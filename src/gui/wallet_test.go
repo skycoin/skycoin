@@ -17,6 +17,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/pkg/errors"
 )
 
 // Gateway RPC interface wrapper for daemon state
@@ -86,52 +87,80 @@ func (gw *FakeGateway) GetWalletDir() string {
 	return args.String(0)
 }
 
-func TestGetWalletFolderHandler(t *testing.T) {
-	type httpBody struct{}
+// NewWalletSeed returns generated mnemomic
+func (gw *FakeGateway) NewWalletSeed() (string, error) {
+	args := gw.Called()
+	return args.String(0), args.Error(1)
+}
+
+func TestNewWalletSeed(t *testing.T) {
+	type httpRequestBody struct{}
+
+	type httpResponseBody struct {
+		Seed string `json:"seed"`
+	}
 
 	tt := []struct {
-		name                 string
-		method               string
-		url                  string
-		body                 *httpBody
-		status               int
-		err                  string
-		getWalletDirResponse string
-		httpResponse         WalletFolder
+		name                  string
+		method                string
+		url                   string
+		body                  *httpRequestBody
+		status                int
+		err                   string
+		newWalletSeedResponse string
+		newWalletSeedError    error
+		httpResponse httpResponseBody
 	}{
 		{
 			"200 - OK",
 			http.MethodGet,
-			"/wallets/folderName",
-			&httpBody{},
+			"/wallets/newSeed",
+			&httpRequestBody{},
 			http.StatusOK,
 			"",
-			"/wallet/folder/address",
-			WalletFolder{
-				Address: "/wallet/folder/address",
+			"newWalletSeedResponse",
+			nil,
+			httpResponseBody{
+				Seed: "newWalletSeedResponse",
 			},
 		},
 		{
-			"200 - OK. trailed backslash",
+			"200 - OK. trailing backspace",
 			http.MethodGet,
-			"/wallets/folderName/",
-			&httpBody{},
+			"/wallets/newSeed/",
+			&httpRequestBody{},
 			http.StatusOK,
 			"",
-			"/wallet/folder/address",
-			WalletFolder{
-				Address: "/wallet/folder/address",
+			"newWalletSeedResponse",
+			nil,
+			httpResponseBody{
+				Seed: "newWalletSeedResponse",
 			},
 		},
 		{
-			"200 -OK. POST",
+			"200 - OK. POST",
 			http.MethodPost,
-			"/wallets/folderName",
-			&httpBody{}, http.StatusOK,
+			"/wallets/newSeed",
+			&httpRequestBody{},
+			http.StatusOK,
 			"",
-			"/wallet/folder/address",
-			WalletFolder{
-				Address: "/wallet/folder/address",
+			"newWalletSeedResponse",
+			nil,
+			httpResponseBody{
+				Seed: "newWalletSeedResponse",
+			},
+		},
+		{
+			"500 - newWalletSeedError",
+			http.MethodGet,
+			"/wallets/newSeed",
+			&httpRequestBody{},
+			http.StatusInternalServerError,
+			"500 Internal Server Error",
+			"",
+			errors.New("newWalletSeedError"),
+			httpResponseBody{
+				Seed: "",
 			},
 		},
 	}
@@ -140,7 +169,7 @@ func TestGetWalletFolderHandler(t *testing.T) {
 		gateway := &FakeGateway{
 			t: t,
 		}
-		gateway.On("GetWalletDir").Return(tc.getWalletDirResponse)
+		gateway.On("NewWalletSeed").Return(tc.newWalletSeedResponse, tc.newWalletSeedError)
 		params, _ := query.Values(tc.body)
 		paramsEncoded := params.Encode()
 		var url = tc.url
@@ -153,7 +182,7 @@ func TestGetWalletFolderHandler(t *testing.T) {
 		}
 
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(GetWalletFolder(gateway))
+		handler := http.HandlerFunc(NewWalletSeed(gateway))
 
 		handler.ServeHTTP(rr, req)
 
@@ -162,12 +191,12 @@ func TestGetWalletFolderHandler(t *testing.T) {
 			tc.name, status, tc.status)
 
 		if status != http.StatusOK {
-			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %d, want `%v`",
 				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 		} else {
-			var msg WalletFolder
+			var msg httpResponseBody
 			if err := json.Unmarshal(rr.Body.Bytes(), &msg); err != nil {
-				t.Fatal("Failed unmarshal responseBidy `%s`: %v", rr.Body.String(), err)
+				t.Fatal("Failed unmarshal responseBody `%s`: %v", rr.Body.String(), err)
 			}
 			require.Equal(t, tc.httpResponse, msg, tc.name)
 		}

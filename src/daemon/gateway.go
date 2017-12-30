@@ -12,6 +12,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/historydb"
+	"github.com/skycoin/skycoin/src/cipher/go-bip39"
 )
 
 // Exposes a read-only api for use by the gui rpc interface
@@ -656,4 +657,15 @@ func (gw *Gateway) GetBuildInfo() visor.BuildInfo {
 		bi = gw.vrpc.GetBuildInfo()
 	})
 	return bi
+}
+
+// NewWalletSeed returns generated mnemomic
+func (gw *Gateway) NewWalletSeed() (string, error) {
+	var mnemonic string
+	var err error
+	gw.strand("NewWalletSeed", func() {
+		mnemonic, err = bip39.NewDefaultMnemomic()
+	})
+
+	return mnemonic, err
 }

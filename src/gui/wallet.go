@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -27,6 +26,7 @@ type Gatewayer interface {
 	UpdateWalletLabel(wltID, label string) error
 	ReloadWallets() error
 	GetWalletDir() string
+	NewWalletSeed() (string, error)
 }
 
 // SpendResult represents the result of spending
@@ -378,9 +378,9 @@ func GetWalletFolder(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-func newWalletSeed(gateway *daemon.Gateway) http.HandlerFunc {
+func NewWalletSeed(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		mnemonic, err := bip39.NewDefaultMnemomic()
+		mnemonic, err := gateway.NewWalletSeed()
 		if err != nil {
 			logger.Error("bip39.NewDefaultMnemomic failed: %v", err)
 			wh.Error500(w)
@@ -458,7 +458,7 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	mux.HandleFunc("/wallets/folderName", GetWalletFolder(gateway))
 
 	// generate wallet seed
-	mux.Handle("/wallet/newSeed", newWalletSeed(gateway))
+	mux.Handle("/wallet/newSeed", NewWalletSeed(gateway))
 
 	// generate wallet seed
 }

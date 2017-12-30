@@ -289,7 +289,7 @@ func Save(dir string, w *Wallet) error {
 	return r.Save(filepath.Join(dir, w.Filename()))
 }
 
-// removeBackupFiles removes any *.wlt with *wlt.bak that matches in the given directory
+// removeBackupFiles removes any *.wlt.bak files whom have *.wlt matched in the given directory
 func removeBackupFiles(dir string) error {
 	fs, err := filterDir(dir, ".wlt")
 	if err != nil {

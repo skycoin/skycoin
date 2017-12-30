@@ -176,7 +176,6 @@ func (rw *ReadableWallet) toWallet() (*Wallet, error) {
 
 // Save saves to filename, remove .bak file if exist
 func (rw *ReadableWallet) Save(filename string) error {
-	// return file.SaveJSON(filename, rw, 0600)
 	data, err := json.MarshalIndent(rw, "", "    ")
 	if err != nil {
 		return err

@@ -500,13 +500,14 @@ func (gw *Gateway) Spend(wltID string, coins uint64, dest cipher.Address) (*coin
 		// create and sign transaction
 		tx, err = gw.vrpc.CreateAndSignTransaction(wltID, sv, unspent, gw.v.Blockchain.Time(), coins, dest)
 		if err != nil {
-			err = fmt.Errorf("Create transaction failed: %v", err)
+			logger.Error("Create transaction failed: %v", err)
 			return
 		}
 
 		// inject transaction
 		if err = gw.d.Visor.InjectTransaction(*tx, gw.d.Pool); err != nil {
-			err = fmt.Errorf("Inject transaction failed: %v", err)
+			logger.Error("Inject transaction failed: %v", err)
+			return
 		}
 	})
 

@@ -233,6 +233,17 @@ Args:
     id: wallet id
     dst: recipient address
     coins: number of coins to send, in droplets. 1 coin equals 1e6 droplets.
+Response:
+    balance: new balance of the wallet
+    txn: spent transaction
+    error: an error that may have occured after broadcast the transaction to the network
+           if this field is not empty, the spend succeeded, but the response data could not be prepared
+Statuses:
+    200: successful spend. NOTE: the response may include an "error" field. if this occurs, the spend succeeded
+         but the response data could not be prepared. The client should NOT spend again.
+    400: Invalid query params, wallet lacks enough coin hours, insufficient balance
+    404: wallet does not exist
+    500: other errors
 ```
 
 example, send 1 coin to `2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc` from wallet `2017_05_09_ea42.wlt`:

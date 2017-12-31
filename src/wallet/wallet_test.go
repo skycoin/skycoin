@@ -604,6 +604,20 @@ func TestWalletDistributeSpendHours(t *testing.T) {
 	}
 }
 
+func uxBalancesEqual(a, b []UxBalance) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i, x := range a {
+		if x != b[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
 func TestWalletSortSpendsLowToHigh(t *testing.T) {
 	// UxBalances are sorted with Coins lowest, then following other order rules
 	orderedUxb := []UxBalance{
@@ -645,7 +659,9 @@ func TestWalletSortSpendsLowToHigh(t *testing.T) {
 		},
 	}
 
-	for i := 0; i < 10; i++ {
+	shuffleWorked := false
+	nShuffle := 20
+	for i := 0; i < nShuffle; i++ {
 		// Shuffle the list
 		uxb := make([]UxBalance, len(orderedUxb))
 		copy(uxb, orderedUxb)
@@ -655,7 +671,10 @@ func TestWalletSortSpendsLowToHigh(t *testing.T) {
 			uxb[i], uxb[j] = uxb[j], uxb[i]
 		}
 
-		require.NotEqual(t, uxb, orderedUxb)
+		// Sanity check that shuffling produces a new result
+		if !uxBalancesEqual(uxb, orderedUxb) {
+			shuffleWorked = true
+		}
 
 		sortSpendsCoinsLowToHigh(uxb)
 
@@ -665,6 +684,8 @@ func TestWalletSortSpendsLowToHigh(t *testing.T) {
 
 		verifySortedCoinsLowToHigh(t, uxb)
 	}
+
+	require.True(t, shuffleWorked)
 
 	nRand := 1000
 	for i := 0; i < nRand; i++ {
@@ -722,7 +743,8 @@ func TestWalletSortSpendsHighToLow(t *testing.T) {
 		},
 	}
 
-	nShuffle := 10
+	shuffleWorked := false
+	nShuffle := 20
 	for i := 0; i < nShuffle; i++ {
 		// Shuffle the list
 		uxb := make([]UxBalance, len(orderedUxb))
@@ -733,7 +755,9 @@ func TestWalletSortSpendsHighToLow(t *testing.T) {
 			uxb[i], uxb[j] = uxb[j], uxb[i]
 		}
 
-		require.NotEqual(t, uxb, orderedUxb)
+		if !uxBalancesEqual(uxb, orderedUxb) {
+			shuffleWorked = true
+		}
 
 		sortSpendsCoinsHighToLow(uxb)
 
@@ -743,6 +767,8 @@ func TestWalletSortSpendsHighToLow(t *testing.T) {
 
 		verifySortedCoinsHighToLow(t, uxb)
 	}
+
+	require.True(t, shuffleWorked)
 
 	nRand := 1000
 	for i := 0; i < nRand; i++ {

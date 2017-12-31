@@ -1,33 +1,26 @@
 package gui
 
 import (
+	"bytes"
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
 	"encoding/json"
 
-	"github.com/google/go-querystring/query"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/wallet"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/visor"
-	"net/url"
-	"bytes"
+	"github.com/skycoin/skycoin/src/wallet"
 )
-
-type httpBody struct {
-	Id    string `url:"id,omitempty"`
-	Dst   string `url:"dst,omitempty"`
-	Coins string `url:"coins,omitempty"`
-}
 
 // Gateway RPC interface wrapper for daemon state
 type FakeGateway struct {
@@ -442,6 +435,11 @@ func TestWalletSpendHandler(t *testing.T) {
 }
 
 func TestWalletBalanceHandler(t *testing.T) {
+	type httpBody struct {
+		WalletID string
+		Dst      string
+		Coins    string
+	}
 	tt := []struct {
 		name                          string
 		method                        string
@@ -450,8 +448,6 @@ func TestWalletBalanceHandler(t *testing.T) {
 		status                        int
 		err                           string
 		walletId                      string
-		coins                         uint64
-		dst                           string
 		gatewayGetWalletBalanceResult wallet.BalancePair
 		gatewayBalanceErr             error
 		result                        *wallet.BalancePair
@@ -464,8 +460,6 @@ func TestWalletBalanceHandler(t *testing.T) {
 			http.StatusMethodNotAllowed,
 			"405 Method Not Allowed",
 			"0",
-			0,
-			"",
 			wallet.BalancePair{},
 			nil,
 			nil,
@@ -478,92 +472,93 @@ func TestWalletBalanceHandler(t *testing.T) {
 			http.StatusBadRequest,
 			"400 Bad Request - missing wallet id",
 			"0",
-			0,
-			"",
 			wallet.BalancePair{},
 			nil,
 			nil,
+		},
+		{
+			"400 - gw error",
+			"GET",
+			"/wallet/balance",
+			&httpBody{
+				WalletID: "someId",
+			},
+			http.StatusBadRequest,
+			"400 Bad Request - get wallet balance failed",
+			"someId",
+			wallet.BalancePair{
+				Confirmed: wallet.Balance{Coins: 0, Hours: 0},
+				Predicted: wallet.Balance{Coins: 0, Hours: 0},
+			},
+			errors.New("gatewayBalanceError"),
+			&wallet.BalancePair{
+				Confirmed: wallet.Balance{Coins: 0, Hours: 0},
+				Predicted: wallet.Balance{Coins: 0, Hours: 0},
+			},
 		},
 		{
 			"200 - OK",
 			"GET",
 			"/wallet/balance",
 			&httpBody{
-				Id: "foo",
+				WalletID: "foo",
 			},
 			http.StatusOK,
 			"",
 			"foo",
-			0,
-			"",
 			wallet.BalancePair{},
 			nil,
 			&wallet.BalancePair{},
 		},
-		{
-			"200 - but with err from `b, err := gateway.GetWalletBalance(wltID)`",
-			"GET",
-			"/wallet/balance",
-			&httpBody{
-				Id: "someId",
-			},
-			http.StatusOK,
-			"",
-			"someId",
-			0,
-			"",
-			wallet.BalancePair{
-				Confirmed: wallet.Balance{Coins: 0, Hours: 0},
-				Predicted: wallet.Balance{Coins: 0, Hours: 0},
-			},
-			errors.New("200 - but with err from `b, err := gateway.GetWalletBalance(wltID)`"),
-			&wallet.BalancePair{
-				Confirmed: wallet.Balance{Coins: 0, Hours: 0},
-				Predicted: wallet.Balance{Coins: 0, Hours: 0},
-			},
-		},
 	}
 
 	for _, tc := range tt {
-		gateway := &FakeGateway{
-			walletId: tc.walletId,
-			t:        t,
-		}
-		gateway.On("GetWalletBalance", tc.walletId).Return(tc.gatewayGetWalletBalanceResult, tc.gatewayBalanceErr)
-		query, _ := query.Values(tc.body)
-		params := query.Encode()
-		var url = tc.url
-		if params != "" {
-			url = url + "?" + params
-		}
-		req, err := http.NewRequest(tc.method, url, nil)
-
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(WalletBalanceHandler(gateway))
-
-		handler.ServeHTTP(rr, req)
-
-		status := rr.Code
-		if status != tc.status {
-			t.Errorf("case: %s, handler returned wrong status code: got `%v` want `%v`",
-				tc.name, status, tc.status)
-		}
-		if status != http.StatusOK {
-			if errMsg := rr.Body.String(); strings.TrimSpace(errMsg) != tc.err {
-				t.Errorf("case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, errMsg, status, tc.err)
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := &FakeGateway{
+				walletID: tc.walletId,
+				t:        t,
 			}
-		} else {
-			var msg wallet.BalancePair
-			err = json.Unmarshal(rr.Body.Bytes(), &msg)
-			if err != nil {
-				t.Errorf("fail unmarshal json response while 200 OK. body: %s, err: %s", rr.Body.String(), err)
+			gateway.On("GetWalletBalance", tc.walletId).Return(tc.gatewayGetWalletBalanceResult, tc.gatewayBalanceErr)
+
+			v := url.Values{}
+			var url = tc.url
+			if tc.body != nil {
+				if tc.body.WalletID != "" {
+					v.Add("id", tc.body.WalletID)
+				}
 			}
-			require.Equal(t, tc.result, &msg, tc.name)
-		}
+			if len(v) > 0 {
+				url += "?" + v.Encode()
+			}
+			req, err := http.NewRequest(tc.method, url, bytes.NewBufferString(v.Encode()))
+			require.NoError(t, err)
+			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+			rr := httptest.NewRecorder()
+			handler := http.HandlerFunc(walletBalanceHandler(gateway))
+
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
+			if status != tc.status {
+				t.Errorf("case: %s, handler returned wrong status code: got `%v` want `%v`",
+					tc.name, status, tc.status)
+			}
+			if status != http.StatusOK {
+				if errMsg := rr.Body.String(); strings.TrimSpace(errMsg) != tc.err {
+					t.Errorf("case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+						tc.name, errMsg, status, tc.err)
+				}
+			} else {
+				var msg wallet.BalancePair
+				err = json.Unmarshal(rr.Body.Bytes(), &msg)
+				if err != nil {
+					t.Errorf("fail unmarshal json response while 200 OK. body: %s, err: %s", rr.Body.String(), err)
+				}
+				require.Equal(t, tc.result, &msg, tc.name)
+			}
+		})
+
 	}
 }

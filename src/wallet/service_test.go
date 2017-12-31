@@ -977,7 +977,6 @@ func TestServiceDecryptWallet(t *testing.T) {
 					a := cipher.AddressFromSecKey(seckeys[i])
 					require.Equal(t, a, wlt.Entries[i].Address)
 					require.Equal(t, seckeys[i], wlt.Entries[i].Secret)
-					require.Empty(t, wlt.Entries[i].EncryptedSecret)
 				}
 			}
 
@@ -1114,11 +1113,11 @@ func TestServiceEncryptWallets(t *testing.T) {
 			verifyEncryptedWlt := func(wlt *Wallet, seed []byte, password []byte) {
 				// Checks if the wallet is encrypted
 				require.True(t, wlt.IsEncrypted())
-				// Checks if the seed is the same as befoe, must be not.
-				require.NotEqual(t, string(seed), wlt.seed())
+				require.Empty(t, wlt.seed())
+				require.Empty(t, wlt.lastSeed())
 
 				// Decrypt the seed and compare
-				dseed, err := Decrypt(wlt.seed(), password)
+				dseed, err := Decrypt(wlt.encryptedSeed(), password)
 				require.NoError(t, err)
 				require.Equal(t, dseed, seed)
 
@@ -1127,7 +1126,7 @@ func TestServiceEncryptWallets(t *testing.T) {
 				require.NotEqual(t, string(sd), wlt.lastSeed())
 
 				// Decrypt the last seed and compare
-				dlseed, err := Decrypt(wlt.lastSeed(), password)
+				dlseed, err := Decrypt(wlt.encryptedLastSeed(), password)
 				require.NoError(t, err)
 				require.Equal(t, hex.EncodeToString(sd), string(dlseed))
 

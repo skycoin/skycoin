@@ -165,40 +165,49 @@ func (w *Wallet) lock(password []byte) error {
 		return ErrWalletEncrypted
 	}
 
+	wlt := w.clone()
+
 	// Encrypt the seed
-	ss, err := Encrypt([]byte(w.seed()), password)
+	ss, err := Encrypt([]byte(wlt.seed()), password)
 	if err != nil {
 		return err
 	}
 
-	w.setSeed(ss)
+	wlt.setEncryptedSeed(ss)
 
 	// Encrypt the last seed
-	sls, err := Encrypt([]byte(w.lastSeed()), password)
+	sls, err := Encrypt([]byte(wlt.lastSeed()), password)
 	if err != nil {
 		return err
 	}
 
-	w.setLastSeed(sls)
+	wlt.setEncryptedLastSeed(sls)
 
 	// encrypt private keys in entries
-	for i, e := range w.Entries {
+	for i, e := range wlt.Entries {
 		se, err := Encrypt(e.Secret[:], password)
 		if err != nil {
 			return err
 		}
 
 		// Set the encrypted seckey value
-		w.Entries[i].EncryptedSecret = se
+		wlt.Entries[i].EncryptedSecret = se
 		// Clear the entry.Secret
-		for j := range w.Entries[i].Secret {
-			w.Entries[i].Secret[j] = 0
+		for j := range wlt.Entries[i].Secret {
+			wlt.Entries[i].Secret[j] = 0
 		}
 
-		w.Entries[i].Secret = cipher.SecKey{}
+		wlt.Entries[i].Secret = cipher.SecKey{}
 	}
 
-	w.setEncrypted(true)
+	wlt.setEncrypted(true)
+	// Wipes the sercet fields in wlt
+	wlt.erase()
+	// Wipes the secret fields in w
+	w.erase()
+
+	// Replace the unlocked w with locked wlt
+	*w = *wlt
 
 	return nil
 }
@@ -212,20 +221,20 @@ func (w *Wallet) unlock(password []byte) (*Wallet, error) {
 	}
 
 	if len(password) == 0 {
-		return nil, errors.New("password is required to decrypt wallet")
+		return nil, ErrRequirePassword
 	}
 
 	wlt := w.clone()
 
 	// decrypt the seed
-	s, err := Decrypt(wlt.seed(), password)
+	s, err := Decrypt(wlt.encryptedSeed(), password)
 	if err != nil {
 		return nil, err
 	}
 	wlt.setSeed(string(s))
 
 	// decrypt lastSeed
-	ls, err := Decrypt(wlt.lastSeed(), password)
+	ls, err := Decrypt(wlt.encryptedLastSeed(), password)
 	if err != nil {
 		return nil, err
 	}
@@ -238,11 +247,26 @@ func (w *Wallet) unlock(password []byte) (*Wallet, error) {
 			return nil, err
 		}
 		copy(wlt.Entries[i].Secret[:], sk[:])
-		wlt.Entries[i].EncryptedSecret = ""
 	}
 	wlt.setEncrypted(false)
 
 	return wlt, nil
+}
+
+// erase wipes secret fields in wallet
+func (w *Wallet) erase() {
+	// Wipes the seed and last seed
+	w.setSeed("")
+	w.setLastSeed("")
+
+	// Wipes private keys in entries
+	for i := range w.Entries {
+		for j := range w.Entries[i].Secret {
+			w.Entries[i].Secret[j] = 0
+		}
+
+		w.Entries[i].Secret = cipher.SecKey{}
+	}
 }
 
 // guard will do:
@@ -265,19 +289,19 @@ func (w *Wallet) guard(password []byte, f func(w *Wallet) error) (err error) {
 		return fmt.Errorf("unlock wallet failed: %v", err)
 	}
 
-	defer func() {
-		if lockErr := wlt.lock(password); lockErr != nil {
-			err = fmt.Errorf("lock wallet failed: %v", lockErr)
-			return
-		}
-
-		*w = *wlt
-	}()
+	defer wlt.erase()
 
 	if err := f(wlt); err != nil {
 		return fmt.Errorf("process wallet failed: %v", err)
 	}
 
+	// lock the wlt
+	if err := wlt.lock(password); err != nil {
+		return fmt.Errorf("lock wallet failed: %v", err)
+	}
+
+	// copy wlt to w
+	*w = *wlt
 	return
 }
 

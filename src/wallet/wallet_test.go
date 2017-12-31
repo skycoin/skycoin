@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -236,12 +237,12 @@ func TestNewWallet(t *testing.T) {
 
 			if w.IsEncrypted() {
 				// decrypt the seed and genearte the first address
-				seed, err := Decrypt(w.seed(), tc.ops.Password)
+				seed, err := Decrypt(w.encryptedSeed(), tc.ops.Password)
 				require.NoError(t, err)
 				require.Equal(t, tc.ops.Seed, string(seed))
 
 				// decrypt last seed
-				lastSeed, err := Decrypt(w.lastSeed(), tc.ops.Password)
+				lastSeed, err := Decrypt(w.encryptedLastSeed(), tc.ops.Password)
 				require.NoError(t, err)
 				require.Equal(t, lastSeed, seed)
 
@@ -307,9 +308,11 @@ func TestWalletLock(t *testing.T) {
 				return
 			}
 
-			// Checks if the seeds are encrypted
-			require.NotEqual(t, w.seed(), tc.opts.Seed)
-			require.NotEqual(t, w.lastSeed(), tc.opts.Seed)
+			require.True(t, w.IsEncrypted())
+
+			// Checks if the seeds are wiped
+			require.Empty(t, w.seed())
+			require.Empty(t, w.lastSeed())
 
 			// Checks if the entries are encrypted
 			for i := range w.Entries {
@@ -348,7 +351,7 @@ func TestWalletUnlock(t *testing.T) {
 				AddressNum: 2,
 			},
 			nil,
-			errors.New("password is required to decrypt wallet"),
+			ErrRequirePassword,
 		},
 		{
 			"unlock undecrypted wallet",
@@ -368,7 +371,6 @@ func TestWalletUnlock(t *testing.T) {
 
 			wlt, err := w.unlock(tc.unlockPwd)
 			require.Equal(t, tc.err, err)
-
 			if err != nil {
 				return
 			}
@@ -380,9 +382,10 @@ func TestWalletUnlock(t *testing.T) {
 
 			// Checks the generated addresses
 			sd, sks := cipher.GenerateDeterministicKeyPairsSeed([]byte(wlt.seed()), int(tc.opts.AddressNum))
-			require.NotEqual(t, sd, []byte(wlt.lastSeed()))
-
 			require.Equal(t, tc.opts.AddressNum, uint64(len(wlt.Entries)))
+
+			// Checks the last seed
+			require.Equal(t, hex.EncodeToString(sd), wlt.lastSeed())
 
 			for i := range wlt.Entries {
 				addr := cipher.AddressFromSecKey(sks[i])
@@ -396,6 +399,10 @@ func TestWalletUnlock(t *testing.T) {
 			for i := range w.Entries {
 				require.Equal(t, cipher.SecKey{}, w.Entries[i].Secret)
 			}
+
+			// Checks if the seed and lastSeed in original wallet are sitll empty
+			require.Empty(t, w.seed())
+			require.Empty(t, w.lastSeed())
 		})
 	}
 }

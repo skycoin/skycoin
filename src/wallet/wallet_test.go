@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -1215,76 +1213,77 @@ func TestWalletChooseSpendsMinimizeUxOuts(t *testing.T) {
 }
 
 func TestRemoveBackupFiles(t *testing.T) {
+	type wltInfo struct {
+		wltName string
+		version string
+	}
+
 	tt := []struct {
 		name                   string
-		initFiles              []string
+		initFiles              []wltInfo
 		expectedRemainingFiles map[string]struct{}
 	}{
 		{
 			"no file",
-			[]string{},
+			[]wltInfo{},
 			map[string]struct{}{},
 		},
 		{
-			"1 matched bak file",
-			[]string{
-				"t1.wlt",
-				"t1.wlt.bak",
+			"1 v0.1 .wlt, 1 v0.1 .bak, delete 1 bak",
+			[]wltInfo{
+				{
+					"t1.wlt",
+					"0.1",
+				},
+				{
+					"t1.wlt.bak",
+					"0.1",
+				},
 			},
 			map[string]struct{}{
 				"t1.wlt": struct{}{},
 			},
 		},
 		{
-			"3 file, 1 matched bak file",
-			[]string{
-				"t1.wlt",
-				"t2.wlt",
-				"t2.wlt.bak",
-			},
-			map[string]struct{}{
-				"t1.wlt": struct{}{},
-				"t2.wlt": struct{}{},
-			},
-		},
-		{
-			"4 file, 1 matched bak file",
-			[]string{
-				"t1.wlt",
-				"t2.wlt",
-				"t3.wlt",
-				"t3.wlt.bak",
-			},
-			map[string]struct{}{
-				"t1.wlt": struct{}{},
-				"t2.wlt": struct{}{},
-				"t3.wlt": struct{}{},
-			},
-		},
-		{
-			"5 file, 2 matched bak file",
-			[]string{
-				"t1.wlt",
-				"t2.wlt",
-				"t2.wlt.bak",
-				"t3.wlt",
-				"t3.wlt.bak",
+			"2 v0.1 .wlt, 1 v0.1 .bak, delete 1 bak",
+			[]wltInfo{
+				{
+					"t1.wlt",
+					"0.1",
+				},
+				{
+					"t2.wlt",
+					"0.1",
+				},
+				{
+					"t2.wlt.bak",
+					"0.1",
+				},
 			},
 			map[string]struct{}{
 				"t1.wlt": struct{}{},
 				"t2.wlt": struct{}{},
-				"t3.wlt": struct{}{},
 			},
 		},
 		{
-			"6 file, 3 matched bak file",
-			[]string{
-				"t1.wlt",
-				"t1.wlt.bak",
-				"t2.wlt",
-				"t2.wlt.bak",
-				"t3.wlt",
-				"t3.wlt.bak",
+			"3 v0.1 .wlt, 1 v0.1 .bak, delete 1 bak",
+			[]wltInfo{
+				{
+					"t1.wlt",
+					"0.1",
+				},
+				{
+					"t2.wlt",
+					"0.1",
+				},
+				{
+					"t3.wlt",
+					"0.1",
+				},
+				{
+					"t3.wlt.bak",
+					"0.1",
+				},
 			},
 			map[string]struct{}{
 				"t1.wlt": struct{}{},
@@ -1293,18 +1292,193 @@ func TestRemoveBackupFiles(t *testing.T) {
 			},
 		},
 		{
-			"4 file, no matched bak file",
-			[]string{
-				"t1.wlt",
-				"t2.wlt",
-				"t3.wlt",
-				"t4.wlt.bak",
+			"3 v0.1 .wlt, 2 v0.1 .bak, delete 2 bak",
+			[]wltInfo{
+				{
+					"t1.wlt",
+					"0.1",
+				},
+				{
+					"t2.wlt",
+					"0.1",
+				},
+				{
+					"t2.wlt.bak",
+					"0.1",
+				},
+				{
+					"t3.wlt",
+					"0.1",
+				},
+				{
+					"t3.wlt.bak",
+					"0.1",
+				},
+			},
+			map[string]struct{}{
+				"t1.wlt": struct{}{},
+				"t2.wlt": struct{}{},
+				"t3.wlt": struct{}{},
+			},
+		},
+		{
+			"3 v0.1 .wlt, 3 v0.1 .bak, delete 3 bak",
+			[]wltInfo{
+				{
+					"t1.wlt",
+					"0.1",
+				},
+				{
+					"t1.wlt.bak",
+					"0.1",
+				},
+				{
+					"t2.wlt",
+					"0.1",
+				},
+				{
+					"t2.wlt.bak",
+					"0.1",
+				},
+				{
+					"t3.wlt",
+					"0.1",
+				},
+				{
+					"t3.wlt.bak",
+					"0.1",
+				},
+			},
+			map[string]struct{}{
+				"t1.wlt": struct{}{},
+				"t2.wlt": struct{}{},
+				"t3.wlt": struct{}{},
+			},
+		},
+		{
+			"3 v0.1 .wlt, 1 v0.1 .bak, no delete",
+			[]wltInfo{
+				{
+					"t1.wlt",
+					"0.1",
+				},
+				{
+					"t2.wlt",
+					"0.1",
+				},
+				{
+					"t3.wlt",
+					"0.1",
+				},
+				{
+					"t4.wlt.bak",
+					"0.1",
+				},
 			},
 			map[string]struct{}{
 				"t1.wlt":     struct{}{},
 				"t2.wlt":     struct{}{},
 				"t3.wlt":     struct{}{},
 				"t4.wlt.bak": struct{}{},
+			},
+		},
+		{
+			"3 v0.2 .wlt, 1 v0.2 .bak, no delete",
+			[]wltInfo{
+				{
+					"t1.wlt",
+					"0.2",
+				},
+				{
+					"t2.wlt",
+					"0.2",
+				},
+				{
+					"t3.wlt",
+					"0.2",
+				},
+				{
+					"t3.wlt.bak",
+					"0.2",
+				},
+			},
+			map[string]struct{}{
+				"t1.wlt":     struct{}{},
+				"t2.wlt":     struct{}{},
+				"t3.wlt":     struct{}{},
+				"t3.wlt.bak": struct{}{},
+			},
+		},
+		{
+			"1 v0.1 .wlt, 1 v0.1 .bak, 2 v0.2 .wlt, 2 v0.2 .bak, delete 1 bak",
+			[]wltInfo{
+				{
+					"t1.wlt",
+					"0.1",
+				},
+				{
+					"t1.wlt.bak",
+					"0.1",
+				},
+				{
+					"t2.wlt",
+					"0.2",
+				},
+				{
+					"t2.wlt.bak",
+					"0.2",
+				},
+				{
+					"t3.wlt",
+					"0.2",
+				},
+				{
+					"t3.wlt.bak",
+					"0.2",
+				},
+			},
+			map[string]struct{}{
+				"t1.wlt":     struct{}{},
+				"t2.wlt":     struct{}{},
+				"t2.wlt.bak": struct{}{},
+				"t3.wlt":     struct{}{},
+				"t3.wlt.bak": struct{}{},
+			},
+		},
+		{
+			"1 v0.1 .wlt, 2 v0.1 .bak, 2 v0.2 .wlt, 1 v0.2 .bak, delete 1 bak",
+			[]wltInfo{
+				{
+					"t1.wlt",
+					"0.1",
+				},
+				{
+					"t1.wlt.bak",
+					"0.1",
+				},
+				{
+					"t2.wlt",
+					"0.2",
+				},
+				{
+					"t2.wlt.bak",
+					"0.1",
+				},
+				{
+					"t3.wlt",
+					"0.2",
+				},
+				{
+					"t3.wlt.bak",
+					"0.2",
+				},
+			},
+			map[string]struct{}{
+				"t1.wlt":     struct{}{},
+				"t2.wlt":     struct{}{},
+				"t2.wlt.bak": struct{}{},
+				"t3.wlt":     struct{}{},
+				"t3.wlt.bak": struct{}{},
 			},
 		},
 	}
@@ -1314,9 +1488,13 @@ func TestRemoveBackupFiles(t *testing.T) {
 			dir := prepareWltDir()
 			// Initialize files
 			for _, f := range tc.initFiles {
-				f, err := os.Create(filepath.Join(dir, f))
+				w, err := NewWallet(f.wltName, Options{
+					Seed: "s1",
+				})
 				require.NoError(t, err)
-				f.Close()
+				w.setVersion(f.version)
+
+				require.NoError(t, Save(dir, w))
 			}
 
 			require.NoError(t, removeBackupFiles(dir))

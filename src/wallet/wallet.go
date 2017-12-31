@@ -29,7 +29,6 @@ var (
 
 	// ErrInsufficientBalance is returned if a wallet does not have enough balance for a spend
 	ErrInsufficientBalance = errors.New("balance is not sufficient")
-
 	// ErrSpendingUnconfirmed is returned if caller attempts to spend unconfirmed outputs
 	ErrSpendingUnconfirmed = errors.New("please spend after your pending transaction is confirmed")
 	// ErrInvalidEncryptedField is returned if a wallet's Meta.encrypted value is invalid.
@@ -327,7 +326,7 @@ func Save(dir string, w *Wallet) error {
 	return r.Save(filepath.Join(dir, w.Filename()))
 }
 
-// removeBackupFiles removes any *.wlt.bak files whom have *.wlt matched in the given directory
+// removeBackupFiles removes any *.wlt.bak files whom have version 0.1 and *.wlt matched in the given directory
 func removeBackupFiles(dir string) error {
 	fs, err := filterDir(dir, ".wlt")
 	if err != nil {
@@ -350,8 +349,16 @@ func removeBackupFiles(dir string) error {
 	for _, bf := range bakFs {
 		f := strings.TrimRight(bf, ".bak")
 		if _, ok := fm[f]; ok {
-			if err := os.Remove(bf); err != nil {
+			// Load and check the wallet version
+			w, err := Load(f)
+			if err != nil {
 				return err
+			}
+
+			if w.Version() == "0.1" {
+				if err := os.Remove(bf); err != nil {
+					return err
+				}
 			}
 		}
 	}

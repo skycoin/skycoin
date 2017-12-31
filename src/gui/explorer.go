@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -47,6 +48,9 @@ type CoinSupply struct {
 	// Distribution addresses which are locked and do not count towards total supply
 	LockedAddresses []string `json:"locked_distribution_addresses"`
 }
+
+//MaxRicherCount max count number of returns richlist
+const MaxRicherCount = 20
 
 func getCoinSupply(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -217,11 +221,15 @@ func getRichlist(gateway *daemon.Gateway) http.HandlerFunc {
 		var topn int
 		topnStr := r.FormValue("n")
 		if topnStr == "" {
-			topn = -1
+			topn = MaxRicherCount
 		} else {
 			topn, err = strconv.Atoi(topnStr)
 			if err != nil {
 				wh.Error400(w, "invalid topn")
+				return
+			}
+			if topn > MaxRicherCount || topn < 0 {
+				wh.Error400(w, fmt.Sprintf("n must no bigger than %d", MaxRicherCount))
 				return
 			}
 		}

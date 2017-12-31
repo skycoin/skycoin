@@ -523,12 +523,6 @@ func TestWalletGet(t *testing.T) {
 			if tc.body.WalletID != "" {
 				v.Add("id", tc.body.WalletID)
 			}
-			if tc.body.Dst != "" {
-				v.Add("dst", tc.body.Dst)
-			}
-			if tc.body.Coins != "" {
-				v.Add("coins", tc.body.Coins)
-			}
 		}
 
 		if len(v) > 0 {
@@ -536,10 +530,7 @@ func TestWalletGet(t *testing.T) {
 		}
 
 		req, err := http.NewRequest(tc.method, url, nil)
-
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 
 		rr := httptest.NewRecorder()
 		handler := http.HandlerFunc(walletGet(gateway))

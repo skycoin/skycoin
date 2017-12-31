@@ -21,6 +21,8 @@ func RegisterExplorerHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	mux.HandleFunc("/coinSupply", getCoinSupply(gateway))
 
 	mux.HandleFunc("/richlist", getRichlist(gateway))
+
+	mux.HandleFunc("/addresscount", getAddressCount(gateway))
 }
 
 // DeprecatedCoinSupply records the coin supply info
@@ -202,7 +204,7 @@ func getTransactionsForAddress(gateway *daemon.Gateway) http.HandlerFunc {
 }
 
 // method: GET
-// url: /explorer/richlist?n=${number}&include-distribution=${bool}
+// url: /richlist?n=${number}&include-distribution=${bool}
 func getRichlist(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -241,6 +243,25 @@ func getRichlist(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 
 		wh.SendOr404(w, &topnAcc)
+	}
+}
+
+// method: GET
+// url: /addresscount
+func getAddressCount(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
+		addrCount, err := gateway.GetAddressCount()
+		if err != nil {
+			wh.Error400(w, "internal error when get addresscount")
+			return
+		}
+
+		wh.SendOr404(w, &map[string]uint64{"count": addrCount})
 	}
 }
 

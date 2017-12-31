@@ -10,7 +10,7 @@ Apis service port is `6420`.
 * [Uxout apis](#uxout-apis)
 * [Coin supply api](#coin-supply-informations)
 * [Richlist api](#richlist-show-top-n-addresses-by-uxouts)
-* [Addresscount api] (#addresscount-show-count-of-unique-address)
+* [Addresscount api](#addresscount-show-count-of-unique-address)
 * [Log api](#wallet-log-api)
 
 

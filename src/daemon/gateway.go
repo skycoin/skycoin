@@ -658,3 +658,27 @@ func (gw *Gateway) GetBuildInfo() visor.BuildInfo {
 	})
 	return bi
 }
+
+// GetRichlist returns rich list as desc order.
+func (gw *Gateway) GetRichlist(topn int, includeDistribution bool) ([]visor.AccountJSON, error) {
+	var topnAccounts []visor.AccountJSON
+	rbOuts, err := gw.GetUnspentOutputs(FbyAddressesNotIncluded([]string{}))
+	if err != nil {
+		return nil, err
+	}
+
+	allAccounts, err := rbOuts.AggregateUnspentOutputs()
+	if err != nil {
+		return nil, err
+	}
+
+	distributionMap := visor.GetLockedDistributionAddressMap()
+	amgr := visor.NewAccountMgr(allAccounts, distributionMap)
+	amgr.Sort()
+	topnAccounts, err = amgr.GetTopn(topn, includeDistribution)
+	if err != nil {
+		return nil, err
+	}
+
+	return topnAccounts, nil
+}

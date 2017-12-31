@@ -2,6 +2,7 @@ package gui
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
@@ -18,6 +19,8 @@ func RegisterExplorerHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	mux.HandleFunc("/explorer/getEffectiveOutputs", getEffectiveOutputs(gateway))
 
 	mux.HandleFunc("/coinSupply", getCoinSupply(gateway))
+
+	mux.HandleFunc("/richlist", getRichlist(gateway))
 }
 
 // DeprecatedCoinSupply records the coin supply info
@@ -195,6 +198,49 @@ func getTransactionsForAddress(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 
 		wh.SendOr404(w, &resTxs)
+	}
+}
+
+// method: GET
+// url: /explorer/richlist?n=${number}&include-distribution=${bool}
+func getRichlist(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
+		var err error
+		var isDistribution bool
+		var topn int
+		topnStr := r.FormValue("n")
+		if topnStr == "" {
+			topn = -1
+		} else {
+			topn, err = strconv.Atoi(topnStr)
+			if err != nil {
+				wh.Error400(w, "invalid topn")
+				return
+			}
+		}
+		isDistributionStr := r.FormValue("include-distribution")
+		if isDistributionStr == "" {
+			isDistribution = false
+		} else {
+			isDistribution, err = strconv.ParseBool(isDistributionStr)
+			if err != nil {
+				wh.Error400(w, "invalid include-distribution")
+				return
+			}
+		}
+
+		topnAcc, err := gateway.GetRichlist(topn, isDistribution)
+		if err != nil {
+			wh.Error400(w, "internal error when get richlist")
+			return
+		}
+
+		wh.SendOr404(w, &topnAcc)
 	}
 }
 

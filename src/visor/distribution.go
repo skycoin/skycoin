@@ -1,6 +1,8 @@
 package visor
 
-import "github.com/skycoin/skycoin/src/coin"
+import (
+	"github.com/skycoin/skycoin/src/coin"
+)
 
 const (
 	// Maximum supply of skycoins
@@ -87,6 +89,16 @@ func TransactionIsLocked(inUxs coin.UxArray) bool {
 	}
 
 	return false
+}
+
+// Returns map struct of locked distribution address
+func GetLockedDistributionAddressMap() map[string]struct{} {
+	distributionMap := map[string]struct{}{}
+	addresses := GetLockedDistributionAddresses()
+	for _, address := range addresses {
+		distributionMap[address] = struct{}{}
+	}
+	return distributionMap
 }
 
 var distributionAddresses = [DistributionAddressesTotal]string{

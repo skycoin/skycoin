@@ -57,6 +57,21 @@ const (
 	CoinTypeBitcoin CoinType = "bitcoin"
 )
 
+// wallet meta fields
+const (
+	metaVersion           = "version"           // wallet version
+	metaFilename          = "filename"          // wallet file name
+	metaLabel             = "label"             // wallet label
+	metaTm                = "tm"                // the timestamp when creating the wallet
+	metaType              = "type"              // wallet type
+	metaCoin              = "coin"              // coin type
+	metaEncrypted         = "encrypted"         // whether the wallet is encrypted
+	metaSeed              = "seed"              // wallet seed
+	metaEncryptedSeed     = "encryptedSeed"     // encrypted wallet seed
+	metaLastSeed          = "lastSeed"          // seed for generating next address
+	metaEncryptedLastSeed = "encryptedLastSeed" //  encrypted seed for generating next address
+)
+
 // CoinType represents the wallet coin type
 type CoinType string
 
@@ -69,9 +84,6 @@ type Options struct {
 	Password   []byte
 	AddressNum uint64 // Generate N addresses when create wallet
 }
-
-// Option NewWallet optional arguments type
-type Option func(w *Wallet)
 
 // newWalletFilename check for collisions and retry if failure
 func newWalletFilename() string {
@@ -89,7 +101,9 @@ func newWalletFilename() string {
 //      label
 // 		encrypted - whether this wallet is encrypted
 //      seed
+//      encryptedSeed - encrypted seed
 //      lastSeed - seed for generating next address
+// .    encryptedLastSeed - encrypted last seed
 //      tm - timestamp when creating the wallet
 //      type - wallet type
 //      coin - coin type
@@ -111,14 +125,14 @@ func NewWallet(wltName string, opts Options) (*Wallet, error) {
 
 	w := &Wallet{
 		Meta: map[string]interface{}{
-			"filename": wltName,
-			"version":  Version,
-			"label":    opts.Label,
-			"seed":     opts.Seed,
-			"lastSeed": opts.Seed,
-			"tm":       fmt.Sprintf("%v", time.Now().Unix()),
-			"type":     "deterministic",
-			"coin":     string(coin),
+			metaFilename: wltName,
+			metaVersion:  Version,
+			metaLabel:    opts.Label,
+			metaSeed:     seed,
+			metaLastSeed: seed,
+			metaTm:       fmt.Sprintf("%v", time.Now().Unix()),
+			metaType:     "deterministic",
+			metaCoin:     string(coin),
 		},
 	}
 
@@ -339,18 +353,19 @@ func filterDir(dir string, suffix string) ([]string, error) {
 func (w *Wallet) reset() {
 	w.Entries = []Entry{}
 	w.setLastSeed(w.seed())
+	w.setEncryptedLastSeed(w.encryptedSeed())
 }
 
 // Validate validates the wallet
 func (w *Wallet) validate() error {
-	if _, ok := w.Meta["filename"]; !ok {
+	if _, ok := w.Meta[metaFilename]; !ok {
 		return errors.New("filename not set")
 	}
-	if _, ok := w.Meta["seed"]; !ok {
+	if _, ok := w.Meta[metaSeed]; !ok {
 		return errors.New("seed field not set")
 	}
 
-	walletType, ok := w.Meta["type"]
+	walletType, ok := w.Meta[metaType]
 	if !ok {
 		return errors.New("type field not set")
 	}
@@ -358,7 +373,7 @@ func (w *Wallet) validate() error {
 		return errors.New("wallet type invalid")
 	}
 
-	if _, ok := w.Meta["coin"]; !ok {
+	if _, ok := w.Meta[metaCoin]; !ok {
 		return errors.New("coin field not set")
 	}
 
@@ -367,7 +382,7 @@ func (w *Wallet) validate() error {
 
 // Type gets the wallet type
 func (w *Wallet) Type() string {
-	if v, ok := w.Meta["type"].(string); ok {
+	if v, ok := w.Meta[metaType].(string); ok {
 		return v
 	}
 	return ""
@@ -375,19 +390,19 @@ func (w *Wallet) Type() string {
 
 // Version gets the wallet version
 func (w *Wallet) Version() string {
-	if v, ok := w.Meta["version"].(string); ok {
+	if v, ok := w.Meta[metaVersion].(string); ok {
 		return v
 	}
 	return ""
 }
 
 func (w *Wallet) setVersion(v string) {
-	w.Meta["version"] = v
+	w.Meta[metaVersion] = v
 }
 
 // Filename gets the wallet filename
 func (w *Wallet) Filename() string {
-	if v, ok := w.Meta["filename"].(string); ok {
+	if v, ok := w.Meta[metaFilename].(string); ok {
 		return v
 	}
 	return ""
@@ -395,12 +410,12 @@ func (w *Wallet) Filename() string {
 
 // setFilename sets the wallet filename
 func (w *Wallet) setFilename(fn string) {
-	w.Meta["filename"] = fn
+	w.Meta[metaFilename] = fn
 }
 
 // Label gets the wallet label
 func (w *Wallet) Label() string {
-	if v, ok := w.Meta["label"].(string); ok {
+	if v, ok := w.Meta[metaLabel].(string); ok {
 		return v
 	}
 	return ""
@@ -408,39 +423,61 @@ func (w *Wallet) Label() string {
 
 // setLabel sets the wallet label
 func (w *Wallet) setLabel(label string) {
-	w.Meta["label"] = label
+	w.Meta[metaLabel] = label
 }
 
 // lastSeed returns the last seed
 func (w *Wallet) lastSeed() string {
-	if v, ok := w.Meta["lastSeed"].(string); ok {
+	if v, ok := w.Meta[metaLastSeed].(string); ok {
 		return v
 	}
 	return ""
 }
 
-func (wlt *Wallet) setLastSeed(lseed string) {
-	wlt.Meta["lastSeed"] = lseed
+func (w *Wallet) setLastSeed(lseed string) {
+	w.Meta[metaLastSeed] = lseed
 }
 
 func (w *Wallet) seed() string {
-	if v, ok := w.Meta["seed"].(string); ok {
+	if v, ok := w.Meta[metaSeed].(string); ok {
 		return v
 	}
 	return ""
 }
 
 func (w *Wallet) setSeed(seed string) {
-	w.Meta["seed"] = seed
+	w.Meta[metaSeed] = seed
+}
+
+func (w *Wallet) encryptedSeed() string {
+	if v, ok := w.Meta[metaEncryptedSeed].(string); ok {
+		return v
+	}
+	return ""
+}
+
+func (w *Wallet) setEncryptedSeed(seed string) {
+	w.Meta[metaEncryptedSeed] = seed
+}
+
+func (w *Wallet) encryptedLastSeed() string {
+	if v, ok := w.Meta[metaEncryptedLastSeed].(string); ok {
+		return v
+	}
+	return ""
+}
+
+func (w *Wallet) setEncryptedLastSeed(seed string) {
+	w.Meta[metaEncryptedLastSeed] = seed
 }
 
 func (w *Wallet) setEncrypted(encrypt bool) {
-	w.Meta["encrypted"] = encrypt
+	w.Meta[metaEncrypted] = encrypt
 }
 
 // IsEncrypted checks whether the wallet is encrypted.
 func (w *Wallet) IsEncrypted() bool {
-	if encrypted, ok := w.Meta["encrypted"].(bool); ok {
+	if encrypted, ok := w.Meta[metaEncrypted].(bool); ok {
 		return encrypted
 	}
 	return false

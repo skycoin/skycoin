@@ -200,21 +200,21 @@ func (rw *ReadableWallet) Load(filename string) error {
 }
 
 func (rw *ReadableWallet) version() string {
-	if v, ok := rw.Meta["version"].(string); ok {
+	if v, ok := rw.Meta[metaVersion].(string); ok {
 		return v
 	}
 	return ""
 }
 
 func (rw *ReadableWallet) isEncrypted() bool {
-	if encrypted, ok := rw.Meta["encrypted"].(bool); ok {
+	if encrypted, ok := rw.Meta[metaEncrypted].(bool); ok {
 		return encrypted
 	}
 	return false
 }
 
 func (rw *ReadableWallet) time() string {
-	if tm, ok := rw.Meta["tm"].(string); ok {
+	if tm, ok := rw.Meta[metaTm].(string); ok {
 		return tm
 	}
 

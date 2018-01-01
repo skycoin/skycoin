@@ -995,7 +995,7 @@ result:
 URI: /richlist
 Method: GET
 Args:
-    n: top N addresses, max value is 20, [default 20].
+    n: top N addresses, [default -1 returns all].
     include-distribution: include distribution addresses or not, default false. 
 ```
 

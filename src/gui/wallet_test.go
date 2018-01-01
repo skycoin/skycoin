@@ -42,6 +42,12 @@ func (gw *FakeGateway) GetWalletBalance(wltID string) (wallet.BalancePair, error
 	return args.Get(0).(wallet.BalancePair), args.Error(1)
 }
 
+// GetWallet returns the wallet by wltID
+func (gw *FakeGateway) GetWallet(wltID string) (wallet.Wallet, error) {
+	args := gw.Called(wltID)
+	return args.Get(0).(wallet.Wallet), args.Error(1)
+}
+
 func TestWalletSpendHandler(t *testing.T) {
 	type httpBody struct {
 		WalletID string
@@ -431,6 +437,122 @@ func TestWalletSpendHandler(t *testing.T) {
 				require.Equal(t, *tc.spendResult, msg)
 			}
 		})
+	}
+}
+
+func TestWalletGet(t *testing.T) {
+	type httpBody struct {
+		WalletID string
+		Dst      string
+		Coins    string
+	}
+
+	tt := []struct {
+		name                   string
+		method                 string
+		url                    string
+		body                   *httpBody
+		status                 int
+		err                    string
+		walletId               string
+		gatewayGetWalletResult wallet.Wallet
+		gatewayGetWalletErr    error
+	}{
+		{
+			"405",
+			http.MethodPut,
+			"/wallet",
+			nil,
+			http.StatusMethodNotAllowed,
+			"405 Method Not Allowed",
+			"0",
+			wallet.Wallet{},
+			nil,
+		},
+		{
+			"400 - no walletId",
+			http.MethodGet,
+			"/wallet",
+			nil,
+			http.StatusBadRequest,
+			"400 Bad Request - missing wallet id",
+			"",
+			wallet.Wallet{},
+			nil,
+		},
+		{
+			"400 - error from the `gateway.GetWallet(wltID)`",
+			http.MethodGet,
+			"/wallet",
+			&httpBody{
+				WalletID: "123",
+			},
+			http.StatusBadRequest,
+			"400 Bad Request - wallet 123 doesn't exist",
+			"123",
+			wallet.Wallet{},
+			errors.New("wallet 123 doesn't exist"),
+		},
+		{
+			"200 - OK",
+			http.MethodGet,
+			"/wallet",
+			&httpBody{
+				WalletID: "1234",
+			},
+			http.StatusOK,
+			"",
+			"1234",
+			wallet.Wallet{
+				Meta:    map[string]string{},
+				Entries: []wallet.Entry{},
+			},
+			nil,
+		},
+	}
+
+	for _, tc := range tt {
+		gateway := &FakeGateway{
+			walletID: tc.walletId,
+			t:        t,
+		}
+		gateway.On("GetWallet", tc.walletId).Return(tc.gatewayGetWalletResult, tc.gatewayGetWalletErr)
+		v := url.Values{}
+		var url = tc.url
+		if tc.body != nil {
+			if tc.body.WalletID != "" {
+				v.Add("id", tc.body.WalletID)
+			}
+		}
+
+		if len(v) > 0 {
+			url += "?" + v.Encode()
+		}
+
+		req, err := http.NewRequest(tc.method, url, nil)
+		require.NoError(t, err)
+
+		rr := httptest.NewRecorder()
+		handler := http.HandlerFunc(walletGet(gateway))
+
+		handler.ServeHTTP(rr, req)
+
+		status := rr.Code
+		require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
+			tc.name, status, tc.status)
+
+		if status != http.StatusOK {
+			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()),
+				"case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+		} else {
+			var msg wallet.Wallet
+			err = json.Unmarshal(rr.Body.Bytes(), &msg)
+			if err != nil {
+				t.Errorf("fail unmarshal json response while 200 OK. body: %s, err: %s", rr.Body.String(), err)
+			}
+			require.Equal(t, tc.gatewayGetWalletResult, msg, tc.name)
+		}
 	}
 }
 

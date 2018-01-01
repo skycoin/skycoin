@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/go-bip39"
+	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/visor"
@@ -21,6 +21,7 @@ import (
 type Gatewayer interface {
 	Spend(wltID string, coins uint64, dest cipher.Address) (*coin.Transaction, error)
 	GetWalletBalance(wltID string) (wallet.BalancePair, error)
+	GetWallet(wltID string) (wallet.Wallet, error)
 }
 
 // SpendResult represents the result of spending
@@ -299,7 +300,7 @@ func walletUpdateHandler(gateway *daemon.Gateway) http.HandlerFunc {
 }
 
 // Returns a wallet by id
-func walletGet(gateway *daemon.Gateway) http.HandlerFunc {
+func walletGet(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)

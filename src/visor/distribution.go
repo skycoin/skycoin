@@ -89,6 +89,16 @@ func TransactionIsLocked(inUxs coin.UxArray) bool {
 	return false
 }
 
+// Returns map struct of locked distribution address
+func GetLockedDistributionAddressMap() map[string]struct{} {
+	distributionMap := map[string]struct{}{}
+	addresses := GetLockedDistributionAddresses()
+	for _, address := range addresses {
+		distributionMap[address] = struct{}{}
+	}
+	return distributionMap
+}
+
 var distributionAddresses = [DistributionAddressesTotal]string{
 	"R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
 	"2EYM4WFHe4Dgz6kjAdUkM6Etep7ruz2ia6h",

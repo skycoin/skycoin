@@ -22,23 +22,11 @@ import (
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-type httpBody struct {
-	Id    string `url:"id,omitempty"`
-	Dst   string `url:"dst,omitempty"`
-	Coins string `url:"coins,omitempty"`
-	Seed  string `url:"seed,omitempty"`
-	Label string `url:"label,omitempty"`
-	ScanN string `url:"scan,omitempty"`
-	Num   string `url:"num,omitempty"`
-}
-
 // Gateway RPC interface wrapper for daemon state
 type FakeGateway struct {
 	mock.Mock
-	walletId string
+	walletID string
 	coins    uint64
-	wltName  string
-	scanN    uint64
 	dst      cipher.Address
 	t        *testing.T
 }
@@ -78,6 +66,10 @@ func (gw *FakeGateway) NewAddresses(wltID string, n uint64) ([]cipher.Address, e
 }
 
 func TestWalletNewAddressesHandler(t *testing.T) {
+	type httpBody struct {
+		Id  string `url:"id,omitempty"`
+		Num string `url:"num,omitempty"`
+	}
 	type Addresses struct {
 		Address []string `json:"addresses"`
 	}
@@ -215,37 +207,35 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		gateway := &FakeGateway{
-			t: t,
-		}
-		gateway.On("NewAddresses", tc.walletId, tc.n).Return(tc.gatewayNewAddressesResult, tc.gatewayNewAddressesErr)
-		body, _ := query.Values(tc.body)
-
-		req, err := http.NewRequest(tc.method, tc.url, bytes.NewBufferString(body.Encode()))
-		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(WalletNewAddresses(gateway))
-
-		handler.ServeHTTP(rr, req)
-
-		status := rr.Code
-		require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
-			tc.name, status, tc.status)
-
-		if status != http.StatusOK {
-			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
-		} else {
-			var msg Addresses
-			err = json.Unmarshal(rr.Body.Bytes(), &msg)
-			if err != nil {
-				t.Errorf("fail unmarshal json response while 200 OK. body: %s, err: %s", rr.Body.String(), err)
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := &FakeGateway{
+				t: t,
 			}
-			require.Equal(t, tc.responseBody, msg, tc.name)
-		}
+			gateway.On("NewAddresses", tc.walletId, tc.n).Return(tc.gatewayNewAddressesResult, tc.gatewayNewAddressesErr)
+			body, _ := query.Values(tc.body)
+
+			req, err := http.NewRequest(tc.method, tc.url, bytes.NewBufferString(body.Encode()))
+			require.NoError(t, err)
+			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+			rr := httptest.NewRecorder()
+			handler := http.HandlerFunc(walletNewAddresses(gateway))
+
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
+				tc.name, status, tc.status)
+
+			if status != http.StatusOK {
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+			} else {
+				var msg Addresses
+				err = json.Unmarshal(rr.Body.Bytes(), &msg)
+				require.NoError(t, err)
+				require.Equal(t, tc.responseBody, msg, tc.name)
+			}
+		})
 	}
 }

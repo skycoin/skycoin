@@ -129,7 +129,7 @@ func (wlts Wallets) ToReadable() []*ReadableWallet {
 func (wlts Wallets) update(id string, updateFunc func(*Wallet) *Wallet) error {
 	w, ok := wlts[id]
 	if !ok {
-		return ErrWalletNotExist{id}
+		return ErrWalletNotExist
 	}
 
 	newWlt := updateFunc(w.clone())

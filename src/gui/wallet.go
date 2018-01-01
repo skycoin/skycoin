@@ -153,7 +153,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		tx, err := gateway.Spend(wltID, coins, dst)
+		tx, err := gateway.Spend(wltID, nil, coins, dst)
 		switch err {
 		case nil:
 		case fee.ErrTxnNoFee, wallet.ErrSpendingUnconfirmed, wallet.ErrInsufficientBalance:

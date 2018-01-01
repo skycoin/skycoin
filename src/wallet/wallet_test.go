@@ -681,9 +681,6 @@ func TestWalletAddEntry(t *testing.T) {
 	}
 }
 
-func TestScanAddresses(t *testing.T) {
-}
-
 type distributeSpendHoursTestCase struct {
 	name              string
 	inputHours        uint64

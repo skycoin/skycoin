@@ -344,7 +344,7 @@ func TestServiceNewAddress(t *testing.T) {
 
 			// Wallet doesn't exist
 			_, err = s.NewAddresses("wallet_not_exist.wlt", tc.pwd, 1)
-			require.Equal(t, ErrWalletNotExist{"wallet_not_exist.wlt"}, err)
+			require.Equal(t, ErrWalletNotExist, err)
 		})
 	}
 
@@ -391,7 +391,7 @@ func TestServiceGetAddress(t *testing.T) {
 	// test none exist wallet
 	notExistID := "not_exist_id.wlt"
 	_, err = s.GetAddresses(notExistID)
-	require.Equal(t, ErrWalletNotExist{notExistID}, err)
+	require.Equal(t, ErrWalletNotExist, err)
 }
 
 func TestServiceGetWalletDisabledWalletAPI(t *testing.T) {
@@ -430,7 +430,7 @@ func TestServiceGetWallet(t *testing.T) {
 	// Get wallet doesn't exist
 	wltName := "does_not_exist.wlt"
 	_, err = s.GetWallet(wltName)
-	require.Equal(t, ErrWalletNotExist{wltName}, err)
+	require.Equal(t, ErrWalletNotExist, err)
 }
 
 func TestServiceGetWallets(t *testing.T) {
@@ -769,7 +769,7 @@ func TestServiceUpdateWalletLabel(t *testing.T) {
 			},
 			"t1.wlt",
 			"new-label",
-			ErrWalletNotExist{"t1.wlt"},
+			ErrWalletNotExist,
 		},
 	}
 
@@ -827,7 +827,7 @@ func TestServiceEncryptWallet(t *testing.T) {
 			},
 			"t2.wlt",
 			nil,
-			ErrWalletNotExist{"t2.wlt"},
+			ErrWalletNotExist,
 		},
 		{
 			"wallet already encrypted",
@@ -920,7 +920,7 @@ func TestServiceDecryptWallet(t *testing.T) {
 			},
 			"t.wlt",
 			[]byte("pwd"),
-			ErrWalletNotExist{"t.wlt"},
+			ErrWalletNotExist,
 		},
 		{
 			"wallet not encrypted",

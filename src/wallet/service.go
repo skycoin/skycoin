@@ -391,7 +391,7 @@ func (serv *Service) GetWallet(wltID string) (*Wallet, error) {
 func (serv *Service) getWallet(wltID string) (*Wallet, error) {
 	w, ok := serv.wallets.get(wltID)
 	if !ok {
-		return nil, ErrWalletNotExist{wltID}
+		return nil, ErrWalletNotExist
 	}
 	return w.clone(), nil
 }
@@ -516,14 +516,4 @@ func (serv *Service) removeDup(wlts Wallets) Wallets {
 	}
 
 	return wlts
-}
-
-// ErrWalletNotExist represents wallet doesnt exist error
-type ErrWalletNotExist struct {
-	id string
-}
-
-// Error returns the error message
-func (ew ErrWalletNotExist) Error() string {
-	return fmt.Sprintf("wallet %s doesn't exist", ew.id)
 }

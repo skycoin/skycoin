@@ -39,8 +39,8 @@ var (
 	ErrWalletNotEncrypted = errors.New("wallet is not encrypted")
 	// ErrRequirePassword find no password when creating wallet
 	ErrRequirePassword = errors.New("password is required")
-	// ErrInvalidWalletVersion represents invalid wallet version erro
-	ErrInvalidWalletVersion = errors.New("invalid wallet version")
+	// ErrWalletNotExist is returned if a wallet does not exist
+	ErrWalletNotExist = errors.New("wallet doesn't exist")
 )
 
 const (

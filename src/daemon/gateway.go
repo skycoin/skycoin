@@ -682,3 +682,18 @@ func (gw *Gateway) GetRichlist(topn int, includeDistribution bool) ([]visor.Acco
 
 	return topnAccounts, nil
 }
+
+// GetAddressCount returns count number of unique address with uxouts > 0.
+func (gw *Gateway) GetAddressCount() (uint64, error) {
+	rbOuts, err := gw.GetUnspentOutputs(FbyAddressesNotIncluded([]string{}))
+	if err != nil {
+		return 0, err
+	}
+
+	allAccounts, err := rbOuts.AggregateUnspentOutputs()
+	if err != nil {
+		return 0, err
+	}
+
+	return uint64(len(allAccounts)), nil
+}

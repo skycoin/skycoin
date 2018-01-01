@@ -697,6 +697,5 @@ func TestWalletBalanceHandler(t *testing.T) {
 				require.Equal(t, tc.result, &msg, tc.name)
 			}
 		})
-
 	}
 }

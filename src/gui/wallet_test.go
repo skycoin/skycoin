@@ -1,26 +1,25 @@
 package gui
 
 import (
+	"bytes"
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
 	"encoding/json"
-	
+
 	"github.com/stretchr/testify/mock"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/pkg/errors"
-
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
-	"github.com/skycoin/skycoin/src/util/fee"
-	"net/url"
-	"bytes"
 )
 
 // Gateway RPC interface wrapper for daemon state
@@ -47,23 +46,6 @@ func (gw *FakeGateway) GetWalletBalance(wltID string) (wallet.BalancePair, error
 func (gw *FakeGateway) GetWallet(wltID string) (wallet.Wallet, error) {
 	args := gw.Called(wltID)
 	return args.Get(0).(wallet.Wallet), args.Error(1)
-}
-
-// GetWalletBalance returns balance pair of specific wallet
-func (gw *FakeGateway) CreateWallet(wltName string, options wallet.Options) (wallet.Wallet, error) {
-	args := gw.Called(wltName, options)
-	return args.Get(0).(wallet.Wallet), args.Error(1)
-}
-
-func (gw *FakeGateway) ScanAheadWalletAddresses(wltName string, scanN uint64) (wallet.Wallet, error) {
-	args := gw.Called(wltName, scanN)
-	return args.Get(0).(wallet.Wallet), args.Error(1)
-}
-
-// NewAddresses generate addresses in given wallet
-func (gw *FakeGateway) NewAddresses(wltID string, n uint64) ([]cipher.Address, error) {
-	args := gw.Called(wltID, n)
-	return args.Get(0).([]cipher.Address), args.Error(1)
 }
 
 // NewAddresses generate addresses in given wallet
@@ -580,10 +562,9 @@ func TestWalletGet(t *testing.T) {
 	}
 }
 
-
 func TestWalletTransactionsHandler(t *testing.T) {
 	type httpBody struct {
-		Id    string `url:"id,omitempty"`
+		Id string
 	}
 
 	tt := []struct {
@@ -657,23 +638,21 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			t: t,
 		}
 		gateway.On("GetWalletUnconfirmedTxns", tc.walletId).Return(tc.gatewayGetWalletUnconfirmedTxnsResult, tc.gatewayGetWalletUnconfirmedTxnsErr)
-		var url = tc.url
 		v := url.Values{}
+		var url = tc.url
 		if tc.body != nil {
 			if tc.body.Id != "" {
 				v.Add("id", tc.body.Id)
 			}
 		}
-		if len(v) > 0  {
+		if len(v) > 0 {
 			url = url + "?" + v.Encode()
 		}
 		req, err := http.NewRequest(tc.method, url, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(WalletTransactionsHandler(gateway))
+		handler := http.HandlerFunc(walletTransactionsHandler(gateway))
 
 		handler.ServeHTTP(rr, req)
 

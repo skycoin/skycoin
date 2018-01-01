@@ -217,7 +217,7 @@ func getRichlist(gateway *daemon.Gateway) http.HandlerFunc {
 		var topn int
 		topnStr := r.FormValue("n")
 		if topnStr == "" {
-			topn = -1
+			topn = 20
 		} else {
 			topn, err = strconv.Atoi(topnStr)
 			if err != nil {

@@ -47,28 +47,20 @@ func (am AccountMgr) Len() int {
 
 func (am AccountMgr) Less(i, j int) bool {
 	if am.Accounts[i].Locked == am.Accounts[j].Locked {
-		if am.Accounts[i].Locked {
-			if am.Accounts[i].Coins == am.Accounts[j].Coins {
-				//sort alphabetically
-				cp := strings.Compare(am.Accounts[i].Addr, am.Accounts[j].Addr)
-				if cp > 0 {
-					return true
-				} else {
-					return false
-				}
-			} else {
-				return am.Accounts[i].Coins > am.Accounts[j].Coins
+		if am.Accounts[i].Coins == am.Accounts[j].Coins {
+			//sort alphabetically
+			cp := strings.Compare(am.Accounts[i].Addr, am.Accounts[j].Addr)
+			if cp > 0 {
+				return true
 			}
-		} else {
-			return am.Accounts[i].Coins > am.Accounts[j].Coins
-		}
-	} else {
-		if am.Accounts[i].Locked {
-			return true
-		} else {
 			return false
 		}
+		return am.Accounts[i].Coins > am.Accounts[j].Coins
 	}
+	if am.Accounts[i].Locked {
+		return true
+	}
+	return false
 }
 
 func (am AccountMgr) Swap(i, j int) {
@@ -80,12 +72,9 @@ func (am *AccountMgr) Sort() {
 	sort.Sort(am)
 }
 
-//GetTopn returns topn rich owner, returns all if topn = -1, exclude distribution if includeDistribution = false
+//GetTopn returns topn rich owner, returns all if topn <= 0, exclude distribution if includeDistribution = false
 func (am *AccountMgr) GetTopn(topn int, includeDistribution bool) ([]AccountJSON, error) {
 	topnAccount := []AccountJSON{}
-	if topn == 0 {
-		return topnAccount, nil
-	}
 	for _, acc := range am.Accounts {
 		//skip special address
 		if !includeDistribution {
@@ -99,7 +88,7 @@ func (am *AccountMgr) GetTopn(topn int, includeDistribution bool) ([]AccountJSON
 		}
 		topnAccount = append(topnAccount, AccountJSON{Addr: acc.Addr, Coins: coinsStr, Locked: acc.Locked})
 		//return all if topn is -1
-		if topn != -1 && len(topnAccount) >= topn {
+		if topn > 0 && len(topnAccount) >= topn {
 			break
 		}
 	}

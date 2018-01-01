@@ -202,7 +202,7 @@ func getTransactionsForAddress(gateway *daemon.Gateway) http.HandlerFunc {
 }
 
 // method: GET
-// url: /explorer/richlist?n=${number}&include-distribution=${bool}
+// url: /richlist?n=${number}&include-distribution=${bool}
 func getRichlist(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -210,37 +210,44 @@ func getRichlist(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		var err error
-		var isDistribution bool
 		var topn int
 		topnStr := r.FormValue("n")
 		if topnStr == "" {
-			topn = -1
+			topn = 0
 		} else {
+			var err error
 			topn, err = strconv.Atoi(topnStr)
 			if err != nil {
-				wh.Error400(w, "invalid topn")
+				wh.Error400(w, "invalid n")
 				return
 			}
 		}
-		isDistributionStr := r.FormValue("include-distribution")
-		if isDistributionStr == "" {
-			isDistribution = false
+
+		var includeDistribution bool
+		includeDistributionStr := r.FormValue("include-distribution")
+		if includeDistributionStr == "" {
+			includeDistribution = false
 		} else {
-			isDistribution, err = strconv.ParseBool(isDistributionStr)
+			var err error
+			includeDistribution, err = strconv.ParseBool(includeDistributionStr)
 			if err != nil {
 				wh.Error400(w, "invalid include-distribution")
 				return
 			}
 		}
 
-		topnAcc, err := gateway.GetRichlist(topn, isDistribution)
+		richlist, err := gateway.GetRichlist(includeDistribution)
 		if err != nil {
-			wh.Error400(w, "internal error when get richlist")
+			logger.Error(err.Error())
+			wh.Error500(w)
 			return
 		}
 
-		wh.SendOr404(w, &topnAcc)
+		if topn > 0 && topn < len(richlist) {
+			richlist = richlist[:topn]
+		}
+
+		wh.SendOr404(w, richlist)
 	}
 }
 

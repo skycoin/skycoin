@@ -33,7 +33,7 @@ func getAllAccounts() map[string]uint64 {
 func TestAccountSort(t *testing.T) {
 	accMap := getAllAccounts()
 	distributionMap := getDistributionMap()
-	accMgr := NewAccountMgr(accMap, distributionMap)
+	accMgr := NewAccountManager(accMap, distributionMap)
 	accMgr.Sort()
 	cases := []struct {
 		topn                int

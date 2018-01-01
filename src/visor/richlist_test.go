@@ -95,9 +95,17 @@ func TestAccountSort(t *testing.T) {
 		{
 			topn:                0,
 			includeDistribution: true,
-			topnCount:           0,
-			result:              []AccountJSON{},
-			err:                 nil,
+			topnCount:           8,
+			result: []AccountJSON{AccountJSON{Addr: "c1", Coins: "2.123456", Locked: true},
+				AccountJSON{Addr: "d1", Coins: "1.000000", Locked: true},
+				AccountJSON{Addr: "b1", Coins: "1.000000", Locked: true},
+				AccountJSON{Addr: "a1", Coins: "1.000000", Locked: true},
+				AccountJSON{Addr: "c2", Coins: "4.010000", Locked: false},
+				AccountJSON{Addr: "a2", Coins: "3.010000", Locked: false},
+				AccountJSON{Addr: "b2", Coins: "2.010000", Locked: false},
+				AccountJSON{Addr: "d2", Coins: "1.010000", Locked: false},
+			},
+			err: nil,
 		},
 	}
 	for _, tc := range cases {

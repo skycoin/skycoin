@@ -13,16 +13,15 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 
-	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 	"github.com/skycoin/skycoin/src/util/fee"
+	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
+// Gatewayer interface for Gateway methods
 type Gatewayer interface {
 	Spend(wltID string, coins uint64, dest cipher.Address) (*coin.Transaction, error)
 	GetWalletBalance(wltID string) (wallet.BalancePair, error)
 	GetWallet(wltID string) (wallet.Wallet, error)
-	CreateWallet(wltName string, options wallet.Options) (wallet.Wallet, error)
-	ScanAheadWalletAddresses(wltName string, scanN uint64) (wallet.Wallet, error)
 	NewAddresses(wltID string, n uint64) ([]cipher.Address, error)
 }
 

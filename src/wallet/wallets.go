@@ -157,7 +157,7 @@ func (wlts Wallets) set(w Wallet) {
 func (wlts Wallets) Update(wltID string, updateFunc func(Wallet) Wallet) error {
 	w, ok := wlts[wltID]
 	if !ok {
-		return errWalletNotExist(wltID)
+		return ErrWalletNotExist
 	}
 
 	newWlt := updateFunc(*w)

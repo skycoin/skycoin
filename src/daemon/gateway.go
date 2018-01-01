@@ -499,13 +499,14 @@ func (gw *Gateway) Spend(wltID string, coins uint64, dest cipher.Address) (*coin
 		// create and sign transaction
 		tx, err = gw.vrpc.CreateAndSignTransaction(wltID, sv, unspent, gw.v.Blockchain.Time(), coins, dest)
 		if err != nil {
-			err = fmt.Errorf("Create transaction failed: %v", err)
+			logger.Error("Create transaction failed: %v", err)
 			return
 		}
 
 		// inject transaction
 		if err = gw.d.Visor.InjectTransaction(*tx, gw.d.Pool); err != nil {
-			err = fmt.Errorf("Inject transaction failed: %v", err)
+			logger.Error("Inject transaction failed: %v", err)
+			return
 		}
 	})
 
@@ -656,4 +657,28 @@ func (gw *Gateway) GetBuildInfo() visor.BuildInfo {
 		bi = gw.vrpc.GetBuildInfo()
 	})
 	return bi
+}
+
+// GetRichlist returns rich list as desc order.
+func (gw *Gateway) GetRichlist(topn int, includeDistribution bool) ([]visor.AccountJSON, error) {
+	var topnAccounts []visor.AccountJSON
+	rbOuts, err := gw.GetUnspentOutputs(FbyAddressesNotIncluded([]string{}))
+	if err != nil {
+		return nil, err
+	}
+
+	allAccounts, err := rbOuts.AggregateUnspentOutputs()
+	if err != nil {
+		return nil, err
+	}
+
+	distributionMap := visor.GetLockedDistributionAddressMap()
+	amgr := visor.NewAccountMgr(allAccounts, distributionMap)
+	amgr.Sort()
+	topnAccounts, err = amgr.GetTopn(topn, includeDistribution)
+	if err != nil {
+		return nil, err
+	}
+
+	return topnAccounts, nil
 }

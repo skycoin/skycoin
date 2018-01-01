@@ -238,7 +238,7 @@ func getRichlist(gateway *daemon.Gateway) http.HandlerFunc {
 
 		topnAcc, err := gateway.GetRichlist(topn, isDistribution)
 		if err != nil {
-			wh.Error400(w, "internal error when get richlist")
+			wh.Error500(w)
 			return
 		}
 
@@ -257,7 +257,7 @@ func getAddressCount(gateway *daemon.Gateway) http.HandlerFunc {
 
 		addrCount, err := gateway.GetAddressCount()
 		if err != nil {
-			wh.Error400(w, "internal error when get addresscount")
+			wh.Error500(w)
 			return
 		}
 

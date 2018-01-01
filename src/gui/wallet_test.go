@@ -477,14 +477,34 @@ func TestWalletBalanceHandler(t *testing.T) {
 			nil,
 		},
 		{
-			"400 - gw error",
+			"404 - gw `wallet doesn't exist` error",
+			"GET",
+			"/wallet/balance",
+			&httpBody{
+				WalletID: "notFoundId",
+			},
+			http.StatusNotFound,
+			"404 Not Found",
+			"notFoundId",
+			wallet.BalancePair{
+				Confirmed: wallet.Balance{Coins: 0, Hours: 0},
+				Predicted: wallet.Balance{Coins: 0, Hours: 0},
+			},
+			wallet.ErrWalletNotExist,
+			&wallet.BalancePair{
+				Confirmed: wallet.Balance{Coins: 0, Hours: 0},
+				Predicted: wallet.Balance{Coins: 0, Hours: 0},
+			},
+		},
+		{
+			"500 - gw other error",
 			"GET",
 			"/wallet/balance",
 			&httpBody{
 				WalletID: "someId",
 			},
-			http.StatusBadRequest,
-			"400 Bad Request - get wallet balance failed",
+			http.StatusInternalServerError,
+			"500 Internal Server Error - gatewayBalanceError",
 			"someId",
 			wallet.BalancePair{
 				Confirmed: wallet.Balance{Coins: 0, Hours: 0},
@@ -546,16 +566,12 @@ func TestWalletBalanceHandler(t *testing.T) {
 					tc.name, status, tc.status)
 			}
 			if status != http.StatusOK {
-				if errMsg := rr.Body.String(); strings.TrimSpace(errMsg) != tc.err {
-					t.Errorf("case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-						tc.name, errMsg, status, tc.err)
-				}
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				var msg wallet.BalancePair
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
-				if err != nil {
-					t.Errorf("fail unmarshal json response while 200 OK. body: %s, err: %s", rr.Body.String(), err)
-				}
+				require.NoError(t, err)
 				require.Equal(t, tc.result, &msg, tc.name)
 			}
 		})

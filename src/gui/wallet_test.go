@@ -563,8 +563,8 @@ func TestWalletGet(t *testing.T) {
 
 func TestWalletNewAddressesHandler(t *testing.T) {
 	type httpBody struct {
-		Id  string `url:"id,omitempty"`
-		Num string `url:"num,omitempty"`
+		Id  string
+		Num string
 	}
 	type Addresses struct {
 		Address []string `json:"addresses"`

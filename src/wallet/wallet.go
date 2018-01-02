@@ -24,6 +24,9 @@ var (
 
 	// ErrInsufficientBalance is returned if a wallet does not have enough balance for a spend
 	ErrInsufficientBalance = errors.New("balance is not sufficient")
+
+	// ErrSpendingUnconfirmed is returned if caller attempts to spend unconfirmed outputs
+	ErrSpendingUnconfirmed = errors.New("please spend after your pending transaction is confirmed")
 )
 
 // CoinType represents the wallet coin type
@@ -369,7 +372,7 @@ func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspent
 	}
 
 	if ok {
-		return nil, errors.New("please spend after your pending transaction is confirmed")
+		return nil, ErrSpendingUnconfirmed
 	}
 
 	txn := coin.Transaction{}

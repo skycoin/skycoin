@@ -561,8 +561,12 @@ func TestWalletGet(t *testing.T) {
 	}
 }
 
-
 func TestUpdateWalletLabelHandler(t *testing.T) {
+	type httpBody struct {
+		WalletID string
+		Label    string
+	}
+
 	tt := []struct {
 		name                        string
 		method                      string
@@ -592,7 +596,7 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 			http.MethodGet,
 			"/wallet/transactions",
 			&httpBody{
-				Id: "foo",
+				WalletID: "foo",
 			},
 			http.StatusBadRequest,
 			"400 Bad Request - missing label",
@@ -606,8 +610,8 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 			http.MethodGet,
 			"/wallet/transactions",
 			&httpBody{
-				Id:    "foo",
-				Label: "label",
+				WalletID: "foo",
+				Label:    "label",
 			},
 			http.StatusBadRequest,
 			"400 Bad Request - update wallet label failed: gateway.UpdateWalletLabel error",
@@ -621,8 +625,8 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 			http.MethodGet,
 			"/wallet/transactions",
 			&httpBody{
-				Id:    "foo",
-				Label: "label",
+				WalletID: "foo",
+				Label:    "label",
 			},
 			http.StatusOK,
 			"",
@@ -638,11 +642,19 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 			t: t,
 		}
 		gateway.On("UpdateWalletLabel", tc.walletId, tc.label).Return(tc.gatewayUpdateWalletLabelErr)
-		params, _ := query.Values(tc.body)
-		paramsEncoded := params.Encode()
+
+		v := url.Values{}
 		var url = tc.url
-		if paramsEncoded != "" {
-			url = url + "?" + paramsEncoded
+		if tc.body != nil {
+			if tc.body.WalletID != "" {
+				v.Add("id", tc.body.WalletID)
+			}
+			if tc.body.Label != "" {
+				v.Add("label", tc.body.Label)
+			}
+		}
+		if len(v) > 0 {
+			url += "?" + v.Encode()
 		}
 		req, err := http.NewRequest(tc.method, url, nil)
 		if err != nil {
@@ -650,7 +662,7 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 		}
 
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(WalletUpdateHandler(gateway))
+		handler := http.HandlerFunc(walletUpdateHandler(gateway))
 
 		handler.ServeHTTP(rr, req)
 

@@ -20,7 +20,6 @@ import (
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
-	"github.com/google/go-querystring/query"
 )
 
 // Gateway RPC interface wrapper for daemon state
@@ -567,7 +566,6 @@ func TestWalletsReloadHandler(t *testing.T) {
 		name                    string
 		method                  string
 		url                     string
-		body                    *httpBody
 		status                  int
 		err                     string
 		gatewayWalletsReloadErr error
@@ -577,7 +575,6 @@ func TestWalletsReloadHandler(t *testing.T) {
 			"500 - gateway.ReloadWallets error",
 			http.MethodGet,
 			"/wallets/reload",
-			&httpBody{},
 			http.StatusInternalServerError,
 			"500 Internal Server Error",
 			errors.New("gateway.ReloadWallets error"),
@@ -587,7 +584,6 @@ func TestWalletsReloadHandler(t *testing.T) {
 			"200 - OK",
 			http.MethodGet,
 			"/wallets/reload",
-			nil,
 			http.StatusOK,
 			"",
 			nil,
@@ -597,7 +593,6 @@ func TestWalletsReloadHandler(t *testing.T) {
 			"200 - OK POST",
 			http.MethodPost,
 			"/wallets/reload",
-			nil,
 			http.StatusOK,
 			"",
 			nil,
@@ -607,7 +602,6 @@ func TestWalletsReloadHandler(t *testing.T) {
 			"200 - OK trailing backslash",
 			http.MethodGet,
 			"/wallets/reload/",
-			nil,
 			http.StatusOK,
 			"",
 			nil,
@@ -620,19 +614,11 @@ func TestWalletsReloadHandler(t *testing.T) {
 			t: t,
 		}
 		gateway.On("ReloadWallets").Return(tc.gatewayWalletsReloadErr)
-		params, _ := query.Values(tc.body)
-		paramsEncoded := params.Encode()
-		var url = tc.url
-		if paramsEncoded != "" {
-			url = url + "?" + paramsEncoded
-		}
-		req, err := http.NewRequest(tc.method, url, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
+		req, err := http.NewRequest(tc.method, tc.url, nil)
+		require.NoError(t, err)
 
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(WalletsReloadHandler(gateway))
+		handler := http.HandlerFunc(walletsReloadHandler(gateway))
 
 		handler.ServeHTTP(rr, req)
 

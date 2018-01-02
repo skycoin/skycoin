@@ -109,3 +109,4 @@ src/mesh/TODO
 
 *.iml
 *.test
+coverage.html

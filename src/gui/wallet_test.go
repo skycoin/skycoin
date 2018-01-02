@@ -48,6 +48,11 @@ func (gw *FakeGateway) GetWallet(wltID string) (wallet.Wallet, error) {
 	return args.Get(0).(wallet.Wallet), args.Error(1)
 }
 
+func (gw *FakeGateway) ReloadWallets() error {
+	args := gw.Called()
+	return args.Error(0)
+}
+
 func TestWalletSpendHandler(t *testing.T) {
 	type httpBody struct {
 		WalletID string
@@ -552,6 +557,80 @@ func TestWalletGet(t *testing.T) {
 				t.Errorf("fail unmarshal json response while 200 OK. body: %s, err: %s", rr.Body.String(), err)
 			}
 			require.Equal(t, tc.gatewayGetWalletResult, msg, tc.name)
+		}
+	}
+}
+
+func TestWalletsReloadHandler(t *testing.T) {
+	tt := []struct {
+		name                    string
+		method                  string
+		url                     string
+		status                  int
+		err                     string
+		gatewayWalletsReloadErr error
+		responseBody            string
+	}{
+		{
+			"500 - gateway.ReloadWallets error",
+			http.MethodGet,
+			"/wallets/reload",
+			http.StatusInternalServerError,
+			"500 Internal Server Error",
+			errors.New("gateway.ReloadWallets error"),
+			"",
+		},
+		{
+			"200 - OK",
+			http.MethodGet,
+			"/wallets/reload",
+			http.StatusOK,
+			"",
+			nil,
+			"\"success\"",
+		},
+		{
+			"200 - OK POST",
+			http.MethodPost,
+			"/wallets/reload",
+			http.StatusOK,
+			"",
+			nil,
+			"\"success\"",
+		},
+		{
+			"200 - OK trailing backslash",
+			http.MethodGet,
+			"/wallets/reload/",
+			http.StatusOK,
+			"",
+			nil,
+			"\"success\"",
+		},
+	}
+
+	for _, tc := range tt {
+		gateway := &FakeGateway{
+			t: t,
+		}
+		gateway.On("ReloadWallets").Return(tc.gatewayWalletsReloadErr)
+		req, err := http.NewRequest(tc.method, tc.url, nil)
+		require.NoError(t, err)
+
+		rr := httptest.NewRecorder()
+		handler := http.HandlerFunc(walletsReloadHandler(gateway))
+
+		handler.ServeHTTP(rr, req)
+
+		status := rr.Code
+		require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
+			tc.name, status, tc.status)
+
+		if status != http.StatusOK {
+			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+		} else {
+			require.Equal(t, tc.responseBody, rr.Body.String(), tc.name)
 		}
 	}
 }

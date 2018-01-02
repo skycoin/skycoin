@@ -22,6 +22,7 @@ type Gatewayer interface {
 	Spend(wltID string, coins uint64, dest cipher.Address) (*coin.Transaction, error)
 	GetWalletBalance(wltID string) (wallet.BalancePair, error)
 	GetWallet(wltID string) (wallet.Wallet, error)
+	ReloadWallets() error
 }
 
 // SpendResult represents the result of spending
@@ -350,7 +351,7 @@ func walletsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 }
 
 // Loads/unloads wallets from the wallet directory
-func walletsReloadHandler(gateway *daemon.Gateway) http.HandlerFunc {
+func walletsReloadHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := gateway.ReloadWallets(); err != nil {
 			logger.Error("reload wallet failed: %v", err)

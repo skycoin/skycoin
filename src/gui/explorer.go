@@ -21,6 +21,8 @@ func RegisterExplorerHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	mux.HandleFunc("/coinSupply", getCoinSupply(gateway))
 
 	mux.HandleFunc("/richlist", getRichlist(gateway))
+
+	mux.HandleFunc("/addresscount", getAddressCount(gateway))
 }
 
 // DeprecatedCoinSupply records the coin supply info
@@ -213,7 +215,7 @@ func getRichlist(gateway *daemon.Gateway) http.HandlerFunc {
 		var topn int
 		topnStr := r.FormValue("n")
 		if topnStr == "" {
-			topn = 0
+			topn = 20
 		} else {
 			var err error
 			topn, err = strconv.Atoi(topnStr)
@@ -248,6 +250,26 @@ func getRichlist(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 
 		wh.SendOr404(w, richlist)
+	}
+}
+
+// method: GET
+// url: /addresscount
+func getAddressCount(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
+		addrCount, err := gateway.GetAddressCount()
+		if err != nil {
+			logger.Error(err.Error())
+			wh.Error500(w)
+			return
+		}
+
+		wh.SendOr404(w, &map[string]uint64{"count": addrCount})
 	}
 }
 

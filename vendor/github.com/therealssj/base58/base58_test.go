@@ -2,8 +2,10 @@ package base58
 
 import (
 	"crypto/rand"
-	"testing"
 	"fmt"
+	"reflect"
+	"testing"
+	"testing/quick"
 )
 
 type testValues struct {
@@ -31,6 +33,19 @@ func initTestPairs() {
 	}
 }
 
+func TestEncDec(t *testing.T) {
+	assertion := func(input []byte) bool {
+		enc, _ := Encode(input)
+		dec, _ := Decode(enc)
+
+		return reflect.DeepEqual(dec, input)
+	}
+
+	if err := quick.Check(assertion, nil); err != nil {
+		t.Error(err)
+	}
+}
+
 func BenchmarkBase58Encoding(b *testing.B) {
 	initTestPairs()
 	b.ResetTimer()
@@ -48,4 +63,3 @@ func BenchmarkBase58Decoding(b *testing.B) {
 		Decode(testPairs[i].enc)
 	}
 }
-

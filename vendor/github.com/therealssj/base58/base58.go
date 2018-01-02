@@ -1,9 +1,9 @@
 package base58
 
 import (
-	"math/big"
-	"fmt"
 	"errors"
+	"fmt"
+	"math/big"
 )
 
 // An Encoding is a radix 58 encoding/decoding scheme.
@@ -32,9 +32,9 @@ func encoding(s string) *Encoding {
 var alphabet = encoding("123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz")
 
 var (
-	bn0  = big.NewInt(0)
+	bn0   = big.NewInt(0)
 	radix = big.NewInt(58)
-	zero = alphabet.encode[0]
+	zero  = alphabet.encode[0]
 )
 
 // Encode encodes the given bytes using bitcoin base58 encoding
@@ -95,11 +95,10 @@ func Decode(str string) ([]byte, error) {
 	for i := range src[j:] {
 		c := alphabet.decode[src[i]]
 		if c == -1 {
-			return nil, fmt.Errorf("invalid character '%c' in decoding a base58 string \"%s\"", src[i], src)
+			return nil, errors.New("Invalid base58 character")
 		}
 		n.Mul(n, radix)
 		n.Add(n, big.NewInt(int64(c)))
 	}
 	return append(leading, n.Bytes()...), nil
 }
-

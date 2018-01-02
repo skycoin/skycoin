@@ -56,7 +56,7 @@
   branch = "master"
   name = "github.com/therealssj/base58"
   packages = ["."]
-  revision = "f8923e070b796d03115a7c9dab0918683299cca8"
+  revision = "b6bbd3c7ec8b322282cf454df138e94d50960705"
 
 [[projects]]
   name = "github.com/toqueteos/webbrowser"

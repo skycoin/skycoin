@@ -9,14 +9,14 @@ import (
 )
 
 const (
-	// the data size of each block
+	// Data size of each block
 	blockSize = 32 // 32 bytes
-	// nonce data size
+	// Nonce data size
 	nonceSize = 32 // 32 bytes
-	// checksum data size
+	// Checksum data size
 	checksumSize = 32 // 32 bytes
-	// the data length prefix size
-	prefixLengthSize = 4 // 4 bytes
+	// Data length size
+	lengthSize = 4 // 4 bytes
 )
 
 var (
@@ -36,31 +36,30 @@ var (
 // 6> Finally, the data format is: <checksum(32 bytes)><nonce(32 bytes)><block0.Hex(), block1.Hex()...>
 func Encrypt(data []byte, password []byte) ([]byte, error) {
 	// set data length prefix
-	length := make([]byte, prefixLengthSize)
-	binary.PutUvarint(length, uint64(len(data))) // the length
-	var pbuf bytes.Buffer
-	pbuf.Write(length)
-	pbuf.Write(data)
-	pdata := pbuf.Bytes()
+	dataLenBytes := make([]byte, lengthSize)
+	binary.LittleEndian.PutUint32(dataLenBytes, uint32(len(data)))
+
+	// Prefix data with length
+	ldata := append(dataLenBytes, data...)
 
 	// Pad length + data with null to 32 bytes
-	l := len(pdata) // hash + length + data
+	l := len(ldata) // hash + length + data
 	n := l / blockSize
 	m := l % blockSize
 	if m > 0 {
 		paddingNull := make([]byte, blockSize-m)
-		pdata = append(pdata, paddingNull...)
+		ldata = append(ldata, paddingNull...)
 		n++
 	}
 
 	// Hash(length+data+padding)
-	dataHash := SumSHA256(pdata)
+	dataHash := SumSHA256(ldata)
 
 	// Initialize blocks with data hash
-	blocks := [][blockSize]byte{dataHash}
+	blocks := []SHA256{dataHash}
 	for i := 0; i < n; i++ {
-		var b [blockSize]byte
-		copy(b[:], pdata[i*blockSize:(i+1)*blockSize])
+		var b SHA256
+		copy(b[:], ldata[i*blockSize:(i+1)*blockSize])
 		blocks = append(blocks, b)
 	}
 
@@ -76,9 +75,7 @@ func Encrypt(data []byte, password []byte) ([]byte, error) {
 	for i := range blocks {
 		// Hash(password, hash(index, hash(nonce)))
 		h := hashPwdIndexNonce(hashPassword, int64(i), hashNonce)
-		// Converts the block to SHA256
-		bh := SHA256(blocks[i])
-		encryptedHash := bh.Xor(h)
+		encryptedHash := blocks[i].Xor(h)
 		encryptedData = append(encryptedData, encryptedHash[:]...)
 	}
 
@@ -174,20 +171,20 @@ func Decrypt(data []byte, password []byte) ([]byte, error) {
 		return nil, ErrInvalidPassword
 	}
 
-	// Reads out the prefix length
-	lb := make([]byte, prefixLengthSize)
-	n, err = buf.Read(lb)
+	// Reads out the data length
+	dataLenBytes := make([]byte, lengthSize)
+	n, err = buf.Read(dataLenBytes)
 	if err != nil {
 		return nil, err
 	}
 
-	if n != prefixLengthSize {
-		return nil, errors.New("read prefix length failed")
+	if n != lengthSize {
+		return nil, errors.New("read data length failed")
 	}
 
-	l, _ := binary.Uvarint(lb)
-	if l > uint64(buf.Len()) {
-		return nil, errors.New("invalid prefix length")
+	l := binary.LittleEndian.Uint32(dataLenBytes)
+	if l > uint32(buf.Len()) {
+		return nil, errors.New("invalid data length")
 	}
 
 	// Reads out the raw data
@@ -197,7 +194,7 @@ func Decrypt(data []byte, password []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	if uint64(n) != l {
+	if uint32(n) != l {
 		return nil, fmt.Errorf("read data failed, expect %d bytes, but get %d bytes", l, n)
 	}
 

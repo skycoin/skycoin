@@ -83,18 +83,8 @@ func Encrypt(data []byte, password []byte) ([]byte, error) {
 	nonceAndDataBytes := append(nonce, encryptedData...)
 	// Calculates the checksum
 	checkSum := SumSHA256(nonceAndDataBytes)
-	var buf bytes.Buffer
-	_, err := buf.Write(checkSum[:])
-	if err != nil {
-		return nil, err
-	}
 
-	_, err = buf.Write(nonceAndDataBytes)
-	if err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
+	return append(checkSum[:], nonceAndDataBytes...), nil
 }
 
 // Decrypt decrypts the data

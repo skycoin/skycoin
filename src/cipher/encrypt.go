@@ -92,8 +92,8 @@ func Decrypt(data []byte, password []byte) ([]byte, error) {
 	buf := bytes.NewBuffer(data)
 
 	// Gets checksum
-	checkSumBytes := make([]byte, checksumSize)
-	n, err := buf.Read(checkSumBytes)
+	var checkSum SHA256
+	n, err := buf.Read(checkSum[:])
 	if err != nil {
 		return nil, err
 	}
@@ -101,9 +101,6 @@ func Decrypt(data []byte, password []byte) ([]byte, error) {
 	if n != checksumSize {
 		return nil, errors.New("invalid checksum length")
 	}
-
-	var checkSum SHA256
-	copy(checkSum[:], checkSumBytes)
 
 	// Checks the checksum
 	csh := SumSHA256(buf.Bytes())

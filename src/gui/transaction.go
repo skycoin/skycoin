@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -161,12 +162,12 @@ func getTransactions(gateway *daemon.Gateway) http.HandlerFunc {
 		// Initialize transaction filters
 		flts := []visor.TxFilter{visor.AddrsFilter(addrs)}
 
-		// Gets the "confirmed" parameter value
+		// Gets the 'confirmed' parameter value
 		confirmedStr := r.FormValue("confirmed")
 		if confirmedStr != "" {
-			confirmed, err := parseConfirmedFromStr(confirmedStr)
+			confirmed, err := strconv.ParseBool(confirmedStr)
 			if err != nil {
-				wh.Error400(w, fmt.Sprintf("parse paramenter: 'confirmed' failed: %v", err))
+				wh.Error400(w, fmt.Sprintf("invalid 'confirmed' value: %v", err))
 				return
 			}
 
@@ -215,18 +216,6 @@ func parseAddressesFromStr(addrStr string) ([]cipher.Address, error) {
 	}
 
 	return addrs, nil
-}
-
-// Parses the confirmed string int bool value, must be "0" or "1".
-func parseConfirmedFromStr(confirmedStr string) (bool, error) {
-	switch confirmedStr {
-	case "0":
-		return false, nil
-	case "1":
-		return true, nil
-	default:
-		return false, fmt.Errorf("invalid 'confirmed' value: %v", confirmedStr)
-	}
 }
 
 //Implement

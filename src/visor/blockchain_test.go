@@ -332,7 +332,7 @@ func TestIsGenesisBlock(t *testing.T) {
 			bc := Blockchain{
 				store: tc.store,
 			}
-
+			logger.Info("%s", tc.b)
 			require.Equal(t, tc.isGenesis, bc.isGenesisBlock(*tc.b))
 		})
 	}

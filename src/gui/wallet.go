@@ -22,6 +22,8 @@ type Gatewayer interface {
 	Spend(wltID string, coins uint64, dest cipher.Address) (*coin.Transaction, error)
 	GetWalletBalance(wltID string) (wallet.BalancePair, error)
 	GetWallet(wltID string) (wallet.Wallet, error)
+	GetBlockByHash(hash cipher.SHA256) (block coin.SignedBlock, ok bool)
+	GetBlockBySeq(seq uint64) (block coin.SignedBlock, ok bool)
 }
 
 // SpendResult represents the result of spending

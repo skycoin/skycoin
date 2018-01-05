@@ -17,7 +17,7 @@ func TestEncryptAndDecrypt(t *testing.T) {
 			"one byte with empty key",
 			"1",
 			"",
-			nil,
+			ErrRequirePassword,
 		},
 		{
 			"one byte, with key",

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 )
 
 const (
@@ -22,12 +23,16 @@ const (
 var (
 	// ErrInvalidPassword represents the invalid password error
 	ErrInvalidPassword = errors.New("invalid password")
+	// ErrRequirePassword will be returned if password is empty in Encrypt or Decrypt function.
+	ErrRequirePassword = errors.New("password is required for encryption")
+	// ErrDataLengthOverflow will be returned if the data length > math.MaxUint32
+	ErrDataLengthOverflow = errors.New("data length must <= math.MaxUint32")
 )
 
 // Encrypt encrypts the data with password
 //
 // 1> Add 32 bits length prefix to indicate the length of data. <length(4 bytes)><data>
-// 2> Pad the length + data to 32 bytes will nulls at end
+// 2> Pad the length + data to 32 bytes with nulls at end
 // 2> SHA256(<length(4 bytes)><data><padding>) and prefix the hash. <hash(32 bytes)><length(4 bytes)><data><padding>
 // 3> Split the whole data(hash+length+data+padding) into 256 bits(32 bytes) blocks
 // 4> Each block is encrypted by XORing the unencrypted block with SHA256(SHA256(password), SHA256(index, SHA256(nonce))
@@ -35,14 +40,22 @@ var (
 // 5> Prefix nonce and SHA256 the nonce with blocks to get checksum, and prefix the checksum
 // 6> Finally, the data format is: <checksum(32 bytes)><nonce(32 bytes)><block0.Hex(), block1.Hex()...>
 func Encrypt(data []byte, password []byte) ([]byte, error) {
-	// set data length prefix
+	if len(password) == 0 {
+		return nil, ErrRequirePassword
+	}
+
+	if len(data) > math.MaxUint32 {
+		return nil, ErrDataLengthOverflow
+	}
+
+	// Sets data length prefix
 	dataLenBytes := make([]byte, lengthSize)
 	binary.LittleEndian.PutUint32(dataLenBytes, uint32(len(data)))
 
-	// Prefix data with length
+	// Prefixes data with length
 	ldata := append(dataLenBytes, data...)
 
-	// Pad length + data with null to 32 bytes
+	// Pads length + data with null to 32 bytes
 	l := len(ldata) // hash + length + data
 	n := l / blockSize
 	m := l % blockSize
@@ -89,6 +102,10 @@ func Encrypt(data []byte, password []byte) ([]byte, error) {
 
 // Decrypt decrypts the data
 func Decrypt(data []byte, password []byte) ([]byte, error) {
+	if len(password) == 0 {
+		return nil, ErrRequirePassword
+	}
+
 	buf := bytes.NewBuffer(data)
 
 	// Gets checksum
@@ -170,6 +187,10 @@ func Decrypt(data []byte, password []byte) ([]byte, error) {
 	}
 
 	l := binary.LittleEndian.Uint32(dataLenBytes)
+	if l > math.MaxUint32 {
+		return nil, ErrDataLengthOverflow
+	}
+
 	if l > uint32(buf.Len()) {
 		return nil, errors.New("invalid data length")
 	}
@@ -189,7 +210,7 @@ func Decrypt(data []byte, password []byte) ([]byte, error) {
 }
 
 // hash(password, hash(index, hash(nonce)))
-func hashPwdIndexNonce(password SHA256, index int64, nonceHash SHA256) SHA256 {
+func hashPwdIndexNonce(passwordHash SHA256, index int64, nonceHash SHA256) SHA256 {
 	// convert index to 256bit number
 	indexBytes := make([]byte, 32)
 	binary.PutVarint(indexBytes, index)
@@ -198,5 +219,5 @@ func hashPwdIndexNonce(password SHA256, index int64, nonceHash SHA256) SHA256 {
 	indexNonceHash := SumSHA256(append(indexBytes, nonceHash[:]...))
 
 	// hash(hash(password), indexNonceHash)
-	return AddSHA256(password, indexNonceHash)
+	return AddSHA256(passwordHash, indexNonceHash)
 }

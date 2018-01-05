@@ -6,10 +6,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"github.com/therealssj/base58"
+	"github.com/skycoin/skycoin/src/cipher/base58"
 )
 
-const btcAlphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
@@ -19,7 +18,7 @@ func init() {
 func RandStringBytes(n int) []byte {
 	b := make([]byte, n)
 	for i := range b {
-		b[i] = btcAlphabet[rand.Intn(len(btcAlphabet))]
+		b[i] = base58.BTCALPAHBET[rand.Intn(len(base58.BTCALPAHBET))]
 	}
 
 	return b

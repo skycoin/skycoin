@@ -43,8 +43,8 @@ export class AppComponent {
       .subscribe(response =>  {
         // Iterate though the tags
         // Find the latest tag which is not a rc
-        for (const i in response) {
-          if (response.hasOwnProperty(i) && response[i]['name'].indexOf('rc') === -1) {
+        for ( const i in response ) {
+          if ( response.hasOwnProperty(i) && response[i]['name'].indexOf('rc') === -1 ) {
             this.releaseVersion = response[i]['name'].substr(1);
             break;
           }

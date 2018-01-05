@@ -155,13 +155,7 @@ func SaveBinary(filename string, data []byte, mode os.FileMode) error {
 	if err := ioutil.WriteFile(tmpname, data, mode); err != nil {
 		return err
 	}
-	// Backup the previous file, if there was one
-	_, err := os.Stat(filename)
-	if !os.IsNotExist(err) {
-		if err := os.Rename(filename, filename+".bak"); err != nil {
-			return err
-		}
-	}
+
 	// Move the temporary to the new file
 	return os.Rename(tmpname, filename)
 }

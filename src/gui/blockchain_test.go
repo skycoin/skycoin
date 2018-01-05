@@ -13,12 +13,14 @@ import (
 
 	"crypto/rand"
 
+	"math"
+
+	"github.com/stretchr/testify/assert"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/visor"
-	"github.com/stretchr/testify/assert"
 	"github.com/skycoin/skycoin/src/testutil"
-	"math"
+	"github.com/skycoin/skycoin/src/visor"
 )
 
 func (gw *FakeGateway) GetBlockByHash(hash cipher.SHA256) (block coin.SignedBlock, ok bool) {
@@ -42,7 +44,7 @@ func randBytes(t *testing.T, n int) []byte {
 
 func makeBadBlock(t *testing.T) *coin.Block {
 	genPublic, _ := cipher.GenerateKeyPair()
-	genAddress           := cipher.AddressFromPubKey(genPublic)
+	genAddress := cipher.AddressFromPubKey(genPublic)
 	var genCoins uint64 = 1000e6
 	var genTime uint64 = 1000
 	now := genTime + 100
@@ -50,7 +52,7 @@ func makeBadBlock(t *testing.T) *coin.Block {
 	require.NoError(t, err)
 	uxHash := testutil.RandSHA256(t)
 	tx := coin.Transaction{}
-	tx.PushOutput(genAddress, math.MaxInt64 + 1, 255)
+	tx.PushOutput(genAddress, math.MaxInt64+1, 255)
 	b, err := coin.NewBlock(*preBlock, now, uxHash, coin.Transactions{tx}, feeCalc)
 	require.NoError(t, err)
 	return b
@@ -62,7 +64,6 @@ func feeCalc(t *coin.Transaction) (uint64, error) {
 func TestGetBlock(t *testing.T) {
 
 	badBlock := makeBadBlock(t)
-
 
 	h := cipher.SHA256{}
 	h.Set(randBytes(t, 32))
@@ -301,7 +302,7 @@ func TestGetBlock(t *testing.T) {
 			1,
 			coin.SignedBlock{},
 			false,
-			coin.SignedBlock{		},
+			coin.SignedBlock{},
 			true,
 			&visor.ReadableBlock{
 				Head: visor.ReadableBlockHeader{

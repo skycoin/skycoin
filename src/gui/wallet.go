@@ -161,7 +161,7 @@ func WalletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 //     seed: wallet seed [required]
 //     label: wallet label [required]
 //     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
-func WalletCreate(gateway Gatewayer) http.HandlerFunc {
+func walletCreate(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			wh.Error405(w)
@@ -411,7 +411,7 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	//     seed: wallet seed [required]
 	//     label: wallet label [required]
 	//     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
-	mux.HandleFunc("/wallet/create", WalletCreate(gateway))
+	mux.HandleFunc("/wallet/create", walletCreate(gateway))
 
 	mux.HandleFunc("/wallet/newAddress", walletNewAddresses(gateway))
 

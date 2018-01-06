@@ -708,7 +708,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 
 func TestWalletTransactionsHandler(t *testing.T) {
 	type httpBody struct {
-		Id string
+		WalletID string
 	}
 
 	tt := []struct {
@@ -748,17 +748,31 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			[]visor.UnconfirmedTxn{},
 		},
 		{
-			"400 - gateway.GetWalletUnconfirmedTxns error",
+			"500 - gateway.GetWalletUnconfirmedTxns error",
 			http.MethodGet,
 			"/wallet/transactions",
 			&httpBody{
-				Id: "foo",
+				WalletID: "foo",
 			},
-			http.StatusBadRequest,
-			"400 Bad Request - get wallet unconfirmed transactions failed: gateway.GetWalletUnconfirmedTxns error",
+			http.StatusInternalServerError,
+			"500 Internal Server Error - gateway.GetWalletUnconfirmedTxns error",
 			"foo",
 			make([]visor.UnconfirmedTxn, 0),
 			errors.New("gateway.GetWalletUnconfirmedTxns error"),
+			[]visor.UnconfirmedTxn{},
+		},
+		{
+			"404 - wallet doesn't exist",
+			http.MethodGet,
+			"/wallet/transactions",
+			&httpBody{
+				WalletID: "foo",
+			},
+			http.StatusNotFound,
+			"404 Not Found",
+			"foo",
+			make([]visor.UnconfirmedTxn, 0),
+			wallet.ErrWalletNotExist,
 			[]visor.UnconfirmedTxn{},
 		},
 		{
@@ -766,7 +780,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			http.MethodGet,
 			"/wallet/transactions",
 			&httpBody{
-				Id: "foo",
+				WalletID: "foo",
 			},
 			http.StatusOK,
 			"",
@@ -783,16 +797,16 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		}
 		gateway.On("GetWalletUnconfirmedTxns", tc.walletId).Return(tc.gatewayGetWalletUnconfirmedTxnsResult, tc.gatewayGetWalletUnconfirmedTxnsErr)
 		v := url.Values{}
-		var url = tc.url
+		var urlFull = tc.url
 		if tc.body != nil {
-			if tc.body.Id != "" {
-				v.Add("id", tc.body.Id)
+			if tc.body.WalletID != "" {
+				v.Add("id", tc.body.WalletID)
 			}
 		}
 		if len(v) > 0 {
-			url = url + "?" + v.Encode()
+			urlFull = urlFull + "?" + v.Encode()
 		}
-		req, err := http.NewRequest(tc.method, url, nil)
+		req, err := http.NewRequest(tc.method, urlFull, nil)
 		require.NoError(t, err)
 
 		rr := httptest.NewRecorder()

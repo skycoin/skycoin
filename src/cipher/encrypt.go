@@ -20,15 +20,6 @@ const (
 	lengthSize = 4 // 4 bytes
 )
 
-var (
-	// ErrInvalidPassword represents the invalid password error
-	ErrInvalidPassword = errors.New("invalid password")
-	// ErrRequirePassword will be returned if password is empty in Encrypt or Decrypt function.
-	ErrRequirePassword = errors.New("password is required for encryption")
-	// ErrDataLengthOverflow will be returned if the data length > math.MaxUint32
-	ErrDataLengthOverflow = errors.New("data length must <= math.MaxUint32")
-)
-
 // Encrypt encrypts the data with password
 //
 // 1> Add 32 bits length prefix to indicate the length of data. <length(4 bytes)><data>
@@ -41,11 +32,11 @@ var (
 // 6> Finally, the data format is: <checksum(32 bytes)><nonce(32 bytes)><block0.Hex(), block1.Hex()...>
 func Encrypt(data []byte, password []byte) ([]byte, error) {
 	if len(password) == 0 {
-		return nil, ErrRequirePassword
+		return nil, errors.New("missing password")
 	}
 
 	if len(data) > math.MaxUint32 {
-		return nil, ErrDataLengthOverflow
+		return nil, errors.New("data length overflowed, it must <= math.MaxUint32(4294967295)")
 	}
 
 	// Sets data length prefix
@@ -103,7 +94,7 @@ func Encrypt(data []byte, password []byte) ([]byte, error) {
 // Decrypt decrypts the data
 func Decrypt(data []byte, password []byte) ([]byte, error) {
 	if len(password) == 0 {
-		return nil, ErrRequirePassword
+		return nil, errors.New("missing password")
 	}
 
 	buf := bytes.NewBuffer(data)
@@ -122,7 +113,7 @@ func Decrypt(data []byte, password []byte) ([]byte, error) {
 	// Checks the checksum
 	csh := SumSHA256(buf.Bytes())
 	if csh != checkSum {
-		return nil, errors.New("invalid checksum")
+		return nil, errors.New("invalid data, checksum is not matched")
 	}
 
 	// Gets the nonce
@@ -172,7 +163,7 @@ func Decrypt(data []byte, password []byte) ([]byte, error) {
 
 	// Checks the hash
 	if dataHash != SumSHA256(buf.Bytes()) {
-		return nil, ErrInvalidPassword
+		return nil, errors.New("invalid password")
 	}
 
 	// Reads out the data length
@@ -188,7 +179,7 @@ func Decrypt(data []byte, password []byte) ([]byte, error) {
 
 	l := binary.LittleEndian.Uint32(dataLenBytes)
 	if l > math.MaxUint32 {
-		return nil, ErrDataLengthOverflow
+		return nil, errors.New("data length overflowed, it must <= math.MaxUint32(4294967295)")
 	}
 
 	if l > uint32(buf.Len()) {

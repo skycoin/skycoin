@@ -50,6 +50,12 @@ func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 		b, err := gateway.GetWalletBalance(wltID)
 		if err != nil {
 			logger.Error("Get wallet balance failed: %v", err)
+			switch err {
+			case wallet.ErrWalletNotExist:
+				wh.Error404(w)
+			default:
+				wh.Error500Msg(w, err.Error())
+			}
 			return
 		}
 		wh.SendOr404(w, b)
@@ -272,6 +278,10 @@ func walletNewAddresses(gateway *daemon.Gateway) http.HandlerFunc {
 // Update wallet label
 func walletUpdateHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			wh.Error405(w)
+			return
+		}
 		// Update wallet
 		wltID := r.FormValue("id")
 		if wltID == "" {
@@ -286,7 +296,14 @@ func walletUpdateHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if err := gateway.UpdateWalletLabel(wltID, label); err != nil {
-			wh.Error400(w, fmt.Sprintf("update wallet label failed: %v", err))
+			logger.Errorf("update wallet label failed: %v", err)
+
+			switch err {
+			case wallet.ErrWalletNotExist:
+				wh.Error404(w)
+			default:
+				wh.Error500Msg(w, err.Error())
+			}
 			return
 		}
 

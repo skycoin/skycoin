@@ -580,9 +580,21 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 		responseBody                string
 	}{
 		{
-			"400 - missing wallet id",
+			"405",
 			http.MethodGet,
-			"/wallet/transactions",
+			"/wallet/update",
+			&httpBody{},
+			http.StatusMethodNotAllowed,
+			"405 Method Not Allowed",
+			"",
+			"",
+			nil,
+			"",
+		},
+		{
+			"400 - missing wallet id",
+			http.MethodPost,
+			"/wallet/update",
 			&httpBody{},
 			http.StatusBadRequest,
 			"400 Bad Request - missing wallet id",
@@ -593,8 +605,8 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 		},
 		{
 			"400 - missing label",
-			http.MethodGet,
-			"/wallet/transactions",
+			http.MethodPost,
+			"/wallet/update",
 			&httpBody{
 				WalletID: "foo",
 			},
@@ -606,15 +618,30 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 			"",
 		},
 		{
-			"400 - gateway.UpdateWalletLabel error",
-			http.MethodGet,
-			"/wallet/transactions",
+			"404 - gateway.UpdateWalletLabel ErrWalletNotExist",
+			http.MethodPost,
+			"/wallet/update",
 			&httpBody{
 				WalletID: "foo",
 				Label:    "label",
 			},
-			http.StatusBadRequest,
-			"400 Bad Request - update wallet label failed: gateway.UpdateWalletLabel error",
+			http.StatusNotFound,
+			"404 Not Found",
+			"foo",
+			"label",
+			wallet.ErrWalletNotExist,
+			"",
+		},
+		{
+			"500 - gateway.UpdateWalletLabel error",
+			http.MethodPost,
+			"/wallet/update",
+			&httpBody{
+				WalletID: "foo",
+				Label:    "label",
+			},
+			http.StatusInternalServerError,
+			"500 Internal Server Error - gateway.UpdateWalletLabel error",
 			"foo",
 			"label",
 			errors.New("gateway.UpdateWalletLabel error"),
@@ -622,8 +649,8 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 		},
 		{
 			"200 OK",
-			http.MethodGet,
-			"/wallet/transactions",
+			http.MethodPost,
+			"/wallet/update",
 			&httpBody{
 				WalletID: "foo",
 				Label:    "label",
@@ -644,7 +671,6 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 		gateway.On("UpdateWalletLabel", tc.walletId, tc.label).Return(tc.gatewayUpdateWalletLabelErr)
 
 		v := url.Values{}
-		var url = tc.url
 		if tc.body != nil {
 			if tc.body.WalletID != "" {
 				v.Add("id", tc.body.WalletID)
@@ -653,14 +679,9 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 				v.Add("label", tc.body.Label)
 			}
 		}
-		if len(v) > 0 {
-			url += "?" + v.Encode()
-		}
-		req, err := http.NewRequest(tc.method, url, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-
+		req, err := http.NewRequest(tc.method, tc.url, bytes.NewBufferString(v.Encode()))
+		require.NoError(t, err)
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		rr := httptest.NewRecorder()
 		handler := http.HandlerFunc(walletUpdateHandler(gateway))
 

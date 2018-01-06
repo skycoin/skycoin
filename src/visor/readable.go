@@ -223,7 +223,7 @@ func (os ReadableOutputSet) AggregateUnspentOutputs() (map[string]uint64, error)
 	for _, out := range os.HeadOutputs {
 		amt, err := droplet.FromString(out.Coins)
 		if err != nil {
-			return allAccounts, err
+			return nil, err
 		}
 		if _, ok := allAccounts[out.Address]; ok {
 			allAccounts[out.Address] += amt

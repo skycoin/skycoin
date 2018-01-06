@@ -171,7 +171,7 @@ func (rw *ReadableWallet) toWallet() (*Wallet, error) {
 	return w, nil
 }
 
-// Save saves to filename, remove .bak file if exist
+// Save saves to filename
 func (rw *ReadableWallet) Save(filename string) error {
 	return file.SaveJSON(filename, rw, 0600)
 }

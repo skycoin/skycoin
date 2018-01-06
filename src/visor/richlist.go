@@ -7,101 +7,65 @@ import (
 	"github.com/skycoin/skycoin/src/util/droplet"
 )
 
-type Account struct {
-	Addr   string
-	Coins  uint64
-	Locked bool
+// RichlistBalance holds info an address balance holder
+type RichlistBalance struct {
+	Address string `json:"address"`
+	Coins   string `json:"coins"`
+	Locked  bool   `json:"locked"`
+	coins   uint64
 }
 
-//AccountJson topn elements
-type AccountJSON struct {
-	Addr   string `json:"address"`
-	Coins  string `json:"coins"`
-	Locked bool   `json:"locked"`
-}
+// Richlist sorts address balances
+type Richlist []RichlistBalance
 
-//AccountMgr manager all unspent outputs
-type AccountMgr struct {
-	Accounts []Account
-}
+// NewRichlist create Richlist via unspent outputs map
+func NewRichlist(allAccounts map[string]uint64, lockedAddrs map[string]struct{}) (Richlist, error) {
+	richlist := make(Richlist, 0, len(allAccounts))
 
-//NewAccountMgr create AccountMgr via unspent outputs map
-func NewAccountMgr(allAccount map[string]uint64, distributionMap map[string]struct{}) *AccountMgr {
-	am := &AccountMgr{}
-	am.Accounts = make([]Account, 0, len(allAccount))
-	var islocked bool
-	for acc, value := range allAccount {
-		if _, ok := distributionMap[acc]; ok {
+	for addr, coins := range allAccounts {
+		var islocked bool
+		if _, ok := lockedAddrs[addr]; ok {
 			islocked = true
-		} else {
-			islocked = false
 		}
-		am.Accounts = append(am.Accounts, Account{Addr: acc, Coins: value, Locked: islocked})
-	}
-	return am
-}
 
-func (am AccountMgr) Len() int {
-	return len(am.Accounts)
-}
-
-func (am AccountMgr) Less(i, j int) bool {
-	if am.Accounts[i].Locked == am.Accounts[j].Locked {
-		if am.Accounts[i].Locked {
-			if am.Accounts[i].Coins == am.Accounts[j].Coins {
-				//sort alphabetically
-				cp := strings.Compare(am.Accounts[i].Addr, am.Accounts[j].Addr)
-				if cp > 0 {
-					return true
-				} else {
-					return false
-				}
-			} else {
-				return am.Accounts[i].Coins > am.Accounts[j].Coins
-			}
-		} else {
-			return am.Accounts[i].Coins > am.Accounts[j].Coins
-		}
-	} else {
-		if am.Accounts[i].Locked {
-			return true
-		} else {
-			return false
-		}
-	}
-}
-
-func (am AccountMgr) Swap(i, j int) {
-	am.Accounts[i], am.Accounts[j] = am.Accounts[j], am.Accounts[i]
-}
-
-//Sort sort coin owner desc order
-func (am *AccountMgr) Sort() {
-	sort.Sort(am)
-}
-
-//GetTopn returns topn rich owner, returns all if topn = -1, exclude distribution if includeDistribution = false
-func (am *AccountMgr) GetTopn(topn int, includeDistribution bool) ([]AccountJSON, error) {
-	topnAccount := []AccountJSON{}
-	if topn == 0 {
-		return topnAccount, nil
-	}
-	for _, acc := range am.Accounts {
-		//skip special address
-		if !includeDistribution {
-			if acc.Locked {
-				continue
-			}
-		}
-		coinsStr, err := droplet.ToString(acc.Coins)
+		coinsStr, err := droplet.ToString(coins)
 		if err != nil {
-			return topnAccount, err
+			return nil, err
 		}
-		topnAccount = append(topnAccount, AccountJSON{Addr: acc.Addr, Coins: coinsStr, Locked: acc.Locked})
-		//return all if topn is -1
-		if topn != -1 && len(topnAccount) >= topn {
-			break
+
+		richlist = append(richlist, RichlistBalance{
+			Address: addr,
+			Coins:   coinsStr,
+			coins:   coins,
+			Locked:  islocked,
+		})
+	}
+
+	// Sort order:
+	// Higher coins
+	// Locked > unlocked
+	// Address alphabetical
+	sort.Slice(richlist, func(i, j int) bool {
+		if richlist[i].coins == richlist[j].coins {
+			if richlist[i].Locked == richlist[j].Locked {
+				return strings.Compare(richlist[i].Address, richlist[j].Address) < 0
+			}
+			return richlist[i].Locked
+		}
+
+		return richlist[i].coins > richlist[j].coins
+	})
+
+	return richlist, nil
+}
+
+// FilterAddresses returns the richlist without addresses from the map
+func (r Richlist) FilterAddresses(addrs map[string]struct{}) Richlist {
+	var s Richlist
+	for _, b := range r {
+		if _, ok := addrs[b.Address]; !ok {
+			s = append(s, b)
 		}
 	}
-	return topnAccount, nil
+	return s
 }

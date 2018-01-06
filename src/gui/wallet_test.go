@@ -561,6 +561,151 @@ func TestWalletGet(t *testing.T) {
 	}
 }
 
+func TestWalletBalanceHandler(t *testing.T) {
+	type httpBody struct {
+		WalletID string
+		Dst      string
+		Coins    string
+	}
+	tt := []struct {
+		name                          string
+		method                        string
+		url                           string
+		body                          *httpBody
+		status                        int
+		err                           string
+		walletId                      string
+		gatewayGetWalletBalanceResult wallet.BalancePair
+		gatewayBalanceErr             error
+		result                        *wallet.BalancePair
+	}{
+		{
+			"405",
+			"PUT",
+			"/wallet/balance",
+			nil,
+			http.StatusMethodNotAllowed,
+			"405 Method Not Allowed",
+			"0",
+			wallet.BalancePair{},
+			nil,
+			nil,
+		},
+		{
+			"400 - no walletId",
+			"GET",
+			"/wallet/balance",
+			nil,
+			http.StatusBadRequest,
+			"400 Bad Request - missing wallet id",
+			"0",
+			wallet.BalancePair{},
+			nil,
+			nil,
+		},
+		{
+			"404 - gw `wallet doesn't exist` error",
+			"GET",
+			"/wallet/balance",
+			&httpBody{
+				WalletID: "notFoundId",
+			},
+			http.StatusNotFound,
+			"404 Not Found",
+			"notFoundId",
+			wallet.BalancePair{
+				Confirmed: wallet.Balance{Coins: 0, Hours: 0},
+				Predicted: wallet.Balance{Coins: 0, Hours: 0},
+			},
+			wallet.ErrWalletNotExist,
+			&wallet.BalancePair{
+				Confirmed: wallet.Balance{Coins: 0, Hours: 0},
+				Predicted: wallet.Balance{Coins: 0, Hours: 0},
+			},
+		},
+		{
+			"500 - gw other error",
+			"GET",
+			"/wallet/balance",
+			&httpBody{
+				WalletID: "someId",
+			},
+			http.StatusInternalServerError,
+			"500 Internal Server Error - gatewayBalanceError",
+			"someId",
+			wallet.BalancePair{
+				Confirmed: wallet.Balance{Coins: 0, Hours: 0},
+				Predicted: wallet.Balance{Coins: 0, Hours: 0},
+			},
+			errors.New("gatewayBalanceError"),
+			&wallet.BalancePair{
+				Confirmed: wallet.Balance{Coins: 0, Hours: 0},
+				Predicted: wallet.Balance{Coins: 0, Hours: 0},
+			},
+		},
+		{
+			"200 - OK",
+			"GET",
+			"/wallet/balance",
+			&httpBody{
+				WalletID: "foo",
+			},
+			http.StatusOK,
+			"",
+			"foo",
+			wallet.BalancePair{},
+			nil,
+			&wallet.BalancePair{},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := &FakeGateway{
+				walletID: tc.walletId,
+				t:        t,
+			}
+			gateway.On("GetWalletBalance", tc.walletId).Return(tc.gatewayGetWalletBalanceResult, tc.gatewayBalanceErr)
+
+			v := url.Values{}
+			var url = tc.url
+			if tc.body != nil {
+				if tc.body.WalletID != "" {
+					v.Add("id", tc.body.WalletID)
+				}
+			}
+			if len(v) > 0 {
+				url += "?" + v.Encode()
+			}
+			req, err := http.NewRequest(tc.method, url, bytes.NewBufferString(v.Encode()))
+			require.NoError(t, err)
+			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+			rr := httptest.NewRecorder()
+			handler := http.HandlerFunc(walletBalanceHandler(gateway))
+
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
+			if status != tc.status {
+				t.Errorf("case: %s, handler returned wrong status code: got `%v` want `%v`",
+					tc.name, status, tc.status)
+			}
+			if status != http.StatusOK {
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+			} else {
+				var msg wallet.BalancePair
+				err = json.Unmarshal(rr.Body.Bytes(), &msg)
+				require.NoError(t, err)
+				require.Equal(t, tc.result, &msg, tc.name)
+			}
+		})
+	}
+}
+
+
 func TestUpdateWalletLabelHandler(t *testing.T) {
 	type httpBody struct {
 		WalletID string

@@ -660,9 +660,8 @@ func (gw *Gateway) GetBuildInfo() visor.BuildInfo {
 }
 
 // GetRichlist returns rich list as desc order.
-func (gw *Gateway) GetRichlist(topn int, includeDistribution bool) ([]visor.AccountJSON, error) {
-	var topnAccounts []visor.AccountJSON
-	rbOuts, err := gw.GetUnspentOutputs(FbyAddressesNotIncluded([]string{}))
+func (gw *Gateway) GetRichlist(includeDistribution bool) (visor.Richlist, error) {
+	rbOuts, err := gw.GetUnspentOutputs()
 	if err != nil {
 		return nil, err
 	}
@@ -672,13 +671,39 @@ func (gw *Gateway) GetRichlist(topn int, includeDistribution bool) ([]visor.Acco
 		return nil, err
 	}
 
-	distributionMap := visor.GetLockedDistributionAddressMap()
-	amgr := visor.NewAccountMgr(allAccounts, distributionMap)
-	amgr.Sort()
-	topnAccounts, err = amgr.GetTopn(topn, includeDistribution)
+	lockedAddrs := visor.GetLockedDistributionAddresses()
+	addrsMap := make(map[string]struct{}, len(lockedAddrs))
+	for _, a := range lockedAddrs {
+		addrsMap[a] = struct{}{}
+	}
+
+	richlist, err := visor.NewRichlist(allAccounts, addrsMap)
 	if err != nil {
 		return nil, err
 	}
 
-	return topnAccounts, nil
+	if !includeDistribution {
+		unlockedAddrs := visor.GetUnlockedDistributionAddresses()
+		for _, a := range unlockedAddrs {
+			addrsMap[a] = struct{}{}
+		}
+		richlist = richlist.FilterAddresses(addrsMap)
+	}
+
+	return richlist, nil
+}
+
+// GetAddressCount returns count number of unique address with uxouts > 0.
+func (gw *Gateway) GetAddressCount() (uint64, error) {
+	rbOuts, err := gw.GetUnspentOutputs()
+	if err != nil {
+		return 0, err
+	}
+
+	allAccounts, err := rbOuts.AggregateUnspentOutputs()
+	if err != nil {
+		return 0, err
+	}
+
+	return uint64(len(allAccounts)), nil
 }

@@ -706,7 +706,6 @@ func TestWalletBalanceHandler(t *testing.T) {
 	}
 }
 
-
 func TestWalletTransactionsHandler(t *testing.T) {
 	type httpBody struct {
 		Id string

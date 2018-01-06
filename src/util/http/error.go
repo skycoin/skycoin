@@ -40,3 +40,12 @@ func Error501(w http.ResponseWriter) {
 func Error500(w http.ResponseWriter) {
 	HTTPError(w, http.StatusInternalServerError, "Internal Server Error")
 }
+
+// Error500Msg response 500 with custom message
+func Error500Msg(w http.ResponseWriter, msg string) {
+	httpMsg := "Internal Server Error"
+	if msg != "" {
+		httpMsg = fmt.Sprintf("%s - %s", httpMsg, msg)
+	}
+	HTTPError(w, http.StatusInternalServerError, httpMsg)
+}

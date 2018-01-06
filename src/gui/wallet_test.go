@@ -20,7 +20,6 @@ import (
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
-	"github.com/google/go-querystring/query"
 )
 
 // Gateway RPC interface wrapper for daemon state
@@ -712,8 +711,12 @@ func TestWalletBalanceHandler(t *testing.T) {
 	}
 }
 
-
 func TestWalletCreateHandler(t *testing.T) {
+	type httpBody struct {
+		Seed  string
+		Label string
+		ScanN string
+	}
 	tt := []struct {
 		name                      string
 		method                    string
@@ -904,22 +907,30 @@ func TestWalletCreateHandler(t *testing.T) {
 
 	for _, tc := range tt {
 		gateway := &FakeGateway{
-			wltName: tc.wltname,
-			scanN:   tc.scnN,
-			t:       t,
+			walletID: tc.wltname,
+			t:        t,
 		}
 		gateway.On("CreateWallet", "", tc.options).Return(tc.gatewayCreateWalletResult, tc.gatewayCreateWalletErr)
 		gateway.On("ScanAheadWalletAddresses", tc.wltname, tc.scnN-1).Return(tc.scanWalletAddressesResult, tc.scanWalletAddressesError)
-		body, _ := query.Values(tc.body)
-
-		req, err := http.NewRequest(tc.method, tc.url, bytes.NewBufferString(body.Encode()))
-		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-		if err != nil {
-			t.Fatal(err)
+		v := url.Values{}
+		if tc.body != nil {
+			if tc.body.Seed != "" {
+				v.Add("seed", tc.body.Seed)
+			}
+			if tc.body.Label != "" {
+				v.Add("label", tc.body.Label)
+			}
+			if tc.body.ScanN != "" {
+				v.Add("scan", tc.body.ScanN)
+			}
 		}
 
+		req, err := http.NewRequest(tc.method, tc.url, bytes.NewBufferString(v.Encode()))
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		require.NoError(t, err)
+
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(WalletCreate(gateway))
+		handler := http.HandlerFunc(walletCreate(gateway))
 
 		handler.ServeHTTP(rr, req)
 
@@ -928,7 +939,8 @@ func TestWalletCreateHandler(t *testing.T) {
 			tc.name, status, tc.status)
 
 		if status != http.StatusOK {
-			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()),
+				"case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 		} else {
 			var msg wallet.ReadableWallet

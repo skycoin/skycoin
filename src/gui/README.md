@@ -9,6 +9,8 @@ Apis service port is `6420`.
 * [Explorer apis](#explorer-apis)
 * [Uxout apis](#uxout-apis)
 * [Coin supply api](#coin-supply-informations)
+* [Richlist api](#richlist-show-top-n-addresses-by-uxouts)
+* [Addresscount api](#addresscount-show-count-of-unique-address)
 * [Log api](#wallet-log-api)
 
 
@@ -233,6 +235,17 @@ Args:
     id: wallet id
     dst: recipient address
     coins: number of coins to send, in droplets. 1 coin equals 1e6 droplets.
+Response:
+    balance: new balance of the wallet
+    txn: spent transaction
+    error: an error that may have occured after broadcast the transaction to the network
+           if this field is not empty, the spend succeeded, but the response data could not be prepared
+Statuses:
+    200: successful spend. NOTE: the response may include an "error" field. if this occurs, the spend succeeded
+         but the response data could not be prepared. The client should NOT spend again.
+    400: Invalid query params, wallet lacks enough coin hours, insufficient balance
+    404: wallet does not exist
+    500: other errors
 ```
 
 example, send 1 coin to `2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc` from wallet `2017_05_09_ea42.wlt`:
@@ -987,6 +1000,69 @@ result:
     ]
 }
 ```
+## Richlist show top N addresses by uxouts
+
+```
+URI: /richlist
+Method: GET
+Args:
+    n: top N addresses, [default 20, returns all if <= 0].
+    include-distribution: include distribution addresses or not, default false. 
+```
+
+example:
+
+```bash
+curl "http://127.0.0.1:6420/richlist?n=4&include-distribution=true"
+```
+
+result:
+
+```json
+[
+    {
+        "address": "zMDywYdGEDtTSvWnCyc3qsYHWwj9ogws74",
+        "coins": "1000000.000000",
+        "locked": true
+    },
+    {
+        "address": "z6CJZfYLvmd41GRVE8HASjRcy5hqbpHZvE",
+        "coins": "1000000.000000",
+        "locked": true
+    },
+    {
+        "address": "wyQVmno9aBJZmQ99nDSLoYWwp7YDJCWsrH",
+        "coins": "1000000.000000",
+        "locked": true
+    },
+    {
+        "address": "tBaeg9zE2sgmw5ZQENaPPYd6jfwpVpGTzS",
+        "coins": "1000000.000000",
+        "locked": true
+    }
+]
+```
+
+## AddressCount show count of unique address
+
+```
+URI: /addresscount
+Method: GET
+```
+example:
+
+```bash
+curl "http://127.0.0.1:6420/addresscount"
+```
+
+result:
+
+```json
+{
+    "count": 10103
+}
+```
+
 ## Wallet log api
 
 ```sh
@@ -1102,3 +1178,4 @@ result:
     "[skycoin.daemon:DEBUG] Received pong from 178.62.225.38:6000",
     "[skycoin.daemon:DEBUG] Received pong from 45.32.235.85:6000",
 ]
+```

@@ -907,8 +907,7 @@ func TestWalletCreateHandler(t *testing.T) {
 
 	for _, tc := range tt {
 		gateway := &FakeGateway{
-			walletID: tc.wltname,
-			t:        t,
+			t: t,
 		}
 		gateway.On("CreateWallet", "", tc.options).Return(tc.gatewayCreateWalletResult, tc.gatewayCreateWalletErr)
 		gateway.On("ScanAheadWalletAddresses", tc.wltname, tc.scnN-1).Return(tc.scanWalletAddressesResult, tc.scanWalletAddressesError)
@@ -945,9 +944,7 @@ func TestWalletCreateHandler(t *testing.T) {
 		} else {
 			var msg wallet.ReadableWallet
 			err = json.Unmarshal(rr.Body.Bytes(), &msg)
-			if err != nil {
-				t.Errorf("fail unmarshal json response while 200 OK. body: %s, err: %s", rr.Body.String(), err)
-			}
+			require.NoError(t, err)
 			require.Equal(t, tc.responseBody, msg, tc.name)
 		}
 	}

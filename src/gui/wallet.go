@@ -50,6 +50,12 @@ func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 		b, err := gateway.GetWalletBalance(wltID)
 		if err != nil {
 			logger.Error("Get wallet balance failed: %v", err)
+			switch err {
+			case wallet.ErrWalletNotExist:
+				wh.Error404(w)
+			default:
+				wh.Error500Msg(w, err.Error())
+			}
 			return
 		}
 		wh.SendOr404(w, b)

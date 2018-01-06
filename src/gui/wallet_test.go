@@ -705,7 +705,6 @@ func TestWalletBalanceHandler(t *testing.T) {
 	}
 }
 
-
 func TestUpdateWalletLabelHandler(t *testing.T) {
 	type httpBody struct {
 		WalletID string
@@ -810,37 +809,39 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		gateway := &FakeGateway{
-			t: t,
-		}
-		gateway.On("UpdateWalletLabel", tc.walletId, tc.label).Return(tc.gatewayUpdateWalletLabelErr)
-
-		v := url.Values{}
-		if tc.body != nil {
-			if tc.body.WalletID != "" {
-				v.Add("id", tc.body.WalletID)
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := &FakeGateway{
+				t: t,
 			}
-			if tc.body.Label != "" {
-				v.Add("label", tc.body.Label)
+			gateway.On("UpdateWalletLabel", tc.walletId, tc.label).Return(tc.gatewayUpdateWalletLabelErr)
+
+			v := url.Values{}
+			if tc.body != nil {
+				if tc.body.WalletID != "" {
+					v.Add("id", tc.body.WalletID)
+				}
+				if tc.body.Label != "" {
+					v.Add("label", tc.body.Label)
+				}
 			}
-		}
-		req, err := http.NewRequest(tc.method, tc.url, bytes.NewBufferString(v.Encode()))
-		require.NoError(t, err)
-		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(walletUpdateHandler(gateway))
+			req, err := http.NewRequest(tc.method, tc.url, bytes.NewBufferString(v.Encode()))
+			require.NoError(t, err)
+			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+			rr := httptest.NewRecorder()
+			handler := http.HandlerFunc(walletUpdateHandler(gateway))
 
-		handler.ServeHTTP(rr, req)
+			handler.ServeHTTP(rr, req)
 
-		status := rr.Code
-		require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
-			tc.name, status, tc.status)
+			status := rr.Code
+			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
+				tc.name, status, tc.status)
 
-		if status != http.StatusOK {
-			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
-		} else {
-			require.Equal(t, tc.responseBody, rr.Body.String(), tc.name)
-		}
+			if status != http.StatusOK {
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+			} else {
+				require.Equal(t, tc.responseBody, rr.Body.String(), tc.name)
+			}
+		})
 	}
 }

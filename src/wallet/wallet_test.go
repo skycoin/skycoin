@@ -198,26 +198,6 @@ func TestNewWallet(t *testing.T) {
 				err: errors.New("seed required"),
 			},
 		},
-		{
-			"generate addresses",
-			"test.wlt",
-			Options{
-				Label:      "wallet1",
-				Coin:       CoinTypeSkycoin,
-				Encrypt:    true,
-				Password:   []byte("pwd"),
-				AddressNum: 2,
-			},
-			expect{
-				meta: map[string]string{
-					"label":     "wallet1",
-					"coin":      string(CoinTypeSkycoin),
-					"type":      "deterministic",
-					"encrypted": "true",
-				},
-				err: errors.New("seed required"),
-			},
-		},
 	}
 
 	for _, tc := range tt {
@@ -227,9 +207,6 @@ func TestNewWallet(t *testing.T) {
 			if err != nil {
 				return
 			}
-
-			// Checks the generated addresses
-			require.Len(t, w.Entries, int(tc.ops.AddressNum))
 
 			require.Equal(t, tc.ops.Encrypt, w.IsEncrypted())
 
@@ -332,10 +309,9 @@ func TestWalletUnlock(t *testing.T) {
 		{
 			"ok",
 			Options{
-				Seed:       "seed",
-				Encrypt:    true,
-				Password:   []byte("pwd"),
-				AddressNum: 2,
+				Seed:     "seed",
+				Encrypt:  true,
+				Password: []byte("pwd"),
 			},
 			[]byte("pwd"),
 			nil,
@@ -343,10 +319,9 @@ func TestWalletUnlock(t *testing.T) {
 		{
 			"unlock with nil password",
 			Options{
-				Seed:       "seed",
-				Encrypt:    true,
-				Password:   []byte("pwd"),
-				AddressNum: 2,
+				Seed:     "seed",
+				Encrypt:  true,
+				Password: []byte("pwd"),
 			},
 			nil,
 			ErrRequirePassword,
@@ -364,9 +339,8 @@ func TestWalletUnlock(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			w, err := NewWallet("t.wlt", tc.opts)
-			require.NoError(t, err)
-
+			w := makeWallet(t, tc.opts, 1)
+			// Tests the unlock method
 			wlt, err := w.unlock(tc.unlockPwd)
 			require.Equal(t, tc.err, err)
 			if err != nil {
@@ -379,8 +353,8 @@ func TestWalletUnlock(t *testing.T) {
 			require.Equal(t, tc.opts.Seed, wlt.seed())
 
 			// Checks the generated addresses
-			sd, sks := cipher.GenerateDeterministicKeyPairsSeed([]byte(wlt.seed()), int(tc.opts.AddressNum))
-			require.Equal(t, tc.opts.AddressNum, uint64(len(wlt.Entries)))
+			sd, sks := cipher.GenerateDeterministicKeyPairsSeed([]byte(wlt.seed()), 1)
+			require.Equal(t, uint64(1), uint64(len(wlt.Entries)))
 
 			// Checks the last seed
 			require.Equal(t, hex.EncodeToString(sd), wlt.lastSeed())
@@ -403,6 +377,22 @@ func TestWalletUnlock(t *testing.T) {
 			require.Empty(t, w.lastSeed())
 		})
 	}
+}
+
+func makeWallet(t *testing.T, opts Options, addrNum uint64) *Wallet {
+	// Create an unlocked wallet first, then generate addresses, lock if the options.Encrypt is true.
+	preOpts := opts
+	opts.Encrypt = false
+	w, err := NewWallet("t.wlt", opts)
+	require.NoError(t, err)
+
+	_, err = w.GenerateAddresses(addrNum)
+	require.NoError(t, err)
+	if preOpts.Encrypt {
+		err = w.lock(preOpts.Password)
+		require.NoError(t, err)
+	}
+	return w
 }
 
 func TestLoadWallet(t *testing.T) {

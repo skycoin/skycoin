@@ -76,12 +76,11 @@ type CoinType string
 
 // Options are wallet constructor options
 type Options struct {
-	Coin       CoinType
-	Label      string
-	Seed       string
-	Encrypt    bool
-	Password   []byte
-	AddressNum uint64 // Generate N addresses when create wallet
+	Coin     CoinType
+	Label    string
+	Seed     string
+	Encrypt  bool
+	Password []byte
 }
 
 // newWalletFilename check for collisions and retry if failure
@@ -135,20 +134,19 @@ func NewWallet(wltName string, opts Options) (*Wallet, error) {
 		},
 	}
 
-	// Generate addresses
-	if _, err := w.GenerateAddresses(opts.AddressNum); err != nil {
-		return nil, fmt.Errorf("generate addresses failed when creating wallets: %v", err)
-	}
-
 	if !opts.Encrypt {
 		return w, nil
+	}
+
+	if len(opts.Password) == 0 {
+		return nil, fmt.Errorf("lock wallet failed: %v", ErrRequirePassword)
 	}
 
 	if err := w.lock(opts.Password); err != nil {
 		return nil, fmt.Errorf("lock wallet failed: %v", err)
 	}
 
-	// Update the encrypted meta field
+	// Update the 'encrypted' meta field
 	w.setEncrypted(true)
 
 	return w, nil

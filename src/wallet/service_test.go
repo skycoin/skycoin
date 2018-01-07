@@ -563,8 +563,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 		{
 			"ok with no change, unencrypted",
 			Options{
-				Seed:       string(seed),
-				AddressNum: 1,
+				Seed: string(seed),
 			},
 			nil,
 			uxouts[:],
@@ -578,10 +577,9 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 		{
 			"ok with no change, encrypted",
 			Options{
-				Seed:       string(seed),
-				AddressNum: 1,
-				Encrypt:    true,
-				Password:   []byte("pwd"),
+				Seed:     string(seed),
+				Encrypt:  true,
+				Password: []byte("pwd"),
 			},
 			[]byte("pwd"),
 			uxouts[:],
@@ -595,8 +593,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 		{
 			"ok with change, unencrypted",
 			Options{
-				Seed:       string(seed),
-				AddressNum: 1,
+				Seed: string(seed),
 			},
 			nil,
 			uxouts[:],
@@ -610,8 +607,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 		{
 			"has unconfirmed spending transaction, unencrypted",
 			Options{
-				Seed:       string(seed),
-				AddressNum: 1,
+				Seed: string(seed),
 			},
 			nil,
 			uxouts[:],
@@ -625,8 +621,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 		{
 			"check unconfirmed spend failed, unencrypted",
 			Options{
-				Seed:       string(seed),
-				AddressNum: 1,
+				Seed: string(seed),
 			},
 			nil,
 			uxouts[:],
@@ -641,8 +636,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 		{
 			"spend zero, unencrypted",
 			Options{
-				Seed:       string(seed),
-				AddressNum: 1,
+				Seed: string(seed),
 			},
 			nil,
 			uxouts[:],
@@ -656,8 +650,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 		{
 			"spend fractional coins, unencrypted",
 			Options{
-				Seed:       string(seed),
-				AddressNum: 1,
+				Seed: string(seed),
 			},
 			nil,
 			uxouts[:],
@@ -671,8 +664,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 		{
 			"not enough confirmed coins, unencrypted",
 			Options{
-				Seed:       string(seed),
-				AddressNum: 1,
+				Seed: string(seed),
 			},
 			nil,
 			uxouts[:],
@@ -686,8 +678,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 		{
 			"no coin hours in inputs, unencrypted",
 			Options{
-				Seed:       string(seed),
-				AddressNum: 1,
+				Seed: string(seed),
 			},
 			nil,
 			uxoutsNoHours[:],

@@ -30,6 +30,7 @@ func encoding(s string) *Encoding {
 
 // encmap is the encoding scheme used for Bitcoin addresses.
 const BTCALPAHBET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+
 var encmap = encoding(BTCALPAHBET)
 
 var (

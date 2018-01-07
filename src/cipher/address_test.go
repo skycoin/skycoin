@@ -5,10 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
 	"github.com/skycoin/skycoin/src/cipher/base58"
+	"github.com/stretchr/testify/require"
 )
-
 
 func init() {
 	rand.Seed(time.Now().UnixNano())

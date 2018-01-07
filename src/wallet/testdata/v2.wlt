@@ -14,7 +14,8 @@
         {
             "address": "2GBifzJEehbDX7Mkk63Prfa4MQQQyRzBLfe",
             "public_key": "03d395b3f7b7cf8780e4bde41f72c930b44f3465da94313e564b04d0f37dd12d9d",
-            "secret_key": "JJMcA/ymhBnk7G1FstgdCPYmXOwy0DqYNznPRJ2F0TdCQ7cUEi0s4pEaPIOrZW4msGj8/rKonrAUEf/jFx1isDFPSmxVaHREakdCbHpWRDFNSVd6RUlSUFNXV2xDQXYzd2JTRmIvRGE0RlU9LDNKQmlUaWtUQkRNT0lvUGc3cEhiRDJCTCswK20rQVR1SmwyZm9CWUtzWmc9LFAxaDlBRTVKclAwZ3dpS25oSUlGcFg4Qk82ODN3bWUwdEllWXJnc3VjOWM9"
+            "secret_key": "",
+            "encrypted_secret_key": "JJMcA/ymhBnk7G1FstgdCPYmXOwy0DqYNznPRJ2F0TdCQ7cUEi0s4pEaPIOrZW4msGj8/rKonrAUEf/jFx1isDFPSmxVaHREakdCbHpWRDFNSVd6RUlSUFNXV2xDQXYzd2JTRmIvRGE0RlU9LDNKQmlUaWtUQkRNT0lvUGc3cEhiRDJCTCswK20rQVR1SmwyZm9CWUtzWmc9LFAxaDlBRTVKclAwZ3dpS25oSUlGcFg4Qk82ODN3bWUwdEllWXJnc3VjOWM9"
         }
     ]
 }

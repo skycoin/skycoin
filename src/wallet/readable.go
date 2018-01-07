@@ -12,24 +12,19 @@ import (
 
 // ReadableEntry wallet entry with json tags
 type ReadableEntry struct {
-	Address string `json:"address"`
-	Public  string `json:"public_key"`
-	Secret  string `json:"secret_key"`
+	Address         string `json:"address"`
+	Public          string `json:"public_key"`
+	Secret          string `json:"secret_key"`
+	EncryptedSecret string `json:"encrypted_secret_key"`
 }
 
 // NewReadableEntry creates readable wallet entry
-func NewReadableEntry(w Entry, isEncrypted bool) ReadableEntry {
-	var secret string
-	if !isEncrypted {
-		secret = w.Secret.Hex()
-	} else {
-		secret = w.EncryptedSecret
-	}
-
+func NewReadableEntry(w Entry) ReadableEntry {
 	return ReadableEntry{
-		Address: w.Address.String(),
-		Public:  w.Public.Hex(),
-		Secret:  secret,
+		Address:         w.Address.String(),
+		Public:          w.Public.Hex(),
+		Secret:          w.Secret.Hex(),
+		EncryptedSecret: w.EncryptedSecret,
 	}
 }
 
@@ -61,10 +56,10 @@ type ReadableEntries []ReadableEntry
 
 // ToWalletEntries convert readable entries to entries
 // converts base on the wallet version.
-func (res ReadableEntries) toWalletEntries(isEncrypted bool) ([]Entry, error) {
+func (res ReadableEntries) toWalletEntries() ([]Entry, error) {
 	entries := make([]Entry, len(res))
 	for i, re := range res {
-		e, err := newEntryFromReadable(&re, isEncrypted)
+		e, err := newEntryFromReadable(&re)
 		if err != nil {
 			return []Entry{}, err
 		}
@@ -75,7 +70,7 @@ func (res ReadableEntries) toWalletEntries(isEncrypted bool) ([]Entry, error) {
 }
 
 // newEntryFromReadable creates WalletEntry base one ReadableWalletEntry
-func newEntryFromReadable(w *ReadableEntry, isEncrypted bool) (*Entry, error) {
+func newEntryFromReadable(w *ReadableEntry) (*Entry, error) {
 	a, err := cipher.DecodeBase58Address(w.Address)
 	if err != nil {
 		return nil, err
@@ -86,23 +81,21 @@ func newEntryFromReadable(w *ReadableEntry, isEncrypted bool) (*Entry, error) {
 		return nil, err
 	}
 
-	if !isEncrypted {
-		// decode the secret hex string
-		s, err := cipher.SecKeyFromHex(w.Secret)
+	// Decodes the secret hex string if any
+	var secret cipher.SecKey
+	if w.Secret != "" {
+		var err error
+		secret, err = cipher.SecKeyFromHex(w.Secret)
 		if err != nil {
 			return nil, err
 		}
-		return &Entry{
-			Address: a,
-			Public:  p,
-			Secret:  s,
-		}, nil
 	}
 
 	return &Entry{
 		Address:         a,
 		Public:          p,
-		EncryptedSecret: w.Secret,
+		Secret:          secret,
+		EncryptedSecret: w.EncryptedSecret,
 	}, nil
 }
 
@@ -131,7 +124,7 @@ func (bt ByTm) Swap(i, j int) {
 func NewReadableWallet(w *Wallet) *ReadableWallet {
 	readable := make(ReadableEntries, len(w.Entries))
 	for i, e := range w.Entries {
-		readable[i] = NewReadableEntry(e, w.IsEncrypted())
+		readable[i] = NewReadableEntry(e)
 	}
 
 	meta := make(map[string]interface{}, len(w.Meta))
@@ -154,7 +147,7 @@ func LoadReadableWallet(filename string) (*ReadableWallet, error) {
 
 // ToWallet convert readable wallet to Wallet
 func (rw *ReadableWallet) toWallet() (*Wallet, error) {
-	ets, err := rw.Entries.toWalletEntries(rw.isEncrypted())
+	ets, err := rw.Entries.toWalletEntries()
 	if err != nil {
 		return nil, err
 	}

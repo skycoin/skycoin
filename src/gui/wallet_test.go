@@ -48,6 +48,11 @@ func (gw *FakeGateway) GetWallet(wltID string) (wallet.Wallet, error) {
 	return args.Get(0).(wallet.Wallet), args.Error(1)
 }
 
+func (gw *FakeGateway) UpdateWalletLabel(wltID, label string) error {
+	args := gw.Called(wltID, label)
+	return args.Error(0)
+}
+
 // NewAddresses generate addresses in given wallet
 func (gw *FakeGateway) GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTxn, error) {
 	args := gw.Called(wltID)
@@ -701,6 +706,147 @@ func TestWalletBalanceHandler(t *testing.T) {
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.result, &msg, tc.name)
+			}
+		})
+	}
+}
+
+func TestUpdateWalletLabelHandler(t *testing.T) {
+	type httpBody struct {
+		WalletID string
+		Label    string
+	}
+
+	tt := []struct {
+		name                        string
+		method                      string
+		url                         string
+		body                        *httpBody
+		status                      int
+		err                         string
+		walletId                    string
+		label                       string
+		gatewayUpdateWalletLabelErr error
+		responseBody                string
+	}{
+		{
+			"405",
+			http.MethodGet,
+			"/wallet/update",
+			&httpBody{},
+			http.StatusMethodNotAllowed,
+			"405 Method Not Allowed",
+			"",
+			"",
+			nil,
+			"",
+		},
+		{
+			"400 - missing wallet id",
+			http.MethodPost,
+			"/wallet/update",
+			&httpBody{},
+			http.StatusBadRequest,
+			"400 Bad Request - missing wallet id",
+			"",
+			"",
+			nil,
+			"",
+		},
+		{
+			"400 - missing label",
+			http.MethodPost,
+			"/wallet/update",
+			&httpBody{
+				WalletID: "foo",
+			},
+			http.StatusBadRequest,
+			"400 Bad Request - missing label",
+			"foo",
+			"",
+			nil,
+			"",
+		},
+		{
+			"404 - gateway.UpdateWalletLabel ErrWalletNotExist",
+			http.MethodPost,
+			"/wallet/update",
+			&httpBody{
+				WalletID: "foo",
+				Label:    "label",
+			},
+			http.StatusNotFound,
+			"404 Not Found",
+			"foo",
+			"label",
+			wallet.ErrWalletNotExist,
+			"",
+		},
+		{
+			"500 - gateway.UpdateWalletLabel error",
+			http.MethodPost,
+			"/wallet/update",
+			&httpBody{
+				WalletID: "foo",
+				Label:    "label",
+			},
+			http.StatusInternalServerError,
+			"500 Internal Server Error - gateway.UpdateWalletLabel error",
+			"foo",
+			"label",
+			errors.New("gateway.UpdateWalletLabel error"),
+			"",
+		},
+		{
+			"200 OK",
+			http.MethodPost,
+			"/wallet/update",
+			&httpBody{
+				WalletID: "foo",
+				Label:    "label",
+			},
+			http.StatusOK,
+			"",
+			"foo",
+			"label",
+			nil,
+			"\"success\"",
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := &FakeGateway{
+				t: t,
+			}
+			gateway.On("UpdateWalletLabel", tc.walletId, tc.label).Return(tc.gatewayUpdateWalletLabelErr)
+
+			v := url.Values{}
+			if tc.body != nil {
+				if tc.body.WalletID != "" {
+					v.Add("id", tc.body.WalletID)
+				}
+				if tc.body.Label != "" {
+					v.Add("label", tc.body.Label)
+				}
+			}
+			req, err := http.NewRequest(tc.method, tc.url, bytes.NewBufferString(v.Encode()))
+			require.NoError(t, err)
+			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+			rr := httptest.NewRecorder()
+			handler := http.HandlerFunc(walletUpdateHandler(gateway))
+
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
+				tc.name, status, tc.status)
+
+			if status != http.StatusOK {
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+			} else {
+				require.Equal(t, tc.responseBody, rr.Body.String(), tc.name)
 			}
 		})
 	}

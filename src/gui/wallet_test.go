@@ -60,7 +60,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		Coins    string
 	}
 
-	tt := []struct {
+	tt := []struct { /**/
 		name                          string
 		method                        string
 		url                           string

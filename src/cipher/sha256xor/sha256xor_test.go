@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/skycoin/skycoin/src/cipher"
 	secp256k1 "github.com/skycoin/skycoin/src/cipher/secp256k1-go"
+	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,37 +21,37 @@ func TestEncrypt(t *testing.T) {
 	}{
 		{
 			"data length=1 password is empty=true",
-			randBytes(t, 1),
+			testutil.RandBytes(t, 1),
 			nil,
 			errors.New("missing password"),
 		},
 		{
 			"data length=1  password is empty=false",
-			randBytes(t, 1),
+			testutil.RandBytes(t, 1),
 			[]byte("key"),
 			nil,
 		},
 		{
 			"data length<32 password is empty=false",
-			randBytes(t, 2),
+			testutil.RandBytes(t, 2),
 			[]byte("pwd"),
 			nil,
 		},
 		{
 			"data length=32 password is empty=false",
-			randBytes(t, 32),
+			testutil.RandBytes(t, 32),
 			[]byte("pwd"),
 			nil,
 		},
 		{
 			"data length=2*32 password is empty=false",
-			randBytes(t, 64),
+			testutil.RandBytes(t, 64),
 			[]byte("9JMkCPphe73NQvGhmab"),
 			nil,
 		},
 		{
 			"data length>2*32 password is empty=false",
-			randBytes(t, 65),
+			testutil.RandBytes(t, 65),
 			[]byte("9JMkCPphe73NQvGhmab"),
 			nil,
 		},
@@ -57,7 +59,7 @@ func TestEncrypt(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			edata, err := Encrypt(tc.data, tc.password)
+			edata, err := New().Encrypt(tc.data, tc.password)
 			require.Equal(t, tc.err, err)
 			if err != nil {
 				return
@@ -71,9 +73,9 @@ func TestEncrypt(t *testing.T) {
 
 			totalEncryptedDataLen := checksumSize + nonceSize + 32 + n*blockSize // 32 is the hash data length
 			require.Equal(t, totalEncryptedDataLen, len(edata))
-			var checksum SHA256
+			var checksum cipher.SHA256
 			copy(checksum[:], edata[:checksumSize])
-			require.Equal(t, checksum, SumSHA256(edata[checksumSize:]))
+			require.Equal(t, checksum, cipher.SumSHA256(edata[checksumSize:]))
 		})
 	}
 
@@ -82,8 +84,8 @@ func TestEncrypt(t *testing.T) {
 	for i := 33; i <= 64; i++ {
 		name := fmt.Sprintf("data length=%d password is empty=false", i)
 		t.Run(name, func(t *testing.T) {
-			data := randBytes(t, i)
-			edata, err := Encrypt(data, pwd)
+			data := testutil.RandBytes(t, i)
+			edata, err := New().Encrypt(data, pwd)
 			require.NoError(t, err)
 
 			n := (lengthSize + len(data)) / blockSize
@@ -94,15 +96,15 @@ func TestEncrypt(t *testing.T) {
 
 			totalEncryptedDataLen := checksumSize + nonceSize + 32 + n*blockSize // 32 is the hash data length
 			require.Equal(t, totalEncryptedDataLen, len(edata))
-			var checksum SHA256
+			var checksum cipher.SHA256
 			copy(checksum[:], edata[:checksumSize])
-			require.Equal(t, checksum, SumSHA256(edata[checksumSize:]))
+			require.Equal(t, checksum, cipher.SumSHA256(edata[checksumSize:]))
 		})
 	}
 }
 
 func TestDecrypt(t *testing.T) {
-	data := randBytes(t, 32)
+	data := testutil.RandBytes(t, 32)
 	tt := []struct {
 		name          string
 		encryptedData func() []byte // encrypted data
@@ -112,7 +114,7 @@ func TestDecrypt(t *testing.T) {
 		{
 			"invalid data length",
 			func() []byte {
-				return makeEncryptedData(data, 65, []byte("pwd"))
+				return makeEncryptedData(t, data, 65, []byte("pwd"))
 			},
 			[]byte("pwd"),
 			errors.New("invalid data length"),
@@ -120,7 +122,7 @@ func TestDecrypt(t *testing.T) {
 		{
 			"invalid checksum",
 			func() []byte {
-				edata := makeEncryptedData(data, 32, []byte("pwd"))
+				edata := makeEncryptedData(t, data, 32, []byte("pwd"))
 				// Changes the encrypted data, so that the checksum could not match
 				edata[len(edata)-1]++
 				return edata
@@ -131,7 +133,7 @@ func TestDecrypt(t *testing.T) {
 		{
 			"empty password",
 			func() []byte {
-				return makeEncryptedData(data, 32, []byte("pwd"))
+				return makeEncryptedData(t, data, 32, []byte("pwd"))
 			},
 			[]byte(""),
 			errors.New("missing password"),
@@ -139,7 +141,7 @@ func TestDecrypt(t *testing.T) {
 		{
 			"nil password",
 			func() []byte {
-				return makeEncryptedData(data, 32, []byte("pwd"))
+				return makeEncryptedData(t, data, 32, []byte("pwd"))
 			},
 			nil,
 			errors.New("missing password"),
@@ -147,7 +149,7 @@ func TestDecrypt(t *testing.T) {
 		{
 			"invalid password",
 			func() []byte {
-				return makeEncryptedData(data, 32, []byte("pwd"))
+				return makeEncryptedData(t, data, 32, []byte("pwd"))
 			},
 			[]byte("wrong password"),
 			errors.New("invalid password"),
@@ -157,7 +159,7 @@ func TestDecrypt(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			edata := tc.encryptedData()
-			d, err := Decrypt(edata, tc.password)
+			d, err := New().Decrypt(edata, tc.password)
 			require.Equal(t, tc.err, err)
 			if err != nil {
 				return
@@ -171,9 +173,9 @@ func TestDecrypt(t *testing.T) {
 	for i := 0; i <= 64; i++ {
 		name := fmt.Sprintf("data length=%d", i)
 		t.Run(name, func(t *testing.T) {
-			data := randBytes(t, i)
-			edata := makeEncryptedData(data, uint32(len(data)), []byte("pwd"))
-			d, err := Decrypt(edata, []byte("pwd"))
+			data := testutil.RandBytes(t, i)
+			edata := makeEncryptedData(t, data, uint32(len(data)), []byte("pwd"))
+			d, err := New().Decrypt(edata, []byte("pwd"))
 			require.NoError(t, err)
 			require.Equal(t, data, d)
 		})
@@ -181,7 +183,7 @@ func TestDecrypt(t *testing.T) {
 }
 
 // encrypts data, manually set the data length, so we could test invalid data length cases.
-func makeEncryptedData(data []byte, dataLength uint32, password []byte) []byte {
+func makeEncryptedData(t *testing.T, data []byte, dataLength uint32, password []byte) []byte {
 	dataLenBytes := make([]byte, lengthSize)
 	binary.LittleEndian.PutUint32(dataLenBytes, dataLength)
 
@@ -198,20 +200,20 @@ func makeEncryptedData(data []byte, dataLength uint32, password []byte) []byte {
 	}
 
 	// Hash(length+data+padding)
-	dataHash := SumSHA256(ldata)
+	dataHash := cipher.SumSHA256(ldata)
 
 	// Initialize blocks with data hash
-	blocks := []SHA256{dataHash}
+	blocks := []cipher.SHA256{dataHash}
 	for i := 0; i < n; i++ {
-		var b SHA256
+		var b cipher.SHA256
 		copy(b[:], ldata[i*blockSize:(i+1)*blockSize])
 		blocks = append(blocks, b)
 	}
 
 	// Generates a nonce
-	nonce := RandByte(nonceSize)
+	nonce := testutil.RandBytes(t, int(nonceSize))
 	// Hash the nonce
-	hashNonce := SumSHA256(nonce)
+	hashNonce := cipher.SumSHA256(nonce)
 	// Hash the password
 	key := secp256k1.Secp256k1Hash(password)
 
@@ -227,7 +229,7 @@ func makeEncryptedData(data []byte, dataLength uint32, password []byte) []byte {
 	// Prefix the nonce
 	nonceAndDataBytes := append(nonce, encryptedData...)
 	// Calculates the checksum
-	checkSum := SumSHA256(nonceAndDataBytes)
+	checkSum := cipher.SumSHA256(nonceAndDataBytes)
 
 	return append(checkSum[:], nonceAndDataBytes...)
 }

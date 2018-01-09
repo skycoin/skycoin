@@ -1,4 +1,4 @@
-package cipher
+package sha256xor
 
 import (
 	"encoding/binary"
@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"testing"
 
+	secp256k1 "github.com/skycoin/skycoin/src/cipher/secp256k1-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -212,13 +213,13 @@ func makeEncryptedData(data []byte, dataLength uint32, password []byte) []byte {
 	// Hash the nonce
 	hashNonce := SumSHA256(nonce)
 	// Hash the password
-	hashPassword := SumSHA256(password)
+	key := secp256k1.Secp256k1Hash(password)
 
 	var encryptedData []byte
 	// Encodes the blocks
 	for i := range blocks {
 		// Hash(password, hash(index, hash(nonce)))
-		h := hashPwdIndexNonce(hashPassword, int64(i), hashNonce)
+		h := hashKeyIndexNonce(key, int64(i), hashNonce)
 		encryptedHash := blocks[i].Xor(h)
 		encryptedData = append(encryptedData, encryptedHash[:]...)
 	}

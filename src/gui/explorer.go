@@ -142,7 +142,7 @@ func coinSupply(gateway *daemon.Gateway, w http.ResponseWriter, r *http.Request)
 
 // method: GET
 // url: /explorer/address?address=${address}
-func getTransactionsForAddress(gateway *daemon.Gateway) http.HandlerFunc {
+func getTransactionsForAddress(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)

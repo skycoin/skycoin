@@ -29,8 +29,12 @@ export class SendSkycoinComponent implements OnInit {
   }
 
   send() {
+    const wallet = this.form.value.wallet;
+    const addressToSend = this.form.value.address;
+    const amountToSend = this.form.value.amount * 1000000;
+
     this.button.setLoading();
-    this.walletService.sendSkycoin(this.form.value.wallet, this.form.value.address, this.form.value.amount * 1000000)
+    this.walletService.sendSkycoin(wallet, addressToSend, amountToSend)
       .delay(1000)
       .subscribe(
         () => {

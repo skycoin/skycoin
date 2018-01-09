@@ -7,7 +7,8 @@ import (
 	"sync"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/go-bip39"
+	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
+	"github.com/skycoin/skycoin/src/cipher/sha256xor"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 )
@@ -25,33 +26,42 @@ type BalanceGetter interface {
 type Service struct {
 	sync.RWMutex
 	wallets          Wallets
-	firstAddrIDMap   map[string]string // key: first address in wallet, value: wallet id
+	firstAddrIDMap   map[string]string                        // Key: first address in wallet; Value: wallet id
+	cryptoMap        map[CryptoType]cipher.EncryptorDecryptor // Key: encryption method name; Value: the EncryptorDecryptor instance
 	disableWalletAPI bool
-	WalletDirectory  string
+	walletDirectory  string
 }
+
+// defaultCrypto default crypto in wallet service
+var defaultCrypto = sha256xor.New()
 
 // NewService new wallet service
 func NewService(walletDir string, disableWalletAPI bool) (*Service, error) {
 	serv := &Service{
-		disableWalletAPI: disableWalletAPI,
 		firstAddrIDMap:   make(map[string]string),
+		disableWalletAPI: disableWalletAPI,
+		cryptoMap: map[CryptoType]cipher.EncryptorDecryptor{
+			CryptoTypeSha256Xor: sha256xor.New(), // Initialize the cryptoMap with sha256xor.
+		},
 	}
+
 	if serv.disableWalletAPI {
 		return serv, nil
 	}
+
 	if err := os.MkdirAll(walletDir, os.FileMode(0700)); err != nil {
 		return nil, fmt.Errorf("failed to create wallet directory %s: %v", walletDir, err)
 	}
 
-	serv.WalletDirectory = walletDir
+	serv.walletDirectory = walletDir
 
 	// Removes .wlt.bak files before loading wallets
-	if err := removeBackupFiles(serv.WalletDirectory); err != nil {
-		return nil, fmt.Errorf("remove .wlt.bak files in %v failed: %v", serv.WalletDirectory, err)
+	if err := removeBackupFiles(serv.walletDirectory); err != nil {
+		return nil, fmt.Errorf("remove .wlt.bak files in %v failed: %v", serv.walletDirectory, err)
 	}
 
 	// Loads wallets
-	w, err := LoadWallets(serv.WalletDirectory)
+	w, err := LoadWallets(serv.walletDirectory)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load all wallets: %v", err)
 	}
@@ -73,8 +83,8 @@ func NewService(walletDir string, disableWalletAPI bool) (*Service, error) {
 			return nil, err
 		}
 
-		if err := Save(serv.WalletDirectory, w); err != nil {
-			return nil, fmt.Errorf("failed to save wallets to %s: %v", serv.WalletDirectory, err)
+		if err := Save(serv.walletDirectory, w); err != nil {
+			return nil, fmt.Errorf("failed to save wallets to %s: %v", serv.walletDirectory, err)
 		}
 	}
 
@@ -112,7 +122,12 @@ func (serv *Service) ScanAheadWalletAddresses(wltName string, password []byte, s
 	}
 
 	if w.IsEncrypted() {
-		if err := w.guard(password, f); err != nil {
+		c, ok := serv.crypto(w.encryptType())
+		if !ok {
+			return nil, fmt.Errorf("wallet %s is encrypted, but it's encrypt type is unknow", w.Filename())
+		}
+
+		if err := w.guard(c, password, f); err != nil {
 			return nil, err
 		}
 	} else {
@@ -121,7 +136,7 @@ func (serv *Service) ScanAheadWalletAddresses(wltName string, password []byte, s
 		}
 	}
 
-	if err := Save(serv.WalletDirectory, w); err != nil {
+	if err := Save(serv.walletDirectory, w); err != nil {
 		return nil, err
 	}
 
@@ -158,7 +173,12 @@ func (serv *Service) loadWallet(wltName string, options Options, scanN uint64, b
 	}
 
 	if w.IsEncrypted() {
-		if err := w.guard(options.Password, f); err != nil {
+		c, ok := serv.crypto(w.encryptType())
+		if !ok {
+			return nil, fmt.Errorf("wallet %s is encrypted, but it's encrypt type is unknow", w.Filename())
+		}
+
+		if err := w.guard(c, options.Password, f); err != nil {
 			return nil, err
 		}
 	} else {
@@ -171,7 +191,7 @@ func (serv *Service) loadWallet(wltName string, options Options, scanN uint64, b
 		return nil, err
 	}
 
-	if err := Save(serv.WalletDirectory, w); err != nil {
+	if err := Save(serv.walletDirectory, w); err != nil {
 		// If save fails, remove the added wallet
 		serv.wallets.remove(w.Filename())
 		return nil, err
@@ -195,7 +215,7 @@ func (serv *Service) generateUniqueWalletFilename() string {
 }
 
 // EncryptWallet encrypts wallet with password
-func (serv *Service) EncryptWallet(wltID string, password []byte) error {
+func (serv *Service) EncryptWallet(wltID string, password []byte, ct CryptoType) error {
 	serv.Lock()
 	defer serv.Unlock()
 	w, err := serv.getWallet(wltID)
@@ -207,14 +227,29 @@ func (serv *Service) EncryptWallet(wltID string, password []byte) error {
 		return ErrWalletEncrypted
 	}
 
-	if err := w.lock(password); err != nil {
+	// Gets encryptor
+	var encryptor cipher.Encryptor
+	var ok bool
+	encryptor, ok = serv.crypto(w.encryptType())
+	if !ok {
+		encryptor = defaultCrypto
+	}
+
+	if err := w.lock(encryptor, password); err != nil {
 		return err
 	}
 
-	// Set the encrypted wallet
-	serv.wallets.set(w)
+	// Sets the encrypt type
+	w.setEncryptType(ct)
 
-	return Save(serv.WalletDirectory, w)
+	// Save to disk first
+	if err := Save(serv.walletDirectory, w); err != nil {
+		return err
+	}
+
+	// Sets the encrypted wallet
+	serv.wallets.set(w)
+	return nil
 }
 
 // DecryptWallet decrypts wallet with password
@@ -231,13 +266,20 @@ func (serv *Service) DecryptWallet(wltID string, password []byte) error {
 		return ErrWalletNotEncrypted
 	}
 
-	unlockWlt, err := w.unlock(password)
+	// Gets decryptor
+	decryptor, ok := serv.crypto(w.encryptType())
+	if !ok {
+		return fmt.Errorf("wallet %s is encrypted, but it's encrypt type is unknow", w.Filename())
+	}
+
+	// Unlocks the wallet
+	unlockWlt, err := w.unlock(decryptor, password)
 	if err != nil {
 		return err
 	}
 
 	// Updates the wallet file
-	if err := Save(serv.WalletDirectory, unlockWlt); err != nil {
+	if err := Save(serv.walletDirectory, unlockWlt); err != nil {
 		return err
 	}
 
@@ -265,7 +307,13 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]
 	}
 
 	if w.IsEncrypted() {
-		if err := w.guard(password, f); err != nil {
+		// Gets the EncryptorDecryptor
+		c, ok := serv.crypto(w.encryptType())
+		if !ok {
+			return nil, fmt.Errorf("wallet %s is encrypted, but it's encrypt type is unknow", w.Filename())
+		}
+
+		if err := w.guard(c, password, f); err != nil {
 			return nil, err
 		}
 	} else {
@@ -277,7 +325,7 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]
 	// Set the updated wallet back
 	serv.wallets.set(w)
 
-	if err := Save(serv.WalletDirectory, w); err != nil {
+	if err := Save(serv.walletDirectory, w); err != nil {
 		return []cipher.Address{}, err
 	}
 
@@ -331,7 +379,7 @@ func (serv *Service) ReloadWallets() error {
 	if serv.disableWalletAPI {
 		return ErrWalletApiDisabled
 	}
-	wallets, err := LoadWallets(serv.WalletDirectory)
+	wallets, err := LoadWallets(serv.walletDirectory)
 	if err != nil {
 		return err
 	}
@@ -360,7 +408,12 @@ func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, vld
 	}
 
 	if w.IsEncrypted() {
-		if err := w.guard(password, f); err != nil {
+		c, ok := serv.crypto(w.encryptType())
+		if !ok {
+			return nil, fmt.Errorf("wallet %s is encrypted, but it's encrypt type is unknow", w.Filename())
+		}
+
+		if err := w.guard(c, password, f); err != nil {
 			return nil, err
 		}
 	} else {
@@ -376,15 +429,15 @@ func (serv *Service) UpdateWalletLabel(wltID, label string) error {
 	serv.Lock()
 	defer serv.Unlock()
 	var wlt *Wallet
-	if err := serv.wallets.update(wltID, func(w *Wallet) *Wallet {
+	if err := serv.wallets.update(wltID, func(w *Wallet) (*Wallet, error) {
 		w.setLabel(label)
 		wlt = w
-		return w
+		return w, nil
 	}); err != nil {
 		return err
 	}
 
-	return Save(serv.WalletDirectory, wlt)
+	return Save(serv.walletDirectory, wlt)
 }
 
 // Remove removes wallet of given wallet id from the service
@@ -433,4 +486,10 @@ func (serv *Service) removeDup(wlts Wallets) Wallets {
 	}
 
 	return wlts
+}
+
+// crypto returns cipher.EncryptorDecryptor instance base on the crypto type.
+func (serv *Service) crypto(ct CryptoType) (cipher.EncryptorDecryptor, bool) {
+	c, ok := serv.cryptoMap[ct]
+	return c, ok
 }

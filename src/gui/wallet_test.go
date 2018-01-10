@@ -1396,3 +1396,136 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 		})
 	}
 }
+
+func TestWalletNewSeed(t *testing.T) {
+	type httpBody struct {
+		Entropy string
+	}
+	tt := []struct {
+		name      string
+		method    string
+		url       string
+		body      *httpBody
+		status    int
+		err       string
+		entropy   string
+		resultLen int
+	}{
+		{
+			"405",
+			http.MethodPut,
+			"/wallet/newSeed",
+			nil,
+			http.StatusMethodNotAllowed,
+			"405 Method Not Allowed",
+			"0",
+			0,
+		},
+		{
+			"400 - invalid entropy type",
+			http.MethodGet,
+			"/wallet/newSeed",
+			&httpBody{
+				Entropy: "xx",
+			},
+			http.StatusBadRequest,
+			"400 Bad Request - invalid entropy",
+			"xx",
+			0,
+		},
+		{
+			"400 - `wrong entropy length` error",
+			http.MethodGet,
+			"/wallet/balance",
+			&httpBody{
+				Entropy: "200",
+			},
+			http.StatusBadRequest,
+			"400 Bad Request - entropy length must be 128 or 256",
+			"200",
+			0,
+		},
+		{
+			"200 - OK with no entropy",
+			http.MethodGet,
+			"/wallet/newSeed",
+			&httpBody{
+				Entropy: "",
+			},
+			http.StatusOK,
+			"",
+			"128",
+			12,
+		},
+		{
+			"200 - OK",
+			http.MethodGet,
+			"/wallet/newSeed",
+			&httpBody{
+				Entropy: "128",
+			},
+			http.StatusOK,
+			"",
+			"128",
+			12,
+		},
+		{
+			"200 - OK",
+			http.MethodGet,
+			"/wallet/newSeed",
+			&httpBody{
+				Entropy: "256",
+			},
+			http.StatusOK,
+			"",
+			"256",
+			24,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := &FakeGateway{
+				t: t,
+			}
+
+			v := url.Values{}
+			var url = tc.url
+			if tc.body != nil {
+				if tc.body.Entropy != "" {
+					v.Add("entropy", tc.body.Entropy)
+				}
+			}
+			if len(v) > 0 {
+				url += "?" + v.Encode()
+			}
+			req, err := http.NewRequest(tc.method, url, bytes.NewBufferString(v.Encode()))
+			require.NoError(t, err)
+			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+			rr := httptest.NewRecorder()
+			handler := http.HandlerFunc(newWalletSeed(gateway))
+
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
+			if status != tc.status {
+				t.Errorf("case: %s, handler returned wrong status code: got `%v` want `%v`",
+					tc.name, status, tc.status)
+			}
+			if status != http.StatusOK {
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+			} else {
+				var msg struct {
+					Seed string `json:"seed"`
+				}
+				err = json.Unmarshal(rr.Body.Bytes(), &msg)
+				require.NoError(t, err)
+				// check that expected length is equal to response length
+				require.Equal(t, tc.resultLen, len(strings.Fields(msg.Seed)), tc.name)
+			}
+		})
+	}
+}

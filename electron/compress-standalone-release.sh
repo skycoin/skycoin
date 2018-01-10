@@ -40,9 +40,9 @@ if [ -e "$WIN64_STL" ]; then
     fi
     echo "Zipping $WIN64_STL_ZIP"
     if [[ "$OSTYPE" == "linux"* ]]; then
-        tar czf "$WIN64_STL_ZIP" --owner=0 --group=0 "$WIN64_STL"
+        zip -r --quiet "$WIN64_STL_ZIP" --owner=0 --group=0 "$WIN64_STL"
     elif [[ "$OSTYPE" == "darwin"* ]]; then
-        tar czf "$WIN64_STL_ZIP" "$WIN64_STL"
+        zip -r --quiet "$WIN64_STL_ZIP" "$WIN64_STL"
     elif [[ "$OSTYPE" == "msys"* ]]; then
         7z a "$WIN64_STL_ZIP" "$WIN64_STL"
     fi
@@ -57,9 +57,9 @@ if [ -e "$WIN32_STL" ]; then
     fi
     echo "Zipping $WIN32_STL_ZIP"
     if [[ "$OSTYPE" == "linux"* ]]; then
-        tar czf "$WIN32_STL_ZIP" --owner=0 --group=0 "$WIN32_STL"
+        zip -r --quiet "$WIN32_STL_ZIP" --owner=0 --group=0 "$WIN32_STL"
     elif [[ "$OSTYPE" == "darwin"* ]]; then
-        tar czf "$WIN32_STL_ZIP" "$WIN32_STL"
+        zip -r --quiet "$WIN32_STL_ZIP" "$WIN32_STL"
     elif [[ "$OSTYPE" == "msys"* ]]; then
         7z a "$WIN32_STL_ZIP" "$WIN32_STL"
     fi

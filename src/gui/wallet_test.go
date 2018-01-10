@@ -84,7 +84,7 @@ func TestWalletSpendHandler(t *testing.T) {
 	}{
 		{
 			"405",
-			"GET",
+			http.MethodGet,
 			"/wallet/spend",
 			nil,
 			http.StatusMethodNotAllowed,
@@ -100,7 +100,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		},
 		{
 			"400 - no walletID",
-			"POST",
+			http.MethodPost,
 			"/wallet/spend",
 			&httpBody{},
 			http.StatusBadRequest,
@@ -116,7 +116,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		},
 		{
 			"400 - no dst",
-			"POST",
+			http.MethodPost,
 			"/wallet/spend",
 			&httpBody{
 				WalletID: "123",
@@ -134,7 +134,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		},
 		{
 			"400 - bad dst addr",
-			"POST",
+			http.MethodPost,
 			"/wallet/spend",
 			&httpBody{
 				WalletID: "123",
@@ -153,7 +153,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		},
 		{
 			"400 - no coins",
-			"POST",
+			http.MethodPost,
 			"/wallet/spend",
 			&httpBody{
 				WalletID: "123",
@@ -172,7 +172,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		},
 		{
 			"400 - coins is string",
-			"POST",
+			http.MethodPost,
 			"/wallet/spend",
 			&httpBody{
 				WalletID: "123",
@@ -192,7 +192,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		},
 		{
 			"400 - coins is negative value",
-			"POST",
+			http.MethodPost,
 			"/wallet/spend",
 			&httpBody{
 				WalletID: "123",
@@ -212,7 +212,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		},
 		{
 			"400 - zero coins",
-			"POST",
+			http.MethodPost,
 			"/wallet/spend",
 			&httpBody{
 				WalletID: "123",
@@ -232,7 +232,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		},
 		{
 			"400 - gw spend error txn no fee",
-			"POST",
+			http.MethodPost,
 			"/wallet/spend",
 			&httpBody{
 				WalletID: "123",
@@ -254,7 +254,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		},
 		{
 			"400 - gw spend error spending unconfirmed",
-			"POST",
+			http.MethodPost,
 			"/wallet/spend",
 			&httpBody{
 				WalletID: "123",
@@ -276,7 +276,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		},
 		{
 			"400 - gw spend error insufficient balance",
-			"POST",
+			http.MethodPost,
 			"/wallet/spend",
 			&httpBody{
 				WalletID: "123",
@@ -298,7 +298,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		},
 		{
 			"404 - gw spend error wallet not exist",
-			"POST",
+			http.MethodPost,
 			"/wallet/spend",
 			&httpBody{
 				WalletID: "123",
@@ -320,7 +320,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		},
 		{
 			"500 - gw spend error",
-			"POST",
+			http.MethodPost,
 			"/wallet/spend",
 			&httpBody{
 				WalletID: "123",
@@ -342,7 +342,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		},
 		{
 			"200 - gw GetWalletBalance error",
-			"POST",
+			http.MethodPost,
 			"/wallet/spend",
 			&httpBody{
 				WalletID: "1234",
@@ -371,7 +371,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		},
 		{
 			"200 - OK",
-			"POST",
+			http.MethodPost,
 			"/wallet/spend",
 			&httpBody{
 				WalletID: "1234",
@@ -471,7 +471,7 @@ func TestWalletGet(t *testing.T) {
 	}{
 		{
 			"405",
-			http.MethodPut,
+			http.MethodPost,
 			"/wallet",
 			nil,
 			http.StatusMethodNotAllowed,
@@ -587,7 +587,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 	}{
 		{
 			"405",
-			"PUT",
+			http.MethodPost,
 			"/wallet/balance",
 			nil,
 			http.StatusMethodNotAllowed,
@@ -599,7 +599,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 		},
 		{
 			"400 - no walletId",
-			"GET",
+			http.MethodGet,
 			"/wallet/balance",
 			nil,
 			http.StatusBadRequest,
@@ -611,7 +611,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 		},
 		{
 			"404 - gw `wallet doesn't exist` error",
-			"GET",
+			http.MethodGet,
 			"/wallet/balance",
 			&httpBody{
 				WalletID: "notFoundId",
@@ -631,7 +631,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 		},
 		{
 			"500 - gw other error",
-			"GET",
+			http.MethodGet,
 			"/wallet/balance",
 			&httpBody{
 				WalletID: "someId",
@@ -651,7 +651,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 		},
 		{
 			"200 - OK",
-			"GET",
+			http.MethodGet,
 			"/wallet/balance",
 			&httpBody{
 				WalletID: "foo",
@@ -871,7 +871,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 	}{
 		{
 			"405",
-			http.MethodPut,
+			http.MethodPost,
 			"/wallet/transactions",
 			nil,
 			http.StatusMethodNotAllowed,

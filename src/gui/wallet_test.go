@@ -53,6 +53,12 @@ func (gw *FakeGateway) UpdateWalletLabel(wltID, label string) error {
 	return args.Error(0)
 }
 
+// NewAddresses generate addresses in given wallet
+func (gw *FakeGateway) GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTxn, error) {
+	args := gw.Called(wltID)
+	return args.Get(0).([]visor.UnconfirmedTxn), args.Error(1)
+}
+
 func TestWalletSpendHandler(t *testing.T) {
 	type httpBody struct {
 		WalletID string
@@ -78,7 +84,7 @@ func TestWalletSpendHandler(t *testing.T) {
 	}{
 		{
 			"405",
-			"GET",
+			http.MethodGet,
 			"/wallet/spend",
 			nil,
 			http.StatusMethodNotAllowed,
@@ -94,7 +100,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		},
 		{
 			"400 - no walletID",
-			"POST",
+			http.MethodPost,
 			"/wallet/spend",
 			&httpBody{},
 			http.StatusBadRequest,
@@ -110,7 +116,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		},
 		{
 			"400 - no dst",
-			"POST",
+			http.MethodPost,
 			"/wallet/spend",
 			&httpBody{
 				WalletID: "123",
@@ -128,7 +134,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		},
 		{
 			"400 - bad dst addr",
-			"POST",
+			http.MethodPost,
 			"/wallet/spend",
 			&httpBody{
 				WalletID: "123",
@@ -147,7 +153,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		},
 		{
 			"400 - no coins",
-			"POST",
+			http.MethodPost,
 			"/wallet/spend",
 			&httpBody{
 				WalletID: "123",
@@ -166,7 +172,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		},
 		{
 			"400 - coins is string",
-			"POST",
+			http.MethodPost,
 			"/wallet/spend",
 			&httpBody{
 				WalletID: "123",
@@ -186,7 +192,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		},
 		{
 			"400 - coins is negative value",
-			"POST",
+			http.MethodPost,
 			"/wallet/spend",
 			&httpBody{
 				WalletID: "123",
@@ -206,7 +212,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		},
 		{
 			"400 - zero coins",
-			"POST",
+			http.MethodPost,
 			"/wallet/spend",
 			&httpBody{
 				WalletID: "123",
@@ -226,7 +232,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		},
 		{
 			"400 - gw spend error txn no fee",
-			"POST",
+			http.MethodPost,
 			"/wallet/spend",
 			&httpBody{
 				WalletID: "123",
@@ -248,7 +254,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		},
 		{
 			"400 - gw spend error spending unconfirmed",
-			"POST",
+			http.MethodPost,
 			"/wallet/spend",
 			&httpBody{
 				WalletID: "123",
@@ -270,7 +276,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		},
 		{
 			"400 - gw spend error insufficient balance",
-			"POST",
+			http.MethodPost,
 			"/wallet/spend",
 			&httpBody{
 				WalletID: "123",
@@ -292,7 +298,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		},
 		{
 			"404 - gw spend error wallet not exist",
-			"POST",
+			http.MethodPost,
 			"/wallet/spend",
 			&httpBody{
 				WalletID: "123",
@@ -314,7 +320,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		},
 		{
 			"500 - gw spend error",
-			"POST",
+			http.MethodPost,
 			"/wallet/spend",
 			&httpBody{
 				WalletID: "123",
@@ -336,7 +342,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		},
 		{
 			"200 - gw GetWalletBalance error",
-			"POST",
+			http.MethodPost,
 			"/wallet/spend",
 			&httpBody{
 				WalletID: "1234",
@@ -365,7 +371,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		},
 		{
 			"200 - OK",
-			"POST",
+			http.MethodPost,
 			"/wallet/spend",
 			&httpBody{
 				WalletID: "1234",
@@ -465,7 +471,7 @@ func TestWalletGet(t *testing.T) {
 	}{
 		{
 			"405",
-			http.MethodPut,
+			http.MethodPost,
 			"/wallet",
 			nil,
 			http.StatusMethodNotAllowed,
@@ -581,7 +587,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 	}{
 		{
 			"405",
-			"PUT",
+			http.MethodPost,
 			"/wallet/balance",
 			nil,
 			http.StatusMethodNotAllowed,
@@ -593,7 +599,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 		},
 		{
 			"400 - no walletId",
-			"GET",
+			http.MethodGet,
 			"/wallet/balance",
 			nil,
 			http.StatusBadRequest,
@@ -605,7 +611,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 		},
 		{
 			"404 - gw `wallet doesn't exist` error",
-			"GET",
+			http.MethodGet,
 			"/wallet/balance",
 			&httpBody{
 				WalletID: "notFoundId",
@@ -625,7 +631,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 		},
 		{
 			"500 - gw other error",
-			"GET",
+			http.MethodGet,
 			"/wallet/balance",
 			&httpBody{
 				WalletID: "someId",
@@ -645,7 +651,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 		},
 		{
 			"200 - OK",
-			"GET",
+			http.MethodGet,
 			"/wallet/balance",
 			&httpBody{
 				WalletID: "foo",
@@ -843,5 +849,129 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 				require.Equal(t, tc.responseBody, rr.Body.String(), tc.name)
 			}
 		})
+	}
+}
+
+func TestWalletTransactionsHandler(t *testing.T) {
+	type httpBody struct {
+		WalletID string
+	}
+
+	tt := []struct {
+		name                                  string
+		method                                string
+		url                                   string
+		body                                  *httpBody
+		status                                int
+		err                                   string
+		walletId                              string
+		gatewayGetWalletUnconfirmedTxnsResult []visor.UnconfirmedTxn
+		gatewayGetWalletUnconfirmedTxnsErr    error
+		responseBody                          []visor.UnconfirmedTxn
+	}{
+		{
+			"405",
+			http.MethodPost,
+			"/wallet/transactions",
+			nil,
+			http.StatusMethodNotAllowed,
+			"405 Method Not Allowed",
+			"",
+			make([]visor.UnconfirmedTxn, 0),
+			nil,
+			[]visor.UnconfirmedTxn{},
+		},
+		{
+			"400 - missing wallet id",
+			http.MethodGet,
+			"/wallet/transactions",
+			nil,
+			http.StatusBadRequest,
+			"400 Bad Request - missing wallet id",
+			"",
+			make([]visor.UnconfirmedTxn, 0),
+			nil,
+			[]visor.UnconfirmedTxn{},
+		},
+		{
+			"500 - gateway.GetWalletUnconfirmedTxns error",
+			http.MethodGet,
+			"/wallet/transactions",
+			&httpBody{
+				WalletID: "foo",
+			},
+			http.StatusInternalServerError,
+			"500 Internal Server Error - gateway.GetWalletUnconfirmedTxns error",
+			"foo",
+			make([]visor.UnconfirmedTxn, 0),
+			errors.New("gateway.GetWalletUnconfirmedTxns error"),
+			[]visor.UnconfirmedTxn{},
+		},
+		{
+			"404 - wallet doesn't exist",
+			http.MethodGet,
+			"/wallet/transactions",
+			&httpBody{
+				WalletID: "foo",
+			},
+			http.StatusNotFound,
+			"404 Not Found",
+			"foo",
+			make([]visor.UnconfirmedTxn, 0),
+			wallet.ErrWalletNotExist,
+			[]visor.UnconfirmedTxn{},
+		},
+		{
+			"200 - OK",
+			http.MethodGet,
+			"/wallet/transactions",
+			&httpBody{
+				WalletID: "foo",
+			},
+			http.StatusOK,
+			"",
+			"foo",
+			make([]visor.UnconfirmedTxn, 0),
+			nil,
+			[]visor.UnconfirmedTxn{},
+		},
+	}
+
+	for _, tc := range tt {
+		gateway := &FakeGateway{
+			t: t,
+		}
+		gateway.On("GetWalletUnconfirmedTxns", tc.walletId).Return(tc.gatewayGetWalletUnconfirmedTxnsResult, tc.gatewayGetWalletUnconfirmedTxnsErr)
+		v := url.Values{}
+		var urlFull = tc.url
+		if tc.body != nil {
+			if tc.body.WalletID != "" {
+				v.Add("id", tc.body.WalletID)
+			}
+		}
+		if len(v) > 0 {
+			urlFull = urlFull + "?" + v.Encode()
+		}
+		req, err := http.NewRequest(tc.method, urlFull, nil)
+		require.NoError(t, err)
+
+		rr := httptest.NewRecorder()
+		handler := http.HandlerFunc(walletTransactionsHandler(gateway))
+
+		handler.ServeHTTP(rr, req)
+
+		status := rr.Code
+		require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
+			tc.name, status, tc.status)
+
+		if status != http.StatusOK {
+			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+		} else {
+			var msg []visor.UnconfirmedTxn
+			err = json.Unmarshal(rr.Body.Bytes(), &msg)
+			require.NoError(t, err)
+			require.Equal(t, tc.responseBody, msg, tc.name)
+		}
 	}
 }

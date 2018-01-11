@@ -24,6 +24,8 @@ type Gatewayer interface {
 	GetWallet(wltID string) (wallet.Wallet, error)
 	UpdateWalletLabel(wltID, label string) error
 	GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTxn, error)
+	CreateWallet(wltName string, options wallet.Options) (wallet.Wallet, error)
+	ScanAheadWalletAddresses(wltName string, scanN uint64) (wallet.Wallet, error)
 }
 
 // SpendResult represents the result of spending
@@ -170,7 +172,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 //     seed: wallet seed [required]
 //     label: wallet label [required]
 //     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
-func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
+func walletCreate(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			wh.Error405(w)

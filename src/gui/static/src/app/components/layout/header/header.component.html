@@ -1,15 +1,13 @@
-<div class="small-header" *ngIf="!showLargeHeader">
-  <app-top-bar [title]="title"></app-top-bar>
-</div>
-<div class="large-header" *ngIf="showLargeHeader">
+<div class="large-header">
   <app-top-bar [title]="title"></app-top-bar>
   <div class="balance-container">
       <div class="balance">
-        <p class="coins"><span>{{ this.coins }}</span> sky</p>
-        <p class="dollars">{{ this.balance }}</p>
+        <p class="coins"><span>{{ coins }}</span> sky</p>
+        <p class="dollars">{{ balance }}</p>
       </div>
     </div>
   <div class="hour-balance">
-    <p>{{ this.hours }} SKY Hours</p>
+    <p>{{ hours }} SKY Hours</p>
   </div>
 </div>
+<app-nav-bar></app-nav-bar>

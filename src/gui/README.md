@@ -196,6 +196,28 @@ result:
 }
 ```
 
+### Updates wallet label
+
+```
+URI: /wallet/update
+Method: POST
+Args:
+    id: wallet file name
+    label: wallet label
+```
+
+example:
+
+```bash
+curl -X POST http://127.0.0.1:6420/wallet/update?id=$id&label=$label
+```
+
+result:
+
+```
+"success"
+```
+
 ### Get wallet balance
 
 ```

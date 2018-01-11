@@ -11,6 +11,7 @@ export class Wallet {
   addresses: Address[];
   visible?: boolean;
   hideEmpty?: boolean;
+  opened?: boolean;
 }
 
 export class Address {

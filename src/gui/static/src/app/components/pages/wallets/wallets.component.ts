@@ -52,7 +52,7 @@ export class WalletsComponent implements OnInit, OnDestroy {
     });
   }
 
-  openWallet(wallet: Wallet) {
-    this.router.navigate(['/wallet', wallet.filename]);
+  toggleWallet(wallet: Wallet) {
+    wallet.opened = !wallet.opened;
   }
 }

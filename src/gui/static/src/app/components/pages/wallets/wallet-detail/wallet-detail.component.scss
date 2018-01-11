@@ -1,0 +1,54 @@
+@import '../../../../../theme/_variables.scss';
+
+.-record {
+  background-color: $white;
+  border-bottom: 1px solid #eff0f0;
+  cursor: pointer;
+  display: flex;
+  font-size: $font-size-standard;
+  line-height: $row-height;
+  min-height: $row-height;
+  padding: 0 50px 0 20px;
+
+  .id-column {
+    width: 50px;
+    color: rgba(30, 34, 39, 0.6);
+  }
+
+  .address-column {
+    color: rgba(30, 34, 39, 0.6);
+    flex: 1 1 auto;
+
+    img {
+      display: inline-block;
+      height: 17px;
+      vertical-align: middle;
+      width: 17px;
+    }
+
+    p {
+      display: inline-block;
+      line-height: $row-height;
+      margin: 0;
+      vertical-align: middle;
+    }
+  }
+
+  .hours-column {
+    color: rgba(30, 34, 39, 0.5);
+    width: 150px;
+  }
+
+  .coins-column {
+    color: black;
+    width: 150px;
+  }
+
+  > img {
+    display: inline-block;
+    margin: ($row-height - $row-detail-size) / 2;
+    margin-left: 0;
+    height: $row-detail-size;
+    width: $row-detail-size;
+  }
+}

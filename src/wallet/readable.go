@@ -157,6 +157,10 @@ func (rw *ReadableWallet) toWallet() (*Wallet, error) {
 		Entries: ets,
 	}
 
+	if w.cryptoType() == "" {
+		w.setCryptoType(defaultCryptoType)
+	}
+
 	if err := w.validate(); err != nil {
 		return nil, fmt.Errorf("invalid wallet %s: %v", w.Filename(), err)
 	}

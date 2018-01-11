@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -141,7 +142,7 @@ func TestNewWallet(t *testing.T) {
 			},
 		},
 		{
-			"ok with label, seed and coin set, encrypted",
+			"ok default crypto type",
 			"test.wlt",
 			Options{
 				Label:    "wallet1",
@@ -176,7 +177,7 @@ func TestNewWallet(t *testing.T) {
 					"type":      "deterministic",
 					"encrypted": "true",
 				},
-				err: errors.New("lock wallet failed: password is required"),
+				err: ErrMissingPassword,
 			},
 		},
 		{
@@ -195,40 +196,60 @@ func TestNewWallet(t *testing.T) {
 					"type":      "deterministic",
 					"encrypted": "true",
 				},
-				err: errors.New("seed required"),
+				err: ErrMissingSeed,
 			},
 		},
 	}
 
 	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			w, err := NewWallet(tc.wltName, tc.ops)
-			require.Equal(t, tc.expect.err, err)
-			if err != nil {
-				return
-			}
-
-			require.Equal(t, tc.ops.Encrypt, w.IsEncrypted())
-
-			if w.IsEncrypted() {
-				// decrypt the seed and genearte the first address
-				seed, err := Decrypt(w.encryptedSeed(), tc.ops.Password)
-				require.NoError(t, err)
-				require.Equal(t, tc.ops.Seed, string(seed))
-
-				// decrypt last seed
-				lastSeed, err := Decrypt(w.encryptedLastSeed(), tc.ops.Password)
-				require.NoError(t, err)
-				require.Equal(t, lastSeed, seed)
-
-				// check the entries, the seckeys must be erased.
-				for _, e := range w.Entries {
-					require.Empty(t, e.Secret)
-					require.NotEmpty(t, e.EncryptedSecret)
+		for ct := range cryptoTable {
+			ops := tc.ops
+			ops.CryptoType = ct
+			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
+			t.Run(name, func(t *testing.T) {
+				// test all supported crypto types
+				w, err := NewWallet(tc.wltName, ops)
+				require.Equal(t, tc.expect.err, err)
+				if err != nil {
+					return
 				}
-			}
-		})
+
+				require.Equal(t, ops.Encrypt, w.IsEncrypted())
+
+				if w.IsEncrypted() {
+					crypto, err := getCrypto(w.cryptoType())
+					require.NoError(t, err)
+
+					// decrypt the seed and genearte the first address
+					ss, err := base64.StdEncoding.DecodeString(w.encryptedSeed())
+					require.NoError(t, err)
+					seed, err := crypto.Decrypt(ss, ops.Password)
+					require.NoError(t, err)
+					require.Equal(t, ops.Seed, string(seed))
+
+					// decrypt last seed
+					sls, err := base64.StdEncoding.DecodeString(w.encryptedLastSeed())
+					require.NoError(t, err)
+					lastSeed, err := crypto.Decrypt(sls, ops.Password)
+					require.NoError(t, err)
+					require.Equal(t, lastSeed, seed)
+
+					// check the entries, the seckeys must be erased.
+					for _, e := range w.Entries {
+						require.Empty(t, e.Secret)
+						require.NotEmpty(t, e.EncryptedSecret)
+					}
+				}
+			})
+		}
 	}
+
+	// Test unknow crypto
+	_, err := NewWallet("t.wlt", Options{
+		Seed:       "seed",
+		CryptoType: CryptoType("unknow"),
+	})
+	require.Error(t, err, "could not find crypto unknow in crypto table")
 }
 
 func TestWalletLock(t *testing.T) {
@@ -252,7 +273,7 @@ func TestWalletLock(t *testing.T) {
 				Seed: "seed",
 			},
 			nil,
-			ErrRequirePassword,
+			ErrMissingPassword,
 		},
 		{
 			"wallet already encrypted",
@@ -267,34 +288,40 @@ func TestWalletLock(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			wltName := newWalletFilename()
-			w, err := NewWallet(wltName, tc.opts)
-			require.NoError(t, err)
-
-			if !w.IsEncrypted() {
-				_, err = w.GenerateAddresses(2)
+		for ct := range cryptoTable {
+			opts := tc.opts
+			opts.CryptoType = ct
+			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
+			t.Run(name, func(t *testing.T) {
+				wltName := newWalletFilename()
+				w, err := NewWallet(wltName, opts)
 				require.NoError(t, err)
-			}
 
-			err = w.lock(tc.lockPwd)
-			require.Equal(t, tc.err, err)
-			if err != nil {
-				return
-			}
+				if !w.IsEncrypted() {
+					_, err = w.GenerateAddresses(2)
+					require.NoError(t, err)
+				}
 
-			require.True(t, w.IsEncrypted())
+				err = w.lock(tc.lockPwd)
+				require.Equal(t, tc.err, err)
+				if err != nil {
+					return
+				}
 
-			// Checks if the seeds are wiped
-			require.Empty(t, w.seed())
-			require.Empty(t, w.lastSeed())
+				require.True(t, w.IsEncrypted())
 
-			// Checks if the entries are encrypted
-			for i := range w.Entries {
-				require.Equal(t, cipher.SecKey{}, w.Entries[i].Secret)
-				require.NotEmpty(t, w.Entries[i].EncryptedSecret)
-			}
-		})
+				// Checks if the seeds are wiped
+				require.Empty(t, w.seed())
+				require.Empty(t, w.lastSeed())
+
+				// Checks if the entries are encrypted
+				for i := range w.Entries {
+					require.Equal(t, cipher.SecKey{}, w.Entries[i].Secret)
+					require.NotEmpty(t, w.Entries[i].EncryptedSecret)
+				}
+			})
+
+		}
 	}
 
 }
@@ -324,7 +351,7 @@ func TestWalletUnlock(t *testing.T) {
 				Password: []byte("pwd"),
 			},
 			nil,
-			ErrRequirePassword,
+			ErrMissingPassword,
 		},
 		{
 			"unlock undecrypted wallet",
@@ -338,44 +365,49 @@ func TestWalletUnlock(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			w := makeWallet(t, tc.opts, 1)
-			// Tests the unlock method
-			wlt, err := w.unlock(tc.unlockPwd)
-			require.Equal(t, tc.err, err)
-			if err != nil {
-				return
-			}
+		for ct := range cryptoTable {
+			opts := tc.opts
+			opts.CryptoType = ct
+			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
+			t.Run(name, func(t *testing.T) {
+				w := makeWallet(t, opts, 1)
+				// Tests the unlock method
+				wlt, err := w.unlock(tc.unlockPwd)
+				require.Equal(t, tc.err, err)
+				if err != nil {
+					return
+				}
 
-			require.False(t, wlt.IsEncrypted())
+				require.False(t, wlt.IsEncrypted())
 
-			// Checks the seeds
-			require.Equal(t, tc.opts.Seed, wlt.seed())
+				// Checks the seeds
+				require.Equal(t, opts.Seed, wlt.seed())
 
-			// Checks the generated addresses
-			sd, sks := cipher.GenerateDeterministicKeyPairsSeed([]byte(wlt.seed()), 1)
-			require.Equal(t, uint64(1), uint64(len(wlt.Entries)))
+				// Checks the generated addresses
+				sd, sks := cipher.GenerateDeterministicKeyPairsSeed([]byte(wlt.seed()), 1)
+				require.Equal(t, uint64(1), uint64(len(wlt.Entries)))
 
-			// Checks the last seed
-			require.Equal(t, hex.EncodeToString(sd), wlt.lastSeed())
+				// Checks the last seed
+				require.Equal(t, hex.EncodeToString(sd), wlt.lastSeed())
 
-			for i := range wlt.Entries {
-				addr := cipher.AddressFromSecKey(sks[i])
-				require.Equal(t, addr, wlt.Entries[i].Address)
-			}
+				for i := range wlt.Entries {
+					addr := cipher.AddressFromSecKey(sks[i])
+					require.Equal(t, addr, wlt.Entries[i].Address)
+				}
 
-			// Checks the original seeds
-			require.NotEqual(t, tc.opts.Seed, w.seed())
+				// Checks the original seeds
+				require.NotEqual(t, opts.Seed, w.seed())
 
-			// Checks if the seckeys in entries of original wallet are empty
-			for i := range w.Entries {
-				require.Equal(t, cipher.SecKey{}, w.Entries[i].Secret)
-			}
+				// Checks if the seckeys in entries of original wallet are empty
+				for i := range w.Entries {
+					require.Equal(t, cipher.SecKey{}, w.Entries[i].Secret)
+				}
 
-			// Checks if the seed and lastSeed in original wallet are sitll empty
-			require.Empty(t, w.seed())
-			require.Empty(t, w.lastSeed())
-		})
+				// Checks if the seed and lastSeed in original wallet are sitll empty
+				require.Empty(t, w.seed())
+				require.Empty(t, w.lastSeed())
+			})
+		}
 	}
 }
 
@@ -1216,7 +1248,7 @@ func TestRemoveBackupFiles(t *testing.T) {
 			map[string]struct{}{},
 		},
 		{
-			"1 v0.1 .wlt, 1 v0.1 .bak, delete 1 bak",
+			"wlt v0.1=1 bak v0.1=1 delete 1 bak",
 			[]wltInfo{
 				{
 					"t1.wlt",
@@ -1232,7 +1264,7 @@ func TestRemoveBackupFiles(t *testing.T) {
 			},
 		},
 		{
-			"2 v0.1 .wlt, 1 v0.1 .bak, delete 1 bak",
+			"wlt v0.1=2 bak v0.1=1 delete 1 bak",
 			[]wltInfo{
 				{
 					"t1.wlt",
@@ -1253,7 +1285,7 @@ func TestRemoveBackupFiles(t *testing.T) {
 			},
 		},
 		{
-			"3 v0.1 .wlt, 1 v0.1 .bak, delete 1 bak",
+			"wlt v0.1=3 bak v0.1=1 delete 1 bak",
 			[]wltInfo{
 				{
 					"t1.wlt",
@@ -1279,7 +1311,7 @@ func TestRemoveBackupFiles(t *testing.T) {
 			},
 		},
 		{
-			"3 v0.1 .wlt, 2 v0.1 .bak, delete 2 bak",
+			"wlt v0.1=3 bak v0.1=2 delete 2 bak",
 			[]wltInfo{
 				{
 					"t1.wlt",
@@ -1309,7 +1341,7 @@ func TestRemoveBackupFiles(t *testing.T) {
 			},
 		},
 		{
-			"3 v0.1 .wlt, 3 v0.1 .bak, delete 3 bak",
+			"wlt v0.1=3 bak v0.1=3 delete 3 bak",
 			[]wltInfo{
 				{
 					"t1.wlt",
@@ -1343,7 +1375,7 @@ func TestRemoveBackupFiles(t *testing.T) {
 			},
 		},
 		{
-			"3 v0.1 .wlt, 1 v0.1 .bak, no delete",
+			"wlt v0.1=3 bak v0.1=1 no delete",
 			[]wltInfo{
 				{
 					"t1.wlt",
@@ -1370,7 +1402,7 @@ func TestRemoveBackupFiles(t *testing.T) {
 			},
 		},
 		{
-			"3 v0.2 .wlt, 1 v0.2 .bak, no delete",
+			"wlt v0.2=3 bak v0.2=1 no delete",
 			[]wltInfo{
 				{
 					"t1.wlt",
@@ -1397,7 +1429,7 @@ func TestRemoveBackupFiles(t *testing.T) {
 			},
 		},
 		{
-			"1 v0.1 .wlt, 1 v0.1 .bak, 2 v0.2 .wlt, 2 v0.2 .bak, delete 1 bak",
+			"wlt v0.1=1 bak v0.1=1 wlt v0.2=2 bak v0.2=2 delete 1 bak",
 			[]wltInfo{
 				{
 					"t1.wlt",
@@ -1433,7 +1465,7 @@ func TestRemoveBackupFiles(t *testing.T) {
 			},
 		},
 		{
-			"1 v0.1 .wlt, 2 v0.1 .bak, 2 v0.2 .wlt, 1 v0.2 .bak, delete 1 bak",
+			"wlt v0.1=1 bak v0.1=2 wlt v0.2=2 bak v0.2=1 delete 1 bak",
 			[]wltInfo{
 				{
 					"t1.wlt",

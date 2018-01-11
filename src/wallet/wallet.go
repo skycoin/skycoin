@@ -38,10 +38,15 @@ var (
 	ErrWalletEncrypted = errors.New("wallet is encrypted")
 	// ErrWalletNotEncrypted is returned when trying to decrypt unencrypted wallet
 	ErrWalletNotEncrypted = errors.New("wallet is not encrypted")
-	// ErrRequirePassword find no password when creating wallet
-	ErrRequirePassword = errors.New("password is required")
+	// ErrMissingPassword is returned when trying to create wallet with encryption, but password is not provided.
+	ErrMissingPassword = errors.New("missing password")
+	// ErrMissingSeed is returned when trying to create wallet without a seed
+	ErrMissingSeed = errors.New("missing seed")
 	// ErrWalletNotExist is returned if a wallet does not exist
 	ErrWalletNotExist = errors.New("wallet doesn't exist")
+
+	// defaultCrypto default wallet crypto
+	defaultCryptoType = CryptoTypeSha256Xor
 )
 
 const (
@@ -66,7 +71,7 @@ const (
 	metaType              = "type"              // wallet type
 	metaCoin              = "coin"              // coin type
 	metaEncrypted         = "encrypted"         // whether the wallet is encrypted
-	metaEncryptType       = "encryptType"       // encrytion method name
+	metaCryptoType        = "cryptoType"        // encrytion/decryption type
 	metaSeed              = "seed"              // wallet seed
 	metaEncryptedSeed     = "encryptedSeed"     // encrypted wallet seed
 	metaLastSeed          = "lastSeed"          // seed for generating next address
@@ -113,10 +118,11 @@ type Wallet struct {
 	Entries []Entry
 }
 
-// NewWallet generates Deterministic Wallet
+// NewWallet creates a wallet instance,
 func NewWallet(wltName string, opts Options) (*Wallet, error) {
-	if opts.Seed == "" {
-		return nil, errors.New("seed required")
+	seed := opts.Seed
+	if seed == "" {
+		return nil, ErrMissingSeed
 	}
 
 	coin := opts.Coin
@@ -124,42 +130,76 @@ func NewWallet(wltName string, opts Options) (*Wallet, error) {
 		coin = CoinTypeSkycoin
 	}
 
+	// Gets wallet crypto
 	cryptoType := opts.CryptoType
 	if cryptoType == "" {
-		cryptoType = CryptoTypeSha256Xor
+		cryptoType = defaultCryptoType
+	}
+
+	// Checks if crypto type is supported
+	_, err := getCrypto(cryptoType)
+	if err != nil {
+		return nil, err
 	}
 
 	w := &Wallet{
 		Meta: map[string]interface{}{
-			metaFilename:    wltName,
-			metaVersion:     Version,
-			metaLabel:       opts.Label,
-			metaSeed:        seed,
-			metaLastSeed:    seed,
-			metaTm:          fmt.Sprintf("%v", time.Now().Unix()),
-			metaType:        "deterministic",
-			metaCoin:        string(coin),
-			metaEncryptType: string(cryptoType),
+			metaFilename:   wltName,
+			metaVersion:    Version,
+			metaLabel:      opts.Label,
+			metaSeed:       seed,
+			metaLastSeed:   seed,
+			metaTm:         fmt.Sprintf("%v", time.Now().Unix()),
+			metaType:       "deterministic",
+			metaCoin:       string(coin),
+			metaCryptoType: cryptoType,
 		},
+	}
+
+	// Checks if the wallet need to encrypt
+	if !opts.Encrypt {
+		return w, nil
+	}
+
+	// Checks if the password is provided
+	if len(opts.Password) == 0 {
+		return nil, ErrMissingPassword
+	}
+
+	// Encrypt the wallet
+	if err := w.lock(opts.Password); err != nil {
+		return nil, err
+	}
+
+	w.setEncrypted(true)
+
+	// Validate the wallet
+	if err := w.validate(); err != nil {
+		return nil, err
 	}
 
 	return w, nil
 }
 
 // lock encrypts the wallet with password
-func (w *Wallet) lock(encryptor cipher.Encryptor, password []byte) error {
+func (w *Wallet) lock(password []byte) error {
 	if len(password) == 0 {
-		return ErrRequirePassword
+		return ErrMissingPassword
 	}
 
 	if w.IsEncrypted() {
 		return ErrWalletEncrypted
 	}
 
+	crypto, err := getCrypto(w.cryptoType())
+	if err != nil {
+		return err
+	}
+
 	wlt := w.clone()
 
 	// Encrypt the seed
-	ss, err := encryptor.Encrypt([]byte(wlt.seed()), password)
+	ss, err := crypto.Encrypt([]byte(wlt.seed()), password)
 	if err != nil {
 		return err
 	}
@@ -167,7 +207,7 @@ func (w *Wallet) lock(encryptor cipher.Encryptor, password []byte) error {
 	wlt.setEncryptedSeed(base64.StdEncoding.EncodeToString(ss))
 
 	// Encrypt the last seed
-	sls, err := encryptor.Encrypt([]byte(wlt.lastSeed()), password)
+	sls, err := crypto.Encrypt([]byte(wlt.lastSeed()), password)
 	if err != nil {
 		return err
 	}
@@ -176,7 +216,7 @@ func (w *Wallet) lock(encryptor cipher.Encryptor, password []byte) error {
 
 	// encrypt private keys in entries
 	for i, e := range wlt.Entries {
-		se, err := encryptor.Encrypt(e.Secret[:], password)
+		se, err := crypto.Encrypt(e.Secret[:], password)
 		if err != nil {
 			return err
 		}
@@ -201,19 +241,20 @@ func (w *Wallet) lock(encryptor cipher.Encryptor, password []byte) error {
 // unlock decrypts the wallet into a temporary decrypted copy of the wallet
 // It returns an error if decryption fails
 // The temporary decrypted wallet should be erased from memory when done.
-func (w *Wallet) unlock(decryptor cipher.Decryptor, password []byte) (*Wallet, error) {
+func (w *Wallet) unlock(password []byte) (*Wallet, error) {
 	if !w.IsEncrypted() {
 		return nil, ErrWalletNotEncrypted
 	}
 
 	if len(password) == 0 {
-		return nil, ErrRequirePassword
+		return nil, ErrMissingPassword
 	}
 
-	// if w.encryptType() != decryptType {
-	// 	return nil, fmt.Errorf("unlock wallet failed: can't decrypt %s encrypted wallet with %s decryptor",
-	// 		w.encryptType(), decryptType)
-	// }
+	// Gets the crypto
+	crypto, err := getCrypto(w.cryptoType())
+	if err != nil {
+		return nil, err
+	}
 
 	wlt := w.clone()
 
@@ -224,7 +265,7 @@ func (w *Wallet) unlock(decryptor cipher.Decryptor, password []byte) (*Wallet, e
 	}
 
 	// Decrypts the seed
-	s, err := decryptor.Decrypt(ss, password)
+	s, err := crypto.Decrypt(ss, password)
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +278,7 @@ func (w *Wallet) unlock(decryptor cipher.Decryptor, password []byte) (*Wallet, e
 	}
 
 	// decrypt lastSeed
-	ls, err := decryptor.Decrypt(sls, password)
+	ls, err := crypto.Decrypt(sls, password)
 	if err != nil {
 		return nil, err
 	}
@@ -250,7 +291,7 @@ func (w *Wallet) unlock(decryptor cipher.Decryptor, password []byte) (*Wallet, e
 			return nil, err
 		}
 
-		sk, err := decryptor.Decrypt(ssecret, password)
+		sk, err := crypto.Decrypt(ssecret, password)
 		if err != nil {
 			return nil, err
 		}
@@ -282,17 +323,17 @@ func (w *Wallet) erase() {
 // 2. process the decrypted wallet by calling the callback function
 // 3. lock the wallet at the end
 // If the wallet is not encrypted, it would return ErrWalletNotEncrypted error
-func (w *Wallet) guard(crypto cipher.EncryptorDecryptor, password []byte, f func(w *Wallet) error) (err error) {
+func (w *Wallet) guard(password []byte, f func(w *Wallet) error) (err error) {
 	if !w.IsEncrypted() {
 		return ErrWalletNotEncrypted
 	}
 
 	if len(password) == 0 {
-		return ErrRequirePassword
+		return ErrMissingPassword
 	}
 
 	var wlt *Wallet
-	wlt, err = w.unlock(crypto, password)
+	wlt, err = w.unlock(password)
 	if err != nil {
 		return fmt.Errorf("unlock wallet failed: %v", err)
 	}
@@ -304,7 +345,7 @@ func (w *Wallet) guard(crypto cipher.EncryptorDecryptor, password []byte, f func
 	}
 
 	// lock the wlt
-	if err := wlt.lock(crypto, password); err != nil {
+	if err := wlt.lock(password); err != nil {
 		return fmt.Errorf("lock wallet failed: %v", err)
 	}
 
@@ -417,6 +458,10 @@ func (w *Wallet) validate() error {
 		return errors.New("coin field not set")
 	}
 
+	if _, ok := w.Meta[metaCryptoType]; !ok {
+		return errors.New("crypto type field not set")
+	}
+
 	return nil
 }
 
@@ -523,12 +568,12 @@ func (w *Wallet) IsEncrypted() bool {
 	return false
 }
 
-func (w *Wallet) setEncryptType(tp CryptoType) {
-	w.Meta[metaEncryptType] = tp
+func (w *Wallet) setCryptoType(tp CryptoType) {
+	w.Meta[metaCryptoType] = tp
 }
 
-func (w *Wallet) encryptType() CryptoType {
-	if et, ok := w.Meta[metaEncryptType].(CryptoType); ok {
+func (w *Wallet) cryptoType() CryptoType {
+	if et, ok := w.Meta[metaCryptoType].(CryptoType); ok {
 		return et
 	}
 	return ""

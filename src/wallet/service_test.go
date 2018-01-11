@@ -38,7 +38,7 @@ func TestNewService(t *testing.T) {
 	_, err = os.Stat(dir)
 	require.NoError(t, err)
 
-	require.Equal(t, dir, s.WalletDirectory)
+	require.Equal(t, dir, s.walletDirectory)
 
 	require.Equal(t, 1, len(s.wallets))
 

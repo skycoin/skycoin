@@ -1,13 +1,15 @@
-<div class="large-header">
-  <app-top-bar [title]="title"></app-top-bar>
-  <div class="balance-container">
+<div class="-container">
+  <div class="large-header">
+    <app-top-bar [title]="title"></app-top-bar>
+    <div class="balance-container">
       <div class="balance">
         <p class="coins"><span>{{ coins }}</span> sky</p>
         <p class="dollars">{{ balance }}</p>
       </div>
     </div>
-  <div class="hour-balance">
-    <p>{{ hours }} SKY Hours</p>
+    <div class="hour-balance">
+      <p>{{ hours }} SKY Hours</p>
+    </div>
   </div>
+  <app-nav-bar></app-nav-bar>
 </div>
-<app-nav-bar></app-nav-bar>

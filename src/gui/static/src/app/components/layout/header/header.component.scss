@@ -1,5 +1,9 @@
 @import '../../../../theme/variables';
 
+.-container {
+  border-bottom: 2px solid rgba(30, 34, 39, 0.05);
+}
+
 .large-header {
   background: $gradient-blue-dark; /* For browsers that do not support gradients */
   background: -webkit-linear-gradient(left top, $gradient-blue-dark-transparent, $gradient-blue-light-transparent), url('../../../../assets/img/header.png') center center no-repeat; /* For Safari 5.1 to 6.0 */

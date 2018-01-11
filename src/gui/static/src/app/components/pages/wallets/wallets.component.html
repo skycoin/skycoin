@@ -1,25 +1,30 @@
 <div class="sky-container sky-container-grey">
   <app-header [coins]="coins" [hours]="hours" title="Wallets" class="front-page"></app-header>
-  <div class="grid-headers">
-    <div class="flex-fill">Wallet</div>
-    <div class="flex-100">SKY Hours</div>
-    <div class="flex-100">Balance</div>
-  </div>
-  <ng-container *ngFor="let wallet of walletService.all() | async">
-    <div class="grid-row" (click)="openWallet(wallet)">
-      <div class="flex-fill label">{{ wallet.label }}</div>
-      <div class="flex-100 hours">{{ wallet.hours ? wallet.hours : 0 }}</div>
-      <div class="flex-100 coins">{{ wallet.coins ? wallet.coins : 0 }}</div>
-      <img src="../../../../assets/img/chevron-right-grey.png">
+  <div class="container">
+    <div class="-headers">
+      <div class="-width-250">Wallet</div>
+      <div class="flex-fill">Encryption</div>
+      <div class="-width-150">SKY Hours</div>
+      <div class="-width-150">Balance</div>
     </div>
-  </ng-container>
-  <div class="action-buttons">
-    <button md-button (click)="addWallet()">
-      <img src="../../../../assets/img/plus-gold.png"> Add Wallet
-    </button>
-    <button md-button (click)="loadWallet()">
-      <img src="../../../../assets/img/load-gold.png"> Load Wallet
-    </button>
+    <div class="-wallets">
+      <ng-container *ngFor="let wallet of walletService.all() | async">
+        <div class="-wallet" (click)="openWallet(wallet)">
+          <div class="-width-250 -label">{{ wallet.label }}</div>
+          <div class="flex-fill -encryption">ENCRYPTION</div>
+          <div class="-width-150 -hours">{{ wallet.hours ? wallet.hours : 0 }}</div>
+          <div class="-width-150 -coins">{{ wallet.coins ? wallet.coins : 0 }}</div>
+          <img src="../../../../assets/img/chevron-right-grey.png">
+        </div>
+      </ng-container>
+    </div>
+    <div class="action-buttons">
+      <button md-button (click)="addWallet()">
+        <img src="../../../../assets/img/plus-gold.png"> Add Wallet
+      </button>
+      <button md-button (click)="loadWallet()">
+        <img src="../../../../assets/img/load-gold.png"> Load Wallet
+      </button>
+    </div>
   </div>
-  <app-footer></app-footer>
 </div>

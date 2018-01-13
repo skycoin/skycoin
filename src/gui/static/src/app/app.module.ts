@@ -56,6 +56,10 @@ const ROUTES = [
     component: WalletsComponent,
   },
   {
+    path: 'send',
+    component: SendSkycoinComponent,
+  },
+  {
     path: 'transactions',
     component: TransactionListComponent,
   },

@@ -433,12 +433,14 @@ func newWalletSeed(gateway Gatewayer) http.HandlerFunc {
 		if err != nil {
 			logger.Error("bip39.NewEntropy failed: %v", err)
 			wh.Error500(w)
+			return
 		}
 
 		mnemonic, err := bip39.NewMnemonic(entropy)
 		if err != nil {
 			logger.Error("bip39.NewDefaultMnemomic failed: %v", err)
 			wh.Error500(w)
+			return
 		}
 
 		var rlt = struct {

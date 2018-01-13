@@ -1,29 +1,24 @@
-<div class="container">
-  <div class="-header">
-    New Wallet <img src="../../../../../assets/img/close-grey.png" (click)="closePopup()">
-  </div>
-  <div class="-body">
-    <div [formGroup]="form">
-      <div class="form-field">
-        <label for="label">Name</label>
-        <input formControlName="label" id="label">
-      </div>
-      <div class="form-field">
-        <label for="seed">Seed</label>
-        <textarea formControlName="seed" id="seed" row="2"></textarea>
-      </div>
-      <div class="form-field">
-        <label for="confirm_seed">Confirm seed</label>
-        <textarea formControlName="confirm_seed" id="confirm_seed" row="2"></textarea>
-      </div>
+<app-modal title="Create Wallet">
+  <div [formGroup]="form">
+    <div class="form-field">
+      <label for="label">Name</label>
+      <input formControlName="label" id="label">
     </div>
-    <div class="-buttons">
-      <app-button (action)="closePopup()">
-        Cancel
-      </app-button>
-      <app-button (action)="createWallet()" class="primary" [disabled]="!form.valid">
-        Create
-      </app-button>
+    <div class="form-field">
+      <label for="seed">Seed</label>
+      <textarea formControlName="seed" id="seed" row="2"></textarea>
+    </div>
+    <div class="form-field">
+      <label for="confirm_seed">Confirm seed</label>
+      <textarea formControlName="confirm_seed" id="confirm_seed" row="2"></textarea>
     </div>
   </div>
-</div>
+  <div class="-buttons">
+    <app-button (action)="closePopup()">
+      Cancel
+    </app-button>
+    <app-button (action)="createWallet()" class="primary" [disabled]="!form.valid">
+      Create
+    </app-button>
+  </div>
+</app-modal>

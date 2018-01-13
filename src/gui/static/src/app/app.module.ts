@@ -45,6 +45,7 @@ import { TransactionListComponent } from './components/pages/transaction-list/tr
 import { TransactionDetailComponent } from './components/pages/transaction-list/transaction-detail/transaction-detail.component';
 import { NavBarComponent } from './components/layout/header/nav-bar/nav-bar.component';
 import { WalletDetailComponent } from './components/pages/wallets/wallet-detail/wallet-detail.component';
+import { ModalComponent } from './components/layout/modal/modal.component';
 
 const ROUTES = [
   {
@@ -126,6 +127,7 @@ const ROUTES = [
     WalletsComponent,
     NavBarComponent,
     WalletDetailComponent,
+    ModalComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,

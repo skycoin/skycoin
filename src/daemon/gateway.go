@@ -476,11 +476,11 @@ func (gw *Gateway) GetUnspent() blockdb.UnspentPool {
 
 // impelemts the wallet.Validator interface
 type spendValidator struct {
-	uncfm   *visor.UnconfirmedTxnPool
+	uncfm   visor.UnconfirmedTxnPooler
 	unspent blockdb.UnspentPool
 }
 
-func newSpendValidator(uncfm *visor.UnconfirmedTxnPool, unspent blockdb.UnspentPool) *spendValidator {
+func newSpendValidator(uncfm visor.UnconfirmedTxnPooler, unspent blockdb.UnspentPool) *spendValidator {
 	return &spendValidator{
 		uncfm:   uncfm,
 		unspent: unspent,

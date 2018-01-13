@@ -246,8 +246,8 @@ type UnconfirmedTxnPool struct {
 	unspent *txUnspents
 }
 
-// NewUnconfirmedTxnPool creates an UnconfirmedTxnPool instance
-func NewUnconfirmedTxnPool(db *bolt.DB) *UnconfirmedTxnPool {
+// newUnconfirmedTxnPool creates an UnconfirmedTxnPool instance
+func newUnconfirmedTxnPool(db *bolt.DB) *UnconfirmedTxnPool {
 	return &UnconfirmedTxnPool{
 		txns:    newUncfmTxBkt(db),
 		unspent: newTxUnspents(db),
@@ -275,7 +275,7 @@ func (utp *UnconfirmedTxnPool) createUnconfirmedTxn(t coin.Transaction) Unconfir
 // InjectTxn adds a coin.Transaction to the pool, or updates an existing one's timestamps
 // Returns an error if txn is invalid, and whether the transaction already
 // existed in the pool.
-func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (bool, error) {
+func (utp *UnconfirmedTxnPool) InjectTxn(bc blockchainer, t coin.Transaction) (bool, error) {
 	f, err := bc.TransactionFee(&t)
 	if err != nil {
 		return false, err
@@ -305,7 +305,7 @@ func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (bo
 	}
 
 	utx := utp.createUnconfirmedTxn(t)
-	if err := bc.db.Update(func(tx *bolt.Tx) error {
+	if err := bc.UpdateDB(func(tx *bolt.Tx) error {
 		// add txn to index
 		if err := utp.txns.putWithTx(tx, &utx); err != nil {
 			return err
@@ -374,7 +374,7 @@ func (utp *UnconfirmedTxnPool) RemoveTransactionsWithTx(tx *bolt.Tx, txns []ciph
 
 // Refresh checks all unconfirmed txns against the blockchain.
 // verify the transaction and returns all those txns that turn to valid.
-func (utp *UnconfirmedTxnPool) Refresh(bc *Blockchain) (hashes []cipher.SHA256) {
+func (utp *UnconfirmedTxnPool) Refresh(bc blockchainer) (hashes []cipher.SHA256) {
 	now := utc.Now()
 	utp.txns.rangeUpdate(func(key cipher.SHA256, tx *UnconfirmedTxn) {
 		tx.Checked = now.UnixNano()

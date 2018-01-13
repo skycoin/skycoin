@@ -28,7 +28,7 @@ func RegisterTxHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// Returns transactions that match the filters.
 	// Method: GET
 	// Args:
-	//     addrs: Comma seperated addresses [optional, returns all transactions if no address provided]
+	//     addrs: Comma seperated addresses [optional, returns all transactions if no address is provided]
 	//     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
 	mux.HandleFunc("/transactions", getTransactions(gateway))
 	//inject a transaction into network

@@ -13,6 +13,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/utc"
+	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
 
@@ -160,16 +161,70 @@ func (c Config) Verify() error {
 	return nil
 }
 
+// historyer is the interface that provides methods for accessing history data that are parsed from blockchain.
+type historyer interface {
+	GetUxout(uxid cipher.SHA256) (*historydb.UxOut, error)
+	ParseBlock(b *coin.Block) error
+	GetTransaction(hash cipher.SHA256) (*historydb.Transaction, error)
+	GetLastTxs() ([]*historydb.Transaction, error)
+	GetAddrUxOuts(address cipher.Address) ([]*historydb.UxOut, error)
+	GetAddrTxns(address cipher.Address) ([]historydb.Transaction, error)
+	ForEach(f func(tx *historydb.Transaction) error) error
+	ResetIfNeed() error
+	ParsedHeight() int64
+}
+
+// Blockchainer is the interface that provides methods for accessing the blockchain data
+type blockchainer interface {
+	GetGenesisBlock() *coin.SignedBlock
+	GetBlocks(start, end uint64) []coin.SignedBlock
+	GetLastBlocks(n uint64) []coin.SignedBlock
+	GetBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, error)
+	GetBlockBySeq(seq uint64) (*coin.SignedBlock, error)
+	Unspent() blockdb.UnspentPool
+	Len() uint64
+	Head() (*coin.SignedBlock, error)
+	HeadSeq() uint64
+	Time() uint64
+	NewBlock(txns coin.Transactions, currentTime uint64) (*coin.Block, error)
+	ExecuteBlockWithTx(tx *bolt.Tx, sb *coin.SignedBlock) error
+	VerifyTransaction(tx coin.Transaction) error
+	TransactionFee(t *coin.Transaction) (uint64, error)
+	Notify(b coin.Block)
+	BindListener(bl BlockListener)
+	UpdateDB(f func(tx *bolt.Tx) error) error
+}
+
+// UnconfirmedTxnPooler is the interface that provides methods for
+// accessing the unconfirmed transaction pool
+type UnconfirmedTxnPooler interface {
+	SetAnnounced(hash cipher.SHA256, t time.Time) error
+	InjectTxn(bc blockchainer, t coin.Transaction) (bool, error)
+	RawTxns() coin.Transactions
+	RemoveTransactions(txns []cipher.SHA256)
+	RemoveTransactionsWithTx(tx *bolt.Tx, txns []cipher.SHA256)
+	Refresh(bc blockchainer) []cipher.SHA256
+	FilterKnown(txns []cipher.SHA256) []cipher.SHA256
+	GetKnown(txns []cipher.SHA256) coin.Transactions
+	RecvOfAddresses(bh coin.BlockHeader, addrs []cipher.Address) (coin.AddressUxOuts, error)
+	SpendsOfAddresses(addrs []cipher.Address, unspent blockdb.UnspentGetter) (coin.AddressUxOuts, error)
+	GetSpendingOutputs(unspent blockdb.UnspentPool) (coin.UxArray, error)
+	GetIncomingOutputs(bh coin.BlockHeader) coin.UxArray
+	Get(hash cipher.SHA256) (*UnconfirmedTxn, bool)
+	GetTxns(filter func(tx UnconfirmedTxn) bool) []UnconfirmedTxn
+	GetTxHashes(filter func(tx UnconfirmedTxn) bool) []cipher.SHA256
+	ForEach(f func(cipher.SHA256, *UnconfirmedTxn) error) error
+	GetUnspentsOfAddr(addr cipher.Address) coin.UxArray
+	Len() int
+}
+
 // Visor manages the Blockchain as both a Master and a Normal
-// TODO:
-//     Replaces the history and unconfirmed transaction pool with interface, to
-//     make it easier for testing.
 type Visor struct {
 	Config Config
 	// Unconfirmed transactions, held for relay until we get block confirmation
-	Unconfirmed *UnconfirmedTxnPool
-	Blockchain  *Blockchain
-	history     *historydb.HistoryDB
+	Unconfirmed UnconfirmedTxnPooler
+	Blockchain  blockchainer
+	history     historyer
 	bcParser    *BlockchainParser
 	wallets     *wallet.Service
 	db          *bolt.DB
@@ -210,7 +265,7 @@ func NewVisor(c Config, db *bolt.DB) (*Visor, error) {
 		Config:      c,
 		db:          db,
 		Blockchain:  bc,
-		Unconfirmed: NewUnconfirmedTxnPool(db),
+		Unconfirmed: newUnconfirmedTxnPool(db),
 		history:     history,
 		bcParser:    bp,
 		wallets:     wltServ,
@@ -652,7 +707,7 @@ func ConfirmedTxFilter(isConfirmed bool) TxFilter {
 	}}
 }
 
-// GetTransactions returns transactions that could pass the filters.
+// GetTransactions returns transactions that can pass the filters.
 // If any 'AddrsFilter' exist, call vs.getTransactionsOfAddrs, cause
 // there's an address index of transactions in db which, having address as key and transaction hashes as value.
 // If no filters is provided, returns all transactions.
@@ -669,10 +724,10 @@ func (vs *Visor) GetTransactions(flts ...TxFilter) ([]Transaction, error) {
 		}
 	}
 
-	// Accumulate all addresses from address filters
+	// Accumulates all addresses in address filters
 	addrs := accumulateAddressInFilter(addrFlts)
 
-	// Traverses all transactions to do collection if find no address filter.
+	// Traverses all transactions to do collection if there's no address filter.
 	if len(addrs) == 0 {
 		return vs.traverseTxns(otherFlts...)
 	}
@@ -798,7 +853,7 @@ func (vs *Visor) getTransactionsOfAddrs(addrs []cipher.Address) (map[cipher.Addr
 }
 
 // traverseTxns traverses transactions in historydb and unconfirmed tx pool in db,
-// returns transactions that could pass the filters.
+// returns transactions that can pass the filters.
 func (vs *Visor) traverseTxns(flts ...TxFilter) ([]Transaction, error) {
 	headBkSeq := vs.HeadBkSeq()
 	var txns []Transaction

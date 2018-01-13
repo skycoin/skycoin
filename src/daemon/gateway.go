@@ -499,13 +499,14 @@ func (gw *Gateway) Spend(wltID string, coins uint64, dest cipher.Address) (*coin
 		// create and sign transaction
 		tx, err = gw.vrpc.CreateAndSignTransaction(wltID, sv, unspent, gw.v.Blockchain.Time(), coins, dest)
 		if err != nil {
-			err = fmt.Errorf("Create transaction failed: %v", err)
+			logger.Error("Create transaction failed: %v", err)
 			return
 		}
 
 		// inject transaction
 		if err = gw.d.Visor.InjectTransaction(*tx, gw.d.Pool); err != nil {
-			err = fmt.Errorf("Inject transaction failed: %v", err)
+			logger.Error("Inject transaction failed: %v", err)
+			return
 		}
 	})
 
@@ -656,4 +657,53 @@ func (gw *Gateway) GetBuildInfo() visor.BuildInfo {
 		bi = gw.vrpc.GetBuildInfo()
 	})
 	return bi
+}
+
+// GetRichlist returns rich list as desc order.
+func (gw *Gateway) GetRichlist(includeDistribution bool) (visor.Richlist, error) {
+	rbOuts, err := gw.GetUnspentOutputs()
+	if err != nil {
+		return nil, err
+	}
+
+	allAccounts, err := rbOuts.AggregateUnspentOutputs()
+	if err != nil {
+		return nil, err
+	}
+
+	lockedAddrs := visor.GetLockedDistributionAddresses()
+	addrsMap := make(map[string]struct{}, len(lockedAddrs))
+	for _, a := range lockedAddrs {
+		addrsMap[a] = struct{}{}
+	}
+
+	richlist, err := visor.NewRichlist(allAccounts, addrsMap)
+	if err != nil {
+		return nil, err
+	}
+
+	if !includeDistribution {
+		unlockedAddrs := visor.GetUnlockedDistributionAddresses()
+		for _, a := range unlockedAddrs {
+			addrsMap[a] = struct{}{}
+		}
+		richlist = richlist.FilterAddresses(addrsMap)
+	}
+
+	return richlist, nil
+}
+
+// GetAddressCount returns count number of unique address with uxouts > 0.
+func (gw *Gateway) GetAddressCount() (uint64, error) {
+	rbOuts, err := gw.GetUnspentOutputs()
+	if err != nil {
+		return 0, err
+	}
+
+	allAccounts, err := rbOuts.AggregateUnspentOutputs()
+	if err != nil {
+		return 0, err
+	}
+
+	return uint64(len(allAccounts)), nil
 }

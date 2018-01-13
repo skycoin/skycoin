@@ -27,9 +27,6 @@ type Gatewayer interface {
 	CreateWallet(wltName string, options wallet.Options) (wallet.Wallet, error)
 	ScanAheadWalletAddresses(wltName string, scanN uint64) (wallet.Wallet, error)
 	NewAddresses(wltID string, n uint64) ([]cipher.Address, error)
-	GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTxn, error)
-	UpdateWalletLabel(wltID, label string) error
-	ReloadWallets() error
 	GetWalletDir() string
 }
 
@@ -38,44 +35,6 @@ type SpendResult struct {
 	Balance     *wallet.BalancePair        `json:"balance,omitempty"`
 	Transaction *visor.ReadableTransaction `json:"txn,omitempty"`
 	Error       string                     `json:"error,omitempty"`
-}
-
-// Spend spends coins from given wallet id
-// Args:
-//  walletID    string          ID of wallet to spend from
-//  coins       uint64          amount of coins to spend
-//  dest        ciper.Address   recipient address
-// Return:
-//  balance     *wallet.BalancePair         latest balance
-//  transaction *visor.ReadableTransaction  readable transaction
-//  error       error                       error in spending the coins
-func Spend(gateway Gatewayer, walletID string, coins uint64, dest cipher.Address) (balance *wallet.BalancePair, transaction *visor.ReadableTransaction, spendError error) {
-	tx, err := gateway.Spend(walletID, coins, dest)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	txStr, err := visor.TransactionToJSON(*tx)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	logger.Info("Spend: \ntx= \n %s \n", txStr)
-
-	// Get the new wallet balance
-	b, err := gateway.GetWalletBalance(walletID)
-	if err != nil {
-		logger.Error("Get wallet balance failed: %v", err)
-		return nil, nil, err
-	}
-
-	rbTx, err := visor.NewReadableTransaction(&visor.Transaction{Txn: *tx})
-	if err != nil {
-		logger.Error("Creation of new readable transaction failed: %s", err)
-		return nil, nil, err
-	}
-
-	return &b, rbTx, err
 }
 
 // Returns the wallet's balance, both confirmed and predicted.  The predicted

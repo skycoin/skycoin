@@ -87,7 +87,21 @@ make ARGS="--launch-browser=false" run
 
 ### Docker image
 
-A Dockerfile is available at https://github.com/skycoin/docker-img
+```
+$ docker volume create skycoin-data
+$ docker volume create skycoin-wallet
+$ docker run -ti --rm \
+    -v skycoin-data:/data \
+    -v skycoin-wallet:/wallet \
+    -p 6000:6000 \
+    -p 6420:6420 \
+    -p 6430:6430 \
+    skycoin/skycoin
+```
+
+Access the dashboard: [http://localhost:6420](http://localhost:6420).
+
+Access the API: [http://localhost:6420/version](http://localhost:6420/version).
 
 ## API Documentation
 

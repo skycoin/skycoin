@@ -76,6 +76,11 @@ func (gw *FakeGateway) NewAddresses(wltID string, n uint64) ([]cipher.Address, e
 	return args.Get(0).([]cipher.Address), args.Error(1)
 }
 
+func (gw *FakeGateway) GetWalletDir() string {
+	args := gw.Called()
+	return args.String(0)
+}
+
 func TestWalletSpendHandler(t *testing.T) {
 	type httpBody struct {
 		WalletID string
@@ -1397,32 +1402,20 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 	}
 }
 
-
-func (gw *FakeGateway) GetWalletDir() string {
-	args := gw.Called()
-	return args.String(0)
-}
-
-
-
 func TestGetWalletFolderHandler(t *testing.T) {
-	type httpBody struct{}
-
 	tt := []struct {
 		name                 string
 		method               string
 		url                  string
-		body                 *httpBody
 		status               int
 		err                  string
 		getWalletDirResponse string
 		httpResponse         WalletFolder
 	}{
 		{
-			"200 - OK",
+			"200",
 			http.MethodGet,
 			"/wallets/folderName",
-			&httpBody{},
 			http.StatusOK,
 			"",
 			"/wallet/folder/address",
@@ -1431,22 +1424,10 @@ func TestGetWalletFolderHandler(t *testing.T) {
 			},
 		},
 		{
-			"200 - OK. trailed backslash",
-			http.MethodGet,
-			"/wallets/folderName/",
-			&httpBody{},
-			http.StatusOK,
-			"",
-			"/wallet/folder/address",
-			WalletFolder{
-				Address: "/wallet/folder/address",
-			},
-		},
-		{
-			"200 -OK. POST",
+			"200 - POST",
 			http.MethodPost,
 			"/wallets/folderName",
-			&httpBody{}, http.StatusOK,
+			http.StatusOK,
 			"",
 			"/wallet/folder/address",
 			WalletFolder{
@@ -1460,19 +1441,12 @@ func TestGetWalletFolderHandler(t *testing.T) {
 			t: t,
 		}
 		gateway.On("GetWalletDir").Return(tc.getWalletDirResponse)
-		params, _ := query.Values(tc.body)
-		paramsEncoded := params.Encode()
-		var url = tc.url
-		if paramsEncoded != "" {
-			url = url + "?" + paramsEncoded
-		}
-		req, err := http.NewRequest(tc.method, url, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
+
+		req, err := http.NewRequest(tc.method, tc.url, nil)
+		require.NoError(t, err)
 
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(GetWalletFolder(gateway))
+		handler := http.HandlerFunc(getWalletFolder(gateway))
 
 		handler.ServeHTTP(rr, req)
 
@@ -1485,9 +1459,8 @@ func TestGetWalletFolderHandler(t *testing.T) {
 				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 		} else {
 			var msg WalletFolder
-			if err := json.Unmarshal(rr.Body.Bytes(), &msg); err != nil {
-				t.Fatal("Failed unmarshal responseBidy `%s`: %v", rr.Body.String(), err)
-			}
+			json.Unmarshal(rr.Body.Bytes(), &msg)
+			require.NoError(t, err)
 			require.Equal(t, tc.httpResponse, msg, tc.name)
 		}
 	}

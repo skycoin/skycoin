@@ -9,3 +9,18 @@
     <div class="coins-column">{{ address.coins ? address.coins : 0 }}</div>
   </div>
 </ng-container>
+<div class="-actions">
+  <div class="-button" (click)="newAddress()">
+    <img src="../../../../../assets/img/plus-grey.png">
+    <span>New Address</span>
+  </div>
+  <div class="-button" (click)="newAddress()">
+    <img src="../../../../../assets/img/minus-grey.png">
+    <span>Remove Empty Addresses</span>
+  </div>
+  <div class="flex-fill"></div>
+  <div class="-button" (click)="newAddress()">
+    <img src="../../../../../assets/img/edit-grey.png">
+    <span>Edit Wallet</span>
+  </div>
+</div>

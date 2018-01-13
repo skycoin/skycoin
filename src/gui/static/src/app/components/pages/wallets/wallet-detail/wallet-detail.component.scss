@@ -52,3 +52,31 @@
     width: $row-detail-size;
   }
 }
+
+.-actions {
+  border-bottom: 1px solid #eff0f0;
+  display: flex;
+  width: 100%;
+
+  .-button {
+    cursor: pointer;
+    padding: 0 20px;
+
+    img {
+      display: inline-block;
+      float: left;
+      height: 60px;
+      padding: 14px 0;
+      width: 32px;
+    }
+
+    span {
+      color: #CECFD0;
+      display: inline-block;
+      font-size: 12px;
+      height: 60px;
+      line-height: 60px;
+      margin: 0 5px;
+    }
+  }
+}

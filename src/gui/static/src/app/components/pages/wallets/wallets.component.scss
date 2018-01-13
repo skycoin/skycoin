@@ -31,7 +31,7 @@
   display: flex;
   font-size: $font-size-standard;
   line-height: $row-height;
-  min-height: $row-height;
+  height: $row-height;
   padding-left: 20px;
 
   &:first-child {
@@ -55,6 +55,16 @@
 
   .coins {
     color: black;
+  }
+
+  .-encryption img {
+    border-radius: 50%;
+    background-color: #f7f7f7;
+    display: inline-block;
+    height: 38px;
+    margin: 11px 0;
+    padding: 3px;
+    width: 38px;
   }
 
   > img {

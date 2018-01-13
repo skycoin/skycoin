@@ -7,20 +7,54 @@
 @import '~@swimlane/ngx-datatable/release/themes/material.css';
 
 @font-face {
-  font-family: 'Montreal';
-  src: url('assets/fonts/MontrealRegular.ttf') format('truetype');
-  font-weight: 400;
+  font-family: 'Skycoin';
   font-style: normal;
+  font-weight: 700;
+  src: url('assets/fonts/skycoin/Skycoin-Light.woff2') format('woff2'),
+  url('assets/fonts/skycoin/Skycoin-Light.woff') format('woff');
 }
 
 @font-face {
-  font-family: 'Montreal';
-  src: url('assets/fonts/MontrealBold.ttf') format('truetype');
+  font-family: 'Skycoin';
+  font-style: italic;
   font-weight: 700;
-  font-style: normal;
+  src: url('assets/fonts/skycoin/Skycoin-LightItalic.woff2') format('woff2'),
+  url('assets/fonts/skycoin/Skycoin-LightItalic.woff') format('woff');
 }
 
-$mat-font-family: Montreal, sans-serif;
+@font-face {
+  font-family: 'Skycoin';
+  font-style: normal;
+  font-weight: 700;
+  src: url('assets/fonts/skycoin/Skycoin-Regular.woff2') format('woff2'),
+  url('assets/fonts/skycoin/Skycoin-Regular.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Skycoin';
+  font-style: italic;
+  font-weight: 700;
+  src: url('assets/fonts/skycoin/Skycoin-RegularItalic.woff2') format('woff2'),
+  url('assets/fonts/skycoin/Skycoin-RegularItalic.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Skycoin';
+  font-style: normal;
+  font-weight: 700;
+  src: url('assets/fonts/skycoin/Skycoin-Bold.woff2') format('woff2'),
+  url('assets/fonts/skycoin/Skycoin-Bold.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Skycoin';
+  font-style: italic;
+  font-weight: 700;
+  src: url('assets/fonts/skycoin/Skycoin-BoldItalic.woff2') format('woff2'),
+  url('assets/fonts/skycoin/Skycoin-BoldItalic.woff') format('woff');
+}
+
+$mat-font-family: Skycoin, sans-serif;
 $white: #FBFBFB;
 
 body, div, h1, h2, h3, h4, h5, h6, p, span, a, button, option, select,

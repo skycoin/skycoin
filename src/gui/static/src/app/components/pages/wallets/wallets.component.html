@@ -11,7 +11,10 @@
       <ng-container *ngFor="let wallet of walletService.all() | async">
         <div class="-wallet" (click)="toggleWallet(wallet)">
           <div class="-width-250 -label">{{ wallet.label }}</div>
-          <div class="flex-fill -encryption">ENCRYPTION</div>
+          <div class="flex-fill -encryption">
+            <img src="../../../../assets/img/lock-gold.png" *ngIf="!wallet.seed">
+            <img src="../../../../assets/img/unlock-grey.png" *ngIf="wallet.seed">
+          </div>
           <div class="-width-150 -hours">{{ wallet.hours ? wallet.hours : 0 }}</div>
           <div class="-width-150 -coins">{{ wallet.coins ? wallet.coins : 0 }}</div>
           <img src="../../../../assets/img/chevron-right-grey.png"

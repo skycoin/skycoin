@@ -10,7 +10,6 @@ import { Wallet } from '../../../../app.datatypes';
   styleUrls: ['./change-name.component.css']
 })
 export class ChangeNameComponent implements OnInit {
-
   form: FormGroup;
 
   constructor(
@@ -22,6 +21,10 @@ export class ChangeNameComponent implements OnInit {
 
   ngOnInit() {
     this.initForm();
+  }
+
+  closePopup() {
+    this.dialogRef.close();
   }
 
   rename() {

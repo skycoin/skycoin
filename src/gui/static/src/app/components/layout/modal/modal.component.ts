@@ -1,16 +1,16 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input } from '@angular/core';
+import { MdDialogRef } from '@angular/material';
 
 @Component({
   selector: 'app-modal',
   templateUrl: './modal.component.html',
   styleUrls: ['./modal.component.scss']
 })
-export class ModalComponent implements OnInit {
+export class ModalComponent {
+  @Input() dialog: MdDialogRef<any>;
   @Input() title: string;
 
-  constructor() { }
-
-  ngOnInit() {
+  closePopup() {
+    this.dialog.close();
   }
-
 }

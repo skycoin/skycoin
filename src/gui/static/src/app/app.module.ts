@@ -17,7 +17,6 @@ import { SendSkycoinComponent } from './components/pages/send-skycoin/send-skyco
 import { NgxDatatableModule } from '@swimlane/ngx-datatable';
 import { DateFromNowPipe } from './pipes/date-from-now.pipe';
 import { RouterModule } from '@angular/router';
-import { BackButtonComponent } from './components/layout/back-button/back-button.component';
 import { ExplorerComponent } from './components/pages/explorer/explorer.component';
 import { BlockchainService } from './services/blockchain.service';
 import { DateTimePipe } from './pipes/date-time.pipe';
@@ -38,7 +37,6 @@ import { TellerStatusPipe } from './pipes/teller-status.pipe';
 import { HeaderComponent } from './components/layout/header/header.component';
 import { TopBarComponent } from './components/layout/header/top-bar/top-bar.component';
 import { FooterComponent } from './components/layout/footer/footer.component';
-import { WalletShowComponent } from './components/pages/wallet-show/wallet-show.component';
 import { PriceService } from './price.service';
 import { LoadWalletComponent } from './components/pages/wallets/load-wallet/load-wallet.component';
 import { TransactionListComponent } from './components/pages/transaction-list/transaction-list.component';
@@ -56,10 +54,6 @@ const ROUTES = [
   {
     path: 'wallets',
     component: WalletsComponent,
-  },
-  {
-    path: 'wallet/:filename',
-    component: WalletShowComponent,
   },
   {
     path: 'transactions',
@@ -100,7 +94,6 @@ const ROUTES = [
   declarations: [
     AddDepositAddressComponent,
     AppComponent,
-    BackButtonComponent,
     BackupComponent,
     BlockchainComponent,
     BuyComponent,
@@ -123,7 +116,6 @@ const ROUTES = [
     TransactionDetailComponent,
     TransactionListComponent,
     TransactionsAmountPipe,
-    WalletShowComponent,
     WalletsComponent,
     NavBarComponent,
     WalletDetailComponent,

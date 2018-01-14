@@ -7,13 +7,14 @@ import (
 	"strconv"
 
 	"github.com/skycoin/skycoin/src/cipher"
-
+	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
-	"github.com/skycoin/skycoin/src/util/fee"
-	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
+
+	"github.com/skycoin/skycoin/src/util/fee"
+	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
 // Gatewayer interface for Gateway methods
@@ -21,12 +22,11 @@ type Gatewayer interface {
 	Spend(wltID string, coins uint64, dest cipher.Address) (*coin.Transaction, error)
 	GetWalletBalance(wltID string) (wallet.BalancePair, error)
 	GetWallet(wltID string) (wallet.Wallet, error)
+	UpdateWalletLabel(wltID, label string) error
+	GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTxn, error)
 	CreateWallet(wltName string, options wallet.Options) (wallet.Wallet, error)
 	ScanAheadWalletAddresses(wltName string, scanN uint64) (wallet.Wallet, error)
 	NewAddresses(wltID string, n uint64) ([]cipher.Address, error)
-	GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTxn, error)
-	UpdateWalletLabel(wltID, label string) error
-	ReloadWallets() error
 	GetWalletDir() string
 	NewWalletSeed() (string, error)
 }
@@ -56,6 +56,12 @@ func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 		b, err := gateway.GetWalletBalance(wltID)
 		if err != nil {
 			logger.Error("Get wallet balance failed: %v", err)
+			switch err {
+			case wallet.ErrWalletNotExist:
+				wh.Error404(w)
+			default:
+				wh.Error500Msg(w, err.Error())
+			}
 			return
 		}
 		wh.SendOr404(w, b)
@@ -278,6 +284,10 @@ func walletNewAddresses(gateway Gatewayer) http.HandlerFunc {
 // Update wallet label
 func walletUpdateHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			wh.Error405(w)
+			return
+		}
 		// Update wallet
 		wltID := r.FormValue("id")
 		if wltID == "" {
@@ -292,7 +302,14 @@ func walletUpdateHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if err := gateway.UpdateWalletLabel(wltID, label); err != nil {
-			wh.Error400(w, fmt.Sprintf("update wallet label failed: %v", err))
+			logger.Errorf("update wallet label failed: %v", err)
+
+			switch err {
+			case wallet.ErrWalletNotExist:
+				wh.Error404(w)
+			default:
+				wh.Error500Msg(w, err.Error())
+			}
 			return
 		}
 
@@ -340,7 +357,13 @@ func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 
 		txns, err := gateway.GetWalletUnconfirmedTxns(wltID)
 		if err != nil {
-			wh.Error400(w, fmt.Sprintf("get wallet unconfirmed transactions failed: %v", err))
+			logger.Error("get wallet unconfirmed transactions failed: %v", err)
+			switch err {
+			case wallet.ErrWalletNotExist:
+				wh.Error404(w)
+			default:
+				wh.Error500Msg(w, err.Error())
+			}
 			return
 		}
 
@@ -357,7 +380,7 @@ func walletsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 }
 
 // Loads/unloads wallets from the wallet directory
-func walletsReloadHandler(gateway Gatewayer) http.HandlerFunc {
+func walletsReloadHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := gateway.ReloadWallets(); err != nil {
 			logger.Error("reload wallet failed: %v", err)

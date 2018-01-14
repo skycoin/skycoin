@@ -660,6 +660,55 @@ func (gw *Gateway) GetBuildInfo() visor.BuildInfo {
 	return bi
 }
 
+// GetRichlist returns rich list as desc order.
+func (gw *Gateway) GetRichlist(includeDistribution bool) (visor.Richlist, error) {
+	rbOuts, err := gw.GetUnspentOutputs()
+	if err != nil {
+		return nil, err
+	}
+
+	allAccounts, err := rbOuts.AggregateUnspentOutputs()
+	if err != nil {
+		return nil, err
+	}
+
+	lockedAddrs := visor.GetLockedDistributionAddresses()
+	addrsMap := make(map[string]struct{}, len(lockedAddrs))
+	for _, a := range lockedAddrs {
+		addrsMap[a] = struct{}{}
+	}
+
+	richlist, err := visor.NewRichlist(allAccounts, addrsMap)
+	if err != nil {
+		return nil, err
+	}
+
+	if !includeDistribution {
+		unlockedAddrs := visor.GetUnlockedDistributionAddresses()
+		for _, a := range unlockedAddrs {
+			addrsMap[a] = struct{}{}
+		}
+		richlist = richlist.FilterAddresses(addrsMap)
+	}
+
+	return richlist, nil
+}
+
+// GetAddressCount returns count number of unique address with uxouts > 0.
+func (gw *Gateway) GetAddressCount() (uint64, error) {
+	rbOuts, err := gw.GetUnspentOutputs()
+	if err != nil {
+		return 0, err
+	}
+
+	allAccounts, err := rbOuts.AggregateUnspentOutputs()
+	if err != nil {
+		return 0, err
+	}
+
+	return uint64(len(allAccounts)), nil
+}
+
 // NewWalletSeed returns generated mnemomic
 func (gw *Gateway) NewWalletSeed() (string, error) {
 	var mnemonic string

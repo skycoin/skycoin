@@ -217,6 +217,24 @@ func (os ReadableOutputSet) ExpectedOutputs() ReadableOutputs {
 	return append(os.SpendableOutputs(), os.IncomingOutputs...)
 }
 
+// AggregateUnspentOutputs aggregate unspent output
+func (os ReadableOutputSet) AggregateUnspentOutputs() (map[string]uint64, error) {
+	allAccounts := map[string]uint64{}
+	for _, out := range os.HeadOutputs {
+		amt, err := droplet.FromString(out.Coins)
+		if err != nil {
+			return nil, err
+		}
+		if _, ok := allAccounts[out.Address]; ok {
+			allAccounts[out.Address] += amt
+		} else {
+			allAccounts[out.Address] = amt
+		}
+	}
+
+	return allAccounts, nil
+}
+
 // NewReadableOutput creates readable output
 func NewReadableOutput(headTime uint64, t coin.UxOut) (ReadableOutput, error) {
 	coinStr, err := droplet.ToString(t.Body.Coins)

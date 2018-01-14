@@ -1472,7 +1472,6 @@ func TestGetWalletFolderHandler(t *testing.T) {
 	}
 }
 
-
 func TestNewWalletSeed(t *testing.T) {
 	type httpResponseBody struct {
 		Seed string `json:"seed"`
@@ -1492,18 +1491,6 @@ func TestNewWalletSeed(t *testing.T) {
 			"200 - OK",
 			http.MethodGet,
 			"/wallets/newSeed",
-			http.StatusOK,
-			"",
-			"newWalletSeedResponse",
-			nil,
-			httpResponseBody{
-				Seed: "newWalletSeedResponse",
-			},
-		},
-		{
-			"200 - trailing backspace",
-			http.MethodGet,
-			"/wallets/newSeed/",
 			http.StatusOK,
 			"",
 			"newWalletSeedResponse",
@@ -1539,15 +1526,12 @@ func TestNewWalletSeed(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-
 		gateway := &FakeGateway{
 			t: t,
 		}
 		gateway.On("NewWalletSeed").Return(tc.newWalletSeedResponse, tc.newWalletSeedError)
 		req, err := http.NewRequest(tc.method, tc.url, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 
 		rr := httptest.NewRecorder()
 		handler := http.HandlerFunc(newWalletSeed(gateway))
@@ -1563,9 +1547,8 @@ func TestNewWalletSeed(t *testing.T) {
 				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 		} else {
 			var msg httpResponseBody
-			if err := json.Unmarshal(rr.Body.Bytes(), &msg); err != nil {
-				t.Fatal("Failed unmarshal responseBody `%s`: %v", rr.Body.String(), err)
-			}
+			err := json.Unmarshal(rr.Body.Bytes(), &msg)
+			require.NoError(t, err)
 			require.Equal(t, tc.httpResponse, msg, tc.name)
 		}
 	}

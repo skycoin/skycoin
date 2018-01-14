@@ -265,7 +265,7 @@ func NewVisor(c Config, db *bolt.DB) (*Visor, error) {
 		Config:      c,
 		db:          db,
 		Blockchain:  bc,
-		Unconfirmed: newUnconfirmedTxnPool(db),
+		Unconfirmed: NewUnconfirmedTxnPool(db),
 		history:     history,
 		bcParser:    bp,
 		wallets:     wltServ,
@@ -874,7 +874,7 @@ func (vs *Visor) traverseTxns(flts ...TxFilter) ([]Transaction, error) {
 			Time:   bk.Time(),
 		}
 
-		// check filters
+		// Checks filters
 		for _, f := range flts {
 			if !f.Match(&txn) {
 				return nil
@@ -893,16 +893,31 @@ func (vs *Visor) traverseTxns(flts ...TxFilter) ([]Transaction, error) {
 
 	// Gets all unconfirmed transactions
 	unconfirmedTxns := vs.Unconfirmed.GetTxns(func(tx UnconfirmedTxn) bool { return true })
-
 	for _, ux := range unconfirmedTxns {
-		txns = append(txns, Transaction{
+		tx := Transaction{
 			Txn:    ux.Txn,
 			Status: NewUnconfirmedTransactionStatus(),
 			Time:   uint64(nanoToTime(ux.Received).Unix()),
-		})
-	}
+		}
 
+		// Checks filters
+		for _, f := range flts {
+			if !f.Match(&tx) {
+				continue
+			}
+			txns = append(txns, tx)
+		}
+	}
 	return txns, nil
+}
+
+func txMatchFilters(tx *Transaction, flts ...TxFilter) bool {
+	for _, f := range flts {
+		if !f.Match(tx) {
+			return false
+		}
+	}
+	return true
 }
 
 // Sort transactions by block seq, if equal then compare hash

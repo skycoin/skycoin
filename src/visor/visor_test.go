@@ -17,7 +17,9 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/fee"
+	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
+	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
 const (
@@ -385,6 +387,1266 @@ func TestVisorCalculatePrecision(t *testing.T) {
 	})
 }
 
-func TestGetTransctionsOfAddrs(t *testing.T) {
+func makeTestData(t *testing.T, n int) ([]historydb.Transaction,
+	[]coin.SignedBlock, []UnconfirmedTxn, uint64) {
+	var txs []historydb.Transaction
+	var blocks []coin.SignedBlock
+	var uncfmTxs []UnconfirmedTxn
+	for i := uint64(0); i < uint64(n); i++ {
+		tm := utc.UnixNow() + int64(i)*int64(time.Second)
+		txs = append(txs, historydb.Transaction{
+			BlockSeq: i,
+			Tx: coin.Transaction{
+				InnerHash: testutil.RandSHA256(t),
+			},
+		})
 
+		blocks = append(blocks, coin.SignedBlock{
+			Block: coin.Block{
+				Head: coin.BlockHeader{
+					BkSeq: i,
+					Time:  uint64(tm),
+				},
+			},
+		})
+
+		uncfmTxs = append(uncfmTxs, UnconfirmedTxn{
+			Txn: coin.Transaction{
+				InnerHash: testutil.RandSHA256(t),
+			},
+			Received: utc.UnixNow() + int64(n)*int64(time.Second),
+		})
+	}
+
+	return txs, blocks, uncfmTxs, uint64(n)
+}
+
+func makeUncfmUxs(txs []UnconfirmedTxn) coin.UxArray {
+	var uxs coin.UxArray
+	for i := range txs {
+		uxs = append(uxs, coin.UxOut{
+			Head: coin.UxHead{
+				Time: uint64(txs[i].Received),
+			},
+			Body: coin.UxBody{
+				SrcTransaction: txs[i].Hash(),
+			},
+		})
+	}
+	return uxs
+}
+
+type txsAndUncfmTxs struct {
+	Txs      []historydb.Transaction
+	UncfmTxs []UnconfirmedTxn
+}
+type expectTxResult struct {
+	txs      []Transaction
+	uncfmTxs []Transaction
+	err      error
+}
+
+func TestGetTransctions(t *testing.T) {
+	// Generates test data
+	txs, blocks, uncfmTxs, headSeq := makeTestData(t, 10)
+	// Generates []Transaction
+	var ltxs []Transaction
+	for i := range txs {
+		height := headSeq - txs[i].BlockSeq + 1
+		ltxs = append(ltxs, Transaction{
+			Txn:    txs[i].Tx,
+			Status: NewConfirmedTransactionStatus(height, txs[i].BlockSeq),
+			Time:   blocks[i].Time(),
+		})
+	}
+
+	// Generate unconfirmed []Transaction
+	var luncfmTxs []Transaction
+	for i, tx := range uncfmTxs {
+		luncfmTxs = append(luncfmTxs, Transaction{
+			Txn:    uncfmTxs[i].Txn,
+			Status: NewUnconfirmedTransactionStatus(),
+			Time:   uint64(nanoToTime(tx.Received).Unix()),
+		})
+	}
+
+	// Generates addresses
+	var addrs []cipher.Address
+	for i := 0; i < 10; i++ {
+		addrs = append(addrs, testutil.MakeAddress())
+	}
+
+	tt := []struct {
+		name      string
+		addrTxns  map[cipher.Address]txsAndUncfmTxs
+		blocks    []coin.SignedBlock
+		bcHeadSeq uint64
+		filters   []TxFilter
+		expect    expectTxResult
+	}{
+		{
+			"addrFilter=1 addr=1 txs=0 unconfirmedTxs=0",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      nil,
+					UncfmTxs: nil,
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:1]),
+			},
+			expectTxResult{
+				txs:      nil,
+				uncfmTxs: nil,
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 addr=1 txs=0 unconfirmedTxs=1",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      nil,
+					UncfmTxs: uncfmTxs[:1],
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:1]),
+			},
+			expectTxResult{
+				txs:      nil,
+				uncfmTxs: luncfmTxs[:1],
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 addr=1 txs=0 unconfirmedTxs=2",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      nil,
+					UncfmTxs: uncfmTxs[:2],
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:1]),
+			},
+			expectTxResult{
+				txs:      nil,
+				uncfmTxs: luncfmTxs[:2],
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 addr=1 txs=1 unconfirmedTxs=0",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:1],
+					UncfmTxs: nil,
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:1]),
+			},
+			expectTxResult{
+				txs:      ltxs[:1],
+				uncfmTxs: nil,
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 addr=1 txs=1 unconfirmedTxs=1",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:1],
+					UncfmTxs: uncfmTxs[:1],
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:1]),
+			},
+			expectTxResult{
+				txs:      ltxs[:1],
+				uncfmTxs: luncfmTxs[:1],
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 addr=1 txs=2 unconfirmedTxs=0",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:2],
+					UncfmTxs: nil,
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:1]),
+			},
+			expectTxResult{
+				txs:      ltxs[:2],
+				uncfmTxs: nil,
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 addr=1 txs=2 unconfirmedTxs=1",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:2],
+					UncfmTxs: uncfmTxs[:1],
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:1]),
+			},
+			expectTxResult{
+				txs:      ltxs[:2],
+				uncfmTxs: luncfmTxs[:1],
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 addr=1 txs=2 unconfirmedTxs=2",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:2],
+					UncfmTxs: uncfmTxs[:2],
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:1]),
+			},
+			expectTxResult{
+				txs:      ltxs[:2],
+				uncfmTxs: luncfmTxs[:2],
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 addr=2 txs=0 unconfirmedTxs=0",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      nil,
+					UncfmTxs: nil,
+				},
+				addrs[1]: txsAndUncfmTxs{
+					Txs:      nil,
+					UncfmTxs: nil,
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:2]),
+			},
+			expectTxResult{
+				txs:      nil,
+				uncfmTxs: nil,
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 addr=2 txs=0 unconfirmedTxs=1",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      nil,
+					UncfmTxs: uncfmTxs[:1],
+				},
+				addrs[1]: txsAndUncfmTxs{
+					Txs:      nil,
+					UncfmTxs: nil,
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:2]),
+			},
+			expectTxResult{
+				txs:      nil,
+				uncfmTxs: luncfmTxs[:1],
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 addr=2 txs=0 unconfirmedTxs=2",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      nil,
+					UncfmTxs: uncfmTxs[:1],
+				},
+				addrs[1]: txsAndUncfmTxs{
+					Txs:      nil,
+					UncfmTxs: uncfmTxs[:2],
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:2]),
+			},
+			expectTxResult{
+				txs:      nil,
+				uncfmTxs: luncfmTxs[:2],
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 addr=2 txs=1 unconfirmedTxs=0",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:1],
+					UncfmTxs: nil,
+				},
+				addrs[1]: txsAndUncfmTxs{
+					Txs:      nil,
+					UncfmTxs: nil,
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:2]),
+			},
+			expectTxResult{
+				txs:      ltxs[:1],
+				uncfmTxs: nil,
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 addr=2 txs=1 unconfirmedTxs=1",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:1],
+					UncfmTxs: uncfmTxs[:1],
+				},
+				addrs[1]: txsAndUncfmTxs{
+					Txs:      nil,
+					UncfmTxs: nil,
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:2]),
+			},
+			expectTxResult{
+				txs:      ltxs[:1],
+				uncfmTxs: luncfmTxs[:1],
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 addr=2 txs=1 unconfirmedTxs=2",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:1],
+					UncfmTxs: uncfmTxs[:1],
+				},
+				addrs[1]: txsAndUncfmTxs{
+					Txs:      nil,
+					UncfmTxs: uncfmTxs[:2],
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:2]),
+			},
+			expectTxResult{
+				txs:      ltxs[:1],
+				uncfmTxs: luncfmTxs[:2],
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 addr=2 txs=2 unconfirmedTxs=0",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:2],
+					UncfmTxs: nil,
+				},
+				addrs[1]: txsAndUncfmTxs{
+					Txs:      nil,
+					UncfmTxs: nil,
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:2]),
+			},
+			expectTxResult{
+				txs:      ltxs[:2],
+				uncfmTxs: nil,
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 addr=2 txs=2 unconfirmedTxs=1",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:2],
+					UncfmTxs: uncfmTxs[:1],
+				},
+				addrs[1]: txsAndUncfmTxs{
+					Txs:      nil,
+					UncfmTxs: nil,
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:2]),
+			},
+			expectTxResult{
+				txs:      ltxs[:2],
+				uncfmTxs: luncfmTxs[:1],
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 addr=2 txs=2 unconfirmedTxs=2",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:2],
+					UncfmTxs: uncfmTxs[:2],
+				},
+				addrs[1]: txsAndUncfmTxs{
+					Txs:      nil,
+					UncfmTxs: nil,
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:2]),
+			},
+			expectTxResult{
+				txs:      ltxs[:2],
+				uncfmTxs: luncfmTxs[:2],
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 addr=2 txs=2 unconfirmedTxs=3",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:2],
+					UncfmTxs: uncfmTxs[:2],
+				},
+				addrs[1]: txsAndUncfmTxs{
+					Txs:      nil,
+					UncfmTxs: uncfmTxs[2:3],
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:2]),
+			},
+			expectTxResult{
+				txs:      ltxs[:2],
+				uncfmTxs: luncfmTxs[:3],
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 addr=2 txs=3 unconfirmedTxs=0",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:2],
+					UncfmTxs: nil,
+				},
+				addrs[1]: txsAndUncfmTxs{
+					Txs:      txs[2:3],
+					UncfmTxs: nil,
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:2]),
+			},
+			expectTxResult{
+				txs:      ltxs[:3],
+				uncfmTxs: nil,
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 addr=2 txs=3 unconfirmedTxs=1",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:2],
+					UncfmTxs: uncfmTxs[:1],
+				},
+				addrs[1]: txsAndUncfmTxs{
+					Txs:      txs[2:3],
+					UncfmTxs: nil,
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:2]),
+			},
+			expectTxResult{
+				txs:      ltxs[:3],
+				uncfmTxs: luncfmTxs[:1],
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 addr=2 txs=3 unconfirmedTxs=2",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:2],
+					UncfmTxs: uncfmTxs[:2],
+				},
+				addrs[1]: txsAndUncfmTxs{
+					Txs:      txs[2:3],
+					UncfmTxs: nil,
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:2]),
+			},
+			expectTxResult{
+				txs:      ltxs[:3],
+				uncfmTxs: luncfmTxs[:2],
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 addr=2 txs=3 unconfirmedTxs=3",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:2],
+					UncfmTxs: uncfmTxs[:2],
+				},
+				addrs[1]: txsAndUncfmTxs{
+					Txs:      txs[2:3],
+					UncfmTxs: uncfmTxs[2:3],
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:2]),
+			},
+			expectTxResult{
+				txs:      ltxs[:3],
+				uncfmTxs: luncfmTxs[:3],
+				err:      nil,
+			},
+		},
+		{
+			"confirmedTxFilter=1 confirmed=false txs=0 unconfirmedTxs=0",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      nil,
+					UncfmTxs: nil,
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				ConfirmedTxFilter(false),
+			},
+			expectTxResult{
+				txs:      nil,
+				uncfmTxs: nil,
+				err:      nil,
+			},
+		},
+		{
+			"confirmedTxFilter=1 confirmed=false confirmedTxs=1 unconfirmedTxs=0",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:1],
+					UncfmTxs: nil,
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				ConfirmedTxFilter(false),
+			},
+			expectTxResult{
+				txs:      nil,
+				uncfmTxs: nil,
+				err:      nil,
+			},
+		},
+		{
+			"confirmedTxFilter=1 confirmed=false confirmedTxs=1 unconfirmedTxs=1",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:1],
+					UncfmTxs: uncfmTxs[:1],
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				ConfirmedTxFilter(false),
+			},
+			expectTxResult{
+				txs:      nil,
+				uncfmTxs: luncfmTxs[:1],
+				err:      nil,
+			},
+		},
+		{
+			"confirmedTxFilter=1 confirmed=false confirmedTxs=2 unconfirmedTxs=1",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:2],
+					UncfmTxs: uncfmTxs[:1],
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				ConfirmedTxFilter(false),
+			},
+			expectTxResult{
+				txs:      nil,
+				uncfmTxs: luncfmTxs[:1],
+				err:      nil,
+			},
+		},
+		{
+			"confirmedTxFilter=1 confirmed=false confirmedTxs=2 unconfirmedTxs=2",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:2],
+					UncfmTxs: uncfmTxs[:2],
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				ConfirmedTxFilter(false),
+			},
+			expectTxResult{
+				txs:      nil,
+				uncfmTxs: luncfmTxs[:2],
+				err:      nil,
+			},
+		},
+		{
+			"confirmedTxFilter=1 confirmed=true confirmedTxs=0 unconfirmedTxs=0",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      nil,
+					UncfmTxs: nil,
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				ConfirmedTxFilter(true),
+			},
+			expectTxResult{
+				txs:      nil,
+				uncfmTxs: nil,
+				err:      nil,
+			},
+		},
+		{
+			"confirmedTxFilter=1 confirmed=true confirmedTxs=1 unconfirmedTxs=0",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:1],
+					UncfmTxs: nil,
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				ConfirmedTxFilter(true),
+			},
+			expectTxResult{
+				txs:      ltxs[:1],
+				uncfmTxs: nil,
+				err:      nil,
+			},
+		},
+		{
+			"confirmedTxFilter=1 confirmed=true confirmedTxs=1 unconfirmedTxs=1",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:1],
+					UncfmTxs: uncfmTxs[:1],
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				ConfirmedTxFilter(true),
+			},
+			expectTxResult{
+				txs:      ltxs[:1],
+				uncfmTxs: nil,
+				err:      nil,
+			},
+		},
+		{
+			"confirmedTxFilter=1 confirmed=true confirmedTxs=2 unconfirmedTxs=1",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:2],
+					UncfmTxs: uncfmTxs[:2],
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				ConfirmedTxFilter(true),
+			},
+			expectTxResult{
+				txs:      ltxs[:2],
+				uncfmTxs: nil,
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 confirmedTxFilter=1 confirmed=false addr=1 txs=0 unconfirmedTxs=0",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:1]),
+				ConfirmedTxFilter(false),
+			},
+			expectTxResult{
+				txs:      nil,
+				uncfmTxs: nil,
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 confirmed=false addr=1 txs=1 unconfirmedTxs=0",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:1],
+					UncfmTxs: nil,
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:1]),
+				ConfirmedTxFilter(false),
+			},
+			expectTxResult{
+				txs:      nil,
+				uncfmTxs: nil,
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 confirmed=false addr=1 txs=1 unconfirmedTxs=1",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:1],
+					UncfmTxs: uncfmTxs[:1],
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:1]),
+				ConfirmedTxFilter(false),
+			},
+			expectTxResult{
+				txs:      nil,
+				uncfmTxs: luncfmTxs[:1],
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 confirmed=false addr=1 txs=1 unconfirmedTxs=2",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:1],
+					UncfmTxs: uncfmTxs[:2],
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:1]),
+				ConfirmedTxFilter(false),
+			},
+			expectTxResult{
+				txs:      nil,
+				uncfmTxs: luncfmTxs[:2],
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 confirmed=false addr=2 txs=1 unconfirmedTxs=0",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:1],
+					UncfmTxs: nil,
+				},
+				addrs[1]: txsAndUncfmTxs{
+					Txs:      nil,
+					UncfmTxs: nil,
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:2]),
+				ConfirmedTxFilter(false),
+			},
+			expectTxResult{
+				txs:      nil,
+				uncfmTxs: nil,
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 confirmed=false addr=2 txs=1 unconfirmedTxs=1",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:1],
+					UncfmTxs: uncfmTxs[:1],
+				},
+				addrs[1]: txsAndUncfmTxs{
+					Txs:      nil,
+					UncfmTxs: nil,
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:2]),
+				ConfirmedTxFilter(false),
+			},
+			expectTxResult{
+				txs:      nil,
+				uncfmTxs: luncfmTxs[:1],
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 confirmed=false addr=2 txs=2 unconfirmedTxs=1",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:2],
+					UncfmTxs: uncfmTxs[:1],
+				},
+				addrs[1]: txsAndUncfmTxs{
+					Txs:      nil,
+					UncfmTxs: nil,
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:2]),
+				ConfirmedTxFilter(false),
+			},
+			expectTxResult{
+				txs:      nil,
+				uncfmTxs: luncfmTxs[:1],
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 confirmed=false addr=2 txs=2 unconfirmedTxs=2",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:2],
+					UncfmTxs: uncfmTxs[:1],
+				},
+				addrs[1]: txsAndUncfmTxs{
+					Txs:      nil,
+					UncfmTxs: uncfmTxs[1:2],
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:2]),
+				ConfirmedTxFilter(false),
+			},
+			expectTxResult{
+				txs:      nil,
+				uncfmTxs: luncfmTxs[:2],
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 confirmed=false addr=2 txs=2 unconfirmedTxs=3",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:2],
+					UncfmTxs: uncfmTxs[:2],
+				},
+				addrs[1]: txsAndUncfmTxs{
+					Txs:      nil,
+					UncfmTxs: uncfmTxs[2:3],
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:2]),
+				ConfirmedTxFilter(false),
+			},
+			expectTxResult{
+				txs:      nil,
+				uncfmTxs: luncfmTxs[:3],
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 confirmed=false addr=2/1 txs=2 unconfirmedTxs=3",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:2],
+					UncfmTxs: uncfmTxs[:2],
+				},
+				addrs[1]: txsAndUncfmTxs{
+					Txs:      nil,
+					UncfmTxs: uncfmTxs[2:3],
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:1]),
+				ConfirmedTxFilter(false),
+			},
+			expectTxResult{
+				txs:      nil,
+				uncfmTxs: luncfmTxs[:2],
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 confirmed=false addr=2/2 txs=2 unconfirmedTxs=3",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:2],
+					UncfmTxs: uncfmTxs[:2],
+				},
+				addrs[1]: txsAndUncfmTxs{
+					Txs:      nil,
+					UncfmTxs: uncfmTxs[2:3],
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[1:2]),
+				ConfirmedTxFilter(false),
+			},
+			expectTxResult{
+				txs:      nil,
+				uncfmTxs: luncfmTxs[2:3],
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 confirmed=true addr=1 txs=0 unconfirmedTxs=0",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      nil,
+					UncfmTxs: nil,
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:1]),
+				ConfirmedTxFilter(true),
+			},
+			expectTxResult{
+				txs:      nil,
+				uncfmTxs: nil,
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 confirmed=true addr=1 txs=1 unconfirmedTxs=0",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:1],
+					UncfmTxs: nil,
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:1]),
+				ConfirmedTxFilter(true),
+			},
+			expectTxResult{
+				txs:      ltxs[:1],
+				uncfmTxs: nil,
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 confirmed=true addr=1 txs=1 unconfirmedTxs=1",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:1],
+					UncfmTxs: uncfmTxs[:1],
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:1]),
+				ConfirmedTxFilter(true),
+			},
+			expectTxResult{
+				txs:      ltxs[:1],
+				uncfmTxs: nil,
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 confirmed=true addr=1 txs=2 unconfirmedTxs=1",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:2],
+					UncfmTxs: uncfmTxs[:1],
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:1]),
+				ConfirmedTxFilter(true),
+			},
+			expectTxResult{
+				txs:      ltxs[:2],
+				uncfmTxs: nil,
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 confirmed=true addr=1 txs=2 unconfirmedTxs=2",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:2],
+					UncfmTxs: uncfmTxs[:2],
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:1]),
+				ConfirmedTxFilter(true),
+			},
+			expectTxResult{
+				txs:      ltxs[:2],
+				uncfmTxs: nil,
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 confirmed=true addr=2/1 txs=3 unconfirmedTxs=2",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:2],
+					UncfmTxs: uncfmTxs[:1],
+				},
+				addrs[1]: txsAndUncfmTxs{
+					Txs:      txs[2:3],
+					UncfmTxs: uncfmTxs[1:2],
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:1]),
+				ConfirmedTxFilter(true),
+			},
+			expectTxResult{
+				txs:      ltxs[:2],
+				uncfmTxs: nil,
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 confirmed=true addr=2/2 txs=3 unconfirmedTxs=2",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:2],
+					UncfmTxs: uncfmTxs[:1],
+				},
+				addrs[1]: txsAndUncfmTxs{
+					Txs:      txs[2:3],
+					UncfmTxs: uncfmTxs[1:2],
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[1:2]),
+				ConfirmedTxFilter(true),
+			},
+			expectTxResult{
+				txs:      ltxs[2:3],
+				uncfmTxs: nil,
+				err:      nil,
+			},
+		},
+		{
+			"addrFilter=1 confirmed=true addr=2 txs=3 unconfirmedTxs=2",
+			map[cipher.Address]txsAndUncfmTxs{
+				addrs[0]: txsAndUncfmTxs{
+					Txs:      txs[:2],
+					UncfmTxs: uncfmTxs[:1],
+				},
+				addrs[1]: txsAndUncfmTxs{
+					Txs:      txs[2:3],
+					UncfmTxs: uncfmTxs[1:2],
+				},
+			},
+			blocks[:],
+			headSeq,
+			[]TxFilter{
+				AddrsFilter(addrs[:2]),
+				ConfirmedTxFilter(true),
+			},
+			expectTxResult{
+				txs:      ltxs[:3],
+				uncfmTxs: nil,
+				err:      nil,
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			his := NewHistoryerMock2()
+			uncfmTxPool := NewUnconfirmedTxnPoolerMock2()
+			for addr, txs := range tc.addrTxns {
+				his.On("GetAddrTxns", addr).Return(txs.Txs, nil)
+				his.txs = append(his.txs, txs.Txs...)
+
+				uncfmTxPool.On("GetUnspentsOfAddr", addr).Return(makeUncfmUxs(txs.UncfmTxs))
+				for i, uncfmTx := range txs.UncfmTxs {
+					uncfmTxPool.On("Get", uncfmTx.Hash()).Return(&txs.UncfmTxs[i], true)
+				}
+				uncfmTxPool.txs = append(uncfmTxPool.txs, txs.UncfmTxs...)
+			}
+
+			bc := NewBlockchainerMock()
+			for i, b := range tc.blocks {
+				bc.On("GetBlockBySeq", b.Seq()).Return(&tc.blocks[i], nil)
+			}
+
+			bc.On("HeadSeq").Return(tc.bcHeadSeq)
+
+			v := &Visor{
+				history:     his,
+				Unconfirmed: uncfmTxPool,
+				Blockchain:  bc,
+			}
+
+			retTxs, err := v.GetTransactions(tc.filters...)
+			require.Equal(t, tc.expect.err, err)
+			if err != nil {
+				return
+			}
+
+			require.Len(t, retTxs, len(tc.expect.txs)+len(tc.expect.uncfmTxs))
+
+			// Splits confirmed and unconfirmed txs in returned transactions
+			uncfmTxMap := make(map[cipher.SHA256]Transaction)
+			txMap := make(map[cipher.SHA256]Transaction)
+			for i, tx := range retTxs {
+				if retTxs[i].Status.Confirmed {
+					txMap[tx.Txn.Hash()] = retTxs[i]
+				} else {
+					uncfmTxMap[tx.Txn.Hash()] = retTxs[i]
+				}
+			}
+
+			// Confirms that all expected confirmed transactions must be in the txMap
+			for _, tx := range tc.expect.txs {
+				retTx, ok := txMap[tx.Txn.Hash()]
+				require.True(t, ok)
+				require.Equal(t, tx, retTx)
+			}
+
+			// Confirms that all expected unconfirmed transactions must be in the uncfmTxMap
+			for _, tx := range tc.expect.uncfmTxs {
+				retTx, ok := uncfmTxMap[tx.Txn.Hash()]
+				require.True(t, ok)
+				require.Equal(t, tx, retTx)
+			}
+		})
+	}
+}
+
+// historyerMock2 embeds historyerMock, and rewrite the ForEach method
+type historyerMock2 struct {
+	historyerMock
+	txs []historydb.Transaction
+}
+
+func NewHistoryerMock2() *historyerMock2 {
+	return &historyerMock2{}
+}
+
+func (h *historyerMock2) ForEach(f func(tx *historydb.Transaction) error) error {
+	for i := range h.txs {
+		if err := f(&h.txs[i]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// UnconfirmedTxnPoolerMock2 embeds UnconfirmedTxnPoolerMock, and rewrite the GetTxns method
+type UnconfirmedTxnPoolerMock2 struct {
+	UnconfirmedTxnPoolerMock
+	txs []UnconfirmedTxn
+}
+
+func NewUnconfirmedTxnPoolerMock2() *UnconfirmedTxnPoolerMock2 {
+	return &UnconfirmedTxnPoolerMock2{}
+}
+
+func (m *UnconfirmedTxnPoolerMock2) GetTxns(f func(tx UnconfirmedTxn) bool) []UnconfirmedTxn {
+	var txs []UnconfirmedTxn
+	for i := range m.txs {
+		if f(m.txs[i]) {
+			txs = append(txs, m.txs[i])
+		}
+	}
+	return txs
 }

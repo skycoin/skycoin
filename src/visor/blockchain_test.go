@@ -43,15 +43,18 @@ func makeFeeCalc(fee uint64) coin.FeeCalculator {
 	}
 }
 
-func addGenesisBlock(t *testing.T, bc *Blockchain) *coin.SignedBlock {
+func addGenesisBlock(t *testing.T, bc blockchainer) *coin.SignedBlock {
 	// create genesis block
 	gb, err := coin.NewGenesisBlock(genAddress, genCoins, genTime)
 	require.NoError(t, err)
 	gbSig := cipher.SignHash(gb.HashHeader(), genSecret)
 
+	bcc, ok := bc.(*Blockchain)
+	require.True(t, ok)
+
 	// add genesis block to blockchain
-	bc.db.Update(func(tx *bolt.Tx) error {
-		return bc.store.AddBlockWithTx(tx, &coin.SignedBlock{
+	bcc.db.Update(func(tx *bolt.Tx) error {
+		return bcc.store.AddBlockWithTx(tx, &coin.SignedBlock{
 			Block: *gb,
 			Sig:   gbSig,
 		})

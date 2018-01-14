@@ -246,8 +246,8 @@ type UnconfirmedTxnPool struct {
 	unspent *txUnspents
 }
 
-// newUnconfirmedTxnPool creates an UnconfirmedTxnPool instance
-func newUnconfirmedTxnPool(db *bolt.DB) *UnconfirmedTxnPool {
+// NewUnconfirmedTxnPool creates an UnconfirmedTxnPool instance
+func NewUnconfirmedTxnPool(db *bolt.DB) *UnconfirmedTxnPool {
 	return &UnconfirmedTxnPool{
 		txns:    newUncfmTxBkt(db),
 		unspent: newTxUnspents(db),

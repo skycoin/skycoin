@@ -76,6 +76,11 @@ func (gw *FakeGateway) NewAddresses(wltID string, n uint64) ([]cipher.Address, e
 	return args.Get(0).([]cipher.Address), args.Error(1)
 }
 
+func (gw *FakeGateway) GetWalletDir() string {
+	args := gw.Called()
+	return args.String(0)
+}
+
 func TestWalletSpendHandler(t *testing.T) {
 	type httpBody struct {
 		WalletID string
@@ -1394,5 +1399,69 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 				require.Equal(t, tc.responseBody, msg, tc.name)
 			}
 		})
+	}
+}
+
+func TestGetWalletFolderHandler(t *testing.T) {
+	tt := []struct {
+		name                 string
+		method               string
+		url                  string
+		status               int
+		err                  string
+		getWalletDirResponse string
+		httpResponse         WalletFolder
+	}{
+		{
+			"200",
+			http.MethodGet,
+			"/wallets/folderName",
+			http.StatusOK,
+			"",
+			"/wallet/folder/address",
+			WalletFolder{
+				Address: "/wallet/folder/address",
+			},
+		},
+		{
+			"200 - POST",
+			http.MethodPost,
+			"/wallets/folderName",
+			http.StatusOK,
+			"",
+			"/wallet/folder/address",
+			WalletFolder{
+				Address: "/wallet/folder/address",
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		gateway := &FakeGateway{
+			t: t,
+		}
+		gateway.On("GetWalletDir").Return(tc.getWalletDirResponse)
+
+		req, err := http.NewRequest(tc.method, tc.url, nil)
+		require.NoError(t, err)
+
+		rr := httptest.NewRecorder()
+		handler := http.HandlerFunc(getWalletFolder(gateway))
+
+		handler.ServeHTTP(rr, req)
+
+		status := rr.Code
+		require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
+			tc.name, status, tc.status)
+
+		if status != http.StatusOK {
+			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+		} else {
+			var msg WalletFolder
+			json.Unmarshal(rr.Body.Bytes(), &msg)
+			require.NoError(t, err)
+			require.Equal(t, tc.httpResponse, msg, tc.name)
+		}
 	}
 }

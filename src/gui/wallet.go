@@ -8,12 +8,27 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
+	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 
+	"github.com/skycoin/skycoin/src/util/fee"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
+
+// Gatewayer interface for Gateway methods
+type Gatewayer interface {
+	Spend(wltID string, coins uint64, dest cipher.Address) (*coin.Transaction, error)
+	GetWalletBalance(wltID string) (wallet.BalancePair, error)
+	GetWallet(wltID string) (wallet.Wallet, error)
+	UpdateWalletLabel(wltID, label string) error
+	GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTxn, error)
+	CreateWallet(wltName string, options wallet.Options) (wallet.Wallet, error)
+	ScanAheadWalletAddresses(wltName string, scanN uint64) (wallet.Wallet, error)
+	NewAddresses(wltID string, n uint64) ([]cipher.Address, error)
+	GetWalletDir() string
+}
 
 // SpendResult represents the result of spending
 type SpendResult struct {
@@ -22,47 +37,9 @@ type SpendResult struct {
 	Error       string                     `json:"error,omitempty"`
 }
 
-// Spend spends coins from given wallet id
-// Args:
-//  walletID    string          ID of wallet to spend from
-//  coins       uint64          amount of coins to spend
-//  dest        ciper.Address   recipient address
-// Return:
-//  balance     *wallet.BalancePair         latest balance
-//  transaction *visor.ReadableTransaction  readable transaction
-//  error       error                       error in spending the coins
-func Spend(gateway *daemon.Gateway, walletID string, coins uint64, dest cipher.Address) (balance *wallet.BalancePair, transaction *visor.ReadableTransaction, spendError error) {
-	tx, err := gateway.Spend(walletID, coins, dest)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	txStr, err := visor.TransactionToJSON(*tx)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	logger.Info("Spend: \ntx= \n %s \n", txStr)
-
-	// Get the new wallet balance
-	b, err := gateway.GetWalletBalance(walletID)
-	if err != nil {
-		logger.Error("Get wallet balance failed: %v", err)
-		return nil, nil, err
-	}
-
-	rbTx, err := visor.NewReadableTransaction(&visor.Transaction{Txn: *tx})
-	if err != nil {
-		logger.Error("Creation of new readable transaction failed: %s", err)
-		return nil, nil, err
-	}
-
-	return &b, rbTx, err
-}
-
 // Returns the wallet's balance, both confirmed and predicted.  The predicted
 // balance is the confirmed balance minus the pending spends.
-func walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
+func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -78,6 +55,12 @@ func walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 		b, err := gateway.GetWalletBalance(wltID)
 		if err != nil {
 			logger.Error("Get wallet balance failed: %v", err)
+			switch err {
+			case wallet.ErrWalletNotExist:
+				wh.Error404(w)
+			default:
+				wh.Error500Msg(w, err.Error())
+			}
 			return
 		}
 		wh.SendOr404(w, b)
@@ -92,7 +75,12 @@ func walletBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 //  id: wallet id
 //	dst: recipient address
 // 	coins: the number of droplet you will send
-func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
+// Response:
+//  balance: new balance of the wallet
+//  txn: spent transaction
+//  error: an error that may have occured after broadcast the transaction to the network
+//         if this field is not empty, the spend succeeded, but the response data could not be prepared
+func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			wh.Error405(w)
@@ -128,15 +116,52 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		balance, transaction, err := Spend(gateway, wltID, coins, dst)
-		ret := SpendResult{
-			Balance:     balance,
-			Transaction: transaction,
-			Error:       err.Error(),
+		tx, err := gateway.Spend(wltID, coins, dst)
+		switch err {
+		case nil:
+		case fee.ErrTxnNoFee, wallet.ErrSpendingUnconfirmed, wallet.ErrInsufficientBalance:
+			wh.Error400(w, err.Error())
+			return
+		case wallet.ErrWalletNotExist:
+			wh.Error404(w)
+			return
+		default:
+			wh.Error500Msg(w, err.Error())
+			return
 		}
-		if ret.Error != "" {
-			logger.Error(ret.Error)
+
+		txStr, err := visor.TransactionToJSON(*tx)
+		if err != nil {
+			logger.Error(err.Error())
+			wh.SendOr404(w, SpendResult{
+				Error: err.Error(),
+			})
+			return
 		}
+
+		logger.Info("Spend: \ntx= \n %s \n", txStr)
+
+		var ret SpendResult
+
+		ret.Transaction, err = visor.NewReadableTransaction(&visor.Transaction{Txn: *tx})
+		if err != nil {
+			err = fmt.Errorf("Creation of new readable transaction failed: %v", err)
+			logger.Error(err.Error())
+			ret.Error = err.Error()
+			wh.SendOr404(w, ret)
+			return
+		}
+
+		// Get the new wallet balance
+		b, err := gateway.GetWalletBalance(wltID)
+		if err != nil {
+			err = fmt.Errorf("Get wallet balance failed: %v", err)
+			logger.Error(err.Error())
+			ret.Error = err.Error()
+			wh.SendOr404(w, ret)
+			return
+		}
+		ret.Balance = &b
 
 		wh.SendOr404(w, ret)
 	}
@@ -149,7 +174,7 @@ func walletSpendHandler(gateway *daemon.Gateway) http.HandlerFunc {
 //     seed: wallet seed [required]
 //     label: wallet label [required]
 //     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
-func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
+func walletCreate(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			wh.Error405(w)
@@ -211,7 +236,7 @@ func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 // params:
 // 		id: wallet id
 // 	   num: number of address need to create, if not set the default value is 1
-func walletNewAddresses(gateway *daemon.Gateway) http.HandlerFunc {
+func walletNewAddresses(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			wh.Error405(w)
@@ -256,8 +281,12 @@ func walletNewAddresses(gateway *daemon.Gateway) http.HandlerFunc {
 }
 
 // Update wallet label
-func walletUpdateHandler(gateway *daemon.Gateway) http.HandlerFunc {
+func walletUpdateHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			wh.Error405(w)
+			return
+		}
 		// Update wallet
 		wltID := r.FormValue("id")
 		if wltID == "" {
@@ -272,7 +301,14 @@ func walletUpdateHandler(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 
 		if err := gateway.UpdateWalletLabel(wltID, label); err != nil {
-			wh.Error400(w, fmt.Sprintf("update wallet label failed: %v", err))
+			logger.Errorf("update wallet label failed: %v", err)
+
+			switch err {
+			case wallet.ErrWalletNotExist:
+				wh.Error404(w)
+			default:
+				wh.Error500Msg(w, err.Error())
+			}
 			return
 		}
 
@@ -281,7 +317,7 @@ func walletUpdateHandler(gateway *daemon.Gateway) http.HandlerFunc {
 }
 
 // Returns a wallet by id
-func walletGet(gateway *daemon.Gateway) http.HandlerFunc {
+func walletGet(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -305,7 +341,7 @@ func walletGet(gateway *daemon.Gateway) http.HandlerFunc {
 }
 
 // Returns JSON of unconfirmed transactions for user's wallet
-func walletTransactionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
+func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -320,7 +356,13 @@ func walletTransactionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 
 		txns, err := gateway.GetWalletUnconfirmedTxns(wltID)
 		if err != nil {
-			wh.Error400(w, fmt.Sprintf("get wallet unconfirmed transactions failed: %v", err))
+			logger.Error("get wallet unconfirmed transactions failed: %v", err)
+			switch err {
+			case wallet.ErrWalletNotExist:
+				wh.Error404(w)
+			default:
+				wh.Error500Msg(w, err.Error())
+			}
 			return
 		}
 
@@ -355,7 +397,7 @@ type WalletFolder struct {
 }
 
 // Loads/unloads wallets from the wallet directory
-func getWalletFolder(gateway *daemon.Gateway) http.HandlerFunc {
+func getWalletFolder(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ret := WalletFolder{
 			Address: gateway.GetWalletDir(),

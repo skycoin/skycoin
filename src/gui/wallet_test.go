@@ -59,6 +59,28 @@ func (gw *FakeGateway) GetWalletUnconfirmedTxns(wltID string) ([]visor.Unconfirm
 	return args.Get(0).([]visor.UnconfirmedTxn), args.Error(1)
 }
 
+// GetWalletBalance returns balance pair of specific wallet
+func (gw *FakeGateway) CreateWallet(wltName string, options wallet.Options) (wallet.Wallet, error) {
+	args := gw.Called(wltName, options)
+	return args.Get(0).(wallet.Wallet), args.Error(1)
+}
+
+func (gw *FakeGateway) ScanAheadWalletAddresses(wltName string, scanN uint64) (wallet.Wallet, error) {
+	args := gw.Called(wltName, scanN)
+	return args.Get(0).(wallet.Wallet), args.Error(1)
+}
+
+// NewAddresses generate addresses in given wallet
+func (gw *FakeGateway) NewAddresses(wltID string, n uint64) ([]cipher.Address, error) {
+	args := gw.Called(wltID, n)
+	return args.Get(0).([]cipher.Address), args.Error(1)
+}
+
+func (gw *FakeGateway) GetWalletDir() string {
+	args := gw.Called()
+	return args.String(0)
+}
+
 func TestWalletSpendHandler(t *testing.T) {
 	type httpBody struct {
 		WalletID string
@@ -559,9 +581,7 @@ func TestWalletGet(t *testing.T) {
 		} else {
 			var msg wallet.Wallet
 			err = json.Unmarshal(rr.Body.Bytes(), &msg)
-			if err != nil {
-				t.Errorf("fail unmarshal json response while 200 OK. body: %s, err: %s", rr.Body.String(), err)
-			}
+			require.NoError(t, err)
 			require.Equal(t, tc.gatewayGetWalletResult, msg, tc.name)
 		}
 	}
@@ -972,6 +992,476 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			err = json.Unmarshal(rr.Body.Bytes(), &msg)
 			require.NoError(t, err)
 			require.Equal(t, tc.responseBody, msg, tc.name)
+		}
+	}
+}
+
+func TestWalletCreateHandler(t *testing.T) {
+	type httpBody struct {
+		Seed  string
+		Label string
+		ScanN string
+	}
+	tt := []struct {
+		name                      string
+		method                    string
+		url                       string
+		body                      *httpBody
+		status                    int
+		err                       string
+		wltname                   string
+		scnN                      uint64
+		options                   wallet.Options
+		gatewayCreateWalletResult wallet.Wallet
+		gatewayCreateWalletErr    error
+		scanWalletAddressesResult wallet.Wallet
+		scanWalletAddressesError  error
+		responseBody              wallet.ReadableWallet
+	}{
+		{
+			"405",
+			http.MethodGet,
+			"/wallet/create",
+			nil,
+			http.StatusMethodNotAllowed,
+			"405 Method Not Allowed",
+			"foo",
+			0,
+			wallet.Options{},
+			wallet.Wallet{},
+			nil,
+			wallet.Wallet{},
+			nil,
+			wallet.ReadableWallet{},
+		},
+		{
+			"400 - missing seed",
+			http.MethodPost,
+			"/wallet/create",
+			&httpBody{},
+			http.StatusBadRequest,
+			"400 Bad Request - missing seed",
+			"foo",
+			0,
+			wallet.Options{},
+			wallet.Wallet{},
+			nil,
+			wallet.Wallet{},
+			nil,
+			wallet.ReadableWallet{},
+		},
+		{
+			"400 - missing label",
+			http.MethodPost,
+			"/wallet/create",
+			&httpBody{
+				Seed: "foo",
+			},
+			http.StatusBadRequest,
+			"400 Bad Request - missing label",
+			"foo",
+			0,
+			wallet.Options{},
+			wallet.Wallet{},
+			nil,
+			wallet.Wallet{},
+			nil,
+			wallet.ReadableWallet{},
+		},
+		{
+			"400 - invalid scan value",
+			http.MethodPost,
+			"/wallet/create",
+			&httpBody{
+				Seed:  "foo",
+				Label: "bar",
+				ScanN: "bad scanN",
+			},
+			http.StatusBadRequest,
+			"400 Bad Request - invalid scan value",
+			"foo",
+			0,
+			wallet.Options{},
+			wallet.Wallet{},
+			nil,
+			wallet.Wallet{},
+			nil,
+			wallet.ReadableWallet{},
+		},
+		{
+			"400 - scan must be > 0",
+			http.MethodPost,
+			"/wallet/create",
+			&httpBody{
+				Seed:  "foo",
+				Label: "bar",
+				ScanN: "0",
+			},
+			http.StatusBadRequest,
+			"400 Bad Request - scan must be > 0",
+			"foo",
+			0,
+			wallet.Options{},
+			wallet.Wallet{},
+			nil,
+			wallet.Wallet{},
+			nil,
+			wallet.ReadableWallet{},
+		},
+		{
+			"400 - gateway.CreateWallet error",
+			http.MethodPost,
+			"/wallet/create",
+			&httpBody{
+				Seed:  "foo",
+				Label: "bar",
+				ScanN: "1",
+			},
+			http.StatusBadRequest,
+			"400 Bad Request - gateway.CreateWallet error",
+			"",
+			0,
+			wallet.Options{
+				Label: "bar",
+				Seed:  "foo",
+			},
+			wallet.Wallet{},
+			errors.New("gateway.CreateWallet error"),
+			wallet.Wallet{},
+			nil,
+			wallet.ReadableWallet{},
+		},
+		{
+			"500 - gateway.ScanAheadWalletAddresses error",
+			http.MethodPost,
+			"/wallet/create",
+			&httpBody{
+				Seed:  "foo",
+				Label: "bar",
+				ScanN: "2",
+			},
+			http.StatusInternalServerError,
+			"500 Internal Server Error",
+			"filename",
+			2,
+			wallet.Options{
+				Label: "bar",
+				Seed:  "foo",
+			},
+			wallet.Wallet{
+				Meta: map[string]string{
+					"filename": "filename",
+				},
+			},
+			nil,
+			wallet.Wallet{},
+			errors.New("gateway.ScanAheadWalletAddresses error"),
+			wallet.ReadableWallet{},
+		},
+		{
+			"200 - OK",
+			http.MethodPost,
+			"/wallet/create",
+			&httpBody{
+				Seed:  "foo",
+				Label: "bar",
+				ScanN: "2",
+			},
+			http.StatusOK,
+			"",
+			"filename",
+			2,
+			wallet.Options{
+				Label: "bar",
+				Seed:  "foo",
+			},
+			wallet.Wallet{
+				Meta: map[string]string{
+					"filename": "filename",
+				},
+			},
+			nil,
+			wallet.Wallet{},
+			nil,
+			wallet.ReadableWallet{
+				Meta:    map[string]string{},
+				Entries: wallet.ReadableEntries{},
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		gateway := &FakeGateway{
+			t: t,
+		}
+		gateway.On("CreateWallet", "", tc.options).Return(tc.gatewayCreateWalletResult, tc.gatewayCreateWalletErr)
+		gateway.On("ScanAheadWalletAddresses", tc.wltname, tc.scnN-1).Return(tc.scanWalletAddressesResult, tc.scanWalletAddressesError)
+		v := url.Values{}
+		if tc.body != nil {
+			if tc.body.Seed != "" {
+				v.Add("seed", tc.body.Seed)
+			}
+			if tc.body.Label != "" {
+				v.Add("label", tc.body.Label)
+			}
+			if tc.body.ScanN != "" {
+				v.Add("scan", tc.body.ScanN)
+			}
+		}
+
+		req, err := http.NewRequest(tc.method, tc.url, bytes.NewBufferString(v.Encode()))
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		require.NoError(t, err)
+
+		rr := httptest.NewRecorder()
+		handler := http.HandlerFunc(walletCreate(gateway))
+
+		handler.ServeHTTP(rr, req)
+
+		status := rr.Code
+		require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
+			tc.name, status, tc.status)
+
+		if status != http.StatusOK {
+			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()),
+				"case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+		} else {
+			var msg wallet.ReadableWallet
+			err = json.Unmarshal(rr.Body.Bytes(), &msg)
+			require.NoError(t, err)
+			require.Equal(t, tc.responseBody, msg, tc.name)
+		}
+	}
+}
+
+func TestWalletNewAddressesHandler(t *testing.T) {
+	type httpBody struct {
+		Id  string
+		Num string
+	}
+	type Addresses struct {
+		Address []string `json:"addresses"`
+	}
+	var responseAddresses = Addresses{}
+	var responseEmptyAddresses = Addresses{}
+
+	var emptyAddrs = make([]cipher.Address, 0)
+	var addrs = make([]cipher.Address, 3)
+
+	for i := 0; i < 3; i++ {
+		pub, _ := cipher.GenerateDeterministicKeyPair(cipher.RandByte(32))
+
+		addrs[i] = cipher.AddressFromPubKey(pub)
+		responseAddresses.Address = append(responseAddresses.Address, addrs[i].String())
+	}
+	tt := []struct {
+		name                      string
+		method                    string
+		url                       string
+		body                      *httpBody
+		status                    int
+		err                       string
+		walletId                  string
+		n                         uint64
+		gatewayNewAddressesResult []cipher.Address
+		gatewayNewAddressesErr    error
+		responseBody              Addresses
+	}{
+		{
+			"405",
+			http.MethodGet,
+			"/wallet/create",
+			nil,
+			http.StatusMethodNotAllowed,
+			"405 Method Not Allowed",
+			"",
+			1,
+			make([]cipher.Address, 0),
+			nil,
+			Addresses{},
+		},
+		{
+			"400 - missing wallet id",
+			http.MethodPost,
+			"/wallet/create",
+			nil,
+			http.StatusBadRequest,
+			"400 Bad Request - missing wallet id",
+			"foo",
+			1,
+			make([]cipher.Address, 0),
+			nil,
+			Addresses{},
+		},
+		{
+			"400 - invalid num value",
+			http.MethodPost,
+			"/wallet/create",
+			&httpBody{
+				Id:  "foo",
+				Num: "bar",
+			},
+			http.StatusBadRequest,
+			"400 Bad Request - invalid num value",
+			"foo",
+			1,
+			make([]cipher.Address, 0),
+			nil,
+			Addresses{},
+		},
+		{
+			"400 - gateway.NewAddresses error",
+			http.MethodPost,
+			"/wallet/create",
+			&httpBody{
+				Id:  "foo",
+				Num: "1",
+			},
+			http.StatusBadRequest,
+			"400 Bad Request - gateway.NewAddresses error",
+			"foo",
+			1,
+			make([]cipher.Address, 0),
+			errors.New("gateway.NewAddresses error"),
+			Addresses{},
+		},
+		{
+			"200 - OK",
+			http.MethodPost,
+			"/wallet/create",
+			&httpBody{
+				Id:  "foo",
+				Num: "1",
+			},
+			http.StatusOK,
+			"",
+			"foo",
+			1,
+			addrs,
+			nil,
+			responseAddresses,
+		},
+		{
+			"200 - OK empty addresses",
+			http.MethodPost,
+			"/wallet/create",
+			&httpBody{
+				Id:  "foo",
+				Num: "0",
+			},
+			http.StatusOK,
+			"",
+			"foo",
+			0,
+			emptyAddrs,
+			nil,
+			responseEmptyAddresses,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := &FakeGateway{
+				t: t,
+			}
+			gateway.On("NewAddresses", tc.walletId, tc.n).Return(tc.gatewayNewAddressesResult, tc.gatewayNewAddressesErr)
+			v := url.Values{}
+			if tc.body != nil {
+				if tc.body.Id != "" {
+					v.Add("id", tc.body.Id)
+				}
+				if tc.body.Num != "" {
+					v.Add("num", tc.body.Num)
+				}
+			}
+
+			req, err := http.NewRequest(tc.method, tc.url, bytes.NewBufferString(v.Encode()))
+			require.NoError(t, err)
+			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+			rr := httptest.NewRecorder()
+			handler := http.HandlerFunc(walletNewAddresses(gateway))
+
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
+				tc.name, status, tc.status)
+
+			if status != http.StatusOK {
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+			} else {
+				var msg Addresses
+				err = json.Unmarshal(rr.Body.Bytes(), &msg)
+				require.NoError(t, err)
+				require.Equal(t, tc.responseBody, msg, tc.name)
+			}
+		})
+	}
+}
+
+func TestGetWalletFolderHandler(t *testing.T) {
+	tt := []struct {
+		name                 string
+		method               string
+		url                  string
+		status               int
+		err                  string
+		getWalletDirResponse string
+		httpResponse         WalletFolder
+	}{
+		{
+			"200",
+			http.MethodGet,
+			"/wallets/folderName",
+			http.StatusOK,
+			"",
+			"/wallet/folder/address",
+			WalletFolder{
+				Address: "/wallet/folder/address",
+			},
+		},
+		{
+			"200 - POST",
+			http.MethodPost,
+			"/wallets/folderName",
+			http.StatusOK,
+			"",
+			"/wallet/folder/address",
+			WalletFolder{
+				Address: "/wallet/folder/address",
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		gateway := &FakeGateway{
+			t: t,
+		}
+		gateway.On("GetWalletDir").Return(tc.getWalletDirResponse)
+
+		req, err := http.NewRequest(tc.method, tc.url, nil)
+		require.NoError(t, err)
+
+		rr := httptest.NewRecorder()
+		handler := http.HandlerFunc(getWalletFolder(gateway))
+
+		handler.ServeHTTP(rr, req)
+
+		status := rr.Code
+		require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
+			tc.name, status, tc.status)
+
+		if status != http.StatusOK {
+			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+		} else {
+			var msg WalletFolder
+			json.Unmarshal(rr.Body.Bytes(), &msg)
+			require.NoError(t, err)
+			require.Equal(t, tc.httpResponse, msg, tc.name)
 		}
 	}
 }

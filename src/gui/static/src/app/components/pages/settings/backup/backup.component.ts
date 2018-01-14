@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
-import { WalletModel } from '../../../../models/wallet.model';
+import { Wallet } from '../../../../app.datatypes';
 
 @Component({
   selector: 'app-backup',
@@ -23,11 +23,11 @@ export class BackupComponent implements OnDestroy, OnInit {
     this.walletService.all().subscribe(wallets => wallets.forEach(wallet => wallet.visible = false));
   }
 
-  download(wallet: WalletModel) {
-    const blob: Blob = new Blob([JSON.stringify({ seed: wallet.meta.seed })], { type: 'application/json'});
+  download(wallet: Wallet) {
+    const blob: Blob = new Blob([JSON.stringify({ seed: wallet.seed })], { type: 'application/json'});
     const link = document.createElement('a');
     link.href = window.URL.createObjectURL(blob);
-    link['download'] = wallet.meta.filename + '.json';
+    link['download'] = wallet.filename + '.json';
     link.click();
   }
 }

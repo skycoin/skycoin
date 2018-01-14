@@ -24,6 +24,10 @@ type Gatewayer interface {
 	GetWallet(wltID string) (wallet.Wallet, error)
 	UpdateWalletLabel(wltID, label string) error
 	GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTxn, error)
+	CreateWallet(wltName string, options wallet.Options) (wallet.Wallet, error)
+	ScanAheadWalletAddresses(wltName string, scanN uint64) (wallet.Wallet, error)
+	NewAddresses(wltID string, n uint64) ([]cipher.Address, error)
+	GetWalletDir() string
 }
 
 // SpendResult represents the result of spending
@@ -170,7 +174,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 //     seed: wallet seed [required]
 //     label: wallet label [required]
 //     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
-func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
+func walletCreate(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			wh.Error405(w)
@@ -232,7 +236,7 @@ func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 // params:
 // 		id: wallet id
 // 	   num: number of address need to create, if not set the default value is 1
-func walletNewAddresses(gateway *daemon.Gateway) http.HandlerFunc {
+func walletNewAddresses(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			wh.Error405(w)
@@ -393,7 +397,7 @@ type WalletFolder struct {
 }
 
 // Loads/unloads wallets from the wallet directory
-func getWalletFolder(gateway *daemon.Gateway) http.HandlerFunc {
+func getWalletFolder(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ret := WalletFolder{
 			Address: gateway.GetWalletDir(),

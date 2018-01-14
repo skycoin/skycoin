@@ -7,13 +7,15 @@ package visor
 
 import (
 	"fmt"
+
 	mock "github.com/stretchr/testify/mock"
+
+	time "time"
 
 	bolt "github.com/boltdb/bolt"
 	cipher "github.com/skycoin/skycoin/src/cipher"
 	coin "github.com/skycoin/skycoin/src/coin"
 	blockdb "github.com/skycoin/skycoin/src/visor/blockdb"
-	time "time"
 )
 
 // UnconfirmedTxnPoolerMock mock

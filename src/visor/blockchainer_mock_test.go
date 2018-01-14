@@ -7,6 +7,7 @@ package visor
 
 import (
 	"fmt"
+
 	mock "github.com/stretchr/testify/mock"
 
 	bolt "github.com/boltdb/bolt"

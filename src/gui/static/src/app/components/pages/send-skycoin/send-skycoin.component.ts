@@ -1,8 +1,6 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { WalletService } from '../../../services/wallet.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { IntervalObservable } from 'rxjs/observable/IntervalObservable';
-import { Router } from '@angular/router';
 import { MdDialogRef, MdSnackBar, MdSnackBarConfig } from '@angular/material';
 import 'rxjs/add/operator/delay';
 import 'rxjs/add/operator/filter';
@@ -23,16 +21,11 @@ export class SendSkycoinComponent implements OnInit {
   constructor(
     public formBuilder: FormBuilder,
     public walletService: WalletService,
-    public dialogRef: MdDialogRef<SendSkycoinComponent>,
     private snackbar: MdSnackBar,
   ) {}
 
   ngOnInit() {
     this.initForm();
-  }
-
-  closePopup() {
-    this.dialogRef.close();
   }
 
   send() {
@@ -43,7 +36,6 @@ export class SendSkycoinComponent implements OnInit {
         () => {
           this.resetForm();
           this.button.setSuccess();
-          this.dialogRef.close();
         },
         error => {
           const config = new MdSnackBarConfig();

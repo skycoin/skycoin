@@ -1,37 +1,28 @@
+<app-header title="Wallets"></app-header>
 <div class="container">
-  <div class="-header">
-    New Wallet <img src="../../../../../assets/img/close-grey.png" (click)="closePopup()">
-  </div>
-  <div class="-body">
-    <div [formGroup]="form">
-      <div class="form-field">
-        <label for="wallet">Send from</label>
-        <select formControlName="wallet" id="wallet">
-          <option *ngFor="let wallet of walletService.all() | async" [disabled]="wallet.balance <= 0" [ngValue]="wallet">
-            {{ wallet.label }} - {{ wallet.coins }} SKY
-          </option>
-        </select>
-      </div>
-      <div class="form-field">
-        <label for="address">Send to</label>
-        <input formControlName="address" id="address">
-      </div>
-      <div class="form-field">
-        <label for="amount">Amount</label>
-        <input formControlName="amount" id="amount">
-      </div>
-      <div class="form-field">
-        <label for="notes">Notes</label>
-        <textarea formControlName="notes" id="notes" row="2"></textarea>
-      </div>
+  <div [formGroup]="form" class="-paper">
+    <div class="form-field">
+      <label for="wallet">Send from</label>
+      <select formControlName="wallet" id="wallet">
+        <option *ngFor="let wallet of walletService.all() | async" [disabled]="wallet.balance <= 0" [ngValue]="wallet">
+          {{ wallet.label }} - {{ wallet.coins }} SKY
+        </option>
+      </select>
     </div>
-    <div class="-buttons">
-      <app-button (action)="closePopup()">
-        Cancel
-      </app-button>
-      <app-button #button (action)="send()" class="primary" [disabled]="!form.valid">
-        Create
-      </app-button>
+    <div class="form-field">
+      <label for="address">Send to</label>
+      <input formControlName="address" id="address">
     </div>
+    <div class="form-field">
+      <label for="amount">Amount</label>
+      <input formControlName="amount" id="amount">
+    </div>
+    <div class="form-field">
+      <label for="notes">Notes</label>
+      <textarea formControlName="notes" id="notes" row="2"></textarea>
+    </div>
+    <app-button #button (action)="send()" class="primary" [disabled]="!form.valid">
+      Create
+    </app-button>
   </div>
 </div>

@@ -1,27 +1,11 @@
-.container {
-  .-header {
-    background-color: #f7f7f7;
-    border-top-left-radius: 5px;
-    border-top-right-radius: 5px;
-    line-height: 50px;
-    position: relative;
-    text-align: center;
+.-buttons {
+  text-align: center;
+}
 
-    img {
-      cursor: pointer;
-      height: 32px;
-      position: absolute;
-      right: 9px;
-      top: 9px;
-    }
-  }
-
-  .-body {
-    background-color: #fbfbfb;
-    padding: 30px;
-
-    .-buttons {
-      text-align: center;
-    }
-  }
+.-paper {
+  background-color: #fbfbfb;
+  border-radius: 10px;
+  box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.01), 1px 1px 2px 2px rgba(0, 0, 0, 0.01);
+  padding: 30px;
+  margin-top: 30px;
 }

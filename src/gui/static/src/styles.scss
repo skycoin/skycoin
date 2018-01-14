@@ -65,7 +65,7 @@ html {
 }
 
 body {
-  background-color: #eee;
+  background-color: #f7f7f7;
   margin: 0;
   padding: 0;
   height: 100%;
@@ -161,6 +161,7 @@ md-panel-title {
   }
 
   select {
+    background-color: white;
     border: 2px solid rgba(0, 0, 0, 0.05);
     border-radius: 6px;
     box-sizing: border-box;
@@ -168,6 +169,7 @@ md-panel-title {
     line-height: 20px;
     padding: 10px 10px;
     width: 100%;
+    -webkit-appearance:none;
   }
 
   textarea {
@@ -187,7 +189,10 @@ md-panel-title {
   background: -o-linear-gradient(bottom right, $gradient-blue-dark, $gradient-blue-light); /* For Opera 11.1 to 12.0 */
   background: -moz-linear-gradient(bottom right, $gradient-blue-dark, $gradient-blue-light); /* For Firefox 3.6 to 15 */
   background: linear-gradient(to bottom right, $gradient-blue-dark, $gradient-blue-light); /* Standard syntax */
-  color: white;
+
+  span {
+    color: white;
+  }
 }
 
 /**

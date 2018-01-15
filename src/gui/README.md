@@ -10,6 +10,7 @@ Apis service port is `6420`.
 * [Uxout apis](#uxout-apis)
 * [Coin supply api](#coin-supply-informations)
 * [Richlist api](#richlist-show-top-n-addresses-by-uxouts)
+* [Addresscount api](#addresscount-show-count-of-unique-address)
 * [Log api](#wallet-log-api)
 
 
@@ -193,6 +194,28 @@ result:
 {
     "address": "TDdQmMgbEVTwLe8EAiH2AoRc4SjoEFKrHB"
 }
+```
+
+### Updates wallet label
+
+```
+URI: /wallet/update
+Method: POST
+Args:
+    id: wallet file name
+    label: wallet label
+```
+
+example:
+
+```bash
+curl -X POST http://127.0.0.1:6420/wallet/update?id=$id&label=$label
+```
+
+result:
+
+```
+"success"
 ```
 
 ### Get wallet balance
@@ -1005,8 +1028,8 @@ result:
 URI: /richlist
 Method: GET
 Args:
-    n: top N addresses, [default 20. if n <= 0, return all].
-    include-distribution: include distribution addresses or not, default false.
+    n: top N addresses, [default 20, returns all if <= 0].
+    include-distribution: include distribution addresses or not, default false. 
 ```
 
 example:
@@ -1040,6 +1063,26 @@ result:
         "locked": true
     }
 ]
+```
+
+## AddressCount show count of unique address
+
+```
+URI: /addresscount
+Method: GET
+```
+example:
+
+```bash
+curl "http://127.0.0.1:6420/addresscount"
+```
+
+result:
+
+```json
+{
+    "count": 10103
+}
 ```
 
 ## Wallet log api

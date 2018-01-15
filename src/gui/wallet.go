@@ -378,19 +378,6 @@ func walletsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-// Loads/unloads wallets from the wallet directory
-func walletsReloadHandler(gateway *daemon.Gateway) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if err := gateway.ReloadWallets(); err != nil {
-			logger.Error("reload wallet failed: %v", err)
-			wh.Error500(w)
-			return
-		}
-
-		wh.SendOr404(w, "success")
-	}
-}
-
 // WalletFolder struct
 type WalletFolder struct {
 	Address string `json:"address"`
@@ -475,13 +462,6 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 
 	// Returns all loaded wallets
 	mux.HandleFunc("/wallets", walletsHandler(gateway))
-	// Saves all wallets to disk. Returns nothing if it works. Otherwise returns
-	// 500 status with error message.
-
-	// Rescans the wallet directory and loads/unloads wallets based on which
-	// files are present. Returns nothing if it works. Otherwise returns
-	// 500 status with error message.
-	mux.HandleFunc("/wallets/reload", walletsReloadHandler(gateway))
 
 	mux.HandleFunc("/wallets/folderName", getWalletFolder(gateway))
 

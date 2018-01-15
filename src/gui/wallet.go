@@ -22,6 +22,12 @@ type Gatewayer interface {
 	Spend(wltID string, coins uint64, dest cipher.Address) (*coin.Transaction, error)
 	GetWalletBalance(wltID string) (wallet.BalancePair, error)
 	GetWallet(wltID string) (wallet.Wallet, error)
+	UpdateWalletLabel(wltID, label string) error
+	GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTxn, error)
+	CreateWallet(wltName string, options wallet.Options) (wallet.Wallet, error)
+	ScanAheadWalletAddresses(wltName string, scanN uint64) (wallet.Wallet, error)
+	NewAddresses(wltID string, n uint64) ([]cipher.Address, error)
+	GetWalletDir() string
 	GetBlockByHash(hash cipher.SHA256) (block coin.SignedBlock, ok bool)
 	GetBlockBySeq(seq uint64) (block coin.SignedBlock, ok bool)
 }
@@ -51,6 +57,12 @@ func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 		b, err := gateway.GetWalletBalance(wltID)
 		if err != nil {
 			logger.Error("Get wallet balance failed: %v", err)
+			switch err {
+			case wallet.ErrWalletNotExist:
+				wh.Error404(w)
+			default:
+				wh.Error500Msg(w, err.Error())
+			}
 			return
 		}
 		wh.SendOr404(w, b)
@@ -164,7 +176,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 //     seed: wallet seed [required]
 //     label: wallet label [required]
 //     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
-func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
+func walletCreate(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			wh.Error405(w)
@@ -226,7 +238,7 @@ func walletCreate(gateway *daemon.Gateway) http.HandlerFunc {
 // params:
 // 		id: wallet id
 // 	   num: number of address need to create, if not set the default value is 1
-func walletNewAddresses(gateway *daemon.Gateway) http.HandlerFunc {
+func walletNewAddresses(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			wh.Error405(w)
@@ -271,8 +283,12 @@ func walletNewAddresses(gateway *daemon.Gateway) http.HandlerFunc {
 }
 
 // Update wallet label
-func walletUpdateHandler(gateway *daemon.Gateway) http.HandlerFunc {
+func walletUpdateHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			wh.Error405(w)
+			return
+		}
 		// Update wallet
 		wltID := r.FormValue("id")
 		if wltID == "" {
@@ -287,7 +303,14 @@ func walletUpdateHandler(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 
 		if err := gateway.UpdateWalletLabel(wltID, label); err != nil {
-			wh.Error400(w, fmt.Sprintf("update wallet label failed: %v", err))
+			logger.Errorf("update wallet label failed: %v", err)
+
+			switch err {
+			case wallet.ErrWalletNotExist:
+				wh.Error404(w)
+			default:
+				wh.Error500Msg(w, err.Error())
+			}
 			return
 		}
 
@@ -320,7 +343,7 @@ func walletGet(gateway Gatewayer) http.HandlerFunc {
 }
 
 // Returns JSON of unconfirmed transactions for user's wallet
-func walletTransactionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
+func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -335,7 +358,13 @@ func walletTransactionsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 
 		txns, err := gateway.GetWalletUnconfirmedTxns(wltID)
 		if err != nil {
-			wh.Error400(w, fmt.Sprintf("get wallet unconfirmed transactions failed: %v", err))
+			logger.Error("get wallet unconfirmed transactions failed: %v", err)
+			switch err {
+			case wallet.ErrWalletNotExist:
+				wh.Error404(w)
+			default:
+				wh.Error500Msg(w, err.Error())
+			}
 			return
 		}
 
@@ -370,7 +399,7 @@ type WalletFolder struct {
 }
 
 // Loads/unloads wallets from the wallet directory
-func getWalletFolder(gateway *daemon.Gateway) http.HandlerFunc {
+func getWalletFolder(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ret := WalletFolder{
 			Address: gateway.GetWalletDir(),

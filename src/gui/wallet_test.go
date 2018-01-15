@@ -81,6 +81,12 @@ func (gw *FakeGateway) GetWalletDir() string {
 	return args.String(0)
 }
 
+// NewWalletSeed returns generated mnemomic
+func (gw *FakeGateway) NewWalletSeed() (string, error) {
+	args := gw.Called()
+	return args.String(0), args.Error(1)
+}
+
 func TestWalletSpendHandler(t *testing.T) {
 	type httpBody struct {
 		WalletID string
@@ -1460,6 +1466,88 @@ func TestGetWalletFolderHandler(t *testing.T) {
 		} else {
 			var msg WalletFolder
 			json.Unmarshal(rr.Body.Bytes(), &msg)
+			require.NoError(t, err)
+			require.Equal(t, tc.httpResponse, msg, tc.name)
+		}
+	}
+}
+
+func TestNewWalletSeed(t *testing.T) {
+	type httpResponseBody struct {
+		Seed string `json:"seed"`
+	}
+
+	tt := []struct {
+		name                  string
+		method                string
+		url                   string
+		status                int
+		err                   string
+		newWalletSeedResponse string
+		newWalletSeedError    error
+		httpResponse          httpResponseBody
+	}{
+		{
+			"200 - OK",
+			http.MethodGet,
+			"/wallets/newSeed",
+			http.StatusOK,
+			"",
+			"newWalletSeedResponse",
+			nil,
+			httpResponseBody{
+				Seed: "newWalletSeedResponse",
+			},
+		},
+		{
+			"200 - POST method",
+			http.MethodPost,
+			"/wallets/newSeed",
+			http.StatusOK,
+			"",
+			"newWalletSeedResponse",
+			nil,
+			httpResponseBody{
+				Seed: "newWalletSeedResponse",
+			},
+		},
+		{
+			"500 - gw newWalletSeed error",
+			http.MethodGet,
+			"/wallets/newSeed",
+			http.StatusInternalServerError,
+			"500 Internal Server Error",
+			"",
+			errors.New("newWalletSeedError"),
+			httpResponseBody{
+				Seed: "",
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		gateway := &FakeGateway{
+			t: t,
+		}
+		gateway.On("NewWalletSeed").Return(tc.newWalletSeedResponse, tc.newWalletSeedError)
+		req, err := http.NewRequest(tc.method, tc.url, nil)
+		require.NoError(t, err)
+
+		rr := httptest.NewRecorder()
+		handler := http.HandlerFunc(newWalletSeed(gateway))
+
+		handler.ServeHTTP(rr, req)
+
+		status := rr.Code
+		require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
+			tc.name, status, tc.status)
+
+		if status != http.StatusOK {
+			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %d, want `%v`",
+				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+		} else {
+			var msg httpResponseBody
+			err := json.Unmarshal(rr.Body.Bytes(), &msg)
 			require.NoError(t, err)
 			require.Equal(t, tc.httpResponse, msg, tc.name)
 		}

@@ -10,6 +10,7 @@ import (
 
 	"fmt"
 
+	"github.com/skycoin/skycoin/src/cipher/go-bip39"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
@@ -706,4 +707,15 @@ func (gw *Gateway) GetAddressCount() (uint64, error) {
 	}
 
 	return uint64(len(allAccounts)), nil
+}
+
+// NewWalletSeed returns generated mnemomic
+func (gw *Gateway) NewWalletSeed() (string, error) {
+	var mnemonic string
+	var err error
+	gw.strand("NewWalletSeed", func() {
+		mnemonic, err = bip39.NewDefaultMnemomic()
+	})
+
+	return mnemonic, err
 }

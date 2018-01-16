@@ -1,7 +1,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { WalletService } from '../../../services/wallet.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { MdDialogRef, MdSnackBar, MdSnackBarConfig } from '@angular/material';
+import { MatSnackBar, MatSnackBarConfig } from '@angular/material/snack-bar';
 import 'rxjs/add/operator/delay';
 import 'rxjs/add/operator/filter';
 import { ButtonComponent } from '../../layout/button/button.component';
@@ -21,7 +21,7 @@ export class SendSkycoinComponent implements OnInit {
   constructor(
     public formBuilder: FormBuilder,
     public walletService: WalletService,
-    private snackbar: MdSnackBar,
+    private snackbar: MatSnackBar,
   ) {}
 
   ngOnInit() {
@@ -38,7 +38,7 @@ export class SendSkycoinComponent implements OnInit {
           this.button.setSuccess();
         },
         error => {
-          const config = new MdSnackBarConfig();
+          const config = new MatSnackBarConfig();
           config.duration = 300000;
           this.snackbar.open(error['_body'], null, config);
           this.button.setError(error);

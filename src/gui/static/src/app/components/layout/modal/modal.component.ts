@@ -1,5 +1,5 @@
 import { Component, Input } from '@angular/core';
-import { MdDialogRef } from '@angular/material';
+import { MatDialogRef } from '@angular/material/dialog';
 
 @Component({
   selector: 'app-modal',
@@ -7,7 +7,7 @@ import { MdDialogRef } from '@angular/material';
   styleUrls: ['./modal.component.scss']
 })
 export class ModalComponent {
-  @Input() dialog: MdDialogRef<any>;
+  @Input() dialog: MatDialogRef<any>;
   @Input() title: string;
 
   closePopup() {

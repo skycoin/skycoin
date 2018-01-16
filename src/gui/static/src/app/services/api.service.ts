@@ -9,8 +9,8 @@ import { Address, GetWalletsResponseEntry, GetWalletsResponseWallet, PostWalletN
 @Injectable()
 export class ApiService {
 
-  private url = 'http://127.0.0.1:6420/'; // production
-  // private url = '/api/'; // test
+  // private url = 'http://127.0.0.1:6420/'; // production
+  private url = '/api/'; // test
 
   constructor(
     private http: Http,
@@ -71,7 +71,7 @@ export class ApiService {
   }
 
   get(url, options = null) {
-    return this.http.get(this.getUrl(url, options), this.getHeaders())
+    return this.http.get(this.getUrl(url, options), this.returnRequestOptions())
       .map((res: any) => res.json())
       .catch((error: any) => Observable.throw(error || 'Server error'));
   }

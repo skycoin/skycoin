@@ -1,6 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import { MdDialog, MdDialogConfig } from '@angular/material';
+import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { SendSkycoinComponent } from '../../pages/send-skycoin/send-skycoin.component';
 
 @Component({
@@ -11,7 +11,7 @@ import { SendSkycoinComponent } from '../../pages/send-skycoin/send-skycoin.comp
 export class FooterComponent {
 
   constructor(
-    private dialog: MdDialog,
+    private dialog: MatDialog,
     private router: Router,
   ) { }
 
@@ -20,7 +20,7 @@ export class FooterComponent {
   }
 
   openSendPage() {
-    const config = new MdDialogConfig();
+    const config = new MatDialogConfig();
     config.width = '566px';
     this.dialog.open(SendSkycoinComponent, config);
   }

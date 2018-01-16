@@ -2,8 +2,6 @@ import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { PriceService } from '../../../price.service';
 import { Subscription } from 'rxjs/Subscription';
 import { WalletService } from '../../../services/wallet.service';
-import { MdDialog } from '@angular/material';
-import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-header',

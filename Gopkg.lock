@@ -85,7 +85,7 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = ["ssh/terminal"]
+  packages = ["chacha20poly1305","chacha20poly1305/internal/chacha20","pbkdf2","poly1305","scrypt"]
   revision = "adbae1b6b6fb4b02448a0fc0dbbc9ba2b95b294d"
 
 [[projects]]
@@ -103,6 +103,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c9d61d36670e7b6265ba5b355d38689f4037290cb3f0b7b22a77251ea1ffd9d8"
+  inputs-digest = "163516faeeb8d5e5f43692c4b1f126b0023bee3d01b626fbea41b2d25c649093"
   solver-name = "gps-cdcl"
   solver-version = 1

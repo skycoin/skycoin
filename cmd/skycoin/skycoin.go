@@ -613,29 +613,30 @@ func Run(c *Config) {
 		}
 	}
 
-	closelog, err := initLogging(c.DataDirectory, c.LogLevel, c.ColorLog, c.Logtofile, c.Logtogui, &d.LogBuff)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	if c.Logtogui {
-		go func(buf *bytes.Buffer, quit chan struct{}) {
-			for {
-				select {
-				case <-quit:
-					logger.Info("Logbuff service closed normally")
-					return
-				case <-time.After(1 * time.Second): //insure logbuff size not exceed required size, like lru
-					for buf.Len() > c.LogBuffSize {
-						_, err := buf.ReadString(byte('\n')) //discard one line
-						if err != nil {
-							continue
-						}
-					}
-				}
-			}
-		}(&d.LogBuff, quit)
-	}
+	// POTENTIALLY UNSAFE CODE -- See https://github.com/skycoin/skycoin/issues/838
+	// closelog, err := initLogging(c.DataDirectory, c.LogLevel, c.ColorLog, c.Logtofile, c.Logtogui, &d.LogBuff)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	return
+	// }
+	// if c.Logtogui {
+	// 	go func(buf *bytes.Buffer, quit chan struct{}) {
+	// 		for {
+	// 			select {
+	// 			case <-quit:
+	// 				logger.Info("Logbuff service closed normally")
+	// 				return
+	// 			case <-time.After(1 * time.Second): //insure logbuff size not exceed required size, like lru
+	// 				for buf.Len() > c.LogBuffSize {
+	// 					_, err := buf.ReadString(byte('\n')) //discard one line
+	// 					if err != nil {
+	// 						continue
+	// 					}
+	// 				}
+	// 			}
+	// 		}
+	// 	}(&d.LogBuff, quit)
+	// }
 
 	errC := make(chan error, 10)
 

@@ -183,7 +183,7 @@ mat-panel-title {
   }
 }
 
-.primary button.enabled {
+.primary button.enabled, .primary-gradient-background {
   background: $gradient-blue-dark; /* For browsers that do not support gradients */
   background: -webkit-linear-gradient(left top, $gradient-blue-dark, $gradient-blue-light); /* For Safari 5.1 to 6.0 */
   background: -o-linear-gradient(bottom right, $gradient-blue-dark, $gradient-blue-light); /* For Opera 11.1 to 12.0 */
@@ -228,6 +228,6 @@ General Helpers
 }
 
 mat-spinner.in-button svg {
-  height: 24px !important;
-  width: 24px !important;
+  height: 24px;
+  width: 24px;
 }

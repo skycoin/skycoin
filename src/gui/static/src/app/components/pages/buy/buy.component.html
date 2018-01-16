@@ -1,3 +1,65 @@
+<app-header></app-header>
+<div class="container">
+  <div [formGroup]="form" class="-paper">
+    <div class="-step">
+      <div class="-number">
+        <span class="primary-gradient-background">1</span>
+      </div>
+      <div class="-instructions flex-fill">
+        <h3>Deposit Location</h3>
+        <p>Choose a wallet where you'd like us to deposit your Skycoin after we receive your Bitcoin.</p>
+        <div class="form-field">
+          <select formControlName="wallet" id="wallet">
+            <option *ngFor="let wallet of walletService.all() | async" [ngValue]="address">
+              {{ wallet.label }} - <span class="-coins">{{ wallet.coins }} SKY</span>
+            </option>
+          </select>
+        </div>
+        <span class="-subtitle">
+          Each time a new wallet and address are selected, a new BTC address is generated. A single Skycoin address can
+          have up to 5 BTC addresses assigned to it.
+        </span>
+      </div>
+    </div>
+    <div class="-step">
+      <div class="-number">
+        <span class="primary-gradient-background">2</span>
+      </div>
+      <div class="-instructions flex-fill">
+        <h3>Send Bitcoin</h3>
+        <p>
+          Send Bitcoin to the address below. Once received, we will deposit the Skycoin to a new address in the wallet
+          selected above at the current rate of <span>825 SKY/BTC</span>.
+        </p>
+        <span class="-address">
+          akdsjfhkdsjfhdksjafksd
+        </span>
+        <span class="-subtitle">
+          Only send multiple of the SKY/BTC rate! Skycoin is sent in whole number; fractional SKY is not sent!
+        </span>
+      </div>
+    </div>
+    <div class="-step">
+      <div class="-number">
+        <span class="primary-gradient-background">3</span>
+      </div>
+      <div class="-instructions flex-fill">
+        <h3>Receive Sky</h3>
+        <p>
+          After receiving your Bitcoin, we'll send you your Skycoin. It may take anywhere between 20 minutes and an hour
+          to receive your SKY.
+        </p>
+
+        <app-button #button (action)="checkStatus()" class="primary">
+          Check Status
+        </app-button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!--
 <p *ngIf="!otcEnabled">Sorry, otc has currently been disabled!</p>
 <mat-card *ngIf="otcEnabled">
   <mat-card-title>Purchase Skycoin</mat-card-title>
@@ -24,3 +86,4 @@
 <div class="button-line" *ngIf="otcEnabled">
   <a mat-raised-button color="primary" (click)="addDepositAddress()">Add deposit address</a>
 </div>
+-->

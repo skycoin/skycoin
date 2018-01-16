@@ -1,0 +1,73 @@
+.-paper {
+  background-color: #fbfbfb;
+  border-radius: 10px;
+  box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.01), 1px 1px 2px 2px rgba(0, 0, 0, 0.01);
+  padding: 30px;
+  margin-top: 30px;
+  max-width: 540px;
+
+  .-step {
+    display: flex;
+    margin-bottom: 30px;
+
+    .-number {
+      width: 60px;
+
+      span {
+        border-radius: 50%;
+        color: white;
+        display: inline-block;
+        height: 32px;
+        line-height: 36px;
+        text-align: center;
+        width: 32px;
+      }
+    }
+
+    .-instructions {
+      flex: 1 1;
+
+      ::ng-deep button {
+        margin-left: 0;
+      }
+
+      h3 {
+        margin: 0;
+        line-height: 36px;
+      }
+
+      p {
+        color: rgba(30, 34, 39, 0.5);
+        font-size: 13px;
+        line-height: 15px;
+      }
+
+      .-address {
+        background-color: white;
+        border: 2px solid rgba(0, 0, 0, 0.05);
+        border-radius: 6px;
+        box-sizing: border-box;
+        display: block;
+        line-height: 20px;
+        margin-bottom: 15px;
+        padding: 10px 10px;
+        width: 100%;
+      }
+
+      .-coins {
+        color: #0072FF;
+      }
+
+      .form-field {
+        margin-bottom: 15px;
+      }
+
+      .-subtitle {
+        color: rgba(30, 34, 39, 0.2);
+        font-size: 10px;
+        line-height: 12px;
+        font-weight: 300;
+      }
+    }
+  }
+}

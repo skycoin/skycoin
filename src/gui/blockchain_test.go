@@ -11,11 +11,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"crypto/rand"
-
 	"math"
-
-	"github.com/stretchr/testify/assert"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -33,14 +29,6 @@ func (gw *FakeGateway) GetBlockByHash(hash cipher.SHA256) (block coin.SignedBloc
 func (gw *FakeGateway) GetBlockBySeq(seq uint64) (block coin.SignedBlock, ok bool) {
 	args := gw.Called(seq)
 	return args.Get(0).(coin.SignedBlock), args.Bool(1)
-}
-
-func randBytes(t *testing.T, n int) []byte {
-	b := make([]byte, n)
-	x, err := rand.Read(b)
-	assert.Equal(t, n, x)
-	assert.Nil(t, err)
-	return b
 }
 
 func makeBadBlock(t *testing.T) *coin.Block {

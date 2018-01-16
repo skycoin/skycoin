@@ -226,3 +226,8 @@ General Helpers
 .rotate-270 {
   transform: rotate(270deg);
 }
+
+mat-spinner.in-button svg {
+  height: 24px !important;
+  width: 24px !important;
+}

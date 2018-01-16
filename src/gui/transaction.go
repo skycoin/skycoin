@@ -30,7 +30,7 @@ func RegisterTxHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 }
 
 // Returns pending transactions
-func getPendingTxs(gateway *daemon.Gateway) http.HandlerFunc {
+func getPendingTxs(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)

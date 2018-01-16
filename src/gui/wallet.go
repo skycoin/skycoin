@@ -8,7 +8,6 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
-	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -16,19 +15,6 @@ import (
 	"github.com/skycoin/skycoin/src/util/fee"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
-
-// Gatewayer interface for Gateway methods
-type Gatewayer interface {
-	Spend(wltID string, coins uint64, dest cipher.Address) (*coin.Transaction, error)
-	GetWalletBalance(wltID string) (wallet.BalancePair, error)
-	GetWallet(wltID string) (wallet.Wallet, error)
-	UpdateWalletLabel(wltID, label string) error
-	GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTxn, error)
-	CreateWallet(wltName string, options wallet.Options) (wallet.Wallet, error)
-	ScanAheadWalletAddresses(wltName string, scanN uint64) (wallet.Wallet, error)
-	NewAddresses(wltID string, n uint64) ([]cipher.Address, error)
-	GetWalletDir() string
-}
 
 // SpendResult represents the result of spending
 type SpendResult struct {

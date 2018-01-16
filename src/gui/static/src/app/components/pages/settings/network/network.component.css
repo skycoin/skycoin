@@ -7,11 +7,11 @@ ngx-datatable {
   margin-bottom: 20px;
 }
 
-md-card {
+mat-card {
   margin-bottom: 20px;
 }
 
-md-card h3 button {
+mat-card h3 button {
   display: inline;
   float: right;
   margin-top: -8px;

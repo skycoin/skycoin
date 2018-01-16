@@ -1,11 +1,11 @@
 <div class="sky-container sky-container-grey">
   <app-header title="Backup"></app-header>
 
-  <md-card>
+  <mat-card>
     <p>Wallet Directory: {{ folder }}</p>
 
     <p>BACKUP YOUR SEED. ON PAPER. IN A SAFE PLACE. As long as you have your seed, you can recover your coins.</p>
-  </md-card>
+  </mat-card>
 
   <ngx-datatable #table
                  class="material"
@@ -20,7 +20,7 @@
     <ngx-datatable-column name="File name" prop="filename" [flexGrow]="1"></ngx-datatable-column>
     <ngx-datatable-column name="Download" [flexGrow]="1">
       <ng-template let-row="row" ngx-datatable-cell-template>
-        <button md-raised-button color="primary" (click)="download(row)">Download</button>
+        <button mat-raised-button color="primary" (click)="download(row)">Download</button>
       </ng-template>
     </ngx-datatable-column>
   </ngx-datatable>

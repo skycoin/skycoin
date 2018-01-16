@@ -378,19 +378,6 @@ func walletsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-// Loads/unloads wallets from the wallet directory
-func walletsReloadHandler(gateway *daemon.Gateway) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if err := gateway.ReloadWallets(); err != nil {
-			logger.Error("reload wallet failed: %v", err)
-			wh.Error500(w)
-			return
-		}
-
-		wh.SendOr404(w, "success")
-	}
-}
-
 // WalletFolder struct
 type WalletFolder struct {
 	Address string `json:"address"`
@@ -406,9 +393,38 @@ func getWalletFolder(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-func newWalletSeed(gateway *daemon.Gateway) http.HandlerFunc {
+func newWalletSeed(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		mnemonic, err := bip39.NewDefaultMnemomic()
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
+		entropyValue := r.FormValue("entropy")
+		if entropyValue == "" {
+			entropyValue = "128"
+		}
+
+		entropyBits, err := strconv.Atoi(entropyValue)
+		if err != nil {
+			wh.Error400(w, "invalid entropy")
+			return
+		}
+
+		// Entropy bit size can either be 128 or 256
+		if entropyBits != 128 && entropyBits != 256 {
+			wh.Error400(w, "entropy length must be 128 or 256")
+			return
+		}
+
+		entropy, err := bip39.NewEntropy(entropyBits)
+		if err != nil {
+			logger.Error("bip39.NewEntropy failed: %v", err)
+			wh.Error500(w)
+			return
+		}
+
+		mnemonic, err := bip39.NewMnemonic(entropy)
 		if err != nil {
 			logger.Error("bip39.NewDefaultMnemomic failed: %v", err)
 			wh.Error500(w)
@@ -420,7 +436,6 @@ func newWalletSeed(gateway *daemon.Gateway) http.HandlerFunc {
 		}{
 			mnemonic,
 		}
-
 		wh.SendOr404(w, rlt)
 	}
 }
@@ -475,13 +490,6 @@ func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 
 	// Returns all loaded wallets
 	mux.HandleFunc("/wallets", walletsHandler(gateway))
-	// Saves all wallets to disk. Returns nothing if it works. Otherwise returns
-	// 500 status with error message.
-
-	// Rescans the wallet directory and loads/unloads wallets based on which
-	// files are present. Returns nothing if it works. Otherwise returns
-	// 500 status with error message.
-	mux.HandleFunc("/wallets/reload", walletsReloadHandler(gateway))
 
 	mux.HandleFunc("/wallets/folderName", getWalletFolder(gateway))
 

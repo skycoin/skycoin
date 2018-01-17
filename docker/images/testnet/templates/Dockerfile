@@ -44,4 +44,4 @@ VOLUME $DATA_DIR
 
 EXPOSE 6000 6420 6430
 
-CMD ["/usr/bin/skycoin", "--gui-dir=/usr/local/skycoin/static", "--web-interface-addr=0.0.0.0"]
+CMD ["/usr/bin/skycoin", "{{ .SkyCoinParameters }}"]

@@ -71,7 +71,7 @@ export class ApiService {
   }
 
   get(url, options = null) {
-    return this.http.get(this.getUrl(url, options), this.getHeaders())
+    return this.http.get(this.getUrl(url, options), this.returnRequestOptions())
       .map((res: any) => res.json())
       .catch((error: any) => Observable.throw(error || 'Server error'));
   }

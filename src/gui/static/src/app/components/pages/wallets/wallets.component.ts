@@ -1,9 +1,8 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { WalletService } from '../../../services/wallet.service';
-import { MdDialog, MdDialogConfig } from '@angular/material';
+import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { CreateWalletComponent } from './create-wallet/create-wallet.component';
 import { Wallet } from '../../../app.datatypes';
-import { Router } from '@angular/router';
 import { Subscription } from 'rxjs/Subscription';
 import { LoadWalletComponent } from './load-wallet/load-wallet.component';
 
@@ -21,8 +20,7 @@ export class WalletsComponent implements OnInit, OnDestroy {
 
   constructor(
     public walletService: WalletService,
-    private dialog: MdDialog,
-    private router: Router,
+    private dialog: MatDialog,
   ) {}
 
   ngOnInit() {
@@ -37,19 +35,15 @@ export class WalletsComponent implements OnInit, OnDestroy {
   }
 
   addWallet() {
-    const config = new MdDialogConfig();
+    const config = new MatDialogConfig();
     config.width = '566px';
-    this.dialog.open(CreateWalletComponent, config).afterClosed().subscribe(result => {
-      //
-    });
+    this.dialog.open(CreateWalletComponent, config).afterClosed().subscribe();
   }
 
   loadWallet() {
-    const config = new MdDialogConfig();
+    const config = new MatDialogConfig();
     config.width = '566px';
-    this.dialog.open(LoadWalletComponent, config).afterClosed().subscribe(result => {
-      //
-    });
+    this.dialog.open(LoadWalletComponent, config).afterClosed().subscribe();
   }
 
   toggleWallet(wallet: Wallet) {

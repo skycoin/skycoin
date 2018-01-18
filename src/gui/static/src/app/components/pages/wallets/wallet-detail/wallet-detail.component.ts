@@ -1,7 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { Wallet } from '../../../../app.datatypes';
 import { WalletService } from '../../../../services/wallet.service';
-import { MdDialog, MdDialogConfig } from '@angular/material';
+import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { ChangeNameComponent } from '../change-name/change-name.component';
 
 @Component({
@@ -13,12 +13,12 @@ export class WalletDetailComponent {
   @Input() wallet: Wallet;
 
   constructor(
-    private dialog: MdDialog,
+    private dialog: MatDialog,
     private walletService: WalletService,
   ) { }
 
   editWallet() {
-    const config = new MdDialogConfig();
+    const config = new MatDialogConfig();
     config.width = '566px';
     config.data = this.wallet;
     this.dialog.open(ChangeNameComponent, config);

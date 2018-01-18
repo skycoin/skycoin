@@ -220,6 +220,7 @@ func NewApp(cfg Config) *App {
 		listAddressesCmd(),
 		listWalletsCmd(),
 		sendCmd(),
+		advancedSendCmd(),
 		statusCmd(),
 		transactionCmd(),
 		versionCmd(),

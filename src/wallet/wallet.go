@@ -15,6 +15,8 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 
+	"math"
+
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/logging"
 )
@@ -490,6 +492,63 @@ func DistributeSpendHours(inputHours, nAddrs uint64, haveChange bool) (uint64, [
 	}
 
 	return changeHours, addrHours, spendHours
+}
+
+func AdvancedDistributeSpendHours(inputHours uint64, nAddrs uint64, sendHours float64, isPercent bool, haveChange bool) (uint64, []uint64, uint64) {
+	feeHours := fee.RequiredFee(inputHours)
+
+	var distributeHours uint64
+	if isPercent {
+		distributeHours = uint64(math.Ceil((float64(inputHours) * sendHours) / 100))
+	} else {
+		distributeHours = uint64(sendHours)
+	}
+
+	remainingHours := inputHours - feeHours - distributeHours
+
+	var changeHours uint64
+	if haveChange {
+		// Send remaining hours to change addr
+		changeHours = remainingHours
+	} else {
+		// If there is no change left add the remaining hours to distribute hours
+		// Otherwise we lose the hours
+		distributeHours += remainingHours
+	}
+
+	// Distribute the send hours equally amongst the destination outputs
+	addrHoursShare := distributeHours / nAddrs
+
+	// Due to integer division, extra coin hours might remain after dividing by len(toAddrs)
+	// Allocate these extra hours to the toAddrs
+	addrHours := make([]uint64, nAddrs)
+	for i := range addrHours {
+		addrHours[i] = addrHoursShare
+	}
+
+	extraHours := distributeHours - (addrHoursShare * nAddrs)
+	i := 0
+	for extraHours > 0 {
+		addrHours[i] = addrHours[i] + 1
+		i++
+		extraHours--
+	}
+
+	// Assert that the hour calculation is correct
+	var spendHours uint64
+	for _, h := range addrHours {
+		spendHours += h
+	}
+
+	if remainingHours < 0 {
+		logger.Panicf("remainingHours in wallet is negative (%d), calculation error", remainingHours)
+	}
+
+	if spendHours != distributeHours {
+		logger.Panicf("spendHours != distributehours (%d != %d), calculation error", spendHours, distributeHours)
+	}
+
+	return changeHours, addrHours, spendHours + changeHours
 }
 
 // UxBalance is an intermediate representation of a UxOut for sorting and spend choosing

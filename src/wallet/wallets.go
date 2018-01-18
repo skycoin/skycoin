@@ -121,7 +121,10 @@ func (wlts Wallets) ToReadable() []*ReadableWallet {
 	for _, w := range wlts {
 		rw = append(rw, NewReadableWallet(w))
 	}
-	sort.Sort(ByTm(rw))
+
+	sort.Slice(rw, func(i int, j int) bool {
+		return rw[i].time() < rw[j].time()
+	})
 	return rw
 }
 

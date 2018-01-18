@@ -127,6 +127,8 @@ type ReadableTransactionOutput struct {
 type ReadableTransactionInput struct {
 	Hash    string `json:"uxid"`
 	Address string `json:"owner"`
+	Coins   string `json:"coins"`
+	Hours   uint64 `json:"hours"`
 }
 
 // NewReadableTransactionOutput creates readable transaction outputs
@@ -145,10 +147,12 @@ func NewReadableTransactionOutput(t *coin.TransactionOutput, txid cipher.SHA256)
 }
 
 // NewReadableTransactionInput creates readable transaction input
-func NewReadableTransactionInput(uxID string, ownerAddress string) ReadableTransactionInput {
+func NewReadableTransactionInput(uxID string, ownerAddress string, coins string, hours uint64) ReadableTransactionInput {
 	return ReadableTransactionInput{
 		Hash:    uxID,
 		Address: ownerAddress, //Destination Address
+		Coins:   coins,
+		Hours:   hours,
 	}
 }
 

@@ -180,6 +180,18 @@ func TestScryptChacha20poly1305Decrypt(t *testing.T) {
 			[]byte("wrong password"),
 			ErrAuthenticationFailed{errors.New("chacha20poly1305: message authentication failed")},
 		},
+		{
+			"wrong crypto type",
+			Options{
+				Seed:       "seed",
+				Encrypt:    true,
+				Password:   []byte("pwd"),
+				CryptoType: CryptoTypeSha256Xor,
+			},
+			2,
+			[]byte("pwd"),
+			ErrWrongCryptoType,
+		},
 	}
 
 	for _, tc := range tt {
@@ -201,7 +213,13 @@ func TestScryptChacha20poly1305Decrypt(t *testing.T) {
 
 			// Encrypts wallet if the original options.Encrypt is true
 			if encrypt {
-				require.NoError(t, crypto.Encrypt(w, pwd))
+				if tc.opts.CryptoType == "" {
+					tc.opts.CryptoType = DefaultCryptoType
+				}
+
+				encryptor, err := getCrypto(tc.opts.CryptoType)
+				require.NoError(t, err)
+				require.NoError(t, encryptor.Encrypt(w, pwd))
 			}
 
 			dw, err := crypto.Decrypt(w, tc.pwd)

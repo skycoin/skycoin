@@ -4,7 +4,7 @@
 /* You can add global styles to this file, and also import other style files */
 //@import '~@angular/material/prebuilt-themes/indigo-pink.css';
 @import 'app/app.theme.scss';
-@import '~@swimlane/ngx-datatable/release/themes/material.css';
+@import '@swimlane/ngx-datatable/release/themes/material.css';
 
 @font-face {
   font-family: 'Skycoin';
@@ -56,7 +56,7 @@ $primary-color: #0072ff;
 $secondary-color: #ffc125;
 
 body, div, h1, h2, h3, h4, h5, h6, p, span, a, button, option, select,
-md-panel-description, md-panel-title, md-option.mat-option {
+mat-panel-description, mat-panel-title, mat-option.mat-option {
   font-family: $mat-font-family;
 }
 
@@ -77,7 +77,7 @@ header {
   height: 300px;
 }
 
-md-dialog-container {
+mat-dialog-container {
   border-radius: 5px !important;
 }
 
@@ -111,7 +111,7 @@ button.active {
   background-color: rgba(0,0,0,.12);
 }
 
-md-spinner.in-button .mat-spinner path {
+mat-spinner.in-button .mat-spinner path {
   stroke: #000;
   opacity: 0.3;
 }
@@ -120,7 +120,7 @@ snack-bar-container {
   background-color: rgba(255, 0, 0, 0.8) !important;
 }
 
-md-panel-title {
+mat-panel-title {
   width: 60%;
   display: block;
   flex-grow: 0 !important;
@@ -225,4 +225,9 @@ General Helpers
 
 .rotate-270 {
   transform: rotate(270deg);
+}
+
+mat-spinner.in-button svg {
+  height: 24px !important;
+  width: 24px !important;
 }

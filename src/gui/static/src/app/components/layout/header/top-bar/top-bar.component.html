@@ -3,22 +3,22 @@
   {{ title }}
 </div>
 <div class="buttons-right">
-  <md-menu #settingsMenu="mdMenu" [overlapTrigger]="false">
-    <button md-menu-item [routerLink]="['/settings/network']"> Networking </button>
-    <button md-menu-item [routerLink]="['/settings/blockchain']"> Blockchain </button>
-    <button md-menu-item [routerLink]="['/settings/outputs']"> Outputs </button>
-    <button md-menu-item [routerLink]="['/settings/pending-transactions']"> Pending Transactions </button>
-  </md-menu>
+  <mat-menu #settingsMenu="matMenu" [overlapTrigger]="false">
+    <button mat-menu-item [routerLink]="['/settings/network']"> Networking </button>
+    <button mat-menu-item [routerLink]="['/settings/blockchain']"> Blockchain </button>
+    <button mat-menu-item [routerLink]="['/settings/outputs']"> Outputs </button>
+    <button mat-menu-item [routerLink]="['/settings/pending-transactions']"> Pending Transactions </button>
+  </mat-menu>
 
-  <md-menu #menuMenu="mdMenu" [overlapTrigger]="false">
-    <button md-menu-item [routerLink]="['/settings/backup']"> Backup wallet </button>
-    <a md-menu-item href="https://explorer.skycoin.net" class="color-primary"> Skycoin Explorer </a>
-  </md-menu>
+  <mat-menu #menuMenu="matMenu" [overlapTrigger]="false">
+    <button mat-menu-item [routerLink]="['/settings/backup']"> Backup wallet </button>
+    <a mat-menu-item href="https://explorer.skycoin.net" class="color-primary"> Skycoin Explorer </a>
+  </mat-menu>
 
-  <button md-icon-button [mdMenuTriggerFor]="settingsMenu">
-    <md-icon>settings</md-icon>
+  <button mat-icon-button [matMenuTriggerFor]="settingsMenu">
+    <mat-icon>settings</mat-icon>
   </button>
-  <button md-icon-button [mdMenuTriggerFor]="menuMenu">
-    <md-icon>menu</md-icon>
+  <button mat-icon-button [matMenuTriggerFor]="menuMenu">
+    <mat-icon>menu</mat-icon>
   </button>
 </div>

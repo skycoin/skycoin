@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { WalletService } from '../../../../services/wallet.service';
-import { MdDialogRef } from '@angular/material';
+import { MatDialogRef } from '@angular/material/dialog';
 
 @Component({
   selector: 'app-load-wallet',
@@ -15,7 +15,7 @@ export class LoadWalletComponent implements OnInit {
   scan: Number;
 
   constructor(
-    public dialogRef: MdDialogRef<LoadWalletComponent>,
+    public dialogRef: MatDialogRef<LoadWalletComponent>,
     private walletService: WalletService,
   ) {}
 

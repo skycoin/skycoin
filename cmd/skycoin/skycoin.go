@@ -728,7 +728,7 @@ func Run(c *Config) {
 		webInterface.Shutdown()
 	}
 	d.Shutdown()
-	closelog()
+	// closelog()
 	wg.Wait()
 	logger.Info("Goodbye")
 }

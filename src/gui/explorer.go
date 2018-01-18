@@ -42,6 +42,8 @@ type CoinSupply struct {
 	TotalSupply string `json:"total_supply"`
 	// MaxSupply is the maximum number of coins to be distributed ever
 	MaxSupply string `json:"max_supply"`
+	// CoinHourSupply is the total number of coinhours in the distribution addresses
+	CoinHourSupply uint64 `json:"coinhour_supply"`
 	// Distribution addresses which count towards total supply
 	UnlockedAddresses []string `json:"unlocked_distribution_addresses"`
 	// Distribution addresses which are locked and do not count towards total supply
@@ -123,10 +125,18 @@ func coinSupply(gateway *daemon.Gateway, w http.ResponseWriter, r *http.Request)
 		return nil, nil
 	}
 
+	totalCoinHours, err := gateway.GetTotalCoinhours()
+	if err != nil {
+		logger.Errorf("Failed to get total coinhours: %v", err.Error())
+		wh.Error500(w)
+		return nil, nil
+	}
+
 	cs := CoinSupply{
 		CurrentSupply:     currentSupplyStr,
 		TotalSupply:       totalSupplyStr,
 		MaxSupply:         maxSupplyStr,
+		CoinHourSupply:    totalCoinHours,
 		UnlockedAddresses: unlockedAddrs,
 		LockedAddresses:   visor.GetLockedDistributionAddresses(),
 	}

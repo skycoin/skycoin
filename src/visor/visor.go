@@ -21,6 +21,7 @@ import (
 const (
 	// MaxDropletPrecision represents the decimal precision of droplets
 	MaxDropletPrecision uint64 = 3
+	DefaultMaxBlockSize int = 32 * 1024
 )
 
 var (
@@ -137,7 +138,7 @@ func NewVisorConfig() Config {
 		UnconfirmedRefreshRate:   time.Minute,
 		// UnconfirmedRefreshRate:   time.Minute * 30,
 		UnconfirmedResendPeriod: time.Minute,
-		MaxBlockSize:            1024 * 32,
+		MaxBlockSize:            DefaultMaxBlockSize,
 
 		GenesisAddress:    cipher.Address{},
 		GenesisSignature:  cipher.Sig{},

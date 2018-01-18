@@ -87,7 +87,7 @@ func getLastTxs(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-func getTransactionByID(gate *daemon.Gateway) http.HandlerFunc {
+func getTransactionByID(gate Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -131,7 +131,7 @@ func getTransactionByID(gate *daemon.Gateway) http.HandlerFunc {
 }
 
 //Implement
-func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
+func injectTransaction(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			wh.Error405(w)

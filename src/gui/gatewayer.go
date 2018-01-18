@@ -19,4 +19,6 @@ type Gatewayer interface {
 	NewAddresses(wltID string, n uint64) ([]cipher.Address, error)
 	GetWalletDir() string
 	GetAllUnconfirmedTxns() []visor.UnconfirmedTxn
+	GetTransaction(txid cipher.SHA256) (tx *visor.Transaction, err error)
+	InjectTransaction(txn coin.Transaction) error
 }

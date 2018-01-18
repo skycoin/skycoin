@@ -25,6 +25,7 @@ import (
 	"github.com/skycoin/skycoin/src/util/file"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 var (
@@ -50,6 +51,9 @@ var (
 	GenesisTimestamp uint64 = 1426562704
 	// GenesisCoinVolume represents the coin capacity
 	GenesisCoinVolume uint64 = 100e12
+
+	// WalletCryptoType crypto type
+	WalletCryptoType = string(wallet.CryptoTypeScryptChacha20poly1305)
 
 	// DefaultConnections the default trust node addresses
 	DefaultConnections = []string{
@@ -224,6 +228,7 @@ func (c *Config) register() {
 	flag.BoolVar(&c.Arbitrating, "arbitrating", c.Arbitrating, "Run node in arbitrating mode")
 	flag.BoolVar(&c.Logtogui, "logtogui", true, "log to gui")
 	flag.IntVar(&c.LogBuffSize, "logbufsize", c.LogBuffSize, "Log size saved in memeory for gui show")
+	flag.StringVar(&WalletCryptoType, "wallet-crypto-type", WalletCryptoType, "wallet crypto type. Can be sha256-xor or scrypt-chacha20poly1305")
 }
 
 var home = file.UserHome()
@@ -526,6 +531,15 @@ func Run(c *Config) {
 			logger.Errorf("recover: %v\nstack:%v", r, string(debug.Stack()))
 		}
 	}()
+
+	// Initialize wallet default crypto type
+	cryptoType, err := wallet.StrToCryptoType(WalletCryptoType)
+	if err != nil {
+		logger.Error("%v", err)
+		return
+	}
+
+	wallet.DefaultCryptoType = cryptoType
 
 	c.GUIDirectory = file.ResolveResourceDirectory(c.GUIDirectory)
 

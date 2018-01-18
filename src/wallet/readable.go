@@ -105,21 +105,6 @@ type ReadableWallet struct {
 	Entries ReadableEntries        `json:"entries"`
 }
 
-// ByTm for sort ReadableWallets
-type ByTm []*ReadableWallet
-
-func (bt ByTm) Len() int {
-	return len(bt)
-}
-
-func (bt ByTm) Less(i, j int) bool {
-	return bt[i].time() < bt[j].time()
-}
-
-func (bt ByTm) Swap(i, j int) {
-	bt[i], bt[j] = bt[j], bt[i]
-}
-
 // NewReadableWallet creates readable wallet
 func NewReadableWallet(w *Wallet) *ReadableWallet {
 	readable := make(ReadableEntries, len(w.Entries))
@@ -158,7 +143,7 @@ func (rw *ReadableWallet) toWallet() (*Wallet, error) {
 	}
 
 	if w.cryptoType() == "" {
-		w.setCryptoType(defaultCryptoType)
+		w.setCryptoType(DefaultCryptoType)
 	}
 
 	if err := w.validate(); err != nil {

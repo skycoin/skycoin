@@ -2,7 +2,6 @@ package wallet
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -202,12 +201,12 @@ func TestNewWallet(t *testing.T) {
 	}
 
 	for _, tc := range tt {
+		// test all supported crypto types
 		for ct := range cryptoTable {
 			ops := tc.ops
 			ops.CryptoType = ct
 			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
 			t.Run(name, func(t *testing.T) {
-				// test all supported crypto types
 				w, err := NewWallet(tc.wltName, ops)
 				require.Equal(t, tc.expect.err, err)
 				if err != nil {
@@ -220,19 +219,11 @@ func TestNewWallet(t *testing.T) {
 					crypto, err := getCrypto(w.cryptoType())
 					require.NoError(t, err)
 
-					// decrypt the seed and genearte the first address
-					ss, err := base64.StdEncoding.DecodeString(w.encryptedSeed())
+					dw, err := crypto.Decrypt(w, ops.Password)
 					require.NoError(t, err)
-					seed, err := crypto.Decrypt(ss, ops.Password)
-					require.NoError(t, err)
-					require.Equal(t, ops.Seed, string(seed))
 
-					// decrypt last seed
-					sls, err := base64.StdEncoding.DecodeString(w.encryptedLastSeed())
-					require.NoError(t, err)
-					lastSeed, err := crypto.Decrypt(sls, ops.Password)
-					require.NoError(t, err)
-					require.Equal(t, lastSeed, seed)
+					require.Equal(t, ops.Seed, dw.seed())
+					require.Equal(t, ops.Seed, dw.lastSeed())
 
 					// check the entries, the seckeys must be erased.
 					for _, e := range w.Entries {

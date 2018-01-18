@@ -68,8 +68,9 @@ func NewService(walletDir string, disableWalletAPI bool) (*Service, error) {
 
 		// Create default wallet
 		w, err := serv.CreateWallet("", Options{
-			Label: "Your Wallet",
-			Seed:  seed,
+			Label:      "Your Wallet",
+			Seed:       seed,
+			CryptoType: DefaultCryptoType,
 		})
 		if err != nil {
 			return nil, err
@@ -88,7 +89,7 @@ func (serv *Service) CreateWallet(wltName string, options Options) (*Wallet, err
 	serv.Lock()
 	defer serv.Unlock()
 	if serv.disableWalletAPI {
-		return Wallet{}, ErrWalletApiDisabled
+		return nil, ErrWalletApiDisabled
 	}
 	if wltName == "" {
 		wltName = serv.generateUniqueWalletFilename()

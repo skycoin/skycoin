@@ -10,6 +10,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 	"time"
 
@@ -224,7 +225,7 @@ func TestServiceNewAddress(t *testing.T) {
 		expectAddrs   []cipher.Address
 	}{
 		{
-			"not encrypted, 0 address",
+			"encrypted=false addresses=0",
 			Options{
 				Label: "label",
 				Seed:  string(seed),
@@ -236,7 +237,7 @@ func TestServiceNewAddress(t *testing.T) {
 			nil, // CreateWallet will generate a default address, so check from new address
 		},
 		{
-			"not encrypted, 1 addresses",
+			"encrypted=false addresses=1",
 			Options{
 				Label: "label",
 				Seed:  string(seed),
@@ -248,7 +249,7 @@ func TestServiceNewAddress(t *testing.T) {
 			addrs[1:3], // CreateWallet will generate a default address, so check from new address
 		},
 		{
-			"not encrypted, 2 addresses",
+			"encrypted=false addresses=2",
 			Options{
 				Label: "label",
 				Seed:  string(seed),
@@ -260,12 +261,13 @@ func TestServiceNewAddress(t *testing.T) {
 			addrs[1:3], // CreateWallet will generate a default address, so check from new address
 		},
 		{
-			"encrypted, 1 addresses",
+			"encrypted=true cryptoType=sha256xor addresses=1",
 			Options{
-				Label:    "label",
-				Seed:     string(seed),
-				Encrypt:  true,
-				Password: []byte("pwd"),
+				Label:      "label",
+				Seed:       string(seed),
+				Encrypt:    true,
+				CryptoType: CryptoTypeSha256Xor,
+				Password:   []byte("pwd"),
 			},
 			1,
 			[]byte("pwd"),
@@ -274,12 +276,13 @@ func TestServiceNewAddress(t *testing.T) {
 			addrs[1:2], // CreateWallet will generate a default address, so check from new address
 		},
 		{
-			"encrypted, 2 addresses",
+			"encrypted=true cryptoType=sha256xor addresses=2",
 			Options{
-				Label:    "label",
-				Seed:     string(seed),
-				Encrypt:  true,
-				Password: []byte("pwd"),
+				Label:      "label",
+				Seed:       string(seed),
+				Encrypt:    true,
+				CryptoType: CryptoTypeSha256Xor,
+				Password:   []byte("pwd"),
 			},
 			2,
 			[]byte("pwd"),
@@ -288,16 +291,62 @@ func TestServiceNewAddress(t *testing.T) {
 			addrs[1:3], // CreateWallet will generate a default address, so check from new address
 		},
 		{
-			"encrypted, wrong password",
+			"encrypted=true cryptoTye=sha256xor fail=wrong password",
 			Options{
-				Label:    "label",
-				Seed:     string(seed),
-				Encrypt:  true,
-				Password: []byte("pwd"),
+				Label:      "label",
+				Seed:       string(seed),
+				Encrypt:    true,
+				CryptoType: CryptoTypeSha256Xor,
+				Password:   []byte("pwd"),
 			},
 			1,
 			[]byte("wrong password"),
-			errors.New("unlock wallet failed: invalid password"),
+			ErrAuthenticationFailed{errors.New("invalid password")},
+			1,
+			nil,
+		},
+		{
+			"encrypted=true cryptoTye=scryptChacha20poly1305 addresses=1",
+			Options{
+				Label:      "label",
+				Seed:       string(seed),
+				Encrypt:    true,
+				CryptoType: CryptoTypeScryptChacha20poly1305,
+				Password:   []byte("pwd"),
+			},
+			1,
+			[]byte("pwd"),
+			nil,
+			1,
+			addrs[1:2],
+		},
+		{
+			"encrypted=true cryptoTye=scryptChacha20poly1305 addresses=2",
+			Options{
+				Label:      "label",
+				Seed:       string(seed),
+				Encrypt:    true,
+				CryptoType: CryptoTypeScryptChacha20poly1305,
+				Password:   []byte("pwd"),
+			},
+			2,
+			[]byte("pwd"),
+			nil,
+			2,
+			addrs[1:3],
+		},
+		{
+			"encrypted=true cryptoTye=scryptChacha20poly1305 fail=message authentication failed",
+			Options{
+				Label:      "label",
+				Seed:       string(seed),
+				Encrypt:    true,
+				CryptoType: CryptoTypeScryptChacha20poly1305,
+				Password:   []byte("pwd"),
+			},
+			1,
+			[]byte("wrong password"),
+			ErrAuthenticationFailed{errors.New("chacha20poly1305: message authentication failed")},
 			1,
 			nil,
 		},
@@ -933,59 +982,69 @@ func TestServiceDecryptWallet(t *testing.T) {
 			},
 			"test.wlt",
 			[]byte("wrong password"),
-			errors.New("invalid password"),
+			ErrAuthenticationFailed{},
 		},
 	}
 
 	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			dir := prepareWltDir()
-			s, err := NewService(dir)
-			require.NoError(t, err)
-
-			_, err = s.CreateWallet(tc.wltName, tc.opts)
-			require.NoError(t, err)
-
-			err = s.DecryptWallet(tc.decryptWltName, tc.password)
-			require.Equal(t, tc.err, err)
-			if err != nil {
-				return
-			}
-
-			verifyDecryptedWlt := func(wlt *Wallet) {
-				// Checks the "encrypted" meta info
-				require.False(t, wlt.IsEncrypted())
-				// Checks the seed
-				require.Equal(t, tc.opts.Seed, wlt.seed())
-				// Checks the last seed
-				entryNum := len(wlt.Entries)
-				lsd, seckeys := cipher.GenerateDeterministicKeyPairsSeed([]byte(wlt.seed()), entryNum)
+		for cryptoType := range cryptoTable {
+			name := fmt.Sprintf("crypto=%v %v", cryptoType, tc.name)
+			t.Run(name, func(t *testing.T) {
+				dir := prepareWltDir()
+				s, err := NewService(dir)
 				require.NoError(t, err)
-				require.Equal(t, hex.EncodeToString(lsd), wlt.lastSeed())
 
-				// Checks the entries
-				for i := range seckeys {
-					a := cipher.AddressFromSecKey(seckeys[i])
-					require.Equal(t, a, wlt.Entries[i].Address)
-					require.Equal(t, seckeys[i], wlt.Entries[i].Secret)
+				tc.opts.CryptoType = cryptoType
+				_, err = s.CreateWallet(tc.wltName, tc.opts)
+				require.NoError(t, err)
+
+				err = s.DecryptWallet(tc.decryptWltName, tc.password)
+				if err != nil {
+					switch tc.err.(type) {
+					case ErrAuthenticationFailed:
+						require.Equal(t, reflect.TypeOf(err).Name(), reflect.TypeOf(tc.err).Name())
+					default:
+						require.Equal(t, tc.err, err)
+					}
+					return
 				}
-			}
 
-			// Checks the decrypted wallet in service
-			w, err := s.getWallet(tc.wltName)
-			require.NoError(t, err)
-			verifyDecryptedWlt(w)
+				verifyDecryptedWlt := func(wlt *Wallet) {
+					// Checks the "encrypted" meta info
+					require.False(t, wlt.IsEncrypted())
+					// Checks the seed
+					require.Equal(t, tc.opts.Seed, wlt.seed())
+					// Checks the last seed
+					entryNum := len(wlt.Entries)
+					lsd, seckeys := cipher.GenerateDeterministicKeyPairsSeed([]byte(wlt.seed()), entryNum)
+					require.NoError(t, err)
+					require.Equal(t, hex.EncodeToString(lsd), wlt.lastSeed())
 
-			// Checks the existence of the wallet file
-			fn := filepath.Join(dir, tc.wltName)
-			_, err = os.Stat(fn)
-			require.True(t, !os.IsNotExist(err))
+					// Checks the entries
+					for i := range seckeys {
+						a := cipher.AddressFromSecKey(seckeys[i])
+						require.Equal(t, a, wlt.Entries[i].Address)
+						require.Equal(t, seckeys[i], wlt.Entries[i].Secret)
+					}
+				}
 
-			// Loads wallet from the file and check if it's decrypted
-			w1, err := Load(fn)
-			require.NoError(t, err)
-			verifyDecryptedWlt(w1)
-		})
+				// Checks the decrypted wallet in service
+				w, err := s.getWallet(tc.wltName)
+				require.NoError(t, err)
+				verifyDecryptedWlt(w)
+
+				// Checks the existence of the wallet file
+				fn := filepath.Join(dir, tc.wltName)
+				_, err = os.Stat(fn)
+				require.True(t, !os.IsNotExist(err))
+
+				// Loads wallet from the file and check if it's decrypted
+				w1, err := Load(fn)
+				require.NoError(t, err)
+				verifyDecryptedWlt(w1)
+			})
+
+		}
 	}
 }
 
@@ -1261,7 +1320,7 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 				addrs[3]: BalancePair{Predicted: Balance{Coins: 10, Hours: 100}},
 			},
 			exp{
-				err: errors.New("unlock wallet failed: invalid password"),
+				err: ErrAuthenticationFailed{},
 			},
 		},
 	}
@@ -1279,8 +1338,13 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 			require.NoError(t, w.validate())
 
 			w1, err := s.ScanAheadWalletAddresses(wltName, tc.pwd, tc.scanN, tc.balGetter)
-			require.Equal(t, tc.expect.err, err)
 			if err != nil {
+				switch tc.expect.err.(type) {
+				case ErrAuthenticationFailed:
+					require.Equal(t, reflect.TypeOf(err).Name(), reflect.TypeOf(tc.expect.err).Name())
+				default:
+					require.Equal(t, tc.expect.err, err)
+				}
 				return
 			}
 

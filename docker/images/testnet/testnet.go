@@ -101,23 +101,24 @@ func (d *DockerFile) BuildImage() {
 
 // ConfigureNodes generates a Dockerfile with the passed parameters
 func ConfigureNodes() {
-	var nodes []DockerFile
 	currentCommit := GetCurrentGitCommit()
-	nodes = append(nodes, DockerFile{
-		NodeType: "gui",
-		SkyCoinParameters: []string{
-			"--gui-dir=/usr/local/skycoin/static",
-			"--web-interface-addr=0.0.0.0",
+	nodes := [2]DockerFile{
+		DockerFile{
+			NodeType: "gui",
+			SkyCoinParameters: []string{
+				"--gui-dir=/usr/local/skycoin/static",
+				"--web-interface-addr=0.0.0.0",
+			},
+			GitCommit: currentCommit,
 		},
-		GitCommit: currentCommit,
-	})
-	nodes = append(nodes, DockerFile{
-		NodeType: "nogui",
-		SkyCoinParameters: []string{
-			"-web-interface false",
+		DockerFile{
+			NodeType: "nogui",
+			SkyCoinParameters: []string{
+				"--web-interface=false",
+			},
+			GitCommit: currentCommit,
 		},
-		GitCommit: currentCommit,
-	})
+	}
 	for _, d := range nodes {
 		d.CreateDockerFile()
 		d.BuildImage()

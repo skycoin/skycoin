@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
 )
 
 // set rand seed.
@@ -60,46 +59,4 @@ func SHA256FromHex(t *testing.T, hex string) cipher.SHA256 {
 	sha, err := cipher.SHA256FromHex(hex)
 	require.NoError(t, err)
 	return sha
-}
-func MakeTransaction(t *testing.T) coin.Transaction {
-	tx, _ := makeTransactionWithSecret(t)
-	return tx
-}
-
-func makeUxOutWithSecret(t *testing.T) (coin.UxOut, cipher.SecKey) {
-	body, sec := makeUxBodyWithSecret(t)
-	return coin.UxOut{
-		Head: coin.UxHead{
-			Time:  100,
-			BkSeq: 2,
-		},
-		Body: body,
-	}, sec
-}
-
-func makeAddress() cipher.Address {
-	p, _ := cipher.GenerateKeyPair()
-	return cipher.AddressFromPubKey(p)
-}
-
-func makeTransactionWithSecret(t *testing.T) (coin.Transaction, cipher.SecKey) {
-	tx := coin.Transaction{}
-	ux, s := makeUxOutWithSecret(t)
-
-	tx.PushInput(ux.Hash())
-	tx.SignInputs([]cipher.SecKey{s})
-	tx.PushOutput(makeAddress(), 1e6, 50)
-	tx.PushOutput(makeAddress(), 5e6, 50)
-	tx.UpdateHeader()
-	return tx, s
-}
-
-func makeUxBodyWithSecret(t *testing.T) (coin.UxBody, cipher.SecKey) {
-	p, s := cipher.GenerateKeyPair()
-	return coin.UxBody{
-		SrcTransaction: RandSHA256(t),
-		Address:        cipher.AddressFromPubKey(p),
-		Coins:          1e6,
-		Hours:          100,
-	}, s
 }

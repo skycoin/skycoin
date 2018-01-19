@@ -3,6 +3,7 @@ package gui
 import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -21,4 +22,5 @@ type Gatewayer interface {
 	GetAllUnconfirmedTxns() []visor.UnconfirmedTxn
 	GetTransaction(txid cipher.SHA256) (tx *visor.Transaction, err error)
 	InjectTransaction(txn coin.Transaction) error
+	ResendUnconfirmedTxns() (rlt *daemon.ResendResult)
 }

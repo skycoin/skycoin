@@ -171,7 +171,7 @@ func injectTransaction(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-func resendUnconfirmedTxns(gate *daemon.Gateway) http.HandlerFunc {
+func resendUnconfirmedTxns(gate Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -186,7 +186,7 @@ func resendUnconfirmedTxns(gate *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-func getRawTx(gate *daemon.Gateway) http.HandlerFunc {
+func getRawTx(gate Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)

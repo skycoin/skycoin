@@ -84,8 +84,6 @@ func sendCmd() gcli.Command {
 	// Commands = append(Commands, cmd)
 }
 
-// @TODO: Add Tests
-// @TODO: Add predefined strategies to choose unspents
 func advancedSendCmd() gcli.Command {
 	name := "advancedSend"
 	return gcli.Command{

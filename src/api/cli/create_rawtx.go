@@ -602,7 +602,7 @@ func advancedCreateRawTx(uxouts visor.ReadableOutputSet, wlt *wallet.Wallet, chg
 		totalCoins += arg.Coins
 	}
 
-	outs, err := advancedChooseSpends(uxouts, totalCoins)
+	outs, err := chooseSpends(uxouts, totalCoins)
 	if err != nil {
 		return nil, err
 	}
@@ -626,43 +626,6 @@ func advancedCreateRawTx(uxouts visor.ReadableOutputSet, wlt *wallet.Wallet, chg
 }
 
 func chooseSpends(uxouts visor.ReadableOutputSet, coins uint64) ([]wallet.UxBalance, error) {
-	// Convert spendable unspent outputs to []wallet.UxBalance
-	spendableOutputs, err := visor.ReadableOutputsToUxBalances(uxouts.SpendableOutputs())
-	if err != nil {
-		return nil, err
-	}
-
-	// Choose which unspent outputs to spend
-	// Use the MinimizeUxOuts strategy, since this is most likely used by
-	// application that may need to send frequently.
-	// Using fewer UxOuts will leave more available for other transactions,
-	// instead of waiting for confirmation.
-	outs, err := wallet.ChooseSpendsMinimizeUxOuts(spendableOutputs, coins)
-	if err != nil {
-		// If there is not enough balance in the spendable outputs,
-		// see if there is enough balance when including incoming outputs
-		if err == wallet.ErrInsufficientBalance {
-			expectedOutputs, otherErr := visor.ReadableOutputsToUxBalances(uxouts.ExpectedOutputs())
-			if otherErr != nil {
-				return nil, otherErr
-			}
-
-			if _, otherErr := wallet.ChooseSpendsMinimizeUxOuts(expectedOutputs, coins); otherErr != nil {
-				return nil, err
-			}
-
-			return nil, ErrTemporaryInsufficientBalance
-		}
-
-		return nil, err
-	}
-
-	return outs, nil
-}
-
-// TODO: Implement this
-// Ideas: allow different predefined strategies to choose UxOuts
-func advancedChooseSpends(uxouts visor.ReadableOutputSet, coins uint64) ([]wallet.UxBalance, error) {
 	// Convert spendable unspent outputs to []wallet.UxBalance
 	spendableOutputs, err := visor.ReadableOutputsToUxBalances(uxouts.SpendableOutputs())
 	if err != nil {

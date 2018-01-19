@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Remove `/logs` and log buffering due to possible crash
 - Add `Host` header check to localhost HTTP interfaces to prevent DNS rebinding attacks
 - #866, Include coins and hours in `/explorer/address` inputs
+- #864, Add `advancedSend` cli command
+
+>>>>>>> Update changelog and readme
 
 ## [0.21.1] - 2017-12-14
 

@@ -86,32 +86,37 @@ USAGE:
    skycoin-cli [global options] command [command options] [arguments...]
 
 VERSION:
-   0.1
+   0.21.1
 
 COMMANDS:
      addPrivateKey         Add a private key to specific wallet
+     addressBalance        Check the balance of specific addresses
+     addressGen            Generate skycoin or bitcoin addresses
+     addressOutputs        Display outputs of specific addresses
      blocks                Lists the content of a single block or a range of blocks
      broadcastTransaction  Broadcast a raw transaction to the network
-     walletBalance         Check the balance of a wallet
-     walletOutputs         Display outputs of specific wallet
-     addressBalance        Check the balance of specific addresses
-     addressOutputs        Display outputs of specific addresses
      createRawTransaction  Create a raw transaction to be broadcast to the network later
+     decodeRawTransaction  Decode raw transaction
      generateAddresses     Generate additional addresses for a wallet
      generateWallet        Generate a new wallet
      lastBlocks            Displays the content of the most recently N generated blocks
      listAddresses         Lists all addresses in a given wallet
-     listWallets           Lists all wallets stored in the default wallet directory
+     listWallets           Lists all wallets stored in the wallet directory
      send                  Send skycoin from a wallet or an address to a recipient address
+     advancedSend          Create a custom send transaction from a wallet or address to a recipient address
      status                Check the status of current skycoin node
      transaction           Show detail info of specific transaction
      version
+     walletBalance         Check the balance of a wallet
      walletDir             Displays wallet folder address
-     walletHistory         Display the transaction history of specific wallet
+     walletHistory         Display the transaction history of specific wallet. Requires skycoin node rpc.
+     walletOutputs         Display outputs of specific wallet
+     checkdb               Verify the database
+     verifyAddress         Verify a skycoin address
      help, h               Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
-   --help, -h     show help, can also be used to show subcommand help
+   --help, -h     show help
    --version, -v  print the version
 ENVIRONMENT VARIABLES:
     RPC_ADDR: Address of RPC node. Default "127.0.0.1:6430"
@@ -134,6 +139,22 @@ $ skycoin-cli send -f $WALLET_PATH $recipient_address $amount
 ```
 
 Use `skycoin-cli send -h` to see the subcommand usage.
+
+### Advanced send
+
+```bash
+$ skycoin-cli advancedSend -s $coinhours_distribute -u $unspent_hash $recipient_address $amount
+```
+
+The above `advancedSend` command will send coins from your node's default wallet: `$HOME/.skycoin/wallets/skycoin_cli.wlt` if it has `$unspent_hash`. 
+It willt send `$coinhours_distribute` to `$recipient_address`
+You can also send from the wallet as you want, just use the `-f` option flag, example:
+
+```bash
+$ skycoin-cli advancedSend -f $WALLET_PATH -a $from_address -s $coinhours_distribute -u $unspent_hash $recipient_address $amount
+```
+
+Use `skycoin-cli advancedSend -h` to see the subcommand usage.
 
 ### Check address balance
 

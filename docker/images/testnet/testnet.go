@@ -2,11 +2,12 @@
 package main
 
 import (
+	"bufio"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"path"
-//	"strings"
 	"text/template"
 )
 
@@ -57,27 +58,69 @@ func (d *DockerFile) CreateDockerFile() {
 	f.Close()
 }
 
+// BuildImage builds the node docker image
+func (d *DockerFile) BuildImage() {
+	cmdName := "docker"
+	imageTag := "skycoin-" + d.NodeType + ":" + d.GitCommit
+	dockerFile := "Dockerfile-" + d.NodeType
+	cmdArgs := []string{
+		"build",
+		"-f", dockerFile,
+		"-t", imageTag,
+		"../../../",
+	}
+	cmd := exec.Command(cmdName, cmdArgs...)
+	cmdReader, err := cmd.StdoutPipe()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error creating StdoutPipe for Cmd", err)
+		os.Exit(1)
+	}
+
+	scanner := bufio.NewScanner(cmdReader)
+	go func() {
+		for scanner.Scan() {
+			fmt.Printf("docker build out | %s\n", scanner.Text())
+		}
+	}()
+
+	fmt.Println("Building " + imageTag)
+
+	err = cmd.Start()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error starting Cmd", err)
+		os.Exit(1)
+	}
+
+	err = cmd.Wait()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error waiting for Cmd", err)
+		os.Exit(1)
+	}
+	os.Remove(dockerFile)
+}
+
 // ConfigureNodes generates a Dockerfile with the passed parameters
 func ConfigureNodes() {
 	var nodes []DockerFile
 	currentCommit := GetCurrentGitCommit()
 	nodes = append(nodes, DockerFile{
-		NodeType:          "gui",
+		NodeType: "gui",
 		SkyCoinParameters: []string{
 			"--gui-dir=/usr/local/skycoin/static",
 			"--web-interface-addr=0.0.0.0",
 		},
-		GitCommit:         currentCommit,
+		GitCommit: currentCommit,
 	})
 	nodes = append(nodes, DockerFile{
-		NodeType:          "nogui",
+		NodeType: "nogui",
 		SkyCoinParameters: []string{
 			"-web-interface false",
 		},
-		GitCommit:         currentCommit,
+		GitCommit: currentCommit,
 	})
 	for _, d := range nodes {
 		d.CreateDockerFile()
+		d.BuildImage()
 	}
 }
 func main() {

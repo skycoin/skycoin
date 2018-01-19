@@ -11,13 +11,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"crypto/rand"
-
 	"math"
 
-	"github.com/stretchr/testify/assert"
-
-	"github.com/pkg/errors"
+	"errors"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -25,12 +21,13 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 )
 
+// GetBlockByHash returns block by hash
 func (gw *FakeGateway) GetBlockByHash(hash cipher.SHA256) (block coin.SignedBlock, ok bool) {
 	args := gw.Called(hash)
 	return args.Get(0).(coin.SignedBlock), args.Bool(1)
 }
 
-// GetBlockBySeq returns blcok by seq
+// GetBlockBySeq returns block by seq
 func (gw *FakeGateway) GetBlockBySeq(seq uint64) (block coin.SignedBlock, ok bool) {
 	args := gw.Called(seq)
 	return args.Get(0).(coin.SignedBlock), args.Bool(1)
@@ -40,14 +37,6 @@ func (gw *FakeGateway) GetBlockBySeq(seq uint64) (block coin.SignedBlock, ok boo
 func (gw *FakeGateway) GetBlocks(start, end uint64) (*visor.ReadableBlocks, error) {
 	args := gw.Called(start, end)
 	return args.Get(0).(*visor.ReadableBlocks), args.Error(1)
-}
-
-func randBytes(t *testing.T, n int) []byte {
-	b := make([]byte, n)
-	x, err := rand.Read(b)
-	assert.Equal(t, n, x)
-	assert.Nil(t, err)
-	return b
 }
 
 func makeBadBlock(t *testing.T) *coin.Block {
@@ -72,12 +61,10 @@ func feeCalc(t *coin.Transaction) (uint64, error) {
 func TestGetBlock(t *testing.T) {
 
 	badBlock := makeBadBlock(t)
-
-	h := cipher.SHA256{}
-	h.Set(randBytes(t, 32))
-	validHashString := h.Hex()
+	validHashString := testutil.RandSHA256(t).Hex()
 	validSHA256, err := cipher.SHA256FromHex(validHashString)
 	require.NoError(t, err)
+
 	tt := []struct {
 		name                        string
 		method                      string
@@ -127,7 +114,7 @@ func TestGetBlock(t *testing.T) {
 			&visor.ReadableBlock{},
 		},
 		{
-			"400 - seq and hash",
+			"400 - seq and hash simultaneously",
 			http.MethodGet,
 			"/block",
 			http.StatusBadRequest,
@@ -143,7 +130,7 @@ func TestGetBlock(t *testing.T) {
 			&visor.ReadableBlock{},
 		},
 		{
-			"400 - hash: encoding/hex err invalid byte: U+0068 'h'",
+			"400 - hash error: encoding/hex err invalid byte: U+0068 'h'",
 			http.MethodGet,
 			"/block",
 			http.StatusBadRequest,
@@ -159,7 +146,7 @@ func TestGetBlock(t *testing.T) {
 			&visor.ReadableBlock{},
 		},
 		{
-			"400 - hash: encoding/hex: odd length hex string",
+			"400 - hash error: encoding/hex: odd length hex string",
 			http.MethodGet,
 			"/block",
 			http.StatusBadRequest,
@@ -175,7 +162,7 @@ func TestGetBlock(t *testing.T) {
 			&visor.ReadableBlock{},
 		},
 		{
-			"400 - hash: Invalid hex length",
+			"400 - hash error: Invalid hex length",
 			http.MethodGet,
 			"/block",
 			http.StatusBadRequest,
@@ -191,7 +178,7 @@ func TestGetBlock(t *testing.T) {
 			&visor.ReadableBlock{},
 		},
 		{
-			"404 - hash",
+			"404 - block by hash does not exist",
 			http.MethodGet,
 			"/block",
 			http.StatusNotFound,
@@ -220,7 +207,7 @@ func TestGetBlock(t *testing.T) {
 			},
 		},
 		{
-			"200 - hash",
+			"200 - got block by hash",
 			http.MethodGet,
 			"/block",
 			http.StatusOK,
@@ -249,7 +236,7 @@ func TestGetBlock(t *testing.T) {
 			},
 		},
 		{
-			"400 - seq: ",
+			"400 - seq error: invalid syntax",
 			http.MethodGet,
 			"/block",
 			http.StatusBadRequest,
@@ -265,7 +252,7 @@ func TestGetBlock(t *testing.T) {
 			&visor.ReadableBlock{},
 		},
 		{
-			"404 - seq",
+			"404 - block by seq does not exist",
 			http.MethodGet,
 			"/block",
 			http.StatusNotFound,
@@ -299,7 +286,7 @@ func TestGetBlock(t *testing.T) {
 			&visor.ReadableBlock{},
 		},
 		{
-			"200 - seq",
+			"200 - got block by seq",
 			http.MethodGet,
 			"/block",
 			http.StatusOK,
@@ -329,9 +316,6 @@ func TestGetBlock(t *testing.T) {
 		},
 	}
 
-	// Truncated hex hash
-	//h := cipher.SumSHA256(randBytes(t, 128))
-
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &FakeGateway{
@@ -341,7 +325,7 @@ func TestGetBlock(t *testing.T) {
 			gateway.On("GetBlockByHash", tc.sha256).Return(tc.gatewayGetBlockByHashResult, tc.gatewayGetBlockByHashExists)
 			gateway.On("GetBlockBySeq", tc.seq).Return(tc.gatewayGetBlockBySeqResult, tc.gatewayGetBlockBySeqExists)
 			v := url.Values{}
-			var url = tc.url
+			var urlFull = tc.url
 			if tc.hash != "" {
 				v.Add("hash", tc.hash)
 			}
@@ -349,10 +333,10 @@ func TestGetBlock(t *testing.T) {
 				v.Add("seq", tc.seqStr)
 			}
 			if len(v) > 0 {
-				url += "?" + v.Encode()
+				urlFull += "?" + v.Encode()
 			}
 
-			req, err := http.NewRequest(tc.method, url, nil)
+			req, err := http.NewRequest(tc.method, urlFull, nil)
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
@@ -454,7 +438,7 @@ func TestGetBlocks(t *testing.T) {
 			&visor.ReadableBlocks{},
 		},
 		{
-			"400",
+			"400 - gatewayGetBlocksError",
 			http.MethodGet,
 			"/blocks",
 			http.StatusBadRequest,
@@ -523,7 +507,7 @@ func TestGetBlocks(t *testing.T) {
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				var msg *visor.ReadableBlocks
-				err := json.Unmarshal(rr.Body.Bytes(), &msg)
+				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.response, msg)
 			}

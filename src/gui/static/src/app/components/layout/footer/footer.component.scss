@@ -1,0 +1,48 @@
+@import '../../../../theme/_variables';
+
+:host {
+  background-color: $white;
+  bottom: 0;
+  height: 66px;
+  left: 0;
+  padding: 4px 0;
+  position: fixed;
+  right: 0;
+  text-align: center;
+  width: 100%;
+
+  button img {
+    max-height: 28px;
+    max-width: 28px;
+  }
+
+  .-main {
+    background: $gradient-blue-dark; /* For browsers that do not support gradients */
+    background: -webkit-linear-gradient(left top, $gradient-blue-dark, $gradient-blue-light); /* For Safari 5.1 to 6.0 */
+    background: -o-linear-gradient(bottom right, $gradient-blue-dark, $gradient-blue-light); /* For Opera 11.1 to 12.0 */
+    background: -moz-linear-gradient(bottom right, $gradient-blue-dark, $gradient-blue-light); /* For Firefox 3.6 to 15 */
+    background: linear-gradient(to bottom right, $gradient-blue-dark, $gradient-blue-light); /* Standard syntax */
+    border-radius: 25px;
+    height: 50px;
+    margin: 13px 30px;
+    width: 100px;
+
+    img {
+      -moz-transform: scaleX(-1);
+      -o-transform: scaleX(-1);
+      -webkit-transform: scaleX(-1);
+      transform: scaleX(-1);
+      filter: FlipH;
+      -ms-filter: "FlipH";
+    }
+  }
+
+  .-transparent {
+    background-color: $white;
+    border-radius: 25px;
+    box-shadow: none;
+    height: 50px;
+    margin: 13px 0;
+    width: 80px;
+  }
+}

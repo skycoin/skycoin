@@ -1,12 +1,17 @@
+h3, ngx-datatable {
+  margin-left: 20px;
+  margin-right: 20px;
+}
+
 ngx-datatable {
   margin-bottom: 20px;
 }
 
-md-card {
+mat-card {
   margin-bottom: 20px;
 }
 
-md-card h3 button {
+mat-card h3 button {
   display: inline;
   float: right;
   margin-top: -8px;

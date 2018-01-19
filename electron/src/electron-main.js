@@ -23,7 +23,7 @@ const defaultURL = 'http://127.0.0.1:6420/';
 let currentURL;
 
 // Force everything localhost, in case of a leak
-app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1');
+app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1, EXCLUDE api.coinmarketcap.com');
 app.commandLine.appendSwitch('ssl-version-fallback-min', 'tls1.2');
 app.commandLine.appendSwitch('--no-proxy-server');
 app.setAsDefaultProtocolClient('skycoin');

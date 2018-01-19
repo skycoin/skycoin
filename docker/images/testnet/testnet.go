@@ -6,14 +6,14 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"strings"
+//	"strings"
 	"text/template"
 )
 
-// DockerParameters Dockerfile parameters
-type DockerParameters struct {
-	SkyCoinParameters string
-	BuildContext      string
+// DockerFile object to generate dockerfiles.
+type DockerFile struct {
+	SkyCoinParameters []string
+	NodeType          string
 	GitCommit         string
 }
 
@@ -36,52 +36,50 @@ func GetCurrentGitCommit() string {
 
 // CreateDockerFile makes the Dockerfiles needed to build the images
 // for the testnet
-func CreateDockerFile(parameters DockerParameters) {
+func (d *DockerFile) CreateDockerFile() {
 	dockerfileTemplate := path.Join("templates", "Dockerfile")
 	_, err := os.Stat(dockerfileTemplate)
 	if err != nil {
 		log.Print(err)
 		return
 	}
-	f, err := os.Create("Dockerfile")
-	if err != nil {
-		log.Print(err)
-		return
-	}
 	buildTemplate, err := template.ParseFiles(dockerfileTemplate)
-	err = buildTemplate.Execute(f, parameters)
+	f, err := os.Create("Dockerfile-" + d.NodeType)
 	if err != nil {
 		log.Print(err)
 		return
 	}
+	err = buildTemplate.Execute(f, d)
+	if err != nil {
+		log.Print(err)
+		return
+	}
+	f.Close()
 }
 
-// GenerateDockerFile generates a Dockerfile with the passed parameters
-func GenerateDockerFiles() {
-	commonParameters := []string{
-		"-launch-browser false",
+// ConfigureNodes generates a Dockerfile with the passed parameters
+func ConfigureNodes() {
+	var nodes []DockerFile
+	currentCommit := GetCurrentGitCommit()
+	nodes = append(nodes, DockerFile{
+		NodeType:          "gui",
+		SkyCoinParameters: []string{
+			"--gui-dir=/usr/local/skycoin/static",
+			"--web-interface-addr=0.0.0.0",
+		},
+		GitCommit:         currentCommit,
+	})
+	nodes = append(nodes, DockerFile{
+		NodeType:          "nogui",
+		SkyCoinParameters: []string{
+			"-web-interface false",
+		},
+		GitCommit:         currentCommit,
+	})
+	for _, d := range nodes {
+		d.CreateDockerFile()
 	}
-	guiParameters := []string{
-		"--gui-dir=/usr/local/skycoin/static",
-		"--web-interface-addr=0.0.0.0",
-	}
-	noGuiParameters := []string{
-		"-web-interface false",
-		"-web-interface false",
-	}
-	parameters := DockerParameters{
-		SkyCoinParameters: strings.Join(append(commonParameters, noGuiParameters...), "\", \""),
-		BuildContext:      "run",
-		GitCommit:         GetCurrentGitCommit(),
-	}
-	noparameters := DockerParameters{
-		SkyCoinParameters: strings.Join(append(commonParameters, guiParameters...), "\", \""),
-		BuildContext:      "run",
-		GitCommit:         GetCurrentGitCommit(),
-	}
-	CreateDockerFile(parameters)
-	CreateDockerFile(noparameters)
 }
 func main() {
-	GenerateDockerFiles()
+	ConfigureNodes()
 }

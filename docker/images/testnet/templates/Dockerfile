@@ -44,4 +44,4 @@ VOLUME $DATA_DIR
 
 EXPOSE 6000 6420 6430
 
-CMD ["/usr/bin/skycoin", "{{ .SkyCoinParameters }}"]
+CMD ["/usr/bin/skycoin"{{ range .SkyCoinParameters }}, "{{ . }}"{{ end }}]

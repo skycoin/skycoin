@@ -101,12 +101,15 @@ func (d *DockerFile) BuildImage() {
 
 // ConfigureNodes generates a Dockerfile with the passed parameters
 func ConfigureNodes() {
+	commonParameters := []string{
+		"--launch-browser=false",
+		"--gui-dir=/usr/local/skycoin/static",
+	}
 	currentCommit := GetCurrentGitCommit()
 	nodes := [2]DockerFile{
 		DockerFile{
 			NodeType: "gui",
 			SkyCoinParameters: []string{
-				"--gui-dir=/usr/local/skycoin/static",
 				"--web-interface-addr=0.0.0.0",
 			},
 			GitCommit: currentCommit,
@@ -120,6 +123,7 @@ func ConfigureNodes() {
 		},
 	}
 	for _, d := range nodes {
+		d.SkyCoinParameters = append(d.SkyCoinParameters, commonParameters...)
 		d.CreateDockerFile()
 		d.BuildImage()
 	}

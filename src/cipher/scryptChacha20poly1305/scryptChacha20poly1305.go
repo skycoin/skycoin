@@ -51,6 +51,10 @@ type meta struct {
 // 5. AEAD.Seal encrypts the data, and use [length][metadata] as additional data
 // 6. Final format: base64([[length][metadata]][ciphertext]), length is 2 bytes.
 func (s *ScryptChacha20poly1305) Encrypt(data, password []byte) ([]byte, error) {
+	if len(password) == 0 {
+		return nil, errors.New("missing password")
+	}
+
 	// Scyrpt derives key from password
 	salt := cipher.RandByte(saltSize)
 	dk, err := scrypt.Key(password, salt, s.n, s.r, s.p, s.keyLen)
@@ -83,7 +87,11 @@ func (s *ScryptChacha20poly1305) Encrypt(data, password []byte) ([]byte, error) 
 	ciphertext := aead.Seal(nil, m.Nonce, data, ad)
 
 	// Base64 encode the [[length][metadata]][ciphertext]
-	return []byte(base64.StdEncoding.EncodeToString(append(ad, ciphertext...))), nil
+	rawData := append(ad, ciphertext...)
+	enc := base64.StdEncoding
+	buf := make([]byte, enc.EncodedLen(len(rawData)))
+	enc.Encode(buf, rawData)
+	return buf, nil
 }
 
 // Decrypt decrypts the data with password
@@ -93,10 +101,17 @@ func (s *ScryptChacha20poly1305) Encrypt(data, password []byte) ([]byte, error) 
 // 4. Chacha20poly1305 geneates AEAD
 // 5. AEAD decrypts ciphertext with nonce in metadata and [length][metadata] as additional data.
 func (s *ScryptChacha20poly1305) Decrypt(data, password []byte) ([]byte, error) {
-	encData, err := base64.StdEncoding.DecodeString(string(data))
+	if len(password) == 0 {
+		return nil, errors.New("missing password")
+	}
+
+	enc := base64.StdEncoding
+	encData := make([]byte, enc.DecodedLen(len(data)))
+	n, err := enc.Decode(encData, data)
 	if err != nil {
 		return nil, err
 	}
+	encData = encData[:n]
 
 	length := binary.LittleEndian.Uint16(encData[:metaLengthSize])
 	if length > math.MaxUint16 {

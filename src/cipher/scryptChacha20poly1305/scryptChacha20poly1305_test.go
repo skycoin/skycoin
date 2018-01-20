@@ -13,7 +13,7 @@ import (
 )
 
 func TestScryptChacha20poly1305Encrypt(t *testing.T) {
-	for i := uint(14); i < 21; i++ {
+	for i := uint(20); i < 21; i++ {
 		name := fmt.Sprintf("N=1<<%v r=%v p=%v keyLen=%v", i, 8, 1, 32)
 		t.Run(name, func(t *testing.T) {
 			crypto := New(1<<i, 8, 1, 32)
@@ -58,10 +58,17 @@ func TestScryptChacha20poly1305Decrypt(t *testing.T) {
 			[]byte("wrong password"),
 			errors.New("chacha20poly1305: message authentication failed"),
 		},
+		{
+			"missing password",
+			[]byte("plaintext"),
+			[]byte("pwd"),
+			nil,
+			errors.New("missing password"),
+		},
 	}
 
 	for _, tc := range tt {
-		for i := uint(14); i < 21; i++ {
+		for i := uint(20); i < 21; i++ {
 			name := fmt.Sprintf("N=1<<%v r=8 p=1 keyLen=32 %v", i, tc.name)
 			t.Run(name, func(t *testing.T) {
 				crypto := New(1<<i, 8, 1, 32)

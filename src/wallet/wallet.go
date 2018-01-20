@@ -187,24 +187,105 @@ func NewWallet(wltName string, opts Options) (*Wallet, error) {
 
 // lock encrypts the wallet with password
 func (w *Wallet) lock(password []byte) error {
+	if len(password) == 0 {
+		return ErrMissingPassword
+	}
+
+	if w.IsEncrypted() {
+		return ErrWalletEncrypted
+	}
+
 	crypto, err := getCrypto(w.cryptoType())
 	if err != nil {
 		return err
 	}
 
-	return crypto.Encrypt(w, password)
+	wlt := w.clone()
+
+	// Encrypt the seed
+	ss, err := crypto.Encrypt([]byte(wlt.seed()), password)
+	if err != nil {
+		return err
+	}
+
+	wlt.setEncryptedSeed(string(ss))
+
+	// Encrypt the last seed
+	sls, err := crypto.Encrypt([]byte(wlt.lastSeed()), password)
+	if err != nil {
+		return err
+	}
+
+	wlt.setEncryptedLastSeed(string(sls))
+
+	// encrypt private keys in entries
+	for i, e := range wlt.Entries {
+		se, err := crypto.Encrypt(e.Secret[:], password)
+		if err != nil {
+			return err
+		}
+
+		// Set the encrypted seckey value
+		wlt.Entries[i].EncryptedSecret = string(se)
+	}
+
+	// Sets wallet as encrypted
+	wlt.setEncrypted(true)
+	// Wipes the sercet fields in wlt
+	wlt.erase()
+	// Wipes the secret fields in w
+	w.erase()
+
+	// Replace the unlocked w with locked wlt
+	*w = *wlt
+	return nil
 }
 
 // unlock decrypts the wallet into a temporary decrypted copy of the wallet
 // It returns an error if decryption fails
 // The temporary decrypted wallet should be erased from memory when done.
 func (w *Wallet) unlock(password []byte) (*Wallet, error) {
+	if !w.IsEncrypted() {
+		return nil, ErrWalletNotEncrypted
+	}
+
+	if len(password) == 0 {
+		return nil, ErrMissingPassword
+	}
+
+	// Gets the crypto
 	crypto, err := getCrypto(w.cryptoType())
 	if err != nil {
 		return nil, err
 	}
 
-	return crypto.Decrypt(w, password)
+	wlt := w.clone()
+
+	// Decrypts the seed
+	sd, err := crypto.Decrypt([]byte(wlt.encryptedSeed()), password)
+	if err != nil {
+		return nil, ErrAuthenticationFailed{err}
+	}
+	wlt.setSeed(string(sd))
+
+	// decrypt lastSeed
+	ls, err := crypto.Decrypt([]byte(wlt.encryptedLastSeed()), password)
+	if err != nil {
+		return nil, ErrAuthenticationFailed{err}
+	}
+	wlt.setLastSeed(string(ls))
+
+	// decrypt the entries
+	for i := range wlt.Entries {
+		sk, err := crypto.Decrypt([]byte(wlt.Entries[i].EncryptedSecret), password)
+		if err != nil {
+			return nil, ErrAuthenticationFailed{err}
+		}
+		copy(wlt.Entries[i].Secret[:], sk[:])
+	}
+	wlt.setEncrypted(false)
+
+	return wlt, nil
 }
 
 // erase wipes secret fields in wallet
@@ -482,29 +563,6 @@ func (w *Wallet) cryptoType() CryptoType {
 		return CryptoType(et)
 	}
 	return ""
-}
-
-// authenticated returns the authenticated metadata
-func (w *Wallet) authenticated() (*authenticated, error) {
-	if d, ok := w.Meta[metaAuthenticated].(string); ok {
-		var auth authenticated
-		if err := auth.Deserialize([]byte(d)); err != nil {
-			return nil, err
-		}
-		return &auth, nil
-	}
-
-	return nil, nil
-}
-
-// setAuthenticate sets the authenticated metadata
-func (w *Wallet) setAuthenticated(auth authenticated) error {
-	d, err := auth.Serialize()
-	if err != nil {
-		return err
-	}
-	w.Meta[metaAuthenticated] = string(d)
-	return nil
 }
 
 // GenerateAddresses generates addresses

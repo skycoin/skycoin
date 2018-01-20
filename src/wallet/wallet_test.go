@@ -219,11 +219,13 @@ func TestNewWallet(t *testing.T) {
 					crypto, err := getCrypto(w.cryptoType())
 					require.NoError(t, err)
 
-					dw, err := crypto.Decrypt(w, ops.Password)
+					sd, err := crypto.Decrypt([]byte(w.seed()), ops.Password)
+					require.NoError(t, err)
+					lsd, err := crypto.Decrypt([]byte(w.lastSeed()), ops.Password)
 					require.NoError(t, err)
 
-					require.Equal(t, ops.Seed, dw.seed())
-					require.Equal(t, ops.Seed, dw.lastSeed())
+					require.Equal(t, ops.Seed, string(sd))
+					require.Equal(t, ops.Seed, string(lsd))
 
 					// check the entries, the seckeys must be erased.
 					for _, e := range w.Entries {
@@ -403,7 +405,7 @@ func TestWalletUnlock(t *testing.T) {
 }
 
 func makeWallet(t *testing.T, opts Options, addrNum uint64) *Wallet {
-	// Create an unlocked wallet first, then generate addresses, lock if the options.Encrypt is true.
+	// Create an unlocked wallet, then generate addresses, lock if the options.Encrypt is true.
 	preOpts := opts
 	opts.Encrypt = false
 	w, err := NewWallet("t.wlt", opts)

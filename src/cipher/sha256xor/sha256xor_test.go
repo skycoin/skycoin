@@ -1,6 +1,7 @@
 package sha256xor
 
 import (
+	"encoding/base64"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -71,11 +72,14 @@ func TestEncrypt(t *testing.T) {
 				n++
 			}
 
+			rdata, err := base64.StdEncoding.DecodeString(string(edata))
+			require.NoError(t, err)
+
 			totalEncryptedDataLen := checksumSize + nonceSize + 32 + n*blockSize // 32 is the hash data length
-			require.Equal(t, totalEncryptedDataLen, len(edata))
+			require.Equal(t, totalEncryptedDataLen, len(rdata))
 			var checksum cipher.SHA256
-			copy(checksum[:], edata[:checksumSize])
-			require.Equal(t, checksum, cipher.SumSHA256(edata[checksumSize:]))
+			copy(checksum[:], rdata[:checksumSize])
+			require.Equal(t, checksum, cipher.SumSHA256(rdata[checksumSize:]))
 		})
 	}
 
@@ -94,11 +98,14 @@ func TestEncrypt(t *testing.T) {
 				n++
 			}
 
+			rdata, err := base64.StdEncoding.DecodeString(string(edata))
+			require.NoError(t, err)
+
 			totalEncryptedDataLen := checksumSize + nonceSize + 32 + n*blockSize // 32 is the hash data length
-			require.Equal(t, totalEncryptedDataLen, len(edata))
+			require.Equal(t, totalEncryptedDataLen, len(rdata))
 			var checksum cipher.SHA256
-			copy(checksum[:], edata[:checksumSize])
-			require.Equal(t, checksum, cipher.SumSHA256(edata[checksumSize:]))
+			copy(checksum[:], rdata[:checksumSize])
+			require.Equal(t, checksum, cipher.SumSHA256(rdata[checksumSize:]))
 		})
 	}
 }
@@ -124,8 +131,10 @@ func TestDecrypt(t *testing.T) {
 			func() []byte {
 				edata := makeEncryptedData(t, data, 32, []byte("pwd"))
 				// Changes the encrypted data, so that the checksum could not match
-				edata[len(edata)-1]++
-				return edata
+				rd, err := base64.StdEncoding.DecodeString(string(edata))
+				require.NoError(t, err)
+				rd[len(rd)-1]++
+				return []byte(base64.StdEncoding.EncodeToString(rd))
 			},
 			[]byte("pwd"),
 			errors.New("invalid data, checksum is not matched"),
@@ -230,6 +239,9 @@ func makeEncryptedData(t *testing.T, data []byte, dataLength uint32, password []
 	nonceAndDataBytes := append(nonce, encryptedData...)
 	// Calculates the checksum
 	checkSum := cipher.SumSHA256(nonceAndDataBytes)
-
-	return append(checkSum[:], nonceAndDataBytes...)
+	rd := append(checkSum[:], nonceAndDataBytes...)
+	enc := base64.StdEncoding
+	buf := make([]byte, enc.EncodedLen(len(rd)))
+	enc.Encode(buf, rd)
+	return buf
 }

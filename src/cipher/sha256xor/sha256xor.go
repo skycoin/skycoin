@@ -3,6 +3,7 @@ package sha256xor
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -41,7 +42,7 @@ type Sha256Xor struct{}
 // 4> Each block is encrypted by XORing the unencrypted block with SHA256(SHA256(password), SHA256(index, SHA256(nonce))
 // 	  - index is 0 for the first block of 32 bytes, 1 for the second block of 32 bytes, 2 for third block
 // 5> Prefix nonce and SHA256 the nonce with blocks to get checksum, and prefix the checksum
-// 6> Finally, the data format is: <checksum(32 bytes)><nonce(32 bytes)><block0.Hex(), block1.Hex()...>
+// 6> Finally, the data format is: base64(<checksum(32 bytes)><nonce(32 bytes)><block0.Hex(), block1.Hex()...>)
 func (s *Sha256Xor) Encrypt(data []byte, password []byte) ([]byte, error) {
 	if len(password) == 0 {
 		return nil, errors.New("missing password")
@@ -100,7 +101,13 @@ func (s *Sha256Xor) Encrypt(data []byte, password []byte) ([]byte, error) {
 	// Calculates the checksum
 	checkSum := cipher.SumSHA256(nonceAndDataBytes)
 
-	return append(checkSum[:], nonceAndDataBytes...), nil
+	finalData := append(checkSum[:], nonceAndDataBytes...)
+
+	// Base64 encodes the data
+	enc := base64.StdEncoding
+	buf := make([]byte, enc.EncodedLen(len(finalData)))
+	enc.Encode(buf, finalData)
+	return buf, nil
 }
 
 // Decrypt decrypts the data
@@ -109,14 +116,24 @@ func (s *Sha256Xor) Decrypt(data []byte, password []byte) ([]byte, error) {
 		return nil, errors.New("missing password")
 	}
 
+	// Base64 decodes data
+	enc := base64.StdEncoding
+	encData := make([]byte, enc.DecodedLen(len(data)))
+	n, err := enc.Decode(encData, data)
+	if err != nil {
+		return nil, err
+	}
+
+	encData = encData[:n]
+
 	// Derives key by secp256k1 hashing password
 	key := secp256k1.Secp256k1Hash(password)
 
-	buf := bytes.NewBuffer(data)
+	buf := bytes.NewBuffer(encData)
 
 	// Gets checksum
 	var checkSum cipher.SHA256
-	n, err := buf.Read(checkSum[:])
+	n, err = buf.Read(checkSum[:])
 	if err != nil {
 		return nil, err
 	}

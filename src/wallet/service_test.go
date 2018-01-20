@@ -124,7 +124,7 @@ func TestServiceLoadWallet(t *testing.T) {
 		expectAddrs   []cipher.Address
 	}{
 		{
-			"raw wallet, one address",
+			"raw wallet address=1",
 			Options{
 				Seed:  "seed",
 				Label: "wallet",
@@ -138,7 +138,7 @@ func TestServiceLoadWallet(t *testing.T) {
 			addrs[:1],
 		},
 		{
-			"raw wallet, two address",
+			"raw wallet address=2",
 			Options{
 				Seed:  "seed",
 				Label: "wallet",
@@ -152,7 +152,7 @@ func TestServiceLoadWallet(t *testing.T) {
 			addrs[:2],
 		},
 		{
-			"encrypted wallet, one address",
+			"encrypted wallet address=1",
 			Options{
 				Seed:     "seed",
 				Label:    "wallet",
@@ -168,7 +168,7 @@ func TestServiceLoadWallet(t *testing.T) {
 			addrs[:1],
 		},
 		{
-			"encrypted wallet, two address",
+			"encrypted wallet address=2",
 			Options{
 				Seed:     "seed",
 				Label:    "wallet",

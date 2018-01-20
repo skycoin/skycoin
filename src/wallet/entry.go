@@ -6,8 +6,7 @@ import (
 
 // Entry represents the wallet entry
 type Entry struct {
-	Address         cipher.Address
-	Public          cipher.PubKey
-	Secret          cipher.SecKey
-	EncryptedSecret string
+	Address cipher.Address
+	Public  cipher.PubKey
+	Secret  cipher.SecKey
 }

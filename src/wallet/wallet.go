@@ -27,6 +27,9 @@ var (
 
 	logger = logging.MustGetLogger("wallet")
 
+	// DefaultCryptoType default wallet crypto type
+	DefaultCryptoType = CryptoTypeScryptChacha20poly1305
+
 	// ErrInsufficientBalance is returned if a wallet does not have enough balance for a spend
 	ErrInsufficientBalance = errors.New("balance is not sufficient")
 	// ErrSpendingUnconfirmed is returned if caller attempts to spend unconfirmed outputs
@@ -47,11 +50,6 @@ var (
 	ErrWrongCryptoType = errors.New("wrong crypto type")
 	// ErrWalletNotExist is returned if a wallet does not exist
 	ErrWalletNotExist = errors.New("wallet doesn't exist")
-)
-
-var (
-	// DefaultCryptoType default wallet crypto type
-	DefaultCryptoType = CryptoTypeScryptChacha20poly1305
 )
 
 const (
@@ -82,6 +80,7 @@ const (
 	metaLastSeed          = "lastSeed"          // seed for generating next address
 	metaEncryptedLastSeed = "encryptedLastSeed" //  encrypted seed for generating next address
 	metaAuthenticated     = "authenticated"     // authenticated meta info records arguments for scrypt and chacha20poly1305
+	metaSecrets           = "secrets"
 )
 
 // CoinType represents the wallet coin type
@@ -195,44 +194,46 @@ func (w *Wallet) lock(password []byte) error {
 		return ErrWalletEncrypted
 	}
 
+	wlt := w.clone()
+
+	// Records seeds in secrets
+	ss := make(secrets)
+	defer func() {
+		// Wipes all data in secrets
+		ss.erase()
+		// Wipes the sercet fields in the clone wallet
+		wlt.erase()
+	}()
+
+	ss.set(secretSeed, wlt.seed())
+	ss.set(secretLastSeed, wlt.lastSeed())
+
+	// Saves address's secret keys in secrets
+	for _, e := range wlt.Entries {
+		ss.set(e.Address.String(), e.Secret)
+	}
+
+	sb, err := ss.serialize()
+	if err != nil {
+		return err
+	}
+
 	crypto, err := getCrypto(w.cryptoType())
 	if err != nil {
 		return err
 	}
 
-	wlt := w.clone()
-
-	// Encrypt the seed
-	ss, err := crypto.Encrypt([]byte(wlt.seed()), password)
+	// Encrypts the secrets
+	encSecret, err := crypto.Encrypt(sb, password)
 	if err != nil {
 		return err
 	}
 
-	wlt.setEncryptedSeed(string(ss))
-
-	// Encrypt the last seed
-	sls, err := crypto.Encrypt([]byte(wlt.lastSeed()), password)
-	if err != nil {
-		return err
-	}
-
-	wlt.setEncryptedLastSeed(string(sls))
-
-	// encrypt private keys in entries
-	for i, e := range wlt.Entries {
-		se, err := crypto.Encrypt(e.Secret[:], password)
-		if err != nil {
-			return err
-		}
-
-		// Set the encrypted seckey value
-		wlt.Entries[i].EncryptedSecret = string(se)
-	}
+	// Updates the secrets data in wallet
+	wlt.setSecrets(string(encSecret))
 
 	// Sets wallet as encrypted
 	wlt.setEncrypted(true)
-	// Wipes the sercet fields in wlt
-	wlt.erase()
 	// Wipes the secret fields in w
 	w.erase()
 
@@ -253,38 +254,55 @@ func (w *Wallet) unlock(password []byte) (*Wallet, error) {
 		return nil, ErrMissingPassword
 	}
 
+	wlt := w.clone()
+
+	// Gets the secrets string
+	sstr := wlt.secrets()
+	if sstr == "" {
+		return nil, errors.New("secrets doesn't exsit")
+	}
+
 	// Gets the crypto
 	crypto, err := getCrypto(w.cryptoType())
 	if err != nil {
 		return nil, err
 	}
 
-	wlt := w.clone()
-
-	// Decrypts the seed
-	sd, err := crypto.Decrypt([]byte(wlt.encryptedSeed()), password)
+	// Decrypts the secrets
+	sb, err := crypto.Decrypt([]byte(sstr), password)
 	if err != nil {
 		return nil, ErrAuthenticationFailed{err}
 	}
-	wlt.setSeed(string(sd))
 
-	// decrypt lastSeed
-	ls, err := crypto.Decrypt([]byte(wlt.encryptedLastSeed()), password)
-	if err != nil {
-		return nil, ErrAuthenticationFailed{err}
+	// Deserialize into secrets
+	ss := make(secrets)
+	defer ss.erase()
+	if err := ss.deserialize(sb); err != nil {
+		return nil, err
 	}
-	wlt.setLastSeed(string(ls))
 
-	// decrypt the entries
-	for i := range wlt.Entries {
-		sk, err := crypto.Decrypt([]byte(wlt.Entries[i].EncryptedSecret), password)
-		if err != nil {
-			return nil, ErrAuthenticationFailed{err}
+	var seed string
+	if err := ss.get(secretSeed, &seed); err != nil {
+		return nil, errors.New("seed doesn't exist in secrets")
+	}
+	wlt.setSeed(seed)
+
+	var lastSeed string
+	if err := ss.get(secretLastSeed, &lastSeed); err != nil {
+		return nil, errors.New("lastSeed doesn't exist in secrets")
+	}
+	wlt.setLastSeed(lastSeed)
+
+	// Gets addresses related secrets
+	for i, e := range wlt.Entries {
+		var s cipher.SecKey
+		if err := ss.get(e.Address.String(), &s); err != nil {
+			return nil, fmt.Errorf("address %s's secret doesn't exist in secrets", e.Address)
 		}
-		copy(wlt.Entries[i].Secret[:], sk[:])
+		copy(wlt.Entries[i].Secret[:], s[:])
 	}
-	wlt.setEncrypted(false)
 
+	wlt.setEncrypted(false)
 	return wlt, nil
 }
 
@@ -420,7 +438,6 @@ func filterDir(dir string, suffix string) ([]string, error) {
 func (w *Wallet) reset() {
 	w.Entries = []Entry{}
 	w.setLastSeed(w.seed())
-	w.setEncryptedLastSeed(w.encryptedSeed())
 }
 
 // Validate validates the wallet
@@ -520,27 +537,27 @@ func (w *Wallet) setSeed(seed string) {
 	w.Meta[metaSeed] = seed
 }
 
-func (w *Wallet) encryptedSeed() string {
-	if v, ok := w.Meta[metaEncryptedSeed].(string); ok {
-		return v
-	}
-	return ""
-}
+// func (w *Wallet) encryptedSeed() string {
+// 	if v, ok := w.Meta[metaEncryptedSeed].(string); ok {
+// 		return v
+// 	}
+// 	return ""
+// }
 
-func (w *Wallet) setEncryptedSeed(seed string) {
-	w.Meta[metaEncryptedSeed] = seed
-}
+// func (w *Wallet) setEncryptedSeed(seed string) {
+// 	w.Meta[metaEncryptedSeed] = seed
+// }
 
-func (w *Wallet) encryptedLastSeed() string {
-	if v, ok := w.Meta[metaEncryptedLastSeed].(string); ok {
-		return v
-	}
-	return ""
-}
+// func (w *Wallet) encryptedLastSeed() string {
+// 	if v, ok := w.Meta[metaEncryptedLastSeed].(string); ok {
+// 		return v
+// 	}
+// 	return ""
+// }
 
-func (w *Wallet) setEncryptedLastSeed(seed string) {
-	w.Meta[metaEncryptedLastSeed] = seed
-}
+// func (w *Wallet) setEncryptedLastSeed(seed string) {
+// 	w.Meta[metaEncryptedLastSeed] = seed
+// }
 
 func (w *Wallet) setEncrypted(encrypt bool) {
 	w.Meta[metaEncrypted] = encrypt
@@ -563,6 +580,17 @@ func (w *Wallet) cryptoType() CryptoType {
 		return CryptoType(et)
 	}
 	return ""
+}
+
+func (w *Wallet) secrets() string {
+	if v, ok := w.Meta[metaSecrets].(string); ok {
+		return v
+	}
+	return ""
+}
+
+func (w *Wallet) setSecrets(s string) {
+	w.Meta[metaSecrets] = s
 }
 
 // GenerateAddresses generates addresses

@@ -1,11 +1,18 @@
 package wallet
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher/scryptChacha20poly1305"
 	"github.com/skycoin/skycoin/src/cipher/sha256xor"
+)
+
+// secrets key name
+const (
+	secretSeed     = "seed"
+	secretLastSeed = "lastSeed"
 )
 
 type cryptor interface {
@@ -67,4 +74,40 @@ func getCrypto(cryptoType CryptoType) (cryptor, error) {
 	}
 
 	return c, nil
+}
+
+type secrets map[string]string
+
+func (s secrets) get(key string, v interface{}) error {
+	d, ok := s[key]
+	if !ok {
+		return fmt.Errorf("secret %v doesn't exist", key)
+	}
+
+	return json.Unmarshal([]byte(d), v)
+}
+
+func (s secrets) set(key string, v interface{}) error {
+	d, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	s[key] = string(d)
+	return nil
+}
+
+func (s secrets) serialize() ([]byte, error) {
+	return json.Marshal(s)
+}
+
+func (s secrets) deserialize(data []byte) error {
+	return json.Unmarshal(data, &s)
+}
+
+func (s secrets) erase() {
+	for k := range s {
+		s[k] = ""
+		delete(s, k)
+	}
 }

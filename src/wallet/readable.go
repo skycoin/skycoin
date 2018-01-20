@@ -21,10 +21,9 @@ type ReadableEntry struct {
 // NewReadableEntry creates readable wallet entry
 func NewReadableEntry(w Entry) ReadableEntry {
 	return ReadableEntry{
-		Address:         w.Address.String(),
-		Public:          w.Public.Hex(),
-		Secret:          w.Secret.Hex(),
-		EncryptedSecret: w.EncryptedSecret,
+		Address: w.Address.String(),
+		Public:  w.Public.Hex(),
+		Secret:  w.Secret.Hex(),
 	}
 }
 
@@ -92,10 +91,9 @@ func newEntryFromReadable(w *ReadableEntry) (*Entry, error) {
 	}
 
 	return &Entry{
-		Address:         a,
-		Public:          p,
-		Secret:          secret,
-		EncryptedSecret: w.EncryptedSecret,
+		Address: a,
+		Public:  p,
+		Secret:  secret,
 	}, nil
 }
 

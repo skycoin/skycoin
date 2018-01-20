@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"sync"
-	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
@@ -163,11 +162,9 @@ func (serv *Service) loadWallet(wltName string, options Options, scanN uint64, b
 	}
 
 	if w.IsEncrypted() {
-		t := time.Now()
 		if err := w.guard(options.Password, f); err != nil {
 			return nil, err
 		}
-		fmt.Println(time.Since(t))
 	} else {
 		if err := f(w); err != nil {
 			return nil, err

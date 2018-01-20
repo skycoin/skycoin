@@ -216,22 +216,16 @@ func TestNewWallet(t *testing.T) {
 				require.Equal(t, ops.Encrypt, w.IsEncrypted())
 
 				if w.IsEncrypted() {
-					crypto, err := getCrypto(w.cryptoType())
-					require.NoError(t, err)
+					// Confirms the seeds and entry secrets are all empty
+					require.Equal(t, "", w.seed())
+					require.Equal(t, "", w.lastSeed())
 
-					sd, err := crypto.Decrypt([]byte(w.seed()), ops.Password)
-					require.NoError(t, err)
-					lsd, err := crypto.Decrypt([]byte(w.lastSeed()), ops.Password)
-					require.NoError(t, err)
-
-					require.Equal(t, ops.Seed, string(sd))
-					require.Equal(t, ops.Seed, string(lsd))
-
-					// check the entries, the seckeys must be erased.
 					for _, e := range w.Entries {
 						require.Empty(t, e.Secret)
-						require.NotEmpty(t, e.EncryptedSecret)
 					}
+
+					// Confirms that secrets field is not empty
+					require.NotEmpty(t, w.secrets())
 				}
 			})
 		}
@@ -310,7 +304,6 @@ func TestWalletLock(t *testing.T) {
 				// Checks if the entries are encrypted
 				for i := range w.Entries {
 					require.Equal(t, cipher.SecKey{}, w.Entries[i].Secret)
-					require.NotEmpty(t, w.Entries[i].EncryptedSecret)
 				}
 			})
 

@@ -56,25 +56,30 @@ func coinSupply(gateway *daemon.Gateway, w http.ResponseWriter, r *http.Request)
 		return nil
 	}
 
-	unlockedAddrs := visor.GetUnlockedDistributionAddresses()
-
-	var filterInUnlocked []daemon.OutputsFilter
-	filterInUnlocked = append(filterInUnlocked, daemon.FbyAddresses(unlockedAddrs))
-	unlockedOutputs, err := gateway.GetUnspentOutputs(filterInUnlocked...)
+	allUnspents, err := gateway.GetUnspentOutputs()
 	if err != nil {
 		wh.Error500(w)
 		return nil
 	}
 
+	unlockedAddrs := visor.GetUnlockedDistributionAddresses()
+	// Search map of unlocked addresses
+	// used to filter unspents
+	unlockedAddrMap := daemon.MakeSearchMap(unlockedAddrs)
+
 	var unlockedSupply uint64
-	for _, u := range unlockedOutputs.HeadOutputs {
-		coins, err := droplet.FromString(u.Coins)
-		if err != nil {
-			logger.Error("Invalid unlocked output balance string %s: %v", u.Coins, err)
-			wh.Error500(w)
-			return nil
+	// check confirmed unspents only
+	for _, u := range allUnspents.HeadOutputs {
+		// check if address is an unlocked distribution address
+		if _, ok := unlockedAddrMap[u.Address]; ok {
+			coins, err := droplet.FromString(u.Coins)
+			if err != nil {
+				logger.Error("Invalid unlocked output balance string %s: %v", u.Coins, err)
+				wh.Error500(w)
+				return nil
+			}
+			unlockedSupply += coins
 		}
-		unlockedSupply += coins
 	}
 
 	// "total supply" is the number of coins unlocked.
@@ -108,25 +113,26 @@ func coinSupply(gateway *daemon.Gateway, w http.ResponseWriter, r *http.Request)
 
 	// locked distribution addresses
 	lockedAddrs := visor.GetLockedDistributionAddresses()
+	lockedAddrMap := daemon.MakeSearchMap(lockedAddrs)
 
 	// get total coins hours which excludes locked distribution addresses
-	var coinHourFilter []daemon.OutputsFilter
-	coinHourFilter = append(coinHourFilter, daemon.FbyAddressesNotIncluded(lockedAddrs))
-	lockedOutputs, err := gateway.GetUnspentOutputs(coinHourFilter...)
-
-	// Get coin hours from confirmed unspents only
 	var totalCoinHours uint64
-	for _, out := range lockedOutputs.HeadOutputs {
-		totalCoinHours += out.Hours
+	for _, out := range allUnspents.HeadOutputs {
+		if _, ok := lockedAddrMap[out.Address]; !ok {
+			totalCoinHours += out.Hours
+		}
 	}
 
 	// get current coin hours which excludes all distribution addresses
-	coinHourFilter = append(coinHourFilter, daemon.FbyAddressesNotIncluded(unlockedAddrs))
-	normalOutputs, err := gateway.GetUnspentOutputs(coinHourFilter...)
-
 	var currentCoinHours uint64
-	for _, out := range normalOutputs.HeadOutputs {
-		currentCoinHours += out.Hours
+	for _, out := range allUnspents.HeadOutputs {
+		// check if address not in locked distribution addresses
+		if _, ok := lockedAddrMap[out.Address]; !ok {
+			// check if address not in unlocked distribution addresses
+			if _, ok := unlockedAddrMap[out.Address]; !ok {
+				currentCoinHours += out.Hours
+			}
+		}
 	}
 
 	if err != nil {

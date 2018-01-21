@@ -920,7 +920,8 @@ result:
     "current_supply": "7187500.000000",
     "total_supply": "25000000.000000",
     "max_supply": "100000000.000000",
-    "coinhour_supply": "92428205903",
+    "current_coinhour_supply": "23499025077",
+    "total_coinhour_supply": "93679828577",
     "unlocked_distribution_addresses": [
         "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
         "2EYM4WFHe4Dgz6kjAdUkM6Etep7ruz2ia6h",

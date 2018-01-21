@@ -299,10 +299,7 @@ func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (visor.ReadableOu
 func FbyAddressesNotIncluded(addrs []string) OutputsFilter {
 	return func(outputs coin.UxArray) coin.UxArray {
 		addrMatch := coin.UxArray{}
-		addrMap := make(map[string]struct{})
-		for _, addr := range addrs {
-			addrMap[addr] = struct{}{}
-		}
+		addrMap := MakeSearchMap(addrs)
 
 		for _, u := range outputs {
 			if _, ok := addrMap[u.Body.Address.String()]; !ok {
@@ -317,10 +314,7 @@ func FbyAddressesNotIncluded(addrs []string) OutputsFilter {
 func FbyAddresses(addrs []string) OutputsFilter {
 	return func(outputs coin.UxArray) coin.UxArray {
 		addrMatch := coin.UxArray{}
-		addrMap := make(map[string]struct{})
-		for _, addr := range addrs {
-			addrMap[addr] = struct{}{}
-		}
+		addrMap := MakeSearchMap(addrs)
 
 		for _, u := range outputs {
 			if _, ok := addrMap[u.Body.Address.String()]; ok {
@@ -335,10 +329,7 @@ func FbyAddresses(addrs []string) OutputsFilter {
 func FbyHashes(hashes []string) OutputsFilter {
 	return func(outputs coin.UxArray) coin.UxArray {
 		hsMatch := coin.UxArray{}
-		hsMap := make(map[string]struct{})
-		for _, h := range hashes {
-			hsMap[h] = struct{}{}
-		}
+		hsMap := MakeSearchMap(hashes)
 
 		for _, u := range outputs {
 			if _, ok := hsMap[u.Hash().Hex()]; ok {
@@ -347,6 +338,17 @@ func FbyHashes(hashes []string) OutputsFilter {
 		}
 		return hsMatch
 	}
+}
+
+
+// Return a search indexed map for use in filters
+func MakeSearchMap(addrs []string) map[string]struct{} {
+	addrMap := make(map[string]struct{})
+	for _, addr := range addrs {
+		addrMap[addr] = struct{}{}
+	}
+
+	return addrMap
 }
 
 // GetTransaction returns transaction by txid

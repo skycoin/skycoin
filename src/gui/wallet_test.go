@@ -1665,7 +1665,7 @@ func TestGetWalletFolderHandler(t *testing.T) {
 		status               int
 		err                  string
 		getWalletDirResponse string
-		getWalletDirErr error
+		getWalletDirErr      error
 		httpResponse         WalletFolder
 	}{
 		{

@@ -16,22 +16,11 @@ func RegisterExplorerHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	// get set of pending transactions
 	mux.HandleFunc("/explorer/address", getTransactionsForAddress(gateway))
 
-	mux.HandleFunc("/explorer/getEffectiveOutputs", getEffectiveOutputs(gateway))
-
 	mux.HandleFunc("/coinSupply", getCoinSupply(gateway))
 
 	mux.HandleFunc("/richlist", getRichlist(gateway))
 
 	mux.HandleFunc("/addresscount", getAddressCount(gateway))
-}
-
-// DeprecatedCoinSupply records the coin supply info
-type DeprecatedCoinSupply struct {
-	CoinSupply
-	DeprecatedCurrentSupply                           uint64   `json:"coinSupply"`
-	DeprecatedCoinCap                                 uint64   `json:"coinCap"`
-	DeprecatedUndistributedLockedCoinBalance          uint64   `json:"UndistributedLockedCoinBalance"`
-	DeprecatedUndistributedLockedCoinHoldingAddresses []string `json:"UndistributedLockedCoinHoldingAddresses"`
 }
 
 // CoinSupply records the coin supply info
@@ -43,7 +32,7 @@ type CoinSupply struct {
 	// MaxSupply is the maximum number of coins to be distributed ever
 	MaxSupply string `json:"max_supply"`
 	// CoinHourSupply is the total number of coinhours in the distribution addresses
-	CoinHourSupply uint64 `json:"coinhour_supply"`
+	CoinHourSupply string `json:"coinhour_supply"`
 	// Distribution addresses which count towards total supply
 	UnlockedAddresses []string `json:"unlocked_distribution_addresses"`
 	// Distribution addresses which are locked and do not count towards total supply
@@ -52,37 +41,27 @@ type CoinSupply struct {
 
 func getCoinSupply(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		supply, _ := coinSupply(gateway, w, r)
+		supply := coinSupply(gateway, w, r)
 		if supply != nil {
 			wh.SendOr404(w, supply)
 		}
 	}
 }
 
-// TODO: DEPRECATED Remove for v21 release
-func getEffectiveOutputs(gateway *daemon.Gateway) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		_, oldSupply := coinSupply(gateway, w, r)
-		if oldSupply != nil {
-			wh.SendOr404(w, oldSupply)
-		}
-	}
-}
-
-func coinSupply(gateway *daemon.Gateway, w http.ResponseWriter, r *http.Request) (*CoinSupply, *DeprecatedCoinSupply) {
+func coinSupply(gateway *daemon.Gateway, w http.ResponseWriter, r *http.Request) *CoinSupply {
 	if r.Method != http.MethodGet {
 		wh.Error405(w)
-		return nil, nil
+		return nil
 	}
 
 	unlockedAddrs := visor.GetUnlockedDistributionAddresses()
 
-	filterInUnlocked := []daemon.OutputsFilter{}
+	var filterInUnlocked []daemon.OutputsFilter
 	filterInUnlocked = append(filterInUnlocked, daemon.FbyAddresses(unlockedAddrs))
 	unlockedOutputs, err := gateway.GetUnspentOutputs(filterInUnlocked...)
 	if err != nil {
 		wh.Error500(w)
-		return nil, nil
+		return nil
 	}
 
 	var unlockedSupply uint64
@@ -91,7 +70,7 @@ func coinSupply(gateway *daemon.Gateway, w http.ResponseWriter, r *http.Request)
 		if err != nil {
 			logger.Error("Invalid unlocked output balance string %s: %v", u.Coins, err)
 			wh.Error500(w)
-			return nil, nil
+			return nil
 		}
 		unlockedSupply += coins
 	}
@@ -108,46 +87,51 @@ func coinSupply(gateway *daemon.Gateway, w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		logger.Error("Failed to convert coins to string: %v", err)
 		wh.Error500(w)
-		return nil, nil
+		return nil
 	}
 
 	totalSupplyStr, err := droplet.ToString(totalSupply)
 	if err != nil {
 		logger.Error("Failed to convert coins to string: %v", err)
 		wh.Error500(w)
-		return nil, nil
+		return nil
 	}
 
 	maxSupplyStr, err := droplet.ToString(visor.MaxCoinSupply * droplet.Multiplier)
 	if err != nil {
 		logger.Error("Failed to convert coins to string: %v", err)
 		wh.Error500(w)
-		return nil, nil
+		return nil
 	}
 
-	totalCoinHours, err := gateway.GetTotalCoinhours()
+	// skip locked addresses for total coinhour calculation
+	lockedAddrs := visor.GetLockedDistributionAddresses()
+	var filterInlocked []daemon.OutputsFilter
+	filterInlocked = append(filterInlocked, daemon.FbyAddressesNotIncluded(lockedAddrs))
+	lockedOutputs, err := gateway.GetUnspentOutputs(filterInlocked...)
+
+	// Get total coin hours of confirmed unspents
+	var totalCoinHours uint64
+	for _, out := range lockedOutputs.HeadOutputs {
+		totalCoinHours += out.Hours
+	}
+
 	if err != nil {
 		logger.Errorf("Failed to get total coinhours: %v", err.Error())
 		wh.Error500(w)
-		return nil, nil
+		return nil
 	}
 
 	cs := CoinSupply{
 		CurrentSupply:     currentSupplyStr,
 		TotalSupply:       totalSupplyStr,
 		MaxSupply:         maxSupplyStr,
-		CoinHourSupply:    totalCoinHours,
+		CoinHourSupply:    strconv.FormatUint(totalCoinHours, 10),
 		UnlockedAddresses: unlockedAddrs,
 		LockedAddresses:   visor.GetLockedDistributionAddresses(),
 	}
 
-	return &cs, &DeprecatedCoinSupply{
-		CoinSupply:                                        cs,
-		DeprecatedCurrentSupply:                           currentSupply,
-		DeprecatedCoinCap:                                 visor.MaxCoinSupply,
-		DeprecatedUndistributedLockedCoinBalance:          unlockedSupply,
-		DeprecatedUndistributedLockedCoinHoldingAddresses: visor.GetDistributionAddresses(),
-	}
+	return &cs
 }
 
 // method: GET

@@ -707,19 +707,3 @@ func (gw *Gateway) GetAddressCount() (uint64, error) {
 
 	return uint64(len(allAccounts)), nil
 }
-
-// GetTotalCoinHours return the sum of coinhours from confirmed unspents
-func (gw *Gateway) GetTotalCoinhours() (uint64, error) {
-	rbOuts, err := gw.GetUnspentOutputs()
-	if err != nil {
-		return 0, err
-	}
-
-	// Get total coin hours of confirmed unspents
-	var totalHours uint64
-	for _, out := range rbOuts.HeadOutputs {
-		totalHours += out.Hours
-	}
-
-	return totalHours, nil
-}

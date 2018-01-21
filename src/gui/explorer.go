@@ -213,7 +213,7 @@ func getTransactionsForAddress(gateway *daemon.Gateway) http.HandlerFunc {
 					wh.Error500(w)
 					return
 				}
-				in[i] = visor.NewReadableTransactionInput(tx.Transaction.In[i], uxout.Out.Body.Address.String(), coins, uxout.Out.Body.Hours)
+				in[i] = visor.NewReadableTransactionInput(tx.Transaction.In[i], uxout.Out.Body.Address.String(), coins, strconv.FormatUint(uxout.Out.Body.Hours, 10))
 			}
 
 			resTxs = append(resTxs, NewReadableTransaction(tx, in))

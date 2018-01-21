@@ -31,8 +31,10 @@ type CoinSupply struct {
 	TotalSupply string `json:"total_supply"`
 	// MaxSupply is the maximum number of coins to be distributed ever
 	MaxSupply string `json:"max_supply"`
-	// CoinHourSupply is the total number of coinhours in the distribution addresses
-	CoinHourSupply string `json:"coinhour_supply"`
+	// CurrentCoinHourSupply is coins hours in non distribution addresses
+	CurrentCoinHourSupply string `json:"current_coinhour_supply"`
+	// TotalCoinHourSupply is coin hours in all addresses including unlocked distribution addresses
+	TotalCoinHourSupply string `json:"total_coinhour_supply"`
 	// Distribution addresses which count towards total supply
 	UnlockedAddresses []string `json:"unlocked_distribution_addresses"`
 	// Distribution addresses which are locked and do not count towards total supply
@@ -104,16 +106,27 @@ func coinSupply(gateway *daemon.Gateway, w http.ResponseWriter, r *http.Request)
 		return nil
 	}
 
-	// skip locked addresses for total coinhour calculation
+	// locked distribution addresses
 	lockedAddrs := visor.GetLockedDistributionAddresses()
-	var filterInlocked []daemon.OutputsFilter
-	filterInlocked = append(filterInlocked, daemon.FbyAddressesNotIncluded(lockedAddrs))
-	lockedOutputs, err := gateway.GetUnspentOutputs(filterInlocked...)
 
-	// Get total coin hours of confirmed unspents
+	// get total coins hours which excludes locked distribution addresses
+	var coinHourFilter []daemon.OutputsFilter
+	coinHourFilter = append(coinHourFilter, daemon.FbyAddressesNotIncluded(lockedAddrs))
+	lockedOutputs, err := gateway.GetUnspentOutputs(coinHourFilter...)
+
+	// Get coin hours from confirmed unspents only
 	var totalCoinHours uint64
 	for _, out := range lockedOutputs.HeadOutputs {
 		totalCoinHours += out.Hours
+	}
+
+	// get current coin hours which excludes all distribution addresses
+	coinHourFilter = append(coinHourFilter, daemon.FbyAddressesNotIncluded(unlockedAddrs))
+	normalOutputs, err := gateway.GetUnspentOutputs(coinHourFilter...)
+
+	var currentCoinHours uint64
+	for _, out := range normalOutputs.HeadOutputs {
+		currentCoinHours += out.Hours
 	}
 
 	if err != nil {
@@ -123,12 +136,13 @@ func coinSupply(gateway *daemon.Gateway, w http.ResponseWriter, r *http.Request)
 	}
 
 	cs := CoinSupply{
-		CurrentSupply:     currentSupplyStr,
-		TotalSupply:       totalSupplyStr,
-		MaxSupply:         maxSupplyStr,
-		CoinHourSupply:    strconv.FormatUint(totalCoinHours, 10),
-		UnlockedAddresses: unlockedAddrs,
-		LockedAddresses:   visor.GetLockedDistributionAddresses(),
+		CurrentSupply:         currentSupplyStr,
+		TotalSupply:           totalSupplyStr,
+		MaxSupply:             maxSupplyStr,
+		CurrentCoinHourSupply: strconv.FormatUint(currentCoinHours, 10),
+		TotalCoinHourSupply:   strconv.FormatUint(totalCoinHours, 10),
+		UnlockedAddresses:     unlockedAddrs,
+		LockedAddresses:       visor.GetLockedDistributionAddresses(),
 	}
 
 	return &cs

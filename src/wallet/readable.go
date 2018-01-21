@@ -12,10 +12,9 @@ import (
 
 // ReadableEntry wallet entry with json tags
 type ReadableEntry struct {
-	Address         string `json:"address"`
-	Public          string `json:"public_key"`
-	Secret          string `json:"secret_key"`
-	EncryptedSecret string `json:"encrypted_secret_key"`
+	Address string `json:"address"`
+	Public  string `json:"public_key"`
+	Secret  string `json:"secret_key"`
 }
 
 // NewReadableEntry creates readable wallet entry

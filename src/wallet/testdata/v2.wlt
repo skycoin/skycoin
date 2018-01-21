@@ -1,21 +1,22 @@
 {
     "meta": {
         "coin": "skycoin",
-        "filename": "t1.wlt",
-        "label": "",
-        "lastSeed": "pYCzcK5exEqBS+bnePDkGs7U2UXIPhPrNdrkp81I2hyCJyJtL122GzsBBtRJpiX+3yvOnmTQZJ7+7m8wZ/qq6nluejE4bzdFSzA3WEtVODdkQi9iUlRGbGdHZWJ6WXlHSlZvOHp3YTVleTA9LEFCaGxpWFlFbVhEVUdHTDJRd2w3VmdVTEJseWVkSzFQMjN6VHBRVVVUMDA9LERmUzRPMGVGS2t0UjU4Y01rbndVcWh2cjlCN1JWZFRueFU3UkFjUkZ3RW89",
-        "seed": "g8slU58evVZtiO4ouxY5QeC6ZsMXprLAQYY9nls/JFyIYQvBxufxZvSlppyiO6X0dK8MzHaEFg0wpHUgbm8WsTd3VXBmR1dMVXVsaE03UkVmY3U3QU0vOWVhallJWDhJN1N6QzcycjFtUlU9LExtSUxVbHMzNkxwbnZFR1FjT0YrdHUyRHJaQ3NqaWdQMDhuTUVFdjhZNzA9",
-        "tm": "1511856544",
+        "cryptoType": "scrypt-chacha20poly1305",
+        "encrypted": true,
+        "filename": "v2.wlt",
+        "label": "v2",
+        "lastSeed": "",
+		"secrets":    "VgB7Ik4iOjEwNDg1NzYsIlIiOjgsIlAiOjEsIktleUxlbiI6MzIsIlNhbHQiOiJHYnYxWUhRNWFOaz0iLCJOb25jZSI6IlRNK3ZhaFRXMzVIbVZrREQifflOR1HUMFwIUXgi8uo81L/Jua0t5iwPVvMeROVhznlDWNbWo8fY7uiGKZaqBE/vM9I11uOmjIOmXbsw62nOus0hirrpq4alUnaZlvgfF7UmElZt2KrI+IsCJyO2fyEKge2wa4cO9gZHSnoMn3XOFm1nJXX+5VFyS+V1Xhxnc//eN3td8hQCC5KjpHxiVdg1JzGbakKsqJMbaNZrkhXsmURB3xwtJU0RqjAyKoEMLA69H/dHAb199qQ+K7Rpy2Z3N51Zhx17Zgby37J3K225jH/pSG7c2El+/swrLNkO752Rg+3w3OFSaYfHY105oKyOZJQLvR7yD/j+V5VVMZMkervKdbTbd4scRplT+fdamA==",
+        "seed": "",
+        "tm": "1516498802",
         "type": "deterministic",
-        "version": "0.2",
-        "encrypted": true
+        "version": "0.2"
     },
     "entries": [
         {
-            "address": "2GBifzJEehbDX7Mkk63Prfa4MQQQyRzBLfe",
-            "public_key": "03d395b3f7b7cf8780e4bde41f72c930b44f3465da94313e564b04d0f37dd12d9d",
-            "secret_key": "",
-            "encrypted_secret_key": "JJMcA/ymhBnk7G1FstgdCPYmXOwy0DqYNznPRJ2F0TdCQ7cUEi0s4pEaPIOrZW4msGj8/rKonrAUEf/jFx1isDFPSmxVaHREakdCbHpWRDFNSVd6RUlSUFNXV2xDQXYzd2JTRmIvRGE0RlU9LDNKQmlUaWtUQkRNT0lvUGc3cEhiRDJCTCswK20rQVR1SmwyZm9CWUtzWmc9LFAxaDlBRTVKclAwZ3dpS25oSUlGcFg4Qk82ODN3bWUwdEllWXJnc3VjOWM9"
+            "address": "2EVNa4CK9SKosT4j1GEn8SuuUUEAXaHAMbM",
+            "public_key": "02e5be89fa161bf6b0bc64ec9ec7fe27311fbb78949c3ef9739d4c73a84920d6e1",
+            "secret_key": "0000000000000000000000000000000000000000000000000000000000000000"
         }
     ]
 }

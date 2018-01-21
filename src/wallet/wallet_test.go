@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/scryptChacha20poly1305"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/fee"
 )
@@ -23,6 +24,11 @@ var _ = func() int64 {
 	rand.Seed(t)
 	return t
 }()
+
+func init() {
+	// Change the scrypt N value in cryptoTable to make test faster, otherwise it would take more than 200 seconds to finish
+	cryptoTable[CryptoTypeScryptChacha20poly1305] = scryptChacha20poly1305.New(1<<15, scryptR, scryptP, scryptKeyLen)
+}
 
 type mockBalanceGetter map[cipher.Address]BalancePair
 
@@ -482,19 +488,39 @@ func TestLoadWallet(t *testing.T) {
 			},
 		},
 		{
-			"load wallet of version 0.2",
+			"version=0.2 encrypted=true",
 			"./testdata/v2.wlt",
 			expect{
 				meta: map[string]interface{}{
-					"coin":      "skycoin",
-					"filename":  "v2.wlt",
-					"label":     "",
-					"lastSeed":  "pYCzcK5exEqBS+bnePDkGs7U2UXIPhPrNdrkp81I2hyCJyJtL122GzsBBtRJpiX+3yvOnmTQZJ7+7m8wZ/qq6nluejE4bzdFSzA3WEtVODdkQi9iUlRGbGdHZWJ6WXlHSlZvOHp3YTVleTA9LEFCaGxpWFlFbVhEVUdHTDJRd2w3VmdVTEJseWVkSzFQMjN6VHBRVVVUMDA9LERmUzRPMGVGS2t0UjU4Y01rbndVcWh2cjlCN1JWZFRueFU3UkFjUkZ3RW89",
-					"seed":      "g8slU58evVZtiO4ouxY5QeC6ZsMXprLAQYY9nls/JFyIYQvBxufxZvSlppyiO6X0dK8MzHaEFg0wpHUgbm8WsTd3VXBmR1dMVXVsaE03UkVmY3U3QU0vOWVhallJWDhJN1N6QzcycjFtUlU9LExtSUxVbHMzNkxwbnZFR1FjT0YrdHUyRHJaQ3NqaWdQMDhuTUVFdjhZNzA9",
-					"tm":        "1511856544",
-					"type":      "deterministic",
-					"encrypted": true,
-					"version":   "0.2",
+					"coin":       "skycoin",
+					"cryptoType": "scrypt-chacha20poly1305",
+					"encrypted":  true,
+					"filename":   "v2.wlt",
+					"label":      "v2",
+					"lastSeed":   "",
+					"secrets":    "VgB7Ik4iOjEwNDg1NzYsIlIiOjgsIlAiOjEsIktleUxlbiI6MzIsIlNhbHQiOiJHYnYxWUhRNWFOaz0iLCJOb25jZSI6IlRNK3ZhaFRXMzVIbVZrREQifflOR1HUMFwIUXgi8uo81L/Jua0t5iwPVvMeROVhznlDWNbWo8fY7uiGKZaqBE/vM9I11uOmjIOmXbsw62nOus0hirrpq4alUnaZlvgfF7UmElZt2KrI+IsCJyO2fyEKge2wa4cO9gZHSnoMn3XOFm1nJXX+5VFyS+V1Xhxnc//eN3td8hQCC5KjpHxiVdg1JzGbakKsqJMbaNZrkhXsmURB3xwtJU0RqjAyKoEMLA69H/dHAb199qQ+K7Rpy2Z3N51Zhx17Zgby37J3K225jH/pSG7c2El+/swrLNkO752Rg+3w3OFSaYfHY105oKyOZJQLvR7yD/j+V5VVMZMkervKdbTbd4scRplT+fdamA==",
+					"seed":       "",
+					"type":       "deterministic",
+					"version":    "0.2",
+				},
+				err: nil,
+			},
+		},
+		{
+			"version=0.2 encrypted=flase",
+			"./testdata/v2_no_encrypt.wlt",
+			expect{
+				meta: map[string]interface{}{
+					"coin":       "skycoin",
+					"cryptoType": "scrypt-chacha20poly1305",
+					"encrypted":  false,
+					"filename":   "v2_no_encrypt.wlt",
+					"label":      "v2_no_encrypt",
+					"lastSeed":   "c79454cf362b3f55e5effce09f664311650a44b9c189b3c8eed1ae9bd696cd9e",
+					"secrets":    "",
+					"seed":       "seed",
+					"type":       "deterministic",
+					"version":    "0.2",
 				},
 				err: nil,
 			},
@@ -624,7 +650,7 @@ func TestWalletGetEntry(t *testing.T) {
 		{
 			"wallet of version 0.2",
 			"./testdata/v2.wlt",
-			"2GBifzJEehbDX7Mkk63Prfa4MQQQyRzBLfe",
+			"2EVNa4CK9SKosT4j1GEn8SuuUUEAXaHAMbM",
 			true,
 		},
 	}

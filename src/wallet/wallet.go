@@ -465,6 +465,12 @@ func (w *Wallet) validate() error {
 		return errors.New("crypto type field not set")
 	}
 
+	if w.IsEncrypted() {
+		if _, ok := w.Meta[metaSecrets]; !ok {
+			return errors.New("wallet is encrypted, but secrets field not set")
+		}
+	}
+
 	return nil
 }
 

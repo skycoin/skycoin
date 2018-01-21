@@ -369,7 +369,12 @@ func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, vld
 	}
 
 	if w.IsEncrypted() {
-		if err := w.guard(password, f); err != nil {
+		dw, err := w.unlock(password)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := f(dw); err != nil {
 			return nil, err
 		}
 	} else {

@@ -404,7 +404,12 @@ func walletsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		wlts, err := gateway.GetWallets()
 		if err != nil {
-			wh.Error403(w)
+			switch err {
+			case wallet.ErrWalletApiDisabled:
+				wh.Error403(w)
+			default:
+				wh.Error500(w)
+			}
 			return
 		}
 		wh.SendOr404(w, wlts.ToReadable())
@@ -424,11 +429,10 @@ func getWalletFolder(gateway Gatewayer) http.HandlerFunc {
 			switch err {
 			case wallet.ErrWalletApiDisabled:
 				wh.Error403(w)
-				return
 			default:
 				wh.Error500(w)
-				return
 			}
+			return
 		}
 		ret := WalletFolder{
 			Address: addr,

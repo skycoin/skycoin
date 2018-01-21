@@ -76,9 +76,9 @@ func (gw *FakeGateway) NewAddresses(wltID string, n uint64) ([]cipher.Address, e
 	return args.Get(0).([]cipher.Address), args.Error(1)
 }
 
-func (gw *FakeGateway) GetWalletDir() string {
+func (gw *FakeGateway) GetWalletDir() (string, error) {
 	args := gw.Called()
-	return args.String(0)
+	return args.String(0), args.Error(1)
 }
 
 func TestWalletSpendHandler(t *testing.T) {
@@ -392,6 +392,28 @@ func TestWalletSpendHandler(t *testing.T) {
 			},
 		},
 		{
+			"403 - Forbidden",
+			http.MethodPost,
+			"/wallet/spend",
+			&httpBody{
+				WalletID: "123",
+				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+				Coins:    "12",
+			},
+			http.StatusForbidden,
+			"403 Forbidden",
+			"123",
+			12,
+			"2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+			&coin.Transaction{},
+			wallet.ErrWalletApiDisabled,
+			wallet.BalancePair{},
+			nil,
+			&SpendResult{
+				Error: wallet.ErrWalletApiDisabled.Error(),
+			},
+		},
+		{
 			"200 - OK",
 			http.MethodPost,
 			"/wallet/spend",
@@ -525,6 +547,22 @@ func TestWalletGet(t *testing.T) {
 			"123",
 			wallet.Wallet{},
 			errors.New("wallet 123 doesn't exist"),
+		},
+		{
+			"403 - Forbidden",
+			http.MethodGet,
+			"/wallet",
+			&httpBody{
+				WalletID: "1234",
+			},
+			http.StatusForbidden,
+			"403 Forbidden",
+			"1234",
+			wallet.Wallet{
+				Meta:    map[string]string{},
+				Entries: []wallet.Entry{},
+			},
+			wallet.ErrWalletApiDisabled,
 		},
 		{
 			"200 - OK",
@@ -668,6 +706,20 @@ func TestWalletBalanceHandler(t *testing.T) {
 				Confirmed: wallet.Balance{Coins: 0, Hours: 0},
 				Predicted: wallet.Balance{Coins: 0, Hours: 0},
 			},
+		},
+		{
+			"403 - Forbidden",
+			http.MethodGet,
+			"/wallet/balance",
+			&httpBody{
+				WalletID: "foo",
+			},
+			http.StatusForbidden,
+			"403 Forbidden",
+			"foo",
+			wallet.BalancePair{},
+			wallet.ErrWalletApiDisabled,
+			&wallet.BalancePair{},
 		},
 		{
 			"200 - OK",
@@ -818,6 +870,21 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 			"",
 		},
 		{
+			"403 Forbidden",
+			http.MethodPost,
+			"/wallet/update",
+			&httpBody{
+				WalletID: "foo",
+				Label:    "label",
+			},
+			http.StatusForbidden,
+			"403 Forbidden",
+			"foo",
+			"label",
+			wallet.ErrWalletApiDisabled,
+			"",
+		},
+		{
 			"200 OK",
 			http.MethodPost,
 			"/wallet/update",
@@ -939,6 +1006,20 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			"foo",
 			make([]visor.UnconfirmedTxn, 0),
 			wallet.ErrWalletNotExist,
+			[]visor.UnconfirmedTxn{},
+		},
+		{
+			"403 - Forbidden",
+			http.MethodGet,
+			"/wallet/transactions",
+			&httpBody{
+				WalletID: "foo",
+			},
+			http.StatusForbidden,
+			"403 Forbidden",
+			"foo",
+			make([]visor.UnconfirmedTxn, 0),
+			wallet.ErrWalletApiDisabled,
 			[]visor.UnconfirmedTxn{},
 		},
 		{
@@ -1157,6 +1238,32 @@ func TestWalletCreateHandler(t *testing.T) {
 			wallet.Wallet{},
 			errors.New("gateway.ScanAheadWalletAddresses error"),
 			wallet.ReadableWallet{},
+		},
+		{
+			"403 - Forbidden",
+			http.MethodPost,
+			"/wallet/create",
+			&httpBody{
+				Seed:  "foo",
+				Label: "bar",
+				ScanN: "2",
+			},
+			http.StatusForbidden,
+			"403 Forbidden",
+			"filename",
+			2,
+			wallet.Options{
+				Label: "bar",
+				Seed:  "foo",
+			},
+			wallet.Wallet{},
+			wallet.ErrWalletApiDisabled,
+			wallet.Wallet{},
+			nil,
+			wallet.ReadableWallet{
+				Meta:    map[string]string{},
+				Entries: wallet.ReadableEntries{},
+			},
 		},
 		{
 			"200 - OK",
@@ -1459,6 +1566,22 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 			Addresses{},
 		},
 		{
+			"403 - Forbidden",
+			http.MethodPost,
+			"/wallet/create",
+			&httpBody{
+				Id:  "foo",
+				Num: "1",
+			},
+			http.StatusForbidden,
+			"403 Forbidden",
+			"foo",
+			1,
+			addrs,
+			wallet.ErrWalletApiDisabled,
+			Addresses{},
+		},
+		{
 			"200 - OK",
 			http.MethodPost,
 			"/wallet/create",
@@ -1542,6 +1665,7 @@ func TestGetWalletFolderHandler(t *testing.T) {
 		status               int
 		err                  string
 		getWalletDirResponse string
+		getWalletDirErr error
 		httpResponse         WalletFolder
 	}{
 		{
@@ -1551,9 +1675,20 @@ func TestGetWalletFolderHandler(t *testing.T) {
 			http.StatusOK,
 			"",
 			"/wallet/folder/address",
+			nil,
 			WalletFolder{
 				Address: "/wallet/folder/address",
 			},
+		},
+		{
+			"403",
+			http.MethodGet,
+			"/wallets/folderName",
+			http.StatusForbidden,
+			"403 Forbidden",
+			"/wallet/folder/address",
+			wallet.ErrWalletApiDisabled,
+			WalletFolder{},
 		},
 		{
 			"200 - POST",
@@ -1562,6 +1697,7 @@ func TestGetWalletFolderHandler(t *testing.T) {
 			http.StatusOK,
 			"",
 			"/wallet/folder/address",
+			nil,
 			WalletFolder{
 				Address: "/wallet/folder/address",
 			},
@@ -1572,7 +1708,7 @@ func TestGetWalletFolderHandler(t *testing.T) {
 		gateway := &FakeGateway{
 			t: t,
 		}
-		gateway.On("GetWalletDir").Return(tc.getWalletDirResponse)
+		gateway.On("GetWalletDir").Return(tc.getWalletDirResponse, tc.getWalletDirErr)
 
 		req, err := http.NewRequest(tc.method, tc.url, nil)
 		require.NoError(t, err)

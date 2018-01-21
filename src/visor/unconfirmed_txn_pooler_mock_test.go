@@ -208,7 +208,7 @@ func (m *UnconfirmedTxnPoolerMock) GetUnspentsOfAddr(p0 cipher.Address) coin.UxA
 }
 
 // InjectTxn mocked method
-func (m *UnconfirmedTxnPoolerMock) InjectTxn(p0 blockchainer, p1 coin.Transaction) (bool, error) {
+func (m *UnconfirmedTxnPoolerMock) InjectTxn(p0 Blockchainer, p1 coin.Transaction) (bool, error) {
 
 	ret := m.Called(p0, p1)
 
@@ -298,7 +298,7 @@ func (m *UnconfirmedTxnPoolerMock) RecvOfAddresses(p0 coin.BlockHeader, p1 []cip
 }
 
 // Refresh mocked method
-func (m *UnconfirmedTxnPoolerMock) Refresh(p0 blockchainer) []cipher.SHA256 {
+func (m *UnconfirmedTxnPoolerMock) Refresh(p0 Blockchainer) []cipher.SHA256 {
 
 	ret := m.Called(p0)
 

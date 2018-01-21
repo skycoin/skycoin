@@ -16,7 +16,7 @@ type BlockchainParser struct {
 	blkC      chan coin.Block
 	quit      chan struct{}
 	done      chan struct{}
-	bc        blockchainer
+	bc        Blockchainer
 
 	isStart bool
 }

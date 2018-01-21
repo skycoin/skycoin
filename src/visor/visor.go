@@ -175,7 +175,7 @@ type historyer interface {
 }
 
 // Blockchainer is the interface that provides methods for accessing the blockchain data
-type blockchainer interface {
+type Blockchainer interface {
 	GetGenesisBlock() *coin.SignedBlock
 	GetBlocks(start, end uint64) []coin.SignedBlock
 	GetLastBlocks(n uint64) []coin.SignedBlock
@@ -199,11 +199,11 @@ type blockchainer interface {
 // accessing the unconfirmed transaction pool
 type UnconfirmedTxnPooler interface {
 	SetAnnounced(hash cipher.SHA256, t time.Time) error
-	InjectTxn(bc blockchainer, t coin.Transaction) (bool, error)
+	InjectTxn(bc Blockchainer, t coin.Transaction) (bool, error)
 	RawTxns() coin.Transactions
 	RemoveTransactions(txns []cipher.SHA256)
 	RemoveTransactionsWithTx(tx *bolt.Tx, txns []cipher.SHA256)
-	Refresh(bc blockchainer) []cipher.SHA256
+	Refresh(bc Blockchainer) []cipher.SHA256
 	FilterKnown(txns []cipher.SHA256) []cipher.SHA256
 	GetKnown(txns []cipher.SHA256) coin.Transactions
 	RecvOfAddresses(bh coin.BlockHeader, addrs []cipher.Address) (coin.AddressUxOuts, error)
@@ -223,7 +223,7 @@ type Visor struct {
 	Config Config
 	// Unconfirmed transactions, held for relay until we get block confirmation
 	Unconfirmed UnconfirmedTxnPooler
-	Blockchain  blockchainer
+	Blockchain  Blockchainer
 	history     historyer
 	bcParser    *BlockchainParser
 	wallets     *wallet.Service

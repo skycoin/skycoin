@@ -1,3 +1,6 @@
+// package scryptChacha20poly1305 uses scrypt for password key derivation, and chacha20poly1305 for
+// encryption/decryption
+
 package scryptChacha20poly1305
 
 import (
@@ -8,8 +11,8 @@ import (
 	"math"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"golang.org/x/crypto/chacha20poly1305"
-	"golang.org/x/crypto/scrypt"
+	"github.com/skycoin/skycoin/src/cipher/chacha20poly1305"
+	"github.com/skycoin/skycoin/src/cipher/scrypt"
 )
 
 const (

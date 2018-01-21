@@ -41,9 +41,8 @@ const (
 	CryptoTypeScryptChacha20poly1305 = CryptoType("scrypt-chacha20poly1305")
 )
 
-// Scrypt paraments
-//
-const (
+// Scrypt paramenters
+var (
 	scryptN      = 1 << 20
 	scryptR      = 8
 	scryptP      = 1

@@ -399,6 +399,15 @@ func (gw *Gateway) GetAddressTxns(a cipher.Address) (*visor.TransactionResults, 
 	return visor.NewTransactionResults(txs)
 }
 
+func (gw *Gateway) GetTransactions(flts ...visor.TxFilter) ([]visor.Transaction, error) {
+	var txns []visor.Transaction
+	var err error
+	gw.strand("GetTransactions", func() {
+		txns, err = gw.v.GetTransactions(flts...)
+	})
+	return txns, err
+}
+
 // GetUxOutByID gets UxOut by hash id.
 func (gw *Gateway) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
 	var uxout *historydb.UxOut
@@ -469,11 +478,11 @@ func (gw *Gateway) GetUnspent() blockdb.UnspentPool {
 
 // impelemts the wallet.Validator interface
 type spendValidator struct {
-	uncfm   *visor.UnconfirmedTxnPool
+	uncfm   visor.UnconfirmedTxnPooler
 	unspent blockdb.UnspentPool
 }
 
-func newSpendValidator(uncfm *visor.UnconfirmedTxnPool, unspent blockdb.UnspentPool) *spendValidator {
+func newSpendValidator(uncfm visor.UnconfirmedTxnPooler, unspent blockdb.UnspentPool) *spendValidator {
 	return &spendValidator{
 		uncfm:   uncfm,
 		unspent: unspent,

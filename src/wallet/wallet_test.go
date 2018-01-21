@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/scryptChacha20poly1305"
+	"github.com/skycoin/skycoin/src/cipher/encrypt"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/fee"
 )
@@ -27,7 +27,7 @@ var _ = func() int64 {
 
 func init() {
 	// Change the scrypt N value in cryptoTable to make test faster, otherwise it would take more than 200 seconds to finish
-	cryptoTable[CryptoTypeScryptChacha20poly1305] = scryptChacha20poly1305.New(1<<15, scryptR, scryptP, scryptKeyLen)
+	cryptoTable[CryptoTypeScryptChacha20poly1305] = encrypt.NewScryptChacha20poly1305(1<<15, scryptR, scryptP, scryptKeyLen)
 }
 
 type mockBalanceGetter map[cipher.Address]BalancePair

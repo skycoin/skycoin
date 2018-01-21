@@ -1,5 +1,6 @@
-// Package sha256xor provides methods for encryption and decryption.
-package sha256xor
+// implements sha256xor encryptor
+
+package encrypt
 
 import (
 	"bytes"
@@ -25,8 +26,8 @@ const (
 	lengthSize = 4 // 4 bytes
 )
 
-// New creates a Sha256Xor instance
-func New() *Sha256Xor {
+// NewSha256Xor creates a Sha256Xor instance
+func NewSha256Xor() *Sha256Xor {
 	return &Sha256Xor{}
 }
 

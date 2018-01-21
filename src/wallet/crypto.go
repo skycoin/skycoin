@@ -5,8 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/skycoin/skycoin/src/cipher/scryptChacha20poly1305"
-	"github.com/skycoin/skycoin/src/cipher/sha256xor"
+	"github.com/skycoin/skycoin/src/cipher/encrypt"
 )
 
 // secrets key name
@@ -42,6 +41,10 @@ const (
 )
 
 // Scrypt paramenters
+// scryptN: scrypt N paramenter. 1<<20 is the recommended value for file encryption, it takes about 3 seconds in 2.9 GHz Intel core i7.
+// scryptR: scrypt r paramenter. Cache line size have not significantly increased since 2009, 8 should still be optimal for r.
+// scryptP: scrypt p paramenter. The parallel difficulty, 1 is still optimal.
+// scryptKeyLen: The length of returned byte slice that can be used as cryptographic key.
 var (
 	scryptN      = 1 << 20
 	scryptR      = 8
@@ -52,8 +55,8 @@ var (
 // cryptoTable records all supported wallet crypto methods
 // If want to support new crypto methods, register here.
 var cryptoTable = map[CryptoType]cryptor{
-	CryptoTypeSha256Xor:              sha256xor.New(),
-	CryptoTypeScryptChacha20poly1305: scryptChacha20poly1305.New(scryptN, scryptR, scryptP, scryptKeyLen),
+	CryptoTypeSha256Xor:              encrypt.NewSha256Xor(),
+	CryptoTypeScryptChacha20poly1305: encrypt.NewScryptChacha20poly1305(scryptN, scryptR, scryptP, scryptKeyLen),
 }
 
 // ErrAuthenticationFailed wraps the error of decryption.

@@ -1,4 +1,4 @@
-package scryptChacha20poly1305
+package encrypt
 
 import (
 	"encoding/base64"

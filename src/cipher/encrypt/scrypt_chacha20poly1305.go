@@ -1,7 +1,7 @@
-// package scryptChacha20poly1305 uses scrypt for password key derivation, and chacha20poly1305 for
+// uses scrypt for password key derivation, and chacha20poly1305 for
 // encryption/decryption
 
-package scryptChacha20poly1305
+package encrypt
 
 import (
 	"encoding/base64"
@@ -28,8 +28,8 @@ type ScryptChacha20poly1305 struct {
 	keyLen int
 }
 
-// New creates a ScryptChacha20poly1305 instance
-func New(N, r, p, keyLen int) *ScryptChacha20poly1305 {
+// NewScryptChacha20poly1305 creates a ScryptChacha20poly1305 instance
+func NewScryptChacha20poly1305(N, r, p, keyLen int) *ScryptChacha20poly1305 {
 	return &ScryptChacha20poly1305{
 		n:      N,
 		r:      r,

@@ -1,4 +1,4 @@
-package sha256xor
+package encrypt
 
 import (
 	"encoding/base64"

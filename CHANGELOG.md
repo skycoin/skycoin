@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - #800, Add entropy parameter to `/wallet/newSeed` endpoint
+- #877, Add -disable-wallet-api CLI options
 
 ## [0.21.1] - 2017-12-14
 

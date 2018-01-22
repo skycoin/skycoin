@@ -16,7 +16,7 @@ func TestScryptChacha20poly1305Encrypt(t *testing.T) {
 	for i := uint(20); i < 21; i++ {
 		name := fmt.Sprintf("N=1<<%v r=%v p=%v keyLen=%v", i, 8, 1, 32)
 		t.Run(name, func(t *testing.T) {
-			crypto := New(1<<i, 8, 1, 32)
+			crypto := NewScryptChacha20poly1305(1<<i, 8, 1, 32)
 			encData, err := crypto.Encrypt([]byte("plaintext"), []byte("password"))
 			require.NoError(t, err)
 
@@ -71,7 +71,7 @@ func TestScryptChacha20poly1305Decrypt(t *testing.T) {
 		for i := uint(20); i < 21; i++ {
 			name := fmt.Sprintf("N=1<<%v r=8 p=1 keyLen=32 %v", i, tc.name)
 			t.Run(name, func(t *testing.T) {
-				crypto := New(1<<i, 8, 1, 32)
+				crypto := NewScryptChacha20poly1305(1<<i, 8, 1, 32)
 				encData, err := crypto.Encrypt(tc.data, tc.encPwd)
 				require.NoError(t, err)
 

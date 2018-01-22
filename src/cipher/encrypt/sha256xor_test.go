@@ -60,7 +60,7 @@ func TestEncrypt(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			edata, err := New().Encrypt(tc.data, tc.password)
+			edata, err := NewSha256Xor().Encrypt(tc.data, tc.password)
 			require.Equal(t, tc.err, err)
 			if err != nil {
 				return
@@ -89,7 +89,7 @@ func TestEncrypt(t *testing.T) {
 		name := fmt.Sprintf("data length=%d password is empty=false", i)
 		t.Run(name, func(t *testing.T) {
 			data := testutil.RandBytes(t, i)
-			edata, err := New().Encrypt(data, pwd)
+			edata, err := NewSha256Xor().Encrypt(data, pwd)
 			require.NoError(t, err)
 
 			n := (lengthSize + len(data)) / blockSize
@@ -168,7 +168,7 @@ func TestDecrypt(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			edata := tc.encryptedData()
-			d, err := New().Decrypt(edata, tc.password)
+			d, err := NewSha256Xor().Decrypt(edata, tc.password)
 			require.Equal(t, tc.err, err)
 			if err != nil {
 				return
@@ -184,7 +184,7 @@ func TestDecrypt(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			data := testutil.RandBytes(t, i)
 			edata := makeEncryptedData(t, data, uint32(len(data)), []byte("pwd"))
-			d, err := New().Decrypt(edata, []byte("pwd"))
+			d, err := NewSha256Xor().Decrypt(edata, []byte("pwd"))
 			require.NoError(t, err)
 			require.Equal(t, data, d)
 		})

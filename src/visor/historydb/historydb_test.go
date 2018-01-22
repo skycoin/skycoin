@@ -21,9 +21,9 @@ import (
 var (
 	genPublic, genSecret = cipher.GenerateKeyPair()
 	genAddress           = cipher.AddressFromPubKey(genPublic)
-	transactionBkt = []byte("transactions")
-	outputBkt      = []byte("uxouts")
-	addressInBkt   = []byte("address_in")
+	transactionBkt       = []byte("transactions")
+	outputBkt            = []byte("uxouts")
+	addressInBkt         = []byte("address_in")
 )
 
 var _genTime uint64 = 1000

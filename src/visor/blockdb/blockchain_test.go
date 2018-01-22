@@ -16,11 +16,11 @@ import (
 )
 
 var (
-	genPublic, genSecret = cipher.GenerateKeyPair()
-	genAddress           = cipher.AddressFromPubKey(genPublic)
-	genTime uint64 = 1000
-	genCoinHours uint64 = 1000 * 1000
-	failedWhenSave bool
+	genPublic, genSecret        = cipher.GenerateKeyPair()
+	genAddress                  = cipher.AddressFromPubKey(genPublic)
+	genTime              uint64 = 1000
+	genCoinHours         uint64 = 1000 * 1000
+	failedWhenSave       bool
 )
 
 func _feeCalc(t *coin.Transaction) (uint64, error) {

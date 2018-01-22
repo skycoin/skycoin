@@ -12,11 +12,11 @@ type ParserOption func(*BlockchainParser)
 
 // BlockchainParser parses the blockchain and stores the data into historydb.
 type BlockchainParser struct {
-	historyDB *historydb.HistoryDB
+	historyDB historyer
 	blkC      chan coin.Block
 	quit      chan struct{}
 	done      chan struct{}
-	bc        *Blockchain
+	bc        Blockchainer
 
 	isStart bool
 }

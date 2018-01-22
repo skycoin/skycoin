@@ -2,6 +2,7 @@ package gui
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
@@ -18,6 +19,10 @@ func RegisterExplorerHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	mux.HandleFunc("/explorer/getEffectiveOutputs", getEffectiveOutputs(gateway))
 
 	mux.HandleFunc("/coinSupply", getCoinSupply(gateway))
+
+	mux.HandleFunc("/richlist", getRichlist(gateway))
+
+	mux.HandleFunc("/addresscount", getAddressCount(gateway))
 }
 
 // DeprecatedCoinSupply records the coin supply info
@@ -195,6 +200,76 @@ func getTransactionsForAddress(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 
 		wh.SendOr404(w, &resTxs)
+	}
+}
+
+// method: GET
+// url: /richlist?n=${number}&include-distribution=${bool}
+func getRichlist(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
+		var topn int
+		topnStr := r.FormValue("n")
+		if topnStr == "" {
+			topn = 20
+		} else {
+			var err error
+			topn, err = strconv.Atoi(topnStr)
+			if err != nil {
+				wh.Error400(w, "invalid n")
+				return
+			}
+		}
+
+		var includeDistribution bool
+		includeDistributionStr := r.FormValue("include-distribution")
+		if includeDistributionStr == "" {
+			includeDistribution = false
+		} else {
+			var err error
+			includeDistribution, err = strconv.ParseBool(includeDistributionStr)
+			if err != nil {
+				wh.Error400(w, "invalid include-distribution")
+				return
+			}
+		}
+
+		richlist, err := gateway.GetRichlist(includeDistribution)
+		if err != nil {
+			logger.Error(err.Error())
+			wh.Error500(w)
+			return
+		}
+
+		if topn > 0 && topn < len(richlist) {
+			richlist = richlist[:topn]
+		}
+
+		wh.SendOr404(w, richlist)
+	}
+}
+
+// method: GET
+// url: /addresscount
+func getAddressCount(gateway *daemon.Gateway) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
+		addrCount, err := gateway.GetAddressCount()
+		if err != nil {
+			logger.Error(err.Error())
+			wh.Error500(w)
+			return
+		}
+
+		wh.SendOr404(w, &map[string]uint64{"count": addrCount})
 	}
 }
 

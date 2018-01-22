@@ -1,0 +1,87 @@
+.-container {
+  .-header {
+    background-color: #f7f7f7;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    line-height: 50px;
+    position: relative;
+    text-align: center;
+
+    img {
+      cursor: pointer;
+      height: 32px;
+      position: absolute;
+      right: 9px;
+      top: 9px;
+    }
+  }
+
+  .-body {
+    background-color: #fbfbfb;
+    height: 190px;
+    text-align: center;
+
+    .-icon {
+      img {
+        height: 22px;
+        margin: 55px 0 0 0;
+      }
+
+      &.-incoming {
+        -moz-transform: scaleX(-1);
+        -o-transform: scaleX(-1);
+        -webkit-transform: scaleX(-1);
+        transform: scaleX(-1);
+        filter: FlipH;
+        -ms-filter: "FlipH";
+      }
+
+      &.-pending {
+        opacity: 0.5;
+      }
+    }
+
+    h4 {
+      color: #1e2227;
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 23px;
+      margin: 20px 0 0 0;
+    }
+
+    p {
+      color: #1e2227;
+      font-size: 13px;
+      line-height: 15px;
+      margin: 5px 0 0 0;
+      opacity: 0.5;
+    }
+  }
+
+  .-footer {
+    background-color: #f7f7f7;
+
+    .-row {
+      border-top: 1px solid #eff0f0;
+      color: #1e2227;
+      display: flex;
+      font-size: 12px;
+      line-height: 14px;
+      padding: 13px 10px;
+
+      .-key {
+        opacity: 0.5;
+        text-align: left;
+      }
+
+      .-values {
+        flex: 1;
+        text-align: right;
+
+        span {
+          display: block;
+        }
+      }
+    }
+  }
+}

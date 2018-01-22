@@ -27,7 +27,7 @@ var (
 	errMsgMethodNotFound = "Method not found"
 	errMsgInvalidParams  = "Invalid params"
 	errMsgInternalError  = "Internal error"
-	errMsgNotPost = "only support http POST"
+	errMsgNotPost        = "only support http POST"
 	errMsgInvalidJsonrpc = "invalid jsonrpc"
 
 	// -32000 to -32099	Server error	Reserved for implementation-defined server-errors.

@@ -34,7 +34,8 @@ test: ## Run tests
 
 lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...
-	gometalinter --disable-all -E goimports -E varcheck --tests --vendor ./...
+	gometalinter --disable-all -E vet -E goimports -E varcheck --tests --vendor ./...
+
 
 check: lint test ## Run tests and linters
 

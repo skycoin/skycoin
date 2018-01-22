@@ -46,7 +46,7 @@ func blockchainProgressHandler(gateway *daemon.Gateway) http.HandlerFunc {
 // method: GET
 // url: /block?hash=[:hash]  or /block?seq[:seq]
 // params: hash or seq, should only specify one filter.
-func getBlock(gate *daemon.Gateway) http.HandlerFunc {
+func getBlock(gate Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)

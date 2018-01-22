@@ -625,9 +625,14 @@ func (bc *Blockchain) BindListener(ls BlockListener) {
 	bc.blkListener = append(bc.blkListener, ls)
 }
 
-// notifies the listener the new block.
+// Notify notifies the listener the new block.
 func (bc *Blockchain) Notify(b coin.Block) {
 	for _, l := range bc.blkListener {
 		l(b)
 	}
+}
+
+// UpdateDB updates db with given func
+func (bc *Blockchain) UpdateDB(f func(t *bolt.Tx) error) error {
+	return bc.db.Update(f)
 }

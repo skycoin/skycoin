@@ -71,8 +71,7 @@ func GenerateCert(certFile, keyFile, host, organization string, rsaBits int,
 		template.KeyUsage |= x509.KeyUsageCertSign
 	}
 
-	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template,
-		&priv.PublicKey, priv)
+	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &priv.PublicKey, priv)
 	if err != nil {
 		return fmt.Errorf("Failed to create certificate: %v", err)
 	}
@@ -84,19 +83,17 @@ func GenerateCert(certFile, keyFile, host, organization string, rsaBits int,
 	defer certOut.Close()
 	pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
 
-	keyOut, err := os.OpenFile(keyFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC,
-		0600)
+	keyOut, err := os.OpenFile(keyFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return fmt.Errorf("Failed to open %s for writing:%v", keyFile, err)
 	}
 	defer keyOut.Close()
-	pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY",
-		Bytes: x509.MarshalPKCS1PrivateKey(priv)})
+	pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(priv)})
 
 	return nil
 }
 
-func certKeyXor(certFile, keyFile string) (bool, []error) {
+func certKeyXor(certFile, keyFile string) (bool, error) {
 	certInfo, err := os.Stat(certFile)
 	certExists := !os.IsNotExist(err)
 	certIsFile := certExists && certInfo.Mode().IsRegular()
@@ -105,45 +102,46 @@ func certKeyXor(certFile, keyFile string) (bool, []error) {
 	keyExists := !os.IsNotExist(err)
 	keyIsFile := keyExists && keyInfo.Mode().IsRegular()
 
-	errors := make([]error, 0)
-	if certExists && certIsFile && keyExists && keyIsFile {
-		return true, errors
+	switch {
+	case certExists && certIsFile && keyExists && keyIsFile:
+		return true, nil
+	case !certExists && !keyExists:
+		return false, nil
+	case !certExists:
+		return false, fmt.Errorf("Cert %s does not exist", certFile)
+	case !certIsFile:
+		return false, fmt.Errorf("Cert %s is not a file", certFile)
+	case !keyExists:
+		return false, fmt.Errorf("Key %s does not exist", keyFile)
+	case !keyIsFile:
+		return false, fmt.Errorf("Key %s is not a file", keyFile)
+	default:
+		panic("unreachable code")
 	}
-	if !certExists && !keyExists {
-		return false, errors
-	}
-	if !certExists {
-		errors = append(errors, fmt.Errorf("Cert %s does not exist", certFile))
-	} else if !certIsFile {
-		errors = append(errors, fmt.Errorf("Cert %s is not a file", certFile))
-	}
-	if !keyExists {
-		errors = append(errors, fmt.Errorf("Key %s does not exist", keyFile))
-	} else if !keyIsFile {
-		errors = append(errors, fmt.Errorf("Key %s is not a file", keyFile))
-	}
-	return false, errors
 }
 
-// CreateCertIfNotExists that certFile and keyFile exist and are files, and if not,
-// returns a slice of errors indicating status.
-// If neither certFile nor keyFile exist, they are automatically created
-// for host
-func CreateCertIfNotExists(host, certFile, keyFile string, appName string) []error {
+// CreateCertIfNotExists verifies that certFile and keyFile exist and are files, and
+// if neither certFile nor keyFile exist, they are automatically created for host
+func CreateCertIfNotExists(host, certFile, keyFile string, appName string) error {
 	// check that cert/key both exist, or dont
-	exist, errs := certKeyXor(certFile, keyFile)
-	// Automatically create a new cert if neither files exist
-	if !exist && len(errs) == 0 {
-		logger.Info("Creating certificate %s", certFile)
-		logger.Info("Creating key %s", keyFile)
-		err := GenerateCert(certFile, keyFile, host, appName, 2048,
-			false, utc.Now(), 365*24*time.Hour)
-		if err == nil {
-			logger.Info("Created certificate %s for host %s", certFile, host)
-			logger.Info("Created key %s for host %s", keyFile, host)
-		} else {
-			errs = append(errs, err)
-		}
+	exist, err := certKeyXor(certFile, keyFile)
+	if err != nil {
+		return err
 	}
-	return errs
+
+	if exist {
+		return nil
+	}
+
+	// Automatically create a new cert if neither files exist
+	logger.Info("Creating certificate %s", certFile)
+	logger.Info("Creating key %s", keyFile)
+	lifetime := time.Hour * 365 * 24 // 1 year
+	if err := GenerateCert(certFile, keyFile, host, appName, 2048, false, utc.Now(), lifetime); err != nil {
+		return err
+	}
+
+	logger.Info("Created certificate %s for host %s", certFile, host)
+	logger.Info("Created key %s for host %s", keyFile, host)
+	return nil
 }

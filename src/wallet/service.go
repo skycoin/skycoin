@@ -368,6 +368,7 @@ func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, vld
 		if err != nil {
 			return nil, err
 		}
+		defer dw.erase()
 
 		if err := f(dw); err != nil {
 			return nil, err

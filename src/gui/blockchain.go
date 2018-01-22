@@ -15,8 +15,6 @@ import (
 	"github.com/skycoin/skycoin/src/daemon"
 )
 
-const lastBlockNum = 10
-
 // RegisterBlockchainHandlers registers blockchain handlers
 func RegisterBlockchainHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	mux.HandleFunc("/blockchain/metadata", blockchainHandler(gateway))

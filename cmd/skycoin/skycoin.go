@@ -95,6 +95,9 @@ type Config struct {
 	DisableIncomingConnections bool
 	// Disables networking altogether
 	DisableNetworking bool
+	// Disables wallet API
+	DisableWalletApi bool
+
 	// Only run on localhost and only connect to others on localhost
 	LocalhostOnly bool
 	// Which address to serve on. Leave blank to automatically assign to a
@@ -181,6 +184,7 @@ func (c *Config) register() {
 	flag.BoolVar(&c.DisableOutgoingConnections, "disable-outgoing", c.DisableOutgoingConnections, "Don't make outgoing connections")
 	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming", c.DisableIncomingConnections, "Don't make incoming connections")
 	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
+	flag.BoolVar(&c.DisableWalletApi, "disable-wallet-api", c.DisableWalletApi, "Disable the wallet API")
 	flag.StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
 
@@ -238,6 +242,8 @@ var devConfig = Config{
 	DisableIncomingConnections: false,
 	// Disables networking altogether
 	DisableNetworking: false,
+	// Disable wallet API
+	DisableWalletApi: false,
 	// Only run on localhost and only connect to others on localhost
 	LocalhostOnly: false,
 	// Which address to serve on. Leave blank to automatically assign to a
@@ -507,7 +513,6 @@ func configureDaemon(c *Config) daemon.Config {
 		c.OutgoingConnectionsRate = time.Millisecond
 	}
 	dc.Daemon.OutgoingRate = c.OutgoingConnectionsRate
-
 	dc.Visor.Config.IsMaster = c.RunMaster
 
 	dc.Visor.Config.BlockchainPubkey = c.BlockchainPubkey
@@ -524,6 +529,9 @@ func configureDaemon(c *Config) daemon.Config {
 		Version: Version,
 		Commit:  Commit,
 	}
+
+	dc.Gateway.DisableWalletAPI = c.DisableWalletApi
+
 	return dc
 }
 
@@ -613,29 +621,30 @@ func Run(c *Config) {
 		}
 	}
 
-	closelog, err := initLogging(c.DataDirectory, c.LogLevel, c.ColorLog, c.Logtofile, c.Logtogui, &d.LogBuff)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	if c.Logtogui {
-		go func(buf *bytes.Buffer, quit chan struct{}) {
-			for {
-				select {
-				case <-quit:
-					logger.Info("Logbuff service closed normally")
-					return
-				case <-time.After(1 * time.Second): //insure logbuff size not exceed required size, like lru
-					for buf.Len() > c.LogBuffSize {
-						_, err := buf.ReadString(byte('\n')) //discard one line
-						if err != nil {
-							continue
-						}
-					}
-				}
-			}
-		}(&d.LogBuff, quit)
-	}
+	// POTENTIALLY UNSAFE CODE -- See https://github.com/skycoin/skycoin/issues/838
+	// closelog, err := initLogging(c.DataDirectory, c.LogLevel, c.ColorLog, c.Logtofile, c.Logtogui, &d.LogBuff)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	return
+	// }
+	// if c.Logtogui {
+	// 	go func(buf *bytes.Buffer, quit chan struct{}) {
+	// 		for {
+	// 			select {
+	// 			case <-quit:
+	// 				logger.Info("Logbuff service closed normally")
+	// 				return
+	// 			case <-time.After(1 * time.Second): //insure logbuff size not exceed required size, like lru
+	// 				for buf.Len() > c.LogBuffSize {
+	// 					_, err := buf.ReadString(byte('\n')) //discard one line
+	// 					if err != nil {
+	// 						continue
+	// 					}
+	// 				}
+	// 			}
+	// 		}
+	// 	}(&d.LogBuff, quit)
+	// }
 
 	errC := make(chan error, 10)
 
@@ -727,7 +736,7 @@ func Run(c *Config) {
 		webInterface.Shutdown()
 	}
 	d.Shutdown()
-	closelog()
+	// closelog()
 	wg.Wait()
 	logger.Info("Goodbye")
 }

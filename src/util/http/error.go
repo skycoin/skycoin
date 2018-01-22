@@ -21,6 +21,11 @@ func Error400(w http.ResponseWriter, msg string) {
 	HTTPError(w, http.StatusBadRequest, httpMsg)
 }
 
+// Error403 response 404 error
+func Error403(w http.ResponseWriter) {
+	HTTPError(w, http.StatusForbidden, "Forbidden")
+}
+
 // Error404 response 404 error
 func Error404(w http.ResponseWriter) {
 	HTTPError(w, http.StatusNotFound, "Not Found")

@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
+	"github.com/skycoin/skycoin/src/cipher/go-bip39"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/visor"
@@ -27,7 +27,7 @@ type Gatewayer interface {
 	CreateWallet(wltName string, options wallet.Options) (wallet.Wallet, error)
 	ScanAheadWalletAddresses(wltName string, scanN uint64) (wallet.Wallet, error)
 	NewAddresses(wltID string, n uint64) ([]cipher.Address, error)
-	GetWalletDir() string
+	GetWalletDir() (string, error)
 	GetBlockByHash(hash cipher.SHA256) (block coin.SignedBlock, ok bool)
 	GetBlockBySeq(seq uint64) (block coin.SignedBlock, ok bool)
 	GetBlocks(start, end uint64) (*visor.ReadableBlocks, error)
@@ -48,7 +48,6 @@ func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 			wh.Error405(w)
 			return
 		}
-
 		wltID := r.FormValue("id")
 		if wltID == "" {
 			wh.Error400(w, "missing wallet id")
@@ -61,6 +60,10 @@ func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 			switch err {
 			case wallet.ErrWalletNotExist:
 				wh.Error404(w)
+				break
+			case wallet.ErrWalletApiDisabled:
+				wh.Error403(w)
+				break
 			default:
 				wh.Error500Msg(w, err.Error())
 			}
@@ -127,6 +130,9 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		case wallet.ErrWalletNotExist:
 			wh.Error404(w)
+			return
+		case wallet.ErrWalletApiDisabled:
+			wh.Error403(w)
 			return
 		default:
 			wh.Error500Msg(w, err.Error())
@@ -218,8 +224,14 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 			Label: label,
 		})
 		if err != nil {
-			wh.Error400(w, err.Error())
-			return
+			switch err {
+			case wallet.ErrWalletApiDisabled:
+				wh.Error403(w)
+				return
+			default:
+				wh.Error400(w, err.Error())
+				return
+			}
 		}
 
 		wlt, err = gateway.ScanAheadWalletAddresses(wlt.GetFilename(), scanN-1)
@@ -266,8 +278,14 @@ func walletNewAddresses(gateway Gatewayer) http.HandlerFunc {
 
 		addrs, err := gateway.NewAddresses(wltID, n)
 		if err != nil {
-			wh.Error400(w, err.Error())
-			return
+			switch err {
+			case wallet.ErrWalletApiDisabled:
+				wh.Error403(w)
+				return
+			default:
+				wh.Error400(w, err.Error())
+				return
+			}
 		}
 
 		var rlt = struct {
@@ -309,6 +327,8 @@ func walletUpdateHandler(gateway Gatewayer) http.HandlerFunc {
 			switch err {
 			case wallet.ErrWalletNotExist:
 				wh.Error404(w)
+			case wallet.ErrWalletApiDisabled:
+				wh.Error403(w)
 			default:
 				wh.Error500Msg(w, err.Error())
 			}
@@ -335,7 +355,12 @@ func walletGet(gateway Gatewayer) http.HandlerFunc {
 
 		wlt, err := gateway.GetWallet(wltID)
 		if err != nil {
-			wh.Error400(w, err.Error())
+			switch err {
+			case wallet.ErrWalletApiDisabled:
+				wh.Error403(w)
+			default:
+				wh.Error400(w, err.Error())
+			}
 			return
 		}
 
@@ -363,6 +388,8 @@ func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 			switch err {
 			case wallet.ErrWalletNotExist:
 				wh.Error404(w)
+			case wallet.ErrWalletApiDisabled:
+				wh.Error403(w)
 			default:
 				wh.Error500Msg(w, err.Error())
 			}
@@ -376,8 +403,17 @@ func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 // Returns all loaded wallets
 func walletsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		wlts := gateway.GetWallets().ToReadable()
-		wh.SendOr404(w, wlts)
+		wlts, err := gateway.GetWallets()
+		if err != nil {
+			switch err {
+			case wallet.ErrWalletApiDisabled:
+				wh.Error403(w)
+			default:
+				wh.Error500(w)
+			}
+			return
+		}
+		wh.SendOr404(w, wlts.ToReadable())
 	}
 }
 
@@ -389,8 +425,18 @@ type WalletFolder struct {
 // Loads/unloads wallets from the wallet directory
 func getWalletFolder(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		addr, err := gateway.GetWalletDir()
+		if err != nil {
+			switch err {
+			case wallet.ErrWalletApiDisabled:
+				wh.Error403(w)
+			default:
+				wh.Error500(w)
+			}
+			return
+		}
 		ret := WalletFolder{
-			Address: gateway.GetWalletDir(),
+			Address: addr,
 		}
 		wh.SendOr404(w, ret)
 	}

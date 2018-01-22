@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- #800, Add entropy parameter to `/wallet/newSeed` endpoint
+- Add `total_coinhour_supply` and `current_coinhour_supply` to `/coinSupply` endpoint
+
 ## [0.21.1] - 2017-12-14
 
 ### Fixed

@@ -8,6 +8,7 @@ import (
 	"github.com/boltdb/bolt"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util/logging"
 )
@@ -106,10 +107,7 @@ func (hd *HistoryDB) reset() error {
 		return err
 	}
 
-	if err := hd.txns.Reset(); err != nil {
-		return err
-	}
-	return nil
+	return hd.txns.Reset()
 }
 
 // GetUxout get UxOut of specific uxID.
@@ -230,4 +228,16 @@ func (hd HistoryDB) GetAddrTxns(address cipher.Address) ([]Transaction, error) {
 	}
 
 	return hd.txns.GetSlice(hashes)
+}
+
+// ForEach traverses the transactions in db
+func (hd HistoryDB) ForEach(f func(tx *Transaction) error) error {
+	return hd.txns.bkt.ForEach(func(k []byte, v []byte) error {
+		var tx Transaction
+		if err := encoder.DeserializeRaw(v, &tx); err != nil {
+			return err
+		}
+
+		return f(&tx)
+	})
 }

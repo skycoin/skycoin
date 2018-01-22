@@ -29,25 +29,25 @@ import (
 )
 
 // GetAllUnconfirmedTxns returns all unconfirmed transactions
-func (gw FakeGateway) GetAllUnconfirmedTxns() []visor.UnconfirmedTxn {
+func (gw *FakeGateway) GetAllUnconfirmedTxns() []visor.UnconfirmedTxn {
 	args := gw.Called()
 	return args.Get(0).([]visor.UnconfirmedTxn)
 }
 
 // GetTransaction returns transaction by txid
-func (gw FakeGateway) GetTransaction(txid cipher.SHA256) (tx *visor.Transaction, err error) {
+func (gw *FakeGateway) GetTransaction(txid cipher.SHA256) (tx *visor.Transaction, err error) {
 	args := gw.Called(txid)
 	return args.Get(0).(*visor.Transaction), args.Error(1)
 }
 
 // InjectTransaction injects transaction
-func (gw FakeGateway) InjectTransaction(txn coin.Transaction) error {
+func (gw *FakeGateway) InjectTransaction(txn coin.Transaction) error {
 	args := gw.Called(txn)
 	return args.Error(0)
 }
 
 // ResendUnconfirmedTxns resents all unconfirmed transactions
-func (gw FakeGateway) ResendUnconfirmedTxns() (rlt *daemon.ResendResult) {
+func (gw *FakeGateway) ResendUnconfirmedTxns() (rlt *daemon.ResendResult) {
 	args := gw.Called()
 	return args.Get(0).(*daemon.ResendResult)
 }

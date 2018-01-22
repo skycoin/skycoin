@@ -1,4 +1,5 @@
 // +build ignore
+
 package visor
 
 import (
@@ -8,15 +9,6 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/utc"
-)
-
-const (
-	testMasterKeysFile  = "testmaster.keys"
-	testWalletFile      = "testwallet.wlt"
-	testBlocksigsFile   = "testblockchain.sigs"
-	testBlockchainFile  = "testblockchain.bin"
-	testWalletEntryFile = "testwalletentry.json"
-	testWalletDir       = "./"
 )
 
 // func createGenesisSignature(master wallet.WalletEntry) cipher.Sig {

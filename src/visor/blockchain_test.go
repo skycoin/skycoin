@@ -19,17 +19,10 @@ import (
 var (
 	genPublic, genSecret = cipher.GenerateKeyPair()
 	genAddress           = cipher.AddressFromPubKey(genPublic)
-	//testMaxSize          = 1024 * 1024
 )
 
 var genTime uint64 = 1000
-
-//var incTime uint64 = 3600 * 1000
 var genCoins uint64 = 1000e6
-
-//var genCoinHours uint64 = 1000 * 1000
-
-//var failedWhenSave bool
 
 func tNow() uint64 {
 	return uint64(utc.UnixNow())

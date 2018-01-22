@@ -18,10 +18,6 @@ const (
 	txConfirmed = true
 )
 
-//var emptyTransactionStr = `{
-//        "transaction": null
-//    }`
-
 func decodeRawTransaction(rawTxStr string) *visor.Transaction {
 	rawTx, err := hex.DecodeString(rawTxStr)
 	if err != nil {

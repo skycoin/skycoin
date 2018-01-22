@@ -34,8 +34,7 @@ test: ## Run tests
 
 lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...
-	gometalinter --disable-all -E goimports --tests --vendor ./...
-	varcheck ./...
+	gometalinter --disable-all -E goimports -E varcheck --tests --vendor ./...
 
 check: lint test ## Run tests and linters
 
@@ -49,9 +48,7 @@ cover: ## Runs tests on ./src/ with HTML code coverage
 install-linters: ## Install linters
 	go get -u github.com/FiloSottile/vendorcheck
 	go get -u github.com/alecthomas/gometalinter
-	go get github.com/fzipp/gocyclo
-	go install github.com/fzipp/gocyclo
-#	gometalinter --vendored-linters --install
+	gometalinter --vendored-linters --install
 
 format:  # Formats the code. Must have goimports installed (use make install-linters).
 	goimports -w -local github.com/skycoin/skycoin ./cmd

@@ -340,7 +340,6 @@ func FbyHashes(hashes []string) OutputsFilter {
 	}
 }
 
-
 // Return a search indexed map for use in filters
 func MakeSearchMap(addrs []string) map[string]struct{} {
 	addrMap := make(map[string]struct{})

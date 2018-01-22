@@ -89,7 +89,7 @@ func advancedSendCmd() gcli.Command {
 	return gcli.Command{
 		Name:      name,
 		Usage:     "Create a custom send transaction from a wallet or address to a recipient address",
-		ArgsUsage: "[to address] [amount]",
+		ArgsUsage: "[to address] [amount] [hours]",
 		Description: `
 		Note: the [amount] argument is the coins you will spend, 1 coins = 1e6 droplets.`,
 		Flags: []gcli.Flag{
@@ -99,16 +99,11 @@ func advancedSendCmd() gcli.Command {
 			},
 			gcli.StringFlag{
 				Name:  "a",
-				Usage: "[address] From address",
+				Usage: "[addresses] From address(es)",
 			},
 			gcli.StringFlag{
 				Name:  "c",
 				Usage: `[changeAddress] Specify change address, by default the from address with most coins is used`,
-			},
-			gcli.StringFlag{
-				Name: "s",
-				Usage: `[spendhours] Specify how many coin hours to send to the destination address
-				can be in percentage or a whole number like 1,2 etc.`,
 			},
 			gcli.StringFlag{
 				Name: "u",
@@ -118,7 +113,7 @@ func advancedSendCmd() gcli.Command {
 			gcli.StringFlag{
 				Name: "m",
 				Usage: `[send to many] use JSON string to set multiple recive addresses and coins,
-				example: -m '[{"addr":"$addr1", "coins": "10.2"}, {"addr":"$addr2", "coins": "20"}]'`,
+				example: -m '[{"addr":"$addr1", "coins": "10.2", "hours": "1"}, {"addr":"$addr2", "coins": "20"}]'`,
 			},
 			gcli.BoolFlag{
 				Name:  "json,j",
@@ -156,6 +151,7 @@ func advancedSendCmd() gcli.Command {
 	// Commands = append(Commands, cmd)
 }
 
+// @TODO: following functions are not used anywhere, remove them if not required
 // SendFromWallet sends from any address or combination of addresses from a wallet. Returns txid.
 func SendFromWallet(c *webrpc.Client, walletFile, chgAddr string, toAddrs []SendAmount) (string, error) {
 	rawTx, err := CreateRawTxFromWallet(c, walletFile, chgAddr, toAddrs)

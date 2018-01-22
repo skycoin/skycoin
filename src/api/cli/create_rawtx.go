@@ -16,6 +16,8 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 
+	"reflect"
+
 	"strconv"
 
 	gcli "github.com/urfave/cli"
@@ -26,7 +28,7 @@ var (
 	ErrTemporaryInsufficientBalance = errors.New("balance is not sufficient. Balance will be sufficient after unconfirmed transactions confirm")
 )
 
-// SendAmount represents an amount to send to an address
+// SendAmount represents the amount to send to an address
 type SendAmount struct {
 	Addr  string
 	Coins uint64
@@ -137,26 +139,34 @@ func fromWalletOrAddress(c *gcli.Context) (walletAddress, error) {
 }
 
 // Change address is where the balance after a transaction is sent
-func getChangeAddress(wltAddr walletAddress, chgAddr string) (string, error) {
+func getChangeAddress(wltAddr interface{}, chgAddr string) (string, error) {
 	if chgAddr == "" {
-		switch {
-		case wltAddr.Address != "":
-			// use the from address as change address
-			chgAddr = wltAddr.Address
-		case wltAddr.Wallet != "":
-			// get the default wallet's coin base address
-			wlt, err := wallet.Load(wltAddr.Wallet)
-			if err != nil {
-				return "", WalletLoadError(err)
-			}
+		switch wltAddr.(type) {
+		case walletAddress, walletAddresses:
+			walletAddr := reflect.ValueOf(wltAddr)
+			switch {
+			// normal send with a single from address
+			case walletAddr.FieldByName("Address").Kind() == reflect.String:
+				// use from address as change address
+				chgAddr = walletAddr.FieldByName("Address").String()
+			// advanced send with multiple from address
+			case walletAddr.FieldByName("Address").Kind() == reflect.Slice:
+				chgAddr = walletAddr.FieldByName("Address").Index(0).String()
+			case walletAddr.FieldByName("Wallet").String() != "":
+				// get the default wallet's coin base address
+				wlt, err := wallet.Load(walletAddr.FieldByName("Wallet").String())
+				if err != nil {
+					return "", WalletLoadError(err)
+				}
 
-			if len(wlt.Entries) > 0 {
-				chgAddr = wlt.Entries[0].Address.String()
-			} else {
-				return "", errors.New("no change address was found")
+				if len(wlt.Entries) > 0 {
+					chgAddr = wlt.Entries[0].Address.String()
+				} else {
+					return "", errors.New("no change address was found")
+				}
+			default:
+				return "", errors.New("both wallet file, from address and change address are empty")
 			}
-		default:
-			return "", errors.New("both wallet file, from address and change address are empty")
 		}
 	}
 
@@ -222,6 +232,21 @@ func getAmount(c *gcli.Context) (uint64, error) {
 	return amt, nil
 }
 
+func getHours(c *gcli.Context) (uint64, error) {
+	if c.NArg() < 3 {
+		return 0, nil
+	}
+
+	hourstr := c.Args().Get(2)
+	hours, err := strconv.ParseUint(hourstr, 10, 0)
+	if err != nil {
+		return 0, fmt.Errorf("invalid hours: %v", err)
+	}
+
+	return hours, nil
+
+}
+
 func createRawTxCmdHandler(c *gcli.Context) (*coin.Transaction, error) {
 	rpcClient := RpcClientFromContext(c)
 
@@ -251,75 +276,30 @@ func createRawTxCmdHandler(c *gcli.Context) (*coin.Transaction, error) {
 	return CreateRawTxFromAddress(rpcClient, wltAddr.Address, wltAddr.Wallet, chgAddr, toAddrs)
 }
 
-func createAdvancedRawTxCmdHandler(c *gcli.Context) (*coin.Transaction, error) {
-	rpcClient := RpcClientFromContext(c)
+func validateSendAmounts(toAddrs interface{}) error {
+	switch toAddrs.(type) {
+	case []SendAmount, []AdvancedSendAmount:
+		// Get interface value
+		s := reflect.ValueOf(toAddrs)
 
-	wltAddr, err := fromWalletOrAddress(c)
-	if err != nil {
-		return nil, err
-	}
-
-	chgAddr, err := getChangeAddress(wltAddr, c.String("c"))
-	if err != nil {
-		return nil, err
-	}
-
-	toAddrs, err := getToAddresses(c)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := validateSendAmounts(toAddrs); err != nil {
-		return nil, err
-	}
-
-	// Send hours can be a percent of your coin hours
-	// Or a constant whole number
-	var sendHours float64
-	var isPercent bool
-	hours := c.String("s")
-	hourSplit := strings.Split(hours, "%")
-	if len(hourSplit) != 2 {
-		sendHours, err = strconv.ParseFloat(hours, 64)
-		isPercent = false
-	} else {
-		sendHours, err = strconv.ParseFloat(hourSplit[0], 64)
-		isPercent = true
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	// hashes of unspent outputs to spend from
-	var uxOutHashes = c.String("u")
-	var allowedUxOuts []string
-
-	if uxOutHashes != "" {
-		allowedUxOuts = strings.Split(uxOutHashes, ",")
-	}
-
-	if wltAddr.Address == "" {
-		return AdvancedCreateRawTxFromWallet(rpcClient, wltAddr.Wallet, chgAddr, toAddrs, allowedUxOuts, sendHours, isPercent)
-	}
-
-	return AdvancedCreateRawTxFromAddress(rpcClient, wltAddr.Address, wltAddr.Wallet, chgAddr, toAddrs, allowedUxOuts, sendHours, isPercent)
-}
-
-func validateSendAmounts(toAddrs []SendAmount) error {
-	for _, arg := range toAddrs {
-		// validate to address
-		_, err := cipher.DecodeBase58Address(arg.Addr)
-		if err != nil {
-			return ErrAddress
+		toAddrsLen := s.Len()
+		if toAddrsLen == 0 {
+			return errors.New("no destination addresses")
 		}
 
-		if arg.Coins == 0 {
-			return errors.New("Cannot send 0 coins")
-		}
-	}
+		for i := 0; i < s.Len(); i++ {
+			arg := s.Index(i)
+			_, err := cipher.DecodeBase58Address(arg.FieldByName("Addr").String())
+			if err != nil {
+				return ErrAddress
+			}
 
-	if len(toAddrs) == 0 {
-		return errors.New("No destination addresses")
+			if arg.FieldByName("Coins").Uint() == 0 {
+				return errors.New("cannot send 0 coins")
+			}
+		}
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", reflect.TypeOf(toAddrs)))
 	}
 
 	return nil
@@ -513,118 +493,6 @@ func createRawTx(uxouts visor.ReadableOutputSet, wlt *wallet.Wallet, inAddrs []s
 	return tx, nil
 }
 
-func AdvancedCreateRawTxFromWallet(c *webrpc.Client, walletFile, chgAddr string, toAddrs []SendAmount, allowedUxOuts []string, hours float64, isPercent bool) (*coin.Transaction, error) {
-	// check change address
-	cAddr, err := cipher.DecodeBase58Address(chgAddr)
-	if err != nil {
-		return nil, ErrAddress
-	}
-
-	// check if the change address is in wallet.
-	wlt, err := wallet.Load(walletFile)
-	if err != nil {
-		return nil, err
-	}
-
-	_, ok := wlt.GetEntry(cAddr)
-	if !ok {
-		return nil, fmt.Errorf("change address %v is not in wallet", chgAddr)
-	}
-
-	// get all address in the wallet
-	totalAddrs := wlt.GetAddresses()
-	addrStrArray := make([]string, len(totalAddrs))
-	for i, a := range totalAddrs {
-		addrStrArray[i] = a.String()
-	}
-
-	return AdvancedCreateRawTx(c, wlt, addrStrArray, chgAddr, toAddrs, allowedUxOuts, hours, isPercent)
-}
-
-func AdvancedCreateRawTxFromAddress(c *webrpc.Client, addr, walletFile, chgAddr string, toAddrs []SendAmount, allowedUxOuts []string, hours float64, isPercent bool) (*coin.Transaction, error) {
-	// check if the address is in the default wallet.
-	wlt, err := wallet.Load(walletFile)
-	if err != nil {
-		return nil, err
-	}
-
-	srcAddr, err := cipher.DecodeBase58Address(addr)
-	if err != nil {
-		return nil, ErrAddress
-	}
-
-	_, ok := wlt.GetEntry(srcAddr)
-	if !ok {
-		return nil, fmt.Errorf("%v address is not in wallet", addr)
-	}
-
-	// validate change address
-	cAddr, err := cipher.DecodeBase58Address(chgAddr)
-	if err != nil {
-		return nil, ErrAddress
-	}
-
-	_, ok = wlt.GetEntry(cAddr)
-	if !ok {
-		return nil, fmt.Errorf("change address %v is not in wallet", chgAddr)
-	}
-
-	return AdvancedCreateRawTx(c, wlt, []string{addr}, chgAddr, toAddrs, allowedUxOuts, hours, isPercent)
-}
-
-func AdvancedCreateRawTx(c *webrpc.Client, wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount, allowedUxOuts []string, hours float64, isPercent bool) (*coin.Transaction, error) {
-	if err := validateSendAmounts(toAddrs); err != nil {
-		return nil, err
-	}
-
-	// Get unspent outputs of those addresses
-	// Filter using address and hashes
-	var filters = map[string][]string{}
-	if len(inAddrs) > 0 {
-		filters["addrs"] = inAddrs
-	}
-	if len(allowedUxOuts) > 0 {
-		filters["hashes"] = allowedUxOuts
-	}
-
-	unspents, err := c.GetUnspentOutputsWithFilters(filters)
-	if err != nil {
-		return nil, err
-	}
-
-	return advancedCreateRawTx(unspents.Outputs, wlt, chgAddr, toAddrs, hours, isPercent)
-}
-
-func advancedCreateRawTx(uxouts visor.ReadableOutputSet, wlt *wallet.Wallet, chgAddr string, toAddrs []SendAmount, hours float64, isPercent bool) (*coin.Transaction, error) {
-	// Calculate total required coins
-	var totalCoins uint64
-	for _, arg := range toAddrs {
-		totalCoins += arg.Coins
-	}
-
-	outs, err := chooseSpends(uxouts, totalCoins)
-	if err != nil {
-		return nil, err
-	}
-
-	keys, err := getKeys(wlt, outs)
-	if err != nil {
-		return nil, err
-	}
-
-	txOuts, err := advancedMakeChangeOut(outs, chgAddr, toAddrs, hours, isPercent)
-	if err != nil {
-		return nil, err
-	}
-
-	tx, err := NewTransaction(outs, keys, txOuts)
-	if err != nil {
-		return nil, err
-	}
-
-	return tx, nil
-}
-
 func chooseSpends(uxouts visor.ReadableOutputSet, coins uint64) ([]wallet.UxBalance, error) {
 	// Convert spendable unspent outputs to []wallet.UxBalance
 	spendableOutputs, err := visor.ReadableOutputsToUxBalances(uxouts.SpendableOutputs())
@@ -687,54 +555,6 @@ func makeChangeOut(outs []wallet.UxBalance, chgAddr string, toAddrs []SendAmount
 	nAddrs := uint64(len(toAddrs))
 	changeHours, addrHours, totalOutHours := wallet.DistributeSpendHours(totalInHours, nAddrs, haveChange)
 
-	if err := fee.VerifyTransactionFeeForHours(totalOutHours, totalInHours-totalOutHours); err != nil {
-		return nil, err
-	}
-
-	if haveChange {
-		outAddrs = append(outAddrs, mustMakeUtxoOutput(chgAddr, changeAmount, changeHours))
-	}
-
-	for i, to := range toAddrs {
-		outAddrs = append(outAddrs, mustMakeUtxoOutput(to.Addr, to.Coins, addrHours[i]))
-	}
-
-	return outAddrs, nil
-}
-
-func advancedMakeChangeOut(outs []wallet.UxBalance, chgAddr string, toAddrs []SendAmount, hours float64, isPercent bool) ([]coin.TransactionOutput, error) {
-	var totalInCoins, totalInHours, totalOutCoins uint64
-
-	for _, o := range outs {
-		totalInCoins += o.Coins
-		totalInHours += o.Hours
-	}
-
-	if totalInHours == 0 {
-		return nil, fee.ErrTxnNoFee
-	}
-
-	// output hours should be less than 50% or
-	// less than half of the input hours
-	if (isPercent && hours > 50) || (uint64(hours) > (totalInHours / 2)) {
-		return nil, errors.New("hours sent to destination more than 50%")
-	}
-
-	for _, to := range toAddrs {
-		totalOutCoins += to.Coins
-	}
-
-	if totalInCoins < totalOutCoins {
-		return nil, wallet.ErrInsufficientBalance
-	}
-
-	outAddrs := []coin.TransactionOutput{}
-	changeAmount := totalInCoins - totalOutCoins
-
-	haveChange := changeAmount > 0
-	nAddrs := uint64(len(toAddrs))
-
-	changeHours, addrHours, totalOutHours := wallet.AdvancedDistributeSpendHours(totalInHours, nAddrs, hours, isPercent, haveChange)
 	if err := fee.VerifyTransactionFeeForHours(totalOutHours, totalInHours-totalOutHours); err != nil {
 		return nil, err
 	}

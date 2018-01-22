@@ -100,7 +100,7 @@ func getBlock(gate Gatewayer) http.HandlerFunc {
 	}
 }
 
-func getBlocks(gateway *daemon.Gateway) http.HandlerFunc {
+func getBlocks(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)

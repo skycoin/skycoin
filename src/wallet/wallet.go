@@ -49,7 +49,8 @@ var (
 	// ErrWrongCryptoType is returned when decrypting wallet with wrong crypto method
 	ErrWrongCryptoType = errors.New("wrong crypto type")
 	// ErrWalletNotExist is returned if a wallet does not exist
-	ErrWalletNotExist = errors.New("wallet doesn't exist")
+	ErrWalletNotExist    = errors.New("wallet doesn't exist")
+	ErrWalletApiDisabled = errors.New("wallet api disabled")
 )
 
 const (

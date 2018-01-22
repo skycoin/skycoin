@@ -235,9 +235,9 @@ type Visor struct {
 	// Unconfirmed transactions, held for relay until we get block confirmation
 	Unconfirmed UnconfirmedTxnPooler
 	Blockchain  Blockchainer
+	Wallets     *wallet.Service
 	history     historyer
 	bcParser    *BlockchainParser
-	wallets     *wallet.Service
 	db          *bolt.DB
 }
 

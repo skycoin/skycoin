@@ -1,7 +1,6 @@
 package wallet
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"sync"
@@ -11,10 +10,6 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 )
-
-// ErrWalletNotExist is returned if a wallet does not exist
-var ErrWalletNotExist = errors.New("wallet doesn't exist")
-var ErrWalletApiDisabled = errors.New("wallet api disabled")
 
 // BalanceGetter interface for getting the balance of given addresses
 type BalanceGetter interface {

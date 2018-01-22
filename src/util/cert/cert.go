@@ -117,7 +117,6 @@ func certKeyXor(certFile, keyFile string) (bool, error) {
 		return false, fmt.Errorf("Key %s is not a file", keyFile)
 	default:
 		panic("unreachable code")
-		//return false, fmt.Errorf("unreachable code")
 	}
 }
 

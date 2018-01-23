@@ -13,6 +13,8 @@ import (
 
 	"math"
 
+	"errors"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
@@ -29,6 +31,12 @@ func (gw *FakeGateway) GetBlockByHash(hash cipher.SHA256) (block coin.SignedBloc
 func (gw *FakeGateway) GetBlockBySeq(seq uint64) (block coin.SignedBlock, ok bool) {
 	args := gw.Called(seq)
 	return args.Get(0).(coin.SignedBlock), args.Bool(1)
+}
+
+// GetBlocks returns a *visor.ReadableBlocks
+func (gw *FakeGateway) GetBlocks(start, end uint64) (*visor.ReadableBlocks, error) {
+	args := gw.Called(start, end)
+	return args.Get(0).(*visor.ReadableBlocks), args.Error(1)
 }
 
 func makeBadBlock(t *testing.T) *coin.Block {
@@ -345,6 +353,160 @@ func TestGetBlock(t *testing.T) {
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				var msg *visor.ReadableBlock
+				err := json.Unmarshal(rr.Body.Bytes(), &msg)
+				require.NoError(t, err)
+				require.Equal(t, tc.response, msg)
+			}
+		})
+	}
+}
+
+func TestGetBlocks(t *testing.T) {
+	type httpBody struct {
+		Start string
+		End   string
+	}
+
+	tt := []struct {
+		name                   string
+		method                 string
+		url                    string
+		status                 int
+		err                    string
+		body                   *httpBody
+		start                  uint64
+		end                    uint64
+		gatewayGetBlocksResult *visor.ReadableBlocks
+		gatewayGetBlocksError  error
+		response               *visor.ReadableBlocks
+	}{
+		{
+			"405",
+			http.MethodPost,
+			"/blocks",
+			http.StatusMethodNotAllowed,
+			"405 Method Not Allowed",
+			&httpBody{},
+			0,
+			0,
+			&visor.ReadableBlocks{},
+			nil,
+			&visor.ReadableBlocks{},
+		},
+		{
+			"400 - empty start/end",
+			http.MethodGet,
+			"/blocks",
+			http.StatusBadRequest,
+			"400 Bad Request - Invalid start value \"\"",
+			&httpBody{},
+			0,
+			0,
+			&visor.ReadableBlocks{},
+			nil,
+			&visor.ReadableBlocks{},
+		},
+		{
+			"400 - bad start",
+			http.MethodGet,
+			"/blocks",
+			http.StatusBadRequest,
+			"400 Bad Request - Invalid start value \"badStart\"",
+			&httpBody{
+				Start: "badStart",
+			},
+			0,
+			0,
+			&visor.ReadableBlocks{},
+			nil,
+			&visor.ReadableBlocks{},
+		},
+		{
+			"400 - bad end",
+			http.MethodGet,
+			"/blocks",
+			http.StatusBadRequest,
+			"400 Bad Request - Invalid end value \"badEnd\"",
+			&httpBody{
+				Start: "1",
+				End:   "badEnd",
+			},
+			1,
+			0,
+			&visor.ReadableBlocks{},
+			nil,
+			&visor.ReadableBlocks{},
+		},
+		{
+			"400 - gatewayGetBlocksError",
+			http.MethodGet,
+			"/blocks",
+			http.StatusBadRequest,
+			"400 Bad Request - Get blocks failed: gatewayGetBlocksError",
+			&httpBody{
+				Start: "1",
+				End:   "3",
+			},
+			1,
+			3,
+			&visor.ReadableBlocks{},
+			errors.New("gatewayGetBlocksError"),
+			&visor.ReadableBlocks{},
+		},
+		{
+			"200",
+			http.MethodGet,
+			"/blocks",
+			http.StatusOK,
+			"",
+			&httpBody{
+				Start: "1",
+				End:   "3",
+			},
+			1,
+			3,
+			&visor.ReadableBlocks{},
+			nil,
+			&visor.ReadableBlocks{},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := &FakeGateway{
+				t: t,
+			}
+			gateway.On("GetBlocks", tc.start, tc.end).Return(tc.gatewayGetBlocksResult, tc.gatewayGetBlocksError)
+			v := url.Values{}
+			var urlFull = tc.url
+			if tc.body != nil {
+				if tc.body.Start != "" {
+					v.Add("start", tc.body.Start)
+				}
+				if tc.body.End != "" {
+					v.Add("end", tc.body.End)
+				}
+			}
+			if len(v) > 0 {
+				urlFull += "?" + v.Encode()
+			}
+
+			req, err := http.NewRequest(tc.method, urlFull, nil)
+			require.NoError(t, err)
+
+			rr := httptest.NewRecorder()
+			handler := http.HandlerFunc(getBlocks(gateway))
+
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
+
+			if status != http.StatusOK {
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+			} else {
+				var msg *visor.ReadableBlocks
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.response, msg)

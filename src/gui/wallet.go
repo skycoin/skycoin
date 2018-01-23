@@ -30,6 +30,7 @@ type Gatewayer interface {
 	GetWalletDir() (string, error)
 	GetBlockByHash(hash cipher.SHA256) (block coin.SignedBlock, ok bool)
 	GetBlockBySeq(seq uint64) (block coin.SignedBlock, ok bool)
+	GetBlocks(start, end uint64) (*visor.ReadableBlocks, error)
 }
 
 // SpendResult represents the result of spending

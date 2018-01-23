@@ -84,12 +84,6 @@
 
 [[projects]]
   branch = "master"
-  name = "golang.org/x/crypto"
-  packages = ["chacha20poly1305","chacha20poly1305/internal/chacha20","pbkdf2","poly1305","scrypt"]
-  revision = "adbae1b6b6fb4b02448a0fc0dbbc9ba2b95b294d"
-
-[[projects]]
-  branch = "master"
   name = "golang.org/x/net"
   packages = ["context"]
   revision = "a8b9294777976932365dabb6640cf1468d95c70f"
@@ -103,6 +97,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "163516faeeb8d5e5f43692c4b1f126b0023bee3d01b626fbea41b2d25c649093"
+  inputs-digest = "1d8b3690230401d26d294ca7b72d86d7f5f8bb706360023a21dde1f81fff4804"
   solver-name = "gps-cdcl"
   solver-version = 1

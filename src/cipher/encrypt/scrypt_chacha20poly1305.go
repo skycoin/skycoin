@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	metaLengthSize = 2 // meta data length field size in bytes
-	saltSize       = 8 // salt bytes number
+	metaLengthSize = 2  // meta data length field size in bytes
+	saltSize       = 32 // salt bytes number
 )
 
 // ScryptChacha20poly1305 provides methods for encryption/decryption with scrypt and chacha20poly1305

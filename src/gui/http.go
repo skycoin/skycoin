@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"path/filepath"
@@ -14,12 +13,10 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
-	"github.com/skycoin/skycoin/src/wallet"
-
 	"github.com/skycoin/skycoin/src/util/file"
-	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
-
+	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 var (
@@ -121,7 +118,7 @@ func NewServerMux(host, appLoc string, gateway Gatewayer) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	webHandler := func(endpoint string, handler http.Handler) {
-		mux.Handle(endpoint, hostCheck(host, handler))
+		mux.Handle(endpoint, wh.HostCheck(logger, host, handler))
 	}
 
 	webHandler("/", newIndexHandler(appLoc))
@@ -258,45 +255,6 @@ func NewServerMux(host, appLoc string, gateway Gatewayer) *http.ServeMux {
 	webHandler("/addresscount", getAddressCount(gateway))
 
 	return mux
-}
-
-// hostCheck checks that the request's Host header is 127.0.0.1:$port or localhost:$port
-// if the HTTP interface host is also a localhost address.
-// This prevents DNS rebinding attacks, where an attacker uses a DNS rebinding service
-// to bypass CORS checks.
-// If the HTTP interface host is not a localhost address,
-// the Host header is not checked. This is considered a public interface.
-// If the Host header is not set, it is not checked.
-// All major browsers send the Host header as required by the HTTP spec.
-func hostCheck(host string, handler http.Handler) http.Handler {
-	addr := host
-	var port uint16
-	if strings.Contains(host, ":") {
-		var err error
-		addr, port, err = daemon.SplitAddr(host)
-		if err != nil {
-			log.Panic(err)
-		}
-	}
-
-	isLocalhost := daemon.IsLocalhost(addr)
-
-	if isLocalhost && port == 0 {
-		log.Panic("localhost with no port specified is unsupported")
-	}
-
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		headerHost := r.Header.Get("Host")
-		logger.Debug("hostCheck: configured-host=%s header-host=%s", host, headerHost)
-
-		if headerHost != "" && isLocalhost && headerHost != fmt.Sprintf("127.0.0.1:%d", port) && headerHost != fmt.Sprintf("localhost:%d", port) {
-			logger.Critical("Detected DNS rebind attempt - configured-host=%s header-host=%s", host, headerHost)
-			wh.Error403(w)
-			return
-		}
-
-		handler.ServeHTTP(w, r)
-	})
 }
 
 // Returns a http.HandlerFunc for index.html, where index.html is in appLoc

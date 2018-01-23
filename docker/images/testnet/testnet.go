@@ -4,10 +4,12 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"gopkg.in/yaml.v2"
 	"log"
 	"os"
 	"os/exec"
 	"path"
+	"strconv"
 	"text/template"
 )
 
@@ -128,6 +130,63 @@ func ConfigureNodes() {
 		d.BuildImage()
 	}
 }
+
+// GenerateDockerCompose generates the compose YAML file.
+func GenerateDockerCompose(nodesNum int, commit string) {
+	network := "skycoin-" + commit
+	compose := []yaml.MapItem{
+		yaml.MapItem{"version", 3},
+		yaml.MapItem{"services",
+			yaml.MapSlice{},
+		},
+		yaml.MapItem{"networks",
+			[]yaml.MapItem{
+				yaml.MapItem{network,
+					[]yaml.MapItem{
+						yaml.MapItem{"driver", "bridge"},
+						yaml.MapItem{"ipam",
+							[]yaml.MapItem{
+								yaml.MapItem{"driver", "default"},
+								yaml.MapItem{"config",
+									[]yaml.MapItem{
+										yaml.MapItem{"subnet", "172.16.200.0/24"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	for i := 1; i <= nodesNum; i++ {
+		num := strconv.Itoa(i)
+		service := yaml.MapItem{
+			"skycoin-" + num,
+			[]yaml.MapItem{
+				yaml.MapItem{"image", "skycoin-nogui:" + commit},
+				yaml.MapItem{"networks",
+					[]yaml.MapItem{
+						yaml.MapItem{network,
+							[]yaml.MapItem{
+								yaml.MapItem{"ipv4_address", "172.16.200." + num},
+							},
+						},
+					},
+				},
+			},
+		}
+		compose[1].Value = append(compose[1].Value.(yaml.MapSlice), service)
+	}
+	text, err := yaml.Marshal(compose)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+	_, err = os.Stdout.Write(text)
+}
+
 func main() {
-	ConfigureNodes()
+	//	ConfigureNodes()
+	GenerateDockerCompose(10, "0f4e23")
 }

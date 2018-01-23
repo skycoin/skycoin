@@ -216,7 +216,7 @@ func TestGetBlock(t *testing.T) {
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 			if tc.hostHeader != "" {
-				req.Header.Set("Host", tc.hostHeader)
+				req.Host = tc.hostHeader
 			}
 
 			rr := httptest.NewRecorder()
@@ -350,7 +350,7 @@ func TestGetBlocks(t *testing.T) {
 			require.NoError(t, err)
 
 			if tc.hostHeader != "" {
-				req.Header.Set("Host", tc.hostHeader)
+				req.Host = tc.hostHeader
 			}
 
 			rr := httptest.NewRecorder()

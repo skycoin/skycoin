@@ -307,6 +307,10 @@ func TestWalletSpendHandler(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			if tc.gatewaySpendResult == nil {
+				tc.gatewaySpendResult = &coin.Transaction{}
+			}
+
 			gateway := &GatewayerMock{}
 			addr, _ := cipher.DecodeBase58Address(tc.dst)
 			gateway.On("Spend", tc.walletID, tc.coins, addr).Return(tc.gatewaySpendResult, tc.gatewaySpendErr)
@@ -332,7 +336,7 @@ func TestWalletSpendHandler(t *testing.T) {
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 			if tc.hostHeader != "" {
-				req.Header.Set("Host", tc.hostHeader)
+				req.Host = tc.hostHeader
 			}
 
 			rr := httptest.NewRecorder()
@@ -462,7 +466,7 @@ func TestWalletGet(t *testing.T) {
 		require.NoError(t, err)
 
 		if tc.hostHeader != "" {
-			req.Header.Set("Host", tc.hostHeader)
+			req.Host = tc.hostHeader
 		}
 
 		rr := httptest.NewRecorder()
@@ -616,7 +620,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 			if tc.hostHeader != "" {
-				req.Header.Set("Host", tc.hostHeader)
+				req.Host = tc.hostHeader
 			}
 
 			rr := httptest.NewRecorder()
@@ -776,7 +780,7 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 			if tc.hostHeader != "" {
-				req.Header.Set("Host", tc.hostHeader)
+				req.Host = tc.hostHeader
 			}
 
 			rr := httptest.NewRecorder()
@@ -904,7 +908,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		require.NoError(t, err)
 
 		if tc.hostHeader != "" {
-			req.Header.Set("Host", tc.hostHeader)
+			req.Host = tc.hostHeader
 		}
 
 		rr := httptest.NewRecorder()
@@ -1117,7 +1121,7 @@ func TestWalletCreateHandler(t *testing.T) {
 		require.NoError(t, err)
 
 		if tc.hostHeader != "" {
-			req.Header.Set("Host", tc.hostHeader)
+			req.Host = tc.hostHeader
 		}
 
 		rr := httptest.NewRecorder()
@@ -1243,7 +1247,7 @@ func TestWalletNewSeed(t *testing.T) {
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 			if tc.hostHeader != "" {
-				req.Header.Set("Host", tc.hostHeader)
+				req.Host = tc.hostHeader
 			}
 
 			rr := httptest.NewRecorder()
@@ -1410,7 +1414,7 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 			if tc.hostHeader != "" {
-				req.Header.Set("Host", tc.hostHeader)
+				req.Host = tc.hostHeader
 			}
 
 			rr := httptest.NewRecorder()
@@ -1489,7 +1493,7 @@ func TestGetWalletFolderHandler(t *testing.T) {
 		require.NoError(t, err)
 
 		if tc.hostHeader != "" {
-			req.Header.Set("Host", tc.hostHeader)
+			req.Host = tc.hostHeader
 		}
 
 		rr := httptest.NewRecorder()

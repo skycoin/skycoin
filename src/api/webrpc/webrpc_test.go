@@ -190,7 +190,7 @@ func Test_rpcHandler_Handler(t *testing.T) {
 			require.NoError(t, err)
 
 			if tt.hostHeader != "" {
-				r.Header.Set("Host", tt.hostHeader)
+				r.Host = tt.hostHeader
 			}
 
 			rr := httptest.NewRecorder()

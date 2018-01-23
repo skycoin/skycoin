@@ -91,7 +91,8 @@ func advancedSendCmd() gcli.Command {
 		Usage:     "Create a custom send transaction from a wallet or address to a recipient address",
 		ArgsUsage: "[to address] [amount] [hours]",
 		Description: `
-		Note: the [amount] argument is the coins you will spend, 1 coins = 1e6 droplets.`,
+		Note: [amount] argument is the coins you will spend, 1 coins = 1e6 droplets.
+		      [hours] argument is number of hours to send to the destination address`,
 		Flags: []gcli.Flag{
 			gcli.StringFlag{
 				Name:  "f",

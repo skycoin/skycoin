@@ -143,16 +143,29 @@ Use `skycoin-cli send -h` to see the subcommand usage.
 ### Advanced send
 
 ```bash
-$ skycoin-cli advancedSend -s $coinhours_distribute -u $unspent_hash $recipient_address $amount
+$ skycoin-cli advancedSend -$a $from_address $recipient_address $amount $hours
 ```
 
-The above `advancedSend` command will send coins from your node's default wallet: `$HOME/.skycoin/wallets/skycoin_cli.wlt` if it has `$unspent_hash`. 
-It willt send `$coinhours_distribute` to `$recipient_address`
+The above `advancedSend` command will send `$amount` coins and `$hours` coinhours from your node's default wallet: `$HOME/.skycoin/wallets/skycoin_cli.wlt`
+
 You can also send from the wallet as you want, just use the `-f` option flag, example:
-
 ```bash
-$ skycoin-cli advancedSend -f $WALLET_PATH -a $from_address -s $coinhours_distribute -u $unspent_hash $recipient_address $amount
+$ skycoin-cli advancedSend -f $WALLET_PATH -a $from_addresses -u $unspent_hashes $recipient_address $amount $hours
 ```
+
+The above `advancedSend` command will send `$amount` coins and `$hours` coinhours from wallet defined by `$WALLET_PATH`
+if the `$from_addresses` have an unspent hash from `$unspent_hashes`. 
+
+
+To send to multiple addresses use the `-m` flag, example:
+```bash
+$ skycoin-cli advancedSend -f $WALLET_PATH -a $from_addresses -u $unspent_hashes -m '[{"addr":"$addr1", "coins": "$amt1", "hours": "$hours1"}, {"addr":"$addr1", "coins": "$amt2"}]'
+```
+
+The above `advancedSend` command will send the coins and hours as defined by the `-m` flag
+if the `$from_addresses` have an unspent hash from `$unspent_hashes`. 
+
+#####Note: default value for `hours` is 0
 
 Use `skycoin-cli advancedSend -h` to see the subcommand usage.
 

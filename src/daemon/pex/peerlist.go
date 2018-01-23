@@ -118,7 +118,7 @@ loop:
 
 // filters
 func isPrivate(p Peer) bool {
-	return p.Private
+	return p.Trusted //modified by stdevEuu
 }
 
 func isPublic(p Peer) bool {
@@ -127,6 +127,14 @@ func isPublic(p Peer) bool {
 
 func isTrusted(p Peer) bool {
 	return p.Trusted
+}
+
+func isDefault(p Peer) bool {
+	return p.Default
+}
+
+func IsAutomatic(p Peer) bool {
+	return p.Automatic
 }
 
 func hasIncomingPort(p Peer) bool {
@@ -162,11 +170,11 @@ func (pl *peerlist) setPrivate(addr string, private bool) error {
 // SetTrusted sets peer as trusted peer
 func (pl *peerlist) setTrusted(addr string, trusted bool) error {
 	if p, ok := pl.peers[addr]; ok {
-		p.Trusted = trusted
+		p.Default = trusted
 		return nil
 	}
 
-	return fmt.Errorf("set peer.Trusted failed: %v does not exist in peer list", addr)
+	return fmt.Errorf("set peer.Default failed: %v does not exist in peer list", addr)
 }
 
 // setHasIncomingPort updates whether the peer is valid and has public incoming port
@@ -284,7 +292,7 @@ func newPeerJSON(p Peer) PeerJSON {
 		Addr:            p.Addr,
 		LastSeen:        p.LastSeen,
 		Private:         p.Private,
-		Trusted:         p.Trusted,
+		Trusted:         p.Default,
 		HasIncomingPort: &p.HasIncomingPort,
 	}
 }
@@ -327,7 +335,7 @@ func newPeerFromJSON(p PeerJSON) (*Peer, error) {
 		Addr:            addr,
 		LastSeen:        lastSeen,
 		Private:         p.Private,
-		Trusted:         p.Trusted,
+		Default:         p.Trusted,
 		HasIncomingPort: hasIncomingPort,
 	}, nil
 }

@@ -15,11 +15,13 @@ import (
 	"github.com/boltdb/bolt"
 
 	"github.com/skycoin/skycoin/src/daemon/gnet"
-	"github.com/skycoin/skycoin/src/daemon/pex"
+	//"github.com/skycoin/skycoin/src/daemon/pex" TODO: Change before commit
 
 	"github.com/skycoin/skycoin/src/util/elapse"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/utc"
+
+	"./pex"
 )
 
 /*
@@ -378,7 +380,7 @@ func (dm *Daemon) Run() error {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			dm.connectToTrustPeer()
+			dm.connectToTrustedPeer()
 		}()
 	}
 
@@ -618,14 +620,14 @@ func (dm *Daemon) makePrivateConnections() {
 	}
 }
 
-func (dm *Daemon) connectToTrustPeer() {
+func (dm *Daemon) connectToTrustedPeer() {
 	if dm.Config.DisableIncomingConnections {
 		return
 	}
 
 	logger.Info("Connect to trusted peers")
 	// Make connections to all trusted peers
-	peers := dm.Pex.TrustedPublic()
+	peers := dm.Pex.Trusted()
 	for _, p := range peers {
 		dm.connectToPeer(p)
 	}
@@ -638,7 +640,7 @@ func (dm *Daemon) connectToRandomPeer() {
 	}
 
 	// Make a connection to a random (public) peer
-	peers := dm.Pex.RandomPublic(0)
+	peers := dm.Pex.RandomPublic(1) //changed from 0 to 1 TODO: return to 0
 	for _, p := range peers {
 		// Check if the peer has public port
 		if p.HasIncomingPort {

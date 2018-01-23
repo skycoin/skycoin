@@ -17,16 +17,18 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
+	//"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
-	"github.com/skycoin/skycoin/src/gui"
+	//"github.com/skycoin/skycoin/src/gui"
 	"github.com/skycoin/skycoin/src/util/browser"
 	"github.com/skycoin/skycoin/src/util/cert"
 	"github.com/skycoin/skycoin/src/util/file"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/visor"
+	"../../src/gui"
+	"../../src/api/webrpc"
 )
 
 var (
@@ -598,7 +600,7 @@ func Run(c *Config) {
 		return
 	}
 
-	closelog, err := initLogging(c.DataDirectory, c.LogLevel, c.ColorLog, c.Logtofile, c.Logtogui, &d.LogBuff)
+	_, err = initLogging(c.DataDirectory, c.LogLevel, c.ColorLog, c.Logtofile, c.Logtogui, &d.LogBuff)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -658,16 +660,15 @@ func Run(c *Config) {
 			return
 		}
 	}
-
+	////had to
 	if c.WebInterface {
 		var err error
 		if c.WebInterfaceHTTPS {
 			// Verify cert/key parameters, and if neither exist, create them
 			errs := cert.CreateCertIfNotExists(host, c.WebInterfaceCert, c.WebInterfaceKey, "Skycoind")
-			if len(errs) != 0 {
-				for _, err := range errs {
-					logger.Error(err.Error())
-				}
+			if err != nil && len(errs.Error()) != 0 {////had to modify this here
+				logger.Error(errs.Error())
+			}
 				logger.Error("gui.CreateCertIfNotExists failure")
 				return
 			}
@@ -726,7 +727,7 @@ func Run(c *Config) {
 		}
 	*/
 
-	select {
+/*	select {
 	case <-quit:
 	case err := <-errC:
 		logger.Error("%v", err)
@@ -742,7 +743,7 @@ func Run(c *Config) {
 	wg.Wait()
 	logger.Info("Goodbye")
 }
-
+*/
 func main() {
 	devConfig.Parse()
 	Run(&devConfig)

@@ -308,7 +308,7 @@ func TestPeerListSetTrusted(t *testing.T) {
 			[]Peer{*NewPeer(testPeers[1])},
 			testPeers[0],
 			false,
-			fmt.Errorf("set peer.Trusted failed: %v does not exist in peer list", testPeers[0]),
+			fmt.Errorf("set peer.Default failed: %v does not exist in peer list", testPeers[0]),
 		},
 	}
 
@@ -327,7 +327,7 @@ func TestPeerListSetTrusted(t *testing.T) {
 
 			p, ok := pl.peers[tc.peer]
 			require.True(t, ok)
-			require.Equal(t, tc.trust, p.Trusted)
+			require.Equal(t, tc.trust, p.Default)
 		})
 	}
 }
@@ -470,7 +470,7 @@ func TestPeerJSONParsing(t *testing.T) {
         "Addr": "11.22.33.44:6000",
         "LastSeen": "2017-09-24T06:42:18.999999999Z",
         "Private": true,
-        "Trusted": true,
+        "Default": true,
         "HasIncomePort": true
     }`
 
@@ -478,14 +478,14 @@ func TestPeerJSONParsing(t *testing.T) {
         "Addr": "11.22.33.44:6000",
         "LastSeen": 1506235338,
         "Private": true,
-        "Trusted": true,
+        "Default": true,
         "HasIncomingPort": true
     }`
 
 	check := func(p *Peer) {
 		require.Equal(t, "11.22.33.44:6000", p.Addr)
 		require.True(t, p.Private)
-		require.True(t, p.Trusted)
+		require.True(t, p.Default)
 		require.True(t, p.HasIncomingPort)
 		require.Equal(t, int64(1506235338), p.LastSeen)
 	}

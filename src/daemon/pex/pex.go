@@ -91,14 +91,16 @@ func validateAddress(ipPort string, allowLocalhost bool) (string, error) {
 	return ipPort, nil
 }
 
-// Peer represents a known peer
+// Peer represents a known peer TODO: Change to a label-based peer list
 type Peer struct {
-	Addr            string // An address of the form ip:port
-	LastSeen        int64  // Unix timestamp when this peer was last seen
-	Private         bool   // Whether it should omitted from public requests
-	Trusted         bool   // Whether this peer is trusted
-	HasIncomingPort bool   // Whether this peer has accessable public port
+	Addr            string            // An address of the form ip:port
+	LastSeen        int64             // Unix timestamp when this peer was last seen
+	Private         bool              // Whether it should omitted from public requests TODO: Deprecate
+	Default         bool              // Whether it belongs on list 2: Default peers: bootstrapped
+	HasIncomingPort bool              // Whether this peer has accessable public port
 	RetryTimes      int    `json:"-"` // records the retry times
+	Trusted         bool              // Whether it belongs on list 1: Default peers: Hardcoded by user
+	Automatic       bool              // Whether it belongs on list 3: Automatic peers: from peer exchange
 }
 
 // NewPeer returns a *Peer initialised by an address string of the form ip:port
@@ -106,7 +108,9 @@ func NewPeer(address string) *Peer {
 	p := &Peer{
 		Addr:    address,
 		Private: false,
+		Default: false,
 		Trusted: false,
+		Automatic: false,
 	}
 	p.Seen()
 	return p
@@ -464,7 +468,7 @@ func (px *Pex) GetPeerByAddr(addr string) (Peer, bool) {
 	return px.peerlist.getPeerByAddr(addr)
 }
 
-// Trusted returns trusted peers
+// Default returns trusted peers
 func (px *Pex) Trusted() Peers {
 	px.RLock()
 	defer px.RUnlock()
@@ -478,11 +482,19 @@ func (px *Pex) Private() Peers {
 	return px.peerlist.getPeers(isPrivate)
 }
 
-// TrustedPublic returns trusted public peers
-func (px *Pex) TrustedPublic() Peers {
+// Default returns default peers
+func (px *Pex) Default() Peers {
 	px.RLock()
 	defer px.RUnlock()
-	return px.peerlist.getPeers(isPublic, isTrusted)
+	//return px.peerlist.getPeers(isPublic, isTrusted)
+	return px.peerlist.getPeers(isDefault)
+}
+
+// Automatic returns automatic peers
+func (px *Pex) Automatic() Peers {
+	px.RLock()
+	defer px.RUnlock()
+	return px.peerlist.getPeers(IsAutomatic)
 }
 
 // RandomPublic returns N random public peers

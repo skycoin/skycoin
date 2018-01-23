@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"path/filepath"
@@ -46,7 +47,7 @@ func create(host, staticDir string, daemon *daemon.Daemon) (*Server, error) {
 	logger.Info("Web resources directory: %s", appLoc)
 
 	return &Server{
-		mux:  NewServerMux(appLoc, daemon),
+		mux:  NewServerMux(host, appLoc, daemon.Gateway),
 		done: make(chan struct{}),
 	}, nil
 }
@@ -116,9 +117,14 @@ func (s *Server) Shutdown() {
 }
 
 // NewServerMux creates an http.ServeMux with handlers registered
-func NewServerMux(appLoc string, daemon *daemon.Daemon) *http.ServeMux {
+func NewServerMux(host, appLoc string, gateway Gatewayer) *http.ServeMux {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", newIndexHandler(appLoc))
+
+	webHandler := func(endpoint string, handler http.Handler) {
+		mux.Handle(endpoint, hostCheck(host, handler))
+	}
+
+	webHandler("/", newIndexHandler(appLoc))
 
 	fileInfos, _ := ioutil.ReadDir(appLoc)
 	for _, fileInfo := range fileInfos {
@@ -126,32 +132,171 @@ func NewServerMux(appLoc string, daemon *daemon.Daemon) *http.ServeMux {
 		if fileInfo.IsDir() {
 			route = route + "/"
 		}
-		mux.Handle(route, http.FileServer(http.Dir(appLoc)))
+		webHandler(route, http.FileServer(http.Dir(appLoc)))
 	}
 
-	mux.HandleFunc("/logs", getLogsHandler(&daemon.LogBuff))
+	webHandler("/version", versionHandler(gateway))
 
-	mux.HandleFunc("/version", versionHandler(daemon.Gateway))
-
-	//get set of unspent outputs
-	mux.HandleFunc("/outputs", getOutputsHandler(daemon.Gateway))
+	// get set of unspent outputs
+	webHandler("/outputs", getOutputsHandler(gateway))
 
 	// get balance of addresses
-	mux.HandleFunc("/balance", getBalanceHandler(daemon.Gateway))
+	webHandler("/balance", getBalanceHandler(gateway))
 
 	// Wallet interface
-	RegisterWalletHandlers(mux, daemon.Gateway)
+
+	// Returns wallet info
+	// Method: GET
+	// Args:
+	//      id - Wallet ID [required]
+	webHandler("/wallet", walletGet(gateway))
+
+	// Loads wallet from seed, will scan ahead N address and
+	// load addresses till the last one that have coins.
+	// Method: POST
+	// Args:
+	//     seed: wallet seed [required]
+	//     label: wallet label [required]
+	//     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
+	webHandler("/wallet/create", walletCreate(gateway))
+
+	webHandler("/wallet/newAddress", walletNewAddresses(gateway))
+
+	// Returns the confirmed and predicted balance for a specific wallet.
+	// The predicted balance is the confirmed balance minus any pending
+	// spent amount.
+	// GET arguments:
+	//      id: Wallet ID
+	webHandler("/wallet/balance", walletBalanceHandler(gateway))
+
+	// Sends coins&hours to another address.
+	// POST arguments:
+	//  id: Wallet ID
+	//  coins: Number of coins to spend
+	//  hours: Number of hours to spends
+	//  fee: Number of hours to use as fee, on top of the default fee.
+	//  Returns total amount spent if successful, otherwise error describing
+	//  failure status.
+	webHandler("/wallet/spend", walletSpendHandler(gateway))
+
+	// GET Arguments:
+	//      id: Wallet ID
+	// Returns all pending transanction for all addresses by selected Wallet
+	webHandler("/wallet/transactions", walletTransactionsHandler(gateway))
+
+	// Update wallet label
+	//      GET Arguments:
+	//          id: wallet id
+	//          label: wallet label
+	webHandler("/wallet/update", walletUpdateHandler(gateway))
+
+	// Returns all loaded wallets
+	webHandler("/wallets", walletsHandler(gateway))
+
+	webHandler("/wallets/folderName", getWalletFolder(gateway))
+
+	// generate wallet seed
+	webHandler("/wallet/newSeed", newWalletSeed(gateway))
+
 	// Blockchain interface
-	RegisterBlockchainHandlers(mux, daemon.Gateway)
+
+	webHandler("/blockchain/metadata", blockchainHandler(gateway))
+	webHandler("/blockchain/progress", blockchainProgressHandler(gateway))
+
+	// get block by hash or seq
+	webHandler("/block", getBlock(gateway))
+	// get blocks in specific range
+	webHandler("/blocks", getBlocks(gateway))
+	// get last N blocks
+	webHandler("/last_blocks", getLastBlocks(gateway))
+
 	// Network stats interface
-	RegisterNetworkHandlers(mux, daemon.Gateway)
+
+	webHandler("/network/connection", connectionHandler(gateway))
+	webHandler("/network/connections", connectionsHandler(gateway))
+	webHandler("/network/defaultConnections", defaultConnectionsHandler(gateway))
+	webHandler("/network/connections/trust", trustConnectionsHandler(gateway))
+	webHandler("/network/connections/exchange", exchgConnectionsHandler(gateway))
+
 	// Transaction handler
-	RegisterTxHandlers(mux, daemon.Gateway)
+
+	// get set of pending transactions
+	webHandler("/pendingTxs", getPendingTxs(gateway))
+	// get latest confirmed transactions
+	webHandler("/lastTxs", getLastTxs(gateway))
+	// get txn by txid
+	webHandler("/transaction", getTransactionByID(gateway))
+
+	// Returns transactions that match the filters.
+	// Method: GET
+	// Args:
+	//     addrs: Comma seperated addresses [optional, returns all transactions if no address is provided]
+	//     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
+	webHandler("/transactions", getTransactions(gateway))
+	//inject a transaction into network
+	webHandler("/injectTransaction", injectTransaction(gateway))
+	webHandler("/resendUnconfirmedTxns", resendUnconfirmedTxns(gateway))
+	// get raw tx by txid.
+	webHandler("/rawtx", getRawTx(gateway))
+
 	// UxOUt api handler
-	RegisterUxOutHandlers(mux, daemon.Gateway)
-	// expplorer handler
-	RegisterExplorerHandlers(mux, daemon.Gateway)
+
+	// get uxout by id.
+	webHandler("/uxout", getUxOutByID(gateway))
+	// get all the address affected uxouts.
+	webHandler("/address_uxouts", getAddrUxOuts(gateway))
+
+	// Explorer handler
+
+	// get set of pending transactions
+	webHandler("/explorer/address", getTransactionsForAddress(gateway))
+
+	webHandler("/coinSupply", getCoinSupply(gateway))
+
+	webHandler("/richlist", getRichlist(gateway))
+
+	webHandler("/addresscount", getAddressCount(gateway))
+
 	return mux
+}
+
+// hostCheck checks that the request's Host header is 127.0.0.1:$port or localhost:$port
+// if the HTTP interface host is also a localhost address.
+// This prevents DNS rebinding attacks, where an attacker uses a DNS rebinding service
+// to bypass CORS checks.
+// If the HTTP interface host is not a localhost address,
+// the Host header is not checked. This is considered a public interface.
+// If the Host header is not set, it is not checked.
+// All major browsers send the Host header as required by the HTTP spec.
+func hostCheck(host string, handler http.Handler) http.Handler {
+	addr := host
+	var port uint16
+	if strings.Contains(host, ":") {
+		var err error
+		addr, port, err = daemon.SplitAddr(host)
+		if err != nil {
+			log.Panic(err)
+		}
+	}
+
+	isLocalhost := daemon.IsLocalhost(addr)
+
+	if isLocalhost && port == 0 {
+		log.Panic("localhost with no port specified is unsupported")
+	}
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		headerHost := r.Header.Get("Host")
+		logger.Debug("hostCheck: configured-host=%s header-host=%s", host, headerHost)
+
+		if headerHost != "" && isLocalhost && headerHost != fmt.Sprintf("127.0.0.1:%d", port) && headerHost != fmt.Sprintf("localhost:%d", port) {
+			logger.Critical("Detected DNS rebind attempt - configured-host=%s header-host=%s", host, headerHost)
+			wh.Error403(w)
+			return
+		}
+
+		handler.ServeHTTP(w, r)
+	})
 }
 
 // Returns a http.HandlerFunc for index.html, where index.html is in appLoc
@@ -174,7 +319,7 @@ func newIndexHandler(appLoc string) http.HandlerFunc {
 // if addrs and hashes are not specificed, return all unspent outputs.
 // if both addrs and hashes are specificed, then both those filters are need to be matched.
 // if only specify one filter, then return outputs match the filter.
-func getOutputsHandler(gateway *daemon.Gateway) http.HandlerFunc {
+func getOutputsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -221,7 +366,7 @@ func getOutputsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-func getBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
+func getBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -259,7 +404,7 @@ func getBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-func versionHandler(gateway *daemon.Gateway) http.HandlerFunc {
+func versionHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)

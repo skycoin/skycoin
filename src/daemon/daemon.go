@@ -923,7 +923,7 @@ func LocalhostIP() (string, error) {
 
 // IsLocalhost returns true if addr is a localhost address
 func IsLocalhost(addr string) bool {
-	return net.ParseIP(addr).IsLoopback()
+	return net.ParseIP(addr).IsLoopback() || addr == "localhost"
 }
 
 // SplitAddr splits an ip:port string to ip, port

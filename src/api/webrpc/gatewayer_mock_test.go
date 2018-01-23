@@ -1,8 +1,12 @@
+/*
+* CODE GENERATED AUTOMATICALLY WITH github.com/ernesto-jimenez/goautomock
+* THIS FILE MUST NEVER BE EDITED MANUALLY
+ */
+
 package webrpc
 
 import (
 	"fmt"
-
 	mock "github.com/stretchr/testify/mock"
 
 	cipher "github.com/skycoin/skycoin/src/cipher"

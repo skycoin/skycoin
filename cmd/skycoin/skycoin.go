@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -429,7 +428,7 @@ func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) (*g
 }
 
 // init logging settings
-func initLogging(dataDir string, level string, color, logtofile, logtogui bool, logbuf *bytes.Buffer) (func(), error) {
+func initLogging(dataDir string, level string, color, logtofile bool) (func(), error) {
 	logCfg := logging.DevLogConfig(logModules)
 	logCfg.Format = logFormat
 	logCfg.Colors = color
@@ -453,16 +452,7 @@ func initLogging(dataDir string, level string, color, logtofile, logtogui bool, 
 			return nil, err
 		}
 
-		if logtogui {
-			logCfg.Output = io.MultiWriter(os.Stdout, fd, logbuf)
-		} else {
-			logCfg.Output = io.MultiWriter(os.Stdout, fd)
-		}
-
-	} else {
-		if logtogui {
-			logCfg.Output = io.MultiWriter(os.Stdout, logbuf)
-		}
+		logCfg.Output = io.MultiWriter(os.Stdout, fd)
 	}
 
 	logCfg.InitLogger()
@@ -558,6 +548,12 @@ func Run(c *Config) {
 	}
 
 	initProfiling(c.HTTPProf, c.ProfileCPU, c.ProfileCPUFile)
+
+	closelog, err := initLogging(c.DataDirectory, c.LogLevel, c.ColorLog, c.Logtofile)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	var wg sync.WaitGroup
 
@@ -736,7 +732,7 @@ func Run(c *Config) {
 		webInterface.Shutdown()
 	}
 	d.Shutdown()
-	// closelog()
+	closelog()
 	wg.Wait()
 	logger.Info("Goodbye")
 }

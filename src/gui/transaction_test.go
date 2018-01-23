@@ -15,10 +15,12 @@ import (
 
 	"net/url"
 
-	"github.com/pkg/errors"
+	"errors"
 
 	"bytes"
 	"encoding/hex"
+
+	"github.com/stretchr/testify/mock"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -50,6 +52,11 @@ func (gw *FakeGateway) InjectTransaction(txn coin.Transaction) error {
 func (gw *FakeGateway) ResendUnconfirmedTxns() (rlt *daemon.ResendResult) {
 	args := gw.Called()
 	return args.Get(0).(*daemon.ResendResult)
+}
+
+func (gw *FakeGateway) GetTransactions(flts ...visor.TxFilter) ([]visor.Transaction, error) {
+	args := gw.Called(flts)
+	return args.Get(0).([]visor.Transaction), args.Error(1)
 }
 
 func createUnconfirmedTxn(t *testing.T) visor.UnconfirmedTxn {
@@ -706,6 +713,190 @@ func TestGetRawTx(t *testing.T) {
 				expectedResponse, err := json.MarshalIndent(tc.httpResponse, "", "    ")
 				require.NoError(t, err)
 				require.Equal(t, string(expectedResponse), rr.Body.String(), tc.name)
+			}
+		})
+	}
+}
+
+func TestGetTransactions(t *testing.T) {
+	invalidAddrsStr := "invalid,addrs"
+	addrsStr := "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ,2PBmUva7J8WFsyWg979cREZkU3z2pkYjNkE"
+	var addrs []cipher.Address
+	for _, item := range []string{"2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ", "2PBmUva7J8WFsyWg979cREZkU3z2pkYjNkE"} {
+		addr, err := cipher.DecodeBase58Address(item)
+		require.NoError(t, err)
+		addrs = append(addrs, addr)
+	}
+	invalidTxn := makeTransaction(t)
+	invalidTxn.Out = append(invalidTxn.Out, coin.TransactionOutput{
+		Coins: math.MaxInt64 + 1,
+	})
+	type httpBody struct {
+		addrs     string
+		confirmed string
+	}
+
+	tt := []struct {
+		name                    string
+		method                  string
+		url                     string
+		status                  int
+		err                     string
+		httpBody                *httpBody
+		getTransactionsArg      []visor.TxFilter
+		getTransactionsResponse []visor.Transaction
+		getTransactionsError    error
+		httpResponse            []visor.Transaction
+	}{
+		{
+			"405",
+			http.MethodPost,
+			"/transactions",
+			http.StatusMethodNotAllowed,
+			"405 Method Not Allowed",
+			nil,
+			[]visor.TxFilter{},
+			nil,
+			nil,
+			[]visor.Transaction{},
+		},
+		{
+			"400 - invalid `addrs` param",
+			http.MethodGet,
+			"/transactions",
+			http.StatusBadRequest,
+			"400 Bad Request - parse parament: 'addrs' failed: Invalid base58 character",
+			&httpBody{
+				addrs: invalidAddrsStr,
+			},
+			[]visor.TxFilter{
+				visor.AddrsFilter(addrs),
+			},
+			nil,
+			nil,
+			[]visor.Transaction{},
+		},
+		{
+			"400 - invalid `confirmed` param",
+			http.MethodGet,
+			"/transactions",
+			http.StatusBadRequest,
+			"400 Bad Request - invalid 'confirmed' value: strconv.ParseBool: parsing \"invalidConfirmed\": invalid syntax",
+			&httpBody{
+				addrs:     addrsStr,
+				confirmed: "invalidConfirmed",
+			},
+			[]visor.TxFilter{
+				visor.AddrsFilter(addrs),
+			},
+			nil,
+			nil,
+			[]visor.Transaction{},
+		},
+		{
+			"500 - getTransactionsError",
+			http.MethodGet,
+			"/transactions",
+			http.StatusInternalServerError,
+			"500 Internal Server Error",
+			&httpBody{
+				addrs:     addrsStr,
+				confirmed: "true",
+			},
+			[]visor.TxFilter{
+				visor.AddrsFilter(addrs),
+				visor.ConfirmedTxFilter(true),
+			},
+			[]visor.Transaction{},
+			errors.New("getTransactionsError"),
+			[]visor.Transaction{},
+		},
+		{
+			"500 - visor.NewTransactionResults error",
+			http.MethodGet,
+			"/transactions",
+			http.StatusInternalServerError,
+			"500 Internal Server Error",
+			&httpBody{
+				addrs:     addrsStr,
+				confirmed: "true",
+			},
+			[]visor.TxFilter{
+				visor.AddrsFilter(addrs),
+				visor.ConfirmedTxFilter(true),
+			},
+			[]visor.Transaction{
+				{
+					Txn: invalidTxn,
+					Status: visor.TransactionStatus{
+						Confirmed: true,
+						Height:    103,
+					},
+				},
+			},
+			nil,
+			[]visor.Transaction{},
+		},
+		{
+			"200",
+			http.MethodGet,
+			"/transactions",
+			http.StatusOK,
+			"",
+			&httpBody{
+				addrs:     addrsStr,
+				confirmed: "true",
+			},
+			[]visor.TxFilter{
+				visor.AddrsFilter(addrs),
+				visor.ConfirmedTxFilter(true),
+			},
+			[]visor.Transaction{},
+			nil,
+			[]visor.Transaction{},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := &FakeGateway{
+				t: t,
+			}
+			gateway.On("GetTransactions", mock.Anything).Return(tc.getTransactionsResponse, tc.getTransactionsError)
+
+			v := url.Values{}
+			urlFull := tc.url
+			if tc.httpBody != nil {
+				if tc.httpBody.addrs != "" {
+					v.Add("addrs", tc.httpBody.addrs)
+				}
+				if tc.httpBody.confirmed != "" {
+					v.Add("confirmed", tc.httpBody.confirmed)
+				}
+			}
+			if len(v) > 0 {
+				urlFull += "?" + v.Encode()
+			}
+
+			req, err := http.NewRequest(tc.method, urlFull, nil)
+			require.NoError(t, err)
+			rr := httptest.NewRecorder()
+			handler := http.HandlerFunc(getTransactions(gateway))
+
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
+				tc.name, status, tc.status)
+
+			if status != http.StatusOK {
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+			} else {
+				var msg []visor.Transaction
+				err = json.Unmarshal(rr.Body.Bytes(), &msg)
+				require.NoError(t, err)
+				require.Equal(t, tc.httpResponse, msg, tc.name)
 			}
 		})
 	}

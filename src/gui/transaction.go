@@ -145,7 +145,7 @@ func getTransactionByID(gate Gatewayer) http.HandlerFunc {
 // Args:
 //     addrs: Comma seperated addresses [optional, returns all transactions if no address provided]
 //     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
-func getTransactions(gateway *daemon.Gateway) http.HandlerFunc {
+func getTransactions(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)

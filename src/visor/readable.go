@@ -9,6 +9,8 @@ import (
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/wallet"
 
+	"strconv"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 )
@@ -147,13 +149,19 @@ func NewReadableTransactionOutput(t *coin.TransactionOutput, txid cipher.SHA256)
 }
 
 // NewReadableTransactionInput creates readable transaction input
-func NewReadableTransactionInput(uxID, ownerAddress, coins, hours string) ReadableTransactionInput {
-	return ReadableTransactionInput{
+func NewReadableTransactionInput(uxID, ownerAddress string, coins, hours uint64) (*ReadableTransactionInput, error) {
+	coinVal, err := droplet.ToString(coins)
+	if err != nil {
+		logger.Errorf("Failed to convert coins to string: %v", err)
+		return nil, err
+	}
+
+	return &ReadableTransactionInput{
 		Hash:    uxID,
 		Address: ownerAddress, //Destination Address
-		Coins:   coins,
-		Hours:   hours,
-	}
+		Coins:   coinVal,
+		Hours:   strconv.FormatUint(hours, 10),
+	}, nil
 }
 
 // ReadableOutput represents readable output

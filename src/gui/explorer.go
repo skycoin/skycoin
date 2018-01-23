@@ -207,13 +207,13 @@ func getTransactionsForAddress(gateway *daemon.Gateway) http.HandlerFunc {
 					return
 				}
 
-				coins, err := droplet.ToString(uxout.Out.Body.Coins)
+				tIn, err := visor.NewReadableTransactionInput(tx.Transaction.In[i], uxout.Out.Body.Address.String(), uxout.Out.Body.Coins, uxout.Out.Body.Hours)
 				if err != nil {
-					logger.Errorf("Failed to convert coins to string: %v", err)
 					wh.Error500(w)
 					return
 				}
-				in[i] = visor.NewReadableTransactionInput(tx.Transaction.In[i], uxout.Out.Body.Address.String(), coins, strconv.FormatUint(uxout.Out.Body.Hours, 10))
+
+				in[i] = *tIn
 			}
 
 			resTxs = append(resTxs, NewReadableTransaction(tx, in))

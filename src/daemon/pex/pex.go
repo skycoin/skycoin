@@ -538,6 +538,23 @@ func (px *Pex) IsFull() bool {
 	defer px.RUnlock()
 	return px.Config.Max > 0 && px.peerlist.len() >= px.Config.Max
 }
+func (pex *Pex) GetSingleDefault() Peer {
+	var peers = pex.Default()
+	rand.Seed(time.Now().Unix())
+	return peers[rand.Intn(len(peers))]
+}
+func (pex *Pex) GetSingleTrusted() Peer {
+	var peers = pex.Trusted()
+	rand.Seed(time.Now().Unix())
+	return peers[rand.Intn(len(peers))]
+}
+
+func (pex *Pex) GetSingleNonTrusted() Peer {
+	var peers = append(pex.Default(), pex.Automatic()...)
+	rand.Seed(time.Now().Unix())
+	return peers[rand.Intn(len(peers))]
+}
+
 
 // downloadText downloads a text format file from url.
 // Returns the raw response body as a string.

@@ -14,7 +14,7 @@ import (
 
 	"github.com/boltdb/bolt"
 
-	"github.com/skycoin/skycoin/src/daemon/gnet"
+	//"github.com/skycoin/skycoin/src/daemon/gnet"
 	//"github.com/skycoin/skycoin/src/daemon/pex" TODO: Change before commit
 
 	"github.com/skycoin/skycoin/src/util/elapse"
@@ -22,6 +22,10 @@ import (
 	"github.com/skycoin/skycoin/src/util/utc"
 
 	"./pex"
+	"go/ast"
+	"debug/elf"
+
+	"./gnet"
 )
 
 /*
@@ -135,12 +139,12 @@ type DaemonConfig struct {
 	// Directory where application data is stored
 	DataDirectory string
 	// How often to check and initiate an outgoing connection if needed
-	OutgoingRate time.Duration
+	OutgoingRate time.Duration //TODO:Deprecate
 	// How often to re-attempt to fill any missing private (aka required)
 	// connections
-	PrivateRate time.Duration
+	PrivateRate time.Duration //TODO:Deprecate
 	// Number of outgoing connections to maintain
-	OutgoingMax int
+	OutgoingMax int //Now it's handled at Pool TODO: Deprecate
 	// Maximum number of connections to try at once
 	PendingMax int
 	// How long to wait for a version packet
@@ -159,6 +163,12 @@ type DaemonConfig struct {
 	LocalhostOnly bool
 	// Log ping and pong messages
 	LogPings bool
+
+	//Number of default and automatic peer connections to maintain
+	NonTrustedMax int
+	//Number of trusted connections to maintain
+	TrustedMax int
+
 }
 
 // NewDaemonConfig creates daemon config
@@ -179,6 +189,10 @@ func NewDaemonConfig() DaemonConfig {
 		DisableIncomingConnections: false,
 		LocalhostOnly:              false,
 		LogPings:                   true,
+
+		NonTrustedMax: 				8,
+		TrustedMax:					8,
+
 	}
 }
 
@@ -374,8 +388,9 @@ func (dm *Daemon) Run() error {
 	requestPeersTicker := time.Tick(dm.Pex.Config.RequestRate)
 	clearStaleConnectionsTicker := time.Tick(dm.Pool.Config.ClearStaleRate)
 	idleCheckTicker := time.Tick(dm.Pool.Config.IdleCheckRate)
+	connectionsTicker := time.Tick(dm.Pool.Config.PeerConnRate)
 
-	// Connect to trusted peers
+
 	if !dm.Config.DisableOutgoingConnections {
 		wg.Add(1)
 		go func() {
@@ -431,7 +446,7 @@ loop:
 				dm.Pool.sendPings()
 			}
 
-		case <-outgoingConnectionsTicker:
+		case <-outgoingConnectionsTicker: //TODO: Deprecate
 			// Fill up our outgoing connections
 			elapser.Register("outgoingConnectionsTicker")
 			trustPeerNum := len(dm.Pex.Trusted())
@@ -441,7 +456,7 @@ loop:
 				dm.connectToRandomPeer()
 			}
 
-		case <-privateConnectionsTicker:
+		case <-privateConnectionsTicker: //TODO Deprecate
 			// Always try to stay connected to our private peers
 			// TODO (also, connect to all of them on start)
 			elapser.Register("privateConnectionsTicker")
@@ -530,6 +545,10 @@ loop:
 			elapser.Register("blocksAnnounceTicker")
 			dm.Visor.AnnounceBlocks(dm.Pool)
 
+		case <-connectionsTicker:
+			elapser.Register("connectionsTicker")
+			dm.AddPeerConnection()
+
 		case err = <-errC:
 			break loop
 		}
@@ -598,7 +617,7 @@ func (dm *Daemon) connectToPeer(p pex.Peer) error {
 	logger.Debug("Trying to connect to %s", p.Addr)
 	dm.pendingConnections.Add(p.Addr, p)
 	go func() {
-		if err := dm.Pool.Pool.Connect(p.Addr); err != nil {
+		if err := dm.Pool.Pool.Connect(p.Addr, p); err != nil {
 			dm.connectionErrors <- ConnectionError{p.Addr, err}
 		}
 	}()
@@ -640,7 +659,7 @@ func (dm *Daemon) connectToRandomPeer() {
 	}
 
 	// Make a connection to a random (public) peer
-	peers := dm.Pex.RandomPublic(1) //changed from 0 to 1 TODO: return to 0
+	peers := dm.Pex.RandomPublic(0)
 	for _, p := range peers {
 		// Check if the peer has public port
 		if p.HasIncomingPort {
@@ -900,6 +919,46 @@ func (dm *Daemon) handleMessageSendResult(r gnet.SendResult) {
 	case SendingTxnsMessage:
 		dm.Visor.SetTxnsAnnounced(r.Message.(SendingTxnsMessage).GetTxns())
 	default:
+	}
+}
+
+
+func (daemon *Daemon) AddPeerConnection() {
+	if daemon.Pool.Pool.Config.CurrentDefault == 0 {
+		daemon.AddDefaultConnection()
+		return
+	}
+	if daemon.Pool.Pool.Config.CurrentTrusted < daemon.Config.TrustedMax{
+		daemon.AddTrustedConnection()
+		return
+	}
+	if daemon.Pool.Pool.Config.CurrentDefault + daemon.Pool.Pool.Config.CurrentAutomatic < daemon.Config.NonTrustedMax {
+		daemon.AddNonTrustedConnection()
+	}
+}
+
+func (daemon *Daemon) AddDefaultConnection() {
+	var p = daemon.Pex.GetSingleDefault()
+	if daemon.connectToPeer(p) == nil{
+		daemon.Pool.Pool.Config.CurrentDefault++
+	}
+}
+func (daemon *Daemon) AddTrustedConnection() {
+	var p = daemon.Pex.GetSingleTrusted()
+	if daemon.connectToPeer(p) == nil{
+		daemon.Pool.Pool.Config.CurrentTrusted++
+	}
+}
+func (daemon *Daemon) AddNonTrustedConnection() {
+	var p = daemon.Pex.GetSingleNonTrusted()
+	if daemon.connectToPeer(p) == nil{
+		if p.Default {
+			daemon.Pool.Pool.Config.CurrentDefault++
+		}
+		if p.Automatic {
+			daemon.Pool.Pool.Config.CurrentAutomatic++
+		}
+
 	}
 }
 

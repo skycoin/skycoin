@@ -18,6 +18,8 @@ import (
 	"github.com/skycoin/skycoin/src/util/elapse"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/utc"
+	//"github.com/skycoin/skycoin/src/daemon/pex"
+	"../pex"
 )
 
 // DisconnectReason is passed to ConnectionPool's DisconnectCallback
@@ -84,6 +86,15 @@ type Config struct {
 	ConnectCallback ConnectCallback
 	// Print debug logs
 	DebugPrint bool
+
+	ConnectionTypes map[string]pex.Peer
+
+	//Number of active trusted connections
+	CurrentTrusted int
+	//Number of active default connections
+	CurrentDefault int
+	//Number of automatic default connections
+	CurrentAutomatic int
 }
 
 // NewConfig returns a Config with defaults set
@@ -102,6 +113,10 @@ func NewConfig() Config {
 		DisconnectCallback:       nil,
 		ConnectCallback:          nil,
 		DebugPrint:               false,
+		ConnectionTypes:	  	map[string]pex.Peer{},
+		CurrentTrusted:				0,
+		CurrentDefault:				0,
+		CurrentAutomatic:			0,
 	}
 }
 
@@ -586,7 +601,7 @@ func (pool *ConnectionPool) GetConnection(addr string) (*Connection, error) {
 }
 
 // Connect to an address
-func (pool *ConnectionPool) Connect(address string) error {
+func (pool *ConnectionPool) Connect(address string, p pex.Peer) error {
 	exist, err := pool.IsConnExist(address)
 	if err != nil {
 		return err
@@ -601,6 +616,10 @@ func (pool *ConnectionPool) Connect(address string) error {
 	if err != nil {
 		return err
 	}
+	//Assume connection is on from here
+
+	pool.Config.ConnectionTypes[address] = p
+
 	pool.wg.Add(1)
 	go func() {
 		defer pool.wg.Done()
@@ -766,9 +785,22 @@ func (pool *ConnectionPool) ClearStaleConnections(idleLimit time.Duration, reaso
 	}
 
 	for _, a := range idleConns {
+		pool.RemoveFromConnCount(a)
 		pool.Disconnect(a, reason)
 	}
 	return nil
+}
+func (pool *ConnectionPool) RemoveFromConnCount(address string) {
+	var p = pool.Config.ConnectionTypes[address]
+	if p.Trusted {
+		pool.Config.CurrentTrusted--
+	}
+	if p.Default{
+		pool.Config.CurrentDefault--
+	}
+	if p.Automatic{
+		pool.Config.CurrentAutomatic--
+	}
 }
 
 // Now returns the current UTC time

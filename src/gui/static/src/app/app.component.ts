@@ -32,7 +32,7 @@ export class AppComponent {
     IntervalObservable
       .create(3000)
       .flatMap(() => this.blockchainService.progress())
-      .takeWhile(response => !response.current || response.current !== response.highest)
+      .takeWhile((response: any) => !response.current || response.current !== response.highest)
       .subscribe(response => {
         this.highest = response.highest;
         this.current = response.current;

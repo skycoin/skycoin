@@ -1,0 +1,108 @@
+@import '../../../../theme/_variables.scss';
+
+.-width-150 {
+  width: 150px;
+}
+
+.-width-250 {
+  width: 250px;
+}
+
+.-headers {
+  color: rgba(30, 34, 39, 0.2);
+  display: flex;
+  font-size: 12px;
+  font-weight: 700;
+  height: 50px;
+  line-height: 50px;
+  padding: 0 80px 0 50px;
+}
+
+.-wallets {
+  border-radius: 15px;
+  box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.01), 1px 1px 2px 2px rgba(0, 0, 0, 0.01);
+  margin: 0 30px;
+}
+
+.-wallet {
+  background-color: $white;
+  border-bottom: 1px solid #eff0f0;
+  cursor: pointer;
+  display: flex;
+  font-size: $font-size-standard;
+  line-height: $row-height;
+  height: $row-height;
+  padding-left: 20px;
+
+  &:first-child {
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+  }
+
+  &:last-child {
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+  }
+
+  .label {
+    color: black;
+    font-weight: 700;
+  }
+
+  .hours {
+    color: rgba(30, 34, 39, 0.5);
+  }
+
+  .coins {
+    color: black;
+  }
+
+  .-encryption img {
+    border-radius: 50%;
+    background-color: #f7f7f7;
+    display: inline-block;
+    height: 38px;
+    margin: 11px 0;
+    padding: 3px;
+    width: 38px;
+  }
+
+  > img {
+    display: inline-block;
+    margin: ($row-height - $row-detail-size) / 2;
+    margin-left: 0;
+    height: $row-detail-size;
+    width: $row-detail-size;
+  }
+}
+
+.-wallet-detail {
+  background-color: $white;
+}
+
+.action-buttons {
+  margin-bottom: 74px;
+  padding: 40px 0 40px;
+  text-align: center;
+
+  button {
+    background-color: $grey-light;
+    border: none;
+    box-shadow: none;
+    color: $grey-dark;
+    font-size: 13px;
+    margin: 0 5px;
+    min-width: 140px;
+
+    img {
+      height: 28px;
+      margin-left: -4px;
+      width: 28px;
+    }
+  }
+}
+
+span {
+  display: inline-block;
+  width: 50%;
+}

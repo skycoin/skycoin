@@ -9,15 +9,11 @@ import (
 
 	"encoding/json"
 
-	"github.com/stretchr/testify/require"
-
-	"crypto/rand"
-
 	"math"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
-	"github.com/pkg/errors"
+	"errors"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -70,12 +66,10 @@ func feeCalc(t *coin.Transaction) (uint64, error) {
 func TestGetBlock(t *testing.T) {
 
 	badBlock := makeBadBlock(t)
-
-	h := cipher.SHA256{}
-	h.Set(testutil.RandBytes(t, 32))
-	validHashString := h.Hex()
+	validHashString := testutil.RandSHA256(t).Hex()
 	validSHA256, err := cipher.SHA256FromHex(validHashString)
 	require.NoError(t, err)
+
 	tt := []struct {
 		name                        string
 		method                      string
@@ -525,7 +519,6 @@ func TestGetBlocks(t *testing.T) {
 		})
 	}
 }
-
 
 func TestGetLastBlocks(t *testing.T) {
 	type httpBody struct {

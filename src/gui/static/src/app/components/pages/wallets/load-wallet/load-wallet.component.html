@@ -1,0 +1,20 @@
+<app-modal title="Load Wallet" [dialog]="dialogRef">
+  <div [formGroup]="form">
+    <div class="form-field">
+      <label for="label">Name</label>
+      <input formControlName="label" id="label">
+    </div>
+    <div class="form-field">
+      <label for="seed">Seed</label>
+      <textarea formControlName="seed" id="seed" row="2"></textarea>
+    </div>
+  </div>
+  <div class="-buttons">
+    <app-button (action)="closePopup()">
+      Cancel
+    </app-button>
+    <app-button (action)="loadWallet()" class="primary" [disabled]="!form.valid">
+      Load
+    </app-button>
+  </div>
+</app-modal>

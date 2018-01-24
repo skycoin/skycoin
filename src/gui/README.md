@@ -116,6 +116,10 @@ result:
 ```
 URI: /wallet/newSeed
 Method: GET
+Args:
+    entropy: seed entropy [optional]
+             can either be 128 or 256; 128 = 12 word seed, 256 = 24 word seed
+             default: 128
 ```
 
 example:
@@ -913,9 +917,11 @@ result:
 
 ```json
 {
-    "current_supply": "5847530.000000",
-    "total_supply": "30000000.000000",
+    "current_supply": "7187500.000000",
+    "total_supply": "25000000.000000",
     "max_supply": "100000000.000000",
+    "current_coinhour_supply": "23499025077",
+    "total_coinhour_supply": "93679828577",
     "unlocked_distribution_addresses": [
         "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
         "2EYM4WFHe4Dgz6kjAdUkM6Etep7ruz2ia6h",
@@ -941,14 +947,14 @@ result:
         "2fM5gVpi7XaiMPm4i29zddTNkmrKe6TzhVZ",
         "ix3NDKgxfYYANKAb5kbmwBYXPrkAsha7uG",
         "2RkPshpFFrkuaP98GprLtgHFTGvPY5e6wCK",
-        "Ak1qCDNudRxZVvcW6YDAdD9jpYNNStAVqm",
+        "Ak1qCDNudRxZVvcW6YDAdD9jpYNNStAVqm"
+    ],
+    "locked_distribution_addresses": [
         "2eZYSbzBKJ7QCL4kd5LSqV478rJQGb4UNkf",
         "KPfqM6S96WtRLMuSy4XLfVwymVqivdcDoM",
         "5B98bU1nsedGJBdRD5wLtq7Z8t8ZXio8u5",
         "2iZWk5tmBynWxj2PpAFyiZzEws9qSnG3a6n",
-        "XUGdPaVnMh7jtzPe3zkrf9FKh5nztFnQU5"
-    ],
-    "locked_distribution_addresses": [
+        "XUGdPaVnMh7jtzPe3zkrf9FKh5nztFnQU5",
         "hSNgHgewJme8uaHrEuKubHYtYSDckD6hpf",
         "2DeK765jLgnMweYrMp1NaYHfzxumfR1PaQN",
         "orrAssY5V2HuQAbW9K6WktFrGieq2m23pr",

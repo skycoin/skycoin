@@ -12,12 +12,16 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
+	"github.com/stretchr/testify/mock"
+
+	"strconv"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
-	"github.com/stretchr/testify/mock"
 )
 
 // GetAddressTxns returns a *visor.TransactionResults
@@ -38,6 +42,74 @@ func (gw *FakeGateway) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) 
 func (gw *FakeGateway) GetUnspentOutputs(filters ...daemon.OutputsFilter) (visor.ReadableOutputSet, error) {
 	args := gw.Called(filters)
 	return args.Get(0).(visor.ReadableOutputSet), args.Error(1)
+}
+
+func makeSuccessCoinSupplyResult(t *testing.T, allUnspents visor.ReadableOutputSet) *CoinSupply {
+	unlockedAddrs := visor.GetUnlockedDistributionAddresses()
+	var unlockedSupply uint64
+	// check confirmed unspents only
+	// Search map of unlocked addresses
+	// used to filter unspents
+	unlockedAddrMap := daemon.MakeSearchMap(unlockedAddrs)
+	for _, u := range allUnspents.HeadOutputs {
+		// check if address is an unlocked distribution address
+		if _, ok := unlockedAddrMap[u.Address]; ok {
+			coins, err := droplet.FromString(u.Coins)
+			require.NoError(t, err)
+			unlockedSupply += coins
+		}
+	}
+	// "total supply" is the number of coins unlocked.
+	// Each distribution address was allocated visor.DistributionAddressInitialBalance coins.
+	totalSupply := uint64(len(unlockedAddrs)) * visor.DistributionAddressInitialBalance
+	totalSupply *= droplet.Multiplier
+
+	// "current supply" is the number of coins distribution from the unlocked pool
+	currentSupply := totalSupply - unlockedSupply
+
+	currentSupplyStr, err := droplet.ToString(currentSupply)
+	require.NoError(t, err)
+
+	totalSupplyStr, err := droplet.ToString(totalSupply)
+	require.NoError(t, err)
+
+	maxSupplyStr, err := droplet.ToString(visor.MaxCoinSupply * droplet.Multiplier)
+	require.NoError(t, err)
+
+	// locked distribution addresses
+	lockedAddrs := visor.GetLockedDistributionAddresses()
+	lockedAddrMap := daemon.MakeSearchMap(lockedAddrs)
+
+	// get total coins hours which excludes locked distribution addresses
+	var totalCoinHours uint64
+	for _, out := range allUnspents.HeadOutputs {
+		if _, ok := lockedAddrMap[out.Address]; !ok {
+			totalCoinHours += out.Hours
+		}
+	}
+
+	// get current coin hours which excludes all distribution addresses
+	var currentCoinHours uint64
+	for _, out := range allUnspents.HeadOutputs {
+		// check if address not in locked distribution addresses
+		if _, ok := lockedAddrMap[out.Address]; !ok {
+			// check if address not in unlocked distribution addresses
+			if _, ok := unlockedAddrMap[out.Address]; !ok {
+				currentCoinHours += out.Hours
+			}
+		}
+	}
+
+	cs := CoinSupply{
+		CurrentSupply:         currentSupplyStr,
+		TotalSupply:           totalSupplyStr,
+		MaxSupply:             maxSupplyStr,
+		CurrentCoinHourSupply: strconv.FormatUint(currentCoinHours, 10),
+		TotalCoinHourSupply:   strconv.FormatUint(totalCoinHours, 10),
+		UnlockedAddresses:     unlockedAddrs,
+		LockedAddresses:       visor.GetLockedDistributionAddresses(),
+	}
+	return &cs
 }
 
 func TestGetTransactionsForAddress(t *testing.T) {
@@ -266,8 +338,17 @@ func TestGetTransactionsForAddress(t *testing.T) {
 
 func TestCoinSupply(t *testing.T) {
 	unlockedAddrs := visor.GetUnlockedDistributionAddresses()
-
-	filterInUnlocked := []daemon.OutputsFilter{}
+	successGatewayGetUnspentOutputsResult := visor.ReadableOutputSet{
+		HeadOutputs: visor.ReadableOutputs{
+			visor.ReadableOutput{
+				Coins: "0",
+			},
+			visor.ReadableOutput{
+				Coins: "0",
+			},
+		},
+	}
+	var filterInUnlocked []daemon.OutputsFilter = nil
 	filterInUnlocked = append(filterInUnlocked, daemon.FbyAddresses(unlockedAddrs))
 	tt := []struct {
 		name                           string
@@ -278,7 +359,7 @@ func TestCoinSupply(t *testing.T) {
 		gatewayGetUnspentOutputsArg    []daemon.OutputsFilter
 		gatewayGetUnspentOutputsResult visor.ReadableOutputSet
 		gatewayGetUnspentOutputsErr    error
-		result                         []ReadableTransaction
+		result                         *CoinSupply
 	}{
 		{
 			"405",
@@ -323,7 +404,8 @@ func TestCoinSupply(t *testing.T) {
 			visor.ReadableOutputSet{
 				HeadOutputs: visor.ReadableOutputs{
 					visor.ReadableOutput{
-						Coins: "9223372036854775807",
+						Coins:   "9223372036854775807",
+						Address: unlockedAddrs[0],
 					},
 					visor.ReadableOutput{
 						Coins: "1",
@@ -343,16 +425,16 @@ func TestCoinSupply(t *testing.T) {
 			visor.ReadableOutputSet{
 				HeadOutputs: visor.ReadableOutputs{
 					visor.ReadableOutput{
-						Coins:"0",
+						Coins: "0",
 						//Coins: "9223372036854",
 					},
 					visor.ReadableOutput{
-						Coins:"0",
+						Coins: "0",
 					},
 				},
 			},
 			nil,
-			nil,
+			makeSuccessCoinSupplyResult(t, successGatewayGetUnspentOutputsResult),
 		},
 	}
 
@@ -378,7 +460,7 @@ func TestCoinSupply(t *testing.T) {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg CoinSupply
+				var msg *CoinSupply
 				err := json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.result, msg)

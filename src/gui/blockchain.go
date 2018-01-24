@@ -15,8 +15,6 @@ import (
 	"github.com/skycoin/skycoin/src/daemon"
 )
 
-const lastBlockNum = 10
-
 // RegisterBlockchainHandlers registers blockchain handlers
 func RegisterBlockchainHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
 	mux.HandleFunc("/blockchain/metadata", blockchainHandler(gateway))
@@ -48,7 +46,7 @@ func blockchainProgressHandler(gateway *daemon.Gateway) http.HandlerFunc {
 // method: GET
 // url: /block?hash=[:hash]  or /block?seq[:seq]
 // params: hash or seq, should only specify one filter.
-func getBlock(gate *daemon.Gateway) http.HandlerFunc {
+func getBlock(gate Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -100,7 +98,7 @@ func getBlock(gate *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-func getBlocks(gateway *daemon.Gateway) http.HandlerFunc {
+func getBlocks(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)

@@ -715,6 +715,41 @@ func TestWalletAddEntry(t *testing.T) {
 	}
 }
 
+func TestWalletGuard(t *testing.T) {
+	validate := func(w *Wallet) {
+		require.Equal(t, "", w.seed())
+		require.Equal(t, "", w.lastSeed())
+		for _, e := range w.Entries {
+			require.Equal(t, cipher.SecKey{}, e.Secret)
+		}
+	}
+
+	w, err := NewWallet("t.wlt", Options{
+		Seed:       "seed",
+		Encrypt:    true,
+		Password:   []byte("pwd"),
+		CryptoType: CryptoTypeSha256Xor,
+	})
+	require.NoError(t, err)
+
+	require.NoError(t, w.guard().update([]byte("pwd"), func(w *Wallet) error {
+		require.Equal(t, "seed", w.seed())
+		w.setLabel("label")
+		return nil
+	}))
+	require.Equal(t, "label", w.Label())
+	validate(w)
+
+	w.guard().view([]byte("pwd"), func(w *Wallet) error {
+		require.Equal(t, "label", w.Label())
+		w.setLabel("new label")
+		return nil
+	})
+
+	require.Equal(t, "label", w.Label())
+	validate(w)
+}
+
 type distributeSpendHoursTestCase struct {
 	name              string
 	inputHours        uint64

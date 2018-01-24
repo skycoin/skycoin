@@ -323,13 +323,15 @@ func (w *Wallet) erase() {
 	}
 }
 
-// guard will do:
-// 1. unlock the encrypted wallet
-// 2. process the decrypted wallet by calling the callback function
-// 3. lock the wallet at the end
-// If the wallet is not encrypted, it would return ErrWalletNotEncrypted error
-func (w *Wallet) guard(password []byte, f func(w *Wallet) error) (err error) {
-	if !w.IsEncrypted() {
+// guard provides methods for accessing encrypted wallet safely.
+// All methods the guard provided will wipe sensitive data in the end.
+type guard struct {
+	*Wallet
+}
+
+// update executes a function within the context of a read-wirte managed wallet.
+func (g *guard) update(password []byte, fn func(w *Wallet) error) error {
+	if !g.IsEncrypted() {
 		return ErrWalletNotEncrypted
 	}
 
@@ -337,8 +339,37 @@ func (w *Wallet) guard(password []byte, f func(w *Wallet) error) (err error) {
 		return ErrMissingPassword
 	}
 
-	var wlt *Wallet
-	wlt, err = w.unlock(password)
+	wlt, err := g.unlock(password)
+	if err != nil {
+		return err
+	}
+
+	defer wlt.erase()
+
+	if err := fn(wlt); err != nil {
+		return err
+	}
+
+	if err := wlt.lock(password); err != nil {
+		return err
+	}
+
+	*g.Wallet = *wlt
+	g.erase()
+	return nil
+}
+
+// view executes a function within the context of a read-only managed wallet.
+func (g *guard) view(password []byte, f func(w *Wallet) error) error {
+	if !g.IsEncrypted() {
+		return ErrWalletNotEncrypted
+	}
+
+	if len(password) == 0 {
+		return ErrMissingPassword
+	}
+
+	wlt, err := g.unlock(password)
 	if err != nil {
 		return err
 	}
@@ -348,15 +379,12 @@ func (w *Wallet) guard(password []byte, f func(w *Wallet) error) (err error) {
 	if err := f(wlt); err != nil {
 		return err
 	}
+	return nil
+}
 
-	// lock the wlt
-	if err := wlt.lock(password); err != nil {
-		return err
-	}
-
-	// copy wlt to w
-	*w = *wlt
-	return
+// guard creates a wallet guard, which protects wallet from exposing sensitive data.
+func (w *Wallet) guard() *guard {
+	return &guard{Wallet: w}
 }
 
 // Load loads wallet from given file

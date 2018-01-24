@@ -133,27 +133,41 @@ func ConfigureNodes() {
 
 // GenerateDockerCompose generates the compose YAML file.
 func GenerateDockerCompose(nodesNum int, commit string) {
+	type ServiceNetwork struct {
+		IPv4Address string `yaml:"ipv4_address"`
+	}
+	type Service struct {
+		Image    string
+		Networks map[string]ServiceNetwork
+	}
+	type NetworkIpamConfig struct {
+		Subnet string
+	}
+	type NetworkIpam struct {
+		Driver string
+		Config NetworkIpamConfig
+	}
+	type Network struct {
+		Driver string
+		Ipam   NetworkIpam
+	}
+	type DockerCompose struct {
+		Version  int
+		Services map[string]Service
+		Networks map[string]Network
+	}
+
 	network := "skycoin-" + commit
-	compose := []yaml.MapItem{
-		yaml.MapItem{"version", 3},
-		yaml.MapItem{"services",
-			yaml.MapSlice{},
-		},
-		yaml.MapItem{"networks",
-			[]yaml.MapItem{
-				yaml.MapItem{network,
-					[]yaml.MapItem{
-						yaml.MapItem{"driver", "bridge"},
-						yaml.MapItem{"ipam",
-							[]yaml.MapItem{
-								yaml.MapItem{"driver", "default"},
-								yaml.MapItem{"config",
-									[]yaml.MapItem{
-										yaml.MapItem{"subnet", "172.16.200.0/24"},
-									},
-								},
-							},
-						},
+	compose := DockerCompose{
+		Version:  3,
+		Services: make(map[string]Service),
+		Networks: map[string]Network{
+			string(network): Network{
+				Driver: "bridge",
+				Ipam: NetworkIpam{
+					Driver: "default",
+					Config: NetworkIpamConfig{
+						Subnet: "172.16.200.0/24",
 					},
 				},
 			},
@@ -161,22 +175,13 @@ func GenerateDockerCompose(nodesNum int, commit string) {
 	}
 	for i := 1; i <= nodesNum; i++ {
 		num := strconv.Itoa(i)
-		service := yaml.MapItem{
-			"skycoin-" + num,
-			[]yaml.MapItem{
-				yaml.MapItem{"image", "skycoin-nogui:" + commit},
-				yaml.MapItem{"networks",
-					[]yaml.MapItem{
-						yaml.MapItem{network,
-							[]yaml.MapItem{
-								yaml.MapItem{"ipv4_address", "172.16.200." + num},
-							},
-						},
-					},
-				},
-			},
+		compose.Services["skycoin-"+num] = Service{
+			Image: "skycoin:" + commit,
+			Networks: map[string]ServiceNetwork{
+				string(network): ServiceNetwork{
+					IPv4Address: "172.16.200." + num,
+				}},
 		}
-		compose[1].Value = append(compose[1].Value.(yaml.MapSlice), service)
 	}
 	text, err := yaml.Marshal(compose)
 	if err != nil {

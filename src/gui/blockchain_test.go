@@ -25,28 +25,27 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 )
 
+// GetBlockByHash returns block by hash
 func (gw *FakeGateway) GetBlockByHash(hash cipher.SHA256) (block coin.SignedBlock, ok bool) {
 	args := gw.Called(hash)
 	return args.Get(0).(coin.SignedBlock), args.Bool(1)
 }
 
-// GetBlockBySeq returns blcok by seq
+// GetBlockBySeq returns block by seq
 func (gw *FakeGateway) GetBlockBySeq(seq uint64) (block coin.SignedBlock, ok bool) {
 	args := gw.Called(seq)
 	return args.Get(0).(coin.SignedBlock), args.Bool(1)
 }
 
-func (gw *FakeGateway) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error) {
-	args := gw.Called(num)
+// GetBlocks returns a *visor.ReadableBlocks
+func (gw *FakeGateway) GetBlocks(start, end uint64) (*visor.ReadableBlocks, error) {
+	args := gw.Called(start, end)
 	return args.Get(0).(*visor.ReadableBlocks), args.Error(1)
 }
 
-func randBytes(t *testing.T, n int) []byte {
-	b := make([]byte, n)
-	x, err := rand.Read(b)
-	assert.Equal(t, n, x)
-	assert.Nil(t, err)
-	return b
+func (gw *FakeGateway) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error) {
+	args := gw.Called(num)
+	return args.Get(0).(*visor.ReadableBlocks), args.Error(1)
 }
 
 func makeBadBlock(t *testing.T) *coin.Block {
@@ -73,7 +72,7 @@ func TestGetBlock(t *testing.T) {
 	badBlock := makeBadBlock(t)
 
 	h := cipher.SHA256{}
-	h.Set(randBytes(t, 32))
+	h.Set(testutil.RandBytes(t, 32))
 	validHashString := h.Hex()
 	validSHA256, err := cipher.SHA256FromHex(validHashString)
 	require.NoError(t, err)
@@ -126,7 +125,7 @@ func TestGetBlock(t *testing.T) {
 			&visor.ReadableBlock{},
 		},
 		{
-			"400 - seq and hash",
+			"400 - seq and hash simultaneously",
 			http.MethodGet,
 			"/block",
 			http.StatusBadRequest,
@@ -142,7 +141,7 @@ func TestGetBlock(t *testing.T) {
 			&visor.ReadableBlock{},
 		},
 		{
-			"400 - hash: encoding/hex err invalid byte: U+0068 'h'",
+			"400 - hash error: encoding/hex err invalid byte: U+0068 'h'",
 			http.MethodGet,
 			"/block",
 			http.StatusBadRequest,
@@ -158,7 +157,7 @@ func TestGetBlock(t *testing.T) {
 			&visor.ReadableBlock{},
 		},
 		{
-			"400 - hash: encoding/hex: odd length hex string",
+			"400 - hash error: encoding/hex: odd length hex string",
 			http.MethodGet,
 			"/block",
 			http.StatusBadRequest,
@@ -174,7 +173,7 @@ func TestGetBlock(t *testing.T) {
 			&visor.ReadableBlock{},
 		},
 		{
-			"400 - hash: Invalid hex length",
+			"400 - hash error: Invalid hex length",
 			http.MethodGet,
 			"/block",
 			http.StatusBadRequest,
@@ -190,7 +189,7 @@ func TestGetBlock(t *testing.T) {
 			&visor.ReadableBlock{},
 		},
 		{
-			"404 - hash",
+			"404 - block by hash does not exist",
 			http.MethodGet,
 			"/block",
 			http.StatusNotFound,
@@ -219,7 +218,7 @@ func TestGetBlock(t *testing.T) {
 			},
 		},
 		{
-			"200 - hash",
+			"200 - got block by hash",
 			http.MethodGet,
 			"/block",
 			http.StatusOK,
@@ -248,7 +247,7 @@ func TestGetBlock(t *testing.T) {
 			},
 		},
 		{
-			"400 - seq: ",
+			"400 - seq error: invalid syntax",
 			http.MethodGet,
 			"/block",
 			http.StatusBadRequest,
@@ -264,7 +263,7 @@ func TestGetBlock(t *testing.T) {
 			&visor.ReadableBlock{},
 		},
 		{
-			"404 - seq",
+			"404 - block by seq does not exist",
 			http.MethodGet,
 			"/block",
 			http.StatusNotFound,
@@ -298,7 +297,7 @@ func TestGetBlock(t *testing.T) {
 			&visor.ReadableBlock{},
 		},
 		{
-			"200 - seq",
+			"200 - got block by seq",
 			http.MethodGet,
 			"/block",
 			http.StatusOK,
@@ -328,9 +327,6 @@ func TestGetBlock(t *testing.T) {
 		},
 	}
 
-	// Truncated hex hash
-	//h := cipher.SumSHA256(randBytes(t, 128))
-
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &FakeGateway{
@@ -340,7 +336,7 @@ func TestGetBlock(t *testing.T) {
 			gateway.On("GetBlockByHash", tc.sha256).Return(tc.gatewayGetBlockByHashResult, tc.gatewayGetBlockByHashExists)
 			gateway.On("GetBlockBySeq", tc.seq).Return(tc.gatewayGetBlockBySeqResult, tc.gatewayGetBlockBySeqExists)
 			v := url.Values{}
-			var url = tc.url
+			var urlFull = tc.url
 			if tc.hash != "" {
 				v.Add("hash", tc.hash)
 			}
@@ -348,10 +344,10 @@ func TestGetBlock(t *testing.T) {
 				v.Add("seq", tc.seqStr)
 			}
 			if len(v) > 0 {
-				url += "?" + v.Encode()
+				urlFull += "?" + v.Encode()
 			}
 
-			req, err := http.NewRequest(tc.method, url, nil)
+			req, err := http.NewRequest(tc.method, urlFull, nil)
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
@@ -375,6 +371,161 @@ func TestGetBlock(t *testing.T) {
 		})
 	}
 }
+
+func TestGetBlocks(t *testing.T) {
+	type httpBody struct {
+		Start string
+		End   string
+	}
+
+	tt := []struct {
+		name                   string
+		method                 string
+		url                    string
+		status                 int
+		err                    string
+		body                   *httpBody
+		start                  uint64
+		end                    uint64
+		gatewayGetBlocksResult *visor.ReadableBlocks
+		gatewayGetBlocksError  error
+		response               *visor.ReadableBlocks
+	}{
+		{
+			"405",
+			http.MethodPost,
+			"/blocks",
+			http.StatusMethodNotAllowed,
+			"405 Method Not Allowed",
+			&httpBody{},
+			0,
+			0,
+			&visor.ReadableBlocks{},
+			nil,
+			&visor.ReadableBlocks{},
+		},
+		{
+			"400 - empty start/end",
+			http.MethodGet,
+			"/blocks",
+			http.StatusBadRequest,
+			"400 Bad Request - Invalid start value \"\"",
+			&httpBody{},
+			0,
+			0,
+			&visor.ReadableBlocks{},
+			nil,
+			&visor.ReadableBlocks{},
+		},
+		{
+			"400 - bad start",
+			http.MethodGet,
+			"/blocks",
+			http.StatusBadRequest,
+			"400 Bad Request - Invalid start value \"badStart\"",
+			&httpBody{
+				Start: "badStart",
+			},
+			0,
+			0,
+			&visor.ReadableBlocks{},
+			nil,
+			&visor.ReadableBlocks{},
+		},
+		{
+			"400 - bad end",
+			http.MethodGet,
+			"/blocks",
+			http.StatusBadRequest,
+			"400 Bad Request - Invalid end value \"badEnd\"",
+			&httpBody{
+				Start: "1",
+				End:   "badEnd",
+			},
+			1,
+			0,
+			&visor.ReadableBlocks{},
+			nil,
+			&visor.ReadableBlocks{},
+		},
+		{
+			"400 - gatewayGetBlocksError",
+			http.MethodGet,
+			"/blocks",
+			http.StatusBadRequest,
+			"400 Bad Request - Get blocks failed: gatewayGetBlocksError",
+			&httpBody{
+				Start: "1",
+				End:   "3",
+			},
+			1,
+			3,
+			&visor.ReadableBlocks{},
+			errors.New("gatewayGetBlocksError"),
+			&visor.ReadableBlocks{},
+		},
+		{
+			"200",
+			http.MethodGet,
+			"/blocks",
+			http.StatusOK,
+			"",
+			&httpBody{
+				Start: "1",
+				End:   "3",
+			},
+			1,
+			3,
+			&visor.ReadableBlocks{},
+			nil,
+			&visor.ReadableBlocks{},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := &FakeGateway{
+				t: t,
+			}
+			gateway.On("GetBlocks", tc.start, tc.end).Return(tc.gatewayGetBlocksResult, tc.gatewayGetBlocksError)
+			v := url.Values{}
+			var urlFull = tc.url
+			if tc.body != nil {
+				if tc.body.Start != "" {
+					v.Add("start", tc.body.Start)
+				}
+				if tc.body.End != "" {
+					v.Add("end", tc.body.End)
+				}
+			}
+			if len(v) > 0 {
+				urlFull += "?" + v.Encode()
+			}
+
+			req, err := http.NewRequest(tc.method, urlFull, nil)
+			require.NoError(t, err)
+
+			rr := httptest.NewRecorder()
+			handler := http.HandlerFunc(getBlocks(gateway))
+
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
+
+			if status != http.StatusOK {
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+			} else {
+				var msg *visor.ReadableBlocks
+				err = json.Unmarshal(rr.Body.Bytes(), &msg)
+				require.NoError(t, err)
+				require.Equal(t, tc.response, msg)
+			}
+		})
+	}
+}
+
 
 func TestGetLastBlocks(t *testing.T) {
 	type httpBody struct {

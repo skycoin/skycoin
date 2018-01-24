@@ -53,6 +53,12 @@ func (gw *FakeGateway) UpdateWalletLabel(wltID, label string) error {
 	return args.Error(0)
 }
 
+// NewAddresses generate addresses in given wallet
+func (gw *FakeGateway) GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTxn, error) {
+	args := gw.Called(wltID)
+	return args.Get(0).([]visor.UnconfirmedTxn), args.Error(1)
+}
+
 func TestWalletSpendHandler(t *testing.T) {
 	type httpBody struct {
 		WalletID string

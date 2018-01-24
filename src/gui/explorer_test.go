@@ -13,9 +13,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
+	"github.com/stretchr/testify/mock"
 )
 
 // GetAddressTxns returns a *visor.TransactionResults
@@ -29,6 +31,13 @@ func (gw *FakeGateway) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) 
 	args := gw.Called(id)
 	return args.Get(0).(*historydb.UxOut), args.Error(1)
 
+}
+
+// GetUnspentOutputs gets unspent outputs and returns the filtered results,
+// Note: all filters will be executed as the pending sequence in 'AND' mode.
+func (gw *FakeGateway) GetUnspentOutputs(filters ...daemon.OutputsFilter) (visor.ReadableOutputSet, error) {
+	args := gw.Called(filters)
+	return args.Get(0).(visor.ReadableOutputSet), args.Error(1)
 }
 
 func TestGetTransactionsForAddress(t *testing.T) {
@@ -247,6 +256,129 @@ func TestGetTransactionsForAddress(t *testing.T) {
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				var msg []ReadableTransaction
+				err := json.Unmarshal(rr.Body.Bytes(), &msg)
+				require.NoError(t, err)
+				require.Equal(t, tc.result, msg)
+			}
+		})
+	}
+}
+
+func TestCoinSupply(t *testing.T) {
+	unlockedAddrs := visor.GetUnlockedDistributionAddresses()
+
+	filterInUnlocked := []daemon.OutputsFilter{}
+	filterInUnlocked = append(filterInUnlocked, daemon.FbyAddresses(unlockedAddrs))
+	tt := []struct {
+		name                           string
+		method                         string
+		url                            string
+		status                         int
+		err                            string
+		gatewayGetUnspentOutputsArg    []daemon.OutputsFilter
+		gatewayGetUnspentOutputsResult visor.ReadableOutputSet
+		gatewayGetUnspentOutputsErr    error
+		result                         []ReadableTransaction
+	}{
+		{
+			"405",
+			http.MethodPost,
+			"/coinSupply",
+			http.StatusMethodNotAllowed,
+			"405 Method Not Allowed",
+			[]daemon.OutputsFilter{},
+			visor.ReadableOutputSet{},
+			nil,
+			nil,
+		},
+		{
+			"500 - gatewayGetUnspentOutputsErr",
+			http.MethodGet,
+			"/coinSupply",
+			http.StatusInternalServerError,
+			"500 Internal Server Error",
+			filterInUnlocked,
+			visor.ReadableOutputSet{},
+			errors.New("gatewayGetUnspentOutputsErr"),
+			nil,
+		},
+		{
+			"500 - gatewayGetUnspentOutputsErr",
+			http.MethodGet,
+			"/coinSupply",
+			http.StatusInternalServerError,
+			"500 Internal Server Error",
+			filterInUnlocked,
+			visor.ReadableOutputSet{},
+			errors.New("gatewayGetUnspentOutputsErr"),
+			nil,
+		},
+		{
+			"500 - too large HeadOutputs item",
+			http.MethodGet,
+			"/coinSupply",
+			http.StatusInternalServerError,
+			"500 Internal Server Error",
+			filterInUnlocked,
+			visor.ReadableOutputSet{
+				HeadOutputs: visor.ReadableOutputs{
+					visor.ReadableOutput{
+						Coins: "9223372036854775807",
+					},
+					visor.ReadableOutput{
+						Coins: "1",
+					},
+				},
+			},
+			nil,
+			nil,
+		},
+		{
+			"200",
+			http.MethodGet,
+			"/coinSupply",
+			http.StatusOK,
+			"",
+			filterInUnlocked,
+			visor.ReadableOutputSet{
+				HeadOutputs: visor.ReadableOutputs{
+					visor.ReadableOutput{
+						Coins:"0",
+						//Coins: "9223372036854",
+					},
+					visor.ReadableOutput{
+						Coins:"0",
+					},
+				},
+			},
+			nil,
+			nil,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := &FakeGateway{
+				t: t,
+			}
+			gateway.On("GetUnspentOutputs", mock.Anything).Return(tc.gatewayGetUnspentOutputsResult, tc.gatewayGetUnspentOutputsErr)
+
+			req, err := http.NewRequest(tc.method, tc.url, nil)
+			require.NoError(t, err)
+
+			rr := httptest.NewRecorder()
+			handler := http.HandlerFunc(getCoinSupply(gateway))
+
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
+
+			if status != http.StatusOK {
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+			} else {
+				var msg CoinSupply
 				err := json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.result, msg)

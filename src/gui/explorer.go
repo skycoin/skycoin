@@ -48,7 +48,7 @@ type CoinSupply struct {
 	LockedAddresses []string `json:"locked_distribution_addresses"`
 }
 
-func getCoinSupply(gateway *daemon.Gateway) http.HandlerFunc {
+func getCoinSupply(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		supply, _ := coinSupply(gateway, w, r)
 		if supply != nil {
@@ -67,7 +67,7 @@ func getEffectiveOutputs(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-func coinSupply(gateway *daemon.Gateway, w http.ResponseWriter, r *http.Request) (*CoinSupply, *DeprecatedCoinSupply) {
+func coinSupply(gateway Gatewayer, w http.ResponseWriter, r *http.Request) (*CoinSupply, *DeprecatedCoinSupply) {
 	if r.Method != http.MethodGet {
 		wh.Error405(w)
 		return nil, nil

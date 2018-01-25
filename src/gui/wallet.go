@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/skycoin/skycoin/src/cipher"
-
 	"github.com/skycoin/skycoin/src/cipher/go-bip39"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/visor"

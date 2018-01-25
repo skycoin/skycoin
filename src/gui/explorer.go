@@ -219,7 +219,7 @@ func getTransactionsForAddress(gateway Gatewayer) http.HandlerFunc {
 
 // method: GET
 // url: /richlist?n=${number}&include-distribution=${bool}
-func getRichlist(gateway *daemon.Gateway) http.HandlerFunc {
+func getRichlist(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)

@@ -26,4 +26,5 @@ type Gatewayer interface {
 	GetBlocks(start, end uint64) (*visor.ReadableBlocks, error)
 	GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error)
 	GetUnspentOutputs(filters ...daemon.OutputsFilter) (visor.ReadableOutputSet, error)
+	GetRichlist(includeDistribution bool) (visor.Richlist, error)
 }

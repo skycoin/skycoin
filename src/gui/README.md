@@ -196,7 +196,9 @@ result:
 
 ```json
 {
-    "address": "TDdQmMgbEVTwLe8EAiH2AoRc4SjoEFKrHB"
+    "addresses": [
+        "TDdQmMgbEVTwLe8EAiH2AoRc4SjoEFKrHB"
+    ]
 }
 ```
 

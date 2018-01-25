@@ -192,7 +192,7 @@ func NewSkyCoinTestNetwork(nodesNum int) SkyCoinTestNetwork {
 						IPv4Address: ipAddress,
 					}},
 			}
-			t.Peers = append(t.Peers, ipAddress+"6000")
+			t.Peers = append(t.Peers, ipAddress+":6000")
 			ipHostNum++
 		}
 		s.SkyCoinParameters = append(s.SkyCoinParameters, commonParameters...)
@@ -227,17 +227,23 @@ func (t *SkyCoinTestNetwork) prepareTestEnv() string {
 		s.CreateDockerFile(tempDir)
 	}
 	peersText := []byte(strings.Join(t.Peers, "\n"))
-	f, err := os.Create(path.Join(tempDir, "peers.txt"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	_, err = f.Write(peersText)
-	if err != nil {
-		log.Fatal(err)
-	}
-	f.Close()
-	if err != nil {
-		log.Fatal(err)
+	for k, _ := range t.Compose.Services {
+		err := os.Mkdir(path.Join(tempDir, k), os.ModePerm)
+		if err != nil {
+			log.Fatal(err)
+		}
+		f, err := os.Create(path.Join(tempDir, k, "peers.txt"))
+		if err != nil {
+			log.Fatal(err)
+		}
+		_, err = f.Write(peersText)
+		if err != nil {
+			log.Fatal(err)
+		}
+		f.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 	return tempDir
 }

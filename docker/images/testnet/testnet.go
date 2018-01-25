@@ -3,20 +3,29 @@ package main
 
 import (
 	//"bufio"
-	//"fmt"
+	"fmt"
 	"gopkg.in/yaml.v2"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"path"
 	"strconv"
+	"strings"
 	"text/template"
 )
 
+// SkyCoinTestNetwork encapsulates the test data and functionality
+type SkyCoinTestNetwork struct {
+	Compose  dockerCompose
+	Services []dockerService
+	Peers    []string
+}
+
 type dockerService struct {
 	SkyCoinParameters []string
-	Image             string
-	Tag               string
+	ImageName         string
+	ImageTag          string
 	NodesNum          int
 }
 
@@ -63,7 +72,7 @@ func GetCurrentGitCommit() string {
 
 // CreateDockerFile makes the Dockerfiles needed to build the images
 // for the testnet
-func (d *dockerService) CreateDockerFile() {
+func (d *dockerService) CreateDockerFile(tempDir string) {
 	dockerfileTemplate := path.Join("templates", "Dockerfile")
 	_, err := os.Stat(dockerfileTemplate)
 	if err != nil {
@@ -71,7 +80,7 @@ func (d *dockerService) CreateDockerFile() {
 		return
 	}
 	buildTemplate, err := template.ParseFiles(dockerfileTemplate)
-	f, err := os.Create("Dockerfile-" + d.Image)
+	f, err := os.Create(path.Join(tempDir, "Dockerfile-"+d.ImageName))
 	if err != nil {
 		log.Print(err)
 		return
@@ -127,8 +136,9 @@ func (d *DockerService) BuildImage() {
 }
 */
 
-// Configure generates a Dockerfile with the passed parameters
-func Configure(nodesNum int) {
+// NewSkyCoinTestNetwork is the SkyCoinTestNetwork factory function
+func NewSkyCoinTestNetwork(nodesNum int) SkyCoinTestNetwork {
+	t := SkyCoinTestNetwork{}
 	ipHostNum := 1
 	networkAddr := "172.16.200."
 	commonParameters := []string{
@@ -137,25 +147,25 @@ func Configure(nodesNum int) {
 	}
 	currentCommit := GetCurrentGitCommit()
 	networkName := "skycoin-" + currentCommit
-	nodes := [2]dockerService{
+	t.Services = []dockerService{
 		dockerService{
-			Image: "skycoin-gui",
+			ImageName: "skycoin-gui",
 			SkyCoinParameters: []string{
 				"--web-interface-addr=0.0.0.0",
 			},
-			Tag:      currentCommit,
+			ImageTag: currentCommit,
 			NodesNum: 1,
 		},
 		dockerService{
-			Image: "skycoin-nogui",
+			ImageName: "skycoin-nogui",
 			SkyCoinParameters: []string{
 				"--web-interface=false",
 			},
-			Tag:      currentCommit,
+			ImageTag: currentCommit,
 			NodesNum: nodesNum,
 		},
 	}
-	compose := dockerCompose{
+	t.Compose = dockerCompose{
 		Version:  3,
 		Services: make(map[string]service),
 		Networks: map[string]network{
@@ -170,39 +180,77 @@ func Configure(nodesNum int) {
 			},
 		},
 	}
-	for _, d := range nodes {
-		for i := 1; i <= d.NodesNum; i++ {
+	for _, s := range t.Services {
+		for i := 1; i <= s.NodesNum; i++ {
 			num := strconv.Itoa(ipHostNum)
-			compose.Services["skycoin-"+num] = service{
-				Image: d.Image + ":" + d.Tag,
+			ipAddress := networkAddr + num
+			serviceName := "skycoin-" + num
+			t.Compose.Services[serviceName] = service{
+				Image: s.ImageName + ":" + s.ImageTag,
 				Networks: map[string]serviceNetwork{
 					string(networkName): serviceNetwork{
-						IPv4Address: networkAddr + num,
+						IPv4Address: ipAddress,
 					}},
 			}
+			t.Peers = append(t.Peers, ipAddress+"6000")
 			ipHostNum++
 		}
-		d.SkyCoinParameters = append(d.SkyCoinParameters, commonParameters...)
-		d.CreateDockerFile()
-		//d.BuildImage()
+		s.SkyCoinParameters = append(s.SkyCoinParameters, commonParameters...)
 	}
-	text, err := yaml.Marshal(compose)
-	if err != nil {
-		log.Fatal(err)
-	}
-	_, err = os.Stdout.Write(text)
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
+	return t
 }
+func (t *SkyCoinTestNetwork) createComposeFile(tempDir string) {
+	text, err := yaml.Marshal(t.Compose)
+	if err != nil {
+		log.Fatal(err)
+	}
+	f, err := os.Create(path.Join(tempDir, "docker-compose.yml"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = f.Write(text)
+	if err != nil {
+		log.Fatal(err)
+	}
+	f.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-// GenerateDockerCompose generates the compose YAML file.
-func GenerateDockerCompose(nodesNum int, commit string) {
+}
+func (t *SkyCoinTestNetwork) prepareTestEnv() string {
+	tempDir, err := ioutil.TempDir("", "skycointest")
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, s := range t.Services {
+		s.CreateDockerFile(tempDir)
+	}
+	peersText := []byte(strings.Join(t.Peers, "\n"))
+	f, err := os.Create(path.Join(tempDir, "peers.txt"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = f.Write(peersText)
+	if err != nil {
+		log.Fatal(err)
+	}
+	f.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return tempDir
 }
 
 func main() {
-	//	ConfigureNodes()
-	GenerateDockerCompose(10, "0f4e23")
-	Configure(15)
+	testNet := NewSkyCoinTestNetwork(10)
+	tempDir := testNet.prepareTestEnv()
+	testNet.createComposeFile(tempDir)
+	/*
+		err := os.RemoveAll(tempDir)
+		if err != nil {
+			log.Fatal(err)
+		}
+	*/
+	fmt.Println(tempDir)
 }

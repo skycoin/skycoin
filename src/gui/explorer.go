@@ -269,7 +269,7 @@ func getRichlist(gateway Gatewayer) http.HandlerFunc {
 
 // method: GET
 // url: /addresscount
-func getAddressCount(gateway *daemon.Gateway) http.HandlerFunc {
+func getAddressCount(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)

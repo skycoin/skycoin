@@ -27,4 +27,5 @@ type Gatewayer interface {
 	GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error)
 	GetUnspentOutputs(filters ...daemon.OutputsFilter) (visor.ReadableOutputSet, error)
 	GetRichlist(includeDistribution bool) (visor.Richlist, error)
+	GetAddressCount() (uint64, error)
 }

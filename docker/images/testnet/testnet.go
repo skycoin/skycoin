@@ -47,14 +47,14 @@ type networkIpamConfig struct {
 }
 type networkIpam struct {
 	Driver string
-	Config networkIpamConfig
+	Config []networkIpamConfig
 }
 type network struct {
 	Driver string
 	Ipam   networkIpam
 }
 type dockerCompose struct {
-	Version  int
+	Version  string
 	Services map[string]service
 	Networks map[string]network
 }
@@ -173,15 +173,15 @@ func NewSkyCoinTestNetwork(nodesNum int, buildContext string, tempDir string) Sk
 		},
 	}
 	t.Compose = dockerCompose{
-		Version:  3,
+		Version:  "3",
 		Services: make(map[string]service),
 		Networks: map[string]network{
 			string(networkName): network{
 				Driver: "bridge",
 				Ipam: networkIpam{
 					Driver: "default",
-					Config: networkIpamConfig{
-						Subnet: networkAddr + "0/24",
+					Config: []networkIpamConfig{
+						networkIpamConfig{Subnet: networkAddr + "0/24"},
 					},
 				},
 			},

@@ -145,7 +145,7 @@ func (d *DockerService) BuildImage() {
 // NewSkyCoinTestNetwork is the SkyCoinTestNetwork factory function
 func NewSkyCoinTestNetwork(nodesNum int, buildContext string, tempDir string) SkyCoinTestNetwork {
 	t := SkyCoinTestNetwork{}
-	ipHostNum := 1
+	ipHostNum := 2
 	networkAddr := "172.16.200."
 	commonParameters := []string{
 		"--launch-browser=false",
@@ -159,6 +159,7 @@ func NewSkyCoinTestNetwork(nodesNum int, buildContext string, tempDir string) Sk
 			ImageName: "skycoin-gui",
 			SkyCoinParameters: []string{
 				"--web-interface-addr=0.0.0.0",
+				"--master",
 			},
 			ImageTag: currentCommit,
 			NodesNum: 1,
@@ -187,7 +188,7 @@ func NewSkyCoinTestNetwork(nodesNum int, buildContext string, tempDir string) Sk
 			},
 		},
 	}
-	for _, s := range t.Services {
+	for idx, s := range t.Services {
 		for i := 1; i <= s.NodesNum; i++ {
 			num := strconv.Itoa(ipHostNum)
 			ipAddress := networkAddr + num
@@ -210,7 +211,7 @@ func NewSkyCoinTestNetwork(nodesNum int, buildContext string, tempDir string) Sk
 			t.Peers = append(t.Peers, ipAddress+":6000")
 			ipHostNum++
 		}
-		s.SkyCoinParameters = append(s.SkyCoinParameters, commonParameters...)
+		t.Services[idx].SkyCoinParameters = append(t.Services[idx].SkyCoinParameters, commonParameters...)
 	}
 	return t
 }

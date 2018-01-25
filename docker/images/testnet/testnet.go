@@ -2,8 +2,8 @@
 package main
 
 import (
-	"bufio"
-	"fmt"
+	//"bufio"
+	//"fmt"
 	"gopkg.in/yaml.v2"
 	"log"
 	"os"
@@ -13,11 +13,35 @@ import (
 	"text/template"
 )
 
-// DockerFile object to generate dockerfiles.
-type DockerFile struct {
+type dockerService struct {
 	SkyCoinParameters []string
-	NodeType          string
-	GitCommit         string
+	Image             string
+	Tag               string
+	NodesNum          int
+}
+
+type serviceNetwork struct {
+	IPv4Address string `yaml:"ipv4_address"`
+}
+type service struct {
+	Image    string
+	Networks map[string]serviceNetwork
+}
+type networkIpamConfig struct {
+	Subnet string
+}
+type networkIpam struct {
+	Driver string
+	Config networkIpamConfig
+}
+type network struct {
+	Driver string
+	Ipam   networkIpam
+}
+type dockerCompose struct {
+	Version  int
+	Services map[string]service
+	Networks map[string]network
 }
 
 // GetCurrentGitCommit returns the current git commit SHA
@@ -39,7 +63,7 @@ func GetCurrentGitCommit() string {
 
 // CreateDockerFile makes the Dockerfiles needed to build the images
 // for the testnet
-func (d *DockerFile) CreateDockerFile() {
+func (d *dockerService) CreateDockerFile() {
 	dockerfileTemplate := path.Join("templates", "Dockerfile")
 	_, err := os.Stat(dockerfileTemplate)
 	if err != nil {
@@ -47,7 +71,7 @@ func (d *DockerFile) CreateDockerFile() {
 		return
 	}
 	buildTemplate, err := template.ParseFiles(dockerfileTemplate)
-	f, err := os.Create("Dockerfile-" + d.NodeType)
+	f, err := os.Create("Dockerfile-" + d.Image)
 	if err != nil {
 		log.Print(err)
 		return
@@ -60,8 +84,9 @@ func (d *DockerFile) CreateDockerFile() {
 	f.Close()
 }
 
+/*
 // BuildImage builds the node docker image
-func (d *DockerFile) BuildImage() {
+func (d *DockerService) BuildImage() {
 	cmdName := "docker"
 	imageTag := "skycoin-" + d.NodeType + ":" + d.GitCommit
 	dockerFile := "Dockerfile-" + d.NodeType
@@ -100,98 +125,84 @@ func (d *DockerFile) BuildImage() {
 	}
 	os.Remove(dockerFile)
 }
+*/
 
-// ConfigureNodes generates a Dockerfile with the passed parameters
-func ConfigureNodes() {
+// Configure generates a Dockerfile with the passed parameters
+func Configure(nodesNum int) {
+	ipHostNum := 1
+	networkAddr := "172.16.200."
 	commonParameters := []string{
 		"--launch-browser=false",
 		"--gui-dir=/usr/local/skycoin/static",
 	}
 	currentCommit := GetCurrentGitCommit()
-	nodes := [2]DockerFile{
-		DockerFile{
-			NodeType: "gui",
+	networkName := "skycoin-" + currentCommit
+	nodes := [2]dockerService{
+		dockerService{
+			Image: "skycoin-gui",
 			SkyCoinParameters: []string{
 				"--web-interface-addr=0.0.0.0",
 			},
-			GitCommit: currentCommit,
+			Tag:      currentCommit,
+			NodesNum: 1,
 		},
-		DockerFile{
-			NodeType: "nogui",
+		dockerService{
+			Image: "skycoin-nogui",
 			SkyCoinParameters: []string{
 				"--web-interface=false",
 			},
-			GitCommit: currentCommit,
+			Tag:      currentCommit,
+			NodesNum: nodesNum,
 		},
 	}
-	for _, d := range nodes {
-		d.SkyCoinParameters = append(d.SkyCoinParameters, commonParameters...)
-		d.CreateDockerFile()
-		d.BuildImage()
-	}
-}
-
-// GenerateDockerCompose generates the compose YAML file.
-func GenerateDockerCompose(nodesNum int, commit string) {
-	type ServiceNetwork struct {
-		IPv4Address string `yaml:"ipv4_address"`
-	}
-	type Service struct {
-		Image    string
-		Networks map[string]ServiceNetwork
-	}
-	type NetworkIpamConfig struct {
-		Subnet string
-	}
-	type NetworkIpam struct {
-		Driver string
-		Config NetworkIpamConfig
-	}
-	type Network struct {
-		Driver string
-		Ipam   NetworkIpam
-	}
-	type DockerCompose struct {
-		Version  int
-		Services map[string]Service
-		Networks map[string]Network
-	}
-
-	network := "skycoin-" + commit
-	compose := DockerCompose{
+	compose := dockerCompose{
 		Version:  3,
-		Services: make(map[string]Service),
-		Networks: map[string]Network{
-			string(network): Network{
+		Services: make(map[string]service),
+		Networks: map[string]network{
+			string(networkName): network{
 				Driver: "bridge",
-				Ipam: NetworkIpam{
+				Ipam: networkIpam{
 					Driver: "default",
-					Config: NetworkIpamConfig{
-						Subnet: "172.16.200.0/24",
+					Config: networkIpamConfig{
+						Subnet: networkAddr + "0/24",
 					},
 				},
 			},
 		},
 	}
-	for i := 1; i <= nodesNum; i++ {
-		num := strconv.Itoa(i)
-		compose.Services["skycoin-"+num] = Service{
-			Image: "skycoin:" + commit,
-			Networks: map[string]ServiceNetwork{
-				string(network): ServiceNetwork{
-					IPv4Address: "172.16.200." + num,
-				}},
+	for _, d := range nodes {
+		for i := 1; i <= d.NodesNum; i++ {
+			num := strconv.Itoa(ipHostNum)
+			compose.Services["skycoin-"+num] = service{
+				Image: d.Image + ":" + d.Tag,
+				Networks: map[string]serviceNetwork{
+					string(networkName): serviceNetwork{
+						IPv4Address: networkAddr + num,
+					}},
+			}
+			ipHostNum++
 		}
+		d.SkyCoinParameters = append(d.SkyCoinParameters, commonParameters...)
+		d.CreateDockerFile()
+		//d.BuildImage()
 	}
 	text, err := yaml.Marshal(compose)
 	if err != nil {
 		log.Fatal(err)
-		return
 	}
 	_, err = os.Stdout.Write(text)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+}
+
+// GenerateDockerCompose generates the compose YAML file.
+func GenerateDockerCompose(nodesNum int, commit string) {
 }
 
 func main() {
 	//	ConfigureNodes()
 	GenerateDockerCompose(10, "0f4e23")
+	Configure(15)
 }

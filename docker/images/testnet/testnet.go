@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"text/template"
@@ -17,24 +18,29 @@ import (
 
 // SkyCoinTestNetwork encapsulates the test data and functionality
 type SkyCoinTestNetwork struct {
-	Compose  dockerCompose
-	Services []dockerService
-	Peers    []string
+	Compose      dockerCompose
+	Services     []dockerService
+	Peers        []string
+	BuildContext string
 }
-
 type dockerService struct {
 	SkyCoinParameters []string
 	ImageName         string
 	ImageTag          string
 	NodesNum          int
 }
-
+type serviceBuild struct {
+	Context    string
+	Dockerfile string
+}
 type serviceNetwork struct {
 	IPv4Address string `yaml:"ipv4_address"`
 }
 type service struct {
 	Image    string
+	Build    serviceBuild
 	Networks map[string]serviceNetwork
+	Volumes  []string
 }
 type networkIpamConfig struct {
 	Subnet string
@@ -137,7 +143,7 @@ func (d *DockerService) BuildImage() {
 */
 
 // NewSkyCoinTestNetwork is the SkyCoinTestNetwork factory function
-func NewSkyCoinTestNetwork(nodesNum int) SkyCoinTestNetwork {
+func NewSkyCoinTestNetwork(nodesNum int, buildContext string, tempDir string) SkyCoinTestNetwork {
 	t := SkyCoinTestNetwork{}
 	ipHostNum := 1
 	networkAddr := "172.16.200."
@@ -147,6 +153,7 @@ func NewSkyCoinTestNetwork(nodesNum int) SkyCoinTestNetwork {
 	}
 	currentCommit := GetCurrentGitCommit()
 	networkName := "skycoin-" + currentCommit
+	t.BuildContext = buildContext
 	t.Services = []dockerService{
 		dockerService{
 			ImageName: "skycoin-gui",
@@ -185,12 +192,20 @@ func NewSkyCoinTestNetwork(nodesNum int) SkyCoinTestNetwork {
 			num := strconv.Itoa(ipHostNum)
 			ipAddress := networkAddr + num
 			serviceName := "skycoin-" + num
+			dockerfile := path.Join(tempDir, "Dockerfile-"+s.ImageName)
+			dataDir := path.Join(tempDir, serviceName)
 			t.Compose.Services[serviceName] = service{
 				Image: s.ImageName + ":" + s.ImageTag,
+				Build: serviceBuild{
+					Context:    t.BuildContext,
+					Dockerfile: dockerfile,
+				},
 				Networks: map[string]serviceNetwork{
 					string(networkName): serviceNetwork{
 						IPv4Address: ipAddress,
-					}},
+					},
+				},
+				Volumes: []string{dataDir + ":/root/.skycoin"},
 			}
 			t.Peers = append(t.Peers, ipAddress+":6000")
 			ipHostNum++
@@ -218,16 +233,12 @@ func (t *SkyCoinTestNetwork) createComposeFile(tempDir string) {
 	}
 
 }
-func (t *SkyCoinTestNetwork) prepareTestEnv() string {
-	tempDir, err := ioutil.TempDir("", "skycointest")
-	if err != nil {
-		log.Fatal(err)
-	}
+func (t *SkyCoinTestNetwork) prepareTestEnv(tempDir string) {
 	for _, s := range t.Services {
 		s.CreateDockerFile(tempDir)
 	}
 	peersText := []byte(strings.Join(t.Peers, "\n"))
-	for k, _ := range t.Compose.Services {
+	for k := range t.Compose.Services {
 		err := os.Mkdir(path.Join(tempDir, k), os.ModePerm)
 		if err != nil {
 			log.Fatal(err)
@@ -245,12 +256,19 @@ func (t *SkyCoinTestNetwork) prepareTestEnv() string {
 			log.Fatal(err)
 		}
 	}
-	return tempDir
 }
 
 func main() {
-	testNet := NewSkyCoinTestNetwork(10)
-	tempDir := testNet.prepareTestEnv()
+	buildContext, err := filepath.Abs("../../../")
+	tempDir, err := ioutil.TempDir("", "skycointest")
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
+	testNet := NewSkyCoinTestNetwork(10, buildContext, tempDir)
+	testNet.prepareTestEnv(tempDir)
 	testNet.createComposeFile(tempDir)
 	/*
 		err := os.RemoveAll(tempDir)

@@ -2,8 +2,9 @@
 package main
 
 import (
-	//"bufio"
+	"bufio"
 	"fmt"
+	"github.com/skycoin/skycoin/src/cipher"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
@@ -12,7 +13,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
-	"strings"
+	//"strings"
 	"text/template"
 )
 
@@ -99,18 +100,11 @@ func (d *dockerService) CreateDockerFile(tempDir string) {
 	f.Close()
 }
 
-/*
 // BuildImage builds the node docker image
-func (d *DockerService) BuildImage() {
-	cmdName := "docker"
-	imageTag := "skycoin-" + d.NodeType + ":" + d.GitCommit
-	dockerFile := "Dockerfile-" + d.NodeType
-	cmdArgs := []string{
-		"build",
-		"-f", dockerFile,
-		"-t", imageTag,
-		"../../../",
-	}
+func runTest(tempDir string) {
+	cmdName := "docker-compose"
+	composeFile := path.Join(tempDir, "docker-compose.yml")
+	cmdArgs := []string{"-f", composeFile, "up"}
 	cmd := exec.Command(cmdName, cmdArgs...)
 	cmdReader, err := cmd.StdoutPipe()
 	if err != nil {
@@ -121,11 +115,9 @@ func (d *DockerService) BuildImage() {
 	scanner := bufio.NewScanner(cmdReader)
 	go func() {
 		for scanner.Scan() {
-			fmt.Printf("docker build out | %s\n", scanner.Text())
+			fmt.Printf("%s\n", scanner.Text())
 		}
 	}()
-
-	fmt.Println("Building " + imageTag)
 
 	err = cmd.Start()
 	if err != nil {
@@ -138,18 +130,27 @@ func (d *DockerService) BuildImage() {
 		fmt.Fprintln(os.Stderr, "Error waiting for Cmd", err)
 		os.Exit(1)
 	}
-	os.Remove(dockerFile)
+	fmt.Println("Cleaning up...")
+	cmdArgs = []string{"-f", composeFile, "down"}
+	err = os.RemoveAll(tempDir)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("Done.")
 }
-*/
 
 // NewSkyCoinTestNetwork is the SkyCoinTestNetwork factory function
 func NewSkyCoinTestNetwork(nodesNum int, buildContext string, tempDir string) SkyCoinTestNetwork {
 	t := SkyCoinTestNetwork{}
+	pubKey, secKey := cipher.GenerateKeyPair()
 	ipHostNum := 2
 	networkAddr := "172.16.200."
 	commonParameters := []string{
 		"--launch-browser=false",
 		"--gui-dir=/usr/local/skycoin/static",
+		"--peerlist-url=http://172.16.200.1/peers.txt",
+		"--download-peerlist",
+		"--master-public-key=" + pubKey.Hex(),
 	}
 	currentCommit := GetCurrentGitCommit()
 	networkName := "skycoin-" + currentCommit
@@ -160,8 +161,7 @@ func NewSkyCoinTestNetwork(nodesNum int, buildContext string, tempDir string) Sk
 			SkyCoinParameters: []string{
 				"--web-interface-addr=0.0.0.0",
 				"--master",
-				"--master-secret-key=47f7616ea6f9b923076625b4488115de1ef1187f760e65f89eb6f4f7ff04b012",
-				"--master-public-key=03fe43d0c2c3daab30f9472beb5b767be020b81c7cc940ed7a7e910f0c1d9feef1",
+				"--master-secret-key=" + secKey.Hex(),
 			},
 			ImageTag: currentCommit,
 			NodesNum: 1,
@@ -240,24 +240,26 @@ func (t *SkyCoinTestNetwork) prepareTestEnv(tempDir string) {
 	for _, s := range t.Services {
 		s.CreateDockerFile(tempDir)
 	}
-	peersText := []byte(strings.Join(t.Peers, "\n"))
+	//peersText := []byte(strings.Join(t.Peers, "\n"))
 	for k := range t.Compose.Services {
 		err := os.Mkdir(path.Join(tempDir, k), os.ModePerm)
 		if err != nil {
 			log.Fatal(err)
 		}
-		f, err := os.Create(path.Join(tempDir, k, "peers.txt"))
-		if err != nil {
-			log.Fatal(err)
-		}
-		_, err = f.Write(peersText)
-		if err != nil {
-			log.Fatal(err)
-		}
-		f.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
+		/*
+			f, err := os.Create(path.Join(tempDir, k, "peers.txt"))
+			if err != nil {
+				log.Fatal(err)
+			}
+			_, err = f.Write(peersText)
+			if err != nil {
+				log.Fatal(err)
+			}
+			f.Close()
+			if err != nil {
+				log.Fatal(err)
+			}
+		*/
 	}
 }
 
@@ -273,11 +275,6 @@ func main() {
 	testNet := NewSkyCoinTestNetwork(10, buildContext, tempDir)
 	testNet.prepareTestEnv(tempDir)
 	testNet.createComposeFile(tempDir)
-	/*
-		err := os.RemoveAll(tempDir)
-		if err != nil {
-			log.Fatal(err)
-		}
-	*/
+	runTest(tempDir)
 	fmt.Println(tempDir)
 }

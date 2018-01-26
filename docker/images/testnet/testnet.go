@@ -160,6 +160,8 @@ func NewSkyCoinTestNetwork(nodesNum int, buildContext string, tempDir string) Sk
 			SkyCoinParameters: []string{
 				"--web-interface-addr=0.0.0.0",
 				"--master",
+				"--master-secret-key=47f7616ea6f9b923076625b4488115de1ef1187f760e65f89eb6f4f7ff04b012",
+				"--master-public-key=03fe43d0c2c3daab30f9472beb5b767be020b81c7cc940ed7a7e910f0c1d9feef1",
 			},
 			ImageTag: currentCommit,
 			NodesNum: 1,

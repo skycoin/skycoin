@@ -3,6 +3,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"github.com/skycoin/skycoin/src/cipher"
 	"gopkg.in/yaml.v2"
@@ -264,7 +265,10 @@ func (t *SkyCoinTestNetwork) prepareTestEnv(tempDir string) {
 }
 
 func main() {
-	buildContext, err := filepath.Abs("../../../")
+	nodesPtr := flag.Int("-nodes", 5, "Number of nodes to launch.")
+	buildContextPtr := flag.String("-buildcontext", "../../../", "Docker build context (source code root).")
+	flag.Parse()
+	buildContext, err := filepath.Abs(*buildContextPtr)
 	tempDir, err := ioutil.TempDir("", "skycointest")
 	if err != nil {
 		log.Fatal(err)
@@ -272,9 +276,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	testNet := NewSkyCoinTestNetwork(10, buildContext, tempDir)
+	testNet := NewSkyCoinTestNetwork(*nodesPtr, buildContext, tempDir)
 	testNet.prepareTestEnv(tempDir)
 	testNet.createComposeFile(tempDir)
 	runTest(tempDir)
-	fmt.Println(tempDir)
 }

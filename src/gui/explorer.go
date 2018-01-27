@@ -195,7 +195,13 @@ func getTransactionsForAddress(gateway Gatewayer) http.HandlerFunc {
 					return
 				}
 
-				in[i] = visor.NewReadableTransactionInput(tx.Transaction.In[i], uxout.Out.Body.Address.String())
+				tIn, err := visor.NewReadableTransactionInput(tx.Transaction.In[i], uxout.Out.Body.Address.String(), uxout.Out.Body.Coins, uxout.Out.Body.Hours)
+				if err != nil {
+					wh.Error500(w)
+					return
+				}
+
+				in[i] = *tIn
 			}
 
 			resTxs = append(resTxs, NewReadableTransaction(tx, in))

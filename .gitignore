@@ -103,6 +103,9 @@ electron/.standalone_output
 
 .vscode/
 
+*.swp
+*.swo
+
 src/mesh/TODO
 
 .idea/

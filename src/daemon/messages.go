@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
+	"reflect"
 	"strings"
 
 	"github.com/skycoin/skycoin/src/daemon/gnet"
@@ -52,6 +53,7 @@ func getMessageConfigs() []MessageConfig {
 		NewMessageConfig("GETT", GetTxnsMessage{}),
 		NewMessageConfig("GIVT", GiveTxnsMessage{}),
 		NewMessageConfig("ANNT", AnnounceTxnsMessage{}),
+		NewMessageConfig("RJCT", RejectMessage{}),
 	}
 }
 
@@ -378,4 +380,49 @@ func (pong *PongMessage) Handle(mc *gnet.MessageContext, daemon interface{}) err
 		logger.Debug("Received pong from %s", mc.Addr)
 	}
 	return nil
+}
+
+// RejectMessage a RejectMessage is sent to inform peers of
+// a protocol failure. Whenever possible the node should
+// send back data useful for peer recovery, especially
+// before disconnecting it
+//
+// Must never Reject a Reject message (infinite loop)
+type RejectMessage struct {
+	// Prefix of the (previous) message that's been rejected
+	TargetPrefix gnet.MessagePrefix
+	// Error code
+	ErrorCode uint8
+	// Reason message. Included only in very particular cases
+	Reason string
+	// Extra data
+	Data interface{}
+
+	c *gnet.MessageContext `enc:"-"`
+}
+
+func NewRejectMessage(msg interface{}, err error, reason string, data interface{}) *RejectMessage {
+	t := reflect.TypeOf(msg)
+	prefix, exists := gnet.MessageIDMap[t]
+	if !exists {
+		logger.Panicf("Rejecting unknown message type %s", t)
+	}
+
+	// TODO: Return RejectMessage instance
+	return &RejectMessage{
+		TargetPrefix: prefix,
+		ErrorCode:    0,
+		Reason:       "",
+		Data:         make([]byte, 0)}
+}
+
+// Process an event queued by Handle()
+func (msg *RejectMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
+	msg.c = mc
+	return daemon.(*Daemon).recordMessageEvent(msg, mc)
+}
+
+// Process Recover from message rejection state
+func (msg *RejectMessage) Process(d *Daemon) {
+	// TODO: Implement
 }

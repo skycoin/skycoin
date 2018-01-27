@@ -13,12 +13,12 @@ import (
 
 var (
 	_sendByteMessage = sendByteMessage
-	_encodeMessage   = encodeMessage
+	_EncodeMessage   = EncodeMessage
 )
 
 func resetHandler() {
 	sendByteMessage = _sendByteMessage
-	encodeMessage = _encodeMessage
+	EncodeMessage = _EncodeMessage
 }
 
 func TestConvertToMessage(t *testing.T) {
@@ -113,14 +113,14 @@ func TestEncodeMessage(t *testing.T) {
 	RegisterMessage(BytePrefix, ByteMessage{})
 	VerifyMessages()
 	m := NewByteMessage(7)
-	b := encodeMessage(m)
+	b := EncodeMessage(m)
 	assert.True(t, bytes.Equal(b, []byte{5, 0, 0, 0, 'B', 'Y', 'T', 'E', 7}))
 }
 
 func TestEncodeMessageUnknownMessage(t *testing.T) {
 	resetHandler()
 	EraseMessages()
-	assert.Panics(t, func() { encodeMessage(&DummyMessage{}) })
+	assert.Panics(t, func() { EncodeMessage(&DummyMessage{}) })
 }
 
 func TestSendByteMessage(t *testing.T) {

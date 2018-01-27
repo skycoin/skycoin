@@ -11,8 +11,6 @@ import (
 
 	"encoding/json"
 
-	"github.com/stretchr/testify/mock"
-
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -22,64 +20,7 @@ import (
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-// Gateway RPC interface wrapper for daemon state
-type FakeGateway struct {
-	mock.Mock
-	walletID string
-	coins    uint64
-	dst      cipher.Address
-	t        *testing.T
-}
-
-func (gw *FakeGateway) Spend(wltID string, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
-	args := gw.Called(wltID, coins, dest)
-	return args.Get(0).(*coin.Transaction), args.Error(1)
-}
-
-// GetWalletBalance returns balance pair of specific wallet
-func (gw *FakeGateway) GetWalletBalance(wltID string) (wallet.BalancePair, error) {
-	args := gw.Called(wltID)
-	return args.Get(0).(wallet.BalancePair), args.Error(1)
-}
-
-// GetWallet returns the wallet by wltID
-func (gw *FakeGateway) GetWallet(wltID string) (wallet.Wallet, error) {
-	args := gw.Called(wltID)
-	return args.Get(0).(wallet.Wallet), args.Error(1)
-}
-
-func (gw *FakeGateway) UpdateWalletLabel(wltID, label string) error {
-	args := gw.Called(wltID, label)
-	return args.Error(0)
-}
-
-// NewAddresses generate addresses in given wallet
-func (gw *FakeGateway) GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTxn, error) {
-	args := gw.Called(wltID)
-	return args.Get(0).([]visor.UnconfirmedTxn), args.Error(1)
-}
-
-// GetWalletBalance returns balance pair of specific wallet
-func (gw *FakeGateway) CreateWallet(wltName string, options wallet.Options) (wallet.Wallet, error) {
-	args := gw.Called(wltName, options)
-	return args.Get(0).(wallet.Wallet), args.Error(1)
-}
-
-func (gw *FakeGateway) ScanAheadWalletAddresses(wltName string, scanN uint64) (wallet.Wallet, error) {
-	args := gw.Called(wltName, scanN)
-	return args.Get(0).(wallet.Wallet), args.Error(1)
-}
-
-// NewAddresses generate addresses in given wallet
-func (gw *FakeGateway) NewAddresses(wltID string, n uint64) ([]cipher.Address, error) {
-	args := gw.Called(wltID, n)
-	return args.Get(0).([]cipher.Address), args.Error(1)
-}
-
-func (gw *FakeGateway) GetWalletDir() (string, error) {
-	args := gw.Called()
-	return args.String(0), args.Error(1)
-}
+const configuredHost = "127.0.0.1:6420"
 
 func TestWalletSpendHandler(t *testing.T) {
 	type httpBody struct {
@@ -91,7 +32,6 @@ func TestWalletSpendHandler(t *testing.T) {
 	tt := []struct {
 		name                          string
 		method                        string
-		url                           string
 		body                          *httpBody
 		status                        int
 		err                           string
@@ -103,284 +43,196 @@ func TestWalletSpendHandler(t *testing.T) {
 		gatewayGetWalletBalanceResult wallet.BalancePair
 		gatewayBalanceErr             error
 		spendResult                   *SpendResult
+		hostHeader                    string
 	}{
 		{
-			"405",
-			http.MethodGet,
-			"/wallet/spend",
-			nil,
-			http.StatusMethodNotAllowed,
-			"405 Method Not Allowed",
-			"0",
-			0,
-			"",
-			nil,
-			nil,
-			wallet.BalancePair{},
-			nil,
-			nil,
+			name:     "405",
+			method:   http.MethodGet,
+			status:   http.StatusMethodNotAllowed,
+			err:      "405 Method Not Allowed",
+			walletID: "0",
 		},
 		{
-			"400 - no walletID",
-			http.MethodPost,
-			"/wallet/spend",
-			&httpBody{},
-			http.StatusBadRequest,
-			"400 Bad Request - missing wallet id",
-			"0",
-			0,
-			"",
-			nil,
-			nil,
-			wallet.BalancePair{},
-			nil,
-			nil,
+			name:     "400 - no walletID",
+			method:   http.MethodPost,
+			body:     &httpBody{},
+			status:   http.StatusBadRequest,
+			err:      "400 Bad Request - missing wallet id",
+			walletID: "0",
 		},
 		{
-			"400 - no dst",
-			http.MethodPost,
-			"/wallet/spend",
-			&httpBody{
+			name:   "400 - no dst",
+			method: http.MethodPost,
+			body: &httpBody{
 				WalletID: "123",
 			},
-			http.StatusBadRequest,
-			"400 Bad Request - missing destination address \"dst\"",
-			"0",
-			0,
-			"",
-			nil,
-			nil,
-			wallet.BalancePair{},
-			nil,
-			nil,
+			status:   http.StatusBadRequest,
+			err:      "400 Bad Request - missing destination address \"dst\"",
+			walletID: "0",
 		},
 		{
-			"400 - bad dst addr",
-			http.MethodPost,
-			"/wallet/spend",
-			&httpBody{
+			name:   "400 - bad dst addr",
+			method: http.MethodPost,
+			body: &httpBody{
 				WalletID: "123",
 				Dst:      " 2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
 			},
-			http.StatusBadRequest,
-			"400 Bad Request - invalid destination address: Invalid base58 character",
-			"0",
-			0,
-			"",
-			nil,
-			nil,
-			wallet.BalancePair{},
-			nil,
-			nil,
+			status:   http.StatusBadRequest,
+			err:      "400 Bad Request - invalid destination address: Invalid base58 character",
+			walletID: "0",
 		},
 		{
-			"400 - no coins",
-			http.MethodPost,
-			"/wallet/spend",
-			&httpBody{
+			name:   "400 - no coins",
+			method: http.MethodPost,
+			body: &httpBody{
 				WalletID: "123",
 				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
 			},
-			http.StatusBadRequest,
-			"400 Bad Request - invalid \"coins\" value",
-			"0",
-			0,
-			"",
-			nil,
-			nil,
-			wallet.BalancePair{},
-			nil,
-			nil,
+			status:   http.StatusBadRequest,
+			err:      "400 Bad Request - invalid \"coins\" value",
+			walletID: "0",
 		},
 		{
-			"400 - coins is string",
-			http.MethodPost,
-			"/wallet/spend",
-			&httpBody{
+			name:   "400 - coins is string",
+			method: http.MethodPost,
+			body: &httpBody{
 				WalletID: "123",
 				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
 				Coins:    "foo",
 			},
-			http.StatusBadRequest,
-			"400 Bad Request - invalid \"coins\" value",
-			"0",
-			0,
-			"",
-			nil,
-			nil,
-			wallet.BalancePair{},
-			nil,
-			nil,
+			status:   http.StatusBadRequest,
+			err:      "400 Bad Request - invalid \"coins\" value",
+			walletID: "0",
 		},
 		{
-			"400 - coins is negative value",
-			http.MethodPost,
-			"/wallet/spend",
-			&httpBody{
+			name:   "400 - coins is negative value",
+			method: http.MethodPost,
+			body: &httpBody{
 				WalletID: "123",
 				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
 				Coins:    "-123",
 			},
-			http.StatusBadRequest,
-			"400 Bad Request - invalid \"coins\" value",
-			"0",
-			0,
-			"",
-			nil,
-			nil,
-			wallet.BalancePair{},
-			nil,
-			nil,
+			status:   http.StatusBadRequest,
+			err:      "400 Bad Request - invalid \"coins\" value",
+			walletID: "0",
 		},
 		{
-			"400 - zero coins",
-			http.MethodPost,
-			"/wallet/spend",
-			&httpBody{
+			name:   "400 - zero coins",
+			method: http.MethodPost,
+			body: &httpBody{
 				WalletID: "123",
 				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
 				Coins:    "0",
 			},
-			http.StatusBadRequest,
-			"400 Bad Request - invalid \"coins\" value, must > 0",
-			"0",
-			0,
-			"",
-			nil,
-			nil,
-			wallet.BalancePair{},
-			nil,
-			nil,
+			status:   http.StatusBadRequest,
+			err:      "400 Bad Request - invalid \"coins\" value, must > 0",
+			walletID: "0",
 		},
 		{
-			"400 - gw spend error txn no fee",
-			http.MethodPost,
-			"/wallet/spend",
-			&httpBody{
+			name:   "400 - gw spend error txn no fee",
+			method: http.MethodPost,
+			body: &httpBody{
 				WalletID: "123",
 				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
 				Coins:    "12",
 			},
-			http.StatusBadRequest,
-			"400 Bad Request - Transaction has zero coinhour fee",
-			"123",
-			12,
-			"2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
-			&coin.Transaction{},
-			fee.ErrTxnNoFee,
-			wallet.BalancePair{},
-			nil,
-			&SpendResult{
+			status:          http.StatusBadRequest,
+			err:             "400 Bad Request - Transaction has zero coinhour fee",
+			walletID:        "123",
+			coins:           12,
+			dst:             "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+			gatewaySpendErr: fee.ErrTxnNoFee,
+			spendResult: &SpendResult{
 				Error: fee.ErrTxnNoFee.Error(),
 			},
 		},
 		{
-			"400 - gw spend error spending unconfirmed",
-			http.MethodPost,
-			"/wallet/spend",
-			&httpBody{
+			name:   "400 - gw spend error spending unconfirmed",
+			method: http.MethodPost,
+			body: &httpBody{
 				WalletID: "123",
 				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
 				Coins:    "12",
 			},
-			http.StatusBadRequest,
-			"400 Bad Request - please spend after your pending transaction is confirmed",
-			"123",
-			12,
-			"2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
-			&coin.Transaction{},
-			wallet.ErrSpendingUnconfirmed,
-			wallet.BalancePair{},
-			nil,
-			&SpendResult{
+			status:          http.StatusBadRequest,
+			err:             "400 Bad Request - please spend after your pending transaction is confirmed",
+			walletID:        "123",
+			coins:           12,
+			dst:             "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+			gatewaySpendErr: wallet.ErrSpendingUnconfirmed,
+			spendResult: &SpendResult{
 				Error: wallet.ErrSpendingUnconfirmed.Error(),
 			},
 		},
 		{
-			"400 - gw spend error insufficient balance",
-			http.MethodPost,
-			"/wallet/spend",
-			&httpBody{
+			name:   "400 - gw spend error insufficient balance",
+			method: http.MethodPost,
+			body: &httpBody{
 				WalletID: "123",
 				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
 				Coins:    "12",
 			},
-			http.StatusBadRequest,
-			"400 Bad Request - balance is not sufficient",
-			"123",
-			12,
-			"2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
-			&coin.Transaction{},
-			wallet.ErrInsufficientBalance,
-			wallet.BalancePair{},
-			nil,
-			&SpendResult{
+			status:          http.StatusBadRequest,
+			err:             "400 Bad Request - balance is not sufficient",
+			walletID:        "123",
+			coins:           12,
+			dst:             "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+			gatewaySpendErr: wallet.ErrInsufficientBalance,
+			spendResult: &SpendResult{
 				Error: wallet.ErrInsufficientBalance.Error(),
 			},
 		},
 		{
-			"404 - gw spend error wallet not exist",
-			http.MethodPost,
-			"/wallet/spend",
-			&httpBody{
+			name:   "404 - gw spend error wallet not exist",
+			method: http.MethodPost,
+			body: &httpBody{
 				WalletID: "123",
 				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
 				Coins:    "12",
 			},
-			http.StatusNotFound,
-			"404 Not Found",
-			"123",
-			12,
-			"2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
-			&coin.Transaction{},
-			wallet.ErrWalletNotExist,
-			wallet.BalancePair{},
-			nil,
-			&SpendResult{
+			status:          http.StatusNotFound,
+			err:             "404 Not Found",
+			walletID:        "123",
+			coins:           12,
+			dst:             "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+			gatewaySpendErr: wallet.ErrWalletNotExist,
+			spendResult: &SpendResult{
 				Error: wallet.ErrWalletNotExist.Error(),
 			},
 		},
 		{
-			"500 - gw spend error",
-			http.MethodPost,
-			"/wallet/spend",
-			&httpBody{
+			name:   "500 - gw spend error",
+			method: http.MethodPost,
+			body: &httpBody{
 				WalletID: "123",
 				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
 				Coins:    "12",
 			},
-			http.StatusInternalServerError,
-			"500 Internal Server Error - Spend error",
-			"123",
-			12,
-			"2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
-			&coin.Transaction{},
-			errors.New("Spend error"),
-			wallet.BalancePair{},
-			nil,
-			&SpendResult{
+			status:          http.StatusInternalServerError,
+			err:             "500 Internal Server Error - Spend error",
+			walletID:        "123",
+			coins:           12,
+			dst:             "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+			gatewaySpendErr: errors.New("Spend error"),
+			spendResult: &SpendResult{
 				Error: "Spend error",
 			},
 		},
 		{
-			"200 - gw GetWalletBalance error",
-			http.MethodPost,
-			"/wallet/spend",
-			&httpBody{
+			name:   "200 - gw GetWalletBalance error",
+			method: http.MethodPost,
+			body: &httpBody{
 				WalletID: "1234",
 				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
 				Coins:    "12",
 			},
-			http.StatusOK,
-			"",
-			"1234",
-			12,
-			"2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
-			&coin.Transaction{},
-			nil,
-			wallet.BalancePair{},
-			errors.New("GetWalletBalance error"),
-			&SpendResult{
+			status:             http.StatusOK,
+			walletID:           "1234",
+			coins:              12,
+			dst:                "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+			gatewaySpendResult: &coin.Transaction{},
+			gatewayBalanceErr:  errors.New("GetWalletBalance error"),
+			spendResult: &SpendResult{
 				Error: "Get wallet balance failed: GetWalletBalance error",
 				Transaction: &visor.ReadableTransaction{
 					Sigs:      []string{},
@@ -392,46 +244,52 @@ func TestWalletSpendHandler(t *testing.T) {
 			},
 		},
 		{
-			"403 - Forbidden",
-			http.MethodPost,
-			"/wallet/spend",
-			&httpBody{
+			name:   "403 - Forbidden - wallet API disabled",
+			method: http.MethodPost,
+			body: &httpBody{
 				WalletID: "123",
 				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
 				Coins:    "12",
 			},
-			http.StatusForbidden,
-			"403 Forbidden",
-			"123",
-			12,
-			"2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
-			&coin.Transaction{},
-			wallet.ErrWalletApiDisabled,
-			wallet.BalancePair{},
-			nil,
-			&SpendResult{
+			status:          http.StatusForbidden,
+			err:             "403 Forbidden",
+			walletID:        "123",
+			coins:           12,
+			dst:             "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+			gatewaySpendErr: wallet.ErrWalletApiDisabled,
+			spendResult: &SpendResult{
 				Error: wallet.ErrWalletApiDisabled.Error(),
 			},
 		},
 		{
-			"200 - OK",
-			http.MethodPost,
-			"/wallet/spend",
-			&httpBody{
+			name:   "403 - Forbidden - invalid Host header",
+			method: http.MethodPost,
+			body: &httpBody{
+				WalletID: "123",
+				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+				Coins:    "12",
+			},
+			status:     http.StatusForbidden,
+			err:        "403 Forbidden",
+			walletID:   "123",
+			coins:      12,
+			dst:        "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+			hostHeader: "example.com",
+		},
+		{
+			name:   "200 - OK",
+			method: http.MethodPost,
+			body: &httpBody{
 				WalletID: "1234",
 				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
 				Coins:    "12",
 			},
-			http.StatusOK,
-			"",
-			"1234",
-			12,
-			"2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
-			&coin.Transaction{},
-			nil,
-			wallet.BalancePair{},
-			nil,
-			&SpendResult{
+			status:             http.StatusOK,
+			walletID:           "1234",
+			coins:              12,
+			dst:                "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+			gatewaySpendResult: &coin.Transaction{},
+			spendResult: &SpendResult{
 				Balance: &wallet.BalancePair{},
 				Transaction: &visor.ReadableTransaction{
 					Length:    0,
@@ -449,13 +307,16 @@ func TestWalletSpendHandler(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			gateway := &FakeGateway{
-				walletID: tc.walletID,
-				t:        t,
+			if tc.gatewaySpendResult == nil {
+				tc.gatewaySpendResult = &coin.Transaction{}
 			}
+
+			gateway := &GatewayerMock{}
 			addr, _ := cipher.DecodeBase58Address(tc.dst)
 			gateway.On("Spend", tc.walletID, tc.coins, addr).Return(tc.gatewaySpendResult, tc.gatewaySpendErr)
 			gateway.On("GetWalletBalance", tc.walletID).Return(tc.gatewayGetWalletBalanceResult, tc.gatewayBalanceErr)
+
+			endpoint := "/wallet/spend"
 
 			v := url.Values{}
 			if tc.body != nil {
@@ -470,12 +331,16 @@ func TestWalletSpendHandler(t *testing.T) {
 				}
 			}
 
-			req, err := http.NewRequest(tc.method, tc.url, bytes.NewBufferString(v.Encode()))
+			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
+			if tc.hostHeader != "" {
+				req.Host = tc.hostHeader
+			}
+
 			rr := httptest.NewRecorder()
-			handler := http.HandlerFunc(walletSpendHandler(gateway))
+			handler := NewServerMux(configuredHost, ".", gateway)
 
 			handler.ServeHTTP(rr, req)
 
@@ -509,87 +374,84 @@ func TestWalletGet(t *testing.T) {
 		body                   *httpBody
 		status                 int
 		err                    string
-		walletId               string
+		walletID               string
 		gatewayGetWalletResult wallet.Wallet
 		gatewayGetWalletErr    error
+		hostHeader             string
 	}{
 		{
-			"405",
-			http.MethodPost,
-			"/wallet",
-			nil,
-			http.StatusMethodNotAllowed,
-			"405 Method Not Allowed",
-			"0",
-			wallet.Wallet{},
-			nil,
+			name:     "405",
+			method:   http.MethodPost,
+			status:   http.StatusMethodNotAllowed,
+			err:      "405 Method Not Allowed",
+			walletID: "0",
 		},
 		{
-			"400 - no walletId",
-			http.MethodGet,
-			"/wallet",
-			nil,
-			http.StatusBadRequest,
-			"400 Bad Request - missing wallet id",
-			"",
-			wallet.Wallet{},
-			nil,
+			name:     "400 - no walletID",
+			method:   http.MethodGet,
+			status:   http.StatusBadRequest,
+			err:      "400 Bad Request - missing wallet id",
+			walletID: "",
 		},
 		{
-			"400 - error from the `gateway.GetWallet(wltID)`",
-			http.MethodGet,
-			"/wallet",
-			&httpBody{
+			name:   "400 - error from the `gateway.GetWallet(wltID)`",
+			method: http.MethodGet,
+			body: &httpBody{
 				WalletID: "123",
 			},
-			http.StatusBadRequest,
-			"400 Bad Request - wallet 123 doesn't exist",
-			"123",
-			wallet.Wallet{},
-			errors.New("wallet 123 doesn't exist"),
+			status:              http.StatusBadRequest,
+			err:                 "400 Bad Request - wallet 123 doesn't exist",
+			walletID:            "123",
+			gatewayGetWalletErr: errors.New("wallet 123 doesn't exist"),
 		},
 		{
-			"403 - Forbidden",
-			http.MethodGet,
-			"/wallet",
-			&httpBody{
+			name:   "403 - Forbidden - wallet API disabled",
+			method: http.MethodGet,
+			body: &httpBody{
 				WalletID: "1234",
 			},
-			http.StatusForbidden,
-			"403 Forbidden",
-			"1234",
-			wallet.Wallet{
+			status:   http.StatusForbidden,
+			err:      "403 Forbidden",
+			walletID: "1234",
+			gatewayGetWalletResult: wallet.Wallet{
 				Meta:    map[string]string{},
 				Entries: []wallet.Entry{},
 			},
-			wallet.ErrWalletApiDisabled,
+			gatewayGetWalletErr: wallet.ErrWalletApiDisabled,
 		},
 		{
-			"200 - OK",
-			http.MethodGet,
-			"/wallet",
-			&httpBody{
+			name:   "403 - Forbidden - invalid Host header",
+			method: http.MethodGet,
+			body: &httpBody{
 				WalletID: "1234",
 			},
-			http.StatusOK,
-			"",
-			"1234",
-			wallet.Wallet{
+			status:     http.StatusForbidden,
+			err:        "403 Forbidden",
+			walletID:   "1234",
+			hostHeader: "example.com",
+		},
+		{
+			name:   "200 - OK",
+			method: http.MethodGet,
+			body: &httpBody{
+				WalletID: "1234",
+			},
+			status:   http.StatusOK,
+			walletID: "1234",
+			gatewayGetWalletResult: wallet.Wallet{
 				Meta:    map[string]string{},
 				Entries: []wallet.Entry{},
 			},
-			nil,
 		},
 	}
 
 	for _, tc := range tt {
-		gateway := &FakeGateway{
-			walletID: tc.walletId,
-			t:        t,
-		}
-		gateway.On("GetWallet", tc.walletId).Return(tc.gatewayGetWalletResult, tc.gatewayGetWalletErr)
+		gateway := &GatewayerMock{}
+		gateway.On("GetWallet", tc.walletID).Return(tc.gatewayGetWalletResult, tc.gatewayGetWalletErr)
 		v := url.Values{}
-		var url = tc.url
+
+		endpoint := "/wallet"
+
 		if tc.body != nil {
 			if tc.body.WalletID != "" {
 				v.Add("id", tc.body.WalletID)
@@ -597,14 +459,18 @@ func TestWalletGet(t *testing.T) {
 		}
 
 		if len(v) > 0 {
-			url += "?" + v.Encode()
+			endpoint += "?" + v.Encode()
 		}
 
-		req, err := http.NewRequest(tc.method, url, nil)
+		req, err := http.NewRequest(tc.method, endpoint, nil)
 		require.NoError(t, err)
 
+		if tc.hostHeader != "" {
+			req.Host = tc.hostHeader
+		}
+
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(walletGet(gateway))
+		handler := NewServerMux(configuredHost, ".", gateway)
 
 		handler.ServeHTTP(rr, req)
 
@@ -631,136 +497,134 @@ func TestWalletBalanceHandler(t *testing.T) {
 		Dst      string
 		Coins    string
 	}
+
 	tt := []struct {
 		name                          string
 		method                        string
-		url                           string
 		body                          *httpBody
 		status                        int
 		err                           string
-		walletId                      string
+		walletID                      string
 		gatewayGetWalletBalanceResult wallet.BalancePair
 		gatewayBalanceErr             error
 		result                        *wallet.BalancePair
+		hostHeader                    string
 	}{
 		{
-			"405",
-			http.MethodPost,
-			"/wallet/balance",
-			nil,
-			http.StatusMethodNotAllowed,
-			"405 Method Not Allowed",
-			"0",
-			wallet.BalancePair{},
-			nil,
-			nil,
+			name:     "405",
+			method:   http.MethodPost,
+			status:   http.StatusMethodNotAllowed,
+			err:      "405 Method Not Allowed",
+			walletID: "0",
 		},
 		{
-			"400 - no walletId",
-			http.MethodGet,
-			"/wallet/balance",
-			nil,
-			http.StatusBadRequest,
-			"400 Bad Request - missing wallet id",
-			"0",
-			wallet.BalancePair{},
-			nil,
-			nil,
+			name:     "400 - no walletID",
+			method:   http.MethodGet,
+			status:   http.StatusBadRequest,
+			err:      "400 Bad Request - missing wallet id",
+			walletID: "0",
 		},
 		{
-			"404 - gw `wallet doesn't exist` error",
-			http.MethodGet,
-			"/wallet/balance",
-			&httpBody{
+			name:   "404 - gw `wallet doesn't exist` error",
+			method: http.MethodGet,
+			body: &httpBody{
 				WalletID: "notFoundId",
 			},
-			http.StatusNotFound,
-			"404 Not Found",
-			"notFoundId",
-			wallet.BalancePair{
+			status:   http.StatusNotFound,
+			err:      "404 Not Found",
+			walletID: "notFoundId",
+			gatewayGetWalletBalanceResult: wallet.BalancePair{
 				Confirmed: wallet.Balance{Coins: 0, Hours: 0},
 				Predicted: wallet.Balance{Coins: 0, Hours: 0},
 			},
-			wallet.ErrWalletNotExist,
-			&wallet.BalancePair{
+			gatewayBalanceErr: wallet.ErrWalletNotExist,
+			result: &wallet.BalancePair{
 				Confirmed: wallet.Balance{Coins: 0, Hours: 0},
 				Predicted: wallet.Balance{Coins: 0, Hours: 0},
 			},
 		},
 		{
-			"500 - gw other error",
-			http.MethodGet,
-			"/wallet/balance",
-			&httpBody{
+			name:   "500 - gw other error",
+			method: http.MethodGet,
+			body: &httpBody{
 				WalletID: "someId",
 			},
-			http.StatusInternalServerError,
-			"500 Internal Server Error - gatewayBalanceError",
-			"someId",
-			wallet.BalancePair{
+			status:   http.StatusInternalServerError,
+			err:      "500 Internal Server Error - gatewayBalanceError",
+			walletID: "someId",
+			gatewayGetWalletBalanceResult: wallet.BalancePair{
 				Confirmed: wallet.Balance{Coins: 0, Hours: 0},
 				Predicted: wallet.Balance{Coins: 0, Hours: 0},
 			},
-			errors.New("gatewayBalanceError"),
-			&wallet.BalancePair{
+			gatewayBalanceErr: errors.New("gatewayBalanceError"),
+			result: &wallet.BalancePair{
 				Confirmed: wallet.Balance{Coins: 0, Hours: 0},
 				Predicted: wallet.Balance{Coins: 0, Hours: 0},
 			},
 		},
 		{
-			"403 - Forbidden",
-			http.MethodGet,
-			"/wallet/balance",
-			&httpBody{
+			name:   "403 - Forbidden - wallet API disabled",
+			method: http.MethodGet,
+			body: &httpBody{
 				WalletID: "foo",
 			},
-			http.StatusForbidden,
-			"403 Forbidden",
-			"foo",
-			wallet.BalancePair{},
-			wallet.ErrWalletApiDisabled,
-			&wallet.BalancePair{},
+			status:                        http.StatusForbidden,
+			err:                           "403 Forbidden",
+			walletID:                      "foo",
+			gatewayGetWalletBalanceResult: wallet.BalancePair{},
+			gatewayBalanceErr:             wallet.ErrWalletApiDisabled,
 		},
 		{
-			"200 - OK",
-			http.MethodGet,
-			"/wallet/balance",
-			&httpBody{
+			name:   "403 - Forbidden - invalid Host header",
+			method: http.MethodGet,
+			body: &httpBody{
 				WalletID: "foo",
 			},
-			http.StatusOK,
-			"",
-			"foo",
-			wallet.BalancePair{},
-			nil,
-			&wallet.BalancePair{},
+			status:     http.StatusForbidden,
+			err:        "403 Forbidden",
+			walletID:   "foo",
+			hostHeader: "example.com",
+		},
+
+		{
+			name:   "200 - OK",
+			method: http.MethodGet,
+			body: &httpBody{
+				WalletID: "foo",
+			},
+			status:   http.StatusOK,
+			err:      "",
+			walletID: "foo",
+			result:   &wallet.BalancePair{},
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			gateway := &FakeGateway{
-				walletID: tc.walletId,
-				t:        t,
-			}
-			gateway.On("GetWalletBalance", tc.walletId).Return(tc.gatewayGetWalletBalanceResult, tc.gatewayBalanceErr)
+			gateway := &GatewayerMock{}
+			gateway.On("GetWalletBalance", tc.walletID).Return(tc.gatewayGetWalletBalanceResult, tc.gatewayBalanceErr)
+
+			endpoint := "/wallet/balance"
 
 			v := url.Values{}
-			var url = tc.url
 			if tc.body != nil {
 				if tc.body.WalletID != "" {
 					v.Add("id", tc.body.WalletID)
 				}
 			}
 			if len(v) > 0 {
-				url += "?" + v.Encode()
+				endpoint += "?" + v.Encode()
 			}
-			req, err := http.NewRequest(tc.method, url, bytes.NewBufferString(v.Encode()))
+			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
+			if tc.hostHeader != "" {
+				req.Host = tc.hostHeader
+			}
+
 			rr := httptest.NewRecorder()
-			handler := http.HandlerFunc(walletBalanceHandler(gateway))
+			handler := NewServerMux(configuredHost, ".", gateway)
 
 			handler.ServeHTTP(rr, req)
 
@@ -796,117 +660,110 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 		body                        *httpBody
 		status                      int
 		err                         string
-		walletId                    string
+		walletID                    string
 		label                       string
 		gatewayUpdateWalletLabelErr error
 		responseBody                string
+		hostHeader                  string
 	}{
 		{
-			"405",
-			http.MethodGet,
-			"/wallet/update",
-			&httpBody{},
-			http.StatusMethodNotAllowed,
-			"405 Method Not Allowed",
-			"",
-			"",
-			nil,
-			"",
+			name:   "405",
+			method: http.MethodGet,
+			body:   &httpBody{},
+			status: http.StatusMethodNotAllowed,
+			err:    "405 Method Not Allowed",
 		},
 		{
-			"400 - missing wallet id",
-			http.MethodPost,
-			"/wallet/update",
-			&httpBody{},
-			http.StatusBadRequest,
-			"400 Bad Request - missing wallet id",
-			"",
-			"",
-			nil,
-			"",
+			name:   "400 - missing wallet id",
+			method: http.MethodPost,
+			body:   &httpBody{},
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - missing wallet id",
 		},
 		{
-			"400 - missing label",
-			http.MethodPost,
-			"/wallet/update",
-			&httpBody{
+			name:   "400 - missing label",
+			method: http.MethodPost,
+			body: &httpBody{
 				WalletID: "foo",
 			},
-			http.StatusBadRequest,
-			"400 Bad Request - missing label",
-			"foo",
-			"",
-			nil,
-			"",
+			status:   http.StatusBadRequest,
+			err:      "400 Bad Request - missing label",
+			walletID: "foo",
 		},
 		{
-			"404 - gateway.UpdateWalletLabel ErrWalletNotExist",
-			http.MethodPost,
-			"/wallet/update",
-			&httpBody{
+			name:   "404 - gateway.UpdateWalletLabel ErrWalletNotExist",
+			method: http.MethodPost,
+			body: &httpBody{
 				WalletID: "foo",
 				Label:    "label",
 			},
-			http.StatusNotFound,
-			"404 Not Found",
-			"foo",
-			"label",
-			wallet.ErrWalletNotExist,
-			"",
+			status:   http.StatusNotFound,
+			err:      "404 Not Found",
+			walletID: "foo",
+			label:    "label",
+			gatewayUpdateWalletLabelErr: wallet.ErrWalletNotExist,
 		},
 		{
-			"500 - gateway.UpdateWalletLabel error",
-			http.MethodPost,
-			"/wallet/update",
-			&httpBody{
+			name:   "500 - gateway.UpdateWalletLabel error",
+			method: http.MethodPost,
+			body: &httpBody{
 				WalletID: "foo",
 				Label:    "label",
 			},
-			http.StatusInternalServerError,
-			"500 Internal Server Error - gateway.UpdateWalletLabel error",
-			"foo",
-			"label",
-			errors.New("gateway.UpdateWalletLabel error"),
-			"",
+			status:   http.StatusInternalServerError,
+			err:      "500 Internal Server Error - gateway.UpdateWalletLabel error",
+			walletID: "foo",
+			label:    "label",
+			gatewayUpdateWalletLabelErr: errors.New("gateway.UpdateWalletLabel error"),
 		},
 		{
-			"403 Forbidden",
-			http.MethodPost,
-			"/wallet/update",
-			&httpBody{
+			name:   "403 Forbidden - wallet API disabled",
+			method: http.MethodPost,
+			body: &httpBody{
 				WalletID: "foo",
 				Label:    "label",
 			},
-			http.StatusForbidden,
-			"403 Forbidden",
-			"foo",
-			"label",
-			wallet.ErrWalletApiDisabled,
-			"",
+			status:   http.StatusForbidden,
+			err:      "403 Forbidden",
+			walletID: "foo",
+			label:    "label",
+			gatewayUpdateWalletLabelErr: wallet.ErrWalletApiDisabled,
 		},
 		{
-			"200 OK",
-			http.MethodPost,
-			"/wallet/update",
-			&httpBody{
+			name:   "403 Forbidden - invalid Host header",
+			method: http.MethodPost,
+			body: &httpBody{
 				WalletID: "foo",
 				Label:    "label",
 			},
-			http.StatusOK,
-			"",
-			"foo",
-			"label",
-			nil,
-			"\"success\"",
+			status:     http.StatusForbidden,
+			err:        "403 Forbidden",
+			walletID:   "foo",
+			label:      "label",
+			hostHeader: "example.com",
+		},
+		{
+			name:   "200 OK",
+			method: http.MethodPost,
+			body: &httpBody{
+				WalletID: "foo",
+				Label:    "label",
+			},
+			status:   http.StatusOK,
+			err:      "",
+			walletID: "foo",
+			label:    "label",
+			gatewayUpdateWalletLabelErr: nil,
+			responseBody:                "\"success\"",
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			gateway := &FakeGateway{
-				t: t,
-			}
-			gateway.On("UpdateWalletLabel", tc.walletId, tc.label).Return(tc.gatewayUpdateWalletLabelErr)
+			gateway := &GatewayerMock{}
+			gateway.On("UpdateWalletLabel", tc.walletID, tc.label).Return(tc.gatewayUpdateWalletLabelErr)
+
+			endpoint := "/wallet/update"
 
 			v := url.Values{}
 			if tc.body != nil {
@@ -917,11 +774,17 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 					v.Add("label", tc.body.Label)
 				}
 			}
-			req, err := http.NewRequest(tc.method, tc.url, bytes.NewBufferString(v.Encode()))
+
+			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+			if tc.hostHeader != "" {
+				req.Host = tc.hostHeader
+			}
+
 			rr := httptest.NewRecorder()
-			handler := http.HandlerFunc(walletUpdateHandler(gateway))
+			handler := NewServerMux(configuredHost, ".", gateway)
 
 			handler.ServeHTTP(rr, req)
 
@@ -947,117 +810,109 @@ func TestWalletTransactionsHandler(t *testing.T) {
 	tt := []struct {
 		name                                  string
 		method                                string
-		url                                   string
 		body                                  *httpBody
 		status                                int
 		err                                   string
-		walletId                              string
+		walletID                              string
 		gatewayGetWalletUnconfirmedTxnsResult []visor.UnconfirmedTxn
 		gatewayGetWalletUnconfirmedTxnsErr    error
 		responseBody                          []visor.UnconfirmedTxn
+		hostHeader                            string
 	}{
 		{
-			"405",
-			http.MethodPost,
-			"/wallet/transactions",
-			nil,
-			http.StatusMethodNotAllowed,
-			"405 Method Not Allowed",
-			"",
-			make([]visor.UnconfirmedTxn, 0),
-			nil,
-			[]visor.UnconfirmedTxn{},
+			name:   "405",
+			method: http.MethodPost,
+			status: http.StatusMethodNotAllowed,
+			err:    "405 Method Not Allowed",
 		},
 		{
-			"400 - missing wallet id",
-			http.MethodGet,
-			"/wallet/transactions",
-			nil,
-			http.StatusBadRequest,
-			"400 Bad Request - missing wallet id",
-			"",
-			make([]visor.UnconfirmedTxn, 0),
-			nil,
-			[]visor.UnconfirmedTxn{},
+			name:   "400 - missing wallet id",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - missing wallet id",
 		},
 		{
-			"500 - gateway.GetWalletUnconfirmedTxns error",
-			http.MethodGet,
-			"/wallet/transactions",
-			&httpBody{
+			name:   "500 - gateway.GetWalletUnconfirmedTxns error",
+			method: http.MethodGet,
+			body: &httpBody{
 				WalletID: "foo",
 			},
-			http.StatusInternalServerError,
-			"500 Internal Server Error - gateway.GetWalletUnconfirmedTxns error",
-			"foo",
-			make([]visor.UnconfirmedTxn, 0),
-			errors.New("gateway.GetWalletUnconfirmedTxns error"),
-			[]visor.UnconfirmedTxn{},
+			status:   http.StatusInternalServerError,
+			err:      "500 Internal Server Error - gateway.GetWalletUnconfirmedTxns error",
+			walletID: "foo",
+			gatewayGetWalletUnconfirmedTxnsErr: errors.New("gateway.GetWalletUnconfirmedTxns error"),
 		},
 		{
-			"404 - wallet doesn't exist",
-			http.MethodGet,
-			"/wallet/transactions",
-			&httpBody{
+			name:   "404 - wallet doesn't exist",
+			method: http.MethodGet,
+			body: &httpBody{
 				WalletID: "foo",
 			},
-			http.StatusNotFound,
-			"404 Not Found",
-			"foo",
-			make([]visor.UnconfirmedTxn, 0),
-			wallet.ErrWalletNotExist,
-			[]visor.UnconfirmedTxn{},
+			status:   http.StatusNotFound,
+			err:      "404 Not Found",
+			walletID: "foo",
+			gatewayGetWalletUnconfirmedTxnsErr: wallet.ErrWalletNotExist,
 		},
 		{
-			"403 - Forbidden",
-			http.MethodGet,
-			"/wallet/transactions",
-			&httpBody{
+			name:   "403 - Forbidden - wallet API disabled",
+			method: http.MethodGet,
+			body: &httpBody{
 				WalletID: "foo",
 			},
-			http.StatusForbidden,
-			"403 Forbidden",
-			"foo",
-			make([]visor.UnconfirmedTxn, 0),
-			wallet.ErrWalletApiDisabled,
-			[]visor.UnconfirmedTxn{},
+			status:   http.StatusForbidden,
+			err:      "403 Forbidden",
+			walletID: "foo",
+			gatewayGetWalletUnconfirmedTxnsErr: wallet.ErrWalletApiDisabled,
 		},
 		{
-			"200 - OK",
-			http.MethodGet,
-			"/wallet/transactions",
-			&httpBody{
+			name:   "403 - Forbidden - invalid Host header",
+			method: http.MethodGet,
+			body: &httpBody{
 				WalletID: "foo",
 			},
-			http.StatusOK,
-			"",
-			"foo",
-			make([]visor.UnconfirmedTxn, 0),
-			nil,
-			[]visor.UnconfirmedTxn{},
+			status:     http.StatusForbidden,
+			err:        "403 Forbidden",
+			walletID:   "foo",
+			hostHeader: "example.com",
+		},
+		{
+			name:   "200 - OK",
+			method: http.MethodGet,
+			body: &httpBody{
+				WalletID: "foo",
+			},
+			status:   http.StatusOK,
+			err:      "",
+			walletID: "foo",
+			gatewayGetWalletUnconfirmedTxnsResult: make([]visor.UnconfirmedTxn, 1),
+			responseBody:                          []visor.UnconfirmedTxn{visor.UnconfirmedTxn{}},
 		},
 	}
 
 	for _, tc := range tt {
-		gateway := &FakeGateway{
-			t: t,
-		}
-		gateway.On("GetWalletUnconfirmedTxns", tc.walletId).Return(tc.gatewayGetWalletUnconfirmedTxnsResult, tc.gatewayGetWalletUnconfirmedTxnsErr)
+		gateway := &GatewayerMock{}
+		gateway.On("GetWalletUnconfirmedTxns", tc.walletID).Return(tc.gatewayGetWalletUnconfirmedTxnsResult, tc.gatewayGetWalletUnconfirmedTxnsErr)
+
+		endpoint := "/wallet/transactions"
+
 		v := url.Values{}
-		var urlFull = tc.url
 		if tc.body != nil {
 			if tc.body.WalletID != "" {
 				v.Add("id", tc.body.WalletID)
 			}
 		}
 		if len(v) > 0 {
-			urlFull = urlFull + "?" + v.Encode()
+			endpoint += "?" + v.Encode()
 		}
-		req, err := http.NewRequest(tc.method, urlFull, nil)
+		req, err := http.NewRequest(tc.method, endpoint, nil)
 		require.NoError(t, err)
 
+		if tc.hostHeader != "" {
+			req.Host = tc.hostHeader
+		}
+
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(walletTransactionsHandler(gateway))
+		handler := NewServerMux(configuredHost, ".", gateway)
 
 		handler.ServeHTTP(rr, req)
 
@@ -1083,14 +938,14 @@ func TestWalletCreateHandler(t *testing.T) {
 		Label string
 		ScanN string
 	}
+
 	tt := []struct {
 		name                      string
 		method                    string
-		url                       string
 		body                      *httpBody
 		status                    int
 		err                       string
-		wltname                   string
+		wltName                   string
 		scnN                      uint64
 		options                   wallet.Options
 		gatewayCreateWalletResult wallet.Wallet
@@ -1098,199 +953,143 @@ func TestWalletCreateHandler(t *testing.T) {
 		scanWalletAddressesResult wallet.Wallet
 		scanWalletAddressesError  error
 		responseBody              wallet.ReadableWallet
+		hostHeader                string
 	}{
 		{
-			"405",
-			http.MethodGet,
-			"/wallet/create",
-			nil,
-			http.StatusMethodNotAllowed,
-			"405 Method Not Allowed",
-			"foo",
-			0,
-			wallet.Options{},
-			wallet.Wallet{},
-			nil,
-			wallet.Wallet{},
-			nil,
-			wallet.ReadableWallet{},
+			name:    "405",
+			method:  http.MethodGet,
+			status:  http.StatusMethodNotAllowed,
+			err:     "405 Method Not Allowed",
+			wltName: "foo",
 		},
 		{
-			"400 - missing seed",
-			http.MethodPost,
-			"/wallet/create",
-			&httpBody{},
-			http.StatusBadRequest,
-			"400 Bad Request - missing seed",
-			"foo",
-			0,
-			wallet.Options{},
-			wallet.Wallet{},
-			nil,
-			wallet.Wallet{},
-			nil,
-			wallet.ReadableWallet{},
+			name:    "400 - missing seed",
+			method:  http.MethodPost,
+			body:    &httpBody{},
+			status:  http.StatusBadRequest,
+			err:     "400 Bad Request - missing seed",
+			wltName: "foo",
 		},
 		{
-			"400 - missing label",
-			http.MethodPost,
-			"/wallet/create",
-			&httpBody{
+			name:   "400 - missing label",
+			method: http.MethodPost,
+			body: &httpBody{
 				Seed: "foo",
 			},
-			http.StatusBadRequest,
-			"400 Bad Request - missing label",
-			"foo",
-			0,
-			wallet.Options{},
-			wallet.Wallet{},
-			nil,
-			wallet.Wallet{},
-			nil,
-			wallet.ReadableWallet{},
+			status:  http.StatusBadRequest,
+			err:     "400 Bad Request - missing label",
+			wltName: "foo",
 		},
 		{
-			"400 - invalid scan value",
-			http.MethodPost,
-			"/wallet/create",
-			&httpBody{
+			name:   "400 - invalid scan value",
+			method: http.MethodPost,
+			body: &httpBody{
 				Seed:  "foo",
 				Label: "bar",
 				ScanN: "bad scanN",
 			},
-			http.StatusBadRequest,
-			"400 Bad Request - invalid scan value",
-			"foo",
-			0,
-			wallet.Options{},
-			wallet.Wallet{},
-			nil,
-			wallet.Wallet{},
-			nil,
-			wallet.ReadableWallet{},
+			status:  http.StatusBadRequest,
+			err:     "400 Bad Request - invalid scan value",
+			wltName: "foo",
 		},
 		{
-			"400 - scan must be > 0",
-			http.MethodPost,
-			"/wallet/create",
-			&httpBody{
+			name:   "400 - scan must be > 0",
+			method: http.MethodPost,
+			body: &httpBody{
 				Seed:  "foo",
 				Label: "bar",
 				ScanN: "0",
 			},
-			http.StatusBadRequest,
-			"400 Bad Request - scan must be > 0",
-			"foo",
-			0,
-			wallet.Options{},
-			wallet.Wallet{},
-			nil,
-			wallet.Wallet{},
-			nil,
-			wallet.ReadableWallet{},
+			status:  http.StatusBadRequest,
+			err:     "400 Bad Request - scan must be > 0",
+			wltName: "foo",
 		},
 		{
-			"400 - gateway.CreateWallet error",
-			http.MethodPost,
-			"/wallet/create",
-			&httpBody{
+			name:   "400 - gateway.CreateWallet error",
+			method: http.MethodPost,
+			body: &httpBody{
 				Seed:  "foo",
 				Label: "bar",
 				ScanN: "1",
 			},
-			http.StatusBadRequest,
-			"400 Bad Request - gateway.CreateWallet error",
-			"",
-			0,
-			wallet.Options{
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - gateway.CreateWallet error",
+			options: wallet.Options{
 				Label: "bar",
 				Seed:  "foo",
 			},
-			wallet.Wallet{},
-			errors.New("gateway.CreateWallet error"),
-			wallet.Wallet{},
-			nil,
-			wallet.ReadableWallet{},
+			gatewayCreateWalletErr: errors.New("gateway.CreateWallet error"),
 		},
 		{
-			"500 - gateway.ScanAheadWalletAddresses error",
-			http.MethodPost,
-			"/wallet/create",
-			&httpBody{
+			name:   "500 - gateway.ScanAheadWalletAddresses error",
+			method: http.MethodPost,
+			body: &httpBody{
 				Seed:  "foo",
 				Label: "bar",
 				ScanN: "2",
 			},
-			http.StatusInternalServerError,
-			"500 Internal Server Error",
-			"filename",
-			2,
-			wallet.Options{
+			status:  http.StatusInternalServerError,
+			err:     "500 Internal Server Error",
+			wltName: "filename",
+			scnN:    2,
+			options: wallet.Options{
 				Label: "bar",
 				Seed:  "foo",
 			},
-			wallet.Wallet{
+			gatewayCreateWalletResult: wallet.Wallet{
 				Meta: map[string]string{
 					"filename": "filename",
 				},
 			},
-			nil,
-			wallet.Wallet{},
-			errors.New("gateway.ScanAheadWalletAddresses error"),
-			wallet.ReadableWallet{},
+			scanWalletAddressesError: errors.New("gateway.ScanAheadWalletAddresses error"),
 		},
 		{
-			"403 - Forbidden",
-			http.MethodPost,
-			"/wallet/create",
-			&httpBody{
+			name:   "403 - Forbidden - wallet API disabled",
+			method: http.MethodPost,
+			body: &httpBody{
 				Seed:  "foo",
 				Label: "bar",
 				ScanN: "2",
 			},
-			http.StatusForbidden,
-			"403 Forbidden",
-			"filename",
-			2,
-			wallet.Options{
+			status:  http.StatusForbidden,
+			err:     "403 Forbidden",
+			wltName: "filename",
+			scnN:    2,
+			options: wallet.Options{
 				Label: "bar",
 				Seed:  "foo",
 			},
-			wallet.Wallet{},
-			wallet.ErrWalletApiDisabled,
-			wallet.Wallet{},
-			nil,
-			wallet.ReadableWallet{
-				Meta:    map[string]string{},
-				Entries: wallet.ReadableEntries{},
-			},
+			gatewayCreateWalletErr: wallet.ErrWalletApiDisabled,
 		},
 		{
-			"200 - OK",
-			http.MethodPost,
-			"/wallet/create",
-			&httpBody{
+			name:       "403 - Forbidden - invalid Host header",
+			method:     http.MethodPost,
+			status:     http.StatusForbidden,
+			err:        "403 Forbidden",
+			hostHeader: "example.com",
+		},
+		{
+			name:   "200 - OK",
+			method: http.MethodPost,
+			body: &httpBody{
 				Seed:  "foo",
 				Label: "bar",
 				ScanN: "2",
 			},
-			http.StatusOK,
-			"",
-			"filename",
-			2,
-			wallet.Options{
+			status:  http.StatusOK,
+			err:     "",
+			wltName: "filename",
+			scnN:    2,
+			options: wallet.Options{
 				Label: "bar",
 				Seed:  "foo",
 			},
-			wallet.Wallet{
+			gatewayCreateWalletResult: wallet.Wallet{
 				Meta: map[string]string{
 					"filename": "filename",
 				},
 			},
-			nil,
-			wallet.Wallet{},
-			nil,
-			wallet.ReadableWallet{
+			responseBody: wallet.ReadableWallet{
 				Meta:    map[string]string{},
 				Entries: wallet.ReadableEntries{},
 			},
@@ -1298,11 +1097,12 @@ func TestWalletCreateHandler(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		gateway := &FakeGateway{
-			t: t,
-		}
+		gateway := &GatewayerMock{}
 		gateway.On("CreateWallet", "", tc.options).Return(tc.gatewayCreateWalletResult, tc.gatewayCreateWalletErr)
-		gateway.On("ScanAheadWalletAddresses", tc.wltname, tc.scnN-1).Return(tc.scanWalletAddressesResult, tc.scanWalletAddressesError)
+		gateway.On("ScanAheadWalletAddresses", tc.wltName, tc.scnN-1).Return(tc.scanWalletAddressesResult, tc.scanWalletAddressesError)
+
+		endpoint := "/wallet/create"
+
 		v := url.Values{}
 		if tc.body != nil {
 			if tc.body.Seed != "" {
@@ -1316,12 +1116,16 @@ func TestWalletCreateHandler(t *testing.T) {
 			}
 		}
 
-		req, err := http.NewRequest(tc.method, tc.url, bytes.NewBufferString(v.Encode()))
+		req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		require.NoError(t, err)
 
+		if tc.hostHeader != "" {
+			req.Host = tc.hostHeader
+		}
+
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(walletCreate(gateway))
+		handler := NewServerMux(configuredHost, ".", gateway)
 
 		handler.ServeHTTP(rr, req)
 
@@ -1346,121 +1150,119 @@ func TestWalletNewSeed(t *testing.T) {
 	type httpBody struct {
 		Entropy string
 	}
+
 	tt := []struct {
 		name       string
 		method     string
-		url        string
 		body       *httpBody
-		statusCode int
+		status     int
 		err        string
 		entropy    string
 		resultLen  int
+		hostHeader string
 	}{
 		{
-			"405",
-			http.MethodPut,
-			"/wallet/newSeed",
-			nil,
-			http.StatusMethodNotAllowed,
-			"405 Method Not Allowed",
-			"0",
-			0,
+			name:   "405",
+			method: http.MethodPut,
+			status: http.StatusMethodNotAllowed,
+			err:    "405 Method Not Allowed",
 		},
 		{
-			"400 - invalid entropy type",
-			http.MethodGet,
-			"/wallet/newSeed",
-			&httpBody{
+			name:   "400 - invalid entropy type",
+			method: http.MethodGet,
+			body: &httpBody{
 				Entropy: "xx",
 			},
-			http.StatusBadRequest,
-			"400 Bad Request - invalid entropy",
-			"xx",
-			0,
+			status:  http.StatusBadRequest,
+			err:     "400 Bad Request - invalid entropy",
+			entropy: "xx",
 		},
 		{
-			"400 - `wrong entropy length` error",
-			http.MethodGet,
-			"/wallet/balance",
-			&httpBody{
+			name:   "400 - `wrong entropy length` error",
+			method: http.MethodGet,
+			body: &httpBody{
 				Entropy: "200",
 			},
-			http.StatusBadRequest,
-			"400 Bad Request - entropy length must be 128 or 256",
-			"200",
-			0,
+			status:  http.StatusBadRequest,
+			err:     "400 Bad Request - entropy length must be 128 or 256",
+			entropy: "200",
 		},
 		{
-			"200 - OK with no entropy",
-			http.MethodGet,
-			"/wallet/newSeed",
-			&httpBody{
-				Entropy: "",
-			},
-			http.StatusOK,
-			"",
-			"128",
-			12,
+			name:       "403 - Forbidden - invalid Host header",
+			method:     http.MethodGet,
+			status:     http.StatusForbidden,
+			err:        "403 Forbidden",
+			hostHeader: "example.com",
 		},
 		{
-			"200 - OK | 12 word seed",
-			http.MethodGet,
-			"/wallet/newSeed",
-			&httpBody{
+			name:      "200 - OK with no entropy",
+			method:    http.MethodGet,
+			body:      &httpBody{},
+			status:    http.StatusOK,
+			entropy:   "128",
+			resultLen: 12,
+		},
+		{
+			name:   "200 - OK | 12 word seed",
+			method: http.MethodGet,
+			body: &httpBody{
 				Entropy: "128",
 			},
-			http.StatusOK,
-			"",
-			"128",
-			12,
+			status:    http.StatusOK,
+			entropy:   "128",
+			resultLen: 12,
 		},
 		{
-			"200 - OK | 24 word seed",
-			http.MethodGet,
-			"/wallet/newSeed",
-			&httpBody{
+			name:   "200 - OK | 24 word seed",
+			method: http.MethodGet,
+			body: &httpBody{
 				Entropy: "256",
 			},
-			http.StatusOK,
-			"",
-			"256",
-			24,
+			status:    http.StatusOK,
+			entropy:   "256",
+			resultLen: 24,
 		},
 	}
 
 	// Loop over each test case
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			gateway := &FakeGateway{t: t}
+			gateway := &GatewayerMock{}
+
+			endpoint := "/wallet/newSeed"
+
 			// Add request parameters to url
 			v := url.Values{}
-			var url = tc.url
 			if tc.body != nil {
 				if tc.body.Entropy != "" {
 					v.Add("entropy", tc.body.Entropy)
 				}
 			}
 			if len(v) > 0 {
-				url += "?" + v.Encode()
+				endpoint += "?" + v.Encode()
 			}
 
-			req, err := http.NewRequest(tc.method, url, bytes.NewBufferString(v.Encode()))
+			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-			rr := httptest.NewRecorder()
 
-			handler := http.HandlerFunc(newWalletSeed(gateway))
+			if tc.hostHeader != "" {
+				req.Host = tc.hostHeader
+			}
+
+			rr := httptest.NewRecorder()
+			handler := NewServerMux(configuredHost, ".", gateway)
+
 			handler.ServeHTTP(rr, req)
 
-			statusCode := rr.Code
-			require.Equal(t, tc.statusCode, statusCode, "case: %s, handler returned wrong status code: got `%v` expected `%v`", tc.name, statusCode, tc.statusCode)
-			if statusCode != tc.statusCode {
-				t.Errorf("case: %s, handler returned wrong status code: got `%v` want `%v`",
-					tc.name, statusCode, tc.statusCode)
+			status := rr.Code
+			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` expected `%v`", tc.name, status, tc.status)
+			if status != tc.status {
+				t.Errorf("case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
 			}
-			if statusCode != http.StatusOK {
+			if status != http.StatusOK {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, expected `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), statusCode, tc.err)
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				var msg struct {
 					Seed string `json:"seed"`
@@ -1476,7 +1278,7 @@ func TestWalletNewSeed(t *testing.T) {
 
 func TestWalletNewAddressesHandler(t *testing.T) {
 	type httpBody struct {
-		Id  string
+		ID  string
 		Num string
 	}
 	type Addresses struct {
@@ -1497,155 +1299,134 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 	tt := []struct {
 		name                      string
 		method                    string
-		url                       string
 		body                      *httpBody
 		status                    int
 		err                       string
-		walletId                  string
+		walletID                  string
 		n                         uint64
 		gatewayNewAddressesResult []cipher.Address
 		gatewayNewAddressesErr    error
 		responseBody              Addresses
+		hostHeader                string
 	}{
 		{
-			"405",
-			http.MethodGet,
-			"/wallet/create",
-			nil,
-			http.StatusMethodNotAllowed,
-			"405 Method Not Allowed",
-			"",
-			1,
-			make([]cipher.Address, 0),
-			nil,
-			Addresses{},
+			name:   "405",
+			method: http.MethodGet,
+			status: http.StatusMethodNotAllowed,
+			err:    "405 Method Not Allowed",
 		},
 		{
-			"400 - missing wallet id",
-			http.MethodPost,
-			"/wallet/create",
-			nil,
-			http.StatusBadRequest,
-			"400 Bad Request - missing wallet id",
-			"foo",
-			1,
-			make([]cipher.Address, 0),
-			nil,
-			Addresses{},
+			name:   "400 - missing wallet id",
+			method: http.MethodPost,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - missing wallet id",
 		},
 		{
-			"400 - invalid num value",
-			http.MethodPost,
-			"/wallet/create",
-			&httpBody{
-				Id:  "foo",
+			name:   "400 - invalid num value",
+			method: http.MethodPost,
+			body: &httpBody{
+				ID:  "foo",
 				Num: "bar",
 			},
-			http.StatusBadRequest,
-			"400 Bad Request - invalid num value",
-			"foo",
-			1,
-			make([]cipher.Address, 0),
-			nil,
-			Addresses{},
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - invalid num value",
 		},
 		{
-			"400 - gateway.NewAddresses error",
-			http.MethodPost,
-			"/wallet/create",
-			&httpBody{
-				Id:  "foo",
+			name:   "400 - gateway.NewAddresses error",
+			method: http.MethodPost,
+			body: &httpBody{
+				ID:  "foo",
 				Num: "1",
 			},
-			http.StatusBadRequest,
-			"400 Bad Request - gateway.NewAddresses error",
-			"foo",
-			1,
-			make([]cipher.Address, 0),
-			errors.New("gateway.NewAddresses error"),
-			Addresses{},
+			status:   http.StatusBadRequest,
+			err:      "400 Bad Request - gateway.NewAddresses error",
+			walletID: "foo",
+			n:        1,
+			gatewayNewAddressesErr: errors.New("gateway.NewAddresses error"),
 		},
 		{
-			"403 - Forbidden",
-			http.MethodPost,
-			"/wallet/create",
-			&httpBody{
-				Id:  "foo",
+			name:   "403 - Forbidden - wallet API disabled",
+			method: http.MethodPost,
+			body: &httpBody{
+				ID:  "foo",
 				Num: "1",
 			},
-			http.StatusForbidden,
-			"403 Forbidden",
-			"foo",
-			1,
-			addrs,
-			wallet.ErrWalletApiDisabled,
-			Addresses{},
+			status:   http.StatusForbidden,
+			err:      "403 Forbidden",
+			walletID: "foo",
+			n:        1,
+			gatewayNewAddressesErr: wallet.ErrWalletApiDisabled,
 		},
 		{
-			"200 - OK",
-			http.MethodPost,
-			"/wallet/create",
-			&httpBody{
-				Id:  "foo",
+			name:       "403 - Forbidden - invalid Host header",
+			method:     http.MethodPost,
+			status:     http.StatusForbidden,
+			err:        "403 Forbidden",
+			hostHeader: "example.com",
+		},
+		{
+			name:   "200 - OK",
+			method: http.MethodPost,
+			body: &httpBody{
+				ID:  "foo",
 				Num: "1",
 			},
-			http.StatusOK,
-			"",
-			"foo",
-			1,
-			addrs,
-			nil,
-			responseAddresses,
+			status:   http.StatusOK,
+			walletID: "foo",
+			n:        1,
+			gatewayNewAddressesResult: addrs,
+			responseBody:              responseAddresses,
 		},
 		{
-			"200 - OK empty addresses",
-			http.MethodPost,
-			"/wallet/create",
-			&httpBody{
-				Id:  "foo",
+			name:   "200 - OK empty addresses",
+			method: http.MethodPost,
+			body: &httpBody{
+				ID:  "foo",
 				Num: "0",
 			},
-			http.StatusOK,
-			"",
-			"foo",
-			0,
-			emptyAddrs,
-			nil,
-			responseEmptyAddresses,
+			status:   http.StatusOK,
+			walletID: "foo",
+			n:        0,
+			gatewayNewAddressesResult: emptyAddrs,
+			responseBody:              responseEmptyAddresses,
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			gateway := &FakeGateway{
-				t: t,
-			}
-			gateway.On("NewAddresses", tc.walletId, tc.n).Return(tc.gatewayNewAddressesResult, tc.gatewayNewAddressesErr)
+			gateway := &GatewayerMock{}
+			gateway.On("NewAddresses", tc.walletID, tc.n).Return(tc.gatewayNewAddressesResult, tc.gatewayNewAddressesErr)
+
+			endpoint := "/wallet/newAddress"
+
 			v := url.Values{}
 			if tc.body != nil {
-				if tc.body.Id != "" {
-					v.Add("id", tc.body.Id)
+				if tc.body.ID != "" {
+					v.Add("id", tc.body.ID)
 				}
 				if tc.body.Num != "" {
 					v.Add("num", tc.body.Num)
 				}
 			}
 
-			req, err := http.NewRequest(tc.method, tc.url, bytes.NewBufferString(v.Encode()))
+			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
+			if tc.hostHeader != "" {
+				req.Host = tc.hostHeader
+			}
+
 			rr := httptest.NewRecorder()
-			handler := http.HandlerFunc(walletNewAddresses(gateway))
+			handler := NewServerMux(configuredHost, ".", gateway)
 
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
-				tc.name, status, tc.status)
+			require.Equal(t, tc.status, status, "wrong status code: got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %d, want `%v`",
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				var msg Addresses
@@ -1661,60 +1442,62 @@ func TestGetWalletFolderHandler(t *testing.T) {
 	tt := []struct {
 		name                 string
 		method               string
-		url                  string
 		status               int
 		err                  string
 		getWalletDirResponse string
 		getWalletDirErr      error
 		httpResponse         WalletFolder
+		hostHeader           string
 	}{
 		{
-			"200",
-			http.MethodGet,
-			"/wallets/folderName",
-			http.StatusOK,
-			"",
-			"/wallet/folder/address",
-			nil,
-			WalletFolder{
+			name:                 "200",
+			method:               http.MethodGet,
+			status:               http.StatusOK,
+			getWalletDirResponse: "/wallet/folder/address",
+			httpResponse: WalletFolder{
 				Address: "/wallet/folder/address",
 			},
 		},
 		{
-			"403",
-			http.MethodGet,
-			"/wallets/folderName",
-			http.StatusForbidden,
-			"403 Forbidden",
-			"/wallet/folder/address",
-			wallet.ErrWalletApiDisabled,
-			WalletFolder{},
+			name:            "403 - wallet API disabled",
+			method:          http.MethodGet,
+			status:          http.StatusForbidden,
+			err:             "403 Forbidden",
+			getWalletDirErr: wallet.ErrWalletApiDisabled,
 		},
 		{
-			"200 - POST",
-			http.MethodPost,
-			"/wallets/folderName",
-			http.StatusOK,
-			"",
-			"/wallet/folder/address",
-			nil,
-			WalletFolder{
+			name:       "403 - invalid Host header",
+			method:     http.MethodGet,
+			status:     http.StatusForbidden,
+			err:        "403 Forbidden",
+			hostHeader: "example.com",
+		},
+		{
+			name:                 "200 - POST",
+			method:               http.MethodPost,
+			status:               http.StatusOK,
+			getWalletDirResponse: "/wallet/folder/address",
+			httpResponse: WalletFolder{
 				Address: "/wallet/folder/address",
 			},
 		},
 	}
 
 	for _, tc := range tt {
-		gateway := &FakeGateway{
-			t: t,
-		}
+		gateway := &GatewayerMock{}
 		gateway.On("GetWalletDir").Return(tc.getWalletDirResponse, tc.getWalletDirErr)
 
-		req, err := http.NewRequest(tc.method, tc.url, nil)
+		endpoint := "/wallets/folderName"
+
+		req, err := http.NewRequest(tc.method, endpoint, nil)
 		require.NoError(t, err)
 
+		if tc.hostHeader != "" {
+			req.Host = tc.hostHeader
+		}
+
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(getWalletFolder(gateway))
+		handler := NewServerMux(configuredHost, ".", gateway)
 
 		handler.ServeHTTP(rr, req)
 

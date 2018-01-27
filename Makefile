@@ -22,6 +22,10 @@ PACKAGES = $(shell find ./src -type d -not -path '\./src' \
     							      -not -path '\./src/cipher/*' \
     							      -not -path '*/testdata*')
 
+# Compilation output
+BUILD_DIR = dist
+BUILDLIB_DIR = $(BUILD_DIR)/skycoinlib
+
 run:  ## Run the skycoin node. To add arguments, do 'make ARGS="--foo" run'.
 	go run cmd/skycoin/skycoin.go --gui-dir="./${STATIC_DIR}" ${ARGS}
 
@@ -31,6 +35,12 @@ run-help: ## Show skycoin node help
 test: ## Run tests
 	go test ./cmd/... -timeout=1m
 	go test ./src/... -timeout=1m
+
+build-lib: # Build skycoinlib shared library object files
+	mkdir -p $(BUILDLIB_DIR)
+	rm -Rf $(BUILDLIB_DIR)/*
+	go build -buildmode=c-shared  -o $(BUILDLIB_DIR)/skycoinlib.so lib/main.go
+	go build -buildmode=c-archive -o $(BUILDLIB_DIR)/skycoinlib.a  lib/main.go
 
 lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...
@@ -54,6 +64,7 @@ install-linters: ## Install linters
 format:  # Formats the code. Must have goimports installed (use make install-linters).
 	goimports -w -local github.com/skycoin/skycoin ./cmd
 	goimports -w -local github.com/skycoin/skycoin ./src
+	goimports -w -local github.com/skycoin/skycoin ./lib
 
 release: ## Build electron apps, the builds are located in electron/release folder.
 	cd $(ELECTRON_DIR) && ./build.sh

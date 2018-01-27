@@ -478,6 +478,148 @@ result:
 "3615fc23cc12a5cb9190878a2151d1cf54129ff0cd90e5fc4f4e7debebad6868"
 ```
 
+### Get transactions that are addresses related
+
+```
+URI: /transactions
+Method: GET
+Args:
+	addrs: Comma seperated addresses [optional, returns all transactions if no address is provided]
+    confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
+```
+
+To get address related confirmed transactions:
+
+```bash
+curl http://127.0.0.1:6420/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY&confirmed=1
+```
+
+To get address related unconfirmed transactions:
+```bash
+curl http://127.0.0.1:6420/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY&confirmed=0
+```
+
+To get all addresses related transactions:
+
+```bash
+curl http://127.0.0.1:6420/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY
+```
+
+
+result:
+
+```sh
+[
+    {
+        "status": {
+            "confirmed": true,
+            "unconfirmed": false,
+            "height": 10492,
+            "block_seq": 1177,
+            "unknown": false
+        },
+        "time": 1494275011,
+        "txn": {
+            "length": 317,
+            "type": 0,
+            "txid": "b09cd3a8baef6a449848f50a1b97943006ca92747d4e485d0647a3ea74550eca",
+            "inner_hash": "2cb370051c92521a04ba5357e229d8ffa90d9d1741ea223b44dd60a1483ee0e5",
+            "timestamp": 1494275011,
+            "sigs": [
+                "a55155ca15f73f0762f79c15917949a936658cff668647daf82a174eed95703a02622881f9cf6c7495536676f931b2d91d389a9e7b034232b3a1519c8da6fb8800",
+                "cc7d7cbd6f31adabd9bde2c0deaa9277c0f3cf807a4ec97e11872817091dc3705841a6adb74acb625ee20ab6d3525350b8663566003276073d94c3bfe22fe48e01"
+            ],
+            "inputs": [
+                "4f4b0078a9cd19b3395e54b3f42af6adc997f77f04e0ca54016c67c4f2384e3c",
+                "36f4871646b6564b2f1ab72bd768a67579a1e0242bc68bcbcf1779bc75b3dddd"
+            ],
+            "outputs": [
+                {
+                    "uxid": "5287f390628909dd8c25fad0feb37859c0c1ddcf90da0c040c837c89fefd9191",
+                    "dst": "2K6NuLBBapWndAssUtkxKfCtyjDQDHrEhhT",
+                    "coins": "8.000000",
+                    "hours": 7454
+                },
+                {
+                    "uxid": "a1268e9bd2033b49b44afa765d20876467254f51e5515626780467267a65c563",
+                    "dst": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
+                    "coins": "1.000000",
+                    "hours": 7454
+                }
+            ]
+        }
+    },
+    {
+        "status": {
+            "confirmed": true,
+            "unconfirmed": false,
+            "height": 10491,
+            "block_seq": 1178,
+            "unknown": false
+        },
+        "time": 1494275231,
+        "txn": {
+            "length": 183,
+            "type": 0,
+            "txid": "a6446654829a4a844add9f181949d12f8291fdd2c0fcb22200361e90e814e2d3",
+            "inner_hash": "075f255d42ddd2fb228fe488b8b468526810db7a144aeed1fd091e3fd404626e",
+            "timestamp": 1494275231,
+            "sigs": [
+                "9b6fae9a70a42464dda089c943fafbf7bae8b8402e6bf4e4077553206eebc2ed4f7630bb1bd92505131cca5bf8bd82a44477ef53058e1995411bdbf1f5dfad1f00"
+            ],
+            "inputs": [
+                "5287f390628909dd8c25fad0feb37859c0c1ddcf90da0c040c837c89fefd9191"
+            ],
+            "outputs": [
+                {
+                    "uxid": "70fa9dfb887f9ef55beb4e960f60e4703c56f98201acecf2cad729f5d7e84690",
+                    "dst": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
+                    "coins": "8.000000",
+                    "hours": 931
+                }
+            ]
+        }
+    },
+    {
+        "status": {
+            "confirmed": true,
+            "unconfirmed": false,
+            "height": 8730,
+            "block_seq": 2939,
+            "unknown": false
+        },
+        "time": 1505205561,
+        "txn": {
+            "length": 474,
+            "type": 0,
+            "txid": "b45e571988bc07bd0b623c999655fa878fb9bdd24c8cd24fde179bf4b26ae7b7",
+            "inner_hash": "393804eca6afadc05db80cfb9e1024ef5761231c70705c406301bad33161f8bf",
+            "timestamp": 1505205561,
+            "sigs": [
+                "fb9dd021cdff51ab56891cca0fd1600877f6e0691136dbe3f8324c3f4f7ee5bc624ded4954c1d70d8cb776ce3454d8f195bbb252e48b0f2cd388f5a733697d9301",
+                "0639e61ba87a61f10b0e0114008ddd4e7090d9397370de28da27b7852b231b8e66c36d10fe3424c9b23a41266fd2c50f169233009713b332d6a48ce9c128ccef01",
+                "055afe17222aab66c48c8e08e03a406bf2b8719f5221ec54c8e678078033bcd56b66bbc46a866f2be5e3f9ca454e3fbc2021630d0430b72e18c24d02df03c03100",
+                "8cf56fb96e11d49bea728cb35ba5953fbc640817fac01b82e62a959ef8d4c3105298f2a6ea127bb07552abd905a667b58f6c79717e9f05258079de08d91f10a500"
+            ],
+            "inputs": [
+                "dea9266aa7b687f4391e92f04436407c51a834274a5a33bc8bcf3189732e82e3",
+                "e811bdce52ddac0d952d2546fdca8d1ac4e0ad32f170d3d73b724fb37c802652",
+                "e94ccdbc07cc62fb41140b4daa7969438c749837c0808acf20dde113bdf1876b",
+                "534afc496a7aee2ec55c71d85abfc27f35d16c56506f663b24d8ee4815583b6e"
+            ],
+            "outputs": [
+                {
+                    "uxid": "732e129fc1630aba3f06d833ce0a7a25f05dae5df3e7a135b5f82e99222e8c28",
+                    "dst": "2hAjmdPP9R3um9JhKczeVdJUVugY6SPJBDm",
+                    "coins": "6.000000",
+                    "hours": 204
+                }
+            ]
+        }
+    }
+]
+```
+
 ## Block apis
 
 ### Get blochchain progress

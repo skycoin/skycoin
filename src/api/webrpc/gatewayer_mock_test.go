@@ -1,3 +1,8 @@
+/*
+* CODE GENERATED AUTOMATICALLY WITH github.com/ernesto-jimenez/goautomock
+* THIS FILE MUST NEVER BE EDITED MANUALLY
+ */
+
 package webrpc
 
 import (

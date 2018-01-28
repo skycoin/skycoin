@@ -42,31 +42,21 @@ export class HeaderComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.priceSubscription = this.priceService.price.subscribe(price => this.price = price);
     this.walletSubscription = this.walletService.all().subscribe(wallets => {
-      this.coins = wallets.map(wallet => wallet.coins >= 0 ? wallet.coins : 0).reduce((a , b) => a + b, 0);
-      this.hours = wallets.map(wallet => wallet.hours >= 0 ? wallet.hours : 0).reduce((a , b) => a + b, 0);
+      this.coins = wallets.map(wallet => wallet.coins >= 0 ? wallet.coins : 0).reduce((a, b) => a + b, 0);
+      this.hours = wallets.map(wallet => wallet.hours >= 0 ? wallet.hours : 0).reduce((a, b) => a + b, 0);
     });
 
-    IntervalObservable
-      .create(2000)
-      .flatMap(() => this.blockchainService.progress())
-      .takeWhile((response: any) => !response.current || response.current !== response.highest)
+    this.blockchainService.progress
+      .filter(response => !!response)
       .subscribe(response => {
-          this.highest = response.highest;
-          this.current = response.current;
-          this.percentage = this.current && this.highest ? (this.current / this.highest) : 0;
-          console.log(response);
-        }, error => console.log(error),
-        () => this.completeLoading());
+        this.highest = response.highest;
+        this.current = response.current;
+        this.percentage = this.current && this.highest ? (this.current / this.highest) : 0;
+      });
   }
 
   ngOnDestroy() {
     this.priceSubscription.unsubscribe();
     this.walletSubscription.unsubscribe();
-  }
-
-  private completeLoading() {
-    this.current = 999999999999;
-    this.highest = 999999999999;
-    this.walletService.refreshBalances();
   }
 }

@@ -40,8 +40,14 @@ test: ## Run tests
 build-lib-c: # Build Skycoinlib C
 	mkdir -p $(BUILDLIB_DIR)
 	rm -Rf $(BUILDLIB_DIR)/*
-	go build -buildmode=c-shared  -o $(BUILDLIB_DIR)/skycoinlib.so $(LIB_DIR)/cgo/main.go
-	go build -buildmode=c-archive -o $(BUILDLIB_DIR)/skycoinlib.a  $(LIB_DIR)/cgo/main.go
+	go build -buildmode=c-shared  -o $(BUILDLIB_DIR)/libskycoin.so $(LIB_DIR)/cgo/main.go
+	go build -buildmode=c-archive -o $(BUILDLIB_DIR)/libskycoin.a  $(LIB_DIR)/cgo/main.go
+
+test-lib-c: build-lib-c
+	cp $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/
+	rm $(BUILDLIB_DIR)/libskycoin.so	# TODO: Get rid of this step
+	gcc -o $(BUILDLIB_DIR)/skycoinlib_test $(BUILDLIB_DIR)/*.c -I$(BUILDLIB_DIR) -lcriterion -lskycoin -L $(BUILDLIB_DIR)
+	$(BUILDLIB_DIR)/skycoinlib_test
 
 lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...

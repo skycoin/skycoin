@@ -2,6 +2,8 @@ import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { PriceService } from '../../../price.service';
 import { Subscription } from 'rxjs/Subscription';
 import { WalletService } from '../../../services/wallet.service';
+import { IntervalObservable } from 'rxjs/observable/IntervalObservable';
+import { BlockchainService } from '../../../services/blockchain.service';
 
 @Component({
   selector: 'app-header',
@@ -13,6 +15,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
   @Input() coins: number;
   @Input() hours: number;
 
+  current: number;
+  highest: number;
+  percentage: number;
+
   private price: number;
   private priceSubscription: Subscription;
   private walletSubscription: Subscription;
@@ -23,7 +29,12 @@ export class HeaderComponent implements OnInit, OnDestroy {
     return '$' + balance.toFixed(2) + ' ($' + (Math.round(this.price * 100) / 100) + ')';
   }
 
+  get loading() {
+    return !this.current || !this.highest || this.current != this.highest;
+  }
+
   constructor(
+    private blockchainService: BlockchainService,
     private priceService: PriceService,
     private walletService: WalletService,
   ) {}
@@ -33,11 +44,29 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.walletSubscription = this.walletService.all().subscribe(wallets => {
       this.coins = wallets.map(wallet => wallet.coins >= 0 ? wallet.coins : 0).reduce((a , b) => a + b, 0);
       this.hours = wallets.map(wallet => wallet.hours >= 0 ? wallet.hours : 0).reduce((a , b) => a + b, 0);
-    })
+    });
+
+    IntervalObservable
+      .create(2000)
+      .flatMap(() => this.blockchainService.progress())
+      .takeWhile((response: any) => !response.current || response.current !== response.highest)
+      .subscribe(response => {
+          this.highest = response.highest;
+          this.current = response.current;
+          this.percentage = this.current && this.highest ? (this.current / this.highest) : 0;
+          console.log(response);
+        }, error => console.log(error),
+        () => this.completeLoading());
   }
 
   ngOnDestroy() {
     this.priceSubscription.unsubscribe();
     this.walletSubscription.unsubscribe();
+  }
+
+  private completeLoading() {
+    this.current = 999999999999;
+    this.highest = 999999999999;
+    this.walletService.refreshBalances();
   }
 }

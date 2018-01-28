@@ -25,6 +25,7 @@ PACKAGES = $(shell find ./src -type d -not -path '\./src' \
 # Compilation output
 BUILD_DIR = dist
 BUILDLIB_DIR = $(BUILD_DIR)/skycoinlib
+LIB_DIR = lib
 
 run:  ## Run the skycoin node. To add arguments, do 'make ARGS="--foo" run'.
 	go run cmd/skycoin/skycoin.go --gui-dir="./${STATIC_DIR}" ${ARGS}
@@ -36,11 +37,11 @@ test: ## Run tests
 	go test ./cmd/... -timeout=1m
 	go test ./src/... -timeout=1m
 
-build-lib: # Build skycoinlib shared library object files
+build-lib-c: # Build Skycoinlib C
 	mkdir -p $(BUILDLIB_DIR)
 	rm -Rf $(BUILDLIB_DIR)/*
-	go build -buildmode=c-shared  -o $(BUILDLIB_DIR)/skycoinlib.so lib/main.go
-	go build -buildmode=c-archive -o $(BUILDLIB_DIR)/skycoinlib.a  lib/main.go
+	go build -buildmode=c-shared  -o $(BUILDLIB_DIR)/skycoinlib.so $(LIB_DIR)/cgo/main.go
+	go build -buildmode=c-archive -o $(BUILDLIB_DIR)/skycoinlib.a  $(LIB_DIR)/cgo/main.go
 
 lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...

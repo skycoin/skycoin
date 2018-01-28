@@ -13,6 +13,8 @@ typedef struct {
 import "C"
 
 import (
+	"unsafe"
+
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
@@ -21,13 +23,13 @@ import (
  */
 
 //export DecodeBase58Address
-func DecodeBase58Address(strAddr string, cAddr *C.Address) C.int {
-	_, err := cipher.DecodeBase58Address(strAddr)
+func DecodeBase58Address(strAddr string) (*C.Address, C.int) {
+	addr, err := cipher.DecodeBase58Address(strAddr)
+	errCode := 1
 	if err != nil {
-		return 0
+		errCode = 0
 	}
-	// TODO: Copy memory
-	return 1
+	return (*C.Address)(unsafe.Pointer(&addr)), C.int(errCode)
 }
 
 func main() {}

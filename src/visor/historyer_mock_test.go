@@ -3,7 +3,7 @@
 * THIS FILE MUST NEVER BE EDITED MANUALLY
  */
 
-package webrpc
+package visor
 
 import (
 	"fmt"
@@ -12,137 +12,27 @@ import (
 
 	cipher "github.com/skycoin/skycoin/src/cipher"
 	coin "github.com/skycoin/skycoin/src/coin"
-	daemon "github.com/skycoin/skycoin/src/daemon"
-	visor "github.com/skycoin/skycoin/src/visor"
 	historydb "github.com/skycoin/skycoin/src/visor/historydb"
 )
 
-// GatewayerMock mock
-type GatewayerMock struct {
+// historyerMock mock
+type historyerMock struct {
 	mock.Mock
 }
 
-func NewGatewayerMock() *GatewayerMock {
-	return &GatewayerMock{}
+func NewHistoryerMock() *historyerMock {
+	return &historyerMock{}
 }
 
-// GetAddrUxOuts mocked method
-func (m *GatewayerMock) GetAddrUxOuts(p0 cipher.Address) ([]*historydb.UxOutJSON, error) {
+// ForEach mocked method
+func (m *historyerMock) ForEach(p0 func(tx *historydb.Transaction) error) error {
 
 	ret := m.Called(p0)
 
-	var r0 []*historydb.UxOutJSON
+	var r0 error
 	switch res := ret.Get(0).(type) {
-	case nil:
-	case []*historydb.UxOutJSON:
-		r0 = res
-	default:
-		panic(fmt.Sprintf("unexpected type: %v", res))
-	}
-
-	var r1 error
-	switch res := ret.Get(1).(type) {
 	case nil:
 	case error:
-		r1 = res
-	default:
-		panic(fmt.Sprintf("unexpected type: %v", res))
-	}
-
-	return r0, r1
-
-}
-
-// GetBlocks mocked method
-func (m *GatewayerMock) GetBlocks(p0 uint64, p1 uint64) (*visor.ReadableBlocks, error) {
-
-	ret := m.Called(p0, p1)
-
-	var r0 *visor.ReadableBlocks
-	switch res := ret.Get(0).(type) {
-	case nil:
-	case *visor.ReadableBlocks:
-		r0 = res
-	default:
-		panic(fmt.Sprintf("unexpected type: %v", res))
-	}
-
-	var r1 error
-	switch res := ret.Get(1).(type) {
-	case nil:
-	case error:
-		r1 = res
-	default:
-		panic(fmt.Sprintf("unexpected type: %v", res))
-	}
-
-	return r0, r1
-
-}
-
-// GetBlocksInDepth mocked method
-func (m *GatewayerMock) GetBlocksInDepth(p0 []uint64) (*visor.ReadableBlocks, error) {
-
-	ret := m.Called(p0)
-
-	var r0 *visor.ReadableBlocks
-	switch res := ret.Get(0).(type) {
-	case nil:
-	case *visor.ReadableBlocks:
-		r0 = res
-	default:
-		panic(fmt.Sprintf("unexpected type: %v", res))
-	}
-
-	var r1 error
-	switch res := ret.Get(1).(type) {
-	case nil:
-	case error:
-		r1 = res
-	default:
-		panic(fmt.Sprintf("unexpected type: %v", res))
-	}
-
-	return r0, r1
-
-}
-
-// GetLastBlocks mocked method
-func (m *GatewayerMock) GetLastBlocks(p0 uint64) (*visor.ReadableBlocks, error) {
-
-	ret := m.Called(p0)
-
-	var r0 *visor.ReadableBlocks
-	switch res := ret.Get(0).(type) {
-	case nil:
-	case *visor.ReadableBlocks:
-		r0 = res
-	default:
-		panic(fmt.Sprintf("unexpected type: %v", res))
-	}
-
-	var r1 error
-	switch res := ret.Get(1).(type) {
-	case nil:
-	case error:
-		r1 = res
-	default:
-		panic(fmt.Sprintf("unexpected type: %v", res))
-	}
-
-	return r0, r1
-
-}
-
-// GetTimeNow mocked method
-func (m *GatewayerMock) GetTimeNow() uint64 {
-
-	ret := m.Called()
-
-	var r0 uint64
-	switch res := ret.Get(0).(type) {
-	case nil:
-	case uint64:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
@@ -152,15 +42,96 @@ func (m *GatewayerMock) GetTimeNow() uint64 {
 
 }
 
+// GetAddrTxns mocked method
+func (m *historyerMock) GetAddrTxns(p0 cipher.Address) ([]historydb.Transaction, error) {
+
+	ret := m.Called(p0)
+
+	var r0 []historydb.Transaction
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case []historydb.Transaction:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
+
+}
+
+// GetAddrUxOuts mocked method
+func (m *historyerMock) GetAddrUxOuts(p0 cipher.Address) ([]*historydb.UxOut, error) {
+
+	ret := m.Called(p0)
+
+	var r0 []*historydb.UxOut
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case []*historydb.UxOut:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
+
+}
+
+// GetLastTxs mocked method
+func (m *historyerMock) GetLastTxs() ([]*historydb.Transaction, error) {
+
+	ret := m.Called()
+
+	var r0 []*historydb.Transaction
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case []*historydb.Transaction:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
+
+}
+
 // GetTransaction mocked method
-func (m *GatewayerMock) GetTransaction(p0 cipher.SHA256) (*visor.Transaction, error) {
+func (m *historyerMock) GetTransaction(p0 cipher.SHA256) (*historydb.Transaction, error) {
 
 	ret := m.Called(p0)
 
-	var r0 *visor.Transaction
+	var r0 *historydb.Transaction
 	switch res := ret.Get(0).(type) {
 	case nil:
-	case *visor.Transaction:
+	case *historydb.Transaction:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
@@ -179,15 +150,15 @@ func (m *GatewayerMock) GetTransaction(p0 cipher.SHA256) (*visor.Transaction, er
 
 }
 
-// GetUnspentOutputs mocked method
-func (m *GatewayerMock) GetUnspentOutputs(p0 ...daemon.OutputsFilter) (visor.ReadableOutputSet, error) {
+// GetUxout mocked method
+func (m *historyerMock) GetUxout(p0 cipher.SHA256) (*historydb.UxOut, error) {
 
 	ret := m.Called(p0)
 
-	var r0 visor.ReadableOutputSet
+	var r0 *historydb.UxOut
 	switch res := ret.Get(0).(type) {
 	case nil:
-	case visor.ReadableOutputSet:
+	case *historydb.UxOut:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
@@ -206,10 +177,46 @@ func (m *GatewayerMock) GetUnspentOutputs(p0 ...daemon.OutputsFilter) (visor.Rea
 
 }
 
-// InjectTransaction mocked method
-func (m *GatewayerMock) InjectTransaction(p0 coin.Transaction) error {
+// ParseBlock mocked method
+func (m *historyerMock) ParseBlock(p0 *coin.Block) error {
 
 	ret := m.Called(p0)
+
+	var r0 error
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case error:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0
+
+}
+
+// ParsedHeight mocked method
+func (m *historyerMock) ParsedHeight() int64 {
+
+	ret := m.Called()
+
+	var r0 int64
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case int64:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0
+
+}
+
+// ResetIfNeed mocked method
+func (m *historyerMock) ResetIfNeed() error {
+
+	ret := m.Called()
 
 	var r0 error
 	switch res := ret.Get(0).(type) {

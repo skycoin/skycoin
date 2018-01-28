@@ -12,9 +12,7 @@ import (
 var (
 	genPublic, genSecret        = cipher.GenerateKeyPair()
 	genAddress                  = cipher.AddressFromPubKey(genPublic)
-	testMaxSize                 = 1024 * 1024
 	_genTime             uint64 = 1000
-	_incTime             uint64 = 3600 * 1000
 	_genCoins            uint64 = 1000e6
 	_genCoinHours        uint64 = 1000 * 1000
 )

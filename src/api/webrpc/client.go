@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor"
@@ -144,11 +146,24 @@ func Do(req *Request, rpcAddress string) (*Response, error) {
 		return nil, err
 	}
 
-	rsp, err := http.Post(fmt.Sprintf("http://%s/webrpc", rpcAddress), "application/json", bytes.NewBuffer(d))
+	url := fmt.Sprintf("http://%s/webrpc", rpcAddress)
+	body := bytes.NewBuffer(d)
+	rsp, err := http.Post(url, "application/json", body)
 	if err != nil {
 		return nil, err
 	}
 	defer rsp.Body.Close()
+
+	if rsp.StatusCode != http.StatusOK {
+		body, err := ioutil.ReadAll(rsp.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		msg := fmt.Sprintf("RPC request failed: %s", body)
+		return nil, errors.New(strings.TrimSpace(msg))
+	}
+
 	res := Response{}
 	if err := json.NewDecoder(rsp.Body).Decode(&res); err != nil {
 		return nil, err

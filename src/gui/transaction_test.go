@@ -30,35 +30,6 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 )
 
-// GetAllUnconfirmedTxns returns all unconfirmed transactions
-func (gw *FakeGateway) GetAllUnconfirmedTxns() []visor.UnconfirmedTxn {
-	args := gw.Called()
-	return args.Get(0).([]visor.UnconfirmedTxn)
-}
-
-// GetTransaction returns transaction by txid
-func (gw *FakeGateway) GetTransaction(txid cipher.SHA256) (tx *visor.Transaction, err error) {
-	args := gw.Called(txid)
-	return args.Get(0).(*visor.Transaction), args.Error(1)
-}
-
-// InjectTransaction injects transaction
-func (gw *FakeGateway) InjectTransaction(txn coin.Transaction) error {
-	args := gw.Called(txn)
-	return args.Error(0)
-}
-
-// ResendUnconfirmedTxns resents all unconfirmed transactions
-func (gw *FakeGateway) ResendUnconfirmedTxns() (rlt *daemon.ResendResult) {
-	args := gw.Called()
-	return args.Get(0).(*daemon.ResendResult)
-}
-
-func (gw *FakeGateway) GetTransactions(flts ...visor.TxFilter) ([]visor.Transaction, error) {
-	args := gw.Called(flts)
-	return args.Get(0).([]visor.Transaction), args.Error(1)
-}
-
 func createUnconfirmedTxn(t *testing.T) visor.UnconfirmedTxn {
 	ut := visor.UnconfirmedTxn{}
 	ut.Txn = coin.Transaction{}
@@ -126,12 +97,13 @@ func TestGetPendingTxs(t *testing.T) {
 		error                         string
 		getAllUnconfirmedTxnsResponse []visor.UnconfirmedTxn
 		httpResponse                  []*visor.ReadableUnconfirmedTxn
+		hostHeader                    string
 	}{
 		{
-			name:                          "405",
-			method:                        http.MethodPost,
-			status:                        http.StatusMethodNotAllowed,
-			error:                         "405 Method Not Allowed",
+			name:   "405",
+			method: http.MethodPost,
+			status: http.StatusMethodNotAllowed,
+			error:  "405 Method Not Allowed",
 			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTxn{},
 		},
 		{
@@ -144,9 +116,16 @@ func TestGetPendingTxs(t *testing.T) {
 			},
 		},
 		{
-			name:                          "200",
-			method:                        http.MethodGet,
-			status:                        http.StatusOK,
+			name:       "403 - Forbidden - invalid Host header",
+			method:     http.MethodGet,
+			status:     http.StatusForbidden,
+			error:      "403 Forbidden",
+			hostHeader: "example.com",
+		},
+		{
+			name:   "200",
+			method: http.MethodGet,
+			status: http.StatusOK,
 			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTxn{},
 			httpResponse:                  []*visor.ReadableUnconfirmedTxn{},
 		},
@@ -155,18 +134,17 @@ func TestGetPendingTxs(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/pendingTxs"
-			gateway := &FakeGateway{
-				t: t,
-			}
+			gateway := NewGatewayerMock()
 			gateway.On("GetAllUnconfirmedTxns").Return(tc.getAllUnconfirmedTxnsResponse)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 			rr := httptest.NewRecorder()
-			handler := http.HandlerFunc(getPendingTxs(gateway))
-
+			if tc.hostHeader != "" {
+				req.Host = tc.hostHeader
+			}
+			handler := NewServerMux(configuredHost, ".", gateway)
 			handler.ServeHTTP(rr, req)
-
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
 				tc.name, status, tc.status)
@@ -202,6 +180,7 @@ func TestGetTransactionByID(t *testing.T) {
 		getTransactionReponse *visor.Transaction
 		getTransactionError   error
 		httpResponse          visor.TransactionResult
+		hostHeader            string
 	}{
 		{
 			name:              "405",
@@ -262,6 +241,13 @@ func TestGetTransactionByID(t *testing.T) {
 			getTransactionArg: testutil.SHA256FromHex(t, validHash),
 		},
 		{
+			name:       "403 - Forbidden - invalid Host header",
+			method:     http.MethodGet,
+			status:     http.StatusForbidden,
+			error:      "403 Forbidden",
+			hostHeader: "example.com",
+		},
+		{
 			name:   "200",
 			method: http.MethodGet,
 			status: http.StatusOK,
@@ -285,9 +271,7 @@ func TestGetTransactionByID(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/transaction"
-			gateway := &FakeGateway{
-				t: t,
-			}
+			gateway := NewGatewayerMock()
 			gateway.On("GetTransaction", tc.getTransactionArg).Return(tc.getTransactionReponse, tc.getTransactionError)
 
 			v := url.Values{}
@@ -302,11 +286,13 @@ func TestGetTransactionByID(t *testing.T) {
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
+			if tc.hostHeader != "" {
+				req.Host = tc.hostHeader
+			}
+
 			rr := httptest.NewRecorder()
-			handler := http.HandlerFunc(getTransactionByID(gateway))
-
+			handler := NewServerMux(configuredHost, ".", gateway)
 			handler.ServeHTTP(rr, req)
-
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
 				tc.name, status, tc.status)
@@ -344,6 +330,7 @@ func TestInjectTransaction(t *testing.T) {
 		injectTransactionArg   coin.Transaction
 		injectTransactionError error
 		httpResponse           string
+		hostHeader             string
 	}{
 		{
 			name:                 "405",
@@ -389,6 +376,13 @@ func TestInjectTransaction(t *testing.T) {
 			injectTransactionError: errors.New("injectTransactionError"),
 		},
 		{
+			name:       "403 - Forbidden - invalid Host header",
+			method:     http.MethodPost,
+			status:     http.StatusForbidden,
+			error:      "403 Forbidden",
+			hostHeader: "example.com",
+		},
+		{
 			name:                 "200",
 			method:               http.MethodPost,
 			status:               http.StatusOK,
@@ -401,15 +395,16 @@ func TestInjectTransaction(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/injectTransaction"
-			gateway := &FakeGateway{
-				t: t,
-			}
+			gateway := NewGatewayerMock()
 			gateway.On("InjectTransaction", tc.injectTransactionArg).Return(tc.injectTransactionError)
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)
+			if tc.hostHeader != "" {
+				req.Host = tc.hostHeader
+			}
 			rr := httptest.NewRecorder()
-			handler := http.HandlerFunc(injectTransaction(gateway))
+			handler := NewServerMux(configuredHost, ".", gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -437,6 +432,7 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 		httpBody                      string
 		resendUnconfirmedTxnsResponse *daemon.ResendResult
 		httpResponse                  *daemon.ResendResult
+		hostHeader                    string
 	}{
 		{
 			name:   "405",
@@ -445,9 +441,16 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 			error:  "405 Method Not Allowed",
 		},
 		{
-			name:                          "200",
-			method:                        http.MethodGet,
-			status:                        http.StatusOK,
+			name:       "403 - Forbidden - invalid Host header",
+			method:     http.MethodGet,
+			status:     http.StatusForbidden,
+			error:      "403 Forbidden",
+			hostHeader: "example.com",
+		},
+		{
+			name:   "200",
+			method: http.MethodGet,
+			status: http.StatusOK,
 			resendUnconfirmedTxnsResponse: &daemon.ResendResult{},
 			httpResponse:                  &daemon.ResendResult{},
 		},
@@ -455,16 +458,17 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			endPoint := "/resendUnconfirmedTxns"
-			gateway := &FakeGateway{
-				t: t,
-			}
+			endpoint := "/resendUnconfirmedTxns"
+			gateway := NewGatewayerMock()
 			gateway.On("ResendUnconfirmedTxns").Return(tc.resendUnconfirmedTxnsResponse)
 
-			req, err := http.NewRequest(tc.method, endPoint, bytes.NewBufferString(tc.httpBody))
+			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)
+			if tc.hostHeader != "" {
+				req.Host = tc.hostHeader
+			}
 			rr := httptest.NewRecorder()
-			handler := http.HandlerFunc(resendUnconfirmedTxns(gateway))
+			handler := NewServerMux(configuredHost, ".", gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -502,6 +506,7 @@ func TestGetRawTx(t *testing.T) {
 		getTransactionResponse *visor.Transaction
 		getTransactionError    error
 		httpResponse           string
+		hostHeader             string
 	}{
 		{
 			name:              "405",
@@ -560,6 +565,13 @@ func TestGetRawTx(t *testing.T) {
 			getTransactionArg: testutil.SHA256FromHex(t, validHash),
 		},
 		{
+			name:       "403 - Forbidden - invalid Host header",
+			method:     http.MethodGet,
+			status:     http.StatusForbidden,
+			error:      "403 Forbidden",
+			hostHeader: "example.com",
+		},
+		{
 			name:   "200",
 			method: http.MethodGet,
 			status: http.StatusOK,
@@ -575,9 +587,7 @@ func TestGetRawTx(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/rawtx"
-			gateway := &FakeGateway{
-				t: t,
-			}
+			gateway := NewGatewayerMock()
 			gateway.On("GetTransaction", tc.getTransactionArg).Return(tc.getTransactionResponse, tc.getTransactionError)
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -591,8 +601,11 @@ func TestGetRawTx(t *testing.T) {
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
+			if tc.hostHeader != "" {
+				req.Host = tc.hostHeader
+			}
 			rr := httptest.NewRecorder()
-			handler := http.HandlerFunc(getRawTx(gateway))
+			handler := NewServerMux(configuredHost, ".", gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -639,6 +652,7 @@ func TestGetTransactions(t *testing.T) {
 		getTransactionsResponse []visor.Transaction
 		getTransactionsError    error
 		httpResponse            []visor.Transaction
+		hostHeader              string
 	}{
 		{
 			name:   "405",
@@ -710,6 +724,13 @@ func TestGetTransactions(t *testing.T) {
 			},
 		},
 		{
+			name:       "403 - Forbidden - invalid Host header",
+			method:     http.MethodGet,
+			status:     http.StatusForbidden,
+			error:      "403 Forbidden",
+			hostHeader: "example.com",
+		},
+		{
 			name:   "200",
 			method: http.MethodGet,
 			status: http.StatusOK,
@@ -729,9 +750,7 @@ func TestGetTransactions(t *testing.T) {
 	for _, tc := range tt {
 		endpoint := "/transactions"
 		t.Run(tc.name, func(t *testing.T) {
-			gateway := &FakeGateway{
-				t: t,
-			}
+			gateway := NewGatewayerMock()
 			gateway.On("GetTransactions", mock.Anything).Return(tc.getTransactionsResponse, tc.getTransactionsError)
 
 			v := url.Values{}
@@ -749,8 +768,11 @@ func TestGetTransactions(t *testing.T) {
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
+			if tc.hostHeader != "" {
+				req.Host = tc.hostHeader
+			}
 			rr := httptest.NewRecorder()
-			handler := http.HandlerFunc(getTransactions(gateway))
+			handler := NewServerMux(configuredHost, ".", gateway)
 
 			handler.ServeHTTP(rr, req)
 

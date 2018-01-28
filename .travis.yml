@@ -1,8 +1,14 @@
 sudo: required
 dist: trusty
 language: go
-go:
-- 1.9.x
+go: 1.9.x
+
+matrix:
+  include:
+    - os: linux
+    - os: osx
+      # Do not start osx build for PR
+      if: type != pull_request
 
 env:
   global:
@@ -17,12 +23,6 @@ cache:
   - $HOME/.cache/electron
   - $HOME/.cache/electron-builder
   - $HOME/.npm/_prebuilds
-
-matrix:
-  include:
-  - os: linux
-    dist: trusty
-  - os: osx
 
 install:
   # Install gox

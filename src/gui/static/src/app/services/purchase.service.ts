@@ -2,14 +2,13 @@ import { Injectable } from '@angular/core';
 import { Subject } from 'rxjs/Subject';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { Http } from '@angular/http';
+import { environment } from '../../environments/environment';
 
 @Injectable()
 export class PurchaseService {
 
   private purchaseOrders: Subject<any[]> = new BehaviorSubject<any[]>([]);
-  // private purchaseUrl: string = 'https://event.skycoin.net/api/';
-  private purchaseUrl: string = 'http://127.0.01:7071/api/';
-  // private purchaseUrl: string = '/teller/';
+  private purchaseUrl = environment.tellerUrl;
 
   constructor(
     private http: Http,

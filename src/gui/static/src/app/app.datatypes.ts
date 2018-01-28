@@ -2,18 +2,6 @@
  * Internal Objects
  */
 
-export class Wallet {
-  label: string;
-  filename: string;
-  seed: string;
-  coins: number;
-  hours: number;
-  addresses: Address[];
-  visible?: boolean;
-  hideEmpty?: boolean;
-  opened?: boolean;
-}
-
 export class Address {
   address: string;
   coins: number;
@@ -42,6 +30,18 @@ export class Transaction {
   outputs: any[];
   timestamp: number;
   txid: string;
+}
+
+export class Wallet {
+  label: string;
+  filename: string;
+  seed: string;
+  coins: number;
+  hours: number;
+  addresses: Address[];
+  visible?: boolean;
+  hideEmpty?: boolean;
+  opened?: boolean;
 }
 
 /**

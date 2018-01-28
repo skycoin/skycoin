@@ -123,49 +123,44 @@ func TestGetPendingTxs(t *testing.T) {
 		method                        string
 		url                           string
 		status                        int
-		err                           string
+		error                         string
 		getAllUnconfirmedTxnsResponse []visor.UnconfirmedTxn
 		httpResponse                  []*visor.ReadableUnconfirmedTxn
 	}{
 		{
-			"405",
-			http.MethodPost,
-			"/pendingTxs",
-			http.StatusMethodNotAllowed,
-			"405 Method Not Allowed",
-			[]visor.UnconfirmedTxn{},
-			nil,
+			name:                          "405",
+			method:                        http.MethodPost,
+			status:                        http.StatusMethodNotAllowed,
+			error:                         "405 Method Not Allowed",
+			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTxn{},
 		},
 		{
-			"500 - bad unconfirmedTxn",
-			http.MethodGet,
-			"/pendingTxs",
-			http.StatusInternalServerError,
-			"500 Internal Server Error",
-			[]visor.UnconfirmedTxn{
+			name:   "500 - bad unconfirmedTxn",
+			method: http.MethodGet,
+			status: http.StatusInternalServerError,
+			error:  "500 Internal Server Error",
+			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTxn{
 				invalidTxn,
 			},
-			nil,
 		},
 		{
-			"200",
-			http.MethodGet,
-			"/pendingTxs",
-			http.StatusOK,
-			"",
-			[]visor.UnconfirmedTxn{},
-			[]*visor.ReadableUnconfirmedTxn{},
+			name:                          "200",
+			method:                        http.MethodGet,
+			status:                        http.StatusOK,
+			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTxn{},
+			httpResponse:                  []*visor.ReadableUnconfirmedTxn{},
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			endpoint := "/pendingTxs"
 			gateway := &FakeGateway{
 				t: t,
 			}
 			gateway.On("GetAllUnconfirmedTxns").Return(tc.getAllUnconfirmedTxnsResponse)
 
-			req, err := http.NewRequest(tc.method, tc.url, nil)
+			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 			rr := httptest.NewRecorder()
 			handler := http.HandlerFunc(getPendingTxs(gateway))
@@ -177,8 +172,8 @@ func TestGetPendingTxs(t *testing.T) {
 				tc.name, status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.error, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.error)
 			} else {
 				var msg []*visor.ReadableUnconfirmedTxn
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
@@ -200,9 +195,8 @@ func TestGetTransactionByID(t *testing.T) {
 	tt := []struct {
 		name                  string
 		method                string
-		url                   string
 		status                int
-		err                   string
+		error                 string
 		httpBody              *httpBody
 		getTransactionArg     cipher.SHA256
 		getTransactionReponse *visor.Transaction
@@ -210,100 +204,73 @@ func TestGetTransactionByID(t *testing.T) {
 		httpResponse          visor.TransactionResult
 	}{
 		{
-			"405",
-			http.MethodPost,
-			"/transaction",
-			http.StatusMethodNotAllowed,
-			"405 Method Not Allowed",
-			nil,
-			testutil.RandSHA256(t),
-			nil,
-			nil,
-			visor.TransactionResult{},
+			name:              "405",
+			method:            http.MethodPost,
+			status:            http.StatusMethodNotAllowed,
+			error:             "405 Method Not Allowed",
+			getTransactionArg: testutil.RandSHA256(t),
 		},
 		{
-			"400 - empty txid",
-			http.MethodGet,
-			"/transaction",
-			http.StatusBadRequest,
-			"400 Bad Request - txid is empty",
-			&httpBody{
+			name:   "400 - empty txid",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			error:  "400 Bad Request - txid is empty",
+			httpBody: &httpBody{
 				txid: "",
 			},
-			testutil.RandSHA256(t),
-			nil,
-			nil,
-			visor.TransactionResult{},
+			getTransactionArg: testutil.RandSHA256(t),
 		},
 		{
-			"400 - invalid hash: odd length hex string",
-			http.MethodGet,
-			"/transaction",
-			http.StatusBadRequest,
-			"400 Bad Request - encoding/hex: odd length hex string",
-			&httpBody{
+			name:   "400 - invalid hash: odd length hex string",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			error:  "400 Bad Request - encoding/hex: odd length hex string",
+			httpBody: &httpBody{
 				txid: oddHash,
 			},
-			testutil.RandSHA256(t),
-			nil,
-			nil,
-			visor.TransactionResult{},
+			getTransactionArg: testutil.RandSHA256(t),
 		},
 		{
-			"400 - invalid hash: invalid byte: U+0072 'r'",
-			http.MethodGet,
-			"/transaction",
-			http.StatusBadRequest,
-			"400 Bad Request - encoding/hex: invalid byte: U+0072 'r'",
-			&httpBody{
+			name:   "400 - invalid hash: invalid byte: U+0072 'r'",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			error:  "400 Bad Request - encoding/hex: invalid byte: U+0072 'r'",
+			httpBody: &httpBody{
 				txid: invalidHash,
 			},
-			testutil.RandSHA256(t),
-			nil,
-			nil,
-			visor.TransactionResult{},
+			getTransactionArg: testutil.RandSHA256(t),
 		},
 		{
-			"400 - getTransactionError",
-			http.MethodGet,
-			"/transaction",
-			http.StatusBadRequest,
-			"400 Bad Request - getTransactionError",
-			&httpBody{
+			name:   "400 - getTransactionError",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			error:  "400 Bad Request - getTransactionError",
+			httpBody: &httpBody{
 				txid: validHash,
 			},
-			testutil.SHA256FromHex(t, validHash),
-			nil,
-			errors.New("getTransactionError"),
-			visor.TransactionResult{},
+			getTransactionArg:   testutil.SHA256FromHex(t, validHash),
+			getTransactionError: errors.New("getTransactionError"),
 		},
 		{
-			"404",
-			http.MethodGet,
-			"/transaction",
-			http.StatusNotFound,
-			"404 Not Found",
-			&httpBody{
+			name:   "404",
+			method: http.MethodGet,
+			status: http.StatusNotFound,
+			error:  "404 Not Found",
+			httpBody: &httpBody{
 				txid: validHash,
 			},
-			testutil.SHA256FromHex(t, validHash),
-			nil,
-			nil,
-			visor.TransactionResult{},
+			getTransactionArg: testutil.SHA256FromHex(t, validHash),
 		},
 		{
-			"200",
-			http.MethodGet,
-			"/transaction",
-			http.StatusOK,
-			"",
-			&httpBody{
+			name:   "200",
+			method: http.MethodGet,
+			status: http.StatusOK,
+			httpBody: &httpBody{
 				txid: validHash,
 			},
-			testutil.SHA256FromHex(t, validHash),
-			&visor.Transaction{},
-			nil,
-			visor.TransactionResult{
+			getTransactionArg:     testutil.SHA256FromHex(t, validHash),
+			getTransactionReponse: &visor.Transaction{},
+			httpResponse: visor.TransactionResult{
 				Transaction: visor.ReadableTransaction{
 					Sigs:      []string{},
 					In:        []string{},
@@ -317,23 +284,23 @@ func TestGetTransactionByID(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			endpoint := "/transaction"
 			gateway := &FakeGateway{
 				t: t,
 			}
 			gateway.On("GetTransaction", tc.getTransactionArg).Return(tc.getTransactionReponse, tc.getTransactionError)
 
 			v := url.Values{}
-			urlFull := tc.url
 			if tc.httpBody != nil {
 				if tc.httpBody.txid != "" {
 					v.Add("txid", tc.httpBody.txid)
 				}
 			}
 			if len(v) > 0 {
-				urlFull += "?" + v.Encode()
+				endpoint += "?" + v.Encode()
 			}
 
-			req, err := http.NewRequest(tc.method, urlFull, nil)
+			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 			rr := httptest.NewRecorder()
 			handler := http.HandlerFunc(getTransactionByID(gateway))
@@ -345,8 +312,8 @@ func TestGetTransactionByID(t *testing.T) {
 				tc.name, status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.error, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.error)
 			} else {
 				var msg visor.TransactionResult
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
@@ -371,101 +338,75 @@ func TestInjectTransaction(t *testing.T) {
 	tt := []struct {
 		name                   string
 		method                 string
-		url                    string
 		status                 int
-		err                    string
+		error                  string
 		httpBody               string
 		injectTransactionArg   coin.Transaction
 		injectTransactionError error
 		httpResponse           string
 	}{
 		{
-			"405",
-			http.MethodGet,
-			"/injectTransaction",
-			http.StatusMethodNotAllowed,
-			"405 Method Not Allowed",
-			"",
-			validTransaction,
-			nil,
-			"",
+			name:                 "405",
+			method:               http.MethodGet,
+			status:               http.StatusMethodNotAllowed,
+			error:                "405 Method Not Allowed",
+			injectTransactionArg: validTransaction,
 		},
 		{
-			"400 - EOF",
-			http.MethodPost,
-			"/injectTransaction",
-			http.StatusBadRequest,
-			"400 Bad Request - EOF",
-			"",
-			validTransaction,
-			nil,
-			"",
+			name:   "400 - EOF",
+			method: http.MethodPost,
+			status: http.StatusBadRequest,
+			error:  "400 Bad Request - EOF",
 		},
 		{
-			"400 - Invalid transaction: Deserialization failed",
-			http.MethodPost,
-			"/injectTransaction",
-			http.StatusBadRequest,
-			"400 Bad Request - Invalid transaction: Deserialization failed",
-			`{"wrongKey":"wrongValue"}`,
-			validTransaction,
-			nil,
-			"",
+			name:     "400 - Invalid transaction: Deserialization failed",
+			method:   http.MethodPost,
+			status:   http.StatusBadRequest,
+			error:    "400 Bad Request - Invalid transaction: Deserialization failed",
+			httpBody: `{"wrongKey":"wrongValue"}`,
 		},
 		{
-			"400 - encoding/hex: odd length hex string",
-			http.MethodPost,
-			"/injectTransaction",
-			http.StatusBadRequest,
-			"400 Bad Request - encoding/hex: odd length hex string",
-			`{"rawtx":"aab"}`,
-			validTransaction,
-			nil,
-			"",
+			name:     "400 - encoding/hex: odd length hex string",
+			method:   http.MethodPost,
+			status:   http.StatusBadRequest,
+			error:    "400 Bad Request - encoding/hex: odd length hex string",
+			httpBody: `{"rawtx":"aab"}`,
 		},
 		{
-			"400 - rawtx deserialization error",
-			http.MethodPost,
-			"/injectTransaction",
-			http.StatusBadRequest,
-			"400 Bad Request - Invalid transaction: Deserialization failed",
-			string(invalidTxBodyJson),
-			validTransaction,
-			nil,
-			"",
+			name:     "400 - rawtx deserialization error",
+			method:   http.MethodPost,
+			status:   http.StatusBadRequest,
+			error:    "400 Bad Request - Invalid transaction: Deserialization failed",
+			httpBody: string(invalidTxBodyJson),
 		},
 		{
-			"400 - injectTransactionError",
-			http.MethodPost,
-			"/injectTransaction",
-			http.StatusBadRequest,
-			"400 Bad Request - inject tx failed:injectTransactionError",
-			string(validTxBodyJson),
-			validTransaction,
-			errors.New("injectTransactionError"),
-			"",
+			name:                   "400 - injectTransactionError",
+			method:                 http.MethodPost,
+			status:                 http.StatusBadRequest,
+			error:                  "400 Bad Request - inject tx failed:injectTransactionError",
+			httpBody:               string(validTxBodyJson),
+			injectTransactionArg:   validTransaction,
+			injectTransactionError: errors.New("injectTransactionError"),
 		},
 		{
-			"200",
-			http.MethodPost,
-			"/injectTransaction",
-			http.StatusOK,
-			"",
-			string(validTxBodyJson),
-			validTransaction,
-			nil,
-			validTransaction.Hash().Hex(),
+			name:                 "200",
+			method:               http.MethodPost,
+			status:               http.StatusOK,
+			httpBody:             string(validTxBodyJson),
+			injectTransactionArg: validTransaction,
+			httpResponse:         validTransaction.Hash().Hex(),
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			endpoint := "/injectTransaction"
 			gateway := &FakeGateway{
 				t: t,
 			}
 			gateway.On("InjectTransaction", tc.injectTransactionArg).Return(tc.injectTransactionError)
 
-			req, err := http.NewRequest(tc.method, tc.url, bytes.NewBufferString(tc.httpBody))
+			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)
 			rr := httptest.NewRecorder()
 			handler := http.HandlerFunc(injectTransaction(gateway))
@@ -476,8 +417,8 @@ func TestInjectTransaction(t *testing.T) {
 				tc.name, status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.error, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.error)
 			} else {
 				expectedResponse, err := json.MarshalIndent(tc.httpResponse, "", "    ")
 				require.NoError(t, err)
@@ -491,43 +432,36 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 	tt := []struct {
 		name                          string
 		method                        string
-		url                           string
 		status                        int
-		err                           string
+		error                         string
 		httpBody                      string
 		resendUnconfirmedTxnsResponse *daemon.ResendResult
 		httpResponse                  *daemon.ResendResult
 	}{
 		{
-			"405",
-			http.MethodPost,
-			"/resendUnconfirmedTxns",
-			http.StatusMethodNotAllowed,
-			"405 Method Not Allowed",
-			"",
-			&daemon.ResendResult{},
-			nil,
+			name:   "405",
+			method: http.MethodPost,
+			status: http.StatusMethodNotAllowed,
+			error:  "405 Method Not Allowed",
 		},
 		{
-			"200",
-			http.MethodGet,
-			"/resendUnconfirmedTxns",
-			http.StatusOK,
-			"",
-			"",
-			&daemon.ResendResult{},
-			&daemon.ResendResult{},
+			name:                          "200",
+			method:                        http.MethodGet,
+			status:                        http.StatusOK,
+			resendUnconfirmedTxnsResponse: &daemon.ResendResult{},
+			httpResponse:                  &daemon.ResendResult{},
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			endPoint := "/resendUnconfirmedTxns"
 			gateway := &FakeGateway{
 				t: t,
 			}
 			gateway.On("ResendUnconfirmedTxns").Return(tc.resendUnconfirmedTxnsResponse)
 
-			req, err := http.NewRequest(tc.method, tc.url, bytes.NewBufferString(tc.httpBody))
+			req, err := http.NewRequest(tc.method, endPoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)
 			rr := httptest.NewRecorder()
 			handler := http.HandlerFunc(resendUnconfirmedTxns(gateway))
@@ -538,8 +472,8 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 				tc.name, status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.error, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.error)
 			} else {
 				var msg *daemon.ResendResult
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
@@ -558,145 +492,104 @@ func TestGetRawTx(t *testing.T) {
 		txid string
 	}
 	tt := []struct {
-		name             string
-		method           string
-		url              string
-		status           int
-		err              string
-		httpBody         *httpBody
-		getRawTxArg      cipher.SHA256
-		getRawTxResponse *visor.Transaction
-		getRawTxError    error
-		httpResponse     string
+		name                   string
+		method                 string
+		url                    string
+		status                 int
+		error                  string
+		httpBody               *httpBody
+		getTransactionArg      cipher.SHA256
+		getTransactionResponse *visor.Transaction
+		getTransactionError    error
+		httpResponse           string
 	}{
 		{
-			"405",
-			http.MethodPost,
-			"/rawtx",
-			http.StatusMethodNotAllowed,
-			"405 Method Not Allowed",
-			nil,
-			testutil.RandSHA256(t),
-			nil,
-			nil,
-			"",
+			name:              "405",
+			method:            http.MethodPost,
+			status:            http.StatusMethodNotAllowed,
+			error:             "405 Method Not Allowed",
+			getTransactionArg: testutil.RandSHA256(t),
 		},
 		{
-			"400 - txid is empty",
-			http.MethodGet,
-			"/rawtx",
-			http.StatusBadRequest,
-			"400 Bad Request - txid is empty",
-			&httpBody{},
-			testutil.RandSHA256(t),
-			nil,
-			nil,
-			"",
+			name:              "400 - txid is empty",
+			method:            http.MethodGet,
+			status:            http.StatusBadRequest,
+			error:             "400 Bad Request - txid is empty",
+			httpBody:          &httpBody{},
+			getTransactionArg: testutil.RandSHA256(t),
 		},
 		{
-			"400 - invalid hash: odd length hex string",
-			http.MethodGet,
-			"/rawtx",
-			http.StatusBadRequest,
-			"400 Bad Request - encoding/hex: odd length hex string",
-			&httpBody{
+			name:   "400 - invalid hash: odd length hex string",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			error:  "400 Bad Request - encoding/hex: odd length hex string",
+			httpBody: &httpBody{
 				txid: oddHash,
 			},
-			testutil.RandSHA256(t),
-			nil,
-			nil,
-			"",
+			getTransactionArg: testutil.RandSHA256(t),
 		},
 		{
-			"400 - invalid hash: invalid byte: U+0072 'r'",
-			http.MethodGet,
-			"/rawtx",
-			http.StatusBadRequest,
-			"400 Bad Request - encoding/hex: invalid byte: U+0072 'r'",
-			&httpBody{
+			name:   "400 - invalid hash: invalid byte: U+0072 'r'",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			error:  "400 Bad Request - encoding/hex: invalid byte: U+0072 'r'",
+			httpBody: &httpBody{
 				txid: invalidHash,
 			},
-			testutil.RandSHA256(t),
-			nil,
-			nil,
-			"",
+			getTransactionArg: testutil.RandSHA256(t),
 		},
 		{
-			"400 - getTransactionError",
-			http.MethodGet,
-			"/rawtx",
-			http.StatusBadRequest,
-			"400 Bad Request - getTransactionError",
-			&httpBody{
+			name:   "400 - getTransactionError",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			error:  "400 Bad Request - getTransactionError",
+			httpBody: &httpBody{
 				txid: validHash,
 			},
-			testutil.SHA256FromHex(t, validHash),
-			nil,
-			errors.New("getTransactionError"),
-			"",
+			getTransactionArg:   testutil.SHA256FromHex(t, validHash),
+			getTransactionError: errors.New("getTransactionError"),
 		},
 		{
-			"400 - getTransactionError",
-			http.MethodGet,
-			"/rawtx",
-			http.StatusBadRequest,
-			"400 Bad Request - getTransactionError",
-			&httpBody{
+			name:   "404",
+			method: http.MethodGet,
+			status: http.StatusNotFound,
+			error:  "404 Not Found",
+			httpBody: &httpBody{
 				txid: validHash,
 			},
-			testutil.SHA256FromHex(t, validHash),
-			nil,
-			errors.New("getTransactionError"),
-			"",
+			getTransactionArg: testutil.SHA256FromHex(t, validHash),
 		},
 		{
-			"404",
-			http.MethodGet,
-			"/rawtx",
-			http.StatusNotFound,
-			"404 Not Found",
-			&httpBody{
+			name:   "200",
+			method: http.MethodGet,
+			status: http.StatusOK,
+			httpBody: &httpBody{
 				txid: validHash,
 			},
-			testutil.SHA256FromHex(t, validHash),
-			nil,
-			nil,
-			"",
-		},
-		{
-			"200",
-			http.MethodGet,
-			"/rawtx",
-			http.StatusOK,
-			"",
-			&httpBody{
-				txid: validHash,
-			},
-			testutil.SHA256FromHex(t, validHash),
-			&visor.Transaction{},
-			nil,
-			"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+			getTransactionArg:      testutil.SHA256FromHex(t, validHash),
+			getTransactionResponse: &visor.Transaction{},
+			httpResponse:           "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			endpoint := "/rawtx"
 			gateway := &FakeGateway{
 				t: t,
 			}
-			gateway.On("GetTransaction", tc.getRawTxArg).Return(tc.getRawTxResponse, tc.getRawTxError)
+			gateway.On("GetTransaction", tc.getTransactionArg).Return(tc.getTransactionResponse, tc.getTransactionError)
 			v := url.Values{}
-			urlFull := tc.url
 			if tc.httpBody != nil {
 				if tc.httpBody.txid != "" {
 					v.Add("txid", tc.httpBody.txid)
 				}
 			}
 			if len(v) > 0 {
-				urlFull += "?" + v.Encode()
+				endpoint += "?" + v.Encode()
 			}
 
-			req, err := http.NewRequest(tc.method, urlFull, nil)
+			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 			rr := httptest.NewRecorder()
 			handler := http.HandlerFunc(getRawTx(gateway))
@@ -707,8 +600,8 @@ func TestGetRawTx(t *testing.T) {
 				tc.name, status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.error, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.error)
 			} else {
 				expectedResponse, err := json.MarshalIndent(tc.httpResponse, "", "    ")
 				require.NoError(t, err)
@@ -739,9 +632,8 @@ func TestGetTransactions(t *testing.T) {
 	tt := []struct {
 		name                    string
 		method                  string
-		url                     string
 		status                  int
-		err                     string
+		error                   string
 		httpBody                *httpBody
 		getTransactionsArg      []visor.TxFilter
 		getTransactionsResponse []visor.Transaction
@@ -749,83 +641,65 @@ func TestGetTransactions(t *testing.T) {
 		httpResponse            []visor.Transaction
 	}{
 		{
-			"405",
-			http.MethodPost,
-			"/transactions",
-			http.StatusMethodNotAllowed,
-			"405 Method Not Allowed",
-			nil,
-			[]visor.TxFilter{},
-			nil,
-			nil,
-			[]visor.Transaction{},
+			name:   "405",
+			method: http.MethodPost,
+			status: http.StatusMethodNotAllowed,
+			error:  "405 Method Not Allowed",
 		},
 		{
-			"400 - invalid `addrs` param",
-			http.MethodGet,
-			"/transactions",
-			http.StatusBadRequest,
-			"400 Bad Request - parse parament: 'addrs' failed: Invalid base58 character",
-			&httpBody{
+			name:   "400 - invalid `addrs` param",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			error:  "400 Bad Request - parse parament: 'addrs' failed: Invalid base58 character",
+			httpBody: &httpBody{
 				addrs: invalidAddrsStr,
 			},
-			[]visor.TxFilter{
+			getTransactionsArg: []visor.TxFilter{
 				visor.AddrsFilter(addrs),
 			},
-			nil,
-			nil,
-			[]visor.Transaction{},
 		},
 		{
-			"400 - invalid `confirmed` param",
-			http.MethodGet,
-			"/transactions",
-			http.StatusBadRequest,
-			"400 Bad Request - invalid 'confirmed' value: strconv.ParseBool: parsing \"invalidConfirmed\": invalid syntax",
-			&httpBody{
+			name:   "400 - invalid `confirmed` param",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			error:  "400 Bad Request - invalid 'confirmed' value: strconv.ParseBool: parsing \"invalidConfirmed\": invalid syntax",
+			httpBody: &httpBody{
 				addrs:     addrsStr,
 				confirmed: "invalidConfirmed",
 			},
-			[]visor.TxFilter{
+			getTransactionsArg: []visor.TxFilter{
 				visor.AddrsFilter(addrs),
 			},
-			nil,
-			nil,
-			[]visor.Transaction{},
 		},
 		{
-			"500 - getTransactionsError",
-			http.MethodGet,
-			"/transactions",
-			http.StatusInternalServerError,
-			"500 Internal Server Error",
-			&httpBody{
+			name:   "500 - getTransactionsError",
+			method: http.MethodGet,
+			status: http.StatusInternalServerError,
+			error:  "500 Internal Server Error",
+			httpBody: &httpBody{
 				addrs:     addrsStr,
 				confirmed: "true",
 			},
-			[]visor.TxFilter{
+			getTransactionsArg: []visor.TxFilter{
 				visor.AddrsFilter(addrs),
 				visor.ConfirmedTxFilter(true),
 			},
-			[]visor.Transaction{},
-			errors.New("getTransactionsError"),
-			[]visor.Transaction{},
+			getTransactionsError: errors.New("getTransactionsError"),
 		},
 		{
-			"500 - visor.NewTransactionResults error",
-			http.MethodGet,
-			"/transactions",
-			http.StatusInternalServerError,
-			"500 Internal Server Error",
-			&httpBody{
+			name:   "500 - visor.NewTransactionResults error",
+			method: http.MethodGet,
+			status: http.StatusInternalServerError,
+			error:  "500 Internal Server Error",
+			httpBody: &httpBody{
 				addrs:     addrsStr,
 				confirmed: "true",
 			},
-			[]visor.TxFilter{
+			getTransactionsArg: []visor.TxFilter{
 				visor.AddrsFilter(addrs),
 				visor.ConfirmedTxFilter(true),
 			},
-			[]visor.Transaction{
+			getTransactionsResponse: []visor.Transaction{
 				{
 					Txn: invalidTxn,
 					Status: visor.TransactionStatus{
@@ -834,30 +708,26 @@ func TestGetTransactions(t *testing.T) {
 					},
 				},
 			},
-			nil,
-			[]visor.Transaction{},
 		},
 		{
-			"200",
-			http.MethodGet,
-			"/transactions",
-			http.StatusOK,
-			"",
-			&httpBody{
+			name:   "200",
+			method: http.MethodGet,
+			status: http.StatusOK,
+			httpBody: &httpBody{
 				addrs:     addrsStr,
 				confirmed: "true",
 			},
-			[]visor.TxFilter{
+			getTransactionsArg: []visor.TxFilter{
 				visor.AddrsFilter(addrs),
 				visor.ConfirmedTxFilter(true),
 			},
-			[]visor.Transaction{},
-			nil,
-			[]visor.Transaction{},
+			getTransactionsResponse: []visor.Transaction{},
+			httpResponse:            []visor.Transaction{},
 		},
 	}
 
 	for _, tc := range tt {
+		endpoint := "/transactions"
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &FakeGateway{
 				t: t,
@@ -865,7 +735,6 @@ func TestGetTransactions(t *testing.T) {
 			gateway.On("GetTransactions", mock.Anything).Return(tc.getTransactionsResponse, tc.getTransactionsError)
 
 			v := url.Values{}
-			urlFull := tc.url
 			if tc.httpBody != nil {
 				if tc.httpBody.addrs != "" {
 					v.Add("addrs", tc.httpBody.addrs)
@@ -875,10 +744,10 @@ func TestGetTransactions(t *testing.T) {
 				}
 			}
 			if len(v) > 0 {
-				urlFull += "?" + v.Encode()
+				endpoint += "?" + v.Encode()
 			}
 
-			req, err := http.NewRequest(tc.method, urlFull, nil)
+			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 			rr := httptest.NewRecorder()
 			handler := http.HandlerFunc(getTransactions(gateway))
@@ -890,8 +759,8 @@ func TestGetTransactions(t *testing.T) {
 				tc.name, status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.error, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.error)
 			} else {
 				var msg []visor.Transaction
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)

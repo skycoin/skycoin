@@ -2,7 +2,6 @@ import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { PriceService } from '../../../price.service';
 import { Subscription } from 'rxjs/Subscription';
 import { WalletService } from '../../../services/wallet.service';
-import { IntervalObservable } from 'rxjs/observable/IntervalObservable';
 import { BlockchainService } from '../../../services/blockchain.service';
 
 @Component({

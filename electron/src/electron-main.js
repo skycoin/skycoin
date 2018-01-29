@@ -134,6 +134,7 @@ function createWindow(url) {
     width: 1200,
     height: 900,
     title: 'Skycoin',
+    icon: path.join(__dirname, 'icon-512x512.png'),
     nodeIntegration: false,
     webPreferences: {
       webgl: false,

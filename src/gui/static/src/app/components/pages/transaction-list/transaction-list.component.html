@@ -16,7 +16,7 @@
         </div>
         <div class="-balance">
           <h4>{{ transaction.balance }} SKY</h4>
-          <p *ngIf="price">{{ transaction.balance * price | currency:'USD':true:'1.2-2' }}</p>
+          <p *ngIf="price">{{ transaction.balance * price | currency:'USD':'symbol':'1.2-2' }}</p>
         </div>
       </div>
     </ng-container>

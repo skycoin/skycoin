@@ -54,6 +54,7 @@ install-linters: ## Install linters
 format:  # Formats the code. Must have goimports installed (use make install-linters).
 	goimports -w -local github.com/skycoin/skycoin ./cmd
 	goimports -w -local github.com/skycoin/skycoin ./src
+	goimports -w -local github.com/skycoin/skycoin ./docker
 
 release: ## Build electron apps, the builds are located in electron/release folder.
 	cd $(ELECTRON_DIR) && ./build.sh

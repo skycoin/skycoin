@@ -2,7 +2,7 @@
     "meta": {
         "coin": "skycoin",
         "cryptoType": "scrypt-chacha20poly1305",
-        "encrypted": false,
+        "encrypted": "false",
         "filename": "v2_no_encrypt.wlt",
         "label": "v2_no_encrypt",
         "lastSeed": "c79454cf362b3f55e5effce09f664311650a44b9c189b3c8eed1ae9bd696cd9e",

@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -120,7 +121,7 @@ func newWalletFilename() string {
 //      type - wallet type
 //      coin - coin type
 type Wallet struct {
-	Meta    map[string]interface{}
+	Meta    map[string]string
 	Entries []Entry
 }
 
@@ -149,7 +150,7 @@ func NewWallet(wltName string, opts Options) (*Wallet, error) {
 	}
 
 	w := &Wallet{
-		Meta: map[string]interface{}{
+		Meta: map[string]string{
 			metaFilename:   wltName,
 			metaVersion:    Version,
 			metaLabel:      opts.Label,
@@ -494,9 +495,19 @@ func (w *Wallet) validate() error {
 		return errors.New("crypto type field not set")
 	}
 
-	if w.IsEncrypted() {
-		if _, ok := w.Meta[metaSecrets]; !ok {
-			return errors.New("wallet is encrypted, but secrets field not set")
+	if encStr, ok := w.Meta[metaEncrypted]; ok {
+		// validate the encrypted value
+		isEncrypted, err := strconv.ParseBool(encStr)
+		if err != nil {
+			return fmt.Errorf("invalid encrypted value: %v", err)
+		}
+
+		// checks if the secrets field is empty
+		if isEncrypted {
+			if _, ok := w.Meta[metaSecrets]; !ok {
+				return errors.New("wallet is encrypted, but secrets field not set")
+			}
+
 		}
 	}
 
@@ -505,18 +516,12 @@ func (w *Wallet) validate() error {
 
 // Type gets the wallet type
 func (w *Wallet) Type() string {
-	if v, ok := w.Meta[metaType].(string); ok {
-		return v
-	}
-	return ""
+	return w.Meta[metaType]
 }
 
 // Version gets the wallet version
 func (w *Wallet) Version() string {
-	if v, ok := w.Meta[metaVersion].(string); ok {
-		return v
-	}
-	return ""
+	return w.Meta[metaVersion]
 }
 
 func (w *Wallet) setVersion(v string) {
@@ -525,10 +530,7 @@ func (w *Wallet) setVersion(v string) {
 
 // Filename gets the wallet filename
 func (w *Wallet) Filename() string {
-	if v, ok := w.Meta[metaFilename].(string); ok {
-		return v
-	}
-	return ""
+	return w.Meta[metaFilename]
 }
 
 // setFilename sets the wallet filename
@@ -538,10 +540,7 @@ func (w *Wallet) setFilename(fn string) {
 
 // Label gets the wallet label
 func (w *Wallet) Label() string {
-	if v, ok := w.Meta[metaLabel].(string); ok {
-		return v
-	}
-	return ""
+	return w.Meta[metaLabel]
 }
 
 // setLabel sets the wallet label
@@ -551,10 +550,7 @@ func (w *Wallet) setLabel(label string) {
 
 // lastSeed returns the last seed
 func (w *Wallet) lastSeed() string {
-	if v, ok := w.Meta[metaLastSeed].(string); ok {
-		return v
-	}
-	return ""
+	return w.Meta[metaLastSeed]
 }
 
 func (w *Wallet) setLastSeed(lseed string) {
@@ -562,48 +558,32 @@ func (w *Wallet) setLastSeed(lseed string) {
 }
 
 func (w *Wallet) seed() string {
-	if v, ok := w.Meta[metaSeed].(string); ok {
-		return v
-	}
-	return ""
+	return w.Meta[metaSeed]
 }
 
 func (w *Wallet) setSeed(seed string) {
 	w.Meta[metaSeed] = seed
 }
 
-// func (w *Wallet) encryptedSeed() string {
-// 	if v, ok := w.Meta[metaEncryptedSeed].(string); ok {
-// 		return v
-// 	}
-// 	return ""
-// }
-
-// func (w *Wallet) setEncryptedSeed(seed string) {
-// 	w.Meta[metaEncryptedSeed] = seed
-// }
-
-// func (w *Wallet) encryptedLastSeed() string {
-// 	if v, ok := w.Meta[metaEncryptedLastSeed].(string); ok {
-// 		return v
-// 	}
-// 	return ""
-// }
-
-// func (w *Wallet) setEncryptedLastSeed(seed string) {
-// 	w.Meta[metaEncryptedLastSeed] = seed
-// }
-
 func (w *Wallet) setEncrypted(encrypt bool) {
-	w.Meta[metaEncrypted] = encrypt
+	w.Meta[metaEncrypted] = strconv.FormatBool(encrypt)
 }
 
 // IsEncrypted checks whether the wallet is encrypted.
+// the meta.encrypted string value must be valid, it's either set by
+// setEncrypted method or converted from ReadableWallet, ReadableWallet
+// will validate the encrypted string.
 func (w *Wallet) IsEncrypted() bool {
-	if encrypted, ok := w.Meta[metaEncrypted].(bool); ok {
-		return encrypted
+	encStr, ok := w.Meta[metaEncrypted]
+	if !ok {
+		return false
 	}
-	return false
+
+	b, err := strconv.ParseBool(encStr)
+	if err != nil {
+		panic(err)
+	}
+	return b
 }
 
 func (w *Wallet) setCryptoType(tp CryptoType) {
@@ -611,17 +591,11 @@ func (w *Wallet) setCryptoType(tp CryptoType) {
 }
 
 func (w *Wallet) cryptoType() CryptoType {
-	if et, ok := w.Meta[metaCryptoType].(string); ok {
-		return CryptoType(et)
-	}
-	return ""
+	return CryptoType(w.Meta[metaCryptoType])
 }
 
 func (w *Wallet) secrets() string {
-	if v, ok := w.Meta[metaSecrets].(string); ok {
-		return v
-	}
-	return ""
+	return w.Meta[metaSecrets]
 }
 
 func (w *Wallet) setSecrets(s string) {
@@ -743,7 +717,7 @@ func (w *Wallet) AddEntry(entry Entry) error {
 
 // clone returns the clone of self
 func (w *Wallet) clone() *Wallet {
-	wlt := Wallet{Meta: make(map[string]interface{})}
+	wlt := Wallet{Meta: make(map[string]string)}
 	for k, v := range w.Meta {
 		wlt.Meta[k] = v
 	}

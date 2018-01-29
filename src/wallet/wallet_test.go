@@ -421,7 +421,7 @@ func makeWallet(t *testing.T, opts Options, addrNum uint64) *Wallet {
 
 func TestLoadWallet(t *testing.T) {
 	type expect struct {
-		meta map[string]interface{}
+		meta map[string]string
 		err  error
 	}
 
@@ -434,7 +434,7 @@ func TestLoadWallet(t *testing.T) {
 			"ok",
 			"./testdata/test1.wlt",
 			expect{
-				meta: map[string]interface{}{
+				meta: map[string]string{
 					"coin":     string(CoinTypeSkycoin),
 					"filename": "test1.wlt",
 					"label":    "test3",
@@ -451,7 +451,7 @@ func TestLoadWallet(t *testing.T) {
 			"wallet file doesn't exist",
 			"not_exist_file.wlt",
 			expect{
-				meta: map[string]interface{}{},
+				meta: map[string]string{},
 				err:  fmt.Errorf("load wallet file failed, wallet not_exist_file.wlt doesn't exist"),
 			},
 		},
@@ -459,7 +459,7 @@ func TestLoadWallet(t *testing.T) {
 			"invalid wallet: no type",
 			"./testdata/invalid_wallets/no_type.wlt",
 			expect{
-				meta: map[string]interface{}{},
+				meta: map[string]string{},
 				err:  fmt.Errorf("invalid wallet no_type.wlt: type field not set"),
 			},
 		},
@@ -467,7 +467,7 @@ func TestLoadWallet(t *testing.T) {
 			"invalid wallet: invalid type",
 			"./testdata/invalid_wallets/err_type.wlt",
 			expect{
-				meta: map[string]interface{}{},
+				meta: map[string]string{},
 				err:  fmt.Errorf("invalid wallet err_type.wlt: wallet type invalid"),
 			},
 		},
@@ -475,7 +475,7 @@ func TestLoadWallet(t *testing.T) {
 			"invalid wallet: no coin",
 			"./testdata/invalid_wallets/no_coin.wlt",
 			expect{
-				meta: map[string]interface{}{},
+				meta: map[string]string{},
 				err:  fmt.Errorf("invalid wallet no_coin.wlt: coin field not set"),
 			},
 		},
@@ -483,7 +483,7 @@ func TestLoadWallet(t *testing.T) {
 			"invalid wallet: no seed",
 			"./testdata/invalid_wallets/no_seed.wlt",
 			expect{
-				meta: map[string]interface{}{},
+				meta: map[string]string{},
 				err:  fmt.Errorf("invalid wallet no_seed.wlt: seed field not set"),
 			},
 		},
@@ -491,10 +491,10 @@ func TestLoadWallet(t *testing.T) {
 			"version=0.2 encrypted=true",
 			"./testdata/v2.wlt",
 			expect{
-				meta: map[string]interface{}{
+				meta: map[string]string{
 					"coin":       "skycoin",
 					"cryptoType": "scrypt-chacha20poly1305",
-					"encrypted":  true,
+					"encrypted":  "true",
 					"filename":   "v2.wlt",
 					"label":      "v2",
 					"lastSeed":   "",
@@ -510,10 +510,10 @@ func TestLoadWallet(t *testing.T) {
 			"version=0.2 encrypted=flase",
 			"./testdata/v2_no_encrypt.wlt",
 			expect{
-				meta: map[string]interface{}{
+				meta: map[string]string{
 					"coin":       "skycoin",
 					"cryptoType": "scrypt-chacha20poly1305",
-					"encrypted":  false,
+					"encrypted":  "false",
 					"filename":   "v2_no_encrypt.wlt",
 					"label":      "v2_no_encrypt",
 					"lastSeed":   "c79454cf362b3f55e5effce09f664311650a44b9c189b3c8eed1ae9bd696cd9e",

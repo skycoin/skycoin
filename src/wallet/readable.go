@@ -98,8 +98,8 @@ func newEntryFromReadable(w *ReadableEntry) (*Entry, error) {
 
 // ReadableWallet used for [de]serialization of a Wallet
 type ReadableWallet struct {
-	Meta    map[string]interface{} `json:"meta"`
-	Entries ReadableEntries        `json:"entries"`
+	Meta    map[string]string `json:"meta"`
+	Entries ReadableEntries   `json:"entries"`
 }
 
 // NewReadableWallet creates readable wallet
@@ -109,7 +109,7 @@ func NewReadableWallet(w *Wallet) *ReadableWallet {
 		readable[i] = NewReadableEntry(e)
 	}
 
-	meta := make(map[string]interface{}, len(w.Meta))
+	meta := make(map[string]string, len(w.Meta))
 	for k, v := range w.Meta {
 		meta[k] = v
 	}
@@ -166,23 +166,9 @@ func (rw *ReadableWallet) Load(filename string) error {
 }
 
 func (rw *ReadableWallet) version() string {
-	if v, ok := rw.Meta[metaVersion].(string); ok {
-		return v
-	}
-	return ""
-}
-
-func (rw *ReadableWallet) isEncrypted() bool {
-	if encrypted, ok := rw.Meta[metaEncrypted].(bool); ok {
-		return encrypted
-	}
-	return false
+	return rw.Meta[metaVersion]
 }
 
 func (rw *ReadableWallet) time() string {
-	if tm, ok := rw.Meta[metaTm].(string); ok {
-		return tm
-	}
-
-	return ""
+	return rw.Meta[metaTm]
 }

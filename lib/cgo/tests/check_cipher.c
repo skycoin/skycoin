@@ -10,9 +10,10 @@ Test(cipher, test_address_valid) {
     SKYCOIN_ADDRESS_VALID,
     8
   };
+  Address addr;
 
-  struct DecodeBase58Address_return r = DecodeBase58Address(strAddr);
-  cr_assert(r.r1 == 1);
+  int r = DecodeBase58Address(strAddr, &addr);
+  cr_assert(r == 1);
 }
 
 Test(cipher, test_address_wrong) {
@@ -20,8 +21,9 @@ Test(cipher, test_address_wrong) {
     SKYCOIN_ADDRESS_VALID,
     8
   };
+  Address addr;
 
-  struct DecodeBase58Address_return r = DecodeBase58Address(strAddr);
-  cr_assert(r.r1 == 0);
+  int r = DecodeBase58Address(strAddr, &addr);
+  cr_assert(r == 0);
 }
 

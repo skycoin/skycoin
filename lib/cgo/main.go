@@ -23,13 +23,15 @@ import (
  */
 
 //export DecodeBase58Address
-func DecodeBase58Address(strAddr string) (*C.Address, C.int) {
+func DecodeBase58Address(strAddr string, retAddr *C.Address) C.int {
 	addr, err := cipher.DecodeBase58Address(strAddr)
+	*retAddr = *(*C.Address)(unsafe.Pointer(&addr))
+
 	errCode := 1
 	if err != nil {
 		errCode = 0
 	}
-	return (*C.Address)(unsafe.Pointer(&addr)), C.int(errCode)
+	return C.int(errCode)
 }
 
 func main() {}

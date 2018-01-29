@@ -117,10 +117,6 @@ func (s *ScryptChacha20poly1305) Decrypt(data, password []byte) ([]byte, error) 
 	encData = encData[:n]
 
 	length := binary.LittleEndian.Uint16(encData[:metaLengthSize])
-	if length > math.MaxUint16 {
-		return nil, errors.New("metadata length beyond math.MaxUint64")
-	}
-
 	if int(metaLengthSize+length) > len(encData) {
 		return nil, errors.New("invalid metadata length")
 	}

@@ -94,7 +94,7 @@ func TestGetPendingTxs(t *testing.T) {
 		method                        string
 		url                           string
 		status                        int
-		error                         string
+		err                           string
 		getAllUnconfirmedTxnsResponse []visor.UnconfirmedTxn
 		httpResponse                  []*visor.ReadableUnconfirmedTxn
 		hostHeader                    string
@@ -103,14 +103,14 @@ func TestGetPendingTxs(t *testing.T) {
 			name:   "405",
 			method: http.MethodPost,
 			status: http.StatusMethodNotAllowed,
-			error:  "405 Method Not Allowed",
+			err:    "405 Method Not Allowed",
 			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTxn{},
 		},
 		{
 			name:   "500 - bad unconfirmedTxn",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			error:  "500 Internal Server Error",
+			err:    "500 Internal Server Error",
 			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTxn{
 				invalidTxn,
 			},
@@ -119,7 +119,7 @@ func TestGetPendingTxs(t *testing.T) {
 			name:       "403 - Forbidden - invalid Host header",
 			method:     http.MethodGet,
 			status:     http.StatusForbidden,
-			error:      "403 Forbidden",
+			err:        "403 Forbidden",
 			hostHeader: "example.com",
 		},
 		{
@@ -150,8 +150,8 @@ func TestGetPendingTxs(t *testing.T) {
 				tc.name, status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.error, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.error)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				var msg []*visor.ReadableUnconfirmedTxn
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
@@ -174,7 +174,7 @@ func TestGetTransactionByID(t *testing.T) {
 		name                  string
 		method                string
 		status                int
-		error                 string
+		err                   string
 		httpBody              *httpBody
 		getTransactionArg     cipher.SHA256
 		getTransactionReponse *visor.Transaction
@@ -186,14 +186,14 @@ func TestGetTransactionByID(t *testing.T) {
 			name:              "405",
 			method:            http.MethodPost,
 			status:            http.StatusMethodNotAllowed,
-			error:             "405 Method Not Allowed",
+			err:               "405 Method Not Allowed",
 			getTransactionArg: testutil.RandSHA256(t),
 		},
 		{
 			name:   "400 - empty txid",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
-			error:  "400 Bad Request - txid is empty",
+			err:    "400 Bad Request - txid is empty",
 			httpBody: &httpBody{
 				txid: "",
 			},
@@ -203,7 +203,7 @@ func TestGetTransactionByID(t *testing.T) {
 			name:   "400 - invalid hash: odd length hex string",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
-			error:  "400 Bad Request - encoding/hex: odd length hex string",
+			err:    "400 Bad Request - encoding/hex: odd length hex string",
 			httpBody: &httpBody{
 				txid: oddHash,
 			},
@@ -213,7 +213,7 @@ func TestGetTransactionByID(t *testing.T) {
 			name:   "400 - invalid hash: invalid byte: U+0072 'r'",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
-			error:  "400 Bad Request - encoding/hex: invalid byte: U+0072 'r'",
+			err:    "400 Bad Request - encoding/hex: invalid byte: U+0072 'r'",
 			httpBody: &httpBody{
 				txid: invalidHash,
 			},
@@ -223,7 +223,7 @@ func TestGetTransactionByID(t *testing.T) {
 			name:   "400 - getTransactionError",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
-			error:  "400 Bad Request - getTransactionError",
+			err:    "400 Bad Request - getTransactionError",
 			httpBody: &httpBody{
 				txid: validHash,
 			},
@@ -234,7 +234,7 @@ func TestGetTransactionByID(t *testing.T) {
 			name:   "404",
 			method: http.MethodGet,
 			status: http.StatusNotFound,
-			error:  "404 Not Found",
+			err:    "404 Not Found",
 			httpBody: &httpBody{
 				txid: validHash,
 			},
@@ -244,7 +244,7 @@ func TestGetTransactionByID(t *testing.T) {
 			name:       "403 - Forbidden - invalid Host header",
 			method:     http.MethodGet,
 			status:     http.StatusForbidden,
-			error:      "403 Forbidden",
+			err:        "403 Forbidden",
 			hostHeader: "example.com",
 		},
 		{
@@ -298,8 +298,8 @@ func TestGetTransactionByID(t *testing.T) {
 				tc.name, status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.error, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.error)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				var msg visor.TransactionResult
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
@@ -325,7 +325,7 @@ func TestInjectTransaction(t *testing.T) {
 		name                   string
 		method                 string
 		status                 int
-		error                  string
+		err                    string
 		httpBody               string
 		injectTransactionArg   coin.Transaction
 		injectTransactionError error
@@ -336,41 +336,41 @@ func TestInjectTransaction(t *testing.T) {
 			name:                 "405",
 			method:               http.MethodGet,
 			status:               http.StatusMethodNotAllowed,
-			error:                "405 Method Not Allowed",
+			err:                  "405 Method Not Allowed",
 			injectTransactionArg: validTransaction,
 		},
 		{
 			name:   "400 - EOF",
 			method: http.MethodPost,
 			status: http.StatusBadRequest,
-			error:  "400 Bad Request - EOF",
+			err:    "400 Bad Request - EOF",
 		},
 		{
 			name:     "400 - Invalid transaction: Deserialization failed",
 			method:   http.MethodPost,
 			status:   http.StatusBadRequest,
-			error:    "400 Bad Request - Invalid transaction: Deserialization failed",
+			err:      "400 Bad Request - Invalid transaction: Deserialization failed",
 			httpBody: `{"wrongKey":"wrongValue"}`,
 		},
 		{
 			name:     "400 - encoding/hex: odd length hex string",
 			method:   http.MethodPost,
 			status:   http.StatusBadRequest,
-			error:    "400 Bad Request - encoding/hex: odd length hex string",
+			err:      "400 Bad Request - encoding/hex: odd length hex string",
 			httpBody: `{"rawtx":"aab"}`,
 		},
 		{
 			name:     "400 - rawtx deserialization error",
 			method:   http.MethodPost,
 			status:   http.StatusBadRequest,
-			error:    "400 Bad Request - Invalid transaction: Deserialization failed",
+			err:      "400 Bad Request - Invalid transaction: Deserialization failed",
 			httpBody: string(invalidTxBodyJson),
 		},
 		{
 			name:                   "400 - injectTransactionError",
 			method:                 http.MethodPost,
 			status:                 http.StatusBadRequest,
-			error:                  "400 Bad Request - inject tx failed:injectTransactionError",
+			err:                    "400 Bad Request - inject tx failed:injectTransactionError",
 			httpBody:               string(validTxBodyJson),
 			injectTransactionArg:   validTransaction,
 			injectTransactionError: errors.New("injectTransactionError"),
@@ -379,7 +379,7 @@ func TestInjectTransaction(t *testing.T) {
 			name:       "403 - Forbidden - invalid Host header",
 			method:     http.MethodPost,
 			status:     http.StatusForbidden,
-			error:      "403 Forbidden",
+			err:        "403 Forbidden",
 			hostHeader: "example.com",
 		},
 		{
@@ -412,8 +412,8 @@ func TestInjectTransaction(t *testing.T) {
 				tc.name, status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.error, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.error)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				expectedResponse, err := json.MarshalIndent(tc.httpResponse, "", "    ")
 				require.NoError(t, err)
@@ -428,7 +428,7 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 		name                          string
 		method                        string
 		status                        int
-		error                         string
+		err                           string
 		httpBody                      string
 		resendUnconfirmedTxnsResponse *daemon.ResendResult
 		httpResponse                  *daemon.ResendResult
@@ -438,13 +438,13 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 			name:   "405",
 			method: http.MethodPost,
 			status: http.StatusMethodNotAllowed,
-			error:  "405 Method Not Allowed",
+			err:    "405 Method Not Allowed",
 		},
 		{
 			name:       "403 - Forbidden - invalid Host header",
 			method:     http.MethodGet,
 			status:     http.StatusForbidden,
-			error:      "403 Forbidden",
+			err:        "403 Forbidden",
 			hostHeader: "example.com",
 		},
 		{
@@ -476,8 +476,8 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 				tc.name, status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.error, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.error)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				var msg *daemon.ResendResult
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
@@ -500,7 +500,7 @@ func TestGetRawTx(t *testing.T) {
 		method                 string
 		url                    string
 		status                 int
-		error                  string
+		err                    string
 		httpBody               *httpBody
 		getTransactionArg      cipher.SHA256
 		getTransactionResponse *visor.Transaction
@@ -512,14 +512,14 @@ func TestGetRawTx(t *testing.T) {
 			name:              "405",
 			method:            http.MethodPost,
 			status:            http.StatusMethodNotAllowed,
-			error:             "405 Method Not Allowed",
+			err:               "405 Method Not Allowed",
 			getTransactionArg: testutil.RandSHA256(t),
 		},
 		{
 			name:              "400 - txid is empty",
 			method:            http.MethodGet,
 			status:            http.StatusBadRequest,
-			error:             "400 Bad Request - txid is empty",
+			err:               "400 Bad Request - txid is empty",
 			httpBody:          &httpBody{},
 			getTransactionArg: testutil.RandSHA256(t),
 		},
@@ -527,7 +527,7 @@ func TestGetRawTx(t *testing.T) {
 			name:   "400 - invalid hash: odd length hex string",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
-			error:  "400 Bad Request - encoding/hex: odd length hex string",
+			err:    "400 Bad Request - encoding/hex: odd length hex string",
 			httpBody: &httpBody{
 				txid: oddHash,
 			},
@@ -537,7 +537,7 @@ func TestGetRawTx(t *testing.T) {
 			name:   "400 - invalid hash: invalid byte: U+0072 'r'",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
-			error:  "400 Bad Request - encoding/hex: invalid byte: U+0072 'r'",
+			err:    "400 Bad Request - encoding/hex: invalid byte: U+0072 'r'",
 			httpBody: &httpBody{
 				txid: invalidHash,
 			},
@@ -547,7 +547,7 @@ func TestGetRawTx(t *testing.T) {
 			name:   "400 - getTransactionError",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
-			error:  "400 Bad Request - getTransactionError",
+			err:    "400 Bad Request - getTransactionError",
 			httpBody: &httpBody{
 				txid: validHash,
 			},
@@ -558,7 +558,7 @@ func TestGetRawTx(t *testing.T) {
 			name:   "404",
 			method: http.MethodGet,
 			status: http.StatusNotFound,
-			error:  "404 Not Found",
+			err:    "404 Not Found",
 			httpBody: &httpBody{
 				txid: validHash,
 			},
@@ -568,7 +568,7 @@ func TestGetRawTx(t *testing.T) {
 			name:       "403 - Forbidden - invalid Host header",
 			method:     http.MethodGet,
 			status:     http.StatusForbidden,
-			error:      "403 Forbidden",
+			err:        "403 Forbidden",
 			hostHeader: "example.com",
 		},
 		{
@@ -613,8 +613,8 @@ func TestGetRawTx(t *testing.T) {
 				tc.name, status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.error, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.error)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				expectedResponse, err := json.MarshalIndent(tc.httpResponse, "", "    ")
 				require.NoError(t, err)
@@ -646,7 +646,7 @@ func TestGetTransactions(t *testing.T) {
 		name                    string
 		method                  string
 		status                  int
-		error                   string
+		err                     string
 		httpBody                *httpBody
 		getTransactionsArg      []visor.TxFilter
 		getTransactionsResponse []visor.Transaction
@@ -658,13 +658,13 @@ func TestGetTransactions(t *testing.T) {
 			name:   "405",
 			method: http.MethodPost,
 			status: http.StatusMethodNotAllowed,
-			error:  "405 Method Not Allowed",
+			err:    "405 Method Not Allowed",
 		},
 		{
 			name:   "400 - invalid `addrs` param",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
-			error:  "400 Bad Request - parse parament: 'addrs' failed: Invalid base58 character",
+			err:    "400 Bad Request - parse parament: 'addrs' failed: Invalid base58 character",
 			httpBody: &httpBody{
 				addrs: invalidAddrsStr,
 			},
@@ -676,7 +676,7 @@ func TestGetTransactions(t *testing.T) {
 			name:   "400 - invalid `confirmed` param",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
-			error:  "400 Bad Request - invalid 'confirmed' value: strconv.ParseBool: parsing \"invalidConfirmed\": invalid syntax",
+			err:    "400 Bad Request - invalid 'confirmed' value: strconv.ParseBool: parsing \"invalidConfirmed\": invalid syntax",
 			httpBody: &httpBody{
 				addrs:     addrsStr,
 				confirmed: "invalidConfirmed",
@@ -689,7 +689,7 @@ func TestGetTransactions(t *testing.T) {
 			name:   "500 - getTransactionsError",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			error:  "500 Internal Server Error",
+			err:    "500 Internal Server Error",
 			httpBody: &httpBody{
 				addrs:     addrsStr,
 				confirmed: "true",
@@ -704,7 +704,7 @@ func TestGetTransactions(t *testing.T) {
 			name:   "500 - visor.NewTransactionResults error",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			error:  "500 Internal Server Error",
+			err:    "500 Internal Server Error",
 			httpBody: &httpBody{
 				addrs:     addrsStr,
 				confirmed: "true",
@@ -727,7 +727,7 @@ func TestGetTransactions(t *testing.T) {
 			name:       "403 - Forbidden - invalid Host header",
 			method:     http.MethodGet,
 			status:     http.StatusForbidden,
-			error:      "403 Forbidden",
+			err:        "403 Forbidden",
 			hostHeader: "example.com",
 		},
 		{
@@ -781,8 +781,8 @@ func TestGetTransactions(t *testing.T) {
 				tc.name, status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.error, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.error)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				var msg []visor.Transaction
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)

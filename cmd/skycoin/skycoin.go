@@ -78,8 +78,6 @@ var (
 	}
 )
 
-// Command line interface arguments
-
 // Config records the node's configuration
 type Config struct {
 	// Disable peer exchange
@@ -358,6 +356,11 @@ func (c *Config) postProcess() {
 
 	if c.DBPath == "" {
 		c.DBPath = filepath.Join(c.DataDirectory, "data.db")
+	}
+
+	if c.RunMaster {
+		// Run in arbitrating mode if the node is master
+		c.Arbitrating = true
 	}
 }
 

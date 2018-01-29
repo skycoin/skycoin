@@ -22,6 +22,11 @@ PACKAGES = $(shell find ./src -type d -not -path '\./src' \
     							      -not -path '\./src/cipher/*' \
     							      -not -path '*/testdata*')
 
+# Compilation output
+BUILD_DIR = dist
+BUILDLIB_DIR = $(BUILD_DIR)/skycoinlib
+LIB_DIR = lib
+
 run:  ## Run the skycoin node. To add arguments, do 'make ARGS="--foo" run'.
 	go run cmd/skycoin/skycoin.go --gui-dir="./${STATIC_DIR}" ${ARGS}
 
@@ -31,6 +36,18 @@ run-help: ## Show skycoin node help
 test: ## Run tests
 	go test ./cmd/... -timeout=1m
 	go test ./src/... -timeout=1m
+
+build-lib-c: # Build Skycoinlib C
+	mkdir -p $(BUILDLIB_DIR)
+	rm -Rf $(BUILDLIB_DIR)/*
+	go build -buildmode=c-shared  -o $(BUILDLIB_DIR)/libskycoin.so $(LIB_DIR)/cgo/main.go
+	go build -buildmode=c-archive -o $(BUILDLIB_DIR)/libskycoin.a  $(LIB_DIR)/cgo/main.go
+
+test-lib-c: build-lib-c
+	cp $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/
+	rm $(BUILDLIB_DIR)/libskycoin.so	# TODO: Get rid of this step
+	gcc -o $(BUILDLIB_DIR)/skycoinlib_test $(BUILDLIB_DIR)/*.c -I$(BUILDLIB_DIR) -lcriterion -lskycoin -L $(BUILDLIB_DIR)
+	$(BUILDLIB_DIR)/skycoinlib_test
 
 lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...
@@ -55,6 +72,7 @@ format:  # Formats the code. Must have goimports installed (use make install-lin
 	goimports -w -local github.com/skycoin/skycoin ./cmd
 	goimports -w -local github.com/skycoin/skycoin ./src
 	goimports -w -local github.com/skycoin/skycoin ./docker
+	goimports -w -local github.com/skycoin/skycoin ./lib
 
 release: ## Build electron apps, the builds are located in electron/release folder.
 	cd $(ELECTRON_DIR) && ./build.sh

@@ -11,18 +11,6 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 )
 
-// RegisterExplorerHandlers register explorer handlers
-func RegisterExplorerHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
-	// get set of pending transactions
-	mux.HandleFunc("/explorer/address", getTransactionsForAddress(gateway))
-
-	mux.HandleFunc("/coinSupply", getCoinSupply(gateway))
-
-	mux.HandleFunc("/richlist", getRichlist(gateway))
-
-	mux.HandleFunc("/addresscount", getAddressCount(gateway))
-}
-
 // CoinSupply records the coin supply info
 type CoinSupply struct {
 	// Coins distributed beyond the project:
@@ -41,7 +29,7 @@ type CoinSupply struct {
 	LockedAddresses []string `json:"locked_distribution_addresses"`
 }
 
-func getCoinSupply(gateway *daemon.Gateway) http.HandlerFunc {
+func getCoinSupply(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		supply := coinSupply(gateway, w, r)
 		if supply != nil {
@@ -50,7 +38,7 @@ func getCoinSupply(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-func coinSupply(gateway *daemon.Gateway, w http.ResponseWriter, r *http.Request) *CoinSupply {
+func coinSupply(gateway Gatewayer, w http.ResponseWriter, r *http.Request) *CoinSupply {
 	if r.Method != http.MethodGet {
 		wh.Error405(w)
 		return nil
@@ -156,7 +144,7 @@ func coinSupply(gateway *daemon.Gateway, w http.ResponseWriter, r *http.Request)
 
 // method: GET
 // url: /explorer/address?address=${address}
-func getTransactionsForAddress(gateway *daemon.Gateway) http.HandlerFunc {
+func getTransactionsForAddress(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -225,7 +213,7 @@ func getTransactionsForAddress(gateway *daemon.Gateway) http.HandlerFunc {
 
 // method: GET
 // url: /richlist?n=${number}&include-distribution=${bool}
-func getRichlist(gateway *daemon.Gateway) http.HandlerFunc {
+func getRichlist(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -275,7 +263,7 @@ func getRichlist(gateway *daemon.Gateway) http.HandlerFunc {
 
 // method: GET
 // url: /addresscount
-func getAddressCount(gateway *daemon.Gateway) http.HandlerFunc {
+func getAddressCount(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)

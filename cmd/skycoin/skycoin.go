@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"io"
@@ -65,17 +66,10 @@ var (
 	// GenesisCoinVolume represents the coin capacity
 	GenesisCoinVolume uint64 = 100e12
 
+	// Name of the file containing trusted peer list (one-by-line)
+	TrustedPeerlistFileName string = "connections.txt"
 	// DefaultConnections the default trust node addresses
-	DefaultConnections = []string{
-		"118.178.135.93:6000",
-		"47.88.33.156:6000",
-		"121.41.103.148:6000",
-		"120.77.69.188:6000",
-		"104.237.142.206:6000",
-		"176.58.126.224:6000",
-		"172.104.85.6:6000",
-		"139.162.7.132:6000",
-	}
+	DefaultConnections []string = make([]string, 0)
 )
 
 // Command line interface arguments
@@ -481,7 +475,27 @@ func initProfiling(httpProf, profileCPU bool, profileCPUFile string) {
 	}
 }
 
+func loadDefaultConnections(dataDirectory string) {
+	fp := filepath.Join(dataDirectory, TrustedPeerlistFileName)
+	fo, err := os.Open(fp)
+	if err != nil {
+		logger.Warning("Unable to open default connections file from %v\n%v",
+			fp, err)
+		return
+	}
+	defer fo.Close()
+
+	input := bufio.NewScanner(fo)
+	for input.Scan() {
+		strAddress := input.Text()
+		// TODO: Validate addresses
+		DefaultConnections = append(DefaultConnections, strAddress)
+	}
+}
+
 func configureDaemon(c *Config) daemon.Config {
+	loadDefaultConnections(c.DataDirectory)
+
 	//cipher.SetAddressVersion(c.AddressVersion)
 	dc := daemon.NewConfig()
 	dc.Pex.DataDirectory = c.DataDirectory

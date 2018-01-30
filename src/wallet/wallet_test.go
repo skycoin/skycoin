@@ -27,7 +27,7 @@ var _ = func() int64 {
 
 func init() {
 	// Change the scrypt N value in cryptoTable to make test faster, otherwise it would take more than 200 seconds to finish
-	cryptoTable[CryptoTypeScryptChacha20poly1305] = encrypt.NewScryptChacha20poly1305(1<<15, scryptR, scryptP, scryptKeyLen)
+	cryptoTable[CryptoTypeScryptChacha20poly1305] = encrypt.ScryptChacha20poly1305{N: 1 << 15, R: encrypt.ScryptR, P: encrypt.ScryptP, KeyLen: encrypt.ScryptKeyLen}
 }
 
 type mockBalanceGetter map[cipher.Address]BalancePair

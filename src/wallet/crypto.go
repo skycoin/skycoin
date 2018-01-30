@@ -40,23 +40,11 @@ const (
 	CryptoTypeScryptChacha20poly1305 = CryptoType("scrypt-chacha20poly1305")
 )
 
-// Scrypt paramenters
-// scryptN: scrypt N paramenter. 1<<20 is the recommended value for file encryption, it takes about 3 seconds in 2.9 GHz Intel core i7.
-// scryptR: scrypt r paramenter. Cache line size have not significantly increased since 2009, 8 should still be optimal for r.
-// scryptP: scrypt p paramenter. The parallel difficulty, 1 is still optimal.
-// scryptKeyLen: The length of returned byte slice that can be used as cryptographic key.
-var (
-	scryptN      = 1 << 20
-	scryptR      = 8
-	scryptP      = 1
-	scryptKeyLen = 32
-)
-
 // cryptoTable records all supported wallet crypto methods
 // If want to support new crypto methods, register here.
 var cryptoTable = map[CryptoType]cryptor{
-	CryptoTypeSha256Xor:              encrypt.NewSha256Xor(),
-	CryptoTypeScryptChacha20poly1305: encrypt.NewScryptChacha20poly1305(scryptN, scryptR, scryptP, scryptKeyLen),
+	CryptoTypeSha256Xor:              encrypt.DefaultSha256Xor,
+	CryptoTypeScryptChacha20poly1305: encrypt.DefaultScryptChacha20poly1305,
 }
 
 // ErrAuthenticationFailed wraps the error of decryption.

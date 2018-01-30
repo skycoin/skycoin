@@ -26,10 +26,8 @@ const (
 	lengthSize = 4 // 4 bytes
 )
 
-// NewSha256Xor creates a Sha256Xor instance
-func NewSha256Xor() *Sha256Xor {
-	return &Sha256Xor{}
-}
+// DefaultSha256Xor default sha256xor encryptor
+var DefaultSha256Xor = Sha256Xor{}
 
 // Sha256Xor provides methods to do encryption and decryption
 type Sha256Xor struct{}
@@ -44,7 +42,7 @@ type Sha256Xor struct{}
 // 	  - index is 0 for the first block of 32 bytes, 1 for the second block of 32 bytes, 2 for third block
 // 5> Prefix nonce and SHA256 the nonce with blocks to get checksum, and prefix the checksum
 // 6> Finally, the data format is: base64(<checksum(32 bytes)><nonce(32 bytes)><block0.Hex(), block1.Hex()...>)
-func (s *Sha256Xor) Encrypt(data []byte, password []byte) ([]byte, error) {
+func (s Sha256Xor) Encrypt(data []byte, password []byte) ([]byte, error) {
 	if len(password) == 0 {
 		return nil, errors.New("missing password")
 	}
@@ -112,7 +110,7 @@ func (s *Sha256Xor) Encrypt(data []byte, password []byte) ([]byte, error) {
 }
 
 // Decrypt decrypts the data
-func (s *Sha256Xor) Decrypt(data []byte, password []byte) ([]byte, error) {
+func (s Sha256Xor) Decrypt(data []byte, password []byte) ([]byte, error) {
 	if len(password) == 0 {
 		return nil, errors.New("missing password")
 	}

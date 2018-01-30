@@ -143,7 +143,7 @@ func TestGetPendingTxs(t *testing.T) {
 			if tc.hostHeader != "" {
 				req.Host = tc.hostHeader
 			}
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, true)
 			handler.ServeHTTP(rr, req)
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
@@ -291,7 +291,7 @@ func TestGetTransactionByID(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, true)
 			handler.ServeHTTP(rr, req)
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
@@ -404,7 +404,7 @@ func TestInjectTransaction(t *testing.T) {
 				req.Host = tc.hostHeader
 			}
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, true)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -468,7 +468,7 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 				req.Host = tc.hostHeader
 			}
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, true)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -605,7 +605,7 @@ func TestGetRawTx(t *testing.T) {
 				req.Host = tc.hostHeader
 			}
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, true)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -772,7 +772,7 @@ func TestGetTransactions(t *testing.T) {
 				req.Host = tc.hostHeader
 			}
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, true)
 
 			handler.ServeHTTP(rr, req)
 

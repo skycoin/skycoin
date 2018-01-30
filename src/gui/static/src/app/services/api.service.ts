@@ -79,11 +79,13 @@ export class ApiService {
       .catch((error: any) => Observable.throw(error || 'Server error'));
   }
 
-  post(url, params = {}, options = {}) {
-    // this.get('csrf').subscribe(response => console.log(response));
-    return this.http.post(this.getUrl(url), this.getQueryString(params), this.returnRequestOptions(options))
-      .map((res: any) => res.json())
-      .catch((error: any) => Observable.throw(error || 'Server error'));
+  post(url, params = {}, options: any = {}) {
+    return this.getCsrf().first().flatMap(csrf => {
+      options.csrf = csrf;
+      return this.http.post(this.getUrl(url), this.getQueryString(params), this.returnRequestOptions(options))
+        .map((res: any) => res.json())
+        .catch((error: any) => Observable.throw(error || 'Server error'));
+    });
   }
 
   returnRequestOptions(additionalOptions) {

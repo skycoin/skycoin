@@ -58,6 +58,11 @@ func (c *CSRFStore) verifyExpireTime() bool {
 
 // verifyToken checks that the given token is same as the internal token
 func (c *CSRFStore) verifyToken(headerToken string) bool {
+	// check if token is initialized
+	if c.token == nil {
+		return false
+	}
+
 	// check if token values are same
 	if headerToken == c.getTokenValue() {
 		// make sure token is still valid
@@ -68,6 +73,7 @@ func (c *CSRFStore) verifyToken(headerToken string) bool {
 }
 
 // getCSRFStore returns a CSRFStore instance
+// initializes the csrf store if not already done
 func (c *CSRFStore) getCSRFStore() *CSRFStore {
 	c.once.Do(func() {
 		// initialize the csrf store
@@ -101,12 +107,14 @@ func getCSRFToken(gateway Gatewayer, store *CSRFStore) http.HandlerFunc {
 }
 
 // CSRFCheck verifies X-CSRF-Token header value
-func CSRFCheck(handler http.Handler, store *CSRFStore) http.Handler {
+func CSRFCheck(handler http.Handler, disabled bool, store *CSRFStore) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token := r.Header.Get(HeaderName)
-		if !store.verifyToken(token) {
-			wh.Error403Msg(w, "invalid CSRF token")
-			return
+		if !disabled {
+			token := r.Header.Get(HeaderName)
+			if !store.verifyToken(token) {
+				wh.Error403Msg(w, "invalid CSRF token")
+				return
+			}
 		}
 
 		handler.ServeHTTP(w, r)

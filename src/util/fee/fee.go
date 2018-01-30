@@ -27,7 +27,11 @@ var (
 // entering the blockchain, but cannot be done at the blockchain level because
 // they may be changed.
 func VerifyTransactionFee(t *coin.Transaction, fee uint64) error {
-	return VerifyTransactionFeeForHours(t.OutputHours(), fee)
+	hours, err := t.OutputHours()
+	if err != nil {
+		return err
+	}
+	return VerifyTransactionFeeForHours(hours, fee)
 }
 
 // VerifyTransactionFeeForHours verifies the fee given fee and hours,
@@ -40,7 +44,10 @@ func VerifyTransactionFeeForHours(hours, fee uint64) error {
 	}
 
 	// Calculate total number of coinhours
-	total := hours + fee
+	total, err := coin.AddUint64(hours, fee)
+	if err != nil {
+		return errors.New("Hours and fee overflow")
+	}
 
 	// Calculate the required fee
 	requiredFee := RequiredFee(total)
@@ -68,15 +75,15 @@ func RequiredFee(hours uint64) uint64 {
 // Returns ErrTxnInsufficientCoinHours if input hours is less than output hours.
 func TransactionFee(tx *coin.Transaction, headTime uint64, inUxs coin.UxArray) (uint64, error) {
 	// Compute input hours
-	inHours := uint64(0)
-	for _, ux := range inUxs {
-		inHours += ux.CoinHours(headTime)
+	inHours, err := inUxs.CoinHours(headTime)
+	if err != nil {
+		return 0, err
 	}
 
 	// Compute output hours
-	outHours := uint64(0)
-	for i := range tx.Out {
-		outHours += tx.Out[i].Hours
+	outHours, err := tx.OutputHours()
+	if err != nil {
+		return 0, err
 	}
 
 	if inHours < outHours {

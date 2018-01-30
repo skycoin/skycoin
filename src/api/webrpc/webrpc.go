@@ -97,8 +97,8 @@ func makeSuccessResponse(id string, result interface{}) Response {
 	}
 }
 
-func makeErrorResponse(code int, msgs ...string) Response {
-	msg := strings.Join(msgs[:], "\n")
+func makeErrorResponse(code int, msg string, msgs ...string) Response {
+	msg = strings.Join(append([]string{msg}, msgs[:]...), "\n")
 	return Response{
 		Error:   &RPCError{Code: code, Message: msg},
 		Jsonrpc: jsonRPC,

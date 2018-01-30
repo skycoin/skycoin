@@ -218,7 +218,6 @@ func parseAddressesFromStr(addrStr string) ([]cipher.Address, error) {
 	return addrs, nil
 }
 
-//Implement
 func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -250,8 +249,9 @@ func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		if err := gateway.InjectTransaction(txn); err != nil {
-			wh.Error400(w, fmt.Sprintf("inject tx failed:%v", err))
+		if err := gateway.InjectBroadcastTransaction(txn); err != nil {
+			logger.Error("%v", err)
+			wh.Error400(w, fmt.Sprintf("inject tx failed: %v", err))
 			return
 		}
 

@@ -342,7 +342,7 @@ func FbyHashes(hashes []string) OutputsFilter {
 	}
 }
 
-// Return a search indexed map for use in filters
+// MakeSearchMap returns a search indexed map for use in filters
 func MakeSearchMap(addrs []string) map[string]struct{} {
 	addrMap := make(map[string]struct{})
 	for _, addr := range addrs {
@@ -375,11 +375,11 @@ func (gw *Gateway) GetTransactionResult(txid cipher.SHA256) (*visor.TransactionR
 	return visor.NewTransactionResult(tx)
 }
 
-// InjectTransaction injects transaction
-func (gw *Gateway) InjectTransaction(txn coin.Transaction) error {
+// InjectBroadcastTransaction injects and broadcasts a transaction
+func (gw *Gateway) InjectBroadcastTransaction(txn coin.Transaction) error {
 	var err error
-	gw.strand("InjectTransaction", func() {
-		err = gw.d.Visor.InjectTransaction(txn, gw.d.Pool)
+	gw.strand("InjectBroadcastTransaction", func() {
+		err = gw.d.Visor.InjectBroadcastTransaction(txn, gw.d.Pool)
 	})
 	return err
 }
@@ -400,6 +400,7 @@ func (gw *Gateway) GetAddressTxns(a cipher.Address) (*visor.TransactionResults, 
 	return visor.NewTransactionResults(txs)
 }
 
+// GetTransactions returns transactions filtered by zero or more visor.TxFilter
 func (gw *Gateway) GetTransactions(flts ...visor.TxFilter) ([]visor.Transaction, error) {
 	var txns []visor.Transaction
 	var err error
@@ -511,15 +512,17 @@ func (gw *Gateway) Spend(wltID string, coins uint64, dest cipher.Address) (*coin
 		// create spend validator
 		unspent := gw.v.Blockchain.Unspent()
 		sv := newSpendValidator(gw.v.Unconfirmed, unspent)
-		// create and sign transaction
+
+		// Create and sign transaction
 		tx, err = gw.vrpc.CreateAndSignTransaction(wltID, sv, unspent, gw.v.Blockchain.Time(), coins, dest)
 		if err != nil {
 			logger.Error("Create transaction failed: %v", err)
 			return
 		}
 
-		// inject transaction
-		if err = gw.d.Visor.InjectTransaction(*tx, gw.d.Pool); err != nil {
+		// Inject transaction
+		err = gw.d.Visor.InjectBroadcastTransaction(*tx, gw.d.Pool)
+		if err != nil {
 			logger.Error("Inject transaction failed: %v", err)
 			return
 		}
@@ -583,8 +586,18 @@ func (gw *Gateway) GetWalletBalance(wltID string) (wallet.BalancePair, error) {
 			return
 		}
 
-		coins1, hours1 := gw.v.AddressBalance(auxs)
-		coins2, hours2 := gw.v.AddressBalance(auxs.Sub(spendUxs).Add(recvUxs))
+		coins1, hours1, err := gw.v.AddressBalance(auxs)
+		if err != nil {
+			err = fmt.Errorf("Computing confirmed address balance failed: %v", err)
+			return
+		}
+
+		coins2, hours2, err := gw.v.AddressBalance(auxs.Sub(spendUxs).Add(recvUxs))
+		if err != nil {
+			err = fmt.Errorf("Computing predicted address balance failed: %v", err)
+			return
+		}
+
 		balance = wallet.BalancePair{
 			Confirmed: wallet.Balance{Coins: coins1, Hours: hours1},
 			Predicted: wallet.Balance{Coins: coins2, Hours: hours2},

@@ -11,30 +11,29 @@ import (
 	mock "github.com/stretchr/testify/mock"
 
 	bolt "github.com/boltdb/bolt"
-
 	cipher "github.com/skycoin/skycoin/src/cipher"
 	coin "github.com/skycoin/skycoin/src/coin"
 	blockdb "github.com/skycoin/skycoin/src/visor/blockdb"
 )
 
-// blockchainerMock mock
-type blockchainerMock struct {
+// BlockchainerMock mock
+type BlockchainerMock struct {
 	mock.Mock
 }
 
-func NewBlockchainerMock() *blockchainerMock {
-	return &blockchainerMock{}
+func NewBlockchainerMock() *BlockchainerMock {
+	return &BlockchainerMock{}
 }
 
 // BindListener mocked method
-func (m *blockchainerMock) BindListener(p0 BlockListener) {
+func (m *BlockchainerMock) BindListener(p0 BlockListener) {
 
 	m.Called(p0)
 
 }
 
 // ExecuteBlockWithTx mocked method
-func (m *blockchainerMock) ExecuteBlockWithTx(p0 *bolt.Tx, p1 *coin.SignedBlock) error {
+func (m *BlockchainerMock) ExecuteBlockWithTx(p0 *bolt.Tx, p1 *coin.SignedBlock) error {
 
 	ret := m.Called(p0, p1)
 
@@ -52,7 +51,7 @@ func (m *blockchainerMock) ExecuteBlockWithTx(p0 *bolt.Tx, p1 *coin.SignedBlock)
 }
 
 // GetBlockByHash mocked method
-func (m *blockchainerMock) GetBlockByHash(p0 cipher.SHA256) (*coin.SignedBlock, error) {
+func (m *BlockchainerMock) GetBlockByHash(p0 cipher.SHA256) (*coin.SignedBlock, error) {
 
 	ret := m.Called(p0)
 
@@ -79,7 +78,7 @@ func (m *blockchainerMock) GetBlockByHash(p0 cipher.SHA256) (*coin.SignedBlock, 
 }
 
 // GetBlockBySeq mocked method
-func (m *blockchainerMock) GetBlockBySeq(p0 uint64) (*coin.SignedBlock, error) {
+func (m *BlockchainerMock) GetBlockBySeq(p0 uint64) (*coin.SignedBlock, error) {
 
 	ret := m.Called(p0)
 
@@ -106,7 +105,7 @@ func (m *blockchainerMock) GetBlockBySeq(p0 uint64) (*coin.SignedBlock, error) {
 }
 
 // GetBlocks mocked method
-func (m *blockchainerMock) GetBlocks(p0 uint64, p1 uint64) []coin.SignedBlock {
+func (m *BlockchainerMock) GetBlocks(p0 uint64, p1 uint64) []coin.SignedBlock {
 
 	ret := m.Called(p0, p1)
 
@@ -124,7 +123,7 @@ func (m *blockchainerMock) GetBlocks(p0 uint64, p1 uint64) []coin.SignedBlock {
 }
 
 // GetGenesisBlock mocked method
-func (m *blockchainerMock) GetGenesisBlock() *coin.SignedBlock {
+func (m *BlockchainerMock) GetGenesisBlock() *coin.SignedBlock {
 
 	ret := m.Called()
 
@@ -142,7 +141,7 @@ func (m *blockchainerMock) GetGenesisBlock() *coin.SignedBlock {
 }
 
 // GetLastBlocks mocked method
-func (m *blockchainerMock) GetLastBlocks(p0 uint64) []coin.SignedBlock {
+func (m *BlockchainerMock) GetLastBlocks(p0 uint64) []coin.SignedBlock {
 
 	ret := m.Called(p0)
 
@@ -160,7 +159,7 @@ func (m *blockchainerMock) GetLastBlocks(p0 uint64) []coin.SignedBlock {
 }
 
 // Head mocked method
-func (m *blockchainerMock) Head() (*coin.SignedBlock, error) {
+func (m *BlockchainerMock) Head() (*coin.SignedBlock, error) {
 
 	ret := m.Called()
 
@@ -187,7 +186,7 @@ func (m *blockchainerMock) Head() (*coin.SignedBlock, error) {
 }
 
 // HeadSeq mocked method
-func (m *blockchainerMock) HeadSeq() uint64 {
+func (m *BlockchainerMock) HeadSeq() uint64 {
 
 	ret := m.Called()
 
@@ -205,7 +204,7 @@ func (m *blockchainerMock) HeadSeq() uint64 {
 }
 
 // Len mocked method
-func (m *blockchainerMock) Len() uint64 {
+func (m *BlockchainerMock) Len() uint64 {
 
 	ret := m.Called()
 
@@ -223,7 +222,7 @@ func (m *blockchainerMock) Len() uint64 {
 }
 
 // NewBlock mocked method
-func (m *blockchainerMock) NewBlock(p0 coin.Transactions, p1 uint64) (*coin.Block, error) {
+func (m *BlockchainerMock) NewBlock(p0 coin.Transactions, p1 uint64) (*coin.Block, error) {
 
 	ret := m.Called(p0, p1)
 
@@ -250,14 +249,14 @@ func (m *blockchainerMock) NewBlock(p0 coin.Transactions, p1 uint64) (*coin.Bloc
 }
 
 // Notify mocked method
-func (m *blockchainerMock) Notify(p0 coin.Block) {
+func (m *BlockchainerMock) Notify(p0 coin.Block) {
 
 	m.Called(p0)
 
 }
 
 // Time mocked method
-func (m *blockchainerMock) Time() uint64 {
+func (m *BlockchainerMock) Time() uint64 {
 
 	ret := m.Called()
 
@@ -275,7 +274,7 @@ func (m *blockchainerMock) Time() uint64 {
 }
 
 // TransactionFee mocked method
-func (m *blockchainerMock) TransactionFee(p0 *coin.Transaction) (uint64, error) {
+func (m *BlockchainerMock) TransactionFee(p0 *coin.Transaction) (uint64, error) {
 
 	ret := m.Called(p0)
 
@@ -302,7 +301,7 @@ func (m *blockchainerMock) TransactionFee(p0 *coin.Transaction) (uint64, error) 
 }
 
 // Unspent mocked method
-func (m *blockchainerMock) Unspent() blockdb.UnspentPool {
+func (m *BlockchainerMock) Unspent() blockdb.UnspentPool {
 
 	ret := m.Called()
 
@@ -320,7 +319,7 @@ func (m *blockchainerMock) Unspent() blockdb.UnspentPool {
 }
 
 // UpdateDB mocked method
-func (m *blockchainerMock) UpdateDB(p0 func(tx *bolt.Tx) error) error {
+func (m *BlockchainerMock) UpdateDB(p0 func(tx *bolt.Tx) error) error {
 
 	ret := m.Called(p0)
 
@@ -337,8 +336,44 @@ func (m *blockchainerMock) UpdateDB(p0 func(tx *bolt.Tx) error) error {
 
 }
 
-// VerifyTransaction mocked method
-func (m *blockchainerMock) VerifyTransaction(p0 coin.Transaction) error {
+// VerifySingleTxnAllConstraints mocked method
+func (m *BlockchainerMock) VerifySingleTxnAllConstraints(p0 coin.Transaction, p1 int) error {
+
+	ret := m.Called(p0, p1)
+
+	var r0 error
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case error:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0
+
+}
+
+// VerifySingleTxnHardConstraints mocked method
+func (m *BlockchainerMock) VerifySingleTxnHardConstraints(p0 coin.Transaction) error {
+
+	ret := m.Called(p0)
+
+	var r0 error
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case error:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0
+
+}
+
+// VerifyBlockTxnConstraints mocked method
+func (m *BlockchainerMock) VerifyBlockTxnConstraints(p0 coin.Transaction) error {
 
 	ret := m.Called(p0)
 

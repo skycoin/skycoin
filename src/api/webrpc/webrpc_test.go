@@ -90,7 +90,7 @@ func (fg fakeGateway) GetTransaction(txid cipher.SHA256) (*visor.Transaction, er
 	return nil, nil
 }
 
-func (fg *fakeGateway) InjectTransaction(txn coin.Transaction) error {
+func (fg *fakeGateway) InjectBroadcastTransaction(txn coin.Transaction) error {
 	if _, v := fg.injectRawTxMap[txn.Hash().Hex()]; v {
 		if fg.injectedTransactions == nil {
 			fg.injectedTransactions = make(map[string]string)

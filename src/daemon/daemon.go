@@ -362,6 +362,7 @@ func (dm *Daemon) Run() error {
 	}
 
 	unconfirmedRefreshTicker := time.Tick(dm.Visor.Config.Config.UnconfirmedRefreshRate)
+	unconfirmedRemoveInvalidTicker := time.Tick(dm.Visor.Config.Config.UnconfirmedRemoveInvalidRate)
 	blocksRequestTicker := time.Tick(dm.Visor.Config.BlocksRequestRate)
 	blocksAnnounceTicker := time.Tick(dm.Visor.Config.BlocksAnnounceRate)
 
@@ -516,9 +517,23 @@ loop:
 		case <-unconfirmedRefreshTicker:
 			elapser.Register("unconfirmedRefreshTicker")
 			// Get the transactions that turn to valid
-			validTxns := dm.Visor.RefreshUnconfirmed()
+			validTxns, err := dm.Visor.RefreshUnconfirmed()
+			if err != nil {
+				logger.Error("dm.Visor.RefreshUnconfirmed failed: %v", err)
+				continue
+			}
 			// Announce these transactions
 			dm.Visor.AnnounceTxns(dm.Pool, validTxns)
+
+		case <-unconfirmedRemoveInvalidTicker:
+			elapser.Register("unconfirmedRemoveInvalidTicker")
+			// Remove transactions that become invalid (violating hard constraints)
+			removedTxns, err := dm.Visor.RemoveInvalidUnconfirmed()
+			if err != nil {
+				logger.Error("dm.Visor.RemoveInvalidUnconfirmed failed: %v", err)
+				continue
+			}
+			logger.Info("Remove %d txns from pool that began violating hard constraints", len(removedTxns))
 
 		case <-blocksRequestTicker:
 			elapser.Register("blocksRequestTicker")

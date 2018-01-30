@@ -244,15 +244,26 @@ func getBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 
 		bals, err := gateway.GetBalanceOfAddrs(addrs)
 		if err != nil {
-			logger.Error("Get balance failed: %v", err)
-			wh.Error500(w)
+			errMsg := fmt.Sprintf("Get balance failed: %v", err)
+			logger.Error("%s", errMsg)
+			wh.Error500Msg(w, errMsg)
 			return
 		}
 
 		var balance wallet.BalancePair
 		for _, bal := range bals {
-			balance.Confirmed = balance.Confirmed.Add(bal.Confirmed)
-			balance.Predicted = balance.Predicted.Add(bal.Predicted)
+			var err error
+			balance.Confirmed, err = balance.Confirmed.Add(bal.Confirmed)
+			if err != nil {
+				wh.Error500Msg(w, err.Error())
+				return
+			}
+
+			balance.Predicted, err = balance.Predicted.Add(bal.Predicted)
+			if err != nil {
+				wh.Error500Msg(w, err.Error())
+				return
+			}
 		}
 
 		wh.SendOr404(w, balance)

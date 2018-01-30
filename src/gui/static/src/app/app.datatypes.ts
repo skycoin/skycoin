@@ -2,22 +2,23 @@
  * Internal Objects
  */
 
-export class Wallet {
-  label: string;
-  filename: string;
-  seed: string;
-  coins: number;
-  hours: number;
-  addresses: Address[];
-  visible?: boolean;
-  hideEmpty?: boolean;
-  opened?: boolean;
-}
-
 export class Address {
   address: string;
   coins: number;
   hours: number;
+}
+
+export class PurchaseOrder {
+  coin_type: string;
+  filename: string;
+  deposit_address: string;
+  recipient_address: string;
+  status?: string;
+}
+
+export class TellerConfig {
+  enabled: boolean;
+  sky_btc_exchange_rate: number;
 }
 
 export class Transaction {
@@ -29,6 +30,18 @@ export class Transaction {
   outputs: any[];
   timestamp: number;
   txid: string;
+}
+
+export class Wallet {
+  label: string;
+  filename: string;
+  seed: string;
+  coins: number;
+  hours: number;
+  addresses: Address[];
+  visible?: boolean;
+  hideEmpty?: boolean;
+  opened?: boolean;
 }
 
 /**

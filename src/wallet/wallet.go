@@ -570,9 +570,6 @@ func (w *Wallet) setEncrypted(encrypt bool) {
 }
 
 // IsEncrypted checks whether the wallet is encrypted.
-// the meta.encrypted string value must be valid, it's either set by
-// setEncrypted method or converted from ReadableWallet, ReadableWallet
-// will validate the encrypted string.
 func (w *Wallet) IsEncrypted() bool {
 	encStr, ok := w.Meta[metaEncrypted]
 	if !ok {
@@ -581,7 +578,11 @@ func (w *Wallet) IsEncrypted() bool {
 
 	b, err := strconv.ParseBool(encStr)
 	if err != nil {
-		panic(err)
+		// This can not happen, the meta.encrypted value is either set by
+		// setEncrypted() method or converted in ReadableWallet.toWallet().
+		// toWallet() method will throw error if the meta.encrypted string is invalid.
+		logger.Warning("parse wallet.meta.encrypted string failed: %v", err)
+		return false
 	}
 	return b
 }

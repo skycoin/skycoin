@@ -31,26 +31,29 @@ export class ApiService {
   }
 
   getWallets(): Observable<Wallet[]> {
-    return this.get('wallets').map((response: GetWalletsResponseWallet[]) => {
-      const wallets: Wallet[] = [];
-      response.forEach(wallet => {
-        wallets.push({
-          label: wallet.meta.label,
-          filename: wallet.meta.filename,
-          seed: wallet.meta.seed,
-          coins: null,
-          hours: null,
-          addresses: wallet.entries.map((entry: GetWalletsResponseEntry) => {
-            return {
-              address: entry.address,
+    return this.getCsrf().first().flatMap(csrf => {
+      return this.get('wallets', null, {csrf: csrf})
+        .map((response: GetWalletsResponseWallet[]) => {
+          const wallets: Wallet[] = [];
+          response.forEach(wallet => {
+            wallets.push({
+              label: wallet.meta.label,
+              filename: wallet.meta.filename,
+              seed: wallet.meta.seed,
               coins: null,
               hours: null,
-            }
-          }),
-        })
+              addresses: wallet.entries.map((entry: GetWalletsResponseEntry) => {
+                return {
+                  address: entry.address,
+                  coins: null,
+                  hours: null,
+                }
+              }),
+            })
+          });
+          return wallets;
+        });
       });
-      return wallets;
-    });
   }
 
   postWalletCreate(label: string, seed: string, scan: number): Observable<Wallet> {
@@ -70,30 +73,39 @@ export class ApiService {
       .map((response: PostWalletNewAddressResponse) => ({ address: response.addresses[0], coins: null, hours: null }));
   }
 
-  get(url, options = null) {
-    return this.http.get(this.getUrl(url, options), this.returnRequestOptions())
+  get(url, params = null, options = {}) {
+    return this.http.get(this.getUrl(url, params), this.returnRequestOptions(options))
       .map((res: any) => res.json())
       .catch((error: any) => Observable.throw(error || 'Server error'));
   }
 
-  post(url, options = {}) {
-    return this.http.post(this.getUrl(url), this.getQueryString(options), this.returnRequestOptions())
+  post(url, params = {}, options = {}) {
+    // this.get('csrf').subscribe(response => console.log(response));
+    return this.http.post(this.getUrl(url), this.getQueryString(params), this.returnRequestOptions(options))
       .map((res: any) => res.json())
       .catch((error: any) => Observable.throw(error || 'Server error'));
+  }
+
+  returnRequestOptions(additionalOptions) {
+    const options = new RequestOptions();
+
+    options.headers = this.getHeaders();
+
+    if (additionalOptions.csrf) {
+      options.headers.append('X-CSRF-Token', additionalOptions.csrf)
+    }
+
+    return options;
+  }
+
+  private getCsrf() {
+    return this.get('csrf');
   }
 
   private getHeaders() {
     const headers = new Headers();
     headers.append('Content-Type', 'application/x-www-form-urlencoded');
     return headers;
-  }
-
-  returnRequestOptions() {
-    const options = new RequestOptions();
-
-    options.headers = this.getHeaders();
-
-    return options;
   }
 
   private getQueryString(parameters = null) {

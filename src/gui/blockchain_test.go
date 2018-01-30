@@ -220,7 +220,7 @@ func TestGetBlock(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, true)
 
 			handler.ServeHTTP(rr, req)
 
@@ -354,7 +354,7 @@ func TestGetBlocks(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, true)
 
 			handler.ServeHTTP(rr, req)
 

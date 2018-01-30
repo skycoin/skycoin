@@ -167,6 +167,7 @@ func NewReadableTransactionInput(uxID, ownerAddress string, coins, hours uint64)
 // ReadableOutput represents readable output
 type ReadableOutput struct {
 	Hash              string `json:"hash"`
+	Time              uint64 `json:"time"`
 	BkSeq             uint64 `json:"block_seq"`
 	SourceTransaction string `json:"src_tx"`
 	Address           string `json:"address"`
@@ -202,6 +203,42 @@ func (ros ReadableOutputs) Balance() (wallet.Balance, error) {
 	}
 
 	return bal, nil
+}
+
+// ToUxArray converts ReadableOutputs to coin.UxArray
+func (ros ReadableOutputs) ToUxArray() (coin.UxArray, error) {
+	var uxs coin.UxArray
+	for _, o := range ros {
+		coins, err := droplet.FromString(o.Coins)
+		if err != nil {
+			return nil, err
+		}
+
+		addr, err := cipher.DecodeBase58Address(o.Address)
+		if err != nil {
+			return nil, err
+		}
+
+		srcTx, err := cipher.SHA256FromHex(o.SourceTransaction)
+		if err != nil {
+			return nil, err
+		}
+
+		uxs = append(uxs, coin.UxOut{
+			Head: coin.UxHead{
+				Time:  o.Time,
+				BkSeq: o.BkSeq,
+			},
+			Body: coin.UxBody{
+				SrcTransaction: srcTx,
+				Address:        addr,
+				Coins:          coins,
+				Hours:          o.Hours,
+			},
+		})
+	}
+
+	return uxs, nil
 }
 
 // SpendableOutputs subtracts OutgoingOutputs from HeadOutputs
@@ -254,13 +291,19 @@ func NewReadableOutput(headTime uint64, t coin.UxOut) (ReadableOutput, error) {
 		return ReadableOutput{}, err
 	}
 
+	hours, err := t.CoinHours(headTime)
+	if err != nil {
+		return ReadableOutput{}, err
+	}
+
 	return ReadableOutput{
 		Hash:              t.Hash().Hex(),
+		Time:              t.Head.Time,
 		BkSeq:             t.Head.BkSeq,
 		SourceTransaction: t.Body.SrcTransaction.Hex(),
 		Address:           t.Body.Address.String(),
 		Coins:             coinStr,
-		Hours:             t.CoinHours(headTime),
+		Hours:             hours,
 	}, nil
 }
 

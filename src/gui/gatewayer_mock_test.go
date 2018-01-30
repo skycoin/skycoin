@@ -729,8 +729,8 @@ func (m *GatewayerMock) GetWallets() (wallet.Wallets, error) {
 
 }
 
-// InjectTransaction mocked method
-func (m *GatewayerMock) InjectTransaction(p0 coin.Transaction) error {
+// InjectBroadcastTransaction mocked method
+func (m *GatewayerMock) InjectBroadcastTransaction(p0 coin.Transaction) error {
 
 	ret := m.Called(p0)
 

@@ -370,7 +370,7 @@ func TestInjectTransaction(t *testing.T) {
 			name:                   "400 - injectTransactionError",
 			method:                 http.MethodPost,
 			status:                 http.StatusBadRequest,
-			err:                    "400 Bad Request - inject tx failed:injectTransactionError",
+			err:                    "400 Bad Request - inject tx failed: injectTransactionError",
 			httpBody:               string(validTxBodyJson),
 			injectTransactionArg:   validTransaction,
 			injectTransactionError: errors.New("injectTransactionError"),
@@ -396,7 +396,7 @@ func TestInjectTransaction(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/injectTransaction"
 			gateway := NewGatewayerMock()
-			gateway.On("InjectTransaction", tc.injectTransactionArg).Return(tc.injectTransactionError)
+			gateway.On("InjectBroadcastTransaction", tc.injectTransactionArg).Return(tc.injectTransactionError)
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)

@@ -43,6 +43,7 @@ type service struct {
 	Build    serviceBuild
 	Networks map[string]serviceNetwork
 	Volumes  []string
+	Ports    []string `yaml:"ports,omitempty"`
 }
 type networkIpamConfig struct {
 	Subnet string
@@ -166,6 +167,7 @@ func NewSkyCoinTestNetwork(nodesNum int, buildContext string, tempDir string) Sk
 			},
 			ImageTag: currentCommit,
 			NodesNum: 1,
+			Ports:    []string{"6420"},
 		},
 		dockerService{
 			ImageName: "skycoin-nogui",
@@ -210,6 +212,7 @@ func NewSkyCoinTestNetwork(nodesNum int, buildContext string, tempDir string) Sk
 					},
 				},
 				Volumes: []string{dataDir + ":/root/.skycoin"},
+				Ports:   s.Ports,
 			}
 			t.Peers = append(t.Peers, ipAddress+":6000")
 			ipHostNum++

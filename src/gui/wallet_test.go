@@ -326,7 +326,8 @@ func TestWalletSpendHandler(t *testing.T) {
 
 			gateway := &GatewayerMock{}
 			addr, _ := cipher.DecodeBase58Address(tc.dst)
-			gateway.On("Spend", tc.walletID, tc.coins, addr).Return(tc.gatewaySpendResult, tc.gatewaySpendErr)
+			var pwd []byte
+			gateway.On("Spend", tc.walletID, pwd, tc.coins, addr).Return(tc.gatewaySpendResult, tc.gatewaySpendErr)
 			gateway.On("GetWalletBalance", tc.walletID).Return(tc.gatewayGetWalletBalanceResult, tc.gatewayBalanceErr)
 
 			endpoint := "/wallet/spend"
@@ -453,7 +454,7 @@ func TestWalletGet(t *testing.T) {
 
 	for _, tc := range tt {
 		gateway := &GatewayerMock{}
-		gateway.On("GetWallet", tc.walletID).Return(tc.gatewayGetWalletResult, tc.gatewayGetWalletErr)
+		gateway.On("GetWallet", tc.walletID).Return(&tc.gatewayGetWalletResult, tc.gatewayGetWalletErr)
 		v := url.Values{}
 
 		endpoint := "/wallet"
@@ -1092,9 +1093,10 @@ func TestWalletCreateHandler(t *testing.T) {
 	}
 
 	for _, tc := range tt {
+		var pwd []byte // nil password
 		gateway := &GatewayerMock{}
-		gateway.On("CreateWallet", "", tc.options).Return(tc.gatewayCreateWalletResult, tc.gatewayCreateWalletErr)
-		gateway.On("ScanAheadWalletAddresses", tc.wltName, tc.scnN-1).Return(tc.scanWalletAddressesResult, tc.scanWalletAddressesError)
+		gateway.On("CreateWallet", "", tc.options).Return(&tc.gatewayCreateWalletResult, tc.gatewayCreateWalletErr)
+		gateway.On("ScanAheadWalletAddresses", tc.wltName, pwd, tc.scnN-1).Return(&tc.scanWalletAddressesResult, tc.scanWalletAddressesError)
 
 		endpoint := "/wallet/create"
 
@@ -1396,7 +1398,8 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &GatewayerMock{}
-			gateway.On("NewAddresses", tc.walletID, tc.n).Return(tc.gatewayNewAddressesResult, tc.gatewayNewAddressesErr)
+			var pwd []byte // nil password
+			gateway.On("NewAddresses", tc.walletID, pwd, tc.n).Return(tc.gatewayNewAddressesResult, tc.gatewayNewAddressesErr)
 
 			endpoint := "/wallet/newAddress"
 

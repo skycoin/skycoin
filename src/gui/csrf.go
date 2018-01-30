@@ -115,7 +115,7 @@ func CSRFCheck(handler http.Handler, store *CSRFStore) http.Handler {
 
 // b64encode returns a url safe base64 encoded string
 func b64encode(data []byte) string {
-	return base64.URLEncoding.EncodeToString(data)
+	return base64.RawURLEncoding.EncodeToString(data)
 }
 
 // generateToken generates a new CSRF Token

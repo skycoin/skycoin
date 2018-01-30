@@ -535,7 +535,7 @@ func addUint32(a, b uint32) (uint32, error) {
 }
 
 func intToUint32(a int) (uint32, error) {
-	if a > math.MaxUint32 {
+	if uint(a) > math.MaxUint32 {
 		return 0, errors.New("Size overflow")
 	}
 

@@ -102,6 +102,10 @@ if [ -e "latest-mac.yml" ]; then rm latest-mac.yml ;fi
 # clean unpacked folders
 rm -rf *-unpacked
 
+# delete blockmap and electron-builder.yaml
+rm *.blockmap
+rm *.yaml
+
 popd >/dev/null
 
 popd >/dev/null

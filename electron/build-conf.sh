@@ -8,7 +8,7 @@ APP_VERSION=`grep version package.json | sed  's/[,\", ]//g'| awk '{split($0,a,"
 
 
 # package name
-PKG_NAME=`grep name package.json | sed 's/[,\", ]//g' | awk '{split($0,s,":");print s[2]}'`
+PKG_NAME=`grep productName package.json | sed 's/[,\", ]//g' | awk '{split($0,s,":");print tolower(s[2])}'`
 
 # product name
 PDT_NAME=`grep productName package.json | sed 's/[,\", ]//g' | awk '{split($0,s,":");print s[2]}'`

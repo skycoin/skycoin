@@ -23,7 +23,7 @@ type addrHistory struct {
 	Timestamp time.Time `json:"timestamp"`
 	Status    int       `json:"status"`
 
-	coins uint64 `json:"-"`
+	coins uint64
 }
 
 type byTime []addrHistory

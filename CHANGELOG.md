@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- #800, Add entropy parameter to `/wallet/newSeed` endpoint
+- #877, Add -disable-wallet-api CLI option
+- Add `total_coinhour_supply` and `current_coinhour_supply` to `/coinSupply` endpoint
+- Remove `/logs` and log buffering due to possible crash
+- Add `Host` header check to localhost HTTP interfaces to prevent DNS rebinding attacks
+- #866, Include coins and hours in `/explorer/address` inputs
+
 ## [0.21.1] - 2017-12-14
 
 ### Fixed

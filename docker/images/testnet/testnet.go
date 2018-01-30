@@ -5,8 +5,6 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"github.com/skycoin/skycoin/src/cipher"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
 	"os"
@@ -14,6 +12,8 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+
+	"github.com/skycoin/skycoin/src/cipher"
 	//"strings"
 	"text/template"
 )

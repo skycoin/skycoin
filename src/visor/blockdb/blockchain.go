@@ -170,10 +170,7 @@ func (bc *Blockchain) AddBlockWithTx(tx *bolt.Tx, sb *coin.SignedBlock) error {
 
 // processBlockWithTx process block with *bolt.Tx
 func (bc *Blockchain) processBlockWithTx(tx *bolt.Tx, b *coin.SignedBlock) error {
-	return bc.updateWithTx(tx,
-		bc.updateHeadSeq(b),
-		bc.unspent.ProcessBlock(b),
-		bc.cacheGenesisBlock(b))
+	return bc.updateWithTx(tx, bc.updateHeadSeq(b), bc.unspent.ProcessBlock(b), bc.cacheGenesisBlock(b))
 }
 
 // Head returns head block, returns error if no block does exist

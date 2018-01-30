@@ -39,12 +39,12 @@ func NewScryptChacha20poly1305(N, r, p, keyLen int) *ScryptChacha20poly1305 {
 }
 
 type meta struct {
-	N      int
-	R      int
-	P      int
-	KeyLen int
-	Salt   []byte
-	Nonce  []byte
+	N      int    `json:"N"`
+	R      int    `json:"r"`
+	P      int    `json:"p"`
+	KeyLen int    `json:"keyLen"`
+	Salt   []byte `json:"salt"`
+	Nonce  []byte `json:"nonce"`
 }
 
 // Encrypt encrypts data with password,
@@ -66,7 +66,14 @@ func (s *ScryptChacha20poly1305) Encrypt(data, password []byte) ([]byte, error) 
 	}
 
 	// Prepare metadata
-	m := meta{s.n, s.r, s.p, s.keyLen, salt, cipher.RandByte(chacha20poly1305.NonceSize)}
+	m := meta{
+		N:      s.n,
+		R:      s.r,
+		P:      s.p,
+		KeyLen: s.keyLen,
+		Salt:   salt,
+		Nonce:  cipher.RandByte(chacha20poly1305.NonceSize),
+	}
 	// json serialize the metadata
 	ms, err := json.Marshal(m)
 	if err != nil {

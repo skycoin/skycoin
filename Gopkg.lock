@@ -45,7 +45,11 @@
 
 [[projects]]
   name = "github.com/stretchr/testify"
-  packages = ["assert","mock","require"]
+  packages = [
+    "assert",
+    "mock",
+    "require"
+  ]
   revision = "2aa2c176b9dab406a6970f6a55f513e8a8c8b18f"
 
 [[projects]]
@@ -78,9 +82,15 @@
   packages = ["unix"]
   revision = "50298aa7a9faed39cd341ad7fd9275b1d5ddd70c"
 
+[[projects]]
+  branch = "v2"
+  name = "gopkg.in/yaml.v2"
+  packages = ["."]
+  revision = "d670f9405373e636a5a2765eea47fac0c9bc91a4"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "35b5d3198cad3c85f69122223bab608f94bdc5c96284be3c22746f1c8b7f74bc"
+  inputs-digest = "dde4f42b89ef8ac499f609ce4eca389bc618e59f95a26db71ced8b482e162edb"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -30,9 +30,16 @@ export class ApiService {
       })));
   }
 
+  getWalletNewSeed(): Observable<string> {
+    return this.getCsrf().first().flatMap(csrf => {
+      return this.get('wallet/newSeed', null, {csrf: csrf})
+        .map(response => response.seed);
+    });
+  }
+
   getWallets(): Observable<Wallet[]> {
     return this.getCsrf().first().flatMap(csrf => {
-      return this.get('wallets', null, {csrf: csrf})
+      return this.get('wallets', null, { csrf: csrf })
         .map((response: GetWalletsResponseWallet[]) => {
           const wallets: Wallet[] = [];
           response.forEach(wallet => {

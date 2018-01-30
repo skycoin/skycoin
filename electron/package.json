@@ -52,8 +52,7 @@
                 "from": "../src/gui/static/dist/",
                 "to": "./app/dist/",
                 "filter": [
-                    "**/*",
-                    "!current-skycoin.json"
+                    "**/*"
                 ]
             },
             {

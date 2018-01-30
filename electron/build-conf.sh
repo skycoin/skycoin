@@ -39,8 +39,6 @@ STL_OUTPUT=".standalone_output"
 
 FINAL_OUTPUT="release"
 
-VERSION_FILE="./skycoin/current-skycoin.json"
-
 GUI_DIST_DIR="../src/gui/static/dist"  # Do not append "/" to this path
 
 # Variable suffix guide:

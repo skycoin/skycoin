@@ -19,10 +19,6 @@ fi
 
 echo
 echo "==========================="
-echo "Stamping the release with proper version"
-./version-control.sh
-
-echo "----------------------------"
 echo "Packaging standalone release"
 ./package-standalone-release.sh "$GOX_OSARCH"
 

@@ -94,6 +94,8 @@ type Config struct {
 	DisableNetworking bool
 	// Disables wallet API
 	DisableWalletApi bool
+	// Disable CSRF check in the wallet api
+	DisableCSRF bool
 
 	// Only run on localhost and only connect to others on localhost
 	LocalhostOnly bool
@@ -182,6 +184,7 @@ func (c *Config) register() {
 	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming", c.DisableIncomingConnections, "Don't make incoming connections")
 	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
 	flag.BoolVar(&c.DisableWalletApi, "disable-wallet-api", c.DisableWalletApi, "Disable the wallet API")
+	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable csrf check")
 	flag.StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
 
@@ -241,6 +244,8 @@ var devConfig = Config{
 	DisableNetworking: false,
 	// Disable wallet API
 	DisableWalletApi: false,
+	// Disable CSRF check in the wallet api
+	DisableCSRF: false,
 	// Only run on localhost and only connect to others on localhost
 	LocalhostOnly: false,
 	// Which address to serve on. Leave blank to automatically assign to a
@@ -524,6 +529,7 @@ func configureDaemon(c *Config) daemon.Config {
 	}
 
 	dc.Gateway.DisableWalletAPI = c.DisableWalletApi
+	dc.Gateway.DisableCSRF = c.DisableCSRF
 
 	return dc
 }

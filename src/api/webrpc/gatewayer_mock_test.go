@@ -1,3 +1,8 @@
+/*
+* CODE GENERATED AUTOMATICALLY WITH github.com/ernesto-jimenez/goautomock
+* THIS FILE MUST NEVER BE EDITED MANUALLY
+ */
+
 package webrpc
 
 import (
@@ -201,8 +206,8 @@ func (m *GatewayerMock) GetUnspentOutputs(p0 ...daemon.OutputsFilter) (visor.Rea
 
 }
 
-// InjectTransaction mocked method
-func (m *GatewayerMock) InjectTransaction(p0 coin.Transaction) error {
+// InjectBroadcastTransaction mocked method
+func (m *GatewayerMock) InjectBroadcastTransaction(p0 coin.Transaction) error {
 
 	ret := m.Called(p0)
 

@@ -9,28 +9,28 @@
 @font-face {
   font-family: 'Skycoin';
   font-style: normal;
-  font-weight: 700;
+  font-weight: 300;
   src: url('assets/fonts/skycoin/Skycoin-Light.woff2') format('woff2'),
   url('assets/fonts/skycoin/Skycoin-Light.woff') format('woff');
 }
 @font-face {
   font-family: 'Skycoin';
   font-style: italic;
-  font-weight: 700;
+  font-weight: 300;
   src: url('assets/fonts/skycoin/Skycoin-LightItalic.woff2') format('woff2'),
   url('assets/fonts/skycoin/Skycoin-LightItalic.woff') format('woff');
 }
 @font-face {
   font-family: 'Skycoin';
   font-style: normal;
-  font-weight: 700;
+  font-weight: 400;
   src: url('assets/fonts/skycoin/Skycoin-Regular.woff2') format('woff2'),
   url('assets/fonts/skycoin/Skycoin-Regular.woff') format('woff');
 }
 @font-face {
   font-family: 'Skycoin';
   font-style: italic;
-  font-weight: 700;
+  font-weight: 400;
   src: url('assets/fonts/skycoin/Skycoin-RegularItalic.woff2') format('woff2'),
   url('assets/fonts/skycoin/Skycoin-RegularItalic.woff') format('woff');
 }
@@ -183,7 +183,7 @@ mat-panel-title {
   }
 }
 
-.primary button.enabled {
+.primary button.enabled, .primary-gradient-background {
   background: $gradient-blue-dark; /* For browsers that do not support gradients */
   background: -webkit-linear-gradient(left top, $gradient-blue-dark, $gradient-blue-light); /* For Safari 5.1 to 6.0 */
   background: -o-linear-gradient(bottom right, $gradient-blue-dark, $gradient-blue-light); /* For Opera 11.1 to 12.0 */
@@ -228,6 +228,6 @@ General Helpers
 }
 
 mat-spinner.in-button svg {
-  height: 24px !important;
-  width: 24px !important;
+  height: 24px;
+  width: 24px;
 }

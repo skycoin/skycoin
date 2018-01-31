@@ -2,6 +2,8 @@ package coin
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"sort"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -73,22 +75,43 @@ func (ub *UxBody) Hash() cipher.SHA256 {
 }
 
 /*
-	Make indepedent of block rate?
+	Make independent of block rate?
 	Then need creation time of output
 	Creation time of transaction cant be hashed
 */
 
 // CoinHours Calculate coinhour balance of output. t is the current unix utc time
-func (uo *UxOut) CoinHours(t uint64) uint64 {
+func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
 	if t < uo.Head.Time {
 		logger.Warning("Calculating coin hours with t < head time")
-		return uo.Body.Hours
+		return uo.Body.Hours, nil
 	}
 
-	seconds := (t - uo.Head.Time)                  // number of seconds
-	coinSeconds := (seconds * uo.Body.Coins) / 1e6 // coin seconds
-	coinHours := coinSeconds / 3600                // coin hours
-	return uo.Body.Hours + coinHours               // starting+earned
+	seconds := t - uo.Head.Time // number of seconds
+
+	// Calculate whole coin seconds
+	wholeCoins := uo.Body.Coins / 1e6
+	wholeCoinSeconds, err := multUint64(seconds, wholeCoins)
+	if err != nil {
+		return 0, fmt.Errorf("Calculating whole coin seconds overflows uint64 seconds=%d coins=%d", seconds, wholeCoins)
+	}
+
+	// Calculate remainder droplet seconds
+	remainderDroplets := uo.Body.Coins % 1e6
+	dropletSeconds, err := multUint64(seconds, remainderDroplets)
+	if err != nil {
+		return 0, fmt.Errorf("Calculating droplet seconds overflows uint64 seconds=%d droplets=%d", seconds, remainderDroplets)
+	}
+
+	// Add coinSeconds and seconds earned by droplets, rounded off
+	coinSeconds := wholeCoinSeconds + dropletSeconds/1e6
+
+	coinHours := coinSeconds / 3600                        // coin hours
+	totalHours, err := AddUint64(uo.Body.Hours, coinHours) // starting+earned
+	if err != nil {
+		return 0, errors.New("UxOut.CoinsHours addition overflow")
+	}
+	return totalHours, nil
 }
 
 // UxHashSet set mapping from UxHash to a placeholder value. Ignore the byte value,
@@ -137,11 +160,6 @@ func (ua UxArray) Sort() {
 	sort.Sort(ua)
 }
 
-// IsSorted checks if uxouts are sorted
-func (ua UxArray) IsSorted() bool {
-	return sort.IsSorted(ua)
-}
-
 // Len returns length of uxarray
 func (ua UxArray) Len() int {
 	return len(ua)
@@ -160,22 +178,34 @@ func (ua UxArray) Swap(i, j int) {
 }
 
 // Coins returns the total coins
-func (ua UxArray) Coins() uint64 {
+func (ua UxArray) Coins() (uint64, error) {
 	var coins uint64
 	for _, ux := range ua {
-		coins += ux.Body.Coins
+		var err error
+		coins, err = AddUint64(coins, ux.Body.Coins)
+		if err != nil {
+			return 0, errors.New("UxArray.Coins addition overflow")
+		}
 	}
 
-	return coins
+	return coins, nil
 }
 
 // CoinHours returns the total coin hours
-func (ua UxArray) CoinHours(headTime uint64) uint64 {
+func (ua UxArray) CoinHours(headTime uint64) (uint64, error) {
 	var hours uint64
 	for _, ux := range ua {
-		hours += ux.CoinHours(headTime)
+		uxHours, err := ux.CoinHours(headTime)
+		if err != nil {
+			return 0, err
+		}
+
+		hours, err = AddUint64(hours, uxHours)
+		if err != nil {
+			return 0, errors.New("UxArray.CoinHours addition overflow")
+		}
 	}
-	return hours
+	return hours, nil
 }
 
 // AddressUxOuts maps address with uxarray

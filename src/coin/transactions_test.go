@@ -934,12 +934,3 @@ func TestMultUint64(t *testing.T) {
 	_, err = multUint64(math.MaxUint64/2, 3)
 	require.Error(t, err)
 }
-
-func TestIntToUint32(t *testing.T) {
-	n, err := intToUint32(10)
-	require.Equal(t, uint32(10), n)
-	require.NoError(t, err)
-
-	_, err = intToUint32(math.MaxUint32 + 1)
-	require.Error(t, err)
-}

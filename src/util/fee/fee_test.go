@@ -1,7 +1,9 @@
 package fee
 
 import (
+	"errors"
 	"fmt"
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -60,10 +62,12 @@ var burnFactor3verifyTxFeeTestCase = []verifyTxFeeTestCase{
 
 func TestVerifyTransactionFee(t *testing.T) {
 	emptyTxn := &coin.Transaction{}
-	require.Equal(t, uint64(0), emptyTxn.OutputHours())
+	hours, err := emptyTxn.OutputHours()
+	require.NoError(t, err)
+	require.Equal(t, uint64(0), hours)
 
 	// A txn with no outputs hours and no coinhours burn fee is valid
-	err := VerifyTransactionFee(emptyTxn, 0)
+	err = VerifyTransactionFee(emptyTxn, 0)
 	testutil.RequireError(t, err, ErrTxnNoFee.Error())
 
 	// A txn with no outputs hours but with a coinhours burn fee is valid
@@ -77,7 +81,10 @@ func TestVerifyTransactionFee(t *testing.T) {
 	txn.Out = append(txn.Out, coin.TransactionOutput{
 		Hours: 3e6,
 	})
-	require.Equal(t, uint64(4e6), txn.OutputHours())
+
+	hours, err = txn.OutputHours()
+	require.NoError(t, err)
+	require.Equal(t, uint64(4e6), hours)
 
 	// A txn with insufficient net coinhours burn fee is invalid
 	err = VerifyTransactionFee(txn, 0)
@@ -87,10 +94,24 @@ func TestVerifyTransactionFee(t *testing.T) {
 	testutil.RequireError(t, err, ErrTxnInsufficientFee.Error())
 
 	// A txn with sufficient net coinhours burn fee is valid
-	err = VerifyTransactionFee(txn, txn.OutputHours())
+	hours, err = txn.OutputHours()
 	require.NoError(t, err)
-	err = VerifyTransactionFee(txn, txn.OutputHours()*10)
+	err = VerifyTransactionFee(txn, hours)
 	require.NoError(t, err)
+	hours, err = txn.OutputHours()
+	err = VerifyTransactionFee(txn, hours*10)
+	require.NoError(t, err)
+
+	// fee + hours overflows
+	err = VerifyTransactionFee(txn, math.MaxUint64-3e6)
+	testutil.RequireError(t, err, "Hours and fee overflow")
+
+	// txn has overflowing output hours
+	txn.Out = append(txn.Out, coin.TransactionOutput{
+		Hours: math.MaxUint64 - 1e6 - 3e6 + 1,
+	})
+	err = VerifyTransactionFee(txn, 10)
+	testutil.RequireError(t, err, "Transaction output hours overflow")
 
 	var cases []verifyTxFeeTestCase
 	switch BurnFactor {
@@ -230,6 +251,28 @@ func TestTransactionFee(t *testing.T) {
 			in: []uxInput{
 				{time: headTime, coins: 10e6, hours: 10},
 				{time: headTime, coins: 8e6, hours: 5},
+			},
+			headTime: headTime,
+		},
+
+		// Test case with overflowing input hours
+		{
+			err: errors.New("UxArray.CoinHours addition overflow"),
+			out: []uint64{0},
+			in: []uxInput{
+				{time: headTime, coins: 10e6, hours: 10},
+				{time: headTime, coins: 10e6, hours: math.MaxUint64 - 9},
+			},
+			headTime: headTime,
+		},
+
+		// Test case with overflowing output hours
+		{
+			err: errors.New("Transaction output hours overflow"),
+			out: []uint64{0, 10, math.MaxUint64 - 9},
+			in: []uxInput{
+				{time: headTime, coins: 10e6, hours: 10},
+				{time: headTime, coins: 10e6, hours: 100},
 			},
 			headTime: headTime,
 		},

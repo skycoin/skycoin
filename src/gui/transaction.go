@@ -10,36 +10,13 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/visor"
 
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
-// RegisterTxHandlers registers transaction handlers
-func RegisterTxHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
-	// get set of pending transactions
-	mux.HandleFunc("/pendingTxs", getPendingTxs(gateway))
-	// get latest confirmed transactions
-	mux.HandleFunc("/lastTxs", getLastTxs(gateway))
-	// get txn by txid
-	mux.HandleFunc("/transaction", getTransactionByID(gateway))
-
-	// Returns transactions that match the filters.
-	// Method: GET
-	// Args:
-	//     addrs: Comma seperated addresses [optional, returns all transactions if no address is provided]
-	//     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
-	mux.HandleFunc("/transactions", getTransactions(gateway))
-	//inject a transaction into network
-	mux.HandleFunc("/injectTransaction", injectTransaction(gateway))
-	mux.HandleFunc("/resendUnconfirmedTxns", resendUnconfirmedTxns(gateway))
-	// get raw tx by txid.
-	mux.HandleFunc("/rawtx", getRawTx(gateway))
-}
-
 // Returns pending transactions
-func getPendingTxs(gateway *daemon.Gateway) http.HandlerFunc {
+func getPendingTxs(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -64,7 +41,7 @@ func getPendingTxs(gateway *daemon.Gateway) http.HandlerFunc {
 
 // DEPRECATED: last txs can't recover from db when restart
 // , and it's not used actually
-func getLastTxs(gateway *daemon.Gateway) http.HandlerFunc {
+func getLastTxs(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -96,7 +73,7 @@ func getLastTxs(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-func getTransactionByID(gate *daemon.Gateway) http.HandlerFunc {
+func getTransactionByID(gate Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -145,7 +122,7 @@ func getTransactionByID(gate *daemon.Gateway) http.HandlerFunc {
 // Args:
 //     addrs: Comma seperated addresses [optional, returns all transactions if no address provided]
 //     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
-func getTransactions(gateway *daemon.Gateway) http.HandlerFunc {
+func getTransactions(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -218,8 +195,7 @@ func parseAddressesFromStr(addrStr string) ([]cipher.Address, error) {
 	return addrs, nil
 }
 
-//Implement
-func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
+func injectTransaction(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			wh.Error405(w)
@@ -250,8 +226,9 @@ func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 			return
 		}
 
-		if err := gateway.InjectTransaction(txn); err != nil {
-			wh.Error400(w, fmt.Sprintf("inject tx failed:%v", err))
+		if err := gateway.InjectBroadcastTransaction(txn); err != nil {
+			logger.Error("%v", err)
+			wh.Error400(w, fmt.Sprintf("inject tx failed: %v", err))
 			return
 		}
 
@@ -259,14 +236,14 @@ func injectTransaction(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-func resendUnconfirmedTxns(gate *daemon.Gateway) http.HandlerFunc {
+func resendUnconfirmedTxns(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}
 
-		rlt := gate.ResendUnconfirmedTxns()
+		rlt := gateway.ResendUnconfirmedTxns()
 		v, _ := json.MarshalIndent(rlt, "", "    ")
 		fmt.Println(v)
 		wh.SendOr404(w, rlt)
@@ -274,7 +251,7 @@ func resendUnconfirmedTxns(gate *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-func getRawTx(gate *daemon.Gateway) http.HandlerFunc {
+func getRawTx(gate Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)

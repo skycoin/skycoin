@@ -11,18 +11,6 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 )
 
-// RegisterExplorerHandlers register explorer handlers
-func RegisterExplorerHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
-	// get set of pending transactions
-	mux.HandleFunc("/explorer/address", getTransactionsForAddress(gateway))
-
-	mux.HandleFunc("/coinSupply", getCoinSupply(gateway))
-
-	mux.HandleFunc("/richlist", getRichlist(gateway))
-
-	mux.HandleFunc("/addresscount", getAddressCount(gateway))
-}
-
 // CoinSupply records the coin supply info
 type CoinSupply struct {
 	// Coins distributed beyond the project:
@@ -207,7 +195,13 @@ func getTransactionsForAddress(gateway Gatewayer) http.HandlerFunc {
 					return
 				}
 
-				in[i] = visor.NewReadableTransactionInput(tx.Transaction.In[i], uxout.Out.Body.Address.String())
+				tIn, err := visor.NewReadableTransactionInput(tx.Transaction.In[i], uxout.Out.Body.Address.String(), uxout.Out.Body.Coins, uxout.Out.Body.Hours)
+				if err != nil {
+					wh.Error500(w)
+					return
+				}
+
+				in[i] = *tIn
 			}
 
 			resTxs = append(resTxs, NewReadableTransaction(tx, in))

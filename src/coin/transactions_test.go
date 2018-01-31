@@ -1,7 +1,10 @@
 package coin
 
 import (
+	"bytes"
+	"errors"
 	"math"
+	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -11,20 +14,19 @@ import (
 	"github.com/skycoin/skycoin/src/testutil"
 )
 
-func makeTransactionWithSecret(t *testing.T) (Transaction, cipher.SecKey) {
+func makeTransactionFromUxOut(t *testing.T, ux UxOut, s cipher.SecKey) Transaction {
 	tx := Transaction{}
-	ux, s := makeUxOutWithSecret(t)
 	tx.PushInput(ux.Hash())
-	tx.SignInputs([]cipher.SecKey{s})
 	tx.PushOutput(makeAddress(), 1e6, 50)
 	tx.PushOutput(makeAddress(), 5e6, 50)
+	tx.SignInputs([]cipher.SecKey{s})
 	tx.UpdateHeader()
-	return tx, s
+	return tx
 }
 
 func makeTransaction(t *testing.T) Transaction {
-	tx, _ := makeTransactionWithSecret(t)
-	return tx
+	ux, s := makeUxOutWithSecret(t)
+	return makeTransactionFromUxOut(t, ux, s)
 }
 
 func makeTransactions(t *testing.T, n int) Transactions {
@@ -89,7 +91,8 @@ func TestTransactionVerify(t *testing.T) {
 	testutil.RequireError(t, tx.Verify(), "Too many signatures and inputs")
 
 	// Duplicate inputs
-	tx, s := makeTransactionWithSecret(t)
+	ux, s := makeUxOutWithSecret(t)
+	tx = makeTransactionFromUxOut(t, ux, s)
 	tx.PushInput(tx.In[0])
 	tx.Sigs = nil
 	tx.SignInputs([]cipher.SecKey{s, s})
@@ -113,7 +116,19 @@ func TestTransactionVerify(t *testing.T) {
 	// This must be done by blockchain tests, because we need the address
 	// from the unspent being spent
 
-	// Output coins are not multiples of 1e6
+	// Output coins are 0
+	tx = makeTransaction(t)
+	tx.Out[0].Coins = 0
+	tx.UpdateHeader()
+	testutil.RequireError(t, tx.Verify(), "Zero coin output")
+
+	// Output coin overflow
+	tx = makeTransaction(t)
+	tx.Out[0].Coins = math.MaxUint64 - 3e6
+	tx.UpdateHeader()
+	testutil.RequireError(t, tx.Verify(), "Output coins overflow")
+
+	// Output coins are not multiples of 1e6 (valid, decimal restriction is not enforced here)
 	tx = makeTransaction(t)
 	tx.Out[0].Coins += 10
 	tx.UpdateHeader()
@@ -122,18 +137,69 @@ func TestTransactionVerify(t *testing.T) {
 	require.NotEqual(t, tx.Out[0].Coins%1e6, uint64(0))
 	require.NoError(t, tx.Verify())
 
-	// Output coins are 0
-	tx = makeTransaction(t)
-	tx.Out[0].Coins = 0
-	tx.UpdateHeader()
-	testutil.RequireError(t, tx.Verify(), "Zero coin output")
-
 	// Valid
 	tx = makeTransaction(t)
 	tx.Out[0].Coins = 10e6
 	tx.Out[1].Coins = 1e6
 	tx.UpdateHeader()
 	require.Nil(t, tx.Verify())
+}
+
+func TestTransactionVerifyInput(t *testing.T) {
+	// Invalid uxIn args
+	tx := makeTransaction(t)
+	require.PanicsWithValue(t, "tx.In != uxIn", func() {
+		tx.VerifyInput(nil)
+	})
+	require.PanicsWithValue(t, "tx.In != uxIn", func() {
+		tx.VerifyInput(UxArray{})
+	})
+	require.PanicsWithValue(t, "tx.In != uxIn", func() {
+		tx.VerifyInput(make(UxArray, 3))
+	})
+
+	// tx.In != tx.Sigs
+	ux, s := makeUxOutWithSecret(t)
+	tx = makeTransactionFromUxOut(t, ux, s)
+	tx.Sigs = []cipher.Sig{}
+	require.PanicsWithValue(t, "tx.In != tx.Sigs", func() {
+		tx.VerifyInput(UxArray{ux})
+	})
+
+	ux, s = makeUxOutWithSecret(t)
+	tx = makeTransactionFromUxOut(t, ux, s)
+	tx.Sigs = append(tx.Sigs, cipher.Sig{})
+	require.PanicsWithValue(t, "tx.In != tx.Sigs", func() {
+		tx.VerifyInput(UxArray{ux})
+	})
+
+	// tx.InnerHash != tx.HashInner()
+	ux, s = makeUxOutWithSecret(t)
+	tx = makeTransactionFromUxOut(t, ux, s)
+	tx.InnerHash = cipher.SHA256{}
+	require.PanicsWithValue(t, "Invalid Tx Inner Hash", func() {
+		tx.VerifyInput(UxArray{ux})
+	})
+
+	// tx.In does not match uxIn hashes
+	ux, s = makeUxOutWithSecret(t)
+	tx = makeTransactionFromUxOut(t, ux, s)
+	require.PanicsWithValue(t, "Ux hash mismatch", func() {
+		tx.VerifyInput(UxArray{UxOut{}})
+	})
+
+	// Invalid signature
+	ux, s = makeUxOutWithSecret(t)
+	tx = makeTransactionFromUxOut(t, ux, s)
+	tx.Sigs[0] = cipher.Sig{}
+	err := tx.VerifyInput(UxArray{ux})
+	testutil.RequireError(t, err, "Signature not valid for output being spent")
+
+	// Valid
+	ux, s = makeUxOutWithSecret(t)
+	tx = makeTransactionFromUxOut(t, ux, s)
+	err = tx.VerifyInput(UxArray{ux})
+	require.NoError(t, err)
 }
 
 func TestTransactionPushInput(t *testing.T) {
@@ -259,7 +325,13 @@ func TestTransactionOutputHours(t *testing.T) {
 	tx.PushOutput(makeAddress(), 1e6, 200)
 	tx.PushOutput(makeAddress(), 1e6, 500)
 	tx.PushOutput(makeAddress(), 1e6, 0)
-	require.Equal(t, tx.OutputHours(), uint64(800))
+	hours, err := tx.OutputHours()
+	require.NoError(t, err)
+	require.Equal(t, hours, uint64(800))
+
+	tx.PushOutput(makeAddress(), 1e6, math.MaxUint64-700)
+	_, err = tx.OutputHours()
+	testutil.RequireError(t, err, "Transaction output hours overflow")
 }
 
 type outAddr struct {
@@ -383,4 +455,482 @@ func TestTransactionsTruncateBytesTo(t *testing.T) {
 	txns2 = txns.TruncateBytesTo(0)
 	require.Equal(t, len(txns2), 0)
 	require.Equal(t, txns2.Size(), trunc)
+}
+
+func TestVerifyTransactionCoinsSpending(t *testing.T) {
+	// Input coins overflow
+	// Insufficient coins
+	// Destroy coins
+
+	type ux struct {
+		coins uint64
+		hours uint64
+	}
+
+	cases := []struct {
+		name   string
+		inUxs  []ux
+		outUxs []ux
+		err    error
+	}{
+		{
+			name: "Input coins overflow",
+			inUxs: []ux{
+				{
+					coins: math.MaxUint64 - 1e6 + 1,
+					hours: 10,
+				},
+				{
+					coins: 1e6,
+					hours: 0,
+				},
+			},
+			err: errors.New("Transaction input coins overflow"),
+		},
+
+		{
+			name: "Output coins overflow",
+			inUxs: []ux{
+				{
+					coins: 10e6,
+					hours: 10,
+				},
+			},
+			outUxs: []ux{
+				{
+					coins: math.MaxUint64 - 10e6 + 1,
+					hours: 0,
+				},
+				{
+					coins: 20e6,
+					hours: 1,
+				},
+			},
+			err: errors.New("Transaction output coins overflow"),
+		},
+
+		{
+			name: "Insufficient coins",
+			inUxs: []ux{
+				{
+					coins: 10e6,
+					hours: 10,
+				},
+				{
+					coins: 15e6,
+					hours: 10,
+				},
+			},
+			outUxs: []ux{
+				{
+					coins: 20e6,
+					hours: 1,
+				},
+				{
+					coins: 10e6,
+					hours: 1,
+				},
+			},
+			err: errors.New("Insufficient coins"),
+		},
+
+		{
+			name: "Destroyed coins",
+			inUxs: []ux{
+				{
+					coins: 10e6,
+					hours: 10,
+				},
+				{
+					coins: 15e6,
+					hours: 10,
+				},
+			},
+			outUxs: []ux{
+				{
+					coins: 5e6,
+					hours: 1,
+				},
+				{
+					coins: 10e6,
+					hours: 1,
+				},
+			},
+			err: errors.New("Transactions may not destroy coins"),
+		},
+
+		{
+			name: "valid",
+			inUxs: []ux{
+				{
+					coins: 10e6,
+					hours: 10,
+				},
+				{
+					coins: 15e6,
+					hours: 10,
+				},
+			},
+			outUxs: []ux{
+				{
+					coins: 10e6,
+					hours: 11,
+				},
+				{
+					coins: 10e6,
+					hours: 1,
+				},
+				{
+					coins: 5e6,
+					hours: 0,
+				},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var uxIn, uxOut UxArray
+
+			for _, ch := range tc.inUxs {
+				uxIn = append(uxIn, UxOut{
+					Body: UxBody{
+						Coins: ch.coins,
+						Hours: ch.hours,
+					},
+				})
+			}
+
+			for _, ch := range tc.outUxs {
+				uxOut = append(uxOut, UxOut{
+					Body: UxBody{
+						Coins: ch.coins,
+						Hours: ch.hours,
+					},
+				})
+			}
+
+			err := VerifyTransactionCoinsSpending(uxIn, uxOut)
+			require.Equal(t, tc.err, err)
+		})
+	}
+}
+
+func TestVerifyTransactionHoursSpending(t *testing.T) {
+	// Input hours overflow
+	// Insufficient hours
+	// NOTE: does not check for hours overflow, that had to be moved to soft constraints
+
+	type ux struct {
+		coins uint64
+		hours uint64
+	}
+
+	cases := []struct {
+		name     string
+		inUxs    []ux
+		outUxs   []ux
+		headTime uint64
+		err      error
+	}{
+		{
+			name: "Input hours overflow",
+			inUxs: []ux{
+				{
+					coins: 3e6,
+					hours: math.MaxUint64 - 1e6 + 1,
+				},
+				{
+					coins: 1e6,
+					hours: 1e6,
+				},
+			},
+			err: errors.New("Transaction input hours overflow"),
+		},
+
+		{
+			name: "Insufficient coin hours",
+			inUxs: []ux{
+				{
+					coins: 10e6,
+					hours: 10,
+				},
+				{
+					coins: 15e6,
+					hours: 10,
+				},
+			},
+			outUxs: []ux{
+				{
+					coins: 15e6,
+					hours: 10,
+				},
+				{
+					coins: 10e6,
+					hours: 11,
+				},
+			},
+			err: errors.New("Insufficient coin hours"),
+		},
+
+		{
+			name: "coin hours time calculation overflow",
+			inUxs: []ux{
+				{
+					coins: 10e6,
+					hours: 10,
+				},
+				{
+					coins: 15e6,
+					hours: 10,
+				},
+			},
+			outUxs: []ux{
+				{
+					coins: 10e6,
+					hours: 11,
+				},
+				{
+					coins: 10e6,
+					hours: 1,
+				},
+				{
+					coins: 5e6,
+					hours: 0,
+				},
+			},
+			headTime: math.MaxUint64,
+			err:      errors.New("Calculating whole coin seconds overflows uint64 seconds=18446744073709551615 coins=10"),
+		},
+
+		{
+			name: "Valid (base inputs have insufficient coin hours, but have sufficient after adjusting coinhours by headTime)",
+			inUxs: []ux{
+				{
+					coins: 10e6,
+					hours: 10,
+				},
+				{
+					coins: 15e6,
+					hours: 10,
+				},
+			},
+			outUxs: []ux{
+				{
+					coins: 15e6,
+					hours: 10,
+				},
+				{
+					coins: 10e6,
+					hours: 11,
+				},
+			},
+			headTime: 1492707255,
+		},
+
+		{
+			name: "valid",
+			inUxs: []ux{
+				{
+					coins: 10e6,
+					hours: 10,
+				},
+				{
+					coins: 15e6,
+					hours: 10,
+				},
+			},
+			outUxs: []ux{
+				{
+					coins: 10e6,
+					hours: 11,
+				},
+				{
+					coins: 10e6,
+					hours: 1,
+				},
+				{
+					coins: 5e6,
+					hours: 0,
+				},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var uxIn, uxOut UxArray
+
+			for _, ch := range tc.inUxs {
+				uxIn = append(uxIn, UxOut{
+					Body: UxBody{
+						Coins: ch.coins,
+						Hours: ch.hours,
+					},
+				})
+			}
+
+			for _, ch := range tc.outUxs {
+				uxOut = append(uxOut, UxOut{
+					Body: UxBody{
+						Coins: ch.coins,
+						Hours: ch.hours,
+					},
+				})
+			}
+
+			err := VerifyTransactionHoursSpending(tc.headTime, uxIn, uxOut)
+			require.Equal(t, tc.err, err)
+		})
+	}
+}
+
+func TestTransactionsFees(t *testing.T) {
+	calc := func(tx *Transaction) (uint64, error) {
+		return 1, nil
+	}
+
+	var txns Transactions
+
+	// Nil txns
+	fee, err := txns.Fees(calc)
+	require.NoError(t, err)
+	require.Equal(t, uint64(0), fee)
+
+	txns = append(txns, Transaction{})
+	txns = append(txns, Transaction{})
+
+	// 2 transactions, calc() always returns 1
+	fee, err = txns.Fees(calc)
+	require.NoError(t, err)
+	require.Equal(t, uint64(2), fee)
+
+	// calc error
+	failingCalc := func(tx *Transaction) (uint64, error) {
+		return 0, errors.New("bad calc")
+	}
+	_, err = txns.Fees(failingCalc)
+	testutil.RequireError(t, err, "bad calc")
+
+	// summing of calculated fees overflows
+	overflowCalc := func(tx *Transaction) (uint64, error) {
+		return math.MaxUint64, nil
+	}
+
+	_, err = txns.Fees(overflowCalc)
+	testutil.RequireError(t, err, "Transactions fee totals overflow")
+}
+
+func TestSortTransactions(t *testing.T) {
+	n := 6
+	var txns Transactions
+	for i := 0; i < n; i++ {
+		txn := Transaction{}
+		txn.PushOutput(makeAddress(), 1e6, uint64(i*1e3))
+		txn.UpdateHeader()
+		txns = append(txns, txn)
+	}
+
+	var hashSortedTxns Transactions
+	for _, txn := range txns {
+		hashSortedTxns = append(hashSortedTxns, txn)
+	}
+
+	sort.Slice(hashSortedTxns, func(i, j int) bool {
+		ihash := hashSortedTxns[i].Hash()
+		jhash := hashSortedTxns[j].Hash()
+		return bytes.Compare(ihash[:], jhash[:]) < 0
+	})
+
+	cases := []struct {
+		name       string
+		feeCalc    FeeCalculator
+		txns       Transactions
+		sortedTxns Transactions
+	}{
+		{
+			name:       "already sorted",
+			txns:       Transactions{txns[0], txns[1]},
+			sortedTxns: Transactions{txns[0], txns[1]},
+			feeCalc: func(txn *Transaction) (uint64, error) {
+				return 1e8 - txn.Out[0].Hours, nil
+			},
+		},
+
+		{
+			name:       "reverse sorted",
+			txns:       Transactions{txns[1], txns[0]},
+			sortedTxns: Transactions{txns[0], txns[1]},
+			feeCalc: func(txn *Transaction) (uint64, error) {
+				return 1e8 - txn.Out[0].Hours, nil
+			},
+		},
+
+		{
+			name:       "hash tiebreaker",
+			txns:       Transactions{hashSortedTxns[1], hashSortedTxns[0]},
+			sortedTxns: Transactions{hashSortedTxns[0], hashSortedTxns[1]},
+			feeCalc: func(txn *Transaction) (uint64, error) {
+				return 1e8, nil
+			},
+		},
+
+		{
+			name:       "invalid fee multiplication is capped",
+			txns:       Transactions{txns[1], txns[2], txns[0]},
+			sortedTxns: Transactions{txns[2], txns[0], txns[1]},
+			feeCalc: func(txn *Transaction) (uint64, error) {
+				if txn.Hash() == txns[2].Hash() {
+					return math.MaxUint64 / 2, nil
+				}
+				return 1e8 - txn.Out[0].Hours, nil
+			},
+		},
+
+		{
+			name:       "failed fee calc is filtered",
+			txns:       Transactions{txns[1], txns[2], txns[0]},
+			sortedTxns: Transactions{txns[0], txns[1]},
+			feeCalc: func(txn *Transaction) (uint64, error) {
+				if txn.Hash() == txns[2].Hash() {
+					return 0, errors.New("fee calc failed")
+				}
+				return 1e8 - txn.Out[0].Hours, nil
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			txns := SortTransactions(tc.txns, tc.feeCalc)
+			require.Equal(t, tc.sortedTxns, txns)
+		})
+	}
+}
+
+func TestAddUint64(t *testing.T) {
+	n, err := AddUint64(10, 11)
+	require.NoError(t, err)
+	require.Equal(t, uint64(21), n)
+
+	_, err = AddUint64(math.MaxUint64, 1)
+	require.Error(t, err)
+}
+
+func TestAddUint32(t *testing.T) {
+	n, err := addUint32(10, 11)
+	require.NoError(t, err)
+	require.Equal(t, uint32(21), n)
+
+	_, err = addUint32(math.MaxUint32, 1)
+	require.Error(t, err)
+}
+
+func TestMultUint64(t *testing.T) {
+	n, err := multUint64(10, 11)
+	require.NoError(t, err)
+	require.Equal(t, uint64(110), n)
+
+	_, err = multUint64(math.MaxUint64/2, 3)
+	require.Error(t, err)
 }

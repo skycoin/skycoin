@@ -24,38 +24,6 @@ import (
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
-// GetAddressTxns returns a *visor.TransactionResults
-func (gw *FakeGateway) GetAddressTxns(a cipher.Address) (*visor.TransactionResults, error) {
-	args := gw.Called(a)
-	return args.Get(0).(*visor.TransactionResults), args.Error(1)
-}
-
-// GetUxOutByID gets UxOut by hash id.
-func (gw *FakeGateway) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
-	args := gw.Called(id)
-	return args.Get(0).(*historydb.UxOut), args.Error(1)
-
-}
-
-// GetUnspentOutputs gets unspent outputs and returns the filtered results,
-// Note: all filters will be executed as the pending sequence in 'AND' mode.
-func (gw *FakeGateway) GetUnspentOutputs(filters ...daemon.OutputsFilter) (visor.ReadableOutputSet, error) {
-	args := gw.Called(filters)
-	return args.Get(0).(visor.ReadableOutputSet), args.Error(1)
-}
-
-// GetRichlist returns rich list as desc order.
-func (gw *FakeGateway) GetRichlist(includeDistribution bool) (visor.Richlist, error) {
-	args := gw.Called(includeDistribution)
-	return args.Get(0).(visor.Richlist), args.Error(1)
-}
-
-// GetAddressCount returns count number of unique address with uxouts > 0.
-func (gw *FakeGateway) GetAddressCount() (uint64, error) {
-	args := gw.Called()
-	return args.Get(0).(uint64), args.Error(1)
-}
-
 func makeSuccessCoinSupplyResult(t *testing.T, allUnspents visor.ReadableOutputSet) *CoinSupply {
 	unlockedAddrs := visor.GetUnlockedDistributionAddresses()
 	var unlockedSupply uint64
@@ -133,7 +101,7 @@ func TestGetTransactionsForAddress(t *testing.T) {
 		name                        string
 		method                      string
 		status                      int
-		error                       string
+		err                         string
 		addressParam                string
 		gatewayGetAddressTxnsResult *visor.TransactionResults
 		gatewayGetAddressTxnsErr    error
@@ -147,28 +115,28 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			name:         "405",
 			method:       http.MethodPost,
 			status:       http.StatusMethodNotAllowed,
-			error:        "405 Method Not Allowed",
+			err:          "405 Method Not Allowed",
 			addressParam: "0",
 		},
 		{
 			name:         "400 - address is empty",
 			method:       http.MethodGet,
 			status:       http.StatusBadRequest,
-			error:        "400 Bad Request - address is empty",
+			err:          "400 Bad Request - address is empty",
 			addressParam: "",
 		},
 		{
 			name:         "400 - invalid address",
 			method:       http.MethodGet,
 			status:       http.StatusBadRequest,
-			error:        "400 Bad Request - invalid address",
+			err:          "400 Bad Request - invalid address",
 			addressParam: "badAddress",
 		},
 		{
 			name:                     "500 - gw GetAddressTxns error",
 			method:                   http.MethodGet,
 			status:                   http.StatusInternalServerError,
-			error:                    "500 Internal Server Error",
+			err:                      "500 Internal Server Error",
 			addressParam:             address.String(),
 			gatewayGetAddressTxnsErr: errors.New("gatewayGetAddressTxnsErr"),
 		},
@@ -176,7 +144,7 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			name:         "500 - cipher.SHA256FromHex(tx.Transaction.In) error",
 			method:       http.MethodGet,
 			status:       http.StatusInternalServerError,
-			error:        "500 Internal Server Error",
+			err:          "500 Internal Server Error",
 			addressParam: address.String(),
 			gatewayGetAddressTxnsResult: &visor.TransactionResults{
 				Txns: []visor.TransactionResult{
@@ -194,7 +162,7 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			name:         "500 - GetUxOutByID error",
 			method:       http.MethodGet,
 			status:       http.StatusInternalServerError,
-			error:        "500 Internal Server Error",
+			err:          "500 Internal Server Error",
 			addressParam: address.String(),
 			gatewayGetAddressTxnsResult: &visor.TransactionResults{
 				Txns: []visor.TransactionResult{
@@ -214,7 +182,7 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			name:         "500 - GetUxOutByID nil result",
 			method:       http.MethodGet,
 			status:       http.StatusInternalServerError,
-			error:        "500 Internal Server Error",
+			err:          "500 Internal Server Error",
 			addressParam: address.String(),
 			gatewayGetAddressTxnsResult: &visor.TransactionResults{
 				Txns: []visor.TransactionResult{
@@ -228,6 +196,13 @@ func TestGetTransactionsForAddress(t *testing.T) {
 				},
 			},
 			gatewayGetUxOutByIDArg: testutil.SHA256FromHex(t, validHash),
+		},
+		{
+			name:       "403 - Forbidden - invalid Host header",
+			method:     http.MethodGet,
+			status:     http.StatusForbidden,
+			err:        "403 Forbidden",
+			hostHeader: "example.com",
 		},
 		{
 			name:         "200",
@@ -253,6 +228,8 @@ func TestGetTransactionsForAddress(t *testing.T) {
 						{
 							Hash:    validHash,
 							Address: successAddress,
+							Coins:   "0.000000",
+							Hours:   "0",
 						},
 					},
 				},
@@ -263,9 +240,7 @@ func TestGetTransactionsForAddress(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/explorer/address"
-			gateway := &FakeGateway{
-				t: t,
-			}
+			gateway := NewGatewayerMock()
 			gateway.On("GetAddressTxns", address).Return(tc.gatewayGetAddressTxnsResult, tc.gatewayGetAddressTxnsErr)
 			gateway.On("GetUxOutByID", tc.gatewayGetUxOutByIDArg).Return(tc.gatewayGetUxOutByIDResult, tc.gatewayGetUxOutByIDErr)
 
@@ -280,21 +255,22 @@ func TestGetTransactionsForAddress(t *testing.T) {
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
-
+			if tc.hostHeader != "" {
+				req.Host = tc.hostHeader
+			}
 			rr := httptest.NewRecorder()
-			handler := http.HandlerFunc(getTransactionsForAddress(gateway))
-
+			handler := NewServerMux(configuredHost, ".", gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.error, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.error)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				var msg []ReadableTransaction
-				err := json.Unmarshal(rr.Body.Bytes(), &msg)
+				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.result, msg)
 			}
@@ -320,7 +296,7 @@ func TestCoinSupply(t *testing.T) {
 		name                           string
 		method                         string
 		status                         int
-		error                          string
+		err                            string
 		gatewayGetUnspentOutputsArg    []daemon.OutputsFilter
 		gatewayGetUnspentOutputsResult visor.ReadableOutputSet
 		gatewayGetUnspentOutputsErr    error
@@ -331,13 +307,13 @@ func TestCoinSupply(t *testing.T) {
 			name:   "405",
 			method: http.MethodPost,
 			status: http.StatusMethodNotAllowed,
-			error:  "405 Method Not Allowed",
+			err:    "405 Method Not Allowed",
 		},
 		{
 			name:   "500 - gatewayGetUnspentOutputsErr",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			error:  "500 Internal Server Error",
+			err:    "500 Internal Server Error",
 			gatewayGetUnspentOutputsArg: filterInUnlocked,
 			gatewayGetUnspentOutputsErr: errors.New("gatewayGetUnspentOutputsErr"),
 		},
@@ -345,7 +321,7 @@ func TestCoinSupply(t *testing.T) {
 			name:   "500 - gatewayGetUnspentOutputsErr",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			error:  "500 Internal Server Error",
+			err:    "500 Internal Server Error",
 			gatewayGetUnspentOutputsArg: filterInUnlocked,
 			gatewayGetUnspentOutputsErr: errors.New("gatewayGetUnspentOutputsErr"),
 		},
@@ -353,7 +329,7 @@ func TestCoinSupply(t *testing.T) {
 			name:   "500 - too large HeadOutputs item",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			error:  "500 Internal Server Error",
+			err:    "500 Internal Server Error",
 			gatewayGetUnspentOutputsArg: filterInUnlocked,
 			gatewayGetUnspentOutputsResult: visor.ReadableOutputSet{
 				HeadOutputs: visor.ReadableOutputs{
@@ -366,6 +342,13 @@ func TestCoinSupply(t *testing.T) {
 					},
 				},
 			},
+		},
+		{
+			name:       "403 - Forbidden - invalid Host header",
+			method:     http.MethodGet,
+			status:     http.StatusForbidden,
+			err:        "403 Forbidden",
+			hostHeader: "example.com",
 		},
 		{
 			name:   "200",
@@ -390,28 +373,27 @@ func TestCoinSupply(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/coinSupply"
-			gateway := &FakeGateway{
-				t: t,
-			}
+			gateway := NewGatewayerMock()
 			gateway.On("GetUnspentOutputs", mock.Anything).Return(tc.gatewayGetUnspentOutputsResult, tc.gatewayGetUnspentOutputsErr)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
-
+			if tc.hostHeader != "" {
+				req.Host = tc.hostHeader
+			}
 			rr := httptest.NewRecorder()
-			handler := http.HandlerFunc(getCoinSupply(gateway))
-
+			handler := NewServerMux(configuredHost, ".", gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.error, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.error)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				var msg *CoinSupply
-				err := json.Unmarshal(rr.Body.Bytes(), &msg)
+				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.result, msg)
 			}
@@ -428,7 +410,7 @@ func TestGetRichlist(t *testing.T) {
 		name                     string
 		method                   string
 		status                   int
-		error                    string
+		err                      string
 		httpParams               *httpParams
 		includeDistribution      bool
 		gatewayGetRichlistResult visor.Richlist
@@ -440,13 +422,13 @@ func TestGetRichlist(t *testing.T) {
 			name:   "405",
 			method: http.MethodPost,
 			status: http.StatusMethodNotAllowed,
-			error:  "405 Method Not Allowed",
+			err:    "405 Method Not Allowed",
 		},
 		{
 			name:   "400 - bad topn param",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
-			error:  "400 Bad Request - invalid n",
+			err:    "400 Bad Request - invalid n",
 			httpParams: &httpParams{
 				topn: "bad topn",
 			},
@@ -455,7 +437,7 @@ func TestGetRichlist(t *testing.T) {
 			name:   "400 - include-distribution",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
-			error:  "400 Bad Request - invalid include-distribution",
+			err:    "400 Bad Request - invalid include-distribution",
 			httpParams: &httpParams{
 				topn:                "1",
 				includeDistribution: "bad include-distribution",
@@ -465,12 +447,19 @@ func TestGetRichlist(t *testing.T) {
 			name:   "500 - gw GetRichlist error",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			error:  "500 Internal Server Error",
+			err:    "500 Internal Server Error",
 			httpParams: &httpParams{
 				topn:                "1",
 				includeDistribution: "false",
 			},
 			gatewayGetRichlistErr: errors.New("gatewayGetRichlistErr"),
+		},
+		{
+			name:       "403 - Forbidden - invalid Host header",
+			method:     http.MethodGet,
+			status:     http.StatusForbidden,
+			err:        "403 Forbidden",
+			hostHeader: "example.com",
 		},
 		{
 			name:   "200",
@@ -486,9 +475,7 @@ func TestGetRichlist(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/richlist"
-			gateway := &FakeGateway{
-				t: t,
-			}
+			gateway := NewGatewayerMock()
 			gateway.On("GetRichlist", tc.includeDistribution).Return(tc.gatewayGetRichlistResult, tc.gatewayGetRichlistErr)
 
 			v := url.Values{}
@@ -506,21 +493,23 @@ func TestGetRichlist(t *testing.T) {
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
+			if tc.hostHeader != "" {
+				req.Host = tc.hostHeader
+			}
 
 			rr := httptest.NewRecorder()
-			handler := http.HandlerFunc(getRichlist(gateway))
-
+			handler := NewServerMux(configuredHost, ".", gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.error, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.error)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				var msg visor.Richlist
-				err := json.Unmarshal(rr.Body.Bytes(), &msg)
+				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.result, msg)
 			}
@@ -536,7 +525,7 @@ func TestGetAddressCount(t *testing.T) {
 		name                         string
 		method                       string
 		status                       int
-		error                        string
+		err                          string
 		gatewayGetAddressCountResult uint64
 		gatewayGetAddressCountErr    error
 		result                       Result
@@ -546,14 +535,21 @@ func TestGetAddressCount(t *testing.T) {
 			name:   "405",
 			method: http.MethodPost,
 			status: http.StatusMethodNotAllowed,
-			error:  "405 Method Not Allowed",
+			err:    "405 Method Not Allowed",
 		},
 		{
 			name:   "500 - gw GetAddressCount error",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			error:  "500 Internal Server Error",
+			err:    "500 Internal Server Error",
 			gatewayGetAddressCountErr: errors.New("gatewayGetAddressCountErr"),
+		},
+		{
+			name:       "403 - Forbidden - invalid Host header",
+			method:     http.MethodGet,
+			status:     http.StatusForbidden,
+			err:        "403 Forbidden",
+			hostHeader: "example.com",
 		},
 		{
 			name:   "200",
@@ -569,28 +565,27 @@ func TestGetAddressCount(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/addresscount"
-			gateway := &FakeGateway{
-				t: t,
-			}
+			gateway := NewGatewayerMock()
 			gateway.On("GetAddressCount").Return(tc.gatewayGetAddressCountResult, tc.gatewayGetAddressCountErr)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
-
+			if tc.hostHeader != "" {
+				req.Host = tc.hostHeader
+			}
 			rr := httptest.NewRecorder()
-			handler := http.HandlerFunc(getAddressCount(gateway))
-
+			handler := NewServerMux(configuredHost, ".", gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.error, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.error)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
 				var msg Result
-				err := json.Unmarshal(rr.Body.Bytes(), &msg)
+				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.result, msg)
 			}

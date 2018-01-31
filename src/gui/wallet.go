@@ -8,7 +8,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/go-bip39"
-	"github.com/skycoin/skycoin/src/daemon"
+
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 
@@ -384,7 +384,7 @@ func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 }
 
 // Returns all loaded wallets
-func walletsHandler(gateway *daemon.Gateway) http.HandlerFunc {
+func walletsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		wlts, err := gateway.GetWallets()
 		if err != nil {
@@ -470,63 +470,4 @@ func newWalletSeed(gateway Gatewayer) http.HandlerFunc {
 		}
 		wh.SendOr404(w, rlt)
 	}
-}
-
-// RegisterWalletHandlers registers wallet handlers
-func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
-	// Returns wallet info
-	// GET Arguments:
-	//      id - Wallet ID.
-
-	//  Gets a wallet .  Will be assigned name if present.
-	mux.HandleFunc("/wallet", walletGet(gateway))
-
-	// Loads wallet from seed, will scan ahead N address and
-	// load addresses till the last one that have coins.
-	// Method: POST
-	// Args:
-	//     seed: wallet seed [required]
-	//     label: wallet label [required]
-	//     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
-	mux.HandleFunc("/wallet/create", walletCreate(gateway))
-
-	mux.HandleFunc("/wallet/newAddress", walletNewAddresses(gateway))
-
-	// Returns the confirmed and predicted balance for a specific wallet.
-	// The predicted balance is the confirmed balance minus any pending
-	// spent amount.
-	// GET arguments:
-	//      id: Wallet ID
-	mux.HandleFunc("/wallet/balance", walletBalanceHandler(gateway))
-
-	// Sends coins&hours to another address.
-	// POST arguments:
-	//  id: Wallet ID
-	//  coins: Number of coins to spend
-	//  hours: Number of hours to spends
-	//  fee: Number of hours to use as fee, on top of the default fee.
-	//  Returns total amount spent if successful, otherwise error describing
-	//  failure status.
-	mux.HandleFunc("/wallet/spend", walletSpendHandler(gateway))
-
-	// GET Arguments:
-	//		id: Wallet ID
-	// Returns all pending transanction for all addresses by selected Wallet
-	mux.HandleFunc("/wallet/transactions", walletTransactionsHandler(gateway))
-
-	// Update wallet label
-	// 		GET Arguments:
-	// 			id: wallet id
-	// 			label: wallet label
-	mux.HandleFunc("/wallet/update", walletUpdateHandler(gateway))
-
-	// Returns all loaded wallets
-	mux.HandleFunc("/wallets", walletsHandler(gateway))
-
-	mux.HandleFunc("/wallets/folderName", getWalletFolder(gateway))
-
-	// generate wallet seed
-	mux.Handle("/wallet/newSeed", newWalletSeed(gateway))
-
-	// generate wallet seed
 }

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Http, RequestOptions, Headers } from '@angular/http';
 import { Observable } from 'rxjs/Observable';
+import { environment } from '../../environments/environment';
 import 'rxjs/add/observable/throw';
 import 'rxjs/add/operator/catch';
 import 'rxjs/add/operator/map';
@@ -9,8 +10,7 @@ import { Address, GetWalletsResponseEntry, GetWalletsResponseWallet, PostWalletN
 @Injectable()
 export class ApiService {
 
-  private url = 'http://127.0.0.1:6420/'; // production
-  // private url = '/api/'; // test
+  private url = environment.nodeUrl;
 
   constructor(
     private http: Http,

@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -9,6 +10,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/daemon/strand"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/visor"
@@ -27,7 +29,8 @@ const (
 )
 
 func MakeTransactionForChain(t *testing.T, bc *visor.Blockchain, ux coin.UxOut, sec cipher.SecKey, toAddr cipher.Address, amt, hours, fee uint64) coin.Transaction {
-	chrs := ux.CoinHours(bc.Time())
+	chrs, err := ux.CoinHours(bc.Time())
+	require.NoError(t, err)
 
 	require.Equal(t, cipher.AddressFromPubKey(cipher.PubKeyFromSecKey(sec)), ux.Body.Address)
 
@@ -50,7 +53,7 @@ func MakeTransactionForChain(t *testing.T, bc *visor.Blockchain, ux coin.UxOut, 
 
 	require.Equal(t, len(tx.Sigs), 1)
 
-	err := cipher.ChkSig(ux.Body.Address, cipher.AddSHA256(tx.HashInner(), tx.In[0]), tx.Sigs[0])
+	err = cipher.ChkSig(ux.Body.Address, cipher.AddSHA256(tx.HashInner(), tx.In[0]), tx.Sigs[0])
 	require.NoError(t, err)
 
 	tx.UpdateHeader()
@@ -58,7 +61,7 @@ func MakeTransactionForChain(t *testing.T, bc *visor.Blockchain, ux coin.UxOut, 
 	err = tx.Verify()
 	require.NoError(t, err)
 
-	err = bc.VerifyTransaction(tx)
+	err = bc.VerifySingleTxnHardConstraints(tx)
 	require.NoError(t, err)
 
 	return tx
@@ -89,20 +92,6 @@ func MakeAddress() (cipher.PubKey, cipher.SecKey, cipher.Address) {
 	return p, s, a
 }
 
-func setupSimpleVisor(db *bolt.DB, bc *visor.Blockchain) *Visor {
-	visorCfg := NewVisorConfig()
-	visorCfg.DisableNetworking = true
-	visorCfg.Config.DBPath = db.Path()
-	return &Visor{
-		Config: visorCfg,
-		v: &visor.Visor{
-			Config:      visorCfg.Config,
-			Unconfirmed: visor.NewUnconfirmedTxnPool(db),
-			Blockchain:  bc,
-		},
-	}
-}
-
 func createGenesisSpendTransaction(t *testing.T, bc *visor.Blockchain, toAddr cipher.Address, coins, hours, fee uint64) coin.Transaction {
 	uxOuts, err := bc.Unspent().GetAll()
 	require.NoError(t, err)
@@ -122,94 +111,24 @@ func createGenesisSpendTransaction(t *testing.T, bc *visor.Blockchain, toAddr ci
 	return txn
 }
 
-func executeGenesisSpendTransaction(t *testing.T, db *bolt.DB, bc *visor.Blockchain, txn coin.Transaction) coin.UxOut {
-	block, err := bc.NewBlock(coin.Transactions{txn}, GenesisTime+TimeIncrement)
-	require.NoError(t, err)
-
-	sig := cipher.SignHash(block.HashHeader(), GenesisSecret)
-	sb := coin.SignedBlock{
-		Block: *block,
-		Sig:   sig,
-	}
-
-	db.Update(func(tx *bolt.Tx) error {
-		err = bc.ExecuteBlockWithTx(tx, &sb)
-		require.NoError(t, err)
-		return nil
-	})
-
-	uxOut, err := coin.CreateUnspent(block.Head, txn, 0)
-	require.NoError(t, err)
-
-	return uxOut
-}
-
-func TestVerifyTransactionIsLocked(t *testing.T) {
-	for _, addr := range visor.GetLockedDistributionAddresses() {
-		t.Run(fmt.Sprintf("IsLocked: %s", addr), func(t *testing.T) {
-			testVerifyTransactionAddressLocking(t, addr, "Transaction has locked address inputs")
-		})
-	}
-}
-
-func TestVerifyTransactionIsUnlocked(t *testing.T) {
-	// Note: we can't sign transactions that spend the outputs of unlocked addresses,
-	// because these are real, hardcoded addresses for which we don't have the secret key.
-	// Validation is expected to fail, but it will fail on invalid header hash, rather than
-	// due to locked address inputs.
-	for _, addr := range visor.GetUnlockedDistributionAddresses() {
-		t.Run(fmt.Sprintf("IsUnlocked: %s", addr), func(t *testing.T) {
-			testVerifyTransactionAddressLocking(t, addr, "Transaction Verification Failed, Invalid header hash")
-		})
-	}
-}
-
-func testVerifyTransactionAddressLocking(t *testing.T, toAddr, errMsg string) {
-	addr, err := cipher.DecodeBase58Address(toAddr)
-	require.NoError(t, err)
-
-	db, close := testutil.PrepareDB(t)
-	defer close()
-
-	_, s := cipher.GenerateKeyPair()
-
-	// Setup blockchain
-	bc := MakeBlockchain(t, db, s)
-
-	// Send coins to the initial address
-	var coins = GenesisCoins
-	var hours uint64 = 1e6
-	var fee uint64 = 5e8
-
-	txn := createGenesisSpendTransaction(t, bc, addr, coins, hours, fee)
-	uxOut := executeGenesisSpendTransaction(t, db, bc, txn)
-
-	// Create a transaction that spends from the locked address
-	// The secret key for the locked address is obviously unavailable here,
-	// instead, forge an invalid transaction.
-	// Transaction.Verify() is called after TransactionIsLocked(),
-	// so for this test it doesn't matter if transaction signature is wrong
-	_, _, randomAddress := MakeAddress()
-	txn = coin.Transaction{
-		In: []cipher.SHA256{uxOut.Hash()},
-		Out: []coin.TransactionOutput{
-			{
-				Address: randomAddress,
-				Coins:   uxOut.Body.Coins,
-				Hours:   uxOut.Body.Hours / 2,
-			},
+func setupSimpleVisor(db *bolt.DB, bc *visor.Blockchain) *Visor {
+	visorCfg := NewVisorConfig()
+	visorCfg.DisableNetworking = true
+	visorCfg.Config.DBPath = db.Path()
+	return &Visor{
+		Config: visorCfg,
+		v: &visor.Visor{
+			Config:      visorCfg.Config,
+			Unconfirmed: visor.NewUnconfirmedTxnPool(db),
+			Blockchain:  bc,
 		},
+		reqC: make(chan strand.Request, 10),
 	}
-
-	// Setup a minimal visor
-	v := setupSimpleVisor(db, bc)
-
-	// Call verifyTransaction
-	err = v.verifyTransaction(txn)
-	testutil.RequireError(t, err, errMsg)
 }
 
 func TestVerifyTransactionInvalidFee(t *testing.T) {
+	// Test that a soft constraint is enforced
+	// Full verification tests are in visor/blockchain_verify_test.go
 	db, close := testutil.PrepareDB(t)
 	defer close()
 
@@ -227,13 +146,21 @@ func TestVerifyTransactionInvalidFee(t *testing.T) {
 
 	// Setup a minimal visor
 	v := setupSimpleVisor(db, bc)
+	errC := make(chan error)
+	go v.processRequests(errC)
+	defer func() {
+		errC <- errors.New("stop")
+	}()
 
-	// Call verifyTransaction
-	err := v.verifyTransaction(txn)
-	testutil.RequireError(t, err, fee.ErrTxnNoFee.Error())
+	_, softErr, err := v.InjectTransaction(txn)
+	require.NoError(t, err)
+	require.NotNil(t, softErr)
+	require.Equal(t, visor.NewErrTxnViolatesSoftConstraint(fee.ErrTxnNoFee), *softErr)
 }
 
 func TestVerifyTransactionInvalidSignature(t *testing.T) {
+	// Test that a hard constraint is enforced
+	// Full verification tests are in visor/blockchain_verify_test.go
 	db, close := testutil.PrepareDB(t)
 	defer close()
 
@@ -254,10 +181,15 @@ func TestVerifyTransactionInvalidSignature(t *testing.T) {
 
 	// Setup a minimal visor
 	v := setupSimpleVisor(db, bc)
+	errC := make(chan error)
+	go v.processRequests(errC)
+	defer func() {
+		errC <- errors.New("stop")
+	}()
 
-	// Call verifyTransaction
-	err := v.verifyTransaction(txn)
-	testutil.RequireError(t, err, "Transaction Verification Failed, Invalid number of signatures")
+	_, softErr, err := v.InjectTransaction(txn)
+	require.Nil(t, softErr)
+	testutil.RequireError(t, err, visor.NewErrTxnViolatesHardConstraint(errors.New("Invalid number of signatures")).Error())
 }
 
 func TestInjectValidTransaction(t *testing.T) {
@@ -278,13 +210,19 @@ func TestInjectValidTransaction(t *testing.T) {
 
 	// Setup a minimal visor
 	v := setupSimpleVisor(db, bc)
+	errC := make(chan error)
+	go v.processRequests(errC)
+	defer func() {
+		errC <- errors.New("stop")
+	}()
 
 	// The unconfirmed pool should be empty
 	txns := v.v.Unconfirmed.RawTxns()
 	require.Len(t, txns, 0)
 
 	// Call injectTransaction
-	err := v.injectTransaction(txn, nil)
+	_, softErr, err := v.InjectTransaction(txn)
+	require.Nil(t, softErr)
 	require.NoError(t, err)
 
 	// The transaction should appear in the unconfirmed pool
@@ -293,7 +231,7 @@ func TestInjectValidTransaction(t *testing.T) {
 	require.Equal(t, txns[0], txn)
 }
 
-func TestInjectInvalidTransaction(t *testing.T) {
+func TestInjectTransactionSoftViolationNoFee(t *testing.T) {
 	db, close := testutil.PrepareDB(t)
 	defer close()
 
@@ -311,18 +249,25 @@ func TestInjectInvalidTransaction(t *testing.T) {
 
 	// Setup a minimal visor
 	v := setupSimpleVisor(db, bc)
+	errC := make(chan error)
+	go v.processRequests(errC)
+	defer func() {
+		errC <- errors.New("stop")
+	}()
 
 	// The unconfirmed pool should be empty
 	txns := v.v.Unconfirmed.RawTxns()
 	require.Len(t, txns, 0)
 
 	// Call injectTransaction
-	err := v.injectTransaction(txn, nil)
-	testutil.RequireError(t, err, fee.ErrTxnNoFee.Error())
+	_, softErr, err := v.InjectTransaction(txn)
+	require.NoError(t, err)
+	require.NotNil(t, softErr)
+	require.Equal(t, visor.NewErrTxnViolatesSoftConstraint(fee.ErrTxnNoFee), *softErr)
 
 	// The transaction should appear in the unconfirmed pool
 	txns = v.v.Unconfirmed.RawTxns()
-	require.Len(t, txns, 0)
+	require.Len(t, txns, 1)
 }
 
 func TestSplitHashes(t *testing.T) {

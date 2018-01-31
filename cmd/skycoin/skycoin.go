@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -78,8 +77,6 @@ var (
 		"139.162.7.132:6000",
 	}
 )
-
-// Command line interface arguments
 
 // Config records the node's configuration
 type Config struct {
@@ -360,6 +357,11 @@ func (c *Config) postProcess() {
 	if c.DBPath == "" {
 		c.DBPath = filepath.Join(c.DataDirectory, "data.db")
 	}
+
+	if c.RunMaster {
+		// Run in arbitrating mode if the node is master
+		c.Arbitrating = true
+	}
 }
 
 func panicIfError(err error, msg string, args ...interface{}) {
@@ -429,7 +431,7 @@ func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) (*g
 }
 
 // init logging settings
-func initLogging(dataDir string, level string, color, logtofile, logtogui bool, logbuf *bytes.Buffer) (func(), error) {
+func initLogging(dataDir string, level string, color, logtofile bool) (func(), error) {
 	logCfg := logging.DevLogConfig(logModules)
 	logCfg.Format = logFormat
 	logCfg.Colors = color
@@ -453,16 +455,7 @@ func initLogging(dataDir string, level string, color, logtofile, logtogui bool, 
 			return nil, err
 		}
 
-		if logtogui {
-			logCfg.Output = io.MultiWriter(os.Stdout, fd, logbuf)
-		} else {
-			logCfg.Output = io.MultiWriter(os.Stdout, fd)
-		}
-
-	} else {
-		if logtogui {
-			logCfg.Output = io.MultiWriter(os.Stdout, logbuf)
-		}
+		logCfg.Output = io.MultiWriter(os.Stdout, fd)
 	}
 
 	logCfg.InitLogger()
@@ -558,6 +551,12 @@ func Run(c *Config) {
 	}
 
 	initProfiling(c.HTTPProf, c.ProfileCPU, c.ProfileCPUFile)
+
+	closelog, err := initLogging(c.DataDirectory, c.LogLevel, c.ColorLog, c.Logtofile)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	var wg sync.WaitGroup
 
@@ -700,7 +699,7 @@ func Run(c *Config) {
 	   time.Sleep(5)
 	   tx := InitTransaction()
 	   _ = tx
-	   err, _ = d.Visor.Visor.InjectTxn(tx)
+	   err, _ = d.Visor.Visor.InjectTransaction(tx)
 	   if err != nil {
 	       log.Panic(err)
 	   }
@@ -713,7 +712,7 @@ func Run(c *Config) {
 	           for d.Visor.Visor.Blockchain.Head().Seq() < 2 {
 	               time.Sleep(5)
 	               tx := InitTransaction()
-	               err, _ := d.Visor.Visor.InjectTxn(tx)
+	               err, _ := d.Visor.Visor.InjectTransaction(tx)
 	               if err != nil {
 	                   //log.Panic(err)
 	               }
@@ -736,7 +735,7 @@ func Run(c *Config) {
 		webInterface.Shutdown()
 	}
 	d.Shutdown()
-	// closelog()
+	closelog()
 	wg.Wait()
 	logger.Info("Goodbye")
 }

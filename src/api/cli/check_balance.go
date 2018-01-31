@@ -221,9 +221,20 @@ func getBalanceOfAddresses(outs *webrpc.OutputsResult, addrs []string) (*Balance
 
 		balRlt.Addresses[i].Address = a
 
-		totalConfirmed = totalConfirmed.Add(b.confirmed)
-		totalSpendable = totalSpendable.Add(b.spendable)
-		totalExpected = totalExpected.Add(b.expected)
+		totalConfirmed, err = totalConfirmed.Add(b.confirmed)
+		if err != nil {
+			return nil, err
+		}
+
+		totalSpendable, err = totalSpendable.Add(b.spendable)
+		if err != nil {
+			return nil, err
+		}
+
+		totalExpected, err = totalExpected.Add(b.expected)
+		if err != nil {
+			return nil, err
+		}
 
 		balRlt.Addresses[i].Confirmed, err = toBalance(b.confirmed)
 		if err != nil {

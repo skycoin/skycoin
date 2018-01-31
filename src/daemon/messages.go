@@ -10,6 +10,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
+	"github.com/skycoin/skycoin/src/util/iputil"
 	"github.com/skycoin/skycoin/src/util/utc"
 )
 
@@ -101,7 +102,7 @@ type IPAddr struct {
 // returned
 func NewIPAddr(addr string) (ipaddr IPAddr, err error) {
 	// TODO -- support ipv6
-	ips, port, err := SplitAddr(addr)
+	ips, port, err := iputil.SplitAddr(addr)
 	if err != nil {
 		return
 	}
@@ -271,7 +272,7 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 
 		// only solicited connection can be added to exchange peer list, cause accepted
 		// connection may not have incomming  port.
-		ip, port, err := SplitAddr(mc.Addr)
+		ip, port, err := iputil.SplitAddr(mc.Addr)
 		if err != nil {
 			// This should never happen, but the program should still work if it
 			// does.

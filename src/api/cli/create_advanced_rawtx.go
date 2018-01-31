@@ -327,10 +327,7 @@ func advancedCreateRawTx(uxouts visor.ReadableOutputSet, wlt *wallet.Wallet, chg
 		return nil, err
 	}
 
-	tx, err := NewTransaction(outs, keys, txOuts)
-	if err != nil {
-		return nil, err
-	}
+	tx := NewTransaction(outs, keys, txOuts)
 
 	return tx, nil
 }

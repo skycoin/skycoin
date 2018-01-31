@@ -42,10 +42,10 @@ func (c *CSRFStore) getTokenValue() string {
 // setToken sets a new CSRF token
 // if the value is changing the expire time should also change
 // so there is no explicit method to just set the value of the token
-func (c *CSRFStore) setToken(token *CSRFToken) {
+func (c *CSRFStore) setToken(token CSRFToken) {
 	c.Lock()
 	defer c.Unlock()
-	c.token = token
+	c.token = &token
 }
 
 // verifyExpireTime checks if token expiry time is greater than current time
@@ -105,7 +105,7 @@ func CSRFCheck(handler http.Handler, store *CSRFStore) http.Handler {
 }
 
 // generateToken generates a new CSRF Token
-func generateToken() *CSRFToken {
+func generateToken() CSRFToken {
 	bytes := cipher.RandByte(csrfTokenLength)
 
 	token := CSRFToken{
@@ -113,5 +113,5 @@ func generateToken() *CSRFToken {
 		time.Now().Add(CSRFMaxAge),
 	}
 
-	return &token
+	return token
 }

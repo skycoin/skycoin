@@ -31,35 +31,31 @@ export class ApiService {
   }
 
   getWalletNewSeed(): Observable<string> {
-    return this.getCsrf().first().flatMap(csrf => {
-      return this.get('wallet/newSeed', null, {csrf: csrf})
-        .map(response => response.seed);
-    });
+    return this.get('wallet/newSeed')
+      .map(response => response.seed);
   }
 
   getWallets(): Observable<Wallet[]> {
-    return this.getCsrf().first().flatMap(csrf => {
-      return this.get('wallets', null, { csrf: csrf })
-        .map((response: GetWalletsResponseWallet[]) => {
-          const wallets: Wallet[] = [];
-          response.forEach(wallet => {
-            wallets.push({
-              label: wallet.meta.label,
-              filename: wallet.meta.filename,
-              seed: wallet.meta.seed,
-              coins: null,
-              hours: null,
-              addresses: wallet.entries.map((entry: GetWalletsResponseEntry) => {
-                return {
-                  address: entry.address,
-                  coins: null,
-                  hours: null,
-                }
-              }),
-            })
-          });
-          return wallets;
+    return this.get('wallets')
+      .map((response: GetWalletsResponseWallet[]) => {
+        const wallets: Wallet[] = [];
+        response.forEach(wallet => {
+          wallets.push({
+            label: wallet.meta.label,
+            filename: wallet.meta.filename,
+            seed: wallet.meta.seed,
+            coins: null,
+            hours: null,
+            addresses: wallet.entries.map((entry: GetWalletsResponseEntry) => {
+              return {
+                address: entry.address,
+                coins: null,
+                hours: null,
+              }
+            }),
+          })
         });
+        return wallets;
       });
   }
 
@@ -108,7 +104,7 @@ export class ApiService {
   }
 
   private getCsrf() {
-    return this.get('csrf');
+    return this.get('csrf').map(response => response.csrf_token);
   }
 
   private getHeaders() {

@@ -5,6 +5,8 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"github.com/skycoin/skycoin/src/cipher"
+	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
 	"os"
@@ -12,9 +14,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
-
-	"github.com/skycoin/skycoin/src/cipher"
-	//"strings"
+	"strings"
 	"text/template"
 )
 
@@ -30,6 +30,7 @@ type dockerService struct {
 	ImageName         string
 	ImageTag          string
 	NodesNum          int
+	Ports             []string
 }
 type serviceBuild struct {
 	Context    string
@@ -244,26 +245,24 @@ func (t *SkyCoinTestNetwork) prepareTestEnv(tempDir string) {
 	for _, s := range t.Services {
 		s.CreateDockerFile(tempDir)
 	}
-	//peersText := []byte(strings.Join(t.Peers, "\n"))
+	peersText := []byte(strings.Join(t.Peers, "\n"))
 	for k := range t.Compose.Services {
 		err := os.Mkdir(path.Join(tempDir, k), os.ModePerm)
 		if err != nil {
 			log.Fatal(err)
 		}
-		/*
-			f, err := os.Create(path.Join(tempDir, k, "peers.txt"))
-			if err != nil {
-				log.Fatal(err)
-			}
-			_, err = f.Write(peersText)
-			if err != nil {
-				log.Fatal(err)
-			}
-			f.Close()
-			if err != nil {
-				log.Fatal(err)
-			}
-		*/
+		f, err := os.Create(path.Join(tempDir, k, "connections.txt"))
+		if err != nil {
+			log.Fatal(err)
+		}
+		_, err = f.Write(peersText)
+		if err != nil {
+			log.Fatal(err)
+		}
+		f.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }
 
@@ -282,5 +281,5 @@ func main() {
 	testNet := NewSkyCoinTestNetwork(*nodesPtr, buildContext, tempDir)
 	testNet.prepareTestEnv(tempDir)
 	testNet.createComposeFile(tempDir)
-	runTest(tempDir)
+	//	runTest(tempDir)
 }

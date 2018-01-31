@@ -53,8 +53,10 @@ curl http://127.0.0.1:6420/csrf
 
 result:
 
-```
-EehRw-67K-HUzzI9ph3-a06O3bgx-4ub9SEunPGekW-5J33YpH8znybQj5zhT0z7o8us4K_q8LTSDNLTcZ4QbQ
+```json
+{
+    "csrf_token": "klSgXoMOFTvEnt8KptBvHjhlFnW0OIkzyFVn4i8frDvIus9iLsFukqA9sM9Rxf3pLZHRLr82vBQxTq50vbYA8g"
+}
 ```
 
 ### Get balance of addresses

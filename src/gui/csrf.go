@@ -1,28 +1,24 @@
 package gui
 
 import (
-	"crypto/rand"
 	"encoding/base64"
-	"fmt"
-	"io"
 	"net/http"
 	"sync"
 	"time"
 
-	"github.com/skycoin/skycoin/src/util/utc"
-
+	"github.com/skycoin/skycoin/src/cipher"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
 const (
 	// the name of CSRF header
-	HeaderName = "X-CSRF-Token"
+	CSRFHeaderName = "X-CSRF-Token"
 
 	// Max-Age in seconds for cookie. 30 seconds default
-	MaxAge = time.Duration(30) * time.Second
+	CSRFMaxAge = time.Duration(30) * time.Second
 
 	// csrf token length
-	tokenLength = 64
+	csrfTokenLength = 64
 )
 
 type CSRFToken struct {
@@ -31,14 +27,16 @@ type CSRFToken struct {
 }
 
 type CSRFStore struct {
-	token *CSRFToken
-	sync.Mutex
-	once sync.Once
+	token   *CSRFToken
+	Enabled bool
+	sync.RWMutex
 }
 
 // getTokenValue returns a url safe base64 encoded token
 func (c *CSRFStore) getTokenValue() string {
-	return b64encode(c.token.Value)
+	c.RLock()
+	defer c.RUnlock()
+	return base64.RawURLEncoding.EncodeToString(c.token.Value)
 }
 
 // setToken sets a new CSRF token
@@ -52,12 +50,15 @@ func (c *CSRFStore) setToken(token *CSRFToken) {
 
 // verifyExpireTime checks if token expiry time is greater than current time
 func (c *CSRFStore) verifyExpireTime() bool {
-	return utc.UnixNow() < c.token.ExpiresAt.Unix()
+	return c.token.ExpiresAt.After(time.Now())
 
 }
 
 // verifyToken checks that the given token is same as the internal token
 func (c *CSRFStore) verifyToken(headerToken string) bool {
+	c.RLock()
+	defer c.RUnlock()
+
 	// check if token is initialized
 	if c.token == nil {
 		return false
@@ -72,45 +73,27 @@ func (c *CSRFStore) verifyToken(headerToken string) bool {
 	return false
 }
 
-// getCSRFStore returns a CSRFStore instance
-// initializes the csrf store if not already done
-func (c *CSRFStore) getCSRFStore() *CSRFStore {
-	c.once.Do(func() {
-		// initialize the csrf store
-		if c.token == nil {
-			// intialize the csrf token
-			c.token = generateToken()
-		}
-	})
-
-	return c
-}
-
 // method: GET
 // url: /csrf
 func getCSRFToken(gateway Gatewayer, store *CSRFStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			wh.Error405(w)
+		if r.Method != http.MethodGet || !store.Enabled {
+			wh.Error404(w)
 			return
 		}
 
-		// check if token is still valid
-		// otherwise generate new token
-		if !store.verifyExpireTime() {
-			store.setToken(generateToken())
-		}
+		// generate a new token
+		store.setToken(generateToken())
 
-		wh.SendOr404(w, store.getTokenValue())
-
+		wh.SendOr404(w, &map[string]string{"csrf_token": store.getTokenValue()})
 	}
 }
 
 // CSRFCheck verifies X-CSRF-Token header value
-func CSRFCheck(handler http.Handler, disabled bool, store *CSRFStore) http.Handler {
+func CSRFCheck(handler http.Handler, store *CSRFStore) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !disabled {
-			token := r.Header.Get(HeaderName)
+		if r.Method == http.MethodPost && store.Enabled {
+			token := r.Header.Get(CSRFHeaderName)
 			if !store.verifyToken(token) {
 				wh.Error403Msg(w, "invalid CSRF token")
 				return
@@ -121,36 +104,14 @@ func CSRFCheck(handler http.Handler, disabled bool, store *CSRFStore) http.Handl
 	})
 }
 
-// b64encode returns a url safe base64 encoded string
-func b64encode(data []byte) string {
-	return base64.RawURLEncoding.EncodeToString(data)
-}
-
 // generateToken generates a new CSRF Token
 func generateToken() *CSRFToken {
-	bytes := make([]byte, tokenLength)
-
-	if _, err := io.ReadFull(rand.Reader, bytes); err != nil {
-		panic(err)
-	}
+	bytes := cipher.RandByte(csrfTokenLength)
 
 	token := CSRFToken{
 		bytes,
-		utc.Now().Add(MaxAge),
+		time.Now().Add(CSRFMaxAge),
 	}
 
 	return &token
-}
-
-func checkForPRNG() {
-	buf := make([]byte, 1)
-	_, err := io.ReadFull(rand.Reader, buf)
-
-	if err != nil {
-		panic(fmt.Sprintf("crypto/rand is unavailable: Read() failed with %#v", err))
-	}
-}
-
-func init() {
-	checkForPRNG()
 }

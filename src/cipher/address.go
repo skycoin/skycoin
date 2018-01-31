@@ -7,7 +7,7 @@ import (
 
 	"encoding/hex"
 
-	"github.com/therealssj/base58"
+	"github.com/skycoin/skycoin/src/cipher/base58"
 )
 
 /*

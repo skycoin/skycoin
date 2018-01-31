@@ -533,11 +533,3 @@ func addUint32(a, b uint32) (uint32, error) {
 	}
 	return c, nil
 }
-
-func intToUint32(a int) (uint32, error) {
-	if uint(a) > math.MaxUint32 {
-		return 0, errors.New("Size overflow")
-	}
-
-	return uint32(a), nil
-}

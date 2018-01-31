@@ -20,7 +20,6 @@ import (
 type GatewayConfig struct {
 	BufferSize       int
 	DisableWalletAPI bool
-	DisableCSRF      bool
 }
 
 // NewGatewayConfig create and init an GatewayConfig

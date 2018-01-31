@@ -133,9 +133,16 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 
 		logger.Info("Spend: \ntx= \n %s \n", txStr)
 
+		txInputsData, err := gateway.GetTransactionInputsData(tx)
+		if err != nil {
+			// Error already logged
+			wh.Error500(w)
+			return
+		}
+
 		var ret SpendResult
 
-		ret.Transaction, err = visor.NewReadableTransaction(&visor.Transaction{Txn: *tx})
+		ret.Transaction, err = visor.NewReadableTransaction(&visor.Transaction{Txn: *tx}, txInputsData)
 		if err != nil {
 			err = fmt.Errorf("Creation of new readable transaction failed: %v", err)
 			logger.Error(err.Error())

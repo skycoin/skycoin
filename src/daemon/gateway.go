@@ -8,6 +8,7 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 
+	"errors"
 	"fmt"
 
 	"github.com/skycoin/skycoin/src/visor/blockdb"
@@ -183,6 +184,85 @@ func (gw *Gateway) GetBlockBySeq(seq uint64) (block coin.SignedBlock, ok bool) {
 	return
 }
 
+// GetInputData returns the data of an inputs
+func (gw *Gateway) GetInputData(in cipher.SHA256) (*historydb.UxOut, error) {
+	uxout, err := gw.GetUxOutByID(in)
+	if err != nil {
+		logger.Error("%v", err)
+		return nil, err
+	}
+	if uxout == nil {
+		logger.Error("uxout of %d does not exist in history db", in)
+		return nil, errors.New("uxout does not exist in history db")
+	}
+
+	return uxout, nil
+}
+
+// GetTransactionInputsData returns the inputs data of a transaction
+func (gw *Gateway) GetTransactionInputsData(tx *coin.Transaction) ([]*historydb.UxOut, error) {
+	txInputsData := make([]*historydb.UxOut, 0, len(tx.In))
+
+	for _, in := range tx.In {
+		uxout, err := gw.GetInputData(in)
+		if err != nil {
+			return nil, err
+		}
+
+		txInputsData = append(txInputsData, uxout)
+	}
+
+	return txInputsData, nil
+}
+
+// GetBlockInputsData returns the inputs data of a block
+func (gw *Gateway) GetBlockInputsData(block *coin.Block) ([][]*historydb.UxOut, error) {
+	txsInputsData := make([][]*historydb.UxOut, 0, len(block.Body.Transactions))
+
+	for _, tx := range block.Body.Transactions {
+		inData, err := gw.GetTransactionInputsData(&tx)
+		if err != nil {
+			return nil, err
+		}
+
+		txsInputsData = append(txsInputsData, inData)
+	}
+
+	return txsInputsData, nil
+}
+
+// GetSignedBlockInputsData returns the inputs data of a signed block
+func (gw *Gateway) GetSignedBlockInputsData(block *coin.SignedBlock) ([][]*historydb.UxOut, error) {
+	txsInputsData := make([][]*historydb.UxOut, 0, len(block.Body.Transactions))
+
+	for _, tx := range block.Body.Transactions {
+		inData, err := gw.GetTransactionInputsData(&tx)
+		if err != nil {
+			return nil, err
+		}
+
+		txsInputsData = append(txsInputsData, inData)
+	}
+
+	return txsInputsData, nil
+}
+
+// GetSignedBlocksInputsData returns the inputs data of a signed blocks slice
+func (gw *Gateway) GetSignedBlocksInputsData(blocks []coin.SignedBlock) ([][][]*historydb.UxOut, error) {
+	txsInputsData := make([][][]*historydb.UxOut, 0, len(blocks))
+
+	for _, block := range blocks {
+		inData, err := gw.GetSignedBlockInputsData(&block)
+		if err != nil {
+			return nil, err
+		}
+
+		txsInputsData = append(txsInputsData, inData)
+	}
+
+	return txsInputsData, nil
+}
+
 // GetBlocks returns a *visor.ReadableBlocks
 func (gw *Gateway) GetBlocks(start, end uint64) (*visor.ReadableBlocks, error) {
 	var blocks []coin.SignedBlock
@@ -190,7 +270,13 @@ func (gw *Gateway) GetBlocks(start, end uint64) (*visor.ReadableBlocks, error) {
 		blocks = gw.vrpc.GetBlocks(gw.v, start, end)
 	})
 
-	return visor.NewReadableBlocks(blocks)
+	txsInputsData, err := gw.GetSignedBlocksInputsData(blocks)
+	if err != nil {
+		// Error already logged
+		return nil, err
+	}
+
+	return visor.NewReadableBlocks(blocks, txsInputsData)
 }
 
 // GetBlocksInDepth returns blocks in different depth
@@ -219,7 +305,13 @@ func (gw *Gateway) GetBlocksInDepth(vs []uint64) (*visor.ReadableBlocks, error) 
 		return nil, err
 	}
 
-	return visor.NewReadableBlocks(blocks)
+	txsInputsData, err := gw.GetSignedBlocksInputsData(blocks)
+	if err != nil {
+		// Error already logged
+		return nil, err
+	}
+
+	return visor.NewReadableBlocks(blocks, txsInputsData)
 }
 
 // GetLastBlocks get last N blocks
@@ -229,7 +321,13 @@ func (gw *Gateway) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error) {
 		blocks = gw.vrpc.GetLastBlocks(gw.v, num)
 	})
 
-	return visor.NewReadableBlocks(blocks)
+	txsInputsData, err := gw.GetSignedBlocksInputsData(blocks)
+	if err != nil {
+		// Error already logged
+		return nil, err
+	}
+
+	return visor.NewReadableBlocks(blocks, txsInputsData)
 }
 
 // OutputsFilter used as optional arguments in GetUnspentOutputs method

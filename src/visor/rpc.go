@@ -4,6 +4,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
+	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -20,7 +21,7 @@ func NewTransactionResult(tx *Transaction) (*TransactionResult, error) {
 		return nil, nil
 	}
 
-	rbTx, err := NewReadableTransaction(tx)
+	rbTx, err := NewReadableTransaction(tx, make([]*historydb.UxOut, 0, 0))
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +47,7 @@ type TransactionResults struct {
 func NewTransactionResults(txs []Transaction) (*TransactionResults, error) {
 	txRlts := make([]TransactionResult, 0, len(txs))
 	for _, tx := range txs {
-		rbTx, err := NewReadableTransaction(&tx)
+		rbTx, err := NewReadableTransaction(&tx, make([]*historydb.UxOut, 0, 0))
 		if err != nil {
 			return nil, err
 		}

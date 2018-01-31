@@ -182,15 +182,9 @@ func getTransactionsForAddress(gateway Gatewayer) http.HandlerFunc {
 					return
 				}
 
-				uxout, err := gateway.GetUxOutByID(id)
+				uxout, err := gateway.GetInputData(id)
 				if err != nil {
-					logger.Error("%v", err)
-					wh.Error500(w)
-					return
-				}
-
-				if uxout == nil {
-					logger.Error("uxout of %d does not exist in history db", id)
+					// Error already logged
 					wh.Error500(w)
 					return
 				}

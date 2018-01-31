@@ -26,7 +26,14 @@ func getPendingTxs(gateway Gatewayer) http.HandlerFunc {
 		txns := gateway.GetAllUnconfirmedTxns()
 		ret := make([]*visor.ReadableUnconfirmedTxn, 0, len(txns))
 		for _, unconfirmedTxn := range txns {
-			readable, err := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
+			txInputsData, err := gateway.GetTransactionInputsData(&unconfirmedTxn.Txn)
+			if err != nil {
+				// Error already logged
+				wh.Error500(w)
+				return
+			}
+
+			readable, err := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn, txInputsData)
 			if err != nil {
 				logger.Error("%v", err)
 				wh.Error500(w)
@@ -56,7 +63,14 @@ func getLastTxs(gateway Gatewayer) http.HandlerFunc {
 
 		resTxs := make([]visor.TransactionResult, len(txs))
 		for i, tx := range txs {
-			rbTx, err := visor.NewReadableTransaction(tx)
+			txInputsData, err := gateway.GetTransactionInputsData(&tx.Txn)
+			if err != nil {
+				// Error already logged
+				wh.Error500(w)
+				return
+			}
+
+			rbTx, err := visor.NewReadableTransaction(tx, txInputsData)
 			if err != nil {
 				logger.Error("%v", err)
 				wh.Error500(w)
@@ -101,7 +115,14 @@ func getTransactionByID(gate Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		rbTx, err := visor.NewReadableTransaction(tx)
+		txInputsData, err := gate.GetTransactionInputsData(&tx.Txn)
+		if err != nil {
+			// Error already logged
+			wh.Error500(w)
+			return
+		}
+
+		rbTx, err := visor.NewReadableTransaction(tx, txInputsData)
 		if err != nil {
 			logger.Error("%v", err)
 			wh.Error500(w)
@@ -160,7 +181,7 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		// Converts visor.Transaction to visor.TransactionResult
-		txRlts, err := visor.NewTransactionResults(txns)
+		txRlts, err := NewTransactionResults(gateway, txns)
 		if err != nil {
 			logger.Error("Converts []visor.Transaction to visor.TransactionResults failed: %v", err)
 			wh.Error500(w)
@@ -284,4 +305,31 @@ func getRawTx(gate Gatewayer) http.HandlerFunc {
 		wh.SendOr404(w, hex.EncodeToString(d))
 		return
 	}
+}
+
+// NewTransactionResults converts []Transaction to []TransactionResults
+func NewTransactionResults(gateway Gatewayer, txs []visor.Transaction) (*visor.TransactionResults, error) {
+	txRlts := make([]visor.TransactionResult, 0, len(txs))
+	for _, tx := range txs {
+		txInputsData, err := gateway.GetTransactionInputsData(&tx.Txn)
+		if err != nil {
+			// Error already logged
+			return nil, err
+		}
+
+		rbTx, err := visor.NewReadableTransaction(&tx, txInputsData)
+		if err != nil {
+			return nil, err
+		}
+
+		txRlts = append(txRlts, visor.TransactionResult{
+			Transaction: *rbTx,
+			Status:      tx.Status,
+			Time:        tx.Time,
+		})
+	}
+
+	return &visor.TransactionResults{
+		Txns: txRlts,
+	}, nil
 }

@@ -70,7 +70,14 @@ func getBlock(gate Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		rb, err := visor.NewReadableBlock(&b.Block)
+		txsInputsData, err := gate.GetBlockInputsData(&b.Block)
+		if err != nil {
+			// Error already logged
+			wh.Error500(w)
+			return
+		}
+
+		rb, err := visor.NewReadableBlock(&b.Block, txsInputsData)
 		if err != nil {
 			logger.Error("%v", err)
 			wh.Error500(w)

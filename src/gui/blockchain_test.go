@@ -468,7 +468,7 @@ func TestGetLastBlocks(t *testing.T) {
 				req.Host = tc.hostHeader
 			}
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, true)
 
 			handler.ServeHTTP(rr, req)
 

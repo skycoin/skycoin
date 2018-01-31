@@ -92,7 +92,7 @@ func getOutputsWithFiltersHandler(req Request, gateway Gatewayer) Response {
 	outs, err := gateway.GetUnspentOutputs(outputFilters...)
 	if err != nil {
 		logger.Error("get unspent outputs with filters failed: %v", err)
-		return makeErrorResponse(errCodeInternalError)
+		return makeErrorResponse(errCodeInternalError, fmt.Sprintf("gateway.GetUnspentOutputs failed: %v", err))
 	}
 
 	return makeSuccessResponse(req.ID, OutputsResult{outs})

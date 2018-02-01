@@ -166,7 +166,7 @@ func NewSkyCoinTestNetwork(nodesNum int, buildContext string, tempDir string) Sk
 			},
 			ImageTag: currentCommit,
 			NodesNum: 1,
-			Ports:    []string{"6420"},
+			Ports:    []string{"6420:6420"},
 		},
 		dockerService{
 			ImageName: "skycoin-nogui",

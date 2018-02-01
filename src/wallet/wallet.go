@@ -329,15 +329,9 @@ func (w *Wallet) erase() {
 	}
 }
 
-// guard provides methods for accessing encrypted wallet safely.
-// All methods the guard provided will wipe sensitive data in the end.
-type guard struct {
-	*Wallet
-}
-
-// update executes a function within the context of a read-wirte managed wallet.
-func (g *guard) update(password []byte, fn func(w *Wallet) error) error {
-	if !g.IsEncrypted() {
+// guardUpdate executes a function within the context of a read-wirte managed wallet.
+func (w *Wallet) guardUpdate(password []byte, fn func(w *Wallet) error) error {
+	if !w.IsEncrypted() {
 		return ErrWalletNotEncrypted
 	}
 
@@ -345,7 +339,7 @@ func (g *guard) update(password []byte, fn func(w *Wallet) error) error {
 		return ErrMissingPassword
 	}
 
-	wlt, err := g.unlock(password)
+	wlt, err := w.unlock(password)
 	if err != nil {
 		return err
 	}
@@ -360,14 +354,15 @@ func (g *guard) update(password []byte, fn func(w *Wallet) error) error {
 		return err
 	}
 
-	*g.Wallet = *wlt
-	g.erase()
+	*w = *wlt
+	// Wipes all sensitive data
+	w.erase()
 	return nil
 }
 
-// view executes a function within the context of a read-only managed wallet.
-func (g *guard) view(password []byte, f func(w *Wallet) error) error {
-	if !g.IsEncrypted() {
+// guardView executes a function within the context of a read-only managed wallet.
+func (w *Wallet) guardView(password []byte, f func(w *Wallet) error) error {
+	if !w.IsEncrypted() {
 		return ErrWalletNotEncrypted
 	}
 
@@ -375,7 +370,7 @@ func (g *guard) view(password []byte, f func(w *Wallet) error) error {
 		return ErrMissingPassword
 	}
 
-	wlt, err := g.unlock(password)
+	wlt, err := w.unlock(password)
 	if err != nil {
 		return err
 	}
@@ -386,11 +381,6 @@ func (g *guard) view(password []byte, f func(w *Wallet) error) error {
 		return err
 	}
 	return nil
-}
-
-// guard creates a wallet guard, which protects wallet from exposing sensitive data.
-func (w *Wallet) guard() *guard {
-	return &guard{Wallet: w}
 }
 
 // Load loads wallet from given file

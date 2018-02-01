@@ -110,7 +110,7 @@ func (serv *Service) ScanAheadWalletAddresses(wltName string, password []byte, s
 	}
 
 	if w.IsEncrypted() {
-		if err := w.guard().update(password, f); err != nil {
+		if err := w.guardUpdate(password, f); err != nil {
 			return nil, err
 		}
 	} else {
@@ -157,7 +157,7 @@ func (serv *Service) loadWallet(wltName string, options Options, scanN uint64, b
 	}
 
 	if w.IsEncrypted() {
-		if err := w.guard().update(options.Password, f); err != nil {
+		if err := w.guardUpdate(options.Password, f); err != nil {
 			return nil, err
 		}
 	} else {
@@ -270,7 +270,7 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]
 	}
 
 	if w.IsEncrypted() {
-		if err := w.guard().update(password, f); err != nil {
+		if err := w.guardUpdate(password, f); err != nil {
 			return nil, err
 		}
 	} else {
@@ -365,7 +365,7 @@ func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, vld
 	}
 
 	if w.IsEncrypted() {
-		if err := w.guard().view(password, f); err != nil {
+		if err := w.guardView(password, f); err != nil {
 			return nil, err
 		}
 	} else {

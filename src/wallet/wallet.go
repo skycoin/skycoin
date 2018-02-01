@@ -137,18 +137,6 @@ func NewWallet(wltName string, opts Options) (*Wallet, error) {
 		coin = CoinTypeSkycoin
 	}
 
-	// Gets wallet crypto
-	cryptoType := opts.CryptoType
-	if cryptoType == "" {
-		cryptoType = DefaultCryptoType
-	}
-
-	// Checks if crypto type is supported
-	_, err := getCrypto(cryptoType)
-	if err != nil {
-		return nil, err
-	}
-
 	w := &Wallet{
 		Meta: map[string]string{
 			metaFilename:   wltName,
@@ -159,7 +147,7 @@ func NewWallet(wltName string, opts Options) (*Wallet, error) {
 			metaTm:         fmt.Sprintf("%v", time.Now().Unix()),
 			metaType:       "deterministic",
 			metaCoin:       string(coin),
-			metaCryptoType: string(cryptoType),
+			metaCryptoType: string(opts.CryptoType),
 		},
 	}
 
@@ -168,13 +156,23 @@ func NewWallet(wltName string, opts Options) (*Wallet, error) {
 		return w, nil
 	}
 
+	// Sets crypto type
+	if opts.CryptoType == "" {
+		return nil, errors.New("missing crypto type")
+	}
+
+	// Checks the crypto type
+	if _, err := getCrypto(opts.CryptoType); err != nil {
+		return nil, err
+	}
+
 	// Checks if the password is provided
 	if len(opts.Password) == 0 {
 		return nil, ErrMissingPassword
 	}
 
 	// Encrypt the wallet
-	if err := w.lock(opts.Password); err != nil {
+	if err := w.lock(opts.Password, opts.CryptoType); err != nil {
 		return nil, err
 	}
 
@@ -187,7 +185,7 @@ func NewWallet(wltName string, opts Options) (*Wallet, error) {
 }
 
 // lock encrypts the wallet with password
-func (w *Wallet) lock(password []byte) error {
+func (w *Wallet) lock(password []byte, ct CryptoType) error {
 	if len(password) == 0 {
 		return ErrMissingPassword
 	}
@@ -220,7 +218,7 @@ func (w *Wallet) lock(password []byte) error {
 		return err
 	}
 
-	crypto, err := getCrypto(w.cryptoType())
+	crypto, err := getCrypto(ct)
 	if err != nil {
 		return err
 	}
@@ -230,6 +228,9 @@ func (w *Wallet) lock(password []byte) error {
 	if err != nil {
 		return err
 	}
+
+	// Sets the crypto type
+	wlt.setCryptoType(ct)
 
 	// Updates the secrets data in wallet
 	wlt.setSecrets(string(encSecret))
@@ -264,8 +265,13 @@ func (w *Wallet) unlock(password []byte) (*Wallet, error) {
 		return nil, errors.New("secrets doesn't exsit")
 	}
 
+	ct := w.cryptoType()
+	if ct == "" {
+		return nil, errors.New("missing crypto type")
+	}
+
 	// Gets the crypto
-	crypto, err := getCrypto(w.cryptoType())
+	crypto, err := getCrypto(ct)
 	if err != nil {
 		return nil, err
 	}
@@ -310,6 +316,7 @@ func (w *Wallet) unlock(password []byte) (*Wallet, error) {
 	}
 
 	wlt.setEncrypted(false)
+	wlt.setCryptoType("")
 	return wlt, nil
 }
 
@@ -339,6 +346,8 @@ func (w *Wallet) guardUpdate(password []byte, fn func(w *Wallet) error) error {
 		return ErrMissingPassword
 	}
 
+	// get walelt crypto type
+	ct := w.cryptoType()
 	wlt, err := w.unlock(password)
 	if err != nil {
 		return err
@@ -350,7 +359,7 @@ func (w *Wallet) guardUpdate(password []byte, fn func(w *Wallet) error) error {
 		return err
 	}
 
-	if err := wlt.lock(password); err != nil {
+	if err := wlt.lock(password, ct); err != nil {
 		return err
 	}
 
@@ -486,10 +495,6 @@ func (w *Wallet) validate() error {
 		return errors.New("coin field not set")
 	}
 
-	if _, ok := w.Meta[metaCryptoType]; !ok {
-		return errors.New("crypto type field not set")
-	}
-
 	if encStr, ok := w.Meta[metaEncrypted]; ok {
 		// validate the encrypted value
 		isEncrypted, err := strconv.ParseBool(encStr)
@@ -499,10 +504,13 @@ func (w *Wallet) validate() error {
 
 		// checks if the secrets field is empty
 		if isEncrypted {
+			if _, ok := w.Meta[metaCryptoType]; !ok {
+				return errors.New("crypto type field not set")
+			}
+
 			if _, ok := w.Meta[metaSecrets]; !ok {
 				return errors.New("wallet is encrypted, but secrets field not set")
 			}
-
 		}
 	}
 

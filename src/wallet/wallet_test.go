@@ -50,7 +50,7 @@ func init() {
 			log.Panic(err)
 		}
 
-		if err := w.lock([]byte("pwd")); err != nil {
+		if err := w.lock([]byte("pwd"), CryptoTypeScryptChacha20poly1305); err != nil {
 			log.Panic(err)
 		}
 
@@ -286,6 +286,8 @@ func TestNewWallet(t *testing.T) {
 	// Test unknow crypto
 	_, err := NewWallet("t.wlt", Options{
 		Seed:       "seed",
+		Encrypt:    true,
+		Password:   []byte("pwd"),
 		CryptoType: CryptoType("unknow"),
 	})
 	require.Error(t, err, "could not find crypto unknow in crypto table")
@@ -328,20 +330,22 @@ func TestWalletLock(t *testing.T) {
 
 	for _, tc := range tt {
 		for ct := range cryptoTable {
-			opts := tc.opts
-			opts.CryptoType = ct
 			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
+			if tc.opts.Encrypt {
+				tc.opts.CryptoType = ct
+			}
 			t.Run(name, func(t *testing.T) {
 				wltName := newWalletFilename()
-				w, err := NewWallet(wltName, opts)
+				w, err := NewWallet(wltName, tc.opts)
 				require.NoError(t, err)
 
 				if !w.IsEncrypted() {
+					// Generates 2 addresses
 					_, err = w.GenerateAddresses(2)
 					require.NoError(t, err)
 				}
 
-				err = w.lock(tc.lockPwd)
+				err = w.lock(tc.lockPwd, ct)
 				require.Equal(t, tc.err, err)
 				if err != nil {
 					return
@@ -459,7 +463,7 @@ func makeWallet(t *testing.T, opts Options, addrNum uint64) *Wallet {
 	_, err = w.GenerateAddresses(addrNum)
 	require.NoError(t, err)
 	if preOpts.Encrypt {
-		err = w.lock(preOpts.Password)
+		err = w.lock(preOpts.Password, opts.CryptoType)
 		require.NoError(t, err)
 	}
 	return w
@@ -659,39 +663,46 @@ func TestWalletGenerateAddress(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			// create wallet
-			w, err := NewWallet("test.wlt", tc.opts)
-			require.NoError(t, err)
+		for ct := range cryptoTable {
+			name := fmt.Sprintf("crypto=%v %v", ct, tc.name)
+			if tc.opts.Encrypt {
+				tc.opts.CryptoType = ct
+			}
 
-			// generate addresses
-			if tc.oneAddressEachTime {
-				_, err = w.GenerateAddresses(tc.num)
-				require.Equal(t, tc.err, err)
-				if err != nil {
-					return
-				}
-			} else {
-				for i := uint64(0); i < tc.num; i++ {
-					_, err := w.GenerateAddresses(1)
+			t.Run(name, func(t *testing.T) {
+				// create wallet
+				w, err := NewWallet("test.wlt", tc.opts)
+				require.NoError(t, err)
+
+				// generate addresses
+				if tc.oneAddressEachTime {
+					_, err = w.GenerateAddresses(tc.num)
 					require.Equal(t, tc.err, err)
 					if err != nil {
 						return
 					}
+				} else {
+					for i := uint64(0); i < tc.num; i++ {
+						_, err := w.GenerateAddresses(1)
+						require.Equal(t, tc.err, err)
+						if err != nil {
+							return
+						}
+					}
 				}
-			}
 
-			// check the entry number
-			require.Equal(t, int(tc.num), len(w.Entries))
+				// check the entry number
+				require.Equal(t, int(tc.num), len(w.Entries))
 
-			addrs := w.GetAddresses()
+				addrs := w.GetAddresses()
 
-			_, keys := cipher.GenerateDeterministicKeyPairsSeed([]byte(tc.opts.Seed), int(tc.num))
-			for i, k := range keys {
-				a := cipher.AddressFromSecKey(k)
-				require.Equal(t, a.String(), addrs[i].String())
-			}
-		})
+				_, keys := cipher.GenerateDeterministicKeyPairsSeed([]byte(tc.opts.Seed), int(tc.num))
+				for i, k := range keys {
+					a := cipher.AddressFromSecKey(k)
+					require.Equal(t, a.String(), addrs[i].String())
+				}
+			})
+		}
 	}
 }
 

@@ -340,7 +340,7 @@ func TestWalletSpendHandler(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, true)
+			handler := NewServerMux(configuredHost, ".", gateway, &CSRFStore{Enabled:false})
 
 			handler.ServeHTTP(rr, req)
 
@@ -470,7 +470,7 @@ func TestWalletGet(t *testing.T) {
 		}
 
 		rr := httptest.NewRecorder()
-		handler := NewServerMux(configuredHost, ".", gateway, true)
+		handler := NewServerMux(configuredHost, ".", gateway, &CSRFStore{Enabled:false})
 
 		handler.ServeHTTP(rr, req)
 
@@ -624,7 +624,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, true)
+			handler := NewServerMux(configuredHost, ".", gateway, &CSRFStore{Enabled:false})
 
 			handler.ServeHTTP(rr, req)
 
@@ -784,7 +784,7 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, true)
+			handler := NewServerMux(configuredHost, ".", gateway, &CSRFStore{Enabled:false})
 
 			handler.ServeHTTP(rr, req)
 
@@ -912,7 +912,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		}
 
 		rr := httptest.NewRecorder()
-		handler := NewServerMux(configuredHost, ".", gateway, true)
+		handler := NewServerMux(configuredHost, ".", gateway, &CSRFStore{Enabled:false})
 
 		handler.ServeHTTP(rr, req)
 
@@ -1125,7 +1125,7 @@ func TestWalletCreateHandler(t *testing.T) {
 		}
 
 		rr := httptest.NewRecorder()
-		handler := NewServerMux(configuredHost, ".", gateway, true)
+		handler := NewServerMux(configuredHost, ".", gateway, &CSRFStore{Enabled:false})
 
 		handler.ServeHTTP(rr, req)
 
@@ -1251,7 +1251,7 @@ func TestWalletNewSeed(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, true)
+			handler := NewServerMux(configuredHost, ".", gateway, &CSRFStore{Enabled:false})
 
 			handler.ServeHTTP(rr, req)
 
@@ -1418,7 +1418,7 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, true)
+			handler := NewServerMux(configuredHost, ".", gateway, &CSRFStore{Enabled:false})
 
 			handler.ServeHTTP(rr, req)
 
@@ -1497,7 +1497,7 @@ func TestGetWalletFolderHandler(t *testing.T) {
 		}
 
 		rr := httptest.NewRecorder()
-		handler := NewServerMux(configuredHost, ".", gateway, true)
+		handler := NewServerMux(configuredHost, ".", gateway, &CSRFStore{Enabled:false})
 
 		handler.ServeHTTP(rr, req)
 

@@ -48,11 +48,15 @@ func create(host string, serverConfig ServerConfig, daemon *daemon.Daemon) (*Ser
 	}
 	logger.Info("Web resources directory: %s", appLoc)
 
+	csrfStore := &CSRFStore{
+		Enabled: !serverConfig.DisableCSRF,
+	}
 	if serverConfig.DisableCSRF {
 		logger.Warning("CSRF check disabled")
 	}
+
 	return &Server{
-		mux:  NewServerMux(host , appLoc, daemon.Gateway, serverConfig.DisableCSRF),
+		mux:  NewServerMux(host , appLoc, daemon.Gateway, csrfStore),
 		done: make(chan struct{}),
 	}, nil
 }
@@ -122,7 +126,7 @@ func (s *Server) Shutdown() {
 }
 
 // NewServerMux creates an http.ServeMux with handlers registered
-func NewServerMux(host, appLoc string, gateway Gatewayer, disableCSRF bool) *http.ServeMux {
+func NewServerMux(host, appLoc string, gateway Gatewayer, csrfStore *CSRFStore) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	webHandler := func(endpoint string, handler http.Handler) {
@@ -138,10 +142,6 @@ func NewServerMux(host, appLoc string, gateway Gatewayer, disableCSRF bool) *htt
 			route = route + "/"
 		}
 		webHandler(route, http.FileServer(http.Dir(appLoc)))
-	}
-
-	csrfStore := &CSRFStore{
-		Enabled: !disableCSRF,
 	}
 
 	webHandler("/version", CSRFCheck(versionHandler(gateway), csrfStore))

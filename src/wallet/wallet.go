@@ -212,7 +212,7 @@ func (w *Wallet) lock(password []byte) error {
 
 	// Saves address's secret keys in secrets
 	for _, e := range wlt.Entries {
-		ss.set(e.Address.String(), e.Secret)
+		ss.set(e.Address.String(), e.Secret.Hex())
 	}
 
 	sb, err := ss.serialize()
@@ -283,24 +283,29 @@ func (w *Wallet) unlock(password []byte) (*Wallet, error) {
 		return nil, err
 	}
 
-	var seed string
-	if err := ss.get(secretSeed, &seed); err != nil {
+	seed, ok := ss.get(secretSeed)
+	if !ok {
 		return nil, errors.New("seed doesn't exist in secrets")
 	}
 	wlt.setSeed(seed)
 
-	var lastSeed string
-	if err := ss.get(secretLastSeed, &lastSeed); err != nil {
+	lastSeed, ok := ss.get(secretLastSeed)
+	if !ok {
 		return nil, errors.New("lastSeed doesn't exist in secrets")
 	}
 	wlt.setLastSeed(lastSeed)
 
 	// Gets addresses related secrets
 	for i, e := range wlt.Entries {
-		var s cipher.SecKey
-		if err := ss.get(e.Address.String(), &s); err != nil {
-			return nil, fmt.Errorf("address %s's secret doesn't exist in secrets", e.Address)
+		sstr, ok := ss.get(e.Address.String())
+		if !ok {
+			return nil, fmt.Errorf("secret of address %s doesn't exist in secrets", e.Address)
 		}
+		s, err := hex.DecodeString(sstr)
+		if err != nil {
+			return nil, fmt.Errorf("decode secret hex string failed: %v", err)
+		}
+
 		copy(wlt.Entries[i].Secret[:], s[:])
 	}
 

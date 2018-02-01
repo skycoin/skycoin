@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
+	"flag"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"math/rand"
 	"testing"
 	"time"
@@ -28,6 +30,50 @@ var _ = func() int64 {
 func init() {
 	// Change the scrypt N value in cryptoTable to make test faster, otherwise it would take more than 200 seconds to finish
 	cryptoTable[CryptoTypeScryptChacha20poly1305] = encrypt.ScryptChacha20poly1305{N: 1 << 15, R: encrypt.ScryptR, P: encrypt.ScryptP, KeyLen: encrypt.ScryptKeyLen}
+
+	// Update wallet file in ./testdata if flag -u is specified.
+	u := flag.Bool("u", false, "update test wallet file in ./testdata")
+	flag.Parse()
+
+	if *u {
+		// Update ./testdata/scrypt-chacha20poly1305-encrypted.wlt
+		w, err := NewWallet("scrypt-chacha20poly1305-encrypted.wlt", Options{
+			Seed:       "seed",
+			Label:      "scrypt-chacha20poly1305",
+			CryptoType: CryptoTypeScryptChacha20poly1305,
+		})
+		if err != nil {
+			log.Panic(err)
+		}
+
+		if _, err := w.GenerateAddresses(1); err != nil {
+			log.Panic(err)
+		}
+
+		if err := w.lock([]byte("pwd")); err != nil {
+			log.Panic(err)
+		}
+
+		if err := Save("./testdata", w); err != nil {
+			log.Panic(err)
+		}
+
+		// Update ./testdata/sha256xor-encrypted.wlt
+		w1, err := NewWallet("sha256xor-encrypted.wlt", Options{
+			Seed:       "seed",
+			Label:      "sha256xor",
+			CryptoType: CryptoTypeSha256Xor,
+			Encrypt:    true,
+			Password:   []byte("pwd"),
+		})
+		if err != nil {
+			log.Panic(err)
+		}
+
+		if err := Save("./testdata", w1); err != nil {
+			log.Panic(err)
+		}
+	}
 }
 
 type mockBalanceGetter map[cipher.Address]BalancePair
@@ -488,17 +534,34 @@ func TestLoadWallet(t *testing.T) {
 			},
 		},
 		{
-			"version=0.2 encrypted=true",
-			"./testdata/v2.wlt",
+			"version=0.2 encrypted=true crypto=scrypt-chacha20poly1305",
+			"./testdata/scrypt-chacha20poly1305-encrypted.wlt",
 			expect{
 				meta: map[string]string{
 					"coin":       "skycoin",
 					"cryptoType": "scrypt-chacha20poly1305",
 					"encrypted":  "true",
-					"filename":   "v2.wlt",
-					"label":      "v2",
+					"filename":   "scrypt-chacha20poly1305-encrypted.wlt",
+					"label":      "scrypt-chacha20poly1305",
 					"lastSeed":   "",
-					"secrets":    "VgB7Ik4iOjEwNDg1NzYsIlIiOjgsIlAiOjEsIktleUxlbiI6MzIsIlNhbHQiOiJHYnYxWUhRNWFOaz0iLCJOb25jZSI6IlRNK3ZhaFRXMzVIbVZrREQifflOR1HUMFwIUXgi8uo81L/Jua0t5iwPVvMeROVhznlDWNbWo8fY7uiGKZaqBE/vM9I11uOmjIOmXbsw62nOus0hirrpq4alUnaZlvgfF7UmElZt2KrI+IsCJyO2fyEKge2wa4cO9gZHSnoMn3XOFm1nJXX+5VFyS+V1Xhxnc//eN3td8hQCC5KjpHxiVdg1JzGbakKsqJMbaNZrkhXsmURB3xwtJU0RqjAyKoEMLA69H/dHAb199qQ+K7Rpy2Z3N51Zhx17Zgby37J3K225jH/pSG7c2El+/swrLNkO752Rg+3w3OFSaYfHY105oKyOZJQLvR7yD/j+V5VVMZMkervKdbTbd4scRplT+fdamA==",
+					"seed":       "",
+					"type":       "deterministic",
+					"version":    "0.2",
+				},
+				err: nil,
+			},
+		},
+		{
+			"version=0.2 encrypted=true crypto=sha256xor",
+			"./testdata/sha256xor-encrypted.wlt",
+			expect{
+				meta: map[string]string{
+					"coin":       "skycoin",
+					"cryptoType": "sha256-xor",
+					"encrypted":  "true",
+					"filename":   "sha256xor-encrypted.wlt",
+					"label":      "sha256xor",
+					"lastSeed":   "",
 					"seed":       "",
 					"type":       "deterministic",
 					"version":    "0.2",
@@ -538,6 +601,10 @@ func TestLoadWallet(t *testing.T) {
 			for k, v := range tc.expect.meta {
 				vv := w.Meta[k]
 				require.Equal(t, v, vv)
+			}
+
+			if w.IsEncrypted() {
+				require.NotEmpty(t, w.Meta[metaSecrets])
 			}
 		})
 	}
@@ -648,8 +715,8 @@ func TestWalletGetEntry(t *testing.T) {
 			false,
 		},
 		{
-			"wallet of version 0.2",
-			"./testdata/v2.wlt",
+			"scrypt-chacha20poly1305 encrytped wallet",
+			"./testdata/scrypt-chacha20poly1305-encrypted.wlt",
 			"2EVNa4CK9SKosT4j1GEn8SuuUUEAXaHAMbM",
 			true,
 		},

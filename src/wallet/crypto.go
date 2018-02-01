@@ -68,23 +68,13 @@ func getCrypto(cryptoType CryptoType) (cryptor, error) {
 
 type secrets map[string]string
 
-func (s secrets) get(key string, v interface{}) error {
-	d, ok := s[key]
-	if !ok {
-		return fmt.Errorf("secret %v doesn't exist", key)
-	}
-
-	return json.Unmarshal([]byte(d), v)
+func (s secrets) get(key string) (string, bool) {
+	v, ok := s[key]
+	return v, ok
 }
 
-func (s secrets) set(key string, v interface{}) error {
-	d, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	s[key] = string(d)
-	return nil
+func (s secrets) set(key, v string) {
+	s[key] = v
 }
 
 func (s secrets) serialize() ([]byte, error) {

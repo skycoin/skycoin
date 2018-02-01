@@ -8,6 +8,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
+	"errors"
 )
 
 const (
@@ -55,29 +56,35 @@ func (c *CSRFStore) verifyExpireTime() bool {
 }
 
 // verifyToken checks that the given token is same as the internal token
-func (c *CSRFStore) verifyToken(headerToken string) bool {
+func (c *CSRFStore) verifyToken(headerToken string) (bool, error) {
 	c.RLock()
 	defer c.RUnlock()
 
 	// check if token is initialized
 	if c.token == nil {
-		return false
+		return false, errors.New("token not initialized")
 	}
 
 	// check if token values are same
 	if headerToken == c.getTokenValue() {
 		// make sure token is still valid
-		return c.verifyExpireTime()
+		return c.verifyExpireTime(), errors.New("token has expired")
 	}
 
-	return false
+	return false, errors.New("invalid token")
 }
 
 // method: GET
 // url: /csrf
 func getCSRFToken(gateway Gatewayer, store *CSRFStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet || !store.Enabled {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
+		if !store.Enabled {
+			logger.Warning("CSRF check disabled")
 			wh.Error404(w)
 			return
 		}
@@ -94,7 +101,8 @@ func CSRFCheck(handler http.Handler, store *CSRFStore) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost && store.Enabled {
 			token := r.Header.Get(CSRFHeaderName)
-			if !store.verifyToken(token) {
+			if ok, err := store.verifyToken(token); !ok {
+				logger.Errorf("CSRF token invalid: %v", err)
 				wh.Error403Msg(w, "invalid CSRF token")
 				return
 			}

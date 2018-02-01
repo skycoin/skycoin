@@ -33,7 +33,7 @@ run:  ## Run the skycoin node. To add arguments, do 'make ARGS="--foo" run'.
 run-help: ## Show skycoin node help
 	@go run cmd/skycoin/skycoin.go --help
 
-test: ## Run tests
+test-core: ## Run tests for Skycoin core
 	go test ./cmd/... -timeout=1m
 	go test ./src/... -timeout=1m
 
@@ -48,6 +48,8 @@ test-lib-c: build-lib-c
 	rm $(BUILDLIB_DIR)/libskycoin.so	# TODO: Get rid of this step
 	gcc -o $(BUILDLIB_DIR)/skycoinlib_test $(BUILDLIB_DIR)/*.c -I$(BUILDLIB_DIR) -lcriterion -lskycoin -L $(BUILDLIB_DIR)
 	$(BUILDLIB_DIR)/skycoinlib_test
+
+test: test-core test-lib-c ## Run tests
 
 lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...

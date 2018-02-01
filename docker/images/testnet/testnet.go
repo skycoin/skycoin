@@ -151,8 +151,6 @@ func NewSkyCoinTestNetwork(nodesNum int, buildContext string, tempDir string) Sk
 	commonParameters := []string{
 		"--launch-browser=false",
 		"--gui-dir=/usr/local/skycoin/static",
-		"--peerlist-url=http://172.16.200.1/peers.txt",
-		"--download-peerlist",
 		"--master-public-key=" + pubKey.Hex(),
 	}
 	currentCommit := GetCurrentGitCommit()

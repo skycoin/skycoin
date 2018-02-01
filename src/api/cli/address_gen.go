@@ -18,7 +18,7 @@ func addressGenCmd() gcli.Command {
 		Description: "",
 		Flags: []gcli.Flag{
 			gcli.IntFlag{
-				Name:  "count,c",
+				Name:  "n",
 				Value: 1,
 				Usage: "Number of addresses to generate",
 			},
@@ -67,7 +67,7 @@ func addressGenCmd() gcli.Command {
 				}
 			}
 
-			w, err := wallet.CreateAddresses(coinType, seed, c.Int("count"), c.Bool("hide-secret"))
+			w, err := wallet.CreateAddresses(coinType, seed, c.Int("n"), c.Bool("hide-secret"))
 			if err != nil {
 				return err
 			}

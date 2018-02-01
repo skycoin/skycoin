@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"io"
@@ -56,6 +57,8 @@ var (
 	BlockchainSeckeyStr = ""
 	// BlockchainSeckeyStr empty private key string
 	BlockchainSeckey = ""
+
+	TrustedPeerlistFileName = "connections.txt"
 )
 
 // Command line interface arguments
@@ -365,8 +368,8 @@ func (c *Config) postProcess(chaincfg ChainConfig) {
 		c.DownloadPeerList = false
 		c.PeerListURL = ""
 
-		c.DefaultConnections = make([]string, 0)
-		// TODO: Force load default connections from file in data dir
+		// Force load default connections from file in data dir
+		c.DefaultConnections = loadDefaultConnections(c.DataDirectory)
 		if len(c.DefaultConnections) == 0 {
 			logger.Info("Unable to load dafault connections from %v", c.DataDirectory)
 			c.DefaultConnections = chaincfg.DefaultConnections
@@ -494,6 +497,26 @@ func initProfiling(httpProf, profileCPU bool, profileCPUFile string) {
 			log.Println(http.ListenAndServe("localhost:6060", nil))
 		}()
 	}
+}
+
+func loadDefaultConnections(dataDirectory string) []string {
+	connections := make([]string, 0)
+	fp := filepath.Join(dataDirectory, TrustedPeerlistFileName)
+	fo, err := os.Open(fp)
+	if err != nil {
+		logger.Warning("Unable to open default connections file from %v\n%v",
+			fp, err)
+		return connections
+	}
+	defer fo.Close()
+
+	input := bufio.NewScanner(fo)
+	for input.Scan() {
+		strAddress := input.Text()
+		// TODO: Validate addresses
+		connections = append(connections, strAddress)
+	}
+	return connections
 }
 
 func configureDaemon(c *Config) daemon.Config {

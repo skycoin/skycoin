@@ -416,6 +416,12 @@ func catchDebug() {
 func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) (*gui.Server, error) {
 	var s *gui.Server
 	var err error
+
+	config := gui.ServerConfig{
+		StaticDir: c.GUIDirectory,
+		DisableCSRF: c.DisableCSRF,
+	}
+
 	if c.WebInterfaceHTTPS {
 		// Verify cert/key parameters, and if neither exist, create them
 		if err := cert.CreateCertIfNotExists(host, c.WebInterfaceCert, c.WebInterfaceKey, "Skycoind"); err != nil {
@@ -423,9 +429,9 @@ func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) (*g
 			return nil, err
 		}
 
-		s, err = gui.CreateHTTPS(host, c.GUIDirectory, d, c.WebInterfaceCert, c.WebInterfaceKey, c.DisableCSRF)
+		s, err = gui.CreateHTTPS(host, config, d, c.WebInterfaceCert, c.WebInterfaceKey)
 	} else {
-		s, err = gui.Create(host, c.GUIDirectory, d, c.DisableCSRF)
+		s, err = gui.Create(host, config, d)
 	}
 	if err != nil {
 		logger.Error("Failed to start web GUI: %v", err)

@@ -21,6 +21,11 @@ func Error400(w http.ResponseWriter, msg string) {
 	HTTPError(w, http.StatusBadRequest, httpMsg)
 }
 
+// Error403 response 404 error
+func Error403(w http.ResponseWriter) {
+	HTTPError(w, http.StatusForbidden, "Forbidden")
+}
+
 // Error404 response 404 error
 func Error404(w http.ResponseWriter) {
 	HTTPError(w, http.StatusNotFound, "Not Found")
@@ -39,4 +44,13 @@ func Error501(w http.ResponseWriter) {
 // Error500 response 500
 func Error500(w http.ResponseWriter) {
 	HTTPError(w, http.StatusInternalServerError, "Internal Server Error")
+}
+
+// Error500Msg response 500 with custom message
+func Error500Msg(w http.ResponseWriter, msg string) {
+	httpMsg := "Internal Server Error"
+	if msg != "" {
+		httpMsg = fmt.Sprintf("%s - %s", httpMsg, msg)
+	}
+	HTTPError(w, http.StatusInternalServerError, httpMsg)
 }

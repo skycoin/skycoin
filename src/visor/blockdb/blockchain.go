@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/boltdb/bolt"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/bucket"
@@ -17,6 +18,20 @@ var (
 	// blockchain head sequence number
 	headSeqKey = []byte("head_seq")
 )
+
+// ErrMissingSignature is returned if no matching signature is found for a block in the db
+type ErrMissingSignature struct {
+	Seq  uint64
+	Hash string
+}
+
+func (e ErrMissingSignature) Error() string {
+	msg := "find no signature of block"
+	if e.Hash != "" {
+		return fmt.Sprintf("%s: hash=%s", msg, e.Hash)
+	}
+	return fmt.Sprintf("%s: seq=%d", msg, e.Seq)
+}
 
 type chainMeta struct {
 	bucket.Bucket
@@ -77,7 +92,7 @@ type Blockchain struct {
 		headSeq      uint64 // head block seq
 		genesisBlock *coin.SignedBlock
 	}
-	sync.Mutex // cache lock
+	sync.RWMutex // cache lock
 }
 
 // NewBlockchain creates a new blockchain instance
@@ -177,8 +192,8 @@ func (bc *Blockchain) Head() (*coin.SignedBlock, error) {
 
 // HeadSeq returns the head block sequence
 func (bc *Blockchain) HeadSeq() uint64 {
-	bc.Lock()
-	defer bc.Unlock()
+	bc.RLock()
+	defer bc.RUnlock()
 	return bc.cache.headSeq
 }
 
@@ -189,8 +204,8 @@ func (bc *Blockchain) UnspentPool() UnspentPool {
 
 // Len returns blockchain length
 func (bc *Blockchain) Len() uint64 {
-	bc.Lock()
-	defer bc.Unlock()
+	bc.RLock()
+	defer bc.RUnlock()
 	if bc.cache.genesisBlock == nil {
 		return 0
 	}
@@ -211,7 +226,9 @@ func (bc *Blockchain) GetBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, err
 	}
 
 	if !ok {
-		return nil, fmt.Errorf("find no signature of block: %v", hash.Hex())
+		return nil, ErrMissingSignature{
+			Hash: hash.Hex(),
+		}
 	}
 
 	return &coin.SignedBlock{
@@ -233,7 +250,9 @@ func (bc *Blockchain) GetBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
 	}
 
 	if !ok {
-		return nil, fmt.Errorf("find no signature of block: %v", seq)
+		return nil, ErrMissingSignature{
+			Seq: seq,
+		}
 	}
 
 	return &coin.SignedBlock{
@@ -244,8 +263,8 @@ func (bc *Blockchain) GetBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
 
 // GetGenesisBlock returns genesis block
 func (bc *Blockchain) GetGenesisBlock() *coin.SignedBlock {
-	bc.Lock()
-	defer bc.Unlock()
+	bc.RLock()
+	defer bc.RUnlock()
 	return bc.cache.genesisBlock
 }
 

@@ -1,22 +1,14 @@
 // +build ignore
+
 package visor
 
 import (
-	"crypto/rand"
+	"testing"
 	"time"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/utc"
-)
-
-const (
-	testMasterKeysFile  = "testmaster.keys"
-	testWalletFile      = "testwallet.wlt"
-	testBlocksigsFile   = "testblockchain.sigs"
-	testBlockchainFile  = "testblockchain.bin"
-	testWalletEntryFile = "testwalletentry.json"
-	testWalletDir       = "./"
 )
 
 // func createGenesisSignature(master wallet.WalletEntry) cipher.Sig {
@@ -106,16 +98,10 @@ const (
 // 	}
 // }
 
-func randSHA256() cipher.SHA256 {
-	b := make([]byte, 128)
-	rand.Read(b)
-	return cipher.SumSHA256(b)
-}
-
-func createUnconfirmedTxn() UnconfirmedTxn {
+func createUnconfirmedTxn(t *testing.T) UnconfirmedTxn {
 	ut := UnconfirmedTxn{}
 	ut.Txn = coin.Transaction{}
-	ut.Txn.InnerHash = randSHA256()
+	ut.Txn.InnerHash = testutil.RandSHA256(t)
 	ut.Received = utc.Now().UnixNano()
 	ut.Checked = ut.Received
 	ut.Announced = time.Time{}.UnixNano()

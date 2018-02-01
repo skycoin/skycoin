@@ -1,27 +1,37 @@
 package wallet
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"sync"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 )
+
+// ErrWalletNotExist is returned if a wallet does not exist
+var ErrWalletNotExist = errors.New("wallet doesn't exist")
+var ErrWalletApiDisabled = errors.New("wallet api disabled")
+
+// BalanceGetter interface for getting the balance of given addresses
+type BalanceGetter interface {
+	GetBalanceOfAddrs(addrs []cipher.Address) ([]BalancePair, error)
+}
 
 // Service wallet service struct
 type Service struct {
 	sync.RWMutex
 	wallets        Wallets
-	options        []Option
 	firstAddrIDMap map[string]string // key: first address in wallet, value: wallet id
 
 	WalletDirectory string
 }
 
 // NewService new wallet service
-func NewService(walletDir string, options ...Option) (*Service, error) {
+func NewService(walletDir string) (*Service, error) {
 	serv := &Service{
 		firstAddrIDMap: make(map[string]string),
 	}
@@ -30,9 +40,6 @@ func NewService(walletDir string, options ...Option) (*Service, error) {
 	}
 
 	serv.WalletDirectory = walletDir
-	for i := range options {
-		serv.options = append(serv.options, options[i])
-	}
 
 	w, err := LoadWallets(serv.WalletDirectory)
 	if err != nil {
@@ -42,9 +49,16 @@ func NewService(walletDir string, options ...Option) (*Service, error) {
 	serv.wallets = serv.removeDup(w)
 
 	if len(serv.wallets) == 0 {
-		wltName := NewWalletFilename()
+		seed, err := bip39.NewDefaultMnemomic()
+		if err != nil {
+			return nil, err
+		}
+
 		// create default wallet
-		w, err := serv.CreateWallet(wltName, OptLabel("Your Wallet"))
+		w, err := serv.CreateWallet("", Options{
+			Label: "Your Wallet",
+			Seed:  seed,
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -57,24 +71,62 @@ func NewService(walletDir string, options ...Option) (*Service, error) {
 	return serv, nil
 }
 
-// CreateWallet creates wallet
-func (serv *Service) CreateWallet(wltName string, options ...Option) (Wallet, error) {
-	ops := make([]Option, 0, len(serv.options)+len(options))
-	ops = append(ops, serv.options...)
-	ops = append(ops, options...)
-	w, err := NewWallet(wltName, ops...)
+// CreateWallet creates a wallet with one address
+func (serv *Service) CreateWallet(wltName string, options Options) (Wallet, error) {
+	serv.Lock()
+	defer serv.Unlock()
+
+	if wltName == "" {
+		wltName = serv.generateUniqueWalletFilename()
+	}
+
+	return serv.loadWallet(wltName, options, 0, nil)
+}
+
+// ScanAheadWalletAddresses scans n addresses for a balance, and sets the wallet's entry list to the highest
+// address with a non-zero coins balance.
+func (serv *Service) ScanAheadWalletAddresses(wltName string, scanN uint64, bg BalanceGetter) (Wallet, error) {
+	serv.Lock()
+	defer serv.Unlock()
+
+	w, err := serv.getWallet(wltName)
 	if err != nil {
 		return Wallet{}, err
 	}
 
-	// generate a default address
+	if err := w.ScanAddresses(scanN, bg); err != nil {
+		return Wallet{}, err
+	}
+
+	if err := w.Save(serv.WalletDirectory); err != nil {
+		return Wallet{}, err
+	}
+
+	serv.wallets.set(w)
+
+	return w.Copy(), nil
+}
+
+// loadWallet loads wallet from seed and scan the first N addresses
+func (serv *Service) loadWallet(wltName string, options Options, scanN uint64, bg BalanceGetter) (Wallet, error) {
+	w, err := NewWallet(wltName, options)
+	if err != nil {
+		return Wallet{}, err
+	}
+
+	// Generate a default address
 	w.GenerateAddresses(1)
 
-	serv.Lock()
-	defer serv.Unlock()
-	// check dup
+	// Check for duplicate wallets by initial seed
 	if id, ok := serv.firstAddrIDMap[w.Entries[0].Address.String()]; ok {
 		return Wallet{}, fmt.Errorf("duplicate wallet with %v", id)
+	}
+
+	// Scan for addresses with balances
+	if scanN > 1 && bg != nil {
+		if err := w.ScanAddresses(scanN-1, bg); err != nil {
+			return Wallet{}, err
+		}
 	}
 
 	if err := serv.wallets.Add(*w); err != nil {
@@ -82,24 +134,36 @@ func (serv *Service) CreateWallet(wltName string, options ...Option) (Wallet, er
 	}
 
 	if err := w.Save(serv.WalletDirectory); err != nil {
-		// remove the added wallet from serv.wallets.
+		// If save fails, remove the added wallet
 		serv.wallets.Remove(w.GetID())
 		return Wallet{}, err
 	}
 
 	serv.firstAddrIDMap[w.Entries[0].Address.String()] = w.GetID()
 
-	return *w, nil
+	return w.Copy(), nil
+}
+
+func (serv *Service) generateUniqueWalletFilename() string {
+	wltName := NewWalletFilename()
+	for {
+		if _, ok := serv.wallets.Get(wltName); !ok {
+			break
+		}
+		wltName = NewWalletFilename()
+	}
+
+	return wltName
 }
 
 // NewAddresses generate address entries in given wallet,
 // return nil if wallet does not exist.
-func (serv *Service) NewAddresses(wltID string, num int) ([]cipher.Address, error) {
+func (serv *Service) NewAddresses(wltID string, num uint64) ([]cipher.Address, error) {
 	serv.Lock()
 	defer serv.Unlock()
 	w, ok := serv.wallets.Get(wltID)
 	if !ok {
-		return []cipher.Address{}, errWalletNotExist(wltID)
+		return []cipher.Address{}, ErrWalletNotExist
 	}
 
 	addrs := w.GenerateAddresses(num)
@@ -116,21 +180,26 @@ func (serv *Service) GetAddresses(wltID string) ([]cipher.Address, error) {
 	defer serv.RUnlock()
 	w, ok := serv.wallets.Get(wltID)
 	if !ok {
-		return []cipher.Address{}, errWalletNotExist(wltID)
+		return []cipher.Address{}, ErrWalletNotExist
 	}
 
 	return w.GetAddresses(), nil
 }
 
 // GetWallet returns wallet by id
-func (serv *Service) GetWallet(wltID string) (Wallet, bool) {
+func (serv *Service) GetWallet(wltID string) (Wallet, error) {
 	serv.RLock()
 	defer serv.RUnlock()
+
+	return serv.getWallet(wltID)
+}
+
+func (serv *Service) getWallet(wltID string) (Wallet, error) {
 	w, ok := serv.wallets.Get(wltID)
 	if !ok {
-		return Wallet{}, false
+		return Wallet{}, ErrWalletNotExist
 	}
-	return w.Copy(), true
+	return w.Copy(), nil
 }
 
 // GetWallets returns all wallet
@@ -165,20 +234,16 @@ func (serv *Service) GetWalletsReadable() []*ReadableWallet {
 }
 
 // CreateAndSignTransaction creates and sign transaction from wallet
-func (serv *Service) CreateAndSignTransaction(wltID string,
-	vld Validator,
-	unspent blockdb.UnspentGetter,
-	headTime uint64,
-	amt Balance,
-	dest cipher.Address) (*coin.Transaction, error) {
+func (serv *Service) CreateAndSignTransaction(wltID string, vld Validator, unspent blockdb.UnspentGetter,
+	headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
 	serv.RLock()
 	defer serv.RUnlock()
 	w, ok := serv.wallets.Get(wltID)
 	if !ok {
-		return nil, errWalletNotExist(wltID)
+		return nil, ErrWalletNotExist
 	}
 
-	return w.CreateAndSignTransaction(vld, unspent, headTime, amt, dest)
+	return w.CreateAndSignTransaction(vld, unspent, headTime, coins, dest)
 }
 
 // UpdateWalletLabel updates the wallet label

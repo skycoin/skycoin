@@ -3,6 +3,7 @@ package coin
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"math"
 	"sort"
 
@@ -269,13 +270,22 @@ func (txn *Transaction) Serialize() []byte {
 	return encoder.Serialize(*txn)
 }
 
-// TransactionDeserialize deserialize transaction
-func TransactionDeserialize(b []byte) Transaction {
-	t := Transaction{}
-	if err := encoder.DeserializeRaw(b, &t); err != nil {
-		logger.Panic("Failed to deserialize transaction")
+// MustTransactionDeserialize deserialize transaction, panics on error
+func MustTransactionDeserialize(b []byte) Transaction {
+	t, err := TransactionDeserialize(b)
+	if err != nil {
+		logger.Panicf("Failed to deserialize transaction: %v", err)
 	}
 	return t
+}
+
+// TransactionDeserialize deserialize transaction
+func TransactionDeserialize(b []byte) (Transaction, error) {
+	t := Transaction{}
+	if err := encoder.DeserializeRaw(b, &t); err != nil {
+		return t, fmt.Errorf("Invalid transaction: %v", err)
+	}
+	return t, nil
 }
 
 // OutputHours returns the coin hours sent as outputs. This does not include the fee.
@@ -349,8 +359,7 @@ type FeeCalculator func(*Transaction) (uint64, error)
 
 // SortTransactions returns transactions sorted by fee per kB, and sorted by lowest hash if
 // tied.  Transactions that fail in fee computation are excluded.
-func SortTransactions(txns Transactions,
-	feeCalc FeeCalculator) Transactions {
+func SortTransactions(txns Transactions, feeCalc FeeCalculator) Transactions {
 	sorted := NewSortableTransactions(txns, feeCalc)
 	sorted.Sort()
 	return sorted.Txns

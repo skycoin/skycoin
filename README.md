@@ -1,3 +1,5 @@
+![skycoin logo](https://user-images.githubusercontent.com/26845312/32426705-d95cb988-c281-11e7-9463-a3fce8076a72.png)
+
 # Skycoin
 
 [![Build Status](https://travis-ci.org/skycoin/skycoin.svg)](https://travis-ci.org/skycoin/skycoin)
@@ -8,7 +10,7 @@ Skycoin is a next-generation cryptocurrency.
 
 Skycoin improves on Bitcoin in too many ways to be addressed here.
 
-Skycoin is small part of OP Redecentralize and OP Darknet Plan.
+Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
 
 ## Links
 
@@ -22,47 +24,39 @@ Skycoin is small part of OP Redecentralize and OP Darknet Plan.
 <!-- MarkdownTOC depth="2" autolink="true" bracket="round" -->
 
 - [Installation](#installation)
-    - [Installing Go](#installing-go)
-    - [Set GOPATH in your environment](#set-gopath-in-your-environment)
+    - [Go 1.9+ Installation and Setup](#go-19-installation-and-setup)
     - [Go get skycoin](#go-get-skycoin)
     - [Run Skycoin from the command line](#run-skycoin-from-the-command-line)
+    - [Show Skycoin node options](#show-skycoin-node-options)
     - [Run Skycoin with options](#run-skycoin-with-options)
+    - [Docker image](#docker-image)
 - [API Documentation](#api-documentation)
     - [Wallet REST API](#wallet-rest-api)
     - [JSON-RPC 2.0 API](#json-rpc-20-api)
     - [Skycoin command line interface](#skycoin-command-line-interface)
+- [Contributing a node to the network](#contributing-a-node-to-the-network)
 - [Development](#development)
     - [Modules](#modules)
+    - [Running Tests](#running-tests)
     - [Formatting](#formatting)
-    - [Running tests](#running-tests)
+    - [Code Linting](#code-linting)
     - [Dependency Management](#dependency-management)
     - [Wallet GUI Development](#wallet-gui-development)
     - [Releases](#releases)
+- [Changelog](#changelog)
 
 <!-- /MarkdownTOC -->
 
 ## Installation
 
-### Installing Go
+### Go 1.9+ Installation and Setup
 
-[Install go1.9+](https://golang.org/doc/install)
-
-### Create GOPATH directory
-
-go packages are installed in `$GOPATH` which defaults to `$HOME/go`.
-
-Create `$HOME/go` for your `$GOPATH`:
-
-```sh
-mkdir ~/go
-```
-
-You may also want to update your `$PATH` environment variable to `PATH="$PATH:$GOPATH/bin`.
+[Golang 1.9+ Installation/Setup](./Installation.md)
 
 ### Go get skycoin
 
 ```sh
-go get https://github.com/skycoin/skycoin/...
+go get github.com/skycoin/skycoin/...
 ```
 
 This will download `github.com/skycoin/skycoin` to `$GOPATH/src/github.com/skycoin/skycoin`.
@@ -74,15 +68,40 @@ but it must be cloned to this path: `$GOPATH/src/github.com/skycoin/skycoin`.
 
 ```sh
 cd $GOPATH/src/github.com/skycoin/skycoin
-./run.sh
+make run
+```
+
+### Show Skycoin node options
+
+```sh
+cd $GOPATH/src/github.com/skycoin/skycoin
+make run-help
 ```
 
 ### Run Skycoin with options
 
 ```sh
 cd $GOPATH/src/github.com/skycoin/skycoin
-./run.sh --help
+make ARGS="--launch-browser=false" run
 ```
+
+### Docker image
+
+```
+$ docker volume create skycoin-data
+$ docker volume create skycoin-wallet
+$ docker run -ti --rm \
+    -v skycoin-data:/data \
+    -v skycoin-wallet:/wallet \
+    -p 6000:6000 \
+    -p 6420:6420 \
+    -p 6430:6430 \
+    skycoin/skycoin
+```
+
+Access the dashboard: [http://localhost:6420](http://localhost:6420).
+
+Access the API: [http://localhost:6420/version](http://localhost:6420/version).
 
 ## API Documentation
 
@@ -97,6 +116,12 @@ cd $GOPATH/src/github.com/skycoin/skycoin
 ### Skycoin command line interface
 
 [CLI command API](cmd/cli/README.md).
+
+## Contributing a node to the network
+
+Add your node's ip:port to the [peers.txt](./peers.txt) file.
+This file will be periodically uploaded to https://downloads.skycoin.net/blockchain/peers.txt
+and used to seed client with peers.
 
 ## Development
 
@@ -117,14 +142,32 @@ We have two branches: `master` and `develop`.
 * `/src/api/webrpc` - JSON-RPC 2.0 API
 * `/src/api/cli` - CLI library
 
-### Formatting
-
-All `.go` source files should be formatted with `gofmt` or `goimports`.
-
-### Running tests
+### Running Tests
 
 ```sh
-go test ./src/...
+make test
+```
+
+### Formatting
+
+All `.go` source files should be formatted `goimports`.  You can do this with:
+
+```sh
+make format
+```
+
+### Code Linting
+
+Install prerequisites:
+
+```sh
+make install-linters
+```
+
+Run linters:
+
+```sh
+make lint
 ```
 
 ### Dependency Management
@@ -181,25 +224,32 @@ dep prune
 
 The compiled wallet source should be checked in to the repo, so that others do not need to install node to run the software.
 
-Compile and add the wallet source to git:
+Instructions for doing this:
 
-```sh
-cd src/gui/static
-npm install
-npm run build
-git add .
-```
+[Wallet GUI Development README](src/gui/static/README.md)
 
 ### Releases
 
-*TODO: Full instructions on doing a release. Need instructions on updating version number in source code, and running scripts to build releases*
+0. If the `master` branch has commits that are not in `develop` (e.g. due to a hotfix applied to `master`), merge `master` into `develop`
+1. Compile the `src/gui/dist/` to make sure that it is up to date (see [Wallet GUI Development README](src/gui/static/README.md))
+2. Update all version strings in the repo (grep for them) to the new version
+3. Update `CHANGELOG.md`: move the "unreleased" changes to the version and add the date
+4. Merge these changes to `develop`
+5. On the `develop` branch, make sure that the client runs properly from the command line (`./run.sh`)
+6. Build the releases and make sure that the Electron client runs properly on Windows, Linux and macOS. Delete these releases when done.
+7. Make a PR merging `develop` into `master`
+8. Review the PR and merge it
+9. Tag the master branch with the version number. Version tags start with `v`, e.g. `v0.20.0`.
+10. Make sure that the client runs properly from the `master` branch
+11. Create the release builds from the `master` branch (see [Create Release builds](electron/README.md))
 
-When ready to do a release, a pull request merging `develop` into `master` must be made.
-
-After merging to `master`, tag the branch with the version number.
-
-Once `master` branch is updated, `git checkout master` and create the release builds.
+If there are problems discovered after merging to master, start over, and increment the 3rd version number.
+For example, `v0.20.0` becomes `v0.20.1`, for minor fixes.
 
 #### Creating release builds
 
 [Create Release builds](electron/README.md).
+
+## Changelog
+
+[CHANGELOG.md](CHANGELOG.md)

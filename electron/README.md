@@ -8,15 +8,19 @@ It cross compiles for osx, linux and windows 64 bit systems.
 
 gox (go cross compiler), node and npm.
 
+### gox
+
 To install gox:
 
 ```sh
-go get github.com/mitchellh/gox
+go get github.com/gz-c/gox
 ```
+
+### NPM
 
 Node and npm installation is system dependent.
 
-## Updating NPM
+#### Linux
 
 ```sh
 sudo apt-get install npm
@@ -32,11 +36,7 @@ npm -v
 
 ## Make sure that the wallet dist is up to date
 
-```sh
-cd /src/gui/static
-npm install
-npm run build
-```
+Recompile the wallet frontend. See [Wallet GUI Development README](src/gui/static/README.md) for instructions.
 
 ## Use electron-builder to pack and create app installer
 
@@ -71,7 +71,7 @@ brew install gnu-tar graphicsmagick xz
 
 ### Code signing
 
-Set the CSC_IDENTITY_AUTO_DISCOVERY environment variable to false if you don't want to do code signing,
+Set the `CSC_IDENTITY_AUTO_DISCOVERY` environment variable to false if you don't want to do code signing,
 otherwise, you can create a certificate in login.keychain for testing purpose.
 
 Create new certificate:
@@ -126,8 +126,16 @@ sudo apt-get install --no-install-recommends -y gcc-multilib g++-multilib
 
 Once requirements are installed, node dependencies must be downloaded.
 
+Install yarn:
+
 ```sh
-npm install
+npm install -g yarn
+```
+
+Install dependencies with yarn:
+
+```sh
+yarn install
 ```
 
 A folder `node_modules/` should now exist.

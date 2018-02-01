@@ -7,13 +7,15 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/stretchr/testify/require"
+
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/testutil"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func _badFeeCalc(t *Transaction) (uint64, error) {
+func badFeeCalc(t *Transaction) (uint64, error) {
 	return 0, errors.New("Bad")
 }
 
@@ -44,10 +46,10 @@ func addTransactionToBlock(t *testing.T, b *Block) Transaction {
 func TestNewBlock(t *testing.T) {
 	// TODO -- update this test for newBlock changes
 	prev := Block{Head: BlockHeader{Version: 0x02, Time: 100, BkSeq: 98}}
-	uxHash := randSHA256(t)
+	uxHash := testutil.RandSHA256(t)
 	txns := Transactions{Transaction{}}
 	// invalid txn fees panics
-	_, err := NewBlock(prev, 133, uxHash, txns, _badFeeCalc)
+	_, err := NewBlock(prev, 133, uxHash, txns, badFeeCalc)
 	require.EqualError(t, err, fmt.Sprintf("Invalid transaction fees: Bad"))
 
 	// no txns panics
@@ -72,7 +74,7 @@ func TestNewBlock(t *testing.T) {
 }
 
 func TestBlockHashHeader(t *testing.T) {
-	uxHash := randSHA256(t)
+	uxHash := testutil.RandSHA256(t)
 	b, err := makeNewBlock(uxHash)
 	require.NoError(t, err)
 	assert.Equal(t, b.HashHeader(), b.Head.Hash())
@@ -80,7 +82,7 @@ func TestBlockHashHeader(t *testing.T) {
 }
 
 func TestBlockHashBody(t *testing.T) {
-	uxHash := randSHA256(t)
+	uxHash := testutil.RandSHA256(t)
 	b, err := makeNewBlock(uxHash)
 	require.NoError(t, err)
 	assert.Equal(t, b.HashBody(), b.Body.Hash())
@@ -113,4 +115,75 @@ func TestNewGenesisBlock(t *testing.T) {
 	require.Equal(t, genAddress, tx.Out[0].Address)
 	require.Equal(t, _genCoins, tx.Out[0].Coins)
 	require.Equal(t, _genCoins, tx.Out[0].Hours)
+}
+
+func TestCreateUnspent(t *testing.T) {
+	tx := Transaction{}
+	tx.PushOutput(genAddress, 11e6, 255)
+	bh := BlockHeader{
+		Time:  tNow(),
+		BkSeq: uint64(1),
+	}
+
+	tt := []struct {
+		name    string
+		txIndex int
+		err     error
+	}{
+		{
+			"ok",
+			0,
+			nil,
+		},
+		{
+			"index overflow",
+			10,
+			errors.New("Transaction out index is overflow"),
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			uxout, err := CreateUnspent(bh, tx, tc.txIndex)
+			require.Equal(t, tc.err, err)
+			if err != nil {
+				return
+			}
+			assertUnspent(t, bh, tx, tc.txIndex, uxout)
+		})
+	}
+}
+
+func TestCreateUnspents(t *testing.T) {
+	tx := Transaction{}
+	tx.PushOutput(genAddress, 11e6, 255)
+	bh := BlockHeader{
+		Time:  tNow(),
+		BkSeq: uint64(1),
+	}
+	uxouts := CreateUnspents(bh, tx)
+	assert.Equal(t, len(uxouts), 1)
+	assertValidUnspents(t, bh, tx, uxouts)
+}
+
+func assertUnspent(t *testing.T, bh BlockHeader, tx Transaction, txIndex int, ux UxOut) {
+	assert.Equal(t, bh.Time, ux.Head.Time)
+	assert.Equal(t, bh.BkSeq, ux.Head.BkSeq)
+	assert.Equal(t, tx.Hash(), ux.Body.SrcTransaction)
+	assert.Equal(t, tx.Out[txIndex].Address, ux.Body.Address)
+	assert.Equal(t, tx.Out[txIndex].Coins, ux.Body.Coins)
+	assert.Equal(t, tx.Out[txIndex].Hours, ux.Body.Hours)
+}
+
+func assertValidUnspents(t *testing.T, bh BlockHeader, tx Transaction,
+	uxo UxArray) {
+	assert.Equal(t, len(tx.Out), len(uxo))
+	for i, ux := range uxo {
+		assert.Equal(t, bh.Time, ux.Head.Time)
+		assert.Equal(t, bh.BkSeq, ux.Head.BkSeq)
+		assert.Equal(t, tx.Hash(), ux.Body.SrcTransaction)
+		assert.Equal(t, tx.Out[i].Address, ux.Body.Address)
+		assert.Equal(t, tx.Out[i].Coins, ux.Body.Coins)
+		assert.Equal(t, tx.Out[i].Hours, ux.Body.Hours)
+	}
 }

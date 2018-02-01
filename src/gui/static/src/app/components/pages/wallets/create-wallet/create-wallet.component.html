@@ -1,12 +1,24 @@
-<div [formGroup]="form">
-  <md-input-container>
-    <input mdInput formControlName="label" placeholder="Label">
-  </md-input-container>
-  <md-input-container>
-    <textarea mdInput formControlName="seed" row="5" placeholder="Seed"></textarea>
-  </md-input-container>
-</div>
-<div class="button-line">
-  <a md-raised-button (click)="generateSeed()">New Seed</a>
-  <a md-raised-button color="primary" (click)="createWallet()">Create</a>
-</div>
+<app-modal title="Create Wallet" [dialog]="dialogRef">
+  <div [formGroup]="form">
+    <div class="form-field">
+      <label for="label">Name</label>
+      <input formControlName="label" id="label">
+    </div>
+    <div class="form-field">
+      <label for="seed">Seed</label>
+      <textarea formControlName="seed" id="seed" row="2"></textarea>
+    </div>
+    <div class="form-field">
+      <label for="confirm_seed">Confirm seed</label>
+      <textarea formControlName="confirm_seed" id="confirm_seed" row="2"></textarea>
+    </div>
+  </div>
+  <div class="-buttons">
+    <app-button (action)="closePopup()">
+      Cancel
+    </app-button>
+    <app-button (action)="createWallet()" class="primary" [disabled]="!form.valid">
+      Create
+    </app-button>
+  </div>
+</app-modal>

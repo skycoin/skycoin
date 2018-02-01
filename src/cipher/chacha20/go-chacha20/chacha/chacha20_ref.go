@@ -1,4 +1,4 @@
-// +build !cgo
+// This was originally "\+\build !cgo" but the cgo file is always ignored in build now
 
 package chacha
 

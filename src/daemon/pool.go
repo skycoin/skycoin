@@ -57,7 +57,6 @@ func NewPool(c PoolConfig, d *Daemon) *Pool {
 		Pool:   nil,
 	}
 
-	logger.Info("NewPool on port %d", pool.Config.port)
 	cfg := gnet.NewConfig()
 	cfg.DialTimeout = pool.Config.DialTimeout
 	cfg.Port = uint16(pool.Config.port)
@@ -80,6 +79,7 @@ func (pool *Pool) Shutdown() {
 // Run starts listening on the configured Port
 // no goroutine
 func (pool *Pool) Run() error {
+	logger.Info("daemon.Pool listening on port %d", pool.Config.port)
 	return pool.Pool.Run()
 }
 

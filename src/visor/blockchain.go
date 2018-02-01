@@ -6,8 +6,10 @@ import (
 	"sync"
 
 	"github.com/boltdb/bolt"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 )
 
@@ -19,8 +21,6 @@ var (
 
 	// ErrUnspentNotExist represents the error of unspent output in a tx does not exist
 	ErrUnspentNotExist = errors.New("Unspent output does not exist")
-	// ErrSignatureLost signature lost error
-	ErrSignatureLost = errors.New("signature lost")
 )
 
 const (
@@ -129,19 +129,9 @@ func (bc *Blockchain) GetBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
 	return bc.store.GetBlockBySeq(seq)
 }
 
-// HeadSeq returns the sequence of head block
-func (bc *Blockchain) HeadSeq() uint64 {
-	return bc.store.HeadSeq()
-}
-
 func (bc *Blockchain) processBlockWithTx(tx *bolt.Tx, b coin.SignedBlock) (coin.SignedBlock, error) {
 	if bc.Len() > 0 {
-		isGenesis, err := bc.isGenesisBlock(b.Block)
-		if err != nil {
-			return coin.SignedBlock{}, err
-		}
-
-		if !isGenesis {
+		if !bc.isGenesisBlock(b.Block) {
 			if err := bc.verifyBlockHeader(b.Block); err != nil {
 				return coin.SignedBlock{}, err
 			}
@@ -174,6 +164,11 @@ func (bc Blockchain) Len() uint64 {
 // Head returns the most recent confirmed block
 func (bc Blockchain) Head() (*coin.SignedBlock, error) {
 	return bc.store.Head()
+}
+
+// HeadSeq returns the sequence of head block
+func (bc *Blockchain) HeadSeq() uint64 {
+	return bc.store.HeadSeq()
 }
 
 // Time returns time of last block
@@ -247,18 +242,17 @@ func (bc *Blockchain) ExecuteBlockWithTx(tx *bolt.Tx, sb *coin.SignedBlock) erro
 		return err
 	}
 
-	bc.notify(nb.Block)
 	return nil
 }
 
 // isGenesisBlock checks if the block is genesis block
-func (bc Blockchain) isGenesisBlock(b coin.Block) (bool, error) {
+func (bc Blockchain) isGenesisBlock(b coin.Block) bool {
 	gb := bc.store.GetGenesisBlock()
 	if gb == nil {
-		return false, errors.New("genesis block doesn't exist")
+		return false
 	}
 
-	return gb.HashHeader() == b.HashHeader(), nil
+	return gb.HashHeader() == b.HashHeader()
 }
 
 // Compares the state of the current UxHash hash to state of unspent
@@ -366,18 +360,12 @@ func (bc Blockchain) GetLastBlocks(num uint64) []coin.SignedBlock {
 		return blocks
 	}
 
-	head, err := bc.store.GetBlockBySeq(0)
-	if err != nil {
-		logger.Error("%v", err)
-		return []coin.SignedBlock{}
-	}
-
-	end := head.Seq()
-	start := end - num + 1
+	end := bc.HeadSeq()
+	start := int(end-num) + 1
 	if start < 0 {
 		start = 0
 	}
-	return bc.GetBlocks(start, end)
+	return bc.GetBlocks(uint64(start), end)
 }
 
 /* Private */
@@ -534,7 +522,7 @@ func (bc Blockchain) TransactionFee(t *coin.Transaction) (uint64, error) {
 		return 0, err
 	}
 
-	return TransactionFee(t, headTime, inUxs)
+	return fee.TransactionFee(t, headTime, inUxs)
 }
 
 // verifySigs checks that BlockSigs state correspond with coin.Blockchain state
@@ -637,9 +625,14 @@ func (bc *Blockchain) BindListener(ls BlockListener) {
 	bc.blkListener = append(bc.blkListener, ls)
 }
 
-// notifies the listener the new block.
-func (bc *Blockchain) notify(b coin.Block) {
+// Notify notifies the listener the new block.
+func (bc *Blockchain) Notify(b coin.Block) {
 	for _, l := range bc.blkListener {
 		l(b)
 	}
+}
+
+// UpdateDB updates db with given func
+func (bc *Blockchain) UpdateDB(f func(t *bolt.Tx) error) error {
+	return bc.db.Update(f)
 }

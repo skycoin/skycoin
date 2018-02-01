@@ -1,5 +1,5 @@
-import { Component, Inject, Input, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { MD_DIALOG_DATA } from '@angular/material';
+import { Component, Inject, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 
 declare var QRCode: any;
 
@@ -18,7 +18,7 @@ export class QrCodeComponent implements OnInit {
   usesvg: boolean = false;
 
   constructor(
-    @Inject(MD_DIALOG_DATA) private data: any,
+    @Inject(MAT_DIALOG_DATA) private data: any,
     private el: ElementRef
   ) { }
 

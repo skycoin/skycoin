@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/skycoin/skycoin/src/util/fee"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
@@ -18,18 +19,20 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-type UnspentOut struct {
-	visor.ReadableOutput
-}
+var (
+	// ErrTemporaryInsufficientBalance is returned if a wallet does not have enough balance for a spend, but will have enough after unconfirmed transactions confirm
+	ErrTemporaryInsufficientBalance = errors.New("balance is not sufficient. Balance will be sufficient after unconfirmed transactions confirm")
+)
 
+// SendAmount represents an amount to send to an address
 type SendAmount struct {
 	Addr  string
 	Coins uint64
 }
 
 type sendAmountJSON struct {
-	Addr  string
-	Coins string
+	Addr  string `json:"addr"`
+	Coins string `json:"coins"`
 }
 
 func createRawTxCmd(cfg Config) gcli.Command {
@@ -39,7 +42,7 @@ func createRawTxCmd(cfg Config) gcli.Command {
 		Usage:     "Create a raw transaction to be broadcast to the network later",
 		ArgsUsage: "[to address] [amount]",
 		Description: fmt.Sprintf(`
-  Note: The [amount] argument is the coins you will spend, 1 coins = 1e6 drops.
+  Note: The [amount] argument is the coins you will spend, 1 coins = 1e6 droplets.
 
 		  The default wallet (%s) will be
 		  used if no wallet and address was specified.
@@ -70,7 +73,7 @@ func createRawTxCmd(cfg Config) gcli.Command {
 			gcli.StringFlag{
 				Name: "m",
 				Usage: `[send to many] use JSON string to set multiple receive addresses and coins,
-				example: -m '[{"addr":"$addr1", "coins": 10}, {"addr":"$addr2", "coins": 20}]'`,
+				example: -m '[{"addr":"$addr1", "coins": "10.2"}, {"addr":"$addr2", "coins": "20"}]'`,
 			},
 			gcli.BoolFlag{
 				Name:  "json,j",
@@ -79,22 +82,23 @@ func createRawTxCmd(cfg Config) gcli.Command {
 		},
 		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
-			rawtx, err := createRawTx(c)
+			tx, err := createRawTxCmdHandler(c)
 			if err != nil {
 				errorWithHelp(c, err)
 				return nil
 			}
 
-			useJson := c.Bool("json")
-			if useJson {
+			rawTx := hex.EncodeToString(tx.Serialize())
+
+			if c.Bool("json") {
 				return printJson(struct {
 					RawTx string `json:"rawtx"`
 				}{
-					RawTx: rawtx,
+					RawTx: rawTx,
 				})
-			} else {
-				fmt.Println(rawtx)
 			}
+
+			fmt.Println(rawTx)
 			return nil
 		},
 	}
@@ -215,58 +219,74 @@ func getAmount(c *gcli.Context) (uint64, error) {
 	return amt, nil
 }
 
-func createRawTx(c *gcli.Context) (string, error) {
+func createRawTxCmdHandler(c *gcli.Context) (*coin.Transaction, error) {
 	rpcClient := RpcClientFromContext(c)
 
 	wltAddr, err := fromWalletOrAddress(c)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	chgAddr, err := getChangeAddress(wltAddr, c.String("c"))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	toAddrs, err := getToAddresses(c)
 	if err != nil {
-		return "", err
+		return nil, err
+	}
+
+	if err := validateSendAmounts(toAddrs); err != nil {
+		return nil, err
 	}
 
 	if wltAddr.Address == "" {
 		return CreateRawTxFromWallet(rpcClient, wltAddr.Wallet, chgAddr, toAddrs)
 	}
+
 	return CreateRawTxFromAddress(rpcClient, wltAddr.Address, wltAddr.Wallet, chgAddr, toAddrs)
+}
+
+func validateSendAmounts(toAddrs []SendAmount) error {
+	for _, arg := range toAddrs {
+		// validate to address
+		_, err := cipher.DecodeBase58Address(arg.Addr)
+		if err != nil {
+			return ErrAddress
+		}
+
+		if arg.Coins == 0 {
+			return errors.New("Cannot send 0 coins")
+		}
+	}
+
+	if len(toAddrs) == 0 {
+		return errors.New("No destination addresses")
+	}
+
+	return nil
 }
 
 // PUBLIC
 
 // CreateRawTxFromWallet creates a transaction from any address or combination of addresses in a wallet
-func CreateRawTxFromWallet(c *webrpc.Client, walletFile, chgAddr string, toAddrs []SendAmount) (string, error) {
-	// validate the send amount
-	for _, arg := range toAddrs {
-		// validate to address
-		_, err := cipher.DecodeBase58Address(arg.Addr)
-		if err != nil {
-			return "", ErrAddress
-		}
-	}
-
+func CreateRawTxFromWallet(c *webrpc.Client, walletFile, chgAddr string, toAddrs []SendAmount) (*coin.Transaction, error) {
 	// check change address
 	cAddr, err := cipher.DecodeBase58Address(chgAddr)
 	if err != nil {
-		return "", ErrAddress
+		return nil, ErrAddress
 	}
 
 	// check if the change address is in wallet.
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	_, ok := wlt.GetEntry(cAddr)
 	if !ok {
-		return "", fmt.Errorf("change address %v is not in wallet", chgAddr)
+		return nil, fmt.Errorf("change address %v is not in wallet", chgAddr)
 	}
 
 	// get all address in the wallet
@@ -279,150 +299,174 @@ func CreateRawTxFromWallet(c *webrpc.Client, walletFile, chgAddr string, toAddrs
 	return CreateRawTx(c, wlt, addrStrArray, chgAddr, toAddrs)
 }
 
-// Creates a transaction from a specific address in a wallet
-func CreateRawTxFromAddress(c *webrpc.Client, addr, walletFile, chgAddr string, toAddrs []SendAmount) (string, error) {
-	var err error
-	for _, arg := range toAddrs {
-		// validate the address
-		if _, err = cipher.DecodeBase58Address(arg.Addr); err != nil {
-			return "", ErrAddress
-		}
-	}
-
+// CreateRawTxFromAddress creates a transaction from a specific address in a wallet
+func CreateRawTxFromAddress(c *webrpc.Client, addr, walletFile, chgAddr string, toAddrs []SendAmount) (*coin.Transaction, error) {
 	// check if the address is in the default wallet.
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	srcAddr, err := cipher.DecodeBase58Address(addr)
 	if err != nil {
-		return "", ErrAddress
+		return nil, ErrAddress
 	}
 
 	_, ok := wlt.GetEntry(srcAddr)
 	if !ok {
-		return "", fmt.Errorf("%v address is not in wallet", addr)
+		return nil, fmt.Errorf("%v address is not in wallet", addr)
 	}
 
 	// validate change address
 	cAddr, err := cipher.DecodeBase58Address(chgAddr)
 	if err != nil {
-		return "", ErrAddress
+		return nil, ErrAddress
 	}
 
 	_, ok = wlt.GetEntry(cAddr)
 	if !ok {
-		return "", fmt.Errorf("change address %v is not in wallet", chgAddr)
+		return nil, fmt.Errorf("change address %v is not in wallet", chgAddr)
 	}
 
 	return CreateRawTx(c, wlt, []string{addr}, chgAddr, toAddrs)
 }
 
 // CreateRawTx creates a transaction from a set of addresses contained in a loaded *wallet.Wallet
-func CreateRawTx(c *webrpc.Client, wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount) (string, error) {
-	// get unspent outputs of those addresses
+func CreateRawTx(c *webrpc.Client, wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount) (*coin.Transaction, error) {
+	if err := validateSendAmounts(toAddrs); err != nil {
+		return nil, err
+	}
+
+	// Get unspent outputs of those addresses
 	unspents, err := c.GetUnspentOutputs(inAddrs)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	spdouts := unspents.Outputs.SpendableOutputs()
-	spendableOuts := make([]UnspentOut, len(spdouts))
-	for i := range spdouts {
-		spendableOuts[i] = UnspentOut{spdouts[i]}
-	}
+	return createRawTx(unspents.Outputs, wlt, inAddrs, chgAddr, toAddrs)
+}
 
-	// caculate total required amount
-	var totalAmt uint64
+func createRawTx(uxouts visor.ReadableOutputSet, wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount) (*coin.Transaction, error) {
+	// Calculate total required coins
+	var totalCoins uint64
 	for _, arg := range toAddrs {
-		totalAmt += arg.Coins
+		totalCoins += arg.Coins
 	}
 
-	outs, err := getSufficientUnspents(spendableOuts, totalAmt)
+	outs, err := chooseSpends(uxouts, totalCoins)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	keys, err := getKeys(wlt, outs)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	txOuts, err := makeChangeOut(outs, chgAddr, toAddrs)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	tx, err := NewTransaction(outs, keys, txOuts)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	d := tx.Serialize()
-	return hex.EncodeToString(d), nil
+	return tx, nil
 }
 
-func makeChangeOut(outs []UnspentOut, chgAddr string, toAddrs []SendAmount) ([]coin.TransactionOutput, error) {
-	var (
-		totalInAmt   uint64
-		totalInHours uint64
-		totalOutAmt  uint64
-	)
+func chooseSpends(uxouts visor.ReadableOutputSet, coins uint64) ([]wallet.UxBalance, error) {
+	// Convert spendable unspent outputs to []wallet.UxBalance
+	spendableOutputs, err := visor.ReadableOutputsToUxBalances(uxouts.SpendableOutputs())
+	if err != nil {
+		return nil, err
+	}
+
+	// Choose which unspent outputs to spend
+	// Use the MinimizeUxOuts strategy, since this is most likely used by
+	// application that may need to send frequently.
+	// Using fewer UxOuts will leave more available for other transactions,
+	// instead of waiting for confirmation.
+	outs, err := wallet.ChooseSpendsMinimizeUxOuts(spendableOutputs, coins)
+	if err != nil {
+		// If there is not enough balance in the spendable outputs,
+		// see if there is enough balance when including incoming outputs
+		if err == wallet.ErrInsufficientBalance {
+			expectedOutputs, otherErr := visor.ReadableOutputsToUxBalances(uxouts.ExpectedOutputs())
+			if otherErr != nil {
+				return nil, otherErr
+			}
+
+			if _, otherErr := wallet.ChooseSpendsMinimizeUxOuts(expectedOutputs, coins); otherErr != nil {
+				return nil, err
+			}
+
+			return nil, ErrTemporaryInsufficientBalance
+		}
+
+		return nil, err
+	}
+
+	return outs, nil
+}
+
+func makeChangeOut(outs []wallet.UxBalance, chgAddr string, toAddrs []SendAmount) ([]coin.TransactionOutput, error) {
+	var totalInCoins, totalInHours, totalOutCoins uint64
 
 	for _, o := range outs {
-		c, err := droplet.FromString(o.Coins)
-		if err != nil {
-			return nil, errors.New("error coins string")
-		}
-		totalInAmt += c
+		totalInCoins += o.Coins
 		totalInHours += o.Hours
 	}
 
-	for _, to := range toAddrs {
-		totalOutAmt += to.Coins
+	if totalInHours == 0 {
+		return nil, fee.ErrTxnNoFee
 	}
 
-	if totalInAmt < totalOutAmt {
-		return nil, errors.New("amount is not sufficient")
+	for _, to := range toAddrs {
+		totalOutCoins += to.Coins
+	}
+
+	if totalInCoins < totalOutCoins {
+		return nil, wallet.ErrInsufficientBalance
 	}
 
 	outAddrs := []coin.TransactionOutput{}
-	chgAmt := totalInAmt - totalOutAmt
-	// FIXME: Why divide by 4 here?
-	chgHours := totalInHours / 4
-	addrHours := chgHours / uint64(len(toAddrs))
-	if chgAmt > 0 {
-		// generate a change address
-		// FIXME: Why divide chgHours by 2 again, already divided by 4?
-		outAddrs = append(outAddrs, mustMakeUtxoOutput(chgAddr, chgAmt, chgHours/2))
+	changeAmount := totalInCoins - totalOutCoins
+
+	haveChange := changeAmount > 0
+	nAddrs := uint64(len(toAddrs))
+	changeHours, addrHours, totalOutHours := wallet.DistributeSpendHours(totalInHours, nAddrs, haveChange)
+
+	if err := fee.VerifyTransactionFeeForHours(totalOutHours, totalInHours-totalOutHours); err != nil {
+		return nil, err
 	}
 
-	for _, to := range toAddrs {
-		outAddrs = append(outAddrs, mustMakeUtxoOutput(to.Addr, to.Coins, addrHours))
+	if haveChange {
+		outAddrs = append(outAddrs, mustMakeUtxoOutput(chgAddr, changeAmount, changeHours))
+	}
+
+	for i, to := range toAddrs {
+		outAddrs = append(outAddrs, mustMakeUtxoOutput(to.Addr, to.Coins, addrHours[i]))
 	}
 
 	return outAddrs, nil
 }
 
-func mustMakeUtxoOutput(addr string, amount, hours uint64) coin.TransactionOutput {
+func mustMakeUtxoOutput(addr string, coins, hours uint64) coin.TransactionOutput {
 	uo := coin.TransactionOutput{}
 	uo.Address = cipher.MustDecodeBase58Address(addr)
-	uo.Coins = amount
+	uo.Coins = coins
 	uo.Hours = hours
 	return uo
 }
 
-func getKeys(wlt *wallet.Wallet, outs []UnspentOut) ([]cipher.SecKey, error) {
+func getKeys(wlt *wallet.Wallet, outs []wallet.UxBalance) ([]cipher.SecKey, error) {
 	keys := make([]cipher.SecKey, len(outs))
 	for i, o := range outs {
-		addr, err := cipher.DecodeBase58Address(o.Address)
-		if err != nil {
-			return nil, ErrAddress
-		}
-		entry, ok := wlt.GetEntry(addr)
+		entry, ok := wlt.GetEntry(o.Address)
 		if !ok {
-			return nil, fmt.Errorf("%v is not in wallet", o.Address)
+			return nil, fmt.Errorf("%v is not in wallet", o.Address.String())
 		}
 
 		keys[i] = entry.Secret
@@ -430,51 +474,25 @@ func getKeys(wlt *wallet.Wallet, outs []UnspentOut) ([]cipher.SecKey, error) {
 	return keys, nil
 }
 
-func getSufficientUnspents(unspents []UnspentOut, amt uint64) ([]UnspentOut, error) {
-	var (
-		totalAmt uint64
-		outs     []UnspentOut
-	)
-
-	addrOuts := make(map[string][]UnspentOut)
-	for _, u := range unspents {
-		addrOuts[u.Address] = append(addrOuts[u.Address], u)
-	}
-
-	for _, us := range addrOuts {
-		for i, u := range us {
-			coins, err := droplet.FromString(u.Coins)
-			if err != nil {
-				return nil, errors.New("error coins string")
-			}
-			if coins == 0 {
-				continue
-			}
-			totalAmt += coins
-			outs = append(outs, us[i])
-
-			if totalAmt >= amt {
-				return outs, nil
-			}
-		}
-	}
-	return nil, errors.New("balance in wallet is not sufficient")
-}
-
 // NewTransaction create skycoin transaction.
-func NewTransaction(utxos []UnspentOut, keys []cipher.SecKey, outs []coin.TransactionOutput) (*coin.Transaction, error) {
+func NewTransaction(utxos []wallet.UxBalance, keys []cipher.SecKey, outs []coin.TransactionOutput) (*coin.Transaction, error) {
 	tx := coin.Transaction{}
-	// keys := make([]cipher.SecKey, len(utxos))
 	for _, u := range utxos {
-		tx.PushInput(cipher.MustSHA256FromHex(u.Hash))
+		tx.PushInput(u.Hash)
 	}
 
 	for _, o := range outs {
+		// Do not create a transaction with invalid number of droplets
+		if err := visor.DropletPrecisionCheck(o.Coins); err != nil {
+			return nil, err
+		}
 		tx.PushOutput(o.Address, o.Coins, o.Hours)
 	}
-	// tx.Verify()
 
 	tx.SignInputs(keys)
+	if tx.Size() > visor.DefaultMaxBlockSize {
+		return nil, errors.New("transaction size bigger than max block size")
+	}
 	tx.UpdateHeader()
 	return &tx, nil
 }

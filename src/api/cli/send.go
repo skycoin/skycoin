@@ -3,8 +3,9 @@ package cli
 import (
 	"fmt"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
 	gcli "github.com/urfave/cli"
+
+	"github.com/skycoin/skycoin/src/api/webrpc"
 )
 
 func sendCmd() gcli.Command {
@@ -14,7 +15,7 @@ func sendCmd() gcli.Command {
 		Usage:     "Send skycoin from a wallet or an address to a recipient address",
 		ArgsUsage: "[to address] [amount]",
 		Description: `
-		Note: the [amount] argument is the coins you will spend, 1 coins = 1e6 drops.
+		Note: the [amount] argument is the coins you will spend, 1 coins = 1e6 droplets.
 
         If you are sending from a wallet the coins will be taken recursively from all
         addresses within the wallet starting with the first address until the amount of
@@ -45,7 +46,7 @@ func sendCmd() gcli.Command {
 			gcli.StringFlag{
 				Name: "m",
 				Usage: `[send to many] use JSON string to set multiple recive addresses and coins,
-				example: -m '[{"addr":"$addr1", "coins": 10}, {"addr":"$addr2", "coins": 20}]'`,
+				example: -m '[{"addr":"$addr1", "coins": "10.2"}, {"addr":"$addr2", "coins": "20"}]'`,
 			},
 			gcli.BoolFlag{
 				Name:  "json,j",
@@ -56,7 +57,7 @@ func sendCmd() gcli.Command {
 		Action: func(c *gcli.Context) error {
 			rpcClient := RpcClientFromContext(c)
 
-			rawtx, err := createRawTx(c)
+			rawtx, err := createRawTxCmdHandler(c)
 			if err != nil {
 				errorWithHelp(c, err)
 				return nil
@@ -83,7 +84,7 @@ func sendCmd() gcli.Command {
 	// Commands = append(Commands, cmd)
 }
 
-// Sends from any address or combination of addresses from a wallet. Returns txid.
+// SendFromWallet sends from any address or combination of addresses from a wallet. Returns txid.
 func SendFromWallet(c *webrpc.Client, walletFile, chgAddr string, toAddrs []SendAmount) (string, error) {
 	rawTx, err := CreateRawTxFromWallet(c, walletFile, chgAddr, toAddrs)
 	if err != nil {
@@ -93,7 +94,7 @@ func SendFromWallet(c *webrpc.Client, walletFile, chgAddr string, toAddrs []Send
 	return c.InjectTransaction(rawTx)
 }
 
-// Sends from a specific address in a wallet. Returns txid.
+// SendFromAddress sends from a specific address in a wallet. Returns txid.
 func SendFromAddress(c *webrpc.Client, addr, walletFile, chgAddr string, toAddrs []SendAmount) (string, error) {
 	rawTx, err := CreateRawTxFromAddress(c, addr, walletFile, chgAddr, toAddrs)
 	if err != nil {
@@ -101,5 +102,4 @@ func SendFromAddress(c *webrpc.Client, addr, walletFile, chgAddr string, toAddrs
 	}
 
 	return c.InjectTransaction(rawTx)
-
 }

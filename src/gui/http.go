@@ -1,27 +1,26 @@
 package gui
 
 import (
+	"bytes"
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
-
 	"github.com/skycoin/skycoin/src/util/file"
-	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
-
+	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 var (
-	logger   = logging.MustGetLogger("gui")
-	listener net.Listener
-	quit     chan struct{}
+	logger = logging.MustGetLogger("gui")
 )
 
 const (
@@ -30,86 +29,99 @@ const (
 	indexPage   = "index.html"
 )
 
-// LaunchWebInterface begins listening on http://$host, for enabling remote web access
-// Does NOT use HTTPS
-func LaunchWebInterface(host, staticDir string, daemon *daemon.Daemon) error {
-	quit = make(chan struct{})
-	logger.Info("Starting web interface on http://%s", host)
-	logger.Warning("HTTPS not in use!")
+// Server exposes an HTTP API
+type Server struct {
+	mux      *http.ServeMux
+	listener net.Listener
+	done     chan struct{}
+}
+
+func create(host, staticDir string, daemon *daemon.Daemon) (*Server, error) {
 	appLoc, err := file.DetermineResourcePath(staticDir, resourceDir, devDir)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	logger.Info("Web resources directory: %s", appLoc)
 
-	listener, err = net.Listen("tcp", host)
-	if err != nil {
-		return err
-	}
-
-	// Runs http.Serve() in a goroutine
-	serve(listener, NewGUIMux(appLoc, daemon), quit)
-	return nil
+	return &Server{
+		mux:  NewServerMux(host, appLoc, daemon.Gateway),
+		done: make(chan struct{}),
+	}, nil
 }
 
-// LaunchWebInterfaceHTTPS begins listening on https://$host, for enabling remote web access
-// Uses HTTPS
-func LaunchWebInterfaceHTTPS(host, staticDir string, daemon *daemon.Daemon, certFile, keyFile string) error {
-	quit = make(chan struct{})
-	logger.Info("Starting web interface on https://%s", host)
+// Create creates a new Server instance that listens on HTTP
+func Create(host, staticDir string, daemon *daemon.Daemon) (*Server, error) {
+	s, err := create(host, staticDir, daemon)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Warning("HTTPS not in use!")
+
+	s.listener, err = net.Listen("tcp", host)
+	if err != nil {
+		return nil, err
+	}
+
+	return s, nil
+}
+
+// CreateHTTPS creates a new Server instance that listens on HTTPS
+func CreateHTTPS(host, staticDir string, daemon *daemon.Daemon, certFile, keyFile string) (*Server, error) {
+	s, err := create(host, staticDir, daemon)
+	if err != nil {
+		return nil, err
+	}
+
 	logger.Info("Using %s for the certificate", certFile)
 	logger.Info("Using %s for the key", keyFile)
-	logger.Info("Web resources directory: %s", staticDir)
 
-	appLoc, err := file.DetermineResourcePath(staticDir, devDir, resourceDir)
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	certs := make([]tls.Certificate, 1)
-	if certs[0], err = tls.LoadX509KeyPair(certFile, keyFile); err != nil {
-		return err
-	}
-
-	listener, err = tls.Listen("tcp", host, &tls.Config{Certificates: certs})
+	s.listener, err = tls.Listen("tcp", host, &tls.Config{
+		Certificates: []tls.Certificate{cert},
+	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	// Runs http.Serve() in a goroutine
-	serve(listener, NewGUIMux(appLoc, daemon), quit)
+	return s, nil
+}
+
+// Serve serves the web interface on the configured host
+func (s *Server) Serve() error {
+	logger.Info("Starting web interface on %s", s.listener.Addr())
+	defer logger.Info("Web interface closed")
+	defer close(s.done)
+
+	if err := http.Serve(s.listener, s.mux); err != nil {
+		if err != http.ErrServerClosed {
+			return err
+		}
+	}
 	return nil
 }
 
-func serve(listener net.Listener, mux *http.ServeMux, q chan struct{}) {
-	go func() {
-		for {
-			if err := http.Serve(listener, mux); err != nil {
-				select {
-				case <-q:
-					return
-				default:
-				}
-				continue
-			}
-		}
-	}()
+// Shutdown closes the HTTP service. This can only be called after Serve or ServeHTTPS has been called.
+func (s *Server) Shutdown() {
+	logger.Info("Shutting down web interface")
+	defer logger.Info("Web interface shut down")
+	s.listener.Close()
+	<-s.done
 }
 
-// Shutdown close http service
-func Shutdown() {
-	if quit != nil {
-		// must close quit first
-		close(quit)
-		listener.Close()
-		listener = nil
-	}
-}
-
-// NewGUIMux creates an http.ServeMux with handlers registered
-func NewGUIMux(appLoc string, daemon *daemon.Daemon) *http.ServeMux {
+// NewServerMux creates an http.ServeMux with handlers registered
+func NewServerMux(host, appLoc string, gateway Gatewayer) *http.ServeMux {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", newIndexHandler(appLoc))
+
+	webHandler := func(endpoint string, handler http.Handler) {
+		mux.Handle(endpoint, wh.HostCheck(logger, host, handler))
+	}
+
+	webHandler("/", newIndexHandler(appLoc))
 
 	fileInfos, _ := ioutil.ReadDir(appLoc)
 	for _, fileInfo := range fileInfos {
@@ -117,29 +129,131 @@ func NewGUIMux(appLoc string, daemon *daemon.Daemon) *http.ServeMux {
 		if fileInfo.IsDir() {
 			route = route + "/"
 		}
-		mux.Handle(route, http.FileServer(http.Dir(appLoc)))
+		webHandler(route, http.FileServer(http.Dir(appLoc)))
 	}
 
-	mux.HandleFunc("/version", versionHandler(daemon.Gateway))
+	webHandler("/version", versionHandler(gateway))
 
-	//get set of unspent outputs
-	mux.HandleFunc("/outputs", getOutputsHandler(daemon.Gateway))
+	// get set of unspent outputs
+	webHandler("/outputs", getOutputsHandler(gateway))
 
 	// get balance of addresses
-	mux.HandleFunc("/balance", getBalanceHandler(daemon.Gateway))
+	webHandler("/balance", getBalanceHandler(gateway))
 
 	// Wallet interface
-	RegisterWalletHandlers(mux, daemon.Gateway)
+
+	// Returns wallet info
+	// Method: GET
+	// Args:
+	//      id - Wallet ID [required]
+	webHandler("/wallet", walletGet(gateway))
+
+	// Loads wallet from seed, will scan ahead N address and
+	// load addresses till the last one that have coins.
+	// Method: POST
+	// Args:
+	//     seed: wallet seed [required]
+	//     label: wallet label [required]
+	//     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
+	webHandler("/wallet/create", walletCreate(gateway))
+
+	webHandler("/wallet/newAddress", walletNewAddresses(gateway))
+
+	// Returns the confirmed and predicted balance for a specific wallet.
+	// The predicted balance is the confirmed balance minus any pending
+	// spent amount.
+	// GET arguments:
+	//      id: Wallet ID
+	webHandler("/wallet/balance", walletBalanceHandler(gateway))
+
+	// Sends coins&hours to another address.
+	// POST arguments:
+	//  id: Wallet ID
+	//  coins: Number of coins to spend
+	//  hours: Number of hours to spends
+	//  fee: Number of hours to use as fee, on top of the default fee.
+	//  Returns total amount spent if successful, otherwise error describing
+	//  failure status.
+	webHandler("/wallet/spend", walletSpendHandler(gateway))
+
+	// GET Arguments:
+	//      id: Wallet ID
+	// Returns all pending transanction for all addresses by selected Wallet
+	webHandler("/wallet/transactions", walletTransactionsHandler(gateway))
+
+	// Update wallet label
+	//      GET Arguments:
+	//          id: wallet id
+	//          label: wallet label
+	webHandler("/wallet/update", walletUpdateHandler(gateway))
+
+	// Returns all loaded wallets
+	webHandler("/wallets", walletsHandler(gateway))
+
+	webHandler("/wallets/folderName", getWalletFolder(gateway))
+
+	// generate wallet seed
+	webHandler("/wallet/newSeed", newWalletSeed(gateway))
+
 	// Blockchain interface
-	RegisterBlockchainHandlers(mux, daemon.Gateway)
+
+	webHandler("/blockchain/metadata", blockchainHandler(gateway))
+	webHandler("/blockchain/progress", blockchainProgressHandler(gateway))
+
+	// get block by hash or seq
+	webHandler("/block", getBlock(gateway))
+	// get blocks in specific range
+	webHandler("/blocks", getBlocks(gateway))
+	// get last N blocks
+	webHandler("/last_blocks", getLastBlocks(gateway))
+
 	// Network stats interface
-	RegisterNetworkHandlers(mux, daemon.Gateway)
+
+	webHandler("/network/connection", connectionHandler(gateway))
+	webHandler("/network/connections", connectionsHandler(gateway))
+	webHandler("/network/defaultConnections", defaultConnectionsHandler(gateway))
+	webHandler("/network/connections/trust", trustConnectionsHandler(gateway))
+	webHandler("/network/connections/exchange", exchgConnectionsHandler(gateway))
+
 	// Transaction handler
-	RegisterTxHandlers(mux, daemon.Gateway)
+
+	// get set of pending transactions
+	webHandler("/pendingTxs", getPendingTxs(gateway))
+	// get latest confirmed transactions
+	webHandler("/lastTxs", getLastTxs(gateway))
+	// get txn by txid
+	webHandler("/transaction", getTransactionByID(gateway))
+
+	// Returns transactions that match the filters.
+	// Method: GET
+	// Args:
+	//     addrs: Comma seperated addresses [optional, returns all transactions if no address is provided]
+	//     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
+	webHandler("/transactions", getTransactions(gateway))
+	//inject a transaction into network
+	webHandler("/injectTransaction", injectTransaction(gateway))
+	webHandler("/resendUnconfirmedTxns", resendUnconfirmedTxns(gateway))
+	// get raw tx by txid.
+	webHandler("/rawtx", getRawTx(gateway))
+
 	// UxOUt api handler
-	RegisterUxOutHandlers(mux, daemon.Gateway)
-	// expplorer handler
-	RegisterExplorerHandlers(mux, daemon.Gateway)
+
+	// get uxout by id.
+	webHandler("/uxout", getUxOutByID(gateway))
+	// get all the address affected uxouts.
+	webHandler("/address_uxouts", getAddrUxOuts(gateway))
+
+	// Explorer handler
+
+	// get set of pending transactions
+	webHandler("/explorer/address", getTransactionsForAddress(gateway))
+
+	webHandler("/coinSupply", getCoinSupply(gateway))
+
+	webHandler("/richlist", getRichlist(gateway))
+
+	webHandler("/addresscount", getAddressCount(gateway))
+
 	return mux
 }
 
@@ -163,7 +277,7 @@ func newIndexHandler(appLoc string) http.HandlerFunc {
 // if addrs and hashes are not specificed, return all unspent outputs.
 // if both addrs and hashes are specificed, then both those filters are need to be matched.
 // if only specify one filter, then return outputs match the filter.
-func getOutputsHandler(gateway *daemon.Gateway) http.HandlerFunc {
+func getOutputsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -210,7 +324,7 @@ func getOutputsHandler(gateway *daemon.Gateway) http.HandlerFunc {
 	}
 }
 
-func getBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
+func getBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -231,18 +345,24 @@ func getBalanceHandler(gateway *daemon.Gateway) http.HandlerFunc {
 			addrs = append(addrs, a)
 		}
 
-		bal, err := gateway.GetAddressesBalance(addrs)
+		bals, err := gateway.GetBalanceOfAddrs(addrs)
 		if err != nil {
 			logger.Error("Get balance failed: %v", err)
 			wh.Error500(w)
 			return
 		}
 
-		wh.SendOr404(w, bal)
+		var balance wallet.BalancePair
+		for _, bal := range bals {
+			balance.Confirmed = balance.Confirmed.Add(bal.Confirmed)
+			balance.Predicted = balance.Predicted.Add(bal.Predicted)
+		}
+
+		wh.SendOr404(w, balance)
 	}
 }
 
-func versionHandler(gateway *daemon.Gateway) http.HandlerFunc {
+func versionHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -250,5 +370,69 @@ func versionHandler(gateway *daemon.Gateway) http.HandlerFunc {
 		}
 
 		wh.SendOr404(w, gateway.GetBuildInfo())
+	}
+}
+
+/*
+attrActualLog remove color char in log
+origin: "\u001b[36m[skycoin.daemon:DEBUG] Trying to connect to 47.88.33.156:6000\u001b[0m",
+*/
+func attrActualLog(logInfo string) string {
+	//return logInfo
+	var actualLog string
+	actualLog = logInfo
+	if strings.HasPrefix(logInfo, "[skycoin") {
+		if strings.Contains(logInfo, "\u001b") {
+			actualLog = logInfo[0 : len(logInfo)-4]
+		}
+	} else {
+		if len(logInfo) > 5 {
+			if strings.Contains(logInfo, "\u001b") {
+				actualLog = logInfo[5 : len(logInfo)-4]
+			}
+		}
+	}
+	return actualLog
+}
+func getLogsHandler(logbuf *bytes.Buffer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
+		var err error
+		defaultLineNum := 1000 // default line numbers
+		linenum := defaultLineNum
+		if lines := r.FormValue("lines"); lines != "" {
+			linenum, err = strconv.Atoi(lines)
+			if err != nil {
+				linenum = defaultLineNum
+			}
+		}
+		keyword := r.FormValue("include")
+		excludeKeyword := r.FormValue("exclude")
+		logs := []string{}
+		logList := strings.Split(logbuf.String(), "\n")
+		for _, logInfo := range logList {
+			if excludeKeyword != "" && strings.Contains(logInfo, excludeKeyword) {
+				continue
+			}
+			if keyword != "" && !strings.Contains(logInfo, keyword) {
+				continue
+			}
+
+			if len(logs) >= linenum {
+				logger.Debug("logs size %d,total size:%d", len(logs), len(logList))
+				break
+			}
+			log := attrActualLog(logInfo)
+			if "" != log {
+				logs = append(logs, log)
+			}
+
+		}
+
+		wh.SendOr404(w, logs)
 	}
 }

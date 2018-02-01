@@ -9,29 +9,26 @@ import (
 	"time"
 
 	"github.com/boltdb/bolt"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 var (
 	genPublic, genSecret = cipher.GenerateKeyPair()
 	genAddress           = cipher.AddressFromPubKey(genPublic)
-	testMaxSize          = 1024 * 1024
-	blockBkt             = []byte("blocks")
 	transactionBkt       = []byte("transactions")
 	outputBkt            = []byte("uxouts")
 	addressInBkt         = []byte("address_in")
-	addressOutBkt        = []byte("address_out")
 )
 
 var _genTime uint64 = 1000
 var _incTime uint64 = 3600 * 1000
 var _genCoins uint64 = 1000e6
-var _genCoinHours uint64 = 1000 * 1000
 
 func _feeCalc(t *coin.Transaction) (uint64, error) {
 	return 0, nil
@@ -178,7 +175,7 @@ func TestProcessGenesisBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := hisDB.ProcessBlock(&gb); err != nil {
+	if err := hisDB.ParseBlock(&gb); err != nil {
 		t.Fatal(err)
 	}
 
@@ -259,7 +256,7 @@ func TestProcessBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := hisDB.ProcessBlock(&gb); err != nil {
+	if err := hisDB.ParseBlock(&gb); err != nil {
 		t.Fatal(err)
 	}
 	/*
@@ -342,7 +339,7 @@ func testEngine(t *testing.T, tds []testData, bc *fakeBlockchain, hdb *HistoryDB
 			tds[i+1].PreBlockHash = b.HashHeader()
 		}
 
-		if err := hdb.ProcessBlock(b); err != nil {
+		if err := hdb.ParseBlock(b); err != nil {
 			t.Fatal(err)
 		}
 
@@ -430,8 +427,7 @@ func getBucketValue(db *bolt.DB, name []byte, key []byte, value interface{}) err
 	})
 }
 
-func newBlock(prev coin.Block, currentTime uint64, uxHash cipher.SHA256,
-	txns coin.Transactions, calc coin.FeeCalculator) coin.Block {
+func newBlock(prev coin.Block, currentTime uint64, uxHash cipher.SHA256, txns coin.Transactions, calc coin.FeeCalculator) coin.Block {
 	if len(txns) == 0 {
 		log.Panic("Refusing to create block with no transactions")
 	}
@@ -447,8 +443,7 @@ func newBlock(prev coin.Block, currentTime uint64, uxHash cipher.SHA256,
 	}
 }
 
-func newBlockHeader(prev coin.BlockHeader, uxHash cipher.SHA256, currentTime,
-	fee uint64, body coin.BlockBody) coin.BlockHeader {
+func newBlockHeader(prev coin.BlockHeader, uxHash cipher.SHA256, currentTime, fee uint64, body coin.BlockBody) coin.BlockHeader {
 	prevHash := prev.Hash()
 	return coin.BlockHeader{
 		BodyHash: body.Hash(),

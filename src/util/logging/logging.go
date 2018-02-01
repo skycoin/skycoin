@@ -13,6 +13,11 @@ const (
 	defaultLogFormat = "[%{module}:%{level}] %{message}"
 )
 
+// Logger wraps op/go-logging.Logger
+type Logger struct {
+	*logging.Logger
+}
+
 // Level embedes the logging's level
 type Level int
 
@@ -25,15 +30,6 @@ const (
 	INFO
 	DEBUG
 )
-
-var levelNames = []string{
-	"CRITICAL",
-	"ERROR",
-	"WARNING",
-	"NOTICE",
-	"INFO",
-	"DEBUG",
-}
 
 // LogConfig logger configurations
 type LogConfig struct {
@@ -109,11 +105,11 @@ func (l *LogConfig) InitLogger() {
 }
 
 // MustGetLogger safe initialize global logger
-func MustGetLogger(module string) *logging.Logger {
-	return logging.MustGetLogger(module)
+func MustGetLogger(module string) *Logger {
+	return &Logger{logging.MustGetLogger(module)}
 }
 
-// DisableLogging disables the logger completely
+// Disable disables the logger completely
 func Disable() {
 	logging.SetBackend(logging.NewLogBackend(ioutil.Discard, "", 0))
 }

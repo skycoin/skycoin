@@ -44,7 +44,7 @@ func TestBlockSigsGet(t *testing.T) {
 	hashSigs := []hashSig{}
 	for i := 0; i < 5; i++ {
 		_, s := cipher.GenerateKeyPair()
-		h := randSHA256(t)
+		h := testutil.RandSHA256(t)
 
 		sig := cipher.SignHash(h, s)
 		hashSigs = append(hashSigs, hashSig{
@@ -114,7 +114,7 @@ func TestBlockSigsAddWithTx(t *testing.T) {
 	defer closeDB()
 
 	_, s := cipher.GenerateKeyPair()
-	h := randSHA256(t)
+	h := testutil.RandSHA256(t)
 	sig := cipher.SignHash(h, s)
 
 	sigs, err := NewBlockSigs(db)

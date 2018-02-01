@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e -o pipefail
 
-# These values are also in gulpfile.js and package.json and must be equal
+# These values are also in package.json and must be equal
 
 # Get skycoin build version from package.json
 APP_VERSION=`grep version package.json | sed  's/[,\", ]//g'| awk '{split($0,a,":");print a[2]}'`

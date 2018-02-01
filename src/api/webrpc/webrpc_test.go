@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -35,42 +36,51 @@ type fakeGateway struct {
 	injectedTransactions map[string]string
 	addrRecvUxOuts       []*historydb.UxOut
 	addrSpentUxOUts      []*historydb.UxOut
+	uxouts               []coin.UxOut
 }
 
-func (fg fakeGateway) GetLastBlocks(num uint64) *visor.ReadableBlocks {
+func (fg fakeGateway) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error) {
 	var blocks visor.ReadableBlocks
 	if err := json.Unmarshal([]byte(blockString), &blocks); err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return &blocks
+	return &blocks, nil
 }
 
-func (fg fakeGateway) GetBlocks(start, end uint64) *visor.ReadableBlocks {
+func (fg fakeGateway) GetBlocks(start, end uint64) (*visor.ReadableBlocks, error) {
 	var blocks visor.ReadableBlocks
 	if start > end {
-		return &blocks
+		return nil, nil
 	}
 
 	if err := json.Unmarshal([]byte(blockString), &blocks); err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return &blocks
+	return &blocks, nil
 }
 
-func (fg fakeGateway) GetBlocksInDepth(vs []uint64) *visor.ReadableBlocks {
-	return nil
+func (fg fakeGateway) GetBlocksInDepth(vs []uint64) (*visor.ReadableBlocks, error) {
+	return nil, nil
 }
 
 func (fg fakeGateway) GetUnspentOutputs(filters ...daemon.OutputsFilter) (visor.ReadableOutputSet, error) {
-	v := decodeOutputStr(outputStr)
+	outs := []coin.UxOut{}
 	for _, f := range filters {
-		v.HeadOutputs = f(v.HeadOutputs)
-		v.OutgoingOutputs = f(v.OutgoingOutputs)
-		v.IncomingOutputs = f(v.IncomingOutputs)
+		outs = f(fg.uxouts)
 	}
-	return v, nil
+
+	headTime := uint64(time.Now().UTC().Unix())
+
+	rbOuts, err := visor.NewReadableOutputs(headTime, outs)
+	if err != nil {
+		return visor.ReadableOutputSet{}, err
+	}
+
+	return visor.ReadableOutputSet{
+		HeadOutputs: rbOuts,
+	}, nil
 }
 
 func (fg fakeGateway) GetTransaction(txid cipher.SHA256) (*visor.Transaction, error) {
@@ -127,17 +137,20 @@ func Test_rpcHandler_Handler(t *testing.T) {
 	}
 
 	tests := []struct {
-		name string
-		args args
-		want Response
+		name       string
+		status     int
+		args       args
+		want       Response
+		hostHeader string
 	}{
 		{
-			"http GET",
-			args{
-				httpMethod: "GET",
+			name:   "http GET",
+			status: http.StatusOK,
+			args: args{
+				httpMethod: http.MethodGet,
 				req:        Request{},
 			},
-			Response{
+			want: Response{
 				Jsonrpc: jsonRPC,
 				Error: &RPCError{
 					Code:    errCodeInvalidRequest,
@@ -146,34 +159,51 @@ func Test_rpcHandler_Handler(t *testing.T) {
 			},
 		},
 		{
-			"invalid jsonrpc",
-			args{
-				httpMethod: "POST",
+			name:   "invalid jsonrpc",
+			status: http.StatusOK,
+			args: args{
+				httpMethod: http.MethodPost,
 				req: Request{
 					ID:      "1",
 					Jsonrpc: "1.0",
 					Method:  "get_status",
 				},
 			},
-			makeErrorResponse(errCodeInvalidParams, errMsgInvalidJsonrpc),
+			want: makeErrorResponse(errCodeInvalidParams, errMsgInvalidJsonrpc),
+		},
+		{
+			name: "invalid Host header",
+			args: args{
+				httpMethod: http.MethodGet,
+			},
+			status:     http.StatusForbidden,
+			hostHeader: "example.com",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			d, err := json.Marshal(tt.args.req)
-			if err != nil {
-				t.Fatal(err)
+			require.NoError(t, err)
+
+			r, err := http.NewRequest(tt.args.httpMethod, "/webrpc", bytes.NewBuffer(d))
+			require.NoError(t, err)
+
+			if tt.hostHeader != "" {
+				r.Host = tt.hostHeader
 			}
 
-			r := httptest.NewRequest(tt.args.httpMethod, "/webrpc", bytes.NewBuffer(d))
-			w := httptest.NewRecorder()
-			rpc.Handler(w, r)
-			var res Response
-			if err := json.NewDecoder(w.Body).Decode(&res); err != nil {
-				t.Fatal(err)
+			rr := httptest.NewRecorder()
+			rpc.ServeHTTP(rr, r)
+
+			require.Equal(t, tt.status, rr.Code)
+
+			if rr.Code == http.StatusOK {
+				var res Response
+				err = json.NewDecoder(rr.Body).Decode(&res)
+				require.NoError(t, err)
+				require.Equal(t, res, tt.want)
 			}
-			require.Equal(t, res, tt.want)
 		})
 	}
 }

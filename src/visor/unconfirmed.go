@@ -1,7 +1,6 @@
 package visor
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -10,48 +9,11 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/bucket"
 )
-
-// BurnFactor half of coinhours must be burnt
-var BurnFactor uint64 = 2
-
-// Performs additional transaction verification at the unconfirmed pool level.
-// This checks tunable parameters that should prevent the transaction from
-// entering the blockchain, but cannot be done at the blockchain level because
-// they may be changed.
-func VerifyTransactionFee(t *coin.Transaction, fee uint64) error {
-	// Calculate total number of coinhours
-	var total = t.OutputHours() + fee
-	// Make sure at least half (BurnFactor=2) the coin hours are destroyed
-	if fee < total/BurnFactor {
-		return errors.New("Transaction coinhour fee minimum not met")
-	}
-	return nil
-}
-
-// TransactionFee calculates the current transaction fee in coinhours of a Transaction
-func TransactionFee(t *coin.Transaction, headTime uint64, inUxs coin.UxArray) (uint64, error) {
-	// Compute input hours
-	inHours := uint64(0)
-	for _, ux := range inUxs {
-		inHours += ux.CoinHours(headTime)
-	}
-
-	// Compute output hours
-	outHours := uint64(0)
-	for i := range t.Out {
-		outHours += t.Out[i].Hours
-	}
-
-	if inHours < outHours {
-		return 0, errors.New("Insufficient coinhours for transaction outputs")
-	}
-
-	return inHours - outHours, nil
-}
 
 // TxnUnspents maps from coin.Transaction hash to its expected unspents.  The unspents'
 // Head can be different at execution time, but the Unspent's hash is fixed.
@@ -293,8 +255,8 @@ func NewUnconfirmedTxnPool(db *bolt.DB) *UnconfirmedTxnPool {
 }
 
 // SetAnnounced updates announced time of specific tx
-func (utp *UnconfirmedTxnPool) SetAnnounced(h cipher.SHA256, t time.Time) {
-	utp.txns.update(h, func(tx *UnconfirmedTxn) {
+func (utp *UnconfirmedTxnPool) SetAnnounced(h cipher.SHA256, t time.Time) error {
+	return utp.txns.update(h, func(tx *UnconfirmedTxn) {
 		tx.Announced = t.UnixNano()
 	})
 }
@@ -313,13 +275,13 @@ func (utp *UnconfirmedTxnPool) createUnconfirmedTxn(t coin.Transaction) Unconfir
 // InjectTxn adds a coin.Transaction to the pool, or updates an existing one's timestamps
 // Returns an error if txn is invalid, and whether the transaction already
 // existed in the pool.
-func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (bool, error) {
-	fee, err := bc.TransactionFee(&t)
+func (utp *UnconfirmedTxnPool) InjectTxn(bc Blockchainer, t coin.Transaction) (bool, error) {
+	f, err := bc.TransactionFee(&t)
 	if err != nil {
 		return false, err
 	}
 
-	if err := VerifyTransactionFee(&t, fee); err != nil {
+	if err := fee.VerifyTransactionFee(&t, f); err != nil {
 		return false, err
 	}
 
@@ -343,7 +305,7 @@ func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (bo
 	}
 
 	utx := utp.createUnconfirmedTxn(t)
-	if err := bc.db.Update(func(tx *bolt.Tx) error {
+	if err := bc.UpdateDB(func(tx *bolt.Tx) error {
 		// add txn to index
 		if err := utp.txns.putWithTx(tx, &utx); err != nil {
 			return err
@@ -412,7 +374,7 @@ func (utp *UnconfirmedTxnPool) RemoveTransactionsWithTx(tx *bolt.Tx, txns []ciph
 
 // Refresh checks all unconfirmed txns against the blockchain.
 // verify the transaction and returns all those txns that turn to valid.
-func (utp *UnconfirmedTxnPool) Refresh(bc *Blockchain) (hashes []cipher.SHA256) {
+func (utp *UnconfirmedTxnPool) Refresh(bc Blockchainer) (hashes []cipher.SHA256) {
 	now := utc.Now()
 	utp.txns.rangeUpdate(func(key cipher.SHA256, tx *UnconfirmedTxn) {
 		tx.Checked = now.UnixNano()
@@ -509,39 +471,35 @@ func (utp *UnconfirmedTxnPool) SpendsOfAddresses(addrs []cipher.Address,
 	return auxs, nil
 }
 
-// AllSpendsOutputs returns all spending outputs in unconfirmed tx pool.
-func (utp *UnconfirmedTxnPool) AllSpendsOutputs(bcUnspent blockdb.UnspentPool) ([]ReadableOutput, error) {
-	outs := []ReadableOutput{}
-	if err := utp.txns.forEach(func(_ cipher.SHA256, tx *UnconfirmedTxn) error {
+// GetSpendingOutputs returns all spending outputs in unconfirmed tx pool.
+func (utp *UnconfirmedTxnPool) GetSpendingOutputs(bcUnspent blockdb.UnspentPool) (coin.UxArray, error) {
+	outs := coin.UxArray{}
+	err := utp.txns.forEach(func(_ cipher.SHA256, tx *UnconfirmedTxn) error {
 		uxs, err := bcUnspent.GetArray(tx.Txn.In)
 		if err != nil {
 			return err
 		}
 
-		for _, ux := range uxs {
-			outs = append(outs, NewReadableOutput(ux))
-		}
-
+		outs = append(outs, uxs...)
 		return nil
-	}); err != nil {
-		return []ReadableOutput{}, fmt.Errorf("AllSpendsOutputs error:%v", err)
+	})
+
+	if err != nil {
+		return coin.UxArray{}, fmt.Errorf("get unconfirmed spending outputs failed: %v", err)
 	}
+
 	return outs, nil
 }
 
-// AllIncomingOutputs returns all predicted incomming outputs.
-func (utp *UnconfirmedTxnPool) AllIncomingOutputs(bh coin.BlockHeader) ([]ReadableOutput, error) {
-	outs := []ReadableOutput{}
-	if err := utp.txns.forEach(func(_ cipher.SHA256, tx *UnconfirmedTxn) error {
+// GetIncomingOutputs returns all predicted incoming outputs.
+func (utp *UnconfirmedTxnPool) GetIncomingOutputs(bh coin.BlockHeader) coin.UxArray {
+	outs := coin.UxArray{}
+	utp.txns.forEach(func(_ cipher.SHA256, tx *UnconfirmedTxn) error {
 		uxOuts := coin.CreateUnspents(bh, tx.Txn)
-		for _, ux := range uxOuts {
-			outs = append(outs, NewReadableOutput(ux))
-		}
+		outs = append(outs, uxOuts...)
 		return nil
-	}); err != nil {
-		return []ReadableOutput{}, fmt.Errorf("AllIncommingOutputs error:%v", err)
-	}
-	return outs, nil
+	})
+	return outs
 }
 
 // Get returns the unconfirmed transaction of given tx hash.

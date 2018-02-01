@@ -1,18 +1,20 @@
 package daemon
 
 import (
+	"bytes"
 	"errors"
-	"fmt"
-	"net"
 	"reflect"
 	"runtime/debug"
-	"strconv"
-	"strings"
+	"sync"
 	"time"
+
+	"github.com/boltdb/bolt"
 
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
 
+	"github.com/skycoin/skycoin/src/util/elapse"
+	"github.com/skycoin/skycoin/src/util/iputil"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/utc"
 )
@@ -51,12 +53,16 @@ var (
 	logger = logging.MustGetLogger("daemon")
 )
 
+const (
+	daemonRunDurationThreshold = time.Millisecond * 200
+)
+
 // Config subsystem configurations
 type Config struct {
 	Daemon   DaemonConfig
 	Messages MessagesConfig
 	Pool     PoolConfig
-	Peers    PeersConfig
+	Pex      pex.Config
 	Gateway  GatewayConfig
 	Visor    VisorConfig
 }
@@ -66,7 +72,7 @@ func NewConfig() Config {
 	return Config{
 		Daemon:   NewDaemonConfig(),
 		Pool:     NewPoolConfig(),
-		Peers:    NewPeersConfig(),
+		Pex:      pex.NewConfig(),
 		Gateway:  NewGatewayConfig(),
 		Messages: NewMessagesConfig(),
 		Visor:    NewVisorConfig(),
@@ -78,32 +84,35 @@ func (cfg *Config) preprocess() Config {
 	config := *cfg
 	if config.Daemon.LocalhostOnly {
 		if config.Daemon.Address == "" {
-			local, err := LocalhostIP()
+			local, err := iputil.LocalhostIP()
 			if err != nil {
 				logger.Panicf("Failed to obtain localhost IP: %v", err)
 			}
 			config.Daemon.Address = local
 		} else {
-			if !IsLocalhost(config.Daemon.Address) {
-				logger.Panicf("Invalid address for localhost-only: %s",
-					config.Daemon.Address)
+			if !iputil.IsLocalhost(config.Daemon.Address) {
+				logger.Panicf("Invalid address for localhost-only: %s", config.Daemon.Address)
 			}
 		}
-		config.Peers.AllowLocalhost = true
+		config.Pex.AllowLocalhost = true
 	}
 	config.Pool.port = config.Daemon.Port
 	config.Pool.address = config.Daemon.Address
 
 	if config.Daemon.DisableNetworking {
-		config.Peers.Disabled = true
+		logger.Info("Networking is disabled")
+		config.Pex.Disabled = true
 		config.Daemon.DisableIncomingConnections = true
 		config.Daemon.DisableOutgoingConnections = true
+		config.Visor.DisableNetworking = true
 	} else {
 		if config.Daemon.DisableIncomingConnections {
 			logger.Info("Incoming connections are disabled.")
 		}
 		if config.Daemon.DisableOutgoingConnections {
 			logger.Info("Outgoing connections are disabled.")
+			// Visor only makes outgoing connections
+			config.Visor.DisableNetworking = true
 		}
 	}
 
@@ -176,10 +185,11 @@ type Daemon struct {
 	// Components
 	Messages *Messages
 	Pool     *Pool
-	Peers    *Peers
+	Pex      *pex.Pex
 	Gateway  *Gateway
 	Visor    *Visor
 
+	// Default connections
 	DefaultConnections []string
 
 	// Separate index of outgoing connections. The pool aggregates all
@@ -211,17 +221,19 @@ type Daemon struct {
 	messageEvents chan MessageEvent
 	// quit channel
 	quitC chan chan struct{}
+	// log buffer
+	LogBuff bytes.Buffer
 }
 
 // NewDaemon returns a Daemon with primitives allocated
-func NewDaemon(config Config) (*Daemon, error) {
+func NewDaemon(config Config, db *bolt.DB, defaultConns []string) (*Daemon, error) {
 	config = config.preprocess()
-	vs, err := NewVisor(config.Visor)
+	vs, err := NewVisor(config.Visor, db)
 	if err != nil {
 		return nil, err
 	}
 
-	peers, err := NewPeers(config.Peers)
+	pex, err := pex.New(config.Pex, defaultConns)
 	if err != nil {
 		return nil, err
 	}
@@ -229,10 +241,10 @@ func NewDaemon(config Config) (*Daemon, error) {
 	d := &Daemon{
 		Config:   config.Daemon,
 		Messages: NewMessages(config.Messages),
-		Peers:    peers,
+		Pex:      pex,
 		Visor:    vs,
 
-		DefaultConnections: DefaultConnections, //passed in from top level
+		DefaultConnections: defaultConns, //passed in from top level
 
 		expectingIntroductions: NewExpectIntroductions(),
 		connectionMirrors:      NewConnectionMirrors(),
@@ -285,20 +297,22 @@ type MessageEvent struct {
 // over the quit channel provided to Init.  The Daemon run loop must be stopped
 // before calling this function.
 func (dm *Daemon) Shutdown() {
-	// close the daemon loop first
+	// close daemon run loop first to avoid creating new connection after
+	// the connection pool is shutdown.
 	close(dm.quitC)
 
 	if !dm.Config.DisableNetworking {
 		dm.Pool.Shutdown()
 	}
 
-	dm.Peers.Shutdown()
+	dm.Pex.Shutdown()
 	dm.Visor.Shutdown()
+
 }
 
-// Run main loop for peer/connection management. Send anything to quit to shut it
-// down
-func (dm *Daemon) Run() (err error) {
+// Run main loop for peer/connection management.
+// Send anything to the quit channel to shut it down.
+func (dm *Daemon) Run() error {
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Errorf("recover:%v\n stack:%v", r, string(debug.Stack()))
@@ -307,16 +321,33 @@ func (dm *Daemon) Run() (err error) {
 		logger.Info("Daemon closed")
 	}()
 
-	errC := make(chan error)
+	errC := make(chan error, 5)
+	wg := sync.WaitGroup{}
 
 	// start visor
+	wg.Add(1)
 	go func() {
-		errC <- dm.Visor.Run()
+		defer wg.Done()
+		if err := dm.Visor.Run(); err != nil {
+			errC <- err
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := dm.Pex.Run(); err != nil {
+			errC <- err
+		}
 	}()
 
 	if !dm.Config.DisableIncomingConnections {
+		wg.Add(1)
 		go func() {
-			errC <- dm.Pool.Run()
+			defer wg.Done()
+			if err := dm.Pool.Run(); err != nil {
+				errC <- err
+			}
 		}()
 	}
 
@@ -335,133 +366,185 @@ func (dm *Daemon) Run() (err error) {
 	privateConnectionsTicker := time.Tick(dm.Config.PrivateRate)
 	cullInvalidTicker := time.Tick(dm.Config.CullInvalidRate)
 	outgoingConnectionsTicker := time.Tick(dm.Config.OutgoingRate)
-	clearOldPeersTicker := time.Tick(dm.Peers.Config.CullRate)
-	requestPeersTicker := time.Tick(dm.Peers.Config.RequestRate)
+	// clearOldPeersTicker := time.Tick(dm.Peers.Config.CullRate)
+	requestPeersTicker := time.Tick(dm.Pex.Config.RequestRate)
 	clearStaleConnectionsTicker := time.Tick(dm.Pool.Config.ClearStaleRate)
 	idleCheckTicker := time.Tick(dm.Pool.Config.IdleCheckRate)
 
-	// connecto to trusted peers
+	// Connect to trusted peers
 	if !dm.Config.DisableOutgoingConnections {
-		go dm.connectToTrustPeer()
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			dm.connectToTrustPeer()
+		}()
 	}
 
+	var err error
+	var elapser = elapse.NewElapser(daemonRunDurationThreshold, logger)
+
+loop:
 	for {
+		elapser.CheckForDone()
 		select {
-		case err = <-errC:
-			return
 		case <-dm.quitC:
-			return
-		// Remove connections that failed to complete the handshake
+			break loop
+
 		case <-cullInvalidTicker:
+			// Remove connections that failed to complete the handshake
+			elapser.Register("cullInvalidTicker")
 			if !dm.Config.DisableNetworking {
 				dm.cullInvalidConnections()
 			}
-		// Request peers via PEX
+
 		case <-requestPeersTicker:
-			dm.Peers.requestPeers(dm.Pool)
-		// Remove peers we haven't seen in a while
-		case <-clearOldPeersTicker:
-			if !dm.Peers.Config.Disabled {
-				dm.Peers.Peers.ClearOld(dm.Peers.Config.Expiration)
+			// Request peers via PEX
+			elapser.Register("requestPeersTicker")
+			if dm.Pex.Config.Disabled {
+				continue
 			}
-		// Remove connections that haven't said anything in a while
+
+			if dm.Pex.IsFull() {
+				continue
+			}
+
+			m := NewGetPeersMessage()
+			if err := dm.Pool.Pool.BroadcastMessage(m); err != nil {
+				logger.Error("%v", err)
+			}
+
 		case <-clearStaleConnectionsTicker:
+			// Remove connections that haven't said anything in a while
+			elapser.Register("clearStaleConnectionsTicker")
 			if !dm.Config.DisableNetworking {
 				dm.Pool.clearStaleConnections()
 			}
-		// Sends pings as needed
+
 		case <-idleCheckTicker:
+			// Sends pings as needed
+			elapser.Register("idleCheckTicker")
 			if !dm.Config.DisableNetworking {
 				dm.Pool.sendPings()
 			}
-		// Fill up our outgoing connections
+
 		case <-outgoingConnectionsTicker:
-			trustPeerNum := len(dm.Peers.Peers.GetAllTrustedPeers())
+			// Fill up our outgoing connections
+			elapser.Register("outgoingConnectionsTicker")
+			trustPeerNum := len(dm.Pex.Trusted())
 			if !dm.Config.DisableOutgoingConnections &&
 				dm.outgoingConnections.Len() < (dm.Config.OutgoingMax+trustPeerNum) &&
 				dm.pendingConnections.Len() < dm.Config.PendingMax {
 				dm.connectToRandomPeer()
 			}
-		// Always try to stay connected to our private peers
-		// TODO (also, connect to all of them on start)
+
 		case <-privateConnectionsTicker:
+			// Always try to stay connected to our private peers
+			// TODO (also, connect to all of them on start)
+			elapser.Register("privateConnectionsTicker")
 			if !dm.Config.DisableOutgoingConnections {
 				dm.makePrivateConnections()
 			}
-		// Process callbacks for when a client connects. No disconnect chan
-		// is needed because the callback is triggered by HandleDisconnectEvent
-		// which is already select{}ed here
+
 		case r := <-dm.onConnectEvent:
+			// Process callbacks for when a client connects. No disconnect chan
+			// is needed because the callback is triggered by HandleDisconnectEvent
+			// which is already select{}ed here
+			elapser.Register("dm.onConnectEvent")
 			if dm.Config.DisableNetworking {
 				logger.Error("There should be no connect events")
-				return
+				return nil
 			}
 			dm.onConnect(r)
+
 		case de := <-dm.onDisconnectEvent:
+			elapser.Register("dm.onDisconnectEvent")
 			if dm.Config.DisableNetworking {
 				logger.Error("There should be no disconnect events")
-				return
+				return nil
 			}
 			dm.onDisconnect(de)
-		// Handle connection errors
+
 		case r := <-dm.connectionErrors:
+			// Handle connection errors
+			elapser.Register("dm.connectionErrors")
 			if dm.Config.DisableNetworking {
 				logger.Error("There should be no connection errors")
-				return
+				return nil
 			}
 			dm.handleConnectionError(r)
-		// Process message sending results
+
 		case r := <-dm.Pool.Pool.SendResults:
+			// Process message sending results
+			elapser.Register("dm.Pool.Pool.SendResults")
 			if dm.Config.DisableNetworking {
 				logger.Error("There should be nothing in SendResults")
-				return
+				return nil
 			}
 			dm.handleMessageSendResult(r)
-		// Message handlers
+
 		case m := <-dm.messageEvents:
+			// Message handlers
+			elapser.Register("dm.messageEvents")
 			if dm.Config.DisableNetworking {
 				logger.Error("There should be no message events")
-				return
+				return nil
 			}
 			dm.processMessageEvent(m)
-		// Process any pending RPC requests
+
 		case req := <-dm.Gateway.requests:
-			req()
-		// TODO -- run these in the Visor
-		// Create blocks, if master chain
+			// Process any pending RPC requests
+			elapser.Register("dm.Gateway.requests")
+			req.Func()
+
 		case <-blockCreationTicker.C:
+			// Create blocks, if master chain
+			elapser.Register("blockCreationTicker.C")
 			if dm.Visor.Config.Config.IsMaster {
-				err := dm.Visor.CreateAndPublishBlock(dm.Pool)
+				sb, err := dm.Visor.CreateAndPublishBlock(dm.Pool)
 				if err != nil {
 					logger.Error("Failed to create block: %v", err)
 					continue
 				}
 
 				// Not a critical error, but we want it visible in logs
-				logger.Critical("Created and published a new block")
+				head := sb.Block.Head
+				logger.Critical("Created and published a new block, version=%d seq=%d time=%d", head.Version, head.BkSeq, head.Time)
 			}
+
 		case <-unconfirmedRefreshTicker:
-			// get the transactions that turn to valid
+			elapser.Register("unconfirmedRefreshTicker")
+			// Get the transactions that turn to valid
 			validTxns := dm.Visor.RefreshUnconfirmed()
-			// announce this transactions
+			// Announce these transactions
 			dm.Visor.AnnounceTxns(dm.Pool, validTxns)
+
 		case <-blocksRequestTicker:
+			elapser.Register("blocksRequestTicker")
 			dm.Visor.RequestBlocks(dm.Pool)
+
 		case <-blocksAnnounceTicker:
+			elapser.Register("blocksAnnounceTicker")
 			dm.Visor.AnnounceBlocks(dm.Pool)
+
+		case err = <-errC:
+			break loop
 		}
 	}
+
+	wg.Wait()
+
+	return err
 }
 
-// GetListenPort returns the ListenPort for a given address.  If no port is found, 0 is
-// returned
+// GetListenPort returns the ListenPort for a given address.
+// If no port is found, 0 is returned.
 func (dm *Daemon) GetListenPort(addr string) uint16 {
 	m, ok := dm.connectionMirrors.Get(addr)
 	if !ok {
 		return 0
 	}
 
-	ip, _, err := SplitAddr(addr)
+	ip, _, err := iputil.SplitAddr(addr)
 	if err != nil {
 		logger.Error("GetListenPort received invalid addr: %v", err)
 		return 0
@@ -474,19 +557,20 @@ func (dm *Daemon) GetListenPort(addr string) uint16 {
 	return p
 }
 
-// Connects to a given peer.  Returns an error if no connection attempt was
-// made.  If the connection attempt itself fails, the error is sent to
+// Connects to a given peer. Returns an error if no connection attempt was
+// made. If the connection attempt itself fails, the error is sent to
 // the connectionErrors channel.
-func (dm *Daemon) connectToPeer(p *pex.Peer) error {
+func (dm *Daemon) connectToPeer(p pex.Peer) error {
 	if dm.Config.DisableOutgoingConnections {
 		return errors.New("Outgoing connections disabled")
 	}
-	a, _, err := SplitAddr(p.Addr)
+
+	a, _, err := iputil.SplitAddr(p.Addr)
 	if err != nil {
 		logger.Warning("PEX gave us an invalid peer: %v", err)
 		return errors.New("Invalid peer")
 	}
-	if dm.Config.LocalhostOnly && !IsLocalhost(a) {
+	if dm.Config.LocalhostOnly && !iputil.IsLocalhost(a) {
 		return errors.New("Not localhost")
 	}
 
@@ -506,6 +590,7 @@ func (dm *Daemon) connectToPeer(p *pex.Peer) error {
 	if !dm.Config.LocalhostOnly && ok && cnt != 0 {
 		return errors.New("Already connected to a peer with this base IP")
 	}
+
 	logger.Debug("Trying to connect to %s", p.Addr)
 	dm.pendingConnections.Add(p.Addr, p)
 	go func() {
@@ -521,14 +606,12 @@ func (dm *Daemon) makePrivateConnections() {
 	if dm.Config.DisableOutgoingConnections {
 		return
 	}
-	addrs := dm.Peers.Peers.GetPrivateAddresses()
-	for _, addr := range addrs {
-		p, exist := dm.Peers.Peers.GetPeerByAddr(addr)
-		if exist {
-			logger.Info("Private peer attempt: %s", p.Addr)
-			if err := dm.connectToPeer(&p); err != nil {
-				logger.Debug("Did not connect to private peer: %v", err)
-			}
+
+	peers := dm.Pex.Private()
+	for _, p := range peers {
+		logger.Info("Private peer attempt: %s", p.Addr)
+		if err := dm.connectToPeer(p); err != nil {
+			logger.Debug("Did not connect to private peer: %v", err)
 		}
 	}
 }
@@ -538,50 +621,49 @@ func (dm *Daemon) connectToTrustPeer() {
 		return
 	}
 
-	logger.Info("connect to trusted peers")
-	// make connections to all trusted peers
-	peers := dm.Peers.Peers.GetPublicTrustPeers()
+	logger.Info("Connect to trusted peers")
+	// Make connections to all trusted peers
+	peers := dm.Pex.TrustedPublic()
 	for _, p := range peers {
 		dm.connectToPeer(p)
 	}
 }
 
-// Attempts to connect to a random peer. If it fails, the peer is removed
+// Attempts to connect to a random peer. If it fails, the peer is removed.
 func (dm *Daemon) connectToRandomPeer() {
 	if dm.Config.DisableOutgoingConnections {
 		return
 	}
+
 	// Make a connection to a random (public) peer
-	peers := dm.Peers.Peers.RandomPublic(0)
+	peers := dm.Pex.RandomPublic(0)
 	for _, p := range peers {
-		// check if the peer has public port
-		if p.HasIncomePort {
-			// try to connect the peer if it's ip:mirror does not exist
+		// Check if the peer has public port
+		if p.HasIncomingPort {
+			// Try to connect the peer if it's ip:mirror does not exist
 			if _, exist := dm.getMirrorPort(p.Addr, dm.Messages.Mirror); !exist {
 				dm.connectToPeer(p)
 				continue
 			}
 		} else {
-			// try to connect to the peer if we don't know whether the peer have public port
+			// Try to connect to the peer if we don't know whether the peer have public port
 			dm.connectToPeer(p)
 		}
 	}
 
 	if len(peers) == 0 {
-		// reset the retry times of all peers
-		dm.Peers.Peers.ResetAllRetryTimes()
+		// Reset the retry times of all peers,
+		dm.Pex.ResetAllRetryTimes()
 	}
 }
 
 // We remove a peer from the Pex if we failed to connect
-// Failure to connect
-// Use exponential backoff, not peer list
+// TODO - On failure to connect, use exponential backoff, not peer list
 func (dm *Daemon) handleConnectionError(c ConnectionError) {
 	logger.Debug("Failed to connect to %s with error: %v", c.Addr, c.Error)
-
 	dm.pendingConnections.Remove(c.Addr)
 
-	dm.Peers.Peers.IncreaseRetryTimes(c.Addr)
+	dm.Pex.IncreaseRetryTimes(c.Addr)
 }
 
 // Removes unsolicited connections who haven't sent a version
@@ -589,21 +671,22 @@ func (dm *Daemon) cullInvalidConnections() {
 	// This method only handles the erroneous people from the DHT, but not
 	// malicious nodes
 	now := utc.Now()
-	addrs, err := dm.expectingIntroductions.CullInvalidConns(func(addr string, t time.Time) (bool, error) {
-		conned, err := dm.Pool.Pool.IsConnExist(addr)
-		if err != nil {
-			return false, err
-		}
+	addrs, err := dm.expectingIntroductions.CullInvalidConns(
+		func(addr string, t time.Time) (bool, error) {
+			conned, err := dm.Pool.Pool.IsConnExist(addr)
+			if err != nil {
+				return false, err
+			}
 
-		if !conned {
-			return true, nil
-		}
+			if !conned {
+				return true, nil
+			}
 
-		if t.Add(dm.Config.IntroductionWait).Before(now) {
-			return true, nil
-		}
-		return false, nil
-	})
+			if t.Add(dm.Config.IntroductionWait).Before(now) {
+				return true, nil
+			}
+			return false, nil
+		})
 
 	if err != nil {
 		logger.Error("expectingIntroduction cull invalid connections failed: %v", err)
@@ -623,7 +706,7 @@ func (dm *Daemon) cullInvalidConnections() {
 				logger.Error("%v", err)
 				return
 			}
-			dm.Peers.RemovePeer(a)
+			dm.Pex.RemovePeer(a)
 		}
 	}
 }
@@ -677,8 +760,7 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 	}
 
 	if !exist {
-		logger.Warning("While processing an onConnect event, no pool " +
-			"connection was found")
+		logger.Warning("While processing an onConnect event, no pool connection was found")
 		return
 	}
 
@@ -696,9 +778,10 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 
 	dm.expectingIntroductions.Add(a, utc.Now())
 	logger.Debug("Sending introduction message to %s, mirror:%d", a, dm.Messages.Mirror)
-	m := NewIntroductionMessage(dm.Messages.Mirror, dm.Config.Version,
-		dm.Pool.Pool.Config.Port)
-	dm.Pool.Pool.SendMessage(a, m)
+	m := NewIntroductionMessage(dm.Messages.Mirror, dm.Config.Version, dm.Pool.Pool.Config.Port)
+	if err := dm.Pool.Pool.SendMessage(a, m); err != nil {
+		logger.Error("Send IntroductionMessage to %s failed: %v", a, err)
+	}
 }
 
 func (dm *Daemon) onDisconnect(e DisconnectEvent) {
@@ -731,7 +814,7 @@ func (dm *Daemon) onGnetConnect(addr string, solicited bool) {
 
 // Returns whether the ipCount maximum has been reached
 func (dm *Daemon) ipCountMaxed(addr string) bool {
-	ip, _, err := SplitAddr(addr)
+	ip, _, err := iputil.SplitAddr(addr)
 	if err != nil {
 		logger.Warning("ipCountMaxed called with invalid addr: %v", err)
 		return true
@@ -745,7 +828,7 @@ func (dm *Daemon) ipCountMaxed(addr string) bool {
 
 // Adds base IP to ipCount or returns error if max is reached
 func (dm *Daemon) recordIPCount(addr string) {
-	ip, _, err := SplitAddr(addr)
+	ip, _, err := iputil.SplitAddr(addr)
 	if err != nil {
 		logger.Warning("recordIPCount called with invalid addr: %v", err)
 		return
@@ -755,7 +838,7 @@ func (dm *Daemon) recordIPCount(addr string) {
 
 // Removes base IP from ipCount
 func (dm *Daemon) removeIPCount(addr string) {
-	ip, _, err := SplitAddr(addr)
+	ip, _, err := iputil.SplitAddr(addr)
 	if err != nil {
 		logger.Warning("removeIPCount called with invalid addr: %v", err)
 		return
@@ -765,10 +848,9 @@ func (dm *Daemon) removeIPCount(addr string) {
 
 // Adds addr + mirror to the connectionMirror mappings
 func (dm *Daemon) recordConnectionMirror(addr string, mirror uint32) error {
-	ip, port, err := SplitAddr(addr)
+	ip, port, err := iputil.SplitAddr(addr)
 	if err != nil {
-		logger.Warning("recordConnectionMirror called with invalid addr: %v",
-			err)
+		logger.Warning("recordConnectionMirror called with invalid addr: %v", err)
 		return err
 	}
 	dm.connectionMirrors.Add(addr, mirror)
@@ -782,10 +864,9 @@ func (dm *Daemon) removeConnectionMirror(addr string) {
 	if !ok {
 		return
 	}
-	ip, _, err := SplitAddr(addr)
+	ip, _, err := iputil.SplitAddr(addr)
 	if err != nil {
-		logger.Warning("removeConnectionMirror called with invalid addr: %v",
-			err)
+		logger.Warning("removeConnectionMirror called with invalid addr: %v", err)
 		return
 	}
 
@@ -797,7 +878,7 @@ func (dm *Daemon) removeConnectionMirror(addr string) {
 
 // Returns whether an addr+mirror's port and whether the port exists
 func (dm *Daemon) getMirrorPort(addr string, mirror uint32) (uint16, bool) {
-	ip, _, err := SplitAddr(addr)
+	ip, _, err := iputil.SplitAddr(addr)
 	if err != nil {
 		logger.Warning("getMirrorPort called with invalid addr: %v", err)
 		return 0, false
@@ -808,8 +889,7 @@ func (dm *Daemon) getMirrorPort(addr string, mirror uint32) (uint16, bool) {
 // When an async message send finishes, its result is handled by this
 func (dm *Daemon) handleMessageSendResult(r gnet.SendResult) {
 	if r.Error != nil {
-		logger.Warning("Failed to send %s to %s: %v",
-			reflect.TypeOf(r.Message).Name(), r.Addr, r.Error)
+		logger.Warning("Failed to send %s to %s: %v", reflect.TypeOf(r.Message), r.Addr, r.Error)
 		return
 	}
 	switch r.Message.(type) {
@@ -817,42 +897,4 @@ func (dm *Daemon) handleMessageSendResult(r gnet.SendResult) {
 		dm.Visor.SetTxnsAnnounced(r.Message.(SendingTxnsMessage).GetTxns())
 	default:
 	}
-}
-
-// LocalhostIP returns the address for localhost on the machine
-func LocalhostIP() (string, error) {
-	tt, err := net.Interfaces()
-	if err != nil {
-		return "", err
-	}
-	for _, t := range tt {
-		aa, err := t.Addrs()
-		if err != nil {
-			return "", err
-		}
-		for _, a := range aa {
-			if ipnet, ok := a.(*net.IPNet); ok && ipnet.IP.IsLoopback() {
-				return ipnet.IP.String(), nil
-			}
-		}
-	}
-	return "", errors.New("No local IP found")
-}
-
-// IsLocalhost returns true if addr is a localhost address
-func IsLocalhost(addr string) bool {
-	return net.ParseIP(addr).IsLoopback()
-}
-
-// SplitAddr splits an ip:port string to ip, port
-func SplitAddr(addr string) (string, uint16, error) {
-	pts := strings.Split(addr, ":")
-	if len(pts) != 2 {
-		return pts[0], 0, fmt.Errorf("Invalid addr %s", addr)
-	}
-	port64, err := strconv.ParseUint(pts[1], 10, 16)
-	if err != nil {
-		return pts[0], 0, fmt.Errorf("Invalid port in %s", addr)
-	}
-	return pts[0], uint16(port64), nil
 }

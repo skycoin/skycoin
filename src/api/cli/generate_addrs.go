@@ -6,9 +6,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	gcli "github.com/urfave/cli"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/wallet"
-	gcli "github.com/urfave/cli"
 )
 
 func generateAddrsCmd(cfg Config) gcli.Command {
@@ -23,7 +24,7 @@ func generateAddrsCmd(cfg Config) gcli.Command {
 		Use caution when using the "-p" command. If you have command
 		history enabled your wallet encryption password can be recovered from the
 		history log. If you do not include the "-p" option you will be prompted to
-		enter your password after you enter your command.`, cfg.FullWalletPath),
+		enter your password after you enter your command.`, cfg.FullWalletPath()),
 		Flags: []gcli.Flag{
 			gcli.UintFlag{
 				Name:  "n",
@@ -50,7 +51,7 @@ func generateAddrs(c *gcli.Context) error {
 	cfg := ConfigFromContext(c)
 
 	// get number of address that are need to be generated.
-	num := c.Uint("n")
+	num := c.Uint64("n")
 	if num == 0 {
 		return errors.New("-n must > 0")
 	}
@@ -62,7 +63,7 @@ func generateAddrs(c *gcli.Context) error {
 		return err
 	}
 
-	addrs, err := GenerateAddressesInFile(w, int(num))
+	addrs, err := GenerateAddressesInFile(w, num)
 
 	switch err.(type) {
 	case nil:
@@ -88,7 +89,7 @@ func generateAddrs(c *gcli.Context) error {
 	return nil
 }
 
-func GenerateAddressesInFile(walletFile string, num int) ([]cipher.Address, error) {
+func GenerateAddressesInFile(walletFile string, num uint64) ([]cipher.Address, error) {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
 		return nil, WalletLoadError(err)

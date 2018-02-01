@@ -4,9 +4,10 @@ import (
 	"testing"
 
 	"github.com/boltdb/bolt"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/visor/bucket"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestNewHistoryMeta(t *testing.T) {

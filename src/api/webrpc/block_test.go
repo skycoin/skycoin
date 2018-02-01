@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/skycoin/skycoin/src/visor"
 	"github.com/stretchr/testify/require"
+
+	"github.com/skycoin/skycoin/src/visor"
 )
 
 var blockString = `{
@@ -244,7 +245,7 @@ func Test_getBlocksHandler(t *testing.T) {
 				},
 				gateway: &fakeGateway{},
 			},
-			makeSuccessResponse("1", &visor.ReadableBlocks{}),
+			makeSuccessResponse("1", nil),
 		},
 	}
 

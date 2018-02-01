@@ -2,26 +2,15 @@ package coin
 
 import (
 	"bytes"
-	"crypto/rand"
 	"sort"
 	"testing"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/testutil"
 )
-
-func randBytes(t *testing.T, n int) []byte {
-	b := make([]byte, n)
-	x, err := rand.Read(b)
-	assert.Equal(t, n, x) //end unit testing.
-	assert.Nil(t, err)
-	return b
-}
-
-func randSHA256(t *testing.T) cipher.SHA256 {
-	return cipher.SumSHA256(randBytes(t, 128))
-}
 
 func makeUxBody(t *testing.T) UxBody {
 	body, _ := makeUxBodyWithSecret(t)
@@ -36,7 +25,7 @@ func makeUxOut(t *testing.T) UxOut {
 func makeUxBodyWithSecret(t *testing.T) (UxBody, cipher.SecKey) {
 	p, s := cipher.GenerateKeyPair()
 	return UxBody{
-		SrcTransaction: cipher.SumSHA256(randBytes(t, 128)),
+		SrcTransaction: testutil.RandSHA256(t),
 		Address:        cipher.AddressFromPubKey(p),
 		Coins:          1e6,
 		Hours:          100,
@@ -80,7 +69,7 @@ func TestUxOutSnapshotHash(t *testing.T) {
 	ux2.Head.BkSeq = 4
 	assert.NotEqual(t, ux2.SnapshotHash(), h)
 	ux2 = ux
-	ux2.Body.SrcTransaction = randSHA256(t)
+	ux2.Body.SrcTransaction = testutil.RandSHA256(t)
 	assert.NotEqual(t, ux2.SnapshotHash(), h)
 	ux2 = ux
 	ux2.Body.Address = makeAddress()

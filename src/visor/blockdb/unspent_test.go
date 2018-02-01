@@ -1,7 +1,6 @@
 package blockdb
 
 import (
-	"crypto/rand"
 	"errors"
 	"testing"
 
@@ -12,27 +11,16 @@ import (
 	"time"
 
 	"github.com/boltdb/bolt"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/stretchr/testify/assert"
 )
 
 type spending struct {
 	ToAddr cipher.Address
 	Coins  uint64
-}
-
-func randBytes(t *testing.T, n int) []byte {
-	b := make([]byte, n)
-	x, err := rand.Read(b)
-	assert.Equal(t, n, x) //end unit testing.
-	assert.Nil(t, err)
-	return b
-}
-
-func randSHA256(t *testing.T) cipher.SHA256 {
-	return cipher.SumSHA256(randBytes(t, 128))
 }
 
 func makeUxBody(t *testing.T) coin.UxBody {
@@ -48,7 +36,7 @@ func makeUxOut(t *testing.T) coin.UxOut {
 func makeUxBodyWithSecret(t *testing.T) (coin.UxBody, cipher.SecKey) {
 	p, s := cipher.GenerateKeyPair()
 	return coin.UxBody{
-		SrcTransaction: cipher.SumSHA256(randBytes(t, 128)),
+		SrcTransaction: testutil.RandSHA256(t),
 		Address:        cipher.AddressFromPubKey(p),
 		Coins:          1e6,
 		Hours:          100,

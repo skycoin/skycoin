@@ -1,0 +1,42 @@
+@import '../../../../../theme/variables';
+
+:host {
+  display: flex;
+  color: $white;
+  width: 100%;
+}
+
+.buttons-left {
+  display: inline-block;
+  padding: 0 10px;
+  width: 120px;
+}
+
+.title {
+  font-size: $font-size-standard;
+  font-weight: 700;
+  display: inline;
+  flex: 1 1 auto;
+  letter-spacing: $letter-spacing-wide;
+  line-height: 50px;
+  text-align: center;
+}
+
+.buttons-right {
+  display: inline-block;
+  text-align: right;
+  width: 120px;
+
+  button {
+    display: inline-block;
+  }
+}
+
+button {
+  height: 50px;
+  width: 50px;
+}
+
+.color-primary {
+  color: #0072FF;
+}

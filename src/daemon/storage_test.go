@@ -5,9 +5,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/util/utc"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestStoreAdd(t *testing.T) {
@@ -264,20 +265,20 @@ func TestNewPendingConns(t *testing.T) {
 
 func TestPendingConnAdd(t *testing.T) {
 	pc := NewPendingConnections(3)
-	pc.Add("a", &pex.Peer{Addr: "a"})
-	pc.Add("b", &pex.Peer{Addr: "b"})
+	pc.Add("a", pex.Peer{Addr: "a"})
+	pc.Add("b", pex.Peer{Addr: "b"})
 	assert.Equal(t, 2, len(pc.value))
-	a := pc.value["a"].(*pex.Peer)
-	b := pc.value["b"].(*pex.Peer)
+	a := pc.value["a"].(pex.Peer)
+	b := pc.value["b"].(pex.Peer)
 
-	assert.Equal(t, &pex.Peer{Addr: "a"}, a)
-	assert.Equal(t, &pex.Peer{Addr: "b"}, b)
+	assert.Equal(t, pex.Peer{Addr: "a"}, a)
+	assert.Equal(t, pex.Peer{Addr: "b"}, b)
 }
 
 func TestPendingConnGet(t *testing.T) {
 	pc := NewPendingConnections(3)
-	pc.Add("a", &pex.Peer{Addr: "a"})
-	pc.Add("b", &pex.Peer{Addr: "b"})
+	pc.Add("a", pex.Peer{Addr: "a"})
+	pc.Add("b", pex.Peer{Addr: "b"})
 	v, ok := pc.Get("a")
 	assert.True(t, ok)
 	assert.Equal(t, "a", v.Addr)
@@ -290,8 +291,8 @@ func TestPendingConnGet(t *testing.T) {
 
 func TestPendingConnRemove(t *testing.T) {
 	pc := NewPendingConnections(3)
-	pc.Add("a", &pex.Peer{Addr: "a"})
-	pc.Add("b", &pex.Peer{Addr: "b"})
+	pc.Add("a", pex.Peer{Addr: "a"})
+	pc.Add("b", pex.Peer{Addr: "b"})
 	assert.Equal(t, 2, len(pc.value))
 	pc.Remove("a")
 	assert.Equal(t, 1, len(pc.value))
@@ -303,8 +304,8 @@ func TestPendingConnRemove(t *testing.T) {
 
 func TestPendingConnLen(t *testing.T) {
 	pc := NewPendingConnections(3)
-	pc.Add("a", &pex.Peer{Addr: "a"})
-	pc.Add("b", &pex.Peer{Addr: "b"})
+	pc.Add("a", pex.Peer{Addr: "a"})
+	pc.Add("b", pex.Peer{Addr: "b"})
 	assert.Equal(t, 2, pc.Len())
 }
 

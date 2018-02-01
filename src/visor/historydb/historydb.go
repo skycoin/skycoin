@@ -6,7 +6,9 @@ import (
 	"errors"
 
 	"github.com/boltdb/bolt"
+
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util/logging"
 )
@@ -105,24 +107,12 @@ func (hd *HistoryDB) reset() error {
 		return err
 	}
 
-	if err := hd.txns.Reset(); err != nil {
-		return err
-	}
-	return nil
+	return hd.txns.Reset()
 }
 
 // GetUxout get UxOut of specific uxID.
 func (hd *HistoryDB) GetUxout(uxID cipher.SHA256) (*UxOut, error) {
 	return hd.outputs.Get(uxID)
-}
-
-// ProcessBlock parses the block and update parsed block height
-func (hd *HistoryDB) ProcessBlock(b *coin.Block) error {
-	if err := hd.ParseBlock(b); err != nil {
-		return err
-	}
-
-	return hd.SetParsedHeight(b.Seq())
 }
 
 // ParseBlock will index the transaction, outputs,etc.
@@ -190,7 +180,7 @@ func (hd *HistoryDB) ParseBlock(b *coin.Block) error {
 			}
 		}
 
-		return nil
+		return hd.SetParsedHeightWithTx(tx, b.Seq())
 	})
 }
 
@@ -238,4 +228,16 @@ func (hd HistoryDB) GetAddrTxns(address cipher.Address) ([]Transaction, error) {
 	}
 
 	return hd.txns.GetSlice(hashes)
+}
+
+// ForEach traverses the transactions in db
+func (hd HistoryDB) ForEach(f func(tx *Transaction) error) error {
+	return hd.txns.bkt.ForEach(func(k []byte, v []byte) error {
+		var tx Transaction
+		if err := encoder.DeserializeRaw(v, &tx); err != nil {
+			return err
+		}
+
+		return f(&tx)
+	})
 }

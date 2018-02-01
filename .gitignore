@@ -103,9 +103,13 @@ electron/.standalone_output
 
 .vscode/
 
+*.swo
+*.swp
+
 src/mesh/TODO
 
 .idea/
 
 *.iml
 *.test
+coverage.html

@@ -18,7 +18,6 @@ import (
 
 const (
 	alphaNumericSeedLength = 64 // bytes
-	mnemonicSeedEntropy    = 128
 )
 
 func generateWalletCmd(cfg Config) gcli.Command {
@@ -107,7 +106,7 @@ func generateWallet(c *gcli.Context) error {
 	}
 
 	// get number of address that are need to be generated, if m is 0, set to 1.
-	num := c.Uint("n")
+	num := c.Uint64("n")
 	if num == 0 {
 		return errors.New("-n must > 0")
 	}
@@ -125,7 +124,7 @@ func generateWallet(c *gcli.Context) error {
 		return err
 	}
 
-	wlt, err := GenerateWallet(wltName, label, sd, int(num))
+	wlt, err := GenerateWallet(wltName, label, sd, num)
 	if err != nil {
 		return err
 	}
@@ -158,17 +157,20 @@ func makeSeed(s string, r, rd bool) (string, error) {
 	}
 
 	// 001, 000
-	return MakeMnemonicSeed()
+	return bip39.NewDefaultMnemomic()
 }
 
 // PUBLIC
 
-// Generates a new wallet with filename walletFile, label, seed and number of addresses.
+// GenerateWallet generates a new wallet with filename walletFile, label, seed and number of addresses.
 // Caller should save the wallet file to its chosen directory
-func GenerateWallet(walletFile, label, seed string, numAddrs int) (*wallet.Wallet, error) {
+func GenerateWallet(walletFile, label, seed string, numAddrs uint64) (*wallet.Wallet, error) {
 	walletFile = filepath.Base(walletFile)
 
-	wlt, err := wallet.NewWallet(walletFile, wallet.OptLabel(label), wallet.OptSeed(seed))
+	wlt, err := wallet.NewWallet(walletFile, wallet.Options{
+		Seed:  seed,
+		Label: label,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -181,19 +183,4 @@ func GenerateWallet(walletFile, label, seed string, numAddrs int) (*wallet.Walle
 func MakeAlphanumericSeed() string {
 	seedRaw := cipher.SumSHA256(secp256k1.RandByte(alphaNumericSeedLength))
 	return hex.EncodeToString(seedRaw[:])
-}
-
-func MakeMnemonicSeed() (string, error) {
-	entropy, err := bip39.NewEntropy(mnemonicSeedEntropy)
-	if err != nil {
-		return "", err
-	}
-
-	mnemonic, err := bip39.NewMnemonic(entropy)
-	if err != nil {
-		return "", err
-	}
-
-	return mnemonic, nil
-
 }

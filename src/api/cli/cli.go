@@ -14,15 +14,16 @@ import (
 
 	"os"
 
+	gcli "github.com/urfave/cli"
+
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/util/file"
-	gcli "github.com/urfave/cli"
 )
 
 // Commands all cmds that we support
 
 const (
-	Version           = "0.19.0"
+	Version           = "0.21.1"
 	walletExt         = ".wlt"
 	defaultCoin       = "skycoin"
 	defaultWalletName = "$COIN_cli" + walletExt
@@ -227,6 +228,7 @@ func NewApp(cfg Config) *App {
 		walletHisCmd(),
 		walletOutputsCmd(cfg),
 		checkdbCmd(),
+		verifyAddressCmd(),
 	}
 
 	app.Name = fmt.Sprintf("%s-cli", cfg.Coin)

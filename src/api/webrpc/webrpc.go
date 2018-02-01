@@ -1,19 +1,16 @@
 package webrpc
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
 	"net/http"
-
-	"encoding/json"
+	"strings"
 
 	wh "github.com/skycoin/skycoin/src/util/http"
-
 	"github.com/skycoin/skycoin/src/util/logging"
-
-	"bytes"
-	"strings"
 )
 
 var (
@@ -24,13 +21,10 @@ var (
 	errCodeInternalError  = -32603 // Internal error	Internal JSON-RPC error.
 
 	errMsgParseError     = "Parse error"
-	errMsgInvalidRequest = "Invalid Request"
 	errMsgMethodNotFound = "Method not found"
 	errMsgInvalidParams  = "Invalid params"
 	errMsgInternalError  = "Internal error"
-
-	errMsgNotPost = "only support http POST"
-
+	errMsgNotPost        = "only support http POST"
 	errMsgInvalidJsonrpc = "invalid jsonrpc"
 
 	// -32000 to -32099	Server error	Reserved for implementation-defined server-errors.
@@ -127,6 +121,7 @@ type WebRPC struct {
 	quit     chan struct{}
 }
 
+// New returns a new WebRPC object
 func New(addr string, gw Gatewayer) (*WebRPC, error) {
 	rpc := &WebRPC{
 		Addr:         addr,
@@ -138,7 +133,7 @@ func New(addr string, gw Gatewayer) (*WebRPC, error) {
 		handlers:     make(map[string]HandlerFunc),
 	}
 
-	rpc.mux.HandleFunc("/webrpc", rpc.Handler)
+	rpc.mux.Handle("/webrpc", wh.HostCheck(logger, addr, http.HandlerFunc(rpc.Handler)))
 
 	if err := rpc.initHandlers(); err != nil {
 		return nil, err
@@ -188,8 +183,8 @@ func (rpc *WebRPC) Run() error {
 		return errors.New("rpc.ChanBuffSize must be > 0")
 	}
 
-	logger.Infof("start webrpc on http://%s", rpc.Addr)
-	defer logger.Info("webrpc service closed")
+	logger.Infof("Start webrpc on http://%s", rpc.Addr)
+	defer logger.Info("Webrpc service closed")
 
 	var err error
 	if rpc.listener, err = net.Listen("tcp", rpc.Addr); err != nil {

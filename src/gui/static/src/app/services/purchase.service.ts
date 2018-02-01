@@ -1,84 +1,72 @@
 import { Injectable } from '@angular/core';
 import { Subject } from 'rxjs/Subject';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
-import { Http } from '@angular/http';
+import { PurchaseOrder, TellerConfig, Wallet } from '../app.datatypes';
+import { WalletService } from './wallet.service';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../environments/environment';
+import { Observable } from 'rxjs/Observable';
 
 @Injectable()
 export class PurchaseService {
 
+  private configSubject: Subject<TellerConfig> = new BehaviorSubject<TellerConfig>(null);
   private purchaseOrders: Subject<any[]> = new BehaviorSubject<any[]>([]);
-  // private purchaseUrl: string = 'https://event.skycoin.net/api/';
-  private purchaseUrl: string = 'http://127.0.01:7071/api/';
-  // private purchaseUrl: string = '/teller/';
+  private purchaseUrl = environment.tellerUrl;
 
   constructor(
-    private http: Http,
+    private httpClient: HttpClient,
+    private walletService: WalletService,
   ) {
-    this.retrievePurchaseOrders();
+    this.getConfig();
   }
 
   all() {
     return this.purchaseOrders.asObservable();
   }
 
-  generate(address: string) {
-    return this.post('bind', { skyaddr: address })
-      .do(response => {
-        this.purchaseOrders.first().subscribe(orders => {
-          let index = orders.findIndex(order => order.address === address);
-          if (index === -1) {
-            orders.push({address: address, addresses: []});
-            index = orders.length - 1;
-          }
-          const timestamp = Math.floor(Date.now() / 1000);
-          orders[index].addresses.unshift({
-            btc: response.btc_address,
-            status: 'waiting_deposit',
-            created: timestamp,
-            updated: timestamp,
-          });
-          this.updatePurchaseOrders(orders)
-        });
-      });
+  config(): Observable<TellerConfig> {
+    return this.configSubject.asObservable();
+  }
+
+  getConfig() {
+    return this.get('config')
+      .map((response: any) => ({
+        enabled: true,
+        sky_btc_exchange_rate: parseFloat(response.sky_btc_exchange_rate),
+      }))
+      .subscribe(response => this.configSubject.next(response));
+  }
+
+  generate(wallet: Wallet): Observable<PurchaseOrder> {
+    return this.walletService.addAddress(wallet).flatMap(address => {
+      return this.post('bind', { skyaddr: address.address, coin_type: 'BTC' })
+        .map(response => ({
+          coin_type: response.coin_type,
+          deposit_address: response.deposit_address,
+          filename: wallet.filename,
+          recipient_address: address.address,
+          status: 'waiting_deposit',
+        }))
+    })
   }
 
   scan(address: string) {
-    return this.get('status?skyaddr=' + address).do(response => {
-      this.purchaseOrders.first().subscribe(orders => {
-        let index = orders.findIndex(order => order.address === address);
-        // Sort addresses ascending by creation date to match teller status response
-        orders[index].addresses.sort((a, b) =>  b.created - a.created);
-        for (const btcAddress of orders[index].addresses) {
-          // Splice last status to assign this to the latest known order
-          const status = response.statuses.splice(-1,1)[0];
-          btcAddress.status = status.status;
-          btcAddress.updated = status.update_at;
+    return this.get('status?skyaddr=' + address)
+      .map((response: any) => {
+        if (!response.statuses || response.statuses.length > 1) {
+          throw new Error('too many purchase orders found');
         }
-
-        this.updatePurchaseOrders(orders)
+        return response.statuses[0];
       });
-    });
   }
 
-  private get(url) {
-    return this.http.get(this.purchaseUrl + url)
-      .map((res: any) => res.json())
+  private get(url): any {
+    return this.httpClient.get(this.purchaseUrl + url)
   }
 
-  private post(url, parameters = {}) {
-    return this.http.post(this.purchaseUrl + url, parameters)
-      .map((res: any) => res.json())
+  private post(url, parameters = {}): any {
+    return this.httpClient.post(this.purchaseUrl + url, parameters)
   }
 
-  private retrievePurchaseOrders() {
-    const orders = JSON.parse(window.localStorage.getItem('purchaseOrders'));
-    if (orders) {
-      this.purchaseOrders.next(orders);
-    }
-  }
-
-  private updatePurchaseOrders(collection: any[]) {
-    this.purchaseOrders.next(collection);
-    window.localStorage.setItem('purchaseOrders', JSON.stringify(collection));
-  }
 }

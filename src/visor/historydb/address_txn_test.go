@@ -5,10 +5,11 @@ import (
 	"testing"
 
 	"github.com/boltdb/bolt"
+	"github.com/stretchr/testify/require"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/stretchr/testify/require"
 )
 
 func TestNewAddressTxns(t *testing.T) {

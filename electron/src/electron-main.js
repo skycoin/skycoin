@@ -13,7 +13,8 @@ const cwd = require('process').cwd();
 // This adds refresh and devtools console keybindings
 // Page can refresh with cmd+r, ctrl+r, F5
 // Devtools can be toggled with cmd+alt+i, ctrl+shift+i, F12
-require('electron-debug')({ enabled: true, showDevTools: false });
+require('electron-debug')({enabled: true, showDevTools: false});
+require('electron-context-menu')({});
 
 
 global.eval = function() { throw new Error('bad!!'); }
@@ -22,7 +23,7 @@ const defaultURL = 'http://127.0.0.1:6420/';
 let currentURL;
 
 // Force everything localhost, in case of a leak
-app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1');
+app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1, EXCLUDE api.coinmarketcap.com');
 app.commandLine.appendSwitch('ssl-version-fallback-min', 'tls1.2');
 app.commandLine.appendSwitch('--no-proxy-server');
 app.setAsDefaultProtocolClient('skycoin');
@@ -70,6 +71,7 @@ function startSkycoin() {
     '-gui-dir=' + path.dirname(exe),
     '-color-log=false', // must be disabled or web interface detection
     '-logtofile=true',
+    '-download-peerlist=true'
     // will break
     // broken (automatically generated certs do not work):
     // '-web-interface-https=true',

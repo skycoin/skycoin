@@ -1,3 +1,3 @@
-export const config = {
+export const AppConfig = {
   otcEnabled: false
 };

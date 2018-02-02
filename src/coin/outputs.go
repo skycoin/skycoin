@@ -83,9 +83,6 @@ func (ub *UxBody) Hash() cipher.SHA256 {
 var errAddEarnedCoinHoursAdditionOverflow = errors.New("UxOut.CoinHours addition of earned coin hours overflow")
 
 // CoinHours Calculate coinhour balance of output. t is the current unix utc time.
-// If the calculated CoinHours would overflow, return zero.
-// It can't return an error due to block 13277 which spends a UxOut that overflows this calculation.
-// If the blockchain is reset/repaired in the future, this method should return an error instead.
 func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
 	if t < uo.Head.Time {
 		logger.Warning("Calculating coin hours with t < head time")

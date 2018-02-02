@@ -7,26 +7,14 @@ import (
 	"strconv"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/cipher/go-bip39"
+
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 
 	"github.com/skycoin/skycoin/src/util/fee"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
-
-// Gatewayer interface for Gateway methods
-type Gatewayer interface {
-	Spend(wltID string, coins uint64, dest cipher.Address) (*coin.Transaction, error)
-	GetWalletBalance(wltID string) (wallet.BalancePair, error)
-	GetWallet(wltID string) (wallet.Wallet, error)
-	UpdateWalletLabel(wltID, label string) error
-	GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTxn, error)
-	CreateWallet(wltName string, options wallet.Options) (wallet.Wallet, error)
-	ScanAheadWalletAddresses(wltName string, scanN uint64) (wallet.Wallet, error)
-}
 
 // SpendResult represents the result of spending
 type SpendResult struct {
@@ -43,7 +31,6 @@ func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 			wh.Error405(w)
 			return
 		}
-
 		wltID := r.FormValue("id")
 		if wltID == "" {
 			wh.Error400(w, "missing wallet id")
@@ -56,6 +43,10 @@ func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 			switch err {
 			case wallet.ErrWalletNotExist:
 				wh.Error404(w)
+				break
+			case wallet.ErrWalletApiDisabled:
+				wh.Error403(w)
+				break
 			default:
 				wh.Error500Msg(w, err.Error())
 			}
@@ -122,6 +113,9 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		case wallet.ErrWalletNotExist:
 			wh.Error404(w)
+			return
+		case wallet.ErrWalletApiDisabled:
+			wh.Error403(w)
 			return
 		default:
 			wh.Error500Msg(w, err.Error())
@@ -213,8 +207,14 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 			Label: label,
 		})
 		if err != nil {
-			wh.Error400(w, err.Error())
-			return
+			switch err {
+			case wallet.ErrWalletApiDisabled:
+				wh.Error403(w)
+				return
+			default:
+				wh.Error400(w, err.Error())
+				return
+			}
 		}
 
 		wlt, err = gateway.ScanAheadWalletAddresses(wlt.GetFilename(), scanN-1)
@@ -234,7 +234,7 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 // params:
 // 		id: wallet id
 // 	   num: number of address need to create, if not set the default value is 1
-func walletNewAddresses(gateway *daemon.Gateway) http.HandlerFunc {
+func walletNewAddresses(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			wh.Error405(w)
@@ -261,8 +261,14 @@ func walletNewAddresses(gateway *daemon.Gateway) http.HandlerFunc {
 
 		addrs, err := gateway.NewAddresses(wltID, n)
 		if err != nil {
-			wh.Error400(w, err.Error())
-			return
+			switch err {
+			case wallet.ErrWalletApiDisabled:
+				wh.Error403(w)
+				return
+			default:
+				wh.Error400(w, err.Error())
+				return
+			}
 		}
 
 		var rlt = struct {
@@ -304,6 +310,8 @@ func walletUpdateHandler(gateway Gatewayer) http.HandlerFunc {
 			switch err {
 			case wallet.ErrWalletNotExist:
 				wh.Error404(w)
+			case wallet.ErrWalletApiDisabled:
+				wh.Error403(w)
 			default:
 				wh.Error500Msg(w, err.Error())
 			}
@@ -330,7 +338,12 @@ func walletGet(gateway Gatewayer) http.HandlerFunc {
 
 		wlt, err := gateway.GetWallet(wltID)
 		if err != nil {
-			wh.Error400(w, err.Error())
+			switch err {
+			case wallet.ErrWalletApiDisabled:
+				wh.Error403(w)
+			default:
+				wh.Error400(w, err.Error())
+			}
 			return
 		}
 
@@ -358,6 +371,8 @@ func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 			switch err {
 			case wallet.ErrWalletNotExist:
 				wh.Error404(w)
+			case wallet.ErrWalletApiDisabled:
+				wh.Error403(w)
 			default:
 				wh.Error500Msg(w, err.Error())
 			}
@@ -369,23 +384,19 @@ func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 }
 
 // Returns all loaded wallets
-func walletsHandler(gateway *daemon.Gateway) http.HandlerFunc {
+func walletsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		wlts := gateway.GetWallets().ToReadable()
-		wh.SendOr404(w, wlts)
-	}
-}
-
-// Loads/unloads wallets from the wallet directory
-func walletsReloadHandler(gateway *daemon.Gateway) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if err := gateway.ReloadWallets(); err != nil {
-			logger.Error("reload wallet failed: %v", err)
-			wh.Error500(w)
+		wlts, err := gateway.GetWallets()
+		if err != nil {
+			switch err {
+			case wallet.ErrWalletApiDisabled:
+				wh.Error403(w)
+			default:
+				wh.Error500(w)
+			}
 			return
 		}
-
-		wh.SendOr404(w, "success")
+		wh.SendOr404(w, wlts.ToReadable())
 	}
 }
 
@@ -395,18 +406,57 @@ type WalletFolder struct {
 }
 
 // Loads/unloads wallets from the wallet directory
-func getWalletFolder(gateway *daemon.Gateway) http.HandlerFunc {
+func getWalletFolder(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		addr, err := gateway.GetWalletDir()
+		if err != nil {
+			switch err {
+			case wallet.ErrWalletApiDisabled:
+				wh.Error403(w)
+			default:
+				wh.Error500(w)
+			}
+			return
+		}
 		ret := WalletFolder{
-			Address: gateway.GetWalletDir(),
+			Address: addr,
 		}
 		wh.SendOr404(w, ret)
 	}
 }
 
-func newWalletSeed(gateway *daemon.Gateway) http.HandlerFunc {
+func newWalletSeed(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		mnemonic, err := bip39.NewDefaultMnemomic()
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
+		entropyValue := r.FormValue("entropy")
+		if entropyValue == "" {
+			entropyValue = "128"
+		}
+
+		entropyBits, err := strconv.Atoi(entropyValue)
+		if err != nil {
+			wh.Error400(w, "invalid entropy")
+			return
+		}
+
+		// Entropy bit size can either be 128 or 256
+		if entropyBits != 128 && entropyBits != 256 {
+			wh.Error400(w, "entropy length must be 128 or 256")
+			return
+		}
+
+		entropy, err := bip39.NewEntropy(entropyBits)
+		if err != nil {
+			logger.Error("bip39.NewEntropy failed: %v", err)
+			wh.Error500(w)
+			return
+		}
+
+		mnemonic, err := bip39.NewMnemonic(entropy)
 		if err != nil {
 			logger.Error("bip39.NewDefaultMnemomic failed: %v", err)
 			wh.Error500(w)
@@ -418,73 +468,6 @@ func newWalletSeed(gateway *daemon.Gateway) http.HandlerFunc {
 		}{
 			mnemonic,
 		}
-
 		wh.SendOr404(w, rlt)
 	}
-}
-
-// RegisterWalletHandlers registers wallet handlers
-func RegisterWalletHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
-	// Returns wallet info
-	// GET Arguments:
-	//      id - Wallet ID.
-
-	//  Gets a wallet .  Will be assigned name if present.
-	mux.HandleFunc("/wallet", walletGet(gateway))
-
-	// Loads wallet from seed, will scan ahead N address and
-	// load addresses till the last one that have coins.
-	// Method: POST
-	// Args:
-	//     seed: wallet seed [required]
-	//     label: wallet label [required]
-	//     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
-	mux.HandleFunc("/wallet/create", walletCreate(gateway))
-
-	mux.HandleFunc("/wallet/newAddress", walletNewAddresses(gateway))
-
-	// Returns the confirmed and predicted balance for a specific wallet.
-	// The predicted balance is the confirmed balance minus any pending
-	// spent amount.
-	// GET arguments:
-	//      id: Wallet ID
-	mux.HandleFunc("/wallet/balance", walletBalanceHandler(gateway))
-
-	// Sends coins&hours to another address.
-	// POST arguments:
-	//  id: Wallet ID
-	//  coins: Number of coins to spend
-	//  hours: Number of hours to spends
-	//  fee: Number of hours to use as fee, on top of the default fee.
-	//  Returns total amount spent if successful, otherwise error describing
-	//  failure status.
-	mux.HandleFunc("/wallet/spend", walletSpendHandler(gateway))
-
-	// GET Arguments:
-	//		id: Wallet ID
-	// Returns all pending transanction for all addresses by selected Wallet
-	mux.HandleFunc("/wallet/transactions", walletTransactionsHandler(gateway))
-
-	// Update wallet label
-	// 		GET Arguments:
-	// 			id: wallet id
-	// 			label: wallet label
-	mux.HandleFunc("/wallet/update", walletUpdateHandler(gateway))
-
-	// Returns all loaded wallets
-	mux.HandleFunc("/wallets", walletsHandler(gateway))
-	// Saves all wallets to disk. Returns nothing if it works. Otherwise returns
-	// 500 status with error message.
-
-	// Rescans the wallet directory and loads/unloads wallets based on which
-	// files are present. Returns nothing if it works. Otherwise returns
-	// 500 status with error message.
-	mux.HandleFunc("/wallets/reload", walletsReloadHandler(gateway))
-
-	mux.HandleFunc("/wallets/folderName", getWalletFolder(gateway))
-
-	// generate wallet seed
-	mux.Handle("/wallet/newSeed", newWalletSeed(gateway))
-
-	// generate wallet seed
 }

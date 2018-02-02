@@ -397,7 +397,7 @@ func TestBadRoundNumber(t *testing.T) {
 	}
 }
 
-func ExampleCipher() {
+func ExampleNewXChaCha() {
 	key, err := hex.DecodeString("60143a3d7c7137c3622d490e7dbb85859138d198d9c648960e186412a6250722")
 	if err != nil {
 		panic(err)

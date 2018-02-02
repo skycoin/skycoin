@@ -1,0 +1,36 @@
+@import '../../../../../theme/variables';
+
+:host {
+  background-color: #fbfbfb;
+  min-height: 66px;
+}
+
+.-buttons {
+  display: flex;
+  width: 100%;
+
+  .-button {
+    cursor: pointer;
+    padding: 0 20px;
+
+    img {
+      display: inline-block;
+      float: left;
+      height: 66px;
+      padding: 17px 0;
+      width: 32px;
+    }
+
+    span {
+      display: inline-block;
+      font-size: 14px;
+      height: 66px;
+      line-height: 66px;
+      margin: 0 5px;
+    }
+  }
+
+  .-low-opacity {
+    opacity: 0.2;
+  }
+}

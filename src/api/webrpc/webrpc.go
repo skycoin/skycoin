@@ -1,19 +1,16 @@
 package webrpc
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
 	"net/http"
-
-	"encoding/json"
+	"strings"
 
 	wh "github.com/skycoin/skycoin/src/util/http"
-
 	"github.com/skycoin/skycoin/src/util/logging"
-
-	"bytes"
-	"strings"
 )
 
 var (
@@ -24,13 +21,10 @@ var (
 	errCodeInternalError  = -32603 // Internal error	Internal JSON-RPC error.
 
 	errMsgParseError     = "Parse error"
-	errMsgInvalidRequest = "Invalid Request"
 	errMsgMethodNotFound = "Method not found"
 	errMsgInvalidParams  = "Invalid params"
 	errMsgInternalError  = "Internal error"
-
-	errMsgNotPost = "only support http POST"
-
+	errMsgNotPost        = "only support http POST"
 	errMsgInvalidJsonrpc = "invalid jsonrpc"
 
 	// -32000 to -32099	Server error	Reserved for implementation-defined server-errors.
@@ -100,8 +94,8 @@ func makeSuccessResponse(id string, result interface{}) Response {
 	}
 }
 
-func makeErrorResponse(code int, msgs ...string) Response {
-	msg := strings.Join(msgs[:], "\n")
+func makeErrorResponse(code int, msg string, msgs ...string) Response {
+	msg = strings.Join(append([]string{msg}, msgs[:]...), "\n")
 	return Response{
 		Error:   &RPCError{Code: code, Message: msg},
 		Jsonrpc: jsonRPC,
@@ -127,6 +121,7 @@ type WebRPC struct {
 	quit     chan struct{}
 }
 
+// New returns a new WebRPC object
 func New(addr string, gw Gatewayer) (*WebRPC, error) {
 	rpc := &WebRPC{
 		Addr:         addr,
@@ -138,7 +133,7 @@ func New(addr string, gw Gatewayer) (*WebRPC, error) {
 		handlers:     make(map[string]HandlerFunc),
 	}
 
-	rpc.mux.HandleFunc("/webrpc", rpc.Handler)
+	rpc.mux.Handle("/webrpc", wh.HostCheck(logger, addr, http.HandlerFunc(rpc.Handler)))
 
 	if err := rpc.initHandlers(); err != nil {
 		return nil, err

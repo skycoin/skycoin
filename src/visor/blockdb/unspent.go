@@ -21,6 +21,22 @@ var (
 	unspentMetaBkt = []byte("unspent_meta")
 )
 
+// ErrUnspentNotExist is returned if an unspent is not found in the pool
+type ErrUnspentNotExist struct {
+	UxID string
+}
+
+// NewErrUnspentNotExist creates ErrUnspentNotExist from a UxID
+func NewErrUnspentNotExist(uxID string) error {
+	return ErrUnspentNotExist{
+		UxID: uxID,
+	}
+}
+
+func (e ErrUnspentNotExist) Error() string {
+	return fmt.Sprintf("unspent output of %s does not exist", e.UxID)
+}
+
 // UnspentGetter provides unspend pool related
 // querying methods
 type UnspentGetter interface {
@@ -259,7 +275,8 @@ func (up *Unspents) updateUxHashInCache(hash cipher.SHA256) {
 }
 
 // GetArray returns UxOut by given hash array, will return error when
-// if any of the hashes is not exist.
+// if any of the hashes do not exist.
+// It MUST return this error, to prevent double spend attacks.
 func (up *Unspents) GetArray(hashes []cipher.SHA256) (coin.UxArray, error) {
 	up.Lock()
 	defer up.Unlock()
@@ -271,7 +288,7 @@ func (up *Unspents) getArray(hashes []cipher.SHA256) (coin.UxArray, error) {
 	for i := range hashes {
 		ux, ok := up.cache.pool[hashes[i].Hex()]
 		if !ok {
-			return nil, fmt.Errorf("unspent output of %s does not exist", hashes[i].Hex())
+			return nil, NewErrUnspentNotExist(hashes[i].Hex())
 		}
 
 		uxs = append(uxs, ux)

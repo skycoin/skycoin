@@ -17,16 +17,9 @@ import (
 
 const (
 	addr          = "127.0.0.1:50823"
-	addrb         = "127.0.0.1:50824"
-	addrc         = "127.0.0.1:50825"
 	port          = 50823
 	address       = "127.0.0.1"
 	silenceLogger = false
-)
-
-var (
-	listener net.Listener
-	conn     net.Conn
 )
 
 func init() {

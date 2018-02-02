@@ -1,6 +1,7 @@
-<button type="submit" md-raised-button color="primary" [disabled]="disabled()" [mdTooltip]="error ? error : null">
-  {{ placeholder }}
-  <md-icon *ngIf="state === 1">done</md-icon>
-  <md-icon *ngIf="state === 2">error</md-icon>
-  <md-spinner *ngIf="state === 0" class="in-button"></md-spinner>
+<button mat-button type="submit" mat-raised-button color="primary" [disabled]="disabled"
+        [matTooltip]="error ? error : null" (click)="onClick()" [ngClass]="{enabled: !disabled}">
+  <ng-content></ng-content>
+  <mat-icon *ngIf="state === 1">done</mat-icon>
+  <mat-icon *ngIf="state === 2">error</mat-icon>
+  <mat-spinner *ngIf="state === 0" class="in-button"></mat-spinner>
 </button>

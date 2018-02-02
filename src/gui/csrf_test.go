@@ -1,14 +1,16 @@
 package gui
 
 import (
-	"testing"
-	"net/url"
 	"bytes"
 	"net/http"
-	"github.com/stretchr/testify/require"
-	"github.com/skycoin/skycoin/src/cipher"
 	"net/http/httptest"
+	"net/url"
+	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/skycoin/skycoin/src/cipher"
 )
 
 // Uses /wallet/newAddress to test CSRF wrapper
@@ -35,7 +37,7 @@ func TestCSRFWrapper(t *testing.T) {
 	}
 	var responseAddresses = Addresses{}
 	var addrs = make([]cipher.Address, 3)
-	var csrfStore CSRFStore
+	var csrfStore = &CSRFStore{}
 
 	for i := 0; i < 3; i++ {
 		pub, _ := cipher.GenerateDeterministicKeyPair(cipher.RandByte(32))
@@ -64,73 +66,73 @@ func TestCSRFWrapper(t *testing.T) {
 				ID:  "foo",
 				Num: "1",
 			},
-			status:                    http.StatusOK,
-			walletID:                  "foo",
-			n:                         1,
+			status:   http.StatusOK,
+			walletID: "foo",
+			n:        1,
 			gatewayNewAddressesResult: addrs,
 			csrfDisabled:              false,
 			csrfTokenType:             TokenValid,
 		},
 		{
-			name:   "403 - Forbidden - Invalid CSRF Token",
-			method: http.MethodPost,
-			body: &httpBody{},
-			status:                    http.StatusForbidden,
-			walletID:                  "foo",
-			n:                         1,
+			name:     "403 - Forbidden - Invalid CSRF Token",
+			method:   http.MethodPost,
+			body:     &httpBody{},
+			status:   http.StatusForbidden,
+			walletID: "foo",
+			n:        1,
 			gatewayNewAddressesResult: addrs,
 			csrfDisabled:              false,
 			csrfTokenType:             TokenInvalid,
 		},
 		{
-			name:   "403 - Forbidden - Expired CSRF Token",
-			method: http.MethodPost,
-			body: &httpBody{},
-			status:                    http.StatusForbidden,
-			walletID:                  "foo",
-			n:                         1,
+			name:     "403 - Forbidden - Expired CSRF Token",
+			method:   http.MethodPost,
+			body:     &httpBody{},
+			status:   http.StatusForbidden,
+			walletID: "foo",
+			n:        1,
 			gatewayNewAddressesResult: addrs,
 			csrfDisabled:              false,
 			csrfTokenType:             TokenExpired,
 		},
 		{
-			name:   "403 - Forbidden - Empty CSRF Token",
-			method: http.MethodPost,
-			body: &httpBody{},
-			status:                    http.StatusForbidden,
-			walletID:                  "foo",
-			n:                         1,
+			name:     "403 - Forbidden - Empty CSRF Token",
+			method:   http.MethodPost,
+			body:     &httpBody{},
+			status:   http.StatusForbidden,
+			walletID: "foo",
+			n:        1,
 			gatewayNewAddressesResult: addrs,
 			csrfDisabled:              false,
 			csrfTokenType:             TokenEmpty,
 		},
 		{
-			name:   "405 - GET Method",
-			method: http.MethodGet,
-			body: &httpBody{},
-			status:                    http.StatusMethodNotAllowed,
-			walletID:                  "",
-			n:                         1,
+			name:     "405 - GET Method",
+			method:   http.MethodGet,
+			body:     &httpBody{},
+			status:   http.StatusMethodNotAllowed,
+			walletID: "",
+			n:        1,
 			gatewayNewAddressesResult: addrs,
 			csrfDisabled:              false,
 		},
 		{
-			name:   "405 - PUT Method",
-			method: http.MethodPut,
-			body: &httpBody{},
-			status:                    http.StatusMethodNotAllowed,
-			walletID:                  "",
-			n:                         1,
+			name:     "405 - PUT Method",
+			method:   http.MethodPut,
+			body:     &httpBody{},
+			status:   http.StatusMethodNotAllowed,
+			walletID: "",
+			n:        1,
 			gatewayNewAddressesResult: addrs,
 			csrfDisabled:              false,
 		},
 		{
-			name:   "405 - DELETE Method",
-			method: http.MethodDelete,
-			body: &httpBody{},
-			status:                    http.StatusMethodNotAllowed,
-			walletID:                  "",
-			n:                         1,
+			name:     "405 - DELETE Method",
+			method:   http.MethodDelete,
+			body:     &httpBody{},
+			status:   http.StatusMethodNotAllowed,
+			walletID: "",
+			n:        1,
 			gatewayNewAddressesResult: addrs,
 			csrfDisabled:              false,
 		},
@@ -141,9 +143,9 @@ func TestCSRFWrapper(t *testing.T) {
 				ID:  "foo",
 				Num: "1",
 			},
-			status:                    http.StatusOK,
-			walletID:                  "foo",
-			n:                         1,
+			status:   http.StatusOK,
+			walletID: "foo",
+			n:        1,
 			gatewayNewAddressesResult: addrs,
 			csrfDisabled:              true,
 		},
@@ -170,28 +172,12 @@ func TestCSRFWrapper(t *testing.T) {
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-			csrfStore.Enabled = !tc.csrfDisabled
+			(*csrfStore).Enabled = !tc.csrfDisabled
 			if csrfStore.Enabled {
-				csrfStore.setToken(generateToken())
-				// token validity check
-				switch tc.csrfTokenType {
-				case TokenValid:
-					req.Header.Add("X-CSRF-Token", csrfStore.getTokenValue())
-				case TokenInvalid:
-					// set invalid token value
-					req.Header.Add("X-CSRF-Token", "xcasadsadsa")
-				case TokenExpired:
-					req.Header.Add("X-CSRF-Token", csrfStore.getTokenValue())
-					// set some old unix time
-					csrfStore.token.ExpiresAt = time.Unix(1517509381, 10)
-				case TokenEmpty:
-					// set empty token
-					req.Header.Add("X-CSRF-Token", "")
-				}
+				csrfStore, req = setCSRFParameters(csrfStore, tc.csrfTokenType, req)
 			}
-
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, &csrfStore)
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 
 			handler.ServeHTTP(rr, req)
 
@@ -200,4 +186,25 @@ func TestCSRFWrapper(t *testing.T) {
 		})
 	}
 
+}
+
+func setCSRFParameters(csrfStore *CSRFStore, tokenType int, req *http.Request) (*CSRFStore, *http.Request) {
+	csrfStore.setToken(generateToken())
+	// token check
+	switch tokenType {
+	case TokenValid:
+		req.Header.Add("X-CSRF-Token", csrfStore.getTokenValue())
+	case TokenInvalid:
+		// set invalid token value
+		req.Header.Add("X-CSRF-Token", "xcasadsadsa")
+	case TokenExpired:
+		req.Header.Add("X-CSRF-Token", csrfStore.getTokenValue())
+		// set some old unix time
+		csrfStore.token.ExpiresAt = time.Unix(1517509381, 10)
+	case TokenEmpty:
+		// set empty token
+		req.Header.Add("X-CSRF-Token", "")
+	}
+
+	return csrfStore, req
 }

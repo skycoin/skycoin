@@ -56,7 +56,7 @@ func create(host string, serverConfig ServerConfig, daemon *daemon.Daemon) (*Ser
 	}
 
 	return &Server{
-		mux:  NewServerMux(host , appLoc, daemon.Gateway, csrfStore),
+		mux:  NewServerMux(host, appLoc, daemon.Gateway, csrfStore),
 		done: make(chan struct{}),
 	}, nil
 }
@@ -410,12 +410,12 @@ func attrActualLog(logInfo string) string {
 	actualLog = logInfo
 	if strings.HasPrefix(logInfo, "[skycoin") {
 		if strings.Contains(logInfo, "\u001b") {
-			actualLog = logInfo[0: len(logInfo)-4]
+			actualLog = logInfo[0 : len(logInfo)-4]
 		}
 	} else {
 		if len(logInfo) > 5 {
 			if strings.Contains(logInfo, "\u001b") {
-				actualLog = logInfo[5: len(logInfo)-4]
+				actualLog = logInfo[5 : len(logInfo)-4]
 			}
 		}
 	}

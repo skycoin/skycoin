@@ -220,7 +220,7 @@ func TestGetBlock(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, &CSRFStore{Enabled:false})
+			handler := NewServerMux(configuredHost, ".", gateway, &CSRFStore{Enabled: false})
 
 			handler.ServeHTTP(rr, req)
 
@@ -354,7 +354,7 @@ func TestGetBlocks(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, &CSRFStore{Enabled:false})
+			handler := NewServerMux(configuredHost, ".", gateway, &CSRFStore{Enabled: false})
 
 			handler.ServeHTTP(rr, req)
 
@@ -468,7 +468,7 @@ func TestGetLastBlocks(t *testing.T) {
 				req.Host = tc.hostHeader
 			}
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, &CSRFStore{Enabled:false})
+			handler := NewServerMux(configuredHost, ".", gateway, &CSRFStore{Enabled: false})
 
 			handler.ServeHTTP(rr, req)
 

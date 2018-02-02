@@ -89,6 +89,9 @@ func TestGetPendingTxs(t *testing.T) {
 		Coins: math.MaxInt64 + 1,
 	})
 
+	var csrfStore = &CSRFStore{}
+	(*csrfStore).Enabled = false
+
 	tt := []struct {
 		name                          string
 		method                        string
@@ -143,7 +146,7 @@ func TestGetPendingTxs(t *testing.T) {
 			if tc.hostHeader != "" {
 				req.Host = tc.hostHeader
 			}
-			handler := NewServerMux(configuredHost, ".", gateway, &CSRFStore{Enabled:false})
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 			handler.ServeHTTP(rr, req)
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
@@ -169,6 +172,9 @@ func TestGetTransactionByID(t *testing.T) {
 	type httpBody struct {
 		txid string
 	}
+
+	var csrfStore = &CSRFStore{}
+	(*csrfStore).Enabled = false
 
 	tt := []struct {
 		name                  string
@@ -291,7 +297,7 @@ func TestGetTransactionByID(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, &CSRFStore{Enabled:false})
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 			handler.ServeHTTP(rr, req)
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
@@ -315,6 +321,9 @@ func TestInjectTransaction(t *testing.T) {
 	type httpBody struct {
 		Rawtx string `json:"rawtx"`
 	}
+
+	var csrfStore = &CSRFStore{}
+
 	validTxBody := &httpBody{Rawtx: hex.EncodeToString(validTransaction.Serialize())}
 	validTxBodyJson, err := json.Marshal(validTxBody)
 	require.NoError(t, err)
@@ -331,6 +340,8 @@ func TestInjectTransaction(t *testing.T) {
 		injectTransactionError error
 		httpResponse           string
 		hostHeader             string
+		csrfDisabled           bool
+		csrfTokenType          int
 	}{
 		{
 			name:                 "405",
@@ -338,33 +349,38 @@ func TestInjectTransaction(t *testing.T) {
 			status:               http.StatusMethodNotAllowed,
 			err:                  "405 Method Not Allowed",
 			injectTransactionArg: validTransaction,
+			csrfDisabled:         true,
 		},
 		{
-			name:   "400 - EOF",
-			method: http.MethodPost,
-			status: http.StatusBadRequest,
-			err:    "400 Bad Request - EOF",
+			name:         "400 - EOF",
+			method:       http.MethodPost,
+			status:       http.StatusBadRequest,
+			err:          "400 Bad Request - EOF",
+			csrfDisabled: true,
 		},
 		{
-			name:     "400 - Invalid transaction: Deserialization failed",
-			method:   http.MethodPost,
-			status:   http.StatusBadRequest,
-			err:      "400 Bad Request - Invalid transaction: Deserialization failed",
-			httpBody: `{"wrongKey":"wrongValue"}`,
+			name:         "400 - Invalid transaction: Deserialization failed",
+			method:       http.MethodPost,
+			status:       http.StatusBadRequest,
+			err:          "400 Bad Request - Invalid transaction: Deserialization failed",
+			httpBody:     `{"wrongKey":"wrongValue"}`,
+			csrfDisabled: true,
 		},
 		{
-			name:     "400 - encoding/hex: odd length hex string",
-			method:   http.MethodPost,
-			status:   http.StatusBadRequest,
-			err:      "400 Bad Request - encoding/hex: odd length hex string",
-			httpBody: `{"rawtx":"aab"}`,
+			name:         "400 - encoding/hex: odd length hex string",
+			method:       http.MethodPost,
+			status:       http.StatusBadRequest,
+			err:          "400 Bad Request - encoding/hex: odd length hex string",
+			httpBody:     `{"rawtx":"aab"}`,
+			csrfDisabled: true,
 		},
 		{
-			name:     "400 - rawtx deserialization error",
-			method:   http.MethodPost,
-			status:   http.StatusBadRequest,
-			err:      "400 Bad Request - Invalid transaction: Deserialization failed",
-			httpBody: string(invalidTxBodyJson),
+			name:         "400 - rawtx deserialization error",
+			method:       http.MethodPost,
+			status:       http.StatusBadRequest,
+			err:          "400 Bad Request - Invalid transaction: Deserialization failed",
+			httpBody:     string(invalidTxBodyJson),
+			csrfDisabled: true,
 		},
 		{
 			name:                   "400 - injectTransactionError",
@@ -374,13 +390,15 @@ func TestInjectTransaction(t *testing.T) {
 			httpBody:               string(validTxBodyJson),
 			injectTransactionArg:   validTransaction,
 			injectTransactionError: errors.New("injectTransactionError"),
+			csrfDisabled:           true,
 		},
 		{
-			name:       "403 - Forbidden - invalid Host header",
-			method:     http.MethodPost,
-			status:     http.StatusForbidden,
-			err:        "403 Forbidden",
-			hostHeader: "example.com",
+			name:         "403 - Forbidden - invalid Host header",
+			method:       http.MethodPost,
+			status:       http.StatusForbidden,
+			err:          "403 Forbidden",
+			hostHeader:   "example.com",
+			csrfDisabled: true,
 		},
 		{
 			name:                 "200",
@@ -389,6 +407,29 @@ func TestInjectTransaction(t *testing.T) {
 			httpBody:             string(validTxBodyJson),
 			injectTransactionArg: validTransaction,
 			httpResponse:         validTransaction.Hash().Hex(),
+			csrfDisabled:         true,
+		},
+		// CSRF Tests
+		{
+			name:                 "200",
+			method:               http.MethodPost,
+			status:               http.StatusOK,
+			httpBody:             string(validTxBodyJson),
+			injectTransactionArg: validTransaction,
+			httpResponse:         validTransaction.Hash().Hex(),
+			csrfDisabled:         false,
+			csrfTokenType:        TokenValid,
+		},
+		{
+			name:                 "200",
+			method:               http.MethodPost,
+			status:               http.StatusForbidden,
+			httpBody:             "",
+			err:                  "403 Forbidden - invalid CSRF token",
+			injectTransactionArg: coin.Transaction{},
+			httpResponse:         "",
+			csrfDisabled:         false,
+			csrfTokenType:        TokenInvalid,
 		},
 	}
 
@@ -400,11 +441,17 @@ func TestInjectTransaction(t *testing.T) {
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)
+
+			(*csrfStore).Enabled = !tc.csrfDisabled
+			if csrfStore.Enabled {
+				csrfStore, req = setCSRFParameters(csrfStore, tc.csrfTokenType, req)
+			}
+
 			if tc.hostHeader != "" {
 				req.Host = tc.hostHeader
 			}
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, &CSRFStore{Enabled:false})
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -424,6 +471,9 @@ func TestInjectTransaction(t *testing.T) {
 }
 
 func TestResendUnconfirmedTxns(t *testing.T) {
+	var csrfStore = &CSRFStore{}
+	(*csrfStore).Enabled = false
+
 	tt := []struct {
 		name                          string
 		method                        string
@@ -468,7 +518,7 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 				req.Host = tc.hostHeader
 			}
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, &CSRFStore{Enabled:false})
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -495,6 +545,10 @@ func TestGetRawTx(t *testing.T) {
 	type httpBody struct {
 		txid string
 	}
+
+	var csrfStore = &CSRFStore{}
+	(*csrfStore).Enabled = false
+
 	tt := []struct {
 		name                   string
 		method                 string
@@ -605,7 +659,7 @@ func TestGetRawTx(t *testing.T) {
 				req.Host = tc.hostHeader
 			}
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, &CSRFStore{Enabled:false})
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -641,6 +695,9 @@ func TestGetTransactions(t *testing.T) {
 		addrs     string
 		confirmed string
 	}
+
+	var csrfStore = &CSRFStore{}
+	(*csrfStore).Enabled = false
 
 	tt := []struct {
 		name                    string
@@ -772,7 +829,7 @@ func TestGetTransactions(t *testing.T) {
 				req.Host = tc.hostHeader
 			}
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, &CSRFStore{Enabled:false})
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 
 			handler.ServeHTTP(rr, req)
 

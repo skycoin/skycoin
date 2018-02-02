@@ -418,7 +418,7 @@ func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) (*g
 	var err error
 
 	config := gui.ServerConfig{
-		StaticDir: c.GUIDirectory,
+		StaticDir:   c.GUIDirectory,
 		DisableCSRF: c.DisableCSRF,
 	}
 

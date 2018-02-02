@@ -6,9 +6,10 @@ import (
 	"sync"
 	"time"
 
+	"errors"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
-	"errors"
 )
 
 const (

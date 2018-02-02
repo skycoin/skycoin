@@ -80,7 +80,12 @@ func (ub *UxBody) Hash() cipher.SHA256 {
 	Creation time of transaction cant be hashed
 */
 
-// CoinHours Calculate coinhour balance of output. t is the current unix utc time
+var errAddEarnedCoinHoursAdditionOverflow = errors.New("UxOut.CoinHours addition of earned coin hours overflow")
+
+// CoinHours Calculate coinhour balance of output. t is the current unix utc time.
+// If the calculated CoinHours would overflow, return zero.
+// It can't return an error due to block 13277 which spends a UxOut that overflows this calculation.
+// If the blockchain is reset/repaired in the future, this method should return an error instead.
 func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
 	if t < uo.Head.Time {
 		logger.Warning("Calculating coin hours with t < head time")
@@ -93,14 +98,16 @@ func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
 	wholeCoins := uo.Body.Coins / 1e6
 	wholeCoinSeconds, err := multUint64(seconds, wholeCoins)
 	if err != nil {
-		return 0, fmt.Errorf("Calculating whole coin seconds overflows uint64 seconds=%d coins=%d", seconds, wholeCoins)
+		logger.Critical("UxOut.CoinHours: Calculating whole coin seconds overflows uint64 seconds=%d coins=%d uxid=%s", seconds, wholeCoins, uo.Hash().Hex())
+		return 0, fmt.Errorf("UxOut.CoinHours: Calculating whole coin seconds overflows uint64 seconds=%d coins=%d uxid=%s", seconds, wholeCoins, uo.Hash().Hex())
 	}
 
 	// Calculate remainder droplet seconds
 	remainderDroplets := uo.Body.Coins % 1e6
 	dropletSeconds, err := multUint64(seconds, remainderDroplets)
 	if err != nil {
-		return 0, fmt.Errorf("Calculating droplet seconds overflows uint64 seconds=%d droplets=%d", seconds, remainderDroplets)
+		logger.Critical("UxOut.CoinHours: Calculating droplet seconds overflows uint64 seconds=%d droplets=%d uxid=%s", seconds, remainderDroplets, uo.Hash().Hex())
+		return 0, fmt.Errorf("UxOut.CoinHours: Calculating droplet seconds overflows uint64 seconds=%d droplets=%d uxid=%s", seconds, remainderDroplets, uo.Hash().Hex())
 	}
 
 	// Add coinSeconds and seconds earned by droplets, rounded off
@@ -109,7 +116,8 @@ func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
 	coinHours := coinSeconds / 3600                        // coin hours
 	totalHours, err := AddUint64(uo.Body.Hours, coinHours) // starting+earned
 	if err != nil {
-		return 0, errors.New("UxOut.CoinsHours addition overflow")
+		logger.Critical("UxOut.CoinHours: addition of earned coin hours overflows uxid=%s", uo.Hash().Hex())
+		return 0, errAddEarnedCoinHoursAdditionOverflow
 	}
 	return totalHours, nil
 }

@@ -9,6 +9,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
 const (
@@ -41,7 +42,7 @@ func Test_getTransactionHandler(t *testing.T) {
 	}
 
 	tx := decodeRawTransaction(rawTxStr)
-	rbTx, err := visor.NewReadableTransaction(tx)
+	rbTx, err := visor.NewReadableTransaction(tx, make([]*historydb.UxOut, 0, 0))
 	require.NoError(t, err)
 	txRlt := visor.TransactionResult{
 		Status: visor.TransactionStatus{

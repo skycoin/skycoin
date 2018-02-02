@@ -16,12 +16,12 @@ type TransactionResult struct {
 }
 
 // NewTransactionResult converts Transaction to TransactionResult
-func NewTransactionResult(tx *Transaction) (*TransactionResult, error) {
+func NewTransactionResult(tx *Transaction, inData []*historydb.UxOut) (*TransactionResult, error) {
 	if tx == nil {
 		return nil, nil
 	}
 
-	rbTx, err := NewReadableTransaction(tx, make([]*historydb.UxOut, 0, 0))
+	rbTx, err := NewReadableTransaction(tx, inData)
 	if err != nil {
 		return nil, err
 	}
@@ -44,10 +44,10 @@ type TransactionResults struct {
 }
 
 // NewTransactionResults converts []Transaction to []TransactionResults
-func NewTransactionResults(txs []Transaction) (*TransactionResults, error) {
+func NewTransactionResults(txs []Transaction, inData [][]*historydb.UxOut) (*TransactionResults, error) {
 	txRlts := make([]TransactionResult, 0, len(txs))
-	for _, tx := range txs {
-		rbTx, err := NewReadableTransaction(&tx, make([]*historydb.UxOut, 0, 0))
+	for i, tx := range txs {
+		rbTx, err := NewReadableTransaction(&tx, inData[i])
 		if err != nil {
 			return nil, err
 		}

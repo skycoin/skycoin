@@ -39,6 +39,26 @@ type fakeGateway struct {
 	uxouts               []coin.UxOut
 }
 
+func (fg *fakeGateway) GetInputData(in cipher.SHA256) (*historydb.UxOut, error) {
+	return nil, nil
+}
+
+func (fg *fakeGateway) GetTransactionInputsData(tx *coin.Transaction) ([]*historydb.UxOut, error) {
+	return nil, nil
+}
+
+func (fg *fakeGateway) GetBlockInputsData(block *coin.Block) ([][]*historydb.UxOut, error) {
+	return nil, nil
+}
+
+func (fg *fakeGateway) GetSignedBlockInputsData(block *coin.SignedBlock) ([][]*historydb.UxOut, error) {
+	return nil, nil
+}
+
+func (fg *fakeGateway) GetSignedBlocksInputsData(blocks []coin.SignedBlock) ([][][]*historydb.UxOut, error) {
+	return nil, nil
+}
+
 func (fg fakeGateway) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error) {
 	var blocks visor.ReadableBlocks
 	if err := json.Unmarshal([]byte(blockString), &blocks); err != nil {

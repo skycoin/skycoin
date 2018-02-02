@@ -470,7 +470,12 @@ func (gw *Gateway) GetTransactionResult(txid cipher.SHA256) (*visor.TransactionR
 		return nil, err
 	}
 
-	return visor.NewTransactionResult(tx)
+	txInputsData, err := gw.GetTransactionInputsData(&tx.Txn)
+	if err != nil {
+		return nil, err
+	}
+
+	return visor.NewTransactionResult(tx, txInputsData)
 }
 
 // InjectBroadcastTransaction injects and broadcasts a transaction
@@ -495,7 +500,17 @@ func (gw *Gateway) GetAddressTxns(a cipher.Address) (*visor.TransactionResults, 
 		return nil, err
 	}
 
-	return visor.NewTransactionResults(txs)
+	txsInputsData := make([][]*historydb.UxOut, 0, len(txs))
+	for _, tx := range txs {
+		uxout, err := gw.GetTransactionInputsData(&tx.Txn)
+		if err != nil {
+			return nil, err
+		}
+
+		txsInputsData = append(txsInputsData, uxout)
+	}
+
+	return visor.NewTransactionResults(txs, txsInputsData)
 }
 
 // GetTransactions returns transactions filtered by zero or more visor.TxFilter

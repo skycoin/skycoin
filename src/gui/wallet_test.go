@@ -237,6 +237,7 @@ func TestWalletSpendHandler(t *testing.T) {
 				Transaction: &visor.ReadableTransaction{
 					Sigs:      []string{},
 					In:        []string{},
+					InData:    []visor.ReadableTransactionInput{},
 					Out:       []visor.ReadableTransactionOutput{},
 					Hash:      "78877fa898f0b4c45c9c33ae941e40617ad7c8657a307db62bc5691f92f4f60e",
 					InnerHash: "0000000000000000000000000000000000000000000000000000000000000000",
@@ -299,6 +300,7 @@ func TestWalletSpendHandler(t *testing.T) {
 					Timestamp: 0,
 					Sigs:      []string{},
 					In:        []string{},
+					InData:    []visor.ReadableTransactionInput{},
 					Out:       []visor.ReadableTransactionOutput{},
 				},
 			},

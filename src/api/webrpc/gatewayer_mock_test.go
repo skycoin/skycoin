@@ -26,6 +26,31 @@ func NewGatewayerMock() *GatewayerMock {
 	return &GatewayerMock{}
 }
 
+// GetInputData returns the data of an inputs
+func (m *GatewayerMock) GetInputData(in cipher.SHA256) (*historydb.UxOut, error) {
+	return nil, nil
+}
+
+// GetTransactionInputsData returns the inputs data of a transaction
+func (m *GatewayerMock) GetTransactionInputsData(tx *coin.Transaction) ([]*historydb.UxOut, error) {
+	return nil, nil
+}
+
+// GetBlockInputsData returns the inputs data of a block
+func (m *GatewayerMock) GetBlockInputsData(block *coin.Block) ([][]*historydb.UxOut, error) {
+	return nil, nil
+}
+
+// GetSignedBlockInputsData returns the inputs data of a signed block
+func (m *GatewayerMock) GetSignedBlockInputsData(block *coin.SignedBlock) ([][]*historydb.UxOut, error) {
+	return nil, nil
+}
+
+// GetSignedBlocksInputsData returns the inputs data of a signed blocks slice
+func (m *GatewayerMock) GetSignedBlocksInputsData(blocks []coin.SignedBlock) ([][][]*historydb.UxOut, error) {
+	return nil, nil
+}
+
 // GetAddrUxOuts mocked method
 func (m *GatewayerMock) GetAddrUxOuts(p0 cipher.Address) ([]*historydb.UxOutJSON, error) {
 

@@ -95,16 +95,18 @@ func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
 	wholeCoins := uo.Body.Coins / 1e6
 	wholeCoinSeconds, err := multUint64(seconds, wholeCoins)
 	if err != nil {
-		logger.Critical("UxOut.CoinHours: Calculating whole coin seconds overflows uint64 seconds=%d coins=%d uxid=%s", seconds, wholeCoins, uo.Hash().Hex())
-		return 0, fmt.Errorf("UxOut.CoinHours: Calculating whole coin seconds overflows uint64 seconds=%d coins=%d uxid=%s", seconds, wholeCoins, uo.Hash().Hex())
+		err := fmt.Errorf("UxOut.CoinHours: Calculating whole coin seconds overflows uint64 seconds=%d coins=%d uxid=%s", seconds, wholeCoins, uo.Hash().Hex())
+		logger.Critical(err.Error())
+		return 0, err
 	}
 
 	// Calculate remainder droplet seconds
 	remainderDroplets := uo.Body.Coins % 1e6
 	dropletSeconds, err := multUint64(seconds, remainderDroplets)
 	if err != nil {
-		logger.Critical("UxOut.CoinHours: Calculating droplet seconds overflows uint64 seconds=%d droplets=%d uxid=%s", seconds, remainderDroplets, uo.Hash().Hex())
-		return 0, fmt.Errorf("UxOut.CoinHours: Calculating droplet seconds overflows uint64 seconds=%d droplets=%d uxid=%s", seconds, remainderDroplets, uo.Hash().Hex())
+		err := fmt.Errorf("UxOut.CoinHours: Calculating droplet seconds overflows uint64 seconds=%d droplets=%d uxid=%s", seconds, remainderDroplets, uo.Hash().Hex())
+		logger.Critical(err.Error())
+		return 0, error
 	}
 
 	// Add coinSeconds and seconds earned by droplets, rounded off
@@ -113,7 +115,7 @@ func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
 	coinHours := coinSeconds / 3600                        // coin hours
 	totalHours, err := AddUint64(uo.Body.Hours, coinHours) // starting+earned
 	if err != nil {
-		logger.Critical("UxOut.CoinHours: addition of earned coin hours overflows uxid=%s", uo.Hash().Hex())
+		logger.Critical("%v uxid=%s", errAddEarnedCoinHoursAdditionOverflow, uo.Hash().Hex())
 		return 0, errAddEarnedCoinHoursAdditionOverflow
 	}
 	return totalHours, nil

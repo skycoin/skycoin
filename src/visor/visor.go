@@ -128,6 +128,8 @@ type Config struct {
 	BuildInfo BuildInfo
 	// disables wallet API
 	DisableWalletAPI bool
+	// wallet crypto type
+	WalletCryptoType wallet.CryptoType
 }
 
 // NewVisorConfig put cap on block size, not on transactions/block
@@ -267,7 +269,7 @@ func NewVisor(c Config, db *bolt.DB) (*Visor, error) {
 
 	bc.BindListener(bp.FeedBlock)
 
-	wltServ, err := wallet.NewService(c.WalletDirectory, c.DisableWalletAPI)
+	wltServ, err := wallet.NewService(c.WalletDirectory, c.WalletCryptoType, c.DisableWalletAPI)
 	if err != nil {
 		return nil, err
 	}

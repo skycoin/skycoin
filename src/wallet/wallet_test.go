@@ -36,11 +36,11 @@ func init() {
 	flag.Parse()
 
 	if *u {
+		// Sets the cryptoType as scrypt-chacha20poly1305
 		// Update ./testdata/scrypt-chacha20poly1305-encrypted.wlt
 		w, err := NewWallet("scrypt-chacha20poly1305-encrypted.wlt", Options{
-			Seed:       "seed",
-			Label:      "scrypt-chacha20poly1305",
-			CryptoType: CryptoTypeScryptChacha20poly1305,
+			Seed:  "seed",
+			Label: "scrypt-chacha20poly1305",
 		})
 		if err != nil {
 			log.Panic(err)
@@ -62,9 +62,9 @@ func init() {
 		w1, err := NewWallet("sha256xor-encrypted.wlt", Options{
 			Seed:       "seed",
 			Label:      "sha256xor",
-			CryptoType: CryptoTypeSha256Xor,
 			Encrypt:    true,
 			Password:   []byte("pwd"),
+			CryptoType: CryptoTypeSha256Xor,
 		})
 		if err != nil {
 			log.Panic(err)
@@ -255,17 +255,18 @@ func TestNewWallet(t *testing.T) {
 	for _, tc := range tt {
 		// test all supported crypto types
 		for ct := range cryptoTable {
-			ops := tc.ops
-			ops.CryptoType = ct
 			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
+			if tc.ops.Encrypt {
+				tc.ops.CryptoType = ct
+			}
 			t.Run(name, func(t *testing.T) {
-				w, err := NewWallet(tc.wltName, ops)
+				w, err := NewWallet(tc.wltName, tc.ops)
 				require.Equal(t, tc.expect.err, err)
 				if err != nil {
 					return
 				}
 
-				require.Equal(t, ops.Encrypt, w.IsEncrypted())
+				require.Equal(t, tc.ops.Encrypt, w.IsEncrypted())
 
 				if w.IsEncrypted() {
 					// Confirms the seeds and entry secrets are all empty
@@ -282,15 +283,6 @@ func TestNewWallet(t *testing.T) {
 			})
 		}
 	}
-
-	// Test unknow crypto
-	_, err := NewWallet("t.wlt", Options{
-		Seed:       "seed",
-		Encrypt:    true,
-		Password:   []byte("pwd"),
-		CryptoType: CryptoType("unknow"),
-	})
-	require.Error(t, err, "could not find crypto unknow in crypto table")
 }
 
 func TestWalletLock(t *testing.T) {
@@ -408,11 +400,12 @@ func TestWalletUnlock(t *testing.T) {
 
 	for _, tc := range tt {
 		for ct := range cryptoTable {
-			opts := tc.opts
-			opts.CryptoType = ct
 			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
+			if tc.opts.Encrypt {
+				tc.opts.CryptoType = ct
+			}
 			t.Run(name, func(t *testing.T) {
-				w := makeWallet(t, opts, 1)
+				w := makeWallet(t, tc.opts, 1)
 				// Tests the unlock method
 				wlt, err := w.unlock(tc.unlockPwd)
 				require.Equal(t, tc.err, err)
@@ -423,7 +416,7 @@ func TestWalletUnlock(t *testing.T) {
 				require.False(t, wlt.IsEncrypted())
 
 				// Checks the seeds
-				require.Equal(t, opts.Seed, wlt.seed())
+				require.Equal(t, tc.opts.Seed, wlt.seed())
 
 				// Checks the generated addresses
 				sd, sks := cipher.GenerateDeterministicKeyPairsSeed([]byte(wlt.seed()), 1)
@@ -438,7 +431,7 @@ func TestWalletUnlock(t *testing.T) {
 				}
 
 				// Checks the original seeds
-				require.NotEqual(t, opts.Seed, w.seed())
+				require.NotEqual(t, tc.opts.Seed, w.seed())
 
 				// Checks if the seckeys in entries of original wallet are empty
 				for i := range w.Entries {
@@ -463,7 +456,7 @@ func makeWallet(t *testing.T, opts Options, addrNum uint64) *Wallet {
 	_, err = w.GenerateAddresses(addrNum)
 	require.NoError(t, err)
 	if preOpts.Encrypt {
-		err = w.lock(preOpts.Password, opts.CryptoType)
+		err = w.lock(preOpts.Password, preOpts.CryptoType)
 		require.NoError(t, err)
 	}
 	return w
@@ -794,38 +787,43 @@ func TestWalletAddEntry(t *testing.T) {
 }
 
 func TestWalletGuard(t *testing.T) {
-	validate := func(w *Wallet) {
-		require.Equal(t, "", w.seed())
-		require.Equal(t, "", w.lastSeed())
-		for _, e := range w.Entries {
-			require.Equal(t, cipher.SecKey{}, e.Secret)
-		}
+	for ct := range cryptoTable {
+		t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
+			validate := func(w *Wallet) {
+				require.Equal(t, "", w.seed())
+				require.Equal(t, "", w.lastSeed())
+				for _, e := range w.Entries {
+					require.Equal(t, cipher.SecKey{}, e.Secret)
+				}
+			}
+
+			w, err := NewWallet("t.wlt", Options{
+				Seed:       "seed",
+				Encrypt:    true,
+				Password:   []byte("pwd"),
+				CryptoType: ct,
+			})
+			require.NoError(t, err)
+
+			require.NoError(t, w.guardUpdate([]byte("pwd"), func(w *Wallet) error {
+				require.Equal(t, "seed", w.seed())
+				w.setLabel("label")
+				return nil
+			}))
+			require.Equal(t, "label", w.Label())
+			validate(w)
+
+			w.guardView([]byte("pwd"), func(w *Wallet) error {
+				require.Equal(t, "label", w.Label())
+				w.setLabel("new label")
+				return nil
+			})
+
+			require.Equal(t, "label", w.Label())
+			validate(w)
+
+		})
 	}
-
-	w, err := NewWallet("t.wlt", Options{
-		Seed:       "seed",
-		Encrypt:    true,
-		Password:   []byte("pwd"),
-		CryptoType: CryptoTypeSha256Xor,
-	})
-	require.NoError(t, err)
-
-	require.NoError(t, w.guardUpdate([]byte("pwd"), func(w *Wallet) error {
-		require.Equal(t, "seed", w.seed())
-		w.setLabel("label")
-		return nil
-	}))
-	require.Equal(t, "label", w.Label())
-	validate(w)
-
-	w.guardView([]byte("pwd"), func(w *Wallet) error {
-		require.Equal(t, "label", w.Label())
-		w.setLabel("new label")
-		return nil
-	})
-
-	require.Equal(t, "label", w.Label())
-	validate(w)
 }
 
 type distributeSpendHoursTestCase struct {

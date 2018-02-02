@@ -22,13 +22,15 @@ type Service struct {
 	wallets          Wallets
 	firstAddrIDMap   map[string]string // Key: first address in wallet; Value: wallet id
 	walletDirectory  string
+	cryptoType       CryptoType
 	disableWalletAPI bool
 }
 
 // NewService new wallet service
-func NewService(walletDir string, disableWalletAPI bool) (*Service, error) {
+func NewService(walletDir string, cryptoType CryptoType, disableWalletAPI bool) (*Service, error) {
 	serv := &Service{
 		firstAddrIDMap:   make(map[string]string),
+		cryptoType:       cryptoType,
 		disableWalletAPI: disableWalletAPI,
 	}
 
@@ -63,9 +65,8 @@ func NewService(walletDir string, disableWalletAPI bool) (*Service, error) {
 
 		// Create default wallet
 		w, err := serv.CreateWallet("", Options{
-			Label:      "Your Wallet",
-			Seed:       seed,
-			CryptoType: DefaultCryptoType,
+			Label: "Your Wallet",
+			Seed:  seed,
 		})
 		if err != nil {
 			return nil, err
@@ -130,6 +131,11 @@ func (serv *Service) ScanAheadWalletAddresses(wltName string, password []byte, s
 
 // loadWallet loads wallet from seed and scan the first N addresses
 func (serv *Service) loadWallet(wltName string, options Options, scanN uint64, bg BalanceGetter) (*Wallet, error) {
+	// service decides what crypto type the wallet should use.
+	if options.Encrypt {
+		options.CryptoType = serv.cryptoType
+	}
+
 	// Creates the wallet
 	w, err := NewWallet(wltName, options)
 	if err != nil {
@@ -206,7 +212,7 @@ func (serv *Service) EncryptWallet(wltID string, password []byte, ct CryptoType)
 		return ErrWalletEncrypted
 	}
 
-	if err := w.lock(password, ct); err != nil {
+	if err := w.lock(password, serv.cryptoType); err != nil {
 		return err
 	}
 

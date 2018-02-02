@@ -52,9 +52,6 @@ var (
 	// GenesisCoinVolume represents the coin capacity
 	GenesisCoinVolume uint64 = 100e12
 
-	// WalletCryptoType crypto type
-	WalletCryptoType = string(wallet.CryptoTypeScryptChacha20poly1305)
-
 	// DefaultConnections the default trust node addresses
 	DefaultConnections = []string{
 		"118.178.135.93:6000",
@@ -139,6 +136,8 @@ type Config struct {
 	// Wallets
 	// Defaults to ${DataDirectory}/wallets/
 	WalletDirectory string
+	// Wallet crypto type
+	WalletCryptoType string
 
 	RunMaster bool
 
@@ -228,7 +227,7 @@ func (c *Config) register() {
 	flag.BoolVar(&c.Arbitrating, "arbitrating", c.Arbitrating, "Run node in arbitrating mode")
 	flag.BoolVar(&c.Logtogui, "logtogui", true, "log to gui")
 	flag.IntVar(&c.LogBuffSize, "logbufsize", c.LogBuffSize, "Log size saved in memeory for gui show")
-	flag.StringVar(&WalletCryptoType, "wallet-crypto-type", WalletCryptoType, "wallet crypto type. Can be sha256-xor or scrypt-chacha20poly1305")
+	flag.StringVar(&c.WalletCryptoType, "wallet-crypto-type", c.WalletCryptoType, "wallet crypto type. Can be sha256-xor or scrypt-chacha20poly1305")
 }
 
 var home = file.UserHome()
@@ -286,7 +285,8 @@ var devConfig = Config{
 	LogLevel: "DEBUG",
 
 	// Wallets
-	WalletDirectory: "",
+	WalletDirectory:  "",
+	WalletCryptoType: string(wallet.CryptoTypeScryptChacha20poly1305),
 
 	// Timeout settings for http.Server
 	// https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
@@ -520,6 +520,14 @@ func configureDaemon(c *Config) daemon.Config {
 
 	dc.Gateway.DisableWalletAPI = c.DisableWalletAPI
 
+	// Initialize wallet default crypto type
+	cryptoType, err := wallet.CryptoTypeFromString(c.WalletCryptoType)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	dc.Visor.Config.WalletCryptoType = cryptoType
+
 	return dc
 }
 
@@ -531,15 +539,6 @@ func Run(c *Config) {
 			logger.Errorf("recover: %v\nstack:%v", r, string(debug.Stack()))
 		}
 	}()
-
-	// Initialize wallet default crypto type
-	cryptoType, err := wallet.StrToCryptoType(WalletCryptoType)
-	if err != nil {
-		logger.Error("%v", err)
-		return
-	}
-
-	wallet.DefaultCryptoType = cryptoType
 
 	c.GUIDirectory = file.ResolveResourceDirectory(c.GUIDirectory)
 

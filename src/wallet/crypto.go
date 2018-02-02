@@ -23,7 +23,7 @@ type cryptor interface {
 type CryptoType string
 
 // StrToCryptoType converts string to CryptoType
-func StrToCryptoType(s string) (CryptoType, error) {
+func CryptoTypeFromString(s string) (CryptoType, error) {
 	switch CryptoType(s) {
 	case CryptoTypeSha256Xor:
 		return CryptoTypeSha256Xor, nil

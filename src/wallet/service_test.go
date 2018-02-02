@@ -31,30 +31,35 @@ func prepareWltDir() string {
 }
 
 func TestNewService(t *testing.T) {
-	dir := prepareWltDir()
-	s, err := NewService(dir, false)
-	require.NoError(t, err)
+	for ct := range cryptoTable {
+		t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
+			dir := prepareWltDir()
+			s, err := NewService(dir, ct, false)
+			require.NoError(t, err)
 
-	// check if the wallet dir is created
-	_, err = os.Stat(dir)
-	require.NoError(t, err)
+			// check if the wallet dir is created
+			_, err = os.Stat(dir)
+			require.NoError(t, err)
 
-	require.Equal(t, dir, s.walletDirectory)
+			require.Equal(t, dir, s.walletDirectory)
 
-	require.Equal(t, 1, len(s.wallets))
+			require.Equal(t, 1, len(s.wallets))
 
-	// test load wallets
-	s, err = NewService("./testdata", false)
-	require.NoError(t, err)
+			// test load wallets
+			s, err = NewService("./testdata", ct, false)
+			require.NoError(t, err)
 
-	// check if the dup wallet is loaded
-	_, ok1 := s.wallets["test3.1.wlt"]
-	_, ok2 := s.wallets["test3.wlt"]
-	if ok1 && ok2 {
-		t.Fatal("load dup wallet")
+			// check if the dup wallet is loaded
+			_, ok1 := s.wallets["test3.1.wlt"]
+			_, ok2 := s.wallets["test3.wlt"]
+			if ok1 && ok2 {
+				t.Fatal("load dup wallet")
+			}
+
+			require.Equal(t, 4, len(s.wallets))
+
+		})
 	}
-
-	require.Equal(t, 4, len(s.wallets))
 }
 
 func TestServiceCreateWalletDisabledWalletAPI(t *testing.T) {
@@ -73,36 +78,39 @@ func TestServiceCreateWalletDisabledWalletAPI(t *testing.T) {
 }
 
 func TestServiceCreateWallet(t *testing.T) {
-	dir := prepareWltDir()
+	for ct := range cryptoTable {
+		t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
+			dir := prepareWltDir()
+			s, err := NewService(dir, ct, false)
+			require.NoError(t, err)
 
-	s, err := NewService(dir, false)
-	require.NoError(t, err)
+			wltName := "t1.wlt"
+			seed := "seed1"
+			w, err := s.CreateWallet(wltName, Options{
+				Seed: seed,
+			})
+			require.NoError(t, err)
+			require.NoError(t, w.validate())
 
-	wltName := "t1.wlt"
-	seed := "seed1"
-	w, err := s.CreateWallet(wltName, Options{
-		Seed: seed,
-	})
-	require.NoError(t, err)
-	require.NoError(t, w.validate())
+			// create wallet with dup wallet name
+			_, err = s.CreateWallet(wltName, Options{Seed: "seed2"})
+			require.Equal(t, err, ErrWalletNameConflict)
 
-	// create wallet with dup wallet name
-	_, err = s.CreateWallet(wltName, Options{Seed: "seed2"})
-	require.Equal(t, err, ErrWalletNameConflict)
+			// create wallet with dup seed
+			dupWlt := "dup_wallet.wlt"
+			_, err = s.CreateWallet(dupWlt, Options{
+				Seed: seed,
+			})
+			require.EqualError(t, err, fmt.Sprintf("wallet %s would be duplicate with %v, same seed", dupWlt, wltName))
 
-	// create wallet with dup seed
-	dupWlt := "dup_wallet.wlt"
-	_, err = s.CreateWallet(dupWlt, Options{
-		Seed: seed,
-	})
-	require.EqualError(t, err, fmt.Sprintf("wallet %s would be duplicate with %v, same seed", dupWlt, wltName))
+			// check if the dup wallet is created
+			_, ok := s.wallets[dupWlt]
+			require.False(t, ok)
 
-	// check if the dup wallet is created
-	_, ok := s.wallets[dupWlt]
-	require.False(t, ok)
-
-	_, err = os.Stat(filepath.Join(dir, dupWlt))
-	require.True(t, os.IsNotExist(err))
+			_, err = os.Stat(filepath.Join(dir, dupWlt))
+			require.True(t, os.IsNotExist(err))
+		})
+	}
 }
 
 func TestServiceLoadWallet(t *testing.T) {
@@ -190,12 +198,9 @@ func TestServiceLoadWallet(t *testing.T) {
 			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
 			t.Run(name, func(t *testing.T) {
 				dir := prepareWltDir()
-				s, err := NewService(dir)
+				s, err := NewService(dir, ct)
 				require.NoError(t, err)
 				wltName := newWalletFilename()
-				if tc.opts.Encrypt {
-					tc.opts.CryptoType = ct
-				}
 
 				w, err := s.loadWallet(wltName, tc.opts, tc.scanN, tc.bg)
 				require.Equal(t, tc.err, err)
@@ -227,7 +232,6 @@ func TestServiceNewAddress(t *testing.T) {
 		opts          Options
 		n             uint64
 		pwd           []byte
-		err           error
 		expectAddrNum int
 		expectAddrs   []cipher.Address
 	}{
@@ -238,7 +242,6 @@ func TestServiceNewAddress(t *testing.T) {
 				Seed:  string(seed),
 			},
 			0,
-			nil,
 			nil,
 			0,
 			nil, // CreateWallet will generate a default address, so check from new address
@@ -251,7 +254,6 @@ func TestServiceNewAddress(t *testing.T) {
 			},
 			2,
 			nil,
-			nil,
 			2,
 			addrs[1:3], // CreateWallet will generate a default address, so check from new address
 		},
@@ -263,149 +265,103 @@ func TestServiceNewAddress(t *testing.T) {
 			},
 			2,
 			nil,
-			nil,
 			2,
 			addrs[1:3], // CreateWallet will generate a default address, so check from new address
 		},
 		{
-			"encrypted=true cryptoType=sha256xor addresses=1",
+			"encrypted=true addresses=1",
 			Options{
-				Label:      "label",
-				Seed:       string(seed),
-				Encrypt:    true,
-				CryptoType: CryptoTypeSha256Xor,
-				Password:   []byte("pwd"),
+				Label:    "label",
+				Seed:     string(seed),
+				Encrypt:  true,
+				Password: []byte("pwd"),
 			},
 			1,
 			[]byte("pwd"),
-			nil,
 			1,
 			addrs[1:2], // CreateWallet will generate a default address, so check from new address
 		},
 		{
-			"encrypted=true cryptoType=sha256xor addresses=2",
+			"encrypted=true addresses=2",
 			Options{
-				Label:      "label",
-				Seed:       string(seed),
-				Encrypt:    true,
-				CryptoType: CryptoTypeSha256Xor,
-				Password:   []byte("pwd"),
+				Label:    "label",
+				Seed:     string(seed),
+				Encrypt:  true,
+				Password: []byte("pwd"),
 			},
 			2,
 			[]byte("pwd"),
-			nil,
 			2,
 			addrs[1:3], // CreateWallet will generate a default address, so check from new address
 		},
 		{
-			"encrypted=true cryptoTye=sha256xor fail=wrong password",
+			"encrypted=true wrong password",
 			Options{
-				Label:      "label",
-				Seed:       string(seed),
-				Encrypt:    true,
-				CryptoType: CryptoTypeSha256Xor,
-				Password:   []byte("pwd"),
+				Label:    "label",
+				Seed:     string(seed),
+				Encrypt:  true,
+				Password: []byte("pwd"),
 			},
 			1,
 			[]byte("wrong password"),
-			ErrAuthenticationFailed{errors.New("invalid password")},
-			1,
-			nil,
-		},
-		{
-			"encrypted=true cryptoTye=scryptChacha20poly1305 addresses=1",
-			Options{
-				Label:      "label",
-				Seed:       string(seed),
-				Encrypt:    true,
-				CryptoType: CryptoTypeScryptChacha20poly1305,
-				Password:   []byte("pwd"),
-			},
-			1,
-			[]byte("pwd"),
-			nil,
-			1,
-			addrs[1:2],
-		},
-		{
-			"encrypted=true cryptoTye=scryptChacha20poly1305 addresses=2",
-			Options{
-				Label:      "label",
-				Seed:       string(seed),
-				Encrypt:    true,
-				CryptoType: CryptoTypeScryptChacha20poly1305,
-				Password:   []byte("pwd"),
-			},
-			2,
-			[]byte("pwd"),
-			nil,
-			2,
-			addrs[1:3],
-		},
-		{
-			"encrypted=true cryptoTye=scryptChacha20poly1305 fail=message authentication failed",
-			Options{
-				Label:      "label",
-				Seed:       string(seed),
-				Encrypt:    true,
-				CryptoType: CryptoTypeScryptChacha20poly1305,
-				Password:   []byte("pwd"),
-			},
-			1,
-			[]byte("wrong password"),
-			ErrAuthenticationFailed{errors.New("chacha20poly1305: message authentication failed")},
 			1,
 			nil,
 		},
 	}
 
 	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			dir := prepareWltDir()
-			s, err := NewService(dir, false)
-			require.NoError(t, err)
+		for ct := range cryptoTable {
+			name := fmt.Sprintf("crypto=%v %v", ct, tc.name)
+			t.Run(name, func(t *testing.T) {
+				dir := prepareWltDir()
+				s, err := NewService(dir, ct, false)
+				require.NoError(t, err)
 
-			wltName := newWalletFilename()
+				wltName := newWalletFilename()
 
-			w, err := s.CreateWallet(wltName, tc.opts)
-			require.NoError(t, err)
+				w, err := s.CreateWallet(wltName, tc.opts)
+				require.NoError(t, err)
 
-			// naddrs, err := s.NewAddresses(w.Filename(), tc.pwd, tc.n)
-			_, err = s.NewAddresses(w.Filename(), tc.pwd, tc.n)
-			require.Equal(t, tc.err, err)
-			if err != nil {
-				return
-			}
+				naddrs, err := s.NewAddresses(w.Filename(), tc.pwd, tc.n)
+				if err != nil {
+					switch err.(type) {
+					case ErrAuthenticationFailed:
+						return
+					default:
+						t.Fatalf("expect ErrAuthenticationFailed error, actually get: %v", err)
+						return
+					}
+				}
 
-			// require.Len(t, naddrs, tc.expectAddrNum)
-			// for i, a := range tc.expectAddrs {
-			// 	require.Equal(t, a, naddrs[i])
-			// }
+				require.Len(t, naddrs, tc.expectAddrNum)
+				for i, a := range tc.expectAddrs {
+					require.Equal(t, a, naddrs[i])
+				}
 
-			// // Check the wallet again
-			// w, ok := s.wallets[wltName]
-			// require.True(t, ok)
-			// require.Len(t, w.Entries, int(tc.n+1))
+				// Check the wallet again
+				w, ok := s.wallets[wltName]
+				require.True(t, ok)
+				require.Len(t, w.Entries, int(tc.n+1))
 
-			// // Wallet has a default address, so need to start from the second address
-			// for i, a := range tc.expectAddrs {
-			// 	require.Equal(t, a, w.Entries[i+1].Address)
-			// }
+				// Wallet has a default address, so need to start from the second address
+				for i, a := range tc.expectAddrs {
+					require.Equal(t, a, w.Entries[i+1].Address)
+				}
 
-			// // Load wallet from file and check
-			// _, err = os.Stat(filepath.Join(dir, w.Filename()))
-			// require.NoError(t, err)
+				// Load wallet from file and check
+				_, err = os.Stat(filepath.Join(dir, w.Filename()))
+				require.NoError(t, err)
 
-			// lw, err := Load(filepath.Join(dir, w.Filename()))
-			// require.NoError(t, err)
-			// require.Equal(t, lw, w)
+				lw, err := Load(filepath.Join(dir, w.Filename()))
+				require.NoError(t, err)
+				require.Equal(t, lw, w)
 
-			// // Wallet doesn't exist
-			// _, err = s.NewAddresses("wallet_not_exist.wlt", tc.pwd, 1)
-			// require.Equal(t, ErrWalletNotExist, err)
-		})
+				// Wallet doesn't exist
+				_, err = s.NewAddresses("wallet_not_exist.wlt", tc.pwd, 1)
+				require.Equal(t, ErrWalletNotExist, err)
+			})
+		}
 	}
-
 }
 
 func TestServiceNewAddressDisabledWalletAPI(t *testing.T) {
@@ -433,23 +389,27 @@ func TestServiceGetAddressDisabledWalletAPI(t *testing.T) {
 }
 
 func TestServiceGetAddress(t *testing.T) {
-	dir := prepareWltDir()
-	s, err := NewService(dir, false)
-	require.NoError(t, err)
+	for ct := range cryptoTable {
+		t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
+			dir := prepareWltDir()
+			s, err := NewService(dir, ct, false)
+			require.NoError(t, err)
 
-	// get the defaut wallet
-	var w *Wallet
-	for _, w = range s.wallets {
+			// get the defaut wallet
+			var w *Wallet
+			for _, w = range s.wallets {
+			}
+
+			addrs, err := s.GetAddresses(w.Filename())
+			require.NoError(t, err)
+			require.Equal(t, 1, len(addrs))
+
+			// test none exist wallet
+			notExistID := "not_exist_id.wlt"
+			_, err = s.GetAddresses(notExistID)
+			require.Equal(t, ErrWalletNotExist, err)
+		})
 	}
-
-	addrs, err := s.GetAddresses(w.Filename())
-	require.NoError(t, err)
-	require.Equal(t, 1, len(addrs))
-
-	// test none exist wallet
-	notExistID := "not_exist_id.wlt"
-	_, err = s.GetAddresses(notExistID)
-	require.Equal(t, ErrWalletNotExist, err)
 }
 
 func TestServiceGetWalletDisabledWalletAPI(t *testing.T) {
@@ -466,59 +426,64 @@ func TestServiceGetWalletDisabledWalletAPI(t *testing.T) {
 }
 
 func TestServiceGetWallet(t *testing.T) {
-	dir := prepareWltDir()
+	for ct := range cryptoTable {
+		t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
+			dir := prepareWltDir()
 
-	s, err := NewService(dir, false)
-	require.NoError(t, err)
+			s, err := NewService(dir, ct, false)
+			require.NoError(t, err)
 
-	// Get the defaut wallet
-	var w *Wallet
-	for _, w = range s.wallets {
+			// Get the defaut wallet
+			var w *Wallet
+			for _, w = range s.wallets {
+			}
+			require.NoError(t, err)
+
+			w1, err := s.GetWallet(w.Filename())
+			require.NoError(t, err)
+
+			// Check if change original wallet would change the returned wallet
+			w.setLabel("new_label")
+
+			require.NotEqual(t, "new_label", w1.Label())
+
+			// Get wallet doesn't exist
+			wltName := "does_not_exist.wlt"
+			_, err = s.GetWallet(wltName)
+			require.Equal(t, ErrWalletNotExist, err)
+		})
 	}
-	require.NoError(t, err)
-
-	w1, err := s.GetWallet(w.Filename())
-	require.NoError(t, err)
-
-	// Check if change original wallet would change the returned wallet
-	w.setLabel("new_label")
-
-	require.NotEqual(t, "new_label", w1.Label())
-
-	// Get wallet doesn't exist
-	wltName := "does_not_exist.wlt"
-	_, err = s.GetWallet(wltName)
-	require.Equal(t, ErrWalletNotExist, err)
 }
 
 func TestServiceGetWallets(t *testing.T) {
-	dir := prepareWltDir()
-	s, err := NewService(dir)
-	require.NoError(t, err)
+	for ct := range cryptoTable {
+		dir := prepareWltDir()
+		s, err := NewService(dir, ct)
+		require.NoError(t, err)
 
-	var wallets []*Wallet
-	// Get the default wallet
-	var w1 *Wallet
-	for _, w1 = range s.wallets {
+		var wallets []*Wallet
+		// Get the default wallet
+		var w1 *Wallet
+		for _, w1 = range s.wallets {
+		}
+		wallets = append(wallets, w1)
+
+		// Create a new wallet
+		wltName := newWalletFilename()
+		w2, err := s.CreateWallet(wltName, Options{
+			Seed:  "seed",
+			Label: "label",
+		})
+		require.NoError(t, err)
+		wallets = append(wallets, w2)
+
+		ws := s.GetWallets()
+		for _, w := range wallets {
+			ww, ok := ws[w.Filename()]
+			require.True(t, ok)
+			require.Equal(t, w, ww)
+		}
 	}
-	wallets = append(wallets, w1)
-
-	// Create a new wallet
-	wltName := newWalletFilename()
-	w2, err := s.CreateWallet(wltName, Options{
-		Seed:  "seed",
-		Label: "label",
-	})
-	require.NoError(t, err)
-	wallets = append(wallets, w2)
-
-	ws := s.GetWallets()
-	for _, w := range wallets {
-		ww, ok := ws[w.Filename()]
-		require.True(t, ok)
-		require.Equal(t, w, ww)
-	}
-
 }
 
 func TestServiceReloadWalletsDisabledWalletAPI(t *testing.T) {
@@ -533,44 +498,49 @@ func TestServiceReloadWalletsDisabledWalletAPI(t *testing.T) {
 }
 
 func TestServiceReloadWallets(t *testing.T) {
-	dir := prepareWltDir()
+	for ct := range cryptoTable {
+		t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
+			dir := prepareWltDir()
 
-	s, err := NewService(dir, false)
-	require.NoError(t, err)
+			s, err := NewService(dir, ct, false)
+			require.NoError(t, err)
 
-	var w *Wallet
-	for _, w = range s.wallets {
+			var w *Wallet
+			for _, w = range s.wallets {
+			}
+
+			defaultWltID := w.Filename()
+
+			var defaultAddr string
+			for defaultAddr = range s.firstAddrIDMap {
+				break
+			}
+
+			wltName := "t1.wlt"
+			w1, err := s.CreateWallet(wltName, Options{Seed: "seed1"})
+			require.NoError(t, err)
+
+			fmt.Println(dir, w1.Filename())
+
+			err = s.ReloadWallets()
+			require.NoError(t, err)
+
+			// check if create dup wallet will return error
+			_, ok := s.wallets[defaultWltID]
+			require.True(t, ok)
+
+			_, ok = s.wallets["t1.wlt"]
+			require.True(t, ok)
+
+			// check if the first address of each wallet is reloaded
+			_, ok = s.firstAddrIDMap[defaultAddr]
+			require.True(t, ok)
+
+			_, ok = s.firstAddrIDMap[w1.Entries[0].Address.String()]
+			require.True(t, ok)
+
+		})
 	}
-
-	defaultWltID := w.Filename()
-
-	var defaultAddr string
-	for defaultAddr = range s.firstAddrIDMap {
-		break
-	}
-
-	wltName := "t1.wlt"
-	w1, err := s.CreateWallet(wltName, Options{Seed: "seed1"})
-	require.NoError(t, err)
-
-	fmt.Println(dir, w1.Filename())
-
-	err = s.ReloadWallets()
-	require.NoError(t, err)
-
-	// check if create dup wallet will return error
-	_, ok := s.wallets[defaultWltID]
-	require.True(t, ok)
-
-	_, ok = s.wallets["t1.wlt"]
-	require.True(t, ok)
-
-	// check if the first address of each wallet is reloaded
-	_, ok = s.firstAddrIDMap[defaultAddr]
-	require.True(t, ok)
-
-	_, ok = s.firstAddrIDMap[w1.Entries[0].Address.String()]
-	require.True(t, ok)
 }
 
 func TestServiceCreateAndSignTx(t *testing.T) {
@@ -752,10 +722,6 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 	for _, tc := range tt {
 		for ct := range cryptoTable {
 			name := fmt.Sprintf("crypto=%v %v", ct, tc.name)
-			if tc.opts.Encrypt {
-				tc.opts.CryptoType = ct
-			}
-
 			t.Run(name, func(t *testing.T) {
 				unspents := &dummyUnspentGetter{
 					addrUnspents: coin.AddressUxOuts{
@@ -769,7 +735,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 				}
 
 				dir := prepareWltDir()
-				s, err := NewService(dir)
+				s, err := NewService(dir, ct)
 				require.NoError(t, err)
 
 				wltName := newWalletFilename()
@@ -830,29 +796,31 @@ func TestServiceUpdateWalletLabel(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			// Create the wallet service
-			dir := prepareWltDir()
-			s, err := NewService(dir)
-			require.NoError(t, err)
+		for ct := range cryptoTable {
+			t.Run(tc.name, func(t *testing.T) {
+				// Create the wallet service
+				dir := prepareWltDir()
+				s, err := NewService(dir, ct)
+				require.NoError(t, err)
 
-			// Create a new wallet
-			w, err := s.CreateWallet(tc.wltName, tc.opts)
-			require.NoError(t, err)
+				// Create a new wallet
+				w, err := s.CreateWallet(tc.wltName, tc.opts)
+				require.NoError(t, err)
 
-			err = s.UpdateWalletLabel(tc.updateWltName, tc.label)
-			require.Equal(t, tc.err, err)
+				err = s.UpdateWalletLabel(tc.updateWltName, tc.label)
+				require.Equal(t, tc.err, err)
 
-			if err != nil {
-				return
-			}
+				if err != nil {
+					return
+				}
 
-			nw, err := s.GetWallet(w.Filename())
-			require.NoError(t, err)
-			require.NotEqual(t, w.Label(), nw.Label())
+				nw, err := s.GetWallet(w.Filename())
+				require.NoError(t, err)
+				require.NotEqual(t, w.Label(), nw.Label())
 
-			require.Equal(t, tc.label, nw.Label())
-		})
+				require.Equal(t, tc.label, nw.Label())
+			})
+		}
 	}
 }
 
@@ -902,13 +870,10 @@ func TestServiceEncryptWallet(t *testing.T) {
 	for _, tc := range tt {
 		for ct := range cryptoTable {
 			name := fmt.Sprintf("crypto=%v %v", ct, tc.name)
-			if tc.opts.Encrypt {
-				tc.opts.CryptoType = ct
-			}
 			t.Run(name, func(t *testing.T) {
 				dir := prepareWltDir()
 				// Create the wallet service
-				s, err := NewService(dir)
+				s, err := NewService(dir, ct)
 				require.NoError(t, err)
 
 				// Create a new wallet
@@ -1009,14 +974,14 @@ func TestServiceDecryptWallet(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		for cryptoType := range cryptoTable {
-			name := fmt.Sprintf("crypto=%v %v", cryptoType, tc.name)
+		for ct := range cryptoTable {
+
+			name := fmt.Sprintf("crypto=%v %v", ct, tc.name)
 			t.Run(name, func(t *testing.T) {
 				dir := prepareWltDir()
-				s, err := NewService(dir)
+				s, err := NewService(dir, ct)
 				require.NoError(t, err)
 
-				tc.opts.CryptoType = cryptoType
 				_, err = s.CreateWallet(tc.wltName, tc.opts)
 				require.NoError(t, err)
 
@@ -1350,12 +1315,9 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 	for _, tc := range tt {
 		for ct := range cryptoTable {
 			name := fmt.Sprintf("crypto=%v %v", ct, tc.name)
-			if tc.opts.Encrypt {
-				tc.opts.CryptoType = ct
-			}
 			t.Run(name, func(t *testing.T) {
 				dir := prepareWltDir()
-				s, err := NewService(dir)
+				s, err := NewService(dir, ct)
 				require.NoError(t, err)
 
 				wltName := newWalletFilename()

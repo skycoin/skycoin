@@ -173,6 +173,7 @@ type ReadableOutput struct {
 	Address           string `json:"address"`
 	Coins             string `json:"coins"`
 	Hours             uint64 `json:"hours"`
+	CurrentHours      uint64 `json:"current_hours"`
 }
 
 // ReadableOutputSet records unspent outputs in different status.
@@ -303,7 +304,8 @@ func NewReadableOutput(headTime uint64, t coin.UxOut) (ReadableOutput, error) {
 		SourceTransaction: t.Body.SrcTransaction.Hex(),
 		Address:           t.Body.Address.String(),
 		Coins:             coinStr,
-		Hours:             hours,
+		Hours:             t.Body.Hours,
+		CurrentHours:      hours,
 	}, nil
 }
 

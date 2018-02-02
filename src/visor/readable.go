@@ -172,6 +172,7 @@ type ReadableOutput struct {
 	SourceTransaction string `json:"src_tx"`
 	Address           string `json:"address"`
 	Coins             string `json:"coins"`
+	Hours             uint64 `json:"hours"`
 	CalculatedHours   uint64 `json:"calculated_hours"`
 }
 
@@ -233,7 +234,7 @@ func (ros ReadableOutputs) ToUxArray() (coin.UxArray, error) {
 				SrcTransaction: srcTx,
 				Address:        addr,
 				Coins:          coins,
-				Hours:          o.CalculatedHours,
+				Hours:          o.Hours,
 			},
 		})
 	}
@@ -291,7 +292,7 @@ func NewReadableOutput(headTime uint64, t coin.UxOut) (ReadableOutput, error) {
 		return ReadableOutput{}, err
 	}
 
-	hours, err := t.CoinHours(headTime)
+	calculatedHours, err := t.CoinHours(headTime)
 	if err != nil {
 		return ReadableOutput{}, err
 	}
@@ -303,7 +304,8 @@ func NewReadableOutput(headTime uint64, t coin.UxOut) (ReadableOutput, error) {
 		SourceTransaction: t.Body.SrcTransaction.Hex(),
 		Address:           t.Body.Address.String(),
 		Coins:             coinStr,
-		CalculatedHours:   hours,
+		Hours:             t.Body.Hours,
+		CalculatedHours:   calculatedHours,
 	}, nil
 }
 

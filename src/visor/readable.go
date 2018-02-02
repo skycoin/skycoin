@@ -172,7 +172,7 @@ type ReadableOutput struct {
 	SourceTransaction string `json:"src_tx"`
 	Address           string `json:"address"`
 	Coins             string `json:"coins"`
-	Hours             uint64 `json:"hours"`
+	CalculatedHours   uint64 `json:"calculated_hours"`
 }
 
 // ReadableOutputSet records unspent outputs in different status.
@@ -199,7 +199,7 @@ func (ros ReadableOutputs) Balance() (wallet.Balance, error) {
 		}
 
 		bal.Coins += coins
-		bal.Hours += out.Hours
+		bal.Hours += out.CalculatedHours
 	}
 
 	return bal, nil
@@ -233,7 +233,7 @@ func (ros ReadableOutputs) ToUxArray() (coin.UxArray, error) {
 				SrcTransaction: srcTx,
 				Address:        addr,
 				Coins:          coins,
-				Hours:          o.Hours,
+				Hours:          o.CalculatedHours,
 			},
 		})
 	}
@@ -303,7 +303,7 @@ func NewReadableOutput(headTime uint64, t coin.UxOut) (ReadableOutput, error) {
 		SourceTransaction: t.Body.SrcTransaction.Hex(),
 		Address:           t.Body.Address.String(),
 		Coins:             coinStr,
-		Hours:             hours,
+		CalculatedHours:   hours,
 	}, nil
 }
 
@@ -349,7 +349,7 @@ func ReadableOutputsToUxBalances(ros ReadableOutputs) ([]wallet.UxBalance, error
 			BkSeq:   ro.BkSeq,
 			Address: addr,
 			Coins:   coins,
-			Hours:   ro.Hours,
+			Hours:   ro.CalculatedHours,
 		}
 
 		uxb[i] = b

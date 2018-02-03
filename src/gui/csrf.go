@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"crypto/subtle"
 	"encoding/base64"
 	"errors"
 	"net/http"
@@ -80,8 +81,13 @@ func (c *CSRFStore) verifyToken(headerToken string) error {
 		return errors.New("token not initialized")
 	}
 
-	// check if token values are same
-	if headerToken != c.token.String() {
+	a, err := base64.RawURLEncoding.DecodeString(headerToken)
+	if err != nil {
+		return err
+	}
+
+	// check if token values are same, using a constant time comparison
+	if subtle.ConstantTimeCompare(a, c.token.Value) != 1 {
 		return errors.New("invalid token")
 	}
 

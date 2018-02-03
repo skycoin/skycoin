@@ -41,10 +41,13 @@ Apis service port is `6420`.
 
 ## CSRF
 
-All `POST` requests require a CSRF token, obtained with a `GET /csrf` call.
+All `POST`, `PUT` and `DELETE` requests require a CSRF token, obtained with a `GET /csrf` call.
 The token must be placed in the `X-CSRF-Token` header.  A token is only valid
 for 30 seconds and it is expected that the client obtains a new CSRF token
 for each request.
+
+A request rejected for invalid or expired CSRF will respond with `403 Forbidden - invalid CSRF token`
+as the response body.
 
 ### Get current csrf token
 

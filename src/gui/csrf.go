@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"net/http"
+	"net/url"
 	"sync"
 	"time"
 
@@ -129,6 +130,40 @@ func CSRFCheck(store *CSRFStore, handler http.Handler) http.Handler {
 					wh.Error403Msg(w, "invalid CSRF token")
 					return
 				}
+			}
+		}
+
+		handler.ServeHTTP(w, r)
+	})
+}
+
+// OriginRefererCheck checks the Origin header if present, falling back on Referer.
+// The Origin or Referer hostname must match the configured host.
+// If neither are present, the request is allowed.  All major browsers will set
+// at least one of these values. If neither are set, assume it is a request
+// from curl/wget.
+func OriginRefererCheck(host string, handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+		referer := r.Header.Get("Referer")
+
+		toCheck := origin
+		if toCheck == "" {
+			toCheck = referer
+		}
+
+		if toCheck != "" {
+			u, err := url.Parse(toCheck)
+			if err != nil {
+				logger.Critical("Invalid URL in Origin or Referer header: %s %v", toCheck, err)
+				wh.Error403(w)
+				return
+			}
+
+			if u.Host != host {
+				logger.Critical("Origin or Referer header value %s does not match host", toCheck)
+				wh.Error403(w)
+				return
 			}
 		}
 

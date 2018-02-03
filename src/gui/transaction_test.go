@@ -131,7 +131,6 @@ func TestGetPendingTxs(t *testing.T) {
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
-			rr := httptest.NewRecorder()
 
 			csrfStore := &CSRFStore{
 				Enabled: true,
@@ -139,6 +138,7 @@ func TestGetPendingTxs(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+			rr := httptest.NewRecorder()
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

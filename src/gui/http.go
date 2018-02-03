@@ -129,9 +129,15 @@ func (s *Server) Shutdown() {
 func NewServerMux(host, appLoc string, gateway Gatewayer, csrfStore *CSRFStore) *http.ServeMux {
 	mux := http.NewServeMux()
 
+	headerCheck := func(host string, handler http.Handler) http.Handler {
+		handler = OriginRefererCheck(host, handler)
+		handler = wh.HostCheck(logger, host, handler)
+		return handler
+	}
+
 	webHandler := func(endpoint string, handler http.Handler) {
 		handler = CSRFCheck(csrfStore, handler)
-		handler = wh.HostCheck(logger, host, handler)
+		handler = headerCheck(host, handler)
 		mux.Handle(endpoint, handler)
 	}
 
@@ -147,7 +153,7 @@ func NewServerMux(host, appLoc string, gateway Gatewayer, csrfStore *CSRFStore) 
 	}
 
 	// get the current CSRF token
-	mux.Handle("/csrf", wh.HostCheck(logger, host, getCSRFToken(gateway, csrfStore)))
+	mux.Handle("/csrf", headerCheck(host, getCSRFToken(gateway, csrfStore)))
 
 	webHandler("/version", versionHandler(gateway))
 

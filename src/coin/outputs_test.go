@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -175,19 +176,21 @@ func TestUxOutCoinHours(t *testing.T) {
 	// when calculating the whole coin seconds
 	uxo.Body.Coins = 2e6
 	_, err = uxo.CoinHours(math.MaxUint64)
-	testutil.RequireError(t, err, "Calculating whole coin seconds overflows uint64 seconds=18446744073709551515 coins=2")
+	require.Error(t, err)
+	require.True(t, strings.HasPrefix(err.Error(), "UxOut.CoinHours: Calculating whole coin seconds overflows uint64 seconds=18446744073709551515 coins=2 uxid="))
 
 	// Centuries have passed, time-based calculation overflows uint64
 	// when calculating the droplet seconds
 	uxo.Body.Coins = 1e6 + 1e5
 	_, err = uxo.CoinHours(math.MaxUint64)
-	testutil.RequireError(t, err, "Calculating droplet seconds overflows uint64 seconds=18446744073709551515 droplets=100000")
+	require.Error(t, err)
+	require.True(t, strings.HasPrefix(err.Error(), "UxOut.CoinHours: Calculating droplet seconds overflows uint64 seconds=18446744073709551515 droplets=100000 uxid="))
 
 	// Output would overflow if given more hours, has reached its limit
 	uxo.Body.Coins = 3600e6
 	uxo.Body.Hours = math.MaxUint64 - 1
 	_, err = uxo.CoinHours(uxo.Head.Time + 1000)
-	testutil.RequireError(t, err, "UxOut.CoinsHours addition overflow")
+	testutil.RequireError(t, err, errAddEarnedCoinHoursAdditionOverflow.Error())
 }
 
 func makeUxArray(t *testing.T, n int) UxArray {
@@ -237,7 +240,7 @@ func TestUxArrayCoinHours(t *testing.T) {
 	require.Equal(t, errors.New("UxArray.CoinHours addition overflow"), err)
 
 	_, err = uxa.CoinHours(uxa[0].Head.Time * 1000000000000)
-	require.Equal(t, errors.New("UxOut.CoinsHours addition overflow"), err)
+	require.Equal(t, errAddEarnedCoinHoursAdditionOverflow, err)
 }
 
 func TestUxArrayHashArray(t *testing.T) {

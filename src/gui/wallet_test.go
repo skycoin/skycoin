@@ -28,6 +28,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		Dst      string
 		Coins    string
 	}
+	var csrfStore = &CSRFStore{}
 
 	tt := []struct {
 		name                          string
@@ -44,21 +45,25 @@ func TestWalletSpendHandler(t *testing.T) {
 		gatewayBalanceErr             error
 		spendResult                   *SpendResult
 		hostHeader                    string
+		csrfDisabled                  bool
+		csrfTokenType                 int
 	}{
 		{
-			name:     "405",
-			method:   http.MethodGet,
-			status:   http.StatusMethodNotAllowed,
-			err:      "405 Method Not Allowed",
-			walletID: "0",
+			name:         "405",
+			method:       http.MethodGet,
+			status:       http.StatusMethodNotAllowed,
+			err:          "405 Method Not Allowed",
+			walletID:     "0",
+			csrfDisabled: true,
 		},
 		{
-			name:     "400 - no walletID",
-			method:   http.MethodPost,
-			body:     &httpBody{},
-			status:   http.StatusBadRequest,
-			err:      "400 Bad Request - missing wallet id",
-			walletID: "0",
+			name:         "400 - no walletID",
+			method:       http.MethodPost,
+			body:         &httpBody{},
+			status:       http.StatusBadRequest,
+			err:          "400 Bad Request - missing wallet id",
+			walletID:     "0",
+			csrfDisabled: true,
 		},
 		{
 			name:   "400 - no dst",
@@ -66,9 +71,10 @@ func TestWalletSpendHandler(t *testing.T) {
 			body: &httpBody{
 				WalletID: "123",
 			},
-			status:   http.StatusBadRequest,
-			err:      "400 Bad Request - missing destination address \"dst\"",
-			walletID: "0",
+			status:       http.StatusBadRequest,
+			err:          "400 Bad Request - missing destination address \"dst\"",
+			walletID:     "0",
+			csrfDisabled: true,
 		},
 		{
 			name:   "400 - bad dst addr",
@@ -77,9 +83,10 @@ func TestWalletSpendHandler(t *testing.T) {
 				WalletID: "123",
 				Dst:      " 2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
 			},
-			status:   http.StatusBadRequest,
-			err:      "400 Bad Request - invalid destination address: Invalid base58 character",
-			walletID: "0",
+			status:       http.StatusBadRequest,
+			err:          "400 Bad Request - invalid destination address: Invalid base58 character",
+			walletID:     "0",
+			csrfDisabled: true,
 		},
 		{
 			name:   "400 - no coins",
@@ -88,9 +95,10 @@ func TestWalletSpendHandler(t *testing.T) {
 				WalletID: "123",
 				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
 			},
-			status:   http.StatusBadRequest,
-			err:      "400 Bad Request - invalid \"coins\" value",
-			walletID: "0",
+			status:       http.StatusBadRequest,
+			err:          "400 Bad Request - invalid \"coins\" value",
+			walletID:     "0",
+			csrfDisabled: true,
 		},
 		{
 			name:   "400 - coins is string",
@@ -100,9 +108,10 @@ func TestWalletSpendHandler(t *testing.T) {
 				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
 				Coins:    "foo",
 			},
-			status:   http.StatusBadRequest,
-			err:      "400 Bad Request - invalid \"coins\" value",
-			walletID: "0",
+			status:       http.StatusBadRequest,
+			err:          "400 Bad Request - invalid \"coins\" value",
+			walletID:     "0",
+			csrfDisabled: true,
 		},
 		{
 			name:   "400 - coins is negative value",
@@ -112,9 +121,10 @@ func TestWalletSpendHandler(t *testing.T) {
 				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
 				Coins:    "-123",
 			},
-			status:   http.StatusBadRequest,
-			err:      "400 Bad Request - invalid \"coins\" value",
-			walletID: "0",
+			status:       http.StatusBadRequest,
+			err:          "400 Bad Request - invalid \"coins\" value",
+			walletID:     "0",
+			csrfDisabled: true,
 		},
 		{
 			name:   "400 - zero coins",
@@ -124,9 +134,10 @@ func TestWalletSpendHandler(t *testing.T) {
 				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
 				Coins:    "0",
 			},
-			status:   http.StatusBadRequest,
-			err:      "400 Bad Request - invalid \"coins\" value, must > 0",
-			walletID: "0",
+			status:       http.StatusBadRequest,
+			err:          "400 Bad Request - invalid \"coins\" value, must > 0",
+			walletID:     "0",
+			csrfDisabled: true,
 		},
 		{
 			name:   "400 - gw spend error txn no fee",
@@ -145,6 +156,7 @@ func TestWalletSpendHandler(t *testing.T) {
 			spendResult: &SpendResult{
 				Error: fee.ErrTxnNoFee.Error(),
 			},
+			csrfDisabled: true,
 		},
 		{
 			name:   "400 - gw spend error spending unconfirmed",
@@ -163,6 +175,7 @@ func TestWalletSpendHandler(t *testing.T) {
 			spendResult: &SpendResult{
 				Error: wallet.ErrSpendingUnconfirmed.Error(),
 			},
+			csrfDisabled: true,
 		},
 		{
 			name:   "400 - gw spend error insufficient balance",
@@ -181,6 +194,7 @@ func TestWalletSpendHandler(t *testing.T) {
 			spendResult: &SpendResult{
 				Error: wallet.ErrInsufficientBalance.Error(),
 			},
+			csrfDisabled: true,
 		},
 		{
 			name:   "404 - gw spend error wallet not exist",
@@ -199,6 +213,7 @@ func TestWalletSpendHandler(t *testing.T) {
 			spendResult: &SpendResult{
 				Error: wallet.ErrWalletNotExist.Error(),
 			},
+			csrfDisabled: true,
 		},
 		{
 			name:   "500 - gw spend error",
@@ -217,6 +232,7 @@ func TestWalletSpendHandler(t *testing.T) {
 			spendResult: &SpendResult{
 				Error: "Spend error",
 			},
+			csrfDisabled: true,
 		},
 		{
 			name:   "200 - gw GetWalletBalance error",
@@ -242,6 +258,7 @@ func TestWalletSpendHandler(t *testing.T) {
 					InnerHash: "0000000000000000000000000000000000000000000000000000000000000000",
 				},
 			},
+			csrfDisabled: true,
 		},
 		{
 			name:   "403 - Forbidden - wallet API disabled",
@@ -260,6 +277,7 @@ func TestWalletSpendHandler(t *testing.T) {
 			spendResult: &SpendResult{
 				Error: wallet.ErrWalletApiDisabled.Error(),
 			},
+			csrfDisabled: true,
 		},
 		{
 			name:   "403 - Forbidden - invalid Host header",
@@ -269,12 +287,13 @@ func TestWalletSpendHandler(t *testing.T) {
 				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
 				Coins:    "12",
 			},
-			status:     http.StatusForbidden,
-			err:        "403 Forbidden",
-			walletID:   "123",
-			coins:      12,
-			dst:        "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
-			hostHeader: "example.com",
+			status:       http.StatusForbidden,
+			err:          "403 Forbidden",
+			walletID:     "123",
+			coins:        12,
+			dst:          "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+			hostHeader:   "example.com",
+			csrfDisabled: true,
 		},
 		{
 			name:   "200 - OK",
@@ -302,6 +321,51 @@ func TestWalletSpendHandler(t *testing.T) {
 					Out:       []visor.ReadableTransactionOutput{},
 				},
 			},
+			csrfDisabled: true,
+		},
+		// CSRF Tests
+		{
+			name:   "200 - OK - With CSRF",
+			method: http.MethodPost,
+			body: &httpBody{
+				WalletID: "1234",
+				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+				Coins:    "12",
+			},
+			status:             http.StatusOK,
+			walletID:           "1234",
+			coins:              12,
+			dst:                "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+			gatewaySpendResult: &coin.Transaction{},
+			spendResult: &SpendResult{
+				Balance: &wallet.BalancePair{},
+				Transaction: &visor.ReadableTransaction{
+					Length:    0,
+					Type:      0,
+					Hash:      "78877fa898f0b4c45c9c33ae941e40617ad7c8657a307db62bc5691f92f4f60e",
+					InnerHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					Timestamp: 0,
+					Sigs:      []string{},
+					In:        []string{},
+					Out:       []visor.ReadableTransactionOutput{},
+				},
+			},
+			csrfDisabled:  false,
+			csrfTokenType: TokenValid,
+		},
+		{
+			name:               "403 - Forbidden - Invalid CSRF",
+			method:             http.MethodPost,
+			body:               &httpBody{},
+			status:             http.StatusForbidden,
+			err:                "403 Forbidden - invalid CSRF token",
+			walletID:           "1234",
+			coins:              12,
+			dst:                "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+			gatewaySpendResult: &coin.Transaction{},
+			spendResult:        &SpendResult{},
+			csrfDisabled:       false,
+			csrfTokenType:      TokenInvalid,
 		},
 	}
 
@@ -335,12 +399,17 @@ func TestWalletSpendHandler(t *testing.T) {
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
+			(*csrfStore).Enabled = !tc.csrfDisabled
+			if csrfStore.Enabled {
+				csrfStore, req = setCSRFParameters(csrfStore, tc.csrfTokenType, req)
+			}
+
 			if tc.hostHeader != "" {
 				req.Host = tc.hostHeader
 			}
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 
 			handler.ServeHTTP(rr, req)
 
@@ -366,6 +435,9 @@ func TestWalletGet(t *testing.T) {
 		Dst      string
 		Coins    string
 	}
+
+	var csrfStore = &CSRFStore{}
+	(*csrfStore).Enabled = false
 
 	tt := []struct {
 		name                   string
@@ -470,7 +542,7 @@ func TestWalletGet(t *testing.T) {
 		}
 
 		rr := httptest.NewRecorder()
-		handler := NewServerMux(configuredHost, ".", gateway)
+		handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 
 		handler.ServeHTTP(rr, req)
 
@@ -497,6 +569,9 @@ func TestWalletBalanceHandler(t *testing.T) {
 		Dst      string
 		Coins    string
 	}
+
+	var csrfStore = &CSRFStore{}
+	(*csrfStore).Enabled = false
 
 	tt := []struct {
 		name                          string
@@ -585,7 +660,6 @@ func TestWalletBalanceHandler(t *testing.T) {
 			walletID:   "foo",
 			hostHeader: "example.com",
 		},
-
 		{
 			name:   "200 - OK",
 			method: http.MethodGet,
@@ -624,7 +698,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 
 			handler.ServeHTTP(rr, req)
 
@@ -652,6 +726,9 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 		WalletID string
 		Label    string
 	}
+
+	var csrfStore = &CSRFStore{}
+	(*csrfStore).Enabled = false
 
 	tt := []struct {
 		name                        string
@@ -784,7 +861,7 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 
 			handler.ServeHTTP(rr, req)
 
@@ -806,6 +883,9 @@ func TestWalletTransactionsHandler(t *testing.T) {
 	type httpBody struct {
 		WalletID string
 	}
+
+	var csrfStore = &CSRFStore{}
+	(*csrfStore).Enabled = false
 
 	tt := []struct {
 		name                                  string
@@ -912,7 +992,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		}
 
 		rr := httptest.NewRecorder()
-		handler := NewServerMux(configuredHost, ".", gateway)
+		handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 
 		handler.ServeHTTP(rr, req)
 
@@ -939,6 +1019,8 @@ func TestWalletCreateHandler(t *testing.T) {
 		ScanN string
 	}
 
+	var csrfStore = &CSRFStore{}
+
 	tt := []struct {
 		name                      string
 		method                    string
@@ -954,21 +1036,25 @@ func TestWalletCreateHandler(t *testing.T) {
 		scanWalletAddressesError  error
 		responseBody              wallet.ReadableWallet
 		hostHeader                string
+		csrfDisabled              bool
+		csrfTokenType             int
 	}{
 		{
-			name:    "405",
-			method:  http.MethodGet,
-			status:  http.StatusMethodNotAllowed,
-			err:     "405 Method Not Allowed",
-			wltName: "foo",
+			name:         "405",
+			method:       http.MethodGet,
+			status:       http.StatusMethodNotAllowed,
+			err:          "405 Method Not Allowed",
+			wltName:      "foo",
+			csrfDisabled: true,
 		},
 		{
-			name:    "400 - missing seed",
-			method:  http.MethodPost,
-			body:    &httpBody{},
-			status:  http.StatusBadRequest,
-			err:     "400 Bad Request - missing seed",
-			wltName: "foo",
+			name:         "400 - missing seed",
+			method:       http.MethodPost,
+			body:         &httpBody{},
+			status:       http.StatusBadRequest,
+			err:          "400 Bad Request - missing seed",
+			wltName:      "foo",
+			csrfDisabled: true,
 		},
 		{
 			name:   "400 - missing label",
@@ -976,9 +1062,10 @@ func TestWalletCreateHandler(t *testing.T) {
 			body: &httpBody{
 				Seed: "foo",
 			},
-			status:  http.StatusBadRequest,
-			err:     "400 Bad Request - missing label",
-			wltName: "foo",
+			status:       http.StatusBadRequest,
+			err:          "400 Bad Request - missing label",
+			wltName:      "foo",
+			csrfDisabled: true,
 		},
 		{
 			name:   "400 - invalid scan value",
@@ -988,9 +1075,10 @@ func TestWalletCreateHandler(t *testing.T) {
 				Label: "bar",
 				ScanN: "bad scanN",
 			},
-			status:  http.StatusBadRequest,
-			err:     "400 Bad Request - invalid scan value",
-			wltName: "foo",
+			status:       http.StatusBadRequest,
+			err:          "400 Bad Request - invalid scan value",
+			wltName:      "foo",
+			csrfDisabled: true,
 		},
 		{
 			name:   "400 - scan must be > 0",
@@ -1000,9 +1088,10 @@ func TestWalletCreateHandler(t *testing.T) {
 				Label: "bar",
 				ScanN: "0",
 			},
-			status:  http.StatusBadRequest,
-			err:     "400 Bad Request - scan must be > 0",
-			wltName: "foo",
+			status:       http.StatusBadRequest,
+			err:          "400 Bad Request - scan must be > 0",
+			wltName:      "foo",
+			csrfDisabled: true,
 		},
 		{
 			name:   "400 - gateway.CreateWallet error",
@@ -1019,6 +1108,7 @@ func TestWalletCreateHandler(t *testing.T) {
 				Seed:  "foo",
 			},
 			gatewayCreateWalletErr: errors.New("gateway.CreateWallet error"),
+			csrfDisabled:           true,
 		},
 		{
 			name:   "500 - gateway.ScanAheadWalletAddresses error",
@@ -1042,6 +1132,7 @@ func TestWalletCreateHandler(t *testing.T) {
 				},
 			},
 			scanWalletAddressesError: errors.New("gateway.ScanAheadWalletAddresses error"),
+			csrfDisabled:             true,
 		},
 		{
 			name:   "403 - Forbidden - wallet API disabled",
@@ -1060,13 +1151,15 @@ func TestWalletCreateHandler(t *testing.T) {
 				Seed:  "foo",
 			},
 			gatewayCreateWalletErr: wallet.ErrWalletApiDisabled,
+			csrfDisabled:           true,
 		},
 		{
-			name:       "403 - Forbidden - invalid Host header",
-			method:     http.MethodPost,
-			status:     http.StatusForbidden,
-			err:        "403 Forbidden",
-			hostHeader: "example.com",
+			name:         "403 - Forbidden - invalid Host header",
+			method:       http.MethodPost,
+			status:       http.StatusForbidden,
+			err:          "403 Forbidden",
+			hostHeader:   "example.com",
+			csrfDisabled: true,
 		},
 		{
 			name:   "200 - OK",
@@ -1093,6 +1186,50 @@ func TestWalletCreateHandler(t *testing.T) {
 				Meta:    map[string]string{},
 				Entries: wallet.ReadableEntries{},
 			},
+			csrfDisabled: true,
+		},
+		// CSRF Tests
+		{
+			name:   "200 - OK - With CSRF",
+			method: http.MethodPost,
+			body: &httpBody{
+				Seed:  "foo",
+				Label: "bar",
+				ScanN: "2",
+			},
+			status:  http.StatusOK,
+			err:     "",
+			wltName: "filename",
+			scnN:    2,
+			options: wallet.Options{
+				Label: "bar",
+				Seed:  "foo",
+			},
+			gatewayCreateWalletResult: wallet.Wallet{
+				Meta: map[string]string{
+					"filename": "filename",
+				},
+			},
+			responseBody: wallet.ReadableWallet{
+				Meta:    map[string]string{},
+				Entries: wallet.ReadableEntries{},
+			},
+			csrfDisabled:  false,
+			csrfTokenType: TokenValid,
+		},
+		{
+			name:                      "403 - Forbidden - Invalid CSRF",
+			method:                    http.MethodPost,
+			body:                      &httpBody{},
+			status:                    http.StatusForbidden,
+			err:                       "403 Forbidden - invalid CSRF token",
+			wltName:                   "filename",
+			scnN:                      2,
+			options:                   wallet.Options{},
+			gatewayCreateWalletResult: wallet.Wallet{},
+			responseBody:              wallet.ReadableWallet{},
+			csrfDisabled:              false,
+			csrfTokenType:             TokenInvalid,
 		},
 	}
 
@@ -1120,12 +1257,17 @@ func TestWalletCreateHandler(t *testing.T) {
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		require.NoError(t, err)
 
+		(*csrfStore).Enabled = !tc.csrfDisabled
+		if csrfStore.Enabled {
+			csrfStore, req = setCSRFParameters(csrfStore, tc.csrfTokenType, req)
+		}
+
 		if tc.hostHeader != "" {
 			req.Host = tc.hostHeader
 		}
 
 		rr := httptest.NewRecorder()
-		handler := NewServerMux(configuredHost, ".", gateway)
+		handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 
 		handler.ServeHTTP(rr, req)
 
@@ -1150,6 +1292,9 @@ func TestWalletNewSeed(t *testing.T) {
 	type httpBody struct {
 		Entropy string
 	}
+
+	var csrfStore = &CSRFStore{}
+	(*csrfStore).Enabled = false
 
 	tt := []struct {
 		name       string
@@ -1251,7 +1396,7 @@ func TestWalletNewSeed(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 
 			handler.ServeHTTP(rr, req)
 
@@ -1276,6 +1421,7 @@ func TestWalletNewSeed(t *testing.T) {
 	}
 }
 
+// this is already tested in TestCSRFWrapper
 func TestWalletNewAddressesHandler(t *testing.T) {
 	type httpBody struct {
 		ID  string
@@ -1418,7 +1564,7 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, &CSRFStore{Enabled: false})
 
 			handler.ServeHTTP(rr, req)
 
@@ -1439,6 +1585,9 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 }
 
 func TestGetWalletFolderHandler(t *testing.T) {
+	var csrfStore = &CSRFStore{}
+	(*csrfStore).Enabled = false
+
 	tt := []struct {
 		name                 string
 		method               string
@@ -1497,7 +1646,7 @@ func TestGetWalletFolderHandler(t *testing.T) {
 		}
 
 		rr := httptest.NewRecorder()
-		handler := NewServerMux(configuredHost, ".", gateway)
+		handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 
 		handler.ServeHTTP(rr, req)
 

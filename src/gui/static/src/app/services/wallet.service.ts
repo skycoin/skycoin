@@ -72,7 +72,7 @@ export class WalletService {
   }
 
   generateSeed(): Observable<string> {
-    return this.apiService.get('wallet/newSeed').map(response => response.seed);
+    return this.apiService.getWalletNewSeed();
   }
 
   outputs(): Observable<any> {

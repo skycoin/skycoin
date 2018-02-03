@@ -38,6 +38,27 @@ result:
 }
 ```
 
+### Get current csrf token
+
+```sh
+URI: /csrf
+Method: GET
+```
+
+example:
+
+```sh
+curl http://127.0.0.1:6420/csrf
+```
+
+result:
+
+```json
+{
+    "csrf_token": "klSgXoMOFTvEnt8KptBvHjhlFnW0OIkzyFVn4i8frDvIus9iLsFukqA9sM9Rxf3pLZHRLr82vBQxTq50vbYA8g"
+}
+```
+
 ### Get balance of addresses
 
 ```

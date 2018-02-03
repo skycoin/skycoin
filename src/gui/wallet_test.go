@@ -1266,7 +1266,6 @@ func TestWalletNewSeed(t *testing.T) {
 	}
 }
 
-// this is already tested in TestCSRFWrapper
 func TestWalletNewAddressesHandler(t *testing.T) {
 	type httpBody struct {
 		ID  string
@@ -1283,10 +1282,10 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 
 	for i := 0; i < 3; i++ {
 		pub, _ := cipher.GenerateDeterministicKeyPair(cipher.RandByte(32))
-
 		addrs[i] = cipher.AddressFromPubKey(pub)
 		responseAddresses.Address = append(responseAddresses.Address, addrs[i].String())
 	}
+
 	tt := []struct {
 		name                      string
 		method                    string
@@ -1298,6 +1297,7 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 		gatewayNewAddressesResult []cipher.Address
 		gatewayNewAddressesErr    error
 		responseBody              Addresses
+		csrfDisabled              bool
 	}{
 		{
 			name:   "405",
@@ -1373,6 +1373,20 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 			gatewayNewAddressesResult: emptyAddrs,
 			responseBody:              responseEmptyAddresses,
 		},
+		{
+			name:   "200 - OK - CSRF disabled",
+			method: http.MethodPost,
+			body: &httpBody{
+				ID:  "foo",
+				Num: "1",
+			},
+			status:   http.StatusOK,
+			walletID: "foo",
+			n:        1,
+			gatewayNewAddressesResult: addrs,
+			responseBody:              responseAddresses,
+			csrfDisabled:              true,
+		},
 	}
 
 	for _, tc := range tt {
@@ -1396,8 +1410,17 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
+			csrfStore := &CSRFStore{
+				Enabled: !tc.csrfDisabled,
+			}
+			if csrfStore.Enabled {
+				setCSRFParameters(csrfStore, tokenValid, req)
+			} else {
+				setCSRFParameters(csrfStore, tokenInvalid, req)
+			}
+
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, &CSRFStore{Enabled: false})
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 
 			handler.ServeHTTP(rr, req)
 

@@ -130,7 +130,9 @@ func NewServerMux(host, appLoc string, gateway Gatewayer, csrfStore *CSRFStore) 
 	mux := http.NewServeMux()
 
 	webHandler := func(endpoint string, handler http.Handler) {
-		mux.Handle(endpoint, wh.HostCheck(logger, host, handler))
+		handler = CSRFCheck(csrfStore, handler)
+		handler = wh.HostCheck(logger, host, handler)
+		mux.Handle(endpoint, handler)
 	}
 
 	webHandler("/", newIndexHandler(appLoc))
@@ -144,13 +146,16 @@ func NewServerMux(host, appLoc string, gateway Gatewayer, csrfStore *CSRFStore) 
 		webHandler(route, http.FileServer(http.Dir(appLoc)))
 	}
 
-	webHandler("/version", CSRFCheck(versionHandler(gateway), csrfStore))
+	// get the current CSRF token
+	mux.Handle("/csrf", wh.HostCheck(logger, host, getCSRFToken(gateway, csrfStore)))
+
+	webHandler("/version", versionHandler(gateway))
 
 	// get set of unspent outputs
-	webHandler("/outputs", CSRFCheck(getOutputsHandler(gateway), csrfStore))
+	webHandler("/outputs", getOutputsHandler(gateway))
 
 	// get balance of addresses
-	webHandler("/balance", CSRFCheck(getBalanceHandler(gateway), csrfStore))
+	webHandler("/balance", getBalanceHandler(gateway))
 
 	// Wallet interface
 
@@ -158,7 +163,7 @@ func NewServerMux(host, appLoc string, gateway Gatewayer, csrfStore *CSRFStore) 
 	// Method: GET
 	// Args:
 	//      id - Wallet ID [required]
-	webHandler("/wallet", CSRFCheck(walletGet(gateway), csrfStore))
+	webHandler("/wallet", walletGet(gateway))
 
 	// Loads wallet from seed, will scan ahead N address and
 	// load addresses till the last one that have coins.
@@ -167,16 +172,16 @@ func NewServerMux(host, appLoc string, gateway Gatewayer, csrfStore *CSRFStore) 
 	//     seed: wallet seed [required]
 	//     label: wallet label [required]
 	//     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
-	webHandler("/wallet/create", CSRFCheck(walletCreate(gateway), csrfStore))
+	webHandler("/wallet/create", walletCreate(gateway))
 
-	webHandler("/wallet/newAddress", CSRFCheck(walletNewAddresses(gateway), csrfStore))
+	webHandler("/wallet/newAddress", walletNewAddresses(gateway))
 
 	// Returns the confirmed and predicted balance for a specific wallet.
 	// The predicted balance is the confirmed balance minus any pending
 	// spent amount.
 	// GET arguments:
 	//      id: Wallet ID
-	webHandler("/wallet/balance", CSRFCheck(walletBalanceHandler(gateway), csrfStore))
+	webHandler("/wallet/balance", walletBalanceHandler(gateway))
 
 	// Sends coins&hours to another address.
 	// POST arguments:
@@ -186,89 +191,86 @@ func NewServerMux(host, appLoc string, gateway Gatewayer, csrfStore *CSRFStore) 
 	//  fee: Number of hours to use as fee, on top of the default fee.
 	//  Returns total amount spent if successful, otherwise error describing
 	//  failure status.
-	webHandler("/wallet/spend", CSRFCheck(walletSpendHandler(gateway), csrfStore))
+	webHandler("/wallet/spend", walletSpendHandler(gateway))
 
 	// GET Arguments:
 	//      id: Wallet ID
 	// Returns all pending transanction for all addresses by selected Wallet
-	webHandler("/wallet/transactions", CSRFCheck(walletTransactionsHandler(gateway), csrfStore))
+	webHandler("/wallet/transactions", walletTransactionsHandler(gateway))
 
 	// Update wallet label
 	//      POST Arguments:
 	//          id: wallet id
 	//          label: wallet label
-	webHandler("/wallet/update", CSRFCheck(walletUpdateHandler(gateway), csrfStore))
+	webHandler("/wallet/update", walletUpdateHandler(gateway))
 
 	// Returns all loaded wallets
 	// returns sensitive information
-	webHandler("/wallets", CSRFCheck(walletsHandler(gateway), csrfStore))
+	webHandler("/wallets", walletsHandler(gateway))
 
-	webHandler("/wallets/folderName", CSRFCheck(getWalletFolder(gateway), csrfStore))
+	webHandler("/wallets/folderName", getWalletFolder(gateway))
 
 	// generate wallet seed
-	webHandler("/wallet/newSeed", CSRFCheck(newWalletSeed(gateway), csrfStore))
+	webHandler("/wallet/newSeed", newWalletSeed(gateway))
 
 	// Blockchain interface
 
-	webHandler("/blockchain/metadata", CSRFCheck(blockchainHandler(gateway), csrfStore))
-	webHandler("/blockchain/progress", CSRFCheck(blockchainProgressHandler(gateway), csrfStore))
+	webHandler("/blockchain/metadata", blockchainHandler(gateway))
+	webHandler("/blockchain/progress", blockchainProgressHandler(gateway))
 
 	// get block by hash or seq
-	webHandler("/block", CSRFCheck(getBlock(gateway), csrfStore))
+	webHandler("/block", getBlock(gateway))
 	// get blocks in specific range
-	webHandler("/blocks", CSRFCheck(getBlocks(gateway), csrfStore))
+	webHandler("/blocks", getBlocks(gateway))
 	// get last N blocks
-	webHandler("/last_blocks", CSRFCheck(getLastBlocks(gateway), csrfStore))
+	webHandler("/last_blocks", getLastBlocks(gateway))
 
 	// Network stats interface
 
-	webHandler("/network/connection", CSRFCheck(connectionHandler(gateway), csrfStore))
-	webHandler("/network/connections", CSRFCheck(connectionsHandler(gateway), csrfStore))
-	webHandler("/network/defaultConnections", CSRFCheck(defaultConnectionsHandler(gateway), csrfStore))
-	webHandler("/network/connections/trust", CSRFCheck(trustConnectionsHandler(gateway), csrfStore))
-	webHandler("/network/connections/exchange", CSRFCheck(exchgConnectionsHandler(gateway), csrfStore))
+	webHandler("/network/connection", connectionHandler(gateway))
+	webHandler("/network/connections", connectionsHandler(gateway))
+	webHandler("/network/defaultConnections", defaultConnectionsHandler(gateway))
+	webHandler("/network/connections/trust", trustConnectionsHandler(gateway))
+	webHandler("/network/connections/exchange", exchgConnectionsHandler(gateway))
 
 	// Transaction handler
 
 	// get set of pending transactions
-	webHandler("/pendingTxs", CSRFCheck(getPendingTxs(gateway), csrfStore))
+	webHandler("/pendingTxs", getPendingTxs(gateway))
 	// get latest confirmed transactions
-	webHandler("/lastTxs", CSRFCheck(getLastTxs(gateway), csrfStore))
+	webHandler("/lastTxs", getLastTxs(gateway))
 	// get txn by txid
-	webHandler("/transaction", CSRFCheck(getTransactionByID(gateway), csrfStore))
+	webHandler("/transaction", getTransactionByID(gateway))
 
 	// Returns transactions that match the filters.
 	// Method: GET
 	// Args:
 	//     addrs: Comma seperated addresses [optional, returns all transactions if no address is provided]
 	//     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
-	webHandler("/transactions", CSRFCheck(getTransactions(gateway), csrfStore))
+	webHandler("/transactions", getTransactions(gateway))
 	//inject a transaction into network
-	webHandler("/injectTransaction", CSRFCheck(injectTransaction(gateway), csrfStore))
-	webHandler("/resendUnconfirmedTxns", CSRFCheck(resendUnconfirmedTxns(gateway), csrfStore))
+	webHandler("/injectTransaction", injectTransaction(gateway))
+	webHandler("/resendUnconfirmedTxns", resendUnconfirmedTxns(gateway))
 	// get raw tx by txid.
-	webHandler("/rawtx", CSRFCheck(getRawTx(gateway), csrfStore))
+	webHandler("/rawtx", getRawTx(gateway))
 
 	// UxOUt api handler
 
 	// get uxout by id.
-	webHandler("/uxout", CSRFCheck(getUxOutByID(gateway), csrfStore))
+	webHandler("/uxout", getUxOutByID(gateway))
 	// get all the address affected uxouts.
-	webHandler("/address_uxouts", CSRFCheck(getAddrUxOuts(gateway), csrfStore))
-
-	// get the current CSRF token
-	webHandler("/csrf", getCSRFToken(gateway, csrfStore))
+	webHandler("/address_uxouts", getAddrUxOuts(gateway))
 
 	// Explorer handler
 
 	// get set of pending transactions
-	webHandler("/explorer/address", CSRFCheck(getTransactionsForAddress(gateway), csrfStore))
+	webHandler("/explorer/address", getTransactionsForAddress(gateway))
 
-	webHandler("/coinSupply", CSRFCheck(getCoinSupply(gateway), csrfStore))
+	webHandler("/coinSupply", getCoinSupply(gateway))
 
-	webHandler("/richlist", CSRFCheck(getRichlist(gateway), csrfStore))
+	webHandler("/richlist", getRichlist(gateway))
 
-	webHandler("/addresscount", CSRFCheck(getAddressCount(gateway), csrfStore))
+	webHandler("/addresscount", getAddressCount(gateway))
 
 	return mux
 }

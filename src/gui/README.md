@@ -2,17 +2,70 @@
 
 Apis service port is `6420`.
 
-* [Simple query apis](#simple-query-apis)
-* [Wallet apis](#wallet-apis)
-* [Transaction apis](#transaction-apis)
-* [Block apis](#block-apis)
-* [Explorer apis](#explorer-apis)
-* [Uxout apis](#uxout-apis)
-* [Coin supply api](#coin-supply-informations)
-* [Richlist api](#richlist-show-top-n-addresses-by-uxouts)
-* [Addresscount api](#addresscount-show-count-of-unique-address)
-* [Log api](#wallet-log-api)
+<!-- MarkdownTOC autolink="true" bracket="round" -->
 
+- [CSRF](#csrf)
+    - [Get current csrf token](#get-current-csrf-token)
+- [Simple query apis](#simple-query-apis)
+    - [Get node version info](#get-node-version-info)
+    - [Get balance of addresses](#get-balance-of-addresses)
+    - [Get unspent output set of address or hash](#get-unspent-output-set-of-address-or-hash)
+- [Wallet apis](#wallet-apis)
+    - [Generate wallet seed](#generate-wallet-seed)
+    - [Create a wallet from seed](#create-a-wallet-from-seed)
+    - [Generate new address in wallet](#generate-new-address-in-wallet)
+    - [Updates wallet label](#updates-wallet-label)
+    - [Get wallet balance](#get-wallet-balance)
+    - [Spend coins from wallet](#spend-coins-from-wallet)
+- [Transaction apis](#transaction-apis)
+    - [Get unconfirmed transactions](#get-unconfirmed-transactions)
+    - [Get transaction info by id](#get-transaction-info-by-id)
+    - [Get raw transaction by id](#get-raw-transaction-by-id)
+    - [Inject raw transaction](#inject-raw-transaction)
+    - [Get transactions that are addresses related](#get-transactions-that-are-addresses-related)
+- [Block apis](#block-apis)
+    - [Get blochchain progress](#get-blochchain-progress)
+    - [Get block by hash or seq](#get-block-by-hash-or-seq)
+    - [Get blocks in specific range](#get-blocks-in-specific-range)
+    - [Get last N blocks](#get-last-n-blocks)
+- [Explorer apis](#explorer-apis)
+    - [Get address affected transactions](#get-address-affected-transactions)
+- [Uxout apis](#uxout-apis)
+    - [Get uxout](#get-uxout)
+    - [Get address affected uxouts](#get-address-affected-uxouts)
+- [Coin supply informations](#coin-supply-informations)
+- [Richlist show top N addresses by uxouts](#richlist-show-top-n-addresses-by-uxouts)
+- [AddressCount show count of unique address](#addresscount-show-count-of-unique-address)
+
+<!-- /MarkdownTOC -->
+
+## CSRF
+
+All `POST` requests require a CSRF token, obtained with a `GET /csrf` call.
+The token must be placed in the `X-CSRF-Token` header.  A token is only valid
+for 30 seconds and it is expected that the client obtains a new CSRF token
+for each request.
+
+### Get current csrf token
+
+```sh
+URI: /csrf
+Method: GET
+```
+
+example:
+
+```sh
+curl http://127.0.0.1:6420/csrf
+```
+
+result:
+
+```json
+{
+    "csrf_token": "klSgXoMOFTvEnt8KptBvHjhlFnW0OIkzyFVn4i8frDvIus9iLsFukqA9sM9Rxf3pLZHRLr82vBQxTq50vbYA8g"
+}
+```
 
 ## Simple query apis
 
@@ -35,27 +88,6 @@ result:
 {
     "version": "0.20.0",
     "commit": "cc733e9922d85c359f5f183d3a3a6e42c73ccb16"
-}
-```
-
-### Get current csrf token
-
-```sh
-URI: /csrf
-Method: GET
-```
-
-example:
-
-```sh
-curl http://127.0.0.1:6420/csrf
-```
-
-result:
-
-```json
-{
-    "csrf_token": "klSgXoMOFTvEnt8KptBvHjhlFnW0OIkzyFVn4i8frDvIus9iLsFukqA9sM9Rxf3pLZHRLr82vBQxTq50vbYA8g"
 }
 ```
 

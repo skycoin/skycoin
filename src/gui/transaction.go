@@ -244,8 +244,6 @@ func resendUnconfirmedTxns(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		rlt := gateway.ResendUnconfirmedTxns()
-		v, _ := json.MarshalIndent(rlt, "", "    ")
-		fmt.Println(v)
 		wh.SendOr404(w, rlt)
 		return
 	}

@@ -102,7 +102,8 @@ result:
             "src_tx": "b51e1933f286c4f03d73e8966186bafb25f64053db8514327291e690ae8aafa5",
             "address": "6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY",
             "coins": "2.000000",
-            "hours": 633
+            "hours": 633,
+            "calculated_hours": 10023
         },
     ],
     "outgoing_outputs": [],

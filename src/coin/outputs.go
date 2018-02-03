@@ -106,7 +106,7 @@ func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
 	if err != nil {
 		err := fmt.Errorf("UxOut.CoinHours: Calculating droplet seconds overflows uint64 seconds=%d droplets=%d uxid=%s", seconds, remainderDroplets, uo.Hash().Hex())
 		logger.Critical(err.Error())
-		return 0, error
+		return 0, err
 	}
 
 	// Add coinSeconds and seconds earned by droplets, rounded off

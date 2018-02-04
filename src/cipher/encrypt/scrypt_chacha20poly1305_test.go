@@ -68,7 +68,7 @@ func TestScryptChacha20poly1305Decrypt(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		for i := uint(20); i < 21; i++ {
+		for i := uint(15); i < 20; i++ {
 			name := fmt.Sprintf("N=1<<%v r=8 p=1 keyLen=32 %v", i, tc.name)
 			t.Run(name, func(t *testing.T) {
 				crypto := ScryptChacha20poly1305{N: 1 << i, R: 8, P: 1, KeyLen: 32}

@@ -47,7 +47,7 @@ func (s Sha256Xor) Encrypt(data []byte, password []byte) ([]byte, error) {
 		return nil, errors.New("missing password")
 	}
 
-	if len(data) > math.MaxUint32 {
+	if uint(len(data)) > math.MaxUint32 {
 		return nil, errors.New("data length overflowed, it must <= math.MaxUint32(4294967295)")
 	}
 

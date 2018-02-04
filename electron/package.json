@@ -36,6 +36,10 @@
                 {
                     "from": ".gox_output/${os}_${arch}",
                     "to": "./resources/app"
+                },
+                {
+                    "from": "build/icons/icon512x512.png",
+                    "to": "./Resources"
                 }
             ]
         },
@@ -48,8 +52,7 @@
                 "from": "../src/gui/static/dist/",
                 "to": "./app/dist/",
                 "filter": [
-                    "**/*",
-                    "!current-skycoin.json"
+                    "**/*"
                 ]
             },
             {
@@ -70,8 +73,8 @@
         "pack-mac": "build --dir -m -p=never"
     },
     "devDependencies": {
-        "electron": "^1.7.9",
-        "electron-builder": "^19.36.0"
+        "electron": "^1.8.0",
+        "electron-builder": "^19.55.0"
     },
     "dependencies": {
         "electron-log": "^2.2.9"

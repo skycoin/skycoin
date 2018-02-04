@@ -17,18 +17,6 @@ import (
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
-// GetUxOutByID gets UxOut by hash id.
-func (gw *FakeGateway) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
-	args := gw.Called(id)
-	return args.Get(0).(*historydb.UxOut), args.Error(1)
-}
-
-// GetAddrUxOuts gets all the address affected UxOuts.
-func (gw *FakeGateway) GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOutJSON, error) {
-	args := gw.Called(addr)
-	return args.Get(0).([]*historydb.UxOutJSON), args.Error(1)
-}
-
 func TestGetUxOutByID(t *testing.T) {
 	invalidHash := "carccb"
 	oddHash := "caccb"
@@ -50,150 +38,128 @@ func TestGetUxOutByID(t *testing.T) {
 		getGetUxOutByIDResponse *historydb.UxOut
 		getGetUxOutByIDError    error
 		httpResponse            *historydb.UxOutJSON
+		hostHeader              string
 	}{
 		{
-			"405",
-			http.MethodPost,
-			"/uxout",
-			http.StatusMethodNotAllowed,
-			"405 Method Not Allowed",
-			nil,
-			"uxid",
-			testutil.RandSHA256(t),
-			nil,
-			nil,
-			nil,
+			name:   "405",
+			method: http.MethodPost,
+			status: http.StatusMethodNotAllowed,
+			err:    "405 Method Not Allowed",
 		},
 		{
-			"400 - empty uxin value",
-			http.MethodGet,
-			"/uxout",
-			http.StatusBadRequest,
-			"400 Bad Request - uxid is empty",
-			&httpBody{
+			name:   "400 - empty uxin value",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - uxid is empty",
+			httpBody: &httpBody{
 				uxid: "",
 			},
-			"",
-			testutil.RandSHA256(t),
-			nil,
-			nil,
-			nil,
 		},
 		{
-			"400 - odd length uxin value",
-			http.MethodGet,
-			"/uxout",
-			http.StatusBadRequest,
-			"400 Bad Request - encoding/hex: odd length hex string",
-			&httpBody{
+			name:   "400 - odd length uxin value",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - encoding/hex: odd length hex string",
+			httpBody: &httpBody{
 				uxid: oddHash,
 			},
-			oddHash,
-			testutil.RandSHA256(t),
-			nil,
-			nil,
-			nil,
+			uxid: oddHash,
 		},
 		{
-			"400 - invalid uxin value",
-			http.MethodGet,
-			"/uxout",
-			http.StatusBadRequest,
-			"400 Bad Request - encoding/hex: invalid byte: U+0072 'r'",
-			&httpBody{
+			name:   "400 - invalid uxin value",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - encoding/hex: invalid byte: U+0072 'r'",
+			httpBody: &httpBody{
 				uxid: invalidHash,
 			},
-			invalidHash,
-			testutil.RandSHA256(t),
-			nil,
-			nil,
-			nil,
+			uxid: invalidHash,
 		},
 		{
-			"400 - getGetUxOutByIDError",
-			http.MethodGet,
-			"/uxout",
-			http.StatusBadRequest,
-			"400 Bad Request - getGetUxOutByIDError",
-			&httpBody{
+			name:   "400 - getGetUxOutByIDError",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - getGetUxOutByIDError",
+			httpBody: &httpBody{
 				uxid: validHash,
 			},
-			validHash,
-			testutil.SHA256FromHex(t, validHash),
-			nil,
-			errors.New("getGetUxOutByIDError"),
-			nil,
+			uxid:                 validHash,
+			getGetUxOutByIDArg:   testutil.SHA256FromHex(t, validHash),
+			getGetUxOutByIDError: errors.New("getGetUxOutByIDError"),
 		},
 		{
-			"404 - uxout == nil",
-			http.MethodGet,
-			"/uxout",
-			http.StatusNotFound,
-			"404 Not Found",
-			&httpBody{
+			name:   "404 - uxout == nil",
+			method: http.MethodGet,
+			status: http.StatusNotFound,
+			err:    "404 Not Found",
+			httpBody: &httpBody{
 				uxid: validHash,
 			},
-			validHash,
-			testutil.SHA256FromHex(t, validHash),
-			nil,
-			nil,
-			nil,
+			uxid:               validHash,
+			getGetUxOutByIDArg: testutil.SHA256FromHex(t, validHash),
 		},
 		{
-			"200",
-			http.MethodGet,
-			"/uxout",
-			http.StatusOK,
-			"404 Not Found",
-			&httpBody{
+			name:       "403 - Forbidden - invalid Host header",
+			method:     http.MethodGet,
+			status:     http.StatusForbidden,
+			err:        "403 Forbidden",
+			hostHeader: "example.com",
+		},
+		{
+			name:   "200",
+			method: http.MethodGet,
+			status: http.StatusOK,
+			err:    "404 Not Found",
+			httpBody: &httpBody{
 				uxid: validHash,
 			},
-			validHash,
-			testutil.SHA256FromHex(t, validHash),
-			&historydb.UxOut{},
-			nil,
-			historydb.NewUxOutJSON(&historydb.UxOut{}),
+			uxid:                    validHash,
+			getGetUxOutByIDArg:      testutil.SHA256FromHex(t, validHash),
+			getGetUxOutByIDResponse: &historydb.UxOut{},
+			httpResponse:            historydb.NewUxOutJSON(&historydb.UxOut{}),
 		},
 	}
 
 	for _, tc := range tt {
-		gateway := &FakeGateway{
-			t: t,
-		}
-		gateway.On("GetUxOutByID", tc.getGetUxOutByIDArg).Return(tc.getGetUxOutByIDResponse, tc.getGetUxOutByIDError)
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := NewGatewayerMock()
+			endpoint := "/uxout"
+			gateway.On("GetUxOutByID", tc.getGetUxOutByIDArg).Return(tc.getGetUxOutByIDResponse, tc.getGetUxOutByIDError)
 
-		var urlFull = tc.url
-		v := url.Values{}
-		if tc.httpBody != nil {
-			if tc.httpBody.uxid != "" {
-				v.Add("uxid", tc.httpBody.uxid)
+			v := url.Values{}
+			if tc.httpBody != nil {
+				if tc.httpBody.uxid != "" {
+					v.Add("uxid", tc.httpBody.uxid)
+				}
 			}
-		}
 
-		if len(v) > 0 {
-			urlFull += "?" + v.Encode()
-		}
+			if len(v) > 0 {
+				endpoint += "?" + v.Encode()
+			}
 
-		req, err := http.NewRequest(tc.method, urlFull, nil)
-		require.NoError(t, err)
-		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(getUxOutByID(gateway))
-
-		handler.ServeHTTP(rr, req)
-
-		status := rr.Code
-		require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
-			tc.name, status, tc.status)
-
-		if status != http.StatusOK {
-			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
-		} else {
-			var msg *historydb.UxOutJSON
-			err = json.Unmarshal(rr.Body.Bytes(), &msg)
+			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
-			require.Equal(t, tc.httpResponse, msg, tc.name)
-		}
+			if tc.hostHeader != "" {
+				req.Host = tc.hostHeader
+			}
+			rr := httptest.NewRecorder()
+			handler := NewServerMux(configuredHost, ".", gateway)
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
+				tc.name, status, tc.status)
+
+			if status != http.StatusOK {
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+			} else {
+				var msg *historydb.UxOutJSON
+				err = json.Unmarshal(rr.Body.Bytes(), &msg)
+				require.NoError(t, err)
+				require.Equal(t, tc.httpResponse, msg, tc.name)
+			}
+		})
 	}
 }
 
@@ -215,114 +181,102 @@ func TestGetAddrUxOuts(t *testing.T) {
 		getAddrUxOutsResponse []*historydb.UxOutJSON
 		getAddrUxOutsError    error
 		httpResponse          []*historydb.UxOutJSON
+		hostHeader            string
 	}{
 		{
-			"405",
-			http.MethodPost,
-			"/address_uxouts",
-			http.StatusMethodNotAllowed,
-			"405 Method Not Allowed",
-			nil,
-			testutil.MakeAddress(),
-			nil,
-			nil,
-			nil,
+			name:   "405",
+			method: http.MethodPost,
+			status: http.StatusMethodNotAllowed,
+			err:    "405 Method Not Allowed",
 		},
 		{
-			"400 - address is empty",
-			http.MethodGet,
-			"/address_uxouts",
-			http.StatusBadRequest,
-			"400 Bad Request - address is empty",
-			&httpBody{
+			name:   "400 - address is empty",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - address is empty",
+			httpBody: &httpBody{
 				address: "",
 			},
-			testutil.MakeAddress(),
-			nil,
-			nil,
-			nil,
 		},
 		{
-			"400 - cipher.DecodeBase58Address error",
-			http.MethodGet,
-			"/address_uxouts",
-			http.StatusBadRequest,
-			"400 Bad Request - Invalid address length",
-			&httpBody{
+			name:   "400 - cipher.DecodeBase58Address error",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - Invalid address length",
+			httpBody: &httpBody{
 				address: "abcd",
 			},
-			testutil.MakeAddress(),
-			nil,
-			nil,
-			nil,
 		},
 		{
-			"400 - gateway.GetAddrUxOuts error",
-			http.MethodGet,
-			"/address_uxouts",
-			http.StatusBadRequest,
-			"400 Bad Request - getAddrUxOutsError",
-			&httpBody{
+			name:   "400 - gateway.GetAddrUxOuts error",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - getAddrUxOutsError",
+			httpBody: &httpBody{
 				address: addressForGwError.String(),
 			},
-			addressForGwError,
-			nil,
-			errors.New("getAddrUxOutsError"),
-			nil,
+			getAddrUxOutsArg:   addressForGwError,
+			getAddrUxOutsError: errors.New("getAddrUxOutsError"),
 		},
 		{
-			"200",
-			http.MethodGet,
-			"/address_uxouts",
-			http.StatusOK,
-			"",
-			&httpBody{
+			name:       "403 - Forbidden - invalid Host header",
+			method:     http.MethodGet,
+			status:     http.StatusForbidden,
+			err:        "403 Forbidden",
+			hostHeader: "example.com",
+		},
+		{
+			name:   "200",
+			method: http.MethodGet,
+			status: http.StatusOK,
+			httpBody: &httpBody{
 				address: addressForGwResponse.String(),
 			},
-			addressForGwResponse,
-			[]*historydb.UxOutJSON{},
-			nil,
-			[]*historydb.UxOutJSON{},
+			getAddrUxOutsArg:      addressForGwResponse,
+			getAddrUxOutsResponse: []*historydb.UxOutJSON{},
+			httpResponse:          []*historydb.UxOutJSON{},
 		},
 	}
 
 	for _, tc := range tt {
-		gateway := &FakeGateway{
-			t: t,
-		}
-		gateway.On("GetAddrUxOuts", tc.getAddrUxOutsArg).Return(tc.getAddrUxOutsResponse, tc.getAddrUxOutsError)
+		t.Run(tc.name, func(t *testing.T) {
+			endpoint := "/address_uxouts"
+			gateway := NewGatewayerMock()
+			gateway.On("GetAddrUxOuts", tc.getAddrUxOutsArg).Return(tc.getAddrUxOutsResponse, tc.getAddrUxOutsError)
 
-		var urlFull = tc.url
-		v := url.Values{}
-		if tc.httpBody != nil {
-			if tc.httpBody.address != "" {
-				v.Add("address", tc.httpBody.address)
+			v := url.Values{}
+			if tc.httpBody != nil {
+				if tc.httpBody.address != "" {
+					v.Add("address", tc.httpBody.address)
+				}
 			}
-		}
 
-		if len(v) > 0 {
-			urlFull += "?" + v.Encode()
-		}
+			if len(v) > 0 {
+				endpoint += "?" + v.Encode()
+			}
 
-		req, err := http.NewRequest(tc.method, urlFull, nil)
-		require.NoError(t, err)
-		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(getAddrUxOuts(gateway))
-
-		handler.ServeHTTP(rr, req)
-
-		status := rr.Code
-		require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
-			tc.name, status, tc.status)
-
-		if status != http.StatusOK {
-			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
-		} else {
-			var msg []*historydb.UxOutJSON
-			err = json.Unmarshal(rr.Body.Bytes(), &msg)
+			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
-			require.Equal(t, tc.httpResponse, msg, tc.name)
-		}
+			if tc.hostHeader != "" {
+				req.Host = tc.hostHeader
+			}
+			rr := httptest.NewRecorder()
+			handler := NewServerMux(configuredHost, ".", gateway)
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
+				tc.name, status, tc.status)
+
+			if status != http.StatusOK {
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+			} else {
+				var msg []*historydb.UxOutJSON
+				err = json.Unmarshal(rr.Body.Bytes(), &msg)
+				require.NoError(t, err)
+				require.Equal(t, tc.httpResponse, msg, tc.name)
+			}
+		})
 	}
 }

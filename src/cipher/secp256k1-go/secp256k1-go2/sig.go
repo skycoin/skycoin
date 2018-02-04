@@ -203,7 +203,7 @@ func (sig *Signature) Bytes() []byte {
 	}
 
 	if len(r) != 32 || len(s) != 32 {
-		log.Panicf("signature size invalid: %s, %s", len(r), len(s))
+		log.Panicf("signature size invalid: %d, %d", len(r), len(s))
 	}
 
 	res := new(bytes.Buffer)

@@ -4,18 +4,9 @@ import (
 	"net/http"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/daemon"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
-
-// RegisterUxOutHandlers binds uxout entries.
-func RegisterUxOutHandlers(mux *http.ServeMux, gateway *daemon.Gateway) {
-	// get uxout by id.
-	mux.HandleFunc("/uxout", getUxOutByID(gateway))
-	// get all the address affected uxouts.
-	mux.HandleFunc("/address_uxouts", getAddrUxOuts(gateway))
-}
 
 func getUxOutByID(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

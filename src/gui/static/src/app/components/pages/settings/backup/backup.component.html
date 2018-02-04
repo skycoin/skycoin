@@ -1,24 +1,27 @@
-<md-card>
-  <p>Wallet Directory: {{ folder }}</p>
+<div class="sky-container sky-container-grey">
+  <app-header title="Backup"></app-header>
 
-  <p>BACKUP YOUR SEED. ON PAPER. IN A SAFE PLACE. As long as you have your seed, you can recover your coins.</p>
-</md-card>
+  <mat-card>
+    <p>Wallet Directory: {{ folder }}</p>
 
-<ngx-datatable #table
-  class="material"
-  [rows]="walletService.all() | async"
-  columnMode="flex"
-  [headerHeight]="50"
-  [footerHeight]="50"
-  [rowHeight]="50"
-  [limit]="10"
-  [scrollbarH]="true">
-  <ngx-datatable-column name="Wallet label" prop="meta.label" [flexGrow]="1"></ngx-datatable-column>
-  <ngx-datatable-column name="File name" prop="meta.filename" [flexGrow]="1"></ngx-datatable-column>
-  <ngx-datatable-column name="Download" [flexGrow]="1">
-    <ng-template let-row="row" ngx-datatable-cell-template>
-      <button md-raised-button color="primary" (click)="download(row)">Download</button>
-    </ng-template>
-  </ngx-datatable-column>
-</ngx-datatable>
+    <p>BACKUP YOUR SEED. ON PAPER. IN A SAFE PLACE. As long as you have your seed, you can recover your coins.</p>
+  </mat-card>
 
+  <ngx-datatable #table
+                 class="material"
+                 [rows]="walletService.all() | async"
+                 columnMode="flex"
+                 [headerHeight]="50"
+                 [footerHeight]="50"
+                 [rowHeight]="50"
+                 [limit]="10"
+                 [scrollbarH]="true">
+    <ngx-datatable-column name="Wallet label" prop="label" [flexGrow]="1"></ngx-datatable-column>
+    <ngx-datatable-column name="File name" prop="filename" [flexGrow]="1"></ngx-datatable-column>
+    <ngx-datatable-column name="Download" [flexGrow]="1">
+      <ng-template let-row="row" ngx-datatable-cell-template>
+        <button mat-raised-button color="primary" (click)="download(row)">Download</button>
+      </ng-template>
+    </ngx-datatable-column>
+  </ngx-datatable>
+</div>

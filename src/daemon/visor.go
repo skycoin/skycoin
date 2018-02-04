@@ -11,7 +11,6 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/strand"
-	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -104,6 +103,10 @@ func (vs *Visor) Run() error {
 		errC <- vs.v.Run()
 	}()
 
+	return vs.processRequests(errC)
+}
+
+func (vs *Visor) processRequests(errC <-chan error) error {
 	for {
 		select {
 		case err := <-errC:
@@ -126,14 +129,32 @@ func (vs *Visor) strand(name string, f func() error) error {
 	return strand.Strand(logger, vs.reqC, name, f)
 }
 
-// RefreshUnconfirmed checks unconfirmed txns against the blockchain and purges ones too old
-func (vs *Visor) RefreshUnconfirmed() []cipher.SHA256 {
+// RefreshUnconfirmed checks unconfirmed txns against the blockchain and marks
+// and returns those that become valid
+func (vs *Visor) RefreshUnconfirmed() ([]cipher.SHA256, error) {
 	var hashes []cipher.SHA256
-	vs.strand("RefreshUnconfirmed", func() error {
-		hashes = vs.v.RefreshUnconfirmed()
-		return nil
-	})
-	return hashes
+	if err := vs.strand("RefreshUnconfirmed", func() error {
+		var err error
+		hashes, err = vs.v.RefreshUnconfirmed()
+		return err
+	}); err != nil {
+		return nil, err
+	}
+	return hashes, nil
+}
+
+// RemoveInvalidUnconfirmed checks unconfirmed txns against the blockchain and
+// purges those that become permanently invalid, violating hard constraints
+func (vs *Visor) RemoveInvalidUnconfirmed() ([]cipher.SHA256, error) {
+	var hashes []cipher.SHA256
+	if err := vs.strand("RemoveInvalidUnconfirmed", func() error {
+		var err error
+		hashes, err = vs.v.RemoveInvalidUnconfirmed()
+		return err
+	}); err != nil {
+		return nil, err
+	}
+	return hashes, nil
 }
 
 // RequestBlocks Sends a GetBlocksMessage to all connections
@@ -286,16 +307,33 @@ func (vs *Visor) SetTxnsAnnounced(txns []cipher.SHA256) {
 	})
 }
 
-// InjectTransaction injects transaction to the unconfirmed pool and broadcasts it
-// The transaction must have a valid fee, be well-formed and not spend timelocked outputs.
-func (vs *Visor) InjectTransaction(txn coin.Transaction, pool *Pool) error {
-	return vs.strand("InjectTransaction", func() error {
-		if err := vs.injectTransaction(txn, pool); err != nil {
+// InjectBroadcastTransaction injects transaction to the unconfirmed pool and broadcasts it.
+// If the transaction violates either hard or soft constraints, it is not broadcast.
+// This method is to be used by user-initiated transaction injections.
+// For transactions received over the network, use InjectTransaction and check the result to
+// decide on repropagation.
+func (vs *Visor) InjectBroadcastTransaction(txn coin.Transaction, pool *Pool) error {
+	return vs.strand("InjectBroadcastTransaction", func() error {
+		if _, err := vs.v.InjectTransactionStrict(txn); err != nil {
 			return err
 		}
 
 		return vs.broadcastTransaction(txn, pool)
 	})
+}
+
+// InjectTransaction adds a transaction to the unconfirmed txn pool if it does not violate hard constraints.
+// The transaction is added to the pool if it only violates soft constraints.
+// If a soft constraint is violated, the specific error is returned separately.
+func (vs *Visor) InjectTransaction(tx coin.Transaction) (bool, *visor.ErrTxnViolatesSoftConstraint, error) {
+	var known bool
+	var softErr *visor.ErrTxnViolatesSoftConstraint
+	err := vs.strand("InjectTransaction", func() error {
+		var err error
+		known, softErr, err = vs.v.InjectTransaction(tx)
+		return err
+	})
+	return known, softErr, err
 }
 
 // Sends a signed block to all connections.
@@ -329,48 +367,6 @@ func (vs *Visor) broadcastTransaction(t coin.Transaction, pool *Pool) error {
 	}
 
 	return err
-}
-
-func (vs *Visor) injectTransaction(txn coin.Transaction, pool *Pool) error {
-	if err := vs.verifyTransaction(txn); err != nil {
-		return err
-	}
-
-	_, err := vs.v.InjectTxn(txn)
-	return err
-}
-
-func (vs *Visor) verifyTransaction(txn coin.Transaction) error {
-	inUxs, err := vs.v.Blockchain.Unspent().GetArray(txn.In)
-	if err != nil {
-		return err
-	}
-
-	f, err := fee.TransactionFee(&txn, vs.v.Blockchain.Time(), inUxs)
-	if err != nil {
-		return err
-	}
-
-	if err := fee.VerifyTransactionFee(&txn, f); err != nil {
-		return err
-	}
-
-	if visor.TransactionIsLocked(inUxs) {
-		return errors.New("Transaction has locked address inputs")
-	}
-
-	if err := txn.Verify(); err != nil {
-		return fmt.Errorf("Transaction Verification Failed, %v", err)
-	}
-
-	// valid the spending coins
-	for _, out := range txn.Out {
-		if err := visor.DropletPrecisionCheck(out.Coins); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 // ResendTransaction resends a known UnconfirmedTxn.
@@ -557,17 +553,6 @@ func (vs *Visor) UnConfirmKnow(hashes []cipher.SHA256) coin.Transactions {
 	return txns
 }
 
-// InjectTxn only try to append transaction into local blockchain, don't broadcast it.
-func (vs *Visor) InjectTxn(tx coin.Transaction) (bool, error) {
-	var known bool
-	err := vs.strand("InjectTxn", func() error {
-		var err error
-		known, err = vs.v.InjectTxn(tx)
-		return err
-	})
-	return known, err
-}
-
 // Communication layer for the coin pkg
 
 // GetBlocksMessage sent to request blocks since LastBlock
@@ -581,7 +566,7 @@ type GetBlocksMessage struct {
 func NewGetBlocksMessage(lastBlock uint64, requestedBlocks uint64) *GetBlocksMessage {
 	return &GetBlocksMessage{
 		LastBlock:       lastBlock,
-		RequestedBlocks: requestedBlocks, //count of blocks requested
+		RequestedBlocks: requestedBlocks, // count of blocks requested
 	}
 }
 
@@ -664,7 +649,7 @@ func (gbm *GiveBlocksMessage) Process(d *Daemon) {
 			logger.Critical("Added new block %d", b.Block.Head.BkSeq)
 			processed++
 		} else {
-			logger.Critical("Failed to execute received block: %v", err)
+			logger.Critical("Failed to execute received block %d: %v", b.Block.Head.BkSeq, err)
 			// Blocks must be received in order, so if one fails its assumed
 			// the rest are failing
 			break
@@ -843,17 +828,19 @@ func (gtm *GiveTxnsMessage) Process(d *Daemon) {
 	// Update unconfirmed pool with these transactions
 	for _, txn := range gtm.Txns {
 		// Only announce transactions that are new to us, so that peers can't spam relays
-		known, err := d.Visor.InjectTxn(txn)
+		known, softErr, err := d.Visor.InjectTransaction(txn)
 		if err != nil {
 			logger.Warning("Failed to record transaction %s: %v", txn.Hash().Hex(), err)
 			continue
+		} else if softErr != nil {
+			logger.Warning("Transaction soft violation: %v", err)
+			continue
+		} else if known {
+			logger.Warning("Duplicate Transaction: %s", txn.Hash().Hex())
+			continue
 		}
 
-		if known {
-			logger.Warning("Duplicate Transaction: %s", txn.Hash().Hex())
-		} else {
-			hashes = append(hashes, txn.Hash())
-		}
+		hashes = append(hashes, txn.Hash())
 	}
 
 	// Announce these transactions to peers

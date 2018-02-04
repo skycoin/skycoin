@@ -23,7 +23,7 @@ const defaultURL = 'http://127.0.0.1:6420/';
 let currentURL;
 
 // Force everything localhost, in case of a leak
-app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1');
+app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1, EXCLUDE api.coinmarketcap.com');
 app.commandLine.appendSwitch('ssl-version-fallback-min', 'tls1.2');
 app.commandLine.appendSwitch('--no-proxy-server');
 app.setAsDefaultProtocolClient('skycoin');
@@ -129,11 +129,21 @@ function createWindow(url) {
     url = defaultURL;
   }
 
+  // To fix appImage doesn't show icon in dock issue.
+  var appPath = app.getPath('exe');
+  var iconPath = (() => {
+    switch (process.platform) {
+      case 'linux':
+        return path.join(path.dirname(appPath), './resources/icon512x512.png');
+    }
+  })()
+
   // Create the browser window.
   win = new BrowserWindow({
     width: 1200,
     height: 900,
     title: 'Skycoin',
+    icon: iconPath,
     nodeIntegration: false,
     webPreferences: {
       webgl: false,

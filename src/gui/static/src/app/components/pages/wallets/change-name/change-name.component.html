@@ -1,8 +1,16 @@
-<div [formGroup]="form">
-  <md-input-container>
-    <input mdInput formControlName="label" placeholder="Label">
-  </md-input-container>
-</div>
-<div class="button-line">
-  <a md-raised-button (click)="rename()">Rename</a>
-</div>
+<app-modal title="Create Wallet" [dialog]="dialogRef">
+  <div [formGroup]="form">
+    <div class="form-field">
+      <label for="label">Name</label>
+      <input formControlName="label" id="label">
+    </div>
+  </div>
+  <div class="-buttons">
+    <app-button (action)="closePopup()">
+      Cancel
+    </app-button>
+    <app-button (action)="rename()" class="primary" [disabled]="!form.valid">
+      Rename
+    </app-button>
+  </div>
+</app-modal>

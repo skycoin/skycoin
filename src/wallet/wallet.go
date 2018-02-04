@@ -492,6 +492,56 @@ func DistributeSpendHours(inputHours, nAddrs uint64, haveChange bool) (uint64, [
 	return changeHours, addrHours, spendHours
 }
 
+func AdvancedDistributeSpendHours(inputHours, nAddrs uint64, addrHours []uint64, haveChange bool) (uint64, []uint64, uint64) {
+	feeHours := fee.RequiredFee(inputHours)
+	remainingHours := inputHours - feeHours
+
+	// Calculate total hours to be distributed to destination addresses
+	var distributeHours uint64
+	for _, hours := range addrHours {
+		distributeHours += hours
+	}
+
+	// Remaining hours are distributed as follows
+	// If there is change left, give all to change addr
+	// otherwise distribute remaining hours equally among the destination addresses
+	var changeHours uint64
+	if haveChange {
+		changeHours = remainingHours - distributeHours
+	} else {
+		// Distribute the left hours equally amongst the destination outputs
+		leftHours := remainingHours - distributeHours
+		addrHoursShare := leftHours / nAddrs
+
+		for i := range addrHours {
+			addrHours[i] += addrHoursShare
+		}
+
+		// Due to integer division, extra coin hours might remain after dividing by len(toAddrs)
+		// Allocate these extra hours to the toAddrs
+		extraHours := leftHours - (addrHoursShare * nAddrs)
+		i := 0
+		for extraHours > 0 {
+			addrHours[i] = addrHours[i] + 1
+			i++
+			extraHours--
+		}
+	}
+
+	// Assert that the hour calculation is correct
+	var spendHours uint64
+	for _, h := range addrHours {
+		spendHours += h
+	}
+	spendHours += changeHours
+
+	if spendHours != remainingHours {
+		logger.Panicf("spendHours != remainingHours (%d != %d), calculation error", spendHours, remainingHours)
+	}
+
+	return changeHours, addrHours, spendHours
+}
+
 // UxBalance is an intermediate representation of a UxOut for sorting and spend choosing
 type UxBalance struct {
 	Hash    cipher.SHA256

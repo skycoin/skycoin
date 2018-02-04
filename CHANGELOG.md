@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- #864, Add `advancedSend` cli command
 - #800, Add entropy parameter to `/wallet/newSeed` endpoint
 - #877, Add -disable-wallet-api CLI option
 - Add `total_coinhour_supply` and `current_coinhour_supply` to `/coinSupply` endpoint

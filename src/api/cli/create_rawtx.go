@@ -16,6 +16,10 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 
+	"reflect"
+
+	"strconv"
+
 	gcli "github.com/urfave/cli"
 )
 
@@ -24,7 +28,7 @@ var (
 	ErrTemporaryInsufficientBalance = errors.New("balance is not sufficient. Balance will be sufficient after unconfirmed transactions confirm")
 )
 
-// SendAmount represents an amount to send to an address
+// SendAmount represents the amount to send to an address
 type SendAmount struct {
 	Addr  string
 	Coins uint64
@@ -134,26 +138,35 @@ func fromWalletOrAddress(c *gcli.Context) (walletAddress, error) {
 	return wltAddr, nil
 }
 
-func getChangeAddress(wltAddr walletAddress, chgAddr string) (string, error) {
+// Change address is where the balance after a transaction is sent
+func getChangeAddress(wltAddr interface{}, chgAddr string) (string, error) {
 	if chgAddr == "" {
-		switch {
-		case wltAddr.Address != "":
-			// use the from address as change address
-			chgAddr = wltAddr.Address
-		case wltAddr.Wallet != "":
-			// get the default wallet's coin base address
-			wlt, err := wallet.Load(wltAddr.Wallet)
-			if err != nil {
-				return "", WalletLoadError(err)
-			}
+		switch wltAddr.(type) {
+		case walletAddress, walletAddresses:
+			walletAddr := reflect.ValueOf(wltAddr)
+			switch {
+			// normal send with a single from address
+			case walletAddr.FieldByName("Address").Kind() == reflect.String:
+				// use from address as change address
+				chgAddr = walletAddr.FieldByName("Address").String()
+			// advanced send with multiple from address
+			case walletAddr.FieldByName("Address").Kind() == reflect.Slice:
+				chgAddr = walletAddr.FieldByName("Address").Index(0).String()
+			case walletAddr.FieldByName("Wallet").String() != "":
+				// get the default wallet's coin base address
+				wlt, err := wallet.Load(walletAddr.FieldByName("Wallet").String())
+				if err != nil {
+					return "", WalletLoadError(err)
+				}
 
-			if len(wlt.Entries) > 0 {
-				chgAddr = wlt.Entries[0].Address.String()
-			} else {
-				return "", errors.New("no change address was found")
+				if len(wlt.Entries) > 0 {
+					chgAddr = wlt.Entries[0].Address.String()
+				} else {
+					return "", errors.New("no change address was found")
+				}
+			default:
+				return "", errors.New("both wallet file, from address and change address are empty")
 			}
-		default:
-			return "", errors.New("both wallet file, from address and change address are empty")
 		}
 	}
 
@@ -219,6 +232,21 @@ func getAmount(c *gcli.Context) (uint64, error) {
 	return amt, nil
 }
 
+func getHours(c *gcli.Context) (uint64, error) {
+	if c.NArg() < 3 {
+		return 0, nil
+	}
+
+	hourstr := c.Args().Get(2)
+	hours, err := strconv.ParseUint(hourstr, 10, 0)
+	if err != nil {
+		return 0, fmt.Errorf("invalid hours: %v", err)
+	}
+
+	return hours, nil
+
+}
+
 func createRawTxCmdHandler(c *gcli.Context) (*coin.Transaction, error) {
 	rpcClient := RpcClientFromContext(c)
 
@@ -248,21 +276,30 @@ func createRawTxCmdHandler(c *gcli.Context) (*coin.Transaction, error) {
 	return CreateRawTxFromAddress(rpcClient, wltAddr.Address, wltAddr.Wallet, chgAddr, toAddrs)
 }
 
-func validateSendAmounts(toAddrs []SendAmount) error {
-	for _, arg := range toAddrs {
-		// validate to address
-		_, err := cipher.DecodeBase58Address(arg.Addr)
-		if err != nil {
-			return ErrAddress
+func validateSendAmounts(toAddrs interface{}) error {
+	switch toAddrs.(type) {
+	case []SendAmount, []AdvancedSendAmount:
+		// Get interface value
+		s := reflect.ValueOf(toAddrs)
+
+		toAddrsLen := s.Len()
+		if toAddrsLen == 0 {
+			return errors.New("no destination addresses")
 		}
 
-		if arg.Coins == 0 {
-			return errors.New("Cannot send 0 coins")
-		}
-	}
+		for i := 0; i < s.Len(); i++ {
+			arg := s.Index(i)
+			_, err := cipher.DecodeBase58Address(arg.FieldByName("Addr").String())
+			if err != nil {
+				return ErrAddress
+			}
 
-	if len(toAddrs) == 0 {
-		return errors.New("No destination addresses")
+			if arg.FieldByName("Coins").Uint() == 0 {
+				return errors.New("cannot send 0 coins")
+			}
+		}
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", reflect.TypeOf(toAddrs)))
 	}
 
 	return nil
@@ -428,6 +465,7 @@ func verifyTransactionConstraints(txn *coin.Transaction, uxIn coin.UxArray, maxS
 	// return coin.VerifyTransactionHoursSpending(head.Time(), uxIn, uxOut)
 }
 
+// @TODO inAddrs is unnecessary here
 func createRawTx(uxouts visor.ReadableOutputSet, wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount) (*coin.Transaction, error) {
 	// Calculate total required coins
 	var totalCoins uint64

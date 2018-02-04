@@ -155,6 +155,8 @@ func (rpc *WebRPC) initHandlers() error {
 		"get_blocks": getBlocksHandler,
 		// get unspent outputs of address
 		"get_outputs": getOutputsHandler,
+		// get unspent outputs of address with filters
+		"get_outputs_filters": getOutputsWithFiltersHandler,
 		// get transaction by txid
 		"get_transaction": getTransactionHandler,
 		// broadcast transaction

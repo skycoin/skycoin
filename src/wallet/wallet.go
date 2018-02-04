@@ -10,7 +10,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"encoding/hex"
@@ -28,11 +27,6 @@ var (
 	Version = "0.2"
 
 	logger = logging.MustGetLogger("wallet")
-
-	once sync.Once
-
-	// cryptoType default wallet crypto type
-	// cryptoType = CryptoTypeScryptChacha20poly1305
 
 	// ErrInsufficientBalance is returned if a wallet does not have enough balance for a spend
 	ErrInsufficientBalance = errors.New("balance is not sufficient")
@@ -109,28 +103,15 @@ func newWalletFilename() string {
 	return fmt.Sprintf("%s_%s.%s", timestamp, padding, WalletExt)
 }
 
-// SetCryptoType sets wallet crypto type
-// func SetCryptoType(ct CryptoType) error {
-// 	var err error
-// 	once.Do(func() {
-// 		_, err = getCrypto(ct)
-// 		if err != nil {
-// 			return
-// 		}
-// 		cryptoType = ct
-// 	})
-
-// 	return err
-// }
-
 // Wallet contains meta data and address entries.
 //
 // Meta:
 //      filename
 //      version
 //      label
-// 		encrypted - whether this wallet is encrypted
 //      seed
+// 		encrypted - whether this wallet is encrypted
+// 		cryptoType - wallet crypto type
 //      encryptedSeed - encrypted seed
 //      lastSeed - seed for generating next address
 // .    encryptedLastSeed - encrypted last seed

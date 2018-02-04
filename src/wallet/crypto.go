@@ -22,7 +22,7 @@ type cryptor interface {
 // CryptoType represents the type of crypto name
 type CryptoType string
 
-// StrToCryptoType converts string to CryptoType
+// CryptoTypeFromString converts string to CryptoType
 func CryptoTypeFromString(s string) (CryptoType, error) {
 	switch CryptoType(s) {
 	case CryptoTypeSha256Xor:

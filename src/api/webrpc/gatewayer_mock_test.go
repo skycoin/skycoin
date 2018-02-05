@@ -26,31 +26,6 @@ func NewGatewayerMock() *GatewayerMock {
 	return &GatewayerMock{}
 }
 
-// GetInputData returns the data of an inputs
-func (m *GatewayerMock) GetInputData(in cipher.SHA256) (*historydb.UxOut, error) {
-	return nil, nil
-}
-
-// GetTransactionInputsData returns the inputs data of a transaction
-func (m *GatewayerMock) GetTransactionInputsData(tx *coin.Transaction) ([]*historydb.UxOut, error) {
-	return nil, nil
-}
-
-// GetBlockInputsData returns the inputs data of a block
-func (m *GatewayerMock) GetBlockInputsData(block *coin.Block) ([][]*historydb.UxOut, error) {
-	return nil, nil
-}
-
-// GetSignedBlockInputsData returns the inputs data of a signed block
-func (m *GatewayerMock) GetSignedBlockInputsData(block *coin.SignedBlock) ([][]*historydb.UxOut, error) {
-	return nil, nil
-}
-
-// GetSignedBlocksInputsData returns the inputs data of a signed blocks slice
-func (m *GatewayerMock) GetSignedBlocksInputsData(blocks []coin.SignedBlock) ([][][]*historydb.UxOut, error) {
-	return nil, nil
-}
-
 // GetAddrUxOuts mocked method
 func (m *GatewayerMock) GetAddrUxOuts(p0 cipher.Address) ([]*historydb.UxOutJSON, error) {
 
@@ -213,6 +188,33 @@ func (m *GatewayerMock) GetUnspentOutputs(p0 ...daemon.OutputsFilter) (visor.Rea
 	switch res := ret.Get(0).(type) {
 	case nil:
 	case visor.ReadableOutputSet:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
+
+}
+
+// GetUxOutByID mocked method
+func (m *GatewayerMock) GetUxOutByID(p0 cipher.SHA256) (*historydb.UxOut, error) {
+
+	ret := m.Called(p0)
+
+	var r0 *historydb.UxOut
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case *historydb.UxOut:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))

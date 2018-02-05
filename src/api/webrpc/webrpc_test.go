@@ -39,24 +39,27 @@ type fakeGateway struct {
 	uxouts               []coin.UxOut
 }
 
-func (fg *fakeGateway) GetInputData(in cipher.SHA256) (*historydb.UxOut, error) {
-	return nil, nil
-}
+func (fg *fakeGateway) GetUxOutByID(in cipher.SHA256) (*historydb.UxOut, error) {
+	pubkey, _ := cipher.PubKeyFromHex("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
 
-func (fg *fakeGateway) GetTransactionInputsData(tx *coin.Transaction) ([]*historydb.UxOut, error) {
-	return nil, nil
-}
+	uxOut := historydb.UxOut{
+		SpentBlockSeq: 1,
+		SpentTxID:     cipher.SumSHA256([]byte("123")),
+		Out: coin.UxOut{
+			Head: coin.UxHead{
+				BkSeq: 1,
+				Time:  1,
+			},
+			Body: coin.UxBody{
+				Address:        cipher.AddressFromPubKey(pubkey),
+				Coins:          1,
+				Hours:          1,
+				SrcTransaction: cipher.SumSHA256([]byte("123")),
+			},
+		},
+	}
 
-func (fg *fakeGateway) GetBlockInputsData(block *coin.Block) ([][]*historydb.UxOut, error) {
-	return nil, nil
-}
-
-func (fg *fakeGateway) GetSignedBlockInputsData(block *coin.SignedBlock) ([][]*historydb.UxOut, error) {
-	return nil, nil
-}
-
-func (fg *fakeGateway) GetSignedBlocksInputsData(blocks []coin.SignedBlock) ([][][]*historydb.UxOut, error) {
-	return nil, nil
+	return &uxOut, nil
 }
 
 func (fg fakeGateway) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error) {

@@ -142,7 +142,14 @@ func testClientGetTransactionByID(t *testing.T, c *Client, s *WebRPC, gw *fakeGa
 	txn, err = c.GetTransactionByID(rawTxID)
 	require.NoError(t, err)
 	expectedTxn := decodeRawTransaction(rawTxStr)
-	rbTx, err := visor.NewReadableTransaction(expectedTxn, make([]*historydb.UxOut, 0, 0))
+	expectedInputsData := make([]*historydb.UxOut, 0, len(expectedTxn.Txn.In))
+	for _, in := range expectedTxn.Txn.In {
+		uxout, err := gw.GetUxOutByID(in)
+		require.NoError(t, err)
+		require.NotNil(t, uxout)
+		expectedInputsData = append(expectedInputsData, uxout)
+	}
+	rbTx, err := visor.NewReadableTransaction(expectedTxn, expectedInputsData)
 	require.NoError(t, err)
 	require.Equal(t, &visor.TransactionResult{
 		Status:      expectedTxn.Status,

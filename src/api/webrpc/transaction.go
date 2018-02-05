@@ -7,6 +7,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
 // TxnResult wraps the visor.TransactionResult
@@ -45,7 +46,7 @@ func getTransactionHandler(req Request, gateway Gatewayer) Response {
 		return makeErrorResponse(errCodeInvalidRequest, "transaction doesn't exist")
 	}
 
-	txInputsData, err := gateway.GetTransactionInputsData(&txn.Txn)
+	txInputsData, err := GetTransactionInputsData(&txn.Txn, gateway)
 	if err != nil {
 		return makeErrorResponse(errCodeInternalError, "invalid transaction")
 	}
@@ -85,4 +86,26 @@ func injectTransactionHandler(req Request, gateway Gatewayer) Response {
 	}
 
 	return makeSuccessResponse(req.ID, TxIDJson{txn.Hash().Hex()})
+}
+
+// GetTransactionInputsData returns the inputs data of a transaction
+func GetTransactionInputsData(tx *coin.Transaction, gateway Gatewayer) ([]*historydb.UxOut, error) {
+	txInputsData := make([]*historydb.UxOut, 0, len(tx.In))
+
+	for _, in := range tx.In {
+
+		uxout, err := gateway.GetUxOutByID(in)
+		if err != nil {
+			logger.Error("%v", err)
+			return nil, err
+		}
+		if uxout == nil {
+			logger.Error("uxout of %d does not exist in history db", in)
+			return nil, fmt.Errorf("uxout of %d does not exist in history db", in)
+		}
+
+		txInputsData = append(txInputsData, uxout)
+	}
+
+	return txInputsData, nil
 }

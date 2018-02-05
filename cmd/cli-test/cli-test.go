@@ -7,32 +7,37 @@ import (
 	"os/exec"
 	"strings"
 
+	"encoding/hex"
+	"encoding/json"
+
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
 /**
 Current list of tested commands:
 
-generateAddresses
-verifyAddress
-send
-send -m (send-to-many)
-broadcastTransaction
-createRawTransaction
-getWalletBalance
-transaction
-status
+generateAddresses - done
+verifyAddress - done
+send - done
+send -m (send-to-many) - done
+broadcastTransaction - done
+createRawTransaction - done
+getWalletBalance - done
+transaction done
+status - done
 */
 
 /**
 The minimal requirements for the cli are
 - a wallet file
 - two addresses ( to test send -m )
+- the wallet address with most coins has enough coinhours for 3 transactions
 */
 
 const cliName = "skycoin-cli"
 
 //@TODO We can put the commands to be tested and their arguments into an array and iterate over it to keep this more DRY
+// @TODO can we fetch the error from the cli command and show the exact error?
 func main() {
 	var (
 		cmdOut    []byte
@@ -100,7 +105,95 @@ func main() {
 	// use the correct address from above to check verifyAddress
 	cmdArgs = []string{"verifyAddress", address}
 	if cmdOut, err = exec.Command(cliName, cmdArgs...).Output(); err != nil {
-		fmt.Fprintln(os.Stderr, fmt.Sprintf("There was an error running  %v command: ", cmdArgs[0]), err)
+		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cmdArgs[0]), err)
+		os.Exit(1)
+	}
+
+	cmdArgs = []string{"walletBalance", wltFile}
+	if cmdOut, err = exec.Command(cliName, cmdArgs...).Output(); err != nil {
+		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cmdArgs[0]), err)
+		os.Exit(1)
+	}
+
+	if !json.Valid(cmdOut) {
+		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command", cmdArgs[0]))
+		os.Exit(1)
+	}
+
+	cmdArgs = []string{"status"}
+	if cmdOut, err = exec.Command(cliName, cmdArgs...).Output(); err != nil {
+		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cmdArgs[0]), err)
+		os.Exit(1)
+	}
+
+	if !json.Valid(cmdOut) {
+		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command", cmdArgs[0]))
+		os.Exit(1)
+	}
+
+	cmdArgs = []string{"createRawTransaction", "-f", wltFile, testAddrs[0], "0.001"}
+	if cmdOut, err = exec.Command(cliName, cmdArgs...).Output(); err != nil {
+		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cmdArgs[0]), err)
+		os.Exit(1)
+	}
+
+	// validate the rawTx
+	rawTx := strings.TrimSpace(string(cmdOut))
+	_, err = hex.DecodeString(rawTx)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cmdArgs[0]), err)
+		os.Exit(1)
+	}
+
+	// use the valid rawTx from above to test broadcast transaction
+	cmdArgs = []string{"broadcastTransaction", rawTx}
+	if cmdOut, err = exec.Command(cliName, cmdArgs...).Output(); err != nil {
+		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cmdArgs[0]), err)
+		os.Exit(1)
+	}
+
+	txId := strings.TrimSpace(string(cmdOut))
+	// validate the txId
+	_, err = cipher.SHA256FromHex(txId)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cmdArgs[0]), err)
+		os.Exit(1)
+	}
+
+	// use the txId from to test transaction
+	cmdArgs = []string{"transaction", txId}
+	if cmdOut, err = exec.Command(cliName, cmdArgs...).Output(); err != nil {
+		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cmdArgs[0]), err)
+		os.Exit(1)
+	}
+
+	if !json.Valid(cmdOut) {
+		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command", cmdArgs[0]))
+		os.Exit(1)
+	}
+
+	cmdArgs = []string{"send", "-f", wltFile, testAddrs[0], "0.001"}
+	if cmdOut, err = exec.Command(cliName, cmdArgs...).Output(); err != nil {
+		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cmdArgs[0]), err)
+		os.Exit(1)
+	}
+
+	// check that response contains the substring `txid:`
+	if !strings.Contains(string(cmdOut), "txid:") {
+		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cmdArgs[0]), err)
+		os.Exit(1)
+	}
+
+	// send many
+	cmdArgs = []string{"send", "-f", wltFile, "-m", fmt.Sprintf("'[{\"addr\":\"%s\", \"coins\": \"0.001\"}, {\"addr\":\"%s\", \"coins\": \"0.001\"}]'", testAddrs[0], testAddrs[1])}
+	if cmdOut, err = exec.Command(cliName, cmdArgs...).Output(); err != nil {
+		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cmdArgs[0]), err)
+		os.Exit(1)
+	}
+
+	// check that response contains the substring `txid:`
+	if !strings.Contains(string(cmdOut), "txid:") {
+		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cmdArgs[0]), err)
 		os.Exit(1)
 	}
 

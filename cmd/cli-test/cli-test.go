@@ -30,6 +30,8 @@ The minimal requirements for the cli are
 - two addresses ( to test send -m )
 */
 
+const cliName = "skycoin-cli"
+
 //@TODO We can put the commands to be tested and their arguments into an array and iterate over it to keep this more DRY
 func main() {
 	var (
@@ -45,6 +47,11 @@ func main() {
 	flag.StringVar(&wltFile, "wallet-file", wltFile, "wallet file used for testing cli commands")
 	flag.StringVar(&addresses, "addrs", addresses, "destination addresses for sending coins")
 	flag.Parse()
+
+	if help {
+		flag.Usage()
+		return
+	}
 
 	if wltFile == "" {
 		fmt.Fprint(os.Stderr, "no wallet file given")
@@ -76,9 +83,8 @@ func main() {
 		}
 	}
 
-	cmdName := "skycoin-cli"
 	cmdArgs := []string{"generateAddresses", "-f", wltFile}
-	if cmdOut, err = exec.Command(cmdName, cmdArgs...).Output(); err != nil {
+	if cmdOut, err = exec.Command(cliName, cmdArgs...).Output(); err != nil {
 		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cmdArgs[0]), err)
 		os.Exit(1)
 	}
@@ -93,7 +99,7 @@ func main() {
 
 	// use the correct address from above to check verifyAddress
 	cmdArgs = []string{"verifyAddress", address}
-	if cmdOut, err = exec.Command(cmdName, cmdArgs...).Output(); err != nil {
+	if cmdOut, err = exec.Command(cliName, cmdArgs...).Output(); err != nil {
 		fmt.Fprintln(os.Stderr, fmt.Sprintf("There was an error running  %v command: ", cmdArgs[0]), err)
 		os.Exit(1)
 	}

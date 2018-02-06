@@ -37,12 +37,6 @@ func TestScryptChacha20poly1305Encrypt(t *testing.T) {
 }
 
 func TestScryptChacha20poly1305Decrypt(t *testing.T) {
-	// var encryptedData []byte
-	// crypto := ScryptChacha20poly1305{N: 1 << 19, R: 8, P: 1, KeyLen: 32}
-	// encryptedData, err := crypto.Encrypt([]byte("plaintext"), []byte("pwd"))
-	// require.NoError(t, err)
-	// fmt.Println(string(encryptedData))
-
 	tt := []struct {
 		name    string
 		data    []byte

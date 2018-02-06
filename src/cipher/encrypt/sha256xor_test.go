@@ -66,8 +66,8 @@ func TestEncrypt(t *testing.T) {
 				return
 			}
 
-			n := (lengthSize + len(tc.data)) / blockSize
-			m := (lengthSize + len(tc.data)) % blockSize
+			n := (sha256XorDataLengthSize + len(tc.data)) / sha256XorBlockSize
+			m := (sha256XorDataLengthSize + len(tc.data)) % sha256XorBlockSize
 			if m > 0 {
 				n++
 			}
@@ -75,11 +75,11 @@ func TestEncrypt(t *testing.T) {
 			rdata, err := base64.StdEncoding.DecodeString(string(edata))
 			require.NoError(t, err)
 
-			totalEncryptedDataLen := checksumSize + nonceSize + 32 + n*blockSize // 32 is the hash data length
+			totalEncryptedDataLen := sha256XorChecksumSize + sha256XorNonceSize + 32 + n*sha256XorBlockSize // 32 is the hash data length
 			require.Equal(t, totalEncryptedDataLen, len(rdata))
 			var checksum cipher.SHA256
-			copy(checksum[:], rdata[:checksumSize])
-			require.Equal(t, checksum, cipher.SumSHA256(rdata[checksumSize:]))
+			copy(checksum[:], rdata[:sha256XorChecksumSize])
+			require.Equal(t, checksum, cipher.SumSHA256(rdata[sha256XorChecksumSize:]))
 		})
 	}
 
@@ -92,8 +92,8 @@ func TestEncrypt(t *testing.T) {
 			edata, err := Sha256Xor{}.Encrypt(data, pwd)
 			require.NoError(t, err)
 
-			n := (lengthSize + len(data)) / blockSize
-			m := (lengthSize + len(data)) % blockSize
+			n := (sha256XorDataLengthSize + len(data)) / sha256XorBlockSize
+			m := (sha256XorDataLengthSize + len(data)) % sha256XorBlockSize
 			if m > 0 {
 				n++
 			}
@@ -101,11 +101,11 @@ func TestEncrypt(t *testing.T) {
 			rdata, err := base64.StdEncoding.DecodeString(string(edata))
 			require.NoError(t, err)
 
-			totalEncryptedDataLen := checksumSize + nonceSize + 32 + n*blockSize // 32 is the hash data length
+			totalEncryptedDataLen := sha256XorChecksumSize + sha256XorNonceSize + 32 + n*sha256XorBlockSize // 32 is the hash data length
 			require.Equal(t, totalEncryptedDataLen, len(rdata))
 			var checksum cipher.SHA256
-			copy(checksum[:], rdata[:checksumSize])
-			require.Equal(t, checksum, cipher.SumSHA256(rdata[checksumSize:]))
+			copy(checksum[:], rdata[:sha256XorChecksumSize])
+			require.Equal(t, checksum, cipher.SumSHA256(rdata[sha256XorChecksumSize:]))
 		})
 	}
 }
@@ -193,17 +193,17 @@ func TestDecrypt(t *testing.T) {
 
 // encrypts data, manually set the data length, so we could test invalid data length cases.
 func makeEncryptedData(t *testing.T, data []byte, dataLength uint32, password []byte) []byte {
-	dataLenBytes := make([]byte, lengthSize)
+	dataLenBytes := make([]byte, sha256XorDataLengthSize)
 	binary.LittleEndian.PutUint32(dataLenBytes, dataLength)
 
 	ldata := append(dataLenBytes, data...)
 
 	// Pads length + data with null to 32 bytes
 	l := len(ldata) // hash + length + data
-	n := l / blockSize
-	m := l % blockSize
+	n := l / sha256XorBlockSize
+	m := l % sha256XorBlockSize
 	if m > 0 {
-		paddingNull := make([]byte, blockSize-m)
+		paddingNull := make([]byte, sha256XorBlockSize-m)
 		ldata = append(ldata, paddingNull...)
 		n++
 	}
@@ -215,12 +215,12 @@ func makeEncryptedData(t *testing.T, data []byte, dataLength uint32, password []
 	blocks := []cipher.SHA256{dataHash}
 	for i := 0; i < n; i++ {
 		var b cipher.SHA256
-		copy(b[:], ldata[i*blockSize:(i+1)*blockSize])
+		copy(b[:], ldata[i*sha256XorBlockSize:(i+1)*sha256XorBlockSize])
 		blocks = append(blocks, b)
 	}
 
 	// Generates a nonce
-	nonce := testutil.RandBytes(t, int(nonceSize))
+	nonce := testutil.RandBytes(t, int(sha256XorNonceSize))
 	// Hash the nonce
 	hashNonce := cipher.SumSHA256(nonce)
 	// Hash the password

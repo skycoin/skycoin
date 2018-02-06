@@ -17,13 +17,13 @@ import (
 
 const (
 	// Data size of each block
-	blockSize = 32 // 32 bytes
+	sha256XorBlockSize = 32 // 32 bytes
 	// Nonce data size
-	nonceSize = 32 // 32 bytes
+	sha256XorNonceSize = 32 // 32 bytes
 	// Checksum data size
-	checksumSize = 32 // 32 bytes
+	sha256XorChecksumSize = 32 // 32 bytes
 	// Data length size
-	lengthSize = 4 // 4 bytes
+	sha256XorDataLengthSize = 4 // 4 bytes
 )
 
 // DefaultSha256Xor default sha256xor encryptor
@@ -52,7 +52,7 @@ func (s Sha256Xor) Encrypt(data []byte, password []byte) ([]byte, error) {
 	}
 
 	// Sets data length prefix
-	dataLenBytes := make([]byte, lengthSize)
+	dataLenBytes := make([]byte, sha256XorDataLengthSize)
 	binary.LittleEndian.PutUint32(dataLenBytes, uint32(len(data)))
 
 	// Prefixes data with length
@@ -60,10 +60,10 @@ func (s Sha256Xor) Encrypt(data []byte, password []byte) ([]byte, error) {
 
 	// Pads length + data with null to 32 bytes
 	l := len(ldata) // hash + length + data
-	n := l / blockSize
-	m := l % blockSize
+	n := l / sha256XorBlockSize
+	m := l % sha256XorBlockSize
 	if m > 0 {
-		paddingNull := make([]byte, blockSize-m)
+		paddingNull := make([]byte, sha256XorBlockSize-m)
 		ldata = append(ldata, paddingNull...)
 		n++
 	}
@@ -75,12 +75,12 @@ func (s Sha256Xor) Encrypt(data []byte, password []byte) ([]byte, error) {
 	blocks := []cipher.SHA256{dataHash}
 	for i := 0; i < n; i++ {
 		var b cipher.SHA256
-		copy(b[:], ldata[i*blockSize:(i+1)*blockSize])
+		copy(b[:], ldata[i*sha256XorBlockSize:(i+1)*sha256XorBlockSize])
 		blocks = append(blocks, b)
 	}
 
 	// Generates a nonce
-	nonce := cipher.RandByte(nonceSize)
+	nonce := cipher.RandByte(sha256XorNonceSize)
 	// Hash the nonce
 	hashNonce := cipher.SumSHA256(nonce)
 	// Derives key by secp256k1 hashing password
@@ -137,7 +137,7 @@ func (s Sha256Xor) Decrypt(data []byte, password []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	if n != checksumSize {
+	if n != sha256XorChecksumSize {
 		return nil, errors.New("invalid checksum length")
 	}
 
@@ -148,13 +148,13 @@ func (s Sha256Xor) Decrypt(data []byte, password []byte) ([]byte, error) {
 	}
 
 	// Gets the nonce
-	nonce := make([]byte, nonceSize)
+	nonce := make([]byte, sha256XorNonceSize)
 	n, err = buf.Read(nonce)
 	if err != nil {
 		return nil, err
 	}
 
-	if n != nonceSize {
+	if n != sha256XorNonceSize {
 		return nil, errors.New("invalid nonce length")
 	}
 
@@ -168,7 +168,7 @@ func (s Sha256Xor) Decrypt(data []byte, password []byte) ([]byte, error) {
 			break
 		}
 
-		if n != blockSize {
+		if n != sha256XorBlockSize {
 			return nil, errors.New("invalid block size, must be multiple of 32 bytes")
 		}
 
@@ -197,13 +197,13 @@ func (s Sha256Xor) Decrypt(data []byte, password []byte) ([]byte, error) {
 	}
 
 	// Reads out the data length
-	dataLenBytes := make([]byte, lengthSize)
+	dataLenBytes := make([]byte, sha256XorDataLengthSize)
 	n, err = buf.Read(dataLenBytes)
 	if err != nil {
 		return nil, err
 	}
 
-	if n != lengthSize {
+	if n != sha256XorDataLengthSize {
 		return nil, errors.New("read data length failed")
 	}
 

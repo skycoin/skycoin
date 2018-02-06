@@ -23,11 +23,11 @@ func TestScryptChacha20poly1305Encrypt(t *testing.T) {
 			data, err := base64.StdEncoding.DecodeString(string(encData))
 			require.NoError(t, err)
 			// Checks the prefix
-			ml := binary.LittleEndian.Uint16(data[:metaLengthSize])
+			ml := binary.LittleEndian.Uint16(data[:scryptChacha20MetaLengthSize])
 			require.True(t, ml <= math.MaxUint16)
-			require.True(t, int(metaLengthSize+ml) <= len(data))
+			require.True(t, int(scryptChacha20MetaLengthSize+ml) <= len(data))
 			var m meta
-			require.NoError(t, json.Unmarshal(data[metaLengthSize:metaLengthSize+ml], &m))
+			require.NoError(t, json.Unmarshal(data[scryptChacha20MetaLengthSize:scryptChacha20MetaLengthSize+ml], &m))
 			require.Equal(t, m.N, 1<<i)
 			require.Equal(t, m.R, 8)
 			require.Equal(t, m.P, 1)

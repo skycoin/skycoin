@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	metaLengthSize = 2  // meta data length field size in bytes
-	saltSize       = 32 // salt bytes number
+	scryptChacha20MetaLengthSize = 2  // meta data length field size in bytes
+	scryptChacha20SaltSize       = 32 // salt bytes number
 )
 
 // Default scrypt paramenters
@@ -69,7 +69,7 @@ func (s ScryptChacha20poly1305) Encrypt(data, password []byte) ([]byte, error) {
 	}
 
 	// Scyrpt derives key from password
-	salt := cipher.RandByte(saltSize)
+	salt := cipher.RandByte(scryptChacha20SaltSize)
 	dk, err := scrypt.Key(password, salt, s.N, s.R, s.P, s.KeyLen)
 	if err != nil {
 		return nil, err
@@ -94,7 +94,7 @@ func (s ScryptChacha20poly1305) Encrypt(data, password []byte) ([]byte, error) {
 		return nil, errors.New("metadata length beyond the math.MaxUint16")
 	}
 
-	length := make([]byte, metaLengthSize)
+	length := make([]byte, scryptChacha20MetaLengthSize)
 	binary.LittleEndian.PutUint16(length, uint16(len(ms)))
 
 	// Additional data for AEAD
@@ -133,17 +133,17 @@ func (s ScryptChacha20poly1305) Decrypt(data, password []byte) ([]byte, error) {
 	}
 	encData = encData[:n]
 
-	length := binary.LittleEndian.Uint16(encData[:metaLengthSize])
-	if int(metaLengthSize+length) > len(encData) {
+	length := binary.LittleEndian.Uint16(encData[:scryptChacha20MetaLengthSize])
+	if int(scryptChacha20MetaLengthSize+length) > len(encData) {
 		return nil, errors.New("invalid metadata length")
 	}
 
 	var m meta
-	if err := json.Unmarshal(encData[metaLengthSize:metaLengthSize+length], &m); err != nil {
+	if err := json.Unmarshal(encData[scryptChacha20MetaLengthSize:scryptChacha20MetaLengthSize+length], &m); err != nil {
 		return nil, err
 	}
 
-	ad := encData[:metaLengthSize+length]
+	ad := encData[:scryptChacha20MetaLengthSize+length]
 	// Scrypt derives key
 	dk, err := scrypt.Key(password, m.Salt, m.N, m.R, m.P, m.KeyLen)
 	if err != nil {
@@ -156,5 +156,5 @@ func (s ScryptChacha20poly1305) Decrypt(data, password []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	return aead.Open(nil, m.Nonce, encData[metaLengthSize+length:], ad)
+	return aead.Open(nil, m.Nonce, encData[scryptChacha20MetaLengthSize+length:], ad)
 }

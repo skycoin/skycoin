@@ -18,7 +18,7 @@ The minimal requirements for the cli are
 - a wallet file
 - two addresses ( to test send -m )
 - the wallet address with most coins has enough coinhours for 3 transactions
-- minimum of 3 unspents in the wallet
+- minimum of 3 unspents in the wallet // this requirement is not checked right now
 */
 
 const cliName = "skycoin-cli"
@@ -44,24 +44,38 @@ func main() {
 		return
 	}
 
+	checkMinimumRequirements()
+
+	// cli tests to be executed
+	testCliAddressCommands()
+	testCliWalletCommands()
+	testCliStatusCommand()
+	testCliTransactionCommands()
+	testCliSendCommands()
+
+	fmt.Println("All tests executed successfully")
+}
+
+// checkMinimumRequirements checks whether we have met the minimal requirements to execute the tests
+func checkMinimumRequirements() {
 	if wltFile == "" {
-		fmt.Fprint(os.Stderr, "no wallet file given")
+		fmt.Fprint(os.Stderr, "No wallet file given")
 		os.Exit(1)
 	}
 
 	if _, err := os.Stat(wltFile); os.IsNotExist(err) {
-		fmt.Fprint(os.Stderr, fmt.Sprintf("wallet file %s does not exist", wltFile))
+		fmt.Fprint(os.Stderr, fmt.Sprintf("Wallet file %s does not exist", wltFile))
 		os.Exit(1)
 	}
 
 	if addresses == "" {
-		fmt.Fprint(os.Stderr, "no test addresses given")
+		fmt.Fprint(os.Stderr, "No test addresses given")
 		os.Exit(1)
 	}
 
 	testAddrs = strings.Split(addresses, ",")
 	if len(testAddrs) < 2 {
-		fmt.Fprint(os.Stderr, fmt.Sprintf("minimum two test addresses required, given: %v", len(testAddrs)))
+		fmt.Fprint(os.Stderr, fmt.Sprintf("Minimum two test addresses required, given: %v", len(testAddrs)))
 		os.Exit(1)
 	}
 
@@ -72,14 +86,6 @@ func main() {
 			os.Exit(1)
 		}
 	}
-
-	testCliAddressCommands()
-	testCliWalletCommands()
-	testCliStatusCommand()
-	testCliTransactionCommands()
-	testCliSendCommands()
-
-	fmt.Println("All tests executed successfully")
 }
 
 func testCliAddressCommands() {
@@ -103,7 +109,6 @@ func testCliAddressCommands() {
 		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: ", cliArgs[0]), string(cliOut))
 		os.Exit(1)
 	}
-
 }
 
 func testCliWalletCommands() {

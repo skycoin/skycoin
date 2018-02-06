@@ -18,6 +18,7 @@ The minimal requirements for the cli are
 - a wallet file
 - two addresses ( to test send -m )
 - the wallet address with most coins has enough coinhours for 3 transactions
+- minimum of 3 unspents in the wallet
 */
 
 const cliName = "skycoin-cli"
@@ -178,13 +179,13 @@ func testCliSendCommands() {
 	// send to a single address
 	cliArgs = []string{"send", "-f", wltFile, testAddrs[0], "0.001"}
 	if cliOut, err = exec.Command(cliName, cliArgs...).CombinedOutput(); err != nil {
-		fmt.Fprint(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cliArgs[0]), cliOut)
+		fmt.Fprint(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cliArgs[0]), string(cliOut))
 		os.Exit(1)
 	}
 
 	// check that response contains the substring `txid:`
 	if !strings.Contains(string(cliOut), "txid:") {
-		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: ", cliArgs[0]), cliOut)
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: ", cliArgs[0]), string(cliOut))
 		os.Exit(1)
 	}
 
@@ -203,13 +204,13 @@ func testCliSendCommands() {
 
 	cliArgs = []string{"send", "-f", wltFile, "-m", string(sendJson)}
 	if cliOut, err = exec.Command(cliName, cliArgs...).CombinedOutput(); err != nil {
-		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: ", cliArgs[0]), string(cliOut))
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v many command: ", cliArgs[0]), string(cliOut))
 		os.Exit(1)
 	}
 
 	// check that response contains the substring `txid:`
 	if !strings.Contains(string(cliOut), "txid:") {
-		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: ", cliArgs[0]), string(cliOut))
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v many command: ", cliArgs[0]), string(cliOut))
 		os.Exit(1)
 	}
 }

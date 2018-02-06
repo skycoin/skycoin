@@ -173,6 +173,7 @@ type ReadableOutput struct {
 	Address           string `json:"address"`
 	Coins             string `json:"coins"`
 	Hours             uint64 `json:"hours"`
+	CalculatedHours   uint64 `json:"calculated_hours"`
 }
 
 // ReadableOutputSet records unspent outputs in different status.
@@ -199,7 +200,7 @@ func (ros ReadableOutputs) Balance() (wallet.Balance, error) {
 		}
 
 		bal.Coins += coins
-		bal.Hours += out.Hours
+		bal.Hours += out.CalculatedHours
 	}
 
 	return bal, nil
@@ -291,8 +292,16 @@ func NewReadableOutput(headTime uint64, t coin.UxOut) (ReadableOutput, error) {
 		return ReadableOutput{}, err
 	}
 
-	hours, err := t.CoinHours(headTime)
-	if err != nil {
+	calculatedHours, err := t.CoinHours(headTime)
+
+	// Treat overflowing coin hours calculations as a non-error and force hours to 0
+	// This affects one bad spent output which had overflowed hours, spent in block 13277.
+	switch err {
+	case nil:
+	case coin.ErrAddEarnedCoinHoursAdditionOverflow:
+		calculatedHours = 0
+		err = nil
+	default:
 		return ReadableOutput{}, err
 	}
 
@@ -303,7 +312,8 @@ func NewReadableOutput(headTime uint64, t coin.UxOut) (ReadableOutput, error) {
 		SourceTransaction: t.Body.SrcTransaction.Hex(),
 		Address:           t.Body.Address.String(),
 		Coins:             coinStr,
-		Hours:             hours,
+		Hours:             t.Body.Hours,
+		CalculatedHours:   calculatedHours,
 	}, nil
 }
 
@@ -349,7 +359,7 @@ func ReadableOutputsToUxBalances(ros ReadableOutputs) ([]wallet.UxBalance, error
 			BkSeq:   ro.BkSeq,
 			Address: addr,
 			Coins:   coins,
-			Hours:   ro.Hours,
+			Hours:   ro.CalculatedHours,
 		}
 
 		uxb[i] = b

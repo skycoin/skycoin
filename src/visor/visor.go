@@ -431,7 +431,7 @@ func (vs *Visor) CreateAndExecuteBlock() (coin.SignedBlock, error) {
 // ExecuteSignedBlock adds a block to the blockchain, or returns error.
 // Blocks must be executed in sequence, and be signed by the master server
 func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
-	if err := vs.verifySignedBlock(&b); err != nil {
+	if err := b.VerifySignature(vs.Config.BlockchainPubkey); err != nil {
 		return err
 	}
 
@@ -456,22 +456,18 @@ func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
 	return nil
 }
 
-// Returns an error if the cipher.Sig is not valid for the coin.Block
-func (vs *Visor) verifySignedBlock(b *coin.SignedBlock) error {
-	return cipher.VerifySignature(vs.Config.BlockchainPubkey, b.Sig, b.Block.HashHeader())
-}
-
 // SignBlock signs a block for master.  Will panic if anything is invalid
 func (vs *Visor) SignBlock(b coin.Block) coin.SignedBlock {
 	if !vs.Config.IsMaster {
 		logger.Panic("Only master chain can sign blocks")
 	}
+
 	sig := cipher.SignHash(b.HashHeader(), vs.Config.BlockchainSeckey)
-	sb := coin.SignedBlock{
+
+	return coin.SignedBlock{
 		Block: b,
 		Sig:   sig,
 	}
-	return sb
 }
 
 /*

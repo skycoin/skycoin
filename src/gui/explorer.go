@@ -46,6 +46,7 @@ func coinSupply(gateway Gatewayer, w http.ResponseWriter, r *http.Request) *Coin
 
 	allUnspents, err := gateway.GetUnspentOutputs()
 	if err != nil {
+		logger.Error("gateway.GetUnspentOutputs error: %v", err)
 		wh.Error500(w)
 		return nil
 	}
@@ -107,7 +108,7 @@ func coinSupply(gateway Gatewayer, w http.ResponseWriter, r *http.Request) *Coin
 	var totalCoinHours uint64
 	for _, out := range allUnspents.HeadOutputs {
 		if _, ok := lockedAddrMap[out.Address]; !ok {
-			totalCoinHours += out.Hours
+			totalCoinHours += out.CalculatedHours
 		}
 	}
 
@@ -118,7 +119,7 @@ func coinSupply(gateway Gatewayer, w http.ResponseWriter, r *http.Request) *Coin
 		if _, ok := lockedAddrMap[out.Address]; !ok {
 			// check if address not in unlocked distribution addresses
 			if _, ok := unlockedAddrMap[out.Address]; !ok {
-				currentCoinHours += out.Hours
+				currentCoinHours += out.CalculatedHours
 			}
 		}
 	}

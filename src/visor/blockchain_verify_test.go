@@ -3,6 +3,7 @@ package visor
 import (
 	"errors"
 	"fmt"
+	"math"
 	"testing"
 
 	"github.com/boltdb/bolt"
@@ -373,6 +374,54 @@ func TestVerifyTransactionAllConstraints(t *testing.T) {
 	dupUxOutTx := makeDuplicateUxOutTx(coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr4, 1e6)
 	err = bc.VerifySingleTxnAllConstraints(dupUxOutTx, DefaultMaxBlockSize)
 	requireHardViolation(t, "Duplicate output in transaction", err)
+}
+
+func TestVerifyTxnFeeCoinHoursAdditionFails(t *testing.T) {
+	// Test that VerifySingleTxnSoftConstraints fails if a uxIn.CoinHours() call fails.
+	// This is a separate test on its own, because it's not possible to reach the line
+	// that is being tested through the blockchain verify API wrappers
+	db, closeDB := testutil.PrepareDB(t)
+	defer closeDB()
+
+	store, err := blockdb.NewBlockchain(db, DefaultWalker)
+	require.NoError(t, err)
+
+	bc := &Blockchain{
+		db:    db,
+		store: store,
+	}
+
+	gb := addGenesisBlock(t, bc)
+
+	toAddr := testutil.MakeAddress()
+	coins := uint64(10e6)
+
+	// create normal spending tx
+	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
+	tx := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins)
+
+	uxIn, err := bc.Unspent().GetArray(tx.In)
+	require.NoError(t, err)
+	require.NotEmpty(t, uxIn)
+
+	head, err := bc.Head()
+	require.NoError(t, err)
+
+	// Set the uxIn's hours high, so that uxIn.CoinHours() returns an error
+	uxIn[0].Body.Hours = math.MaxUint64
+	_, coinHoursErr := uxIn[0].CoinHours(head.Time() + 1e6)
+	testutil.RequireError(t, coinHoursErr, "UxOut.CoinHours addition of earned coin hours overflow")
+
+	// VerifySingleTxnSoftConstraints should fail on this, when trying to calculate the TransactionFee
+	err = VerifySingleTxnSoftConstraints(tx, head.Time()+1e6, uxIn, DefaultMaxBlockSize)
+	testutil.RequireError(t, err, NewErrTxnViolatesSoftConstraint(coinHoursErr).Error())
+
+	// VerifySingleTxnHardConstraints should fail on this, when performing the extra check of
+	// uxIn.CoinHours() errors, which is ignored by VerifyTransactionHoursSpending if the error
+	// is because of the earned hours addition overflow
+	head.Block.Head.Time += 1e6
+	err = VerifySingleTxnHardConstraints(tx, head, uxIn)
+	testutil.RequireError(t, err, NewErrTxnViolatesHardConstraint(coinHoursErr).Error())
 }
 
 func TestVerifyTransactionIsLocked(t *testing.T) {

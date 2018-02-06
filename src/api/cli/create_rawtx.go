@@ -353,9 +353,19 @@ func CreateRawTx(c *webrpc.Client, wlt *wallet.Wallet, inAddrs []string, chgAddr
 		return nil, err
 	}
 
+	// filter out unspents which are not used in transaction
+	var inUxsFiltered coin.UxArray
+	for _, h := range txn.In {
+		for _, u := range inUxs {
+			if h == u.Hash() {
+				inUxsFiltered = append(inUxsFiltered, u)
+			}
+		}
+	}
+
 	// TODO -- remove me -- reimplementation of visor.VerifySingleTxnSoftConstraints minus
 	// the parts that require block head data, which is not available from the RPC API (see below)
-	if err := verifyTransactionConstraints(txn, inUxs, visor.DefaultMaxBlockSize); err != nil {
+	if err := verifyTransactionConstraints(txn, inUxsFiltered, visor.DefaultMaxBlockSize); err != nil {
 		return nil, err
 	}
 

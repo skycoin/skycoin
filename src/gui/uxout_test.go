@@ -38,7 +38,7 @@ func TestGetUxOutByID(t *testing.T) {
 		getGetUxOutByIDResponse *historydb.UxOut
 		getGetUxOutByIDError    error
 		httpResponse            *historydb.UxOutJSON
-		hostHeader              string
+		csrfDisabled            bool
 	}{
 		{
 			name:   "405",
@@ -99,13 +99,6 @@ func TestGetUxOutByID(t *testing.T) {
 			getGetUxOutByIDArg: testutil.SHA256FromHex(t, validHash),
 		},
 		{
-			name:       "403 - Forbidden - invalid Host header",
-			method:     http.MethodGet,
-			status:     http.StatusForbidden,
-			err:        "403 Forbidden",
-			hostHeader: "example.com",
-		},
-		{
 			name:   "200",
 			method: http.MethodGet,
 			status: http.StatusOK,
@@ -139,11 +132,18 @@ func TestGetUxOutByID(t *testing.T) {
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
-			if tc.hostHeader != "" {
-				req.Host = tc.hostHeader
+
+			csrfStore := &CSRFStore{
+				Enabled: !tc.csrfDisabled,
 			}
+			if csrfStore.Enabled {
+				setCSRFParameters(csrfStore, tokenValid, req)
+			} else {
+				setCSRFParameters(csrfStore, tokenInvalid, req)
+			}
+
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -181,7 +181,7 @@ func TestGetAddrUxOuts(t *testing.T) {
 		getAddrUxOutsResponse []*historydb.UxOutJSON
 		getAddrUxOutsError    error
 		httpResponse          []*historydb.UxOutJSON
-		hostHeader            string
+		csrfDisabled          bool
 	}{
 		{
 			name:   "405",
@@ -219,13 +219,6 @@ func TestGetAddrUxOuts(t *testing.T) {
 			getAddrUxOutsError: errors.New("getAddrUxOutsError"),
 		},
 		{
-			name:       "403 - Forbidden - invalid Host header",
-			method:     http.MethodGet,
-			status:     http.StatusForbidden,
-			err:        "403 Forbidden",
-			hostHeader: "example.com",
-		},
-		{
 			name:   "200",
 			method: http.MethodGet,
 			status: http.StatusOK,
@@ -257,11 +250,16 @@ func TestGetAddrUxOuts(t *testing.T) {
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
-			if tc.hostHeader != "" {
-				req.Host = tc.hostHeader
+			csrfStore := &CSRFStore{
+				Enabled: !tc.csrfDisabled,
+			}
+			if csrfStore.Enabled {
+				setCSRFParameters(csrfStore, tokenValid, req)
+			} else {
+				setCSRFParameters(csrfStore, tokenInvalid, req)
 			}
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

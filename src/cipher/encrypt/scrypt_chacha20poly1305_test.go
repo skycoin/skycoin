@@ -13,7 +13,7 @@ import (
 )
 
 func TestScryptChacha20poly1305Encrypt(t *testing.T) {
-	for i := uint(20); i < 21; i++ {
+	for i := uint(20); i < 20; i++ {
 		name := fmt.Sprintf("N=1<<%v r=%v p=%v keyLen=%v", i, 8, 1, 32)
 		t.Run(name, func(t *testing.T) {
 			crypto := ScryptChacha20poly1305{N: 1 << i, R: 8, P: 1, KeyLen: 32}
@@ -37,52 +37,57 @@ func TestScryptChacha20poly1305Encrypt(t *testing.T) {
 }
 
 func TestScryptChacha20poly1305Decrypt(t *testing.T) {
+	// var encryptedData []byte
+	// crypto := ScryptChacha20poly1305{N: 1 << 19, R: 8, P: 1, KeyLen: 32}
+	// encryptedData, err := crypto.Encrypt([]byte("plaintext"), []byte("pwd"))
+	// require.NoError(t, err)
+	// fmt.Println(string(encryptedData))
+
 	tt := []struct {
-		name   string
-		data   []byte
-		encPwd []byte
-		decPwd []byte
-		err    error
+		name    string
+		data    []byte
+		encData []byte
+		encPwd  []byte
+		decPwd  []byte
+		err     error
 	}{
 		{
-			"ok",
-			[]byte("plaintext"),
-			[]byte("pwd"),
-			[]byte("pwd"),
-			nil,
+			name:    "ok",
+			data:    []byte("plaintext"),
+			encData: []byte("dQB7Im4iOjUyNDI4OCwiciI6OCwicCI6MSwia2V5TGVuIjozMiwic2FsdCI6ImpiejUrSFNjTFFLWkI5T0tYblNNRmt2WDBPY3JxVGZ0ZFpDNm9KUFpaeHc9Iiwibm9uY2UiOiJLTlhOQmRQa1ZUWHZYNHdoIn3PQFmOot0ETxTuv//skTG7Q57UVamGCgG5"),
+			encPwd:  []byte("pwd"),
+			decPwd:  []byte("pwd"),
+			err:     nil,
 		},
 		{
-			"invalid password",
-			[]byte("plaintext"),
-			[]byte("pwd"),
-			[]byte("wrong password"),
-			errors.New("chacha20poly1305: message authentication failed"),
+			name:    "invalid password",
+			data:    []byte("plaintext"),
+			encData: []byte("dQB7Im4iOjUyNDI4OCwiciI6OCwicCI6MSwia2V5TGVuIjozMiwic2FsdCI6ImpiejUrSFNjTFFLWkI5T0tYblNNRmt2WDBPY3JxVGZ0ZFpDNm9KUFpaeHc9Iiwibm9uY2UiOiJLTlhOQmRQa1ZUWHZYNHdoIn3PQFmOot0ETxTuv//skTG7Q57UVamGCgG5"),
+			encPwd:  []byte("pwd"),
+			decPwd:  []byte("wrong password"),
+			err:     errors.New("chacha20poly1305: message authentication failed"),
 		},
 		{
-			"missing password",
-			[]byte("plaintext"),
-			[]byte("pwd"),
-			nil,
-			errors.New("missing password"),
+			name:    "missing password",
+			data:    []byte("plaintext"),
+			encData: []byte("dQB7Im4iOjUyNDI4OCwiciI6OCwicCI6MSwia2V5TGVuIjozMiwic2FsdCI6ImpiejUrSFNjTFFLWkI5T0tYblNNRmt2WDBPY3JxVGZ0ZFpDNm9KUFpaeHc9Iiwibm9uY2UiOiJLTlhOQmRQa1ZUWHZYNHdoIn3PQFmOot0ETxTuv//skTG7Q57UVamGCgG5"),
+			encPwd:  []byte("pwd"),
+			decPwd:  nil,
+			err:     errors.New("missing password"),
 		},
 	}
 
 	for _, tc := range tt {
-		for i := uint(15); i < 20; i++ {
-			name := fmt.Sprintf("N=1<<%v r=8 p=1 keyLen=32 %v", i, tc.name)
-			t.Run(name, func(t *testing.T) {
-				crypto := ScryptChacha20poly1305{N: 1 << i, R: 8, P: 1, KeyLen: 32}
-				encData, err := crypto.Encrypt(tc.data, tc.encPwd)
-				require.NoError(t, err)
+		name := fmt.Sprintf("N=1<<19 r=8 p=1 keyLen=32 %v", tc.name)
+		t.Run(name, func(t *testing.T) {
+			crypto := ScryptChacha20poly1305{}
+			data, err := crypto.Decrypt(tc.encData, tc.decPwd)
+			require.Equal(t, tc.err, err)
+			if err != nil {
+				return
+			}
 
-				data, err := crypto.Decrypt(encData, tc.decPwd)
-				require.Equal(t, tc.err, err)
-				if err != nil {
-					return
-				}
-
-				require.Equal(t, tc.data, data)
-			})
-		}
+			require.Equal(t, tc.data, data)
+		})
 	}
 }

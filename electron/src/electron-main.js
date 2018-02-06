@@ -129,11 +129,21 @@ function createWindow(url) {
     url = defaultURL;
   }
 
+  // To fix appImage doesn't show icon in dock issue.
+  var appPath = app.getPath('exe');
+  var iconPath = (() => {
+    switch (process.platform) {
+      case 'linux':
+        return path.join(path.dirname(appPath), './resources/icon512x512.png');
+    }
+  })()
+
   // Create the browser window.
   win = new BrowserWindow({
     width: 1200,
     height: 900,
     title: 'Skycoin',
+    icon: iconPath,
     nodeIntegration: false,
     webPreferences: {
       webgl: false,

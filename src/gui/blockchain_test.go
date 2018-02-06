@@ -9,9 +9,9 @@ import (
 
 	"encoding/json"
 
-	"github.com/stretchr/testify/require"
-
 	"math"
+
+	"github.com/stretchr/testify/require"
 
 	"errors"
 
@@ -60,7 +60,6 @@ func TestGetBlock(t *testing.T) {
 		gatewayGetBlockBySeqResult  coin.SignedBlock
 		gatewayGetBlockBySeqExists  bool
 		response                    *visor.ReadableBlock
-		hostHeader                  string
 	}{
 		{
 			name:   "405",
@@ -182,13 +181,6 @@ func TestGetBlock(t *testing.T) {
 				},
 			},
 		},
-		{
-			name:       "403 - Forbidden - invalid Host header",
-			method:     http.MethodGet,
-			status:     http.StatusForbidden,
-			hostHeader: "example.com",
-			err:        "403 Forbidden",
-		},
 	}
 
 	for _, tc := range tt {
@@ -215,12 +207,13 @@ func TestGetBlock(t *testing.T) {
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-			if tc.hostHeader != "" {
-				req.Host = tc.hostHeader
+			csrfStore := &CSRFStore{
+				Enabled: true,
 			}
+			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 
 			handler.ServeHTTP(rr, req)
 
@@ -257,7 +250,6 @@ func TestGetBlocks(t *testing.T) {
 		gatewayGetBlocksResult *visor.ReadableBlocks
 		gatewayGetBlocksError  error
 		response               *visor.ReadableBlocks
-		hostHeader             string
 	}{
 		{
 			name:   "405",
@@ -305,13 +297,6 @@ func TestGetBlocks(t *testing.T) {
 			gatewayGetBlocksError: errors.New("gatewayGetBlocksError"),
 		},
 		{
-			name:       "403 - Forbidden - invalid Host header",
-			method:     http.MethodGet,
-			status:     http.StatusForbidden,
-			err:        "403 Forbidden",
-			hostHeader: "example.com",
-		},
-		{
 			name:   "200",
 			method: http.MethodGet,
 			status: http.StatusOK,
@@ -349,17 +334,127 @@ func TestGetBlocks(t *testing.T) {
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
-			if tc.hostHeader != "" {
-				req.Host = tc.hostHeader
+			csrfStore := &CSRFStore{
+				Enabled: true,
 			}
+			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
 			require.Equal(t, tc.status, status, "wrong status code: got `%v` want `%v`", status, tc.status)
+
+			if status != http.StatusOK {
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+			} else {
+				var msg *visor.ReadableBlocks
+				err = json.Unmarshal(rr.Body.Bytes(), &msg)
+				require.NoError(t, err)
+				require.Equal(t, tc.response, msg)
+			}
+		})
+	}
+}
+
+func TestGetLastBlocks(t *testing.T) {
+	type httpBody struct {
+		Num string
+	}
+	tt := []struct {
+		name                       string
+		method                     string
+		url                        string
+		status                     int
+		err                        string
+		body                       httpBody
+		num                        uint64
+		gatewayGetLastBlocksResult *visor.ReadableBlocks
+		gatewayGetLastBlocksError  error
+		response                   *visor.ReadableBlocks
+	}{
+		{
+			name:   "405",
+			method: http.MethodPost,
+			status: http.StatusMethodNotAllowed,
+			err:    "405 Method Not Allowed",
+			body: httpBody{
+				Num: "1",
+			},
+			num: 1,
+		},
+		{
+			name:   "400 - empty num value",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - Param: num is empty",
+			num:    1,
+		},
+		{
+			name:   "400 - bad num value",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - strconv.ParseUint: parsing \"badNumValue\": invalid syntax",
+			body: httpBody{
+				Num: "badNumValue",
+			},
+			num: 1,
+		},
+		{
+			name:   "400 - gatewayGetLastBlocksError",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - Get last 1 blocks failed: gatewayGetLastBlocksError",
+			body: httpBody{
+				Num: "1",
+			},
+			num: 1,
+			gatewayGetLastBlocksError: errors.New("gatewayGetLastBlocksError"),
+		},
+		{
+			name:   "200",
+			method: http.MethodGet,
+			status: http.StatusOK,
+			body: httpBody{
+				Num: "1",
+			},
+			num: 1,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			endpoint := "/last_blocks"
+			gateway := NewGatewayerMock()
+
+			gateway.On("GetLastBlocks", tc.num).Return(tc.gatewayGetLastBlocksResult, tc.gatewayGetLastBlocksError)
+
+			v := url.Values{}
+			if tc.body.Num != "" {
+				v.Add("num", tc.body.Num)
+			}
+			if len(v) > 0 {
+				endpoint += "?" + v.Encode()
+			}
+
+			req, err := http.NewRequest(tc.method, endpoint, nil)
+			require.NoError(t, err)
+
+			csrfStore := &CSRFStore{
+				Enabled: true,
+			}
+			setCSRFParameters(csrfStore, tokenValid, req)
+
+			rr := httptest.NewRecorder()
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
 
 			if status != http.StatusOK {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",

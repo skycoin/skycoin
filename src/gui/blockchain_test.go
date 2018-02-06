@@ -60,7 +60,6 @@ func TestGetBlock(t *testing.T) {
 		gatewayGetBlockBySeqResult  coin.SignedBlock
 		gatewayGetBlockBySeqExists  bool
 		response                    *visor.ReadableBlock
-		hostHeader                  string
 	}{
 		{
 			name:   "405",
@@ -182,13 +181,6 @@ func TestGetBlock(t *testing.T) {
 				},
 			},
 		},
-		{
-			name:       "403 - Forbidden - invalid Host header",
-			method:     http.MethodGet,
-			status:     http.StatusForbidden,
-			hostHeader: "example.com",
-			err:        "403 Forbidden",
-		},
 	}
 
 	for _, tc := range tt {
@@ -215,12 +207,13 @@ func TestGetBlock(t *testing.T) {
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-			if tc.hostHeader != "" {
-				req.Host = tc.hostHeader
+			csrfStore := &CSRFStore{
+				Enabled: true,
 			}
+			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 
 			handler.ServeHTTP(rr, req)
 
@@ -257,7 +250,6 @@ func TestGetBlocks(t *testing.T) {
 		gatewayGetBlocksResult *visor.ReadableBlocks
 		gatewayGetBlocksError  error
 		response               *visor.ReadableBlocks
-		hostHeader             string
 	}{
 		{
 			name:   "405",
@@ -305,13 +297,6 @@ func TestGetBlocks(t *testing.T) {
 			gatewayGetBlocksError: errors.New("gatewayGetBlocksError"),
 		},
 		{
-			name:       "403 - Forbidden - invalid Host header",
-			method:     http.MethodGet,
-			status:     http.StatusForbidden,
-			err:        "403 Forbidden",
-			hostHeader: "example.com",
-		},
-		{
 			name:   "200",
 			method: http.MethodGet,
 			status: http.StatusOK,
@@ -349,12 +334,13 @@ func TestGetBlocks(t *testing.T) {
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
-			if tc.hostHeader != "" {
-				req.Host = tc.hostHeader
+			csrfStore := &CSRFStore{
+				Enabled: true,
 			}
+			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 
 			handler.ServeHTTP(rr, req)
 
@@ -389,7 +375,6 @@ func TestGetLastBlocks(t *testing.T) {
 		gatewayGetLastBlocksResult *visor.ReadableBlocks
 		gatewayGetLastBlocksError  error
 		response                   *visor.ReadableBlocks
-		hostHeader                 string
 	}{
 		{
 			name:   "405",
@@ -430,13 +415,6 @@ func TestGetLastBlocks(t *testing.T) {
 			gatewayGetLastBlocksError: errors.New("gatewayGetLastBlocksError"),
 		},
 		{
-			name:       "403 - Forbidden - invalid Host header",
-			method:     http.MethodGet,
-			status:     http.StatusForbidden,
-			err:        "403 Forbidden",
-			hostHeader: "example.com",
-		},
-		{
 			name:   "200",
 			method: http.MethodGet,
 			status: http.StatusOK,
@@ -464,11 +442,14 @@ func TestGetLastBlocks(t *testing.T) {
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
-			if tc.hostHeader != "" {
-				req.Host = tc.hostHeader
+
+			csrfStore := &CSRFStore{
+				Enabled: true,
 			}
+			setCSRFParameters(csrfStore, tokenValid, req)
+
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 
 			handler.ServeHTTP(rr, req)
 

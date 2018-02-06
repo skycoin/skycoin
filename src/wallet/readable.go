@@ -54,12 +54,19 @@ type ReadableEntries []ReadableEntry
 
 // ToWalletEntries convert readable entries to entries
 // converts base on the wallet version.
-func (res ReadableEntries) toWalletEntries() ([]Entry, error) {
+func (res ReadableEntries) toWalletEntries(isEncrypted bool) ([]Entry, error) {
 	entries := make([]Entry, len(res))
 	for i, re := range res {
 		e, err := newEntryFromReadable(&re)
 		if err != nil {
 			return []Entry{}, err
+		}
+
+		// Verify the wallet if it's not encrypted
+		if !isEncrypted {
+			if err := e.Verify(); err != nil {
+				return nil, err
+			}
 		}
 
 		entries[i] = *e
@@ -129,19 +136,20 @@ func LoadReadableWallet(filename string) (*ReadableWallet, error) {
 
 // ToWallet convert readable wallet to Wallet
 func (rw *ReadableWallet) toWallet() (*Wallet, error) {
-	ets, err := rw.Entries.toWalletEntries()
-	if err != nil {
-		return nil, err
-	}
-
 	w := &Wallet{
-		Meta:    rw.Meta,
-		Entries: ets,
+		Meta: rw.Meta,
 	}
 
 	if err := w.validate(); err != nil {
 		return nil, fmt.Errorf("invalid wallet %s: %v", w.Filename(), err)
 	}
+
+	ets, err := rw.Entries.toWalletEntries(w.IsEncrypted())
+	if err != nil {
+		return nil, err
+	}
+
+	w.Entries = ets
 
 	return w, nil
 }

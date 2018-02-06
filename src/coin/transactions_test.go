@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -620,6 +621,8 @@ func TestVerifyTransactionHoursSpending(t *testing.T) {
 	// Input hours overflow
 	// Insufficient hours
 	// NOTE: does not check for hours overflow, that had to be moved to soft constraints
+	// NOTE: if uxIn.CoinHours() fails during the addition of earned hours to base hours,
+	// the error is ignored and treated as 0 hours
 
 	type ux struct {
 		coins uint64
@@ -631,7 +634,7 @@ func TestVerifyTransactionHoursSpending(t *testing.T) {
 		inUxs    []ux
 		outUxs   []ux
 		headTime uint64
-		err      error
+		err      string
 	}{
 		{
 			name: "Input hours overflow",
@@ -645,7 +648,7 @@ func TestVerifyTransactionHoursSpending(t *testing.T) {
 					hours: 1e6,
 				},
 			},
-			err: errors.New("Transaction input hours overflow"),
+			err: "Transaction input hours overflow",
 		},
 
 		{
@@ -670,7 +673,7 @@ func TestVerifyTransactionHoursSpending(t *testing.T) {
 					hours: 11,
 				},
 			},
-			err: errors.New("Insufficient coin hours"),
+			err: "Insufficient coin hours",
 		},
 
 		{
@@ -700,7 +703,42 @@ func TestVerifyTransactionHoursSpending(t *testing.T) {
 				},
 			},
 			headTime: math.MaxUint64,
-			err:      errors.New("Calculating whole coin seconds overflows uint64 seconds=18446744073709551615 coins=10"),
+			err:      "UxOut.CoinHours: Calculating whole coin seconds overflows uint64 seconds=18446744073709551615 coins=10 uxid=",
+		},
+
+		{
+			name:     "Invalid (coin hours overflow when adding earned hours, which is treated as 0, and now enough coin hours)",
+			headTime: 1e6,
+			inUxs: []ux{
+				{
+					coins: 10e6,
+					hours: math.MaxUint64,
+				},
+			},
+			outUxs: []ux{
+				{
+					coins: 10e6,
+					hours: 1,
+				},
+			},
+			err: "Insufficient coin hours",
+		},
+
+		{
+			name:     "Valid (coin hours overflow when adding earned hours, which is treated as 0, but not sending any hours)",
+			headTime: 1e6,
+			inUxs: []ux{
+				{
+					coins: 10e6,
+					hours: math.MaxUint64,
+				},
+			},
+			outUxs: []ux{
+				{
+					coins: 10e6,
+					hours: 0,
+				},
+			},
 		},
 
 		{
@@ -780,7 +818,12 @@ func TestVerifyTransactionHoursSpending(t *testing.T) {
 			}
 
 			err := VerifyTransactionHoursSpending(tc.headTime, uxIn, uxOut)
-			require.Equal(t, tc.err, err)
+			if tc.err == "" {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+				require.True(t, strings.HasPrefix(err.Error(), tc.err))
+			}
 		})
 	}
 }

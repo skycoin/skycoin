@@ -97,7 +97,6 @@ func TestGetPendingTxs(t *testing.T) {
 		err                           string
 		getAllUnconfirmedTxnsResponse []visor.UnconfirmedTxn
 		httpResponse                  []*visor.ReadableUnconfirmedTxn
-		hostHeader                    string
 	}{
 		{
 			name:   "405",
@@ -116,13 +115,6 @@ func TestGetPendingTxs(t *testing.T) {
 			},
 		},
 		{
-			name:       "403 - Forbidden - invalid Host header",
-			method:     http.MethodGet,
-			status:     http.StatusForbidden,
-			err:        "403 Forbidden",
-			hostHeader: "example.com",
-		},
-		{
 			name:   "200",
 			method: http.MethodGet,
 			status: http.StatusOK,
@@ -139,12 +131,16 @@ func TestGetPendingTxs(t *testing.T) {
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
-			rr := httptest.NewRecorder()
-			if tc.hostHeader != "" {
-				req.Host = tc.hostHeader
+
+			csrfStore := &CSRFStore{
+				Enabled: true,
 			}
-			handler := NewServerMux(configuredHost, ".", gateway)
+			setCSRFParameters(csrfStore, tokenValid, req)
+
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+			rr := httptest.NewRecorder()
 			handler.ServeHTTP(rr, req)
+
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
 				tc.name, status, tc.status)
@@ -180,7 +176,6 @@ func TestGetTransactionByID(t *testing.T) {
 		getTransactionReponse *visor.Transaction
 		getTransactionError   error
 		httpResponse          visor.TransactionResult
-		hostHeader            string
 	}{
 		{
 			name:              "405",
@@ -241,13 +236,6 @@ func TestGetTransactionByID(t *testing.T) {
 			getTransactionArg: testutil.SHA256FromHex(t, validHash),
 		},
 		{
-			name:       "403 - Forbidden - invalid Host header",
-			method:     http.MethodGet,
-			status:     http.StatusForbidden,
-			err:        "403 Forbidden",
-			hostHeader: "example.com",
-		},
-		{
 			name:   "200",
 			method: http.MethodGet,
 			status: http.StatusOK,
@@ -287,12 +275,14 @@ func TestGetTransactionByID(t *testing.T) {
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
-			if tc.hostHeader != "" {
-				req.Host = tc.hostHeader
+
+			csrfStore := &CSRFStore{
+				Enabled: true,
 			}
+			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 			handler.ServeHTTP(rr, req)
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
@@ -316,12 +306,14 @@ func TestInjectTransaction(t *testing.T) {
 	type httpBody struct {
 		Rawtx string `json:"rawtx"`
 	}
+
 	validTxBody := &httpBody{Rawtx: hex.EncodeToString(validTransaction.Serialize())}
-	validTxBodyJson, err := json.Marshal(validTxBody)
+	validTxBodyJSON, err := json.Marshal(validTxBody)
 	require.NoError(t, err)
 	b := &httpBody{Rawtx: hex.EncodeToString(testutil.RandBytes(t, 128))}
-	invalidTxBodyJson, err := json.Marshal(b)
+	invalidTxBodyJSON, err := json.Marshal(b)
 	require.NoError(t, err)
+
 	tt := []struct {
 		name                   string
 		method                 string
@@ -331,7 +323,7 @@ func TestInjectTransaction(t *testing.T) {
 		injectTransactionArg   coin.Transaction
 		injectTransactionError error
 		httpResponse           string
-		hostHeader             string
+		csrfDisabled           bool
 	}{
 		{
 			name:                 "405",
@@ -365,31 +357,33 @@ func TestInjectTransaction(t *testing.T) {
 			method:   http.MethodPost,
 			status:   http.StatusBadRequest,
 			err:      "400 Bad Request - Invalid transaction: Deserialization failed",
-			httpBody: string(invalidTxBodyJson),
+			httpBody: string(invalidTxBodyJSON),
 		},
 		{
 			name:                   "400 - injectTransactionError",
 			method:                 http.MethodPost,
 			status:                 http.StatusBadRequest,
 			err:                    "400 Bad Request - inject tx failed: injectTransactionError",
-			httpBody:               string(validTxBodyJson),
+			httpBody:               string(validTxBodyJSON),
 			injectTransactionArg:   validTransaction,
 			injectTransactionError: errors.New("injectTransactionError"),
-		},
-		{
-			name:       "403 - Forbidden - invalid Host header",
-			method:     http.MethodPost,
-			status:     http.StatusForbidden,
-			err:        "403 Forbidden",
-			hostHeader: "example.com",
 		},
 		{
 			name:                 "200",
 			method:               http.MethodPost,
 			status:               http.StatusOK,
-			httpBody:             string(validTxBodyJson),
+			httpBody:             string(validTxBodyJSON),
 			injectTransactionArg: validTransaction,
 			httpResponse:         validTransaction.Hash().Hex(),
+		},
+		{
+			name:                 "200 - csrf disabled",
+			method:               http.MethodPost,
+			status:               http.StatusOK,
+			httpBody:             string(validTxBodyJSON),
+			injectTransactionArg: validTransaction,
+			httpResponse:         validTransaction.Hash().Hex(),
+			csrfDisabled:         true,
 		},
 	}
 
@@ -401,11 +395,18 @@ func TestInjectTransaction(t *testing.T) {
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)
-			if tc.hostHeader != "" {
-				req.Host = tc.hostHeader
+
+			csrfStore := &CSRFStore{
+				Enabled: !tc.csrfDisabled,
 			}
+			if csrfStore.Enabled {
+				setCSRFParameters(csrfStore, tokenValid, req)
+			} else {
+				setCSRFParameters(csrfStore, tokenInvalid, req)
+			}
+
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -433,20 +434,12 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 		httpBody                      string
 		resendUnconfirmedTxnsResponse *daemon.ResendResult
 		httpResponse                  *daemon.ResendResult
-		hostHeader                    string
 	}{
 		{
 			name:   "405",
 			method: http.MethodPost,
 			status: http.StatusMethodNotAllowed,
 			err:    "405 Method Not Allowed",
-		},
-		{
-			name:       "403 - Forbidden - invalid Host header",
-			method:     http.MethodGet,
-			status:     http.StatusForbidden,
-			err:        "403 Forbidden",
-			hostHeader: "example.com",
 		},
 		{
 			name:   "200",
@@ -465,11 +458,14 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)
-			if tc.hostHeader != "" {
-				req.Host = tc.hostHeader
+
+			csrfStore := &CSRFStore{
+				Enabled: true,
 			}
+			setCSRFParameters(csrfStore, tokenValid, req)
+
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -496,6 +492,7 @@ func TestGetRawTx(t *testing.T) {
 	type httpBody struct {
 		txid string
 	}
+
 	tt := []struct {
 		name                   string
 		method                 string
@@ -507,7 +504,6 @@ func TestGetRawTx(t *testing.T) {
 		getTransactionResponse *visor.Transaction
 		getTransactionError    error
 		httpResponse           string
-		hostHeader             string
 	}{
 		{
 			name:              "405",
@@ -566,13 +562,6 @@ func TestGetRawTx(t *testing.T) {
 			getTransactionArg: testutil.SHA256FromHex(t, validHash),
 		},
 		{
-			name:       "403 - Forbidden - invalid Host header",
-			method:     http.MethodGet,
-			status:     http.StatusForbidden,
-			err:        "403 Forbidden",
-			hostHeader: "example.com",
-		},
-		{
 			name:   "200",
 			method: http.MethodGet,
 			status: http.StatusOK,
@@ -602,16 +591,18 @@ func TestGetRawTx(t *testing.T) {
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
-			if tc.hostHeader != "" {
-				req.Host = tc.hostHeader
+
+			csrfStore := &CSRFStore{
+				Enabled: true,
 			}
+			setCSRFParameters(csrfStore, tokenValid, req)
+
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
-				tc.name, status, tc.status)
+			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
 
 			if status != http.StatusOK {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
@@ -653,7 +644,6 @@ func TestGetTransactions(t *testing.T) {
 		getTransactionsResponse []visor.Transaction
 		getTransactionsError    error
 		httpResponse            []visor.Transaction
-		hostHeader              string
 	}{
 		{
 			name:   "405",
@@ -725,13 +715,6 @@ func TestGetTransactions(t *testing.T) {
 			},
 		},
 		{
-			name:       "403 - Forbidden - invalid Host header",
-			method:     http.MethodGet,
-			status:     http.StatusForbidden,
-			err:        "403 Forbidden",
-			hostHeader: "example.com",
-		},
-		{
 			name:   "200",
 			method: http.MethodGet,
 			status: http.StatusOK,
@@ -770,17 +753,19 @@ func TestGetTransactions(t *testing.T) {
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
-			if tc.hostHeader != "" {
-				req.Host = tc.hostHeader
+
+			csrfStore := &CSRFStore{
+				Enabled: true,
 			}
+			setCSRFParameters(csrfStore, tokenValid, req)
+
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
-				tc.name, status, tc.status)
+			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
 
 			if status != http.StatusOK {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",

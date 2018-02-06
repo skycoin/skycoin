@@ -11,6 +11,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/visor" //http,json helpers
+	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
 func blockchainHandler(gateway Gatewayer) http.HandlerFunc {
@@ -70,7 +71,7 @@ func getBlock(gate Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		txsInputsData, err := gate.GetBlockInputsData(&b.Block)
+		txsInputsData, err := GetBlockInputsData(&b.Block, gate)
 		if err != nil {
 			// Error already logged
 			wh.Error500(w)
@@ -144,4 +145,20 @@ func getLastBlocks(gateway Gatewayer) http.HandlerFunc {
 
 		wh.SendOr404(w, rb)
 	}
+}
+
+// GetBlockInputsData returns the inputs data of a block
+func GetBlockInputsData(block *coin.Block, gw Gatewayer) ([][]*historydb.UxOut, error) {
+	txsInputsData := make([][]*historydb.UxOut, 0, len(block.Body.Transactions))
+
+	for _, tx := range block.Body.Transactions {
+		inData, err := GetTransactionInputsData(&tx, gw)
+		if err != nil {
+			return nil, err
+		}
+
+		txsInputsData = append(txsInputsData, inData)
+	}
+
+	return txsInputsData, nil
 }

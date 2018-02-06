@@ -11,6 +11,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/visor/historydb"
 
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
@@ -26,9 +27,9 @@ func getPendingTxs(gateway Gatewayer) http.HandlerFunc {
 		txns := gateway.GetAllUnconfirmedTxns()
 		ret := make([]*visor.ReadableUnconfirmedTxn, 0, len(txns))
 		for _, unconfirmedTxn := range txns {
-			txInputsData, err := gateway.GetTransactionInputsData(&unconfirmedTxn.Txn)
+			txInputsData, err := GetTransactionInputsData(&unconfirmedTxn.Txn, gateway)
 			if err != nil {
-				// Error already logged
+				logger.Error("%v", err)
 				wh.Error500(w)
 				return
 			}
@@ -63,9 +64,9 @@ func getLastTxs(gateway Gatewayer) http.HandlerFunc {
 
 		resTxs := make([]visor.TransactionResult, len(txs))
 		for i, tx := range txs {
-			txInputsData, err := gateway.GetTransactionInputsData(&tx.Txn)
+			txInputsData, err := GetTransactionInputsData(&tx.Txn, gateway)
 			if err != nil {
-				// Error already logged
+				logger.Error("%v", err)
 				wh.Error500(w)
 				return
 			}
@@ -115,9 +116,9 @@ func getTransactionByID(gate Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		txInputsData, err := gate.GetTransactionInputsData(&tx.Txn)
+		txInputsData, err := GetTransactionInputsData(&tx.Txn, gate)
 		if err != nil {
-			// Error already logged
+			logger.Error("%v", err)
 			wh.Error500(w)
 			return
 		}
@@ -311,9 +312,8 @@ func getRawTx(gate Gatewayer) http.HandlerFunc {
 func NewTransactionResults(gateway Gatewayer, txs []visor.Transaction) (*visor.TransactionResults, error) {
 	txRlts := make([]visor.TransactionResult, 0, len(txs))
 	for _, tx := range txs {
-		txInputsData, err := gateway.GetTransactionInputsData(&tx.Txn)
+		txInputsData, err := GetTransactionInputsData(&tx.Txn, gateway)
 		if err != nil {
-			// Error already logged
 			return nil, err
 		}
 
@@ -332,4 +332,21 @@ func NewTransactionResults(gateway Gatewayer, txs []visor.Transaction) (*visor.T
 	return &visor.TransactionResults{
 		Txns: txRlts,
 	}, nil
+}
+
+// GetTransactionInputsData returns the inputs data of a transaction
+func GetTransactionInputsData(tx *coin.Transaction, gw Gatewayer) ([]*historydb.UxOut, error) {
+	txInputsData := make([]*historydb.UxOut, 0, len(tx.In))
+
+	for _, in := range tx.In {
+
+		uxout, err := GetInputData(in, gw)
+		if err != nil {
+			return nil, err
+		}
+
+		txInputsData = append(txInputsData, uxout)
+	}
+
+	return txInputsData, nil
 }

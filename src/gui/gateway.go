@@ -25,11 +25,6 @@ type Gatewayer interface {
 	GetWalletDir() (string, error)
 	GetBlockByHash(hash cipher.SHA256) (block coin.SignedBlock, ok bool)
 	GetBlockBySeq(seq uint64) (block coin.SignedBlock, ok bool)
-	GetInputData(in cipher.SHA256) (*historydb.UxOut, error)
-	GetTransactionInputsData(tx *coin.Transaction) ([]*historydb.UxOut, error)
-	GetBlockInputsData(block *coin.Block) ([][]*historydb.UxOut, error)
-	GetSignedBlockInputsData(block *coin.SignedBlock) ([][]*historydb.UxOut, error)
-	GetSignedBlocksInputsData(blocks []coin.SignedBlock) ([][][]*historydb.UxOut, error)
 	GetBlocks(start, end uint64) (*visor.ReadableBlocks, error)
 	GetLastBlocks(num uint64) (*visor.ReadableBlocks, error)
 	GetBuildInfo() visor.BuildInfo

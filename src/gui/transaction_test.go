@@ -753,6 +753,7 @@ func TestGetTransactions(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := NewGatewayerMock()
 			gateway.On("GetTransactions", mock.Anything).Return(tc.getTransactionsResponse, tc.getTransactionsError)
+			gateway.On("GetUxOutByID", mock.Anything).Return(nil, nil)
 
 			v := url.Values{}
 			if tc.httpBody != nil {

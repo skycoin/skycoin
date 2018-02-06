@@ -387,59 +387,6 @@ func (m *GatewayerMock) GetExchgConnection() interface{} {
 
 }
 
-func (m *GatewayerMock) GetInputData(in cipher.SHA256) (*historydb.UxOut, error) {
-	return nil, nil
-}
-
-func (m *GatewayerMock) GetTransactionInputsData(tx *coin.Transaction) ([]*historydb.UxOut, error) {
-	return nil, nil
-}
-
-func (m *GatewayerMock) GetBlockInputsData(block *coin.Block) ([][]*historydb.UxOut, error) {
-	txsInputsData := make([][]*historydb.UxOut, 0, len(block.Body.Transactions))
-
-	for _, tx := range block.Body.Transactions {
-		inData, err := m.GetTransactionInputsData(&tx)
-		if err != nil {
-			return nil, err
-		}
-
-		txsInputsData = append(txsInputsData, inData)
-	}
-
-	return txsInputsData, nil
-}
-
-func (m *GatewayerMock) GetSignedBlockInputsData(block *coin.SignedBlock) ([][]*historydb.UxOut, error) {
-	txsInputsData := make([][]*historydb.UxOut, 0, len(block.Body.Transactions))
-
-	for _, tx := range block.Body.Transactions {
-		inData, err := m.GetTransactionInputsData(&tx)
-		if err != nil {
-			return nil, err
-		}
-
-		txsInputsData = append(txsInputsData, inData)
-	}
-
-	return txsInputsData, nil
-}
-
-func (m *GatewayerMock) GetSignedBlocksInputsData(blocks []coin.SignedBlock) ([][][]*historydb.UxOut, error) {
-	txsInputsData := make([][][]*historydb.UxOut, 0, len(blocks))
-
-	for _, block := range blocks {
-		inData, err := m.GetSignedBlockInputsData(&block)
-		if err != nil {
-			return nil, err
-		}
-
-		txsInputsData = append(txsInputsData, inData)
-	}
-
-	return txsInputsData, nil
-}
-
 // GetLastBlocks mocked method
 func (m *GatewayerMock) GetLastBlocks(p0 uint64) (*visor.ReadableBlocks, error) {
 

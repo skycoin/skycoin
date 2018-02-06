@@ -4,11 +4,14 @@ import (
 	"net/http"
 	"strconv"
 
+	"fmt"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
 // CoinSupply records the coin supply info
@@ -182,9 +185,9 @@ func getTransactionsForAddress(gateway Gatewayer) http.HandlerFunc {
 					return
 				}
 
-				uxout, err := gateway.GetInputData(id)
+				uxout, err := GetInputData(id, gateway)
 				if err != nil {
-					// Error already logged
+					logger.Error("%v", err)
 					wh.Error500(w)
 					return
 				}
@@ -303,4 +306,17 @@ func NewReadableTransaction(t visor.TransactionResult, inputs []visor.ReadableTr
 		In:   inputs,
 		Out:  t.Transaction.Out,
 	}
+}
+
+// GetInputData returns the data of an input
+func GetInputData(in cipher.SHA256, gw Gatewayer) (*historydb.UxOut, error) {
+	uxout, err := gw.GetUxOutByID(in)
+	if err != nil {
+		return nil, err
+	}
+	if uxout == nil {
+		return nil, fmt.Errorf("uxout of %d does not exist in history db", in)
+	}
+
+	return uxout, nil
 }

@@ -133,7 +133,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 
 		logger.Info("Spend: \ntx= \n %s \n", txStr)
 
-		txInputsData, err := gateway.GetTransactionInputsData(tx)
+		txInputsData, err := GetTransactionInputsData(tx, gateway)
 		if err != nil {
 			// Error already logged
 			wh.Error500(w)

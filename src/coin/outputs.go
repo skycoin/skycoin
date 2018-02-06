@@ -80,7 +80,11 @@ func (ub *UxBody) Hash() cipher.SHA256 {
 	Creation time of transaction cant be hashed
 */
 
-var errAddEarnedCoinHoursAdditionOverflow = errors.New("UxOut.CoinHours addition of earned coin hours overflow")
+// ErrAddEarnedCoinHoursAdditionOverflow is returned by UxOut.CoinHours() if during the addition of base coin
+// hours to additional earned coin hours, the value would overflow a uint64.
+// Callers may choose to ignore this errors and use 0 as the coinhours value instead.
+// This affects one existing spent output, spent in block 13277.
+var ErrAddEarnedCoinHoursAdditionOverflow = errors.New("UxOut.CoinHours addition of earned coin hours overflow")
 
 // CoinHours Calculate coinhour balance of output. t is the current unix utc time.
 func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
@@ -115,8 +119,8 @@ func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
 	coinHours := coinSeconds / 3600                        // coin hours
 	totalHours, err := AddUint64(uo.Body.Hours, coinHours) // starting+earned
 	if err != nil {
-		logger.Critical("%v uxid=%s", errAddEarnedCoinHoursAdditionOverflow, uo.Hash().Hex())
-		return 0, errAddEarnedCoinHoursAdditionOverflow
+		logger.Critical("%v uxid=%s", ErrAddEarnedCoinHoursAdditionOverflow, uo.Hash().Hex())
+		return 0, ErrAddEarnedCoinHoursAdditionOverflow
 	}
 	return totalHours, nil
 }

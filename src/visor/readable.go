@@ -293,7 +293,15 @@ func NewReadableOutput(headTime uint64, t coin.UxOut) (ReadableOutput, error) {
 	}
 
 	calculatedHours, err := t.CoinHours(headTime)
-	if err != nil {
+
+	// Treat overflowing coin hours calculations as a non-error and force hours to 0
+	// This affects one bad spent output which had overflowed hours, spent in block 13277.
+	switch err {
+	case nil:
+	case coin.ErrAddEarnedCoinHoursAdditionOverflow:
+		calculatedHours = 0
+		err = nil
+	default:
 		return ReadableOutput{}, err
 	}
 

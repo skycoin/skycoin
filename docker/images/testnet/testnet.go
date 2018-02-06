@@ -154,7 +154,6 @@ func NewSkyCoinTestNetwork(nodesNum int, buildContext string, tempDir string) Sk
 		"--launch-browser=false",
 		"--gui-dir=/usr/local/skycoin/static",
 		"--master-public-key=" + pubKey.Hex(),
-		"--testchain=false",
 	}
 	currentCommit := GetCurrentGitCommit()
 	networkName := "skycoin-" + currentCommit
@@ -164,6 +163,7 @@ func NewSkyCoinTestNetwork(nodesNum int, buildContext string, tempDir string) Sk
 			ImageName: "skycoin-gui",
 			SkyCoinParameters: []string{
 				"--web-interface-addr=0.0.0.0",
+				"--testchain=true",
 				"--master",
 				"--master-secret-key=" + secKey.Hex(),
 			},

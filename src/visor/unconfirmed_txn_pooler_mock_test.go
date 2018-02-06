@@ -299,7 +299,34 @@ func (m *UnconfirmedTxnPoolerMock) RecvOfAddresses(p0 coin.BlockHeader, p1 []cip
 }
 
 // Refresh mocked method
-func (m *UnconfirmedTxnPoolerMock) Refresh(p0 Blockchainer) []cipher.SHA256 {
+func (m *UnconfirmedTxnPoolerMock) Refresh(p0 Blockchainer, p1 int) ([]cipher.SHA256, error) {
+
+	ret := m.Called(p0, p1)
+
+	var r0 []cipher.SHA256
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case []cipher.SHA256:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
+
+}
+
+// RemoveInvalid mocked method
+func (m *UnconfirmedTxnPoolerMock) RemoveInvalid(p0 Blockchainer) ([]cipher.SHA256, error) {
 
 	ret := m.Called(p0)
 
@@ -312,14 +339,34 @@ func (m *UnconfirmedTxnPoolerMock) Refresh(p0 Blockchainer) []cipher.SHA256 {
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	return r0
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
 
 }
 
 // RemoveTransactions mocked method
-func (m *UnconfirmedTxnPoolerMock) RemoveTransactions(p0 []cipher.SHA256) {
+func (m *UnconfirmedTxnPoolerMock) RemoveTransactions(p0 []cipher.SHA256) error {
 
-	m.Called(p0)
+	ret := m.Called(p0)
+
+	var r0 error
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case error:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0
 
 }
 
@@ -372,5 +419,41 @@ func (m *UnconfirmedTxnPoolerMock) SpendsOfAddresses(p0 []cipher.Address, p1 blo
 	}
 
 	return r0, r1
+
+}
+
+// InjectTransaction mocked method
+func (m *UnconfirmedTxnPoolerMock) InjectTransaction(p0 Blockchainer, p1 coin.Transaction, p2 int) (bool, *ErrTxnViolatesSoftConstraint, error) {
+
+	ret := m.Called(p0, p1, p2)
+
+	var r0 bool
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case bool:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 *ErrTxnViolatesSoftConstraint
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case *ErrTxnViolatesSoftConstraint:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r2 error
+	switch res := ret.Get(2).(type) {
+	case nil:
+	case error:
+		r2 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1, r2
 
 }

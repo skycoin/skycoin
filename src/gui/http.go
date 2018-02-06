@@ -36,22 +36,34 @@ type Server struct {
 	done     chan struct{}
 }
 
-func create(host, staticDir string, daemon *daemon.Daemon) (*Server, error) {
-	appLoc, err := file.DetermineResourcePath(staticDir, resourceDir, devDir)
+type ServerConfig struct {
+	StaticDir   string
+	DisableCSRF bool
+}
+
+func create(host string, serverConfig ServerConfig, daemon *daemon.Daemon) (*Server, error) {
+	appLoc, err := file.DetermineResourcePath(serverConfig.StaticDir, resourceDir, devDir)
 	if err != nil {
 		return nil, err
 	}
 	logger.Info("Web resources directory: %s", appLoc)
 
+	csrfStore := &CSRFStore{
+		Enabled: !serverConfig.DisableCSRF,
+	}
+	if serverConfig.DisableCSRF {
+		logger.Warning("CSRF check disabled")
+	}
+
 	return &Server{
-		mux:  NewServerMux(host, appLoc, daemon.Gateway),
+		mux:  NewServerMux(host, appLoc, daemon.Gateway, csrfStore),
 		done: make(chan struct{}),
 	}, nil
 }
 
 // Create creates a new Server instance that listens on HTTP
-func Create(host, staticDir string, daemon *daemon.Daemon) (*Server, error) {
-	s, err := create(host, staticDir, daemon)
+func Create(host string, serverConfig ServerConfig, daemon *daemon.Daemon) (*Server, error) {
+	s, err := create(host, serverConfig, daemon)
 	if err != nil {
 		return nil, err
 	}
@@ -67,8 +79,8 @@ func Create(host, staticDir string, daemon *daemon.Daemon) (*Server, error) {
 }
 
 // CreateHTTPS creates a new Server instance that listens on HTTPS
-func CreateHTTPS(host, staticDir string, daemon *daemon.Daemon, certFile, keyFile string) (*Server, error) {
-	s, err := create(host, staticDir, daemon)
+func CreateHTTPS(host string, serverConfig ServerConfig, daemon *daemon.Daemon, certFile, keyFile string) (*Server, error) {
+	s, err := create(host, serverConfig, daemon)
 	if err != nil {
 		return nil, err
 	}
@@ -114,11 +126,19 @@ func (s *Server) Shutdown() {
 }
 
 // NewServerMux creates an http.ServeMux with handlers registered
-func NewServerMux(host, appLoc string, gateway Gatewayer) *http.ServeMux {
+func NewServerMux(host, appLoc string, gateway Gatewayer, csrfStore *CSRFStore) *http.ServeMux {
 	mux := http.NewServeMux()
 
+	headerCheck := func(host string, handler http.Handler) http.Handler {
+		handler = OriginRefererCheck(host, handler)
+		handler = wh.HostCheck(logger, host, handler)
+		return handler
+	}
+
 	webHandler := func(endpoint string, handler http.Handler) {
-		mux.Handle(endpoint, wh.HostCheck(logger, host, handler))
+		handler = CSRFCheck(csrfStore, handler)
+		handler = headerCheck(host, handler)
+		mux.Handle(endpoint, handler)
 	}
 
 	webHandler("/", newIndexHandler(appLoc))
@@ -131,6 +151,9 @@ func NewServerMux(host, appLoc string, gateway Gatewayer) *http.ServeMux {
 		}
 		webHandler(route, http.FileServer(http.Dir(appLoc)))
 	}
+
+	// get the current CSRF token
+	mux.Handle("/csrf", headerCheck(host, getCSRFToken(gateway, csrfStore)))
 
 	webHandler("/version", versionHandler(gateway))
 
@@ -182,12 +205,13 @@ func NewServerMux(host, appLoc string, gateway Gatewayer) *http.ServeMux {
 	webHandler("/wallet/transactions", walletTransactionsHandler(gateway))
 
 	// Update wallet label
-	//      GET Arguments:
+	//      POST Arguments:
 	//          id: wallet id
 	//          label: wallet label
 	webHandler("/wallet/update", walletUpdateHandler(gateway))
 
 	// Returns all loaded wallets
+	// returns sensitive information
 	webHandler("/wallets", walletsHandler(gateway))
 
 	webHandler("/wallets/folderName", getWalletFolder(gateway))
@@ -347,15 +371,26 @@ func getBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 
 		bals, err := gateway.GetBalanceOfAddrs(addrs)
 		if err != nil {
-			logger.Error("Get balance failed: %v", err)
-			wh.Error500(w)
+			errMsg := fmt.Sprintf("Get balance failed: %v", err)
+			logger.Error("%s", errMsg)
+			wh.Error500Msg(w, errMsg)
 			return
 		}
 
 		var balance wallet.BalancePair
 		for _, bal := range bals {
-			balance.Confirmed = balance.Confirmed.Add(bal.Confirmed)
-			balance.Predicted = balance.Predicted.Add(bal.Predicted)
+			var err error
+			balance.Confirmed, err = balance.Confirmed.Add(bal.Confirmed)
+			if err != nil {
+				wh.Error500Msg(w, err.Error())
+				return
+			}
+
+			balance.Predicted, err = balance.Predicted.Add(bal.Predicted)
+			if err != nil {
+				wh.Error500Msg(w, err.Error())
+				return
+			}
 		}
 
 		wh.SendOr404(w, balance)

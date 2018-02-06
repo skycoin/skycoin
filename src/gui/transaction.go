@@ -195,7 +195,6 @@ func parseAddressesFromStr(addrStr string) ([]cipher.Address, error) {
 	return addrs, nil
 }
 
-//Implement
 func injectTransaction(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -227,8 +226,9 @@ func injectTransaction(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if err := gateway.InjectTransaction(txn); err != nil {
-			wh.Error400(w, fmt.Sprintf("inject tx failed:%v", err))
+		if err := gateway.InjectBroadcastTransaction(txn); err != nil {
+			logger.Error("%v", err)
+			wh.Error400(w, fmt.Sprintf("inject tx failed: %v", err))
 			return
 		}
 
@@ -244,8 +244,6 @@ func resendUnconfirmedTxns(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		rlt := gateway.ResendUnconfirmedTxns()
-		v, _ := json.MarshalIndent(rlt, "", "    ")
-		fmt.Println(v)
 		wh.SendOr404(w, rlt)
 		return
 	}

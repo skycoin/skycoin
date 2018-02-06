@@ -58,10 +58,8 @@ var (
 	// BlockchainSeckeyStr empty private key string
 	BlockchainSeckey = ""
 	// Name of the file containing trusted peer list (one-by-line)
-	TrustedPeerlistFileName string = "connections.txt"
+	TrustedPeerlistFileName = "connections.txt"
 )
-
-// Command line interface arguments
 
 // Config records the node's configuration
 type Config struct {
@@ -79,6 +77,8 @@ type Config struct {
 	DisableNetworking bool
 	// Disables wallet API
 	DisableWalletApi bool
+	// Disable CSRF check in the wallet api
+	DisableCSRF bool
 
 	// Only run on localhost and only connect to others on localhost
 	LocalhostOnly bool
@@ -173,6 +173,7 @@ func (c *Config) register() {
 		c.DisableIncomingConnections, "Don't make incoming connections")
 	flag.BoolVar(&c.DisableNetworking, "disable-networking",
 		c.DisableNetworking, "Disable all network activity")
+	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable csrf check")
 	flag.StringVar(&c.Address, "address", c.Address,
 		"IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
@@ -229,6 +230,8 @@ var devConfig = Config{
 	DisableNetworking: false,
 	// Disable wallet API
 	DisableWalletApi: false,
+	// Disable CSRF check in the wallet api
+	DisableCSRF: false,
 	// Only run on localhost and only connect to others on localhost
 	LocalhostOnly: false,
 	// Which address to serve on. Leave blank to automatically assign to a
@@ -363,6 +366,10 @@ func (c *Config) postProcess(chaincfg ChainConfig) {
 		c.DBPath = filepath.Join(c.DataDirectory, "data.db")
 	}
 
+	if c.RunMaster {
+		// Run in arbitrating mode if the node is master
+		c.Arbitrating = true
+	}
 	if c.TestChain {
 		// Never download peers list if running testnet
 		c.DownloadPeerList = false
@@ -426,6 +433,12 @@ func catchDebug() {
 func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) (*gui.Server, error) {
 	var s *gui.Server
 	var err error
+
+	config := gui.ServerConfig{
+		StaticDir:   c.GUIDirectory,
+		DisableCSRF: c.DisableCSRF,
+	}
+
 	if c.WebInterfaceHTTPS {
 		// Verify cert/key parameters, and if neither exist, create them
 		if err := cert.CreateCertIfNotExists(host, c.WebInterfaceCert, c.WebInterfaceKey, "Skycoind"); err != nil {
@@ -433,9 +446,9 @@ func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) (*g
 			return nil, err
 		}
 
-		s, err = gui.CreateHTTPS(host, c.GUIDirectory, d, c.WebInterfaceCert, c.WebInterfaceKey)
+		s, err = gui.CreateHTTPS(host, config, d, c.WebInterfaceCert, c.WebInterfaceKey)
 	} else {
-		s, err = gui.Create(host, c.GUIDirectory, d)
+		s, err = gui.Create(host, config, d)
 	}
 	if err != nil {
 		logger.Error("Failed to start web GUI: %v", err)
@@ -735,7 +748,7 @@ func Run(c *Config) {
 	   time.Sleep(5)
 	   tx := InitTransaction()
 	   _ = tx
-	   err, _ = d.Visor.Visor.InjectTxn(tx)
+	   err, _ = d.Visor.Visor.InjectTransaction(tx)
 	   if err != nil {
 	       log.Panic(err)
 	   }
@@ -748,7 +761,7 @@ func Run(c *Config) {
 	           for d.Visor.Visor.Blockchain.Head().Seq() < 2 {
 	               time.Sleep(5)
 	               tx := InitTransaction()
-	               err, _ := d.Visor.Visor.InjectTxn(tx)
+	               err, _ := d.Visor.Visor.InjectTransaction(tx)
 	               if err != nil {
 	                   //log.Panic(err)
 	               }
@@ -874,13 +887,17 @@ var MainChainCfg = ChainConfig{
 	Port:              6000,
 	WebInterfacePort:  6420,
 	RPCInterfacePort:  6430,
-	DataDirectory:     ".skycoin",
+	DataDirectory:     "~/.skycoin",
 	LogFmt:            "[skycoin.%{module}:%{level}] %{message}",
 	DefaultConnections: []string{
 		"118.178.135.93:6000",
 		"47.88.33.156:6000",
 		"121.41.103.148:6000",
 		"120.77.69.188:6000",
+		"104.237.142.206:6000",
+		"176.58.126.224:6000",
+		"172.104.85.6:6000",
+		"139.162.7.132:6000",
 	},
 }
 
@@ -894,7 +911,7 @@ var TestChainCfg = ChainConfig{
 	Port:              16000,
 	WebInterfacePort:  16420,
 	RPCInterfacePort:  16430,
-	DataDirectory:     ".skycoin-testnet",
+	DataDirectory:     "~/.skycoin-testnet",
 	LogFmt:            "[skycoin.testnet.%{module}:%{level}] %{message}",
 	DefaultConnections: []string{
 		"139.162.33.154:16000",

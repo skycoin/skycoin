@@ -48,6 +48,11 @@ type SignedBlock struct {
 	Sig cipher.Sig
 }
 
+// VerifySignature verifies that the block is signed by pubkey
+func (b SignedBlock) VerifySignature(pubkey cipher.PubKey) error {
+	return cipher.VerifySignature(pubkey, b.Sig, b.Block.HashHeader())
+}
+
 // NewBlock creates new block.
 func NewBlock(prev Block, currentTime uint64, uxHash cipher.SHA256, txns Transactions, calc FeeCalculator) (*Block, error) {
 	if len(txns) == 0 {

@@ -30,6 +30,9 @@ LIB_DIR = lib
 run:  ## Run the skycoin node. To add arguments, do 'make ARGS="--foo" run'.
 	go run cmd/skycoin/skycoin.go --gui-dir="./${STATIC_DIR}" ${ARGS}
 
+run-testnet:  ## Run the skycoin testnet node. To add arguments, do 'make ARGS="--foo" run'.
+	go run cmd/skycoin/skycoin.go --testchain --gui-dir="./${STATIC_DIR}" ${ARGS}
+
 run-help: ## Show skycoin node help
 	@go run cmd/skycoin/skycoin.go --help
 

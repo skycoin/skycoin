@@ -190,7 +190,7 @@ func TestUxOutCoinHours(t *testing.T) {
 	uxo.Body.Coins = 3600e6
 	uxo.Body.Hours = math.MaxUint64 - 1
 	_, err = uxo.CoinHours(uxo.Head.Time + 1000)
-	testutil.RequireError(t, err, errAddEarnedCoinHoursAdditionOverflow.Error())
+	testutil.RequireError(t, err, ErrAddEarnedCoinHoursAdditionOverflow.Error())
 }
 
 func makeUxArray(t *testing.T, n int) UxArray {
@@ -240,7 +240,7 @@ func TestUxArrayCoinHours(t *testing.T) {
 	require.Equal(t, errors.New("UxArray.CoinHours addition overflow"), err)
 
 	_, err = uxa.CoinHours(uxa[0].Head.Time * 1000000000000)
-	require.Equal(t, errAddEarnedCoinHoursAdditionOverflow, err)
+	require.Equal(t, ErrAddEarnedCoinHoursAdditionOverflow, err)
 }
 
 func TestUxArrayHashArray(t *testing.T) {

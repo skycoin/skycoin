@@ -46,6 +46,7 @@ func coinSupply(gateway Gatewayer, w http.ResponseWriter, r *http.Request) *Coin
 
 	allUnspents, err := gateway.GetUnspentOutputs()
 	if err != nil {
+		logger.Error("gateway.GetUnspentOutputs error: %v", err)
 		wh.Error500(w)
 		return nil
 	}

@@ -109,7 +109,7 @@ func TestGetTransactionsForAddress(t *testing.T) {
 		gatewayGetUxOutByIDResult   *historydb.UxOut
 		gatewayGetUxOutByIDErr      error
 		result                      []ReadableTransaction
-		hostHeader                  string
+		csrfDisabled                bool
 	}{
 		{
 			name:         "405",
@@ -198,13 +198,6 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			gatewayGetUxOutByIDArg: testutil.SHA256FromHex(t, validHash),
 		},
 		{
-			name:       "403 - Forbidden - invalid Host header",
-			method:     http.MethodGet,
-			status:     http.StatusForbidden,
-			err:        "403 Forbidden",
-			hostHeader: "example.com",
-		},
-		{
 			name:         "200",
 			method:       http.MethodGet,
 			status:       http.StatusOK,
@@ -255,11 +248,16 @@ func TestGetTransactionsForAddress(t *testing.T) {
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
-			if tc.hostHeader != "" {
-				req.Host = tc.hostHeader
-			}
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			csrfStore := &CSRFStore{
+				Enabled: !tc.csrfDisabled,
+			}
+			if csrfStore.Enabled {
+				setCSRFParameters(csrfStore, tokenValid, req)
+			} else {
+				setCSRFParameters(csrfStore, tokenInvalid, req)
+			}
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -301,7 +299,7 @@ func TestCoinSupply(t *testing.T) {
 		gatewayGetUnspentOutputsResult visor.ReadableOutputSet
 		gatewayGetUnspentOutputsErr    error
 		result                         *CoinSupply
-		hostHeader                     string
+		csrfDisabled                   bool
 	}{
 		{
 			name:   "405",
@@ -344,13 +342,6 @@ func TestCoinSupply(t *testing.T) {
 			},
 		},
 		{
-			name:       "403 - Forbidden - invalid Host header",
-			method:     http.MethodGet,
-			status:     http.StatusForbidden,
-			err:        "403 Forbidden",
-			hostHeader: "example.com",
-		},
-		{
 			name:   "200",
 			method: http.MethodGet,
 			status: http.StatusOK,
@@ -378,11 +369,17 @@ func TestCoinSupply(t *testing.T) {
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
-			if tc.hostHeader != "" {
-				req.Host = tc.hostHeader
-			}
+
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			csrfStore := &CSRFStore{
+				Enabled: !tc.csrfDisabled,
+			}
+			if csrfStore.Enabled {
+				setCSRFParameters(csrfStore, tokenValid, req)
+			} else {
+				setCSRFParameters(csrfStore, tokenInvalid, req)
+			}
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -416,7 +413,7 @@ func TestGetRichlist(t *testing.T) {
 		gatewayGetRichlistResult visor.Richlist
 		gatewayGetRichlistErr    error
 		result                   visor.Richlist
-		hostHeader               string
+		csrfDisabled             bool
 	}{
 		{
 			name:   "405",
@@ -455,13 +452,6 @@ func TestGetRichlist(t *testing.T) {
 			gatewayGetRichlistErr: errors.New("gatewayGetRichlistErr"),
 		},
 		{
-			name:       "403 - Forbidden - invalid Host header",
-			method:     http.MethodGet,
-			status:     http.StatusForbidden,
-			err:        "403 Forbidden",
-			hostHeader: "example.com",
-		},
-		{
 			name:   "200",
 			method: http.MethodGet,
 			status: http.StatusOK,
@@ -493,12 +483,17 @@ func TestGetRichlist(t *testing.T) {
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
-			if tc.hostHeader != "" {
-				req.Host = tc.hostHeader
-			}
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			csrfStore := &CSRFStore{
+				Enabled: !tc.csrfDisabled,
+			}
+			if csrfStore.Enabled {
+				setCSRFParameters(csrfStore, tokenValid, req)
+			} else {
+				setCSRFParameters(csrfStore, tokenInvalid, req)
+			}
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -529,7 +524,7 @@ func TestGetAddressCount(t *testing.T) {
 		gatewayGetAddressCountResult uint64
 		gatewayGetAddressCountErr    error
 		result                       Result
-		hostHeader                   string
+		csrfDisabled                 bool
 	}{
 		{
 			name:   "405",
@@ -543,13 +538,6 @@ func TestGetAddressCount(t *testing.T) {
 			status: http.StatusInternalServerError,
 			err:    "500 Internal Server Error",
 			gatewayGetAddressCountErr: errors.New("gatewayGetAddressCountErr"),
-		},
-		{
-			name:       "403 - Forbidden - invalid Host header",
-			method:     http.MethodGet,
-			status:     http.StatusForbidden,
-			err:        "403 Forbidden",
-			hostHeader: "example.com",
 		},
 		{
 			name:   "200",
@@ -570,11 +558,17 @@ func TestGetAddressCount(t *testing.T) {
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
-			if tc.hostHeader != "" {
-				req.Host = tc.hostHeader
-			}
+
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			csrfStore := &CSRFStore{
+				Enabled: !tc.csrfDisabled,
+			}
+			if csrfStore.Enabled {
+				setCSRFParameters(csrfStore, tokenValid, req)
+			} else {
+				setCSRFParameters(csrfStore, tokenInvalid, req)
+			}
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

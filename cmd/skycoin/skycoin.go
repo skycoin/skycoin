@@ -887,13 +887,17 @@ var MainChainCfg = ChainConfig{
 	Port:              6000,
 	WebInterfacePort:  6420,
 	RPCInterfacePort:  6430,
-	DataDirectory:     ".skycoin",
+	DataDirectory:     "~/.skycoin",
 	LogFmt:            "[skycoin.%{module}:%{level}] %{message}",
 	DefaultConnections: []string{
 		"118.178.135.93:6000",
 		"47.88.33.156:6000",
 		"121.41.103.148:6000",
 		"120.77.69.188:6000",
+		"104.237.142.206:6000",
+		"176.58.126.224:6000",
+		"172.104.85.6:6000",
+		"139.162.7.132:6000",
 	},
 }
 
@@ -907,7 +911,7 @@ var TestChainCfg = ChainConfig{
 	Port:              16000,
 	WebInterfacePort:  16420,
 	RPCInterfacePort:  16430,
-	DataDirectory:     ".skycoin-testnet",
+	DataDirectory:     "~/.skycoin-testnet",
 	LogFmt:            "[skycoin.testnet.%{module}:%{level}] %{message}",
 	DefaultConnections: []string{
 		"139.162.33.154:16000",

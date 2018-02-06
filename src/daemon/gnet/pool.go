@@ -18,8 +18,8 @@ import (
 	"github.com/skycoin/skycoin/src/util/elapse"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/utc"
-	//"github.com/skycoin/skycoin/src/daemon/pex"
-	"../pex"
+	"github.com/skycoin/skycoin/src/daemon/pex"
+	//"../pex"
 )
 
 // DisconnectReason is passed to ConnectionPool's DisconnectCallback

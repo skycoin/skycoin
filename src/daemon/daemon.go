@@ -14,18 +14,18 @@ import (
 
 	"github.com/boltdb/bolt"
 
-	//"github.com/skycoin/skycoin/src/daemon/gnet"
-	//"github.com/skycoin/skycoin/src/daemon/pex" TODO: Change before commit
+	"github.com/skycoin/skycoin/src/daemon/gnet"
+	"github.com/skycoin/skycoin/src/daemon/pex" //TODO: Change before commit
 
 	"github.com/skycoin/skycoin/src/util/elapse"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/utc"
 
-	"./pex"
-	"go/ast"
-	"debug/elf"
+	//"./pex"
+	//"go/ast"
+	//"debug/elf"
 
-	"./gnet"
+	//"./gnet"
 )
 
 /*

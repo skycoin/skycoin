@@ -14,20 +14,6 @@ import (
 )
 
 /**
-Current list of tested commands:
-
-generateAddresses - done
-verifyAddress - done
-send - done
-send -m (send-to-many) - done
-broadcastTransaction - done
-createRawTransaction - done
-getWalletBalance - done
-transaction done
-status - done
-*/
-
-/**
 The minimal requirements for the cli are
 - a wallet file
 - two addresses ( to test send -m )
@@ -36,18 +22,17 @@ The minimal requirements for the cli are
 
 const cliName = "skycoin-cli"
 
-//@TODO We can put the commands to be tested and their arguments into an array and iterate over it to keep this more DRY
-// @TODO can we fetch the error from the cli command and show the exact error?
-func main() {
-	var (
-		cmdOut    []byte
-		err       error
-		help      bool
-		wltFile   string
-		addresses string // comma separated addresses, to be used in send and send -m commands, min 2 required
-		testAddrs []string
-	)
+var (
+	cliOut    []byte
+	cliArgs   []string
+	err       error
+	help      bool
+	wltFile   string
+	addresses string // comma separated addresses, to be used in send and send -m commands, min 2 required
+	testAddrs []string
+)
 
+func main() {
 	flag.BoolVar(&help, "help", false, "Show help")
 	flag.StringVar(&wltFile, "wallet-file", wltFile, "wallet file used for testing cli commands")
 	flag.StringVar(&addresses, "addrs", addresses, "destination addresses for sending coins")
@@ -64,138 +49,167 @@ func main() {
 	}
 
 	if _, err := os.Stat(wltFile); os.IsNotExist(err) {
-		fmt.Fprintln(os.Stderr, fmt.Sprintf("wallet file %s does not exist", wltFile))
+		fmt.Fprint(os.Stderr, fmt.Sprintf("wallet file %s does not exist", wltFile))
 		os.Exit(1)
 	}
 
 	if addresses == "" {
-		fmt.Fprintln(os.Stderr, "no test addresses given")
+		fmt.Fprint(os.Stderr, "no test addresses given")
 		os.Exit(1)
 	}
 
 	testAddrs = strings.Split(addresses, ",")
 	if len(testAddrs) < 2 {
-		fmt.Fprintln(os.Stderr, fmt.Sprintf("minimum two test addresses required, given: %v", len(testAddrs)))
+		fmt.Fprint(os.Stderr, fmt.Sprintf("minimum two test addresses required, given: %v", len(testAddrs)))
 		os.Exit(1)
 	}
 
-	//@TODO add a check to make sure that the addresses are unique?
 	for i := range testAddrs {
 		_, err = cipher.DecodeBase58Address(testAddrs[i])
 		if err != nil {
-			fmt.Fprintln(os.Stderr, fmt.Sprintf("address %s is invalid: ", testAddrs[i]), err)
+			fmt.Fprint(os.Stderr, fmt.Sprintf("Address %s is invalid: ", testAddrs[i]), err)
 			os.Exit(1)
 		}
 	}
 
-	cmdArgs := []string{"generateAddresses", "-f", wltFile}
-	if cmdOut, err = exec.Command(cliName, cmdArgs...).Output(); err != nil {
-		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cmdArgs[0]), err)
+	testCliAddressCommands()
+	testCliWalletCommands()
+	testCliStatusCommand()
+	testCliTransactionCommands()
+	testCliSendCommands()
+
+	fmt.Println("All tests executed successfully")
+}
+
+func testCliAddressCommands() {
+	cliArgs = []string{"generateAddresses", "-f", wltFile}
+	if cliOut, err = exec.Command(cliName, cliArgs...).CombinedOutput(); err != nil {
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: ", cliArgs[0]), string(cliOut))
 		os.Exit(1)
 	}
 
-	address := strings.TrimSpace(string(cmdOut))
+	address := strings.TrimSpace(string(cliOut))
 	// verify that the generated address is correct
 	_, err = cipher.DecodeBase58Address(address)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cmdArgs[0]), err)
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: ", cliArgs[0]), string(cliOut))
 		os.Exit(1)
 	}
 
 	// use the correct address from above to check verifyAddress
-	cmdArgs = []string{"verifyAddress", address}
-	if cmdOut, err = exec.Command(cliName, cmdArgs...).Output(); err != nil {
-		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cmdArgs[0]), err)
+	cliArgs = []string{"verifyAddress", address}
+	if cliOut, err = exec.Command(cliName, cliArgs...).CombinedOutput(); err != nil {
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: ", cliArgs[0]), string(cliOut))
 		os.Exit(1)
 	}
 
-	cmdArgs = []string{"walletBalance", wltFile}
-	if cmdOut, err = exec.Command(cliName, cmdArgs...).Output(); err != nil {
-		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cmdArgs[0]), err)
+}
+
+func testCliWalletCommands() {
+	cliArgs = []string{"walletBalance", wltFile}
+	if cliOut, err = exec.Command(cliName, cliArgs...).CombinedOutput(); err != nil {
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: ", cliArgs[0]), string(cliOut))
 		os.Exit(1)
 	}
 
-	if !json.Valid(cmdOut) {
-		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command", cmdArgs[0]))
+	if !json.Valid(cliOut) {
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command", cliArgs[0]))
+		os.Exit(1)
+	}
+}
+
+func testCliStatusCommand() {
+	cliArgs = []string{"status"}
+	if cliOut, err = exec.Command(cliName, cliArgs...).CombinedOutput(); err != nil {
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: ", cliArgs[0]), string(cliOut))
 		os.Exit(1)
 	}
 
-	cmdArgs = []string{"status"}
-	if cmdOut, err = exec.Command(cliName, cmdArgs...).Output(); err != nil {
-		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cmdArgs[0]), err)
+	if !json.Valid(cliOut) {
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command", cliArgs[0]))
 		os.Exit(1)
 	}
+}
 
-	if !json.Valid(cmdOut) {
-		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command", cmdArgs[0]))
-		os.Exit(1)
-	}
-
-	cmdArgs = []string{"createRawTransaction", "-f", wltFile, testAddrs[0], "0.001"}
-	if cmdOut, err = exec.Command(cliName, cmdArgs...).Output(); err != nil {
-		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cmdArgs[0]), err)
+func testCliTransactionCommands() {
+	cliArgs = []string{"createRawTransaction", "-f", wltFile, testAddrs[0], "0.001"}
+	if cliOut, err = exec.Command(cliName, cliArgs...).CombinedOutput(); err != nil {
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: ", cliArgs[0]), string(cliOut))
 		os.Exit(1)
 	}
 
 	// validate the rawTx
-	rawTx := strings.TrimSpace(string(cmdOut))
+	rawTx := strings.TrimSpace(string(cliOut))
 	_, err = hex.DecodeString(rawTx)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cmdArgs[0]), err)
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: ", cliArgs[0]), string(cliOut))
 		os.Exit(1)
 	}
 
 	// use the valid rawTx from above to test broadcast transaction
-	cmdArgs = []string{"broadcastTransaction", rawTx}
-	if cmdOut, err = exec.Command(cliName, cmdArgs...).Output(); err != nil {
-		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cmdArgs[0]), err)
+	cliArgs = []string{"broadcastTransaction", rawTx}
+	if cliOut, err = exec.Command(cliName, cliArgs...).CombinedOutput(); err != nil {
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: ", cliArgs[0]), string(cliOut))
 		os.Exit(1)
 	}
 
-	txId := strings.TrimSpace(string(cmdOut))
+	txId := strings.TrimSpace(string(cliOut))
 	// validate the txId
 	_, err = cipher.SHA256FromHex(txId)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cmdArgs[0]), err)
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: ", cliArgs[0]), string(cliOut))
 		os.Exit(1)
 	}
 
 	// use the txId from to test transaction
-	cmdArgs = []string{"transaction", txId}
-	if cmdOut, err = exec.Command(cliName, cmdArgs...).Output(); err != nil {
-		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cmdArgs[0]), err)
+	cliArgs = []string{"transaction", txId}
+	if cliOut, err = exec.Command(cliName, cliArgs...).CombinedOutput(); err != nil {
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: ", cliArgs[0]), string(cliOut))
 		os.Exit(1)
 	}
 
-	if !json.Valid(cmdOut) {
-		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command", cmdArgs[0]))
+	if !json.Valid(cliOut) {
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command", cliArgs[0]))
 		os.Exit(1)
 	}
+}
 
-	cmdArgs = []string{"send", "-f", wltFile, testAddrs[0], "0.001"}
-	if cmdOut, err = exec.Command(cliName, cmdArgs...).Output(); err != nil {
-		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cmdArgs[0]), err)
+func testCliSendCommands() {
+	// send to a single address
+	cliArgs = []string{"send", "-f", wltFile, testAddrs[0], "0.001"}
+	if cliOut, err = exec.Command(cliName, cliArgs...).CombinedOutput(); err != nil {
+		fmt.Fprint(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cliArgs[0]), cliOut)
 		os.Exit(1)
 	}
 
 	// check that response contains the substring `txid:`
-	if !strings.Contains(string(cmdOut), "txid:") {
-		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cmdArgs[0]), err)
+	if !strings.Contains(string(cliOut), "txid:") {
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: ", cliArgs[0]), cliOut)
 		os.Exit(1)
 	}
 
 	// send many
-	cmdArgs = []string{"send", "-f", wltFile, "-m", fmt.Sprintf("'[{\"addr\":\"%s\", \"coins\": \"0.001\"}, {\"addr\":\"%s\", \"coins\": \"0.001\"}]'", testAddrs[0], testAddrs[1])}
-	if cmdOut, err = exec.Command(cliName, cmdArgs...).Output(); err != nil {
-		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cmdArgs[0]), err)
+	sendJsonMap := make([]map[string]string, len(testAddrs))
+	for i := range testAddrs {
+		sendJsonMap[i] = map[string]string{
+			"addr":  testAddrs[i],
+			"coins": "0.001",
+		}
+	}
+	sendJson, err := json.Marshal(sendJsonMap)
+	if err != nil {
+		fmt.Fprint(os.Stderr, fmt.Sprintf("Unable to marshal send many json string: %v", err))
+	}
+
+	cliArgs = []string{"send", "-f", wltFile, "-m", string(sendJson)}
+	if cliOut, err = exec.Command(cliName, cliArgs...).CombinedOutput(); err != nil {
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: ", cliArgs[0]), string(cliOut))
 		os.Exit(1)
 	}
 
 	// check that response contains the substring `txid:`
-	if !strings.Contains(string(cmdOut), "txid:") {
-		fmt.Fprintln(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cmdArgs[0]), err)
+	if !strings.Contains(string(cliOut), "txid:") {
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: ", cliArgs[0]), string(cliOut))
 		os.Exit(1)
 	}
-
-	fmt.Println("All tests executed successfully")
 }

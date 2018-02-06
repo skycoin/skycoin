@@ -18,6 +18,7 @@ import (
 // the Host header is not checked. This is considered a public interface.
 // If the Host header is not set, it is not checked.
 // All major browsers send the Host header as required by the HTTP spec.
+// TODO: move this back into gui/ library after webrpc interface is removed
 func HostCheck(logger *logging.Logger, host string, handler http.Handler) http.Handler {
 	addr := host
 	var port uint16

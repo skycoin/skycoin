@@ -167,11 +167,13 @@ func NewReadableTransactionInput(uxID, ownerAddress string, coins, hours uint64)
 // ReadableOutput represents readable output
 type ReadableOutput struct {
 	Hash              string `json:"hash"`
+	Time              uint64 `json:"time"`
 	BkSeq             uint64 `json:"block_seq"`
 	SourceTransaction string `json:"src_tx"`
 	Address           string `json:"address"`
 	Coins             string `json:"coins"`
 	Hours             uint64 `json:"hours"`
+	CalculatedHours   uint64 `json:"calculated_hours"`
 }
 
 // ReadableOutputSet records unspent outputs in different status.
@@ -198,10 +200,46 @@ func (ros ReadableOutputs) Balance() (wallet.Balance, error) {
 		}
 
 		bal.Coins += coins
-		bal.Hours += out.Hours
+		bal.Hours += out.CalculatedHours
 	}
 
 	return bal, nil
+}
+
+// ToUxArray converts ReadableOutputs to coin.UxArray
+func (ros ReadableOutputs) ToUxArray() (coin.UxArray, error) {
+	var uxs coin.UxArray
+	for _, o := range ros {
+		coins, err := droplet.FromString(o.Coins)
+		if err != nil {
+			return nil, err
+		}
+
+		addr, err := cipher.DecodeBase58Address(o.Address)
+		if err != nil {
+			return nil, err
+		}
+
+		srcTx, err := cipher.SHA256FromHex(o.SourceTransaction)
+		if err != nil {
+			return nil, err
+		}
+
+		uxs = append(uxs, coin.UxOut{
+			Head: coin.UxHead{
+				Time:  o.Time,
+				BkSeq: o.BkSeq,
+			},
+			Body: coin.UxBody{
+				SrcTransaction: srcTx,
+				Address:        addr,
+				Coins:          coins,
+				Hours:          o.Hours,
+			},
+		})
+	}
+
+	return uxs, nil
 }
 
 // SpendableOutputs subtracts OutgoingOutputs from HeadOutputs
@@ -254,13 +292,28 @@ func NewReadableOutput(headTime uint64, t coin.UxOut) (ReadableOutput, error) {
 		return ReadableOutput{}, err
 	}
 
+	calculatedHours, err := t.CoinHours(headTime)
+
+	// Treat overflowing coin hours calculations as a non-error and force hours to 0
+	// This affects one bad spent output which had overflowed hours, spent in block 13277.
+	switch err {
+	case nil:
+	case coin.ErrAddEarnedCoinHoursAdditionOverflow:
+		calculatedHours = 0
+		err = nil
+	default:
+		return ReadableOutput{}, err
+	}
+
 	return ReadableOutput{
 		Hash:              t.Hash().Hex(),
+		Time:              t.Head.Time,
 		BkSeq:             t.Head.BkSeq,
 		SourceTransaction: t.Body.SrcTransaction.Hex(),
 		Address:           t.Body.Address.String(),
 		Coins:             coinStr,
-		Hours:             t.CoinHours(headTime),
+		Hours:             t.Body.Hours,
+		CalculatedHours:   calculatedHours,
 	}, nil
 }
 
@@ -306,7 +359,7 @@ func ReadableOutputsToUxBalances(ros ReadableOutputs) ([]wallet.UxBalance, error
 			BkSeq:   ro.BkSeq,
 			Address: addr,
 			Coins:   coins,
-			Hours:   ro.Hours,
+			Hours:   ro.CalculatedHours,
 		}
 
 		uxb[i] = b

@@ -55,6 +55,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { HttpClientModule } from '@angular/common/http';
 
 
 const ROUTES = [
@@ -149,6 +150,7 @@ const ROUTES = [
   imports: [
     BrowserModule,
     HttpModule,
+    HttpClientModule,
     MatButtonModule,
     MatCardModule,
     MatDialogModule,

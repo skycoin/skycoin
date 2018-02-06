@@ -54,3 +54,9 @@ func RandBytes(t *testing.T, n int) []byte {
 func RandSHA256(t *testing.T) cipher.SHA256 {
 	return cipher.SumSHA256(RandBytes(t, 128))
 }
+
+func SHA256FromHex(t *testing.T, hex string) cipher.SHA256 {
+	sha, err := cipher.SHA256FromHex(hex)
+	require.NoError(t, err)
+	return sha
+}

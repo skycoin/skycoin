@@ -40,6 +40,8 @@ var (
 	ErrWalletNotEncrypted = errors.New("wallet is not encrypted")
 	// ErrMissingPassword is returned when trying to create wallet with encryption, but password is not provided.
 	ErrMissingPassword = errors.New("missing password")
+	// ErrInvalidPassword is returned if decrypts secrets failed
+	ErrInvalidPassword = errors.New("invalid password")
 	// ErrMissingSeed is returned when trying to create wallet without a seed
 	ErrMissingSeed = errors.New("missing seed")
 	// ErrMissingAuthenticated is returned if try to decrypt a scrypt chacha20poly1305 encrypted wallet, and find no authenticated metadata.
@@ -271,7 +273,8 @@ func (w *Wallet) unlock(password []byte) (*Wallet, error) {
 	// Decrypts the secrets
 	sb, err := crypto.Decrypt([]byte(sstr), password)
 	if err != nil {
-		return nil, ErrAuthenticationFailed{err}
+		logger.Error("Decrypt wallet failed: %v", err)
+		return nil, ErrInvalidPassword
 	}
 
 	// Deserialize into secrets

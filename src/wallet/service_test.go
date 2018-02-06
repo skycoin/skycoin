@@ -10,7 +10,6 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
 	"time"
 
@@ -234,6 +233,7 @@ func TestServiceNewAddress(t *testing.T) {
 		pwd           []byte
 		expectAddrNum int
 		expectAddrs   []cipher.Address
+		expectErr     error
 	}{
 		{
 			"encrypted=false addresses=0",
@@ -245,6 +245,7 @@ func TestServiceNewAddress(t *testing.T) {
 			nil,
 			0,
 			nil, // CreateWallet will generate a default address, so check from new address
+			nil,
 		},
 		{
 			"encrypted=false addresses=1",
@@ -256,6 +257,7 @@ func TestServiceNewAddress(t *testing.T) {
 			nil,
 			2,
 			addrs[1:3], // CreateWallet will generate a default address, so check from new address
+			nil,
 		},
 		{
 			"encrypted=false addresses=2",
@@ -267,6 +269,7 @@ func TestServiceNewAddress(t *testing.T) {
 			nil,
 			2,
 			addrs[1:3], // CreateWallet will generate a default address, so check from new address
+			nil,
 		},
 		{
 			"encrypted=true addresses=1",
@@ -280,6 +283,7 @@ func TestServiceNewAddress(t *testing.T) {
 			[]byte("pwd"),
 			1,
 			addrs[1:2], // CreateWallet will generate a default address, so check from new address
+			nil,
 		},
 		{
 			"encrypted=true addresses=2",
@@ -293,6 +297,7 @@ func TestServiceNewAddress(t *testing.T) {
 			[]byte("pwd"),
 			2,
 			addrs[1:3], // CreateWallet will generate a default address, so check from new address
+			nil,
 		},
 		{
 			"encrypted=true wrong password",
@@ -306,6 +311,7 @@ func TestServiceNewAddress(t *testing.T) {
 			[]byte("wrong password"),
 			1,
 			nil,
+			ErrInvalidPassword,
 		},
 	}
 
@@ -323,14 +329,9 @@ func TestServiceNewAddress(t *testing.T) {
 				require.NoError(t, err)
 
 				naddrs, err := s.NewAddresses(w.Filename(), tc.pwd, tc.n)
+				require.Equal(t, tc.expectErr, err)
 				if err != nil {
-					switch err.(type) {
-					case ErrAuthenticationFailed:
-						return
-					default:
-						t.Fatalf("expect ErrAuthenticationFailed error, actually get: %v", err)
-						return
-					}
+					return
 				}
 
 				require.Len(t, naddrs, tc.expectAddrNum)
@@ -969,7 +970,7 @@ func TestServiceDecryptWallet(t *testing.T) {
 			},
 			"test.wlt",
 			[]byte("wrong password"),
-			ErrAuthenticationFailed{},
+			ErrInvalidPassword,
 		},
 	}
 
@@ -986,13 +987,8 @@ func TestServiceDecryptWallet(t *testing.T) {
 				require.NoError(t, err)
 
 				err = s.DecryptWallet(tc.decryptWltName, tc.password)
+				require.Equal(t, tc.err, err)
 				if err != nil {
-					switch tc.err.(type) {
-					case ErrAuthenticationFailed:
-						require.Equal(t, reflect.TypeOf(err).Name(), reflect.TypeOf(tc.err).Name())
-					default:
-						require.Equal(t, tc.err, err)
-					}
 					return
 				}
 
@@ -1307,7 +1303,7 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 				addrs[3]: BalancePair{Predicted: Balance{Coins: 10, Hours: 100}},
 			},
 			exp{
-				err: ErrAuthenticationFailed{},
+				err: ErrInvalidPassword,
 			},
 		},
 	}
@@ -1327,13 +1323,8 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 				require.NoError(t, w.validate())
 
 				w1, err := s.ScanAheadWalletAddresses(wltName, tc.pwd, tc.scanN, tc.balGetter)
+				require.Equal(t, tc.expect.err, err)
 				if err != nil {
-					switch tc.expect.err.(type) {
-					case ErrAuthenticationFailed:
-						require.Equal(t, reflect.TypeOf(err).Name(), reflect.TypeOf(tc.expect.err).Name())
-					default:
-						require.Equal(t, tc.expect.err, err)
-					}
 					return
 				}
 

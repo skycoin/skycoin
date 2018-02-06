@@ -47,15 +47,6 @@ var cryptoTable = map[CryptoType]cryptor{
 	CryptoTypeScryptChacha20poly1305: encrypt.DefaultScryptChacha20poly1305,
 }
 
-// ErrAuthenticationFailed wraps the error of decryption.
-type ErrAuthenticationFailed struct {
-	err error
-}
-
-func (e ErrAuthenticationFailed) Error() string {
-	return e.err.Error()
-}
-
 // getCrypto gets crypto of given type
 func getCrypto(cryptoType CryptoType) (cryptor, error) {
 	c, ok := cryptoTable[cryptoType]

@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/util/file"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
@@ -40,11 +41,12 @@ type serviceNetwork struct {
 	IPv4Address string `yaml:"ipv4_address"`
 }
 type service struct {
-	Image    string
-	Build    serviceBuild
-	Networks map[string]serviceNetwork
-	Volumes  []string
-	Ports    []string `yaml:"ports,omitempty"`
+	Image       string
+	Build       serviceBuild
+	Networks    map[string]serviceNetwork
+	Volumes     []string `yaml:"volumes,omitempty"`
+	Ports       []string `yaml:"ports,omitempty"`
+	Environment []string `yaml:"environment,omitempty"`
 }
 type networkIpamConfig struct {
 	Subnet string
@@ -152,6 +154,7 @@ func NewSkyCoinTestNetwork(nodesNum int, buildContext string, tempDir string) Sk
 		"--launch-browser=false",
 		"--gui-dir=/usr/local/skycoin/static",
 		"--master-public-key=" + pubKey.Hex(),
+		"--testchain=false",
 	}
 	currentCommit := GetCurrentGitCommit()
 	networkName := "skycoin-" + currentCommit
@@ -218,6 +221,25 @@ func NewSkyCoinTestNetwork(nodesNum int, buildContext string, tempDir string) Sk
 		}
 		t.Services[idx].SkyCoinParameters = append(t.Services[idx].SkyCoinParameters, commonParameters...)
 	}
+	// SkyCoin Explorer
+	explorerContext, err := filepath.Abs("../../../../.../../")
+	if err != nil {
+		log.Fatal(err)
+	}
+	t.Compose.Services["skycoin-explorer"] = service{
+		Image: "skycoin-explorer:" + currentCommit,
+		Build: serviceBuild{
+			Context:    explorerContext,
+			Dockerfile: path.Join(tempDir, "Dockerfile-explorer"),
+		},
+		Networks: map[string]serviceNetwork{
+			string(networkName): serviceNetwork{
+				IPv4Address: networkAddr + strconv.Itoa(ipHostNum),
+			},
+		},
+		Ports:       []string{"8001:8001"},
+		Environment: []string{"SKYCOIN_ADDR=http://172.16.200.2:6420"},
+	}
 	return t
 }
 func (t *SkyCoinTestNetwork) createComposeFile(tempDir string) {
@@ -243,6 +265,7 @@ func (t *SkyCoinTestNetwork) prepareTestEnv(tempDir string) {
 	for _, s := range t.Services {
 		s.CreateDockerFile(tempDir)
 	}
+
 	peersText := []byte(strings.Join(t.Peers, "\n"))
 	for k := range t.Compose.Services {
 		err := os.Mkdir(path.Join(tempDir, k), os.ModePerm)
@@ -262,6 +285,15 @@ func (t *SkyCoinTestNetwork) prepareTestEnv(tempDir string) {
 			log.Fatal(err)
 		}
 	}
+	// Copies the explorer dockerfile
+	dockerfileExplorerSrc := path.Join("templates", "Dockerfile-explorer")
+	dockerfileExplorerDst := path.Join(tempDir, "Dockerfile-explorer")
+	df, err := os.Open(dockerfileExplorerSrc)
+	_, err = file.CopyFile(dockerfileExplorerDst, df)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }
 
 func main() {
@@ -279,5 +311,5 @@ func main() {
 	testNet := NewSkyCoinTestNetwork(*nodesPtr, buildContext, tempDir)
 	testNet.prepareTestEnv(tempDir)
 	testNet.createComposeFile(tempDir)
-	//	runTest(tempDir)
+	runTest(tempDir)
 }

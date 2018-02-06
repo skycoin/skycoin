@@ -14,6 +14,9 @@ env:
   global:
     - ELECTRON_CACHE: $HOME/.cache/electron
     - ELECTRON_BUILDER_CACHE: $HOME/.cache/electron-builder
+    - BUILD_DIR: dist
+    - BUILDLIB_DIR: $BUILD_DIR/skycoinlib
+    - LIB_DIR: lib
 
 cache:
   yarn: true
@@ -39,6 +42,7 @@ install:
   # - go get github.com/gordonklaus/ineffassign
   - go get golang.org/x/tools/cmd/goimports
   # - go get github.com/tsenart/deadcode
+  # TODO: Install dependencies for testing libskycoin
 
 
 
@@ -53,6 +57,16 @@ script:
   - go test ./src/...
   # build wallets
   - if [[ "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/build-wallet.sh; fi
+  # build libskycoin
+  - mkdir -p $(BUILDLIB_DIR)
+  - rm -Rf $(BUILDLIB_DIR)/*
+  # - go build -buildmode=c-shared  -o $(BUILDLIB_DIR)/libskycoin.so $(LIB_DIR)/cgo/main.go
+  - go build -buildmode=c-archive -o $(BUILDLIB_DIR)/libskycoin.a  $(LIB_DIR)/cgo/main.go
+  # test libskycoin
+  - cp $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/
+  - gcc -o $(BUILDLIB_DIR)/skycoinlib_test $(BUILDLIB_DIR)/*.c -I$(BUILDLIB_DIR) -lcriterion -lskycoin -L $(BUILDLIB_DIR)
+  - $(BUILDLIB_DIR)/skycoinlib_test
+   
 
 # after_script:
 #   - golint -set_exit_status ./src/...

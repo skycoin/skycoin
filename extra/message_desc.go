@@ -13,6 +13,9 @@ import (
 	//"encoding/base64"
 	//"math"
 	//"log"
+	"strconv"
+	"encoding/binary"
+	"bytes"
 )
 
 func serializeMessage(msg gnet.Message) []byte {
@@ -34,10 +37,40 @@ func serializeMessage(msg gnet.Message) []byte {
 	return m
 }
 
+func byteSliceToHexStrSlice(bts []byte) []string {
+
+	var hex= make([]string, len(bts))
+	for i := 0; i < len(bts); i++ {
+		var n int64
+		_ = binary.Read(bytes.NewReader(bts), binary.BigEndian, &n)
+		hex[i] = strconv.FormatInt(n,16)
 
 
-func HexDump(message interface{}){
-	var v = reflect.ValueOf(message)
+	}
+	return hex
+}
+
+func printLHexDumpWithFormat(offset int, name string, buffer []byte){
+	if offset == -1{
+		fmt.Println(buffer,name)
+	} else{
+		fmt.Println(offset,buffer,name)
+	}
+
+}
+
+func HexDump(message *dm.AnnounceTxnsMessage){
+
+
+	var serializedMsg = serializeMessage(message)
+
+	printLHexDumpWithFormat(-1,"Full message",serializedMsg)
+
+	fmt.Println("_________--------_______")
+
+	fmt.Println(serializedMsg[0:8],"Prefix")
+
+	var v = reflect.ValueOf(*message)
 
 	t := v.Type()
 	for i := 0; i < v.NumField(); i++ {
@@ -47,7 +80,10 @@ func HexDump(message interface{}){
 	if f.Tag.Get("enc") != "-" {
 		if v_f.CanSet() || f.Name != "_" {
 			if v.Field(i).Kind() == reflect.Slice {
-				fmt.Println(encoder.Serialize(v.Field(i).Slice(0, v.Field(i).Len()).Interface()),f.Name)
+				fmt.Println(encoder.Serialize(v.Field(i).Slice(0, v.Field(i).Len()).Interface())[0:4],f.Name,"header")
+				for j := 0; j < v.Field(i).Len(); j++ {
+					fmt.Println(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface()),f.Name + "#" + strconv.Itoa(j))
+				}
 			} else {
 				fmt.Println(encoder.Serialize(v.Field(i).Interface()),f.Name)
 			}
@@ -58,9 +94,7 @@ func HexDump(message interface{}){
 	}
 }
 
-fmt.Println("_________--------_______")
-var bts = serializeMessage((gnet.Message)message)
-fmt.Println(bts)
+
 }
 
 func main() {
@@ -69,7 +103,7 @@ func main() {
 	h.Write([]byte("hello world\n"))
 	h.Sum(nil)
 	var sha, _ = cipher.SHA256FromHex("ffgd")
-	var message = dm.NewAnnounceTxnsMessage([]cipher.SHA256 {sha})
+	var message = dm.NewAnnounceTxnsMessage([]cipher.SHA256 {sha,sha,sha})
 
 	HexDump(message)
 

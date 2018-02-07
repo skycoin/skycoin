@@ -50,12 +50,53 @@ func byteSliceToHexStrSlice(bts []byte) []string {
 	return hex
 }
 
-func printLHexDumpWithFormat(offset int, name string, buffer []byte){
-	if offset == -1{
-		fmt.Println(buffer,name)
-	} else{
-		fmt.Println(offset,buffer,name)
+func getSliceContentsString(sl []string,offset int) string {
+	var res string = ""
+	var counter int = 0
+	if offset != -1{
+		var hex = strconv.FormatInt(int64(offset),16)
+		var l = len(hex)
+		for i := 0; i < 4 - l; i++ {
+			hex = "0" + hex
+		}
+		hex = "0x" + hex
+		res += hex +  " "
 	}
+	for i := 0; i < len(sl); i++ {
+		counter++
+		res += sl[i] + " "
+		if counter == 16{
+			res += "\n"
+			if offset != -1 {
+				res += "       "//7 spaces
+			}
+			counter = 0
+		}
+	}
+	for i := 0; i < (16-counter); i++ {
+		res += "..."
+	}
+	res += "..."
+	return res
+}
+
+func printLHexDumpWithFormat(offset int, name string, buffer []byte){
+	//if offset == -1{
+		//fmt.Println(buffer,name)
+		var hexBuff = make([]string,len(buffer))
+		for  i := 0; i < len(buffer) ;i++  {
+			hexBuff[i] = strconv.FormatInt(int64(buffer[i]),16)
+		}
+		for  i := 0; i < len(buffer) ;i++  {
+			if len(hexBuff[i]) == 1{
+				hexBuff[i] = "0" + hexBuff[i]
+			}
+		}
+
+		fmt.Println(getSliceContentsString(hexBuff,offset),name)
+	//} else{
+	//	fmt.Println(offset,buffer,name)
+	//}
 
 }
 
@@ -66,9 +107,10 @@ func HexDump(message *dm.AnnounceTxnsMessage){
 
 	printLHexDumpWithFormat(-1,"Full message",serializedMsg)
 
-	fmt.Println("_________--------_______")
+	fmt.Println("------------------------------------------------------------------------")
 
-	fmt.Println(serializedMsg[0:8],"Prefix")
+	printLHexDumpWithFormat(0,"Prefix",serializedMsg[0:8])
+	//fmt.Println(serializedMsg[0:8],"Prefix")
 
 	var v = reflect.ValueOf(*message)
 
@@ -80,12 +122,15 @@ func HexDump(message *dm.AnnounceTxnsMessage){
 	if f.Tag.Get("enc") != "-" {
 		if v_f.CanSet() || f.Name != "_" {
 			if v.Field(i).Kind() == reflect.Slice {
-				fmt.Println(encoder.Serialize(v.Field(i).Slice(0, v.Field(i).Len()).Interface())[0:4],f.Name,"header")
+				printLHexDumpWithFormat(0,f.Name + " header",encoder.Serialize(v.Field(i).Slice(0, v.Field(i).Len()).Interface())[0:4])
+				//fmt.Println(encoder.Serialize(v.Field(i).Slice(0, v.Field(i).Len()).Interface())[0:4],f.Name,"header")
 				for j := 0; j < v.Field(i).Len(); j++ {
-					fmt.Println(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface()),f.Name + "#" + strconv.Itoa(j))
+					printLHexDumpWithFormat(0,f.Name + "#" + strconv.Itoa(j),encoder.Serialize(v.Field(i).Slice(j, j+1).Interface()))
+					//fmt.Println(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface()),f.Name + "#" + strconv.Itoa(j))
 				}
 			} else {
-				fmt.Println(encoder.Serialize(v.Field(i).Interface()),f.Name)
+				printLHexDumpWithFormat(0,f.Name,encoder.Serialize(v.Field(i).Interface()))
+				//fmt.Println(encoder.Serialize(v.Field(i).Interface()),f.Name)
 			}
 		} else {
 				//dont write anything

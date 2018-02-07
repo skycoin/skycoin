@@ -433,16 +433,13 @@ func NewGenesisReadableTransaction(t *Transaction, inData []*historydb.UxOut) (*
 	for i := range t.Txn.In {
 		in[i] = t.Txn.In[i].Hex()
 	}
-	var inInfo []ReadableTransactionInput
-	if inData != nil {
-		inInfo = make([]ReadableTransactionInput, len(inData))
-		for i := range inData {
-			in, err := NewReadableTransactionInput(inData[i].Out.Body.Hash().Hex(), inData[i].Out.Body.Address.String(), inData[i].Out.Body.Coins, inData[i].Out.Body.Hours)
-			if err != nil {
-				return nil, err
-			}
-			inInfo[i] = *in
+	inInfo := make([]ReadableTransactionInput, len(inData))
+	for i := range inData {
+		in, err := NewReadableTransactionInput(inData[i].Out.Body.Hash().Hex(), inData[i].Out.Body.Address.String(), inData[i].Out.Body.Coins, inData[i].Out.Body.Hours)
+		if err != nil {
+			return nil, err
 		}
+		inInfo[i] = *in
 	}
 	out := make([]ReadableTransactionOutput, len(t.Txn.Out))
 	for i := range t.Txn.Out {
@@ -478,16 +475,13 @@ func NewReadableTransaction(t *Transaction, inData []*historydb.UxOut) (*Readabl
 	for i := range t.Txn.In {
 		in[i] = t.Txn.In[i].Hex()
 	}
-	var inInfo []ReadableTransactionInput
-	if inData != nil {
-		inInfo = make([]ReadableTransactionInput, len(inData))
-		for i := range inData {
-			in, err := NewReadableTransactionInput(inData[i].Out.Body.Hash().Hex(), inData[i].Out.Body.Address.String(), inData[i].Out.Body.Coins, inData[i].Out.Body.Hours)
-			if err != nil {
-				return nil, err
-			}
-			inInfo[i] = *in
+	inInfo := make([]ReadableTransactionInput, len(inData))
+	for i := range inData {
+		in, err := NewReadableTransactionInput(inData[i].Out.Body.Hash().Hex(), inData[i].Out.Body.Address.String(), inData[i].Out.Body.Coins, inData[i].Out.Body.Hours)
+		if err != nil {
+			return nil, err
 		}
+		inInfo[i] = *in
 	}
 	out := make([]ReadableTransactionOutput, len(t.Txn.Out))
 	for i := range t.Txn.Out {

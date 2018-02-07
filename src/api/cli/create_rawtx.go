@@ -525,7 +525,7 @@ func makeChangeOut(outs []wallet.UxBalance, chgAddr string, toAddrs []SendAmount
 
 	haveChange := changeAmount > 0
 	nAddrs := uint64(len(toAddrs))
-	changeHours, addrHours, totalOutHours := wallet.DistributeSpendHours(totalInHours, nAddrs, haveChange)
+	changeHours, addrHours, totalOutHours := wallet.DistributeSpendHours(totalInHours, totalOutCoins, nAddrs, haveChange)
 
 	if err := fee.VerifyTransactionFeeForHours(totalOutHours, totalInHours-totalOutHours); err != nil {
 		return nil, err

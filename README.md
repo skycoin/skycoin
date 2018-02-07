@@ -64,11 +64,36 @@ This will download `github.com/skycoin/skycoin` to `$GOPATH/src/github.com/skyco
 You can also clone the repo directly with `git clone https://github.com/skycoin/skycoin`,
 but it must be cloned to this path: `$GOPATH/src/github.com/skycoin/skycoin`.
 
-### Run Skycoin from the command line
+### Run Skycoin mainnet from the command line
+
+The following command runs a Skycoin mainnet node.
+Online Skycoin mainnet servers will be queried to establish
+initial connection to the gnet P2P network.
+Default path for Skycoin data directory will be `~/.skycoin`
 
 ```sh
 cd $GOPATH/src/github.com/skycoin/skycoin
 make run
+```
+
+### Run Skycoin from the command line
+
+The following command runs a Skycoin testnet node.
+All address:port pairs to establish initial trusted connections
+will be loaded from `connections.txt` under the data directory
+of the particular Skycoin instance.
+Default path for Skycoin data directory will be `~/.skycoin-testnet`
+The IP addresses in the following snippet are just placeholders.
+Replace them with the adresses of the nodes deployed in a
+particular scenario.
+
+```sh
+echo '192.168.5.29:6000' >  ~/.skycoin-testnet/connections.txt
+echo '192.168.5.21:6000' >> ~/.skycoin-testnet/connections.txt
+echo '192.168.5.13:6000' >> ~/.skycoin-testnet/connections.txt
+echo '192.168.5.7:6000'  >> ~/.skycoin-testnet/connections.txt
+cd $GOPATH/src/github.com/skycoin/skycoin
+make run-testnet
 ```
 
 ### Show Skycoin node options

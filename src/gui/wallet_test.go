@@ -285,6 +285,7 @@ func TestWalletSpendHandler(t *testing.T) {
 					Timestamp: 0,
 					Sigs:      []string{},
 					In:        []string{},
+					InData:    []visor.ReadableTransactionInput{},
 					Out:       []visor.ReadableTransactionOutput{},
 				},
 			},

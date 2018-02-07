@@ -183,8 +183,8 @@ func (gw *Gateway) GetBlockBySeq(seq uint64) (block coin.SignedBlock, ok bool) {
 	return
 }
 
-// GetInputData returns the data of an input
-func GetInputData(in cipher.SHA256, gw *Gateway) (*historydb.UxOut, error) {
+// getInputData returns the data of an input
+func getInputData(in cipher.SHA256, gw *Gateway) (*historydb.UxOut, error) {
 	uxout, err := gw.GetUxOutByID(in)
 	if err != nil {
 		return nil, err
@@ -196,8 +196,8 @@ func GetInputData(in cipher.SHA256, gw *Gateway) (*historydb.UxOut, error) {
 	return uxout, nil
 }
 
-// GetSignedBlocksInputsData returns the inputs data of a signed blocks slice
-func GetSignedBlocksInputsData(blocks []coin.SignedBlock, gw *Gateway) ([][][]*historydb.UxOut, error) {
+// getSignedBlocksInputsData returns the inputs data of a signed blocks slice
+func getSignedBlocksInputsData(blocks []coin.SignedBlock, gw *Gateway) ([][][]*historydb.UxOut, error) {
 
 	txsInputsData := make([][][]*historydb.UxOut, 0, len(blocks))
 	for i, block := range blocks {
@@ -205,7 +205,7 @@ func GetSignedBlocksInputsData(blocks []coin.SignedBlock, gw *Gateway) ([][][]*h
 		for j, tx := range block.Body.Transactions {
 			txsInputsData[i] = append(txsInputsData[i], make([]*historydb.UxOut, 0, len(tx.In)))
 			for _, in := range tx.In {
-				uxout, err := GetInputData(in, gw)
+				uxout, err := getInputData(in, gw)
 				if err != nil {
 					return nil, err
 				}
@@ -225,7 +225,7 @@ func (gw *Gateway) GetBlocks(start, end uint64) (*visor.ReadableBlocks, error) {
 		blocks = gw.vrpc.GetBlocks(gw.v, start, end)
 	})
 
-	txsInputsData, err := GetSignedBlocksInputsData(blocks, gw)
+	txsInputsData, err := getSignedBlocksInputsData(blocks, gw)
 	if err != nil {
 		return nil, err
 	}
@@ -259,7 +259,7 @@ func (gw *Gateway) GetBlocksInDepth(vs []uint64) (*visor.ReadableBlocks, error) 
 		return nil, err
 	}
 
-	txsInputsData, err := GetSignedBlocksInputsData(blocks, gw)
+	txsInputsData, err := getSignedBlocksInputsData(blocks, gw)
 	if err != nil {
 		// Error already logged
 		return nil, err
@@ -275,7 +275,7 @@ func (gw *Gateway) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error) {
 		blocks = gw.vrpc.GetLastBlocks(gw.v, num)
 	})
 
-	txsInputsData, err := GetSignedBlocksInputsData(blocks, gw)
+	txsInputsData, err := getSignedBlocksInputsData(blocks, gw)
 	if err != nil {
 		// Error already logged
 		return nil, err
@@ -412,12 +412,12 @@ func (gw *Gateway) GetTransaction(txid cipher.SHA256) (tx *visor.Transaction, er
 	return
 }
 
-// GetTransactionInputsData returns the inputs data of a transaction
-func GetTransactionInputsData(tx *coin.Transaction, gw *Gateway) ([]*historydb.UxOut, error) {
+// getTransactionInputsData returns the inputs data of a transaction
+func getTransactionInputsData(tx *coin.Transaction, gw *Gateway) ([]*historydb.UxOut, error) {
 	txInputsData := make([]*historydb.UxOut, 0, len(tx.In))
 
 	for _, in := range tx.In {
-		uxout, err := GetInputData(in, gw)
+		uxout, err := getInputData(in, gw)
 		if err != nil {
 			return nil, err
 		}
@@ -440,7 +440,7 @@ func (gw *Gateway) GetTransactionResult(txid cipher.SHA256) (*visor.TransactionR
 		return nil, err
 	}
 
-	txInputsData, err := GetTransactionInputsData(&tx.Txn, gw)
+	txInputsData, err := getTransactionInputsData(&tx.Txn, gw)
 	if err != nil {
 		return nil, err
 	}
@@ -472,7 +472,7 @@ func (gw *Gateway) GetAddressTxns(a cipher.Address) (*visor.TransactionResults, 
 
 	txsInputsData := make([][]*historydb.UxOut, 0, len(txs))
 	for _, tx := range txs {
-		uxout, err := GetTransactionInputsData(&tx.Txn, gw)
+		uxout, err := getTransactionInputsData(&tx.Txn, gw)
 		if err != nil {
 			return nil, err
 		}

@@ -186,7 +186,7 @@ func getTransactionsForAddress(gateway Gatewayer) http.HandlerFunc {
 					return
 				}
 
-				uxout, err := GetInputData(id, gateway)
+				uxout, err := getInputData(id, gateway)
 				if err != nil {
 					logger.Error("%v", err)
 					wh.Error500(w)
@@ -309,8 +309,8 @@ func NewReadableTransaction(t visor.TransactionResult, inputs []visor.ReadableTr
 	}
 }
 
-// GetInputData returns the data of an input
-func GetInputData(in cipher.SHA256, gw Gatewayer) (*historydb.UxOut, error) {
+// getInputData returns the data of an input
+func getInputData(in cipher.SHA256, gw Gatewayer) (*historydb.UxOut, error) {
 	uxout, err := gw.GetUxOutByID(in)
 	if err != nil {
 		return nil, err

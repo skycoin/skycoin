@@ -71,7 +71,7 @@ func getBlock(gate Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		txsInputsData, err := GetBlockInputsData(&b.Block, gate)
+		txsInputsData, err := getBlockInputsData(&b.Block, gate)
 		if err != nil {
 			// Error already logged
 			wh.Error500(w)
@@ -147,12 +147,12 @@ func getLastBlocks(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-// GetBlockInputsData returns the inputs data of a block
-func GetBlockInputsData(block *coin.Block, gw Gatewayer) ([][]*historydb.UxOut, error) {
+// getBlockInputsData returns the inputs data of a block
+func getBlockInputsData(block *coin.Block, gw Gatewayer) ([][]*historydb.UxOut, error) {
 	txsInputsData := make([][]*historydb.UxOut, 0, len(block.Body.Transactions))
 
 	for _, tx := range block.Body.Transactions {
-		inData, err := GetTransactionInputsData(&tx, gw)
+		inData, err := getTransactionInputsData(&tx, gw)
 		if err != nil {
 			return nil, err
 		}

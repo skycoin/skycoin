@@ -27,7 +27,7 @@ func getPendingTxs(gateway Gatewayer) http.HandlerFunc {
 		txns := gateway.GetAllUnconfirmedTxns()
 		ret := make([]*visor.ReadableUnconfirmedTxn, 0, len(txns))
 		for _, unconfirmedTxn := range txns {
-			txInputsData, err := GetTransactionInputsData(&unconfirmedTxn.Txn, gateway)
+			txInputsData, err := getTransactionInputsData(&unconfirmedTxn.Txn, gateway)
 			if err != nil {
 				logger.Error("%v", err)
 				wh.Error500(w)
@@ -64,7 +64,7 @@ func getLastTxs(gateway Gatewayer) http.HandlerFunc {
 
 		resTxs := make([]visor.TransactionResult, len(txs))
 		for i, tx := range txs {
-			txInputsData, err := GetTransactionInputsData(&tx.Txn, gateway)
+			txInputsData, err := getTransactionInputsData(&tx.Txn, gateway)
 			if err != nil {
 				logger.Error("%v", err)
 				wh.Error500(w)
@@ -116,7 +116,7 @@ func getTransactionByID(gate Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		txInputsData, err := GetTransactionInputsData(&tx.Txn, gate)
+		txInputsData, err := getTransactionInputsData(&tx.Txn, gate)
 		if err != nil {
 			logger.Error("%v", err)
 			wh.Error500(w)
@@ -310,7 +310,7 @@ func getRawTx(gate Gatewayer) http.HandlerFunc {
 func NewTransactionResults(gateway Gatewayer, txs []visor.Transaction) (*visor.TransactionResults, error) {
 	txRlts := make([]visor.TransactionResult, 0, len(txs))
 	for _, tx := range txs {
-		txInputsData, err := GetTransactionInputsData(&tx.Txn, gateway)
+		txInputsData, err := getTransactionInputsData(&tx.Txn, gateway)
 		if err != nil {
 			return nil, err
 		}
@@ -332,13 +332,13 @@ func NewTransactionResults(gateway Gatewayer, txs []visor.Transaction) (*visor.T
 	}, nil
 }
 
-// GetTransactionInputsData returns the inputs data of a transaction
-func GetTransactionInputsData(tx *coin.Transaction, gw Gatewayer) ([]*historydb.UxOut, error) {
+// getTransactionInputsData returns the inputs data of a transaction
+func getTransactionInputsData(tx *coin.Transaction, gw Gatewayer) ([]*historydb.UxOut, error) {
 	txInputsData := make([]*historydb.UxOut, 0, len(tx.In))
 
 	for _, in := range tx.In {
 
-		uxout, err := GetInputData(in, gw)
+		uxout, err := getInputData(in, gw)
 		if err != nil {
 			return nil, err
 		}

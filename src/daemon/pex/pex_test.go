@@ -511,7 +511,7 @@ func TestPexTrustedPublic(t *testing.T) {
 			for _, p := range tc.expect {
 				v, ok := pm[p.Addr]
 				require.True(t, ok)
-				require.Equal(t, p, v)
+				peersEqualWithSeenAllowedDiff(t, p, v)
 			}
 		})
 	}
@@ -636,7 +636,7 @@ func TestPexRandomExchangeable(t *testing.T) {
 			for _, p := range peers {
 				v, ok := psm[p.Addr]
 				require.True(t, ok)
-				require.Equal(t, p, v)
+				peersEqualWithSeenAllowedDiff(t, p, v)
 			}
 		})
 	}
@@ -800,7 +800,7 @@ func TestPexRandomPublic(t *testing.T) {
 			for _, p := range peers {
 				v, ok := psm[p.Addr]
 				require.True(t, ok)
-				require.Equal(t, p, v)
+				peersEqualWithSeenAllowedDiff(t, p, v)
 			}
 		})
 	}
@@ -865,7 +865,7 @@ func TestPexTrusted(t *testing.T) {
 			for _, p := range tc.expect {
 				v, ok := pm[p.Addr]
 				require.True(t, ok)
-				require.Equal(t, p, v)
+				peersEqualWithSeenAllowedDiff(t, p, v)
 			}
 		})
 	}
@@ -930,7 +930,7 @@ func TestPexPrivate(t *testing.T) {
 			for _, p := range tc.expect {
 				v, ok := pm[p.Addr]
 				require.True(t, ok)
-				require.Equal(t, p, v)
+				peersEqualWithSeenAllowedDiff(t, p, v)
 			}
 		})
 	}

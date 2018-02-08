@@ -490,6 +490,9 @@ func NewTransaction(utxos []wallet.UxBalance, keys []cipher.SecKey, outs []coin.
 	}
 
 	tx.SignInputs(keys)
+	if tx.Size() > visor.DefaultMaxBlockSize {
+		return nil, errors.New("transaction size bigger than max block size")
+	}
 	tx.UpdateHeader()
 	return &tx, nil
 }

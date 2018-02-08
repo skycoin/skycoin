@@ -12,11 +12,6 @@ import (
 func serializeMessage(msg gnet.Message) []byte {
 	t := reflect.ValueOf(msg).Elem().Type()
 	msgID := gnet.MessageIDMap[t]
-	//if !succ {
-	//txt := "Attempted to serialize message struct not in MessageIdMap: %v"
-	//logger.Panicf(txt, msg)
-	//	panic(msg)//TODO: Log
-	//}
 	bMsg := encoder.Serialize(msg)
 
 	// message length
@@ -101,7 +96,7 @@ func HexDump(message gnet.Message){
 					offset += len(encoder.Serialize(v.Field(i).Interface()))
 				}
 			} else {
-				//dont write anything
+				//don't write anything
 			}
 		}
 	}

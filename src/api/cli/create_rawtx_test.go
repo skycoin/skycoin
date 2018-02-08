@@ -6,12 +6,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"fmt"
-	"math"
-	"strconv"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -66,7 +63,7 @@ func TestMakeChangeOut(t *testing.T) {
 	}
 	remainingHours := totalHours - fee.RequiredFee(totalHours)
 
-	spendCoinsAmt := calculateSpendAmt(spendAmt[0].Coins, t)
+	spendCoinsAmt := calculateSpendAmt(spendAmt[0].Coins)
 	chgHours := remainingHours - spendCoinsAmt
 	if remainingHours%2 != 0 {
 		chgHours++
@@ -126,7 +123,7 @@ func TestMakeChangeOutMinOneCoinHourSend(t *testing.T) {
 	}
 	remainingHours := totalHours - fee.RequiredFee(totalHours)
 
-	spendCoinsAmt := calculateSpendAmt(spendAmt[0].Coins, t)
+	spendCoinsAmt := calculateSpendAmt(spendAmt[0].Coins)
 
 	chgHours := remainingHours - spendCoinsAmt
 	if remainingHours%2 != 0 {
@@ -136,7 +133,6 @@ func TestMakeChangeOutMinOneCoinHourSend(t *testing.T) {
 	fmt.Println(spendHours)
 	require.Exactly(t, chgHours, chgOut.Hours)
 	require.Exactly(t, spendHours, spendOut.Hours)
-
 }
 
 func TestMakeChangeOutOneCoinHour(t *testing.T) {
@@ -446,15 +442,11 @@ func TestChooseSpends(t *testing.T) {
 	}
 }
 
-func calculateSpendAmt(spendCoins uint64, t *testing.T) uint64 {
-	// convert droplet to coins
-	// then we ceil it to make sure that we send atleast 1 coinhour
-	spendCoinsAmtStr, err := droplet.ToString(spendCoins)
-	require.NoError(t, err)
+func calculateSpendAmt(spendCoins uint64) uint64 {
+	spendCoinsAmt := spendCoins / 1e6
+	if spendCoinsAmt == 0 {
+		spendCoinsAmt += 1
+	}
 
-	spendCoinsAmt, err := strconv.ParseFloat(spendCoinsAmtStr, 64)
-	require.NoError(t, err)
-
-	spendCoinsAmt = math.Ceil(spendCoinsAmt)
-	return uint64(spendCoinsAmt)
+	return spendCoinsAmt
 }

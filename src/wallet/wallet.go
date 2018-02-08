@@ -15,10 +15,6 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 
-	"math"
-	"strconv"
-
-	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/logging"
 )
@@ -457,68 +453,6 @@ func DistributeSpendHours(inputHours, nAddrs uint64, haveChange bool) (uint64, [
 	if haveChange {
 		// Split the remaining hours between the change output and the other outputs
 		changeHours = remainingHours / 2
-
-		// If remainingHours is an odd number, give the extra hour to the change output
-		if remainingHours%2 == 1 {
-			changeHours++
-		}
-	}
-
-	// Distribute the remaining hours equally amongst the destination outputs
-	remainingAddrHours := remainingHours - changeHours
-	addrHoursShare := remainingAddrHours / nAddrs
-
-	// Due to integer division, extra coin hours might remain after dividing by len(toAddrs)
-	// Allocate these extra hours to the toAddrs
-	addrHours := make([]uint64, nAddrs)
-	for i := range addrHours {
-		addrHours[i] = addrHoursShare
-	}
-
-	extraHours := remainingAddrHours - (addrHoursShare * nAddrs)
-	i := 0
-	for extraHours > 0 {
-		addrHours[i] = addrHours[i] + 1
-		i++
-		extraHours--
-	}
-
-	// Assert that the hour calculation is correct
-	var spendHours uint64
-	for _, h := range addrHours {
-		spendHours += h
-	}
-	spendHours += changeHours
-	if spendHours != remainingHours {
-		logger.Panicf("spendHours != remainingHours (%d != %d), calculation error", spendHours, remainingHours)
-	}
-
-	return changeHours, addrHours, spendHours
-}
-
-func CliDistributeSpendHours(inputHours, spendCoins, nAddrs uint64, haveChange bool) (uint64, []uint64, uint64) {
-	feeHours := fee.RequiredFee(inputHours)
-	remainingHours := inputHours - feeHours
-
-	// convert droplet to coins
-	// then we ceil it to make sure that we send atleast 1 coinhour
-	spendCoinsAmtStr, err := droplet.ToString(spendCoins)
-	if err != nil {
-		logger.Panicf("Unable to convert droplets: %v to coins", spendCoins)
-	}
-
-	spendCoinsAmt, err := strconv.ParseFloat(spendCoinsAmtStr, 64)
-	if err != nil {
-		logger.Panicf("Failed to convert %v to float64", spendCoinsAmt)
-	}
-	spendCoinsAmt = math.Ceil(spendCoinsAmt)
-
-	// make sure that remaining hours is positive and non zero
-	// otherwise it causes an overflow
-	var changeHours uint64
-	if haveChange && remainingHours > 0 {
-		// Split the remaining hours between the change output and the other outputs
-		changeHours = remainingHours - uint64(spendCoinsAmt)
 
 		// If remainingHours is an odd number, give the extra hour to the change output
 		if remainingHours%2 == 1 {

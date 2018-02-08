@@ -525,18 +525,35 @@ func makeChangeOut(outs []wallet.UxBalance, chgAddr string, toAddrs []SendAmount
 
 	haveChange := changeAmount > 0
 	nAddrs := uint64(len(toAddrs))
-	changeHours, addrHours, totalOutHours := wallet.CliDistributeSpendHours(totalInHours, totalOutCoins, nAddrs, haveChange)
+	changeHours, addrHours, totalOutHours := wallet.DistributeSpendHours(totalInHours, nAddrs, haveChange)
 
 	if err := fee.VerifyTransactionFeeForHours(totalOutHours, totalInHours-totalOutHours); err != nil {
 		return nil, err
 	}
 
-	if haveChange {
-		outAddrs = append(outAddrs, mustMakeUtxoOutput(chgAddr, changeAmount, changeHours))
+	var spendCoinsAmt uint64
+	for i, to := range toAddrs {
+		// check if changeHours > 0
+		// if changeHours is zero then all addrHours will also be zero
+		if changeHours > 0 {
+			spendCoinsAmt = to.Coins / 1e6
+			if spendCoinsAmt == 0 {
+				spendCoinsAmt += 1
+			}
+
+			// we let the addrHours to be less than the out coins for the address but not more
+			// so we cap the addrHour to out coins and move the difference to changeHours
+			if addrHours[i] > spendCoinsAmt {
+				changeHours += addrHours[i] - spendCoinsAmt
+				addrHours[i] = spendCoinsAmt
+			}
+		}
+
+		outAddrs = append(outAddrs, mustMakeUtxoOutput(to.Addr, to.Coins, addrHours[i]))
 	}
 
-	for i, to := range toAddrs {
-		outAddrs = append(outAddrs, mustMakeUtxoOutput(to.Addr, to.Coins, addrHours[i]))
+	if haveChange {
+		outAddrs = append(outAddrs, mustMakeUtxoOutput(chgAddr, changeAmount, changeHours))
 	}
 
 	return outAddrs, nil

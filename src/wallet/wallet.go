@@ -15,11 +15,12 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 
+	"math"
+	"strconv"
+
+	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/logging"
-	"math"
-	"github.com/skycoin/skycoin/src/util/droplet"
-	"strconv"
 )
 
 var (
@@ -499,7 +500,7 @@ func CliDistributeSpendHours(inputHours, spendCoins, nAddrs uint64, haveChange b
 	feeHours := fee.RequiredFee(inputHours)
 	remainingHours := inputHours - feeHours
 
-	// convert droplet to float64
+	// convert droplet to coins
 	// then we ceil it to make sure that we send atleast 1 coinhour
 	spendCoinsAmtStr, err := droplet.ToString(spendCoins)
 	if err != nil {

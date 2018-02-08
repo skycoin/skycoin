@@ -1,14 +1,14 @@
-package main
+package extra
 
 import (
 
 	"fmt"
 	"reflect"
-	dm "github.com/skycoin/skycoin/src/daemon"
+	//dm "github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"crypto/sha256"
-	"github.com/skycoin/skycoin/src/cipher"
+	//"crypto/sha256"
+	//"github.com/skycoin/skycoin/src/cipher"
 	//"crypto/sha1"
 	//"encoding/base64"
 	//"math"
@@ -35,19 +35,6 @@ func serializeMessage(msg gnet.Message) []byte {
 	m = append(m, msgID[:]...) // message id
 	m = append(m, bMsg...)     // message bytes
 	return m
-}
-
-func byteSliceToHexStrSlice(bts []byte) []string {
-
-	var hex= make([]string, len(bts))
-	for i := 0; i < len(bts); i++ {
-		var n int64
-		_ = binary.Read(bytes.NewReader(bts), binary.BigEndian, &n)
-		hex[i] = strconv.FormatInt(n,16)
-
-
-	}
-	return hex
 }
 
 func getSliceContentsString(sl []string,offset int) string {
@@ -93,7 +80,7 @@ func printLHexDumpWithFormat(offset int, name string, buffer []byte){
 	fmt.Println(getSliceContentsString(hexBuff,offset),name)
 }
 
-func HexDump(message *dm.AnnounceTxnsMessage){
+func HexDump(message gnet.Message){
 	var serializedMsg = serializeMessage(message)
 
 	printLHexDumpWithFormat(-1,"Full message",serializedMsg)
@@ -102,7 +89,7 @@ func HexDump(message *dm.AnnounceTxnsMessage){
 	var offset int = 0
 	printLHexDumpWithFormat(0,"Prefix",serializedMsg[0:8])
 	offset += len(serializedMsg[0:8])
-	var v = reflect.ValueOf(*message)
+	var v = reflect.Indirect(reflect.ValueOf(message))
 
 	t := v.Type()
 	for i := 0; i < v.NumField(); i++ {
@@ -129,17 +116,5 @@ func HexDump(message *dm.AnnounceTxnsMessage){
 	}
 }
 
-
-}
-
-func main() {
-
-	h := sha256.New()
-	h.Write([]byte("hello world\n"))
-	h.Sum(nil)
-	var sha, _ = cipher.SHA256FromHex("ffgd")
-	var message = dm.NewAnnounceTxnsMessage([]cipher.SHA256 {sha,sha,sha})
-
-	HexDump(message)
 
 }

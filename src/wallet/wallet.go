@@ -17,9 +17,9 @@ import (
 
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/logging"
+	"math"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"strconv"
-	"math"
 )
 
 var (
@@ -416,7 +416,7 @@ func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspent
 	// Calculate coin hour allocation
 	changeCoins := spending.Coins - coins
 	haveChange := changeCoins > 0
-	changeHours, addrHours, outputHours := DistributeSpendHours(spending.Hours, coins, 1, haveChange)
+	changeHours, addrHours, outputHours := DistributeSpendHours(spending.Hours, 1, haveChange)
 
 	logger.Info("wallet.CreateAndSignTransaction: spending.Hours=%d, fee.VerifyTransactionFeeForHours(%d, %d)", spending.Hours, outputHours, spending.Hours-outputHours)
 	if err := fee.VerifyTransactionFeeForHours(outputHours, spending.Hours-outputHours); err != nil {
@@ -448,7 +448,54 @@ func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspent
 // Returns the number of hours to send to the change address,
 // an array of length nAddrs with the hours to give to each destination address,
 // and a sum of these values.
-func DistributeSpendHours(inputHours, spendCoins, nAddrs uint64, haveChange bool) (uint64, []uint64, uint64) {
+func DistributeSpendHours(inputHours, nAddrs uint64, haveChange bool) (uint64, []uint64, uint64) {
+	feeHours := fee.RequiredFee(inputHours)
+	remainingHours := inputHours - feeHours
+
+	var changeHours uint64
+	if haveChange {
+		// Split the remaining hours between the change output and the other outputs
+		changeHours = remainingHours / 2
+
+		// If remainingHours is an odd number, give the extra hour to the change output
+		if remainingHours%2 == 1 {
+			changeHours++
+		}
+	}
+
+	// Distribute the remaining hours equally amongst the destination outputs
+	remainingAddrHours := remainingHours - changeHours
+	addrHoursShare := remainingAddrHours / nAddrs
+
+	// Due to integer division, extra coin hours might remain after dividing by len(toAddrs)
+	// Allocate these extra hours to the toAddrs
+	addrHours := make([]uint64, nAddrs)
+	for i := range addrHours {
+		addrHours[i] = addrHoursShare
+	}
+
+	extraHours := remainingAddrHours - (addrHoursShare * nAddrs)
+	i := 0
+	for extraHours > 0 {
+		addrHours[i] = addrHours[i] + 1
+		i++
+		extraHours--
+	}
+
+	// Assert that the hour calculation is correct
+	var spendHours uint64
+	for _, h := range addrHours {
+		spendHours += h
+	}
+	spendHours += changeHours
+	if spendHours != remainingHours {
+		logger.Panicf("spendHours != remainingHours (%d != %d), calculation error", spendHours, remainingHours)
+	}
+
+	return changeHours, addrHours, spendHours
+}
+
+func CliDistributeSpendHours(inputHours, spendCoins, nAddrs uint64, haveChange bool) (uint64, []uint64, uint64) {
 	feeHours := fee.RequiredFee(inputHours)
 	remainingHours := inputHours - feeHours
 

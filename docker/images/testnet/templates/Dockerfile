@@ -26,7 +26,7 @@ RUN cd $GOPATH/src/github.com/skycoin/skycoin/cmd/address_gen && \
 # skycoin image
 FROM alpine:3.7
 
-ENV COIN="skycoin" \
+ENV COIN="skycoin-testnet" \
     RPC_ADDR="0.0.0.0:6430" \
     DATA_DIR="/root/.$COIN" \
     WALLET_DIR="/wallet" \

@@ -154,6 +154,7 @@ func NewSkyCoinTestNetwork(nodesNum int, buildContext string, tempDir string) Sk
 		"--launch-browser=false",
 		"--gui-dir=/usr/local/skycoin/static",
 		"--master-public-key=" + pubKey.Hex(),
+		"--testchain",
 	}
 	currentCommit := GetCurrentGitCommit()
 	networkName := "skycoin-" + currentCommit
@@ -163,7 +164,6 @@ func NewSkyCoinTestNetwork(nodesNum int, buildContext string, tempDir string) Sk
 			ImageName: "skycoin-gui",
 			SkyCoinParameters: []string{
 				"--web-interface-addr=0.0.0.0",
-				"--testchain=true",
 				"--master",
 				"--master-secret-key=" + secKey.Hex(),
 			},
@@ -213,7 +213,7 @@ func NewSkyCoinTestNetwork(nodesNum int, buildContext string, tempDir string) Sk
 						IPv4Address: ipAddress,
 					},
 				},
-				Volumes: []string{dataDir + ":/root/.skycoin"},
+				Volumes: []string{dataDir + ":/root/.skycoin-test"},
 				Ports:   s.Ports,
 			}
 			t.Peers = append(t.Peers, ipAddress+":6000")

@@ -59,30 +59,30 @@ func main() {
 // checkMinimumRequirements checks whether we have met the minimal requirements to execute the tests
 func checkMinimumRequirements() {
 	if wltFile == "" {
-		fmt.Fprint(os.Stderr, "No wallet file given")
+		fmt.Fprint(os.Stderr, "No wallet file given\n")
 		os.Exit(1)
 	}
 
 	if _, err := os.Stat(wltFile); os.IsNotExist(err) {
-		fmt.Fprint(os.Stderr, fmt.Sprintf("Wallet file %s does not exist", wltFile))
+		fmt.Fprint(os.Stderr, fmt.Sprintf("Wallet file %s does not exist\n", wltFile))
 		os.Exit(1)
 	}
 
 	if addresses == "" {
-		fmt.Fprint(os.Stderr, "No test addresses given")
+		fmt.Fprint(os.Stderr, "No test addresses given\n")
 		os.Exit(1)
 	}
 
 	testAddrs = strings.Split(addresses, ",")
 	if len(testAddrs) < 2 {
-		fmt.Fprint(os.Stderr, fmt.Sprintf("Minimum two test addresses required, given: %v", len(testAddrs)))
+		fmt.Fprint(os.Stderr, fmt.Sprintf("Minimum two test addresses required, given: %v\n", len(testAddrs)))
 		os.Exit(1)
 	}
 
 	for i := range testAddrs {
 		_, err = cipher.DecodeBase58Address(testAddrs[i])
 		if err != nil {
-			fmt.Fprint(os.Stderr, fmt.Sprintf("Address %s is invalid: ", testAddrs[i]), err)
+			fmt.Fprint(os.Stderr, fmt.Sprintf("Address %s is invalid: %v\n", testAddrs[i], err))
 			os.Exit(1)
 		}
 	}
@@ -91,7 +91,7 @@ func checkMinimumRequirements() {
 func testCliAddressCommands() {
 	cliArgs = []string{"generateAddresses", "-f", wltFile}
 	if cliOut, err = exec.Command(cliName, cliArgs...).CombinedOutput(); err != nil {
-		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: ", cliArgs[0]), string(cliOut))
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: %v\n", cliArgs[0], string(cliOut)))
 		os.Exit(1)
 	}
 
@@ -99,14 +99,14 @@ func testCliAddressCommands() {
 	// verify that the generated address is correct
 	_, err = cipher.DecodeBase58Address(address)
 	if err != nil {
-		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: ", cliArgs[0]), string(cliOut))
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: %v\n", cliArgs[0], string(cliOut)))
 		os.Exit(1)
 	}
 
 	// use the correct address from above to check verifyAddress
 	cliArgs = []string{"verifyAddress", address}
 	if cliOut, err = exec.Command(cliName, cliArgs...).CombinedOutput(); err != nil {
-		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: ", cliArgs[0]), string(cliOut))
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: %v\n", cliArgs[0], string(cliOut)))
 		os.Exit(1)
 	}
 }
@@ -114,12 +114,12 @@ func testCliAddressCommands() {
 func testCliWalletCommands() {
 	cliArgs = []string{"walletBalance", wltFile}
 	if cliOut, err = exec.Command(cliName, cliArgs...).CombinedOutput(); err != nil {
-		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: ", cliArgs[0]), string(cliOut))
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: %v\n", cliArgs[0], string(cliOut)))
 		os.Exit(1)
 	}
 
 	if !json.Valid(cliOut) {
-		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command", cliArgs[0]))
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command\n", cliArgs[0]))
 		os.Exit(1)
 	}
 }
@@ -127,12 +127,12 @@ func testCliWalletCommands() {
 func testCliStatusCommand() {
 	cliArgs = []string{"status"}
 	if cliOut, err = exec.Command(cliName, cliArgs...).CombinedOutput(); err != nil {
-		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: ", cliArgs[0]), string(cliOut))
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: %v\n", cliArgs[0], string(cliOut)))
 		os.Exit(1)
 	}
 
 	if !json.Valid(cliOut) {
-		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command", cliArgs[0]))
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command\n", cliArgs[0]))
 		os.Exit(1)
 	}
 }
@@ -140,7 +140,7 @@ func testCliStatusCommand() {
 func testCliTransactionCommands() {
 	cliArgs = []string{"createRawTransaction", "-f", wltFile, testAddrs[0], "0.001"}
 	if cliOut, err = exec.Command(cliName, cliArgs...).CombinedOutput(); err != nil {
-		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: ", cliArgs[0]), string(cliOut))
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: %v\n", cliArgs[0], string(cliOut)))
 		os.Exit(1)
 	}
 
@@ -148,14 +148,14 @@ func testCliTransactionCommands() {
 	rawTx := strings.TrimSpace(string(cliOut))
 	_, err = hex.DecodeString(rawTx)
 	if err != nil {
-		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: ", cliArgs[0]), string(cliOut))
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: %v\n", cliArgs[0], string(cliOut)))
 		os.Exit(1)
 	}
 
 	// use the valid rawTx from above to test broadcast transaction
 	cliArgs = []string{"broadcastTransaction", rawTx}
 	if cliOut, err = exec.Command(cliName, cliArgs...).CombinedOutput(); err != nil {
-		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: ", cliArgs[0]), string(cliOut))
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: %v\n", cliArgs[0], string(cliOut)))
 		os.Exit(1)
 	}
 
@@ -163,19 +163,19 @@ func testCliTransactionCommands() {
 	// validate the txId
 	_, err = cipher.SHA256FromHex(txId)
 	if err != nil {
-		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: ", cliArgs[0]), string(cliOut))
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: %v\n", cliArgs[0], string(cliOut)))
 		os.Exit(1)
 	}
 
 	// use the txId from to test transaction
 	cliArgs = []string{"transaction", txId}
 	if cliOut, err = exec.Command(cliName, cliArgs...).CombinedOutput(); err != nil {
-		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: ", cliArgs[0]), string(cliOut))
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: %v\n", cliArgs[0], string(cliOut)))
 		os.Exit(1)
 	}
 
 	if !json.Valid(cliOut) {
-		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command", cliArgs[0]))
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command\n", cliArgs[0]))
 		os.Exit(1)
 	}
 }
@@ -184,13 +184,13 @@ func testCliSendCommands() {
 	// send to a single address
 	cliArgs = []string{"send", "-f", wltFile, testAddrs[0], "0.001"}
 	if cliOut, err = exec.Command(cliName, cliArgs...).CombinedOutput(); err != nil {
-		fmt.Fprint(os.Stderr, fmt.Sprintf("there was an error running %v command: ", cliArgs[0]), string(cliOut))
+		fmt.Fprint(os.Stderr, fmt.Sprintf("there was an error running %v command: %v\n", cliArgs[0], string(cliOut)))
 		os.Exit(1)
 	}
 
 	// check that response contains the substring `txid:`
 	if !strings.Contains(string(cliOut), "txid:") {
-		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: ", cliArgs[0]), string(cliOut))
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v command: %v\n", cliArgs[0], string(cliOut)))
 		os.Exit(1)
 	}
 
@@ -204,18 +204,18 @@ func testCliSendCommands() {
 	}
 	sendJson, err := json.Marshal(sendJsonMap)
 	if err != nil {
-		fmt.Fprint(os.Stderr, fmt.Sprintf("Unable to marshal send many json string: %v", err))
+		fmt.Fprint(os.Stderr, fmt.Sprintf("Unable to marshal send many json string: %v\n", err))
 	}
 
 	cliArgs = []string{"send", "-f", wltFile, "-m", string(sendJson)}
 	if cliOut, err = exec.Command(cliName, cliArgs...).CombinedOutput(); err != nil {
-		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v many command: ", cliArgs[0]), string(cliOut))
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v many command: %v\n", cliArgs[0], string(cliOut)))
 		os.Exit(1)
 	}
 
 	// check that response contains the substring `txid:`
 	if !strings.Contains(string(cliOut), "txid:") {
-		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v many command: ", cliArgs[0]), string(cliOut))
+		fmt.Fprint(os.Stderr, fmt.Sprintf("There was an error running %v many command: %v\n", cliArgs[0], string(cliOut)))
 		os.Exit(1)
 	}
 }

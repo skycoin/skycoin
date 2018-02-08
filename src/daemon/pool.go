@@ -3,8 +3,8 @@ package daemon
 import (
 	"time"
 
-	//"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
+	//"./gnet"
 )
 
 // PoolConfig pool config
@@ -23,6 +23,11 @@ type PoolConfig struct {
 	ClearStaleRate time.Duration
 	// Buffer size for gnet.ConnectionPool's network Read events
 	EventChannelSize int
+	//How often to try to add a new peer connection
+	PeerConnRate time.Duration
+
+
+
 	// These should be assigned by the controlling daemon
 	address string
 	port    int
@@ -41,6 +46,8 @@ func NewPoolConfig() PoolConfig {
 		IdleCheckRate:       1 * time.Second,
 		ClearStaleRate:      1 * time.Second,
 		EventChannelSize:    4096,
+		PeerConnRate:        1 * time.Second,
+
 	}
 }
 

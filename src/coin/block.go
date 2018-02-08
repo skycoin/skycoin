@@ -7,6 +7,10 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 
 	"github.com/skycoin/skycoin/src/util/logging"
+
+	"math"
+
+	"github.com/willf/bloom"
 )
 
 var logger = logging.MustGetLogger("coin")
@@ -15,6 +19,8 @@ var logger = logging.MustGetLogger("coin")
 type Block struct {
 	Head BlockHeader
 	Body BlockBody
+
+	filter *bloom.BloomFilter `enc:"-"`
 }
 
 // HashPair including current block hash and previous block hash.
@@ -66,9 +72,18 @@ func NewBlock(prev Block, currentTime uint64, uxHash cipher.SHA256, txns Transac
 	}
 
 	body := BlockBody{txns}
+	// These params minimizes false positive probability
+	filter := bloom.New(uint(len(txns))*20, uint(math.Ceil(0.69*20)))
+
+	for _, tx := range txns {
+		hash := tx.Hash()
+		filter.Add(hash[:])
+	}
+
 	return &Block{
-		Head: NewBlockHeader(prev.Head, uxHash, currentTime, fee, body),
-		Body: body,
+		Head:   NewBlockHeader(prev.Head, uxHash, currentTime, fee, body),
+		Body:   body,
+		filter: filter,
 	}, nil
 }
 
@@ -136,6 +151,10 @@ func (b Block) String() string {
 // mapping txns to their block + tx index
 // TODO: Deprecate? Utility Function
 func (b Block) GetTransaction(txHash cipher.SHA256) (Transaction, bool) {
+	if b.filter != nil && !b.filter.Test(txHash[:]) {
+		return Transaction{}, false
+	}
+
 	txns := b.Body.Transactions
 	for i := range txns {
 		if txns[i].Hash() == txHash {

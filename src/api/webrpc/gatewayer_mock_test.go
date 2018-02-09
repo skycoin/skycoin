@@ -153,7 +153,7 @@ func (m *GatewayerMock) GetTimeNow() uint64 {
 }
 
 // GetTransaction mocked method
-func (m *GatewayerMock) GetTransaction(p0 cipher.SHA256) (*visor.Transaction, error) {
+func (m *GatewayerMock) GetTransaction(p0 cipher.SHA256) (*visor.Transaction, *visor.TransactionResult, error) {
 
 	ret := m.Called(p0)
 
@@ -166,16 +166,25 @@ func (m *GatewayerMock) GetTransaction(p0 cipher.SHA256) (*visor.Transaction, er
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	var r1 error
+	var r1 *visor.TransactionResult
 	switch res := ret.Get(1).(type) {
 	case nil:
-	case error:
+	case *visor.TransactionResult:
 		r1 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	return r0, r1
+	var r2 error
+	switch res := ret.Get(2).(type) {
+	case nil:
+	case error:
+		r2 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1, r2
 
 }
 

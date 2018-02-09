@@ -106,12 +106,26 @@ func (fg fakeGateway) GetUnspentOutputs(filters ...daemon.OutputsFilter) (visor.
 	}, nil
 }
 
-func (fg fakeGateway) GetTransaction(txid cipher.SHA256) (*visor.Transaction, error) {
+func (fg fakeGateway) GetTransaction(txid cipher.SHA256) (*visor.Transaction, *visor.TransactionResult, error) {
 	str, ok := fg.transactions[txid.Hex()]
 	if ok {
-		return decodeRawTransaction(str), nil
+		tx := decodeRawTransaction(str)
+
+		inputsData := make([]*historydb.UxOut, 0, len(tx.Txn.In))
+		for _, in := range tx.Txn.In {
+			uxout, _ := fg.GetUxOutByID(in)
+			inputsData = append(inputsData, uxout)
+		}
+
+		rdTx, _ := visor.NewReadableTransaction(tx, inputsData)
+		txResult := &visor.TransactionResult{
+			Status:      tx.Status,
+			Time:        tx.Time,
+			Transaction: *rdTx,
+		}
+		return tx, txResult, nil
 	}
-	return nil, nil
+	return nil, nil, nil
 }
 
 func (fg *fakeGateway) InjectBroadcastTransaction(txn coin.Transaction) error {

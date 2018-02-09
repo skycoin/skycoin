@@ -11,7 +11,6 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/visor/historydb"
 
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
@@ -24,23 +23,11 @@ func getPendingTxs(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		txns := gateway.GetAllUnconfirmedTxns()
-		ret := make([]*visor.ReadableUnconfirmedTxn, 0, len(txns))
-		for _, unconfirmedTxn := range txns {
-			txInputsData, err := getTransactionInputsData(&unconfirmedTxn.Txn, gateway)
-			if err != nil {
-				logger.Error("%v", err)
-				wh.Error500(w)
-				return
-			}
-
-			readable, err := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn, txInputsData)
-			if err != nil {
-				logger.Error("%v", err)
-				wh.Error500(w)
-				return
-			}
-			ret = append(ret, readable)
+		ret, err := gateway.GetAllUnconfirmedTxns()
+		if err != nil {
+			logger.Error("%v", err)
+			wh.Error500(w)
+			return
 		}
 
 		wh.SendOr404(w, &ret)
@@ -62,29 +49,7 @@ func getLastTxs(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		resTxs := make([]visor.TransactionResult, len(txs))
-		for i, tx := range txs {
-			txInputsData, err := getTransactionInputsData(&tx.Txn, gateway)
-			if err != nil {
-				logger.Error("%v", err)
-				wh.Error500(w)
-				return
-			}
-
-			rbTx, err := visor.NewReadableTransaction(tx, txInputsData)
-			if err != nil {
-				logger.Error("%v", err)
-				wh.Error500(w)
-				return
-			}
-
-			resTxs[i] = visor.TransactionResult{
-				Transaction: *rbTx,
-				Status:      tx.Status,
-			}
-		}
-
-		wh.SendOr404(w, &resTxs)
+		wh.SendOr404(w, txs)
 	}
 }
 
@@ -106,33 +71,14 @@ func getTransactionByID(gate Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		tx, err := gate.GetTransaction(h)
+		_, resTx, err := gate.GetTransaction(h)
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return
 		}
-		if tx == nil {
+		if resTx == nil {
 			wh.Error404(w)
 			return
-		}
-
-		txInputsData, err := getTransactionInputsData(&tx.Txn, gate)
-		if err != nil {
-			logger.Error("%v", err)
-			wh.Error500(w)
-			return
-		}
-
-		rbTx, err := visor.NewReadableTransaction(tx, txInputsData)
-		if err != nil {
-			logger.Error("%v", err)
-			wh.Error500(w)
-			return
-		}
-
-		resTx := visor.TransactionResult{
-			Transaction: *rbTx,
-			Status:      tx.Status,
 		}
 		wh.SendOr404(w, &resTx)
 	}
@@ -174,22 +120,14 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		// Gets transactions
-		txns, err := gateway.GetTransactions(flts...)
+		txRlts, err := gateway.GetTransactions(flts...)
 		if err != nil {
 			logger.Error("get transactions failed: %v", err)
 			wh.Error500(w)
 			return
 		}
 
-		// Converts visor.Transaction to visor.TransactionResult
-		txRlts, err := NewTransactionResults(gateway, txns)
-		if err != nil {
-			logger.Error("Converts []visor.Transaction to visor.TransactionResults failed: %v", err)
-			wh.Error500(w)
-			return
-		}
-
-		wh.SendOr404(w, txRlts.Txns)
+		wh.SendOr404(w, txRlts)
 	}
 }
 
@@ -289,7 +227,7 @@ func getRawTx(gate Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		tx, err := gate.GetTransaction(h)
+		tx, _, err := gate.GetTransaction(h)
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return
@@ -304,47 +242,4 @@ func getRawTx(gate Gatewayer) http.HandlerFunc {
 		wh.SendOr404(w, hex.EncodeToString(d))
 		return
 	}
-}
-
-// NewTransactionResults converts []Transaction to []TransactionResults
-func NewTransactionResults(gateway Gatewayer, txs []visor.Transaction) (*visor.TransactionResults, error) {
-	txRlts := make([]visor.TransactionResult, 0, len(txs))
-	for _, tx := range txs {
-		txInputsData, err := getTransactionInputsData(&tx.Txn, gateway)
-		if err != nil {
-			return nil, err
-		}
-
-		rbTx, err := visor.NewReadableTransaction(&tx, txInputsData)
-		if err != nil {
-			return nil, err
-		}
-
-		txRlts = append(txRlts, visor.TransactionResult{
-			Transaction: *rbTx,
-			Status:      tx.Status,
-			Time:        tx.Time,
-		})
-	}
-
-	return &visor.TransactionResults{
-		Txns: txRlts,
-	}, nil
-}
-
-// getTransactionInputsData returns the inputs data of a transaction
-func getTransactionInputsData(tx *coin.Transaction, gw Gatewayer) ([]*historydb.UxOut, error) {
-	txInputsData := make([]*historydb.UxOut, 0, len(tx.In))
-
-	for _, in := range tx.In {
-
-		uxout, err := getInputData(in, gw)
-		if err != nil {
-			return nil, err
-		}
-
-		txInputsData = append(txInputsData, uxout)
-	}
-
-	return txInputsData, nil
 }

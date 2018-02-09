@@ -84,10 +84,6 @@ func makeUxBodyWithSecret(t *testing.T) (coin.UxBody, cipher.SecKey) {
 }
 
 func TestGetPendingTxs(t *testing.T) {
-	invalidTxn := createUnconfirmedTxn(t)
-	invalidTxn.Txn.Out = append(invalidTxn.Txn.Out, coin.TransactionOutput{
-		Coins: math.MaxInt64 + 1,
-	})
 
 	tt := []struct {
 		name                          string
@@ -95,7 +91,7 @@ func TestGetPendingTxs(t *testing.T) {
 		url                           string
 		status                        int
 		err                           string
-		getAllUnconfirmedTxnsResponse []visor.UnconfirmedTxn
+		getAllUnconfirmedTxnsResponse []*visor.ReadableUnconfirmedTxn
 		httpResponse                  []*visor.ReadableUnconfirmedTxn
 	}{
 		{
@@ -103,22 +99,13 @@ func TestGetPendingTxs(t *testing.T) {
 			method: http.MethodPost,
 			status: http.StatusMethodNotAllowed,
 			err:    "405 Method Not Allowed",
-			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTxn{},
-		},
-		{
-			name:   "500 - bad unconfirmedTxn",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error",
-			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTxn{
-				invalidTxn,
-			},
+			getAllUnconfirmedTxnsResponse: []*visor.ReadableUnconfirmedTxn{},
 		},
 		{
 			name:   "200",
 			method: http.MethodGet,
 			status: http.StatusOK,
-			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTxn{},
+			getAllUnconfirmedTxnsResponse: []*visor.ReadableUnconfirmedTxn{},
 			httpResponse:                  []*visor.ReadableUnconfirmedTxn{},
 		},
 	}
@@ -127,7 +114,7 @@ func TestGetPendingTxs(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/pendingTxs"
 			gateway := NewGatewayerMock()
-			gateway.On("GetAllUnconfirmedTxns").Return(tc.getAllUnconfirmedTxnsResponse)
+			gateway.On("GetAllUnconfirmedTxns").Return(tc.getAllUnconfirmedTxnsResponse, nil)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
@@ -173,7 +160,7 @@ func TestGetTransactionByID(t *testing.T) {
 		err                   string
 		httpBody              *httpBody
 		getTransactionArg     cipher.SHA256
-		getTransactionReponse *visor.Transaction
+		getTransactionReponse *visor.TransactionResult
 		getTransactionError   error
 		httpResponse          visor.TransactionResult
 	}{
@@ -242,8 +229,17 @@ func TestGetTransactionByID(t *testing.T) {
 			httpBody: &httpBody{
 				txid: validHash,
 			},
-			getTransactionArg:     testutil.SHA256FromHex(t, validHash),
-			getTransactionReponse: &visor.Transaction{},
+			getTransactionArg: testutil.SHA256FromHex(t, validHash),
+			getTransactionReponse: &visor.TransactionResult{
+				Transaction: visor.ReadableTransaction{
+					Sigs:      []string{},
+					In:        []string{},
+					InData:    []visor.ReadableTransactionInput{},
+					Out:       []visor.ReadableTransactionOutput{},
+					Hash:      "78877fa898f0b4c45c9c33ae941e40617ad7c8657a307db62bc5691f92f4f60e",
+					InnerHash: "0000000000000000000000000000000000000000000000000000000000000000",
+				},
+			},
 			httpResponse: visor.TransactionResult{
 				Transaction: visor.ReadableTransaction{
 					Sigs:      []string{},
@@ -261,7 +257,7 @@ func TestGetTransactionByID(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/transaction"
 			gateway := NewGatewayerMock()
-			gateway.On("GetTransaction", tc.getTransactionArg).Return(tc.getTransactionReponse, tc.getTransactionError)
+			gateway.On("GetTransaction", tc.getTransactionArg).Return(nil, tc.getTransactionReponse, tc.getTransactionError)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -578,7 +574,7 @@ func TestGetRawTx(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/rawtx"
 			gateway := NewGatewayerMock()
-			gateway.On("GetTransaction", tc.getTransactionArg).Return(tc.getTransactionResponse, tc.getTransactionError)
+			gateway.On("GetTransaction", tc.getTransactionArg).Return(tc.getTransactionResponse, nil, tc.getTransactionError)
 			v := url.Values{}
 			if tc.httpBody != nil {
 				if tc.httpBody.txid != "" {
@@ -641,7 +637,7 @@ func TestGetTransactions(t *testing.T) {
 		err                     string
 		httpBody                *httpBody
 		getTransactionsArg      []visor.TxFilter
-		getTransactionsResponse []visor.Transaction
+		getTransactionsResponse []*visor.TransactionResult
 		getTransactionsError    error
 		httpResponse            []visor.Transaction
 	}{
@@ -692,29 +688,6 @@ func TestGetTransactions(t *testing.T) {
 			getTransactionsError: errors.New("getTransactionsError"),
 		},
 		{
-			name:   "500 - visor.NewTransactionResults error",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error",
-			httpBody: &httpBody{
-				addrs:     addrsStr,
-				confirmed: "true",
-			},
-			getTransactionsArg: []visor.TxFilter{
-				visor.AddrsFilter(addrs),
-				visor.ConfirmedTxFilter(true),
-			},
-			getTransactionsResponse: []visor.Transaction{
-				{
-					Txn: invalidTxn,
-					Status: visor.TransactionStatus{
-						Confirmed: true,
-						Height:    103,
-					},
-				},
-			},
-		},
-		{
 			name:   "200",
 			method: http.MethodGet,
 			status: http.StatusOK,
@@ -726,7 +699,7 @@ func TestGetTransactions(t *testing.T) {
 				visor.AddrsFilter(addrs),
 				visor.ConfirmedTxFilter(true),
 			},
-			getTransactionsResponse: []visor.Transaction{},
+			getTransactionsResponse: []*visor.TransactionResult{},
 			httpResponse:            []visor.Transaction{},
 		},
 	}

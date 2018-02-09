@@ -23,8 +23,8 @@ type Gatewayer interface {
 	ScanAheadWalletAddresses(wltName string, scanN uint64) (wallet.Wallet, error)
 	NewAddresses(wltID string, n uint64) ([]cipher.Address, error)
 	GetWalletDir() (string, error)
-	GetBlockByHash(hash cipher.SHA256) (block coin.SignedBlock, ok bool)
-	GetBlockBySeq(seq uint64) (block coin.SignedBlock, ok bool)
+	GetBlockByHash(hash cipher.SHA256) (block *visor.ReadableBlock, ok bool)
+	GetBlockBySeq(seq uint64) (block *visor.ReadableBlock, ok bool)
 	GetBlocks(start, end uint64) (*visor.ReadableBlocks, error)
 	GetLastBlocks(num uint64) (*visor.ReadableBlocks, error)
 	GetBuildInfo() visor.BuildInfo
@@ -37,10 +37,10 @@ type Gatewayer interface {
 	GetDefaultConnections() interface{}
 	GetTrustConnections() interface{}
 	GetExchgConnection() interface{}
-	GetAllUnconfirmedTxns() []visor.UnconfirmedTxn
-	GetLastTxs() ([]*visor.Transaction, error)
-	GetTransaction(txid cipher.SHA256) (*visor.Transaction, error)
-	GetTransactions(flts ...visor.TxFilter) ([]visor.Transaction, error)
+	GetAllUnconfirmedTxns() ([]*visor.ReadableUnconfirmedTxn, error)
+	GetLastTxs() ([]*visor.TransactionResult, error)
+	GetTransaction(txid cipher.SHA256) (*visor.Transaction, *visor.TransactionResult, error)
+	GetTransactions(flts ...visor.TxFilter) ([]*visor.TransactionResult, error)
 	InjectBroadcastTransaction(txn coin.Transaction) error
 	ResendUnconfirmedTxns() *daemon.ResendResult
 	GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error)

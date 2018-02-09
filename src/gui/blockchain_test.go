@@ -41,7 +41,6 @@ func makeBadBlock(t *testing.T) *coin.Block {
 
 func TestGetBlock(t *testing.T) {
 
-	badBlock := makeBadBlock(t)
 	validHashString := testutil.RandSHA256(t).Hex()
 	validSHA256, err := cipher.SHA256FromHex(validHashString)
 	require.NoError(t, err)
@@ -55,9 +54,9 @@ func TestGetBlock(t *testing.T) {
 		sha256                      cipher.SHA256
 		seqStr                      string
 		seq                         uint64
-		gatewayGetBlockByHashResult coin.SignedBlock
+		gatewayGetBlockByHashResult *visor.ReadableBlock
 		gatewayGetBlockByHashExists bool
-		gatewayGetBlockBySeqResult  coin.SignedBlock
+		gatewayGetBlockBySeqResult  *visor.ReadableBlock
 		gatewayGetBlockBySeqExists  bool
 		response                    *visor.ReadableBlock
 	}{
@@ -117,6 +116,20 @@ func TestGetBlock(t *testing.T) {
 			hash:   validHashString,
 			sha256: validSHA256,
 			gatewayGetBlockByHashExists: true,
+			gatewayGetBlockByHashResult: &visor.ReadableBlock{
+				Head: visor.ReadableBlockHeader{
+					BkSeq:             0x0,
+					BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+					PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					Time:              0x0,
+					Fee:               0x0,
+					Version:           0x0,
+					BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+				},
+				Body: visor.ReadableBlockBody{
+					Transactions: []visor.ReadableTransaction{},
+				},
+			},
 			response: &visor.ReadableBlock{
 				Head: visor.ReadableBlockHeader{
 					BkSeq:             0x0,
@@ -148,24 +161,26 @@ func TestGetBlock(t *testing.T) {
 			seq:    1,
 		},
 		{
-			name:   "500 - NewReadableBlock error",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error",
-			seqStr: "1",
-			seq:    1,
-			gatewayGetBlockBySeqResult: coin.SignedBlock{
-				Block: *badBlock,
-			},
-			gatewayGetBlockBySeqExists: true,
-		},
-		{
 			name:   "200 - got block by seq",
 			method: http.MethodGet,
 			status: http.StatusOK,
 			seqStr: "1",
 			seq:    1,
 			gatewayGetBlockBySeqExists: true,
+			gatewayGetBlockBySeqResult: &visor.ReadableBlock{
+				Head: visor.ReadableBlockHeader{
+					BkSeq:             0x0,
+					BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+					PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					Time:              0x0,
+					Fee:               0x0,
+					Version:           0x0,
+					BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+				},
+				Body: visor.ReadableBlockBody{
+					Transactions: []visor.ReadableTransaction{},
+				},
+			},
 			response: &visor.ReadableBlock{
 				Head: visor.ReadableBlockHeader{
 					BkSeq:             0x0,

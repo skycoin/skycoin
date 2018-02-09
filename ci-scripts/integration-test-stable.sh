@@ -10,7 +10,7 @@ HOST="http://127.0.0.1:$PORT"
 MODE="stable"
 BINARY="skycoin-integration"
 
-DATA_DIR=$(mktemp -d -t skycoin-data-dir)
+DATA_DIR=$(mktemp -d -t skycoin-data-dir.XXXXXX)
 WALLET_DIR="${DATA_DIR}/wallets"
 
 if [[ ! "$DATA_DIR" ]]; then

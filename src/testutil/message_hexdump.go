@@ -1,7 +1,6 @@
 package testutil
 
 import (
-
 	"fmt"
 	"reflect"
 	"github.com/skycoin/skycoin/src/daemon/gnet"

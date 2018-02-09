@@ -253,14 +253,14 @@ func (m *GatewayerMock) GetBlockchainMetadata() *visor.BlockchainMetadata {
 }
 
 // GetBlockchainProgress mocked method
-func (m *GatewayerMock) GetBlockchainProgress() *BlockchainProgress {
+func (m *GatewayerMock) GetBlockchainProgress() *daemon.BlockchainProgress {
 
 	ret := m.Called()
 
-	var r0 *BlockchainProgress
+	var r0 *daemon.BlockchainProgress
 	switch res := ret.Get(0).(type) {
 	case nil:
-	case *BlockchainProgress:
+	case *daemon.BlockchainProgress:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))

@@ -497,12 +497,12 @@ func (vs *Visor) UnconfirmedIncomingOutputs() (coin.UxArray, error) {
 	return vs.Unconfirmed.GetIncomingOutputs(head.Head), nil
 }
 
-// GetSignedBlocksSince returns N signed blocks more recent than Seq. Does not return nil.
+// GetSignedBlocksSince returns signed blocks in an inclusive range of [seq+1, seq+ct]
 func (vs *Visor) GetSignedBlocksSince(seq, ct uint64) ([]coin.SignedBlock, error) {
 	avail := uint64(0)
 	head, err := vs.Blockchain.Head()
 	if err != nil {
-		return []coin.SignedBlock{}, err
+		return nil, err
 	}
 
 	headSeq := head.Seq()
@@ -513,14 +513,15 @@ func (vs *Visor) GetSignedBlocksSince(seq, ct uint64) ([]coin.SignedBlock, error
 		ct = avail
 	}
 	if ct == 0 {
-		return []coin.SignedBlock{}, nil
+		return nil, nil
 	}
+
 	blocks := make([]coin.SignedBlock, 0, ct)
 	for j := uint64(0); j < ct; j++ {
 		i := seq + 1 + j
 		b, err := vs.Blockchain.GetBlockBySeq(i)
 		if err != nil {
-			return []coin.SignedBlock{}, err
+			return nil, err
 		}
 
 		blocks = append(blocks, *b)

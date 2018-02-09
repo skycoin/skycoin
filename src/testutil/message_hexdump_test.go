@@ -139,5 +139,5 @@ func TestGiveTxnsMessage(t *testing.T) {
 
 func TestAnnounceTxnsMessage(t *testing.T) {
 	var message = daemon.NewAnnounceTxnsMessage([]cipher.SHA256{GenerateRandomSha256(),GenerateRandomSha256()})
-	HexDump(message)
+	HexDump(message) 
 }

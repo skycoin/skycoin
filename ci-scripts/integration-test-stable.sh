@@ -47,7 +47,7 @@ SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOS
 echo "shutting down skycoin node"
 
 # Shutdown skycoin node
-kill $SKYCOIN_PID
+kill -s SIGINT $SKYCOIN_PID
 wait $SKYCOIN_PID
 
 rm "$BINARY"

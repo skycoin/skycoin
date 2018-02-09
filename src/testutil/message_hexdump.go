@@ -6,6 +6,9 @@ import (
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"strconv"
+	"time"
+	"crypto/sha256"
+	"github.com/skycoin/skycoin/src/cipher"
 )
 
 func serializeMessage(msg gnet.Message) []byte {
@@ -63,6 +66,10 @@ func printLHexDumpWithFormat(offset int, name string, buffer []byte){
 		}
 	}
 	fmt.Println(getSliceContentsString(hexBuff,offset),name)
+}
+
+func GenerateRandomSha256() cipher.SHA256 {
+	return sha256.Sum256([]byte(string(time.Now().Unix())))
 }
 
 func HexDump(message gnet.Message){

@@ -94,7 +94,7 @@ func TestMakeChangeOut(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, txOuts)
 
-	// Should have a change output and an output to the destination in toAddrs
+	// Should have a change output and two output to the destination in toAddrs
 	require.Len(t, txOuts, 3)
 
 	chgOut = txOuts[2]

@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- #951, Refactor createRawTransaction coin hour distribution
 - #896, Add CSRF check to wallet api
 - #800, Add entropy parameter to `/wallet/newSeed` endpoint
 - #877, Add -disable-wallet-api CLI option

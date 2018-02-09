@@ -114,8 +114,8 @@ func (gw *Gateway) GetExchgConnection() interface{} {
 /* Blockchain & Transaction status */
 
 // GetBlockchainProgress returns a *BlockchainProgress
-func (gw *Gateway) GetBlockchainProgress() interface{} {
-	var bcp interface{}
+func (gw *Gateway) GetBlockchainProgress() *BlockchainProgress {
+	var bcp *BlockchainProgress
 	gw.strand("GetBlockchainProgress", func() {
 		bcp = gw.drpc.GetBlockchainProgress(gw.d.Visor)
 	})
@@ -140,8 +140,8 @@ func (gw *Gateway) ResendUnconfirmedTxns() (rlt *ResendResult) {
 }
 
 // GetBlockchainMetadata returns a *visor.BlockchainMetadata
-func (gw *Gateway) GetBlockchainMetadata() interface{} {
-	var bcm interface{}
+func (gw *Gateway) GetBlockchainMetadata() *visor.BlockchainMetadata {
+	var bcm *visor.BlockchainMetadata
 	gw.strand("GetBlockchainMetadata", func() {
 		bcm = gw.vrpc.GetBlockchainMetadata(gw.v)
 	})

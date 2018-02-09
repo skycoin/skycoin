@@ -359,8 +359,7 @@ func getBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 		addrsStr := strings.Split(addrsParam, ",")
 		addrs := make([]cipher.Address, 0, len(addrsStr))
 		for _, addr := range addrsStr {
-			// trim space
-			addr = strings.Trim(addr, " ")
+			addr = strings.TrimSpace(addr)
 			a, err := cipher.DecodeBase58Address(addr)
 			if err != nil {
 				wh.Error400(w, fmt.Sprintf("address %s is invalid: %v", addr, err))

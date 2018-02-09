@@ -235,14 +235,14 @@ func (m *GatewayerMock) GetBlockBySeq(p0 uint64) (coin.SignedBlock, bool) {
 }
 
 // GetBlockchainMetadata mocked method
-func (m *GatewayerMock) GetBlockchainMetadata() interface{} {
+func (m *GatewayerMock) GetBlockchainMetadata() *visor.BlockchainMetadata {
 
 	ret := m.Called()
 
-	var r0 interface{}
+	var r0 *visor.BlockchainMetadata
 	switch res := ret.Get(0).(type) {
 	case nil:
-	case interface{}:
+	case *visor.BlockchainMetadata:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
@@ -253,14 +253,14 @@ func (m *GatewayerMock) GetBlockchainMetadata() interface{} {
 }
 
 // GetBlockchainProgress mocked method
-func (m *GatewayerMock) GetBlockchainProgress() interface{} {
+func (m *GatewayerMock) GetBlockchainProgress() *BlockchainProgress {
 
 	ret := m.Called()
 
-	var r0 interface{}
+	var r0 *BlockchainProgress
 	switch res := ret.Get(0).(type) {
 	case nil:
-	case interface{}:
+	case *BlockchainProgress:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))

@@ -167,6 +167,7 @@ type Config struct {
 	// to show up as a peer
 	ConnectTo string
 
+	DBFile       string
 	DBPath       string
 	Arbitrating  bool
 	RPCThreadNum uint // rpc number
@@ -203,6 +204,7 @@ func (c *Config) register() {
 	flag.BoolVar(&c.LaunchBrowser, "launch-browser", c.LaunchBrowser, "launch system default webbrowser at client startup")
 	flag.BoolVar(&c.PrintWebInterfaceAddress, "print-web-interface-address", c.PrintWebInterfaceAddress, "print configured web interface address and exit")
 	flag.StringVar(&c.DataDirectory, "data-dir", c.DataDirectory, "directory to store app data (defaults to ~/.skycoin)")
+	flag.StringVar(&c.DBPath, "db-path", c.DBPath, "path of database file (defaults to ~/.skycoin/data.db)")
 	flag.StringVar(&c.ConnectTo, "connect-to", c.ConnectTo, "connect to this ip only")
 	flag.BoolVar(&c.ProfileCPU, "profile-cpu", c.ProfileCPU, "enable cpu profiling")
 	flag.StringVar(&c.ProfileCPUFile, "profile-cpu-file", c.ProfileCPUFile, "where to write the cpu profile file")
@@ -360,7 +362,7 @@ func (c *Config) postProcess() {
 	}
 
 	if c.DBPath == "" {
-		c.DBPath = filepath.Join(c.DataDirectory, "data.db")
+		c.DBPath = filepath.Join(c.DataDirectory, c.DBFile)
 	}
 
 	if c.RunMaster {
@@ -376,28 +378,11 @@ func panicIfError(err error, msg string, args ...interface{}) {
 }
 
 func printProgramStatus() {
-	fn := "goroutine.prof"
-	logger.Debug("Writing goroutine profile to %s", fn)
 	p := pprof.Lookup("goroutine")
-	f, err := os.Create(fn)
-	defer f.Close()
-	if err != nil {
-		logger.Error("%v", err)
+	if err := p.WriteTo(os.Stdout, 2); err != nil {
+		fmt.Println("ERROR:", err)
 		return
 	}
-	err = p.WriteTo(f, 2)
-	if err != nil {
-		logger.Error("%v", err)
-		return
-	}
-}
-
-func catchInterrupt(quit chan<- struct{}) {
-	sigchan := make(chan os.Signal, 1)
-	signal.Notify(sigchan, os.Interrupt)
-	<-sigchan
-	signal.Stop(sigchan)
-	close(quit)
 }
 
 // Catches SIGUSR1 and prints internal program state
@@ -411,6 +396,28 @@ func catchDebug() {
 			printProgramStatus()
 		}
 	}
+}
+
+func catchInterrupt(quit chan<- struct{}) {
+	sigchan := make(chan os.Signal, 1)
+	signal.Notify(sigchan, os.Interrupt)
+	<-sigchan
+	signal.Stop(sigchan)
+	close(quit)
+
+	// If ctrl-c is called again, panic so that the program state can be examined.
+	// Ctrl-c would be called again if program shutdown was stuck.
+	go catchInterruptPanic()
+}
+
+// catchInterruptPanic catches os.Interrupt and panics
+func catchInterruptPanic() {
+	sigchan := make(chan os.Signal, 1)
+	signal.Notify(sigchan, os.Interrupt)
+	<-sigchan
+	signal.Stop(sigchan)
+	printProgramStatus()
+	panic("SIGINT")
 }
 
 func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) (*gui.Server, error) {
@@ -590,6 +597,7 @@ func Run(c *Config) {
 	// creates blockchain instance
 	dconf := configureDaemon(c)
 
+	logger.Info("Opening database %s", dconf.Visor.Config.DBPath)
 	db, err := visor.OpenDB(dconf.Visor.Config.DBPath)
 	if err != nil {
 		logger.Error("Database failed to open: %v. Is another skycoin instance running?", err)

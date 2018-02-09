@@ -42,6 +42,7 @@ type Gateway struct {
 	v *visor.Visor
 	// Requests are queued on this channel
 	requests chan strand.Request
+	quit     chan struct{}
 }
 
 // NewGateway create and init an Gateway instance.
@@ -53,7 +54,13 @@ func NewGateway(c GatewayConfig, D *Daemon) *Gateway {
 		d:        D,
 		v:        D.Visor.v,
 		requests: make(chan strand.Request, c.BufferSize),
+		quit:     make(chan struct{}),
 	}
+}
+
+// Shutdown closes the Gateway
+func (gw *Gateway) Shutdown() {
+	close(gw.quit)
 }
 
 func (gw *Gateway) strand(name string, f func()) {
@@ -61,7 +68,7 @@ func (gw *Gateway) strand(name string, f func()) {
 	strand.Strand(logger, gw.requests, name, func() error {
 		f()
 		return nil
-	})
+	}, gw.quit, nil)
 }
 
 // GetConnections returns a *Connections
@@ -478,7 +485,7 @@ func (gw *Gateway) GetUnspent() blockdb.UnspentPool {
 	return unspent
 }
 
-// impelemts the wallet.Validator interface
+// implements the wallet.Validator interface
 type spendValidator struct {
 	uncfm   visor.UnconfirmedTxnPooler
 	unspent blockdb.UnspentPool

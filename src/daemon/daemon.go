@@ -304,9 +304,9 @@ func (dm *Daemon) Shutdown() {
 		dm.Pool.Shutdown()
 	}
 
+	dm.Gateway.Shutdown()
 	dm.Pex.Shutdown()
 	dm.Visor.Shutdown()
-
 }
 
 // Run main loop for peer/connection management.

@@ -541,8 +541,8 @@ func makeChangeOut(outs []wallet.UxBalance, chgAddr string, toAddrs []SendAmount
 				spendCoinsAmt += 1
 			}
 
-			// we let the addrHours to be less than the out coins for the address but not more
-			// so we cap the addrHour to out coins and move the difference to changeHours
+			// allow addrHours to be less than the incoming coins of the address but not more
+			// cap the addrHours to incoming coins and move the difference to changeHours
 			if addrHours[i] > spendCoinsAmt {
 				changeHours += addrHours[i] - spendCoinsAmt
 				addrHours[i] = spendCoinsAmt

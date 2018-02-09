@@ -167,7 +167,6 @@ type Config struct {
 	// to show up as a peer
 	ConnectTo string
 
-	DBFile       string
 	DBPath       string
 	Arbitrating  bool
 	RPCThreadNum uint // rpc number
@@ -362,7 +361,7 @@ func (c *Config) postProcess() {
 	}
 
 	if c.DBPath == "" {
-		c.DBPath = filepath.Join(c.DataDirectory, c.DBFile)
+		c.DBPath = filepath.Join(c.DataDirectory, "data.db")
 	}
 
 	if c.RunMaster {

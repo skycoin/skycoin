@@ -75,6 +75,7 @@ type Visor struct {
 	blockchainHeights map[string]uint64
 	// all request will go through this channel, to keep writing and reading member variable thread safe.
 	reqC chan strand.Request
+	quit chan struct{}
 }
 
 // NewVisor creates visor instance
@@ -83,6 +84,7 @@ func NewVisor(c VisorConfig, db *bolt.DB) (*Visor, error) {
 		Config:            c,
 		blockchainHeights: make(map[string]uint64),
 		reqC:              make(chan strand.Request, c.RequestBufferSize),
+		quit:              make(chan struct{}),
 	}
 
 	v, err := visor.NewVisor(c.Config, db)
@@ -121,12 +123,13 @@ func (vs *Visor) processRequests(errC <-chan error) error {
 
 // Shutdown shuts down the visor
 func (vs *Visor) Shutdown() {
+	close(vs.quit)
 	vs.v.Shutdown()
 }
 
 func (vs *Visor) strand(name string, f func() error) error {
 	name = fmt.Sprintf("daemon.Visor.%s", name)
-	return strand.Strand(logger, vs.reqC, name, f)
+	return strand.Strand(logger, vs.reqC, name, f, vs.quit, nil)
 }
 
 // RefreshUnconfirmed checks unconfirmed txns against the blockchain and marks

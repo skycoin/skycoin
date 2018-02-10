@@ -295,6 +295,35 @@ func newIndexHandler(appLoc string) http.HandlerFunc {
 	}
 }
 
+func splitCommaString(s string) []string {
+	s = strings.TrimSpace(s)
+	vs := strings.Split(s, ",")
+	for i := range vs {
+		vs[i] = strings.TrimSpace(vs[i])
+	}
+
+	// Filter empty strings
+	outs := make([]string, 0, len(vs))
+	for _, v := range vs {
+		if v != "" {
+			outs = append(outs, v)
+		}
+	}
+
+	// Deduplicate
+	m := make(map[string]struct{}, len(outs))
+	for _, a := range outs {
+		m[a] = struct{}{}
+	}
+
+	deduped := make([]string, 0, len(m))
+	for a := range m {
+		deduped = append(deduped, a)
+	}
+
+	return deduped
+}
+
 // getOutputsHandler returns UxOuts filtered by a set of addresses or a set of hashes
 // URI: /outputs
 // Method: GET
@@ -314,13 +343,6 @@ func getOutputsHandler(gateway Gatewayer) http.HandlerFunc {
 		var addrs []string
 		var hashes []string
 
-		trimSpace := func(vs []string) []string {
-			for i := range vs {
-				vs[i] = strings.TrimSpace(vs[i])
-			}
-			return vs
-		}
-
 		addrStr := r.FormValue("addrs")
 		hashStr := r.FormValue("hashes")
 
@@ -332,7 +354,7 @@ func getOutputsHandler(gateway Gatewayer) http.HandlerFunc {
 		filters := []daemon.OutputsFilter{}
 
 		if addrStr != "" {
-			addrs = trimSpace(strings.Split(addrStr, ","))
+			addrs = splitCommaString(addrStr)
 
 			for _, a := range addrs {
 				if _, err := cipher.DecodeBase58Address(a); err != nil {
@@ -347,7 +369,7 @@ func getOutputsHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if hashStr != "" {
-			hashes = trimSpace(strings.Split(hashStr, ","))
+			hashes = splitCommaString(hashStr)
 			if len(hashes) > 0 {
 				filters = append(filters, daemon.FbyHashes(hashes))
 			}
@@ -372,10 +394,10 @@ func getBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		addrsParam := r.FormValue("addrs")
-		addrsStr := strings.Split(addrsParam, ",")
+		addrsStr := splitCommaString(addrsParam)
+
 		addrs := make([]cipher.Address, 0, len(addrsStr))
 		for _, addr := range addrsStr {
-			addr = strings.TrimSpace(addr)
 			a, err := cipher.DecodeBase58Address(addr)
 			if err != nil {
 				wh.Error400(w, fmt.Sprintf("address %s is invalid: %v", addr, err))

@@ -10,6 +10,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/gui"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/wallet"
 	"github.com/stretchr/testify/require"
 )
 
@@ -417,4 +418,91 @@ func TestLiveBlockchainProgress(t *testing.T) {
 	require.NotEqual(t, uint64(0), progress.Current)
 	require.True(t, progress.Current <= progress.Highest)
 	require.NotEmpty(t, progress.Peers)
+}
+
+func TestStableBalance(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	cases := []struct {
+		name   string
+		golden string
+		addrs  []string
+	}{
+		{
+			name:   "no addresses",
+			golden: "balance-noaddrs.golden",
+		},
+		{
+			name:   "unknown address",
+			addrs:  []string{"prRXwTcDK24hs6AFxj69UuWae3LzhrsPW9"},
+			golden: "balance-noaddrs.golden",
+		},
+		{
+			name:   "one address",
+			addrs:  []string{"2THDupTBEo7UqB6dsVizkYUvkKq82Qn4gjf"},
+			golden: "balance-2THDupTBEo7UqB6dsVizkYUvkKq82Qn4gjf.golden",
+		},
+		{
+			name:   "duplicate addresses",
+			addrs:  []string{"2THDupTBEo7UqB6dsVizkYUvkKq82Qn4gjf", "2THDupTBEo7UqB6dsVizkYUvkKq82Qn4gjf"},
+			golden: "balance-2THDupTBEo7UqB6dsVizkYUvkKq82Qn4gjf.golden",
+		},
+		{
+			name:   "two addresses",
+			addrs:  []string{"2THDupTBEo7UqB6dsVizkYUvkKq82Qn4gjf", "qxmeHkwgAMfwXyaQrwv9jq3qt228xMuoT5"},
+			golden: "balance-two-addrs.golden",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			balance, err := c.Balance(tc.addrs)
+			require.NoError(t, err)
+
+			var expected wallet.BalancePair
+			loadJSON(t, tc.golden, &expected)
+
+			require.Equal(t, expected, *balance)
+		})
+	}
+}
+
+func TestLiveBalance(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	// Genesis address check, should not have a balance
+	b, err := c.Balance([]string{"2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6"})
+	require.NoError(t, err)
+	require.Equal(t, wallet.BalancePair{}, *b)
+
+	// Balance of final distribution address. Should have the same coins balance
+	// for the next 15-20 years.
+	b, err = c.Balance([]string{"ejJjiCwp86ykmFr5iTJ8LxQXJ2wJPTYmkm"})
+	require.NoError(t, err)
+	require.Equal(t, b.Confirmed, b.Predicted)
+	require.NotEmpty(t, b.Confirmed.Hours)
+	require.Equal(t, uint64(1e6*1e6), b.Confirmed.Coins)
+
+	// Check that the balance is queryable for addresses known to be affected
+	// by the coinhour overflow problem
+	addrs := []string{
+		"n7AR1VMW1pK7F9TxhYdnr3HoXEQ3g9iTNP",
+		"2aTzmXi9jyiq45oTRFCP9Y7dcvnT6Rsp7u",
+		"FjFLnus2ePxuaPTXFXfpw6cVAE5owT1t3P",
+		"KT9vosieyWhn9yWdY8w7UZ6tk31KH4NAQK",
+	}
+	for _, a := range addrs {
+		_, err := c.Balance([]string{a})
+		require.NoError(t, err, "Failed to get balance of address %s", a)
+	}
+	_, err = c.Balance(addrs)
+	require.NoError(t, err)
 }

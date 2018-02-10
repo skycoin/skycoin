@@ -551,28 +551,30 @@ func (gw *Gateway) GetTransactions(flts ...visor.TxFilter) ([]*visor.Transaction
 	var err error
 	gw.strand("GetTransactions", func() {
 		txns, err = gw.v.GetTransactions(flts...)
-		if err == nil {
-			for _, tx := range txns {
-				txInputsData, e := getTransactionInputsData(&tx.Txn, gw)
-				if e != nil {
-					err = e
-					return
-				}
+		if err != nil {
+			return
+		}
 
-				rbTx, e := visor.NewReadableTransaction(&tx, txInputsData)
-				if e != nil {
-					err = e
-					return
-				}
-
-				resTx := &visor.TransactionResult{
-					Transaction: *rbTx,
-					Status:      tx.Status,
-					Time:        tx.Time,
-				}
-
-				resTxs = append(resTxs, resTx)
+		for _, tx := range txns {
+			txInputsData, e := getTransactionInputsData(&tx.Txn, gw)
+			if e != nil {
+				err = e
+				return
 			}
+
+			rbTx, e := visor.NewReadableTransaction(&tx, txInputsData)
+			if e != nil {
+				err = e
+				return
+			}
+
+			resTx := &visor.TransactionResult{
+				Transaction: *rbTx,
+				Status:      tx.Status,
+				Time:        tx.Time,
+			}
+
+			resTxs = append(resTxs, resTx)
 		}
 	})
 	return resTxs, err
@@ -651,26 +653,28 @@ func (gw *Gateway) GetLastTxs() ([]*visor.TransactionResult, error) {
 	var err error
 	gw.strand("GetLastTxs", func() {
 		txns, err = gw.v.GetLastTxs()
-		if err == nil {
-			ret = make([]*visor.TransactionResult, len(txns))
-			for i, tx := range txns {
-				txInputsData, e := getTransactionInputsData(&tx.Txn, gw)
-				if e != nil {
-					err = e
-					return
-				}
+		if err != nil {
+			return
+		}
+		
+		ret = make([]*visor.TransactionResult, len(txns))
+		for i, tx := range txns {
+			txInputsData, e := getTransactionInputsData(&tx.Txn, gw)
+			if e != nil {
+				err = e
+				return
+			}
 
-				rbTx, e := visor.NewReadableTransaction(tx, txInputsData)
-				if e != nil {
-					err = e
-					return
-				}
+			rbTx, e := visor.NewReadableTransaction(tx, txInputsData)
+			if e != nil {
+				err = e
+				return
+			}
 
-				ret[i] = &visor.TransactionResult{
-					Transaction: *rbTx,
-					Status:      tx.Status,
-					Time:        tx.Time,
-				}
+			ret[i] = &visor.TransactionResult{
+				Transaction: *rbTx,
+				Status:      tx.Status,
+				Time:        tx.Time,
 			}
 		}
 	})

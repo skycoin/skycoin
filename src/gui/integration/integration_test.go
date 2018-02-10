@@ -103,7 +103,8 @@ func loadJSON(t *testing.T, filename string, obj interface{}) {
 func updateGoldenFile(t *testing.T, filename string, content interface{}) {
 	contentJson, err := json.MarshalIndent(content, "", "\t")
 	require.NoError(t, err)
-	ioutil.WriteFile(filename, contentJson, 0644)
+	err = ioutil.WriteFile(filename, contentJson, 0644)
+	require.NoError(t, err)
 }
 
 func assertResponseError(t *testing.T, err error, errCode int, errMsg string) {

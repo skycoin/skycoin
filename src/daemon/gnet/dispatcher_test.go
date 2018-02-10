@@ -13,12 +13,10 @@ import (
 
 var (
 	_sendByteMessage = sendByteMessage
-	_encodeMessage   = encodeMessage
 )
 
 func resetHandler() {
 	sendByteMessage = _sendByteMessage
-	encodeMessage = _encodeMessage
 }
 
 func TestConvertToMessage(t *testing.T) {
@@ -113,14 +111,14 @@ func TestEncodeMessage(t *testing.T) {
 	RegisterMessage(BytePrefix, ByteMessage{})
 	VerifyMessages()
 	m := NewByteMessage(7)
-	b := encodeMessage(m)
+	b := EncodeMessage(m)
 	assert.True(t, bytes.Equal(b, []byte{5, 0, 0, 0, 'B', 'Y', 'T', 'E', 7}))
 }
 
 func TestEncodeMessageUnknownMessage(t *testing.T) {
 	resetHandler()
 	EraseMessages()
-	assert.Panics(t, func() { encodeMessage(&DummyMessage{}) })
+	assert.Panics(t, func() { EncodeMessage(&DummyMessage{}) })
 }
 
 func TestSendByteMessage(t *testing.T) {
@@ -180,10 +178,6 @@ func noopSendByteMessage(conn net.Conn, m []byte, tm time.Duration) error {
 
 func failingSendByteMessage(conn net.Conn, m []byte, tm time.Duration) error {
 	return errors.New("failed")
-}
-
-func noopEncodeMessage(msg Message) []byte {
-	return []byte{}
 }
 
 type CaptureConn struct {

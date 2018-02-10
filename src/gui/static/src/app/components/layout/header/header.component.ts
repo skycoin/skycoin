@@ -1,11 +1,11 @@
-import {Component, Input, OnDestroy, OnInit} from '@angular/core';
+import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { PriceService } from '../../../price.service';
 import { Subscription } from 'rxjs/Subscription';
 import { WalletService } from '../../../services/wallet.service';
 import { BlockchainService } from '../../../services/blockchain.service';
-import {Observable} from 'rxjs/Observable';
-import {ApiService} from '../../../services/api.service';
-import { Http, Headers } from '@angular/http';
+import { Observable } from 'rxjs/Observable';
+import { ApiService } from '../../../services/api.service';
+import { Http } from '@angular/http';
 
 @Component({
   selector: 'app-header',
@@ -78,14 +78,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
       .map((res: any) => res.json())
       .catch((error: any) => Observable.throw(error || 'Unable to fetch latest release version from github.'))
       .subscribe(response =>  {
-        // Iterate though the tags
         // Find the latest tag which is not a rc
-        for ( const i in response ) {
-          if ( response.hasOwnProperty(i) && response[i]['name'].indexOf('rc') === -1 ) {
-            this.releaseVersion = response[i]['name'].substr(1);
-            break;
-          }
-        }
+        this.releaseVersion = response.find(element => element['name'].indexOf('rc') === -1)['name'].substr(1);
 
         // Check if build version and release version differ
         this.updateAvailable = (this.version !== this.releaseVersion);

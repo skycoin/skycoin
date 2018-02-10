@@ -333,6 +333,14 @@ func getOutputsHandler(gateway Gatewayer) http.HandlerFunc {
 
 		if addrStr != "" {
 			addrs = trimSpace(strings.Split(addrStr, ","))
+
+			for _, a := range addrs {
+				if _, err := cipher.DecodeBase58Address(a); err != nil {
+					wh.Error400(w, "addrs contains invalid address")
+					return
+				}
+			}
+
 			if len(addrs) > 0 {
 				filters = append(filters, daemon.FbyAddresses(addrs))
 			}

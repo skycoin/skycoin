@@ -61,11 +61,21 @@ func enabled() bool {
 }
 
 func doStable(t *testing.T) bool {
-	return enabled() && mode(t) == testModeStable
+	if enabled() && mode(t) == testModeStable {
+		return true
+	}
+
+	t.Skip("Stable tests disabled")
+	return false
 }
 
 func doLive(t *testing.T) bool {
-	return enabled() && mode(t) == testModeLive
+	if enabled() && mode(t) == testModeLive {
+		return true
+	}
+
+	t.Skip("Live tests disabled")
+	return false
 }
 
 func loadJSON(t *testing.T, filename string, obj interface{}) {
@@ -77,9 +87,15 @@ func loadJSON(t *testing.T, filename string, obj interface{}) {
 	require.NoError(t, err)
 }
 
+func assertResponseError(t *testing.T, err error, errCode int, errMsg string) {
+	require.Error(t, err)
+	require.IsType(t, gui.APIError{}, err)
+	require.Equal(t, errCode, err.(gui.APIError).StatusCode)
+	require.Equal(t, errMsg, err.(gui.APIError).Message)
+}
+
 func TestStableCoinSupply(t *testing.T) {
 	if !doStable(t) {
-		t.Skip()
 		return
 	}
 
@@ -96,7 +112,6 @@ func TestStableCoinSupply(t *testing.T) {
 
 func TestLiveCoinSupply(t *testing.T) {
 	if !doLive(t) {
-		t.Skip()
 		return
 	}
 
@@ -116,7 +131,6 @@ func TestLiveCoinSupply(t *testing.T) {
 
 func TestVersion(t *testing.T) {
 	if !doStable(t) && !doLive(t) {
-		t.Skip()
 		return
 	}
 
@@ -130,7 +144,6 @@ func TestVersion(t *testing.T) {
 
 func TestStableOutputs(t *testing.T) {
 	if !doStable(t) {
-		t.Skip()
 		return
 	}
 
@@ -190,10 +203,7 @@ func TestStableOutputs(t *testing.T) {
 			outputs, err := c.Outputs(tc.addrs, tc.hashes)
 
 			if tc.errCode != 0 && tc.errCode != http.StatusOK {
-				require.Error(t, err)
-				require.IsType(t, gui.APIError{}, err)
-				require.Equal(t, tc.errCode, err.(gui.APIError).StatusCode)
-				require.Equal(t, tc.errMsg, err.(gui.APIError).Message)
+				assertResponseError(t, err, tc.errCode, tc.errMsg)
 				return
 			}
 
@@ -211,6 +221,111 @@ func TestStableOutputs(t *testing.T) {
 			}
 
 			require.Equal(t, expected, *outputs)
+		})
+	}
+}
+
+func TestLiveOutputs(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	// Request all outputs and check that HeadOutputs is not empty
+	// OutgoingOutputs and IncomingOutputs are variable and could be empty
+	outputs, err := c.Outputs(nil, nil)
+	require.NoError(t, err)
+	require.NotEmpty(t, outputs.HeadOutputs)
+}
+
+func TestStableBlock(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	testKnownBlocks(t)
+}
+
+func TestLiveBlock(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	testKnownBlocks(t)
+
+	// These blocks were affected by the coinhour overflow issue, make sure that they can be queried
+	blockSeqs := []uint64{11685, 11707, 11710, 11709, 11705, 11708, 11711, 11706, 11699}
+
+	c := gui.NewClient(nodeAddress())
+	for _, seq := range blockSeqs {
+		b, err := c.BlockBySeq(seq)
+		require.NoError(t, err)
+		require.Equal(t, seq, b.Head.BkSeq)
+	}
+}
+
+func testKnownBlocks(t *testing.T) {
+	c := gui.NewClient(nodeAddress())
+
+	cases := []struct {
+		name    string
+		golden  string
+		hash    string
+		seq     uint64
+		errCode int
+		errMsg  string
+	}{
+		{
+			name:    "unknown hash",
+			hash:    "80744ec25e6233f40074d35bf0bfdbddfac777869b954a96833cb89f44204444",
+			errCode: http.StatusNotFound,
+			errMsg:  "404 Not Found\n",
+		},
+		{
+			name:   "valid hash",
+			golden: "block-hash.golden",
+			hash:   "70584db7fb8ab88b8dbcfed72ddc42a1aeb8c4882266dbb78439ba3efcd0458d",
+		},
+		{
+			name:   "genesis hash",
+			golden: "block-hash-genesis.golden",
+			hash:   "0551a1e5af999fe8fff529f6f2ab341e1e33db95135eef1b2be44fe6981349f3",
+		},
+		{
+			name:   "genesis seq",
+			golden: "block-seq-0.golden",
+			seq:    0,
+		},
+		{
+			name:   "seq 100",
+			golden: "block-seq-100.golden",
+			seq:    100,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var b *visor.ReadableBlock
+			var err error
+
+			if tc.hash != "" {
+				b, err = c.BlockByHash(tc.hash)
+			} else {
+				b, err = c.BlockBySeq(tc.seq)
+			}
+
+			if tc.errCode != 0 && tc.errCode != http.StatusOK {
+				assertResponseError(t, err, tc.errCode, tc.errMsg)
+				return
+			}
+
+			require.NotNil(t, b)
+
+			var expected visor.ReadableBlock
+			loadJSON(t, tc.golden, &expected)
+
+			require.Equal(t, expected, *b)
 		})
 	}
 }

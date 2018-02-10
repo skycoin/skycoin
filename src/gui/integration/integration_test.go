@@ -9,7 +9,9 @@ import (
 
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/gui"
+	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
 	"github.com/stretchr/testify/require"
 )
@@ -505,4 +507,89 @@ func TestLiveBalance(t *testing.T) {
 	}
 	_, err = c.Balance(addrs)
 	require.NoError(t, err)
+}
+
+func TestStableUxOut(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	cases := []struct {
+		name   string
+		golden string
+		uxID   string
+	}{
+		{
+			name:   "valid uxID",
+			golden: "uxout.golden",
+			uxID:   "fe6762d753d626115c8dd3a053b5fb75d6d419a8d0fb1478c5fffc1fe41c5f20",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ux, err := c.UxOut(tc.uxID)
+			require.NoError(t, err)
+
+			var expected historydb.UxOutJSON
+			loadJSON(t, tc.golden, &expected)
+
+			require.Equal(t, expected, *ux)
+		})
+	}
+
+	// Scan all uxouts from the result of /outputs
+	scanUxOuts(t)
+}
+
+func TestLiveUxOut(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	// A spent uxout should never change
+	ux, err := c.UxOut("fe6762d753d626115c8dd3a053b5fb75d6d419a8d0fb1478c5fffc1fe41c5f20")
+	require.NoError(t, err)
+
+	var expected historydb.UxOutJSON
+	loadJSON(t, "uxout-spent.golden", &expected)
+	require.Equal(t, expected, *ux)
+	require.NotEqual(t, uint64(0), ux.SpentBlockSeq)
+
+	// Scan all uxouts from the result of /outputs
+	scanUxOuts(t)
+}
+
+func scanUxOuts(t *testing.T) {
+	c := gui.NewClient(nodeAddress())
+
+	outputs, err := c.Outputs(nil, nil)
+	require.NoError(t, err)
+
+	for _, ux := range outputs.HeadOutputs {
+		t.Run(ux.Hash, func(t *testing.T) {
+			foundUx, err := c.UxOut(ux.Hash)
+			require.NoError(t, err)
+
+			require.Equal(t, ux.Hash, foundUx.Uxid)
+			require.Equal(t, ux.Time, foundUx.Time)
+			require.Equal(t, ux.BkSeq, foundUx.SrcBkSeq)
+			require.Equal(t, ux.SourceTransaction, foundUx.SrcTx)
+			require.Equal(t, ux.Address, foundUx.OwnerAddress)
+			require.Equal(t, ux.Hours, foundUx.Hours)
+			coinsStr, err := droplet.ToString(foundUx.Coins)
+			require.NoError(t, err)
+			require.Equal(t, ux.Coins, coinsStr)
+
+			if foundUx.SpentBlockSeq == 0 {
+				require.Equal(t, "0000000000000000000000000000000000000000000000000000000000000000", foundUx.SpentTxID)
+			} else {
+				require.NotEqual(t, "0000000000000000000000000000000000000000000000000000000000000000", foundUx.SpentTxID)
+			}
+		})
+	}
 }

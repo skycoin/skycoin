@@ -175,7 +175,7 @@ func parseAddressesFromStr(s string) ([]cipher.Address, error) {
 	addrsStr := splitCommaString(s)
 
 	var addrs []cipher.Address
-	for _, as := range addrsStr {
+	for _, s := range addrsStr {
 		a, err := cipher.DecodeBase58Address(s)
 		if err != nil {
 			return nil, err

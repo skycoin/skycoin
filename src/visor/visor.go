@@ -1092,7 +1092,13 @@ func (vs Visor) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair,
 
 		coinHours, err := uxs.CoinHours(headTime)
 		if err != nil {
-			return nil, fmt.Errorf("uxs.CoinHours failed: %v", err)
+			switch err {
+			case coin.ErrAddEarnedCoinHoursAdditionOverflow:
+				coinHours = 0
+				err = nil
+			default:
+				return nil, fmt.Errorf("uxs.CoinHours failed: %v", err)
+			}
 		}
 
 		pcoins, err := predictedUxs.Coins()
@@ -1102,7 +1108,13 @@ func (vs Visor) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair,
 
 		pcoinHours, err := predictedUxs.CoinHours(headTime)
 		if err != nil {
-			return nil, fmt.Errorf("predictedUxs.CoinHours failed: %v", err)
+			switch err {
+			case coin.ErrAddEarnedCoinHoursAdditionOverflow:
+				coinHours = 0
+				err = nil
+			default:
+				return nil, fmt.Errorf("predictedUxs.CoinHours failed: %v", err)
+			}
 		}
 
 		bp := wallet.BalancePair{

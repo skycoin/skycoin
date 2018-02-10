@@ -244,7 +244,7 @@ type OutputsFilter func(outputs coin.UxArray) coin.UxArray
 
 // GetUnspentOutputs gets unspent outputs and returns the filtered results,
 // Note: all filters will be executed as the pending sequence in 'AND' mode.
-func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (visor.ReadableOutputSet, error) {
+func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (*visor.ReadableOutputSet, error) {
 	// unspent outputs
 	var unspentOutputs []coin.UxOut
 	// unconfirmed spending outputs
@@ -276,7 +276,7 @@ func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (visor.ReadableOu
 	})
 
 	if err != nil {
-		return visor.ReadableOutputSet{}, err
+		return nil, err
 	}
 
 	for _, flt := range filters {
@@ -288,20 +288,20 @@ func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (visor.ReadableOu
 	outputSet := visor.ReadableOutputSet{}
 	outputSet.HeadOutputs, err = visor.NewReadableOutputs(headTime, unspentOutputs)
 	if err != nil {
-		return visor.ReadableOutputSet{}, err
+		return nil, err
 	}
 
 	outputSet.OutgoingOutputs, err = visor.NewReadableOutputs(headTime, uncfmSpendingOutputs)
 	if err != nil {
-		return visor.ReadableOutputSet{}, err
+		return nil, err
 	}
 
 	outputSet.IncomingOutputs, err = visor.NewReadableOutputs(headTime, uncfmIncomingOutputs)
 	if err != nil {
-		return visor.ReadableOutputSet{}, err
+		return nil, err
 	}
 
-	return outputSet, nil
+	return &outputSet, nil
 }
 
 // FbyAddressesNotIncluded filters the unspent outputs that are not owned by the addresses

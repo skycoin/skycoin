@@ -295,12 +295,44 @@ func newIndexHandler(appLoc string) http.HandlerFunc {
 	}
 }
 
-// getOutputsHandler get utxos base on the filters in url params.
-// mode: GET
-// url: /outputs?addrs=[:addrs]&hashes=[:hashes]
-// if addrs and hashes are not specificed, return all unspent outputs.
-// if both addrs and hashes are specificed, then both those filters are need to be matched.
-// if only specify one filter, then return outputs match the filter.
+func splitCommaString(s string) []string {
+	s = strings.TrimSpace(s)
+	vs := strings.Split(s, ",")
+	for i := range vs {
+		vs[i] = strings.TrimSpace(vs[i])
+	}
+
+	// Filter empty strings
+	outs := make([]string, 0, len(vs))
+	for _, v := range vs {
+		if v != "" {
+			outs = append(outs, v)
+		}
+	}
+
+	// Deduplicate
+	m := make(map[string]struct{}, len(outs))
+	for _, a := range outs {
+		m[a] = struct{}{}
+	}
+
+	deduped := make([]string, 0, len(m))
+	for a := range m {
+		deduped = append(deduped, a)
+	}
+
+	return deduped
+}
+
+// getOutputsHandler returns UxOuts filtered by a set of addresses or a set of hashes
+// URI: /outputs
+// Method: GET
+// Args:
+//    addrs: comma-separated list of addresses
+//    hashes: comma-separated list of uxout hashes
+// If neither addrs nor hashes are specificed, return all unspent outputs.
+// If only one filter is specified, then return outputs match the filter.
+// Both filters cannot be specified.
 func getOutputsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -311,30 +343,36 @@ func getOutputsHandler(gateway Gatewayer) http.HandlerFunc {
 		var addrs []string
 		var hashes []string
 
-		trimSpace := func(vs []string) []string {
-			for i := range vs {
-				vs[i] = strings.TrimSpace(vs[i])
-			}
-			return vs
-		}
-
 		addrStr := r.FormValue("addrs")
-		if addrStr != "" {
-			addrs = trimSpace(strings.Split(addrStr, ","))
-		}
-
 		hashStr := r.FormValue("hashes")
-		if hashStr != "" {
-			hashes = trimSpace(strings.Split(hashStr, ","))
+
+		if addrStr != "" && hashStr != "" {
+			wh.Error400(w, "addrs and hashes cannot be specified together")
+			return
 		}
 
 		filters := []daemon.OutputsFilter{}
-		if len(addrs) > 0 {
-			filters = append(filters, daemon.FbyAddresses(addrs))
+
+		if addrStr != "" {
+			addrs = splitCommaString(addrStr)
+
+			for _, a := range addrs {
+				if _, err := cipher.DecodeBase58Address(a); err != nil {
+					wh.Error400(w, "addrs contains invalid address")
+					return
+				}
+			}
+
+			if len(addrs) > 0 {
+				filters = append(filters, daemon.FbyAddresses(addrs))
+			}
 		}
 
-		if len(hashes) > 0 {
-			filters = append(filters, daemon.FbyHashes(hashes))
+		if hashStr != "" {
+			hashes = splitCommaString(hashStr)
+			if len(hashes) > 0 {
+				filters = append(filters, daemon.FbyHashes(hashes))
+			}
 		}
 
 		outs, err := gateway.GetUnspentOutputs(filters...)
@@ -356,10 +394,10 @@ func getBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		addrsParam := r.FormValue("addrs")
-		addrsStr := strings.Split(addrsParam, ",")
+		addrsStr := splitCommaString(addrsParam)
+
 		addrs := make([]cipher.Address, 0, len(addrsStr))
 		for _, addr := range addrsStr {
-			addr = strings.TrimSpace(addr)
 			a, err := cipher.DecodeBase58Address(addr)
 			if err != nil {
 				wh.Error400(w, fmt.Sprintf("address %s is invalid: %v", addr, err))

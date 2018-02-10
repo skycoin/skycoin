@@ -100,7 +100,7 @@ result:
 URI: /balance
 Method: GET
 Args:
-    addrs: addresses
+    addrs: comma-separated list of addresses. must contain at least one address
 ```
 
 example:
@@ -133,6 +133,8 @@ Args:
     addrs  // address list, joined with ","
     hashes // hash list, joined with ","
 ```
+
+Addrs and hashes cannot be combined.
 
 example:
 

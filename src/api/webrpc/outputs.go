@@ -41,5 +41,5 @@ func getOutputsHandler(req Request, gateway Gatewayer) Response {
 		return makeErrorResponse(errCodeInternalError, fmt.Sprintf("gateway.GetUnspentOutputs failed: %v", err))
 	}
 
-	return makeSuccessResponse(req.ID, OutputsResult{outs})
+	return makeSuccessResponse(req.ID, OutputsResult{*outs})
 }

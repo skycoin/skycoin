@@ -30,13 +30,13 @@ type Gatewayer interface {
 	GetBuildInfo() visor.BuildInfo
 	GetUnspentOutputs(filters ...daemon.OutputsFilter) (visor.ReadableOutputSet, error)
 	GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair, error)
-	GetBlockchainMetadata() interface{}
-	GetBlockchainProgress() interface{}
-	GetConnection(addr string) interface{}
-	GetConnections() interface{}
-	GetDefaultConnections() interface{}
-	GetTrustConnections() interface{}
-	GetExchgConnection() interface{}
+	GetBlockchainMetadata() *visor.BlockchainMetadata
+	GetBlockchainProgress() *daemon.BlockchainProgress
+	GetConnection(addr string) *daemon.Connection
+	GetConnections() *daemon.Connections
+	GetDefaultConnections() []string
+	GetTrustConnections() []string
+	GetExchgConnection() []string
 	GetAllUnconfirmedTxns() ([]*visor.ReadableUnconfirmedTxn, error)
 	GetLastTxs() ([]*visor.TransactionResult, error)
 	GetTransaction(txid cipher.SHA256) (*visor.Transaction, *visor.TransactionResult, error)

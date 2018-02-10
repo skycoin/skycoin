@@ -244,14 +244,14 @@ func (m *GatewayerMock) GetBlockBySeq(p0 uint64) (*visor.ReadableBlock, bool) {
 }
 
 // GetBlockchainMetadata mocked method
-func (m *GatewayerMock) GetBlockchainMetadata() interface{} {
+func (m *GatewayerMock) GetBlockchainMetadata() *visor.BlockchainMetadata {
 
 	ret := m.Called()
 
-	var r0 interface{}
+	var r0 *visor.BlockchainMetadata
 	switch res := ret.Get(0).(type) {
 	case nil:
-	case interface{}:
+	case *visor.BlockchainMetadata:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
@@ -262,14 +262,14 @@ func (m *GatewayerMock) GetBlockchainMetadata() interface{} {
 }
 
 // GetBlockchainProgress mocked method
-func (m *GatewayerMock) GetBlockchainProgress() interface{} {
+func (m *GatewayerMock) GetBlockchainProgress() *daemon.BlockchainProgress {
 
 	ret := m.Called()
 
-	var r0 interface{}
+	var r0 *daemon.BlockchainProgress
 	switch res := ret.Get(0).(type) {
 	case nil:
-	case interface{}:
+	case *daemon.BlockchainProgress:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
@@ -325,14 +325,14 @@ func (m *GatewayerMock) GetBuildInfo() visor.BuildInfo {
 }
 
 // GetConnection mocked method
-func (m *GatewayerMock) GetConnection(p0 string) interface{} {
+func (m *GatewayerMock) GetConnection(p0 string) *daemon.Connection {
 
 	ret := m.Called(p0)
 
-	var r0 interface{}
+	var r0 *daemon.Connection
 	switch res := ret.Get(0).(type) {
 	case nil:
-	case interface{}:
+	case *daemon.Connection:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
@@ -343,14 +343,14 @@ func (m *GatewayerMock) GetConnection(p0 string) interface{} {
 }
 
 // GetConnections mocked method
-func (m *GatewayerMock) GetConnections() interface{} {
+func (m *GatewayerMock) GetConnections() *daemon.Connections {
 
 	ret := m.Called()
 
-	var r0 interface{}
+	var r0 *daemon.Connections
 	switch res := ret.Get(0).(type) {
 	case nil:
-	case interface{}:
+	case *daemon.Connections:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
@@ -361,14 +361,14 @@ func (m *GatewayerMock) GetConnections() interface{} {
 }
 
 // GetDefaultConnections mocked method
-func (m *GatewayerMock) GetDefaultConnections() interface{} {
+func (m *GatewayerMock) GetDefaultConnections() []string {
 
 	ret := m.Called()
 
-	var r0 interface{}
+	var r0 []string
 	switch res := ret.Get(0).(type) {
 	case nil:
-	case interface{}:
+	case []string:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
@@ -379,14 +379,14 @@ func (m *GatewayerMock) GetDefaultConnections() interface{} {
 }
 
 // GetExchgConnection mocked method
-func (m *GatewayerMock) GetExchgConnection() interface{} {
+func (m *GatewayerMock) GetExchgConnection() []string {
 
 	ret := m.Called()
 
-	var r0 interface{}
+	var r0 []string
 	switch res := ret.Get(0).(type) {
 	case nil:
-	case interface{}:
+	case []string:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
@@ -541,14 +541,14 @@ func (m *GatewayerMock) GetTransactions(p0 ...visor.TxFilter) ([]*visor.Transact
 }
 
 // GetTrustConnections mocked method
-func (m *GatewayerMock) GetTrustConnections() interface{} {
+func (m *GatewayerMock) GetTrustConnections() []string {
 
 	ret := m.Called()
 
-	var r0 interface{}
+	var r0 []string
 	switch res := ret.Get(0).(type) {
 	case nil:
-	case interface{}:
+	case []string:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))

@@ -75,6 +75,7 @@ type Visor struct {
 	blockchainHeights map[string]uint64
 	// all request will go through this channel, to keep writing and reading member variable thread safe.
 	reqC chan strand.Request
+	quit chan struct{}
 }
 
 // NewVisor creates visor instance
@@ -83,6 +84,7 @@ func NewVisor(c VisorConfig, db *bolt.DB) (*Visor, error) {
 		Config:            c,
 		blockchainHeights: make(map[string]uint64),
 		reqC:              make(chan strand.Request, c.RequestBufferSize),
+		quit:              make(chan struct{}),
 	}
 
 	v, err := visor.NewVisor(c.Config, db)
@@ -121,12 +123,13 @@ func (vs *Visor) processRequests(errC <-chan error) error {
 
 // Shutdown shuts down the visor
 func (vs *Visor) Shutdown() {
+	close(vs.quit)
 	vs.v.Shutdown()
 }
 
 func (vs *Visor) strand(name string, f func() error) error {
 	name = fmt.Sprintf("daemon.Visor.%s", name)
-	return strand.Strand(logger, vs.reqC, name, f)
+	return strand.Strand(logger, vs.reqC, name, f, vs.quit, nil)
 }
 
 // RefreshUnconfirmed checks unconfirmed txns against the blockchain and marks
@@ -522,12 +525,12 @@ func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
 	})
 }
 
-// GetSignedBlocksSince returns numbers of signed blocks since seq.
-func (vs *Visor) GetSignedBlocksSince(seq uint64, num uint64) ([]coin.SignedBlock, error) {
+// GetSignedBlocksSince returns signed blocks in an inclusive range of [seq+1, seq+ct]
+func (vs *Visor) GetSignedBlocksSince(seq uint64, ct uint64) ([]coin.SignedBlock, error) {
 	var sbs []coin.SignedBlock
 	err := vs.strand("GetSignedBlocksSince", func() error {
 		var err error
-		sbs, err = vs.v.GetSignedBlocksSince(seq, num)
+		sbs, err = vs.v.GetSignedBlocksSince(seq, ct)
 		return err
 	})
 	return sbs, err
@@ -594,10 +597,12 @@ func (gbm *GetBlocksMessage) Process(d *Daemon) {
 		return
 	}
 
-	logger.Debug("Got %d blocks since %d", len(blocks), gbm.LastBlock)
 	if len(blocks) == 0 {
 		return
 	}
+
+	logger.Debug("Got %d blocks since %d", len(blocks), gbm.LastBlock)
+
 	m := NewGiveBlocksMessage(blocks)
 	if err := d.Pool.Pool.SendMessage(gbm.c.Addr, m); err != nil {
 		logger.Error("Send GiveBlocksMessage to %s failed: %v", gbm.c.Addr, err)

@@ -137,7 +137,7 @@ Args:
 example:
 
 ```sh
-curl http://127.0.0.1:6420/outputs?addrs= 6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY
+curl http://127.0.0.1:6420/outputs?addrs=6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY
 ```
 
 or

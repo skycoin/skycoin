@@ -42,6 +42,7 @@ type Gateway struct {
 	v *visor.Visor
 	// Requests are queued on this channel
 	requests chan strand.Request
+	quit     chan struct{}
 }
 
 // NewGateway create and init an Gateway instance.
@@ -53,7 +54,13 @@ func NewGateway(c GatewayConfig, D *Daemon) *Gateway {
 		d:        D,
 		v:        D.Visor.v,
 		requests: make(chan strand.Request, c.BufferSize),
+		quit:     make(chan struct{}),
 	}
+}
+
+// Shutdown closes the Gateway
+func (gw *Gateway) Shutdown() {
+	close(gw.quit)
 }
 
 func (gw *Gateway) strand(name string, f func()) {
@@ -61,12 +68,12 @@ func (gw *Gateway) strand(name string, f func()) {
 	strand.Strand(logger, gw.requests, name, func() error {
 		f()
 		return nil
-	})
+	}, gw.quit, nil)
 }
 
 // GetConnections returns a *Connections
-func (gw *Gateway) GetConnections() interface{} {
-	var conns interface{}
+func (gw *Gateway) GetConnections() *Connections {
+	var conns *Connections
 	gw.strand("GetConnections", func() {
 		conns = gw.drpc.GetConnections(gw.d)
 	})
@@ -74,8 +81,8 @@ func (gw *Gateway) GetConnections() interface{} {
 }
 
 // GetDefaultConnections returns default connections
-func (gw *Gateway) GetDefaultConnections() interface{} {
-	var conns interface{}
+func (gw *Gateway) GetDefaultConnections() []string {
+	var conns []string
 	gw.strand("GetDefaultConnections", func() {
 		conns = gw.drpc.GetDefaultConnections(gw.d)
 	})
@@ -83,8 +90,8 @@ func (gw *Gateway) GetDefaultConnections() interface{} {
 }
 
 // GetConnection returns a *Connection of specific address
-func (gw *Gateway) GetConnection(addr string) interface{} {
-	var conn interface{}
+func (gw *Gateway) GetConnection(addr string) *Connection {
+	var conn *Connection
 	gw.strand("GetConnection", func() {
 		conn = gw.drpc.GetConnection(gw.d, addr)
 	})
@@ -93,8 +100,8 @@ func (gw *Gateway) GetConnection(addr string) interface{} {
 
 // GetTrustConnections returns all trusted connections,
 // including private and public
-func (gw *Gateway) GetTrustConnections() interface{} {
-	var conn interface{}
+func (gw *Gateway) GetTrustConnections() []string {
+	var conn []string
 	gw.strand("GetTrustConnections", func() {
 		conn = gw.drpc.GetTrustConnections(gw.d)
 	})
@@ -103,8 +110,8 @@ func (gw *Gateway) GetTrustConnections() interface{} {
 
 // GetExchgConnection returns all exchangeable connections,
 // including private and public
-func (gw *Gateway) GetExchgConnection() interface{} {
-	var conn interface{}
+func (gw *Gateway) GetExchgConnection() []string {
+	var conn []string
 	gw.strand("GetExchgConnection", func() {
 		conn = gw.drpc.GetAllExchgConnections(gw.d)
 	})
@@ -114,8 +121,8 @@ func (gw *Gateway) GetExchgConnection() interface{} {
 /* Blockchain & Transaction status */
 
 // GetBlockchainProgress returns a *BlockchainProgress
-func (gw *Gateway) GetBlockchainProgress() interface{} {
-	var bcp interface{}
+func (gw *Gateway) GetBlockchainProgress() *BlockchainProgress {
+	var bcp *BlockchainProgress
 	gw.strand("GetBlockchainProgress", func() {
 		bcp = gw.drpc.GetBlockchainProgress(gw.d.Visor)
 	})
@@ -123,8 +130,8 @@ func (gw *Gateway) GetBlockchainProgress() interface{} {
 }
 
 // ResendTransaction resent the transaction and return a *ResendResult
-func (gw *Gateway) ResendTransaction(txn cipher.SHA256) interface{} {
-	var result interface{}
+func (gw *Gateway) ResendTransaction(txn cipher.SHA256) *ResendResult {
+	var result *ResendResult
 	gw.strand("ResendTransaction", func() {
 		result = gw.drpc.ResendTransaction(gw.d.Visor, gw.d.Pool, txn)
 	})
@@ -140,8 +147,8 @@ func (gw *Gateway) ResendUnconfirmedTxns() (rlt *ResendResult) {
 }
 
 // GetBlockchainMetadata returns a *visor.BlockchainMetadata
-func (gw *Gateway) GetBlockchainMetadata() interface{} {
-	var bcm interface{}
+func (gw *Gateway) GetBlockchainMetadata() *visor.BlockchainMetadata {
+	var bcm *visor.BlockchainMetadata
 	gw.strand("GetBlockchainMetadata", func() {
 		bcm = gw.vrpc.GetBlockchainMetadata(gw.v)
 	})
@@ -679,7 +686,7 @@ func (gw *Gateway) GetUnspent() blockdb.UnspentPool {
 	return unspent
 }
 
-// impelemts the wallet.Validator interface
+// implements the wallet.Validator interface
 type spendValidator struct {
 	uncfm   visor.UnconfirmedTxnPooler
 	unspent blockdb.UnspentPool

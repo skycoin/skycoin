@@ -7,13 +7,18 @@ import (
 	"os"
 	"testing"
 
+	"flag"
+	"io/ioutil"
+	"path/filepath"
+
+	"github.com/stretchr/testify/require"
+
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/gui"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
-	"github.com/stretchr/testify/require"
 )
 
 /* Runs HTTP API tests against a running skycoin node
@@ -40,6 +45,8 @@ const (
 	testModeStable = "stable"
 	testModeLive   = "live"
 )
+
+var update = flag.Bool("update", false, "update golden files")
 
 func nodeAddress() string {
 	addr := os.Getenv("SKYCOIN_NODE_HOST")
@@ -85,11 +92,18 @@ func doLive(t *testing.T) bool {
 
 func loadJSON(t *testing.T, filename string, obj interface{}) {
 	f, err := os.Open(filename)
+
 	require.NoError(t, err)
 	defer f.Close()
 
 	err = json.NewDecoder(f).Decode(obj)
 	require.NoError(t, err)
+}
+
+func updateGoldenFile(t *testing.T, filename string, content interface{}) {
+	contentJson, err := json.MarshalIndent(content, "", "\t")
+	require.NoError(t, err)
+	ioutil.WriteFile(filename, contentJson, 0644)
 }
 
 func assertResponseError(t *testing.T, err error, errCode int, errMsg string) {
@@ -109,8 +123,13 @@ func TestStableCoinSupply(t *testing.T) {
 	cs, err := c.CoinSupply()
 	require.NoError(t, err)
 
+	goldenFile := filepath.Join("test-fixtures", "coinsupply.golden")
+	if *update {
+		updateGoldenFile(t, goldenFile, cs)
+	}
+
 	var expected gui.CoinSupply
-	loadJSON(t, "coinsupply.golden", &expected)
+	loadJSON(t, goldenFile, &expected)
 
 	require.Equal(t, expected, *cs)
 }
@@ -215,7 +234,11 @@ func TestStableOutputs(t *testing.T) {
 			require.NoError(t, err)
 
 			var expected visor.ReadableOutputSet
-			loadJSON(t, tc.golden, &expected)
+			goldenFile := filepath.Join("test-fixtures", tc.golden)
+			if *update {
+				updateGoldenFile(t, goldenFile, outputs)
+			}
+			loadJSON(t, goldenFile, &expected)
 
 			require.Equal(t, len(expected.HeadOutputs), len(outputs.HeadOutputs))
 			require.Equal(t, len(expected.OutgoingOutputs), len(outputs.OutgoingOutputs))
@@ -328,7 +351,11 @@ func testKnownBlocks(t *testing.T) {
 			require.NotNil(t, b)
 
 			var expected visor.ReadableBlock
-			loadJSON(t, tc.golden, &expected)
+			goldenFile := filepath.Join("test-fixtures", tc.golden)
+			if *update {
+				updateGoldenFile(t, goldenFile, b)
+			}
+			loadJSON(t, goldenFile, &expected)
 
 			require.Equal(t, expected, *b)
 		})
@@ -373,7 +400,11 @@ func TestStableBlockchainMetadata(t *testing.T) {
 	require.NoError(t, err)
 
 	var expected visor.BlockchainMetadata
-	loadJSON(t, "blockchain-metadata.golden", &expected)
+	goldenFile := filepath.Join("test-fixtures", "blockchain-metadata.golden")
+	if *update {
+		updateGoldenFile(t, goldenFile, metadata)
+	}
+	loadJSON(t, goldenFile, &expected)
 
 	require.Equal(t, expected, *metadata)
 }
@@ -402,7 +433,11 @@ func TestStableBlockchainProgress(t *testing.T) {
 	require.NoError(t, err)
 
 	var expected daemon.BlockchainProgress
-	loadJSON(t, "blockchain-progress.golden", &expected)
+	goldenFile := filepath.Join("test-fixtures", "blockchain-progress.golden")
+	if *update {
+		updateGoldenFile(t, goldenFile, progress)
+	}
+	loadJSON(t, goldenFile, &expected)
 
 	require.Equal(t, expected, *progress)
 }
@@ -466,7 +501,11 @@ func TestStableBalance(t *testing.T) {
 			require.NoError(t, err)
 
 			var expected wallet.BalancePair
-			loadJSON(t, tc.golden, &expected)
+			goldenFile := filepath.Join("test-fixtures", tc.golden)
+			if *update {
+				updateGoldenFile(t, goldenFile, balance)
+			}
+			loadJSON(t, goldenFile, &expected)
 
 			require.Equal(t, expected, *balance)
 		})
@@ -534,7 +573,11 @@ func TestStableUxOut(t *testing.T) {
 			require.NoError(t, err)
 
 			var expected historydb.UxOutJSON
-			loadJSON(t, tc.golden, &expected)
+			goldenFile := filepath.Join("test-fixtures", tc.golden)
+			if *update {
+				updateGoldenFile(t, goldenFile, ux)
+			}
+			loadJSON(t, goldenFile, &expected)
 
 			require.Equal(t, expected, *ux)
 		})
@@ -556,7 +599,11 @@ func TestLiveUxOut(t *testing.T) {
 	require.NoError(t, err)
 
 	var expected historydb.UxOutJSON
-	loadJSON(t, "uxout-spent.golden", &expected)
+	goldenFile := filepath.Join("test-fixtures", "uxout-spent.golden")
+	if *update {
+		updateGoldenFile(t, goldenFile, ux)
+	}
+	loadJSON(t, goldenFile, &expected)
 	require.Equal(t, expected, *ux)
 	require.NotEqual(t, uint64(0), ux.SpentBlockSeq)
 

@@ -2,10 +2,12 @@ package gui_integration_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"testing"
 
+	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/gui"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/stretchr/testify/require"
@@ -328,4 +330,91 @@ func testKnownBlocks(t *testing.T) {
 			require.Equal(t, expected, *b)
 		})
 	}
+
+	t.Logf("Querying every block in the blockchain")
+
+	// Scan every block by seq
+	progress, err := c.BlockchainProgress()
+	require.NoError(t, err)
+
+	var prevBlock *visor.ReadableBlock
+	for i := uint64(0); i < progress.Current; i++ {
+		t.Run(fmt.Sprintf("block-seq-%d", i), func(t *testing.T) {
+			b, err := c.BlockBySeq(i)
+			require.NoError(t, err)
+			require.NotNil(t, b)
+			require.Equal(t, i, b.Head.BkSeq)
+
+			if prevBlock != nil {
+				require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
+			}
+
+			bHash, err := c.BlockByHash(b.Head.BlockHash)
+			require.NoError(t, err)
+			require.NotNil(t, bHash)
+			require.Equal(t, b, bHash)
+
+			prevBlock = b
+		})
+	}
+}
+
+func TestStableBlockchainMetadata(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	metadata, err := c.BlockchainMetadata()
+	require.NoError(t, err)
+
+	var expected visor.BlockchainMetadata
+	loadJSON(t, "blockchain-metadata.golden", &expected)
+
+	require.Equal(t, expected, *metadata)
+}
+
+func TestLiveBlockchainMetadata(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	metadata, err := c.BlockchainMetadata()
+	require.NoError(t, err)
+
+	require.NotEqual(t, uint64(0), metadata.Head.BkSeq)
+}
+
+func TestStableBlockchainProgress(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	progress, err := c.BlockchainProgress()
+	require.NoError(t, err)
+
+	var expected daemon.BlockchainProgress
+	loadJSON(t, "blockchain-progress.golden", &expected)
+
+	require.Equal(t, expected, *progress)
+}
+
+func TestLiveBlockchainProgress(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	progress, err := c.BlockchainProgress()
+	require.NoError(t, err)
+
+	require.NotEqual(t, uint64(0), progress.Current)
+	require.True(t, progress.Current <= progress.Highest)
+	require.NotEmpty(t, progress.Peers)
 }

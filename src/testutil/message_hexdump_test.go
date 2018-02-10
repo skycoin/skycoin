@@ -1,11 +1,12 @@
 package testutil
 
 import (
+	"testing"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/daemon/pex"
-	"testing"
 )
 
 func TestIntroductionMessage(t *testing.T) {

@@ -3,12 +3,13 @@ package testutil
 import (
 	"crypto/sha256"
 	"fmt"
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"reflect"
 	"strconv"
 	"time"
+
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
+	"github.com/skycoin/skycoin/src/daemon/gnet"
 )
 
 func serializeMessage(msg gnet.Message) []byte {

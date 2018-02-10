@@ -295,12 +295,15 @@ func newIndexHandler(appLoc string) http.HandlerFunc {
 	}
 }
 
-// getOutputsHandler get utxos base on the filters in url params.
-// mode: GET
-// url: /outputs?addrs=[:addrs]&hashes=[:hashes]
-// if addrs and hashes are not specificed, return all unspent outputs.
-// if both addrs and hashes are specificed, then both those filters are need to be matched.
-// if only specify one filter, then return outputs match the filter.
+// getOutputsHandler returns UxOuts filtered by a set of addresses or a set of hashes
+// URI: /outputs
+// Method: GET
+// Args:
+//    addrs: comma-separated list of addresses
+//    hashes: comma-separated list of uxout hashes
+// If neither addrs nor hashes are specificed, return all unspent outputs.
+// If only one filter is specified, then return outputs match the filter.
+// Both filters cannot be specified.
 func getOutputsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -319,22 +322,27 @@ func getOutputsHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		addrStr := r.FormValue("addrs")
-		if addrStr != "" {
-			addrs = trimSpace(strings.Split(addrStr, ","))
-		}
-
 		hashStr := r.FormValue("hashes")
-		if hashStr != "" {
-			hashes = trimSpace(strings.Split(hashStr, ","))
+
+		if addrStr != "" && hashStr != "" {
+			wh.Error400(w, "addrs and hashes cannot be specified together")
+			return
 		}
 
 		filters := []daemon.OutputsFilter{}
-		if len(addrs) > 0 {
-			filters = append(filters, daemon.FbyAddresses(addrs))
+
+		if addrStr != "" {
+			addrs = trimSpace(strings.Split(addrStr, ","))
+			if len(addrs) > 0 {
+				filters = append(filters, daemon.FbyAddresses(addrs))
+			}
 		}
 
-		if len(hashes) > 0 {
-			filters = append(filters, daemon.FbyHashes(hashes))
+		if hashStr != "" {
+			hashes = trimSpace(strings.Split(hashStr, ","))
+			if len(hashes) > 0 {
+				filters = append(filters, daemon.FbyHashes(hashes))
+			}
 		}
 
 		outs, err := gateway.GetUnspentOutputs(filters...)

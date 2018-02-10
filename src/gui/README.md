@@ -134,6 +134,8 @@ Args:
     hashes // hash list, joined with ","
 ```
 
+Addrs and hashes cannot be combined.
+
 example:
 
 ```sh

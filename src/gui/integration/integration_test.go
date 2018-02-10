@@ -2,10 +2,12 @@ package gui_integration_test
 
 import (
 	"encoding/json"
+	"net/http"
 	"os"
 	"testing"
 
 	"github.com/skycoin/skycoin/src/gui"
+	"github.com/skycoin/skycoin/src/visor"
 	"github.com/stretchr/testify/require"
 )
 
@@ -110,4 +112,105 @@ func TestLiveCoinSupply(t *testing.T) {
 	require.NotEmpty(t, cs.CurrentCoinHourSupply)
 	require.NotEmpty(t, cs.TotalCoinHourSupply)
 	require.Equal(t, 100, len(cs.UnlockedAddresses)+len(cs.LockedAddresses))
+}
+
+func TestVersion(t *testing.T) {
+	if !doStable(t) && !doLive(t) {
+		t.Skip()
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	v, err := c.Version()
+	require.NoError(t, err)
+
+	require.NotEmpty(t, v.Version)
+}
+
+func TestStableOutputs(t *testing.T) {
+	if !doStable(t) {
+		t.Skip()
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	cases := []struct {
+		name    string
+		golden  string
+		addrs   []string
+		hashes  []string
+		errCode int
+		errMsg  string
+	}{
+		{
+			name:   "no addrs or hashes",
+			golden: "outputs-noargs.golden",
+		},
+		{
+			name: "only addrs",
+			addrs: []string{
+				"ALJVNKYL7WGxFBSriiZuwZKWD4b7fbV1od",
+				"2THDupTBEo7UqB6dsVizkYUvkKq82Qn4gjf",
+				"qxmeHkwgAMfwXyaQrwv9jq3qt228xMuoT5",
+			},
+			golden: "outputs-addrs.golden",
+		},
+		{
+			name: "only hashes",
+			hashes: []string{
+				"9e53268a18f8d32a44b4fb183033b49bebfe9d0da3bf3ef2ad1d560500aa54c6",
+				"d91e07318227651129b715d2db448ae245b442acd08c8b4525a934f0e87efce9",
+				"01f9c1d6c83dbc1c993357436cdf7f214acd0bfa107ff7f1466d1b18ec03563e",
+				"fe6762d753d626115c8dd3a053b5fb75d6d419a8d0fb1478c5fffc1fe41c5f20",
+			},
+			golden: "outputs-hashes.golden",
+		},
+		{
+			name: "addrs and hashes",
+			addrs: []string{
+				"ALJVNKYL7WGxFBSriiZuwZKWD4b7fbV1od",
+				"2THDupTBEo7UqB6dsVizkYUvkKq82Qn4gjf",
+				"qxmeHkwgAMfwXyaQrwv9jq3qt228xMuoT5",
+			},
+			hashes: []string{
+				"9e53268a18f8d32a44b4fb183033b49bebfe9d0da3bf3ef2ad1d560500aa54c6",
+				"d91e07318227651129b715d2db448ae245b442acd08c8b4525a934f0e87efce9",
+				"01f9c1d6c83dbc1c993357436cdf7f214acd0bfa107ff7f1466d1b18ec03563e",
+				"fe6762d753d626115c8dd3a053b5fb75d6d419a8d0fb1478c5fffc1fe41c5f20",
+			},
+			errCode: http.StatusBadRequest,
+			errMsg:  "400 Bad Request - addrs and hashes cannot be specified together\n",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			outputs, err := c.Outputs(tc.addrs, tc.hashes)
+
+			if tc.errCode != 0 && tc.errCode != http.StatusOK {
+				require.Error(t, err)
+				require.IsType(t, gui.APIError{}, err)
+				require.Equal(t, tc.errCode, err.(gui.APIError).StatusCode)
+				require.Equal(t, tc.errMsg, err.(gui.APIError).Message)
+				return
+			}
+
+			require.NoError(t, err)
+
+			var expected visor.ReadableOutputSet
+			loadJSON(t, tc.golden, &expected)
+
+			require.Equal(t, len(expected.HeadOutputs), len(outputs.HeadOutputs))
+			require.Equal(t, len(expected.OutgoingOutputs), len(outputs.OutgoingOutputs))
+			require.Equal(t, len(expected.IncomingOutputs), len(outputs.IncomingOutputs))
+
+			for i, o := range expected.HeadOutputs {
+				require.Equal(t, o, outputs.HeadOutputs[i], "mismatch at index %d", i)
+			}
+
+			require.Equal(t, expected, *outputs)
+		})
+	}
 }

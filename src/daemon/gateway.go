@@ -656,7 +656,7 @@ func (gw *Gateway) GetLastTxs() ([]*visor.TransactionResult, error) {
 		if err != nil {
 			return
 		}
-		
+
 		ret = make([]*visor.TransactionResult, len(txns))
 		for i, tx := range txns {
 			txInputsData, e := getTransactionInputsData(&tx.Txn, gw)

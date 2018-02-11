@@ -29,7 +29,7 @@ echo "starting skycoin node in background with http listener on $HOST"
 ./skycoin-integration -disable-networking=true \
                       -web-interface-port=$PORT \
                       -download-peerlist=false \
-                      -db-path=./src/gui/integration/blockchain-180.db \
+                      -db-path=./src/gui/integration/test-fixtures/blockchain-180.db \
                       -rpc-interface=false \
                       -launch-browser=false \
                       -data-dir="$DATA_DIR" \

@@ -2,14 +2,13 @@ package gui_integration_test
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
-	"testing"
-
-	"flag"
-	"io/ioutil"
 	"path/filepath"
+	"testing"
 
 	"github.com/stretchr/testify/require"
 

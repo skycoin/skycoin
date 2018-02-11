@@ -352,6 +352,7 @@ func (c *Config) postProcess(chaincfg ChainConfig) {
 	}
 
 	c.DataDirectory, err = file.InitDataDir(c.DataDirectory)
+	logger.Info("Loading node config from %v", c.DataDirectory)
 	panicIfError(err, "Invalid DataDirectory")
 
 	if c.WebInterfaceCert == "" {
@@ -890,7 +891,7 @@ var MainChainCfg = ChainConfig{
 	Port:              6000,
 	WebInterfacePort:  6420,
 	RPCInterfacePort:  6430,
-	DataDirectory:     "~/.skycoin",
+	DataDirectory:     ".skycoin",
 	LogFmt:            "[skycoin.%{module}:%{level}] %{message}",
 	DefaultConnections: []string{
 		"118.178.135.93:6000",
@@ -915,7 +916,7 @@ var TestChainCfg = ChainConfig{
 	Port:              16000,
 	WebInterfacePort:  16420,
 	RPCInterfacePort:  16430,
-	DataDirectory:     "~/.skycoin-testnet",
+	DataDirectory:     ".skycoin-testnet",
 	LogFmt:            "[skycoin.testnet.%{module}:%{level}] %{message}",
 	DefaultConnections: []string{
 		"139.162.33.154:16000",

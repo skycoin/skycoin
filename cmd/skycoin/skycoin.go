@@ -311,7 +311,11 @@ func (c *Config) postProcess(chaincfg ChainConfig) {
 	c.GenesisAddress, err = cipher.DecodeBase58Address(chaincfg.GenesisAddress)
 	panicIfError(err, "Invalid address")
 
-	c.BlockchainPubkey, err = cipher.PubKeyFromHex(chaincfg.BlockchainPubkey)
+	if BlockchainPubkeyStr != "" {
+		c.BlockchainPubkey, err = cipher.PubKeyFromHex(BlockchainPubkeyStr)
+	} else {
+		c.BlockchainPubkey, err = cipher.PubKeyFromHex(chaincfg.BlockchainPubkey)
+	}
 	panicIfError(err, "Invalid Pubkey")
 
 	c.GenesisTimestamp = chaincfg.GenesisTimestamp
@@ -325,6 +329,7 @@ func (c *Config) postProcess(chaincfg ChainConfig) {
 		c.DataDirectory = chaincfg.DataDirectory
 	}
 	c.LogFmt = chaincfg.LogFmt
+
 	// } else {
 	// if GenesisSignatureStr != "" {
 	// 	c.GenesisSignature, err = cipher.SigFromHex(GenesisSignatureStr)

@@ -41,7 +41,7 @@ func TestGenerateAddresses(t *testing.T) {
 	loadJSON(t, wltPath, &w)
 
 	var expect wallet.ReadableWallet
-	loadJSON(t, "generateAddresses.golden", &expect)
+	loadJSON(t, filepath.Join("golden", "generateAddresses.golden"), &expect)
 	require.Equal(t, expect, w)
 }
 
@@ -69,7 +69,7 @@ func TestStableStatus(t *testing.T) {
 		webrpc.StatusResult
 		RPCAddress string `json:"webrpc_address"`
 	}
-	loadJSON(t, "status.golden", &expect)
+	loadJSON(t, filepath.Join("golden", "status.golden"), &expect)
 
 	require.Equal(t, expect, ret)
 }
@@ -91,7 +91,7 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	dir, clean, err := createTempWalletFile("integration_test.wlt")
+	dir, clean, err := createTempWalletFile(filepath.Join("fixtures", "integration_test.wlt"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
@@ -114,15 +114,15 @@ func TestMain(m *testing.M) {
 	os.Exit(ret)
 }
 
-// createTempWalletFile creates a temporary dir, and copy the ./integration_test.wlt file to dir.
+// createTempWalletFile creates a temporary dir, and copy the 'from' file to dir.
 // returns the temporary dir path, cleanup callback function, and error if any.
-func createTempWalletFile(fromPath string) (string, func(), error) {
+func createTempWalletFile(from string) (string, func(), error) {
 	dir, err := ioutil.TempDir("", "integration_test")
 	if err != nil {
 		return "", nil, fmt.Errorf("Get temporary dir failed: %v", err)
 	}
 
-	// Copy the ./integration_test.wlt to the temporary dir.
+	// Copy the  the temporary dir.
 	wltPath := filepath.Join(dir, walletName)
 	f, err := os.Create(wltPath)
 	if err != nil {
@@ -131,9 +131,9 @@ func createTempWalletFile(fromPath string) (string, func(), error) {
 
 	defer f.Close()
 
-	rf, err := os.Open(fromPath)
+	rf, err := os.Open(from)
 	if err != nil {
-		return "", nil, fmt.Errorf("Open ./integration_test.wlt failed: %v", err)
+		return "", nil, fmt.Errorf("Open %v failed: %v", from, err)
 	}
 
 	defer rf.Close()

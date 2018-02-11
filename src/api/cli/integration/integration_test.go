@@ -45,7 +45,7 @@ func TestGenerateAddresses(t *testing.T) {
 	require.Equal(t, expect, w)
 }
 
-func TestStabeStatus(t *testing.T) {
+func TestStableStatus(t *testing.T) {
 	if !doStable(t) {
 		return
 	}
@@ -74,6 +74,7 @@ func TestStabeStatus(t *testing.T) {
 	require.Equal(t, expect, ret)
 }
 
+// Do setup and teardown here.
 func TestMain(m *testing.M) {
 	abs, err := filepath.Abs(binaryName)
 	if err != nil {
@@ -82,6 +83,7 @@ func TestMain(m *testing.M) {
 	}
 
 	binaryPath = abs
+
 	// Build cli binary file.
 	args := []string{"build", "-o", binaryPath, "../../../../cmd/cli/cli.go"}
 	if err := exec.Command("go", args...).Run(); err != nil {
@@ -102,7 +104,8 @@ func TestMain(m *testing.M) {
 	os.Setenv("WALLET_NAME", walletName)
 
 	ret := m.Run()
-	// Remove the geneate cli binary file.
+
+	// Remove the generated cli binary file.
 	if err := os.Remove(binaryPath); err != nil {
 		fmt.Fprintf(os.Stderr, fmt.Sprintf("Delete %v failed: %v", binaryName, err))
 		os.Exit(1)
@@ -151,14 +154,6 @@ func loadJSON(t *testing.T, filename string, obj interface{}) {
 
 	err = json.NewDecoder(f).Decode(obj)
 	require.NoError(t, err)
-}
-
-func nodeAddress() string {
-	addr := os.Getenv("SKYCOIN_NODE_HOST")
-	if addr == "" {
-		return "http://127.0.0.1:6420"
-	}
-	return addr
 }
 
 func mode(t *testing.T) string {

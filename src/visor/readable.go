@@ -470,6 +470,7 @@ func NewGenesisReadableTransaction(t *Transaction, inData []*historydb.UxOut) (*
 
 		Sigs: sigs,
 		In:   in,
+		InData: inInfo,
 		Out:  out,
 	}, nil
 }

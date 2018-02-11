@@ -21,6 +21,14 @@
 				"inputs": [
 					"ec2c2238793d71240502de3e7c46ec1d5bf938c76541185f1c3fdf0d99a90795"
 				],
+				"inputs_data": [
+                    {
+                        "uxid": "ec2c2238793d71240502de3e7c46ec1d5bf938c76541185f1c3fdf0d99a90795",
+                        "owner": "NGLS4CYvBdV9HXJDpeY8jrdQDqLeBvfAwc",
+                        "coins": "5.000000",
+                        "hours": "0"
+                    }
+                ],
 				"outputs": [
 					{
 						"uxid": "9c7d3674d7a6b28a559a052e6d354ec13d2e0396739973c9f0dce08f8c7d157c",

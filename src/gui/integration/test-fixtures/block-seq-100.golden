@@ -21,6 +21,14 @@
 				"inputs": [
 					"aee4af7e06c24bccc2f87b16d0708bfea68ac1b420f97914965f4a23ad9e11d6"
 				],
+				"inputs_data": [
+                    {
+                        "uxid": "aee4af7e06c24bccc2f87b16d0708bfea68ac1b420f97914965f4a23ad9e11d6",
+                        "owner": "qxmeHkwgAMfwXyaQrwv9jq3qt228xMuoT5",
+                        "coins": "23000.000000",
+                        "hours": "294"
+                    }
+                ],
 				"outputs": [
 					{
 						"uxid": "194cc596d2beda803d8142ddc455872082f84b09a5edd8085082b60d314c1e29",

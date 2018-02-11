@@ -74,6 +74,24 @@ func TestStableStatus(t *testing.T) {
 	require.Equal(t, expect, ret)
 }
 
+func TestLiveStatus(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	output, err := exec.Command(binaryPath, "status").CombinedOutput()
+	require.NoError(t, err)
+
+	var ret struct {
+		webrpc.StatusResult
+		RPCAddress string `json:"webrpc_address"`
+	}
+
+	require.NoError(t, json.NewDecoder(bytes.NewReader(output)).Decode(&ret))
+	require.True(t, ret.Running)
+	require.Equal(t, ret.RPCAddress, rpcAddress())
+}
+
 // Do setup and teardown here.
 func TestMain(m *testing.M) {
 	abs, err := filepath.Abs(binaryName)
@@ -188,4 +206,13 @@ func doLive(t *testing.T) bool {
 
 	t.Skip("Live tests disabled")
 	return false
+}
+
+func rpcAddress() string {
+	rpcAddr := os.Getenv("RPC_ADDR")
+	if rpcAddr == "" {
+		rpcAddr = "127.0.0.1:6430"
+	}
+
+	return rpcAddr
 }

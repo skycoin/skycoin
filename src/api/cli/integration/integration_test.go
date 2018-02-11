@@ -3,6 +3,8 @@ package cli_integration_test
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -13,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
+	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 	"github.com/stretchr/testify/require"
 )
@@ -30,7 +33,13 @@ var (
 	walletDir  string
 )
 
+var update = flag.Bool("update", false, "update golden files")
+
 func TestGenerateAddresses(t *testing.T) {
+	if !doLive(t) && !doStable(t) {
+		return
+	}
+
 	output, err := exec.Command(binaryPath, "generateAddresses").CombinedOutput()
 	require.NoError(t, err)
 	o := strings.Trim(string(output), "\n")
@@ -57,10 +66,8 @@ func TestStableStatus(t *testing.T) {
 		RPCAddress string `json:"webrpc_address"`
 	}
 
-	if err := json.NewDecoder(bytes.NewReader(output)).Decode(&ret); err != nil {
-		fmt.Fprintf(os.Stderr, "Decode result failed: %v", err)
-		os.Exit(1)
-	}
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&ret)
+	require.NoError(t, err)
 
 	// TimeSinceLastBlock is not stable
 	ret.TimeSinceLastBlock = ""
@@ -90,6 +97,70 @@ func TestLiveStatus(t *testing.T) {
 	require.NoError(t, json.NewDecoder(bytes.NewReader(output)).Decode(&ret))
 	require.True(t, ret.Running)
 	require.Equal(t, ret.RPCAddress, rpcAddress())
+}
+
+func TestStableTransaction(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	tt := []struct {
+		name       string
+		args       []string
+		err        error
+		errMsg     string
+		goldenFile string
+	}{
+		{
+			"invalid txid",
+			[]string{"abcd"},
+			errors.New("exit status 1"),
+			"invalid txid\n",
+			"",
+		},
+		{
+			"not exist",
+			[]string{"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947"},
+			errors.New("exit status 1"),
+			"transaction doesn't exist [code: -32600]\n",
+			"",
+		},
+		{
+			"empty txid",
+			[]string{""},
+			errors.New("exit status 1"),
+			"txid is empty\n",
+			"",
+		},
+		{
+			"genesis transaction",
+			[]string{"d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add"},
+			nil,
+			"",
+			"./golden/genesisTransaction.golden",
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			args := append([]string{"transaction"}, tc.args...)
+			o, err := exec.Command(binaryPath, args...).CombinedOutput()
+			if err != nil {
+				require.Equal(t, tc.err.Error(), err.Error())
+				require.Equal(t, tc.errMsg, string(o))
+				return
+			}
+
+			// Decode the output into visor.TransactionJSON
+			var tx visor.TransactionJSON
+			require.NoError(t, json.NewDecoder(bytes.NewReader(o)).Decode(&tx))
+
+			var expect visor.TransactionJSON
+			loadJSON(t, tc.goldenFile, &expect)
+
+			require.Equal(t, expect, tx)
+		})
+	}
 }
 
 // Do setup and teardown here.
@@ -172,6 +243,14 @@ func loadJSON(t *testing.T, filename string, obj interface{}) {
 
 	err = json.NewDecoder(f).Decode(obj)
 	require.NoError(t, err)
+}
+
+func writeJSON(t *testing.T, filename string, obj interface{}) {
+	f, err := os.Create(filename)
+	require.NoError(t, err)
+	defer f.Close()
+
+	require.NoError(t, json.NewEncoder(f).Encode(obj))
 }
 
 func mode(t *testing.T) string {

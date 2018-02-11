@@ -29,7 +29,7 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
     - [Run Skycoin from the command line](#run-skycoin-from-the-command-line)
     - [Show Skycoin node options](#show-skycoin-node-options)
     - [Run Skycoin with options](#run-skycoin-with-options)
-    - [Docker image](#docker-image)
+    - [Docker images](#docker-images)
 - [API Documentation](#api-documentation)
     - [Wallet REST API](#wallet-rest-api)
     - [JSON-RPC 2.0 API](#json-rpc-20-api)
@@ -110,7 +110,9 @@ cd $GOPATH/src/github.com/skycoin/skycoin
 make ARGS="--launch-browser=false" run
 ```
 
-### Docker image
+### Docker images
+
+#### Mainnet
 
 ```
 $ docker volume create skycoin-data
@@ -127,6 +129,31 @@ $ docker run -ti --rm \
 Access the dashboard: [http://localhost:6420](http://localhost:6420).
 
 Access the API: [http://localhost:6420/version](http://localhost:6420/version).
+
+#### Multi-node testnet
+
+Setup multiple container nodes connected and running a Skycoin testnet as follows
+
+```sh
+go run $GOPATH/src/github.com/skycoin/skycoin/docker/images/testnet/testnet.go
+```
+
+This will generate and run a docker-compose.yaml file providing:
+
+- one virtual network
+- one master node running testnet and connected to the virtual network
+- a configurable (`-nodes`) number of nodes connected to the virtual network
+- one testnet node running browser (aforementioned nodes will not)
+- one container running a centralized logging server, and
+  all testnet nodes configured to aggregate log entries through it
+- one container running [Skycoin Explore](https://github.com/skycoin/skycoin-explorer)
+  configured to retrieve block information from the testnet master node
+
+All testnet nodes will be configured with `IPaddr:port` pairs of all
+testnet nodes connected to the virtual network so as to establish trusted
+connections at startup.
+
+TODO: Document option to load an existing blockchain DB
 
 ## API Documentation
 

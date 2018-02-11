@@ -559,14 +559,14 @@ func (m *GatewayerMock) GetTrustConnections() []string {
 }
 
 // GetUnspentOutputs mocked method
-func (m *GatewayerMock) GetUnspentOutputs(p0 ...daemon.OutputsFilter) (visor.ReadableOutputSet, error) {
+func (m *GatewayerMock) GetUnspentOutputs(p0 ...daemon.OutputsFilter) (*visor.ReadableOutputSet, error) {
 
 	ret := m.Called(p0)
 
-	var r0 visor.ReadableOutputSet
+	var r0 *visor.ReadableOutputSet
 	switch res := ret.Get(0).(type) {
 	case nil:
-	case visor.ReadableOutputSet:
+	case *visor.ReadableOutputSet:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))

@@ -28,7 +28,7 @@ type Gatewayer interface {
 	GetBlocks(start, end uint64) (*visor.ReadableBlocks, error)
 	GetLastBlocks(num uint64) (*visor.ReadableBlocks, error)
 	GetBuildInfo() visor.BuildInfo
-	GetUnspentOutputs(filters ...daemon.OutputsFilter) (visor.ReadableOutputSet, error)
+	GetUnspentOutputs(filters ...daemon.OutputsFilter) (*visor.ReadableOutputSet, error)
 	GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair, error)
 	GetBlockchainMetadata() *visor.BlockchainMetadata
 	GetBlockchainProgress() *daemon.BlockchainProgress

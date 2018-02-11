@@ -288,7 +288,7 @@ func TestCoinSupply(t *testing.T) {
 			},
 		},
 	}
-	var filterInUnlocked []daemon.OutputsFilter = nil
+	var filterInUnlocked []daemon.OutputsFilter
 	filterInUnlocked = append(filterInUnlocked, daemon.FbyAddresses(unlockedAddrs))
 	tt := []struct {
 		name                           string
@@ -296,7 +296,7 @@ func TestCoinSupply(t *testing.T) {
 		status                         int
 		err                            string
 		gatewayGetUnspentOutputsArg    []daemon.OutputsFilter
-		gatewayGetUnspentOutputsResult visor.ReadableOutputSet
+		gatewayGetUnspentOutputsResult *visor.ReadableOutputSet
 		gatewayGetUnspentOutputsErr    error
 		result                         *CoinSupply
 		csrfDisabled                   bool
@@ -329,7 +329,7 @@ func TestCoinSupply(t *testing.T) {
 			status: http.StatusInternalServerError,
 			err:    "500 Internal Server Error",
 			gatewayGetUnspentOutputsArg: filterInUnlocked,
-			gatewayGetUnspentOutputsResult: visor.ReadableOutputSet{
+			gatewayGetUnspentOutputsResult: &visor.ReadableOutputSet{
 				HeadOutputs: visor.ReadableOutputs{
 					visor.ReadableOutput{
 						Coins:   "9223372036854775807",
@@ -347,7 +347,7 @@ func TestCoinSupply(t *testing.T) {
 			status: http.StatusOK,
 
 			gatewayGetUnspentOutputsArg: filterInUnlocked,
-			gatewayGetUnspentOutputsResult: visor.ReadableOutputSet{
+			gatewayGetUnspentOutputsResult: &visor.ReadableOutputSet{
 				HeadOutputs: visor.ReadableOutputs{
 					visor.ReadableOutput{
 						Coins: "0",

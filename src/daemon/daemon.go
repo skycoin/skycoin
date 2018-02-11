@@ -530,7 +530,9 @@ loop:
 				logger.Error("dm.Visor.RemoveInvalidUnconfirmed failed: %v", err)
 				continue
 			}
-			logger.Info("Remove %d txns from pool that began violating hard constraints", len(removedTxns))
+			if len(removedTxns) > 0 {
+				logger.Info("Remove %d txns from pool that began violating hard constraints", len(removedTxns))
+			}
 
 		case <-blocksRequestTicker:
 			elapser.Register("blocksRequestTicker")

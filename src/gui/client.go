@@ -58,7 +58,7 @@ func (c *Client) Get(endpoint string, obj interface{}) error {
 			return err
 		}
 
-		return &APIError{
+		return APIError{
 			Status:     resp.Status,
 			StatusCode: resp.StatusCode,
 			Message:    string(body),
@@ -122,7 +122,7 @@ func (c *Client) CSRF() (string, error) {
 			return "", err
 		}
 
-		return "", &APIError{
+		return "", APIError{
 			Status:     resp.Status,
 			StatusCode: resp.StatusCode,
 			Message:    string(body),

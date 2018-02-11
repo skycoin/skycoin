@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"text/template"
@@ -297,8 +298,11 @@ func (t *SkyCoinTestNetwork) prepareTestEnv(tempDir string) {
 }
 
 func main() {
+	_, callerFile, _, _ := runtime.Caller(0)
+	projectPath, _ := filepath.Abs(filepath.Join(filepath.Dir(callerFile), "../../../"))
+	log.Print("Source code base dir at ", projectPath)
 	nodesPtr := flag.Int("-nodes", 5, "Number of nodes to launch.")
-	buildContextPtr := flag.String("-buildcontext", "../../../", "Docker build context (source code root).")
+	buildContextPtr := flag.String("-buildcontext", projectPath, "Docker build context (source code root).")
 	flag.Parse()
 	buildContext, err := filepath.Abs(*buildContextPtr)
 	tempDir, err := ioutil.TempDir("", "skycointest")

@@ -468,10 +468,10 @@ func NewGenesisReadableTransaction(t *Transaction, inData []*historydb.UxOut) (*
 		InnerHash: t.Txn.InnerHash.Hex(),
 		Timestamp: t.Time,
 
-		Sigs: sigs,
-		In:   in,
+		Sigs:   sigs,
+		In:     in,
 		InData: inInfo,
-		Out:  out,
+		Out:    out,
 	}, nil
 }
 

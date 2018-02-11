@@ -39,12 +39,18 @@ but the response is checked to be unmarshallable to a known JSON object.
 TODO: When go1.10 is released, use the new DisallowUnknownFields property of the JSON decoder, to detect when
 an API adds a new field to the response. See: https://tip.golang.org/doc/go1.10#encoding/json
 
+When update flag is set to true all tests pass
 */
 
 const (
 	testModeStable = "stable"
 	testModeLive   = "live"
 )
+
+type TestData struct {
+	actual   interface{}
+	expected interface{}
+}
 
 var update = flag.Bool("update", false, "update golden files")
 
@@ -90,13 +96,18 @@ func doLive(t *testing.T) bool {
 	return false
 }
 
-func loadJSON(t *testing.T, filename string, obj interface{}) {
-	f, err := os.Open(filename)
+func loadJSON(t *testing.T, filename string, testData *TestData) {
+	goldenFile := filepath.Join("test-fixtures", filename)
+	f, err := os.Open(goldenFile)
+
+	if *update {
+		updateGoldenFile(t, goldenFile, testData.actual)
+	}
 
 	require.NoError(t, err)
 	defer f.Close()
 
-	err = json.NewDecoder(f).Decode(obj)
+	err = json.NewDecoder(f).Decode(testData.expected)
 	require.NoError(t, err)
 }
 
@@ -124,13 +135,8 @@ func TestStableCoinSupply(t *testing.T) {
 	cs, err := c.CoinSupply()
 	require.NoError(t, err)
 
-	goldenFile := filepath.Join("test-fixtures", "coinsupply.golden")
-	if *update {
-		updateGoldenFile(t, goldenFile, cs)
-	}
-
 	var expected gui.CoinSupply
-	loadJSON(t, goldenFile, &expected)
+	loadJSON(t, "coinsupply.golden", &TestData{cs, &expected})
 
 	require.Equal(t, expected, *cs)
 }
@@ -235,11 +241,7 @@ func TestStableOutputs(t *testing.T) {
 			require.NoError(t, err)
 
 			var expected visor.ReadableOutputSet
-			goldenFile := filepath.Join("test-fixtures", tc.golden)
-			if *update {
-				updateGoldenFile(t, goldenFile, outputs)
-			}
-			loadJSON(t, goldenFile, &expected)
+			loadJSON(t, tc.golden, &TestData{outputs, &expected})
 
 			require.Equal(t, len(expected.HeadOutputs), len(outputs.HeadOutputs))
 			require.Equal(t, len(expected.OutgoingOutputs), len(outputs.OutgoingOutputs))
@@ -352,11 +354,7 @@ func testKnownBlocks(t *testing.T) {
 			require.NotNil(t, b)
 
 			var expected visor.ReadableBlock
-			goldenFile := filepath.Join("test-fixtures", tc.golden)
-			if *update {
-				updateGoldenFile(t, goldenFile, b)
-			}
-			loadJSON(t, goldenFile, &expected)
+			loadJSON(t, tc.golden, &TestData{b, &expected})
 
 			require.Equal(t, expected, *b)
 		})
@@ -401,11 +399,7 @@ func TestStableBlockchainMetadata(t *testing.T) {
 	require.NoError(t, err)
 
 	var expected visor.BlockchainMetadata
-	goldenFile := filepath.Join("test-fixtures", "blockchain-metadata.golden")
-	if *update {
-		updateGoldenFile(t, goldenFile, metadata)
-	}
-	loadJSON(t, goldenFile, &expected)
+	loadJSON(t, "blockchain-metadata.golden", &TestData{metadata, &expected})
 
 	require.Equal(t, expected, *metadata)
 }
@@ -434,11 +428,7 @@ func TestStableBlockchainProgress(t *testing.T) {
 	require.NoError(t, err)
 
 	var expected daemon.BlockchainProgress
-	goldenFile := filepath.Join("test-fixtures", "blockchain-progress.golden")
-	if *update {
-		updateGoldenFile(t, goldenFile, progress)
-	}
-	loadJSON(t, goldenFile, &expected)
+	loadJSON(t, "blockchain-progress.golden", &TestData{progress, &expected})
 
 	require.Equal(t, expected, *progress)
 }
@@ -502,11 +492,7 @@ func TestStableBalance(t *testing.T) {
 			require.NoError(t, err)
 
 			var expected wallet.BalancePair
-			goldenFile := filepath.Join("test-fixtures", tc.golden)
-			if *update {
-				updateGoldenFile(t, goldenFile, balance)
-			}
-			loadJSON(t, goldenFile, &expected)
+			loadJSON(t, tc.golden, &TestData{balance, &expected})
 
 			require.Equal(t, expected, *balance)
 		})
@@ -574,11 +560,7 @@ func TestStableUxOut(t *testing.T) {
 			require.NoError(t, err)
 
 			var expected historydb.UxOutJSON
-			goldenFile := filepath.Join("test-fixtures", tc.golden)
-			if *update {
-				updateGoldenFile(t, goldenFile, ux)
-			}
-			loadJSON(t, goldenFile, &expected)
+			loadJSON(t, tc.golden, &TestData{ux, &expected})
 
 			require.Equal(t, expected, *ux)
 		})
@@ -600,11 +582,7 @@ func TestLiveUxOut(t *testing.T) {
 	require.NoError(t, err)
 
 	var expected historydb.UxOutJSON
-	goldenFile := filepath.Join("test-fixtures", "uxout-spent.golden")
-	if *update {
-		updateGoldenFile(t, goldenFile, ux)
-	}
-	loadJSON(t, goldenFile, &expected)
+	loadJSON(t, "uxout-spent.golden", &TestData{ux, &expected})
 	require.Equal(t, expected, *ux)
 	require.NotEqual(t, uint64(0), ux.SpentBlockSeq)
 

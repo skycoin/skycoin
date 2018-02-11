@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 
+	"unicode"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/util/file"
@@ -296,32 +298,21 @@ func newIndexHandler(appLoc string) http.HandlerFunc {
 }
 
 func splitCommaString(s string) []string {
-	s = strings.TrimSpace(s)
-	vs := strings.Split(s, ",")
-	for i := range vs {
-		vs[i] = strings.TrimSpace(vs[i])
-	}
-
-	// Filter empty strings
-	outs := make([]string, 0, len(vs))
-	for _, v := range vs {
-		if v != "" {
-			outs = append(outs, v)
+	words := strings.FieldsFunc(s, func(r rune) bool {
+		return r == ',' || unicode.IsSpace(r)
+	})
+	// Deduplicate
+	seen := make(map[string]struct{}, len(words))
+	for i := 0; i < len(words); i++ {
+		w := words[i]
+		if _, ok := seen[w]; ok {
+			// Delete the already existing string
+			words = append(words[:i], words[i+1:]...)
+		} else {
+			seen[w] = struct{}{}
 		}
 	}
-
-	// Deduplicate
-	m := make(map[string]struct{}, len(outs))
-	for _, a := range outs {
-		m[a] = struct{}{}
-	}
-
-	deduped := make([]string, 0, len(m))
-	for a := range m {
-		deduped = append(deduped, a)
-	}
-
-	return deduped
+	return words
 }
 
 // getOutputsHandler returns UxOuts filtered by a set of addresses or a set of hashes

@@ -9,7 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pkg/errors"
+	"errors"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 

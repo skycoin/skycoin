@@ -55,8 +55,6 @@ var (
 	BlockchainPubkeyStr = ""
 	// BlockchainSeckeyStr empty private key string
 	BlockchainSeckeyStr = ""
-	// BlockchainSeckeyStr empty private key string
-	BlockchainSeckey = ""
 
 	TrustedPeerlistFileName = "connections.txt"
 )
@@ -342,10 +340,10 @@ func (c *Config) postProcess(chaincfg ChainConfig) {
 	// }
 	// }
 
-	if BlockchainSeckey != "" {
-		c.BlockchainSeckey, err = cipher.SecKeyFromHex(BlockchainSeckey)
+	if BlockchainSeckeyStr != "" {
+		c.BlockchainSeckey, err = cipher.SecKeyFromHex(BlockchainSeckeyStr)
 		panicIfError(err, "Invalid Seckey")
-		BlockchainSeckey = ""
+		BlockchainSeckeyStr = ""
 	}
 
 	c.DataDirectory, err = file.InitDataDir(c.DataDirectory)
@@ -906,6 +904,7 @@ var TestChainCfg = ChainConfig{
 	GenesisSignature:  "07f46ce7502147a97f2fb32c7c1e66638af851c1cb532d893f1f360bb4ab1ccf0656f2f358695e8cb752e05080af69c8f44b0d72610bd11e3fb028ecdcfed2ea01",
 	GenesisAddress:    "F5k1VyFHZGJgQADWpmMEW8Se2HNidFm9k3",
 	BlockchainPubkey:  "03b2595c36f542bf4d3cf347327fef1e21cbe0600c281efed5f673eb0c77298e4c",
+	BlockchainSeckey:  "",
 	GenesisTimestamp:  1505801448,
 	GenesisCoinVolume: 100e12,
 	Port:              16000,

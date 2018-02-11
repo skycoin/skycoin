@@ -5,6 +5,9 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/util/file"
+	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
 	"os"
@@ -12,9 +15,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
-
-	"github.com/skycoin/skycoin/src/cipher"
-	//"strings"
+	"strings"
 	"text/template"
 )
 
@@ -30,6 +31,7 @@ type dockerService struct {
 	ImageName         string
 	ImageTag          string
 	NodesNum          int
+	Ports             []string
 }
 type serviceBuild struct {
 	Context    string
@@ -39,10 +41,12 @@ type serviceNetwork struct {
 	IPv4Address string `yaml:"ipv4_address"`
 }
 type service struct {
-	Image    string
-	Build    serviceBuild
-	Networks map[string]serviceNetwork
-	Volumes  []string
+	Image       string
+	Build       serviceBuild
+	Networks    map[string]serviceNetwork
+	Volumes     []string `yaml:"volumes,omitempty"`
+	Ports       []string `yaml:"ports,omitempty"`
+	Environment []string `yaml:"environment,omitempty"`
 }
 type networkIpamConfig struct {
 	Subnet string
@@ -149,9 +153,8 @@ func NewSkyCoinTestNetwork(nodesNum int, buildContext string, tempDir string) Sk
 	commonParameters := []string{
 		"--launch-browser=false",
 		"--gui-dir=/usr/local/skycoin/static",
-		"--peerlist-url=http://172.16.200.1/peers.txt",
-		"--download-peerlist",
 		"--master-public-key=" + pubKey.Hex(),
+		"--testchain",
 	}
 	currentCommit := GetCurrentGitCommit()
 	networkName := "skycoin-" + currentCommit
@@ -166,6 +169,7 @@ func NewSkyCoinTestNetwork(nodesNum int, buildContext string, tempDir string) Sk
 			},
 			ImageTag: currentCommit,
 			NodesNum: 1,
+			Ports:    []string{"6420:6420"},
 		},
 		dockerService{
 			ImageName: "skycoin-nogui",
@@ -209,12 +213,32 @@ func NewSkyCoinTestNetwork(nodesNum int, buildContext string, tempDir string) Sk
 						IPv4Address: ipAddress,
 					},
 				},
-				Volumes: []string{dataDir + ":/root/.skycoin"},
+				Volumes: []string{dataDir + ":/root/.skycoin-test"},
+				Ports:   s.Ports,
 			}
 			t.Peers = append(t.Peers, ipAddress+":6000")
 			ipHostNum++
 		}
 		t.Services[idx].SkyCoinParameters = append(t.Services[idx].SkyCoinParameters, commonParameters...)
+	}
+	// SkyCoin Explorer
+	explorerContext, err := filepath.Abs("../../../../.../../")
+	if err != nil {
+		log.Fatal(err)
+	}
+	t.Compose.Services["skycoin-explorer"] = service{
+		Image: "skycoin-explorer:" + currentCommit,
+		Build: serviceBuild{
+			Context:    explorerContext,
+			Dockerfile: path.Join(tempDir, "Dockerfile-explorer"),
+		},
+		Networks: map[string]serviceNetwork{
+			string(networkName): serviceNetwork{
+				IPv4Address: networkAddr + strconv.Itoa(ipHostNum),
+			},
+		},
+		Ports:       []string{"8001:8001"},
+		Environment: []string{"SKYCOIN_ADDR=http://172.16.200.2:6420"},
 	}
 	return t
 }
@@ -241,27 +265,35 @@ func (t *SkyCoinTestNetwork) prepareTestEnv(tempDir string) {
 	for _, s := range t.Services {
 		s.CreateDockerFile(tempDir)
 	}
-	//peersText := []byte(strings.Join(t.Peers, "\n"))
+
+	peersText := []byte(strings.Join(t.Peers, "\n"))
 	for k := range t.Compose.Services {
 		err := os.Mkdir(path.Join(tempDir, k), os.ModePerm)
 		if err != nil {
 			log.Fatal(err)
 		}
-		/*
-			f, err := os.Create(path.Join(tempDir, k, "peers.txt"))
-			if err != nil {
-				log.Fatal(err)
-			}
-			_, err = f.Write(peersText)
-			if err != nil {
-				log.Fatal(err)
-			}
-			f.Close()
-			if err != nil {
-				log.Fatal(err)
-			}
-		*/
+		f, err := os.Create(path.Join(tempDir, k, "connections.txt"))
+		if err != nil {
+			log.Fatal(err)
+		}
+		_, err = f.Write(peersText)
+		if err != nil {
+			log.Fatal(err)
+		}
+		f.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
+	// Copies the explorer dockerfile
+	dockerfileExplorerSrc := path.Join("templates", "Dockerfile-explorer")
+	dockerfileExplorerDst := path.Join(tempDir, "Dockerfile-explorer")
+	df, err := os.Open(dockerfileExplorerSrc)
+	_, err = file.CopyFile(dockerfileExplorerDst, df)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }
 
 func main() {

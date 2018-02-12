@@ -7,7 +7,9 @@ set -euxo pipefail
 # Data is checked for the appearance of correctness but the values themselves are not verified
 
 PORT="6420"
+RPC_PORT="6430"
 HOST="http://127.0.0.1:$PORT"
+RPC_ADDR="127.0.0.1:$RPC_PORT"
 MODE="live"
 
 echo "checking if skycoin node is running"
@@ -20,3 +22,5 @@ if [ ! $? -eq 0 ]; then
 fi
 
 SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST go test ./src/gui/integration/... -timeout=3m -v
+
+SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR go test ./src/api/cli/integration/... -timeout=3m -v

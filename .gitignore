@@ -72,6 +72,7 @@ release
 /blockchain
 /generate_cert
 /address_gen
+/skycoin-integration
 
 *.pem
 
@@ -113,3 +114,5 @@ src/mesh/TODO
 *.iml
 *.test
 coverage.html
+
+src/gui/integration/wallets/

@@ -27,7 +27,7 @@ func newSendResult(addr string, m Message, err error) SendResult {
 
 // Serializes a Message over a net.Conn
 func sendMessage(conn net.Conn, msg Message, timeout time.Duration) error {
-	m := encodeMessage(msg)
+	m := EncodeMessage(msg)
 	return sendByteMessage(conn, m, timeout)
 }
 
@@ -89,8 +89,8 @@ func deserializeMessage(msg []byte, v reflect.Value) (n int, e error) {
 	return
 }
 
-// Packgs a Message into []byte containing length, id and data
-var encodeMessage = func(msg Message) []byte {
+// EncodeMessage packs a Message into []byte containing length, id and data
+func EncodeMessage(msg Message) []byte {
 	t := reflect.ValueOf(msg).Elem().Type()
 	msgID, succ := MessageIDMap[t]
 	if !succ {

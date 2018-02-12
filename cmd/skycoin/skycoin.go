@@ -94,6 +94,8 @@ type Config struct {
 	DisableNetworking bool
 	// Disables wallet API
 	DisableWalletApi bool
+	// Disable CSRF check in the wallet api
+	DisableCSRF bool
 
 	// Only run on localhost and only connect to others on localhost
 	LocalhostOnly bool
@@ -182,6 +184,7 @@ func (c *Config) register() {
 	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming", c.DisableIncomingConnections, "Don't make incoming connections")
 	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
 	flag.BoolVar(&c.DisableWalletApi, "disable-wallet-api", c.DisableWalletApi, "Disable the wallet API")
+	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable csrf check")
 	flag.StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
 
@@ -200,6 +203,7 @@ func (c *Config) register() {
 	flag.BoolVar(&c.LaunchBrowser, "launch-browser", c.LaunchBrowser, "launch system default webbrowser at client startup")
 	flag.BoolVar(&c.PrintWebInterfaceAddress, "print-web-interface-address", c.PrintWebInterfaceAddress, "print configured web interface address and exit")
 	flag.StringVar(&c.DataDirectory, "data-dir", c.DataDirectory, "directory to store app data (defaults to ~/.skycoin)")
+	flag.StringVar(&c.DBPath, "db-path", c.DBPath, "path of database file (defaults to ~/.skycoin/data.db)")
 	flag.StringVar(&c.ConnectTo, "connect-to", c.ConnectTo, "connect to this ip only")
 	flag.BoolVar(&c.ProfileCPU, "profile-cpu", c.ProfileCPU, "enable cpu profiling")
 	flag.StringVar(&c.ProfileCPUFile, "profile-cpu-file", c.ProfileCPUFile, "where to write the cpu profile file")
@@ -241,6 +245,8 @@ var devConfig = Config{
 	DisableNetworking: false,
 	// Disable wallet API
 	DisableWalletApi: false,
+	// Disable CSRF check in the wallet api
+	DisableCSRF: false,
 	// Only run on localhost and only connect to others on localhost
 	LocalhostOnly: false,
 	// Which address to serve on. Leave blank to automatically assign to a
@@ -371,28 +377,11 @@ func panicIfError(err error, msg string, args ...interface{}) {
 }
 
 func printProgramStatus() {
-	fn := "goroutine.prof"
-	logger.Debug("Writing goroutine profile to %s", fn)
 	p := pprof.Lookup("goroutine")
-	f, err := os.Create(fn)
-	defer f.Close()
-	if err != nil {
-		logger.Error("%v", err)
+	if err := p.WriteTo(os.Stdout, 2); err != nil {
+		fmt.Println("ERROR:", err)
 		return
 	}
-	err = p.WriteTo(f, 2)
-	if err != nil {
-		logger.Error("%v", err)
-		return
-	}
-}
-
-func catchInterrupt(quit chan<- struct{}) {
-	sigchan := make(chan os.Signal, 1)
-	signal.Notify(sigchan, os.Interrupt)
-	<-sigchan
-	signal.Stop(sigchan)
-	close(quit)
 }
 
 // Catches SIGUSR1 and prints internal program state
@@ -408,9 +397,37 @@ func catchDebug() {
 	}
 }
 
+func catchInterrupt(quit chan<- struct{}) {
+	sigchan := make(chan os.Signal, 1)
+	signal.Notify(sigchan, os.Interrupt)
+	<-sigchan
+	signal.Stop(sigchan)
+	close(quit)
+
+	// If ctrl-c is called again, panic so that the program state can be examined.
+	// Ctrl-c would be called again if program shutdown was stuck.
+	go catchInterruptPanic()
+}
+
+// catchInterruptPanic catches os.Interrupt and panics
+func catchInterruptPanic() {
+	sigchan := make(chan os.Signal, 1)
+	signal.Notify(sigchan, os.Interrupt)
+	<-sigchan
+	signal.Stop(sigchan)
+	printProgramStatus()
+	panic("SIGINT")
+}
+
 func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) (*gui.Server, error) {
 	var s *gui.Server
 	var err error
+
+	config := gui.ServerConfig{
+		StaticDir:   c.GUIDirectory,
+		DisableCSRF: c.DisableCSRF,
+	}
+
 	if c.WebInterfaceHTTPS {
 		// Verify cert/key parameters, and if neither exist, create them
 		if err := cert.CreateCertIfNotExists(host, c.WebInterfaceCert, c.WebInterfaceKey, "Skycoind"); err != nil {
@@ -418,9 +435,9 @@ func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) (*g
 			return nil, err
 		}
 
-		s, err = gui.CreateHTTPS(host, c.GUIDirectory, d, c.WebInterfaceCert, c.WebInterfaceKey)
+		s, err = gui.CreateHTTPS(host, config, d, c.WebInterfaceCert, c.WebInterfaceKey)
 	} else {
-		s, err = gui.Create(host, c.GUIDirectory, d)
+		s, err = gui.Create(host, config, d)
 	}
 	if err != nil {
 		logger.Error("Failed to start web GUI: %v", err)
@@ -579,6 +596,7 @@ func Run(c *Config) {
 	// creates blockchain instance
 	dconf := configureDaemon(c)
 
+	logger.Info("Opening database %s", dconf.Visor.Config.DBPath)
 	db, err := visor.OpenDB(dconf.Visor.Config.DBPath)
 	if err != nil {
 		logger.Error("Database failed to open: %v. Is another skycoin instance running?", err)

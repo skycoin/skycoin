@@ -1451,6 +1451,12 @@ func TestGetWalletFolderHandler(t *testing.T) {
 		httpResponse         WalletFolder
 	}{
 		{
+			name:   "405",
+			method: http.MethodPost,
+			status: http.StatusMethodNotAllowed,
+			err:    "405 Method Not Allowed",
+		},
+		{
 			name:                 "200",
 			method:               http.MethodGet,
 			status:               http.StatusOK,
@@ -1465,15 +1471,6 @@ func TestGetWalletFolderHandler(t *testing.T) {
 			status:          http.StatusForbidden,
 			err:             "403 Forbidden",
 			getWalletDirErr: wallet.ErrWalletApiDisabled,
-		},
-		{
-			name:                 "200 - POST",
-			method:               http.MethodPost,
-			status:               http.StatusOK,
-			getWalletDirResponse: "/wallet/folder/address",
-			httpResponse: WalletFolder{
-				Address: "/wallet/folder/address",
-			},
 		},
 	}
 

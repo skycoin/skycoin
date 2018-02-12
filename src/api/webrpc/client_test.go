@@ -13,6 +13,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
 // Tests are setup as subtests, to retain a single *WebRPC instance for scaffolding
@@ -153,7 +154,14 @@ func testClientGetTransactionByID(t *testing.T, c *Client, s *WebRPC, gw *fakeGa
 	txn, err = c.GetTransactionByID(rawTxID)
 	require.NoError(t, err)
 	expectedTxn := decodeRawTransaction(rawTxStr)
-	rbTx, err := visor.NewReadableTransaction(expectedTxn)
+	expectedInputsData := make([]*historydb.UxOut, 0, len(expectedTxn.Txn.In))
+	for _, in := range expectedTxn.Txn.In {
+		uxout, err := gw.GetUxOutByID(in)
+		require.NoError(t, err)
+		require.NotNil(t, uxout)
+		expectedInputsData = append(expectedInputsData, uxout)
+	}
+	rbTx, err := visor.NewReadableTransaction(expectedTxn, expectedInputsData)
 	require.NoError(t, err)
 	require.Equal(t, &visor.TransactionResult{
 		Status:      expectedTxn.Status,

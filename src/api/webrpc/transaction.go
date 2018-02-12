@@ -35,7 +35,7 @@ func getTransactionHandler(req Request, gateway Gatewayer) Response {
 		logger.Critical("decode txid err: %v", err)
 		return makeErrorResponse(errCodeInvalidParams, "invalid transaction hash")
 	}
-	txn, err := gateway.GetTransaction(t)
+	txn, reTx, err := gateway.GetTransaction(t)
 	if err != nil {
 		logger.Debugf("%v", err)
 		return makeErrorResponse(errCodeInternalError, errMsgInternalError)
@@ -45,13 +45,7 @@ func getTransactionHandler(req Request, gateway Gatewayer) Response {
 		return makeErrorResponse(errCodeInvalidRequest, "transaction doesn't exist")
 	}
 
-	tx, err := visor.NewTransactionResult(txn)
-	if err != nil {
-		logger.Error("%v", err)
-		return makeErrorResponse(errCodeInternalError, errMsgInternalError)
-	}
-
-	return makeSuccessResponse(req.ID, TxnResult{tx})
+	return makeSuccessResponse(req.ID, TxnResult{reTx})
 }
 
 func injectTransactionHandler(req Request, gateway Gatewayer) Response {

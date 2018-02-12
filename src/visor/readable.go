@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/skycoin/skycoin/src/visor/historydb"
+
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/wallet"
 
@@ -387,9 +389,10 @@ type ReadableTransaction struct {
 	InnerHash string `json:"inner_hash"`
 	Timestamp uint64 `json:"timestamp,omitempty"`
 
-	Sigs []string                    `json:"sigs"`
-	In   []string                    `json:"inputs"`
-	Out  []ReadableTransactionOutput `json:"outputs"`
+	Sigs   []string                    `json:"sigs"`
+	In     []string                    `json:"inputs"`
+	InData []ReadableTransactionInput  `json:"inputs_data"`
+	Out    []ReadableTransactionOutput `json:"outputs"`
 }
 
 // ReadableUnconfirmedTxn represents readable unconfirmed transaction
@@ -402,8 +405,8 @@ type ReadableUnconfirmedTxn struct {
 }
 
 // NewReadableUnconfirmedTxn creates readable unconfirmed transaction
-func NewReadableUnconfirmedTxn(unconfirmed *UnconfirmedTxn) (*ReadableUnconfirmedTxn, error) {
-	tx, err := NewReadableTransaction(&Transaction{Txn: unconfirmed.Txn})
+func NewReadableUnconfirmedTxn(unconfirmed *UnconfirmedTxn, inData []*historydb.UxOut) (*ReadableUnconfirmedTxn, error) {
+	tx, err := NewReadableTransaction(&Transaction{Txn: unconfirmed.Txn}, inData)
 	if err != nil {
 		return nil, err
 	}
@@ -417,10 +420,10 @@ func NewReadableUnconfirmedTxn(unconfirmed *UnconfirmedTxn) (*ReadableUnconfirme
 }
 
 // NewReadableUnconfirmedTxns converts []UnconfirmedTxn to []ReadableUnconfirmedTxn
-func NewReadableUnconfirmedTxns(txs []UnconfirmedTxn) ([]ReadableUnconfirmedTxn, error) {
+func NewReadableUnconfirmedTxns(txs []UnconfirmedTxn, inData [][]*historydb.UxOut) ([]ReadableUnconfirmedTxn, error) {
 	rut := make([]ReadableUnconfirmedTxn, len(txs))
 	for i := range txs {
-		tx, err := NewReadableUnconfirmedTxn(&txs[i])
+		tx, err := NewReadableUnconfirmedTxn(&txs[i], inData[i])
 		if err != nil {
 			return []ReadableUnconfirmedTxn{}, err
 		}
@@ -430,7 +433,7 @@ func NewReadableUnconfirmedTxns(txs []UnconfirmedTxn) ([]ReadableUnconfirmedTxn,
 }
 
 // NewGenesisReadableTransaction creates genesis readable transaction
-func NewGenesisReadableTransaction(t *Transaction) (*ReadableTransaction, error) {
+func NewGenesisReadableTransaction(t *Transaction, inData []*historydb.UxOut) (*ReadableTransaction, error) {
 	txid := cipher.SHA256{}
 	sigs := make([]string, len(t.Txn.Sigs))
 	for i := range t.Txn.Sigs {
@@ -440,6 +443,14 @@ func NewGenesisReadableTransaction(t *Transaction) (*ReadableTransaction, error)
 	in := make([]string, len(t.Txn.In))
 	for i := range t.Txn.In {
 		in[i] = t.Txn.In[i].Hex()
+	}
+	inInfo := make([]ReadableTransactionInput, len(inData))
+	for i := range inData {
+		in, err := NewReadableTransactionInput(inData[i].Out.Body.Hash().Hex(), inData[i].Out.Body.Address.String(), inData[i].Out.Body.Coins, inData[i].Out.Body.Hours)
+		if err != nil {
+			return nil, err
+		}
+		inInfo[i] = *in
 	}
 	out := make([]ReadableTransactionOutput, len(t.Txn.Out))
 	for i := range t.Txn.Out {
@@ -457,14 +468,15 @@ func NewGenesisReadableTransaction(t *Transaction) (*ReadableTransaction, error)
 		InnerHash: t.Txn.InnerHash.Hex(),
 		Timestamp: t.Time,
 
-		Sigs: sigs,
-		In:   in,
-		Out:  out,
+		Sigs:   sigs,
+		In:     in,
+		InData: inInfo,
+		Out:    out,
 	}, nil
 }
 
 // NewReadableTransaction creates readable transaction
-func NewReadableTransaction(t *Transaction) (*ReadableTransaction, error) {
+func NewReadableTransaction(t *Transaction, inData []*historydb.UxOut) (*ReadableTransaction, error) {
 	txid := t.Txn.Hash()
 	sigs := make([]string, len(t.Txn.Sigs))
 	for i := range t.Txn.Sigs {
@@ -474,6 +486,14 @@ func NewReadableTransaction(t *Transaction) (*ReadableTransaction, error) {
 	in := make([]string, len(t.Txn.In))
 	for i := range t.Txn.In {
 		in[i] = t.Txn.In[i].Hex()
+	}
+	inInfo := make([]ReadableTransactionInput, len(inData))
+	for i := range inData {
+		in, err := NewReadableTransactionInput(inData[i].Out.Body.Hash().Hex(), inData[i].Out.Body.Address.String(), inData[i].Out.Body.Coins, inData[i].Out.Body.Hours)
+		if err != nil {
+			return nil, err
+		}
+		inInfo[i] = *in
 	}
 	out := make([]ReadableTransactionOutput, len(t.Txn.Out))
 	for i := range t.Txn.Out {
@@ -491,9 +511,10 @@ func NewReadableTransaction(t *Transaction) (*ReadableTransaction, error) {
 		InnerHash: t.Txn.InnerHash.Hex(),
 		Timestamp: t.Time,
 
-		Sigs: sigs,
-		In:   in,
-		Out:  out,
+		Sigs:   sigs,
+		In:     in,
+		InData: inInfo,
+		Out:    out,
 	}, nil
 }
 
@@ -527,18 +548,18 @@ type ReadableBlockBody struct {
 }
 
 // NewReadableBlockBody creates readable block body
-func NewReadableBlockBody(b *coin.Block) (*ReadableBlockBody, error) {
+func NewReadableBlockBody(b *coin.Block, inData [][]*historydb.UxOut) (*ReadableBlockBody, error) {
 	txns := make([]ReadableTransaction, len(b.Body.Transactions))
 	for i := range b.Body.Transactions {
 		if b.Seq() == uint64(0) {
 			// genesis block
-			tx, err := NewGenesisReadableTransaction(&Transaction{Txn: b.Body.Transactions[i]})
+			tx, err := NewGenesisReadableTransaction(&Transaction{Txn: b.Body.Transactions[i]}, inData[i])
 			if err != nil {
 				return nil, err
 			}
 			txns[i] = *tx
 		} else {
-			tx, err := NewReadableTransaction(&Transaction{Txn: b.Body.Transactions[i]})
+			tx, err := NewReadableTransaction(&Transaction{Txn: b.Body.Transactions[i]}, inData[i])
 			if err != nil {
 				return nil, err
 			}
@@ -557,8 +578,8 @@ type ReadableBlock struct {
 }
 
 // NewReadableBlock creates readable block
-func NewReadableBlock(b *coin.Block) (*ReadableBlock, error) {
-	body, err := NewReadableBlockBody(b)
+func NewReadableBlock(b *coin.Block, inData [][]*historydb.UxOut) (*ReadableBlock, error) {
+	body, err := NewReadableBlockBody(b, inData)
 	if err != nil {
 		return nil, err
 	}
@@ -569,10 +590,10 @@ func NewReadableBlock(b *coin.Block) (*ReadableBlock, error) {
 }
 
 // NewReadableBlocks converts []coin.SignedBlock to readable blocks
-func NewReadableBlocks(blocks []coin.SignedBlock) (*ReadableBlocks, error) {
+func NewReadableBlocks(blocks []coin.SignedBlock, inData [][][]*historydb.UxOut) (*ReadableBlocks, error) {
 	rbs := make([]ReadableBlock, 0, len(blocks))
-	for _, b := range blocks {
-		rb, err := NewReadableBlock(&b.Block)
+	for i, b := range blocks {
+		rb, err := NewReadableBlock(&b.Block, inData[i])
 		if err != nil {
 			return nil, err
 		}

@@ -39,6 +39,29 @@ type fakeGateway struct {
 	uxouts               []coin.UxOut
 }
 
+func (fg *fakeGateway) GetUxOutByID(in cipher.SHA256) (*historydb.UxOut, error) {
+	pubkey, _ := cipher.PubKeyFromHex("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+
+	uxOut := historydb.UxOut{
+		SpentBlockSeq: 1,
+		SpentTxID:     cipher.SumSHA256([]byte("123")),
+		Out: coin.UxOut{
+			Head: coin.UxHead{
+				BkSeq: 1,
+				Time:  1,
+			},
+			Body: coin.UxBody{
+				Address:        cipher.AddressFromPubKey(pubkey),
+				Coins:          1,
+				Hours:          1,
+				SrcTransaction: cipher.SumSHA256([]byte("123")),
+			},
+		},
+	}
+
+	return &uxOut, nil
+}
+
 func (fg fakeGateway) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error) {
 	var blocks visor.ReadableBlocks
 	if err := json.Unmarshal([]byte(blockString), &blocks); err != nil {
@@ -83,12 +106,26 @@ func (fg fakeGateway) GetUnspentOutputs(filters ...daemon.OutputsFilter) (*visor
 	}, nil
 }
 
-func (fg fakeGateway) GetTransaction(txid cipher.SHA256) (*visor.Transaction, error) {
+func (fg fakeGateway) GetTransaction(txid cipher.SHA256) (*visor.Transaction, *visor.TransactionResult, error) {
 	str, ok := fg.transactions[txid.Hex()]
 	if ok {
-		return decodeRawTransaction(str), nil
+		tx := decodeRawTransaction(str)
+
+		inputsData := make([]*historydb.UxOut, 0, len(tx.Txn.In))
+		for _, in := range tx.Txn.In {
+			uxout, _ := fg.GetUxOutByID(in)
+			inputsData = append(inputsData, uxout)
+		}
+
+		rdTx, _ := visor.NewReadableTransaction(tx, inputsData)
+		txResult := &visor.TransactionResult{
+			Status:      tx.Status,
+			Time:        tx.Time,
+			Transaction: *rdTx,
+		}
+		return tx, txResult, nil
 	}
-	return nil, nil
+	return nil, nil, nil
 }
 
 func (fg *fakeGateway) InjectBroadcastTransaction(txn coin.Transaction) error {

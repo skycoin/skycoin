@@ -22,16 +22,11 @@ func getPendingTxs(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		txns := gateway.GetAllUnconfirmedTxns()
-		ret := make([]*visor.ReadableUnconfirmedTxn, 0, len(txns))
-		for _, unconfirmedTxn := range txns {
-			readable, err := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
-			if err != nil {
-				logger.Error("%v", err)
-				wh.Error500(w)
-				return
-			}
-			ret = append(ret, readable)
+		ret, err := gateway.GetAllUnconfirmedTxns()
+		if err != nil {
+			logger.Error("%v", err)
+			wh.Error500(w)
+			return
 		}
 
 		wh.SendOr404(w, &ret)
@@ -53,22 +48,7 @@ func getLastTxs(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		resTxs := make([]visor.TransactionResult, len(txs))
-		for i, tx := range txs {
-			rbTx, err := visor.NewReadableTransaction(tx)
-			if err != nil {
-				logger.Error("%v", err)
-				wh.Error500(w)
-				return
-			}
-
-			resTxs[i] = visor.TransactionResult{
-				Transaction: *rbTx,
-				Status:      tx.Status,
-			}
-		}
-
-		wh.SendOr404(w, &resTxs)
+		wh.SendOr404(w, txs)
 	}
 }
 
@@ -90,26 +70,14 @@ func getTransactionByID(gate Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		tx, err := gate.GetTransaction(h)
+		_, resTx, err := gate.GetTransaction(h)
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return
 		}
-		if tx == nil {
+		if resTx == nil {
 			wh.Error404(w)
 			return
-		}
-
-		rbTx, err := visor.NewReadableTransaction(tx)
-		if err != nil {
-			logger.Error("%v", err)
-			wh.Error500(w)
-			return
-		}
-
-		resTx := visor.TransactionResult{
-			Transaction: *rbTx,
-			Status:      tx.Status,
 		}
 		wh.SendOr404(w, &resTx)
 	}
@@ -151,22 +119,14 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		// Gets transactions
-		txns, err := gateway.GetTransactions(flts...)
+		txRlts, err := gateway.GetTransactions(flts...)
 		if err != nil {
 			logger.Error("get transactions failed: %v", err)
 			wh.Error500(w)
 			return
 		}
 
-		// Converts visor.Transaction to visor.TransactionResult
-		txRlts, err := visor.NewTransactionResults(txns)
-		if err != nil {
-			logger.Error("Converts []visor.Transaction to visor.TransactionResults failed: %v", err)
-			wh.Error500(w)
-			return
-		}
-
-		wh.SendOr404(w, txRlts.Txns)
+		wh.SendOr404(w, txRlts)
 	}
 }
 
@@ -259,7 +219,7 @@ func getRawTx(gate Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		tx, err := gate.GetTransaction(h)
+		tx, _, err := gate.GetTransaction(h)
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return

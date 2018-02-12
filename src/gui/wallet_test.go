@@ -42,6 +42,8 @@ func TestWalletSpendHandler(t *testing.T) {
 		gatewaySpendErr               error
 		gatewayGetWalletBalanceResult wallet.BalancePair
 		gatewayBalanceErr             error
+		gatewayGetTransactionResult   *visor.TransactionResult
+		gatewayTransactionErr         error
 		spendResult                   *SpendResult
 		csrfDisabled                  bool
 	}{
@@ -231,16 +233,48 @@ func TestWalletSpendHandler(t *testing.T) {
 			coins:              12,
 			dst:                "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
 			gatewaySpendResult: &coin.Transaction{},
-			gatewayBalanceErr:  errors.New("GetWalletBalance error"),
+			gatewayGetTransactionResult: &visor.TransactionResult{
+				Transaction: visor.ReadableTransaction{
+					Length:    0,
+					Type:      0,
+					Hash:      "78877fa898f0b4c45c9c33ae941e40617ad7c8657a307db62bc5691f92f4f60e",
+					InnerHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					Timestamp: 0,
+					Sigs:      []string{},
+					In:        []string{},
+					InData:    []visor.ReadableTransactionInput{},
+					Out:       []visor.ReadableTransactionOutput{},
+				},
+			},
+			gatewayBalanceErr: errors.New("GetWalletBalance error"),
 			spendResult: &SpendResult{
 				Error: "Get wallet balance failed: GetWalletBalance error",
 				Transaction: &visor.ReadableTransaction{
 					Sigs:      []string{},
 					In:        []string{},
+					InData:    []visor.ReadableTransactionInput{},
 					Out:       []visor.ReadableTransactionOutput{},
 					Hash:      "78877fa898f0b4c45c9c33ae941e40617ad7c8657a307db62bc5691f92f4f60e",
 					InnerHash: "0000000000000000000000000000000000000000000000000000000000000000",
 				},
+			},
+		},
+		{
+			name:   "200 - gw GetTransaction error",
+			method: http.MethodPost,
+			body: &httpBody{
+				WalletID: "1234",
+				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+				Coins:    "12",
+			},
+			status:                http.StatusOK,
+			walletID:              "1234",
+			coins:                 12,
+			dst:                   "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+			gatewaySpendResult:    &coin.Transaction{},
+			gatewayTransactionErr: errors.New("GetTransaction error"),
+			spendResult: &SpendResult{
+				Error: "Creation of new readable transaction failed: GetTransaction error",
 			},
 		},
 		{
@@ -274,6 +308,19 @@ func TestWalletSpendHandler(t *testing.T) {
 			coins:              12,
 			dst:                "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
 			gatewaySpendResult: &coin.Transaction{},
+			gatewayGetTransactionResult: &visor.TransactionResult{
+				Transaction: visor.ReadableTransaction{
+					Length:    0,
+					Type:      0,
+					Hash:      "78877fa898f0b4c45c9c33ae941e40617ad7c8657a307db62bc5691f92f4f60e",
+					InnerHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					Timestamp: 0,
+					Sigs:      []string{},
+					In:        []string{},
+					InData:    []visor.ReadableTransactionInput{},
+					Out:       []visor.ReadableTransactionOutput{},
+				},
+			},
 			spendResult: &SpendResult{
 				Balance: &wallet.BalancePair{},
 				Transaction: &visor.ReadableTransaction{
@@ -284,6 +331,7 @@ func TestWalletSpendHandler(t *testing.T) {
 					Timestamp: 0,
 					Sigs:      []string{},
 					In:        []string{},
+					InData:    []visor.ReadableTransactionInput{},
 					Out:       []visor.ReadableTransactionOutput{},
 				},
 			},
@@ -301,6 +349,19 @@ func TestWalletSpendHandler(t *testing.T) {
 			coins:              12,
 			dst:                "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
 			gatewaySpendResult: &coin.Transaction{},
+			gatewayGetTransactionResult: &visor.TransactionResult{
+				Transaction: visor.ReadableTransaction{
+					Length:    0,
+					Type:      0,
+					Hash:      "78877fa898f0b4c45c9c33ae941e40617ad7c8657a307db62bc5691f92f4f60e",
+					InnerHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					Timestamp: 0,
+					Sigs:      []string{},
+					In:        []string{},
+					InData:    []visor.ReadableTransactionInput{},
+					Out:       []visor.ReadableTransactionOutput{},
+				},
+			},
 			spendResult: &SpendResult{
 				Balance: &wallet.BalancePair{},
 				Transaction: &visor.ReadableTransaction{
@@ -311,6 +372,7 @@ func TestWalletSpendHandler(t *testing.T) {
 					Timestamp: 0,
 					Sigs:      []string{},
 					In:        []string{},
+					InData:    []visor.ReadableTransactionInput{},
 					Out:       []visor.ReadableTransactionOutput{},
 				},
 			},
@@ -328,6 +390,7 @@ func TestWalletSpendHandler(t *testing.T) {
 			addr, _ := cipher.DecodeBase58Address(tc.dst)
 			gateway.On("Spend", tc.walletID, tc.coins, addr).Return(tc.gatewaySpendResult, tc.gatewaySpendErr)
 			gateway.On("GetWalletBalance", tc.walletID).Return(tc.gatewayGetWalletBalanceResult, tc.gatewayBalanceErr)
+			gateway.On("GetTransaction", tc.gatewaySpendResult.Hash()).Return(nil, tc.gatewayGetTransactionResult, tc.gatewayTransactionErr)
 
 			endpoint := "/wallet/spend"
 

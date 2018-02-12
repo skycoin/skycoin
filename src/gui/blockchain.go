@@ -8,7 +8,6 @@ import (
 	"strconv"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/visor" //http,json helpers
 )
@@ -38,7 +37,7 @@ func getBlock(gate Gatewayer) http.HandlerFunc {
 
 		hash := r.FormValue("hash")
 		seq := r.FormValue("seq")
-		var b coin.SignedBlock
+		var b *visor.ReadableBlock
 		var exist bool
 		switch {
 		case hash == "" && seq == "":
@@ -70,14 +69,7 @@ func getBlock(gate Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		rb, err := visor.NewReadableBlock(&b.Block)
-		if err != nil {
-			logger.Error("%v", err)
-			wh.Error500(w)
-			return
-		}
-
-		wh.SendOr404(w, rb)
+		wh.SendOr404(w, b)
 	}
 }
 

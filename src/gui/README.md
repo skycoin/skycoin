@@ -370,6 +370,20 @@ result:
             "bb89d4ed40d0e6e3a82c12e70b01a4bc240d2cd4f252cfac88235abe61bd3ad0",
             "170d6fd7be1d722a1969cb3f7d45cdf4d978129c3433915dbaf098d4f075bbfc"
         ],
+        "inputs_data": [
+            {
+                "uxid": "bb89d4ed40d0e6e3a82c12e70b01a4bc240d2cd4f252cfac88235abe61bd3ad0",
+                "owner": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
+                "coins": "59.000000",
+                "hours": "418"
+            },
+            {
+                "uxid": "170d6fd7be1d722a1969cb3f7d45cdf4d978129c3433915dbaf098d4f075bbfc",
+                "owner": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
+                "coins": "2.000000",
+                "hours": "55"
+            }
+        ],
         "outputs": [
             {
                 "uxid": "ec9cf2f6052bab24ec57847c72cfb377c06958a9e04a077d07b6dd5bf23ec106",
@@ -421,6 +435,20 @@ result:
             "inputs": [
                 "bb89d4ed40d0e6e3a82c12e70b01a4bc240d2cd4f252cfac88235abe61bd3ad0",
                 "170d6fd7be1d722a1969cb3f7d45cdf4d978129c3433915dbaf098d4f075bbfc"
+            ],
+            "inputs_data": [
+                {
+                    "uxid": "bb89d4ed40d0e6e3a82c12e70b01a4bc240d2cd4f252cfac88235abe61bd3ad0",
+                    "owner": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
+                    "coins": "59.000000",
+                    "hours": "418"
+                },
+                {
+                    "uxid": "170d6fd7be1d722a1969cb3f7d45cdf4d978129c3433915dbaf098d4f075bbfc",
+                    "owner": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
+                    "coins": "2.000000",
+                    "hours": "55"
+                }
             ],
             "outputs": [
                 {
@@ -482,6 +510,14 @@ result:
         ],
         "inputs": [
             "5287f390628909dd8c25fad0feb37859c0c1ddcf90da0c040c837c89fefd9191"
+        ],
+        "inputs_data": [
+            {
+                "uxid": "5287f390628909dd8c25fad0feb37859c0c1ddcf90da0c040c837c89fefd9191",
+                "owner": "2K6NuLBBapWndAssUtkxKfCtyjDQDHrEhhT",
+                "coins": "8.000000",
+                "hours": "7454"
+            }
         ],
         "outputs": [
             {
@@ -595,6 +631,20 @@ result:
                 "4f4b0078a9cd19b3395e54b3f42af6adc997f77f04e0ca54016c67c4f2384e3c",
                 "36f4871646b6564b2f1ab72bd768a67579a1e0242bc68bcbcf1779bc75b3dddd"
             ],
+            "inputs_data": [
+                {
+                    "uxid": "4f4b0078a9cd19b3395e54b3f42af6adc997f77f04e0ca54016c67c4f2384e3c",
+                    "owner": "2K6NuLBBapWndAssUtkxKfCtyjDQDHrEhhT",
+                    "coins": "1.000000",
+                    "hours": "52836"
+                },
+                {
+                    "uxid": "36f4871646b6564b2f1ab72bd768a67579a1e0242bc68bcbcf1779bc75b3dddd",
+                    "owner": "2K6NuLBBapWndAssUtkxKfCtyjDQDHrEhhT",
+                    "coins": "8.000000",
+                    "hours": "6604"
+                }
+            ],
             "outputs": [
                 {
                     "uxid": "5287f390628909dd8c25fad0feb37859c0c1ddcf90da0c040c837c89fefd9191",
@@ -632,6 +682,14 @@ result:
             "inputs": [
                 "5287f390628909dd8c25fad0feb37859c0c1ddcf90da0c040c837c89fefd9191"
             ],
+            "inputs_data": [
+                {
+                    "uxid": "4f4b0078a9cd19b3395e54b3f42af6adc997f77f04e0ca54016c67c4f2384e3c",
+                    "owner": "2K6NuLBBapWndAssUtkxKfCtyjDQDHrEhhT",
+                    "coins": "8.000000",
+                    "hours": "7454"
+                }
+            ],
             "outputs": [
                 {
                     "uxid": "70fa9dfb887f9ef55beb4e960f60e4703c56f98201acecf2cad729f5d7e84690",
@@ -668,6 +726,32 @@ result:
                 "e811bdce52ddac0d952d2546fdca8d1ac4e0ad32f170d3d73b724fb37c802652",
                 "e94ccdbc07cc62fb41140b4daa7969438c749837c0808acf20dde113bdf1876b",
                 "534afc496a7aee2ec55c71d85abfc27f35d16c56506f663b24d8ee4815583b6e"
+            ],
+            "inputs_data": [
+                {
+                    "uxid": "dea9266aa7b687f4391e92f04436407c51a834274a5a33bc8bcf3189732e82e3",
+                    "owner": "2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc",
+                    "coins": "1.000000",
+                    "hours": "458"
+                },
+                {
+                    "uxid": "e811bdce52ddac0d952d2546fdca8d1ac4e0ad32f170d3d73b724fb37c802652",
+                    "owner": "6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY",
+                    "coins": "3.000000",
+                    "hours": "435"
+                },
+                {
+                    "uxid": "e94ccdbc07cc62fb41140b4daa7969438c749837c0808acf20dde113bdf1876b",
+                    "owner": "2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc",
+                    "coins": "1.000000",
+                    "hours": "216"
+                },
+                {
+                    "uxid": "534afc496a7aee2ec55c71d85abfc27f35d16c56506f663b24d8ee4815583b6e",
+                    "owner": "2XVjp4ehGhiWYhVJ9HcFcYYkwMUbqtMscNX",
+                    "coins": "1.000000",
+                    "hours": "107"
+                }
             ],
             "outputs": [
                 {
@@ -763,6 +847,14 @@ result:
                     "inputs": [
                             "e7594379c9a6bb111205cbfa6fac908cac1d136e207960eb0429f15fde09ac8c"
                     ],
+                    "inputs_data": [
+                        {
+                            "uxid": "e7594379c9a6bb111205cbfa6fac908cac1d136e207960eb0429f15fde09ac8c",
+                            "owner": "kbbzyrUKNVJsJDGFLAjVT5neVcx5SQjFx5",
+                            "coins": "1000.000000",
+                            "hours": "283123"
+                        }
+                    ],
                     "outputs": [
                         {
                             "uxid": "840d0ee483c1dc085e6518e1928c68979af61188b809fc74da9fca982e6a61ba",
@@ -828,6 +920,14 @@ result:
                         "inputs": [
                             "aee4af7e06c24bccc2f87b16d0708bfea68ac1b420f97914965f4a23ad9e11d6"
                         ],
+                        "inputs_data": [
+                            {
+                                "uxid": "aee4af7e06c24bccc2f87b16d0708bfea68ac1b420f97914965f4a23ad9e11d6",
+                                "owner": "qxmeHkwgAMfwXyaQrwv9jq3qt228xMuoT5",
+                                "coins": "23000.000000",
+                                "hours": "294"
+                            }
+                        ],
                         "outputs": [
                             {
                                 "uxid": "194cc596d2beda803d8142ddc455872082f84b09a5edd8085082b60d314c1e29",
@@ -862,6 +962,14 @@ result:
                         ],
                         "inputs": [
                             "6002f3afc7054c0e1161bcf2b4c1d4d1009440751bc1fe806e0eae33291399f4"
+                        ],
+                        "inputs_data": [
+                            {
+                                "uxid": "6002f3afc7054c0e1161bcf2b4c1d4d1009440751bc1fe806e0eae33291399f4",
+                                "owner": "2M1C5LSZ4Pvu5RWS44bCdY6or3R8grQw7ez",
+                                "coins": "27000.000000",
+                                "hours": "220"
+                            }
                         ],
                         "outputs": [
                             {
@@ -922,6 +1030,20 @@ result:
                         "inputs": [
                             "aa6a295c7197e4660c2e0c26d8dfab4f68d65c3acdb5f611d70f9781abd3c004",
                             "bdf3a268e177bbc6c4333c7d585ddf30b8fb123667255f90669956c3e61cda9c"
+                        ],
+                        "inputs_data": [
+                            {
+                                "uxid": "aa6a295c7197e4660c2e0c26d8dfab4f68d65c3acdb5f611d70f9781abd3c004",
+                                "owner": "B9UG4KLggfX9MNcVuMJPm11XXNDU5vkRcY",
+                                "coins": "250.000000",
+                                "hours": "147193"
+                            },
+                            {
+                                "uxid": "bdf3a268e177bbc6c4333c7d585ddf30b8fb123667255f90669956c3e61cda9c",
+                                "owner": "2LaFBnQSa6hvth26ub6oDBBrtUFmCgLYfMv",
+                                "coins": "600.000000",
+                                "hours": "26868"
+                            }
                         ],
                         "outputs": [
                             {
@@ -999,7 +1121,7 @@ Args: address
 example:
 
 ```sh
-curl http://127.0.0.1:6420/explorer/address
+curl http://127.0.0.1:6420/explorer/address?address=ANdw72kCg5HwVkn2fRgsHRu5g9Hoe3p93s
 ```
 
 result:

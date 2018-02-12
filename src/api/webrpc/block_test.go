@@ -40,7 +40,7 @@ var blockString = `{
                             "7e8ac23a2422b4666ff45192fe36b1bd05f1285cf74e077ac92cabf5a7c1100e",
                             "b3606a4f115d4161e1c8206f4fb5ac0e91551c40d0ee6fe40c86040d2faacac0",
                             "305f1983f5b630bba27e2777c229c725b6b57f37a6ddee138d1d82ae56311909"
-                        ],
+						],
                         "outputs": [
                             {
                                 "uxid": "574d7e5afaefe4ee7e0adf6ce1971d979f038adc8ebbd35771b2c19b0bad7e3d",

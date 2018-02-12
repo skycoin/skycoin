@@ -135,7 +135,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 
 		var ret SpendResult
 
-		ret.Transaction, err = visor.NewReadableTransaction(&visor.Transaction{Txn: *tx})
+		_, reTx, err := gateway.GetTransaction(tx.Hash())
 		if err != nil {
 			err = fmt.Errorf("Creation of new readable transaction failed: %v", err)
 			logger.Error(err.Error())
@@ -143,6 +143,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 			wh.SendOr404(w, ret)
 			return
 		}
+		ret.Transaction = &reTx.Transaction
 
 		// Get the new wallet balance
 		b, err := gateway.GetWalletBalance(wltID)

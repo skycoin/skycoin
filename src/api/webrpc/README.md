@@ -61,7 +61,7 @@ request:
 {
     "id": "1",
     "jsonrpc": "2.0",
-    "method": "get_blocks",
+    "method": "get_blocks_by_seq",
     "params": [133, 401, 212]
 }
 ```
@@ -79,7 +79,7 @@ request:
     "id": "1",
     "jsonrpc": "2.0",
     "method": "get_outputs",
-    "params": ["fyqX5YuwXMUs4GEUE3LjLyhrqvNztFHQ4C", "fyqX5YuwXMUs4GEUE3LjLyhrqvNztFHQ4B"]
+    "params": ["UsS43vk2yRqjXvgbwq12Dkjr8cHVTBxYoj", "fyqX5YuwXMUs4GEUE3LjLyhrqvNztFHQ4B"]
 }
 ```
 

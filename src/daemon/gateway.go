@@ -156,7 +156,7 @@ func (gw *Gateway) GetBlockchainMetadata() *visor.BlockchainMetadata {
 }
 
 // GetBlockByHash returns the block by hash
-func (gw *Gateway) GetBlockByHash(hash cipher.SHA256) (block coin.SignedBlock, ok bool) {
+func (gw *Gateway) GetBlockByHash(hash cipher.SHA256) (block *visor.ReadableBlock, ok bool) {
 	gw.strand("GetBlockByHash", func() {
 		b, err := gw.v.GetBlockByHash(hash)
 		if err != nil {
@@ -167,14 +167,19 @@ func (gw *Gateway) GetBlockByHash(hash cipher.SHA256) (block coin.SignedBlock, o
 			return
 		}
 
-		block = *b
+		block, err = getReadableFromSignedBlock(*b, gw)
+		if err != nil {
+			logger.Error("gateway.GetBlockByHash failed: %v", err)
+			return
+		}
+
 		ok = true
 	})
 	return
 }
 
 // GetBlockBySeq returns blcok by seq
-func (gw *Gateway) GetBlockBySeq(seq uint64) (block coin.SignedBlock, ok bool) {
+func (gw *Gateway) GetBlockBySeq(seq uint64) (block *visor.ReadableBlock, ok bool) {
 	gw.strand("GetBlockBySeq", func() {
 		b, err := gw.v.GetBlockBySeq(seq)
 		if err != nil {
@@ -184,10 +189,75 @@ func (gw *Gateway) GetBlockBySeq(seq uint64) (block coin.SignedBlock, ok bool) {
 		if b == nil {
 			return
 		}
-		block = *b
+
+		block, err = getReadableFromSignedBlock(*b, gw)
+		if err != nil {
+			logger.Error("gateway.GetBlockByHash failed: %v", err)
+			return
+		}
+
 		ok = true
 	})
 	return
+}
+
+// getReadableFromSignedBlock returns a ReadableBlock from a signed block
+func getReadableFromSignedBlock(block coin.SignedBlock, gw *Gateway) (*visor.ReadableBlock, error) {
+	txsInputsData, err := getSignedBlockInputsData(block, gw)
+	if err != nil {
+		return nil, err
+	}
+	rb, err := visor.NewReadableBlock(&block.Block, txsInputsData)
+	if err != nil {
+		return nil, err
+	}
+	return rb, nil
+}
+
+// getInputData returns the data of an input
+func getInputData(in cipher.SHA256, gw *Gateway) (*historydb.UxOut, error) {
+	uxout, err := gw.v.GetUxOutByID(in)
+	if err != nil {
+		return nil, err
+	}
+	if uxout == nil {
+		return nil, fmt.Errorf("uxout of %d does not exist in history db", in)
+	}
+
+	return uxout, nil
+}
+
+// getTransactionInputsData returns the inputs data of a transaction
+func getSignedBlockInputsData(block coin.SignedBlock, gw *Gateway) ([][]*historydb.UxOut, error) {
+	txsInputsData := make([][]*historydb.UxOut, 0, len(block.Body.Transactions))
+
+	for _, tx := range block.Body.Transactions {
+		inData, err := getTransactionInputsData(&tx, gw)
+		if err != nil {
+			return nil, err
+		}
+
+		txsInputsData = append(txsInputsData, inData)
+	}
+
+	return txsInputsData, nil
+}
+
+// getSignedBlocksInputsData returns the inputs data of a signed blocks slice
+func getSignedBlocksInputsData(blocks []coin.SignedBlock, gw *Gateway) ([][][]*historydb.UxOut, error) {
+
+	txsInputsData := make([][][]*historydb.UxOut, 0, len(blocks))
+	for _, block := range blocks {
+
+		blockInputsData, err := getSignedBlockInputsData(block, gw)
+		if err != nil {
+			return nil, err
+		}
+
+		txsInputsData = append(txsInputsData, blockInputsData)
+	}
+
+	return txsInputsData, nil
 }
 
 // GetBlocks returns a *visor.ReadableBlocks
@@ -197,7 +267,12 @@ func (gw *Gateway) GetBlocks(start, end uint64) (*visor.ReadableBlocks, error) {
 		blocks = gw.vrpc.GetBlocks(gw.v, start, end)
 	})
 
-	return visor.NewReadableBlocks(blocks)
+	txsInputsData, err := getSignedBlocksInputsData(blocks, gw)
+	if err != nil {
+		return nil, err
+	}
+
+	return visor.NewReadableBlocks(blocks, txsInputsData)
 }
 
 // GetBlocksInDepth returns blocks in different depth
@@ -226,7 +301,13 @@ func (gw *Gateway) GetBlocksInDepth(vs []uint64) (*visor.ReadableBlocks, error) 
 		return nil, err
 	}
 
-	return visor.NewReadableBlocks(blocks)
+	txsInputsData, err := getSignedBlocksInputsData(blocks, gw)
+	if err != nil {
+		// Error already logged
+		return nil, err
+	}
+
+	return visor.NewReadableBlocks(blocks, txsInputsData)
 }
 
 // GetLastBlocks get last N blocks
@@ -236,7 +317,13 @@ func (gw *Gateway) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error) {
 		blocks = gw.vrpc.GetLastBlocks(gw.v, num)
 	})
 
-	return visor.NewReadableBlocks(blocks)
+	txsInputsData, err := getSignedBlocksInputsData(blocks, gw)
+	if err != nil {
+		// Error already logged
+		return nil, err
+	}
+
+	return visor.NewReadableBlocks(blocks, txsInputsData)
 }
 
 // OutputsFilter used as optional arguments in GetUnspentOutputs method
@@ -360,11 +447,46 @@ func MakeSearchMap(addrs []string) map[string]struct{} {
 }
 
 // GetTransaction returns transaction by txid
-func (gw *Gateway) GetTransaction(txid cipher.SHA256) (tx *visor.Transaction, err error) {
+func (gw *Gateway) GetTransaction(txid cipher.SHA256) (tx *visor.Transaction, resTx *visor.TransactionResult, err error) {
 	gw.strand("GetTransaction", func() {
 		tx, err = gw.v.GetTransaction(txid)
+		if err == nil && tx != nil {
+			txInputsData, e := getTransactionInputsData(&tx.Txn, gw)
+			if e != nil {
+				err = e
+				return
+			}
+
+			rbTx, e := visor.NewReadableTransaction(tx, txInputsData)
+			if e != nil {
+				err = e
+				return
+			}
+
+			resTx = &visor.TransactionResult{
+				Transaction: *rbTx,
+				Status:      tx.Status,
+				Time:        tx.Time,
+			}
+		}
 	})
 	return
+}
+
+// getTransactionInputsData returns the inputs data of a transaction
+func getTransactionInputsData(tx *coin.Transaction, gw *Gateway) ([]*historydb.UxOut, error) {
+	txInputsData := make([]*historydb.UxOut, 0, len(tx.In))
+
+	for _, in := range tx.In {
+		uxout, err := getInputData(in, gw)
+		if err != nil {
+			return nil, err
+		}
+
+		txInputsData = append(txInputsData, uxout)
+	}
+
+	return txInputsData, nil
 }
 
 // GetTransactionResult gets transaction result by txid.
@@ -379,7 +501,12 @@ func (gw *Gateway) GetTransactionResult(txid cipher.SHA256) (*visor.TransactionR
 		return nil, err
 	}
 
-	return visor.NewTransactionResult(tx)
+	txInputsData, err := getTransactionInputsData(&tx.Txn, gw)
+	if err != nil {
+		return nil, err
+	}
+
+	return visor.NewTransactionResult(tx, txInputsData)
 }
 
 // InjectBroadcastTransaction injects and broadcasts a transaction
@@ -404,17 +531,53 @@ func (gw *Gateway) GetAddressTxns(a cipher.Address) (*visor.TransactionResults, 
 		return nil, err
 	}
 
-	return visor.NewTransactionResults(txs)
+	txsInputsData := make([][]*historydb.UxOut, 0, len(txs))
+	for _, tx := range txs {
+		uxout, err := getTransactionInputsData(&tx.Txn, gw)
+		if err != nil {
+			return nil, err
+		}
+
+		txsInputsData = append(txsInputsData, uxout)
+	}
+
+	return visor.NewTransactionResults(txs, txsInputsData)
 }
 
 // GetTransactions returns transactions filtered by zero or more visor.TxFilter
-func (gw *Gateway) GetTransactions(flts ...visor.TxFilter) ([]visor.Transaction, error) {
+func (gw *Gateway) GetTransactions(flts ...visor.TxFilter) ([]*visor.TransactionResult, error) {
 	var txns []visor.Transaction
+	var resTxs []*visor.TransactionResult
 	var err error
 	gw.strand("GetTransactions", func() {
 		txns, err = gw.v.GetTransactions(flts...)
+		if err != nil {
+			return
+		}
+
+		for _, tx := range txns {
+			txInputsData, e := getTransactionInputsData(&tx.Txn, gw)
+			if e != nil {
+				err = e
+				return
+			}
+
+			rbTx, e := visor.NewReadableTransaction(&tx, txInputsData)
+			if e != nil {
+				err = e
+				return
+			}
+
+			resTx := &visor.TransactionResult{
+				Transaction: *rbTx,
+				Status:      tx.Status,
+				Time:        tx.Time,
+			}
+
+			resTxs = append(resTxs, resTx)
+		}
 	})
-	return txns, err
+	return resTxs, err
 }
 
 // GetUxOutByID gets UxOut by hash id.
@@ -449,12 +612,29 @@ func (gw *Gateway) GetTimeNow() uint64 {
 }
 
 // GetAllUnconfirmedTxns returns all unconfirmed transactions
-func (gw *Gateway) GetAllUnconfirmedTxns() []visor.UnconfirmedTxn {
+func (gw *Gateway) GetAllUnconfirmedTxns() ([]*visor.ReadableUnconfirmedTxn, error) {
 	var txns []visor.UnconfirmedTxn
+	var ret []*visor.ReadableUnconfirmedTxn
+	var err error
 	gw.strand("GetAllUnconfirmedTxns", func() {
 		txns = gw.v.GetAllUnconfirmedTxns()
+		ret = make([]*visor.ReadableUnconfirmedTxn, 0, len(txns))
+		for _, unconfirmedTxn := range txns {
+			txInputsData, e := getTransactionInputsData(&unconfirmedTxn.Txn, gw)
+			if e != nil {
+				err = e
+				return
+			}
+
+			readable, e := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn, txInputsData)
+			if e != nil {
+				err = e
+				return
+			}
+			ret = append(ret, readable)
+		}
 	})
-	return txns
+	return ret, err
 }
 
 // GetUnconfirmedTxns returns addresses related unconfirmed transactions
@@ -467,13 +647,38 @@ func (gw *Gateway) GetUnconfirmedTxns(addrs []cipher.Address) []visor.Unconfirme
 }
 
 // GetLastTxs returns last confirmed transactions, return nil if empty
-func (gw *Gateway) GetLastTxs() ([]*visor.Transaction, error) {
+func (gw *Gateway) GetLastTxs() ([]*visor.TransactionResult, error) {
 	var txns []*visor.Transaction
+	var ret []*visor.TransactionResult
 	var err error
 	gw.strand("GetLastTxs", func() {
 		txns, err = gw.v.GetLastTxs()
+		if err != nil {
+			return
+		}
+
+		ret = make([]*visor.TransactionResult, len(txns))
+		for i, tx := range txns {
+			txInputsData, e := getTransactionInputsData(&tx.Txn, gw)
+			if e != nil {
+				err = e
+				return
+			}
+
+			rbTx, e := visor.NewReadableTransaction(tx, txInputsData)
+			if e != nil {
+				err = e
+				return
+			}
+
+			ret[i] = &visor.TransactionResult{
+				Transaction: *rbTx,
+				Status:      tx.Status,
+				Time:        tx.Time,
+			}
+		}
 	})
-	return txns, err
+	return ret, err
 }
 
 // GetUnspent returns the unspent pool

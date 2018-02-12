@@ -9,6 +9,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
 const (
@@ -41,7 +42,15 @@ func Test_getTransactionHandler(t *testing.T) {
 	}
 
 	tx := decodeRawTransaction(rawTxStr)
-	rbTx, err := visor.NewReadableTransaction(tx)
+	inputsData := make([]*historydb.UxOut, 0, len(tx.Txn.In))
+	gw := &fakeGateway{}
+	for _, in := range tx.Txn.In {
+		uxout, err := gw.GetUxOutByID(in)
+		require.NoError(t, err)
+		require.NotNil(t, uxout)
+		inputsData = append(inputsData, uxout)
+	}
+	rbTx, err := visor.NewReadableTransaction(tx, inputsData)
 	require.NoError(t, err)
 	txRlt := visor.TransactionResult{
 		Status: visor.TransactionStatus{

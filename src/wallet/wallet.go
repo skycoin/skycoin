@@ -203,9 +203,13 @@ func (w *Wallet) NumEntries() int {
 }
 
 // GenerateAddresses generate addresses of given number and adds them to the wallet
-func (w *Wallet) GenerateAddresses(num uint64) []cipher.Address {
+func (w *Wallet) GenerateAddresses(num uint64) ([]cipher.Address, error) {
 	if num == 0 {
-		return []cipher.Address{}
+		return nil, nil
+	}
+
+	if w.getLastSeed() == "" {
+		return nil, errors.New("missing seed in wallet")
 	}
 
 	var seckeys []cipher.SecKey
@@ -216,7 +220,7 @@ func (w *Wallet) GenerateAddresses(num uint64) []cipher.Address {
 		var err error
 		seed, err = hex.DecodeString(w.getLastSeed())
 		if err != nil {
-			logger.Panicf("decode hex seed failed: %v", err)
+			return nil, fmt.Errorf("decode hex seed failed: %v", err)
 		}
 		seed, seckeys = cipher.GenerateDeterministicKeyPairsSeed(seed, int(num))
 	}
@@ -234,7 +238,7 @@ func (w *Wallet) GenerateAddresses(num uint64) []cipher.Address {
 			Public:  p,
 		})
 	}
-	return addrs
+	return addrs, nil
 }
 
 // ScanAddresses scans ahead N addresses to find one with non-zero coins
@@ -246,7 +250,10 @@ func (w *Wallet) ScanAddresses(scanN uint64, bg BalanceGetter) error {
 	nExistingAddrs := uint64(w.NumEntries())
 
 	// Generate the addresses to scan
-	addrs := w.GenerateAddresses(scanN)
+	addrs, err := w.GenerateAddresses(scanN)
+	if err != nil {
+		return err
+	}
 
 	// Get these addresses' balances
 	bals, err := bg.GetBalanceOfAddrs(addrs)

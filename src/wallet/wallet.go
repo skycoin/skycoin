@@ -75,8 +75,7 @@ type Options struct {
 
 // NewWallet generates Deterministic Wallet
 func NewWallet(wltName string, opts Options) (*Wallet, error) {
-	seed := opts.Seed
-	if seed == "" {
+	if opts.Seed == "" {
 		return nil, errors.New("seed required")
 	}
 
@@ -90,8 +89,7 @@ func NewWallet(wltName string, opts Options) (*Wallet, error) {
 			"filename": wltName,
 			"version":  version,
 			"label":    opts.Label,
-			"seed":     seed,
-			"lastSeed": seed,
+			"seed":     opts.Seed,
 			"tm":       fmt.Sprintf("%v", time.Now().Unix()),
 			"type":     "deterministic",
 			"coin":     string(coin),
@@ -184,6 +182,11 @@ func (w *Wallet) SetLabel(label string) {
 	w.Meta["label"] = label
 }
 
+// getSeed returns the wallet initial seed
+func (w *Wallet) getSeed() string {
+	return w.Meta["seed"]
+}
+
 func (w *Wallet) getLastSeed() string {
 	return w.Meta["lastSeed"]
 }
@@ -208,14 +211,14 @@ func (w *Wallet) GenerateAddresses(num uint64) ([]cipher.Address, error) {
 		return nil, nil
 	}
 
-	if w.getLastSeed() == "" {
+	if w.getSeed() == "" {
 		return nil, errors.New("missing seed in wallet")
 	}
 
 	var seckeys []cipher.SecKey
 	var seed []byte
 	if len(w.Entries) == 0 {
-		seed, seckeys = cipher.GenerateDeterministicKeyPairsSeed([]byte(w.getLastSeed()), int(num))
+		seed, seckeys = cipher.GenerateDeterministicKeyPairsSeed([]byte(w.getSeed()), int(num))
 	} else {
 		var err error
 		seed, err = hex.DecodeString(w.getLastSeed())

@@ -8,13 +8,18 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
+	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 	"github.com/stretchr/testify/require"
 )
@@ -25,6 +30,9 @@ const (
 
 	testModeStable = "stable"
 	testModeLive   = "live"
+
+	// Number of random transactions of live transaction test.
+	randomLiveTransactionNum = 500
 )
 
 var (
@@ -32,10 +40,17 @@ var (
 	walletDir  string
 )
 
-var update = flag.Bool("update", false, "update golden files")
+var (
+	update     = flag.Bool("update", false, "update golden files")
+	liveTxFull = flag.Bool("live-tx-full", false, "run live transaction test against full blockchain")
+)
+
+func init() {
+	rand.Seed(time.Now().Unix())
+}
 
 func TestGenerateAddresses(t *testing.T) {
-	if !doLive(t) && !doStable(t) {
+	if !doLiveOrStable(t) {
 		return
 	}
 
@@ -161,21 +176,139 @@ func TestStableTransaction(t *testing.T) {
 		})
 	}
 
-	// check all transactions
-	var v struct {
-		Txids []string `json:"txids"`
-	}
-	loadJSON(t, "fixtures/txids-181.json", &v)
+	scanTransactions(t, true)
+}
 
-	for _, txid := range v.Txids {
-		t.Run(fmt.Sprintf("%v", txid), func(t *testing.T) {
-			var tx webrpc.TxnResult
-			output, err := exec.Command(binaryPath, "transaction", txid).CombinedOutput()
-			require.NoError(t, err)
-			require.NoError(t, json.NewDecoder(bytes.NewReader(output)).Decode(&tx))
-			require.Equal(t, txid, tx.Transaction.Transaction.Hash)
-		})
+func TestLiveTransaction(t *testing.T) {
+	if !doLive(t) {
+		return
 	}
+
+	o, err := exec.Command(binaryPath, "transaction", "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add").CombinedOutput()
+	require.NoError(t, err)
+	var tx webrpc.TxnResult
+	require.NoError(t, json.NewDecoder(bytes.NewReader(o)).Decode(&tx))
+
+	var expect webrpc.TxnResult
+	loadJSON(t, filepath.Join("golden", "genesisTransaction.golden"), &expect)
+	require.Equal(t, expect.Transaction.Transaction, tx.Transaction.Transaction)
+
+	scanTransactions(t, *liveTxFull)
+
+	// scan pending transactions
+	scanPendingTransactions(t)
+}
+
+func scanPendingTransactions(t *testing.T) {
+}
+
+// scanTransactions scans transactions against blockchain.
+// If fullTest is true, scan the whole blockchain, and test every transactions,
+// otherwise just test random transactions.
+func scanTransactions(t *testing.T, fullTest bool) {
+	// Gets blockchain height through "status" command
+	output, err := exec.Command(binaryPath, "status").CombinedOutput()
+	require.NoError(t, err)
+	var status struct {
+		webrpc.StatusResult
+		RPCAddress string `json:"webrpc_address"`
+	}
+	require.NoError(t, json.NewDecoder(bytes.NewReader(output)).Decode(&status))
+
+	txids := getTxids(t, status.BlockNum)
+
+	l := len(txids)
+	if !fullTest && l > randomLiveTransactionNum {
+		txidMap := make(map[string]struct{})
+		var ids []string
+		for len(txidMap) < randomLiveTransactionNum {
+			// get random txid
+			txid := txids[rand.Intn(l)]
+			if _, ok := txidMap[txid]; !ok {
+				ids = append(ids, txid)
+				txidMap[txid] = struct{}{}
+			}
+		}
+
+		// reassign the txids
+		txids = ids
+	}
+
+	checkTransctions(t, txids)
+}
+
+func checkTransctions(t *testing.T, txids []string) {
+	// Start goroutines to check transactions
+	var wg sync.WaitGroup
+	txC := make(chan string, 500)
+	for i := 0; i < 4; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				select {
+				case txid, ok := <-txC:
+					if !ok {
+						return
+					}
+
+					t.Run(fmt.Sprintf("%v", txid), func(t *testing.T) {
+						o, err := exec.Command(binaryPath, "transaction", txid).CombinedOutput()
+						require.NoError(t, err)
+						var txRlt webrpc.TxnResult
+						require.NoError(t, json.NewDecoder(bytes.NewReader(o)).Decode(&txRlt))
+						require.Equal(t, txid, txRlt.Transaction.Transaction.Hash)
+						require.True(t, txRlt.Transaction.Status.Confirmed)
+					})
+				}
+			}
+		}()
+	}
+
+	for _, txid := range txids {
+		txC <- txid
+	}
+	close(txC)
+
+	wg.Wait()
+}
+
+func getTxids(t *testing.T, blockNum uint64) []string {
+	// p represents the number of blocks that each time we query,
+	// do not get all blocks in one query, which might run out of
+	// memory when blockchain becomes very huge.
+	p := 500
+	n := int(blockNum / uint64(p))
+
+	// Collects all transactions' id
+	var txids []string
+	for i := 0; i < int(n); i++ {
+		txids = append(txids, getTxidsInBlocks(t, i*p+1, (i+1)*p)...)
+	}
+
+	if (blockNum % uint64(p)) > 0 {
+		txids = append(txids, getTxidsInBlocks(t, n*p+1, int(blockNum)-1)...)
+	}
+
+	return txids
+}
+
+func getTxidsInBlocks(t *testing.T, start, end int) []string {
+	s := strconv.Itoa(start)
+	e := strconv.Itoa(end)
+	o, err := exec.Command(binaryPath, "blocks", s, e).CombinedOutput()
+	require.NoError(t, err)
+	var blocks visor.ReadableBlocks
+	require.NoError(t, json.NewDecoder(bytes.NewReader(o)).Decode(&blocks))
+	require.Len(t, blocks.Blocks, end-start+1)
+
+	var txids []string
+	for _, b := range blocks.Blocks {
+		for _, tx := range b.Body.Transactions {
+			txids = append(txids, tx.Hash)
+		}
+	}
+	return txids
 }
 
 // Do setup and teardown here.
@@ -299,6 +432,18 @@ func doLive(t *testing.T) bool {
 	}
 
 	t.Skip("Live tests disabled")
+	return false
+}
+
+func doLiveOrStable(t *testing.T) bool {
+	if enabled() {
+		switch mode(t) {
+		case testModeStable, testModeLive:
+			return true
+		}
+	}
+
+	t.Skip("Live and stable tests disabled")
 	return false
 }
 

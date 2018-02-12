@@ -90,6 +90,7 @@ func NewWallet(wltName string, opts Options) (*Wallet, error) {
 			"version":  version,
 			"label":    opts.Label,
 			"seed":     opts.Seed,
+			"lastSeed": opts.Seed,
 			"tm":       fmt.Sprintf("%v", time.Now().Unix()),
 			"type":     "deterministic",
 			"coin":     string(coin),
@@ -213,6 +214,10 @@ func (w *Wallet) GenerateAddresses(num uint64) ([]cipher.Address, error) {
 
 	if w.getSeed() == "" {
 		return nil, errors.New("missing seed in wallet")
+	}
+
+	if w.getLastSeed() == "" {
+		return nil, errors.New("missing lastSeed in wallet")
 	}
 
 	var seckeys []cipher.SecKey

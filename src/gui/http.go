@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-
 	"unicode"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -301,18 +300,18 @@ func splitCommaString(s string) []string {
 	words := strings.FieldsFunc(s, func(r rune) bool {
 		return r == ',' || unicode.IsSpace(r)
 	})
+
 	// Deduplicate
-	seen := make(map[string]struct{}, len(words))
-	for i := 0; i < len(words); i++ {
-		w := words[i]
-		if _, ok := seen[w]; ok {
-			// Delete the already existing string
-			words = append(words[:i], words[i+1:]...)
-		} else {
-			seen[w] = struct{}{}
+	var dedupWords []string
+	wordsMap := make(map[string]struct{})
+	for _, w := range words {
+		if _, ok := wordsMap[w]; !ok {
+			dedupWords = append(dedupWords, w)
 		}
+		wordsMap[w] = struct{}{}
 	}
-	return words
+
+	return dedupWords
 }
 
 // getOutputsHandler returns UxOuts filtered by a set of addresses or a set of hashes

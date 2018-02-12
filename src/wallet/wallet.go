@@ -74,7 +74,6 @@ type Options struct {
 }
 
 // NewWallet generates Deterministic Wallet
-// generates a random seed if seed is ""
 func NewWallet(wltName string, opts Options) (*Wallet, error) {
 	seed := opts.Seed
 	if seed == "" {

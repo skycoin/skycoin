@@ -15,7 +15,7 @@ import (
 )
 
 func run() error {
-	csvFile := flag.String("csv", "", "csv file to load (format: skyaddress,amount)")
+	csvFile := flag.String("csv", "", "csv file to load (format: skyaddress,coins). coins are in whole numbers")
 	walletFile := flag.String("wallet", "", "wallet file")
 	rpcAddr := flag.String("rpc-addr", "127.0.0.1:6430", "rpc interface address")
 
@@ -96,6 +96,13 @@ func run() error {
 	}
 
 	fmt.Printf("%+v\n", tx)
+
+	// txid, err := c.InjectTransaction(tx)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// fmt.Println("txid:", txid)
 
 	return nil
 }

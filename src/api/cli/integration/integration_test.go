@@ -15,7 +15,6 @@ import (
 	"testing"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
-	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 	"github.com/stretchr/testify/require"
 )
@@ -152,13 +151,29 @@ func TestStableTransaction(t *testing.T) {
 			}
 
 			// Decode the output into visor.TransactionJSON
-			var tx visor.TransactionJSON
+			var tx webrpc.TxnResult
 			require.NoError(t, json.NewDecoder(bytes.NewReader(o)).Decode(&tx))
 
-			var expect visor.TransactionJSON
+			var expect webrpc.TxnResult
 			loadJSON(t, tc.goldenFile, &expect)
 
 			require.Equal(t, expect, tx)
+		})
+	}
+
+	// check all transactions
+	var v struct {
+		Txids []string `json:"txids"`
+	}
+	loadJSON(t, "fixtures/txids.json", &v)
+
+	for _, txid := range v.Txids {
+		t.Run(fmt.Sprintf("%v", txid), func(t *testing.T) {
+			var tx webrpc.TxnResult
+			output, err := exec.Command(binaryPath, "transaction", txid).CombinedOutput()
+			require.NoError(t, err)
+			require.NoError(t, json.NewDecoder(bytes.NewReader(output)).Decode(&tx))
+			require.Equal(t, txid, tx.Transaction.Transaction.Hash)
 		})
 	}
 }

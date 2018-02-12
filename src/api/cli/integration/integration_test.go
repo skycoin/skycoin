@@ -165,7 +165,7 @@ func TestStableTransaction(t *testing.T) {
 	var v struct {
 		Txids []string `json:"txids"`
 	}
-	loadJSON(t, "fixtures/txids.json", &v)
+	loadJSON(t, "fixtures/txids-181.json", &v)
 
 	for _, txid := range v.Txids {
 		t.Run(fmt.Sprintf("%v", txid), func(t *testing.T) {

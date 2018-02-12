@@ -241,7 +241,7 @@ func resendUnconfirmedTxns(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-func getRawTx(gate Gatewayer) http.HandlerFunc {
+func getRawTx(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -259,7 +259,7 @@ func getRawTx(gate Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		tx, err := gate.GetTransaction(h)
+		tx, err := gateway.GetTransaction(h)
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return

@@ -100,14 +100,11 @@ func doLiveOrStable(t *testing.T) bool {
 		switch mode(t) {
 		case testModeStable, testModeLive:
 			return true
-		default:
-			return false
 		}
 	}
 
 	t.Skip("Live and stable tests disabled")
 	return false
-
 }
 
 func loadJSON(t *testing.T, filename string, testData *TestData) {

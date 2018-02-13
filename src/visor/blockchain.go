@@ -645,7 +645,7 @@ func (bc *Blockchain) verifyBlockSig(seq uint64) error {
 		return err
 	}
 
-	return cipher.VerifySignature(bc.pubkey, sb.Sig, sb.Block.HashHeader())
+	return sb.VerifySignature(bc.pubkey)
 }
 
 // VerifyBlockHeader Returns error if the BlockHeader is not valid

@@ -43,7 +43,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		gatewayGetWalletBalanceResult wallet.BalancePair
 		gatewayBalanceErr             error
 		spendResult                   *SpendResult
-		hostHeader                    string
+		csrfDisabled                  bool
 	}{
 		{
 			name:     "405",
@@ -262,21 +262,6 @@ func TestWalletSpendHandler(t *testing.T) {
 			},
 		},
 		{
-			name:   "403 - Forbidden - invalid Host header",
-			method: http.MethodPost,
-			body: &httpBody{
-				WalletID: "123",
-				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
-				Coins:    "12",
-			},
-			status:     http.StatusForbidden,
-			err:        "403 Forbidden",
-			walletID:   "123",
-			coins:      12,
-			dst:        "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
-			hostHeader: "example.com",
-		},
-		{
 			name:   "200 - OK",
 			method: http.MethodPost,
 			body: &httpBody{
@@ -302,6 +287,34 @@ func TestWalletSpendHandler(t *testing.T) {
 					Out:       []visor.ReadableTransactionOutput{},
 				},
 			},
+		},
+		{
+			name:   "200 - OK - CSRF disabled",
+			method: http.MethodPost,
+			body: &httpBody{
+				WalletID: "1234",
+				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+				Coins:    "12",
+			},
+			status:             http.StatusOK,
+			walletID:           "1234",
+			coins:              12,
+			dst:                "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+			gatewaySpendResult: &coin.Transaction{},
+			spendResult: &SpendResult{
+				Balance: &wallet.BalancePair{},
+				Transaction: &visor.ReadableTransaction{
+					Length:    0,
+					Type:      0,
+					Hash:      "78877fa898f0b4c45c9c33ae941e40617ad7c8657a307db62bc5691f92f4f60e",
+					InnerHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					Timestamp: 0,
+					Sigs:      []string{},
+					In:        []string{},
+					Out:       []visor.ReadableTransactionOutput{},
+				},
+			},
+			csrfDisabled: true,
 		},
 	}
 
@@ -335,12 +348,17 @@ func TestWalletSpendHandler(t *testing.T) {
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-			if tc.hostHeader != "" {
-				req.Host = tc.hostHeader
+			csrfStore := &CSRFStore{
+				Enabled: !tc.csrfDisabled,
+			}
+			if csrfStore.Enabled {
+				setCSRFParameters(csrfStore, tokenValid, req)
+			} else {
+				setCSRFParameters(csrfStore, tokenInvalid, req)
 			}
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 
 			handler.ServeHTTP(rr, req)
 
@@ -377,7 +395,6 @@ func TestWalletGet(t *testing.T) {
 		walletID               string
 		gatewayGetWalletResult wallet.Wallet
 		gatewayGetWalletErr    error
-		hostHeader             string
 	}{
 		{
 			name:     "405",
@@ -420,17 +437,6 @@ func TestWalletGet(t *testing.T) {
 			gatewayGetWalletErr: wallet.ErrWalletApiDisabled,
 		},
 		{
-			name:   "403 - Forbidden - invalid Host header",
-			method: http.MethodGet,
-			body: &httpBody{
-				WalletID: "1234",
-			},
-			status:     http.StatusForbidden,
-			err:        "403 Forbidden",
-			walletID:   "1234",
-			hostHeader: "example.com",
-		},
-		{
 			name:   "200 - OK",
 			method: http.MethodGet,
 			body: &httpBody{
@@ -465,12 +471,13 @@ func TestWalletGet(t *testing.T) {
 		req, err := http.NewRequest(tc.method, endpoint, nil)
 		require.NoError(t, err)
 
-		if tc.hostHeader != "" {
-			req.Host = tc.hostHeader
+		csrfStore := &CSRFStore{
+			Enabled: true,
 		}
+		setCSRFParameters(csrfStore, tokenValid, req)
 
 		rr := httptest.NewRecorder()
-		handler := NewServerMux(configuredHost, ".", gateway)
+		handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 
 		handler.ServeHTTP(rr, req)
 
@@ -508,7 +515,6 @@ func TestWalletBalanceHandler(t *testing.T) {
 		gatewayGetWalletBalanceResult wallet.BalancePair
 		gatewayBalanceErr             error
 		result                        *wallet.BalancePair
-		hostHeader                    string
 	}{
 		{
 			name:     "405",
@@ -575,18 +581,6 @@ func TestWalletBalanceHandler(t *testing.T) {
 			gatewayBalanceErr:             wallet.ErrWalletApiDisabled,
 		},
 		{
-			name:   "403 - Forbidden - invalid Host header",
-			method: http.MethodGet,
-			body: &httpBody{
-				WalletID: "foo",
-			},
-			status:     http.StatusForbidden,
-			err:        "403 Forbidden",
-			walletID:   "foo",
-			hostHeader: "example.com",
-		},
-
-		{
 			name:   "200 - OK",
 			method: http.MethodGet,
 			body: &httpBody{
@@ -619,12 +613,13 @@ func TestWalletBalanceHandler(t *testing.T) {
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-			if tc.hostHeader != "" {
-				req.Host = tc.hostHeader
+			csrfStore := &CSRFStore{
+				Enabled: true,
 			}
+			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 
 			handler.ServeHTTP(rr, req)
 
@@ -664,7 +659,6 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 		label                       string
 		gatewayUpdateWalletLabelErr error
 		responseBody                string
-		hostHeader                  string
 	}{
 		{
 			name:   "405",
@@ -730,19 +724,6 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 			gatewayUpdateWalletLabelErr: wallet.ErrWalletApiDisabled,
 		},
 		{
-			name:   "403 Forbidden - invalid Host header",
-			method: http.MethodPost,
-			body: &httpBody{
-				WalletID: "foo",
-				Label:    "label",
-			},
-			status:     http.StatusForbidden,
-			err:        "403 Forbidden",
-			walletID:   "foo",
-			label:      "label",
-			hostHeader: "example.com",
-		},
-		{
 			name:   "200 OK",
 			method: http.MethodPost,
 			body: &httpBody{
@@ -779,12 +760,13 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-			if tc.hostHeader != "" {
-				req.Host = tc.hostHeader
+			csrfStore := &CSRFStore{
+				Enabled: true,
 			}
+			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 
 			handler.ServeHTTP(rr, req)
 
@@ -817,7 +799,6 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		gatewayGetWalletUnconfirmedTxnsResult []visor.UnconfirmedTxn
 		gatewayGetWalletUnconfirmedTxnsErr    error
 		responseBody                          []visor.UnconfirmedTxn
-		hostHeader                            string
 	}{
 		{
 			name:   "405",
@@ -865,17 +846,6 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			gatewayGetWalletUnconfirmedTxnsErr: wallet.ErrWalletApiDisabled,
 		},
 		{
-			name:   "403 - Forbidden - invalid Host header",
-			method: http.MethodGet,
-			body: &httpBody{
-				WalletID: "foo",
-			},
-			status:     http.StatusForbidden,
-			err:        "403 Forbidden",
-			walletID:   "foo",
-			hostHeader: "example.com",
-		},
-		{
 			name:   "200 - OK",
 			method: http.MethodGet,
 			body: &httpBody{
@@ -907,12 +877,13 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		req, err := http.NewRequest(tc.method, endpoint, nil)
 		require.NoError(t, err)
 
-		if tc.hostHeader != "" {
-			req.Host = tc.hostHeader
+		csrfStore := &CSRFStore{
+			Enabled: true,
 		}
+		setCSRFParameters(csrfStore, tokenValid, req)
 
 		rr := httptest.NewRecorder()
-		handler := NewServerMux(configuredHost, ".", gateway)
+		handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 
 		handler.ServeHTTP(rr, req)
 
@@ -953,7 +924,7 @@ func TestWalletCreateHandler(t *testing.T) {
 		scanWalletAddressesResult wallet.Wallet
 		scanWalletAddressesError  error
 		responseBody              wallet.ReadableWallet
-		hostHeader                string
+		csrfDisabled              bool
 	}{
 		{
 			name:    "405",
@@ -1062,13 +1033,6 @@ func TestWalletCreateHandler(t *testing.T) {
 			gatewayCreateWalletErr: wallet.ErrWalletApiDisabled,
 		},
 		{
-			name:       "403 - Forbidden - invalid Host header",
-			method:     http.MethodPost,
-			status:     http.StatusForbidden,
-			err:        "403 Forbidden",
-			hostHeader: "example.com",
-		},
-		{
 			name:   "200 - OK",
 			method: http.MethodPost,
 			body: &httpBody{
@@ -1093,6 +1057,34 @@ func TestWalletCreateHandler(t *testing.T) {
 				Meta:    map[string]string{},
 				Entries: wallet.ReadableEntries{},
 			},
+		},
+		// CSRF Tests
+		{
+			name:   "200 - OK - CSRF disabled",
+			method: http.MethodPost,
+			body: &httpBody{
+				Seed:  "foo",
+				Label: "bar",
+				ScanN: "2",
+			},
+			status:  http.StatusOK,
+			err:     "",
+			wltName: "filename",
+			scnN:    2,
+			options: wallet.Options{
+				Label: "bar",
+				Seed:  "foo",
+			},
+			gatewayCreateWalletResult: wallet.Wallet{
+				Meta: map[string]string{
+					"filename": "filename",
+				},
+			},
+			responseBody: wallet.ReadableWallet{
+				Meta:    map[string]string{},
+				Entries: wallet.ReadableEntries{},
+			},
+			csrfDisabled: true,
 		},
 	}
 
@@ -1120,12 +1112,17 @@ func TestWalletCreateHandler(t *testing.T) {
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		require.NoError(t, err)
 
-		if tc.hostHeader != "" {
-			req.Host = tc.hostHeader
+		csrfStore := &CSRFStore{
+			Enabled: !tc.csrfDisabled,
+		}
+		if csrfStore.Enabled {
+			setCSRFParameters(csrfStore, tokenValid, req)
+		} else {
+			setCSRFParameters(csrfStore, tokenInvalid, req)
 		}
 
 		rr := httptest.NewRecorder()
-		handler := NewServerMux(configuredHost, ".", gateway)
+		handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 
 		handler.ServeHTTP(rr, req)
 
@@ -1152,14 +1149,13 @@ func TestWalletNewSeed(t *testing.T) {
 	}
 
 	tt := []struct {
-		name       string
-		method     string
-		body       *httpBody
-		status     int
-		err        string
-		entropy    string
-		resultLen  int
-		hostHeader string
+		name      string
+		method    string
+		body      *httpBody
+		status    int
+		err       string
+		entropy   string
+		resultLen int
 	}{
 		{
 			name:   "405",
@@ -1186,13 +1182,6 @@ func TestWalletNewSeed(t *testing.T) {
 			status:  http.StatusBadRequest,
 			err:     "400 Bad Request - entropy length must be 128 or 256",
 			entropy: "200",
-		},
-		{
-			name:       "403 - Forbidden - invalid Host header",
-			method:     http.MethodGet,
-			status:     http.StatusForbidden,
-			err:        "403 Forbidden",
-			hostHeader: "example.com",
 		},
 		{
 			name:      "200 - OK with no entropy",
@@ -1246,12 +1235,13 @@ func TestWalletNewSeed(t *testing.T) {
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-			if tc.hostHeader != "" {
-				req.Host = tc.hostHeader
+			csrfStore := &CSRFStore{
+				Enabled: true,
 			}
+			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 
 			handler.ServeHTTP(rr, req)
 
@@ -1292,10 +1282,10 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 
 	for i := 0; i < 3; i++ {
 		pub, _ := cipher.GenerateDeterministicKeyPair(cipher.RandByte(32))
-
 		addrs[i] = cipher.AddressFromPubKey(pub)
 		responseAddresses.Address = append(responseAddresses.Address, addrs[i].String())
 	}
+
 	tt := []struct {
 		name                      string
 		method                    string
@@ -1307,7 +1297,7 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 		gatewayNewAddressesResult []cipher.Address
 		gatewayNewAddressesErr    error
 		responseBody              Addresses
-		hostHeader                string
+		csrfDisabled              bool
 	}{
 		{
 			name:   "405",
@@ -1358,13 +1348,6 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 			gatewayNewAddressesErr: wallet.ErrWalletApiDisabled,
 		},
 		{
-			name:       "403 - Forbidden - invalid Host header",
-			method:     http.MethodPost,
-			status:     http.StatusForbidden,
-			err:        "403 Forbidden",
-			hostHeader: "example.com",
-		},
-		{
 			name:   "200 - OK",
 			method: http.MethodPost,
 			body: &httpBody{
@@ -1390,6 +1373,20 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 			gatewayNewAddressesResult: emptyAddrs,
 			responseBody:              responseEmptyAddresses,
 		},
+		{
+			name:   "200 - OK - CSRF disabled",
+			method: http.MethodPost,
+			body: &httpBody{
+				ID:  "foo",
+				Num: "1",
+			},
+			status:   http.StatusOK,
+			walletID: "foo",
+			n:        1,
+			gatewayNewAddressesResult: addrs,
+			responseBody:              responseAddresses,
+			csrfDisabled:              true,
+		},
 	}
 
 	for _, tc := range tt {
@@ -1413,12 +1410,17 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 			require.NoError(t, err)
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-			if tc.hostHeader != "" {
-				req.Host = tc.hostHeader
+			csrfStore := &CSRFStore{
+				Enabled: !tc.csrfDisabled,
+			}
+			if csrfStore.Enabled {
+				setCSRFParameters(csrfStore, tokenValid, req)
+			} else {
+				setCSRFParameters(csrfStore, tokenInvalid, req)
 			}
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway)
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 
 			handler.ServeHTTP(rr, req)
 
@@ -1447,8 +1449,13 @@ func TestGetWalletFolderHandler(t *testing.T) {
 		getWalletDirResponse string
 		getWalletDirErr      error
 		httpResponse         WalletFolder
-		hostHeader           string
 	}{
+		{
+			name:   "405",
+			method: http.MethodPost,
+			status: http.StatusMethodNotAllowed,
+			err:    "405 Method Not Allowed",
+		},
 		{
 			name:                 "200",
 			method:               http.MethodGet,
@@ -1465,22 +1472,6 @@ func TestGetWalletFolderHandler(t *testing.T) {
 			err:             "403 Forbidden",
 			getWalletDirErr: wallet.ErrWalletApiDisabled,
 		},
-		{
-			name:       "403 - invalid Host header",
-			method:     http.MethodGet,
-			status:     http.StatusForbidden,
-			err:        "403 Forbidden",
-			hostHeader: "example.com",
-		},
-		{
-			name:                 "200 - POST",
-			method:               http.MethodPost,
-			status:               http.StatusOK,
-			getWalletDirResponse: "/wallet/folder/address",
-			httpResponse: WalletFolder{
-				Address: "/wallet/folder/address",
-			},
-		},
 	}
 
 	for _, tc := range tt {
@@ -1492,12 +1483,13 @@ func TestGetWalletFolderHandler(t *testing.T) {
 		req, err := http.NewRequest(tc.method, endpoint, nil)
 		require.NoError(t, err)
 
-		if tc.hostHeader != "" {
-			req.Host = tc.hostHeader
+		csrfStore := &CSRFStore{
+			Enabled: true,
 		}
+		setCSRFParameters(csrfStore, tokenValid, req)
 
 		rr := httptest.NewRecorder()
-		handler := NewServerMux(configuredHost, ".", gateway)
+		handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
 
 		handler.ServeHTTP(rr, req)
 

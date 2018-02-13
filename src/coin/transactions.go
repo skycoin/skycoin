@@ -485,7 +485,15 @@ func VerifyTransactionHoursSpending(headTime uint64, uxIn UxArray, uxOut UxArray
 	for i := range uxIn {
 		uxHours, err := uxIn[i].CoinHours(headTime)
 		if err != nil {
-			return err
+			// If the error was specifically an overflow when adding the
+			// earned coin hours to the base coin hours, treat the uxHours as 0.
+			// Block 13277 spends an input which overflows in this way,
+			// so the block will not sync if an error is returned.
+			if err == ErrAddEarnedCoinHoursAdditionOverflow {
+				uxHours = 0
+			} else {
+				return err
+			}
 		}
 
 		hoursIn, err = AddUint64(hoursIn, uxHours)

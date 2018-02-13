@@ -2,7 +2,6 @@ package webrpc
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -136,7 +135,6 @@ func Test_getOutputsHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			params, err := json.Marshal(tt.args.addrs)
-			fmt.Println("param:", string(params))
 			require.NoError(t, err)
 			req := Request{
 				ID:      "1",

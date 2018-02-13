@@ -71,19 +71,34 @@ export class HeaderComponent implements OnInit, OnDestroy {
   setVersion() {
     // Set build version
     this.apiService.get('version')
-      .subscribe(output =>  this.version = output.version);
+      .subscribe(output =>  {
+        this.version = output.version;
+        this.retrieveReleaseVersion();
+      });
+  }
 
-    // Set latest release version from github
+  private higherVersion(first: string, second: string): boolean {
+    const fa = first.split('.');
+    const fb = second.split('.');
+    for (let i = 0; i < 3; i++) {
+      const na = Number(fa[i]);
+      const nb = Number(fb[i]);
+      if (na > nb || !isNaN(na) && isNaN(nb)) {
+        return true;
+      } else if (na < nb || isNaN(na) && !isNaN(nb)) {
+        return false;
+      }
+    }
+    return false;
+  }
+
+  private retrieveReleaseVersion() {
     this.http.get('https://api.github.com/repos/skycoin/skycoin/tags')
       .map((res: any) => res.json())
       .catch((error: any) => Observable.throw(error || 'Unable to fetch latest release version from github.'))
       .subscribe(response =>  {
-        // Find the latest tag which is not a rc
         this.releaseVersion = response.find(element => element['name'].indexOf('rc') === -1)['name'].substr(1);
-
-        // Check if build version and release version differ
-        this.updateAvailable = (this.version !== this.releaseVersion);
-    });
+        this.updateAvailable = this.higherVersion(this.releaseVersion, this.version);
+      });
   }
-
 }

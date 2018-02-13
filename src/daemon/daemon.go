@@ -304,9 +304,9 @@ func (dm *Daemon) Shutdown() {
 		dm.Pool.Shutdown()
 	}
 
+	dm.Gateway.Shutdown()
 	dm.Pex.Shutdown()
 	dm.Visor.Shutdown()
-
 }
 
 // Run main loop for peer/connection management.
@@ -530,7 +530,9 @@ loop:
 				logger.Error("dm.Visor.RemoveInvalidUnconfirmed failed: %v", err)
 				continue
 			}
-			logger.Info("Remove %d txns from pool that began violating hard constraints", len(removedTxns))
+			if len(removedTxns) > 0 {
+				logger.Info("Remove %d txns from pool that began violating hard constraints", len(removedTxns))
+			}
 
 		case <-blocksRequestTicker:
 			elapser.Register("blocksRequestTicker")

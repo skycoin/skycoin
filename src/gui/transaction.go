@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -132,7 +131,7 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 		// Gets 'addrs' parameter value
 		addrs, err := parseAddressesFromStr(r.FormValue("addrs"))
 		if err != nil {
-			wh.Error400(w, fmt.Sprintf("parse parament: 'addrs' failed: %v", err))
+			wh.Error400(w, fmt.Sprintf("parse parameter: 'addrs' failed: %v", err))
 			return
 		}
 
@@ -171,19 +170,12 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-// Parses comma seperated addresses string into []cipher.Address,
-func parseAddressesFromStr(addrStr string) ([]cipher.Address, error) {
-	if addrStr == "" {
-		return nil, nil
-	}
+// parseAddressesFromStr parses comma seperated addresses string into []cipher.Address
+func parseAddressesFromStr(s string) ([]cipher.Address, error) {
+	addrsStr := splitCommaString(s)
 
 	var addrs []cipher.Address
-	for _, as := range strings.Split(addrStr, ",") {
-		s := strings.TrimSpace(as)
-		if s == "" {
-			continue
-		}
-
+	for _, s := range addrsStr {
 		a, err := cipher.DecodeBase58Address(s)
 		if err != nil {
 			return nil, err
@@ -195,7 +187,6 @@ func parseAddressesFromStr(addrStr string) ([]cipher.Address, error) {
 	return addrs, nil
 }
 
-//Implement
 func injectTransaction(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -227,8 +218,9 @@ func injectTransaction(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if err := gateway.InjectTransaction(txn); err != nil {
-			wh.Error400(w, fmt.Sprintf("inject tx failed:%v", err))
+		if err := gateway.InjectBroadcastTransaction(txn); err != nil {
+			logger.Error("%v", err)
+			wh.Error400(w, fmt.Sprintf("inject tx failed: %v", err))
 			return
 		}
 
@@ -244,8 +236,6 @@ func resendUnconfirmedTxns(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		rlt := gateway.ResendUnconfirmedTxns()
-		v, _ := json.MarshalIndent(rlt, "", "    ")
-		fmt.Println(v)
 		wh.SendOr404(w, rlt)
 		return
 	}

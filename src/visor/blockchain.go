@@ -13,17 +13,12 @@ import (
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 )
 
-var (
+const (
 	// DebugLevel1 checks for extremely unlikely conditions (10e-40)
 	DebugLevel1 = true
 	// DebugLevel2 enable checks for impossible conditions
 	DebugLevel2 = true
 
-	// ErrUnspentNotExist represents the error of unspent output in a tx does not exist
-	ErrUnspentNotExist = errors.New("Unspent output does not exist")
-)
-
-const (
 	// SigVerifyTheadNum  signature verifycation goroutine number
 	SigVerifyTheadNum = 4
 )
@@ -129,12 +124,13 @@ func (bc *Blockchain) GetBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
 	return bc.store.GetBlockBySeq(seq)
 }
 
-func (bc *Blockchain) processBlockWithTx(tx *bolt.Tx, b coin.SignedBlock) (coin.SignedBlock, error) {
+func (bc *Blockchain) processBlock(b coin.SignedBlock) (coin.SignedBlock, error) {
 	if bc.Len() > 0 {
 		if !bc.isGenesisBlock(b.Block) {
 			if err := bc.verifyBlockHeader(b.Block); err != nil {
 				return coin.SignedBlock{}, err
 			}
+
 			txns, err := bc.processTransactions(b.Body.Transactions)
 			if err != nil {
 				return coin.SignedBlock{}, err
@@ -183,8 +179,10 @@ func (bc *Blockchain) Time() uint64 {
 	return b.Time()
 }
 
-// NewBlock creates a Block given an array of Transactions.  It does not verify the
-// block; ExecuteBlock will handle verification.  Transactions must be sorted.
+// NewBlock creates a Block given an array of Transactions.
+// Only hard constraints are applied to transactions in the block.
+// The caller of this function should apply any additional soft constraints,
+// and choose which transactions to place into the block.
 func (bc Blockchain) NewBlock(txns coin.Transactions, currentTime uint64) (*coin.Block, error) {
 	if currentTime <= bc.Time() {
 		return nil, errors.New("Time can only move forward")
@@ -233,7 +231,8 @@ func (bc *Blockchain) ExecuteBlockWithTx(tx *bolt.Tx, sb *coin.SignedBlock) erro
 
 		sb.Head.PrevHash = head.HashHeader()
 	}
-	nb, err := bc.processBlockWithTx(tx, *sb)
+
+	nb, err := bc.processBlock(*sb)
 	if err != nil {
 		return err
 	}
@@ -266,67 +265,121 @@ func (bc Blockchain) verifyUxHash(b coin.Block) error {
 	return nil
 }
 
-// VerifyTransaction checks that the inputs to the transaction exist,
-// that the transaction does not create or destroy coins and that the
-// signatures on the transaction are valid
-func (bc Blockchain) VerifyTransaction(tx coin.Transaction) error {
-	//CHECKLIST: DONE: check for duplicate ux inputs/double spending
-	//CHECKLIST: DONE: check that inputs of transaction have not been spent
-	//CHECKLIST: DONE: check there are no duplicate outputs
-
-	// Q: why are coin hours based on last block time and not
-	// current time?
-	// A: no two computers will agree on system time. Need system clock
-	// indepedent timing that everyone agrees on. fee values would depend on
-	// local clock
-
-	// Check transaction type and length
-	// Check for duplicate outputs
-	// Check for duplicate inputs
-	// Check for invalid hash
-	// Check for no inputs
-	// Check for no outputs
-	// Check for zero coin outputs
-	// Check valid looking signatures
-	if err := tx.Verify(); err != nil {
-		return err
-	}
-
+// VerifyBlockTxnConstraints checks that the transaction does not violate hard constraints,
+// for transactions that are already included in a block.
+func (bc Blockchain) VerifyBlockTxnConstraints(tx coin.Transaction) error {
+	// NOTE: Unspent().GetArray() returns an error if not all tx.In can be found
+	// This prevents double spends
 	uxIn, err := bc.Unspent().GetArray(tx.In)
 	if err != nil {
-		return err
-	}
-	// Checks whether ux inputs exist,
-	// Check that signatures are allowed to spend inputs
-	if err := tx.VerifyInput(uxIn); err != nil {
-		return err
+		switch err.(type) {
+		case blockdb.ErrUnspentNotExist:
+			return NewErrTxnViolatesHardConstraint(err)
+		default:
+			return err
+		}
 	}
 
-	// Get the UxOuts we expect to have when the block is created.
 	head, err := bc.Head()
 	if err != nil {
 		return err
 	}
-	uxOut := coin.CreateUnspents(head.Head, tx)
-	// Check that there are any duplicates within this set
-	if uxOut.HasDupes() {
-		return errors.New("Duplicate unspent outputs in transaction")
+
+	return bc.verifyBlockTxnHardConstraints(tx, head, uxIn)
+}
+
+func (bc Blockchain) verifyBlockTxnHardConstraints(tx coin.Transaction, head *coin.SignedBlock, uxIn coin.UxArray) error {
+	if err := VerifyBlockTxnConstraints(tx, head, uxIn); err != nil {
+		return err
 	}
+
 	if DebugLevel1 {
-		// Check that new unspents don't collide with existing.  This should
-		// also be checked in verifyTransactions
+		// Check that new unspents don't collide with existing.
+		// This should not occur but is a sanity check.
+		// NOTE: this is not in the top-level VerifyBlockTxnConstraints
+		// because it relies on the unspent pool to check for existence.
+		// For remote callers such as the CLI, they'd need to download the whole
+		// unspent pool or make a separate API call to check for duplicate unspents.
+		uxOut := coin.CreateUnspents(head.Head, tx)
 		for i := range uxOut {
 			if bc.Unspent().Contains(uxOut[i].Hash()) {
-				return errors.New("New unspent collides with existing unspent")
+				err := errors.New("New unspent collides with existing unspent")
+				return NewErrTxnViolatesHardConstraint(err)
 			}
 		}
 	}
 
-	// Check that no coins are lost, and sufficient coins and hours are spent
-	err = coin.VerifyTransactionSpending(bc.Time(), uxIn, uxOut)
+	return nil
+}
+
+// VerifySingleTxnHardConstraints checks that the transaction does not violate hard constraints.
+// for transactions that are not included in a block.
+func (bc Blockchain) VerifySingleTxnHardConstraints(tx coin.Transaction) error {
+	// NOTE: Unspent().GetArray() returns an error if not all tx.In can be found
+	// This prevents double spends
+	uxIn, err := bc.Unspent().GetArray(tx.In)
+	if err != nil {
+		switch err.(type) {
+		case blockdb.ErrUnspentNotExist:
+			return NewErrTxnViolatesHardConstraint(err)
+		default:
+			return err
+		}
+	}
+
+	head, err := bc.Head()
 	if err != nil {
 		return err
 	}
+
+	return bc.verifySingleTxnHardConstraints(tx, head, uxIn)
+}
+
+// VerifySingleTxnAllConstraints checks that the transaction does not violate hard or soft constraints,
+// for transactions that are not included in a block.
+// Hard constraints are checked before soft constraints.
+func (bc Blockchain) VerifySingleTxnAllConstraints(tx coin.Transaction, maxSize int) error {
+	// NOTE: Unspent().GetArray() returns an error if not all tx.In can be found
+	// This prevents double spends
+	uxIn, err := bc.Unspent().GetArray(tx.In)
+	if err != nil {
+		return NewErrTxnViolatesHardConstraint(err)
+	}
+
+	head, err := bc.Head()
+	if err != nil {
+		return err
+	}
+
+	// Hard constraints must be checked before soft constraints
+	if err := bc.verifySingleTxnHardConstraints(tx, head, uxIn); err != nil {
+		return err
+	}
+
+	return VerifySingleTxnSoftConstraints(tx, head.Time(), uxIn, maxSize)
+}
+
+func (bc Blockchain) verifySingleTxnHardConstraints(tx coin.Transaction, head *coin.SignedBlock, uxIn coin.UxArray) error {
+	if err := VerifySingleTxnHardConstraints(tx, head, uxIn); err != nil {
+		return err
+	}
+
+	if DebugLevel1 {
+		// Check that new unspents don't collide with existing.
+		// This should not occur but is a sanity check.
+		// NOTE: this is not in the top-level VerifySingleTxnHardConstraints
+		// because it relies on the unspent pool to check for existence.
+		// For remote callers such as the CLI, they'd need to download the whole
+		// unspent pool or make a separate API call to check for duplicate unspents.
+		uxOut := coin.CreateUnspents(head.Head, tx)
+		for i := range uxOut {
+			if bc.Unspent().Contains(uxOut[i].Hash()) {
+				err := errors.New("New unspent collides with existing unspent")
+				return NewErrTxnViolatesHardConstraint(err)
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -403,7 +456,7 @@ func (bc Blockchain) processTransactions(txs coin.Transactions) (coin.Transactio
 	for i, tx := range txns {
 		// Check the transaction against itself.  This covers the hash,
 		// signature indices and duplicate spends within itself
-		err := bc.VerifyTransaction(tx)
+		err := bc.VerifyBlockTxnConstraints(tx)
 		if err != nil {
 			if bc.arbitrating {
 				skip[i] = struct{}{}
@@ -465,7 +518,7 @@ func (bc Blockchain) processTransactions(txs coin.Transactions) (coin.Transactio
 
 	// Check to ensure that there are no duplicate spends in the entire block,
 	// and that we aren't creating duplicate outputs.  Duplicate outputs
-	// within a single Transaction are already checked by VerifyTransaction
+	// within a single Transaction are already checked by VerifyBlockTxnConstraints
 	hashes := txns.Hashes()
 	for i := 0; i < len(txns)-1; i++ {
 		s := txns[i]
@@ -592,7 +645,7 @@ func (bc *Blockchain) verifyBlockSig(seq uint64) error {
 		return err
 	}
 
-	return cipher.VerifySignature(bc.pubkey, sb.Sig, sb.Block.HashHeader())
+	return sb.VerifySignature(bc.pubkey)
 }
 
 // VerifyBlockHeader Returns error if the BlockHeader is not valid

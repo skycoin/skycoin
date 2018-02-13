@@ -26,6 +26,14 @@ func Error403(w http.ResponseWriter) {
 	HTTPError(w, http.StatusForbidden, "Forbidden")
 }
 
+func Error403Msg(w http.ResponseWriter, msg string) {
+	httpMsg := "Forbidden"
+	if msg != "" {
+		httpMsg = fmt.Sprintf("%s - %s", httpMsg, msg)
+	}
+	HTTPError(w, http.StatusForbidden, httpMsg)
+}
+
 // Error404 response 404 error
 func Error404(w http.ResponseWriter) {
 	HTTPError(w, http.StatusNotFound, "Not Found")

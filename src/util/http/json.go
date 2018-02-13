@@ -14,6 +14,8 @@ func SendJSON(w http.ResponseWriter, m interface{}) error {
 		return err
 	}
 
+	w.Header().Add("Content-Type", "application/json")
+
 	if _, err := w.Write(out); err != nil {
 		return err
 	}

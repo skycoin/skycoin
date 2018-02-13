@@ -72,6 +72,7 @@ release
 /blockchain
 /generate_cert
 /address_gen
+/skycoin-integration
 
 *.pem
 
@@ -103,6 +104,9 @@ electron/.standalone_output
 
 .vscode/
 
+*.swo
+*.swp
+
 src/mesh/TODO
 
 .idea/
@@ -110,3 +114,5 @@ src/mesh/TODO
 *.iml
 *.test
 coverage.html
+
+src/gui/integration/wallets/

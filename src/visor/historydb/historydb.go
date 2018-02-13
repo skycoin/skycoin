@@ -21,7 +21,6 @@ type Blockchainer interface {
 	GetBlockInDepth(dep uint64) *coin.Block
 	ExecuteBlock(b *coin.Block) (coin.UxArray, error)
 	CreateGenesisBlock(genAddress cipher.Address, genCoins, timestamp uint64) coin.Block
-	VerifyTransaction(tx coin.Transaction) error
 	GetBlock(hash cipher.SHA256) *coin.Block
 }
 

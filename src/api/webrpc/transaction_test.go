@@ -174,7 +174,7 @@ func Test_injectTransactionHandler(t *testing.T) {
 					Params:  []byte(`["abcdefghijk"]`),
 				},
 			},
-			makeErrorResponse(errCodeInvalidParams, "invalid raw transaction:encoding/hex: odd length hex string"),
+			makeErrorResponse(errCodeInvalidParams, "invalid raw transaction: encoding/hex: odd length hex string"),
 		},
 		{
 			"invalid params type",
@@ -211,7 +211,7 @@ func Test_injectTransactionHandler(t *testing.T) {
 				},
 				gateway: &fakeGateway{},
 			},
-			makeErrorResponse(errCodeInternalError, "inject transaction failed:fake gateway inject transaction failed"),
+			makeErrorResponse(errCodeInternalError, "inject transaction failed: fake gateway inject transaction failed"),
 		},
 	}
 

@@ -214,7 +214,7 @@ func NewSkyCoinTestNetwork(nodesNum int, buildContext string, tempDir string) Sk
 						IPv4Address: ipAddress,
 					},
 				},
-				Volumes: []string{dataDir + ":/root/.skycoin-test"},
+				Volumes: []string{dataDir + ":/root/.skycoin-testnet"},
 				Ports:   s.Ports,
 			}
 			t.Peers = append(t.Peers, ipAddress+":6000")

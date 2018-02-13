@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: run run-help test lint check cover install-linters format release clean help
+.PHONY: run run-help test lint check cover integration-test-stable integration-test-live install-linters format release clean help
 
 # Static files directory
 STATIC_DIR = src/gui/static
@@ -56,8 +56,13 @@ lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...
 	gometalinter --disable-all -E vet -E goimports -E varcheck --tests --vendor ./...
 
-
 check: lint test ## Run tests and linters
+
+integration-test-stable: ## Run stable integration tests
+	./ci-scripts/integration-test-stable.sh
+
+integration-test-live: ## Run live integration tests
+	./ci-scripts/integration-test-live.sh
 
 cover: ## Runs tests on ./src/ with HTML code coverage
 	@echo "mode: count" > coverage-all.out

@@ -76,7 +76,7 @@ func coinSupply(gateway Gatewayer, w http.ResponseWriter, r *http.Request) *Coin
 	totalSupply := uint64(len(unlockedAddrs)) * visor.DistributionAddressInitialBalance
 	totalSupply *= droplet.Multiplier
 
-	// "current supply" is the number of coins distribution from the unlocked pool
+	// "current supply" is the number of coins distributed from the unlocked pool
 	currentSupply := totalSupply - unlockedSupply
 
 	currentSupplyStr, err := droplet.ToString(currentSupply)

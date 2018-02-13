@@ -9,6 +9,11 @@ import (
 
 func connectionHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
 		if addr := r.FormValue("addr"); addr == "" {
 			wh.Error404(w)
 		} else {
@@ -19,24 +24,44 @@ func connectionHandler(gateway Gatewayer) http.HandlerFunc {
 
 func connectionsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
 		wh.SendOr404(w, gateway.GetConnections())
 	}
 }
 
 func defaultConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
 		wh.SendOr404(w, gateway.GetDefaultConnections())
 	}
 }
 
 func trustConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
 		wh.SendOr404(w, gateway.GetTrustConnections())
 	}
 }
 
 func exchgConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
 		wh.SendOr404(w, gateway.GetExchgConnection())
 	}
 }

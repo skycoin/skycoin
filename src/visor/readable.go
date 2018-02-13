@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/skycoin/skycoin/src/util/droplet"
@@ -328,6 +330,15 @@ func NewReadableOutputs(headTime uint64, uxs coin.UxArray) (ReadableOutputs, err
 
 		rxReadables[i] = out
 	}
+
+	// Sort ReadableOutputs newest to oldest, using hash to break ties
+	sort.Slice(rxReadables, func(i, j int) bool {
+		if rxReadables[i].Time == rxReadables[j].Time {
+			return strings.Compare(rxReadables[i].Hash, rxReadables[j].Hash) < 0
+		}
+		return rxReadables[i].Time > rxReadables[j].Time
+	})
+
 	return rxReadables, nil
 }
 

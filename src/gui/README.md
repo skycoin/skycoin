@@ -100,7 +100,7 @@ result:
 URI: /balance
 Method: GET
 Args:
-    addrs: addresses
+    addrs: comma-separated list of addresses. must contain at least one address
 ```
 
 example:
@@ -134,10 +134,12 @@ Args:
     hashes // hash list, joined with ","
 ```
 
+Addrs and hashes cannot be combined.
+
 example:
 
 ```sh
-curl http://127.0.0.1:6420/outputs?addrs= 6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY
+curl http://127.0.0.1:6420/outputs?addrs=6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY
 ```
 
 or

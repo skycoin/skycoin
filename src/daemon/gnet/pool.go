@@ -277,7 +277,7 @@ func (pool *ConnectionPool) Shutdown() {
 // strand ensures all read and write action of pool's member variable are in one thread.
 func (pool *ConnectionPool) strand(name string, f func() error) error {
 	name = fmt.Sprintf("daemon.gnet.ConnectionPool.%s", name)
-	return strand.WithQuit(logger, pool.reqC, name, f, pool.quit, ErrConnectionPoolClosed)
+	return strand.Strand(logger, pool.reqC, name, f, pool.quit, ErrConnectionPoolClosed)
 }
 
 // NewConnection creates a new Connection around a net.Conn.  Trying to make a connection

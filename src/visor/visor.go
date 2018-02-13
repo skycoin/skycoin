@@ -497,12 +497,12 @@ func (vs *Visor) UnconfirmedIncomingOutputs() (coin.UxArray, error) {
 	return vs.Unconfirmed.GetIncomingOutputs(head.Head), nil
 }
 
-// GetSignedBlocksSince returns N signed blocks more recent than Seq. Does not return nil.
+// GetSignedBlocksSince returns signed blocks in an inclusive range of [seq+1, seq+ct]
 func (vs *Visor) GetSignedBlocksSince(seq, ct uint64) ([]coin.SignedBlock, error) {
 	avail := uint64(0)
 	head, err := vs.Blockchain.Head()
 	if err != nil {
-		return []coin.SignedBlock{}, err
+		return nil, err
 	}
 
 	headSeq := head.Seq()
@@ -513,14 +513,15 @@ func (vs *Visor) GetSignedBlocksSince(seq, ct uint64) ([]coin.SignedBlock, error
 		ct = avail
 	}
 	if ct == 0 {
-		return []coin.SignedBlock{}, nil
+		return nil, nil
 	}
+
 	blocks := make([]coin.SignedBlock, 0, ct)
 	for j := uint64(0); j < ct; j++ {
 		i := seq + 1 + j
 		b, err := vs.Blockchain.GetBlockBySeq(i)
 		if err != nil {
-			return []coin.SignedBlock{}, err
+			return nil, err
 		}
 
 		blocks = append(blocks, *b)
@@ -1091,7 +1092,13 @@ func (vs Visor) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair,
 
 		coinHours, err := uxs.CoinHours(headTime)
 		if err != nil {
-			return nil, fmt.Errorf("uxs.CoinHours failed: %v", err)
+			switch err {
+			case coin.ErrAddEarnedCoinHoursAdditionOverflow:
+				coinHours = 0
+				err = nil
+			default:
+				return nil, fmt.Errorf("uxs.CoinHours failed: %v", err)
+			}
 		}
 
 		pcoins, err := predictedUxs.Coins()
@@ -1101,7 +1108,13 @@ func (vs Visor) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair,
 
 		pcoinHours, err := predictedUxs.CoinHours(headTime)
 		if err != nil {
-			return nil, fmt.Errorf("predictedUxs.CoinHours failed: %v", err)
+			switch err {
+			case coin.ErrAddEarnedCoinHoursAdditionOverflow:
+				coinHours = 0
+				err = nil
+			default:
+				return nil, fmt.Errorf("predictedUxs.CoinHours failed: %v", err)
+			}
 		}
 
 		bp := wallet.BalancePair{

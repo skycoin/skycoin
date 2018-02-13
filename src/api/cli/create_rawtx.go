@@ -531,12 +531,33 @@ func makeChangeOut(outs []wallet.UxBalance, chgAddr string, toAddrs []SendAmount
 		return nil, err
 	}
 
-	if haveChange {
-		outAddrs = append(outAddrs, mustMakeUtxoOutput(chgAddr, changeAmount, changeHours))
+	for i, to := range toAddrs {
+		// check if changeHours > 0, we do not need to cap addrHours when changeHours is zero
+		// changeHours is zero when there is no change left or all the coinhours were used in fees
+		// 1) if there is no change then the remaining coinhours are evenly distributed among the destination addresses
+		// 2) if all the coinhours are burned in fees then all addrHours are zero by default
+		if changeHours > 0 {
+			// the coinhours are capped to a maximum of incoming coins for the address
+			// if incoming coins < 1 then the cap is set to 1 coinhour
+
+			spendCoinsAmt := to.Coins / 1e6
+			if spendCoinsAmt == 0 {
+				spendCoinsAmt = 1
+			}
+
+			// allow addrHours to be less than the incoming coins of the address but not more
+			if addrHours[i] > spendCoinsAmt {
+				// cap the addrHours, move the difference to changeHours
+				changeHours += addrHours[i] - spendCoinsAmt
+				addrHours[i] = spendCoinsAmt
+			}
+		}
+
+		outAddrs = append(outAddrs, mustMakeUtxoOutput(to.Addr, to.Coins, addrHours[i]))
 	}
 
-	for i, to := range toAddrs {
-		outAddrs = append(outAddrs, mustMakeUtxoOutput(to.Addr, to.Coins, addrHours[i]))
+	if haveChange {
+		outAddrs = append(outAddrs, mustMakeUtxoOutput(chgAddr, changeAmount, changeHours))
 	}
 
 	return outAddrs, nil

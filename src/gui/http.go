@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
@@ -36,22 +37,34 @@ type Server struct {
 	done     chan struct{}
 }
 
-func create(host, staticDir string, daemon *daemon.Daemon) (*Server, error) {
-	appLoc, err := file.DetermineResourcePath(staticDir, resourceDir, devDir)
+type ServerConfig struct {
+	StaticDir   string
+	DisableCSRF bool
+}
+
+func create(host string, serverConfig ServerConfig, daemon *daemon.Daemon) (*Server, error) {
+	appLoc, err := file.DetermineResourcePath(serverConfig.StaticDir, resourceDir, devDir)
 	if err != nil {
 		return nil, err
 	}
 	logger.Info("Web resources directory: %s", appLoc)
 
+	csrfStore := &CSRFStore{
+		Enabled: !serverConfig.DisableCSRF,
+	}
+	if serverConfig.DisableCSRF {
+		logger.Warning("CSRF check disabled")
+	}
+
 	return &Server{
-		mux:  NewServerMux(host, appLoc, daemon.Gateway),
+		mux:  NewServerMux(host, appLoc, daemon.Gateway, csrfStore),
 		done: make(chan struct{}),
 	}, nil
 }
 
 // Create creates a new Server instance that listens on HTTP
-func Create(host, staticDir string, daemon *daemon.Daemon) (*Server, error) {
-	s, err := create(host, staticDir, daemon)
+func Create(host string, serverConfig ServerConfig, daemon *daemon.Daemon) (*Server, error) {
+	s, err := create(host, serverConfig, daemon)
 	if err != nil {
 		return nil, err
 	}
@@ -67,8 +80,8 @@ func Create(host, staticDir string, daemon *daemon.Daemon) (*Server, error) {
 }
 
 // CreateHTTPS creates a new Server instance that listens on HTTPS
-func CreateHTTPS(host, staticDir string, daemon *daemon.Daemon, certFile, keyFile string) (*Server, error) {
-	s, err := create(host, staticDir, daemon)
+func CreateHTTPS(host string, serverConfig ServerConfig, daemon *daemon.Daemon, certFile, keyFile string) (*Server, error) {
+	s, err := create(host, serverConfig, daemon)
 	if err != nil {
 		return nil, err
 	}
@@ -114,11 +127,19 @@ func (s *Server) Shutdown() {
 }
 
 // NewServerMux creates an http.ServeMux with handlers registered
-func NewServerMux(host, appLoc string, gateway Gatewayer) *http.ServeMux {
+func NewServerMux(host, appLoc string, gateway Gatewayer, csrfStore *CSRFStore) *http.ServeMux {
 	mux := http.NewServeMux()
 
+	headerCheck := func(host string, handler http.Handler) http.Handler {
+		handler = OriginRefererCheck(host, handler)
+		handler = wh.HostCheck(logger, host, handler)
+		return handler
+	}
+
 	webHandler := func(endpoint string, handler http.Handler) {
-		mux.Handle(endpoint, wh.HostCheck(logger, host, handler))
+		handler = CSRFCheck(csrfStore, handler)
+		handler = headerCheck(host, handler)
+		mux.Handle(endpoint, handler)
 	}
 
 	webHandler("/", newIndexHandler(appLoc))
@@ -131,6 +152,9 @@ func NewServerMux(host, appLoc string, gateway Gatewayer) *http.ServeMux {
 		}
 		webHandler(route, http.FileServer(http.Dir(appLoc)))
 	}
+
+	// get the current CSRF token
+	mux.Handle("/csrf", headerCheck(host, getCSRFToken(gateway, csrfStore)))
 
 	webHandler("/version", versionHandler(gateway))
 
@@ -182,12 +206,13 @@ func NewServerMux(host, appLoc string, gateway Gatewayer) *http.ServeMux {
 	webHandler("/wallet/transactions", walletTransactionsHandler(gateway))
 
 	// Update wallet label
-	//      GET Arguments:
+	//      POST Arguments:
 	//          id: wallet id
 	//          label: wallet label
 	webHandler("/wallet/update", walletUpdateHandler(gateway))
 
 	// Returns all loaded wallets
+	// returns sensitive information
 	webHandler("/wallets", walletsHandler(gateway))
 
 	webHandler("/wallets/folderName", getWalletFolder(gateway))
@@ -271,12 +296,33 @@ func newIndexHandler(appLoc string) http.HandlerFunc {
 	}
 }
 
-// getOutputsHandler get utxos base on the filters in url params.
-// mode: GET
-// url: /outputs?addrs=[:addrs]&hashes=[:hashes]
-// if addrs and hashes are not specificed, return all unspent outputs.
-// if both addrs and hashes are specificed, then both those filters are need to be matched.
-// if only specify one filter, then return outputs match the filter.
+func splitCommaString(s string) []string {
+	words := strings.FieldsFunc(s, func(r rune) bool {
+		return r == ',' || unicode.IsSpace(r)
+	})
+
+	// Deduplicate
+	var dedupWords []string
+	wordsMap := make(map[string]struct{})
+	for _, w := range words {
+		if _, ok := wordsMap[w]; !ok {
+			dedupWords = append(dedupWords, w)
+		}
+		wordsMap[w] = struct{}{}
+	}
+
+	return dedupWords
+}
+
+// getOutputsHandler returns UxOuts filtered by a set of addresses or a set of hashes
+// URI: /outputs
+// Method: GET
+// Args:
+//    addrs: comma-separated list of addresses
+//    hashes: comma-separated list of uxout hashes
+// If neither addrs nor hashes are specificed, return all unspent outputs.
+// If only one filter is specified, then return outputs match the filter.
+// Both filters cannot be specified.
 func getOutputsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -287,30 +333,36 @@ func getOutputsHandler(gateway Gatewayer) http.HandlerFunc {
 		var addrs []string
 		var hashes []string
 
-		trimSpace := func(vs []string) []string {
-			for i := range vs {
-				vs[i] = strings.TrimSpace(vs[i])
-			}
-			return vs
-		}
-
 		addrStr := r.FormValue("addrs")
-		if addrStr != "" {
-			addrs = trimSpace(strings.Split(addrStr, ","))
-		}
-
 		hashStr := r.FormValue("hashes")
-		if hashStr != "" {
-			hashes = trimSpace(strings.Split(hashStr, ","))
+
+		if addrStr != "" && hashStr != "" {
+			wh.Error400(w, "addrs and hashes cannot be specified together")
+			return
 		}
 
 		filters := []daemon.OutputsFilter{}
-		if len(addrs) > 0 {
-			filters = append(filters, daemon.FbyAddresses(addrs))
+
+		if addrStr != "" {
+			addrs = splitCommaString(addrStr)
+
+			for _, a := range addrs {
+				if _, err := cipher.DecodeBase58Address(a); err != nil {
+					wh.Error400(w, "addrs contains invalid address")
+					return
+				}
+			}
+
+			if len(addrs) > 0 {
+				filters = append(filters, daemon.FbyAddresses(addrs))
+			}
 		}
 
-		if len(hashes) > 0 {
-			filters = append(filters, daemon.FbyHashes(hashes))
+		if hashStr != "" {
+			hashes = splitCommaString(hashStr)
+			if len(hashes) > 0 {
+				filters = append(filters, daemon.FbyHashes(hashes))
+			}
 		}
 
 		outs, err := gateway.GetUnspentOutputs(filters...)
@@ -332,11 +384,10 @@ func getBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		addrsParam := r.FormValue("addrs")
-		addrsStr := strings.Split(addrsParam, ",")
+		addrsStr := splitCommaString(addrsParam)
+
 		addrs := make([]cipher.Address, 0, len(addrsStr))
 		for _, addr := range addrsStr {
-			// trim space
-			addr = strings.Trim(addr, " ")
 			a, err := cipher.DecodeBase58Address(addr)
 			if err != nil {
 				wh.Error400(w, fmt.Sprintf("address %s is invalid: %v", addr, err))
@@ -347,15 +398,26 @@ func getBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 
 		bals, err := gateway.GetBalanceOfAddrs(addrs)
 		if err != nil {
-			logger.Error("Get balance failed: %v", err)
-			wh.Error500(w)
+			errMsg := fmt.Sprintf("Get balance failed: %v", err)
+			logger.Error("%s", errMsg)
+			wh.Error500Msg(w, errMsg)
 			return
 		}
 
 		var balance wallet.BalancePair
 		for _, bal := range bals {
-			balance.Confirmed = balance.Confirmed.Add(bal.Confirmed)
-			balance.Predicted = balance.Predicted.Add(bal.Predicted)
+			var err error
+			balance.Confirmed, err = balance.Confirmed.Add(bal.Confirmed)
+			if err != nil {
+				wh.Error500Msg(w, err.Error())
+				return
+			}
+
+			balance.Predicted, err = balance.Predicted.Add(bal.Predicted)
+			if err != nil {
+				wh.Error500Msg(w, err.Error())
+				return
+			}
 		}
 
 		wh.SendOr404(w, balance)

@@ -21,7 +21,7 @@ var (
 	ErrEmptyDirectoryName = errors.New("data directory must not be empty")
 	// ErrDotDirectoryName is returned by constructing the full path of
 	// data directory if the passed argument is "."
-	ErrDotDirectoryName = errors.New("data directory must not be equivalent to .")
+	ErrDotDirectoryName = errors.New("data directory must not be equal to \".\"")
 
 	logger = logging.MustGetLogger("file")
 )
@@ -59,6 +59,10 @@ func buildDataDir(dir string) (string, error) {
 	if dir == "" {
 		logger.Error("data directory is empty")
 		return "", ErrEmptyDirectoryName
+	}
+
+	if filepath.IsAbs(dir) {
+		return filepath.Clean(dir), nil
 	}
 
 	home := UserHome()

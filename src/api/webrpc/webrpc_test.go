@@ -65,7 +65,7 @@ func (fg fakeGateway) GetBlocksInDepth(vs []uint64) (*visor.ReadableBlocks, erro
 	return nil, nil
 }
 
-func (fg fakeGateway) GetUnspentOutputs(filters ...daemon.OutputsFilter) (visor.ReadableOutputSet, error) {
+func (fg fakeGateway) GetUnspentOutputs(filters ...daemon.OutputsFilter) (*visor.ReadableOutputSet, error) {
 	outs := []coin.UxOut{}
 	for _, f := range filters {
 		outs = f(fg.uxouts)
@@ -75,10 +75,10 @@ func (fg fakeGateway) GetUnspentOutputs(filters ...daemon.OutputsFilter) (visor.
 
 	rbOuts, err := visor.NewReadableOutputs(headTime, outs)
 	if err != nil {
-		return visor.ReadableOutputSet{}, err
+		return nil, err
 	}
 
-	return visor.ReadableOutputSet{
+	return &visor.ReadableOutputSet{
 		HeadOutputs: rbOuts,
 	}, nil
 }
@@ -91,7 +91,7 @@ func (fg fakeGateway) GetTransaction(txid cipher.SHA256) (*visor.Transaction, er
 	return nil, nil
 }
 
-func (fg *fakeGateway) InjectTransaction(txn coin.Transaction) error {
+func (fg *fakeGateway) InjectBroadcastTransaction(txn coin.Transaction) error {
 	if _, v := fg.injectRawTxMap[txn.Hash().Hex()]; v {
 		if fg.injectedTransactions == nil {
 			fg.injectedTransactions = make(map[string]string)

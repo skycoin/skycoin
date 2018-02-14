@@ -34,27 +34,19 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_PULL_REQUEST" == false ]]; then sudo apt-get install --no-install-recommends -y icnsutils graphicsmagick xz-utils  &&nvm install 8; fi
   # for test
   - go get -t ./...
-  - go get github.com/golang/lint/golint
-  - go get github.com/FiloSottile/vendorcheck
-  # Install gometalinter and certain linters
-  - go get github.com/alecthomas/gometalinter
-  # - go get github.com/client9/misspell/cmd/misspell
-  # - go get github.com/gordonklaus/ineffassign
-  - go get golang.org/x/tools/cmd/goimports
-  # - go get github.com/tsenart/deadcode
+  - make install-linters
   # TODO: Install dependencies for testing libskycoin
-
-
 
 before_script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" && "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/add-key.sh && npm install -g yarn ;fi
 
 script:
-  # - gometalinter --disable-all -E vet -E gofmt -E misspell -E ineffassign -E goimports -E deadcode --tests --vendor ./...
   - gometalinter --disable-all -E goimports --tests --vendor ./...
   - vendorcheck ./...
-  - go test ./cmd/...
-  - go test ./src/...
+  - GOARCH=386 go test ./...
+  - GOARCH=amd64 go test ./...
+  # stable integration tests
+  - make integration-test-stable
   # build wallets
   - if [[ "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/build-wallet.sh; fi
   # build libskycoin
@@ -69,13 +61,8 @@ script:
   # - go build -buildmode=c-shared  -o $(BUILDLIB_DIR)/libskycoin.so $(LIB_DIR)/cgo/main.go
    
 
-# after_script:
-#   - golint -set_exit_status ./src/...
-#   - golint -set_exit_status ./cmd/...
-
 notifications:
   email: false
-
 
 deploy:
   provider: s3

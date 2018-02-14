@@ -126,7 +126,7 @@ func createUnconfirmedTxn(t *testing.T) UnconfirmedTxn {
 // 	if err != nil {
 // 		return err
 // 	}
-// 	v.InjectTxn(tx)
+// 	v.InjectTransaction(tx)
 // 	_, err = v.CreateAndExecuteBlock()
 // 	return err
 // }
@@ -137,7 +137,7 @@ func createUnconfirmedTxn(t *testing.T) UnconfirmedTxn {
 // 	if err != nil {
 // 		return err
 // 	}
-// 	mv.InjectTxn(tx)
+// 	mv.InjectTransaction(tx)
 // 	now := uint64(utc.UnixNow())
 // 	if len(mv.blockchain.Blocks) > 0 {
 // 		now = mv.blockchain.Time() + 1

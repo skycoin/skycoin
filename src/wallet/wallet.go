@@ -74,10 +74,8 @@ type Options struct {
 }
 
 // NewWallet generates Deterministic Wallet
-// generates a random seed if seed is ""
 func NewWallet(wltName string, opts Options) (*Wallet, error) {
-	seed := opts.Seed
-	if seed == "" {
+	if opts.Seed == "" {
 		return nil, errors.New("seed required")
 	}
 
@@ -91,8 +89,8 @@ func NewWallet(wltName string, opts Options) (*Wallet, error) {
 			"filename": wltName,
 			"version":  version,
 			"label":    opts.Label,
-			"seed":     seed,
-			"lastSeed": seed,
+			"seed":     opts.Seed,
+			"lastSeed": opts.Seed,
 			"tm":       fmt.Sprintf("%v", time.Now().Unix()),
 			"type":     "deterministic",
 			"coin":     string(coin),
@@ -185,6 +183,11 @@ func (w *Wallet) SetLabel(label string) {
 	w.Meta["label"] = label
 }
 
+// getSeed returns the wallet initial seed
+func (w *Wallet) getSeed() string {
+	return w.Meta["seed"]
+}
+
 func (w *Wallet) getLastSeed() string {
 	return w.Meta["lastSeed"]
 }
@@ -204,20 +207,28 @@ func (w *Wallet) NumEntries() int {
 }
 
 // GenerateAddresses generate addresses of given number and adds them to the wallet
-func (w *Wallet) GenerateAddresses(num uint64) []cipher.Address {
+func (w *Wallet) GenerateAddresses(num uint64) ([]cipher.Address, error) {
 	if num == 0 {
-		return []cipher.Address{}
+		return nil, nil
+	}
+
+	if w.getSeed() == "" {
+		return nil, errors.New("missing seed in wallet")
+	}
+
+	if w.getLastSeed() == "" {
+		return nil, errors.New("missing lastSeed in wallet")
 	}
 
 	var seckeys []cipher.SecKey
 	var seed []byte
 	if len(w.Entries) == 0 {
-		seed, seckeys = cipher.GenerateDeterministicKeyPairsSeed([]byte(w.getLastSeed()), int(num))
+		seed, seckeys = cipher.GenerateDeterministicKeyPairsSeed([]byte(w.getSeed()), int(num))
 	} else {
 		var err error
 		seed, err = hex.DecodeString(w.getLastSeed())
 		if err != nil {
-			logger.Panicf("decode hex seed failed: %v", err)
+			return nil, fmt.Errorf("decode hex seed failed: %v", err)
 		}
 		seed, seckeys = cipher.GenerateDeterministicKeyPairsSeed(seed, int(num))
 	}
@@ -235,7 +246,7 @@ func (w *Wallet) GenerateAddresses(num uint64) []cipher.Address {
 			Public:  p,
 		})
 	}
-	return addrs
+	return addrs, nil
 }
 
 // ScanAddresses scans ahead N addresses to find one with non-zero coins
@@ -247,7 +258,10 @@ func (w *Wallet) ScanAddresses(scanN uint64, bg BalanceGetter) error {
 	nExistingAddrs := uint64(w.NumEntries())
 
 	// Generate the addresses to scan
-	addrs := w.GenerateAddresses(scanN)
+	addrs, err := w.GenerateAddresses(scanN)
+	if err != nil {
+		return err
+	}
 
 	// Get these addresses' balances
 	bals, err := bg.GetBalanceOfAddrs(addrs)
@@ -381,7 +395,11 @@ func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspent
 	// Determine which unspents to spend.
 	// Use the MaximizeUxOuts strategy, this will keep the uxout pool smaller
 	uxa := auxs.Flatten()
-	uxb := NewUxBalances(headTime, uxa)
+	uxb, err := NewUxBalances(headTime, uxa)
+	if err != nil {
+		return nil, err
+	}
+
 	spends, err := ChooseSpendsMaximizeUxOuts(uxb, coins)
 	if err != nil {
 		return nil, err
@@ -499,21 +517,26 @@ type UxBalance struct {
 
 // NewUxBalances converts coin.UxArray to []UxBalance.
 // headTime is required to calculate coin hours.
-func NewUxBalances(headTime uint64, uxa coin.UxArray) []UxBalance {
+func NewUxBalances(headTime uint64, uxa coin.UxArray) ([]UxBalance, error) {
 	uxb := make([]UxBalance, len(uxa))
 	for i, ux := range uxa {
+		hours, err := ux.CoinHours(headTime)
+		if err != nil {
+			return nil, err
+		}
+
 		b := UxBalance{
 			Hash:    ux.Hash(),
 			BkSeq:   ux.Head.BkSeq,
 			Address: ux.Body.Address,
 			Coins:   ux.Body.Coins,
-			Hours:   ux.CoinHours(headTime),
+			Hours:   hours,
 		}
 
 		uxb[i] = b
 	}
 
-	return uxb
+	return uxb, nil
 }
 
 // ChooseSpendsMinimizeUxOuts chooses uxout spends to satisfy an amount, using the least number of uxouts

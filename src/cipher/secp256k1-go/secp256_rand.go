@@ -114,7 +114,10 @@ func init() {
 	seed3 := []byte(strconv.FormatUint(uint64(os.Getpid()), 16))
 
 	seed4 := make([]byte, 256)
-	io.ReadFull(crand.Reader, seed4) //system secure random number generator
+	_, err := io.ReadFull(crand.Reader, seed4) //system secure random number generator
+	if err != nil {
+		log.Panic(err)
+	}
 
 	// init the hash reuse pool
 	sha256HashChan = make(chan hash.Hash, poolsize)
@@ -137,9 +140,9 @@ func init() {
 // and process id is mixed in for forward security. Future version should use entropy pool
 func RandByte(n int) []byte {
 	buff := make([]byte, n)
-	ret, err := io.ReadFull(crand.Reader, buff) //system secure random number generator
-	if len(buff) != ret || err != nil {
-		log.Panic()
+	_, err := io.ReadFull(crand.Reader, buff) //system secure random number generator
+	if err != nil {
+		log.Panic(err)
 	}
 
 	//XORing in sequence, cannot reduce security (even if sequence is bad/known/non-random)

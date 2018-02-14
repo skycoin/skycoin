@@ -28,20 +28,20 @@ type Gatewayer interface {
 	GetBlocks(start, end uint64) (*visor.ReadableBlocks, error)
 	GetLastBlocks(num uint64) (*visor.ReadableBlocks, error)
 	GetBuildInfo() visor.BuildInfo
-	GetUnspentOutputs(filters ...daemon.OutputsFilter) (visor.ReadableOutputSet, error)
+	GetUnspentOutputs(filters ...daemon.OutputsFilter) (*visor.ReadableOutputSet, error)
 	GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair, error)
-	GetBlockchainMetadata() interface{}
-	GetBlockchainProgress() interface{}
-	GetConnection(addr string) interface{}
-	GetConnections() interface{}
-	GetDefaultConnections() interface{}
-	GetTrustConnections() interface{}
-	GetExchgConnection() interface{}
+	GetBlockchainMetadata() *visor.BlockchainMetadata
+	GetBlockchainProgress() *daemon.BlockchainProgress
+	GetConnection(addr string) *daemon.Connection
+	GetConnections() *daemon.Connections
+	GetDefaultConnections() []string
+	GetTrustConnections() []string
+	GetExchgConnection() []string
 	GetAllUnconfirmedTxns() []visor.UnconfirmedTxn
 	GetLastTxs() ([]*visor.Transaction, error)
 	GetTransaction(txid cipher.SHA256) (*visor.Transaction, error)
 	GetTransactions(flts ...visor.TxFilter) ([]visor.Transaction, error)
-	InjectTransaction(txn coin.Transaction) error
+	InjectBroadcastTransaction(txn coin.Transaction) error
 	ResendUnconfirmedTxns() *daemon.ResendResult
 	GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error)
 	GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOutJSON, error)

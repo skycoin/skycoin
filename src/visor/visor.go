@@ -31,8 +31,8 @@ const (
 var (
 	logger = logging.MustGetLogger("visor")
 
-	// ErrInvalidDecimals is returned by DropletPrecisionCheck if a coin amount has an invalid number of decimal places
-	ErrInvalidDecimals = errors.New("invalid amount, too many decimal places")
+	// errInvalidDecimals is returned by DropletPrecisionCheck if a coin amount has an invalid number of decimal places
+	errInvalidDecimals = errors.New("invalid amount, too many decimal places")
 
 	// maxDropletDivisor represents the modulus divisor when checking droplet precision rules.
 	// It is computed from MaxDropletPrecision in init()
@@ -66,7 +66,7 @@ func calculateDivisor(precision uint64) uint64 {
 // DropletPrecisionCheck checks if an amount of coins is valid given decimal place restrictions
 func DropletPrecisionCheck(amount uint64) error {
 	if amount%maxDropletDivisor != 0 {
-		return ErrInvalidDecimals
+		return errInvalidDecimals
 	}
 	return nil
 }
@@ -94,8 +94,10 @@ type Config struct {
 	UnconfirmedCheckInterval time.Duration
 	// How long we'll hold onto an unconfirmed txn
 	UnconfirmedMaxAge time.Duration
-	// How often to refresh the unconfirmed pool
+	// How often to check the unconfirmed pool for transactions that become valid
 	UnconfirmedRefreshRate time.Duration
+	// How often to remove transactions that become permanently invalid from the unconfirmed pool
+	UnconfirmedRemoveInvalidRate time.Duration
 	// How often to rebroadcast unconfirmed transactions
 	UnconfirmedResendPeriod time.Duration
 	// Maximum size of a block, in bytes.
@@ -137,12 +139,12 @@ func NewVisorConfig() Config {
 		BlockCreationInterval: 10,
 		//BlockCreationForceInterval: 120, //create block if no block within this many seconds
 
-		UnconfirmedCheckInterval: time.Hour * 2,
-		UnconfirmedMaxAge:        time.Hour * 48,
-		UnconfirmedRefreshRate:   time.Minute,
-		// UnconfirmedRefreshRate:   time.Minute * 30,
-		UnconfirmedResendPeriod: time.Minute,
-		MaxBlockSize:            DefaultMaxBlockSize,
+		UnconfirmedCheckInterval:     time.Hour * 2,
+		UnconfirmedMaxAge:            time.Hour * 48,
+		UnconfirmedRefreshRate:       time.Minute,
+		UnconfirmedRemoveInvalidRate: time.Minute,
+		UnconfirmedResendPeriod:      time.Minute,
+		MaxBlockSize:                 DefaultMaxBlockSize,
 
 		GenesisAddress:    cipher.Address{},
 		GenesisSignature:  cipher.Sig{},
@@ -191,7 +193,9 @@ type Blockchainer interface {
 	Time() uint64
 	NewBlock(txns coin.Transactions, currentTime uint64) (*coin.Block, error)
 	ExecuteBlockWithTx(tx *bolt.Tx, sb *coin.SignedBlock) error
-	VerifyTransaction(tx coin.Transaction) error
+	VerifyBlockTxnConstraints(tx coin.Transaction) error
+	VerifySingleTxnHardConstraints(tx coin.Transaction) error
+	VerifySingleTxnAllConstraints(tx coin.Transaction, maxSize int) error
 	TransactionFee(t *coin.Transaction) (uint64, error)
 	Notify(b coin.Block)
 	BindListener(bl BlockListener)
@@ -202,11 +206,12 @@ type Blockchainer interface {
 // accessing the unconfirmed transaction pool
 type UnconfirmedTxnPooler interface {
 	SetAnnounced(hash cipher.SHA256, t time.Time) error
-	InjectTxn(bc Blockchainer, t coin.Transaction) (bool, error)
+	InjectTransaction(bc Blockchainer, t coin.Transaction, maxSize int) (bool, *ErrTxnViolatesSoftConstraint, error)
 	RawTxns() coin.Transactions
-	RemoveTransactions(txns []cipher.SHA256)
+	RemoveTransactions(txns []cipher.SHA256) error
 	RemoveTransactionsWithTx(tx *bolt.Tx, txns []cipher.SHA256)
-	Refresh(bc Blockchainer) []cipher.SHA256
+	Refresh(bc Blockchainer, maxBlockSize int) ([]cipher.SHA256, error)
+	RemoveInvalid(bc Blockchainer) ([]cipher.SHA256, error)
 	FilterKnown(txns []cipher.SHA256) []cipher.SHA256
 	GetKnown(txns []cipher.SHA256) coin.Transactions
 	RecvOfAddresses(bh coin.BlockHeader, addrs []cipher.Address) (coin.AddressUxOuts, error)
@@ -283,9 +288,11 @@ func (vs *Visor) Run() error {
 		return err
 	}
 
-	if err := vs.processUnconfirmedTxns(); err != nil {
+	removed, err := vs.RemoveInvalidUnconfirmed()
+	if err != nil {
 		return err
 	}
+	logger.Info("Removed %d invalid txns from pool", len(removed))
 
 	return vs.bcParser.Run()
 }
@@ -329,35 +336,6 @@ func (vs *Visor) maybeCreateGenesisBlock() error {
 	return vs.ExecuteSignedBlock(sb)
 }
 
-// check if there're unconfirmed transactions that are actually
-// already executed, and remove them if any
-func (vs *Visor) processUnconfirmedTxns() error {
-	removeTxs := []cipher.SHA256{}
-	vs.Unconfirmed.ForEach(func(hash cipher.SHA256, tx *UnconfirmedTxn) error {
-		// check if the tx already executed
-		if err := vs.Blockchain.VerifyTransaction(tx.Txn); err != nil {
-			removeTxs = append(removeTxs, hash)
-		}
-
-		txn, err := vs.history.GetTransaction(hash)
-		if err != nil {
-			return fmt.Errorf("process unconfirmed txs failed: %v", err)
-		}
-
-		if txn != nil {
-			removeTxs = append(removeTxs, hash)
-		}
-
-		return nil
-	})
-
-	if len(removeTxs) > 0 {
-		vs.Unconfirmed.RemoveTransactions(removeTxs)
-	}
-
-	return nil
-}
-
 // GenesisPreconditions panics if conditions for genesis block are not met
 func (vs *Visor) GenesisPreconditions() {
 	if vs.Config.BlockchainSeckey != (cipher.SecKey{}) {
@@ -369,8 +347,15 @@ func (vs *Visor) GenesisPreconditions() {
 
 // RefreshUnconfirmed checks unconfirmed txns against the blockchain and returns
 // all transaction that turn to valid.
-func (vs *Visor) RefreshUnconfirmed() []cipher.SHA256 {
-	return vs.Unconfirmed.Refresh(vs.Blockchain)
+func (vs *Visor) RefreshUnconfirmed() ([]cipher.SHA256, error) {
+	return vs.Unconfirmed.Refresh(vs.Blockchain, vs.Config.MaxBlockSize)
+}
+
+// RemoveInvalidUnconfirmed removes transactions that become permanently invalid
+// (by violating hard constraints) from the pool.
+// Returns the transaction hashes that were removed.
+func (vs *Visor) RemoveInvalidUnconfirmed() ([]cipher.SHA256, error) {
+	return vs.Unconfirmed.RemoveInvalid(vs.Blockchain)
 }
 
 // CreateBlock creates a SignedBlock from pending transactions
@@ -380,42 +365,47 @@ func (vs *Visor) CreateBlock(when uint64) (coin.SignedBlock, error) {
 	}
 
 	var sb coin.SignedBlock
-	if vs.Unconfirmed.Len() == 0 {
-		return sb, errors.New("No transactions")
-	}
 
 	// Gather all unconfirmed transactions
 	txns := vs.Unconfirmed.RawTxns()
+
+	if len(txns) == 0 {
+		return sb, errors.New("No transactions")
+	}
+
 	logger.Info("Unconfirmed pool has %d transactions pending", len(txns))
 
-	// Sort them by highest fee per kilobyte
-	txns = coin.SortTransactions(txns, vs.Blockchain.TransactionFee)
-
-	// Filter transactions that do not obey droplet precision rules
+	// Filter transactions that violate all constraints
 	var filteredTxns coin.Transactions
 	for _, txn := range txns {
-		skip := false
-		for _, o := range txn.Out {
-			if err := DropletPrecisionCheck(o.Coins); err != nil {
-				skip = true
-				break
-			}
-		}
-
-		if !skip {
+		if err := vs.Blockchain.VerifySingleTxnAllConstraints(txn, vs.Config.MaxBlockSize); err != nil {
+			logger.Warning("Transaction %s violates constraints: %v", txn.TxIDHex(), err)
+		} else {
 			filteredTxns = append(filteredTxns, txn)
 		}
 	}
 
 	nRemoved := len(txns) - len(filteredTxns)
 	if nRemoved > 0 {
-		logger.Info("CreateBlock ignored %d transactions with too many decimal places", nRemoved)
+		logger.Info("CreateBlock ignored %d transactions violating constraints", nRemoved)
 	}
 
 	txns = filteredTxns
 
+	if len(txns) == 0 {
+		logger.Info("No transactions after filtering for constraint violations")
+		return sb, errors.New("No transactions after filtering for constraint violations")
+	}
+
+	// Sort them by highest fee per kilobyte
+	txns = coin.SortTransactions(txns, vs.Blockchain.TransactionFee)
+
 	// Apply block size transaction limit
 	txns = txns.TruncateBytesTo(vs.Config.MaxBlockSize)
+
+	if len(txns) == 0 {
+		logger.Panic("TruncateBytesTo removed all transactions")
+	}
 
 	logger.Info("Creating new block with %d transactions, head time %d", len(txns), when)
 
@@ -441,7 +431,7 @@ func (vs *Visor) CreateAndExecuteBlock() (coin.SignedBlock, error) {
 // ExecuteSignedBlock adds a block to the blockchain, or returns error.
 // Blocks must be executed in sequence, and be signed by the master server
 func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
-	if err := vs.verifySignedBlock(&b); err != nil {
+	if err := b.VerifySignature(vs.Config.BlockchainPubkey); err != nil {
 		return err
 	}
 
@@ -466,22 +456,18 @@ func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
 	return nil
 }
 
-// Returns an error if the cipher.Sig is not valid for the coin.Block
-func (vs *Visor) verifySignedBlock(b *coin.SignedBlock) error {
-	return cipher.VerifySignature(vs.Config.BlockchainPubkey, b.Sig, b.Block.HashHeader())
-}
-
 // SignBlock signs a block for master.  Will panic if anything is invalid
 func (vs *Visor) SignBlock(b coin.Block) coin.SignedBlock {
 	if !vs.Config.IsMaster {
 		logger.Panic("Only master chain can sign blocks")
 	}
+
 	sig := cipher.SignHash(b.HashHeader(), vs.Config.BlockchainSeckey)
-	sb := coin.SignedBlock{
+
+	return coin.SignedBlock{
 		Block: b,
 		Sig:   sig,
 	}
-	return sb
 }
 
 /*
@@ -511,12 +497,12 @@ func (vs *Visor) UnconfirmedIncomingOutputs() (coin.UxArray, error) {
 	return vs.Unconfirmed.GetIncomingOutputs(head.Head), nil
 }
 
-// GetSignedBlocksSince returns N signed blocks more recent than Seq. Does not return nil.
+// GetSignedBlocksSince returns signed blocks in an inclusive range of [seq+1, seq+ct]
 func (vs *Visor) GetSignedBlocksSince(seq, ct uint64) ([]coin.SignedBlock, error) {
 	avail := uint64(0)
 	head, err := vs.Blockchain.Head()
 	if err != nil {
-		return []coin.SignedBlock{}, err
+		return nil, err
 	}
 
 	headSeq := head.Seq()
@@ -527,14 +513,15 @@ func (vs *Visor) GetSignedBlocksSince(seq, ct uint64) ([]coin.SignedBlock, error
 		ct = avail
 	}
 	if ct == 0 {
-		return []coin.SignedBlock{}, nil
+		return nil, nil
 	}
+
 	blocks := make([]coin.SignedBlock, 0, ct)
 	for j := uint64(0); j < ct; j++ {
 		i := seq + 1 + j
 		b, err := vs.Blockchain.GetBlockBySeq(i)
 		if err != nil {
-			return []coin.SignedBlock{}, err
+			return nil, err
 		}
 
 		blocks = append(blocks, *b)
@@ -570,21 +557,26 @@ func (vs *Visor) GetBlocks(start, end uint64) []coin.SignedBlock {
 	return vs.Blockchain.GetBlocks(start, end)
 }
 
-// InjectTxn records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
-// already in the blockchain
-// TODO
-// - rename InjectTransaction
-// Refactor
-// Why do does this return both error and bool
-func (vs *Visor) InjectTxn(txn coin.Transaction) (bool, error) {
-	// Ignore transactions that do not conform to decimal restrictions
-	for _, o := range txn.Out {
-		if err := DropletPrecisionCheck(o.Coins); err != nil {
-			return false, err
-		}
+// InjectTransaction records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
+// already in the blockchain.
+// The bool return value is whether or not the transaction was already in the pool.
+// If the transaction violates hard constraints, it is rejected, and error will not be nil.
+// If the transaction only violates soft constraints, it is still injected, and the soft constraint violation is returned.
+func (vs *Visor) InjectTransaction(txn coin.Transaction) (bool, *ErrTxnViolatesSoftConstraint, error) {
+	return vs.Unconfirmed.InjectTransaction(vs.Blockchain, txn, vs.Config.MaxBlockSize)
+}
+
+// InjectTransactionStrict records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
+// already in the blockchain.
+// The bool return value is whether or not the transaction was already in the pool.
+// If the transaction violates hard or soft constraints, it is rejected, and error will not be nil.
+func (vs *Visor) InjectTransactionStrict(txn coin.Transaction) (bool, error) {
+	if err := vs.Blockchain.VerifySingleTxnAllConstraints(txn, vs.Config.MaxBlockSize); err != nil {
+		return false, err
 	}
 
-	return vs.Unconfirmed.InjectTxn(vs.Blockchain, txn)
+	known, _, err := vs.Unconfirmed.InjectTransaction(vs.Blockchain, txn, vs.Config.MaxBlockSize)
+	return known, err
 }
 
 // GetAddressTxns returns the Transactions whose unspents give coins to a cipher.Address.
@@ -941,20 +933,29 @@ func sortTxns(txns []Transaction) []Transaction {
 }
 
 // AddressBalance computes the total balance for cipher.Addresses and their coin.UxOuts
-func (vs *Visor) AddressBalance(auxs coin.AddressUxOuts) (uint64, uint64) {
+func (vs *Visor) AddressBalance(auxs coin.AddressUxOuts) (uint64, uint64, error) {
 	prevTime := vs.Blockchain.Time()
-	//b := wallet.NewBalance(0, 0)
 	var coins uint64
 	var hours uint64
 	for _, uxs := range auxs {
 		for _, ux := range uxs {
-			coins += ux.Body.Coins
-			hours += ux.CoinHours(prevTime)
-			// FIXME
-			//b = b.Add(wallet.NewBalance(ux.Body.Coins, ux.CoinHours(prevTime)))
+			uxHours, err := ux.CoinHours(prevTime)
+			if err != nil {
+				return 0, 0, err
+			}
+
+			coins, err = coin.AddUint64(coins, ux.Body.Coins)
+			if err != nil {
+				return 0, 0, err
+			}
+
+			hours, err = coin.AddUint64(hours, uxHours)
+			if err != nil {
+				return 0, 0, err
+			}
 		}
 	}
-	return coins, hours
+	return coins, hours, nil
 }
 
 // GetUnconfirmedTxns gets all confirmed transactions of specific addresses
@@ -1084,13 +1085,47 @@ func (vs Visor) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair,
 		inUxs := recvUxs[addr]
 		predictedUxs := uxs.Sub(outUxs).Add(inUxs)
 
-		coins := uxs.Coins()
-		coinHours := uxs.CoinHours(headTime)
-		pcoins := predictedUxs.Coins()
-		pcoinHours := predictedUxs.CoinHours(headTime)
+		coins, err := uxs.Coins()
+		if err != nil {
+			return nil, fmt.Errorf("uxs.Coins failed: %v", err)
+		}
+
+		coinHours, err := uxs.CoinHours(headTime)
+		if err != nil {
+			switch err {
+			case coin.ErrAddEarnedCoinHoursAdditionOverflow:
+				coinHours = 0
+				err = nil
+			default:
+				return nil, fmt.Errorf("uxs.CoinHours failed: %v", err)
+			}
+		}
+
+		pcoins, err := predictedUxs.Coins()
+		if err != nil {
+			return nil, fmt.Errorf("predictedUxs.Coins failed: %v", err)
+		}
+
+		pcoinHours, err := predictedUxs.CoinHours(headTime)
+		if err != nil {
+			switch err {
+			case coin.ErrAddEarnedCoinHoursAdditionOverflow:
+				coinHours = 0
+				err = nil
+			default:
+				return nil, fmt.Errorf("predictedUxs.CoinHours failed: %v", err)
+			}
+		}
+
 		bp := wallet.BalancePair{
-			Confirmed: wallet.Balance{Coins: coins, Hours: coinHours},
-			Predicted: wallet.Balance{Coins: pcoins, Hours: pcoinHours},
+			Confirmed: wallet.Balance{
+				Coins: coins,
+				Hours: coinHours,
+			},
+			Predicted: wallet.Balance{
+				Coins: pcoins,
+				Hours: pcoinHours,
+			},
 		}
 
 		bps = append(bps, bp)

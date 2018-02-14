@@ -15,7 +15,7 @@ env:
     - ELECTRON_CACHE: $HOME/.cache/electron
     - ELECTRON_BUILDER_CACHE: $HOME/.cache/electron-builder
     - BUILD_DIR: dist
-    - BUILDLIB_DIR: $BUILD_DIR/skycoinlib
+    - BUILDLIB_DIR: $BUILD_DIR/libskycoin
     - LIB_DIR: lib
 
 cache:
@@ -60,12 +60,13 @@ script:
   # build libskycoin
   - mkdir -p $(BUILDLIB_DIR)
   - rm -Rf $(BUILDLIB_DIR)/*
-  # - go build -buildmode=c-shared  -o $(BUILDLIB_DIR)/libskycoin.so $(LIB_DIR)/cgo/main.go
   - go build -buildmode=c-archive -o $(BUILDLIB_DIR)/libskycoin.a  $(LIB_DIR)/cgo/main.go
   # test libskycoin
   - cp $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/
-  - gcc -o $(BUILDLIB_DIR)/skycoinlib_test $(BUILDLIB_DIR)/*.c -I$(BUILDLIB_DIR) -lcriterion -lskycoin -L $(BUILDLIB_DIR)
-  - $(BUILDLIB_DIR)/skycoinlib_test
+  - gcc -o $(BUILDLIB_DIR)/test_libskycoin $(BUILDLIB_DIR)/*.c -I$(BUILDLIB_DIR) -lcriterion -lskycoin -L $(BUILDLIB_DIR)
+  - $(BUILDLIB_DIR)/test_libskycoin
+  # TODO: test pyskycoin
+  # - go build -buildmode=c-shared  -o $(BUILDLIB_DIR)/libskycoin.so $(LIB_DIR)/cgo/main.go
    
 
 # after_script:

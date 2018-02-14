@@ -24,7 +24,7 @@ PACKAGES = $(shell find ./src -type d -not -path '\./src' \
 
 # Compilation output
 BUILD_DIR = dist
-BUILDLIB_DIR = $(BUILD_DIR)/skycoinlib
+BUILDLIB_DIR = $(BUILD_DIR)/libskycoin
 LIB_DIR = lib
 
 run:  ## Run the skycoin node. To add arguments, do 'make ARGS="--foo" run'.
@@ -46,8 +46,8 @@ build-lib-c: # Build Skycoinlib C
 test-lib-c: build-lib-c
 	cp $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/
 	rm $(BUILDLIB_DIR)/libskycoin.so	# TODO: Get rid of this step
-	gcc -o $(BUILDLIB_DIR)/skycoinlib_test $(BUILDLIB_DIR)/*.c -I$(BUILDLIB_DIR) -lcriterion -lskycoin -L $(BUILDLIB_DIR)
-	$(BUILDLIB_DIR)/skycoinlib_test
+	gcc -o $(BUILDLIB_DIR)/test_libskycoin $(BUILDLIB_DIR)/*.c -I$(BUILDLIB_DIR) -lcriterion -lskycoin -L $(BUILDLIB_DIR)
+	$(BUILDLIB_DIR)/test_libskycoin
 
 test: test-core test-lib-c ## Run tests
 

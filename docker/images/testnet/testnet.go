@@ -170,7 +170,7 @@ func NewSkyCoinTestNetwork(nodesNum int, buildContext string, tempDir string) Sk
 			},
 			ImageTag: currentCommit,
 			NodesNum: 1,
-			Ports:    []string{"6420:6420"},
+			Ports:    []string{"16420:16420"},
 		},
 		dockerService{
 			ImageName: "skycoin-nogui",
@@ -217,7 +217,7 @@ func NewSkyCoinTestNetwork(nodesNum int, buildContext string, tempDir string) Sk
 				Volumes: []string{dataDir + ":/root/.skycoin-testnet"},
 				Ports:   s.Ports,
 			}
-			t.Peers = append(t.Peers, ipAddress+":6000")
+			t.Peers = append(t.Peers, ipAddress+":16000")
 			ipHostNum++
 		}
 		t.Services[idx].SkyCoinParameters = append(t.Services[idx].SkyCoinParameters, commonParameters...)
@@ -239,7 +239,7 @@ func NewSkyCoinTestNetwork(nodesNum int, buildContext string, tempDir string) Sk
 			},
 		},
 		Ports:       []string{"8001:8001"},
-		Environment: []string{"SKYCOIN_ADDR=http://172.16.200.2:6420"},
+		Environment: []string{"SKYCOIN_ADDR=http://172.16.200.2:16420"},
 	}
 	return t
 }

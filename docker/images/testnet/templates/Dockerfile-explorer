@@ -19,7 +19,7 @@ FROM alpine:3.7
 COPY --from=build /go/bin/* /usr/bin/
 
 # copy assets
-COPY --from=build /go/src/github.com/skycoin/skycoin-explorer/dist ./
+COPY --from=build /go/src/github.com/skycoin/skycoin-explorer/dist ./dist
 
 ENV EXPLORER_HOST="0.0.0.0:8001"
 

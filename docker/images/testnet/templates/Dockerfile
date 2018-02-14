@@ -27,7 +27,7 @@ RUN cd $GOPATH/src/github.com/skycoin/skycoin/cmd/address_gen && \
 FROM alpine:3.7
 
 ENV COIN="skycoin-testnet" \
-    RPC_ADDR="0.0.0.0:6430" \
+    RPC_ADDR="0.0.0.0:16430" \
     DATA_DIR="/root/.$COIN" \
     WALLET_DIR="/wallet" \
     WALLET_NAME="$COIN_cli.wlt"
@@ -42,6 +42,6 @@ COPY --from=build /go/src/github.com/skycoin/skycoin/src/gui/static /usr/local/s
 VOLUME $WALLET_DIR
 VOLUME $DATA_DIR
 
-EXPOSE 6000 6420 6430
+EXPOSE 16000 16420 16430
 
 CMD ["/usr/bin/skycoin"{{ range .SkyCoinParameters }}, "{{ . }}"{{ end }}]

@@ -26,6 +26,7 @@ PACKAGES = $(shell find ./src -type d -not -path '\./src' \
 BUILD_DIR = dist
 BUILDLIB_DIR = $(BUILD_DIR)/skycoinlib
 LIB_DIR = lib
+LIB_FILES = $(shell find ./lib/cgo -type f -name "*.go")
 
 run:  ## Run the skycoin node. To add arguments, do 'make ARGS="--foo" run'.
 	go run cmd/skycoin/skycoin.go --gui-dir="./${STATIC_DIR}" ${ARGS}
@@ -40,8 +41,8 @@ test: ## Run tests
 build-lib-c: # Build Skycoinlib C
 	mkdir -p $(BUILDLIB_DIR)
 	rm -Rf $(BUILDLIB_DIR)/*
-	go build -buildmode=c-shared  -o $(BUILDLIB_DIR)/libskycoin.so $(LIB_DIR)/cgo/main.go
-	go build -buildmode=c-archive -o $(BUILDLIB_DIR)/libskycoin.a  $(LIB_DIR)/cgo/main.go
+	go build -buildmode=c-shared  -o $(BUILDLIB_DIR)/libskycoin.so $(LIB_FILES)
+	go build -buildmode=c-archive -o $(BUILDLIB_DIR)/libskycoin.a  $(LIB_FILES)
 
 test-lib-c: build-lib-c
 	cp $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/

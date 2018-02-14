@@ -50,15 +50,15 @@ script:
   # build wallets
   - if [[ "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/build-wallet.sh; fi
   # build libskycoin
-  - mkdir -p $(BUILDLIB_DIR)
-  - rm -Rf $(BUILDLIB_DIR)/*
-  - go build -buildmode=c-archive -o $(BUILDLIB_DIR)/libskycoin.a  $(LIB_DIR)/cgo/main.go
+  - mkdir -p $BUILDLIB_DIR
+  - rm -Rf $BUILDLIB_DIR/*
+  - go build -buildmode=c-archive -o $BUILDLIB_DIR/libskycoin.a  $LIB_DIR/cgo/main.go
   # test libskycoin
-  - cp $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/
-  - gcc -o $(BUILDLIB_DIR)/test_libskycoin $(BUILDLIB_DIR)/*.c -I$(BUILDLIB_DIR) -lcriterion -lskycoin -L $(BUILDLIB_DIR)
+  - cp $LIB_DIR/cgo/tests/*.c $BUILDLIB_DIR/
+  - gcc -o $BUILDLIB_DIR/test_libskycoin $BUILDLIB_DIR/*.c -I$BUILDLIB_DIR -lcriterion -lskycoin -L $BUILDLIB_DIR
   - $(BUILDLIB_DIR)/test_libskycoin
   # TODO: test pyskycoin
-  # - go build -buildmode=c-shared  -o $(BUILDLIB_DIR)/libskycoin.so $(LIB_DIR)/cgo/main.go
+  # - go build -buildmode=c-shared  -o $BUILDLIB_DIR/libskycoin.so $LIB_DIR/cgo/main.go
    
 
 notifications:

@@ -273,11 +273,11 @@ func walletNewAddresses(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		var rlt = struct {
-			Address []string `json:"addresses"`
+			Addresses []string `json:"addresses"`
 		}{}
 
 		for _, a := range addrs {
-			rlt.Address = append(rlt.Address, a.String())
+			rlt.Addresses = append(rlt.Addresses, a.String())
 		}
 
 		wh.SendOr404(w, rlt)
@@ -409,6 +409,11 @@ type WalletFolder struct {
 // Loads/unloads wallets from the wallet directory
 func getWalletFolder(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
 		addr, err := gateway.GetWalletDir()
 		if err != nil {
 			switch err {

@@ -525,6 +525,18 @@ func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
 	})
 }
 
+// GetSignedBlock returns a copy of signed block at seq.
+// Returns error if seq is greater than blockhain height.
+func (vs *Visor) GetSignedBlock(seq uint64) (*coin.SignedBlock, error) {
+	var sb *coin.SignedBlock
+	err := vs.strand("GetSignedBlock", func() error {
+		var err error
+		sb, err = vs.v.GetBlock(seq)
+		return err
+	})
+	return sb, err
+}
+
 // GetSignedBlocksSince returns signed blocks in an inclusive range of [seq+1, seq+ct]
 func (vs *Visor) GetSignedBlocksSince(seq uint64, ct uint64) ([]coin.SignedBlock, error) {
 	var sbs []coin.SignedBlock

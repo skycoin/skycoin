@@ -6,7 +6,9 @@ set -euxo pipefail
 # "stable" mode tests assume the blockchain data is static, in order to check API responses more precisely
 
 PORT="46420"
+RPC_PORT="46430"
 HOST="http://127.0.0.1:$PORT"
+RPC_ADDR="127.0.0.1:$RPC_PORT"
 MODE="stable"
 BINARY="skycoin-integration"
 
@@ -30,7 +32,8 @@ echo "starting skycoin node in background with http listener on $HOST"
                       -web-interface-port=$PORT \
                       -download-peerlist=false \
                       -db-path=./src/gui/integration/test-fixtures/blockchain-180.db \
-                      -rpc-interface=false \
+                      -rpc-interface=true \
+                      -rpc-interface-port=$RPC_PORT \
                       -launch-browser=false \
                       -data-dir="$DATA_DIR" \
                       -wallet-dir="$WALLET_DIR" &
@@ -46,7 +49,12 @@ set +e
 
 SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST go test ./src/gui/integration/... -timeout=30s -v
 
-FAIL=$?
+GUI_FAIL=$?
+
+SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR go test ./src/api/cli/integration/... -timeout=30s -v
+
+CLI_FAIL=$?
+
 
 echo "shutting down skycoin node"
 
@@ -56,4 +64,11 @@ wait $SKYCOIN_PID
 
 rm "$BINARY"
 
-exit $FAIL
+if [[ $GUI_FAIL -ne 0 ]]; then 
+  exit $GUI_FAIL
+elif [[ $CLI_FAIL -ne 0 ]]; then 
+  exit $CLI_FAIL
+else 
+  exit 0
+fi
+# exit $FAIL

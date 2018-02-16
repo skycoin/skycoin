@@ -16,15 +16,14 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"io"
-	"io/ioutil"
-	"strconv"
-	"sync"
-
 	"github.com/skycoin/skycoin/src/api/cli"
 	"github.com/skycoin/skycoin/src/api/webrpc"
-	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
+	"sync"
+	"io/ioutil"
+	"io"
+	"strconv"
+	"github.com/skycoin/skycoin/src/visor"
 )
 
 const (
@@ -81,9 +80,42 @@ func TestVerifyAddress(t *testing.T) {
 		return
 	}
 
-	output, err := exec.Command(binaryPath, "verifyAddress", "2Kg3eRXUhY6hrDZvNGB99DKahtrPDQ1W9vN").CombinedOutput()
-	require.NoError(t, err)
-	require.Empty(t, output)
+	tt := []struct {
+		name   string
+		addr   string
+		err    error
+		errMsg string
+	}{
+		{
+			"valid skycoin address",
+			"2Kg3eRXUhY6hrDZvNGB99DKahtrPDQ1W9vN",
+			nil,
+			"",
+		},
+		{
+			"invalid skycoin address",
+			"2KG9eRXUhx6hrDZvNGB99DKahtrPDQ1W9vn",
+			errors.New("exit status 1"),
+			"Invalid version",
+		},
+		{
+			"invalid bitcoin address",
+			"1Dcb9gpaZpBKmjqjCsiBsP3sBW1md2kEM2",
+			errors.New("exit status 1"),
+			"Invalid version",
+		},
+	}
+
+	for _, tc := range tt {
+		output, err := exec.Command(binaryPath, "verifyAddress", tc.addr).CombinedOutput()
+		if err != nil {
+			require.Equal(t, tc.err.Error(), err.Error())
+			require.Equal(t, tc.errMsg, strings.Trim(string(output), "\n"))
+			return
+		}
+
+		require.Empty(t, output)
+	}
 }
 
 func TestStableListAddress(t *testing.T) {

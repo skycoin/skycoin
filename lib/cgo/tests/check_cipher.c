@@ -12,7 +12,7 @@ Test(cipher, test_address_valid) {
   };
   Address addr;
 
-  int r = DecodeBase58Address(strAddr, &addr);
+  int r = SKY_Cipher_DecodeBase58Address(strAddr, &addr);
   cr_assert(r == 1);
 }
 
@@ -23,7 +23,7 @@ Test(cipher, test_address_wrong) {
   };
   Address addr;
 
-  int r = DecodeBase58Address(strAddr, &addr);
+  int r = SKY_Cipher_DecodeBase58Address(strAddr, &addr);
   cr_assert(r == 0);
 }
 

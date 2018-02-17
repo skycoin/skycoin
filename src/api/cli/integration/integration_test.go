@@ -16,14 +16,15 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"io"
+	"io/ioutil"
+	"strconv"
+	"sync"
+
 	"github.com/skycoin/skycoin/src/api/cli"
 	"github.com/skycoin/skycoin/src/api/webrpc"
-	"github.com/skycoin/skycoin/src/wallet"
-	"sync"
-	"io/ioutil"
-	"io"
-	"strconv"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 const (
@@ -143,6 +144,21 @@ func TestStableListAddress(t *testing.T) {
 	require.Equal(t, expect, wltAddresses)
 }
 
+func TestLiveListAddresses(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	output, err := exec.Command(binaryPath, "listAddresses").CombinedOutput()
+	require.NoError(t, err)
+
+	var wltAddresses struct {
+		Addresses []string `json:"addresses"`
+	}
+
+	require.NoError(t, json.NewDecoder(bytes.NewReader(output)).Decode(&wltAddresses))
+}
+
 func TestStableAddressBalance(t *testing.T) {
 	if !doStable(t) {
 		return
@@ -164,6 +180,18 @@ func TestStableAddressBalance(t *testing.T) {
 	require.Equal(t, expect, addrBalance)
 }
 
+func TestLiveAddressBalance(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	output, err := exec.Command(binaryPath, "addressBalance", "2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt").CombinedOutput()
+	require.NoError(t, err)
+
+	var addrBalance cli.BalanceResult
+	require.NoError(t, json.NewDecoder(bytes.NewReader(output)).Decode(&addrBalance))
+}
+
 func TestStableWalletBalance(t *testing.T) {
 	if !doStable(t) {
 		return
@@ -183,6 +211,18 @@ func TestStableWalletBalance(t *testing.T) {
 	var expect cli.BalanceResult
 	loadJSON(t, golden, &expect)
 	require.Equal(t, expect, wltBalance)
+}
+
+func TestLiveWalletBalance(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	output, err := exec.Command(binaryPath, "walletBalance").CombinedOutput()
+	require.NoError(t, err)
+
+	var wltBalance cli.BalanceResult
+	require.NoError(t, json.NewDecoder(bytes.NewReader(output)).Decode(&wltBalance))
 }
 
 func TestStableStatus(t *testing.T) {

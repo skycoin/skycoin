@@ -130,7 +130,8 @@ func TestStableListAddress(t *testing.T) {
 	var wltAddresses struct {
 		Addresses []string `json:"addresses"`
 	}
-	require.NoError(t, json.NewDecoder(bytes.NewReader(output)).Decode(&wltAddresses))
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wltAddresses)
+	require.NoError(t, err)
 
 	golden := filepath.Join("testdata", "listAddresses.golden")
 	if *update {
@@ -156,7 +157,8 @@ func TestLiveListAddresses(t *testing.T) {
 		Addresses []string `json:"addresses"`
 	}
 
-	require.NoError(t, json.NewDecoder(bytes.NewReader(output)).Decode(&wltAddresses))
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wltAddresses)
+	require.NoError(t, err)
 }
 
 func TestStableAddressBalance(t *testing.T) {
@@ -168,7 +170,8 @@ func TestStableAddressBalance(t *testing.T) {
 	require.NoError(t, err)
 
 	var addrBalance cli.BalanceResult
-	require.NoError(t, json.NewDecoder(bytes.NewReader(output)).Decode(&addrBalance))
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&addrBalance)
+	require.NoError(t, err)
 
 	golden := filepath.Join("testdata", "addressBalance.golden")
 	if *update {
@@ -189,7 +192,8 @@ func TestLiveAddressBalance(t *testing.T) {
 	require.NoError(t, err)
 
 	var addrBalance cli.BalanceResult
-	require.NoError(t, json.NewDecoder(bytes.NewReader(output)).Decode(&addrBalance))
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&addrBalance)
+	require.NoError(t, err)
 }
 
 func TestStableWalletBalance(t *testing.T) {
@@ -201,7 +205,8 @@ func TestStableWalletBalance(t *testing.T) {
 	require.NoError(t, err)
 
 	var wltBalance cli.BalanceResult
-	require.NoError(t, json.NewDecoder(bytes.NewReader(output)).Decode(&wltBalance))
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wltBalance)
+	require.NoError(t, err)
 
 	golden := filepath.Join("testdata", "walletBalance.golden")
 	if *update {
@@ -222,7 +227,8 @@ func TestLiveWalletBalance(t *testing.T) {
 	require.NoError(t, err)
 
 	var wltBalance cli.BalanceResult
-	require.NoError(t, json.NewDecoder(bytes.NewReader(output)).Decode(&wltBalance))
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wltBalance)
+	require.NoError(t, err)
 }
 
 func TestStableAddressOutputs(t *testing.T) {
@@ -234,7 +240,8 @@ func TestStableAddressOutputs(t *testing.T) {
 	require.NoError(t, err)
 
 	var addrOutputs webrpc.OutputsResult
-	require.NoError(t, json.NewDecoder(bytes.NewReader(output)).Decode(&addrOutputs))
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&addrOutputs)
+	require.NoError(t, err)
 
 	golden := filepath.Join("testdata", "addressOutputs.golden")
 	if *update {
@@ -256,7 +263,8 @@ func TestLiveAddressOutputs(t *testing.T) {
 	require.NoError(t, err)
 
 	var addrOutputs webrpc.OutputsResult
-	require.NoError(t, json.NewDecoder(bytes.NewReader(output)).Decode(&addrOutputs))
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&addrOutputs)
+	require.NoError(t, err)
 }
 
 func TestStableStatus(t *testing.T) {
@@ -304,7 +312,8 @@ func TestLiveStatus(t *testing.T) {
 		RPCAddress string `json:"webrpc_address"`
 	}
 
-	require.NoError(t, json.NewDecoder(bytes.NewReader(output)).Decode(&ret))
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&ret)
+	require.NoError(t, err)
 	require.True(t, ret.Running)
 	require.Equal(t, ret.RPCAddress, rpcAddress())
 }
@@ -363,7 +372,8 @@ func TestStableTransaction(t *testing.T) {
 
 			// Decode the output into visor.TransactionJSON
 			var tx webrpc.TxnResult
-			require.NoError(t, json.NewDecoder(bytes.NewReader(o)).Decode(&tx))
+			err = json.NewDecoder(bytes.NewReader(o)).Decode(&tx)
+			require.NoError(t, err)
 
 			if tc.goldenFile != "" && *update {
 				writeJSON(t, tc.goldenFile, tx)
@@ -386,7 +396,8 @@ func TestLiveTransaction(t *testing.T) {
 	o, err := exec.Command(binaryPath, "transaction", "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add").CombinedOutput()
 	require.NoError(t, err)
 	var tx webrpc.TxnResult
-	require.NoError(t, json.NewDecoder(bytes.NewReader(o)).Decode(&tx))
+	err = json.NewDecoder(bytes.NewReader(o)).Decode(&tx)
+	require.NoError(t, err)
 
 	var expect webrpc.TxnResult
 
@@ -418,7 +429,8 @@ func scanTransactions(t *testing.T, fullTest bool) {
 		webrpc.StatusResult
 		RPCAddress string `json:"webrpc_address"`
 	}
-	require.NoError(t, json.NewDecoder(bytes.NewReader(output)).Decode(&status))
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&status)
+	require.NoError(t, err)
 
 	txids := getTxids(t, status.BlockNum)
 
@@ -461,7 +473,8 @@ func checkTransctions(t *testing.T, txids []string) {
 						o, err := exec.Command(binaryPath, "transaction", txid).CombinedOutput()
 						require.NoError(t, err)
 						var txRlt webrpc.TxnResult
-						require.NoError(t, json.NewDecoder(bytes.NewReader(o)).Decode(&txRlt))
+						err = json.NewDecoder(bytes.NewReader(o)).Decode(&txRlt)
+						require.NoError(t, err)
 						require.Equal(t, txid, txRlt.Transaction.Transaction.Hash)
 						require.True(t, txRlt.Transaction.Status.Confirmed)
 					})
@@ -504,7 +517,8 @@ func getTxidsInBlocks(t *testing.T, start, end int) []string {
 	o, err := exec.Command(binaryPath, "blocks", s, e).CombinedOutput()
 	require.NoError(t, err)
 	var blocks visor.ReadableBlocks
-	require.NoError(t, json.NewDecoder(bytes.NewReader(o)).Decode(&blocks))
+	err = json.NewDecoder(bytes.NewReader(o)).Decode(&blocks)
+	require.NoError(t, err)
 	require.Len(t, blocks.Blocks, end-start+1)
 
 	var txids []string

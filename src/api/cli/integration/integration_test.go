@@ -119,6 +119,83 @@ func TestVerifyAddress(t *testing.T) {
 	}
 }
 
+func TestDecodeRawTransaction(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+
+	rawTx := `2601000000a1d3345ac47f897f24084b1c6b9bd6e03fc92887050d0748bdab5e639c1fdcd401000000a2a10f07e0e06cf6ba3e793b3186388a126591ee230b3f387617f1ccb6376a3f18e094bd3f7719aa8191c00764f323872f5192da393852bd85dab70b13409d2b01010000004d78de698a33abcfff22391c043b57a56bb0efbdc4a5b975bf8e7889668896bc0400000000bae12bbf671abeb1181fc85f1c01cdfee55deb97980c9c0a00000000543600000000000000373bb3675cbf3880bba3f3de7eb078925b8a72ad0095ba0a000000001c12000000000000008829025fe45b48f29795893a642bdaa89b2bb40e40d2df03000000001c12000000000000008001532c3a705e7e62bb0bb80630ecc21a87ec09c0fc9b01000000001b12000000000000`
+	output, err := exec.Command(binaryPath, "decodeRawTransaction", rawTx).CombinedOutput()
+	require.NoError(t, err)
+
+	var txn visor.TransactionJSON
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&txn)
+	require.NoError(t, err)
+
+	golden := filepath.Join("testdata", "decodeRawTransaction.golden")
+	if *update {
+		writeJSON(t, golden, txn)
+	}
+
+	var expect visor.TransactionJSON
+	loadJSON(t, golden, &expect)
+	require.Equal(t, expect, txn)
+}
+
+func TestAddressGen(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+
+	output, err := exec.Command(binaryPath, "addressGen").CombinedOutput()
+	require.NoError(t, err)
+
+	var wltAddress wallet.ReadableWallet
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wltAddress)
+	require.NoError(t, err)
+}
+
+func TestStableListWallets(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	output, err := exec.Command(binaryPath, "listWallets").CombinedOutput()
+	require.NoError(t, err)
+
+	var wlts struct {
+		Wallets []cli.WalletEntry `json:"wallets"`
+	}
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wlts)
+	require.NoError(t, err)
+
+	golden := filepath.Join("testdata", "listWallets.golden")
+	if *update {
+		writeJSON(t, golden, wlts)
+	}
+
+	var expect struct {
+		Wallets []cli.WalletEntry `json:"wallets"`
+	}
+	loadJSON(t, golden, &expect)
+	require.Equal(t, expect, wlts)
+}
+
+func TestLiveListWallets(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	output, err := exec.Command(binaryPath, "listWallets").CombinedOutput()
+	require.NoError(t, err)
+
+	var wlts struct {
+		Wallets []cli.WalletEntry `json:"wallets"`
+	}
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wlts)
+	require.NoError(t, err)
+}
+
 func TestStableListAddress(t *testing.T) {
 	if !doStable(t) {
 		return
@@ -231,6 +308,41 @@ func TestLiveWalletBalance(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestStableWalletOutputs(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	output, err := exec.Command(binaryPath, "walletOutputs").CombinedOutput()
+	require.NoError(t, err)
+
+	var wltOutput webrpc.OutputsResult
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wltOutput)
+	require.NoError(t, err)
+
+	golden := filepath.Join("testdata", "walletOutputs.golden")
+	if *update {
+		writeJSON(t, golden, wltOutput)
+	}
+
+	var expect webrpc.OutputsResult
+	loadJSON(t, golden, &expect)
+	require.Equal(t, expect, wltOutput)
+}
+
+func TestLiveWalletOutputs(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	output, err := exec.Command(binaryPath, "walletOutputs").CombinedOutput()
+	require.NoError(t, err)
+
+	var wltOutput webrpc.OutputsResult
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wltOutput)
+	require.NoError(t, err)
+}
+
 func TestStableAddressOutputs(t *testing.T) {
 	if !doStable(t) {
 		return
@@ -251,7 +363,6 @@ func TestStableAddressOutputs(t *testing.T) {
 	var expect webrpc.OutputsResult
 	loadJSON(t, golden, &expect)
 	require.Equal(t, expect, addrOutputs)
-
 }
 
 func TestLiveAddressOutputs(t *testing.T) {

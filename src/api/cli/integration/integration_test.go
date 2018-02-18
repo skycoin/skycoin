@@ -18,10 +18,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
-	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -41,7 +42,6 @@ var (
 )
 
 var (
-	update     = flag.Bool("update", false, "update golden files")
 	liveTxFull = flag.Bool("live-tx-full", false, "run live transaction test against full blockchain")
 )
 

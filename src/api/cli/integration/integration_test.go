@@ -45,6 +45,7 @@ var (
 )
 
 var (
+	update     = flag.Bool("update", false, "update golden files")
 	liveTxFull = flag.Bool("live-tx-full", false, "run live transaction test against full blockchain")
 )
 

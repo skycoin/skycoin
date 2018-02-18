@@ -24,7 +24,7 @@ PACKAGES = $(shell find ./src -type d -not -path '\./src' \
 
 # Compilation output
 BUILD_DIR = dist
-BUILDLIB_DIR = $(BUILD_DIR)/skycoinlib
+BUILDLIB_DIR = $(BUILD_DIR)/libskycoin
 LIB_DIR = lib
 LIB_FILES = $(shell find ./lib/cgo -type f -name "*.go")
 
@@ -38,17 +38,17 @@ test: ## Run tests
 	go test ./cmd/... -timeout=1m
 	go test ./src/... -timeout=1m
 
-build-lib-c: # Build Skycoinlib C
+build-libc: # Build Skycoinlib C
 	mkdir -p $(BUILDLIB_DIR)
 	rm -Rf $(BUILDLIB_DIR)/*
 	go build -buildmode=c-shared  -o $(BUILDLIB_DIR)/libskycoin.so $(LIB_FILES)
 	go build -buildmode=c-archive -o $(BUILDLIB_DIR)/libskycoin.a  $(LIB_FILES)
 
-test-lib-c: build-lib-c
+test-libc: build-libc
 	cp $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/
 	rm $(BUILDLIB_DIR)/libskycoin.so	# TODO: Get rid of this step
-	gcc -o $(BUILDLIB_DIR)/skycoinlib_test $(BUILDLIB_DIR)/*.c -I$(BUILDLIB_DIR) -lcriterion -lskycoin -L $(BUILDLIB_DIR)
-	$(BUILDLIB_DIR)/skycoinlib_test
+	gcc -o $(BUILDLIB_DIR)/test_libskycoin $(BUILDLIB_DIR)/*.c -I$(BUILDLIB_DIR) -lcriterion -lskycoin -L $(BUILDLIB_DIR)
+	$(BUILDLIB_DIR)/test_libskycoin
 
 lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...

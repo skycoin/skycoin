@@ -20,4 +20,7 @@
     color="primary"
     mode="determinate"
     [value]="percentage * 100"></mat-progress-bar>
+  <mat-toolbar class="notification-bar" *ngIf="updateAvailable">
+  <div> Wallet update <a href="https://www.skycoin.net/downloads/" target="_blank">v{{ releaseVersion }}</a>  available.</div>
+  </mat-toolbar>
 </div>

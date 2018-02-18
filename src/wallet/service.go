@@ -166,9 +166,13 @@ func (serv *Service) NewAddresses(wltID string, num uint64) ([]cipher.Address, e
 		return []cipher.Address{}, ErrWalletNotExist
 	}
 
-	addrs := w.GenerateAddresses(num)
+	addrs, err := w.GenerateAddresses(num)
+	if err != nil {
+		return nil, err
+	}
+
 	if err := w.Save(serv.WalletDirectory); err != nil {
-		return []cipher.Address{}, err
+		return nil, err
 	}
 
 	return addrs, nil

@@ -35,11 +35,7 @@ install:
   # for test
   - go get -t ./...
   - make install-linters
-  # Install dependencies for testing libskycoin
-  - mkdir -p $BUILD_DIR/usr/tmp $BUILD_DIR/usr/lib $BUILD_DIR/usr/include
-  - wget -O $BUILD_DIR/usr/tmp/criterion-v2.3.2-$TRAVIS_OS_NAME-x86_64.tar.bz2 https://github.com/Snaipe/Criterion/releases/download/v2.3.2/criterion-v2.3.2-$TRAVIS_OS_NAME-x86_64.tar.bz2
-  - tar -x -C $BUILD_DIR/usr/tmp/ -y -f $BUILD_DIR/usr/tmp/criterion-v2.3.2-$TRAVIS_OS_NAME-x86_64.tar.bz2 
-  - echo "include lib" | tr ' ' "\n" | xargs -I NAME mv $BUILD_DIR/usr/tmp/criterion-v2.3.2/NAME/* $BUILD_DIR/usr/NAME/
+  - make install-deps-libc
 
 before_script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" && "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/add-key.sh && npm install -g yarn ;fi

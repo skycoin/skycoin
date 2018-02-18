@@ -245,7 +245,7 @@ func (c *Client) Blocks(start, end int) (*visor.ReadableBlocks, error) {
 // LastBlocks makes a request to /last_blocks
 func (c *Client) LastBlocks(n int) (*visor.ReadableBlocks, error) {
 	v := url.Values{}
-	v.Add("n", fmt.Sprint(n))
+	v.Add("num", fmt.Sprint(n))
 	endpoint := "/last_blocks?" + v.Encode()
 
 	var b visor.ReadableBlocks
@@ -461,7 +461,7 @@ func (c *Client) NetworkConnection(addr string) (*daemon.Connection, error) {
 }
 
 // NetworkConnections makes a request to /network/connections
-func (c *Client) NetworkConnections(addr string) (*daemon.Connections, error) {
+func (c *Client) NetworkConnections() (*daemon.Connections, error) {
 	var dc daemon.Connections
 	if err := c.Get("/network/connections", &dc); err != nil {
 		return nil, err
@@ -470,7 +470,7 @@ func (c *Client) NetworkConnections(addr string) (*daemon.Connections, error) {
 }
 
 // NetworkDefaultConnections makes a request to /network/defaultConnections
-func (c *Client) NetworkDefaultConnections(addr string) ([]string, error) {
+func (c *Client) NetworkDefaultConnections() ([]string, error) {
 	var dc []string
 	if err := c.Get("/network/defaultConnections", &dc); err != nil {
 		return nil, err
@@ -479,7 +479,7 @@ func (c *Client) NetworkDefaultConnections(addr string) ([]string, error) {
 }
 
 // NetworkTrustedConnections makes a request to /network/connections/trust
-func (c *Client) NetworkTrustedConnections(addr string) ([]string, error) {
+func (c *Client) NetworkTrustedConnections() ([]string, error) {
 	var dc []string
 	if err := c.Get("/network/connections/trust", &dc); err != nil {
 		return nil, err
@@ -488,7 +488,7 @@ func (c *Client) NetworkTrustedConnections(addr string) ([]string, error) {
 }
 
 // NetworkExchangeableConnections makes a request to /network/connections/exchange
-func (c *Client) NetworkExchangeableConnections(addr string) ([]string, error) {
+func (c *Client) NetworkExchangeableConnections() ([]string, error) {
 	var dc []string
 	if err := c.Get("/network/connections/exchange", &dc); err != nil {
 		return nil, err

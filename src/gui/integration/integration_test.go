@@ -12,6 +12,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/testutil"
+
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/gui"
 	"github.com/skycoin/skycoin/src/util/droplet"
@@ -45,6 +49,18 @@ const (
 	testModeStable = "stable"
 	testModeLive   = "live"
 )
+
+// DefaultConnections the default trust node addresses
+var defaultConnections = map[string]bool{
+	"118.178.135.93:6000":  true,
+	"47.88.33.156:6000":    true,
+	"121.41.103.148:6000":  true,
+	"120.77.69.188:6000":   true,
+	"104.237.142.206:6000": true,
+	"176.58.126.224:6000":  true,
+	"172.104.85.6:6000":    true,
+	"139.162.7.132:6000":   true,
+}
 
 type TestData struct {
 	actual   interface{}
@@ -107,7 +123,7 @@ func loadJSON(t *testing.T, filename string, testData *TestData) {
 	defer f.Close()
 
 	err = json.NewDecoder(f).Decode(testData.expected)
-	require.NoError(t, err)
+	require.NoError(t, err, filename)
 }
 
 func updateGoldenFile(t *testing.T, filename string, content interface{}) {
@@ -122,6 +138,49 @@ func assertResponseError(t *testing.T, err error, errCode int, errMsg string) {
 	require.IsType(t, gui.APIError{}, err)
 	require.Equal(t, errCode, err.(gui.APIError).StatusCode)
 	require.Equal(t, errMsg, err.(gui.APIError).Message)
+}
+
+func makeTransaction(t *testing.T) coin.Transaction {
+	tx, _ := makeTransactionWithSecret(t)
+	return tx
+}
+
+func makeTransactionWithSecret(t *testing.T) (coin.Transaction, cipher.SecKey) {
+	tx := coin.Transaction{}
+	ux, s := makeUxOutWithSecret(t)
+
+	tx.PushInput(ux.Hash())
+	tx.SignInputs([]cipher.SecKey{s})
+	tx.PushOutput(makeAddress(), 1e6, 50)
+	tx.PushOutput(makeAddress(), 5e6, 50)
+	tx.UpdateHeader()
+	return tx, s
+}
+
+func makeAddress() cipher.Address {
+	p, _ := cipher.GenerateKeyPair()
+	return cipher.AddressFromPubKey(p)
+}
+
+func makeUxOutWithSecret(t *testing.T) (coin.UxOut, cipher.SecKey) {
+	body, sec := makeUxBodyWithSecret(t)
+	return coin.UxOut{
+		Head: coin.UxHead{
+			Time:  100,
+			BkSeq: 2,
+		},
+		Body: body,
+	}, sec
+}
+
+func makeUxBodyWithSecret(t *testing.T) (coin.UxBody, cipher.SecKey) {
+	p, s := cipher.GenerateKeyPair()
+	return coin.UxBody{
+		SrcTransaction: testutil.RandSHA256(t),
+		Address:        cipher.AddressFromPubKey(p),
+		Coins:          1e6,
+		Hours:          100,
+	}, s
 }
 
 func TestStableCoinSupply(t *testing.T) {
@@ -587,6 +646,248 @@ func TestLiveUxOut(t *testing.T) {
 
 	// Scan all uxouts from the result of /outputs
 	scanUxOuts(t)
+}
+
+func TestStableAddressUxOuts(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+	cases := []struct {
+		name    string
+		errCode int
+		errMsg  string
+		golden  string
+		addr    string
+	}{
+		{
+			name:    "no addresses",
+			errCode: http.StatusBadRequest,
+			errMsg:  "400 Bad Request - address is empty\n",
+		},
+		{
+			name:   "unknown address",
+			addr:   "prRXwTcDK24hs6AFxj69UuWae3LzhrsPW9",
+			golden: "uxout-noaddr.golden",
+		},
+		{
+			name:   "one address",
+			addr:   "2THDupTBEo7UqB6dsVizkYUvkKq82Qn4gjf",
+			golden: "uxout-addr.golden",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ux, err := c.AddressUxOuts(tc.addr)
+			if tc.errCode != 0 && tc.errCode != http.StatusOK {
+				assertResponseError(t, err, tc.errCode, tc.errMsg)
+				return
+			}
+			require.NoError(t, err)
+			var expected []*historydb.UxOutJSON
+			loadJSON(t, tc.golden, &TestData{ux, &expected})
+			require.Equal(t, expected, ux, tc.name)
+		})
+	}
+}
+
+func TestLiveAddressUxOuts(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+	cases := []struct {
+		name         string
+		errCode      int
+		errMsg       string
+		addr         string
+		moreThanZero bool
+	}{
+		{
+			name:    "no addresses",
+			errCode: http.StatusBadRequest,
+			errMsg:  "400 Bad Request - address is empty\n",
+		},
+		{
+			name:    "no addresses",
+			errCode: http.StatusBadRequest,
+			errMsg:  "400 Bad Request - Invalid address length\n",
+			addr:    "prRXwTcDK24hs6AFxj",
+		},
+		{
+			name: "unknown address",
+			addr: "prRXwTcDK24hs6AFxj69UuWae3LzhrsPW9",
+		},
+		{
+			name: "one address",
+			addr: "2THDupTBEo7UqB6dsVizkYUvkKq82Qn4gjf",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ux, err := c.AddressUxOuts(tc.addr)
+			if tc.errCode != 0 && tc.errCode != http.StatusOK {
+				assertResponseError(t, err, tc.errCode, tc.errMsg)
+				return
+			}
+			require.NoError(t, err)
+			if tc.moreThanZero {
+				require.NotEqual(t, 0, len(ux))
+			}
+		})
+	}
+}
+
+func TestBlocks(t *testing.T) {
+	c := gui.NewClient(nodeAddress())
+	progress, err := c.BlockchainProgress()
+	require.NoError(t, err)
+	blocks, err := c.Blocks(1, int(progress.Current))
+	require.NoError(t, err)
+	require.Equal(t, int(progress.Current), len(blocks.Blocks))
+
+	var prevBlock *visor.ReadableBlock
+	for idx, b := range blocks.Blocks {
+		if prevBlock != nil {
+			require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
+		}
+
+		bHash, err := c.BlockByHash(b.Head.BlockHash)
+		require.Equal(t, uint64(idx+1), b.Head.BkSeq)
+		require.NoError(t, err)
+		require.NotNil(t, bHash)
+		require.Equal(t, b, *bHash)
+
+		prevBlock = &blocks.Blocks[idx]
+	}
+}
+
+func TestStableLastBlocks(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	blocks, err := c.LastBlocks(1)
+	require.NoError(t, err)
+
+	var expected *visor.ReadableBlocks
+	loadJSON(t, "block-last.golden", &TestData{blocks, &expected})
+	require.Equal(t, expected, blocks)
+
+	var prevBlock *visor.ReadableBlock
+	blocks, err = c.LastBlocks(10)
+	require.NoError(t, err)
+	require.Equal(t, 10, len(blocks.Blocks))
+	for idx, b := range blocks.Blocks {
+		if prevBlock != nil {
+			require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
+		}
+
+		bHash, err := c.BlockByHash(b.Head.BlockHash)
+		require.NoError(t, err)
+		require.NotNil(t, bHash)
+		require.Equal(t, b, *bHash)
+
+		prevBlock = &blocks.Blocks[idx]
+	}
+
+}
+
+func TestLiveLastBlocks(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+	c := gui.NewClient(nodeAddress())
+	var prevBlock *visor.ReadableBlock
+	blocks, err := c.LastBlocks(10)
+	require.NoError(t, err)
+	require.Equal(t, 10, len(blocks.Blocks))
+	for idx, b := range blocks.Blocks {
+		if prevBlock != nil {
+			require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
+		}
+
+		bHash, err := c.BlockByHash(b.Head.BlockHash)
+		require.NoError(t, err)
+		require.NotNil(t, bHash)
+		require.Equal(t, b, *bHash)
+
+		prevBlock = &blocks.Blocks[idx]
+	}
+}
+
+func TestLiveConnections(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+	connections, err := c.NetworkConnections()
+	require.NoError(t, err)
+	require.True(t, len(connections.Connections) > 0)
+
+}
+
+func TestLiveConnection(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+	c := gui.NewClient(nodeAddress())
+	connections, err := c.NetworkConnections()
+	require.NoError(t, err)
+	for _, cc := range connections.Connections {
+		connection, err := c.NetworkConnection(cc.Addr)
+		require.Equal(t, cc.Addr, connection.Addr)
+		require.Equal(t, cc.ID, connection.ID)
+		require.Equal(t, cc.ListenPort, connection.ListenPort)
+		require.Equal(t, cc.Mirror, connection.Mirror)
+		require.Equal(t, cc.Introduced, connection.Introduced)
+		require.Equal(t, cc.Outgoing, connection.Outgoing)
+		require.True(t, cc.LastReceived <= connection.LastReceived)
+		require.True(t, cc.LastSent <= connection.LastReceived)
+		require.NoError(t, err)
+	}
+}
+
+func TestLiveNetworkDefaultConnections(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+	connections, err := c.NetworkDefaultConnections()
+	require.NoError(t, err)
+	require.True(t, len(connections) == len(defaultConnections))
+	for _, connection := range connections {
+		require.True(t, defaultConnections[connection])
+	}
+}
+
+func TestNetworkTrustedConnections(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+	c := gui.NewClient(nodeAddress())
+	connections, err := c.NetworkTrustedConnections()
+	require.NoError(t, err)
+	require.True(t, len(connections) > 0)
+	for _, connection := range connections {
+		require.True(t, defaultConnections[connection])
+	}
+}
+
+func TestNetworkExchangeableConnections(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+	c := gui.NewClient(nodeAddress())
+	connections, err := c.NetworkExchangeableConnections()
+	require.NoError(t, err)
+	require.True(t, len(connections) > 0)
 }
 
 func scanUxOuts(t *testing.T) {

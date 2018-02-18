@@ -130,7 +130,7 @@ func TestStableListAddress(t *testing.T) {
 	var wltAddresses struct {
 		Addresses []string `json:"addresses"`
 	}
-	json.Unmarshal(output, &wltAddresses)
+	require.NoError(t, json.NewDecoder(bytes.NewReader(output)).Decode(&wltAddresses))
 
 	golden := filepath.Join("testdata", "listAddresses.golden")
 	if *update {
@@ -168,7 +168,7 @@ func TestStableAddressBalance(t *testing.T) {
 	require.NoError(t, err)
 
 	var addrBalance cli.BalanceResult
-	json.Unmarshal(output, &addrBalance)
+	require.NoError(t, json.NewDecoder(bytes.NewReader(output)).Decode(&addrBalance))
 
 	golden := filepath.Join("testdata", "addressBalance.golden")
 	if *update {
@@ -201,7 +201,7 @@ func TestStableWalletBalance(t *testing.T) {
 	require.NoError(t, err)
 
 	var wltBalance cli.BalanceResult
-	json.Unmarshal(output, &wltBalance)
+	require.NoError(t, json.NewDecoder(bytes.NewReader(output)).Decode(&wltBalance))
 
 	golden := filepath.Join("testdata", "walletBalance.golden")
 	if *update {
@@ -223,6 +223,40 @@ func TestLiveWalletBalance(t *testing.T) {
 
 	var wltBalance cli.BalanceResult
 	require.NoError(t, json.NewDecoder(bytes.NewReader(output)).Decode(&wltBalance))
+}
+
+func TestStableAddressOutputs(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	output, err := exec.Command(binaryPath, "addressOutputs", "2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt").CombinedOutput()
+	require.NoError(t, err)
+
+	var addrOutputs webrpc.OutputsResult
+	require.NoError(t, json.NewDecoder(bytes.NewReader(output)).Decode(&addrOutputs))
+
+	golden := filepath.Join("testdata", "addressOutputs.golden")
+	if *update {
+		writeJSON(t, golden, addrOutputs)
+	}
+
+	var expect webrpc.OutputsResult
+	loadJSON(t, golden, &expect)
+	require.Equal(t, expect, addrOutputs)
+
+}
+
+func TestLiveAddressOutputs(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	output, err := exec.Command(binaryPath, "addressOutputs", "2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt").CombinedOutput()
+	require.NoError(t, err)
+
+	var addrOutputs webrpc.OutputsResult
+	require.NoError(t, json.NewDecoder(bytes.NewReader(output)).Decode(&addrOutputs))
 }
 
 func TestStableStatus(t *testing.T) {

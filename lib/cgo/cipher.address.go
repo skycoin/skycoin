@@ -2,6 +2,9 @@ package main
 
 /*
 
+#include <string.h>
+#include <stdlib.h>
+
 typedef unsigned char Ripemd160[20];
 
 typedef struct {
@@ -13,6 +16,9 @@ typedef unsigned char Checksum[4];
 
 typedef unsigned char PubKey[33];
 typedef unsigned char SecKey[32];
+
+typedef unsigned char Pubkey[33];
+
 */
 import "C"
 
@@ -66,20 +72,32 @@ func SKY_Cipher_BitcoinDecodeBase58Address(_strAddr string, _retAddr *C.Address)
 	return C.int(errCode)
 }
 
+// export SKY_Cipher_Address_Bytes
+func SKY_Cipher_Address_Bytes(_addr *C.Address, _ret *C.uchar) {
+	addr := (*cipher.Address)(unsafe.Pointer(&_addr))
+	bytes := addr.Bytes()
+	C.memcpy(unsafe.Pointer(_ret), unsafe.Pointer(&bytes[0]), C.size_t(len(bytes)))
+}
+
+// export SKY_Cipher_BitcoinBytes
+func SKY_Cipher_BitcoinBytes(_addr *C.Address, _ret *C.uchar) {
+	addr := (*cipher.Address)(unsafe.Pointer(&_addr))
+	bytes := addr.BitcoinBytes()
+	C.memcpy(unsafe.Pointer(_ret), unsafe.Pointer(&bytes[0]), C.size_t(len(bytes)))
+}
+
+// export SKY_Cipher_Verify
+func SKY_Cipher_Verify(_addr *C.Address, _key *C.PubKey) C.uint {
+	addr := (*cipher.Address)(unsafe.Pointer(&_addr))
+	key := (*cipher.PubKey)(unsafe.Pointer(&_key))
+	err := addr.Verify(*key)
+	if err != nil {
+		return 1
+	}
+	return 0
+}
+
 /*
-// Bytes return address as a byte slice
-func SKY_Cipher_Address_Bytes(addr *C.Address, C.uint *_ret) {
-
-}
-
-// BitcoinBytes returns bitcoin address as byte slice
-func SKY_Cipher_(addr *Address) BitcoinBytes() []byte {
-}
-
-// Verify checks that the address appears valid for the public key
-func SKY_Cipher_(addr Address) Verify(key PubKey) error {
-}
-
 // String address as Base58 encoded string
 // Returns address as printable
 // version is first byte in binary format

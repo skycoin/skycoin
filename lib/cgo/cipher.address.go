@@ -16,9 +16,7 @@ typedef unsigned char Checksum[4];
 
 typedef unsigned char PubKey[33];
 typedef unsigned char SecKey[32];
-
-typedef unsigned char Pubkey[33];
-
+typedef unsigned char Checksum[4];
 */
 import "C"
 
@@ -79,15 +77,15 @@ func SKY_Cipher_Address_Bytes(_addr *C.Address, _ret *C.uchar) {
 	C.memcpy(unsafe.Pointer(_ret), unsafe.Pointer(&bytes[0]), C.size_t(len(bytes)))
 }
 
-// export SKY_Cipher_BitcoinBytes
-func SKY_Cipher_BitcoinBytes(_addr *C.Address, _ret *C.uchar) {
+// export SKY_Cipher_Address_BitcoinBytes
+func SKY_Cipher_Address_BitcoinBytes(_addr *C.Address, _ret *C.uchar) {
 	addr := (*cipher.Address)(unsafe.Pointer(&_addr))
 	bytes := addr.BitcoinBytes()
 	C.memcpy(unsafe.Pointer(_ret), unsafe.Pointer(&bytes[0]), C.size_t(len(bytes)))
 }
 
-// export SKY_Cipher_Verify
-func SKY_Cipher_Verify(_addr *C.Address, _key *C.PubKey) C.uint {
+// export SKY_Cipher_Address_Verify
+func SKY_Cipher_Address_Verify(_addr *C.Address, _key *C.PubKey) C.uint {
 	addr := (*cipher.Address)(unsafe.Pointer(&_addr))
 	key := (*cipher.PubKey)(unsafe.Pointer(&_key))
 	err := addr.Verify(*key)
@@ -97,26 +95,31 @@ func SKY_Cipher_Verify(_addr *C.Address, _key *C.PubKey) C.uint {
 	return 0
 }
 
-/*
-// String address as Base58 encoded string
-// Returns address as printable
-// version is first byte in binary format
-// in printed address its key, version, checksum
-func SKY_Cipher_(addr Address) String() string {
+// export SKY_Cipher_Address_String
+func SKY_Cipher_Address_String(_addr *C.Address) string {
+	addr := (*cipher.Address)(unsafe.Pointer(&_addr))
+	return addr.String()
 }
 
-// BitcoinString convert bitcoin address to hex string
-func SKY_Cipher_(addr Address) BitcoinString() string {
+// SKY_Cipher_Address_BitcoinString
+func SKY_Cipher_Address_BitcoinString(_addr *C.Address) string {
+	addr := (*cipher.Address)(unsafe.Pointer(&_addr))
+	return addr.BitcoinString()
 }
 
-// Checksum returns Address Checksum which is the first 4 bytes of sha256(key+version)
-func SKY_Cipher_(addr *Address) Checksum() Checksum {
+//
+func SKY_Cipher_Address_Checksum(_addr *C.Address, _ret *C.Checksum) {
+	addr := (*cipher.Address)(unsafe.Pointer(&_addr))
+	cs := addr.Checksum()
+	C.memcpy(unsafe.Pointer(_ret), unsafe.Pointer(&cs[0]), C.size_t(len(cs)))
 }
 
 // BitcoinChecksum bitcoin checksum
-func SKY_Cipher_(addr *Address) BitcoinChecksum() Checksum {
+func SKY_Cipher_Address_BitcoinChecksum(_addr *C.Address, _ret *C.Checksum) {
+	addr := (*cipher.Address)(unsafe.Pointer(&_addr))
+	cs := addr.BitcoinChecksum()
+	C.memcpy(unsafe.Pointer(_ret), unsafe.Pointer(&cs[0]), C.size_t(len(cs)))
 }
-*/
 
 /*
 Bitcoin Functions

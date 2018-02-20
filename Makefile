@@ -23,9 +23,12 @@ PACKAGES = $(shell find ./src -type d -not -path '\./src' \
     							      -not -path '*/testdata*')
 
 # Compilation output
-BUILD_DIR = dist
+BUILD_DIR = build
 BUILDLIB_DIR = $(BUILD_DIR)/libskycoin
 LIB_DIR = lib
+LIB_FILES = $(shell find ./lib/cgo -type f -name "*.go")
+BIN_DIR = bin
+INCLUDE_DIR = include
 
 # Travis CI environment vars
 # TODO: TRAVIS_OS_NAME
@@ -40,17 +43,19 @@ test-core: ## Run tests for Skycoin core
 	go test ./cmd/... -timeout=1m
 	go test ./src/... -timeout=1m
 
-build-libc: # Build Skycoinlib C
-	mkdir -p $(BUILDLIB_DIR)
+build-libc: # Build libskycoin C client library
+	mkdir -p $(BUILDLIB_DIR) $(BIN_DIR) $(INCLUDE_DIR)
 	rm -Rf $(BUILDLIB_DIR)/*
-	go build -buildmode=c-shared  -o $(BUILDLIB_DIR)/libskycoin.so $(LIB_DIR)/cgo/main.go
-	go build -buildmode=c-archive -o $(BUILDLIB_DIR)/libskycoin.a  $(LIB_DIR)/cgo/main.go
+	go build -buildmode=c-shared  -o $(BUILDLIB_DIR)/libskycoin.so $(LIB_FILES)
+	go build -buildmode=c-archive -o $(BUILDLIB_DIR)/libskycoin.a  $(LIB_FILES)
+	mv $(BUILDLIB_DIR)/libskycoin.h $(INCLUDE_DIR)/
 
 test-libc: build-libc
 	cp $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/
-	rm $(BUILDLIB_DIR)/libskycoin.so	# TODO: Get rid of this step
-	gcc -o $(BUILDLIB_DIR)/test_libskycoin $(BUILDLIB_DIR)/*.c -I$(BUILDLIB_DIR) -lcriterion -lskycoin -L $(BUILDLIB_DIR)
-	$(BUILDLIB_DIR)/test_libskycoin
+	gcc -o $(BIN_DIR)/test_libskycoin_shared $(BUILDLIB_DIR)/*.c -lskycoin                    -lcriterion -I$(INCLUDE_DIR) -L $(BUILDLIB_DIR)
+	gcc -o $(BIN_DIR)/test_libskycoin_static $(BUILDLIB_DIR)/*.c $(BUILDLIB_DIR)/libskycoin.a -lcriterion -I$(INCLUDE_DIR) -L $(BUILDLIB_DIR)
+	$(BIN_DIR)/test_libskycoin_static
+	DYLD_LIBRARY_PATH="$(DYLD_LIBRARY_PATH):$(shell pwd)/build/libskycoin" $(BIN_DIR)/test_libskycoin_shared
 
 test: test-core test-libc ## Run tests
 
@@ -79,10 +84,10 @@ install-linters: ## Install linters
 	gometalinter --vendored-linters --install
 
 install-deps-libc:  # Install locally dependencies for testing libskycoin
-  mkdir -p $(BUILD_DIR)/usr/tmp $(BUILD_DIR)/usr/lib $(BUILD_DIR)/usr/include
-  wget -O $(BUILD_DIR)/usr/tmp/criterion-v2.3.2-$(TRAVIS_OS_NAME)-x86_64.tar.bz2 https://github.com/Snaipe/Criterion/releases/download/v2.3.2/criterion-v2.3.2-$(TRAVIS_OS_NAME)-x86_64.tar.bz2
-  tar -x -C $(BUILD_DIR)/usr/tmp/ -j -f $(BUILD_DIR)/usr/tmp/criterion-v2.3.2-$(TRAVIS_OS_NAME)-x86_64.tar.bz2 
-  echo "include lib" | tr ' ' "\n" | xargs -I NAME mv $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/NAME/* $(BUILD_DIR)/usr/NAME/
+	mkdir -p $(BUILD_DIR)/usr/tmp $(BUILD_DIR)/usr/lib $(BUILD_DIR)/usr/include
+	wget -O $(BUILD_DIR)/usr/tmp/criterion-v2.3.2-$(TRAVIS_OS_NAME)-x86_64.tar.bz2 https://github.com/Snaipe/Criterion/releases/download/v2.3.2/criterion-v2.3.2-$(TRAVIS_OS_NAME)-x86_64.tar.bz2
+	tar -x -C $(BUILD_DIR)/usr/tmp/ -j -f $(BUILD_DIR)/usr/tmp/criterion-v2.3.2-$(TRAVIS_OS_NAME)-x86_64.tar.bz2 
+	echo "include lib" | tr ' ' "\n" | xargs -I NAME mv $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/NAME/* $(BUILD_DIR)/usr/NAME/
 
 format:  # Formats the code. Must have goimports installed (use make install-linters).
 	goimports -w -local github.com/skycoin/skycoin ./cmd

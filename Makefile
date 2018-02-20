@@ -30,8 +30,28 @@ LIB_FILES = $(shell find ./lib/cgo -type f -name "*.go")
 BIN_DIR = bin
 INCLUDE_DIR = include
 
-# Travis CI environment vars
-# TODO: TRAVIS_OS_NAME
+# Compilation flags
+ifndef CC
+	CC = gcc
+endif
+LDLIBS = -lcriterion
+LDFLAGS = -I$(INCLUDE_DIR) -I$(BUILD_DIR)/usr/include -L $(BUILDLIB_DIR) -L$(BUILD_DIR)/usr/lib
+
+# Platform specific checks
+OSNAME = $(TRAVIS_OS_NAME)
+
+ifeq ($(shell uname -s),Linux)
+  LDLIBS=$(LDLIBS) -lpthread
+ifndef OSNAME
+  OSNAME = linux
+endif
+endif
+
+ifeq ($(shell uname -s),Darwin)
+ifndef OSNAME
+  OSNAME = osx
+endif
+endif
 
 run:  ## Run the skycoin node. To add arguments, do 'make ARGS="--foo" run'.
 	go run cmd/skycoin/skycoin.go --gui-dir="./${STATIC_DIR}" ${ARGS}
@@ -43,8 +63,11 @@ test-core: ## Run tests for Skycoin core
 	go test ./cmd/... -timeout=1m
 	go test ./src/... -timeout=1m
 
-build-libc: # Build libskycoin C client library
+configure-build:
+	mkdir -p $(BUILD_DIR)/usr/tmp $(BUILD_DIR)/usr/lib $(BUILD_DIR)/usr/include
 	mkdir -p $(BUILDLIB_DIR) $(BIN_DIR) $(INCLUDE_DIR)
+
+build-libc: configure-build # Build libskycoin C client library
 	rm -Rf $(BUILDLIB_DIR)/*
 	go build -buildmode=c-shared  -o $(BUILDLIB_DIR)/libskycoin.so $(LIB_FILES)
 	go build -buildmode=c-archive -o $(BUILDLIB_DIR)/libskycoin.a  $(LIB_FILES)
@@ -52,8 +75,8 @@ build-libc: # Build libskycoin C client library
 
 test-libc: build-libc
 	cp $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/
-	gcc -o $(BIN_DIR)/test_libskycoin_shared $(BUILDLIB_DIR)/*.c -lskycoin                    -lcriterion -I$(INCLUDE_DIR) -L $(BUILDLIB_DIR)
-	gcc -o $(BIN_DIR)/test_libskycoin_static $(BUILDLIB_DIR)/*.c $(BUILDLIB_DIR)/libskycoin.a -lcriterion -I$(INCLUDE_DIR) -L $(BUILDLIB_DIR)
+	$(CC) -o $(BIN_DIR)/test_libskycoin_shared $(BUILDLIB_DIR)/*.c -lskycoin                    $(LDLIBS) $(LDFLAGS)
+	$(CC) -o $(BIN_DIR)/test_libskycoin_static $(BUILDLIB_DIR)/*.c $(BUILDLIB_DIR)/libskycoin.a $(LDLIBS) $(LDFLAGS)
 	$(BIN_DIR)/test_libskycoin_static
 	DYLD_LIBRARY_PATH="$(DYLD_LIBRARY_PATH):$(shell pwd)/build/libskycoin" $(BIN_DIR)/test_libskycoin_shared
 
@@ -83,10 +106,9 @@ install-linters: ## Install linters
 	go get -u github.com/alecthomas/gometalinter
 	gometalinter --vendored-linters --install
 
-install-deps-libc:  # Install locally dependencies for testing libskycoin
-	mkdir -p $(BUILD_DIR)/usr/tmp $(BUILD_DIR)/usr/lib $(BUILD_DIR)/usr/include
-	wget -O $(BUILD_DIR)/usr/tmp/criterion-v2.3.2-$(TRAVIS_OS_NAME)-x86_64.tar.bz2 https://github.com/Snaipe/Criterion/releases/download/v2.3.2/criterion-v2.3.2-$(TRAVIS_OS_NAME)-x86_64.tar.bz2
-	tar -x -C $(BUILD_DIR)/usr/tmp/ -j -f $(BUILD_DIR)/usr/tmp/criterion-v2.3.2-$(TRAVIS_OS_NAME)-x86_64.tar.bz2 
+install-deps-libc: configure-build # Install locally dependencies for testing libskycoin
+	wget -O $(BUILD_DIR)/usr/tmp/criterion-v2.3.2-$(OSNAME)-x86_64.tar.bz2 https://github.com/Snaipe/Criterion/releases/download/v2.3.2/criterion-v2.3.2-$(OSNAME)-x86_64.tar.bz2
+	tar -x -C $(BUILD_DIR)/usr/tmp/ -j -f $(BUILD_DIR)/usr/tmp/criterion-v2.3.2-$(OSNAME)-x86_64.tar.bz2 
 	echo "include lib" | tr ' ' "\n" | xargs -I NAME mv $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/NAME/* $(BUILD_DIR)/usr/NAME/
 
 format:  # Formats the code. Must have goimports installed (use make install-linters).

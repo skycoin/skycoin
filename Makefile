@@ -31,9 +31,7 @@ BIN_DIR = bin
 INCLUDE_DIR = include
 
 # Compilation flags
-ifndef CC
-	CC = gcc
-endif
+CC = gcc
 LIBC_LIBS = -lcriterion
 LDFLAGS = -I$(INCLUDE_DIR) -I$(BUILD_DIR)/usr/include -L $(BUILDLIB_DIR) -L$(BUILD_DIR)/usr/lib
 
@@ -49,6 +47,7 @@ else ifeq ($(shell uname -s),Darwin)
 ifndef OSNAME
   OSNAME = osx
 endif
+	LDLIBS = $(LIBC_LIBS)
 else
 	LDLIBS = $(LIBC_LIBS)
 endif

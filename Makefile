@@ -40,8 +40,8 @@ OSNAME = $(TRAVIS_OS_NAME)
 
 ifeq ($(shell uname -s),Linux)
   LDLIBS=$(LIBC_LIBS) -lpthread
-	LDPATH=&(shell printenv DYLD_LIBRARY_PATH)
-	LDPATHVAR=DYLD_LIBRARY_PATH
+	LDPATH=&(shell printenv LD_LIBRARY_PATH)
+	LDPATHVAR=LD_LIBRARY_PATH
 ifndef OSNAME
   OSNAME = linux
 endif
@@ -50,8 +50,8 @@ ifndef OSNAME
   OSNAME = osx
 endif
 	LDLIBS = $(LIBC_LIBS)
-	LDPATH=&(shell printenv LD_LIBRARY_PATH)
-	LDPATHVAR=LD_LIBRARY_PATH
+	LDPATH=&(shell printenv DYLD_LIBRARY_PATH)
+	LDPATHVAR=DYLD_LIBRARY_PATH
 else
 	LDLIBS = $(LIBC_LIBS)
 	LDPATH=&(shell printenv LD_LIBRARY_PATH)

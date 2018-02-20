@@ -40,6 +40,8 @@ OSNAME = $(TRAVIS_OS_NAME)
 
 ifeq ($(shell uname -s),Linux)
   LDLIBS=$(LIBC_LIBS) -lpthread
+	LDPATH=&(shell printenv DYLD_LIBRARY_PATH)
+	LDPATHVAR=DYLD_LIBRARY_PATH
 ifndef OSNAME
   OSNAME = linux
 endif
@@ -48,8 +50,12 @@ ifndef OSNAME
   OSNAME = osx
 endif
 	LDLIBS = $(LIBC_LIBS)
+	LDPATH=&(shell printenv LD_LIBRARY_PATH)
+	LDPATHVAR=LD_LIBRARY_PATH
 else
 	LDLIBS = $(LIBC_LIBS)
+	LDPATH=&(shell printenv LD_LIBRARY_PATH)
+	LDPATHVAR=LD_LIBRARY_PATH
 endif
 
 run:  ## Run the skycoin node. To add arguments, do 'make ARGS="--foo" run'.
@@ -76,8 +82,8 @@ test-libc: build-libc
 	cp $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/
 	$(CC) -o $(BIN_DIR)/test_libskycoin_shared $(BUILDLIB_DIR)/*.c -lskycoin                    $(LDLIBS) $(LDFLAGS)
 	$(CC) -o $(BIN_DIR)/test_libskycoin_static $(BUILDLIB_DIR)/*.c $(BUILDLIB_DIR)/libskycoin.a $(LDLIBS) $(LDFLAGS)
-	$(BIN_DIR)/test_libskycoin_static
-	DYLD_LIBRARY_PATH="$(DYLD_LIBRARY_PATH):$(shell pwd)/build/libskycoin" $(BIN_DIR)/test_libskycoin_shared
+	$(LDPATHVAR)="$(LDPATH):$(BUILD_DIR)/usr/lib" $(BIN_DIR)/test_libskycoin_static
+	$(LDPATHVAR)="$(LDPATH):$(BUILDLIB_DIR)"      $(BIN_DIR)/test_libskycoin_shared
 
 test: test-core test-libc ## Run tests
 

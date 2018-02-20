@@ -14,6 +14,9 @@ env:
   global:
     - ELECTRON_CACHE: $HOME/.cache/electron
     - ELECTRON_BUILDER_CACHE: $HOME/.cache/electron-builder
+    - BUILD_DIR: build
+    - BUILDLIB_DIR: $BUILD_DIR/libskycoin
+    - LIB_DIR: lib
 
 cache:
   yarn: true
@@ -32,6 +35,7 @@ install:
   # for test
   - go get -t ./...
   - make install-linters
+  - make install-deps-libc
 
 before_script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" && "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/add-key.sh && npm install -g yarn ;fi
@@ -43,8 +47,13 @@ script:
   - GOARCH=amd64 go test ./...
   # stable integration tests
   - make integration-test-stable
+  # libskycoin tests
+  - make test-libc
+  # TODO: test pyskycoin
+  # - make test-libpy
   # build wallets
   - if [[ "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/build-wallet.sh; fi
+   
 
 notifications:
   email: false

@@ -109,7 +109,7 @@ install-linters: ## Install linters
 install-deps-libc: configure-build # Install locally dependencies for testing libskycoin
 	wget -O $(BUILD_DIR)/usr/tmp/criterion-v2.3.2-$(OSNAME)-x86_64.tar.bz2 https://github.com/Snaipe/Criterion/releases/download/v2.3.2/criterion-v2.3.2-$(OSNAME)-x86_64.tar.bz2
 	tar -x -C $(BUILD_DIR)/usr/tmp/ -j -f $(BUILD_DIR)/usr/tmp/criterion-v2.3.2-$(OSNAME)-x86_64.tar.bz2 
-	ls $(BUILD_DIR)/usr/tmp/criterion-v2.3.2
+	ls $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/include
 	echo "include lib" | tr ' ' "\n" | xargs -I NAME mv $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/NAME/* $(BUILD_DIR)/usr/NAME/
 
 format:  # Formats the code. Must have goimports installed (use make install-linters).

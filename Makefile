@@ -34,23 +34,23 @@ INCLUDE_DIR = include
 ifndef CC
 	CC = gcc
 endif
-LDLIBS = -lcriterion
+LIBC_LIBS = -lcriterion
 LDFLAGS = -I$(INCLUDE_DIR) -I$(BUILD_DIR)/usr/include -L $(BUILDLIB_DIR) -L$(BUILD_DIR)/usr/lib
 
 # Platform specific checks
 OSNAME = $(TRAVIS_OS_NAME)
 
 ifeq ($(shell uname -s),Linux)
-  LDLIBS=$(LDLIBS) -lpthread
+  LDLIBS=$(LIBC_LIBS) -lpthread
 ifndef OSNAME
   OSNAME = linux
 endif
-endif
-
-ifeq ($(shell uname -s),Darwin)
+else ifeq ($(shell uname -s),Darwin)
 ifndef OSNAME
   OSNAME = osx
 endif
+else
+	LDLIBS = $(LIBC_LIBS)
 endif
 
 run:  ## Run the skycoin node. To add arguments, do 'make ARGS="--foo" run'.

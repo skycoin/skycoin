@@ -82,8 +82,8 @@ test-libc: build-libc
 	cp $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/
 	$(CC) -o $(BIN_DIR)/test_libskycoin_shared $(BUILDLIB_DIR)/*.c -lskycoin                    $(LDLIBS) $(LDFLAGS)
 	$(CC) -o $(BIN_DIR)/test_libskycoin_static $(BUILDLIB_DIR)/*.c $(BUILDLIB_DIR)/libskycoin.a $(LDLIBS) $(LDFLAGS)
-	$(LDPATHVAR)="$(LDPATH):$(BUILD_DIR)/usr/lib" $(BIN_DIR)/test_libskycoin_static
-	$(LDPATHVAR)="$(LDPATH):$(BUILDLIB_DIR)"      $(BIN_DIR)/test_libskycoin_shared
+	$(LDPATHVAR)="$(LDPATH):$(BUILD_DIR)/usr/lib"                 $(BIN_DIR)/test_libskycoin_static
+	$(LDPATHVAR)="$(LDPATH):$(BUILD_DIR)/usr/lib:$(BUILDLIB_DIR)" $(BIN_DIR)/test_libskycoin_shared
 
 test: test-core test-libc ## Run tests
 

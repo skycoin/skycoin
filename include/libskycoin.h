@@ -5,15 +5,13 @@
 /* Start of preamble from import "C" comments.  */
 
 
-#line 3 "/Users/olemis/Documents/workspace/work/go/src/github.com/skycoin/skycoin/lib/cgo/main.go"
+#line 3 "/Users/olemis/Documents/workspace/work/go/src/github.com/skycoin/skycoin/lib/cgo/cipher.address.go"
 
 
-typedef unsigned char Ripemd160[20];
+#include <string.h>
+#include <stdlib.h>
 
-typedef struct {
-	unsigned char Version;
-	Ripemd160 Key;
-} Address;
+#include "../../include/skystructs.h"
 
 
 #line 1 "cgo-generated-wrapper"
@@ -65,7 +63,35 @@ extern "C" {
 #endif
 
 
-extern int DecodeBase58Address(GoString p0, Address* p1);
+extern unsigned int SKY_Cipher_DecodeBase58Address(GoString p0, Address* p1);
+
+extern void SKY_Cipher_AddressFromPubKey(PubKey* p0, Address* p1);
+
+extern void SKY_Cipher_AddressFromSecKey(SecKey* p0, Address* p1);
+
+extern unsigned int SKY_Cipher_BitcoinDecodeBase58Address(GoString p0, Address* p1);
+
+extern void SKY_Cipher_Address_Bytes(Address* p0, unsigned char* p1);
+
+extern void SKY_Cipher_Address_BitcoinBytes(Address* p0, unsigned char* p1);
+
+extern unsigned int SKY_Cipher_Address_Verify(Address* p0, PubKey* p1);
+
+extern GoString SKY_Cipher_Address_String(Address* p0);
+
+extern GoString SKY_Cipher_Address_BitcoinString(Address* p0);
+
+extern void SKY_Cipher_Address_Checksum(Address* p0, Checksum* p1);
+
+extern void SKY_Cipher_Address_BitcoinChecksum(Address* p0, Checksum* p1);
+
+extern GoString SKY_Cipher_BitcoinAddressFromPubkey(PubKey* p0);
+
+extern GoString SKY_Cipher_BitcoinWalletImportFormatFromSeckey(SecKey* p0);
+
+extern unsigned int SKY_Cipher_BitcoinAddressFromBytes(unsigned char* p0, size_t p1, Address* p2);
+
+extern unsigned int SKY_Cipher_SecKeyFromWalletImportFormat(GoString p0, SecKey* p1);
 
 #ifdef __cplusplus
 }

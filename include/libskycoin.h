@@ -7,7 +7,6 @@
 
 #line 3 "/Users/olemis/Documents/workspace/work/go/src/github.com/skycoin/skycoin/lib/cgo/cipher.address.go"
 
-
 #include <string.h>
 #include <stdlib.h>
 
@@ -17,7 +16,6 @@
 #line 1 "cgo-generated-wrapper"
 
 #line 3 "/Users/olemis/Documents/workspace/work/go/src/github.com/skycoin/skycoin/lib/cgo/cli.transaction.go"
-
 
 #include <string.h>
 #include <stdlib.h>

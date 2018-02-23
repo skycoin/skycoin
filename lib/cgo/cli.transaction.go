@@ -1,7 +1,6 @@
 package main
 
 /*
-
 #include <string.h>
 #include <stdlib.h>
 

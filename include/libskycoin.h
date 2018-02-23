@@ -7,11 +7,20 @@
 
 #line 3 "/Users/olemis/Documents/workspace/work/go/src/github.com/skycoin/skycoin/lib/cgo/cipher.address.go"
 
+#include <string.h>
+#include <stdlib.h>
+
+#include "../../include/skytypes.h"
+
+
+#line 1 "cgo-generated-wrapper"
+
+#line 3 "/Users/olemis/Documents/workspace/work/go/src/github.com/skycoin/skycoin/lib/cgo/cli.transaction.go"
 
 #include <string.h>
 #include <stdlib.h>
 
-#include "../../include/skystructs.h"
+#include "../../include/skytypes.h"
 
 
 #line 1 "cgo-generated-wrapper"
@@ -92,6 +101,14 @@ extern GoString SKY_Cipher_BitcoinWalletImportFormatFromSeckey(SecKey* p0);
 extern unsigned int SKY_Cipher_BitcoinAddressFromBytes(unsigned char* p0, size_t p1, Address* p2);
 
 extern unsigned int SKY_Cipher_SecKeyFromWalletImportFormat(GoString p0, SecKey* p1);
+
+extern unsigned int SKY_CLI_CreateRawTxFromWallet(Handle p0, GoString p1, GoString p2, _GoSlice* p3, Transaction* p4);
+
+extern unsigned int SKY_CLI_CreateRawTxFromAddress(Handle p0, GoString p1, GoString p2, GoString p3, _GoSlice p4, Transaction* p5);
+
+extern void SKY_CLI_CreateRawTx(Handle p0, Wallet* p1, _GoSlice p2, GoString p3, _GoSlice p4, Transaction* p5);
+
+extern void SKY_CLI_NewTransaction(_GoSlice* p0, GoSlice p1, GoSlice p2, Transaction* p3);
 
 #ifdef __cplusplus
 }

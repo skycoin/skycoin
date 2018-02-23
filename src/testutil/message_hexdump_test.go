@@ -3,6 +3,8 @@ package testutil
 import (
 	"testing"
 
+	"fmt"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
@@ -11,11 +13,13 @@ import (
 
 func TestIntroductionMessage(t *testing.T) {
 	var message = daemon.NewIntroductionMessage(1234, 5, 7890)
+	fmt.Println("IntroductionMessage:")
 	HexDump(message)
 }
 
 func TestGetPeersMessage(t *testing.T) {
 	var message = daemon.NewGetPeersMessage()
+	fmt.Println("GetPeersMessage:")
 	HexDump(message)
 }
 
@@ -26,6 +30,7 @@ func TestGivePeersMessage(t *testing.T) {
 	var peer2 pex.Peer = *pex.NewPeer("121.41.103.148:6000")
 	peers = append(peers, peer0, peer1, peer2)
 	var message = daemon.NewGivePeersMessage(peers)
+	fmt.Println("GivePeersMessage:")
 	HexDump(message)
 }
 
@@ -43,6 +48,7 @@ func TestPongMessage(t *testing.T) {
 
 func TestGetBlocksMessage(t *testing.T) {
 	var message = daemon.NewGetBlocksMessage(1234, 5678)
+	fmt.Println("GetBlocksMessage:")
 	HexDump(message)
 }
 
@@ -68,11 +74,13 @@ func TestGiveBlocksMessage(t *testing.T) {
 	}
 	blocks = append(blocks, signedBlock)
 	var message = daemon.NewGiveBlocksMessage(blocks)
+	fmt.Println("GiveBlocksMessage:")
 	HexDump(message)
 }
 
 func TestAnnounceBlocksMessage(t *testing.T) {
 	var message = daemon.NewAnnounceBlocksMessage(123456)
+	fmt.Println("AnnounceBlocksMessage:")
 	HexDump(message)
 }
 
@@ -81,6 +89,7 @@ func TestGetTxnsMessage(t *testing.T) {
 
 	shas = append(shas, GenerateRandomSha256(), GenerateRandomSha256())
 	var message = daemon.NewGetTxnsMessage(shas)
+	fmt.Println("GetTxns:")
 	HexDump(message)
 }
 
@@ -134,10 +143,12 @@ func TestGiveTxnsMessage(t *testing.T) {
 	}
 	transactions = append(transactions, transaction0, transaction1)
 	var message = daemon.NewGiveTxnsMessage(transactions)
+	fmt.Println("GiveTxnsMessage:")
 	HexDump(message)
 }
 
 func TestAnnounceTxnsMessage(t *testing.T) {
 	var message = daemon.NewAnnounceTxnsMessage([]cipher.SHA256{GenerateRandomSha256(), GenerateRandomSha256()})
+	fmt.Println("AnnounceTxnsMessage:")
 	HexDump(message)
 }

@@ -9,8 +9,11 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
+	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 )
+
+var registered = false
 
 func serializeMessage(msg gnet.Message) []byte {
 	t := reflect.ValueOf(msg).Elem().Type()
@@ -36,7 +39,7 @@ func getSliceContentsString(sl []string, offset int) string {
 			hex = "0" + hex
 		}
 		hex = "0x" + hex
-		res += hex + " "
+		res += hex + " | "
 	}
 	for i := 0; i < len(sl); i++ {
 		counter++
@@ -74,13 +77,20 @@ func GenerateRandomSha256() cipher.SHA256 {
 }
 
 func HexDump(message gnet.Message) {
-	var serializedMsg = serializeMessage(message)
+	var messagesConfig = daemon.NewMessagesConfig()
+	if registered == false {
+		messagesConfig.Register()
+		registered = true
+	}
+
+	var serializedMsg = gnet.EncodeMessage(message)
 
 	printLHexDumpWithFormat(-1, "Full message", serializedMsg)
 
 	fmt.Println("------------------------------------------------------------------------")
 	var offset int = 0
-	printLHexDumpWithFormat(0, "Prefix", serializedMsg[0:8])
+	printLHexDumpWithFormat(0, "Length", serializedMsg[0:4])
+	printLHexDumpWithFormat(4, "Prefix", serializedMsg[4:8])
 	offset += len(serializedMsg[0:8])
 	var v = reflect.Indirect(reflect.ValueOf(message))
 
@@ -108,4 +118,18 @@ func HexDump(message gnet.Message) {
 		}
 	}
 
+	printFinalHex(len(serializedMsg))
+
+
+
+}
+func printFinalHex(i int) {
+	var finalHex = strconv.FormatInt(int64(i), 16)
+	var l = len(finalHex)
+	for i := 0; i < 4-l; i++ {
+		finalHex = "0" + finalHex
+	}
+	finalHex = "0x" + finalHex
+	finalHex = finalHex + " | "
+	fmt.Println(finalHex)
 }

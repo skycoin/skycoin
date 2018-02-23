@@ -32,6 +32,7 @@ func serializeMessage(msg gnet.Message) []byte {
 func getSliceContentsString(sl []string, offset int) string {
 	var res string = ""
 	var counter int = 0
+	var currentOff = offset
 	if offset != -1 {
 		var hex = strconv.FormatInt(int64(offset), 16)
 		var l = len(hex)
@@ -46,8 +47,16 @@ func getSliceContentsString(sl []string, offset int) string {
 		res += sl[i] + " "
 		if counter == 16 {
 			res += "\n"
+			currentOff+=16
 			if offset != -1 {
-				res += "       " //7 spaces
+				//res += "         " //9 spaces
+				var hex = strconv.FormatInt(int64(currentOff), 16)
+				var l = len(hex)
+				for i := 0; i < 4-l; i++ {
+					hex = "0" + hex
+				}
+				hex = "0x" + hex
+				res += hex + " | "
 			}
 			counter = 0
 		}
@@ -101,7 +110,7 @@ func HexDump(message gnet.Message) {
 		if f.Tag.Get("enc") != "-" {
 			if v_f.CanSet() || f.Name != "_" {
 				if v.Field(i).Kind() == reflect.Slice {
-					printLHexDumpWithFormat(offset, f.Name+" header", encoder.Serialize(v.Field(i).Slice(0, v.Field(i).Len()).Interface())[0:4])
+					printLHexDumpWithFormat(offset, f.Name+" length", encoder.Serialize(v.Field(i).Slice(0, v.Field(i).Len()).Interface())[0:4])
 					offset += len(encoder.Serialize(v.Field(i).Slice(0, v.Field(i).Len()).Interface())[0:4])
 
 					for j := 0; j < v.Field(i).Len(); j++ {

@@ -34,7 +34,7 @@ LIBSRC_DIR = lib/cgo
 # Compilation flags
 CC = gcc
 LIBC_LIBS = -lcriterion
-LDFLAGS = -I$(LIBSRC_DIR) -I$(INCLUDE_DIR) -I$(BUILD_DIR)/usr/include -L $(BUILDLIB_DIR) -L$(BUILD_DIR)/usr/lib
+LIBC_FLAGS = -I$(LIBSRC_DIR) -I$(INCLUDE_DIR) -I$(BUILD_DIR)/usr/include -L $(BUILDLIB_DIR) -L$(BUILD_DIR)/usr/lib
 
 # Platform specific checks
 OSNAME = $(TRAVIS_OS_NAME)
@@ -43,6 +43,7 @@ ifeq ($(shell uname -s),Linux)
   LDLIBS=$(LIBC_LIBS) -lpthread
 	LDPATH=$(shell printenv LD_LIBRARY_PATH)
 	LDPATHVAR=LD_LIBRARY_PATH
+	LDFLAGS=$(LIBC_FLAGS)
 ifndef OSNAME
   OSNAME = linux
 endif
@@ -53,10 +54,12 @@ endif
 	LDLIBS = $(LIBC_LIBS)
 	LDPATH=$(shell printenv DYLD_LIBRARY_PATH)
 	LDPATHVAR=DYLD_LIBRARY_PATH
+	LDFLAGS=$(LIBC_FLAGS) -framework CoreFoundation -framework Security
 else
 	LDLIBS = $(LIBC_LIBS)
 	LDPATH=$(shell printenv LD_LIBRARY_PATH)
 	LDPATHVAR=LD_LIBRARY_PATH
+	LDFLAGS=$(LIBC_FLAGS)
 endif
 
 run:  ## Run the skycoin node. To add arguments, do 'make ARGS="--foo" run'.
@@ -82,9 +85,9 @@ build-libc: configure-build # Build libskycoin C client library
 test-libc: build-libc
 	cp $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/
 	$(CC) -o $(BIN_DIR)/test_libskycoin_shared $(BUILDLIB_DIR)/*.c -lskycoin                    $(LDLIBS) $(LDFLAGS)
-#	$(CC) -o $(BIN_DIR)/test_libskycoin_static $(BUILDLIB_DIR)/*.c $(BUILDLIB_DIR)/libskycoin.a $(LDLIBS) $(LDFLAGS)
+	$(CC) -o $(BIN_DIR)/test_libskycoin_static $(BUILDLIB_DIR)/*.c $(BUILDLIB_DIR)/libskycoin.a $(LDLIBS) $(LDFLAGS)
 	$(LDPATHVAR)="$(LDPATH):$(BUILD_DIR)/usr/lib:$(BUILDLIB_DIR)" $(BIN_DIR)/test_libskycoin_shared
-#	$(LDPATHVAR)="$(LDPATH):$(BUILD_DIR)/usr/lib"                 $(BIN_DIR)/test_libskycoin_static
+	$(LDPATHVAR)="$(LDPATH):$(BUILD_DIR)/usr/lib"                 $(BIN_DIR)/test_libskycoin_static
 
 test: test-core test-libc ## Run tests
 

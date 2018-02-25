@@ -68,7 +68,6 @@ func (c *Client) Get(endpoint string, obj interface{}) error {
 	if obj == nil {
 		return nil
 	}
-
 	return json.NewDecoder(resp.Body).Decode(obj)
 }
 
@@ -520,20 +519,20 @@ func (c *Client) Transaction(txid string) (*visor.ReadableTransaction, error) {
 	v.Add("txid", txid)
 	endpoint := "/transaction?" + v.Encode()
 
-	var r visor.ReadableTransaction
+	var r visor.TransactionResult
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}
-	return &r, nil
+	return &r.Transaction, nil
 }
 
 // Transactions makes a request to /transactions
-func (c *Client) Transactions(addrs []string) (*visor.TransactionResults, error) {
+func (c *Client) Transactions(addrs []string) (*[]visor.TransactionResult, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	endpoint := "/transactions?" + v.Encode()
 
-	var r visor.TransactionResults
+	var r []visor.TransactionResult
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}
@@ -541,13 +540,13 @@ func (c *Client) Transactions(addrs []string) (*visor.TransactionResults, error)
 }
 
 // ConfirmedTransactions makes a request to /transactions?confirmed=true
-func (c *Client) ConfirmedTransactions(addrs []string) (*visor.TransactionResults, error) {
+func (c *Client) ConfirmedTransactions(addrs []string) (*[]visor.TransactionResult, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	v.Add("confirmed", "true")
 	endpoint := "/transactions?" + v.Encode()
 
-	var r visor.TransactionResults
+	var r []visor.TransactionResult
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}
@@ -555,13 +554,13 @@ func (c *Client) ConfirmedTransactions(addrs []string) (*visor.TransactionResult
 }
 
 // UnconfirmedTransactions makes a request to /transactions?confirmed=true
-func (c *Client) UnconfirmedTransactions(addrs []string) (*visor.TransactionResults, error) {
+func (c *Client) UnconfirmedTransactions(addrs []string) (*[]visor.TransactionResult, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	v.Add("confirmed", "false")
 	endpoint := "/transactions?" + v.Encode()
 
-	var r visor.TransactionResults
+	var r []visor.TransactionResult
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}

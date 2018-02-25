@@ -10,7 +10,7 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-type walletEntry struct {
+type WalletEntry struct {
 	Name       string `json:"name"`
 	Label      string `json:"label"`
 	AddressNum int    `json:"address_num"`
@@ -32,7 +32,7 @@ func listWallets(c *gcli.Context) error {
 	cfg := ConfigFromContext(c)
 
 	var wlts struct {
-		Wallets []walletEntry `json:"wallets"`
+		Wallets []WalletEntry `json:"wallets"`
 	}
 
 	entries, err := ioutil.ReadDir(cfg.WalletDir)
@@ -52,7 +52,7 @@ func listWallets(c *gcli.Context) error {
 			if err != nil {
 				return WalletLoadError(err)
 			}
-			wlts.Wallets = append(wlts.Wallets, walletEntry{
+			wlts.Wallets = append(wlts.Wallets, WalletEntry{
 				Name:       name,
 				Label:      w.GetLabel(),
 				AddressNum: len(w.Entries),

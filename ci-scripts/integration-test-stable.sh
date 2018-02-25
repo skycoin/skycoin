@@ -32,6 +32,7 @@ echo "starting skycoin node in background with http listener on $HOST"
                       -web-interface-port=$PORT \
                       -download-peerlist=false \
                       -db-path=./src/gui/integration/test-fixtures/blockchain-180.db \
+                      -db-read-only=true \
                       -rpc-interface=true \
                       -rpc-interface-port=$RPC_PORT \
                       -launch-browser=false \

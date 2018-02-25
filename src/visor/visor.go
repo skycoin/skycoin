@@ -1,6 +1,7 @@
 package visor
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
@@ -659,7 +660,8 @@ func (vs *Visor) GetTransaction(txHash cipher.SHA256) (*Transaction, error) {
 	if b == nil {
 		return nil, fmt.Errorf("found no block in seq %v", txn.BlockSeq)
 	}
-
+	txBytes, err := json.Marshal(txn)
+	fmt.Println(string(txBytes))
 	return &Transaction{
 		Txn:    txn.Tx,
 		Status: NewConfirmedTransactionStatus(confirms, txn.BlockSeq),

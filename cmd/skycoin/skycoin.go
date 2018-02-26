@@ -168,6 +168,7 @@ type Config struct {
 	ConnectTo string
 
 	DBPath       string
+	DBReadOnly   bool
 	Arbitrating  bool
 	RPCThreadNum uint // rpc number
 	Logtofile    bool
@@ -204,6 +205,7 @@ func (c *Config) register() {
 	flag.BoolVar(&c.PrintWebInterfaceAddress, "print-web-interface-address", c.PrintWebInterfaceAddress, "print configured web interface address and exit")
 	flag.StringVar(&c.DataDirectory, "data-dir", c.DataDirectory, "directory to store app data (defaults to ~/.skycoin)")
 	flag.StringVar(&c.DBPath, "db-path", c.DBPath, "path of database file (defaults to ~/.skycoin/data.db)")
+	flag.BoolVar(&c.DBReadOnly, "db-read-only", c.DBReadOnly, "open bolt db read-only")
 	flag.StringVar(&c.ConnectTo, "connect-to", c.ConnectTo, "connect to this ip only")
 	flag.BoolVar(&c.ProfileCPU, "profile-cpu", c.ProfileCPU, "enable cpu profiling")
 	flag.StringVar(&c.ProfileCPUFile, "profile-cpu-file", c.ProfileCPUFile, "where to write the cpu profile file")
@@ -533,6 +535,7 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Visor.Config.GenesisTimestamp = c.GenesisTimestamp
 	dc.Visor.Config.GenesisCoinVolume = GenesisCoinVolume
 	dc.Visor.Config.DBPath = c.DBPath
+	dc.Visor.Config.DBReadOnly = c.DBReadOnly
 	dc.Visor.Config.Arbitrating = c.Arbitrating
 	dc.Visor.Config.WalletDirectory = c.WalletDirectory
 	dc.Visor.Config.BuildInfo = visor.BuildInfo{
@@ -597,7 +600,7 @@ func Run(c *Config) {
 	dconf := configureDaemon(c)
 
 	logger.Info("Opening database %s", dconf.Visor.Config.DBPath)
-	db, err := visor.OpenDB(dconf.Visor.Config.DBPath)
+	db, err := visor.OpenDB(dconf.Visor.Config.DBPath, dconf.Visor.Config.DBReadOnly)
 	if err != nil {
 		logger.Error("Database failed to open: %v. Is another skycoin instance running?", err)
 		return

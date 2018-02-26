@@ -279,7 +279,7 @@ var devConfig = Config{
 
 	LaunchBrowser: true,
 	// Data directory holds app data -- defaults to ~/.skycoin
-	DataDirectory: ".skycoin",
+	DataDirectory: "~/.skycoin",
 	// Web GUI static resources
 	GUIDirectory: "./src/gui/static/",
 	// Logging

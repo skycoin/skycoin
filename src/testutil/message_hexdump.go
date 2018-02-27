@@ -47,7 +47,7 @@ func getSliceContentsString(sl []string, offset int) string {
 		res += sl[i] + " "
 		if counter == 16 {
 			res += "\n"
-			currentOff+=16
+			currentOff += 16
 			if offset != -1 {
 				//res += "         " //9 spaces
 				var hex = strconv.FormatInt(int64(currentOff), 16)
@@ -128,8 +128,6 @@ func HexDump(message gnet.Message) {
 	}
 
 	printFinalHex(len(serializedMsg))
-
-
 
 }
 func printFinalHex(i int) {

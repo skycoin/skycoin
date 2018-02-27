@@ -92,7 +92,7 @@ func deserializeMessage(msg []byte, v reflect.Value) (n int, e error) {
 // EncodeMessage packs a Message into []byte containing length, id and data
 func EncodeMessage(msg Message) []byte {
 	t := reflect.ValueOf(msg).Elem().Type()
-	msgID,succ := MessageIDMap[t]
+	msgID, succ := MessageIDMap[t]
 	if !succ {
 		txt := "Attempted to serialize message struct not in MessageIdMap: %v"
 		logger.Panicf(txt, msg)

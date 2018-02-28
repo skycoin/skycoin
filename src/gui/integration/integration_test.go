@@ -95,6 +95,18 @@ func doLive(t *testing.T) bool {
 	return false
 }
 
+func doLiveOrStable(t *testing.T) bool {
+	if enabled() {
+		switch mode(t) {
+		case testModeStable, testModeLive:
+			return true
+		}
+	}
+
+	t.Skip("Live and stable tests disabled")
+	return false
+}
+
 func loadJSON(t *testing.T, filename string, testData *TestData) {
 	goldenFile := filepath.Join("test-fixtures", filename)
 	f, err := os.Open(goldenFile)
@@ -160,7 +172,7 @@ func TestLiveCoinSupply(t *testing.T) {
 }
 
 func TestVersion(t *testing.T) {
-	if !doStable(t) && !doLive(t) {
+	if !doLiveOrStable(t) {
 		return
 	}
 

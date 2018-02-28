@@ -74,6 +74,28 @@ func TestGenerateAddresses(t *testing.T) {
 	var expect wallet.ReadableWallet
 	loadJSON(t, golden, &expect)
 	require.Equal(t, expect, w)
+
+	// generateAddresses -n 2 -j
+	output, err = exec.Command(binaryPath, "generateAddresses", "-n", "2", "-j").CombinedOutput()
+	require.NoError(t, err)
+	var addrs struct {
+		Addresses []string `json:"addresses"`
+	}
+
+	fmt.Println("o:", string(output))
+
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&addrs)
+	require.NoError(t, err)
+
+	require.Equal(t, addrs.Addresses[0], "2EDapDfn1VC6P2hx4nTH2cRUkboGAE16evV")
+	require.Equal(t, addrs.Addresses[1], "hLLcizfJomBKJrUeHrHTWKZMNdqwb69WVb")
+
+	// Checks wallet file again
+	loadJSON(t, wltPath, &w)
+
+	golden2 := filepath.Join("testdata", "generateAddresses2.golden")
+	loadJSON(t, golden2, &expect)
+	require.Equal(t, expect, w)
 }
 
 func TestVerifyAddress(t *testing.T) {

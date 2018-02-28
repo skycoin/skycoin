@@ -93,11 +93,11 @@ func TestUserHome(t *testing.T) {
 }
 
 func TestBuildDataDirDefault(t *testing.T) {
-	dir, err := buildDataDir("~/.skycoin")
+	dir, err := buildDataDir("$HOME/.skycoin")
 	home := UserHome()
 	require.Nil(t, err)
-	require.True(t, strings.HasPrefix(dir, home))
-	require.NotEqual(t, dir, home)
+	expectedPath := filepath.Join(home, ".skycoin")
+	require.Equal(t, dir, expectedPath)
 }
 
 func TestLoadJSON(t *testing.T) {

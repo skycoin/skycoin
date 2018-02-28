@@ -57,45 +57,55 @@ func TestGenerateAddresses(t *testing.T) {
 		return
 	}
 
-	output, err := exec.Command(binaryPath, "generateAddresses").CombinedOutput()
-	require.NoError(t, err)
-	o := strings.Trim(string(output), "\n")
-	require.Equal(t, "7g3M372kxwNwwQEAmrronu4anXTW8aD1XC", o)
-
-	wltPath := filepath.Join(walletDir, walletName)
-	var w wallet.ReadableWallet
-	loadJSON(t, wltPath, &w)
-
-	golden := filepath.Join("testdata", "generateAddresses.golden")
-	if *update {
-		writeJSON(t, golden, w)
+	tt := []struct {
+		name         string
+		args         []string
+		expectOutput []byte
+		wltFile      string
+		goldenFile   string
+	}{
+		{
+			"generateAddresses",
+			[]string{"generateAddresses"},
+			[]byte("7g3M372kxwNwwQEAmrronu4anXTW8aD1XC\n"),
+			filepath.Join(walletDir, walletName),
+			filepath.Join("testdata", "generateAddresses.golden"),
+		},
+		{
+			"generateAddresses -n 2 -j",
+			[]string{"generateAddresses", "-n", "2", "-j"},
+			[]byte("{\n    \"addresses\": [\n        \"2EDapDfn1VC6P2hx4nTH2cRUkboGAE16evV\",\n        \"hLLcizfJomBKJrUeHrHTWKZMNdqwb69WVb\"\n    ]\n}\n"),
+			filepath.Join(walletDir, walletName),
+			filepath.Join("testdata", "generateAddresses2.golden"),
+		},
+		{
+			"generateAddresses -n -2 -j",
+			[]string{"generateAddresses", "-n", "-2", "-j"},
+			[]byte("Error: invalid value \"-2\" for flag -n: strconv.ParseUint: parsing \"-2\": invalid syntax"),
+			filepath.Join(walletDir, walletName),
+			filepath.Join("testdata", "generateAddresses2.golden"),
+		},
 	}
 
-	var expect wallet.ReadableWallet
-	loadJSON(t, golden, &expect)
-	require.Equal(t, expect, w)
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			output, err := exec.Command(binaryPath, tc.args[:]...).CombinedOutput()
+			require.NoError(t, err)
+			if bytes.Contains(output, []byte("Error: ")) {
+				require.True(t, bytes.Contains(output, tc.expectOutput))
+				return
+			}
 
-	// generateAddresses -n 2 -j
-	output, err = exec.Command(binaryPath, "generateAddresses", "-n", "2", "-j").CombinedOutput()
-	require.NoError(t, err)
-	var addrs struct {
-		Addresses []string `json:"addresses"`
+			require.Equal(t, string(tc.expectOutput), string(output))
+			var w wallet.ReadableWallet
+			loadJSON(t, tc.wltFile, &w)
+
+			var expect wallet.ReadableWallet
+			loadJSON(t, tc.goldenFile, &expect)
+
+			require.Equal(t, expect, w)
+		})
 	}
-
-	fmt.Println("o:", string(output))
-
-	err = json.NewDecoder(bytes.NewReader(output)).Decode(&addrs)
-	require.NoError(t, err)
-
-	require.Equal(t, addrs.Addresses[0], "2EDapDfn1VC6P2hx4nTH2cRUkboGAE16evV")
-	require.Equal(t, addrs.Addresses[1], "hLLcizfJomBKJrUeHrHTWKZMNdqwb69WVb")
-
-	// Checks wallet file again
-	loadJSON(t, wltPath, &w)
-
-	golden2 := filepath.Join("testdata", "generateAddresses2.golden")
-	loadJSON(t, golden2, &expect)
-	require.Equal(t, expect, w)
 }
 
 func TestVerifyAddress(t *testing.T) {

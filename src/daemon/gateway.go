@@ -34,7 +34,7 @@ func NewGatewayConfig() GatewayConfig {
 type Gateway struct {
 	Config GatewayConfig
 	drpc   RPC
-	vrpc   visor.RPC
+	vrpc   visor.RPCIface
 
 	// Backref to Daemon
 	d *Daemon

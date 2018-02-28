@@ -70,8 +70,8 @@ type RPC struct {
 }
 
 // MakeRPC make RPC instance
-func MakeRPC(v *Visor) RPC {
-	return RPC{
+func MakeRPC(v *Visor) *RPC {
+	return &RPC{
 		v: v,
 	}
 }

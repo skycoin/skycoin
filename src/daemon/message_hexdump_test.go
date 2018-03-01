@@ -1,4 +1,4 @@
-package testutil
+package daemon
 
 import (
 	"testing"
@@ -7,18 +7,18 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/daemon/pex"
+	"github.com/skycoin/skycoin/src/testutil"
 )
 
 func TestIntroductionMessage(t *testing.T) {
-	var message = daemon.NewIntroductionMessage(1234, 5, 7890)
+	var message = NewIntroductionMessage(1234, 5, 7890)
 	fmt.Println("IntroductionMessage:")
 	HexDump(message)
 }
 
 func TestGetPeersMessage(t *testing.T) {
-	var message = daemon.NewGetPeersMessage()
+	var message = NewGetPeersMessage()
 	fmt.Println("GetPeersMessage:")
 	HexDump(message)
 }
@@ -29,7 +29,7 @@ func TestGivePeersMessage(t *testing.T) {
 	var peer1 pex.Peer = *pex.NewPeer("47.88.33.156:6000")
 	var peer2 pex.Peer = *pex.NewPeer("121.41.103.148:6000")
 	peers = append(peers, peer0, peer1, peer2)
-	var message = daemon.NewGivePeersMessage(peers)
+	var message = NewGivePeersMessage(peers)
 	fmt.Println("GivePeersMessage:")
 	HexDump(message)
 }
@@ -47,7 +47,7 @@ func TestPongMessage(t *testing.T) {
 }
 
 func TestGetBlocksMessage(t *testing.T) {
-	var message = daemon.NewGetBlocksMessage(1234, 5678)
+	var message = NewGetBlocksMessage(1234, 5678)
 	fmt.Println("GetBlocksMessage:")
 	HexDump(message)
 }
@@ -73,13 +73,13 @@ func TestGiveBlocksMessage(t *testing.T) {
 		Block: block1,
 	}
 	blocks = append(blocks, signedBlock)
-	var message = daemon.NewGiveBlocksMessage(blocks)
+	var message = NewGiveBlocksMessage(blocks)
 	fmt.Println("GiveBlocksMessage:")
 	HexDump(message)
 }
 
 func TestAnnounceBlocksMessage(t *testing.T) {
-	var message = daemon.NewAnnounceBlocksMessage(123456)
+	var message = NewAnnounceBlocksMessage(123456)
 	fmt.Println("AnnounceBlocksMessage:")
 	HexDump(message)
 }
@@ -88,7 +88,7 @@ func TestGetTxnsMessage(t *testing.T) {
 	var shas = make([]cipher.SHA256, 0)
 
 	shas = append(shas, GenerateRandomSha256(), GenerateRandomSha256())
-	var message = daemon.NewGetTxnsMessage(shas)
+	var message = NewGetTxnsMessage(shas)
 	fmt.Println("GetTxns:")
 	HexDump(message)
 }
@@ -98,22 +98,22 @@ func TestGiveTxnsMessage(t *testing.T) {
 	var transactionOutputs0 []coin.TransactionOutput = make([]coin.TransactionOutput, 0)
 	var transactionOutputs1 []coin.TransactionOutput = make([]coin.TransactionOutput, 0)
 	var txOutput0 = coin.TransactionOutput{
-		Address: MakeAddress(),
+		Address: testutil.MakeAddress(),
 		Coins:   12,
 		Hours:   34,
 	}
 	var txOutput1 = coin.TransactionOutput{
-		Address: MakeAddress(),
+		Address: testutil.MakeAddress(),
 		Coins:   56,
 		Hours:   78,
 	}
 	var txOutput2 = coin.TransactionOutput{
-		Address: MakeAddress(),
+		Address: testutil.MakeAddress(),
 		Coins:   9,
 		Hours:   12,
 	}
 	var txOutput3 = coin.TransactionOutput{
-		Address: MakeAddress(),
+		Address: testutil.MakeAddress(),
 		Coins:   34,
 		Hours:   56,
 	}
@@ -142,13 +142,13 @@ func TestGiveTxnsMessage(t *testing.T) {
 		Sigs:      []cipher.Sig{sig2, sig3},
 	}
 	transactions = append(transactions, transaction0, transaction1)
-	var message = daemon.NewGiveTxnsMessage(transactions)
+	var message = NewGiveTxnsMessage(transactions)
 	fmt.Println("GiveTxnsMessage:")
 	HexDump(message)
 }
 
 func TestAnnounceTxnsMessage(t *testing.T) {
-	var message = daemon.NewAnnounceTxnsMessage([]cipher.SHA256{GenerateRandomSha256(), GenerateRandomSha256()})
+	var message = NewAnnounceTxnsMessage([]cipher.SHA256{GenerateRandomSha256(), GenerateRandomSha256()})
 	fmt.Println("AnnounceTxnsMessage:")
 	HexDump(message)
 }

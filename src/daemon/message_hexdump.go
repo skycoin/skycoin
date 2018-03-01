@@ -1,4 +1,4 @@
-package testutil
+package daemon
 
 import (
 	"crypto/sha256"
@@ -9,7 +9,6 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 )
 
@@ -86,7 +85,7 @@ func GenerateRandomSha256() cipher.SHA256 {
 }
 
 func HexDump(message gnet.Message) {
-	var messagesConfig = daemon.NewMessagesConfig()
+	var messagesConfig = NewMessagesConfig()
 	if registered == false {
 		messagesConfig.Register()
 		registered = true

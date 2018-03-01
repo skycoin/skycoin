@@ -70,7 +70,7 @@ func NewVisorConfig() VisorConfig {
 // Visor struct
 type Visor struct {
 	Config VisorConfig
-	v      *visor.Visor
+	v      visor.Visorer
 	// Peer-reported blockchain height.  Use to estimate download progress
 	blockchainHeights map[string]uint64
 	// all request will go through this channel, to keep writing and reading member variable thread safe.
@@ -301,11 +301,10 @@ func (vs *Visor) SetTxnsAnnounced(txns []cipher.SHA256) {
 	vs.strand("SetTxnsAnnounced", func() error {
 		now := utc.Now()
 		for _, h := range txns {
-			if err := vs.v.Unconfirmed.SetAnnounced(h, now); err != nil {
+			if err := vs.v.GetUnconfirmed().SetAnnounced(h, now); err != nil {
 				logger.Error("Failed to set unconfirmed txn announce time")
 			}
 		}
-
 		return nil
 	})
 }
@@ -379,7 +378,7 @@ func (vs *Visor) ResendTransaction(h cipher.SHA256, pool *Pool) error {
 	}
 
 	return vs.strand("ResendTransaction", func() error {
-		if ut, ok := vs.v.Unconfirmed.Get(h); ok {
+		if ut, ok := vs.v.GetUnconfirmed().Get(h); ok {
 			return vs.broadcastTransaction(ut.Txn, pool)
 		}
 		return nil
@@ -552,7 +551,7 @@ func (vs *Visor) GetSignedBlocksSince(seq uint64, ct uint64) ([]coin.SignedBlock
 func (vs *Visor) UnConfirmFilterKnown(txns []cipher.SHA256) []cipher.SHA256 {
 	var ts []cipher.SHA256
 	vs.strand("UnConfirmFilterKnown", func() error {
-		ts = vs.v.Unconfirmed.FilterKnown(txns)
+		ts = vs.v.GetUnconfirmed().FilterKnown(txns)
 		return nil
 	})
 	return ts
@@ -562,7 +561,7 @@ func (vs *Visor) UnConfirmFilterKnown(txns []cipher.SHA256) []cipher.SHA256 {
 func (vs *Visor) UnConfirmKnow(hashes []cipher.SHA256) coin.Transactions {
 	var txns coin.Transactions
 	vs.strand("UnConfirmKnow", func() error {
-		txns = vs.v.Unconfirmed.GetKnown(hashes)
+		txns = vs.v.GetUnconfirmed().GetKnown(hashes)
 		return nil
 	})
 	return txns

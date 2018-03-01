@@ -66,119 +66,119 @@ func NewTransactionResults(txs []Transaction) (*TransactionResults, error) {
 // RPC is balance check and transaction injection
 // separate wallets out of visor
 type RPC struct {
-	v *Visor
+	v Visorer
 }
 
 // MakeRPC make RPC instance
-func MakeRPC(v *Visor) *RPC {
+func MakeRPC(v Visorer) RPCIface {
 	return &RPC{
 		v: v,
 	}
 }
 
 // GetBlockchainMetadata get blockchain meta data
-func (rpc RPC) GetBlockchainMetadata(v *Visor) *BlockchainMetadata {
+func (rpc RPC) GetBlockchainMetadata(v Visorer) *BlockchainMetadata {
 	bm := v.GetBlockchainMetadata()
 	return &bm
 }
 
 // GetUnspent gets unspent
-func (rpc RPC) GetUnspent(v *Visor) blockdb.UnspentPool {
-	return v.Blockchain.Unspent()
+func (rpc RPC) GetUnspent(v Visorer) blockdb.UnspentPool {
+	return v.GetBlockchain().Unspent()
 }
 
 // GetUnconfirmedSpends get unconfirmed spents
-func (rpc RPC) GetUnconfirmedSpends(v *Visor, addrs []cipher.Address) (coin.AddressUxOuts, error) {
-	return v.Unconfirmed.SpendsOfAddresses(addrs, rpc.GetUnspent(v))
+func (rpc RPC) GetUnconfirmedSpends(v Visorer, addrs []cipher.Address) (coin.AddressUxOuts, error) {
+	return v.GetUnconfirmed().SpendsOfAddresses(addrs, rpc.GetUnspent(v))
 }
 
 // GetUnconfirmedReceiving returns unconfirmed
-func (rpc RPC) GetUnconfirmedReceiving(v *Visor, addrs []cipher.Address) (coin.AddressUxOuts, error) {
-	head, err := v.Blockchain.Head()
+func (rpc RPC) GetUnconfirmedReceiving(v Visorer, addrs []cipher.Address) (coin.AddressUxOuts, error) {
+	head, err := v.GetBlockchain().Head()
 	if err != nil {
 		return coin.AddressUxOuts{}, err
 	}
-	return v.Unconfirmed.RecvOfAddresses(head.Head, addrs)
+	return v.GetUnconfirmed().RecvOfAddresses(head.Head, addrs)
 }
 
 // GetUnconfirmedTxns gets unconfirmed transactions
-func (rpc RPC) GetUnconfirmedTxns(v *Visor, addresses []cipher.Address) []UnconfirmedTxn {
+func (rpc RPC) GetUnconfirmedTxns(v Visorer, addresses []cipher.Address) []UnconfirmedTxn {
 	return v.GetUnconfirmedTxns(ToAddresses(addresses))
 }
 
 // GetBlock gets block
-func (rpc RPC) GetBlock(v *Visor, seq uint64) (*coin.SignedBlock, error) {
+func (rpc RPC) GetBlock(v Visorer, seq uint64) (*coin.SignedBlock, error) {
 	return v.GetBlock(seq)
 }
 
 // GetBlocks gets blocks
-func (rpc RPC) GetBlocks(v *Visor, start, end uint64) []coin.SignedBlock {
+func (rpc RPC) GetBlocks(v Visorer, start, end uint64) []coin.SignedBlock {
 	return v.GetBlocks(start, end)
 }
 
 // GetLastBlocks returns the last N blocks
-func (rpc RPC) GetLastBlocks(v *Visor, num uint64) []coin.SignedBlock {
+func (rpc RPC) GetLastBlocks(v Visorer, num uint64) []coin.SignedBlock {
 	return v.GetLastBlocks(num)
 }
 
 // GetBlockBySeq get block in depth
-func (rpc RPC) GetBlockBySeq(v *Visor, n uint64) (*coin.SignedBlock, error) {
+func (rpc RPC) GetBlockBySeq(v Visorer, n uint64) (*coin.SignedBlock, error) {
 	return v.GetBlockBySeq(n)
 
 }
 
 // GetTransaction gets transaction
-func (rpc RPC) GetTransaction(v *Visor, txHash cipher.SHA256) (*Transaction, error) {
+func (rpc RPC) GetTransaction(v Visorer, txHash cipher.SHA256) (*Transaction, error) {
 	return v.GetTransaction(txHash)
 }
 
 // GetAddressTxns get address transactions
-func (rpc RPC) GetAddressTxns(v *Visor, addr cipher.Address) ([]Transaction, error) {
+func (rpc *RPC) GetAddressTxns(v Visorer, addr cipher.Address) ([]Transaction, error) {
 	return v.GetAddressTxns(addr)
 }
 
 // CreateWallet creates new wallet
-func (rpc *RPC) CreateWallet(wltName string, options wallet.Options) (wallet.Wallet, error) {
-	return rpc.v.wallets.CreateWallet(wltName, options)
+func (rpc RPC) CreateWallet(wltName string, options wallet.Options) (wallet.Wallet, error) {
+	return rpc.v.Wallets().CreateWallet(wltName, options)
 }
 
 // NewAddresses generates new addresses in given wallet
-func (rpc *RPC) NewAddresses(wltName string, num uint64) ([]cipher.Address, error) {
-	return rpc.v.wallets.NewAddresses(wltName, num)
+func (rpc RPC) NewAddresses(wltName string, num uint64) ([]cipher.Address, error) {
+	return rpc.v.Wallets().NewAddresses(wltName, num)
 }
 
 // GetWalletAddresses returns all addresses in given wallet
-func (rpc *RPC) GetWalletAddresses(wltID string) ([]cipher.Address, error) {
-	return rpc.v.wallets.GetAddresses(wltID)
+func (rpc RPC) GetWalletAddresses(wltID string) ([]cipher.Address, error) {
+	return rpc.v.Wallets().GetAddresses(wltID)
 }
 
 // CreateAndSignTransaction creates and sign transaction from wallet
-func (rpc *RPC) CreateAndSignTransaction(wltID string, vld wallet.Validator, unspent blockdb.UnspentGetter,
+func (rpc RPC) CreateAndSignTransaction(wltID string, vld wallet.Validator, unspent blockdb.UnspentGetter,
 	headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
-	return rpc.v.wallets.CreateAndSignTransaction(wltID, vld, unspent, headTime, coins, dest)
+	return rpc.v.Wallets().CreateAndSignTransaction(wltID, vld, unspent, headTime, coins, dest)
 }
 
 // UpdateWalletLabel updates wallet label
-func (rpc *RPC) UpdateWalletLabel(wltID, label string) error {
-	return rpc.v.wallets.UpdateWalletLabel(wltID, label)
+func (rpc RPC) UpdateWalletLabel(wltID, label string) error {
+	return rpc.v.Wallets().UpdateWalletLabel(wltID, label)
 }
 
 // GetWallet returns wallet by id
-func (rpc *RPC) GetWallet(wltID string) (wallet.Wallet, error) {
-	return rpc.v.wallets.GetWallet(wltID)
+func (rpc RPC) GetWallet(wltID string) (wallet.Wallet, error) {
+	return rpc.v.Wallets().GetWallet(wltID)
 }
 
 // GetWallets returns all wallet
-func (rpc *RPC) GetWallets() wallet.Wallets {
-	return rpc.v.wallets.GetWallets()
+func (rpc RPC) GetWallets() wallet.Wallets {
+	return rpc.v.Wallets().GetWallets()
 }
 
 // ReloadWallets reloads all wallet from files
-func (rpc *RPC) ReloadWallets() error {
-	return rpc.v.wallets.ReloadWallets()
+func (rpc RPC) ReloadWallets() error {
+	return rpc.v.Wallets().ReloadWallets()
 }
 
 // GetBuildInfo returns node build info, including version, build time, etc.
-func (rpc *RPC) GetBuildInfo() BuildInfo {
-	return rpc.v.Config.BuildInfo
+func (rpc RPC) GetBuildInfo() BuildInfo {
+	return rpc.v.GetConfig().BuildInfo
 }

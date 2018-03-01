@@ -4,9 +4,11 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+
 	"github.com/skycoin/skycoin/src/daemon/strand"
 	"github.com/skycoin/skycoin/src/wallet"
-	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/visor"
 
@@ -14,6 +16,28 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
 )
+
+func newGateway(disabledWalletApi bool) (*Gateway, *visor.RPCIfaceMock, *visor.VisorerMock) {
+	vrpc := visor.NewRPCIfaceMock()
+	v := visor.NewVisorerMock()
+	gw := &Gateway{
+		Config: GatewayConfig{
+			DisableWalletAPI: disabledWalletApi,
+		},
+		drpc:     RPC{},
+		vrpc:     vrpc,
+		v:        v,
+		requests: make(chan strand.Request, 32),
+		quit:     make(chan struct{}),
+	}
+	go func() {
+		select {
+		case req := <-gw.requests:
+			req.Func()
+		}
+	}()
+	return gw, vrpc, v
+}
 
 func TestFbyAddresses(t *testing.T) {
 	uxs := make(coin.UxArray, 5)
@@ -126,23 +150,7 @@ func TestGateway_GetWallet(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			vrpc := visor.NewRPCIfaceMock()
-			gw := &Gateway{
-				Config: GatewayConfig{
-					DisableWalletAPI: tc.disableWalletAPI,
-				},
-				drpc:     RPC{},
-				vrpc:     vrpc,
-				requests: make(chan strand.Request, 32),
-				quit:     make(chan struct{}),
-			}
-			go func() {
-				select {
-				case req := <-gw.requests:
-					req.Func()
-				}
-			}()
-
+			gw, vrpc, _ := newGateway(tc.disableWalletAPI)
 			vrpc.On("GetWallet", tc.walletId).Return(tc.wallet, tc.getWalletError)
 			w, err := gw.GetWallet(tc.walletId)
 			if err != nil {
@@ -176,23 +184,7 @@ func TestGateway_GetWallets(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			vrpc := visor.NewRPCIfaceMock()
-			gw := &Gateway{
-				Config: GatewayConfig{
-					DisableWalletAPI: tc.disableWalletAPI,
-				},
-				drpc:     RPC{},
-				vrpc:     vrpc,
-				requests: make(chan strand.Request, 32),
-				quit:     make(chan struct{}),
-			}
-			go func() {
-				select {
-				case req := <-gw.requests:
-					req.Func()
-				}
-			}()
-
+			gw, vrpc, _ := newGateway(tc.disableWalletAPI)
 			vrpc.On("GetWallets").Return(tc.wallets)
 			w, err := gw.GetWallets()
 			if err != nil {
@@ -204,56 +196,84 @@ func TestGateway_GetWallets(t *testing.T) {
 	}
 }
 
-//func TestGateway_GetWalletUnconfirmedTxns(t *testing.T) {
-//	tests := []struct {
-//		name             string
-//		disableWalletAPI bool
-//		walletId         string
-//		addrs            []cipher.Address
-//		wallets          wallet.Wallets
-//		getWalletError   error
-//		err              error
-//	}{
-//		{
-//			name:             "wallet api disabled",
-//			disableWalletAPI: true,
-//			err:              wallet.ErrWalletApiDisabled,
-//		},
-//		{
-//			name:             "OK",
-//			disableWalletAPI: false,
-//			wallets:          wallet.Wallets{},
-//		},
-//	}
-//
-//	for _, tc := range tests {
-//		t.Run(tc.name, func(t *testing.T) {
-//			vrpc := visor.NewRPCIfaceMock()
-//			v := visor.NewVisorerMock()
-//			gw := &Gateway{
-//				Config: GatewayConfig{
-//					DisableWalletAPI: tc.disableWalletAPI,
-//				},
-//				drpc:     RPC{},
-//				vrpc:     vrpc,
-//				v:        v,
-//				requests: make(chan strand.Request, 32),
-//				quit:     make(chan struct{}),
-//			}
-//			go func() {
-//				select {
-//				case req := <-gw.requests:
-//					req.Func()
-//				}
-//			}()
-//
-//			vrpc.On("GetWalletAddresses", tc.walletId).Return(tc.addrs)
-//			w, err := gw.GetWalletUnconfirmedTxns(tc.walletId)
-//			if err != nil {
-//				require.Equal(t, tc.err, err)
-//				return
-//			}
-//			require.Equal(t, tc.wallets, w)
-//		})
-//	}
-//}
+func TestGateway_GetWalletUnconfirmedTxns(t *testing.T) {
+	tests := []struct {
+		name                     string
+		disableWalletAPI         bool
+		walletId                 string
+		getWalletAddressesResult []cipher.Address
+		getWalletError           error
+		getUnconfirmedTxnsResult []visor.UnconfirmedTxn
+		err                      error
+	}{
+		{
+			name:             "wallet api disabled",
+			disableWalletAPI: true,
+			err:              wallet.ErrWalletApiDisabled,
+		},
+		{
+			name:             "getWalletError",
+			disableWalletAPI: false,
+			walletId:         "walletId",
+			getWalletError:   errors.New("getWalletError"),
+		},
+		{
+			name:                     "OK",
+			disableWalletAPI:         false,
+			walletId:                 "walletId",
+			getWalletError:           errors.New("getWalletError"),
+			getUnconfirmedTxnsResult: []visor.UnconfirmedTxn{},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			gw, vrpc, v := newGateway(tc.disableWalletAPI)
+
+			vrpc.On("GetWalletAddresses", tc.walletId).Return(tc.getWalletAddressesResult, tc.err)
+			v.On("GetUnconfirmedTxns", mock.Anything).Return(tc.getUnconfirmedTxnsResult)
+			w, err := gw.GetWalletUnconfirmedTxns(tc.walletId)
+			if err != nil {
+				require.Equal(t, tc.err, err)
+				return
+			}
+			require.Equal(t, tc.getUnconfirmedTxnsResult, w)
+		})
+	}
+}
+
+func TestGateway_ReloadWallets(t *testing.T) {
+	tests := []struct {
+		name             string
+		disableWalletAPI bool
+		err              error
+	}{
+		{
+			name:             "wallet api disabled",
+			disableWalletAPI: true,
+			err:              wallet.ErrWalletApiDisabled,
+		},
+		{
+			name:             "reloadWalletError",
+			disableWalletAPI: false,
+			err:              errors.New("reloadWalletError"),
+		},
+		{
+			name:             "OK",
+			disableWalletAPI: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			gw, vrpc, _ := newGateway(tc.disableWalletAPI)
+
+			vrpc.On("ReloadWallets").Return(tc.err)
+			err := gw.ReloadWallets()
+			if err != nil {
+				require.Equal(t, tc.err, err)
+				return
+			}
+		})
+	}
+}

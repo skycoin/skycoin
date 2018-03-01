@@ -80,7 +80,7 @@ func (m *RPCIfaceMock) CreateWallet(p0 string, p1 wallet.Options) (wallet.Wallet
 }
 
 // GetAddressTxns mocked method
-func (m *RPCIfaceMock) GetAddressTxns(p0 *Visor, p1 cipher.Address) ([]Transaction, error) {
+func (m *RPCIfaceMock) GetAddressTxns(p0 Visorer, p1 cipher.Address) ([]Transaction, error) {
 
 	ret := m.Called(p0, p1)
 
@@ -107,7 +107,7 @@ func (m *RPCIfaceMock) GetAddressTxns(p0 *Visor, p1 cipher.Address) ([]Transacti
 }
 
 // GetBlock mocked method
-func (m *RPCIfaceMock) GetBlock(p0 *Visor, p1 uint64) (*coin.SignedBlock, error) {
+func (m *RPCIfaceMock) GetBlock(p0 Visorer, p1 uint64) (*coin.SignedBlock, error) {
 
 	ret := m.Called(p0, p1)
 
@@ -134,7 +134,7 @@ func (m *RPCIfaceMock) GetBlock(p0 *Visor, p1 uint64) (*coin.SignedBlock, error)
 }
 
 // GetBlockBySeq mocked method
-func (m *RPCIfaceMock) GetBlockBySeq(p0 *Visor, p1 uint64) (*coin.SignedBlock, error) {
+func (m *RPCIfaceMock) GetBlockBySeq(p0 Visorer, p1 uint64) (*coin.SignedBlock, error) {
 
 	ret := m.Called(p0, p1)
 
@@ -161,7 +161,7 @@ func (m *RPCIfaceMock) GetBlockBySeq(p0 *Visor, p1 uint64) (*coin.SignedBlock, e
 }
 
 // GetBlockchainMetadata mocked method
-func (m *RPCIfaceMock) GetBlockchainMetadata(p0 *Visor) *BlockchainMetadata {
+func (m *RPCIfaceMock) GetBlockchainMetadata(p0 Visorer) *BlockchainMetadata {
 
 	ret := m.Called(p0)
 
@@ -179,7 +179,7 @@ func (m *RPCIfaceMock) GetBlockchainMetadata(p0 *Visor) *BlockchainMetadata {
 }
 
 // GetBlocks mocked method
-func (m *RPCIfaceMock) GetBlocks(p0 *Visor, p1 uint64, p2 uint64) []coin.SignedBlock {
+func (m *RPCIfaceMock) GetBlocks(p0 Visorer, p1 uint64, p2 uint64) []coin.SignedBlock {
 
 	ret := m.Called(p0, p1, p2)
 
@@ -215,7 +215,7 @@ func (m *RPCIfaceMock) GetBuildInfo() BuildInfo {
 }
 
 // GetLastBlocks mocked method
-func (m *RPCIfaceMock) GetLastBlocks(p0 *Visor, p1 uint64) []coin.SignedBlock {
+func (m *RPCIfaceMock) GetLastBlocks(p0 Visorer, p1 uint64) []coin.SignedBlock {
 
 	ret := m.Called(p0, p1)
 
@@ -233,7 +233,7 @@ func (m *RPCIfaceMock) GetLastBlocks(p0 *Visor, p1 uint64) []coin.SignedBlock {
 }
 
 // GetTransaction mocked method
-func (m *RPCIfaceMock) GetTransaction(p0 *Visor, p1 cipher.SHA256) (*Transaction, error) {
+func (m *RPCIfaceMock) GetTransaction(p0 Visorer, p1 cipher.SHA256) (*Transaction, error) {
 
 	ret := m.Called(p0, p1)
 
@@ -260,7 +260,7 @@ func (m *RPCIfaceMock) GetTransaction(p0 *Visor, p1 cipher.SHA256) (*Transaction
 }
 
 // GetUnconfirmedReceiving mocked method
-func (m *RPCIfaceMock) GetUnconfirmedReceiving(p0 *Visor, p1 []cipher.Address) (coin.AddressUxOuts, error) {
+func (m *RPCIfaceMock) GetUnconfirmedReceiving(p0 Visorer, p1 []cipher.Address) (coin.AddressUxOuts, error) {
 
 	ret := m.Called(p0, p1)
 
@@ -287,7 +287,7 @@ func (m *RPCIfaceMock) GetUnconfirmedReceiving(p0 *Visor, p1 []cipher.Address) (
 }
 
 // GetUnconfirmedSpends mocked method
-func (m *RPCIfaceMock) GetUnconfirmedSpends(p0 *Visor, p1 []cipher.Address) (coin.AddressUxOuts, error) {
+func (m *RPCIfaceMock) GetUnconfirmedSpends(p0 Visorer, p1 []cipher.Address) (coin.AddressUxOuts, error) {
 
 	ret := m.Called(p0, p1)
 
@@ -314,7 +314,7 @@ func (m *RPCIfaceMock) GetUnconfirmedSpends(p0 *Visor, p1 []cipher.Address) (coi
 }
 
 // GetUnconfirmedTxns mocked method
-func (m *RPCIfaceMock) GetUnconfirmedTxns(p0 *Visor, p1 []cipher.Address) []UnconfirmedTxn {
+func (m *RPCIfaceMock) GetUnconfirmedTxns(p0 Visorer, p1 []cipher.Address) []UnconfirmedTxn {
 
 	ret := m.Called(p0, p1)
 
@@ -332,7 +332,7 @@ func (m *RPCIfaceMock) GetUnconfirmedTxns(p0 *Visor, p1 []cipher.Address) []Unco
 }
 
 // GetUnspent mocked method
-func (m *RPCIfaceMock) GetUnspent(p0 *Visor) blockdb.UnspentPool {
+func (m *RPCIfaceMock) GetUnspent(p0 Visorer) blockdb.UnspentPool {
 
 	ret := m.Called(p0)
 

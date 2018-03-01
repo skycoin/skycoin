@@ -9,6 +9,10 @@ import (
 
 //go:generate goautomock -template=testify Visorer
 type Visorer interface {
+	GetConfig() Config
+	Wallets() *wallet.Service
+	GetUnconfirmed() UnconfirmedTxnPooler
+	GetBlockchain() Blockchainer
 	Run() error
 	Shutdown()
 	maybeCreateGenesisBlock() error

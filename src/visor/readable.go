@@ -28,8 +28,9 @@ type BlockchainMetadata struct {
 }
 
 // NewBlockchainMetadata creates blockchain meta data
-func NewBlockchainMetadata(v *Visor) BlockchainMetadata {
-	head, err := v.Blockchain.Head()
+func NewBlockchainMetadata(v Visor) BlockchainMetadata {
+	v.GetConfig()
+	head, err := v.GetBlockchain().Head()
 	if err != nil {
 		logger.Error("%v", err)
 		return BlockchainMetadata{}

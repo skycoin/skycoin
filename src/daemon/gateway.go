@@ -39,7 +39,7 @@ type Gateway struct {
 	// Backref to Daemon
 	d *Daemon
 	// Backref to Visor
-	v *visor.Visor
+	v visor.Visorer
 	// Requests are queued on this channel
 	requests chan strand.Request
 	quit     chan struct{}
@@ -254,7 +254,7 @@ func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (*visor.ReadableO
 	var headTime uint64
 	var err error
 	gw.strand("GetUnspentOutputs", func() {
-		headTime = gw.v.Blockchain.Time()
+		headTime = gw.v.GetBlockchain().Time()
 
 		unspentOutputs, err = gw.v.GetUnspentOutputs()
 		if err != nil {
@@ -480,7 +480,7 @@ func (gw *Gateway) GetLastTxs() ([]*visor.Transaction, error) {
 func (gw *Gateway) GetUnspent() blockdb.UnspentPool {
 	var unspent blockdb.UnspentPool
 	gw.strand("GetUnspent", func() {
-		unspent = gw.v.Blockchain.Unspent()
+		unspent = gw.v.GetBlockchain().Unspent()
 	})
 	return unspent
 }
@@ -517,11 +517,11 @@ func (gw *Gateway) Spend(wltID string, coins uint64, dest cipher.Address) (*coin
 	}
 	gw.strand("Spend", func() {
 		// create spend validator
-		unspent := gw.v.Blockchain.Unspent()
-		sv := newSpendValidator(gw.v.Unconfirmed, unspent)
+		unspent := gw.v.GetBlockchain().Unspent()
+		sv := newSpendValidator(gw.v.GetUnconfirmed(), unspent)
 
 		// Create and sign transaction
-		tx, err = gw.vrpc.CreateAndSignTransaction(wltID, sv, unspent, gw.v.Blockchain.Time(), coins, dest)
+		tx, err = gw.vrpc.CreateAndSignTransaction(wltID, sv, unspent, gw.v.GetBlockchain().Time(), coins, dest)
 		if err != nil {
 			logger.Error("Create transaction failed: %v", err)
 			return
@@ -630,7 +630,7 @@ func (gw *Gateway) GetWalletDir() (string, error) {
 	if gw.Config.DisableWalletAPI {
 		return "", wallet.ErrWalletApiDisabled
 	}
-	return gw.v.Config.WalletDirectory, nil
+	return gw.v.GetConfig().WalletDirectory, nil
 }
 
 // NewAddresses generate addresses in given wallet

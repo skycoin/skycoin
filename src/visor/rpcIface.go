@@ -9,17 +9,17 @@ import (
 
 //go:generate goautomock -template=testify RPCIface
 type RPCIface interface {
-	GetBlockchainMetadata(v *Visor) *BlockchainMetadata
-	GetUnspent(v *Visor) blockdb.UnspentPool
-	GetUnconfirmedSpends(v *Visor, addrs []cipher.Address) (coin.AddressUxOuts, error)
-	GetUnconfirmedReceiving(v *Visor, addrs []cipher.Address) (coin.AddressUxOuts, error)
-	GetUnconfirmedTxns(v *Visor, addresses []cipher.Address) []UnconfirmedTxn
-	GetBlock(v *Visor, seq uint64) (*coin.SignedBlock, error)
-	GetBlocks(v *Visor, start, end uint64) []coin.SignedBlock
-	GetLastBlocks(v *Visor, num uint64) []coin.SignedBlock
-	GetBlockBySeq(v *Visor, n uint64) (*coin.SignedBlock, error)
-	GetTransaction(v *Visor, txHash cipher.SHA256) (*Transaction, error)
-	GetAddressTxns(v *Visor, addr cipher.Address) ([]Transaction, error)
+	GetBlockchainMetadata(v Visorer) *BlockchainMetadata
+	GetUnspent(v Visorer) blockdb.UnspentPool
+	GetUnconfirmedSpends(v Visorer, addrs []cipher.Address) (coin.AddressUxOuts, error)
+	GetUnconfirmedReceiving(v Visorer, addrs []cipher.Address) (coin.AddressUxOuts, error)
+	GetUnconfirmedTxns(v Visorer, addresses []cipher.Address) []UnconfirmedTxn
+	GetBlock(v Visorer, seq uint64) (*coin.SignedBlock, error)
+	GetBlocks(v Visorer, start, end uint64) []coin.SignedBlock
+	GetLastBlocks(v Visorer, num uint64) []coin.SignedBlock
+	GetBlockBySeq(v Visorer, n uint64) (*coin.SignedBlock, error)
+	GetTransaction(v Visorer, txHash cipher.SHA256) (*Transaction, error)
+	GetAddressTxns(v Visorer, addr cipher.Address) ([]Transaction, error)
 	CreateWallet(wltName string, options wallet.Options) (wallet.Wallet, error)
 	NewAddresses(wltName string, num uint64) ([]cipher.Address, error)
 	GetWalletAddresses(wltID string) ([]cipher.Address, error)

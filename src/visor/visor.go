@@ -299,6 +299,22 @@ func (vs *Visor) Run() error {
 	return vs.bcParser.Run()
 }
 
+func (vs *Visor) GetConfig() Config {
+	return vs.Config
+}
+
+func (vs *Visor) Wallets() *wallet.Service {
+	return vs.wallets
+}
+
+func (vs *Visor) GetBlockchain() Blockchainer {
+	return vs.Blockchain
+}
+
+func (vs *Visor) GetUnconfirmed() UnconfirmedTxnPooler {
+	return vs.Unconfirmed
+}
+
 // Shutdown shuts down the visor
 func (vs *Visor) Shutdown() {
 	defer logger.Info("DB and BlockchainParser closed")
@@ -537,7 +553,7 @@ func (vs *Visor) HeadBkSeq() uint64 {
 }
 
 // GetBlockchainMetadata returns descriptive Blockchain information
-func (vs *Visor) GetBlockchainMetadata() BlockchainMetadata {
+func (vs Visor) GetBlockchainMetadata() BlockchainMetadata {
 	return NewBlockchainMetadata(vs)
 }
 

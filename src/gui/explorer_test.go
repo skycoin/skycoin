@@ -222,7 +222,7 @@ func TestGetTransactionsForAddress(t *testing.T) {
 							Hash:    validHash,
 							Address: successAddress,
 							Coins:   "0.000000",
-							Hours:   "0",
+							Hours:   0,
 						},
 					},
 				},

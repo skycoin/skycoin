@@ -598,16 +598,38 @@ func TestStableAddressOutputs(t *testing.T) {
 		return
 	}
 
-	output, err := exec.Command(binaryPath, "addressOutputs", "2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt").CombinedOutput()
-	require.NoError(t, err)
+	tt := []struct {
+		name       string
+		args       []string
+		goldenFile string
+	}{
+		{
+			"addressOutputs one address",
+			[]string{"addressOutputs", "2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"},
+			"address-outputs.golden",
+		},
+		{
+			"addressOutputs two address",
+			[]string{"addressOutputs", "2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt", "ejJjiCwp86ykmFr5iTJ8LxQXJ2wJPTYmkm"},
+			"two-address-outputs.golden",
+		},
+	}
 
-	var addrOutputs webrpc.OutputsResult
-	err = json.NewDecoder(bytes.NewReader(output)).Decode(&addrOutputs)
-	require.NoError(t, err)
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			output, err := exec.Command(binaryPath, tc.args...).CombinedOutput()
+			require.NoError(t, err)
 
-	var expect webrpc.OutputsResult
-	loadGoldenFile(t, "address-outputs.golden", TestData{addrOutputs, &expect})
-	require.Equal(t, expect, addrOutputs)
+			var addrOutputs webrpc.OutputsResult
+			err = json.NewDecoder(bytes.NewReader(output)).Decode(&addrOutputs)
+			require.NoError(t, err)
+
+			var expect webrpc.OutputsResult
+			loadGoldenFile(t, tc.goldenFile, TestData{addrOutputs, &expect})
+			require.Equal(t, expect, addrOutputs)
+
+		})
+	}
 }
 
 func TestLiveAddressOutputs(t *testing.T) {

@@ -905,13 +905,6 @@ func (m *VisorerMock) ScanAheadWalletAddresses(p0 string, p1 uint64) (wallet.Wal
 
 }
 
-// SetBlockchain mocked method
-func (m *VisorerMock) SetBlockchain(p0 Blockchainer) {
-
-	m.Called(p0)
-
-}
-
 // Shutdown mocked method
 func (m *VisorerMock) Shutdown() {
 

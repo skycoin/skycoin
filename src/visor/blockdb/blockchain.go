@@ -65,6 +65,7 @@ type BlockSigs interface {
 	Get(hash cipher.SHA256) (cipher.Sig, bool, error)
 }
 
+//go:generate goautomock -template=testify UnspentPool
 // UnspentPool unspent outputs pool
 type UnspentPool interface {
 	Len() uint64                          // Len returns the length of unspent outputs pool

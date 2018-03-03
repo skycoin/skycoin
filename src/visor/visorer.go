@@ -12,7 +12,6 @@ type Visorer interface {
 	GetConfig() Config
 	Wallets() *wallet.Service
 	GetUnconfirmed() UnconfirmedTxnPooler
-	SetBlockchain(b Blockchainer)
 	GetBlockchain() Blockchainer
 	Run() error
 	Shutdown()

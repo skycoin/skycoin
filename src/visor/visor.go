@@ -299,22 +299,22 @@ func (vs *Visor) Run() error {
 	return vs.bcParser.Run()
 }
 
+// GetConfig returns config
 func (vs *Visor) GetConfig() Config {
 	return vs.Config
 }
 
+// Wallets returns wallets
 func (vs *Visor) Wallets() *wallet.Service {
 	return vs.wallets
 }
 
-func (vs *Visor) SetBlockchain(b Blockchainer) {
-	vs.Blockchain = b
-}
-
+// GetBlockchain returns blockchain
 func (vs *Visor) GetBlockchain() Blockchainer {
 	return vs.Blockchain
 }
 
+// GetUnconfirmed returns unconfirmed
 func (vs *Visor) GetUnconfirmed() UnconfirmedTxnPooler {
 	return vs.Unconfirmed
 }
@@ -557,7 +557,7 @@ func (vs *Visor) HeadBkSeq() uint64 {
 }
 
 // GetBlockchainMetadata returns descriptive Blockchain information
-func (vs Visor) GetBlockchainMetadata() BlockchainMetadata {
+func (vs *Visor) GetBlockchainMetadata() BlockchainMetadata {
 	return NewBlockchainMetadata(vs)
 }
 

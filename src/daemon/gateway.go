@@ -592,14 +592,14 @@ func (gw *Gateway) GetWalletBalance(wltID string) (wallet.BalancePair, error) {
 			err = fmt.Errorf("get unconfirmed receiving failed when when checking wallet balance: %v", err)
 			return
 		}
-
-		coins1, hours1, err := gw.v.AddressBalance(auxs)
+		var coins1, hours1 uint64
+		coins1, hours1, err = gw.v.AddressBalance(auxs)
 		if err != nil {
 			err = fmt.Errorf("Computing confirmed address balance failed: %v", err)
 			return
 		}
-
-		coins2, hours2, err := gw.v.AddressBalance(auxs.Sub(spendUxs).Add(recvUxs))
+		var coins2, hours2 uint64
+		coins2, hours2, err = gw.v.AddressBalance(auxs.Sub(spendUxs).Add(recvUxs))
 		if err != nil {
 			err = fmt.Errorf("Computing predicted address balance failed: %v", err)
 			return

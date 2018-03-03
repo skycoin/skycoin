@@ -292,6 +292,7 @@ type MessageEvent struct {
 	Context *gnet.MessageContext
 }
 
+//GetVisor returns visor
 func (dm *Daemon) GetVisor() Visorer {
 	return dm.Visor
 }

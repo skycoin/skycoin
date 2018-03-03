@@ -97,10 +97,12 @@ func NewVisor(c VisorConfig, db *bolt.DB) (*Visor, error) {
 	return vs, nil
 }
 
+//GetVisor returns visor
 func (vs *Visor) GetVisor() visor.Visorer {
 	return vs.v
 }
 
+//GetConfig returns config
 func (vs *Visor) GetConfig() VisorConfig {
 	return vs.Config
 }
@@ -313,6 +315,7 @@ func (vs *Visor) SetTxnsAnnounced(txns []cipher.SHA256) {
 				logger.Error("Failed to set unconfirmed txn announce time")
 			}
 		}
+
 		return nil
 	})
 }

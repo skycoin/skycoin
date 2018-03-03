@@ -214,6 +214,20 @@ func doLive(t *testing.T) bool {
 	return false
 }
 
+// doLiveEnvCheck checks if the WALLET_DIR and WALLET_NAME environment value do exist
+func doLiveEnvCheck(t *testing.T) {
+	t.Helper()
+	walletDir := os.Getenv("WALLET_DIR")
+	if walletDir == "" {
+		t.Fatal("missing WALLET_DIR environment value")
+	}
+
+	walletName := os.Getenv("WALLET_NAME")
+	if walletName == "" {
+		t.Fatal("missing WALLET_NAME environment value")
+	}
+}
+
 func doLiveOrStable(t *testing.T) bool {
 	if enabled() {
 		switch mode(t) {
@@ -666,6 +680,8 @@ func TestLiveListWallets(t *testing.T) {
 		return
 	}
 
+	doLiveEnvCheck(t)
+
 	output, err := exec.Command(binaryPath, "listWallets").CombinedOutput()
 	require.NoError(t, err)
 
@@ -705,6 +721,8 @@ func TestLiveListAddresses(t *testing.T) {
 		return
 	}
 
+	doLiveEnvCheck(t)
+
 	output, err := exec.Command(binaryPath, "listAddresses").CombinedOutput()
 	require.NoError(t, err)
 
@@ -734,7 +752,7 @@ func TestStableAddressBalance(t *testing.T) {
 }
 
 func TestLiveAddressBalance(t *testing.T) {
-	if !doStable(t) {
+	if !doLive(t) {
 		return
 	}
 
@@ -771,6 +789,8 @@ func TestLiveWalletBalance(t *testing.T) {
 		return
 	}
 
+	doLiveEnvCheck(t)
+
 	output, err := exec.Command(binaryPath, "walletBalance").CombinedOutput()
 	require.NoError(t, err)
 
@@ -803,6 +823,8 @@ func TestLiveWalletOutputs(t *testing.T) {
 	if !doLive(t) {
 		return
 	}
+
+	doLiveEnvCheck(t)
 
 	output, err := exec.Command(binaryPath, "walletOutputs").CombinedOutput()
 	require.NoError(t, err)

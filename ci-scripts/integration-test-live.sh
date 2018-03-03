@@ -13,22 +13,26 @@ RPC_ADDR="127.0.0.1:$RPC_PORT"
 MODE="live"
 TEST=""
 UPDATE=""
+# run go test with -v flag
+VERBOSE=""
 
 usage () {
   echo "Usage: $SCRIPT"
   echo "Optional command line arguments"
   echo "-t <string>  -- Test to run, gui or cli; empty runs both tests"
   echo "-u <boolean> -- Update stable testdata"
+  echo "-v <boolean> -- Run test with -v flag"
   exit 1
 }
 
-while getopts "h?t:u" args; do
+while getopts "h?t:v" args; do
 case $args in
     h|\?)
         usage;
         exit;;
     t ) TEST=${OPTARG};;
     u ) UPDATE="--update";;
+    v ) VERBOSE="-v";;
   esac
 done
 
@@ -45,12 +49,12 @@ fi
 
 if [[ -z $TEST || $TEST = "gui" ]]; then
 
-SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST go test ./src/gui/integration/... $UPDATE -timeout=3m -v
+SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST go test ./src/gui/integration/... $UPDATE -timeout=3m $VERBOSE
 
 fi
 
 if [[ -z $TEST || $TEST = "cli" ]]; then
 
-SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR go test ./src/api/cli/integration/... $UPDATE -timeout=3m -v
+SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR go test ./src/api/cli/integration/... $UPDATE -timeout=3m $VERBOSE
 
 fi

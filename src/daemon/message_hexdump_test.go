@@ -87,7 +87,7 @@ func TestAnnounceBlocksMessage(t *testing.T) {
 func TestGetTxnsMessage(t *testing.T) {
 	var shas = make([]cipher.SHA256, 0)
 
-	shas = append(shas, GenerateRandomSha256(), GenerateRandomSha256())
+		shas = append(shas, testutil.RandSHA256(t), testutil.RandSHA256(t))
 	var message = NewGetTxnsMessage(shas)
 	fmt.Println("GetTxns:")
 	fmt.Println(HexDump(message))
@@ -127,16 +127,16 @@ func TestGiveTxnsMessage(t *testing.T) {
 	sig3, _ = cipher.SigFromHex("sig3")
 	var transaction0 = coin.Transaction{
 		Type:      123,
-		In:        []cipher.SHA256{GenerateRandomSha256(), GenerateRandomSha256()},
-		InnerHash: GenerateRandomSha256(),
+		In:        []cipher.SHA256{testutil.RandSHA256(t), testutil.RandSHA256(t)},
+		InnerHash: testutil.RandSHA256(t),
 		Length:    5000,
 		Out:       transactionOutputs0,
 		Sigs:      []cipher.Sig{sig0, sig1},
 	}
 	var transaction1 = coin.Transaction{
 		Type:      123,
-		In:        []cipher.SHA256{GenerateRandomSha256(), GenerateRandomSha256()},
-		InnerHash: GenerateRandomSha256(),
+		In:        []cipher.SHA256{testutil.RandSHA256(t), testutil.RandSHA256(t)},
+		InnerHash: testutil.RandSHA256(t),
 		Length:    5000,
 		Out:       transactionOutputs1,
 		Sigs:      []cipher.Sig{sig2, sig3},
@@ -148,7 +148,7 @@ func TestGiveTxnsMessage(t *testing.T) {
 }
 
 func TestAnnounceTxnsMessage(t *testing.T) {
-	var message = NewAnnounceTxnsMessage([]cipher.SHA256{GenerateRandomSha256(), GenerateRandomSha256()})
+	var message = NewAnnounceTxnsMessage([]cipher.SHA256{testutil.RandSHA256(t), testutil.RandSHA256(t)})
 	fmt.Println("AnnounceTxnsMessage:")
 	fmt.Println(HexDump(message))
 }

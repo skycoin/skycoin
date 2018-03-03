@@ -68,10 +68,6 @@ func printLHexDumpWithFormat(offset int, name string, buffer []byte) {
 	fmt.Println(getSliceContentsString(hexBuff, offset), name)
 }
 
-func GenerateRandomSha256() cipher.SHA256 {
-	return sha256.Sum256([]byte(string(time.Now().Unix())))
-}
-
 func HexDump(message gnet.Message) string {
 
 	//setting stdout to a temp file

@@ -30,7 +30,6 @@ import (
 
 const (
 	binaryName = "skycoin-cli"
-	walletName = "integration-test.wlt"
 
 	testModeStable = "stable"
 	testModeLive   = "live"
@@ -39,11 +38,12 @@ const (
 	randomLiveTransactionNum = 500
 
 	testFixturesDir = "test-fixtures"
+
+	stableWalletName = "integration_test.wlt"
 )
 
 var (
 	binaryPath string
-	walletDir  string
 
 	update     = flag.Bool("update", false, "update golden files")
 	liveTxFull = flag.Bool("live-tx-full", false, "run live transaction test against full blockchain")
@@ -75,18 +75,6 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	dir, clean, err := createTempWalletFile(filepath.Join(testdata, "integration_test.wlt"))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
-	}
-	defer clean()
-
-	walletDir = dir
-
-	os.Setenv("WALLET_DIR", dir)
-	os.Setenv("WALLET_NAME", walletName)
-
 	ret := m.Run()
 
 	// Remove the generated cli binary file.
@@ -99,36 +87,54 @@ func TestMain(m *testing.M) {
 }
 
 // createTempWalletFile creates a temporary dir, and copy the 'from' file to dir.
-// returns the temporary dir path, cleanup callback function, and error if any.
-func createTempWalletFile(from string) (string, func(), error) {
-	dir, err := ioutil.TempDir("", "integration_test")
-	if err != nil {
-		return "", nil, fmt.Errorf("Get temporary dir failed: %v", err)
-	}
+// returns the temporary wallet path, cleanup callback function, and error if any.
+func createTempWalletFile(t *testing.T) (string, func()) {
+	dir, err := ioutil.TempDir("", "wallet-data-dir")
+	require.NoError(t, err)
 
-	// Copy the  the temporary dir.
-	wltPath := filepath.Join(dir, walletName)
-	f, err := os.Create(wltPath)
-	if err != nil {
-		return "", nil, fmt.Errorf("Create temporary file: %v failed: %v", wltPath, err)
-	}
+	// Copy the testdata/$stableWalletName to the temporary dir.
+	walletPath := filepath.Join(dir, stableWalletName)
+	f, err := os.Create(walletPath)
+	require.NoError(t, err)
 
 	defer f.Close()
 
-	rf, err := os.Open(from)
-	if err != nil {
-		return "", nil, fmt.Errorf("Open %v failed: %v", from, err)
-	}
+	rf, err := os.Open(filepath.Join(testFixturesDir, stableWalletName))
+	require.NoError(t, err)
 
 	defer rf.Close()
 	io.Copy(f, rf)
 
+	os.Setenv("WALLET_DIR", dir)
+	os.Setenv("WALLET_NAME", stableWalletName)
+
 	fun := func() {
+		os.Setenv("WALLET_DIR", "")
+		os.Setenv("WALLET_NAME", "")
+
 		// Delete the temporary dir
 		os.RemoveAll(dir)
 	}
 
-	return dir, fun, nil
+	return walletPath, fun
+}
+
+func copyFile(dst, src string) {
+	f, err := os.Create(dst)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Create dst file failed: %v", err)
+		os.Exit(1)
+	}
+	defer f.Close()
+
+	rf, err := os.Open(src)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Open src file failed: %v", err)
+		os.Exit(1)
+	}
+
+	defer rf.Close()
+	io.Copy(f, rf)
 }
 
 func loadJSON(t *testing.T, filename string, obj interface{}) {
@@ -229,8 +235,8 @@ func rpcAddress() string {
 	return rpcAddr
 }
 
-func TestGenerateAddresses(t *testing.T) {
-	if !doLiveOrStable(t) {
+func TestStableGenerateAddresses(t *testing.T) {
+	if !doStable(t) {
 		return
 	}
 
@@ -238,34 +244,33 @@ func TestGenerateAddresses(t *testing.T) {
 		name         string
 		args         []string
 		expectOutput []byte
-		wltFile      string
 		goldenFile   string
 	}{
 		{
 			"generateAddresses",
 			[]string{"generateAddresses"},
 			[]byte("7g3M372kxwNwwQEAmrronu4anXTW8aD1XC\n"),
-			walletName,
 			"generate-addresses.golden",
 		},
 		{
 			"generateAddresses -n 2 -j",
 			[]string{"generateAddresses", "-n", "2", "-j"},
 			[]byte("{\n    \"addresses\": [\n        \"2EDapDfn1VC6P2hx4nTH2cRUkboGAE16evV\",\n        \"hLLcizfJomBKJrUeHrHTWKZMNdqwb69WVb\"\n    ]\n}\n"),
-			walletName,
 			"generate-addresses-2.golden",
 		},
 		{
 			"generateAddresses -n -2 -j",
 			[]string{"generateAddresses", "-n", "-2", "-j"},
 			[]byte("Error: invalid value \"-2\" for flag -n: strconv.ParseUint: parsing \"-2\": invalid syntax"),
-			walletName,
 			"generate-addresses-2.golden",
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			walletPath, clean := createTempWalletFile(t)
+			defer clean()
+
 			output, err := exec.Command(binaryPath, tc.args...).CombinedOutput()
 			require.NoError(t, err)
 			if bytes.Contains(output, []byte("Error: ")) {
@@ -275,9 +280,8 @@ func TestGenerateAddresses(t *testing.T) {
 
 			require.Equal(t, string(tc.expectOutput), string(output))
 
-			wltFile := filepath.Join(walletDir, tc.wltFile)
 			var w wallet.ReadableWallet
-			loadJSON(t, wltFile, &w)
+			loadJSON(t, walletPath, &w)
 
 			// Use loadJSON instead of loadGoldenFile because this golden file
 			// should not use the *update flag
@@ -346,7 +350,7 @@ func TestDecodeRawTransaction(t *testing.T) {
 		{
 			name:       "success",
 			rawTx:      "2601000000a1d3345ac47f897f24084b1c6b9bd6e03fc92887050d0748bdab5e639c1fdcd401000000a2a10f07e0e06cf6ba3e793b3186388a126591ee230b3f387617f1ccb6376a3f18e094bd3f7719aa8191c00764f323872f5192da393852bd85dab70b13409d2b01010000004d78de698a33abcfff22391c043b57a56bb0efbdc4a5b975bf8e7889668896bc0400000000bae12bbf671abeb1181fc85f1c01cdfee55deb97980c9c0a00000000543600000000000000373bb3675cbf3880bba3f3de7eb078925b8a72ad0095ba0a000000001c12000000000000008829025fe45b48f29795893a642bdaa89b2bb40e40d2df03000000001c12000000000000008001532c3a705e7e62bb0bb80630ecc21a87ec09c0fc9b01000000001b12000000000000",
-			goldenFile: filepath.Join(testdata, "decodeRawTransaction.golden"),
+			goldenFile: "decode-raw-transaction.golden",
 		},
 		{
 			name:   "invalid raw transaction",
@@ -638,6 +642,9 @@ func TestStableListWallets(t *testing.T) {
 		return
 	}
 
+	_, clean := createTempWalletFile(t)
+	defer clean()
+
 	output, err := exec.Command(binaryPath, "listWallets").CombinedOutput()
 	require.NoError(t, err)
 
@@ -673,6 +680,9 @@ func TestStableListAddress(t *testing.T) {
 	if !doStable(t) {
 		return
 	}
+
+	_, clean := createTempWalletFile(t)
+	defer clean()
 
 	output, err := exec.Command(binaryPath, "listAddresses").CombinedOutput()
 	require.NoError(t, err)
@@ -741,6 +751,9 @@ func TestStableWalletBalance(t *testing.T) {
 		return
 	}
 
+	_, clean := createTempWalletFile(t)
+	defer clean()
+
 	output, err := exec.Command(binaryPath, "walletBalance").CombinedOutput()
 	require.NoError(t, err)
 
@@ -770,6 +783,9 @@ func TestStableWalletOutputs(t *testing.T) {
 	if !doStable(t) {
 		return
 	}
+
+	_, clean := createTempWalletFile(t)
+	defer clean()
 
 	output, err := exec.Command(binaryPath, "walletOutputs").CombinedOutput()
 	require.NoError(t, err)
@@ -1114,7 +1130,7 @@ func TestStableBlocks(t *testing.T) {
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&blocks)
 	require.NoError(t, err)
 
-	goldenFile := filepath.Join(testdata, "blocks180.golden")
+	goldenFile := filepath.Join(testFixturesDir, "blocks180.golden")
 	if *update {
 		writeJSON(t, goldenFile, blocks)
 	}
@@ -1152,12 +1168,12 @@ func testKnownBlocks(t *testing.T) {
 		{
 			"blocks 0",
 			[]string{"blocks", "0"},
-			filepath.Join(testdata, "block0.golden"),
+			filepath.Join(testFixturesDir, "block0.golden"),
 		},
 		{
 			"blocks 0 5",
 			[]string{"blocks", "0", "5"},
-			filepath.Join(testdata, "blocks0~5.golden"),
+			filepath.Join(testFixturesDir, "blocks0~5.golden"),
 		},
 	}
 
@@ -1213,17 +1229,17 @@ func TestStableLastBlocks(t *testing.T) {
 		{
 			name:       "lastBlocks 0",
 			args:       []string{"lastBlocks", "0"},
-			goldenFile: filepath.Join(testdata, "lastBlocks0.golden"),
+			goldenFile: filepath.Join(testFixturesDir, "lastBlocks0.golden"),
 		},
 		{
 			name:       "lastBlocks 1",
 			args:       []string{"lastBlocks", "1"},
-			goldenFile: filepath.Join(testdata, "lastBlocks1.golden"),
+			goldenFile: filepath.Join(testFixturesDir, "lastBlocks1.golden"),
 		},
 		{
 			name:       "lastBlocks 2",
 			args:       []string{"lastBlocks", "2"},
-			goldenFile: filepath.Join(testdata, "lastBlocks2.golden"),
+			goldenFile: filepath.Join(testFixturesDir, "lastBlocks2.golden"),
 		},
 	}
 

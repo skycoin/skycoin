@@ -58,6 +58,153 @@ func init() {
 	rand.Seed(time.Now().Unix())
 }
 
+// Do setup and teardown here.
+func TestMain(m *testing.M) {
+	abs, err := filepath.Abs(binaryName)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, fmt.Sprintf("get binary name absolute path failed: %v\n", err))
+		os.Exit(1)
+	}
+
+	binaryPath = abs
+
+	// Build cli binary file.
+	args := []string{"build", "-o", binaryPath, "../../../../cmd/cli/cli.go"}
+	if err := exec.Command("go", args...).Run(); err != nil {
+		fmt.Fprintf(os.Stderr, fmt.Sprintf("Make %v binary failed: %v\n", binaryName, err))
+		os.Exit(1)
+	}
+
+	dir, clean, err := createTempWalletFile(filepath.Join("testdata", "integration_test.wlt"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
+	}
+	defer clean()
+
+	walletDir = dir
+
+	os.Setenv("WALLET_DIR", dir)
+	os.Setenv("WALLET_NAME", walletName)
+
+	ret := m.Run()
+
+	// Remove the generated cli binary file.
+	if err := os.Remove(binaryPath); err != nil {
+		fmt.Fprintf(os.Stderr, fmt.Sprintf("Delete %v failed: %v", binaryName, err))
+		os.Exit(1)
+	}
+
+	os.Exit(ret)
+}
+
+// createTempWalletFile creates a temporary dir, and copy the 'from' file to dir.
+// returns the temporary dir path, cleanup callback function, and error if any.
+func createTempWalletFile(from string) (string, func(), error) {
+	dir, err := ioutil.TempDir("", "integration_test")
+	if err != nil {
+		return "", nil, fmt.Errorf("Get temporary dir failed: %v", err)
+	}
+
+	// Copy the  the temporary dir.
+	wltPath := filepath.Join(dir, walletName)
+	f, err := os.Create(wltPath)
+	if err != nil {
+		return "", nil, fmt.Errorf("Create temporary file: %v failed: %v", wltPath, err)
+	}
+
+	defer f.Close()
+
+	rf, err := os.Open(from)
+	if err != nil {
+		return "", nil, fmt.Errorf("Open %v failed: %v", from, err)
+	}
+
+	defer rf.Close()
+	io.Copy(f, rf)
+
+	fun := func() {
+		// Delete the temporary dir
+		os.RemoveAll(dir)
+	}
+
+	return dir, fun, nil
+}
+
+func loadJSON(t *testing.T, filename string, obj interface{}) {
+	f, err := os.Open(filename)
+	require.NoError(t, err)
+	defer f.Close()
+
+	err = json.NewDecoder(f).Decode(obj)
+	require.NoError(t, err)
+}
+
+func writeJSON(t *testing.T, filename string, obj interface{}) {
+	f, err := os.Create(filename)
+	require.NoError(t, err)
+	defer f.Close()
+
+	enc := json.NewEncoder(f)
+	enc.SetIndent("", "\t")
+	require.NoError(t, enc.Encode(obj))
+}
+
+func mode(t *testing.T) string {
+	mode := os.Getenv("SKYCOIN_INTEGRATION_TEST_MODE")
+	switch mode {
+	case "":
+		mode = testModeStable
+	case testModeLive, testModeStable:
+	default:
+		t.Fatal("Invalid test mode, must be stable or live")
+	}
+	return mode
+}
+
+func enabled() bool {
+	return os.Getenv("SKYCOIN_INTEGRATION_TESTS") == "1"
+}
+
+func doStable(t *testing.T) bool {
+	if enabled() && mode(t) == testModeStable {
+		return true
+	}
+
+	t.Skip("Stable tests disabled")
+	return false
+}
+
+func doLive(t *testing.T) bool {
+	if enabled() && mode(t) == testModeLive {
+		return true
+	}
+
+	t.Skip("Live tests disabled")
+	return false
+}
+
+func doLiveOrStable(t *testing.T) bool {
+	if enabled() {
+		switch mode(t) {
+		case testModeStable, testModeLive:
+			return true
+		}
+	}
+
+	t.Skip("Live and stable tests disabled")
+	return false
+}
+
+func rpcAddress() string {
+	rpcAddr := os.Getenv("RPC_ADDR")
+	if rpcAddr == "" {
+		rpcAddr = "127.0.0.1:6430"
+	}
+
+	return rpcAddr
+}
+
 func TestGenerateAddresses(t *testing.T) {
 	if !doLiveOrStable(t) {
 		return
@@ -166,17 +313,49 @@ func TestDecodeRawTransaction(t *testing.T) {
 		return
 	}
 
-	rawTx := `2601000000a1d3345ac47f897f24084b1c6b9bd6e03fc92887050d0748bdab5e639c1fdcd401000000a2a10f07e0e06cf6ba3e793b3186388a126591ee230b3f387617f1ccb6376a3f18e094bd3f7719aa8191c00764f323872f5192da393852bd85dab70b13409d2b01010000004d78de698a33abcfff22391c043b57a56bb0efbdc4a5b975bf8e7889668896bc0400000000bae12bbf671abeb1181fc85f1c01cdfee55deb97980c9c0a00000000543600000000000000373bb3675cbf3880bba3f3de7eb078925b8a72ad0095ba0a000000001c12000000000000008829025fe45b48f29795893a642bdaa89b2bb40e40d2df03000000001c12000000000000008001532c3a705e7e62bb0bb80630ecc21a87ec09c0fc9b01000000001b12000000000000`
-	output, err := exec.Command(binaryPath, "decodeRawTransaction", rawTx).CombinedOutput()
-	require.NoError(t, err)
+	tt := []struct {
+		name       string
+		rawTx      string
+		goldenFile string
+		errMsg     []byte
+	}{
+		{
+			name:       "success",
+			rawTx:      "2601000000a1d3345ac47f897f24084b1c6b9bd6e03fc92887050d0748bdab5e639c1fdcd401000000a2a10f07e0e06cf6ba3e793b3186388a126591ee230b3f387617f1ccb6376a3f18e094bd3f7719aa8191c00764f323872f5192da393852bd85dab70b13409d2b01010000004d78de698a33abcfff22391c043b57a56bb0efbdc4a5b975bf8e7889668896bc0400000000bae12bbf671abeb1181fc85f1c01cdfee55deb97980c9c0a00000000543600000000000000373bb3675cbf3880bba3f3de7eb078925b8a72ad0095ba0a000000001c12000000000000008829025fe45b48f29795893a642bdaa89b2bb40e40d2df03000000001c12000000000000008001532c3a705e7e62bb0bb80630ecc21a87ec09c0fc9b01000000001b12000000000000",
+			goldenFile: filepath.Join("testdata", "decodeRawTransaction.golden"),
+		},
+		{
+			name:   "invalid raw transaction",
+			rawTx:  "2601000000a1d",
+			errMsg: []byte("invalid raw transaction: encoding/hex: odd length hex string\nencoding/hex: odd length hex string\n"),
+		},
+	}
 
-	var txn visor.TransactionJSON
-	err = json.NewDecoder(bytes.NewReader(output)).Decode(&txn)
-	require.NoError(t, err)
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			output, err := exec.Command(binaryPath, "decodeRawTransaction", tc.rawTx).CombinedOutput()
+			if err != nil {
+				require.Error(t, err, "exit status 1")
+				require.Equal(t, tc.errMsg, output)
+				return
+			}
 
-	var expect visor.TransactionJSON
-	loadGoldenFile(t, "decode-raw-transaction.golden", TestData{txn, &expect})
-	require.Equal(t, expect, txn)
+			require.NoError(t, err)
+			if bytes.Contains(output, []byte("Error: ")) {
+				require.Equal(t, tc.errMsg, string(output))
+				return
+			}
+
+			var txn visor.TransactionJSON
+			err = json.NewDecoder(bytes.NewReader(output)).Decode(&txn)
+			require.NoError(t, err)
+
+			var expect visor.TransactionJSON
+			loadGoldenFile(t, tc.goldenFile, TestData{txn, &expect})
+			require.Equal(t, expect, txn)
+		})
+	}
+
 }
 
 func TestAddressGen(t *testing.T) {

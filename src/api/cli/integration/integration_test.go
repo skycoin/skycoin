@@ -140,6 +140,30 @@ func loadJSON(t *testing.T, filename string, obj interface{}) {
 	require.NoError(t, err)
 }
 
+func loadGoldenFile(t *testing.T, filename string, testData TestData) {
+	require.NotEmpty(t, filename, "loadGoldenFile golden filename missing")
+
+	goldenFile := filepath.Join(testFixturesDir, filename)
+
+	if *update {
+		updateGoldenFile(t, goldenFile, testData.actual)
+	}
+
+	f, err := os.Open(goldenFile)
+	require.NoError(t, err)
+	defer f.Close()
+
+	err = json.NewDecoder(f).Decode(testData.expected)
+	require.NoError(t, err, filename)
+}
+
+func updateGoldenFile(t *testing.T, filename string, content interface{}) {
+	contentJson, err := json.MarshalIndent(content, "", "\t")
+	require.NoError(t, err)
+	err = ioutil.WriteFile(filename, contentJson, 0644)
+	require.NoError(t, err)
+}
+
 func writeJSON(t *testing.T, filename string, obj interface{}) {
 	f, err := os.Create(filename)
 	require.NoError(t, err)
@@ -1074,163 +1098,102 @@ func getTxidsInBlocks(t *testing.T, start, end int) []string {
 	return txids
 }
 
-// Do setup and teardown here.
-func TestMain(m *testing.M) {
-	abs, err := filepath.Abs(binaryName)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, fmt.Sprintf("get binary name absolute path failed: %v\n", err))
-		os.Exit(1)
+func TestStableBlocks(t *testing.T) {
+	if !doStable(t) {
+		return
 	}
 
-	binaryPath = abs
+	testKnownBlocks(t)
 
-	// Build cli binary file.
-	args := []string{"build", "-o", binaryPath, "../../../../cmd/cli/cli.go"}
-	if err := exec.Command("go", args...).Run(); err != nil {
-		fmt.Fprintf(os.Stderr, fmt.Sprintf("Make %v binary failed: %v\n", binaryName, err))
-		os.Exit(1)
-	}
+	// Tests blocks 180~181, should only return block 180.
+	output, err := exec.Command(binaryPath, "blocks", "180", "181").CombinedOutput()
+	require.NoError(t, err)
 
-	dir, clean, err := createTempWalletFile(filepath.Join(testFixturesDir, walletName))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
-	}
-	defer clean()
+	var blocks visor.ReadableBlocks
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&blocks)
+	require.NoError(t, err)
 
-	walletDir = dir
-
-	os.Setenv("WALLET_DIR", dir)
-	os.Setenv("WALLET_NAME", walletName)
-
-	ret := m.Run()
-
-	// Remove the generated cli binary file.
-	if err := os.Remove(binaryPath); err != nil {
-		fmt.Fprintf(os.Stderr, fmt.Sprintf("Delete %v failed: %v", binaryName, err))
-		os.Exit(1)
-	}
-
-	os.Exit(ret)
-}
-
-// createTempWalletFile creates a temporary dir, and copy the 'from' file to dir.
-// returns the temporary dir path, cleanup callback function, and error if any.
-func createTempWalletFile(from string) (string, func(), error) {
-	dir, err := ioutil.TempDir("", "integration_test")
-	if err != nil {
-		return "", nil, fmt.Errorf("Get temporary dir failed: %v", err)
-	}
-
-	// Copy the  the temporary dir.
-	wltPath := filepath.Join(dir, walletName)
-	f, err := os.Create(wltPath)
-	if err != nil {
-		return "", nil, fmt.Errorf("Create temporary file: %v failed: %v", wltPath, err)
-	}
-
-	defer f.Close()
-
-	rf, err := os.Open(from)
-	if err != nil {
-		return "", nil, fmt.Errorf("Open %v failed: %v", from, err)
-	}
-
-	defer rf.Close()
-	io.Copy(f, rf)
-
-	fun := func() {
-		// Delete the temporary dir
-		os.RemoveAll(dir)
-	}
-
-	return dir, fun, nil
-}
-
-func loadJSON(t *testing.T, filename string, obj interface{}) {
-	f, err := os.Open(filename)
-	require.NoError(t, err, filename)
-	defer f.Close()
-
-	err = json.NewDecoder(f).Decode(obj)
-	require.NoError(t, err, filename)
-}
-
-func loadGoldenFile(t *testing.T, filename string, testData TestData) {
-	require.NotEmpty(t, filename, "loadGoldenFile golden filename missing")
-
-	goldenFile := filepath.Join(testFixturesDir, filename)
-
+	goldenFile := filepath.Join("testdata", "blocks180.golden")
 	if *update {
-		updateGoldenFile(t, goldenFile, testData.actual)
+		writeJSON(t, goldenFile, blocks)
 	}
 
-	f, err := os.Open(goldenFile)
+	var expect visor.ReadableBlocks
+	loadJSON(t, goldenFile, &expect)
+	require.Equal(t, expect, blocks)
+}
+
+func TestLiveBlocks(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	testKnownBlocks(t)
+
+	// These blocks were affected by the coinhour overflow issue, make sure that they can be queried
+	blockSeqs := []int{11685, 11707, 11710, 11709, 11705, 11708, 11711, 11706, 11699}
+
+	for _, seq := range blockSeqs {
+		output, err := exec.Command(binaryPath, "blocks", strconv.Itoa(seq)).CombinedOutput()
+		require.NoError(t, err)
+		var blocks visor.ReadableBlocks
+		err = json.NewDecoder(bytes.NewReader(output)).Decode(&blocks)
+		require.NoError(t, err)
+	}
+}
+
+func testKnownBlocks(t *testing.T) {
+	tt := []struct {
+		name       string
+		args       []string
+		goldenFile string
+	}{
+		{
+			"blocks 0",
+			[]string{"blocks", "0"},
+			filepath.Join("testdata", "block0.golden"),
+		},
+		{
+			"blocks 0 5",
+			[]string{"blocks", "0", "5"},
+			filepath.Join("testdata", "blocks0~5.golden"),
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			output, err := exec.Command(binaryPath, tc.args...).CombinedOutput()
+			require.NoError(t, err)
+
+			var blocks visor.ReadableBlocks
+			err = json.NewDecoder(bytes.NewReader(output)).Decode(&blocks)
+			require.NoError(t, err)
+
+			if *update {
+				writeJSON(t, tc.goldenFile, blocks)
+			}
+
+			var expect visor.ReadableBlocks
+			loadJSON(t, tc.goldenFile, &expect)
+			require.Equal(t, expect, blocks)
+		})
+	}
+
+	scanBlocks(t, "0", "180")
+}
+
+func scanBlocks(t *testing.T, s, e string) {
+	outputs, err := exec.Command(binaryPath, "blocks", s, e).CombinedOutput()
 	require.NoError(t, err)
-	defer f.Close()
 
-	err = json.NewDecoder(f).Decode(testData.expected)
-	require.NoError(t, err, filename)
-}
-
-func updateGoldenFile(t *testing.T, filename string, content interface{}) {
-	contentJson, err := json.MarshalIndent(content, "", "\t")
+	var blocks visor.ReadableBlocks
+	err = json.NewDecoder(bytes.NewReader(outputs)).Decode(&blocks)
 	require.NoError(t, err)
-	err = ioutil.WriteFile(filename, contentJson, 0644)
-	require.NoError(t, err)
-}
 
-func mode(t *testing.T) string {
-	mode := os.Getenv("SKYCOIN_INTEGRATION_TEST_MODE")
-	switch mode {
-	case "":
-		mode = testModeStable
-	case testModeLive, testModeStable:
-	default:
-		t.Fatal("Invalid test mode, must be stable or live")
+	var preBlocks visor.ReadableBlock
+	preBlocks.Head.BlockHash = "0000000000000000000000000000000000000000000000000000000000000000"
+	for _, b := range blocks.Blocks {
+		require.Equal(t, b.Head.PreviousBlockHash, preBlocks.Head.BlockHash)
+		preBlocks = b
 	}
-	return mode
-}
-
-func enabled() bool {
-	return os.Getenv("SKYCOIN_INTEGRATION_TESTS") == "1"
-}
-
-func doStable(t *testing.T) bool {
-	if enabled() && mode(t) == testModeStable {
-		return true
-	}
-
-	t.Skip("Stable tests disabled")
-	return false
-}
-
-func doLive(t *testing.T) bool {
-	if enabled() && mode(t) == testModeLive {
-		return true
-	}
-
-	t.Skip("Live tests disabled")
-	return false
-}
-
-func doLiveOrStable(t *testing.T) bool {
-	if enabled() {
-		switch mode(t) {
-		case testModeStable, testModeLive:
-			return true
-		}
-	}
-
-	t.Skip("Live and stable tests disabled")
-	return false
-}
-
-func rpcAddress() string {
-	rpcAddr := os.Getenv("RPC_ADDR")
-	if rpcAddr == "" {
-		rpcAddr = "127.0.0.1:6430"
-	}
-
-	return rpcAddr
 }

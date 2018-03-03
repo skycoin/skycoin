@@ -911,22 +911,6 @@ func TestStableConfirmedTransactions(t *testing.T) {
 	}
 }
 
-func TestLiveUnconfirmedTransactions(t *testing.T) {
-	if !doLive(t) {
-		return
-	}
-	c := gui.NewClient(nodeAddress())
-
-	cTxsSingle, err := c.UnconfirmedTransactions([]string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"})
-	require.NoError(t, err)
-	require.True(t, len(*cTxsSingle) >= 0)
-
-	cTxsAll, err := c.UnconfirmedTransactions([]string{})
-	require.NoError(t, err)
-	require.True(t, len(*cTxsAll) >= 0)
-	require.True(t, len(*cTxsAll) >= len(*cTxsSingle))
-}
-
 func TestStableUnconfirmedTransactions(t *testing.T) {
 	if !doStable(t) {
 		return
@@ -987,13 +971,20 @@ func TestStableUnconfirmedTransactions(t *testing.T) {
 	}
 }
 
-func TestLiveResendUnconfirmedTransactions(t *testing.T) {
+func TestLiveUnconfirmedTransactions(t *testing.T) {
 	if !doLive(t) {
 		return
 	}
 	c := gui.NewClient(nodeAddress())
-	_, err := c.ResendUnconfirmedTransactions()
+
+	cTxsSingle, err := c.UnconfirmedTransactions([]string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"})
 	require.NoError(t, err)
+	require.True(t, len(*cTxsSingle) >= 0)
+
+	cTxsAll, err := c.UnconfirmedTransactions([]string{})
+	require.NoError(t, err)
+	require.True(t, len(*cTxsAll) >= 0)
+	require.True(t, len(*cTxsAll) >= len(*cTxsSingle))
 }
 
 func TestStableResendUnconfirmedTransactions(t *testing.T) {
@@ -1004,6 +995,15 @@ func TestStableResendUnconfirmedTransactions(t *testing.T) {
 	res, err := c.ResendUnconfirmedTransactions()
 	require.NoError(t, err)
 	require.True(t, len(res.Txids) == 0)
+}
+
+func TestLiveResendUnconfirmedTransactions(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+	c := gui.NewClient(nodeAddress())
+	_, err := c.ResendUnconfirmedTransactions()
+	require.NoError(t, err)
 }
 
 func TestStableRawTransaction(t *testing.T) {
@@ -1065,7 +1065,7 @@ func TestStableRawTransaction(t *testing.T) {
 }
 
 func TestLiveRawTransaction(t *testing.T) {
-	if !doStable(t) {
+	if !doLive(t) {
 		return
 	}
 

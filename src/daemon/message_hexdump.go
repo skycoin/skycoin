@@ -10,23 +10,11 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
+	"os"
+	"io/ioutil"
 )
 
 var registered = false
-
-func serializeMessage(msg gnet.Message) []byte {
-	t := reflect.ValueOf(msg).Elem().Type()
-	msgID := gnet.MessageIDMap[t]
-	bMsg := encoder.Serialize(msg)
-
-	// message length
-	bLen := encoder.SerializeAtomic(uint32(len(bMsg) + len(msgID)))
-	m := make([]byte, 0)
-	m = append(m, bLen...)     // length prefix
-	m = append(m, msgID[:]...) // message id
-	m = append(m, bMsg...)     // message bytes
-	return m
-}
 
 func getSliceContentsString(sl []string, offset int) string {
 	var res string = ""
@@ -84,7 +72,13 @@ func GenerateRandomSha256() cipher.SHA256 {
 	return sha256.Sum256([]byte(string(time.Now().Unix())))
 }
 
-func HexDump(message gnet.Message) {
+func HexDump(message gnet.Message) string {
+
+	//setting stdout to a temp file
+	defaultStdOut := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
 	var messagesConfig = NewMessagesConfig()
 	if registered == false {
 		messagesConfig.Register()
@@ -128,6 +122,19 @@ func HexDump(message gnet.Message) {
 
 	printFinalHex(len(serializedMsg))
 
+
+	w.Close()
+	out, _ := ioutil.ReadAll(r)
+	os.Stdout = defaultStdOut
+
+	var strOut string = ""
+
+	for i := 0;i < len(out) ;i++  {
+		strOut += string(out[i])
+	}
+
+
+	return strOut
 }
 func printFinalHex(i int) {
 	var finalHex = strconv.FormatInt(int64(i), 16)

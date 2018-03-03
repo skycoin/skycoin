@@ -30,7 +30,7 @@ import (
 
 const (
 	binaryName = "skycoin-cli"
-	walletName = "integration_test.wlt"
+	walletName = "integration-test.wlt"
 
 	testModeStable = "stable"
 	testModeLive   = "live"
@@ -70,21 +70,21 @@ func TestGenerateAddresses(t *testing.T) {
 			[]string{"generateAddresses"},
 			[]byte("7g3M372kxwNwwQEAmrronu4anXTW8aD1XC\n"),
 			filepath.Join(walletDir, walletName),
-			filepath.Join("testdata", "generateAddresses.golden"),
+			filepath.Join("test-fixtures", "generate-addresses.golden"),
 		},
 		{
 			"generateAddresses -n 2 -j",
 			[]string{"generateAddresses", "-n", "2", "-j"},
 			[]byte("{\n    \"addresses\": [\n        \"2EDapDfn1VC6P2hx4nTH2cRUkboGAE16evV\",\n        \"hLLcizfJomBKJrUeHrHTWKZMNdqwb69WVb\"\n    ]\n}\n"),
 			filepath.Join(walletDir, walletName),
-			filepath.Join("testdata", "generateAddresses2.golden"),
+			filepath.Join("test-fixtures", "generate-addresses-2.golden"),
 		},
 		{
 			"generateAddresses -n -2 -j",
 			[]string{"generateAddresses", "-n", "-2", "-j"},
 			[]byte("Error: invalid value \"-2\" for flag -n: strconv.ParseUint: parsing \"-2\": invalid syntax"),
 			filepath.Join(walletDir, walletName),
-			filepath.Join("testdata", "generateAddresses2.golden"),
+			filepath.Join("test-fixtures", "generate-addresses-2.golden"),
 		},
 	}
 
@@ -165,7 +165,7 @@ func TestDecodeRawTransaction(t *testing.T) {
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&txn)
 	require.NoError(t, err)
 
-	golden := filepath.Join("testdata", "decodeRawTransaction.golden")
+	golden := filepath.Join("test-fixtures", "decode-raw-transaction.golden")
 	if *update {
 		writeJSON(t, golden, txn)
 	}
@@ -440,7 +440,7 @@ func TestStableListWallets(t *testing.T) {
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wlts)
 	require.NoError(t, err)
 
-	golden := filepath.Join("testdata", "listWallets.golden")
+	golden := filepath.Join("test-fixtures", "list-wallets.golden")
 	if *update {
 		writeJSON(t, golden, wlts)
 	}
@@ -481,7 +481,7 @@ func TestStableListAddress(t *testing.T) {
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wltAddresses)
 	require.NoError(t, err)
 
-	golden := filepath.Join("testdata", "listAddresses.golden")
+	golden := filepath.Join("test-fixtures", "list-addresses.golden")
 	if *update {
 		writeJSON(t, golden, wltAddresses)
 	}
@@ -521,7 +521,7 @@ func TestStableAddressBalance(t *testing.T) {
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&addrBalance)
 	require.NoError(t, err)
 
-	golden := filepath.Join("testdata", "addressBalance.golden")
+	golden := filepath.Join("test-fixtures", "address-balance.golden")
 	if *update {
 		writeJSON(t, golden, addrBalance)
 	}
@@ -556,7 +556,7 @@ func TestStableWalletBalance(t *testing.T) {
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wltBalance)
 	require.NoError(t, err)
 
-	golden := filepath.Join("testdata", "walletBalance.golden")
+	golden := filepath.Join("test-fixtures", "wallet-balance.golden")
 	if *update {
 		writeJSON(t, golden, wltBalance)
 	}
@@ -591,7 +591,7 @@ func TestStableWalletOutputs(t *testing.T) {
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wltOutput)
 	require.NoError(t, err)
 
-	golden := filepath.Join("testdata", "walletOutputs.golden")
+	golden := filepath.Join("test-fixtures", "wallet-outputs.golden")
 	if *update {
 		writeJSON(t, golden, wltOutput)
 	}
@@ -626,7 +626,7 @@ func TestStableAddressOutputs(t *testing.T) {
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&addrOutputs)
 	require.NoError(t, err)
 
-	golden := filepath.Join("testdata", "addressOutputs.golden")
+	golden := filepath.Join("test-fixtures", "address-outputs.golden")
 	if *update {
 		writeJSON(t, golden, addrOutputs)
 	}
@@ -672,7 +672,7 @@ func TestStableStatus(t *testing.T) {
 		RPCAddress string `json:"webrpc_address"`
 	}
 
-	golden := filepath.Join("testdata", "status.golden")
+	golden := filepath.Join("test-fixtures", "status.golden")
 	if *update {
 		writeJSON(t, golden, ret)
 	}
@@ -738,7 +738,7 @@ func TestStableTransaction(t *testing.T) {
 			[]string{"d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add"},
 			nil,
 			"",
-			"./testdata/genesisTransaction.golden",
+			"./test-fixtures/genesis-transaction.golden",
 		},
 	}
 
@@ -783,7 +783,7 @@ func TestLiveTransaction(t *testing.T) {
 
 	var expect webrpc.TxnResult
 
-	golden := filepath.Join("testdata", "genesisTransaction.golden")
+	golden := filepath.Join("test-fixtures", "genesis-transaction.golden")
 	if *update {
 		writeJSON(t, golden, tx)
 	}
@@ -833,10 +833,10 @@ func scanTransactions(t *testing.T, fullTest bool) {
 		txids = ids
 	}
 
-	checkTransctions(t, txids)
+	checkTransactions(t, txids)
 }
 
-func checkTransctions(t *testing.T, txids []string) {
+func checkTransactions(t *testing.T, txids []string) {
 	// Start goroutines to check transactions
 	var wg sync.WaitGroup
 	txC := make(chan string, 500)
@@ -929,7 +929,7 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	dir, clean, err := createTempWalletFile(filepath.Join("testdata", "integration_test.wlt"))
+	dir, clean, err := createTempWalletFile(filepath.Join("test-fixtures", walletName))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
@@ -986,6 +986,8 @@ func createTempWalletFile(from string) (string, func(), error) {
 }
 
 func loadJSON(t *testing.T, filename string, obj interface{}) {
+	require.NotEmpty(t, filename, "loadJSON golden filename missing")
+
 	f, err := os.Open(filename)
 	require.NoError(t, err)
 	defer f.Close()

@@ -619,6 +619,7 @@ func TestStableAddressUxOuts(t *testing.T) {
 	}
 
 	c := gui.NewClient(nodeAddress())
+
 	cases := []struct {
 		name    string
 		errCode int
@@ -663,6 +664,7 @@ func TestLiveAddressUxOuts(t *testing.T) {
 	}
 
 	c := gui.NewClient(nodeAddress())
+
 	cases := []struct {
 		name         string
 		errCode      int
@@ -676,7 +678,7 @@ func TestLiveAddressUxOuts(t *testing.T) {
 			errMsg:  "400 Bad Request - address is empty\n",
 		},
 		{
-			name:    "no addresses",
+			name:    "invalid address length",
 			errCode: http.StatusBadRequest,
 			errMsg:  "400 Bad Request - Invalid address length\n",
 			addr:    "prRXwTcDK24hs6AFxj",
@@ -705,16 +707,109 @@ func TestLiveAddressUxOuts(t *testing.T) {
 	}
 }
 
-func TestBlocks(t *testing.T) {
-	if !doLiveOrStable(t) {
+func TestStableBlocks(t *testing.T) {
+	if !doStable(t) {
 		return
 	}
+
 	c := gui.NewClient(nodeAddress())
+
 	progress, err := c.BlockchainProgress()
 	require.NoError(t, err)
-	blocks, err := c.Blocks(1, int(progress.Current))
+
+	lastNBlocks := 10
+	require.True(t, int(progress.Current) > lastNBlocks+1)
+
+	cases := []struct {
+		name    string
+		golden  string
+		start   int
+		end     int
+		errCode int
+		errMsg  string
+	}{
+		{
+			name:   "first 10",
+			golden: "blocks-first-10.golden",
+			start:  1,
+			end:    10,
+		},
+		{
+			name:   "last 10",
+			golden: "blocks-last-10.golden",
+			start:  int(progress.Current) - lastNBlocks,
+			end:    int(progress.Current),
+		},
+		{
+			name:   "first block",
+			golden: "blocks-first-1.golden",
+			start:  1,
+			end:    1,
+		},
+		{
+			name:   "all blocks",
+			golden: "blocks-all.golden",
+			start:  0,
+			end:    int(progress.Current),
+		},
+		{
+			name:   "start > end",
+			golden: "blocks-end-less-than-start.golden",
+			start:  10,
+			end:    9,
+		},
+		{
+			name:    "start negative",
+			start:   -10,
+			end:     9,
+			errCode: http.StatusBadRequest,
+			errMsg:  "400 Bad Request - Invalid start value \"-10\"\n",
+		},
+		{
+			name:    "end negative",
+			start:   10,
+			end:     -9,
+			errCode: http.StatusBadRequest,
+			errMsg:  "400 Bad Request - Invalid end value \"-9\"\n",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.errMsg == "" {
+				resp := testBlocks(t, tc.start, tc.end)
+
+				var expected visor.ReadableBlocks
+				loadJSON(t, tc.golden, &TestData{resp, &expected})
+
+				require.Equal(t, expected, *resp)
+			} else {
+				_, err := c.Blocks(tc.start, tc.end)
+				assertResponseError(t, err, tc.errCode, tc.errMsg)
+			}
+		})
+	}
+}
+
+func TestLiveBlocks(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	testBlocks(t, 1, 10)
+}
+
+func testBlocks(t *testing.T, start, end int) *visor.ReadableBlocks {
+	c := gui.NewClient(nodeAddress())
+
+	blocks, err := c.Blocks(start, end)
 	require.NoError(t, err)
-	require.Equal(t, int(progress.Current), len(blocks.Blocks))
+
+	if start > end {
+		require.Empty(t, blocks.Blocks)
+	} else {
+		require.Len(t, blocks.Blocks, end-start+1)
+	}
 
 	var prevBlock *visor.ReadableBlock
 	for idx, b := range blocks.Blocks {
@@ -723,13 +818,15 @@ func TestBlocks(t *testing.T) {
 		}
 
 		bHash, err := c.BlockByHash(b.Head.BlockHash)
-		require.Equal(t, uint64(idx+1), b.Head.BkSeq)
+		require.Equal(t, uint64(idx+start), b.Head.BkSeq)
 		require.NoError(t, err)
 		require.NotNil(t, bHash)
 		require.Equal(t, b, *bHash)
 
 		prevBlock = &blocks.Blocks[idx]
 	}
+
+	return blocks
 }
 
 func TestStableLastBlocks(t *testing.T) {
@@ -983,7 +1080,7 @@ func TestStableTransaction(t *testing.T) {
 		{
 			name:       "genesis transaction",
 			txId:       "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add",
-			goldenFile: "./genesisTransaction.golden",
+			goldenFile: "./genesis-transaction.golden",
 		},
 	}
 
@@ -1062,12 +1159,12 @@ func TestStableTransactions(t *testing.T) {
 				StatusCode: http.StatusBadRequest,
 				Message:    "400 Bad Request - txId is empty\n",
 			},
-			goldenFile: "./emptyAddrs.golden",
+			goldenFile: "./empty-addrs.golden",
 		},
 		{
 			name:       "single addr",
 			addrs:      []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"},
-			goldenFile: "./singleAddr.golden",
+			goldenFile: "./single-addr.golden",
 		},
 	}
 
@@ -1143,12 +1240,12 @@ func TestStableConfirmedTransactions(t *testing.T) {
 		{
 			name:       "empty addrs",
 			addrs:      []string{},
-			goldenFile: "./emptyAddrs.golden",
+			goldenFile: "./empty-addrs.golden",
 		},
 		{
 			name:       "single addr",
 			addrs:      []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"},
-			goldenFile: "./singleAddr.golden",
+			goldenFile: "./single-addr.golden",
 		},
 	}
 
@@ -1208,7 +1305,7 @@ func TestStableUnconfirmedTransactions(t *testing.T) {
 		{
 			name:       "empty addrs",
 			addrs:      []string{},
-			goldenFile: "./emptyAddrsUnconfirmedTxs.golden",
+			goldenFile: "./empty-addrs-unconfirmed-txs.golden",
 		},
 	}
 
@@ -1294,7 +1391,7 @@ func TestStableRawTransaction(t *testing.T) {
 		},
 		{
 			name: "odd length hex string",
-			txId: "2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk",
+			txId: "abcdeffedca",
 			err: gui.APIError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
@@ -1343,7 +1440,7 @@ func TestLiveRawTransaction(t *testing.T) {
 		},
 		{
 			name: "odd length hex string",
-			txId: "2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk",
+			txId: "abcdeffedca",
 			err: gui.APIError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,

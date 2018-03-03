@@ -300,10 +300,7 @@ func (dm *Daemon) Shutdown() {
 	// the connection pool is shutdown.
 	close(dm.quitC)
 
-	if !dm.Config.DisableNetworking {
-		dm.Pool.Shutdown()
-	}
-
+	dm.Pool.Shutdown()
 	dm.Gateway.Shutdown()
 	dm.Pex.Shutdown()
 	dm.Visor.Shutdown()
@@ -340,15 +337,19 @@ func (dm *Daemon) Run() error {
 		}
 	}()
 
-	if !dm.Config.DisableIncomingConnections {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if dm.Config.DisableIncomingConnections {
+			if err := dm.Pool.RunOffline(); err != nil {
+				errC <- err
+			}
+		} else {
 			if err := dm.Pool.Run(); err != nil {
 				errC <- err
 			}
-		}()
-	}
+		}
+	}()
 
 	// TODO -- run blockchain stuff in its own goroutine
 	blockInterval := time.Duration(dm.Visor.Config.Config.BlockCreationInterval)

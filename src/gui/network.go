@@ -14,11 +14,19 @@ func connectionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if addr := r.FormValue("addr"); addr == "" {
-			wh.Error404(w)
-		} else {
-			wh.SendOr404(w, gateway.GetConnection(addr))
+		addr := r.FormValue("addr")
+		if addr == "" {
+			wh.Error400(w, "addr is required")
+			return
 		}
+
+		c := gateway.GetConnection(addr)
+		if c == nil {
+			wh.Error404(w)
+			return
+		}
+
+		wh.SendJSONOr500(logger, w, c)
 	}
 }
 

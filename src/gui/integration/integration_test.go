@@ -906,27 +906,35 @@ func TestLiveLastBlocks(t *testing.T) {
 	}
 }
 
-func TestLiveConnections(t *testing.T) {
-	if !doLive(t) {
+func TestStableNetworkConnections(t *testing.T) {
+	if !doStable(t) {
 		return
 	}
 
 	c := gui.NewClient(nodeAddress())
 	connections, err := c.NetworkConnections()
 	require.NoError(t, err)
-	require.True(t, len(connections.Connections) > 0)
+	require.Empty(t, connections.Connections)
 
+	connection, err := c.NetworkConnection("127.0.0.1:4444")
+	assertResponseError(t, err, http.StatusNotFound, "404 Not Found\n")
+	require.Nil(t, connection)
 }
 
-func TestLiveConnection(t *testing.T) {
+func TestLiveNetworkConnections(t *testing.T) {
 	if !doLive(t) {
 		return
 	}
+
 	c := gui.NewClient(nodeAddress())
 	connections, err := c.NetworkConnections()
 	require.NoError(t, err)
+	require.NotEmpty(t, connections.Connections)
+
 	for _, cc := range connections.Connections {
 		connection, err := c.NetworkConnection(cc.Addr)
+		require.NoError(t, err)
+		require.NotEmpty(t, cc.Addr)
 		require.Equal(t, cc.Addr, connection.Addr)
 		require.Equal(t, cc.ID, connection.ID)
 		require.Equal(t, cc.ListenPort, connection.ListenPort)
@@ -935,7 +943,6 @@ func TestLiveConnection(t *testing.T) {
 		require.Equal(t, cc.Outgoing, connection.Outgoing)
 		require.True(t, cc.LastReceived <= connection.LastReceived)
 		require.True(t, cc.LastSent <= connection.LastReceived)
-		require.NoError(t, err)
 	}
 }
 
@@ -973,8 +980,8 @@ func TestNetworkTrustedConnections(t *testing.T) {
 	require.Equal(t, expected, connections)
 }
 
-func TestNetworkExchangeableConnections(t *testing.T) {
-	if !doLiveOrStable(t) {
+func TestStableNetworkExchangeableConnections(t *testing.T) {
+	if !doStable(t) {
 		return
 	}
 
@@ -987,6 +994,16 @@ func TestNetworkExchangeableConnections(t *testing.T) {
 	sort.Strings(connections)
 	sort.Strings(expected)
 	require.Equal(t, expected, connections)
+}
+
+func TestLiveNetworkExchangeableConnections(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+	_, err := c.NetworkExchangeableConnections()
+	require.NoError(t, err)
 }
 
 func TestLiveTransaction(t *testing.T) {

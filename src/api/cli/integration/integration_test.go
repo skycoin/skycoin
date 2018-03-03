@@ -75,7 +75,7 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	dir, clean, err := createTempWalletFile(filepath.Join("testdata", "integration_test.wlt"))
+	dir, clean, err := createTempWalletFile(filepath.Join(testdata, "integration_test.wlt"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
@@ -346,7 +346,7 @@ func TestDecodeRawTransaction(t *testing.T) {
 		{
 			name:       "success",
 			rawTx:      "2601000000a1d3345ac47f897f24084b1c6b9bd6e03fc92887050d0748bdab5e639c1fdcd401000000a2a10f07e0e06cf6ba3e793b3186388a126591ee230b3f387617f1ccb6376a3f18e094bd3f7719aa8191c00764f323872f5192da393852bd85dab70b13409d2b01010000004d78de698a33abcfff22391c043b57a56bb0efbdc4a5b975bf8e7889668896bc0400000000bae12bbf671abeb1181fc85f1c01cdfee55deb97980c9c0a00000000543600000000000000373bb3675cbf3880bba3f3de7eb078925b8a72ad0095ba0a000000001c12000000000000008829025fe45b48f29795893a642bdaa89b2bb40e40d2df03000000001c12000000000000008001532c3a705e7e62bb0bb80630ecc21a87ec09c0fc9b01000000001b12000000000000",
-			goldenFile: filepath.Join("testdata", "decodeRawTransaction.golden"),
+			goldenFile: filepath.Join(testdata, "decodeRawTransaction.golden"),
 		},
 		{
 			name:   "invalid raw transaction",
@@ -983,6 +983,7 @@ func TestLiveTransaction(t *testing.T) {
 	scanPendingTransactions(t)
 }
 
+// cli doesn't have command to querying pending transactions yet.
 func scanPendingTransactions(t *testing.T) {
 }
 
@@ -1113,7 +1114,7 @@ func TestStableBlocks(t *testing.T) {
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&blocks)
 	require.NoError(t, err)
 
-	goldenFile := filepath.Join("testdata", "blocks180.golden")
+	goldenFile := filepath.Join(testdata, "blocks180.golden")
 	if *update {
 		writeJSON(t, goldenFile, blocks)
 	}
@@ -1151,12 +1152,12 @@ func testKnownBlocks(t *testing.T) {
 		{
 			"blocks 0",
 			[]string{"blocks", "0"},
-			filepath.Join("testdata", "block0.golden"),
+			filepath.Join(testdata, "block0.golden"),
 		},
 		{
 			"blocks 0 5",
 			[]string{"blocks", "0", "5"},
-			filepath.Join("testdata", "blocks0~5.golden"),
+			filepath.Join(testdata, "blocks0~5.golden"),
 		},
 	}
 
@@ -1195,5 +1196,95 @@ func scanBlocks(t *testing.T, s, e string) {
 	for _, b := range blocks.Blocks {
 		require.Equal(t, b.Head.PreviousBlockHash, preBlocks.Head.BlockHash)
 		preBlocks = b
+	}
+}
+
+func TestStableLastBlocks(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	tt := []struct {
+		name       string
+		args       []string
+		goldenFile string
+		errMsg     []byte
+	}{
+		{
+			name:       "lastBlocks 0",
+			args:       []string{"lastBlocks", "0"},
+			goldenFile: filepath.Join(testdata, "lastBlocks0.golden"),
+		},
+		{
+			name:       "lastBlocks 1",
+			args:       []string{"lastBlocks", "1"},
+			goldenFile: filepath.Join(testdata, "lastBlocks1.golden"),
+		},
+		{
+			name:       "lastBlocks 2",
+			args:       []string{"lastBlocks", "2"},
+			goldenFile: filepath.Join(testdata, "lastBlocks2.golden"),
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			output, err := exec.Command(binaryPath, tc.args...).CombinedOutput()
+
+			if bytes.Contains(output, []byte("Error: ")) {
+				fmt.Println(string(output))
+				require.Equal(t, string(tc.errMsg), string(output))
+				return
+			}
+
+			require.NoError(t, err)
+
+			var blocks visor.ReadableBlocks
+			err = json.NewDecoder(bytes.NewReader(output)).Decode(&blocks)
+			require.NoError(t, err)
+
+			if *update {
+				writeJSON(t, tc.goldenFile, blocks)
+			}
+
+			var expect visor.ReadableBlocks
+			loadJSON(t, tc.goldenFile, &expect)
+			require.Equal(t, expect, blocks)
+		})
+	}
+}
+
+func TestLiveLastBlocks(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	tt := []struct {
+		name string
+		args []string
+	}{
+		{
+			"lastBlocks 0",
+			[]string{"lastBlocks", "0"},
+		},
+		{
+			"lastBlocks 1",
+			[]string{"lastBlocks", "1"},
+		},
+		{
+			"lastBlocks 2",
+			[]string{"lastBlocks", "2"},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			output, err := exec.Command(binaryPath, tc.args...).CombinedOutput()
+			require.NoError(t, err)
+
+			var blocks visor.ReadableBlocks
+			err = json.NewDecoder(bytes.NewReader(output)).Decode(&blocks)
+			require.NoError(t, err)
+		})
 	}
 }

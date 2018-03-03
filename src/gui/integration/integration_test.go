@@ -719,7 +719,7 @@ func TestStableTransaction(t *testing.T) {
 			err: gui.APIError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - txId is empty\n",
+				Message:    "400 Bad Request - txid is empty\n",
 			},
 			goldenFile: "",
 		},

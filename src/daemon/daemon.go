@@ -187,7 +187,7 @@ type Daemon struct {
 	Pool     *Pool
 	Pex      *pex.Pex
 	Gateway  *Gateway
-	Visor    *Visor
+	Visor    Visorer
 
 	DefaultConnections []string
 
@@ -292,6 +292,10 @@ type MessageEvent struct {
 	Context *gnet.MessageContext
 }
 
+func (dm *Daemon) GetVisor() Visorer {
+	return dm.Visor
+}
+
 // Shutdown Terminates all subsystems safely.  To stop the Daemon run loop, send a value
 // over the quit channel provided to Init.  The Daemon run loop must be stopped
 // before calling this function.
@@ -351,17 +355,17 @@ func (dm *Daemon) Run() error {
 	}
 
 	// TODO -- run blockchain stuff in its own goroutine
-	blockInterval := time.Duration(dm.Visor.Config.Config.BlockCreationInterval)
+	blockInterval := time.Duration(dm.Visor.GetConfig().Config.BlockCreationInterval)
 	// blockchainBackupTicker := time.Tick(self.Visor.Config.BlockchainBackupRate)
 	blockCreationTicker := time.NewTicker(time.Second * blockInterval)
-	if !dm.Visor.Config.Config.IsMaster {
+	if !dm.Visor.GetConfig().Config.IsMaster {
 		blockCreationTicker.Stop()
 	}
 
-	unconfirmedRefreshTicker := time.Tick(dm.Visor.Config.Config.UnconfirmedRefreshRate)
-	unconfirmedRemoveInvalidTicker := time.Tick(dm.Visor.Config.Config.UnconfirmedRemoveInvalidRate)
-	blocksRequestTicker := time.Tick(dm.Visor.Config.BlocksRequestRate)
-	blocksAnnounceTicker := time.Tick(dm.Visor.Config.BlocksAnnounceRate)
+	unconfirmedRefreshTicker := time.Tick(dm.Visor.GetConfig().Config.UnconfirmedRefreshRate)
+	unconfirmedRemoveInvalidTicker := time.Tick(dm.Visor.GetConfig().Config.UnconfirmedRemoveInvalidRate)
+	blocksRequestTicker := time.Tick(dm.Visor.GetConfig().BlocksRequestRate)
+	blocksAnnounceTicker := time.Tick(dm.Visor.GetConfig().BlocksAnnounceRate)
 
 	privateConnectionsTicker := time.Tick(dm.Config.PrivateRate)
 	cullInvalidTicker := time.Tick(dm.Config.CullInvalidRate)
@@ -499,7 +503,7 @@ loop:
 		case <-blockCreationTicker.C:
 			// Create blocks, if master chain
 			elapser.Register("blockCreationTicker.C")
-			if dm.Visor.Config.Config.IsMaster {
+			if dm.Visor.GetConfig().Config.IsMaster {
 				sb, err := dm.Visor.CreateAndPublishBlock(dm.Pool)
 				if err != nil {
 					logger.Error("Failed to create block: %v", err)

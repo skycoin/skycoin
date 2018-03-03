@@ -97,6 +97,14 @@ func NewVisor(c VisorConfig, db *bolt.DB) (*Visor, error) {
 	return vs, nil
 }
 
+func (vs *Visor) GetVisor() visor.Visorer {
+	return vs.v
+}
+
+func (vs *Visor) GetConfig() VisorConfig {
+	return vs.Config
+}
+
 // Run starts the visor
 func (vs *Visor) Run() error {
 	defer logger.Info("Visor closed")
@@ -596,7 +604,7 @@ func (gbm *GetBlocksMessage) Process(d *Daemon) {
 	// TODO -- we need the sig to be sent with the block, but only the master
 	// can sign blocks.  Thus the sig needs to be stored with the block.
 	// TODO -- move to either Messages.Config or Visor.Config
-	if d.Visor.Config.DisableNetworking {
+	if d.Visor.GetConfig().DisableNetworking {
 		return
 	}
 	// Record this as this peer's highest block
@@ -642,7 +650,7 @@ func (gbm *GiveBlocksMessage) Handle(mc *gnet.MessageContext,
 
 // Process process message
 func (gbm *GiveBlocksMessage) Process(d *Daemon) {
-	if d.Visor.Config.DisableNetworking {
+	if d.Visor.GetConfig().DisableNetworking {
 		logger.Critical("Visor disabled, ignoring GiveBlocksMessage")
 		return
 	}
@@ -680,7 +688,7 @@ func (gbm *GiveBlocksMessage) Process(d *Daemon) {
 	m1 := NewAnnounceBlocksMessage(headBkSeq)
 	d.Pool.Pool.BroadcastMessage(m1)
 	//request more blocks.
-	m2 := NewGetBlocksMessage(headBkSeq, d.Visor.Config.BlocksResponseCount)
+	m2 := NewGetBlocksMessage(headBkSeq, d.Visor.GetConfig().BlocksResponseCount)
 	d.Pool.Pool.BroadcastMessage(m2)
 }
 
@@ -707,7 +715,7 @@ func (abm *AnnounceBlocksMessage) Handle(mc *gnet.MessageContext,
 
 // Process process message
 func (abm *AnnounceBlocksMessage) Process(d *Daemon) {
-	if d.Visor.Config.DisableNetworking {
+	if d.Visor.GetConfig().DisableNetworking {
 		return
 	}
 
@@ -718,7 +726,7 @@ func (abm *AnnounceBlocksMessage) Process(d *Daemon) {
 
 	// TODO: Should this be block get request for current sequence?
 	// If client is not caught up, won't attempt to get block
-	m := NewGetBlocksMessage(headBkSeq, d.Visor.Config.BlocksResponseCount)
+	m := NewGetBlocksMessage(headBkSeq, d.Visor.GetConfig().BlocksResponseCount)
 	if err := d.Pool.Pool.SendMessage(abm.c.Addr, m); err != nil {
 		logger.Error("Send GetBlocksMessage to %s failed: %v", abm.c.Addr, err)
 	}
@@ -756,7 +764,7 @@ func (atm *AnnounceTxnsMessage) Handle(mc *gnet.MessageContext,
 
 // Process process message
 func (atm *AnnounceTxnsMessage) Process(d *Daemon) {
-	if d.Visor.Config.DisableNetworking {
+	if d.Visor.GetConfig().DisableNetworking {
 		return
 	}
 
@@ -792,7 +800,7 @@ func (gtm *GetTxnsMessage) Handle(mc *gnet.MessageContext, daemon interface{}) e
 
 // Process process message
 func (gtm *GetTxnsMessage) Process(d *Daemon) {
-	if d.Visor.Config.DisableNetworking {
+	if d.Visor.GetConfig().DisableNetworking {
 		return
 	}
 
@@ -836,7 +844,7 @@ func (gtm *GiveTxnsMessage) Handle(mc *gnet.MessageContext,
 
 // Process process message
 func (gtm *GiveTxnsMessage) Process(d *Daemon) {
-	if d.Visor.Config.DisableNetworking {
+	if d.Visor.GetConfig().DisableNetworking {
 		return
 	}
 

@@ -50,9 +50,9 @@ func NewGateway(c GatewayConfig, D *Daemon) *Gateway {
 	return &Gateway{
 		Config:   c,
 		drpc:     RPC{},
-		vrpc:     visor.MakeRPC(D.Visor.v),
+		vrpc:     visor.MakeRPC(D.Visor.GetVisor()),
 		d:        D,
-		v:        D.Visor.v,
+		v:        D.Visor.GetVisor(),
 		requests: make(chan strand.Request, c.BufferSize),
 		quit:     make(chan struct{}),
 	}

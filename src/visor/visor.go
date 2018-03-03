@@ -307,6 +307,10 @@ func (vs *Visor) Wallets() *wallet.Service {
 	return vs.wallets
 }
 
+func (vs *Visor) SetBlockchain(b Blockchainer) {
+	vs.Blockchain = b
+}
+
 func (vs *Visor) GetBlockchain() Blockchainer {
 	return vs.Blockchain
 }

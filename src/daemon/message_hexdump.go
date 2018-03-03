@@ -1,17 +1,15 @@
 package daemon
 
 import (
-	"crypto/sha256"
 	"fmt"
 	"reflect"
 	"strconv"
-	"time"
 
-	"github.com/skycoin/skycoin/src/cipher"
+	"io/ioutil"
+	"os"
+
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
-	"os"
-	"io/ioutil"
 )
 
 var registered = false
@@ -118,17 +116,15 @@ func HexDump(message gnet.Message) string {
 
 	printFinalHex(len(serializedMsg))
 
-
 	w.Close()
 	out, _ := ioutil.ReadAll(r)
 	os.Stdout = defaultStdOut
 
 	var strOut string = ""
 
-	for i := 0;i < len(out) ;i++  {
+	for i := 0; i < len(out); i++ {
 		strOut += string(out[i])
 	}
-
 
 	return strOut
 }

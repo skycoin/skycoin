@@ -87,7 +87,7 @@ func TestAnnounceBlocksMessage(t *testing.T) {
 func TestGetTxnsMessage(t *testing.T) {
 	var shas = make([]cipher.SHA256, 0)
 
-		shas = append(shas, testutil.RandSHA256(t), testutil.RandSHA256(t))
+	shas = append(shas, testutil.RandSHA256(t), testutil.RandSHA256(t))
 	var message = NewGetTxnsMessage(shas)
 	fmt.Println("GetTxns:")
 	fmt.Println(HexDump(message))

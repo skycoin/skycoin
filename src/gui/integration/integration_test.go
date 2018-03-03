@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -44,19 +45,9 @@ When update flag is set to true all tests pass
 const (
 	testModeStable = "stable"
 	testModeLive   = "live"
-)
 
-// DefaultConnections the default trust node addresses
-var defaultConnections = map[string]bool{
-	"118.178.135.93:6000":  true,
-	"47.88.33.156:6000":    true,
-	"121.41.103.148:6000":  true,
-	"120.77.69.188:6000":   true,
-	"104.237.142.206:6000": true,
-	"176.58.126.224:6000":  true,
-	"172.104.85.6:6000":    true,
-	"139.162.7.132:6000":   true,
-}
+	testFixturesDirectory = "test-fixtures"
+)
 
 type TestData struct {
 	actual   interface{}
@@ -120,13 +111,13 @@ func doLiveOrStable(t *testing.T) bool {
 }
 
 func loadJSON(t *testing.T, filename string, testData *TestData) {
-	goldenFile := filepath.Join("test-fixtures", filename)
-	f, err := os.Open(goldenFile)
+	goldenFile := filepath.Join(testFixturesDirectory, filename)
 
 	if *update {
 		updateGoldenFile(t, goldenFile, testData.actual)
 	}
 
+	f, err := os.Open(goldenFile)
 	require.NoError(t, err)
 	defer f.Close()
 
@@ -613,6 +604,36 @@ func TestLiveUxOut(t *testing.T) {
 	scanUxOuts(t)
 }
 
+func scanUxOuts(t *testing.T) {
+	c := gui.NewClient(nodeAddress())
+
+	outputs, err := c.Outputs(nil, nil)
+	require.NoError(t, err)
+
+	for _, ux := range outputs.HeadOutputs {
+		t.Run(ux.Hash, func(t *testing.T) {
+			foundUx, err := c.UxOut(ux.Hash)
+			require.NoError(t, err)
+
+			require.Equal(t, ux.Hash, foundUx.Uxid)
+			require.Equal(t, ux.Time, foundUx.Time)
+			require.Equal(t, ux.BkSeq, foundUx.SrcBkSeq)
+			require.Equal(t, ux.SourceTransaction, foundUx.SrcTx)
+			require.Equal(t, ux.Address, foundUx.OwnerAddress)
+			require.Equal(t, ux.Hours, foundUx.Hours)
+			coinsStr, err := droplet.ToString(foundUx.Coins)
+			require.NoError(t, err)
+			require.Equal(t, ux.Coins, coinsStr)
+
+			if foundUx.SpentBlockSeq == 0 {
+				require.Equal(t, "0000000000000000000000000000000000000000000000000000000000000000", foundUx.SpentTxID)
+			} else {
+				require.NotEqual(t, "0000000000000000000000000000000000000000000000000000000000000000", foundUx.SpentTxID)
+			}
+		})
+	}
+}
+
 func TestStableAddressUxOuts(t *testing.T) {
 	if !doStable(t) {
 		return
@@ -918,71 +939,54 @@ func TestLiveConnection(t *testing.T) {
 	}
 }
 
-func TestLiveNetworkDefaultConnections(t *testing.T) {
-	if !doLive(t) {
+func TestNetworkDefaultConnections(t *testing.T) {
+	if !doLiveOrStable(t) {
 		return
 	}
 
 	c := gui.NewClient(nodeAddress())
 	connections, err := c.NetworkDefaultConnections()
 	require.NoError(t, err)
-	require.True(t, len(connections) == len(defaultConnections))
-	for _, connection := range connections {
-		require.True(t, defaultConnections[connection])
-	}
+	require.NotEmpty(t, connections)
+
+	var expected []string
+	loadJSON(t, "network-default-connections.golden", &TestData{connections, &expected})
+	sort.Strings(connections)
+	sort.Strings(expected)
+	require.Equal(t, expected, connections)
 }
 
 func TestNetworkTrustedConnections(t *testing.T) {
-	if !doLive(t) {
+	if !doLiveOrStable(t) {
 		return
 	}
+
 	c := gui.NewClient(nodeAddress())
 	connections, err := c.NetworkTrustedConnections()
 	require.NoError(t, err)
-	require.True(t, len(connections) > 0)
-	for _, connection := range connections {
-		require.True(t, defaultConnections[connection])
-	}
+	require.NotEmpty(t, connections)
+
+	var expected []string
+	loadJSON(t, "network-trusted-connections.golden", &TestData{connections, &expected})
+	sort.Strings(connections)
+	sort.Strings(expected)
+	require.Equal(t, expected, connections)
 }
 
 func TestNetworkExchangeableConnections(t *testing.T) {
-	if !doLive(t) {
+	if !doLiveOrStable(t) {
 		return
 	}
+
 	c := gui.NewClient(nodeAddress())
 	connections, err := c.NetworkExchangeableConnections()
 	require.NoError(t, err)
-	require.True(t, len(connections) > 0)
-}
 
-func scanUxOuts(t *testing.T) {
-	c := gui.NewClient(nodeAddress())
-
-	outputs, err := c.Outputs(nil, nil)
-	require.NoError(t, err)
-
-	for _, ux := range outputs.HeadOutputs {
-		t.Run(ux.Hash, func(t *testing.T) {
-			foundUx, err := c.UxOut(ux.Hash)
-			require.NoError(t, err)
-
-			require.Equal(t, ux.Hash, foundUx.Uxid)
-			require.Equal(t, ux.Time, foundUx.Time)
-			require.Equal(t, ux.BkSeq, foundUx.SrcBkSeq)
-			require.Equal(t, ux.SourceTransaction, foundUx.SrcTx)
-			require.Equal(t, ux.Address, foundUx.OwnerAddress)
-			require.Equal(t, ux.Hours, foundUx.Hours)
-			coinsStr, err := droplet.ToString(foundUx.Coins)
-			require.NoError(t, err)
-			require.Equal(t, ux.Coins, coinsStr)
-
-			if foundUx.SpentBlockSeq == 0 {
-				require.Equal(t, "0000000000000000000000000000000000000000000000000000000000000000", foundUx.SpentTxID)
-			} else {
-				require.NotEqual(t, "0000000000000000000000000000000000000000000000000000000000000000", foundUx.SpentTxID)
-			}
-		})
-	}
+	var expected []string
+	loadJSON(t, "network-exchangeable-connections.golden", &TestData{connections, &expected})
+	sort.Strings(connections)
+	sort.Strings(expected)
+	require.Equal(t, expected, connections)
 }
 
 func TestLiveTransaction(t *testing.T) {

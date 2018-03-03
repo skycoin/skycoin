@@ -44,8 +44,26 @@ func TestConnection(t *testing.T) {
 			status: http.StatusOK,
 			err:    "",
 			addr:   "addr",
-			gatewayGetConnectionResult: &daemon.Connection{},
-			result: &daemon.Connection{},
+			gatewayGetConnectionResult: &daemon.Connection{
+				ID:           1,
+				Addr:         "127.0.0.1",
+				LastSent:     99999,
+				LastReceived: 1111111,
+				Outgoing:     true,
+				Introduced:   true,
+				Mirror:       9876,
+				ListenPort:   9877,
+			},
+			result: &daemon.Connection{
+				ID:           1,
+				Addr:         "127.0.0.1",
+				LastSent:     99999,
+				LastReceived: 1111111,
+				Outgoing:     true,
+				Introduced:   true,
+				Mirror:       9876,
+				ListenPort:   9877,
+			},
 		},
 	}
 	for _, tc := range tt {
@@ -103,8 +121,34 @@ func TestConnections(t *testing.T) {
 			method: http.MethodGet,
 			status: http.StatusOK,
 			err:    "",
-			gatewayGetConnectionsResult: &daemon.Connections{},
-			result: &daemon.Connections{},
+			gatewayGetConnectionsResult: &daemon.Connections{
+				Connections: []*daemon.Connection{
+					&daemon.Connection{
+						ID:           1,
+						Addr:         "127.0.0.1",
+						LastSent:     99999,
+						LastReceived: 1111111,
+						Outgoing:     true,
+						Introduced:   true,
+						Mirror:       9876,
+						ListenPort:   9877,
+					},
+				},
+			},
+			result: &daemon.Connections{
+				Connections: []*daemon.Connection{
+					&daemon.Connection{
+						ID:           1,
+						Addr:         "127.0.0.1",
+						LastSent:     99999,
+						LastReceived: 1111111,
+						Outgoing:     true,
+						Introduced:   true,
+						Mirror:       9876,
+						ListenPort:   9877,
+					},
+				},
+			},
 		},
 	}
 	for _, tc := range tt {
@@ -155,8 +199,8 @@ func TestDefaultConnections(t *testing.T) {
 			method: http.MethodGet,
 			status: http.StatusOK,
 			err:    "",
-			gatewayGetDefaultConnectionsResult: []string{},
-			result: []string{},
+			gatewayGetDefaultConnectionsResult: []string{"44.33.22.11", "11.44.66.88"},
+			result: []string{"44.33.22.11", "11.44.66.88"},
 		},
 	}
 	for _, tc := range tt {
@@ -207,8 +251,8 @@ func TestGetTrustConnections(t *testing.T) {
 			method: http.MethodGet,
 			status: http.StatusOK,
 			err:    "",
-			gatewayGetTrustConnectionsResult: []string{},
-			result: []string{},
+			gatewayGetTrustConnectionsResult: []string{"44.33.22.11", "11.44.66.88"},
+			result: []string{"44.33.22.11", "11.44.66.88"},
 		},
 	}
 	for _, tc := range tt {
@@ -259,8 +303,8 @@ func TestGetExchgConnection(t *testing.T) {
 			method: http.MethodGet,
 			status: http.StatusOK,
 			err:    "",
-			gatewayGetExchgConnectionResult: []string{},
-			result: []string{},
+			gatewayGetExchgConnectionResult: []string{"44.33.22.11", "11.44.66.88"},
+			result: []string{"44.33.22.11", "11.44.66.88"},
 		},
 	}
 	for _, tc := range tt {

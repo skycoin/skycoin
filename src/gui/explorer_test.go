@@ -95,7 +95,7 @@ func makeSuccessCoinSupplyResult(t *testing.T, allUnspents visor.ReadableOutputS
 func TestGetTransactionsForAddress(t *testing.T) {
 	address := testutil.MakeAddress()
 	successAddress := "111111111111111111111691FSP"
-	invalidHash := "caicb"
+	invalidHash := "cafcb"
 	validHash := "79216473e8f2c17095c6887cc9edca6c023afedfac2e0c5460e8b6f359684f8b"
 	tt := []struct {
 		name                        string
@@ -222,7 +222,7 @@ func TestGetTransactionsForAddress(t *testing.T) {
 							Hash:    validHash,
 							Address: successAddress,
 							Coins:   "0.000000",
-							Hours:   "0",
+							Hours:   0,
 						},
 					},
 				},

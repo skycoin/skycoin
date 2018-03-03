@@ -191,7 +191,7 @@ func getTransactionsForAddress(gateway Gatewayer) http.HandlerFunc {
 				}
 
 				if uxout == nil {
-					logger.Error("uxout of %d does not exist in history db", id)
+					logger.Error("uxout of %v does not exist in history db", id.Hex())
 					wh.Error500(w)
 					return
 				}

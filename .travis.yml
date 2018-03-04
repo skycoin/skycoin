@@ -43,10 +43,9 @@ before_script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" && "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/add-key.sh && npm install -g yarn ;fi
 
 script:
-  - gometalinter --disable-all -E goimports --tests --vendor ./...
-  - vendorcheck ./...
-  - GOARCH=386 go test ./...
-  - GOARCH=amd64 go test ./...
+  - make lint
+  - make test-386
+  - make test-amd64
   # stable integration tests
   - make integration-test-stable
   # libskycoin tests

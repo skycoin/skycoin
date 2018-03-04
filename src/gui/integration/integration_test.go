@@ -46,7 +46,7 @@ const (
 	testModeStable = "stable"
 	testModeLive   = "live"
 
-	testFixturesDirectory = "test-fixtures"
+	testFixturesDir = "test-fixtures"
 )
 
 type TestData struct {
@@ -110,8 +110,19 @@ func doLiveOrStable(t *testing.T) bool {
 	return false
 }
 
-func loadJSON(t *testing.T, filename string, testData *TestData) {
-	goldenFile := filepath.Join(testFixturesDirectory, filename)
+func loadJSON(t *testing.T, filename string, obj interface{}) {
+	f, err := os.Open(filename)
+	require.NoError(t, err, filename)
+	defer f.Close()
+
+	err = json.NewDecoder(f).Decode(obj)
+	require.NoError(t, err, filename)
+}
+
+func loadGoldenFile(t *testing.T, filename string, testData TestData) {
+	require.NotEmpty(t, filename, "loadGoldenFile golden filename missing")
+
+	goldenFile := filepath.Join(testFixturesDir, filename)
 
 	if *update {
 		updateGoldenFile(t, goldenFile, testData.actual)
@@ -150,7 +161,7 @@ func TestStableCoinSupply(t *testing.T) {
 	require.NoError(t, err)
 
 	var expected gui.CoinSupply
-	loadJSON(t, "coinsupply.golden", &TestData{cs, &expected})
+	loadGoldenFile(t, "coinsupply.golden", TestData{cs, &expected})
 
 	require.Equal(t, expected, *cs)
 }
@@ -250,7 +261,7 @@ func TestStableOutputs(t *testing.T) {
 			require.NoError(t, err)
 
 			var expected visor.ReadableOutputSet
-			loadJSON(t, tc.golden, &TestData{outputs, &expected})
+			loadGoldenFile(t, tc.golden, TestData{outputs, &expected})
 
 			require.Equal(t, len(expected.HeadOutputs), len(outputs.HeadOutputs))
 			require.Equal(t, len(expected.OutgoingOutputs), len(outputs.OutgoingOutputs))
@@ -371,7 +382,7 @@ func testKnownBlocks(t *testing.T) {
 			require.NotNil(t, b)
 
 			var expected visor.ReadableBlock
-			loadJSON(t, tc.golden, &TestData{b, &expected})
+			loadGoldenFile(t, tc.golden, TestData{b, &expected})
 
 			require.Equal(t, expected, *b)
 		})
@@ -416,7 +427,7 @@ func TestStableBlockchainMetadata(t *testing.T) {
 	require.NoError(t, err)
 
 	var expected visor.BlockchainMetadata
-	loadJSON(t, "blockchain-metadata.golden", &TestData{metadata, &expected})
+	loadGoldenFile(t, "blockchain-metadata.golden", TestData{metadata, &expected})
 
 	require.Equal(t, expected, *metadata)
 }
@@ -445,7 +456,7 @@ func TestStableBlockchainProgress(t *testing.T) {
 	require.NoError(t, err)
 
 	var expected daemon.BlockchainProgress
-	loadJSON(t, "blockchain-progress.golden", &TestData{progress, &expected})
+	loadGoldenFile(t, "blockchain-progress.golden", TestData{progress, &expected})
 
 	require.Equal(t, expected, *progress)
 }
@@ -509,7 +520,7 @@ func TestStableBalance(t *testing.T) {
 			require.NoError(t, err)
 
 			var expected wallet.BalancePair
-			loadJSON(t, tc.golden, &TestData{balance, &expected})
+			loadGoldenFile(t, tc.golden, TestData{balance, &expected})
 
 			require.Equal(t, expected, *balance)
 		})
@@ -577,7 +588,7 @@ func TestStableUxOut(t *testing.T) {
 			require.NoError(t, err)
 
 			var expected historydb.UxOutJSON
-			loadJSON(t, tc.golden, &TestData{ux, &expected})
+			loadGoldenFile(t, tc.golden, TestData{ux, &expected})
 
 			require.Equal(t, expected, *ux)
 		})
@@ -599,7 +610,7 @@ func TestLiveUxOut(t *testing.T) {
 	require.NoError(t, err)
 
 	var expected historydb.UxOutJSON
-	loadJSON(t, "uxout-spent.golden", &TestData{ux, &expected})
+	loadGoldenFile(t, "uxout-spent.golden", TestData{ux, &expected})
 	require.Equal(t, expected, *ux)
 	require.NotEqual(t, uint64(0), ux.SpentBlockSeq)
 
@@ -676,7 +687,7 @@ func TestStableAddressUxOuts(t *testing.T) {
 			}
 			require.NoError(t, err)
 			var expected []*historydb.UxOutJSON
-			loadJSON(t, tc.golden, &TestData{ux, &expected})
+			loadGoldenFile(t, tc.golden, TestData{ux, &expected})
 			require.Equal(t, expected, ux, tc.name)
 		})
 	}
@@ -804,7 +815,7 @@ func TestStableBlocks(t *testing.T) {
 				resp := testBlocks(t, tc.start, tc.end)
 
 				var expected visor.ReadableBlocks
-				loadJSON(t, tc.golden, &TestData{resp, &expected})
+				loadGoldenFile(t, tc.golden, TestData{resp, &expected})
 
 				require.Equal(t, expected, *resp)
 			} else {
@@ -864,7 +875,7 @@ func TestStableLastBlocks(t *testing.T) {
 	require.NoError(t, err)
 
 	var expected *visor.ReadableBlocks
-	loadJSON(t, "block-last.golden", &TestData{blocks, &expected})
+	loadGoldenFile(t, "block-last.golden", TestData{blocks, &expected})
 	require.Equal(t, expected, blocks)
 
 	var prevBlock *visor.ReadableBlock
@@ -960,7 +971,7 @@ func TestNetworkDefaultConnections(t *testing.T) {
 	require.NotEmpty(t, connections)
 
 	var expected []string
-	loadJSON(t, "network-default-connections.golden", &TestData{connections, &expected})
+	loadGoldenFile(t, "network-default-connections.golden", TestData{connections, &expected})
 	sort.Strings(connections)
 	sort.Strings(expected)
 	require.Equal(t, expected, connections)
@@ -977,7 +988,7 @@ func TestNetworkTrustedConnections(t *testing.T) {
 	require.NotEmpty(t, connections)
 
 	var expected []string
-	loadJSON(t, "network-trusted-connections.golden", &TestData{connections, &expected})
+	loadGoldenFile(t, "network-trusted-connections.golden", TestData{connections, &expected})
 	sort.Strings(connections)
 	sort.Strings(expected)
 	require.Equal(t, expected, connections)
@@ -993,7 +1004,7 @@ func TestStableNetworkExchangeableConnections(t *testing.T) {
 	require.NoError(t, err)
 
 	var expected []string
-	loadJSON(t, "network-exchangeable-connections.golden", &TestData{connections, &expected})
+	loadGoldenFile(t, "network-exchangeable-connections.golden", TestData{connections, &expected})
 	sort.Strings(connections)
 	sort.Strings(expected)
 	require.Equal(t, expected, connections)
@@ -1054,7 +1065,7 @@ func TestLiveTransaction(t *testing.T) {
 				return
 			}
 			var expected *visor.ReadableTransaction
-			loadJSON(t, tc.goldenFile, &TestData{tx, &expected})
+			loadGoldenFile(t, tc.goldenFile, TestData{tx, &expected})
 			require.Equal(t, expected, tx)
 		})
 	}
@@ -1104,7 +1115,7 @@ func TestStableTransaction(t *testing.T) {
 		{
 			name:       "genesis transaction",
 			txId:       "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add",
-			goldenFile: "./genesis-transaction.golden",
+			goldenFile: "genesis-transaction.golden",
 		},
 	}
 
@@ -1116,8 +1127,9 @@ func TestStableTransaction(t *testing.T) {
 				require.Equal(t, tc.err, err)
 				return
 			}
+
 			var expected *visor.ReadableTransaction
-			loadJSON(t, tc.goldenFile, &TestData{tx, &expected})
+			loadGoldenFile(t, tc.goldenFile, TestData{tx, &expected})
 			require.Equal(t, expected, tx)
 		})
 	}
@@ -1202,7 +1214,7 @@ func TestStableTransactions(t *testing.T) {
 			}
 
 			var expected *[]visor.TransactionResult
-			loadJSON(t, tc.goldenFile, &TestData{txResult, &expected})
+			loadGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
 			require.Equal(t, expected, txResult, "case: "+tc.name)
 		})
 	}
@@ -1283,7 +1295,7 @@ func TestStableConfirmedTransactions(t *testing.T) {
 			}
 
 			var expected *[]visor.TransactionResult
-			loadJSON(t, tc.goldenFile, &TestData{txResult, &expected})
+			loadGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
 			require.Equal(t, expected, txResult, "case: "+tc.name)
 		})
 	}
@@ -1343,7 +1355,7 @@ func TestStableUnconfirmedTransactions(t *testing.T) {
 			}
 
 			var expected *[]visor.TransactionResult
-			loadJSON(t, tc.goldenFile, &TestData{txResult, &expected})
+			loadGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
 			require.Equal(t, expected, txResult, "case: "+tc.name)
 		})
 	}

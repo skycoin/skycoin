@@ -37,17 +37,22 @@ const (
 
 	// Number of random transactions of live transaction test.
 	randomLiveTransactionNum = 500
+
+	testFixturesDir = "test-fixtures"
 )
 
 var (
 	binaryPath string
 	walletDir  string
-)
 
-var (
 	update     = flag.Bool("update", false, "update golden files")
 	liveTxFull = flag.Bool("live-tx-full", false, "run live transaction test against full blockchain")
 )
+
+type TestData struct {
+	actual   interface{}
+	expected interface{}
+}
 
 func init() {
 	rand.Seed(time.Now().Unix())
@@ -69,22 +74,22 @@ func TestGenerateAddresses(t *testing.T) {
 			"generateAddresses",
 			[]string{"generateAddresses"},
 			[]byte("7g3M372kxwNwwQEAmrronu4anXTW8aD1XC\n"),
-			filepath.Join(walletDir, walletName),
-			filepath.Join("test-fixtures", "generate-addresses.golden"),
+			walletName,
+			"generate-addresses.golden",
 		},
 		{
 			"generateAddresses -n 2 -j",
 			[]string{"generateAddresses", "-n", "2", "-j"},
 			[]byte("{\n    \"addresses\": [\n        \"2EDapDfn1VC6P2hx4nTH2cRUkboGAE16evV\",\n        \"hLLcizfJomBKJrUeHrHTWKZMNdqwb69WVb\"\n    ]\n}\n"),
-			filepath.Join(walletDir, walletName),
-			filepath.Join("test-fixtures", "generate-addresses-2.golden"),
+			walletName,
+			"generate-addresses-2.golden",
 		},
 		{
 			"generateAddresses -n -2 -j",
 			[]string{"generateAddresses", "-n", "-2", "-j"},
 			[]byte("Error: invalid value \"-2\" for flag -n: strconv.ParseUint: parsing \"-2\": invalid syntax"),
-			filepath.Join(walletDir, walletName),
-			filepath.Join("test-fixtures", "generate-addresses-2.golden"),
+			walletName,
+			"generate-addresses-2.golden",
 		},
 	}
 
@@ -98,12 +103,16 @@ func TestGenerateAddresses(t *testing.T) {
 			}
 
 			require.Equal(t, string(tc.expectOutput), string(output))
+
+			wltFile := filepath.Join(walletDir, tc.wltFile)
 			var w wallet.ReadableWallet
-			loadJSON(t, tc.wltFile, &w)
+			loadJSON(t, wltFile, &w)
 
+			// Use loadJSON instead of loadGoldenFile because this golden file
+			// should not use the *update flag
+			goldenFile := filepath.Join(testFixturesDir, tc.goldenFile)
 			var expect wallet.ReadableWallet
-			loadJSON(t, tc.goldenFile, &expect)
-
+			loadJSON(t, goldenFile, &expect)
 			require.Equal(t, expect, w)
 		})
 	}
@@ -165,13 +174,8 @@ func TestDecodeRawTransaction(t *testing.T) {
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&txn)
 	require.NoError(t, err)
 
-	golden := filepath.Join("test-fixtures", "decode-raw-transaction.golden")
-	if *update {
-		writeJSON(t, golden, txn)
-	}
-
 	var expect visor.TransactionJSON
-	loadJSON(t, golden, &expect)
+	loadGoldenFile(t, "decode-raw-transaction.golden", TestData{txn, &expect})
 	require.Equal(t, expect, txn)
 }
 
@@ -440,15 +444,10 @@ func TestStableListWallets(t *testing.T) {
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wlts)
 	require.NoError(t, err)
 
-	golden := filepath.Join("test-fixtures", "list-wallets.golden")
-	if *update {
-		writeJSON(t, golden, wlts)
-	}
-
 	var expect struct {
 		Wallets []cli.WalletEntry `json:"wallets"`
 	}
-	loadJSON(t, golden, &expect)
+	loadGoldenFile(t, "list-wallets.golden", TestData{wlts, &expect})
 	require.Equal(t, expect, wlts)
 }
 
@@ -481,15 +480,10 @@ func TestStableListAddress(t *testing.T) {
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wltAddresses)
 	require.NoError(t, err)
 
-	golden := filepath.Join("test-fixtures", "list-addresses.golden")
-	if *update {
-		writeJSON(t, golden, wltAddresses)
-	}
-
 	var expect struct {
 		Addresses []string `json:"addresses"`
 	}
-	loadJSON(t, golden, &expect)
+	loadGoldenFile(t, "list-addresses.golden", TestData{wltAddresses, &expect})
 	require.Equal(t, expect, wltAddresses)
 }
 
@@ -521,13 +515,8 @@ func TestStableAddressBalance(t *testing.T) {
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&addrBalance)
 	require.NoError(t, err)
 
-	golden := filepath.Join("test-fixtures", "address-balance.golden")
-	if *update {
-		writeJSON(t, golden, addrBalance)
-	}
-
 	var expect cli.BalanceResult
-	loadJSON(t, golden, &expect)
+	loadGoldenFile(t, "address-balance.golden", TestData{addrBalance, &expect})
 	require.Equal(t, expect, addrBalance)
 }
 
@@ -556,13 +545,8 @@ func TestStableWalletBalance(t *testing.T) {
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wltBalance)
 	require.NoError(t, err)
 
-	golden := filepath.Join("test-fixtures", "wallet-balance.golden")
-	if *update {
-		writeJSON(t, golden, wltBalance)
-	}
-
 	var expect cli.BalanceResult
-	loadJSON(t, golden, &expect)
+	loadGoldenFile(t, "wallet-balance.golden", TestData{wltBalance, &expect})
 	require.Equal(t, expect, wltBalance)
 }
 
@@ -591,13 +575,8 @@ func TestStableWalletOutputs(t *testing.T) {
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wltOutput)
 	require.NoError(t, err)
 
-	golden := filepath.Join("test-fixtures", "wallet-outputs.golden")
-	if *update {
-		writeJSON(t, golden, wltOutput)
-	}
-
 	var expect webrpc.OutputsResult
-	loadJSON(t, golden, &expect)
+	loadGoldenFile(t, "wallet-outputs.golden", TestData{wltOutput, &expect})
 	require.Equal(t, expect, wltOutput)
 }
 
@@ -626,13 +605,8 @@ func TestStableAddressOutputs(t *testing.T) {
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&addrOutputs)
 	require.NoError(t, err)
 
-	golden := filepath.Join("test-fixtures", "address-outputs.golden")
-	if *update {
-		writeJSON(t, golden, addrOutputs)
-	}
-
 	var expect webrpc.OutputsResult
-	loadJSON(t, golden, &expect)
+	loadGoldenFile(t, "address-outputs.golden", TestData{addrOutputs, &expect})
 	require.Equal(t, expect, addrOutputs)
 }
 
@@ -672,12 +646,7 @@ func TestStableStatus(t *testing.T) {
 		RPCAddress string `json:"webrpc_address"`
 	}
 
-	golden := filepath.Join("test-fixtures", "status.golden")
-	if *update {
-		writeJSON(t, golden, ret)
-	}
-
-	loadJSON(t, golden, &expect)
+	loadGoldenFile(t, "status.golden", TestData{ret, &expect})
 	require.Equal(t, expect, ret)
 }
 
@@ -738,7 +707,7 @@ func TestStableTransaction(t *testing.T) {
 			[]string{"d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add"},
 			nil,
 			"",
-			"./test-fixtures/genesis-transaction.golden",
+			"genesis-transaction.golden",
 		},
 	}
 
@@ -757,11 +726,8 @@ func TestStableTransaction(t *testing.T) {
 			err = json.NewDecoder(bytes.NewReader(o)).Decode(&tx)
 			require.NoError(t, err)
 
-			if tc.goldenFile != "" && *update {
-				writeJSON(t, tc.goldenFile, tx)
-			}
 			var expect webrpc.TxnResult
-			loadJSON(t, tc.goldenFile, &expect)
+			loadGoldenFile(t, tc.goldenFile, TestData{tx, &expect})
 
 			require.Equal(t, expect, tx)
 		})
@@ -783,12 +749,7 @@ func TestLiveTransaction(t *testing.T) {
 
 	var expect webrpc.TxnResult
 
-	golden := filepath.Join("test-fixtures", "genesis-transaction.golden")
-	if *update {
-		writeJSON(t, golden, tx)
-	}
-
-	loadJSON(t, golden, &expect)
+	loadGoldenFile(t, "genesis-transaction.golden", TestData{tx, &expect})
 	require.Equal(t, expect.Transaction.Transaction, tx.Transaction.Transaction)
 
 	scanTransactions(t, *liveTxFull)
@@ -929,7 +890,7 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	dir, clean, err := createTempWalletFile(filepath.Join("test-fixtures", walletName))
+	dir, clean, err := createTempWalletFile(filepath.Join(testFixturesDir, walletName))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
@@ -986,24 +947,36 @@ func createTempWalletFile(from string) (string, func(), error) {
 }
 
 func loadJSON(t *testing.T, filename string, obj interface{}) {
-	require.NotEmpty(t, filename, "loadJSON golden filename missing")
-
 	f, err := os.Open(filename)
-	require.NoError(t, err)
+	require.NoError(t, err, filename)
 	defer f.Close()
 
 	err = json.NewDecoder(f).Decode(obj)
-	require.NoError(t, err)
+	require.NoError(t, err, filename)
 }
 
-func writeJSON(t *testing.T, filename string, obj interface{}) {
-	f, err := os.Create(filename)
+func loadGoldenFile(t *testing.T, filename string, testData TestData) {
+	require.NotEmpty(t, filename, "loadGoldenFile golden filename missing")
+
+	goldenFile := filepath.Join(testFixturesDir, filename)
+
+	if *update {
+		updateGoldenFile(t, goldenFile, testData.actual)
+	}
+
+	f, err := os.Open(goldenFile)
 	require.NoError(t, err)
 	defer f.Close()
 
-	enc := json.NewEncoder(f)
-	enc.SetIndent("", "\t")
-	require.NoError(t, enc.Encode(obj))
+	err = json.NewDecoder(f).Decode(testData.expected)
+	require.NoError(t, err, filename)
+}
+
+func updateGoldenFile(t *testing.T, filename string, content interface{}) {
+	contentJson, err := json.MarshalIndent(content, "", "\t")
+	require.NoError(t, err)
+	err = ioutil.WriteFile(filename, contentJson, 0644)
+	require.NoError(t, err)
 }
 
 func mode(t *testing.T) string {

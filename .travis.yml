@@ -1,7 +1,9 @@
 sudo: required
 dist: trusty
 language: go
-go: 1.9.x
+go:
+  - "1.9.x"
+  - "1.10.x"
 
 matrix:
   include:
@@ -53,7 +55,7 @@ script:
   # - make test-libpy
   # build wallets
   - if [[ "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/build-wallet.sh; fi
-   
+
 
 notifications:
   email: false

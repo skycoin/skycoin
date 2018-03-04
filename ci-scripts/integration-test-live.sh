@@ -11,6 +11,7 @@ RPC_PORT="6430"
 HOST="http://127.0.0.1:$PORT"
 RPC_ADDR="127.0.0.1:$RPC_PORT"
 MODE="live"
+TEST=""
 
 usage () {
   echo "Usage: $SCRIPT"

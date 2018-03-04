@@ -69,12 +69,12 @@ test: ## Run tests for Skycoin
 	go test ./src/... -timeout=1m
 
 test-386: ## Run tests for Skycoin with GOARCH=386
-	GOARCH=386 go test ./cmd/... -timeout=1m
-	GOARCH=386 go test ./src/... -timeout=1m
+	GOARCH=386 go test ./cmd/... -timeout=5m
+	GOARCH=386 go test ./src/... -timeout=5m
 
 test-amd64: ## Run tests for Skycoin with GOARCH=amd64
-	GOARCH=amd64 go test ./cmd/... -timeout=1m
-	GOARCH=amd64 go test ./src/... -timeout=1m
+	GOARCH=amd64 go test ./cmd/... -timeout=5m
+	GOARCH=amd64 go test ./src/... -timeout=5m
 
 configure-build:
 	mkdir -p $(BUILD_DIR)/usr/tmp $(BUILD_DIR)/usr/lib $(BUILD_DIR)/usr/include

@@ -225,27 +225,22 @@ func TestStableOutputs(t *testing.T) {
 			},
 			golden: "outputs-hashes.golden",
 		},
-		{
-			name: "addrs and hashes",
-			addrs: []string{
-				"ALJVNKYL7WGxFBSriiZuwZKWD4b7fbV1od",
-				"2THDupTBEo7UqB6dsVizkYUvkKq82Qn4gjf",
-				"qxmeHkwgAMfwXyaQrwv9jq3qt228xMuoT5",
-			},
-			hashes: []string{
-				"9e53268a18f8d32a44b4fb183033b49bebfe9d0da3bf3ef2ad1d560500aa54c6",
-				"d91e07318227651129b715d2db448ae245b442acd08c8b4525a934f0e87efce9",
-				"01f9c1d6c83dbc1c993357436cdf7f214acd0bfa107ff7f1466d1b18ec03563e",
-				"fe6762d753d626115c8dd3a053b5fb75d6d419a8d0fb1478c5fffc1fe41c5f20",
-			},
-			errCode: http.StatusBadRequest,
-			errMsg:  "400 Bad Request - addrs and hashes cannot be specified together\n",
-		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			outputs, err := c.Outputs(tc.addrs, tc.hashes)
+			require.False(t, tc.addrs != nil && tc.hashes != nil)
+
+			var outputs *visor.ReadableOutputSet
+			var err error
+			switch {
+			case tc.addrs == nil && tc.hashes == nil:
+				outputs, err = c.Outputs()
+			case tc.addrs != nil:
+				outputs, err = c.OutputsForAddresses(tc.addrs)
+			case tc.hashes != nil:
+				outputs, err = c.OutputsForHashes(tc.hashes)
+			}
 
 			if tc.errCode != 0 && tc.errCode != http.StatusOK {
 				assertResponseError(t, err, tc.errCode, tc.errMsg)
@@ -279,7 +274,15 @@ func TestLiveOutputs(t *testing.T) {
 
 	// Request all outputs and check that HeadOutputs is not empty
 	// OutgoingOutputs and IncomingOutputs are variable and could be empty
-	outputs, err := c.Outputs(nil, nil)
+	outputs, err := c.Outputs()
+	require.NoError(t, err)
+	require.NotEmpty(t, outputs.HeadOutputs)
+
+	outputs, err = c.OutputsForAddresses(nil)
+	require.NoError(t, err)
+	require.NotEmpty(t, outputs.HeadOutputs)
+
+	outputs, err = c.OutputsForHashes(nil)
 	require.NoError(t, err)
 	require.NotEmpty(t, outputs.HeadOutputs)
 }
@@ -607,7 +610,7 @@ func TestLiveUxOut(t *testing.T) {
 func scanUxOuts(t *testing.T) {
 	c := gui.NewClient(nodeAddress())
 
-	outputs, err := c.Outputs(nil, nil)
+	outputs, err := c.Outputs()
 	require.NoError(t, err)
 
 	for _, ux := range outputs.HeadOutputs {

@@ -178,10 +178,31 @@ func (c *Client) Version() (*visor.BuildInfo, error) {
 	return &bi, nil
 }
 
-// Outputs makes a request to /outputs?addrs=xxx&hashes=zzz
-func (c *Client) Outputs(addrs, hashes []string) (*visor.ReadableOutputSet, error) {
+// Outputs makes a request to /outputs
+func (c *Client) Outputs() (*visor.ReadableOutputSet, error) {
+	var o visor.ReadableOutputSet
+	if err := c.Get("/outputs", &o); err != nil {
+		return nil, err
+	}
+	return &o, nil
+}
+
+// OutputsForAddresses makes a request to /outputs?addrs=xxx
+func (c *Client) OutputsForAddresses(addrs []string) (*visor.ReadableOutputSet, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
+	endpoint := "/outputs?" + v.Encode()
+
+	var o visor.ReadableOutputSet
+	if err := c.Get(endpoint, &o); err != nil {
+		return nil, err
+	}
+	return &o, nil
+}
+
+// OutputsForHashes makes a request to /outputs?hashes=zzz
+func (c *Client) OutputsForHashes(hashes []string) (*visor.ReadableOutputSet, error) {
+	v := url.Values{}
 	v.Add("hashes", strings.Join(hashes, ","))
 	endpoint := "/outputs?" + v.Encode()
 
@@ -553,7 +574,7 @@ func (c *Client) ConfirmedTransactions(addrs []string) (*[]visor.TransactionResu
 	return &r, nil
 }
 
-// UnconfirmedTransactions makes a request to /transactions?confirmed=true
+// UnconfirmedTransactions makes a request to /transactions?confirmed=false
 func (c *Client) UnconfirmedTransactions(addrs []string) (*[]visor.TransactionResult, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))

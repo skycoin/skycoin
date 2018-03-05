@@ -30,10 +30,10 @@ func TestConnection(t *testing.T) {
 			err:    "405 Method Not Allowed",
 		},
 		{
-			name:   "404 - empty addr",
+			name:   "400 - empty addr",
 			method: http.MethodGet,
-			status: http.StatusNotFound,
-			err:    "404 Not Found",
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - addr is required",
 			addr:   "",
 			gatewayGetConnectionResult: nil,
 			result: nil,

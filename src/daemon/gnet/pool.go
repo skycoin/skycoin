@@ -225,16 +225,7 @@ func (pool *ConnectionPool) Run() error {
 	pool.wg.Add(1)
 	go func() {
 		defer pool.wg.Done()
-		for {
-			select {
-			case <-pool.quit:
-				return
-			case req := <-pool.reqC:
-				if err := req.Func(); err != nil {
-					logger.Error("req.Func %s failed: %v", req.Name, err)
-				}
-			}
-		}
+		pool.processStrand()
 	}()
 
 loop:
@@ -261,6 +252,26 @@ loop:
 	}
 	pool.wg.Wait()
 	return nil
+}
+
+// RunOffline runs the pool in offline mode. No connections will be accepted,
+// but strand requests are processed.
+func (pool *ConnectionPool) RunOffline() error {
+	pool.processStrand()
+	return nil
+}
+
+func (pool *ConnectionPool) processStrand() {
+	for {
+		select {
+		case <-pool.quit:
+			return
+		case req := <-pool.reqC:
+			if err := req.Func(); err != nil {
+				logger.Error("req.Func %s failed: %v", req.Name, err)
+			}
+		}
+	}
 }
 
 // Shutdown gracefully shutdown the connection pool
@@ -574,7 +585,7 @@ func (pool *ConnectionPool) GetConnection(addr string) (*Connection, error) {
 	if err := pool.strand("GetConnection", func() error {
 		if c, ok := pool.addresses[addr]; ok {
 			// copy connection
-			var cc = *c
+			cc := *c
 			conn = &cc
 		}
 		return nil

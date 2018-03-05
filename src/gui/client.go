@@ -178,10 +178,31 @@ func (c *Client) Version() (*visor.BuildInfo, error) {
 	return &bi, nil
 }
 
-// Outputs makes a request to /outputs?addrs=xxx&hashes=zzz
-func (c *Client) Outputs(addrs, hashes []string) (*visor.ReadableOutputSet, error) {
+// Outputs makes a request to /outputs
+func (c *Client) Outputs() (*visor.ReadableOutputSet, error) {
+	var o visor.ReadableOutputSet
+	if err := c.Get("/outputs", &o); err != nil {
+		return nil, err
+	}
+	return &o, nil
+}
+
+// OutputsForAddresses makes a request to /outputs?addrs=xxx
+func (c *Client) OutputsForAddresses(addrs []string) (*visor.ReadableOutputSet, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
+	endpoint := "/outputs?" + v.Encode()
+
+	var o visor.ReadableOutputSet
+	if err := c.Get(endpoint, &o); err != nil {
+		return nil, err
+	}
+	return &o, nil
+}
+
+// OutputsForHashes makes a request to /outputs?hashes=zzz
+func (c *Client) OutputsForHashes(hashes []string) (*visor.ReadableOutputSet, error) {
+	v := url.Values{}
 	v.Add("hashes", strings.Join(hashes, ","))
 	endpoint := "/outputs?" + v.Encode()
 
@@ -244,7 +265,7 @@ func (c *Client) Blocks(start, end int) (*visor.ReadableBlocks, error) {
 // LastBlocks makes a request to /last_blocks
 func (c *Client) LastBlocks(n int) (*visor.ReadableBlocks, error) {
 	v := url.Values{}
-	v.Add("n", fmt.Sprint(n))
+	v.Add("num", fmt.Sprint(n))
 	endpoint := "/last_blocks?" + v.Encode()
 
 	var b visor.ReadableBlocks
@@ -460,7 +481,7 @@ func (c *Client) NetworkConnection(addr string) (*daemon.Connection, error) {
 }
 
 // NetworkConnections makes a request to /network/connections
-func (c *Client) NetworkConnections(addr string) (*daemon.Connections, error) {
+func (c *Client) NetworkConnections() (*daemon.Connections, error) {
 	var dc daemon.Connections
 	if err := c.Get("/network/connections", &dc); err != nil {
 		return nil, err
@@ -469,7 +490,7 @@ func (c *Client) NetworkConnections(addr string) (*daemon.Connections, error) {
 }
 
 // NetworkDefaultConnections makes a request to /network/defaultConnections
-func (c *Client) NetworkDefaultConnections(addr string) ([]string, error) {
+func (c *Client) NetworkDefaultConnections() ([]string, error) {
 	var dc []string
 	if err := c.Get("/network/defaultConnections", &dc); err != nil {
 		return nil, err
@@ -478,7 +499,7 @@ func (c *Client) NetworkDefaultConnections(addr string) ([]string, error) {
 }
 
 // NetworkTrustedConnections makes a request to /network/connections/trust
-func (c *Client) NetworkTrustedConnections(addr string) ([]string, error) {
+func (c *Client) NetworkTrustedConnections() ([]string, error) {
 	var dc []string
 	if err := c.Get("/network/connections/trust", &dc); err != nil {
 		return nil, err
@@ -487,7 +508,7 @@ func (c *Client) NetworkTrustedConnections(addr string) ([]string, error) {
 }
 
 // NetworkExchangeableConnections makes a request to /network/connections/exchange
-func (c *Client) NetworkExchangeableConnections(addr string) ([]string, error) {
+func (c *Client) NetworkExchangeableConnections() ([]string, error) {
 	var dc []string
 	if err := c.Get("/network/connections/exchange", &dc); err != nil {
 		return nil, err
@@ -553,7 +574,7 @@ func (c *Client) ConfirmedTransactions(addrs []string) (*[]visor.TransactionResu
 	return &r, nil
 }
 
-// UnconfirmedTransactions makes a request to /transactions?confirmed=true
+// UnconfirmedTransactions makes a request to /transactions?confirmed=false
 func (c *Client) UnconfirmedTransactions(addrs []string) (*[]visor.TransactionResult, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))

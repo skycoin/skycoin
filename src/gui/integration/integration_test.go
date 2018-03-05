@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -44,6 +45,8 @@ When update flag is set to true all tests pass
 const (
 	testModeStable = "stable"
 	testModeLive   = "live"
+
+	testFixturesDir = "test-fixtures"
 )
 
 type TestData struct {
@@ -107,19 +110,30 @@ func doLiveOrStable(t *testing.T) bool {
 	return false
 }
 
-func loadJSON(t *testing.T, filename string, testData *TestData) {
-	goldenFile := filepath.Join("test-fixtures", filename)
-	f, err := os.Open(goldenFile)
+func loadJSON(t *testing.T, filename string, obj interface{}) {
+	f, err := os.Open(filename)
+	require.NoError(t, err, filename)
+	defer f.Close()
+
+	err = json.NewDecoder(f).Decode(obj)
+	require.NoError(t, err, filename)
+}
+
+func loadGoldenFile(t *testing.T, filename string, testData TestData) {
+	require.NotEmpty(t, filename, "loadGoldenFile golden filename missing")
+
+	goldenFile := filepath.Join(testFixturesDir, filename)
 
 	if *update {
 		updateGoldenFile(t, goldenFile, testData.actual)
 	}
 
+	f, err := os.Open(goldenFile)
 	require.NoError(t, err)
 	defer f.Close()
 
 	err = json.NewDecoder(f).Decode(testData.expected)
-	require.NoError(t, err)
+	require.NoError(t, err, filename)
 }
 
 func updateGoldenFile(t *testing.T, filename string, content interface{}) {
@@ -147,7 +161,7 @@ func TestStableCoinSupply(t *testing.T) {
 	require.NoError(t, err)
 
 	var expected gui.CoinSupply
-	loadJSON(t, "coinsupply.golden", &TestData{cs, &expected})
+	loadGoldenFile(t, "coinsupply.golden", TestData{cs, &expected})
 
 	require.Equal(t, expected, *cs)
 }
@@ -222,27 +236,22 @@ func TestStableOutputs(t *testing.T) {
 			},
 			golden: "outputs-hashes.golden",
 		},
-		{
-			name: "addrs and hashes",
-			addrs: []string{
-				"ALJVNKYL7WGxFBSriiZuwZKWD4b7fbV1od",
-				"2THDupTBEo7UqB6dsVizkYUvkKq82Qn4gjf",
-				"qxmeHkwgAMfwXyaQrwv9jq3qt228xMuoT5",
-			},
-			hashes: []string{
-				"9e53268a18f8d32a44b4fb183033b49bebfe9d0da3bf3ef2ad1d560500aa54c6",
-				"d91e07318227651129b715d2db448ae245b442acd08c8b4525a934f0e87efce9",
-				"01f9c1d6c83dbc1c993357436cdf7f214acd0bfa107ff7f1466d1b18ec03563e",
-				"fe6762d753d626115c8dd3a053b5fb75d6d419a8d0fb1478c5fffc1fe41c5f20",
-			},
-			errCode: http.StatusBadRequest,
-			errMsg:  "400 Bad Request - addrs and hashes cannot be specified together\n",
-		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			outputs, err := c.Outputs(tc.addrs, tc.hashes)
+			require.False(t, tc.addrs != nil && tc.hashes != nil)
+
+			var outputs *visor.ReadableOutputSet
+			var err error
+			switch {
+			case tc.addrs == nil && tc.hashes == nil:
+				outputs, err = c.Outputs()
+			case tc.addrs != nil:
+				outputs, err = c.OutputsForAddresses(tc.addrs)
+			case tc.hashes != nil:
+				outputs, err = c.OutputsForHashes(tc.hashes)
+			}
 
 			if tc.errCode != 0 && tc.errCode != http.StatusOK {
 				assertResponseError(t, err, tc.errCode, tc.errMsg)
@@ -252,7 +261,7 @@ func TestStableOutputs(t *testing.T) {
 			require.NoError(t, err)
 
 			var expected visor.ReadableOutputSet
-			loadJSON(t, tc.golden, &TestData{outputs, &expected})
+			loadGoldenFile(t, tc.golden, TestData{outputs, &expected})
 
 			require.Equal(t, len(expected.HeadOutputs), len(outputs.HeadOutputs))
 			require.Equal(t, len(expected.OutgoingOutputs), len(outputs.OutgoingOutputs))
@@ -276,7 +285,15 @@ func TestLiveOutputs(t *testing.T) {
 
 	// Request all outputs and check that HeadOutputs is not empty
 	// OutgoingOutputs and IncomingOutputs are variable and could be empty
-	outputs, err := c.Outputs(nil, nil)
+	outputs, err := c.Outputs()
+	require.NoError(t, err)
+	require.NotEmpty(t, outputs.HeadOutputs)
+
+	outputs, err = c.OutputsForAddresses(nil)
+	require.NoError(t, err)
+	require.NotEmpty(t, outputs.HeadOutputs)
+
+	outputs, err = c.OutputsForHashes(nil)
 	require.NoError(t, err)
 	require.NotEmpty(t, outputs.HeadOutputs)
 }
@@ -365,7 +382,7 @@ func testKnownBlocks(t *testing.T) {
 			require.NotNil(t, b)
 
 			var expected visor.ReadableBlock
-			loadJSON(t, tc.golden, &TestData{b, &expected})
+			loadGoldenFile(t, tc.golden, TestData{b, &expected})
 
 			require.Equal(t, expected, *b)
 		})
@@ -410,7 +427,7 @@ func TestStableBlockchainMetadata(t *testing.T) {
 	require.NoError(t, err)
 
 	var expected visor.BlockchainMetadata
-	loadJSON(t, "blockchain-metadata.golden", &TestData{metadata, &expected})
+	loadGoldenFile(t, "blockchain-metadata.golden", TestData{metadata, &expected})
 
 	require.Equal(t, expected, *metadata)
 }
@@ -439,7 +456,7 @@ func TestStableBlockchainProgress(t *testing.T) {
 	require.NoError(t, err)
 
 	var expected daemon.BlockchainProgress
-	loadJSON(t, "blockchain-progress.golden", &TestData{progress, &expected})
+	loadGoldenFile(t, "blockchain-progress.golden", TestData{progress, &expected})
 
 	require.Equal(t, expected, *progress)
 }
@@ -503,7 +520,7 @@ func TestStableBalance(t *testing.T) {
 			require.NoError(t, err)
 
 			var expected wallet.BalancePair
-			loadJSON(t, tc.golden, &TestData{balance, &expected})
+			loadGoldenFile(t, tc.golden, TestData{balance, &expected})
 
 			require.Equal(t, expected, *balance)
 		})
@@ -571,7 +588,7 @@ func TestStableUxOut(t *testing.T) {
 			require.NoError(t, err)
 
 			var expected historydb.UxOutJSON
-			loadJSON(t, tc.golden, &TestData{ux, &expected})
+			loadGoldenFile(t, tc.golden, TestData{ux, &expected})
 
 			require.Equal(t, expected, *ux)
 		})
@@ -593,7 +610,7 @@ func TestLiveUxOut(t *testing.T) {
 	require.NoError(t, err)
 
 	var expected historydb.UxOutJSON
-	loadJSON(t, "uxout-spent.golden", &TestData{ux, &expected})
+	loadGoldenFile(t, "uxout-spent.golden", TestData{ux, &expected})
 	require.Equal(t, expected, *ux)
 	require.NotEqual(t, uint64(0), ux.SpentBlockSeq)
 
@@ -604,7 +621,7 @@ func TestLiveUxOut(t *testing.T) {
 func scanUxOuts(t *testing.T) {
 	c := gui.NewClient(nodeAddress())
 
-	outputs, err := c.Outputs(nil, nil)
+	outputs, err := c.Outputs()
 	require.NoError(t, err)
 
 	for _, ux := range outputs.HeadOutputs {
@@ -629,6 +646,378 @@ func scanUxOuts(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestStableAddressUxOuts(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	cases := []struct {
+		name    string
+		errCode int
+		errMsg  string
+		golden  string
+		addr    string
+	}{
+		{
+			name:    "no addresses",
+			errCode: http.StatusBadRequest,
+			errMsg:  "400 Bad Request - address is empty\n",
+		},
+		{
+			name:   "unknown address",
+			addr:   "prRXwTcDK24hs6AFxj69UuWae3LzhrsPW9",
+			golden: "uxout-noaddr.golden",
+		},
+		{
+			name:   "one address",
+			addr:   "2THDupTBEo7UqB6dsVizkYUvkKq82Qn4gjf",
+			golden: "uxout-addr.golden",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ux, err := c.AddressUxOuts(tc.addr)
+			if tc.errCode != 0 && tc.errCode != http.StatusOK {
+				assertResponseError(t, err, tc.errCode, tc.errMsg)
+				return
+			}
+			require.NoError(t, err)
+			var expected []*historydb.UxOutJSON
+			loadGoldenFile(t, tc.golden, TestData{ux, &expected})
+			require.Equal(t, expected, ux, tc.name)
+		})
+	}
+}
+
+func TestLiveAddressUxOuts(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	cases := []struct {
+		name         string
+		errCode      int
+		errMsg       string
+		addr         string
+		moreThanZero bool
+	}{
+		{
+			name:    "no addresses",
+			errCode: http.StatusBadRequest,
+			errMsg:  "400 Bad Request - address is empty\n",
+		},
+		{
+			name:    "invalid address length",
+			errCode: http.StatusBadRequest,
+			errMsg:  "400 Bad Request - Invalid address length\n",
+			addr:    "prRXwTcDK24hs6AFxj",
+		},
+		{
+			name: "unknown address",
+			addr: "prRXwTcDK24hs6AFxj69UuWae3LzhrsPW9",
+		},
+		{
+			name: "one address",
+			addr: "2THDupTBEo7UqB6dsVizkYUvkKq82Qn4gjf",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ux, err := c.AddressUxOuts(tc.addr)
+			if tc.errCode != 0 && tc.errCode != http.StatusOK {
+				assertResponseError(t, err, tc.errCode, tc.errMsg)
+				return
+			}
+			require.NoError(t, err)
+			if tc.moreThanZero {
+				require.NotEqual(t, 0, len(ux))
+			}
+		})
+	}
+}
+
+func TestStableBlocks(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	progress, err := c.BlockchainProgress()
+	require.NoError(t, err)
+
+	lastNBlocks := 10
+	require.True(t, int(progress.Current) > lastNBlocks+1)
+
+	cases := []struct {
+		name    string
+		golden  string
+		start   int
+		end     int
+		errCode int
+		errMsg  string
+	}{
+		{
+			name:   "first 10",
+			golden: "blocks-first-10.golden",
+			start:  1,
+			end:    10,
+		},
+		{
+			name:   "last 10",
+			golden: "blocks-last-10.golden",
+			start:  int(progress.Current) - lastNBlocks,
+			end:    int(progress.Current),
+		},
+		{
+			name:   "first block",
+			golden: "blocks-first-1.golden",
+			start:  1,
+			end:    1,
+		},
+		{
+			name:   "all blocks",
+			golden: "blocks-all.golden",
+			start:  0,
+			end:    int(progress.Current),
+		},
+		{
+			name:   "start > end",
+			golden: "blocks-end-less-than-start.golden",
+			start:  10,
+			end:    9,
+		},
+		{
+			name:    "start negative",
+			start:   -10,
+			end:     9,
+			errCode: http.StatusBadRequest,
+			errMsg:  "400 Bad Request - Invalid start value \"-10\"\n",
+		},
+		{
+			name:    "end negative",
+			start:   10,
+			end:     -9,
+			errCode: http.StatusBadRequest,
+			errMsg:  "400 Bad Request - Invalid end value \"-9\"\n",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.errMsg == "" {
+				resp := testBlocks(t, tc.start, tc.end)
+
+				var expected visor.ReadableBlocks
+				loadGoldenFile(t, tc.golden, TestData{resp, &expected})
+
+				require.Equal(t, expected, *resp)
+			} else {
+				_, err := c.Blocks(tc.start, tc.end)
+				assertResponseError(t, err, tc.errCode, tc.errMsg)
+			}
+		})
+	}
+}
+
+func TestLiveBlocks(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	testBlocks(t, 1, 10)
+}
+
+func testBlocks(t *testing.T, start, end int) *visor.ReadableBlocks {
+	c := gui.NewClient(nodeAddress())
+
+	blocks, err := c.Blocks(start, end)
+	require.NoError(t, err)
+
+	if start > end {
+		require.Empty(t, blocks.Blocks)
+	} else {
+		require.Len(t, blocks.Blocks, end-start+1)
+	}
+
+	var prevBlock *visor.ReadableBlock
+	for idx, b := range blocks.Blocks {
+		if prevBlock != nil {
+			require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
+		}
+
+		bHash, err := c.BlockByHash(b.Head.BlockHash)
+		require.Equal(t, uint64(idx+start), b.Head.BkSeq)
+		require.NoError(t, err)
+		require.NotNil(t, bHash)
+		require.Equal(t, b, *bHash)
+
+		prevBlock = &blocks.Blocks[idx]
+	}
+
+	return blocks
+}
+
+func TestStableLastBlocks(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	blocks, err := c.LastBlocks(1)
+	require.NoError(t, err)
+
+	var expected *visor.ReadableBlocks
+	loadGoldenFile(t, "block-last.golden", TestData{blocks, &expected})
+	require.Equal(t, expected, blocks)
+
+	var prevBlock *visor.ReadableBlock
+	blocks, err = c.LastBlocks(10)
+	require.NoError(t, err)
+	require.Equal(t, 10, len(blocks.Blocks))
+	for idx, b := range blocks.Blocks {
+		if prevBlock != nil {
+			require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
+		}
+
+		bHash, err := c.BlockByHash(b.Head.BlockHash)
+		require.NoError(t, err)
+		require.NotNil(t, bHash)
+		require.Equal(t, b, *bHash)
+
+		prevBlock = &blocks.Blocks[idx]
+	}
+
+}
+
+func TestLiveLastBlocks(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+	c := gui.NewClient(nodeAddress())
+	var prevBlock *visor.ReadableBlock
+	blocks, err := c.LastBlocks(10)
+	require.NoError(t, err)
+	require.Equal(t, 10, len(blocks.Blocks))
+	for idx, b := range blocks.Blocks {
+		if prevBlock != nil {
+			require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
+		}
+
+		bHash, err := c.BlockByHash(b.Head.BlockHash)
+		require.NoError(t, err)
+		require.NotNil(t, bHash)
+		require.Equal(t, b, *bHash)
+
+		prevBlock = &blocks.Blocks[idx]
+	}
+}
+
+func TestStableNetworkConnections(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+	connections, err := c.NetworkConnections()
+	require.NoError(t, err)
+	require.Empty(t, connections.Connections)
+
+	connection, err := c.NetworkConnection("127.0.0.1:4444")
+	assertResponseError(t, err, http.StatusNotFound, "404 Not Found\n")
+	require.Nil(t, connection)
+}
+
+func TestLiveNetworkConnections(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+	connections, err := c.NetworkConnections()
+	require.NoError(t, err)
+	require.NotEmpty(t, connections.Connections)
+
+	for _, cc := range connections.Connections {
+		connection, err := c.NetworkConnection(cc.Addr)
+		require.NoError(t, err)
+		require.NotEmpty(t, cc.Addr)
+		require.Equal(t, cc.Addr, connection.Addr)
+		require.Equal(t, cc.ID, connection.ID)
+		require.Equal(t, cc.ListenPort, connection.ListenPort)
+		require.Equal(t, cc.Mirror, connection.Mirror)
+		require.Equal(t, cc.Introduced, connection.Introduced)
+		require.Equal(t, cc.Outgoing, connection.Outgoing)
+		require.True(t, cc.LastReceived <= connection.LastReceived)
+		require.True(t, cc.LastSent <= connection.LastReceived)
+	}
+}
+
+func TestNetworkDefaultConnections(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+	connections, err := c.NetworkDefaultConnections()
+	require.NoError(t, err)
+	require.NotEmpty(t, connections)
+
+	var expected []string
+	loadGoldenFile(t, "network-default-connections.golden", TestData{connections, &expected})
+	sort.Strings(connections)
+	sort.Strings(expected)
+	require.Equal(t, expected, connections)
+}
+
+func TestNetworkTrustedConnections(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+	connections, err := c.NetworkTrustedConnections()
+	require.NoError(t, err)
+	require.NotEmpty(t, connections)
+
+	var expected []string
+	loadGoldenFile(t, "network-trusted-connections.golden", TestData{connections, &expected})
+	sort.Strings(connections)
+	sort.Strings(expected)
+	require.Equal(t, expected, connections)
+}
+
+func TestStableNetworkExchangeableConnections(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+	connections, err := c.NetworkExchangeableConnections()
+	require.NoError(t, err)
+
+	var expected []string
+	loadGoldenFile(t, "network-exchangeable-connections.golden", TestData{connections, &expected})
+	sort.Strings(connections)
+	sort.Strings(expected)
+	require.Equal(t, expected, connections)
+}
+
+func TestLiveNetworkExchangeableConnections(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+	_, err := c.NetworkExchangeableConnections()
+	require.NoError(t, err)
 }
 
 func TestLiveTransaction(t *testing.T) {
@@ -676,7 +1065,7 @@ func TestLiveTransaction(t *testing.T) {
 				return
 			}
 			var expected *visor.ReadableTransaction
-			loadJSON(t, tc.goldenFile, &TestData{tx, &expected})
+			loadGoldenFile(t, tc.goldenFile, TestData{tx, &expected})
 			require.Equal(t, expected, tx)
 		})
 	}
@@ -726,7 +1115,7 @@ func TestStableTransaction(t *testing.T) {
 		{
 			name:       "genesis transaction",
 			txId:       "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add",
-			goldenFile: "./genesisTransaction.golden",
+			goldenFile: "genesis-transaction.golden",
 		},
 	}
 
@@ -738,8 +1127,9 @@ func TestStableTransaction(t *testing.T) {
 				require.Equal(t, tc.err, err)
 				return
 			}
+
 			var expected *visor.ReadableTransaction
-			loadJSON(t, tc.goldenFile, &TestData{tx, &expected})
+			loadGoldenFile(t, tc.goldenFile, TestData{tx, &expected})
 			require.Equal(t, expected, tx)
 		})
 	}
@@ -805,12 +1195,12 @@ func TestStableTransactions(t *testing.T) {
 				StatusCode: http.StatusBadRequest,
 				Message:    "400 Bad Request - txId is empty\n",
 			},
-			goldenFile: "./emptyAddrs.golden",
+			goldenFile: "./empty-addrs.golden",
 		},
 		{
 			name:       "single addr",
 			addrs:      []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"},
-			goldenFile: "./singleAddr.golden",
+			goldenFile: "./single-addr.golden",
 		},
 	}
 
@@ -824,7 +1214,7 @@ func TestStableTransactions(t *testing.T) {
 			}
 
 			var expected *[]visor.TransactionResult
-			loadJSON(t, tc.goldenFile, &TestData{txResult, &expected})
+			loadGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
 			require.Equal(t, expected, txResult, "case: "+tc.name)
 		})
 	}
@@ -886,12 +1276,12 @@ func TestStableConfirmedTransactions(t *testing.T) {
 		{
 			name:       "empty addrs",
 			addrs:      []string{},
-			goldenFile: "./emptyAddrs.golden",
+			goldenFile: "./empty-addrs.golden",
 		},
 		{
 			name:       "single addr",
 			addrs:      []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"},
-			goldenFile: "./singleAddr.golden",
+			goldenFile: "./single-addr.golden",
 		},
 	}
 
@@ -905,7 +1295,7 @@ func TestStableConfirmedTransactions(t *testing.T) {
 			}
 
 			var expected *[]visor.TransactionResult
-			loadJSON(t, tc.goldenFile, &TestData{txResult, &expected})
+			loadGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
 			require.Equal(t, expected, txResult, "case: "+tc.name)
 		})
 	}
@@ -951,7 +1341,7 @@ func TestStableUnconfirmedTransactions(t *testing.T) {
 		{
 			name:       "empty addrs",
 			addrs:      []string{},
-			goldenFile: "./emptyAddrsUnconfirmedTxs.golden",
+			goldenFile: "./empty-addrs-unconfirmed-txs.golden",
 		},
 	}
 
@@ -965,7 +1355,7 @@ func TestStableUnconfirmedTransactions(t *testing.T) {
 			}
 
 			var expected *[]visor.TransactionResult
-			loadJSON(t, tc.goldenFile, &TestData{txResult, &expected})
+			loadGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
 			require.Equal(t, expected, txResult, "case: "+tc.name)
 		})
 	}

@@ -100,7 +100,7 @@ if [[ (-z $TEST || $TEST = "gui") && $GUI_FAIL -ne 0 ]]; then
   exit $GUI_FAIL
 elif [[ (-z $TEST || $TEST = "cli") && $CLI_FAIL -ne 0 ]]; then
   exit $CLI_FAIL
-else 
+else
   exit 0
 fi
 # exit $FAIL

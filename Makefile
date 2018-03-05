@@ -20,7 +20,8 @@ PACKAGES = $(shell find ./src -type d -not -path '\./src' \
     							      -not -path '\./src/consensus/example' \
     							      -not -path '\./src/gui/static*' \
     							      -not -path '\./src/cipher/*' \
-    							      -not -path '*/testdata*')
+    							      -not -path '*/testdata*' \
+    							      -not -path '*/test-fixtures*')
 
 # Compilation output
 BUILD_DIR = build

@@ -93,8 +93,9 @@ func TestUserHome(t *testing.T) {
 }
 
 func TestBuildDataDirDefault(t *testing.T) {
-	dir, err := buildDataDir("$HOME/.skycoin")
 	home := UserHome()
+	defaultDir := filepath.Join(home, ".skycoin")
+	dir, err := buildDataDir(defaultDir)
 	require.Nil(t, err)
 	expectedPath := filepath.Join(home, ".skycoin")
 	require.Equal(t, dir, expectedPath)

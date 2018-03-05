@@ -68,15 +68,7 @@ func buildDataDir(dir string) (string, error) {
 	}
 	wd = filepath.Clean(wd)
 
-	envWithHome := func(key string) string {
-		value, ok := os.LookupEnv(key)
-		if !ok && key == "HOME" {
-			return home
-		}
-		return value
-	}
-	_fullDir := os.Expand(dir, envWithHome)
-	fullDir, err := filepath.Abs(_fullDir)
+	fullDir, err := filepath.Abs(dir)
 
 	if err != nil {
 		return "", err

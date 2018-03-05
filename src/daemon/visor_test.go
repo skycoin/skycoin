@@ -217,7 +217,7 @@ func TestInjectValidTransaction(t *testing.T) {
 	}()
 
 	// The unconfirmed pool should be empty
-	txns := v.v.GetUnconfirmed().RawTxns()
+	txns := v.v.Unconfirmed.RawTxns()
 	require.Len(t, txns, 0)
 
 	// Call injectTransaction
@@ -226,7 +226,7 @@ func TestInjectValidTransaction(t *testing.T) {
 	require.NoError(t, err)
 
 	// The transaction should appear in the unconfirmed pool
-	txns = v.v.GetUnconfirmed().RawTxns()
+	txns = v.v.Unconfirmed.RawTxns()
 	require.Len(t, txns, 1)
 	require.Equal(t, txns[0], txn)
 }
@@ -256,7 +256,7 @@ func TestInjectTransactionSoftViolationNoFee(t *testing.T) {
 	}()
 
 	// The unconfirmed pool should be empty
-	txns := v.v.GetUnconfirmed().RawTxns()
+	txns := v.v.Unconfirmed.RawTxns()
 	require.Len(t, txns, 0)
 
 	// Call injectTransaction
@@ -266,7 +266,7 @@ func TestInjectTransactionSoftViolationNoFee(t *testing.T) {
 	require.Equal(t, visor.NewErrTxnViolatesSoftConstraint(fee.ErrTxnNoFee), *softErr)
 
 	// The transaction should appear in the unconfirmed pool
-	txns = v.v.GetUnconfirmed().RawTxns()
+	txns = v.v.Unconfirmed.RawTxns()
 	require.Len(t, txns, 1)
 }
 

@@ -70,7 +70,7 @@ func NewVisorConfig() VisorConfig {
 // Visor struct
 type Visor struct {
 	Config VisorConfig
-	v      visor.Visorer
+	v      *visor.Visor
 	// Peer-reported blockchain height.  Use to estimate download progress
 	blockchainHeights map[string]uint64
 	// all request will go through this channel, to keep writing and reading member variable thread safe.
@@ -95,16 +95,6 @@ func NewVisor(c VisorConfig, db *bolt.DB) (*Visor, error) {
 	vs.v = v
 
 	return vs, nil
-}
-
-//GetVisor returns visor
-func (vs *Visor) GetVisor() visor.Visorer {
-	return vs.v
-}
-
-//GetConfig returns config
-func (vs *Visor) GetConfig() VisorConfig {
-	return vs.Config
 }
 
 // Run starts the visor
@@ -311,7 +301,7 @@ func (vs *Visor) SetTxnsAnnounced(txns []cipher.SHA256) {
 	vs.strand("SetTxnsAnnounced", func() error {
 		now := utc.Now()
 		for _, h := range txns {
-			if err := vs.v.GetUnconfirmed().SetAnnounced(h, now); err != nil {
+			if err := vs.v.Unconfirmed.SetAnnounced(h, now); err != nil {
 				logger.Error("Failed to set unconfirmed txn announce time")
 			}
 		}
@@ -389,7 +379,7 @@ func (vs *Visor) ResendTransaction(h cipher.SHA256, pool *Pool) error {
 	}
 
 	return vs.strand("ResendTransaction", func() error {
-		if ut, ok := vs.v.GetUnconfirmed().Get(h); ok {
+		if ut, ok := vs.v.Unconfirmed.Get(h); ok {
 			return vs.broadcastTransaction(ut.Txn, pool)
 		}
 		return nil
@@ -562,7 +552,7 @@ func (vs *Visor) GetSignedBlocksSince(seq uint64, ct uint64) ([]coin.SignedBlock
 func (vs *Visor) UnConfirmFilterKnown(txns []cipher.SHA256) []cipher.SHA256 {
 	var ts []cipher.SHA256
 	vs.strand("UnConfirmFilterKnown", func() error {
-		ts = vs.v.GetUnconfirmed().FilterKnown(txns)
+		ts = vs.v.Unconfirmed.FilterKnown(txns)
 		return nil
 	})
 	return ts
@@ -572,7 +562,7 @@ func (vs *Visor) UnConfirmFilterKnown(txns []cipher.SHA256) []cipher.SHA256 {
 func (vs *Visor) UnConfirmKnow(hashes []cipher.SHA256) coin.Transactions {
 	var txns coin.Transactions
 	vs.strand("UnConfirmKnow", func() error {
-		txns = vs.v.GetUnconfirmed().GetKnown(hashes)
+		txns = vs.v.Unconfirmed.GetKnown(hashes)
 		return nil
 	})
 	return txns
@@ -607,7 +597,7 @@ func (gbm *GetBlocksMessage) Process(d *Daemon) {
 	// TODO -- we need the sig to be sent with the block, but only the master
 	// can sign blocks.  Thus the sig needs to be stored with the block.
 	// TODO -- move to either Messages.Config or Visor.Config
-	if d.Visor.GetConfig().DisableNetworking {
+	if d.Visor.Config.DisableNetworking {
 		return
 	}
 	// Record this as this peer's highest block
@@ -653,7 +643,7 @@ func (gbm *GiveBlocksMessage) Handle(mc *gnet.MessageContext,
 
 // Process process message
 func (gbm *GiveBlocksMessage) Process(d *Daemon) {
-	if d.Visor.GetConfig().DisableNetworking {
+	if d.Visor.Config.DisableNetworking {
 		logger.Critical("Visor disabled, ignoring GiveBlocksMessage")
 		return
 	}
@@ -691,7 +681,7 @@ func (gbm *GiveBlocksMessage) Process(d *Daemon) {
 	m1 := NewAnnounceBlocksMessage(headBkSeq)
 	d.Pool.Pool.BroadcastMessage(m1)
 	//request more blocks.
-	m2 := NewGetBlocksMessage(headBkSeq, d.Visor.GetConfig().BlocksResponseCount)
+	m2 := NewGetBlocksMessage(headBkSeq, d.Visor.Config.BlocksResponseCount)
 	d.Pool.Pool.BroadcastMessage(m2)
 }
 
@@ -718,7 +708,7 @@ func (abm *AnnounceBlocksMessage) Handle(mc *gnet.MessageContext,
 
 // Process process message
 func (abm *AnnounceBlocksMessage) Process(d *Daemon) {
-	if d.Visor.GetConfig().DisableNetworking {
+	if d.Visor.Config.DisableNetworking {
 		return
 	}
 
@@ -729,7 +719,7 @@ func (abm *AnnounceBlocksMessage) Process(d *Daemon) {
 
 	// TODO: Should this be block get request for current sequence?
 	// If client is not caught up, won't attempt to get block
-	m := NewGetBlocksMessage(headBkSeq, d.Visor.GetConfig().BlocksResponseCount)
+	m := NewGetBlocksMessage(headBkSeq, d.Visor.Config.BlocksResponseCount)
 	if err := d.Pool.Pool.SendMessage(abm.c.Addr, m); err != nil {
 		logger.Error("Send GetBlocksMessage to %s failed: %v", abm.c.Addr, err)
 	}
@@ -767,7 +757,7 @@ func (atm *AnnounceTxnsMessage) Handle(mc *gnet.MessageContext,
 
 // Process process message
 func (atm *AnnounceTxnsMessage) Process(d *Daemon) {
-	if d.Visor.GetConfig().DisableNetworking {
+	if d.Visor.Config.DisableNetworking {
 		return
 	}
 
@@ -803,7 +793,7 @@ func (gtm *GetTxnsMessage) Handle(mc *gnet.MessageContext, daemon interface{}) e
 
 // Process process message
 func (gtm *GetTxnsMessage) Process(d *Daemon) {
-	if d.Visor.GetConfig().DisableNetworking {
+	if d.Visor.Config.DisableNetworking {
 		return
 	}
 
@@ -847,7 +837,7 @@ func (gtm *GiveTxnsMessage) Handle(mc *gnet.MessageContext,
 
 // Process process message
 func (gtm *GiveTxnsMessage) Process(d *Daemon) {
-	if d.Visor.GetConfig().DisableNetworking {
+	if d.Visor.Config.DisableNetworking {
 		return
 	}
 

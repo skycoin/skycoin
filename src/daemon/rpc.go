@@ -124,8 +124,8 @@ func (rpc RPC) GetAllExchgConnections(d *Daemon) []string {
 }
 
 // GetBlockchainProgress gets the blockchain progress
-func (rpc RPC) GetBlockchainProgress(v Visorer) *BlockchainProgress {
-	if v.GetVisor() == nil {
+func (rpc RPC) GetBlockchainProgress(v *Visor) *BlockchainProgress {
+	if v.v == nil {
 		return nil
 	}
 
@@ -150,8 +150,8 @@ func (rpc RPC) GetBlockchainProgress(v Visorer) *BlockchainProgress {
 }
 
 // ResendTransaction rebroadcast transaction
-func (rpc RPC) ResendTransaction(v Visorer, p *Pool, txHash cipher.SHA256) *ResendResult {
-	if v.GetVisor() == nil {
+func (rpc RPC) ResendTransaction(v *Visor, p *Pool, txHash cipher.SHA256) *ResendResult {
+	if v.v == nil {
 		return nil
 	}
 	v.ResendTransaction(txHash, p)
@@ -159,8 +159,8 @@ func (rpc RPC) ResendTransaction(v Visorer, p *Pool, txHash cipher.SHA256) *Rese
 }
 
 // ResendUnconfirmedTxns rebroadcast unconfirmed transactions
-func (rpc RPC) ResendUnconfirmedTxns(v Visorer, p *Pool) *ResendResult {
-	if v.GetVisor() == nil {
+func (rpc RPC) ResendUnconfirmedTxns(v *Visor, p *Pool) *ResendResult {
+	if v.v == nil {
 		return nil
 	}
 	txids := v.ResendUnconfirmedTxns(p)

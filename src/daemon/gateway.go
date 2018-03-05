@@ -34,12 +34,12 @@ func NewGatewayConfig() GatewayConfig {
 type Gateway struct {
 	Config GatewayConfig
 	drpc   RPC
-	vrpc   visor.RPCIface
+	vrpc   visor.RPC
 
 	// Backref to Daemon
 	d *Daemon
 	// Backref to Visor
-	v visor.Visorer
+	v *visor.Visor
 	// Requests are queued on this channel
 	requests chan strand.Request
 	quit     chan struct{}
@@ -50,9 +50,9 @@ func NewGateway(c GatewayConfig, D *Daemon) *Gateway {
 	return &Gateway{
 		Config:   c,
 		drpc:     RPC{},
-		vrpc:     visor.MakeRPC(D.Visor.GetVisor()),
+		vrpc:     visor.MakeRPC(D.Visor.v),
 		d:        D,
-		v:        D.Visor.GetVisor(),
+		v:        D.Visor.v,
 		requests: make(chan strand.Request, c.BufferSize),
 		quit:     make(chan struct{}),
 	}
@@ -254,7 +254,7 @@ func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (*visor.ReadableO
 	var headTime uint64
 	var err error
 	gw.strand("GetUnspentOutputs", func() {
-		headTime = gw.v.GetBlockchain().Time()
+		headTime = gw.v.Blockchain.Time()
 
 		unspentOutputs, err = gw.v.GetUnspentOutputs()
 		if err != nil {
@@ -480,7 +480,7 @@ func (gw *Gateway) GetLastTxs() ([]*visor.Transaction, error) {
 func (gw *Gateway) GetUnspent() blockdb.UnspentPool {
 	var unspent blockdb.UnspentPool
 	gw.strand("GetUnspent", func() {
-		unspent = gw.v.GetBlockchain().Unspent()
+		unspent = gw.v.Blockchain.Unspent()
 	})
 	return unspent
 }
@@ -517,11 +517,11 @@ func (gw *Gateway) Spend(wltID string, coins uint64, dest cipher.Address) (*coin
 	}
 	gw.strand("Spend", func() {
 		// create spend validator
-		unspent := gw.v.GetBlockchain().Unspent()
-		sv := newSpendValidator(gw.v.GetUnconfirmed(), unspent)
+		unspent := gw.v.Blockchain.Unspent()
+		sv := newSpendValidator(gw.v.Unconfirmed, unspent)
 
 		// Create and sign transaction
-		tx, err = gw.vrpc.CreateAndSignTransaction(wltID, sv, unspent, gw.v.GetBlockchain().Time(), coins, dest)
+		tx, err = gw.vrpc.CreateAndSignTransaction(wltID, sv, unspent, gw.v.Blockchain.Time(), coins, dest)
 		if err != nil {
 			logger.Error("Create transaction failed: %v", err)
 			return
@@ -592,14 +592,14 @@ func (gw *Gateway) GetWalletBalance(wltID string) (wallet.BalancePair, error) {
 			err = fmt.Errorf("get unconfirmed receiving failed when when checking wallet balance: %v", err)
 			return
 		}
-		var coins1, hours1 uint64
-		coins1, hours1, err = gw.v.AddressBalance(auxs)
+
+		coins1, hours1, err := gw.v.AddressBalance(auxs)
 		if err != nil {
 			err = fmt.Errorf("Computing confirmed address balance failed: %v", err)
 			return
 		}
-		var coins2, hours2 uint64
-		coins2, hours2, err = gw.v.AddressBalance(auxs.Sub(spendUxs).Add(recvUxs))
+
+		coins2, hours2, err := gw.v.AddressBalance(auxs.Sub(spendUxs).Add(recvUxs))
 		if err != nil {
 			err = fmt.Errorf("Computing predicted address balance failed: %v", err)
 			return
@@ -630,7 +630,7 @@ func (gw *Gateway) GetWalletDir() (string, error) {
 	if gw.Config.DisableWalletAPI {
 		return "", wallet.ErrWalletApiDisabled
 	}
-	return gw.v.GetConfig().WalletDirectory, nil
+	return gw.v.Config.WalletDirectory, nil
 }
 
 // NewAddresses generate addresses in given wallet

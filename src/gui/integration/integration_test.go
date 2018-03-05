@@ -1037,7 +1037,7 @@ func TestStableRawTransaction(t *testing.T) {
 		},
 		{
 			name: "odd length hex string",
-			txId: "2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk",
+			txId: "abcdeffedca",
 			err: gui.APIError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
@@ -1086,7 +1086,7 @@ func TestLiveRawTransaction(t *testing.T) {
 		},
 		{
 			name: "odd length hex string",
-			txId: "2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk",
+			txId: "abcdeffedca",
 			err: gui.APIError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,

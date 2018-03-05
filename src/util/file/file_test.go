@@ -92,6 +92,14 @@ func TestUserHome(t *testing.T) {
 	require.NotEqual(t, home, "")
 }
 
+func TestBuildDataDirDefault(t *testing.T) {
+	dir, err := buildDataDir("$HOME/.skycoin")
+	home := UserHome()
+	require.Nil(t, err)
+	expectedPath := filepath.Join(home, ".skycoin")
+	require.Equal(t, dir, expectedPath)
+}
+
 func TestLoadJSON(t *testing.T) {
 	obj := struct{ Key string }{}
 	fn := "test.json"

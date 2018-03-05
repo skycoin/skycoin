@@ -999,7 +999,7 @@ Args: address
 example:
 
 ```sh
-curl http://127.0.0.1:6420/explorer/address
+curl http://127.0.0.1:6420/explorer/address?address=2NfNKsaGJEndpSajJ6TsKJfsdDjW2gFsjXg
 ```
 
 result:
@@ -1010,38 +1010,32 @@ result:
         "status": {
             "confirmed": true,
             "unconfirmed": false,
-            "height": 783,
-            "block_seq": 10819,
+            "height": 1268,
+            "block_seq": 15493,
             "unknown": false
         },
-        "length": 220,
+        "length": 183,
         "type": 0,
-        "txid": "86cdee14f1b9cc06710815f51e5a546a8a33c4179433e047ed50d17b3a7a734e",
-        "inner_hash": "45ade9ec2b7618f782a869796f021486dda3856bf009dc6ee633d1840fd08a75",
-        "timestamp": 1516000192,
+        "txid": "6d8e2f8b436a2f38d604b3aa1196ef2176779c5e11e33fbdd09f993fe659c39f",
+        "inner_hash": "8da7c64dcedeeb6aa1e0d21fb84a0028dcd68e6801f1a3cc0224fdd50682046f",
+        "timestamp": 1518878675,
         "sigs": [
-            "ecd5d555dc13007a6ce39d7036e9e9ee6319c00f653372db2a0e64147739946370ddad9bf8a3cd187d481089a66381d59b0d0725fd1663ff8ab0eed202996a1701"
+            "c60e43980497daad59b4c72a2eac053b1584f960c57a5e6ac8337118dccfcee4045da3f60d9be674867862a13fdd87af90f4b85cbf39913bde13674e0a039b7800"
         ],
         "inputs": [
             {
-                "uxid": "a1a715655c526fd4ca9a12208a7b1a4754998a47415ce2870bcdecb236a3fea0",
-                "owner": "2Xdt4EUnJ9HZrc41L9DTDGPNrufxUbpUv4g",
-                "coins": "6149.000000",
-                "hours": "11286"
+                "uxid": "349b06e5707f633fd2d8f048b687b40462d875d968b246831434fb5ab5dcac38",
+                "owner": "WzPDgdfL1NzSbX96tscUNXUqtCRLjaBugC",
+                "coins": "125.000000",
+                "hours": 34596
             }
         ],
         "outputs": [
             {
-                "uxid": "f9bc2e30f263fd4a4c677d83d40f0cea5c9adc72ee696d8b9f9721fbc93473ac",
-                "dst": "2Xdt4EUnJ9HZrc41L9DTDGPNrufxUbpUv4g",
-                "coins": "6029.000000",
-                "hours": 64965
-            },
-            {
-                "uxid": "03077587d2ceb5f9b3c0680522e806dda4bf39d08c0f661740c5237ba0226105",
-                "dst": "ANdw72kCg5HwVkn2fRgsHRu5g9Hoe3p93s",
-                "coins": "120.000000",
-                "hours": 64964
+                "uxid": "5b4a79c7de2e9099e083bbc8096619ae76ba6fbe34875c61bbe2d3bfa6b18b99",
+                "dst": "2NfNKsaGJEndpSajJ6TsKJfsdDjW2gFsjXg",
+                "coins": "125.000000",
+                "hours": 51925
             }
         ]
     }

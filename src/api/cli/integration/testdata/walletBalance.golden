@@ -1,0 +1,76 @@
+{
+	"confirmed": {
+		"coins": "0.000000",
+		"hours": "0"
+	},
+	"spendable": {
+		"coins": "0.000000",
+		"hours": "0"
+	},
+	"expected": {
+		"coins": "0.000000",
+		"hours": "0"
+	},
+	"addresses": [
+		{
+			"confirmed": {
+				"coins": "0.000000",
+				"hours": "0"
+			},
+			"spendable": {
+				"coins": "0.000000",
+				"hours": "0"
+			},
+			"expected": {
+				"coins": "0.000000",
+				"hours": "0"
+			},
+			"address": "2Kg3eRXUhY6hrDZvNGB99DKahtrPDQ1W9vN"
+		},
+		{
+			"confirmed": {
+				"coins": "0.000000",
+				"hours": "0"
+			},
+			"spendable": {
+				"coins": "0.000000",
+				"hours": "0"
+			},
+			"expected": {
+				"coins": "0.000000",
+				"hours": "0"
+			},
+			"address": "7g3M372kxwNwwQEAmrronu4anXTW8aD1XC"
+		},
+		{
+			"confirmed": {
+				"coins": "0.000000",
+				"hours": "0"
+			},
+			"spendable": {
+				"coins": "0.000000",
+				"hours": "0"
+			},
+			"expected": {
+				"coins": "0.000000",
+				"hours": "0"
+			},
+			"address": "2EDapDfn1VC6P2hx4nTH2cRUkboGAE16evV"
+		},
+		{
+			"confirmed": {
+				"coins": "0.000000",
+				"hours": "0"
+			},
+			"spendable": {
+				"coins": "0.000000",
+				"hours": "0"
+			},
+			"expected": {
+				"coins": "0.000000",
+				"hours": "0"
+			},
+			"address": "hLLcizfJomBKJrUeHrHTWKZMNdqwb69WVb"
+		}
+	]
+}

@@ -142,6 +142,13 @@ We have two branches: `master` and `develop`.
 * `/src/api/webrpc` - JSON-RPC 2.0 API
 * `/src/api/cli` - CLI library
 
+### Client libraries
+
+Skycoin implements client libraries which export core functionality for usage from
+other programming languages. Read the corresponding README file for further details.
+
+* `lib/cgo/` - libskycoin C client library
+
 ### Running Tests
 
 ```sh

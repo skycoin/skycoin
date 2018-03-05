@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: run run-help test lint check cover integration-test-stable integration-test-live install-linters format release clean help
+.PHONY: run run-help test test-core test-libc test-lint build-libc check cover integration-test-stable integration-test-live install-linters format release clean help
 
 # Static files directory
 STATIC_DIR = src/gui/static
@@ -23,9 +23,40 @@ PACKAGES = $(shell find ./src -type d -not -path '\./src' \
     							      -not -path '*/testdata*')
 
 # Compilation output
-BUILD_DIR = dist
-BUILDLIB_DIR = $(BUILD_DIR)/skycoinlib
+BUILD_DIR = build
+BUILDLIB_DIR = $(BUILD_DIR)/libskycoin
 LIB_DIR = lib
+LIB_FILES = $(shell find ./lib/cgo -type f -name "*.go")
+BIN_DIR = bin
+INCLUDE_DIR = include
+
+# Compilation flags
+CC = gcc
+LIBC_LIBS = -lcriterion
+LDFLAGS = -I$(INCLUDE_DIR) -I$(BUILD_DIR)/usr/include -L $(BUILDLIB_DIR) -L$(BUILD_DIR)/usr/lib
+
+# Platform specific checks
+OSNAME = $(TRAVIS_OS_NAME)
+
+ifeq ($(shell uname -s),Linux)
+  LDLIBS=$(LIBC_LIBS) -lpthread
+	LDPATH=$(shell printenv LD_LIBRARY_PATH)
+	LDPATHVAR=LD_LIBRARY_PATH
+ifndef OSNAME
+  OSNAME = linux
+endif
+else ifeq ($(shell uname -s),Darwin)
+ifndef OSNAME
+  OSNAME = osx
+endif
+	LDLIBS = $(LIBC_LIBS)
+	LDPATH=$(shell printenv DYLD_LIBRARY_PATH)
+	LDPATHVAR=DYLD_LIBRARY_PATH
+else
+	LDLIBS = $(LIBC_LIBS)
+	LDPATH=$(shell printenv LD_LIBRARY_PATH)
+	LDPATHVAR=LD_LIBRARY_PATH
+endif
 
 run:  ## Run the skycoin node. To add arguments, do 'make ARGS="--foo" run'.
 	go run cmd/skycoin/skycoin.go --gui-dir="./${STATIC_DIR}" ${ARGS}
@@ -33,21 +64,34 @@ run:  ## Run the skycoin node. To add arguments, do 'make ARGS="--foo" run'.
 run-help: ## Show skycoin node help
 	@go run cmd/skycoin/skycoin.go --help
 
-test: ## Run tests
+test: ## Run tests for Skycoin
 	go test ./cmd/... -timeout=1m
 	go test ./src/... -timeout=1m
 
-build-lib-c: # Build Skycoinlib C
-	mkdir -p $(BUILDLIB_DIR)
-	rm -Rf $(BUILDLIB_DIR)/*
-	go build -buildmode=c-shared  -o $(BUILDLIB_DIR)/libskycoin.so $(LIB_DIR)/cgo/main.go
-	go build -buildmode=c-archive -o $(BUILDLIB_DIR)/libskycoin.a  $(LIB_DIR)/cgo/main.go
+test-386: ## Run tests for Skycoin with GOARCH=386
+	GOARCH=386 go test ./cmd/... -timeout=5m
+	GOARCH=386 go test ./src/... -timeout=5m
 
-test-lib-c: build-lib-c
+test-amd64: ## Run tests for Skycoin with GOARCH=amd64
+	GOARCH=amd64 go test ./cmd/... -timeout=5m
+	GOARCH=amd64 go test ./src/... -timeout=5m
+
+configure-build:
+	mkdir -p $(BUILD_DIR)/usr/tmp $(BUILD_DIR)/usr/lib $(BUILD_DIR)/usr/include
+	mkdir -p $(BUILDLIB_DIR) $(BIN_DIR) $(INCLUDE_DIR)
+
+build-libc: configure-build ## Build libskycoin C client library
+	rm -Rf $(BUILDLIB_DIR)/*
+	go build -buildmode=c-shared  -o $(BUILDLIB_DIR)/libskycoin.so $(LIB_FILES)
+	go build -buildmode=c-archive -o $(BUILDLIB_DIR)/libskycoin.a  $(LIB_FILES)
+	mv $(BUILDLIB_DIR)/libskycoin.h $(INCLUDE_DIR)/
+
+test-libc: build-libc ## Run tests for libskycoin C client library
 	cp $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/
-	rm $(BUILDLIB_DIR)/libskycoin.so	# TODO: Get rid of this step
-	gcc -o $(BUILDLIB_DIR)/skycoinlib_test $(BUILDLIB_DIR)/*.c -I$(BUILDLIB_DIR) -lcriterion -lskycoin -L $(BUILDLIB_DIR)
-	$(BUILDLIB_DIR)/skycoinlib_test
+	$(CC) -o $(BIN_DIR)/test_libskycoin_shared $(BUILDLIB_DIR)/*.c -lskycoin                    $(LDLIBS) $(LDFLAGS)
+	$(CC) -o $(BIN_DIR)/test_libskycoin_static $(BUILDLIB_DIR)/*.c $(BUILDLIB_DIR)/libskycoin.a $(LDLIBS) $(LDFLAGS)
+	$(LDPATHVAR)="$(LDPATH):$(BUILD_DIR)/usr/lib"                 $(BIN_DIR)/test_libskycoin_static
+	$(LDPATHVAR)="$(LDPATH):$(BUILD_DIR)/usr/lib:$(BUILDLIB_DIR)" $(BIN_DIR)/test_libskycoin_shared
 
 lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...
@@ -62,18 +106,22 @@ integration-test-live: ## Run live integration tests
 	./ci-scripts/integration-test-live.sh
 
 cover: ## Runs tests on ./src/ with HTML code coverage
-	@echo "mode: count" > coverage-all.out
-	$(foreach pkg,$(PACKAGES),\
-		go test -coverprofile=coverage.out $(pkg);\
-		tail -n +2 coverage.out >> coverage-all.out;)
-	go tool cover -html=coverage-all.out
+	go test -cover -coverprofile=cover.out -coverpkg=github.com/skycoin/skycoin/... ./src/...
+	go tool cover -html=cover.out
 
 install-linters: ## Install linters
 	go get -u github.com/FiloSottile/vendorcheck
 	go get -u github.com/alecthomas/gometalinter
 	gometalinter --vendored-linters --install
 
-format:  # Formats the code. Must have goimports installed (use make install-linters).
+install-deps-libc: configure-build ## Install locally dependencies for testing libskycoin
+	wget -O $(BUILD_DIR)/usr/tmp/criterion-v2.3.2-$(OSNAME)-x86_64.tar.bz2 https://github.com/Snaipe/Criterion/releases/download/v2.3.2/criterion-v2.3.2-$(OSNAME)-x86_64.tar.bz2
+	tar -x -C $(BUILD_DIR)/usr/tmp/ -j -f $(BUILD_DIR)/usr/tmp/criterion-v2.3.2-$(OSNAME)-x86_64.tar.bz2
+	ls $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/include
+	ls -1 $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/lib     | xargs -I NAME mv $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/lib/NAME     $(BUILD_DIR)/usr/lib/NAME
+	ls -1 $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/include | xargs -I NAME mv $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/include/NAME $(BUILD_DIR)/usr/include/NAME
+
+format: ## Formats the code. Must have goimports installed (use make install-linters).
 	goimports -w -local github.com/skycoin/skycoin ./cmd
 	goimports -w -local github.com/skycoin/skycoin ./src
 	goimports -w -local github.com/skycoin/skycoin ./lib

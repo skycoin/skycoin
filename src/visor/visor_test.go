@@ -92,7 +92,7 @@ func TestErrSignatureLostRecreateDB(t *testing.T) {
 	// Make sure that the database file causes ErrMissingSignature error
 	t.Logf("Checking that %s is a corrupted database", badDBFile)
 	func() {
-		db, err := OpenDB(badDBFile)
+		db, err := OpenDB(badDBFile, false)
 		require.NoError(t, err)
 		defer func() {
 			err := db.Close()
@@ -106,7 +106,7 @@ func TestErrSignatureLostRecreateDB(t *testing.T) {
 
 	// Loading this invalid db should cause loadBlockchain() to recreate the db
 	t.Logf("Loading the corrupted db from %s", badDBFile)
-	badDB, err := OpenDB(badDBFile)
+	badDB, err := OpenDB(badDBFile, false)
 	require.NoError(t, err)
 	require.NotNil(t, badDB)
 	require.NotEmpty(t, badDB.Path())
@@ -128,7 +128,7 @@ func TestErrSignatureLostRecreateDB(t *testing.T) {
 	// A new db should be written in place of the old bad db, and not be corrupted
 	t.Logf("Checking that the new db file is valid")
 	func() {
-		db, err := OpenDB(badDBFile)
+		db, err := OpenDB(badDBFile, false)
 		require.NoError(t, err)
 		defer func() {
 			err := db.Close()

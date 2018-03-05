@@ -630,3 +630,490 @@ func scanUxOuts(t *testing.T) {
 		})
 	}
 }
+
+func TestLiveTransaction(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	tt := []struct {
+		name       string
+		txId       string
+		err        gui.APIError
+		goldenFile string
+	}{
+		{
+			name: "invalid txId",
+			txId: "abcd",
+			err: gui.APIError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - Invalid hex length\n",
+			},
+		},
+		{
+			name: "empty txId",
+			txId: "",
+			err: gui.APIError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - txid is empty\n",
+			},
+		},
+		{
+			name:       "OK",
+			txId:       "76ecbabc53ea2a3be46983058433dda6a3cf7ea0b86ba14d90b932fa97385de7",
+			goldenFile: "./transaction.golden",
+		},
+	}
+
+	c := gui.NewClient(nodeAddress())
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			tx, err := c.Transaction(tc.txId)
+			if err != nil {
+				require.Equal(t, tc.err, err)
+				return
+			}
+			var expected *visor.ReadableTransaction
+			loadJSON(t, tc.goldenFile, &TestData{tx, &expected})
+			require.Equal(t, expected, tx)
+		})
+	}
+}
+
+func TestStableTransaction(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	tt := []struct {
+		name       string
+		txId       string
+		err        gui.APIError
+		goldenFile string
+	}{
+		{
+			name: "invalid txId",
+			txId: "abcd",
+			err: gui.APIError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - Invalid hex length\n",
+			},
+			goldenFile: "",
+		},
+		{
+			name: "not exist",
+			txId: "701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947",
+			err: gui.APIError{
+				Status:     "404 Not Found",
+				StatusCode: http.StatusNotFound,
+				Message:    "404 Not Found\n",
+			},
+			goldenFile: "",
+		},
+		{
+			name: "empty txId",
+			txId: "",
+			err: gui.APIError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - txid is empty\n",
+			},
+			goldenFile: "",
+		},
+		{
+			name:       "genesis transaction",
+			txId:       "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add",
+			goldenFile: "./genesisTransaction.golden",
+		},
+	}
+
+	c := gui.NewClient(nodeAddress())
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			tx, err := c.Transaction(tc.txId)
+			if err != nil {
+				require.Equal(t, tc.err, err)
+				return
+			}
+			var expected *visor.ReadableTransaction
+			loadJSON(t, tc.goldenFile, &TestData{tx, &expected})
+			require.Equal(t, expected, tx)
+		})
+	}
+}
+
+func TestLiveTransactions(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+	addrs := []string{
+		"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt",
+	}
+	txns, err := c.Transactions(addrs)
+	require.NoError(t, err)
+	require.True(t, len(*txns) > 0)
+}
+
+func TestStableTransactions(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	tt := []struct {
+		name       string
+		addrs      []string
+		err        gui.APIError
+		goldenFile string
+	}{
+		{
+			name:  "invalid addr length",
+			addrs: []string{"abcd"},
+			err: gui.APIError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid address length\n",
+			},
+		},
+		{
+			name:  "invalid addr character",
+			addrs: []string{"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947"},
+			err: gui.APIError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid base58 character\n",
+			},
+		},
+		{
+			name:  "invalid checksum",
+			addrs: []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk"},
+			err: gui.APIError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid checksum\n",
+			},
+		},
+		{
+			name:  "empty addrs",
+			addrs: []string{},
+			err: gui.APIError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - txId is empty\n",
+			},
+			goldenFile: "./emptyAddrs.golden",
+		},
+		{
+			name:       "single addr",
+			addrs:      []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"},
+			goldenFile: "./singleAddr.golden",
+		},
+	}
+
+	c := gui.NewClient(nodeAddress())
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			txResult, err := c.Transactions(tc.addrs)
+			if err != nil {
+				require.Equal(t, tc.err, err, "case: "+tc.name)
+				return
+			}
+
+			var expected *[]visor.TransactionResult
+			loadJSON(t, tc.goldenFile, &TestData{txResult, &expected})
+			require.Equal(t, expected, txResult, "case: "+tc.name)
+		})
+	}
+}
+
+func TestLiveConfirmedTransactions(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+	c := gui.NewClient(nodeAddress())
+
+	ctxsSingle, err := c.ConfirmedTransactions([]string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"})
+	require.NoError(t, err)
+	require.True(t, len(*ctxsSingle) > 0)
+
+	ctxsAll, err := c.ConfirmedTransactions([]string{})
+	require.NoError(t, err)
+	require.True(t, len(*ctxsAll) > 0)
+	require.True(t, len(*ctxsAll) > len(*ctxsSingle))
+}
+
+func TestStableConfirmedTransactions(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+	tt := []struct {
+		name       string
+		addrs      []string
+		err        gui.APIError
+		goldenFile string
+	}{
+		{
+			name:  "invalid addr length",
+			addrs: []string{"abcd"},
+			err: gui.APIError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid address length\n",
+			},
+		},
+		{
+			name:  "invalid addr character",
+			addrs: []string{"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947"},
+			err: gui.APIError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid base58 character\n",
+			},
+		},
+		{
+			name:  "invalid checksum",
+			addrs: []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk"},
+			err: gui.APIError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid checksum\n",
+			},
+		},
+		{
+			name:       "empty addrs",
+			addrs:      []string{},
+			goldenFile: "./emptyAddrs.golden",
+		},
+		{
+			name:       "single addr",
+			addrs:      []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"},
+			goldenFile: "./singleAddr.golden",
+		},
+	}
+
+	c := gui.NewClient(nodeAddress())
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			txResult, err := c.ConfirmedTransactions(tc.addrs)
+			if err != nil {
+				require.Equal(t, tc.err, err, "case: "+tc.name)
+				return
+			}
+
+			var expected *[]visor.TransactionResult
+			loadJSON(t, tc.goldenFile, &TestData{txResult, &expected})
+			require.Equal(t, expected, txResult, "case: "+tc.name)
+		})
+	}
+}
+
+func TestStableUnconfirmedTransactions(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+	tt := []struct {
+		name       string
+		addrs      []string
+		err        gui.APIError
+		goldenFile string
+	}{
+		{
+			name:  "invalid addr length",
+			addrs: []string{"abcd"},
+			err: gui.APIError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid address length\n",
+			},
+		},
+		{
+			name:  "invalid addr character",
+			addrs: []string{"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947"},
+			err: gui.APIError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid base58 character\n",
+			},
+		},
+		{
+			name:  "invalid checksum",
+			addrs: []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk"},
+			err: gui.APIError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid checksum\n",
+			},
+		},
+		{
+			name:       "empty addrs",
+			addrs:      []string{},
+			goldenFile: "./emptyAddrsUnconfirmedTxs.golden",
+		},
+	}
+
+	c := gui.NewClient(nodeAddress())
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			txResult, err := c.UnconfirmedTransactions(tc.addrs)
+			if err != nil {
+				require.Equal(t, tc.err, err, "case: "+tc.name)
+				return
+			}
+
+			var expected *[]visor.TransactionResult
+			loadJSON(t, tc.goldenFile, &TestData{txResult, &expected})
+			require.Equal(t, expected, txResult, "case: "+tc.name)
+		})
+	}
+}
+
+func TestLiveUnconfirmedTransactions(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+	c := gui.NewClient(nodeAddress())
+
+	cTxsSingle, err := c.UnconfirmedTransactions([]string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"})
+	require.NoError(t, err)
+	require.True(t, len(*cTxsSingle) >= 0)
+
+	cTxsAll, err := c.UnconfirmedTransactions([]string{})
+	require.NoError(t, err)
+	require.True(t, len(*cTxsAll) >= 0)
+	require.True(t, len(*cTxsAll) >= len(*cTxsSingle))
+}
+
+func TestStableResendUnconfirmedTransactions(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+	c := gui.NewClient(nodeAddress())
+	res, err := c.ResendUnconfirmedTransactions()
+	require.NoError(t, err)
+	require.True(t, len(res.Txids) == 0)
+}
+
+func TestLiveResendUnconfirmedTransactions(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+	c := gui.NewClient(nodeAddress())
+	_, err := c.ResendUnconfirmedTransactions()
+	require.NoError(t, err)
+}
+
+func TestStableRawTransaction(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	tt := []struct {
+		name  string
+		txId  string
+		err   gui.APIError
+		rawTx string
+	}{
+		{
+			name: "invalid hex length",
+			txId: "abcd",
+			err: gui.APIError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - Invalid hex length\n",
+			},
+		},
+		{
+			name: "not found",
+			txId: "701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947",
+			err: gui.APIError{
+				Status:     "404 Not Found",
+				StatusCode: http.StatusNotFound,
+				Message:    "404 Not Found\n",
+			},
+		},
+		{
+			name: "odd length hex string",
+			txId: "abcdeffedca",
+			err: gui.APIError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - encoding/hex: odd length hex string\n",
+			},
+		},
+		{
+			name:  "OK",
+			txId:  "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add",
+			rawTx: "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000f8f9c644772dc5373d85e11094e438df707a42c900407a10f35a000000407a10f35a0000",
+		},
+	}
+
+	c := gui.NewClient(nodeAddress())
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			txResult, err := c.RawTransaction(tc.txId)
+			if err != nil {
+				require.Equal(t, tc.err, err, "case: "+tc.name)
+				return
+			}
+			require.Equal(t, tc.rawTx, txResult, "case: "+tc.name)
+		})
+	}
+}
+
+func TestLiveRawTransaction(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	tt := []struct {
+		name  string
+		txId  string
+		err   gui.APIError
+		rawTx string
+	}{
+		{
+			name: "invalid hex length",
+			txId: "abcd",
+			err: gui.APIError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - Invalid hex length\n",
+			},
+		},
+		{
+			name: "odd length hex string",
+			txId: "abcdeffedca",
+			err: gui.APIError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - encoding/hex: odd length hex string\n",
+			},
+		},
+		{
+			name:  "OK - genesis tx",
+			txId:  "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add",
+			rawTx: "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000f8f9c644772dc5373d85e11094e438df707a42c900407a10f35a000000407a10f35a0000",
+		},
+		{
+			name:  "OK",
+			txId:  "701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947",
+			rawTx: "dc00000000f8293dbfdddcc56a97664655ceee650715d35a0dda32a9f0ce0e2e99d4899124010000003981061c7275ae9cc936e902a5367fdd87ef779bbdb31e1e10d325d17a129abb34f6e597ceeaf67bb051774b41c58276004f6a63cb81de61d4693bc7a5536f320001000000fe6762d753d626115c8dd3a053b5fb75d6d419a8d0fb1478c5fffc1fe41c5f2002000000003be2537f8c0893fddcddc878518f38ea493d949e008988068d0000002739570000000000009037ff169fbec6db95e2537e4ff79396c050aeeb00e40b54020000002739570000000000",
+		},
+	}
+
+	c := gui.NewClient(nodeAddress())
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			txResult, err := c.RawTransaction(tc.txId)
+			if err != nil {
+				require.Equal(t, tc.err, err, "case: "+tc.name)
+				return
+			}
+			require.Equal(t, tc.rawTx, txResult, "case: "+tc.name)
+		})
+	}
+}

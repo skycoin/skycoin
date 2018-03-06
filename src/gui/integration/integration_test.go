@@ -1725,3 +1725,30 @@ func TestLiveRichlist(t *testing.T) {
 
 	require.Len(t, richlist.Richlist, 150)
 }
+
+func TestStableAddressCount(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	count, err := c.AddressCount()
+	require.NoError(t, err)
+
+	require.Equal(t, uint64(155), count)
+}
+
+func TestLiveAddressCount(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	count, err := c.AddressCount()
+	require.NoError(t, err)
+
+	// 5296 addresses as of 2018-03-06, the count could decrease but is unlikely to
+	require.True(t, count > 5000)
+}

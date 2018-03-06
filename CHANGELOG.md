@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - CLI and GUI integration tests against a stable and live blockchain
 - HTTP API client
 - `/richlist` API method, returns top n address balances
-- `/addresscoint` API method, returns the number of addresses that have any amount of coins
+- `/addresscount` API method, returns the number of addresses that have any amount of coins
 - #951, cap cli createRawTransaction and send command coinhour distribution, coinhours are capped to a maximum of receiving coins for the address with a minimum of 1 coinhour
 - #896, Add CSRF check to wallet api
 - #800, Add entropy parameter to `/wallet/newSeed` endpoint

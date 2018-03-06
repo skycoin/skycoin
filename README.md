@@ -37,6 +37,7 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
 - [Contributing a node to the network](#contributing-a-node-to-the-network)
 - [Development](#development)
     - [Modules](#modules)
+    - [Client libraries](#client-libraries)
     - [Running Tests](#running-tests)
     - [Formatting](#formatting)
     - [Code Linting](#code-linting)

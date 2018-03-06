@@ -19,27 +19,14 @@
 # [[override]]
 #  name = "github.com/x/y"
 #  version = "2.4.0"
-
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/anacrolix/envpprof"
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/anacrolix/missinggo"
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/anacrolix/utp"
+[prune]
+  unused-packages = true
+  go-tests = true
+  non-go = true
 
 [[constraint]]
   name = "github.com/boltdb/bolt"
   version = "1.0.0"
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/bradfitz/iter"
 
 [[constraint]]
   name = "github.com/op/go-logging"

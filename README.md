@@ -193,8 +193,6 @@ If you change the dependencies, you should update them as needed with `dep ensur
 
 Use `dep help` for instructions on vendoring a specific version of a dependency, or updating them.
 
-After adding a new dependency (with `dep ensure`), run `dep prune` to remove any unnecessary subpackages from the dependency.
-
 When updating or initializing, `dep` will find the latest version of a dependency that will compile.
 
 Examples:
@@ -203,28 +201,24 @@ Initialize all dependencies:
 
 ```sh
 dep init
-dep prune
 ```
 
 Update all dependencies:
 
 ```sh
 dep ensure -update -v
-dep prune
 ```
 
 Add a single dependency (latest version):
 
 ```sh
 dep ensure github.com/foo/bar
-dep prune
 ```
 
 Add a single dependency (more specific version), or downgrade an existing dependency:
 
 ```sh
 dep ensure github.com/foo/bar@tag
-dep prune
 ```
 
 ### Wallet GUI Development

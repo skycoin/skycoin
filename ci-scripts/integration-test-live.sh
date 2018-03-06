@@ -12,11 +12,13 @@ HOST="http://127.0.0.1:$PORT"
 RPC_ADDR="127.0.0.1:$RPC_PORT"
 MODE="live"
 TEST=""
+UPDATE=""
 
 usage () {
   echo "Usage: $SCRIPT"
   echo "Optional command line arguments"
   echo "-t <string>  -- Test to run, gui or cli; empty runs both tests"
+  echo "-u <boolean> -- Update stable testdata"
   exit 1
 }
 
@@ -26,6 +28,7 @@ case $args in
         usage;
         exit;;
     t ) TEST=${OPTARG};;
+    u ) UPDATE="--update";;
   esac
 done
 
@@ -42,12 +45,12 @@ fi
 
 if [[ -z $TEST || $TEST = "gui" ]]; then
 
-SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST go test ./src/gui/integration/... -timeout=3m -v
+SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST go test ./src/gui/integration/... $UPDATE -timeout=3m -v
 
 fi
 
 if [[ -z $TEST || $TEST = "cli" ]]; then
 
-SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR go test ./src/api/cli/integration/... -timeout=3m -v
+SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR go test ./src/api/cli/integration/... $UPDATE -timeout=3m -v
 
 fi

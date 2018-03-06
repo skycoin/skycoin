@@ -212,6 +212,10 @@ func getTransactionsForAddress(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
+type Richlist struct {
+	Richlist visor.Richlist `json:"richlist"`
+}
+
 // method: GET
 // url: /richlist?n=${number}&include-distribution=${bool}
 func getRichlist(gateway Gatewayer) http.HandlerFunc {
@@ -223,15 +227,17 @@ func getRichlist(gateway Gatewayer) http.HandlerFunc {
 
 		var topn int
 		topnStr := r.FormValue("n")
-		if topnStr == "" {
-			topn = 20
-		} else {
+		if topnStr != "" {
 			var err error
 			topn, err = strconv.Atoi(topnStr)
 			if err != nil {
 				wh.Error400(w, "invalid n")
 				return
 			}
+		}
+
+		if topn == 0 {
+			topn = 20
 		}
 
 		var includeDistribution bool
@@ -258,7 +264,9 @@ func getRichlist(gateway Gatewayer) http.HandlerFunc {
 			richlist = richlist[:topn]
 		}
 
-		wh.SendOr404(w, richlist)
+		wh.SendOr404(w, Richlist{
+			Richlist: richlist,
+		})
 	}
 }
 

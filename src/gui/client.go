@@ -635,13 +635,28 @@ func (c *Client) AddressTransactions(addr string) ([]ReadableTransaction, error)
 	return b, nil
 }
 
+// RichlistParams are arguments to the /richlist endpoint
+type RichlistParams struct {
+	N                   int
+	IncludeDistribution bool
+}
+
 // Richlist makes a request to /richlist
-func (c *Client) Richlist() (visor.Richlist, error) {
-	var r visor.Richlist
-	if err := c.Get("/richlist", &r); err != nil {
+func (c *Client) Richlist(params *RichlistParams) (*Richlist, error) {
+	endpoint := "/richlist"
+
+	if params != nil {
+		v := url.Values{}
+		v.Add("n", fmt.Sprint(params.N))
+		v.Add("include-distribution", fmt.Sprint(params.IncludeDistribution))
+		endpoint = "/richlist?" + v.Encode()
+	}
+
+	var r Richlist
+	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}
-	return r, nil
+	return &r, nil
 }
 
 // AddressCount makes a request to /addresscount

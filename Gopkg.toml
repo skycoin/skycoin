@@ -22,7 +22,6 @@
 [prune]
   unused-packages = true
   go-tests = true
-  non-go = true
 
 [[constraint]]
   name = "github.com/boltdb/bolt"

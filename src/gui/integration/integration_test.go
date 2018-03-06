@@ -1562,3 +1562,89 @@ func TestWalletNewSeed(t *testing.T) {
 		})
 	}
 }
+
+type addressTransactionsTestCase struct {
+	name    string
+	address string
+	golden  string
+	errCode int
+	errMsg  string
+}
+
+func TestStableAddressTransactions(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	cases := []addressTransactionsTestCase{
+		{
+			name:    "address with transactions",
+			address: "ALJVNKYL7WGxFBSriiZuwZKWD4b7fbV1od",
+			golden:  "address-transactions-ALJVNKYL7WGxFBSriiZuwZKWD4b7fbV1od.golden",
+		},
+		{
+			name:    "address without transactions",
+			address: "2b8ourW8fbTkC1yQBSLseVt6srhXvNMHvn9",
+			golden:  "address-transactions-2b8ourW8fbTkC1yQBSLseVt6srhXvNMHvn9.golden",
+		},
+		{
+			name:    "invalid address",
+			address: "prRXwTcDK24hs6AFxj",
+			errCode: http.StatusBadRequest,
+			errMsg:  "400 Bad Request - invalid address\n",
+		},
+	}
+
+	testAddressTransactions(t, cases)
+}
+
+func TestLiveAddressTransactions(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	cases := []addressTransactionsTestCase{
+		{
+			name: "address with transactions",
+			// This is the first distribution address which has spent all of its coins
+			// It's transactions list should not change, unless someone sends coins to it
+			address: "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
+			golden:  "address-transactions-R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ.golden",
+		},
+		{
+			name: "address without transactions",
+			// This is a randomly generated address, never used
+			// It should never see new transactions
+			// (if it ever does, somebody managed to generate this address for use and there is a serious bug)
+			address: "2RRpfMDmPHEyG4LWmNYT6eWj5VcmUfCJY6D",
+			golden:  "address-transactions-2RRpfMDmPHEyG4LWmNYT6eWj5VcmUfCJY6D.golden",
+		},
+		{
+			name:    "invalid address",
+			address: "prRXwTcDK24hs6AFxj",
+			errCode: http.StatusBadRequest,
+			errMsg:  "400 Bad Request - invalid address\n",
+		},
+	}
+
+	testAddressTransactions(t, cases)
+}
+
+func testAddressTransactions(t *testing.T, cases []addressTransactionsTestCase) {
+	c := gui.NewClient(nodeAddress())
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			txns, err := c.AddressTransactions(tc.address)
+			if tc.errMsg != "" {
+				assertResponseError(t, err, tc.errCode, tc.errMsg)
+				return
+			}
+
+			require.NoError(t, err)
+
+			var expected []gui.ReadableTransaction
+			loadGoldenFile(t, tc.golden, TestData{txns, &expected})
+			require.Equal(t, expected, txns)
+		})
+	}
+}

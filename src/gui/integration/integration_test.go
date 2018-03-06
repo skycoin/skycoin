@@ -1663,12 +1663,35 @@ func TestStableRichlist(t *testing.T) {
 	loadGoldenFile(t, "richlist-default.golden", TestData{richlist, &expected})
 	require.Equal(t, expected, *richlist)
 
-	richlist2, err := c.Richlist(&gui.RichlistParams{
+	richlist, err = c.Richlist(&gui.RichlistParams{
 		N:                   0,
 		IncludeDistribution: false,
 	})
 	require.NoError(t, err)
-	require.Equal(t, richlist, richlist2)
+
+	expected = gui.Richlist{}
+	loadGoldenFile(t, "richlist-all.golden", TestData{richlist, &expected})
+	require.Equal(t, expected, *richlist)
+
+	richlist, err = c.Richlist(&gui.RichlistParams{
+		N:                   0,
+		IncludeDistribution: true,
+	})
+	require.NoError(t, err)
+
+	expected = gui.Richlist{}
+	loadGoldenFile(t, "richlist-all-include-distribution.golden", TestData{richlist, &expected})
+	require.Equal(t, expected, *richlist)
+
+	richlist, err = c.Richlist(&gui.RichlistParams{
+		N:                   8,
+		IncludeDistribution: false,
+	})
+	require.NoError(t, err)
+
+	expected = gui.Richlist{}
+	loadGoldenFile(t, "richlist-8.golden", TestData{richlist, &expected})
+	require.Equal(t, expected, *richlist)
 
 	richlist, err = c.Richlist(&gui.RichlistParams{
 		N:                   150,

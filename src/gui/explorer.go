@@ -212,6 +212,7 @@ func getTransactionsForAddress(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
+// Richlist is the API response for /richlist, contains top address balances
 type Richlist struct {
 	Richlist visor.Richlist `json:"richlist"`
 }
@@ -227,17 +228,15 @@ func getRichlist(gateway Gatewayer) http.HandlerFunc {
 
 		var topn int
 		topnStr := r.FormValue("n")
-		if topnStr != "" {
+		if topnStr == "" {
+			topn = 0
+		} else {
 			var err error
 			topn, err = strconv.Atoi(topnStr)
 			if err != nil {
 				wh.Error400(w, "invalid n")
 				return
 			}
-		}
-
-		if topn == 0 {
-			topn = 20
 		}
 
 		var includeDistribution bool

@@ -15,17 +15,17 @@ import (
 
 func requireFileMode(t *testing.T, filename string, mode os.FileMode) {
 	stat, err := os.Stat(filename)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, stat.Mode(), mode)
 }
 
 func requireFileContentsBinary(t *testing.T, filename string, contents []byte) {
 	f, err := os.Open(filename)
 	defer f.Close()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	b := make([]byte, len(contents)*16)
 	n, err := f.Read(b)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	require.Equal(t, n, len(contents))
 	require.True(t, bytes.Equal(b[:n], contents))
@@ -37,13 +37,13 @@ func requireFileContents(t *testing.T, filename, contents string) {
 
 func requireFileExists(t *testing.T, filename string) {
 	stat, err := os.Stat(filename)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.True(t, stat.Mode().IsRegular())
 }
 
 func requireFileNotExists(t *testing.T, filename string) {
 	_, err := os.Stat(filename)
-	require.NotNil(t, err)
+	require.Error(t, err)
 	require.True(t, os.IsNotExist(err))
 }
 
@@ -53,7 +53,7 @@ func cleanup(fn string) {
 	os.Remove(fn + ".bak")
 }
 
-func TestBuildDataDir(t *testing.T) {
+func TestBuildDataDirDotOk(t *testing.T) {
 	dir := "./.test-skycoin/test"
 	builtDir, err := buildDataDir(dir)
 	require.NoError(t, err)
@@ -96,7 +96,7 @@ func TestBuildDataDirDefault(t *testing.T) {
 	home := UserHome()
 	defaultDir := filepath.Join(home, ".skycoin")
 	dir, err := buildDataDir(defaultDir)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	expectedPath := filepath.Join(home, ".skycoin")
 	require.Equal(t, dir, expectedPath)
 }
@@ -109,17 +109,17 @@ func TestLoadJSON(t *testing.T) {
 	// Loading nonexistant file
 	requireFileNotExists(t, fn)
 	err := LoadJSON(fn, &obj)
-	require.NotNil(t, err)
+	require.Error(t, err)
 	require.True(t, os.IsNotExist(err))
 
 	f, err := os.Create(fn)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	_, err = f.WriteString("{\"key\":\"value\"}")
-	require.Nil(t, err)
+	require.NoError(t, err)
 	f.Close()
 
 	err = LoadJSON(fn, &obj)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, obj.Key, "value")
 }
 
@@ -131,10 +131,10 @@ func TestSaveJSON(t *testing.T) {
 	}{Key: "value"}
 
 	b, err := json.MarshalIndent(obj, "", "    ")
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	err = SaveJSON(fn, obj, 0644)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	requireFileExists(t, fn)
 	requireFileNotExists(t, fn+".bak")
@@ -144,9 +144,9 @@ func TestSaveJSON(t *testing.T) {
 	// Saving again should result in a .bak file same as original
 	obj.Key = "value2"
 	err = SaveJSON(fn, obj, 0644)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	b2, err := json.MarshalIndent(obj, "", "    ")
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	requireFileMode(t, fn, 0644)
 	requireFileExists(t, fn)
@@ -163,9 +163,9 @@ func TestSaveJSONSafe(t *testing.T) {
 		Key string `json:"key"`
 	}{Key: "value"}
 	err := SaveJSONSafe(fn, obj, 0600)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	b, err := json.MarshalIndent(obj, "", "    ")
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	requireFileExists(t, fn)
 	requireFileMode(t, fn, 0600)
@@ -174,7 +174,7 @@ func TestSaveJSONSafe(t *testing.T) {
 	// Saving again should result in error, and original file not changed
 	obj.Key = "value2"
 	err = SaveJSONSafe(fn, obj, 0600)
-	require.NotNil(t, err)
+	require.Error(t, err)
 
 	requireFileExists(t, fn)
 	requireFileContents(t, fn, string(b))
@@ -188,7 +188,7 @@ func TestSaveBinary(t *testing.T) {
 	b := make([]byte, 128)
 	rand.Read(b)
 	err := SaveBinary(fn, b, 0644)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	requireFileNotExists(t, fn+".tmp")
 	requireFileNotExists(t, fn+".bak")
 	requireFileExists(t, fn)

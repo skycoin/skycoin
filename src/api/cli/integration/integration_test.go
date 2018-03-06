@@ -39,7 +39,7 @@ const (
 
 	testFixturesDir = "test-fixtures"
 
-	stableWalletName = "integration_test.wlt"
+	stableWalletName = "integration-test.wlt"
 )
 
 var (
@@ -269,7 +269,7 @@ func TestStableGenerateAddresses(t *testing.T) {
 		{
 			"generateAddresses -n 2 -j",
 			[]string{"generateAddresses", "-n", "2", "-j"},
-			[]byte("{\n    \"addresses\": [\n        \"2EDapDfn1VC6P2hx4nTH2cRUkboGAE16evV\",\n        \"hLLcizfJomBKJrUeHrHTWKZMNdqwb69WVb\"\n    ]\n}\n"),
+			[]byte("{\n    \"addresses\": [\n        \"7g3M372kxwNwwQEAmrronu4anXTW8aD1XC\",\n        \"2EDapDfn1VC6P2hx4nTH2cRUkboGAE16evV\"\n    ]\n}\n"),
 			"generate-addresses-2.golden",
 		},
 		{
@@ -852,7 +852,7 @@ func TestStableAddressOutputs(t *testing.T) {
 		{
 			"addressOutputs two address",
 			[]string{"addressOutputs", "2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt", "ejJjiCwp86ykmFr5iTJ8LxQXJ2wJPTYmkm"},
-			"two-address-outputs.golden",
+			"two-addresses-outputs.golden",
 		},
 	}
 
@@ -1152,13 +1152,8 @@ func TestStableBlocks(t *testing.T) {
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&blocks)
 	require.NoError(t, err)
 
-	goldenFile := filepath.Join(testFixturesDir, "blocks180.golden")
-	if *update {
-		writeJSON(t, goldenFile, blocks)
-	}
-
 	var expect visor.ReadableBlocks
-	loadJSON(t, goldenFile, &expect)
+	loadGoldenFile(t, "blocks180.golden", TestData{blocks, &expect})
 	require.Equal(t, expect, blocks)
 }
 
@@ -1190,12 +1185,12 @@ func testKnownBlocks(t *testing.T) {
 		{
 			"blocks 0",
 			[]string{"blocks", "0"},
-			filepath.Join(testFixturesDir, "block0.golden"),
+			"block0.golden",
 		},
 		{
 			"blocks 0 5",
 			[]string{"blocks", "0", "5"},
-			filepath.Join(testFixturesDir, "blocks0~5.golden"),
+			"blocks0-5.golden",
 		},
 	}
 
@@ -1208,12 +1203,8 @@ func testKnownBlocks(t *testing.T) {
 			err = json.NewDecoder(bytes.NewReader(output)).Decode(&blocks)
 			require.NoError(t, err)
 
-			if *update {
-				writeJSON(t, tc.goldenFile, blocks)
-			}
-
 			var expect visor.ReadableBlocks
-			loadJSON(t, tc.goldenFile, &expect)
+			loadGoldenFile(t, tc.goldenFile, TestData{blocks, &expect})
 			require.Equal(t, expect, blocks)
 		})
 	}
@@ -1251,17 +1242,17 @@ func TestStableLastBlocks(t *testing.T) {
 		{
 			name:       "lastBlocks 0",
 			args:       []string{"lastBlocks", "0"},
-			goldenFile: filepath.Join(testFixturesDir, "lastBlocks0.golden"),
+			goldenFile: "lastBlocks0.golden",
 		},
 		{
 			name:       "lastBlocks 1",
 			args:       []string{"lastBlocks", "1"},
-			goldenFile: filepath.Join(testFixturesDir, "lastBlocks1.golden"),
+			goldenFile: "lastBlocks1.golden",
 		},
 		{
 			name:       "lastBlocks 2",
 			args:       []string{"lastBlocks", "2"},
-			goldenFile: filepath.Join(testFixturesDir, "lastBlocks2.golden"),
+			goldenFile: "lastBlocks2.golden",
 		},
 	}
 
@@ -1281,12 +1272,8 @@ func TestStableLastBlocks(t *testing.T) {
 			err = json.NewDecoder(bytes.NewReader(output)).Decode(&blocks)
 			require.NoError(t, err)
 
-			if *update {
-				writeJSON(t, tc.goldenFile, blocks)
-			}
-
 			var expect visor.ReadableBlocks
-			loadJSON(t, tc.goldenFile, &expect)
+			loadGoldenFile(t, tc.goldenFile, TestData{blocks, &expect})
 			require.Equal(t, expect, blocks)
 		})
 	}

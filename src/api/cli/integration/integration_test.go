@@ -1313,3 +1313,31 @@ func TestLiveLastBlocks(t *testing.T) {
 		})
 	}
 }
+
+func TestStableWalletDir(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	walletPath, clean := createTempWalletFile(t)
+	defer clean()
+
+	dir := filepath.Dir(walletPath)
+	output, err := exec.Command(binaryPath, "walletDir").CombinedOutput()
+	require.NoError(t, err)
+	require.Equal(t, dir, strings.TrimRight(string(output), "\n"))
+}
+
+func TestLiveWalletDir(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	doLiveEnvCheck(t)
+
+	walletDir := os.Getenv("WALLET_DIR")
+	output, err := exec.Command(binaryPath, "walletDir").CombinedOutput()
+	require.NoError(t, err)
+
+	require.Equal(t, walletDir, strings.Trim(string(output), "\n"))
+}

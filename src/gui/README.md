@@ -1253,28 +1253,30 @@ curl "http://127.0.0.1:6420/richlist?n=4&include-distribution=true"
 result:
 
 ```json
-[
-    {
-        "address": "zMDywYdGEDtTSvWnCyc3qsYHWwj9ogws74",
-        "coins": "1000000.000000",
-        "locked": true
-    },
-    {
-        "address": "z6CJZfYLvmd41GRVE8HASjRcy5hqbpHZvE",
-        "coins": "1000000.000000",
-        "locked": true
-    },
-    {
-        "address": "wyQVmno9aBJZmQ99nDSLoYWwp7YDJCWsrH",
-        "coins": "1000000.000000",
-        "locked": true
-    },
-    {
-        "address": "tBaeg9zE2sgmw5ZQENaPPYd6jfwpVpGTzS",
-        "coins": "1000000.000000",
-        "locked": true
-    }
-]
+{
+    "richlist": [
+        {
+            "address": "zMDywYdGEDtTSvWnCyc3qsYHWwj9ogws74",
+            "coins": "1000000.000000",
+            "locked": true
+        },
+        {
+            "address": "z6CJZfYLvmd41GRVE8HASjRcy5hqbpHZvE",
+            "coins": "1000000.000000",
+            "locked": true
+        },
+        {
+            "address": "wyQVmno9aBJZmQ99nDSLoYWwp7YDJCWsrH",
+            "coins": "1000000.000000",
+            "locked": true
+        },
+        {
+            "address": "tBaeg9zE2sgmw5ZQENaPPYd6jfwpVpGTzS",
+            "coins": "1000000.000000",
+            "locked": true
+        }
+    ]
+}
 ```
 
 ## AddressCount show count of unique address

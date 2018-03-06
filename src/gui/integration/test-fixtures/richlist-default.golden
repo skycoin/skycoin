@@ -1,0 +1,279 @@
+{
+	"richlist": [
+		{
+			"address": "2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt",
+			"coins": "63083.000000",
+			"locked": false
+		},
+		{
+			"address": "LzniV6G4nVVvRBNo7NcCUvAz1Tzo5MajqZ",
+			"coins": "38105.000000",
+			"locked": false
+		},
+		{
+			"address": "2fGC7kwAM9yZyEF1QqBqp8uo9RUsF6ENGJF",
+			"coins": "27045.000000",
+			"locked": false
+		},
+		{
+			"address": "bNQHMc2nM8x2fssmyUp6QWY1ow6LzB7kZz",
+			"coins": "27000.000000",
+			"locked": false
+		},
+		{
+			"address": "2JJ8pgq8EDAnrzf9xxBJapE2qkYLefW4uF8",
+			"coins": "26400.000000",
+			"locked": false
+		},
+		{
+			"address": "qxmeHkwgAMfwXyaQrwv9jq3qt228xMuoT5",
+			"coins": "22100.000000",
+			"locked": false
+		},
+		{
+			"address": "wLhHnBXzdhzFcuWRmfLCG5DTnPVEtHdhzB",
+			"coins": "22000.000000",
+			"locked": false
+		},
+		{
+			"address": "G5XZCdcjcnKqPkeLjZShMz112avsgSo8EW",
+			"coins": "21500.000000",
+			"locked": false
+		},
+		{
+			"address": "wYRMGKCkEpWD3v9Pz3Lqvk3u5HJpp4YaGK",
+			"coins": "18000.000000",
+			"locked": false
+		},
+		{
+			"address": "2hVtXZWjGWsTfrV1Tj4KLaxCfiAoBzqw1Vw",
+			"coins": "14600.000000",
+			"locked": false
+		},
+		{
+			"address": "2j7twMgd2kfeU2Jww37cWH7GY79hX73MSVs",
+			"coins": "12000.000000",
+			"locked": false
+		},
+		{
+			"address": "8MQsjc5HYbSjPTZikFZYeHHDtLungBEHYS",
+			"coins": "10100.000000",
+			"locked": false
+		},
+		{
+			"address": "sKr6GJwXTBcvG1P3qdrwnd4UgtrrgDa4jU",
+			"coins": "10060.000000",
+			"locked": false
+		},
+		{
+			"address": "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6",
+			"coins": "10000.000000",
+			"locked": false
+		},
+		{
+			"address": "2J3rWX7pciQwmvcATSnxEeCHRs1mSkWmt4L",
+			"coins": "6700.000000",
+			"locked": false
+		},
+		{
+			"address": "v7Bma8dYdBMx7RQ2NohXXDUo7eR5TWBscF",
+			"coins": "5100.000000",
+			"locked": false
+		},
+		{
+			"address": "NGLS4CYvBdV9HXJDpeY8jrdQDqLeBvfAwc",
+			"coins": "4955.000000",
+			"locked": false
+		},
+		{
+			"address": "2iwB1VmUWbCoVd4gNstB9LKctw3htFhVmuV",
+			"coins": "3400.000000",
+			"locked": false
+		},
+		{
+			"address": "Vq7DUM8vGL81QS8S4SXBNTBvLHpkLf9Eaj",
+			"coins": "3100.000000",
+			"locked": false
+		},
+		{
+			"address": "2ZZHJVrHvkSrUL4bDpjaqnfq6oHYzbgxghD",
+			"coins": "3000.000000",
+			"locked": false
+		},
+		{
+			"address": "2iJPqYVuQvFoG1pim4bjoyxWK8uwGmznWaV",
+			"coins": "3000.000000",
+			"locked": false
+		},
+		{
+			"address": "3iEkvqSQCNrm8tMVf5ABAx2Bp6EGL9wyMP",
+			"coins": "3000.000000",
+			"locked": false
+		},
+		{
+			"address": "vdLGAnCfbBkxabcVk6tEsa6RH99JTxdzbt",
+			"coins": "3000.000000",
+			"locked": false
+		},
+		{
+			"address": "22WGCstVJGVyqnBuvGHt17L5aNNMpURvckd",
+			"coins": "2000.000000",
+			"locked": false
+		},
+		{
+			"address": "PCAtFnGVujpALXB1Gqb9CEMRMVXfVGu6iM",
+			"coins": "2000.000000",
+			"locked": false
+		},
+		{
+			"address": "XnKU1htBL5wFSMX8oytZBsBMeaBSbVNivT",
+			"coins": "2000.000000",
+			"locked": false
+		},
+		{
+			"address": "pMub1Pz3SLVaSwHoomgp5oDVxdkVxLkW6L",
+			"coins": "2000.000000",
+			"locked": false
+		},
+		{
+			"address": "tG8F6fuw3KEUStpa85EFQDMHVw9piTzZ2g",
+			"coins": "2000.000000",
+			"locked": false
+		},
+		{
+			"address": "2jNYhHCuqQtU8kKkLf8ZZmKj6fywTL7fw2e",
+			"coins": "1500.000000",
+			"locked": false
+		},
+		{
+			"address": "YLT4buWf3kYDV9QddnC5iXTj881Eniuvrx",
+			"coins": "1290.000000",
+			"locked": false
+		},
+		{
+			"address": "2acnXsnJ2k8jxiUahtBe8h4xouPAnpbwwjc",
+			"coins": "1100.000000",
+			"locked": false
+		},
+		{
+			"address": "VD98Qt2f2UeUbUKcCJEaKxqEewExgCyiVh",
+			"coins": "1100.000000",
+			"locked": false
+		},
+		{
+			"address": "sV8sVBgs11uHQtZK5MPbYem2iJ6Hehghv7",
+			"coins": "1100.000000",
+			"locked": false
+		},
+		{
+			"address": "9vNYwzpjSgw4dRyTc7SAP4z9Jh8bhwURnu",
+			"coins": "1010.000000",
+			"locked": false
+		},
+		{
+			"address": "ZWhZtjwXMS46cpDxfRwQyxxKPhqwsQu8oN",
+			"coins": "1002.000000",
+			"locked": false
+		},
+		{
+			"address": "212mwY3Dmey6vwnWpiph99zzCmopXTqeVEN",
+			"coins": "1000.000000",
+			"locked": false
+		},
+		{
+			"address": "22Piwuzo8ZfoXfpMghhbzGz3ptmTeiDhLbg",
+			"coins": "1000.000000",
+			"locked": false
+		},
+		{
+			"address": "2H7mA88ireMKHqP9LYWK5opnU176v7eYqrn",
+			"coins": "1000.000000",
+			"locked": false
+		},
+		{
+			"address": "2LZzgdFYNhsBBSLATkV6PA1zk6DvWNghP2",
+			"coins": "1000.000000",
+			"locked": false
+		},
+		{
+			"address": "2U1B6EE5ZCXWJJSyEndouuCk434xpvYqYDF",
+			"coins": "1000.000000",
+			"locked": false
+		},
+		{
+			"address": "4EHiTjCsxQmt4wRy5yJxBMcxsM5yGqtuqu",
+			"coins": "1000.000000",
+			"locked": false
+		},
+		{
+			"address": "CDD8GoJUHEvBm1pD3BQ3hEC2KcJNhvUzpu",
+			"coins": "1000.000000",
+			"locked": false
+		},
+		{
+			"address": "FtdApqw416skWtXM7ExanZWFmiHNPZ1Ft6",
+			"coins": "1000.000000",
+			"locked": false
+		},
+		{
+			"address": "2kN23viEG7Kn3Utuwz9voM4Z8ohLR9Y8L2v",
+			"coins": "500.000000",
+			"locked": false
+		},
+		{
+			"address": "WADSeEwEQVbtUy8CfcVimyxX1KjTRkvfoK",
+			"coins": "110.000000",
+			"locked": false
+		},
+		{
+			"address": "2A2YC8kxWnUDbscpzZ6UPfNAmx5ddKBeYNs",
+			"coins": "100.000000",
+			"locked": false
+		},
+		{
+			"address": "aPF9pL9sVEiyEVhynp3s1dmqLetP1BJrW6",
+			"coins": "100.000000",
+			"locked": false
+		},
+		{
+			"address": "bFTFUB3zdwZcwWQTewXZnVS7UykkTb7zqa",
+			"coins": "100.000000",
+			"locked": false
+		},
+		{
+			"address": "38cVLswijqC2ANV5HxTroeapQzqeoBR88C",
+			"coins": "12.000000",
+			"locked": false
+		},
+		{
+			"address": "odhAMxHhXoBdx1RHNmfu7dTZ1LZivfsbiH",
+			"coins": "10.000000",
+			"locked": false
+		},
+		{
+			"address": "2apVG7f24ezDK13yCDTqBWYrTZpuj94KnCN",
+			"coins": "5.000000",
+			"locked": false
+		},
+		{
+			"address": "j6pa8kdKqHbxRm2VXJVbzigQDFzqTVfvfq",
+			"coins": "5.000000",
+			"locked": false
+		},
+		{
+			"address": "Kb9SqqTVA3XyQjZYb4wYrBVUeZWRKEQyzZ",
+			"coins": "3.000000",
+			"locked": false
+		},
+		{
+			"address": "PRXLNyB64cqaiG4pCoFZZ8Tuv7LWYPpa7m",
+			"coins": "3.000000",
+			"locked": false
+		},
+		{
+			"address": "2bvEzLx4mgyQkYL5bkSc2rD9V1nqWBqn8vp",
+			"coins": "2.000000",
+			"locked": false
+		}
+	]
+}

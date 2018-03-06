@@ -15,7 +15,7 @@ type RichlistBalance struct {
 	coins   uint64
 }
 
-// Richlist sorts address balances
+// Richlist contains RichlistBalances
 type Richlist []RichlistBalance
 
 // NewRichlist create Richlist via unspent outputs map

@@ -970,10 +970,10 @@ func TestNetworkDefaultConnections(t *testing.T) {
 	connections, err := c.NetworkDefaultConnections()
 	require.NoError(t, err)
 	require.NotEmpty(t, connections)
+	sort.Strings(connections)
 
 	var expected []string
 	loadGoldenFile(t, "network-default-connections.golden", TestData{connections, &expected})
-	sort.Strings(connections)
 	sort.Strings(expected)
 	require.Equal(t, expected, connections)
 }
@@ -987,10 +987,10 @@ func TestNetworkTrustedConnections(t *testing.T) {
 	connections, err := c.NetworkTrustedConnections()
 	require.NoError(t, err)
 	require.NotEmpty(t, connections)
+	sort.Strings(connections)
 
 	var expected []string
 	loadGoldenFile(t, "network-trusted-connections.golden", TestData{connections, &expected})
-	sort.Strings(connections)
 	sort.Strings(expected)
 	require.Equal(t, expected, connections)
 }
@@ -1647,4 +1647,81 @@ func testAddressTransactions(t *testing.T, cases []addressTransactionsTestCase) 
 			require.Equal(t, expected, txns)
 		})
 	}
+}
+
+func TestStableRichlist(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	richlist, err := c.Richlist(nil)
+	require.NoError(t, err)
+
+	var expected gui.Richlist
+	loadGoldenFile(t, "richlist-default.golden", TestData{richlist, &expected})
+	require.Equal(t, expected, *richlist)
+
+	richlist, err = c.Richlist(&gui.RichlistParams{
+		N:                   0,
+		IncludeDistribution: false,
+	})
+	require.NoError(t, err)
+
+	expected = gui.Richlist{}
+	loadGoldenFile(t, "richlist-all.golden", TestData{richlist, &expected})
+	require.Equal(t, expected, *richlist)
+
+	richlist, err = c.Richlist(&gui.RichlistParams{
+		N:                   0,
+		IncludeDistribution: true,
+	})
+	require.NoError(t, err)
+
+	expected = gui.Richlist{}
+	loadGoldenFile(t, "richlist-all-include-distribution.golden", TestData{richlist, &expected})
+	require.Equal(t, expected, *richlist)
+
+	richlist, err = c.Richlist(&gui.RichlistParams{
+		N:                   8,
+		IncludeDistribution: false,
+	})
+	require.NoError(t, err)
+
+	expected = gui.Richlist{}
+	loadGoldenFile(t, "richlist-8.golden", TestData{richlist, &expected})
+	require.Equal(t, expected, *richlist)
+
+	richlist, err = c.Richlist(&gui.RichlistParams{
+		N:                   150,
+		IncludeDistribution: true,
+	})
+	require.NoError(t, err)
+
+	expected = gui.Richlist{}
+	loadGoldenFile(t, "richlist-150-include-distribution.golden", TestData{richlist, &expected})
+	require.Equal(t, expected, *richlist)
+}
+
+func TestLiveRichlist(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	richlist, err := c.Richlist(nil)
+	require.NoError(t, err)
+
+	require.NotEmpty(t, richlist.Richlist)
+	require.Len(t, richlist.Richlist, 20)
+
+	richlist, err = c.Richlist(&gui.RichlistParams{
+		N:                   150,
+		IncludeDistribution: true,
+	})
+	require.NoError(t, err)
+
+	require.Len(t, richlist.Richlist, 150)
 }

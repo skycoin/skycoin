@@ -101,6 +101,13 @@ func TestBuildDataDirDefault(t *testing.T) {
 	require.Equal(t, dir, expectedPath)
 }
 
+func TestBuildDataDirAbsolute(t *testing.T) {
+	abspath := "/opt/.skycoin"
+	dir, err := buildDataDir(abspath)
+	require.NoError(t, err)
+	require.Equal(t, abspath, dir)
+}
+
 func TestLoadJSON(t *testing.T) {
 	obj := struct{ Key string }{}
 	fn := "test.json"

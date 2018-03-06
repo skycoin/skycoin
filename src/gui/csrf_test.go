@@ -73,7 +73,6 @@ var endpoints = []string{
 	"/network/connections/trust",
 	"/network/connections/exchange",
 	"/pendingTxs",
-	"/lastTxs",
 	"/transaction",
 	"/transactions",
 	"/injectTransaction",

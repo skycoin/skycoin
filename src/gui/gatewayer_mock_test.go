@@ -414,33 +414,6 @@ func (m *GatewayerMock) GetLastBlocks(p0 uint64) (*visor.ReadableBlocks, error) 
 
 }
 
-// GetLastTxs mocked method
-func (m *GatewayerMock) GetLastTxs() ([]*visor.Transaction, error) {
-
-	ret := m.Called()
-
-	var r0 []*visor.Transaction
-	switch res := ret.Get(0).(type) {
-	case nil:
-	case []*visor.Transaction:
-		r0 = res
-	default:
-		panic(fmt.Sprintf("unexpected type: %v", res))
-	}
-
-	var r1 error
-	switch res := ret.Get(1).(type) {
-	case nil:
-	case error:
-		r1 = res
-	default:
-		panic(fmt.Sprintf("unexpected type: %v", res))
-	}
-
-	return r0, r1
-
-}
-
 // GetRichlist mocked method
 func (m *GatewayerMock) GetRichlist(p0 bool) (visor.Richlist, error) {
 

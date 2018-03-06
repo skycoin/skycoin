@@ -244,8 +244,6 @@ func NewServerMux(host, appLoc string, gateway Gatewayer, csrfStore *CSRFStore) 
 
 	// get set of pending transactions
 	webHandler("/pendingTxs", getPendingTxs(gateway))
-	// get latest confirmed transactions
-	webHandler("/lastTxs", getLastTxs(gateway))
 	// get txn by txid
 	webHandler("/transaction", getTransactionByID(gateway))
 

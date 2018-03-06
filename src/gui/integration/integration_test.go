@@ -1752,3 +1752,26 @@ func TestLiveAddressCount(t *testing.T) {
 	// 5296 addresses as of 2018-03-06, the count could decrease but is unlikely to
 	require.True(t, count > 5000)
 }
+
+func TestStablePendingTransactions(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	txns, err := c.PendingTransactions()
+	require.NoError(t, err)
+	require.Empty(t, txns)
+}
+
+func TestLivePendingTransactions(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	_, err := c.PendingTransactions()
+	require.NoError(t, err)
+}

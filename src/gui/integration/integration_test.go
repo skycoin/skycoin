@@ -1554,6 +1554,11 @@ func TestWalletNewSeed(t *testing.T) {
 
 			// no extra whitespace on the seed
 			require.Equal(t, seed, strings.TrimSpace(seed))
+
+			// should generate a different seed each time
+			seed2, err := c.NewSeed(tc.entropy)
+			require.NoError(t, err)
+			require.NotEqual(t, seed, seed2)
 		})
 	}
 }

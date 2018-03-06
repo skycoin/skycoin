@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -1025,7 +1026,7 @@ func TestLiveTransaction(t *testing.T) {
 		return
 	}
 
-	tt := []struct {
+	cases := []struct {
 		name       string
 		txId       string
 		err        gui.APIError
@@ -1057,7 +1058,7 @@ func TestLiveTransaction(t *testing.T) {
 	}
 
 	c := gui.NewClient(nodeAddress())
-	for _, tc := range tt {
+	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			tx, err := c.Transaction(tc.txId)
 			if err != nil {
@@ -1076,7 +1077,7 @@ func TestStableTransaction(t *testing.T) {
 		return
 	}
 
-	tt := []struct {
+	cases := []struct {
 		name       string
 		txId       string
 		err        gui.APIError
@@ -1120,7 +1121,7 @@ func TestStableTransaction(t *testing.T) {
 	}
 
 	c := gui.NewClient(nodeAddress())
-	for _, tc := range tt {
+	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			tx, err := c.Transaction(tc.txId)
 			if err != nil {
@@ -1154,7 +1155,7 @@ func TestStableTransactions(t *testing.T) {
 		return
 	}
 
-	tt := []struct {
+	cases := []struct {
 		name       string
 		addrs      []string
 		err        gui.APIError
@@ -1205,7 +1206,7 @@ func TestStableTransactions(t *testing.T) {
 	}
 
 	c := gui.NewClient(nodeAddress())
-	for _, tc := range tt {
+	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			txResult, err := c.Transactions(tc.addrs)
 			if err != nil {
@@ -1240,7 +1241,7 @@ func TestStableConfirmedTransactions(t *testing.T) {
 	if !doStable(t) {
 		return
 	}
-	tt := []struct {
+	cases := []struct {
 		name       string
 		addrs      []string
 		err        gui.APIError
@@ -1286,7 +1287,7 @@ func TestStableConfirmedTransactions(t *testing.T) {
 	}
 
 	c := gui.NewClient(nodeAddress())
-	for _, tc := range tt {
+	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			txResult, err := c.ConfirmedTransactions(tc.addrs)
 			if err != nil {
@@ -1305,7 +1306,7 @@ func TestStableUnconfirmedTransactions(t *testing.T) {
 	if !doStable(t) {
 		return
 	}
-	tt := []struct {
+	cases := []struct {
 		name       string
 		addrs      []string
 		err        gui.APIError
@@ -1346,7 +1347,7 @@ func TestStableUnconfirmedTransactions(t *testing.T) {
 	}
 
 	c := gui.NewClient(nodeAddress())
-	for _, tc := range tt {
+	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			txResult, err := c.UnconfirmedTransactions(tc.addrs)
 			if err != nil {
@@ -1401,7 +1402,7 @@ func TestStableRawTransaction(t *testing.T) {
 		return
 	}
 
-	tt := []struct {
+	cases := []struct {
 		name  string
 		txId  string
 		err   gui.APIError
@@ -1442,7 +1443,7 @@ func TestStableRawTransaction(t *testing.T) {
 	}
 
 	c := gui.NewClient(nodeAddress())
-	for _, tc := range tt {
+	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			txResult, err := c.RawTransaction(tc.txId)
 			if err != nil {
@@ -1459,7 +1460,7 @@ func TestLiveRawTransaction(t *testing.T) {
 		return
 	}
 
-	tt := []struct {
+	cases := []struct {
 		name  string
 		txId  string
 		err   gui.APIError
@@ -1496,7 +1497,7 @@ func TestLiveRawTransaction(t *testing.T) {
 	}
 
 	c := gui.NewClient(nodeAddress())
-	for _, tc := range tt {
+	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			txResult, err := c.RawTransaction(tc.txId)
 			if err != nil {
@@ -1504,6 +1505,55 @@ func TestLiveRawTransaction(t *testing.T) {
 				return
 			}
 			require.Equal(t, tc.rawTx, txResult, "case: "+tc.name)
+		})
+	}
+}
+
+func TestWalletNewSeed(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+
+	cases := []struct {
+		name     string
+		entropy  int
+		numWords int
+		errCode  int
+		errMsg   string
+	}{
+		{
+			name:     "entropy 128",
+			entropy:  128,
+			numWords: 12,
+		},
+		{
+			name:     "entropy 256",
+			entropy:  256,
+			numWords: 24,
+		},
+		{
+			name:    "entropy 100",
+			entropy: 100,
+			errCode: http.StatusBadRequest,
+			errMsg:  "400 Bad Request - entropy length must be 128 or 256\n",
+		},
+	}
+
+	c := gui.NewClient(nodeAddress())
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			seed, err := c.NewSeed(tc.entropy)
+			if tc.errMsg != "" {
+				assertResponseError(t, err, tc.errCode, tc.errMsg)
+				return
+			}
+
+			require.NoError(t, err)
+			words := strings.Split(seed, " ")
+			require.Len(t, words, tc.numWords)
+
+			// no extra whitespace on the seed
+			require.Equal(t, seed, strings.TrimSpace(seed))
 		})
 	}
 }

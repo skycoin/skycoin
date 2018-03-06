@@ -31,9 +31,12 @@ type Service struct {
 }
 
 // NewService new wallet service
-func NewService(walletDir string) (*Service, error) {
+func NewService(walletDir string, disabledWalletAPI bool) (*Service, error) {
 	serv := &Service{
 		firstAddrIDMap: make(map[string]string),
+	}
+	if disabledWalletAPI {
+		return serv, nil
 	}
 	if err := os.MkdirAll(walletDir, os.FileMode(0700)); err != nil {
 		return nil, fmt.Errorf("failed to create wallet directory %s: %v", walletDir, err)

@@ -537,6 +537,7 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Visor.Config.DBPath = c.DBPath
 	dc.Visor.Config.DBReadOnly = c.DBReadOnly
 	dc.Visor.Config.Arbitrating = c.Arbitrating
+	dc.Visor.Config.DisabledWalletAPI = c.DisableWalletApi
 	dc.Visor.Config.WalletDirectory = c.WalletDirectory
 	dc.Visor.Config.BuildInfo = visor.BuildInfo{
 		Version: Version,

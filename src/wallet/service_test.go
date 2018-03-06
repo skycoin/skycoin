@@ -77,7 +77,7 @@ func (mb mockBalanceGetter) GetBalanceOfAddrs(addrs []cipher.Address) ([]Balance
 
 func TestNewService(t *testing.T) {
 	dir := prepareWltDir()
-	s, err := NewService(dir)
+	s, err := NewService(dir, false)
 	require.NoError(t, err)
 
 	// check if the wallet dir is created
@@ -98,7 +98,7 @@ func TestNewService(t *testing.T) {
 	}
 
 	// test load wallets
-	s, err = NewService("./testdata")
+	s, err = NewService("./testdata", false)
 	require.NoError(t, err)
 
 	// check if the dup wallet is loaded
@@ -114,7 +114,7 @@ func TestNewService(t *testing.T) {
 func TestServiceCreateWallet(t *testing.T) {
 	dir := prepareWltDir()
 
-	s, err := NewService(dir)
+	s, err := NewService(dir, false)
 	require.NoError(t, err)
 
 	wltName := "t1.wlt"
@@ -269,7 +269,7 @@ func TestServiceCreateAndScanWallet(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := prepareWltDir()
 
-			s, err := NewService(dir)
+			s, err := NewService(dir, false)
 			require.NoError(t, err)
 
 			wltName := "t1.wlt"
@@ -294,7 +294,7 @@ func TestServiceCreateAndScanWallet(t *testing.T) {
 
 func TestServiceNewAddress(t *testing.T) {
 	dir := prepareWltDir()
-	s, err := NewService(dir)
+	s, err := NewService(dir, false)
 	require.NoError(t, err)
 
 	// get the default wallet id
@@ -317,7 +317,7 @@ func TestServiceNewAddress(t *testing.T) {
 
 func TestServiceGetAddress(t *testing.T) {
 	dir := prepareWltDir()
-	s, err := NewService(dir)
+	s, err := NewService(dir, false)
 	require.NoError(t, err)
 
 	var id string
@@ -338,7 +338,7 @@ func TestServiceGetAddress(t *testing.T) {
 func TestServiceGetWallet(t *testing.T) {
 	dir := prepareWltDir()
 
-	s, err := NewService(dir)
+	s, err := NewService(dir, false)
 	require.NoError(t, err)
 
 	var id string
@@ -361,7 +361,7 @@ func TestServiceGetWallet(t *testing.T) {
 func TestServiceReloadWallets(t *testing.T) {
 	dir := prepareWltDir()
 
-	s, err := NewService(dir)
+	s, err := NewService(dir, false)
 	require.NoError(t, err)
 
 	var defaultWltID string
@@ -422,7 +422,7 @@ func (dug dummyUnspentGetter) Get(uxid cipher.SHA256) (coin.UxOut, bool) {
 func TestServiceCreateAndSignTx(t *testing.T) {
 	dir := prepareWltDir()
 
-	s, err := NewService(dir)
+	s, err := NewService(dir, false)
 	require.NoError(t, err)
 	var id string
 	for id = range s.wallets {

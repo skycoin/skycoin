@@ -466,16 +466,6 @@ func (gw *Gateway) GetUnconfirmedTxns(addrs []cipher.Address) []visor.Unconfirme
 	return txns
 }
 
-// GetLastTxs returns last confirmed transactions, return nil if empty
-func (gw *Gateway) GetLastTxs() ([]*visor.Transaction, error) {
-	var txns []*visor.Transaction
-	var err error
-	gw.strand("GetLastTxs", func() {
-		txns, err = gw.v.GetLastTxs()
-	})
-	return txns, err
-}
-
 // GetUnspent returns the unspent pool
 func (gw *Gateway) GetUnspent() blockdb.UnspentPool {
 	var unspent blockdb.UnspentPool

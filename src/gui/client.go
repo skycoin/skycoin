@@ -525,15 +525,6 @@ func (c *Client) PendingTransactions() ([]*visor.ReadableUnconfirmedTxn, error) 
 	return v, nil
 }
 
-// LastTransactions makes a request to /lastTxs
-func (c *Client) LastTransactions() ([]visor.TransactionResult, error) {
-	var r []visor.TransactionResult
-	if err := c.Get("/lastTxs", &r); err != nil {
-		return nil, err
-	}
-	return r, nil
-}
-
 // Transaction makes a request to /transaction
 func (c *Client) Transaction(txid string) (*visor.ReadableTransaction, error) {
 	v := url.Values{}

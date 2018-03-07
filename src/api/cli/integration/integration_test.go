@@ -1242,17 +1242,17 @@ func TestStableLastBlocks(t *testing.T) {
 		{
 			name:       "lastBlocks 0",
 			args:       []string{"lastBlocks", "0"},
-			goldenFile: "lastBlocks0.golden",
+			goldenFile: "last-blocks0.golden",
 		},
 		{
 			name:       "lastBlocks 1",
 			args:       []string{"lastBlocks", "1"},
-			goldenFile: "lastBlocks1.golden",
+			goldenFile: "last-blocks1.golden",
 		},
 		{
 			name:       "lastBlocks 2",
 			args:       []string{"lastBlocks", "2"},
-			goldenFile: "lastBlocks2.golden",
+			goldenFile: "last-blocks2.golden",
 		},
 	}
 

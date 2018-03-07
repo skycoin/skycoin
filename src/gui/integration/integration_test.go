@@ -957,7 +957,7 @@ func TestLiveNetworkConnections(t *testing.T) {
 		require.Equal(t, cc.Introduced, connection.Introduced)
 		require.Equal(t, cc.Outgoing, connection.Outgoing)
 		require.True(t, cc.LastReceived <= connection.LastReceived)
-		require.True(t, cc.LastSent <= connection.LastReceived)
+		require.True(t, cc.LastSent <= connection.LastSent)
 	}
 }
 

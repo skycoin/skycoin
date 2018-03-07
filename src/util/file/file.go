@@ -61,23 +61,22 @@ func buildDataDir(dir string) (string, error) {
 		return "", ErrEmptyDirectoryName
 	}
 
-	if filepath.IsAbs(dir) {
-		return filepath.Clean(dir), nil
+	home := filepath.Clean(UserHome())
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", err
 	}
+	wd = filepath.Clean(wd)
 
-	home := UserHome()
-	if home == "" {
-		logger.Warning("Failed to get home directory, using ./")
-		home = "./"
-	} else {
-		home = filepath.Clean(home)
+	fullDir, err := filepath.Abs(dir)
+
+	if err != nil {
+		return "", err
 	}
-
-	fullDir := filepath.Join(home, dir)
-	fullDir = filepath.Clean(fullDir)
 
 	// The joined directory must not be equal to $HOME or a parent path of $HOME
-	if strings.HasPrefix(home, fullDir) {
+	// The joined directory must not be equal to `pwd` or a parent path of `pwd`
+	if strings.HasPrefix(home, fullDir) || strings.HasPrefix(wd, fullDir) {
 		logger.Error("join(%[1]s, %[2]s) == %[1]s", home, dir)
 		return "", ErrDotDirectoryName
 	}

@@ -18,11 +18,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HTTP API client
 - `/richlist` API method, returns top n address balances
 - `/addresscount` API method, returns the number of addresses that have any amount of coins
-- #800, Add entropy parameter to `/wallet/newSeed` endpoint. Entropy can be 128 (default) or 256, corresponding to 12- and 24-word seeds respectively
-- Add `total_coinhour_supply` and `current_coinhour_supply` to `/coinSupply` endpoint
-- #866, Include coins and hours in `/explorer/address` inputs
-- #885, Add `Host` header check to localhost HTTP interfaces to prevent DNS rebinding attacks
-- #896, Add CSRF check to wallet API
 
 ### Fixed
 
@@ -30,11 +25,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Prevent creating transactions whose size exceeds the maximum block size
 - Check addition and multiplication uint64 overflow
 - Keep trusted peers in the peerlist permanently, even if they are unreachable
+- #885, Add `Host` header check to localhost HTTP interfaces to prevent DNS rebinding attacks
+- #896, Add CSRF check to wallet API
 
 ### Changed
 
 - #951, cap cli createRawTransaction and send command coinhour distribution, coinhours are capped to a maximum of receiving coins for the address with a minimum of 1 coinhour
 - Upgrade to Angular 5
+- Add `total_coinhour_supply` and `current_coinhour_supply` to `/coinSupply` endpoint
+- #800, Add entropy parameter to `/wallet/newSeed` endpoint. Entropy can be 128 (default) or 256, corresponding to 12- and 24-word seeds respectively
+- #866, Include coins and hours in `/explorer/address` inputs
 
 ### Removed
 

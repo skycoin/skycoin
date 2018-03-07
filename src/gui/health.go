@@ -1,9 +1,10 @@
 package gui
 
 import (
+	"net/http"
+
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/visor"
-	"net/http"
 )
 
 const Version = "0.21.1"

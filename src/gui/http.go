@@ -233,7 +233,6 @@ func NewServerMux(host, appLoc string, gateway Gatewayer, csrfStore *CSRFStore) 
 	webHandler("/last_blocks", getLastBlocks(gateway))
 
 	// Network stats interface
-
 	webHandler("/network/connection", connectionHandler(gateway))
 	webHandler("/network/connections", connectionsHandler(gateway))
 	webHandler("/network/defaultConnections", defaultConnectionsHandler(gateway))
@@ -246,6 +245,9 @@ func NewServerMux(host, appLoc string, gateway Gatewayer, csrfStore *CSRFStore) 
 	webHandler("/pendingTxs", getPendingTxs(gateway))
 	// get txn by txid
 	webHandler("/transaction", getTransactionByID(gateway))
+
+	// Health check handler
+	webHandler("/health", healthCheck(gateway))
 
 	// Returns transactions that match the filters.
 	// Method: GET

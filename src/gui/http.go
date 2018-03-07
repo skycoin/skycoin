@@ -33,7 +33,7 @@ const (
 
 // Server exposes an HTTP API
 type Server struct {
-	*http.Server
+	server   *http.Server
 	mux      *http.ServeMux
 	listener net.Listener
 	done     chan struct{}
@@ -70,11 +70,10 @@ func create(host string, serverConfig ServerConfig, daemon *daemon.Daemon) (*Ser
 	}
 
 	server := &Server{
-		done: make(chan struct{}),
+		server: srv,
+		mux:    srvMux,
+		done:   make(chan struct{}),
 	}
-
-	server.mux = srvMux
-	server.Server = srv
 
 	return server, nil
 }
@@ -127,7 +126,7 @@ func (s *Server) Serve() error {
 	defer logger.Info("Web interface closed")
 	defer close(s.done)
 
-	if err := s.Serve(s.listener); err != nil {
+	if err := s.server.Serve(s.listener); err != nil {
 		if err != http.ErrServerClosed {
 			return err
 		}

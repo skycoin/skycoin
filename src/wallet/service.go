@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
+	"github.com/skycoin/skycoin/src/cipher/go-bip39"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 )
@@ -24,18 +24,19 @@ type BalanceGetter interface {
 // Service wallet service struct
 type Service struct {
 	sync.RWMutex
-	wallets        Wallets
-	firstAddrIDMap map[string]string // key: first address in wallet, value: wallet id
-
-	WalletDirectory string
+	wallets          Wallets
+	firstAddrIDMap   map[string]string // key: first address in wallet, value: wallet id
+	DisableWalletAPI bool
+	WalletDirectory  string
 }
 
 // NewService new wallet service
-func NewService(walletDir string, disabledWalletAPI bool) (*Service, error) {
+func NewService(walletDir string, disableWalletAPI bool) (*Service, error) {
 	serv := &Service{
-		firstAddrIDMap: make(map[string]string),
+		DisableWalletAPI: disableWalletAPI,
+		firstAddrIDMap:   make(map[string]string),
 	}
-	if disabledWalletAPI {
+	if serv.DisableWalletAPI {
 		return serv, nil
 	}
 	if err := os.MkdirAll(walletDir, os.FileMode(0700)); err != nil {
@@ -78,7 +79,9 @@ func NewService(walletDir string, disabledWalletAPI bool) (*Service, error) {
 func (serv *Service) CreateWallet(wltName string, options Options) (Wallet, error) {
 	serv.Lock()
 	defer serv.Unlock()
-
+	if serv.DisableWalletAPI {
+		return Wallet{}, ErrWalletApiDisabled
+	}
 	if wltName == "" {
 		wltName = serv.generateUniqueWalletFilename()
 	}

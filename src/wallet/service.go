@@ -226,6 +226,9 @@ func (serv *Service) GetWallets() Wallets {
 func (serv *Service) ReloadWallets() error {
 	serv.Lock()
 	defer serv.Unlock()
+	if serv.DisableWalletAPI {
+		return ErrWalletApiDisabled
+	}
 	wallets, err := LoadWallets(serv.WalletDirectory)
 	if err != nil {
 		return err

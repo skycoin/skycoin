@@ -3,6 +3,7 @@ package wallet
 import (
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -25,6 +26,14 @@ func prepareWltDir() string {
 	}
 
 	return dir
+}
+
+func dirIsEmpty(t *testing.T, dir string) {
+	f, err := os.Open(dir)
+	require.NoError(t, err)
+	names, err := f.Readdirnames(1)
+	require.Equal(t, io.EOF, err)
+	require.Empty(t, names)
 }
 
 type mockBalanceGetter map[cipher.Address]BalancePair
@@ -79,6 +88,7 @@ func TestNewServiceDisabledWalletAPI(t *testing.T) {
 	dir := prepareWltDir()
 	s, err := NewService(dir, true)
 	require.NoError(t, err)
+	dirIsEmpty(t, dir)
 
 	// check if the wallet dir is created
 	_, err = os.Stat(dir)
@@ -128,16 +138,17 @@ func TestNewService(t *testing.T) {
 
 func TestServiceCreateWalletDisabledWalletAPI(t *testing.T) {
 	dir := prepareWltDir()
-
 	s, err := NewService(dir, true)
 	require.NoError(t, err)
+	dirIsEmpty(t, dir)
 
 	wltName := "t1.wlt"
 	seed := "seed1"
 	_, err = s.CreateWallet(wltName, Options{
 		Seed: seed,
 	})
-	require.Equal(t, err, ErrWalletApiDisabled)
+	dirIsEmpty(t, dir)
+	require.Equal(t, ErrWalletApiDisabled, err)
 }
 
 func TestServiceCreateWallet(t *testing.T) {
@@ -176,8 +187,11 @@ func TestServiceCreateWallet(t *testing.T) {
 
 func TestServiceScanWalletDisabledWalletAPI(t *testing.T) {
 	bg := make(mockBalanceGetter, len(addrsOfSeed1))
+	dir := prepareWltDir()
+	s, err := NewService(dir, true)
+	require.NoError(t, err)
+	dirIsEmpty(t, dir)
 
-	s, err := NewService("", true)
 	wallet, err := s.ScanAheadWalletAddresses("wltName", 1, bg)
 	require.Equal(t, err, errors.New("wallet doesn't exist"))
 	require.Equal(t, wallet, Wallet{})
@@ -334,6 +348,7 @@ func TestServiceNewAddressDisabledWalletAPI(t *testing.T) {
 	dir := prepareWltDir()
 	s, err := NewService(dir, true)
 	require.NoError(t, err)
+	dirIsEmpty(t, dir)
 
 	// get the default wallet id
 	var id string
@@ -341,8 +356,9 @@ func TestServiceNewAddressDisabledWalletAPI(t *testing.T) {
 		break
 	}
 	require.Equal(t, id, "")
+	require.Empty(t, s.wallets)
 	addrs, err := s.NewAddresses(id, 1)
-	require.Equal(t, err, errors.New("wallet doesn't exist"))
+	require.Equal(t, ErrWalletNotExist, err)
 	require.Equal(t, 0, len(addrs))
 }
 
@@ -373,15 +389,16 @@ func TestServiceGetAddressDisabledWalletAPI(t *testing.T) {
 	dir := prepareWltDir()
 	s, err := NewService(dir, true)
 	require.NoError(t, err)
+	dirIsEmpty(t, dir)
 
 	var id string
 	for id = range s.wallets {
 		break
 	}
 	require.Equal(t, id, "")
-
+	require.Empty(t, s.wallets)
 	addrs, err := s.GetAddresses(id)
-	require.Equal(t, err, errors.New("wallet doesn't exist"))
+	require.Equal(t, ErrWalletNotExist, err)
 	require.Equal(t, 0, len(addrs))
 }
 
@@ -410,14 +427,16 @@ func TestServiceGetWalletDisabledWalletAPI(t *testing.T) {
 
 	s, err := NewService(dir, true)
 	require.NoError(t, err)
+	dirIsEmpty(t, dir)
 
 	var id string
 	for id = range s.wallets {
 		break
 	}
 	require.Equal(t, id, "")
+	require.Empty(t, s.wallets)
 	w, err := s.GetWallet(id)
-	require.Equal(t, err, errors.New("wallet doesn't exist"))
+	require.Equal(t, ErrWalletNotExist, err)
 	require.Equal(t, w, Wallet{})
 }
 
@@ -448,8 +467,11 @@ func TestServiceReloadWalletsDisabledWalletAPI(t *testing.T) {
 	dir := prepareWltDir()
 
 	s, err := NewService(dir, true)
+	require.NoError(t, err)
+	dirIsEmpty(t, dir)
+
 	err = s.ReloadWallets()
-	require.Equal(t, err.Error(), "open : no such file or directory")
+	require.Equal(t, ErrWalletApiDisabled, err)
 }
 
 func TestServiceReloadWallets(t *testing.T) {

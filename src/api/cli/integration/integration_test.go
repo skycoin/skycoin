@@ -228,6 +228,21 @@ func doLiveEnvCheck(t *testing.T) {
 	}
 }
 
+//  getWalletPathFromEnv gets wallet file path from environment variables
+func getWalletPathFromEnv(t *testing.T) (string, string) {
+	walletDir := os.Getenv("WALLET_DIR")
+	if walletDir == "" {
+		t.Fatal("missing WALLET_DIR environment value")
+	}
+
+	walletName := os.Getenv("WALLET_NAME")
+	if walletName == "" {
+		t.Fatal("missing WALLET_NAME environment value")
+	}
+
+	return walletDir, walletName
+}
+
 func doLiveOrStable(t *testing.T) bool {
 	if enabled() {
 		switch mode(t) {
@@ -1340,4 +1355,129 @@ func TestLiveWalletDir(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, walletDir, strings.Trim(string(output), "\n"))
+}
+
+// TestLiveSend sends coin from specific wallet file, user should manually specify the
+// wallet file by setting the enviroment variables: WALLET_DIR and WALLET_NAME. The WALLET_DIR
+// points to the directory of the wallet, and WALLET_NAME represents the wallet file name.
+//
+// Note:
+// 1. This test might modify the wallet file, in order to avoid losing coins, we don't send coins to
+// addresses that are not belong to the wallet, when addresses in the wallet are not sufficient, we
+// will automatically generate enough addresses as coin recipient.
+// 2. The wallet should have at least 0.1 skycoin and sufficient coinhours in the first address, it's for the -a flag testing,
+// which is used to specify from address.
+func TestLiveSend(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	w := prepareWallet(t)
+	tt := []struct {
+		name string
+		args func() []string
+	}{
+		{
+			"send to one address",
+			func() []string {
+				return []string{"send", w.Entries[1].Address.String(), "0.1"}
+			},
+		},
+		{
+			"send to multiple address",
+			func() []string {
+				addrCoins := []struct {
+					Addr  string `json:"addr"`
+					Coins string `json:"coins"`
+				}{
+					{
+						w.Entries[1].Address.String(),
+						"0.05",
+					},
+					{
+						w.Entries[2].Address.String(),
+						"0.05",
+					},
+				}
+
+				v, err := json.Marshal(addrCoins)
+				require.NoError(t, err)
+
+				return []string{"send", "-m", string(v)}
+			},
+		},
+		{
+			"send with -c(change address) flag",
+			func() []string {
+				// Set the third address as change address
+				return []string{"send", "-c", w.Entries[2].Address.String(), w.Entries[1].Address.String(), "0.1"}
+			},
+		},
+		{
+			"send with -a(from address) flag",
+			func() []string {
+				// Set the third address as change address
+				return []string{"send", "-a", w.Entries[0].Address.String(), w.Entries[1].Address.String(), "0.1"}
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			output, err := exec.Command(binaryPath, tc.args()...).CombinedOutput()
+			require.NoError(t, err)
+			output = bytes.TrimRight(output, "\n")
+
+			// output: "txid:$txid_string"
+			// split the output to get txid value
+			v := bytes.Split(output, []byte(":"))
+			require.Len(t, v, 2)
+			txid := string(v[1])
+			_, err = cipher.SHA256FromHex(txid)
+			require.NoError(t, err)
+
+			// Wait untill transaction is confirmed.
+			for {
+				time.Sleep(time.Second)
+				if isTxConfirmed(t, txid) {
+					return
+				}
+			}
+		})
+	}
+}
+
+func isTxConfirmed(t *testing.T, txid string) bool {
+	output, err := exec.Command(binaryPath, "transaction", txid).CombinedOutput()
+	require.NoError(t, err)
+
+	var tx webrpc.TxnResult
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&tx)
+	require.NoError(t, err)
+
+	return tx.Transaction.Status.Confirmed
+}
+
+// prepareWallet prepares wallet for live testing.
+func prepareWallet(t *testing.T) *wallet.Wallet {
+	walletDir, walletName := getWalletPathFromEnv(t)
+	walletPath := filepath.Join(walletDir, walletName)
+	// Checks if the wallet does exist
+	if _, err := os.Stat(walletPath); os.IsNotExist(err) {
+		t.Fatalf("Wallet file: %v does not exist", walletPath)
+	}
+
+	// Loads the wallet
+	w, err := wallet.Load(walletPath)
+	require.NoError(t, err)
+
+	if len(w.Entries) < 3 {
+		// Generates addresses
+		_, err = w.GenerateAddresses(uint64(3 - len(w.Entries)))
+		require.NoError(t, err)
+	}
+
+	err = w.Save(walletDir)
+	require.NoError(t, err)
+	return w
 }

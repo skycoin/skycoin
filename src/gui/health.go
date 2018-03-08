@@ -28,13 +28,18 @@ func healthCheck(gateway Gatewayer) http.HandlerFunc {
 		connectionCount := len(gateway.GetConnections().Connections)
 		metadata := gateway.GetBlockchainMetadata()
 
-		resp := HealthResponse{
+		resp := &HealthResponse{
 			BlockChainMetadata:  metadata,
 			VersionData:         Version,
 			UnconfirmedTxCount:  txnCount,
 			OpenConnectionCount: connectionCount,
 		}
 
-		wh.SendOr404(w, &resp)
+		if resp == nil {
+			wh.Error404(w)
+			return
+		}
+
+		wh.SendJSONOr500(logger, w, resp)
 	}
 }

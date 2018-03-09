@@ -1595,7 +1595,22 @@ func TestStableAddressTransactions(t *testing.T) {
 		},
 	}
 
-	testAddressTransactions(t, cases)
+	c := gui.NewClient(nodeAddress())
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			txns, err := c.AddressTransactions(tc.address)
+			if tc.errMsg != "" {
+				assertResponseError(t, err, tc.errCode, tc.errMsg)
+				return
+			}
+
+			require.NoError(t, err)
+
+			var expected []gui.ReadableTransaction
+			loadGoldenFile(t, tc.golden, TestData{txns, &expected})
+			require.Equal(t, expected, txns)
+		})
+	}
 }
 
 func TestLiveAddressTransactions(t *testing.T) {
@@ -1627,11 +1642,10 @@ func TestLiveAddressTransactions(t *testing.T) {
 		},
 	}
 
-	testAddressTransactions(t, cases)
-}
-
-func testAddressTransactions(t *testing.T, cases []addressTransactionsTestCase) {
 	c := gui.NewClient(nodeAddress())
+	// Get current blockchain height
+	bp, err := c.BlockchainProgress()
+	require.NoError(t, err)
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			txns, err := c.AddressTransactions(tc.address)
@@ -1644,6 +1658,12 @@ func testAddressTransactions(t *testing.T, cases []addressTransactionsTestCase) 
 
 			var expected []gui.ReadableTransaction
 			loadGoldenFile(t, tc.golden, TestData{txns, &expected})
+
+			// Recaculate the height if it's live test
+			for i := range expected {
+				expected[i].Status.Height = bp.Current - expected[i].Status.BlockSeq + 1
+			}
+
 			require.Equal(t, expected, txns)
 		})
 	}

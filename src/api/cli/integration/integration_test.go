@@ -24,6 +24,7 @@ import (
 	"github.com/skycoin/skycoin/src/api/cli"
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -1365,23 +1366,27 @@ func TestLiveWalletDir(t *testing.T) {
 // 1. This test might modify the wallet file, in order to avoid losing coins, we don't send coins to
 // addresses that are not belong to the wallet, when addresses in the wallet are not sufficient, we
 // will automatically generate enough addresses as coin recipient.
-// 2. The wallet should have at least 0.1 skycoin and sufficient coinhours in the first address, it's for the -a flag testing,
-// which is used to specify from address.
+// 2. The wallet should have at least 2 skycoins in the wallet, and at least 0.5 coin in the first
+// address of the wallet.
 func TestLiveSend(t *testing.T) {
 	if !doLive(t) {
 		return
 	}
 
-	w := prepareWallet(t)
+	w := prepareAndCheckWallet(t, 4)
+
 	tt := []struct {
-		name string
-		args func() []string
+		name    string
+		args    func() []string
+		checkTx func(t *testing.T, txid string)
 	}{
 		{
-			"send to one address",
+			"send with -a(from address) flag",
 			func() []string {
-				return []string{"send", w.Entries[1].Address.String(), "0.1"}
+				// Set the third address as the receiver address
+				return []string{"send", "-a", w.Entries[0].Address.String(), w.Entries[1].Address.String(), "0.5"}
 			},
+			func(t *testing.T, txid string) {},
 		},
 		{
 			"send to multiple address",
@@ -1392,11 +1397,11 @@ func TestLiveSend(t *testing.T) {
 				}{
 					{
 						w.Entries[1].Address.String(),
-						"0.05",
+						"0.5",
 					},
 					{
 						w.Entries[2].Address.String(),
-						"0.05",
+						"0.5",
 					},
 				}
 
@@ -1405,26 +1410,50 @@ func TestLiveSend(t *testing.T) {
 
 				return []string{"send", "-m", string(v)}
 			},
+			func(t *testing.T, txid string) {
+				tx := getTransaction(t, txid)
+				// get the total input hours the transaction has.
+				_, hours := getUxoutCoinsAndHours(t, tx.Transaction.Transaction.In)
+				// Only when hours >= 4, the two recipient addresses could all receive 1 coinhours
+				if hours >= 4 {
+					// Confirms the second address has 0.5 coin and 1 coinhour
+					checkCoinsAndCoinhours(t, tx, w.Entries[1].Address.String(), "0.500000", 1)
+					// Confirms the third address has 1 coin and 1 coinhour
+					checkCoinsAndCoinhours(t, tx, w.Entries[2].Address.String(), "0.500000", 1)
+				}
+
+				// If the total input coin hours is <= 1, the two recipient addresses should receive no coinhours.
+				if hours <= 1 {
+					// Confirms the second address has 0.5 coin and 1 coinhour
+					checkCoinsAndCoinhours(t, tx, w.Entries[1].Address.String(), "0.500000", 0)
+					// Confirms the third address has 1 coin and 1 coinhour
+					checkCoinsAndCoinhours(t, tx, w.Entries[2].Address.String(), "0.500000", 0)
+				}
+			},
 		},
 		{
 			"send with -c(change address) flag",
 			func() []string {
 				// Set the third address as change address
-				return []string{"send", "-c", w.Entries[2].Address.String(), w.Entries[1].Address.String(), "0.1"}
+				return []string{"send", "-c", w.Entries[2].Address.String(), w.Entries[0].Address.String(), "1"}
 			},
+			func(t *testing.T, txid string) {},
 		},
 		{
-			"send with -a(from address) flag",
+			"send to one address",
 			func() []string {
-				// Set the third address as change address
-				return []string{"send", "-a", w.Entries[0].Address.String(), w.Entries[1].Address.String(), "0.1"}
+				return []string{"send", w.Entries[0].Address.String(), "2"}
 			},
+			func(t *testing.T, txid string) {},
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			output, err := exec.Command(binaryPath, tc.args()...).CombinedOutput()
+			if err != nil {
+				fmt.Println("result:", output)
+			}
 			require.NoError(t, err)
 			output = bytes.TrimRight(output, "\n")
 
@@ -1433,6 +1462,7 @@ func TestLiveSend(t *testing.T) {
 			v := bytes.Split(output, []byte(":"))
 			require.Len(t, v, 2)
 			txid := string(v[1])
+			fmt.Println("txid:", txid)
 			_, err = cipher.SHA256FromHex(txid)
 			require.NoError(t, err)
 
@@ -1440,14 +1470,15 @@ func TestLiveSend(t *testing.T) {
 			for {
 				time.Sleep(time.Second)
 				if isTxConfirmed(t, txid) {
-					return
+					break
 				}
 			}
+			tc.checkTx(t, txid)
 		})
 	}
 }
 
-func isTxConfirmed(t *testing.T, txid string) bool {
+func getTransaction(t *testing.T, txid string) *webrpc.TxnResult {
 	output, err := exec.Command(binaryPath, "transaction", txid).CombinedOutput()
 	require.NoError(t, err)
 
@@ -1455,11 +1486,33 @@ func isTxConfirmed(t *testing.T, txid string) bool {
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&tx)
 	require.NoError(t, err)
 
+	return &tx
+}
+
+func isTxConfirmed(t *testing.T, txid string) bool {
+	tx := getTransaction(t, txid)
 	return tx.Transaction.Status.Confirmed
 }
 
-// prepareWallet prepares wallet for live testing.
-func prepareWallet(t *testing.T) *wallet.Wallet {
+// checkCoinhours checks if the address coinhours in transaction are correct
+func checkCoinsAndCoinhours(t *testing.T, tx *webrpc.TxnResult, addr, coins string, coinhours uint64) {
+	addrCoinhoursMap := make(map[string]visor.ReadableTransactionOutput)
+	for _, o := range tx.Transaction.Transaction.Out {
+		addrCoinhoursMap[o.Address] = o
+	}
+
+	o, ok := addrCoinhoursMap[addr]
+	if !ok {
+		t.Fatalf("transaction doesn't have receiver of address: %v", addr)
+	}
+
+	require.Equal(t, coins, o.Coins)
+	require.Equal(t, coinhours, o.Hours)
+}
+
+// prepareAndCheckWallet prepares wallet for live testing.
+// confirms the wallet has at least 2 coins and 2^testCasesNum coinhours.
+func prepareAndCheckWallet(t *testing.T, testCasesNum int) *wallet.Wallet {
 	walletDir, walletName := getWalletPathFromEnv(t)
 	walletPath := filepath.Join(walletDir, walletName)
 	// Checks if the wallet does exist
@@ -1477,7 +1530,63 @@ func prepareWallet(t *testing.T) *wallet.Wallet {
 		require.NoError(t, err)
 	}
 
+	coins, hours := getWalletBalance(t, walletPath)
+	if coins < 2 {
+		t.Fatal("Wallet must have at least 2 coins")
+	}
+
+	miniCoinHours := uint64(1 << uint(testCasesNum))
+	if hours < miniCoinHours {
+		t.Fatalf("Wallet must have at least %d coinhours", miniCoinHours)
+	}
+
 	err = w.Save(walletDir)
 	require.NoError(t, err)
 	return w
+}
+
+// getWalletBalance returns wallet balance of specific wallet
+func getWalletBalance(t *testing.T, walletPath string) (uint64, uint64) {
+	output, err := exec.Command(binaryPath, "walletBalance", walletPath).CombinedOutput()
+	require.NoError(t, err)
+	var bal cli.BalanceResult
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&bal)
+	require.NoError(t, err)
+
+	coins, err := droplet.FromString(bal.Confirmed.Coins)
+	require.NoError(t, err)
+
+	hours, err := droplet.FromString(bal.Confirmed.Hours)
+	require.NoError(t, err)
+	return coins, hours
+}
+
+func getWalletOutputs(t *testing.T, walletPath string) visor.ReadableOutputs {
+	output, err := exec.Command(binaryPath, "walletOutputs", walletPath).CombinedOutput()
+	require.NoError(t, err)
+
+	var wltOutput webrpc.OutputsResult
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wltOutput)
+	require.NoError(t, err)
+
+	return wltOutput.Outputs.HeadOutputs
+}
+
+// get coins and hours in specific uxouts
+func getUxoutCoinsAndHours(t *testing.T, uxids []string) (uint64, uint64) {
+	args := append([]string{"uxouts"}, uxids...)
+	output, err := exec.Command(binaryPath, args...).CombinedOutput()
+	require.NoError(t, err)
+
+	var uxouts webrpc.UxoutsResult
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&uxouts)
+	require.NoError(t, err)
+
+	var coins, hours uint64
+	for _, uxout := range uxouts.UxOuts {
+		coins += uxout.Coins
+		hours += uxout.Hours
+	}
+
+	return coins, hours
 }

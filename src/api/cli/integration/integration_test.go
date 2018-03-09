@@ -1366,8 +1366,8 @@ func TestLiveWalletDir(t *testing.T) {
 // 1. This test might modify the wallet file, in order to avoid losing coins, we don't send coins to
 // addresses that are not belong to the wallet, when addresses in the wallet are not sufficient, we
 // will automatically generate enough addresses as coin recipient.
-// 2. The wallet should have at least 2 skycoins in the wallet, and at least 0.5 coin in the first
-// address of the wallet.
+// 2. The wallet should have at least 2 skycoins, and at least 0.5 coin in the first
+// address of the wallet for testing -a(from address) option.
 func TestLiveSend(t *testing.T) {
 	if !doLive(t) {
 		return

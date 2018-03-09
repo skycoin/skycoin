@@ -37,6 +37,7 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
 - [Contributing a node to the network](#contributing-a-node-to-the-network)
 - [Development](#development)
     - [Modules](#modules)
+    - [Client libraries](#client-libraries)
     - [Running Tests](#running-tests)
     - [Formatting](#formatting)
     - [Code Linting](#code-linting)
@@ -142,6 +143,13 @@ We have two branches: `master` and `develop`.
 * `/src/api/webrpc` - JSON-RPC 2.0 API
 * `/src/api/cli` - CLI library
 
+### Client libraries
+
+Skycoin implements client libraries which export core functionality for usage from
+other programming languages. Read the corresponding README file for further details.
+
+* `lib/cgo/` - libskycoin C client library ( [read more](lib/cgo/README.md) )
+
 ### Running Tests
 
 ```sh
@@ -186,8 +194,6 @@ If you change the dependencies, you should update them as needed with `dep ensur
 
 Use `dep help` for instructions on vendoring a specific version of a dependency, or updating them.
 
-After adding a new dependency (with `dep ensure`), run `dep prune` to remove any unnecessary subpackages from the dependency.
-
 When updating or initializing, `dep` will find the latest version of a dependency that will compile.
 
 Examples:
@@ -196,28 +202,24 @@ Initialize all dependencies:
 
 ```sh
 dep init
-dep prune
 ```
 
 Update all dependencies:
 
 ```sh
 dep ensure -update -v
-dep prune
 ```
 
 Add a single dependency (latest version):
 
 ```sh
 dep ensure github.com/foo/bar
-dep prune
 ```
 
 Add a single dependency (more specific version), or downgrade an existing dependency:
 
 ```sh
 dep ensure github.com/foo/bar@tag
-dep prune
 ```
 
 ### Wallet GUI Development

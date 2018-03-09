@@ -8,6 +8,7 @@
 
 sb
 
+build
 data
 pkg
 bin
@@ -116,3 +117,5 @@ src/mesh/TODO
 coverage.html
 
 src/gui/integration/wallets/
+
+skycoin-cli

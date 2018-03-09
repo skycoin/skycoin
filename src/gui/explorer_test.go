@@ -95,7 +95,7 @@ func makeSuccessCoinSupplyResult(t *testing.T, allUnspents visor.ReadableOutputS
 func TestGetTransactionsForAddress(t *testing.T) {
 	address := testutil.MakeAddress()
 	successAddress := "111111111111111111111691FSP"
-	invalidHash := "caicb"
+	invalidHash := "cafcb"
 	validHash := "79216473e8f2c17095c6887cc9edca6c023afedfac2e0c5460e8b6f359684f8b"
 	tt := []struct {
 		name                        string
@@ -222,7 +222,7 @@ func TestGetTransactionsForAddress(t *testing.T) {
 							Hash:    validHash,
 							Address: successAddress,
 							Coins:   "0.000000",
-							Hours:   "0",
+							Hours:   0,
 						},
 					},
 				},
@@ -412,7 +412,7 @@ func TestGetRichlist(t *testing.T) {
 		includeDistribution      bool
 		gatewayGetRichlistResult visor.Richlist
 		gatewayGetRichlistErr    error
-		result                   visor.Richlist
+		result                   Richlist
 		csrfDisabled             bool
 	}{
 		{
@@ -456,8 +456,119 @@ func TestGetRichlist(t *testing.T) {
 			method: http.MethodGet,
 			status: http.StatusOK,
 			httpParams: &httpParams{
-				topn:                "1",
+				topn:                "3",
 				includeDistribution: "false",
+			},
+			gatewayGetRichlistResult: visor.Richlist{
+				{
+					Address: "2fGC7kwAM9yZyEF1QqBqp8uo9RUsF6ENGJF",
+					Coins:   "1000000.000000",
+					Locked:  false,
+				},
+				{
+					Address: "27jg25DZX21MXMypVbKJMmgCJ5SPuEunMF1",
+					Coins:   "500000.000000",
+					Locked:  false,
+				},
+				{
+					Address: "2fGi2jhvp6ppHg3DecguZgzqvpJj2Gd4KHW",
+					Coins:   "500000.000000",
+					Locked:  false,
+				},
+				{
+					Address: "2TmvdBWJgxMwGs84R4drS9p5fYkva4dGdfs",
+					Coins:   "244458.000000",
+					Locked:  false,
+				},
+				{
+					Address: "24gvUHXHtSg5drKiFsMw7iMgoN2PbLub53C",
+					Coins:   "195503.000000",
+					Locked:  false,
+				},
+			},
+			result: Richlist{
+				Richlist: visor.Richlist{
+					{
+						Address: "2fGC7kwAM9yZyEF1QqBqp8uo9RUsF6ENGJF",
+						Coins:   "1000000.000000",
+						Locked:  false,
+					},
+					{
+						Address: "27jg25DZX21MXMypVbKJMmgCJ5SPuEunMF1",
+						Coins:   "500000.000000",
+						Locked:  false,
+					},
+					{
+						Address: "2fGi2jhvp6ppHg3DecguZgzqvpJj2Gd4KHW",
+						Coins:   "500000.000000",
+						Locked:  false,
+					},
+				},
+			},
+		},
+		{
+			name:   "200 no limit",
+			method: http.MethodGet,
+			status: http.StatusOK,
+			httpParams: &httpParams{
+				topn:                "0",
+				includeDistribution: "false",
+			},
+			gatewayGetRichlistResult: visor.Richlist{
+				{
+					Address: "2fGC7kwAM9yZyEF1QqBqp8uo9RUsF6ENGJF",
+					Coins:   "1000000.000000",
+					Locked:  false,
+				},
+				{
+					Address: "27jg25DZX21MXMypVbKJMmgCJ5SPuEunMF1",
+					Coins:   "500000.000000",
+					Locked:  false,
+				},
+				{
+					Address: "2fGi2jhvp6ppHg3DecguZgzqvpJj2Gd4KHW",
+					Coins:   "500000.000000",
+					Locked:  false,
+				},
+				{
+					Address: "2TmvdBWJgxMwGs84R4drS9p5fYkva4dGdfs",
+					Coins:   "244458.000000",
+					Locked:  false,
+				},
+				{
+					Address: "24gvUHXHtSg5drKiFsMw7iMgoN2PbLub53C",
+					Coins:   "195503.000000",
+					Locked:  false,
+				},
+			},
+			result: Richlist{
+				Richlist: visor.Richlist{
+					{
+						Address: "2fGC7kwAM9yZyEF1QqBqp8uo9RUsF6ENGJF",
+						Coins:   "1000000.000000",
+						Locked:  false,
+					},
+					{
+						Address: "27jg25DZX21MXMypVbKJMmgCJ5SPuEunMF1",
+						Coins:   "500000.000000",
+						Locked:  false,
+					},
+					{
+						Address: "2fGi2jhvp6ppHg3DecguZgzqvpJj2Gd4KHW",
+						Coins:   "500000.000000",
+						Locked:  false,
+					},
+					{
+						Address: "2TmvdBWJgxMwGs84R4drS9p5fYkva4dGdfs",
+						Coins:   "244458.000000",
+						Locked:  false,
+					},
+					{
+						Address: "24gvUHXHtSg5drKiFsMw7iMgoN2PbLub53C",
+						Coins:   "195503.000000",
+						Locked:  false,
+					},
+				},
 			},
 		},
 	}
@@ -503,7 +614,7 @@ func TestGetRichlist(t *testing.T) {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg visor.Richlist
+				var msg Richlist
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.result, msg)

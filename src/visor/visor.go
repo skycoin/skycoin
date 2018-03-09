@@ -118,6 +118,8 @@ type Config struct {
 	GenesisCoinVolume uint64
 	// bolt db file path
 	DBPath string
+	// open bolt db read-only
+	DBReadOnly bool
 	// enable arbitrating mode
 	Arbitrating bool
 	// wallet directory
@@ -171,7 +173,6 @@ type historyer interface {
 	GetUxout(uxid cipher.SHA256) (*historydb.UxOut, error)
 	ParseBlock(b *coin.Block) error
 	GetTransaction(hash cipher.SHA256) (*historydb.Transaction, error)
-	GetLastTxs() ([]*historydb.Transaction, error)
 	GetAddrUxOuts(address cipher.Address) ([]*historydb.UxOut, error)
 	GetAddrTxns(address cipher.Address) ([]historydb.Transaction, error)
 	ForEach(f func(tx *historydb.Transaction) error) error
@@ -1001,37 +1002,6 @@ func (vs *Visor) GetBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
 // GetLastBlocks returns last N blocks
 func (vs *Visor) GetLastBlocks(num uint64) []coin.SignedBlock {
 	return vs.Blockchain.GetLastBlocks(num)
-}
-
-// GetLastTxs returns last confirmed transactions, return nil if empty
-func (vs *Visor) GetLastTxs() ([]*Transaction, error) {
-	ltxs, err := vs.history.GetLastTxs()
-	if err != nil {
-		return nil, err
-	}
-
-	txs := make([]*Transaction, len(ltxs))
-	var confirms uint64
-	bh := vs.HeadBkSeq()
-	var b *coin.SignedBlock
-	for i, tx := range ltxs {
-		confirms = uint64(bh) - tx.BlockSeq + 1
-		b, err = vs.GetBlockBySeq(tx.BlockSeq)
-		if err != nil {
-			return nil, err
-		}
-
-		if b == nil {
-			return nil, fmt.Errorf("found no block in seq %v", tx.BlockSeq)
-		}
-
-		txs[i] = &Transaction{
-			Txn:    tx.Tx,
-			Status: NewConfirmedTransactionStatus(confirms, tx.BlockSeq),
-			Time:   b.Time(),
-		}
-	}
-	return txs, nil
 }
 
 // GetHeadBlock gets head block.

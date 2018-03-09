@@ -5,8 +5,8 @@
       <img src="../../../../../assets/img/qr-code-black.png">
       <p class="click-to-copy">{{ address.address }} <span data-label="Copied" class="copy-label hidden">Copy</span></p>
     </div>
-    <div class="hours-column">{{ address.hours ? address.hours : 0 }}</div>
-    <div class="coins-column">{{ address.coins ? address.coins : 0 }}</div>
+    <div class="hours-column">{{ (address.hours ? address.hours : 0) | number:'1.0-6' }}</div>
+    <div class="coins-column">{{ (address.coins ? address.coins : 0) | number:'1.0-6' }}</div>
   </div>
 </ng-container>
 <div class="-actions">

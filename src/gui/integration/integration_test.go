@@ -1595,7 +1595,22 @@ func TestStableAddressTransactions(t *testing.T) {
 		},
 	}
 
-	testStableAddressTransactions(t, cases)
+	c := gui.NewClient(nodeAddress())
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			txns, err := c.AddressTransactions(tc.address)
+			if tc.errMsg != "" {
+				assertResponseError(t, err, tc.errCode, tc.errMsg)
+				return
+			}
+
+			require.NoError(t, err)
+
+			var expected []gui.ReadableTransaction
+			loadGoldenFile(t, tc.golden, TestData{txns, &expected})
+			require.Equal(t, expected, txns)
+		})
+	}
 }
 
 func TestLiveAddressTransactions(t *testing.T) {
@@ -1627,29 +1642,6 @@ func TestLiveAddressTransactions(t *testing.T) {
 		},
 	}
 
-	testLiveAddressTransactions(t, cases)
-}
-
-func testStableAddressTransactions(t *testing.T, cases []addressTransactionsTestCase) {
-	c := gui.NewClient(nodeAddress())
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			txns, err := c.AddressTransactions(tc.address)
-			if tc.errMsg != "" {
-				assertResponseError(t, err, tc.errCode, tc.errMsg)
-				return
-			}
-
-			require.NoError(t, err)
-
-			var expected []gui.ReadableTransaction
-			loadGoldenFile(t, tc.golden, TestData{txns, &expected})
-			require.Equal(t, expected, txns)
-		})
-	}
-}
-
-func testLiveAddressTransactions(t *testing.T, cases []addressTransactionsTestCase) {
 	c := gui.NewClient(nodeAddress())
 	// Get current blockchain height
 	bp, err := c.BlockchainProgress()

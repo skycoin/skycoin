@@ -19,5 +19,6 @@ type Gatewayer interface {
 	GetTransaction(txid cipher.SHA256) (*visor.Transaction, error)
 	InjectBroadcastTransaction(tx coin.Transaction) error
 	GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOutJSON, error)
+	GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error)
 	GetTimeNow() uint64
 }

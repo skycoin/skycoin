@@ -53,7 +53,7 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
 
 ### Go 1.9+ Installation and Setup
 
-[Golang 1.9+ Installation/Setup](./Installation.md)
+[Golang 1.9+ Installation/Setup](./INSTALLATION.md)
 
 ### Go get skycoin
 
@@ -121,7 +121,7 @@ Access the API: [http://localhost:6420/version](http://localhost:6420/version).
 
 ## Integrating Skycoin with your application
 
-[Skycoin Integration Documentation](integration.md)
+[Skycoin Integration Documentation](INTEGRATION.md)
 
 ## Contributing a node to the network
 

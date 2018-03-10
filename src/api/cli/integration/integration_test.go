@@ -164,9 +164,10 @@ func loadGoldenFile(t *testing.T, filename string, testData TestData) {
 }
 
 func updateGoldenFile(t *testing.T, filename string, content interface{}) {
-	contentJson, err := json.MarshalIndent(content, "", "\t")
+	contentJSON, err := json.MarshalIndent(content, "", "\t")
 	require.NoError(t, err)
-	err = ioutil.WriteFile(filename, contentJson, 0644)
+	contentJSON = append(contentJSON, '\n')
+	err = ioutil.WriteFile(filename, contentJSON, 0644)
 	require.NoError(t, err)
 }
 

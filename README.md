@@ -34,6 +34,7 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
     - [Wallet REST API](#wallet-rest-api)
     - [JSON-RPC 2.0 API](#json-rpc-20-api)
     - [Skycoin command line interface](#skycoin-command-line-interface)
+- [Integrating Skycoin with your application](#integrating-skycoin-with-your-application)
 - [Contributing a node to the network](#contributing-a-node-to-the-network)
 - [Development](#development)
     - [Modules](#modules)
@@ -52,7 +53,7 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
 
 ### Go 1.9+ Installation and Setup
 
-[Golang 1.9+ Installation/Setup](./Installation.md)
+[Golang 1.9+ Installation/Setup](./INSTALLATION.md)
 
 ### Go get skycoin
 
@@ -88,7 +89,7 @@ make ARGS="--launch-browser=false" run
 
 ### Docker image
 
-```
+```sh
 $ docker volume create skycoin-data
 $ docker volume create skycoin-wallet
 $ docker run -ti --rm \
@@ -118,11 +119,18 @@ Access the API: [http://localhost:6420/version](http://localhost:6420/version).
 
 [CLI command API](cmd/cli/README.md).
 
+## Integrating Skycoin with your application
+
+[Skycoin Integration Documentation](INTEGRATION.md)
+
 ## Contributing a node to the network
 
-Add your node's ip:port to the [peers.txt](./peers.txt) file.
+Add your node's `ip:port` to the [peers.txt](peers.txt) file.
 This file will be periodically uploaded to https://downloads.skycoin.net/blockchain/peers.txt
 and used to seed client with peers.
+
+*Note*: Do not add Skywire nodes to `peers.txt`.
+Only add Skycoin nodes with high uptime and a static IP address (such as a Skycoin node hosted on a VPS).
 
 ## Development
 

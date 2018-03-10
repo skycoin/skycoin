@@ -3,6 +3,7 @@ package gui
 // Network-related information for the GUI
 import (
 	"net/http"
+	"sort"
 
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
@@ -48,7 +49,10 @@ func defaultConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendOr404(w, gateway.GetDefaultConnections())
+		conns := gateway.GetDefaultConnections()
+		sort.Strings(conns)
+
+		wh.SendJSONOr500(logger, w, conns)
 	}
 }
 
@@ -59,7 +63,10 @@ func trustConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendOr404(w, gateway.GetTrustConnections())
+		conns := gateway.GetTrustConnections()
+		sort.Strings(conns)
+
+		wh.SendJSONOr500(logger, w, conns)
 	}
 }
 
@@ -70,6 +77,9 @@ func exchgConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendOr404(w, gateway.GetExchgConnection())
+		conns := gateway.GetExchgConnection()
+		sort.Strings(conns)
+
+		wh.SendJSONOr500(logger, w, conns)
 	}
 }

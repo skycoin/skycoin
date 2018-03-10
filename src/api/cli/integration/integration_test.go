@@ -120,24 +120,6 @@ func createTempWalletFile(t *testing.T) (string, func()) {
 	return walletPath, fun
 }
 
-func copyFile(dst, src string) {
-	f, err := os.Create(dst)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Create dst file failed: %v", err)
-		os.Exit(1)
-	}
-	defer f.Close()
-
-	rf, err := os.Open(src)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Open src file failed: %v", err)
-		os.Exit(1)
-	}
-
-	defer rf.Close()
-	io.Copy(f, rf)
-}
-
 func loadJSON(t *testing.T, filename string, obj interface{}) {
 	f, err := os.Open(filename)
 	require.NoError(t, err)

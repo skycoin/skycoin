@@ -5,7 +5,7 @@ A Skycoin node offers multiple interfaces:
 * REST API on port 6420
 * JSON-RPC 2.0 API on port 6430 **[deprecated]**
 
-A CLI tool is provided in `cmd/cli/cli.go`. This tool communicates over the JSON-RPC 2.0 API.
+A CLI tool is provided in `cmd/cli/cli.go`. This tool communicates over the JSON-RPC 2.0 API. In the future it will communicate over the REST API.
 
 *Note*: Do not interface with the JSON-RPC 2.0 API directly, it is deprecated and will be removed in a future version.
 
@@ -17,6 +17,15 @@ If your application is written in Go, you can use these client libraries to inte
 * [Skycoin CLI Godoc](https://godoc.org/github.com/skycoin/skycoin/src/api/cli)
 
 *Note*: The CLI interface will be deprecated and replaced with a better one in the future.
+
+The wallet APIs in the REST API operate on wallets loaded from and saved to `~/.skycoin/wallets`.
+Use the CLI tool to perform seed generation and transaction signing outside of the Skycoin node.
+
+The Skycoin node's wallet APIs can be disabled with `-disable-wallet-api`.
+
+For a node used to support another application,
+it is recommended to use the REST API for blockchain queries and disable the wallet APIs,
+and to use the CLI tool for wallet operations (seed and address generation, transaction signing).
 
 <!-- MarkdownTOC autolink="true" bracket="round" -->
 

@@ -34,6 +34,7 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
     - [Wallet REST API](#wallet-rest-api)
     - [JSON-RPC 2.0 API](#json-rpc-20-api)
     - [Skycoin command line interface](#skycoin-command-line-interface)
+- [Integrating Skycoin with your application](#integrating-skycoin-with-your-application)
 - [Contributing a node to the network](#contributing-a-node-to-the-network)
 - [Development](#development)
     - [Modules](#modules)
@@ -117,6 +118,10 @@ Access the API: [http://localhost:6420/version](http://localhost:6420/version).
 ### Skycoin command line interface
 
 [CLI command API](cmd/cli/README.md).
+
+## Integrating Skycoin with your application
+
+[Skycoin Integration Documentation](integration.md)
 
 ## Contributing a node to the network
 

@@ -147,12 +147,6 @@ To perform a send, the preferred method follows these steps in a loop:
 
 That is, create a raw transaction, broadcast it, and wait for it to confirm.
 
-Alternatively, `skycoin-cli send -m` could be used, which will create a transaction and broadcast it in one step.
-However, suppose you are updating your local database at the same time;
-
-* If you update your database after the `send` and database transaction fails, you cannot undo the broadcast, and your database will be inconsistent.
-* If you update your database before the `send` and the `send` fails, you will
-
 #### Using the REST API
 
 When sending coins via the REST API, a wallet file local to the skycoin node is used.

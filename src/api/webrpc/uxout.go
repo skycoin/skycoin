@@ -45,34 +45,3 @@ func getAddrUxOutsHandler(req Request, gateway Gatewayer) Response {
 
 	return makeSuccessResponse(req.ID, &results)
 }
-
-type UxoutsResult struct {
-	UxOuts []historydb.UxOutJSON `json:"uxouts"`
-}
-
-func getUxoutsHandler(req Request, gateway Gatewayer) Response {
-	var uxidsStr []string
-	if err := req.DecodeParams(&uxidsStr); err != nil {
-		logger.Critical("decode params failed: %v", err)
-		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
-	}
-
-	var uxouts UxoutsResult
-	for _, uxidStr := range uxidsStr {
-		uxid, err := cipher.SHA256FromHex(uxidStr)
-		if err != nil {
-			logger.Critical("invalid uxid: %v", err)
-			return makeErrorResponse(errCodeInvalidParams, fmt.Sprintf("invalid uxid: %v", err))
-		}
-
-		uxout, err := gateway.GetUxOutByID(uxid)
-		if err != nil {
-			logger.Error("%v", err)
-			return makeErrorResponse(errCodeInternalError, errMsgInternalError)
-		}
-
-		uxouts.UxOuts = append(uxouts.UxOuts, *historydb.NewUxOutJSON(uxout))
-	}
-
-	return makeSuccessResponse(req.ID, &uxouts)
-}

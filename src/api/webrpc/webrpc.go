@@ -161,8 +161,6 @@ func (rpc *WebRPC) initHandlers() error {
 		"inject_transaction": injectTransactionHandler,
 		// get address affected uxouts
 		"get_address_uxouts": getAddrUxOutsHandler,
-		// get uxout by uxid
-		"get_uxouts": getUxoutsHandler,
 	}
 
 	// register handlers

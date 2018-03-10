@@ -139,16 +139,6 @@ func (c *Client) GetLastBlocks(n uint64) (*visor.ReadableBlocks, error) {
 	return &blocks, nil
 }
 
-// GetUxouts gets uxouts by uxid array
-func (c *Client) GetUxouts(uxids []string) (*UxoutsResult, error) {
-	var uxout UxoutsResult
-	if err := c.Do(&uxout, "get_uxouts", uxids); err != nil {
-		return nil, err
-	}
-
-	return &uxout, nil
-}
-
 // Do send request to web
 func Do(req *Request, rpcAddress string) (*Response, error) {
 	d, err := json.Marshal(req)

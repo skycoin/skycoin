@@ -19,62 +19,57 @@ import (
  * Functions in github.com/skycoin/skycoin/src/cipher/address.go
  */
 
-//export SKY_Cipher_DecodeBase58Address
-func SKY_Cipher_DecodeBase58Address(_strAddr string, _retAddr *C.Address) C.uint {
-	addr, err := cipher.DecodeBase58Address(_strAddr)
-	*_retAddr = *(*C.Address)(unsafe.Pointer(&addr))
-
-	errCode := 1
-	if err != nil {
-		errCode = 0
+//export SKY_cipher_DecodeBase58Address
+func SKY_cipher_DecodeBase58Address(_addr string, _arg1 *C.Address) C.uint {
+	addr, err := cipher.DecodeBase58Address(_addr)
+	if err == nil {
+		*_arg1 = *(*C.Address)(unsafe.Pointer(&addr))
+		return 1
 	}
-	return C.uint(errCode)
+	return 0
 }
 
-//export SKY_Cipher_AddressFromPubKey
-func SKY_Cipher_AddressFromPubKey(_pubKey *C.PubKey, _retAddr *C.Address) {
-	var pubKey cipher.PubKey
-	pubKey = *(*cipher.PubKey)(unsafe.Pointer(_pubKey))
+//export SKY_cipher_AddressFromPubKey
+func SKY_cipher_AddressFromPubKey(_pubKey *C.PubKey, _arg1 *C.Address) {
+	pubKey := *(*cipher.PubKey)(unsafe.Pointer(_pubKey))
 	addr := cipher.AddressFromPubKey(pubKey)
-	*_retAddr = *(*C.Address)(unsafe.Pointer(&addr))
+	*_arg1 = *(*C.Address)(unsafe.Pointer(&addr))
 }
 
-//export SKY_Cipher_AddressFromSecKey
-func SKY_Cipher_AddressFromSecKey(_secKey *C.SecKey, _retAddr *C.Address) {
+//export SKY_cipher_AddressFromSecKey
+func SKY_cipher_AddressFromSecKey(_secKey *C.SecKey, _arg1 *C.Address) {
 	var secKey cipher.SecKey
 	secKey = *(*cipher.SecKey)(unsafe.Pointer(_secKey))
 	addr := cipher.AddressFromSecKey(secKey)
-	*_retAddr = *(*C.Address)(unsafe.Pointer(&addr))
+	*_arg1 = *(*C.Address)(unsafe.Pointer(&addr))
 }
 
-//export SKY_Cipher_BitcoinDecodeBase58Address
-func SKY_Cipher_BitcoinDecodeBase58Address(_strAddr string, _retAddr *C.Address) C.uint {
-	addr, err := cipher.BitcoinDecodeBase58Address(_strAddr)
-	*_retAddr = *(*C.Address)(unsafe.Pointer(&addr))
-
-	errCode := 1
-	if err != nil {
-		errCode = 0
+//export SKY_cipher_BitcoinDecodeBase58Address
+func SKY_cipher_BitcoinDecodeBase58Address(_addr string, _arg1 *C.Address) C.uint {
+	addr, err := cipher.BitcoinDecodeBase58Address(_addr)
+	if err == nil {
+		*_arg1 = *(*C.Address)(unsafe.Pointer(&addr))
+		return 1
 	}
-	return C.uint(errCode)
+	return 0
 }
 
-//export SKY_Cipher_Address_Bytes
-func SKY_Cipher_Address_Bytes(_addr *C.Address, _ret *C.uchar) {
+//export SKY_cipher_Address_Bytes
+func SKY_cipher_Address_Bytes(_addr *C.Address, _arg0 *C.GoSlice_) {
 	addr := (*cipher.Address)(unsafe.Pointer(_addr))
 	bytes := addr.Bytes()
-	C.memcpy(unsafe.Pointer(_ret), unsafe.Pointer(&bytes[0]), C.size_t(len(bytes)))
+	C.memcpy(unsafe.Pointer(_arg0.data), unsafe.Pointer(&bytes[0]), C.size_t(len(bytes)))
 }
 
-//export SKY_Cipher_Address_BitcoinBytes
-func SKY_Cipher_Address_BitcoinBytes(_addr *C.Address, _ret *C.uchar) {
+//export SKY_cipher_Address_BitcoinBytes
+func SKY_cipher_Address_BitcoinBytes(_addr *C.Address, _arg0 *C.GoSlice_) {
 	addr := (*cipher.Address)(unsafe.Pointer(_addr))
 	bytes := addr.BitcoinBytes()
-	C.memcpy(unsafe.Pointer(_ret), unsafe.Pointer(&bytes[0]), C.size_t(len(bytes)))
+	C.memcpy(unsafe.Pointer(_arg0), unsafe.Pointer(&bytes[0]), C.size_t(len(bytes)))
 }
 
-//export SKY_Cipher_Address_Verify
-func SKY_Cipher_Address_Verify(_addr *C.Address, _key *C.PubKey) C.uint {
+//export SKY_cipher_Address_Verify
+func SKY_cipher_Address_Verify(_addr *C.Address, _key *C.PubKey) C.uint {
 	addr := (*cipher.Address)(unsafe.Pointer(_addr))
 	key := (*cipher.PubKey)(unsafe.Pointer(&_key))
 	err := addr.Verify(*key)
@@ -84,65 +79,63 @@ func SKY_Cipher_Address_Verify(_addr *C.Address, _key *C.PubKey) C.uint {
 	return 0
 }
 
-//export SKY_Cipher_Address_String
-func SKY_Cipher_Address_String(_addr *C.Address) string {
+//export SKY_cipher_Address_String
+func SKY_cipher_Address_String(_addr *C.Address) string {
 	addr := (*cipher.Address)(unsafe.Pointer(_addr))
 	return addr.String()
 }
 
-//export SKY_Cipher_Address_BitcoinString
-func SKY_Cipher_Address_BitcoinString(_addr *C.Address) string {
+//export SKY_cipher_Address_BitcoinString
+func SKY_cipher_Address_BitcoinString(_addr *C.Address) string {
 	addr := (*cipher.Address)(unsafe.Pointer(_addr))
 	return addr.BitcoinString()
 }
 
-//export SKY_Cipher_Address_Checksum
-func SKY_Cipher_Address_Checksum(_addr *C.Address, _ret *C.Checksum) {
+//export SKY_cipher_Address_Checksum
+func SKY_cipher_Address_Checksum(_addr *C.Address, _arg0 *C.Checksum) {
 	addr := (*cipher.Address)(unsafe.Pointer(_addr))
 	cs := addr.Checksum()
-	C.memcpy(unsafe.Pointer(_ret), unsafe.Pointer(&cs[0]), C.size_t(len(cs)))
+	C.memcpy(unsafe.Pointer(_arg0), unsafe.Pointer(&cs[0]), C.size_t(len(cs)))
 }
 
-//export SKY_Cipher_Address_BitcoinChecksum
-func SKY_Cipher_Address_BitcoinChecksum(_addr *C.Address, _ret *C.Checksum) {
+//export SKY_cipher_Address_BitcoinChecksum
+func SKY_cipher_Address_BitcoinChecksum(_addr *C.Address, _arg0 *C.Checksum) {
 	addr := (*cipher.Address)(unsafe.Pointer(_addr))
 	cs := addr.BitcoinChecksum()
-	C.memcpy(unsafe.Pointer(_ret), unsafe.Pointer(&cs[0]), C.size_t(len(cs)))
+	C.memcpy(unsafe.Pointer(_arg0), unsafe.Pointer(&cs[0]), C.size_t(len(cs)))
 }
 
 /*
 Bitcoin Functions
 */
 
-//export SKY_Cipher_BitcoinAddressFromPubkey
-func SKY_Cipher_BitcoinAddressFromPubkey(_pubkey *C.PubKey) string {
+//export SKY_cipher_BitcoinAddressFromPubkey
+func SKY_cipher_BitcoinAddressFromPubkey(_pubkey *C.PubKey) string {
 	pubkey := (*cipher.PubKey)(unsafe.Pointer(_pubkey))
 	return cipher.BitcoinAddressFromPubkey(*pubkey)
 }
 
-//export SKY_Cipher_BitcoinWalletImportFormatFromSeckey
-func SKY_Cipher_BitcoinWalletImportFormatFromSeckey(_seckey *C.SecKey) string {
+//export SKY_cipher_BitcoinWalletImportFormatFromSeckey
+func SKY_cipher_BitcoinWalletImportFormatFromSeckey(_seckey *C.SecKey) string {
 	seckey := (*cipher.SecKey)(unsafe.Pointer(_seckey))
 	return cipher.BitcoinWalletImportFormatFromSeckey(*seckey)
 }
 
-//export SKY_Cipher_BitcoinAddressFromBytes
-func SKY_Cipher_BitcoinAddressFromBytes(_b *C.uchar, _sz C.size_t, _retAddr *C.Address) C.uint {
-	b := C.GoBytes(unsafe.Pointer(_b), C.int(_sz))
-	addr, err := cipher.BitcoinAddressFromBytes(b)
+//export SKY_cipher_BitcoinAddressFromBytes
+func SKY_cipher_BitcoinAddressFromBytes(_b []byte, _arg1 *C.Address) C.uint {
+	addr, err := cipher.BitcoinAddressFromBytes(_b)
 	if err != nil {
-		*_retAddr = *(*C.Address)(unsafe.Pointer(&addr))
+		*_arg1 = *(*C.Address)(unsafe.Pointer(&addr))
 		return 1
-	} else {
-		return 0
 	}
+	return 0
 }
 
-//export SKY_Cipher_SecKeyFromWalletImportFormat
-func SKY_Cipher_SecKeyFromWalletImportFormat(_input string, _seckey *C.SecKey) C.uint {
+//export SKY_cipher_SecKeyFromWalletImportFormat
+func SKY_cipher_SecKeyFromWalletImportFormat(_input string, _arg1 *C.SecKey) C.uint {
 	seckey, err := cipher.SecKeyFromWalletImportFormat(_input)
 	if err != nil {
-		*_seckey = *(*C.SecKey)(unsafe.Pointer(&seckey))
+		*_arg1 = *(*C.SecKey)(unsafe.Pointer(&seckey))
 		return 1
 	} else {
 		return 0

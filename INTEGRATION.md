@@ -69,7 +69,7 @@ If your application is written in Go, you can use these client libraries to inte
 
 ### Skycoin Go Library Documentation
 
-[Skycoin Godoc][https://godoc.org/github.com/skycoin/skycoin]
+[Skycoin Godoc](https://godoc.org/github.com/skycoin/skycoin)
 
 ### libskycoin Documentation
 

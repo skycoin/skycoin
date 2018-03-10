@@ -33,9 +33,16 @@ Apis service port is `6420`.
 - [Uxout apis](#uxout-apis)
     - [Get uxout](#get-uxout)
     - [Get address affected uxouts](#get-address-affected-uxouts)
-- [Coin supply informations](#coin-supply-informations)
-- [Richlist show top N addresses by uxouts](#richlist-show-top-n-addresses-by-uxouts)
-- [AddressCount show count of unique address](#addresscount-show-count-of-unique-address)
+- [Coin supply related information](#coin-supply-related-information)
+    - [Coin supply](#coin-supply)
+    - [Richlist show top N addresses by uxouts](#richlist-show-top-n-addresses-by-uxouts)
+    - [Count unique addresses](#count-unique-addresses)
+- [Network status](#network-status)
+    - [Get information for a specific connection](#get-information-for-a-specific-connection)
+    - [Get a list of all connections](#get-a-list-of-all-connections)
+    - [Get a list of all default connections](#get-a-list-of-all-default-connections)
+    - [Get a list of all trusted connections](#get-a-list-of-all-trusted-connections)
+    - [Get a list of all connections discovered through peer exchange](#get-a-list-of-all-connections-discovered-through-peer-exchange)
 
 <!-- /MarkdownTOC -->
 
@@ -1106,7 +1113,9 @@ result:
 ]
 ```
 
-## Coin supply informations
+## Coin supply related information
+
+### Coin supply
 
 ```
 URI: /coinSupply
@@ -1234,7 +1243,8 @@ result:
     ]
 }
 ```
-## Richlist show top N addresses by uxouts
+
+### Richlist show top N addresses by uxouts
 
 ```
 URI: /richlist
@@ -1279,7 +1289,7 @@ result:
 }
 ```
 
-## AddressCount show count of unique address
+### Count unique addresses
 
 ```
 URI: /addresscount
@@ -1297,4 +1307,189 @@ result:
 {
     "count": 10103
 }
+```
+
+## Network status
+
+### Get information for a specific connection
+
+```
+URI: /network/connection
+Method: GET
+Args:
+    addr: ip:port address of a known connection
+```
+
+example:
+
+```bash
+curl 'http://127.0.0.1:6420/network/connection?addr=176.9.84.75:6000'
+```
+
+result:
+
+```json
+{
+    "id": 109548,
+    "address": "176.9.84.75:6000",
+    "last_sent": 1520675817,
+    "last_received": 1520675817,
+    "outgoing": false,
+    "introduced": true,
+    "mirror": 719118746,
+    "listen_port": 6000
+}
+```
+
+### Get a list of all connections
+
+```
+URI: /network/connections
+Method: GET
+```
+
+example:
+
+```bash
+curl 'http://127.0.0.1:6420/network/connections'
+```
+
+result:
+
+```json
+{
+    "connections": [
+        {
+            "id": 99107,
+            "address": "139.162.161.41:20002",
+            "last_sent": 1520675750,
+            "last_received": 1520675750,
+            "outgoing": false,
+            "introduced": true,
+            "mirror": 1338939619,
+            "listen_port": 20002
+        },
+        {
+            "id": 109548,
+            "address": "176.9.84.75:6000",
+            "last_sent": 1520675751,
+            "last_received": 1520675751,
+            "outgoing": false,
+            "introduced": true,
+            "mirror": 719118746,
+            "listen_port": 6000
+        },
+        {
+            "id": 99115,
+            "address": "185.120.34.60:6000",
+            "last_sent": 1520675754,
+            "last_received": 1520675754,
+            "outgoing": false,
+            "introduced": true,
+            "mirror": 1931713869,
+            "listen_port": 6000
+        }
+    ]
+}
+```
+
+
+### Get a list of all default connections
+
+```
+URI: /network/defaultConnections
+Method: GET
+```
+
+example:
+
+```bash
+curl 'http://127.0.0.1:6420/network/defaultConnections'
+```
+
+result:
+
+```json
+[
+    "104.237.142.206:6000",
+    "118.178.135.93:6000",
+    "120.77.69.188:6000",
+    "121.41.103.148:6000",
+    "139.162.7.132:6000",
+    "172.104.85.6:6000",
+    "176.58.126.224:6000",
+    "47.88.33.156:6000"
+]
+```
+
+### Get a list of all trusted connections
+
+```
+URI: /network/connections/trust
+Method: GET
+```
+
+example:
+
+```bash
+curl 'http://127.0.0.1:6420/network/connections/trust'
+```
+
+result:
+
+```json
+[
+    "104.237.142.206:6000",
+    "118.178.135.93:6000",
+    "120.77.69.188:6000",
+    "121.41.103.148:6000",
+    "139.162.7.132:6000",
+    "172.104.85.6:6000",
+    "176.58.126.224:6000",
+    "47.88.33.156:6000"
+]
+```
+
+### Get a list of all connections discovered through peer exchange
+
+```
+URI: /network/connections/exchange
+Method: GET
+```
+
+example:
+
+```bash
+curl 'http://127.0.0.1:6420/network/connections/exchange'
+```
+
+result:
+
+```json
+[
+    "104.237.142.206:6000",
+    "116.62.220.158:7200",
+    "118.237.210.163:6000",
+    "120.77.69.188:6000",
+    "121.41.103.148:6000",
+    "121.41.103.148:7200",
+    "139.162.161.41:20000",
+    "139.162.161.41:20001",
+    "139.162.161.41:20002",
+    "139.162.33.154:6000",
+    "139.162.7.132:6000",
+    "155.94.137.34:6000",
+    "164.132.108.92:6000",
+    "165.227.199.63:6000",
+    "172.104.145.6:6000",
+    "172.104.52.230:7200",
+    "172.104.85.6:6000",
+    "173.212.205.184:6000",
+    "173.249.30.221:6000",
+    "176.58.126.224:6000",
+    "176.9.84.75:6000",
+    "185.120.34.60:6000",
+    "35.201.160.163:6000",
+    "47.88.33.156:6000"
+]
 ```

@@ -2,6 +2,8 @@
 
 Skycoin command line interface
 
+The CLI command APIs can be used directly from a Go application, see [Skycoin CLI Godoc](https://godoc.org/github.com/skycoin/skycoin/src/api/cli).
+
 <!-- MarkdownTOC depth="3" autolink="true" bracket="round" -->
 
 - [Install](#install)

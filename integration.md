@@ -23,6 +23,7 @@ If your application is written in Go, you can use these client libraries to inte
 - [API Documentation](#api-documentation)
     - [Wallet REST API](#wallet-rest-api)
     - [Skycoin command line interface](#skycoin-command-line-interface)
+    - [Skycoin REST API Client Documentation](#skycoin-rest-api-client-documentation)
     - [Skycoin Go Library Documentation](#skycoin-go-library-documentation)
     - [libskycoin Documentation](#libskycoin-documentation)
 - [Implementation guidelines](#implementation-guidelines)
@@ -61,6 +62,10 @@ If your application is written in Go, you can use these client libraries to inte
 ### Skycoin command line interface
 
 [CLI command API](cmd/cli/README.md).
+
+### Skycoin REST API Client Documentation
+
+[Skycoin REST API Client](https://godoc.org/github.com/skycoin/skycoin/src/gui#Client)
 
 ### Skycoin Go Library Documentation
 

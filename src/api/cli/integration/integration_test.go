@@ -1439,21 +1439,30 @@ func TestLiveSend(t *testing.T) {
 			},
 		},
 		{
-			// Send all coins to the first address to one output.
-			"send all coins to the frist address",
+			// Send 1 coin from second to the the third address, this will spend three outputs(0.2, 0.3. 0.5 coin),
+			// and burn out the remaining 1 coin hour.
+			"send to burn all coin hour",
 			func() []string {
-				coins, err := droplet.ToString(totalCoins)
-				require.NoError(t, err)
-				return []string{"send", w.Entries[0].Address.String(), coins}
+				return []string{"send", "-a", w.Entries[1].Address.String(),
+					w.Entries[2].Address.String(), "1"}
 			},
+			nil,
 			func(t *testing.T, txid string) {
-				// Confirms all coins are in the first address in one output
-				tx := getTransaction(t, txid)
-				require.Len(t, tx.Transaction.Transaction.Out, 1)
-				c, err := droplet.FromString(tx.Transaction.Transaction.Out[0].Coins)
-				require.NoError(t, err)
-				require.Equal(t, totalCoins, c)
+				// Confirms that the third address has 1 coin and 0 coin hour
+				coins, hours := getAddressBalance(t, w.Entries[2].Address.String())
+				require.Equal(t, uint64(1000000), coins)
+				require.Equal(t, uint64(0), hours)
 			},
+		},
+		{
+			// Send with 0 coin hour, this test should fail.
+			"send 0 coin hour",
+			func() []string {
+				return []string{"send", "-a", w.Entries[2].Address.String(),
+					w.Entries[1].Address.String(), "1"}
+			},
+			[]byte("ERROR: Transaction has zero coinhour fee. See 'skycoin-cli send --help'"),
+			func(t *testing.T, txid string) {},
 		},
 	}
 
@@ -1462,9 +1471,14 @@ func TestLiveSend(t *testing.T) {
 			output, err := exec.Command(binaryPath, tc.args()...).CombinedOutput()
 			if err != nil {
 				fmt.Println(string(output))
+				return
 			}
 			require.NoError(t, err)
 			output = bytes.TrimRight(output, "\n")
+			if bytes.Contains(output, []byte("ERROR:")) {
+				require.Equal(t, tc.errMsg, output)
+				return
+			}
 
 			// output: "txid:$txid_string"
 			// split the output to get txid value

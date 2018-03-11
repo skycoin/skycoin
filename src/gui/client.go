@@ -527,7 +527,7 @@ func (c *Client) PendingTransactions() ([]*visor.ReadableUnconfirmedTxn, error) 
 }
 
 // Transaction makes a request to /transaction
-func (c *Client) Transaction(txid string) (*visor.ReadableTransaction, error) {
+func (c *Client) Transaction(txid string) (*visor.TransactionResult, error) {
 	v := url.Values{}
 	v.Add("txid", txid)
 	endpoint := "/transaction?" + v.Encode()
@@ -536,7 +536,7 @@ func (c *Client) Transaction(txid string) (*visor.ReadableTransaction, error) {
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}
-	return &r.Transaction, nil
+	return &r, nil
 }
 
 // Transactions makes a request to /transactions

@@ -410,7 +410,8 @@ func (c *Client) Spend(id, dst string, coins uint64) (*SpendResult, error) {
 	v.Add("coins", fmt.Sprint(coins))
 
 	var r SpendResult
-	if err := c.Post("/wallet/spend", strings.NewReader(v.Encode()), &r); err != nil {
+	endpoint := "/wallet/spend?" + v.Encode()
+	if err := c.Post(endpoint, nil, &r); err != nil {
 		return nil, err
 	}
 

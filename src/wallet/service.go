@@ -26,17 +26,17 @@ type Service struct {
 	sync.RWMutex
 	wallets          Wallets
 	firstAddrIDMap   map[string]string // key: first address in wallet, value: wallet id
-	DisableWalletAPI bool
+	disableWalletAPI bool
 	WalletDirectory  string
 }
 
 // NewService new wallet service
 func NewService(walletDir string, disableWalletAPI bool) (*Service, error) {
 	serv := &Service{
-		DisableWalletAPI: disableWalletAPI,
+		disableWalletAPI: disableWalletAPI,
 		firstAddrIDMap:   make(map[string]string),
 	}
-	if serv.DisableWalletAPI {
+	if serv.disableWalletAPI {
 		return serv, nil
 	}
 	if err := os.MkdirAll(walletDir, os.FileMode(0700)); err != nil {
@@ -79,7 +79,7 @@ func NewService(walletDir string, disableWalletAPI bool) (*Service, error) {
 func (serv *Service) CreateWallet(wltName string, options Options) (Wallet, error) {
 	serv.Lock()
 	defer serv.Unlock()
-	if serv.DisableWalletAPI {
+	if serv.disableWalletAPI {
 		return Wallet{}, ErrWalletApiDisabled
 	}
 	if wltName == "" {
@@ -226,7 +226,7 @@ func (serv *Service) GetWallets() Wallets {
 func (serv *Service) ReloadWallets() error {
 	serv.Lock()
 	defer serv.Unlock()
-	if serv.DisableWalletAPI {
+	if serv.disableWalletAPI {
 		return ErrWalletApiDisabled
 	}
 	wallets, err := LoadWallets(serv.WalletDirectory)

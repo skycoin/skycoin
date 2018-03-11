@@ -350,14 +350,8 @@ func TestServiceNewAddressDisabledWalletAPI(t *testing.T) {
 	require.NoError(t, err)
 	dirIsEmpty(t, dir)
 
-	// get the default wallet id
-	var id string
-	for id = range s.wallets {
-		break
-	}
-	require.Equal(t, id, "")
 	require.Empty(t, s.wallets)
-	addrs, err := s.NewAddresses(id, 1)
+	addrs, err := s.NewAddresses("", 1)
 	require.Equal(t, ErrWalletNotExist, err)
 	require.Equal(t, 0, len(addrs))
 }
@@ -391,13 +385,8 @@ func TestServiceGetAddressDisabledWalletAPI(t *testing.T) {
 	require.NoError(t, err)
 	dirIsEmpty(t, dir)
 
-	var id string
-	for id = range s.wallets {
-		break
-	}
-	require.Equal(t, id, "")
 	require.Empty(t, s.wallets)
-	addrs, err := s.GetAddresses(id)
+	addrs, err := s.GetAddresses("")
 	require.Equal(t, ErrWalletNotExist, err)
 	require.Equal(t, 0, len(addrs))
 }
@@ -429,13 +418,8 @@ func TestServiceGetWalletDisabledWalletAPI(t *testing.T) {
 	require.NoError(t, err)
 	dirIsEmpty(t, dir)
 
-	var id string
-	for id = range s.wallets {
-		break
-	}
-	require.Equal(t, id, "")
 	require.Empty(t, s.wallets)
-	w, err := s.GetWallet(id)
+	w, err := s.GetWallet("")
 	require.Equal(t, ErrWalletNotExist, err)
 	require.Equal(t, w, Wallet{})
 }

@@ -1506,6 +1506,20 @@ func TestLiveSend(t *testing.T) {
 			tc.checkTx(t, txid)
 		})
 	}
+
+	// Send with too small decimal value
+	errMsg := []byte("ERROR: invalid amount, too many decimal places. See 'skycoin-cli send --help'")
+	for i := 0.0001; i <= 0.0009; i++ {
+		v, err := droplet.ToString(uint64(i * droplet.Multiplier))
+		require.NoError(t, err)
+		name := fmt.Sprintf("send %v", v)
+		t.Run(name, func(t *testing.T) {
+			output, err := exec.Command(binaryPath, "send", w.Entries[0].Address.String(), v).CombinedOutput()
+			require.NoError(t, err)
+			output = bytes.Trim(output, "\n")
+			require.Equal(t, errMsg, output)
+		})
+	}
 }
 
 func getTransaction(t *testing.T, txid string) *webrpc.TxnResult {
@@ -1552,10 +1566,7 @@ func checkCoinsAndCoinhours(t *testing.T, tx *webrpc.TxnResult, addr string, coi
 
 // prepareAndCheckWallet prepares wallet for live testing.
 // Returns *wallet.Wallet, total coin, total hours.
-// 1. Confirms that the wallet meets the minimal requirements of coins and coinhours.
-// 2. Confirms all the coins are in the first address.
-// 3. Confirms that the wallet's first address coins meet the miniCoins requirement.
-// 4. Confirms that the wallet's first address coinhours meet the miniCoinHours requirement.
+// Confirms that the wallet meets the minimal requirements of coins and coinhours.
 func prepareAndCheckWallet(t *testing.T, miniCoins, miniCoinHours uint64) (*wallet.Wallet, uint64, uint64) {
 	walletDir, walletName := getWalletPathFromEnv(t)
 	walletPath := filepath.Join(walletDir, walletName)
@@ -1584,26 +1595,16 @@ func prepareAndCheckWallet(t *testing.T, miniCoins, miniCoinHours uint64) (*wall
 		t.Fatalf("Wallet %v has no coin", walletPath)
 	}
 
-	// Confirms all coins are in one output
-	if len(outputs) != 1 {
-		t.Fatalf("All coins must be in one output")
-	}
-
-	// Confirms all coins are in the first address
-	firstAddr := w.Entries[0].Address.String()
 	var totalCoins uint64
 	var totalCoinhours uint64
 	for _, output := range outputs {
-		if output.Address != firstAddr {
-			t.Fatal("All coins must be in the first address")
-		}
 		coins, err := droplet.FromString(output.Coins)
 		if err != nil {
 			t.Fatalf("%v", err)
 		}
 
 		totalCoins += coins
-		totalCoinhours += output.Hours
+		totalCoinhours += output.CalculatedHours
 	}
 
 	// Confirms the coins meet minimal coins requirement

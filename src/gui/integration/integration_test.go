@@ -1133,7 +1133,7 @@ func TestStableTransaction(t *testing.T) {
 
 			var expected *visor.ReadableTransaction
 			loadGoldenFile(t, tc.goldenFile, TestData{tx, &expected})
-			require.Equal(t, expected, tx.Transaction)
+			require.Equal(t, expected, &tx.Transaction)
 		})
 	}
 }

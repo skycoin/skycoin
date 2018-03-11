@@ -1406,6 +1406,7 @@ func TestLiveSend(t *testing.T) {
 
 				return []string{"send", "-m", string(v)}
 			},
+			nil,
 			func(t *testing.T, txid string) {
 				tx := getTransaction(t, txid)
 				// Confirms the second address receives 0.5 coin and 1 coinhour in this transaction
@@ -1418,14 +1419,15 @@ func TestLiveSend(t *testing.T) {
 			},
 		},
 		{
-			// Send 0.2 coin from the third address to the second address.
-			// Set the second as change address, so the 0.3 change coin will also be sent to the second address.
+			// Send 0.001 coin from the third address to the second address.
+			// Set the second as change address, so the 0.499 change coin will also be sent to the second address.
 			// After sending, the second address should have 1 coin and 1 coin hour.
 			"send with -c(change address) -a(from address) options",
 			func() []string {
 				return []string{"send", "-c", w.Entries[1].Address.String(),
-					"-a", w.Entries[2].Address.String(), w.Entries[1].Address.String(), "0.2"}
+					"-a", w.Entries[2].Address.String(), w.Entries[1].Address.String(), "0.001"}
 			},
+			nil,
 			func(t *testing.T, txid string) {
 				tx := getTransaction(t, txid)
 				// Confirms the second address receives 0.5 coin and 0 coinhour in this transaction

@@ -1348,20 +1348,39 @@ func TestLiveWalletDir(t *testing.T) {
 // 1. This test might modify the wallet file, in order to avoid losing coins, we don't send coins to
 // addresses that are not belong to the wallet, when addresses in the wallet are not sufficient, we
 // will automatically generate enough addresses as coin recipient.
-// 2. The wallet must have all coins in the first address, which must have at least 2 coins and 8 coinhours.
+// 2. The wallet must must have at least 2 coins and 16 coinhours.
 func TestLiveSend(t *testing.T) {
 	if !doLive(t) {
 		return
 	}
 
-	// prepare wallet and confirms the wallet has at least 2 coins and 8 coin hours.
-	w, totalCoins, _ := prepareAndCheckWallet(t, 2, 8)
+	// prepares wallet and confirms the wallet has at least 2 coins and 16 coin hours.
+	w, totalCoins, _ := prepareAndCheckWallet(t, 2, 16)
 
 	tt := []struct {
 		name    string
 		args    func() []string
+		errMsg  []byte
 		checkTx func(t *testing.T, txid string)
 	}{
+		{
+			// Send all coins to the first address to one output.
+			"send all coins to the frist address",
+			func() []string {
+				coins, err := droplet.ToString(totalCoins)
+				require.NoError(t, err)
+				return []string{"send", w.Entries[0].Address.String(), coins}
+			},
+			nil,
+			func(t *testing.T, txid string) {
+				// Confirms all coins are in the first address in one output
+				tx := getTransaction(t, txid)
+				require.Len(t, tx.Transaction.Transaction.Out, 1)
+				c, err := droplet.FromString(tx.Transaction.Transaction.Out[0].Coins)
+				require.NoError(t, err)
+				require.Equal(t, totalCoins, c)
+			},
+		},
 		{
 			// Send 0.5 coin to the second address.
 			// Send 0.5 coin to the third address.

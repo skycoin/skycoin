@@ -10,9 +10,16 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
+	"crypto/sha256"
+	"time"
+	"github.com/skycoin/skycoin/src/cipher"
 )
 
 var registered = false
+
+func GenerateRandomSha256() cipher.SHA256 {
+	return sha256.Sum256([]byte(string(time.Now().Unix())))
+}
 
 func getSliceContentsString(sl []string, offset int) string {
 	var res string = ""

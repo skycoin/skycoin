@@ -135,6 +135,10 @@ type Config struct {
 	// GUI directory contains assets for the html gui
 	GUIDirectory string
 
+	ReadTimeout  time.Duration
+	WriteTimeout time.Duration
+	IdleTimeout  time.Duration
+
 	// Logging
 	ColorLog bool
 	// This is the value registered with flag, it is converted to LogLevel after parsing
@@ -293,6 +297,10 @@ var devConfig = Config{
 	// Wallets
 	WalletDirectory: "",
 
+	ReadTimeout:  5,
+	WriteTimeout: 10,
+	IdleTimeout:  60,
+
 	// Centralized network configuration
 	RunMaster:        false,
 	BlockchainPubkey: cipher.PubKey{},
@@ -428,8 +436,11 @@ func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) (*g
 	var err error
 
 	config := gui.ServerConfig{
-		StaticDir:   c.GUIDirectory,
-		DisableCSRF: c.DisableCSRF,
+		StaticDir:    c.GUIDirectory,
+		DisableCSRF:  c.DisableCSRF,
+		IdleTimeout:  time.Second * c.IdleTimeout,
+		ReadTimeout:  time.Second * c.ReadTimeout,
+		WriteTimeout: time.Second * c.WriteTimeout,
 	}
 
 	if c.WebInterfaceHTTPS {

@@ -36,8 +36,6 @@ typedef struct {
 	Ripemd160 Key;
 } Address;
 
-typedef unsigned char Checksum[4];
-
 typedef unsigned char PubKey[33];
 typedef unsigned char SecKey[32];
 typedef unsigned char Checksum[4];

@@ -5,7 +5,7 @@
 /* Start of preamble from import "C" comments.  */
 
 
-#line 3 "/Users/olemis/Documents/workspace/work/go/macos/src/github.com/skycoin/skycoin/lib/cgo/api.cli.create_rawtx.go"
+#line 3 "/go/src/github.com/skycoin/skycoin/lib/cgo/api.cli.create_rawtx.go"
 
 #include <string.h>
 #include <stdlib.h>
@@ -15,7 +15,7 @@
 
 #line 1 "cgo-generated-wrapper"
 
-#line 3 "/Users/olemis/Documents/workspace/work/go/macos/src/github.com/skycoin/skycoin/lib/cgo/cipher.address.go"
+#line 3 "/go/src/github.com/skycoin/skycoin/lib/cgo/cipher.address.go"
 
 #include <string.h>
 #include <stdlib.h>

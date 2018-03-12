@@ -39,10 +39,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   constructor(
+    public apiService: ApiService,
     private blockchainService: BlockchainService,
     private priceService: PriceService,
     private walletService: WalletService,
-    private apiService: ApiService,
     private http: Http,
   ) {}
 

@@ -16,6 +16,10 @@ type Bucket struct {
 
 // New create bucket of specific name.
 func New(name []byte, db *bolt.DB) (*Bucket, error) {
+	if db.IsReadOnly() {
+		return &Bucket{name, db}, nil
+	}
+
 	err := db.Update(func(tx *bolt.Tx) error {
 		if _, err := tx.CreateBucketIfNotExists(name); err != nil {
 			return err

@@ -5,7 +5,7 @@
 /* Start of preamble from import "C" comments.  */
 
 
-#line 3 "/go/src/github.com/skycoin/skycoin/lib/cgo/api.cli.create_rawtx.go"
+#line 3 "/go/src/github.com/skycoin/skycoin/lib/cgo/cipher.address.go"
 
 #include <string.h>
 #include <stdlib.h>
@@ -15,7 +15,7 @@
 
 #line 1 "cgo-generated-wrapper"
 
-#line 3 "/go/src/github.com/skycoin/skycoin/lib/cgo/cipher.address.go"
+#line 3 "/go/src/github.com/skycoin/skycoin/lib/cgo/api.cli.create_rawtx.go"
 
 #include <string.h>
 #include <stdlib.h>
@@ -72,14 +72,6 @@ extern "C" {
 #endif
 
 
-extern unsigned int SKY_cli_CreateRawTxFromWallet(Handle p0, GoString p1, GoString p2, GoSlice p3, Transaction* p4);
-
-extern unsigned int SKY_cli_CreateRawTxFromAddress(Handle p0, GoString p1, GoString p2, GoString p3, GoSlice p4, Transaction* p5);
-
-extern void SKY_cli_CreateRawTx(Handle p0, Wallet* p1, GoSlice p2, GoString p3, GoSlice p4, Transaction* p5);
-
-extern void SKY_cli_NewTransaction(GoSlice p0, GoSlice p1, GoSlice p2, Transaction* p3);
-
 extern unsigned int SKY_cipher_DecodeBase58Address(GoString p0, Address* p1);
 
 extern void SKY_cipher_AddressFromPubKey(PubKey* p0, Address* p1);
@@ -109,6 +101,14 @@ extern GoString SKY_cipher_BitcoinWalletImportFormatFromSeckey(SecKey* p0);
 extern unsigned int SKY_cipher_BitcoinAddressFromBytes(GoSlice p0, Address* p1);
 
 extern unsigned int SKY_cipher_SecKeyFromWalletImportFormat(GoString p0, SecKey* p1);
+
+extern unsigned int SKY_cli_CreateRawTxFromWallet(Handle p0, GoString p1, GoString p2, GoSlice p3, Transaction* p4);
+
+extern unsigned int SKY_cli_CreateRawTxFromAddress(Handle p0, GoString p1, GoString p2, GoString p3, GoSlice p4, Transaction* p5);
+
+extern void SKY_cli_CreateRawTx(Handle p0, Wallet* p1, GoSlice p2, GoString p3, GoSlice p4, Transaction* p5);
+
+extern void SKY_cli_NewTransaction(GoSlice p0, GoSlice p1, GoSlice p2, Transaction* p3);
 
 #ifdef __cplusplus
 }

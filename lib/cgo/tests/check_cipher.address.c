@@ -9,6 +9,9 @@
 #define SKYCOIN_ADDRESS_WRONG_4 "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv000"
 #define SKYCOIN_ADDRESS_WRONG_5 "abc2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qvdef"
 
+// buffer big enough to hold all kind of data needed by test cases
+unsigned char buff[1024];
+
 int addr_equal(Address *addr1, Address *addr2){
   if(addr1->Version != addr2->Version)
     return 0;
@@ -84,8 +87,11 @@ Test(cipher, test_address_frombytes){
   Address addr, addr2;
   GoSlice bytes;
 
+  bytes.data = buff;
+  bytes.cap = sizeof(buff);
+
   SKY_cipher_DecodeBase58Address(strAddr, &addr);
-  SKY_cipher_Address_Bytes(&addr, (GoSlice_ *)&bytes);
+  SKY_cipher_Address_BitcoinBytes(&addr, (GoSlice_ *)&bytes);
   int r = SKY_cipher_BitcoinAddressFromBytes(bytes, &addr2);
   cr_assert(r == 1, "convert bytes to SKY address");
   cr_assert_addr_eq(&addr, &addr2, "address from bytes should match original");

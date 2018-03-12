@@ -88,10 +88,12 @@ Test(cipher, test_address_frombytes){
   GoSlice bytes;
 
   bytes.data = buff;
+  bytes.len = 0;
   bytes.cap = sizeof(buff);
 
   SKY_cipher_DecodeBase58Address(strAddr, &addr);
   SKY_cipher_Address_BitcoinBytes(&addr, (GoSlice_ *)&bytes);
+  cr_assert(bytes.len > 0, "address bytes written");
   int r = SKY_cipher_BitcoinAddressFromBytes(bytes, &addr2);
   cr_assert(r == 1, "convert bytes to SKY address");
   cr_assert_addr_eq(&addr, &addr2, "address from bytes should match original");

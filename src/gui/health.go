@@ -7,11 +7,9 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 )
 
-const Version = "0.21.1"
-
 type HealthResponse struct {
 	BlockChainMetadata  *visor.BlockchainMetadata `json:"blockchain_metadata"`
-	VersionData         string                    `json:"version_data"`
+	VersionData         visor.BuildInfo           `json:"version_data"`
 	UnconfirmedTxCount  int                       `json:"unconfirmed_tx_count"`
 	OpenConnectionCount int                       `json:"open_connection_count"`
 }
@@ -30,7 +28,7 @@ func healthCheck(gateway Gatewayer) http.HandlerFunc {
 
 		resp := &HealthResponse{
 			BlockChainMetadata:  metadata,
-			VersionData:         Version,
+			VersionData:         gateway.GetBuildInfo(),
 			UnconfirmedTxCount:  txnCount,
 			OpenConnectionCount: connectionCount,
 		}

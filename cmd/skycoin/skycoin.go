@@ -297,6 +297,7 @@ var devConfig = Config{
 	// Wallets
 	WalletDirectory: "",
 
+	// Timeout settings for http.Server
 	ReadTimeout:  5,
 	WriteTimeout: 10,
 	IdleTimeout:  60,

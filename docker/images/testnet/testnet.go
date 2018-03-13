@@ -86,7 +86,7 @@ func GetCurrentGitCommit() string {
 // CreateDockerFile makes the Dockerfiles needed to build the images
 // for the testnet
 func (d *dockerService) CreateDockerFile(tempDir string) {
-	dockerfileTemplate := path.Join("templates", "Dockerfile")
+	dockerfileTemplate := path.Join("templates", "Dockerfile-skycoin")
 	_, err := os.Stat(dockerfileTemplate)
 	if err != nil {
 		log.Print(err)

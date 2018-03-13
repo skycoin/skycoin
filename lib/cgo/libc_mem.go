@@ -25,3 +25,9 @@ func lookupHandleObj(handle Handle) (interface{}, bool) {
 func closeHandle(handle Handle) {
 	delete(handleMap, handle)
 }
+
+func inplaceArrayObj(p unsafe.Pointer, length int) interface{} {
+	// Create slice without copying data
+	return (*[1 << 30]byte)(p)[:length:length]
+
+}

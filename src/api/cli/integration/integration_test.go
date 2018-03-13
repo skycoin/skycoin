@@ -1355,7 +1355,7 @@ func TestLiveSend(t *testing.T) {
 	}
 
 	// prepares wallet and confirms the wallet has at least 2 coins and 16 coin hours.
-	w, totalCoins, _ := prepareAndCheckWallet(t, 2, 16)
+	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 16)
 
 	tt := []struct {
 		name    string
@@ -1365,7 +1365,7 @@ func TestLiveSend(t *testing.T) {
 	}{
 		{
 			// Send all coins to the first address to one output.
-			"send all coins to the frist address",
+			"name: send all coins to the first address",
 			func() []string {
 				coins, err := droplet.ToString(totalCoins)
 				require.NoError(t, err)
@@ -1385,7 +1385,7 @@ func TestLiveSend(t *testing.T) {
 			// Send 0.5 coin to the second address.
 			// Send 0.5 coin to the third address.
 			// After sending, the first address should have at least 1 coin left.
-			"send to multiple address with -m option",
+			"name: send to multiple address with -m option",
 			func() []string {
 				addrCoins := []struct {
 					Addr  string `json:"addr"`
@@ -1410,19 +1410,19 @@ func TestLiveSend(t *testing.T) {
 			func(t *testing.T, txid string) {
 				tx := getTransaction(t, txid)
 				// Confirms the second address receives 0.5 coin and 1 coinhour in this transaction
-				checkCoinsAndCoinhours(t, tx, w.Entries[1].Address.String(), 500000, 1)
+				checkCoinsAndCoinhours(t, tx, w.Entries[1].Address.String(), 5e5, 1)
 				// Confirms the third address receives 0.5 coin and 1 coinhour in this transaction
-				checkCoinsAndCoinhours(t, tx, w.Entries[2].Address.String(), 500000, 1)
+				checkCoinsAndCoinhours(t, tx, w.Entries[2].Address.String(), 5e5, 1)
 				// Confirms the first address has at least 1 coin left.
 				coins, _ := getAddressBalance(t, w.Entries[0].Address.String())
-				require.True(t, coins >= 1000000)
+				require.True(t, coins >= 1e6)
 			},
 		},
 		{
 			// Send 0.001 coin from the third address to the second address.
 			// Set the second as change address, so the 0.499 change coin will also be sent to the second address.
 			// After sending, the second address should have 1 coin and 1 coin hour.
-			"send with -c(change address) -a(from address) options",
+			"name: send with -c(change address) -a(from address) options",
 			func() []string {
 				return []string{"send", "-c", w.Entries[1].Address.String(),
 					"-a", w.Entries[2].Address.String(), w.Entries[1].Address.String(), "0.001"}
@@ -1431,17 +1431,17 @@ func TestLiveSend(t *testing.T) {
 			func(t *testing.T, txid string) {
 				tx := getTransaction(t, txid)
 				// Confirms the second address receives 0.5 coin and 0 coinhour in this transaction
-				checkCoinsAndCoinhours(t, tx, w.Entries[1].Address.String(), 500000, 0)
+				checkCoinsAndCoinhours(t, tx, w.Entries[1].Address.String(), 5e5, 0)
 				// Confirms the second address have 1 coin and 1 coin hour
 				coins, hours := getAddressBalance(t, w.Entries[1].Address.String())
-				require.Equal(t, uint64(1000000), coins)
+				require.Equal(t, uint64(1e6), coins)
 				require.Equal(t, uint64(1), hours)
 			},
 		},
 		{
 			// Send 1 coin from second to the the third address, this will spend three outputs(0.2, 0.3. 0.5 coin),
 			// and burn out the remaining 1 coin hour.
-			"send to burn all coin hour",
+			"name: send to burn all coin hour",
 			func() []string {
 				return []string{"send", "-a", w.Entries[1].Address.String(),
 					w.Entries[2].Address.String(), "1"}
@@ -1450,13 +1450,13 @@ func TestLiveSend(t *testing.T) {
 			func(t *testing.T, txid string) {
 				// Confirms that the third address has 1 coin and 0 coin hour
 				coins, hours := getAddressBalance(t, w.Entries[2].Address.String())
-				require.Equal(t, uint64(1000000), coins)
+				require.Equal(t, uint64(1e6), coins)
 				require.Equal(t, uint64(0), hours)
 			},
 		},
 		{
 			// Send with 0 coin hour, this test should fail.
-			"send 0 coin hour",
+			"name: send 0 coin hour",
 			func() []string {
 				return []string{"send", "-a", w.Entries[2].Address.String(),
 					w.Entries[1].Address.String(), "1"}
@@ -1470,7 +1470,7 @@ func TestLiveSend(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			output, err := exec.Command(binaryPath, tc.args()...).CombinedOutput()
 			if err != nil {
-				fmt.Println(string(output))
+				t.Fatalf("err: %v, output: %v", err, string(output))
 				return
 			}
 			require.NoError(t, err)

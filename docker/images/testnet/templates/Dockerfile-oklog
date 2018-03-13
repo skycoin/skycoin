@@ -1,0 +1,13 @@
+# oklog image
+FROM alpine:3.7
+
+# Download binary
+ADD https://github.com/oklog/oklog/releases/download/v0.3.0/oklog-0.3.0-linux-amd64 /usr/bin/oklog
+
+# Set permissions
+RUN chmod 755 /usr/bin/oklog
+
+# volumes
+EXPOSE 7651
+
+CMD ["/usr/bin/oklog", "ingeststore","-store.segment-replication-factor=1"]

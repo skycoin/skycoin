@@ -10,6 +10,7 @@ import { Address, GetWalletsResponseEntry, GetWalletsResponseWallet, PostWalletN
 @Injectable()
 export class ApiService {
 
+  backendError: boolean;
   csrfError: boolean;
 
   private url = environment.nodeUrl;
@@ -106,7 +107,10 @@ export class ApiService {
   }
 
   testBackend() {
-    this.getCsrf().subscribe(null, () => this.csrfError = true);
+    this.get('version').subscribe(
+      () => this.getCsrf().subscribe(null, () => this.csrfError = true),
+      () => this.backendError = true
+    );
   }
 
   private getCsrf() {

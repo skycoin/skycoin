@@ -38,7 +38,6 @@ type Gatewayer interface {
 	GetTrustConnections() []string
 	GetExchgConnection() []string
 	GetAllUnconfirmedTxns() []visor.UnconfirmedTxn
-	GetLastTxs() ([]*visor.Transaction, error)
 	GetTransaction(txid cipher.SHA256) (*visor.Transaction, error)
 	GetTransactions(flts ...visor.TxFilter) ([]visor.Transaction, error)
 	InjectBroadcastTransaction(txn coin.Transaction) error

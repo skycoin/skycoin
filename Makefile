@@ -20,7 +20,8 @@ PACKAGES = $(shell find ./src -type d -not -path '\./src' \
     							      -not -path '\./src/consensus/example' \
     							      -not -path '\./src/gui/static*' \
     							      -not -path '\./src/cipher/*' \
-    							      -not -path '*/testdata*')
+    							      -not -path '*/testdata*' \
+    							      -not -path '*/test-fixtures*')
 
 # Compilation output
 BUILD_DIR = build
@@ -68,28 +69,34 @@ run:  ## Run the skycoin node. To add arguments, do 'make ARGS="--foo" run'.
 run-help: ## Show skycoin node help
 	@go run cmd/skycoin/skycoin.go --help
 
-test-core: ## Run tests for Skycoin core
+test: ## Run tests for Skycoin
 	go test ./cmd/... -timeout=1m
 	go test ./src/... -timeout=1m
+
+test-386: ## Run tests for Skycoin with GOARCH=386
+	GOARCH=386 go test ./cmd/... -timeout=5m
+	GOARCH=386 go test ./src/... -timeout=5m
+
+test-amd64: ## Run tests for Skycoin with GOARCH=amd64
+	GOARCH=amd64 go test ./cmd/... -timeout=5m
+	GOARCH=amd64 go test ./src/... -timeout=5m
 
 configure-build:
 	mkdir -p $(BUILD_DIR)/usr/tmp $(BUILD_DIR)/usr/lib $(BUILD_DIR)/usr/include
 	mkdir -p $(BUILDLIB_DIR) $(BIN_DIR) $(INCLUDE_DIR)
 
-build-libc: configure-build # Build libskycoin C client library
+build-libc: configure-build ## Build libskycoin C client library
 	rm -Rf $(BUILDLIB_DIR)/*
 	go build -buildmode=c-shared  -o $(BUILDLIB_DIR)/libskycoin.so $(LIB_FILES)
 	go build -buildmode=c-archive -o $(BUILDLIB_DIR)/libskycoin.a  $(LIB_FILES)
 	mv $(BUILDLIB_DIR)/libskycoin.h $(INCLUDE_DIR)/
 
-test-libc: build-libc
+test-libc: build-libc ## Run tests for libskycoin C client library
 	cp $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/
 	$(CC) -o $(BIN_DIR)/test_libskycoin_shared $(BUILDLIB_DIR)/*.c -lskycoin                    $(LDLIBS) $(LDFLAGS)
 	$(CC) -o $(BIN_DIR)/test_libskycoin_static $(BUILDLIB_DIR)/*.c $(BUILDLIB_DIR)/libskycoin.a $(LDLIBS) $(LDFLAGS)
 	$(LDPATHVAR)="$(LDPATH):$(BUILD_DIR)/usr/lib:$(BUILDLIB_DIR)" $(BIN_DIR)/test_libskycoin_shared
 	$(LDPATHVAR)="$(LDPATH):$(BUILD_DIR)/usr/lib"                 $(BIN_DIR)/test_libskycoin_static
-
-test: test-core test-libc ## Run tests
 
 lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...
@@ -98,31 +105,28 @@ lint: ## Run linters. Use make install-linters first.
 check: lint test ## Run tests and linters
 
 integration-test-stable: ## Run stable integration tests
-	./ci-scripts/integration-test-stable.sh
+	./ci-scripts/integration-test-stable.sh -v
 
 integration-test-live: ## Run live integration tests
-	./ci-scripts/integration-test-live.sh
+	./ci-scripts/integration-test-live.sh -v
 
 cover: ## Runs tests on ./src/ with HTML code coverage
-	@echo "mode: count" > coverage-all.out
-	$(foreach pkg,$(PACKAGES),\
-		go test -coverprofile=coverage.out $(pkg);\
-		tail -n +2 coverage.out >> coverage-all.out;)
-	go tool cover -html=coverage-all.out
+	go test -cover -coverprofile=cover.out -coverpkg=github.com/skycoin/skycoin/... ./src/...
+	go tool cover -html=cover.out
 
 install-linters: ## Install linters
 	go get -u github.com/FiloSottile/vendorcheck
 	go get -u github.com/alecthomas/gometalinter
 	gometalinter --vendored-linters --install
 
-install-deps-libc: configure-build # Install locally dependencies for testing libskycoin
+install-deps-libc: configure-build ## Install locally dependencies for testing libskycoin
 	wget -O $(BUILD_DIR)/usr/tmp/criterion-v2.3.2-$(OSNAME)-x86_64.tar.bz2 https://github.com/Snaipe/Criterion/releases/download/v2.3.2/criterion-v2.3.2-$(OSNAME)-x86_64.tar.bz2
-	tar -x -C $(BUILD_DIR)/usr/tmp/ -j -f $(BUILD_DIR)/usr/tmp/criterion-v2.3.2-$(OSNAME)-x86_64.tar.bz2 
+	tar -x -C $(BUILD_DIR)/usr/tmp/ -j -f $(BUILD_DIR)/usr/tmp/criterion-v2.3.2-$(OSNAME)-x86_64.tar.bz2
 	ls $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/include
 	ls -1 $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/lib     | xargs -I NAME mv $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/lib/NAME     $(BUILD_DIR)/usr/lib/NAME
 	ls -1 $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/include | xargs -I NAME mv $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/include/NAME $(BUILD_DIR)/usr/include/NAME
 
-format:  # Formats the code. Must have goimports installed (use make install-linters).
+format: ## Formats the code. Must have goimports installed (use make install-linters).
 	goimports -w -local github.com/skycoin/skycoin ./cmd
 	goimports -w -local github.com/skycoin/skycoin ./src
 	goimports -w -local github.com/skycoin/skycoin ./lib

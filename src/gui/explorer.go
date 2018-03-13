@@ -191,7 +191,7 @@ func getTransactionsForAddress(gateway Gatewayer) http.HandlerFunc {
 				}
 
 				if uxout == nil {
-					logger.Error("uxout of %d does not exist in history db", id)
+					logger.Error("uxout of %v does not exist in history db", id.Hex())
 					wh.Error500(w)
 					return
 				}
@@ -210,6 +210,11 @@ func getTransactionsForAddress(gateway Gatewayer) http.HandlerFunc {
 
 		wh.SendOr404(w, &resTxs)
 	}
+}
+
+// Richlist is the API response for /richlist, contains top address balances
+type Richlist struct {
+	Richlist visor.Richlist `json:"richlist"`
 }
 
 // method: GET
@@ -258,7 +263,9 @@ func getRichlist(gateway Gatewayer) http.HandlerFunc {
 			richlist = richlist[:topn]
 		}
 
-		wh.SendOr404(w, richlist)
+		wh.SendOr404(w, Richlist{
+			Richlist: richlist,
+		})
 	}
 }
 

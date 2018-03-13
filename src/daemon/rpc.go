@@ -1,6 +1,9 @@
 package daemon
 
 import (
+	"sort"
+	"strings"
+
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
@@ -105,6 +108,12 @@ func (rpc RPC) GetConnections(d *Daemon) *Connections {
 			}
 		}
 	}
+
+	// Sort connnections by IP address
+	sort.Slice(conns, func(i, j int) bool {
+		return strings.Compare(conns[i].Addr, conns[j].Addr) < 0
+	})
+
 	return &Connections{Connections: conns}
 }
 

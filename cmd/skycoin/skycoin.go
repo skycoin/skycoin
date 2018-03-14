@@ -298,9 +298,9 @@ var devConfig = Config{
 	WalletDirectory: "",
 
 	// Timeout settings for http.Server
-	ReadTimeout:  5,
-	WriteTimeout: 10,
-	IdleTimeout:  60,
+	ReadTimeout:  5 * time.Second,
+	WriteTimeout: 10 * time.Second,
+	IdleTimeout:  60 * time.Second,
 
 	// Centralized network configuration
 	RunMaster:        false,
@@ -444,9 +444,9 @@ func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) (*g
 	config := gui.ServerConfig{
 		StaticDir:    c.GUIDirectory,
 		DisableCSRF:  c.DisableCSRF,
-		IdleTimeout:  time.Second * c.IdleTimeout,
-		ReadTimeout:  time.Second * c.ReadTimeout,
-		WriteTimeout: time.Second * c.WriteTimeout,
+		IdleTimeout:  c.IdleTimeout,
+		ReadTimeout:  c.ReadTimeout,
+		WriteTimeout: c.WriteTimeout,
 	}
 
 	if c.WebInterfaceHTTPS {

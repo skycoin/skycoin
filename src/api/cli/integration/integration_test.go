@@ -1366,14 +1366,13 @@ func TestLiveSend(t *testing.T) {
 	}{
 		{
 			// Send all coins to the first address to one output.
-			"name: send all coins to the first address",
-			func() []string {
+			name: "send all coins to the first address",
+			args: func() []string {
 				coins, err := droplet.ToString(totalCoins)
 				require.NoError(t, err)
 				return []string{"send", w.Entries[0].Address.String(), coins}
 			},
-			nil,
-			func(t *testing.T, txid string) {
+			checkTx: func(t *testing.T, txid string) {
 				// Confirms all coins are in the first address in one output
 				tx := getTransaction(t, txid)
 				require.Len(t, tx.Transaction.Transaction.Out, 1)
@@ -1386,8 +1385,8 @@ func TestLiveSend(t *testing.T) {
 			// Send 0.5 coin to the second address.
 			// Send 0.5 coin to the third address.
 			// After sending, the first address should have at least 1 coin left.
-			"name: send to multiple address with -m option",
-			func() []string {
+			name: "send to multiple address with -m option",
+			args: func() []string {
 				addrCoins := []struct {
 					Addr  string `json:"addr"`
 					Coins string `json:"coins"`
@@ -1407,8 +1406,7 @@ func TestLiveSend(t *testing.T) {
 
 				return []string{"send", "-m", string(v)}
 			},
-			nil,
-			func(t *testing.T, txid string) {
+			checkTx: func(t *testing.T, txid string) {
 				tx := getTransaction(t, txid)
 				// Confirms the second address receives 0.5 coin and 1 coinhour in this transaction
 				checkCoinsAndCoinhours(t, tx, w.Entries[1].Address.String(), 5e5, 1)
@@ -1423,13 +1421,12 @@ func TestLiveSend(t *testing.T) {
 			// Send 0.001 coin from the third address to the second address.
 			// Set the second as change address, so the 0.499 change coin will also be sent to the second address.
 			// After sending, the second address should have 1 coin and 1 coin hour.
-			"name: send with -c(change address) -a(from address) options",
-			func() []string {
+			name: "send with -c(change address) -a(from address) options",
+			args: func() []string {
 				return []string{"send", "-c", w.Entries[1].Address.String(),
 					"-a", w.Entries[2].Address.String(), w.Entries[1].Address.String(), "0.001"}
 			},
-			nil,
-			func(t *testing.T, txid string) {
+			checkTx: func(t *testing.T, txid string) {
 				tx := getTransaction(t, txid)
 				// Confirms the second address receives 0.5 coin and 0 coinhour in this transaction
 				checkCoinsAndCoinhours(t, tx, w.Entries[1].Address.String(), 5e5, 0)
@@ -1442,13 +1439,12 @@ func TestLiveSend(t *testing.T) {
 		{
 			// Send 1 coin from second to the the third address, this will spend three outputs(0.2, 0.3. 0.5 coin),
 			// and burn out the remaining 1 coin hour.
-			"name: send to burn all coin hour",
-			func() []string {
+			name: "send to burn all coin hour",
+			args: func() []string {
 				return []string{"send", "-a", w.Entries[1].Address.String(),
 					w.Entries[2].Address.String(), "1"}
 			},
-			nil,
-			func(t *testing.T, txid string) {
+			checkTx: func(t *testing.T, txid string) {
 				// Confirms that the third address has 1 coin and 0 coin hour
 				coins, hours := getAddressBalance(t, w.Entries[2].Address.String())
 				require.Equal(t, uint64(1e6), coins)
@@ -1457,13 +1453,13 @@ func TestLiveSend(t *testing.T) {
 		},
 		{
 			// Send with 0 coin hour, this test should fail.
-			"name: send 0 coin hour",
-			func() []string {
+			name: "send 0 coin hour",
+			args: func() []string {
 				return []string{"send", "-a", w.Entries[2].Address.String(),
 					w.Entries[1].Address.String(), "1"}
 			},
-			[]byte("ERROR: Transaction has zero coinhour fee. See 'skycoin-cli send --help'"),
-			func(t *testing.T, txid string) {},
+			errMsg:  []byte("ERROR: Transaction has zero coinhour fee. See 'skycoin-cli send --help'"),
+			checkTx: func(t *testing.T, txid string) {},
 		},
 	}
 
@@ -1543,14 +1539,13 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 	}{
 		{
 			// Send all coins to the first address to one output.
-			"name: send all coins to the first address",
-			func() []string {
+			name: "send all coins to the first address",
+			args: func() []string {
 				coins, err := droplet.ToString(totalCoins)
 				require.NoError(t, err)
 				return []string{"createRawTransaction", w.Entries[0].Address.String(), coins}
 			},
-			nil,
-			func(t *testing.T, txid string) {
+			checkTx: func(t *testing.T, txid string) {
 				// Confirms all coins are in the first address in one output
 				tx := getTransaction(t, txid)
 				require.Len(t, tx.Transaction.Transaction.Out, 1)
@@ -1563,8 +1558,8 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 			// Send 0.5 coin to the second address.
 			// Send 0.5 coin to the third address.
 			// After sending, the first address should have at least 1 coin left.
-			"name: send to multiple address with -m option",
-			func() []string {
+			name: "send to multiple address with -m option",
+			args: func() []string {
 				addrCoins := []struct {
 					Addr  string `json:"addr"`
 					Coins string `json:"coins"`
@@ -1584,8 +1579,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 
 				return []string{"createRawTransaction", "-m", string(v)}
 			},
-			nil,
-			func(t *testing.T, txid string) {
+			checkTx: func(t *testing.T, txid string) {
 				tx := getTransaction(t, txid)
 				// Confirms the second address receives 0.5 coin and 1 coinhour in this transaction
 				checkCoinsAndCoinhours(t, tx, w.Entries[1].Address.String(), 5e5, 1)
@@ -1600,13 +1594,12 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 			// Send 0.001 coin from the third address to the second address.
 			// Set the second as change address, so the 0.499 change coin will also be sent to the second address.
 			// After sending, the second address should have 1 coin and 1 coin hour.
-			"name: send with -c(change address) -a(from address) options",
-			func() []string {
+			name: "send with -c(change address) -a(from address) options",
+			args: func() []string {
 				return []string{"createRawTransaction", "-c", w.Entries[1].Address.String(),
 					"-a", w.Entries[2].Address.String(), w.Entries[1].Address.String(), "0.001"}
 			},
-			nil,
-			func(t *testing.T, txid string) {
+			checkTx: func(t *testing.T, txid string) {
 				tx := getTransaction(t, txid)
 				// Confirms the second address receives 0.5 coin and 0 coinhour in this transaction
 				checkCoinsAndCoinhours(t, tx, w.Entries[1].Address.String(), 5e5, 0)
@@ -1619,13 +1612,12 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 		{
 			// Send 1 coin from second to the the third address, this will spend three outputs(0.2, 0.3. 0.5 coin),
 			// and burn out the remaining 1 coin hour.
-			"name: send to burn all coin hour",
-			func() []string {
+			name: "send to burn all coin hour",
+			args: func() []string {
 				return []string{"createRawTransaction", "-a", w.Entries[1].Address.String(),
 					w.Entries[2].Address.String(), "1"}
 			},
-			nil,
-			func(t *testing.T, txid string) {
+			checkTx: func(t *testing.T, txid string) {
 				// Confirms that the third address has 1 coin and 0 coin hour
 				coins, hours := getAddressBalance(t, w.Entries[2].Address.String())
 				require.Equal(t, uint64(1e6), coins)
@@ -1634,13 +1626,13 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 		},
 		{
 			// Send with 0 coin hour, this test should fail.
-			"name: send 0 coin hour",
-			func() []string {
+			name: "send 0 coin hour",
+			args: func() []string {
 				return []string{"createRawTransaction", "-a", w.Entries[2].Address.String(),
 					w.Entries[1].Address.String(), "1"}
 			},
-			[]byte("ERROR: Transaction has zero coinhour fee. See 'skycoin-cli createRawTransaction --help'"),
-			func(t *testing.T, txid string) {},
+			errMsg:  []byte("ERROR: Transaction has zero coinhour fee. See 'skycoin-cli createRawTransaction --help'"),
+			checkTx: func(t *testing.T, txid string) {},
 		},
 	}
 
@@ -1863,4 +1855,46 @@ func TestLiveWalletHistory(t *testing.T) {
 	require.NoError(t, err)
 	// Confirms that the wallet has history.
 	require.True(t, len(his) > 0)
+}
+
+func TestCheckDB(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+
+	tt := []struct {
+		name   string
+		dbPath string
+		result []byte
+		errMsg []byte
+	}{
+		{
+			name:   "no signature",
+			dbPath: "../../../visor/testdata/data.db.nosig",
+			errMsg: []byte("checkdb failed: find no signature of block: seq=1000\n"),
+		},
+		{
+			name:   "invalid database",
+			dbPath: "../../../visor/testdata/data.db.garbage",
+			errMsg: []byte("open db failed: invalid database\n"),
+		},
+		{
+			name:   "valid database",
+			dbPath: "../../../gui/integration/test-fixtures/blockchain-180.db",
+			result: []byte("check db success\n"),
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			output, err := exec.Command(binaryPath, "checkdb", tc.dbPath).CombinedOutput()
+			if err != nil {
+				fmt.Println(string(output))
+				require.Equal(t, tc.errMsg, output)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tc.result, output)
+		})
+	}
 }

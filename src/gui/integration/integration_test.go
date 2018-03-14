@@ -1812,7 +1812,7 @@ func TestLiveWalletSpend(t *testing.T) {
 		checkTx func(t *testing.T, tx *visor.TransactionResult)
 	}{
 		{
-			"Send all coins to the first address",
+			"name: send all coins to the first address",
 			w.Entries[0].Address.String(),
 			totalCoins,
 			func(t *testing.T, tx *visor.TransactionResult) {

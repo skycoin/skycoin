@@ -3,11 +3,6 @@
 #include "libskycoin.h"
 
 #define SKYCOIN_ADDRESS_VALID "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv"
-#define SKYCOIN_ADDRESS_WRONG_1 "12345678"
-#define SKYCOIN_ADDRESS_WRONG_2 " 2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv"
-#define SKYCOIN_ADDRESS_WRONG_3 "0002GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv"
-#define SKYCOIN_ADDRESS_WRONG_4 "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv000"
-#define SKYCOIN_ADDRESS_WRONG_5 "abc2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qvdef"
 
 // buffer big enough to hold all kind of data needed by test cases
 unsigned char buff[1024];
@@ -24,62 +19,49 @@ int addr_equal(Address *addr1, Address *addr2){
 
 // TODO: Change to write assertion like this cr_assert(eq(type(struct Address), &addr1, &addr2))
 void cr_assert_addr_eq(Address *addr1, Address *addr2, char *msg){
-  int r = addr_equal(addr1, addr2);
-  cr_assert(r == 1);
+  cr_assert( addr_equal(addr1, addr2) == 1);
 }
 
 // TODO: Change to write assertion like this cr_assert(not(eq(type(struct Address), &addr1, &addr2)))
 void cr_assert_addr_noteq(Address *addr1, Address *addr2, char *msg){
-  int r = addr_equal(addr1, addr2);
-  cr_assert(r == 0);
+  cr_assert( addr_equal(addr1, addr2) == 0);
 }
 
-Test(cipher, test_address_valid) {
-  GoString strAddr = {
-    SKYCOIN_ADDRESS_VALID,
-    35
-  };
-  Address addr;
+Test(asserts, TestDecodeBase58Address) {
 
-  int r = SKY_cipher_DecodeBase58Address(strAddr, &addr);
-  cr_assert(r == 1, "accept valid address");
+ GoString strAddr = {
+  SKYCOIN_ADDRESS_VALID,
+  35
+};
+Address addr;
 
-  strAddr.p = SKYCOIN_ADDRESS_WRONG_4;
-  r = SKY_cipher_DecodeBase58Address(strAddr, &addr);
-  cr_assert(r == 1, "accept address with suffix and exact len");
+cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == 1, "accept valid address");
+
+// preceding whitespace is invalid
+char *worng = ' ' + SKYCOIN_ADDRESS_VALID;
+
+GoString strAddrWrong ={
+  worng,
+  35
+};
+cr_assert( SKY_cipher_DecodeBase58Address(strAddrWrong, &addr) == 0, "preceding whitespace is invalid");
+
+// preceding zeroes are invalid
+strAddrWrong.p=('0'+'0'+'0' + SKYCOIN_ADDRESS_VALID);
+cr_assert( SKY_cipher_DecodeBase58Address(strAddrWrong, &addr) == 0, " preceding zeroes are invalid");
+
+// trailing whitespace is invalid
+strAddrWrong.p = SKYCOIN_ADDRESS_VALID + ' ';
+cr_assert( SKY_cipher_DecodeBase58Address(strAddrWrong, &addr) == 0, " trailing whitespace is invalid");
+
+// trailing zeroes are invalid
+strAddrWrong.p = SKYCOIN_ADDRESS_VALID + '0'+'0'+'0';
+cr_assert( SKY_cipher_DecodeBase58Address(strAddrWrong, &addr) == 0, " trailing zeroes are invalid");
+
 }
 
-Test(cipher, test_address_wrong) {
-  GoString strAddr = {
-    SKYCOIN_ADDRESS_VALID,
-    8
-  };
-  Address addr;
 
-  int r = SKY_cipher_DecodeBase58Address(strAddr, &addr);
-  cr_assert(r == 0, "reject shorter strings");
-
-  strAddr.p = SKYCOIN_ADDRESS_WRONG_2;
-  strAddr.n = 35;
-  r = SKY_cipher_DecodeBase58Address(strAddr, &addr);
-  cr_assert(r == 0, "reject leading whitespaces");
-
-  strAddr.p = SKYCOIN_ADDRESS_WRONG_3;
-  r = SKY_cipher_DecodeBase58Address(strAddr, &addr);
-  cr_assert(r == 0, "reject unexpected prefix");
-
-  strAddr.p = SKYCOIN_ADDRESS_WRONG_4;
-  strAddr.n = 38;
-  r = SKY_cipher_DecodeBase58Address(strAddr, &addr);
-  cr_assert(r == 0, "reject unexpected suffix");
-
-  strAddr.p = SKYCOIN_ADDRESS_WRONG_5;
-  strAddr.n = 41;
-  r = SKY_cipher_DecodeBase58Address(strAddr, &addr);
-  cr_assert(r == 0, "reject unexpected prefix and suffix");
-}
-
-Test(cipher, test_address_frombytes){
+Test(cipher, TestAddressFromBytes){
   GoString strAddr = {
     SKYCOIN_ADDRESS_VALID,
     35
@@ -94,19 +76,35 @@ Test(cipher, test_address_frombytes){
   SKY_cipher_DecodeBase58Address(strAddr, &addr);
   SKY_cipher_Address_BitcoinBytes(&addr, (GoSlice_ *)&bytes);
   cr_assert(bytes.len > 0, "address bytes written");
-  int r = SKY_cipher_BitcoinAddressFromBytes(bytes, &addr2);
-  cr_assert(r == 1, "convert bytes to SKY address");
-  cr_assert_addr_eq(&addr, &addr2, "address from bytes should match original");
+  cr_assert(SKY_cipher_BitcoinAddressFromBytes(bytes, &addr2) == 0, "convert bytes to SKY address");
+  // cr_assert(eq(type(struct Address), &addr, &addr2));
 
   int bytes_len = bytes.len;
 
   bytes.len = bytes.len - 2;
-  r = SKY_cipher_BitcoinAddressFromBytes(bytes, &addr2);
-  cr_assert(r == 0, "no SKY address due to short bytes length");
+  cr_assert(SKY_cipher_BitcoinAddressFromBytes(bytes, &addr2) == 1, "no SKY address due to short bytes length");
 
   bytes.len = bytes_len;
   ((char *) bytes.data)[bytes.len - 1] = '2';
-  r = SKY_cipher_BitcoinAddressFromBytes(bytes, &addr2);
-  cr_assert(r == 0, "no SKY address due to corrupted bytes");
+  cr_assert(SKY_cipher_BitcoinAddressFromBytes(bytes, &addr2) == 1, "no SKY address due to corrupted bytes");
 }
+
+// Test(cipher, TestAddressRoundtrip){
+//  GoString strAddr = {
+//     SKYCOIN_ADDRESS_VALID,
+//     35
+//   };
+
+//   Address addr, addr2;
+//   GoSlice bytes;
+
+//   bytes.data = buff;
+//   bytes.len = 0;
+//   bytes.cap = sizeof(buff);
+
+//   // a2, err := addressFromBytes(a.Bytes())
+//   // require.NoError(t, err)
+//   // require.Equal(t, a, a2)
+//   // require.Equal(t, a.String(), a2.String())
+// }
 

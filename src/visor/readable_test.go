@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"reflect"
 	"testing"
 
@@ -57,13 +56,6 @@ func setupVisor(t *testing.T) (v *Visor, close func()) {
 	return
 }
 
-func cleanupVisor(dir string) {
-	err := os.RemoveAll(dir)
-	if err != nil {
-		logger.Critical("Failed to remove tmp wallets dir: %v", err)
-	}
-}
-
 func transferCoins(t *testing.T, v *Visor) error {
 	head := addGenesisBlock(t, v.Blockchain)
 	toAddrs := make([]cipher.Address, 10)
@@ -112,7 +104,6 @@ func assertJSONSerializability(t *testing.T, thing interface{}) {
 
 func TestNewBlockchainMetadata(t *testing.T) {
 	v, close := setupVisor(t)
-	defer cleanupVisor(v.Config.WalletDirectory)
 	defer close()
 	assert.Nil(t, transferCoins(t, v))
 
@@ -165,7 +156,6 @@ func assertReadableTransactionOutput(t *testing.T,
 
 func TestReadableTransactionOutput(t *testing.T) {
 	v, close := setupVisor(t)
-	defer cleanupVisor(v.Config.WalletDirectory)
 	defer close()
 	assert.Nil(t, transferCoins(t, v))
 	b, err := v.Blockchain.Head()
@@ -185,7 +175,6 @@ func assertReadableTransactionInput(t *testing.T, rti string, ti cipher.SHA256) 
 
 func TestReadableTransactionInput(t *testing.T) {
 	v, close := setupVisor(t)
-	defer cleanupVisor(v.Config.WalletDirectory)
 	defer close()
 	assert.Nil(t, transferCoins(t, v))
 	b, err := v.Blockchain.Head()
@@ -210,7 +199,6 @@ func assertReadableTransaction(t *testing.T, rtx ReadableTransaction,
 
 func TestReadableTransaction(t *testing.T) {
 	v, close := setupVisor(t)
-	defer cleanupVisor(v.Config.WalletDirectory)
 	defer close()
 	assert.Nil(t, transferCoins(t, v))
 	b, err := v.Blockchain.Head()
@@ -236,7 +224,6 @@ func assertReadableBlockHeader(t *testing.T, rb ReadableBlockHeader,
 
 func TestNewReadableBlockHeader(t *testing.T) {
 	v, close := setupVisor(t)
-	defer cleanupVisor(v.Config.WalletDirectory)
 	defer close()
 	assert.Nil(t, transferCoins(t, v))
 	bh, err := v.Blockchain.Head()
@@ -263,7 +250,6 @@ func assertReadableBlock(t *testing.T, rb ReadableBlock, b coin.Block) {
 
 func TestNewReadableBlock(t *testing.T) {
 	v, close := setupVisor(t)
-	defer cleanupVisor(v.Config.WalletDirectory)
 	defer close()
 	assert.Nil(t, transferCoins(t, v))
 	sb, err := v.Blockchain.Head()

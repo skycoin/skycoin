@@ -1523,13 +1523,17 @@ func TestLiveSend(t *testing.T) {
 	}
 }
 
-func TestCreateAndBroadcastRawTransaction(t *testing.T) {
+// TestLiveCreateAndBroadcastRawTransaction does almost the same procedure as TestLiveSend.
+// Create raw transaction with command arguments the same as TestLiveSend, then broadcast the
+// created raw transaction. After the transaction is confirmed, run the same transaction check
+// function like it in TestLiveSend.
+func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 	if !doLive(t) {
 		return
 	}
 
 	// prepares wallet and confirms the wallet has at least 2 coins and 16 coin hours.
-	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 8)
+	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 16)
 
 	tt := []struct {
 		name    string
@@ -1825,4 +1829,38 @@ func getWalletOutputs(t *testing.T, walletPath string) visor.ReadableOutputs {
 	require.NoError(t, err)
 
 	return wltOutput.Outputs.HeadOutputs
+}
+
+func TestStableWalletHistory(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	_, clean := createTempWalletFile(t)
+	defer clean()
+
+	output, err := exec.Command(binaryPath, "walletHistory").CombinedOutput()
+	require.NoError(t, err)
+
+	var history []cli.AddrHistory
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&history)
+	require.NoError(t, err)
+
+	var expect []cli.AddrHistory
+	loadGoldenFile(t, "wallet-history.golden", TestData{history, &expect})
+	require.Equal(t, expect, history)
+}
+
+func TestLiveWalletHistory(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	output, err := exec.Command(binaryPath, "walletHistory").CombinedOutput()
+	require.NoError(t, err)
+	var his []cli.AddrHistory
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&his)
+	require.NoError(t, err)
+	// Confirms that the wallet has history.
+	require.True(t, len(his) > 0)
 }

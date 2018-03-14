@@ -117,12 +117,8 @@ loop:
 }
 
 // filters
-func isPrivate(p Peer) bool {
-	return p.Trusted //modified by stdevEuu
-}
-
-func isPublic(p Peer) bool {
-	return !p.Private
+func isNotTrusted(p Peer) bool{
+	return !p.Trusted
 }
 
 func isTrusted(p Peer) bool {
@@ -150,7 +146,7 @@ func zeroRetryTimes(p Peer) bool {
 }
 
 // isExchangeable filters exchangeable peers
-var isExchangeable = []Filter{hasIncomingPort, isPublic, zeroRetryTimes}
+var isExchangeable = []Filter{hasIncomingPort, isNotTrusted, zeroRetryTimes}
 
 // removePeer removes peer
 func (pl *peerlist) removePeer(addr string) {
@@ -158,9 +154,9 @@ func (pl *peerlist) removePeer(addr string) {
 }
 
 // SetPrivate sets specific peer as private
-func (pl *peerlist) setPrivate(addr string, private bool) error {
+func (pl *peerlist) setPrivate(addr string, trusted bool) error {
 	if p, ok := pl.peers[addr]; ok {
-		p.Private = private
+		p.Trusted = trusted
 		return nil
 	}
 
@@ -207,7 +203,7 @@ func (pl *peerlist) clearOld(timeAgo time.Duration) {
 	t := utc.Now()
 	for addr, peer := range pl.peers {
 		lastSeen := time.Unix(peer.LastSeen, 0)
-		if !peer.Private && t.Sub(lastSeen) > timeAgo {
+		if !peer.Trusted && t.Sub(lastSeen) > timeAgo {
 			delete(pl.peers, addr)
 		}
 	}
@@ -280,8 +276,9 @@ type PeerJSON struct {
 	// Unix timestamp when this peer was last seen.
 	// This could be a time.Time string or an int64 timestamp
 	LastSeen        interface{}
-	Private         bool  // Whether it should omitted from public requests
 	Trusted         bool  // Whether this peer is trusted
+	Default         bool  // Whether this peer is default
+	Automatic         bool  // Whether this peer is automatic
 	HasIncomePort   *bool `json:"HasIncomePort,omitempty"` // Whether this peer has incoming port [DEPRECATED]
 	HasIncomingPort *bool // Whether this peer has incoming port
 }
@@ -291,8 +288,9 @@ func newPeerJSON(p Peer) PeerJSON {
 	return PeerJSON{
 		Addr:            p.Addr,
 		LastSeen:        p.LastSeen,
-		Private:         p.Private,
-		Trusted:         p.Default,
+		Trusted:         p.Trusted,
+		Default:         p.Default,
+		Automatic:		 p.Automatic,
 		HasIncomingPort: &p.HasIncomingPort,
 	}
 }
@@ -334,8 +332,9 @@ func newPeerFromJSON(p PeerJSON) (*Peer, error) {
 	return &Peer{
 		Addr:            addr,
 		LastSeen:        lastSeen,
-		Private:         p.Private,
-		Default:         p.Trusted,
+		Trusted:         p.Trusted,
+		Default:         p.Default,
+		Automatic:		 p.Automatic,
 		HasIncomingPort: hasIncomingPort,
 	}, nil
 }

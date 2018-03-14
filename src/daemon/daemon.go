@@ -461,7 +461,7 @@ loop:
 			// TODO (also, connect to all of them on start)
 			elapser.Register("privateConnectionsTicker")
 			if !dm.Config.DisableOutgoingConnections {
-				dm.makePrivateConnections()
+				dm.makeTrustedConnections()
 			}
 
 		case r := <-dm.onConnectEvent:
@@ -624,13 +624,13 @@ func (dm *Daemon) connectToPeer(p pex.Peer) error {
 	return nil
 }
 
-// Connects to all private peers
-func (dm *Daemon) makePrivateConnections() {
+// Connects to all trusted peers
+func (dm *Daemon) makeTrustedConnections() {
 	if dm.Config.DisableOutgoingConnections {
 		return
 	}
 
-	peers := dm.Pex.Private()
+	peers := dm.Pex.Trusted()
 	for _, p := range peers {
 		logger.Info("Private peer attempt: %s", p.Addr)
 		if err := dm.connectToPeer(p); err != nil {

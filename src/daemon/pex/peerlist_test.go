@@ -31,7 +31,7 @@ func TestNewPeer(t *testing.T) {
 	p := NewPeer(testPeers[0])
 	require.NotEqual(t, p.LastSeen, 0)
 	require.Equal(t, p.Addr, testPeers[0])
-	require.False(t, p.Private)
+	require.False(t, p.Trusted)
 }
 
 func TestPeerSeen(t *testing.T) {
@@ -469,23 +469,26 @@ func TestPeerJSONParsing(t *testing.T) {
 	oldFormat := `{
         "Addr": "11.22.33.44:6000",
         "LastSeen": "2017-09-24T06:42:18.999999999Z",
-        "Private": true,
-        "Default": true,
+        "Trusted": true,
+        "Default": false,
+		"Automatic": false,
         "HasIncomePort": true
     }`
 
 	newFormat := `{
         "Addr": "11.22.33.44:6000",
         "LastSeen": 1506235338,
-        "Private": true,
-        "Default": true,
+        "Trusted": true,
+        "Default": false,
+		"Automatic": false,
         "HasIncomingPort": true
     }`
 
 	check := func(p *Peer) {
 		require.Equal(t, "11.22.33.44:6000", p.Addr)
-		require.True(t, p.Private)
-		require.True(t, p.Default)
+		require.True(t, p.Trusted)
+		require.False(t, p.Default)
+		require.False(t, p.Automatic)
 		require.True(t, p.HasIncomingPort)
 		require.Equal(t, int64(1506235338), p.LastSeen)
 	}

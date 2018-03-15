@@ -76,6 +76,11 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
+		if err := r.ParseForm(); err != nil {
+			wh.Error400(w, err.Error())
+			return
+		}
+
 		wltID := r.FormValue("id")
 		if wltID == "" {
 			wh.Error400(w, "missing wallet id")
@@ -173,6 +178,11 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
+		if err := r.ParseForm(); err != nil {
+			wh.Error400(w, err.Error())
+			return
+		}
+
 		seed := r.FormValue("seed")
 		label := r.FormValue("label")
 		scanNStr := r.FormValue("scan")
@@ -241,6 +251,11 @@ func walletNewAddresses(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
+		if err := r.ParseForm(); err != nil {
+			wh.Error400(w, err.Error())
+			return
+		}
+
 		wltID := r.FormValue("id")
 		if wltID == "" {
 			wh.Error400(w, "missing wallet id")
@@ -291,6 +306,12 @@ func walletUpdateHandler(gateway Gatewayer) http.HandlerFunc {
 			wh.Error405(w)
 			return
 		}
+
+		if err := r.ParseForm(); err != nil {
+			wh.Error400(w, err.Error())
+			return
+		}
+
 		// Update wallet
 		wltID := r.FormValue("id")
 		if wltID == "" {

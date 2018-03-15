@@ -1862,17 +1862,17 @@ func TestLiveWalletHistory(t *testing.T) {
 		return
 	}
 
+	doLiveEnvCheck(t)
+
 	output, err := exec.Command(binaryPath, "walletHistory").CombinedOutput()
 	require.NoError(t, err)
 	var his []cli.AddrHistory
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&his)
 	require.NoError(t, err)
-	// Confirms that the wallet has history.
-	require.True(t, len(his) > 0)
 }
 
-func TestCheckDB(t *testing.T) {
-	if !doLiveOrStable(t) {
+func TestStableCheckDB(t *testing.T) {
+	if !doStable(t) {
 		return
 	}
 
@@ -1945,8 +1945,8 @@ func TestVersion(t *testing.T) {
 	require.Len(t, vers, 4)
 }
 
-func TestGenerateWallet(t *testing.T) {
-	if !doLiveOrStable(t) {
+func TestStableGenerateWallet(t *testing.T) {
+	if !doStable(t) {
 		return
 	}
 

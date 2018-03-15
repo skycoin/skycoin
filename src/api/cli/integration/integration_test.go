@@ -2049,7 +2049,7 @@ func TestStableGenerateWallet(t *testing.T) {
 				_, clean := createTempWalletFile(t)
 				return clean
 			},
-			errMsg: []byte("Error: integration-test.wlt already exist. See 'skycoin-cli generateWallet --help'"),
+			errMsg: []byte("ERROR: integration-test.wlt already exist. See 'skycoin-cli generateWallet --help'"),
 		},
 	}
 
@@ -2060,17 +2060,18 @@ func TestStableGenerateWallet(t *testing.T) {
 
 			// Run command with arguments
 			args := append([]string{"generateWallet"}, tc.args...)
-			output, err := exec.Command(binaryName, args...).CombinedOutput()
+			output, err := exec.Command(binaryPath, args...).CombinedOutput()
 			require.NoError(t, err)
 			// Trims the suffix "\n"
 			output = bytes.TrimRight(output, "\n")
 
 			// Checks if the output is start with "Error: ",
 			// confirms the error message are matched.
-			if bytes.Contains(output, []byte("Error: ")) {
+			if bytes.Contains(output, []byte("ERROR: ")) {
 				require.Equal(t, tc.errMsg, output)
 				return
 			}
+			fmt.Println("output:", string(output))
 
 			var rw wallet.ReadableWallet
 			err = json.NewDecoder(bytes.NewReader(output)).Decode(&rw)

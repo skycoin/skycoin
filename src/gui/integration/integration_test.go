@@ -1803,7 +1803,8 @@ func TestLiveWalletSpend(t *testing.T) {
 		return
 	}
 
-	w, totalCoins, _ := prepareAndCheckWallet(t, 2, 1)
+	c := gui.NewClient(nodeAddress())
+	w, totalCoins, _ := prepareAndCheckWallet(t, c, 2, 1)
 	tt := []struct {
 		name    string
 		to      string
@@ -1825,7 +1826,7 @@ func TestLiveWalletSpend(t *testing.T) {
 				require.Equal(t, totalCoins, coins)
 
 				// Confirms the address balance are equal to the totoalCoins
-				coins, _ = getAddressBalance(t, w.Entries[0].Address.String())
+				coins, _ = getAddressBalance(t, c, w.Entries[0].Address.String())
 				require.Equal(t, totalCoins, coins)
 			},
 		},
@@ -1833,7 +1834,6 @@ func TestLiveWalletSpend(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			c := gui.NewClient(nodeAddress())
 			result, err := c.Spend(w.GetFilename(), tc.to, tc.coins)
 			if err != nil {
 				t.Fatalf("spend failed: %v", err)
@@ -1847,7 +1847,7 @@ func TestLiveWalletSpend(t *testing.T) {
 				case <-time.After(30 * time.Second):
 					t.Fatal("Waiting for transaction to be confirmed timeout")
 				case <-tk.C:
-					tx = getTransaction(t, result.Transaction.Hash)
+					tx = getTransaction(t, c, result.Transaction.Hash)
 					if tx.Status.Confirmed {
 						break loop
 					}
@@ -1862,7 +1862,7 @@ func TestLiveWalletSpend(t *testing.T) {
 // 1. The minimal coins and coin hours requirements are met.
 // 2. The wallet has at least one address entry.
 // Returns the loaded wallet, total coins and total coin hours in the wallet.
-func prepareAndCheckWallet(t *testing.T, miniCoins, miniCoinHours uint64) (*wallet.Wallet, uint64, uint64) {
+func prepareAndCheckWallet(t *testing.T, c *gui.Client, miniCoins, miniCoinHours uint64) (*wallet.Wallet, uint64, uint64) {
 	walletDir, walletName := getWalletFromEnv(t)
 	walletPath := filepath.Join(walletDir, walletName)
 
@@ -1880,7 +1880,7 @@ func prepareAndCheckWallet(t *testing.T, miniCoins, miniCoinHours uint64) (*wall
 		t.Fatalf("Wallet %v has no address entry", walletPath)
 	}
 
-	coins, hours := getWalletBalance(t, walletName)
+	coins, hours := getWalletBalance(t, c, walletName)
 	if coins < miniCoins {
 		t.Fatalf("Wallet must have at least %d coins", miniCoins)
 	}
@@ -1914,8 +1914,7 @@ func getWalletFromEnv(t *testing.T) (string, string) {
 
 // getWalletBalance gets wallet balance.
 // Returns coins and hours
-func getWalletBalance(t *testing.T, walletName string) (uint64, uint64) {
-	c := gui.NewClient(nodeAddress())
+func getWalletBalance(t *testing.T, c *gui.Client, walletName string) (uint64, uint64) {
 	wp, err := c.WalletBalance(walletName)
 	if err != nil {
 		t.Fatalf("Get wallet balance of %v failed: %v", walletName, err)
@@ -1924,8 +1923,7 @@ func getWalletBalance(t *testing.T, walletName string) (uint64, uint64) {
 	return wp.Confirmed.Coins, wp.Confirmed.Hours
 }
 
-func getTransaction(t *testing.T, txid string) *visor.TransactionResult {
-	c := gui.NewClient(nodeAddress())
+func getTransaction(t *testing.T, c *gui.Client, txid string) *visor.TransactionResult {
 	tx, err := c.Transaction(txid)
 	if err != nil {
 		t.Fatalf("%v", err)
@@ -1936,8 +1934,7 @@ func getTransaction(t *testing.T, txid string) *visor.TransactionResult {
 
 // getAddressBalance gets balance of given address.
 // Returns coins and coin hours.
-func getAddressBalance(t *testing.T, addr string) (uint64, uint64) {
-	c := gui.NewClient(nodeAddress())
+func getAddressBalance(t *testing.T, c *gui.Client, addr string) (uint64, uint64) {
 	bp, err := c.Balance([]string{addr})
 	if err != nil {
 		t.Fatalf("%v", err)

@@ -1804,7 +1804,7 @@ func TestLiveWalletSpend(t *testing.T) {
 	}
 
 	c := gui.NewClient(nodeAddress())
-	w, totalCoins, _ := prepareAndCheckWallet(t, c, 2, 1)
+	w, totalCoins, _ := prepareAndCheckWallet(t, c, 2e6, 2)
 	tt := []struct {
 		name    string
 		to      string

@@ -410,7 +410,8 @@ func (c *Client) Spend(id, dst string, coins uint64) (*SpendResult, error) {
 	v.Add("coins", fmt.Sprint(coins))
 
 	var r SpendResult
-	if err := c.Post("/wallet/spend", strings.NewReader(v.Encode()), &r); err != nil {
+	endpoint := "/wallet/spend?" + v.Encode()
+	if err := c.Post(endpoint, nil, &r); err != nil {
 		return nil, err
 	}
 
@@ -526,7 +527,7 @@ func (c *Client) PendingTransactions() ([]*visor.ReadableUnconfirmedTxn, error) 
 }
 
 // Transaction makes a request to /transaction
-func (c *Client) Transaction(txid string) (*visor.ReadableTransaction, error) {
+func (c *Client) Transaction(txid string) (*visor.TransactionResult, error) {
 	v := url.Values{}
 	v.Add("txid", txid)
 	endpoint := "/transaction?" + v.Encode()
@@ -535,7 +536,7 @@ func (c *Client) Transaction(txid string) (*visor.ReadableTransaction, error) {
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}
-	return &r.Transaction, nil
+	return &r, nil
 }
 
 // Transactions makes a request to /transactions

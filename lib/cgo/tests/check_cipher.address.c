@@ -40,26 +40,20 @@ Address addr;
 cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == 1, "accept valid address");
 
 // preceding whitespace is invalid
-char *worng = join_char(" ",SKYCOIN_ADDRESS_VALID);
-
-GoString strAddrWrong ={
-  worng,
-  35
-};
-cr_assert( SKY_cipher_DecodeBase58Address(strAddrWrong, &addr) == 0, "preceding whitespace is invalid");
+strAddr.p = join_char(" ",SKYCOIN_ADDRESS_VALID);
+cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == 0, "preceding whitespace is invalid");
 
 // preceding zeroes are invalid
-strAddrWrong.p=join_char("000",SKYCOIN_ADDRESS_VALID);
-cr_assert( SKY_cipher_DecodeBase58Address(strAddrWrong, &addr) == 0, " preceding zeroes are invalid");
+strAddr.p=join_char("000",SKYCOIN_ADDRESS_VALID);
+cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == 0, " preceding zeroes are invalid");
 
 // trailing whitespace is invalid
-
-strAddrWrong.p = join_char(SKYCOIN_ADDRESS_VALID," ");
-cr_assert( SKY_cipher_DecodeBase58Address(strAddrWrong, &addr) == 0, " trailing whitespace is invalid");
+strAddr.p = join_char(SKYCOIN_ADDRESS_VALID," ");
+cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == 0, " trailing whitespace is invalid");
 
 // trailing zeroes are invalid
-strAddrWrong.p = join_char(SKYCOIN_ADDRESS_VALID,"000");
-cr_assert( SKY_cipher_DecodeBase58Address(strAddrWrong, &addr) == 0, " trailing zeroes are invalid");
+strAddr.p = join_char(SKYCOIN_ADDRESS_VALID,"000");
+cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == 0, " trailing zeroes are invalid");
 
 }
 

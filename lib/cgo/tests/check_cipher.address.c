@@ -1,6 +1,8 @@
 
 #include <criterion/criterion.h>
 #include "libskycoin.h"
+#include "libsky_util.h"
+#include <stdio.h>
 
 #define SKYCOIN_ADDRESS_VALID "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv"
 
@@ -38,7 +40,7 @@ Address addr;
 cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == 1, "accept valid address");
 
 // preceding whitespace is invalid
-char *worng = ' ' + SKYCOIN_ADDRESS_VALID;
+char *worng = join_char(" ",SKYCOIN_ADDRESS_VALID);
 
 GoString strAddrWrong ={
   worng,
@@ -47,15 +49,16 @@ GoString strAddrWrong ={
 cr_assert( SKY_cipher_DecodeBase58Address(strAddrWrong, &addr) == 0, "preceding whitespace is invalid");
 
 // preceding zeroes are invalid
-strAddrWrong.p=('0'+'0'+'0' + SKYCOIN_ADDRESS_VALID);
+strAddrWrong.p=join_char("000",SKYCOIN_ADDRESS_VALID);
 cr_assert( SKY_cipher_DecodeBase58Address(strAddrWrong, &addr) == 0, " preceding zeroes are invalid");
 
 // trailing whitespace is invalid
-strAddrWrong.p = SKYCOIN_ADDRESS_VALID + ' ';
+
+strAddrWrong.p = join_char(SKYCOIN_ADDRESS_VALID," ");
 cr_assert( SKY_cipher_DecodeBase58Address(strAddrWrong, &addr) == 0, " trailing whitespace is invalid");
 
 // trailing zeroes are invalid
-strAddrWrong.p = SKYCOIN_ADDRESS_VALID + '0'+'0'+'0';
+strAddrWrong.p = join_char(SKYCOIN_ADDRESS_VALID,"000");
 cr_assert( SKY_cipher_DecodeBase58Address(strAddrWrong, &addr) == 0, " trailing zeroes are invalid");
 
 }

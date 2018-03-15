@@ -120,6 +120,20 @@ func createTempWalletFile(t *testing.T) (string, func()) {
 	return walletPath, fun
 }
 
+// createTempWalletDir creates a temporary wallet dir,
+// sets the WALLET_DIR environment variable.
+// Returns wallet dir path and callback function to clean up the dir.
+func createTempWalletDir(t *testing.T) func() {
+	dir, err := ioutil.TempDir("", "wallet-data-dir")
+	require.NoError(t, err)
+	os.Setenv("WALLET_DIR", dir)
+
+	return func() {
+		os.Setenv("WALLET_DIR", "")
+		os.RemoveAll(dir)
+	}
+}
+
 func loadJSON(t *testing.T, filename string, obj interface{}) {
 	f, err := os.Open(filename)
 	require.NoError(t, err)
@@ -1929,4 +1943,169 @@ func TestVersion(t *testing.T) {
 	output = bytes.TrimRight(output, "\n")
 	vers := bytes.Split(output, []byte("\n"))
 	require.Len(t, vers, 4)
+}
+
+func TestGenerateWallet(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+
+	tt := []struct {
+		name        string
+		args        []string
+		setup       func(t *testing.T) func()
+		errMsg      []byte
+		checkWallet func(t *testing.T, w *wallet.Wallet)
+	}{
+		{
+			name:  "generate wallet with -r option",
+			args:  []string{"-r"},
+			setup: createTempWalletDir,
+			checkWallet: func(t *testing.T, w *wallet.Wallet) {
+				// Confirms the default wallet name is skycoin_cli.wlt
+				require.Equal(t, "skycoin_cli.wlt", w.GetFilename())
+
+				// Confirms the seed is a valid hex string
+				_, err := hex.DecodeString(w.Meta["seed"])
+				require.NoError(t, err)
+
+				// Confirms the label is empty
+				require.Empty(t, w.Meta["label"])
+			},
+		},
+		{
+			name:  "generate wallet with --rd option",
+			args:  []string{"--rd"},
+			setup: createTempWalletDir,
+			checkWallet: func(t *testing.T, w *wallet.Wallet) {
+				// Confirms the default wallet name is skycoin_cli.wlt
+				require.Equal(t, "skycoin_cli.wlt", w.GetFilename())
+
+				// Confirms the seed is consisited of 12 words
+				seed := w.Meta["seed"]
+				words := strings.Split(seed, " ")
+				require.Len(t, words, 12)
+
+				// Confirms the label is empty
+				require.Empty(t, w.Meta["label"])
+			},
+		},
+		{
+			name:  "generate wallet with -s option",
+			args:  []string{"-s", "great duck trophy inhale dad pluck include maze smart mechanic ring merge"},
+			setup: createTempWalletDir,
+			checkWallet: func(t *testing.T, w *wallet.Wallet) {
+				// Confirms the default wallet name is skycoin_cli.wlt
+				require.Equal(t, "skycoin_cli.wlt", w.GetFilename())
+				// Confirms the label is empty
+				require.Empty(t, w.Meta["label"])
+
+				require.Equal(t, "great duck trophy inhale dad pluck include maze smart mechanic ring merge", w.Meta["seed"])
+				require.Equal(t, "2amA8sxKJhNRp3wfWrE5JfTEUjr9S3C2BaU", w.Entries[0].Address.String())
+				require.Equal(t, "02b4a4b63f2f8ba56f9508712815eca3c088693333715eaf7a73275d8928e1be5a", w.Entries[0].Public.Hex())
+				require.Equal(t, "f4a281d094a6e9e95a84c23701a7d01a0e413c838758e94ad86a10b9b83e0434", w.Entries[0].Secret.Hex())
+			},
+		},
+		{
+			name:  "generate wallet with -n option",
+			args:  []string{"-n", "5"},
+			setup: createTempWalletDir,
+			checkWallet: func(t *testing.T, w *wallet.Wallet) {
+				// Confirms the default wallet name is skycoin_cli.wlt
+				require.Equal(t, "skycoin_cli.wlt", w.GetFilename())
+				// Confirms the label is empty
+				require.Empty(t, w.Meta["label"])
+				// Confirms wallet has 5 address entries
+				require.Len(t, w.Entries, 5)
+			},
+		},
+		{
+			name:  "generate wallet with -f option",
+			args:  []string{"-f", "integration-cli.wlt"},
+			setup: createTempWalletDir,
+			checkWallet: func(t *testing.T, w *wallet.Wallet) {
+				// Confirms the default wallet name is skycoin_cli.wlt
+				require.Equal(t, "integration-cli.wlt", w.GetFilename())
+				// Confirms the label is empty
+				require.Empty(t, w.Meta["label"])
+			},
+		},
+		{
+			name:  "generate wallet with -l option",
+			args:  []string{"-l", "integration-cli"},
+			setup: createTempWalletDir,
+			checkWallet: func(t *testing.T, w *wallet.Wallet) {
+				// Confirms the default wallet name is skycoin_cli.wlt
+				require.Equal(t, "skycoin_cli.wlt", w.GetFilename())
+				label, ok := w.Meta["label"]
+				require.True(t, ok)
+				require.Equal(t, "integration-cli", label)
+			},
+		},
+		{
+			name: "generate wallet with duplicate wallet name",
+			args: []string{},
+			setup: func(t *testing.T) func() {
+				_, clean := createTempWalletFile(t)
+				return clean
+			},
+			errMsg: []byte("Error: integration-test.wlt already exist. See 'skycoin-cli generateWallet --help'"),
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			clean := tc.setup(t)
+			defer clean()
+
+			// Run command with arguments
+			args := append([]string{"generateWallet"}, tc.args...)
+			output, err := exec.Command(binaryName, args...).CombinedOutput()
+			require.NoError(t, err)
+			// Trims the suffix "\n"
+			output = bytes.TrimRight(output, "\n")
+
+			// Checks if the output is start with "Error: ",
+			// confirms the error message are matched.
+			if bytes.Contains(output, []byte("Error: ")) {
+				require.Equal(t, tc.errMsg, output)
+				return
+			}
+
+			var rw wallet.ReadableWallet
+			err = json.NewDecoder(bytes.NewReader(output)).Decode(&rw)
+			require.NoError(t, err)
+
+			// Converts to wallet.Wallet
+			w, err := rw.ToWallet()
+			require.NoError(t, err)
+
+			// Validate the wallet
+			err = w.Validate()
+			require.NoError(t, err)
+
+			// Confirms all entries and lastSeed are derived from seed.
+			checkWalletEntriesAndLastSeed(t, &w)
+
+			// Checks the wallet with provided checking method.
+			tc.checkWallet(t, &w)
+		})
+	}
+}
+
+// checkWalletEntriesAndLastSeed confirms the wallet entries and lastSeed are derivied
+// from the seed.
+func checkWalletEntriesAndLastSeed(t *testing.T, w *wallet.Wallet) {
+	seed, ok := w.Meta["seed"]
+	require.True(t, ok)
+	newSeed, seckeys := cipher.GenerateDeterministicKeyPairsSeed([]byte(seed), len(w.Entries))
+	require.Len(t, seckeys, len(w.Entries))
+	for i, sk := range seckeys {
+		require.Equal(t, w.Entries[i].Secret, sk)
+		pk := cipher.PubKeyFromSecKey(sk)
+		require.Equal(t, w.Entries[i].Public, pk)
+	}
+	lastSeed, ok := w.Meta["lastSeed"]
+	require.True(t, ok)
+	require.Equal(t, lastSeed, hex.EncodeToString(newSeed))
 }

@@ -379,7 +379,16 @@ func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendOr404(w, txns)
+		unconfirmedTxns, err := visor.NewReadableUnconfirmedTxns(txns)
+		if err != nil {
+			wh.Error500Msg(w, err.Error())
+			return
+		}
+
+		wh.SendJSONOr500(logger, w, map[string][]visor.ReadableUnconfirmedTxn{
+			"transactions": unconfirmedTxns,
+		})
+
 	}
 }
 

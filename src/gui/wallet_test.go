@@ -789,6 +789,9 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		WalletID string
 	}
 
+	// create an unconfirmed readable transaction of default values
+	readableUnconfirmedTxn, _ := visor.NewReadableUnconfirmedTxn(&visor.UnconfirmedTxn{})
+
 	tt := []struct {
 		name                                  string
 		method                                string
@@ -798,7 +801,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		walletID                              string
 		gatewayGetWalletUnconfirmedTxnsResult []visor.UnconfirmedTxn
 		gatewayGetWalletUnconfirmedTxnsErr    error
-		responseBody                          []visor.UnconfirmedTxn
+		responseBody                          map[string][]visor.ReadableUnconfirmedTxn
 	}{
 		{
 			name:   "405",
@@ -855,7 +858,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			err:      "",
 			walletID: "foo",
 			gatewayGetWalletUnconfirmedTxnsResult: make([]visor.UnconfirmedTxn, 1),
-			responseBody:                          []visor.UnconfirmedTxn{visor.UnconfirmedTxn{}},
+			responseBody:                          map[string][]visor.ReadableUnconfirmedTxn{"transactions": []visor.ReadableUnconfirmedTxn{*readableUnconfirmedTxn}},
 		},
 	}
 
@@ -895,7 +898,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 		} else {
-			var msg []visor.UnconfirmedTxn
+			var msg map[string][]visor.ReadableUnconfirmedTxn
 			err = json.Unmarshal(rr.Body.Bytes(), &msg)
 			require.NoError(t, err)
 			require.Equal(t, tc.responseBody, msg, tc.name)
@@ -909,7 +912,6 @@ func TestWalletCreateHandler(t *testing.T) {
 		Label string
 		ScanN string
 	}
-
 	tt := []struct {
 		name                      string
 		method                    string
@@ -1147,7 +1149,6 @@ func TestWalletNewSeed(t *testing.T) {
 	type httpBody struct {
 		Entropy string
 	}
-
 	tt := []struct {
 		name      string
 		method    string
@@ -1274,6 +1275,7 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 	type Addresses struct {
 		Address []string `json:"addresses"`
 	}
+
 	var responseAddresses = Addresses{}
 	var responseEmptyAddresses = Addresses{}
 

@@ -1522,7 +1522,7 @@ func TestLiveSend(t *testing.T) {
 // TestLiveCreateAndBroadcastRawTransaction does almost the same procedure as TestLiveSend.
 // Create raw transaction with command arguments the same as TestLiveSend, then broadcast the
 // created raw transaction. After the transaction is confirmed, run the same transaction check
-// function like it in TestLiveSend.
+// function like in TestLiveSend.
 func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 	if !doLive(t) {
 		return
@@ -1897,4 +1897,36 @@ func TestCheckDB(t *testing.T) {
 			require.Equal(t, tc.result, output)
 		})
 	}
+}
+
+func TestVersion(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+
+	// Gets version in json format.
+	output, err := exec.Command(binaryPath, "version", "-j").CombinedOutput()
+	require.NoError(t, err)
+
+	var ver = struct {
+		Skycoin string `json:"skycoin"`
+		Cli     string `json:"cli"`
+		RPC     string `json:"rpc"`
+		Wallet  string `json:"wallet"`
+	}{}
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&ver)
+	require.NoError(t, err)
+	require.True(t, ver.Skycoin != "")
+	require.True(t, ver.Cli != "")
+	require.True(t, ver.RPC != "")
+	require.True(t, ver.Wallet != "")
+
+	// Gets version without json format.
+	output, err = exec.Command(binaryPath, "version").CombinedOutput()
+	require.NoError(t, err)
+
+	// Confirms the result contains 4 version componments
+	output = bytes.TrimRight(output, "\n")
+	vers := bytes.Split(output, []byte("\n"))
+	require.Len(t, vers, 4)
 }

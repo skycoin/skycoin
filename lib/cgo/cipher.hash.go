@@ -16,7 +16,7 @@ import (
 import "C"
 
 //export SKY_cipher_Ripemd160_Set
-func SKY_cipher_Ripemd160_Set(_rd *C.Ripemd160, _b []byte) (retVal C.uint) {
+func SKY_cipher_Ripemd160_Set(_rd *C.Ripemd160, _b []byte) (retVal C.uint32) {
 	defer func() {
 		if r := recover(); r != nil {
 			retVal = 0
@@ -36,7 +36,7 @@ func SKY_cipher_HashRipemd160(_data []byte, _arg1 *C.Ripemd160) {
 }
 
 //export SKY_cipher_SHA256_Set
-func SKY_cipher_SHA256_Set(_g *C.SHA256, _b []byte) (retVal C.uint) {
+func SKY_cipher_SHA256_Set(_g *C.SHA256, _b []byte) (retVal C.uint32) {
 	defer func() {
 		if r := recover(); r != nil {
 			retVal = 0
@@ -71,7 +71,7 @@ func SKY_cipher_SumSHA256(_b []byte, _arg1 *C.SHA256) {
 }
 
 //export SKY_cipher_SHA256FromHex
-func SKY_cipher_SHA256FromHex(_hs string, _arg1 *C.SHA256) C.uint {
+func SKY_cipher_SHA256FromHex(_hs string, _arg1 *C.SHA256) C.uint32 {
 	h, err := cipher.SHA256FromHex(_hs)
 	if err != nil {
 		return 0

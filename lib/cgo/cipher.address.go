@@ -20,7 +20,7 @@ import (
  */
 
 //export SKY_cipher_DecodeBase58Address
-func SKY_cipher_DecodeBase58Address(_addr string, _arg1 *C.Address) C.uint {
+func SKY_cipher_DecodeBase58Address(_addr string, _arg1 *C.Address) C.uint32 {
 	addr, err := cipher.DecodeBase58Address(_addr)
 	if err == nil {
 		*_arg1 = *(*C.Address)(unsafe.Pointer(&addr))
@@ -45,7 +45,7 @@ func SKY_cipher_AddressFromSecKey(_secKey *C.SecKey, _arg1 *C.Address) {
 }
 
 //export SKY_cipher_BitcoinDecodeBase58Address
-func SKY_cipher_BitcoinDecodeBase58Address(_addr string, _arg1 *C.Address) C.uint {
+func SKY_cipher_BitcoinDecodeBase58Address(_addr string, _arg1 *C.Address) C.uint32 {
 	addr, err := cipher.BitcoinDecodeBase58Address(_addr)
 	if err == nil {
 		*_arg1 = *(*C.Address)(unsafe.Pointer(&addr))
@@ -83,7 +83,7 @@ func SKY_cipher_Address_BitcoinBytes(_addr *C.Address, _arg0 *C.GoSlice_) {
 }
 
 //export SKY_cipher_Address_Verify
-func SKY_cipher_Address_Verify(_addr *C.Address, _key *C.PubKey) C.uint {
+func SKY_cipher_Address_Verify(_addr *C.Address, _key *C.PubKey) C.uint32 {
 	addr := (*cipher.Address)(unsafe.Pointer(_addr))
 	key := (*cipher.PubKey)(unsafe.Pointer(&_key))
 	err := addr.Verify(*key)
@@ -136,7 +136,7 @@ func SKY_cipher_BitcoinWalletImportFormatFromSeckey(_seckey *C.SecKey) string {
 }
 
 //export SKY_cipher_BitcoinAddressFromBytes
-func SKY_cipher_BitcoinAddressFromBytes(_b []byte, _arg1 *C.Address) C.uint {
+func SKY_cipher_BitcoinAddressFromBytes(_b []byte, _arg1 *C.Address) C.uint32 {
 	addr, err := cipher.BitcoinAddressFromBytes(_b)
 	if err != nil {
 		*_arg1 = *(*C.Address)(unsafe.Pointer(&addr))
@@ -146,7 +146,7 @@ func SKY_cipher_BitcoinAddressFromBytes(_b []byte, _arg1 *C.Address) C.uint {
 }
 
 //export SKY_cipher_SecKeyFromWalletImportFormat
-func SKY_cipher_SecKeyFromWalletImportFormat(_input string, _arg1 *C.SecKey) C.uint {
+func SKY_cipher_SecKeyFromWalletImportFormat(_input string, _arg1 *C.SecKey) C.uint32 {
 	seckey, err := cipher.SecKeyFromWalletImportFormat(_input)
 	if err != nil {
 		*_arg1 = *(*C.SecKey)(unsafe.Pointer(&seckey))

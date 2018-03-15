@@ -1519,9 +1519,10 @@ func TestLiveSend(t *testing.T) {
 	}
 
 	// Send with too small decimal value
+	// CLI send is a litte bit slow, almost 300ms each. so we only test 20 invalid decimal coin.
 	errMsg := []byte("ERROR: invalid amount, too many decimal places. See 'skycoin-cli send --help'")
-	for i := 0.0001; i <= 0.0009; i++ {
-		v, err := droplet.ToString(uint64(i * droplet.Multiplier))
+	for i := uint64(1); i < uint64(20); i++ {
+		v, err := droplet.ToString(i)
 		require.NoError(t, err)
 		name := fmt.Sprintf("send %v", v)
 		t.Run(name, func(t *testing.T) {
@@ -1694,8 +1695,8 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 
 	// Send with too small decimal value
 	errMsg := []byte("ERROR: invalid amount, too many decimal places. See 'skycoin-cli createRawTransaction --help'")
-	for i := 0.0001; i <= 0.0009; i++ {
-		v, err := droplet.ToString(uint64(i * droplet.Multiplier))
+	for i := uint64(1); i < uint64(20); i++ {
+		v, err := droplet.ToString(i)
 		require.NoError(t, err)
 		name := fmt.Sprintf("send %v", v)
 		t.Run(name, func(t *testing.T) {

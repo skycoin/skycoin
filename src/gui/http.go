@@ -5,11 +5,13 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -25,16 +27,18 @@ var (
 )
 
 const (
-	resourceDir = "dist/"
-	devDir      = "dev/"
-	indexPage   = "index.html"
+	resourceDir      = "dist/"
+	devDir           = "dev/"
+	indexPage        = "index.html"
+	elapsedThreshold = 50 * time.Millisecond
 )
 
 // Server exposes an HTTP API
 type Server struct {
-	mux      *http.ServeMux
-	listener net.Listener
-	done     chan struct{}
+	mux              *http.ServeMux
+	listener         net.Listener
+	elapsedThreshold time.Duration
+	done             chan struct{}
 }
 
 type ServerConfig struct {
@@ -126,6 +130,17 @@ func (s *Server) Shutdown() {
 	<-s.done
 }
 
+func ElapseHandler(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		handler.ServeHTTP(w, r)
+		since := time.Since(start)
+		if since > elapsedThreshold {
+			log.Printf("%s %s %v", r.Method, r.URL.Path, time.Since(start))
+		}
+	})
+}
+
 // NewServerMux creates an http.ServeMux with handlers registered
 func NewServerMux(host, appLoc string, gateway Gatewayer, csrfStore *CSRFStore) *http.ServeMux {
 	mux := http.NewServeMux()
@@ -139,6 +154,7 @@ func NewServerMux(host, appLoc string, gateway Gatewayer, csrfStore *CSRFStore) 
 	webHandler := func(endpoint string, handler http.Handler) {
 		handler = CSRFCheck(csrfStore, handler)
 		handler = headerCheck(host, handler)
+		handler = ElapseHandler(handler)
 		mux.Handle(endpoint, handler)
 	}
 

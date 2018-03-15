@@ -1897,6 +1897,19 @@ func TestLiveWalletSpend(t *testing.T) {
 			tc.checkTx(t, tx)
 		})
 	}
+
+	// Confirms sending coins less than 0.001 is not allowed
+	errMsg := "500 Internal Server Error - Transaction violates soft constraint: invalid amount, too many decimal places\n"
+	for i := uint64(1); i < uint64(1000); i++ {
+		cs, err := droplet.ToString(i)
+		require.NoError(t, err)
+		name := fmt.Sprintf("send invalid coin %v", cs)
+		t.Run(name, func(t *testing.T) {
+			result, err := c.Spend(w.GetFilename(), w.Entries[0].Address.String(), i)
+			require.Equal(t, errMsg, err.Error())
+			require.Nil(t, result)
+		})
+	}
 }
 
 // prepareAndCheckWallet gets wallet from environment, and confirms:

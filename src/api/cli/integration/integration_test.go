@@ -1676,50 +1676,6 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 				require.True(t, coins >= 1e6)
 			},
 		},
-		{
-			// Send 0.001 coin from the third address to the second address.
-			// Set the second as change address, so the 0.499 change coin will also be sent to the second address.
-			// After sending, the second address should have 1 coin and 1 coin hour.
-			name: "send with -c(change address) -a(from address) options",
-			args: func() []string {
-				return []string{"createRawTransaction", "-c", w.Entries[1].Address.String(),
-					"-a", w.Entries[2].Address.String(), w.Entries[1].Address.String(), "0.001"}
-			},
-			checkTx: func(t *testing.T, txid string) {
-				tx := getTransaction(t, txid)
-				// Confirms the second address receives 0.5 coin and 0 coinhour in this transaction
-				checkCoinsAndCoinhours(t, tx, w.Entries[1].Address.String(), 5e5, 0)
-				// Confirms the second address have 1 coin and 1 coin hour
-				coins, hours := getAddressBalance(t, w.Entries[1].Address.String())
-				require.Equal(t, uint64(1e6), coins)
-				require.Equal(t, uint64(1), hours)
-			},
-		},
-		{
-			// Send 1 coin from second to the the third address, this will spend three outputs(0.2, 0.3. 0.5 coin),
-			// and burn out the remaining 1 coin hour.
-			name: "send to burn all coin hour",
-			args: func() []string {
-				return []string{"createRawTransaction", "-a", w.Entries[1].Address.String(),
-					w.Entries[2].Address.String(), "1"}
-			},
-			checkTx: func(t *testing.T, txid string) {
-				// Confirms that the third address has 1 coin and 0 coin hour
-				coins, hours := getAddressBalance(t, w.Entries[2].Address.String())
-				require.Equal(t, uint64(1e6), coins)
-				require.Equal(t, uint64(0), hours)
-			},
-		},
-		{
-			// Send with 0 coin hour, this test should fail.
-			name: "send 0 coin hour",
-			args: func() []string {
-				return []string{"createRawTransaction", "-a", w.Entries[2].Address.String(),
-					w.Entries[1].Address.String(), "1"}
-			},
-			errMsg:  []byte("ERROR: Transaction has zero coinhour fee. See 'skycoin-cli createRawTransaction --help'"),
-			checkTx: func(t *testing.T, txid string) {},
-		},
 	}
 
 	for _, tc := range tt {
@@ -2263,50 +2219,6 @@ func TestLiveGUIInjectTransaction(t *testing.T) {
 				coins, _ := getAddressBalance(t, w.Entries[0].Address.String())
 				require.True(t, coins >= 1e6)
 			},
-		},
-		{
-			// Send 0.001 coin from the third address to the second address.
-			// Set the second as change address, so the 0.499 change coin will also be sent to the second address.
-			// After sending, the second address should have 1 coin and 1 coin hour.
-			name: "send with -c(change address) -a(from address) options",
-			args: func() []string {
-				return []string{"createRawTransaction", "-c", w.Entries[1].Address.String(),
-					"-a", w.Entries[2].Address.String(), w.Entries[1].Address.String(), "0.001"}
-			},
-			checkTx: func(t *testing.T, txid string) {
-				tx := getTransaction(t, txid)
-				// Confirms the second address receives 0.5 coin and 0 coinhour in this transaction
-				checkCoinsAndCoinhours(t, tx, w.Entries[1].Address.String(), 5e5, 0)
-				// Confirms the second address have 1 coin and 1 coin hour
-				coins, hours := getAddressBalance(t, w.Entries[1].Address.String())
-				require.Equal(t, uint64(1e6), coins)
-				require.Equal(t, uint64(1), hours)
-			},
-		},
-		{
-			// Send 1 coin from second to the the third address, this will spend three outputs(0.2, 0.3. 0.5 coin),
-			// and burn out the remaining 1 coin hour.
-			name: "send to burn all coin hour",
-			args: func() []string {
-				return []string{"createRawTransaction", "-a", w.Entries[1].Address.String(),
-					w.Entries[2].Address.String(), "1"}
-			},
-			checkTx: func(t *testing.T, txid string) {
-				// Confirms that the third address has 1 coin and 0 coin hour
-				coins, hours := getAddressBalance(t, w.Entries[2].Address.String())
-				require.Equal(t, uint64(1e6), coins)
-				require.Equal(t, uint64(0), hours)
-			},
-		},
-		{
-			// Send with 0 coin hour, this test should fail.
-			name: "send 0 coin hour",
-			args: func() []string {
-				return []string{"createRawTransaction", "-a", w.Entries[2].Address.String(),
-					w.Entries[1].Address.String(), "1"}
-			},
-			errMsg:  []byte("ERROR: Transaction has zero coinhour fee. See 'skycoin-cli createRawTransaction --help'"),
-			checkTx: func(t *testing.T, txid string) {},
 		},
 	}
 

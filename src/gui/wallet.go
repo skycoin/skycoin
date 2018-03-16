@@ -23,6 +23,10 @@ type SpendResult struct {
 	Error       string                     `json:"error,omitempty"`
 }
 
+type UnconfirmedTxnsResponse struct {
+	Transactions []visor.ReadableUnconfirmedTxn `json:"transactions"`
+}
+
 // Returns the wallet's balance, both confirmed and predicted.  The predicted
 // balance is the confirmed balance minus the pending spends.
 func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
@@ -380,7 +384,16 @@ func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendOr404(w, txns)
+		unconfirmedTxns, err := visor.NewReadableUnconfirmedTxns(txns)
+		if err != nil {
+			wh.Error500Msg(w, err.Error())
+			return
+		}
+
+		unconfirmedTxnResp := UnconfirmedTxnsResponse{
+			Transactions: unconfirmedTxns,
+		}
+		wh.SendJSONOr500(logger, w, unconfirmedTxnResp)
 	}
 }
 

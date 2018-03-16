@@ -418,12 +418,12 @@ func (c *Client) Spend(id, dst string, coins uint64) (*SpendResult, error) {
 }
 
 // WalletTransactions makes a request to /wallet/transactions
-func (c *Client) WalletTransactions(id string) ([]visor.UnconfirmedTxn, error) {
+func (c *Client) WalletTransactions(id string) (*UnconfirmedTxnsResponse, error) {
 	v := url.Values{}
 	v.Add("id", id)
 	endpoint := "/wallet/transactions?" + v.Encode()
 
-	var utx []visor.UnconfirmedTxn
+	var utx *UnconfirmedTxnsResponse
 	if err := c.Get(endpoint, &utx); err != nil {
 		return nil, err
 	}

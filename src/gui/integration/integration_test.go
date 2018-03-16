@@ -2088,7 +2088,9 @@ func TestStableWalletTransactions(t *testing.T) {
 	txns, err := c.WalletTransactions(w.GetFilename())
 	require.NoError(t, err)
 
-	require.Empty(t, txns)
+	var expect gui.UnconfirmedTxnsResponse
+	loadGoldenFile(t, "wallet-transactions.golden", TestData{txns, &expect})
+	require.Equal(t, expect, *txns)
 }
 
 func TestLiveWalletTransactions(t *testing.T) {
@@ -2107,11 +2109,11 @@ func TestLiveWalletTransactions(t *testing.T) {
 	require.NoError(t, err)
 	// There's pending transactions if predicted coins are not the same as confirmed coins
 	if bp.Predicted.Coins != bp.Confirmed.Coins {
-		require.NotEmpty(t, txns)
+		require.NotEmpty(t, txns.Transactions)
 		return
 	}
 
-	require.Empty(t, txns)
+	require.Empty(t, txns.Transactions)
 }
 
 func TestWalletFolderName(t *testing.T) {

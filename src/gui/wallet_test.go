@@ -789,10 +789,6 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		WalletID string
 	}
 
-	type unconfirmedTxnResp struct {
-		Transactions []visor.ReadableUnconfirmedTxn `json:"transactions"`
-	}
-
 	unconfirmedTxn, _ := visor.NewReadableUnconfirmedTxn(&visor.UnconfirmedTxn{})
 	tt := []struct {
 		name                                  string
@@ -803,7 +799,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		walletID                              string
 		gatewayGetWalletUnconfirmedTxnsResult []visor.UnconfirmedTxn
 		gatewayGetWalletUnconfirmedTxnsErr    error
-		responseBody                          unconfirmedTxnResp
+		responseBody                          UnconfirmedTxnsResponse
 	}{
 		{
 			name:   "405",
@@ -860,7 +856,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			err:      "",
 			walletID: "foo",
 			gatewayGetWalletUnconfirmedTxnsResult: make([]visor.UnconfirmedTxn, 1),
-			responseBody:                          unconfirmedTxnResp{Transactions: []visor.ReadableUnconfirmedTxn{*unconfirmedTxn}},
+			responseBody:                          UnconfirmedTxnsResponse{Transactions: []visor.ReadableUnconfirmedTxn{*unconfirmedTxn}},
 		},
 	}
 
@@ -900,7 +896,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 		} else {
-			var msg unconfirmedTxnResp
+			var msg UnconfirmedTxnsResponse
 			err = json.Unmarshal(rr.Body.Bytes(), &msg)
 			require.NoError(t, err)
 			// require.Equal on whole response might result in flaky tests as there is a time field attached to unconfirmed txn response

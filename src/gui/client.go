@@ -100,7 +100,7 @@ func (c *Client) Post(endpoint string, body io.Reader, obj interface{}) error {
 	}
 
 	req.Header.Set("X-CSRF-Token", csrf)
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -410,8 +410,7 @@ func (c *Client) Spend(id, dst string, coins uint64) (*SpendResult, error) {
 	v.Add("coins", fmt.Sprint(coins))
 
 	var r SpendResult
-	endpoint := "/wallet/spend?" + v.Encode()
-	if err := c.Post(endpoint, nil, &r); err != nil {
+	if err := c.Post("/wallet/spend", strings.NewReader(v.Encode()), &r); err != nil {
 		return nil, err
 	}
 

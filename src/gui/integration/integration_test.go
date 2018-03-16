@@ -1804,18 +1804,19 @@ func TestLiveWalletSpend(t *testing.T) {
 	}
 
 	c := gui.NewClient(nodeAddress())
-	w, totalCoins, _ := prepareAndCheckWallet(t, c, 2, 1)
+	w, totalCoins, _ := prepareAndCheckWallet(t, c, 2e6, 2)
 	tt := []struct {
 		name    string
 		to      string
 		coins   uint64
+		errMsg  []byte
 		checkTx func(t *testing.T, tx *visor.TransactionResult)
 	}{
 		{
-			"Send all coins to the first address",
-			w.Entries[0].Address.String(),
-			totalCoins,
-			func(t *testing.T, tx *visor.TransactionResult) {
+			name:  "send all coins to the first address",
+			to:    w.Entries[0].Address.String(),
+			coins: totalCoins,
+			checkTx: func(t *testing.T, tx *visor.TransactionResult) {
 				// Confirms the total output coins are equal to the totalCoins
 				var coins uint64
 				for _, o := range tx.Transaction.Out {
@@ -1828,6 +1829,46 @@ func TestLiveWalletSpend(t *testing.T) {
 				// Confirms the address balance are equal to the totoalCoins
 				coins, _ = getAddressBalance(t, c, w.Entries[0].Address.String())
 				require.Equal(t, totalCoins, coins)
+			},
+		},
+		{
+			// send 0.001 coin to the second address,
+			name:  "send 0.001 coin to second address",
+			to:    w.Entries[1].Address.String(),
+			coins: 1e3,
+			checkTx: func(t *testing.T, tx *visor.TransactionResult) {
+				// Confirms there're two outputs, one to the second address, one as change output to the first address.
+				require.Len(t, tx.Transaction.Out, 2)
+
+				// Gets the output of the second address in the transaction
+				getAddrOutputInTx := func(t *testing.T, tx *visor.TransactionResult, addr string) *visor.ReadableTransactionOutput {
+					for _, output := range tx.Transaction.Out {
+						if output.Address == addr {
+							return &output
+						}
+					}
+					t.Fatalf("transaction doesn't have output to address: %v", addr)
+					return nil
+				}
+
+				out := getAddrOutputInTx(t, tx, w.Entries[1].Address.String())
+
+				// Confirms the second address has 0.001 coin
+				require.Equal(t, out.Coins, "0.001000")
+				require.Equal(t, out.Address, w.Entries[1].Address.String())
+
+				coin, err := droplet.FromString(out.Coins)
+				require.NoError(t, err)
+
+				// Gets the expected change coins
+				expectChangeCoins := totalCoins - coin
+
+				// Gets the real change coins
+				changeOut := getAddrOutputInTx(t, tx, w.Entries[0].Address.String())
+				changeCoins, err := droplet.FromString(changeOut.Coins)
+				require.NoError(t, err)
+				// Confirms the change coins are matched.
+				require.Equal(t, expectChangeCoins, changeCoins)
 			},
 		},
 	}
@@ -1854,6 +1895,19 @@ func TestLiveWalletSpend(t *testing.T) {
 				}
 			}
 			tc.checkTx(t, tx)
+		})
+	}
+
+	// Confirms sending coins less than 0.001 is not allowed
+	errMsg := "500 Internal Server Error - Transaction violates soft constraint: invalid amount, too many decimal places\n"
+	for i := uint64(1); i < uint64(1000); i++ {
+		cs, err := droplet.ToString(i)
+		require.NoError(t, err)
+		name := fmt.Sprintf("send invalid coin %v", cs)
+		t.Run(name, func(t *testing.T) {
+			result, err := c.Spend(w.GetFilename(), w.Entries[0].Address.String(), i)
+			require.Equal(t, errMsg, err.Error())
+			require.Nil(t, result)
 		})
 	}
 }

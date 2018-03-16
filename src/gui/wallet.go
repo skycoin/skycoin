@@ -385,10 +385,12 @@ func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendJSONOr500(logger, w, map[string][]visor.ReadableUnconfirmedTxn{
-			"transactions": unconfirmedTxns,
-		})
-
+		unconfirmedTxnResp := struct {
+			Transactions []visor.ReadableUnconfirmedTxn `json:"transactions"`
+		}{
+			Transactions: unconfirmedTxns,
+		}
+		wh.SendJSONOr500(logger, w, unconfirmedTxnResp)
 	}
 }
 

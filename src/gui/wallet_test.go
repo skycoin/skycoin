@@ -789,6 +789,11 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		WalletID string
 	}
 
+	type unconfirmedTxnResp struct {
+		Transactions []visor.ReadableUnconfirmedTxn `json:"transactions"`
+	}
+
+	unconfirmedTxn, _ := visor.NewReadableUnconfirmedTxn(&visor.UnconfirmedTxn{})
 	tt := []struct {
 		name                                  string
 		method                                string
@@ -798,7 +803,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		walletID                              string
 		gatewayGetWalletUnconfirmedTxnsResult []visor.UnconfirmedTxn
 		gatewayGetWalletUnconfirmedTxnsErr    error
-		responseBody                          map[string][]visor.ReadableUnconfirmedTxn
+		responseBody                          unconfirmedTxnResp
 	}{
 		{
 			name:   "405",
@@ -855,7 +860,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			err:      "",
 			walletID: "foo",
 			gatewayGetWalletUnconfirmedTxnsResult: make([]visor.UnconfirmedTxn, 1),
-			responseBody:                          map[string][]visor.ReadableUnconfirmedTxn{"transactions": []visor.ReadableUnconfirmedTxn{}},
+			responseBody:                          unconfirmedTxnResp{Transactions: []visor.ReadableUnconfirmedTxn{*unconfirmedTxn}},
 		},
 	}
 
@@ -895,11 +900,13 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 		} else {
-			var msg map[string][]visor.ReadableUnconfirmedTxn
+			var msg unconfirmedTxnResp
 			err = json.Unmarshal(rr.Body.Bytes(), &msg)
 			require.NoError(t, err)
-			// require.Equal might result in flaky tests as there is a time field attached to unconfirmed txn response
-			require.IsType(t, tc.responseBody, msg)
+			// require.Equal on whole response might result in flaky tests as there is a time field attached to unconfirmed txn response
+			require.IsType(t, msg, tc.responseBody)
+			require.Len(t, msg.Transactions, 1)
+			require.Equal(t, msg.Transactions[0].Txn, tc.responseBody.Transactions[0].Txn)
 		}
 	}
 }

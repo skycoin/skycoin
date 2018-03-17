@@ -1931,7 +1931,7 @@ func TestCreateWallet(t *testing.T) {
 	// Confirms the wallet does exist
 	walletPath := filepath.Join(walletDir, w.GetFilename())
 	_, err := os.Stat(walletPath)
-	require.False(t, os.IsNotExist(err))
+	require.NoError(t, err)
 
 	checkWalletEntriesAndLastSeed(t, w)
 }

@@ -8,10 +8,11 @@ const (
 	ERR_UNKNOWN = 0
 )
 
-func libErrorCode(err error) C.uint32 {
+func libErrorCode(err error) uint32 {
 	if err == nil {
 		return NO_ERROR
 	}
+	// TODO: Implement error codes
 	return ERR_UNKNOWN
 }
 

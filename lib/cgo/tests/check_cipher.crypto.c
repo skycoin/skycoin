@@ -3,6 +3,8 @@
 #include <time.h>
 
 #include <criterion/criterion.h>
+#include <criterion/new/assert.h>
+
 #include "libskycoin.h"
 #include "skyerrors.h"
 
@@ -32,8 +34,33 @@ Test(asserts, TestNewPubKey) {
 
   randBytes(buff, 31);
   slice.len = 31;
-
   unsigned int errcode = SKY_cipher_NewPubKey(slice, &pk);
-  cr_assert(errcode == SKY_ERROR, "33 random bytes");
+  cr_assert(errcode == SKY_ERROR, "31 random bytes");
+
+  randBytes(buff, 32);
+  slice.len = 32;
+  errcode = SKY_cipher_NewPubKey(slice, &pk);
+  cr_assert(errcode == SKY_ERROR, "32 random bytes");
+
+  randBytes(buff, 34);
+  slice.len = 34;
+  errcode = SKY_cipher_NewPubKey(slice, &pk);
+  cr_assert(errcode == SKY_ERROR, "34 random bytes");
+
+  slice.len = 0;
+  errcode = SKY_cipher_NewPubKey(slice, &pk);
+  cr_assert(errcode == SKY_ERROR, "0 random bytes");
+
+  randBytes(buff, 100);
+  slice.len = 100;
+  errcode = SKY_cipher_NewPubKey(slice, &pk);
+  cr_assert(errcode == SKY_ERROR, "100 random bytes");
+
+  randBytes(buff, 33);
+  slice.len = 33;
+  errcode = SKY_cipher_NewPubKey(slice, &pk);
+  cr_assert(errcode == SKY_OK, "33 random bytes");
+
+  cr_assert(eq(unsigned char[33]), pk, buff, "PubKey must match original bytes")
 }
 

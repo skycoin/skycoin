@@ -37,6 +37,7 @@ typedef struct {
 } Address;
 
 typedef unsigned char PubKey[33];
+typedef GoSlice_ PubKeySlice;
 typedef unsigned char SecKey[32];
 typedef unsigned char Checksum[4];
 

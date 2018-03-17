@@ -21,7 +21,7 @@ import (
  */
 
 //export SKY_cli_CreateRawTxFromWallet
-func SKY_cli_CreateRawTxFromWallet(_ctx C.Handle, _walletFile, _chgAddr string, _toAddrs []C.SendAmount, _tx *C.Transaction) C.uint {
+func SKY_cli_CreateRawTxFromWallet(_ctx C.Handle, _walletFile, _chgAddr string, _toAddrs []C.SendAmount, _tx *C.Transaction) uint32 {
 	// TODO: Instantiate _ctx . Not used in cli function
 	toAddrs := (*[]cli.SendAmount)(unsafe.Pointer(&_toAddrs))
 	tx, err := cli.CreateRawTxFromWallet(nil, _walletFile, _chgAddr, *toAddrs)
@@ -33,7 +33,7 @@ func SKY_cli_CreateRawTxFromWallet(_ctx C.Handle, _walletFile, _chgAddr string, 
 }
 
 //export SKY_cli_CreateRawTxFromAddress
-func SKY_cli_CreateRawTxFromAddress(_ctx C.Handle, _addr, _walletFile, _chgAddr string, _toAddrs []C.SendAmount, _tx *C.Transaction) C.uint {
+func SKY_cli_CreateRawTxFromAddress(_ctx C.Handle, _addr, _walletFile, _chgAddr string, _toAddrs []C.SendAmount, _tx *C.Transaction) uint32 {
 	// TODO: Implement
 	return 0
 }

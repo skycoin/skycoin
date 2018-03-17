@@ -50,7 +50,7 @@ func SKY_cipher_NewPubKey(_b []byte, _arg1 *C.PubKey) (retVal uint32) {
 	defer func() {
 		if err := recover(); err != nil {
 			// TODO: Fix to be like retVal = libErrorCode(err)
-			retVal = ERR_UNKNOWN
+			retVal = SKY_ERROR
 		}
 	}()
 
@@ -76,7 +76,7 @@ func SKY_cipher_PubKeyFromSecKey(_seckey *C.SecKey, _arg1 *C.PubKey) (retVal uin
 	defer func() {
 		if err := recover(); err != nil {
 			// TODO: Fix to be like retVal = libErrorCode(err)
-			retVal = ERR_UNKNOWN
+			retVal = SKY_ERROR
 		}
 	}()
 
@@ -97,7 +97,7 @@ func SKY_cipher_PubKeyFromSig(_sig *C.Sig, _hash *C.SHA256, _arg2 *C.PubKey) uin
 	if err != nil {
 		copy(arg2[:], pubkey[:])
 	}
-	return errcode;
+	return errcode
 }
 
 //export SKY_cipher_PubKey_Verify

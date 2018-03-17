@@ -20,7 +20,7 @@ func SKY_cipher_Ripemd160_Set(_rd *C.Ripemd160, _b []byte) (retVal uint32) {
 	defer func() {
 		if r := recover(); r != nil {
 			// TODO: Fix to be like retVal = libErrorCode(err)
-			retVal = ERR_UNKNOWN
+			retVal = SKY_ERROR
 		}
 	}()
 
@@ -41,7 +41,7 @@ func SKY_cipher_SHA256_Set(_g *C.SHA256, _b []byte) (retVal uint32) {
 	defer func() {
 		if r := recover(); r != nil {
 			// TODO: Fix to be like retVal = libErrorCode(err)
-			retVal = ERR_UNKNOWN
+			retVal = SKY_ERROR
 		}
 	}()
 
@@ -76,7 +76,7 @@ func SKY_cipher_SumSHA256(_b []byte, _arg1 *C.SHA256) {
 func SKY_cipher_SHA256FromHex(_hs string, _arg1 *C.SHA256) uint32 {
 	h, err := cipher.SHA256FromHex(_hs)
 	errcode := libErrorCode(err)
-	if err != nil {
+	if err == nil {
 		arg1 := inplaceSHA256(_arg1)
 		copy(arg1[:], h[:])
 	}

@@ -1,8 +1,11 @@
 
-#include <criterion/criterion.h>
-#include "libskycoin.h"
-#include "libsky_util.h"
 #include <stdio.h>
+#include <string.h>
+
+#include <criterion/criterion.h>
+
+#include "libskycoin.h"
+#include "skyerrors.h"
 
 #define SKYCOIN_ADDRESS_VALID "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv"
 
@@ -37,23 +40,37 @@ Test(asserts, TestDecodeBase58Address) {
 };
 Address addr;
 
-cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == 1, "accept valid address");
+cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == SKY_OK, "accept valid address");
+
+char tempStr[50];
 
 // preceding whitespace is invalid
-strAddr.p = join_char(" ",SKYCOIN_ADDRESS_VALID);
-cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == 0, "preceding whitespace is invalid");
+strcpy(tempStr, " ");
+strcat(tempStr, SKYCOIN_ADDRESS_VALID);
+strAddr.p = tempStr;
+strAddr.n = strlen(tempStr);
+cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == SKY_ERROR, "preceding whitespace is invalid");
 
 // preceding zeroes are invalid
-strAddr.p=join_char("000",SKYCOIN_ADDRESS_VALID);
-cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == 0, " preceding zeroes are invalid");
+strcpy(tempStr, "000");
+strcat(tempStr, SKYCOIN_ADDRESS_VALID);
+strAddr.p = tempStr;
+strAddr.n = strlen(tempStr);
+cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == SKY_ERROR, "leading zeroes prefix are invalid");
 
 // trailing whitespace is invalid
-strAddr.p = join_char(SKYCOIN_ADDRESS_VALID," ");
-cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == 0, " trailing whitespace is invalid");
+strcpy(tempStr, SKYCOIN_ADDRESS_VALID);
+strcat(tempStr, " ");
+strAddr.p = tempStr;
+strAddr.n = strlen(tempStr);
+cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == SKY_ERROR, " trailing whitespace is invalid");
 
 // trailing zeroes are invalid
-strAddr.p = join_char(SKYCOIN_ADDRESS_VALID,"000");
-cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == 0, " trailing zeroes are invalid");
+strcpy(tempStr, SKYCOIN_ADDRESS_VALID);
+strcat(tempStr, "000");
+strAddr.p = tempStr;
+strAddr.n = strlen(tempStr);
+cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == SKY_ERROR, " trailing zeroes suffix are invalid");
 
 }
 
@@ -73,17 +90,17 @@ Test(cipher, TestAddressFromBytes){
   SKY_cipher_DecodeBase58Address(strAddr, &addr);
   SKY_cipher_Address_BitcoinBytes(&addr, (GoSlice_ *)&bytes);
   cr_assert(bytes.len > 0, "address bytes written");
-  cr_assert(SKY_cipher_BitcoinAddressFromBytes(bytes, &addr2) == 0, "convert bytes to SKY address");
+  cr_assert(SKY_cipher_BitcoinAddressFromBytes(bytes, &addr2) == SKY_OK, "convert bytes to SKY address");
   // cr_assert(eq(type(struct Address), &addr, &addr2));
 
   int bytes_len = bytes.len;
 
   bytes.len = bytes.len - 2;
-  cr_assert(SKY_cipher_BitcoinAddressFromBytes(bytes, &addr2) == 1, "no SKY address due to short bytes length");
+  cr_assert(SKY_cipher_BitcoinAddressFromBytes(bytes, &addr2) == SKY_ERROR, "no SKY address due to short bytes length");
 
   bytes.len = bytes_len;
   ((char *) bytes.data)[bytes.len - 1] = '2';
-  cr_assert(SKY_cipher_BitcoinAddressFromBytes(bytes, &addr2) == 1, "no SKY address due to corrupted bytes");
+  cr_assert(SKY_cipher_BitcoinAddressFromBytes(bytes, &addr2) == SKY_ERROR, "no SKY address due to corrupted bytes");
 }
 
 // Test(cipher, TestAddressRoundtrip){

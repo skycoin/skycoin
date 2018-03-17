@@ -59,6 +59,7 @@ type TestData struct {
 }
 
 var update = flag.Bool("update", false, "update golden files")
+var testWallet = flag.Bool("test-wallet", false, "run wallet tests")
 
 func nodeAddress() string {
 	addr := os.Getenv("SKYCOIN_NODE_HOST")
@@ -111,6 +112,15 @@ func doLiveOrStable(t *testing.T) bool {
 	}
 
 	t.Skip("Live and stable tests disabled")
+	return false
+}
+
+func doWallet(t *testing.T) bool {
+	if *testWallet {
+		return true
+	}
+
+	t.Skip("Wallet tests disabled")
 	return false
 }
 
@@ -1518,6 +1528,10 @@ func TestWalletNewSeed(t *testing.T) {
 		return
 	}
 
+	if !doWallet(t) {
+		return
+	}
+
 	cases := []struct {
 		name     string
 		entropy  int
@@ -1806,6 +1820,10 @@ func TestLiveWalletSpend(t *testing.T) {
 	}
 
 	doLiveEnvCheck(t)
+
+	if !doWallet(t) {
+		return
+	}
 
 	c := gui.NewClient(nodeAddress())
 	w, totalCoins, _ := prepareAndCheckWallet(t, c, 2e6, 2)

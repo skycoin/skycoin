@@ -442,10 +442,10 @@ func (c *Client) UpdateWallet(id, label string) error {
 	return nil
 }
 
-// WalletFolderName makes a request to /wallet/folderName
+// WalletFolderName makes a request to /wallets/folderName
 func (c *Client) WalletFolderName() (*WalletFolder, error) {
 	var w WalletFolder
-	if err := c.Get("/wallet/folderName", &w); err != nil {
+	if err := c.Get("/wallets/folderName", &w); err != nil {
 		return nil, err
 	}
 	return &w, nil

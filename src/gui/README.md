@@ -203,32 +203,32 @@ curl http://127.0.0.1:6420/wallet?id=walletId
 result:
 ```json
 {
-  "Meta": {
-    "coin": "skycoin",
-    "filename": "2017_11_25_e5fb.wlt",
-    "label": "test",
-    "lastSeed": "c69085fc5c95e8bbc5903baef8ad2d7b7065d7a5c1b3d150101f9a2f357c1537",
-    "seed": "child cruel simple clerk cave",
-    "tm": "1511640884",
-    "type": "deterministic",
-    "version": "0.1"
-  },
-  "Entries": [
-    {
-      "Address": {
-        "Version": 0,
-        "Key": [
+    "Meta":{
+        "coin":"skycoin",
+        "filename":"2017_11_25_e5fb.wlt",
+        "label":"test",
+        "lastSeed":"c69085fc5c95e8bbc5903baef8ad2d7b7065d7a5c1b3d150101f9a2f357c1537",
+        "seed":"child cruel simple clerk cave",
+        "tm":"1511640884",
+        "type":"deterministic",
+        "version":"0.1"
+    },
+    "Entries":[
+        {
+            "Address":{
+                "Version":0,
+                "Key":[
 
-        ]
-      },
-      "Public": [
+                ]
+            },
+            "Public":[
 
-      ],
-      "Secret": [
+            ],
+            "Secret":[
 
-      ]
-    }
-  ]
+            ]
+        }
+    ]
 }
 ```
 
@@ -249,43 +249,44 @@ curl http://127.0.0.1:6420/wallet/transactions?id=2017_11_25_e5fb.wlt
 result:
 
 ```json
-[
-  {
-    "Txn": {
-      "length": 317,
-      "type": 0,
-      "txid": "76ecbabc53ea2a3be46983058433dda6a3cf7ea0b86ba14d90b932fa97385de7",
-      "inner_hash": "5d55837bb0cbda9c9323ff9aafd7c3d31d0d38638346172fbe2d9078ebaa892a",
-      "timestamp": 11521050990,
-      "sigs": [
-        "464b7724302178c1cfeacadaaf3556a3b7e5259adf51919476c3acc695747ed244b5ce2187ce7bedb6ad65c71f7f7ff3fa6805e64fe5da3aaa00ad563c7424f600",
-        "1155537b0391d4a6ee5eac07dee5798e953dca3a7c30643403dd2d326582c7d35080a16dc22644782ce1087bfc3bd06c2bf68e9a98e3989d90831646a9be2c9101"
-      ],
-      "inputs": [
-        "782a8662efb0e933cab7d3ae9429ab53c4208cf44d8cdc07c2fbd7204b6b5cad",
-        "2f6b61a44086588c4eaa56a5dd9f1e0be2528861a6731608fcec38891b95db91"
-      ],
-      "outputs": [
+{
+    "transactions":[
         {
-          "uxid": "bd302ef776efa8548183b89f21e90649f21b90fe2d2e90ecc1b880f2d995f226",
-          "dst": "2UXZTg4ZHF6715b6tRhtaqceuQQ3G79GiZg",
-          "coins": "998.000000",
-          "hours": 247538
-        },
-        {
-          "uxid": "31058b6bfb30bfd441aec00929e75782bce47c8a75787ba519dbb268f89d2c4b",
-          "dst": "2awsJ2CR5H6QXCF2hwDjcvcAH9SgyfxCxgz",
-          "coins": "1.000000",
-          "hours": 247538
+            "transaction":{
+                "length":317,
+                "type":0,
+                "txid":"76ecbabc53ea2a3be46983058433dda6a3cf7ea0b86ba14d90b932fa97385de7",
+                "inner_hash":"5d55837bb0cbda9c9323ff9aafd7c3d31d0d38638346172fbe2d9078ebaa892a",
+                "sigs":[
+                    "464b7724302178c1cfeacadaaf3556a3b7e5259adf51919476c3acc695747ed244b5ce2187ce7bedb6ad65c71f7f7ff3fa6805e64fe5da3aaa00ad563c7424f600",
+                    "1155537b0391d4a6ee5eac07dee5798e953dca3a7c30643403dd2d326582c7d35080a16dc22644782ce1087bfc3bd06c2bf68e9a98e3989d90831646a9be2c9101"
+                ],
+                "inputs":[
+                    "782a8662efb0e933cab7d3ae9429ab53c4208cf44d8cdc07c2fbd7204b6b5cad",
+                    "2f6b61a44086588c4eaa56a5dd9f1e0be2528861a6731608fcec38891b95db91"
+                ],
+                "outputs":[
+                    {
+                        "uxid":"bd302ef776efa8548183b89f21e90649f21b90fe2d2e90ecc1b880f2d995f226",
+                        "dst":"2UXZTg4ZHF6715b6tRhtaqceuQQ3G79GiZg",
+                        "coins":"998.000000",
+                        "hours":247538
+                    },
+                    {
+                        "uxid":"31058b6bfb30bfd441aec00929e75782bce47c8a75787ba519dbb268f89d2c4b",
+                        "dst":"2awsJ2CR5H6QXCF2hwDjcvcAH9SgyfxCxgz",
+                        "coins":"1.000000",
+                        "hours":247538
+                    }
+                ]
+            },
+            "received":"2018-03-16T18:03:57.139109904+05:30",
+            "checked":"2018-03-16T18:03:57.139109904+05:30",
+            "announced":"0001-01-01T00:00:00Z",
+            "is_valid":true
         }
-      ]
-    },
-    "Received": 11521050990,
-    "Checked": 0,
-    "Announced": 0,
-    "IsValid": 0
-  }
-]
+    ]
+}
 ```
 
 ### Get wallets
@@ -880,10 +881,10 @@ curl http://127.0.0.1:6420/resendUnconfirmedTxns
 result:
 ```json
 {
-  "txids": [
-    "b45e571988bc07bd0b623c999655fa878fb9bdd24c8cd24fde179bf4b26ae7b7",
-    "a6446654829a4a844add9f181949d12f8291fdd2c0fcb22200361e90e814e2d3"
-  ]
+    "txids":[
+        "b45e571988bc07bd0b623c999655fa878fb9bdd24c8cd24fde179bf4b26ae7b7",
+        "a6446654829a4a844add9f181949d12f8291fdd2c0fcb22200361e90e814e2d3"
+    ]
 }
 ```
 
@@ -905,17 +906,17 @@ curl http://127.0.0.1:6420/blockchain/metadata
 result:
 ```json
 {
-  "head": {
-    "seq": 17936,
-    "block_hash": "b91663fa8ff14aab529cd7bfd48bde5bd86e3c2db154d601528801ee0d064d19",
-    "previous_block_hash": "b57d3b644898f95c9f7a9281e786a0ae2a567e9dc573654363ffafaa41ab4caf",
-    "timestamp": 1520967639,
-    "fee": 61662,
-    "version": 0,
-    "tx_body_hash": "f0e8440f30acf01def3acaa9a88ea91f1fbaea19c0df003726edfe5bd1c7b51d"
-  },
-  "unspents": 12704,
-  "unconfirmed": 0
+    "head":{
+        "seq":17936,
+        "block_hash":"b91663fa8ff14aab529cd7bfd48bde5bd86e3c2db154d601528801ee0d064d19",
+        "previous_block_hash":"b57d3b644898f95c9f7a9281e786a0ae2a567e9dc573654363ffafaa41ab4caf",
+        "timestamp":1520967639,
+        "fee":61662,
+        "version":0,
+        "tx_body_hash":"f0e8440f30acf01def3acaa9a88ea91f1fbaea19c0df003726edfe5bd1c7b51d"
+    },
+    "unspents":12704,
+    "unconfirmed":0
 }
 ```
 

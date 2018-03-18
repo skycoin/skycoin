@@ -61,6 +61,6 @@ Test(asserts, TestNewPubKey) {
   errcode = SKY_cipher_NewPubKey(slice, &pk);
   cr_assert(errcode == SKY_OK, "33 random bytes");
 
-  cr_assert(eq(unsigned char[33]), pk, buff, "PubKey must match original bytes")
+  cr_assert(eq(u8[33], pk, buff));
 }
 

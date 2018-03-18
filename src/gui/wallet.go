@@ -491,3 +491,23 @@ func newWalletSeed(gateway Gatewayer) http.HandlerFunc {
 		wh.SendJSONOr500(logger, w, rlt)
 	}
 }
+
+func walletUnloadHandler(gateway Gatewayer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			wh.Error405(w)
+			return
+		}
+
+		id := r.FormValue("id")
+		if id == "" {
+			wh.Error400(w, "missing wallet id")
+			return
+		}
+
+		if err := gateway.UnloadWallet(id); err != nil {
+			wh.Error400(w, err.Error())
+			return
+		}
+	}
+}

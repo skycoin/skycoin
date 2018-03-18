@@ -275,6 +275,13 @@ func (serv *Service) UpdateWalletLabel(wltID, label string) error {
 	return wlt.Save(serv.WalletDirectory)
 }
 
+// Remove removes wallet of given wallet id from the service
+func (serv *Service) Remove(wltID string) {
+	serv.Lock()
+	defer serv.Unlock()
+	serv.wallets.Remove(wltID)
+}
+
 func (serv *Service) removeDup(wlts Wallets) Wallets {
 	var rmWltIDS []string
 	// remove dup wallets

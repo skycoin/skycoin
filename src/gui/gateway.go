@@ -47,4 +47,5 @@ type Gatewayer interface {
 	GetAddressTxns(a cipher.Address) (*visor.TransactionResults, error)
 	GetRichlist(includeDistribution bool) (visor.Richlist, error)
 	GetAddressCount() (uint64, error)
+	UnloadWallet(id string) error
 }

@@ -2009,9 +2009,6 @@ func TestGetWallets(t *testing.T) {
 
 // TestWalletNewAddress will generate 30 wallets for testing, and they will
 // be removed automatically after testing.
-//
-// Note: Though the new generated wallet files are all deleted, they are still
-// in the memory, you need to resrat the node to free them.
 func TestWalletNewAddress(t *testing.T) {
 	if !doLiveOrStable(t) {
 		return
@@ -2282,6 +2279,9 @@ func createWallet(t *testing.T, c *gui.Client) (*wallet.Wallet, func()) {
 		bakWalletPath := walletPath + ".bak"
 		err = os.Remove(bakWalletPath)
 		require.NoError(t, err)
+
+		// Removes the wallet from memory
+		c.UnloadWallet(walletName)
 	}
 }
 

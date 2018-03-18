@@ -769,7 +769,7 @@ func (gw *Gateway) UnloadWallet(id string) error {
 		return wallet.ErrWalletApiDisabled
 	}
 
-	gw.strand("CreateWallet", func() {
+	gw.strand("UnloadWallet", func() {
 		gw.vrpc.UnloadWallet(id)
 	})
 

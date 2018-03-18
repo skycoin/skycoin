@@ -506,8 +506,12 @@ func walletUnloadHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if err := gateway.UnloadWallet(id); err != nil {
-			wh.Error400(w, err.Error())
-			return
+			switch err {
+			case wallet.ErrWalletApiDisabled:
+				wh.Error403(w)
+			default:
+				wh.Error500(w)
+			}
 		}
 	}
 }

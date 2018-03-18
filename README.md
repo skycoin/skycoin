@@ -194,9 +194,9 @@ After the skycoin node is up, run the following command to start the live tests:
 ./ci-scripts/integration-test.live.sh -v
 ```
 
-The above command will run all tests except the wallet tests. To run live wallet integration tests, we
-need to manually specify a wallet file, the wallet must have at least `2 coins` and `256 coinhours`, and
-it also must already have been loaded by the node.
+The above command will run all tests except the wallet related tests. To run wallet tests, we
+need to manually specify a wallet file, and it must have at least `2 coins` and `256 coinhours`,
+it also must have been loaded by the node.
 
 We can specify the wallet by setting two environment variables: `WALLET_DIR` and `WALLET_NAME`. The `WALLET_DIR`
 represents the absolute path of the wallet directory, and `WALLET_NAME` represents the wallet file name.

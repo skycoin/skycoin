@@ -200,7 +200,7 @@ func TestDefaultConnections(t *testing.T) {
 			status: http.StatusOK,
 			err:    "",
 			gatewayGetDefaultConnectionsResult: []string{"44.33.22.11", "11.44.66.88"},
-			result: []string{"44.33.22.11", "11.44.66.88"},
+			result: []string{"11.44.66.88", "44.33.22.11"},
 		},
 	}
 	for _, tc := range tt {
@@ -252,7 +252,7 @@ func TestGetTrustConnections(t *testing.T) {
 			status: http.StatusOK,
 			err:    "",
 			gatewayGetTrustConnectionsResult: []string{"44.33.22.11", "11.44.66.88"},
-			result: []string{"44.33.22.11", "11.44.66.88"},
+			result: []string{"11.44.66.88", "44.33.22.11"},
 		},
 	}
 	for _, tc := range tt {
@@ -304,7 +304,7 @@ func TestGetExchgConnection(t *testing.T) {
 			status: http.StatusOK,
 			err:    "",
 			gatewayGetExchgConnectionResult: []string{"44.33.22.11", "11.44.66.88"},
-			result: []string{"44.33.22.11", "11.44.66.88"},
+			result: []string{"11.44.66.88", "44.33.22.11"},
 		},
 	}
 	for _, tc := range tt {

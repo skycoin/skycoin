@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HTTP API client
 - `/richlist` API method, returns top n address balances
 - `/addresscount` API method, returns the number of addresses that have any amount of coins
+- `/transactions` API method, returns transactions of addresses
 
 ### Fixed
 
@@ -27,9 +28,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Keep trusted peers in the peerlist permanently, even if they are unreachable
 - #885, Add `Host` header check to localhost HTTP interfaces to prevent DNS rebinding attacks
 - #896, Add CSRF check to wallet API
+- Fix base58 address parsing, which allowed leading invalid characters and treated unknown characters as a '1'
 
 ### Changed
 
+- #1080, `/wallet/transactions` now returns a proper json object with pending transactions under `transactions` key
 - #951, cap cli createRawTransaction and send command coinhour distribution, coinhours are capped to a maximum of receiving coins for the address with a minimum of 1 coinhour
 - Upgrade to Angular 5
 - Add `total_coinhour_supply` and `current_coinhour_supply` to `/coinSupply` endpoint

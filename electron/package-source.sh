@@ -10,20 +10,17 @@ pushd "${SCRIPTDIR}"
 if [[ "$OSTYPE" == "linux"* ]]; then
     tar cvPf "${SRC_TAR}" --owner=0 --group=0 --exclude=electron \
         --exclude=node_modules --exclude=_deprecated --exclude='.[^/\.]*' \
-        "../src" "../cmd" "../run.sh" "../README.md" \
-        "../Installation.md" "../CHANGELOG.md" \
+        "../src" "../cmd" "../run.sh" "../*.md" \
         >/dev/null
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     tar cvf "${SRC_TAR}" --exclude=electron \
         --exclude=node_modules --exclude=_deprecated --exclude='.[^/\.]*' \
-        "../src" "../cmd" "../run.sh" "../README.md" \
-        "../Installation.md" "../CHANGELOG.md" \
+        "../src" "../cmd" "../run.sh" "../*.md" \
         >/dev/null
 elif [[ "$OSTYPE" == "msys"* ]]; then
     tar cvPf "${SRC_TAR}" --owner=0 --group=0 --exclude=electron \
         --exclude=node_modules --exclude=_deprecated --exclude='.[^/\.]*' \
-        "../src" "../cmd" "../run.sh" "../README.md" \
-        "../Installation.md" "../CHANGELOG.md" \
+        "../src" "../cmd" "../run.sh" "../*.md" \
         >/dev/null
 fi
 

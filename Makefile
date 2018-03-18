@@ -98,7 +98,7 @@ lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...
 	gometalinter --disable-all -E vet -E goimports -E varcheck --tests --vendor ./...
 
-check: lint test ## Run tests and linters
+check: lint test integration-test-stable ## Run tests and linters
 
 integration-test-stable: ## Run stable integration tests
 	./ci-scripts/integration-test-stable.sh -v -w

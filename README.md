@@ -164,6 +164,82 @@ other programming languages. Read the corresponding README file for further deta
 make test
 ```
 
+### Running Integration Tests
+
+Run stable integration tests:
+
+```sh
+make integration-test-stable
+```
+
+or
+
+```sh
+./ci-scripts/integration-test-stable.sh -v -w
+```
+
+The `-w` option, run wallet integrations tests.
+
+The `-v` option, show verbose logs.
+
+Run live integration tests:
+
+The live integration tests run against a live runnning skycoin node, so before running the test, we
+need to start a skycoin node.
+
+After the skycoin node is up, run the following command to start the live tests:
+
+```sh
+./ci-scripts/integration-test.live.sh -v
+```
+
+The above command will run all tests except the wallet tests. To run live wallet integration tests, we
+need to manually specify a wallet file, the wallet must have at least `2 coins` and `256 coinhours`, and
+it also must already have been loaded by the node.
+
+We can specify the wallet by setting two environment variables: `WALLET_DIR` and `WALLET_NAME`. The `WALLET_DIR`
+represents the absolute path of the wallet directory, and `WALLET_NAME` represents the wallet file name.
+
+```sh
+export WALLET_DIR=$HOME/.skycoin/wallets
+export WALLET_NAME=$wallet-file-name-meet-the-requirements
+```
+
+Then run the tests with the follwoing command:
+
+```sh
+make integration-test-live
+```
+
+or
+
+```sh
+./ci-scripts/integration-test-live.sh -v -w
+```
+
+### Debugging integration tests
+
+Run specific test case:
+
+It's annoying and a waste of time to run all tests to see if the test we real care
+is working correctly. There's an option: `-r`, which can be used to run specific test case.
+For exampe: if we only want to test `TestStableAddressBalance` and see the result, we can run:
+
+```sh
+./ci-scripts/integration-test-stable.sh -v -r TestStableAddressBalance
+```
+
+Update golden files in test-fixtures files:
+
+To update all golden files:
+
+```sh
+./ci-scripts/integration-test-live.sh -v -u
+./ci-scripts/integration-test-stable.sh -v -u
+```
+
+We can also update specific test case's golden file with the `-r` option.
+
 ### Formatting
 
 All `.go` source files should be formatted `goimports`.  You can do this with:

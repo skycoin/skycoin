@@ -48,6 +48,7 @@ var (
 
 	update     = flag.Bool("update", false, "update golden files")
 	liveTxFull = flag.Bool("live-tx-full", false, "run live transaction test against full blockchain")
+	testWallet = flag.Bool("test-wallet", false, "run wallet tests")
 )
 
 type TestData struct {
@@ -212,6 +213,15 @@ func doLive(t *testing.T) bool {
 	return false
 }
 
+func doWallet(t *testing.T) bool {
+	if *testWallet {
+		return true
+	}
+
+	t.Skip("Wallet tests disabled")
+	return false
+}
+
 // doLiveEnvCheck checks if the WALLET_DIR and WALLET_NAME environment value do exist
 func doLiveEnvCheck(t *testing.T) {
 	t.Helper()
@@ -264,6 +274,10 @@ func rpcAddress() string {
 
 func TestStableGenerateAddresses(t *testing.T) {
 	if !doStable(t) {
+		return
+	}
+
+	if !doWallet(t) {
 		return
 	}
 
@@ -669,6 +683,10 @@ func TestStableListWallets(t *testing.T) {
 		return
 	}
 
+	if !doWallet(t) {
+		return
+	}
+
 	_, clean := createTempWalletFile(t)
 	defer clean()
 
@@ -693,6 +711,10 @@ func TestLiveListWallets(t *testing.T) {
 		return
 	}
 
+	if !doWallet(t) {
+		return
+	}
+
 	doLiveEnvCheck(t)
 
 	output, err := exec.Command(binaryPath, "listWallets").CombinedOutput()
@@ -707,6 +729,10 @@ func TestLiveListWallets(t *testing.T) {
 
 func TestStableListAddress(t *testing.T) {
 	if !doStable(t) {
+		return
+	}
+
+	if !doWallet(t) {
 		return
 	}
 
@@ -731,6 +757,10 @@ func TestStableListAddress(t *testing.T) {
 
 func TestLiveListAddresses(t *testing.T) {
 	if !doLive(t) {
+		return
+	}
+
+	if !doWallet(t) {
 		return
 	}
 
@@ -782,6 +812,10 @@ func TestStableWalletBalance(t *testing.T) {
 		return
 	}
 
+	if !doWallet(t) {
+		return
+	}
+
 	_, clean := createTempWalletFile(t)
 	defer clean()
 
@@ -802,6 +836,10 @@ func TestLiveWalletBalance(t *testing.T) {
 		return
 	}
 
+	if !doWallet(t) {
+		return
+	}
+
 	doLiveEnvCheck(t)
 
 	output, err := exec.Command(binaryPath, "walletBalance").CombinedOutput()
@@ -814,6 +852,10 @@ func TestLiveWalletBalance(t *testing.T) {
 
 func TestStableWalletOutputs(t *testing.T) {
 	if !doStable(t) {
+		return
+	}
+
+	if !doWallet(t) {
 		return
 	}
 
@@ -834,6 +876,10 @@ func TestStableWalletOutputs(t *testing.T) {
 
 func TestLiveWalletOutputs(t *testing.T) {
 	if !doLive(t) {
+		return
+	}
+
+	if !doWallet(t) {
 		return
 	}
 
@@ -1332,6 +1378,10 @@ func TestStableWalletDir(t *testing.T) {
 		return
 	}
 
+	if !doWallet(t) {
+		return
+	}
+
 	walletPath, clean := createTempWalletFile(t)
 	defer clean()
 
@@ -1343,6 +1393,10 @@ func TestStableWalletDir(t *testing.T) {
 
 func TestLiveWalletDir(t *testing.T) {
 	if !doLive(t) {
+		return
+	}
+
+	if !doWallet(t) {
 		return
 	}
 
@@ -1366,6 +1420,10 @@ func TestLiveWalletDir(t *testing.T) {
 // 2. The wallet must must have at least 2 coins and 16 coinhours.
 func TestLiveSend(t *testing.T) {
 	if !doLive(t) {
+		return
+	}
+
+	if !doWallet(t) {
 		return
 	}
 
@@ -1540,6 +1598,10 @@ func TestLiveSend(t *testing.T) {
 // function like in TestLiveSend.
 func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 	if !doLive(t) {
+		return
+	}
+
+	if !doWallet(t) {
 		return
 	}
 
@@ -1843,6 +1905,10 @@ func TestStableWalletHistory(t *testing.T) {
 		return
 	}
 
+	if !doWallet(t) {
+		return
+	}
+
 	_, clean := createTempWalletFile(t)
 	defer clean()
 
@@ -1860,6 +1926,10 @@ func TestStableWalletHistory(t *testing.T) {
 
 func TestLiveWalletHistory(t *testing.T) {
 	if !doLive(t) {
+		return
+	}
+
+	if !doWallet(t) {
 		return
 	}
 
@@ -1948,6 +2018,10 @@ func TestVersion(t *testing.T) {
 
 func TestStableGenerateWallet(t *testing.T) {
 	if !doStable(t) {
+		return
+	}
+
+	if !doWallet(t) {
 		return
 	}
 
@@ -2072,7 +2146,6 @@ func TestStableGenerateWallet(t *testing.T) {
 				require.Equal(t, tc.errMsg, output)
 				return
 			}
-			fmt.Println("output:", string(output))
 
 			var rw wallet.ReadableWallet
 			err = json.NewDecoder(bytes.NewReader(output)).Decode(&rw)

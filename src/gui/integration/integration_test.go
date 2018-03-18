@@ -59,6 +59,7 @@ type TestData struct {
 }
 
 var update = flag.Bool("update", false, "update golden files")
+var testWallet = flag.Bool("test-wallet", false, "run wallet tests")
 
 func nodeAddress() string {
 	addr := os.Getenv("SKYCOIN_NODE_HOST")
@@ -111,6 +112,15 @@ func doLiveOrStable(t *testing.T) bool {
 	}
 
 	t.Skip("Live and stable tests disabled")
+	return false
+}
+
+func doWallet(t *testing.T) bool {
+	if *testWallet {
+		return true
+	}
+
+	t.Skip("Wallet tests disabled")
 	return false
 }
 
@@ -1518,6 +1528,10 @@ func TestWalletNewSeed(t *testing.T) {
 		return
 	}
 
+	if !doWallet(t) {
+		return
+	}
+
 	cases := []struct {
 		name     string
 		entropy  int
@@ -1807,6 +1821,10 @@ func TestLiveWalletSpend(t *testing.T) {
 
 	doLiveEnvCheck(t)
 
+	if !doWallet(t) {
+		return
+	}
+
 	c := gui.NewClient(nodeAddress())
 	w, totalCoins, _ := prepareAndCheckWallet(t, c, 2e6, 2)
 	tt := []struct {
@@ -1926,7 +1944,7 @@ func TestCreateWallet(t *testing.T) {
 	w, clean := createWallet(t, c)
 	defer clean()
 
-	walletDir := getWalletDirFromEnv(t)
+	walletDir := getWalletDir(t, c)
 
 	// Confirms the wallet does exist
 	walletPath := filepath.Join(walletDir, w.GetFilename())
@@ -2051,8 +2069,8 @@ func TestLiveWalletbalance(t *testing.T) {
 
 	doLiveEnvCheck(t)
 
-	_, walletName := getWalletFromEnv(t)
 	c := gui.NewClient(nodeAddress())
+	_, walletName := getWalletFromEnv(t, c)
 	bp, err := c.WalletBalance(walletName)
 	require.NoError(t, err)
 	require.NotNil(t, bp)
@@ -2125,8 +2143,8 @@ func TestWalletFolderName(t *testing.T) {
 	folderName, err := c.WalletFolderName()
 	require.NoError(t, err)
 
-	walletDir := getWalletDirFromEnv(t)
-	require.Equal(t, walletDir, folderName.Address)
+	require.NotNil(t, folderName)
+	require.NotEmpty(t, folderName.Address)
 }
 
 // prepareAndCheckWallet gets wallet from environment, and confirms:
@@ -2134,7 +2152,7 @@ func TestWalletFolderName(t *testing.T) {
 // 2. The wallet has at least two address entry.
 // Returns the loaded wallet, total coins and total coin hours in the wallet.
 func prepareAndCheckWallet(t *testing.T, c *gui.Client, miniCoins, miniCoinHours uint64) (*wallet.Wallet, uint64, uint64) {
-	walletDir, walletName := getWalletFromEnv(t)
+	walletDir, walletName := getWalletFromEnv(t, c)
 	walletPath := filepath.Join(walletDir, walletName)
 
 	// Checks if the wallet does exist
@@ -2173,11 +2191,8 @@ func prepareAndCheckWallet(t *testing.T, c *gui.Client, miniCoins, miniCoinHours
 
 // getWalletFromEnv loads wallet from envrionment variables.
 // Returns wallet dir and wallet name.
-func getWalletFromEnv(t *testing.T) (string, string) {
-	walletDir := os.Getenv("WALLET_DIR")
-	if walletDir == "" {
-		t.Fatal("Missing WALLET_DIR environment value")
-	}
+func getWalletFromEnv(t *testing.T, c *gui.Client) (string, string) {
+	walletDir := getWalletDir(t, c)
 
 	walletName := os.Getenv("WALLET_NAME")
 	if walletName == "" {
@@ -2187,20 +2202,8 @@ func getWalletFromEnv(t *testing.T) (string, string) {
 	return walletDir, walletName
 }
 
-func getWalletDirFromEnv(t *testing.T) string {
-	walletDir := os.Getenv("WALLET_DIR")
-	if walletDir == "" {
-		t.Fatal("Missing WALLET_DIR environment value")
-	}
-	return walletDir
-}
-
 func doLiveEnvCheck(t *testing.T) {
 	t.Helper()
-	walletDir := os.Getenv("WALLET_DIR")
-	if walletDir == "" {
-		t.Fatal("missing WALLET_DIR environment value")
-	}
 
 	walletName := os.Getenv("WALLET_NAME")
 	if walletName == "" {
@@ -2268,7 +2271,7 @@ func createWallet(t *testing.T, c *gui.Client) (*wallet.Wallet, func()) {
 	err = w.Validate()
 	require.NoError(t, err)
 
-	walletDir := getWalletDirFromEnv(t)
+	walletDir := getWalletDir(t, c)
 
 	return &w, func() {
 		// Cleaner function to delete the wallet
@@ -2276,4 +2279,12 @@ func createWallet(t *testing.T, c *gui.Client) (*wallet.Wallet, func()) {
 		err = os.Remove(walletPath)
 		require.NoError(t, err)
 	}
+}
+
+func getWalletDir(t *testing.T, c *gui.Client) string {
+	wf, err := c.WalletFolderName()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	return wf.Address
 }

@@ -372,6 +372,11 @@ func (c *Config) postProcess() {
 		// Run in arbitrating mode if the node is master
 		c.Arbitrating = true
 	}
+
+	// Don't open browser to load wallets if wallet apis are disabled.
+	if c.DisableWalletApi {
+		c.LaunchBrowser = false
+	}
 }
 
 func panicIfError(err error, msg string, args ...interface{}) {

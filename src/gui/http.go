@@ -30,16 +30,20 @@ const (
 	resourceDir = "dist/"
 	devDir      = "dev/"
 	indexPage   = "index.html"
+
+	defaultReadTimeout  = time.Second * 10
+	defaultWriteTimeout = time.Second * 60
+	defaultIdleTimeout  = time.Second * 120
 )
 
 // Server exposes an HTTP API
 type Server struct {
 	server   *http.Server
-	mux      *http.ServeMux
 	listener net.Listener
 	done     chan struct{}
 }
 
+// ServerConfig configures the Server
 type ServerConfig struct {
 	StaticDir    string
 	DisableCSRF  bool
@@ -48,35 +52,42 @@ type ServerConfig struct {
 	IdleTimeout  time.Duration
 }
 
-func create(host string, serverConfig ServerConfig, daemon *daemon.Daemon) (*Server, error) {
-	appLoc, err := file.DetermineResourcePath(serverConfig.StaticDir, resourceDir, devDir)
+func create(host string, c ServerConfig, daemon *daemon.Daemon) (*Server, error) {
+	appLoc, err := file.DetermineResourcePath(c.StaticDir, resourceDir, devDir)
 	if err != nil {
 		return nil, err
 	}
 	logger.Info("Web resources directory: %s", appLoc)
 
 	csrfStore := &CSRFStore{
-		Enabled: !serverConfig.DisableCSRF,
+		Enabled: !c.DisableCSRF,
 	}
-	if serverConfig.DisableCSRF {
+	if c.DisableCSRF {
 		logger.Warning("CSRF check disabled")
+	}
+
+	if c.ReadTimeout == 0 {
+		c.ReadTimeout = defaultReadTimeout
+	}
+	if c.WriteTimeout == 0 {
+		c.WriteTimeout = defaultWriteTimeout
+	}
+	if c.IdleTimeout == 0 {
+		c.IdleTimeout = defaultIdleTimeout
 	}
 
 	srvMux := NewServerMux(host, appLoc, daemon.Gateway, csrfStore)
 	srv := &http.Server{
 		Handler:      srvMux,
-		ReadTimeout:  serverConfig.ReadTimeout,
-		WriteTimeout: serverConfig.WriteTimeout,
-		IdleTimeout:  serverConfig.IdleTimeout,
+		ReadTimeout:  c.ReadTimeout,
+		WriteTimeout: c.WriteTimeout,
+		IdleTimeout:  c.IdleTimeout,
 	}
 
-	server := &Server{
+	return &Server{
 		server: srv,
-		mux:    srvMux,
 		done:   make(chan struct{}),
-	}
-
-	return server, nil
+	}, nil
 }
 
 // Create creates a new Server instance that listens on HTTP

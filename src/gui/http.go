@@ -12,6 +12,8 @@ import (
 	"strings"
 	"unicode"
 
+	"time"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/util/file"
@@ -32,14 +34,18 @@ const (
 
 // Server exposes an HTTP API
 type Server struct {
+	server   *http.Server
 	mux      *http.ServeMux
 	listener net.Listener
 	done     chan struct{}
 }
 
 type ServerConfig struct {
-	StaticDir   string
-	DisableCSRF bool
+	StaticDir    string
+	DisableCSRF  bool
+	ReadTimeout  time.Duration
+	WriteTimeout time.Duration
+	IdleTimeout  time.Duration
 }
 
 func create(host string, serverConfig ServerConfig, daemon *daemon.Daemon) (*Server, error) {
@@ -56,10 +62,21 @@ func create(host string, serverConfig ServerConfig, daemon *daemon.Daemon) (*Ser
 		logger.Warning("CSRF check disabled")
 	}
 
-	return &Server{
-		mux:  NewServerMux(host, appLoc, daemon.Gateway, csrfStore),
-		done: make(chan struct{}),
-	}, nil
+	srvMux := NewServerMux(host, appLoc, daemon.Gateway, csrfStore)
+	srv := &http.Server{
+		Handler:      srvMux,
+		ReadTimeout:  serverConfig.ReadTimeout,
+		WriteTimeout: serverConfig.WriteTimeout,
+		IdleTimeout:  serverConfig.IdleTimeout,
+	}
+
+	server := &Server{
+		server: srv,
+		mux:    srvMux,
+		done:   make(chan struct{}),
+	}
+
+	return server, nil
 }
 
 // Create creates a new Server instance that listens on HTTP
@@ -110,7 +127,7 @@ func (s *Server) Serve() error {
 	defer logger.Info("Web interface closed")
 	defer close(s.done)
 
-	if err := http.Serve(s.listener, s.mux); err != nil {
+	if err := s.server.Serve(s.listener); err != nil {
 		if err != http.ErrServerClosed {
 			return err
 		}

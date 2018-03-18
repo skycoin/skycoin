@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- #1080, `/wallet/transactions` now returns a proper json object with pending transactions under `transactions` key
 - #951, cap cli createRawTransaction and send command coinhour distribution, coinhours are capped to a maximum of receiving coins for the address with a minimum of 1 coinhour
 - Upgrade to Angular 5
 - Add `total_coinhour_supply` and `current_coinhour_supply` to `/coinSupply` endpoint

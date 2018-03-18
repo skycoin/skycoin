@@ -100,7 +100,7 @@ func (c *Client) Post(endpoint string, body io.Reader, obj interface{}) error {
 	}
 
 	req.Header.Set("X-CSRF-Token", csrf)
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -418,12 +418,12 @@ func (c *Client) Spend(id, dst string, coins uint64) (*SpendResult, error) {
 }
 
 // WalletTransactions makes a request to /wallet/transactions
-func (c *Client) WalletTransactions(id string) ([]visor.UnconfirmedTxn, error) {
+func (c *Client) WalletTransactions(id string) (*UnconfirmedTxnsResponse, error) {
 	v := url.Values{}
 	v.Add("id", id)
 	endpoint := "/wallet/transactions?" + v.Encode()
 
-	var utx []visor.UnconfirmedTxn
+	var utx *UnconfirmedTxnsResponse
 	if err := c.Get(endpoint, &utx); err != nil {
 		return nil, err
 	}
@@ -442,10 +442,10 @@ func (c *Client) UpdateWallet(id, label string) error {
 	return nil
 }
 
-// WalletFolderName makes a request to /wallet/folderName
+// WalletFolderName makes a request to /wallets/folderName
 func (c *Client) WalletFolderName() (*WalletFolder, error) {
 	var w WalletFolder
-	if err := c.Get("/wallet/folderName", &w); err != nil {
+	if err := c.Get("/wallets/folderName", &w); err != nil {
 		return nil, err
 	}
 	return &w, nil
@@ -526,7 +526,7 @@ func (c *Client) PendingTransactions() ([]*visor.ReadableUnconfirmedTxn, error) 
 }
 
 // Transaction makes a request to /transaction
-func (c *Client) Transaction(txid string) (*visor.ReadableTransaction, error) {
+func (c *Client) Transaction(txid string) (*visor.TransactionResult, error) {
 	v := url.Values{}
 	v.Add("txid", txid)
 	endpoint := "/transaction?" + v.Encode()
@@ -535,7 +535,7 @@ func (c *Client) Transaction(txid string) (*visor.ReadableTransaction, error) {
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}
-	return &r.Transaction, nil
+	return &r, nil
 }
 
 // Transactions makes a request to /transactions

@@ -236,6 +236,8 @@ func (c *Config) register() {
 	flag.IntVar(&c.LogBuffSize, "logbufsize", c.LogBuffSize, "Log size saved in memeory for gui show")
 }
 
+var home = file.UserHome()
+
 var devConfig = Config{
 	// Disable peer exchange
 	DisablePEX: false,
@@ -281,7 +283,7 @@ var devConfig = Config{
 
 	LaunchBrowser: true,
 	// Data directory holds app data -- defaults to ~/.skycoin
-	DataDirectory: ".skycoin",
+	DataDirectory: filepath.Join(home, ".skycoin"),
 	// Web GUI static resources
 	GUIDirectory: "./src/gui/static/",
 	// Logging
@@ -537,6 +539,7 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Visor.Config.DBPath = c.DBPath
 	dc.Visor.Config.DBReadOnly = c.DBReadOnly
 	dc.Visor.Config.Arbitrating = c.Arbitrating
+	dc.Visor.Config.DisableWalletAPI = c.DisableWalletApi
 	dc.Visor.Config.WalletDirectory = c.WalletDirectory
 	dc.Visor.Config.BuildInfo = visor.BuildInfo{
 		Version: Version,

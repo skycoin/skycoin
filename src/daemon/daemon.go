@@ -695,6 +695,11 @@ func (dm *Daemon) cullInvalidConnections() {
 				return false, err
 			}
 
+			// Do not remove trusted peers
+			if dm.isTrustedPeer(addr) {
+				return false, nil
+			}
+
 			if !conned {
 				return true, nil
 			}
@@ -726,6 +731,15 @@ func (dm *Daemon) cullInvalidConnections() {
 			dm.Pex.RemovePeer(a)
 		}
 	}
+}
+
+func (dm *Daemon) isTrustedPeer(addr string) bool {
+	peer, ok := dm.Pex.GetPeerByAddr(addr)
+	if !ok {
+		return false
+	}
+
+	return peer.Trusted
 }
 
 // Records an AsyncMessage to the messageEvent chan.  Do not access

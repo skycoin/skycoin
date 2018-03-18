@@ -99,9 +99,28 @@ func (pl *peerlist) addPeers(addrs []string) {
 	}
 }
 
-func (pl *peerlist) getPeers(flts ...Filter) Peers {
+// getCanTryPeers returns all peers that are triable(retried times blew exponential backoff times)
+// and are able to pass the filters.
+func (pl *peerlist) getCanTryPeers(flts ...Filter) Peers {
 	var ps Peers
 	flts = append([]Filter{canTry}, flts...)
+loop:
+	for _, p := range pl.peers {
+		for i := range flts {
+			if !flts[i](*p) {
+				continue loop
+			}
+		}
+
+		ps = append(ps, *p)
+	}
+
+	return ps
+}
+
+// getPeers returns all peers that can pass the filters.
+func (pl *peerlist) getPeers(flts ...Filter) Peers {
+	var ps Peers
 loop:
 	for _, p := range pl.peers {
 		for i := range flts {
@@ -208,7 +227,7 @@ func (pl *peerlist) clearOld(timeAgo time.Duration) {
 // Returns n random peers, or all of the peers, whichever is lower.
 // If count is 0, all of the peers are returned, shuffled.
 func (pl *peerlist) random(count int, flts ...Filter) Peers {
-	keys := pl.getPeers(flts...).ToAddrs()
+	keys := pl.getCanTryPeers(flts...).ToAddrs()
 	if len(keys) == 0 {
 		return Peers{}
 	}

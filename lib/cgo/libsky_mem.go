@@ -11,6 +11,23 @@ import (
 */
 import "C"
 
+const (
+	SizeofRipemd160         = unsafe.Sizeof(C.Ripemd160{})
+	SizeOfAddress           = unsafe.Sizeof(C.Address{})
+	SizeofPubKey            = unsafe.Sizeof(C.PubKey{})
+	SizeofPubKeySlice       = unsafe.Sizeof(C.PubKeySlice{})
+	SizeofSecKey            = unsafe.Sizeof(C.SecKey{})
+	SizeofSig               = unsafe.Sizeof(C.Sig{})
+	SizeofChecksum          = unsafe.Sizeof(C.Checksum{})
+	SizeofSendAmount        = unsafe.Sizeof(C.SendAmount{})
+	SizeofSHA256            = unsafe.Sizeof(C.SHA256{})
+	SizeofTransactionOutput = unsafe.Sizeof(C.TransactionOutput{})
+	SizeofTransaction       = unsafe.Sizeof(C.Transaction{})
+	SizeofWallet            = unsafe.Sizeof(C.Wallet{})
+	SizeofEntry             = unsafe.Sizeof(C.Entry{})
+	SizeofUxBalance         = unsafe.Sizeof(C.UxBalance{})
+)
+
 type Handle uint64
 
 var (
@@ -33,44 +50,10 @@ func closeHandle(handle Handle) {
 	delete(handleMap, handle)
 }
 
-func inplaceByteArray(p unsafe.Pointer, length int) *[]byte {
-	// Create slice without copying data
-	// TODO: Memory efficiency
-	slice := (*[1 << 30]byte)(p)[:length:length]
-	return &slice
-}
-
-func inplacePubKey(p *C.PubKey) *cipher.PubKey {
-	return (*cipher.PubKey)(unsafe.Pointer(inplaceByteArray(unsafe.Pointer(p), 33)))
-}
-
 func inplacePubKeySlice(p *C.PubKeySlice) *cipher.PubKeySlice {
-	// Create slice without copying data
-	slice := (*[1 << 30]cipher.PubKey)(p.data)[:p.len:p.len]
-	return (*cipher.PubKeySlice)(unsafe.Pointer(&slice))
-}
-
-func inplaceSecKey(p *C.SecKey) *cipher.SecKey {
-	return (*cipher.SecKey)(unsafe.Pointer(inplaceByteArray(unsafe.Pointer(p), 32)))
-}
-
-func inplaceSig(p *C.Sig) *cipher.Sig {
-	return (*cipher.Sig)(unsafe.Pointer(inplaceByteArray(unsafe.Pointer(p), 64 + 1)))
-}
-
-func inplaceChecksum(p *C.Checksum) *cipher.Checksum {
-	return (*cipher.Checksum)(unsafe.Pointer(inplaceByteArray(unsafe.Pointer(p), 4)))
-}
-
-func inplaceRipemd160(p *C.Ripemd160) *cipher.Ripemd160 {
-	return (*cipher.Ripemd160)(unsafe.Pointer(inplaceByteArray(unsafe.Pointer(p), 20)))
-}
-
-func inplaceSHA256(p *C.SHA256) *cipher.SHA256 {
-	return (*cipher.SHA256)(unsafe.Pointer(inplaceByteArray(unsafe.Pointer(p), 20)))
+	return (*cipher.PubKeySlice)(unsafe.Pointer(p))
 }
 
 func inplaceAddress(p *C.Address) *cipher.Address {
 	return (*cipher.Address)(unsafe.Pointer(p))
 }
-

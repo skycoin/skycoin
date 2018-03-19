@@ -6,6 +6,7 @@ export class Address {
   address: string;
   coins: number;
   hours: number;
+  copying?: boolean; // Optional parameter indicating whether the address is being copied to clipboard
 }
 
 export class PurchaseOrder {

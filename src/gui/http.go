@@ -12,6 +12,8 @@ import (
 	"strings"
 	"unicode"
 
+	"time"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/util/file"
@@ -28,37 +30,63 @@ const (
 	resourceDir = "dist/"
 	devDir      = "dev/"
 	indexPage   = "index.html"
+
+	defaultReadTimeout  = time.Second * 10
+	defaultWriteTimeout = time.Second * 60
+	defaultIdleTimeout  = time.Second * 120
 )
 
 // Server exposes an HTTP API
 type Server struct {
-	mux      *http.ServeMux
+	server   *http.Server
 	listener net.Listener
 	done     chan struct{}
 }
 
+// ServerConfig configures the Server
 type ServerConfig struct {
-	StaticDir   string
-	DisableCSRF bool
+	StaticDir    string
+	DisableCSRF  bool
+	ReadTimeout  time.Duration
+	WriteTimeout time.Duration
+	IdleTimeout  time.Duration
 }
 
-func create(host string, serverConfig ServerConfig, daemon *daemon.Daemon) (*Server, error) {
-	appLoc, err := file.DetermineResourcePath(serverConfig.StaticDir, resourceDir, devDir)
+func create(host string, c ServerConfig, daemon *daemon.Daemon) (*Server, error) {
+	appLoc, err := file.DetermineResourcePath(c.StaticDir, resourceDir, devDir)
 	if err != nil {
 		return nil, err
 	}
 	logger.Info("Web resources directory: %s", appLoc)
 
 	csrfStore := &CSRFStore{
-		Enabled: !serverConfig.DisableCSRF,
+		Enabled: !c.DisableCSRF,
 	}
-	if serverConfig.DisableCSRF {
+	if c.DisableCSRF {
 		logger.Warning("CSRF check disabled")
 	}
 
+	if c.ReadTimeout == 0 {
+		c.ReadTimeout = defaultReadTimeout
+	}
+	if c.WriteTimeout == 0 {
+		c.WriteTimeout = defaultWriteTimeout
+	}
+	if c.IdleTimeout == 0 {
+		c.IdleTimeout = defaultIdleTimeout
+	}
+
+	srvMux := NewServerMux(host, appLoc, daemon.Gateway, csrfStore)
+	srv := &http.Server{
+		Handler:      srvMux,
+		ReadTimeout:  c.ReadTimeout,
+		WriteTimeout: c.WriteTimeout,
+		IdleTimeout:  c.IdleTimeout,
+	}
+
 	return &Server{
-		mux:  NewServerMux(host, appLoc, daemon.Gateway, csrfStore),
-		done: make(chan struct{}),
+		server: srv,
+		done:   make(chan struct{}),
 	}, nil
 }
 
@@ -110,7 +138,7 @@ func (s *Server) Serve() error {
 	defer logger.Info("Web interface closed")
 	defer close(s.done)
 
-	if err := http.Serve(s.listener, s.mux); err != nil {
+	if err := s.server.Serve(s.listener); err != nil {
 		if err != http.ErrServerClosed {
 			return err
 		}

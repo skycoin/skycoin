@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Add Read, Write and Idle timeouts to the HTTP listener, preventing file descriptor leaks
 - Support absolute and relative paths for `-data-dir` option
 - Prevent creating transactions whose size exceeds the maximum block size
 - Check addition and multiplication uint64 overflow

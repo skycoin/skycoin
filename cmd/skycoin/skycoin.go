@@ -135,6 +135,10 @@ type Config struct {
 	// GUI directory contains assets for the html gui
 	GUIDirectory string
 
+	ReadTimeout  time.Duration
+	WriteTimeout time.Duration
+	IdleTimeout  time.Duration
+
 	// Logging
 	ColorLog bool
 	// This is the value registered with flag, it is converted to LogLevel after parsing
@@ -293,6 +297,12 @@ var devConfig = Config{
 	// Wallets
 	WalletDirectory: "",
 
+	// Timeout settings for http.Server
+	// https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
+	ReadTimeout:  10 * time.Second,
+	WriteTimeout: 60 * time.Second,
+	IdleTimeout:  120 * time.Second,
+
 	// Centralized network configuration
 	RunMaster:        false,
 	BlockchainPubkey: cipher.PubKey{},
@@ -433,8 +443,11 @@ func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) (*g
 	var err error
 
 	config := gui.ServerConfig{
-		StaticDir:   c.GUIDirectory,
-		DisableCSRF: c.DisableCSRF,
+		StaticDir:    c.GUIDirectory,
+		DisableCSRF:  c.DisableCSRF,
+		ReadTimeout:  c.ReadTimeout,
+		WriteTimeout: c.WriteTimeout,
+		IdleTimeout:  c.IdleTimeout,
 	}
 
 	if c.WebInterfaceHTTPS {
@@ -623,7 +636,13 @@ func Run(c *Config) {
 	var rpc *webrpc.WebRPC
 	if c.RPCInterface {
 		rpcAddr := fmt.Sprintf("%v:%v", c.RPCInterfaceAddr, c.RPCInterfacePort)
-		rpc, err = webrpc.New(rpcAddr, d.Gateway)
+		rpc, err = webrpc.New(rpcAddr, webrpc.Config{
+			ReadTimeout:  c.ReadTimeout,
+			WriteTimeout: c.WriteTimeout,
+			IdleTimeout:  c.IdleTimeout,
+			ChanBuffSize: 1000,
+			WorkerNum:    c.RPCThreadNum,
+		}, d.Gateway)
 		if err != nil {
 			logger.Error("%v", err)
 			return

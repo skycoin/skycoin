@@ -6,6 +6,7 @@ import (
 
 	"crypto/sha256"
 	"time"
+
 	"github.com/skycoin/skycoin/src/cipher"
 )
 

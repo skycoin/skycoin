@@ -14,7 +14,7 @@ import (
 	"github.com/skycoin/skycoin/src/testutil"
 )
 
-var hashes = []cipher.SHA256 {
+var hashes = []cipher.SHA256{
 	GetSHAFromHex("123"),
 	GetSHAFromHex("456"),
 	GetSHAFromHex("789"),
@@ -231,11 +231,11 @@ func ExampleNewGiveTxnsMessage() {
 		Sigs:      []cipher.Sig{sig0, sig1},
 	}
 	var transaction1 = coin.Transaction{
-		Type:      123,
-		In:        []cipher.SHA256{hashes[5],hashes[6],hashes[7]},
-		Length:    5000,
-		Out:       transactionOutputs1,
-		Sigs:      []cipher.Sig{sig2, sig3},
+		Type:   123,
+		In:     []cipher.SHA256{hashes[5], hashes[6], hashes[7]},
+		Length: 5000,
+		Out:    transactionOutputs1,
+		Sigs:   []cipher.Sig{sig2, sig3},
 	}
 	transactions = append(transactions, transaction0, transaction1)
 	var message = NewGiveTxnsMessage(transactions)

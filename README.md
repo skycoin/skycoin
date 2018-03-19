@@ -22,7 +22,7 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
 
 ## Table of Contents
 
-<!-- MarkdownTOC depth="2" autolink="true" bracket="round" -->
+<!-- MarkdownTOC depth="5" autolink="true" bracket="round" -->
 
 - [Changelog](#changelog)
 - [Installation](#installation)
@@ -43,11 +43,17 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
     - [Client libraries](#client-libraries)
     - [Running Tests](#running-tests)
     - [Running Integration Tests](#running-integration-tests)
+        - [Stable Integration Tests](#stable-integration-tests)
+        - [Live Integration Tests](#live-integration-tests)
+        - [Debugging Integration Tests](#debugging-integration-tests)
+        - [Update golden files in integration test-fixtures](#update-golden-files-in-integration-test-fixtures)
     - [Formatting](#formatting)
     - [Code Linting](#code-linting)
     - [Dependency Management](#dependency-management)
     - [Wallet GUI Development](#wallet-gui-development)
     - [Releases](#releases)
+        - [Pre-release testing](#pre-release-testing)
+        - [Creating release builds](#creating-release-builds)
 
 <!-- /MarkdownTOC -->
 

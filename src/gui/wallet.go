@@ -291,6 +291,7 @@ func walletUpdateHandler(gateway Gatewayer) http.HandlerFunc {
 			wh.Error405(w)
 			return
 		}
+
 		// Update wallet
 		wltID := r.FormValue("id")
 		if wltID == "" {

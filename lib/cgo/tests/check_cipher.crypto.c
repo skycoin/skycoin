@@ -148,3 +148,22 @@ Test(asserts, TestPubKeyHex) {
   cr_assert(eq(str, (char *) s.p, (char *) s2.p));
 }
 
+Test(asserts, TestPubKeyVerify) {
+  PubKey p;
+  unsigned char buff[50];
+  GoSlice slice;
+  unsigned int errcode;
+
+  slice.data = buff;
+  slice.len = 0;
+  slice.cap = 50;
+
+  int i = 0;
+  for (; i < 10; i++) {
+    randBytes(&slice, 33);
+    errcode = SKY_cipher_NewPubKey(slice, &p);
+    cr_assert(errcode == SKY_OK);
+    errcode = SKY_cipher_PubKey_Verify(&p);
+    cr_assert(errcode == SKY_ERROR);
+  } 
+}

@@ -28,28 +28,28 @@ var hashes = []cipher.SHA256{
 
 var addresses = []cipher.Address{
 	cipher.Address{
-		Version:1,
-		Key:cipher.HashRipemd160([]byte("123")),
+		Version: 1,
+		Key:     cipher.HashRipemd160([]byte("123")),
 	},
 	cipher.Address{
-		Version:1,
-		Key:cipher.HashRipemd160([]byte("456")),
+		Version: 1,
+		Key:     cipher.HashRipemd160([]byte("456")),
 	},
 	cipher.Address{
-		Version:1,
-		Key:cipher.HashRipemd160([]byte("789")),
+		Version: 1,
+		Key:     cipher.HashRipemd160([]byte("789")),
 	},
 	cipher.Address{
-		Version:1,
-		Key:cipher.HashRipemd160([]byte("abc")),
+		Version: 1,
+		Key:     cipher.HashRipemd160([]byte("abc")),
 	},
 	cipher.Address{
-		Version:1,
-		Key:cipher.HashRipemd160([]byte("def")),
+		Version: 1,
+		Key:     cipher.HashRipemd160([]byte("def")),
 	},
 	cipher.Address{
-		Version:1,
-		Key:cipher.HashRipemd160([]byte("101")),
+		Version: 1,
+		Key:     cipher.HashRipemd160([]byte("101")),
 	},
 }
 

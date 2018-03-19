@@ -2,7 +2,6 @@ package daemon
 
 import (
 	"fmt"
-	"reflect"
 	"strconv"
 
 	"io/ioutil"
@@ -60,7 +59,7 @@ func getSliceContentsString(sl []string, offset int) string {
 	return res
 }
 
-func printLHexDumpWithFormat(offset int, name string, buffer []byte) {
+func PrintLHexDumpWithFormat(offset int, name string, buffer []byte) {
 	var hexBuff = make([]string, len(buffer))
 	for i := 0; i < len(buffer); i++ {
 		hexBuff[i] = strconv.FormatInt(int64(buffer[i]), 16)

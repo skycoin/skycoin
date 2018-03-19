@@ -77,10 +77,14 @@ func (pool *Pool) Shutdown() {
 }
 
 // Run starts listening on the configured Port
-// no goroutine
 func (pool *Pool) Run() error {
 	logger.Info("daemon.Pool listening on port %d", pool.Config.port)
 	return pool.Pool.Run()
+}
+
+// RunOffline runs the pool without a listener. This is necessary to process strand requests.
+func (pool *Pool) RunOffline() error {
+	return pool.Pool.RunOffline()
 }
 
 // Send a ping if our last message sent was over pingRate ago

@@ -2,6 +2,8 @@
 
 Skycoin command line interface
 
+The CLI command APIs can be used directly from a Go application, see [Skycoin CLI Godoc](https://godoc.org/github.com/skycoin/skycoin/src/api/cli).
+
 <!-- MarkdownTOC depth="3" autolink="true" bracket="round" -->
 
 - [Install](#install)
@@ -83,35 +85,39 @@ NAME:
    skycoin-cli - the skycoin command line interface
 
 USAGE:
-   skycoin-cli [global options] command [command options] [arguments...]
+   cli [global options] command [command options] [arguments...]
 
 VERSION:
-   0.1
+   0.21.1
 
 COMMANDS:
      addPrivateKey         Add a private key to specific wallet
+     addressBalance        Check the balance of specific addresses
+     addressGen            Generate skycoin or bitcoin addresses
+     addressOutputs        Display outputs of specific addresses
      blocks                Lists the content of a single block or a range of blocks
      broadcastTransaction  Broadcast a raw transaction to the network
-     walletBalance         Check the balance of a wallet
-     walletOutputs         Display outputs of specific wallet
-     addressBalance        Check the balance of specific addresses
-     addressOutputs        Display outputs of specific addresses
+     checkdb               Verify the database
      createRawTransaction  Create a raw transaction to be broadcast to the network later
+     decodeRawTransaction  Decode raw transaction
      generateAddresses     Generate additional addresses for a wallet
      generateWallet        Generate a new wallet
      lastBlocks            Displays the content of the most recently N generated blocks
      listAddresses         Lists all addresses in a given wallet
-     listWallets           Lists all wallets stored in the default wallet directory
+     listWallets           Lists all wallets stored in the wallet directory
      send                  Send skycoin from a wallet or an address to a recipient address
      status                Check the status of current skycoin node
      transaction           Show detail info of specific transaction
+     verifyAddress         Verify a skycoin address
      version
+     walletBalance         Check the balance of a wallet
      walletDir             Displays wallet folder address
-     walletHistory         Display the transaction history of specific wallet
+     walletHistory         Display the transaction history of specific wallet. Requires skycoin node rpc.
+     walletOutputs         Display outputs of specific wallet
      help, h               Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
-   --help, -h     show help, can also be used to show subcommand help
+   --help, -h     show help
    --version, -v  print the version
 ENVIRONMENT VARIABLES:
     RPC_ADDR: Address of RPC node. Default "127.0.0.1:6430"

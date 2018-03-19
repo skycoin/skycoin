@@ -8,14 +8,41 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- #951, cap cli createRawTransaction and send command coinhour distribution, coinhours are capped to a maximum of receiving coins for the address with a minimum of 1 coinhour   
-- #896, Add CSRF check to wallet api
-- #800, Add entropy parameter to `/wallet/newSeed` endpoint
-- #877, Add -disable-wallet-api CLI option
+- go1.10 support
+- Add Dockerfile
+- Add libskycoin C API wrapper
+- New wallet UI
+- Notify the user when a new version is available
+- CLI and GUI integration tests against a stable and live blockchain
+- #877, Add `-disable-wallet-api` CLI option
+- HTTP API client
+- `/richlist` API method, returns top n address balances
+- `/addresscount` API method, returns the number of addresses that have any amount of coins
+- `/transactions` API method, returns transactions of addresses
+
+### Fixed
+
+- Support absolute and relative paths for `-data-dir` option
+- Prevent creating transactions whose size exceeds the maximum block size
+- Check addition and multiplication uint64 overflow
+- Keep trusted peers in the peerlist permanently, even if they are unreachable
+- #885, Add `Host` header check to localhost HTTP interfaces to prevent DNS rebinding attacks
+- #896, Add CSRF check to wallet API
+- Fix base58 address parsing, which allowed leading invalid characters and treated unknown characters as a '1'
+
+### Changed
+
+- #951, cap cli createRawTransaction and send command coinhour distribution, coinhours are capped to a maximum of receiving coins for the address with a minimum of 1 coinhour
+- Upgrade to Angular 5
 - Add `total_coinhour_supply` and `current_coinhour_supply` to `/coinSupply` endpoint
-- Remove `/logs` and log buffering due to possible crash
-- Add `Host` header check to localhost HTTP interfaces to prevent DNS rebinding attacks
+- #800, Add entropy parameter to `/wallet/newSeed` endpoint. Entropy can be 128 (default) or 256, corresponding to 12- and 24-word seeds respectively
 - #866, Include coins and hours in `/explorer/address` inputs
+
+### Removed
+
+- Remove `/lastTxs` API endpoint
+- Remove `/logs` and log buffering due to possible crash
+- Remove `/wallets/reload` endpoint
 
 ## [0.21.1] - 2017-12-14
 

@@ -11,8 +11,6 @@ import (
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/wallet"
 
-	"strconv"
-
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 )
@@ -132,7 +130,7 @@ type ReadableTransactionInput struct {
 	Hash    string `json:"uxid"`
 	Address string `json:"owner"`
 	Coins   string `json:"coins"`
-	Hours   string `json:"hours"`
+	Hours   uint64 `json:"hours"`
 }
 
 // NewReadableTransactionOutput creates readable transaction outputs
@@ -162,7 +160,7 @@ func NewReadableTransactionInput(uxID, ownerAddress string, coins, hours uint64)
 		Hash:    uxID,
 		Address: ownerAddress, //Destination Address
 		Coins:   coinVal,
-		Hours:   strconv.FormatUint(hours, 10),
+		Hours:   hours,
 	}, nil
 }
 

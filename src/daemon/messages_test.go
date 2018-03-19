@@ -11,7 +11,6 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
-	"github.com/skycoin/skycoin/src/testutil"
 )
 
 var hashes = []cipher.SHA256{
@@ -25,6 +24,33 @@ var hashes = []cipher.SHA256{
 	GetSHAFromHex("121"),
 	GetSHAFromHex("314"),
 	GetSHAFromHex("151"),
+}
+
+var addresses = []cipher.Address{
+	cipher.Address{
+		Version:1,
+		Key:cipher.HashRipemd160([]byte("123")),
+	},
+	cipher.Address{
+		Version:1,
+		Key:cipher.HashRipemd160([]byte("456")),
+	},
+	cipher.Address{
+		Version:1,
+		Key:cipher.HashRipemd160([]byte("789")),
+	},
+	cipher.Address{
+		Version:1,
+		Key:cipher.HashRipemd160([]byte("abc")),
+	},
+	cipher.Address{
+		Version:1,
+		Key:cipher.HashRipemd160([]byte("def")),
+	},
+	cipher.Address{
+		Version:1,
+		Key:cipher.HashRipemd160([]byte("101")),
+	},
 }
 
 func GetSHAFromHex(hex string) cipher.SHA256 {
@@ -85,6 +111,16 @@ func ExampleNewIntroductionMessage() {
 	fmt.Println("IntroductionMessage:")
 	MessageHexDump(message, true)
 	// Output:
+	// IntroductionMessage:
+	// 0e 00 00 00 49 4e 54 52 d2 04 00 00 d2 1e 05 00
+	// 00 00 ............................................. Full message
+	// ------------------------------------------------------------------------
+	// 0x0000 | 0e 00 00 00 ....................................... Length
+	// 0x0004 | 49 4e 54 52 ....................................... Prefix
+	// 0x0008 | d2 04 00 00 ....................................... Mirror
+	// 0x000c | d2 1e ............................................. Port
+	// 0x000e | 05 00 00 00 ....................................... Version
+	// 0x0012 |
 }
 
 func ExampleNewGetPeersMessage() {
@@ -95,6 +131,11 @@ func ExampleNewGetPeersMessage() {
 	fmt.Println("GetPeersMessage:")
 	MessageHexDump(message, true)
 	// Output:
+	// 04 00 00 00 47 45 54 50 ........................... Full message
+	// ------------------------------------------------------------------------
+	// 0x0000 | 04 00 00 00 ....................................... Length
+	// 0x0004 | 47 45 54 50 ....................................... Prefix
+	// 0x0008 |
 }
 
 func ExampleNewGivePeersMessage() {
@@ -110,6 +151,16 @@ func ExampleNewGivePeersMessage() {
 	fmt.Println("GivePeersMessage:")
 	MessageHexDump(message, true)
 	// Output:
+	// 1a 00 00 00 47 49 56 50 03 00 00 00 5d 87 b2 76
+	// 70 17 9c 21 58 2f 70 17 94 67 29 79 70 17 ......... Full message
+	// ------------------------------------------------------------------------
+	// 0x0000 | 1a 00 00 00 ....................................... Length
+	// 0x0004 | 47 49 56 50 ....................................... Prefix
+	// 0x0008 | 03 00 00 00 ....................................... Peers length
+	// 0x000c | 01 00 00 00 5d 87 b2 76 70 17 ..................... Peers#0
+	// 0x001a | 01 00 00 00 9c 21 58 2f 70 17 ..................... Peers#1
+	// 0x0028 | 01 00 00 00 94 67 29 79 70 17 ..................... Peers#2
+	// 0x001e |
 }
 
 func ExampleNewPingMessage() {
@@ -132,6 +183,14 @@ func ExampleNewGetBlocksMessage() {
 	fmt.Println("GetBlocksMessage:")
 	MessageHexDump(message, true)
 	// Output:
+	// 14 00 00 00 47 45 54 42 d2 04 00 00 00 00 00 00
+	// 2e 16 00 00 00 00 00 00 ........................... Full message
+	// ------------------------------------------------------------------------
+	// 0x0000 | 14 00 00 00 ....................................... Length
+	// 0x0004 | 47 45 54 42 ....................................... Prefix
+	// 0x0008 | d2 04 00 00 00 00 00 00 ........................... LastBlock
+	// 0x0010 | 2e 16 00 00 00 00 00 00 ........................... RequestedBlocks
+	// 0x0018 |
 }
 
 func ExampleNewGiveBlocksMessage() {
@@ -149,7 +208,7 @@ func ExampleNewGiveBlocksMessage() {
 			Time:     100,
 			BkSeq:    0,
 			Fee:      10,
-			PrevHash: cipher.SHA256{},
+			PrevHash: hashes[8],
 			BodyHash: body1.Hash(),
 		}}
 	var sig, _ = cipher.SigFromHex("123")
@@ -162,6 +221,62 @@ func ExampleNewGiveBlocksMessage() {
 	fmt.Println("GiveBlocksMessage:")
 	MessageHexDump(message, true)
 	// Output:
+	// 8a 01 00 00 47 49 56 42 02 00 00 00 00 00 00 00
+	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 00 00 00 00 00 00 00 00 00 00 00 00 00 02 00 00
+	// 00 64 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 00 0a 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ......... Full message
+	// ------------------------------------------------------------------------
+	// 0x0000 | 8a 01 00 00 ....................................... Length
+	// 0x0004 | 47 49 56 42 ....................................... Prefix
+	// 0x0008 | 02 00 00 00 ....................................... Blocks length
+	// 0x000c | 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x001c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x002c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x003c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x004c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x005c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x006c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x007c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x008c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x009c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x00ac | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x00bc | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x00cc | 00 00 00 00 00 .................................... Blocks#0
+	// 0x00d5 | 01 00 00 00 02 00 00 00 64 00 00 00 00 00 00 00
+	// 0x00e5 | 00 00 00 00 00 00 00 00 0a 00 00 00 00 00 00 00
+	// 0x00f5 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x0105 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x0115 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x0125 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x0135 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x0145 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x0155 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x0165 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x0175 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x0185 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x0195 | 00 00 00 00 00 .................................... Blocks#1
+	// 0x018e |
 }
 
 func ExampleNewAnnounceBlocksMessage() {
@@ -172,6 +287,13 @@ func ExampleNewAnnounceBlocksMessage() {
 	fmt.Println("AnnounceBlocksMessage:")
 	MessageHexDump(message, true)
 	// Output:
+	// 0c 00 00 00 41 4e 4e 42 40 e2 01 00 00 00 00 00
+	// ................................................... Full message
+	// ------------------------------------------------------------------------
+	// 0x0000 | 0c 00 00 00 ....................................... Length
+	// 0x0004 | 41 4e 4e 42 ....................................... Prefix
+	// 0x0008 | 40 e2 01 00 00 00 00 00 ........................... MaxBkSeq
+	// 0x0010 |
 }
 
 func ExampleNewGetTxnsMessage() {
@@ -185,6 +307,22 @@ func ExampleNewGetTxnsMessage() {
 	fmt.Println("GetTxns:")
 	MessageHexDump(message, true)
 	// Output:
+	// 48 00 00 00 47 45 54 54 02 00 00 00 00 00 00 00
+	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 00 00 00 00 00 00 00 00 00 00 00 00 ............... Full message
+	// ------------------------------------------------------------------------
+	// 0x0000 | 48 00 00 00 ....................................... Length
+	// 0x0004 | 47 45 54 54 ....................................... Prefix
+	// 0x0008 | 02 00 00 00 ....................................... Txns length
+	// 0x000c | 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x001c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x002c | 00 00 00 00 ....................................... Txns#0
+	// 0x0034 | 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x0044 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x0054 | 00 00 00 00 ....................................... Txns#1
+	// 0x004c |
 }
 
 func ExampleNewGiveTxnsMessage() {
@@ -195,22 +333,22 @@ func ExampleNewGiveTxnsMessage() {
 	var transactionOutputs0 []coin.TransactionOutput = make([]coin.TransactionOutput, 0)
 	var transactionOutputs1 []coin.TransactionOutput = make([]coin.TransactionOutput, 0)
 	var txOutput0 = coin.TransactionOutput{
-		Address: testutil.MakeAddress(),
+		Address: addresses[0],
 		Coins:   12,
 		Hours:   34,
 	}
 	var txOutput1 = coin.TransactionOutput{
-		Address: testutil.MakeAddress(),
+		Address: addresses[1],
 		Coins:   56,
 		Hours:   78,
 	}
 	var txOutput2 = coin.TransactionOutput{
-		Address: testutil.MakeAddress(),
+		Address: addresses[2],
 		Coins:   9,
 		Hours:   12,
 	}
 	var txOutput3 = coin.TransactionOutput{
-		Address: testutil.MakeAddress(),
+		Address: addresses[3],
 		Coins:   34,
 		Hours:   56,
 	}

@@ -88,7 +88,7 @@ func create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
 		disableWalletAPI: c.DisableWalletAPI,
 	}
 
-	srvMux := NewServerMux(mc, daemon.Gateway, csrfStore)
+	srvMux := newServerMux(mc, daemon.Gateway, csrfStore)
 	srv := &http.Server{
 		Handler:      srvMux,
 		ReadTimeout:  c.ReadTimeout,
@@ -166,9 +166,8 @@ func (s *Server) Shutdown() {
 	<-s.done
 }
 
-// NewServerMux creates an http.ServeMux with handlers registered
-// func NewServerMux(host, appLoc string, disableStatic bool, gateway Gatewayer, csrfStore *CSRFStore) *http.ServeMux {
-func NewServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.ServeMux {
+// newServerMux creates an http.ServeMux with handlers registered
+func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	headerCheck := func(host string, handler http.Handler) http.Handler {

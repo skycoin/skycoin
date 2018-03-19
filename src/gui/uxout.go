@@ -66,6 +66,6 @@ func getAddrUxOuts(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendOr404(w, uxs)
+		wh.SendJSONOr500(logger, w, uxs)
 	}
 }

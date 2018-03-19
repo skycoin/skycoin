@@ -1511,3 +1511,87 @@ func TestGetWalletFolderHandler(t *testing.T) {
 		}
 	}
 }
+
+func TestWalletUnloadHandler(t *testing.T) {
+	tt := []struct {
+		name            string
+		method          string
+		status          int
+		err             string
+		walletID        string
+		unloadWalletErr error
+		csrfDisabled    bool
+	}{
+		{
+			name:     "405",
+			method:   http.MethodGet,
+			status:   http.StatusMethodNotAllowed,
+			err:      "405 Method Not Allowed",
+			walletID: "wallet.wlt",
+		},
+		{
+			name:   "400 - missing wallet id",
+			method: http.MethodPost,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - missing wallet id",
+		},
+		{
+			name:            "403 - Forbidden - wallet API disabled",
+			method:          http.MethodPost,
+			status:          http.StatusForbidden,
+			err:             "403 Forbidden",
+			walletID:        "wallet.wlt",
+			unloadWalletErr: wallet.ErrWalletApiDisabled,
+		},
+		{
+			name:     "200 - ok",
+			method:   http.MethodPost,
+			status:   http.StatusOK,
+			walletID: "wallet.wlt",
+		},
+		{
+			name:         "200 - ok, csrf disabled",
+			method:       http.MethodPost,
+			status:       http.StatusOK,
+			walletID:     "wallet.wlt",
+			csrfDisabled: true,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := &GatewayerMock{}
+			gateway.On("UnloadWallet", tc.walletID).Return(tc.unloadWalletErr)
+
+			endpoint := "/wallet/unload"
+			v := url.Values{}
+			v.Add("id", tc.walletID)
+
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(v.Encode()))
+			require.NoError(t, err)
+			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+			csrfStore := &CSRFStore{
+				Enabled: !tc.csrfDisabled,
+			}
+			if csrfStore.Enabled {
+				setCSRFParameters(csrfStore, tokenValid, req)
+			} else {
+				setCSRFParameters(csrfStore, tokenInvalid, req)
+			}
+
+			rr := httptest.NewRecorder()
+			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.status, status, "wrong status code: got `%v` want `%v`", status, tc.status)
+
+			if status != http.StatusOK {
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %d, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+			}
+		})
+	}
+}

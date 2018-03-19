@@ -15,14 +15,16 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
 ## Links
 
 * [skycoin.net](https://www.skycoin.net)
-* [Skycoin Blog](https://blog.skycoin.net)
+* [Skycoin Blog](https://www.skycoin.net/blog)
+* [Skycoin Docs](https://www.skycoin.net/docs)
 * [Skycoin Blockchain Explorer](https://explorer.skycoin.net)
-* [Skycoin Distribution Event](https://event.skycoin.net)
+* [Skycoin Development Telegram Channel](https://t.me/skycoindev)
 
 ## Table of Contents
 
 <!-- MarkdownTOC depth="2" autolink="true" bracket="round" -->
 
+- [Changelog](#changelog)
 - [Installation](#installation)
     - [Go 1.9+ Installation and Setup](#go-19-installation-and-setup)
     - [Go get skycoin](#go-get-skycoin)
@@ -46,11 +48,16 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
     - [Dependency Management](#dependency-management)
     - [Wallet GUI Development](#wallet-gui-development)
     - [Releases](#releases)
-- [Changelog](#changelog)
 
 <!-- /MarkdownTOC -->
 
+## Changelog
+
+[CHANGELOG.md](CHANGELOG.md)
+
 ## Installation
+
+Skycoin supports go1.9+.  The preferred version is go1.10.
 
 ### Go 1.9+ Installation and Setup
 
@@ -167,7 +174,16 @@ make test
 
 ### Running Integration Tests
 
-Run stable integration tests:
+There are integration tests for the CLI and HTTP API interfaces. They have two
+run modes, "stable" and "live.
+
+The stable integration tests will use a skycoin daemon
+whose blockchain is synced to a specific point and has networking disabled so that the internal
+state does not change.
+
+The live integration tests should be run against a synced or syncing node with networking enabled.
+
+#### Stable Integration Tests
 
 ```sh
 make integration-test-stable
@@ -183,7 +199,7 @@ The `-w` option, run wallet integrations tests.
 
 The `-v` option, show verbose logs.
 
-Run live integration tests:
+#### Live Integration Tests
 
 The live integration tests run against a live runnning skycoin node, so before running the test, we
 need to start a skycoin node.
@@ -206,7 +222,7 @@ export WALLET_DIR=$HOME/.skycoin/wallets
 export WALLET_NAME=$wallet-file-name-meet-the-requirements
 ```
 
-Then run the tests with the follwoing command:
+Then run the tests with the following command:
 
 ```sh
 make integration-test-live
@@ -218,7 +234,7 @@ or
 ./ci-scripts/integration-test-live.sh -v -w
 ```
 
-### Debugging integration tests
+#### Debugging Integration Tests
 
 Run specific test case:
 
@@ -230,16 +246,19 @@ For exampe: if we only want to test `TestStableAddressBalance` and see the resul
 ./ci-scripts/integration-test-stable.sh -v -r TestStableAddressBalance
 ```
 
-Update golden files in test-fixtures files:
+#### Update golden files in integration test-fixtures
 
-To update all golden files:
+Golden files are expected data responses from the CLI or HTTP API saved to disk.
+When the tests are run, their output is compared to the golden files.
+
+To update golden files, use the `-u` option:
 
 ```sh
 ./ci-scripts/integration-test-live.sh -v -u
 ./ci-scripts/integration-test-stable.sh -v -u
 ```
 
-We can also update specific test case's golden file with the `-r` option.
+We can also update a specific test case's golden file with the `-r` option.
 
 ### Formatting
 
@@ -322,21 +341,32 @@ Instructions for doing this:
 2. Update all version strings in the repo (grep for them) to the new version
 3. Update `CHANGELOG.md`: move the "unreleased" changes to the version and add the date
 4. Merge these changes to `develop`
-5. On the `develop` branch, make sure that the client runs properly from the command line (`./run.sh`)
-6. Build the releases and make sure that the Electron client runs properly on Windows, Linux and macOS. Delete these releases when done.
-7. Make a PR merging `develop` into `master`
-8. Review the PR and merge it
-9. Tag the master branch with the version number. Version tags start with `v`, e.g. `v0.20.0`.
-10. Make sure that the client runs properly from the `master` branch
-11. Create the release builds from the `master` branch (see [Create Release builds](electron/README.md))
+5. Follow the steps in [pre-release testing](#pre-release-testing)
+6. Make a PR merging `develop` into `master`
+7. Review the PR and merge it
+8. Tag the master branch with the version number. Version tags start with `v`, e.g. `v0.20.0`.
+9. Make sure that the client runs properly from the `master` branch
+10. Create the release builds from the `master` branch (see [Create Release builds](electron/README.md))
 
 If there are problems discovered after merging to master, start over, and increment the 3rd version number.
 For example, `v0.20.0` becomes `v0.20.1`, for minor fixes.
+
+#### Pre-release testing
+
+Performs these actions before releasing:
+
+* `make check`
+* `make integration-test-live` (see [live integration tests](#live-integration-tests))
+* `go run cmd/cli/cli.go checkdb` against a synced node
+* On all OSes, make sure that the client runs properly from the command line (`./run.sh`)
+* Build the releases and make sure that the Electron client runs properly on Windows, Linux and macOS.
+    * Delete the database file and sync from scratch to confirm syncing works
+    * Load a test wallet with nonzero balance from seed to confirm wallet loading works
+    * Send coins to another wallet to confirm spending works
+    * Restart the client, confirm that it reloads properly
+* `./run.sh -disable-wallet-api` and check that the wallet does not load, and `/wallets` and `/spend` fail
 
 #### Creating release builds
 
 [Create Release builds](electron/README.md).
 
-## Changelog
-
-[CHANGELOG.md](CHANGELOG.md)

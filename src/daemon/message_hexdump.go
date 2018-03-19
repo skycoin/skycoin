@@ -3,16 +3,10 @@ package daemon
 import (
 	"fmt"
 	"strconv"
-	"reflect"
-	"io/ioutil"
-	"os"
 
-	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"crypto/sha256"
 	"time"
 	"github.com/skycoin/skycoin/src/cipher"
-	"reflect"
 )
 
 var registered = false
@@ -60,7 +54,7 @@ func getSliceContentsString(sl []string, offset int) string {
 	return res
 }
 
-func printLHexDumpWithFormat(offset int, name string, buffer []byte) {
+func PrintLHexDumpWithFormat(offset int, name string, buffer []byte) {
 	var hexBuff = make([]string, len(buffer))
 	for i := 0; i < len(buffer); i++ {
 		hexBuff[i] = strconv.FormatInt(int64(buffer[i]), 16)
@@ -73,6 +67,7 @@ func printLHexDumpWithFormat(offset int, name string, buffer []byte) {
 	fmt.Println(getSliceContentsString(hexBuff, offset), name)
 }
 
+/*
 func HexDump(message gnet.Message) string {
 
 	//setting stdout to a temp file
@@ -135,7 +130,10 @@ func HexDump(message gnet.Message) string {
 
 	return strOut
 }
-func printFinalHex(i int) {
+
+*/
+
+func PrintFinalHex(i int) {
 	var finalHex = strconv.FormatInt(int64(i), 16)
 	var l = len(finalHex)
 	for i := 0; i < 4-l; i++ {

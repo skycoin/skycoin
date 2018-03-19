@@ -1,12 +1,10 @@
 package daemon
 
 import (
-	"crypto/sha256"
 	"fmt"
 	"reflect"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
@@ -16,8 +14,22 @@ import (
 	"github.com/skycoin/skycoin/src/testutil"
 )
 
-func GenerateRandomSha256() cipher.SHA256 {
-	return sha256.Sum256([]byte(string(time.Now().Unix())))
+var hashes = []cipher.SHA256 {
+	GetSHAFromHex("123"),
+	GetSHAFromHex("456"),
+	GetSHAFromHex("789"),
+	GetSHAFromHex("abc"),
+	GetSHAFromHex("def"),
+	GetSHAFromHex("101"),
+	GetSHAFromHex("111"),
+	GetSHAFromHex("121"),
+	GetSHAFromHex("314"),
+	GetSHAFromHex("151"),
+}
+
+func GetSHAFromHex(hex string) cipher.SHA256 {
+	var sha, _ = cipher.SHA256FromHex(hex)
+	return sha
 }
 
 func setupMsgEncoding() {
@@ -29,12 +41,12 @@ func setupMsgEncoding() {
 func MessageHexDump(message gnet.Message, printFull bool) {
 	var serializedMsg = gnet.EncodeMessage(message)
 
-	testutil.PrintLHexDumpWithFormat(-1, "Full message", serializedMsg)
+	PrintLHexDumpWithFormat(-1, "Full message", serializedMsg)
 
 	fmt.Println("------------------------------------------------------------------------")
 	var offset int = 0
-	testutil.PrintLHexDumpWithFormat(0, "Length", serializedMsg[0:4])
-	testutil.PrintLHexDumpWithFormat(4, "Prefix", serializedMsg[4:8])
+	PrintLHexDumpWithFormat(0, "Length", serializedMsg[0:4])
+	PrintLHexDumpWithFormat(4, "Prefix", serializedMsg[4:8])
 	offset += len(serializedMsg[0:8])
 	var v = reflect.Indirect(reflect.ValueOf(message))
 
@@ -45,15 +57,15 @@ func MessageHexDump(message gnet.Message, printFull bool) {
 		if f.Tag.Get("enc") != "-" {
 			if v_f.CanSet() || f.Name != "_" {
 				if v.Field(i).Kind() == reflect.Slice {
-					testutil.PrintLHexDumpWithFormat(offset, f.Name+" length", encoder.Serialize(v.Field(i).Slice(0, v.Field(i).Len()).Interface())[0:4])
+					PrintLHexDumpWithFormat(offset, f.Name+" length", encoder.Serialize(v.Field(i).Slice(0, v.Field(i).Len()).Interface())[0:4])
 					offset += len(encoder.Serialize(v.Field(i).Slice(0, v.Field(i).Len()).Interface())[0:4])
 
 					for j := 0; j < v.Field(i).Len(); j++ {
-						testutil.PrintLHexDumpWithFormat(offset, f.Name+"#"+strconv.Itoa(j), encoder.Serialize(v.Field(i).Slice(j, j+1).Interface()))
+						PrintLHexDumpWithFormat(offset, f.Name+"#"+strconv.Itoa(j), encoder.Serialize(v.Field(i).Slice(j, j+1).Interface()))
 						offset += len(encoder.Serialize(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())))
 					}
 				} else {
-					testutil.PrintLHexDumpWithFormat(offset, f.Name, encoder.Serialize(v.Field(i).Interface()))
+					PrintLHexDumpWithFormat(offset, f.Name, encoder.Serialize(v.Field(i).Interface()))
 					offset += len(encoder.Serialize(v.Field(i).Interface()))
 				}
 			} else {
@@ -62,7 +74,7 @@ func MessageHexDump(message gnet.Message, printFull bool) {
 		}
 	}
 
-	testutil.PrintFinalHex(len(serializedMsg))
+	PrintFinalHex(len(serializedMsg))
 }
 
 func ExampleNewIntroductionMessage() {
@@ -168,7 +180,7 @@ func ExampleNewGetTxnsMessage() {
 
 	var shas = make([]cipher.SHA256, 0)
 
-	shas = append(shas, GenerateRandomSha256(), GenerateRandomSha256())
+	shas = append(shas, hashes[0], hashes[1])
 	var message = NewGetTxnsMessage(shas)
 	fmt.Println("GetTxns:")
 	MessageHexDump(message, true)
@@ -212,16 +224,15 @@ func ExampleNewGiveTxnsMessage() {
 	sig3, _ = cipher.SigFromHex("sig3")
 	var transaction0 = coin.Transaction{
 		Type:      123,
-		In:        []cipher.SHA256{GenerateRandomSha256(), GenerateRandomSha256()},
-		InnerHash: GenerateRandomSha256(),
+		In:        []cipher.SHA256{hashes[2], hashes[3]},
+		InnerHash: hashes[4],
 		Length:    5000,
 		Out:       transactionOutputs0,
 		Sigs:      []cipher.Sig{sig0, sig1},
 	}
 	var transaction1 = coin.Transaction{
 		Type:      123,
-		In:        []cipher.SHA256{GenerateRandomSha256(), GenerateRandomSha256()},
-		InnerHash: GenerateRandomSha256(),
+		In:        []cipher.SHA256{hashes[5],hashes[6],hashes[7]},
 		Length:    5000,
 		Out:       transactionOutputs1,
 		Sigs:      []cipher.Sig{sig2, sig3},
@@ -237,7 +248,7 @@ func ExampleNewAnnounceTxnsMessage() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
 
-	var message = NewAnnounceTxnsMessage([]cipher.SHA256{GenerateRandomSha256(), GenerateRandomSha256()})
+	var message = NewAnnounceTxnsMessage([]cipher.SHA256{hashes[8], hashes[9]})
 	fmt.Println("AnnounceTxnsMessage:")
 	MessageHexDump(message, true)
 	// Output:

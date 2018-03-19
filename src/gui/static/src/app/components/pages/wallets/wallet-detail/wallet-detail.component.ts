@@ -57,9 +57,4 @@ export class WalletDetailComponent {
     }, 500);
 
   }
-
-  toggleClass(i) {
-    const label = document.getElementsByClassName('copy-label');
-    label[i].classList.toggle('hidden');
-  }
 }

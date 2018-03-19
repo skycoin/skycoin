@@ -34,7 +34,7 @@ func getPendingTxs(gateway Gatewayer) http.HandlerFunc {
 			ret = append(ret, readable)
 		}
 
-		wh.SendOr404(w, &ret)
+		wh.SendJSONOr500(logger, w, &ret)
 	}
 }
 
@@ -77,7 +77,7 @@ func getTransactionByID(gate Gatewayer) http.HandlerFunc {
 			Transaction: *rbTx,
 			Status:      tx.Status,
 		}
-		wh.SendOr404(w, &resTx)
+		wh.SendJSONOr500(logger, w, &resTx)
 	}
 }
 
@@ -132,7 +132,7 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendOr404(w, txRlts.Txns)
+		wh.SendJSONOr500(logger, w, txRlts.Txns)
 	}
 }
 
@@ -190,7 +190,7 @@ func injectTransaction(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendOr404(w, txn.Hash().Hex())
+		wh.SendJSONOr500(logger, w, txn.Hash().Hex())
 	}
 }
 
@@ -202,7 +202,7 @@ func resendUnconfirmedTxns(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		rlt := gateway.ResendUnconfirmedTxns()
-		wh.SendOr404(w, rlt)
+		wh.SendJSONOr500(logger, w, rlt)
 		return
 	}
 }
@@ -237,7 +237,7 @@ func getRawTx(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		d := tx.Txn.Serialize()
-		wh.SendOr404(w, hex.EncodeToString(d))
+		wh.SendJSONOr500(logger, w, hex.EncodeToString(d))
 		return
 	}
 }

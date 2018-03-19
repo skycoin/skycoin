@@ -38,7 +38,7 @@ func getUxOutByID(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendOr404(w, historydb.NewUxOutJSON(uxout))
+		wh.SendJSONOr500(logger, w, historydb.NewUxOutJSON(uxout))
 	}
 }
 

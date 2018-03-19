@@ -1,15 +1,32 @@
 package daemon
 
 import (
-	"testing"
-
 	"fmt"
-
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/testutil"
 )
+
+
+var hashes = []cipher.SHA256 {
+	GetSHAFromHex("123"),
+	GetSHAFromHex("456"),
+	GetSHAFromHex("789"),
+	GetSHAFromHex("abc"),
+	GetSHAFromHex("def"),
+	GetSHAFromHex("101"),
+	GetSHAFromHex("111"),
+	GetSHAFromHex("121"),
+	GetSHAFromHex("314"),
+	GetSHAFromHex("151"),
+}
+
+func GetSHAFromHex(hex string) cipher.SHA256 {
+	var sha, _ = cipher.SHA256FromHex(hex)
+	return sha
+}
+
 
 func ExampleIntroductionMessage() {
 	var message = NewIntroductionMessage(1234, 5, 7890)
@@ -64,18 +81,6 @@ func ExampleGivePeersMessage() {
 	// 0x001e |
 }
 
-func TestPingMessage(t *testing.T) {
-	//var message gnet.Message = daemon.PingMessage{
-	//}
-	//HexDump(message)
-}
-
-func TestPongMessage(t *testing.T) {
-	//var message = daemon.PongMessage{
-	//}
-	//HexDump(message)
-}
-
 func ExampleGetBlocksMessage() {
 	var message = NewGetBlocksMessage(1234, 5678)
 	fmt.Println("GetBlocksMessage:")
@@ -104,7 +109,7 @@ func ExampleGiveBlocksMessage() {
 			Time:     100,
 			BkSeq:    0,
 			Fee:      10,
-			PrevHash: cipher.SHA256{},
+			PrevHash: hashes[0],
 			BodyHash: body1.Hash(),
 		}}
 	var sig, _ = cipher.SigFromHex("123")
@@ -194,7 +199,7 @@ func ExampleAnnounceBlocksMessage() {
 func ExampleGetTxnsMessage() { //TODO: Conflict Here
 	var shas = make([]cipher.SHA256, 0)
 
-	shas = append(shas, GenerateRandomSha256(), GenerateRandomSha256())
+	shas = append(shas, hashes[1], hashes[2])
 	var message = NewGetTxnsMessage(shas)
 	fmt.Println("GetTxnsMessage:")
 	fmt.Println(HexDump(message))
@@ -252,7 +257,7 @@ func ExampleGiveTxnsMessage() {
 	sig3, _ = cipher.SigFromHex("sig3")
 	var transaction0 = coin.Transaction{
 		Type:      123,
-		In:        []cipher.SHA256{GenerateRandomSha256(), GenerateRandomSha256()},
+		In:        []cipher.SHA256{hashes[3], hashes[4]},
 		InnerHash: GenerateRandomSha256(),
 		Length:    5000,
 		Out:       transactionOutputs0,
@@ -260,7 +265,7 @@ func ExampleGiveTxnsMessage() {
 	}
 	var transaction1 = coin.Transaction{
 		Type:      123,
-		In:        []cipher.SHA256{GenerateRandomSha256(), GenerateRandomSha256()},
+		In:        []cipher.SHA256{hashes[5], hashes[6]},
 		InnerHash: GenerateRandomSha256(),
 		Length:    5000,
 		Out:       transactionOutputs1,
@@ -362,8 +367,8 @@ func ExampleGiveTxnsMessage() {
 	// 0x0286 |
 }
 
-func TestAnnounceTxnsMessage(t *testing.T) {
-	var message = NewAnnounceTxnsMessage([]cipher.SHA256{testutil.RandSHA256(t), testutil.RandSHA256(t)})
+func ExampleAnnounceTxnsMessage() {
+	var message = NewAnnounceTxnsMessage([]cipher.SHA256{hashes[7], hashes[8]})
 	fmt.Println("AnnounceTxnsMessage:")
 	fmt.Println(HexDump(message))
 	// Output:

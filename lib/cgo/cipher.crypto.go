@@ -62,10 +62,17 @@ func SKY_cipher_NewPubKey(_b []byte, _arg1 *C.PubKey) (retVal uint32) {
 }
 
 //export SKY_cipher_PubKeyFromHex
-func SKY_cipher_PubKeyFromHex(_s string, _arg1 *C.PubKey) uint32 {
+func SKY_cipher_PubKeyFromHex(_s string, _arg1 *C.PubKey) (retVal uint32) {
+	defer func() {
+		if err := recover(); err != nil {
+			// TODO: Fix to be like retVal = libErrorCode(err)
+			retVal = SKY_ERROR
+		}
+	}()
+
 	pubkey, err := cipher.PubKeyFromHex(_s)
 	errcode := libErrorCode(err)
-	if err != nil {
+	if err == nil {
 		arg1 := (*[1 << 30]byte)(
 			unsafe.Pointer(_arg1))[:SizeofPubKey:SizeofPubKey]
 		copy(arg1[:], pubkey[:])

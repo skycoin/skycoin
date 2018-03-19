@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `/richlist` API method, returns top n address balances
 - `/addresscount` API method, returns the number of addresses that have any amount of coins
 - `/transactions` API method, returns transactions of addresses
+- `/wallet/unload` API method, removes the wallet of given id from wallet services
 
 ### Fixed
 

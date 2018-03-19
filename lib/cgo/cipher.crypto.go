@@ -128,11 +128,11 @@ func SKY_cipher_PubKey_Verify(_pk *C.PubKey) uint32 {
 }
 
 //export SKY_cipher_PubKey_Hex
-func SKY_cipher_PubKey_Hex(_pk *C.PubKey) string {
+func SKY_cipher_PubKey_Hex(_pk *C.PubKey) *C.char {
 	__pk := (*[1 << 30]byte)(
 		unsafe.Pointer(_pk))[:SizeofPubKey:SizeofPubKey]
 	pk := (*cipher.PubKey)(unsafe.Pointer(&__pk))
-	return pk.Hex()
+	return C.CString(pk.Hex())
 }
 
 //export SKY_cipher_PubKey_ToAddressHash

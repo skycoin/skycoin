@@ -148,7 +148,7 @@ extern GoUint32 SKY_cipher_PubKeyFromSig(Sig* p0, SHA256* p1, PubKey* p2);
 
 extern GoUint32 SKY_cipher_PubKey_Verify(PubKey* p0);
 
-extern GoString SKY_cipher_PubKey_Hex(PubKey* p0);
+extern char* SKY_cipher_PubKey_Hex(PubKey* p0);
 
 extern void SKY_cipher_PubKey_ToAddressHash(PubKey* p0, Ripemd160* p1);
 

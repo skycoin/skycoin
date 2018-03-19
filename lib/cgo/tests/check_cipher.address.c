@@ -22,12 +22,12 @@ int addr_equal(Address *addr1, Address *addr2){
   return 1;
 }
 
-// TODO: Change to write assertion like this cr_assert(eq(type(struct Address), &addr1, &addr2))
+// TODO: Write like this cr_assert(eq(type(struct Address), &addr1, &addr2))
 void cr_assert_addr_eq(Address *addr1, Address *addr2, char *msg){
   cr_assert( addr_equal(addr1, addr2) == 1);
 }
 
-// TODO: Change to write assertion like this cr_assert(not(eq(type(struct Address), &addr1, &addr2)))
+// TODO: Write like this cr_assert(not(eq(type(struct Address), &addr1, &addr2)))
 void cr_assert_addr_noteq(Address *addr1, Address *addr2, char *msg){
   cr_assert( addr_equal(addr1, addr2) == 0);
 }

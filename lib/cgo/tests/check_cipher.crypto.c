@@ -119,10 +119,32 @@ Test(asserts, TestPubKeyFromHex) {
   errcode = SKY_cipher_PubKeyFromHex(s, &p1);
   cr_assert(errcode == SKY_OK, "TestPubKeyFromHex: Valid. No panic.");
   cr_assert(eq(u8[33], p, p1));
-
-  /*
-	s = hex.EncodeToString(p[:])
-	assert.NotPanics(t, func() { MustPubKeyFromHex(s) })
-	assert.Equal(t, p, MustPubKeyFromHex(s))
-  */
 }
+
+Test(asserts, TestPubKeyHex) {
+  PubKey p, p2;
+  GoString s, s2;
+  unsigned char buff[50];
+  GoSlice slice;
+  unsigned int errcode;
+
+  slice.data = buff;
+  slice.len = 0;
+  slice.cap = 50;
+
+  randBytes(&slice, 33);
+  errcode = SKY_cipher_NewPubKey(slice, &p);
+  cr_assert(errcode == SKY_OK);
+  s.p = SKY_cipher_PubKey_Hex(&p);
+  s.n = strlen(s.p);
+  errcode = SKY_cipher_PubKeyFromHex(s, &p2);
+  cr_assert(errcode == SKY_OK);
+  cr_assert(eq(u8[33], p, p2));
+
+  s2.p = SKY_cipher_PubKey_Hex(&p2);
+  s2.n = strlen(s2.p);
+  // TODO: Write like this cr_assert(eq(type(struct GoString), &s, &s2))
+  cr_assert(eq(int, s.n, s2.n));
+  cr_assert(eq(str, (char *) s.p, (char *) s2.p));
+}
+

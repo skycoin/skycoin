@@ -3,11 +3,13 @@ import { ApiService } from './api.service';
 import { Observable } from 'rxjs/Observable';
 import { IntervalObservable } from 'rxjs/observable/IntervalObservable';
 import { ConnectionModel } from '../models/connection.model';
+import { Version } from '../app.datatypes';
 
 @Injectable()
 export class AppService {
 
   error: number;
+  version: Version;
 
   constructor(
     private apiService: ApiService,
@@ -17,8 +19,10 @@ export class AppService {
 
   testBackend() {
     this.apiService.getVersion().first().subscribe(
-      () => this.apiService.getCsrf().subscribe(null, () => this.error = 3),
-      () => this.error = 2
+      version => {
+        this.version = version;
+        this.apiService.getCsrf().subscribe(null, () => this.error = 3);
+      }, () => this.error = 2
     );
   }
 

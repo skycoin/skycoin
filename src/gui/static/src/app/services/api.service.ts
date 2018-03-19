@@ -5,7 +5,10 @@ import { environment } from '../../environments/environment';
 import 'rxjs/add/observable/throw';
 import 'rxjs/add/operator/catch';
 import 'rxjs/add/operator/map';
-import { Address, GetWalletsResponseEntry, GetWalletsResponseWallet, PostWalletNewAddressResponse, Transaction, Wallet } from '../app.datatypes';
+import {
+  Address, GetWalletsResponseEntry, GetWalletsResponseWallet, PostWalletNewAddressResponse, Transaction, Version,
+  Wallet
+} from '../app.datatypes';
 
 @Injectable()
 export class ApiService {
@@ -30,7 +33,7 @@ export class ApiService {
       })));
   }
 
-  getVersion(): Observable<any> {
+  getVersion(): Observable<Version> {
     return this.get('version');
   }
 

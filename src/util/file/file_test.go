@@ -61,12 +61,12 @@ func TestBuildDataDirDotOk(t *testing.T) {
 	cleanDir := filepath.Clean(dir)
 	require.True(t, strings.HasSuffix(builtDir, cleanDir))
 
-	home := filepath.Clean(UserHome())
-	if home == "" {
+	gopath := os.Getenv("GOPATH")
+	if gopath == "" {
 		require.Equal(t, cleanDir, builtDir)
 	} else {
-		require.True(t, strings.HasPrefix(builtDir, home))
-		require.NotEqual(t, builtDir, filepath.Clean(home))
+		require.True(t, strings.HasPrefix(builtDir, gopath))
+		require.NotEqual(t, builtDir, filepath.Clean(gopath))
 	}
 }
 

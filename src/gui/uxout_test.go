@@ -143,7 +143,7 @@ func TestGetUxOutByID(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -259,7 +259,7 @@ func TestGetAddrUxOuts(t *testing.T) {
 				setCSRFParameters(csrfStore, tokenInvalid, req)
 			}
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

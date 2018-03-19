@@ -43,16 +43,22 @@ type Server struct {
 	done     chan struct{}
 }
 
-// ServerConfig configures the Server
-type ServerConfig struct {
-	StaticDir    string
-	DisableCSRF  bool
-	ReadTimeout  time.Duration
-	WriteTimeout time.Duration
-	IdleTimeout  time.Duration
+type Config struct {
+	StaticDir        string
+	DisableCSRF      bool
+	DisableWalletAPI bool
+	ReadTimeout      time.Duration
+	WriteTimeout     time.Duration
+	IdleTimeout      time.Duration
 }
 
-func create(host string, c ServerConfig, daemon *daemon.Daemon) (*Server, error) {
+type muxConfig struct {
+	host             string
+	appLoc           string
+	disableWalletAPI bool
+}
+
+func create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
 	appLoc, err := file.DetermineResourcePath(c.StaticDir, resourceDir, devDir)
 	if err != nil {
 		return nil, err
@@ -76,7 +82,13 @@ func create(host string, c ServerConfig, daemon *daemon.Daemon) (*Server, error)
 		c.IdleTimeout = defaultIdleTimeout
 	}
 
-	srvMux := NewServerMux(host, appLoc, daemon.Gateway, csrfStore)
+	mc := muxConfig{
+		host:             host,
+		appLoc:           appLoc,
+		disableWalletAPI: c.DisableWalletAPI,
+	}
+
+	srvMux := newServerMux(mc, daemon.Gateway, csrfStore)
 	srv := &http.Server{
 		Handler:      srvMux,
 		ReadTimeout:  c.ReadTimeout,
@@ -91,8 +103,8 @@ func create(host string, c ServerConfig, daemon *daemon.Daemon) (*Server, error)
 }
 
 // Create creates a new Server instance that listens on HTTP
-func Create(host string, serverConfig ServerConfig, daemon *daemon.Daemon) (*Server, error) {
-	s, err := create(host, serverConfig, daemon)
+func Create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
+	s, err := create(host, c, daemon)
 	if err != nil {
 		return nil, err
 	}
@@ -108,8 +120,8 @@ func Create(host string, serverConfig ServerConfig, daemon *daemon.Daemon) (*Ser
 }
 
 // CreateHTTPS creates a new Server instance that listens on HTTPS
-func CreateHTTPS(host string, serverConfig ServerConfig, daemon *daemon.Daemon, certFile, keyFile string) (*Server, error) {
-	s, err := create(host, serverConfig, daemon)
+func CreateHTTPS(host string, c Config, daemon *daemon.Daemon, certFile, keyFile string) (*Server, error) {
+	s, err := create(host, c, daemon)
 	if err != nil {
 		return nil, err
 	}
@@ -154,8 +166,8 @@ func (s *Server) Shutdown() {
 	<-s.done
 }
 
-// NewServerMux creates an http.ServeMux with handlers registered
-func NewServerMux(host, appLoc string, gateway Gatewayer, csrfStore *CSRFStore) *http.ServeMux {
+// newServerMux creates an http.ServeMux with handlers registered
+func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	headerCheck := func(host string, handler http.Handler) http.Handler {
@@ -166,23 +178,25 @@ func NewServerMux(host, appLoc string, gateway Gatewayer, csrfStore *CSRFStore) 
 
 	webHandler := func(endpoint string, handler http.Handler) {
 		handler = CSRFCheck(csrfStore, handler)
-		handler = headerCheck(host, handler)
+		handler = headerCheck(c.host, handler)
 		mux.Handle(endpoint, handler)
 	}
 
-	webHandler("/", newIndexHandler(appLoc))
+	if !c.disableWalletAPI {
+		webHandler("/", newIndexHandler(c.appLoc))
 
-	fileInfos, _ := ioutil.ReadDir(appLoc)
-	for _, fileInfo := range fileInfos {
-		route := fmt.Sprintf("/%s", fileInfo.Name())
-		if fileInfo.IsDir() {
-			route = route + "/"
+		fileInfos, _ := ioutil.ReadDir(c.appLoc)
+		for _, fileInfo := range fileInfos {
+			route := fmt.Sprintf("/%s", fileInfo.Name())
+			if fileInfo.IsDir() {
+				route = route + "/"
+			}
+			webHandler(route, http.FileServer(http.Dir(c.appLoc)))
 		}
-		webHandler(route, http.FileServer(http.Dir(appLoc)))
 	}
 
 	// get the current CSRF token
-	mux.Handle("/csrf", headerCheck(host, getCSRFToken(gateway, csrfStore)))
+	mux.Handle("/csrf", headerCheck(c.host, getCSRFToken(gateway, csrfStore)))
 
 	webHandler("/version", versionHandler(gateway))
 

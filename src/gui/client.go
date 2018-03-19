@@ -68,7 +68,6 @@ func (c *Client) Get(endpoint string, obj interface{}) error {
 	if obj == nil {
 		return nil
 	}
-
 	return json.NewDecoder(resp.Body).Decode(obj)
 }
 
@@ -101,7 +100,7 @@ func (c *Client) Post(endpoint string, body io.Reader, obj interface{}) error {
 	}
 
 	req.Header.Set("X-CSRF-Token", csrf)
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -179,10 +178,31 @@ func (c *Client) Version() (*visor.BuildInfo, error) {
 	return &bi, nil
 }
 
-// Outputs makes a request to /outputs?addrs=xxx&hashes=zzz
-func (c *Client) Outputs(addrs, hashes []string) (*visor.ReadableOutputSet, error) {
+// Outputs makes a request to /outputs
+func (c *Client) Outputs() (*visor.ReadableOutputSet, error) {
+	var o visor.ReadableOutputSet
+	if err := c.Get("/outputs", &o); err != nil {
+		return nil, err
+	}
+	return &o, nil
+}
+
+// OutputsForAddresses makes a request to /outputs?addrs=xxx
+func (c *Client) OutputsForAddresses(addrs []string) (*visor.ReadableOutputSet, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
+	endpoint := "/outputs?" + v.Encode()
+
+	var o visor.ReadableOutputSet
+	if err := c.Get(endpoint, &o); err != nil {
+		return nil, err
+	}
+	return &o, nil
+}
+
+// OutputsForHashes makes a request to /outputs?hashes=zzz
+func (c *Client) OutputsForHashes(hashes []string) (*visor.ReadableOutputSet, error) {
+	v := url.Values{}
 	v.Add("hashes", strings.Join(hashes, ","))
 	endpoint := "/outputs?" + v.Encode()
 
@@ -245,7 +265,7 @@ func (c *Client) Blocks(start, end int) (*visor.ReadableBlocks, error) {
 // LastBlocks makes a request to /last_blocks
 func (c *Client) LastBlocks(n int) (*visor.ReadableBlocks, error) {
 	v := url.Values{}
-	v.Add("n", fmt.Sprint(n))
+	v.Add("num", fmt.Sprint(n))
 	endpoint := "/last_blocks?" + v.Encode()
 
 	var b visor.ReadableBlocks
@@ -398,12 +418,12 @@ func (c *Client) Spend(id, dst string, coins uint64) (*SpendResult, error) {
 }
 
 // WalletTransactions makes a request to /wallet/transactions
-func (c *Client) WalletTransactions(id string) ([]visor.UnconfirmedTxn, error) {
+func (c *Client) WalletTransactions(id string) (*UnconfirmedTxnsResponse, error) {
 	v := url.Values{}
 	v.Add("id", id)
 	endpoint := "/wallet/transactions?" + v.Encode()
 
-	var utx []visor.UnconfirmedTxn
+	var utx *UnconfirmedTxnsResponse
 	if err := c.Get(endpoint, &utx); err != nil {
 		return nil, err
 	}
@@ -461,7 +481,7 @@ func (c *Client) NetworkConnection(addr string) (*daemon.Connection, error) {
 }
 
 // NetworkConnections makes a request to /network/connections
-func (c *Client) NetworkConnections(addr string) (*daemon.Connections, error) {
+func (c *Client) NetworkConnections() (*daemon.Connections, error) {
 	var dc daemon.Connections
 	if err := c.Get("/network/connections", &dc); err != nil {
 		return nil, err
@@ -470,7 +490,7 @@ func (c *Client) NetworkConnections(addr string) (*daemon.Connections, error) {
 }
 
 // NetworkDefaultConnections makes a request to /network/defaultConnections
-func (c *Client) NetworkDefaultConnections(addr string) ([]string, error) {
+func (c *Client) NetworkDefaultConnections() ([]string, error) {
 	var dc []string
 	if err := c.Get("/network/defaultConnections", &dc); err != nil {
 		return nil, err
@@ -479,7 +499,7 @@ func (c *Client) NetworkDefaultConnections(addr string) ([]string, error) {
 }
 
 // NetworkTrustedConnections makes a request to /network/connections/trust
-func (c *Client) NetworkTrustedConnections(addr string) ([]string, error) {
+func (c *Client) NetworkTrustedConnections() ([]string, error) {
 	var dc []string
 	if err := c.Get("/network/connections/trust", &dc); err != nil {
 		return nil, err
@@ -488,7 +508,7 @@ func (c *Client) NetworkTrustedConnections(addr string) ([]string, error) {
 }
 
 // NetworkExchangeableConnections makes a request to /network/connections/exchange
-func (c *Client) NetworkExchangeableConnections(addr string) ([]string, error) {
+func (c *Client) NetworkExchangeableConnections() ([]string, error) {
 	var dc []string
 	if err := c.Get("/network/connections/exchange", &dc); err != nil {
 		return nil, err
@@ -505,22 +525,13 @@ func (c *Client) PendingTransactions() ([]*visor.ReadableUnconfirmedTxn, error) 
 	return v, nil
 }
 
-// LastTransactions makes a request to /lastTxs
-func (c *Client) LastTransactions() ([]visor.TransactionResult, error) {
-	var r []visor.TransactionResult
-	if err := c.Get("/lastTxs", &r); err != nil {
-		return nil, err
-	}
-	return r, nil
-}
-
 // Transaction makes a request to /transaction
-func (c *Client) Transaction(txid string) (*visor.ReadableTransaction, error) {
+func (c *Client) Transaction(txid string) (*visor.TransactionResult, error) {
 	v := url.Values{}
 	v.Add("txid", txid)
 	endpoint := "/transaction?" + v.Encode()
 
-	var r visor.ReadableTransaction
+	var r visor.TransactionResult
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}
@@ -528,12 +539,12 @@ func (c *Client) Transaction(txid string) (*visor.ReadableTransaction, error) {
 }
 
 // Transactions makes a request to /transactions
-func (c *Client) Transactions(addrs []string) (*visor.TransactionResults, error) {
+func (c *Client) Transactions(addrs []string) (*[]visor.TransactionResult, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	endpoint := "/transactions?" + v.Encode()
 
-	var r visor.TransactionResults
+	var r []visor.TransactionResult
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}
@@ -541,27 +552,27 @@ func (c *Client) Transactions(addrs []string) (*visor.TransactionResults, error)
 }
 
 // ConfirmedTransactions makes a request to /transactions?confirmed=true
-func (c *Client) ConfirmedTransactions(addrs []string) (*visor.TransactionResults, error) {
+func (c *Client) ConfirmedTransactions(addrs []string) (*[]visor.TransactionResult, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	v.Add("confirmed", "true")
 	endpoint := "/transactions?" + v.Encode()
 
-	var r visor.TransactionResults
+	var r []visor.TransactionResult
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}
 	return &r, nil
 }
 
-// UnconfirmedTransactions makes a request to /transactions?confirmed=true
-func (c *Client) UnconfirmedTransactions(addrs []string) (*visor.TransactionResults, error) {
+// UnconfirmedTransactions makes a request to /transactions?confirmed=false
+func (c *Client) UnconfirmedTransactions(addrs []string) (*[]visor.TransactionResult, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	v.Add("confirmed", "false")
 	endpoint := "/transactions?" + v.Encode()
 
-	var r visor.TransactionResults
+	var r []visor.TransactionResult
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}
@@ -615,13 +626,28 @@ func (c *Client) AddressTransactions(addr string) ([]ReadableTransaction, error)
 	return b, nil
 }
 
+// RichlistParams are arguments to the /richlist endpoint
+type RichlistParams struct {
+	N                   int
+	IncludeDistribution bool
+}
+
 // Richlist makes a request to /richlist
-func (c *Client) Richlist() (visor.Richlist, error) {
-	var r visor.Richlist
-	if err := c.Get("/richlist", &r); err != nil {
+func (c *Client) Richlist(params *RichlistParams) (*Richlist, error) {
+	endpoint := "/richlist"
+
+	if params != nil {
+		v := url.Values{}
+		v.Add("n", fmt.Sprint(params.N))
+		v.Add("include-distribution", fmt.Sprint(params.IncludeDistribution))
+		endpoint = "/richlist?" + v.Encode()
+	}
+
+	var r Richlist
+	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}
-	return r, nil
+	return &r, nil
 }
 
 // AddressCount makes a request to /addresscount

@@ -34,9 +34,11 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
     - [Wallet REST API](#wallet-rest-api)
     - [JSON-RPC 2.0 API](#json-rpc-20-api)
     - [Skycoin command line interface](#skycoin-command-line-interface)
+- [Integrating Skycoin with your application](#integrating-skycoin-with-your-application)
 - [Contributing a node to the network](#contributing-a-node-to-the-network)
 - [Development](#development)
     - [Modules](#modules)
+    - [Client libraries](#client-libraries)
     - [Running Tests](#running-tests)
     - [Formatting](#formatting)
     - [Code Linting](#code-linting)
@@ -51,7 +53,7 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
 
 ### Go 1.9+ Installation and Setup
 
-[Golang 1.9+ Installation/Setup](./Installation.md)
+[Golang 1.9+ Installation/Setup](./INSTALLATION.md)
 
 ### Go get skycoin
 
@@ -87,7 +89,7 @@ make ARGS="--launch-browser=false" run
 
 ### Docker image
 
-```
+```sh
 $ docker volume create skycoin-data
 $ docker volume create skycoin-wallet
 $ docker run -ti --rm \
@@ -117,11 +119,18 @@ Access the API: [http://localhost:6420/version](http://localhost:6420/version).
 
 [CLI command API](cmd/cli/README.md).
 
+## Integrating Skycoin with your application
+
+[Skycoin Integration Documentation](INTEGRATION.md)
+
 ## Contributing a node to the network
 
-Add your node's ip:port to the [peers.txt](./peers.txt) file.
+Add your node's `ip:port` to the [peers.txt](peers.txt) file.
 This file will be periodically uploaded to https://downloads.skycoin.net/blockchain/peers.txt
 and used to seed client with peers.
+
+*Note*: Do not add Skywire nodes to `peers.txt`.
+Only add Skycoin nodes with high uptime and a static IP address (such as a Skycoin node hosted on a VPS).
 
 ## Development
 
@@ -141,6 +150,13 @@ We have two branches: `master` and `develop`.
 * `/src/wallet` - the private key storage library
 * `/src/api/webrpc` - JSON-RPC 2.0 API
 * `/src/api/cli` - CLI library
+
+### Client libraries
+
+Skycoin implements client libraries which export core functionality for usage from
+other programming languages. Read the corresponding README file for further details.
+
+* `lib/cgo/` - libskycoin C client library ( [read more](lib/cgo/README.md) )
 
 ### Running Tests
 
@@ -186,8 +202,6 @@ If you change the dependencies, you should update them as needed with `dep ensur
 
 Use `dep help` for instructions on vendoring a specific version of a dependency, or updating them.
 
-After adding a new dependency (with `dep ensure`), run `dep prune` to remove any unnecessary subpackages from the dependency.
-
 When updating or initializing, `dep` will find the latest version of a dependency that will compile.
 
 Examples:
@@ -196,28 +210,24 @@ Initialize all dependencies:
 
 ```sh
 dep init
-dep prune
 ```
 
 Update all dependencies:
 
 ```sh
 dep ensure -update -v
-dep prune
 ```
 
 Add a single dependency (latest version):
 
 ```sh
 dep ensure github.com/foo/bar
-dep prune
 ```
 
 Add a single dependency (more specific version), or downgrade an existing dependency:
 
 ```sh
 dep ensure github.com/foo/bar@tag
-dep prune
 ```
 
 ### Wallet GUI Development

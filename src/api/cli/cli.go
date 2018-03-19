@@ -212,6 +212,7 @@ func NewApp(cfg Config) *App {
 		addressOutputsCmd(),
 		blocksCmd(),
 		broadcastTxCmd(),
+		checkdbCmd(),
 		createRawTxCmd(cfg),
 		decodeRawTxCmd(),
 		generateAddrsCmd(cfg),
@@ -222,13 +223,12 @@ func NewApp(cfg Config) *App {
 		sendCmd(),
 		statusCmd(),
 		transactionCmd(),
+		verifyAddressCmd(),
 		versionCmd(),
 		walletBalanceCmd(cfg),
 		walletDirCmd(),
 		walletHisCmd(),
 		walletOutputsCmd(cfg),
-		checkdbCmd(),
-		verifyAddressCmd(),
 	}
 
 	app.Name = fmt.Sprintf("%s-cli", cfg.Coin)

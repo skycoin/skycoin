@@ -33,6 +33,10 @@ export class ApiService {
       })));
   }
 
+  getVersion(): Observable<any> {
+    return this.get('version');
+  }
+
   getWalletNewSeed(): Observable<string> {
     return this.get('wallet/newSeed')
       .map(response => response.seed);
@@ -85,6 +89,10 @@ export class ApiService {
       .catch((error: any) => Observable.throw(error || 'Server error'));
   }
 
+  getCsrf() {
+    return this.get('csrf').map(response => response.csrf_token);
+  }
+
   post(url, params = {}, options: any = {}) {
     return this.getCsrf().first().flatMap(csrf => {
       options.csrf = csrf;
@@ -111,10 +119,6 @@ export class ApiService {
       () => this.getCsrf().subscribe(null, () => this.csrfError = true),
       () => this.backendError = true
     );
-  }
-
-  private getCsrf() {
-    return this.get('csrf').map(response => response.csrf_token);
   }
 
   private getHeaders() {

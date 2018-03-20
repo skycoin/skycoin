@@ -21,6 +21,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   current: number;
   highest: number;
   percentage: number;
+  querying = true;
   version: string;
   releaseVersion: string;
   updateAvailable: boolean;
@@ -59,6 +60,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.blockchainService.progress
       .filter(response => !!response)
       .subscribe(response => {
+        this.querying = false;
         this.highest = response.highest;
         this.current = response.current;
         this.percentage = this.current && this.highest ? (this.current / this.highest) : 0;

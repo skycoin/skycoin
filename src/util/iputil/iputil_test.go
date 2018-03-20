@@ -1,6 +1,9 @@
 package iputil
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestSplitAddr(t *testing.T) {
 	testData := []struct {
@@ -44,36 +47,41 @@ func TestIsLocalhost(t *testing.T) {
 		input string
 		host  string
 		port  uint16
-		err   bool
+		err   error
 	}{
 		{
 			input: "0.0.0.0:8888",
 			host:  "0.0.0.0",
 			port:  8888,
-			err:   false,
+			err:   nil,
 		},
 		{
 			input: "0.0.0.0:",
 			host:  "0.0.0.0",
-			err:   true,
+			err:   fmt.Errorf("Invalid port in %s", "0.0.0.0:"),
 		},
 		{
 			input: ":9999",
 			port:  9999,
-			err:   false,
+			err:   fmt.Errorf("Invalid port in %s", ":9999"),
 		},
 		{
 			input: "127.0.0.1",
 			host:  "127.0.0.1",
-			err:   true,
+			err:   fmt.Errorf("Invalid addr %s", "127.0.0.1"),
 		},
 	}
 
 	for _, test := range testData {
 		addr, port, err := SplitAddr(test.input)
 
-		if test.err && err == nil {
-			t.Errorf("Expected error, actual nil")
+		if test.err == nil && err != nil {
+			t.Errorf("Unexpected error %v", err)
+			return
+		}
+
+		if test.err != nil && err != nil && err.Error() != test.err.Error() {
+			t.Errorf("Expected error %v, actual %v", test.err, err)
 			return
 		}
 

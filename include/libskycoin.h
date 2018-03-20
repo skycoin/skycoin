@@ -25,7 +25,7 @@
 
 #line 1 "cgo-generated-wrapper"
 
-#line 9 "/Users/olemis/Documents/workspace/work/go/macos/src/github.com/skycoin/skycoin/lib/cgo/cipher.crypto.go"
+#line 10 "/Users/olemis/Documents/workspace/work/go/macos/src/github.com/skycoin/skycoin/lib/cgo/cipher.crypto.go"
 
 
   #include <string.h>

@@ -1,4 +1,5 @@
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 
@@ -146,6 +147,12 @@ Test(asserts, TestPubKeyHex) {
   // TODO: Write like this cr_assert(eq(type(struct GoString), &s, &s2))
   cr_assert(eq(int, s.n, s2.n));
   cr_assert(eq(str, (char *) s.p, (char *) s2.p));
+  if (s.p != NULL) {
+    free((void *) s.p);
+  }
+  if (s2.p != NULL) {
+    free((void *) s2.p);
+  }
 }
 
 Test(asserts, TestPubKeyVerify) {
@@ -167,3 +174,29 @@ Test(asserts, TestPubKeyVerify) {
     cr_assert(errcode == SKY_ERROR);
   } 
 }
+
+Test(asserts, TestPubKeyVerifyNil) {
+  PubKey p = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0
+  };
+  unsigned int errcode;
+
+  errcode = SKY_cipher_PubKey_Verify(&p);
+  cr_assert(errcode == SKY_ERROR);
+}
+
+Test(asserts, TestPubKeyVerifyDefault1) {
+  PubKey p;
+  SecKey s;
+
+  fprintf(stderr, "p1 %p %p\n", &p, &s);
+  SKY_cipher_GenerateKeyPair(&p, &s);
+  fprintf(stderr, "p2\n");
+  unsigned int errcode = SKY_cipher_PubKey_Verify(&p);
+  fprintf(stderr, "p3\n");
+  cr_assert(errcode == SKY_OK);
+}
+

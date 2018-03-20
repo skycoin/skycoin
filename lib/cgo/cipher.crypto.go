@@ -3,6 +3,7 @@ package main
 import (
 	cipher "github.com/skycoin/skycoin/src/cipher"
 
+	"fmt"
 	"unsafe"
 )
 
@@ -292,6 +293,7 @@ func SKY_cipher_VerifySignature(_pubkey *C.PubKey, _sig *C.Sig, _hash *C.SHA256)
 
 //export SKY_cipher_GenerateKeyPair
 func SKY_cipher_GenerateKeyPair(_arg0 *C.PubKey, _arg1 *C.SecKey) {
+	fmt.Println(unsafe.Pointer(_arg0), unsafe.Pointer(_arg1))
 	__arg0 := (*[1 << 30]byte)(
 		unsafe.Pointer(_arg0))[:SizeofPubKey:SizeofPubKey]
 	arg0 := (*cipher.PubKey)(unsafe.Pointer(&__arg0))
@@ -299,6 +301,7 @@ func SKY_cipher_GenerateKeyPair(_arg0 *C.PubKey, _arg1 *C.SecKey) {
 		unsafe.Pointer(_arg1))[:SizeofSecKey:SizeofSecKey]
 	arg1 := (*cipher.SecKey)(unsafe.Pointer(&__arg1))
 	p, s := cipher.GenerateKeyPair()
+	fmt.Println(p)
 	copy(arg0[:], p[:])
 	copy(arg1[:], s[:])
 }

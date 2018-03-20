@@ -6,6 +6,7 @@ import { BlockchainService } from '../../../services/blockchain.service';
 import { Observable } from 'rxjs/Observable';
 import { ApiService } from '../../../services/api.service';
 import { Http } from '@angular/http';
+import { AppService } from '../../../services/app.service';
 
 @Component({
   selector: 'app-header',
@@ -39,7 +40,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   constructor(
-    public apiService: ApiService,
+    public appService: AppService,
+    private apiService: ApiService,
     private blockchainService: BlockchainService,
     private priceService: PriceService,
     private walletService: WalletService,
@@ -47,7 +49,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    this.setVersion()
+    this.setVersion();
     this.priceSubscription = this.priceService.price.subscribe(price => this.price = price);
     this.walletSubscription = this.walletService.all().subscribe(wallets => {
       this.coins = wallets.map(wallet => wallet.coins >= 0 ? wallet.coins : 0).reduce((a, b) => a + b, 0);
@@ -70,7 +72,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   setVersion() {
     // Set build version
-    this.apiService.get('version')
+    this.apiService.getVersion().first()
       .subscribe(output =>  {
         this.version = output.version;
         this.retrieveReleaseVersion();

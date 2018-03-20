@@ -33,6 +33,10 @@ export class Transaction {
   txid: string;
 }
 
+export class Version {
+  version: string;
+}
+
 export class Wallet {
   label: string;
   filename: string;

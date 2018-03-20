@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - #885, Add `Host` header check to localhost HTTP interfaces to prevent DNS rebinding attacks
 - #896, Add CSRF check to wallet API
 - Fix base58 address parsing, which allowed leading invalid characters and treated unknown characters as a '1'
+- Fix occasional error which causes blockchain progress not to be shown in front-end
 
 ### Changed
 

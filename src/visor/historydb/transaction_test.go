@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -19,34 +18,6 @@ var _ = func() int64 {
 	rand.Seed(t)
 	return t
 }()
-
-func TestGetLastTxs(t *testing.T) {
-	testData := []uint64{0, 3, lastTxNum, lastTxNum + 10}
-	for i := range testData {
-		func(i uint64) {
-			db, teardown := testutil.PrepareDB(t)
-			defer teardown()
-			txIns, err := newTransactionsBkt(db)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			var txs []cipher.SHA256
-			for j := uint64(0); j < testData[i]; j++ {
-				tx := makeTransaction()
-				txs = append(txs, tx.Hash())
-				if err := txIns.Add(&tx); err != nil {
-					t.Fatal(err)
-				}
-			}
-			if testData[i] > lastTxNum {
-				txs = txs[len(txs)-lastTxNum:]
-			}
-			lastTxHash := txIns.GetLastTxs()
-			assert.Equal(t, txs, lastTxHash)
-		}(uint64(i))
-	}
-}
 
 func TestTransactionGet(t *testing.T) {
 	txs := make([]Transaction, 0, 3)

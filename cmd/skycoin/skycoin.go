@@ -95,7 +95,7 @@ type Config struct {
 	// Disables networking altogether
 	DisableNetworking bool
 	// Disables wallet API
-	DisableWalletApi bool
+	DisableWalletAPI bool
 	// Disable CSRF check in the wallet api
 	DisableCSRF bool
 
@@ -136,6 +136,10 @@ type Config struct {
 	DataDirectory string
 	// GUI directory contains assets for the html gui
 	GUIDirectory string
+
+	ReadTimeout  time.Duration
+	WriteTimeout time.Duration
+	IdleTimeout  time.Duration
 
 	// Logging
 	ColorLog bool
@@ -186,7 +190,7 @@ func (c *Config) register() {
 	flag.BoolVar(&c.DisableOutgoingConnections, "disable-outgoing", c.DisableOutgoingConnections, "Don't make outgoing connections")
 	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming", c.DisableIncomingConnections, "Don't make incoming connections")
 	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
-	flag.BoolVar(&c.DisableWalletApi, "disable-wallet-api", c.DisableWalletApi, "Disable the wallet API")
+	flag.BoolVar(&c.DisableWalletAPI, "disable-wallet-api", c.DisableWalletAPI, "Disable the wallet API")
 	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable csrf check")
 	flag.StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
@@ -238,6 +242,8 @@ func (c *Config) register() {
 	flag.IntVar(&c.LogBuffSize, "logbufsize", c.LogBuffSize, "Log size saved in memeory for gui show")
 }
 
+var home = file.UserHome()
+
 var devConfig = Config{
 	// Disable peer exchange
 	DisablePEX: false,
@@ -248,7 +254,7 @@ var devConfig = Config{
 	// Disables networking altogether
 	DisableNetworking: false,
 	// Disable wallet API
-	DisableWalletApi: false,
+	DisableWalletAPI: false,
 	// Disable CSRF check in the wallet api
 	DisableCSRF: false,
 	// Only run on localhost and only connect to others on localhost
@@ -283,7 +289,7 @@ var devConfig = Config{
 
 	LaunchBrowser: true,
 	// Data directory holds app data -- defaults to ~/.skycoin
-	DataDirectory: ".skycoin",
+	DataDirectory: filepath.Join(home, ".skycoin"),
 	// Web GUI static resources
 	GUIDirectory: "./src/gui/static/",
 	// Logging
@@ -292,6 +298,12 @@ var devConfig = Config{
 
 	// Wallets
 	WalletDirectory: "",
+
+	// Timeout settings for http.Server
+	// https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
+	ReadTimeout:  10 * time.Second,
+	WriteTimeout: 60 * time.Second,
+	IdleTimeout:  120 * time.Second,
 
 	// Centralized network configuration
 	RunMaster:        false,
@@ -372,6 +384,11 @@ func (c *Config) postProcess() {
 		// Run in arbitrating mode if the node is master
 		c.Arbitrating = true
 	}
+
+	// Don't open browser to load wallets if wallet apis are disabled.
+	if c.DisableWalletAPI {
+		c.LaunchBrowser = false
+	}
 }
 
 func panicIfError(err error, msg string, args ...interface{}) {
@@ -427,9 +444,13 @@ func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) (*g
 	var s *gui.Server
 	var err error
 
-	config := gui.ServerConfig{
-		StaticDir:   c.GUIDirectory,
-		DisableCSRF: c.DisableCSRF,
+	config := gui.Config{
+		StaticDir:        c.GUIDirectory,
+		DisableCSRF:      c.DisableCSRF,
+		DisableWalletAPI: c.DisableWalletAPI,
+		ReadTimeout:      c.ReadTimeout,
+		WriteTimeout:     c.WriteTimeout,
+		IdleTimeout:      c.IdleTimeout,
 	}
 
 	if c.WebInterfaceHTTPS {
@@ -539,13 +560,14 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Visor.Config.DBPath = c.DBPath
 	dc.Visor.Config.DBReadOnly = c.DBReadOnly
 	dc.Visor.Config.Arbitrating = c.Arbitrating
+	dc.Visor.Config.DisableWalletAPI = c.DisableWalletAPI
 	dc.Visor.Config.WalletDirectory = c.WalletDirectory
 	dc.Visor.Config.BuildInfo = visor.BuildInfo{
 		Version: Version,
 		Commit:  Commit,
 	}
 
-	dc.Gateway.DisableWalletAPI = c.DisableWalletApi
+	dc.Gateway.DisableWalletAPI = c.DisableWalletAPI
 
 	return dc
 }
@@ -617,7 +639,13 @@ func Run(c *Config) {
 	var rpc *webrpc.WebRPC
 	if c.RPCInterface {
 		rpcAddr := fmt.Sprintf("%v:%v", c.RPCInterfaceAddr, c.RPCInterfacePort)
-		rpc, err = webrpc.New(rpcAddr, d.Gateway)
+		rpc, err = webrpc.New(rpcAddr, webrpc.Config{
+			ReadTimeout:  c.ReadTimeout,
+			WriteTimeout: c.WriteTimeout,
+			IdleTimeout:  c.IdleTimeout,
+			ChanBuffSize: 1000,
+			WorkerNum:    c.RPCThreadNum,
+		}, d.Gateway)
 		if err != nil {
 			logger.Error("%v", err)
 			return

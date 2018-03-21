@@ -46,13 +46,13 @@ type Gateway struct {
 }
 
 // NewGateway create and init an Gateway instance.
-func NewGateway(c GatewayConfig, D *Daemon) *Gateway {
+func NewGateway(c GatewayConfig, d *Daemon) *Gateway {
 	return &Gateway{
 		Config:   c,
 		drpc:     RPC{},
-		vrpc:     visor.MakeRPC(D.Visor.v),
-		d:        D,
-		v:        D.Visor.v,
+		vrpc:     visor.MakeRPC(d.Visor.v),
+		d:        d,
+		v:        d.Visor.v,
 		requests: make(chan strand.Request, c.BufferSize),
 		quit:     make(chan struct{}),
 	}
@@ -464,16 +464,6 @@ func (gw *Gateway) GetUnconfirmedTxns(addrs []cipher.Address) []visor.Unconfirme
 		txns = gw.v.GetUnconfirmedTxns(visor.ToAddresses(addrs))
 	})
 	return txns
-}
-
-// GetLastTxs returns last confirmed transactions, return nil if empty
-func (gw *Gateway) GetLastTxs() ([]*visor.Transaction, error) {
-	var txns []*visor.Transaction
-	var err error
-	gw.strand("GetLastTxs", func() {
-		txns, err = gw.v.GetLastTxs()
-	})
-	return txns, err
 }
 
 // GetUnspent returns the unspent pool

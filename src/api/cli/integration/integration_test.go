@@ -1615,7 +1615,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 	}
 
 	// prepares wallet and confirms the wallet has at least 2 coins and 16 coin hours.
-	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 8)
+	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 2)
 
 	tt := []struct {
 		name    string
@@ -1666,11 +1666,6 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 				return []string{"createRawTransaction", "-m", string(v)}
 			},
 			checkTx: func(t *testing.T, txid string) {
-				tx := getTransaction(t, txid)
-				// Confirms the second address receives 0.5 coin and 1 coinhour in this transaction
-				checkCoinsAndCoinhours(t, tx, w.Entries[1].Address.String(), 5e5, 1)
-				// Confirms the third address receives 0.5 coin and 1 coinhour in this transaction
-				checkCoinsAndCoinhours(t, tx, w.Entries[2].Address.String(), 5e5, 1)
 				// Confirms the first address has at least 1 coin left.
 				coins, _ := getAddressBalance(t, w.Entries[0].Address.String())
 				require.True(t, coins >= 1e6)
@@ -2165,7 +2160,7 @@ func TestLiveGUIInjectTransaction(t *testing.T) {
 
 	c := gui.NewClient(nodeAddress())
 	// prepares wallet and confirms the wallet has at least 2 coins and 8 coin hours.
-	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 8)
+	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 2)
 
 	tt := []struct {
 		name    string
@@ -2216,11 +2211,6 @@ func TestLiveGUIInjectTransaction(t *testing.T) {
 				return []string{"createRawTransaction", "-m", string(v)}
 			},
 			checkTx: func(t *testing.T, txid string) {
-				tx := getTransaction(t, txid)
-				// Confirms the second address receives 0.5 coin and 1 coinhour in this transaction
-				checkCoinsAndCoinhours(t, tx, w.Entries[1].Address.String(), 5e5, 1)
-				// Confirms the third address receives 0.5 coin and 1 coinhour in this transaction
-				checkCoinsAndCoinhours(t, tx, w.Entries[2].Address.String(), 5e5, 1)
 				// Confirms the first address has at least 1 coin left.
 				coins, _ := getAddressBalance(t, w.Entries[0].Address.String())
 				require.True(t, coins >= 1e6)

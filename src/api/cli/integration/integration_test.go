@@ -1615,7 +1615,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 	}
 
 	// prepares wallet and confirms the wallet has at least 2 coins and 16 coin hours.
-	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 16)
+	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 8)
 
 	tt := []struct {
 		name    string
@@ -2157,9 +2157,15 @@ func TestLiveGUIInjectTransaction(t *testing.T) {
 		return
 	}
 
+	doLiveEnvCheck(t)
+
+	if !doWallet(t) {
+		return
+	}
+
 	c := gui.NewClient(nodeAddress())
-	// prepares wallet and confirms the wallet has at least 2 coins and 16 coin hours.
-	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 16)
+	// prepares wallet and confirms the wallet has at least 2 coins and 8 coin hours.
+	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 8)
 
 	tt := []struct {
 		name    string

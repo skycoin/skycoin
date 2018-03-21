@@ -1,6 +1,7 @@
-<md-card>
-  <md-card-title>Blockchain</md-card-title>
-  <md-card class="skycoin-details">
+<div class="sky-container sky-container-grey">
+  <app-header title="Blockchain"></app-header>
+
+  <mat-card class="skycoin-details">
     <div class="skycoin-detail-keys">
       Number of blocks: <br>
       Time since last block: <br>
@@ -11,6 +12,5 @@
       {{ block.header.timestamp | dateFromNow }} <br>
       {{ block.header.block_hash }}
     </div>
-  </md-card>
-</md-card>
-
+  </mat-card>
+</div>

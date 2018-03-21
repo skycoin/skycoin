@@ -8,7 +8,7 @@ APP_VERSION=`grep version package.json | sed  's/[,\", ]//g'| awk '{split($0,a,"
 
 
 # package name
-PKG_NAME=`grep name package.json | sed 's/[,\", ]//g' | awk '{split($0,s,":");print s[2]}'`
+PKG_NAME=`grep productName package.json | sed 's/[,\", ]//g' | awk '{split($0,s,":");print tolower(s[2])}'`
 
 # product name
 PDT_NAME=`grep productName package.json | sed 's/[,\", ]//g' | awk '{split($0,s,":");print s[2]}'`
@@ -38,8 +38,6 @@ GOX_OUTPUT=".gox_output"
 STL_OUTPUT=".standalone_output"
 
 FINAL_OUTPUT="release"
-
-VERSION_FILE="./skycoin/current-skycoin.json"
 
 GUI_DIST_DIR="../src/gui/static/dist"  # Do not append "/" to this path
 

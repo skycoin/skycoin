@@ -343,7 +343,99 @@ func CreateRawTx(c *webrpc.Client, wlt *wallet.Wallet, inAddrs []string, chgAddr
 		return nil, err
 	}
 
-	return createRawTx(unspents.Outputs, wlt, inAddrs, chgAddr, toAddrs)
+	inUxs, err := unspents.Outputs.SpendableOutputs().ToUxArray()
+	if err != nil {
+		return nil, err
+	}
+
+	txn, err := createRawTx(unspents.Outputs, wlt, inAddrs, chgAddr, toAddrs)
+	if err != nil {
+		return nil, err
+	}
+
+	// filter out unspents which are not used in transaction
+	var inUxsFiltered coin.UxArray
+	for _, h := range txn.In {
+		for _, u := range inUxs {
+			if h == u.Hash() {
+				inUxsFiltered = append(inUxsFiltered, u)
+			}
+		}
+	}
+
+	// TODO -- remove me -- reimplementation of visor.VerifySingleTxnSoftConstraints minus
+	// the parts that require block head data, which is not available from the RPC API (see below)
+	if err := verifyTransactionConstraints(txn, inUxsFiltered, visor.DefaultMaxBlockSize); err != nil {
+		return nil, err
+	}
+
+	// TODO -- verify against soft and hard constraints
+	// Need to get the head block to do verification.
+	// The head block is not exposed over the JSON RPC, which webrpc.Client uses.
+	// Need to remove the JSON RPC API and have the client make requests to the HTTP API.
+	// Once the HTTP API is used,
+	// Need to request /blockchain/metadata to get the head block time
+	// This could lead to race conditions; /blockchain/metadata should return the full head, or have an API endpoint
+	// just for the head, and/or include the head block in the get_outputs response
+	// The head block is used for calculating inUxs's coin hours.
+	// if err := visor.VerifySingleTxnSoftConstraints(txn, inUxs, visor.DefaultMaxBlockSize); err != nil {
+	//     return nil, err
+	// }
+	// if err := visor.VerifySingleTxnHardConstraints(txn, head, inUxs); err != nil {
+	// 	return nil, err
+	// }
+
+	return txn, nil
+}
+
+// TODO -- remove me -- reimplementation of visor.VerifySingleTxnSoftConstraints and HardConstraints
+// minus the parts that require block head data, which is not available from the RPC API (see below)
+func verifyTransactionConstraints(txn *coin.Transaction, uxIn coin.UxArray, maxSize int) error {
+	// SOFT constraints:
+
+	if txn.Size() > maxSize {
+		return errors.New("Transaction size bigger than max block size")
+	}
+
+	if visor.TransactionIsLocked(uxIn) {
+		return errors.New("Transaction has locked address inputs")
+	}
+
+	// Ignore transactions that do not conform to decimal restrictions
+	for _, o := range txn.Out {
+		if err := visor.DropletPrecisionCheck(o.Coins); err != nil {
+			return err
+		}
+	}
+
+	// HARD constraints:
+
+	if err := txn.Verify(); err != nil {
+		return err
+	}
+
+	// Checks whether ux inputs exist,
+	// Check that signatures are allowed to spend inputs
+	if err := txn.VerifyInput(uxIn); err != nil {
+		return err
+	}
+
+	// Verify CoinHours do not overflow
+	if _, err := txn.OutputHours(); err != nil {
+		return err
+	}
+
+	// Check that no coins are created or destroyed
+	// TODO -- use the correct block head, once we have it from the API
+	// For now it doesn't matter, the block head is used to calculate the uxOut hours,
+	// but we're not validating the hours
+	uxOut := coin.CreateUnspents(coin.BlockHeader{
+		BkSeq: 1,
+	}, *txn)
+	return coin.VerifyTransactionCoinsSpending(uxIn, uxOut)
+
+	// TODO -- use coin.VerifyTransactionHoursSpending, once we have the head block
+	// return coin.VerifyTransactionHoursSpending(head.Time(), uxIn, uxOut)
 }
 
 func createRawTx(uxouts visor.ReadableOutputSet, wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount) (*coin.Transaction, error) {
@@ -353,25 +445,22 @@ func createRawTx(uxouts visor.ReadableOutputSet, wlt *wallet.Wallet, inAddrs []s
 		totalCoins += arg.Coins
 	}
 
-	outs, err := chooseSpends(uxouts, totalCoins)
+	spendOutputs, err := chooseSpends(uxouts, totalCoins)
 	if err != nil {
 		return nil, err
 	}
 
-	keys, err := getKeys(wlt, outs)
+	keys, err := getKeys(wlt, spendOutputs)
 	if err != nil {
 		return nil, err
 	}
 
-	txOuts, err := makeChangeOut(outs, chgAddr, toAddrs)
+	txOuts, err := makeChangeOut(spendOutputs, chgAddr, toAddrs)
 	if err != nil {
 		return nil, err
 	}
 
-	tx, err := NewTransaction(outs, keys, txOuts)
-	if err != nil {
-		return nil, err
-	}
+	tx := NewTransaction(spendOutputs, keys, txOuts)
 
 	return tx, nil
 }
@@ -442,12 +531,33 @@ func makeChangeOut(outs []wallet.UxBalance, chgAddr string, toAddrs []SendAmount
 		return nil, err
 	}
 
-	if haveChange {
-		outAddrs = append(outAddrs, mustMakeUtxoOutput(chgAddr, changeAmount, changeHours))
+	for i, to := range toAddrs {
+		// check if changeHours > 0, we do not need to cap addrHours when changeHours is zero
+		// changeHours is zero when there is no change left or all the coinhours were used in fees
+		// 1) if there is no change then the remaining coinhours are evenly distributed among the destination addresses
+		// 2) if all the coinhours are burned in fees then all addrHours are zero by default
+		if changeHours > 0 {
+			// the coinhours are capped to a maximum of incoming coins for the address
+			// if incoming coins < 1 then the cap is set to 1 coinhour
+
+			spendCoinsAmt := to.Coins / 1e6
+			if spendCoinsAmt == 0 {
+				spendCoinsAmt = 1
+			}
+
+			// allow addrHours to be less than the incoming coins of the address but not more
+			if addrHours[i] > spendCoinsAmt {
+				// cap the addrHours, move the difference to changeHours
+				changeHours += addrHours[i] - spendCoinsAmt
+				addrHours[i] = spendCoinsAmt
+			}
+		}
+
+		outAddrs = append(outAddrs, mustMakeUtxoOutput(to.Addr, to.Coins, addrHours[i]))
 	}
 
-	for i, to := range toAddrs {
-		outAddrs = append(outAddrs, mustMakeUtxoOutput(to.Addr, to.Coins, addrHours[i]))
+	if haveChange {
+		outAddrs = append(outAddrs, mustMakeUtxoOutput(chgAddr, changeAmount, changeHours))
 	}
 
 	return outAddrs, nil
@@ -474,22 +584,19 @@ func getKeys(wlt *wallet.Wallet, outs []wallet.UxBalance) ([]cipher.SecKey, erro
 	return keys, nil
 }
 
-// NewTransaction create skycoin transaction.
-func NewTransaction(utxos []wallet.UxBalance, keys []cipher.SecKey, outs []coin.TransactionOutput) (*coin.Transaction, error) {
+// NewTransaction creates a transaction. The transaction should be validated against hard and soft constraints before transmission.
+func NewTransaction(utxos []wallet.UxBalance, keys []cipher.SecKey, outs []coin.TransactionOutput) *coin.Transaction {
 	tx := coin.Transaction{}
 	for _, u := range utxos {
 		tx.PushInput(u.Hash)
 	}
 
 	for _, o := range outs {
-		// Do not create a transaction with invalid number of droplets
-		if err := visor.DropletPrecisionCheck(o.Coins); err != nil {
-			return nil, err
-		}
 		tx.PushOutput(o.Address, o.Coins, o.Hours)
 	}
 
 	tx.SignInputs(keys)
+
 	tx.UpdateHeader()
-	return &tx, nil
+	return &tx
 }

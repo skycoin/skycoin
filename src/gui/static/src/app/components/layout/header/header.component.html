@@ -1,0 +1,29 @@
+<div class="-container">
+  <div class="large-header">
+    <app-top-bar [title]="title"></app-top-bar>
+    <div class="balance-container">
+      <div class="balance">
+        <p *ngIf="highest && loading" class="coins"><span>{{ percentage | percent:'1.2-2' }}</span></p>
+        <p *ngIf="!loading" class="coins"><span>{{ coins | number:'1.0-6' }}</span> sky</p>
+        <p *ngIf="!loading" class="dollars">{{ balance }}</p>
+      </div>
+    </div>
+    <div class="hour-balance">
+      <p *ngIf="loading">Syncing blocks {{ current && highest ?  '(' + current + '/'  + highest + ')' : '..' }}</p>
+      <p *ngIf="!loading">{{ hours }} SKY Hours</p>
+    </div>
+  </div>
+  <app-nav-bar></app-nav-bar>
+  <mat-progress-bar
+    *ngIf="loading"
+    class="example-margin"
+    color="primary"
+    mode="determinate"
+    [value]="percentage * 100"></mat-progress-bar>
+  <mat-toolbar class="notification-bar" *ngIf="updateAvailable">
+    <div> Wallet update <a href="https://www.skycoin.net/downloads/" target="_blank">v{{ releaseVersion }}</a>  available.</div>
+  </mat-toolbar>
+  <mat-toolbar class="notification-bar" *ngIf="apiService.csrfError">
+    <div> Security vulnerability: CSRF is not working, please exit immediately.</div>
+  </mat-toolbar>
+</div>

@@ -18,13 +18,15 @@ import (
 
 // GatewayConfig configuration set of gateway.
 type GatewayConfig struct {
-	BufferSize int
+	BufferSize       int
+	DisableWalletAPI bool
 }
 
 // NewGatewayConfig create and init an GatewayConfig
 func NewGatewayConfig() GatewayConfig {
 	return GatewayConfig{
-		BufferSize: 32,
+		BufferSize:       32,
+		DisableWalletAPI: false,
 	}
 }
 
@@ -40,6 +42,7 @@ type Gateway struct {
 	v *visor.Visor
 	// Requests are queued on this channel
 	requests chan strand.Request
+	quit     chan struct{}
 }
 
 // NewGateway create and init an Gateway instance.
@@ -51,7 +54,13 @@ func NewGateway(c GatewayConfig, D *Daemon) *Gateway {
 		d:        D,
 		v:        D.Visor.v,
 		requests: make(chan strand.Request, c.BufferSize),
+		quit:     make(chan struct{}),
 	}
+}
+
+// Shutdown closes the Gateway
+func (gw *Gateway) Shutdown() {
+	close(gw.quit)
 }
 
 func (gw *Gateway) strand(name string, f func()) {
@@ -59,12 +68,12 @@ func (gw *Gateway) strand(name string, f func()) {
 	strand.Strand(logger, gw.requests, name, func() error {
 		f()
 		return nil
-	})
+	}, gw.quit, nil)
 }
 
 // GetConnections returns a *Connections
-func (gw *Gateway) GetConnections() interface{} {
-	var conns interface{}
+func (gw *Gateway) GetConnections() *Connections {
+	var conns *Connections
 	gw.strand("GetConnections", func() {
 		conns = gw.drpc.GetConnections(gw.d)
 	})
@@ -72,8 +81,8 @@ func (gw *Gateway) GetConnections() interface{} {
 }
 
 // GetDefaultConnections returns default connections
-func (gw *Gateway) GetDefaultConnections() interface{} {
-	var conns interface{}
+func (gw *Gateway) GetDefaultConnections() []string {
+	var conns []string
 	gw.strand("GetDefaultConnections", func() {
 		conns = gw.drpc.GetDefaultConnections(gw.d)
 	})
@@ -81,8 +90,8 @@ func (gw *Gateway) GetDefaultConnections() interface{} {
 }
 
 // GetConnection returns a *Connection of specific address
-func (gw *Gateway) GetConnection(addr string) interface{} {
-	var conn interface{}
+func (gw *Gateway) GetConnection(addr string) *Connection {
+	var conn *Connection
 	gw.strand("GetConnection", func() {
 		conn = gw.drpc.GetConnection(gw.d, addr)
 	})
@@ -91,8 +100,8 @@ func (gw *Gateway) GetConnection(addr string) interface{} {
 
 // GetTrustConnections returns all trusted connections,
 // including private and public
-func (gw *Gateway) GetTrustConnections() interface{} {
-	var conn interface{}
+func (gw *Gateway) GetTrustConnections() []string {
+	var conn []string
 	gw.strand("GetTrustConnections", func() {
 		conn = gw.drpc.GetTrustConnections(gw.d)
 	})
@@ -101,8 +110,8 @@ func (gw *Gateway) GetTrustConnections() interface{} {
 
 // GetExchgConnection returns all exchangeable connections,
 // including private and public
-func (gw *Gateway) GetExchgConnection() interface{} {
-	var conn interface{}
+func (gw *Gateway) GetExchgConnection() []string {
+	var conn []string
 	gw.strand("GetExchgConnection", func() {
 		conn = gw.drpc.GetAllExchgConnections(gw.d)
 	})
@@ -112,8 +121,8 @@ func (gw *Gateway) GetExchgConnection() interface{} {
 /* Blockchain & Transaction status */
 
 // GetBlockchainProgress returns a *BlockchainProgress
-func (gw *Gateway) GetBlockchainProgress() interface{} {
-	var bcp interface{}
+func (gw *Gateway) GetBlockchainProgress() *BlockchainProgress {
+	var bcp *BlockchainProgress
 	gw.strand("GetBlockchainProgress", func() {
 		bcp = gw.drpc.GetBlockchainProgress(gw.d.Visor)
 	})
@@ -121,8 +130,8 @@ func (gw *Gateway) GetBlockchainProgress() interface{} {
 }
 
 // ResendTransaction resent the transaction and return a *ResendResult
-func (gw *Gateway) ResendTransaction(txn cipher.SHA256) interface{} {
-	var result interface{}
+func (gw *Gateway) ResendTransaction(txn cipher.SHA256) *ResendResult {
+	var result *ResendResult
 	gw.strand("ResendTransaction", func() {
 		result = gw.drpc.ResendTransaction(gw.d.Visor, gw.d.Pool, txn)
 	})
@@ -138,8 +147,8 @@ func (gw *Gateway) ResendUnconfirmedTxns() (rlt *ResendResult) {
 }
 
 // GetBlockchainMetadata returns a *visor.BlockchainMetadata
-func (gw *Gateway) GetBlockchainMetadata() interface{} {
-	var bcm interface{}
+func (gw *Gateway) GetBlockchainMetadata() *visor.BlockchainMetadata {
+	var bcm *visor.BlockchainMetadata
 	gw.strand("GetBlockchainMetadata", func() {
 		bcm = gw.vrpc.GetBlockchainMetadata(gw.v)
 	})
@@ -235,7 +244,7 @@ type OutputsFilter func(outputs coin.UxArray) coin.UxArray
 
 // GetUnspentOutputs gets unspent outputs and returns the filtered results,
 // Note: all filters will be executed as the pending sequence in 'AND' mode.
-func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (visor.ReadableOutputSet, error) {
+func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (*visor.ReadableOutputSet, error) {
 	// unspent outputs
 	var unspentOutputs []coin.UxOut
 	// unconfirmed spending outputs
@@ -267,7 +276,7 @@ func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (visor.ReadableOu
 	})
 
 	if err != nil {
-		return visor.ReadableOutputSet{}, err
+		return nil, err
 	}
 
 	for _, flt := range filters {
@@ -279,30 +288,27 @@ func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (visor.ReadableOu
 	outputSet := visor.ReadableOutputSet{}
 	outputSet.HeadOutputs, err = visor.NewReadableOutputs(headTime, unspentOutputs)
 	if err != nil {
-		return visor.ReadableOutputSet{}, err
+		return nil, err
 	}
 
 	outputSet.OutgoingOutputs, err = visor.NewReadableOutputs(headTime, uncfmSpendingOutputs)
 	if err != nil {
-		return visor.ReadableOutputSet{}, err
+		return nil, err
 	}
 
 	outputSet.IncomingOutputs, err = visor.NewReadableOutputs(headTime, uncfmIncomingOutputs)
 	if err != nil {
-		return visor.ReadableOutputSet{}, err
+		return nil, err
 	}
 
-	return outputSet, nil
+	return &outputSet, nil
 }
 
 // FbyAddressesNotIncluded filters the unspent outputs that are not owned by the addresses
 func FbyAddressesNotIncluded(addrs []string) OutputsFilter {
 	return func(outputs coin.UxArray) coin.UxArray {
 		addrMatch := coin.UxArray{}
-		addrMap := make(map[string]struct{})
-		for _, addr := range addrs {
-			addrMap[addr] = struct{}{}
-		}
+		addrMap := MakeSearchMap(addrs)
 
 		for _, u := range outputs {
 			if _, ok := addrMap[u.Body.Address.String()]; !ok {
@@ -317,10 +323,7 @@ func FbyAddressesNotIncluded(addrs []string) OutputsFilter {
 func FbyAddresses(addrs []string) OutputsFilter {
 	return func(outputs coin.UxArray) coin.UxArray {
 		addrMatch := coin.UxArray{}
-		addrMap := make(map[string]struct{})
-		for _, addr := range addrs {
-			addrMap[addr] = struct{}{}
-		}
+		addrMap := MakeSearchMap(addrs)
 
 		for _, u := range outputs {
 			if _, ok := addrMap[u.Body.Address.String()]; ok {
@@ -335,10 +338,7 @@ func FbyAddresses(addrs []string) OutputsFilter {
 func FbyHashes(hashes []string) OutputsFilter {
 	return func(outputs coin.UxArray) coin.UxArray {
 		hsMatch := coin.UxArray{}
-		hsMap := make(map[string]struct{})
-		for _, h := range hashes {
-			hsMap[h] = struct{}{}
-		}
+		hsMap := MakeSearchMap(hashes)
 
 		for _, u := range outputs {
 			if _, ok := hsMap[u.Hash().Hex()]; ok {
@@ -347,6 +347,16 @@ func FbyHashes(hashes []string) OutputsFilter {
 		}
 		return hsMatch
 	}
+}
+
+// MakeSearchMap returns a search indexed map for use in filters
+func MakeSearchMap(addrs []string) map[string]struct{} {
+	addrMap := make(map[string]struct{})
+	for _, addr := range addrs {
+		addrMap[addr] = struct{}{}
+	}
+
+	return addrMap
 }
 
 // GetTransaction returns transaction by txid
@@ -372,11 +382,11 @@ func (gw *Gateway) GetTransactionResult(txid cipher.SHA256) (*visor.TransactionR
 	return visor.NewTransactionResult(tx)
 }
 
-// InjectTransaction injects transaction
-func (gw *Gateway) InjectTransaction(txn coin.Transaction) error {
+// InjectBroadcastTransaction injects and broadcasts a transaction
+func (gw *Gateway) InjectBroadcastTransaction(txn coin.Transaction) error {
 	var err error
-	gw.strand("InjectTransaction", func() {
-		err = gw.d.Visor.InjectTransaction(txn, gw.d.Pool)
+	gw.strand("InjectBroadcastTransaction", func() {
+		err = gw.d.Visor.InjectBroadcastTransaction(txn, gw.d.Pool)
 	})
 	return err
 }
@@ -395,6 +405,16 @@ func (gw *Gateway) GetAddressTxns(a cipher.Address) (*visor.TransactionResults, 
 	}
 
 	return visor.NewTransactionResults(txs)
+}
+
+// GetTransactions returns transactions filtered by zero or more visor.TxFilter
+func (gw *Gateway) GetTransactions(flts ...visor.TxFilter) ([]visor.Transaction, error) {
+	var txns []visor.Transaction
+	var err error
+	gw.strand("GetTransactions", func() {
+		txns, err = gw.v.GetTransactions(flts...)
+	})
+	return txns, err
 }
 
 // GetUxOutByID gets UxOut by hash id.
@@ -465,13 +485,13 @@ func (gw *Gateway) GetUnspent() blockdb.UnspentPool {
 	return unspent
 }
 
-// impelemts the wallet.Validator interface
+// implements the wallet.Validator interface
 type spendValidator struct {
-	uncfm   *visor.UnconfirmedTxnPool
+	uncfm   visor.UnconfirmedTxnPooler
 	unspent blockdb.UnspentPool
 }
 
-func newSpendValidator(uncfm *visor.UnconfirmedTxnPool, unspent blockdb.UnspentPool) *spendValidator {
+func newSpendValidator(uncfm visor.UnconfirmedTxnPooler, unspent blockdb.UnspentPool) *spendValidator {
 	return &spendValidator{
 		uncfm:   uncfm,
 		unspent: unspent,
@@ -492,20 +512,26 @@ func (sv spendValidator) HasUnconfirmedSpendTx(addr []cipher.Address) (bool, err
 func (gw *Gateway) Spend(wltID string, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
 	var tx *coin.Transaction
 	var err error
+	if gw.Config.DisableWalletAPI {
+		return tx, wallet.ErrWalletApiDisabled
+	}
 	gw.strand("Spend", func() {
 		// create spend validator
 		unspent := gw.v.Blockchain.Unspent()
 		sv := newSpendValidator(gw.v.Unconfirmed, unspent)
-		// create and sign transaction
+
+		// Create and sign transaction
 		tx, err = gw.vrpc.CreateAndSignTransaction(wltID, sv, unspent, gw.v.Blockchain.Time(), coins, dest)
 		if err != nil {
-			err = fmt.Errorf("Create transaction failed: %v", err)
+			logger.Error("Create transaction failed: %v", err)
 			return
 		}
 
-		// inject transaction
-		if err = gw.d.Visor.InjectTransaction(*tx, gw.d.Pool); err != nil {
-			err = fmt.Errorf("Inject transaction failed: %v", err)
+		// Inject transaction
+		err = gw.d.Visor.InjectBroadcastTransaction(*tx, gw.d.Pool)
+		if err != nil {
+			logger.Error("Inject transaction failed: %v", err)
+			return
 		}
 	})
 
@@ -516,6 +542,9 @@ func (gw *Gateway) Spend(wltID string, coins uint64, dest cipher.Address) (*coin
 func (gw *Gateway) CreateWallet(wltName string, options wallet.Options) (wallet.Wallet, error) {
 	var wlt wallet.Wallet
 	var err error
+	if gw.Config.DisableWalletAPI {
+		return wlt, wallet.ErrWalletApiDisabled
+	}
 	gw.strand("CreateWallet", func() {
 		wlt, err = gw.vrpc.CreateWallet(wltName, options)
 	})
@@ -526,6 +555,9 @@ func (gw *Gateway) CreateWallet(wltName string, options wallet.Options) (wallet.
 func (gw *Gateway) ScanAheadWalletAddresses(wltName string, scanN uint64) (wallet.Wallet, error) {
 	var wlt wallet.Wallet
 	var err error
+	if gw.Config.DisableWalletAPI {
+		return wlt, wallet.ErrWalletApiDisabled
+	}
 	gw.strand("ScanAheadWalletAddresses", func() {
 		wlt, err = gw.v.ScanAheadWalletAddresses(wltName, scanN)
 	})
@@ -536,6 +568,9 @@ func (gw *Gateway) ScanAheadWalletAddresses(wltName string, scanN uint64) (walle
 func (gw *Gateway) GetWalletBalance(wltID string) (wallet.BalancePair, error) {
 	var balance wallet.BalancePair
 	var err error
+	if gw.Config.DisableWalletAPI {
+		return balance, wallet.ErrWalletApiDisabled
+	}
 	gw.strand("GetWalletBalance", func() {
 		var addrs []cipher.Address
 		addrs, err = gw.vrpc.GetWalletAddresses(wltID)
@@ -558,8 +593,18 @@ func (gw *Gateway) GetWalletBalance(wltID string) (wallet.BalancePair, error) {
 			return
 		}
 
-		coins1, hours1 := gw.v.AddressBalance(auxs)
-		coins2, hours2 := gw.v.AddressBalance(auxs.Sub(spendUxs).Add(recvUxs))
+		coins1, hours1, err := gw.v.AddressBalance(auxs)
+		if err != nil {
+			err = fmt.Errorf("Computing confirmed address balance failed: %v", err)
+			return
+		}
+
+		coins2, hours2, err := gw.v.AddressBalance(auxs.Sub(spendUxs).Add(recvUxs))
+		if err != nil {
+			err = fmt.Errorf("Computing predicted address balance failed: %v", err)
+			return
+		}
+
 		balance = wallet.BalancePair{
 			Confirmed: wallet.Balance{Coins: coins1, Hours: hours1},
 			Predicted: wallet.Balance{Coins: coins2, Hours: hours2},
@@ -581,14 +626,20 @@ func (gw *Gateway) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePa
 }
 
 // GetWalletDir returns path for storing wallet files
-func (gw *Gateway) GetWalletDir() string {
-	return gw.v.Config.WalletDirectory
+func (gw *Gateway) GetWalletDir() (string, error) {
+	if gw.Config.DisableWalletAPI {
+		return "", wallet.ErrWalletApiDisabled
+	}
+	return gw.v.Config.WalletDirectory, nil
 }
 
 // NewAddresses generate addresses in given wallet
 func (gw *Gateway) NewAddresses(wltID string, n uint64) ([]cipher.Address, error) {
 	var addrs []cipher.Address
 	var err error
+	if gw.Config.DisableWalletAPI {
+		return addrs, wallet.ErrWalletApiDisabled
+	}
 	gw.strand("NewAddresses", func() {
 		addrs, err = gw.vrpc.NewAddresses(wltID, n)
 	})
@@ -598,6 +649,9 @@ func (gw *Gateway) NewAddresses(wltID string, n uint64) ([]cipher.Address, error
 // UpdateWalletLabel updates the label of wallet
 func (gw *Gateway) UpdateWalletLabel(wltID, label string) error {
 	var err error
+	if gw.Config.DisableWalletAPI {
+		return wallet.ErrWalletApiDisabled
+	}
 	gw.strand("UpdateWalletLabel", func() {
 		err = gw.vrpc.UpdateWalletLabel(wltID, label)
 	})
@@ -608,6 +662,9 @@ func (gw *Gateway) UpdateWalletLabel(wltID, label string) error {
 func (gw *Gateway) GetWallet(wltID string) (wallet.Wallet, error) {
 	var w wallet.Wallet
 	var err error
+	if gw.Config.DisableWalletAPI {
+		return w, wallet.ErrWalletApiDisabled
+	}
 	gw.strand("GetWallet", func() {
 		w, err = gw.vrpc.GetWallet(wltID)
 	})
@@ -615,18 +672,24 @@ func (gw *Gateway) GetWallet(wltID string) (wallet.Wallet, error) {
 }
 
 // GetWallets returns wallets
-func (gw *Gateway) GetWallets() wallet.Wallets {
+func (gw *Gateway) GetWallets() (wallet.Wallets, error) {
 	var w wallet.Wallets
+	if gw.Config.DisableWalletAPI {
+		return w, wallet.ErrWalletApiDisabled
+	}
 	gw.strand("GetWallets", func() {
 		w = gw.vrpc.GetWallets()
 	})
-	return w
+	return w, nil
 }
 
 // GetWalletUnconfirmedTxns returns all unconfirmed transactions in given wallet
 func (gw *Gateway) GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTxn, error) {
 	var txns []visor.UnconfirmedTxn
 	var err error
+	if gw.Config.DisableWalletAPI {
+		return txns, wallet.ErrWalletApiDisabled
+	}
 	gw.strand("GetWalletUnconfirmedTxns", func() {
 		var addrs []cipher.Address
 		addrs, err = gw.vrpc.GetWalletAddresses(wltID)
@@ -643,6 +706,9 @@ func (gw *Gateway) GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTx
 // ReloadWallets reloads all wallets
 func (gw *Gateway) ReloadWallets() error {
 	var err error
+	if gw.Config.DisableWalletAPI {
+		return wallet.ErrWalletApiDisabled
+	}
 	gw.strand("ReloadWallets", func() {
 		err = gw.vrpc.ReloadWallets()
 	})
@@ -656,4 +722,53 @@ func (gw *Gateway) GetBuildInfo() visor.BuildInfo {
 		bi = gw.vrpc.GetBuildInfo()
 	})
 	return bi
+}
+
+// GetRichlist returns rich list as desc order.
+func (gw *Gateway) GetRichlist(includeDistribution bool) (visor.Richlist, error) {
+	rbOuts, err := gw.GetUnspentOutputs()
+	if err != nil {
+		return nil, err
+	}
+
+	allAccounts, err := rbOuts.AggregateUnspentOutputs()
+	if err != nil {
+		return nil, err
+	}
+
+	lockedAddrs := visor.GetLockedDistributionAddresses()
+	addrsMap := make(map[string]struct{}, len(lockedAddrs))
+	for _, a := range lockedAddrs {
+		addrsMap[a] = struct{}{}
+	}
+
+	richlist, err := visor.NewRichlist(allAccounts, addrsMap)
+	if err != nil {
+		return nil, err
+	}
+
+	if !includeDistribution {
+		unlockedAddrs := visor.GetUnlockedDistributionAddresses()
+		for _, a := range unlockedAddrs {
+			addrsMap[a] = struct{}{}
+		}
+		richlist = richlist.FilterAddresses(addrsMap)
+	}
+
+	return richlist, nil
+}
+
+// GetAddressCount returns count number of unique address with uxouts > 0.
+func (gw *Gateway) GetAddressCount() (uint64, error) {
+	rbOuts, err := gw.GetUnspentOutputs()
+	if err != nil {
+		return 0, err
+	}
+
+	allAccounts, err := rbOuts.AggregateUnspentOutputs()
+	if err != nil {
+		return 0, err
+	}
+
+	return uint64(len(allAccounts)), nil
 }

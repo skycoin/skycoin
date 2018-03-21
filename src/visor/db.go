@@ -33,6 +33,7 @@ func loadBlockchain(db *bolt.DB, pubkey cipher.PubKey, arbitrating bool) (*bolt.
 
 	// Recreate the block database if ErrMissingSignature occurs
 	dbPath := db.Path()
+	dbReadOnly := db.IsReadOnly()
 
 	logger.Critical("Block database signature missing, recreating db: %v", err)
 	if err := db.Close(); err != nil {
@@ -46,7 +47,7 @@ func loadBlockchain(db *bolt.DB, pubkey cipher.PubKey, arbitrating bool) (*bolt.
 
 	logger.Critical("Moved corrupted db to %s", corruptDBPath)
 
-	db, err = OpenDB(dbPath)
+	db, err = OpenDB(dbPath, dbReadOnly)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -60,9 +61,10 @@ func loadBlockchain(db *bolt.DB, pubkey cipher.PubKey, arbitrating bool) (*bolt.
 }
 
 // OpenDB opens the blockdb
-func OpenDB(dbFile string) (*bolt.DB, error) {
+func OpenDB(dbFile string, readOnly bool) (*bolt.DB, error) {
 	db, err := bolt.Open(dbFile, 0600, &bolt.Options{
-		Timeout: 500 * time.Millisecond,
+		Timeout:  500 * time.Millisecond,
+		ReadOnly: readOnly,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("Open boltdb failed, %v", err)

@@ -2,15 +2,73 @@
 
 Apis service port is `6420`.
 
-* [Simple query apis](#simple-query-apis)
-* [Wallet apis](#wallet-apis)
-* [Transaction apis](#transaction-apis)
-* [Block apis](#block-apis)
-* [Explorer apis](#explorer-apis)
-* [Uxout apis](#uxout-apis)
-* [Coin supply api](#coin-supply-informations)
-* [Log api](#wallet-log-api)
+<!-- MarkdownTOC autolink="true" bracket="round" -->
 
+- [CSRF](#csrf)
+    - [Get current csrf token](#get-current-csrf-token)
+- [Simple query apis](#simple-query-apis)
+    - [Get node version info](#get-node-version-info)
+    - [Get balance of addresses](#get-balance-of-addresses)
+    - [Get unspent output set of address or hash](#get-unspent-output-set-of-address-or-hash)
+- [Wallet apis](#wallet-apis)
+    - [Generate wallet seed](#generate-wallet-seed)
+    - [Create a wallet from seed](#create-a-wallet-from-seed)
+    - [Generate new address in wallet](#generate-new-address-in-wallet)
+    - [Updates wallet label](#updates-wallet-label)
+    - [Get wallet balance](#get-wallet-balance)
+    - [Spend coins from wallet](#spend-coins-from-wallet)
+- [Transaction apis](#transaction-apis)
+    - [Get unconfirmed transactions](#get-unconfirmed-transactions)
+    - [Get transaction info by id](#get-transaction-info-by-id)
+    - [Get raw transaction by id](#get-raw-transaction-by-id)
+    - [Inject raw transaction](#inject-raw-transaction)
+    - [Get transactions that are addresses related](#get-transactions-that-are-addresses-related)
+- [Block apis](#block-apis)
+    - [Get blochchain progress](#get-blochchain-progress)
+    - [Get block by hash or seq](#get-block-by-hash-or-seq)
+    - [Get blocks in specific range](#get-blocks-in-specific-range)
+    - [Get last N blocks](#get-last-n-blocks)
+- [Explorer apis](#explorer-apis)
+    - [Get address affected transactions](#get-address-affected-transactions)
+- [Uxout apis](#uxout-apis)
+    - [Get uxout](#get-uxout)
+    - [Get address affected uxouts](#get-address-affected-uxouts)
+- [Coin supply informations](#coin-supply-informations)
+- [Richlist show top N addresses by uxouts](#richlist-show-top-n-addresses-by-uxouts)
+- [AddressCount show count of unique address](#addresscount-show-count-of-unique-address)
+
+<!-- /MarkdownTOC -->
+
+## CSRF
+
+All `POST`, `PUT` and `DELETE` requests require a CSRF token, obtained with a `GET /csrf` call.
+The token must be placed in the `X-CSRF-Token` header.  A token is only valid
+for 30 seconds and it is expected that the client obtains a new CSRF token
+for each request.
+
+A request rejected for invalid or expired CSRF will respond with `403 Forbidden - invalid CSRF token`
+as the response body.
+
+### Get current csrf token
+
+```sh
+URI: /csrf
+Method: GET
+```
+
+example:
+
+```sh
+curl http://127.0.0.1:6420/csrf
+```
+
+result:
+
+```json
+{
+    "csrf_token": "klSgXoMOFTvEnt8KptBvHjhlFnW0OIkzyFVn4i8frDvIus9iLsFukqA9sM9Rxf3pLZHRLr82vBQxTq50vbYA8g"
+}
+```
 
 ## Simple query apis
 
@@ -42,7 +100,7 @@ result:
 URI: /balance
 Method: GET
 Args:
-    addrs: addresses
+    addrs: comma-separated list of addresses. must contain at least one address
 ```
 
 example:
@@ -76,10 +134,12 @@ Args:
     hashes // hash list, joined with ","
 ```
 
+Addrs and hashes cannot be combined.
+
 example:
 
 ```sh
-curl http://127.0.0.1:6420/outputs?addrs= 6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY
+curl http://127.0.0.1:6420/outputs?addrs=6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY
 ```
 
 or
@@ -96,10 +156,12 @@ result:
         {
             "hash": "7669ff7350d2c70a88093431a7b30d3e69dda2319dcb048aa80fa0d19e12ebe0",
             "block_seq": 22,
+            "time": 1494275011,
             "src_tx": "b51e1933f286c4f03d73e8966186bafb25f64053db8514327291e690ae8aafa5",
             "address": "6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY",
             "coins": "2.000000",
-            "hours": 633
+            "hours": 633,
+            "calculated_hours": 10023
         },
     ],
     "outgoing_outputs": [],
@@ -114,6 +176,10 @@ result:
 ```
 URI: /wallet/newSeed
 Method: GET
+Args:
+    entropy: seed entropy [optional]
+             can either be 128 or 256; 128 = 12 word seed, 256 = 24 word seed
+             default: 128
 ```
 
 example:
@@ -190,8 +256,32 @@ result:
 
 ```json
 {
-    "address": "TDdQmMgbEVTwLe8EAiH2AoRc4SjoEFKrHB"
+    "addresses": [
+        "TDdQmMgbEVTwLe8EAiH2AoRc4SjoEFKrHB"
+    ]
 }
+```
+
+### Updates wallet label
+
+```
+URI: /wallet/update
+Method: POST
+Args:
+    id: wallet file name
+    label: wallet label
+```
+
+example:
+
+```bash
+curl -X POST http://127.0.0.1:6420/wallet/update?id=$id&label=$label
+```
+
+result:
+
+```
+"success"
 ```
 
 ### Get wallet balance
@@ -233,6 +323,17 @@ Args:
     id: wallet id
     dst: recipient address
     coins: number of coins to send, in droplets. 1 coin equals 1e6 droplets.
+Response:
+    balance: new balance of the wallet
+    txn: spent transaction
+    error: an error that may have occured after broadcast the transaction to the network
+           if this field is not empty, the spend succeeded, but the response data could not be prepared
+Statuses:
+    200: successful spend. NOTE: the response may include an "error" field. if this occurs, the spend succeeded
+         but the response data could not be prepared. The client should NOT spend again.
+    400: Invalid query params, wallet lacks enough coin hours, insufficient balance
+    404: wallet does not exist
+    500: other errors
 ```
 
 example, send 1 coin to `2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc` from wallet `2017_05_09_ea42.wlt`:
@@ -437,6 +538,148 @@ result:
 
 ```bash
 "3615fc23cc12a5cb9190878a2151d1cf54129ff0cd90e5fc4f4e7debebad6868"
+```
+
+### Get transactions that are addresses related
+
+```
+URI: /transactions
+Method: GET
+Args:
+	addrs: Comma seperated addresses [optional, returns all transactions if no address is provided]
+    confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
+```
+
+To get address related confirmed transactions:
+
+```bash
+curl http://127.0.0.1:6420/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY&confirmed=1
+```
+
+To get address related unconfirmed transactions:
+```bash
+curl http://127.0.0.1:6420/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY&confirmed=0
+```
+
+To get all addresses related transactions:
+
+```bash
+curl http://127.0.0.1:6420/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY
+```
+
+
+result:
+
+```sh
+[
+    {
+        "status": {
+            "confirmed": true,
+            "unconfirmed": false,
+            "height": 10492,
+            "block_seq": 1177,
+            "unknown": false
+        },
+        "time": 1494275011,
+        "txn": {
+            "length": 317,
+            "type": 0,
+            "txid": "b09cd3a8baef6a449848f50a1b97943006ca92747d4e485d0647a3ea74550eca",
+            "inner_hash": "2cb370051c92521a04ba5357e229d8ffa90d9d1741ea223b44dd60a1483ee0e5",
+            "timestamp": 1494275011,
+            "sigs": [
+                "a55155ca15f73f0762f79c15917949a936658cff668647daf82a174eed95703a02622881f9cf6c7495536676f931b2d91d389a9e7b034232b3a1519c8da6fb8800",
+                "cc7d7cbd6f31adabd9bde2c0deaa9277c0f3cf807a4ec97e11872817091dc3705841a6adb74acb625ee20ab6d3525350b8663566003276073d94c3bfe22fe48e01"
+            ],
+            "inputs": [
+                "4f4b0078a9cd19b3395e54b3f42af6adc997f77f04e0ca54016c67c4f2384e3c",
+                "36f4871646b6564b2f1ab72bd768a67579a1e0242bc68bcbcf1779bc75b3dddd"
+            ],
+            "outputs": [
+                {
+                    "uxid": "5287f390628909dd8c25fad0feb37859c0c1ddcf90da0c040c837c89fefd9191",
+                    "dst": "2K6NuLBBapWndAssUtkxKfCtyjDQDHrEhhT",
+                    "coins": "8.000000",
+                    "hours": 7454
+                },
+                {
+                    "uxid": "a1268e9bd2033b49b44afa765d20876467254f51e5515626780467267a65c563",
+                    "dst": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
+                    "coins": "1.000000",
+                    "hours": 7454
+                }
+            ]
+        }
+    },
+    {
+        "status": {
+            "confirmed": true,
+            "unconfirmed": false,
+            "height": 10491,
+            "block_seq": 1178,
+            "unknown": false
+        },
+        "time": 1494275231,
+        "txn": {
+            "length": 183,
+            "type": 0,
+            "txid": "a6446654829a4a844add9f181949d12f8291fdd2c0fcb22200361e90e814e2d3",
+            "inner_hash": "075f255d42ddd2fb228fe488b8b468526810db7a144aeed1fd091e3fd404626e",
+            "timestamp": 1494275231,
+            "sigs": [
+                "9b6fae9a70a42464dda089c943fafbf7bae8b8402e6bf4e4077553206eebc2ed4f7630bb1bd92505131cca5bf8bd82a44477ef53058e1995411bdbf1f5dfad1f00"
+            ],
+            "inputs": [
+                "5287f390628909dd8c25fad0feb37859c0c1ddcf90da0c040c837c89fefd9191"
+            ],
+            "outputs": [
+                {
+                    "uxid": "70fa9dfb887f9ef55beb4e960f60e4703c56f98201acecf2cad729f5d7e84690",
+                    "dst": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
+                    "coins": "8.000000",
+                    "hours": 931
+                }
+            ]
+        }
+    },
+    {
+        "status": {
+            "confirmed": true,
+            "unconfirmed": false,
+            "height": 8730,
+            "block_seq": 2939,
+            "unknown": false
+        },
+        "time": 1505205561,
+        "txn": {
+            "length": 474,
+            "type": 0,
+            "txid": "b45e571988bc07bd0b623c999655fa878fb9bdd24c8cd24fde179bf4b26ae7b7",
+            "inner_hash": "393804eca6afadc05db80cfb9e1024ef5761231c70705c406301bad33161f8bf",
+            "timestamp": 1505205561,
+            "sigs": [
+                "fb9dd021cdff51ab56891cca0fd1600877f6e0691136dbe3f8324c3f4f7ee5bc624ded4954c1d70d8cb776ce3454d8f195bbb252e48b0f2cd388f5a733697d9301",
+                "0639e61ba87a61f10b0e0114008ddd4e7090d9397370de28da27b7852b231b8e66c36d10fe3424c9b23a41266fd2c50f169233009713b332d6a48ce9c128ccef01",
+                "055afe17222aab66c48c8e08e03a406bf2b8719f5221ec54c8e678078033bcd56b66bbc46a866f2be5e3f9ca454e3fbc2021630d0430b72e18c24d02df03c03100",
+                "8cf56fb96e11d49bea728cb35ba5953fbc640817fac01b82e62a959ef8d4c3105298f2a6ea127bb07552abd905a667b58f6c79717e9f05258079de08d91f10a500"
+            ],
+            "inputs": [
+                "dea9266aa7b687f4391e92f04436407c51a834274a5a33bc8bcf3189732e82e3",
+                "e811bdce52ddac0d952d2546fdca8d1ac4e0ad32f170d3d73b724fb37c802652",
+                "e94ccdbc07cc62fb41140b4daa7969438c749837c0808acf20dde113bdf1876b",
+                "534afc496a7aee2ec55c71d85abfc27f35d16c56506f663b24d8ee4815583b6e"
+            ],
+            "outputs": [
+                {
+                    "uxid": "732e129fc1630aba3f06d833ce0a7a25f05dae5df3e7a135b5f82e99222e8c28",
+                    "dst": "2hAjmdPP9R3um9JhKczeVdJUVugY6SPJBDm",
+                    "coins": "6.000000",
+                    "hours": 204
+                }
+            ]
+        }
+    }
+]
 ```
 
 ## Block apis
@@ -767,30 +1010,38 @@ result:
         "status": {
             "confirmed": true,
             "unconfirmed": false,
-            "height": 208,
-            "block_seq": 2556,
+            "height": 783,
+            "block_seq": 10819,
             "unknown": false
         },
-        "length": 183,
+        "length": 220,
         "type": 0,
-        "txid": "b51e1933f286c4f03d73e8966186bafb25f64053db8514327291e690ae8aafa5",
-        "inner_hash": "028f5570bf2725cb76877bb3c4b8dca1620b374a9e55a060a2872d3a87e2da4e",
-        "timestamp": 1502936862,
+        "txid": "86cdee14f1b9cc06710815f51e5a546a8a33c4179433e047ed50d17b3a7a734e",
+        "inner_hash": "45ade9ec2b7618f782a869796f021486dda3856bf009dc6ee633d1840fd08a75",
+        "timestamp": 1516000192,
         "sigs": [
-            "6e91ef4211be5cd9647a67a175e2c19808f3b6965a2349f5932a385d06bb1db61bbd445396692cd72e6313fb38705deda818a0609236691980829dc86676de3101"
+            "ecd5d555dc13007a6ce39d7036e9e9ee6319c00f653372db2a0e64147739946370ddad9bf8a3cd187d481089a66381d59b0d0725fd1663ff8ab0eed202996a1701"
         ],
         "inputs": [
             {
-                "uxid": "8b64d9b058e10472b9457fd2d05a1d89cbbbd78ce1d97b16587d43379271bed1",
-                "owner": "c9zyTYwgR4n89KyzknpmGaaDarUCPEs9mV"
+                "uxid": "a1a715655c526fd4ca9a12208a7b1a4754998a47415ce2870bcdecb236a3fea0",
+                "owner": "2Xdt4EUnJ9HZrc41L9DTDGPNrufxUbpUv4g",
+                "coins": "6149.000000",
+                "hours": "11286"
             }
         ],
         "outputs": [
             {
-                "uxid": "7669ff7350d2c70a88093431a7b30d3e69dda2319dcb048aa80fa0d19e12ebe0",
-                "dst": "6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY",
-                "coins": "2.000000",
-                "hours": 633
+                "uxid": "f9bc2e30f263fd4a4c677d83d40f0cea5c9adc72ee696d8b9f9721fbc93473ac",
+                "dst": "2Xdt4EUnJ9HZrc41L9DTDGPNrufxUbpUv4g",
+                "coins": "6029.000000",
+                "hours": 64965
+            },
+            {
+                "uxid": "03077587d2ceb5f9b3c0680522e806dda4bf39d08c0f661740c5237ba0226105",
+                "dst": "ANdw72kCg5HwVkn2fRgsHRu5g9Hoe3p93s",
+                "coins": "120.000000",
+                "hours": 64964
             }
         ]
     }
@@ -878,9 +1129,11 @@ result:
 
 ```json
 {
-    "current_supply": "5847530.000000",
-    "total_supply": "30000000.000000",
+    "current_supply": "7187500.000000",
+    "total_supply": "25000000.000000",
     "max_supply": "100000000.000000",
+    "current_coinhour_supply": "23499025077",
+    "total_coinhour_supply": "93679828577",
     "unlocked_distribution_addresses": [
         "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
         "2EYM4WFHe4Dgz6kjAdUkM6Etep7ruz2ia6h",
@@ -906,14 +1159,14 @@ result:
         "2fM5gVpi7XaiMPm4i29zddTNkmrKe6TzhVZ",
         "ix3NDKgxfYYANKAb5kbmwBYXPrkAsha7uG",
         "2RkPshpFFrkuaP98GprLtgHFTGvPY5e6wCK",
-        "Ak1qCDNudRxZVvcW6YDAdD9jpYNNStAVqm",
+        "Ak1qCDNudRxZVvcW6YDAdD9jpYNNStAVqm"
+    ],
+    "locked_distribution_addresses": [
         "2eZYSbzBKJ7QCL4kd5LSqV478rJQGb4UNkf",
         "KPfqM6S96WtRLMuSy4XLfVwymVqivdcDoM",
         "5B98bU1nsedGJBdRD5wLtq7Z8t8ZXio8u5",
         "2iZWk5tmBynWxj2PpAFyiZzEws9qSnG3a6n",
-        "XUGdPaVnMh7jtzPe3zkrf9FKh5nztFnQU5"
-    ],
-    "locked_distribution_addresses": [
+        "XUGdPaVnMh7jtzPe3zkrf9FKh5nztFnQU5",
         "hSNgHgewJme8uaHrEuKubHYtYSDckD6hpf",
         "2DeK765jLgnMweYrMp1NaYHfzxumfR1PaQN",
         "orrAssY5V2HuQAbW9K6WktFrGieq2m23pr",
@@ -987,118 +1240,65 @@ result:
     ]
 }
 ```
-## Wallet log api
+## Richlist show top N addresses by uxouts
 
-```sh
-URI: /logs
+```
+URI: /richlist
 Method: GET
 Args:
-    lines: how many lines to return,It is 1000 by default.
-    include: the word which must be included in log line.It's empty by default.
-    exclude: the word which must not be included in log line.It's empty by default.
+    n: top N addresses, [default 20, returns all if <= 0].
+    include-distribution: include distribution addresses or not, default false.
 ```
 
 example:
 
-```sh
-curl http://127.0.0.1:6420/logs?lines=1000
+```bash
+curl "http://127.0.0.1:6420/richlist?n=4&include-distribution=true"
 ```
 
 result:
 
 ```json
 [
-    "[skycoin.gui:INFO] Starting web interface on http://127.0.0.1:6420",
-    "[skycoin.gui:WARNING] HTTPS not in use!",
-    "[skycoin.gui:INFO] Web resources directory: /Users/hanyouhong/go/src/github.com/skycoin/skycoin/src/gui/static/dist",
-    "[skycoin.webrpc:INFO] Start webrpc on http://127.0.0.1:6430",
-    "[skycoin.visor:INFO] Blockchain parser start",
-    "[skycoin.daemon:INFO] Connect to trusted peers",
-    "[skycoin.daemon:INFO] daemon.Pool listening on port 6000",
-    "[skycoin.gnet:INFO] Listening for connections on :6000...",
-    "[skycoin.daemon:DEBUG] Trying to connect to 121.41.103.148:6000",
-    "[skycoin.daemon:DEBUG] Trying to connect to 120.77.69.188:6000",
-    "[skycoin.daemon:DEBUG] Trying to connect to 47.88.33.156:6000",
-    "[skycoin.daemon:DEBUG] Trying to connect to 118.178.135.93:6000",
-    "[skycoin.gnet:DEBUG] Making TCP Connection to 118.178.135.93:6000",
-    "[skycoin.gnet:DEBUG] Making TCP Connection to 121.41.103.148:6000",
-    "[skycoin.gnet:DEBUG] Making TCP Connection to 47.88.33.156:6000",
-    "[skycoin.gnet:DEBUG] Making TCP Connection to 120.77.69.188:6000",
-    "[skycoin.daemon:INFO] Connected to peer: 121.41.103.148:6000 (outgoing)",
-    "[skycoin.daemon:DEBUG] Sending introduction message to 121.41.103.148:6000, mirror:1033754283",
-    "[skycoin.daemon:INFO] Connected to peer: 118.178.135.93:6000 (outgoing)",
-    "[skycoin.daemon:DEBUG] Sending introduction message to 118.178.135.93:6000, mirror:1033754283",
-    "[skycoin.daemon:INFO] Connected to peer: 120.77.69.188:6000 (outgoing)",
-    "[skycoin.daemon:DEBUG] Sending introduction message to 120.77.69.188:6000, mirror:1033754283",
-    "[skycoin.gnet:DEBUG] connection 118.178.135.93:6000 closed",
-    "[skycoin.daemon:INFO] 118.178.135.93:6000 disconnected because: read data failed: EOF",
-    "[skycoin.gnet:DEBUG] connection 121.41.103.148:6000 closed",
-    "[skycoin.daemon:INFO] 121.41.103.148:6000 disconnected because: read data failed: EOF",
-    "[skycoin.daemon:INFO] 120.77.69.188:6000 verified for version 2",
-    "[skycoin.pex:DEBUG] Reset retry times of 120.77.69.188:6000",
-    "[skycoin.daemon:DEBUG] Successfully requested blocks from 120.77.69.188:6000",
-    "[skycoin.daemon:DEBUG] Got 0 blocks since 4082",
-    "[skycoin.main:INFO] Launching System Browser with http://127.0.0.1:6420",
-    "[skycoin.daemon:CRITICAL] Added new block 4078",
-    "[skycoin.daemon:CRITICAL] Added new block 4079",
-    "[skycoin.daemon:CRITICAL] Added new block 4080",
-    "[skycoin.daemon:CRITICAL] Added new block 4081",
-    "[skycoin.daemon:CRITICAL] Added new block 4082"
+    {
+        "address": "zMDywYdGEDtTSvWnCyc3qsYHWwj9ogws74",
+        "coins": "1000000.000000",
+        "locked": true
+    },
+    {
+        "address": "z6CJZfYLvmd41GRVE8HASjRcy5hqbpHZvE",
+        "coins": "1000000.000000",
+        "locked": true
+    },
+    {
+        "address": "wyQVmno9aBJZmQ99nDSLoYWwp7YDJCWsrH",
+        "coins": "1000000.000000",
+        "locked": true
+    },
+    {
+        "address": "tBaeg9zE2sgmw5ZQENaPPYd6jfwpVpGTzS",
+        "coins": "1000000.000000",
+        "locked": true
+    }
 ]
 ```
 
+## AddressCount show count of unique address
 
-```sh
-curl http://127.0.0.1:6420/logs?lines=100&include=DEBUG
+```
+URI: /addresscount
+Method: GET
+```
+example:
+
+```bash
+curl "http://127.0.0.1:6420/addresscount"
 ```
 
 result:
 
 ```json
-[
-    "[skycoin.daemon:DEBUG] Trying to connect to 118.178.135.93:6000",
-    "[skycoin.gnet:DEBUG] Making TCP Connection to 118.178.135.93:6000",
-    "[skycoin.daemon:DEBUG] Trying to connect to 121.41.103.148:6000",
-    "[skycoin.daemon:DEBUG] Trying to connect to 120.77.69.188:6000",
-    "[skycoin.daemon:DEBUG] Trying to connect to 47.88.33.156:6000",
-    "[skycoin.gnet:DEBUG] Making TCP Connection to 47.88.33.156:6000",
-    "[skycoin.gnet:DEBUG] Making TCP Connection to 121.41.103.148:6000",
-    "[skycoin.gnet:DEBUG] Making TCP Connection to 120.77.69.188:6000",
-    "[skycoin.daemon:DEBUG] Sending introduction message to 121.41.103.148:6000, mirror:1023099266",
-    "[skycoin.daemon:DEBUG] Sending introduction message to 118.178.135.93:6000, mirror:1023099266",
-    "[skycoin.daemon:DEBUG] Sending introduction message to 120.77.69.188:6000, mirror:1023099266",
-    "[skycoin.pex:DEBUG] Reset retry times of 121.41.103.148:6000",
-    "[skycoin.gnet:DEBUG] connection 121.41.103.148:6000 closed",
-    "[skycoin.gnet:DEBUG] connection 118.178.135.93:6000 closed",
-    "[skycoin.pex:DEBUG] Reset retry times of 120.77.69.188:6000",
-    "[skycoin.daemon:DEBUG] Successfully requested blocks from 120.77.69.188:6000",
-    "[skycoin.daemon:DEBUG] Got 0 blocks since 4083",
-    "[skycoin.daemon:DEBUG] Sending introduction message to 47.88.33.156:6000, mirror:1023099266",
-    "[skycoin.pex:DEBUG] Reset retry times of 47.88.33.156:6000",
-    "[skycoin.daemon:DEBUG] Successfully requested blocks from 47.88.33.156:6000",
-    "[skycoin.daemon:DEBUG] Got 0 blocks since 4083"
-]
+{
+    "count": 10103
+}
 ```
-
-```sh
-curl http://127.0.0.1:6420/logs?lines=100&include=DEBUG&exclude=ping
-```
-
-result:
-
-```json
-[
-     "[skycoin.pex:DEBUG] Increase retry times of 111.198.225.50:6000: 1",
-    "[skycoin.daemon:DEBUG] Failed to connect to 91.105.75.60:6000 with error: dial tcp 91.105.75.60:6000: i/o timeout",
-    "[skycoin.pex:DEBUG] Increase retry times of 91.105.75.60:6000: 1",
-    "[skycoin.daemon:DEBUG] Received pong from 117.48.197.46:6000",
-    "[skycoin.daemon:DEBUG] Received pong from 176.9.47.13:6000",
-    "[skycoin.daemon:DEBUG] Received pong from 139.162.33.154:6000",
-    "[skycoin.daemon:DEBUG] Reply to ping from 197.97.221.117:6000",
-    "[skycoin.daemon:DEBUG] Received pong from 197.97.221.117:6000",
-    "[skycoin.daemon:DEBUG] Received pong from 118.190.40.103:6000",
-    "[skycoin.daemon:DEBUG] Received pong from 47.88.33.156:6000",
-    "[skycoin.daemon:DEBUG] Received pong from 35.157.164.126:6000",
-    "[skycoin.daemon:DEBUG] Received pong from 178.62.225.38:6000",
-    "[skycoin.daemon:DEBUG] Received pong from 45.32.235.85:6000",
-]

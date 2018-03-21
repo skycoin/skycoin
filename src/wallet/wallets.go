@@ -157,7 +157,7 @@ func (wlts Wallets) set(w Wallet) {
 func (wlts Wallets) Update(wltID string, updateFunc func(Wallet) Wallet) error {
 	w, ok := wlts[wltID]
 	if !ok {
-		return errWalletNotExist(wltID)
+		return ErrWalletNotExist
 	}
 
 	newWlt := updateFunc(*w)
@@ -168,7 +168,7 @@ func (wlts Wallets) Update(wltID string, updateFunc func(Wallet) Wallet) error {
 // NewAddresses creates num addresses in given wallet
 func (wlts *Wallets) NewAddresses(wltID string, num uint64) ([]cipher.Address, error) {
 	if w, ok := (*wlts)[wltID]; ok {
-		return w.GenerateAddresses(num), nil
+		return w.GenerateAddresses(num)
 	}
 	return nil, fmt.Errorf("wallet: %v does not exist", wltID)
 }

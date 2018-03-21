@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"sync"
@@ -11,9 +12,9 @@ import (
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 )
 
-func errWalletNotExist(wltName string) error {
-	return fmt.Errorf("wallet %s doesn't exist", wltName)
-}
+// ErrWalletNotExist is returned if a wallet does not exist
+var ErrWalletNotExist = errors.New("wallet doesn't exist")
+var ErrWalletApiDisabled = errors.New("wallet api disabled")
 
 // BalanceGetter interface for getting the balance of given addresses
 type BalanceGetter interface {
@@ -162,12 +163,16 @@ func (serv *Service) NewAddresses(wltID string, num uint64) ([]cipher.Address, e
 	defer serv.Unlock()
 	w, ok := serv.wallets.Get(wltID)
 	if !ok {
-		return []cipher.Address{}, errWalletNotExist(wltID)
+		return []cipher.Address{}, ErrWalletNotExist
 	}
 
-	addrs := w.GenerateAddresses(num)
+	addrs, err := w.GenerateAddresses(num)
+	if err != nil {
+		return nil, err
+	}
+
 	if err := w.Save(serv.WalletDirectory); err != nil {
-		return []cipher.Address{}, err
+		return nil, err
 	}
 
 	return addrs, nil
@@ -179,7 +184,7 @@ func (serv *Service) GetAddresses(wltID string) ([]cipher.Address, error) {
 	defer serv.RUnlock()
 	w, ok := serv.wallets.Get(wltID)
 	if !ok {
-		return []cipher.Address{}, errWalletNotExist(wltID)
+		return []cipher.Address{}, ErrWalletNotExist
 	}
 
 	return w.GetAddresses(), nil
@@ -196,7 +201,7 @@ func (serv *Service) GetWallet(wltID string) (Wallet, error) {
 func (serv *Service) getWallet(wltID string) (Wallet, error) {
 	w, ok := serv.wallets.Get(wltID)
 	if !ok {
-		return Wallet{}, errWalletNotExist(wltID)
+		return Wallet{}, ErrWalletNotExist
 	}
 	return w.Copy(), nil
 }
@@ -239,7 +244,7 @@ func (serv *Service) CreateAndSignTransaction(wltID string, vld Validator, unspe
 	defer serv.RUnlock()
 	w, ok := serv.wallets.Get(wltID)
 	if !ok {
-		return nil, errWalletNotExist(wltID)
+		return nil, ErrWalletNotExist
 	}
 
 	return w.CreateAndSignTransaction(vld, unspent, headTime, coins, dest)

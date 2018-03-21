@@ -3,12 +3,8 @@ package daemon
 import (
 	"bytes"
 	"errors"
-	"fmt"
-	"net"
 	"reflect"
 	"runtime/debug"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -18,6 +14,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon/pex" //TODO: Change before commit
 
 	"github.com/skycoin/skycoin/src/util/elapse"
+	"github.com/skycoin/skycoin/src/util/iputil"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/utc"
 
@@ -93,13 +90,13 @@ func (cfg *Config) preprocess() Config {
 	config := *cfg
 	if config.Daemon.LocalhostOnly {
 		if config.Daemon.Address == "" {
-			local, err := LocalhostIP()
+			local, err := iputil.LocalhostIP()
 			if err != nil {
 				logger.Panicf("Failed to obtain localhost IP: %v", err)
 			}
 			config.Daemon.Address = local
 		} else {
-			if !IsLocalhost(config.Daemon.Address) {
+			if !iputil.IsLocalhost(config.Daemon.Address) {
 				logger.Panicf("Invalid address for localhost-only: %s", config.Daemon.Address)
 			}
 		}
@@ -323,9 +320,9 @@ func (dm *Daemon) Shutdown() {
 		dm.Pool.Shutdown()
 	}
 
+	dm.Gateway.Shutdown()
 	dm.Pex.Shutdown()
 	dm.Visor.Shutdown()
-
 }
 
 // Run main loop for peer/connection management.
@@ -378,6 +375,7 @@ func (dm *Daemon) Run() error {
 	}
 
 	unconfirmedRefreshTicker := time.Tick(dm.Visor.Config.Config.UnconfirmedRefreshRate)
+	unconfirmedRemoveInvalidTicker := time.Tick(dm.Visor.Config.Config.UnconfirmedRemoveInvalidRate)
 	blocksRequestTicker := time.Tick(dm.Visor.Config.BlocksRequestRate)
 	blocksAnnounceTicker := time.Tick(dm.Visor.Config.BlocksAnnounceRate)
 
@@ -533,9 +531,25 @@ loop:
 		case <-unconfirmedRefreshTicker:
 			elapser.Register("unconfirmedRefreshTicker")
 			// Get the transactions that turn to valid
-			validTxns := dm.Visor.RefreshUnconfirmed()
+			validTxns, err := dm.Visor.RefreshUnconfirmed()
+			if err != nil {
+				logger.Error("dm.Visor.RefreshUnconfirmed failed: %v", err)
+				continue
+			}
 			// Announce these transactions
 			dm.Visor.AnnounceTxns(dm.Pool, validTxns)
+
+		case <-unconfirmedRemoveInvalidTicker:
+			elapser.Register("unconfirmedRemoveInvalidTicker")
+			// Remove transactions that become invalid (violating hard constraints)
+			removedTxns, err := dm.Visor.RemoveInvalidUnconfirmed()
+			if err != nil {
+				logger.Error("dm.Visor.RemoveInvalidUnconfirmed failed: %v", err)
+				continue
+			}
+			if len(removedTxns) > 0 {
+				logger.Info("Remove %d txns from pool that began violating hard constraints", len(removedTxns))
+			}
 
 		case <-blocksRequestTicker:
 			elapser.Register("blocksRequestTicker")
@@ -567,7 +581,7 @@ func (dm *Daemon) GetListenPort(addr string) uint16 {
 		return 0
 	}
 
-	ip, _, err := SplitAddr(addr)
+	ip, _, err := iputil.SplitAddr(addr)
 	if err != nil {
 		logger.Error("GetListenPort received invalid addr: %v", err)
 		return 0
@@ -588,12 +602,12 @@ func (dm *Daemon) connectToPeer(p pex.Peer) error {
 		return errors.New("Outgoing connections disabled")
 	}
 
-	a, _, err := SplitAddr(p.Addr)
+	a, _, err := iputil.SplitAddr(p.Addr)
 	if err != nil {
 		logger.Warning("PEX gave us an invalid peer: %v", err)
 		return errors.New("Invalid peer")
 	}
-	if dm.Config.LocalhostOnly && !IsLocalhost(a) {
+	if dm.Config.LocalhostOnly && !iputil.IsLocalhost(a) {
 		return errors.New("Not localhost")
 	}
 
@@ -837,7 +851,7 @@ func (dm *Daemon) onGnetConnect(addr string, solicited bool) {
 
 // Returns whether the ipCount maximum has been reached
 func (dm *Daemon) ipCountMaxed(addr string) bool {
-	ip, _, err := SplitAddr(addr)
+	ip, _, err := iputil.SplitAddr(addr)
 	if err != nil {
 		logger.Warning("ipCountMaxed called with invalid addr: %v", err)
 		return true
@@ -851,7 +865,7 @@ func (dm *Daemon) ipCountMaxed(addr string) bool {
 
 // Adds base IP to ipCount or returns error if max is reached
 func (dm *Daemon) recordIPCount(addr string) {
-	ip, _, err := SplitAddr(addr)
+	ip, _, err := iputil.SplitAddr(addr)
 	if err != nil {
 		logger.Warning("recordIPCount called with invalid addr: %v", err)
 		return
@@ -861,7 +875,7 @@ func (dm *Daemon) recordIPCount(addr string) {
 
 // Removes base IP from ipCount
 func (dm *Daemon) removeIPCount(addr string) {
-	ip, _, err := SplitAddr(addr)
+	ip, _, err := iputil.SplitAddr(addr)
 	if err != nil {
 		logger.Warning("removeIPCount called with invalid addr: %v", err)
 		return
@@ -871,7 +885,7 @@ func (dm *Daemon) removeIPCount(addr string) {
 
 // Adds addr + mirror to the connectionMirror mappings
 func (dm *Daemon) recordConnectionMirror(addr string, mirror uint32) error {
-	ip, port, err := SplitAddr(addr)
+	ip, port, err := iputil.SplitAddr(addr)
 	if err != nil {
 		logger.Warning("recordConnectionMirror called with invalid addr: %v", err)
 		return err
@@ -887,7 +901,7 @@ func (dm *Daemon) removeConnectionMirror(addr string) {
 	if !ok {
 		return
 	}
-	ip, _, err := SplitAddr(addr)
+	ip, _, err := iputil.SplitAddr(addr)
 	if err != nil {
 		logger.Warning("removeConnectionMirror called with invalid addr: %v", err)
 		return
@@ -901,7 +915,7 @@ func (dm *Daemon) removeConnectionMirror(addr string) {
 
 // Returns whether an addr+mirror's port and whether the port exists
 func (dm *Daemon) getMirrorPort(addr string, mirror uint32) (uint16, bool) {
-	ip, _, err := SplitAddr(addr)
+	ip, _, err := iputil.SplitAddr(addr)
 	if err != nil {
 		logger.Warning("getMirrorPort called with invalid addr: %v", err)
 		return 0, false

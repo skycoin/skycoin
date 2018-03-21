@@ -69,13 +69,13 @@ export class ApiService {
   postWalletCreate(label: string, seed: string, scan: number): Observable<Wallet> {
     return this.post('wallet/create', { label: label, seed: seed, scan: scan })
       .map(response => ({
-        label: response.meta.label,
-        filename: response.meta.filename,
-        seed: response.meta.seed,
-        coins: null,
-        hours: null,
-        addresses: [ { address: response.entries[0].address, coins: null, hours: null } ],
-      }))
+          label: response.meta.label,
+          filename: response.meta.filename,
+          seed: response.meta.seed,
+          coins: null,
+          hours: null,
+          addresses: response.entries.map(entry => ({ address: entry.address, coins: null, hours: null })),
+        }));
   }
 
   postWalletNewAddress(wallet: Wallet): Observable<Address> {

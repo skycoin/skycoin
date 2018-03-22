@@ -3,26 +3,22 @@ package daemon
 import (
 	"bytes"
 	"errors"
+	"fmt"
+	"net"
 	"reflect"
 	"runtime/debug"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/boltdb/bolt"
-
 	"github.com/skycoin/skycoin/src/daemon/gnet"
-	"github.com/skycoin/skycoin/src/daemon/pex" //TODO: Change before commit
-
+	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/util/elapse"
 	"github.com/skycoin/skycoin/src/util/iputil"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/utc"
-
-	//"./pex"
-	//"go/ast"
-	//"debug/elf"
-
-	//"./gnet"
 )
 
 /*
@@ -165,7 +161,6 @@ type DaemonConfig struct {
 	NonTrustedMax int
 	//Number of trusted connections to maintain
 	TrustedMax int
-
 }
 
 // NewDaemonConfig creates daemon config
@@ -187,9 +182,8 @@ func NewDaemonConfig() DaemonConfig {
 		LocalhostOnly:              false,
 		LogPings:                   true,
 
-		NonTrustedMax: 				8,
-		TrustedMax:					8,
-
+		NonTrustedMax: 8,
+		TrustedMax:    8,
 	}
 }
 
@@ -388,7 +382,6 @@ func (dm *Daemon) Run() error {
 	clearStaleConnectionsTicker := time.Tick(dm.Pool.Config.ClearStaleRate)
 	idleCheckTicker := time.Tick(dm.Pool.Config.IdleCheckRate)
 	connectionsTicker := time.Tick(dm.Pool.Config.PeerConnRate)
-
 
 	if !dm.Config.DisableOutgoingConnections {
 		wg.Add(1)
@@ -951,36 +944,35 @@ func (dm *Daemon) handleMessageSendResult(r gnet.SendResult) {
 	}
 }
 
-
 func (daemon *Daemon) AddPeerConnection() {
 	if daemon.Pool.Pool.Config.CurrentDefault == 0 {
 		daemon.AddDefaultConnection()
 		return
 	}
-	if daemon.Pool.Pool.Config.CurrentTrusted < daemon.Config.TrustedMax{
+	if daemon.Pool.Pool.Config.CurrentTrusted < daemon.Config.TrustedMax {
 		daemon.AddTrustedConnection()
 		return
 	}
-	if daemon.Pool.Pool.Config.CurrentDefault + daemon.Pool.Pool.Config.CurrentAutomatic < daemon.Config.NonTrustedMax {
+	if daemon.Pool.Pool.Config.CurrentDefault+daemon.Pool.Pool.Config.CurrentAutomatic < daemon.Config.NonTrustedMax {
 		daemon.AddNonTrustedConnection()
 	}
 }
 
 func (daemon *Daemon) AddDefaultConnection() {
 	var p = daemon.Pex.GetSingleDefault()
-	if daemon.connectToPeer(p) == nil{
+	if daemon.connectToPeer(p) == nil {
 		daemon.Pool.Pool.Config.CurrentDefault++
 	}
 }
 func (daemon *Daemon) AddTrustedConnection() {
 	var p = daemon.Pex.GetSingleTrusted()
-	if daemon.connectToPeer(p) == nil{
+	if daemon.connectToPeer(p) == nil {
 		daemon.Pool.Pool.Config.CurrentTrusted++
 	}
 }
 func (daemon *Daemon) AddNonTrustedConnection() {
 	var p = daemon.Pex.GetSingleNonTrusted()
-	if daemon.connectToPeer(p) == nil{
+	if daemon.connectToPeer(p) == nil {
 		if p.Default {
 			daemon.Pool.Pool.Config.CurrentDefault++
 		}

@@ -663,7 +663,7 @@ func Run(c *Config) {
 
 	// Debug only - forces connection on start.  Violates thread safety.
 
-	
+
 	if c.ConnectTo != "" {
 		if err := d.Pool.Pool.Connect(c.ConnectTo); err != nil {
 			logger.Error("Force connect %s failed, %v", c.ConnectTo, err)

@@ -2274,9 +2274,13 @@ func createWallet(t *testing.T, c *gui.Client) (*wallet.Wallet, func()) {
 	walletDir := getWalletDir(t, c)
 
 	return &w, func() {
-		// Cleaner function to delete the wallet
+		// Cleaner function to delete the wallet and bak wallet
 		walletPath := filepath.Join(walletDir, w.GetFilename())
 		err = os.Remove(walletPath)
+		require.NoError(t, err)
+
+		bakWalletPath := walletPath + ".bak"
+		err = os.Remove(bakWalletPath)
 		require.NoError(t, err)
 	}
 }

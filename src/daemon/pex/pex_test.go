@@ -1028,11 +1028,9 @@ func TestPexSetTrusted(t *testing.T) {
 			require.Equal(t, tc.err, err)
 			if err != nil {
 				return
-
-				p, ok := pex.peerlist.peers[tc.peer]
-				require.True(t, ok)
-
-				require.Equal(t, tc.Trusted, p.Trusted)
+				//p, ok := pex.peerlist.peers[tc.peer]
+				//require.True(t, ok)
+				//require.Equal(t, tc.Trusted, p.Trusted)
 			}
 		})
 	}

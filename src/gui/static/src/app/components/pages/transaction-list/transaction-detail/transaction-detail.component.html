@@ -15,6 +15,10 @@
       <div class="-values">{{ transaction.timestamp * 1000 | date:'short' }}</div>
     </div>
     <div class="-row">
+      <div class="-key">ID</div>
+      <div class="-values">{{ transaction.txid }}</div>
+    </div>
+    <div class="-row">
       <div class="-key">Status</div>
       <div class="-values">{{ transaction.confirmed ? 'Complete' : 'Pending' }}</div>
     </div>

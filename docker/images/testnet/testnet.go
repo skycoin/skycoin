@@ -5,7 +5,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	//"github.com/skycoin/skycoin/src/util/file"
+	"github.com/skycoin/skycoin/src/util/file"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
@@ -72,12 +72,10 @@ func runTest(tempDir string, scale int) {
 
 func processComposeFile(composeFile *dockerCompose, tempDir string) {
 	for k, v := range composeFile.Services {
-		fmt.Println(v)
 		v.Image = k
 		v.Build.Dockerfile = tempDir + "/Dockerfile-" + k
 		composeFile.Services[k] = v
 	}
-	fmt.Println(composeFile)
 }
 
 func createComposeFile(composeFile dockerCompose, tempDir string) {
@@ -100,19 +98,21 @@ func createComposeFile(composeFile dockerCompose, tempDir string) {
 
 }
 
-/*
-func prepareTestEnv(tempDir string) {
-	// Copies the explorer dockerfile
-	dockerfileExplorerSrc := path.Join("templates", "Dockerfile-explorer")
-	dockerfileExplorerDst := path.Join(tempDir, "Dockerfile-explorer")
-	df, err := os.Open(dockerfileExplorerSrc)
-	_, err = file.CopyFile(dockerfileExplorerDst, df)
-	if err != nil {
-		log.Fatal(err)
+func prepareTestEnv(composeFile dockerCompose) {
+	// Copies Dockerfiles
+	for k, service := range composeFile.Services {
+		dockerfileExplorerSrc := path.Join("templates", "Dockerfile-"+k)
+		dockerfileExplorerDst := service.Build.Dockerfile
+		fmt.Println(dockerfileExplorerSrc)
+		fmt.Println(dockerfileExplorerDst)
+		df, err := os.Open(dockerfileExplorerSrc)
+		_, err = file.CopyFile(dockerfileExplorerDst, df)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 }
-*/
 func main() {
 	_, callerFile, _, _ := runtime.Caller(0)
 	projectPath, _ := filepath.Abs(filepath.Join(filepath.Dir(callerFile), "../../../"))
@@ -150,7 +150,7 @@ func main() {
 	}
 	processComposeFile(&composeFile, tempDir)
 	createComposeFile(composeFile, tempDir)
-	//prepareTestEnv(composeFile, tempDir)
+	prepareTestEnv(composeFile)
 	//testNet := NewSkyCoinTestNetwork(*nodesPtr, buildContext, tempDir)
 	//runTest(tempDir)
 }

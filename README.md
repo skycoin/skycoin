@@ -54,6 +54,7 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
     - [Releases](#releases)
         - [Pre-release testing](#pre-release-testing)
         - [Creating release builds](#creating-release-builds)
+        - [Release signing](#release-signing)
 
 <!-- /MarkdownTOC -->
 
@@ -350,7 +351,7 @@ Instructions for doing this:
 5. Follow the steps in [pre-release testing](#pre-release-testing)
 6. Make a PR merging `develop` into `master`
 7. Review the PR and merge it
-8. Tag the master branch with the version number. Version tags start with `v`, e.g. `v0.20.0`.
+8. Tag the master branch with the version number. Version tags start with `v`, e.g. `v0.20.0`. Sign the tag. Example: `git tag -as v0.20.0 $COMMIT_ID`.
 9. Make sure that the client runs properly from the `master` branch
 10. Create the release builds from the `master` branch (see [Create Release builds](electron/README.md))
 
@@ -376,3 +377,28 @@ Performs these actions before releasing:
 
 [Create Release builds](electron/README.md).
 
+#### Release signing
+
+Releases are signed with this PGP key:
+
+`0x5801631BD27C7874`
+
+The fingerprint for this key is:
+
+```
+pub   ed25519 2017-09-01 [SC] [expires: 2023-03-18]
+      10A7 22B7 6F2F FE7B D238  0222 5801 631B D27C 7874
+uid                      GZ-C SKYCOIN <token@protonmail.com>
+sub   cv25519 2017-09-01 [E] [expires: 2023-03-18]
+```
+
+Keybase.io account: https://keybase.io/gzc
+
+Follow the [Tor Project's instructions for verifying signatures](https://www.torproject.org/docs/verifying-signatures.html.en).
+
+If you can't or don't want to import the keys from a keyserver, the signing key is available in the repo: [gz-c.asc](gz-c.asc).
+
+Releases and their signatures can be found on the [releases page](https://github.com/skycoin/skycoin/releases).
+
+Instructions for generating a PGP key, publishing it, signing the tags and binaries:
+https://gist.github.com/gz-c/de3f9c43343b2f1a27c640fe529b067c

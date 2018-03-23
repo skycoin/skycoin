@@ -1,0 +1,24 @@
+<app-header title="Transactions"></app-header>
+<div class="container">
+  <div class="-paper">
+    <ng-container *ngFor="let transaction of transactions">
+      <div class="-transaction" *ngIf="transaction.balance !== 0" (click)="showTransaction(transaction)">
+        <div class="-icon" [ngClass]="{ '-incoming': transaction.balance > 0, '-pending': !transaction.confirmed }">
+          <img src="/assets/img/send-blue.png">
+        </div>
+        <div class="-address">
+          <h4 *ngIf="transaction.balance < 0 && transaction.confirmed">Sent SKY <span class="-timestamp">{{ transaction.timestamp * 1000 | date:'short' }}</span></h4>
+          <h4 *ngIf="transaction.balance < 0 && !transaction.confirmed">Sending SKY <span class="-pending">Pending</span></h4>
+          <h4 *ngIf="transaction.balance > 0 && transaction.confirmed">Received SKY <span class="-timestamp">{{ transaction.timestamp * 1000 | date:'short' }}</span></h4>
+          <h4 *ngIf="transaction.balance > 0 && !transaction.confirmed">Sent SKY <span class="-pending">Pending</span></h4>
+          <img src="../../../../assets/img/qr-code-black.png">
+          <p>{{ transaction.addresses.join(', ') }}</p>
+        </div>
+        <div class="-balance">
+          <h4>{{ transaction.balance }} SKY</h4>
+          <p *ngIf="price">{{ transaction.balance * price | currency:'USD':'symbol':'1.2-2' }}</p>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+</div>

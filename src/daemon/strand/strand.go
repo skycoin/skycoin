@@ -27,19 +27,10 @@ type Request struct {
 // Strand linearizes concurrent method calls through a single channel,
 // to avoid concurrency issues when conflicting methods are called from
 // multiple goroutines.
-// Methods passed to strand() will block until completed.
-func Strand(logger *logging.Logger, c chan Request, name string, f func() error) error {
-	quit := make(chan struct{})
-	return WithQuit(logger, c, name, f, quit, nil)
-}
-
-// WithQuit linearizes concurrent method calls through a single channel,
-// to avoid concurrency issues when conflicting methods are called from
-// multiple goroutines.
-// Methods passed to WithQuit() will block until completed.
-// WithQuit accepts a quit channel and will return quitErr if the quit
+// Methods passed to Strand() will block until completed.
+// Strand accepts a quit channel and will return quitErr if the quit
 // channel closes.
-func WithQuit(logger *logging.Logger, c chan Request, name string, f func() error, quit chan struct{}, quitErr error) error {
+func Strand(logger *logging.Logger, c chan Request, name string, f func() error, quit chan struct{}, quitErr error) error {
 	if Debug {
 		logger.Debug("Strand precall %s", name)
 	}
@@ -109,7 +100,7 @@ loop:
 	for {
 		select {
 		case <-quit:
-			return nil
+			return quitErr
 		case c <- req:
 			break loop
 		case <-time.After(logQueueRequestWaitThreshold):
@@ -117,6 +108,10 @@ loop:
 		}
 	}
 
-	<-done
-	return err
+	select {
+	case <-quit:
+		return quitErr
+	case <-done:
+		return err
+	}
 }

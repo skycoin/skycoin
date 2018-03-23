@@ -21,7 +21,7 @@ var (
 	ErrEmptyDirectoryName = errors.New("data directory must not be empty")
 	// ErrDotDirectoryName is returned by constructing the full path of
 	// data directory if the passed argument is "."
-	ErrDotDirectoryName = errors.New("data directory must not be equivalent to .")
+	ErrDotDirectoryName = errors.New("data directory must not be equal to \".\"")
 
 	logger = logging.MustGetLogger("file")
 )
@@ -61,19 +61,22 @@ func buildDataDir(dir string) (string, error) {
 		return "", ErrEmptyDirectoryName
 	}
 
-	home := UserHome()
-	if home == "" {
-		logger.Warning("Failed to get home directory, using ./")
-		home = "./"
-	} else {
-		home = filepath.Clean(home)
+	home := filepath.Clean(UserHome())
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	wd = filepath.Clean(wd)
+
+	fullDir, err := filepath.Abs(dir)
+
+	if err != nil {
+		return "", err
 	}
 
-	fullDir := filepath.Join(home, dir)
-	fullDir = filepath.Clean(fullDir)
-
 	// The joined directory must not be equal to $HOME or a parent path of $HOME
-	if strings.HasPrefix(home, fullDir) {
+	// The joined directory must not be equal to `pwd` or a parent path of `pwd`
+	if strings.HasPrefix(home, fullDir) || strings.HasPrefix(wd, fullDir) {
 		logger.Error("join(%[1]s, %[2]s) == %[1]s", home, dir)
 		return "", ErrDotDirectoryName
 	}

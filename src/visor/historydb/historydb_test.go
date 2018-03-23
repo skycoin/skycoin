@@ -21,18 +21,14 @@ import (
 var (
 	genPublic, genSecret = cipher.GenerateKeyPair()
 	genAddress           = cipher.AddressFromPubKey(genPublic)
-	testMaxSize          = 1024 * 1024
-	blockBkt             = []byte("blocks")
 	transactionBkt       = []byte("transactions")
 	outputBkt            = []byte("uxouts")
 	addressInBkt         = []byte("address_in")
-	addressOutBkt        = []byte("address_out")
 )
 
 var _genTime uint64 = 1000
 var _incTime uint64 = 3600 * 1000
 var _genCoins uint64 = 1000e6
-var _genCoinHours uint64 = 1000 * 1000
 
 func _feeCalc(t *coin.Transaction) (uint64, error) {
 	return 0, nil

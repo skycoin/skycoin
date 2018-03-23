@@ -8,6 +8,7 @@
 
 sb
 
+build
 data
 pkg
 bin
@@ -72,6 +73,7 @@ release
 /blockchain
 /generate_cert
 /address_gen
+/skycoin-integration
 
 *.pem
 
@@ -103,9 +105,21 @@ electron/.standalone_output
 
 .vscode/
 
+*.swo
+*.swp
+
 src/mesh/TODO
 
 .idea/
 
 *.iml
 *.test
+coverage.html
+
+src/gui/integration/wallets/
+
+skycoin-cli
+
+# FIXME: see #1027 - Temporary solution to deal with generated file
+include/libskycoin.h
+

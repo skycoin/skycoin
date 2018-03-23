@@ -1,0 +1,72 @@
+@import '../../../../theme/variables';
+
+.-container {
+  background-color: #fbfbfb;
+  border-bottom: 2px solid rgba(30, 34, 39, 0.05);
+}
+
+.large-header {
+  background: $gradient-blue-dark; /* For browsers that do not support gradients */
+  background: -webkit-linear-gradient(left top, $gradient-blue-dark-transparent, $gradient-blue-light-transparent), url('../../../../assets/img/header.png') center center no-repeat; /* For Safari 5.1 to 6.0 */
+  background: -o-linear-gradient(bottom right, $gradient-blue-dark-transparent, $gradient-blue-light-transparent), url('../../../../assets/img/header.png') center center no-repeat; /* For Opera 11.1 to 12.0 */
+  background: -moz-linear-gradient(bottom right, $gradient-blue-dark-transparent, $gradient-blue-light-transparent), url('../../../../assets/img/header.png') center center no-repeat; /* For Firefox 3.6 to 15 */
+  background: linear-gradient(to bottom right, $gradient-blue-dark-transparent, $gradient-blue-light-transparent), url('../../../../assets/img/header.png') center center no-repeat; /* Standard syntax */
+  background-size: 100% auto;
+  display: flex;
+  flex-flow: column;
+  align-items: stretch;
+  min-height: 190px;
+}
+
+.balance-container {
+  align-items: center;
+  color: $white;
+  display: flex;
+  flex: 1 1 auto;
+  font-size: 12px;
+  justify-content: center;
+  text-align: center;
+
+  .balance {
+    .coins {
+      line-height: 1;
+      margin: 0 0 0.5em;
+
+      span {
+        font-size: 4em;
+      }
+    }
+  }
+
+  .dollars {
+    margin: 0;
+  }
+}
+
+.hour-balance {
+  text-align: center;
+
+  p {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 15px;
+    color: $black;
+    display: inline-block;
+    font-size: 12px;
+    line-height: 22px;
+    margin: 1em 0 2em;
+    padding: 0 30px;
+  }
+}
+
+.notification-bar {
+  background-color: #F44A4D;
+  color:#FBFBFB;
+  div {
+    margin:auto;
+
+    a{
+      text-decoration:none;
+      color:#FFEBEE;
+    }
+  }
+}

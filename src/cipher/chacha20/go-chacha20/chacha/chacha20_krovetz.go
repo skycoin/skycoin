@@ -1,4 +1,6 @@
-// +build cgo
+// +build ignore
+// NOTE: the build directive was originally "+build cgo", but this code is not meant to be built
+// for skycoin and exists only as a reference implementation
 
 package chacha
 

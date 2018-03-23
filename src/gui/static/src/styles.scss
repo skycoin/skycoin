@@ -1,50 +1,88 @@
+@import 'theme/_variables';
+@import '~bootstrap/scss/bootstrap-grid.scss';
+
 /* You can add global styles to this file, and also import other style files */
 //@import '~@angular/material/prebuilt-themes/indigo-pink.css';
 @import 'app/app.theme.scss';
-@import '~@swimlane/ngx-datatable/release/themes/material.css';
+@import '@swimlane/ngx-datatable/release/themes/material.css';
 
 @font-face {
-  font-family: 'Poppins';
+  font-family: 'Skycoin';
   font-style: normal;
   font-weight: 300;
-  src: local('Poppins Light'), local('Poppins-Light'), url(assets/fonts/poppins-light.woff2) format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215;
+  src: url('assets/fonts/skycoin/Skycoin-Light.woff2') format('woff2'),
+  url('assets/fonts/skycoin/Skycoin-Light.woff') format('woff');
 }
-
 @font-face {
-  font-family: 'Poppins';
+  font-family: 'Skycoin';
+  font-style: italic;
+  font-weight: 300;
+  src: url('assets/fonts/skycoin/Skycoin-LightItalic.woff2') format('woff2'),
+  url('assets/fonts/skycoin/Skycoin-LightItalic.woff') format('woff');
+}
+@font-face {
+  font-family: 'Skycoin';
   font-style: normal;
   font-weight: 400;
-  src: local('Poppins Regular'), local('Poppins-Regular'), url(assets/fonts/poppins-regular.woff2) format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215;
+  src: url('assets/fonts/skycoin/Skycoin-Regular.woff2') format('woff2'),
+  url('assets/fonts/skycoin/Skycoin-Regular.woff') format('woff');
 }
-
 @font-face {
-  font-family: 'Poppins';
+  font-family: 'Skycoin';
+  font-style: italic;
+  font-weight: 400;
+  src: url('assets/fonts/skycoin/Skycoin-RegularItalic.woff2') format('woff2'),
+  url('assets/fonts/skycoin/Skycoin-RegularItalic.woff') format('woff');
+}
+@font-face {
+  font-family: 'Skycoin';
   font-style: normal;
   font-weight: 700;
-  src: local('Poppins Bold'), local('Poppins-Bold'), url(assets/fonts/poppins-bold.woff2) format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215;
+  src: url('assets/fonts/skycoin/Skycoin-Bold.woff2') format('woff2'),
+  url('assets/fonts/skycoin/Skycoin-Bold.woff') format('woff');
+}
+@font-face {
+  font-family: 'Skycoin';
+  font-style: italic;
+  font-weight: 700;
+  src: url('assets/fonts/skycoin/Skycoin-BoldItalic.woff2') format('woff2'),
+  url('assets/fonts/skycoin/Skycoin-BoldItalic.woff') format('woff');
 }
 
-$mat-font-family: Poppins, sans-serif;
+$mat-font-family: Skycoin, sans-serif;
 $white: #FBFBFB;
 
+$primary-color: #0072ff;
+$secondary-color: #ffc125;
+
 body, div, h1, h2, h3, h4, h5, h6, p, span, a, button, option, select,
-md-panel-description, md-panel-title, md-option.mat-option {
+mat-panel-description, mat-panel-title, mat-option.mat-option {
   font-family: $mat-font-family;
 }
 
+html {
+  height: 100%;
+}
+
 body {
-  background-color: #eee;
+  background-color: #f7f7f7;
   margin: 0;
   padding: 0;
+  height: 100%;
 }
 
 header {
   background: url("assets/header.png") center center / cover, linear-gradient(-155deg, #686e96 0%, #373b5c 100%);
   width: 100%;
   height: 300px;
+}
+
+mat-dialog-container {
+  border-radius: 5px !important;
+}
+
+.mat-dialog-container {
+  padding: 0 !important;
 }
 
 .header-container {
@@ -73,7 +111,7 @@ button.active {
   background-color: rgba(0,0,0,.12);
 }
 
-md-spinner.in-button .mat-spinner path {
+mat-spinner.in-button .mat-spinner path {
   stroke: #000;
   opacity: 0.3;
 }
@@ -82,8 +120,114 @@ snack-bar-container {
   background-color: rgba(255, 0, 0, 0.8) !important;
 }
 
-md-panel-title {
+mat-panel-title {
   width: 60%;
   display: block;
   flex-grow: 0 !important;
+}
+
+.sky-container {
+  min-width: 100%;
+  min-height: 100%;
+
+  &.sky-container-grey {
+    background-color: $grey-light;
+  }
+}
+
+.flex-fill {
+  flex: 1 1 auto;
+}
+
+.form-field {
+  margin-bottom: 20px;
+
+  label {
+    color: #1e2227;
+    display: block;
+    font-size: 13px;
+    line-height: 20px;
+    margin-bottom: 2px;
+  }
+
+  input {
+    border: 2px solid rgba(0, 0, 0, 0.05);
+    border-radius: 6px;
+    box-sizing: border-box;
+    display: block;
+    line-height: 20px;
+    padding: 10px 10px;
+    width: 100%;
+  }
+
+  select {
+    background-color: white;
+    border: 2px solid rgba(0, 0, 0, 0.05);
+    border-radius: 6px;
+    box-sizing: border-box;
+    display: block;
+    line-height: 20px;
+    padding: 10px 10px;
+    width: 100%;
+    -webkit-appearance:none;
+  }
+
+  textarea {
+    border: 2px solid rgba(0, 0, 0, 0.05);
+    border-radius: 6px;
+    box-sizing: border-box;
+    display: block;
+    line-height: 20px;
+    padding: 10px 10px;
+    width: 100%;
+  }
+}
+
+.primary button.enabled, .primary-gradient-background {
+  background: $gradient-blue-dark; /* For browsers that do not support gradients */
+  background: -webkit-linear-gradient(left top, $gradient-blue-dark, $gradient-blue-light); /* For Safari 5.1 to 6.0 */
+  background: -o-linear-gradient(bottom right, $gradient-blue-dark, $gradient-blue-light); /* For Opera 11.1 to 12.0 */
+  background: -moz-linear-gradient(bottom right, $gradient-blue-dark, $gradient-blue-light); /* For Firefox 3.6 to 15 */
+  background: linear-gradient(to bottom right, $gradient-blue-dark, $gradient-blue-light); /* Standard syntax */
+
+  span {
+    color: white;
+  }
+}
+
+/**
+General Helpers
+ */
+
+.primary-color {
+  color: $primary-color;
+}
+
+.secondary-color {
+  color: $secondary-color;
+}
+
+.no-opacity {
+  opacity: 1 !important;
+}
+
+.light-opacity {
+  opacity: 0.2
+}
+
+.rotate-90 {
+  transform: rotate(90deg);
+}
+
+.rotate-180 {
+  transform: rotate(180deg);
+}
+
+.rotate-270 {
+  transform: rotate(270deg);
+}
+
+mat-spinner.in-button svg {
+  height: 24px !important;
+  width: 24px !important;
 }

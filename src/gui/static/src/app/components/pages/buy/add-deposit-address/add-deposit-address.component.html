@@ -1,11 +1,11 @@
 <p>Choose an address to generate a BTC deposit link for:</p>
 <div [formGroup]="form">
-  <md-select formControlName="address" placeholder="Select Address" class="input-field">
-    <md-option *ngFor="let address of walletService.allAddresses() | async" [value]="address.address">
+  <mat-select formControlName="address" placeholder="Select Address" class="input-field">
+    <mat-option *ngFor="let address of walletService.allAddresses() | async" [value]="address.address">
       {{ address.address }}
-    </md-option>
-  </md-select>
+    </mat-option>
+  </mat-select>
 </div>
 <div class="button-line">
-  <a md-raised-button (click)="generate()">Generate</a>
+  <a mat-raised-button (click)="generate()">Generate</a>
 </div>

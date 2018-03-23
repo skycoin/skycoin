@@ -8,19 +8,19 @@ SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 pushd "${SCRIPTDIR}"
 
 if [[ "$OSTYPE" == "linux"* ]]; then
-    tar cvPf "${SRC_TAR}" --owner=0 --group=0 --exclude=electron \
-        --exclude=node_modules --exclude=_deprecated --exclude='.[^/\.]*' \
-        "../src" "../cmd" "../run.sh" "../*.md" \
+    tar -C .. -cvPf "${SRC_TAR}" --owner=0 --group=0 --exclude=electron \
+        --exclude=node_modules --exclude=_deprecated --exclude='.*' \
+        src cmd run.sh README.md INSTALLATION.md CHANGELOG.md INTEGRATION.md \
         >/dev/null
 elif [[ "$OSTYPE" == "darwin"* ]]; then
-    tar cvf "${SRC_TAR}" --exclude=electron \
-        --exclude=node_modules --exclude=_deprecated --exclude='.[^/\.]*' \
-        "../src" "../cmd" "../run.sh" "../*.md" \
+    tar -C .. -cvf "${SRC_TAR}" --exclude=electron \
+        --exclude=node_modules --exclude=_deprecated --exclude='.*' \
+        src cmd run.sh README.md INSTALLATION.md CHANGELOG.md INTEGRATION.md \
         >/dev/null
 elif [[ "$OSTYPE" == "msys"* ]]; then
-    tar cvPf "${SRC_TAR}" --owner=0 --group=0 --exclude=electron \
-        --exclude=node_modules --exclude=_deprecated --exclude='.[^/\.]*' \
-        "../src" "../cmd" "../run.sh" "../*.md" \
+    tar -C .. -cvPf "${SRC_TAR}" --owner=0 --group=0 --exclude=electron \
+        --exclude=node_modules --exclude=_deprecated --exclude='.*' \
+        src cmd run.sh README.md INSTALLATION.md CHANGELOG.md INTEGRATION.md \
         >/dev/null
 fi
 

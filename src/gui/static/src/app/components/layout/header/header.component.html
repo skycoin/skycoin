@@ -18,18 +18,21 @@
     *ngIf="loading"
     class="example-margin"
     color="primary"
-    mode="determinate"
+    [mode]="querying ? 'query' : 'determinate'"
     [value]="percentage * 100"></mat-progress-bar>
   <mat-toolbar class="notification-bar" *ngIf="updateAvailable">
     <div> Wallet update <a href="https://www.skycoin.net/downloads/" target="_blank">v{{ releaseVersion }}</a>  available.</div>
   </mat-toolbar>
-  <mat-toolbar class="notification-bar" *ngIf="apiService.backendError">
-    <div>
+  <mat-toolbar class="notification-bar" *ngIf="appService.error">
+    <div *ngIf="appService.error === 1">
+      No connections active, your client is not connected to any other nodes!
+    </div>
+    <div *ngIf="appService.error === 2">
       Cannot reach backend. Please restart the app and/or seek help on our
       <a href="https://web.telegram.org/#/im?p=@skycoinsupport">Telegram</a>
     </div>
-  </mat-toolbar>
-  <mat-toolbar class="notification-bar" *ngIf="apiService.csrfError">
-    <div> Security vulnerability: CSRF is not working, please exit immediately.</div>
+    <div *ngIf="appService.error === 3">
+      Security vulnerability: CSRF is not working, please exit immediately.
+    </div>
   </mat-toolbar>
 </div>

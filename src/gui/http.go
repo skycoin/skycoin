@@ -27,48 +27,84 @@ var (
 )
 
 const (
-	resourceDir      = "dist/"
-	devDir           = "dev/"
-	indexPage        = "index.html"
-	elapsedThreshold = 50 * time.Millisecond
+	resourceDir = "dist/"
+	devDir      = "dev/"
+	indexPage   = "index.html"
+
+	defaultReadTimeout  = time.Second * 10
+	defaultWriteTimeout = time.Second * 60
+	defaultIdleTimeout  = time.Second * 120
 )
 
 // Server exposes an HTTP API
 type Server struct {
-	mux              *http.ServeMux
-	listener         net.Listener
-	elapsedThreshold time.Duration
-	done             chan struct{}
+	server   *http.Server
+	listener net.Listener
+	done     chan struct{}
 }
 
-type ServerConfig struct {
-	StaticDir   string
-	DisableCSRF bool
+type Config struct {
+	StaticDir        string
+	DisableCSRF      bool
+	DisableWalletAPI bool
+	ReadTimeout      time.Duration
+	WriteTimeout     time.Duration
+	IdleTimeout      time.Duration
 }
 
-func create(host string, serverConfig ServerConfig, daemon *daemon.Daemon) (*Server, error) {
-	appLoc, err := file.DetermineResourcePath(serverConfig.StaticDir, resourceDir, devDir)
+type muxConfig struct {
+	host             string
+	appLoc           string
+	disableWalletAPI bool
+}
+
+func create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
+	appLoc, err := file.DetermineResourcePath(c.StaticDir, resourceDir, devDir)
 	if err != nil {
 		return nil, err
 	}
 	logger.Info("Web resources directory: %s", appLoc)
 
 	csrfStore := &CSRFStore{
-		Enabled: !serverConfig.DisableCSRF,
+		Enabled: !c.DisableCSRF,
 	}
-	if serverConfig.DisableCSRF {
+	if c.DisableCSRF {
 		logger.Warning("CSRF check disabled")
 	}
 
+	if c.ReadTimeout == 0 {
+		c.ReadTimeout = defaultReadTimeout
+	}
+	if c.WriteTimeout == 0 {
+		c.WriteTimeout = defaultWriteTimeout
+	}
+	if c.IdleTimeout == 0 {
+		c.IdleTimeout = defaultIdleTimeout
+	}
+
+	mc := muxConfig{
+		host:             host,
+		appLoc:           appLoc,
+		disableWalletAPI: c.DisableWalletAPI,
+	}
+
+	srvMux := newServerMux(mc, daemon.Gateway, csrfStore)
+	srv := &http.Server{
+		Handler:      srvMux,
+		ReadTimeout:  c.ReadTimeout,
+		WriteTimeout: c.WriteTimeout,
+		IdleTimeout:  c.IdleTimeout,
+	}
+
 	return &Server{
-		mux:  NewServerMux(host, appLoc, daemon.Gateway, csrfStore),
-		done: make(chan struct{}),
+		server: srv,
+		done:   make(chan struct{}),
 	}, nil
 }
 
 // Create creates a new Server instance that listens on HTTP
-func Create(host string, serverConfig ServerConfig, daemon *daemon.Daemon) (*Server, error) {
-	s, err := create(host, serverConfig, daemon)
+func Create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
+	s, err := create(host, c, daemon)
 	if err != nil {
 		return nil, err
 	}
@@ -84,8 +120,8 @@ func Create(host string, serverConfig ServerConfig, daemon *daemon.Daemon) (*Ser
 }
 
 // CreateHTTPS creates a new Server instance that listens on HTTPS
-func CreateHTTPS(host string, serverConfig ServerConfig, daemon *daemon.Daemon, certFile, keyFile string) (*Server, error) {
-	s, err := create(host, serverConfig, daemon)
+func CreateHTTPS(host string, c Config, daemon *daemon.Daemon, certFile, keyFile string) (*Server, error) {
+	s, err := create(host, c, daemon)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +150,7 @@ func (s *Server) Serve() error {
 	defer logger.Info("Web interface closed")
 	defer close(s.done)
 
-	if err := http.Serve(s.listener, s.mux); err != nil {
+	if err := s.server.Serve(s.listener); err != nil {
 		if err != http.ErrServerClosed {
 			return err
 		}
@@ -134,15 +170,13 @@ func ElapseHandler(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		handler.ServeHTTP(w, r)
-		since := time.Since(start)
-		if since > elapsedThreshold {
-			log.Printf("%s %s %v", r.Method, r.URL.Path, time.Since(start))
-		}
+		log.Printf("%s %s %v", r.Method, r.URL.Path, time.Since(start))
+
 	})
 }
 
-// NewServerMux creates an http.ServeMux with handlers registered
-func NewServerMux(host, appLoc string, gateway Gatewayer, csrfStore *CSRFStore) *http.ServeMux {
+// newServerMux creates an http.ServeMux with handlers registered
+func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	headerCheck := func(host string, handler http.Handler) http.Handler {
@@ -153,24 +187,26 @@ func NewServerMux(host, appLoc string, gateway Gatewayer, csrfStore *CSRFStore) 
 
 	webHandler := func(endpoint string, handler http.Handler) {
 		handler = CSRFCheck(csrfStore, handler)
-		handler = headerCheck(host, handler)
+		handler = headerCheck(c.host, handler)
 		handler = ElapseHandler(handler)
 		mux.Handle(endpoint, handler)
 	}
 
-	webHandler("/", newIndexHandler(appLoc))
+	if !c.disableWalletAPI {
+		webHandler("/", newIndexHandler(c.appLoc))
 
-	fileInfos, _ := ioutil.ReadDir(appLoc)
-	for _, fileInfo := range fileInfos {
-		route := fmt.Sprintf("/%s", fileInfo.Name())
-		if fileInfo.IsDir() {
-			route = route + "/"
+		fileInfos, _ := ioutil.ReadDir(c.appLoc)
+		for _, fileInfo := range fileInfos {
+			route := fmt.Sprintf("/%s", fileInfo.Name())
+			if fileInfo.IsDir() {
+				route = route + "/"
+			}
+			webHandler(route, http.FileServer(http.Dir(c.appLoc)))
 		}
-		webHandler(route, http.FileServer(http.Dir(appLoc)))
 	}
 
 	// get the current CSRF token
-	mux.Handle("/csrf", headerCheck(host, getCSRFToken(gateway, csrfStore)))
+	mux.Handle("/csrf", headerCheck(c.host, getCSRFToken(gateway, csrfStore)))
 
 	webHandler("/version", versionHandler(gateway))
 

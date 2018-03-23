@@ -6,6 +6,7 @@ export class Address {
   address: string;
   coins: number;
   hours: number;
+  copying?: boolean; // Optional parameter indicating whether the address is being copied to clipboard
 }
 
 export class PurchaseOrder {
@@ -30,6 +31,10 @@ export class Transaction {
   outputs: any[];
   timestamp: number;
   txid: string;
+}
+
+export class Version {
+  version: string;
 }
 
 export class Wallet {

@@ -32,6 +32,10 @@
       margin: 0;
       vertical-align: middle;
     }
+
+    &:hover .copy-label {
+      display: inline-block;
+    }
   }
 
   .hours-column {
@@ -111,7 +115,7 @@
 
 .copy-label {
   color: #0072ff;
-  display: inline-block;
+  display: none;
   font-size: 12px;
   line-height: 100%;
   position: relative;

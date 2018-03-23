@@ -32,14 +32,14 @@ export class WalletDetailComponent {
     this.wallet.hideEmpty = !this.wallet.hideEmpty;
   }
 
-  copyAddress(address, i) {
+  copyAddress(address) {
     const selBox = document.createElement('textarea');
 
     selBox.style.position = 'fixed';
     selBox.style.left = '0';
     selBox.style.top = '0';
     selBox.style.opacity = '0';
-    selBox.value = address;
+    selBox.value = address.address;
 
     document.body.appendChild(selBox);
     selBox.focus();
@@ -48,18 +48,12 @@ export class WalletDetailComponent {
     document.execCommand('copy');
     document.body.removeChild(selBox);
 
-    const d = document.getElementsByClassName('click-to-copy');
-    d[i].classList.toggle('copying');
+    address.copying = true;
 
     // wait for a while and then remove the 'copying' class
     setTimeout(function () {
-      d[i].classList.toggle('copying');
+      address.copying = false;
     }, 500);
 
-  }
-
-  toggleClass(i) {
-    const label = document.getElementsByClassName('copy-label');
-    label[i].classList.toggle('hidden');
   }
 }

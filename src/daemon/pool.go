@@ -26,8 +26,6 @@ type PoolConfig struct {
 	//How often to try to add a new peer connection
 	PeerConnRate time.Duration
 
-
-
 	// These should be assigned by the controlling daemon
 	address string
 	port    int
@@ -47,7 +45,6 @@ func NewPoolConfig() PoolConfig {
 		ClearStaleRate:      1 * time.Second,
 		EventChannelSize:    4096,
 		PeerConnRate:        1 * time.Second,
-
 	}
 }
 

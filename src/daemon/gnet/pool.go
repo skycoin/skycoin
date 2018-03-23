@@ -15,10 +15,10 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/daemon/strand"
 
+	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/util/elapse"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/utc"
-	"github.com/skycoin/skycoin/src/daemon/pex"
 	//"../pex"
 )
 
@@ -113,10 +113,10 @@ func NewConfig() Config {
 		DisconnectCallback:       nil,
 		ConnectCallback:          nil,
 		DebugPrint:               false,
-		ConnectionTypes:	  	map[string]pex.Peer{},
-		CurrentTrusted:				0,
-		CurrentDefault:				0,
-		CurrentAutomatic:			0,
+		ConnectionTypes:          map[string]pex.Peer{},
+		CurrentTrusted:           0,
+		CurrentDefault:           0,
+		CurrentAutomatic:         0,
 	}
 }
 
@@ -806,10 +806,10 @@ func (pool *ConnectionPool) RemoveFromConnCount(address string) {
 	if p.Trusted {
 		pool.Config.CurrentTrusted--
 	}
-	if p.Default{
+	if p.Default {
 		pool.Config.CurrentDefault--
 	}
-	if p.Automatic{
+	if p.Automatic {
 		pool.Config.CurrentAutomatic--
 	}
 }

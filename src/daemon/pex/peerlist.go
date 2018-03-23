@@ -136,7 +136,7 @@ loop:
 }
 
 // filters
-func isNotTrusted(p Peer) bool{
+func isNotTrusted(p Peer) bool {
 	return !p.Trusted
 }
 
@@ -297,7 +297,7 @@ type PeerJSON struct {
 	LastSeen        interface{}
 	Trusted         bool  // Whether this peer is trusted
 	Default         bool  // Whether this peer is default
-	Automatic         bool  // Whether this peer is automatic
+	Automatic       bool  // Whether this peer is automatic
 	HasIncomePort   *bool `json:"HasIncomePort,omitempty"` // Whether this peer has incoming port [DEPRECATED]
 	HasIncomingPort *bool // Whether this peer has incoming port
 }
@@ -309,7 +309,7 @@ func newPeerJSON(p Peer) PeerJSON {
 		LastSeen:        p.LastSeen,
 		Trusted:         p.Trusted,
 		Default:         p.Default,
-		Automatic:		 p.Automatic,
+		Automatic:       p.Automatic,
 		HasIncomingPort: &p.HasIncomingPort,
 	}
 }
@@ -353,7 +353,7 @@ func newPeerFromJSON(p PeerJSON) (*Peer, error) {
 		LastSeen:        lastSeen,
 		Trusted:         p.Trusted,
 		Default:         p.Default,
-		Automatic:		 p.Automatic,
+		Automatic:       p.Automatic,
 		HasIncomingPort: hasIncomingPort,
 	}, nil
 }

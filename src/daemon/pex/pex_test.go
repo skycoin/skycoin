@@ -740,7 +740,6 @@ func TestPexRandomPublic(t *testing.T) {
 	}
 }
 
-
 func TestPexTrusted(t *testing.T) {
 	tt := []struct {
 		name   string
@@ -1025,12 +1024,10 @@ func TestPexSetTrusted(t *testing.T) {
 
 			pex.peerlist.setPeers(tc.initPeer)
 
-
-			err := pex.peerlist.setTrusted(tc.peer,tc.Trusted)
+			err := pex.peerlist.setTrusted(tc.peer, tc.Trusted)
 			require.Equal(t, tc.err, err)
 			if err != nil {
 				return
-
 
 				p, ok := pex.peerlist.peers[tc.peer]
 				require.True(t, ok)

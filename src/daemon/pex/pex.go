@@ -93,23 +93,23 @@ func validateAddress(ipPort string, allowLocalhost bool) (string, error) {
 
 // Peer represents a known peer TODO: Change to a label-based peer list
 type Peer struct {
-	Addr            string            // An address of the form ip:port
-	LastSeen        int64             // Unix timestamp when this peer was last seen
+	Addr     string // An address of the form ip:port
+	LastSeen int64  // Unix timestamp when this peer was last seen
 	//Private         bool              // Whether it should omitted from public requests TODO: Deprecate
-	Default         bool              // Whether it belongs on list 2: Default peers: bootstrapped
-	HasIncomingPort bool              // Whether this peer has accessable public port
-	RetryTimes      int    `json:"-"` // records the retry times
-	Trusted         bool              // Whether it belongs on list 1: Default peers: Hardcoded by user
-	Automatic       bool              // Whether it belongs on list 3: Automatic peers: from peer exchange
+	Default         bool // Whether it belongs on list 2: Default peers: bootstrapped
+	HasIncomingPort bool // Whether this peer has accessable public port
+	RetryTimes      int  `json:"-"` // records the retry times
+	Trusted         bool // Whether it belongs on list 1: Default peers: Hardcoded by user
+	Automatic       bool // Whether it belongs on list 3: Automatic peers: from peer exchange
 }
 
 // NewPeer returns a *Peer initialised by an address string of the form ip:port
 func NewPeer(address string) *Peer {
 	p := &Peer{
-		Addr:    address,
+		Addr: address,
 		//Private: false,
-		Default: false,
-		Trusted: false,
+		Default:   false,
+		Trusted:   false,
 		Automatic: false,
 	}
 	p.Seen()
@@ -475,7 +475,6 @@ func (px *Pex) Trusted() Peers {
 	return px.peerlist.getPeers(isTrusted)
 }
 
-
 // Default returns default peers
 func (px *Pex) Default() Peers {
 	px.RLock()
@@ -548,7 +547,6 @@ func (pex *Pex) GetSingleNonTrusted() Peer {
 	rand.Seed(time.Now().Unix())
 	return peers[rand.Intn(len(peers))]
 }
-
 
 // downloadText downloads a text format file from url.
 // Returns the raw response body as a string.

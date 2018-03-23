@@ -37,6 +37,9 @@ COPY --from=build /go/bin/* /usr/bin/
 
 # copy assets
 COPY --from=build /go/src/github.com/skycoin/skycoin/src/gui/static /usr/local/skycoin/static
+#
+# copy launcher
+ADD docker/images/testnet/launch-skycoin.sh launch-skycoin.sh
 
 # volumes
 VOLUME $WALLET_DIR
@@ -44,4 +47,4 @@ VOLUME $DATA_DIR
 
 EXPOSE 16000 16420 16430
 
-CMD ["/usr/bin/skycoin"{{ range .SkyCoinParameters }}, "{{ . }}"{{ end }}]
+CMD ["sh", "launch-skycoin.sh", "/usr/bin/skycoin", "--web-interface=false", "--launch-browser=false", "--gui-dir=/usr/local/skycoin/static", "--master-public-key=03d0c6a4b26471769320892e7ca6461aad45f8b045e825d0cd208f1462452dd13c", "--testchain"]

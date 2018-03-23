@@ -103,8 +103,6 @@ func prepareTestEnv(composeFile dockerCompose) {
 	for k, service := range composeFile.Services {
 		dockerfileExplorerSrc := path.Join("templates", "Dockerfile-"+k)
 		dockerfileExplorerDst := service.Build.Dockerfile
-		fmt.Println(dockerfileExplorerSrc)
-		fmt.Println(dockerfileExplorerDst)
 		df, err := os.Open(dockerfileExplorerSrc)
 		_, err = file.CopyFile(dockerfileExplorerDst, df)
 		if err != nil {

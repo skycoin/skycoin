@@ -6,10 +6,11 @@ FROM golang:1.9 AS build
 RUN mkdir -p $GOPATH/src/github.com/skycoin/
 
 # copy code to build
-ADD skycoin-explorer $GOPATH/src/github.com/skycoin/skycoin-explorer
+ADD https://github.com/skycoin/skycoin-explorer/archive/master.tar.gz $GOPATH/src/github.com/skycoin/skycoin-explorer.tar.gz
+RUN cd $GOPATH/src/github.com/skycoin/ && tar xvf skycoin-explorer.tar.gz
 
 # install skycoin-explorer
-RUN cd $GOPATH/src/github.com/skycoin/skycoin-explorer && \
+RUN cd $GOPATH/src/github.com/skycoin/skycoin-explorer-master && \
   CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /go/bin/skycoin-explorer .
 
 # skycoin image
@@ -19,9 +20,10 @@ FROM alpine:3.7
 COPY --from=build /go/bin/* /usr/bin/
 
 # copy assets
-COPY --from=build /go/src/github.com/skycoin/skycoin-explorer/dist ./dist
+COPY --from=build /go/src/github.com/skycoin/skycoin-explorer-master/dist ./dist
 
-ENV EXPLORER_HOST="0.0.0.0:8001"
+ENV EXPLORER_HOST="0.0.0.0:8001"\ 
+    SKYCOIN_ADDR=http://skycoin-master:16420
 
 EXPOSE 8001
 

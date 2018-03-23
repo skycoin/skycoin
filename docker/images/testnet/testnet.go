@@ -141,7 +141,9 @@ func main() {
 				},
 			},
 			"skycoin-explorer": dockerService{
-				Build: serviceBuild{},
+				Build: serviceBuild{
+					Context: ".",
+				},
 				Ports: []string{"8001:8001"},
 			},
 		},

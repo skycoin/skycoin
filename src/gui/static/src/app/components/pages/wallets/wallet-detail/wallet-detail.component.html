@@ -1,0 +1,34 @@
+<ng-container *ngFor="let address of (wallet ? wallet.addresses : []); let i = index">
+  <div class="-record" *ngIf="!wallet.hideEmpty || address.coins">
+    <div class="id-column">{{ i + 1 }}</div>
+    <div class="address-column" (click)="copyAddress(address)">
+      <img src="../../../../../assets/img/qr-code-black.png">
+      <p class="click-to-copy" [ngClass]="{ copying: address.copying }">
+        {{ address.address }} <span data-label="Copied" class="copy-label">Copy</span>
+      </p>
+    </div>
+    <div class="hours-column">{{ (address.hours ? address.hours : 0) | number:'1.0-6' }}</div>
+    <div class="coins-column">{{ (address.coins ? address.coins : 0) | number:'1.0-6' }}</div>
+  </div>
+</ng-container>
+<div class="-actions">
+  <div class="-button" (click)="newAddress()">
+    <img src="../../../../../assets/img/plus-grey.png">
+    <span>New Address</span>
+  </div>
+  <div class="-button" (click)="toggleEmpty()">
+    <ng-container *ngIf="!wallet.hideEmpty">
+      <img src="../../../../../assets/img/minus-grey.png">
+      <span>Hide Empty</span>
+    </ng-container>
+    <ng-container *ngIf="wallet.hideEmpty">
+      <img src="../../../../../assets/img/plus-grey.png">
+      <span>Show Empty</span>
+    </ng-container>
+  </div>
+  <div class="flex-fill"></div>
+  <div class="-button" (click)="editWallet()">
+    <img src="../../../../../assets/img/edit-grey.png">
+    <span>Edit Wallet</span>
+  </div>
+</div>

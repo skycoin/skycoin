@@ -1,0 +1,151 @@
+@import '../../../../../theme/_variables.scss';
+
+.-record {
+  background-color: $white;
+  border-bottom: 1px solid #eff0f0;
+  cursor: pointer;
+  display: flex;
+  font-size: $font-size-standard;
+  line-height: $row-height;
+  min-height: $row-height;
+  padding: 0 50px 0 20px;
+
+  .id-column {
+    width: 50px;
+    color: rgba(30, 34, 39, 0.6);
+  }
+
+  .address-column {
+    color: rgba(30, 34, 39, 0.6);
+    flex: 1 1 auto;
+
+    img {
+      display: inline-block;
+      height: 17px;
+      vertical-align: middle;
+      width: 17px;
+    }
+
+    p {
+      display: inline-block;
+      line-height: $row-height;
+      margin: 0;
+      vertical-align: middle;
+    }
+
+    &:hover .copy-label {
+      display: inline-block;
+    }
+  }
+
+  .hours-column {
+    color: rgba(30, 34, 39, 0.5);
+    width: 150px;
+  }
+
+  .coins-column {
+    color: black;
+    width: 150px;
+  }
+
+  > img {
+    display: inline-block;
+    margin: ($row-height - $row-detail-size) / 2;
+    margin-left: 0;
+    height: $row-detail-size;
+    width: $row-detail-size;
+  }
+}
+
+.-actions {
+  border-bottom: 1px solid #eff0f0;
+  display: flex;
+  width: 100%;
+
+  .-button {
+    cursor: pointer;
+    padding: 0 20px;
+
+    img {
+      display: inline-block;
+      float: left;
+      height: 60px;
+      padding: 14px 0;
+      width: 32px;
+    }
+
+    span {
+      color: #CECFD0;
+      display: inline-block;
+      font-size: 12px;
+      height: 60px;
+      line-height: 60px;
+      margin: 0 5px;
+    }
+  }
+}
+
+
+@keyframes floatup {
+  20% {
+    opacity: .999
+  }
+
+  100% {
+    -webkit-transform: translate3d(-50%, -17px, 0);
+    transform: translate3d(-50%, -17px, 0)
+  }
+}
+
+@-webkit-keyframes floatup {
+  20% {
+    opacity: .999
+  }
+
+  100% {
+    -webkit-transform: translate3d(-50%, -17px, 0);
+    transform: translate3d(-50%, -17px, 0)
+  }
+}
+
+.click-to-copy {
+  cursor: pointer;
+}
+
+
+.copy-label {
+  color: #0072ff;
+  display: none;
+  font-size: 12px;
+  line-height: 100%;
+  position: relative;
+  opacity: .999;
+  transition: opacity .2s ease-in-out;
+  top: -1px;
+  padding-left: 10px;
+
+  &.hidden{
+    opacity: .001;
+  }
+
+  &::after {
+    content: attr(data-label);
+    color: #0072ff;
+    display: inline-block;
+    position: absolute;
+    top: -2px;
+    left: 50%;
+    opacity: .001;
+    text-align: center;
+    -webkit-transform: translate3d(-50%,0,0);
+    transform: translate3d(-50%,0,0);
+    -webkit-backface-visibility: hidden;
+    white-space: nowrap;
+    padding-left: 11px;
+  }
+}
+
+.copying .copy-label::after {
+  -webkit-animation: floatup .5s ease-in-out;
+  animation: floatup .5s ease-in-out;
+}

@@ -1,19 +1,20 @@
 package wallet
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"sync"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
+	"github.com/skycoin/skycoin/src/cipher/go-bip39"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 )
 
-func errWalletNotExist(wltName string) error {
-	return fmt.Errorf("wallet %s doesn't exist", wltName)
-}
+// ErrWalletNotExist is returned if a wallet does not exist
+var ErrWalletNotExist = errors.New("wallet doesn't exist")
+var ErrWalletApiDisabled = errors.New("wallet api disabled")
 
 // BalanceGetter interface for getting the balance of given addresses
 type BalanceGetter interface {
@@ -23,16 +24,20 @@ type BalanceGetter interface {
 // Service wallet service struct
 type Service struct {
 	sync.RWMutex
-	wallets        Wallets
-	firstAddrIDMap map[string]string // key: first address in wallet, value: wallet id
-
-	WalletDirectory string
+	wallets          Wallets
+	firstAddrIDMap   map[string]string // key: first address in wallet, value: wallet id
+	disableWalletAPI bool
+	WalletDirectory  string
 }
 
 // NewService new wallet service
-func NewService(walletDir string) (*Service, error) {
+func NewService(walletDir string, disableWalletAPI bool) (*Service, error) {
 	serv := &Service{
-		firstAddrIDMap: make(map[string]string),
+		disableWalletAPI: disableWalletAPI,
+		firstAddrIDMap:   make(map[string]string),
+	}
+	if serv.disableWalletAPI {
+		return serv, nil
 	}
 	if err := os.MkdirAll(walletDir, os.FileMode(0700)); err != nil {
 		return nil, fmt.Errorf("failed to create wallet directory %s: %v", walletDir, err)
@@ -74,7 +79,9 @@ func NewService(walletDir string) (*Service, error) {
 func (serv *Service) CreateWallet(wltName string, options Options) (Wallet, error) {
 	serv.Lock()
 	defer serv.Unlock()
-
+	if serv.disableWalletAPI {
+		return Wallet{}, ErrWalletApiDisabled
+	}
 	if wltName == "" {
 		wltName = serv.generateUniqueWalletFilename()
 	}
@@ -162,12 +169,16 @@ func (serv *Service) NewAddresses(wltID string, num uint64) ([]cipher.Address, e
 	defer serv.Unlock()
 	w, ok := serv.wallets.Get(wltID)
 	if !ok {
-		return []cipher.Address{}, errWalletNotExist(wltID)
+		return []cipher.Address{}, ErrWalletNotExist
 	}
 
-	addrs := w.GenerateAddresses(num)
+	addrs, err := w.GenerateAddresses(num)
+	if err != nil {
+		return nil, err
+	}
+
 	if err := w.Save(serv.WalletDirectory); err != nil {
-		return []cipher.Address{}, err
+		return nil, err
 	}
 
 	return addrs, nil
@@ -179,7 +190,7 @@ func (serv *Service) GetAddresses(wltID string) ([]cipher.Address, error) {
 	defer serv.RUnlock()
 	w, ok := serv.wallets.Get(wltID)
 	if !ok {
-		return []cipher.Address{}, errWalletNotExist(wltID)
+		return []cipher.Address{}, ErrWalletNotExist
 	}
 
 	return w.GetAddresses(), nil
@@ -196,7 +207,7 @@ func (serv *Service) GetWallet(wltID string) (Wallet, error) {
 func (serv *Service) getWallet(wltID string) (Wallet, error) {
 	w, ok := serv.wallets.Get(wltID)
 	if !ok {
-		return Wallet{}, errWalletNotExist(wltID)
+		return Wallet{}, ErrWalletNotExist
 	}
 	return w.Copy(), nil
 }
@@ -215,6 +226,9 @@ func (serv *Service) GetWallets() Wallets {
 func (serv *Service) ReloadWallets() error {
 	serv.Lock()
 	defer serv.Unlock()
+	if serv.disableWalletAPI {
+		return ErrWalletApiDisabled
+	}
 	wallets, err := LoadWallets(serv.WalletDirectory)
 	if err != nil {
 		return err
@@ -239,7 +253,7 @@ func (serv *Service) CreateAndSignTransaction(wltID string, vld Validator, unspe
 	defer serv.RUnlock()
 	w, ok := serv.wallets.Get(wltID)
 	if !ok {
-		return nil, errWalletNotExist(wltID)
+		return nil, ErrWalletNotExist
 	}
 
 	return w.CreateAndSignTransaction(vld, unspent, headTime, coins, dest)

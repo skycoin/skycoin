@@ -1,19 +1,17 @@
 package webrpc
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
 	"net/http"
-
-	"encoding/json"
+	"strings"
+	"time"
 
 	wh "github.com/skycoin/skycoin/src/util/http"
-
 	"github.com/skycoin/skycoin/src/util/logging"
-
-	"bytes"
-	"strings"
 )
 
 var (
@@ -24,21 +22,26 @@ var (
 	errCodeInternalError  = -32603 // Internal error	Internal JSON-RPC error.
 
 	errMsgParseError     = "Parse error"
-	errMsgInvalidRequest = "Invalid Request"
 	errMsgMethodNotFound = "Method not found"
 	errMsgInvalidParams  = "Invalid params"
 	errMsgInternalError  = "Internal error"
-
-	errMsgNotPost = "only support http POST"
-
+	errMsgNotPost        = "only support http POST"
 	errMsgInvalidJsonrpc = "invalid jsonrpc"
 
 	// -32000 to -32099	Server error	Reserved for implementation-defined server-errors.
 
 	jsonRPC = "2.0"
+
+	logger = logging.MustGetLogger("webrpc")
 )
 
-var logger = logging.MustGetLogger("webrpc")
+const (
+	defaultReadTimeout  = time.Second * 10
+	defaultWriteTimeout = time.Second * 60
+	defaultIdleTimeout  = time.Second * 120
+	defaultWorkerNum    = 5
+	defaultChanBuffSize = 1000
+)
 
 // Request rpc request struct
 type Request struct {
@@ -100,8 +103,8 @@ func makeSuccessResponse(id string, result interface{}) Response {
 	}
 }
 
-func makeErrorResponse(code int, msgs ...string) Response {
-	msg := strings.Join(msgs[:], "\n")
+func makeErrorResponse(code int, msg string, msgs ...string) Response {
+	msg = strings.Join(append([]string{msg}, msgs[:]...), "\n")
 	return Response{
 		Error:   &RPCError{Code: code, Message: msg},
 		Jsonrpc: jsonRPC,
@@ -122,23 +125,58 @@ type WebRPC struct {
 
 	ops      chan operation // request channel
 	mux      *http.ServeMux
+	server   *http.Server
 	handlers map[string]HandlerFunc
 	listener net.Listener
 	quit     chan struct{}
 }
 
-func New(addr string, gw Gatewayer) (*WebRPC, error) {
+// Config configures the WebRPC
+type Config struct {
+	ReadTimeout  time.Duration
+	WriteTimeout time.Duration
+	IdleTimeout  time.Duration
+	WorkerNum    uint
+	ChanBuffSize uint // size of ops channel
+}
+
+// New returns a new WebRPC object
+func New(addr string, c Config, gw Gatewayer) (*WebRPC, error) {
+	if c.ReadTimeout == 0 {
+		c.ReadTimeout = defaultReadTimeout
+	}
+	if c.WriteTimeout == 0 {
+		c.WriteTimeout = defaultWriteTimeout
+	}
+	if c.IdleTimeout == 0 {
+		c.IdleTimeout = defaultIdleTimeout
+	}
+	if c.WorkerNum == 0 {
+		c.WorkerNum = defaultWorkerNum
+	}
+	if c.ChanBuffSize == 0 {
+		c.ChanBuffSize = defaultChanBuffSize
+	}
+
+	mux := http.NewServeMux()
+
 	rpc := &WebRPC{
 		Addr:         addr,
 		Gateway:      gw,
-		WorkerNum:    5,
-		ChanBuffSize: 1000,
+		WorkerNum:    c.WorkerNum,
+		ChanBuffSize: c.ChanBuffSize,
 		quit:         make(chan struct{}),
-		mux:          http.NewServeMux(),
-		handlers:     make(map[string]HandlerFunc),
+		mux:          mux,
+		server: &http.Server{
+			Handler:      mux,
+			ReadTimeout:  c.ReadTimeout,
+			WriteTimeout: c.WriteTimeout,
+			IdleTimeout:  c.IdleTimeout,
+		},
+		handlers: make(map[string]HandlerFunc),
 	}
 
-	rpc.mux.HandleFunc("/webrpc", rpc.Handler)
+	mux.Handle("/webrpc", wh.HostCheck(logger, addr, http.HandlerFunc(rpc.Handler)))
 
 	if err := rpc.initHandlers(); err != nil {
 		return nil, err
@@ -204,7 +242,7 @@ func (rpc *WebRPC) Run() error {
 
 	errC := make(chan error, 1)
 	go func() {
-		if err := http.Serve(rpc.listener, rpc); err != nil {
+		if err := rpc.server.Serve(rpc.listener); err != nil {
 			select {
 			case <-rpc.quit:
 				errC <- nil
@@ -240,11 +278,6 @@ func (rpc *WebRPC) HandleFunc(method string, h HandlerFunc) error {
 
 	rpc.handlers[method] = h
 	return nil
-}
-
-// ServHTTP implements the interface of http.Handler
-func (rpc *WebRPC) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	rpc.mux.ServeHTTP(w, r)
 }
 
 // Handler processes the http request

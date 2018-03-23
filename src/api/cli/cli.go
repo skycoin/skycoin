@@ -23,7 +23,7 @@ import (
 // Commands all cmds that we support
 
 const (
-	Version           = "0.20.3"
+	Version           = "0.21.1"
 	walletExt         = ".wlt"
 	defaultCoin       = "skycoin"
 	defaultWalletName = "$COIN_cli" + walletExt
@@ -212,6 +212,7 @@ func NewApp(cfg Config) *App {
 		addressOutputsCmd(),
 		blocksCmd(),
 		broadcastTxCmd(),
+		checkdbCmd(),
 		createRawTxCmd(cfg),
 		decodeRawTxCmd(),
 		generateAddrsCmd(cfg),
@@ -222,13 +223,12 @@ func NewApp(cfg Config) *App {
 		sendCmd(),
 		statusCmd(),
 		transactionCmd(),
+		verifyAddressCmd(),
 		versionCmd(),
 		walletBalanceCmd(cfg),
 		walletDirCmd(),
 		walletHisCmd(),
 		walletOutputsCmd(cfg),
-		checkdbCmd(),
-		verifyAddressCmd(),
 	}
 
 	app.Name = fmt.Sprintf("%s-cli", cfg.Coin)

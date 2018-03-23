@@ -1,17 +1,21 @@
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 
 @Component({
   selector: 'app-button',
   templateUrl: 'button.component.html',
-  styleUrls: ['button.component.css']
+  styleUrls: ['button.component.scss']
 })
 
 export class ButtonComponent {
-  @Input() form: any;
-  @Input() placeholder: string;
+  @Input() disabled: any;
+  @Output() action = new EventEmitter();
 
   error: string;
   state: number;
+
+  onClick() {
+    if (!this.disabled) this.action.emit();
+  }
 
   setLoading() {
     this.state = 0;
@@ -25,9 +29,5 @@ export class ButtonComponent {
   setError(error: any) {
     this.error = error['_body'];
     this.state = 2;
-  }
-
-  disabled() {
-    return this.state === 0  || (!(this.form === undefined) && !(this.form && this.form.valid));
   }
 }

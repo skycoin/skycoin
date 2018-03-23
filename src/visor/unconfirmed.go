@@ -9,7 +9,6 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/bucket"
@@ -122,7 +121,7 @@ func (utb *uncfmTxnBkt) getAll() ([]UnconfirmedTxn, error) {
 	return txns, nil
 }
 
-func (utb *uncfmTxnBkt) rangeUpdate(f func(key cipher.SHA256, tx *UnconfirmedTxn)) error {
+func (utb *uncfmTxnBkt) rangeUpdate(f func(key cipher.SHA256, tx *UnconfirmedTxn) error) error {
 	return utb.txns.RangeUpdate(func(k, v []byte) ([]byte, error) {
 		key, err := cipher.SHA256FromHex(string(k))
 		if err != nil {
@@ -133,7 +132,11 @@ func (utb *uncfmTxnBkt) rangeUpdate(f func(key cipher.SHA256, tx *UnconfirmedTxn
 		if err := encoder.DeserializeRaw(v, &tx); err != nil {
 			return nil, err
 		}
-		f(key, &tx)
+
+		if err := f(key, &tx); err != nil {
+			return nil, err
+		}
+
 		// encode the tx
 		d := encoder.Serialize(tx)
 		return d, nil
@@ -272,21 +275,26 @@ func (utp *UnconfirmedTxnPool) createUnconfirmedTxn(t coin.Transaction) Unconfir
 	}
 }
 
-// InjectTxn adds a coin.Transaction to the pool, or updates an existing one's timestamps
+// InjectTransaction adds a coin.Transaction to the pool, or updates an existing one's timestamps
 // Returns an error if txn is invalid, and whether the transaction already
 // existed in the pool.
-func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (bool, error) {
-	f, err := bc.TransactionFee(&t)
-	if err != nil {
-		return false, err
-	}
-
-	if err := fee.VerifyTransactionFee(&t, f); err != nil {
-		return false, err
-	}
-
-	if err := bc.VerifyTransaction(t); err != nil {
-		return false, err
+// If the transaction violates hard constraints, it is rejected.
+// Soft constraints violations mark a txn as invalid, but the txn is inserted. The soft violation is returned.
+func (utp *UnconfirmedTxnPool) InjectTransaction(bc Blockchainer, t coin.Transaction, maxSize int) (bool, *ErrTxnViolatesSoftConstraint, error) {
+	var isValid int8 = 1
+	var softErr *ErrTxnViolatesSoftConstraint
+	if err := bc.VerifySingleTxnAllConstraints(t, maxSize); err != nil {
+		logger.Warning("bc.VerifySingleTxnAllConstraints failed for txn %s: %v", t.TxIDHex(), err)
+		switch err.(type) {
+		case ErrTxnViolatesSoftConstraint:
+			e := err.(ErrTxnViolatesSoftConstraint)
+			softErr = &e
+			isValid = 0
+		case ErrTxnViolatesHardConstraint:
+			return false, nil, err
+		default:
+			return false, nil, err
+		}
 	}
 
 	// Update if we already have this txn
@@ -297,15 +305,17 @@ func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (bo
 		now := utc.Now().UnixNano()
 		tx.Received = now
 		tx.Checked = now
-		tx.IsValid = 1
+		tx.IsValid = isValid
 	})
 
 	if known {
-		return true, nil
+		return true, softErr, nil
 	}
 
 	utx := utp.createUnconfirmedTxn(t)
-	if err := bc.db.Update(func(tx *bolt.Tx) error {
+	utx.IsValid = isValid
+
+	if err := bc.UpdateDB(func(tx *bolt.Tx) error {
 		// add txn to index
 		if err := utp.txns.putWithTx(tx, &utx); err != nil {
 			return err
@@ -319,10 +329,10 @@ func (utp *UnconfirmedTxnPool) InjectTxn(bc *Blockchain, t coin.Transaction) (bo
 
 		return utp.unspent.putWithTx(tx, h, coin.CreateUnspents(head.Head, t))
 	}); err != nil {
-		return false, err
+		return false, nil, err
 	}
 
-	return false, nil
+	return false, softErr, nil
 }
 
 // RawTxns returns underlying coin.Transactions
@@ -348,11 +358,17 @@ func (utp *UnconfirmedTxnPool) removeTxn(bc *Blockchain, txHash cipher.SHA256) {
 
 // Removes multiple txns at once. Slightly more efficient than a series of
 // single RemoveTxns.  Hashes is an array of Transaction hashes.
-func (utp *UnconfirmedTxnPool) removeTxns(hashes []cipher.SHA256) {
+func (utp *UnconfirmedTxnPool) removeTxns(hashes []cipher.SHA256) error {
 	for i := range hashes {
-		utp.txns.delete(hashes[i])
-		utp.unspent.delete(hashes[i])
+		if err := utp.txns.delete(hashes[i]); err != nil {
+			return err
+		}
+		if err := utp.unspent.delete(hashes[i]); err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
 func (utp *UnconfirmedTxnPool) removeTxnsWithTx(tx *bolt.Tx, hashes []cipher.SHA256) {
@@ -363,8 +379,8 @@ func (utp *UnconfirmedTxnPool) removeTxnsWithTx(tx *bolt.Tx, hashes []cipher.SHA
 }
 
 // RemoveTransactions removes confirmed txns from the pool
-func (utp *UnconfirmedTxnPool) RemoveTransactions(txns []cipher.SHA256) {
-	utp.removeTxns(txns)
+func (utp *UnconfirmedTxnPool) RemoveTransactions(txns []cipher.SHA256) error {
+	return utp.removeTxns(txns)
 }
 
 // RemoveTransactionsWithTx remove transactions with bolt.Tx
@@ -373,20 +389,64 @@ func (utp *UnconfirmedTxnPool) RemoveTransactionsWithTx(tx *bolt.Tx, txns []ciph
 }
 
 // Refresh checks all unconfirmed txns against the blockchain.
-// verify the transaction and returns all those txns that turn to valid.
-func (utp *UnconfirmedTxnPool) Refresh(bc *Blockchain) (hashes []cipher.SHA256) {
+// If the transaction becomes invalid it is marked invalid.
+// If the transaction becomes valid it is marked valid and is returned to the caller.
+func (utp *UnconfirmedTxnPool) Refresh(bc Blockchainer, maxBlockSize int) ([]cipher.SHA256, error) {
 	now := utc.Now()
-	utp.txns.rangeUpdate(func(key cipher.SHA256, tx *UnconfirmedTxn) {
-		tx.Checked = now.UnixNano()
-		if tx.IsValid == 0 {
-			if bc.VerifyTransaction(tx.Txn) == nil {
-				tx.IsValid = 1
-				hashes = append(hashes, tx.Hash())
-			}
-		}
-	})
 
-	return
+	var nowValid []cipher.SHA256
+
+	if err := utp.txns.rangeUpdate(func(_ cipher.SHA256, tx *UnconfirmedTxn) error {
+		tx.Checked = now.UnixNano()
+
+		err := bc.VerifySingleTxnAllConstraints(tx.Txn, maxBlockSize)
+
+		switch err.(type) {
+		case ErrTxnViolatesSoftConstraint, ErrTxnViolatesHardConstraint:
+			tx.IsValid = 0
+		case nil:
+			if tx.IsValid == 0 {
+				nowValid = append(nowValid, tx.Hash())
+			}
+			tx.IsValid = 1
+		default:
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return nowValid, nil
+}
+
+// RemoveInvalid checks all unconfirmed txns against the blockchain.
+// If a transaction violates hard constraints it is removed from the pool.
+// The transactions that were removed are returned.
+func (utp *UnconfirmedTxnPool) RemoveInvalid(bc Blockchainer) ([]cipher.SHA256, error) {
+	var removeTxs []cipher.SHA256
+
+	if err := utp.txns.forEach(func(_ cipher.SHA256, tx *UnconfirmedTxn) error {
+		err := bc.VerifySingleTxnHardConstraints(tx.Txn)
+
+		switch err.(type) {
+		case ErrTxnViolatesHardConstraint:
+			removeTxs = append(removeTxs, tx.Hash())
+		default:
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	if err := utp.RemoveTransactions(removeTxs); err != nil {
+		return nil, err
+	}
+
+	return removeTxs, nil
 }
 
 // FilterKnown returns txn hashes with known ones removed

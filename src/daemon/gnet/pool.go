@@ -240,16 +240,7 @@ func (pool *ConnectionPool) Run() error {
 	pool.wg.Add(1)
 	go func() {
 		defer pool.wg.Done()
-		for {
-			select {
-			case <-pool.quit:
-				return
-			case req := <-pool.reqC:
-				if err := req.Func(); err != nil {
-					logger.Error("req.Func %s failed: %v", req.Name, err)
-				}
-			}
-		}
+		pool.processStrand()
 	}()
 
 loop:
@@ -278,6 +269,26 @@ loop:
 	return nil
 }
 
+// RunOffline runs the pool in offline mode. No connections will be accepted,
+// but strand requests are processed.
+func (pool *ConnectionPool) RunOffline() error {
+	pool.processStrand()
+	return nil
+}
+
+func (pool *ConnectionPool) processStrand() {
+	for {
+		select {
+		case <-pool.quit:
+			return
+		case req := <-pool.reqC:
+			if err := req.Func(); err != nil {
+				logger.Error("req.Func %s failed: %v", req.Name, err)
+			}
+		}
+	}
+}
+
 // Shutdown gracefully shutdown the connection pool
 func (pool *ConnectionPool) Shutdown() {
 	close(pool.quit)
@@ -292,7 +303,7 @@ func (pool *ConnectionPool) Shutdown() {
 // strand ensures all read and write action of pool's member variable are in one thread.
 func (pool *ConnectionPool) strand(name string, f func() error) error {
 	name = fmt.Sprintf("daemon.gnet.ConnectionPool.%s", name)
-	return strand.WithQuit(logger, pool.reqC, name, f, pool.quit, ErrConnectionPoolClosed)
+	return strand.Strand(logger, pool.reqC, name, f, pool.quit, ErrConnectionPoolClosed)
 }
 
 // NewConnection creates a new Connection around a net.Conn.  Trying to make a connection
@@ -589,7 +600,7 @@ func (pool *ConnectionPool) GetConnection(addr string) (*Connection, error) {
 	if err := pool.strand("GetConnection", func() error {
 		if c, ok := pool.addresses[addr]; ok {
 			// copy connection
-			var cc = *c
+			cc := *c
 			conn = &cc
 		}
 		return nil

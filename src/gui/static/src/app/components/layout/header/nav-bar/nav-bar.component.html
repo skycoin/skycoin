@@ -1,0 +1,21 @@
+<div class="container">
+  <div class="-buttons">
+    <div class="-button -low-opacity" routerLink="/wallets" routerLinkActive="no-opacity">
+      <img src="../../../../../assets/img/wallet-black.png">
+      <span>Wallets</span>
+    </div>
+    <div class="-button -low-opacity" routerLink="/send" routerLinkActive="no-opacity">
+      <img src="../../../../../assets/img/send-black.png">
+      <span>Send</span>
+    </div>
+    <div class="-button -low-opacity" routerLink="/transactions" routerLinkActive="no-opacity">
+      <img src="../../../../../assets/img/transactions-black.png">
+      <span>History</span>
+    </div>
+    <div class="flex-fill"></div>
+    <div class="-button" *ngIf="otcEnabled">
+      <img src="../../../../../assets/img/money-gold.png">
+      <span class="secondary-color">Buy Skycoin</span>
+    </div>
+  </div>
+</div>

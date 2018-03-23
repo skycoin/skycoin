@@ -133,8 +133,7 @@ func (rpc RPC) GetTransaction(v *Visor, txHash cipher.SHA256) (*Transaction, err
 }
 
 // GetAddressTxns get address transactions
-func (rpc RPC) GetAddressTxns(v *Visor,
-	addr cipher.Address) ([]Transaction, error) {
+func (rpc RPC) GetAddressTxns(v *Visor, addr cipher.Address) ([]Transaction, error) {
 	return v.GetAddressTxns(addr)
 }
 

@@ -1,8 +1,8 @@
 import { Component, OnInit, Inject } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
-import { MD_DIALOG_DATA, MdDialogRef } from '@angular/material';
-import { WalletModel } from '../../../../models/wallet.model';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { Wallet } from '../../../../app.datatypes';
 
 @Component({
   selector: 'app-change-name',
@@ -10,18 +10,21 @@ import { WalletModel } from '../../../../models/wallet.model';
   styleUrls: ['./change-name.component.css']
 })
 export class ChangeNameComponent implements OnInit {
-
   form: FormGroup;
 
   constructor(
-    @Inject(MD_DIALOG_DATA) private data: WalletModel,
-    public dialogRef: MdDialogRef<ChangeNameComponent>,
+    @Inject(MAT_DIALOG_DATA) private data: Wallet,
+    public dialogRef: MatDialogRef<ChangeNameComponent>,
     private formBuilder: FormBuilder,
     private walletService: WalletService,
   ) {}
 
   ngOnInit() {
     this.initForm();
+  }
+
+  closePopup() {
+    this.dialogRef.close();
   }
 
   rename() {
@@ -31,7 +34,7 @@ export class ChangeNameComponent implements OnInit {
 
   private initForm() {
     this.form = this.formBuilder.group({
-      label: [this.data.meta.label, Validators.required],
+      label: [this.data.label, Validators.required],
     });
   }
 }

@@ -38,8 +38,8 @@ func getOutputsHandler(req Request, gateway Gatewayer) Response {
 	outs, err := gateway.GetUnspentOutputs(daemon.FbyAddresses(addrs))
 	if err != nil {
 		logger.Error("get unspent outputs failed: %v", err)
-		return makeErrorResponse(errCodeInternalError)
+		return makeErrorResponse(errCodeInternalError, fmt.Sprintf("gateway.GetUnspentOutputs failed: %v", err))
 	}
 
-	return makeSuccessResponse(req.ID, OutputsResult{outs})
+	return makeSuccessResponse(req.ID, OutputsResult{*outs})
 }

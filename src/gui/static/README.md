@@ -39,3 +39,7 @@ Please note that at the moment the Purchase API (teller) is both offline and not
 While event.skycoin.net is not working, we will have to run the purchase API locally.
 
 Similar as the solution for the above CORS issue, you can circumvent CORS issues by changing the url property to '/teller/'
+
+## Style guide
+
+As an Angular application, we try to follow the [Angular style guide](https://angular.io/guide/styleguide).

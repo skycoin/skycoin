@@ -16,18 +16,16 @@ import (
 	"syscall"
 	"time"
 
-	//"github.com/skycoin/skycoin/src/api/webrpc"
+	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
-	//"github.com/skycoin/skycoin/src/gui"
+	"github.com/skycoin/skycoin/src/gui"
 	"github.com/skycoin/skycoin/src/util/browser"
 	"github.com/skycoin/skycoin/src/util/cert"
 	"github.com/skycoin/skycoin/src/util/file"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/visor"
-	"../../src/gui"
-	"../../src/api/webrpc"
 )
 
 var (
@@ -664,12 +662,16 @@ func Run(c *Config) {
 	}
 
 	// Debug only - forces connection on start.  Violates thread safety.
+	/*
 	if c.ConnectTo != "" {
 		if err := d.Pool.Pool.Connect(c.ConnectTo); err != nil {
 			logger.Error("Force connect %s failed, %v", c.ConnectTo, err)
 			return
 		}
+
 	}
+
+	*/
 
 	// POTENTIALLY UNSAFE CODE -- See https://github.com/skycoin/skycoin/issues/838
 	// closelog, err := initLogging(c.DataDirectory, c.LogLevel, c.ColorLog, c.Logtofile, c.Logtogui, &d.LogBuff)
@@ -772,7 +774,7 @@ func Run(c *Config) {
 	   }
 	*/
 
-/*	select {
+	select {
 	case <-quit:
 	case err := <-errC:
 		logger.Error("%v", err)
@@ -790,7 +792,7 @@ func Run(c *Config) {
 	wg.Wait()
 	logger.Info("Goodbye")
 }
-*/
+
 func main() {
 	devConfig.Parse()
 	Run(&devConfig)

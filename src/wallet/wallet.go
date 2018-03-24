@@ -68,20 +68,18 @@ const (
 
 // wallet meta fields
 const (
-	metaVersion           = "version"           // wallet version
-	metaFilename          = "filename"          // wallet file name
-	metaLabel             = "label"             // wallet label
-	metaTm                = "tm"                // the timestamp when creating the wallet
-	metaType              = "type"              // wallet type
-	metaCoin              = "coin"              // coin type
-	metaEncrypted         = "encrypted"         // whether the wallet is encrypted
-	metaCryptoType        = "cryptoType"        // encrytion/decryption type
-	metaSeed              = "seed"              // wallet seed
-	metaEncryptedSeed     = "encryptedSeed"     // encrypted wallet seed
-	metaLastSeed          = "lastSeed"          // seed for generating next address
-	metaEncryptedLastSeed = "encryptedLastSeed" //  encrypted seed for generating next address
-	metaAuthenticated     = "authenticated"     // authenticated meta info records arguments for scrypt and chacha20poly1305
-	metaSecrets           = "secrets"
+	metaVersion       = "version"       // wallet version
+	metaFilename      = "filename"      // wallet file name
+	metaLabel         = "label"         // wallet label
+	metaTm            = "tm"            // the timestamp when creating the wallet
+	metaType          = "type"          // wallet type
+	metaCoin          = "coin"          // coin type
+	metaEncrypted     = "encrypted"     // whether the wallet is encrypted
+	metaCryptoType    = "cryptoType"    // encrytion/decryption type
+	metaSeed          = "seed"          // wallet seed
+	metaLastSeed      = "lastSeed"      // seed for generating next address
+	metaAuthenticated = "authenticated" // authenticated meta info records arguments for scrypt and chacha20poly1305
+	metaSecrets       = "secrets"
 )
 
 // CoinType represents the wallet coin type

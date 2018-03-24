@@ -56,7 +56,8 @@ func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 			return
 		}
-		wh.SendOr404(w, b)
+
+		wh.SendJSONOr500(logger, w, b)
 	}
 }
 
@@ -129,7 +130,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 		txStr, err := visor.TransactionToJSON(*tx)
 		if err != nil {
 			logger.Error(err.Error())
-			wh.SendOr404(w, SpendResult{
+			wh.SendJSONOr500(logger, w, SpendResult{
 				Error: err.Error(),
 			})
 			return
@@ -144,7 +145,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 			err = fmt.Errorf("Creation of new readable transaction failed: %v", err)
 			logger.Error(err.Error())
 			ret.Error = err.Error()
-			wh.SendOr404(w, ret)
+			wh.SendJSONOr500(logger, w, ret)
 			return
 		}
 
@@ -154,12 +155,12 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 			err = fmt.Errorf("Get wallet balance failed: %v", err)
 			logger.Error(err.Error())
 			ret.Error = err.Error()
-			wh.SendOr404(w, ret)
+			wh.SendJSONOr500(logger, w, ret)
 			return
 		}
 		ret.Balance = &b
 
-		wh.SendOr404(w, ret)
+		wh.SendJSONOr500(logger, w, ret)
 	}
 }
 
@@ -229,7 +230,7 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		rlt := wallet.NewReadableWallet(wlt)
-		wh.SendOr500(w, rlt)
+		wh.SendJSONOr500(logger, w, rlt)
 	}
 }
 
@@ -283,7 +284,7 @@ func walletNewAddresses(gateway Gatewayer) http.HandlerFunc {
 			rlt.Addresses = append(rlt.Addresses, a.String())
 		}
 
-		wh.SendOr404(w, rlt)
+		wh.SendJSONOr500(logger, w, rlt)
 		return
 	}
 }
@@ -323,7 +324,7 @@ func walletUpdateHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendOr404(w, "success")
+		wh.SendJSONOr500(logger, w, "success")
 	}
 }
 
@@ -352,7 +353,7 @@ func walletGet(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendOr404(w, wlt)
+		wh.SendJSONOr500(logger, w, wlt)
 	}
 }
 
@@ -410,7 +411,7 @@ func walletsHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 			return
 		}
-		wh.SendOr404(w, wlts.ToReadable())
+		wh.SendJSONOr500(logger, w, wlts.ToReadable())
 	}
 }
 
@@ -440,7 +441,7 @@ func getWalletFolder(gateway Gatewayer) http.HandlerFunc {
 		ret := WalletFolder{
 			Address: addr,
 		}
-		wh.SendOr404(w, ret)
+		wh.SendJSONOr500(logger, w, ret)
 	}
 }
 
@@ -487,6 +488,6 @@ func newWalletSeed(gateway Gatewayer) http.HandlerFunc {
 		}{
 			mnemonic,
 		}
-		wh.SendOr404(w, rlt)
+		wh.SendJSONOr500(logger, w, rlt)
 	}
 }

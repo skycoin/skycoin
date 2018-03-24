@@ -80,48 +80,39 @@ function startSkycoin() {
 
   skycoin.on('error', (e) => {
     dialog.showErrorBox('Failed to start skycoin', e.toString());
-  app.quit();
-});
+    app.quit();
+  });
 
   skycoin.stdout.on('data', (data) => {
     console.log(data.toString());
-
-  // Scan for the web URL string
-  if (currentURL) {
-    return
-  }
-  const marker = 'Starting web interface on ';
-  var i = data.indexOf(marker);
-  if (i === -1) {
-    return
-  }
-  // var j = data.indexOf('\n', i);
-
-  // // dialog.showErrorBox('index of newline: ', j);
-  // if (j === -1) {
-  //     throw new Error('web interface url log line incomplete');
-  // }
-  // var url = data.slice(i + marker.length, j);
-  // currentURL = url.toString();
-  currentURL = defaultURL;
-  app.emit('skycoin-ready', { url: currentURL });
-});
+    // Scan for the web URL string
+    if (currentURL) {
+      return
+    }
+    const marker = 'Starting web interface on ';
+    var i = data.indexOf(marker);
+    if (i === -1) {
+      return
+    }
+    currentURL = defaultURL;
+    app.emit('skycoin-ready', { url: currentURL });
+  });
 
   skycoin.stderr.on('data', (data) => {
     console.log(data.toString());
-});
+  });
 
   skycoin.on('close', (code) => {
     // log.info('Skycoin closed');
     console.log('Skycoin closed');
-  reset();
-});
+    reset();
+  });
 
   skycoin.on('exit', (code) => {
     // log.info('Skycoin exited');
     console.log('Skycoin exited');
-  reset();
-});
+    reset();
+  });
 }
 
 function createWindow(url) {
@@ -174,7 +165,12 @@ function createWindow(url) {
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
     win = null;
-});
+  });
+
+  win.webContents.on('will-navigate', function(e, url) {
+    e.preventDefault();
+    require('electron').shell.openExternal(url);
+  });
 
   // create application's main menu
   var template = [{

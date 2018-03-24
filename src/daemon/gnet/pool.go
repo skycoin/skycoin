@@ -612,7 +612,7 @@ func (pool *ConnectionPool) GetConnection(addr string) (*Connection, error) {
 }
 
 // Connect to an address
-func (pool *ConnectionPool) Connect(address string, p pex.Peer) error {
+func (pool *ConnectionPool) Connect(address string) error {
 	exist, err := pool.IsConnExist(address)
 	if err != nil {
 		return err
@@ -628,8 +628,6 @@ func (pool *ConnectionPool) Connect(address string, p pex.Peer) error {
 		return err
 	}
 	//Assume connection is on from here
-
-	pool.Config.ConnectionTypes[address] = p
 
 	pool.wg.Add(1)
 	go func() {

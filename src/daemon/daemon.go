@@ -625,8 +625,10 @@ func (dm *Daemon) connectToPeer(p pex.Peer) error {
 	logger.Debug("Trying to connect to %s", p.Addr)
 	dm.pendingConnections.Add(p.Addr, p)
 	go func() {
-		if err := dm.Pool.Pool.Connect(p.Addr, p); err != nil {
+		if err := dm.Pool.Pool.Connect(p.Addr); err != nil {
 			dm.connectionErrors <- ConnectionError{p.Addr, err}
+		} else {
+			dm.Pool.Pool.Config.ConnectionTypes[p.Addr] = p
 		}
 	}()
 	return nil

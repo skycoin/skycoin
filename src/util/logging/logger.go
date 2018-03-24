@@ -25,7 +25,7 @@ type ExtendedFieldLogger interface {
 
 // Logger wraps sirupsen/logrus.Logger to implement ExtendendFieldLogger
 type Logger struct {
-	logrus.Logger
+	*logrus.Logger
 	module            string
 	allModulesEnabled bool
 	moduleLoggers     map[string]*Logger
@@ -43,7 +43,7 @@ var (
 // New modules-aware logger with formatting string
 func NewLogger() (logger *Logger) {
 	logger = &Logger{
-		Logger: logrus.Logger{
+		Logger: &logrus.Logger{
 			Out: os.Stderr,
 			Formatter: &prefixed.TextFormatter{
 				FullTimestamp:      true,
@@ -74,7 +74,7 @@ func LoggerForModules(enabledModules []string) *Logger {
 
 func (l *Logger) cloneForModule(moduleName string) (logger *Logger) {
 	logger = &Logger{
-		Logger: logrus.Logger{
+		Logger: &logrus.Logger{
 			Out:       l.Out,
 			Formatter: l.Formatter,
 			Hooks:     make(logrus.LevelHooks),
@@ -93,11 +93,10 @@ func (logger *Logger) MustGetLogger(moduleName string) *Logger {
 	if !(isInCache && newLogger != nil) {
 		if isInCache || logger.allModulesEnabled {
 			newLogger = logger.cloneForModule(moduleName)
-			newLogger.Out = ioutil.Discard
 			logger.moduleLoggers[moduleName] = newLogger
 		} else {
 			newLogger = &Logger{
-				Logger:            QuietLogger,
+				Logger:            &QuietLogger,
 				allModulesEnabled: logger.allModulesEnabled,
 				moduleLoggers:     logger.moduleLoggers,
 			}

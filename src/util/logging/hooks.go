@@ -75,14 +75,11 @@ func (h ModuleLogHook) Levels() []logrus.Level {
 func (h ModuleLogHook) Fire(entry *logrus.Entry) error {
 	entry.Data[h.FieldKey] = h.ModuleName
 	prefix := h.ModuleName
-	if value, hasField := entry.Data[h.PriorityKey]; hasField {
-		prefix += ":" + value.(string)
-	}
-	if value, hasField := entry.Data["prefix"]; hasField {
+	if value, hasField := entry.Data[h.PriorityKey]; hasField && value.(string) != "" {
 		prefix += ":" + value.(string)
 	}
 	if prefix != "" {
-		entry.Data["prefix"] = prefix
+		entry.Data["prefix"] = "[" + prefix + "]"
 	}
 
 	return nil

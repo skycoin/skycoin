@@ -33,7 +33,7 @@ func getCoinSupply(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		supply := coinSupply(gateway, w, r)
 		if supply != nil {
-			wh.SendOr404(w, supply)
+			wh.SendJSONOr500(logger, w, supply)
 		}
 	}
 }
@@ -208,7 +208,7 @@ func getTransactionsForAddress(gateway Gatewayer) http.HandlerFunc {
 			resTxs = append(resTxs, NewReadableTransaction(tx, in))
 		}
 
-		wh.SendOr404(w, &resTxs)
+		wh.SendJSONOr500(logger, w, &resTxs)
 	}
 }
 
@@ -263,7 +263,7 @@ func getRichlist(gateway Gatewayer) http.HandlerFunc {
 			richlist = richlist[:topn]
 		}
 
-		wh.SendOr404(w, Richlist{
+		wh.SendJSONOr500(logger, w, Richlist{
 			Richlist: richlist,
 		})
 	}
@@ -285,7 +285,7 @@ func getAddressCount(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendOr404(w, &map[string]uint64{"count": addrCount})
+		wh.SendJSONOr500(logger, w, &map[string]uint64{"count": addrCount})
 	}
 }
 

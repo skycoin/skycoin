@@ -412,7 +412,7 @@ func getOutputsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendOr404(w, outs)
+		wh.SendJSONOr500(logger, w, outs)
 	}
 }
 
@@ -460,7 +460,7 @@ func getBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 		}
 
-		wh.SendOr404(w, balance)
+		wh.SendJSONOr500(logger, w, balance)
 	}
 }
 
@@ -471,7 +471,7 @@ func versionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendOr404(w, gateway.GetBuildInfo())
+		wh.SendJSONOr500(logger, w, gateway.GetBuildInfo())
 	}
 }
 
@@ -535,6 +535,6 @@ func getLogsHandler(logbuf *bytes.Buffer) http.HandlerFunc {
 
 		}
 
-		wh.SendOr404(w, logs)
+		wh.SendJSONOr500(logger, w, logs)
 	}
 }

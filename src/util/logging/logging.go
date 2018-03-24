@@ -1,35 +1,98 @@
 package logging
 
 import (
+	"fmt"
 	"io"
-	"io/ioutil"
-	"log"
 	"os"
+	"strings"
 
-	logging "github.com/op/go-logging"
+	prefixed "github.com/gz-c/logrus-prefixed-formatter"
+	"github.com/sirupsen/logrus"
 )
 
 const (
 	defaultLogFormat = "[%{module}:%{level}] %{message}"
 )
 
-// Logger wraps op/go-logging.Logger
-type Logger struct {
-	*logging.Logger
-}
-
 // Level embedes the logging's level
-type Level int
+type Level uint32
 
-// Log levels.
+// Log levels. Based (approximately) on Python defaults
 const (
-	CRITICAL Level = iota
+	QUIET Level = 10 * iota // No logging
+	PANIC
+	FATAL
+	CRITICAL
 	ERROR
 	WARNING
 	NOTICE
 	INFO
 	DEBUG
 )
+
+func (lvl Level) toImplLevel() (logrus.Level, error) {
+	switch lvl {
+	case PANIC:
+		return logrus.PanicLevel, nil
+	case FATAL:
+		return logrus.FatalLevel, nil
+	case ERROR, CRITICAL:
+		return logrus.ErrorLevel, nil
+	case WARNING:
+		return logrus.WarnLevel, nil
+	case INFO, NOTICE:
+		return logrus.InfoLevel, nil
+	case DEBUG:
+		return logrus.DebugLevel, nil
+	}
+	var l logrus.Level
+	return l, fmt.Errorf("logrus.ing implementation does not support level: %q", lvl)
+}
+
+// LogLevel parse the log level string
+func LogLevel(levelStr string) (Level, error) {
+	switch strings.ToLower(levelStr) {
+	case "panic":
+		return PANIC, nil
+	case "fatal":
+		return FATAL, nil
+	case "critical", "error":
+		return ERROR, nil
+	case "warn", "warning":
+		return WARNING, nil
+	case "notice", "info":
+		return INFO, nil
+	case "debug":
+		return DEBUG, nil
+	}
+
+	var l Level
+	return l, fmt.Errorf("not a valid logging Level: %q", levelStr)
+}
+
+// Return the
+func (l Level) String() string {
+	switch l {
+	case PANIC:
+		return "PANIC"
+	case FATAL:
+		return "FATAL"
+	case CRITICAL:
+		return "CRITICAL"
+	case ERROR:
+		return "ERROR"
+	case WARNING:
+		return "WARN"
+	case INFO:
+		return "INFO"
+	case NOTICE:
+		return "NOTICE"
+	case DEBUG:
+		return "DEBUG"
+	}
+
+	return fmt.Sprintf("LOGLEVEL%d", l)
+}
 
 // LogConfig logger configurations
 type LogConfig struct {
@@ -47,12 +110,6 @@ type LogConfig struct {
 	Output io.Writer
 }
 
-// LogLevel parse the log level string
-func LogLevel(level string) (logging.Level, error) {
-	return logging.LogLevel(level)
-}
-
-// TODO:
 // DefaultLogConfig vs (DevLogConfig + ProdLogConfig) ?
 
 // DevLogConfig default development config for logging
@@ -82,34 +139,54 @@ func ProdLogConfig(modules []string) *LogConfig {
 // convertes l.Level (string) to l.level (int)
 // or panics if l.Level is invalid
 func (l *LogConfig) initLevel() {
-	level, err := logging.LogLevel(l.Level)
+	level, err := LogLevel(l.Level)
 	if err != nil {
 		log.Panicf("Invalid -log-level %s: %v", l.Level, err)
 	}
 	l.level = Level(level)
 }
 
+var log = NewLogger()
+
 // InitLogger initialize logging using this LogConfig;
 // it panics if l.Format is invalid or l.Level is invalid
 func (l *LogConfig) InitLogger() {
 	l.initLevel()
 
-	format := logging.MustStringFormatter(l.Format)
-	logging.SetFormatter(format)
-	for _, s := range l.Modules {
-		logging.SetLevel(logging.Level(l.level), s)
+	formatter := prefixed.TextFormatter{
+		FullTimestamp:      true,
+		AlwaysQuoteStrings: true,
+		QuoteEmptyFields:   true,
+		ForceFormatting:    true,
 	}
-	stdout := logging.NewLogBackend(l.Output, "", 0)
-	stdout.Color = l.Colors
-	logging.SetBackend(stdout)
+	formatter.ForceColors = l.Colors
+	formatter.DisableColors = !l.Colors
+	log.Formatter = &formatter
+
+	log.Out = l.Output
+	if level, err := l.level.toImplLevel(); err == nil {
+		log.SetLevel(level)
+	}
+
+	log.DisableAllModules()
+	log.EnableModules(l.Modules...)
 }
 
 // MustGetLogger safe initialize global logger
 func MustGetLogger(module string) *Logger {
-	return &Logger{logging.MustGetLogger(module)}
+	return log.MustGetLogger(module)
 }
 
 // Disable disables the logger completely
 func Disable() {
-	logging.SetBackend(logging.NewLogBackend(ioutil.Discard, "", 0))
+	for k := range log.moduleLoggers {
+		log.moduleLoggers[k].Disable()
+	}
+}
+
+// Disable disables the logger completely
+func RedirectTo(w io.Writer) {
+	for k := range log.moduleLoggers {
+		log.moduleLoggers[k].Out = w
+	}
 }

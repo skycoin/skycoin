@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"path/filepath"
@@ -168,11 +167,25 @@ func (s *Server) Shutdown() {
 
 func ElapseHandler(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		lrw := NewWrappedResponseWriter(w)
 		start := time.Now()
-		handler.ServeHTTP(w, r)
-		log.Printf("%s %s %v", r.Method, r.URL.Path, time.Since(start))
-
+		handler.ServeHTTP(lrw, r)
+		logger.Info("%v %s %s %v", lrw.statusCode, r.Method, r.URL.Path, time.Since(start))
 	})
+}
+
+type wrappedResponseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func NewWrappedResponseWriter(w http.ResponseWriter) *wrappedResponseWriter {
+	return &wrappedResponseWriter{w, http.StatusOK}
+}
+
+func (lrw *wrappedResponseWriter) WriteHeader(code int) {
+	lrw.statusCode = code
+	lrw.ResponseWriter.WriteHeader(code)
 }
 
 // newServerMux creates an http.ServeMux with handlers registered
@@ -186,6 +199,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.Se
 	}
 
 	webHandler := func(endpoint string, handler http.Handler) {
+
 		handler = CSRFCheck(csrfStore, handler)
 		handler = headerCheck(c.host, handler)
 		handler = ElapseHandler(handler)

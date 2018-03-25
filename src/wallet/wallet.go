@@ -68,18 +68,17 @@ const (
 
 // wallet meta fields
 const (
-	metaVersion       = "version"       // wallet version
-	metaFilename      = "filename"      // wallet file name
-	metaLabel         = "label"         // wallet label
-	metaTm            = "tm"            // the timestamp when creating the wallet
-	metaType          = "type"          // wallet type
-	metaCoin          = "coin"          // coin type
-	metaEncrypted     = "encrypted"     // whether the wallet is encrypted
-	metaCryptoType    = "cryptoType"    // encrytion/decryption type
-	metaSeed          = "seed"          // wallet seed
-	metaLastSeed      = "lastSeed"      // seed for generating next address
-	metaAuthenticated = "authenticated" // authenticated meta info records arguments for scrypt and chacha20poly1305
-	metaSecrets       = "secrets"
+	metaVersion    = "version"    // wallet version
+	metaFilename   = "filename"   // wallet file name
+	metaLabel      = "label"      // wallet label
+	metaTm         = "tm"         // the timestamp when creating the wallet
+	metaType       = "type"       // wallet type
+	metaCoin       = "coin"       // coin type
+	metaEncrypted  = "encrypted"  // whether the wallet is encrypted
+	metaCryptoType = "cryptoType" // encrytion/decryption type
+	metaSeed       = "seed"       // wallet seed
+	metaLastSeed   = "lastSeed"   // seed for generating next address
+	metaSecrets    = "secrets"    // secrets which records the encrypted seeds and secrets of address entries
 )
 
 // CoinType represents the wallet coin type
@@ -104,20 +103,6 @@ func newWalletFilename() string {
 }
 
 // Wallet contains meta data and address entries.
-//
-// Meta:
-//      filename
-//      version
-//      label
-//      seed
-// 		encrypted - whether this wallet is encrypted
-// 		cryptoType - wallet crypto type
-//      encryptedSeed - encrypted seed
-//      lastSeed - seed for generating next address
-// .    encryptedLastSeed - encrypted last seed
-//      tm - timestamp when creating the wallet
-//      type - wallet type
-//      coin - coin type
 type Wallet struct {
 	Meta    map[string]string
 	Entries []Entry
@@ -176,7 +161,7 @@ func NewWallet(wltName string, opts Options) (*Wallet, error) {
 	return w, nil
 }
 
-// lock encrypts the wallet with password
+// lock encrypts the wallet with the given password and specific crypto type
 func (w *Wallet) lock(password []byte, cryptoType CryptoType) error {
 	if len(password) == 0 {
 		return ErrMissingPassword
@@ -191,9 +176,9 @@ func (w *Wallet) lock(password []byte, cryptoType CryptoType) error {
 	// Records seeds in secrets
 	ss := make(secrets)
 	defer func() {
-		// Wipes all data in secrets
+		// Wipes all secrets
 		ss.erase()
-		// Wipes the sercet fields in the clone wallet
+		// Wipes all sercets in the clone wallet
 		wlt.erase()
 	}()
 
@@ -238,7 +223,7 @@ func (w *Wallet) lock(password []byte, cryptoType CryptoType) error {
 }
 
 // unlock decrypts the wallet into a temporary decrypted copy of the wallet
-// It returns an error if decryption fails
+// Returns error if the decryption fails
 // The temporary decrypted wallet should be erased from memory when done.
 func (w *Wallet) unlock(password []byte) (*Wallet, error) {
 	if !w.IsEncrypted() {
@@ -329,7 +314,8 @@ func (w *Wallet) erase() {
 	}
 }
 
-// guardUpdate executes a function within the context of a read-wirte managed wallet.
+// guardUpdate executes a function within the context of a read-wirte managed decrypted wallet.
+// Returns ErrWalletNotEncrypted if wallet is not encrypted.
 func (w *Wallet) guardUpdate(password []byte, fn func(w *Wallet) error) error {
 	if !w.IsEncrypted() {
 		return ErrWalletNotEncrypted
@@ -361,7 +347,8 @@ func (w *Wallet) guardUpdate(password []byte, fn func(w *Wallet) error) error {
 	return nil
 }
 
-// guardView executes a function within the context of a read-only managed wallet.
+// guardView executes a function within the context of a read-only managed decrypted wallet.
+// Returns ErrWalletNotEncrypted if wallet is not encrypted.
 func (w *Wallet) guardView(password []byte, f func(w *Wallet) error) error {
 	if !w.IsEncrypted() {
 		return ErrWalletNotEncrypted
@@ -384,7 +371,7 @@ func (w *Wallet) guardView(password []byte, f func(w *Wallet) error) error {
 	return nil
 }
 
-// Load loads wallet from given file
+// Load loads wallet from a given file
 func Load(wltFile string) (*Wallet, error) {
 	if _, err := os.Stat(wltFile); os.IsNotExist(err) {
 		return nil, fmt.Errorf("load wallet file failed, wallet %s doesn't exist", wltFile)

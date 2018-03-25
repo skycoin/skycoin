@@ -1829,7 +1829,7 @@ func prepareAndCheckWallet(t *testing.T, miniCoins, miniCoinHours uint64) (*wall
 		t.Fatalf("Wallet must have at least %v coinhours", miniCoinHours)
 	}
 
-	if err := w.Save(walletDir); err != nil {
+	if err := wallet.Save(walletDir, w); err != nil {
 		t.Fatalf("%v", err)
 	}
 	return w, totalCoins, totalCoinhours
@@ -1999,7 +1999,7 @@ func TestStableGenerateWallet(t *testing.T) {
 			setup: createTempWalletDir,
 			checkWallet: func(t *testing.T, w *wallet.Wallet) {
 				// Confirms the default wallet name is skycoin_cli.wlt
-				require.Equal(t, "skycoin_cli.wlt", w.GetFilename())
+				require.Equal(t, "skycoin_cli.wlt", w.Filename())
 
 				// Confirms the seed is a valid hex string
 				_, err := hex.DecodeString(w.Meta["seed"])
@@ -2015,7 +2015,7 @@ func TestStableGenerateWallet(t *testing.T) {
 			setup: createTempWalletDir,
 			checkWallet: func(t *testing.T, w *wallet.Wallet) {
 				// Confirms the default wallet name is skycoin_cli.wlt
-				require.Equal(t, "skycoin_cli.wlt", w.GetFilename())
+				require.Equal(t, "skycoin_cli.wlt", w.Filename())
 
 				// Confirms the seed is consisited of 12 words
 				seed := w.Meta["seed"]
@@ -2032,7 +2032,7 @@ func TestStableGenerateWallet(t *testing.T) {
 			setup: createTempWalletDir,
 			checkWallet: func(t *testing.T, w *wallet.Wallet) {
 				// Confirms the default wallet name is skycoin_cli.wlt
-				require.Equal(t, "skycoin_cli.wlt", w.GetFilename())
+				require.Equal(t, "skycoin_cli.wlt", w.Filename())
 				// Confirms the label is empty
 				require.Empty(t, w.Meta["label"])
 
@@ -2048,7 +2048,7 @@ func TestStableGenerateWallet(t *testing.T) {
 			setup: createTempWalletDir,
 			checkWallet: func(t *testing.T, w *wallet.Wallet) {
 				// Confirms the default wallet name is skycoin_cli.wlt
-				require.Equal(t, "skycoin_cli.wlt", w.GetFilename())
+				require.Equal(t, "skycoin_cli.wlt", w.Filename())
 				// Confirms the label is empty
 				require.Empty(t, w.Meta["label"])
 				// Confirms wallet has 5 address entries
@@ -2061,7 +2061,7 @@ func TestStableGenerateWallet(t *testing.T) {
 			setup: createTempWalletDir,
 			checkWallet: func(t *testing.T, w *wallet.Wallet) {
 				// Confirms the default wallet name is skycoin_cli.wlt
-				require.Equal(t, "integration-cli.wlt", w.GetFilename())
+				require.Equal(t, "integration-cli.wlt", w.Filename())
 				// Confirms the label is empty
 				require.Empty(t, w.Meta["label"])
 			},
@@ -2072,7 +2072,7 @@ func TestStableGenerateWallet(t *testing.T) {
 			setup: createTempWalletDir,
 			checkWallet: func(t *testing.T, w *wallet.Wallet) {
 				// Confirms the default wallet name is skycoin_cli.wlt
-				require.Equal(t, "skycoin_cli.wlt", w.GetFilename())
+				require.Equal(t, "skycoin_cli.wlt", w.Filename())
 				label, ok := w.Meta["label"]
 				require.True(t, ok)
 				require.Equal(t, "integration-cli", label)
@@ -2121,10 +2121,10 @@ func TestStableGenerateWallet(t *testing.T) {
 			require.NoError(t, err)
 
 			// Confirms all entries and lastSeed are derived from seed.
-			checkWalletEntriesAndLastSeed(t, &w)
+			checkWalletEntriesAndLastSeed(t, w)
 
 			// Checks the wallet with provided checking method.
-			tc.checkWallet(t, &w)
+			tc.checkWallet(t, w)
 		})
 	}
 }

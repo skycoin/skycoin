@@ -111,8 +111,7 @@ type Wallet struct {
 
 // NewWallet creates a wallet instance,
 func NewWallet(wltName string, opts Options) (*Wallet, error) {
-	seed := opts.Seed
-	if seed == "" {
+	if opts.Seed == "" {
 		return nil, ErrMissingSeed
 	}
 
@@ -126,8 +125,8 @@ func NewWallet(wltName string, opts Options) (*Wallet, error) {
 			metaFilename: wltName,
 			metaVersion:  Version,
 			metaLabel:    opts.Label,
-			metaSeed:     seed,
-			metaLastSeed: seed,
+			metaSeed:     opts.Seed,
+			metaLastSeed: opts.Seed,
 			metaTm:       fmt.Sprintf("%v", time.Now().Unix()),
 			metaType:     "deterministic",
 			metaCoin:     string(coin),

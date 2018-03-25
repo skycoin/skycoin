@@ -256,9 +256,9 @@ func TestWalletSpendHandler(t *testing.T) {
 			walletID:        "123",
 			coins:           12,
 			dst:             "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
-			gatewaySpendErr: wallet.ErrWalletApiDisabled,
+			gatewaySpendErr: wallet.ErrWalletAPIDisabled,
 			spendResult: &SpendResult{
-				Error: wallet.ErrWalletApiDisabled.Error(),
+				Error: wallet.ErrWalletAPIDisabled.Error(),
 			},
 		},
 		{
@@ -435,7 +435,7 @@ func TestWalletGet(t *testing.T) {
 				Meta:    map[string]string{},
 				Entries: []wallet.Entry{},
 			},
-			gatewayGetWalletErr: wallet.ErrWalletApiDisabled,
+			gatewayGetWalletErr: wallet.ErrWalletAPIDisabled,
 		},
 		{
 			name:   "200 - OK",
@@ -579,7 +579,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 			err:                           "403 Forbidden",
 			walletID:                      "foo",
 			gatewayGetWalletBalanceResult: wallet.BalancePair{},
-			gatewayBalanceErr:             wallet.ErrWalletApiDisabled,
+			gatewayBalanceErr:             wallet.ErrWalletAPIDisabled,
 		},
 		{
 			name:   "200 - OK",
@@ -722,7 +722,7 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 			err:      "403 Forbidden",
 			walletID: "foo",
 			label:    "label",
-			gatewayUpdateWalletLabelErr: wallet.ErrWalletApiDisabled,
+			gatewayUpdateWalletLabelErr: wallet.ErrWalletAPIDisabled,
 		},
 		{
 			name:   "200 OK",
@@ -845,7 +845,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			status:   http.StatusForbidden,
 			err:      "403 Forbidden",
 			walletID: "foo",
-			gatewayGetWalletUnconfirmedTxnsErr: wallet.ErrWalletApiDisabled,
+			gatewayGetWalletUnconfirmedTxnsErr: wallet.ErrWalletAPIDisabled,
 		},
 		{
 			name:   "200 - OK",
@@ -1034,7 +1034,7 @@ func TestWalletCreateHandler(t *testing.T) {
 				Label: "bar",
 				Seed:  "foo",
 			},
-			gatewayCreateWalletErr: wallet.ErrWalletApiDisabled,
+			gatewayCreateWalletErr: wallet.ErrWalletAPIDisabled,
 		},
 		{
 			name:   "200 - OK",
@@ -1351,7 +1351,7 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 			err:      "403 Forbidden",
 			walletID: "foo",
 			n:        1,
-			gatewayNewAddressesErr: wallet.ErrWalletApiDisabled,
+			gatewayNewAddressesErr: wallet.ErrWalletAPIDisabled,
 		},
 		{
 			name:   "200 - OK",
@@ -1477,7 +1477,7 @@ func TestGetWalletFolderHandler(t *testing.T) {
 			method:          http.MethodGet,
 			status:          http.StatusForbidden,
 			err:             "403 Forbidden",
-			getWalletDirErr: wallet.ErrWalletApiDisabled,
+			getWalletDirErr: wallet.ErrWalletAPIDisabled,
 		},
 	}
 

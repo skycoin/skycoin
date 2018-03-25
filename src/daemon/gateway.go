@@ -504,7 +504,7 @@ func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest ciphe
 	var tx *coin.Transaction
 	var err error
 	if gw.Config.DisableWalletAPI {
-		return tx, wallet.ErrWalletApiDisabled
+		return tx, wallet.ErrWalletAPIDisabled
 	}
 	gw.strand("Spend", func() {
 		// create spend validator
@@ -533,7 +533,7 @@ func (gw *Gateway) CreateWallet(wltName string, options wallet.Options) (*wallet
 	var wlt *wallet.Wallet
 	var err error
 	if gw.Config.DisableWalletAPI {
-		return wlt, wallet.ErrWalletApiDisabled
+		return wlt, wallet.ErrWalletAPIDisabled
 	}
 	gw.strand("CreateWallet", func() {
 		wlt, err = gw.vrpc.CreateWallet(wltName, options)
@@ -547,7 +547,7 @@ func (gw *Gateway) ScanAheadWalletAddresses(wltName string, password []byte, sca
 	var wlt *wallet.Wallet
 	var err error
 	if gw.Config.DisableWalletAPI {
-		return wlt, wallet.ErrWalletApiDisabled
+		return wlt, wallet.ErrWalletAPIDisabled
 	}
 	gw.strand("ScanAheadWalletAddresses", func() {
 		wlt, err = gw.v.ScanAheadWalletAddresses(wltName, password, scanN)
@@ -569,7 +569,7 @@ func (gw *Gateway) GetWalletBalance(wltID string) (wallet.BalancePair, error) {
 	var balance wallet.BalancePair
 	var err error
 	if gw.Config.DisableWalletAPI {
-		return balance, wallet.ErrWalletApiDisabled
+		return balance, wallet.ErrWalletAPIDisabled
 	}
 	gw.strand("GetWalletBalance", func() {
 		var addrs []cipher.Address
@@ -628,7 +628,7 @@ func (gw *Gateway) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePa
 // GetWalletDir returns path for storing wallet files
 func (gw *Gateway) GetWalletDir() (string, error) {
 	if gw.Config.DisableWalletAPI {
-		return "", wallet.ErrWalletApiDisabled
+		return "", wallet.ErrWalletAPIDisabled
 	}
 	return gw.v.Config.WalletDirectory, nil
 }
@@ -638,7 +638,7 @@ func (gw *Gateway) NewAddresses(wltID string, password []byte, n uint64) ([]ciph
 	var addrs []cipher.Address
 	var err error
 	if gw.Config.DisableWalletAPI {
-		return addrs, wallet.ErrWalletApiDisabled
+		return addrs, wallet.ErrWalletAPIDisabled
 	}
 	gw.strand("NewAddresses", func() {
 		addrs, err = gw.v.Wallets.NewAddresses(wltID, password, n)
@@ -650,7 +650,7 @@ func (gw *Gateway) NewAddresses(wltID string, password []byte, n uint64) ([]ciph
 func (gw *Gateway) UpdateWalletLabel(wltID, label string) error {
 	var err error
 	if gw.Config.DisableWalletAPI {
-		return wallet.ErrWalletApiDisabled
+		return wallet.ErrWalletAPIDisabled
 	}
 	gw.strand("UpdateWalletLabel", func() {
 		err = gw.v.Wallets.UpdateWalletLabel(wltID, label)
@@ -663,7 +663,7 @@ func (gw *Gateway) GetWallet(wltID string) (*wallet.Wallet, error) {
 	var w *wallet.Wallet
 	var err error
 	if gw.Config.DisableWalletAPI {
-		return w, wallet.ErrWalletApiDisabled
+		return w, wallet.ErrWalletAPIDisabled
 	}
 	gw.strand("GetWallet", func() {
 		w, err = gw.vrpc.GetWallet(wltID)
@@ -675,7 +675,7 @@ func (gw *Gateway) GetWallet(wltID string) (*wallet.Wallet, error) {
 func (gw *Gateway) GetWallets() (wallet.Wallets, error) {
 	var w wallet.Wallets
 	if gw.Config.DisableWalletAPI {
-		return w, wallet.ErrWalletApiDisabled
+		return w, wallet.ErrWalletAPIDisabled
 	}
 	gw.strand("GetWallets", func() {
 		w = gw.v.Wallets.GetWallets()
@@ -688,7 +688,7 @@ func (gw *Gateway) GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTx
 	var txns []visor.UnconfirmedTxn
 	var err error
 	if gw.Config.DisableWalletAPI {
-		return txns, wallet.ErrWalletApiDisabled
+		return txns, wallet.ErrWalletAPIDisabled
 	}
 	gw.strand("GetWalletUnconfirmedTxns", func() {
 		var addrs []cipher.Address
@@ -707,7 +707,7 @@ func (gw *Gateway) GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTx
 func (gw *Gateway) ReloadWallets() error {
 	var err error
 	if gw.Config.DisableWalletAPI {
-		return wallet.ErrWalletApiDisabled
+		return wallet.ErrWalletAPIDisabled
 	}
 	gw.strand("ReloadWallets", func() {
 		err = gw.v.Wallets.ReloadWallets()

@@ -607,14 +607,14 @@ func (w *Wallet) GenerateAddresses(num uint64) ([]cipher.Address, error) {
 		seed, seckeys = cipher.GenerateDeterministicKeyPairsSeed(sd, int(num))
 	}
 
-	wlt.setLastSeed(hex.EncodeToString(seed))
+	w.setLastSeed(hex.EncodeToString(seed))
 
 	addrs := make([]cipher.Address, len(seckeys))
 	for i, s := range seckeys {
 		p := cipher.PubKeyFromSecKey(s)
 		a := cipher.AddressFromPubKey(p)
 		addrs[i] = a
-		wlt.Entries = append(wlt.Entries, Entry{
+		w.Entries = append(w.Entries, Entry{
 			Address: a,
 			Secret:  s,
 			Public:  p,

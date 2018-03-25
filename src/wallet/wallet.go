@@ -49,8 +49,9 @@ var (
 	// ErrWrongCryptoType is returned when decrypting wallet with wrong crypto method
 	ErrWrongCryptoType = errors.New("wrong crypto type")
 	// ErrWalletNotExist is returned if a wallet does not exist
-	ErrWalletNotExist    = errors.New("wallet doesn't exist")
-	ErrWalletApiDisabled = errors.New("wallet api disabled")
+	ErrWalletNotExist = errors.New("wallet doesn't exist")
+	// ErrWalletAPIDisabled is returned when trying to do wallet actions while the DisableWalletAPI option is enabled.
+	ErrWalletAPIDisabled = errors.New("wallet api disabled")
 )
 
 const (
@@ -154,7 +155,7 @@ func NewWallet(wltName string, opts Options) (*Wallet, error) {
 	}
 
 	// Validate the wallet
-	if err := w.validate(); err != nil {
+	if err := w.Validate(); err != nil {
 		return nil, err
 	}
 
@@ -384,7 +385,7 @@ func Load(wltFile string) (*Wallet, error) {
 
 	// update filename meta info with the real filename
 	r.Meta["filename"] = filepath.Base(wltFile)
-	return r.toWallet()
+	return r.ToWallet()
 }
 
 // Save saves the wallet to given dir
@@ -454,7 +455,7 @@ func (w *Wallet) reset() {
 }
 
 // Validate validates the wallet
-func (w *Wallet) validate() error {
+func (w *Wallet) Validate() error {
 	if _, ok := w.Meta[metaFilename]; !ok {
 		return errors.New("filename not set")
 	}

@@ -135,12 +135,12 @@ func LoadReadableWallet(filename string) (*ReadableWallet, error) {
 }
 
 // ToWallet convert readable wallet to Wallet
-func (rw *ReadableWallet) toWallet() (*Wallet, error) {
+func (rw *ReadableWallet) ToWallet() (*Wallet, error) {
 	w := &Wallet{
 		Meta: rw.Meta,
 	}
 
-	if err := w.validate(); err != nil {
+	if err := w.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid wallet %s: %v", w.Filename(), err)
 	}
 

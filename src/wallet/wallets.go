@@ -45,7 +45,7 @@ func LoadWallets(dir string) (Wallets, error) {
 			if err != nil {
 				return nil, err
 			}
-			w, err := rw.toWallet()
+			w, err := rw.ToWallet()
 			if err != nil {
 				return nil, err
 			}

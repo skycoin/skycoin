@@ -32,42 +32,39 @@ type dockerCompose struct {
 }
 
 // BuildImage builds the node docker image
-func runTest(tempDir string, scale int) {
+func runTestNet(tempDir string, scale int) {
 	cmdName := "docker-compose"
-	composeFile := path.Join(tempDir, "docker-compose.yml")
-	cmdArgs := []string{"-f", composeFile, "up", "--scale", "skycoin-slave=" + strconv.Itoa(scale)}
+	cmdArgs := []string{"up", "-d", "--scale", "skycoin-slave=" + strconv.Itoa(scale)}
 	cmd := exec.Command(cmdName, cmdArgs...)
-	cmdReader, err := cmd.StdoutPipe()
+	cmd.Dir = tempDir
+	err := cmd.Run()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error creating StdoutPipe for Cmd", err)
+		fmt.Fprintln(os.Stderr, "Error starting Testnet", err)
+		cleanUp(tempDir)
 		os.Exit(1)
 	}
+}
 
-	scanner := bufio.NewScanner(cmdReader)
-	go func() {
-		for scanner.Scan() {
-			fmt.Printf("%s\n", scanner.Text())
-		}
-	}()
-
-	err = cmd.Start()
+func stopTestNet(tempDir string) {
+	cmdName := "docker-compose"
+	cmdArgs := []string{"down"}
+	cmd := exec.Command(cmdName, cmdArgs...)
+	cmd.Dir = tempDir
+	err := cmd.Run()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error starting Cmd", err)
+		fmt.Fprintln(os.Stderr, "Error stopping Testnet", err)
+		cleanUp(tempDir)
 		os.Exit(1)
 	}
+	cleanUp(tempDir)
+	fmt.Println("Done.")
+}
 
-	err = cmd.Wait()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error waiting for Cmd", err)
-		os.Exit(1)
-	}
-	fmt.Println("Cleaning up...")
-	cmdArgs = []string{"-f", composeFile, "down"}
-	err = os.RemoveAll(tempDir)
+func cleanUp(tempDir string) {
+	err := os.RemoveAll(tempDir)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("Done.")
 }
 
 func processComposeFile(composeFile *dockerCompose, tempDir string) {
@@ -115,10 +112,10 @@ func main() {
 	_, callerFile, _, _ := runtime.Caller(0)
 	projectPath, _ := filepath.Abs(filepath.Join(filepath.Dir(callerFile), "../../../"))
 	log.Print("Source code base dir at ", projectPath)
-	//nodesPtr := flag.Int("-nodes", 5, "Number of nodes to launch.")
-	//buildContextPtr := flag.String("-buildcontext", projectPath, "Docker build context (source code root).")
+	nodesPtr := flag.Int("-nodes", 5, "Number of nodes to launch.")
+	buildContextPtr := flag.String("-buildcontext", projectPath, "Docker build context (source code root).")
 	flag.Parse()
-	//buildContext, err := filepath.Abs(*buildContextPtr)
+	buildContext, err := filepath.Abs(*buildContextPtr)
 	tempDir, err := ioutil.TempDir("", "skycointest")
 	if err != nil {
 		log.Fatal(err)
@@ -131,13 +128,13 @@ func main() {
 		Services: map[string]dockerService{
 			"skycoin-master": dockerService{
 				Build: serviceBuild{
-					Context: projectPath,
+					Context: buildContext,
 				},
 				Ports: []string{"16420:16420"},
 			},
 			"skycoin-peer": dockerService{
 				Build: serviceBuild{
-					Context: projectPath,
+					Context: buildContext,
 				},
 			},
 			"skycoin-explorer": dockerService{
@@ -151,6 +148,9 @@ func main() {
 	processComposeFile(&composeFile, tempDir)
 	createComposeFile(composeFile, tempDir)
 	prepareTestEnv(composeFile)
-	//testNet := NewSkyCoinTestNetwork(*nodesPtr, buildContext, tempDir)
-	//runTest(tempDir)
+	runTestNet(tempDir, *nodesPtr)
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("Press enter to stop TestNet: ")
+	_, _ = reader.ReadString('\n')
+	stopTestNet(tempDir)
 }

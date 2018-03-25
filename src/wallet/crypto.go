@@ -1,17 +1,10 @@
 package wallet
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher/encrypt"
-)
-
-// secrets key name
-const (
-	secretSeed     = "seed"
-	secretLastSeed = "lastSeed"
 )
 
 type cryptor interface {
@@ -30,7 +23,7 @@ func CryptoTypeFromString(s string) (CryptoType, error) {
 	case CryptoTypeScryptChacha20poly1305:
 		return CryptoTypeScryptChacha20poly1305, nil
 	default:
-		return "", errors.New("unknow crypto type")
+		return "", errors.New("unknown crypto type")
 	}
 }
 
@@ -55,30 +48,4 @@ func getCrypto(cryptoType CryptoType) (cryptor, error) {
 	}
 
 	return c, nil
-}
-
-type secrets map[string]string
-
-func (s secrets) get(key string) (string, bool) {
-	v, ok := s[key]
-	return v, ok
-}
-
-func (s secrets) set(key, v string) {
-	s[key] = v
-}
-
-func (s secrets) serialize() ([]byte, error) {
-	return json.Marshal(s)
-}
-
-func (s secrets) deserialize(data []byte) error {
-	return json.Unmarshal(data, &s)
-}
-
-func (s secrets) erase() {
-	for k := range s {
-		s[k] = ""
-		delete(s, k)
-	}
 }

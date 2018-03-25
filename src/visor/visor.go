@@ -269,7 +269,13 @@ func NewVisor(c Config, db *bolt.DB) (*Visor, error) {
 
 	bc.BindListener(bp.FeedBlock)
 
-	wltServ, err := wallet.NewService(c.WalletDirectory, c.WalletCryptoType, c.DisableWalletAPI)
+	wltServConfig := wallet.Config{
+		WalletDir:        c.WalletDirectory,
+		CryptoType:       c.WalletCryptoType,
+		DisableWalletAPI: c.DisableWalletAPI,
+	}
+
+	wltServ, err := wallet.NewService(wltServConfig)
 	if err != nil {
 		return nil, err
 	}

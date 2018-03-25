@@ -26,23 +26,30 @@ type Service struct {
 	disableWalletAPI bool
 }
 
+// Config wallet service config
+type Config struct {
+	WalletDir        string
+	CryptoType       CryptoType
+	DisableWalletAPI bool
+}
+
 // NewService new wallet service
-func NewService(walletDir string, cryptoType CryptoType, disableWalletAPI bool) (*Service, error) {
+func NewService(c Config) (*Service, error) {
 	serv := &Service{
 		firstAddrIDMap:   make(map[string]string),
-		cryptoType:       cryptoType,
-		disableWalletAPI: disableWalletAPI,
+		cryptoType:       c.CryptoType,
+		disableWalletAPI: c.DisableWalletAPI,
 	}
 
 	if serv.disableWalletAPI {
 		return serv, nil
 	}
 
-	if err := os.MkdirAll(walletDir, os.FileMode(0700)); err != nil {
-		return nil, fmt.Errorf("failed to create wallet directory %s: %v", walletDir, err)
+	if err := os.MkdirAll(c.WalletDir, os.FileMode(0700)); err != nil {
+		return nil, fmt.Errorf("failed to create wallet directory %s: %v", c.WalletDir, err)
 	}
 
-	serv.walletDirectory = walletDir
+	serv.walletDirectory = c.WalletDir
 
 	// Removes .wlt.bak files before loading wallets
 	if err := removeBackupFiles(serv.walletDirectory); err != nil {
@@ -85,7 +92,7 @@ func (serv *Service) CreateWallet(wltName string, options Options) (*Wallet, err
 	serv.Lock()
 	defer serv.Unlock()
 	if serv.disableWalletAPI {
-		return nil, ErrWalletApiDisabled
+		return nil, ErrWalletAPIDisabled
 	}
 	if wltName == "" {
 		wltName = serv.generateUniqueWalletFilename()
@@ -340,7 +347,7 @@ func (serv *Service) ReloadWallets() error {
 	serv.Lock()
 	defer serv.Unlock()
 	if serv.disableWalletAPI {
-		return ErrWalletApiDisabled
+		return ErrWalletAPIDisabled
 	}
 	wallets, err := LoadWallets(serv.walletDirectory)
 	if err != nil {

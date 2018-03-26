@@ -2444,3 +2444,14 @@ func TestDisableWalletApi(t *testing.T) {
 	_, err := os.Stat(walletDir)
 	require.True(t, os.IsNotExist(err))
 }
+
+func TestLiveHealth(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+	_, err := c.Health()
+
+	require.NoError(t, err)
+}

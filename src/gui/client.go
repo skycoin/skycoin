@@ -705,3 +705,12 @@ func (c *Client) UnloadWallet(id string) error {
 	v.Add("id", id)
 	return c.PostForm("/wallet/unload", strings.NewReader(v.Encode()), nil)
 }
+
+// Health makes a request to /health
+func (c *Client) Health() (bool, error) {
+	if err := c.Get("/health", nil); err != nil {
+		return false, err
+	}
+
+	return true, nil
+}

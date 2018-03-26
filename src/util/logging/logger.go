@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"os"
 
-	prefixed "github.com/gz-c/logrus-prefixed-formatter"
 	"github.com/sirupsen/logrus"
 )
 
@@ -45,11 +44,12 @@ func NewLogger() (logger *Logger) {
 	logger = &Logger{
 		Logger: &logrus.Logger{
 			Out: os.Stderr,
-			Formatter: &prefixed.TextFormatter{
+			Formatter: &TextFormatter{
 				FullTimestamp:      true,
 				AlwaysQuoteStrings: true,
 				QuoteEmptyFields:   true,
 				ForceFormatting:    true,
+				PriorityKey:        "priority",
 			},
 			Hooks: make(logrus.LevelHooks),
 			Level: logrus.InfoLevel,

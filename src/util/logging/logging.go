@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 
-	prefixed "github.com/gz-c/logrus-prefixed-formatter"
 	"github.com/sirupsen/logrus"
 )
 
@@ -153,11 +152,12 @@ var log = NewLogger()
 func (l *LogConfig) InitLogger() {
 	l.initLevel()
 
-	formatter := prefixed.TextFormatter{
+	formatter := TextFormatter{
 		FullTimestamp:      true,
 		AlwaysQuoteStrings: true,
 		QuoteEmptyFields:   true,
 		ForceFormatting:    true,
+		PriorityKey:        "priority",
 	}
 	formatter.ForceColors = l.Colors
 	formatter.DisableColors = !l.Colors

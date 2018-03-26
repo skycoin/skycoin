@@ -29,6 +29,10 @@ type UnconfirmedTxnsResponse struct {
 
 // Returns the wallet's balance, both confirmed and predicted.  The predicted
 // balance is the confirmed balance minus the pending spends.
+// URI: /wallet/balance
+// Method: GET
+// Args:
+//     id: wallet id [required]
 func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -66,13 +70,13 @@ func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 // URI: /wallet/spend
 // Method: POST
 // Args:
-//  id: wallet id
-//	dst: recipient address
-// 	coins: the number of droplet you will send
+//     id: wallet id
+//     dst: recipient address
+//     coins: the number of droplet you will send
 // Response:
-//  balance: new balance of the wallet
-//  txn: spent transaction
-//  error: an error that may have occured after broadcast the transaction to the network
+//     balance: new balance of the wallet
+//     txn: spent transaction
+//     error: an error that may have occured after broadcast the transaction to the network
 //         if this field is not empty, the spend succeeded, but the response data could not be prepared
 func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -234,11 +238,12 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-// method: POST
-// url: /wallet/newAddress
-// params:
-// 		id: wallet id
-// 	   num: number of address need to create, if not set the default value is 1
+// Genreates new addresses
+// URI: /wallet/newAddress
+// Method: POST
+// Args:
+//     id: wallet id [required]
+//     num: number of address need to create [optional, if not set the default value is 1]
 func walletNewAddresses(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -290,6 +295,11 @@ func walletNewAddresses(gateway Gatewayer) http.HandlerFunc {
 }
 
 // Update wallet label
+// URI: /wallet/update
+// Method: POST
+// Args:
+//     id: wallet id [required]
+//     label: the label the wallet will be updated to [required]
 func walletUpdateHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -329,6 +339,10 @@ func walletUpdateHandler(gateway Gatewayer) http.HandlerFunc {
 }
 
 // Returns a wallet by id
+// URI: /wallet
+// Method: GET
+// Args:
+//     id: wallet id [required]
 func walletGet(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -358,6 +372,10 @@ func walletGet(gateway Gatewayer) http.HandlerFunc {
 }
 
 // Returns JSON of unconfirmed transactions for user's wallet
+// URI: /wallet/transactions
+// Method: GET
+// Args:
+//     id: wallet id [required]
 func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -399,6 +417,8 @@ func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 }
 
 // Returns all loaded wallets
+// RUI: /wallets
+// Method: GET
 func walletsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		wlts, err := gateway.GetWallets()
@@ -420,7 +440,9 @@ type WalletFolder struct {
 	Address string `json:"address"`
 }
 
-// Loads/unloads wallets from the wallet directory
+// Returns the wallet directory path
+// URI: /wallets/folderName
+// Method: GET
 func getWalletFolder(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -445,10 +467,20 @@ func getWalletFolder(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
+// Generates wallet seed
+// URI: /wallet/newSeed
+// Method: GET
+// Args:
+//     entropy: entropy bitsize [optional, default value of 128 will be used if not set]
 func newWalletSeed(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
+			return
+		}
+
+		if gateway.IsWalletAPIDisabled() {
+			wh.Error403(w)
 			return
 		}
 

@@ -260,8 +260,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.Se
 	// POST arguments:
 	//  id: Wallet ID
 	//  coins: Number of coins to spend
-	//  hours: Number of hours to spends
-	//  fee: Number of hours to use as fee, on top of the default fee.
+	//  dst: Destination address
 	//  Returns total amount spent if successful, otherwise error describing
 	//  failure status.
 	webHandler("/wallet/spend", walletSpendHandler(gateway))
@@ -272,18 +271,21 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.Se
 	webHandler("/wallet/transactions", walletTransactionsHandler(gateway))
 
 	// Update wallet label
-	//      POST Arguments:
-	//          id: wallet id
-	//          label: wallet label
+	// POST Arguments:
+	//     id: wallet id
+	//     label: wallet label
 	webHandler("/wallet/update", walletUpdateHandler(gateway))
 
 	// Returns all loaded wallets
 	// returns sensitive information
 	webHandler("/wallets", walletsHandler(gateway))
 
+	// Returns wallets directory path
 	webHandler("/wallets/folderName", getWalletFolder(gateway))
 
-	// generate wallet seed
+	// Generate wallet seed
+	// GET Arguments:
+	//     entropy: entropy bitsize.
 	webHandler("/wallet/newSeed", newWalletSeed(gateway))
 
 	// unload wallet
@@ -330,7 +332,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.Se
 	// get raw tx by txid.
 	webHandler("/rawtx", getRawTx(gateway))
 
-	// UxOUt api handler
+	// UxOut api handler
 
 	// get uxout by id.
 	webHandler("/uxout", getUxOutByID(gateway))

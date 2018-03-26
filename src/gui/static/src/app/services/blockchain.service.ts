@@ -20,7 +20,7 @@ export class BlockchainService {
     private apiService: ApiService,
     private walletService: WalletService,
   ) {
-    IntervalObservable
+    setTimeout(() => IntervalObservable
       .create(2000)
       .flatMap(() => this.getBlockchainProgress())
       .takeWhile((response: any) => !response.current || response.current !== response.highest)
@@ -28,7 +28,7 @@ export class BlockchainService {
         response => this.progressSubject.next(response),
         error => console.log(error),
         () => this.completeLoading()
-      );
+      ), 3000);
   }
 
   addressTransactions(id): Observable<any> {

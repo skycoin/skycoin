@@ -106,7 +106,7 @@ func TestGetOutputsHandler(t *testing.T) {
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, &CSRFStore{})
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, &CSRFStore{})
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -257,7 +257,7 @@ func TestGetBalanceHandler(t *testing.T) {
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, &CSRFStore{})
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, &CSRFStore{})
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

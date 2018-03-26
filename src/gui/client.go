@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -84,8 +85,18 @@ func (c *Client) get(endpoint string) (*http.Response, error) {
 	return http.DefaultClient.Do(req)
 }
 
+// PostForm makes a POST request to an endpoint with body of "application/x-www-form-urlencoded" formated data.
+func (c *Client) PostForm(endpoints string, body io.Reader, obj interface{}) error {
+	return c.post(endpoints, "application/x-www-form-urlencoded", body, obj)
+}
+
+// PostJSON makes a POST request to an endpoint with body of json data.
+func (c *Client) PostJSON(endpoints string, body io.Reader, obj interface{}) error {
+	return c.post(endpoints, "application/json", body, obj)
+}
+
 // Post makes a POST request to an endpoint. Caller must close response body.
-func (c *Client) Post(endpoint string, body io.Reader, obj interface{}) error {
+func (c *Client) post(endpoint string, contentType string, body io.Reader, obj interface{}) error {
 	csrf, err := c.CSRF()
 	if err != nil {
 		return err
@@ -100,7 +111,7 @@ func (c *Client) Post(endpoint string, body io.Reader, obj interface{}) error {
 	}
 
 	req.Header.Set("X-CSRF-Token", csrf)
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", contentType)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -365,7 +376,7 @@ func (c *Client) CreateWallet(seed, label string, scanN int) (*wallet.ReadableWa
 	}
 
 	var w wallet.ReadableWallet
-	if err := c.Post("/wallet/create", strings.NewReader(v.Encode()), &w); err != nil {
+	if err := c.PostForm("/wallet/create", strings.NewReader(v.Encode()), &w); err != nil {
 		return nil, err
 	}
 	return &w, nil
@@ -383,7 +394,7 @@ func (c *Client) NewWalletAddress(id string, n int) ([]string, error) {
 	var obj struct {
 		Addresses []string `json:"addresses"`
 	}
-	if err := c.Post("/wallet/newAddress", strings.NewReader(v.Encode()), &obj); err != nil {
+	if err := c.PostForm("/wallet/newAddress", strings.NewReader(v.Encode()), &obj); err != nil {
 		return nil, err
 	}
 	return obj.Addresses, nil
@@ -410,7 +421,8 @@ func (c *Client) Spend(id, dst string, coins uint64) (*SpendResult, error) {
 	v.Add("coins", fmt.Sprint(coins))
 
 	var r SpendResult
-	if err := c.Post("/wallet/spend", strings.NewReader(v.Encode()), &r); err != nil {
+	endpoint := "/wallet/spend"
+	if err := c.PostForm(endpoint, strings.NewReader(v.Encode()), &r); err != nil {
 		return nil, err
 	}
 
@@ -418,12 +430,12 @@ func (c *Client) Spend(id, dst string, coins uint64) (*SpendResult, error) {
 }
 
 // WalletTransactions makes a request to /wallet/transactions
-func (c *Client) WalletTransactions(id string) ([]visor.UnconfirmedTxn, error) {
+func (c *Client) WalletTransactions(id string) (*UnconfirmedTxnsResponse, error) {
 	v := url.Values{}
 	v.Add("id", id)
 	endpoint := "/wallet/transactions?" + v.Encode()
 
-	var utx []visor.UnconfirmedTxn
+	var utx *UnconfirmedTxnsResponse
 	if err := c.Get(endpoint, &utx); err != nil {
 		return nil, err
 	}
@@ -436,16 +448,16 @@ func (c *Client) UpdateWallet(id, label string) error {
 	v.Add("id", id)
 	v.Add("label", label)
 
-	if err := c.Post("/wallet/update", strings.NewReader(v.Encode()), nil); err != nil {
+	if err := c.PostForm("/wallet/update", strings.NewReader(v.Encode()), nil); err != nil {
 		return err
 	}
 	return nil
 }
 
-// WalletFolderName makes a request to /wallet/folderName
+// WalletFolderName makes a request to /wallets/folderName
 func (c *Client) WalletFolderName() (*WalletFolder, error) {
 	var w WalletFolder
-	if err := c.Get("/wallet/folderName", &w); err != nil {
+	if err := c.Get("/wallets/folderName", &w); err != nil {
 		return nil, err
 	}
 	return &w, nil
@@ -526,7 +538,7 @@ func (c *Client) PendingTransactions() ([]*visor.ReadableUnconfirmedTxn, error) 
 }
 
 // Transaction makes a request to /transaction
-func (c *Client) Transaction(txid string) (*visor.ReadableTransaction, error) {
+func (c *Client) Transaction(txid string) (*visor.TransactionResult, error) {
 	v := url.Values{}
 	v.Add("txid", txid)
 	endpoint := "/transaction?" + v.Encode()
@@ -535,7 +547,7 @@ func (c *Client) Transaction(txid string) (*visor.ReadableTransaction, error) {
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}
-	return &r.Transaction, nil
+	return &r, nil
 }
 
 // Transactions makes a request to /transactions
@@ -581,11 +593,19 @@ func (c *Client) UnconfirmedTransactions(addrs []string) (*[]visor.TransactionRe
 
 // InjectTransaction makes a request to /injectTransaction
 func (c *Client) InjectTransaction(rawTx string) (string, error) {
-	v := url.Values{}
-	v.Add("rawtx", rawTx)
+	v := struct {
+		Rawtx string `json:"rawtx"`
+	}{
+		Rawtx: rawTx,
+	}
+
+	d, err := json.Marshal(v)
+	if err != nil {
+		return "", err
+	}
 
 	var txid string
-	if err := c.Post("/injectTransaction", strings.NewReader(v.Encode()), &txid); err != nil {
+	if err := c.PostJSON("/injectTransaction", bytes.NewReader(d), &txid); err != nil {
 		return "", err
 	}
 	return txid, nil

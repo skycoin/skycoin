@@ -24,6 +24,8 @@ import (
 	"github.com/skycoin/skycoin/src/api/cli"
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/gui"
+	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -47,6 +49,7 @@ var (
 
 	update     = flag.Bool("update", false, "update golden files")
 	liveTxFull = flag.Bool("live-tx-full", false, "run live transaction test against full blockchain")
+	testWallet = flag.Bool("test-wallet", false, "run wallet tests")
 )
 
 type TestData struct {
@@ -86,6 +89,14 @@ func TestMain(m *testing.M) {
 	os.Exit(ret)
 }
 
+func nodeAddress() string {
+	addr := os.Getenv("SKYCOIN_NODE_HOST")
+	if addr == "" {
+		return "http://127.0.0.1:6420"
+	}
+	return addr
+}
+
 // createTempWalletFile creates a temporary dir, and copy the 'from' file to dir.
 // returns the temporary wallet path, cleanup callback function, and error if any.
 func createTempWalletFile(t *testing.T) (string, func()) {
@@ -119,22 +130,18 @@ func createTempWalletFile(t *testing.T) (string, func()) {
 	return walletPath, fun
 }
 
-func copyFile(dst, src string) {
-	f, err := os.Create(dst)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Create dst file failed: %v", err)
-		os.Exit(1)
-	}
-	defer f.Close()
+// createTempWalletDir creates a temporary wallet dir,
+// sets the WALLET_DIR environment variable.
+// Returns wallet dir path and callback function to clean up the dir.
+func createTempWalletDir(t *testing.T) func() {
+	dir, err := ioutil.TempDir("", "wallet-data-dir")
+	require.NoError(t, err)
+	os.Setenv("WALLET_DIR", dir)
 
-	rf, err := os.Open(src)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Open src file failed: %v", err)
-		os.Exit(1)
+	return func() {
+		os.Setenv("WALLET_DIR", "")
+		os.RemoveAll(dir)
 	}
-
-	defer rf.Close()
-	io.Copy(f, rf)
 }
 
 func loadJSON(t *testing.T, filename string, obj interface{}) {
@@ -164,9 +171,10 @@ func loadGoldenFile(t *testing.T, filename string, testData TestData) {
 }
 
 func updateGoldenFile(t *testing.T, filename string, content interface{}) {
-	contentJson, err := json.MarshalIndent(content, "", "\t")
+	contentJSON, err := json.MarshalIndent(content, "", "\t")
 	require.NoError(t, err)
-	err = ioutil.WriteFile(filename, contentJson, 0644)
+	contentJSON = append(contentJSON, '\n')
+	err = ioutil.WriteFile(filename, contentJSON, 0644)
 	require.NoError(t, err)
 }
 
@@ -214,6 +222,15 @@ func doLive(t *testing.T) bool {
 	return false
 }
 
+func doWallet(t *testing.T) bool {
+	if *testWallet {
+		return true
+	}
+
+	t.Skip("Wallet tests disabled")
+	return false
+}
+
 // doLiveEnvCheck checks if the WALLET_DIR and WALLET_NAME environment value do exist
 func doLiveEnvCheck(t *testing.T) {
 	t.Helper()
@@ -226,6 +243,21 @@ func doLiveEnvCheck(t *testing.T) {
 	if walletName == "" {
 		t.Fatal("missing WALLET_NAME environment value")
 	}
+}
+
+//  getWalletPathFromEnv gets wallet file path from environment variables
+func getWalletPathFromEnv(t *testing.T) (string, string) {
+	walletDir := os.Getenv("WALLET_DIR")
+	if walletDir == "" {
+		t.Fatal("missing WALLET_DIR environment value")
+	}
+
+	walletName := os.Getenv("WALLET_NAME")
+	if walletName == "" {
+		t.Fatal("missing WALLET_NAME environment value")
+	}
+
+	return walletDir, walletName
 }
 
 func doLiveOrStable(t *testing.T) bool {
@@ -251,6 +283,10 @@ func rpcAddress() string {
 
 func TestStableGenerateAddresses(t *testing.T) {
 	if !doStable(t) {
+		return
+	}
+
+	if !doWallet(t) {
 		return
 	}
 
@@ -656,6 +692,10 @@ func TestStableListWallets(t *testing.T) {
 		return
 	}
 
+	if !doWallet(t) {
+		return
+	}
+
 	_, clean := createTempWalletFile(t)
 	defer clean()
 
@@ -680,6 +720,10 @@ func TestLiveListWallets(t *testing.T) {
 		return
 	}
 
+	if !doWallet(t) {
+		return
+	}
+
 	doLiveEnvCheck(t)
 
 	output, err := exec.Command(binaryPath, "listWallets").CombinedOutput()
@@ -694,6 +738,10 @@ func TestLiveListWallets(t *testing.T) {
 
 func TestStableListAddress(t *testing.T) {
 	if !doStable(t) {
+		return
+	}
+
+	if !doWallet(t) {
 		return
 	}
 
@@ -718,6 +766,10 @@ func TestStableListAddress(t *testing.T) {
 
 func TestLiveListAddresses(t *testing.T) {
 	if !doLive(t) {
+		return
+	}
+
+	if !doWallet(t) {
 		return
 	}
 
@@ -769,6 +821,10 @@ func TestStableWalletBalance(t *testing.T) {
 		return
 	}
 
+	if !doWallet(t) {
+		return
+	}
+
 	_, clean := createTempWalletFile(t)
 	defer clean()
 
@@ -789,6 +845,10 @@ func TestLiveWalletBalance(t *testing.T) {
 		return
 	}
 
+	if !doWallet(t) {
+		return
+	}
+
 	doLiveEnvCheck(t)
 
 	output, err := exec.Command(binaryPath, "walletBalance").CombinedOutput()
@@ -801,6 +861,10 @@ func TestLiveWalletBalance(t *testing.T) {
 
 func TestStableWalletOutputs(t *testing.T) {
 	if !doStable(t) {
+		return
+	}
+
+	if !doWallet(t) {
 		return
 	}
 
@@ -821,6 +885,10 @@ func TestStableWalletOutputs(t *testing.T) {
 
 func TestLiveWalletOutputs(t *testing.T) {
 	if !doLive(t) {
+		return
+	}
+
+	if !doWallet(t) {
 		return
 	}
 
@@ -1319,6 +1387,10 @@ func TestStableWalletDir(t *testing.T) {
 		return
 	}
 
+	if !doWallet(t) {
+		return
+	}
+
 	walletPath, clean := createTempWalletFile(t)
 	defer clean()
 
@@ -1333,6 +1405,10 @@ func TestLiveWalletDir(t *testing.T) {
 		return
 	}
 
+	if !doWallet(t) {
+		return
+	}
+
 	doLiveEnvCheck(t)
 
 	walletDir := os.Getenv("WALLET_DIR")
@@ -1340,4 +1416,847 @@ func TestLiveWalletDir(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, walletDir, strings.Trim(string(output), "\n"))
+}
+
+// TestLiveSend sends coin from specific wallet file, user should manually specify the
+// wallet file by setting the enviroment variables: WALLET_DIR and WALLET_NAME. The WALLET_DIR
+// points to the directory of the wallet, and WALLET_NAME represents the wallet file name.
+//
+// Note:
+// 1. This test might modify the wallet file, in order to avoid losing coins, we don't send coins to
+// addresses that are not belong to the wallet, when addresses in the wallet are not sufficient, we
+// will automatically generate enough addresses as coin recipient.
+// 2. The wallet must must have at least 2 coins and 16 coinhours.
+func TestLiveSend(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	if !doWallet(t) {
+		return
+	}
+
+	// prepares wallet and confirms the wallet has at least 2 coins and 16 coin hours.
+	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 16)
+
+	tt := []struct {
+		name    string
+		args    func() []string
+		errMsg  []byte
+		checkTx func(t *testing.T, txid string)
+	}{
+		{
+			// Send all coins to the first address to one output.
+			name: "send all coins to the first address",
+			args: func() []string {
+				coins, err := droplet.ToString(totalCoins)
+				require.NoError(t, err)
+				return []string{"send", w.Entries[0].Address.String(), coins}
+			},
+			checkTx: func(t *testing.T, txid string) {
+				// Confirms all coins are in the first address in one output
+				tx := getTransaction(t, txid)
+				require.Len(t, tx.Transaction.Transaction.Out, 1)
+				c, err := droplet.FromString(tx.Transaction.Transaction.Out[0].Coins)
+				require.NoError(t, err)
+				require.Equal(t, totalCoins, c)
+			},
+		},
+		{
+			// Send 0.5 coin to the second address.
+			// Send 0.5 coin to the third address.
+			// After sending, the first address should have at least 1 coin left.
+			name: "send to multiple address with -m option",
+			args: func() []string {
+				addrCoins := []struct {
+					Addr  string `json:"addr"`
+					Coins string `json:"coins"`
+				}{
+					{
+						w.Entries[1].Address.String(),
+						"0.5",
+					},
+					{
+						w.Entries[2].Address.String(),
+						"0.5",
+					},
+				}
+
+				v, err := json.Marshal(addrCoins)
+				require.NoError(t, err)
+
+				return []string{"send", "-m", string(v)}
+			},
+			checkTx: func(t *testing.T, txid string) {
+				tx := getTransaction(t, txid)
+				// Confirms the second address receives 0.5 coin and 1 coinhour in this transaction
+				checkCoinsAndCoinhours(t, tx, w.Entries[1].Address.String(), 5e5, 1)
+				// Confirms the third address receives 0.5 coin and 1 coinhour in this transaction
+				checkCoinsAndCoinhours(t, tx, w.Entries[2].Address.String(), 5e5, 1)
+				// Confirms the first address has at least 1 coin left.
+				coins, _ := getAddressBalance(t, w.Entries[0].Address.String())
+				require.True(t, coins >= 1e6)
+			},
+		},
+		{
+			// Send 0.001 coin from the third address to the second address.
+			// Set the second as change address, so the 0.499 change coin will also be sent to the second address.
+			// After sending, the second address should have 1 coin and 1 coin hour.
+			name: "send with -c(change address) -a(from address) options",
+			args: func() []string {
+				return []string{"send", "-c", w.Entries[1].Address.String(),
+					"-a", w.Entries[2].Address.String(), w.Entries[1].Address.String(), "0.001"}
+			},
+			checkTx: func(t *testing.T, txid string) {
+				tx := getTransaction(t, txid)
+				// Confirms the second address receives 0.5 coin and 0 coinhour in this transaction
+				checkCoinsAndCoinhours(t, tx, w.Entries[1].Address.String(), 5e5, 0)
+				// Confirms the second address have 1 coin and 1 coin hour
+				coins, hours := getAddressBalance(t, w.Entries[1].Address.String())
+				require.Equal(t, uint64(1e6), coins)
+				require.Equal(t, uint64(1), hours)
+			},
+		},
+		{
+			// Send 1 coin from second to the the third address, this will spend three outputs(0.2, 0.3. 0.5 coin),
+			// and burn out the remaining 1 coin hour.
+			name: "send to burn all coin hour",
+			args: func() []string {
+				return []string{"send", "-a", w.Entries[1].Address.String(),
+					w.Entries[2].Address.String(), "1"}
+			},
+			checkTx: func(t *testing.T, txid string) {
+				// Confirms that the third address has 1 coin and 0 coin hour
+				coins, hours := getAddressBalance(t, w.Entries[2].Address.String())
+				require.Equal(t, uint64(1e6), coins)
+				require.Equal(t, uint64(0), hours)
+			},
+		},
+		{
+			// Send with 0 coin hour, this test should fail.
+			name: "send 0 coin hour",
+			args: func() []string {
+				return []string{"send", "-a", w.Entries[2].Address.String(),
+					w.Entries[1].Address.String(), "1"}
+			},
+			errMsg:  []byte("ERROR: Transaction has zero coinhour fee. See 'skycoin-cli send --help'"),
+			checkTx: func(t *testing.T, txid string) {},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			output, err := exec.Command(binaryPath, tc.args()...).CombinedOutput()
+			if err != nil {
+				t.Fatalf("err: %v, output: %v", err, string(output))
+				return
+			}
+			require.NoError(t, err)
+			output = bytes.TrimRight(output, "\n")
+			if bytes.Contains(output, []byte("ERROR:")) {
+				require.Equal(t, tc.errMsg, output)
+				return
+			}
+
+			// output: "txid:$txid_string"
+			// split the output to get txid value
+			v := bytes.Split(output, []byte(":"))
+			require.Len(t, v, 2)
+			txid := string(v[1])
+			fmt.Println("txid:", txid)
+			_, err = cipher.SHA256FromHex(txid)
+			require.NoError(t, err)
+
+			// Wait untill transaction is confirmed.
+			tk := time.NewTicker(time.Second)
+		loop:
+			for {
+				select {
+				case <-time.After(30 * time.Second):
+					t.Fatal("Wait tx confirmation timeout")
+				case <-tk.C:
+					if isTxConfirmed(t, txid) {
+						break loop
+					}
+				}
+			}
+
+			tc.checkTx(t, txid)
+		})
+	}
+
+	// Send with too small decimal value
+	// CLI send is a litte bit slow, almost 300ms each. so we only test 20 invalid decimal coin.
+	errMsg := []byte("ERROR: invalid amount, too many decimal places. See 'skycoin-cli send --help'")
+	for i := uint64(1); i < uint64(20); i++ {
+		v, err := droplet.ToString(i)
+		require.NoError(t, err)
+		name := fmt.Sprintf("send %v", v)
+		t.Run(name, func(t *testing.T) {
+			output, err := exec.Command(binaryPath, "send", w.Entries[0].Address.String(), v).CombinedOutput()
+			require.NoError(t, err)
+			output = bytes.Trim(output, "\n")
+			require.Equal(t, errMsg, output)
+		})
+	}
+}
+
+// TestLiveCreateAndBroadcastRawTransaction does almost the same procedure as TestLiveSend.
+// Create raw transaction with command arguments the same as TestLiveSend, then broadcast the
+// created raw transaction. After the transaction is confirmed, run the same transaction check
+// function like in TestLiveSend.
+func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	if !doWallet(t) {
+		return
+	}
+
+	// prepares wallet and confirms the wallet has at least 2 coins and 2 coin hours.
+	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 2)
+
+	tt := []struct {
+		name    string
+		args    func() []string
+		errMsg  []byte
+		checkTx func(t *testing.T, txid string)
+	}{
+		{
+			// Send all coins to the first address to one output.
+			name: "send all coins to the first address",
+			args: func() []string {
+				coins, err := droplet.ToString(totalCoins)
+				require.NoError(t, err)
+				return []string{"createRawTransaction", w.Entries[0].Address.String(), coins}
+			},
+			checkTx: func(t *testing.T, txid string) {
+				// Confirms all coins are in the first address in one output
+				tx := getTransaction(t, txid)
+				require.Len(t, tx.Transaction.Transaction.Out, 1)
+				c, err := droplet.FromString(tx.Transaction.Transaction.Out[0].Coins)
+				require.NoError(t, err)
+				require.Equal(t, totalCoins, c)
+			},
+		},
+		{
+			// Send 0.5 coin to the second address.
+			// Send 0.5 coin to the third address.
+			// After sending, the first address should have at least 1 coin left.
+			name: "send to multiple address with -m option",
+			args: func() []string {
+				addrCoins := []struct {
+					Addr  string `json:"addr"`
+					Coins string `json:"coins"`
+				}{
+					{
+						w.Entries[1].Address.String(),
+						"0.5",
+					},
+					{
+						w.Entries[2].Address.String(),
+						"0.5",
+					},
+				}
+
+				v, err := json.Marshal(addrCoins)
+				require.NoError(t, err)
+
+				return []string{"createRawTransaction", "-m", string(v)}
+			},
+			checkTx: func(t *testing.T, txid string) {
+				// Confirms the first address has at least 1 coin left.
+				coins, _ := getAddressBalance(t, w.Entries[0].Address.String())
+				require.True(t, coins >= 1e6)
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create raw transaction first
+			output, err := exec.Command(binaryPath, tc.args()...).CombinedOutput()
+			if err != nil {
+				t.Fatalf("err: %v, output: %v", err, string(output))
+				return
+			}
+			require.NoError(t, err)
+			output = bytes.TrimRight(output, "\n")
+			if bytes.Contains(output, []byte("ERROR:")) {
+				require.Equal(t, tc.errMsg, output)
+				return
+			}
+
+			// Broadcast transaction
+			output, err = exec.Command(binaryPath, "broadcastTransaction", string(output)).CombinedOutput()
+			require.NoError(t, err)
+
+			txid := string(bytes.TrimRight(output, "\n"))
+			fmt.Println("txid:", txid)
+			_, err = cipher.SHA256FromHex(txid)
+			require.NoError(t, err)
+
+			// Wait untill transaction is confirmed.
+			tk := time.NewTicker(time.Second)
+		loop:
+			for {
+				select {
+				case <-time.After(30 * time.Second):
+					t.Fatal("Wait tx confirmation timeout")
+				case <-tk.C:
+					if isTxConfirmed(t, txid) {
+						break loop
+					}
+				}
+			}
+
+			tc.checkTx(t, txid)
+		})
+	}
+
+	// Send with too small decimal value
+	errMsg := []byte("ERROR: invalid amount, too many decimal places. See 'skycoin-cli createRawTransaction --help'")
+	for i := uint64(1); i < uint64(20); i++ {
+		v, err := droplet.ToString(i)
+		require.NoError(t, err)
+		name := fmt.Sprintf("send %v", v)
+		t.Run(name, func(t *testing.T) {
+			output, err := exec.Command(binaryPath, "createRawTransaction", w.Entries[0].Address.String(), v).CombinedOutput()
+			require.NoError(t, err)
+			output = bytes.Trim(output, "\n")
+			require.Equal(t, errMsg, output)
+		})
+	}
+}
+
+func getTransaction(t *testing.T, txid string) *webrpc.TxnResult {
+	output, err := exec.Command(binaryPath, "transaction", txid).CombinedOutput()
+	if err != nil {
+		fmt.Println(string(output))
+		return &webrpc.TxnResult{}
+	}
+	require.NoError(t, err)
+
+	var tx webrpc.TxnResult
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&tx)
+	require.NoError(t, err)
+
+	return &tx
+}
+
+func isTxConfirmed(t *testing.T, txid string) bool {
+	tx := getTransaction(t, txid)
+	return tx.Transaction.Status.Confirmed
+}
+
+// checkCoinhours checks if the address coinhours in transaction are correct
+func checkCoinsAndCoinhours(t *testing.T, tx *webrpc.TxnResult, addr string, coins, coinhours uint64) {
+	addrCoinhoursMap := make(map[string][]visor.ReadableTransactionOutput)
+	for _, o := range tx.Transaction.Transaction.Out {
+		addrCoinhoursMap[o.Address] = append(addrCoinhoursMap[o.Address], o)
+	}
+
+	os, ok := addrCoinhoursMap[addr]
+	if !ok {
+		t.Fatalf("transaction doesn't have receiver of address: %v", addr)
+	}
+
+	var totalCoins, totalHours uint64
+	for _, o := range os {
+		c, err := droplet.FromString(o.Coins)
+		if err != nil {
+			t.Fatalf("%v", err)
+		}
+		totalCoins += c
+		totalHours += o.Hours
+	}
+
+	require.Equal(t, coins, totalCoins)
+	require.Equal(t, coinhours, totalHours)
+}
+
+// prepareAndCheckWallet prepares wallet for live testing.
+// Returns *wallet.Wallet, total coin, total hours.
+// Confirms that the wallet meets the minimal requirements of coins and coinhours.
+func prepareAndCheckWallet(t *testing.T, miniCoins, miniCoinHours uint64) (*wallet.Wallet, uint64, uint64) {
+	walletDir, walletName := getWalletPathFromEnv(t)
+	walletPath := filepath.Join(walletDir, walletName)
+	// Checks if the wallet does exist
+	if _, err := os.Stat(walletPath); os.IsNotExist(err) {
+		t.Fatalf("Wallet file: %v does not exist", walletPath)
+	}
+
+	// Loads the wallet
+	w, err := wallet.Load(walletPath)
+	if err != nil {
+		t.Fatalf("Load wallet failed: %v", err)
+	}
+
+	if len(w.Entries) < 3 {
+		// Generates addresses
+		_, err = w.GenerateAddresses(uint64(3 - len(w.Entries)))
+		if err != nil {
+			t.Fatalf("Wallet generateAddress failed: %v", err)
+		}
+	}
+
+	outputs := getWalletOutputs(t, walletPath)
+	// Confirms the wallet is not empty.
+	if len(outputs) == 0 {
+		t.Fatalf("Wallet %v has no coin", walletPath)
+	}
+
+	var totalCoins uint64
+	var totalCoinhours uint64
+	for _, output := range outputs {
+		coins, err := droplet.FromString(output.Coins)
+		if err != nil {
+			t.Fatalf("%v", err)
+		}
+
+		totalCoins += coins
+		totalCoinhours += output.CalculatedHours
+	}
+
+	// Confirms the coins meet minimal coins requirement
+	if totalCoins < miniCoins {
+		t.Fatalf("Wallet must have at least %v coins", miniCoins)
+	}
+
+	if totalCoinhours < miniCoinHours {
+		t.Fatalf("Wallet must have at least %v coinhours", miniCoinHours)
+	}
+
+	if err := w.Save(walletDir); err != nil {
+		t.Fatalf("%v", err)
+	}
+	return w, totalCoins, totalCoinhours
+}
+
+func getAddressBalance(t *testing.T, addr string) (uint64, uint64) {
+	output, err := exec.Command(binaryPath, "addressBalance", addr).CombinedOutput()
+	require.NoError(t, err)
+
+	var addrBalance cli.BalanceResult
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&addrBalance)
+	require.NoError(t, err)
+	coins, err := droplet.FromString(addrBalance.Confirmed.Coins)
+	require.NoError(t, err)
+
+	hours, err := strconv.ParseUint(addrBalance.Confirmed.Hours, 10, 64)
+	require.NoError(t, err)
+	return coins, hours
+}
+
+func getWalletOutputs(t *testing.T, walletPath string) visor.ReadableOutputs {
+	output, err := exec.Command(binaryPath, "walletOutputs", walletPath).CombinedOutput()
+	require.NoError(t, err)
+
+	var wltOutput webrpc.OutputsResult
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wltOutput)
+	require.NoError(t, err)
+
+	return wltOutput.Outputs.HeadOutputs
+}
+
+func TestStableWalletHistory(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	if !doWallet(t) {
+		return
+	}
+
+	_, clean := createTempWalletFile(t)
+	defer clean()
+
+	output, err := exec.Command(binaryPath, "walletHistory").CombinedOutput()
+	require.NoError(t, err)
+
+	var history []cli.AddrHistory
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&history)
+	require.NoError(t, err)
+
+	var expect []cli.AddrHistory
+	loadGoldenFile(t, "wallet-history.golden", TestData{history, &expect})
+	require.Equal(t, expect, history)
+}
+
+func TestLiveWalletHistory(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	if !doWallet(t) {
+		return
+	}
+
+	doLiveEnvCheck(t)
+
+	output, err := exec.Command(binaryPath, "walletHistory").CombinedOutput()
+	require.NoError(t, err)
+	var his []cli.AddrHistory
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&his)
+	require.NoError(t, err)
+}
+
+func TestStableCheckDB(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	tt := []struct {
+		name   string
+		dbPath string
+		result []byte
+		errMsg []byte
+	}{
+		{
+			name:   "no signature",
+			dbPath: "../../../visor/testdata/data.db.nosig",
+			errMsg: []byte("checkdb failed: find no signature of block: seq=1000\n"),
+		},
+		{
+			name:   "invalid database",
+			dbPath: "../../../visor/testdata/data.db.garbage",
+			errMsg: []byte("open db failed: invalid database\n"),
+		},
+		{
+			name:   "valid database",
+			dbPath: "../../../gui/integration/test-fixtures/blockchain-180.db",
+			result: []byte("check db success\n"),
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			output, err := exec.Command(binaryPath, "checkdb", tc.dbPath).CombinedOutput()
+			if err != nil {
+				fmt.Println(string(output))
+				require.Equal(t, tc.errMsg, output)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tc.result, output)
+		})
+	}
+}
+
+func TestVersion(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+
+	// Gets version in json format.
+	output, err := exec.Command(binaryPath, "version", "-j").CombinedOutput()
+	require.NoError(t, err)
+
+	var ver = struct {
+		Skycoin string `json:"skycoin"`
+		Cli     string `json:"cli"`
+		RPC     string `json:"rpc"`
+		Wallet  string `json:"wallet"`
+	}{}
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&ver)
+	require.NoError(t, err)
+	require.True(t, ver.Skycoin != "")
+	require.True(t, ver.Cli != "")
+	require.True(t, ver.RPC != "")
+	require.True(t, ver.Wallet != "")
+
+	// Gets version without json format.
+	output, err = exec.Command(binaryPath, "version").CombinedOutput()
+	require.NoError(t, err)
+
+	// Confirms the result contains 4 version componments
+	output = bytes.TrimRight(output, "\n")
+	vers := bytes.Split(output, []byte("\n"))
+	require.Len(t, vers, 4)
+}
+
+func TestStableGenerateWallet(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	if !doWallet(t) {
+		return
+	}
+
+	tt := []struct {
+		name        string
+		args        []string
+		setup       func(t *testing.T) func()
+		errMsg      []byte
+		checkWallet func(t *testing.T, w *wallet.Wallet)
+	}{
+		{
+			name:  "generate wallet with -r option",
+			args:  []string{"-r"},
+			setup: createTempWalletDir,
+			checkWallet: func(t *testing.T, w *wallet.Wallet) {
+				// Confirms the default wallet name is skycoin_cli.wlt
+				require.Equal(t, "skycoin_cli.wlt", w.GetFilename())
+
+				// Confirms the seed is a valid hex string
+				_, err := hex.DecodeString(w.Meta["seed"])
+				require.NoError(t, err)
+
+				// Confirms the label is empty
+				require.Empty(t, w.Meta["label"])
+			},
+		},
+		{
+			name:  "generate wallet with --rd option",
+			args:  []string{"--rd"},
+			setup: createTempWalletDir,
+			checkWallet: func(t *testing.T, w *wallet.Wallet) {
+				// Confirms the default wallet name is skycoin_cli.wlt
+				require.Equal(t, "skycoin_cli.wlt", w.GetFilename())
+
+				// Confirms the seed is consisited of 12 words
+				seed := w.Meta["seed"]
+				words := strings.Split(seed, " ")
+				require.Len(t, words, 12)
+
+				// Confirms the label is empty
+				require.Empty(t, w.Meta["label"])
+			},
+		},
+		{
+			name:  "generate wallet with -s option",
+			args:  []string{"-s", "great duck trophy inhale dad pluck include maze smart mechanic ring merge"},
+			setup: createTempWalletDir,
+			checkWallet: func(t *testing.T, w *wallet.Wallet) {
+				// Confirms the default wallet name is skycoin_cli.wlt
+				require.Equal(t, "skycoin_cli.wlt", w.GetFilename())
+				// Confirms the label is empty
+				require.Empty(t, w.Meta["label"])
+
+				require.Equal(t, "great duck trophy inhale dad pluck include maze smart mechanic ring merge", w.Meta["seed"])
+				require.Equal(t, "2amA8sxKJhNRp3wfWrE5JfTEUjr9S3C2BaU", w.Entries[0].Address.String())
+				require.Equal(t, "02b4a4b63f2f8ba56f9508712815eca3c088693333715eaf7a73275d8928e1be5a", w.Entries[0].Public.Hex())
+				require.Equal(t, "f4a281d094a6e9e95a84c23701a7d01a0e413c838758e94ad86a10b9b83e0434", w.Entries[0].Secret.Hex())
+			},
+		},
+		{
+			name:  "generate wallet with -n option",
+			args:  []string{"-n", "5"},
+			setup: createTempWalletDir,
+			checkWallet: func(t *testing.T, w *wallet.Wallet) {
+				// Confirms the default wallet name is skycoin_cli.wlt
+				require.Equal(t, "skycoin_cli.wlt", w.GetFilename())
+				// Confirms the label is empty
+				require.Empty(t, w.Meta["label"])
+				// Confirms wallet has 5 address entries
+				require.Len(t, w.Entries, 5)
+			},
+		},
+		{
+			name:  "generate wallet with -f option",
+			args:  []string{"-f", "integration-cli.wlt"},
+			setup: createTempWalletDir,
+			checkWallet: func(t *testing.T, w *wallet.Wallet) {
+				// Confirms the default wallet name is skycoin_cli.wlt
+				require.Equal(t, "integration-cli.wlt", w.GetFilename())
+				// Confirms the label is empty
+				require.Empty(t, w.Meta["label"])
+			},
+		},
+		{
+			name:  "generate wallet with -l option",
+			args:  []string{"-l", "integration-cli"},
+			setup: createTempWalletDir,
+			checkWallet: func(t *testing.T, w *wallet.Wallet) {
+				// Confirms the default wallet name is skycoin_cli.wlt
+				require.Equal(t, "skycoin_cli.wlt", w.GetFilename())
+				label, ok := w.Meta["label"]
+				require.True(t, ok)
+				require.Equal(t, "integration-cli", label)
+			},
+		},
+		{
+			name: "generate wallet with duplicate wallet name",
+			args: []string{},
+			setup: func(t *testing.T) func() {
+				_, clean := createTempWalletFile(t)
+				return clean
+			},
+			errMsg: []byte("ERROR: integration-test.wlt already exist. See 'skycoin-cli generateWallet --help'"),
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			clean := tc.setup(t)
+			defer clean()
+
+			// Run command with arguments
+			args := append([]string{"generateWallet"}, tc.args...)
+			output, err := exec.Command(binaryPath, args...).CombinedOutput()
+			require.NoError(t, err)
+			// Trims the suffix "\n"
+			output = bytes.TrimRight(output, "\n")
+
+			// Checks if the output is start with "Error: ",
+			// confirms the error message are matched.
+			if bytes.Contains(output, []byte("ERROR: ")) {
+				require.Equal(t, tc.errMsg, output)
+				return
+			}
+
+			var rw wallet.ReadableWallet
+			err = json.NewDecoder(bytes.NewReader(output)).Decode(&rw)
+			require.NoError(t, err)
+
+			// Converts to wallet.Wallet
+			w, err := rw.ToWallet()
+			require.NoError(t, err)
+
+			// Validate the wallet
+			err = w.Validate()
+			require.NoError(t, err)
+
+			// Confirms all entries and lastSeed are derived from seed.
+			checkWalletEntriesAndLastSeed(t, &w)
+
+			// Checks the wallet with provided checking method.
+			tc.checkWallet(t, &w)
+		})
+	}
+}
+
+// checkWalletEntriesAndLastSeed confirms the wallet entries and lastSeed are derivied
+// from the seed.
+func checkWalletEntriesAndLastSeed(t *testing.T, w *wallet.Wallet) {
+	seed, ok := w.Meta["seed"]
+	require.True(t, ok)
+	newSeed, seckeys := cipher.GenerateDeterministicKeyPairsSeed([]byte(seed), len(w.Entries))
+	require.Len(t, seckeys, len(w.Entries))
+	for i, sk := range seckeys {
+		require.Equal(t, w.Entries[i].Secret, sk)
+		pk := cipher.PubKeyFromSecKey(sk)
+		require.Equal(t, w.Entries[i].Public, pk)
+	}
+	lastSeed, ok := w.Meta["lastSeed"]
+	require.True(t, ok)
+	require.Equal(t, lastSeed, hex.EncodeToString(newSeed))
+}
+
+// TestLiveGUIInjectTransaction does almost the same procedure as TestCreateAndBroadcastRawTransaction.
+// The only difference is we broadcast the raw transaction throught the gui /injectTransaction api.
+func TestLiveGUIInjectTransaction(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	doLiveEnvCheck(t)
+
+	if !doWallet(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+	// prepares wallet and confirms the wallet has at least 2 coins and 2 coin hours.
+	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 2)
+
+	tt := []struct {
+		name    string
+		args    func() []string
+		errMsg  []byte
+		checkTx func(t *testing.T, txid string)
+	}{
+		{
+			// Send all coins to the first address to one output.
+			name: "send all coins to the first address",
+			args: func() []string {
+				coins, err := droplet.ToString(totalCoins)
+				require.NoError(t, err)
+				return []string{"createRawTransaction", w.Entries[0].Address.String(), coins}
+			},
+			checkTx: func(t *testing.T, txid string) {
+				// Confirms all coins are in the first address in one output
+				tx := getTransaction(t, txid)
+				require.Len(t, tx.Transaction.Transaction.Out, 1)
+				c, err := droplet.FromString(tx.Transaction.Transaction.Out[0].Coins)
+				require.NoError(t, err)
+				require.Equal(t, totalCoins, c)
+			},
+		},
+		{
+			// Send 0.5 coin to the second address.
+			// Send 0.5 coin to the third address.
+			// After sending, the first address should have at least 1 coin left.
+			name: "send to multiple address with -m option",
+			args: func() []string {
+				addrCoins := []struct {
+					Addr  string `json:"addr"`
+					Coins string `json:"coins"`
+				}{
+					{
+						w.Entries[1].Address.String(),
+						"0.5",
+					},
+					{
+						w.Entries[2].Address.String(),
+						"0.5",
+					},
+				}
+
+				v, err := json.Marshal(addrCoins)
+				require.NoError(t, err)
+
+				return []string{"createRawTransaction", "-m", string(v)}
+			},
+			checkTx: func(t *testing.T, txid string) {
+				// Confirms the first address has at least 1 coin left.
+				coins, _ := getAddressBalance(t, w.Entries[0].Address.String())
+				require.True(t, coins >= 1e6)
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create raw transaction first
+			output, err := exec.Command(binaryPath, tc.args()...).CombinedOutput()
+			if err != nil {
+				t.Fatalf("err: %v, output: %v", err, string(output))
+				return
+			}
+			require.NoError(t, err)
+			output = bytes.TrimRight(output, "\n")
+			if bytes.Contains(output, []byte("ERROR:")) {
+				require.Equal(t, tc.errMsg, output)
+				return
+			}
+
+			// Broadcast raw transaction with gui /injectTransaction
+			txid, err := c.InjectTransaction(string(output))
+			require.NoError(t, err)
+
+			txid = strings.TrimRight(txid, "\n")
+			fmt.Println("txid:", txid)
+			_, err = cipher.SHA256FromHex(txid)
+			require.NoError(t, err)
+
+			// Wait untill transaction is confirmed.
+			tk := time.NewTicker(time.Second)
+		loop:
+			for {
+				select {
+				case <-time.After(30 * time.Second):
+					t.Fatal("Wait tx confirmation timeout")
+				case <-tk.C:
+					if isTxConfirmed(t, txid) {
+						break loop
+					}
+				}
+			}
+
+			tc.checkTx(t, txid)
+		})
+	}
 }

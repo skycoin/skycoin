@@ -5,13 +5,13 @@ import { environment } from '../../environments/environment';
 import 'rxjs/add/observable/throw';
 import 'rxjs/add/operator/catch';
 import 'rxjs/add/operator/map';
-import { Address, GetWalletsResponseEntry, GetWalletsResponseWallet, PostWalletNewAddressResponse, Transaction, Wallet } from '../app.datatypes';
+import {
+  Address, GetWalletsResponseEntry, GetWalletsResponseWallet, PostWalletNewAddressResponse, Transaction, Version,
+  Wallet
+} from '../app.datatypes';
 
 @Injectable()
 export class ApiService {
-
-  backendError: boolean;
-  csrfError: boolean;
 
   private url = environment.nodeUrl;
 
@@ -31,6 +31,10 @@ export class ApiService {
         inputs: transaction.inputs,
         outputs: transaction.outputs,
       })));
+  }
+
+  getVersion(): Observable<Version> {
+    return this.get('version');
   }
 
   getWalletNewSeed(): Observable<string> {
@@ -65,13 +69,13 @@ export class ApiService {
   postWalletCreate(label: string, seed: string, scan: number): Observable<Wallet> {
     return this.post('wallet/create', { label: label, seed: seed, scan: scan })
       .map(response => ({
-        label: response.meta.label,
-        filename: response.meta.filename,
-        seed: response.meta.seed,
-        coins: null,
-        hours: null,
-        addresses: [ { address: response.entries[0].address, coins: null, hours: null } ],
-      }))
+          label: response.meta.label,
+          filename: response.meta.filename,
+          seed: response.meta.seed,
+          coins: null,
+          hours: null,
+          addresses: response.entries.map(entry => ({ address: entry.address, coins: null, hours: null })),
+        }));
   }
 
   postWalletNewAddress(wallet: Wallet): Observable<Address> {
@@ -83,6 +87,10 @@ export class ApiService {
     return this.http.get(this.getUrl(url, params), this.returnRequestOptions(options))
       .map((res: any) => res.json())
       .catch((error: any) => Observable.throw(error || 'Server error'));
+  }
+
+  getCsrf() {
+    return this.get('csrf').map(response => response.csrf_token);
   }
 
   post(url, params = {}, options: any = {}) {
@@ -104,17 +112,6 @@ export class ApiService {
     }
 
     return options;
-  }
-
-  testBackend() {
-    this.get('version').subscribe(
-      () => this.getCsrf().subscribe(null, () => this.csrfError = true),
-      () => this.backendError = true
-    );
-  }
-
-  private getCsrf() {
-    return this.get('csrf').map(response => response.csrf_token);
   }
 
   private getHeaders() {

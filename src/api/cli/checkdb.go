@@ -43,7 +43,8 @@ func checkdb(c *gcli.Context) error {
 	}
 
 	db, err := bolt.Open(dbpath, 0600, &bolt.Options{
-		Timeout: 5 * time.Second,
+		Timeout:  5 * time.Second,
+		ReadOnly: true,
 	})
 
 	if err != nil {

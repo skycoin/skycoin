@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -47,8 +49,9 @@ When update flag is set to true all tests pass
 */
 
 const (
-	testModeStable = "stable"
-	testModeLive   = "live"
+	testModeStable           = "stable"
+	testModeLive             = "live"
+	testModeDisableWalletApi = "disable-wallet-api"
 
 	testFixturesDir = "test-fixtures"
 )
@@ -74,9 +77,9 @@ func mode(t *testing.T) string {
 	switch mode {
 	case "":
 		mode = testModeStable
-	case testModeLive, testModeStable:
+	case testModeLive, testModeStable, testModeDisableWalletApi:
 	default:
-		t.Fatal("Invalid test mode, must be stable or live")
+		t.Fatal("Invalid test mode, must be stable, live or disable-wallet-api")
 	}
 	return mode
 }
@@ -100,6 +103,15 @@ func doLive(t *testing.T) bool {
 	}
 
 	t.Skip("Live tests disabled")
+	return false
+}
+
+func doDisableWalletApi(t *testing.T) bool {
+	if enabled() && mode(t) == testModeDisableWalletApi {
+		return true
+	}
+
+	t.Skip("DisableWalletApi tests disabled")
 	return false
 }
 
@@ -2291,4 +2303,115 @@ func getWalletDir(t *testing.T, c *gui.Client) string {
 		t.Fatalf("%v", err)
 	}
 	return wf.Address
+}
+
+func TestDisableWalletApi(t *testing.T) {
+	if !doDisableWalletApi(t) {
+		return
+	}
+
+	tt := []struct {
+		name     string
+		method   string
+		endpoint string
+		body     func() io.Reader
+	}{
+		{
+			name:     "get wallet",
+			method:   http.MethodGet,
+			endpoint: "/wallet?id=test.wlt",
+		},
+		{
+			name:     "create wallet",
+			method:   http.MethodPost,
+			endpoint: "/wallet/create",
+			body: func() io.Reader {
+				v := url.Values{}
+				v.Add("seed", "seed")
+				v.Add("label", "label")
+				v.Add("scan", "1")
+				return strings.NewReader(v.Encode())
+			},
+		},
+		{
+			name:     "generate new address",
+			method:   http.MethodPost,
+			endpoint: "/wallet/newAddress",
+			body: func() io.Reader {
+				v := url.Values{}
+				v.Add("id", "test.wlt")
+				return strings.NewReader(v.Encode())
+			},
+		},
+		{
+			name:     "get wallet balance",
+			method:   http.MethodGet,
+			endpoint: "/wallet/balance",
+			body: func() io.Reader {
+				v := url.Values{}
+				v.Add("id", "test.wlt")
+				return strings.NewReader(v.Encode())
+			},
+		},
+		{
+			name:     "wallet spending",
+			method:   http.MethodPost,
+			endpoint: "/wallet/spend",
+			body: func() io.Reader {
+				v := url.Values{}
+				v.Add("id", "test.wlt")
+				v.Add("coins", "100000") // 1e5
+				v.Add("dst", "9eb7954461ba0256c9054fe38c00c66e60428dccf900a62e74b9fe39310aea13")
+				return strings.NewReader(v.Encode())
+			},
+		},
+		{
+			name:     "get wallet unconfirmed transactions",
+			method:   http.MethodGet,
+			endpoint: "/wallet/transactions",
+			body: func() io.Reader {
+				v := url.Values{}
+				v.Add("id", "test.wlt")
+				return strings.NewReader(v.Encode())
+			},
+		},
+		{
+			name:     "update wallet label",
+			method:   http.MethodPost,
+			endpoint: "/wallet/update",
+			body: func() io.Reader {
+				v := url.Values{}
+				v.Add("id", "test.wlt")
+				return strings.NewReader(v.Encode())
+			},
+		},
+		{
+			name:   "new seed",
+			method: http.MethodGet,
+		},
+		{
+			name:     "get wallets",
+			method:   http.MethodGet,
+			endpoint: "/wallets",
+		},
+		{
+			name:     "get wallets folder name",
+			method:   http.MethodGet,
+			endpoint: "/wallets/folderName",
+		},
+	}
+
+	c := gui.NewClient(nodeAddress())
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			switch tc.method {
+			case http.MethodGet:
+				err := c.Get(tc.endpoint, nil)
+				require.Error(t, err, "403 forbiden")
+			case http.MethodPost:
+				err := c.PostForm(tc.endpoint, tc.body(), nil)
+				require.Error(t, err, "403 forbiden")
+			}
+		})
+	}
 }

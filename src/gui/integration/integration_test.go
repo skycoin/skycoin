@@ -2450,6 +2450,8 @@ func TestLiveHealth(t *testing.T) {
 		return
 	}
 
+	doLiveEnvCheck(t)
+
 	c := gui.NewClient(nodeAddress())
 	_, err := c.Health()
 

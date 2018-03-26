@@ -34,7 +34,7 @@ type dockerCompose struct {
 // BuildImage builds the node docker image
 func runTestNet(tempDir string, scale int) {
 	cmdName := "docker-compose"
-	cmdArgs := []string{"up", "-d", "--scale", "skycoin-slave=" + strconv.Itoa(scale)}
+	cmdArgs := []string{"up", "-d", "--scale", "skycoin-peer=" + strconv.Itoa(scale)}
 	cmd := exec.Command(cmdName, cmdArgs...)
 	cmd.Dir = tempDir
 	err := cmd.Run()
@@ -112,8 +112,8 @@ func main() {
 	_, callerFile, _, _ := runtime.Caller(0)
 	projectPath, _ := filepath.Abs(filepath.Join(filepath.Dir(callerFile), "../../../"))
 	log.Print("Source code base dir at ", projectPath)
-	nodesPtr := flag.Int("-nodes", 5, "Number of nodes to launch.")
-	buildContextPtr := flag.String("-buildcontext", projectPath, "Docker build context (source code root).")
+	nodesPtr := flag.Int("nodes", 5, "Number of nodes to launch.")
+	buildContextPtr := flag.String("buildcontext", projectPath, "Docker build context (source code root).")
 	flag.Parse()
 	buildContext, err := filepath.Abs(*buildContextPtr)
 	tempDir, err := ioutil.TempDir("", "skycointest")

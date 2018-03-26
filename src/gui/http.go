@@ -200,9 +200,9 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.Se
 
 	webHandler := func(endpoint string, handler http.Handler) {
 
+		handler = ElapseHandler(handler)
 		handler = CSRFCheck(csrfStore, handler)
 		handler = headerCheck(c.host, handler)
-		handler = ElapseHandler(handler)
 		mux.Handle(endpoint, handler)
 	}
 

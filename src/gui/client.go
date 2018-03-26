@@ -683,5 +683,5 @@ func (c *Client) AddressCount() (uint64, error) {
 func (c *Client) UnloadWallet(id string) error {
 	v := url.Values{}
 	v.Add("id", id)
-	return c.Post("/wallet/unload", strings.NewReader(v.Encode()), nil)
+	return c.PostForm("/wallet/unload", strings.NewReader(v.Encode()), nil)
 }

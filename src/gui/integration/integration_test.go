@@ -2311,15 +2311,17 @@ func TestDisableWalletApi(t *testing.T) {
 	}
 
 	tt := []struct {
-		name     string
-		method   string
-		endpoint string
-		body     func() io.Reader
+		name      string
+		method    string
+		endpoint  string
+		body      func() io.Reader
+		expectErr string
 	}{
 		{
-			name:     "get wallet",
-			method:   http.MethodGet,
-			endpoint: "/wallet?id=test.wlt",
+			name:      "get wallet",
+			method:    http.MethodGet,
+			endpoint:  "/wallet?id=test.wlt",
+			expectErr: "403 Forbiden\n",
 		},
 		{
 			name:     "create wallet",
@@ -2332,6 +2334,7 @@ func TestDisableWalletApi(t *testing.T) {
 				v.Add("scan", "1")
 				return strings.NewReader(v.Encode())
 			},
+			expectErr: "403 Forbiden\n",
 		},
 		{
 			name:     "generate new address",
@@ -2342,6 +2345,7 @@ func TestDisableWalletApi(t *testing.T) {
 				v.Add("id", "test.wlt")
 				return strings.NewReader(v.Encode())
 			},
+			expectErr: "403 Forbiden\n",
 		},
 		{
 			name:     "get wallet balance",
@@ -2352,6 +2356,7 @@ func TestDisableWalletApi(t *testing.T) {
 				v.Add("id", "test.wlt")
 				return strings.NewReader(v.Encode())
 			},
+			expectErr: "403 Forbiden\n",
 		},
 		{
 			name:     "wallet spending",
@@ -2364,6 +2369,7 @@ func TestDisableWalletApi(t *testing.T) {
 				v.Add("dst", "9eb7954461ba0256c9054fe38c00c66e60428dccf900a62e74b9fe39310aea13")
 				return strings.NewReader(v.Encode())
 			},
+			expectErr: "403 Forbiden\n",
 		},
 		{
 			name:     "get wallet unconfirmed transactions",
@@ -2374,6 +2380,7 @@ func TestDisableWalletApi(t *testing.T) {
 				v.Add("id", "test.wlt")
 				return strings.NewReader(v.Encode())
 			},
+			expectErr: "403 Forbiden\n",
 		},
 		{
 			name:     "update wallet label",
@@ -2384,34 +2391,55 @@ func TestDisableWalletApi(t *testing.T) {
 				v.Add("id", "test.wlt")
 				return strings.NewReader(v.Encode())
 			},
+			expectErr: "403 Forbiden\n",
 		},
 		{
-			name:   "new seed",
-			method: http.MethodGet,
+			name:      "new seed",
+			method:    http.MethodGet,
+			expectErr: "403 Forbiden\n",
 		},
 		{
-			name:     "get wallets",
-			method:   http.MethodGet,
-			endpoint: "/wallets",
+			name:      "get wallets",
+			method:    http.MethodGet,
+			endpoint:  "/wallets",
+			expectErr: "403 Forbiden\n",
 		},
 		{
-			name:     "get wallets folder name",
-			method:   http.MethodGet,
-			endpoint: "/wallets/folderName",
+			name:      "get wallets folder name",
+			method:    http.MethodGet,
+			endpoint:  "/wallets/folderName",
+			expectErr: "403 Forbiden\n",
+		},
+		{
+			name:      "main index.html 404 not found",
+			method:    http.MethodGet,
+			endpoint:  "/",
+			expectErr: "404 Not found\n",
 		},
 	}
 
 	c := gui.NewClient(nodeAddress())
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			var err error
 			switch tc.method {
 			case http.MethodGet:
-				err := c.Get(tc.endpoint, nil)
-				require.Error(t, err, "403 forbiden")
+				err = c.Get(tc.endpoint, nil)
 			case http.MethodPost:
-				err := c.PostForm(tc.endpoint, tc.body(), nil)
-				require.Error(t, err, "403 forbiden")
+				err = c.PostForm(tc.endpoint, tc.body(), nil)
 			}
+			require.Error(t, err, tc.expectErr)
 		})
 	}
+
+	// Confirms that no new wallet is created
+	// WALLET_DIR environment variable is set in ci-script/integration-test-disable-wallet-api.sh
+	walletDir := os.Getenv("WALLET_DIR")
+	if walletDir == "" {
+		t.Fatal("WALLET_DIR is not set")
+	}
+
+	// Confirms that the wallet directory does not exist
+	_, err := os.Stat(walletDir)
+	require.True(t, os.IsNotExist(err))
 }

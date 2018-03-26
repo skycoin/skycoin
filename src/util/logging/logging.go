@@ -165,7 +165,6 @@ func (l *LogConfig) InitLogger() {
 
 	log.Out = l.Output
 	if level, err := l.level.toImplLevel(); err == nil {
-		fmt.Printf("Setting log level %s\n", level)
 		log.SetLevel(level)
 	}
 

@@ -1,7 +1,6 @@
 package logging
 
 import (
-	"fmt"
 	"reflect"
 
 	"github.com/sirupsen/logrus"
@@ -43,7 +42,6 @@ func (h ReplayHook) Fire(entry *logrus.Entry) error {
 	level := entry.Level
 	for _, hook := range hooks[level] {
 		if _, ok := h.excludeTypes[reflect.TypeOf(hook)]; ok {
-			fmt.Printf("Excluding hook %s\n", hook)
 			continue
 		}
 		if err := hook.Fire(entry); err != nil {

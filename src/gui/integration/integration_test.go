@@ -1775,3 +1775,14 @@ func TestLivePendingTransactions(t *testing.T) {
 	_, err := c.PendingTransactions()
 	require.NoError(t, err)
 }
+
+func TestHealth(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+	_, err := c.Health()
+
+	require.NoError(t, err)
+}

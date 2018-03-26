@@ -661,3 +661,11 @@ func (c *Client) AddressCount() (uint64, error) {
 	return r.Count, nil
 
 }
+
+func (c *Client) Health() (bool, error) {
+	if err := c.Get("/health", nil); err != nil {
+		return false, err
+	}
+
+	return true, nil
+}

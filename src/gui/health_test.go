@@ -52,7 +52,11 @@ func TestHealthCheckHandler(t *testing.T) {
 	}
 
 	rr := httptest.NewRecorder()
-	handler := NewServerMux(configuredHost, ".", gateway, &CSRFStore{})
+	cfg := muxConfig{
+		host:   configuredHost,
+		appLoc: ".",
+	}
+	handler := newServerMux(cfg, gateway, &CSRFStore{})
 	handler.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusOK {

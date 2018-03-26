@@ -1581,7 +1581,7 @@ func TestWalletUnloadHandler(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 
 			handler.ServeHTTP(rr, req)
 

@@ -99,7 +99,7 @@ func NewVisor(c VisorConfig, db *bolt.DB) (*Visor, error) {
 
 // Run starts the visor
 func (vs *Visor) Run() error {
-	defer logger.Info("Visor closed")
+	defer logger.Infof("Visor closed")
 	errC := make(chan error, 1)
 	go func() {
 		errC <- vs.v.Run()
@@ -115,7 +115,7 @@ func (vs *Visor) processRequests(errC <-chan error) error {
 			return err
 		case req := <-vs.reqC:
 			if err := req.Func(); err != nil {
-				logger.Error("Visor request func failed: %v", err)
+				logger.Errorf("Visor request func failed: %v", err)
 			}
 		}
 	}
@@ -302,7 +302,7 @@ func (vs *Visor) SetTxnsAnnounced(txns []cipher.SHA256) {
 		now := utc.Now()
 		for _, h := range txns {
 			if err := vs.v.Unconfirmed.SetAnnounced(h, now); err != nil {
-				logger.Error("Failed to set unconfirmed txn announce time")
+				logger.Errorf("Failed to set unconfirmed txn announce time")
 			}
 		}
 
@@ -366,7 +366,7 @@ func (vs *Visor) broadcastTransaction(t coin.Transaction, pool *Pool) error {
 
 	err = pool.Pool.BroadcastMessage(m)
 	if err != nil {
-		logger.Error("Broadcast GivenTxnsMessage failed: %v", err)
+		logger.Errorf("Broadcast GivenTxnsMessage failed: %v", err)
 	}
 
 	return err
@@ -605,7 +605,7 @@ func (gbm *GetBlocksMessage) Process(d *Daemon) {
 	// Fetch and return signed blocks since LastBlock
 	blocks, err := d.Visor.GetSignedBlocksSince(gbm.LastBlock, gbm.RequestedBlocks)
 	if err != nil {
-		logger.Info("Get signed blocks failed: %v", err)
+		logger.Infof("Get signed blocks failed: %v", err)
 		return
 	}
 
@@ -617,7 +617,7 @@ func (gbm *GetBlocksMessage) Process(d *Daemon) {
 
 	m := NewGiveBlocksMessage(blocks)
 	if err := d.Pool.Pool.SendMessage(gbm.c.Addr, m); err != nil {
-		logger.Error("Send GiveBlocksMessage to %s failed: %v", gbm.c.Addr, err)
+		logger.Errorf("Send GiveBlocksMessage to %s failed: %v", gbm.c.Addr, err)
 	}
 }
 
@@ -644,7 +644,7 @@ func (gbm *GiveBlocksMessage) Handle(mc *gnet.MessageContext,
 // Process process message
 func (gbm *GiveBlocksMessage) Process(d *Daemon) {
 	if d.Visor.Config.DisableNetworking {
-		logger.Notice("Visor disabled, ignoring GiveBlocksMessage")
+		logger.Noticef("Visor disabled, ignoring GiveBlocksMessage")
 		return
 	}
 
@@ -663,10 +663,10 @@ func (gbm *GiveBlocksMessage) Process(d *Daemon) {
 
 		err := d.Visor.ExecuteSignedBlock(b)
 		if err == nil {
-			logger.Notice("Added new block %d", b.Block.Head.BkSeq)
+			logger.Noticef("Added new block %d", b.Block.Head.BkSeq)
 			processed++
 		} else {
-			logger.Critical("Failed to execute received block %d: %v", b.Block.Head.BkSeq, err)
+			logger.Criticalf("Failed to execute received block %d: %v", b.Block.Head.BkSeq, err)
 			// Blocks must be received in order, so if one fails its assumed
 			// the rest are failing
 			break
@@ -721,7 +721,7 @@ func (abm *AnnounceBlocksMessage) Process(d *Daemon) {
 	// If client is not caught up, won't attempt to get block
 	m := NewGetBlocksMessage(headBkSeq, d.Visor.Config.BlocksResponseCount)
 	if err := d.Pool.Pool.SendMessage(abm.c.Addr, m); err != nil {
-		logger.Error("Send GetBlocksMessage to %s failed: %v", abm.c.Addr, err)
+		logger.Errorf("Send GetBlocksMessage to %s failed: %v", abm.c.Addr, err)
 	}
 }
 
@@ -768,7 +768,7 @@ func (atm *AnnounceTxnsMessage) Process(d *Daemon) {
 
 	m := NewGetTxnsMessage(unknown)
 	if err := d.Pool.Pool.SendMessage(atm.c.Addr, m); err != nil {
-		logger.Error("Send GetTxnsMessage to %s failed: %v", atm.c.Addr, err)
+		logger.Errorf("Send GetTxnsMessage to %s failed: %v", atm.c.Addr, err)
 	}
 }
 
@@ -806,7 +806,7 @@ func (gtm *GetTxnsMessage) Process(d *Daemon) {
 	// Reply to sender with GiveTxnsMessage
 	m := NewGiveTxnsMessage(known)
 	if err := d.Pool.Pool.SendMessage(gtm.c.Addr, m); err != nil {
-		logger.Error("Send GiveTxnsMessage to %s failed: %v", gtm.c.Addr, err)
+		logger.Errorf("Send GiveTxnsMessage to %s failed: %v", gtm.c.Addr, err)
 	}
 }
 
@@ -847,13 +847,13 @@ func (gtm *GiveTxnsMessage) Process(d *Daemon) {
 		// Only announce transactions that are new to us, so that peers can't spam relays
 		known, softErr, err := d.Visor.InjectTransaction(txn)
 		if err != nil {
-			logger.Warning("Failed to record transaction %s: %v", txn.Hash().Hex(), err)
+			logger.Warningf("Failed to record transaction %s: %v", txn.Hash().Hex(), err)
 			continue
 		} else if softErr != nil {
-			logger.Warning("Transaction soft violation: %v", err)
+			logger.Warningf("Transaction soft violation: %v", err)
 			continue
 		} else if known {
-			logger.Warning("Duplicate Transaction: %s", txn.Hash().Hex())
+			logger.Warningf("Duplicate Transaction: %s", txn.Hash().Hex())
 			continue
 		}
 

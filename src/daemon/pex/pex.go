@@ -225,11 +225,11 @@ func New(cfg Config, defaultConns []string) (*Pex, error) {
 	for _, addr := range defaultConns {
 		// Default peers will mark as trusted peers.
 		if err := pex.AddPeer(addr); err != nil {
-			logger.Critical("add peer failed:%v", err)
+			logger.Criticalf("add peer failed:%v", err)
 			continue
 		}
 		if err := pex.SetTrusted(addr); err != nil {
-			logger.Critical("pex.SetTrust failed: %v", err)
+			logger.Criticalf("pex.SetTrust failed: %v", err)
 		}
 	}
 
@@ -242,7 +242,7 @@ func New(cfg Config, defaultConns []string) (*Pex, error) {
 	if pex.Config.DownloadPeerList {
 		go func() {
 			if err := pex.downloadPeers(); err != nil {
-				logger.Error("Failed to download peers list: %v", err)
+				logger.Errorf("Failed to download peers list: %v", err)
 			}
 		}()
 	}
@@ -252,15 +252,15 @@ func New(cfg Config, defaultConns []string) (*Pex, error) {
 
 // Run starts the pex service
 func (px *Pex) Run() error {
-	logger.Info("Pex.Run started")
-	defer logger.Info("Pex.Run stopped")
+	logger.Infof("Pex.Run started")
+	defer logger.Infof("Pex.Run stopped")
 	defer close(px.done)
 
 	defer func() {
 		// Save the peerlist
-		logger.Info("Save peerlist")
+		logger.Infof("Save peerlist")
 		if err := px.save(); err != nil {
-			logger.Error("Save peers failed: %v", err)
+			logger.Errorf("Save peers failed: %v", err)
 		}
 	}()
 
@@ -283,8 +283,8 @@ func (px *Pex) Run() error {
 
 // Shutdown notifies the pex service to exist
 func (px *Pex) Shutdown() {
-	logger.Info("Shutting down pex")
-	defer logger.Info("Pex shutdown")
+	logger.Infof("Shutting down pex")
+	defer logger.Infof("Pex shutdown")
 	close(px.quit)
 	<-px.done
 }
@@ -292,15 +292,15 @@ func (px *Pex) Shutdown() {
 func (px *Pex) downloadPeers() error {
 	body, err := backoffDownloadText(px.Config.PeerListURL)
 	if err != nil {
-		logger.Error("Failed to download peers from %s. err: %s", px.Config.PeerListURL, err.Error())
+		logger.Errorf("Failed to download peers from %s. err: %s", px.Config.PeerListURL, err.Error())
 		return err
 	}
 
 	peers := parseRemotePeerList(body)
-	logger.Info("Downloaded peers list from %s, got %d peers", px.Config.PeerListURL, len(peers))
+	logger.Infof("Downloaded peers list from %s, got %d peers", px.Config.PeerListURL, len(peers))
 
 	n := px.AddPeers(peers)
-	logger.Info("Added %d/%d peers from downloaded peers list", n, len(peers))
+	logger.Infof("Added %d/%d peers from downloaded peers list", n, len(peers))
 
 	return nil
 }
@@ -324,7 +324,7 @@ func (px *Pex) load() error {
 	var validPeers []Peer
 	for addr, p := range peers {
 		if _, err := validateAddress(addr, px.Config.AllowLocalhost); err != nil {
-			logger.Error("Invalid peer address: %v", err)
+			logger.Errorf("Invalid peer address: %v", err)
 			continue
 		}
 
@@ -355,7 +355,7 @@ func (px *Pex) AddPeer(addr string) error {
 
 	cleanAddr, err := validateAddress(addr, px.Config.AllowLocalhost)
 	if err != nil {
-		logger.Error("Invalid address %s: %v", addr, err)
+		logger.Errorf("Invalid address %s: %v", addr, err)
 		return ErrInvalidAddress
 	}
 
@@ -375,7 +375,7 @@ func (px *Pex) AddPeers(addrs []string) int {
 	defer px.Unlock()
 
 	if px.Config.Max > 0 && px.peerlist.len() >= px.Config.Max {
-		logger.Warning("Add peers failed, peer list is full")
+		logger.Warningf("Add peers failed, peer list is full")
 		return 0
 	}
 
@@ -384,7 +384,7 @@ func (px *Pex) AddPeers(addrs []string) int {
 	for _, addr := range addrs {
 		a, err := validateAddress(addr, px.Config.AllowLocalhost)
 		if err != nil {
-			logger.Info("Add peers sees an invalid address %s: %v", addr, err)
+			logger.Infof("Add peers sees an invalid address %s: %v", addr, err)
 			continue
 		}
 		validAddrs = append(validAddrs, a)
@@ -415,7 +415,7 @@ func (px *Pex) SetPrivate(addr string, private bool) error {
 
 	cleanAddr, err := validateAddress(addr, px.Config.AllowLocalhost)
 	if err != nil {
-		logger.Error("Invalid address %s: %v", addr, err)
+		logger.Errorf("Invalid address %s: %v", addr, err)
 		return ErrInvalidAddress
 	}
 
@@ -429,7 +429,7 @@ func (px *Pex) SetTrusted(addr string) error {
 
 	cleanAddr, err := validateAddress(addr, px.Config.AllowLocalhost)
 	if err != nil {
-		logger.Error("Invalid address %s: %v", addr, err)
+		logger.Errorf("Invalid address %s: %v", addr, err)
 		return ErrInvalidAddress
 	}
 
@@ -443,7 +443,7 @@ func (px *Pex) SetHasIncomingPort(addr string, hasPublicPort bool) error {
 
 	cleanAddr, err := validateAddress(addr, px.Config.AllowLocalhost)
 	if err != nil {
-		logger.Error("Invalid address %s: %v", addr, err)
+		logger.Errorf("Invalid address %s: %v", addr, err)
 		return ErrInvalidAddress
 	}
 
@@ -551,22 +551,22 @@ func backoffDownloadText(url string) (string, error) {
 	b := backoff.NewExponentialBackOff()
 
 	notify := func(err error, wait time.Duration) {
-		logger.Error("waiting %v to retry downloadText, error: %v", wait, err)
+		logger.Errorf("waiting %v to retry downloadText, error: %v", wait, err)
 	}
 
 	operation := func() error {
-		logger.Info("Trying to download peers list from %s", url)
+		logger.Infof("Trying to download peers list from %s", url)
 		var err error
 		body, err = downloadText(url)
 		return err
 	}
 
 	if err := backoff.RetryNotify(operation, b, notify); err != nil {
-		logger.Info("Gave up dowloading peers list from %s: %v", url, err)
+		logger.Infof("Gave up dowloading peers list from %s: %v", url, err)
 		return "", err
 	}
 
-	logger.Info("Peers list downloaded from %s", url)
+	logger.Infof("Peers list downloaded from %s", url)
 
 	return body, nil
 }
@@ -586,7 +586,7 @@ func parseRemotePeerList(body string) []string {
 		// Never allow localhost addresses from the remote peers list
 		a, err := validateAddress(addr, false)
 		if err != nil {
-			logger.Error("Remote peers list has invalid address %s: %v", addr, err)
+			logger.Errorf("Remote peers list has invalid address %s: %v", addr, err)
 			continue
 		}
 

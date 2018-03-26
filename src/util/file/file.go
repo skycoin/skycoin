@@ -46,18 +46,18 @@ func InitDataDir(dir string) (string, error) {
 	}
 
 	if err := os.MkdirAll(dir, os.FileMode(0700)); err != nil {
-		logger.Error("Failed to create directory %s: %v", dir, err)
+		logger.Errorf("Failed to create directory %s: %v", dir, err)
 		return "", err
 	}
 
-	logger.Info("Created data directory %s", dir)
+	logger.Infof("Created data directory %s", dir)
 	return dir, nil
 }
 
 // Construct the full data directory by adding to $HOME or ./
 func buildDataDir(dir string) (string, error) {
 	if dir == "" {
-		logger.Error("data directory is empty")
+		logger.Errorf("data directory is empty")
 		return "", ErrEmptyDirectoryName
 	}
 
@@ -77,7 +77,7 @@ func buildDataDir(dir string) (string, error) {
 	// The joined directory must not be equal to $HOME or a parent path of $HOME
 	// The joined directory must not be equal to `pwd` or a parent path of `pwd`
 	if strings.HasPrefix(home, fullDir) || strings.HasPrefix(wd, fullDir) {
-		logger.Error("join(%[1]s, %[2]s) == %[1]s", home, dir)
+		logger.Errorf("join(%[1]s, %[2]s) == %[1]s", home, dir)
 		return "", ErrDotDirectoryName
 	}
 

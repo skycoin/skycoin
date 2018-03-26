@@ -429,9 +429,9 @@ func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspent
 	haveChange := changeCoins > 0
 	changeHours, addrHours, outputHours := DistributeSpendHours(spending.Hours, 1, haveChange)
 
-	logger.Info("wallet.CreateAndSignTransaction: spending.Hours=%d, fee.VerifyTransactionFeeForHours(%d, %d)", spending.Hours, outputHours, spending.Hours-outputHours)
+	logger.Infof("wallet.CreateAndSignTransaction: spending.Hours=%d, fee.VerifyTransactionFeeForHours(%d, %d)", spending.Hours, outputHours, spending.Hours-outputHours)
 	if err := fee.VerifyTransactionFeeForHours(outputHours, spending.Hours-outputHours); err != nil {
-		logger.Warning("wallet.CreateAndSignTransaction: fee.VerifyTransactionFeeForHours failed: %v", err)
+		logger.Warningf("wallet.CreateAndSignTransaction: fee.VerifyTransactionFeeForHours failed: %v", err)
 		return nil, err
 	}
 

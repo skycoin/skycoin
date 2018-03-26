@@ -168,7 +168,7 @@ func (gpm *GetPeersMessage) Process(d *Daemon) {
 
 	m := NewGivePeersMessage(peers)
 	if err := d.Pool.Pool.SendMessage(gpm.addr, m); err != nil {
-		logger.Error("Send GivePeersMessage to %s failed: %v", gpm.addr, err)
+		logger.Errorf("Send GivePeersMessage to %s failed: %v", gpm.addr, err)
 	}
 }
 
@@ -184,8 +184,8 @@ func NewGivePeersMessage(peers []pex.Peer) *GivePeersMessage {
 	for _, ps := range peers {
 		ipaddr, err := NewIPAddr(ps.Addr)
 		if err != nil {
-			logger.Warning("GivePeersMessage skipping address %s", ps.Addr)
-			logger.Warning(err.Error())
+			logger.Warningf("GivePeersMessage skipping address %s", ps.Addr)
+			logger.Warningf(err.Error())
 			continue
 		}
 		ipaddrs = append(ipaddrs, ipaddr)
@@ -254,7 +254,7 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 	err := func() error {
 		// Disconnect if this is a self connection (we have the same mirror value)
 		if intro.Mirror == d.Messages.Mirror {
-			logger.Info("Remote mirror value %v matches ours", intro.Mirror)
+			logger.Infof("Remote mirror value %v matches ours", intro.Mirror)
 			d.Pool.Pool.Disconnect(mc.Addr, ErrDisconnectSelf)
 			return ErrDisconnectSelf
 
@@ -262,13 +262,13 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 
 		// Disconnect if not running the same version
 		if intro.Version != d.Config.Version {
-			logger.Info("%s has different version %d. Disconnecting.",
+			logger.Infof("%s has different version %d. Disconnecting.",
 				mc.Addr, intro.Version)
 			d.Pool.Pool.Disconnect(mc.Addr, ErrDisconnectInvalidVersion)
 			return ErrDisconnectInvalidVersion
 		}
 
-		logger.Info("%s verified for version %d", mc.Addr, intro.Version)
+		logger.Infof("%s verified for version %d", mc.Addr, intro.Version)
 
 		// only solicited connection can be added to exchange peer list, cause accepted
 		// connection may not have incomming  port.
@@ -276,25 +276,25 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 		if err != nil {
 			// This should never happen, but the program should still work if it
 			// does.
-			logger.Error("Invalid Addr() for connection: %s", mc.Addr)
+			logger.Errorf("Invalid Addr() for connection: %s", mc.Addr)
 			d.Pool.Pool.Disconnect(mc.Addr, ErrDisconnectOtherError)
 			return ErrDisconnectOtherError
 		}
 
 		if port == intro.Port {
 			if err := d.Pex.SetHasIncomingPort(mc.Addr, true); err != nil {
-				logger.Error("Failed to set peer has incoming port status, %v", err)
+				logger.Errorf("Failed to set peer has incoming port status, %v", err)
 			}
 		} else {
 			if err := d.Pex.AddPeer(fmt.Sprintf("%s:%d", ip, intro.Port)); err != nil {
-				logger.Error("Failed to add peer: %v", err)
+				logger.Errorf("Failed to add peer: %v", err)
 			}
 		}
 
 		// Disconnect if connected twice to the same peer (judging by ip:mirror)
 		knownPort, exists := d.getMirrorPort(mc.Addr, intro.Mirror)
 		if exists {
-			logger.Info("%s is already connected on port %d", mc.Addr, knownPort)
+			logger.Infof("%s is already connected on port %d", mc.Addr, knownPort)
 			d.Pool.Pool.Disconnect(mc.Addr, ErrDisconnectConnectedTwice)
 			return ErrDisconnectConnectedTwice
 		}
@@ -329,7 +329,7 @@ func (intro *IntroductionMessage) Process(d *Daemon) {
 	if err != nil {
 		// This should never happen, but the program should not allow itself
 		// to be corrupted in case it does
-		logger.Error("Invalid port for connection %s", a)
+		logger.Errorf("Invalid port for connection %s", a)
 		d.Pool.Pool.Disconnect(intro.c.Addr, ErrDisconnectOtherError)
 		return
 	}
@@ -339,7 +339,7 @@ func (intro *IntroductionMessage) Process(d *Daemon) {
 	if err == nil {
 		logger.Debug("Successfully requested blocks from %s", intro.c.Addr)
 	} else {
-		logger.Warning("%v", err)
+		logger.Warningf("%v", err)
 	}
 
 	// Anounce unconfirmed know txns
@@ -363,7 +363,7 @@ func (ping *PingMessage) Process(d *Daemon) {
 		logger.Debug("Reply to ping from %s", ping.c.Addr)
 	}
 	if err := d.Pool.Pool.SendMessage(ping.c.Addr, &PongMessage{}); err != nil {
-		logger.Error("Send PongMessage to %s failed: %v", ping.c.Addr, err)
+		logger.Errorf("Send PongMessage to %s failed: %v", ping.c.Addr, err)
 	}
 }
 

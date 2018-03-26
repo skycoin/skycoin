@@ -284,7 +284,7 @@ func (utp *UnconfirmedTxnPool) InjectTransaction(bc Blockchainer, t coin.Transac
 	var isValid int8 = 1
 	var softErr *ErrTxnViolatesSoftConstraint
 	if err := bc.VerifySingleTxnAllConstraints(t, maxSize); err != nil {
-		logger.Warning("bc.VerifySingleTxnAllConstraints failed for txn %s: %v", t.TxIDHex(), err)
+		logger.Warningf("bc.VerifySingleTxnAllConstraints failed for txn %s: %v", t.TxIDHex(), err)
 		switch err.(type) {
 		case ErrTxnViolatesSoftConstraint:
 			e := err.(ErrTxnViolatesSoftConstraint)

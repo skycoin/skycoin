@@ -227,7 +227,7 @@ func (rpc *WebRPC) Run() error {
 	}
 
 	logger.Infof("Start webrpc on http://%s", rpc.Addr)
-	defer logger.Info("Webrpc service closed")
+	defer logger.Infof("Webrpc service closed")
 
 	var err error
 	if rpc.listener, err = net.Listen("tcp", rpc.Addr); err != nil {
@@ -248,7 +248,7 @@ func (rpc *WebRPC) Run() error {
 				errC <- nil
 			default:
 				// the webrpc service failed unexpectedly
-				logger.Info("webrpc.Run, http.Serve error:", err)
+				logger.Infof("webrpc.Run, http.Serve error:", err)
 				errC <- err
 			}
 		}
@@ -307,13 +307,13 @@ func (rpc *WebRPC) Handler(w http.ResponseWriter, r *http.Request) {
 	rpc.ops <- func(rpc *WebRPC) {
 		defer func() {
 			if r := recover(); r != nil {
-				logger.Critical(fmt.Sprintf("%v", r))
+				logger.Criticalf(fmt.Sprintf("%v", r))
 				resC <- makeErrorResponse(errCodeInternalError, errMsgInternalError)
 			}
 		}()
 
 		if handler, ok := rpc.handlers[req.Method]; ok {
-			logger.Info("webrpc handling method: %v", req.Method)
+			logger.Infof("webrpc handling method: %v", req.Method)
 			resC <- handler(req, rpc.Gateway)
 		} else {
 			resC <- makeErrorResponse(errCodeMethodNotFound, errMsgMethodNotFound)
@@ -333,7 +333,7 @@ func (rpc *WebRPC) workerThread(seq uint) {
 			func() {
 				defer func() {
 					if r := recover(); r != nil {
-						logger.Error("recover: %v", r)
+						logger.Errorf("recover: %v", r)
 					}
 				}()
 				op(rpc)

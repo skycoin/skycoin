@@ -39,7 +39,7 @@ func HostCheck(logger *logging.Logger, host string, handler http.Handler) http.H
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// NOTE: The "Host" header is not in http.Request.Header, it's put in the http.Request.Host field
 		if r.Host != "" && isLocalhost && r.Host != fmt.Sprintf("127.0.0.1:%d", port) && r.Host != fmt.Sprintf("localhost:%d", port) {
-			logger.Critical("Detected DNS rebind attempt - configured-host=%s header-host=%s", host, r.Host)
+			logger.Criticalf("Detected DNS rebind attempt - configured-host=%s header-host=%s", host, r.Host)
 			Error403(w)
 			return
 		}

@@ -134,14 +134,14 @@ func CreateCertIfNotExists(host, certFile, keyFile string, appName string) error
 	}
 
 	// Automatically create a new cert if neither files exist
-	logger.Info("Creating certificate %s", certFile)
-	logger.Info("Creating key %s", keyFile)
+	logger.Infof("Creating certificate %s", certFile)
+	logger.Infof("Creating key %s", keyFile)
 	lifetime := time.Hour * 365 * 24 // 1 year
 	if err := GenerateCert(certFile, keyFile, host, appName, 2048, false, utc.Now(), lifetime); err != nil {
 		return err
 	}
 
-	logger.Info("Created certificate %s for host %s", certFile, host)
-	logger.Info("Created key %s for host %s", keyFile, host)
+	logger.Infof("Created certificate %s for host %s", certFile, host)
+	logger.Infof("Created key %s for host %s", keyFile, host)
 	return nil
 }

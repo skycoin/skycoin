@@ -137,15 +137,15 @@ func (l *Logger) Criticalln(args ...interface{}) {
 }
 
 func (l *Logger) Noticef(format string, args ...interface{}) {
-	l.WithField("priority", "CRITICAL").Error(args...)
+	l.WithField("priority", "CRITICAL").Info(args...)
 }
 
 func (l *Logger) Notice(args ...interface{}) {
-	l.WithField("priority", "CRITICAL").Error(args...)
+	l.WithField("priority", "CRITICAL").Info(args...)
 }
 
 func (l *Logger) Noticeln(args ...interface{}) {
-	l.WithField("priority", "CRITICAL").Error(args...)
+	l.WithField("priority", "CRITICAL").Info(args...)
 }
 
 func (l *Logger) Disable() {

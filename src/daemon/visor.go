@@ -644,7 +644,7 @@ func (gbm *GiveBlocksMessage) Handle(mc *gnet.MessageContext,
 // Process process message
 func (gbm *GiveBlocksMessage) Process(d *Daemon) {
 	if d.Visor.Config.DisableNetworking {
-		logger.Critical("Visor disabled, ignoring GiveBlocksMessage")
+		logger.Notice("Visor disabled, ignoring GiveBlocksMessage")
 		return
 	}
 
@@ -663,7 +663,7 @@ func (gbm *GiveBlocksMessage) Process(d *Daemon) {
 
 		err := d.Visor.ExecuteSignedBlock(b)
 		if err == nil {
-			logger.Critical("Added new block %d", b.Block.Head.BkSeq)
+			logger.Notice("Added new block %d", b.Block.Head.BkSeq)
 			processed++
 		} else {
 			logger.Critical("Failed to execute received block %d: %v", b.Block.Head.BkSeq, err)

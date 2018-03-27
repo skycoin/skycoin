@@ -262,6 +262,11 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.Se
 	// generate wallet seed
 	webHandler("/wallet/newSeed", newWalletSeed(gateway))
 
+	// unload wallet
+	// POST Argument:
+	//         id: wallet id
+	webHandler("/wallet/unload", walletUnloadHandler(gateway))
+
 	// Blockchain interface
 
 	webHandler("/blockchain/metadata", blockchainHandler(gateway))

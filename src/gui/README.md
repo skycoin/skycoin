@@ -51,6 +51,8 @@ A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](h
     - [Get a list of all default connections](#get-a-list-of-all-default-connections)
     - [Get a list of all trusted connections](#get-a-list-of-all-trusted-connections)
     - [Get a list of all connections discovered through peer exchange](#get-a-list-of-all-connections-discovered-through-peer-exchange)
+- [General system check](#general-system-check)
+    - [Health check](#health-check)
 
 <!-- /MarkdownTOC -->
 
@@ -1737,4 +1739,19 @@ result:
     "35.201.160.163:6000",
     "47.88.33.156:6000"
 ]
+```
+
+## General system checks
+
+### Health check
+
+```
+URI: /health
+Method: GET
+```
+
+example:
+
+```bash
+curl 'http://127.0.0.1:6420/health'
 ```

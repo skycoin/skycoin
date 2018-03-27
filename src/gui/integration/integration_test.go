@@ -2292,3 +2292,16 @@ func getWalletDir(t *testing.T, c *gui.Client) string {
 	}
 	return wf.Address
 }
+
+func TestHealth(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	doLiveEnvCheck(t)
+
+	c := gui.NewClient(nodeAddress())
+	_, err := c.Health()
+
+	require.NoError(t, err)
+}

@@ -2321,7 +2321,7 @@ func TestDisableWalletApi(t *testing.T) {
 			name:      "get wallet",
 			method:    http.MethodGet,
 			endpoint:  "/wallet?id=test.wlt",
-			expectErr: "403 Forbiden\n",
+			expectErr: "403 Forbidden\n",
 		},
 		{
 			name:     "create wallet",
@@ -2334,7 +2334,7 @@ func TestDisableWalletApi(t *testing.T) {
 				v.Add("scan", "1")
 				return strings.NewReader(v.Encode())
 			},
-			expectErr: "403 Forbiden\n",
+			expectErr: "403 Forbidden\n",
 		},
 		{
 			name:     "generate new address",
@@ -2345,18 +2345,13 @@ func TestDisableWalletApi(t *testing.T) {
 				v.Add("id", "test.wlt")
 				return strings.NewReader(v.Encode())
 			},
-			expectErr: "403 Forbiden\n",
+			expectErr: "403 Forbidden\n",
 		},
 		{
-			name:     "get wallet balance",
-			method:   http.MethodGet,
-			endpoint: "/wallet/balance",
-			body: func() io.Reader {
-				v := url.Values{}
-				v.Add("id", "test.wlt")
-				return strings.NewReader(v.Encode())
-			},
-			expectErr: "403 Forbiden\n",
+			name:      "get wallet balance",
+			method:    http.MethodGet,
+			endpoint:  "/wallet/balance?id=test.wlt",
+			expectErr: "403 Forbidden\n",
 		},
 		{
 			name:     "wallet spending",
@@ -2366,21 +2361,16 @@ func TestDisableWalletApi(t *testing.T) {
 				v := url.Values{}
 				v.Add("id", "test.wlt")
 				v.Add("coins", "100000") // 1e5
-				v.Add("dst", "9eb7954461ba0256c9054fe38c00c66e60428dccf900a62e74b9fe39310aea13")
+				v.Add("dst", "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6")
 				return strings.NewReader(v.Encode())
 			},
-			expectErr: "403 Forbiden\n",
+			expectErr: "403 Forbidden\n",
 		},
 		{
-			name:     "get wallet unconfirmed transactions",
-			method:   http.MethodGet,
-			endpoint: "/wallet/transactions",
-			body: func() io.Reader {
-				v := url.Values{}
-				v.Add("id", "test.wlt")
-				return strings.NewReader(v.Encode())
-			},
-			expectErr: "403 Forbiden\n",
+			name:      "get wallet unconfirmed transactions",
+			method:    http.MethodGet,
+			endpoint:  "/wallet/transactions?id=test.wlt",
+			expectErr: "403 Forbidden\n",
 		},
 		{
 			name:     "update wallet label",
@@ -2389,32 +2379,34 @@ func TestDisableWalletApi(t *testing.T) {
 			body: func() io.Reader {
 				v := url.Values{}
 				v.Add("id", "test.wlt")
+				v.Add("label", "label")
 				return strings.NewReader(v.Encode())
 			},
-			expectErr: "403 Forbiden\n",
+			expectErr: "403 Forbidden\n",
 		},
 		{
 			name:      "new seed",
 			method:    http.MethodGet,
-			expectErr: "403 Forbiden\n",
+			endpoint:  "/wallet/newSeed",
+			expectErr: "403 Forbidden\n",
 		},
 		{
 			name:      "get wallets",
 			method:    http.MethodGet,
 			endpoint:  "/wallets",
-			expectErr: "403 Forbiden\n",
+			expectErr: "403 Forbidden\n",
 		},
 		{
 			name:      "get wallets folder name",
 			method:    http.MethodGet,
 			endpoint:  "/wallets/folderName",
-			expectErr: "403 Forbiden\n",
+			expectErr: "403 Forbidden\n",
 		},
 		{
 			name:      "main index.html 404 not found",
 			method:    http.MethodGet,
 			endpoint:  "/",
-			expectErr: "404 Not found\n",
+			expectErr: "404 page not found\n",
 		},
 	}
 
@@ -2428,7 +2420,7 @@ func TestDisableWalletApi(t *testing.T) {
 			case http.MethodPost:
 				err = c.PostForm(tc.endpoint, tc.body(), nil)
 			}
-			require.Error(t, err, tc.expectErr)
+			require.EqualError(t, err, tc.expectErr)
 		})
 	}
 

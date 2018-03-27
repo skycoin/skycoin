@@ -120,7 +120,7 @@ func getCSRFToken(gateway Gatewayer, store *CSRFStore) http.HandlerFunc {
 		// generate a new token
 		store.setToken(newCSRFToken())
 
-		wh.SendOr404(w, &map[string]string{"csrf_token": store.getTokenValue()})
+		wh.SendJSONOr500(logger, w, &map[string]string{"csrf_token": store.getTokenValue()})
 	}
 }
 

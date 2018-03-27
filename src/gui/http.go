@@ -10,9 +10,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"unicode"
-
 	"time"
+	"unicode"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
@@ -166,6 +165,29 @@ func (s *Server) Shutdown() {
 	<-s.done
 }
 
+func ElapseHandler(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		lrw := NewWrappedResponseWriter(w)
+		start := time.Now()
+		handler.ServeHTTP(lrw, r)
+		logger.Info("%v %s %s %v", lrw.statusCode, r.Method, r.URL.Path, time.Since(start))
+	})
+}
+
+type wrappedResponseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func NewWrappedResponseWriter(w http.ResponseWriter) *wrappedResponseWriter {
+	return &wrappedResponseWriter{w, http.StatusOK}
+}
+
+func (lrw *wrappedResponseWriter) WriteHeader(code int) {
+	lrw.statusCode = code
+	lrw.ResponseWriter.WriteHeader(code)
+}
+
 // newServerMux creates an http.ServeMux with handlers registered
 func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.ServeMux {
 	mux := http.NewServeMux()
@@ -177,6 +199,8 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.Se
 	}
 
 	webHandler := func(endpoint string, handler http.Handler) {
+
+		handler = ElapseHandler(handler)
 		handler = CSRFCheck(csrfStore, handler)
 		handler = headerCheck(c.host, handler)
 		mux.Handle(endpoint, handler)
@@ -261,6 +285,11 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.Se
 
 	// generate wallet seed
 	webHandler("/wallet/newSeed", newWalletSeed(gateway))
+
+	// unload wallet
+	// POST Argument:
+	//         id: wallet id
+	webHandler("/wallet/unload", walletUnloadHandler(gateway))
 
 	// Blockchain interface
 
@@ -414,7 +443,7 @@ func getOutputsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendOr404(w, outs)
+		wh.SendJSONOr500(logger, w, outs)
 	}
 }
 
@@ -462,7 +491,7 @@ func getBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 		}
 
-		wh.SendOr404(w, balance)
+		wh.SendJSONOr500(logger, w, balance)
 	}
 }
 
@@ -473,7 +502,7 @@ func versionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendOr404(w, gateway.GetBuildInfo())
+		wh.SendJSONOr500(logger, w, gateway.GetBuildInfo())
 	}
 }
 
@@ -537,6 +566,6 @@ func getLogsHandler(logbuf *bytes.Buffer) http.HandlerFunc {
 
 		}
 
-		wh.SendOr404(w, logs)
+		wh.SendJSONOr500(logger, w, logs)
 	}
 }

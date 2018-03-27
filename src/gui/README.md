@@ -572,6 +572,22 @@ result:
 }
 ```
 
+### Unload wallet
+
+```
+URI: /wallet/unload
+Method: POST
+Args:
+    id: wallet file name
+```
+
+example:
+
+```bash
+curl -X POST \
+    'http://127.0.0.1:6420/wallet/unload?id=2017_05_09_d554.wlt'
+```
+
 ## Transaction apis
 
 ### Get unconfirmed transactions

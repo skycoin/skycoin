@@ -285,21 +285,21 @@ func (rpc *WebRPC) Handler(w http.ResponseWriter, r *http.Request) {
 	// only support post.
 	if r.Method != http.MethodPost {
 		res := makeErrorResponse(errCodeInvalidRequest, errMsgNotPost)
-		wh.SendOr404(w, &res)
+		wh.SendJSONOr500(logger, w, &res)
 		return
 	}
 
-	// deocder request.
+	// decoder request.
 	req := Request{}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		res := makeErrorResponse(errCodeParseError, errMsgParseError)
-		wh.SendOr404(w, &res)
+		wh.SendJSONOr500(logger, w, &res)
 		return
 	}
 
 	if req.Jsonrpc != jsonRPC {
 		res := makeErrorResponse(errCodeInvalidParams, errMsgInvalidJsonrpc)
-		wh.SendOr404(w, &res)
+		wh.SendJSONOr500(logger, w, &res)
 		return
 	}
 
@@ -321,7 +321,7 @@ func (rpc *WebRPC) Handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res := <-resC
-	wh.SendOr404(w, &res)
+	wh.SendJSONOr500(logger, w, &res)
 }
 
 func (rpc *WebRPC) workerThread(seq uint) {

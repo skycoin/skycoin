@@ -448,10 +448,7 @@ func (c *Client) UpdateWallet(id, label string) error {
 	v.Add("id", id)
 	v.Add("label", label)
 
-	if err := c.PostForm("/wallet/update", strings.NewReader(v.Encode()), nil); err != nil {
-		return err
-	}
-	return nil
+	return c.PostForm("/wallet/update", strings.NewReader(v.Encode()), nil)
 }
 
 // WalletFolderName makes a request to /wallets/folderName
@@ -680,6 +677,13 @@ func (c *Client) AddressCount() (uint64, error) {
 	}
 	return r.Count, nil
 
+}
+
+// UnloadWallet make a request to /wallet/unload
+func (c *Client) UnloadWallet(id string) error {
+	v := url.Values{}
+	v.Add("id", id)
+	return c.PostForm("/wallet/unload", strings.NewReader(v.Encode()), nil)
 }
 
 func (c *Client) Health() (bool, error) {

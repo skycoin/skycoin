@@ -1219,6 +1219,7 @@ func TestWalletNewSeed(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &GatewayerMock{}
+			gateway.On("IsWalletAPIDisabled").Return(false)
 
 			endpoint := "/wallet/newSeed"
 

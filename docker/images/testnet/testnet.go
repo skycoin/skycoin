@@ -143,6 +143,12 @@ func main() {
 				},
 				Ports: []string{"8001:8001"},
 			},
+			"oklog": dockerService{
+				Build: serviceBuild{
+					Context: ".",
+				},
+				Ports: []string{"7651:7651"},
+			},
 		},
 	}
 	processComposeFile(&composeFile, tempDir)

@@ -62,6 +62,7 @@ var endpoints = []string{
 	"/wallets",
 	"/wallets/folderName",
 	"/wallet/newSeed",
+	"/wallet/unload",
 	"/blockchain/metadata",
 	"/blockchain/progress",
 	"/block",

@@ -819,6 +819,24 @@ func (m *GatewayerMock) Spend(p0 string, p1 uint64, p2 cipher.Address) (*coin.Tr
 
 }
 
+// UnloadWallet mocked method
+func (m *GatewayerMock) UnloadWallet(p0 string) error {
+
+	ret := m.Called(p0)
+
+	var r0 error
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case error:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0
+
+}
+
 // UpdateWalletLabel mocked method
 func (m *GatewayerMock) UpdateWalletLabel(p0 string, p1 string) error {
 

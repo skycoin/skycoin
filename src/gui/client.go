@@ -7,14 +7,22 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
+)
+
+const (
+	dialTimeout         = 60 * time.Second
+	httpClientTimeout   = 120 * time.Second
+	tlsHandshakeTimeout = 60 * time.Second
 )
 
 // APIError is used for non-200 API responses
@@ -30,16 +38,28 @@ func (e APIError) Error() string {
 
 // Client provides an interface to a remote node's HTTP API
 type Client struct {
-	Addr string
+	HTTPClient *http.Client
+	Addr       string
 }
 
 // NewClient creates a Client
 func NewClient(addr string) *Client {
+	transport := &http.Transport{
+		Dial: (&net.Dialer{
+			Timeout: dialTimeout,
+		}).Dial,
+		TLSHandshakeTimeout: tlsHandshakeTimeout,
+	}
+	httpClient := &http.Client{
+		Transport: transport,
+		Timeout:   httpClientTimeout,
+	}
 	addr = strings.TrimRight(addr, "/")
 	addr += "/"
 
 	return &Client{
-		Addr: addr,
+		Addr:       addr,
+		HTTPClient: httpClient,
 	}
 }
 
@@ -82,7 +102,7 @@ func (c *Client) get(endpoint string) (*http.Response, error) {
 		return nil, err
 	}
 
-	return http.DefaultClient.Do(req)
+	return c.HTTPClient.Do(req)
 }
 
 // PostForm makes a POST request to an endpoint with body of "application/x-www-form-urlencoded" formated data.
@@ -113,7 +133,7 @@ func (c *Client) post(endpoint string, contentType string, body io.Reader, obj i
 	req.Header.Set("X-CSRF-Token", csrf)
 	req.Header.Set("Content-Type", contentType)
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return err
 	}

@@ -7,30 +7,28 @@ import (
 )
 
 func NewReplayHook(logger *Logger) ReplayHook {
-	return ReplayHook{
-		Logger: logger,
-		excludeTypes: map[reflect.Type]int{
-			reflect.TypeOf(ReplayHook{}):    1,
-			reflect.TypeOf(ModuleLogHook{}): 1,
-		},
-	}
+	return ExclusiveReplayHook(logger, []reflect.Type{
+		reflect.TypeOf(ReplayHook{}),
+		reflect.TypeOf(ModuleLogHook{}),
+	})
 }
 
 // Do not replay hooks of given exclude types
 func ExclusiveReplayHook(logger *Logger, exclude []reflect.Type) (h ReplayHook) {
-	h = NewReplayHook(logger)
-	h.excludeTypes = nil
+	h = ReplayHook{
+		Logger:       logger,
+		excludeTypes: make(map[reflect.Type]struct{}, len(exclude)),
+	}
 	for _, _type := range exclude {
-		h.excludeTypes[_type] = 1
+		h.excludeTypes[_type] = struct{}{}
 	}
 	return
 }
 
 // Hook for replaying hooks bound to another logger
 type ReplayHook struct {
-	Logger *Logger
-	// FIXME : Go lang sets?
-	excludeTypes map[reflect.Type]int
+	Logger       *Logger
+	excludeTypes map[reflect.Type]struct{}
 }
 
 func (h ReplayHook) Levels() []logrus.Level {

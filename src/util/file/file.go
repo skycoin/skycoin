@@ -156,8 +156,13 @@ func SaveBinary(filename string, data []byte, mode os.FileMode) error {
 		return err
 	}
 
-	// Move the temporary to the new file
-	return os.Rename(tmpname, filename)
+	// Write the new file to the target wallet file
+	if err := ioutil.WriteFile(filename, data, mode); err != nil {
+		return err
+	}
+
+	// Remove the tmp file
+	return os.Remove(tmpname)
 }
 
 //TODO: require file named after application and then hashcode, in static directory

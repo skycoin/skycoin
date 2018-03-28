@@ -720,6 +720,24 @@ func (m *GatewayerMock) InjectBroadcastTransaction(p0 coin.Transaction) error {
 
 }
 
+// IsWalletAPIDisabled mocked method
+func (m *GatewayerMock) IsWalletAPIDisabled() bool {
+
+	ret := m.Called()
+
+	var r0 bool
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case bool:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0
+
+}
+
 // NewAddresses mocked method
 func (m *GatewayerMock) NewAddresses(p0 string, p1 uint64) ([]cipher.Address, error) {
 

@@ -106,6 +106,9 @@ integration-test-stable: ## Run stable integration tests
 integration-test-live: ## Run live integration tests
 	./ci-scripts/integration-test-live.sh -v -w
 
+integration-test-disable-wallet-api: ## Run disable wallet api integration tests
+	./ci-scripts/integration-test-disable-wallet-api.sh -v
+
 cover: ## Runs tests on ./src/ with HTML code coverage
 	go test -cover -coverprofile=cover.out -coverpkg=github.com/skycoin/skycoin/... ./src/...
 	go tool cover -html=cover.out

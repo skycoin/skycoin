@@ -775,3 +775,8 @@ func (gw *Gateway) UnloadWallet(id string) error {
 
 	return nil
 }
+
+// IsWalletAPIDisabled returns if all wallet related apis are disabled
+func (gw *Gateway) IsWalletAPIDisabled() bool {
+	return gw.Config.DisableWalletAPI
+}

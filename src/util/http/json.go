@@ -28,7 +28,7 @@ func SendJSON(w http.ResponseWriter, m interface{}) error {
 // SendJSONOr500 writes an object as JSON, writing a 500 error if it fails
 func SendJSONOr500(log *logging.Logger, w http.ResponseWriter, m interface{}) {
 	if err := SendJSON(w, m); err != nil {
-		log.Error("%v", err)
+		log.Errorf("%v", err)
 		Error500(w)
 	}
 }

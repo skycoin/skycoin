@@ -38,12 +38,6 @@
   revision = "9520e82c474b0a04dd04f8a40959027271bab992"
 
 [[projects]]
-  name = "github.com/op/go-logging"
-  packages = ["."]
-  revision = "b2cb9fa56473e98db8caba80237377e83fe44db5"
-  version = "v1"
-
-[[projects]]
   name = "github.com/pmezard/go-difflib"
   packages = ["difflib"]
   revision = "792786c7400a136282c1664665ae0a8db921c6c2"
@@ -91,10 +85,7 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = [
-    "pbkdf2",
-    "ssh/terminal"
-  ]
+  packages = ["ssh/terminal"]
   revision = "adbae1b6b6fb4b02448a0fc0dbbc9ba2b95b294d"
 
 [[projects]]
@@ -112,6 +103,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0074ea0378acfb8bed09824de8825feddbc7a97bfd43ada2289cdb3460d42cdb"
+  inputs-digest = "c9d61d36670e7b6265ba5b355d38689f4037290cb3f0b7b22a77251ea1ffd9d8"
   solver-name = "gps-cdcl"
   solver-version = 1

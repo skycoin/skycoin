@@ -2301,7 +2301,7 @@ func createWallet(t *testing.T, c *gui.Client) (*wallet.Wallet, func()) {
 		require.NoError(t, err)
 
 		// Removes the wallet from memory
-		c.UnloadWallet(w.GetFilename())
+		c.UnloadWallet(w.Filename())
 	}
 }
 

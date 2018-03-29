@@ -185,5 +185,5 @@ func (rpc *RPC) GetBuildInfo() BuildInfo {
 
 // UnloadWallet removes the wallet of given id from wallet service.
 func (rpc *RPC) UnloadWallet(id string) {
-	rpc.v.wallets.Remove(id)
+	rpc.v.Wallets.Remove(id)
 }

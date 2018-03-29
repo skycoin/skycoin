@@ -1545,7 +1545,7 @@ func TestWalletUnloadHandler(t *testing.T) {
 			status:          http.StatusForbidden,
 			err:             "403 Forbidden",
 			walletID:        "wallet.wlt",
-			unloadWalletErr: wallet.ErrWalletApiDisabled,
+			unloadWalletErr: wallet.ErrWalletAPIDisabled,
 		},
 		{
 			name:     "200 - ok",

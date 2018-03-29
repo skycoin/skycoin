@@ -409,7 +409,7 @@ func (serv *Service) UpdateWalletLabel(wltID, label string) error {
 func (serv *Service) Remove(wltID string) {
 	serv.Lock()
 	defer serv.Unlock()
-	serv.wallets.Remove(wltID)
+	serv.wallets.remove(wltID)
 }
 
 func (serv *Service) removeDup(wlts Wallets) Wallets {

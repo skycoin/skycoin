@@ -516,7 +516,7 @@ func readData(reader io.Reader, buf []byte) ([]byte, error) {
 func decodeData(buf *bytes.Buffer, maxMsgLength int) ([][]byte, error) {
 	dataArray := [][]byte{}
 	for buf.Len() > messageLengthSize {
-		//logger.Debugf("There is data in the buffer, extracting")
+		//logger.Debug("There is data in the buffer, extracting")
 		prefix := buf.Bytes()[:messageLengthSize]
 		// decode message length
 		tmpLength := uint32(0)
@@ -530,7 +530,7 @@ func decodeData(buf *bytes.Buffer, maxMsgLength int) ([][]byte, error) {
 		}
 
 		if buf.Len()-messageLengthSize < length {
-			// logger.Debugf("Skipping, not enough data to read this")
+			// logger.Debug("Skipping, not enough data to read this")
 			return [][]byte{}, nil
 		}
 

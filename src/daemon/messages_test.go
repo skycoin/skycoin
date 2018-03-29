@@ -163,17 +163,21 @@ func ExampleNewGivePeersMessage() {
 	// 0x001e |
 }
 
-func ExampleNewPingMessage() {
-	//var message gnet.Message = PingMessage{
-	//}
-	//MessageHexDump(message, true)
+
+/*
+func TestNewPingMessage(t *testing.T) {
+	var message gnet.Message = &PingMessage{}
+	MessageHexDump(message, true)
 }
+
 
 func ExampleNewPongMessage() {
 	//var message = PongMessage{
 	//}
 	//MessageHexDump(message, true)
 }
+
+*/
 
 func ExampleNewGetBlocksMessage() {
 	defer gnet.EraseMessages()

@@ -762,3 +762,21 @@ func (gw *Gateway) GetAddressCount() (uint64, error) {
 
 	return uint64(len(allAccounts)), nil
 }
+
+// UnloadWallet removes wallet of given id from memory.
+func (gw *Gateway) UnloadWallet(id string) error {
+	if gw.Config.DisableWalletAPI {
+		return wallet.ErrWalletApiDisabled
+	}
+
+	gw.strand("UnloadWallet", func() {
+		gw.vrpc.UnloadWallet(id)
+	})
+
+	return nil
+}
+
+// IsWalletAPIDisabled returns if all wallet related apis are disabled
+func (gw *Gateway) IsWalletAPIDisabled() bool {
+	return gw.Config.DisableWalletAPI
+}

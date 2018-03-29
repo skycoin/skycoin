@@ -1,15 +1,15 @@
 #!/bin/bash
-# Runs "stable"-mode tests against a skycoin node configured with a pinned database
-# "stable" mode tests assume the blockchain data is static, in order to check API responses more precisely
-# $TEST defines which test to run i.e, cli or gui; If empty both are run
+# Runs "disable-wallet-api"-mode tests against a skycoin node configured with -disable-wallet-api option
+# "disable-wallet-api"-mode confirms that no wallet related apis work, that the main index.html page 
+# does not load, and that a new wallet file is not created.
 
 #Set Script Name variable
 SCRIPT=`basename ${BASH_SOURCE[0]}`
-PORT="46420"
-RPC_PORT="46430"
+PORT="46421"
+RPC_PORT="46431"
 HOST="http://127.0.0.1:$PORT"
 RPC_ADDR="127.0.0.1:$RPC_PORT"
-MODE="stable"
+MODE="disable-wallet-api"
 BINARY="skycoin-integration"
 TEST=""
 UPDATE=""
@@ -71,7 +71,8 @@ echo "starting skycoin node in background with http listener on $HOST"
                       -rpc-interface-port=$RPC_PORT \
                       -launch-browser=false \
                       -data-dir="$DATA_DIR" \
-                      -wallet-dir="$WALLET_DIR" &
+                      -wallet-dir="$WALLET_DIR" \
+                      -disable-wallet-api=true &
 SKYCOIN_PID=$!
 
 echo "skycoin node pid=$SKYCOIN_PID"
@@ -84,7 +85,7 @@ set +e
 
 if [[ -z $TEST || $TEST = "gui" ]]; then
 
-SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST go test ./src/gui/integration/... $UPDATE -timeout=30s $VERBOSE $RUN_TESTS $TEST_WALLET
+SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST WALLET_DIR=$WALLET_DIR go test ./src/gui/integration/... $UPDATE -timeout=30s $VERBOSE $RUN_TESTS $TEST_WALLET
 
 GUI_FAIL=$?
 

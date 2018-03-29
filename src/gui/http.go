@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -28,43 +29,81 @@ const (
 	resourceDir = "dist/"
 	devDir      = "dev/"
 	indexPage   = "index.html"
+
+	defaultReadTimeout  = time.Second * 10
+	defaultWriteTimeout = time.Second * 60
+	defaultIdleTimeout  = time.Second * 120
 )
 
 // Server exposes an HTTP API
 type Server struct {
-	mux      *http.ServeMux
+	server   *http.Server
 	listener net.Listener
 	done     chan struct{}
 }
 
-type ServerConfig struct {
-	StaticDir   string
-	DisableCSRF bool
+type Config struct {
+	StaticDir        string
+	DisableCSRF      bool
+	DisableWalletAPI bool
+	ReadTimeout      time.Duration
+	WriteTimeout     time.Duration
+	IdleTimeout      time.Duration
 }
 
-func create(host string, serverConfig ServerConfig, daemon *daemon.Daemon) (*Server, error) {
-	appLoc, err := file.DetermineResourcePath(serverConfig.StaticDir, resourceDir, devDir)
+type muxConfig struct {
+	host             string
+	appLoc           string
+	disableWalletAPI bool
+}
+
+func create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
+	appLoc, err := file.DetermineResourcePath(c.StaticDir, resourceDir, devDir)
 	if err != nil {
 		return nil, err
 	}
 	logger.Info("Web resources directory: %s", appLoc)
 
 	csrfStore := &CSRFStore{
-		Enabled: !serverConfig.DisableCSRF,
+		Enabled: !c.DisableCSRF,
 	}
-	if serverConfig.DisableCSRF {
+	if c.DisableCSRF {
 		logger.Warning("CSRF check disabled")
 	}
 
+	if c.ReadTimeout == 0 {
+		c.ReadTimeout = defaultReadTimeout
+	}
+	if c.WriteTimeout == 0 {
+		c.WriteTimeout = defaultWriteTimeout
+	}
+	if c.IdleTimeout == 0 {
+		c.IdleTimeout = defaultIdleTimeout
+	}
+
+	mc := muxConfig{
+		host:             host,
+		appLoc:           appLoc,
+		disableWalletAPI: c.DisableWalletAPI,
+	}
+
+	srvMux := newServerMux(mc, daemon.Gateway, csrfStore)
+	srv := &http.Server{
+		Handler:      srvMux,
+		ReadTimeout:  c.ReadTimeout,
+		WriteTimeout: c.WriteTimeout,
+		IdleTimeout:  c.IdleTimeout,
+	}
+
 	return &Server{
-		mux:  NewServerMux(host, appLoc, daemon.Gateway, csrfStore),
-		done: make(chan struct{}),
+		server: srv,
+		done:   make(chan struct{}),
 	}, nil
 }
 
 // Create creates a new Server instance that listens on HTTP
-func Create(host string, serverConfig ServerConfig, daemon *daemon.Daemon) (*Server, error) {
-	s, err := create(host, serverConfig, daemon)
+func Create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
+	s, err := create(host, c, daemon)
 	if err != nil {
 		return nil, err
 	}
@@ -80,8 +119,8 @@ func Create(host string, serverConfig ServerConfig, daemon *daemon.Daemon) (*Ser
 }
 
 // CreateHTTPS creates a new Server instance that listens on HTTPS
-func CreateHTTPS(host string, serverConfig ServerConfig, daemon *daemon.Daemon, certFile, keyFile string) (*Server, error) {
-	s, err := create(host, serverConfig, daemon)
+func CreateHTTPS(host string, c Config, daemon *daemon.Daemon, certFile, keyFile string) (*Server, error) {
+	s, err := create(host, c, daemon)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +149,7 @@ func (s *Server) Serve() error {
 	defer logger.Info("Web interface closed")
 	defer close(s.done)
 
-	if err := http.Serve(s.listener, s.mux); err != nil {
+	if err := s.server.Serve(s.listener); err != nil {
 		if err != http.ErrServerClosed {
 			return err
 		}
@@ -126,8 +165,31 @@ func (s *Server) Shutdown() {
 	<-s.done
 }
 
-// NewServerMux creates an http.ServeMux with handlers registered
-func NewServerMux(host, appLoc string, gateway Gatewayer, csrfStore *CSRFStore) *http.ServeMux {
+func ElapseHandler(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		lrw := NewWrappedResponseWriter(w)
+		start := time.Now()
+		handler.ServeHTTP(lrw, r)
+		logger.Info("%v %s %s %v", lrw.statusCode, r.Method, r.URL.Path, time.Since(start))
+	})
+}
+
+type wrappedResponseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func NewWrappedResponseWriter(w http.ResponseWriter) *wrappedResponseWriter {
+	return &wrappedResponseWriter{w, http.StatusOK}
+}
+
+func (lrw *wrappedResponseWriter) WriteHeader(code int) {
+	lrw.statusCode = code
+	lrw.ResponseWriter.WriteHeader(code)
+}
+
+// newServerMux creates an http.ServeMux with handlers registered
+func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	headerCheck := func(host string, handler http.Handler) http.Handler {
@@ -137,24 +199,28 @@ func NewServerMux(host, appLoc string, gateway Gatewayer, csrfStore *CSRFStore) 
 	}
 
 	webHandler := func(endpoint string, handler http.Handler) {
+
+		handler = ElapseHandler(handler)
 		handler = CSRFCheck(csrfStore, handler)
-		handler = headerCheck(host, handler)
+		handler = headerCheck(c.host, handler)
 		mux.Handle(endpoint, handler)
 	}
 
-	webHandler("/", newIndexHandler(appLoc))
+	if !c.disableWalletAPI {
+		webHandler("/", newIndexHandler(c.appLoc))
 
-	fileInfos, _ := ioutil.ReadDir(appLoc)
-	for _, fileInfo := range fileInfos {
-		route := fmt.Sprintf("/%s", fileInfo.Name())
-		if fileInfo.IsDir() {
-			route = route + "/"
+		fileInfos, _ := ioutil.ReadDir(c.appLoc)
+		for _, fileInfo := range fileInfos {
+			route := fmt.Sprintf("/%s", fileInfo.Name())
+			if fileInfo.IsDir() {
+				route = route + "/"
+			}
+			webHandler(route, http.FileServer(http.Dir(c.appLoc)))
 		}
-		webHandler(route, http.FileServer(http.Dir(appLoc)))
 	}
 
 	// get the current CSRF token
-	mux.Handle("/csrf", headerCheck(host, getCSRFToken(gateway, csrfStore)))
+	mux.Handle("/csrf", headerCheck(c.host, getCSRFToken(gateway, csrfStore)))
 
 	webHandler("/version", versionHandler(gateway))
 
@@ -194,8 +260,7 @@ func NewServerMux(host, appLoc string, gateway Gatewayer, csrfStore *CSRFStore) 
 	// POST arguments:
 	//  id: Wallet ID
 	//  coins: Number of coins to spend
-	//  hours: Number of hours to spends
-	//  fee: Number of hours to use as fee, on top of the default fee.
+	//  dst: Destination address
 	//  Returns total amount spent if successful, otherwise error describing
 	//  failure status.
 	webHandler("/wallet/spend", walletSpendHandler(gateway))
@@ -206,19 +271,27 @@ func NewServerMux(host, appLoc string, gateway Gatewayer, csrfStore *CSRFStore) 
 	webHandler("/wallet/transactions", walletTransactionsHandler(gateway))
 
 	// Update wallet label
-	//      POST Arguments:
-	//          id: wallet id
-	//          label: wallet label
+	// POST Arguments:
+	//     id: wallet id
+	//     label: wallet label
 	webHandler("/wallet/update", walletUpdateHandler(gateway))
 
 	// Returns all loaded wallets
 	// returns sensitive information
 	webHandler("/wallets", walletsHandler(gateway))
 
+	// Returns wallets directory path
 	webHandler("/wallets/folderName", getWalletFolder(gateway))
 
-	// generate wallet seed
+	// Generate wallet seed
+	// GET Arguments:
+	//     entropy: entropy bitsize.
 	webHandler("/wallet/newSeed", newWalletSeed(gateway))
+
+	// unload wallet
+	// POST Argument:
+	//         id: wallet id
+	webHandler("/wallet/unload", walletUnloadHandler(gateway))
 
 	// Blockchain interface
 
@@ -259,7 +332,7 @@ func NewServerMux(host, appLoc string, gateway Gatewayer, csrfStore *CSRFStore) 
 	// get raw tx by txid.
 	webHandler("/rawtx", getRawTx(gateway))
 
-	// UxOUt api handler
+	// UxOut api handler
 
 	// get uxout by id.
 	webHandler("/uxout", getUxOutByID(gateway))
@@ -370,7 +443,7 @@ func getOutputsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendOr404(w, outs)
+		wh.SendJSONOr500(logger, w, outs)
 	}
 }
 
@@ -418,7 +491,7 @@ func getBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 		}
 
-		wh.SendOr404(w, balance)
+		wh.SendJSONOr500(logger, w, balance)
 	}
 }
 
@@ -429,7 +502,7 @@ func versionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendOr404(w, gateway.GetBuildInfo())
+		wh.SendJSONOr500(logger, w, gateway.GetBuildInfo())
 	}
 }
 
@@ -493,6 +566,6 @@ func getLogsHandler(logbuf *bytes.Buffer) http.HandlerFunc {
 
 		}
 
-		wh.SendOr404(w, logs)
+		wh.SendJSONOr500(logger, w, logs)
 	}
 }

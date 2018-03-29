@@ -2,7 +2,7 @@
 # reference https://github.com/skycoin/skycoin
 FROM golang:1.9 AS build
 
-ENV SKYCOIN_VERSION=0.21.1
+ENV SKYCOIN_VERSION=0.22.0
 
 # dirs
 RUN mkdir -p $GOPATH/src/github.com/skycoin/skycoin

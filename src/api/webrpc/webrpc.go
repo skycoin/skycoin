@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"time"
 
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/util/logging"
@@ -30,9 +31,17 @@ var (
 	// -32000 to -32099	Server error	Reserved for implementation-defined server-errors.
 
 	jsonRPC = "2.0"
+
+	logger = logging.MustGetLogger("webrpc")
 )
 
-var logger = logging.MustGetLogger("webrpc")
+const (
+	defaultReadTimeout  = time.Second * 10
+	defaultWriteTimeout = time.Second * 60
+	defaultIdleTimeout  = time.Second * 120
+	defaultWorkerNum    = 5
+	defaultChanBuffSize = 1000
+)
 
 // Request rpc request struct
 type Request struct {
@@ -116,24 +125,58 @@ type WebRPC struct {
 
 	ops      chan operation // request channel
 	mux      *http.ServeMux
+	server   *http.Server
 	handlers map[string]HandlerFunc
 	listener net.Listener
 	quit     chan struct{}
 }
 
+// Config configures the WebRPC
+type Config struct {
+	ReadTimeout  time.Duration
+	WriteTimeout time.Duration
+	IdleTimeout  time.Duration
+	WorkerNum    uint
+	ChanBuffSize uint // size of ops channel
+}
+
 // New returns a new WebRPC object
-func New(addr string, gw Gatewayer) (*WebRPC, error) {
+func New(addr string, c Config, gw Gatewayer) (*WebRPC, error) {
+	if c.ReadTimeout == 0 {
+		c.ReadTimeout = defaultReadTimeout
+	}
+	if c.WriteTimeout == 0 {
+		c.WriteTimeout = defaultWriteTimeout
+	}
+	if c.IdleTimeout == 0 {
+		c.IdleTimeout = defaultIdleTimeout
+	}
+	if c.WorkerNum == 0 {
+		c.WorkerNum = defaultWorkerNum
+	}
+	if c.ChanBuffSize == 0 {
+		c.ChanBuffSize = defaultChanBuffSize
+	}
+
+	mux := http.NewServeMux()
+
 	rpc := &WebRPC{
 		Addr:         addr,
 		Gateway:      gw,
-		WorkerNum:    5,
-		ChanBuffSize: 1000,
+		WorkerNum:    c.WorkerNum,
+		ChanBuffSize: c.ChanBuffSize,
 		quit:         make(chan struct{}),
-		mux:          http.NewServeMux(),
-		handlers:     make(map[string]HandlerFunc),
+		mux:          mux,
+		server: &http.Server{
+			Handler:      mux,
+			ReadTimeout:  c.ReadTimeout,
+			WriteTimeout: c.WriteTimeout,
+			IdleTimeout:  c.IdleTimeout,
+		},
+		handlers: make(map[string]HandlerFunc),
 	}
 
-	rpc.mux.Handle("/webrpc", wh.HostCheck(logger, addr, http.HandlerFunc(rpc.Handler)))
+	mux.Handle("/webrpc", wh.HostCheck(logger, addr, http.HandlerFunc(rpc.Handler)))
 
 	if err := rpc.initHandlers(); err != nil {
 		return nil, err
@@ -199,7 +242,7 @@ func (rpc *WebRPC) Run() error {
 
 	errC := make(chan error, 1)
 	go func() {
-		if err := http.Serve(rpc.listener, rpc); err != nil {
+		if err := rpc.server.Serve(rpc.listener); err != nil {
 			select {
 			case <-rpc.quit:
 				errC <- nil
@@ -237,31 +280,26 @@ func (rpc *WebRPC) HandleFunc(method string, h HandlerFunc) error {
 	return nil
 }
 
-// ServHTTP implements the interface of http.Handler
-func (rpc *WebRPC) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	rpc.mux.ServeHTTP(w, r)
-}
-
 // Handler processes the http request
 func (rpc *WebRPC) Handler(w http.ResponseWriter, r *http.Request) {
 	// only support post.
 	if r.Method != http.MethodPost {
 		res := makeErrorResponse(errCodeInvalidRequest, errMsgNotPost)
-		wh.SendOr404(w, &res)
+		wh.SendJSONOr500(logger, w, &res)
 		return
 	}
 
-	// deocder request.
+	// decoder request.
 	req := Request{}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		res := makeErrorResponse(errCodeParseError, errMsgParseError)
-		wh.SendOr404(w, &res)
+		wh.SendJSONOr500(logger, w, &res)
 		return
 	}
 
 	if req.Jsonrpc != jsonRPC {
 		res := makeErrorResponse(errCodeInvalidParams, errMsgInvalidJsonrpc)
-		wh.SendOr404(w, &res)
+		wh.SendJSONOr500(logger, w, &res)
 		return
 	}
 
@@ -283,7 +321,7 @@ func (rpc *WebRPC) Handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res := <-resC
-	wh.SendOr404(w, &res)
+	wh.SendJSONOr500(logger, w, &res)
 }
 
 func (rpc *WebRPC) workerThread(seq uint) {

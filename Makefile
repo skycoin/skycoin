@@ -102,13 +102,16 @@ lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...
 	gometalinter --disable-all -E vet -E goimports -E varcheck --tests --vendor ./...
 
-check: lint test ## Run tests and linters
+check: lint test integration-test-stable ## Run tests and linters
 
 integration-test-stable: ## Run stable integration tests
-	./ci-scripts/integration-test-stable.sh -v
+	./ci-scripts/integration-test-stable.sh -v -w
 
 integration-test-live: ## Run live integration tests
-	./ci-scripts/integration-test-live.sh -v
+	./ci-scripts/integration-test-live.sh -v -w
+
+integration-test-disable-wallet-api: ## Run disable wallet api integration tests
+	./ci-scripts/integration-test-disable-wallet-api.sh -v
 
 cover: ## Runs tests on ./src/ with HTML code coverage
 	go test -cover -coverprofile=cover.out -coverpkg=github.com/skycoin/skycoin/... ./src/...

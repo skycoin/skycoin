@@ -13,6 +13,10 @@ A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](h
     - [Get balance of addresses](#get-balance-of-addresses)
     - [Get unspent output set of address or hash](#get-unspent-output-set-of-address-or-hash)
 - [Wallet apis](#wallet-apis)
+    - [Get wallet](#get-wallet)
+    - [Get wallet transactions](#get-wallet-transactions)
+    - [Get wallets](#get-wallets)
+    - [Get wallet folder name](#get-wallet-folder-name)
     - [Generate wallet seed](#generate-wallet-seed)
     - [Create a wallet from seed](#create-a-wallet-from-seed)
     - [Generate new address in wallet](#generate-new-address-in-wallet)
@@ -25,7 +29,9 @@ A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](h
     - [Get raw transaction by id](#get-raw-transaction-by-id)
     - [Inject raw transaction](#inject-raw-transaction)
     - [Get transactions that are addresses related](#get-transactions-that-are-addresses-related)
+    - [Resend unconfirmed transactions](#resend-unconfirmed-transactions)
 - [Block apis](#block-apis)
+    - [Get blockchain metadata](#get-blockchain-metadata)
     - [Get blochchain progress](#get-blochchain-progress)
     - [Get block by hash or seq](#get-block-by-hash-or-seq)
     - [Get blocks in specific range](#get-blocks-in-specific-range)
@@ -179,6 +185,174 @@ result:
 ```
 
 ## Wallet apis
+
+### Get wallet
+
+```
+URI: /wallet
+Method: GET
+Args:
+    id - Wallet ID [required]
+```
+
+example:
+```bash
+curl http://127.0.0.1:6420/wallet?id=walletId
+```
+
+result:
+```json
+{
+    "Meta":{
+        "coin":"skycoin",
+        "filename":"2017_11_25_e5fb.wlt",
+        "label":"test",
+        "lastSeed":"c69085fc5c95e8bbc5903baef8ad2d7b7065d7a5c1b3d150101f9a2f357c1537",
+        "seed":"child cruel simple clerk cave",
+        "tm":"1511640884",
+        "type":"deterministic",
+        "version":"0.1"
+    },
+    "Entries":[
+        {
+            "Address":{
+                "Version":0,
+                "Key":[
+
+                ]
+            },
+            "Public":[
+
+            ],
+            "Secret":[
+
+            ]
+        }
+    ]
+}
+```
+
+### Get wallet transactions
+```
+URI: /wallet/transactions
+Method: GET
+Args:
+	id: Wallet ID
+```
+
+// Returns all pending transaction for all addresses by selected Wallet
+example:
+```bash
+curl http://127.0.0.1:6420/wallet/transactions?id=2017_11_25_e5fb.wlt
+```
+
+result:
+
+```json
+{
+    "transactions":[
+        {
+            "transaction":{
+                "length":317,
+                "type":0,
+                "txid":"76ecbabc53ea2a3be46983058433dda6a3cf7ea0b86ba14d90b932fa97385de7",
+                "inner_hash":"5d55837bb0cbda9c9323ff9aafd7c3d31d0d38638346172fbe2d9078ebaa892a",
+                "sigs":[
+                    "464b7724302178c1cfeacadaaf3556a3b7e5259adf51919476c3acc695747ed244b5ce2187ce7bedb6ad65c71f7f7ff3fa6805e64fe5da3aaa00ad563c7424f600",
+                    "1155537b0391d4a6ee5eac07dee5798e953dca3a7c30643403dd2d326582c7d35080a16dc22644782ce1087bfc3bd06c2bf68e9a98e3989d90831646a9be2c9101"
+                ],
+                "inputs":[
+                    "782a8662efb0e933cab7d3ae9429ab53c4208cf44d8cdc07c2fbd7204b6b5cad",
+                    "2f6b61a44086588c4eaa56a5dd9f1e0be2528861a6731608fcec38891b95db91"
+                ],
+                "outputs":[
+                    {
+                        "uxid":"bd302ef776efa8548183b89f21e90649f21b90fe2d2e90ecc1b880f2d995f226",
+                        "dst":"2UXZTg4ZHF6715b6tRhtaqceuQQ3G79GiZg",
+                        "coins":"998.000000",
+                        "hours":247538
+                    },
+                    {
+                        "uxid":"31058b6bfb30bfd441aec00929e75782bce47c8a75787ba519dbb268f89d2c4b",
+                        "dst":"2awsJ2CR5H6QXCF2hwDjcvcAH9SgyfxCxgz",
+                        "coins":"1.000000",
+                        "hours":247538
+                    }
+                ]
+            },
+            "received":"2018-03-16T18:03:57.139109904+05:30",
+            "checked":"2018-03-16T18:03:57.139109904+05:30",
+            "announced":"0001-01-01T00:00:00Z",
+            "is_valid":true
+        }
+    ]
+}
+```
+
+### Get wallets
+```
+URI: /wallets
+Method: GET
+Args:
+    -
+```
+
+example:
+```bash
+curl http://127.0.0.1:6420/wallets
+```
+
+result:
+```json
+[
+    {
+        "meta": {
+            "coin": "skycoin",
+            "filename": "2017_11_25_e5fb.wlt",
+            "label": "test",
+            "lastSeed": "c69085fc5c95e8bbc5903baef8ad2d7b7065d7a5c1b3d150101f9a2f357c1537",
+            "seed": "child cruel assault pepper miracle hello clerk cave",
+            "tm": "1511640884",
+            "type": "deterministic",
+            "version": "0.1"
+        },
+        "entries": [
+            {
+                "address": "8C5icxR9zdkYTZZTVV3cCX7QoK4EkLuK4p",
+                "public_key": "***",
+                "secret_key": "***"
+            },
+            {
+                "address": "23A1EWMZopUFLCwtXMe2CU9xTCbi5Gth643",
+                "public_key": "***",
+                "secret_key": "***"
+            }
+        ]
+    }
+]
+```
+
+### Get wallet folder name
+
+```
+URI: /wallets/folderName
+Method: GET
+Args:
+    -
+
+```
+
+example:
+```bash
+curl http://127.0.0.1:6420/wallets/folderName
+```
+
+result:
+```json
+{
+    "address": "/Users/user/.skycoin/wallets"
+}
+```
 
 ### Generate wallet seed
 
@@ -396,6 +570,22 @@ result:
     },
     "error": ""
 }
+```
+
+### Unload wallet
+
+```
+URI: /wallet/unload
+Method: POST
+Args:
+    id: wallet file name
+```
+
+example:
+
+```bash
+curl -X POST \
+    'http://127.0.0.1:6420/wallet/unload?id=2017_05_09_d554.wlt'
 ```
 
 ## Transaction apis
@@ -691,9 +881,62 @@ result:
 ]
 ```
 
+### Resend unconfirmed transactions
+```
+URI: /resendUnconfirmedTxns
+Method: GET
+Args:
+    -
+```
+
+example:
+```bash
+curl http://127.0.0.1:6420/resendUnconfirmedTxns
+```
+
+result:
+```json
+{
+    "txids":[
+        "b45e571988bc07bd0b623c999655fa878fb9bdd24c8cd24fde179bf4b26ae7b7",
+        "a6446654829a4a844add9f181949d12f8291fdd2c0fcb22200361e90e814e2d3"
+    ]
+}
+```
+
 ## Block apis
 
-### Get blochchain progress
+### Get blockchain metadata
+```
+URI:  /blockchain/metadata
+Method: GET
+Args:
+    -
+```
+
+example:
+```bash
+curl http://127.0.0.1:6420/blockchain/metadata
+```
+
+result:
+```json
+{
+    "head":{
+        "seq":17936,
+        "block_hash":"b91663fa8ff14aab529cd7bfd48bde5bd86e3c2db154d601528801ee0d064d19",
+        "previous_block_hash":"b57d3b644898f95c9f7a9281e786a0ae2a567e9dc573654363ffafaa41ab4caf",
+        "timestamp":1520967639,
+        "fee":61662,
+        "version":0,
+        "tx_body_hash":"f0e8440f30acf01def3acaa9a88ea91f1fbaea19c0df003726edfe5bd1c7b51d"
+    },
+    "unspents":12704,
+    "unconfirmed":0
+}
+```
+
+### Get blockchain progress
 
 ```sh
 URI: /blockchain/progress

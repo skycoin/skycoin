@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+### Fixed
+
+### Changed
+
+### Removed
+
+## [0.22.0] - 2018-03-20
+
+### Added
+
 - go1.10 support
 - Add Dockerfile
 - Add libskycoin C API wrapper
@@ -19,9 +29,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `/richlist` API method, returns top n address balances
 - `/addresscount` API method, returns the number of addresses that have any amount of coins
 - `/transactions` API method, returns transactions of addresses
+- `/wallet/unload` API method, removes the wallet of given id from wallet services
 
 ### Fixed
 
+- #1021, remove `SendOr404` and `SendOr500` as they do not work properly due to typed nils
+- Add Read, Write and Idle timeouts to the HTTP listener, preventing file descriptor leaks
 - Support absolute and relative paths for `-data-dir` option
 - Prevent creating transactions whose size exceeds the maximum block size
 - Check addition and multiplication uint64 overflow
@@ -29,9 +42,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - #885, Add `Host` header check to localhost HTTP interfaces to prevent DNS rebinding attacks
 - #896, Add CSRF check to wallet API
 - Fix base58 address parsing, which allowed leading invalid characters and treated unknown characters as a '1'
+- Fix occasional error which causes blockchain progress not to be shown in front-end
 
 ### Changed
 
+- #1080, `/wallet/transactions` now returns a proper json object with pending transactions under `transactions` key
 - #951, cap cli createRawTransaction and send command coinhour distribution, coinhours are capped to a maximum of receiving coins for the address with a minimum of 1 coinhour
 - Upgrade to Angular 5
 - Add `total_coinhour_supply` and `current_coinhour_supply` to `/coinSupply` endpoint
@@ -43,13 +58,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Remove `/lastTxs` API endpoint
 - Remove `/logs` and log buffering due to possible crash
 - Remove `/wallets/reload` endpoint
+- Remove deprecated `/api/getEffectiveOutputs`, use `/coinSupply`.
 
 ## [0.21.1] - 2017-12-14
 
 ### Fixed
 
 - Fix blank page issue in windows gui wallet, which was caused by misusing the flag of -download-peers-list in electron.
-
 
 ## [0.21.0] - 2017-12-10
 
@@ -80,7 +95,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Add  /logs api to filter skycoin logs ,so that we can add a debug panel to the GUI wallet to show logs
+- Add `/logs` api to filter skycoin logs, so that we can add a debug panel to the GUI wallet to show logs
 
 ## [0.20.3] - 2017-10-23
 
@@ -105,25 +120,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- New wallet frontend in angular4. This is a complete rewrite and fixes many
-  of the old wallet issues.
+- New wallet frontend in angular4. This is a complete rewrite and fixes many of the old wallet issues.
 - New wallet has preliminary support for OTC functionality
 - Create `webrpc.Client` for JSON-2.0 RPC calls.
 - Add this CHANGELOG.md file.
 - Add Installation.md file, with install instructions for go.
-- Timelock distribution addresses. The first 25% of the distribution is
-  spendable. After that 25% is spent, a timestamp will be added to the code to
-  enable further distribution.
-- Add `/coinSupply` endpoint. Correctly returns total, locked and unlocked coin
-  amounts.
+- Timelock distribution addresses. The first 25% of the distribution is spendable. After that 25% is spent, a timestamp will be added to the code to enable further distribution.
+- Add `/coinSupply` endpoint. Correctly returns total, locked and unlocked coin amounts.
 - `testutil` package for common test setup methods.
-- `/version` endpoint, which will return the current node version number and
-  the HEAD commit id when build the node
+- `/version` endpoint, which will return the current node version number and the HEAD commit id when build the node
 - `-no-ping-log` option to disable ping/pong log output
-- Check for invalid block signatures during startup and recreate the database
-  if they are corrupted.
-- Add methods for converting fixed-point decimal strings to droplets and
-  vice versa.
+- Check for invalid block signatures during startup and recreate the database if they are corrupted.
+- Add methods for converting fixed-point decimal strings to droplets and vice versa.
 - Add `make run`, `make test`, `make lint`, `make check` to `Makefile`
 
 ### Changed
@@ -134,17 +142,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `README` improvements.
 - Set default wallet's label as "Your Wallet"
 - Use BIP32 mnemomic seeds by default in `address_gen`.
-- Add `-x` option to `address_gen`, to generate a random base64-encoded 128-bit
-  seed instead of a BIP32 mnemomic seed.
-- Add `-v` option to `address_gen` to print all address information
-  (pubkey, seckey, address, seed) to stdout as JSON.
-- All API and CLI methods with "coin"-related arguments must be a string and
-  can use decimal notation to specify coin amounts.
-- CLI's `walletHistory` command prints amounts as fixed-point decimal strings.
-  Previously, it printed amounts as integers representing whole skycoin amounts,
-  and did not support droplets / fractional skycoins.
-- A user is prevented from broadcasting a new transaction with unspent outputs
-  that they have already sent as an unconfirmed transaction.
+- Add `-x` option to `address_gen`, to generate a random base64-encoded 128-bit seed instead of a BIP32 mnemomic seed.
+- Add `-v` option to `address_gen` to print all address information (pubkey, seckey, address, seed) to stdout as JSON.
+- All API and CLI methods with "coin"-related arguments must be a string and can use decimal notation to specify coin amounts.
+- CLI's `walletHistory` command prints amounts as fixed-point decimal strings. Previously, it printed amounts as integers representing whole skycoin amounts, and did not support droplets / fractional skycoins.
+- A user is prevented from broadcasting a new transaction with unspent outputs that they have already sent as an unconfirmed transaction.
 
 ### Deprecated
 
@@ -158,12 +160,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 
 - Wallet folder path loading.
-- #371 Fix `/wallet/spend`, will return only when pending transaction is
-  confirmed.
+- #371 Fix `/wallet/spend`, will return only when pending transaction is confirmed.
 - #443 Fix predicted balance in `/wallet/spend` API call.
 - #444 Fix bug in `/blockchain/progress` API call.
-- Removed globals in `gui` package that caused race condition with wallet API
-  calls.
+- Removed globals in `gui` package that caused race condition with wallet API calls.
 - #494 Clean invalid unconfirmed transactions during startup.
 - Various race conditions around the bolt.DB blockchain DB
 - Missing `strand()` call in `daemon.Visor.AnnounceTxns`.
@@ -200,6 +200,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - #350 Wallet name always 'undefined' after loading wallet from seed
 
 [Unreleased]: https://github.com/skycoin/skycoin/compare/master...develop
+[0.22.0]: https://github.com/skycoin/skycoin/compare/v0.21.1...v0.22.0
 [0.21.1]: https://github.com/skycoin/skycoin/compare/v0.21.0...v0.21.1
 [0.21.0]: https://github.com/skycoin/skycoin/compare/v0.20.4...v0.21.0
 [0.20.4]: https://github.com/skycoin/skycoin/compare/v0.20.3...v0.20.4

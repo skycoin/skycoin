@@ -62,6 +62,7 @@ var endpoints = []string{
 	"/wallets",
 	"/wallets/folderName",
 	"/wallet/newSeed",
+	"/wallet/unload",
 	"/blockchain/metadata",
 	"/blockchain/progress",
 	"/block",
@@ -106,7 +107,7 @@ func TestCSRFWrapper(t *testing.T) {
 					setCSRFParameters(csrfStore, c, req)
 
 					rr := httptest.NewRecorder()
-					handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+					handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 
 					handler.ServeHTTP(rr, req)
 
@@ -157,7 +158,7 @@ func TestOriginRefererCheck(t *testing.T) {
 				}
 
 				rr := httptest.NewRecorder()
-				handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+				handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 
 				handler.ServeHTTP(rr, req)
 
@@ -185,7 +186,7 @@ func TestHostCheck(t *testing.T) {
 			req.Host = "example.com"
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 
 			handler.ServeHTTP(rr, req)
 
@@ -220,7 +221,7 @@ func TestCSRF(t *testing.T) {
 		}
 
 		rr := httptest.NewRecorder()
-		handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+		handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 
 		handler.ServeHTTP(rr, req)
 
@@ -234,7 +235,7 @@ func TestCSRF(t *testing.T) {
 
 	// Make a request to /csrf to get a token
 	gateway := &GatewayerMock{}
-	handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+	handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 
 	// non-GET request to /csrf is invalid
 	req, err := http.NewRequest(http.MethodPost, "/csrf", nil)

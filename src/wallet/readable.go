@@ -159,11 +159,6 @@ func (rw *ReadableWallet) Save(filename string) error {
 	return file.SaveJSON(filename, rw, 0600)
 }
 
-// SaveSafe saves to filename, but won't overwrite existing
-func (rw *ReadableWallet) SaveSafe(filename string) error {
-	return file.SaveJSONSafe(filename, rw, 0600)
-}
-
 // Load loads from filename
 func (rw *ReadableWallet) Load(filename string) error {
 	return file.LoadJSON(filename, rw)

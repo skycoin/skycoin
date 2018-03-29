@@ -106,7 +106,7 @@ func GenerateAddressesInFile(walletFile string, num uint64) ([]cipher.Address, e
 		return nil, err
 	}
 
-	if err := wallet.Save(dir, wlt); err != nil {
+	if err := wlt.Save(dir); err != nil {
 		return nil, WalletSaveError(err)
 	}
 

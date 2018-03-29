@@ -2191,7 +2191,7 @@ func prepareAndCheckWallet(t *testing.T, c *gui.Client, miniCoins, miniCoinHours
 		t.Fatalf("Wallet must have at least %d coin hours", miniCoinHours)
 	}
 
-	if err := wallet.Save(walletDir, w); err != nil {
+	if err := w.Save(walletDir); err != nil {
 		t.Fatalf("%v", err)
 	}
 

@@ -63,7 +63,7 @@ func init() {
 			log.Panic(err)
 		}
 
-		if err := Save("./testdata", w); err != nil {
+		if err := w.Save("./testdata"); err != nil {
 			log.Panic(err)
 		}
 
@@ -80,7 +80,7 @@ func init() {
 			log.Panic(err)
 		}
 
-		if err := Save("./testdata", w1); err != nil {
+		if err := w1.Save("./testdata"); err != nil {
 			log.Panic(err)
 		}
 	}
@@ -1646,7 +1646,7 @@ func TestRemoveBackupFiles(t *testing.T) {
 				require.NoError(t, err)
 				w.setVersion(f.version)
 
-				require.NoError(t, Save(dir, w))
+				require.NoError(t, w.Save(dir))
 			}
 
 			require.NoError(t, removeBackupFiles(dir))

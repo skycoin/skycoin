@@ -102,7 +102,7 @@ func AddPrivateKeyToFile(walletFile, key string) error {
 		return err
 	}
 
-	if err := wallet.Save(dir, wlt); err != nil {
+	if err := wlt.Save(dir); err != nil {
 		return WalletSaveError(err)
 	}
 

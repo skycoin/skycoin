@@ -79,7 +79,7 @@ func NewService(c Config) (*Service, error) {
 			return nil, err
 		}
 
-		if err := Save(serv.walletDirectory, w); err != nil {
+		if err := w.Save(serv.walletDirectory); err != nil {
 			return nil, fmt.Errorf("failed to save wallets to %s: %v", serv.walletDirectory, err)
 		}
 	}
@@ -127,7 +127,7 @@ func (serv *Service) ScanAheadWalletAddresses(wltName string, password []byte, s
 		}
 	}
 
-	if err := Save(serv.walletDirectory, w); err != nil {
+	if err := w.Save(serv.walletDirectory); err != nil {
 		return nil, err
 	}
 
@@ -183,7 +183,7 @@ func (serv *Service) loadWallet(wltName string, options Options, scanN uint64, b
 		return nil, err
 	}
 
-	if err := Save(serv.walletDirectory, w); err != nil {
+	if err := w.Save(serv.walletDirectory); err != nil {
 		// If save fails, remove the added wallet
 		serv.wallets.remove(w.Filename())
 		return nil, err
@@ -224,7 +224,7 @@ func (serv *Service) EncryptWallet(wltID string, password []byte, ct CryptoType)
 	}
 
 	// Save to disk first
-	if err := Save(serv.walletDirectory, w); err != nil {
+	if err := w.Save(serv.walletDirectory); err != nil {
 		return err
 	}
 
@@ -254,7 +254,7 @@ func (serv *Service) DecryptWallet(wltID string, password []byte) error {
 	}
 
 	// Updates the wallet file
-	if err := Save(serv.walletDirectory, unlockWlt); err != nil {
+	if err := unlockWlt.Save(serv.walletDirectory); err != nil {
 		return err
 	}
 
@@ -295,7 +295,7 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]
 	// Set the updated wallet back
 	serv.wallets.set(w)
 
-	if err := Save(serv.walletDirectory, w); err != nil {
+	if err := w.Save(serv.walletDirectory); err != nil {
 		return []cipher.Address{}, err
 	}
 
@@ -402,7 +402,7 @@ func (serv *Service) UpdateWalletLabel(wltID, label string) error {
 		return err
 	}
 
-	return Save(serv.walletDirectory, wlt)
+	return wlt.Save(serv.walletDirectory)
 }
 
 // Remove removes wallet of given wallet id from the service

@@ -128,7 +128,7 @@ func generateWallet(c *gcli.Context) error {
 		return err
 	}
 
-	if err := wallet.Save(cfg.WalletDir, wlt); err != nil {
+	if err := wlt.Save(cfg.WalletDir); err != nil {
 		return err
 	}
 

@@ -388,7 +388,7 @@ func Load(wltFile string) (*Wallet, error) {
 }
 
 // Save saves the wallet to given dir
-func Save(dir string, w *Wallet) error {
+func (w *Wallet) Save(dir string) error {
 	r := NewReadableWallet(w)
 	return r.Save(filepath.Join(dir, w.Filename()))
 }

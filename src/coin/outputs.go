@@ -89,7 +89,7 @@ var ErrAddEarnedCoinHoursAdditionOverflow = errors.New("UxOut.CoinHours addition
 // CoinHours Calculate coinhour balance of output. t is the current unix utc time.
 func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
 	if t < uo.Head.Time {
-		logger.Warningf("Calculating coin hours with t < head time")
+		logger.Warning("Calculating coin hours with t < head time")
 		return uo.Body.Hours, nil
 	}
 
@@ -100,7 +100,7 @@ func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
 	wholeCoinSeconds, err := multUint64(seconds, wholeCoins)
 	if err != nil {
 		err := fmt.Errorf("UxOut.CoinHours: Calculating whole coin seconds overflows uint64 seconds=%d coins=%d uxid=%s", seconds, wholeCoins, uo.Hash().Hex())
-		logger.Criticalf(err.Error())
+		logger.Critical(err)
 		return 0, err
 	}
 
@@ -109,7 +109,7 @@ func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
 	dropletSeconds, err := multUint64(seconds, remainderDroplets)
 	if err != nil {
 		err := fmt.Errorf("UxOut.CoinHours: Calculating droplet seconds overflows uint64 seconds=%d droplets=%d uxid=%s", seconds, remainderDroplets, uo.Hash().Hex())
-		logger.Criticalf(err.Error())
+		logger.Critical(err)
 		return 0, err
 	}
 

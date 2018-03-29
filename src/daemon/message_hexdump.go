@@ -10,7 +10,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
-var registered = false
+//var registered = false
 
 func GenerateRandomSha256() cipher.SHA256 {
 	return sha256.Sum256([]byte(string(time.Now().Unix())))

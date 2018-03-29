@@ -256,7 +256,7 @@ func (w *Wallet) unlock(password []byte) (*Wallet, error) {
 	// Decrypts the secrets
 	sb, err := crypto.Decrypt([]byte(sstr), password)
 	if err != nil {
-		logger.Error("Decrypt wallet failed: %v", err)
+		logger.Errorf("Decrypt wallet failed: %v", err)
 		return nil, ErrInvalidPassword
 	}
 

@@ -99,7 +99,7 @@ func NewVisor(c VisorConfig, db *bolt.DB) (*Visor, error) {
 
 // Run starts the visor
 func (vs *Visor) Run() error {
-	defer logger.Infof("Visor closed")
+	defer logger.Info("Visor closed")
 	errC := make(chan error, 1)
 	go func() {
 		errC <- vs.v.Run()
@@ -172,7 +172,7 @@ func (vs *Visor) RequestBlocks(pool *Pool) error {
 	})
 
 	if err != nil {
-		logger.Debug("Broadcast GetBlocksMessage failed: %v", err)
+		logger.Debugf("Broadcast GetBlocksMessage failed: %v", err)
 	}
 
 	return err
@@ -190,7 +190,7 @@ func (vs *Visor) AnnounceBlocks(pool *Pool) error {
 	})
 
 	if err != nil {
-		logger.Debug("Broadcast AnnounceBlocksMessage failed: %v", err)
+		logger.Debugf("Broadcast AnnounceBlocksMessage failed: %v", err)
 	}
 
 	return err
@@ -220,7 +220,7 @@ func (vs *Visor) AnnounceAllTxns(pool *Pool) error {
 	})
 
 	if err != nil {
-		logger.Debug("Broadcast AnnounceTxnsMessage failed, err:%v", err)
+		logger.Debugf("Broadcast AnnounceTxnsMessage failed, err:%v", err)
 	}
 
 	return err
@@ -242,7 +242,7 @@ func (vs *Visor) AnnounceTxns(pool *Pool, txns []cipher.SHA256) error {
 	})
 
 	if err != nil {
-		logger.Debug("Broadcast AnnounceTxnsMessage failed: %v", err)
+		logger.Debugf("Broadcast AnnounceTxnsMessage failed: %v", err)
 	}
 
 	return err
@@ -302,7 +302,7 @@ func (vs *Visor) SetTxnsAnnounced(txns []cipher.SHA256) {
 		now := utc.Now()
 		for _, h := range txns {
 			if err := vs.v.Unconfirmed.SetAnnounced(h, now); err != nil {
-				logger.Errorf("Failed to set unconfirmed txn announce time")
+				logger.Error("Failed to set unconfirmed txn announce time")
 			}
 		}
 
@@ -362,7 +362,7 @@ func (vs *Visor) broadcastTransaction(t coin.Transaction, pool *Pool) error {
 		return err
 	}
 
-	logger.Debug("Broadcasting GiveTxnsMessage to %d conns", l)
+	logger.Debugf("Broadcasting GiveTxnsMessage to %d conns", l)
 
 	err = pool.Pool.BroadcastMessage(m)
 	if err != nil {
@@ -613,7 +613,7 @@ func (gbm *GetBlocksMessage) Process(d *Daemon) {
 		return
 	}
 
-	logger.Debug("Got %d blocks since %d", len(blocks), gbm.LastBlock)
+	logger.Debugf("Got %d blocks since %d", len(blocks), gbm.LastBlock)
 
 	m := NewGiveBlocksMessage(blocks)
 	if err := d.Pool.Pool.SendMessage(gbm.c.Addr, m); err != nil {
@@ -644,7 +644,7 @@ func (gbm *GiveBlocksMessage) Handle(mc *gnet.MessageContext,
 // Process process message
 func (gbm *GiveBlocksMessage) Process(d *Daemon) {
 	if d.Visor.Config.DisableNetworking {
-		logger.Noticef("Visor disabled, ignoring GiveBlocksMessage")
+		logger.Notice("Visor disabled, ignoring GiveBlocksMessage")
 		return
 	}
 

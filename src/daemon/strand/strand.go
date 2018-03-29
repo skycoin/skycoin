@@ -32,7 +32,7 @@ type Request struct {
 // channel closes.
 func Strand(logger *logging.Logger, c chan Request, name string, f func() error, quit chan struct{}, quitErr error) error {
 	if Debug {
-		logger.Debug("Strand precall %s", name)
+		logger.Debugf("Strand precall %s", name)
 	}
 
 	done := make(chan struct{})
@@ -44,7 +44,7 @@ func Strand(logger *logging.Logger, c chan Request, name string, f func() error,
 			defer close(done)
 
 			// TODO: record time statistics in a data structure and expose stats via an API
-			// logger.Debug("%s begin", name)
+			// logger.Debugf("%s begin", name)
 
 			t := time.Now()
 
@@ -73,7 +73,7 @@ func Strand(logger *logging.Logger, c chan Request, name string, f func() error,
 			}()
 
 			if Debug {
-				logger.Debug("Stranding %s", name)
+				logger.Debugf("Stranding %s", name)
 			}
 
 			err = f()
@@ -88,7 +88,7 @@ func Strand(logger *logging.Logger, c chan Request, name string, f func() error,
 			if elapsed > logDurationThreshold {
 				logger.Warningf("%s took %s", name, elapsed)
 			} else {
-				//logger.Debug("%s took %s", name, elapsed)
+				//logger.Debugf("%s took %s", name, elapsed)
 			}
 
 			return err

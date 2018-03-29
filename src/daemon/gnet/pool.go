@@ -209,7 +209,7 @@ func NewConnectionPool(c Config, state interface{}) *ConnectionPool {
 
 // Run starts the connection pool
 func (pool *ConnectionPool) Run() error {
-	defer logger.Infof("Connection pool closed")
+	defer logger.Info("Connection pool closed")
 
 	// start the connection accept loop
 	addr := fmt.Sprintf("%s:%v", pool.Config.Address, pool.Config.Port)
@@ -239,7 +239,7 @@ loop:
 				break loop
 			default:
 				// without the default case the select will block.
-				logger.Errorf("%v", err)
+				logger.Error(err)
 				continue
 			}
 		}
@@ -325,11 +325,11 @@ func (pool *ConnectionPool) ListeningAddress() (net.Addr, error) {
 
 // Creates a Connection and begins its read and write loop
 func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) {
-	defer logger.Debug("connection %s closed", conn.RemoteAddr())
+	defer logger.Debugf("connection %s closed", conn.RemoteAddr())
 	addr := conn.RemoteAddr().String()
 	exist, err := pool.IsConnExist(addr)
 	if err != nil {
-		logger.Errorf("%v", err)
+		logger.Error(err)
 		return
 	}
 
@@ -481,7 +481,7 @@ func (pool *ConnectionPool) sendLoop(conn *Connection, timeout time.Duration, qc
 				return nil
 			case pool.SendResults <- sr:
 			case <-time.After(sendResultTimeout):
-				logger.Warningf("push send result channel timeout")
+				logger.Warning("push send result channel timeout")
 			}
 
 			if err != nil {
@@ -522,7 +522,7 @@ func decodeData(buf *bytes.Buffer, maxMsgLength int) ([][]byte, error) {
 		tmpLength := uint32(0)
 		encoder.DeserializeAtomic(prefix, &tmpLength)
 		length := int(tmpLength)
-		// logger.Debug("Length is %d", length)
+		// logger.Debugf("Length is %d", length)
 		// Disconnect if we received an invalid length.
 		if length < messagePrefixLength ||
 			length > maxMsgLength {
@@ -607,7 +607,7 @@ func (pool *ConnectionPool) Connect(address string) error {
 		return nil
 	}
 
-	logger.Debug("Making TCP Connection to %s", address)
+	logger.Debugf("Making TCP Connection to %s", address)
 	conn, err := net.DialTimeout("tcp", address, pool.Config.DialTimeout)
 	if err != nil {
 		return err
@@ -670,7 +670,7 @@ func (pool *ConnectionPool) Size() (l int, err error) {
 // SendResults channel.
 func (pool *ConnectionPool) SendMessage(addr string, msg Message) error {
 	if pool.Config.DebugPrint {
-		logger.Debug("Send, Msg Type: %s", reflect.TypeOf(msg))
+		logger.Debugf("Send, Msg Type: %s", reflect.TypeOf(msg))
 	}
 
 	return pool.strand("SendMessage", func() error {
@@ -688,7 +688,7 @@ func (pool *ConnectionPool) SendMessage(addr string, msg Message) error {
 // BroadcastMessage sends a Message to all connections in the Pool.
 func (pool *ConnectionPool) BroadcastMessage(msg Message) error {
 	if pool.Config.DebugPrint {
-		logger.Debug("Broadcast, Msg Type: %s", reflect.TypeOf(msg))
+		logger.Debugf("Broadcast, Msg Type: %s", reflect.TypeOf(msg))
 	}
 
 	fullWriteQueue := []string{}

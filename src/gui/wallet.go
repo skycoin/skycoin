@@ -133,7 +133,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 
 		txStr, err := visor.TransactionToJSON(*tx)
 		if err != nil {
-			logger.Errorf(err.Error())
+			logger.Error(err)
 			wh.SendJSONOr500(logger, w, SpendResult{
 				Error: err.Error(),
 			})
@@ -147,7 +147,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 		ret.Transaction, err = visor.NewReadableTransaction(&visor.Transaction{Txn: *tx})
 		if err != nil {
 			err = fmt.Errorf("Creation of new readable transaction failed: %v", err)
-			logger.Errorf(err.Error())
+			logger.Error(err)
 			ret.Error = err.Error()
 			wh.SendJSONOr500(logger, w, ret)
 			return
@@ -157,7 +157,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 		b, err := gateway.GetWalletBalance(wltID)
 		if err != nil {
 			err = fmt.Errorf("Get wallet balance failed: %v", err)
-			logger.Errorf(err.Error())
+			logger.Error(err)
 			ret.Error = err.Error()
 			wh.SendJSONOr500(logger, w, ret)
 			return

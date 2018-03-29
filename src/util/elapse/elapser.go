@@ -45,7 +45,7 @@ func (e *Elapser) ShowCurrentTime(step string) {
 		return
 	}
 	elapsed := stopTime.Sub(e.startTime)
-	e.logger.Info("%s[%s] elapsed %s", *e.name, step, elapsed)
+	e.logger.Infof("%s[%s] elapsed %s", *e.name, step, elapsed)
 
 }
 

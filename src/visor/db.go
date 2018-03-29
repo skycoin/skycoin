@@ -18,7 +18,7 @@ import (
 // loadBlockchain loads blockchain from DB and if any error occurs then delete
 // the db and create an empty blockchain.
 func loadBlockchain(db *bolt.DB, pubkey cipher.PubKey, arbitrating bool) (*bolt.DB, *Blockchain, error) {
-	logger.Infof("Loading blockchain")
+	logger.Info("Loading blockchain")
 
 	bc, err := NewBlockchain(db, pubkey, Arbitrating(arbitrating))
 	if err == nil {

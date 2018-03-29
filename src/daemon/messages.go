@@ -164,8 +164,6 @@ func (gpm *GetPeersMessage) Process(d *Daemon) {
 		return
 	}
 
-	// logger.Info(fmt.Sprintf("give exchange peers:%+v", peers))
-
 	m := NewGivePeersMessage(peers)
 	if err := d.Pool.Pool.SendMessage(gpm.addr, m); err != nil {
 		logger.Errorf("Send GivePeersMessage to %s failed: %v", gpm.addr, err)
@@ -185,7 +183,7 @@ func NewGivePeersMessage(peers []pex.Peer) *GivePeersMessage {
 		ipaddr, err := NewIPAddr(ps.Addr)
 		if err != nil {
 			logger.Warningf("GivePeersMessage skipping address %s", ps.Addr)
-			logger.Warningf(err.Error())
+			logger.Warning(err.Error())
 			continue
 		}
 		ipaddrs = append(ipaddrs, ipaddr)
@@ -216,7 +214,7 @@ func (gpm *GivePeersMessage) Process(d *Daemon) {
 		return
 	}
 	peers := gpm.GetPeers()
-	logger.Debug("Got these peers via PEX: %s", strings.Join(peers, ", "))
+	logger.Debugf("Got these peers via PEX: %s", strings.Join(peers, ", "))
 
 	d.Pex.AddPeers(peers)
 }
@@ -337,9 +335,9 @@ func (intro *IntroductionMessage) Process(d *Daemon) {
 	// Request blocks immediately after they're confirmed
 	err = d.Visor.RequestBlocksFromAddr(d.Pool, intro.c.Addr)
 	if err == nil {
-		logger.Debug("Successfully requested blocks from %s", intro.c.Addr)
+		logger.Debugf("Successfully requested blocks from %s", intro.c.Addr)
 	} else {
-		logger.Warningf("%v", err)
+		logger.Warning(err)
 	}
 
 	// Anounce unconfirmed know txns
@@ -360,7 +358,7 @@ func (ping *PingMessage) Handle(mc *gnet.MessageContext, daemon interface{}) err
 // Process Sends a PongMessage to the sender of PingMessage
 func (ping *PingMessage) Process(d *Daemon) {
 	if d.Config.LogPings {
-		logger.Debug("Reply to ping from %s", ping.c.Addr)
+		logger.Debugf("Reply to ping from %s", ping.c.Addr)
 	}
 	if err := d.Pool.Pool.SendMessage(ping.c.Addr, &PongMessage{}); err != nil {
 		logger.Errorf("Send PongMessage to %s failed: %v", ping.c.Addr, err)
@@ -376,7 +374,7 @@ func (pong *PongMessage) Handle(mc *gnet.MessageContext, daemon interface{}) err
 	// There is nothing to do; gnet updates Connection.LastMessage internally
 	// when this is received
 	if daemon.(*Daemon).Config.LogPings {
-		logger.Debug("Received pong from %s", mc.Addr)
+		logger.Debugf("Received pong from %s", mc.Addr)
 	}
 	return nil
 }

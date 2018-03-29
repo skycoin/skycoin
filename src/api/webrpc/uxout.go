@@ -21,7 +21,7 @@ func getAddrUxOutsHandler(req Request, gateway Gatewayer) Response {
 	}
 
 	if len(addrs) == 0 {
-		logger.Errorf("empty request params")
+		logger.Error("empty request params")
 		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
 	}
 
@@ -31,13 +31,13 @@ func getAddrUxOutsHandler(req Request, gateway Gatewayer) Response {
 		// decode address
 		a, err := cipher.DecodeBase58Address(addr)
 		if err != nil {
-			logger.Errorf("%v", err)
+			logger.Error(err)
 			return makeErrorResponse(errCodeInvalidParams, fmt.Sprintf("%v", err))
 		}
 		results[i].Address = addr
 		uxouts, err := gateway.GetAddrUxOuts(a)
 		if err != nil {
-			logger.Errorf("%v", err)
+			logger.Error(err)
 			return makeErrorResponse(errCodeInternalError, errMsgInternalError)
 		}
 		results[i].UxOuts = append(results[i].UxOuts, uxouts...)

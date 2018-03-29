@@ -68,7 +68,7 @@ func create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
 		Enabled: !c.DisableCSRF,
 	}
 	if c.DisableCSRF {
-		logger.Warningf("CSRF check disabled")
+		logger.Warning("CSRF check disabled")
 	}
 
 	if c.ReadTimeout == 0 {
@@ -108,7 +108,7 @@ func Create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
 		return nil, err
 	}
 
-	logger.Warningf("HTTPS not in use!")
+	logger.Warning("HTTPS not in use!")
 
 	s.listener, err = net.Listen("tcp", host)
 	if err != nil {
@@ -146,7 +146,7 @@ func CreateHTTPS(host string, c Config, daemon *daemon.Daemon, certFile, keyFile
 // Serve serves the web interface on the configured host
 func (s *Server) Serve() error {
 	logger.Infof("Starting web interface on %s", s.listener.Addr())
-	defer logger.Infof("Web interface closed")
+	defer logger.Info("Web interface closed")
 	defer close(s.done)
 
 	if err := s.server.Serve(s.listener); err != nil {
@@ -159,8 +159,8 @@ func (s *Server) Serve() error {
 
 // Shutdown closes the HTTP service. This can only be called after Serve or ServeHTTPS has been called.
 func (s *Server) Shutdown() {
-	logger.Infof("Shutting down web interface")
-	defer logger.Infof("Web interface shut down")
+	logger.Info("Shutting down web interface")
+	defer logger.Info("Web interface shut down")
 	s.listener.Close()
 	<-s.done
 }
@@ -170,7 +170,7 @@ func ElapseHandler(handler http.Handler) http.Handler {
 		lrw := NewWrappedResponseWriter(w)
 		start := time.Now()
 		handler.ServeHTTP(lrw, r)
-		logger.Info("%v %s %s %v", lrw.statusCode, r.Method, r.URL.Path, time.Since(start))
+		logger.Infof("%v %s %s %v", lrw.statusCode, r.Method, r.URL.Path, time.Since(start))
 	})
 }
 
@@ -358,7 +358,7 @@ func newIndexHandler(appLoc string) http.HandlerFunc {
 	// Serves the main page
 	return func(w http.ResponseWriter, r *http.Request) {
 		page := filepath.Join(appLoc, indexPage)
-		logger.Debug("Serving index page: %s", page)
+		logger.Debugf("Serving index page: %s", page)
 		if r.URL.Path == "/" {
 			http.ServeFile(w, r, page)
 		} else {
@@ -470,7 +470,7 @@ func getBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 		bals, err := gateway.GetBalanceOfAddrs(addrs)
 		if err != nil {
 			errMsg := fmt.Sprintf("Get balance failed: %v", err)
-			logger.Errorf("%s", errMsg)
+			logger.Error(errMsg)
 			wh.Error500Msg(w, errMsg)
 			return
 		}
@@ -556,7 +556,7 @@ func getLogsHandler(logbuf *bytes.Buffer) http.HandlerFunc {
 			}
 
 			if len(logs) >= linenum {
-				logger.Debug("logs size %d,total size:%d", len(logs), len(logList))
+				logger.Debugf("logs size %d,total size:%d", len(logs), len(logList))
 				break
 			}
 			log := attrActualLog(logInfo)

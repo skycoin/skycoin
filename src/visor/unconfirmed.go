@@ -575,7 +575,7 @@ func (utp *UnconfirmedTxnPool) GetTxns(filter func(tx UnconfirmedTxn) bool) (txn
 		}
 		return nil
 	}); err != nil {
-		logger.Debug("GetTxns error:%v", err)
+		logger.Debugf("GetTxns error:%v", err)
 	}
 	return
 }
@@ -588,7 +588,7 @@ func (utp *UnconfirmedTxnPool) GetTxHashes(filter func(tx UnconfirmedTxn) bool) 
 		}
 		return nil
 	}); err != nil {
-		logger.Debug("GetTxHashes error:%v", err)
+		logger.Debugf("GetTxHashes error:%v", err)
 	}
 	return
 }

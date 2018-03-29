@@ -227,7 +227,7 @@ func (rpc *WebRPC) Run() error {
 	}
 
 	logger.Infof("Start webrpc on http://%s", rpc.Addr)
-	defer logger.Infof("Webrpc service closed")
+	defer logger.Info("Webrpc service closed")
 
 	var err error
 	if rpc.listener, err = net.Listen("tcp", rpc.Addr); err != nil {

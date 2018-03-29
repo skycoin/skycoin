@@ -128,8 +128,6 @@ func (rw *ReadableWallet) ToWallet() (Wallet, error) {
 
 // Save saves to filename
 func (rw *ReadableWallet) Save(filename string) error {
-	// logger.Info("Saving readable wallet to %s with filename %s", filename,
-	// 	self.Meta["filename"])
 	return file.SaveJSON(filename, rw, 0600)
 }
 

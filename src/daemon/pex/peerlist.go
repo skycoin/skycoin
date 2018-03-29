@@ -278,7 +278,7 @@ func (pl *peerlist) resetRetryTimes(addr string) {
 
 // resetAllRetryTimes reset all peers' retry times
 func (pl *peerlist) resetAllRetryTimes() {
-	logger.Infof("Reset all peer's retry times")
+	logger.Info("Reset all peer's retry times")
 	for _, p := range pl.peers {
 		p.ResetRetryTimes()
 	}

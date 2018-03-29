@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -36,20 +35,7 @@ var (
 
 	help = false
 
-	logger     = logging.MustGetLogger("main")
-	logFormat  = "[skycoin.%{module}:%{level}] %{message}"
-	logModules = []string{
-		"main",
-		"daemon",
-		"coin",
-		"gui",
-		"file",
-		"visor",
-		"wallet",
-		"gnet",
-		"pex",
-		"webrpc",
-	}
+	logger = logging.MustGetLogger("main")
 
 	// GenesisSignatureStr hex string of genesis signature
 	GenesisSignatureStr = "eb10468d10054d15f2b6f8946cd46797779aa20a7617ceb4be884189f219bc9a164e56a5b9f7bec392a804ff3740210348d73db77a37adb542a8e08d429ac92700"
@@ -470,44 +456,6 @@ func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) (*g
 	return s, nil
 }
 
-// init logging settings
-func initLogging(dataDir string, level string, color, logtofile bool) (func(), error) {
-	logCfg := logging.DevLogConfig(logModules)
-	logCfg.Format = logFormat
-	logCfg.Colors = color
-	logCfg.Level = level
-
-	var fd *os.File
-	if logtofile {
-		logDir := filepath.Join(dataDir, "logs")
-		if err := createDirIfNotExist(logDir); err != nil {
-			log.Println("initial logs folder failed", err)
-			return nil, fmt.Errorf("init log folder fail, %v", err)
-		}
-
-		// open log file
-		tf := "2006-01-02-030405"
-		logfile := filepath.Join(logDir,
-			fmt.Sprintf("%s-v%s.log", time.Now().Format(tf), Version))
-		var err error
-		fd, err = os.OpenFile(logfile, os.O_RDWR|os.O_CREATE, 0666)
-		if err != nil {
-			return nil, err
-		}
-
-		logCfg.Output = io.MultiWriter(os.Stdout, fd)
-	}
-
-	logCfg.InitLogger()
-
-	return func() {
-		logger.Infof("Log file closed")
-		if fd != nil {
-			fd.Close()
-		}
-	}, nil
-}
-
 func initProfiling(httpProf, profileCPU bool, profileCPUFile string) {
 	if profileCPU {
 		f, err := os.Create(profileCPUFile)
@@ -594,12 +542,6 @@ func Run(c *Config) {
 
 	initProfiling(c.HTTPProf, c.ProfileCPU, c.ProfileCPUFile)
 
-	closelog, err := initLogging(c.DataDirectory, c.LogLevel, c.ColorLog, c.Logtofile)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
 	var wg sync.WaitGroup
 
 	// If the user Ctrl-C's, shutdown properly
@@ -630,7 +572,7 @@ func Run(c *Config) {
 
 	d, err := daemon.NewDaemon(dconf, db, DefaultConnections)
 	if err != nil {
-		logger.Errorf("%v", err)
+		logger.Error(err)
 		return
 	}
 
@@ -645,7 +587,7 @@ func Run(c *Config) {
 			WorkerNum:    c.RPCThreadNum,
 		}, d.Gateway)
 		if err != nil {
-			logger.Errorf("%v", err)
+			logger.Error(err)
 			return
 		}
 		rpc.ChanBuffSize = 1000
@@ -656,7 +598,7 @@ func Run(c *Config) {
 	if c.WebInterface {
 		webInterface, err = createGUI(c, d, host, quit)
 		if err != nil {
-			logger.Errorf("%v", err)
+			logger.Error(err)
 			return
 		}
 	}
@@ -700,7 +642,7 @@ func Run(c *Config) {
 	go func() {
 		defer wg.Done()
 		if err := d.Run(); err != nil {
-			logger.Errorf("%v", err)
+			logger.Error(err)
 			errC <- err
 		}
 	}()
@@ -711,7 +653,7 @@ func Run(c *Config) {
 		go func() {
 			defer wg.Done()
 			if err := rpc.Run(); err != nil {
-				logger.Errorf("%v", err)
+				logger.Error(err)
 				errC <- err
 			}
 		}()
@@ -722,7 +664,7 @@ func Run(c *Config) {
 		go func() {
 			defer wg.Done()
 			if err := webInterface.Serve(); err != nil {
-				logger.Errorf("%v", err)
+				logger.Error(err)
 				errC <- err
 			}
 		}()
@@ -737,7 +679,7 @@ func Run(c *Config) {
 
 				logger.Infof("Launching System Browser with %s", fullAddress)
 				if err := browser.Open(fullAddress); err != nil {
-					logger.Errorf(err.Error())
+					logger.Error(err)
 					return
 				}
 			}()
@@ -773,10 +715,10 @@ func Run(c *Config) {
 	select {
 	case <-quit:
 	case err := <-errC:
-		logger.Errorf("%v", err)
+		logger.Error(err)
 	}
 
-	logger.Infof("Shutting down...")
+	logger.Info("Shutting down...")
 	if rpc != nil {
 		rpc.Shutdown()
 	}
@@ -784,9 +726,8 @@ func Run(c *Config) {
 		webInterface.Shutdown()
 	}
 	d.Shutdown()
-	closelog()
 	wg.Wait()
-	logger.Infof("Goodbye")
+	logger.Info("Goodbye")
 }
 
 func main() {

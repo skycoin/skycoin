@@ -160,7 +160,7 @@ func (gw *Gateway) GetBlockByHash(hash cipher.SHA256) (block coin.SignedBlock, o
 	gw.strand("GetBlockByHash", func() {
 		b, err := gw.v.GetBlockByHash(hash)
 		if err != nil {
-			logger.Error("gateway.GetBlockByHash failed: %v", err)
+			logger.Errorf("gateway.GetBlockByHash failed: %v", err)
 			return
 		}
 		if b == nil {
@@ -178,7 +178,7 @@ func (gw *Gateway) GetBlockBySeq(seq uint64) (block coin.SignedBlock, ok bool) {
 	gw.strand("GetBlockBySeq", func() {
 		b, err := gw.v.GetBlockBySeq(seq)
 		if err != nil {
-			logger.Error("gateway.GetBlockBySeq failed: %v", err)
+			logger.Errorf("gateway.GetBlockBySeq failed: %v", err)
 			return
 		}
 		if b == nil {
@@ -513,14 +513,14 @@ func (gw *Gateway) Spend(wltID string, coins uint64, dest cipher.Address) (*coin
 		// Create and sign transaction
 		tx, err = gw.vrpc.CreateAndSignTransaction(wltID, sv, unspent, gw.v.Blockchain.Time(), coins, dest)
 		if err != nil {
-			logger.Error("Create transaction failed: %v", err)
+			logger.Errorf("Create transaction failed: %v", err)
 			return
 		}
 
 		// Inject transaction
 		err = gw.d.Visor.InjectBroadcastTransaction(*tx, gw.d.Pool)
 		if err != nil {
-			logger.Error("Inject transaction failed: %v", err)
+			logger.Errorf("Inject transaction failed: %v", err)
 			return
 		}
 	})

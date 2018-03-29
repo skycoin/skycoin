@@ -295,19 +295,19 @@ func (vs *Visor) Run() error {
 	if err != nil {
 		return err
 	}
-	logger.Info("Removed %d invalid txns from pool", len(removed))
+	logger.Infof("Removed %d invalid txns from pool", len(removed))
 
 	return vs.bcParser.Run()
 }
 
 // Shutdown shuts down the visor
 func (vs *Visor) Shutdown() {
-	defer logger.Info("DB and BlockchainParser closed")
+	defer logger.Infof("DB and BlockchainParser closed")
 
 	vs.bcParser.Shutdown()
 
 	if err := vs.db.Close(); err != nil {
-		logger.Error("db.Close() error: %v", err)
+		logger.Errorf("db.Close() error: %v", err)
 	}
 }
 
@@ -328,7 +328,7 @@ func (vs *Visor) maybeCreateGenesisBlock() error {
 	// record the signature of genesis block
 	if vs.Config.IsMaster {
 		sb = vs.SignBlock(*b)
-		logger.Info("Genesis block signature=%s", sb.Sig.Hex())
+		logger.Infof("Genesis block signature=%s", sb.Sig.Hex())
 	} else {
 		sb = coin.SignedBlock{
 			Block: *b,
@@ -376,13 +376,13 @@ func (vs *Visor) CreateBlock(when uint64) (coin.SignedBlock, error) {
 		return sb, errors.New("No transactions")
 	}
 
-	logger.Info("Unconfirmed pool has %d transactions pending", len(txns))
+	logger.Infof("Unconfirmed pool has %d transactions pending", len(txns))
 
 	// Filter transactions that violate all constraints
 	var filteredTxns coin.Transactions
 	for _, txn := range txns {
 		if err := vs.Blockchain.VerifySingleTxnAllConstraints(txn, vs.Config.MaxBlockSize); err != nil {
-			logger.Warning("Transaction %s violates constraints: %v", txn.TxIDHex(), err)
+			logger.Warningf("Transaction %s violates constraints: %v", txn.TxIDHex(), err)
 		} else {
 			filteredTxns = append(filteredTxns, txn)
 		}
@@ -390,13 +390,13 @@ func (vs *Visor) CreateBlock(when uint64) (coin.SignedBlock, error) {
 
 	nRemoved := len(txns) - len(filteredTxns)
 	if nRemoved > 0 {
-		logger.Info("CreateBlock ignored %d transactions violating constraints", nRemoved)
+		logger.Infof("CreateBlock ignored %d transactions violating constraints", nRemoved)
 	}
 
 	txns = filteredTxns
 
 	if len(txns) == 0 {
-		logger.Info("No transactions after filtering for constraint violations")
+		logger.Infof("No transactions after filtering for constraint violations")
 		return sb, errors.New("No transactions after filtering for constraint violations")
 	}
 
@@ -410,11 +410,11 @@ func (vs *Visor) CreateBlock(when uint64) (coin.SignedBlock, error) {
 		logger.Panic("TruncateBytesTo removed all transactions")
 	}
 
-	logger.Info("Creating new block with %d transactions, head time %d", len(txns), when)
+	logger.Infof("Creating new block with %d transactions, head time %d", len(txns), when)
 
 	b, err := vs.Blockchain.NewBlock(txns, when)
 	if err != nil {
-		logger.Warning("Blockchain.NewBlock failed: %v", err)
+		logger.Warningf("Blockchain.NewBlock failed: %v", err)
 		return sb, err
 	}
 
@@ -617,7 +617,7 @@ func (vs *Visor) GetAddressTxns(a cipher.Address) ([]Transaction, error) {
 	for _, ux := range uxs {
 		tx, ok := vs.Unconfirmed.Get(ux.Body.SrcTransaction)
 		if !ok {
-			logger.Critical("Unconfirmed unspent missing unconfirmed txn")
+			logger.Criticalf("Unconfirmed unspent missing unconfirmed txn")
 			continue
 		}
 		txns = append(txns, Transaction{
@@ -834,7 +834,7 @@ func (vs *Visor) getTransactionsOfAddrs(addrs []cipher.Address) (map[cipher.Addr
 		for _, ux := range uxs {
 			tx, ok := vs.Unconfirmed.Get(ux.Body.SrcTransaction)
 			if !ok {
-				logger.Critical("Unconfirmed unspent missing unconfirmed txn")
+				logger.Criticalf("Unconfirmed unspent missing unconfirmed txn")
 				continue
 			}
 			txns = append(txns, Transaction{

@@ -57,7 +57,7 @@ func (e *Elapser) Elapsed() {
 	}
 	elapsed := stopTime.Sub(e.startTime)
 	if elapsed >= e.elapsedThreshold {
-		e.logger.Warning("%s elapsed %s", *e.name, elapsed)
+		e.logger.Warningf("%s elapsed %s", *e.name, elapsed)
 	}
 	e.name = nil
 }

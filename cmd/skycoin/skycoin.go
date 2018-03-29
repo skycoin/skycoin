@@ -454,7 +454,7 @@ func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) (*g
 	if c.WebInterfaceHTTPS {
 		// Verify cert/key parameters, and if neither exist, create them
 		if err := cert.CreateCertIfNotExists(host, c.WebInterfaceCert, c.WebInterfaceKey, "Skycoind"); err != nil {
-			logger.Error("gui.CreateCertIfNotExists failure: %v", err)
+			logger.Errorf("gui.CreateCertIfNotExists failure: %v", err)
 			return nil, err
 		}
 
@@ -463,7 +463,7 @@ func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) (*g
 		s, err = gui.Create(host, config, d)
 	}
 	if err != nil {
-		logger.Error("Failed to start web GUI: %v", err)
+		logger.Errorf("Failed to start web GUI: %v", err)
 		return nil, err
 	}
 
@@ -501,7 +501,7 @@ func initLogging(dataDir string, level string, color, logtofile bool) (func(), e
 	logCfg.InitLogger()
 
 	return func() {
-		logger.Info("Log file closed")
+		logger.Infof("Log file closed")
 		if fd != nil {
 			fd.Close()
 		}
@@ -575,7 +575,7 @@ func Run(c *Config) {
 	defer func() {
 		// try catch panic in main thread
 		if r := recover(); r != nil {
-			logger.Error("recover: %v\nstack:%v", r, string(debug.Stack()))
+			logger.Errorf("recover: %v\nstack:%v", r, string(debug.Stack()))
 		}
 	}()
 
@@ -587,7 +587,7 @@ func Run(c *Config) {
 	}
 	host := fmt.Sprintf("%s:%d", c.WebInterfaceAddr, c.WebInterfacePort)
 	fullAddress := fmt.Sprintf("%s://%s", scheme, host)
-	logger.Critical("Full address: %s", fullAddress)
+	logger.Noticef("Full address: %s", fullAddress)
 	if c.PrintWebInterfaceAddress {
 		fmt.Println(fullAddress)
 	}
@@ -621,16 +621,16 @@ func Run(c *Config) {
 	// creates blockchain instance
 	dconf := configureDaemon(c)
 
-	logger.Info("Opening database %s", dconf.Visor.Config.DBPath)
+	logger.Infof("Opening database %s", dconf.Visor.Config.DBPath)
 	db, err := visor.OpenDB(dconf.Visor.Config.DBPath, dconf.Visor.Config.DBReadOnly)
 	if err != nil {
-		logger.Error("Database failed to open: %v. Is another skycoin instance running?", err)
+		logger.Errorf("Database failed to open: %v. Is another skycoin instance running?", err)
 		return
 	}
 
 	d, err := daemon.NewDaemon(dconf, db, DefaultConnections)
 	if err != nil {
-		logger.Error("%v", err)
+		logger.Errorf("%v", err)
 		return
 	}
 
@@ -645,7 +645,7 @@ func Run(c *Config) {
 			WorkerNum:    c.RPCThreadNum,
 		}, d.Gateway)
 		if err != nil {
-			logger.Error("%v", err)
+			logger.Errorf("%v", err)
 			return
 		}
 		rpc.ChanBuffSize = 1000
@@ -656,7 +656,7 @@ func Run(c *Config) {
 	if c.WebInterface {
 		webInterface, err = createGUI(c, d, host, quit)
 		if err != nil {
-			logger.Error("%v", err)
+			logger.Errorf("%v", err)
 			return
 		}
 	}
@@ -664,7 +664,7 @@ func Run(c *Config) {
 	// Debug only - forces connection on start.  Violates thread safety.
 	if c.ConnectTo != "" {
 		if err := d.Pool.Pool.Connect(c.ConnectTo); err != nil {
-			logger.Error("Force connect %s failed, %v", c.ConnectTo, err)
+			logger.Errorf("Force connect %s failed, %v", c.ConnectTo, err)
 			return
 		}
 	}
@@ -700,7 +700,7 @@ func Run(c *Config) {
 	go func() {
 		defer wg.Done()
 		if err := d.Run(); err != nil {
-			logger.Error("%v", err)
+			logger.Errorf("%v", err)
 			errC <- err
 		}
 	}()
@@ -711,7 +711,7 @@ func Run(c *Config) {
 		go func() {
 			defer wg.Done()
 			if err := rpc.Run(); err != nil {
-				logger.Error("%v", err)
+				logger.Errorf("%v", err)
 				errC <- err
 			}
 		}()
@@ -722,7 +722,7 @@ func Run(c *Config) {
 		go func() {
 			defer wg.Done()
 			if err := webInterface.Serve(); err != nil {
-				logger.Error("%v", err)
+				logger.Errorf("%v", err)
 				errC <- err
 			}
 		}()
@@ -735,9 +735,9 @@ func Run(c *Config) {
 				// Wait a moment just to make sure the http interface is up
 				time.Sleep(time.Millisecond * 100)
 
-				logger.Info("Launching System Browser with %s", fullAddress)
+				logger.Infof("Launching System Browser with %s", fullAddress)
 				if err := browser.Open(fullAddress); err != nil {
-					logger.Error(err.Error())
+					logger.Errorf(err.Error())
 					return
 				}
 			}()
@@ -773,10 +773,10 @@ func Run(c *Config) {
 	select {
 	case <-quit:
 	case err := <-errC:
-		logger.Error("%v", err)
+		logger.Errorf("%v", err)
 	}
 
-	logger.Info("Shutting down...")
+	logger.Infof("Shutting down...")
 	if rpc != nil {
 		rpc.Shutdown()
 	}
@@ -786,7 +786,7 @@ func Run(c *Config) {
 	d.Shutdown()
 	closelog()
 	wg.Wait()
-	logger.Info("Goodbye")
+	logger.Infof("Goodbye")
 }
 
 func main() {

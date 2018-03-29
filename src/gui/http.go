@@ -62,13 +62,13 @@ func create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	logger.Info("Web resources directory: %s", appLoc)
+	logger.Infof("Web resources directory: %s", appLoc)
 
 	csrfStore := &CSRFStore{
 		Enabled: !c.DisableCSRF,
 	}
 	if c.DisableCSRF {
-		logger.Warning("CSRF check disabled")
+		logger.Warningf("CSRF check disabled")
 	}
 
 	if c.ReadTimeout == 0 {
@@ -108,7 +108,7 @@ func Create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
 		return nil, err
 	}
 
-	logger.Warning("HTTPS not in use!")
+	logger.Warningf("HTTPS not in use!")
 
 	s.listener, err = net.Listen("tcp", host)
 	if err != nil {
@@ -125,8 +125,8 @@ func CreateHTTPS(host string, c Config, daemon *daemon.Daemon, certFile, keyFile
 		return nil, err
 	}
 
-	logger.Info("Using %s for the certificate", certFile)
-	logger.Info("Using %s for the key", keyFile)
+	logger.Infof("Using %s for the certificate", certFile)
+	logger.Infof("Using %s for the key", keyFile)
 
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
@@ -145,8 +145,8 @@ func CreateHTTPS(host string, c Config, daemon *daemon.Daemon, certFile, keyFile
 
 // Serve serves the web interface on the configured host
 func (s *Server) Serve() error {
-	logger.Info("Starting web interface on %s", s.listener.Addr())
-	defer logger.Info("Web interface closed")
+	logger.Infof("Starting web interface on %s", s.listener.Addr())
+	defer logger.Infof("Web interface closed")
 	defer close(s.done)
 
 	if err := s.server.Serve(s.listener); err != nil {
@@ -159,8 +159,8 @@ func (s *Server) Serve() error {
 
 // Shutdown closes the HTTP service. This can only be called after Serve or ServeHTTPS has been called.
 func (s *Server) Shutdown() {
-	logger.Info("Shutting down web interface")
-	defer logger.Info("Web interface shut down")
+	logger.Infof("Shutting down web interface")
+	defer logger.Infof("Web interface shut down")
 	s.listener.Close()
 	<-s.done
 }
@@ -438,7 +438,7 @@ func getOutputsHandler(gateway Gatewayer) http.HandlerFunc {
 
 		outs, err := gateway.GetUnspentOutputs(filters...)
 		if err != nil {
-			logger.Error("get unspent outputs failed: %v", err)
+			logger.Errorf("get unspent outputs failed: %v", err)
 			wh.Error500(w)
 			return
 		}
@@ -470,7 +470,7 @@ func getBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 		bals, err := gateway.GetBalanceOfAddrs(addrs)
 		if err != nil {
 			errMsg := fmt.Sprintf("Get balance failed: %v", err)
-			logger.Error("%s", errMsg)
+			logger.Errorf("%s", errMsg)
 			wh.Error500Msg(w, errMsg)
 			return
 		}

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"math"
 
-	logging "github.com/op/go-logging"
 	"github.com/shopspring/decimal"
+	logging "github.com/skycoin/skycoin/src/util/logging"
 )
 
 const (

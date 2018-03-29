@@ -45,9 +45,9 @@ func (bcp *BlockchainParser) FeedBlock(b coin.Block) {
 
 // Run starts blockchain parser
 func (bcp *BlockchainParser) Run() error {
-	logger.Info("Blockchain parser start")
+	logger.Infof("Blockchain parser start")
 	defer close(bcp.done)
-	defer logger.Info("Blockchain parser closed")
+	defer logger.Infof("Blockchain parser closed")
 
 	if err := bcp.historyDB.ResetIfNeed(); err != nil {
 		return err

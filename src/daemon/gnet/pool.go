@@ -209,11 +209,11 @@ func NewConnectionPool(c Config, state interface{}) *ConnectionPool {
 
 // Run starts the connection pool
 func (pool *ConnectionPool) Run() error {
-	defer logger.Info("Connection pool closed")
+	defer logger.Infof("Connection pool closed")
 
 	// start the connection accept loop
 	addr := fmt.Sprintf("%s:%v", pool.Config.Address, pool.Config.Port)
-	logger.Info("Listening for connections on %s...", addr)
+	logger.Infof("Listening for connections on %s...", addr)
 
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -239,7 +239,7 @@ loop:
 				break loop
 			default:
 				// without the default case the select will block.
-				logger.Error("%v", err)
+				logger.Errorf("%v", err)
 				continue
 			}
 		}
@@ -268,7 +268,7 @@ func (pool *ConnectionPool) processStrand() {
 			return
 		case req := <-pool.reqC:
 			if err := req.Func(); err != nil {
-				logger.Error("req.Func %s failed: %v", req.Name, err)
+				logger.Errorf("req.Func %s failed: %v", req.Name, err)
 			}
 		}
 	}
@@ -329,18 +329,18 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) {
 	addr := conn.RemoteAddr().String()
 	exist, err := pool.IsConnExist(addr)
 	if err != nil {
-		logger.Error("%v", err)
+		logger.Errorf("%v", err)
 		return
 	}
 
 	if exist {
-		logger.Error("Connection %s already exists", addr)
+		logger.Errorf("Connection %s already exists", addr)
 		return
 	}
 
 	c, err := pool.NewConnection(conn, solicited)
 	if err != nil {
-		logger.Error("Create connection failed: %v", err)
+		logger.Errorf("Create connection failed: %v", err)
 		return
 	}
 
@@ -393,11 +393,11 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) {
 	select {
 	case <-pool.quit:
 		if err := conn.Close(); err != nil {
-			logger.Error("conn.Close() error: %v", err)
+			logger.Errorf("conn.Close() error: %v", err)
 		}
 	case err = <-errC:
 		if err := pool.Disconnect(c.Addr(), err); err != nil {
-			logger.Error("Disconnect failed: %v", err)
+			logger.Errorf("Disconnect failed: %v", err)
 		}
 	}
 	close(qc)
@@ -481,7 +481,7 @@ func (pool *ConnectionPool) sendLoop(conn *Connection, timeout time.Duration, qc
 				return nil
 			case pool.SendResults <- sr:
 			case <-time.After(sendResultTimeout):
-				logger.Warning("push send result channel timeout")
+				logger.Warningf("push send result channel timeout")
 			}
 
 			if err != nil {

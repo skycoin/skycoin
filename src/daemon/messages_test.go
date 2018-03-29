@@ -163,7 +163,6 @@ func ExampleNewGivePeersMessage() {
 	// 0x001e |
 }
 
-
 /*
 func TestNewPingMessage(t *testing.T) {
 	var message gnet.Message = &PingMessage{}

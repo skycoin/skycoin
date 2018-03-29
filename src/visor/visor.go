@@ -302,7 +302,7 @@ func (vs *Visor) Run() error {
 
 // Shutdown shuts down the visor
 func (vs *Visor) Shutdown() {
-	defer logger.Infof("DB and BlockchainParser closed")
+	defer logger.Info("DB and BlockchainParser closed")
 
 	vs.bcParser.Shutdown()
 
@@ -343,7 +343,7 @@ func (vs *Visor) maybeCreateGenesisBlock() error {
 func (vs *Visor) GenesisPreconditions() {
 	if vs.Config.BlockchainSeckey != (cipher.SecKey{}) {
 		if vs.Config.BlockchainPubkey != cipher.PubKeyFromSecKey(vs.Config.BlockchainSeckey) {
-			logger.Panicf("Cannot create genesis block. Invalid secret key for pubkey")
+			logger.Panic("Cannot create genesis block. Invalid secret key for pubkey")
 		}
 	}
 }
@@ -396,7 +396,7 @@ func (vs *Visor) CreateBlock(when uint64) (coin.SignedBlock, error) {
 	txns = filteredTxns
 
 	if len(txns) == 0 {
-		logger.Infof("No transactions after filtering for constraint violations")
+		logger.Info("No transactions after filtering for constraint violations")
 		return sb, errors.New("No transactions after filtering for constraint violations")
 	}
 
@@ -617,7 +617,7 @@ func (vs *Visor) GetAddressTxns(a cipher.Address) ([]Transaction, error) {
 	for _, ux := range uxs {
 		tx, ok := vs.Unconfirmed.Get(ux.Body.SrcTransaction)
 		if !ok {
-			logger.Criticalf("Unconfirmed unspent missing unconfirmed txn")
+			logger.Critical("Unconfirmed unspent missing unconfirmed txn")
 			continue
 		}
 		txns = append(txns, Transaction{
@@ -834,7 +834,7 @@ func (vs *Visor) getTransactionsOfAddrs(addrs []cipher.Address) (map[cipher.Addr
 		for _, ux := range uxs {
 			tx, ok := vs.Unconfirmed.Get(ux.Body.SrcTransaction)
 			if !ok {
-				logger.Criticalf("Unconfirmed unspent missing unconfirmed txn")
+				logger.Critical("Unconfirmed unspent missing unconfirmed txn")
 				continue
 			}
 			txns = append(txns, Transaction{

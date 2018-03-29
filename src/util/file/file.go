@@ -57,7 +57,7 @@ func InitDataDir(dir string) (string, error) {
 // Construct the full data directory by adding to $HOME or ./
 func buildDataDir(dir string) (string, error) {
 	if dir == "" {
-		logger.Errorf("data directory is empty")
+		logger.Error("data directory is empty")
 		return "", ErrEmptyDirectoryName
 	}
 

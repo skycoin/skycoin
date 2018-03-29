@@ -72,7 +72,7 @@ func getBlock(gate Gatewayer) http.HandlerFunc {
 
 		rb, err := visor.NewReadableBlock(&b.Block)
 		if err != nil {
-			logger.Errorf("%v", err)
+			logger.Error(err)
 			wh.Error500(w)
 			return
 		}

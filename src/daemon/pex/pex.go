@@ -120,13 +120,13 @@ func (peer *Peer) Seen() {
 // IncreaseRetryTimes adds the retry times
 func (peer *Peer) IncreaseRetryTimes() {
 	peer.RetryTimes++
-	logger.Debug("Increase retry times of %v: %v", peer.Addr, peer.RetryTimes)
+	logger.Debugf("Increase retry times of %v: %v", peer.Addr, peer.RetryTimes)
 }
 
 // ResetRetryTimes resets the retry time
 func (peer *Peer) ResetRetryTimes() {
 	peer.RetryTimes = 0
-	logger.Debug("Reset retry times of %v", peer.Addr)
+	logger.Debugf("Reset retry times of %v", peer.Addr)
 }
 
 // CanTry returns whether this peer is tryable base on the exponential backoff algorithm
@@ -252,13 +252,13 @@ func New(cfg Config, defaultConns []string) (*Pex, error) {
 
 // Run starts the pex service
 func (px *Pex) Run() error {
-	logger.Infof("Pex.Run started")
-	defer logger.Infof("Pex.Run stopped")
+	logger.Info("Pex.Run started")
+	defer logger.Info("Pex.Run stopped")
 	defer close(px.done)
 
 	defer func() {
 		// Save the peerlist
-		logger.Infof("Save peerlist")
+		logger.Info("Save peerlist")
 		if err := px.save(); err != nil {
 			logger.Errorf("Save peers failed: %v", err)
 		}
@@ -283,8 +283,8 @@ func (px *Pex) Run() error {
 
 // Shutdown notifies the pex service to exist
 func (px *Pex) Shutdown() {
-	logger.Infof("Shutting down pex")
-	defer logger.Infof("Pex shutdown")
+	logger.Info("Shutting down pex")
+	defer logger.Info("Pex shutdown")
 	close(px.quit)
 	<-px.done
 }
@@ -375,7 +375,7 @@ func (px *Pex) AddPeers(addrs []string) int {
 	defer px.Unlock()
 
 	if px.Config.Max > 0 && px.peerlist.len() >= px.Config.Max {
-		logger.Warningf("Add peers failed, peer list is full")
+		logger.Warning("Add peers failed, peer list is full")
 		return 0
 	}
 

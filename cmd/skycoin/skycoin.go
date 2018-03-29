@@ -630,7 +630,7 @@ func Run(c *Config) {
 
 	d, err := daemon.NewDaemon(dconf, db, DefaultConnections)
 	if err != nil {
-		logger.Errorf("%v", err)
+		logger.Error(err)
 		return
 	}
 
@@ -645,7 +645,7 @@ func Run(c *Config) {
 			WorkerNum:    c.RPCThreadNum,
 		}, d.Gateway)
 		if err != nil {
-			logger.Errorf("%v", err)
+			logger.Error(err)
 			return
 		}
 		rpc.ChanBuffSize = 1000
@@ -656,7 +656,7 @@ func Run(c *Config) {
 	if c.WebInterface {
 		webInterface, err = createGUI(c, d, host, quit)
 		if err != nil {
-			logger.Errorf("%v", err)
+			logger.Error(err)
 			return
 		}
 	}
@@ -700,7 +700,7 @@ func Run(c *Config) {
 	go func() {
 		defer wg.Done()
 		if err := d.Run(); err != nil {
-			logger.Errorf("%v", err)
+			logger.Error(err)
 			errC <- err
 		}
 	}()
@@ -711,7 +711,7 @@ func Run(c *Config) {
 		go func() {
 			defer wg.Done()
 			if err := rpc.Run(); err != nil {
-				logger.Errorf("%v", err)
+				logger.Error(err)
 				errC <- err
 			}
 		}()
@@ -722,7 +722,7 @@ func Run(c *Config) {
 		go func() {
 			defer wg.Done()
 			if err := webInterface.Serve(); err != nil {
-				logger.Errorf("%v", err)
+				logger.Error(err)
 				errC <- err
 			}
 		}()
@@ -737,7 +737,7 @@ func Run(c *Config) {
 
 				logger.Infof("Launching System Browser with %s", fullAddress)
 				if err := browser.Open(fullAddress); err != nil {
-					logger.Errorf(err.Error())
+					logger.Error(err)
 					return
 				}
 			}()
@@ -773,10 +773,10 @@ func Run(c *Config) {
 	select {
 	case <-quit:
 	case err := <-errC:
-		logger.Errorf("%v", err)
+		logger.Error(err)
 	}
 
-	logger.Infof("Shutting down...")
+	logger.Info("Shutting down...")
 	if rpc != nil {
 		rpc.Shutdown()
 	}
@@ -786,7 +786,7 @@ func Run(c *Config) {
 	d.Shutdown()
 	closelog()
 	wg.Wait()
-	logger.Infof("Goodbye")
+	logger.Info("Goodbye")
 }
 
 func main() {

@@ -112,7 +112,7 @@ func getCSRFToken(gateway Gatewayer, store *CSRFStore) http.HandlerFunc {
 		}
 
 		if !store.Enabled {
-			logger.Warningf("CSRF check disabled")
+			logger.Warning("CSRF check disabled")
 			wh.Error404(w)
 			return
 		}

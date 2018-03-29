@@ -125,7 +125,7 @@ func coinSupply(gateway Gatewayer, w http.ResponseWriter, r *http.Request) *Coin
 	}
 
 	if err != nil {
-		logger.Errorf("Failed to get total coinhours: %v", err.Error())
+		logger.Errorf("Failed to get total coinhours: %v", err)
 		wh.Error500(w)
 		return nil
 	}
@@ -178,14 +178,14 @@ func getTransactionsForAddress(gateway Gatewayer) http.HandlerFunc {
 			for i := range tx.Transaction.In {
 				id, err := cipher.SHA256FromHex(tx.Transaction.In[i])
 				if err != nil {
-					logger.Errorf("%v", err)
+					logger.Error(err)
 					wh.Error500(w)
 					return
 				}
 
 				uxout, err := gateway.GetUxOutByID(id)
 				if err != nil {
-					logger.Errorf("%v", err)
+					logger.Error(err)
 					wh.Error500(w)
 					return
 				}
@@ -254,7 +254,7 @@ func getRichlist(gateway Gatewayer) http.HandlerFunc {
 
 		richlist, err := gateway.GetRichlist(includeDistribution)
 		if err != nil {
-			logger.Errorf(err.Error())
+			logger.Error(err)
 			wh.Error500(w)
 			return
 		}
@@ -280,7 +280,7 @@ func getAddressCount(gateway Gatewayer) http.HandlerFunc {
 
 		addrCount, err := gateway.GetAddressCount()
 		if err != nil {
-			logger.Errorf(err.Error())
+			logger.Error(err)
 			wh.Error500(w)
 			return
 		}

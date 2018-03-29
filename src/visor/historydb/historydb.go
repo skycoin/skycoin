@@ -89,7 +89,7 @@ func (hd *HistoryDB) ResetIfNeed() error {
 }
 
 func (hd *HistoryDB) reset() error {
-	logger.Infof("History db reset")
+	logger.Info("History db reset")
 	if err := hd.addrTxns.Reset(); err != nil {
 		return err
 	}

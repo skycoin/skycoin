@@ -27,7 +27,7 @@ func getPendingTxs(gateway Gatewayer) http.HandlerFunc {
 		for _, unconfirmedTxn := range txns {
 			readable, err := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
 			if err != nil {
-				logger.Errorf("%v", err)
+				logger.Error(err)
 				wh.Error500(w)
 				return
 			}
@@ -68,7 +68,7 @@ func getTransactionByID(gate Gatewayer) http.HandlerFunc {
 
 		rbTx, err := visor.NewReadableTransaction(tx)
 		if err != nil {
-			logger.Errorf("%v", err)
+			logger.Error(err)
 			wh.Error500(w)
 			return
 		}
@@ -172,20 +172,20 @@ func injectTransaction(gateway Gatewayer) http.HandlerFunc {
 
 		b, err := hex.DecodeString(v.Rawtx)
 		if err != nil {
-			logger.Errorf("%v", err)
+			logger.Error(err)
 			wh.Error400(w, err.Error())
 			return
 		}
 
 		txn, err := coin.TransactionDeserialize(b)
 		if err != nil {
-			logger.Errorf("%v", err)
+			logger.Error(err)
 			wh.Error400(w, err.Error())
 			return
 		}
 
 		if err := gateway.InjectBroadcastTransaction(txn); err != nil {
-			logger.Errorf("%v", err)
+			logger.Error(err)
 			wh.Error400(w, fmt.Sprintf("inject tx failed: %v", err))
 			return
 		}

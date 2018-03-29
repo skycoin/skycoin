@@ -184,7 +184,7 @@ func Disable() {
 	}
 }
 
-// Disable disables the logger completely
+// RedirectTo redirects log to the given io.Wirter
 func RedirectTo(w io.Writer) {
 	for k := range log.moduleLoggers {
 		log.moduleLoggers[k].Out = w

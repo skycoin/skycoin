@@ -248,7 +248,7 @@ func (rpc *WebRPC) Run() error {
 				errC <- nil
 			default:
 				// the webrpc service failed unexpectedly
-				logger.Infof("webrpc.Run, http.Serve error:", err)
+				logger.Infof("webrpc.Run, http.Serve error: %v", err)
 				errC <- err
 			}
 		}

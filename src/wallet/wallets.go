@@ -44,7 +44,7 @@ func LoadWallets(dir string) (Wallets, error) {
 			if err != nil {
 				return nil, err
 			}
-			logger.Info("Loaded wallet from %s", fullpath)
+			logger.Infof("Loaded wallet from %s", fullpath)
 			w.setFilename(name)
 			wallets[name] = w
 		}

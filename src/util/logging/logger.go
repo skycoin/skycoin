@@ -28,6 +28,8 @@ type Logger struct {
 	module            string
 	allModulesEnabled bool
 	moduleLoggers     map[string]*Logger
+	PriorityKey       string
+	CriticalPriority  string
 }
 
 var (
@@ -40,30 +42,33 @@ var (
 )
 
 // New modules-aware logger with formatting string
-func NewLogger() (logger *Logger) {
+func NewLogger(priorityKey, criticalPriority string) (logger *Logger) {
 	logger = &Logger{
 		Logger: &logrus.Logger{
 			Out: os.Stderr,
 			Formatter: &TextFormatter{
-				FullTimestamp:      true,
-				AlwaysQuoteStrings: true,
-				QuoteEmptyFields:   true,
-				ForceFormatting:    true,
-				PriorityKey:        "priority",
+				FullTimestamp:          true,
+				AlwaysQuoteStrings:     true,
+				QuoteEmptyFields:       true,
+				ForceFormatting:        true,
+				PriorityKey:            priorityKey,
+				HighlightPriorityValue: criticalPriority,
 			},
 			Hooks: make(logrus.LevelHooks),
 			Level: logrus.InfoLevel,
 		},
 		allModulesEnabled: true,
 		moduleLoggers:     make(map[string]*Logger),
+		PriorityKey:       priorityKey,
+		CriticalPriority:  criticalPriority,
 	}
 	logger.Hooks.Add(NewModuleLogHook(""))
 	logger.moduleLoggers[""] = logger
 	return
 }
 
-func LoggerForModules(enabledModules []string) *Logger {
-	logger := NewLogger()
+func LoggerForModules(priorityKey, criticalPriority string, enabledModules []string) *Logger {
+	logger := NewLogger(priorityKey, criticalPriority)
 	logger.allModulesEnabled = false
 	for _, moduleName := range enabledModules {
 		// Lazy instantiation
@@ -82,6 +87,8 @@ func (l *Logger) cloneForModule(moduleName string) (logger *Logger) {
 		},
 		allModulesEnabled: l.allModulesEnabled,
 		moduleLoggers:     l.moduleLoggers,
+		PriorityKey:       l.PriorityKey,
+		CriticalPriority:  l.CriticalPriority,
 	}
 	logger.Hooks.Add(NewReplayHook(l.moduleLoggers[""]))
 	logger.Hooks.Add(NewModuleLogHook(moduleName))
@@ -125,27 +132,27 @@ func (logger *Logger) EnableModules(modules ...string) {
 }
 
 func (l *Logger) Criticalf(format string, args ...interface{}) {
-	l.WithField("priority", "CRITICAL").Error(args...)
+	l.WithField(l.PriorityKey, l.CriticalPriority).Error(args...)
 }
 
 func (l *Logger) Critical(args ...interface{}) {
-	l.WithField("priority", "CRITICAL").Error(args...)
+	l.WithField(l.PriorityKey, l.CriticalPriority).Error(args...)
 }
 
 func (l *Logger) Criticalln(args ...interface{}) {
-	l.WithField("priority", "CRITICAL").Error(args...)
+	l.WithField(l.PriorityKey, l.CriticalPriority).Error(args...)
 }
 
 func (l *Logger) Noticef(format string, args ...interface{}) {
-	l.WithField("priority", "CRITICAL").Info(args...)
+	l.WithField(l.PriorityKey, l.CriticalPriority).Info(args...)
 }
 
 func (l *Logger) Notice(args ...interface{}) {
-	l.WithField("priority", "CRITICAL").Info(args...)
+	l.WithField(l.PriorityKey, l.CriticalPriority).Info(args...)
 }
 
 func (l *Logger) Noticeln(args ...interface{}) {
-	l.WithField("priority", "CRITICAL").Info(args...)
+	l.WithField(l.PriorityKey, l.CriticalPriority).Info(args...)
 }
 
 func (l *Logger) Disable() {

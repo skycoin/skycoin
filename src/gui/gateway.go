@@ -23,6 +23,7 @@ type Gatewayer interface {
 	ScanAheadWalletAddresses(wltName string, scanN uint64) (wallet.Wallet, error)
 	NewAddresses(wltID string, n uint64) ([]cipher.Address, error)
 	GetWalletDir() (string, error)
+	IsWalletAPIDisabled() bool
 	GetBlockByHash(hash cipher.SHA256) (block coin.SignedBlock, ok bool)
 	GetBlockBySeq(seq uint64) (block coin.SignedBlock, ok bool)
 	GetBlocks(start, end uint64) (*visor.ReadableBlocks, error)
@@ -47,4 +48,5 @@ type Gatewayer interface {
 	GetAddressTxns(a cipher.Address) (*visor.TransactionResults, error)
 	GetRichlist(includeDistribution bool) (visor.Richlist, error)
 	GetAddressCount() (uint64, error)
+	UnloadWallet(id string) error
 }

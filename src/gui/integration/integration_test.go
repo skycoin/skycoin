@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -47,8 +49,9 @@ When update flag is set to true all tests pass
 */
 
 const (
-	testModeStable = "stable"
-	testModeLive   = "live"
+	testModeStable           = "stable"
+	testModeLive             = "live"
+	testModeDisableWalletApi = "disable-wallet-api"
 
 	testFixturesDir = "test-fixtures"
 )
@@ -74,9 +77,9 @@ func mode(t *testing.T) string {
 	switch mode {
 	case "":
 		mode = testModeStable
-	case testModeLive, testModeStable:
+	case testModeLive, testModeStable, testModeDisableWalletApi:
 	default:
-		t.Fatal("Invalid test mode, must be stable or live")
+		t.Fatal("Invalid test mode, must be stable, live or disable-wallet-api")
 	}
 	return mode
 }
@@ -100,6 +103,15 @@ func doLive(t *testing.T) bool {
 	}
 
 	t.Skip("Live tests disabled")
+	return false
+}
+
+func doDisableWalletApi(t *testing.T) bool {
+	if enabled() && mode(t) == testModeDisableWalletApi {
+		return true
+	}
+
+	t.Skip("DisableWalletApi tests disabled")
 	return false
 }
 
@@ -2009,9 +2021,6 @@ func TestGetWallets(t *testing.T) {
 
 // TestWalletNewAddress will generate 30 wallets for testing, and they will
 // be removed automatically after testing.
-//
-// Note: Though the new generated wallet files are all deleted, they are still
-// in the memory, you need to resrat the node to free them.
 func TestWalletNewAddress(t *testing.T) {
 	if !doLiveOrStable(t) {
 		return
@@ -2274,10 +2283,17 @@ func createWallet(t *testing.T, c *gui.Client) (*wallet.Wallet, func()) {
 	walletDir := getWalletDir(t, c)
 
 	return &w, func() {
-		// Cleaner function to delete the wallet
+		// Cleaner function to delete the wallet and bak wallet
 		walletPath := filepath.Join(walletDir, w.GetFilename())
 		err = os.Remove(walletPath)
 		require.NoError(t, err)
+
+		bakWalletPath := walletPath + ".bak"
+		err = os.Remove(bakWalletPath)
+		require.NoError(t, err)
+
+		// Removes the wallet from memory
+		c.UnloadWallet(w.GetFilename())
 	}
 }
 
@@ -2287,4 +2303,135 @@ func getWalletDir(t *testing.T, c *gui.Client) string {
 		t.Fatalf("%v", err)
 	}
 	return wf.Address
+}
+
+func TestDisableWalletApi(t *testing.T) {
+	if !doDisableWalletApi(t) {
+		return
+	}
+
+	tt := []struct {
+		name      string
+		method    string
+		endpoint  string
+		body      func() io.Reader
+		expectErr string
+	}{
+		{
+			name:      "get wallet",
+			method:    http.MethodGet,
+			endpoint:  "/wallet?id=test.wlt",
+			expectErr: "403 Forbidden\n",
+		},
+		{
+			name:     "create wallet",
+			method:   http.MethodPost,
+			endpoint: "/wallet/create",
+			body: func() io.Reader {
+				v := url.Values{}
+				v.Add("seed", "seed")
+				v.Add("label", "label")
+				v.Add("scan", "1")
+				return strings.NewReader(v.Encode())
+			},
+			expectErr: "403 Forbidden\n",
+		},
+		{
+			name:     "generate new address",
+			method:   http.MethodPost,
+			endpoint: "/wallet/newAddress",
+			body: func() io.Reader {
+				v := url.Values{}
+				v.Add("id", "test.wlt")
+				return strings.NewReader(v.Encode())
+			},
+			expectErr: "403 Forbidden\n",
+		},
+		{
+			name:      "get wallet balance",
+			method:    http.MethodGet,
+			endpoint:  "/wallet/balance?id=test.wlt",
+			expectErr: "403 Forbidden\n",
+		},
+		{
+			name:     "wallet spending",
+			method:   http.MethodPost,
+			endpoint: "/wallet/spend",
+			body: func() io.Reader {
+				v := url.Values{}
+				v.Add("id", "test.wlt")
+				v.Add("coins", "100000") // 1e5
+				v.Add("dst", "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6")
+				return strings.NewReader(v.Encode())
+			},
+			expectErr: "403 Forbidden\n",
+		},
+		{
+			name:      "get wallet unconfirmed transactions",
+			method:    http.MethodGet,
+			endpoint:  "/wallet/transactions?id=test.wlt",
+			expectErr: "403 Forbidden\n",
+		},
+		{
+			name:     "update wallet label",
+			method:   http.MethodPost,
+			endpoint: "/wallet/update",
+			body: func() io.Reader {
+				v := url.Values{}
+				v.Add("id", "test.wlt")
+				v.Add("label", "label")
+				return strings.NewReader(v.Encode())
+			},
+			expectErr: "403 Forbidden\n",
+		},
+		{
+			name:      "new seed",
+			method:    http.MethodGet,
+			endpoint:  "/wallet/newSeed",
+			expectErr: "403 Forbidden\n",
+		},
+		{
+			name:      "get wallets",
+			method:    http.MethodGet,
+			endpoint:  "/wallets",
+			expectErr: "403 Forbidden\n",
+		},
+		{
+			name:      "get wallets folder name",
+			method:    http.MethodGet,
+			endpoint:  "/wallets/folderName",
+			expectErr: "403 Forbidden\n",
+		},
+		{
+			name:      "main index.html 404 not found",
+			method:    http.MethodGet,
+			endpoint:  "/",
+			expectErr: "404 page not found\n",
+		},
+	}
+
+	c := gui.NewClient(nodeAddress())
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			var err error
+			switch tc.method {
+			case http.MethodGet:
+				err = c.Get(tc.endpoint, nil)
+			case http.MethodPost:
+				err = c.PostForm(tc.endpoint, tc.body(), nil)
+			}
+			require.EqualError(t, err, tc.expectErr)
+		})
+	}
+
+	// Confirms that no new wallet is created
+	// WALLET_DIR environment variable is set in ci-script/integration-test-disable-wallet-api.sh
+	walletDir := os.Getenv("WALLET_DIR")
+	if walletDir == "" {
+		t.Fatal("WALLET_DIR is not set")
+	}
+
+	// Confirms that the wallet directory does not exist
+	_, err := os.Stat(walletDir)
+	require.True(t, os.IsNotExist(err))
 }

@@ -45,12 +45,12 @@ func convertToMessage(id int, msg []byte, debugPrint bool) (Message, error) {
 	}
 
 	if debugPrint {
-		logger.Debug("Convert, Message type %v", t)
+		logger.Debugf("Convert, Message type %v", t)
 	}
 
 	var m Message
 	v := reflect.New(t)
-	//logger.Debug("Giving %d bytes to the decoder", len(msg))
+	//logger.Debugf("Giving %d bytes to the decoder", len(msg))
 	used, err := deserializeMessage(msg, v)
 	if err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func convertToMessage(id int, msg []byte, debugPrint bool) (Message, error) {
 func deserializeMessage(msg []byte, v reflect.Value) (n int, e error) {
 	defer func() {
 		if r := recover(); r != nil {
-			logger.Debug("Recovering from deserializer panic: %v", r)
+			logger.Debugf("Recovering from deserializer panic: %v", r)
 			switch x := r.(type) {
 			case string:
 				e = errors.New(x)

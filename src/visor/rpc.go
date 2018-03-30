@@ -182,3 +182,8 @@ func (rpc *RPC) ReloadWallets() error {
 func (rpc *RPC) GetBuildInfo() BuildInfo {
 	return rpc.v.Config.BuildInfo
 }
+
+// UnloadWallet removes the wallet of given id from wallet service.
+func (rpc *RPC) UnloadWallet(id string) {
+	rpc.v.wallets.Remove(id)
+}

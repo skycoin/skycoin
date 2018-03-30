@@ -54,18 +54,18 @@ func loadPeersFromFile(path string) (map[string]*Peer, error) {
 	for addr, peerJSON := range peersJSON {
 		a, err := validateAddress(addr, true)
 		if err != nil {
-			logger.Error("Invalid address in peers JSON file %s: %v", addr, err)
+			logger.Errorf("Invalid address in peers JSON file %s: %v", addr, err)
 			continue
 		}
 
 		peer, err := newPeerFromJSON(peerJSON)
 		if err != nil {
-			logger.Error("newPeerFromJSON failed: %v", err)
+			logger.Errorf("newPeerFromJSON failed: %v", err)
 			continue
 		}
 
 		if a != peer.Addr {
-			logger.Error("address key %s does not match Peer.Addr %s", a, peer.Addr)
+			logger.Errorf("address key %s does not match Peer.Addr %s", a, peer.Addr)
 			continue
 		}
 

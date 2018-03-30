@@ -51,7 +51,7 @@ func LoadNotes(dir string) (Notes, error) {
 	bkpath := dir + "/backup/"
 	if _, err := os.Stat(bkpath); os.IsNotExist(err) {
 		// create the backup dir
-		logger.Critical("create wallet backup dir, %v", bkpath)
+		logger.Noticef("create wallet backup dir, %v", bkpath)
 		if err := os.Mkdir(bkpath, 0777); err != nil {
 			return nil, err
 		}

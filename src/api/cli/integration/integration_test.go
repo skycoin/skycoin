@@ -24,6 +24,7 @@ import (
 	"github.com/skycoin/skycoin/src/api/cli"
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/gui"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -32,8 +33,9 @@ import (
 const (
 	binaryName = "skycoin-cli"
 
-	testModeStable = "stable"
-	testModeLive   = "live"
+	testModeStable           = "stable"
+	testModeLive             = "live"
+	testModeDisableWalletApi = "disable-wallet-api"
 
 	// Number of random transactions of live transaction test.
 	randomLiveTransactionNum = 500
@@ -86,6 +88,14 @@ func TestMain(m *testing.M) {
 	}
 
 	os.Exit(ret)
+}
+
+func nodeAddress() string {
+	addr := os.Getenv("SKYCOIN_NODE_HOST")
+	if addr == "" {
+		return "http://127.0.0.1:6420"
+	}
+	return addr
 }
 
 // createTempWalletFile creates a temporary dir, and copy the 'from' file to dir.
@@ -184,9 +194,9 @@ func mode(t *testing.T) string {
 	switch mode {
 	case "":
 		mode = testModeStable
-	case testModeLive, testModeStable:
+	case testModeLive, testModeStable, testModeDisableWalletApi:
 	default:
-		t.Fatal("Invalid test mode, must be stable or live")
+		t.Fatal("Invalid test mode, must be stable, live or disable-wallet-api")
 	}
 	return mode
 }
@@ -1605,8 +1615,8 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 		return
 	}
 
-	// prepares wallet and confirms the wallet has at least 2 coins and 16 coin hours.
-	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 16)
+	// prepares wallet and confirms the wallet has at least 2 coins and 2 coin hours.
+	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 2)
 
 	tt := []struct {
 		name    string
@@ -1657,59 +1667,10 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 				return []string{"createRawTransaction", "-m", string(v)}
 			},
 			checkTx: func(t *testing.T, txid string) {
-				tx := getTransaction(t, txid)
-				// Confirms the second address receives 0.5 coin and 1 coinhour in this transaction
-				checkCoinsAndCoinhours(t, tx, w.Entries[1].Address.String(), 5e5, 1)
-				// Confirms the third address receives 0.5 coin and 1 coinhour in this transaction
-				checkCoinsAndCoinhours(t, tx, w.Entries[2].Address.String(), 5e5, 1)
 				// Confirms the first address has at least 1 coin left.
 				coins, _ := getAddressBalance(t, w.Entries[0].Address.String())
 				require.True(t, coins >= 1e6)
 			},
-		},
-		{
-			// Send 0.001 coin from the third address to the second address.
-			// Set the second as change address, so the 0.499 change coin will also be sent to the second address.
-			// After sending, the second address should have 1 coin and 1 coin hour.
-			name: "send with -c(change address) -a(from address) options",
-			args: func() []string {
-				return []string{"createRawTransaction", "-c", w.Entries[1].Address.String(),
-					"-a", w.Entries[2].Address.String(), w.Entries[1].Address.String(), "0.001"}
-			},
-			checkTx: func(t *testing.T, txid string) {
-				tx := getTransaction(t, txid)
-				// Confirms the second address receives 0.5 coin and 0 coinhour in this transaction
-				checkCoinsAndCoinhours(t, tx, w.Entries[1].Address.String(), 5e5, 0)
-				// Confirms the second address have 1 coin and 1 coin hour
-				coins, hours := getAddressBalance(t, w.Entries[1].Address.String())
-				require.Equal(t, uint64(1e6), coins)
-				require.Equal(t, uint64(1), hours)
-			},
-		},
-		{
-			// Send 1 coin from second to the the third address, this will spend three outputs(0.2, 0.3. 0.5 coin),
-			// and burn out the remaining 1 coin hour.
-			name: "send to burn all coin hour",
-			args: func() []string {
-				return []string{"createRawTransaction", "-a", w.Entries[1].Address.String(),
-					w.Entries[2].Address.String(), "1"}
-			},
-			checkTx: func(t *testing.T, txid string) {
-				// Confirms that the third address has 1 coin and 0 coin hour
-				coins, hours := getAddressBalance(t, w.Entries[2].Address.String())
-				require.Equal(t, uint64(1e6), coins)
-				require.Equal(t, uint64(0), hours)
-			},
-		},
-		{
-			// Send with 0 coin hour, this test should fail.
-			name: "send 0 coin hour",
-			args: func() []string {
-				return []string{"createRawTransaction", "-a", w.Entries[2].Address.String(),
-					w.Entries[1].Address.String(), "1"}
-			},
-			errMsg:  []byte("ERROR: Transaction has zero coinhour fee. See 'skycoin-cli createRawTransaction --help'"),
-			checkTx: func(t *testing.T, txid string) {},
 		},
 	}
 
@@ -2183,4 +2144,120 @@ func checkWalletEntriesAndLastSeed(t *testing.T, w *wallet.Wallet) {
 	lastSeed, ok := w.Meta["lastSeed"]
 	require.True(t, ok)
 	require.Equal(t, lastSeed, hex.EncodeToString(newSeed))
+}
+
+// TestLiveGUIInjectTransaction does almost the same procedure as TestCreateAndBroadcastRawTransaction.
+// The only difference is we broadcast the raw transaction throught the gui /injectTransaction api.
+func TestLiveGUIInjectTransaction(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	doLiveEnvCheck(t)
+
+	if !doWallet(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+	// prepares wallet and confirms the wallet has at least 2 coins and 2 coin hours.
+	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 2)
+
+	tt := []struct {
+		name    string
+		args    func() []string
+		errMsg  []byte
+		checkTx func(t *testing.T, txid string)
+	}{
+		{
+			// Send all coins to the first address to one output.
+			name: "send all coins to the first address",
+			args: func() []string {
+				coins, err := droplet.ToString(totalCoins)
+				require.NoError(t, err)
+				return []string{"createRawTransaction", w.Entries[0].Address.String(), coins}
+			},
+			checkTx: func(t *testing.T, txid string) {
+				// Confirms all coins are in the first address in one output
+				tx := getTransaction(t, txid)
+				require.Len(t, tx.Transaction.Transaction.Out, 1)
+				c, err := droplet.FromString(tx.Transaction.Transaction.Out[0].Coins)
+				require.NoError(t, err)
+				require.Equal(t, totalCoins, c)
+			},
+		},
+		{
+			// Send 0.5 coin to the second address.
+			// Send 0.5 coin to the third address.
+			// After sending, the first address should have at least 1 coin left.
+			name: "send to multiple address with -m option",
+			args: func() []string {
+				addrCoins := []struct {
+					Addr  string `json:"addr"`
+					Coins string `json:"coins"`
+				}{
+					{
+						w.Entries[1].Address.String(),
+						"0.5",
+					},
+					{
+						w.Entries[2].Address.String(),
+						"0.5",
+					},
+				}
+
+				v, err := json.Marshal(addrCoins)
+				require.NoError(t, err)
+
+				return []string{"createRawTransaction", "-m", string(v)}
+			},
+			checkTx: func(t *testing.T, txid string) {
+				// Confirms the first address has at least 1 coin left.
+				coins, _ := getAddressBalance(t, w.Entries[0].Address.String())
+				require.True(t, coins >= 1e6)
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create raw transaction first
+			output, err := exec.Command(binaryPath, tc.args()...).CombinedOutput()
+			if err != nil {
+				t.Fatalf("err: %v, output: %v", err, string(output))
+				return
+			}
+			require.NoError(t, err)
+			output = bytes.TrimRight(output, "\n")
+			if bytes.Contains(output, []byte("ERROR:")) {
+				require.Equal(t, tc.errMsg, output)
+				return
+			}
+
+			// Broadcast raw transaction with gui /injectTransaction
+			txid, err := c.InjectTransaction(string(output))
+			require.NoError(t, err)
+
+			txid = strings.TrimRight(txid, "\n")
+			fmt.Println("txid:", txid)
+			_, err = cipher.SHA256FromHex(txid)
+			require.NoError(t, err)
+
+			// Wait untill transaction is confirmed.
+			tk := time.NewTicker(time.Second)
+		loop:
+			for {
+				select {
+				case <-time.After(30 * time.Second):
+					t.Fatal("Wait tx confirmation timeout")
+				case <-tk.C:
+					if isTxConfirmed(t, txid) {
+						break loop
+					}
+				}
+			}
+
+			tc.checkTx(t, txid)
+		})
+	}
 }

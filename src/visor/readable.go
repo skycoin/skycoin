@@ -29,7 +29,7 @@ type BlockchainMetadata struct {
 func NewBlockchainMetadata(v *Visor) BlockchainMetadata {
 	head, err := v.Blockchain.Head()
 	if err != nil {
-		logger.Error("%v", err)
+		logger.Error(err)
 		return BlockchainMetadata{}
 	}
 

@@ -171,6 +171,10 @@ directly, see [Skycoin CLI Godoc](https://godoc.org/github.com/skycoin/skycoin/s
 A REST API client is also available: [Skycoin REST API Client Godoc](https://godoc.org/github.com/skycoin/skycoin/src/gui#Client).
 
 #### Coinhours
+Transaction fees in skycoin is paid in coinhours and is currently set to `50%`,
+every transaction created burns `50%` of the total coinhours in all the input
+unspents.
+
 You need a minimum of `1` of coinhour to create a transaction.
 
 Coinhours are generated at a rate of `1 coinsecond` per `second`
@@ -186,7 +190,7 @@ When using the `REST API` the coinhours are distributed as follows:
 
 For e.g, If an address has `10` skycoins and `50` coinhours and only `1` unspent.
 If we send `5` skycoins to another address then that address will receive
-`5` skycoins and `12` coinhours, `26` coinhours will be burned.
+`5` skycoins and `12` coinhours, `26` coinhours(burned coinhours are made even) will be burned.
 The sending address will be left with `5` skycoins and `12` coinhours which
 will then be sent to the change address.
 

@@ -208,7 +208,7 @@ func (serv *Service) generateUniqueWalletFilename() string {
 }
 
 // EncryptWallet encrypts wallet with password
-func (serv *Service) EncryptWallet(wltID string, password []byte, ct CryptoType) error {
+func (serv *Service) EncryptWallet(wltID string, password []byte) error {
 	serv.Lock()
 	defer serv.Unlock()
 	w, err := serv.getWallet(wltID)

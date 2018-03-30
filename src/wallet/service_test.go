@@ -983,7 +983,7 @@ func TestServiceEncryptWallet(t *testing.T) {
 				require.NoError(t, err)
 
 				// Encrypt the wallet
-				err = s.EncryptWallet(tc.encWltName, tc.pwd, ct)
+				err = s.EncryptWallet(tc.encWltName, tc.pwd)
 				require.Equal(t, tc.err, err)
 				if err != nil {
 					return

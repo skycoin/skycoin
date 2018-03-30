@@ -91,15 +91,17 @@ func SKY_cipher_Address_Verify(_addr *C.Address, _key *C.PubKey) uint32 {
 }
 
 //export SKY_cipher_Address_String
-func SKY_cipher_Address_String(_addr *C.Address) string {
+func SKY_cipher_Address_String(_addr *C.Address, _arg1 *C.GoString_) {
 	addr := (*cipher.Address)(unsafe.Pointer(_addr))
-	return addr.String()
+	s := addr.String()
+	copyString(s, _arg1)
 }
 
 //export SKY_cipher_Address_BitcoinString
-func SKY_cipher_Address_BitcoinString(_addr *C.Address) string {
+func SKY_cipher_Address_BitcoinString(_addr *C.Address, _arg1 *C.GoString_) {
 	addr := (*cipher.Address)(unsafe.Pointer(_addr))
-	return addr.BitcoinString()
+	s := addr.BitcoinString()
+	copyString(s, _arg1)
 }
 
 //export SKY_cipher_Address_Checksum
@@ -121,15 +123,17 @@ Bitcoin Functions
 */
 
 //export SKY_cipher_BitcoinAddressFromPubkey
-func SKY_cipher_BitcoinAddressFromPubkey(_pubkey *C.PubKey) string {
+func SKY_cipher_BitcoinAddressFromPubkey(_pubkey *C.PubKey, _arg1 *C.GoString_) {
 	pubkey := (*cipher.PubKey)(unsafe.Pointer(_pubkey))
-	return cipher.BitcoinAddressFromPubkey(*pubkey)
+	s := cipher.BitcoinAddressFromPubkey(*pubkey)
+	copyString(s, _arg1)
 }
 
 //export SKY_cipher_BitcoinWalletImportFormatFromSeckey
-func SKY_cipher_BitcoinWalletImportFormatFromSeckey(_seckey *C.SecKey) string {
+func SKY_cipher_BitcoinWalletImportFormatFromSeckey(_seckey *C.SecKey, _arg1 *C.GoString_) {
 	seckey := (*cipher.SecKey)(unsafe.Pointer(_seckey))
-	return cipher.BitcoinWalletImportFormatFromSeckey(*seckey)
+	s := cipher.BitcoinWalletImportFormatFromSeckey(*seckey)
+	copyString(s, _arg1)
 }
 
 //export SKY_cipher_BitcoinAddressFromBytes

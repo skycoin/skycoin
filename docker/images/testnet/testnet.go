@@ -127,6 +127,7 @@ func main() {
 	flag.Parse()
 	buildContext, err := filepath.Abs(*buildContextPtr)
 	tempDir, err := ioutil.TempDir("", "skycointest")
+	log.Print("Compose files will be copied to ", tempDir)
 	if err != nil {
 		log.Fatal(err)
 	}

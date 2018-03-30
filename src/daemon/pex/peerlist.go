@@ -3,6 +3,7 @@ package pex
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
 	"os"
 	"time"
@@ -47,9 +48,13 @@ func loadPeersFromFile(path string) (map[string]*Peer, error) {
 	}
 
 	peersJSON := make(map[string]PeerJSON)
+	err := file.LoadJSON(path, &peersJSON)
 
-	if err := file.LoadJSON(path, &peersJSON); err != nil {
-		logger.Error("the file %s is empty or corrupt %v", path, err)
+	if err == io.EOF {
+		logger.Error(" %s corrupt or empty file, rewriting file", path)
+		return nil, nil
+
+	} else if err != nil {
 		return nil, err
 	}
 	peers := make(map[string]*Peer, len(peersJSON))

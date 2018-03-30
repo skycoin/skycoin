@@ -18,9 +18,11 @@ import (
 )
 
 type dockerService struct {
-	Image string
-	Ports []string `yaml:"ports,omitempty"`
-	Build serviceBuild
+	Image   string
+	Ports   []string     `yaml:"ports,omitempty"`
+	Volumes []string     `yaml:"volumes,omitempty"`
+	Command string       `yaml:"command,omitempty"`
+	Build   serviceBuild `yaml:"build,omitempty"`
 }
 type serviceBuild struct {
 	Context    string `yaml:"context,omitempty"`
@@ -150,6 +152,11 @@ func main() {
 					Context: ".",
 				},
 				Ports: []string{"8001:8001"},
+			},
+			"gliderlabs_logspout": dockerService{
+				Image:   "gliderlabs/logspout",
+				Volumes: []string{"/var/run/docker.sock:/var/run/docker.sock"},
+				Command: "raw+tcp://oklog:7651?filter.name=*skycoin*",
 			},
 			"oklog": dockerService{
 				Build: serviceBuild{

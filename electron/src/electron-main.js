@@ -23,7 +23,7 @@ const defaultURL = 'http://127.0.0.1:6420/';
 let currentURL;
 
 // Force everything localhost, in case of a leak
-app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1, EXCLUDE api.coinmarketcap.com');
+app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1, EXCLUDE api.coinmarketcap.com, api.github.com');
 app.commandLine.appendSwitch('ssl-version-fallback-min', 'tls1.2');
 app.commandLine.appendSwitch('--no-proxy-server');
 app.setAsDefaultProtocolClient('skycoin');
@@ -80,48 +80,39 @@ function startSkycoin() {
 
   skycoin.on('error', (e) => {
     dialog.showErrorBox('Failed to start skycoin', e.toString());
-  app.quit();
-});
+    app.quit();
+  });
 
   skycoin.stdout.on('data', (data) => {
     console.log(data.toString());
-
-  // Scan for the web URL string
-  if (currentURL) {
-    return
-  }
-  const marker = 'Starting web interface on ';
-  var i = data.indexOf(marker);
-  if (i === -1) {
-    return
-  }
-  // var j = data.indexOf('\n', i);
-
-  // // dialog.showErrorBox('index of newline: ', j);
-  // if (j === -1) {
-  //     throw new Error('web interface url log line incomplete');
-  // }
-  // var url = data.slice(i + marker.length, j);
-  // currentURL = url.toString();
-  currentURL = defaultURL;
-  app.emit('skycoin-ready', { url: currentURL });
-});
+    // Scan for the web URL string
+    if (currentURL) {
+      return
+    }
+    const marker = 'Starting web interface on ';
+    var i = data.indexOf(marker);
+    if (i === -1) {
+      return
+    }
+    currentURL = defaultURL;
+    app.emit('skycoin-ready', { url: currentURL });
+  });
 
   skycoin.stderr.on('data', (data) => {
     console.log(data.toString());
-});
+  });
 
   skycoin.on('close', (code) => {
     // log.info('Skycoin closed');
     console.log('Skycoin closed');
-  reset();
-});
+    reset();
+  });
 
   skycoin.on('exit', (code) => {
     // log.info('Skycoin exited');
     console.log('Skycoin exited');
-  reset();
-});
+    reset();
+  });
 }
 
 function createWindow(url) {
@@ -174,7 +165,12 @@ function createWindow(url) {
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
     win = null;
-});
+  });
+
+  win.webContents.on('will-navigate', function(e, url) {
+    e.preventDefault();
+    require('electron').shell.openExternal(url);
+  });
 
   // create application's main menu
   var template = [{

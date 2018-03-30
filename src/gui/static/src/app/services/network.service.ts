@@ -23,7 +23,7 @@ export class NetworkService {
   }
 
   retrieveDefaultConnections(): Observable<ConnectionModel[]> {
-    return this.apiService.post('network/defaultConnections')
+    return this.apiService.get('network/defaultConnections')
       .map(output => output.map((address, index) => ({
         id: index + 1,
         address: address,
@@ -40,7 +40,7 @@ export class NetworkService {
   }
 
   private retrieveConnections(): Observable<ConnectionModel[]> {
-    return this.apiService.post('network/connections')
+    return this.apiService.get('network/connections')
       .map(response => response.connections.sort((a, b) =>  a.id - b.id));
   }
 }

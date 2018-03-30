@@ -137,7 +137,7 @@ func TestGetPendingTxs(t *testing.T) {
 			}
 			setCSRFParameters(csrfStore, tokenValid, req)
 
-			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 			rr := httptest.NewRecorder()
 			handler.ServeHTTP(rr, req)
 
@@ -159,7 +159,7 @@ func TestGetPendingTxs(t *testing.T) {
 }
 
 func TestGetTransactionByID(t *testing.T) {
-	oddHash := "caicb"
+	oddHash := "cafcb"
 	invalidHash := "cabrca"
 	validHash := "79216473e8f2c17095c6887cc9edca6c023afedfac2e0c5460e8b6f359684f8b"
 	type httpBody struct {
@@ -281,7 +281,7 @@ func TestGetTransactionByID(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 			handler.ServeHTTP(rr, req)
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
@@ -405,7 +405,7 @@ func TestInjectTransaction(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -464,7 +464,7 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -485,7 +485,7 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 }
 
 func TestGetRawTx(t *testing.T) {
-	oddHash := "caicb"
+	oddHash := "cafcb"
 	invalidHash := "cabrca"
 	validHash := "79216473e8f2c17095c6887cc9edca6c023afedfac2e0c5460e8b6f359684f8b"
 	type httpBody struct {
@@ -597,7 +597,7 @@ func TestGetRawTx(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -758,7 +758,7 @@ func TestGetTransactions(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 
 			handler.ServeHTTP(rr, req)
 

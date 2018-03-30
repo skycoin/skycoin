@@ -358,7 +358,7 @@ func TestWalletSpendHandler(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 
 			handler.ServeHTTP(rr, req)
 
@@ -477,7 +477,7 @@ func TestWalletGet(t *testing.T) {
 		setCSRFParameters(csrfStore, tokenValid, req)
 
 		rr := httptest.NewRecorder()
-		handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+		handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 
 		handler.ServeHTTP(rr, req)
 
@@ -619,7 +619,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 
 			handler.ServeHTTP(rr, req)
 
@@ -766,7 +766,7 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 
 			handler.ServeHTTP(rr, req)
 
@@ -789,6 +789,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		WalletID string
 	}
 
+	unconfirmedTxn, _ := visor.NewReadableUnconfirmedTxn(&visor.UnconfirmedTxn{})
 	tt := []struct {
 		name                                  string
 		method                                string
@@ -798,7 +799,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		walletID                              string
 		gatewayGetWalletUnconfirmedTxnsResult []visor.UnconfirmedTxn
 		gatewayGetWalletUnconfirmedTxnsErr    error
-		responseBody                          []visor.UnconfirmedTxn
+		responseBody                          UnconfirmedTxnsResponse
 	}{
 		{
 			name:   "405",
@@ -855,7 +856,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			err:      "",
 			walletID: "foo",
 			gatewayGetWalletUnconfirmedTxnsResult: make([]visor.UnconfirmedTxn, 1),
-			responseBody:                          []visor.UnconfirmedTxn{visor.UnconfirmedTxn{}},
+			responseBody:                          UnconfirmedTxnsResponse{Transactions: []visor.ReadableUnconfirmedTxn{*unconfirmedTxn}},
 		},
 	}
 
@@ -883,7 +884,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		setCSRFParameters(csrfStore, tokenValid, req)
 
 		rr := httptest.NewRecorder()
-		handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+		handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 
 		handler.ServeHTTP(rr, req)
 
@@ -895,10 +896,13 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 		} else {
-			var msg []visor.UnconfirmedTxn
+			var msg UnconfirmedTxnsResponse
 			err = json.Unmarshal(rr.Body.Bytes(), &msg)
 			require.NoError(t, err)
-			require.Equal(t, tc.responseBody, msg, tc.name)
+			// require.Equal on whole response might result in flaky tests as there is a time field attached to unconfirmed txn response
+			require.IsType(t, msg, tc.responseBody)
+			require.Len(t, msg.Transactions, 1)
+			require.Equal(t, msg.Transactions[0].Txn, tc.responseBody.Transactions[0].Txn)
 		}
 	}
 }
@@ -909,7 +913,6 @@ func TestWalletCreateHandler(t *testing.T) {
 		Label string
 		ScanN string
 	}
-
 	tt := []struct {
 		name                      string
 		method                    string
@@ -1122,7 +1125,7 @@ func TestWalletCreateHandler(t *testing.T) {
 		}
 
 		rr := httptest.NewRecorder()
-		handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+		handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 
 		handler.ServeHTTP(rr, req)
 
@@ -1147,7 +1150,6 @@ func TestWalletNewSeed(t *testing.T) {
 	type httpBody struct {
 		Entropy string
 	}
-
 	tt := []struct {
 		name      string
 		method    string
@@ -1217,6 +1219,7 @@ func TestWalletNewSeed(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &GatewayerMock{}
+			gateway.On("IsWalletAPIDisabled").Return(false)
 
 			endpoint := "/wallet/newSeed"
 
@@ -1241,7 +1244,7 @@ func TestWalletNewSeed(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 
 			handler.ServeHTTP(rr, req)
 
@@ -1274,6 +1277,7 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 	type Addresses struct {
 		Address []string `json:"addresses"`
 	}
+
 	var responseAddresses = Addresses{}
 	var responseEmptyAddresses = Addresses{}
 
@@ -1420,7 +1424,7 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 
 			handler.ServeHTTP(rr, req)
 
@@ -1489,7 +1493,7 @@ func TestGetWalletFolderHandler(t *testing.T) {
 		setCSRFParameters(csrfStore, tokenValid, req)
 
 		rr := httptest.NewRecorder()
-		handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+		handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 
 		handler.ServeHTTP(rr, req)
 
@@ -1506,5 +1510,89 @@ func TestGetWalletFolderHandler(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, tc.httpResponse, msg, tc.name)
 		}
+	}
+}
+
+func TestWalletUnloadHandler(t *testing.T) {
+	tt := []struct {
+		name            string
+		method          string
+		status          int
+		err             string
+		walletID        string
+		unloadWalletErr error
+		csrfDisabled    bool
+	}{
+		{
+			name:     "405",
+			method:   http.MethodGet,
+			status:   http.StatusMethodNotAllowed,
+			err:      "405 Method Not Allowed",
+			walletID: "wallet.wlt",
+		},
+		{
+			name:   "400 - missing wallet id",
+			method: http.MethodPost,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - missing wallet id",
+		},
+		{
+			name:            "403 - Forbidden - wallet API disabled",
+			method:          http.MethodPost,
+			status:          http.StatusForbidden,
+			err:             "403 Forbidden",
+			walletID:        "wallet.wlt",
+			unloadWalletErr: wallet.ErrWalletApiDisabled,
+		},
+		{
+			name:     "200 - ok",
+			method:   http.MethodPost,
+			status:   http.StatusOK,
+			walletID: "wallet.wlt",
+		},
+		{
+			name:         "200 - ok, csrf disabled",
+			method:       http.MethodPost,
+			status:       http.StatusOK,
+			walletID:     "wallet.wlt",
+			csrfDisabled: true,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := &GatewayerMock{}
+			gateway.On("UnloadWallet", tc.walletID).Return(tc.unloadWalletErr)
+
+			endpoint := "/wallet/unload"
+			v := url.Values{}
+			v.Add("id", tc.walletID)
+
+			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(v.Encode()))
+			require.NoError(t, err)
+			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+			csrfStore := &CSRFStore{
+				Enabled: !tc.csrfDisabled,
+			}
+			if csrfStore.Enabled {
+				setCSRFParameters(csrfStore, tokenValid, req)
+			} else {
+				setCSRFParameters(csrfStore, tokenInvalid, req)
+			}
+
+			rr := httptest.NewRecorder()
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
+
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.status, status, "wrong status code: got `%v` want `%v`", status, tc.status)
+
+			if status != http.StatusOK {
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %d, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+			}
+		})
 	}
 }

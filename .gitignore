@@ -8,6 +8,7 @@
 
 sb
 
+build
 data
 pkg
 bin
@@ -116,3 +117,9 @@ src/mesh/TODO
 coverage.html
 
 src/gui/integration/wallets/
+
+skycoin-cli
+
+# FIXME: see #1027 - Temporary solution to deal with generated file
+include/libskycoin.h
+

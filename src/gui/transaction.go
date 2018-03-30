@@ -27,48 +27,14 @@ func getPendingTxs(gateway Gatewayer) http.HandlerFunc {
 		for _, unconfirmedTxn := range txns {
 			readable, err := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
 			if err != nil {
-				logger.Error("%v", err)
+				logger.Error(err)
 				wh.Error500(w)
 				return
 			}
 			ret = append(ret, readable)
 		}
 
-		wh.SendOr404(w, &ret)
-	}
-}
-
-// DEPRECATED: last txs can't recover from db when restart
-// , and it's not used actually
-func getLastTxs(gateway Gatewayer) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			wh.Error405(w)
-			return
-		}
-		txs, err := gateway.GetLastTxs()
-		if err != nil {
-			logger.Error("gateway.GetLastTxs failed: %v", err)
-			wh.Error500(w)
-			return
-		}
-
-		resTxs := make([]visor.TransactionResult, len(txs))
-		for i, tx := range txs {
-			rbTx, err := visor.NewReadableTransaction(tx)
-			if err != nil {
-				logger.Error("%v", err)
-				wh.Error500(w)
-				return
-			}
-
-			resTxs[i] = visor.TransactionResult{
-				Transaction: *rbTx,
-				Status:      tx.Status,
-			}
-		}
-
-		wh.SendOr404(w, &resTxs)
+		wh.SendJSONOr500(logger, w, &ret)
 	}
 }
 
@@ -102,7 +68,7 @@ func getTransactionByID(gate Gatewayer) http.HandlerFunc {
 
 		rbTx, err := visor.NewReadableTransaction(tx)
 		if err != nil {
-			logger.Error("%v", err)
+			logger.Error(err)
 			wh.Error500(w)
 			return
 		}
@@ -111,7 +77,7 @@ func getTransactionByID(gate Gatewayer) http.HandlerFunc {
 			Transaction: *rbTx,
 			Status:      tx.Status,
 		}
-		wh.SendOr404(w, &resTx)
+		wh.SendJSONOr500(logger, w, &resTx)
 	}
 }
 
@@ -153,7 +119,7 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 		// Gets transactions
 		txns, err := gateway.GetTransactions(flts...)
 		if err != nil {
-			logger.Error("get transactions failed: %v", err)
+			logger.Errorf("get transactions failed: %v", err)
 			wh.Error500(w)
 			return
 		}
@@ -161,12 +127,12 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 		// Converts visor.Transaction to visor.TransactionResult
 		txRlts, err := visor.NewTransactionResults(txns)
 		if err != nil {
-			logger.Error("Converts []visor.Transaction to visor.TransactionResults failed: %v", err)
+			logger.Errorf("Converts []visor.Transaction to visor.TransactionResults failed: %v", err)
 			wh.Error500(w)
 			return
 		}
 
-		wh.SendOr404(w, txRlts.Txns)
+		wh.SendJSONOr500(logger, w, txRlts.Txns)
 	}
 }
 
@@ -199,32 +165,32 @@ func injectTransaction(gateway Gatewayer) http.HandlerFunc {
 		}{}
 
 		if err := json.NewDecoder(r.Body).Decode(&v); err != nil {
-			logger.Error("bad request: %v", err)
+			logger.Errorf("bad request: %v", err)
 			wh.Error400(w, err.Error())
 			return
 		}
 
 		b, err := hex.DecodeString(v.Rawtx)
 		if err != nil {
-			logger.Error("%v", err)
+			logger.Error(err)
 			wh.Error400(w, err.Error())
 			return
 		}
 
 		txn, err := coin.TransactionDeserialize(b)
 		if err != nil {
-			logger.Error("%v", err)
+			logger.Error(err)
 			wh.Error400(w, err.Error())
 			return
 		}
 
 		if err := gateway.InjectBroadcastTransaction(txn); err != nil {
-			logger.Error("%v", err)
+			logger.Error(err)
 			wh.Error400(w, fmt.Sprintf("inject tx failed: %v", err))
 			return
 		}
 
-		wh.SendOr404(w, txn.Hash().Hex())
+		wh.SendJSONOr500(logger, w, txn.Hash().Hex())
 	}
 }
 
@@ -236,7 +202,7 @@ func resendUnconfirmedTxns(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		rlt := gateway.ResendUnconfirmedTxns()
-		wh.SendOr404(w, rlt)
+		wh.SendJSONOr500(logger, w, rlt)
 		return
 	}
 }
@@ -271,7 +237,7 @@ func getRawTx(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		d := tx.Txn.Serialize()
-		wh.SendOr404(w, hex.EncodeToString(d))
+		wh.SendJSONOr500(logger, w, hex.EncodeToString(d))
 		return
 	}
 }

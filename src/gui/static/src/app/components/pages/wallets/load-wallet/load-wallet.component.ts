@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { WalletService } from '../../../../services/wallet.service';
 import { MatDialogRef } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-load-wallet',
@@ -16,6 +17,7 @@ export class LoadWalletComponent implements OnInit {
 
   constructor(
     public dialogRef: MatDialogRef<LoadWalletComponent>,
+    private snackbar: MatSnackBar,
     private walletService: WalletService,
   ) {}
 
@@ -29,7 +31,10 @@ export class LoadWalletComponent implements OnInit {
 
   loadWallet() {
     this.walletService.create(this.form.value.label, this.form.value.seed, this.scan)
-      .subscribe(() => this.dialogRef.close());
+      .subscribe(
+        () => this.dialogRef.close(),
+        error => this.snackbar.open(error['_body'], null, { duration: 5000 })
+      );
   }
 
   private initForm() {

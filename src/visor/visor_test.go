@@ -17,6 +17,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
+	_require "github.com/skycoin/skycoin/src/testutil/require"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
@@ -92,7 +93,7 @@ func TestErrSignatureLostRecreateDB(t *testing.T) {
 	// Make sure that the database file causes ErrMissingSignature error
 	t.Logf("Checking that %s is a corrupted database", badDBFile)
 	func() {
-		db, err := OpenDB(badDBFile)
+		db, err := OpenDB(badDBFile, false)
 		require.NoError(t, err)
 		defer func() {
 			err := db.Close()
@@ -106,7 +107,7 @@ func TestErrSignatureLostRecreateDB(t *testing.T) {
 
 	// Loading this invalid db should cause loadBlockchain() to recreate the db
 	t.Logf("Loading the corrupted db from %s", badDBFile)
-	badDB, err := OpenDB(badDBFile)
+	badDB, err := OpenDB(badDBFile, false)
 	require.NoError(t, err)
 	require.NotNil(t, badDB)
 	require.NotEmpty(t, badDB.Path())
@@ -128,7 +129,7 @@ func TestErrSignatureLostRecreateDB(t *testing.T) {
 	// A new db should be written in place of the old bad db, and not be corrupted
 	t.Logf("Checking that the new db file is valid")
 	func() {
-		db, err := OpenDB(badDBFile)
+		db, err := OpenDB(badDBFile, false)
 		require.NoError(t, err)
 		defer func() {
 			err := db.Close()
@@ -167,7 +168,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	}
 
 	// CreateBlock panics if called when not master
-	require.PanicsWithValue(t, "Only master chain can create blocks", func() {
+	_require.PanicsWithLogMessage(t, "Only master chain can create blocks", func() {
 		v.CreateBlock(when)
 	})
 
@@ -318,7 +319,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	}
 
 	// CreateBlock panics if called when not master
-	require.PanicsWithValue(t, "Only master chain can create blocks", func() {
+	_require.PanicsWithLogMessage(t, "Only master chain can create blocks", func() {
 		v.CreateBlock(when)
 	})
 
@@ -447,7 +448,7 @@ func TestVisorCalculatePrecision(t *testing.T) {
 		})
 	}
 
-	require.PanicsWithValue(t, "precision must be <= droplet.Exponent", func() {
+	_require.PanicsWithLogMessage(t, "precision must be <= droplet.Exponent", func() {
 		calculateDivisor(7)
 	})
 }

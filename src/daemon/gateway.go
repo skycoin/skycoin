@@ -46,13 +46,13 @@ type Gateway struct {
 }
 
 // NewGateway create and init an Gateway instance.
-func NewGateway(c GatewayConfig, D *Daemon) *Gateway {
+func NewGateway(c GatewayConfig, d *Daemon) *Gateway {
 	return &Gateway{
 		Config:   c,
 		drpc:     RPC{},
-		vrpc:     visor.MakeRPC(D.Visor.v),
-		d:        D,
-		v:        D.Visor.v,
+		vrpc:     visor.MakeRPC(d.Visor.v),
+		d:        d,
+		v:        d.Visor.v,
 		requests: make(chan strand.Request, c.BufferSize),
 		quit:     make(chan struct{}),
 	}
@@ -160,7 +160,7 @@ func (gw *Gateway) GetBlockByHash(hash cipher.SHA256) (block coin.SignedBlock, o
 	gw.strand("GetBlockByHash", func() {
 		b, err := gw.v.GetBlockByHash(hash)
 		if err != nil {
-			logger.Error("gateway.GetBlockByHash failed: %v", err)
+			logger.Errorf("gateway.GetBlockByHash failed: %v", err)
 			return
 		}
 		if b == nil {
@@ -178,7 +178,7 @@ func (gw *Gateway) GetBlockBySeq(seq uint64) (block coin.SignedBlock, ok bool) {
 	gw.strand("GetBlockBySeq", func() {
 		b, err := gw.v.GetBlockBySeq(seq)
 		if err != nil {
-			logger.Error("gateway.GetBlockBySeq failed: %v", err)
+			logger.Errorf("gateway.GetBlockBySeq failed: %v", err)
 			return
 		}
 		if b == nil {
@@ -466,16 +466,6 @@ func (gw *Gateway) GetUnconfirmedTxns(addrs []cipher.Address) []visor.Unconfirme
 	return txns
 }
 
-// GetLastTxs returns last confirmed transactions, return nil if empty
-func (gw *Gateway) GetLastTxs() ([]*visor.Transaction, error) {
-	var txns []*visor.Transaction
-	var err error
-	gw.strand("GetLastTxs", func() {
-		txns, err = gw.v.GetLastTxs()
-	})
-	return txns, err
-}
-
 // GetUnspent returns the unspent pool
 func (gw *Gateway) GetUnspent() blockdb.UnspentPool {
 	var unspent blockdb.UnspentPool
@@ -523,14 +513,14 @@ func (gw *Gateway) Spend(wltID string, coins uint64, dest cipher.Address) (*coin
 		// Create and sign transaction
 		tx, err = gw.vrpc.CreateAndSignTransaction(wltID, sv, unspent, gw.v.Blockchain.Time(), coins, dest)
 		if err != nil {
-			logger.Error("Create transaction failed: %v", err)
+			logger.Errorf("Create transaction failed: %v", err)
 			return
 		}
 
 		// Inject transaction
 		err = gw.d.Visor.InjectBroadcastTransaction(*tx, gw.d.Pool)
 		if err != nil {
-			logger.Error("Inject transaction failed: %v", err)
+			logger.Errorf("Inject transaction failed: %v", err)
 			return
 		}
 	})
@@ -771,4 +761,22 @@ func (gw *Gateway) GetAddressCount() (uint64, error) {
 	}
 
 	return uint64(len(allAccounts)), nil
+}
+
+// UnloadWallet removes wallet of given id from memory.
+func (gw *Gateway) UnloadWallet(id string) error {
+	if gw.Config.DisableWalletAPI {
+		return wallet.ErrWalletApiDisabled
+	}
+
+	gw.strand("UnloadWallet", func() {
+		gw.vrpc.UnloadWallet(id)
+	})
+
+	return nil
+}
+
+// IsWalletAPIDisabled returns if all wallet related apis are disabled
+func (gw *Gateway) IsWalletAPIDisabled() bool {
+	return gw.Config.DisableWalletAPI
 }

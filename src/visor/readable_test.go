@@ -1,343 +1,260 @@
-// +build ignore
-
 package visor
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"reflect"
 	"testing"
-	"time"
 
+	"github.com/boltdb/bolt"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/skycoin/skycoin/src/util/droplet"
+
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/util/utc"
 )
 
-// func createGenesisSignature(master wallet.WalletEntry) cipher.Sig {
-// 	c := NewVisorConfig()
-// 	bc := coin.NewBlockchain()
-// 	gb := bc.CreateGenesisBlock(master.Address, c.GenesisTimestamp,
-// 		c.GenesisCoinVolume)
-// 	return cipher.SignHash(gb.HashHeader(), master.Secret)
-// }
+func prepareWltDir() string {
+	dir, err := ioutil.TempDir("", "wallets")
+	if err != nil {
+		panic(err)
+	}
 
-// Returns an appropriate VisorConfig and a master visor
-// func setupVisorConfig() (VisorConfig, *Visor) {
-// 	// Make a new master visor + blockchain
-// 	// Get the signed genesis block,
-// 	mw := wallet.NewWalletEntry()
-// 	mvc := NewVisorConfig()
-// 	mvc.CoinHourBurnFactor = 0
-// 	mvc.IsMaster = true
-// 	mvc.MasterKeys = mw
-// 	mvc.GenesisSignature = createGenesisSignature(mw)
-// 	mv := NewVisor(mvc)
-
-// 	// Use the master values for a client configuration
-// 	c := NewVisorConfig()
-// 	c.IsMaster = false
-// 	c.GenesisSignature = mvc.GenesisSignature
-// 	c.GenesisTimestamp = mvc.GenesisTimestamp
-// 	c.MasterKeys = mw
-// 	c.MasterKeys.Secret = cipher.SecKey{}
-// 	c.WalletDirectory = testWalletDir
-// 	return c, mv
-// }
-
-// func setupVisor() (v *Visor, mv *Visor) {
-// 	vc, mv := setupVisorConfig()
-// 	v = NewVisor(vc)
-// 	return
-// }
-
-// func setupVisorFromMaster(mv *Visor) *Visor {
-// 	vc := NewVisorConfig()
-// 	vc.IsMaster = false
-// 	vc.MasterKeys = mv.Config.MasterKeys
-// 	vc.MasterKeys.Secret = cipher.SecKey{}
-// 	vc.GenesisSignature = mv.blockSigs.Sigs[0]
-// 	vc.GenesisTimestamp = mv.blockchain.Blocks[0].Head.Time
-// 	return NewVisor(vc)
-// }
-
-// func setupMasterVisorConfig() VisorConfig {
-// 	// Create testmaster.keys file
-// 	c := NewVisorConfig()
-// 	c.CoinHourBurnFactor = 0
-// 	c.IsMaster = true
-// 	mw := wallet.NewWalletEntry()
-// 	c.MasterKeys = mw
-// 	c.GenesisSignature = createGenesisSignature(mw)
-// 	return c
-// }
-
-// func setupMasterVisor() *Visor {
-// 	return NewVisor(setupMasterVisorConfig())
-// }
-
-// func cleanupVisor() {
-// 	filenames := []string{
-// 		testMasterKeysFile,
-// 		testBlockchainFile,
-// 		testBlocksigsFile,
-// 		testWalletFile,
-// 		testWalletEntryFile,
-// 	}
-// 	for _, fn := range filenames {
-// 		os.Remove(fn)
-// 		os.Remove(fn + ".bak")
-// 		os.Remove(fn + ".tmp")
-// 	}
-// 	wallets, err := filepath.Glob("*." + wallet.WalletExt)
-// 	if err != nil {
-// 		logger.Critical("Failed to glob wallet files: %v", err)
-// 	} else {
-// 		for _, w := range wallets {
-// 			os.Remove(w)
-// 			os.Remove(w + ".bak")
-// 			os.Remove(w + ".tmp")
-// 		}
-// 	}
-// }
-
-func createUnconfirmedTxn(t *testing.T) UnconfirmedTxn {
-	ut := UnconfirmedTxn{}
-	ut.Txn = coin.Transaction{}
-	ut.Txn.InnerHash = testutil.RandSHA256(t)
-	ut.Received = utc.Now().UnixNano()
-	ut.Checked = ut.Received
-	ut.Announced = time.Time{}.UnixNano()
-	return ut
+	return dir
 }
 
-// func addUnconfirmedTxn(v *Visor) UnconfirmedTxn {
-// 	ut := createUnconfirmedTxn()
-// 	ut.Hash()
-// 	v.Unconfirmed.txns.put(&ut)
-// 	return ut
-// }
+func createGenesisSignature(t *testing.T) cipher.Sig {
 
-// func addUnconfirmedTxnToPool(utp *UnconfirmedTxnPool) UnconfirmedTxn {
-// 	ut := createUnconfirmedTxn()
-// 	utp.txns.put(&ut)
-// 	return ut
-// }
+	_, s := cipher.GenerateKeyPair()
+	gb, err := coin.NewGenesisBlock(GenesisAddress, GenesisCoins, GenesisTime)
+	if err != nil {
+		panic(fmt.Errorf("create genesis block failed: %v", err))
+	}
 
-// func transferCoinsToSelf(v *Visor, addr cipher.Address) error {
-// 	tx, err := v.Spend(v.Wallets[0].GetFilename(), wallet.Balance{1e6, 0}, 0, addr)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	v.InjectTransaction(tx)
-// 	_, err = v.CreateAndExecuteBlock()
-// 	return err
-// }
+	sig := cipher.SignHash(gb.HashHeader(), s)
+	return sig
+}
 
-// func transferCoinsAdvanced(mv *Visor, v *Visor, b wallet.Balance, fee uint64,
-// 	addr cipher.Address) error {
-// 	tx, err := mv.Spend(mv.Wallets[0].GetFilename(), b, fee, addr)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	mv.InjectTransaction(tx)
-// 	now := uint64(utc.UnixNow())
-// 	if len(mv.blockchain.Blocks) > 0 {
-// 		now = mv.blockchain.Time() + 1
-// 	}
-// 	sb, err := mv.CreateBlock(now)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	err = mv.ExecuteSignedBlock(sb)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	return v.ExecuteSignedBlock(sb)
-// }
+// Returns an appropriate VisorConfig and a master visor
+func setupVisorConfig(t *testing.T) Config {
+	wltDir := prepareWltDir()
+	c := NewVisorConfig()
+	c.WalletDirectory = wltDir
+	c.GenesisSignature = createGenesisSignature(t)
+	return c
+}
 
-// func transferCoins(mv *Visor, v *Visor) error {
-// 	// Give the nonmaster some money to spend
-// 	addr := v.Wallets[0].GetAddresses()[0]
-// 	return transferCoinsAdvanced(mv, v, wallet.Balance{10e6, 0}, 0, addr)
-// }
+func setupVisor(t *testing.T) (v *Visor, close func()) {
+	db, close := testutil.PrepareDB(t)
+	vc := setupVisorConfig(t)
+	v, err := NewVisor(vc, db)
+	require.NoError(t, err)
+	return
+}
 
-// func assertJSONSerializability(t *testing.T, thing interface{}) {
-// 	b, err := json.Marshal(thing)
-// 	assert.Nil(t, err)
-// 	rt := reflect.TypeOf(reflect.Indirect(reflect.ValueOf(thing)).Interface())
-// 	newThing := reflect.New(rt).Interface()
-// 	err = json.Unmarshal(b, newThing)
-// 	assert.Nil(t, err)
-// 	assert.True(t, reflect.DeepEqual(thing, newThing))
-// }
+func transferCoins(t *testing.T, v *Visor) error {
+	head := addGenesisBlock(t, v.Blockchain)
+	toAddrs := make([]cipher.Address, 10)
+	keys := make([]cipher.SecKey, 10)
+	for i := 0; i < 10; i++ {
+		p, s := cipher.GenerateKeyPair()
+		toAddrs[i] = cipher.AddressFromPubKey(p)
+		keys[i] = s
+	}
 
-// func TestNewBlockchainMetadata(t *testing.T) {
-// 	defer cleanupVisor()
-// 	v, mv := setupVisor()
-// 	assert.Nil(t, transferCoins(mv, v))
-// 	addUnconfirmedTxn(v)
-// 	addUnconfirmedTxn(v)
+	var spend = spending{
+		TxIndex: 0,
+		UxIndex: 0,
+		Keys:    []cipher.SecKey{genSecret},
+		ToAddr:  toAddrs[0],
+		Coins:   10e6,
+	}
+	// create normal spending tx
+	uxs := coin.CreateUnspents(head.Head, head.Body.Transactions[0])
+	tx := makeSpendTx(t, coin.UxArray{uxs[spend.UxIndex]}, spend.Keys, spend.ToAddr, spend.Coins)
+	b, err := v.Blockchain.NewBlock(coin.Transactions{tx}, head.Time()+uint64(100))
+	require.NoError(t, err)
 
-// 	bcm := NewBlockchainMetadata(v)
-// 	assert.Equal(t, bcm.Unspents, uint64(2))
-// 	assert.Equal(t, bcm.Unconfirmed, uint64(2))
-// 	assertReadableBlockHeader(t, bcm.Head, v.blockchain.Head().Head)
-// 	assertJSONSerializability(t, &bcm)
-// }
+	sb := &coin.SignedBlock{
+		Block: *b,
+		Sig:   cipher.SignHash(b.HashHeader(), genSecret),
+	}
+	v.db.Update(func(tx *bolt.Tx) error {
+		bcc, ok := v.Blockchain.(*Blockchain)
+		require.True(t, ok)
+		return bcc.store.AddBlockWithTx(tx, sb)
+	})
+	head = sb
+	return nil
+}
 
-// func TestNewTransactionStatus(t *testing.T) {
-// 	ts := NewUnconfirmedTransactionStatus()
-// 	assert.True(t, ts.Unconfirmed)
-// 	assert.False(t, ts.Unknown)
-// 	assert.False(t, ts.Confirmed)
-// 	assert.Equal(t, ts.Height, uint64(0))
-// 	assertJSONSerializability(t, &ts)
+func assertJSONSerializability(t *testing.T, thing interface{}) {
+	b, err := json.Marshal(thing)
+	assert.Nil(t, err)
+	rt := reflect.TypeOf(reflect.Indirect(reflect.ValueOf(thing)).Interface())
+	newThing := reflect.New(rt).Interface()
+	err = json.Unmarshal(b, newThing)
+	assert.Nil(t, err)
+	assert.True(t, reflect.DeepEqual(thing, newThing))
+}
 
-// 	ts = NewUnknownTransactionStatus()
-// 	assert.False(t, ts.Unconfirmed)
-// 	assert.True(t, ts.Unknown)
-// 	assert.False(t, ts.Confirmed)
-// 	assert.Equal(t, ts.Height, uint64(0))
-// 	assertJSONSerializability(t, &ts)
+func TestNewBlockchainMetadata(t *testing.T) {
+	v, close := setupVisor(t)
+	defer close()
+	assert.Nil(t, transferCoins(t, v))
 
-// 	ts = NewConfirmedTransactionStatus(uint64(7))
-// 	assert.False(t, ts.Unconfirmed)
-// 	assert.False(t, ts.Unknown)
-// 	assert.True(t, ts.Confirmed)
-// 	assert.Equal(t, ts.Height, uint64(7))
-// 	assertJSONSerializability(t, &ts)
+	bcm := NewBlockchainMetadata(v)
+	assert.Equal(t, uint64(2), bcm.Unspents)
+	assert.Equal(t, uint64(0), bcm.Unconfirmed)
+	b, err := v.Blockchain.Head()
+	require.NoError(t, err)
+	assertReadableBlockHeader(t, bcm.Head, b.Block.Head)
+	assertJSONSerializability(t, &bcm)
+}
 
-// 	assert.Panics(t, func() { NewConfirmedTransactionStatus(uint64(0)) })
-// }
+func TestNewTransactionStatus(t *testing.T) {
+	ts := NewUnconfirmedTransactionStatus()
+	assert.True(t, ts.Unconfirmed)
+	assert.False(t, ts.Unknown)
+	assert.False(t, ts.Confirmed)
+	assert.Equal(t, ts.Height, uint64(0))
+	assertJSONSerializability(t, &ts)
 
-// func assertReadableTransactionHeader(t *testing.T,
-// 	rth ReadableTransactionHeader, th coin.TransactionHeader) {
-// 	assert.Equal(t, len(rth.Sigs), len(th.Sigs))
-// 	assert.NotPanics(t, func() {
-// 		for i, s := range rth.Sigs {
-// 			assert.Equal(t, cipher.MustSigFromHex(s), th.Sigs[i])
-// 		}
-// 		assert.Equal(t, cipher.MustSHA256FromHex(rth.Hash), th.Hash)
-// 	})
-// 	assertJSONSerializability(t, &rth)
-// }
+	ts = NewUnknownTransactionStatus()
+	assert.False(t, ts.Unconfirmed)
+	assert.True(t, ts.Unknown)
+	assert.False(t, ts.Confirmed)
+	assert.Equal(t, ts.Height, uint64(0))
+	assertJSONSerializability(t, &ts)
 
-// func TestReadableTransactionHeader(t *testing.T) {
-// 	defer cleanupVisor()
-// 	v, mv := setupVisor()
-// 	assert.Nil(t, transferCoins(mv, v))
-// 	b := mv.blockchain.Head()
-// 	th := b.Body.Transactions[0].Head
-// 	rth := NewReadableTransactionHeader(&th)
-// 	assertReadableTransactionHeader(t, rth, th)
-// }
+	ts = NewConfirmedTransactionStatus(uint64(7), uint64(7))
+	assert.False(t, ts.Unconfirmed)
+	assert.False(t, ts.Unknown)
+	assert.True(t, ts.Confirmed)
+	assert.Equal(t, ts.Height, uint64(7))
+	assertJSONSerializability(t, &ts)
 
-// func assertReadableTransactionOutput(t *testing.T,
-// 	rto ReadableTransactionOutput, to coin.TransactionOutput) {
-// 	assert.NotPanics(t, func() {
-// 		assert.Equal(t, cipher.MustDecodeBase58Address(rto.Address),
-// 			to.Address)
-// 	})
-// 	assert.Equal(t, rto.Coins, to.Coins)
-// 	assert.Equal(t, rto.Hours, to.Hours)
-// 	assertJSONSerializability(t, &rto)
-// }
+	assert.Panics(t, func() { NewConfirmedTransactionStatus(uint64(0), uint64(0)) })
+}
 
-// func TestReadableTransactionOutput(t *testing.T) {
-// 	defer cleanupVisor()
-// 	v, mv := setupVisor()
-// 	assert.Nil(t, transferCoins(mv, v))
-// 	b := mv.blockchain.Head()
-// 	to := b.Body.Transactions[0].Out[0]
+func assertReadableTransactionOutput(t *testing.T,
+	rto ReadableTransactionOutput, to coin.TransactionOutput) {
+	assert.NotPanics(t, func() {
+		assert.Equal(t, cipher.MustDecodeBase58Address(rto.Address),
+			to.Address)
+	})
+	coins, err := droplet.ToString(to.Coins)
+	require.NoError(t, err)
+	assert.Equal(t, rto.Coins, coins)
+	assert.Equal(t, rto.Hours, to.Hours)
+	assertJSONSerializability(t, &rto)
+}
 
-// 	rto := NewReadableTransactionOutput(&to)
-// 	assertReadableTransactionOutput(t, rto, to)
-// }
+func TestReadableTransactionOutput(t *testing.T) {
+	v, close := setupVisor(t)
+	defer close()
+	assert.Nil(t, transferCoins(t, v))
+	b, err := v.Blockchain.Head()
+	require.NoError(t, err)
+	to := b.Body.Transactions[0].Out[0]
 
-// func assertReadableTransactionInput(t *testing.T, rti string, ti cipher.SHA256) {
-// 	assert.NotPanics(t, func() {
-// 		assert.Equal(t, cipher.MustSHA256FromHex(rti), ti)
-// 	})
-// 	assertJSONSerializability(t, &rti)
-// }
+	rto, err := NewReadableTransactionOutput(&to, testutil.RandSHA256(t))
+	assertReadableTransactionOutput(t, *rto, to)
+}
 
-// func TestReadableTransactionInput(t *testing.T) {
-// 	defer cleanupVisor()
-// 	v, mv := setupVisor()
-// 	assert.Nil(t, transferCoins(mv, v))
-// 	b := mv.blockchain.Head()
-// 	ti := b.Body.Transactions[0].In[0]
-// 	rti := ti.Hex()
-// 	assertReadableTransactionInput(t, rti, ti)
-// }
+func assertReadableTransactionInput(t *testing.T, rti string, ti cipher.SHA256) {
+	assert.NotPanics(t, func() {
+		assert.Equal(t, cipher.MustSHA256FromHex(rti), ti)
+	})
+	assertJSONSerializability(t, &rti)
+}
 
-// func assertReadableTransaction(t *testing.T, rtx ReadableTransaction,
-// 	tx coin.Transaction) {
-// 	assert.Equal(t, len(tx.In), len(rtx.In))
-// 	assert.Equal(t, len(tx.Out), len(rtx.Out))
-// 	assertReadableTransactionHeader(t, rtx.Head, tx.Head)
-// 	for i, ti := range rtx.In {
-// 		assertReadableTransactionInput(t, ti, tx.In[i])
-// 	}
-// 	for i, to := range rtx.Out {
-// 		assertReadableTransactionOutput(t, to, tx.Out[i])
-// 	}
-// 	assertJSONSerializability(t, &rtx)
-// }
+func TestReadableTransactionInput(t *testing.T) {
+	v, close := setupVisor(t)
+	defer close()
+	assert.Nil(t, transferCoins(t, v))
+	b, err := v.Blockchain.Head()
+	require.NoError(t, err)
+	ti := b.Body.Transactions[0].In[0]
+	rti := ti.Hex()
+	assertReadableTransactionInput(t, rti, ti)
+}
 
-// func TestReadableTransaction(t *testing.T) {
-// 	defer cleanupVisor()
-// 	v, mv := setupVisor()
-// 	assert.Nil(t, transferCoins(mv, v))
-// 	b := mv.blockchain.Head()
-// 	tx := b.Body.Transactions[0]
+func assertReadableTransaction(t *testing.T, rtx ReadableTransaction,
+	tx coin.Transaction) {
+	assert.Equal(t, len(tx.In), len(rtx.In))
+	assert.Equal(t, len(tx.Out), len(rtx.Out))
+	for i, ti := range rtx.In {
+		assertReadableTransactionInput(t, ti, tx.In[i])
+	}
+	for i, to := range rtx.Out {
+		assertReadableTransactionOutput(t, to, tx.Out[i])
+	}
+	assertJSONSerializability(t, &rtx)
+}
 
-// 	rtx := NewReadableTransaction(&tx)
-// 	assertReadableTransaction(t, rtx, tx)
-// }
+func TestReadableTransaction(t *testing.T) {
+	v, close := setupVisor(t)
+	defer close()
+	assert.Nil(t, transferCoins(t, v))
+	b, err := v.Blockchain.Head()
+	require.NoError(t, err)
+	tx := b.Body.Transactions[0]
 
-// func assertReadableBlockHeader(t *testing.T, rb ReadableBlockHeader,
-// 	bh coin.BlockHeader) {
-// 	assert.Equal(t, rb.Version, bh.Version)
-// 	assert.Equal(t, rb.Time, bh.Time)
-// 	assert.Equal(t, rb.BkSeq, bh.BkSeq)
-// 	assert.Equal(t, rb.Fee, bh.Fee)
-// 	assert.NotPanics(t, func() {
-// 		assert.Equal(t, cipher.MustSHA256FromHex(rb.PrevHash), bh.PrevHash)
-// 		assert.Equal(t, cipher.MustSHA256FromHex(rb.BodyHash), bh.BodyHash)
-// 	})
-// 	assertJSONSerializability(t, &rb)
-// }
+	rtx, err := NewReadableTransaction(&Transaction{Txn: tx})
+	assertReadableTransaction(t, *rtx, tx)
+}
 
-// func TestNewReadableBlockHeader(t *testing.T) {
-// 	defer cleanupVisor()
-// 	v, mv := setupVisor()
-// 	assert.Nil(t, transferCoins(mv, v))
-// 	bh := mv.blockchain.Head().Head
-// 	assert.Equal(t, bh.BkSeq, uint64(1))
-// 	rb := NewReadableBlockHeader(&bh)
-// 	assertReadableBlockHeader(t, rb, bh)
-// }
+func assertReadableBlockHeader(t *testing.T, rb ReadableBlockHeader,
+	bh coin.BlockHeader) {
+	assert.Equal(t, rb.Version, bh.Version)
+	assert.Equal(t, rb.Time, bh.Time)
+	assert.Equal(t, rb.BkSeq, bh.BkSeq)
+	assert.Equal(t, rb.Fee, bh.Fee)
+	assert.NotPanics(t, func() {
+		assert.Equal(t, cipher.MustSHA256FromHex(rb.PreviousBlockHash), bh.PrevHash)
+		assert.Equal(t, cipher.MustSHA256FromHex(rb.BodyHash), bh.BodyHash)
+	})
+	assertJSONSerializability(t, &rb)
+}
 
-// func assertReadableBlockBody(t *testing.T, rbb ReadableBlockBody,
-// 	bb coin.BlockBody) {
-// 	assert.Equal(t, len(rbb.Transactions), len(bb.Transactions))
-// 	for i, rt := range rbb.Transactions {
-// 		assertReadableTransaction(t, rt, bb.Transactions[i])
-// 	}
-// 	assertJSONSerializability(t, &rbb)
-// }
+func TestNewReadableBlockHeader(t *testing.T) {
+	v, close := setupVisor(t)
+	defer close()
+	assert.Nil(t, transferCoins(t, v))
+	bh, err := v.Blockchain.Head()
+	require.NoError(t, err)
+	assert.Equal(t, bh.Head.BkSeq, uint64(1))
+	rb := NewReadableBlockHeader(&bh.Head)
+	assertReadableBlockHeader(t, rb, bh.Head)
+}
 
-// func assertReadableBlock(t *testing.T, rb ReadableBlock, b coin.Block) {
-// 	assertReadableBlockHeader(t, rb.Head, b.Head)
-// 	assertReadableBlockBody(t, rb.Body, b.Body)
-// 	assertJSONSerializability(t, &rb)
-// }
+func assertReadableBlockBody(t *testing.T, rbb ReadableBlockBody,
+	bb coin.BlockBody) {
+	assert.Equal(t, len(rbb.Transactions), len(bb.Transactions))
+	for i, rt := range rbb.Transactions {
+		assertReadableTransaction(t, rt, bb.Transactions[i])
+	}
+	assertJSONSerializability(t, &rbb)
+}
 
-// func TestNewReadableBlock(t *testing.T) {
-// 	defer cleanupVisor()
-// 	v, mv := setupVisor()
-// 	assert.Nil(t, transferCoins(mv, v))
-// 	b := mv.blockchain.Head()
-// 	assert.Equal(t, b.Head.BkSeq, uint64(1))
-// 	rb := NewReadableBlock(&b)
-// 	assertReadableBlock(t, rb, b)
-// }
+func assertReadableBlock(t *testing.T, rb ReadableBlock, b coin.Block) {
+	assertReadableBlockHeader(t, rb.Head, b.Head)
+	assertReadableBlockBody(t, rb.Body, b.Body)
+	assertJSONSerializability(t, &rb)
+}
+
+func TestNewReadableBlock(t *testing.T) {
+	v, close := setupVisor(t)
+	defer close()
+	assert.Nil(t, transferCoins(t, v))
+	sb, err := v.Blockchain.Head()
+	require.NoError(t, err)
+	assert.Equal(t, sb.Head.BkSeq, uint64(1))
+	rb, err := NewReadableBlock(&sb.Block)
+	assertReadableBlock(t, *rb, sb.Block)
+}

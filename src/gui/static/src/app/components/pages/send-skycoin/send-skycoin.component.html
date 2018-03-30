@@ -5,7 +5,7 @@
       <label for="wallet">Send from</label>
       <select formControlName="wallet" id="wallet">
         <option *ngFor="let wallet of walletService.all() | async" [disabled]="wallet.balance <= 0" [ngValue]="wallet">
-          {{ wallet.label }} - {{ wallet.coins }} SKY
+          {{ wallet.label }} - {{ wallet.coins | number:'1.0-6' }} SKY
         </option>
       </select>
     </div>

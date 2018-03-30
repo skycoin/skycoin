@@ -33,8 +33,9 @@ func loadBlockchain(db *bolt.DB, pubkey cipher.PubKey, arbitrating bool) (*bolt.
 
 	// Recreate the block database if ErrMissingSignature occurs
 	dbPath := db.Path()
+	dbReadOnly := db.IsReadOnly()
 
-	logger.Critical("Block database signature missing, recreating db: %v", err)
+	logger.Criticalf("Block database signature missing, recreating db: %v", err)
 	if err := db.Close(); err != nil {
 		return nil, nil, fmt.Errorf("failed to close db: %v", err)
 	}
@@ -44,9 +45,9 @@ func loadBlockchain(db *bolt.DB, pubkey cipher.PubKey, arbitrating bool) (*bolt.
 		return nil, nil, fmt.Errorf("Failed to copy corrupted db: %v", err)
 	}
 
-	logger.Critical("Moved corrupted db to %s", corruptDBPath)
+	logger.Criticalf("Moved corrupted db to %s", corruptDBPath)
 
-	db, err = OpenDB(dbPath)
+	db, err = OpenDB(dbPath, dbReadOnly)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -60,9 +61,10 @@ func loadBlockchain(db *bolt.DB, pubkey cipher.PubKey, arbitrating bool) (*bolt.
 }
 
 // OpenDB opens the blockdb
-func OpenDB(dbFile string) (*bolt.DB, error) {
+func OpenDB(dbFile string, readOnly bool) (*bolt.DB, error) {
 	db, err := bolt.Open(dbFile, 0600, &bolt.Options{
-		Timeout: 500 * time.Millisecond,
+		Timeout:  500 * time.Millisecond,
+		ReadOnly: readOnly,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("Open boltdb failed, %v", err)
@@ -79,7 +81,7 @@ func moveCorruptDB(dbPath string) (string, error) {
 	}
 
 	if err := os.Rename(dbPath, newDBPath); err != nil {
-		logger.Info("os.Rename(%s, %s) failed: %v", dbPath, newDBPath, err)
+		logger.Infof("os.Rename(%s, %s) failed: %v", dbPath, newDBPath, err)
 		return "", err
 	}
 

@@ -45,7 +45,7 @@ func (e *Elapser) ShowCurrentTime(step string) {
 		return
 	}
 	elapsed := stopTime.Sub(e.startTime)
-	e.logger.Info("%s[%s] elapsed %s", *e.name, step, elapsed)
+	e.logger.Infof("%s[%s] elapsed %s", *e.name, step, elapsed)
 
 }
 
@@ -57,7 +57,7 @@ func (e *Elapser) Elapsed() {
 	}
 	elapsed := stopTime.Sub(e.startTime)
 	if elapsed >= e.elapsedThreshold {
-		e.logger.Warning("%s elapsed %s", *e.name, elapsed)
+		e.logger.Warningf("%s elapsed %s", *e.name, elapsed)
 	}
 	e.name = nil
 }

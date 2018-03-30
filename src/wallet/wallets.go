@@ -41,7 +41,7 @@ func LoadWallets(dir string) (Wallets, error) {
 	bkpath := dir + "/backup/"
 	if _, err := os.Stat(bkpath); os.IsNotExist(err) {
 		// create the backup dir
-		logger.Critical("create wallet backup dir, %v", bkpath)
+		logger.Noticef("create wallet backup dir, %v", bkpath)
 		if err := os.Mkdir(bkpath, 0777); err != nil {
 			return nil, err
 		}
@@ -63,11 +63,11 @@ func LoadWallets(dir string) (Wallets, error) {
 			if err != nil {
 				return nil, err
 			}
-			logger.Info("Loaded wallet from %s", fullpath)
+			logger.Infof("Loaded wallet from %s", fullpath)
 			w.SetFilename(name)
 			// check the wallet version
 			if w.GetVersion() != version {
-				logger.Info("Update wallet %v", fullpath)
+				logger.Infof("Update wallet %v", fullpath)
 				bkFile := filepath.Join(bkpath, w.GetFilename())
 				if err := backupWltFile(fullpath, bkFile); err != nil {
 					return nil, err

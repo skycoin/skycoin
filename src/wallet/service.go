@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
+	"github.com/skycoin/skycoin/src/cipher/go-bip39"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 )
@@ -24,16 +24,20 @@ type BalanceGetter interface {
 // Service wallet service struct
 type Service struct {
 	sync.RWMutex
-	wallets        Wallets
-	firstAddrIDMap map[string]string // key: first address in wallet, value: wallet id
-
-	WalletDirectory string
+	wallets          Wallets
+	firstAddrIDMap   map[string]string // key: first address in wallet, value: wallet id
+	disableWalletAPI bool
+	WalletDirectory  string
 }
 
 // NewService new wallet service
-func NewService(walletDir string) (*Service, error) {
+func NewService(walletDir string, disableWalletAPI bool) (*Service, error) {
 	serv := &Service{
-		firstAddrIDMap: make(map[string]string),
+		disableWalletAPI: disableWalletAPI,
+		firstAddrIDMap:   make(map[string]string),
+	}
+	if serv.disableWalletAPI {
+		return serv, nil
 	}
 	if err := os.MkdirAll(walletDir, os.FileMode(0700)); err != nil {
 		return nil, fmt.Errorf("failed to create wallet directory %s: %v", walletDir, err)
@@ -75,7 +79,9 @@ func NewService(walletDir string) (*Service, error) {
 func (serv *Service) CreateWallet(wltName string, options Options) (Wallet, error) {
 	serv.Lock()
 	defer serv.Unlock()
-
+	if serv.disableWalletAPI {
+		return Wallet{}, ErrWalletApiDisabled
+	}
 	if wltName == "" {
 		wltName = serv.generateUniqueWalletFilename()
 	}
@@ -220,6 +226,9 @@ func (serv *Service) GetWallets() Wallets {
 func (serv *Service) ReloadWallets() error {
 	serv.Lock()
 	defer serv.Unlock()
+	if serv.disableWalletAPI {
+		return ErrWalletApiDisabled
+	}
 	wallets, err := LoadWallets(serv.WalletDirectory)
 	if err != nil {
 		return err
@@ -264,6 +273,13 @@ func (serv *Service) UpdateWalletLabel(wltID, label string) error {
 	}
 
 	return wlt.Save(serv.WalletDirectory)
+}
+
+// Remove removes wallet of given wallet id from the service
+func (serv *Service) Remove(wltID string) {
+	serv.Lock()
+	defer serv.Unlock()
+	serv.wallets.Remove(wltID)
 }
 
 func (serv *Service) removeDup(wlts Wallets) Wallets {

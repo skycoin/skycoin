@@ -33,7 +33,7 @@ func getCoinSupply(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		supply := coinSupply(gateway, w, r)
 		if supply != nil {
-			wh.SendOr404(w, supply)
+			wh.SendJSONOr500(logger, w, supply)
 		}
 	}
 }
@@ -46,7 +46,7 @@ func coinSupply(gateway Gatewayer, w http.ResponseWriter, r *http.Request) *Coin
 
 	allUnspents, err := gateway.GetUnspentOutputs()
 	if err != nil {
-		logger.Error("gateway.GetUnspentOutputs error: %v", err)
+		logger.Errorf("gateway.GetUnspentOutputs error: %v", err)
 		wh.Error500(w)
 		return nil
 	}
@@ -63,7 +63,7 @@ func coinSupply(gateway Gatewayer, w http.ResponseWriter, r *http.Request) *Coin
 		if _, ok := unlockedAddrMap[u.Address]; ok {
 			coins, err := droplet.FromString(u.Coins)
 			if err != nil {
-				logger.Error("Invalid unlocked output balance string %s: %v", u.Coins, err)
+				logger.Errorf("Invalid unlocked output balance string %s: %v", u.Coins, err)
 				wh.Error500(w)
 				return nil
 			}
@@ -81,21 +81,21 @@ func coinSupply(gateway Gatewayer, w http.ResponseWriter, r *http.Request) *Coin
 
 	currentSupplyStr, err := droplet.ToString(currentSupply)
 	if err != nil {
-		logger.Error("Failed to convert coins to string: %v", err)
+		logger.Errorf("Failed to convert coins to string: %v", err)
 		wh.Error500(w)
 		return nil
 	}
 
 	totalSupplyStr, err := droplet.ToString(totalSupply)
 	if err != nil {
-		logger.Error("Failed to convert coins to string: %v", err)
+		logger.Errorf("Failed to convert coins to string: %v", err)
 		wh.Error500(w)
 		return nil
 	}
 
 	maxSupplyStr, err := droplet.ToString(visor.MaxCoinSupply * droplet.Multiplier)
 	if err != nil {
-		logger.Error("Failed to convert coins to string: %v", err)
+		logger.Errorf("Failed to convert coins to string: %v", err)
 		wh.Error500(w)
 		return nil
 	}
@@ -125,7 +125,7 @@ func coinSupply(gateway Gatewayer, w http.ResponseWriter, r *http.Request) *Coin
 	}
 
 	if err != nil {
-		logger.Errorf("Failed to get total coinhours: %v", err.Error())
+		logger.Errorf("Failed to get total coinhours: %v", err)
 		wh.Error500(w)
 		return nil
 	}
@@ -166,7 +166,7 @@ func getTransactionsForAddress(gateway Gatewayer) http.HandlerFunc {
 
 		txns, err := gateway.GetAddressTxns(cipherAddr)
 		if err != nil {
-			logger.Error("Get address transactions failed: %v", err)
+			logger.Errorf("Get address transactions failed: %v", err)
 			wh.Error500(w)
 			return
 		}
@@ -178,20 +178,20 @@ func getTransactionsForAddress(gateway Gatewayer) http.HandlerFunc {
 			for i := range tx.Transaction.In {
 				id, err := cipher.SHA256FromHex(tx.Transaction.In[i])
 				if err != nil {
-					logger.Error("%v", err)
+					logger.Error(err)
 					wh.Error500(w)
 					return
 				}
 
 				uxout, err := gateway.GetUxOutByID(id)
 				if err != nil {
-					logger.Error("%v", err)
+					logger.Error(err)
 					wh.Error500(w)
 					return
 				}
 
 				if uxout == nil {
-					logger.Error("uxout of %d does not exist in history db", id)
+					logger.Errorf("uxout of %v does not exist in history db", id.Hex())
 					wh.Error500(w)
 					return
 				}
@@ -208,8 +208,13 @@ func getTransactionsForAddress(gateway Gatewayer) http.HandlerFunc {
 			resTxs = append(resTxs, NewReadableTransaction(tx, in))
 		}
 
-		wh.SendOr404(w, &resTxs)
+		wh.SendJSONOr500(logger, w, &resTxs)
 	}
+}
+
+// Richlist is the API response for /richlist, contains top address balances
+type Richlist struct {
+	Richlist visor.Richlist `json:"richlist"`
 }
 
 // method: GET
@@ -249,7 +254,7 @@ func getRichlist(gateway Gatewayer) http.HandlerFunc {
 
 		richlist, err := gateway.GetRichlist(includeDistribution)
 		if err != nil {
-			logger.Error(err.Error())
+			logger.Error(err)
 			wh.Error500(w)
 			return
 		}
@@ -258,7 +263,9 @@ func getRichlist(gateway Gatewayer) http.HandlerFunc {
 			richlist = richlist[:topn]
 		}
 
-		wh.SendOr404(w, richlist)
+		wh.SendJSONOr500(logger, w, Richlist{
+			Richlist: richlist,
+		})
 	}
 }
 
@@ -273,12 +280,12 @@ func getAddressCount(gateway Gatewayer) http.HandlerFunc {
 
 		addrCount, err := gateway.GetAddressCount()
 		if err != nil {
-			logger.Error(err.Error())
+			logger.Error(err)
 			wh.Error500(w)
 			return
 		}
 
-		wh.SendOr404(w, &map[string]uint64{"count": addrCount})
+		wh.SendJSONOr500(logger, w, &map[string]uint64{"count": addrCount})
 	}
 }
 

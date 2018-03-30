@@ -25,6 +25,7 @@
   flex: 1 1 auto;
   font-size: 12px;
   justify-content: center;
+  text-align: center;
 
   .balance {
     .coins {
@@ -54,5 +55,18 @@
     line-height: 22px;
     margin: 1em 0 2em;
     padding: 0 30px;
+  }
+}
+
+.notification-bar {
+  background-color: #F44A4D;
+  color:#FBFBFB;
+  div {
+    margin:auto;
+
+    a{
+      text-decoration:none;
+      color:#FFEBEE;
+    }
   }
 }

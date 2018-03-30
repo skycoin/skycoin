@@ -2,6 +2,8 @@
 
 Apis service port is `6420`.
 
+A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](https://godoc.org/github.com/skycoin/skycoin/src/gui#Client).
+
 <!-- MarkdownTOC autolink="true" bracket="round" -->
 
 - [CSRF](#csrf)
@@ -11,6 +13,10 @@ Apis service port is `6420`.
     - [Get balance of addresses](#get-balance-of-addresses)
     - [Get unspent output set of address or hash](#get-unspent-output-set-of-address-or-hash)
 - [Wallet apis](#wallet-apis)
+    - [Get wallet](#get-wallet)
+    - [Get wallet transactions](#get-wallet-transactions)
+    - [Get wallets](#get-wallets)
+    - [Get wallet folder name](#get-wallet-folder-name)
     - [Generate wallet seed](#generate-wallet-seed)
     - [Create a wallet from seed](#create-a-wallet-from-seed)
     - [Generate new address in wallet](#generate-new-address-in-wallet)
@@ -23,7 +29,9 @@ Apis service port is `6420`.
     - [Get raw transaction by id](#get-raw-transaction-by-id)
     - [Inject raw transaction](#inject-raw-transaction)
     - [Get transactions that are addresses related](#get-transactions-that-are-addresses-related)
+    - [Resend unconfirmed transactions](#resend-unconfirmed-transactions)
 - [Block apis](#block-apis)
+    - [Get blockchain metadata](#get-blockchain-metadata)
     - [Get blochchain progress](#get-blochchain-progress)
     - [Get block by hash or seq](#get-block-by-hash-or-seq)
     - [Get blocks in specific range](#get-blocks-in-specific-range)
@@ -33,9 +41,16 @@ Apis service port is `6420`.
 - [Uxout apis](#uxout-apis)
     - [Get uxout](#get-uxout)
     - [Get address affected uxouts](#get-address-affected-uxouts)
-- [Coin supply informations](#coin-supply-informations)
-- [Richlist show top N addresses by uxouts](#richlist-show-top-n-addresses-by-uxouts)
-- [AddressCount show count of unique address](#addresscount-show-count-of-unique-address)
+- [Coin supply related information](#coin-supply-related-information)
+    - [Coin supply](#coin-supply)
+    - [Richlist show top N addresses by uxouts](#richlist-show-top-n-addresses-by-uxouts)
+    - [Count unique addresses](#count-unique-addresses)
+- [Network status](#network-status)
+    - [Get information for a specific connection](#get-information-for-a-specific-connection)
+    - [Get a list of all connections](#get-a-list-of-all-connections)
+    - [Get a list of all default connections](#get-a-list-of-all-default-connections)
+    - [Get a list of all trusted connections](#get-a-list-of-all-trusted-connections)
+    - [Get a list of all connections discovered through peer exchange](#get-a-list-of-all-connections-discovered-through-peer-exchange)
 
 <!-- /MarkdownTOC -->
 
@@ -170,6 +185,174 @@ result:
 ```
 
 ## Wallet apis
+
+### Get wallet
+
+```
+URI: /wallet
+Method: GET
+Args:
+    id - Wallet ID [required]
+```
+
+example:
+```bash
+curl http://127.0.0.1:6420/wallet?id=walletId
+```
+
+result:
+```json
+{
+    "Meta":{
+        "coin":"skycoin",
+        "filename":"2017_11_25_e5fb.wlt",
+        "label":"test",
+        "lastSeed":"c69085fc5c95e8bbc5903baef8ad2d7b7065d7a5c1b3d150101f9a2f357c1537",
+        "seed":"child cruel simple clerk cave",
+        "tm":"1511640884",
+        "type":"deterministic",
+        "version":"0.1"
+    },
+    "Entries":[
+        {
+            "Address":{
+                "Version":0,
+                "Key":[
+
+                ]
+            },
+            "Public":[
+
+            ],
+            "Secret":[
+
+            ]
+        }
+    ]
+}
+```
+
+### Get wallet transactions
+```
+URI: /wallet/transactions
+Method: GET
+Args:
+	id: Wallet ID
+```
+
+// Returns all pending transaction for all addresses by selected Wallet
+example:
+```bash
+curl http://127.0.0.1:6420/wallet/transactions?id=2017_11_25_e5fb.wlt
+```
+
+result:
+
+```json
+{
+    "transactions":[
+        {
+            "transaction":{
+                "length":317,
+                "type":0,
+                "txid":"76ecbabc53ea2a3be46983058433dda6a3cf7ea0b86ba14d90b932fa97385de7",
+                "inner_hash":"5d55837bb0cbda9c9323ff9aafd7c3d31d0d38638346172fbe2d9078ebaa892a",
+                "sigs":[
+                    "464b7724302178c1cfeacadaaf3556a3b7e5259adf51919476c3acc695747ed244b5ce2187ce7bedb6ad65c71f7f7ff3fa6805e64fe5da3aaa00ad563c7424f600",
+                    "1155537b0391d4a6ee5eac07dee5798e953dca3a7c30643403dd2d326582c7d35080a16dc22644782ce1087bfc3bd06c2bf68e9a98e3989d90831646a9be2c9101"
+                ],
+                "inputs":[
+                    "782a8662efb0e933cab7d3ae9429ab53c4208cf44d8cdc07c2fbd7204b6b5cad",
+                    "2f6b61a44086588c4eaa56a5dd9f1e0be2528861a6731608fcec38891b95db91"
+                ],
+                "outputs":[
+                    {
+                        "uxid":"bd302ef776efa8548183b89f21e90649f21b90fe2d2e90ecc1b880f2d995f226",
+                        "dst":"2UXZTg4ZHF6715b6tRhtaqceuQQ3G79GiZg",
+                        "coins":"998.000000",
+                        "hours":247538
+                    },
+                    {
+                        "uxid":"31058b6bfb30bfd441aec00929e75782bce47c8a75787ba519dbb268f89d2c4b",
+                        "dst":"2awsJ2CR5H6QXCF2hwDjcvcAH9SgyfxCxgz",
+                        "coins":"1.000000",
+                        "hours":247538
+                    }
+                ]
+            },
+            "received":"2018-03-16T18:03:57.139109904+05:30",
+            "checked":"2018-03-16T18:03:57.139109904+05:30",
+            "announced":"0001-01-01T00:00:00Z",
+            "is_valid":true
+        }
+    ]
+}
+```
+
+### Get wallets
+```
+URI: /wallets
+Method: GET
+Args:
+    -
+```
+
+example:
+```bash
+curl http://127.0.0.1:6420/wallets
+```
+
+result:
+```json
+[
+    {
+        "meta": {
+            "coin": "skycoin",
+            "filename": "2017_11_25_e5fb.wlt",
+            "label": "test",
+            "lastSeed": "c69085fc5c95e8bbc5903baef8ad2d7b7065d7a5c1b3d150101f9a2f357c1537",
+            "seed": "child cruel assault pepper miracle hello clerk cave",
+            "tm": "1511640884",
+            "type": "deterministic",
+            "version": "0.1"
+        },
+        "entries": [
+            {
+                "address": "8C5icxR9zdkYTZZTVV3cCX7QoK4EkLuK4p",
+                "public_key": "***",
+                "secret_key": "***"
+            },
+            {
+                "address": "23A1EWMZopUFLCwtXMe2CU9xTCbi5Gth643",
+                "public_key": "***",
+                "secret_key": "***"
+            }
+        ]
+    }
+]
+```
+
+### Get wallet folder name
+
+```
+URI: /wallets/folderName
+Method: GET
+Args:
+    -
+
+```
+
+example:
+```bash
+curl http://127.0.0.1:6420/wallets/folderName
+```
+
+result:
+```json
+{
+    "address": "/Users/user/.skycoin/wallets"
+}
+```
 
 ### Generate wallet seed
 
@@ -387,6 +570,22 @@ result:
     },
     "error": ""
 }
+```
+
+### Unload wallet
+
+```
+URI: /wallet/unload
+Method: POST
+Args:
+    id: wallet file name
+```
+
+example:
+
+```bash
+curl -X POST \
+    'http://127.0.0.1:6420/wallet/unload?id=2017_05_09_d554.wlt'
 ```
 
 ## Transaction apis
@@ -682,9 +881,62 @@ result:
 ]
 ```
 
+### Resend unconfirmed transactions
+```
+URI: /resendUnconfirmedTxns
+Method: GET
+Args:
+    -
+```
+
+example:
+```bash
+curl http://127.0.0.1:6420/resendUnconfirmedTxns
+```
+
+result:
+```json
+{
+    "txids":[
+        "b45e571988bc07bd0b623c999655fa878fb9bdd24c8cd24fde179bf4b26ae7b7",
+        "a6446654829a4a844add9f181949d12f8291fdd2c0fcb22200361e90e814e2d3"
+    ]
+}
+```
+
 ## Block apis
 
-### Get blochchain progress
+### Get blockchain metadata
+```
+URI:  /blockchain/metadata
+Method: GET
+Args:
+    -
+```
+
+example:
+```bash
+curl http://127.0.0.1:6420/blockchain/metadata
+```
+
+result:
+```json
+{
+    "head":{
+        "seq":17936,
+        "block_hash":"b91663fa8ff14aab529cd7bfd48bde5bd86e3c2db154d601528801ee0d064d19",
+        "previous_block_hash":"b57d3b644898f95c9f7a9281e786a0ae2a567e9dc573654363ffafaa41ab4caf",
+        "timestamp":1520967639,
+        "fee":61662,
+        "version":0,
+        "tx_body_hash":"f0e8440f30acf01def3acaa9a88ea91f1fbaea19c0df003726edfe5bd1c7b51d"
+    },
+    "unspents":12704,
+    "unconfirmed":0
+}
+```
+
+### Get blockchain progress
 
 ```sh
 URI: /blockchain/progress
@@ -999,7 +1251,7 @@ Args: address
 example:
 
 ```sh
-curl http://127.0.0.1:6420/explorer/address
+curl http://127.0.0.1:6420/explorer/address?address=2NfNKsaGJEndpSajJ6TsKJfsdDjW2gFsjXg
 ```
 
 result:
@@ -1010,38 +1262,32 @@ result:
         "status": {
             "confirmed": true,
             "unconfirmed": false,
-            "height": 783,
-            "block_seq": 10819,
+            "height": 1268,
+            "block_seq": 15493,
             "unknown": false
         },
-        "length": 220,
+        "length": 183,
         "type": 0,
-        "txid": "86cdee14f1b9cc06710815f51e5a546a8a33c4179433e047ed50d17b3a7a734e",
-        "inner_hash": "45ade9ec2b7618f782a869796f021486dda3856bf009dc6ee633d1840fd08a75",
-        "timestamp": 1516000192,
+        "txid": "6d8e2f8b436a2f38d604b3aa1196ef2176779c5e11e33fbdd09f993fe659c39f",
+        "inner_hash": "8da7c64dcedeeb6aa1e0d21fb84a0028dcd68e6801f1a3cc0224fdd50682046f",
+        "timestamp": 1518878675,
         "sigs": [
-            "ecd5d555dc13007a6ce39d7036e9e9ee6319c00f653372db2a0e64147739946370ddad9bf8a3cd187d481089a66381d59b0d0725fd1663ff8ab0eed202996a1701"
+            "c60e43980497daad59b4c72a2eac053b1584f960c57a5e6ac8337118dccfcee4045da3f60d9be674867862a13fdd87af90f4b85cbf39913bde13674e0a039b7800"
         ],
         "inputs": [
             {
-                "uxid": "a1a715655c526fd4ca9a12208a7b1a4754998a47415ce2870bcdecb236a3fea0",
-                "owner": "2Xdt4EUnJ9HZrc41L9DTDGPNrufxUbpUv4g",
-                "coins": "6149.000000",
-                "hours": "11286"
+                "uxid": "349b06e5707f633fd2d8f048b687b40462d875d968b246831434fb5ab5dcac38",
+                "owner": "WzPDgdfL1NzSbX96tscUNXUqtCRLjaBugC",
+                "coins": "125.000000",
+                "hours": 34596
             }
         ],
         "outputs": [
             {
-                "uxid": "f9bc2e30f263fd4a4c677d83d40f0cea5c9adc72ee696d8b9f9721fbc93473ac",
-                "dst": "2Xdt4EUnJ9HZrc41L9DTDGPNrufxUbpUv4g",
-                "coins": "6029.000000",
-                "hours": 64965
-            },
-            {
-                "uxid": "03077587d2ceb5f9b3c0680522e806dda4bf39d08c0f661740c5237ba0226105",
-                "dst": "ANdw72kCg5HwVkn2fRgsHRu5g9Hoe3p93s",
-                "coins": "120.000000",
-                "hours": 64964
+                "uxid": "5b4a79c7de2e9099e083bbc8096619ae76ba6fbe34875c61bbe2d3bfa6b18b99",
+                "dst": "2NfNKsaGJEndpSajJ6TsKJfsdDjW2gFsjXg",
+                "coins": "125.000000",
+                "hours": 51925
             }
         ]
     }
@@ -1112,7 +1358,9 @@ result:
 ]
 ```
 
-## Coin supply informations
+## Coin supply related information
+
+### Coin supply
 
 ```
 URI: /coinSupply
@@ -1240,7 +1488,8 @@ result:
     ]
 }
 ```
-## Richlist show top N addresses by uxouts
+
+### Richlist show top N addresses by uxouts
 
 ```
 URI: /richlist
@@ -1259,31 +1508,33 @@ curl "http://127.0.0.1:6420/richlist?n=4&include-distribution=true"
 result:
 
 ```json
-[
-    {
-        "address": "zMDywYdGEDtTSvWnCyc3qsYHWwj9ogws74",
-        "coins": "1000000.000000",
-        "locked": true
-    },
-    {
-        "address": "z6CJZfYLvmd41GRVE8HASjRcy5hqbpHZvE",
-        "coins": "1000000.000000",
-        "locked": true
-    },
-    {
-        "address": "wyQVmno9aBJZmQ99nDSLoYWwp7YDJCWsrH",
-        "coins": "1000000.000000",
-        "locked": true
-    },
-    {
-        "address": "tBaeg9zE2sgmw5ZQENaPPYd6jfwpVpGTzS",
-        "coins": "1000000.000000",
-        "locked": true
-    }
-]
+{
+    "richlist": [
+        {
+            "address": "zMDywYdGEDtTSvWnCyc3qsYHWwj9ogws74",
+            "coins": "1000000.000000",
+            "locked": true
+        },
+        {
+            "address": "z6CJZfYLvmd41GRVE8HASjRcy5hqbpHZvE",
+            "coins": "1000000.000000",
+            "locked": true
+        },
+        {
+            "address": "wyQVmno9aBJZmQ99nDSLoYWwp7YDJCWsrH",
+            "coins": "1000000.000000",
+            "locked": true
+        },
+        {
+            "address": "tBaeg9zE2sgmw5ZQENaPPYd6jfwpVpGTzS",
+            "coins": "1000000.000000",
+            "locked": true
+        }
+    ]
+}
 ```
 
-## AddressCount show count of unique address
+### Count unique addresses
 
 ```
 URI: /addresscount
@@ -1301,4 +1552,189 @@ result:
 {
     "count": 10103
 }
+```
+
+## Network status
+
+### Get information for a specific connection
+
+```
+URI: /network/connection
+Method: GET
+Args:
+    addr: ip:port address of a known connection
+```
+
+example:
+
+```bash
+curl 'http://127.0.0.1:6420/network/connection?addr=176.9.84.75:6000'
+```
+
+result:
+
+```json
+{
+    "id": 109548,
+    "address": "176.9.84.75:6000",
+    "last_sent": 1520675817,
+    "last_received": 1520675817,
+    "outgoing": false,
+    "introduced": true,
+    "mirror": 719118746,
+    "listen_port": 6000
+}
+```
+
+### Get a list of all connections
+
+```
+URI: /network/connections
+Method: GET
+```
+
+example:
+
+```bash
+curl 'http://127.0.0.1:6420/network/connections'
+```
+
+result:
+
+```json
+{
+    "connections": [
+        {
+            "id": 99107,
+            "address": "139.162.161.41:20002",
+            "last_sent": 1520675750,
+            "last_received": 1520675750,
+            "outgoing": false,
+            "introduced": true,
+            "mirror": 1338939619,
+            "listen_port": 20002
+        },
+        {
+            "id": 109548,
+            "address": "176.9.84.75:6000",
+            "last_sent": 1520675751,
+            "last_received": 1520675751,
+            "outgoing": false,
+            "introduced": true,
+            "mirror": 719118746,
+            "listen_port": 6000
+        },
+        {
+            "id": 99115,
+            "address": "185.120.34.60:6000",
+            "last_sent": 1520675754,
+            "last_received": 1520675754,
+            "outgoing": false,
+            "introduced": true,
+            "mirror": 1931713869,
+            "listen_port": 6000
+        }
+    ]
+}
+```
+
+
+### Get a list of all default connections
+
+```
+URI: /network/defaultConnections
+Method: GET
+```
+
+example:
+
+```bash
+curl 'http://127.0.0.1:6420/network/defaultConnections'
+```
+
+result:
+
+```json
+[
+    "104.237.142.206:6000",
+    "118.178.135.93:6000",
+    "120.77.69.188:6000",
+    "121.41.103.148:6000",
+    "139.162.7.132:6000",
+    "172.104.85.6:6000",
+    "176.58.126.224:6000",
+    "47.88.33.156:6000"
+]
+```
+
+### Get a list of all trusted connections
+
+```
+URI: /network/connections/trust
+Method: GET
+```
+
+example:
+
+```bash
+curl 'http://127.0.0.1:6420/network/connections/trust'
+```
+
+result:
+
+```json
+[
+    "104.237.142.206:6000",
+    "118.178.135.93:6000",
+    "120.77.69.188:6000",
+    "121.41.103.148:6000",
+    "139.162.7.132:6000",
+    "172.104.85.6:6000",
+    "176.58.126.224:6000",
+    "47.88.33.156:6000"
+]
+```
+
+### Get a list of all connections discovered through peer exchange
+
+```
+URI: /network/connections/exchange
+Method: GET
+```
+
+example:
+
+```bash
+curl 'http://127.0.0.1:6420/network/connections/exchange'
+```
+
+result:
+
+```json
+[
+    "104.237.142.206:6000",
+    "116.62.220.158:7200",
+    "118.237.210.163:6000",
+    "120.77.69.188:6000",
+    "121.41.103.148:6000",
+    "121.41.103.148:7200",
+    "139.162.161.41:20000",
+    "139.162.161.41:20001",
+    "139.162.161.41:20002",
+    "139.162.33.154:6000",
+    "139.162.7.132:6000",
+    "155.94.137.34:6000",
+    "164.132.108.92:6000",
+    "165.227.199.63:6000",
+    "172.104.145.6:6000",
+    "172.104.52.230:7200",
+    "172.104.85.6:6000",
+    "173.212.205.184:6000",
+    "173.249.30.221:6000",
+    "176.58.126.224:6000",
+    "176.9.84.75:6000",
+    "185.120.34.60:6000",
+    "35.201.160.163:6000",
+    "47.88.33.156:6000"
+]
 ```

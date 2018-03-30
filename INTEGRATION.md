@@ -45,6 +45,7 @@ and to use the CLI tool for wallet operations (seed and address generation, tran
         - [Using the CLI](#using-the-cli-1)
         - [Using the REST API](#using-the-rest-api-1)
         - [Using skycoin as a library in a Go application](#using-skycoin-as-a-library-in-a-go-application-1)
+        - [Coinhours](#coinhours)
     - [Verifying addresses](#verifying-addresses)
         - [Using the CLI](#using-the-cli-2)
         - [Using the REST API](#using-the-rest-api-2)
@@ -170,6 +171,13 @@ directly, see [Skycoin CLI Godoc](https://godoc.org/github.com/skycoin/skycoin/s
 A REST API client is also available: [Skycoin REST API Client Godoc](https://godoc.org/github.com/skycoin/skycoin/src/gui#Client).
 
 #### Coinhours
+To create a transaction you need a minimum of `1` coinhour which is used
+for transaction fees.
+
+Coinhours are generated at a rate of `1 coinsecond` per `second`
+which are then converted to `coinhours`, `1` coinhour = `3600` coinseconds.
+
+> Note: Coinhours don't have decimals and only show up in whole numbers.
 
 ##### REST API
 When using the `REST API` the coinhours are distributed as follows:
@@ -177,13 +185,25 @@ When using the `REST API` the coinhours are distributed as follows:
 - 25% of the coinhours go to the the change address along with the remaining coins
 - 25% of the coinhours are split equally between the receivers
 
+For e.g, If an address has `10` skycoins and `50` coinhours and only `1` unspent.
+If we send `5` skycoins to another address then that address will receive
+`5` skycoins and `12` coinhours, `26` coinhours will be burned.
+The sending address will be left with `5` skycoins and `12` coinhours which
+will then be sent to the change address.
+
 ##### CLI
 When using the `CLI` the amount of coinhours sent to the receiver is capped to
-the number of coins they receive with a minimum of 1 coinhour for transactions
-with <1 skycoin being sent.
+the number of coins they receive with a minimum of `1` coinhour for transactions
+with `<1` skycoin being sent.
 
-For eg. If the number of coins sent to the receiver are 100 then they will receive
-a maximum of 100 coinhour.
+The coinhours left after burning `50%` and sending to receivers are sent to the change address.
+
+For eg. If an address has `10` skycoins and `50` coinhours and only `1` unspent.
+If we send `5` skycoins to another address then that address will receive
+`5` skycoins and `5` coinhours, `26` coinhours will be burned.
+The sending address will be left with `5` skycoins and `19` coinhours which
+will then be sent to the change address.
+
 
 ### Verifying addresses
 

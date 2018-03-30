@@ -24,7 +24,8 @@ type dockerService struct {
 }
 type serviceBuild struct {
 	Context    string `yaml:"context,omitempty"`
-	Dockerfile string
+	Dockerfile string `yaml:"dockerfile,omitempty"`
+	Template   string `yaml:"-"`
 }
 type dockerCompose struct {
 	Version  string
@@ -69,8 +70,15 @@ func cleanUp(tempDir string) {
 
 func processComposeFile(composeFile *dockerCompose, tempDir string) {
 	for k, v := range composeFile.Services {
-		v.Image = k
-		v.Build.Dockerfile = tempDir + "/Dockerfile-" + k
+		if v.Image == "" {
+			v.Image = k
+		}
+		templateFile := path.Join("templates", "Dockerfile-"+k)
+		_, err := os.Stat(templateFile)
+		if err == nil {
+			v.Build.Template = templateFile
+			v.Build.Dockerfile = path.Join(tempDir, "Dockerfile-"+k)
+		}
 		composeFile.Services[k] = v
 	}
 }
@@ -97,13 +105,13 @@ func createComposeFile(composeFile dockerCompose, tempDir string) {
 
 func prepareTestEnv(composeFile dockerCompose) {
 	// Copies Dockerfiles
-	for k, service := range composeFile.Services {
-		dockerfileExplorerSrc := path.Join("templates", "Dockerfile-"+k)
-		dockerfileExplorerDst := service.Build.Dockerfile
-		df, err := os.Open(dockerfileExplorerSrc)
-		_, err = file.CopyFile(dockerfileExplorerDst, df)
-		if err != nil {
-			log.Fatal(err)
+	for _, service := range composeFile.Services {
+		if service.Build.Template != "" {
+			df, err := os.Open(service.Build.Template)
+			_, err = file.CopyFile(service.Build.Dockerfile, df)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 

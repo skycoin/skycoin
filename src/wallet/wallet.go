@@ -52,6 +52,8 @@ var (
 	ErrWalletNotExist = errors.New("wallet doesn't exist")
 	// ErrWalletAPIDisabled is returned when trying to do wallet actions while the DisableWalletAPI option is enabled.
 	ErrWalletAPIDisabled = errors.New("wallet api disabled")
+	// ErrWalletNameConflict represents the wallet name conflict error
+	ErrWalletNameConflict = errors.New("wallet name would conflict with existing wallet, renaming")
 )
 
 const (
@@ -85,14 +87,14 @@ const (
 // CoinType represents the wallet coin type
 type CoinType string
 
-// Options are wallet constructor options
+// Options options that could be used when creating a wallet
 type Options struct {
-	Coin       CoinType
-	Label      string
-	Seed       string
-	Encrypt    bool
-	Password   []byte
-	CryptoType CryptoType
+	Coin       CoinType   // coin type, skycoin, bitcoin, etc.
+	Label      string     // wallet label.
+	Seed       string     // wallet seed.
+	Encrypt    bool       // whether the wallet need to be encrypted.
+	Password   []byte     // password that would be used for encryption, and would only be used when 'Encrypt' is true.
+	CryptoType CryptoType // wallet encryption type, scrypt-chacha20poly1305 or sha256-xor.
 }
 
 // newWalletFilename check for collisions and retry if failure
@@ -103,13 +105,18 @@ func newWalletFilename() string {
 	return fmt.Sprintf("%s_%s.%s", timestamp, padding, WalletExt)
 }
 
-// Wallet contains meta data and address entries.
+// Wallet is consisted of meta and entries.
+// Meta field records items that are not deterministic, like
+// filename, lable, wallet type, secrets, etc.
+// Entries field stores the address entries that are deterministically generated
+// from seed.
+// For wallet encryption
 type Wallet struct {
 	Meta    map[string]string
 	Entries []Entry
 }
 
-// NewWallet creates a wallet instance,
+// NewWallet creates a wallet instance with given name and options.
 func NewWallet(wltName string, opts Options) (*Wallet, error) {
 	if opts.Seed == "" {
 		return nil, ErrMissingSeed

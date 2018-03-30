@@ -17,11 +17,6 @@ import (
 // Wallets wallets map
 type Wallets map[string]*Wallet
 
-var (
-	// ErrWalletNameConflict represents the wallet name conflict error
-	ErrWalletNameConflict = errors.New("wallet name would conflict with existing wallet, renaming")
-)
-
 // LoadWallets Loads all wallets contained in wallet dir.  If any regular file in wallet
 // dir fails to load, loading is aborted and error returned.  Only files with
 // extension WalletExt are considered.

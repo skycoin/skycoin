@@ -171,8 +171,7 @@ directly, see [Skycoin CLI Godoc](https://godoc.org/github.com/skycoin/skycoin/s
 A REST API client is also available: [Skycoin REST API Client Godoc](https://godoc.org/github.com/skycoin/skycoin/src/gui#Client).
 
 #### Coinhours
-To create a transaction you need a minimum of `1` coinhour which is used
-for transaction fees.
+You need a minimum of `1` of coinhour to create a transaction.
 
 Coinhours are generated at a rate of `1 coinsecond` per `second`
 which are then converted to `coinhours`, `1` coinhour = `3600` coinseconds.

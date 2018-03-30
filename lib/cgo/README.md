@@ -62,6 +62,7 @@ Caller is responsible for allocating memory for objects meant to be
 created by libskycoin API. Different approaches are chosen to avoid
 segmentation faults and memory corruption.
 
+<<<<<<< HEAD
 The parameters corresponding to slices returned by libskycoin are
 of `GoSlice *` type. Their `data` field must always be
 set consistently to point at the buffer memory address whereas
@@ -78,4 +79,35 @@ invocation. The caller will be responsible for allocating another
 memory buffer using a higher `cap` and retry.
 
 
+=======
+API functions perform memory allocation for output `GoString *` arguments.
+In that case new memory is allocated dynamically by `libskycoin` code.
+The caller C code is responsible for releasing that memory by passing the pointer
+in `p` field in to [free()](http://en.cppreference.com/w/c/memory/free).
+
+The parameters corresponding to slices returned by `libskycoin` are
+of `GoSlice *` type. Aforementioned approach is also implemented for slices
+with `cap` field set to `0` prior to function invocation.
+Otherwise their `data` field must always be
+set consistently to point at the buffer memory address whereas
+`cap` must always be set to the number of items of the
+target element type that will fit in the memory
+area reserved in advance for that buffer. If the size of the data
+to be returned by a given libskycoin function exceeds the value
+set in `cap` then libskycoin will copy `cap` items in available
+memory space and will set `len` to a negative value representing
+the number of extra items that could not be copied due to
+overflow.
+
+For instance if `100` bytes have been allocated in advance
+by the caller for a struct type that occupies `25` bytes then only
+`4` items fit in that memory and `cap` should be set accordingly.
+In the hypothetical situation that `libskycoin` result occupies
+`125` bytes (e.g. a slice of same type including `5` items) then
+the first `100` bytes will be copied onto C-allocated `data` buffer
+and `len` field will be set to `-1` as a side-effect of function
+invocation. The caller will be responsible for
+[reallocating another memory buffer](http://en.cppreference.com/w/c/memory/realloc)
+using a higher `cap` and retry.
+>>>>>>> d337866aae036c4dadafdbf94243261a4d75919f
 

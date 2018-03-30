@@ -14,3 +14,12 @@ func libErrorCode(err error) uint32 {
 	// TODO: Implement error codes
 	return SKY_ERROR
 }
+
+func catchApiPanic() (retVal uint32) {
+	retVal = SKY_OK
+	if err := recover(); err != nil {
+		// TODO: Fix to be like retVal = libErrorCode(err)
+		retVal = SKY_ERROR
+	}
+	return
+}

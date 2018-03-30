@@ -57,11 +57,11 @@ func SKY_cipher_SHA256_Set(_g *C.SHA256, _b []byte) (retVal uint32) {
 }
 
 //export SKY_cipher_SHA256_Hex
-func SKY_cipher_SHA256_Hex(_g *C.SHA256) string {
+func SKY_cipher_SHA256_Hex(_g *C.SHA256, _arg1 *C.GoString_) {
 	__g := (*[1 << 30]byte)(
 		unsafe.Pointer(_g))[:SizeofSecKey:SizeofSecKey]
 	g := (*cipher.SHA256)(unsafe.Pointer(&__g))
-	return g.Hex()
+	copyString(g.Hex(), _arg1)
 }
 
 //export SKY_cipher_SHA256_Xor

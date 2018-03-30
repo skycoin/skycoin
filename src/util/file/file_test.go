@@ -65,7 +65,7 @@ func TestBuildDataDirDotOk(t *testing.T) {
 	// by default go uses GOPATH=$HOME/go if it is not set
 	if gopath == "" {
 		home := filepath.Clean(UserHome())
-		gopath = home + "/" + "go"
+		gopath = filepath.Join(home, "go")
 	}
 
 	require.True(t, strings.HasPrefix(builtDir, gopath))

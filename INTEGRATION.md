@@ -169,6 +169,22 @@ directly, see [Skycoin CLI Godoc](https://godoc.org/github.com/skycoin/skycoin/s
 
 A REST API client is also available: [Skycoin REST API Client Godoc](https://godoc.org/github.com/skycoin/skycoin/src/gui#Client).
 
+#### Coinhours
+
+##### REST API
+When using the `REST API` the coinhours are distributed as follows:
+- 50% of the total coinhours in the unspents being used are burned.
+- 25% of the coinhours go to the the change address along with the remaining coins
+- 25% of the coinhours are split equally between the receivers
+
+##### CLI
+When using the `CLI` the amount of coinhours sent to the receiver is capped to
+the number of coins they receive with a minimum of 1 coinhour for transactions
+with <1 skycoin being sent.
+
+For eg. If the number of coins sent to the receiver are 100 then they will receive
+a maximum of 100 coinhour.
+
 ### Verifying addresses
 
 #### Using the CLI

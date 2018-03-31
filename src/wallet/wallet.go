@@ -183,9 +183,8 @@ func (w *Wallet) lock(password []byte, cryptoType CryptoType) error {
 	// Records seeds in secrets
 	ss := make(secrets)
 	defer func() {
-		// Wipes all secrets
+		// Wipes all unencrypted sensitive data
 		ss.erase()
-		// Wipes all sercets in the clone wallet
 		wlt.erase()
 	}()
 
@@ -221,11 +220,15 @@ func (w *Wallet) lock(password []byte, cryptoType CryptoType) error {
 
 	// Sets wallet as encrypted
 	wlt.setEncrypted(true)
+
+	// Wipes unencrypted sensitive data
+	wlt.erase()
+
 	// Wipes the secret fields in w
 	w.erase()
 
-	// Replace the unlocked w with locked wlt
-	*w = *wlt
+	// Replace the original wallet with new encrypted wallet
+	w.copyFrom(wlt)
 	return nil
 }
 
@@ -303,6 +306,23 @@ func (w *Wallet) unlock(password []byte) (*Wallet, error) {
 	wlt.setEncrypted(false)
 	wlt.setCryptoType("")
 	return wlt, nil
+}
+
+// copyFrom copies the src wallet to w
+func (w *Wallet) copyFrom(src *Wallet) {
+	// Clear the original info first
+	w.Meta = make(map[string]string)
+	w.Entries = w.Entries[:0]
+
+	// Copies the meta
+	for k, v := range src.Meta {
+		w.Meta[k] = v
+	}
+
+	// Copies the address entries
+	for _, e := range src.Entries {
+		w.Entries = append(w.Entries, e)
+	}
 }
 
 // erase wipes secret fields in wallet

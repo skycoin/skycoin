@@ -8,6 +8,7 @@ var log = NewLogger(LogPriorityKey, LogPriorityCritical)
 
 const (
 	LogPriorityKey      = "priority"
+	LogModuleKey        = "module"
 	LogPriorityCritical = "CRITICAL"
 )
 

@@ -124,18 +124,22 @@ func (wlts Wallets) ToReadable() []*ReadableWallet {
 }
 
 // Update updates the given wallet, return error if not exist
-func (wlts Wallets) update(id string, updateFunc func(*Wallet) (*Wallet, error)) error {
+func (wlts Wallets) update(id string, updateFunc func(*Wallet) error) error {
 	w, ok := wlts[id]
 	if !ok {
 		return ErrWalletNotExist
 	}
 
-	newWlt, err := updateFunc(w.clone())
-	if err != nil {
+	// Clone the wallet
+	cw := w.clone()
+
+	// update the clone wallet, to avoid updateFunc interrupting the original wallet.
+	if err := updateFunc(cw); err != nil {
 		return err
 	}
+
 	// Wipes secrets in old wallet
 	w.erase()
-	wlts[id] = newWlt
+	wlts[id] = cw
 	return nil
 }

@@ -395,10 +395,10 @@ func (serv *Service) UpdateWalletLabel(wltID, label string) error {
 	serv.Lock()
 	defer serv.Unlock()
 	var wlt *Wallet
-	if err := serv.wallets.update(wltID, func(w *Wallet) (*Wallet, error) {
+	if err := serv.wallets.update(wltID, func(w *Wallet) error {
 		w.setLabel(label)
 		wlt = w
-		return w, nil
+		return nil
 	}); err != nil {
 		return err
 	}

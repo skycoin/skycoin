@@ -61,13 +61,15 @@ func TestBuildDataDirDotOk(t *testing.T) {
 	cleanDir := filepath.Clean(dir)
 	require.True(t, strings.HasSuffix(builtDir, cleanDir))
 
-	home := filepath.Clean(UserHome())
-	if home == "" {
-		require.Equal(t, cleanDir, builtDir)
-	} else {
-		require.True(t, strings.HasPrefix(builtDir, home))
-		require.NotEqual(t, builtDir, filepath.Clean(home))
+	gopath := os.Getenv("GOPATH")
+	// by default go uses GOPATH=$HOME/go if it is not set
+	if gopath == "" {
+		home := filepath.Clean(UserHome())
+		gopath = filepath.Join(home, "go")
 	}
+
+	require.True(t, strings.HasPrefix(builtDir, gopath))
+	require.NotEqual(t, builtDir, filepath.Clean(gopath))
 }
 
 func TestBuildDataDirEmptyError(t *testing.T) {

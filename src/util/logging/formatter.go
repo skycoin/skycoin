@@ -81,6 +81,9 @@ type TextFormatter struct {
 	// Name of the logging field containing priority level
 	PriorityKey string
 
+	// Highlight messages with this priority
+	HighlightPriorityValue string
+
 	// Set to true to bypass checking for a TTY before outputting colors.
 	ForceColors bool
 
@@ -254,7 +257,7 @@ func (f *TextFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys 
 	}
 
 	priority, ok := entry.Data[f.PriorityKey]
-	hasPriority := ok && priority == "CRITICAL"
+	hasPriority := ok && priority == f.HighlightPriorityValue
 
 	if entry.Level != logrus.WarnLevel {
 		levelText = entry.Level.String()
@@ -345,7 +348,7 @@ func (f *TextFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys 
 	}
 
 	for _, k := range keys {
-		if k != "prefix" && k != "file" && k != "func" && k != "line" {
+		if k != "prefix" && k != "file" && k != "func" && k != "line" && k != f.PriorityKey && k != LogModuleKey {
 			v := entry.Data[k]
 			fmt.Fprintf(b, " %s", f.formatKeyValue(levelColor(k), v))
 		}

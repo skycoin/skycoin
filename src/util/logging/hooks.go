@@ -56,10 +56,10 @@ type ModuleLogHook struct {
 	ModuleName  string
 }
 
-func NewModuleLogHook(moduleName string) logrus.Hook {
+func NewModuleLogHook(moduleName string) ModuleLogHook {
 	return ModuleLogHook{
-		FieldKey:    "module",
-		PriorityKey: "priority",
+		FieldKey:    LogModuleKey,
+		PriorityKey: LogPriorityKey,
 		ModuleName:  moduleName,
 	}
 }

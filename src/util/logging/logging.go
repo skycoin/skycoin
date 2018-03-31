@@ -4,7 +4,13 @@ import (
 	"io"
 )
 
-var log = NewLogger()
+var log = NewLogger(LogPriorityKey, LogPriorityCritical)
+
+const (
+	LogPriorityKey      = "priority"
+	LogModuleKey        = "module"
+	LogPriorityCritical = "CRITICAL"
+)
 
 // MustGetLogger safe initialize global logger
 func MustGetLogger(module string) *Logger {

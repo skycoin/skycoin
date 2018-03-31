@@ -2,7 +2,6 @@ package bucket
 
 import (
 	"fmt"
-	"math/rand"
 	"testing"
 
 	"encoding/json"
@@ -27,8 +26,8 @@ func TestBktUpdate(t *testing.T) {
 	}{
 		{
 			map[string]person{
-				"1": person{"XiaoHei", 10},
-				"2": person{"XiaoHuang", 11},
+				"1": person{"p1", 10},
+				"2": person{"p2", 11},
 			},
 			map[string]int{
 				"1": 20,
@@ -37,44 +36,45 @@ func TestBktUpdate(t *testing.T) {
 		},
 	}
 
-	db, cancel := testutil.PrepareDB(t)
-	defer cancel()
-
 	for _, tc := range testCases {
-		bkt, err := New([]byte(fmt.Sprintf("bkt%d", rand.Int31n(1024))), db)
-		assert.Nil(t, err)
-		// init value
-		for k, v := range tc.Init {
-			d, err := json.Marshal(v)
+		t.Run("", func(t *testing.T) {
+			db, close := testutil.PrepareDB(t)
+			defer close()
+			bkt, err := New([]byte("bkt"), db)
 			assert.Nil(t, err)
-			bkt.Put([]byte(k), d)
-		}
+			// init value
+			for k, v := range tc.Init {
+				d, err := json.Marshal(v)
+				assert.Nil(t, err)
+				bkt.Put([]byte(k), d)
+			}
 
-		// update value
-		for k, v := range tc.UpdateAge {
-			err := bkt.Update([]byte(k), func(val []byte) ([]byte, error) {
+			// update value
+			for k, v := range tc.UpdateAge {
+				err := bkt.Update([]byte(k), func(val []byte) ([]byte, error) {
+					var p person
+					if err := json.NewDecoder(bytes.NewReader(val)).Decode(&p); err != nil {
+						return nil, err
+					}
+					p.Age = v
+					d, err := json.Marshal(p)
+					if err != nil {
+						return nil, err
+					}
+					return d, nil
+				})
+				assert.Nil(t, err)
+			}
+
+			// check the updated value
+			for k, v := range tc.UpdateAge {
+				val := bkt.Get([]byte(k))
 				var p person
-				if err := json.NewDecoder(bytes.NewReader(val)).Decode(&p); err != nil {
-					return nil, err
-				}
-				p.Age = v
-				d, err := json.Marshal(p)
-				if err != nil {
-					return nil, err
-				}
-				return d, nil
-			})
-			assert.Nil(t, err)
-		}
-
-		// check the updated value
-		for k, v := range tc.UpdateAge {
-			val := bkt.Get([]byte(k))
-			var p person
-			err := json.NewDecoder(bytes.NewReader(val)).Decode(&p)
-			assert.Nil(t, err)
-			assert.Equal(t, v, p.Age)
-		}
+				err := json.NewDecoder(bytes.NewReader(val)).Decode(&p)
+				assert.Nil(t, err)
+				assert.Equal(t, v, p.Age)
+			}
+		})
 	}
 }
 
@@ -131,11 +131,12 @@ func TestDelete(t *testing.T) {
 			nil,
 		},
 	}
-	db, cancel := testutil.PrepareDB(t)
-	defer cancel()
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			bkt, err := New([]byte(fmt.Sprintf("abc%d", rand.Int31n(1024))), db)
+			db, close := testutil.PrepareDB(t)
+			defer close()
+
+			bkt, err := New([]byte("bkt"), db)
 			assert.Nil(t, err)
 			for k, v := range tc.Init {
 				err := bkt.Put([]byte(k), []byte(v))
@@ -164,22 +165,26 @@ func TestGetAll(t *testing.T) {
 			},
 		},
 	}
-	db, cancel := testutil.PrepareDB(t)
-	defer cancel()
 
 	for _, tc := range testCases {
-		bkt, err := New([]byte(fmt.Sprintf("abc%d", rand.Int31n(1024))), db)
-		assert.Nil(t, err)
-		// init bkt
-		for k, v := range tc.init {
-			bkt.Put([]byte(k), []byte(v))
-		}
+		name := fmt.Sprintf("with item num=%v", len(tc.init))
+		t.Run(name, func(t *testing.T) {
+			db, close := testutil.PrepareDB(t)
+			defer close()
 
-		// get all
-		vs := bkt.GetAll()
-		for k, v := range vs {
-			assert.Equal(t, string(v), tc.init[k.(string)])
-		}
+			bkt, err := New([]byte("bkt"), db)
+			assert.Nil(t, err)
+			// init bkt
+			for k, v := range tc.init {
+				bkt.Put([]byte(k), []byte(v))
+			}
+
+			// get all
+			vs := bkt.GetAll()
+			for k, v := range vs {
+				assert.Equal(t, string(v), tc.init[k.(string)])
+			}
+		})
 	}
 }
 
@@ -201,25 +206,28 @@ func TestRangeUpdate(t *testing.T) {
 			},
 		},
 	}
-	db, cancel := testutil.PrepareDB(t)
-	defer cancel()
 
 	for _, tc := range testCases {
-		bkt, err := New([]byte(fmt.Sprintf("asd%d", rand.Int31n(1024))), db)
-		assert.Nil(t, err)
-		for k, v := range tc.init {
-			bkt.Put([]byte(k), []byte(v))
-		}
+		name := fmt.Sprintf("with item num=%v", len(tc.up))
+		t.Run(name, func(t *testing.T) {
+			db, close := testutil.PrepareDB(t)
+			defer close()
+			bkt, err := New([]byte("bkt"), db)
+			assert.Nil(t, err)
+			for k, v := range tc.init {
+				bkt.Put([]byte(k), []byte(v))
+			}
 
-		// range update
-		bkt.RangeUpdate(func(k, v []byte) ([]byte, error) {
-			return []byte(tc.up[string(k)]), nil
+			// range update
+			bkt.RangeUpdate(func(k, v []byte) ([]byte, error) {
+				return []byte(tc.up[string(k)]), nil
+			})
+
+			// check if the value has been updated
+			for k, v := range tc.up {
+				assert.Equal(t, []byte(v), bkt.Get([]byte(k)))
+			}
 		})
-
-		// check if the value has been updated
-		for k, v := range tc.up {
-			assert.Equal(t, []byte(v), bkt.Get([]byte(k)))
-		}
 	}
 }
 
@@ -260,19 +268,22 @@ func TestIsExsit(t *testing.T) {
 		},
 	}
 
-	db, cancel := testutil.PrepareDB(t)
-	defer cancel()
-
 	for _, tc := range testCases {
-		bkt, err := New([]byte(fmt.Sprintf("asdf%d", rand.Int31n(1024))), db)
-		assert.Nil(t, err)
+		name := fmt.Sprintf("exist=%v", tc.exist)
+		t.Run(name, func(t *testing.T) {
+			db, close := testutil.PrepareDB(t)
+			defer close()
 
-		// init the bucket
-		for k, v := range tc.init {
-			bkt.Put([]byte(k), []byte(v))
-		}
+			bkt, err := New([]byte("bkt"), db)
+			assert.Nil(t, err)
 
-		assert.Equal(t, tc.exist, bkt.IsExist([]byte(tc.k)))
+			// init the bucket
+			for k, v := range tc.init {
+				bkt.Put([]byte(k), []byte(v))
+			}
+
+			assert.Equal(t, tc.exist, bkt.IsExist([]byte(tc.k)))
+		})
 	}
 }
 
@@ -291,23 +302,30 @@ func TestForEach(t *testing.T) {
 			map[string]string{},
 		},
 	}
-	db, cancel := testutil.PrepareDB(t)
-	defer cancel()
 	for _, tc := range testCases {
-		bkt, err := New([]byte(fmt.Sprintf("fasd%d", rand.Int31n(1024))), db)
-		assert.Nil(t, err)
-		for k, v := range tc.init {
-			bkt.Put([]byte(k), []byte(v))
-		}
+		name := fmt.Sprintf("with item num=%v", len(tc.init))
+		t.Run(name, func(t *testing.T) {
+			db, close := testutil.PrepareDB(t)
+			defer close()
 
-		var count int
-		bkt.ForEach(func(k, v []byte) error {
-			count++
-			assert.Equal(t, string(v), tc.init[string(k)])
-			return nil
+			// Creates new bucket
+			bkt, err := New([]byte("bkt"), db)
+			assert.Nil(t, err)
+
+			// Writes data into the bucket
+			for k, v := range tc.init {
+				bkt.Put([]byte(k), []byte(v))
+			}
+
+			var count int
+			bkt.ForEach(func(k, v []byte) error {
+				count++
+				assert.Equal(t, string(v), tc.init[string(k)])
+				return nil
+			})
+
+			assert.Equal(t, len(tc.init), count)
 		})
-
-		assert.Equal(t, len(tc.init), count)
 	}
 }
 
@@ -337,16 +355,20 @@ func TestLen(t *testing.T) {
 		},
 	}
 
-	db, cl := testutil.PrepareDB(t)
-	defer cl()
 	for _, tc := range testCases {
-		bkt, err := New([]byte(fmt.Sprintf("adsf%d", rand.Int31n(1024))), db)
-		assert.Nil(t, err)
-		for k, v := range tc.data {
-			bkt.Put([]byte(k), []byte(v))
-		}
+		name := fmt.Sprintf("len=%v", tc.len)
+		t.Run(name, func(t *testing.T) {
+			db, close := testutil.PrepareDB(t)
+			defer close()
 
-		assert.Equal(t, tc.len, bkt.Len())
+			bkt, err := New([]byte("bkt"), db)
+			assert.Nil(t, err)
+			for k, v := range tc.data {
+				bkt.Put([]byte(k), []byte(v))
+			}
+
+			assert.Equal(t, tc.len, bkt.Len())
+		})
 	}
 }
 

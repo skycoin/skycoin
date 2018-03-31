@@ -40,6 +40,8 @@ var (
 	ErrWalletNotEncrypted = errors.New("wallet is not encrypted")
 	// ErrMissingPassword is returned when trying to create wallet with encryption, but password is not provided.
 	ErrMissingPassword = errors.New("missing password")
+	// ErrMissingEncrypt is returned when trying to create wallet with password, but options.Encrypt is not set.
+	ErrMissingEncrypt = errors.New("missing encrypt")
 	// ErrInvalidPassword is returned if decrypts secrets failed
 	ErrInvalidPassword = errors.New("invalid password")
 	// ErrMissingSeed is returned when trying to create wallet without a seed
@@ -142,6 +144,9 @@ func NewWallet(wltName string, opts Options) (*Wallet, error) {
 
 	// Checks if the wallet need to encrypt
 	if !opts.Encrypt {
+		if len(opts.Password) != 0 {
+			return nil, ErrMissingEncrypt
+		}
 		return w, nil
 	}
 

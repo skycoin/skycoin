@@ -131,14 +131,17 @@ func NewWallet(wltName string, opts Options) (*Wallet, error) {
 
 	w := &Wallet{
 		Meta: map[string]string{
-			metaFilename: wltName,
-			metaVersion:  Version,
-			metaLabel:    opts.Label,
-			metaSeed:     opts.Seed,
-			metaLastSeed: opts.Seed,
-			metaTm:       fmt.Sprintf("%v", time.Now().Unix()),
-			metaType:     "deterministic",
-			metaCoin:     string(coin),
+			metaFilename:   wltName,
+			metaVersion:    Version,
+			metaLabel:      opts.Label,
+			metaSeed:       opts.Seed,
+			metaLastSeed:   opts.Seed,
+			metaTm:         fmt.Sprintf("%v", time.Now().Unix()),
+			metaType:       "deterministic",
+			metaCoin:       string(coin),
+			metaEncrypted:  "false",
+			metaCryptoType: "",
+			metaSecrets:    "",
 		},
 	}
 
@@ -309,6 +312,7 @@ func (w *Wallet) unlock(password []byte) (*Wallet, error) {
 	}
 
 	wlt.setEncrypted(false)
+	wlt.setSecrets("")
 	wlt.setCryptoType("")
 	return wlt, nil
 }

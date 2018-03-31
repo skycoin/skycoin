@@ -260,6 +260,20 @@ func TestNewWallet(t *testing.T) {
 				err: ErrMissingSeed,
 			},
 		},
+		{
+			"password=pwd encrypt=false",
+			"test.wlt",
+			Options{
+				Label:    "wallet1",
+				Coin:     CoinTypeSkycoin,
+				Encrypt:  false,
+				Seed:     "seed",
+				Password: []byte("pwd"),
+			},
+			expect{
+				err: ErrMissingEncrypt,
+			},
+		},
 	}
 
 	for _, tc := range tt {
@@ -456,10 +470,40 @@ func TestWalletUnlock(t *testing.T) {
 	}
 }
 
+func TestLockAndUnLock(t *testing.T) {
+	for ct := range cryptoTable {
+		t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
+			w, err := NewWallet("wallet", Options{
+				Label: "wallet",
+				Seed:  "seed",
+			})
+			require.NoError(t, err)
+			_, err = w.GenerateAddresses(10)
+			require.NoError(t, err)
+			require.Len(t, w.Entries, 10)
+
+			// clone the wallet
+			cw := w.clone()
+			require.Equal(t, w, cw)
+
+			// lock the cloned wallet
+			err = cw.lock([]byte("pwd"), ct)
+			require.NoError(t, err)
+
+			// unlock the cloned wallet
+			ucw, err := cw.unlock([]byte("pwd"))
+			require.NoError(t, err)
+
+			require.Equal(t, w, ucw)
+		})
+	}
+}
+
 func makeWallet(t *testing.T, opts Options, addrNum uint64) *Wallet {
 	// Create an unlocked wallet, then generate addresses, lock if the options.Encrypt is true.
 	preOpts := opts
 	opts.Encrypt = false
+	opts.Password = nil
 	w, err := NewWallet("t.wlt", opts)
 	require.NoError(t, err)
 

@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Write specification for skycoin URIs (based upon bip21)
+
 ### Fixed
 
 ### Changed

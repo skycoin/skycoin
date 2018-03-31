@@ -13,6 +13,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/testutil"
+	_require "github.com/skycoin/skycoin/src/testutil/require"
 )
 
 func makeTransactionFromUxOut(t *testing.T, ux UxOut, s cipher.SecKey) Transaction {
@@ -149,13 +150,13 @@ func TestTransactionVerify(t *testing.T) {
 func TestTransactionVerifyInput(t *testing.T) {
 	// Invalid uxIn args
 	tx := makeTransaction(t)
-	require.PanicsWithValue(t, "tx.In != uxIn", func() {
+	_require.PanicsWithLogMessage(t, "tx.In != uxIn", func() {
 		tx.VerifyInput(nil)
 	})
-	require.PanicsWithValue(t, "tx.In != uxIn", func() {
+	_require.PanicsWithLogMessage(t, "tx.In != uxIn", func() {
 		tx.VerifyInput(UxArray{})
 	})
-	require.PanicsWithValue(t, "tx.In != uxIn", func() {
+	_require.PanicsWithLogMessage(t, "tx.In != uxIn", func() {
 		tx.VerifyInput(make(UxArray, 3))
 	})
 
@@ -163,14 +164,14 @@ func TestTransactionVerifyInput(t *testing.T) {
 	ux, s := makeUxOutWithSecret(t)
 	tx = makeTransactionFromUxOut(t, ux, s)
 	tx.Sigs = []cipher.Sig{}
-	require.PanicsWithValue(t, "tx.In != tx.Sigs", func() {
+	_require.PanicsWithLogMessage(t, "tx.In != tx.Sigs", func() {
 		tx.VerifyInput(UxArray{ux})
 	})
 
 	ux, s = makeUxOutWithSecret(t)
 	tx = makeTransactionFromUxOut(t, ux, s)
 	tx.Sigs = append(tx.Sigs, cipher.Sig{})
-	require.PanicsWithValue(t, "tx.In != tx.Sigs", func() {
+	_require.PanicsWithLogMessage(t, "tx.In != tx.Sigs", func() {
 		tx.VerifyInput(UxArray{ux})
 	})
 
@@ -178,14 +179,14 @@ func TestTransactionVerifyInput(t *testing.T) {
 	ux, s = makeUxOutWithSecret(t)
 	tx = makeTransactionFromUxOut(t, ux, s)
 	tx.InnerHash = cipher.SHA256{}
-	require.PanicsWithValue(t, "Invalid Tx Inner Hash", func() {
+	_require.PanicsWithLogMessage(t, "Invalid Tx Inner Hash", func() {
 		tx.VerifyInput(UxArray{ux})
 	})
 
 	// tx.In does not match uxIn hashes
 	ux, s = makeUxOutWithSecret(t)
 	tx = makeTransactionFromUxOut(t, ux, s)
-	require.PanicsWithValue(t, "Ux hash mismatch", func() {
+	_require.PanicsWithLogMessage(t, "Ux hash mismatch", func() {
 		tx.VerifyInput(UxArray{UxOut{}})
 	})
 

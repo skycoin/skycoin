@@ -27,7 +27,7 @@ func getPendingTxs(gateway Gatewayer) http.HandlerFunc {
 		for _, unconfirmedTxn := range txns {
 			readable, err := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
 			if err != nil {
-				logger.Error("%v", err)
+				logger.Error(err)
 				wh.Error500(w)
 				return
 			}
@@ -68,7 +68,7 @@ func getTransactionByID(gate Gatewayer) http.HandlerFunc {
 
 		rbTx, err := visor.NewReadableTransaction(tx)
 		if err != nil {
-			logger.Error("%v", err)
+			logger.Error(err)
 			wh.Error500(w)
 			return
 		}
@@ -119,7 +119,7 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 		// Gets transactions
 		txns, err := gateway.GetTransactions(flts...)
 		if err != nil {
-			logger.Error("get transactions failed: %v", err)
+			logger.Errorf("get transactions failed: %v", err)
 			wh.Error500(w)
 			return
 		}
@@ -127,7 +127,7 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 		// Converts visor.Transaction to visor.TransactionResult
 		txRlts, err := visor.NewTransactionResults(txns)
 		if err != nil {
-			logger.Error("Converts []visor.Transaction to visor.TransactionResults failed: %v", err)
+			logger.Errorf("Converts []visor.Transaction to visor.TransactionResults failed: %v", err)
 			wh.Error500(w)
 			return
 		}
@@ -165,27 +165,27 @@ func injectTransaction(gateway Gatewayer) http.HandlerFunc {
 		}{}
 
 		if err := json.NewDecoder(r.Body).Decode(&v); err != nil {
-			logger.Error("bad request: %v", err)
+			logger.Errorf("bad request: %v", err)
 			wh.Error400(w, err.Error())
 			return
 		}
 
 		b, err := hex.DecodeString(v.Rawtx)
 		if err != nil {
-			logger.Error("%v", err)
+			logger.Error(err)
 			wh.Error400(w, err.Error())
 			return
 		}
 
 		txn, err := coin.TransactionDeserialize(b)
 		if err != nil {
-			logger.Error("%v", err)
+			logger.Error(err)
 			wh.Error400(w, err.Error())
 			return
 		}
 
 		if err := gateway.InjectBroadcastTransaction(txn); err != nil {
-			logger.Error("%v", err)
+			logger.Error(err)
 			wh.Error400(w, fmt.Sprintf("inject tx failed: %v", err))
 			return
 		}

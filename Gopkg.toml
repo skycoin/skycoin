@@ -28,10 +28,6 @@
   version = "1.0.0"
 
 [[constraint]]
-  name = "github.com/op/go-logging"
-  version = "1.0.0"
-
-[[constraint]]
   name = "github.com/toqueteos/webbrowser"
   version = "1.0.0"
 

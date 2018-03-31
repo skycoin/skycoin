@@ -56,7 +56,7 @@ func (rpc RPC) GetConnection(d *Daemon, addr string) *Connection {
 
 	c, err := d.Pool.Pool.GetConnection(addr)
 	if err != nil {
-		logger.Error("%v", err)
+		logger.Error(err)
 		return nil
 	}
 
@@ -89,14 +89,14 @@ func (rpc RPC) GetConnections(d *Daemon) *Connections {
 
 	l, err := d.Pool.Pool.Size()
 	if err != nil {
-		logger.Error("%v", err)
+		logger.Error(err)
 		return nil
 	}
 
 	conns := make([]*Connection, 0, l)
 	cs, err := d.Pool.Pool.GetConnections()
 	if err != nil {
-		logger.Error("%v", err)
+		logger.Error(err)
 		return nil
 	}
 

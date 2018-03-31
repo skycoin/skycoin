@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -36,20 +35,7 @@ var (
 
 	help = false
 
-	logger     = logging.MustGetLogger("main")
-	logFormat  = "[skycoin.%{module}:%{level}] %{message}"
-	logModules = []string{
-		"main",
-		"daemon",
-		"coin",
-		"gui",
-		"file",
-		"visor",
-		"wallet",
-		"gnet",
-		"pex",
-		"webrpc",
-	}
+	logger = logging.MustGetLogger("main")
 
 	// GenesisSignatureStr hex string of genesis signature
 	GenesisSignatureStr = "eb10468d10054d15f2b6f8946cd46797779aa20a7617ceb4be884189f219bc9a164e56a5b9f7bec392a804ff3740210348d73db77a37adb542a8e08d429ac92700"
@@ -454,7 +440,7 @@ func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) (*g
 	if c.WebInterfaceHTTPS {
 		// Verify cert/key parameters, and if neither exist, create them
 		if err := cert.CreateCertIfNotExists(host, c.WebInterfaceCert, c.WebInterfaceKey, "Skycoind"); err != nil {
-			logger.Error("gui.CreateCertIfNotExists failure: %v", err)
+			logger.Errorf("gui.CreateCertIfNotExists failure: %v", err)
 			return nil, err
 		}
 
@@ -463,49 +449,11 @@ func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) (*g
 		s, err = gui.Create(host, config, d)
 	}
 	if err != nil {
-		logger.Error("Failed to start web GUI: %v", err)
+		logger.Errorf("Failed to start web GUI: %v", err)
 		return nil, err
 	}
 
 	return s, nil
-}
-
-// init logging settings
-func initLogging(dataDir string, level string, color, logtofile bool) (func(), error) {
-	logCfg := logging.DevLogConfig(logModules)
-	logCfg.Format = logFormat
-	logCfg.Colors = color
-	logCfg.Level = level
-
-	var fd *os.File
-	if logtofile {
-		logDir := filepath.Join(dataDir, "logs")
-		if err := createDirIfNotExist(logDir); err != nil {
-			log.Println("initial logs folder failed", err)
-			return nil, fmt.Errorf("init log folder fail, %v", err)
-		}
-
-		// open log file
-		tf := "2006-01-02-030405"
-		logfile := filepath.Join(logDir,
-			fmt.Sprintf("%s-v%s.log", time.Now().Format(tf), Version))
-		var err error
-		fd, err = os.OpenFile(logfile, os.O_RDWR|os.O_CREATE, 0666)
-		if err != nil {
-			return nil, err
-		}
-
-		logCfg.Output = io.MultiWriter(os.Stdout, fd)
-	}
-
-	logCfg.InitLogger()
-
-	return func() {
-		logger.Info("Log file closed")
-		if fd != nil {
-			fd.Close()
-		}
-	}, nil
 }
 
 func initProfiling(httpProf, profileCPU bool, profileCPUFile string) {
@@ -575,7 +523,7 @@ func Run(c *Config) {
 	defer func() {
 		// try catch panic in main thread
 		if r := recover(); r != nil {
-			logger.Error("recover: %v\nstack:%v", r, string(debug.Stack()))
+			logger.Errorf("recover: %v\nstack:%v", r, string(debug.Stack()))
 		}
 	}()
 
@@ -587,18 +535,12 @@ func Run(c *Config) {
 	}
 	host := fmt.Sprintf("%s:%d", c.WebInterfaceAddr, c.WebInterfacePort)
 	fullAddress := fmt.Sprintf("%s://%s", scheme, host)
-	logger.Critical("Full address: %s", fullAddress)
+	logger.Noticef("Full address: %s", fullAddress)
 	if c.PrintWebInterfaceAddress {
 		fmt.Println(fullAddress)
 	}
 
 	initProfiling(c.HTTPProf, c.ProfileCPU, c.ProfileCPUFile)
-
-	closelog, err := initLogging(c.DataDirectory, c.LogLevel, c.ColorLog, c.Logtofile)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
 
 	var wg sync.WaitGroup
 
@@ -621,16 +563,16 @@ func Run(c *Config) {
 	// creates blockchain instance
 	dconf := configureDaemon(c)
 
-	logger.Info("Opening database %s", dconf.Visor.Config.DBPath)
+	logger.Infof("Opening database %s", dconf.Visor.Config.DBPath)
 	db, err := visor.OpenDB(dconf.Visor.Config.DBPath, dconf.Visor.Config.DBReadOnly)
 	if err != nil {
-		logger.Error("Database failed to open: %v. Is another skycoin instance running?", err)
+		logger.Errorf("Database failed to open: %v. Is another skycoin instance running?", err)
 		return
 	}
 
 	d, err := daemon.NewDaemon(dconf, db, DefaultConnections)
 	if err != nil {
-		logger.Error("%v", err)
+		logger.Error(err)
 		return
 	}
 
@@ -645,7 +587,7 @@ func Run(c *Config) {
 			WorkerNum:    c.RPCThreadNum,
 		}, d.Gateway)
 		if err != nil {
-			logger.Error("%v", err)
+			logger.Error(err)
 			return
 		}
 		rpc.ChanBuffSize = 1000
@@ -656,7 +598,7 @@ func Run(c *Config) {
 	if c.WebInterface {
 		webInterface, err = createGUI(c, d, host, quit)
 		if err != nil {
-			logger.Error("%v", err)
+			logger.Error(err)
 			return
 		}
 	}
@@ -664,7 +606,7 @@ func Run(c *Config) {
 	// Debug only - forces connection on start.  Violates thread safety.
 	if c.ConnectTo != "" {
 		if err := d.Pool.Pool.Connect(c.ConnectTo); err != nil {
-			logger.Error("Force connect %s failed, %v", c.ConnectTo, err)
+			logger.Errorf("Force connect %s failed, %v", c.ConnectTo, err)
 			return
 		}
 	}
@@ -700,7 +642,7 @@ func Run(c *Config) {
 	go func() {
 		defer wg.Done()
 		if err := d.Run(); err != nil {
-			logger.Error("%v", err)
+			logger.Error(err)
 			errC <- err
 		}
 	}()
@@ -711,7 +653,7 @@ func Run(c *Config) {
 		go func() {
 			defer wg.Done()
 			if err := rpc.Run(); err != nil {
-				logger.Error("%v", err)
+				logger.Error(err)
 				errC <- err
 			}
 		}()
@@ -722,7 +664,7 @@ func Run(c *Config) {
 		go func() {
 			defer wg.Done()
 			if err := webInterface.Serve(); err != nil {
-				logger.Error("%v", err)
+				logger.Error(err)
 				errC <- err
 			}
 		}()
@@ -735,9 +677,9 @@ func Run(c *Config) {
 				// Wait a moment just to make sure the http interface is up
 				time.Sleep(time.Millisecond * 100)
 
-				logger.Info("Launching System Browser with %s", fullAddress)
+				logger.Infof("Launching System Browser with %s", fullAddress)
 				if err := browser.Open(fullAddress); err != nil {
-					logger.Error(err.Error())
+					logger.Error(err)
 					return
 				}
 			}()
@@ -773,7 +715,7 @@ func Run(c *Config) {
 	select {
 	case <-quit:
 	case err := <-errC:
-		logger.Error("%v", err)
+		logger.Error(err)
 	}
 
 	logger.Info("Shutting down...")
@@ -784,7 +726,6 @@ func Run(c *Config) {
 		webInterface.Shutdown()
 	}
 	d.Shutdown()
-	closelog()
 	wg.Wait()
 	logger.Info("Goodbye")
 }

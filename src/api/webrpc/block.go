@@ -12,7 +12,7 @@ func getBlocksBySeqHandler(req Request, gateway Gatewayer) Response {
 	}
 	blocks, err := gateway.GetBlocksInDepth(seqs)
 	if err != nil {
-		logger.Error("%v", err)
+		logger.Error(err)
 		return makeErrorResponse(errCodeInternalError, errMsgInternalError)
 	}
 	return makeSuccessResponse(req.ID, blocks)
@@ -32,7 +32,7 @@ func getLastBlocksHandler(req Request, gateway Gatewayer) Response {
 
 	blocks, err := gateway.GetLastBlocks(num[0])
 	if err != nil {
-		logger.Error("%v", err)
+		logger.Error(err)
 		return makeErrorResponse(errCodeInternalError, errMsgInternalError)
 	}
 	return makeSuccessResponse(req.ID, blocks)

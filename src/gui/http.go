@@ -62,7 +62,7 @@ func create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	logger.Info("Web resources directory: %s", appLoc)
+	logger.Infof("Web resources directory: %s", appLoc)
 
 	csrfStore := &CSRFStore{
 		Enabled: !c.DisableCSRF,
@@ -125,8 +125,8 @@ func CreateHTTPS(host string, c Config, daemon *daemon.Daemon, certFile, keyFile
 		return nil, err
 	}
 
-	logger.Info("Using %s for the certificate", certFile)
-	logger.Info("Using %s for the key", keyFile)
+	logger.Infof("Using %s for the certificate", certFile)
+	logger.Infof("Using %s for the key", keyFile)
 
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
@@ -145,7 +145,7 @@ func CreateHTTPS(host string, c Config, daemon *daemon.Daemon, certFile, keyFile
 
 // Serve serves the web interface on the configured host
 func (s *Server) Serve() error {
-	logger.Info("Starting web interface on %s", s.listener.Addr())
+	logger.Infof("Starting web interface on %s", s.listener.Addr())
 	defer logger.Info("Web interface closed")
 	defer close(s.done)
 
@@ -170,7 +170,7 @@ func ElapseHandler(handler http.Handler) http.Handler {
 		lrw := NewWrappedResponseWriter(w)
 		start := time.Now()
 		handler.ServeHTTP(lrw, r)
-		logger.Info("%v %s %s %v", lrw.statusCode, r.Method, r.URL.Path, time.Since(start))
+		logger.Infof("%v %s %s %v", lrw.statusCode, r.Method, r.URL.Path, time.Since(start))
 	})
 }
 
@@ -358,7 +358,7 @@ func newIndexHandler(appLoc string) http.HandlerFunc {
 	// Serves the main page
 	return func(w http.ResponseWriter, r *http.Request) {
 		page := filepath.Join(appLoc, indexPage)
-		logger.Debug("Serving index page: %s", page)
+		logger.Debugf("Serving index page: %s", page)
 		if r.URL.Path == "/" {
 			http.ServeFile(w, r, page)
 		} else {
@@ -438,7 +438,7 @@ func getOutputsHandler(gateway Gatewayer) http.HandlerFunc {
 
 		outs, err := gateway.GetUnspentOutputs(filters...)
 		if err != nil {
-			logger.Error("get unspent outputs failed: %v", err)
+			logger.Errorf("get unspent outputs failed: %v", err)
 			wh.Error500(w)
 			return
 		}
@@ -470,7 +470,7 @@ func getBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 		bals, err := gateway.GetBalanceOfAddrs(addrs)
 		if err != nil {
 			errMsg := fmt.Sprintf("Get balance failed: %v", err)
-			logger.Error("%s", errMsg)
+			logger.Error(errMsg)
 			wh.Error500Msg(w, errMsg)
 			return
 		}
@@ -556,7 +556,7 @@ func getLogsHandler(logbuf *bytes.Buffer) http.HandlerFunc {
 			}
 
 			if len(logs) >= linenum {
-				logger.Debug("logs size %d,total size:%d", len(logs), len(logList))
+				logger.Debugf("logs size %d,total size:%d", len(logs), len(logList))
 				break
 			}
 			log := attrActualLog(logInfo)

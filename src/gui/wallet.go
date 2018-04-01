@@ -368,7 +368,9 @@ func walletGet(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendJSONOr500(logger, w, wlt)
+		rlt := wallet.NewReadableWallet(wlt)
+		rlt.Erase()
+		wh.SendJSONOr500(logger, w, rlt)
 	}
 }
 

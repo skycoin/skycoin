@@ -159,6 +159,15 @@ func (rw *ReadableWallet) Save(filename string) error {
 	return file.SaveJSON(filename, rw, 0600)
 }
 
+// Erase wipes all sensitive data
+func (rw *ReadableWallet) Erase() {
+	rw.Meta[metaSeed] = ""
+	rw.Meta[metaLastSeed] = ""
+	for i := range rw.Entries {
+		rw.Entries[i].Secret = ""
+	}
+}
+
 // Load loads from filename
 func (rw *ReadableWallet) Load(filename string) error {
 	return file.LoadJSON(filename, rw)

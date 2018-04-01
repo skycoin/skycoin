@@ -432,7 +432,7 @@ func TestWalletGet(t *testing.T) {
 			err:      "403 Forbidden",
 			walletID: "1234",
 			gatewayGetWalletResult: wallet.Wallet{
-				Meta:    map[string]string{},
+				Meta:    map[string]string{"seed": "seed", "lastSeed": "seed"},
 				Entries: []wallet.Entry{},
 			},
 			gatewayGetWalletErr: wallet.ErrWalletAPIDisabled,
@@ -446,56 +446,60 @@ func TestWalletGet(t *testing.T) {
 			status:   http.StatusOK,
 			walletID: "1234",
 			gatewayGetWalletResult: wallet.Wallet{
-				Meta:    map[string]string{},
+				Meta:    map[string]string{"seed": "seed", "lastSeed": "seed"},
 				Entries: []wallet.Entry{},
 			},
 		},
 	}
 
 	for _, tc := range tt {
-		gateway := &GatewayerMock{}
-		gateway.On("GetWallet", tc.walletID).Return(&tc.gatewayGetWalletResult, tc.gatewayGetWalletErr)
-		v := url.Values{}
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := &GatewayerMock{}
+			gateway.On("GetWallet", tc.walletID).Return(&tc.gatewayGetWalletResult, tc.gatewayGetWalletErr)
+			v := url.Values{}
 
-		endpoint := "/wallet"
+			endpoint := "/wallet"
 
-		if tc.body != nil {
-			if tc.body.WalletID != "" {
-				v.Add("id", tc.body.WalletID)
+			if tc.body != nil {
+				if tc.body.WalletID != "" {
+					v.Add("id", tc.body.WalletID)
+				}
 			}
-		}
 
-		if len(v) > 0 {
-			endpoint += "?" + v.Encode()
-		}
+			if len(v) > 0 {
+				endpoint += "?" + v.Encode()
+			}
 
-		req, err := http.NewRequest(tc.method, endpoint, nil)
-		require.NoError(t, err)
-
-		csrfStore := &CSRFStore{
-			Enabled: true,
-		}
-		setCSRFParameters(csrfStore, tokenValid, req)
-
-		rr := httptest.NewRecorder()
-		handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
-
-		handler.ServeHTTP(rr, req)
-
-		status := rr.Code
-		require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
-			tc.name, status, tc.status)
-
-		if status != http.StatusOK {
-			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()),
-				"case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
-		} else {
-			var msg wallet.Wallet
-			err = json.Unmarshal(rr.Body.Bytes(), &msg)
+			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
-			require.Equal(t, tc.gatewayGetWalletResult, msg, tc.name)
-		}
+
+			csrfStore := &CSRFStore{
+				Enabled: true,
+			}
+			setCSRFParameters(csrfStore, tokenValid, req)
+
+			rr := httptest.NewRecorder()
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
+
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
+				tc.name, status, tc.status)
+
+			if status != http.StatusOK {
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()),
+					"case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+			} else {
+				var msg wallet.ReadableWallet
+				err = json.Unmarshal(rr.Body.Bytes(), &msg)
+				require.NoError(t, err)
+				rlt := wallet.NewReadableWallet(&tc.gatewayGetWalletResult)
+				rlt.Erase()
+				require.Equal(t, rlt, &msg, tc.name)
+			}
+		})
 	}
 }
 

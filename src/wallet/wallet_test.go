@@ -2,8 +2,12 @@ package wallet
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
+	"flag"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"math/rand"
 	"testing"
 	"time"
@@ -11,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/encrypt"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/fee"
 )
@@ -21,6 +26,113 @@ var _ = func() int64 {
 	rand.Seed(t)
 	return t
 }()
+
+var u = flag.Bool("u", false, "update test wallet file in ./testdata")
+
+func init() {
+	// Change the scrypt N value in cryptoTable to make test faster, otherwise
+	// it would take more than 200 seconds to finish.
+	cryptoTable[CryptoTypeScryptChacha20poly1305] = encrypt.ScryptChacha20poly1305{
+		N:      1 << 15,
+		R:      encrypt.ScryptR,
+		P:      encrypt.ScryptP,
+		KeyLen: encrypt.ScryptKeyLen,
+	}
+
+	// When -u flag is specified, update the following wallet files:
+	//     - ./testdata/scrypt-chacha20poly1305-encrypted.wlt
+	//     - ./testdata/sha256xor-encrypted.wlt
+	if *u {
+		// Update ./testdata/scrypt-chacha20poly1305-encrypted.wlt
+		//     - Create an unencrypted wallet
+		//     - Generate an address
+		//     - Lock the wallet with scrypt-chacha20poly1305 crypto type and password of "pwd".
+		w, err := NewWallet("scrypt-chacha20poly1305-encrypted.wlt", Options{
+			Seed:  "seed",
+			Label: "scrypt-chacha20poly1305",
+		})
+		if err != nil {
+			log.Panic(err)
+		}
+
+		if _, err := w.GenerateAddresses(1); err != nil {
+			log.Panic(err)
+		}
+
+		if err := w.lock([]byte("pwd"), CryptoTypeScryptChacha20poly1305); err != nil {
+			log.Panic(err)
+		}
+
+		if err := w.Save("./testdata"); err != nil {
+			log.Panic(err)
+		}
+
+		// Update ./testdata/sha256xor-encrypted.wlt
+		//     - Create an sha256xor encrypted wallet with password: "pwd".
+		w1, err := NewWallet("sha256xor-encrypted.wlt", Options{
+			Seed:       "seed",
+			Label:      "sha256xor",
+			Encrypt:    true,
+			Password:   []byte("pwd"),
+			CryptoType: CryptoTypeSha256Xor,
+		})
+		if err != nil {
+			log.Panic(err)
+		}
+
+		if err := w1.Save("./testdata"); err != nil {
+			log.Panic(err)
+		}
+	}
+}
+
+type mockBalanceGetter map[cipher.Address]BalancePair
+
+func (mb mockBalanceGetter) GetBalanceOfAddrs(addrs []cipher.Address) ([]BalancePair, error) {
+	var bals []BalancePair
+	for _, addr := range addrs {
+		bal := mb[addr]
+		bals = append(bals, bal)
+	}
+	return bals, nil
+}
+
+// 10 addresses of seed1
+var addrsOfSeed1 = []string{
+	"2GBifzJEehbDX7Mkk63Prfa4MQQQyRzBLfe",
+	"q2kU13X8XsAg8cS8BuSeSVzjPF9AT9ghAa",
+	"2WXvTagXtrc1Qq71yjNXw86TC6SRgfVRH1B",
+	"2NUNw748b9mT2FHRxgJL5KjBHasLfdP32Sh",
+	"2V1CnVzWoXDaCX6wHU4tLJkWaFmLcQBb2q4",
+	"wBkMr936thcr57wxyrH6ffvA99JN2Q1MN1",
+	"2f92Wht7VQefAyoJUz3SEnfwT6wTdeAcq3L",
+	"27UM5jPFYVuve3ceEHAYGaJSmkynQYmwPcH",
+	"xjWbVN7ihReasVFwXJSSYYWF7rgQa22auC",
+	"2LyanokLYFeBfBsNkRYHp2qtN8naGFJqeUw",
+}
+
+var childSeedsOfSeed1 = []string{
+	"22b826c586039f8078433be26618ca1024e883d97de2267313bb78068f634c5a",
+	"68efbbdf8aa06368cfc55e252d1e782bbd7651e590ee59e94ab579d2e44c20ad",
+	"8894c818732375680284be4509d153272726f42296b85ecac1fb66b9dc7484b9",
+	"6603375ee19c1e9fffe369e3f62e9deaa6931c1183d7da7f24ecbbd591061502",
+	"91a63f939149d423ea39701d8ed16cfb16a3554c184d214d2289018ddb9e73de",
+	"f0f4f008aa3e7cd32ee953507856fb46e37b734fd289dc01449133d7e37a1f07",
+	"6b194da58a5ba5660cf2b00076cf6a2962fe8fe0523abca5647c87df3352866a",
+	"b47a2678f7e797d3ada86e7e36855f572a18ab78dcbe54ed0613bba69fd76f8d",
+	"fe064533108dadbef13be3a95f547ba03423aa6a701c40aaaed775cb783b12b3",
+	"d554da211321a437e4d08f2a57e3ef255cffa89dd182e0fd52a4fd5bdfcab1ae",
+}
+
+func fromAddrString(t *testing.T, addrStrs []string) []cipher.Address {
+	addrs := make([]cipher.Address, 0, len(addrStrs))
+	for _, addr := range addrStrs {
+		a, err := cipher.DecodeBase58Address(addr)
+		require.NoError(t, err)
+		addrs = append(addrs, a)
+	}
+	return addrs
+}
 
 func TestNewWallet(t *testing.T) {
 	type expect struct {
@@ -47,6 +159,7 @@ func TestNewWallet(t *testing.T) {
 					"coin":     "skycoin",
 					"type":     "deterministic",
 					"seed":     "testseed123",
+					"version":  Version,
 				},
 				err: nil,
 			},
@@ -65,6 +178,7 @@ func TestNewWallet(t *testing.T) {
 					"coin":     "skycoin",
 					"type":     "deterministic",
 					"seed":     "testseed123",
+					"version":  Version,
 				},
 				err: nil,
 			},
@@ -88,23 +202,318 @@ func TestNewWallet(t *testing.T) {
 				err: nil,
 			},
 		},
+		{
+			"ok default crypto type",
+			"test.wlt",
+			Options{
+				Label:    "wallet1",
+				Coin:     CoinTypeSkycoin,
+				Seed:     "testseed123",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			expect{
+				meta: map[string]string{
+					"label":     "wallet1",
+					"coin":      string(CoinTypeSkycoin),
+					"type":      "deterministic",
+					"encrypted": "true",
+				},
+				err: nil,
+			},
+		},
+		{
+			"encrypt without password",
+			"test.wlt",
+			Options{
+				Label:   "wallet1",
+				Coin:    CoinTypeSkycoin,
+				Seed:    "testseed123",
+				Encrypt: true,
+			},
+			expect{
+				meta: map[string]string{
+					"label":     "wallet1",
+					"coin":      string(CoinTypeSkycoin),
+					"type":      "deterministic",
+					"encrypted": "true",
+				},
+				err: ErrMissingPassword,
+			},
+		},
+		{
+			"create with no seed",
+			"test.wlt",
+			Options{
+				Label:    "wallet1",
+				Coin:     CoinTypeSkycoin,
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			expect{
+				meta: map[string]string{
+					"label":     "wallet1",
+					"coin":      string(CoinTypeSkycoin),
+					"type":      "deterministic",
+					"encrypted": "true",
+				},
+				err: ErrMissingSeed,
+			},
+		},
+		{
+			"password=pwd encrypt=false",
+			"test.wlt",
+			Options{
+				Label:    "wallet1",
+				Coin:     CoinTypeSkycoin,
+				Encrypt:  false,
+				Seed:     "seed",
+				Password: []byte("pwd"),
+			},
+			expect{
+				err: ErrMissingEncrypt,
+			},
+		},
 	}
 
 	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			w, err := NewWallet(tc.wltName, tc.ops)
-			require.Equal(t, tc.expect.err, err)
-			if err != nil {
-				return
+		// test all supported crypto types
+		for ct := range cryptoTable {
+			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
+			if tc.ops.Encrypt {
+				tc.ops.CryptoType = ct
 			}
-			require.NoError(t, w.Validate())
-			for k, v := range tc.expect.meta {
-				vv, ok := w.Meta[k]
-				require.True(t, ok)
-				require.Equal(t, v, vv)
+			t.Run(name, func(t *testing.T) {
+				w, err := NewWallet(tc.wltName, tc.ops)
+				require.Equal(t, tc.expect.err, err)
+				if err != nil {
+					return
+				}
+
+				require.Equal(t, tc.ops.Encrypt, w.IsEncrypted())
+
+				if w.IsEncrypted() {
+					// Confirms the seeds and entry secrets are all empty
+					require.Equal(t, "", w.seed())
+					require.Equal(t, "", w.lastSeed())
+
+					for _, e := range w.Entries {
+						require.Empty(t, e.Secret)
+					}
+
+					// Confirms that secrets field is not empty
+					require.NotEmpty(t, w.secrets())
+				}
+			})
+		}
+	}
+}
+
+func TestWalletLock(t *testing.T) {
+	tt := []struct {
+		name    string
+		opts    Options
+		lockPwd []byte
+		err     error
+	}{
+		{
+			"ok",
+			Options{
+				Seed: "seed",
+			},
+			[]byte("pwd"),
+			nil,
+		},
+		{
+			"password is nil",
+			Options{
+				Seed: "seed",
+			},
+			nil,
+			ErrMissingPassword,
+		},
+		{
+			"wallet already encrypted",
+			Options{
+				Seed:     "seed",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			[]byte("pwd"),
+			ErrWalletEncrypted,
+		},
+	}
+
+	for _, tc := range tt {
+		for ct := range cryptoTable {
+			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
+			if tc.opts.Encrypt {
+				tc.opts.CryptoType = ct
 			}
+			t.Run(name, func(t *testing.T) {
+				wltName := newWalletFilename()
+				w, err := NewWallet(wltName, tc.opts)
+				require.NoError(t, err)
+
+				if !w.IsEncrypted() {
+					// Generates 2 addresses
+					_, err = w.GenerateAddresses(2)
+					require.NoError(t, err)
+				}
+
+				err = w.lock(tc.lockPwd, ct)
+				require.Equal(t, tc.err, err)
+				if err != nil {
+					return
+				}
+
+				require.True(t, w.IsEncrypted())
+
+				// Checks if the seeds are wiped
+				require.Empty(t, w.seed())
+				require.Empty(t, w.lastSeed())
+
+				// Checks if the entries are encrypted
+				for i := range w.Entries {
+					require.Equal(t, cipher.SecKey{}, w.Entries[i].Secret)
+				}
+			})
+
+		}
+	}
+
+}
+
+func TestWalletUnlock(t *testing.T) {
+	tt := []struct {
+		name      string
+		opts      Options
+		unlockPwd []byte
+		err       error
+	}{
+		{
+			"ok",
+			Options{
+				Seed:     "seed",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			[]byte("pwd"),
+			nil,
+		},
+		{
+			"unlock with nil password",
+			Options{
+				Seed:     "seed",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			nil,
+			ErrMissingPassword,
+		},
+		{
+			"unlock undecrypted wallet",
+			Options{
+				Seed:    "seed",
+				Encrypt: false,
+			},
+			[]byte("pwd"),
+			ErrWalletNotEncrypted,
+		},
+	}
+
+	for _, tc := range tt {
+		for ct := range cryptoTable {
+			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
+			if tc.opts.Encrypt {
+				tc.opts.CryptoType = ct
+			}
+			t.Run(name, func(t *testing.T) {
+				w := makeWallet(t, tc.opts, 1)
+				// Tests the unlock method
+				wlt, err := w.unlock(tc.unlockPwd)
+				require.Equal(t, tc.err, err)
+				if err != nil {
+					return
+				}
+
+				require.False(t, wlt.IsEncrypted())
+
+				// Checks the seeds
+				require.Equal(t, tc.opts.Seed, wlt.seed())
+
+				// Checks the generated addresses
+				sd, sks := cipher.GenerateDeterministicKeyPairsSeed([]byte(wlt.seed()), 1)
+				require.Equal(t, uint64(1), uint64(len(wlt.Entries)))
+
+				// Checks the last seed
+				require.Equal(t, hex.EncodeToString(sd), wlt.lastSeed())
+
+				for i := range wlt.Entries {
+					addr := cipher.AddressFromSecKey(sks[i])
+					require.Equal(t, addr, wlt.Entries[i].Address)
+				}
+
+				// Checks the original seeds
+				require.NotEqual(t, tc.opts.Seed, w.seed())
+
+				// Checks if the seckeys in entries of original wallet are empty
+				for i := range w.Entries {
+					require.Equal(t, cipher.SecKey{}, w.Entries[i].Secret)
+				}
+
+				// Checks if the seed and lastSeed in original wallet are sitll empty
+				require.Empty(t, w.seed())
+				require.Empty(t, w.lastSeed())
+			})
+		}
+	}
+}
+
+func TestLockAndUnLock(t *testing.T) {
+	for ct := range cryptoTable {
+		t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
+			w, err := NewWallet("wallet", Options{
+				Label: "wallet",
+				Seed:  "seed",
+			})
+			require.NoError(t, err)
+			_, err = w.GenerateAddresses(10)
+			require.NoError(t, err)
+			require.Len(t, w.Entries, 10)
+
+			// clone the wallet
+			cw := w.clone()
+			require.Equal(t, w, cw)
+
+			// lock the cloned wallet
+			err = cw.lock([]byte("pwd"), ct)
+			require.NoError(t, err)
+
+			// unlock the cloned wallet
+			ucw, err := cw.unlock([]byte("pwd"))
+			require.NoError(t, err)
+
+			require.Equal(t, w, ucw)
 		})
 	}
+}
+
+func makeWallet(t *testing.T, opts Options, addrNum uint64) *Wallet {
+	// Create an unlocked wallet, then generate addresses, lock if the options.Encrypt is true.
+	preOpts := opts
+	opts.Encrypt = false
+	opts.Password = nil
+	w, err := NewWallet("t.wlt", opts)
+	require.NoError(t, err)
+
+	_, err = w.GenerateAddresses(addrNum)
+	require.NoError(t, err)
+	if preOpts.Encrypt {
+		err = w.lock(preOpts.Password, preOpts.CryptoType)
+		require.NoError(t, err)
+	}
+	return w
 }
 
 func TestLoadWallet(t *testing.T) {
@@ -175,12 +584,66 @@ func TestLoadWallet(t *testing.T) {
 				err:  fmt.Errorf("invalid wallet no_seed.wlt: seed field not set"),
 			},
 		},
+		{
+			"version=0.2 encrypted=true crypto=scrypt-chacha20poly1305",
+			"./testdata/scrypt-chacha20poly1305-encrypted.wlt",
+			expect{
+				meta: map[string]string{
+					"coin":       "skycoin",
+					"cryptoType": "scrypt-chacha20poly1305",
+					"encrypted":  "true",
+					"filename":   "scrypt-chacha20poly1305-encrypted.wlt",
+					"label":      "scrypt-chacha20poly1305",
+					"lastSeed":   "",
+					"seed":       "",
+					"type":       "deterministic",
+					"version":    "0.2",
+				},
+				err: nil,
+			},
+		},
+		{
+			"version=0.2 encrypted=true crypto=sha256xor",
+			"./testdata/sha256xor-encrypted.wlt",
+			expect{
+				meta: map[string]string{
+					"coin":       "skycoin",
+					"cryptoType": "sha256-xor",
+					"encrypted":  "true",
+					"filename":   "sha256xor-encrypted.wlt",
+					"label":      "sha256xor",
+					"lastSeed":   "",
+					"seed":       "",
+					"type":       "deterministic",
+					"version":    "0.2",
+				},
+				err: nil,
+			},
+		},
+		{
+			"version=0.2 encrypted=flase",
+			"./testdata/v2_no_encrypt.wlt",
+			expect{
+				meta: map[string]string{
+					"coin":       "skycoin",
+					"cryptoType": "scrypt-chacha20poly1305",
+					"encrypted":  "false",
+					"filename":   "v2_no_encrypt.wlt",
+					"label":      "v2_no_encrypt",
+					"lastSeed":   "c79454cf362b3f55e5effce09f664311650a44b9c189b3c8eed1ae9bd696cd9e",
+					"secrets":    "",
+					"seed":       "seed",
+					"type":       "deterministic",
+					"version":    "0.2",
+				},
+				err: nil,
+			},
+		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			w := Wallet{}
-			err := w.Load(tc.file)
+			w, err := Load(tc.file)
 			require.Equal(t, tc.expect.err, err)
 			if err != nil {
 				return
@@ -190,7 +653,103 @@ func TestLoadWallet(t *testing.T) {
 				vv := w.Meta[k]
 				require.Equal(t, v, vv)
 			}
+
+			if w.IsEncrypted() {
+				require.NotEmpty(t, w.Meta[metaSecrets])
+			}
 		})
+	}
+}
+
+func TestWalletGenerateAddress(t *testing.T) {
+	tt := []struct {
+		name               string
+		opts               Options
+		num                uint64
+		oneAddressEachTime bool
+		err                error
+	}{
+		{
+			"ok with one address",
+			Options{
+				Seed: "seed",
+			},
+			1,
+			false,
+			nil,
+		},
+		{
+			"ok with two address",
+			Options{
+				Seed: "seed",
+			},
+			2,
+			false,
+			nil,
+		},
+		{
+			"ok with three address and generate one address each time",
+			Options{
+				Seed: "seed",
+			},
+			2,
+			true,
+			nil,
+		},
+		{
+			"wallet is encrypted",
+			Options{
+				Seed:     "seed",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			2,
+			true,
+			ErrWalletEncrypted,
+		},
+	}
+
+	for _, tc := range tt {
+		for ct := range cryptoTable {
+			name := fmt.Sprintf("crypto=%v %v", ct, tc.name)
+			if tc.opts.Encrypt {
+				tc.opts.CryptoType = ct
+			}
+
+			t.Run(name, func(t *testing.T) {
+				// create wallet
+				w, err := NewWallet("test.wlt", tc.opts)
+				require.NoError(t, err)
+
+				// generate addresses
+				if tc.oneAddressEachTime {
+					_, err = w.GenerateAddresses(tc.num)
+					require.Equal(t, tc.err, err)
+					if err != nil {
+						return
+					}
+				} else {
+					for i := uint64(0); i < tc.num; i++ {
+						_, err := w.GenerateAddresses(1)
+						require.Equal(t, tc.err, err)
+						if err != nil {
+							return
+						}
+					}
+				}
+
+				// check the entry number
+				require.Equal(t, int(tc.num), len(w.Entries))
+
+				addrs := w.GetAddresses()
+
+				_, keys := cipher.GenerateDeterministicKeyPairsSeed([]byte(tc.opts.Seed), int(tc.num))
+				for i, k := range keys {
+					a := cipher.AddressFromSecKey(k)
+					require.Equal(t, a.String(), addrs[i].String())
+				}
+			})
+		}
 	}
 }
 
@@ -213,12 +772,18 @@ func TestWalletGetEntry(t *testing.T) {
 			"2ULfxDUuenUY5V4Pr8whmoAwFdUseXNyjXC",
 			false,
 		},
+		{
+			"scrypt-chacha20poly1305 encrytped wallet",
+			"./testdata/scrypt-chacha20poly1305-encrypted.wlt",
+			"2EVNa4CK9SKosT4j1GEn8SuuUUEAXaHAMbM",
+			true,
+		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			w := Wallet{}
-			require.NoError(t, w.Load(tc.wltFile))
+			w, err := Load(tc.wltFile)
+			require.NoError(t, err)
 			a, err := cipher.DecodeBase58Address(tc.address)
 			require.NoError(t, err)
 			e, ok := w.GetEntry(a)
@@ -262,8 +827,8 @@ func TestWalletAddEntry(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			w := Wallet{}
-			require.NoError(t, w.Load(tc.wltFile))
+			w, err := Load(tc.wltFile)
+			require.NoError(t, err)
 			a := cipher.AddressFromSecKey(tc.secKey)
 			p := cipher.PubKeyFromSecKey(tc.secKey)
 			require.Equal(t, tc.err, w.AddEntry(Entry{
@@ -271,6 +836,46 @@ func TestWalletAddEntry(t *testing.T) {
 				Public:  p,
 				Secret:  s,
 			}))
+		})
+	}
+}
+
+func TestWalletGuard(t *testing.T) {
+	for ct := range cryptoTable {
+		t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
+			validate := func(w *Wallet) {
+				require.Equal(t, "", w.seed())
+				require.Equal(t, "", w.lastSeed())
+				for _, e := range w.Entries {
+					require.Equal(t, cipher.SecKey{}, e.Secret)
+				}
+			}
+
+			w, err := NewWallet("t.wlt", Options{
+				Seed:       "seed",
+				Encrypt:    true,
+				Password:   []byte("pwd"),
+				CryptoType: ct,
+			})
+			require.NoError(t, err)
+
+			require.NoError(t, w.guardUpdate([]byte("pwd"), func(w *Wallet) error {
+				require.Equal(t, "seed", w.seed())
+				w.setLabel("label")
+				return nil
+			}))
+			require.Equal(t, "label", w.Label())
+			validate(w)
+
+			w.guardView([]byte("pwd"), func(w *Wallet) error {
+				require.Equal(t, "label", w.Label())
+				w.setLabel("new label")
+				return nil
+			})
+
+			require.Equal(t, "label", w.Label())
+			validate(w)
+
 		})
 	}
 }
@@ -799,6 +1404,305 @@ func TestWalletChooseSpendsMinimizeUxOuts(t *testing.T) {
 
 		verifyChosenCoins(t, uxb, coins, ChooseSpendsMinimizeUxOuts, func(a, b UxBalance) bool {
 			return a.Coins >= b.Coins
+		})
+	}
+}
+
+func TestRemoveBackupFiles(t *testing.T) {
+	type wltInfo struct {
+		wltName string
+		version string
+	}
+
+	tt := []struct {
+		name                   string
+		initFiles              []wltInfo
+		expectedRemainingFiles map[string]struct{}
+	}{
+		{
+			"no file",
+			[]wltInfo{},
+			map[string]struct{}{},
+		},
+		{
+			"wlt v0.1=1 bak v0.1=1 delete 1 bak",
+			[]wltInfo{
+				{
+					"t1.wlt",
+					"0.1",
+				},
+				{
+					"t1.wlt.bak",
+					"0.1",
+				},
+			},
+			map[string]struct{}{
+				"t1.wlt": struct{}{},
+			},
+		},
+		{
+			"wlt v0.1=2 bak v0.1=1 delete 1 bak",
+			[]wltInfo{
+				{
+					"t1.wlt",
+					"0.1",
+				},
+				{
+					"t2.wlt",
+					"0.1",
+				},
+				{
+					"t2.wlt.bak",
+					"0.1",
+				},
+			},
+			map[string]struct{}{
+				"t1.wlt": struct{}{},
+				"t2.wlt": struct{}{},
+			},
+		},
+		{
+			"wlt v0.1=3 bak v0.1=1 delete 1 bak",
+			[]wltInfo{
+				{
+					"t1.wlt",
+					"0.1",
+				},
+				{
+					"t2.wlt",
+					"0.1",
+				},
+				{
+					"t3.wlt",
+					"0.1",
+				},
+				{
+					"t3.wlt.bak",
+					"0.1",
+				},
+			},
+			map[string]struct{}{
+				"t1.wlt": struct{}{},
+				"t2.wlt": struct{}{},
+				"t3.wlt": struct{}{},
+			},
+		},
+		{
+			"wlt v0.1=3 bak v0.1=2 delete 2 bak",
+			[]wltInfo{
+				{
+					"t1.wlt",
+					"0.1",
+				},
+				{
+					"t2.wlt",
+					"0.1",
+				},
+				{
+					"t2.wlt.bak",
+					"0.1",
+				},
+				{
+					"t3.wlt",
+					"0.1",
+				},
+				{
+					"t3.wlt.bak",
+					"0.1",
+				},
+			},
+			map[string]struct{}{
+				"t1.wlt": struct{}{},
+				"t2.wlt": struct{}{},
+				"t3.wlt": struct{}{},
+			},
+		},
+		{
+			"wlt v0.1=3 bak v0.1=3 delete 3 bak",
+			[]wltInfo{
+				{
+					"t1.wlt",
+					"0.1",
+				},
+				{
+					"t1.wlt.bak",
+					"0.1",
+				},
+				{
+					"t2.wlt",
+					"0.1",
+				},
+				{
+					"t2.wlt.bak",
+					"0.1",
+				},
+				{
+					"t3.wlt",
+					"0.1",
+				},
+				{
+					"t3.wlt.bak",
+					"0.1",
+				},
+			},
+			map[string]struct{}{
+				"t1.wlt": struct{}{},
+				"t2.wlt": struct{}{},
+				"t3.wlt": struct{}{},
+			},
+		},
+		{
+			"wlt v0.1=3 bak v0.1=1 no delete",
+			[]wltInfo{
+				{
+					"t1.wlt",
+					"0.1",
+				},
+				{
+					"t2.wlt",
+					"0.1",
+				},
+				{
+					"t3.wlt",
+					"0.1",
+				},
+				{
+					"t4.wlt.bak",
+					"0.1",
+				},
+			},
+			map[string]struct{}{
+				"t1.wlt":     struct{}{},
+				"t2.wlt":     struct{}{},
+				"t3.wlt":     struct{}{},
+				"t4.wlt.bak": struct{}{},
+			},
+		},
+		{
+			"wlt v0.2=3 bak v0.2=1 no delete",
+			[]wltInfo{
+				{
+					"t1.wlt",
+					"0.2",
+				},
+				{
+					"t2.wlt",
+					"0.2",
+				},
+				{
+					"t3.wlt",
+					"0.2",
+				},
+				{
+					"t3.wlt.bak",
+					"0.2",
+				},
+			},
+			map[string]struct{}{
+				"t1.wlt":     struct{}{},
+				"t2.wlt":     struct{}{},
+				"t3.wlt":     struct{}{},
+				"t3.wlt.bak": struct{}{},
+			},
+		},
+		{
+			"wlt v0.1=1 bak v0.1=1 wlt v0.2=2 bak v0.2=2 delete 1 bak",
+			[]wltInfo{
+				{
+					"t1.wlt",
+					"0.1",
+				},
+				{
+					"t1.wlt.bak",
+					"0.1",
+				},
+				{
+					"t2.wlt",
+					"0.2",
+				},
+				{
+					"t2.wlt.bak",
+					"0.2",
+				},
+				{
+					"t3.wlt",
+					"0.2",
+				},
+				{
+					"t3.wlt.bak",
+					"0.2",
+				},
+			},
+			map[string]struct{}{
+				"t1.wlt":     struct{}{},
+				"t2.wlt":     struct{}{},
+				"t2.wlt.bak": struct{}{},
+				"t3.wlt":     struct{}{},
+				"t3.wlt.bak": struct{}{},
+			},
+		},
+		{
+			"wlt v0.1=1 bak v0.1=2 wlt v0.2=2 bak v0.2=1 delete 1 bak",
+			[]wltInfo{
+				{
+					"t1.wlt",
+					"0.1",
+				},
+				{
+					"t1.wlt.bak",
+					"0.1",
+				},
+				{
+					"t2.wlt",
+					"0.2",
+				},
+				{
+					"t2.wlt.bak",
+					"0.1",
+				},
+				{
+					"t3.wlt",
+					"0.2",
+				},
+				{
+					"t3.wlt.bak",
+					"0.2",
+				},
+			},
+			map[string]struct{}{
+				"t1.wlt":     struct{}{},
+				"t2.wlt":     struct{}{},
+				"t2.wlt.bak": struct{}{},
+				"t3.wlt":     struct{}{},
+				"t3.wlt.bak": struct{}{},
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := prepareWltDir()
+			// Initialize files
+			for _, f := range tc.initFiles {
+				w, err := NewWallet(f.wltName, Options{
+					Seed: "s1",
+				})
+				require.NoError(t, err)
+				w.setVersion(f.version)
+
+				require.NoError(t, w.Save(dir))
+			}
+
+			require.NoError(t, removeBackupFiles(dir))
+
+			// Get all remaining files
+			fs, err := ioutil.ReadDir(dir)
+			require.NoError(t, err)
+			require.Len(t, fs, len(tc.expectedRemainingFiles))
+			for _, f := range fs {
+				_, ok := tc.expectedRemainingFiles[f.Name()]
+				require.True(t, ok)
+			}
 		})
 	}
 }

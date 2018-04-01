@@ -159,9 +159,7 @@ func TestSaveJSON(t *testing.T) {
 
 	requireFileMode(t, fn, 0644)
 	requireFileExists(t, fn)
-	requireFileExists(t, fn+".bak")
 	requireFileContents(t, fn, string(b2))
-	requireFileContents(t, fn+".bak", string(b))
 	requireFileNotExists(t, fn+".tmp")
 }
 
@@ -210,10 +208,9 @@ func TestSaveBinary(t *testing.T) {
 
 	err = SaveBinary(fn, b2, 0644)
 	requireFileExists(t, fn)
-	requireFileExists(t, fn+".bak")
 	requireFileNotExists(t, fn+".tmp")
 	requireFileContentsBinary(t, fn, b2)
-	requireFileContentsBinary(t, fn+".bak", b)
+	// requireFileContentsBinary(t, fn+".bak", b)
 	requireFileMode(t, fn, 0644)
-	requireFileMode(t, fn+".bak", 0644)
+	// requireFileMode(t, fn+".bak", 0644)
 }

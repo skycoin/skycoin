@@ -122,8 +122,7 @@ func SaveJSON(filename string, thing interface{}, mode os.FileMode) error {
 	if err != nil {
 		return err
 	}
-	err = SaveBinary(filename, data, mode)
-	return err
+	return SaveBinary(filename, data, mode)
 }
 
 // SaveJSONSafe saves json to disk, but refuses if file already exists
@@ -148,22 +147,22 @@ func SaveJSONSafe(filename string, thing interface{}, mode os.FileMode) error {
 	return err
 }
 
-// SaveBinary persists data into given file in binary
+// SaveBinary persists data into given file in binary,
+// backup the previous file, if there was one
 func SaveBinary(filename string, data []byte, mode os.FileMode) error {
 	// Write the new file to a temporary
 	tmpname := filename + ".tmp"
 	if err := ioutil.WriteFile(tmpname, data, mode); err != nil {
 		return err
 	}
-	// Backup the previous file, if there was one
-	_, err := os.Stat(filename)
-	if !os.IsNotExist(err) {
-		if err := os.Rename(filename, filename+".bak"); err != nil {
-			return err
-		}
+
+	// Write the new file to the target wallet file
+	if err := ioutil.WriteFile(filename, data, mode); err != nil {
+		return err
 	}
-	// Move the temporary to the new file
-	return os.Rename(tmpname, filename)
+
+	// Remove the tmp file
+	return os.Remove(tmpname)
 }
 
 //TODO: require file named after application and then hashcode, in static directory

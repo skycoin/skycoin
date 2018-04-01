@@ -256,9 +256,9 @@ func TestWalletSpendHandler(t *testing.T) {
 			walletID:        "123",
 			coins:           12,
 			dst:             "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
-			gatewaySpendErr: wallet.ErrWalletApiDisabled,
+			gatewaySpendErr: wallet.ErrWalletAPIDisabled,
 			spendResult: &SpendResult{
-				Error: wallet.ErrWalletApiDisabled.Error(),
+				Error: wallet.ErrWalletAPIDisabled.Error(),
 			},
 		},
 		{
@@ -326,7 +326,8 @@ func TestWalletSpendHandler(t *testing.T) {
 
 			gateway := &GatewayerMock{}
 			addr, _ := cipher.DecodeBase58Address(tc.dst)
-			gateway.On("Spend", tc.walletID, tc.coins, addr).Return(tc.gatewaySpendResult, tc.gatewaySpendErr)
+			var pwd []byte
+			gateway.On("Spend", tc.walletID, pwd, tc.coins, addr).Return(tc.gatewaySpendResult, tc.gatewaySpendErr)
 			gateway.On("GetWalletBalance", tc.walletID).Return(tc.gatewayGetWalletBalanceResult, tc.gatewayBalanceErr)
 
 			endpoint := "/wallet/spend"
@@ -434,7 +435,7 @@ func TestWalletGet(t *testing.T) {
 				Meta:    map[string]string{},
 				Entries: []wallet.Entry{},
 			},
-			gatewayGetWalletErr: wallet.ErrWalletApiDisabled,
+			gatewayGetWalletErr: wallet.ErrWalletAPIDisabled,
 		},
 		{
 			name:   "200 - OK",
@@ -453,7 +454,7 @@ func TestWalletGet(t *testing.T) {
 
 	for _, tc := range tt {
 		gateway := &GatewayerMock{}
-		gateway.On("GetWallet", tc.walletID).Return(tc.gatewayGetWalletResult, tc.gatewayGetWalletErr)
+		gateway.On("GetWallet", tc.walletID).Return(&tc.gatewayGetWalletResult, tc.gatewayGetWalletErr)
 		v := url.Values{}
 
 		endpoint := "/wallet"
@@ -578,7 +579,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 			err:                           "403 Forbidden",
 			walletID:                      "foo",
 			gatewayGetWalletBalanceResult: wallet.BalancePair{},
-			gatewayBalanceErr:             wallet.ErrWalletApiDisabled,
+			gatewayBalanceErr:             wallet.ErrWalletAPIDisabled,
 		},
 		{
 			name:   "200 - OK",
@@ -721,7 +722,7 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 			err:      "403 Forbidden",
 			walletID: "foo",
 			label:    "label",
-			gatewayUpdateWalletLabelErr: wallet.ErrWalletApiDisabled,
+			gatewayUpdateWalletLabelErr: wallet.ErrWalletAPIDisabled,
 		},
 		{
 			name:   "200 OK",
@@ -844,7 +845,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			status:   http.StatusForbidden,
 			err:      "403 Forbidden",
 			walletID: "foo",
-			gatewayGetWalletUnconfirmedTxnsErr: wallet.ErrWalletApiDisabled,
+			gatewayGetWalletUnconfirmedTxnsErr: wallet.ErrWalletAPIDisabled,
 		},
 		{
 			name:   "200 - OK",
@@ -1033,7 +1034,7 @@ func TestWalletCreateHandler(t *testing.T) {
 				Label: "bar",
 				Seed:  "foo",
 			},
-			gatewayCreateWalletErr: wallet.ErrWalletApiDisabled,
+			gatewayCreateWalletErr: wallet.ErrWalletAPIDisabled,
 		},
 		{
 			name:   "200 - OK",
@@ -1092,9 +1093,10 @@ func TestWalletCreateHandler(t *testing.T) {
 	}
 
 	for _, tc := range tt {
+		var pwd []byte // nil password
 		gateway := &GatewayerMock{}
-		gateway.On("CreateWallet", "", tc.options).Return(tc.gatewayCreateWalletResult, tc.gatewayCreateWalletErr)
-		gateway.On("ScanAheadWalletAddresses", tc.wltName, tc.scnN-1).Return(tc.scanWalletAddressesResult, tc.scanWalletAddressesError)
+		gateway.On("CreateWallet", "", tc.options).Return(&tc.gatewayCreateWalletResult, tc.gatewayCreateWalletErr)
+		gateway.On("ScanAheadWalletAddresses", tc.wltName, pwd, tc.scnN-1).Return(&tc.scanWalletAddressesResult, tc.scanWalletAddressesError)
 
 		endpoint := "/wallet/create"
 
@@ -1349,7 +1351,7 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 			err:      "403 Forbidden",
 			walletID: "foo",
 			n:        1,
-			gatewayNewAddressesErr: wallet.ErrWalletApiDisabled,
+			gatewayNewAddressesErr: wallet.ErrWalletAPIDisabled,
 		},
 		{
 			name:   "200 - OK",
@@ -1396,7 +1398,8 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &GatewayerMock{}
-			gateway.On("NewAddresses", tc.walletID, tc.n).Return(tc.gatewayNewAddressesResult, tc.gatewayNewAddressesErr)
+			var pwd []byte // nil password
+			gateway.On("NewAddresses", tc.walletID, pwd, tc.n).Return(tc.gatewayNewAddressesResult, tc.gatewayNewAddressesErr)
 
 			endpoint := "/wallet/newAddress"
 
@@ -1474,7 +1477,7 @@ func TestGetWalletFolderHandler(t *testing.T) {
 			method:          http.MethodGet,
 			status:          http.StatusForbidden,
 			err:             "403 Forbidden",
-			getWalletDirErr: wallet.ErrWalletApiDisabled,
+			getWalletDirErr: wallet.ErrWalletAPIDisabled,
 		},
 	}
 
@@ -1542,7 +1545,7 @@ func TestWalletUnloadHandler(t *testing.T) {
 			status:          http.StatusForbidden,
 			err:             "403 Forbidden",
 			walletID:        "wallet.wlt",
-			unloadWalletErr: wallet.ErrWalletApiDisabled,
+			unloadWalletErr: wallet.ErrWalletAPIDisabled,
 		},
 		{
 			name:     "200 - ok",

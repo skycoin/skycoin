@@ -25,6 +25,7 @@ import (
 	"github.com/skycoin/skycoin/src/util/file"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 var (
@@ -135,6 +136,8 @@ type Config struct {
 	// Wallets
 	// Defaults to ${DataDirectory}/wallets/
 	WalletDirectory string
+	// Wallet crypto type
+	WalletCryptoType string
 
 	RunMaster bool
 
@@ -224,6 +227,7 @@ func (c *Config) register() {
 	flag.BoolVar(&c.Arbitrating, "arbitrating", c.Arbitrating, "Run node in arbitrating mode")
 	flag.BoolVar(&c.Logtogui, "logtogui", true, "log to gui")
 	flag.IntVar(&c.LogBuffSize, "logbufsize", c.LogBuffSize, "Log size saved in memeory for gui show")
+	flag.StringVar(&c.WalletCryptoType, "wallet-crypto-type", c.WalletCryptoType, "wallet crypto type. Can be sha256-xor or scrypt-chacha20poly1305")
 }
 
 var home = file.UserHome()
@@ -281,7 +285,8 @@ var devConfig = Config{
 	LogLevel: "DEBUG",
 
 	// Wallets
-	WalletDirectory: "",
+	WalletDirectory:  "",
+	WalletCryptoType: string(wallet.CryptoTypeScryptChacha20poly1305),
 
 	// Timeout settings for http.Server
 	// https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
@@ -514,6 +519,14 @@ func configureDaemon(c *Config) daemon.Config {
 	}
 
 	dc.Gateway.DisableWalletAPI = c.DisableWalletAPI
+
+	// Initialize wallet default crypto type
+	cryptoType, err := wallet.CryptoTypeFromString(c.WalletCryptoType)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	dc.Visor.Config.WalletCryptoType = cryptoType
 
 	return dc
 }

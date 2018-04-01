@@ -86,7 +86,7 @@ func AddPrivateKey(wlt *wallet.Wallet, key string) error {
 	return wlt.AddEntry(entry)
 }
 
-// Adds a private key to a wallet based on filename.  Will save the wallet after modifying.
+// AddPrivateKeyToFile adds a private key to a wallet based on filename.  Will save the wallet after modifying.
 func AddPrivateKeyToFile(walletFile, key string) error {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {

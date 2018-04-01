@@ -1,1 +1,1 @@
-package cli_integration
+package integration

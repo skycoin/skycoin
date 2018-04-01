@@ -91,7 +91,7 @@ func createRawTxCmd(cfg Config) gcli.Command {
 			rawTx := hex.EncodeToString(tx.Serialize())
 
 			if c.Bool("json") {
-				return printJson(struct {
+				return printJSON(struct {
 					RawTx string `json:"rawtx"`
 				}{
 					RawTx: rawTx,
@@ -220,7 +220,7 @@ func getAmount(c *gcli.Context) (uint64, error) {
 }
 
 func createRawTxCmdHandler(c *gcli.Context) (*coin.Transaction, error) {
-	rpcClient := RpcClientFromContext(c)
+	rpcClient := RPCClientFromContext(c)
 
 	wltAddr, err := fromWalletOrAddress(c)
 	if err != nil {

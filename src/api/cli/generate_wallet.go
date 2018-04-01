@@ -17,7 +17,8 @@ import (
 )
 
 const (
-	alphaNumericSeedLength = 64 // bytes
+	// AlphaNumericSeedLength is the size of generated alphanumeric seeds, in bytes
+	AlphaNumericSeedLength = 64
 )
 
 func generateWalletCmd(cfg Config) gcli.Command {
@@ -132,7 +133,7 @@ func generateWallet(c *gcli.Context) error {
 		return err
 	}
 
-	return printJson(wallet.NewReadableWallet(wlt))
+	return printJSON(wallet.NewReadableWallet(wlt))
 }
 
 func makeSeed(s string, r, rd bool) (string, error) {
@@ -181,7 +182,8 @@ func GenerateWallet(walletFile, label, seed string, numAddrs uint64) (*wallet.Wa
 	return wlt, nil
 }
 
+// MakeAlphanumericSeed creates a random seed with AlphaNumericSeedLength bytes and hex encodes it
 func MakeAlphanumericSeed() string {
-	seedRaw := cipher.SumSHA256(secp256k1.RandByte(alphaNumericSeedLength))
+	seedRaw := cipher.SumSHA256(secp256k1.RandByte(AlphaNumericSeedLength))
 	return hex.EncodeToString(seedRaw[:])
 }

@@ -7,8 +7,11 @@ import (
 var log = NewLogger(LogPriorityKey, LogPriorityCritical)
 
 const (
-	LogPriorityKey      = "priority"
-	LogModuleKey        = "module"
+	// LogModuleKey is the key used for the module name data entry
+	LogModuleKey = "module"
+	// LogPriorityKey is the log entry key for priority log statements
+	LogPriorityKey = "priority"
+	// LogPriorityCritical is the log entry value for priority log statements
 	LogPriorityCritical = "CRITICAL"
 )
 

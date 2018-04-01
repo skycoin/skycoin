@@ -1,4 +1,5 @@
-package cli_integration_test
+// package integration_test implements CLI integration tests
+package integration_test
 
 import (
 	"bytes"

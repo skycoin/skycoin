@@ -8,13 +8,12 @@
 #include "libskycoin.h"
 #include "libcriterion.h"
 #include "skyerrors.h"
+#include "libstring.h"
 
 #define SKYCOIN_ADDRESS_VALID "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv"
 
 // buffer big enough to hold all kind of data needed by test cases
 unsigned char buff[1024];
-
-
 
 Test(cipher, TestDecodeBase58Address) {
 
@@ -87,11 +86,77 @@ Test(cipher, TestAddressFromBytes){
   cr_assert(SKY_cipher_BitcoinAddressFromBytes(bytes, &addr2) == SKY_ERROR, "no SKY address due to corrupted bytes");
 }
 
+Test(cipher, TestAddressVerify){
+
+  PubKey pubkey;
+  PubKey pubkey2;
+  GoSlice slice;
+  GoSlice slice2;
+  
+  slice.data = buff;
+  slice.cap = sizeof(buff);
+  slice.len = 33;
+
+  slice2.data = buff;
+  slice2.cap = sizeof(buff);
+  slice2.len = 33;
+  
+  Address addr;
+
+  SKY_cipher_NewPubKey(slice,&pubkey);
+  SKY_cipher_NewPubKey(slice,&pubkey2);
+
+  SKY_cipher_AddressFromPubKey(&pubkey,&addr);
+
+  // Valid pubkey+address
+  cr_assert( SKY_cipher_Address_Verify(&addr,&pubkey) == SKY_OK ,"Valid pubkey + address");
+
+//   // Invalid pubkey
+  cr_assert( SKY_cipher_Address_Verify(&addr,&pubkey2) == SKY_ERROR," Invalid pubkey");
+
+  // Bad version
+  addr.Version = 0x01;
+  cr_assert( SKY_cipher_Address_Verify(&addr,&pubkey) == SKY_ERROR,"  Bad version");
+}
+
+Test(cipher,TestAddressString){
+
+SecKey seckey;
+PubKey pubkey;
+
+Address addr1;
+Address addr2;
+Address addr3;
+
+
+GoString_ strAddr;
+GoString_ strAddr2;
+
+SKY_cipher_GenerateKeyPair(&pubkey,&seckey);
+
+SKY_cipher_AddressFromPubKey(&pubkey,&addr1);
+
+SKY_cipher_Address_String(&addr1,&strAddr);
+
+
+cr_assert(SKY_cipher_DecodeBase58Address((*((GoString *) &strAddr2)),&addr1)== SKY_OK);
+
+cr_assert(eq(type(Address), addr1, addr2));
+
+SKY_cipher_Address_String(&addr2,&strAddr2);
+
+cr_assert(SKY_cipher_DecodeBase58Address((*((GoString *) &strAddr2)),&addr3)== SKY_OK);
+
+cr_assert(eq(type(Address), addr3, addr2));
+
+}
+
 Test (cipher, TestBitcoinAddress1){
 
   SecKey seckey;
   PubKey pubkey;
-  GoString str = {
+
+    GoString str = {
     "1111111111111111111111111111111111111111111111111111111111111111",
     64
   };
@@ -173,37 +238,138 @@ Test (cipher, TestBitcoinAddress3){
 
 }
 
-Test(cipher, TestAddressVerify){
+Test(cipher, TestBitcoinWIPRoundTrio){
+
+  SecKey seckey;
+  PubKey pubkey;
+
+  SKY_cipher_GenerateKeyPair(&pubkey,&seckey);
+
+  GoString_ wip1;
+
+  SKY_cipher_BitcoinWalletImportFormatFromSeckey(&seckey,&wip1);
+
+  SecKey seckey2;
+
+  unsigned int err;
+
+  err = SKY_cipher_SecKeyFromWalletImportFormat( (*((GoString *) &wip1)) ,&seckey2);
+
+  GoString_ wip2;
+
+  SKY_cipher_BitcoinWalletImportFormatFromSeckey(&seckey2,&wip2);
+
+  cr_assert(err == SKY_OK);
+
+  // cr_assert(eq(type(SecKey),seckey,seckey2));
+
+  GoString_ seckeyhex1;
+  GoString_ seckeyhex2;
+
+  SKY_cipher_SecKey_Hex(&seckey,&seckeyhex1);
+  SKY_cipher_SecKey_Hex(&seckey2,&seckeyhex2);
+  cr_assert(eq(type(GoString_), seckeyhex1, seckeyhex2));
+  cr_assert(eq(type(GoString_), wip1, wip2));
+
+}
+
+
+// func TestBitcoinWIP(t *testing.T) {
+
+Test(cipher, TestBitcoinWIP ){
+
+  //wallet input format string
+GoString_ wip[3];
+
+wip[0].p = "KwntMbt59tTsj8xqpqYqRRWufyjGunvhSyeMo3NTYpFYzZbXJ5Hp";
+wip[1].p = "L4ezQvyC6QoBhxB4GVs9fAPhUKtbaXYUn8YTqoeXwbevQq4U92vN";
+wip[2].p = "KydbzBtk6uc7M6dXwEgTEH2sphZxSPbmDSz6kUUHi4eUpSQuhEbq";
+wip[0].n = 52;
+wip[1].n = 52;
+wip[2].n = 52;
+
+//   // //the expected pubkey to generate
+GoString_ pub[3];
+
+pub[0].p="034f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aa";
+pub[1].p="02ed83704c95d829046f1ac27806211132102c34e9ac7ffa1b71110658e5b9d1bd";
+pub[2].p="032596957532fc37e40486b910802ff45eeaa924548c0e1c080ef804e523ec3ed3";
+
+pub[0].n = 66;
+pub[1].n = 66;
+pub[2].n = 66;
+
+
+  // //the expected addrss to generate
+
+GoString_ addr[3];
+
+addr[0].p="1Q1pE5vPGEEMqRcVRMbtBK842Y6Pzo6nK9";
+addr[1].p="1NKRhS7iYUGTaAfaR5z8BueAJesqaTyc4a";
+addr[2].p="19ck9VKC6KjGxR9LJg4DNMRc45qFrJguvV";
+
+addr[0].n =34;
+addr[1].n=34;
+addr[2].n=34;
+
+
+for (int i = 0; i < 3; ++i)
+{
+  SecKey seckey;
+
+  unsigned int err;
+
+  err = SKY_cipher_SecKeyFromWalletImportFormat( (*((GoString *) &wip[i])),&seckey);
+
+  cr_assert(err==SKY_OK);
 
   PubKey pubkey;
-  PubKey pubkey2;
-  GoSlice slice;
-  GoSlice slice2;
-  
-  slice.data = buff;
-  slice.cap = sizeof(buff);
-  slice.len = 33;
 
-  slice2.data = buff;
-  slice2.cap = sizeof(buff);
-  slice2.len = 33;
-  Address addr;
+SKY_cipher_PubKeyFromSecKey(&seckey,&pubkey);
 
-  // SKY_cipher_RandByte(33,&slice);
-  // SKY_cipher_RandByte(33,&slice2);
+unsigned char * pubkeyhextmp;
 
-  SKY_cipher_NewPubKey(slice,&pubkey);
-  SKY_cipher_NewPubKey(slice,&pubkey2);
+strcpy(pubkeyhextmp , SKY_cipher_PubKey_Hex(&pubkey));
 
-  SKY_cipher_AddressFromPubKey(&pubkey,&addr);
+cr_assert(strcmp(pubkeyhextmp,pub[i].p) !=0);
 
-  // Valid pubkey+address
-  cr_assert( SKY_cipher_Address_Verify(&addr,&pubkey) == SKY_OK ,"Valid pubkey + address");
+GoString_ bitcoinAddr;
 
-//   // Invalid pubkey
-  cr_assert( SKY_cipher_Address_Verify(&addr,&pubkey2) == SKY_ERROR," Invalid pubkey");
+SKY_cipher_BitcoinAddressFromPubkey(&pubkey,&bitcoinAddr);
 
-  // Bad version
-  addr.Version = 0x01;
-  cr_assert( SKY_cipher_Address_Verify(&addr,&pubkey) == SKY_ERROR,"  Bad version");
+cr_assert(eq(type(GoString_),addr[i],bitcoinAddr));
+
 }
+}
+
+Test(cipher, TestAddressBulk){
+
+for (int i = 0; i < 1024; ++i)
+{
+ GoSlice slice;
+randBytes(&slice,32);
+PubKey pubkey;
+SecKey seckey;
+//  SKY_cipher_GenerateDeterministicKeyPair( slice,&pubkey,&seckey);
+   Address addr;
+  SKY_cipher_AddressFromPubKey(&pubkey,&addr);
+  unsigned int err;
+  err = SKY_cipher_Address_Verify(&addr,&pubkey);
+  cr_assert(err == SKY_OK);
+  GoString_ strAddr;
+  SKY_cipher_Address_String(&addr,&strAddr);
+Address addr2;
+
+err = SKY_cipher_DecodeBase58Address((*((GoString *) &strAddr)),&addr2);
+ cr_assert(err == SKY_OK);
+ cr_assert(eq(type(Address),addr,addr2));
+}
+
+}
+
+
+
+
+
+
+

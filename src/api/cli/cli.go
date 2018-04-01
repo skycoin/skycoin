@@ -1,5 +1,5 @@
 /*
-Implements an interface for creating a CLI application.
+Package cli implements an interface for creating a CLI application.
 Includes methods for manipulating wallets files and interacting with the
 webrpc API to query a skycoin node's status.
 */
@@ -81,8 +81,11 @@ COPYRIGHT:
 %s
 `, envVarsHelp)
 
-	ErrWalletName  = fmt.Errorf("error wallet file name, must have %s extension", walletExt)
-	ErrAddress     = errors.New("invalid address")
+	// ErrWalletName is returned if the wallet file name is invalid
+	ErrWalletName = fmt.Errorf("error wallet file name, must have %s extension", walletExt)
+	// ErrAddress is returned if an address is invalid
+	ErrAddress = errors.New("invalid address")
+	// ErrJSONMarshal is returned if JSON marshaling failed
 	ErrJSONMarshal = errors.New("json marshal failed")
 )
 
@@ -98,7 +101,7 @@ type Config struct {
 	WalletName string
 	DataDir    string
 	Coin       string
-	RpcAddress string
+	RPCAddress string
 }
 
 // LoadConfig loads config from environment, prior to parsing CLI flags
@@ -140,14 +143,16 @@ func LoadConfig() (Config, error) {
 		WalletName: wltName,
 		DataDir:    dataDir,
 		Coin:       coin,
-		RpcAddress: rpcAddr,
+		RPCAddress: rpcAddr,
 	}, nil
 }
 
+// FullWalletPath returns the joined wallet dir and wallet name path
 func (c Config) FullWalletPath() string {
 	return filepath.Join(c.WalletDir, c.WalletName)
 }
 
+// FullDBPath returns the joined data directory and db file name path
 func (c Config) FullDBPath() string {
 	return filepath.Join(c.DataDir, "data.db")
 }
@@ -248,7 +253,7 @@ func NewApp(cfg Config) *App {
 	app.Metadata = map[string]interface{}{
 		"config": cfg,
 		"rpc": &webrpc.Client{
-			Addr: cfg.RpcAddress,
+			Addr: cfg.RPCAddress,
 		},
 	}
 
@@ -260,10 +265,12 @@ func (app *App) Run(args []string) error {
 	return app.App.Run(args)
 }
 
-func RpcClientFromContext(c *gcli.Context) *webrpc.Client {
+// RPCClientFromContext returns a webrpc.Client from a urfave/cli Context
+func RPCClientFromContext(c *gcli.Context) *webrpc.Client {
 	return c.App.Metadata["rpc"].(*webrpc.Client)
 }
 
+// ConfigFromContext returns a Config from a urfave/cli Context
 func ConfigFromContext(c *gcli.Context) Config {
 	return c.App.Metadata["config"].(Config)
 }
@@ -280,7 +287,7 @@ func errorWithHelp(c *gcli.Context, err error) {
 	fmt.Fprintf(c.App.Writer, "ERROR: %v. See '%s %s --help'\n\n", err, c.App.HelpName, c.Command.Name)
 }
 
-func formatJson(obj interface{}) ([]byte, error) {
+func formatJSON(obj interface{}) ([]byte, error) {
 	d, err := json.MarshalIndent(obj, "", "    ")
 	if err != nil {
 		return nil, ErrJSONMarshal
@@ -288,8 +295,8 @@ func formatJson(obj interface{}) ([]byte, error) {
 	return d, nil
 }
 
-func printJson(obj interface{}) error {
-	d, err := formatJson(obj)
+func printJSON(obj interface{}) error {
+	d, err := formatJSON(obj)
 	if err != nil {
 		return err
 	}

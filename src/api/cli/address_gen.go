@@ -73,7 +73,7 @@ func addressGenCmd() gcli.Command {
 			}
 
 			if !c.Bool("only-addr") {
-				return printJson(w)
+				return printJSON(w)
 			}
 
 			for _, e := range w.Entries {

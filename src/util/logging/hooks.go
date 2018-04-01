@@ -6,15 +6,16 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// NewReplayHook creates a ReplayHook
 func NewReplayHook(logger *Logger) ReplayHook {
-	return ExclusiveReplayHook(logger, []reflect.Type{
+	return newExclusiveReplayHook(logger, []reflect.Type{
 		reflect.TypeOf(ReplayHook{}),
 		reflect.TypeOf(ModuleLogHook{}),
 	})
 }
 
-// Do not replay hooks of given exclude types
-func ExclusiveReplayHook(logger *Logger, exclude []reflect.Type) (h ReplayHook) {
+// newExclusiveReplayHook creates a ReplayHook that does not replay hooks of given excluded types
+func newExclusiveReplayHook(logger *Logger, exclude []reflect.Type) (h ReplayHook) {
 	h = ReplayHook{
 		Logger:       logger,
 		excludeTypes: make(map[reflect.Type]struct{}, len(exclude)),
@@ -25,16 +26,18 @@ func ExclusiveReplayHook(logger *Logger, exclude []reflect.Type) (h ReplayHook) 
 	return
 }
 
-// Hook for replaying hooks bound to another logger
+// ReplayHook is a hook for replaying hooks bound to another logger
 type ReplayHook struct {
 	Logger       *Logger
 	excludeTypes map[reflect.Type]struct{}
 }
 
+// Levels returns all levels
 func (h ReplayHook) Levels() []logrus.Level {
 	return logrus.AllLevels
 }
 
+// Fire fires other hooks that are not excluded from replay
 func (h ReplayHook) Fire(entry *logrus.Entry) error {
 	hooks := h.Logger.Hooks
 	level := entry.Level
@@ -49,13 +52,14 @@ func (h ReplayHook) Fire(entry *logrus.Entry) error {
 	return hooks.Fire(entry.Level, entry)
 }
 
-// Tag log entries with module information
+// ModuleLogHook tags log entries with module information
 type ModuleLogHook struct {
 	FieldKey    string
 	PriorityKey string
 	ModuleName  string
 }
 
+// NewModuleLogHook creates a ModuleLogHook
 func NewModuleLogHook(moduleName string) ModuleLogHook {
 	return ModuleLogHook{
 		FieldKey:    LogModuleKey,
@@ -64,10 +68,12 @@ func NewModuleLogHook(moduleName string) ModuleLogHook {
 	}
 }
 
+// Levels returns all levels
 func (h ModuleLogHook) Levels() []logrus.Level {
 	return logrus.AllLevels
 }
 
+// Fire adds module prefix to the logrus.Entry data
 func (h ModuleLogHook) Fire(entry *logrus.Entry) error {
 	entry.Data[h.FieldKey] = h.ModuleName
 	prefix := h.ModuleName

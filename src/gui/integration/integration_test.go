@@ -1,4 +1,5 @@
-package gui_integration_test
+// package integration_test implements GUI integration tests
+package integration_test
 
 import (
 	"encoding/hex"

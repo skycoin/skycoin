@@ -110,11 +110,11 @@ func run() error {
 		info.KeysCount = *genCount
 		info.Seed = *seed
 
-		infoJson, err := json.MarshalIndent(info, "", "    ")
+		infoJSON, err := json.MarshalIndent(info, "", "    ")
 		if err != nil {
 			return err
 		}
-		err = ioutil.WriteFile(*outputInfo, infoJson, 0644)
+		err = ioutil.WriteFile(*outputInfo, infoJSON, 0644)
 		if err != nil {
 			return err
 		}

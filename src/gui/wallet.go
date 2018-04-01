@@ -23,6 +23,7 @@ type SpendResult struct {
 	Error       string                     `json:"error,omitempty"`
 }
 
+// UnconfirmedTxnsResponse contains unconfirmed transaction data
 type UnconfirmedTxnsResponse struct {
 	Transactions []visor.ReadableUnconfirmedTxn `json:"transactions"`
 }

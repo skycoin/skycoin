@@ -22,7 +22,7 @@ import (
  * Cipher API
  */
 
-// DecodeBase58Address exported wrapper around cipher.DecodeBase58Address
+//export DecodeBase58Address
 func DecodeBase58Address(strAddr string, retAddr *C.Address) C.int {
 	addr, err := cipher.DecodeBase58Address(strAddr)
 	*retAddr = *(*C.Address)(unsafe.Pointer(&addr))

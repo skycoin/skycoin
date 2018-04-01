@@ -509,156 +509,277 @@ Test(asserts, TestMustSigFromHex) {
 }
 
 Test(asserts, TestSigHex) {
-  cr_fatal("Not implemented");
-  /*
-	b := randBytes(t, 65)
-	p := NewSig(b)
-	h := p.Hex()
-	p2 := MustSigFromHex(h)
-	assert.Equal(t, p2, p)
-	assert.Equal(t, p2.Hex(), h)
-  */
+  unsigned char buff[66];
+  GoSlice b = {buff, 0, 66};
+  char strBuff[150], strBuff2[150];
+  GoString str = {NULL, 0}, str2 = {NULL, 0};
+  Sig s, s2;
+  int errcode;
+
+  randBytes(&b, 65);
+  errcode = SKY_cipher_NewSig(b, &s);
+  cr_assert(errcode == SKY_OK);
+  SKY_cipher_Sig_Hex(s, &str);
+  memcpy(strBuff, str.p, str.n + 1);
+  free((void *) str.p);
+  str.p = strBuff;
+  errcode = SKY_cipher_SigFromHex(str, &s2);
+  cr_assert(errcode == SKY_OK);
+  cr_assert(eq(u8[65], s, s2));
+
+  SKY_cipher_Sig_Hex(&s2, (GoString_ *) &str2);
+  memcpy(strBuff2, str2.p, str2.n + 1);
+  free((void *) str2.p);
+  str2.p = strBuff2;
+  cr_assert(eq(int, str.n, str2.n));
+  cr_assert(eq(str, ((char *)str.p), ((char *)str2.p)));
 }
 
 Test(asserts, TestChkSig) {
-  cr_fatal("Not implemented");
-  /*
-	p, s := GenerateKeyPair()
-	assert.Nil(t, p.Verify())
-	assert.Nil(t, s.Verify())
-	a := AddressFromPubKey(p)
-	assert.Nil(t, a.Verify(p))
-	b := randBytes(t, 256)
-	h := SumSHA256(b)
-	sig := SignHash(h, s)
-	assert.Nil(t, ChkSig(a, h, sig))
+  PubKey pk, pk2;
+  SecKey sk, sk2;
+  Address addr, addr2;
+  unsigned char buff[257];
+  GoSlice b = { buff, 0, 257 };
+  SHA256 h, h2;
+  Sig sig, sig2;
+  int errcode;
+
+  SKY_cipher_GenerateKeyPair(&pk, &sk);
+  errcode = SKY_cipher_PubKey_Verify(&pk);
+  cr_assert(errcode == SKY_OK);
+  errcode = SKY_cipher_SecKey_Verify(&sk);
+  cr_assert(errcode == SKY_OK);
+
+  SKY_cipher_AddressFromPubKey(&pk, &addr);
+  errcode = SKY_cipher_Address_Verify(&addr, &pk);
+  cr_assert(errcode == SKY_OK);
+  randBytes(&b, 256);
+  SKY_cipher_SumSHA256(b, &h);
+  SKY_cipher_SignHash(&h, &sk, &sig);
+  errcode = SKY_cipher_ChkSig(&addr, &h, &sig);
+  cr_assert(errcode == SKY_OK);
+
 	// Empty sig should be invalid
-	assert.NotNil(t, ChkSig(a, h, Sig{}))
+  memset(&sig, 0, sizeof(sig));
+  errcode = SKY_cipher_ChkSig(&addr, &h, &sig);
+  cr_assert(errcode == SKY_ERROR);
+
 	// Random sigs should not pass
-	for i := 0; i < 100; i++ {
-		assert.NotNil(t, ChkSig(a, h, NewSig(randBytes(t, 65))))
+  int i;
+	for (i = 0; i < 100; i++) {
+    randBytes(&b, 65);
+    SKY_cipher_NewSig(b, &sig);
+    errcode = SKY_cipher_ChkSig(&addr, &h, &sig);
+    cr_assert(errcode == SKY_ERROR);
 	}
+
 	// Sig for one hash does not work for another hash
-	h2 := SumSHA256(randBytes(t, 256))
-	sig2 := SignHash(h2, s)
-	assert.Nil(t, ChkSig(a, h2, sig2))
-	assert.NotNil(t, ChkSig(a, h, sig2))
-	assert.NotNil(t, ChkSig(a, h2, sig))
+  randBytes(&b, 256);
+  SKY_cipher_SumSHA256(b, &h2);
+  SKY_cipher_SignHash(&h2, &sk, &sig2);
+  errcode = SKY_cipher_ChkSig(&addr, &h2, &sig2);
+  cr_assert(errcode == SKY_OK);
+  errcode = SKY_cipher_ChkSig(&addr, &h, &sig2);
+  cr_assert(errcode == SKY_ERROR);
+  errcode = SKY_cipher_ChkSig(&addr, &h2, &sig);
+  cr_assert(errcode == SKY_ERROR);
 
 	// Different secret keys should not create same sig
-	p2, s2 := GenerateKeyPair()
-	a2 := AddressFromPubKey(p2)
-	h = SHA256{}
-	sig = SignHash(h, s)
-	sig2 = SignHash(h, s2)
-	assert.Nil(t, ChkSig(a, h, sig))
-	assert.Nil(t, ChkSig(a2, h, sig2))
-	assert.NotEqual(t, sig, sig2)
-	h = SumSHA256(randBytes(t, 256))
-	sig = SignHash(h, s)
-	sig2 = SignHash(h, s2)
-	assert.Nil(t, ChkSig(a, h, sig))
-	assert.Nil(t, ChkSig(a2, h, sig2))
-	assert.NotEqual(t, sig, sig2)
+  SKY_cipher_GenerateKeyPair(&pk2, &sk2);
+  SKY_cipher_AddressFromPubKey(&pk2, &addr2);
+  memset(&h, 0, sizeof(h));
+  SKY_cipher_SignHash(&h, &sk, &sig);
+  SKY_cipher_SignHash(&h, &sk2, &sig2);
+  errcode = SKY_cipher_ChkSig(&addr, &h, &sig);
+  cr_assert(errcode == SKY_OK);
+  errcode = SKY_cipher_ChkSig(&addr2, &h, &sig2);
+  cr_assert(errcode == SKY_OK);
+  cr_assert(ne(u8[65], sig, sig2));
+
+  randBytes(&b, 256);
+  SKY_cipher_SumSHA256(b, &h);
+  SKY_cipher_SignHash(&h, &sk, &sig);
+  SKY_cipher_SignHash(&h, &sk2, &sig2);
+  errcode = SKY_cipher_ChkSig(&addr, &h, &sig);
+  cr_assert(errcode == SKY_OK);
+  errcode = SKY_cipher_ChkSig(&addr2, &h, &sig2);
+  cr_assert(errcode == SKY_OK);
+  cr_assert(ne(u8[65], sig, sig2));
 
 	// Bad address should be invalid
-	assert.NotNil(t, ChkSig(a, h, sig2))
-	assert.NotNil(t, ChkSig(a2, h, sig))
-  */
+  errcode = SKY_cipher_ChkSig(&addr, &h, &sig2);
+  cr_assert(errcode == SKY_ERROR);
+  errcode = SKY_cipher_ChkSig(&addr2, &h, &sig);
+  cr_assert(errcode == SKY_ERROR);
 }
 
 Test(asserts, TestSignHash) {
-  cr_fatal("Not implemented");
-  /*
-	p, s := GenerateKeyPair()
-	a := AddressFromPubKey(p)
-	h := SumSHA256(randBytes(t, 256))
-	sig := SignHash(h, s)
-	assert.NotEqual(t, sig, Sig{})
-	assert.Nil(t, ChkSig(a, h, sig))
-  */
+  PubKey pk;
+  SecKey sk;
+  Address addr;
+  unsigned char buff[101];
+  GoSlice b = { buff, 0, 101 };
+  SHA256 h;
+  Sig sig, sig2;
+  int errcode;
+
+  SKY_cipher_GenerateKeyPair(&pk, &sk);
+  SKY_cipher_AddressFromPubKey(&pk, &addr);
+  randBytes(&b, 256);
+  SKY_cipher_SumSHA256(b, &h);
+  SKY_cipher_SignHash(&h, &sk, &sig);
+  memset((void *) &sig2, 0, 65);
+  cr_assert(ne(u8[65], sig2, sig));
+  errcode = SKY_cipher_ChkSig(&addr, &h, &sig);
+  cr_assert(errcode == SKY_OK);
 }
 
 Test(asserts, TestPubKeyFromSecKey) {
-  cr_fatal("Not implemented");
-  /*
-	p, s := GenerateKeyPair()
-	assert.Equal(t, PubKeyFromSecKey(s), p)
-	assert.Panics(t, func() { PubKeyFromSecKey(SecKey{}) })
-	assert.Panics(t, func() { PubKeyFromSecKey(NewSecKey(randBytes(t, 99))) })
-	assert.Panics(t, func() { PubKeyFromSecKey(NewSecKey(randBytes(t, 31))) })
-  */
+  PubKey pk, pk2;
+  SecKey sk;
+  unsigned char buff[101];
+  GoSlice b = { buff, 0, 101 };
+  int errcode;
+
+  SKY_cipher_GenerateKeyPair(&pk, &sk);
+  errcode = SKY_cipher_PubKeyFromSecKey(&sk, &pk2);
+  cr_assert(errcode == SKY_OK);
+  cr_assert(eq(u8[33], pk, pk2));
+
+  memset(&sk, 0, sizeof(sk));
+  errcode = SKY_cipher_PubKeyFromSecKey(&sk, &pk);
+  cr_assert(errcode == SKY_ERROR);
+
+  randBytes(&b, 99);
+  errcode = SKY_cipher_NewSecKey(b, &sk);
+  cr_assert(errcode == SKY_ERROR);
+
+  randBytes(&b, 31);
+  errcode = SKY_cipher_NewSecKey(b, &sk);
+  cr_assert(errcode == SKY_ERROR);
 }
 
 Test(asserts, TestPubKeyFromSig) {
-  cr_fatal("Not implemented");
-  /*
-	p, s := GenerateKeyPair()
-	h := SumSHA256(randBytes(t, 256))
-	sig := SignHash(h, s)
-	p2, err := PubKeyFromSig(sig, h)
-	assert.Equal(t, p, p2)
-	assert.Nil(t, err)
-	_, err = PubKeyFromSig(Sig{}, h)
-	assert.NotNil(t, err)
-  */
+  PubKey pk, pk2;
+  SecKey sk;
+  SHA256 h;
+  Sig sig;
+  unsigned char buff[257];
+  GoSlice b = { buff, 0, 257 };
+  int errcode;
+
+  SKY_cipher_GenerateKeyPair(&pk, &sk);
+  randBytes(&b, 256);
+  SKY_cipher_SumSHA256(b, &h);
+  SKY_cipher_SignHash(&h, &sk, &sig);
+  errcode = SKY_cipher_PubKeyFromSig(&sig, &h, &pk2);
+  cr_assert(errcode == SKY_OK);
+  cr_assert(eq(u8[33], pk, pk2));
+
+  memset(&sig, 0, sizeof(sig));
+  errcode = SKY_cipher_PubKeyFromSig(&sig, &h, &pk2);
+  cr_assert(errcode == SKY_ERROR);
 }
 
 Test(asserts, TestVerifySignature) {
-  cr_fatal("Not implemented");
-  /*
-	p, s := GenerateKeyPair()
-	h := SumSHA256(randBytes(t, 256))
-	h2 := SumSHA256(randBytes(t, 256))
-	sig := SignHash(h, s)
-	assert.Nil(t, VerifySignature(p, sig, h))
-	assert.NotNil(t, VerifySignature(p, Sig{}, h))
-	assert.NotNil(t, VerifySignature(p, sig, h2))
-	p2, _ := GenerateKeyPair()
-	assert.NotNil(t, VerifySignature(p2, sig, h))
-	assert.NotNil(t, VerifySignature(PubKey{}, sig, h))
-  */
+  PubKey pk, pk2;
+  SecKey sk, sk2;
+  SHA256 h, h2;
+  Sig sig, sig2;
+  unsigned char buff[257];
+  GoSlice b = { buff, 0, 257 };
+  int errcode;
+
+  SKY_cipher_GenerateKeyPair(&pk, &sk);
+  randBytes(&b, 256);
+  SKY_cipher_SumSHA256(b, &h);
+  randBytes(&b, 256);
+  SKY_cipher_SumSHA256(b, &h2);
+  SKY_cipher_SignHash(&h, &sk, &sig);
+  errcode = SKY_cipher_VerifySignature(&pk, &sig, &h);
+  cr_assert(errcode == SKY_OK);
+
+  memset(&sig2, 0, sizeof(sig2));
+  errcode = SKY_cipher_VerifySignature(&pk, &sig2, &h);
+  cr_assert(errcode == SKY_ERROR);
+
+  errcode = SKY_cipher_VerifySignature(&pk, &sig, &h2);
+  cr_assert(errcode == SKY_ERROR);
+
+  SKY_cipher_GenerateKeyPair(&pk2, &sk2);
+  errcode = SKY_cipher_VerifySignature(&pk2, &sig, &h);
+  cr_assert(errcode == SKY_ERROR);
+
+  memset(&pk2, 0, sizeof(pk2));
+  errcode = SKY_cipher_VerifySignature(&pk2, &sig, &h);
+  cr_assert(errcode == SKY_ERROR);
 }
 
 Test(asserts, TestGenerateKeyPair) {
-  cr_fatal("Not implemented");
-  /*
-	p, s := GenerateKeyPair()
-	assert.Nil(t, p.Verify())
-	assert.Nil(t, s.Verify())
-  */
+  PubKey pk;
+  SecKey sk;
+  int errcode;
+
+  SKY_cipher_GenerateKeyPair(&pk, &sk);
+  errcode = SKY_cipher_PubKey_Verify(&pk);
+  cr_assert(errcode == SKY_OK);
+  errcode = SKY_cipher_SecKey_Verify(&sk);
+  cr_assert(errcode == SKY_OK);
 }
 
 Test(asserts, TestGenerateDeterministicKeyPair) {
-  cr_fatal("Not implemented");
-  /*
+  PubKey pk;
+  SecKey sk;
+  unsigned char buff[33];
+  GoSlice seed = { buff, 0, 33 };
+  int errcode;
+
 	// TODO -- deterministic key pairs are useless as is because we can't
 	// generate pair n+1, only pair 0
-	seed := randBytes(t, 32)
-	p, s := GenerateDeterministicKeyPair(seed)
-	assert.Nil(t, p.Verify())
-	assert.Nil(t, s.Verify())
-	p, s = GenerateDeterministicKeyPair(seed)
-	assert.Nil(t, p.Verify())
-	assert.Nil(t, s.Verify())
-  */
+  randBytes(&seed, 32);
+  SKY_cipher_GenerateDeterministicKeyPair(seed, &pk, &sk);
+  errcode = SKY_cipher_PubKey_Verify(&pk);
+  cr_assert(errcode == SKY_OK);
+  errcode = SKY_cipher_SecKey_Verify(&sk);
+  cr_assert(errcode == SKY_OK);
+
+  SKY_cipher_GenerateDeterministicKeyPair(seed, &pk, &sk);
+  errcode = SKY_cipher_PubKey_Verify(&pk);
+  cr_assert(errcode == SKY_OK);
+  errcode = SKY_cipher_SecKey_Verify(&sk);
+  cr_assert(errcode == SKY_OK);
 }
 
 Test(asserts, TestSecKeTest) {
-  cr_fatal("Not implemented");
-  /*
-	_, s := GenerateKeyPair()
-	assert.Nil(t, TestSecKey(s))
-	assert.NotNil(t, TestSecKey(SecKey{}))
-  */
+  PubKey pk;
+  SecKey sk;
+  int errcode;
+
+  SKY_cipher_GenerateKeyPair(&pk, &sk);
+  SKY_cipher_TestSecKey(&sk);
+  cr_assert(errcode == SKY_OK);
+
+  memset(&sk, 0, sizeof(sk));
+  SKY_cipher_TestSecKey(&sk);
+  cr_assert(errcode == SKY_ERROR);
 }
 
 Test(asserts, TestSecKeyHashTest) {
-  cr_fatal("Not implemented");
-  /*
-	_, s := GenerateKeyPair()
-	h := SumSHA256(randBytes(t, 256))
-	assert.Nil(t, TestSecKeyHash(s, h))
-	assert.NotNil(t, TestSecKeyHash(SecKey{}, h))
-  */
+  PubKey pk;
+  SecKey sk;
+  SHA256 h;
+  unsigned char buff[257];
+  GoSlice b = { buff, 0, 257};
+  int errcode;
+
+  SKY_cipher_GenerateKeyPair(&pk, &sk);
+  randBytes(&b, 256);
+  SKY_cipher_SumSHA256(b, &h);
+  errcode = SKY_cipher_TestSecKeyHash(&sk, &h);
+  cr_assert(errcode == SKY_OK);
+
+  memset(&sk, 0, sizeof(sk));
+  errcode = SKY_cipher_TestSecKeyHash(&sk, &h);
+  cr_assert(errcode == SKY_ERROR);
 }

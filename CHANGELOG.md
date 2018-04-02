@@ -8,11 +8,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Logging migration, now powered by [logrus](https://github.com/sirupsen/logrus)
+
 ### Fixed
 
 ### Changed
 
 ### Removed
+
+- Remove dependency [op/go-logging](https://github.com/op/go-logging)
 
 ## [0.22.0] - 2018-03-20
 

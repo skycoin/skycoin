@@ -519,7 +519,7 @@ Test(asserts, TestSigHex) {
   randBytes(&b, 65);
   errcode = SKY_cipher_NewSig(b, &s);
   cr_assert(errcode == SKY_OK);
-  SKY_cipher_Sig_Hex(s, &str);
+  SKY_cipher_Sig_Hex(&s, (GoString_ *) &str);
   memcpy(strBuff, str.p, str.n + 1);
   free((void *) str.p);
   str.p = strBuff;

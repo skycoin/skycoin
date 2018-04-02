@@ -120,7 +120,7 @@ func (cfg *Config) preprocess() Config {
 }
 
 // DaemonConfig configuration for the Daemon
-type DaemonConfig struct {
+type DaemonConfig struct { // nolint: golint
 	// Application version. TODO -- manage version better
 	Version int32
 	// IP Address to serve on. Leave empty for automatic assignment

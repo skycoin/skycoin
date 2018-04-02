@@ -19,8 +19,8 @@ import (
 const defaultTimestampFormat = time.RFC3339
 
 var (
-	baseTimestamp      time.Time    = time.Now()
-	defaultColorScheme *ColorScheme = &ColorScheme{
+	baseTimestamp      = time.Now()
+	defaultColorScheme = &ColorScheme{
 		InfoLevelStyle:   "green",
 		WarnLevelStyle:   "yellow",
 		ErrorLevelStyle:  "red",
@@ -32,7 +32,7 @@ var (
 		CallContextStyle: "black+h",
 		CriticalStyle:    "magenta+h",
 	}
-	noColorsColorScheme *compiledColorScheme = &compiledColorScheme{
+	noColorsColorScheme = &compiledColorScheme{
 		InfoLevelColor:   ansi.ColorFunc(""),
 		WarnLevelColor:   ansi.ColorFunc(""),
 		ErrorLevelColor:  ansi.ColorFunc(""),
@@ -44,13 +44,14 @@ var (
 		CallContextColor: ansi.ColorFunc(""),
 		CriticalColor:    ansi.ColorFunc(""),
 	}
-	defaultCompiledColorScheme *compiledColorScheme = compileColorScheme(defaultColorScheme)
+	defaultCompiledColorScheme = compileColorScheme(defaultColorScheme)
 )
 
 func miniTS() int {
 	return int(time.Since(baseTimestamp) / time.Second)
 }
 
+// ColorScheme configures the logging output colors
 type ColorScheme struct {
 	InfoLevelStyle   string
 	WarnLevelStyle   string
@@ -77,9 +78,13 @@ type compiledColorScheme struct {
 	CriticalColor    func(string) string
 }
 
+// TextFormatter formats log output
 type TextFormatter struct {
 	// Name of the logging field containing priority level
 	PriorityKey string
+
+	// Highlight messages with this priority
+	HighlightPriorityValue string
 
 	// Set to true to bypass checking for a TTY before outputting colors.
 	ForceColors bool
@@ -176,13 +181,15 @@ func (f *TextFormatter) checkIfTerminal(w io.Writer) bool {
 	}
 }
 
+// SetColorScheme sets the TextFormatter's color scheme configuration
 func (f *TextFormatter) SetColorScheme(colorScheme *ColorScheme) {
 	f.colorScheme = compileColorScheme(colorScheme)
 }
 
+// Format formats a logrus.Entry
 func (f *TextFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	var b *bytes.Buffer
-	var keys []string = make([]string, 0, len(entry.Data))
+	keys := make([]string, 0, len(entry.Data))
 	for k := range entry.Data {
 		keys = append(keys, k)
 	}
@@ -254,7 +261,7 @@ func (f *TextFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys 
 	}
 
 	priority, ok := entry.Data[f.PriorityKey]
-	hasPriority := ok && priority == "CRITICAL"
+	hasPriority := ok && priority == f.HighlightPriorityValue
 
 	if entry.Level != logrus.WarnLevel {
 		levelText = entry.Level.String()
@@ -345,7 +352,7 @@ func (f *TextFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys 
 	}
 
 	for _, k := range keys {
-		if k != "prefix" && k != "file" && k != "func" && k != "line" {
+		if k != "prefix" && k != "file" && k != "func" && k != "line" && k != f.PriorityKey && k != LogModuleKey {
 			v := entry.Data[k]
 			fmt.Fprintf(b, " %s", f.formatKeyValue(levelColor(k), v))
 		}

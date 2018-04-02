@@ -6,21 +6,29 @@ The project contains both the source (src) and target (dist) files of this web i
 
 ## Prerequisites
 
-The Skycoin web interface requires Node 6.9.0 or higher, together with NPM 3 or higher.
+The Skycoin web interface requires Node 8.10.0 or higher, together with NPM 5.6 or higher.
 
 ## Installation
 
 This project is generated using Angular CLI, therefore it is adviced to first run `npm install -g @angular/cli`.
 
-Dependencies are managed with Yarn, to install yarn run `npm install -g yarn`.
+Dependencies are managed with NPM 5, to install these run `npm install`.
 
-To install all Angular, Angular CLI and all other libraries, you will then have to run `yarn`.
-
-You will only have to run this again, if any dependencies have been changed in the `package.json` file.
+You will only have to run this again, if any dependencies have been changed in the `package-lock.json` file.
 
 ## Compiling new target files
 
-To compile new target files, you will have to run: `npm run build`
+After pulling the latest code, you might first have to update your dependencies, in case someone else has updated them. 
+You should always do this when compiling new production files:
+
+```
+rm -rf node_modules
+npm install 
+```
+
+This will remove the current dependencies, and install them from the `package-lock.json`.
+
+To compile new target files, you will have to run: `npm run build`.
 
 ## Development server
 

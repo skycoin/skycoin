@@ -77,7 +77,7 @@ func generateAddrs(c *gcli.Context) error {
 	}
 
 	if jsonFmt {
-		s, err := FormatAddressesAsJson(addrs)
+		s, err := FormatAddressesAsJSON(addrs)
 		if err != nil {
 			return err
 		}
@@ -89,6 +89,7 @@ func generateAddrs(c *gcli.Context) error {
 	return nil
 }
 
+// GenerateAddressesInFile generates addresses in given wallet file
 func GenerateAddressesInFile(walletFile string, num uint64) ([]cipher.Address, error) {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
@@ -112,8 +113,9 @@ func GenerateAddressesInFile(walletFile string, num uint64) ([]cipher.Address, e
 	return addrs, nil
 }
 
-func FormatAddressesAsJson(addrs []cipher.Address) (string, error) {
-	d, err := formatJson(struct {
+// FormatAddressesAsJSON converts []cipher.Address to strings and formats the array into a standard JSON object wrapper
+func FormatAddressesAsJSON(addrs []cipher.Address) (string, error) {
+	d, err := formatJSON(struct {
 		Addresses []string `json:"addresses"`
 	}{
 		Addresses: AddressesToStrings(addrs),
@@ -126,10 +128,12 @@ func FormatAddressesAsJson(addrs []cipher.Address) (string, error) {
 	return string(d), nil
 }
 
+// FormatAddressesAsJoinedArray converts []cipher.Address to strings and concatenates them with a comma
 func FormatAddressesAsJoinedArray(addrs []cipher.Address) string {
 	return strings.Join(AddressesToStrings(addrs), ",")
 }
 
+// AddressesToStrings converts []cipher.Address to []string
 func AddressesToStrings(addrs []cipher.Address) []string {
 	if addrs == nil {
 		return nil

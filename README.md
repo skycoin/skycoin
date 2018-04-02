@@ -38,6 +38,7 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
     - [Skycoin command line interface](#skycoin-command-line-interface)
 - [Integrating Skycoin with your application](#integrating-skycoin-with-your-application)
 - [Contributing a node to the network](#contributing-a-node-to-the-network)
+- [URI Specification](#uri-specification)
 - [Development](#development)
     - [Modules](#modules)
     - [Client libraries](#client-libraries)
@@ -146,6 +147,17 @@ and used to seed client with peers.
 
 *Note*: Do not add Skywire nodes to `peers.txt`.
 Only add Skycoin nodes with high uptime and a static IP address (such as a Skycoin node hosted on a VPS).
+
+## URI Specification
+
+Skycoin URIs obey the same rules as specified in Bitcoin's [BIP21](https://github.com/bitcoin/bips/blob/master/bip-0021.mediawiki).
+They use the same fields, except with the addition of an optional `hours` parameter, specifying the coin hours.
+
+Example Skycoin URIs:
+
+* `skycoin:2hYbwYudg34AjkJJCRVRcMeqSWHUixjkfwY`
+* `skycoin:2hYbwYudg34AjkJJCRVRcMeqSWHUixjkfwY?amount=123.456&hours=70`
+* `skycoin:2hYbwYudg34AjkJJCRVRcMeqSWHUixjkfwY?amount=123.456&hours=70&label=friend&message=Birthday%20Gift`
 
 ## Development
 

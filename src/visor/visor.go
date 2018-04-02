@@ -128,6 +128,8 @@ type Config struct {
 	BuildInfo BuildInfo
 	// disables wallet API
 	DisableWalletAPI bool
+	// wallet crypto type
+	WalletCryptoType wallet.CryptoType
 }
 
 // NewVisorConfig put cap on block size, not on transactions/block
@@ -235,9 +237,9 @@ type Visor struct {
 	// Unconfirmed transactions, held for relay until we get block confirmation
 	Unconfirmed UnconfirmedTxnPooler
 	Blockchain  Blockchainer
+	Wallets     *wallet.Service
 	history     historyer
 	bcParser    *BlockchainParser
-	wallets     *wallet.Service
 	db          *bolt.DB
 }
 
@@ -267,7 +269,13 @@ func NewVisor(c Config, db *bolt.DB) (*Visor, error) {
 
 	bc.BindListener(bp.FeedBlock)
 
-	wltServ, err := wallet.NewService(c.WalletDirectory, c.DisableWalletAPI)
+	wltServConfig := wallet.Config{
+		WalletDir:        c.WalletDirectory,
+		CryptoType:       c.WalletCryptoType,
+		DisableWalletAPI: c.DisableWalletAPI,
+	}
+
+	wltServ, err := wallet.NewService(wltServConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -279,7 +287,7 @@ func NewVisor(c Config, db *bolt.DB) (*Visor, error) {
 		Unconfirmed: NewUnconfirmedTxnPool(db),
 		history:     history,
 		bcParser:    bp,
-		wallets:     wltServ,
+		Wallets:     wltServ,
 	}
 
 	return v, nil
@@ -1022,8 +1030,8 @@ func (vs Visor) GetAddrUxOuts(address cipher.Address) ([]*historydb.UxOut, error
 }
 
 // ScanAheadWalletAddresses scans ahead N addresses in a wallet, looking for a non-empty balance
-func (vs Visor) ScanAheadWalletAddresses(wltName string, scanN uint64) (wallet.Wallet, error) {
-	return vs.wallets.ScanAheadWalletAddresses(wltName, scanN, vs)
+func (vs Visor) ScanAheadWalletAddresses(wltName string, password []byte, scanN uint64) (*wallet.Wallet, error) {
+	return vs.Wallets.ScanAheadWalletAddresses(wltName, password, scanN, vs)
 }
 
 // GetBalanceOfAddrs returns balance pairs of given addreses
@@ -1102,6 +1110,5 @@ func (vs Visor) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair,
 
 		bps = append(bps, bp)
 	}
-
 	return bps, nil
 }

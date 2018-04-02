@@ -115,7 +115,7 @@ func NewBlockchain(db *bolt.DB, walker Walker) (*Blockchain, error) {
 		return nil, err
 	}
 
-	sigs, err := NewBlockSigs(db)
+	sigs, err := newBlockSigs(db)
 	if err != nil {
 		return nil, err
 	}

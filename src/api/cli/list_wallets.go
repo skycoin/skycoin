@@ -10,6 +10,7 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
+// WalletEntry represents an enty in a wallet file
 type WalletEntry struct {
 	Name       string `json:"name"`
 	Label      string `json:"label"`
@@ -54,11 +55,11 @@ func listWallets(c *gcli.Context) error {
 			}
 			wlts.Wallets = append(wlts.Wallets, WalletEntry{
 				Name:       name,
-				Label:      w.GetLabel(),
+				Label:      w.Label(),
 				AddressNum: len(w.Entries),
 			})
 		}
 	}
 
-	return printJson(wlts)
+	return printJSON(wlts)
 }

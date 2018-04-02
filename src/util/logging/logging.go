@@ -4,7 +4,16 @@ import (
 	"io"
 )
 
-var log = NewLogger()
+var log = NewLogger(LogPriorityKey, LogPriorityCritical)
+
+const (
+	// LogModuleKey is the key used for the module name data entry
+	LogModuleKey = "module"
+	// LogPriorityKey is the log entry key for priority log statements
+	LogPriorityKey = "priority"
+	// LogPriorityCritical is the log entry value for priority log statements
+	LogPriorityCritical = "CRITICAL"
+)
 
 // MustGetLogger safe initialize global logger
 func MustGetLogger(module string) *Logger {

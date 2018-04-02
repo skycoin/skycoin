@@ -21,7 +21,7 @@ func lastBlocksCmd() gcli.Command {
 }
 
 func getLastBlocks(c *gcli.Context) error {
-	rpcClient := RpcClientFromContext(c)
+	rpcClient := RPCClientFromContext(c)
 
 	num := c.Args().First()
 	if num == "" {
@@ -39,5 +39,5 @@ func getLastBlocks(c *gcli.Context) error {
 		return err
 	}
 
-	return printJson(blocks)
+	return printJSON(blocks)
 }

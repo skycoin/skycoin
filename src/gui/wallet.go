@@ -176,6 +176,8 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 //     seed: wallet seed [required]
 //     label: wallet label [required]
 //     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
+//     encrypt: bool value, whether encrypt the wallet [optional]
+//     password: password for encrypting wallet [optional, must be provided if "encrypt" is set]
 func walletCreate(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -184,19 +186,36 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		seed := r.FormValue("seed")
-		label := r.FormValue("label")
-		scanNStr := r.FormValue("scan")
-
 		if seed == "" {
 			wh.Error400(w, "missing seed")
 			return
 		}
 
+		label := r.FormValue("label")
 		if label == "" {
 			wh.Error400(w, "missing label")
 			return
 		}
 
+		password := r.FormValue("password")
+
+		var encrypt bool
+		encryptStr := r.FormValue("encrypt")
+		if encryptStr != "" {
+			var err error
+			encrypt, err = strconv.ParseBool(encryptStr)
+			if err != nil {
+				wh.Error400(w, fmt.Sprintf("invalid encrypt value: %v", err))
+				return
+			}
+
+			if encrypt && len(password) == 0 {
+				wh.Error400(w, "missing password")
+				return
+			}
+		}
+
+		scanNStr := r.FormValue("scan")
 		var scanN uint64 = 1
 		if scanNStr != "" {
 			var err error
@@ -213,8 +232,10 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		wlt, err := gateway.CreateWallet("", wallet.Options{
-			Seed:  seed,
-			Label: label,
+			Seed:     seed,
+			Label:    label,
+			Encrypt:  encrypt,
+			Password: []byte(password),
 		})
 		if err != nil {
 			switch err {
@@ -227,7 +248,7 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 			}
 		}
 
-		wlt, err = gateway.ScanAheadWalletAddresses(wlt.Filename(), nil, scanN-1)
+		wlt, err = gateway.ScanAheadWalletAddresses(wlt.Filename(), []byte(password), scanN-1)
 		if err != nil {
 			logger.Errorf("gateway.ScanAheadWalletAddresses failed: %v", err)
 			wh.Error500(w)
@@ -235,6 +256,7 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		rlt := wallet.NewReadableWallet(wlt)
+		rlt.Erase()
 		wh.SendJSONOr500(logger, w, rlt)
 	}
 }

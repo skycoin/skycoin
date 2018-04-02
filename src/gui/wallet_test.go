@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -914,9 +915,11 @@ func TestWalletTransactionsHandler(t *testing.T) {
 
 func TestWalletCreateHandler(t *testing.T) {
 	type httpBody struct {
-		Seed  string
-		Label string
-		ScanN string
+		Seed     string
+		Label    string
+		ScanN    string
+		Encrypt  bool
+		Password string
 	}
 	tt := []struct {
 		name                      string
@@ -994,8 +997,9 @@ func TestWalletCreateHandler(t *testing.T) {
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - gateway.CreateWallet error",
 			options: wallet.Options{
-				Label: "bar",
-				Seed:  "foo",
+				Label:    "bar",
+				Seed:     "foo",
+				Password: []byte{},
 			},
 			gatewayCreateWalletErr: errors.New("gateway.CreateWallet error"),
 		},
@@ -1012,8 +1016,9 @@ func TestWalletCreateHandler(t *testing.T) {
 			wltName: "filename",
 			scnN:    2,
 			options: wallet.Options{
-				Label: "bar",
-				Seed:  "foo",
+				Label:    "bar",
+				Seed:     "foo",
+				Password: []byte{},
 			},
 			gatewayCreateWalletResult: wallet.Wallet{
 				Meta: map[string]string{
@@ -1035,8 +1040,9 @@ func TestWalletCreateHandler(t *testing.T) {
 			wltName: "filename",
 			scnN:    2,
 			options: wallet.Options{
-				Label: "bar",
-				Seed:  "foo",
+				Label:    "bar",
+				Seed:     "foo",
+				Password: []byte{},
 			},
 			gatewayCreateWalletErr: wallet.ErrWalletAPIDisabled,
 		},
@@ -1053,8 +1059,9 @@ func TestWalletCreateHandler(t *testing.T) {
 			wltName: "filename",
 			scnN:    2,
 			options: wallet.Options{
-				Label: "bar",
-				Seed:  "foo",
+				Label:    "bar",
+				Seed:     "foo",
+				Password: []byte{},
 			},
 			gatewayCreateWalletResult: wallet.Wallet{
 				Meta: map[string]string{
@@ -1062,7 +1069,10 @@ func TestWalletCreateHandler(t *testing.T) {
 				},
 			},
 			responseBody: wallet.ReadableWallet{
-				Meta:    map[string]string{},
+				Meta: map[string]string{
+					"seed":     "",
+					"lastSeed": "",
+				},
 				Entries: wallet.ReadableEntries{},
 			},
 		},
@@ -1080,8 +1090,9 @@ func TestWalletCreateHandler(t *testing.T) {
 			wltName: "filename",
 			scnN:    2,
 			options: wallet.Options{
-				Label: "bar",
-				Seed:  "foo",
+				Label:    "bar",
+				Seed:     "foo",
+				Password: []byte{},
 			},
 			gatewayCreateWalletResult: wallet.Wallet{
 				Meta: map[string]string{
@@ -1089,18 +1100,82 @@ func TestWalletCreateHandler(t *testing.T) {
 				},
 			},
 			responseBody: wallet.ReadableWallet{
-				Meta:    map[string]string{},
+				Meta: map[string]string{
+					"seed":     "",
+					"lastSeed": "",
+				},
 				Entries: wallet.ReadableEntries{},
 			},
 			csrfDisabled: true,
 		},
+		{
+			name:   "200 - OK - Encrypted",
+			method: http.MethodPost,
+			body: &httpBody{
+				Seed:     "foo",
+				Label:    "bar",
+				Encrypt:  true,
+				Password: "pwd",
+				ScanN:    "2",
+			},
+			status:  http.StatusOK,
+			err:     "",
+			wltName: "filename",
+			options: wallet.Options{
+				Label:    "bar",
+				Seed:     "foo",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			scnN: 2,
+			gatewayCreateWalletResult: wallet.Wallet{
+				Meta: map[string]string{
+					"filename":  "filename",
+					"label":     "bar",
+					"encrypted": "true",
+					"password":  "pwd",
+					"secrets":   "secrets",
+				},
+			},
+			scanWalletAddressesResult: wallet.Wallet{
+				Meta: map[string]string{
+					"filename":  "filename",
+					"label":     "bar",
+					"encrypted": "true",
+					"password":  "pwd",
+					"secrets":   "secrets",
+				},
+			},
+			responseBody: wallet.ReadableWallet{
+				Meta: map[string]string{
+					"filename":  "filename",
+					"label":     "bar",
+					"seed":      "",
+					"lastSeed":  "",
+					"encrypted": "true",
+					"password":  "pwd",
+					"secrets":   "secrets",
+				},
+				Entries: wallet.ReadableEntries{},
+			},
+		},
+		{
+			name:   "400 Bad request - encrypt without password",
+			method: http.MethodPost,
+			body: &httpBody{
+				Seed:    "foo",
+				Label:   "bar",
+				Encrypt: true,
+			},
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - missing password",
+		},
 	}
 
 	for _, tc := range tt {
-		var pwd []byte // nil password
 		gateway := &GatewayerMock{}
 		gateway.On("CreateWallet", "", tc.options).Return(&tc.gatewayCreateWalletResult, tc.gatewayCreateWalletErr)
-		gateway.On("ScanAheadWalletAddresses", tc.wltName, pwd, tc.scnN-1).Return(&tc.scanWalletAddressesResult, tc.scanWalletAddressesError)
+		gateway.On("ScanAheadWalletAddresses", tc.wltName, tc.options.Password, tc.scnN-1).Return(&tc.scanWalletAddressesResult, tc.scanWalletAddressesError)
 
 		endpoint := "/wallet/create"
 
@@ -1114,6 +1189,14 @@ func TestWalletCreateHandler(t *testing.T) {
 			}
 			if tc.body.ScanN != "" {
 				v.Add("scan", tc.body.ScanN)
+			}
+
+			if tc.body.Encrypt {
+				v.Add("encrypt", strconv.FormatBool(tc.body.Encrypt))
+			}
+
+			if tc.body.Password != "" {
+				v.Add("password", tc.body.Password)
 			}
 		}
 

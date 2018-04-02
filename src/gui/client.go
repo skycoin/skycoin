@@ -387,10 +387,15 @@ func (c *Client) Wallets() ([]*wallet.ReadableWallet, error) {
 
 // CreateWallet makes a request to /wallet/create
 // If scanN is <= 0, the scan number defaults to 1
-func (c *Client) CreateWallet(seed, label string, scanN int) (*wallet.ReadableWallet, error) {
+func (c *Client) CreateWallet(seed, label string, scanN int, encrypt bool, password string) (*wallet.ReadableWallet, error) {
 	v := url.Values{}
 	v.Add("seed", seed)
 	v.Add("label", label)
+	if encrypt {
+		v.Add("encrypt", "true")
+		v.Add("password", password)
+	}
+
 	if scanN > 0 {
 		v.Add("scan", fmt.Sprint(scanN))
 	}

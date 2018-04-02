@@ -23,6 +23,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/gui"
 	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -64,6 +65,7 @@ type TestData struct {
 
 var update = flag.Bool("update", false, "update golden files")
 var testWallet = flag.Bool("test-wallet", false, "run wallet tests")
+var logger = logging.MustGetLogger("gui-integration-test")
 
 func nodeAddress() string {
 	addr := os.Getenv("SKYCOIN_NODE_HOST")
@@ -1954,8 +1956,10 @@ func TestCreateWallet(t *testing.T) {
 
 	c := gui.NewClient(nodeAddress())
 
-	w, clean := createWallet(t, c)
+	w, clean := createWallet(t, c, false, "")
 	defer clean()
+
+	checkNoSensitiveData(t, w)
 
 	walletDir := getWalletDir(t, c)
 
@@ -1964,7 +1968,15 @@ func TestCreateWallet(t *testing.T) {
 	_, err := os.Stat(walletPath)
 	require.NoError(t, err)
 
-	checkWalletEntriesAndLastSeed(t, w)
+	// create wallet with encryption
+	encW, encWClean := createWallet(t, c, true, "pwd")
+	defer encWClean()
+
+	checkNoSensitiveData(t, encW)
+
+	require.NotEmpty(t, encW.Meta["secrets"])
+
+	// TODO: decrypt the wallet and verify the seed and address keys.
 }
 
 func TestGetWallet(t *testing.T) {
@@ -1975,7 +1987,7 @@ func TestGetWallet(t *testing.T) {
 	c := gui.NewClient(nodeAddress())
 
 	// Create a wallet
-	w, clean := createWallet(t, c)
+	w, clean := createWallet(t, c, false, "")
 	defer clean()
 
 	// Confirms the wallet can be acquired
@@ -1994,7 +2006,7 @@ func TestGetWallets(t *testing.T) {
 	// Creates 2 new wallets
 	var ws []wallet.Wallet
 	for i := 0; i < 2; i++ {
-		w, clean := createWallet(t, c)
+		w, clean := createWallet(t, c, false, "")
 		defer clean()
 		// cleaners = append(cleaners, clean)
 		ws = append(ws, *w)
@@ -2033,7 +2045,7 @@ func TestWalletNewAddress(t *testing.T) {
 	for i := 1; i <= 30; i++ {
 		name := fmt.Sprintf("generate %v addresses", i)
 		t.Run(name, func(t *testing.T) {
-			w, clean := createWallet(t, c)
+			w, clean := createWallet(t, c, false, "")
 			defer clean()
 
 			addrs, err := c.NewWalletAddress(w.Filename(), i)
@@ -2061,7 +2073,7 @@ func TestStableWalletBalance(t *testing.T) {
 	}
 
 	c := gui.NewClient(nodeAddress())
-	w, clean := createWallet(t, c)
+	w, clean := createWallet(t, c, false, "")
 	defer clean()
 
 	bp, err := c.WalletBalance(w.Filename())
@@ -2092,7 +2104,7 @@ func TestWalletUpdate(t *testing.T) {
 	}
 
 	c := gui.NewClient(nodeAddress())
-	w, clean := createWallet(t, c)
+	w, clean := createWallet(t, c, false, "")
 	defer clean()
 
 	err := c.UpdateWallet(w.Filename(), "new wallet")
@@ -2110,7 +2122,7 @@ func TestStableWalletTransactions(t *testing.T) {
 	}
 
 	c := gui.NewClient(nodeAddress())
-	w, clean := createWallet(t, c)
+	w, clean := createWallet(t, c, false, "")
 	defer clean()
 
 	txns, err := c.WalletTransactions(w.Filename())
@@ -2251,6 +2263,14 @@ func getAddressBalance(t *testing.T, c *gui.Client, addr string) (uint64, uint64
 	return bp.Confirmed.Coins, bp.Confirmed.Hours
 }
 
+func checkNoSensitiveData(t *testing.T, w *wallet.Wallet) {
+	require.Empty(t, w.Meta["seed"])
+	require.Empty(t, w.Meta["lastSeed"])
+	for _, e := range w.Entries {
+		require.Equal(t, cipher.SecKey{}, e.Secret)
+	}
+}
+
 // checkWalletEntriesAndLastSeed confirms the wallet entries and lastSeed are derivied
 // from the seed.
 func checkWalletEntriesAndLastSeed(t *testing.T, w *wallet.Wallet) {
@@ -2270,13 +2290,13 @@ func checkWalletEntriesAndLastSeed(t *testing.T, w *wallet.Wallet) {
 
 // createWallet creates a wallet with rand seed.
 // Returns the generated wallet and clean up function.
-func createWallet(t *testing.T, c *gui.Client) (*wallet.Wallet, func()) {
+func createWallet(t *testing.T, c *gui.Client, encrypt bool, password string) (*wallet.Wallet, func()) {
 	if !doWallet(t) {
 		return nil, func() {}
 	}
 	seed := hex.EncodeToString(cipher.RandByte(32))
 	// Use the first 6 letter of the seed as label.
-	rw, err := c.CreateWallet(seed, seed[:6], 0)
+	rw, err := c.CreateWallet(seed, seed[:6], 0, encrypt, password)
 	require.NoError(t, err)
 
 	w, err := rw.ToWallet()

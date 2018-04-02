@@ -63,7 +63,7 @@ func (res ReadableEntries) toWalletEntries(isEncrypted bool) ([]Entry, error) {
 		}
 
 		// Verify the wallet if it's not encrypted
-		if !isEncrypted {
+		if !isEncrypted && re.Secret != "" {
 			if err := e.Verify(); err != nil {
 				return nil, err
 			}

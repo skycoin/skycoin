@@ -496,8 +496,8 @@ func TestWalletGet(t *testing.T) {
 				var msg wallet.ReadableWallet
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
+				tc.gatewayGetWalletResult.Erase()
 				rlt := wallet.NewReadableWallet(&tc.gatewayGetWalletResult)
-				rlt.Erase()
 				require.Equal(t, rlt, &msg, tc.name)
 			}
 		})

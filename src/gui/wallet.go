@@ -254,9 +254,9 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 			wh.Error500(w)
 			return
 		}
-
+		// Wipes all sensitive data
+		wlt.Erase()
 		rlt := wallet.NewReadableWallet(wlt)
-		rlt.Erase()
 		wh.SendJSONOr500(logger, w, rlt)
 	}
 }
@@ -389,9 +389,9 @@ func walletGet(gateway Gatewayer) http.HandlerFunc {
 			}
 			return
 		}
-
+		// Wipes all sensitive data
+		wlt.Erase()
 		rlt := wallet.NewReadableWallet(wlt)
-		rlt.Erase()
 		wh.SendJSONOr500(logger, w, rlt)
 	}
 }

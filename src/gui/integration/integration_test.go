@@ -23,7 +23,6 @@ import (
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/gui"
 	"github.com/skycoin/skycoin/src/util/droplet"
-	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -65,7 +64,6 @@ type TestData struct {
 
 var update = flag.Bool("update", false, "update golden files")
 var testWallet = flag.Bool("test-wallet", false, "run wallet tests")
-var logger = logging.MustGetLogger("gui-integration-test")
 
 func nodeAddress() string {
 	addr := os.Getenv("SKYCOIN_NODE_HOST")

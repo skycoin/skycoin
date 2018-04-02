@@ -139,7 +139,7 @@ func (wlts Wallets) update(id string, updateFunc func(*Wallet) error) error {
 	}
 
 	// Wipes secrets in old wallet
-	w.erase()
+	w.Erase()
 	wlts[id] = cw
 	return nil
 }

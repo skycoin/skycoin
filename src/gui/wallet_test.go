@@ -1068,8 +1068,14 @@ func TestWalletCreateHandler(t *testing.T) {
 					"filename": "filename",
 				},
 			},
+			scanWalletAddressesResult: wallet.Wallet{
+				Meta: map[string]string{
+					"filename": "filename",
+				},
+			},
 			responseBody: wallet.ReadableWallet{
 				Meta: map[string]string{
+					"filename": "filename",
 					"seed":     "",
 					"lastSeed": "",
 				},
@@ -1099,8 +1105,14 @@ func TestWalletCreateHandler(t *testing.T) {
 					"filename": "filename",
 				},
 			},
+			scanWalletAddressesResult: wallet.Wallet{
+				Meta: map[string]string{
+					"filename": "filename",
+				},
+			},
 			responseBody: wallet.ReadableWallet{
 				Meta: map[string]string{
+					"filename": "filename",
 					"seed":     "",
 					"lastSeed": "",
 				},
@@ -1173,65 +1185,68 @@ func TestWalletCreateHandler(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		gateway := &GatewayerMock{}
-		gateway.On("CreateWallet", "", tc.options).Return(&tc.gatewayCreateWalletResult, tc.gatewayCreateWalletErr)
-		gateway.On("ScanAheadWalletAddresses", tc.wltName, tc.options.Password, tc.scnN-1).Return(&tc.scanWalletAddressesResult, tc.scanWalletAddressesError)
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := &GatewayerMock{}
+			gateway.On("CreateWallet", "", tc.options).Return(&tc.gatewayCreateWalletResult, tc.gatewayCreateWalletErr)
+			gateway.On("ScanAheadWalletAddresses", tc.wltName, tc.options.Password, tc.scnN-1).Return(&tc.scanWalletAddressesResult, tc.scanWalletAddressesError)
 
-		endpoint := "/wallet/create"
+			endpoint := "/wallet/create"
 
-		v := url.Values{}
-		if tc.body != nil {
-			if tc.body.Seed != "" {
-				v.Add("seed", tc.body.Seed)
+			v := url.Values{}
+			if tc.body != nil {
+				if tc.body.Seed != "" {
+					v.Add("seed", tc.body.Seed)
+				}
+				if tc.body.Label != "" {
+					v.Add("label", tc.body.Label)
+				}
+				if tc.body.ScanN != "" {
+					v.Add("scan", tc.body.ScanN)
+				}
+
+				if tc.body.Encrypt {
+					v.Add("encrypt", strconv.FormatBool(tc.body.Encrypt))
+				}
+
+				if tc.body.Password != "" {
+					v.Add("password", tc.body.Password)
+				}
 			}
-			if tc.body.Label != "" {
-				v.Add("label", tc.body.Label)
-			}
-			if tc.body.ScanN != "" {
-				v.Add("scan", tc.body.ScanN)
-			}
 
-			if tc.body.Encrypt {
-				v.Add("encrypt", strconv.FormatBool(tc.body.Encrypt))
-			}
-
-			if tc.body.Password != "" {
-				v.Add("password", tc.body.Password)
-			}
-		}
-
-		req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
-		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-		require.NoError(t, err)
-
-		csrfStore := &CSRFStore{
-			Enabled: !tc.csrfDisabled,
-		}
-		if csrfStore.Enabled {
-			setCSRFParameters(csrfStore, tokenValid, req)
-		} else {
-			setCSRFParameters(csrfStore, tokenInvalid, req)
-		}
-
-		rr := httptest.NewRecorder()
-		handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
-
-		handler.ServeHTTP(rr, req)
-
-		status := rr.Code
-		require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
-			tc.name, status, tc.status)
-
-		if status != http.StatusOK {
-			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()),
-				"case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
-		} else {
-			var msg wallet.ReadableWallet
-			err = json.Unmarshal(rr.Body.Bytes(), &msg)
+			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
+			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 			require.NoError(t, err)
-			require.Equal(t, tc.responseBody, msg, tc.name)
-		}
+
+			csrfStore := &CSRFStore{
+				Enabled: !tc.csrfDisabled,
+			}
+			if csrfStore.Enabled {
+				setCSRFParameters(csrfStore, tokenValid, req)
+			} else {
+				setCSRFParameters(csrfStore, tokenInvalid, req)
+			}
+
+			rr := httptest.NewRecorder()
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
+
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
+				tc.name, status, tc.status)
+
+			if status != http.StatusOK {
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()),
+					"case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+			} else {
+				var msg wallet.ReadableWallet
+				err = json.Unmarshal(rr.Body.Bytes(), &msg)
+				require.NoError(t, err)
+				require.Equal(t, tc.responseBody, msg, tc.name)
+			}
+
+		})
 	}
 }
 

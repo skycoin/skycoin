@@ -80,3 +80,116 @@ char *cr_user_SecKey_tostr(SecKey *seckey1)
   cr_asprintf(&out, "(SecKey) { .SecKey = %s,}", &seckey1);
   return out;
 }
+
+
+int cr_user_Ripemd160_noteq(Ripemd160 *rp1, Ripemd160 *rp2){
+
+  if( strcmp((char *)rp1,(char *)rp2) == 0 ) {
+    return SKY_ERROR;
+  }else
+  return SKY_OK;
+}
+
+int cr_user_Ripemd160_eq(Ripemd160 *rp1, Ripemd160 *rp2){
+
+    if( strcmp((char *)rp1,(char *)rp2) == 0 ) {
+
+    return SKY_OK;
+  }else
+  return SKY_ERROR;
+}
+
+char *cr_user_Ripemd160_tostr(Ripemd160 *rp1)
+{
+  char *out;
+  cr_asprintf(&out, "(Ripemd160) { %s }", (unsigned char *)&rp1);
+  return out;
+}
+
+
+// TODO: Write like this cr_assert(eq(type(GoSlice), slice1, slice2))
+int cr_user_GoSlice_eq(GoSlice *slice1, GoSlice *slice2){
+  if(slice1->len != slice1->len)
+    return SKY_ERROR;
+
+  if( strcmp(slice1->data,slice2->data) == 0){
+    return SKY_OK;
+  }
+  else{
+  return SKY_ERROR;}
+}
+
+char *cr_user_GoSlice_tostr(GoSlice *slice1)
+{
+  char *out;
+
+  cr_asprintf(&out, "(GoSlice) { .data = %s, .len = %llu, .cap = %llu }", slice1->data, (unsigned long long) slice1->len, (unsigned long long)slice1->cap);
+  return out;
+}
+// // TODO: Write like this cr_assert(not(eq(type(GoSlice), slice1, slice2)))
+int cr_user_GoSlice_noteq(GoSlice *slice1, GoSlice *slice2){
+  if(slice1->len != slice1->len)
+    return SKY_OK;
+
+  if( strcmp(slice1->data,slice2->data) == 0){
+    return SKY_ERROR;
+  }
+  else{
+  return SKY_OK;}
+}
+
+
+int cr_user_SHA256_noteq(SHA256 *sh1, SHA256 *sh2){
+
+  if( strcmp((char *)sh1,(char *)sh1) == 0 ) {
+    return SKY_ERROR;
+  }else
+  return SKY_OK;
+}
+
+int cr_user_SHA256_eq(SHA256 *sh1, SHA256 *sh2){
+
+    if( strcmp((char *)sh1,(char *)sh2) == 0 ) {
+    return SKY_OK;
+  }else
+  return SKY_ERROR;
+}
+
+char *cr_user_SHA256_tostr(SHA256 *sh1)
+{
+  char *out;
+  cr_asprintf(&out, "(SHA256) { %s }", &sh1);
+  return out;
+}
+
+
+int cr_user_char_eq(unsigned char *string1, unsigned char *string2){
+
+  if( strlen(string1) != strlen(string2) ) return SKY_ERROR;
+
+  if (strcmp(string1,string2) == 0)
+  {
+    return SKY_OK;
+  }
+
+  return SKY_ERROR;
+}
+
+int cr_user_char_noteq(unsigned char *string1, unsigned char *string2){
+
+  if( strlen(string1) != strlen(string2) ) return SKY_OK;
+
+  if (strcmp(string1,string2) == 0)
+  {
+    return SKY_ERROR;
+  }
+  return SKY_OK;
+}
+
+char *cr_user_char_tostr(unsigned char *string1)
+{
+  char *out;
+
+  cr_asprintf(&out, "(CHAR) {  %s }", string1);
+  return out;
+}

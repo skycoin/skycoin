@@ -381,6 +381,7 @@ func TestWalletSpendHandler(t *testing.T) {
 }
 
 func TestWalletGet(t *testing.T) {
+	entries, noSecReadableEntries := makeEntries([]byte("seed"), 5)
 	type httpBody struct {
 		WalletID string
 		Dst      string
@@ -396,6 +397,7 @@ func TestWalletGet(t *testing.T) {
 		err                    string
 		walletID               string
 		gatewayGetWalletResult wallet.Wallet
+		responseBody           wallet.ReadableWallet
 		gatewayGetWalletErr    error
 	}{
 		{
@@ -448,7 +450,11 @@ func TestWalletGet(t *testing.T) {
 			walletID: "1234",
 			gatewayGetWalletResult: wallet.Wallet{
 				Meta:    map[string]string{"seed": "seed", "lastSeed": "seed"},
-				Entries: []wallet.Entry{},
+				Entries: cloneEntries(entries),
+			},
+			responseBody: wallet.ReadableWallet{
+				Meta:    map[string]string{"seed": "", "lastSeed": ""},
+				Entries: noSecReadableEntries[:],
 			},
 		},
 	}
@@ -493,12 +499,10 @@ func TestWalletGet(t *testing.T) {
 					"case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg wallet.ReadableWallet
-				err = json.Unmarshal(rr.Body.Bytes(), &msg)
+				var rlt wallet.ReadableWallet
+				err = json.Unmarshal(rr.Body.Bytes(), &rlt)
 				require.NoError(t, err)
-				tc.gatewayGetWalletResult.Erase()
-				rlt := wallet.NewReadableWallet(&tc.gatewayGetWalletResult)
-				require.Equal(t, rlt, &msg, tc.name)
+				require.Equal(t, tc.responseBody, rlt)
 			}
 		})
 	}
@@ -914,6 +918,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 }
 
 func TestWalletCreateHandler(t *testing.T) {
+	entries, noSecReadableEntries := makeEntries([]byte("seed"), 5)
 	type httpBody struct {
 		Seed     string
 		Label    string
@@ -1067,11 +1072,13 @@ func TestWalletCreateHandler(t *testing.T) {
 				Meta: map[string]string{
 					"filename": "filename",
 				},
+				Entries: cloneEntries(entries),
 			},
 			scanWalletAddressesResult: wallet.Wallet{
 				Meta: map[string]string{
 					"filename": "filename",
 				},
+				Entries: cloneEntries(entries),
 			},
 			responseBody: wallet.ReadableWallet{
 				Meta: map[string]string{
@@ -1079,7 +1086,7 @@ func TestWalletCreateHandler(t *testing.T) {
 					"seed":     "",
 					"lastSeed": "",
 				},
-				Entries: wallet.ReadableEntries{},
+				Entries: noSecReadableEntries[:],
 			},
 		},
 		// CSRF Tests
@@ -1700,4 +1707,34 @@ func TestWalletUnloadHandler(t *testing.T) {
 			}
 		})
 	}
+}
+
+// makeEntries derives N wallet address entries from given seed
+// Returns set of wallet.Entry and wallet.ReadableEntry, the readable
+// entries' secrets are removed.
+func makeEntries(seed []byte, n int) ([]wallet.Entry, []wallet.ReadableEntry) {
+	seckeys := cipher.GenerateDeterministicKeyPairs(seed, n)
+	var entries []wallet.Entry
+	var noSecReadableEntries []wallet.ReadableEntry
+	for i, seckey := range seckeys {
+		pubkey := cipher.PubKeyFromSecKey(seckey)
+		entries = append(entries, wallet.Entry{
+			Address: cipher.AddressFromPubKey(pubkey),
+			Public:  pubkey,
+			Secret:  seckey,
+		})
+		noSecReadableEntries = append(noSecReadableEntries, wallet.ReadableEntry{
+			Address: entries[i].Address.String(),
+			Public:  entries[i].Public.Hex(),
+		})
+	}
+	return entries, noSecReadableEntries
+}
+
+func cloneEntries(es []wallet.Entry) []wallet.Entry {
+	var entries []wallet.Entry
+	for _, e := range es {
+		entries = append(entries, e)
+	}
+	return entries
 }

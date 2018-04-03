@@ -4,23 +4,20 @@ import (
 	"fmt"
 	"strconv"
 
-	"crypto/sha256"
-	"time"
-
 	"strings"
-
-	"github.com/skycoin/skycoin/src/cipher"
 )
 
 //var registered = false
 
+/*
 func GenerateRandomSha256() cipher.SHA256 {
 	return sha256.Sum256([]byte(string(time.Now().Unix())))
 }
+*/
 
 func getSliceContentsString(sl []string, offset int) string {
-	var res string = ""
-	var counter int = 0
+	var res string
+	var counter int
 	var currentOff = offset
 	if offset != -1 {
 		var hex = strconv.FormatInt(int64(offset), 16)
@@ -58,7 +55,7 @@ func getSliceContentsString(sl []string, offset int) string {
 	return res
 }
 
-func PrintLHexDumpWithFormat(offset int, name string, buffer []byte) {
+func printLHexDumpWithFormat(offset int, name string, buffer []byte) {
 	var hexBuff = make([]string, len(buffer))
 	for i := 0; i < len(buffer); i++ {
 		hexBuff[i] = strconv.FormatInt(int64(buffer[i]), 16)
@@ -137,7 +134,7 @@ func HexDump(message gnet.Message) string {
 
 */
 
-func PrintFinalHex(i int) {
+func printFinalHex(i int) {
 	var finalHex = strconv.FormatInt(int64(i), 16)
 	var l = len(finalHex)
 	for i := 0; i < 4-l; i++ {

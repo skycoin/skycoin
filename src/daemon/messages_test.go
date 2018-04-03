@@ -67,31 +67,31 @@ func setupMsgEncoding() {
 func MessageHexDump(message gnet.Message, printFull bool) {
 	var serializedMsg = gnet.EncodeMessage(message)
 
-	PrintLHexDumpWithFormat(-1, "Full message", serializedMsg)
+	printLHexDumpWithFormat(-1, "Full message", serializedMsg)
 
 	fmt.Println("------------------------------------------------------------------------")
-	var offset int = 0
-	PrintLHexDumpWithFormat(0, "Length", serializedMsg[0:4])
-	PrintLHexDumpWithFormat(4, "Prefix", serializedMsg[4:8])
+	var offset int
+	printLHexDumpWithFormat(0, "Length", serializedMsg[0:4])
+	printLHexDumpWithFormat(4, "Prefix", serializedMsg[4:8])
 	offset += len(serializedMsg[0:8])
 	var v = reflect.Indirect(reflect.ValueOf(message))
 
 	t := v.Type()
 	for i := 0; i < v.NumField(); i++ {
-		v_f := v.Field(i)
+		vF := v.Field(i)
 		f := t.Field(i)
 		if f.Tag.Get("enc") != "-" {
-			if v_f.CanSet() || f.Name != "_" {
+			if vF.CanSet() || f.Name != "_" {
 				if v.Field(i).Kind() == reflect.Slice {
-					PrintLHexDumpWithFormat(offset, f.Name+" length", encoder.Serialize(v.Field(i).Slice(0, v.Field(i).Len()).Interface())[0:4])
+					printLHexDumpWithFormat(offset, f.Name+" length", encoder.Serialize(v.Field(i).Slice(0, v.Field(i).Len()).Interface())[0:4])
 					offset += len(encoder.Serialize(v.Field(i).Slice(0, v.Field(i).Len()).Interface())[0:4])
 
 					for j := 0; j < v.Field(i).Len(); j++ {
-						PrintLHexDumpWithFormat(offset, f.Name+"#"+strconv.Itoa(j), encoder.Serialize(v.Field(i).Slice(j, j+1).Interface()))
+						printLHexDumpWithFormat(offset, f.Name+"#"+strconv.Itoa(j), encoder.Serialize(v.Field(i).Slice(j, j+1).Interface()))
 						offset += len(encoder.Serialize(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())))
 					}
 				} else {
-					PrintLHexDumpWithFormat(offset, f.Name, encoder.Serialize(v.Field(i).Interface()))
+					printLHexDumpWithFormat(offset, f.Name, encoder.Serialize(v.Field(i).Interface()))
 					offset += len(encoder.Serialize(v.Field(i).Interface()))
 				}
 			} else {
@@ -100,7 +100,7 @@ func MessageHexDump(message gnet.Message, printFull bool) {
 		}
 	}
 
-	PrintFinalHex(len(serializedMsg))
+	printFinalHex(len(serializedMsg))
 }
 
 func ExampleNewIntroductionMessage() {
@@ -144,9 +144,9 @@ func ExampleNewGivePeersMessage() {
 	setupMsgEncoding()
 
 	var peers = make([]pex.Peer, 3)
-	var peer0 pex.Peer = *pex.NewPeer("118.178.135.93:6000")
-	var peer1 pex.Peer = *pex.NewPeer("47.88.33.156:6000")
-	var peer2 pex.Peer = *pex.NewPeer("121.41.103.148:6000")
+	var peer0 = *pex.NewPeer("118.178.135.93:6000")
+	var peer1 = *pex.NewPeer("47.88.33.156:6000")
+	var peer2 = *pex.NewPeer("121.41.103.148:6000")
 	peers = append(peers, peer0, peer1, peer2)
 	var message = NewGivePeersMessage(peers)
 	fmt.Println("GivePeersMessage:")
@@ -207,7 +207,7 @@ func ExampleNewGiveBlocksMessage() {
 	var body1 = coin.BlockBody{
 		Transactions: make([]coin.Transaction, 0),
 	}
-	var block1 coin.Block = coin.Block{
+	var block1 = coin.Block{
 		Body: body1,
 		Head: coin.BlockHeader{
 			Version:  0x02,
@@ -339,8 +339,8 @@ func ExampleNewGiveTxnsMessage() {
 	setupMsgEncoding()
 
 	var transactions coin.Transactions = make([]coin.Transaction, 0)
-	var transactionOutputs0 []coin.TransactionOutput = make([]coin.TransactionOutput, 0)
-	var transactionOutputs1 []coin.TransactionOutput = make([]coin.TransactionOutput, 0)
+	var transactionOutputs0 = make([]coin.TransactionOutput, 0)
+	var transactionOutputs1 = make([]coin.TransactionOutput, 0)
 	var txOutput0 = coin.TransactionOutput{
 		Address: addresses[0],
 		Coins:   12,

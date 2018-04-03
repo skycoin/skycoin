@@ -125,7 +125,7 @@ include/libskycoin.h
 
 # Eclipse temp files
 .cproject
-metadata/**
+.metadata/**
 .project
 
 

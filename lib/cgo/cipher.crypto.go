@@ -4,6 +4,7 @@ import (
 	cipher "github.com/skycoin/skycoin/src/cipher"
 
 	"fmt"
+	"reflect"
 	"unsafe"
 )
 
@@ -114,6 +115,9 @@ func SKY_cipher_PubKey_Verify(_pk *C.PubKey) uint32 {
 	__pk := (*[1 << 30]byte)(
 		unsafe.Pointer(_pk))[:SizeofPubKey:SizeofPubKey]
 	pk := (*cipher.PubKey)(unsafe.Pointer(&__pk))
+
+	fmt.Println("PubKey in Go ", pk)
+
 	err := pk.Verify()
 	errcode := libErrorCode(err)
 	return errcode
@@ -296,17 +300,13 @@ func SKY_cipher_VerifySignature(_pubkey *C.PubKey, _sig *C.Sig, _hash *C.SHA256)
 
 //export SKY_cipher_GenerateKeyPair
 func SKY_cipher_GenerateKeyPair(_arg0 *C.PubKey, _arg1 *C.SecKey) {
-	fmt.Println(unsafe.Pointer(_arg0), unsafe.Pointer(_arg1))
-	__arg0 := (*[1 << 30]byte)(
-		unsafe.Pointer(_arg0))[:SizeofPubKey:SizeofPubKey]
-	arg0 := (*cipher.PubKey)(unsafe.Pointer(&__arg0))
-	__arg1 := (*[1 << 30]byte)(
-		unsafe.Pointer(_arg1))[:SizeofSecKey:SizeofSecKey]
-	arg1 := (*cipher.SecKey)(unsafe.Pointer(&__arg1))
+	fmt.Printf("Go Pointers %p %p\n", unsafe.Pointer(_arg0), unsafe.Pointer(_arg1))
+
 	p, s := cipher.GenerateKeyPair()
-	fmt.Println(p)
-	copy(arg0[:], p[:])
-	copy(arg1[:], s[:])
+	copyToBuffer(reflect.ValueOf(p[:]), unsafe.Pointer(_arg0), uint(SizeofPubKey))
+	copyToBuffer(reflect.ValueOf(s[:]), unsafe.Pointer(_arg1), uint(SizeofSecKey))
+
+	fmt.Println("PubKey in Go ", p)
 }
 
 //export SKY_cipher_GenerateDeterministicKeyPair

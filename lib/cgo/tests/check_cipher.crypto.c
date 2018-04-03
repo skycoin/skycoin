@@ -201,17 +201,8 @@ Test(asserts, TestPubKeyVerifyNil) {
 Test(asserts, TestPubKeyVerifyDefault1) {
   PubKey p;
   SecKey s;
-  char strBuff[101];
-
-  fprintf(stderr, "C pointers %p %p\n", &p, &s);
 
   SKY_cipher_GenerateKeyPair(&p, &s);
-
-  strnhex(p, strBuff, 33);
-  fprintf(stderr, "PubKey in C ");
-  fprintbuff(stderr, p, 33);
-  fprintf(stderr, "\n");
-
   unsigned int errcode = SKY_cipher_PubKey_Verify(&p);
   cr_assert(errcode == SKY_OK);
 }
@@ -731,6 +722,8 @@ Test(asserts, TestVerifySignature) {
   cr_assert(errcode == SKY_ERROR);
 }
 
+*/
+
 Test(asserts, TestGenerateKeyPair) {
   PubKey pk;
   SecKey sk;
@@ -743,6 +736,7 @@ Test(asserts, TestGenerateKeyPair) {
   cr_assert(errcode == SKY_OK);
 }
 
+/*
 Test(asserts, TestGenerateDeterministicKeyPair) {
   PubKey pk;
   SecKey sk;

@@ -112,11 +112,7 @@ func SKY_cipher_PubKeyFromSig(_sig *C.Sig, _hash *C.SHA256, _arg2 *C.PubKey) uin
 
 //export SKY_cipher_PubKey_Verify
 func SKY_cipher_PubKey_Verify(_pk *C.PubKey) uint32 {
-	__pk := (*[1 << 30]byte)(
-		unsafe.Pointer(_pk))[:SizeofPubKey:SizeofPubKey]
-	pk := (*cipher.PubKey)(unsafe.Pointer(&__pk))
-
-	fmt.Println("PubKey in Go ", pk)
+	pk := (*cipher.PubKey)(unsafe.Pointer(_pk))
 
 	err := pk.Verify()
 	errcode := libErrorCode(err)
@@ -172,9 +168,7 @@ func SKY_cipher_SecKeyFromHex(_s string, _arg1 *C.SecKey) uint32 {
 
 //export SKY_cipher_SecKey_Verify
 func SKY_cipher_SecKey_Verify(_sk *C.SecKey) uint32 {
-	__sk := (*[1 << 30]byte)(
-		unsafe.Pointer(_sk))[:SizeofSecKey:SizeofSecKey]
-	sk := (*cipher.SecKey)(unsafe.Pointer(&__sk))
+	sk := (*cipher.SecKey)(unsafe.Pointer(_sk))
 	err := sk.Verify()
 	return libErrorCode(err)
 }
@@ -300,13 +294,9 @@ func SKY_cipher_VerifySignature(_pubkey *C.PubKey, _sig *C.Sig, _hash *C.SHA256)
 
 //export SKY_cipher_GenerateKeyPair
 func SKY_cipher_GenerateKeyPair(_arg0 *C.PubKey, _arg1 *C.SecKey) {
-	fmt.Printf("Go Pointers %p %p\n", unsafe.Pointer(_arg0), unsafe.Pointer(_arg1))
-
 	p, s := cipher.GenerateKeyPair()
 	copyToBuffer(reflect.ValueOf(p[:]), unsafe.Pointer(_arg0), uint(SizeofPubKey))
 	copyToBuffer(reflect.ValueOf(s[:]), unsafe.Pointer(_arg1), uint(SizeofSecKey))
-
-	fmt.Println("PubKey in Go ", p)
 }
 
 //export SKY_cipher_GenerateDeterministicKeyPair

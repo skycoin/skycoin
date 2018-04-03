@@ -8,6 +8,20 @@ import (
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
+// ConnectionStatus structs
+type ConnectionStatus struct {
+	Connection string `json:connection`
+	isAlive    bool   `json:isalive`
+}
+
+// ConnectionsHealth struct
+type ConnectionsHealth struct {
+	Count        int                `json:"count"`
+	TotalAlive   int                `json:total_alive`
+	TotalOffline int                `json:total_offline`
+	Connections  []ConnectionStatus `json:"connections"`
+}
+
 func connectionHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -81,5 +95,52 @@ func exchgConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 		sort.Strings(conns)
 
 		wh.SendJSONOr500(logger, w, conns)
+	}
+}
+
+func defaultStatusHandler(gateway Gatewayer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
+		connsDefault := gateway.GetDefaultConnections()
+		sort.Strings(connsDefault)
+		connsAll := gateway.GetConnections().Connections
+
+		countDefault, totalAlive := len(connsDefault), 0
+		totalOffline := countDefault
+
+		var connections []ConnectionStatus
+		connsMap := make(map[string]*ConnectionStatus, countDefault)
+		for _, conn := range connsDefault {
+			status := ConnectionStatus{
+				Connection: conn,
+				isAlive:    false,
+			}
+			connections = append(connections, status)
+			connsMap[conn] = &status
+		}
+
+		for _, conn := range connsAll {
+			if status, isDefault := connsMap[conn.Addr]; isDefault {
+				if !status.isAlive {
+					status.isAlive = true
+					totalAlive++
+					totalOffline--
+				}
+			}
+		}
+
+		resp := &ConnectionsHealth{
+			Count:        countDefault,
+			TotalAlive:   totalAlive,
+			TotalOffline: totalOffline,
+			Connections:  connections,
+		}
+
+		wh.SendJSONOr500(logger, w, &resp)
+
 	}
 }

@@ -288,6 +288,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.Se
 	webHandler("/network/connection", connectionHandler(gateway))
 	webHandler("/network/connections", connectionsHandler(gateway))
 	webHandler("/network/defaultConnections", defaultConnectionsHandler(gateway))
+	webHandler("/network/connections/default", defaultStatusHandler(gateway))
 	webHandler("/network/connections/trust", trustConnectionsHandler(gateway))
 	webHandler("/network/connections/exchange", exchgConnectionsHandler(gateway))
 

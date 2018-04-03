@@ -227,6 +227,7 @@ func ExampleNewGiveBlocksMessage() {
 	fmt.Println("GiveBlocksMessage:")
 	MessageHexDump(message, true)
 	// Output:
+	// GiveBlocksMessage:
 	// 8a 01 00 00 47 49 56 42 02 00 00 00 00 00 00 00
 	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00

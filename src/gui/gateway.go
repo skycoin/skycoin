@@ -9,6 +9,7 @@ import (
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
+//go:generate go install
 //go:generate goautomock -template=testify Gatewayer
 
 // Gatewayer interface for Gateway methods
@@ -24,6 +25,8 @@ type Gatewayer interface {
 	NewAddresses(wltID string, password []byte, n uint64) ([]cipher.Address, error)
 	GetWalletDir() (string, error)
 	IsWalletAPIDisabled() bool
+	EncryptWallet(wltID string, password []byte) (*wallet.Wallet, error)
+	DecryptWallet(wltID string, password []byte) (*wallet.Wallet, error)
 	GetBlockByHash(hash cipher.SHA256) (block coin.SignedBlock, ok bool)
 	GetBlockBySeq(seq uint64) (block coin.SignedBlock, ok bool)
 	GetBlocks(start, end uint64) (*visor.ReadableBlocks, error)

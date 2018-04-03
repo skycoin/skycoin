@@ -7,7 +7,6 @@ package gui
 
 import (
 	"fmt"
-
 	mock "github.com/stretchr/testify/mock"
 
 	cipher "github.com/skycoin/skycoin/src/cipher"
@@ -29,6 +28,60 @@ func NewGatewayerMock() *GatewayerMock {
 
 // CreateWallet mocked method
 func (m *GatewayerMock) CreateWallet(p0 string, p1 wallet.Options) (*wallet.Wallet, error) {
+
+	ret := m.Called(p0, p1)
+
+	var r0 *wallet.Wallet
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case *wallet.Wallet:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
+
+}
+
+// DecryptWallet mocked method
+func (m *GatewayerMock) DecryptWallet(p0 string, p1 []byte) (*wallet.Wallet, error) {
+
+	ret := m.Called(p0, p1)
+
+	var r0 *wallet.Wallet
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case *wallet.Wallet:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
+
+}
+
+// EncryptWallet mocked method
+func (m *GatewayerMock) EncryptWallet(p0 string, p1 []byte) (*wallet.Wallet, error) {
 
 	ret := m.Called(p0, p1)
 

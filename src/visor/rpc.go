@@ -169,7 +169,7 @@ func (rpc *RPC) GetWallet(wltID string) (*wallet.Wallet, error) {
 }
 
 // GetWallets returns all wallet
-func (rpc *RPC) GetWallets() wallet.Wallets {
+func (rpc *RPC) GetWallets() (wallet.Wallets, error) {
 	return rpc.v.Wallets.GetWallets()
 }
 

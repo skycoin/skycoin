@@ -689,10 +689,11 @@ func (gw *Gateway) GetWallets() (wallet.Wallets, error) {
 	}
 
 	var w wallet.Wallets
+	var err error
 	gw.strand("GetWallets", func() {
-		w = gw.v.Wallets.GetWallets()
+		w, err = gw.v.Wallets.GetWallets()
 	})
-	return w, nil
+	return w, err
 }
 
 // GetWalletUnconfirmedTxns returns all unconfirmed transactions in given wallet

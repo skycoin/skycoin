@@ -109,6 +109,10 @@ func (serv *Service) ScanAheadWalletAddresses(wltName string, password []byte, s
 	serv.Lock()
 	defer serv.Unlock()
 
+	if serv.disableWalletAPI {
+		return nil, ErrWalletAPIDisabled
+	}
+
 	w, err := serv.getWallet(wltName)
 	if err != nil {
 		return nil, err
@@ -208,60 +212,68 @@ func (serv *Service) generateUniqueWalletFilename() string {
 }
 
 // EncryptWallet encrypts wallet with password
-func (serv *Service) EncryptWallet(wltID string, password []byte) error {
+func (serv *Service) EncryptWallet(wltID string, password []byte) (*Wallet, error) {
 	serv.Lock()
 	defer serv.Unlock()
+	if serv.disableWalletAPI {
+		return nil, ErrWalletAPIDisabled
+	}
+
 	w, err := serv.getWallet(wltID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if w.IsEncrypted() {
-		return ErrWalletEncrypted
+		return nil, ErrWalletEncrypted
 	}
 
 	if err := w.lock(password, serv.cryptoType); err != nil {
-		return err
+		return nil, err
 	}
 
 	// Save to disk first
 	if err := w.Save(serv.walletDirectory); err != nil {
-		return err
+		return nil, err
 	}
 
 	// Sets the encrypted wallet
 	serv.wallets.set(w)
-	return nil
+	return w, nil
 }
 
 // DecryptWallet decrypts wallet with password
-func (serv *Service) DecryptWallet(wltID string, password []byte) error {
+func (serv *Service) DecryptWallet(wltID string, password []byte) (*Wallet, error) {
 	serv.Lock()
 	defer serv.Unlock()
+	if serv.disableWalletAPI {
+		return nil, ErrWalletAPIDisabled
+	}
+
 	w, err := serv.getWallet(wltID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Returns error if wallet is not encrypted
 	if !w.IsEncrypted() {
-		return ErrWalletNotEncrypted
+		return nil, ErrWalletNotEncrypted
 	}
 
 	// Unlocks the wallet
 	unlockWlt, err := w.unlock(password)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Updates the wallet file
 	if err := unlockWlt.Save(serv.walletDirectory); err != nil {
-		return err
+		return nil, err
 	}
 
 	// Sets the decrypted wallet in memory
 	serv.wallets.set(unlockWlt)
-	return nil
+	return unlockWlt, nil
 }
 
 // NewAddresses generate address entries in given wallet,
@@ -270,6 +282,10 @@ func (serv *Service) DecryptWallet(wltID string, password []byte) error {
 func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]cipher.Address, error) {
 	serv.Lock()
 	defer serv.Unlock()
+
+	if serv.disableWalletAPI {
+		return nil, ErrWalletAPIDisabled
+	}
 
 	w, err := serv.getWallet(wltID)
 	if err != nil {
@@ -307,6 +323,10 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]
 func (serv *Service) GetAddresses(wltID string) ([]cipher.Address, error) {
 	serv.RLock()
 	defer serv.RUnlock()
+	if serv.disableWalletAPI {
+		return nil, ErrWalletAPIDisabled
+	}
+
 	w, err := serv.getWallet(wltID)
 	if err != nil {
 		return nil, err
@@ -319,6 +339,9 @@ func (serv *Service) GetAddresses(wltID string) ([]cipher.Address, error) {
 func (serv *Service) GetWallet(wltID string) (*Wallet, error) {
 	serv.RLock()
 	defer serv.RUnlock()
+	if serv.disableWalletAPI {
+		return nil, ErrWalletAPIDisabled
+	}
 
 	return serv.getWallet(wltID)
 }
@@ -333,14 +356,18 @@ func (serv *Service) getWallet(wltID string) (*Wallet, error) {
 }
 
 // GetWallets returns all wallet clones
-func (serv *Service) GetWallets() Wallets {
+func (serv *Service) GetWallets() (Wallets, error) {
 	serv.RLock()
 	defer serv.RUnlock()
+	if serv.disableWalletAPI {
+		return nil, ErrWalletAPIDisabled
+	}
+
 	wlts := make(Wallets, len(serv.wallets))
 	for k, w := range serv.wallets {
 		wlts[k] = w.clone()
 	}
-	return wlts
+	return wlts, nil
 }
 
 // ReloadWallets reload wallets
@@ -366,6 +393,10 @@ func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, vld
 	headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
 	serv.RLock()
 	defer serv.RUnlock()
+	if serv.disableWalletAPI {
+		return nil, ErrWalletAPIDisabled
+	}
+
 	w, err := serv.getWallet(wltID)
 	if err != nil {
 		return nil, err
@@ -394,6 +425,10 @@ func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, vld
 func (serv *Service) UpdateWalletLabel(wltID, label string) error {
 	serv.Lock()
 	defer serv.Unlock()
+	if serv.disableWalletAPI {
+		return ErrWalletAPIDisabled
+	}
+
 	var wlt *Wallet
 	if err := serv.wallets.update(wltID, func(w *Wallet) error {
 		w.setLabel(label)
@@ -407,10 +442,15 @@ func (serv *Service) UpdateWalletLabel(wltID, label string) error {
 }
 
 // Remove removes wallet of given wallet id from the service
-func (serv *Service) Remove(wltID string) {
+func (serv *Service) Remove(wltID string) error {
 	serv.Lock()
 	defer serv.Unlock()
+	if serv.disableWalletAPI {
+		return ErrWalletAPIDisabled
+	}
+
 	serv.wallets.remove(wltID)
+	return nil
 }
 
 func (serv *Service) removeDup(wlts Wallets) Wallets {

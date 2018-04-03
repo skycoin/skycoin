@@ -7,8 +7,9 @@ import (
 	"crypto/sha256"
 	"time"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"strings"
+
+	"github.com/skycoin/skycoin/src/cipher"
 )
 
 //var registered = false
@@ -34,7 +35,7 @@ func getSliceContentsString(sl []string, offset int) string {
 		counter++
 		res += sl[i] + " "
 		if counter == 16 {
-			res= strings.TrimSpace(res)
+			res = strings.TrimSpace(res)
 			res += "\n"
 			currentOff += 16
 			if offset != -1 {

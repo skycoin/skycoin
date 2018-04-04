@@ -456,6 +456,11 @@ func walletsHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 			return
 		}
+		// Erase sensitive data
+		for i := range wlts {
+			wlts[i].Erase()
+		}
+
 		wh.SendJSONOr500(logger, w, wlts.ToReadable())
 	}
 }
@@ -570,5 +575,47 @@ func walletUnloadHandler(gateway Gatewayer) http.HandlerFunc {
 				wh.Error500(w)
 			}
 		}
+	}
+}
+
+func walletEncryptHandler(gateway Gatewayer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			wh.Error405(w)
+			return
+		}
+
+		id := r.FormValue("id")
+		if id == "" {
+			wh.Error400(w, "missing wallet id")
+			return
+		}
+
+		password := r.FormValue("password")
+		if password == "" {
+			wh.Error400(w, "missing password")
+			return
+		}
+
+		wlt, err := gateway.EncryptWallet(id, []byte(password))
+		if err != nil {
+			switch err {
+			case wallet.ErrWalletAPIDisabled:
+				wh.Error403(w)
+			case wallet.ErrWalletEncrypted:
+				wh.Error400(w, "wallet is already encrypted")
+			case wallet.ErrInvalidPassword,
+				wallet.ErrWalletNotExist:
+				wh.Error400(w, err.Error())
+			default:
+				wh.Error500(w)
+			}
+			return
+		}
+
+		// Make sure the sensitive data are wiped
+		password = ""
+		wlt.Erase()
+		wh.SendJSONOr500(logger, w, wallet.NewReadableWallet(wlt))
 	}
 }

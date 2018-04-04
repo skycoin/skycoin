@@ -369,11 +369,12 @@ func (c *Client) Wallet(id string) (*wallet.Wallet, error) {
 	v.Add("id", id)
 	endpoint := "/wallet?" + v.Encode()
 
-	var w wallet.Wallet
-	if err := c.Get(endpoint, &w); err != nil {
+	var rw wallet.ReadableWallet
+	if err := c.Get(endpoint, &rw); err != nil {
 		return nil, err
 	}
-	return &w, nil
+
+	return rw.ToWallet()
 }
 
 // Wallets makes a request to /wallets
@@ -709,4 +710,17 @@ func (c *Client) UnloadWallet(id string) error {
 	v := url.Values{}
 	v.Add("id", id)
 	return c.PostForm("/wallet/unload", strings.NewReader(v.Encode()), nil)
+}
+
+// EncryptWallet encrypts specific wallet with given password
+func (c *Client) EncryptWallet(id string, password string) (*wallet.ReadableWallet, error) {
+	v := url.Values{}
+	v.Add("id", id)
+	v.Add("password", password)
+	var wlt wallet.ReadableWallet
+	if err := c.PostForm("/wallet/encrypt", strings.NewReader(v.Encode()), &wlt); err != nil {
+		return nil, err
+	}
+
+	return &wlt, nil
 }

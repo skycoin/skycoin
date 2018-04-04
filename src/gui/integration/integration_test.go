@@ -1954,7 +1954,7 @@ func TestCreateWallet(t *testing.T) {
 
 	c := gui.NewClient(nodeAddress())
 
-	w, clean := createWallet(t, c, false, "")
+	w, _, clean := createWallet(t, c, false, "")
 	defer clean()
 
 	checkNoSensitiveData(t, w)
@@ -1967,7 +1967,7 @@ func TestCreateWallet(t *testing.T) {
 	require.NoError(t, err)
 
 	// create wallet with encryption
-	encW, encWClean := createWallet(t, c, true, "pwd")
+	encW, _, encWClean := createWallet(t, c, true, "pwd")
 	defer encWClean()
 
 	checkNoSensitiveData(t, encW)
@@ -1985,7 +1985,7 @@ func TestGetWallet(t *testing.T) {
 	c := gui.NewClient(nodeAddress())
 
 	// Create a wallet
-	w, clean := createWallet(t, c, false, "")
+	w, _, clean := createWallet(t, c, false, "")
 	defer clean()
 
 	// Confirms the wallet can be acquired
@@ -2004,7 +2004,7 @@ func TestGetWallets(t *testing.T) {
 	// Creates 2 new wallets
 	var ws []wallet.Wallet
 	for i := 0; i < 2; i++ {
-		w, clean := createWallet(t, c, false, "")
+		w, _, clean := createWallet(t, c, false, "")
 		defer clean()
 		// cleaners = append(cleaners, clean)
 		ws = append(ws, *w)
@@ -2043,7 +2043,7 @@ func TestWalletNewAddress(t *testing.T) {
 	for i := 1; i <= 30; i++ {
 		name := fmt.Sprintf("generate %v addresses", i)
 		t.Run(name, func(t *testing.T) {
-			w, clean := createWallet(t, c, false, "")
+			w, seed, clean := createWallet(t, c, false, "")
 			defer clean()
 
 			addrs, err := c.NewWalletAddress(w.Filename(), i)
@@ -2053,13 +2053,16 @@ func TestWalletNewAddress(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			as, err := w.GenerateAddresses(uint64(i))
-			require.NoError(t, err)
+			seckeys := cipher.GenerateDeterministicKeyPairs([]byte(seed), i+1)
+			var as []string
+			for _, k := range seckeys {
+				as = append(as, cipher.AddressFromSecKey(k).String())
+			}
 
 			// Confirms thoses new generated addresses are the same.
-			require.Equal(t, len(addrs), len(as))
-			for i, a := range as {
-				require.Equal(t, a.String(), addrs[i])
+			require.Equal(t, len(addrs), len(as)-1)
+			for i := range addrs {
+				require.Equal(t, as[i+1], addrs[i])
 			}
 		})
 	}
@@ -2071,7 +2074,7 @@ func TestStableWalletBalance(t *testing.T) {
 	}
 
 	c := gui.NewClient(nodeAddress())
-	w, clean := createWallet(t, c, false, "")
+	w, _, clean := createWallet(t, c, false, "")
 	defer clean()
 
 	bp, err := c.WalletBalance(w.Filename())
@@ -2102,7 +2105,7 @@ func TestWalletUpdate(t *testing.T) {
 	}
 
 	c := gui.NewClient(nodeAddress())
-	w, clean := createWallet(t, c, false, "")
+	w, _, clean := createWallet(t, c, false, "")
 	defer clean()
 
 	err := c.UpdateWallet(w.Filename(), "new wallet")
@@ -2120,7 +2123,7 @@ func TestStableWalletTransactions(t *testing.T) {
 	}
 
 	c := gui.NewClient(nodeAddress())
-	w, clean := createWallet(t, c, false, "")
+	w, _, clean := createWallet(t, c, false, "")
 	defer clean()
 
 	txns, err := c.WalletTransactions(w.Filename())
@@ -2165,6 +2168,45 @@ func TestWalletFolderName(t *testing.T) {
 
 	require.NotNil(t, folderName)
 	require.NotEmpty(t, folderName.Address)
+}
+
+func TestEncryptWallet(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+
+	if !doWallet(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	// Create a unencrypted wallet
+	w, _, clean := createWallet(t, c, false, "")
+	defer clean()
+
+	checkNoSensitiveData(t, w)
+
+	// Encrypts the wallet
+	rlt, err := c.EncryptWallet(w.Filename(), "pwd")
+	require.NoError(t, err)
+	checkRdNoSensitiveData(t, rlt)
+
+	//  Encrypt the wallet again, should returns error
+	_, err = c.EncryptWallet(w.Filename(), "pwd")
+	require.EqualError(t, err, "400 Bad Request - wallet is already encrypted\n")
+
+	// Confirms that no sensitive data do exist in wallet file
+	wf, err := c.WalletFolderName()
+	require.NoError(t, err)
+	wltPath := filepath.Join(wf.Address, w.Filename())
+	lw, err := wallet.Load(wltPath)
+	require.NoError(t, err)
+	checkNoSensitiveData(t, lw)
+	require.NotEmpty(t, lw.Meta["secrets"])
+	require.Equal(t, lw.Meta["secrets"], rlt.Meta["secrets"])
+
+	// TODO: decrypt wallet to confirms that all seeds, seckeys are matched.
 }
 
 // prepareAndCheckWallet gets wallet from environment, and confirms:
@@ -2269,6 +2311,14 @@ func checkNoSensitiveData(t *testing.T, w *wallet.Wallet) {
 	}
 }
 
+func checkRdNoSensitiveData(t *testing.T, w *wallet.ReadableWallet) {
+	require.Empty(t, w.Meta["seed"])
+	require.Empty(t, w.Meta["lastSeed"])
+	for _, e := range w.Entries {
+		require.Empty(t, e.Secret)
+	}
+}
+
 // checkWalletEntriesAndLastSeed confirms the wallet entries and lastSeed are derivied
 // from the seed.
 func checkWalletEntriesAndLastSeed(t *testing.T, w *wallet.Wallet) {
@@ -2287,10 +2337,10 @@ func checkWalletEntriesAndLastSeed(t *testing.T, w *wallet.Wallet) {
 }
 
 // createWallet creates a wallet with rand seed.
-// Returns the generated wallet and clean up function.
-func createWallet(t *testing.T, c *gui.Client, encrypt bool, password string) (*wallet.Wallet, func()) {
+// Returns the generated wallet, seed and clean up function.
+func createWallet(t *testing.T, c *gui.Client, encrypt bool, password string) (*wallet.Wallet, string, func()) {
 	if !doWallet(t) {
-		return nil, func() {}
+		return nil, "", func() {}
 	}
 	seed := hex.EncodeToString(cipher.RandByte(32))
 	// Use the first 6 letter of the seed as label.
@@ -2304,19 +2354,18 @@ func createWallet(t *testing.T, c *gui.Client, encrypt bool, password string) (*
 
 	walletDir := getWalletDir(t, c)
 
-	return w, func() {
+	return w, seed, func() {
 		// Cleaner function to delete the wallet and bak wallet
 		walletPath := filepath.Join(walletDir, w.Filename())
 		err = os.Remove(walletPath)
 		require.NoError(t, err)
 
 		bakWalletPath := walletPath + ".bak"
-		if _, err := os.Stat(bakWalletPath); os.IsNotExist(err) {
+		if _, err := os.Stat(bakWalletPath); !os.IsNotExist(err) {
 			// Return directly if no .bak file does exist
-			return
+			err = os.Remove(bakWalletPath)
 		}
 
-		err = os.Remove(bakWalletPath)
 		require.NoError(t, err)
 
 		// Removes the wallet from memory

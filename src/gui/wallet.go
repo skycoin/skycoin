@@ -267,6 +267,7 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 // Args:
 //     id: wallet id [required]
 //     num: number of address need to create [optional, if not set the default value is 1]
+//     password: wallet password [optional, must be provided if the wallet is encrypted]
 func walletNewAddresses(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -292,7 +293,9 @@ func walletNewAddresses(gateway Gatewayer) http.HandlerFunc {
 			}
 		}
 
-		addrs, err := gateway.NewAddresses(wltID, nil, n)
+		password := r.FormValue("password")
+
+		addrs, err := gateway.NewAddresses(wltID, []byte(password), n)
 		if err != nil {
 			switch err {
 			case wallet.ErrWalletAPIDisabled:

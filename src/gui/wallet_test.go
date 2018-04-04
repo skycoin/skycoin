@@ -1384,8 +1384,9 @@ func TestWalletNewSeed(t *testing.T) {
 
 func TestWalletNewAddressesHandler(t *testing.T) {
 	type httpBody struct {
-		ID  string
-		Num string
+		ID       string
+		Num      string
+		Password string
 	}
 	type Addresses struct {
 		Address []string `json:"addresses"`
@@ -1411,6 +1412,7 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 		err                       string
 		walletID                  string
 		n                         uint64
+		password                  string
 		gatewayNewAddressesResult []cipher.Address
 		gatewayNewAddressesErr    error
 		responseBody              Addresses
@@ -1465,11 +1467,51 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 			gatewayNewAddressesErr: wallet.ErrWalletAPIDisabled,
 		},
 		{
+			name:   "400 Bad Request - missing password",
+			method: http.MethodPost,
+			body: &httpBody{
+				ID:  "foo",
+				Num: "1",
+			},
+			status:   http.StatusBadRequest,
+			err:      "400 Bad Request - missing password",
+			walletID: "foo",
+			n:        1,
+			gatewayNewAddressesErr: wallet.ErrMissingPassword,
+		},
+		{
+			name:   "400 Bad Request - wallet invalid password",
+			method: http.MethodPost,
+			body: &httpBody{
+				ID:  "foo",
+				Num: "1",
+			},
+			status:   http.StatusBadRequest,
+			err:      "400 Bad Request - invalid password",
+			walletID: "foo",
+			n:        1,
+			gatewayNewAddressesErr: wallet.ErrInvalidPassword,
+		},
+		{
 			name:   "200 - OK",
 			method: http.MethodPost,
 			body: &httpBody{
 				ID:  "foo",
 				Num: "1",
+			},
+			status:   http.StatusOK,
+			walletID: "foo",
+			n:        1,
+			gatewayNewAddressesResult: addrs,
+			responseBody:              responseAddresses,
+		},
+		{
+			name:   "200 - OK with password",
+			method: http.MethodPost,
+			body: &httpBody{
+				ID:       "foo",
+				Num:      "1",
+				Password: "pwd",
 			},
 			status:   http.StatusOK,
 			walletID: "foo",
@@ -1509,8 +1551,7 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &GatewayerMock{}
-			var pwd []byte // nil password
-			gateway.On("NewAddresses", tc.walletID, pwd, tc.n).Return(tc.gatewayNewAddressesResult, tc.gatewayNewAddressesErr)
+			gateway.On("NewAddresses", tc.walletID, []byte(tc.password), tc.n).Return(tc.gatewayNewAddressesResult, tc.gatewayNewAddressesErr)
 
 			endpoint := "/wallet/newAddress"
 

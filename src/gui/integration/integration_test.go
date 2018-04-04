@@ -2037,16 +2037,25 @@ func TestWalletNewAddress(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
 	// We only test 30 cases, cause the more addresses we generate, the longer
 	// it takes, we don't want to spend much time here.
 	for i := 1; i <= 30; i++ {
 		name := fmt.Sprintf("generate %v addresses", i)
 		t.Run(name, func(t *testing.T) {
-			w, seed, clean := createWallet(t, c, false, "")
+			c := gui.NewClient(nodeAddress())
+			var encrypt bool
+			var password string
+			// Test wallet with encryption only when i == 2, so that
+			// the tests won't time out.
+			if i == 2 {
+				encrypt = true
+				password = "pwd"
+			}
+
+			w, seed, clean := createWallet(t, c, encrypt, password)
 			defer clean()
 
-			addrs, err := c.NewWalletAddress(w.Filename(), i)
+			addrs, err := c.NewWalletAddress(w.Filename(), i, password)
 			if err != nil {
 				t.Fatalf("%v", err)
 				return
@@ -2288,7 +2297,7 @@ func prepareAndCheckWallet(t *testing.T, c *gui.Client, miniCoins, miniCoinHours
 
 	// Generate more addresses if address entries less than 2.
 	if len(w.Entries) < 2 {
-		_, err := c.NewWalletAddress(w.Filename(), 2-len(w.Entries))
+		_, err := c.NewWalletAddress(w.Filename(), 2-len(w.Entries), "")
 		if err != nil {
 			t.Fatalf("New wallet address failed: %v", err)
 		}

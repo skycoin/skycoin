@@ -410,11 +410,15 @@ func (c *Client) CreateWallet(seed, label string, scanN int, encrypt bool, passw
 
 // NewWalletAddress makes a request to /wallet/newAddress
 // if n is <= 0, defaults to 1
-func (c *Client) NewWalletAddress(id string, n int) ([]string, error) {
+func (c *Client) NewWalletAddress(id string, n int, password string) ([]string, error) {
 	v := url.Values{}
 	v.Add("id", id)
 	if n > 0 {
 		v.Add("num", fmt.Sprint(n))
+	}
+
+	if len(password) != 0 {
+		v.Add("password", password)
 	}
 
 	var obj struct {

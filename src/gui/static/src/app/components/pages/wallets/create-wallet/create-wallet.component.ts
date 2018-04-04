@@ -46,7 +46,7 @@ export class CreateWalletComponent implements OnInit {
 
     ['seed', 'confirm_seed'].forEach(control =>
       this.form.get(control).valueChanges.subscribe(v =>
-        this.form.get(control).setValue(this.reformatInput(v), { emitEvent: false })
+        this.form.get(control).setValue(v.replace(/\r?\n|\r/g, ' ').replace(/ +/g, ' '), { emitEvent: false })
       )
     );
 
@@ -57,9 +57,5 @@ export class CreateWalletComponent implements OnInit {
 
   private validateAreEqual(fieldControl: FormControl) {
     return fieldControl.value.trim() === this.form.get('seed').value.trim() ? null : { NotEqual: true };
-  }
-
-  private reformatInput(value) {
-    return value.replace(/\r?\n|\r/g, ' ').replace(/ +/g, ' ');
   }
 }

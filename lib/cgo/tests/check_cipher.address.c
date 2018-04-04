@@ -217,6 +217,7 @@ Test (cipher, TestBitcoinAddress3){
     "032596957532fc37e40486b910802ff45eeaa924548c0e1c080ef804e523ec3ed3",
     66
   }, s1, s2;
+
   SKY_cipher_PubKey_Hex(&pubkey, (GoString_ *)&s1);
   registerMemCleanup((void *) s1.p);
   cr_assert(eq(type(GoString), pubkeyStr, s1));
@@ -232,23 +233,16 @@ Test(cipher, TestAddressVerify){
 
   PubKey pubkey;
   PubKey pubkey2;
-  GoSlice slice;
-  GoSlice slice2;
-
-  slice.data = buff;
-  slice.cap = sizeof(buff);
-  slice.len = 33;
-
-  slice2.data = buff;
-  slice2.cap = sizeof(buff);
-  slice2.len = 33;
+  unsigned char buff1[51],
+                buff2[51];
+  GoSlice slice = { buff1, 0, 51 };
+  GoSlice slice2 = { buff2, 0, 51 };
   Address addr;
 
-  // SKY_cipher_RandByte(33,&slice);
-  // SKY_cipher_RandByte(33,&slice2);
-
+  randBytes((GoSlice_ *) &slice, 33);
   SKY_cipher_NewPubKey(slice,&pubkey);
-  SKY_cipher_NewPubKey(slice,&pubkey2);
+  randBytes((GoSlice_ *) &slice2, 33);
+  SKY_cipher_NewPubKey(slice2,&pubkey2);
 
   SKY_cipher_AddressFromPubKey(&pubkey,&addr);
 

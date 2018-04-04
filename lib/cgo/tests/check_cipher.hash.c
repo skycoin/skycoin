@@ -3,10 +3,11 @@
 
 #include <criterion/criterion.h>
 #include <criterion/new/assert.h>
+
 #include "libskycoin.h"
 #include "skyerrors.h"
-#include "libcriterion.h"
-#include "libsky_string.c"
+#include "skytest.h"
+#include "libsky_string.h"
 
 void freshSumRipemd160(GoSlice bytes, Ripemd160* rp160){
 

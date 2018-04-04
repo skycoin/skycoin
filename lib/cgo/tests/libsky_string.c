@@ -1,7 +1,5 @@
 
-#include <stdio.h>
-#include <stdlib.h>
-#include "libskycoin.h"
+#include "libsky_string.h"
 #define ALPHANUM "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 #define ALPHANUM_LEN 62
 #define SIZE_ALL -1

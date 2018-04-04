@@ -6,10 +6,9 @@
 #include <criterion/new/assert.h>
 
 #include "libskycoin.h"
-#include "libcriterion.h"
 #include "skyerrors.h"
 #include "skytest.h"
-#include "libsky_string.c"
+#include "libsky_string.h"
 
 #define SKYCOIN_ADDRESS_VALID "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv"
 
@@ -90,30 +89,20 @@ Test(cipher, TestAddressFromBytes){
 Test(cipher, TestAddressVerify){
 
   PubKey pubkey;
+  SecKey seckey;
   PubKey pubkey2;
-  GoSlice slice;
-  GoSlice slice2;
-  
-  slice.data = buff;
-  slice.cap = sizeof(buff);
-  slice.len = 33;
-
-  slice2.data = buff;
-  slice2.cap = sizeof(buff);
-  slice2.len = 33;
-  
+  SecKey seckey2;
   Address addr;
 
-  SKY_cipher_NewPubKey(slice,&pubkey);
-  SKY_cipher_NewPubKey(slice,&pubkey2);
-
+  SKY_cipher_GenerateKeyPair(&pubkey,&seckey);
   SKY_cipher_AddressFromPubKey(&pubkey,&addr);
 
   // Valid pubkey+address
   cr_assert( SKY_cipher_Address_Verify(&addr,&pubkey) == SKY_OK ,"Valid pubkey + address");
 
+SKY_cipher_GenerateKeyPair(&pubkey,&seckey2);
 //   // Invalid pubkey
-  cr_assert( SKY_cipher_Address_Verify(&addr,&pubkey2) == SKY_ERROR," Invalid pubkey");
+  cr_assert( SKY_cipher_Address_Verify(&addr,&pubkey) == SKY_ERROR," Invalid pubkey");
 
   // Bad version
   addr.Version = 0x01;
@@ -139,8 +128,15 @@ SKY_cipher_AddressFromPubKey(&pubkey,&addr1);
 
 SKY_cipher_Address_String(&addr1,&strAddr);
 
+GoString tmpStrAddr;
 
-cr_assert(SKY_cipher_DecodeBase58Address((*((GoString *) &strAddr2)),&addr1)== SKY_OK);
+tmpStrAddr = (*((GoString *) &strAddr2));
+
+unsigned int error = SKY_cipher_DecodeBase58Address( tmpStrAddr,&addr1);
+
+printf("%d\n",error );
+
+cr_assert( error == SKY_OK);
 
 cr_assert(eq(type(Address), addr1, addr2));
 
@@ -171,7 +167,7 @@ Test (cipher, TestBitcoinAddress1){
   GoString pubkeyStr = { "034f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aa", 66 };
 
   SKY_cipher_PubKey_Hex(&pubkey, (GoString_ *) &s1);
-  registerMemCleanup((void *) s1.p);
+  // registerMemCleanup((void *) s1.p);
   cr_assert(eq(type(GoString), pubkeyStr, s1));
 
   GoString bitcoinStr = {"1Q1pE5vPGEEMqRcVRMbtBK842Y6Pzo6nK9",34};

@@ -23,6 +23,7 @@ type SpendResult struct {
 	Error       string                     `json:"error,omitempty"`
 }
 
+// UnconfirmedTxnsResponse contains unconfirmed transaction data
 type UnconfirmedTxnsResponse struct {
 	Transactions []visor.ReadableUnconfirmedTxn `json:"transactions"`
 }
@@ -47,12 +48,12 @@ func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 
 		b, err := gateway.GetWalletBalance(wltID)
 		if err != nil {
-			logger.Error("Get wallet balance failed: %v", err)
+			logger.Errorf("Get wallet balance failed: %v", err)
 			switch err {
 			case wallet.ErrWalletNotExist:
 				wh.Error404(w)
 				break
-			case wallet.ErrWalletApiDisabled:
+			case wallet.ErrWalletAPIDisabled:
 				wh.Error403(w)
 				break
 			default:
@@ -114,7 +115,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		tx, err := gateway.Spend(wltID, coins, dst)
+		tx, err := gateway.Spend(wltID, nil, coins, dst)
 		switch err {
 		case nil:
 		case fee.ErrTxnNoFee, wallet.ErrSpendingUnconfirmed, wallet.ErrInsufficientBalance:
@@ -123,7 +124,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 		case wallet.ErrWalletNotExist:
 			wh.Error404(w)
 			return
-		case wallet.ErrWalletApiDisabled:
+		case wallet.ErrWalletAPIDisabled:
 			wh.Error403(w)
 			return
 		default:
@@ -133,21 +134,21 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 
 		txStr, err := visor.TransactionToJSON(*tx)
 		if err != nil {
-			logger.Error(err.Error())
+			logger.Error(err)
 			wh.SendJSONOr500(logger, w, SpendResult{
 				Error: err.Error(),
 			})
 			return
 		}
 
-		logger.Info("Spend: \ntx= \n %s \n", txStr)
+		logger.Infof("Spend: \ntx= \n %s \n", txStr)
 
 		var ret SpendResult
 
 		ret.Transaction, err = visor.NewReadableTransaction(&visor.Transaction{Txn: *tx})
 		if err != nil {
 			err = fmt.Errorf("Creation of new readable transaction failed: %v", err)
-			logger.Error(err.Error())
+			logger.Error(err)
 			ret.Error = err.Error()
 			wh.SendJSONOr500(logger, w, ret)
 			return
@@ -157,7 +158,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 		b, err := gateway.GetWalletBalance(wltID)
 		if err != nil {
 			err = fmt.Errorf("Get wallet balance failed: %v", err)
-			logger.Error(err.Error())
+			logger.Error(err)
 			ret.Error = err.Error()
 			wh.SendJSONOr500(logger, w, ret)
 			return
@@ -217,7 +218,7 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 		})
 		if err != nil {
 			switch err {
-			case wallet.ErrWalletApiDisabled:
+			case wallet.ErrWalletAPIDisabled:
 				wh.Error403(w)
 				return
 			default:
@@ -226,9 +227,9 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 			}
 		}
 
-		wlt, err = gateway.ScanAheadWalletAddresses(wlt.GetFilename(), scanN-1)
+		wlt, err = gateway.ScanAheadWalletAddresses(wlt.Filename(), nil, scanN-1)
 		if err != nil {
-			logger.Error("gateway.ScanAheadWalletAddresses failed: %v", err)
+			logger.Errorf("gateway.ScanAheadWalletAddresses failed: %v", err)
 			wh.Error500(w)
 			return
 		}
@@ -269,10 +270,10 @@ func walletNewAddresses(gateway Gatewayer) http.HandlerFunc {
 			}
 		}
 
-		addrs, err := gateway.NewAddresses(wltID, n)
+		addrs, err := gateway.NewAddresses(wltID, nil, n)
 		if err != nil {
 			switch err {
-			case wallet.ErrWalletApiDisabled:
+			case wallet.ErrWalletAPIDisabled:
 				wh.Error403(w)
 				return
 			default:
@@ -326,7 +327,7 @@ func walletUpdateHandler(gateway Gatewayer) http.HandlerFunc {
 			switch err {
 			case wallet.ErrWalletNotExist:
 				wh.Error404(w)
-			case wallet.ErrWalletApiDisabled:
+			case wallet.ErrWalletAPIDisabled:
 				wh.Error403(w)
 			default:
 				wh.Error500Msg(w, err.Error())
@@ -359,7 +360,7 @@ func walletGet(gateway Gatewayer) http.HandlerFunc {
 		wlt, err := gateway.GetWallet(wltID)
 		if err != nil {
 			switch err {
-			case wallet.ErrWalletApiDisabled:
+			case wallet.ErrWalletAPIDisabled:
 				wh.Error403(w)
 			default:
 				wh.Error400(w, err.Error())
@@ -391,11 +392,11 @@ func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 
 		txns, err := gateway.GetWalletUnconfirmedTxns(wltID)
 		if err != nil {
-			logger.Error("get wallet unconfirmed transactions failed: %v", err)
+			logger.Errorf("get wallet unconfirmed transactions failed: %v", err)
 			switch err {
 			case wallet.ErrWalletNotExist:
 				wh.Error404(w)
-			case wallet.ErrWalletApiDisabled:
+			case wallet.ErrWalletAPIDisabled:
 				wh.Error403(w)
 			default:
 				wh.Error500Msg(w, err.Error())
@@ -424,7 +425,7 @@ func walletsHandler(gateway Gatewayer) http.HandlerFunc {
 		wlts, err := gateway.GetWallets()
 		if err != nil {
 			switch err {
-			case wallet.ErrWalletApiDisabled:
+			case wallet.ErrWalletAPIDisabled:
 				wh.Error403(w)
 			default:
 				wh.Error500(w)
@@ -453,7 +454,7 @@ func getWalletFolder(gateway Gatewayer) http.HandlerFunc {
 		addr, err := gateway.GetWalletDir()
 		if err != nil {
 			switch err {
-			case wallet.ErrWalletApiDisabled:
+			case wallet.ErrWalletAPIDisabled:
 				wh.Error403(w)
 			default:
 				wh.Error500(w)
@@ -503,14 +504,14 @@ func newWalletSeed(gateway Gatewayer) http.HandlerFunc {
 
 		entropy, err := bip39.NewEntropy(entropyBits)
 		if err != nil {
-			logger.Error("bip39.NewEntropy failed: %v", err)
+			logger.Errorf("bip39.NewEntropy failed: %v", err)
 			wh.Error500(w)
 			return
 		}
 
 		mnemonic, err := bip39.NewMnemonic(entropy)
 		if err != nil {
-			logger.Error("bip39.NewDefaultMnemomic failed: %v", err)
+			logger.Errorf("bip39.NewDefaultMnemomic failed: %v", err)
 			wh.Error500(w)
 			return
 		}
@@ -539,7 +540,7 @@ func walletUnloadHandler(gateway Gatewayer) http.HandlerFunc {
 
 		if err := gateway.UnloadWallet(id); err != nil {
 			switch err {
-			case wallet.ErrWalletApiDisabled:
+			case wallet.ErrWalletAPIDisabled:
 				wh.Error403(w)
 			default:
 				wh.Error500(w)

@@ -19,7 +19,7 @@ func getStatusHandler(req Request, gw Gatewayer) Response {
 
 	blocks, err := gw.GetLastBlocks(1)
 	if err != nil {
-		logger.Error("%v", err)
+		logger.Error(err)
 		return makeErrorResponse(errCodeInternalError, errMsgInternalError)
 	}
 	if len(blocks.Blocks) == 0 {

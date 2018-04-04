@@ -14,13 +14,13 @@ func statusCmd() gcli.Command {
 		ArgsUsage:    " ",
 		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
-			rpcClient := RpcClientFromContext(c)
+			rpcClient := RPCClientFromContext(c)
 			status, err := rpcClient.GetStatus()
 			if err != nil {
 				return err
 			}
 
-			return printJson(struct {
+			return printJSON(struct {
 				webrpc.StatusResult
 				RPCAddress string `json:"webrpc_address"`
 			}{

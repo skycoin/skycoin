@@ -15,6 +15,7 @@ import (
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
+// AddrHistory represents a transactional event for an address
 type AddrHistory struct {
 	BlockSeq  uint64    `json:"-"`
 	Txid      string    `json:"txid"`
@@ -59,7 +60,7 @@ func walletHisCmd() gcli.Command {
 
 func walletHistoryAction(c *gcli.Context) error {
 	cfg := ConfigFromContext(c)
-	rpcClient := RpcClientFromContext(c)
+	rpcClient := RPCClientFromContext(c)
 
 	if c.NArg() > 0 {
 		fmt.Printf("Error: invalid argument\n\n")
@@ -101,7 +102,7 @@ func walletHistoryAction(c *gcli.Context) error {
 	sort.Sort(byTime(totalAddrHis))
 
 	// print the addr history
-	return printJson(totalAddrHis)
+	return printJSON(totalAddrHis)
 }
 
 func makeAddrHisArray(c *webrpc.Client, ux webrpc.AddrUxoutResult) ([]AddrHistory, error) {

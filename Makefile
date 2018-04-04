@@ -110,7 +110,16 @@ test-libc: build-libc ## Run tests for libskycoin C client library
 
 lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...
-	gometalinter --disable-all -E vet -E goimports -E varcheck --tests --vendor ./...
+	gometalinter --deadline=3m --concurrency=2 --disable-all --tests --vendor --skip=lib/cgo \
+		-E goimports \
+		-E golint \
+		-E varcheck \
+		./...
+	# lib cgo can't use golint because it needs export directives in function docstrings that do not obey golint rules
+	gometalinter --deadline=3m --concurrency=2 --disable-all --tests --vendor --skip=lib/cgo \
+		-E goimports \
+		-E varcheck \
+		./...
 
 check: lint test integration-test-stable ## Run tests and linters
 

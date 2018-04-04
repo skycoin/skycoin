@@ -42,6 +42,7 @@ type Server struct {
 	done     chan struct{}
 }
 
+// Config configures Server
 type Config struct {
 	StaticDir        string
 	DisableCSRF      bool
@@ -62,7 +63,7 @@ func create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	logger.Info("Web resources directory: %s", appLoc)
+	logger.Infof("Web resources directory: %s", appLoc)
 
 	csrfStore := &CSRFStore{
 		Enabled: !c.DisableCSRF,
@@ -125,8 +126,8 @@ func CreateHTTPS(host string, c Config, daemon *daemon.Daemon, certFile, keyFile
 		return nil, err
 	}
 
-	logger.Info("Using %s for the certificate", certFile)
-	logger.Info("Using %s for the key", keyFile)
+	logger.Infof("Using %s for the certificate", certFile)
+	logger.Infof("Using %s for the key", keyFile)
 
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
@@ -145,7 +146,7 @@ func CreateHTTPS(host string, c Config, daemon *daemon.Daemon, certFile, keyFile
 
 // Serve serves the web interface on the configured host
 func (s *Server) Serve() error {
-	logger.Info("Starting web interface on %s", s.listener.Addr())
+	logger.Infof("Starting web interface on %s", s.listener.Addr())
 	defer logger.Info("Web interface closed")
 	defer close(s.done)
 
@@ -165,29 +166,6 @@ func (s *Server) Shutdown() {
 	<-s.done
 }
 
-func ElapseHandler(handler http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		lrw := NewWrappedResponseWriter(w)
-		start := time.Now()
-		handler.ServeHTTP(lrw, r)
-		logger.Info("%v %s %s %v", lrw.statusCode, r.Method, r.URL.Path, time.Since(start))
-	})
-}
-
-type wrappedResponseWriter struct {
-	http.ResponseWriter
-	statusCode int
-}
-
-func NewWrappedResponseWriter(w http.ResponseWriter) *wrappedResponseWriter {
-	return &wrappedResponseWriter{w, http.StatusOK}
-}
-
-func (lrw *wrappedResponseWriter) WriteHeader(code int) {
-	lrw.statusCode = code
-	lrw.ResponseWriter.WriteHeader(code)
-}
-
 // newServerMux creates an http.ServeMux with handlers registered
 func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.ServeMux {
 	mux := http.NewServeMux()
@@ -200,7 +178,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.Se
 
 	webHandler := func(endpoint string, handler http.Handler) {
 
-		handler = ElapseHandler(handler)
+		handler = wh.ElapsedHandler(logger, handler)
 		handler = CSRFCheck(csrfStore, handler)
 		handler = headerCheck(c.host, handler)
 		mux.Handle(endpoint, handler)
@@ -358,7 +336,7 @@ func newIndexHandler(appLoc string) http.HandlerFunc {
 	// Serves the main page
 	return func(w http.ResponseWriter, r *http.Request) {
 		page := filepath.Join(appLoc, indexPage)
-		logger.Debug("Serving index page: %s", page)
+		logger.Debugf("Serving index page: %s", page)
 		if r.URL.Path == "/" {
 			http.ServeFile(w, r, page)
 		} else {
@@ -438,7 +416,7 @@ func getOutputsHandler(gateway Gatewayer) http.HandlerFunc {
 
 		outs, err := gateway.GetUnspentOutputs(filters...)
 		if err != nil {
-			logger.Error("get unspent outputs failed: %v", err)
+			logger.Errorf("get unspent outputs failed: %v", err)
 			wh.Error500(w)
 			return
 		}
@@ -470,7 +448,7 @@ func getBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 		bals, err := gateway.GetBalanceOfAddrs(addrs)
 		if err != nil {
 			errMsg := fmt.Sprintf("Get balance failed: %v", err)
-			logger.Error("%s", errMsg)
+			logger.Error(errMsg)
 			wh.Error500Msg(w, errMsg)
 			return
 		}
@@ -556,7 +534,7 @@ func getLogsHandler(logbuf *bytes.Buffer) http.HandlerFunc {
 			}
 
 			if len(logs) >= linenum {
-				logger.Debug("logs size %d,total size:%d", len(logs), len(logList))
+				logger.Debugf("logs size %d,total size:%d", len(logs), len(logList))
 				break
 			}
 			log := attrActualLog(logInfo)

@@ -1,8 +1,10 @@
 package wallet
 
 import (
-	"fmt"
+
 	//"fmt"
+
+	"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util/file"
@@ -51,21 +53,54 @@ func (re *ReadableEntry) Save(filename string) error {
 type ReadableEntries []ReadableEntry
 
 // ToWalletEntries convert readable entries to entries
-func (res ReadableEntries) ToWalletEntries() ([]Entry, error) {
+// converts base on the wallet version.
+func (res ReadableEntries) toWalletEntries(isEncrypted bool) ([]Entry, error) {
 	entries := make([]Entry, len(res))
 	for i, re := range res {
-		e, err := NewEntryFromReadable(&re)
+		e, err := newEntryFromReadable(&re)
 		if err != nil {
 			return []Entry{}, err
 		}
 
-		if err := e.Verify(); err != nil {
-			return []Entry{}, fmt.Errorf("convert readable wallet entry failed: %v", err)
+		// Verify the wallet if it's not encrypted
+		if !isEncrypted {
+			if err := e.Verify(); err != nil {
+				return nil, err
+			}
 		}
 
 		entries[i] = *e
 	}
 	return entries, nil
+}
+
+// newEntryFromReadable creates WalletEntry base one ReadableWalletEntry
+func newEntryFromReadable(w *ReadableEntry) (*Entry, error) {
+	a, err := cipher.DecodeBase58Address(w.Address)
+	if err != nil {
+		return nil, err
+	}
+
+	p, err := cipher.PubKeyFromHex(w.Public)
+	if err != nil {
+		return nil, err
+	}
+
+	// Decodes the secret hex string if any
+	var secret cipher.SecKey
+	if w.Secret != "" {
+		var err error
+		secret, err = cipher.SecKeyFromHex(w.Secret)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &Entry{
+		Address: a,
+		Public:  p,
+		Secret:  secret,
+	}, nil
 }
 
 // ReadableWallet used for [de]serialization of a Wallet
@@ -74,26 +109,8 @@ type ReadableWallet struct {
 	Entries ReadableEntries   `json:"entries"`
 }
 
-// ByTm for sort ReadableWallets
-type ByTm []*ReadableWallet
-
-func (bt ByTm) Len() int {
-	return len(bt)
-}
-
-func (bt ByTm) Less(i, j int) bool {
-	return bt[i].Meta["tm"] < bt[j].Meta["tm"]
-}
-
-func (bt ByTm) Swap(i, j int) {
-	bt[i], bt[j] = bt[j], bt[i]
-}
-
-// ReadableWalletCtor readable wallet creator
-type ReadableWalletCtor func(w Wallet) *ReadableWallet
-
 // NewReadableWallet creates readable wallet
-func NewReadableWallet(w Wallet) *ReadableWallet {
+func NewReadableWallet(w *Wallet) *ReadableWallet {
 	readable := make(ReadableEntries, len(w.Entries))
 	for i, e := range w.Entries {
 		readable[i] = NewReadableEntry(e)
@@ -118,27 +135,39 @@ func LoadReadableWallet(filename string) (*ReadableWallet, error) {
 }
 
 // ToWallet convert readable wallet to Wallet
-func (rw *ReadableWallet) ToWallet() (Wallet, error) {
-	w, err := newWalletFromReadable(rw)
-	if err != nil {
-		return Wallet{}, err
+func (rw *ReadableWallet) ToWallet() (*Wallet, error) {
+	w := &Wallet{
+		Meta: rw.Meta,
 	}
-	return *w, nil
+
+	if err := w.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid wallet %s: %v", w.Filename(), err)
+	}
+
+	ets, err := rw.Entries.toWalletEntries(w.IsEncrypted())
+	if err != nil {
+		return nil, err
+	}
+
+	w.Entries = ets
+
+	return w, nil
 }
 
 // Save saves to filename
 func (rw *ReadableWallet) Save(filename string) error {
-	// logger.Info("Saving readable wallet to %s with filename %s", filename,
-	// 	self.Meta["filename"])
 	return file.SaveJSON(filename, rw, 0600)
-}
-
-// SaveSafe saves to filename, but won't overwrite existing
-func (rw *ReadableWallet) SaveSafe(filename string) error {
-	return file.SaveJSONSafe(filename, rw, 0600)
 }
 
 // Load loads from filename
 func (rw *ReadableWallet) Load(filename string) error {
 	return file.LoadJSON(filename, rw)
+}
+
+func (rw *ReadableWallet) version() string {
+	return rw.Meta[metaVersion]
+}
+
+func (rw *ReadableWallet) time() string {
+	return rw.Meta[metaTm]
 }

@@ -55,7 +55,7 @@ func sendCmd() gcli.Command {
 		},
 		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
-			rpcClient := RpcClientFromContext(c)
+			rpcClient := RPCClientFromContext(c)
 
 			rawtx, err := createRawTxCmdHandler(c)
 			if err != nil {
@@ -70,7 +70,7 @@ func sendCmd() gcli.Command {
 
 			jsonFmt := c.Bool("json")
 			if jsonFmt {
-				return printJson(struct {
+				return printJSON(struct {
 					Txid string `json:"txid"`
 				}{
 					Txid: txid,

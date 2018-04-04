@@ -65,7 +65,7 @@ func addressBalanceCmd() gcli.Command {
 
 func checkWltBalance(c *gcli.Context) error {
 	cfg := ConfigFromContext(c)
-	rpcClient := RpcClientFromContext(c)
+	rpcClient := RPCClientFromContext(c)
 
 	var w string
 	if c.NArg() > 0 {
@@ -83,11 +83,11 @@ func checkWltBalance(c *gcli.Context) error {
 		return err
 	}
 
-	return printJson(balRlt)
+	return printJSON(balRlt)
 }
 
 func addrBalance(c *gcli.Context) error {
-	rpcClient := RpcClientFromContext(c)
+	rpcClient := RPCClientFromContext(c)
 
 	addrs := make([]string, c.NArg())
 	var err error
@@ -103,7 +103,7 @@ func addrBalance(c *gcli.Context) error {
 		return err
 	}
 
-	return printJson(balRlt)
+	return printJSON(balRlt)
 }
 
 // PUBLIC

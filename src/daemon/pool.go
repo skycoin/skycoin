@@ -78,7 +78,7 @@ func (pool *Pool) Shutdown() {
 
 // Run starts listening on the configured Port
 func (pool *Pool) Run() error {
-	logger.Info("daemon.Pool listening on port %d", pool.Config.port)
+	logger.Infof("daemon.Pool listening on port %d", pool.Config.port)
 	return pool.Pool.Run()
 }
 

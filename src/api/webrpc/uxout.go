@@ -16,7 +16,7 @@ type AddrUxoutResult struct {
 func getAddrUxOutsHandler(req Request, gateway Gatewayer) Response {
 	var addrs []string
 	if err := req.DecodeParams(&addrs); err != nil {
-		logger.Critical("decode params failed:%v", err)
+		logger.Criticalf("decode params failed:%v", err)
 		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
 	}
 
@@ -31,13 +31,13 @@ func getAddrUxOutsHandler(req Request, gateway Gatewayer) Response {
 		// decode address
 		a, err := cipher.DecodeBase58Address(addr)
 		if err != nil {
-			logger.Error("%v", err)
+			logger.Error(err)
 			return makeErrorResponse(errCodeInvalidParams, fmt.Sprintf("%v", err))
 		}
 		results[i].Address = addr
 		uxouts, err := gateway.GetAddrUxOuts(a)
 		if err != nil {
-			logger.Error("%v", err)
+			logger.Error(err)
 			return makeErrorResponse(errCodeInternalError, errMsgInternalError)
 		}
 		results[i].UxOuts = append(results[i].UxOuts, uxouts...)

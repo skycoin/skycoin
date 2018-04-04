@@ -35,7 +35,7 @@ func versionCmd() gcli.Command {
 
 			jsonFmt := c.Bool("json")
 			if jsonFmt {
-				return printJson(ver)
+				return printJSON(ver)
 			}
 
 			v := reflect.ValueOf(ver)

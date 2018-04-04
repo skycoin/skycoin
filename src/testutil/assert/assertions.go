@@ -28,7 +28,7 @@ func didPanic(f assert.PanicTestFunc) (bool, interface{}) {
 	return didPanic, message
 }
 
-// Check that a value meets certain condition
+// TestValuePredicate checks that a value meets certain condition
 // This function type may be seen as a continuation of a test scenario.
 // Assertions executed inside of it may be recorded to the calling context
 // by accessing free-vars in function closure.

@@ -20,7 +20,7 @@ type historyerMock struct {
 	mock.Mock
 }
 
-func NewHistoryerMock() *historyerMock {
+func newHistoryerMock() *historyerMock {
 	return &historyerMock{}
 }
 

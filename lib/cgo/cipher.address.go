@@ -85,7 +85,7 @@ func SKY_cipher_Address_BitcoinBytes(_addr *C.Address, _arg0 *C.GoSlice_) {
 //export SKY_cipher_Address_Verify
 func SKY_cipher_Address_Verify(_addr *C.Address, _key *C.PubKey) uint32 {
 	addr := (*cipher.Address)(unsafe.Pointer(_addr))
-	key := (*cipher.PubKey)(unsafe.Pointer(&_key))
+	key := (*cipher.PubKey)(unsafe.Pointer(_key))
 	err := addr.Verify(*key)
 	return libErrorCode(err)
 }

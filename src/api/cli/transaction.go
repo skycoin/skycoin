@@ -31,14 +31,14 @@ func transactionCmd() gcli.Command {
 				return errors.New("invalid txid")
 			}
 
-			rpcClient := RpcClientFromContext(c)
+			rpcClient := RPCClientFromContext(c)
 
 			tx, err := rpcClient.GetTransactionByID(txid)
 			if err != nil {
 				return err
 			}
 
-			return printJson(tx)
+			return printJSON(tx)
 		},
 	}
 }

@@ -37,7 +37,7 @@ func getTransactionHandler(req Request, gateway Gatewayer) Response {
 	}
 	txn, err := gateway.GetTransaction(t)
 	if err != nil {
-		logger.Debugf("%v", err)
+		logger.Debug(err)
 		return makeErrorResponse(errCodeInternalError, errMsgInternalError)
 	}
 

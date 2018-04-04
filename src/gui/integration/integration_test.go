@@ -1,4 +1,5 @@
-package gui_integration_test
+// package integration_test implements GUI integration tests
+package integration_test
 
 import (
 	"encoding/hex"
@@ -1909,7 +1910,7 @@ func TestLiveWalletSpend(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			result, err := c.Spend(w.GetFilename(), tc.to, tc.coins)
+			result, err := c.Spend(w.Filename(), tc.to, tc.coins)
 			if err != nil {
 				t.Fatalf("spend failed: %v", err)
 			}
@@ -1939,7 +1940,7 @@ func TestLiveWalletSpend(t *testing.T) {
 		require.NoError(t, err)
 		name := fmt.Sprintf("send invalid coin %v", cs)
 		t.Run(name, func(t *testing.T) {
-			result, err := c.Spend(w.GetFilename(), w.Entries[0].Address.String(), i)
+			result, err := c.Spend(w.Filename(), w.Entries[0].Address.String(), i)
 			require.Equal(t, errMsg, err.Error())
 			require.Nil(t, result)
 		})
@@ -1959,7 +1960,7 @@ func TestCreateWallet(t *testing.T) {
 	walletDir := getWalletDir(t, c)
 
 	// Confirms the wallet does exist
-	walletPath := filepath.Join(walletDir, w.GetFilename())
+	walletPath := filepath.Join(walletDir, w.Filename())
 	_, err := os.Stat(walletPath)
 	require.NoError(t, err)
 
@@ -1978,7 +1979,7 @@ func TestGetWallet(t *testing.T) {
 	defer clean()
 
 	// Confirms the wallet can be acquired
-	w1, err := c.Wallet(w.GetFilename())
+	w1, err := c.Wallet(w.Filename())
 	require.NoError(t, err)
 	require.Equal(t, *w, *w1)
 }
@@ -2008,12 +2009,12 @@ func TestGetWallets(t *testing.T) {
 	for _, rw := range readableWallets {
 		w, err := rw.ToWallet()
 		require.NoError(t, err)
-		walletMap[w.GetFilename()] = w
+		walletMap[w.Filename()] = *w
 	}
 
 	// Confirms the returned wallets contains the wallet we created.
 	for _, w := range ws {
-		retW, ok := walletMap[w.GetFilename()]
+		retW, ok := walletMap[w.Filename()]
 		require.True(t, ok)
 		require.Equal(t, w, retW)
 	}
@@ -2035,7 +2036,7 @@ func TestWalletNewAddress(t *testing.T) {
 			w, clean := createWallet(t, c)
 			defer clean()
 
-			addrs, err := c.NewWalletAddress(w.GetFilename(), i)
+			addrs, err := c.NewWalletAddress(w.Filename(), i)
 			if err != nil {
 				t.Fatalf("%v", err)
 				return
@@ -2063,7 +2064,7 @@ func TestStableWalletBalance(t *testing.T) {
 	w, clean := createWallet(t, c)
 	defer clean()
 
-	bp, err := c.WalletBalance(w.GetFilename())
+	bp, err := c.WalletBalance(w.Filename())
 	require.NoError(t, err)
 
 	var expect wallet.BalancePair
@@ -2094,13 +2095,13 @@ func TestWalletUpdate(t *testing.T) {
 	w, clean := createWallet(t, c)
 	defer clean()
 
-	err := c.UpdateWallet(w.GetFilename(), "new wallet")
+	err := c.UpdateWallet(w.Filename(), "new wallet")
 	require.NoError(t, err)
 
 	// Confirms the wallet has label of "new wallet"
-	w1, err := c.Wallet(w.GetFilename())
+	w1, err := c.Wallet(w.Filename())
 	require.NoError(t, err)
-	require.Equal(t, w1.GetLabel(), "new wallet")
+	require.Equal(t, w1.Label(), "new wallet")
 }
 
 func TestStableWalletTransactions(t *testing.T) {
@@ -2112,7 +2113,7 @@ func TestStableWalletTransactions(t *testing.T) {
 	w, clean := createWallet(t, c)
 	defer clean()
 
-	txns, err := c.WalletTransactions(w.GetFilename())
+	txns, err := c.WalletTransactions(w.Filename())
 	require.NoError(t, err)
 
 	var expect gui.UnconfirmedTxnsResponse
@@ -2129,10 +2130,10 @@ func TestLiveWalletTransactions(t *testing.T) {
 
 	c := gui.NewClient(nodeAddress())
 	w, _, _ := prepareAndCheckWallet(t, c, 1e6, 1)
-	txns, err := c.WalletTransactions(w.GetFilename())
+	txns, err := c.WalletTransactions(w.Filename())
 	require.NoError(t, err)
 
-	bp, err := c.WalletBalance(w.GetFilename())
+	bp, err := c.WalletBalance(w.Filename())
 	require.NoError(t, err)
 	// There's pending transactions if predicted coins are not the same as confirmed coins
 	if bp.Predicted.Coins != bp.Confirmed.Coins {
@@ -2176,7 +2177,7 @@ func prepareAndCheckWallet(t *testing.T, c *gui.Client, miniCoins, miniCoinHours
 
 	// Generate more addresses if address entries less than 2.
 	if len(w.Entries) < 2 {
-		_, err := c.NewWalletAddress(w.GetFilename(), 2-len(w.Entries))
+		_, err := c.NewWalletAddress(w.Filename(), 2-len(w.Entries))
 		if err != nil {
 			t.Fatalf("New wallet address failed: %v", err)
 		}
@@ -2270,6 +2271,9 @@ func checkWalletEntriesAndLastSeed(t *testing.T, w *wallet.Wallet) {
 // createWallet creates a wallet with rand seed.
 // Returns the generated wallet and clean up function.
 func createWallet(t *testing.T, c *gui.Client) (*wallet.Wallet, func()) {
+	if !doWallet(t) {
+		return nil, func() {}
+	}
 	seed := hex.EncodeToString(cipher.RandByte(32))
 	// Use the first 6 letter of the seed as label.
 	rw, err := c.CreateWallet(seed, seed[:6], 0)
@@ -2282,18 +2286,23 @@ func createWallet(t *testing.T, c *gui.Client) (*wallet.Wallet, func()) {
 
 	walletDir := getWalletDir(t, c)
 
-	return &w, func() {
+	return w, func() {
 		// Cleaner function to delete the wallet and bak wallet
-		walletPath := filepath.Join(walletDir, w.GetFilename())
+		walletPath := filepath.Join(walletDir, w.Filename())
 		err = os.Remove(walletPath)
 		require.NoError(t, err)
 
 		bakWalletPath := walletPath + ".bak"
+		if _, err := os.Stat(bakWalletPath); os.IsNotExist(err) {
+			// Return directly if no .bak file does exist
+			return
+		}
+
 		err = os.Remove(bakWalletPath)
 		require.NoError(t, err)
 
 		// Removes the wallet from memory
-		c.UnloadWallet(w.GetFilename())
+		c.UnloadWallet(w.Filename())
 	}
 }
 

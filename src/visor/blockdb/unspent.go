@@ -173,6 +173,7 @@ func (up *Unspents) syncCache() error {
 	return nil
 }
 
+// ProcessBlock updates the unspent pool based upon the published block
 func (up *Unspents) ProcessBlock(b *coin.SignedBlock) bucket.TxHandler {
 	return func(tx *bolt.Tx) (bucket.Rollback, error) {
 		var (

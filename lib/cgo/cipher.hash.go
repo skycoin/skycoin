@@ -3,6 +3,7 @@ package main
 import (
 	cipher "github.com/skycoin/skycoin/src/cipher"
 
+	"reflect"
 	"unsafe"
 )
 
@@ -18,10 +19,7 @@ import "C"
 //export SKY_cipher_Ripemd160_Set
 func SKY_cipher_Ripemd160_Set(_rd *C.Ripemd160, _b []byte) (retVal uint32) {
 	defer func() {
-		if r := recover(); r != nil {
-			// TODO: Fix to be like retVal = libErrorCode(err)
-			retVal = SKY_ERROR
-		}
+		retVal = catchApiPanic(recover())
 	}()
 
 	__rd := (*[1 << 30]byte)(
@@ -43,10 +41,7 @@ func SKY_cipher_HashRipemd160(_data []byte, _arg1 *C.Ripemd160) {
 //export SKY_cipher_SHA256_Set
 func SKY_cipher_SHA256_Set(_g *C.SHA256, _b []byte) (retVal uint32) {
 	defer func() {
-		if r := recover(); r != nil {
-			// TODO: Fix to be like retVal = libErrorCode(err)
-			retVal = SKY_ERROR
-		}
+		retVal = catchApiPanic(recover())
 	}()
 
 	__g := (*[1 << 30]byte)(
@@ -80,12 +75,13 @@ func SKY_cipher_SHA256_Xor(_g *C.SHA256, _b *C.SHA256, _arg1 *C.SHA256) {
 }
 
 //export SKY_cipher_SumSHA256
-func SKY_cipher_SumSHA256(_b []byte, _arg1 *C.SHA256) {
-	__arg1 := (*[1 << 30]byte)(
-		unsafe.Pointer(_arg1))[:SizeofSecKey:SizeofSecKey]
-	arg1 := (*cipher.SHA256)(unsafe.Pointer(&__arg1))
+func SKY_cipher_SumSHA256(_b []byte, _arg1 *C.SHA256) (retVal uint32) {
+	defer func() {
+		retVal = catchApiPanic(recover())
+	}()
 	h := cipher.SumSHA256(_b)
-	copy(arg1[:], h[:])
+	copyToBuffer(reflect.ValueOf(h[:]), unsafe.Pointer(_arg1), uint(SizeofSHA256))
+	return libErrorCode(nil)
 }
 
 //export SKY_cipher_SHA256FromHex

@@ -28,7 +28,7 @@ export class CreateWalletComponent implements OnInit {
   }
 
   createWallet() {
-    this.walletService.create(this.form.value.label, this.form.value.seed, this.scan)
+    this.walletService.create(this.form.value.label, this.form.value.seed.trim(), this.scan)
       .subscribe(() => this.dialogRef.close());
   }
 
@@ -44,12 +44,22 @@ export class CreateWalletComponent implements OnInit {
       Validators.compose([Validators.required, this.validateAreEqual.bind(this)])
     ]));
 
+    ['seed', 'confirm_seed'].forEach(control =>
+      this.form.get(control).valueChanges.subscribe(v =>
+        this.form.get(control).setValue(this.reformatInput(v), { emitEvent: false })
+      )
+    );
+
     this.generateSeed();
 
     this.scan = 100;
   }
 
-  private validateAreEqual(fieldControl: FormControl){
-    return fieldControl.value === this.form.get('seed').value ? null : { NotEqual: true };
+  private validateAreEqual(fieldControl: FormControl) {
+    return fieldControl.value.trim() === this.form.get('seed').value.trim() ? null : { NotEqual: true };
+  }
+
+  private reformatInput(value) {
+    return value.replace(/\r?\n|\r/g, ' ').replace(/ +/g, ' ');
   }
 }

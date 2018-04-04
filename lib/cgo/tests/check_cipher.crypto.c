@@ -1,13 +1,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 
 #include <criterion/criterion.h>
 #include <criterion/new/assert.h>
 
 #include "libskycoin.h"
 #include "skyerrors.h"
+#include "skytest.h"
 
 #define ALPHANUM "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 #define ALPHANUM_LEN 62
@@ -21,8 +21,33 @@ void randBytes(GoSlice *bytes, size_t n) {
   bytes->len = (GoInt) n;
 }
 
-void setup(void) {
-  srand ((unsigned int) time (NULL));
+#define SIZE_ALL -1
+
+// TODO: Move to libsky_string.c
+void strnhex(unsigned char* buf, char *str, int n){
+    unsigned char * pin = buf;
+    const char * hex = "0123456789ABCDEF";
+    char * pout = str;
+    for(; *pin && n; --n){
+        *pout++ = hex[(*pin>>4)&0xF];
+        *pout++ = hex[(*pin++)&0xF];
+    }
+    *pout = 0;
+}
+
+// TODO: Move to libsky_string.c
+void strhex(unsigned char* buf, char *str){
+  strnhex(buf, str, SIZE_ALL);
+}
+
+// TODO: Move to libsky_io.c
+void fprintbuff(FILE *f, void *buff, size_t n) {
+  unsigned char *ptr = (unsigned char *) buff;
+  fprintf(f, "[ ");
+  for (; n; --n, ptr++) {
+    fprintf(f, "%02d ", *ptr);
+  }
+  fprintf(f, "]");
 }
 
 Test(asserts, TestNewPubKey) {
@@ -61,36 +86,13 @@ Test(asserts, TestNewPubKey) {
   cr_assert(eq(u8[33], pk, buff));
 }
 
-#define SIZE_ALL -1
-
-// TODO: Move to libsky_string.c
-void strnhex(unsigned char* buf, char *str, int n){
-    unsigned char * pin = buf;
-    const char * hex = "0123456789ABCDEF";
-    char * pout = str;
-    for(; *pin && n; --n){
-        *pout++ = hex[(*pin>>4)&0xF];
-        *pout++ = hex[(*pin++)&0xF];
-    }
-    *pout = 0;
-}
-
-// TODO: Move to libsky_string.c
-void strhex(unsigned char* buf, char *str){
-  strnhex(buf, str, SIZE_ALL);
-}
-
 Test(asserts, TestPubKeyFromHex) {
   PubKey p, p1;
   GoString s;
-  unsigned char buff[50];
+  unsigned char buff[51];
   char sbuff[101];
-  GoSlice slice;
+  GoSlice slice = { (void *)buff, 0, 51 };
   unsigned int errcode;
-
-  slice.data = (void *)buff;
-  slice.cap = 51;
-  slice.len = 0;
 
 	// Invalid hex
   s.n = 0;
@@ -123,46 +125,32 @@ Test(asserts, TestPubKeyFromHex) {
 
 Test(asserts, TestPubKeyHex) {
   PubKey p, p2;
-  GoString s, s2;
+  GoString s3, s4;
   unsigned char buff[50];
-  GoSlice slice;
+  GoSlice slice = { buff, 0, 50};
   unsigned int errcode;
-
-  slice.data = buff;
-  slice.len = 0;
-  slice.cap = 50;
 
   randBytes(&slice, 33);
   errcode = SKY_cipher_NewPubKey(slice, &p);
   cr_assert(errcode == SKY_OK);
-  s.p = SKY_cipher_PubKey_Hex(&p);
-  s.n = strlen(s.p);
-  errcode = SKY_cipher_PubKeyFromHex(s, &p2);
+  SKY_cipher_PubKey_Hex(&p, (GoString_ *) &s3);
+  registerMemCleanup((void *) s3.p);
+  errcode = SKY_cipher_PubKeyFromHex(s3, &p2);
   cr_assert(errcode == SKY_OK);
   cr_assert(eq(u8[33], p, p2));
 
-  s2.p = SKY_cipher_PubKey_Hex(&p2);
-  s2.n = strlen(s2.p);
-  // TODO: Write like this cr_assert(eq(type(struct GoString), &s, &s2))
-  cr_assert(eq(int, s.n, s2.n));
-  cr_assert(eq(str, (char *) s.p, (char *) s2.p));
-  if (s.p != NULL) {
-    free((void *) s.p);
-  }
-  if (s2.p != NULL) {
-    free((void *) s2.p);
-  }
+  SKY_cipher_PubKey_Hex(&p2, (GoString_ *)&s4);
+  registerMemCleanup((void *) s4.p);
+  // TODO: Translate into cr_assert(eq(type(GoString), s3, s4));
+  cr_assert(s3.n == s4.n);
+  cr_assert(eq(str, ((char *) s3.p), ((char *) s4.p)));
 }
 
 Test(asserts, TestPubKeyVerify) {
   PubKey p;
   unsigned char buff[50];
-  GoSlice slice;
+  GoSlice slice = { buff, 0, 50 };
   unsigned int errcode;
-
-  slice.data = buff;
-  slice.len = 0;
-  slice.cap = 50;
 
   int i = 0;
   for (; i < 10; i++) {
@@ -191,11 +179,8 @@ Test(asserts, TestPubKeyVerifyDefault1) {
   PubKey p;
   SecKey s;
 
-  fprintf(stderr, "p1 %p %p\n", &p, &s);
   SKY_cipher_GenerateKeyPair(&p, &s);
-  fprintf(stderr, "p2\n");
   unsigned int errcode = SKY_cipher_PubKey_Verify(&p);
-  fprintf(stderr, "p3\n");
   cr_assert(errcode == SKY_OK);
 }
 
@@ -205,11 +190,8 @@ Test(asserts, TestPubKeyVerifyDefault2) {
   int i;
 
   for (i = 0; i < 1024; ++i) {
-    fprintf(stderr, "p1 %p %p\n", &p, &s);
     SKY_cipher_GenerateKeyPair(&p, &s);
-    fprintf(stderr, "p2\n");
     unsigned int errcode = SKY_cipher_PubKey_Verify(&p);
-    fprintf(stderr, "p3\n");
     cr_assert(errcode == SKY_OK);
   }
 }
@@ -221,16 +203,16 @@ Test(asserts, TestPubKeyToAddressHash) {
 
   SKY_cipher_GenerateKeyPair(&p, &s);
   SKY_cipher_PubKey_ToAddressHash(&p, &h);
-  /* TODO: Translate code snippet
-   *
-   * x := sha256.Sum256(p[:])
-   * x = sha256.Sum256(x[:])
-   * rh := ripemd160.New()
-   * rh.Write(x[:])
-   * y := rh.Sum(nil)
-   * assert.True(t, bytes.Equal(h[:], y))
-   *
-   */
+  // TODO: Translate code snippet
+  //
+  // x := sha256.Sum256(p[:])
+  // x = sha256.Sum256(x[:])
+  // rh := ripemd160.New()
+  // rh.Write(x[:])
+  // y := rh.Sum(nil)
+  // assert.True(t, bytes.Equal(h[:], y))
+  //
+  //
 }
 
 Test(asserts, TestPubKeyToAddress) {
@@ -260,8 +242,9 @@ Test(asserts, TestPubKeyToAddress2) {
 		errcode = SKY_cipher_Address_Verify(&addr, &p);
     cr_assert(errcode == SKY_OK);
 		SKY_cipher_Address_String(&addr, &addrStr);
+    registerMemCleanup((void *) addrStr.p);
 		errcode = SKY_cipher_DecodeBase58Address(
-        *((GoString*)(GoString_*)&addrStr), &addr);
+        *((GoString*)&addrStr), &addr);
 		//func DecodeBase58Address(addr string) (Address, error) {
     cr_assert(errcode == SKY_OK);
 	}
@@ -357,6 +340,7 @@ Test(asserts, TestSecKeyHex) {
   randBytes(&b, 32);
   SKY_cipher_NewSecKey(b, &sk);
   SKY_cipher_SecKey_Hex(&sk, (GoString_ *)&str);
+  registerMemCleanup((void *) str.p);
 
   // Copy early to ensure memory is released
   strncpy((char *) h.p, str.p, str.n);
@@ -511,15 +495,18 @@ Test(asserts, TestMustSigFromHex) {
 Test(asserts, TestSigHex) {
   unsigned char buff[66];
   GoSlice b = {buff, 0, 66};
-  char strBuff[150], strBuff2[150];
-  GoString str = {NULL, 0}, str2 = {NULL, 0};
+  char strBuff[150],
+       strBuff2[150];
+  GoString str = {NULL, 0},
+           str2 = {NULL, 0};
   Sig s, s2;
   int errcode;
 
   randBytes(&b, 65);
   errcode = SKY_cipher_NewSig(b, &s);
   cr_assert(errcode == SKY_OK);
-  SKY_cipher_Sig_Hex(s, &str);
+  SKY_cipher_Sig_Hex(&s, (GoString_ *) &str);
+  registerMemCleanup((void *) str.p);
   memcpy(strBuff, str.p, str.n + 1);
   free((void *) str.p);
   str.p = strBuff;
@@ -528,9 +515,7 @@ Test(asserts, TestSigHex) {
   cr_assert(eq(u8[65], s, s2));
 
   SKY_cipher_Sig_Hex(&s2, (GoString_ *) &str2);
-  memcpy(strBuff2, str2.p, str2.n + 1);
-  free((void *) str2.p);
-  str2.p = strBuff2;
+  registerMemCleanup((void *) str2.p);
   cr_assert(eq(int, str.n, str2.n));
   cr_assert(eq(str, ((char *)str.p), ((char *)str2.p)));
 }
@@ -783,3 +768,4 @@ Test(asserts, TestSecKeyHashTest) {
   errcode = SKY_cipher_TestSecKeyHash(&sk, &h);
   cr_assert(errcode == SKY_ERROR);
 }
+

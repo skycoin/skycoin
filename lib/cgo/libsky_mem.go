@@ -89,7 +89,7 @@ func copyString(src string, dest *C.GoString_) bool {
 func getBufferData(src reflect.Value) (bufferAddr unsafe.Pointer, elemSize C.size_t) {
 	firstElem := src.Index(0)
 	elemSize = C.size_t(firstElem.Type().Size())
-	bufferAddr = unsafe.Pointer(firstElem.UnsafeAddr())
+	bufferAddr = unsafe.Pointer(src.Pointer())
 	return
 }
 

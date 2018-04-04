@@ -123,7 +123,7 @@ func TestConnections(t *testing.T) {
 			err:    "",
 			gatewayGetConnectionsResult: &daemon.Connections{
 				Connections: []*daemon.Connection{
-					&daemon.Connection{
+					{
 						ID:           1,
 						Addr:         "127.0.0.1",
 						LastSent:     99999,
@@ -137,7 +137,7 @@ func TestConnections(t *testing.T) {
 			},
 			result: &daemon.Connections{
 				Connections: []*daemon.Connection{
-					&daemon.Connection{
+					{
 						ID:           1,
 						Addr:         "127.0.0.1",
 						LastSent:     99999,
@@ -330,6 +330,111 @@ func TestGetExchgConnection(t *testing.T) {
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.result, msg)
+			}
+		})
+	}
+}
+
+func TestGetDefaultStatus(t *testing.T) {
+
+	// ConnectionStatus structs
+	type ConnectionStatus struct {
+		Connection string `json:connection`
+		isAlive    bool   `json:isalive`
+	}
+
+	// ConnectionsHealth struct
+	type ConnectionsHealth struct {
+		Count        int                `json:"count"`
+		TotalAlive   int                `json:total_alive`
+		TotalOffline int                `json:total_offline`
+		Connections  []ConnectionStatus `json:"connections"`
+	}
+
+	tt := []struct {
+		name   string
+		method string
+		status int
+		err    string
+	}{
+		{
+			name:   "405",
+			method: http.MethodPost,
+			status: http.StatusMethodNotAllowed,
+			err:    "405 Method Not Allowed",
+		},
+		{
+			name:   "200",
+			method: http.MethodGet,
+			status: http.StatusOK,
+			err:    "",
+		},
+	}
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+
+			endpoint := "/network/connections/default"
+
+			gateway := NewGatewayerMock()
+
+			GetDefaultConnections := []string{"44.33.22.11:9000", "11.44.66.88:9000"}
+
+			gatewayGetConnectionsResult := &daemon.Connections{
+				Connections: []*daemon.Connection{
+					{
+						ID:           1,
+						Addr:         "44.33.22.11:9000",
+						LastSent:     99999,
+						LastReceived: 1111111,
+						Outgoing:     true,
+						Introduced:   true,
+						Mirror:       9876,
+						ListenPort:   9877,
+					},
+					{
+						ID:           2,
+						Addr:         "11.44.66.88:9000",
+						LastSent:     99999,
+						LastReceived: 1111111,
+						Outgoing:     true,
+						Introduced:   true,
+						Mirror:       9876,
+						ListenPort:   9877,
+					},
+				},
+			}
+
+			gateway.On("GetDefaultConnections").Return(GetDefaultConnections).
+				On("GetConnections").Return(gatewayGetConnectionsResult)
+
+			resp := ConnectionsHealth{
+				Count:        2,
+				TotalAlive:   2,
+				TotalOffline: 0,
+				Connections: []ConnectionStatus{
+					{Connection: "11.44.66.88:9000", isAlive: false},
+					{Connection: "44.33.22.11:9000", isAlive: false},
+				},
+			}
+
+			req, err := http.NewRequest(tc.method, endpoint, nil)
+			require.NoError(t, err)
+
+			rr := httptest.NewRecorder()
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, &CSRFStore{})
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
+
+			if status != http.StatusOK {
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %d, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+			} else {
+				var msg ConnectionsHealth
+				err = json.Unmarshal(rr.Body.Bytes(), &msg)
+				require.NoError(t, err)
+				require.Equal(t, resp, msg)
 			}
 		})
 	}

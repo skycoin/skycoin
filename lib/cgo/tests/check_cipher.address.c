@@ -7,6 +7,7 @@
 
 #include "libskycoin.h"
 #include "skyerrors.h"
+#include "skytest.h"
 
 #define SKYCOIN_ADDRESS_VALID "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv"
 
@@ -72,40 +73,40 @@ Test(cipher, TestDecodeBase58Address) {
  GoString strAddr = {
   SKYCOIN_ADDRESS_VALID,
   35
-};
-Address addr;
+  };
+  Address addr;
 
-cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == SKY_OK, "accept valid address");
+  cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == SKY_OK, "accept valid address");
 
-char tempStr[50];
+  char tempStr[50];
 
-// preceding whitespace is invalid
-strcpy(tempStr, " ");
-strcat(tempStr, SKYCOIN_ADDRESS_VALID);
-strAddr.p = tempStr;
-strAddr.n = strlen(tempStr);
-cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == SKY_ERROR, "preceding whitespace is invalid");
+  // preceding whitespace is invalid
+  strcpy(tempStr, " ");
+  strcat(tempStr, SKYCOIN_ADDRESS_VALID);
+  strAddr.p = tempStr;
+  strAddr.n = strlen(tempStr);
+  cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == SKY_ERROR, "preceding whitespace is invalid");
 
-// preceding zeroes are invalid
-strcpy(tempStr, "000");
-strcat(tempStr, SKYCOIN_ADDRESS_VALID);
-strAddr.p = tempStr;
-strAddr.n = strlen(tempStr);
-cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == SKY_ERROR, "leading zeroes prefix are invalid");
+  // preceding zeroes are invalid
+  strcpy(tempStr, "000");
+  strcat(tempStr, SKYCOIN_ADDRESS_VALID);
+  strAddr.p = tempStr;
+  strAddr.n = strlen(tempStr);
+  cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == SKY_ERROR, "leading zeroes prefix are invalid");
 
-// trailing whitespace is invalid
-strcpy(tempStr, SKYCOIN_ADDRESS_VALID);
-strcat(tempStr, " ");
-strAddr.p = tempStr;
-strAddr.n = strlen(tempStr);
-cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == SKY_ERROR, " trailing whitespace is invalid");
+  // trailing whitespace is invalid
+  strcpy(tempStr, SKYCOIN_ADDRESS_VALID);
+  strcat(tempStr, " ");
+  strAddr.p = tempStr;
+  strAddr.n = strlen(tempStr);
+  cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == SKY_ERROR, " trailing whitespace is invalid");
 
-// trailing zeroes are invalid
-strcpy(tempStr, SKYCOIN_ADDRESS_VALID);
-strcat(tempStr, "000");
-strAddr.p = tempStr;
-strAddr.n = strlen(tempStr);
-cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == SKY_ERROR, " trailing zeroes suffix are invalid");
+  // trailing zeroes are invalid
+  strcpy(tempStr, SKYCOIN_ADDRESS_VALID);
+  strcat(tempStr, "000");
+  strAddr.p = tempStr;
+  strAddr.n = strlen(tempStr);
+  cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == SKY_ERROR, " trailing zeroes suffix are invalid");
 
 }
 
@@ -145,25 +146,24 @@ Test (cipher, TestBitcoinAddress1){
   GoString str = {
     "1111111111111111111111111111111111111111111111111111111111111111",
     64
-  };
+  }, s1, s2;
 
-  SKY_cipher_SecKeyFromHex(str, &seckey);
   unsigned  int  error;
+  error = SKY_cipher_SecKeyFromHex(str, &seckey);
+  cr_assert(error == SKY_OK, "Create SecKey from Hex");
   error = SKY_cipher_PubKeyFromSecKey(&seckey,&pubkey);
   cr_assert(error == SKY_OK, "Create PubKey from SecKey");
 
-  char pubkeyStr[67];
-  strcpy( pubkeyStr, "034f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aa");
-  char  pubkeyhex[101];
-  strcpy(pubkeyhex,SKY_cipher_PubKey_Hex(&pubkey));
-  cr_assert( strcmp(pubkeyStr,pubkeyhex) == 0);
+  GoString pubkeyStr = { "034f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aa", 66 };
 
-  GoString_ bitcoinAddr;
+  SKY_cipher_PubKey_Hex(&pubkey, (GoString_ *) &s1);
+  registerMemCleanup((void *) s1.p);
+  cr_assert(eq(type(GoString), pubkeyStr, s1));
 
-  GoString_ bitcoinStr = {"1Q1pE5vPGEEMqRcVRMbtBK842Y6Pzo6nK9",34};
-  SKY_cipher_BitcoinAddressFromPubkey(&pubkey, &bitcoinAddr);
-  cr_assert(eq(type(GoString_), bitcoinStr, bitcoinAddr));
-
+  GoString bitcoinStr = {"1Q1pE5vPGEEMqRcVRMbtBK842Y6Pzo6nK9",34};
+  SKY_cipher_BitcoinAddressFromPubkey(&pubkey, (GoString_ *) &s2);
+  registerMemCleanup((void *) s2.p);
+  cr_assert(eq(type(GoString), bitcoinStr, s2));
 }
 
 Test (cipher, TestBitcoinAddress2){
@@ -173,25 +173,27 @@ Test (cipher, TestBitcoinAddress2){
   GoString str = {
     "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
     64
-  };
+  }, s1, s2;
 
-  SKY_cipher_SecKeyFromHex(str, &seckey);
   unsigned  int error;
+  error = SKY_cipher_SecKeyFromHex(str, &seckey);
+  cr_assert(error == SKY_OK, "Create SecKey from Hex");
   error = SKY_cipher_PubKeyFromSecKey(&seckey,&pubkey);
-
   cr_assert(error == SKY_OK, "Create PubKey from SecKey");
 
-  char pubkeyStr[67];
-  strcpy( pubkeyStr, "02ed83704c95d829046f1ac27806211132102c34e9ac7ffa1b71110658e5b9d1bd");
-  char  pubkeyhex[31];
-  strcpy(pubkeyhex,SKY_cipher_PubKey_Hex(&pubkey));
-  cr_assert( strcmp(pubkeyStr,pubkeyhex) == 0);
+  char strBuff[101];
+  GoString pubkeyStr = {
+    "02ed83704c95d829046f1ac27806211132102c34e9ac7ffa1b71110658e5b9d1bd",
+    66
+  };
+  SKY_cipher_PubKey_Hex(&pubkey, (GoString_ *) &s1);
+  registerMemCleanup((void *) s1.p);
+  cr_assert(eq(type(GoString), pubkeyStr, s1));
 
-  GoString_ bitcoinAddr;
-
-  GoString_ bitcoinStr = {"1NKRhS7iYUGTaAfaR5z8BueAJesqaTyc4a",34};
-  SKY_cipher_BitcoinAddressFromPubkey(&pubkey, &bitcoinAddr);
-  cr_assert(eq(type(GoString_), bitcoinStr, bitcoinAddr));
+  GoString bitcoinStr = {"1NKRhS7iYUGTaAfaR5z8BueAJesqaTyc4a",34};
+  SKY_cipher_BitcoinAddressFromPubkey(&pubkey, (GoString_ *) &s2);
+  registerMemCleanup((void *) s2.p);
+  cr_assert(eq(type(GoString), bitcoinStr, s2));
 
 }
 
@@ -204,23 +206,25 @@ Test (cipher, TestBitcoinAddress3){
     64
   };
 
-  SKY_cipher_SecKeyFromHex(str, &seckey);
   unsigned  int error;
+  error = SKY_cipher_SecKeyFromHex(str, &seckey);
+  cr_assert(error == SKY_OK, "Create SecKey from Hex");
   error = SKY_cipher_PubKeyFromSecKey(&seckey,&pubkey);
-
   cr_assert(error == SKY_OK, "Create PubKey from SecKey");
 
-  char pubkeyStr[67];
-  strcpy( pubkeyStr, "032596957532fc37e40486b910802ff45eeaa924548c0e1c080ef804e523ec3ed3");
-  char  pubkeyhex[31];
-  strcpy(pubkeyhex,SKY_cipher_PubKey_Hex(&pubkey));
-  cr_assert( strcmp(pubkeyStr,pubkeyhex) == 0);
+  char strBuff[101];
+  GoString pubkeyStr = {
+    "032596957532fc37e40486b910802ff45eeaa924548c0e1c080ef804e523ec3ed3",
+    66
+  }, s1, s2;
+  SKY_cipher_PubKey_Hex(&pubkey, (GoString_ *)&s1);
+  registerMemCleanup((void *) s1.p);
+  cr_assert(eq(type(GoString), pubkeyStr, s1));
 
-  GoString_ bitcoinAddr;
-
-  GoString_ bitcoinStr = {"19ck9VKC6KjGxR9LJg4DNMRc45qFrJguvV",34};
-  SKY_cipher_BitcoinAddressFromPubkey(&pubkey, &bitcoinAddr);
-  cr_assert(eq(type(GoString_), bitcoinStr, bitcoinAddr));
+  GoString bitcoinStr = {"19ck9VKC6KjGxR9LJg4DNMRc45qFrJguvV",34};
+  SKY_cipher_BitcoinAddressFromPubkey(&pubkey, (GoString_ *)&s2);
+  registerMemCleanup((void *) s2.p);
+  cr_assert(eq(type(GoString), bitcoinStr, s2));
 
 }
 
@@ -230,7 +234,7 @@ Test(cipher, TestAddressVerify){
   PubKey pubkey2;
   GoSlice slice;
   GoSlice slice2;
-  
+
   slice.data = buff;
   slice.cap = sizeof(buff);
   slice.len = 33;

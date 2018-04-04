@@ -619,3 +619,44 @@ func walletEncryptHandler(gateway Gatewayer) http.HandlerFunc {
 		wh.SendJSONOr500(logger, w, wallet.NewReadableWallet(wlt))
 	}
 }
+
+func walletDecryptHandler(gateway Gatewayer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			wh.Error405(w)
+			return
+		}
+
+		id := r.FormValue("id")
+		if id == "" {
+			wh.Error400(w, "missing wallet id")
+			return
+		}
+
+		password := r.FormValue("password")
+		if password == "" {
+			wh.Error400(w, "missing password")
+			return
+		}
+
+		wlt, err := gateway.DecryptWallet(id, []byte(password))
+		if err != nil {
+			switch err {
+			case wallet.ErrWalletAPIDisabled:
+				wh.Error403(w)
+			case wallet.ErrWalletNotEncrypted,
+				wallet.ErrInvalidPassword,
+				wallet.ErrWalletNotExist:
+				wh.Error400(w, err.Error())
+			default:
+				wh.Error500(w)
+			}
+			return
+		}
+
+		// Wipes sensitive data in wallet
+		password = ""
+		wlt.Erase()
+		wh.SendJSONOr500(logger, w, wallet.NewReadableWallet(wlt))
+	}
+}

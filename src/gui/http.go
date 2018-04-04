@@ -278,6 +278,12 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.Se
 	// Returns an encrypted wallet json without sensitive data
 	webHandler("/wallet/encrypt", walletEncryptHandler(gateway))
 
+	// Decrypts wallet
+	// POST arguments:
+	//     id: wallet id
+	//     password: wallet password
+	webHandler("/wallet/decrypt", walletDecryptHandler(gateway))
+
 	// Blockchain interface
 
 	webHandler("/blockchain/metadata", blockchainHandler(gateway))

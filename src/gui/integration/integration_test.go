@@ -2191,6 +2191,9 @@ func TestEncryptWallet(t *testing.T) {
 	rlt, err := c.EncryptWallet(w.Filename(), "pwd")
 	require.NoError(t, err)
 	checkRdNoSensitiveData(t, rlt)
+	require.NotEmpty(t, rlt.Meta["secrets"])
+	require.NotEmpty(t, rlt.Meta["cryptoType"])
+	require.Equal(t, rlt.Meta["encrypted"], "true")
 
 	//  Encrypt the wallet again, should returns error
 	_, err = c.EncryptWallet(w.Filename(), "pwd")
@@ -2206,7 +2209,63 @@ func TestEncryptWallet(t *testing.T) {
 	require.NotEmpty(t, lw.Meta["secrets"])
 	require.Equal(t, lw.Meta["secrets"], rlt.Meta["secrets"])
 
-	// TODO: decrypt wallet to confirms that all seeds, seckeys are matched.
+	// Decrypts the wallet, and confirms that the
+	// seed and address entries are the same as it was before being encrypted.
+	drw, err := c.DecryptWallet(w.Filename(), "pwd")
+	require.NoError(t, err)
+	dw, err := drw.ToWallet()
+	require.NoError(t, err)
+	require.Equal(t, w, dw)
+}
+
+func TestDecryptWallet(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+
+	if !doWallet(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+	w, seed, clean := createWallet(t, c, true, "pwd")
+	defer clean()
+
+	checkNoSensitiveData(t, w)
+	require.NotEmpty(t, w.Meta["secrets"])
+
+	// Decrypt wallet with different password, must fail
+	_, err := c.DecryptWallet(w.Filename(), "pwd1")
+	require.EqualError(t, err, "400 Bad Request - invalid password\n")
+
+	// Decrypts wallet with correct password
+	rw, err := c.DecryptWallet(w.Filename(), "pwd")
+	require.NoError(t, err)
+
+	// Confirms that no sensitive data are returned
+	checkRdNoSensitiveData(t, rw)
+	require.Empty(t, rw.Meta["secrets"])
+	require.Empty(t, rw.Meta["cryptoType"])
+	require.Equal(t, rw.Meta["encrypted"], "false")
+
+	// Loads wallet from file
+	wf, err := c.WalletFolderName()
+	require.NoError(t, err)
+	wltPath := filepath.Join(wf.Address, w.Filename())
+	lw, err := wallet.Load(wltPath)
+	require.NoError(t, err)
+
+	require.Equal(t, lw.Meta["seed"], seed)
+	require.Len(t, lw.Entries, 1)
+
+	// Confirms the last seed is matched
+	lseed, seckeys := cipher.GenerateDeterministicKeyPairsSeed([]byte(seed), 1)
+	require.Equal(t, hex.EncodeToString(lseed), lw.Meta["lastSeed"])
+
+	// Confirms that the first address is derivied from the private key
+	pubkey := cipher.PubKeyFromSecKey(seckeys[0])
+	require.Equal(t, w.Entries[0].Address, cipher.AddressFromPubKey(pubkey))
+	require.Equal(t, lw.Entries[0].Address, w.Entries[0].Address)
 }
 
 // prepareAndCheckWallet gets wallet from environment, and confirms:

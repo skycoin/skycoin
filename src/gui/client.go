@@ -724,3 +724,16 @@ func (c *Client) EncryptWallet(id string, password string) (*wallet.ReadableWall
 
 	return &wlt, nil
 }
+
+// DecryptWallet decrypts wallet by making a request to /wallet/decrypt
+func (c *Client) DecryptWallet(id string, password string) (*wallet.ReadableWallet, error) {
+	v := url.Values{}
+	v.Add("id", id)
+	v.Add("password", password)
+	var wlt wallet.ReadableWallet
+	if err := c.PostForm("/wallet/decrypt", strings.NewReader(v.Encode()), &wlt); err != nil {
+		return nil, err
+	}
+
+	return &wlt, nil
+}

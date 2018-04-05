@@ -66,8 +66,8 @@ run-help: ## Show skycoin node help
 	@go run cmd/skycoin/skycoin.go --help
 
 test: ## Run tests for Skycoin
-	go test ./cmd/... -timeout=1m
-	go test ./src/... -timeout=1m
+	go test ./cmd/... -timeout=5m
+	go test ./src/... -timeout=5m
 
 test-386: ## Run tests for Skycoin with GOARCH=386
 	GOARCH=386 go test ./cmd/... -timeout=5m

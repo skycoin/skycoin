@@ -2286,6 +2286,42 @@ func TestDecryptWallet(t *testing.T) {
 	require.Equal(t, lw.Entries[0].Address, w.Entries[0].Address)
 }
 
+func TestGetWalletSeed(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+
+	if !doWallet(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	// Create an encrypted wallet
+	w, seed, clean := createWallet(t, c, true, "pwd")
+	defer clean()
+
+	sd, err := c.GetWalletSeed(w.Filename(), "pwd")
+	require.NoError(t, err)
+
+	// Confirms the seed are matched
+	require.Equal(t, seed, sd)
+
+	// Get seed of wrong wallet id
+	_, err = c.GetWalletSeed("w.wlt", "pwd")
+	require.EqualError(t, err, "404 Not Found\n")
+
+	// Check with invalid password
+	_, err = c.GetWalletSeed(w.Filename(), "wrong password")
+	require.EqualError(t, err, "400 Bad Request - invalid password\n")
+
+	// Creates none encrypted wallet
+	nw, _, nclean := createWallet(t, c, false, "")
+	defer nclean()
+	_, err = c.GetWalletSeed(nw.Filename(), "pwd")
+	require.EqualError(t, err, "403 Forbidden\n")
+}
+
 // prepareAndCheckWallet gets wallet from environment, and confirms:
 // 1. The minimal coins and coin hours requirements are met.
 // 2. The wallet has at least two address entry.
@@ -2561,6 +2597,36 @@ func TestDisableWalletApi(t *testing.T) {
 			method:    http.MethodGet,
 			endpoint:  "/",
 			expectErr: "404 page not found\n",
+		},
+		{
+			name:     "encrypt wallet",
+			method:   http.MethodPost,
+			endpoint: "/wallet/encrypt",
+			body: func() io.Reader {
+				v := url.Values{}
+				v.Add("id", "test.wlt")
+				v.Add("password", "pwd")
+				return strings.NewReader(v.Encode())
+			},
+			expectErr: "403 Forbidden\n",
+		},
+		{
+			name:     "decrypt wallet",
+			method:   http.MethodPost,
+			endpoint: "/wallet/decrypt",
+			body: func() io.Reader {
+				v := url.Values{}
+				v.Add("id", "test.wlt")
+				v.Add("password", "pwd")
+				return strings.NewReader(v.Encode())
+			},
+			expectErr: "403 Forbidden\n",
+		},
+		{
+			name:      "get wallet seed",
+			method:    http.MethodGet,
+			endpoint:  "/wallet/seed?id=test.wlt&password=pwd",
+			expectErr: "403 Forbidden\n",
 		},
 	}
 

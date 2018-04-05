@@ -117,6 +117,9 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		password := r.FormValue("password")
+		defer func() {
+			password = ""
+		}()
 		tx, err := gateway.Spend(wltID, []byte(password), coins, dst)
 		switch err {
 		case nil:
@@ -206,6 +209,9 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		password := r.FormValue("password")
+		defer func() {
+			password = ""
+		}()
 
 		var encrypt bool
 		encryptStr := r.FormValue("encrypt")
@@ -302,6 +308,9 @@ func walletNewAddresses(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		password := r.FormValue("password")
+		defer func() {
+			password = ""
+		}()
 
 		addrs, err := gateway.NewAddresses(wltID, []byte(password), n)
 		if err != nil {
@@ -565,6 +574,59 @@ func newWalletSeed(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
+// Returns seed of wallet of given id
+// Get Arguments:
+//     id: wallet id
+//     password: wallet password
+func walletSeedHandler(gateway Gatewayer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
+		id := r.FormValue("id")
+		if id == "" {
+			wh.Error400(w, "missing wallet id")
+			return
+		}
+
+		password := r.FormValue("password")
+		defer func() {
+			password = ""
+		}()
+
+		if password == "" {
+			wh.Error400(w, "missing password")
+			return
+		}
+
+		seed, err := gateway.GetWalletSeed(id, []byte(password))
+		if err != nil {
+			switch err {
+			case wallet.ErrInvalidPassword:
+				wh.Error400(w, err.Error())
+			case wallet.ErrWalletAPIDisabled,
+				wallet.ErrWalletNotEncrypted:
+				wh.Error403(w)
+			case wallet.ErrWalletNotExist:
+				wh.Error404(w)
+			default:
+				wh.Error500(w)
+			}
+			return
+		}
+
+		v := struct {
+			Seed string `json:"seed"`
+		}{
+			Seed: seed,
+		}
+
+		wh.SendJSONOr500(logger, w, v)
+	}
+}
+
 func walletUnloadHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -603,6 +665,9 @@ func walletEncryptHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		password := r.FormValue("password")
+		defer func() {
+			password = ""
+		}()
 		if password == "" {
 			wh.Error400(w, "missing password")
 			return
@@ -626,7 +691,6 @@ func walletEncryptHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		// Make sure the sensitive data are wiped
-		password = ""
 		wlt.Erase()
 		wh.SendJSONOr500(logger, w, wallet.NewReadableWallet(wlt))
 	}
@@ -646,6 +710,10 @@ func walletDecryptHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		password := r.FormValue("password")
+		defer func() {
+			password = ""
+		}()
+
 		if password == "" {
 			wh.Error400(w, "missing password")
 			return
@@ -668,7 +736,6 @@ func walletDecryptHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		// Wipes sensitive data in wallet
-		password = ""
 		wlt.Erase()
 		wh.SendJSONOr500(logger, w, wallet.NewReadableWallet(wlt))
 	}

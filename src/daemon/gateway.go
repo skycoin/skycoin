@@ -758,6 +758,21 @@ func (gw *Gateway) UnloadWallet(id string) error {
 	return nil
 }
 
+// GetWalletSeed returns seed of wallet of given id,
+// returns wallet.ErrWalletNotEncrypted if the wallet is not encrypted.
+func (gw *Gateway) GetWalletSeed(id string, password []byte) (string, error) {
+	if gw.Config.DisableWalletAPI {
+		return "", wallet.ErrWalletAPIDisabled
+	}
+
+	var seed string
+	var err error
+	gw.strand("GetWalletSeed", func() {
+		seed, err = gw.v.Wallets.GetWalletSeed(id, password)
+	})
+	return seed, err
+}
+
 // IsWalletAPIDisabled returns if all wallet related apis are disabled
 func (gw *Gateway) IsWalletAPIDisabled() bool {
 	return gw.Config.DisableWalletAPI

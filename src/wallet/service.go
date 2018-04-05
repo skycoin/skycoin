@@ -493,3 +493,32 @@ func (serv *Service) removeDup(wlts Wallets) Wallets {
 
 	return wlts
 }
+
+// GetWalletSeed returns seed of encrypted wallet of given wallet id
+// Returns ErrWalletNotEncrypted if it's not encrypted
+func (serv *Service) GetWalletSeed(wltID string, password []byte) (string, error) {
+	serv.RLock()
+	defer serv.RUnlock()
+	if serv.disableWalletAPI {
+		return "", ErrWalletAPIDisabled
+	}
+
+	w, err := serv.getWallet(wltID)
+	if err != nil {
+		return "", err
+	}
+
+	if !w.IsEncrypted() {
+		return "", ErrWalletNotEncrypted
+	}
+
+	var seed string
+	if err := w.guardView(password, func(wlt *Wallet) error {
+		seed = wlt.seed()
+		return nil
+	}); err != nil {
+		return "", err
+	}
+
+	return seed, nil
+}

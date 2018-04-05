@@ -92,14 +92,10 @@ randBytes(&slice,0);
 Test(hash,TestSHA256Set){
 
 	SHA256 h;
-
 	GoSlice slice;
-
-	randBytes(&slice,33);
-
 	int error;
 
-    randBytes(&slice,33);
+  randBytes(&slice,33);
 	error=SKY_cipher_SHA256_Set(&h,slice);
 	cr_assert(error == SKY_OK);
 

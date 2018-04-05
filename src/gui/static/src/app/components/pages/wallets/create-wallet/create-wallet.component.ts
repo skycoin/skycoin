@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormControl, FormGroup, Validators } from '@angular/forms';
+import { AbstractControl, FormControl, FormGroup, Validators } from '@angular/forms';
 import { WalletService } from '../../../../services/wallet.service';
 import { MatDialogRef } from '@angular/material/dialog';
 
@@ -32,24 +32,25 @@ export class CreateWalletComponent implements OnInit {
       .subscribe(() => this.dialogRef.close());
   }
 
-  generateSeed() {
-    this.walletService.generateSeed().subscribe(seed => this.form.controls.seed.setValue(seed));
+  generateSeed(entropy: number) {
+    this.walletService.generateSeed(entropy).subscribe(seed => this.form.controls.seed.setValue(seed));
   }
 
   private initForm() {
-    this.form = new FormGroup({});
+    this.form = new FormGroup({}, this.validateSeedsAreEqual);
     this.form.addControl('label', new FormControl('', [Validators.required]));
     this.form.addControl('seed', new FormControl('', [Validators.required]));
-    this.form.addControl('confirm_seed', new FormControl('', [
-      Validators.compose([Validators.required, this.validateAreEqual.bind(this)])
-    ]));
+    this.form.addControl('confirm_seed', new FormControl('', [Validators.required]));
 
-    this.generateSeed();
+    this.generateSeed(128);
 
     this.scan = 100;
   }
 
-  private validateAreEqual(fieldControl: FormControl){
-    return fieldControl.value === this.form.get('seed').value ? null : { NotEqual: true };
+  private validateSeedsAreEqual(control: AbstractControl) {
+    return control && control.get('seed') && control.get('confirm_seed')
+      && control.get('seed').value !== control.get('confirm_seed').value
+      ? { NotEqual: true }
+      : null;
   }
 }

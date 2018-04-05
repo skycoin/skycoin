@@ -5,7 +5,14 @@
       <input formControlName="label" id="label">
     </div>
     <div class="form-field">
-      <label for="seed">Seed</label>
+      <label for="seed">
+        Seed
+        <span class="generators">
+          [<span (click)="generateSeed(128)">Generate 128bit</span>
+          |
+          <span (click)="generateSeed(256)">Generate 256bit</span>]
+        </span>
+      </label>
       <textarea formControlName="seed" id="seed" row="2"></textarea>
     </div>
     <div class="form-field">

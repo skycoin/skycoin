@@ -1,3 +1,14 @@
+@import '../../../../../theme/variables';
+
 .-buttons {
   text-align: center;
+}
+
+.generators {
+  padding-left: 10px;
+
+  span {
+    cursor: pointer;
+    color: $gradient-blue-dark;
+  }
 }

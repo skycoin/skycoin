@@ -607,9 +607,10 @@ func walletEncryptHandler(gateway Gatewayer) http.HandlerFunc {
 				wh.Error403(w)
 			case wallet.ErrWalletEncrypted:
 				wh.Error400(w, "wallet is already encrypted")
-			case wallet.ErrInvalidPassword,
-				wallet.ErrWalletNotExist:
+			case wallet.ErrInvalidPassword:
 				wh.Error400(w, err.Error())
+			case wallet.ErrWalletNotExist:
+				wh.Error404(w)
 			default:
 				wh.Error500(w)
 			}
@@ -648,9 +649,10 @@ func walletDecryptHandler(gateway Gatewayer) http.HandlerFunc {
 			case wallet.ErrWalletAPIDisabled:
 				wh.Error403(w)
 			case wallet.ErrWalletNotEncrypted,
-				wallet.ErrInvalidPassword,
-				wallet.ErrWalletNotExist:
+				wallet.ErrInvalidPassword:
 				wh.Error400(w, err.Error())
+			case wallet.ErrWalletNotExist:
+				wh.Error404(w)
 			default:
 				wh.Error500(w)
 			}

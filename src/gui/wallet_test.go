@@ -1843,15 +1843,15 @@ func TestEncryptWallet(t *testing.T) {
 			expectErr: "400 Bad Request - invalid password",
 		},
 		{
-			name:     "400 - Wallet Does Not Exist",
+			name:     "404 - Wallet Not Found",
 			method:   http.MethodPost,
 			wltID:    "wallet.wlt",
 			password: "pwd",
 			gatewayReturn: gatewayReturnPair{
 				err: wallet.ErrWalletNotExist,
 			},
-			status:    http.StatusBadRequest,
-			expectErr: "400 Bad Request - wallet doesn't exist",
+			status:    http.StatusNotFound,
+			expectErr: "404 Not Found",
 		},
 		{
 			name:     "400 - Wallet Is Already Encrypted",
@@ -2008,15 +2008,15 @@ func TestDecryptWallet(t *testing.T) {
 			expectErr: "400 Bad Request - invalid password",
 		},
 		{
-			name:     "400 - Wallet Does Not Exist",
+			name:     "404 - Wallet Does Not Exist",
 			method:   http.MethodPost,
 			wltID:    "wallet.wlt",
 			password: "pwd",
 			gatewayReturn: gatewayReturnPair{
 				err: wallet.ErrWalletNotExist,
 			},
-			status:    http.StatusBadRequest,
-			expectErr: "400 Bad Request - wallet doesn't exist",
+			status:    http.StatusNotFound,
+			expectErr: "404 Not Found",
 		},
 	}
 

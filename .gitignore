@@ -105,6 +105,11 @@ electron/.standalone_output
 
 .vscode/
 
+#File generation sublime text
+.do.cfg
+.do.state
+skycoin.do
+
 *.swo
 *.swp
 

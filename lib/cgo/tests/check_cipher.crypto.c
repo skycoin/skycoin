@@ -7,6 +7,7 @@
 
 #include "libskycoin.h"
 #include "skyerrors.h"
+#include "skystring.h"
 #include "skytest.h"
 
 Test(asserts, TestNewPubKey) {

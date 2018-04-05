@@ -37,8 +37,8 @@ export class ApiService {
     return this.get('version');
   }
 
-  getWalletNewSeed(): Observable<string> {
-    return this.get('wallet/newSeed')
+  getWalletNewSeed(entropy: number = 128): Observable<string> {
+    return this.get('wallet/newSeed', { entropy })
       .map(response => response.seed);
   }
 

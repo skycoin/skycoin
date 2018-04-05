@@ -71,8 +71,8 @@ export class WalletService {
     return this.apiService.get('wallets/folderName').map(response => response.address);
   }
 
-  generateSeed(): Observable<string> {
-    return this.apiService.getWalletNewSeed();
+  generateSeed(entropy: number = 128): Observable<string> {
+    return this.apiService.getWalletNewSeed(entropy);
   }
 
   outputs(): Observable<any> {

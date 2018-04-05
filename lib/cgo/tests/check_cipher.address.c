@@ -9,6 +9,7 @@
 #include "skyerrors.h"
 #include "skytest.h"
 #include "libsky_string.h"
+#include "libcriterion.h"
 
 #define SKYCOIN_ADDRESS_VALID "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv"
 
@@ -111,133 +112,71 @@ SKY_cipher_GenerateKeyPair(&pubkey,&seckey2);
 
 Test(cipher,TestAddressString){
 
-SecKey seckey;
 PubKey pubkey;
-
-Address addr1;
-Address addr2;
-Address addr3;
-
-
-GoString_ strAddr;
-GoString_ strAddr2;
-
+SecKey seckey;
 SKY_cipher_GenerateKeyPair(&pubkey,&seckey);
+Address a;
+SKY_cipher_AddressFromPubKey(&pubkey,&a);
+GoString_ s;
+SKY_cipher_Address_String(&a,&s);
+Address a2;
+int error;
 
-SKY_cipher_AddressFromPubKey(&pubkey,&addr1);
+GoString tmp_s;
+toGoString(&s,&tmp_s);
+error = SKY_cipher_DecodeBase58Address( tmp_s,&a2 );
+cr_assert(error == SKY_OK);
 
-SKY_cipher_Address_String(&addr1,&strAddr);
+cr_assert(eq(type(Address),a,a2));
 
-GoString tmpStrAddr;
-
-tmpStrAddr = (*((GoString *) &strAddr2));
-
-unsigned int error = SKY_cipher_DecodeBase58Address( tmpStrAddr,&addr1);
-
-printf("%d\n",error );
-
-cr_assert( error == SKY_OK);
-
-cr_assert(eq(type(Address), addr1, addr2));
-
-SKY_cipher_Address_String(&addr2,&strAddr2);
-
-cr_assert(SKY_cipher_DecodeBase58Address((*((GoString *) &strAddr2)),&addr3)== SKY_OK);
-
-cr_assert(eq(type(Address), addr3, addr2));
-
+GoString_ s2;
+SKY_cipher_Address_String(&a2,&s2);
+GoString tmp_s2;
+toGoString(&s,&tmp_s2);
+Address a3;
+error = SKY_cipher_DecodeBase58Address( tmp_s2,&a3 );
+cr_assert(error == SKY_OK);
+cr_assert(eq(type(Address),a2,a3));
 }
 
-Test (cipher, TestBitcoinAddress1){
+// Test (cipher, TestBitcoinAddress1){
 
-  SecKey seckey;
-  PubKey pubkey;
+//   SecKey seckey;
+//   PubKey pubkey;
 
-    GoString str = {
-    "1111111111111111111111111111111111111111111111111111111111111111",
-    64
-  }, s1, s2;
+//     GoString str = {
+//     "1111111111111111111111111111111111111111111111111111111111111111",
+//     64
+//   };
+//   unsigned  int  error;
+//   error = SKY_cipher_SecKeyFromHex(str, &seckey);
 
-  unsigned  int  error;
-  error = SKY_cipher_SecKeyFromHex(str, &seckey);
-  cr_assert(error == SKY_OK, "Create SecKey from Hex");
-  error = SKY_cipher_PubKeyFromSecKey(&seckey,&pubkey);
-  cr_assert(error == SKY_OK, "Create PubKey from SecKey");
+//   cr_assert(error == SKY_OK);
+//   error = SKY_cipher_PubKeyFromSecKey(&seckey,&pubkey);
+//   cr_assert(error == SKY_OK);
+//   GoString pubkeyStr = { "034f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aa", 66 };
+//   GoString_ s1;
+//   SKY_cipher_PubKey_Hex(&pubkey, &s1);
+//   GoString tmp_s1;
+//   toGoString(&s1,&tmp_s1);
+//   cr_assert(eq(type(GoString), pubkeyStr, tmp_s1));
 
-  GoString pubkeyStr = { "034f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aa", 66 };
+//   GoString bitcoinStr = {"1Q1pE5vPGEEMqRcVRMbtBK842Y6Pzo6nK9",34};
+//   GoString_ s2;
+//   SKY_cipher_BitcoinAddressFromPubkey(&pubkey,&s2);
+//   GoString tmp_s2;
+//   toGoString(&s2,&tmp_s2);
+//   cr_assert(eq(type(GoString), bitcoinStr, tmp_s2));
+// }
 
-  SKY_cipher_PubKey_Hex(&pubkey, (GoString_ *) &s1);
-  // registerMemCleanup((void *) s1.p);
-  cr_assert(eq(type(GoString), pubkeyStr, s1));
-
-  GoString bitcoinStr = {"1Q1pE5vPGEEMqRcVRMbtBK842Y6Pzo6nK9",34};
-  SKY_cipher_BitcoinAddressFromPubkey(&pubkey, (GoString_ *) &s2);
-  registerMemCleanup((void *) s2.p);
-  cr_assert(eq(type(GoString), bitcoinStr, s2));
-}
-
-Test (cipher, TestBitcoinAddress2){
-
-  SecKey seckey;
-  PubKey pubkey  ;
-  GoString str = {
-    "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
-    64
-  }, s1, s2;
-
-  unsigned  int error;
-  error = SKY_cipher_SecKeyFromHex(str, &seckey);
-  cr_assert(error == SKY_OK, "Create SecKey from Hex");
-  error = SKY_cipher_PubKeyFromSecKey(&seckey,&pubkey);
-  cr_assert(error == SKY_OK, "Create PubKey from SecKey");
-
-  char strBuff[101];
-  GoString pubkeyStr = {
-    "02ed83704c95d829046f1ac27806211132102c34e9ac7ffa1b71110658e5b9d1bd",
-    66
-  };
-  SKY_cipher_PubKey_Hex(&pubkey, (GoString_ *) &s1);
-  registerMemCleanup((void *) s1.p);
-  cr_assert(eq(type(GoString), pubkeyStr, s1));
-
-  GoString bitcoinStr = {"1NKRhS7iYUGTaAfaR5z8BueAJesqaTyc4a",34};
-  SKY_cipher_BitcoinAddressFromPubkey(&pubkey, (GoString_ *) &s2);
-  registerMemCleanup((void *) s2.p);
-  cr_assert(eq(type(GoString), bitcoinStr, s2));
-
-}
-
-Test (cipher, TestBitcoinAddress3){
-
-  SecKey seckey;
-  PubKey pubkey;
-  GoString str = {
-    "47f7616ea6f9b923076625b4488115de1ef1187f760e65f89eb6f4f7ff04b012",
-    64
-  };
-
-  unsigned  int error;
-  error = SKY_cipher_SecKeyFromHex(str, &seckey);
-  cr_assert(error == SKY_OK, "Create SecKey from Hex");
-  error = SKY_cipher_PubKeyFromSecKey(&seckey,&pubkey);
-  cr_assert(error == SKY_OK, "Create PubKey from SecKey");
-
-  char strBuff[101];
-  GoString pubkeyStr = {
-    "032596957532fc37e40486b910802ff45eeaa924548c0e1c080ef804e523ec3ed3",
-    66
-  }, s1, s2;
-  SKY_cipher_PubKey_Hex(&pubkey, (GoString_ *)&s1);
-  registerMemCleanup((void *) s1.p);
-  cr_assert(eq(type(GoString), pubkeyStr, s1));
-
-  GoString bitcoinStr = {"19ck9VKC6KjGxR9LJg4DNMRc45qFrJguvV",34};
-  SKY_cipher_BitcoinAddressFromPubkey(&pubkey, (GoString_ *)&s2);
-  registerMemCleanup((void *) s2.p);
-  cr_assert(eq(type(GoString), bitcoinStr, s2));
-
-}
-
+// func TestAddressRoundtrip(t *testing.T) {
+//   p, _ := GenerateKeyPair()
+//   a := AddressFromPubKey(p)
+//   a2, err := addressFromBytes(a.Bytes())
+//   require.NoError(t, err)
+//   require.Equal(t, a, a2)
+//   require.Equal(t, a.String(), a2.String())
+// }
 Test(cipher, TestBitcoinWIPRoundTrio){
 
   SecKey seckey;
@@ -265,20 +204,21 @@ GoSlice slice;
 
   cr_assert(err == SKY_OK);
 
-  // cr_assert(eq(type(SecKey),seckey,seckey2));
+  // cr_assert(eq(type(char),(unsigned char *)seckey,(unsigned char *)seckey2));
 
   GoString_ seckeyhex1;
   GoString_ seckeyhex2;
 
   SKY_cipher_SecKey_Hex(&seckey,&seckeyhex1);
+
   SKY_cipher_SecKey_Hex(&seckey2,&seckeyhex2);
   cr_assert(eq(type(GoString_), seckeyhex1, seckeyhex2));
+
   cr_assert(eq(type(GoString_), wip1, wip2));
 
 }
 
 
-// func TestBitcoinWIP(t *testing.T) {
 
 Test(cipher, TestBitcoinWIP ){
 

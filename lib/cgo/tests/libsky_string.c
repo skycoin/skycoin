@@ -29,3 +29,9 @@ void strnhex(unsigned char* buf, char *str, int n){
 void strhex(unsigned char* buf, char *str){
   strnhex(buf, str, SIZE_ALL);
 }
+
+void toGoString(GoString_ *s, GoString *r){
+GoString * tmp = r;
+  
+  *tmp = (*(GoString *) s);
+}

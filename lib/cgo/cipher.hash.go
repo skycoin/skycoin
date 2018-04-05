@@ -79,7 +79,7 @@ func SKY_cipher_SHA256FromHex(_hs string, _arg1 *C.SHA256) uint32 {
 	h, err := cipher.SHA256FromHex(_hs)
 	errcode := libErrorCode(err)
 	if err == nil {
-		copyToBuffer(reflect.ValueOf(h), unsafe.Pointer(_arg1), uint(SizeofSHA256))
+		copyToBuffer(reflect.ValueOf(h[:]), unsafe.Pointer(_arg1), uint(SizeofSHA256))
 	}
 	return errcode
 }
@@ -87,7 +87,7 @@ func SKY_cipher_SHA256FromHex(_hs string, _arg1 *C.SHA256) uint32 {
 //export SKY_cipher_DoubleSHA256
 func SKY_cipher_DoubleSHA256(_b []byte, _arg1 *C.SHA256) {
 	h := cipher.DoubleSHA256(_b)
-	copyToBuffer(reflect.ValueOf(h), unsafe.Pointer(_arg1), uint(SizeofSHA256))
+	copyToBuffer(reflect.ValueOf(h[:]), unsafe.Pointer(_arg1), uint(SizeofSHA256))
 }
 
 //export SKY_cipher_AddSHA256
@@ -96,12 +96,12 @@ func SKY_cipher_AddSHA256(_a *C.SHA256, _b *C.SHA256, _arg2 *C.SHA256) {
 	b := (*cipher.SHA256)(unsafe.Pointer(_b))
 
 	h := cipher.AddSHA256(*a, *b)
-	copyToBuffer(reflect.ValueOf(h), unsafe.Pointer(_arg2), uint(SizeofSHA256))
+	copyToBuffer(reflect.ValueOf(h[:]), unsafe.Pointer(_arg2), uint(SizeofSHA256))
 }
 
 //export SKY_cipher_Merkle
 func SKY_cipher_Merkle(_h0 *C.GoSlice_, _arg1 *C.SHA256) {
 	h0 := (*[]cipher.SHA256)(unsafe.Pointer(_h0))
 	h := cipher.Merkle(*h0)
-	copyToBuffer(reflect.ValueOf(h), unsafe.Pointer(_arg1), uint(SizeofSHA256))
+	copyToBuffer(reflect.ValueOf(h[:]), unsafe.Pointer(_arg1), uint(SizeofSHA256))
 }

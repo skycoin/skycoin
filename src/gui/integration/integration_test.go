@@ -1839,7 +1839,7 @@ func TestLiveWalletSpend(t *testing.T) {
 	}
 
 	c := gui.NewClient(nodeAddress())
-	w, totalCoins, _ := prepareAndCheckWallet(t, c, 2e6, 2)
+	w, totalCoins, _, password := prepareAndCheckWallet(t, c, 2e6, 2)
 	tt := []struct {
 		name    string
 		to      string
@@ -1910,7 +1910,7 @@ func TestLiveWalletSpend(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			result, err := c.Spend(w.Filename(), tc.to, tc.coins)
+			result, err := c.Spend(w.Filename(), tc.to, tc.coins, password)
 			if err != nil {
 				t.Fatalf("spend failed: %v", err)
 			}
@@ -1933,6 +1933,11 @@ func TestLiveWalletSpend(t *testing.T) {
 		})
 	}
 
+	// Return if wallet is encrypted, cause the rest of the tests will spend a lot of time.
+	if w.IsEncrypted() {
+		return
+	}
+
 	// Confirms sending coins less than 0.001 is not allowed
 	errMsg := "500 Internal Server Error - Transaction violates soft constraint: invalid amount, too many decimal places\n"
 	for i := uint64(1); i < uint64(1000); i++ {
@@ -1940,7 +1945,11 @@ func TestLiveWalletSpend(t *testing.T) {
 		require.NoError(t, err)
 		name := fmt.Sprintf("send invalid coin %v", cs)
 		t.Run(name, func(t *testing.T) {
-			result, err := c.Spend(w.Filename(), w.Entries[0].Address.String(), i)
+			result, err := c.Spend(w.Filename(), w.Entries[0].Address.String(), i, password)
+			if w.IsEncrypted() && len(password) == 0 {
+				require.EqualError(t, err, "400 Bad Request - missing password\n")
+				return
+			}
 			require.Equal(t, errMsg, err.Error())
 			require.Nil(t, result)
 		})
@@ -2102,7 +2111,7 @@ func TestLiveWalletbalance(t *testing.T) {
 	doLiveEnvCheck(t)
 
 	c := gui.NewClient(nodeAddress())
-	_, walletName := getWalletFromEnv(t, c)
+	_, walletName, _ := getWalletFromEnv(t, c)
 	bp, err := c.WalletBalance(walletName)
 	require.NoError(t, err)
 	require.NotNil(t, bp)
@@ -2151,7 +2160,7 @@ func TestLiveWalletTransactions(t *testing.T) {
 	doLiveEnvCheck(t)
 
 	c := gui.NewClient(nodeAddress())
-	w, _, _ := prepareAndCheckWallet(t, c, 1e6, 1)
+	w, _, _, _ := prepareAndCheckWallet(t, c, 1e6, 1)
 	txns, err := c.WalletTransactions(w.Filename())
 	require.NoError(t, err)
 
@@ -2280,9 +2289,9 @@ func TestDecryptWallet(t *testing.T) {
 // prepareAndCheckWallet gets wallet from environment, and confirms:
 // 1. The minimal coins and coin hours requirements are met.
 // 2. The wallet has at least two address entry.
-// Returns the loaded wallet, total coins and total coin hours in the wallet.
-func prepareAndCheckWallet(t *testing.T, c *gui.Client, miniCoins, miniCoinHours uint64) (*wallet.Wallet, uint64, uint64) {
-	walletDir, walletName := getWalletFromEnv(t, c)
+// Returns the loaded wallet, total coins, total coin hours and password of the wallet.
+func prepareAndCheckWallet(t *testing.T, c *gui.Client, miniCoins, miniCoinHours uint64) (*wallet.Wallet, uint64, uint64, string) {
+	walletDir, walletName, password := getWalletFromEnv(t, c)
 	walletPath := filepath.Join(walletDir, walletName)
 
 	// Checks if the wallet does exist
@@ -2297,7 +2306,7 @@ func prepareAndCheckWallet(t *testing.T, c *gui.Client, miniCoins, miniCoinHours
 
 	// Generate more addresses if address entries less than 2.
 	if len(w.Entries) < 2 {
-		_, err := c.NewWalletAddress(w.Filename(), 2-len(w.Entries), "")
+		_, err := c.NewWalletAddress(w.Filename(), 2-len(w.Entries), password)
 		if err != nil {
 			t.Fatalf("New wallet address failed: %v", err)
 		}
@@ -2316,12 +2325,12 @@ func prepareAndCheckWallet(t *testing.T, c *gui.Client, miniCoins, miniCoinHours
 		t.Fatalf("%v", err)
 	}
 
-	return w, coins, hours
+	return w, coins, hours, password
 }
 
 // getWalletFromEnv loads wallet from envrionment variables.
-// Returns wallet dir and wallet name.
-func getWalletFromEnv(t *testing.T, c *gui.Client) (string, string) {
+// Returns wallet dir, wallet name and wallet password is any.
+func getWalletFromEnv(t *testing.T, c *gui.Client) (string, string, string) {
 	walletDir := getWalletDir(t, c)
 
 	walletName := os.Getenv("WALLET_NAME")
@@ -2329,7 +2338,8 @@ func getWalletFromEnv(t *testing.T, c *gui.Client) (string, string) {
 		t.Fatal("Missing WALLET_NAME environment value")
 	}
 
-	return walletDir, walletName
+	walletPassword := os.Getenv("WALLET_PASSWORD")
+	return walletDir, walletName, walletPassword
 }
 
 func doLiveEnvCheck(t *testing.T) {

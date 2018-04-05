@@ -444,11 +444,14 @@ func (c *Client) WalletBalance(id string) (*wallet.BalancePair, error) {
 }
 
 // Spend makes a request to /wallet/spend
-func (c *Client) Spend(id, dst string, coins uint64) (*SpendResult, error) {
+func (c *Client) Spend(id, dst string, coins uint64, password string) (*SpendResult, error) {
 	v := url.Values{}
 	v.Add("id", id)
 	v.Add("dst", dst)
 	v.Add("coins", fmt.Sprint(coins))
+	if len(password) > 0 {
+		v.Add("password", password)
+	}
 
 	var r SpendResult
 	endpoint := "/wallet/spend"

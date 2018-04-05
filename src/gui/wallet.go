@@ -74,6 +74,7 @@ func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 //     id: wallet id
 //     dst: recipient address
 //     coins: the number of droplet you will send
+//     password: wallet password
 // Response:
 //     balance: new balance of the wallet
 //     txn: spent transaction
@@ -115,10 +116,17 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		tx, err := gateway.Spend(wltID, nil, coins, dst)
+		password := r.FormValue("password")
+		tx, err := gateway.Spend(wltID, []byte(password), coins, dst)
 		switch err {
 		case nil:
-		case fee.ErrTxnNoFee, wallet.ErrSpendingUnconfirmed, wallet.ErrInsufficientBalance:
+		case fee.ErrTxnNoFee,
+			wallet.ErrSpendingUnconfirmed,
+			wallet.ErrInsufficientBalance,
+			wallet.ErrInvalidPassword,
+			wallet.ErrWalletNotEncrypted,
+			wallet.ErrMissingPassword,
+			wallet.ErrWalletEncrypted:
 			wh.Error400(w, err.Error())
 			return
 		case wallet.ErrWalletNotExist:

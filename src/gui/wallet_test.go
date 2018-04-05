@@ -30,6 +30,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		WalletID string
 		Dst      string
 		Coins    string
+		Password string
 	}
 
 	tt := []struct {
@@ -41,6 +42,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		walletID                      string
 		coins                         uint64
 		dst                           string
+		password                      string
 		gatewaySpendResult            *coin.Transaction
 		gatewaySpendErr               error
 		gatewayGetWalletBalanceResult wallet.BalancePair
@@ -319,6 +321,82 @@ func TestWalletSpendHandler(t *testing.T) {
 			},
 			csrfDisabled: true,
 		},
+		{
+			name:   "400 - missing password",
+			method: http.MethodPost,
+			body: &httpBody{
+				WalletID: "wallet.wlt",
+				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+				Coins:    "1",
+			},
+			status:          http.StatusBadRequest,
+			gatewaySpendErr: wallet.ErrMissingPassword,
+			err:             "400 Bad Request - missing password",
+			walletID:        "wallet.wlt",
+			coins:           1,
+			dst:             "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+			spendResult: &SpendResult{
+				Error: wallet.ErrMissingPassword.Error(),
+			},
+		},
+		{
+			name:   "400 - invalid password",
+			method: http.MethodPost,
+			body: &httpBody{
+				WalletID: "wallet.wlt",
+				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+				Coins:    "1",
+				Password: "pwd",
+			},
+			password:        "pwd",
+			status:          http.StatusBadRequest,
+			gatewaySpendErr: wallet.ErrInvalidPassword,
+			err:             "400 Bad Request - invalid password",
+			walletID:        "wallet.wlt",
+			coins:           1,
+			dst:             "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+			spendResult: &SpendResult{
+				Error: wallet.ErrInvalidPassword.Error(),
+			},
+		},
+		{
+			name:   "400 - wallet is encrypted",
+			method: http.MethodPost,
+			body: &httpBody{
+				WalletID: "wallet.wlt",
+				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+				Coins:    "1",
+			},
+			status:          http.StatusBadRequest,
+			gatewaySpendErr: wallet.ErrWalletEncrypted,
+			err:             "400 Bad Request - wallet is encrypted",
+			walletID:        "wallet.wlt",
+			coins:           1,
+			dst:             "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+			spendResult: &SpendResult{
+				Error: wallet.ErrWalletEncrypted.Error(),
+			},
+		},
+		{
+			name:   "400 - wallet is not encrypted",
+			method: http.MethodPost,
+			body: &httpBody{
+				WalletID: "wallet.wlt",
+				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+				Coins:    "1",
+				Password: "pwd",
+			},
+			password:        "pwd",
+			status:          http.StatusBadRequest,
+			gatewaySpendErr: wallet.ErrWalletNotEncrypted,
+			err:             "400 Bad Request - wallet is not encrypted",
+			walletID:        "wallet.wlt",
+			coins:           1,
+			dst:             "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+			spendResult: &SpendResult{
+				Error: wallet.ErrWalletNotEncrypted.Error(),
+			},
+		},
 	}
 
 	for _, tc := range tt {
@@ -329,8 +407,7 @@ func TestWalletSpendHandler(t *testing.T) {
 
 			gateway := &GatewayerMock{}
 			addr, _ := cipher.DecodeBase58Address(tc.dst)
-			var pwd []byte
-			gateway.On("Spend", tc.walletID, pwd, tc.coins, addr).Return(tc.gatewaySpendResult, tc.gatewaySpendErr)
+			gateway.On("Spend", tc.walletID, []byte(tc.password), tc.coins, addr).Return(tc.gatewaySpendResult, tc.gatewaySpendErr)
 			gateway.On("GetWalletBalance", tc.walletID).Return(tc.gatewayGetWalletBalanceResult, tc.gatewayBalanceErr)
 
 			endpoint := "/wallet/spend"
@@ -345,6 +422,9 @@ func TestWalletSpendHandler(t *testing.T) {
 				}
 				if tc.body.Coins != "" {
 					v.Add("coins", tc.body.Coins)
+				}
+				if tc.body.Password != "" {
+					v.Add("password", tc.body.Password)
 				}
 			}
 
@@ -367,11 +447,10 @@ func TestWalletSpendHandler(t *testing.T) {
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
+			require.Equal(t, tc.status, status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()))
 			} else {
 				var msg SpendResult
 				err := json.Unmarshal(rr.Body.Bytes(), &msg)

@@ -229,6 +229,9 @@ func (w *Wallet) lock(password []byte, cryptoType CryptoType) error {
 	// Sets wallet as encrypted
 	wlt.setEncrypted(true)
 
+	// Sets the wallet version
+	wlt.setVersion(Version)
+
 	// Wipes unencrypted sensitive data
 	wlt.Erase()
 

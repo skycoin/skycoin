@@ -101,30 +101,25 @@ unsigned char buff[101];
 
   randBytes(&slice,33);
 	error=SKY_cipher_SHA256_Set(&h,slice);
-	cr_assert(error == SKY_OK);
+	cr_assert(error == SKY_ERROR);
 
 	randBytes(&slice,100);
 	error=SKY_cipher_SHA256_Set(&h,slice);
-	cr_assert(error == SKY_OK);
+	cr_assert(error == SKY_ERROR);
 
 	randBytes(&slice,31);
 	error=SKY_cipher_SHA256_Set(&h,slice);
-	cr_assert(error == SKY_OK);
+	cr_assert(error == SKY_ERROR);
 
 	randBytes(&slice,0);
 	error=SKY_cipher_SHA256_Set(&h,slice);
-	cr_assert(error == SKY_OK);
+	cr_assert(error == SKY_ERROR);
 
 	randBytes(&slice,32);
 	error=SKY_cipher_SHA256_Set(&h,slice);
 	cr_assert(error == SKY_OK);
 
-unsigned char buff1[101];
-	GoSlice slice1 = { buff1, 0, 101 };
-
-	randBytes(&slice1,32);
-
-	cr_assert(eq(type(GoSlice),slice,slice1));
+	cr_assert(eq(u8[32], h, slice.data));
 }
 
 Test(hash,TestSHA256Hex){

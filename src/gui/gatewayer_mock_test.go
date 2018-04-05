@@ -7,6 +7,7 @@ package gui
 
 import (
 	"fmt"
+
 	mock "github.com/stretchr/testify/mock"
 
 	cipher "github.com/skycoin/skycoin/src/cipher"
@@ -678,6 +679,33 @@ func (m *GatewayerMock) GetWalletBalance(p0 string) (wallet.BalancePair, error) 
 func (m *GatewayerMock) GetWalletDir() (string, error) {
 
 	ret := m.Called()
+
+	var r0 string
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case string:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
+
+}
+
+// GetWalletSeed mocked method
+func (m *GatewayerMock) GetWalletSeed(p0 string, p1 []byte) (string, error) {
+
+	ret := m.Called(p0, p1)
 
 	var r0 string
 	switch res := ret.Get(0).(type) {

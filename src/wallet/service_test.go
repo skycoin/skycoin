@@ -1540,6 +1540,97 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 	}
 }
 
+func TestGetWalletSeed(t *testing.T) {
+	tt := []struct {
+		name             string
+		wltName          string
+		opts             Options
+		id               string
+		pwd              []byte
+		disableWalletAPI bool
+		expectErr        error
+	}{
+		{
+			name:    "wallet is not encrypted",
+			wltName: "wallet.wlt",
+			opts: Options{
+				Seed:  "seed",
+				Label: "label",
+			},
+			id:        "wallet.wlt",
+			expectErr: ErrWalletNotEncrypted,
+		},
+		{
+			name:    "wallet api disabled",
+			wltName: "wallet.wlt",
+			opts: Options{
+				Seed:  "seed",
+				Label: "label",
+			},
+			id:               "wallet.wlt",
+			disableWalletAPI: true,
+			expectErr:        ErrWalletAPIDisabled,
+		},
+		{
+			name:    "ok",
+			wltName: "wallet.wlt",
+			opts: Options{
+				Seed:     "seed",
+				Label:    "label",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			id:  "wallet.wlt",
+			pwd: []byte("pwd"),
+		},
+		{
+			name:    "wallet does not exist",
+			wltName: "wallet.wlt",
+			opts: Options{
+				Seed:     "seed",
+				Label:    "label",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			pwd:       []byte("pwd"),
+			id:        "none-exist.wlt",
+			expectErr: ErrWalletNotExist,
+		},
+	}
+
+	for _, tc := range tt {
+		for ct := range cryptoTable {
+			t.Run(tc.name, func(t *testing.T) {
+				dir := prepareWltDir()
+				s, err := NewService(Config{
+					WalletDir:        dir,
+					CryptoType:       ct,
+					DisableWalletAPI: tc.disableWalletAPI,
+				})
+				require.NoError(t, err)
+
+				if tc.disableWalletAPI {
+					_, err = s.GetWalletSeed("", tc.pwd)
+					require.Equal(t, tc.expectErr, err)
+					return
+				}
+
+				// Create a wallet
+				_, err = s.CreateWallet(tc.wltName, tc.opts)
+				require.NoError(t, err)
+
+				seed, err := s.GetWalletSeed(tc.id, tc.pwd)
+				require.Equal(t, tc.expectErr, err)
+				if err != nil {
+					return
+				}
+
+				require.Equal(t, tc.opts.Seed, seed)
+			})
+		}
+	}
+}
+
 type dummyValidator struct {
 	ok  bool
 	err error

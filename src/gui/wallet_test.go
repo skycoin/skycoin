@@ -1461,6 +1461,138 @@ func TestWalletNewSeed(t *testing.T) {
 	}
 }
 
+func TestGetWalletSeed(t *testing.T) {
+	type gatewayReturnPair struct {
+		seed string
+		err  error
+	}
+
+	tt := []struct {
+		name              string
+		method            string
+		wltID             string
+		password          string
+		gatewayReturnArgs []interface{}
+		expectStatus      int
+		expectSeed        string
+		expectErr         string
+	}{
+		{
+			name:     "200 - OK",
+			method:   http.MethodGet,
+			wltID:    "wallet.wlt",
+			password: "pwd",
+			gatewayReturnArgs: []interface{}{
+				"seed",
+				nil,
+			},
+			expectStatus: http.StatusOK,
+			expectSeed:   "seed",
+		},
+		{
+			name:              "400 - missing wallet id ",
+			method:            http.MethodGet,
+			wltID:             "",
+			password:          "pwd",
+			gatewayReturnArgs: []interface{}{},
+			expectStatus:      http.StatusBadRequest,
+			expectErr:         "400 Bad Request - missing wallet id",
+		},
+		{
+			name:              "400 - missing password",
+			method:            http.MethodGet,
+			wltID:             "wallet.wlt",
+			password:          "",
+			gatewayReturnArgs: []interface{}{},
+			expectStatus:      http.StatusBadRequest,
+			expectErr:         "400 Bad Request - missing password",
+		},
+		{
+			name:     "400 - invalid password",
+			method:   http.MethodGet,
+			wltID:    "wallet.wlt",
+			password: "pwd",
+			gatewayReturnArgs: []interface{}{
+				nil,
+				wallet.ErrInvalidPassword,
+			},
+			expectStatus: http.StatusBadRequest,
+			expectErr:    "400 Bad Request - invalid password",
+		},
+		{
+			name:     "403 - wallet not encrypted",
+			method:   http.MethodGet,
+			wltID:    "wallet.wlt",
+			password: "pwd",
+			gatewayReturnArgs: []interface{}{
+				nil,
+				wallet.ErrWalletNotEncrypted,
+			},
+			expectStatus: http.StatusForbidden,
+			expectErr:    "403 Forbidden",
+		},
+		{
+			name:     "404 - wallet does not exist",
+			method:   http.MethodGet,
+			wltID:    "wallet.wlt",
+			password: "pwd",
+			gatewayReturnArgs: []interface{}{
+				nil,
+				wallet.ErrWalletNotExist,
+			},
+			expectStatus: http.StatusNotFound,
+			expectErr:    "404 Not Found",
+		},
+		{
+			name:         "405 - Method Not Allowed",
+			method:       http.MethodPost,
+			expectStatus: http.StatusMethodNotAllowed,
+			expectErr:    "405 Method Not Allowed",
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := NewGatewayerMock()
+			gateway.On("GetWalletSeed", tc.wltID, []byte(tc.password)).Return(tc.gatewayReturnArgs...)
+
+			v := url.Values{}
+			v.Add("id", tc.wltID)
+			if len(tc.password) > 0 {
+				v.Add("password", tc.password)
+			}
+			endpoint := "/wallet/seed?" + v.Encode()
+
+			req, err := http.NewRequest(tc.method, endpoint, nil)
+			require.NoError(t, err)
+
+			csrfStore := &CSRFStore{
+				Enabled: true,
+			}
+			setCSRFParameters(csrfStore, tokenValid, req)
+
+			rr := httptest.NewRecorder()
+			handler := newServerMux(mxConfig, gateway, csrfStore)
+
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.expectStatus, status)
+
+			if status != http.StatusOK {
+				require.Equal(t, tc.expectErr, strings.TrimSpace(rr.Body.String()))
+			} else {
+				var r struct {
+					Seed string `json:"seed"`
+				}
+				err := json.Unmarshal(rr.Body.Bytes(), &r)
+				require.NoError(t, err)
+				require.Equal(t, tc.expectSeed, r.Seed)
+			}
+		})
+	}
+}
+
 func TestWalletNewAddressesHandler(t *testing.T) {
 	type httpBody struct {
 		ID       string

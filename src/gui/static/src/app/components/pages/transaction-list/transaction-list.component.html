@@ -11,7 +11,7 @@
           <h4 *ngIf="transaction.balance < 0 && !transaction.confirmed">Sending SKY <span class="-pending">Pending</span></h4>
           <h4 *ngIf="transaction.balance > 0 && transaction.confirmed">Received SKY <span class="-timestamp">{{ transaction.timestamp * 1000 | date:'short' }}</span></h4>
           <h4 *ngIf="transaction.balance > 0 && !transaction.confirmed">Sent SKY <span class="-pending">Pending</span></h4>
-          <img src="../../../../assets/img/qr-code-black.png">
+          <img src="../../../../assets/img/qr-code-black.png" (click)="showQrCode($event, transaction.addresses)">
           <p>{{ transaction.addresses.join(', ') }}</p>
         </div>
         <div class="-balance">

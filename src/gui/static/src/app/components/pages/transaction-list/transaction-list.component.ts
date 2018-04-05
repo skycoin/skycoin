@@ -5,6 +5,7 @@ import { Subscription } from 'rxjs/Subscription';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { TransactionDetailComponent } from './transaction-detail/transaction-detail.component';
 import { Transaction } from '../../../app.datatypes';
+import { QrCodeComponent } from '../../layout/qr-code/qr-code.component';
 
 @Component({
   selector: 'app-transaction-list',
@@ -37,5 +38,15 @@ export class TransactionListComponent implements OnInit, OnDestroy {
     config.width = '566px';
     config.data = transaction;
     this.dialog.open(TransactionDetailComponent, config).afterClosed().subscribe();
+  }
+
+  showQrCode($event: any, address: string[]) {
+    if (address.length === 1) {
+      $event.stopPropagation();
+
+      const config = new MatDialogConfig();
+      config.data = { address: address[0] };
+      this.dialog.open(QrCodeComponent, config).afterClosed().subscribe();
+    }
   }
 }

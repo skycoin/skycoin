@@ -131,7 +131,7 @@ install-deps-libc: configure-build ## Install locally dependencies for testing l
 	# wget -O $(BUILD_DIR)/usr/tmp/criterion-v2.3.2-$(OSNAME)-x86_64.tar.bz2 https://github.com/Snaipe/Criterion/releases/download/v2.3.2/criterion-v2.3.2-$(OSNAME)-x86_64.tar.bz2
 	wget -O $(BUILD_DIR)/usr/tmp/criterion-bleeding-branch.zip https://github.com/Snaipe/Criterion/archive/bleeding.zip
 	# tar -x -C $(BUILD_DIR)/usr/tmp/ -j -f $(BUILD_DIR)/usr/tmp/criterion-v2.3.2-$(OSNAME)-x86_64.tar.bz2
-	unzip criterion-bleeding-branch.zip -d criterion-bleeding-branch
+	unzip $(BUILD_DIR)/usr/tmp/criterion-bleeding-branch.zip -d $(BUILD_DIR)/usr/tmp/
 	ls $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/include
 	ls -1 $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/lib     | xargs -I NAME mv $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/lib/NAME     $(BUILD_DIR)/usr/lib/NAME
 	ls -1 $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/include | xargs -I NAME mv $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/include/NAME $(BUILD_DIR)/usr/include/NAME

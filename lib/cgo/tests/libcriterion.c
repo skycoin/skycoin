@@ -31,36 +31,31 @@ int cr_user_Address_noteq(Address *addr1, Address *addr2){
 };
 
 int cr_user_GoString_eq(GoString *string1, GoString *string2){
+if (strlen(string1->p) != strlen(string2->p) ) return 0;
 
-if (strlen(string1->p) != strlen(string2->p) ) return SKY_ERROR;
-
-  if(  strcmp( (unsigned char *) string1->p, (unsigned char *) string2->p) != 0 )
+  if(  strcmp(  string1->p, string2->p ) != 0 )
   {
-    return SKY_ERROR;
+    return 0;
 
   } else {
-    return SKY_OK;
+    return 1;
   }
 };
 
 char *cr_user_GoString_tostr(GoString *string)
 {
   char *out;
-  cr_asprintf(&out, "(GoString) { .Data = %s, .Length = %llu }", (unsigned char *)&string->p, (unsigned long long) &string->n);
+  cr_asprintf(&out, "(GoString) { .Data = %s, .Length = %d }",  &string->p, string->n);
   return out;
 };
 
 int cr_user_GoString__eq(GoString_ *string1, GoString_ *string2){
-  if (strlen(string1->p) != strlen(string2->p) ) return SKY_ERROR;
+  if (strlen(string1->p) != strlen(string2->p) ) return 0;
 
-unsigned int error = strcmp( string1->p, string2->p);
-
-  if(  error == 0 ){
-       return SKY_OK;
+  if(  strcmp( string1->p, string2->p) == 0 ){
+       return 1;
      }
-   if(  error != 0 ){
-    return SKY_ERROR;
-  }
+return 0;
 };
 
 char *cr_user_GoString__tostr(GoString_ *string) {
@@ -74,9 +69,9 @@ char *cr_user_GoString__tostr(GoString_ *string) {
 int cr_user_SecKey_eq(SecKey *seckey1, SecKey *seckey2){
 if (strcmp((unsigned char *)seckey1,(unsigned char *)seckey2) != 0)
 {
-  return SKY_ERROR;
+  return 0;
 }else {
-  return SKY_OK;
+  return 1;
 }
 };
 
@@ -101,9 +96,9 @@ int cr_user_Ripemd160_eq(Ripemd160 *rp1, Ripemd160 *rp2){
 
     if( strcmp((char *)rp1,(char *)rp2) == 0 ) {
 
-    return SKY_OK;
+    return 1;
   }else
-  return SKY_ERROR;
+  return 0;
 };
 
 char *cr_user_Ripemd160_tostr(Ripemd160 *rp1)
@@ -117,13 +112,13 @@ char *cr_user_Ripemd160_tostr(Ripemd160 *rp1)
 // TODO: Write like this cr_assert(eq(type(GoSlice), slice1, slice2))
 int cr_user_GoSlice_eq(GoSlice *slice1, GoSlice *slice2){
   if(slice1->len != slice1->len)
-    return SKY_ERROR;
+    return 0;
 
   if( strcmp(slice1->data,slice2->data) == 0){
-    return SKY_OK;
+    return 1;
   }
   else{
-  return SKY_ERROR;}
+  return 0;}
 };
 
 char *cr_user_GoSlice_tostr(GoSlice *slice1)
@@ -136,30 +131,29 @@ char *cr_user_GoSlice_tostr(GoSlice *slice1)
 // // TODO: Write like this cr_assert(not(eq(type(GoSlice), slice1, slice2)))
 int cr_user_GoSlice_noteq(GoSlice *slice1, GoSlice *slice2){
   if(slice1->len != slice1->len)
-    return SKY_OK;
+    return 1;
 
   if( strcmp(slice1->data,slice2->data) == 0){
-    return SKY_ERROR;
+    return 0;
   }
-  else{
-  return SKY_OK;}
+  return SKY_OK;
 };
 
 
 int cr_user_SHA256_noteq(SHA256 *sh1, SHA256 *sh2){
 
   if( strcmp((char *)sh1,(char *)sh1) == 0 ) {
-    return SKY_ERROR;
+    return 0;
   }else
-  return SKY_OK;
+  return 1;
 };
 
 int cr_user_SHA256_eq(SHA256 *sh1, SHA256 *sh2){
 
     if( strcmp((char *)sh1,(char *)sh2) == 0 ) {
-    return SKY_OK;
+    return 1;
   }else
-  return SKY_ERROR;
+  return 0;
 };
 
 char *cr_user_SHA256_tostr(SHA256 *sh1)
@@ -172,26 +166,25 @@ char *cr_user_SHA256_tostr(SHA256 *sh1)
 
 int cr_user_char_eq(unsigned char *string1, unsigned char *string2){
 
-printf("string1 %s string2 %s\n", &string1,&string2 );
-  if( strlen(string1) != strlen(string2) ) return SKY_ERROR;
+  if( strlen(string1) != strlen(string2) ) return 0;
 
   if (strcmp(string1,string2) == 0)
   {
-    return SKY_OK;
+    return 1;
   }
 
-  return SKY_ERROR;
+  return 0;
 };
 
 int cr_user_char_noteq(unsigned char *string1, unsigned char *string2){
 
-  if( strlen(string1) != strlen(string2) ) return SKY_OK;
+  if( strlen(string1) != strlen(string2) ) return 1;
 
   if (strcmp(string1,string2) == 0)
   {
-    return SKY_ERROR;
+    return 0;
   }
-  return SKY_OK;
+  return 1;
 };
 
 char *cr_user_char_tostr(unsigned char *string1)

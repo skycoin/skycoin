@@ -1,7 +1,6 @@
 
-#include "libcriterion.h"
+#include "skycriterion.h"
 
-// // TODO: Write like this cr_assert(eq(type(Address), addr1, addr2))
 int cr_user_Address_eq(Address *addr1, Address *addr2){
   if(addr1->Version != addr2->Version)
     return 0;
@@ -19,7 +18,6 @@ char *cr_user_Address_tostr(Address *addr1)
   cr_asprintf(&out, "(Address) { .Key = %s, .Version = %llu }", addr1->Key, (unsigned long long) addr1->Version);
   return out;
 };
-// // TODO: Write like this cr_assert(not(eq(type(Address), addr1, addr2)))
 int cr_user_Address_noteq(Address *addr1, Address *addr2){
   if(addr1->Version != addr2->Version)
     return SKY_OK;
@@ -64,8 +62,6 @@ char *cr_user_GoString__tostr(GoString_ *string) {
   return out;
 };
 
-
-// // TODO: Write like this cr_assert(eq(type(SecKey), seckey1, seckey2))
 int cr_user_SecKey_eq(SecKey *seckey1, SecKey *seckey2){
 if (strcmp((unsigned char *)seckey1,(unsigned char *)seckey2) != 0)
 {
@@ -108,8 +104,6 @@ char *cr_user_Ripemd160_tostr(Ripemd160 *rp1)
   return out;
 };
 
-
-// TODO: Write like this cr_assert(eq(type(GoSlice), slice1, slice2))
 int cr_user_GoSlice_eq(GoSlice *slice1, GoSlice *slice2){
   if(slice1->len != slice1->len)
     return 0;
@@ -128,7 +122,7 @@ char *cr_user_GoSlice_tostr(GoSlice *slice1)
   cr_asprintf(&out, "(GoSlice) { .data = %s, .len = %llu, .cap = %llu }", slice1->data, (unsigned long long) slice1->len, (unsigned long long)slice1->cap);
   return out;
 };
-// // TODO: Write like this cr_assert(not(eq(type(GoSlice), slice1, slice2)))
+
 int cr_user_GoSlice_noteq(GoSlice *slice1, GoSlice *slice2){
   if(slice1->len != slice1->len)
     return 1;
@@ -194,3 +188,4 @@ char *cr_user_char_tostr(unsigned char *string1)
   cr_asprintf(&out, "(CHAR) {  %s }", string1);
   return out;
 };
+

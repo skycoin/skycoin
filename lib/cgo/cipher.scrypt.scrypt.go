@@ -1,0 +1,36 @@
+package main
+
+import (
+	scrypt "github.com/skycoin/skycoin/src/cipher/scrypt"
+	reflect "reflect"
+	unsafe "unsafe"
+)
+
+/*
+
+  #include <string.h>
+  #include <stdlib.h>
+
+  #include "../../include/skytypes.h"
+*/
+import "C"
+
+// export SKY_scrypt_Key
+func SKY_scrypt_Key(_password, _salt *C.GoSlice_, _N, _r, _p, _keyLen int, _arg2 *C.GoSlice_) (____return_var uint32) {
+	____return_var = 0
+	defer func() {
+		____return_var = catchApiPanic(recover())
+	}()
+	password := *(*[]byte)(unsafe.Pointer(_password))
+	salt := *(*[]byte)(unsafe.Pointer(_salt))
+	N := _N
+	r := _r
+	p := _p
+	keyLen := _keyLen
+	__arg2, ____return_err := scrypt.Key(password, salt, N, r, p, keyLen)
+	____return_var = libErrorCode(____return_err)
+	if ____return_err == nil {
+		copyToGoSlice(reflect.ValueOf(__arg2), _arg2)
+	}
+	return
+}

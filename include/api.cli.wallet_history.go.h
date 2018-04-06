@@ -1,0 +1,1 @@
+typedef GoSlice_ byTime;

@@ -113,39 +113,21 @@ Test(cipher,TestAddressString){
 
   SecKey seckey;
   PubKey pubkey;
-
-  Address addr1;
-  Address addr2;
-  Address addr3;
-
-
-  GoString_ strAddr;
-  GoString_ strAddr2;
+  Address addr1, addr2, addr3;
+  GoString strAddr, strAddr2;
 
   SKY_cipher_GenerateKeyPair(&pubkey,&seckey);
-
   SKY_cipher_AddressFromPubKey(&pubkey,&addr1);
-
   SKY_cipher_Address_String(&addr1,&strAddr);
+  registerMemCleanup((void *) strAddr.p);
 
-  GoString tmpStrAddr;
-
-  tmpStrAddr = (*((GoString *) &strAddr2));
-
-  unsigned int error = SKY_cipher_DecodeBase58Address( tmpStrAddr,&addr1);
-
-  printf("%d\n",error );
-
-  cr_assert( error == SKY_OK);
-
+  int error = SKY_cipher_DecodeBase58Address(strAddr,&addr2);
+  cr_assert(error == SKY_OK);
   cr_assert(eq(type(Address), addr1, addr2));
 
   SKY_cipher_Address_String(&addr2,&strAddr2);
-
-  cr_assert(SKY_cipher_DecodeBase58Address((*((GoString *) &strAddr2)),&addr3)== SKY_OK);
-
+  cr_assert(SKY_cipher_DecodeBase58Address(strAddr2, &addr3)== SKY_OK);
   cr_assert(eq(type(Address), addr3, addr2));
-
 }
 
 Test (cipher, TestBitcoinAddress1){
@@ -167,7 +149,7 @@ Test (cipher, TestBitcoinAddress1){
   GoString pubkeyStr = { "034f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aa", 66 };
 
   SKY_cipher_PubKey_Hex(&pubkey, (GoString_ *) &s1);
-  // registerMemCleanup((void *) s1.p);
+  registerMemCleanup((void *) s1.p);
   cr_assert(eq(type(GoString), pubkeyStr, s1));
 
   GoString bitcoinStr = {"1Q1pE5vPGEEMqRcVRMbtBK842Y6Pzo6nK9",34};

@@ -1,6 +1,7 @@
 
-#include "string.h"
+#include <string.h>
 #include "skycriterion.h"
+#include "skystring.h"
 
 int cr_user_Address_eq(Address *addr1, Address *addr2){
   if(addr1->Version != addr2->Version)
@@ -32,15 +33,15 @@ int cr_user_Address_noteq(Address *addr1, Address *addr2){
 
 int cr_user_GoString_eq(GoString *string1, GoString *string2){
 
-  if (strlen(string1->p) != strlen(string2->p) ) return SKY_ERROR;
-
-  return strcmp( (char *) &string1->p, (char *) &string2->p) == 0;
+  return (string1->n == string2->n) &&
+    (strcmp( (char *) string1->p, (char *) string2->p) == 0);
 }
 
 char *cr_user_GoString_tostr(GoString *string)
 {
   char *out;
-  cr_asprintf(&out, "(GoString) { .Data = %s, .Length = %llu }", (unsigned char *)&string->p, (unsigned long long) &string->n);
+  cr_asprintf(&out, "(GoString) { .Data = %s, .Length = %llu }",
+      string->p, (unsigned long long) string->n);
   return out;
 }
 
@@ -59,24 +60,29 @@ int cr_user_SecKey_eq(SecKey *seckey1, SecKey *seckey2){
 char *cr_user_SecKey_tostr(SecKey *seckey1)
 {
   char *out;
+  char hexdump[101];
 
-  cr_asprintf(&out, "(SecKey) { .SecKey = %s,}", &seckey1);
+  strnhex(seckey1, hexdump, sizeof(SecKey));
+  cr_asprintf(&out, "(SecKey) { .SecKey = %s }", hexdump);
   return out;
 }
 
 
 int cr_user_Ripemd160_noteq(Ripemd160 *rp1, Ripemd160 *rp2){
-  return memcmp((char *)rp1,(char *)rp2, sizeof(Ripemd160)) != 0;
+  return memcmp((void *)rp1,(void *)rp2, sizeof(Ripemd160)) != 0;
 }
 
 int cr_user_Ripemd160_eq(Ripemd160 *rp1, Ripemd160 *rp2){
-  return memcmp((char *)rp1,(char *)rp2, sizeof(Ripemd160)) == 0;
+  return memcmp((void *)rp1,(void *)rp2, sizeof(Ripemd160)) == 0;
 }
 
 char *cr_user_Ripemd160_tostr(Ripemd160 *rp1)
 {
   char *out;
-  cr_asprintf(&out, "(Ripemd160) { %s }", (unsigned char *)&rp1);
+  char hexdump[101];
+
+  strnhex(rp1, hexdump, sizeof(Ripemd160));
+  cr_asprintf(&out, "(Ripemd160) { %s }", hexdump );
   return out;
 }
 
@@ -91,7 +97,10 @@ int cr_user_SHA256_eq(SHA256 *sh1, SHA256 *sh2){
 char *cr_user_SHA256_tostr(SHA256 *sh1)
 {
   char *out;
-  cr_asprintf(&out, "(SHA256) { %s }", &sh1);
+  char hexdump[101];
+
+  strnhex(sh1, hexdump, sizeof(SHA256));
+  cr_asprintf(&out, "(SHA256) { %s }", hexdump);
   return out;
 }
 

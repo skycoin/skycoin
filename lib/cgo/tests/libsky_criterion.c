@@ -54,6 +54,7 @@ char *cr_user_GoString__tostr(GoString_ *string) {
 
 int cr_user_SecKey_eq(SecKey *seckey1, SecKey *seckey2){
   return memcmp((void *)seckey1,(void *)seckey2, sizeof(SecKey)) == 0;
+}
 
 char *cr_user_SecKey_tostr(SecKey *seckey1)
 {
@@ -82,6 +83,7 @@ char *cr_user_Ripemd160_tostr(Ripemd160 *rp1)
   strnhex((unsigned char *)rp1, hexdump, sizeof(Ripemd160));
   cr_asprintf(&out, "(Ripemd160) { %s }", hexdump );
 }
+
 int cr_user_SHA256_noteq(SHA256 *sh1, SHA256 *sh2){
   return memcmp((void *)sh1,(void *)sh1, sizeof(SHA256)) != 0;
 }
@@ -90,8 +92,7 @@ int cr_user_SHA256_eq(SHA256 *sh1, SHA256 *sh2){
   return memcmp((void *)sh1,(void *)sh1, sizeof(SHA256)) == 0;
 }
 
-char *cr_user_SHA256_tostr(SHA256 *sh1)
-{
+char *cr_user_SHA256_tostr(SHA256 *sh1) {
   char *out;
   char hexdump[101];
 

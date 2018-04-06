@@ -65,31 +65,24 @@ Test(hash,TestRipemd160Set){
   randBytes(&slice,21);
 
   error = SKY_cipher_Ripemd160_Set(&h,slice);
-  cr_assert( error == SKY_OK);
+  cr_assert( error == SKY_ERROR);
 
   randBytes(&slice,100);
   error = SKY_cipher_Ripemd160_Set(&h,slice);
-  cr_assert(error == SKY_OK);
+  cr_assert(error == SKY_ERROR);
 
   randBytes(&slice,19);
   error = SKY_cipher_Ripemd160_Set(&h,slice);
-  cr_assert(error == SKY_OK);
+  cr_assert(error == SKY_ERROR);
 
   randBytes(&slice,0);
   error = SKY_cipher_Ripemd160_Set(&h,slice);
-  cr_assert(error == SKY_OK);
+  cr_assert(error == SKY_ERROR);
 
   randBytes(&slice,20);
   error = SKY_cipher_Ripemd160_Set(&h,slice);
   cr_assert(error == SKY_OK);
-
-  unsigned char buff1[101];
-  GoSlice slice1 = { buff1, 0, 101 };
-
-  randBytes(&slice1,20);
-  error = SKY_cipher_Ripemd160_Set(&h,slice1);
-
-  cr_assert(eq(type(GoSlice),slice1,slice));
+  cr_assert(eq(u8[20], slice.data, h));
 }
 
 Test(hash,TestSHA256Set){
@@ -132,24 +125,22 @@ Test(hash,TestSHA256Hex){
   memset(&h, 0, sizeof(h));
   randBytes(&slice,32);
   SKY_cipher_SHA256_Set(&h,slice);
-  GoString_ s;
+  GoString s;
 
-  SKY_cipher_SHA256_Hex(&h,&s);
+  SKY_cipher_SHA256_Hex(&h, (GoString_ *)&s);
   registerMemCleanup(s.p);
 
   SHA256 h2;
 
-  error = SKY_cipher_SHA256FromHex( (*((GoString*)&s)),&h2 );
-
-  GoString_ s2;
-
-  SKY_cipher_SHA256_Hex(&h2,&s2);
-  registerMemCleanup(s2.p);
-
+  error = SKY_cipher_SHA256FromHex(s, &h2 );
+  cr_assert(error == SKY_OK);
   cr_assert(eq(u8[32],h,h2));
 
-  cr_assert(eq(type(GoString_),s,s2));
+  GoString s2;
 
+  SKY_cipher_SHA256_Hex(&h2, (GoString_ *) &s2);
+  registerMemCleanup(s2.p);
+  cr_assert(eq(type(GoString),s,s2));
 }
 
 Test(hash,TestSHA256KnownValue){

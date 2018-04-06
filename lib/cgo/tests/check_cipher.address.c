@@ -158,8 +158,9 @@ Test (cipher, TestBitcoinAddress1){
   cr_assert(error == SKY_OK);
   GoString pubkeyStr = { "034f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aa", 66 };
   GoString s1;
-  SKY_cipher_PubKey_Hex(&pubkey, ((GoString_*)&s1));
 
+  SKY_cipher_PubKey_Hex(&pubkey, (GoString_ *) &s1);
+  registerMemCleanup((void *) s1.p);
   cr_assert(eq(type(GoString), pubkeyStr, s1));
   GoString bitcoinStr = {"1Q1pE5vPGEEMqRcVRMbtBK842Y6Pzo6nK9",34};
   GoString_ s2;

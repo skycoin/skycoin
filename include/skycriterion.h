@@ -12,6 +12,9 @@ extern char *cr_user_Address_tostr(Address *addr1);
 extern int cr_user_Address_noteq(Address *addr1, Address *addr2);
 
 extern int cr_user_GoString_eq(GoString *string1, GoString *string2);
+
+extern int cr_user_GoString__eq(GoString_ *string1, GoString_ *string2);
+
 extern char *cr_user_GoString_tostr(GoString *string);
 extern char *cr_user_GoString__tostr(GoString_ *string) ;
 

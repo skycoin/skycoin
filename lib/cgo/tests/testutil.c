@@ -38,3 +38,9 @@ void fprintbuff(FILE *f, void *buff, size_t n) {
   fprintf(f, "]");
 }
 
+
+void toGoString(GoString_ *s, GoString *r){
+GoString * tmp = r;
+  
+  *tmp = (*(GoString *) s);
+}

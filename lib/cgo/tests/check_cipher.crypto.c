@@ -119,7 +119,7 @@ Test(asserts, TestPubKeyVerify) {
     cr_assert(errcode == SKY_OK);
     errcode = SKY_cipher_PubKey_Verify(&p);
     cr_assert(errcode == SKY_ERROR);
-  } 
+  }
 }
 
 Test(asserts, TestPubKeyVerifyNil) {
@@ -723,6 +723,7 @@ Test(asserts, TestPubKeyToAddress2) {
     SKY_cipher_SumSHA256(b, &h);
     errcode = SKY_cipher_TestSecKeyHash(&sk, &h);
     cr_assert(errcode == SKY_OK);
+
 
     memset(&sk, 0, sizeof(sk));
     errcode = SKY_cipher_TestSecKeyHash(&sk, &h);

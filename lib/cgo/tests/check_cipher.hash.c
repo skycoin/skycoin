@@ -145,6 +145,7 @@ Test(hash,TestSHA256Hex){
 
 Test(hash,TestSHA256KnownValue){
 
+
   typedef struct 
   {
     char *input;

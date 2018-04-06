@@ -45,7 +45,7 @@ if (strlen(string1->p) != strlen(string2->p) ) return 0;
 char *cr_user_GoString_tostr(GoString *string)
 {
   char *out;
-  cr_asprintf(&out, "(GoString) { .Data = %s, .Length = %d }",  &string->p, string->n);
+  cr_asprintf(&out, "(GoString) { .Data = %s, .Length = %d }",  string->p, string->n);
   return out;
 };
 

@@ -7,7 +7,6 @@
 #include "libskycoin.h"
 #include "skyerrors.h"
 #include "skytest.h"
-#include "libsky_string.h"
 
 void freshSumRipemd160(GoSlice bytes, Ripemd160* rp160){
 
@@ -154,7 +153,7 @@ cr_assert(eq(type(GoString_),s,s2));
 
 Test(hash,TestSHA256KnownValue){
 
-	typedef struct 
+	typedef struct
 	{
 		 char *input;
 		 char *output;

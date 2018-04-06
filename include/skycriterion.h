@@ -33,8 +33,5 @@ extern int cr_user_SHA256_noteq(SHA256 *sh1, SHA256 *sh2);
 extern int cr_user_SHA256_eq(SHA256 *sh1, SHA256 *sh2);
 extern char *cr_user_SHA256_tostr(SHA256 *sh1);
 
-extern int cr_user_char_eq(unsigned char *string1, unsigned char *string2);
-extern int cr_user_char_noteq(unsigned char *string1, unsigned char *string2);
-extern char *cr_user_char_tostr(unsigned char *string1);
 
 #endif //LIBCRITERION_H

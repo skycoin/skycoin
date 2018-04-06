@@ -111,23 +111,6 @@ Test(cipher, TestAddressVerify){
 
 Test(cipher,TestAddressString){
 
-  SecKey seckey;
-  PubKey pubkey;
-  Address addr1, addr2, addr3;
-  GoString strAddr, strAddr2;
-
-  SKY_cipher_GenerateKeyPair(&pubkey,&seckey);
-  SKY_cipher_AddressFromPubKey(&pubkey,&addr1);
-  SKY_cipher_Address_String(&addr1,&strAddr);
-  registerMemCleanup((void *) strAddr.p);
-
-  int error = SKY_cipher_DecodeBase58Address(strAddr,&addr2);
-  cr_assert(error == SKY_OK);
-  cr_assert(eq(type(Address), addr1, addr2));
-
-  SKY_cipher_Address_String(&addr2,&strAddr2);
-  cr_assert(SKY_cipher_DecodeBase58Address(strAddr2, &addr3)== SKY_OK);
-  cr_assert(eq(type(Address), addr3, addr2));
 }
 
 Test (cipher, TestBitcoinAddress1){

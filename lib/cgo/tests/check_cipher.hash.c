@@ -39,7 +39,7 @@ Test(cipher,TestHashRipemd160){
 
   SKY_cipher_HashRipemd160(slice1,&rp2);
 
-  cr_assert( strcmp((char *)rp1,(char *)rp2) !=0   );
+  cr_assert(not(eq(u8[32],rp1,rp2)));
 
   unsigned char buff2[257];
   GoSlice slice2;
@@ -48,11 +48,11 @@ Test(cipher,TestHashRipemd160){
 
   SKY_cipher_HashRipemd160(slice2,&rp3);
 
-  cr_assert(eq(u8[32],rp1,rp2));
+  cr_assert(eq(u8[32],rp3,rp2));
 
   freshSumRipemd160(slice2,&rp3);
 
-  cr_assert(eq(u8[32],rp1,rp2));
+  cr_assert(eq(u8[32],rp3,rp2));
 }
 
 Test(hash,TestRipemd160Set){
@@ -82,7 +82,8 @@ Test(hash,TestRipemd160Set){
   randBytes(&slice,20);
   error = SKY_cipher_Ripemd160_Set(&h,slice);
   cr_assert(error == SKY_OK);
-  cr_assert(eq(u8[20], slice.data, h));
+  printf(slice.data);
+  cr_assert(eq(u8[21], slice.data, h));
 }
 
 Test(hash,TestSHA256Set){

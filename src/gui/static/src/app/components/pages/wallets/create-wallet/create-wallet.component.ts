@@ -33,7 +33,7 @@ export class CreateWalletComponent implements OnInit {
   }
 
   generateSeed() {
-    this.walletService.generateSeed().subscribe(seed => this.form.controls.seed.setValue(seed));
+    this.walletService.generateSeed().subscribe(seed => this.form.controls.seed.setValue(seed, { emitEvent: false }));
   }
 
   private initForm() {

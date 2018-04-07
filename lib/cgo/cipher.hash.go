@@ -17,9 +17,9 @@ import (
 import "C"
 
 //export SKY_cipher_Ripemd160_Set
-func SKY_cipher_Ripemd160_Set(_rd *C.Ripemd160, _b []byte) (retVal uint32) {
+func SKY_cipher_Ripemd160_Set(_rd *C.Ripemd160, _b []byte) (errcode uint32) {
 	defer func() {
-		retVal = catchApiPanic(recover())
+		errcode = catchApiPanic(errcode, recover())
 	}()
 
 	rd := (*cipher.Ripemd160)(unsafe.Pointer(_rd))
@@ -36,9 +36,9 @@ func SKY_cipher_HashRipemd160(_data []byte, _arg1 *C.Ripemd160) {
 }
 
 //export SKY_cipher_SHA256_Set
-func SKY_cipher_SHA256_Set(_g *C.SHA256, _b []byte) (retVal uint32) {
+func SKY_cipher_SHA256_Set(_g *C.SHA256, _b []byte) (errcode uint32) {
 	defer func() {
-		retVal = catchApiPanic(recover())
+		errcode = catchApiPanic(errcode, recover())
 	}()
 
 	g := (*cipher.SHA256)(unsafe.Pointer(_g))
@@ -63,9 +63,9 @@ func SKY_cipher_SHA256_Xor(_g *C.SHA256, _b *C.SHA256, _arg1 *C.SHA256) {
 }
 
 //export SKY_cipher_SumSHA256
-func SKY_cipher_SumSHA256(_b []byte, _arg1 *C.SHA256) (retVal uint32) {
+func SKY_cipher_SumSHA256(_b []byte, _arg1 *C.SHA256) (errcode uint32) {
 	defer func() {
-		retVal = catchApiPanic(recover())
+		errcode = catchApiPanic(errcode, recover())
 	}()
 
 	h := cipher.SumSHA256(_b)

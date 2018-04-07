@@ -22,11 +22,11 @@ import (
 //export SKY_cipher_DecodeBase58Address
 func SKY_cipher_DecodeBase58Address(_addr string, _arg1 *C.Address) uint32 {
 	addr, err := cipher.DecodeBase58Address(_addr)
-	errorcode := libErrorCode(err)
+	errcode := libErrorCode(err)
 	if err == nil {
 		*_arg1 = *(*C.Address)(unsafe.Pointer(&addr))
 	}
-	return errorcode
+	return errcode
 }
 
 //export SKY_cipher_AddressFromPubKey
@@ -48,11 +48,11 @@ func SKY_cipher_AddressFromSecKey(_secKey *C.SecKey, _arg1 *C.Address) {
 //export SKY_cipher_BitcoinDecodeBase58Address
 func SKY_cipher_BitcoinDecodeBase58Address(_addr string, _arg1 *C.Address) uint32 {
 	addr, err := cipher.BitcoinDecodeBase58Address(_addr)
-	errorcode := libErrorCode(err)
+	errcode := libErrorCode(err)
 	if err == nil {
 		*_arg1 = *(*C.Address)(unsafe.Pointer(&addr))
 	}
-	return errorcode
+	return errcode
 }
 
 //export SKY_cipher_Address_Bytes
@@ -140,19 +140,19 @@ func SKY_cipher_BitcoinWalletImportFormatFromSeckey(_seckey *C.SecKey, _arg1 *C.
 //export SKY_cipher_BitcoinAddressFromBytes
 func SKY_cipher_BitcoinAddressFromBytes(_b []byte, _arg1 *C.Address) uint32 {
 	addr, err := cipher.BitcoinAddressFromBytes(_b)
-	errorcode := libErrorCode(err)
+	errcode := libErrorCode(err)
 	if err == nil {
 		*_arg1 = *(*C.Address)(unsafe.Pointer(&addr))
 	}
-	return errorcode
+	return errcode
 }
 
 //export SKY_cipher_SecKeyFromWalletImportFormat
 func SKY_cipher_SecKeyFromWalletImportFormat(_input string, _arg1 *C.SecKey) uint32 {
 	seckey, err := cipher.SecKeyFromWalletImportFormat(_input)
-	errorcode := libErrorCode(err)
+	errcode := libErrorCode(err)
 	if err == nil {
 		*_arg1 = *(*C.SecKey)(unsafe.Pointer(&seckey))
 	}
-	return errorcode
+	return errcode
 }

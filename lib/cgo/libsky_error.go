@@ -17,12 +17,23 @@ func libErrorCode(err error) uint32 {
 	return SKY_ERROR
 }
 
-func catchApiPanic(err interface{}) (retVal uint32) {
-	retVal = SKY_OK
+// Catch panic signals emitted by internal implementation
+// of API methods. This function is mainly used in defer statements
+// exceuted immediately before returning from API calls.
+//
+// @param errcode error status in function body
+// @param err			`recover()` result
+//
+func catchApiPanic(errcode uint32, err interface{}) uint32 {
+	if errcode != SKY_OK {
+		// Error already detected in function body
+		// Return right away
+		return errcode
+	}
 	if err != nil {
 		fmt.Printf("API panic detected : %v\n", err)
 		// TODO: Fix to be like retVal = libErrorCode(err)
-		retVal = SKY_ERROR
+		return SKY_ERROR
 	}
-	return
+	return SKY_OK
 }

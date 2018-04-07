@@ -7,6 +7,7 @@ import { Observable } from 'rxjs/Observable';
 import { ApiService } from '../../../services/api.service';
 import { Http } from '@angular/http';
 import { AppService } from '../../../services/app.service';
+import { IntervalObservable } from 'rxjs/observable/IntervalObservable';
 
 @Component({
   selector: 'app-header',
@@ -25,6 +26,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   version: string;
   releaseVersion: string;
   updateAvailable: boolean;
+  hasPendingTxs: boolean;
 
   private price: number;
   private priceSubscription: Subscription;
@@ -47,7 +49,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
     private priceService: PriceService,
     private walletService: WalletService,
     private http: Http,
-  ) {}
+  ) {
+    IntervalObservable.create(10000)
+      .subscribe(() => this.checkPendingTxs());
+  }
 
   ngOnInit() {
     this.setVersion();
@@ -86,6 +91,12 @@ export class HeaderComponent implements OnInit, OnDestroy {
         this.version = output.version;
         this.retrieveReleaseVersion();
       });
+  }
+
+  checkPendingTxs() {
+    this.walletService.pendingTransactions().subscribe(txs => {
+      this.hasPendingTxs = txs.length > 0;
+    });
   }
 
   private higherVersion(first: string, second: string): boolean {

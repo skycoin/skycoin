@@ -131,7 +131,7 @@ func SKY_cipher_NewSecKey(_b []byte, _arg1 *C.SecKey) (retVal uint32) {
 func SKY_cipher_SecKeyFromHex(_s string, _arg1 *C.SecKey) uint32 {
 	sk, err := cipher.SecKeyFromHex(_s)
 	errcode := libErrorCode(err)
-	if err != nil {
+	if err == nil {
 		copyToBuffer(reflect.ValueOf(sk[:]), unsafe.Pointer(_arg1), uint(SizeofSecKey))
 	}
 	return errcode

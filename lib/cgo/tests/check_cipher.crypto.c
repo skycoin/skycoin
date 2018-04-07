@@ -269,14 +269,16 @@ Test(asserts, TestMustSecKeyFromHex) {
   b.data = buff;
   b.cap = 50;
   randBytes((GoSlice_ *)&b, 32);
-  SKY_cipher_NewSecKey(b, &sk);
-  strnhex(sk, strBuff, 32);
+  errcode = SKY_cipher_NewSecKey(b, &sk);
+  cr_assert(errcode == SKY_OK);
+  strnhex(sk, strBuff, 16);
   s.p = strBuff;
-  s.n = strlen(strBuff) >> 1;
+  s.n = strlen(strBuff);
   errcode = SKY_cipher_SecKeyFromHex(s, &sk1);
   cr_assert(errcode == SKY_ERROR);
 
   // Valid
+  strnhex(sk, strBuff, 32);
   s.p = strBuff;
   s.n = strlen(strBuff);
   errcode = SKY_cipher_SecKeyFromHex(s, &sk1);
@@ -546,7 +548,7 @@ Test(asserts, TestChkSig) {
   cr_assert(errcode == SKY_OK);
   errcode = SKY_cipher_ChkSig(&addr2, &h, &sig2);
   cr_assert(errcode == SKY_OK);
-  cr_assert(ne(u8[65], sig, sig2));
+  cr_assert(not(eq(u8[65], sig, sig2)));
 
   // Bad address should be invalid
   errcode = SKY_cipher_ChkSig(&addr, &h, &sig2);

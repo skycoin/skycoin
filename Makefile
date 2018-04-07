@@ -134,7 +134,7 @@ install-deps-libc: configure-build ## Install locally dependencies for testing l
 	unzip $(BUILD_DIR)/usr/tmp/criterion-bleeding-branch.zip -d $(BUILD_DIR)/usr/tmp/
 	cd $(BUILD_DIR)/usr/tmp/Criterion-bleeding
 	mkdir $(BUILD_DIR)/usr/tmp/Criterion-bleeding/.build
-	cd .build
+	cd $(BUILD_DIR)/usr/tmp/Criterion-bleeding/.build
 	cmake $(BUILD_DIR)/usr/tmp/Criterion-bleeding/.build
 	cmake --build $(BUILD_DIR)/usr/tmp/Criterion-bleeding/.build
 	make install $(BUILD_DIR)/usr/tmp/Criterion-bleeding/.build

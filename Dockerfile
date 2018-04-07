@@ -31,7 +31,7 @@ ENV COIN="skycoin" \
     WALLET_NAME="$COIN_cli.wlt"
 
 # create directories and set ownership
-RUN mkdir -p $DATA_DIR $WALLET_DIR && chown skycoin $DATA_DIR $WALLET_DIR
+RUN mkdir -p $DATA_DIR $WALLET_DIR
 
 
 # copy binaries

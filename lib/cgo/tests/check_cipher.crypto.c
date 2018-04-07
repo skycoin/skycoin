@@ -389,7 +389,7 @@ Test(asserts, TestNewSig) {
   b.cap = 101;
 
   randBytes((GoSlice_ *)&b, 64);
-  SKY_cipher_NewSig(b, &s);
+  errcode = SKY_cipher_NewSig(b, &s);
   cr_assert(errcode == SKY_ERROR);
 
   randBytes((GoSlice_ *)&b, 66);
@@ -436,14 +436,16 @@ Test(asserts, TestMustSigFromHex) {
   // Invalid hex length
   randBytes((GoSlice_ *)&b, 65);
   errcode = SKY_cipher_NewSig(b, &s);
-  strnhex(buff, (char *) str.p, b.len >> 1);
+  str.p = strBuff;
+  str.n = 0;
+  strnhex(b.data, (char *) str.p, b.len >> 1);
   str.n = strlen(str.p);
 
   errcode = SKY_cipher_SigFromHex(str, &s);
   cr_assert(errcode == SKY_ERROR);
 
   // Valid
-  strnhex(buff, (char *)str.p, b.len);
+  strnhex(b.data, (char *)str.p, b.len);
   str.n = strlen(str.p);
   errcode = SKY_cipher_SigFromHex(str, &s);
   cr_assert(errcode == SKY_OK);

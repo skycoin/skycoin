@@ -5,3 +5,7 @@ mat-card {
 ngx-datatable {
   margin: 0 20px;
 }
+
+button.in-table {
+  margin-top: -0.9rem;
+}

@@ -87,7 +87,7 @@ func SKY_cipher_PubKeyFromSig(_sig *C.Sig, _hash *C.SHA256, _arg2 *C.PubKey) uin
 	pubkey, err := cipher.PubKeyFromSig(*sig, *hash)
 
 	errcode := libErrorCode(err)
-	if err != nil {
+	if err == nil {
 		copyToBuffer(reflect.ValueOf(pubkey[:]), unsafe.Pointer(_arg2), uint(SizeofPubKey))
 	}
 	return errcode
@@ -175,7 +175,7 @@ func SKY_cipher_NewSig(_b []byte, _arg1 *C.Sig) (errcode uint32) {
 func SKY_cipher_SigFromHex(_s string, _arg1 *C.Sig) uint32 {
 	s, err := cipher.SigFromHex(_s)
 	errcode := libErrorCode(err)
-	if err != nil {
+	if err == nil {
 		copyToBuffer(reflect.ValueOf(s[:]), unsafe.Pointer(_arg1), uint(SizeofSig))
 	}
 	return errcode

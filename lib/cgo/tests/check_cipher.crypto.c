@@ -619,14 +619,10 @@ Test(asserts, TestPubKeyFromSig) {
 
   SKY_cipher_GenerateKeyPair(&pk, &sk);
 
-  fprintbuff(stdout, &pk, sizeof(pk));
-
   randBytes((GoSlice_ *)&b, 256);
   SKY_cipher_SumSHA256(b, &h);
   SKY_cipher_SignHash(&h, &sk, &sig);
   errcode = SKY_cipher_PubKeyFromSig(&sig, &h, &pk2);
-
-  fprintbuff(stdout, &pk2, sizeof(pk2));
 
   cr_assert(errcode == SKY_OK);
   cr_assert(eq(u8[33], pk, pk2));

@@ -133,14 +133,14 @@ install-deps-libc: configure-build ## Install locally dependencies for testing l
 	# tar -x -C $(BUILD_DIR)/usr/tmp/ -j -f $(BUILD_DIR)/usr/tmp/criterion-v2.3.2-$(OSNAME)-x86_64.tar.bz2
 	unzip $(BUILD_DIR)/usr/tmp/criterion-bleeding-branch.zip -d $(BUILD_DIR)/usr/tmp/
 	cd $(BUILD_DIR)/usr/tmp/Criterion-bleeding
-	mkdir .build
+	mkdir $(BUILD_DIR)/usr/tmp/Criterion-bleeding/.build
 	cd .build
-	cmake ..
-	cmake --build .
-	make install
-	ls $(BUILD_DIR)/usr/tmp/Criterion-bleeding/include
-	ls -1 $(BUILD_DIR)/usr/tmp/Criterion-bleeding/lib     | xargs -I NAME mv $(BUILD_DIR)/usr/tmp/Criterion-bleeding/lib/NAME     $(BUILD_DIR)/usr/lib/NAME
-	ls -1 $(BUILD_DIR)/usr/tmp/Criterion-bleeding/include | xargs -I NAME mv $(BUILD_DIR)/usr/tmp/Criterion-bleeding/include/NAME $(BUILD_DIR)/usr/include/NAME
+	cmake $(BUILD_DIR)/usr/tmp/Criterion-bleeding/.build
+	cmake --build $(BUILD_DIR)/usr/tmp/Criterion-bleeding/.build
+	make install $(BUILD_DIR)/usr/tmp/Criterion-bleeding/.build
+	ls $(BUILD_DIR)/usr/tmp/Criterion-bleeding/.build/include
+	ls -1 $(BUILD_DIR)/usr/tmp/Criterion-bleeding/.build/lib     | xargs -I NAME mv $(BUILD_DIR)/usr/tmp/Criterion-bleeding/.build/lib/NAME     $(BUILD_DIR)/usr/lib/NAME
+	ls -1 $(BUILD_DIR)/usr/tmp/Criterion-bleeding/.build/include | xargs -I NAME mv $(BUILD_DIR)/usr/tmp/Criterion-bleeding/.build/include/NAME $(BUILD_DIR)/usr/include/NAME
 
 format: ## Formats the code. Must have goimports installed (use make install-linters).
 	goimports -w -local github.com/skycoin/skycoin ./cmd

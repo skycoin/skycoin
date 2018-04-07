@@ -465,14 +465,10 @@ Test(asserts, TestSigHex) {
   randBytes((GoSlice_ *)&b, 65);
   errcode = SKY_cipher_NewSig(b, &s);
 
-  fprintbuff(stdout, (void *) &s, sizeof(s));
-
   cr_assert(errcode == SKY_OK);
   SKY_cipher_Sig_Hex(&s, (GoString_ *) &str);
   registerMemCleanup((void *) str.p);
   errcode = SKY_cipher_SigFromHex(str, &s2);
-
-  fprintbuff(stdout, (void *) &s2, sizeof(s2));
 
   cr_assert(errcode == SKY_OK);
   cr_assert(eq(u8[65], s, s2));

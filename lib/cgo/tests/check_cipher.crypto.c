@@ -320,9 +320,9 @@ Test(asserts, TestSecKeyVerify) {
   int errcode;
 
   // Empty secret key should not be valid
-  memset(&sk, 0, 32);
+  memset(sk, 0, 32);
   errcode = SKY_cipher_SecKey_Verify(&sk);
-  cr_assert(errcode == SKY_OK);
+  cr_assert(errcode == SKY_ERROR);
 
   // Generated sec key should be valid
   SKY_cipher_GenerateKeyPair(&pk, &sk);
@@ -563,7 +563,7 @@ Test(asserts, TestSignHash) {
   PubKey pk;
   SecKey sk;
   Address addr;
-  unsigned char buff[101];
+  unsigned char buff[257];
   GoSlice b = { buff, 0, 101 };
   SHA256 h;
   Sig sig, sig2;
@@ -571,6 +571,7 @@ Test(asserts, TestSignHash) {
 
   SKY_cipher_GenerateKeyPair(&pk, &sk);
   SKY_cipher_AddressFromPubKey(&pk, &addr);
+
   randBytes((GoSlice_ *)&b, 256);
   SKY_cipher_SumSHA256(b, &h);
   SKY_cipher_SignHash(&h, &sk, &sig);
@@ -702,11 +703,11 @@ Test(asserts, TestSecKeTest) {
   int errcode;
 
   SKY_cipher_GenerateKeyPair(&pk, &sk);
-  SKY_cipher_TestSecKey(&sk);
+  errcode = SKY_cipher_TestSecKey(&sk);
   cr_assert(errcode == SKY_OK);
 
   memset(&sk, 0, sizeof(sk));
-  SKY_cipher_TestSecKey(&sk);
+  errcode = SKY_cipher_TestSecKey(&sk);
   cr_assert(errcode == SKY_ERROR);
 }
 

@@ -31,8 +31,9 @@ func SKY_cipher_DecodeBase58Address(_addr string, _arg1 *C.Address) uint32 {
 
 //export SKY_cipher_AddressFromPubKey
 func SKY_cipher_AddressFromPubKey(_pubKey *C.PubKey, _arg1 *C.Address) {
-	pubKey := *(*cipher.PubKey)(unsafe.Pointer(_pubKey))
-	addr := cipher.AddressFromPubKey(pubKey)
+	pubKey := (*cipher.PubKey)(unsafe.Pointer(_pubKey))
+
+	addr := cipher.AddressFromPubKey(*pubKey)
 	*_arg1 = *(*C.Address)(unsafe.Pointer(&addr))
 }
 

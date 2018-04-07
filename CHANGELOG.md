@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Implemented `scrypt-chacha20poly1305` for wallet encryption
 - Implemented `sha256xor` for wallet encryption
 - Add new field of `secrets` to wallet, which records all encrypted sensitive data like seed, public/private keys.
+- Adds Dockerfile in docker/images/skycoindev to build a docker image suitable for development.
 
 ### Fixed
 

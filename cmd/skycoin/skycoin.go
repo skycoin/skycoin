@@ -275,7 +275,7 @@ var devConfig = Config{
 	RPCInterfaceAddr: "127.0.0.1",
 	RPCThreadNum:     5,
 
-	LaunchBrowser: true,
+	LaunchBrowser: false,
 	// Data directory holds app data -- defaults to ~/.skycoin
 	DataDirectory: filepath.Join(home, ".skycoin"),
 	// Web GUI static resources

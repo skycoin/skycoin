@@ -12,11 +12,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/fee"
-	"github.com/stretchr/testify/require"
 )
 
 func prepareWltDir() string {
@@ -41,9 +42,9 @@ func TestNewService(t *testing.T) {
 		t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
 			dir := prepareWltDir()
 			s, err := NewService(Config{
-				WalletDir:        dir,
-				CryptoType:       ct,
-				DisableWalletAPI: false,
+				WalletDir:       dir,
+				CryptoType:      ct,
+				EnableWalletAPI: true,
 			})
 			require.NoError(t, err)
 
@@ -57,9 +58,9 @@ func TestNewService(t *testing.T) {
 
 			// test load wallets
 			s, err = NewService(Config{
-				WalletDir:        "./testdata",
-				CryptoType:       ct,
-				DisableWalletAPI: false,
+				WalletDir:       "./testdata",
+				CryptoType:      ct,
+				EnableWalletAPI: true,
 			})
 			require.NoError(t, err)
 
@@ -78,35 +79,35 @@ func TestNewService(t *testing.T) {
 
 func TestServiceCreateWallet(t *testing.T) {
 	tt := []struct {
-		name             string
-		encrypt          bool
-		password         []byte
-		disableWalletAPI bool
-		err              error
+		name            string
+		encrypt         bool
+		password        []byte
+		enableWalletAPI bool
+		err             error
 	}{
 		{
-			name:             "encrypt=true password=pwd",
-			encrypt:          true,
-			password:         []byte("pwd"),
-			disableWalletAPI: false,
+			name:            "encrypt=true password=pwd",
+			encrypt:         true,
+			password:        []byte("pwd"),
+			enableWalletAPI: true,
 		},
 		{
-			name:             "encrypt=true password=pwd",
-			encrypt:          true,
-			password:         []byte("pwd"),
-			disableWalletAPI: true,
-			err:              ErrWalletAPIDisabled,
+			name:            "encrypt=true password=pwd",
+			encrypt:         true,
+			password:        []byte("pwd"),
+			enableWalletAPI: false,
+			err:             ErrWalletAPIDisabled,
 		},
 		{
-			name:             "encrypt=false",
-			encrypt:          false,
-			disableWalletAPI: false,
+			name:            "encrypt=false",
+			encrypt:         false,
+			enableWalletAPI: true,
 		},
 		{
-			name:             "encrypt=false",
-			encrypt:          false,
-			disableWalletAPI: true,
-			err:              ErrWalletAPIDisabled,
+			name:            "encrypt=false",
+			encrypt:         false,
+			enableWalletAPI: false,
+			err:             ErrWalletAPIDisabled,
 		},
 	}
 	for _, tc := range tt {
@@ -114,9 +115,9 @@ func TestServiceCreateWallet(t *testing.T) {
 			t.Run(fmt.Sprintf("%v crypto=%v", tc.name, ct), func(t *testing.T) {
 				dir := prepareWltDir()
 				s, err := NewService(Config{
-					WalletDir:        dir,
-					CryptoType:       ct,
-					DisableWalletAPI: tc.disableWalletAPI,
+					WalletDir:       dir,
+					CryptoType:      ct,
+					EnableWalletAPI: tc.enableWalletAPI,
 				})
 				require.NoError(t, err)
 
@@ -254,9 +255,9 @@ func TestServiceLoadWallet(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				dir := prepareWltDir()
 				s, err := NewService(Config{
-					WalletDir:        dir,
-					CryptoType:       ct,
-					DisableWalletAPI: false,
+					WalletDir:       dir,
+					CryptoType:      ct,
+					EnableWalletAPI: true,
 				})
 				require.NoError(t, err)
 				wltName := newWalletFilename()
@@ -391,9 +392,9 @@ func TestServiceNewAddress(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				dir := prepareWltDir()
 				s, err := NewService(Config{
-					WalletDir:        dir,
-					CryptoType:       ct,
-					DisableWalletAPI: tc.walletAPIDisabled,
+					WalletDir:       dir,
+					CryptoType:      ct,
+					EnableWalletAPI: !tc.walletAPIDisabled,
 				})
 				require.NoError(t, err)
 
@@ -450,18 +451,18 @@ func TestServiceNewAddress(t *testing.T) {
 }
 
 func TestServiceGetAddress(t *testing.T) {
-	for _, disableWalletAPI := range []bool{true, false} {
+	for _, enableWalletAPI := range []bool{true, false} {
 		for ct := range cryptoTable {
-			t.Run(fmt.Sprintf("disable wallet api=%v crypto=%v", disableWalletAPI, ct), func(t *testing.T) {
+			t.Run(fmt.Sprintf("enable wallet api=%v crypto=%v", enableWalletAPI, ct), func(t *testing.T) {
 				dir := prepareWltDir()
 				s, err := NewService(Config{
-					WalletDir:        dir,
-					CryptoType:       ct,
-					DisableWalletAPI: disableWalletAPI,
+					WalletDir:       dir,
+					CryptoType:      ct,
+					EnableWalletAPI: enableWalletAPI,
 				})
 				require.NoError(t, err)
 
-				if disableWalletAPI {
+				if !enableWalletAPI {
 					dirIsEmpty(t, dir)
 
 					require.Empty(t, s.wallets)
@@ -470,10 +471,9 @@ func TestServiceGetAddress(t *testing.T) {
 					require.Equal(t, 0, len(addrs))
 					return
 				}
-				// get the defaut wallet
-				var w *Wallet
-				for _, w = range s.wallets {
-				}
+
+				// get the default wallet
+				w := s.wallets[len(s.wallets)-1]
 
 				addrs, err := s.GetAddresses(w.Filename())
 				require.NoError(t, err)
@@ -490,19 +490,19 @@ func TestServiceGetAddress(t *testing.T) {
 }
 
 func TestServiceGetWallet(t *testing.T) {
-	for _, disableWalletAPI := range []bool{true, false} {
+	for _, enableWalletAPI := range []bool{true, false} {
 		for ct := range cryptoTable {
-			t.Run(fmt.Sprintf("disable wallet api=%v crypto=%v", disableWalletAPI, ct), func(t *testing.T) {
+			t.Run(fmt.Sprintf("enable wallet api=%v crypto=%v", enableWalletAPI, ct), func(t *testing.T) {
 				dir := prepareWltDir()
 
 				s, err := NewService(Config{
-					WalletDir:        dir,
-					CryptoType:       ct,
-					DisableWalletAPI: disableWalletAPI,
+					WalletDir:       dir,
+					CryptoType:      ct,
+					EnableWalletAPI: enableWalletAPI,
 				})
 				require.NoError(t, err)
 
-				if disableWalletAPI {
+				if !enableWalletAPI {
 					dirIsEmpty(t, dir)
 
 					require.Empty(t, s.wallets)
@@ -513,11 +513,8 @@ func TestServiceGetWallet(t *testing.T) {
 					return
 				}
 
-				// Get the defaut wallet
-				var w *Wallet
-				for _, w = range s.wallets {
-				}
-				require.NoError(t, err)
+				// Get the default wallet
+				w := s.wallets[len(s.wallets)-1]
 
 				w1, err := s.GetWallet(w.Filename())
 				require.NoError(t, err)
@@ -537,18 +534,18 @@ func TestServiceGetWallet(t *testing.T) {
 }
 
 func TestServiceGetWallets(t *testing.T) {
-	for _, disableWalletAPI := range []bool{true, false} {
+	for _, enableWalletAPI := range []bool{true, false} {
 		for ct := range cryptoTable {
-			t.Run(fmt.Sprintf("disable wallet=%v crypto=%v", disableWalletAPI, ct), func(t *testing.T) {
+			t.Run(fmt.Sprintf("enable wallet=%v crypto=%v", enableWalletAPI, ct), func(t *testing.T) {
 				dir := prepareWltDir()
 				s, err := NewService(Config{
-					WalletDir:        dir,
-					CryptoType:       ct,
-					DisableWalletAPI: disableWalletAPI,
+					WalletDir:       dir,
+					CryptoType:      ct,
+					EnableWalletAPI: enableWalletAPI,
 				})
 				require.NoError(t, err)
 
-				if disableWalletAPI {
+				if enableWalletAPI {
 					dirIsEmpty(t, dir)
 
 					require.Empty(t, s.wallets)
@@ -561,9 +558,7 @@ func TestServiceGetWallets(t *testing.T) {
 
 				var wallets []*Wallet
 				// Get the default wallet
-				var w1 *Wallet
-				for _, w1 = range s.wallets {
-				}
+				w1 := s.wallets[len(s.wallets)-1]
 				wallets = append(wallets, w1)
 
 				// Create a new wallet
@@ -592,9 +587,9 @@ func TestServiceReloadWalletsDisabledWalletAPI(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			dir := prepareWltDir()
 			s, err := NewService(Config{
-				WalletDir:        dir,
-				CryptoType:       ct,
-				DisableWalletAPI: true,
+				WalletDir:       dir,
+				CryptoType:      ct,
+				EnableWalletAPI: false,
 			})
 			require.NoError(t, err)
 			dirIsEmpty(t, dir)
@@ -611,9 +606,9 @@ func TestServiceReloadWallets(t *testing.T) {
 			dir := prepareWltDir()
 
 			s, err := NewService(Config{
-				WalletDir:        dir,
-				CryptoType:       ct,
-				DisableWalletAPI: false,
+				WalletDir:       dir,
+				CryptoType:      ct,
+				EnableWalletAPI: true,
 			})
 			require.NoError(t, err)
 
@@ -846,9 +841,9 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 
 				dir := prepareWltDir()
 				s, err := NewService(Config{
-					WalletDir:        dir,
-					CryptoType:       ct,
-					DisableWalletAPI: tc.disableWalletAPI,
+					WalletDir:       dir,
+					CryptoType:      ct,
+					EnableWalletAPI: !tc.disableWalletAPI,
 				})
 				require.NoError(t, err)
 
@@ -931,9 +926,9 @@ func TestServiceUpdateWalletLabel(t *testing.T) {
 				// Create the wallet service
 				dir := prepareWltDir()
 				s, err := NewService(Config{
-					WalletDir:        dir,
-					CryptoType:       ct,
-					DisableWalletAPI: tc.disableWalletAPI,
+					WalletDir:       dir,
+					CryptoType:      ct,
+					EnableWalletAPI: !tc.disableWalletAPI,
 				})
 				require.NoError(t, err)
 
@@ -1026,9 +1021,9 @@ func TestServiceEncryptWallet(t *testing.T) {
 				dir := prepareWltDir()
 				// Create the wallet service
 				s, err := NewService(Config{
-					WalletDir:        dir,
-					CryptoType:       ct,
-					DisableWalletAPI: tc.disableWalletAPI,
+					WalletDir:       dir,
+					CryptoType:      ct,
+					EnableWalletAPI: !tc.disableWalletAPI,
 				})
 				require.NoError(t, err)
 
@@ -1155,9 +1150,9 @@ func TestServiceDecryptWallet(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				dir := prepareWltDir()
 				s, err := NewService(Config{
-					WalletDir:        dir,
-					CryptoType:       ct,
-					DisableWalletAPI: tc.disableWalletAPI,
+					WalletDir:       dir,
+					CryptoType:      ct,
+					EnableWalletAPI: !tc.disableWalletAPI,
 				})
 				require.NoError(t, err)
 
@@ -1507,9 +1502,9 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				dir := prepareWltDir()
 				s, err := NewService(Config{
-					WalletDir:        dir,
-					CryptoType:       ct,
-					DisableWalletAPI: tc.disableWalletAPI,
+					WalletDir:       dir,
+					CryptoType:      ct,
+					EnableWalletAPI: !tc.disableWalletAPI,
 				})
 				require.NoError(t, err)
 
@@ -1622,10 +1617,10 @@ func TestGetWalletSeed(t *testing.T) {
 			t.Run(tc.name, func(t *testing.T) {
 				dir := prepareWltDir()
 				s, err := NewService(Config{
-					WalletDir:        dir,
-					CryptoType:       ct,
-					DisableWalletAPI: tc.disableWalletAPI,
-					EnableSeedAPI:    tc.enableSeedAPI,
+					WalletDir:       dir,
+					CryptoType:      ct,
+					EnableWalletAPI: !tc.disableWalletAPI,
+					EnableSeedAPI:   tc.enableSeedAPI,
 				})
 				require.NoError(t, err)
 

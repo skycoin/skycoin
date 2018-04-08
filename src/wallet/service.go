@@ -19,32 +19,32 @@ type BalanceGetter interface {
 // Service wallet service struct
 type Service struct {
 	sync.RWMutex
-	wallets          Wallets
-	firstAddrIDMap   map[string]string // Key: first address in wallet; Value: wallet id
-	walletDirectory  string
-	cryptoType       CryptoType
-	disableWalletAPI bool
-	enableSeedAPI    bool
+	wallets         Wallets
+	firstAddrIDMap  map[string]string // Key: first address in wallet; Value: wallet id
+	walletDirectory string
+	cryptoType      CryptoType
+	enableWalletAPI bool
+	enableSeedAPI   bool
 }
 
 // Config wallet service config
 type Config struct {
-	WalletDir        string
-	CryptoType       CryptoType
-	DisableWalletAPI bool
-	EnableSeedAPI    bool
+	WalletDir       string
+	CryptoType      CryptoType
+	EnableWalletAPI bool
+	EnableSeedAPI   bool
 }
 
 // NewService new wallet service
 func NewService(c Config) (*Service, error) {
 	serv := &Service{
-		firstAddrIDMap:   make(map[string]string),
-		cryptoType:       c.CryptoType,
-		disableWalletAPI: c.DisableWalletAPI,
-		enableSeedAPI:    c.EnableSeedAPI,
+		firstAddrIDMap:  make(map[string]string),
+		cryptoType:      c.CryptoType,
+		enableWalletAPI: c.EnableWalletAPI,
+		enableSeedAPI:   c.EnableSeedAPI,
 	}
 
-	if serv.disableWalletAPI {
+	if !serv.enableWalletAPI {
 		return serv, nil
 	}
 
@@ -95,7 +95,7 @@ func NewService(c Config) (*Service, error) {
 func (serv *Service) CreateWallet(wltName string, options Options) (*Wallet, error) {
 	serv.Lock()
 	defer serv.Unlock()
-	if serv.disableWalletAPI {
+	if !serv.enableWalletAPI {
 		return nil, ErrWalletAPIDisabled
 	}
 	if wltName == "" {
@@ -112,7 +112,7 @@ func (serv *Service) ScanAheadWalletAddresses(wltName string, password []byte, s
 	serv.Lock()
 	defer serv.Unlock()
 
-	if serv.disableWalletAPI {
+	if serv.enableWalletAPI {
 		return nil, ErrWalletAPIDisabled
 	}
 
@@ -218,7 +218,7 @@ func (serv *Service) generateUniqueWalletFilename() string {
 func (serv *Service) EncryptWallet(wltID string, password []byte) (*Wallet, error) {
 	serv.Lock()
 	defer serv.Unlock()
-	if serv.disableWalletAPI {
+	if serv.enableWalletAPI {
 		return nil, ErrWalletAPIDisabled
 	}
 
@@ -249,7 +249,7 @@ func (serv *Service) EncryptWallet(wltID string, password []byte) (*Wallet, erro
 func (serv *Service) DecryptWallet(wltID string, password []byte) (*Wallet, error) {
 	serv.Lock()
 	defer serv.Unlock()
-	if serv.disableWalletAPI {
+	if serv.enableWalletAPI {
 		return nil, ErrWalletAPIDisabled
 	}
 
@@ -286,7 +286,7 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]
 	serv.Lock()
 	defer serv.Unlock()
 
-	if serv.disableWalletAPI {
+	if serv.enableWalletAPI {
 		return nil, ErrWalletAPIDisabled
 	}
 
@@ -326,7 +326,7 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]
 func (serv *Service) GetAddresses(wltID string) ([]cipher.Address, error) {
 	serv.RLock()
 	defer serv.RUnlock()
-	if serv.disableWalletAPI {
+	if serv.enableWalletAPI {
 		return nil, ErrWalletAPIDisabled
 	}
 
@@ -342,7 +342,7 @@ func (serv *Service) GetAddresses(wltID string) ([]cipher.Address, error) {
 func (serv *Service) GetWallet(wltID string) (*Wallet, error) {
 	serv.RLock()
 	defer serv.RUnlock()
-	if serv.disableWalletAPI {
+	if serv.enableWalletAPI {
 		return nil, ErrWalletAPIDisabled
 	}
 
@@ -362,7 +362,7 @@ func (serv *Service) getWallet(wltID string) (*Wallet, error) {
 func (serv *Service) GetWallets() (Wallets, error) {
 	serv.RLock()
 	defer serv.RUnlock()
-	if serv.disableWalletAPI {
+	if serv.enableWalletAPI {
 		return nil, ErrWalletAPIDisabled
 	}
 
@@ -377,7 +377,7 @@ func (serv *Service) GetWallets() (Wallets, error) {
 func (serv *Service) ReloadWallets() error {
 	serv.Lock()
 	defer serv.Unlock()
-	if serv.disableWalletAPI {
+	if !serv.enableWalletAPI {
 		return ErrWalletAPIDisabled
 	}
 	wallets, err := LoadWallets(serv.walletDirectory)
@@ -396,7 +396,7 @@ func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, vld
 	headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
 	serv.RLock()
 	defer serv.RUnlock()
-	if serv.disableWalletAPI {
+	if serv.enableWalletAPI {
 		return nil, ErrWalletAPIDisabled
 	}
 
@@ -428,7 +428,7 @@ func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, vld
 func (serv *Service) UpdateWalletLabel(wltID, label string) error {
 	serv.Lock()
 	defer serv.Unlock()
-	if serv.disableWalletAPI {
+	if serv.enableWalletAPI {
 		return ErrWalletAPIDisabled
 	}
 
@@ -448,7 +448,7 @@ func (serv *Service) UpdateWalletLabel(wltID, label string) error {
 func (serv *Service) Remove(wltID string) error {
 	serv.Lock()
 	defer serv.Unlock()
-	if serv.disableWalletAPI {
+	if serv.enableWalletAPI {
 		return ErrWalletAPIDisabled
 	}
 
@@ -502,7 +502,7 @@ func (serv *Service) removeDup(wlts Wallets) Wallets {
 func (serv *Service) GetWalletSeed(wltID string, password []byte) (string, error) {
 	serv.RLock()
 	defer serv.RUnlock()
-	if serv.disableWalletAPI {
+	if serv.enableWalletAPI {
 		return "", ErrWalletAPIDisabled
 	}
 

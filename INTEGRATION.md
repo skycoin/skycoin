@@ -21,7 +21,7 @@ If your application is written in Go, you can use these client libraries to inte
 The wallet APIs in the REST API operate on wallets loaded from and saved to `~/.skycoin/wallets`.
 Use the CLI tool to perform seed generation and transaction signing outside of the Skycoin node.
 
-The Skycoin node's wallet APIs can be disabled with `-disable-wallet-api`.
+The Skycoin node's wallet APIs can be enabled with `-enable-wallet-api`.
 
 For a node used to support another application,
 it is recommended to use the REST API for blockchain queries and disable the wallet APIs,

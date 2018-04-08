@@ -801,8 +801,8 @@ func (m *GatewayerMock) InjectBroadcastTransaction(p0 coin.Transaction) error {
 
 }
 
-// IsWalletAPIDisabled mocked method
-func (m *GatewayerMock) IsWalletAPIDisabled() bool {
+// IsWalletAPIEnabled mocked method
+func (m *GatewayerMock) IsWalletAPIEnabled() bool {
 
 	ret := m.Called()
 

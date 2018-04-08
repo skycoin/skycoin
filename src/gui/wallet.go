@@ -116,11 +116,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		password := r.FormValue("password")
-		defer func() {
-			password = ""
-		}()
-		tx, err := gateway.Spend(wltID, []byte(password), coins, dst)
+		tx, err := gateway.Spend(wltID, []byte(r.FormValue("password")), coins, dst)
 		switch err {
 		case nil:
 		case fee.ErrTxnNoFee,
@@ -222,11 +218,16 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 				wh.Error400(w, fmt.Sprintf("invalid encrypt value: %v", err))
 				return
 			}
+		}
 
-			if encrypt && len(password) == 0 {
-				wh.Error400(w, "missing password")
-				return
-			}
+		if encrypt && len(password) == 0 {
+			wh.Error400(w, "missing password")
+			return
+		}
+
+		if !encrypt && len(password) > 0 {
+			wh.Error400(w, "encrypt must be true as password is provided")
+			return
 		}
 
 		scanNStr := r.FormValue("scan")

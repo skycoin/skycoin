@@ -394,6 +394,9 @@ func (c *Client) CreateWallet(seed, label string, scanN int, encrypt bool, passw
 	v.Add("label", label)
 	if encrypt {
 		v.Add("encrypt", "true")
+		if len(password) == 0 {
+			return nil, errors.New("missing password")
+		}
 		v.Add("password", password)
 	}
 
@@ -512,11 +515,14 @@ func (c *Client) NewSeed(entropy int) (string, error) {
 // GetWalletSeed returns seed of wallet of given id,
 // returns ErrWalletNotEncrypted if the wallet is not encrypted.
 func (c *Client) GetWalletSeed(id string, password string) (string, error) {
+	if len(password) == 0 {
+		return "", errors.New("missing password")
+	}
+
 	v := url.Values{}
 	v.Add("id", id)
-	if len(password) > 0 {
-		v.Add("password", password)
-	}
+	v.Add("password", password)
+
 	endpoint := "/wallet/seed?" + v.Encode()
 
 	var r struct {
@@ -741,6 +747,10 @@ func (c *Client) UnloadWallet(id string) error {
 
 // EncryptWallet encrypts specific wallet with given password
 func (c *Client) EncryptWallet(id string, password string) (*wallet.ReadableWallet, error) {
+	if len(password) == 0 {
+		return nil, errors.New("missing password")
+	}
+
 	v := url.Values{}
 	v.Add("id", id)
 	v.Add("password", password)
@@ -754,6 +764,9 @@ func (c *Client) EncryptWallet(id string, password string) (*wallet.ReadableWall
 
 // DecryptWallet decrypts wallet by making a request to /wallet/decrypt
 func (c *Client) DecryptWallet(id string, password string) (*wallet.ReadableWallet, error) {
+	if len(password) == 0 {
+		return nil, errors.New("missing password")
+	}
 	v := url.Values{}
 	v.Add("id", id)
 	v.Add("password", password)

@@ -24,6 +24,7 @@ type Service struct {
 	walletDirectory  string
 	cryptoType       CryptoType
 	disableWalletAPI bool
+	disableSeedAPI   bool
 }
 
 // Config wallet service config
@@ -31,6 +32,7 @@ type Config struct {
 	WalletDir        string
 	CryptoType       CryptoType
 	DisableWalletAPI bool
+	DisableSeedAPI   bool
 }
 
 // NewService new wallet service
@@ -39,6 +41,7 @@ func NewService(c Config) (*Service, error) {
 		firstAddrIDMap:   make(map[string]string),
 		cryptoType:       c.CryptoType,
 		disableWalletAPI: c.DisableWalletAPI,
+		disableSeedAPI:   c.DisableSeedAPI,
 	}
 
 	if serv.disableWalletAPI {
@@ -501,6 +504,10 @@ func (serv *Service) GetWalletSeed(wltID string, password []byte) (string, error
 	defer serv.RUnlock()
 	if serv.disableWalletAPI {
 		return "", ErrWalletAPIDisabled
+	}
+
+	if serv.disableSeedAPI {
+		return "", ErrSeedAPIDisabled
 	}
 
 	w, err := serv.getWallet(wltID)

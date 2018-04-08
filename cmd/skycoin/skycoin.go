@@ -83,6 +83,8 @@ type Config struct {
 	DisableWalletAPI bool
 	// Disable CSRF check in the wallet api
 	DisableCSRF bool
+	// Enable /wallet/seed api endpoint
+	EnableSeedAPI bool
 
 	// Only run on localhost and only connect to others on localhost
 	LocalhostOnly bool
@@ -179,6 +181,7 @@ func (c *Config) register() {
 	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
 	flag.BoolVar(&c.DisableWalletAPI, "disable-wallet-api", c.DisableWalletAPI, "Disable the wallet API")
 	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable csrf check")
+	flag.BoolVar(&c.EnableSeedAPI, "enable-seed-api", false, "enable /wallet/seed api")
 	flag.StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
 
@@ -243,6 +246,8 @@ var devConfig = Config{
 	DisableNetworking: false,
 	// Disable wallet API
 	DisableWalletAPI: false,
+	// Enable seed API
+	EnableSeedAPI: false,
 	// Disable CSRF check in the wallet api
 	DisableCSRF: false,
 	// Only run on localhost and only connect to others on localhost
@@ -517,6 +522,7 @@ func configureDaemon(c *Config) daemon.Config {
 		Version: Version,
 		Commit:  Commit,
 	}
+	dc.Visor.Config.DisableSeedAPI = !c.EnableSeedAPI
 
 	dc.Gateway.DisableWalletAPI = c.DisableWalletAPI
 

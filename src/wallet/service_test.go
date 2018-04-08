@@ -1548,6 +1548,7 @@ func TestGetWalletSeed(t *testing.T) {
 		id               string
 		pwd              []byte
 		disableWalletAPI bool
+		disableSeedAPI   bool
 		expectErr        error
 	}{
 		{
@@ -1596,6 +1597,20 @@ func TestGetWalletSeed(t *testing.T) {
 			id:        "none-exist.wlt",
 			expectErr: ErrWalletNotExist,
 		},
+		{
+			name:    "disable seed api",
+			wltName: "wallet.wlt",
+			opts: Options{
+				Seed:     "seed",
+				Label:    "label",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			pwd:            []byte("pwd"),
+			id:             "wallet.wlt",
+			disableSeedAPI: true,
+			expectErr:      ErrSeedAPIDisabled,
+		},
 	}
 
 	for _, tc := range tt {
@@ -1606,6 +1621,7 @@ func TestGetWalletSeed(t *testing.T) {
 					WalletDir:        dir,
 					CryptoType:       ct,
 					DisableWalletAPI: tc.disableWalletAPI,
+					DisableSeedAPI:   tc.disableSeedAPI,
 				})
 				require.NoError(t, err)
 

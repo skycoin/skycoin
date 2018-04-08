@@ -53,7 +53,9 @@ var (
 	// ErrWalletNotExist is returned if a wallet does not exist
 	ErrWalletNotExist = errors.New("wallet doesn't exist")
 	// ErrWalletAPIDisabled is returned when trying to do wallet actions while the DisableWalletAPI option is enabled.
-	ErrWalletAPIDisabled = errors.New("wallet api disabled")
+	ErrWalletAPIDisabled = errors.New("wallet api is disabled")
+	// ErrSeedAPIDisabled is returned when trying to get seed of wallet while the EnableWalletAPI is false
+	ErrSeedAPIDisabled = errors.New("wallet seed api is disabled")
 	// ErrWalletNameConflict represents the wallet name conflict error
 	ErrWalletNameConflict = errors.New("wallet name would conflict with existing wallet, renaming")
 )

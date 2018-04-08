@@ -608,7 +608,8 @@ func walletSeedHandler(gateway Gatewayer) http.HandlerFunc {
 			case wallet.ErrInvalidPassword:
 				wh.Error400(w, err.Error())
 			case wallet.ErrWalletAPIDisabled,
-				wallet.ErrWalletNotEncrypted:
+				wallet.ErrWalletNotEncrypted,
+				wallet.ErrSeedAPIDisabled:
 				wh.Error403(w)
 			case wallet.ErrWalletNotExist:
 				wh.Error404(w)

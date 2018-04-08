@@ -32,11 +32,6 @@ func NewTransactionResult(tx *Transaction) (*TransactionResult, error) {
 	}, nil
 }
 
-// ReadableBlocks an array of readable blocks.
-type ReadableBlocks struct {
-	Blocks []ReadableBlock `json:"blocks"`
-}
-
 // TransactionResults array of transaction results
 type TransactionResults struct {
 	Txns []TransactionResult `json:"txns"`

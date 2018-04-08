@@ -44,6 +44,7 @@ type Transaction struct {
 	Txn    coin.Transaction  //`json:"txn"`
 	Status TransactionStatus //`json:"status"`
 	Time   uint64            //`json:"time"`
+	Size   int
 }
 
 // TransactionStatus represents the transaction status
@@ -96,24 +97,6 @@ func NewConfirmedTransactionStatus(height uint64, blockSeq uint64) TransactionSt
 		BlockSeq:    blockSeq,
 	}
 }
-
-/*
-type ReadableTransactionHeader struct {
-	Hash string   `json:"hash"`
-	Sigs []string `json:"sigs"`
-}
-
-func NewReadableTransactionHeader(t *coin.TransactionHeader) ReadableTransactionHeader {
-	sigs := make([]string, len(t.Sigs))
-	for i, _ := range t.Sigs {
-		sigs[i] = t.Sigs[i].Hex()
-	}
-	return ReadableTransactionHeader{
-		Hash: t.Hash.Hex(),
-		Sigs: sigs,
-	}
-}
-*/
 
 // ReadableTransactionOutput readable transaction output
 type ReadableTransactionOutput struct {
@@ -550,6 +533,7 @@ func NewReadableBlockBody(b *coin.Block) (*ReadableBlockBody, error) {
 type ReadableBlock struct {
 	Head ReadableBlockHeader `json:"header"`
 	Body ReadableBlockBody   `json:"body"`
+	Size int                 `json:"size"`
 }
 
 // NewReadableBlock creates readable block
@@ -561,7 +545,13 @@ func NewReadableBlock(b *coin.Block) (*ReadableBlock, error) {
 	return &ReadableBlock{
 		Head: NewReadableBlockHeader(&b.Head),
 		Body: *body,
+		Size: b.Size(),
 	}, nil
+}
+
+// ReadableBlocks an array of readable blocks.
+type ReadableBlocks struct {
+	Blocks []ReadableBlock `json:"blocks"`
 }
 
 // NewReadableBlocks converts []coin.SignedBlock to readable blocks

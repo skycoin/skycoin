@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Add `"size"` to block API response data (affects `/block`, `/blocks` and `/last_blocks`)
 - Add `/health` endpoint
 - Logging migration, now powered by [logrus](https://github.com/sirupsen/logrus)
 - Write specification for skycoin URIs (based upon bip21)

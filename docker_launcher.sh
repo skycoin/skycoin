@@ -4,7 +4,7 @@ VOLUME_USERNAME=`stat -c %U $DATA_DIR`
 VOLUME_UID=`stat -c %u $DATA_DIR`
 if [[ $VOLUME_USERNAME = "UNKNOWN" ]] ; then
     adduser -D -u $VOLUME_UID skycoin
-    su skycoin $COMMAND
+    su skycoin -c "$COMMAND"
 else
-    su $VOLUME_USERNAME $COMMAND
+    su $VOLUME_USERNAME -c "$COMMAND"
 fi

@@ -60,7 +60,11 @@ else
 endif
 
 run:  ## Run the skycoin node. To add arguments, do 'make ARGS="--foo" run'.
-	go run cmd/skycoin/skycoin.go --gui-dir="./${STATIC_DIR}" --launch-browser=true ${ARGS}
+	go run cmd/skycoin/skycoin.go \
+	    --gui-dir="./${STATIC_DIR}" \
+	    --launch-browser=true \
+	    --enable-wallet-api=true \
+	    ${ARGS}
 
 run-help: ## Show skycoin node help
 	@go run cmd/skycoin/skycoin.go --help

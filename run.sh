@@ -3,5 +3,9 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 echo "skycoin binary dir:" "$DIR"
 pushd "$DIR" >/dev/null
-go run cmd/skycoin/skycoin.go --gui-dir="${DIR}/src/gui/static/" --launch-browser=true $@
+go run cmd/skycoin/skycoin.go \
+    --gui-dir="${DIR}/src/gui/static/" \
+    --launch-browser=true \
+    --enable-wallet-api=true \
+    $@
 popd >/dev/null

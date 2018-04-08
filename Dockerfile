@@ -41,7 +41,7 @@ COPY --from=build-go /go/bin/* /usr/bin/
 COPY --from=build-node /skycoin/src/gui/static /usr/local/skycoin/src/gui/static
 
 # copy launcher
-COPY launcher.sh /usr/local/bin
+COPY docker_launcher.sh /usr/local/bin
 
 # volumes
 VOLUME $WALLET_DIR
@@ -51,4 +51,4 @@ EXPOSE 6000 6420 6430
 
 WORKDIR /usr/local/skycoin
 
-CMD ["launcher.sh", "--web-interface-addr=0.0.0.0",  "--rpc-interface-addr=0.0.0.0"]
+CMD ["docker_launcher.sh", "--web-interface-addr=0.0.0.0",  "--rpc-interface-addr=0.0.0.0"]

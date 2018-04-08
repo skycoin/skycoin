@@ -211,7 +211,7 @@ $ skycoin-cli addressBalance 2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc 2GgFvqoyk9RjwVz
      ]
  }
  ```
-<details>
+</details>
 
 ### Generate new addresses
 Generate new skycoin or bitcoin addresses.
@@ -258,7 +258,7 @@ $ skycoin-cli addressGen --count 2
      ]
  }
  ```
-<details>
+</details>
 
 
 ##### Generate `n` number of bitcoin addresses
@@ -288,7 +288,7 @@ $ skycoin-cli addressGen --count 2 --bitcoin
      ]
  }
  ```
-<details>
+</details>
 
 ##### Hide secret in output
 ```bash
@@ -317,7 +317,7 @@ $ skycoin-cli addressGen --count 2 --hide-secret
      ]
  }
  ```
-<details>
+</details>
 
 ##### Output only an address list
 ```bash
@@ -358,7 +358,7 @@ $ skycoin-cli addressGen --count 2 --seed "my super secret seed"
      ]
  }
  ```
-<details>
+</details>
 
 ##### Generate addresses with a hex (CSPRNG-generated) seed
 ```bash
@@ -387,7 +387,7 @@ skycoin-cli addressGen --count 2 --hex
      ]
  }
  ```
-<details>
+</details>
 
 
 ### Check address outputs
@@ -550,7 +550,7 @@ $ skycoin-cli blocks 41 42
      ]
  }
  ```
-<details>
+</details>
 
 ### Check database integrity
 Checks if the given database file contains valid skycoin blockchain data
@@ -570,7 +570,7 @@ $ skycoin-cli checkdb $DB_PATH
  ```
  check db success
  ```
-<details>
+</details>
 
 ### Create a raw transaction
 Create a raw transaction that can be broadcasted later.
@@ -608,7 +608,7 @@ $ skycoin-cli createRawTransaction -f $WALLET_PATH -a $FROM_ADDRESS -c $CHANGE_A
  ```
  dc00000000c7425e5a49fce496d78ea9b04fc47e4126b91f675b00c16b3a7515c1555c252001000000115112dbb438b423dccd5f1afb7bce3d0cd4b87b57fd9fd3e5a26ee24e05fb696f0c7f3d6a84eafd80e051117162d790fa0e57c01a0e570b8ac0ae5faa5bf782000100000005e524872c838de517592c9a495d758b8ab2ec32d3e4d3fb131023a424386634020000000007445b5d6fbbb1a7d70bef941fb5da234a10fcae40420f000000000001000000000000000056500d41a1a6f1967ffe0074bb171148667ce20d0024f400000000009a05000000000000
  ```
-<details>
+</details>
 
 ##### Sending to multiple addresses
 ```bash
@@ -620,7 +620,7 @@ $ skycoin-cli createRawTransaction -f $WALLET_PATH -a $FROM_ADDRESS -m '[{"addr"
  ```
  01010000000e2a5bf4964604006fea5cf8cbd705e82bebb055467f10681ef01ce5c8db654801000000d951d4e34a7b35b1b165e8302cd47e09b6433ea443a8864dc8428537dbe8b76e00ee58bb195d7de3d28935ed4fc3684f1cac5593c09c4bafb016705b7e2b3393000100000005e524872c838de517592c9a495d758b8ab2ec32d3e4d3fb131023a424386634030000000007445b5d6fbbb1a7d70bef941fb5da234a10fcae40420f000000000001000000000000000056500d41a1a6f1967ffe0074bb171148667ce20d40420f00000000000100000000000000008001532c3a705e7e62bb0bb80630ecc21a87ec09c0e1e400000000009a05000000000000
  ```
-<details>
+</details>
 
 > NOTE: When sending to multiple addresses all the receiving addresses need to be different
         Otherwise you get, `ERROR: Duplicate output in transaction`
@@ -638,7 +638,7 @@ $ skycoin-cli createRawTransaction -f $WALLET_PATH -a $FROM_ADDRESS --json $RECI
      "rawtx": "dc00000000c7425e5a49fce496d78ea9b04fc47e4126b91f675b00c16b3a7515c1555c252001000000115112dbb438b423dccd5f1afb7bce3d0cd4b87b57fd9fd3e5a26ee24e05fb696f0c7f3d6a84eafd80e051117162d790fa0e57c01a0e570b8ac0ae5faa5bf782000100000005e524872c838de517592c9a495d758b8ab2ec32d3e4d3fb131023a424386634020000000007445b5d6fbbb1a7d70bef941fb5da234a10fcae40420f000000000001000000000000000056500d41a1a6f1967ffe0074bb171148667ce20d0024f400000000009a05000000000000"
  }
  ```
-<details>
+</details>
 
 ### Decode a raw transaction
 ```bash
@@ -680,7 +680,7 @@ skycoin-cli decodeRawTransaction dc00000000247bd0f0a1cf39fa51ea3eca044e4d9cbb28f
        "hours": 1432
      }
    ]
-<details>
+</details>
 
 
 ### Broadcast a raw transaction
@@ -699,7 +699,7 @@ $ skycoin-cli broadcastTransaction dc00000000247bd0f0a1cf39fa51ea3eca044e4d9cbb2
  ```
  ee700309aba9b8b552f1c932a667c3701eff98e71c0e5b0e807485cea28170e5
  ```
-<details>
+</details>
 
 ### Generate a wallet
 Generate a new skycoin wallet.
@@ -752,7 +752,7 @@ $ skycoin-cli generateWallet
      ]
  }
  ```
-<details>
+</details>
 
 > NOTE: If a wallet with the same name already exists then the cli exits with an error.
 
@@ -787,7 +787,7 @@ $ skycoin-cli generateWallet -r
      ]
  }
  ```
-<details>
+</details>
 
 ##### Generate a wallet with a 12 word mnemomic seed
 ```bash
@@ -820,7 +820,7 @@ $ skycoin-cli generateWallet -rd
      ]
  }
  ```
-<details>
+</details>
 
 ##### Generate a wallet with a specified seed
 ```bash
@@ -853,7 +853,7 @@ $ skycoin-cli generateWallet -s "this is the super secret seed everyone needs bu
      ]
  }
  ```
-<details>
+</details>
 
 
 ##### Generate more than 1 default address
@@ -892,7 +892,7 @@ $ skycoin-cli generateWallet -n 2
      ]
  }
  ```
-<details>
+</details>
 
 ##### Generate wallet with a custom wallet name
 ```bash
@@ -925,7 +925,7 @@ $ skycoin-cli generateWallet -f "secret_wallet.wlt"
      ]
  }
  ```
-<details>
+</details>
 
 > NOTE: The wallet name needs to end with `.wlt` and it should not be a path.
 
@@ -961,7 +961,7 @@ $ skycoin-cli generateWallet -l "cli wallet"
      ]
  }
  ```
-<details>
+</details>
 
 ### Generate addresses for a wallet
 Generate new addresses for a skycoin wallet.
@@ -987,7 +987,7 @@ $ skycoin-cli generateAddresses
  ```
  2mEgmYt6NZHA1erYqbAeXmGPD5gqLZ9toFv
  ```
-<details>
+</details>
 
 ##### Generate an address for a specific wallet
 ```bash
@@ -999,7 +999,7 @@ $ skycoin-cli generateAddresses $WALLET_PATH
  ```json
  2cET6L4c6Bee5jucuzsTQUXFxWX76GZoDqv
  ```
-<details>
+</details>
 
 ##### Generate `n` addresses
 ```bash
@@ -1011,7 +1011,7 @@ $ skycoin-cli generateAddresses -n 2
  ```csv
  2UrEV3Vyu5RJABZNukKRq25ggrrg96RUwdH,LJN5qGmLbJxLswzD3nFn3RFcmWJyZ2LGHY
  ```
-<details>
+</details>
 
 ##### Generate a JSON output
 ```bash
@@ -1027,7 +1027,7 @@ $ skycoin-cli generateAddresses --json
      ]
  }
  ```
-<details>
+</details>
 
 ### Last blocks
 Show the last `n` skycoin blocks.
@@ -1092,7 +1092,7 @@ $ skycoin-cli lastBlocks
      ]
  }
  ```
-<details>
+</details>
 
 ##### Get the last `n` blocks
 ```bash
@@ -1230,7 +1230,7 @@ $ skycoin-cli lastBlocks 3
      ]
  }
  ```
-<details>
+</details>
 
 
 ### List wallet addresses
@@ -1265,7 +1265,7 @@ $ skycoin-cli listAddresses
      ]
  }
  ```
-<details>
+</details>
 
 ##### List addresses of a specific wallet
 ```bash
@@ -1283,7 +1283,7 @@ $ skycoin-cli listAddresses $WALLET_NAME or $WALLET_PATH
      ]
  }
  ```
-<details>
+</details>
 
 ### List wallets
 List wallets in the skycoin wallet directory.
@@ -1330,7 +1330,7 @@ $ skycoin-cli listWallets
      ]
  }
  ```
-<details>
+</details>
 
 ### Send
 Make a skycoin transaction.
@@ -1384,7 +1384,7 @@ $ skycoin-cli send -f $WALLET_PATH -a $FROM_ADDRESS -m '[{"addr":"$ADDR1", "coin
  ```
  txid:$TRANSACTION_ID
  ```
-<details>
+</details>
 
 ##### Generate a JSON output
 ```bash
@@ -1398,7 +1398,7 @@ $ skycoin-cli send -f $WALLET_PATH -a $FROM_ADDRESS --json $RECIPIENT_ADDRESS $A
      "txid": "$TRANSACTION_ID"
  }
  ```
-<details>
+</details>
 
 ### Status
 #### Example
@@ -1417,7 +1417,7 @@ $ skycoin-cli status
      "webrpc_address": "127.0.0.1:6430"
  }
  ```
-<details>
+</details>
 
 ### Get transaction
 Get transaction data from a `txid`.
@@ -1473,7 +1473,7 @@ $ skycoin-cli transaction 824d421a25f81aa7565d042a54b3e1e8fdc58bed4eefe8f8a90748
      }
  }
  ```
-<details>
+</details>
 
 ### Verify address
 Verify whether a given address is a valid skycoin addres or not.
@@ -1504,7 +1504,7 @@ $ skycoin-cli verifyAddress 21YPgFwkLxQ1e9JTCZ43G7JUyCaGRGqAsdx
  ```
  Invalid checksum
  ```
-<details>
+</details>
 
 ###### Invalid address length
 ```bash
@@ -1516,7 +1516,7 @@ $ skycoin-cli verifyAddress 21YPg
  ```
  Invalid address length
  ```
-<details>
+</details>
 
 
 ### Check wallet balance
@@ -1642,7 +1642,7 @@ $ skycoin-cli walletBalance ~/.skycoin/wallets/2018_04_01_198c.wlt
      ]
  }
  ```
-<details>
+</details>
 
 ### See wallet directory
 Get the current skycoin wallet directory.
@@ -1666,7 +1666,7 @@ $ skycoin-cli walletDir
  ```
  $WALLET_DIR
  ```
-<details>
+</details>
 
 ##### JSON output
 ```bash
@@ -1680,7 +1680,7 @@ $ skycoin-cli walletDir --json
      "walletDir": "$WALLET_DIR"
  }
  ```
-<details>
+</details>
 
 ### List wallet transaction history
 Show all previous transactions made by the addresses in a wallet.
@@ -1729,7 +1729,7 @@ $ skycoin-cli walletHistory -f $WALLET_PATH
      }
  ]
  ```
-<details>
+</details>
 
 ### List wallet outputs
 List unspent outputs of all addresses in a wallet.
@@ -1785,7 +1785,7 @@ $ skycoin-cli walletHistory $WALLET_PATH
      }
  }
  ```
-<details>
+</details>
 
 ### CLI version
 Get version of current skycoin cli.
@@ -1813,7 +1813,7 @@ $ skycoin-cli version
  rpc:0.22.0
  wallet:0.22.0
  ```
-<details>
+</details>
 
 ##### JSON output
 ```bash
@@ -1830,7 +1830,7 @@ $ skycoin-cli version --json
      "wallet": "0.22.0"
  }
  ```
-<details>
+</details>
 
 ## Note
 

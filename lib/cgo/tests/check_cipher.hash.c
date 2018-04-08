@@ -31,7 +31,9 @@ Test(cipher,TestHashRipemd160){
   randBytes(&slice,160);
   SKY_cipher_HashRipemd160(slice,&r);
   cr_assert(not(eq(u8[sizeof(Ripemd160)],tmp,r)));
-  GoSlice b;
+
+  unsigned char buff1[257];
+  GoSlice b = { buff1, 0, 257 };
   randBytes(&b,256);
   SKY_cipher_HashRipemd160(b,&r2);
   cr_assert(not(eq(u8[sizeof(Ripemd160)],r2,tmp)));
@@ -130,7 +132,7 @@ Test(hash,TestSHA256Hex){
 
 Test(hash,TestSHA256KnownValue){
 
-  
+
   typedef struct 
   {
     char *input;
@@ -167,7 +169,7 @@ Test(hash,TestSHA256KnownValue){
     SKY_cipher_SHA256_Hex(&sha,&tmp_output);
     registerMemCleanup(&tmp_output.p);
 
-   cr_assert(strcmp(tmp_output.p,vals[i].output)== SKY_OK);
+    cr_assert(strcmp(tmp_output.p,vals[i].output)== SKY_OK);
   }
 }
 
@@ -192,13 +194,13 @@ Test(hash,TestSumSHA256){
 }
 
 Test(hash,TestSHA256FromHex){
-unsigned int error;
-SHA256 tmp;
+  unsigned int error;
+  SHA256 tmp;
   // Invalid hex hash
-GoString tmp_string = {"cawcd",5};
-error = SKY_cipher_SHA256FromHex(tmp_string,&tmp);
-cr_assert(error == SKY_ERROR);
-  	// Truncated hex hash
+  GoString tmp_string = {"cawcd",5};
+  error = SKY_cipher_SHA256FromHex(tmp_string,&tmp);
+  cr_assert(error == SKY_ERROR);
+  // Truncated hex hash
   SHA256 h;
   unsigned char buff[130];
   char sbuff[300];
@@ -284,15 +286,15 @@ Test(hash,TestXorSHA256){
 }
 
 Test(hash,TestMerkle){
-cr_fail("Not implement");
+  cr_fail("Not implement");
 
-// GoSlice tmp_slice;
-// randBytes(&tmp_slice,128);
-// SHA256 h;
-// SKY_cipher_SumSHA256(tmp_slice,&h);
-// Single hash input returns hash
+  // GoSlice tmp_slice;
+  // randBytes(&tmp_slice,128);
+  // SHA256 h;
+  // SKY_cipher_SumSHA256(tmp_slice,&h);
+  // Single hash input returns hash
 
-// SKY_cipher_Merkle()
+  // SKY_cipher_Merkle()
 
 
   // // Single hash input returns hash

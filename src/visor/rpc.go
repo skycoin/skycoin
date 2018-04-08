@@ -77,9 +77,8 @@ func MakeRPC(v *Visor) RPC {
 }
 
 // GetBlockchainMetadata get blockchain meta data
-func (rpc RPC) GetBlockchainMetadata(v *Visor) *BlockchainMetadata {
-	bm := v.GetBlockchainMetadata()
-	return &bm
+func (rpc RPC) GetBlockchainMetadata(v *Visor) (*BlockchainMetadata, error) {
+	return v.GetBlockchainMetadata()
 }
 
 // GetUnspent gets unspent

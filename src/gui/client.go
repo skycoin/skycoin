@@ -699,7 +699,7 @@ func (c *Client) AddressCount() (uint64, error) {
 
 }
 
-// UnloadWallet make a request to /wallet/unload
+// UnloadWallet makes a request to /wallet/unload
 func (c *Client) UnloadWallet(id string) error {
 	v := url.Values{}
 	v.Add("id", id)
@@ -707,10 +707,11 @@ func (c *Client) UnloadWallet(id string) error {
 }
 
 // Health makes a request to /health
-func (c *Client) Health() (bool, error) {
-	if err := c.Get("/health", nil); err != nil {
-		return false, err
+func (c *Client) Health() (*HealthResponse, error) {
+	var r HealthResponse
+	if err := c.Get("/health", &r); err != nil {
+		return nil, err
 	}
 
-	return true, nil
+	return &r, nil
 }

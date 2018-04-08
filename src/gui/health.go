@@ -2,40 +2,54 @@ package gui
 
 import (
 	"net/http"
+	"time"
 
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/visor"
 )
 
-type HealthResponse struct {
-	BlockChainMetadata  *visor.BlockchainMetadata `json:"blockchain_metadata"`
-	VersionData         visor.BuildInfo           `json:"version_data"`
-	UnconfirmedTxCount  int                       `json:"unconfirmed_tx_count"`
-	OpenConnectionCount int                       `json:"open_connection_count"`
+// BlockchainMetadata extends visor.BlockchainMetadata to include the time since the last block
+type BlockchainMetadata struct {
+	*visor.BlockchainMetadata
+	TimeSinceLastBlock wh.Duration `json:"time_since_last_block"`
 }
 
-// Health status of application
-func healthCheck(gateway Gatewayer) http.HandlerFunc {
+// HealthResponse is returned by the /health endpoint
+type HealthResponse struct {
+	Blockchain      BlockchainMetadata `json:"blockchain"`
+	Version         visor.BuildInfo    `json:"version"`
+	OpenConnections int                `json:"open_connections"`
+	Uptime          wh.Duration        `json:"uptime"`
+}
+
+// Returns node health data.
+// URI: /health
+// Method: GET
+func healthCheck(gateway Gatewayer, startedAt time.Time) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}
 
-		txnCount := len(gateway.GetAllUnconfirmedTxns())
-		connectionCount := len(gateway.GetConnections().Connections)
-		metadata := gateway.GetBlockchainMetadata()
-
-		resp := &HealthResponse{
-			BlockChainMetadata:  metadata,
-			VersionData:         gateway.GetBuildInfo(),
-			UnconfirmedTxCount:  txnCount,
-			OpenConnectionCount: connectionCount,
+		metadata, err := gateway.GetBlockchainMetadata()
+		if err != nil {
+			logger.WithError(err).Error("gateway.GetBlockchainMetadata failed")
+			wh.Error500Msg(w, err.Error())
+			return
 		}
 
-		if resp == nil {
-			wh.Error404(w)
-			return
+		elapsedBlockTime := time.Now().UTC().Unix() - int64(metadata.Head.Time)
+		timeSinceLastBlock := time.Second * time.Duration(elapsedBlockTime)
+
+		resp := &HealthResponse{
+			Blockchain: BlockchainMetadata{
+				BlockchainMetadata: metadata,
+				TimeSinceLastBlock: wh.FromDuration(timeSinceLastBlock),
+			},
+			Version:         gateway.GetBuildInfo(),
+			OpenConnections: len(gateway.GetConnections().Connections),
+			Uptime:          wh.FromDuration(time.Since(startedAt)),
 		}
 
 		wh.SendJSONOr500(logger, w, resp)

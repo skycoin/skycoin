@@ -1,10 +1,12 @@
 package gui
 
 import (
+	"errors"
 	"net/http"
 	"testing"
+	"time"
 
-	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 
 	"encoding/json"
 	"net/http/httptest"
@@ -14,88 +16,114 @@ import (
 )
 
 func TestHealthCheckHandler(t *testing.T) {
-	unspent := uint64(10)
-	unconf := uint64(20)
 
-	unconfirmed := []visor.UnconfirmedTxn{{}, {}}
-	connections := &daemon.Connections{
-		Connections: []*daemon.Connection{
-			{},
-			{},
-			{},
+	cases := []struct {
+		name                     string
+		method                   string
+		code                     int
+		getBlockchainMetadataErr error
+	}{
+		{
+			name:   "valid response",
+			method: http.MethodGet,
+			code:   http.StatusOK,
+		},
+		{
+			name:   "403 method not allowed",
+			method: http.MethodPost,
+			code:   http.StatusMethodNotAllowed,
+		},
+		{
+			name:   "gateway.GetBlockchainMetadata error",
+			method: http.MethodGet,
+			code:   http.StatusInternalServerError,
+			getBlockchainMetadataErr: errors.New("GetBlockchainMetadata failed"),
 		},
 	}
-	metadata := &visor.BlockchainMetadata{
-		Unspents:    unspent,
-		Unconfirmed: unconf,
-	}
-	version := "1.0.0"
-	commit := "abcdef"
 
-	buildInfo := visor.BuildInfo{
-		Version: version,
-		Commit:  commit,
-	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			unspents := uint64(10)
+			unconfirmed := uint64(20)
 
-	gateway := NewGatewayerMock()
-	gateway.On("GetAllUnconfirmedTxns", mock.Anything).Return(unconfirmed)
-	gateway.On("GetConnections", mock.Anything).Return(connections)
-	gateway.On("GetBlockchainMetadata", mock.Anything).Return(metadata)
-	gateway.On("GetBuildInfo", mock.Anything).Return(buildInfo)
+			connections := &daemon.Connections{
+				Connections: []*daemon.Connection{
+					{
+						ID:   1,
+						Addr: "127.0.0.1:4343",
+					},
+					{
+						ID:   2,
+						Addr: "127.0.0.1:5454",
+					},
+					{
+						ID:   3,
+						Addr: "127.0.0.1:6565",
+					},
+				},
+			}
 
-	endpoint := "/health"
-	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
+			metadata := &visor.BlockchainMetadata{
+				Head: visor.ReadableBlockHeader{
+					BkSeq:             21175,
+					BlockHash:         "8a3e0aac619551ae009cfb28c2b36bb1300925f74da770d1512072314f6a4c80",
+					PreviousBlockHash: "001eb7911b6a6ab7c75feb88726dd2bc8b87133aebc82201c4404537eb74f7ac",
+					Time:              1523168686,
+					Fee:               2,
+					Version:           0,
+					BodyHash:          "36be8d70d1e9f70b340ea7ecf0b247c27086bad10568044c1196fe150f6cea1b",
+				},
+				Unspents:    unspents,
+				Unconfirmed: unconfirmed,
+			}
 
-	if err != nil {
-		t.Error(err)
-		return
-	}
+			buildInfo := visor.BuildInfo{
+				Version: "1.0.0",
+				Commit:  "abcdef",
+				Branch:  "develop",
+			}
 
-	rr := httptest.NewRecorder()
-	cfg := muxConfig{
-		host:   configuredHost,
-		appLoc: ".",
-	}
-	handler := newServerMux(cfg, gateway, &CSRFStore{})
-	handler.ServeHTTP(rr, req)
+			gateway := NewGatewayerMock()
+			gateway.On("GetConnections").Return(connections)
+			gateway.On("GetBuildInfo").Return(buildInfo)
+			if tc.getBlockchainMetadataErr != nil {
+				gateway.On("GetBlockchainMetadata").Return(nil, tc.getBlockchainMetadataErr)
+			} else {
+				gateway.On("GetBlockchainMetadata").Return(metadata, nil)
+			}
 
-	if rr.Code != http.StatusOK {
-		t.Errorf("Wrong response code expected %d actual %d", http.StatusOK, rr.Code)
-	}
+			endpoint := "/health"
+			req, err := http.NewRequest(tc.method, endpoint, nil)
+			require.NoError(t, err)
 
-	resp := &HealthResponse{}
-	err = json.Unmarshal(rr.Body.Bytes(), resp)
+			rr := httptest.NewRecorder()
+			cfg := muxConfig{
+				host:   configuredHost,
+				appLoc: ".",
+			}
+			handler := newServerMux(cfg, gateway, &CSRFStore{})
+			handler.ServeHTTP(rr, req)
 
-	if err != nil {
-		t.Error(err)
-	}
+			if tc.code != http.StatusOK {
+				require.Equal(t, tc.code, rr.Code)
+				return
+			}
 
-	if len(resp.VersionData.Version) == 0 {
-		t.Errorf("Empty version data")
-	}
+			require.Equal(t, http.StatusOK, rr.Code)
 
-	if resp.UnconfirmedTxCount != len(unconfirmed) {
-		t.Errorf("Wrong count of unconfirmed tx expected %d actual %d",
-			len(unconfirmed), resp.UnconfirmedTxCount)
-	}
+			r := &HealthResponse{}
+			err = json.Unmarshal(rr.Body.Bytes(), r)
+			require.NoError(t, err)
 
-	if resp.OpenConnectionCount != len(connections.Connections) {
-		t.Errorf("Wrong connection count expected %d actual %d",
-			len(connections.Connections), resp.OpenConnectionCount)
-	}
+			require.Equal(t, buildInfo.Version, r.Version.Version)
+			require.Equal(t, buildInfo.Commit, r.Version.Commit)
+			require.Equal(t, buildInfo.Branch, r.Version.Branch)
 
-	if resp.BlockChainMetadata.Unconfirmed != unconf {
-		t.Errorf("Wrong blockchain metadata unconfirmed expected %d actual %d",
-			unconf, resp.BlockChainMetadata.Unconfirmed)
-	}
+			require.Equal(t, len(connections.Connections), r.OpenConnections)
 
-	if resp.BlockChainMetadata.Unspents != unspent {
-		t.Errorf("Wrong blockchain metadata unspent expected %d actual %d",
-			unspent, resp.BlockChainMetadata.Unspents)
-	}
-
-	if resp.VersionData.Commit != commit || resp.VersionData.Version != version {
-		t.Errorf("Wrong build info expected version %s commit %s actual version %s commit %s",
-			version, commit, resp.VersionData.Version, resp.VersionData.Commit)
+			require.Equal(t, unconfirmed, r.Blockchain.Unconfirmed)
+			require.Equal(t, unspents, r.Blockchain.Unspents)
+			require.True(t, r.Blockchain.TimeSinceLastBlock.Duration > time.Duration(0))
+		})
 	}
 }

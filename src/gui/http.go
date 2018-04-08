@@ -298,7 +298,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.Se
 	webHandler("/transaction", getTransactionByID(gateway))
 
 	// Health check handler
-	webHandler("/health", healthCheck(gateway))
+	webHandler("/health", healthCheck(gateway, time.Now()))
 
 	// Returns transactions that match the filters.
 	// Method: GET

@@ -107,7 +107,8 @@ func TestNewBlockchainMetadata(t *testing.T) {
 	defer close()
 	assert.Nil(t, transferCoins(t, v))
 
-	bcm := NewBlockchainMetadata(v)
+	bcm, err := NewBlockchainMetadata(v)
+	require.NoError(t, err)
 	assert.Equal(t, uint64(2), bcm.Unspents)
 	assert.Equal(t, uint64(0), bcm.Unconfirmed)
 	b, err := v.Blockchain.Head()

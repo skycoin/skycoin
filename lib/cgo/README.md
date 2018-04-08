@@ -31,7 +31,7 @@ In order to test the C client libraries follow these steps
 
 The following files will be generated
 
-- `build/libskycoin.h` - Header file for including libskycoin symbols in your app code
+- `include/libskycoin.h` - Platform-specific header file for including libskycoin symbols in your app code
 - `build/libskycoin.a` - Static library.
 - `build/libskycoin.so` - Shared library object.
 

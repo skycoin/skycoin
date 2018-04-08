@@ -522,7 +522,7 @@ func configureDaemon(c *Config) daemon.Config {
 		Version: Version,
 		Commit:  Commit,
 	}
-	dc.Visor.Config.DisableSeedAPI = !c.EnableSeedAPI
+	dc.Visor.Config.EnableSeedAPI = c.EnableSeedAPI
 
 	dc.Gateway.DisableWalletAPI = c.DisableWalletAPI
 

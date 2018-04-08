@@ -1548,7 +1548,7 @@ func TestGetWalletSeed(t *testing.T) {
 		id               string
 		pwd              []byte
 		disableWalletAPI bool
-		disableSeedAPI   bool
+		enableSeedAPI    bool
 		expectErr        error
 	}{
 		{
@@ -1558,8 +1558,9 @@ func TestGetWalletSeed(t *testing.T) {
 				Seed:  "seed",
 				Label: "label",
 			},
-			id:        "wallet.wlt",
-			expectErr: ErrWalletNotEncrypted,
+			id:            "wallet.wlt",
+			enableSeedAPI: true,
+			expectErr:     ErrWalletNotEncrypted,
 		},
 		{
 			name:    "wallet api disabled",
@@ -1569,6 +1570,7 @@ func TestGetWalletSeed(t *testing.T) {
 				Label: "label",
 			},
 			id:               "wallet.wlt",
+			enableSeedAPI:    true,
 			disableWalletAPI: true,
 			expectErr:        ErrWalletAPIDisabled,
 		},
@@ -1581,8 +1583,9 @@ func TestGetWalletSeed(t *testing.T) {
 				Encrypt:  true,
 				Password: []byte("pwd"),
 			},
-			id:  "wallet.wlt",
-			pwd: []byte("pwd"),
+			enableSeedAPI: true,
+			id:            "wallet.wlt",
+			pwd:           []byte("pwd"),
 		},
 		{
 			name:    "wallet does not exist",
@@ -1593,9 +1596,10 @@ func TestGetWalletSeed(t *testing.T) {
 				Encrypt:  true,
 				Password: []byte("pwd"),
 			},
-			pwd:       []byte("pwd"),
-			id:        "none-exist.wlt",
-			expectErr: ErrWalletNotExist,
+			enableSeedAPI: true,
+			pwd:           []byte("pwd"),
+			id:            "none-exist.wlt",
+			expectErr:     ErrWalletNotExist,
 		},
 		{
 			name:    "disable seed api",
@@ -1606,10 +1610,10 @@ func TestGetWalletSeed(t *testing.T) {
 				Encrypt:  true,
 				Password: []byte("pwd"),
 			},
-			pwd:            []byte("pwd"),
-			id:             "wallet.wlt",
-			disableSeedAPI: true,
-			expectErr:      ErrSeedAPIDisabled,
+			pwd:           []byte("pwd"),
+			id:            "wallet.wlt",
+			enableSeedAPI: false,
+			expectErr:     ErrSeedAPIDisabled,
 		},
 	}
 
@@ -1621,7 +1625,7 @@ func TestGetWalletSeed(t *testing.T) {
 					WalletDir:        dir,
 					CryptoType:       ct,
 					DisableWalletAPI: tc.disableWalletAPI,
-					DisableSeedAPI:   tc.disableSeedAPI,
+					EnableSeedAPI:    tc.enableSeedAPI,
 				})
 				require.NoError(t, err)
 

@@ -124,6 +124,7 @@ func TestHealthCheckHandler(t *testing.T) {
 			require.Equal(t, unconfirmed, r.Blockchain.Unconfirmed)
 			require.Equal(t, unspents, r.Blockchain.Unspents)
 			require.True(t, r.Blockchain.TimeSinceLastBlock.Duration > time.Duration(0))
+			require.Equal(t, metadata.Head, r.Blockchain.Head)
 		})
 	}
 }

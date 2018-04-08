@@ -22,6 +22,46 @@ type ConnectionsHealth struct {
 	Connections  []ConnectionStatus `json:"connections"`
 }
 
+func defaultStatus(gateway Gatewayer) ConnectionsHealth {
+
+	connsDefault := gateway.GetDefaultConnections()
+	sort.Strings(connsDefault)
+	connsAll := gateway.GetConnections().Connections
+
+	countDefault, totalAlive := len(connsDefault), 0
+	totalOffline := countDefault
+
+	var connections []ConnectionStatus
+	connsMap := make(map[string]*ConnectionStatus, countDefault)
+	for _, conn := range connsDefault {
+		status := ConnectionStatus{
+			Connection: conn,
+			isAlive:    false,
+		}
+		connections = append(connections, status)
+		connsMap[conn] = &status
+	}
+
+	for _, conn := range connsAll {
+		if status, isDefault := connsMap[conn.Addr]; isDefault {
+			if !status.isAlive {
+				status.isAlive = true
+				totalAlive++
+				totalOffline--
+			}
+		}
+	}
+
+	resp := ConnectionsHealth{
+		Count:        countDefault,
+		TotalAlive:   totalAlive,
+		TotalOffline: totalOffline,
+		Connections:  connections,
+	}
+
+	return resp
+}
+
 func connectionHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -104,41 +144,7 @@ func defaultStatusHandler(gateway Gatewayer) http.HandlerFunc {
 			wh.Error405(w)
 			return
 		}
-
-		connsDefault := gateway.GetDefaultConnections()
-		sort.Strings(connsDefault)
-		connsAll := gateway.GetConnections().Connections
-
-		countDefault, totalAlive := len(connsDefault), 0
-		totalOffline := countDefault
-
-		var connections []ConnectionStatus
-		connsMap := make(map[string]*ConnectionStatus, countDefault)
-		for _, conn := range connsDefault {
-			status := ConnectionStatus{
-				Connection: conn,
-				isAlive:    false,
-			}
-			connections = append(connections, status)
-			connsMap[conn] = &status
-		}
-
-		for _, conn := range connsAll {
-			if status, isDefault := connsMap[conn.Addr]; isDefault {
-				if !status.isAlive {
-					status.isAlive = true
-					totalAlive++
-					totalOffline--
-				}
-			}
-		}
-
-		resp := &ConnectionsHealth{
-			Count:        countDefault,
-			TotalAlive:   totalAlive,
-			TotalOffline: totalOffline,
-			Connections:  connections,
-		}
+		resp := defaultStatus(gateway)
 
 		wh.SendJSONOr500(logger, w, &resp)
 

@@ -53,6 +53,7 @@ const (
 	testModeStable           = "stable"
 	testModeLive             = "live"
 	testModeDisableWalletApi = "disable-wallet-api"
+	testModeEnableSeedApi    = "enable-seed-api"
 
 	testFixturesDir = "test-fixtures"
 )
@@ -78,7 +79,10 @@ func mode(t *testing.T) string {
 	switch mode {
 	case "":
 		mode = testModeStable
-	case testModeLive, testModeStable, testModeDisableWalletApi:
+	case testModeLive,
+		testModeStable,
+		testModeDisableWalletApi,
+		testModeEnableSeedApi:
 	default:
 		t.Fatal("Invalid test mode, must be stable, live or disable-wallet-api")
 	}
@@ -113,6 +117,15 @@ func doDisableWalletApi(t *testing.T) bool {
 	}
 
 	t.Skip("DisableWalletApi tests disabled")
+	return false
+}
+
+func doEnableSeedApi(t *testing.T) bool {
+	if enabled() && mode(t) == testModeEnableSeedApi {
+		return true
+	}
+
+	t.Skip("EnableSeedAPI tests disabled")
 	return false
 }
 
@@ -1975,7 +1988,7 @@ func TestCreateWallet(t *testing.T) {
 	_, err := os.Stat(walletPath)
 	require.NoError(t, err)
 
-	// create wallet with encryption
+	// Creates wallet with encryption
 	encW, _, encWClean := createWallet(t, c, true, "pwd")
 	defer encWClean()
 
@@ -2288,6 +2301,25 @@ func TestDecryptWallet(t *testing.T) {
 
 func TestGetWalletSeed(t *testing.T) {
 	if !doLiveOrStable(t) {
+		return
+	}
+
+	if !doWallet(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	// Create an encrypted wallet
+	w, _, clean := createWallet(t, c, true, "pwd")
+	defer clean()
+
+	_, err := c.GetWalletSeed(w.Filename(), "pwd")
+	require.EqualError(t, err, "403 Forbidden\n")
+}
+
+func TestEnableSeedAPIAndGetWalletSeed(t *testing.T) {
+	if !doEnableSeedApi(t) {
 		return
 	}
 

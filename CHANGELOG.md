@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `/wallet/encrypt` API endpoint, encrypts wallet and returns encrypted wallet without sensitive data
 - `/wallet/decrypt` API endpoint, decrypts wallet and returns decrypted wallet without sensitive data
 - `/wallet/seed` API endpoint, returns seed of specific wallet
+- `-enable-seed-api` cli option
 
 ### Fixed
 
@@ -26,7 +27,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `-launch-browser` is set to false by default
 - `/wallet` API endpoint, remove sensitive data from the response, and fix the data format to be the same as `/wallet/create`
 - `/wallets` API endpoint, remove sensitive data from the response
-- `/wallet/create` API endpoint, add `password` argument
+- `/wallet/create` API endpoint, add `encrypt(bool)` and `password` argument
 - `/wallet/newAddress` API endpoint, add `password` argument
 - `/wallet/spend` API endpoint, add `password` argument
 

@@ -561,7 +561,7 @@ $ skycoin-cli blocks 41 42
 
 ### Check database integrity
 Checks if the given database file contains valid skycoin blockchain data
-If no argument is given, the default `data.db` in ``$HOME/.$COIN/` will be checked.
+If no argument is given, the default `data.db` in `$HOME/.$COIN/` will be checked.
 
 ```bash
 $ skycoin-cli checkdb [db path]
@@ -1565,7 +1565,7 @@ $ skycoin-cli walletBalance [wallet]
 ```
 
 > NOTE: Both the full wallet path or only the wallet name can be used.
-        If no wallet is specified then the default wallet: $HOME/.$COIN/wallets/skycoin_cli.wlt is used.
+        If no wallet is specified then the default wallet: `$HOME/.$COIN/wallets/skycoin_cli.wlt` is used.
 
 #### Example
 ##### Balance of default wallet
@@ -1631,7 +1631,8 @@ $ skycoin-cli walletBalance
 $ skycoin-cli walletBalance 2018_04_01_198c.wlt
 ```
 *OR*
-````bash
+
+```bash
 $ skycoin-cli walletBalance ~/.skycoin/wallets/2018_04_01_198c.wlt
 ```
 
@@ -1693,12 +1694,12 @@ Get the current skycoin wallet directory.
 
 ```bash
 $ skycoin-cli walletDir [command options]
+```
 
 ```
 OPTIONS:
         -j, --json  Returns the results in JSON format.
 ```
-
 
 #### Examples
 ##### Text output

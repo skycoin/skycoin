@@ -3,5 +3,5 @@ typedef struct{
     GoString_ Coins;
     bool Locked;
     GoUint64_ coins;
-}RichlistBalance;
+} RichlistBalance;
 typedef GoSlice_ Richlist;

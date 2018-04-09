@@ -1,5 +1,5 @@
 typedef struct{
     GoSlice_ buf;
-}coder;
+} coder;
 typedef coder decoder;
 typedef coder encoder;

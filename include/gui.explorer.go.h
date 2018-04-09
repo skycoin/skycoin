@@ -6,4 +6,4 @@ typedef struct{
     GoString_ TotalCoinHourSupply;
     GoSlice_ UnlockedAddresses;
     GoSlice_ LockedAddresses;
-}CoinSupply;
+} CoinSupply;

@@ -2,5 +2,5 @@ typedef GoString_ CoinType;
 typedef struct{
     GoMap_ Meta;
     GoSlice_ Entries;
-}Wallet;
+} Wallet;
 typedef GoInterface_ Validator;

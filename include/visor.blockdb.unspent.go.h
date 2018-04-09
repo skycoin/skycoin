@@ -1,4 +1,10 @@
 typedef struct{
     GoString_ UxID;
-}ErrUnspentNotExist;
+} ErrUnspentNotExist;
 typedef GoInterface_ UnspentGetter;
+typedef struct{
+;
+} unspentMeta;
+typedef struct{
+;
+} pool;

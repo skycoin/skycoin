@@ -1,1 +1,1 @@
-typedef GoSlice_ Checksum;
+typedef GoUint8_  Checksum[4];

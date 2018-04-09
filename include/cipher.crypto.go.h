@@ -1,4 +1,4 @@
-typedef GoSlice_ PubKey;
+typedef GoUint8_  PubKey[33];
 typedef GoSlice_ PubKeySlice;
-typedef GoSlice_ SecKey;
-typedef GoSlice_ Sig;
+typedef GoUint8_  SecKey[32];
+typedef ;

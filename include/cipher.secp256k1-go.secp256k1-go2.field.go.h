@@ -1,3 +1,3 @@
 typedef struct{
-    GoSlice_ n;
-}Field;
+    GoUint32_  n[10];
+} Field;

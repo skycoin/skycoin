@@ -1,6 +1,6 @@
 typedef struct{
     GoSlice_ Blocks;
-}ReadableBlocks;
+} ReadableBlocks;
 typedef struct{
     GoSlice_ Txns;
-}TransactionResults;
+} TransactionResults;

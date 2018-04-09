@@ -1,2 +1,2 @@
-typedef GoSlice_ Ripemd160;
-typedef GoSlice_ SHA256;
+typedef GoUint8_  Ripemd160[20];
+typedef GoUint8_  SHA256[32];

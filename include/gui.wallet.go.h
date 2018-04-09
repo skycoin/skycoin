@@ -1,6 +1,6 @@
 typedef struct{
     GoSlice_ Transactions;
-}UnconfirmedTxnsResponse;
+} UnconfirmedTxnsResponse;
 typedef struct{
     GoString_ Address;
-}WalletFolder;
+} WalletFolder;

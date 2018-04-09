@@ -4,19 +4,19 @@ typedef struct{
     GoUint64_ Height;
     GoUint64_ BlockSeq;
     bool Unknown;
-}TransactionStatus;
+} TransactionStatus;
 typedef struct{
     GoString_ Hash;
     GoString_ Address;
     GoString_ Coins;
     GoUint64_ Hours;
-}ReadableTransactionOutput;
+} ReadableTransactionOutput;
 typedef struct{
     GoString_ Hash;
     GoString_ Address;
     GoString_ Coins;
     GoUint64_ Hours;
-}ReadableTransactionInput;
+} ReadableTransactionInput;
 typedef struct{
     GoString_ Hash;
     GoUint64_ Time;
@@ -26,7 +26,7 @@ typedef struct{
     GoString_ Coins;
     GoUint64_ Hours;
     GoUint64_ CalculatedHours;
-}ReadableOutput;
+} ReadableOutput;
 typedef GoSlice_ ReadableOutputs;
 typedef struct{
     GoUint32_ Length;
@@ -37,7 +37,7 @@ typedef struct{
     GoSlice_ Sigs;
     GoSlice_ In;
     GoSlice_ Out;
-}ReadableTransaction;
+} ReadableTransaction;
 typedef struct{
     GoUint64_ BkSeq;
     GoString_ BlockHash;
@@ -46,35 +46,35 @@ typedef struct{
     GoUint64_ Fee;
     GoUint32_ Version;
     GoString_ BodyHash;
-}ReadableBlockHeader;
+} ReadableBlockHeader;
 typedef struct{
     GoSlice_ Transactions;
-}ReadableBlockBody;
+} ReadableBlockBody;
 typedef struct{
     ReadableBlockHeader Head;
     ReadableBlockBody Body;
-}ReadableBlock;
+} ReadableBlock;
 typedef struct{
     GoString_ Hash;
     GoString_ SourceTransaction;
     GoString_ Address;
     GoString_ Coins;
     GoUint64_ Hours;
-}TransactionOutputJSON;
+} TransactionOutputJSON;
 typedef struct{
     GoString_ Hash;
     GoString_ InnerHash;
     GoSlice_ Sigs;
     GoSlice_ In;
     GoSlice_ Out;
-}TransactionJSON;
+} TransactionJSON;
 typedef struct{
     ReadableBlockHeader Head;
     GoUint64_ Unspents;
     GoUint64_ Unconfirmed;
-}BlockchainMetadata;
+} BlockchainMetadata;
 typedef struct{
     ReadableOutputs HeadOutputs;
     ReadableOutputs OutgoingOutputs;
     ReadableOutputs IncomingOutputs;
-}ReadableOutputSet;
+} ReadableOutputSet;

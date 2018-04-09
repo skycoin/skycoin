@@ -3,4 +3,4 @@ typedef struct{
     GoUint32_ Kind;
     GoString_ Type;
     GoString_ Tag;
-}StructField;
+} StructField;

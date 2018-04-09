@@ -1,6 +1,6 @@
 typedef struct{
-    GoSlice_ s;
-    GoSlice_ x;
+    GoUint32_  s[5];
+    ;
     GoInt_ nx;
     GoUint64_ tc;
-}digest;
+} digest;

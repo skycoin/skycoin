@@ -8,4 +8,4 @@ typedef struct{
     GoUint64_ Hours;
     GoUint64_ SpentBlockSeq;
     GoString_ SpentTxID;
-}UxOutJSON;
+} UxOutJSON;

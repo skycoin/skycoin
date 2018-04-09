@@ -1,7 +1,7 @@
 typedef GoSlice_ Peers;
 typedef struct{
     GoMap_ peers;
-}peerlist;
+} peerlist;
 typedef Handle Filter;
 typedef struct{
     GoString_ Addr;
@@ -10,4 +10,4 @@ typedef struct{
     bool Trusted;
     bool * HasIncomePort;
     bool * HasIncomingPort;
-}PeerJSON;
+} PeerJSON;

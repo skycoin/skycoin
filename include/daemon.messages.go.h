@@ -1,17 +1,17 @@
 typedef struct{
     GoSlice_ Messages;
-}MessagesConfig;
+} MessagesConfig;
 typedef struct{
     MessagesConfig Config;
     GoUint32_ Mirror;
-}Messages;
+} Messages;
 typedef struct{
     GoUint32_ IP;
     GoUint16_ Port;
-}IPAddr;
+} IPAddr;
 typedef GoInterface_ AsyncMessage;
 typedef struct{
     GoString_ addr;
-}GetPeersMessage;
+} GetPeersMessage;
 typedef struct{
-}PongMessage;
+} PongMessage;

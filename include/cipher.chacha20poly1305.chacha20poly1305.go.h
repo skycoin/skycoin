@@ -1,3 +1,3 @@
 typedef struct{
-    GoSlice_ key;
-}chacha20poly1305;
+    GoUint8_  key[32];
+} chacha20poly1305;

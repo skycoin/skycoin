@@ -1,5 +1,5 @@
 typedef struct{
     GoInt_ BufferSize;
     bool DisableWalletAPI;
-}GatewayConfig;
+} GatewayConfig;
 typedef Handle OutputsFilter;

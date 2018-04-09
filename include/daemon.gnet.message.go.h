@@ -1,6 +1,6 @@
-typedef GoSlice_ MessagePrefix;
+typedef ;
 typedef GoInterface_ Message;
 typedef struct{
     GoInt_ ConnID;
     GoString_ Addr;
-}MessageContext;
+} MessageContext;

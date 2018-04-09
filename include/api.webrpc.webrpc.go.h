@@ -2,6 +2,6 @@ typedef struct{
     GoInt_ Code;
     GoString_ Message;
     GoString_ Data;
-}RPCError;
+} RPCError;
 typedef Handle operation;
 typedef Handle HandlerFunc;

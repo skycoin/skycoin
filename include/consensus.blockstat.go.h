@@ -10,8 +10,8 @@ typedef struct{
     GoInt_ debug_reject_count;
     GoInt_ debug_neglect_count;
     GoInt_ debug_usage;
-}BlockStat;
+} BlockStat;
 typedef GoSlice_ PriorityQueue;
 typedef struct{
     PriorityQueue queue;
-}BlockStatQueue;
+} BlockStatQueue;

@@ -1,12 +1,12 @@
 typedef struct{
     GoString_ Addr;
     GoUint64_ Coins;
-}SendAmount;
+} SendAmount;
 typedef struct{
     GoString_ Addr;
     GoString_ Coins;
-}sendAmountJSON;
+} sendAmountJSON;
 typedef struct{
     GoString_ Wallet;
     GoString_ Address;
-}walletAddress;
+} walletAddress;

@@ -5,4 +5,4 @@ typedef struct{
     bool Trusted;
     bool HasIncomingPort;
     GoInt_ RetryTimes;
-}Peer;
+} Peer;

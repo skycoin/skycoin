@@ -28,12 +28,12 @@ export class CreateWalletComponent implements OnInit {
   }
 
   createWallet() {
-    this.walletService.create(this.form.value.label, this.form.value.seed.trim(), this.scan)
+    this.walletService.create(this.form.value.label, this.form.value.seed, this.scan)
       .subscribe(() => this.dialogRef.close());
   }
 
   generateSeed() {
-    this.walletService.generateSeed().subscribe(seed => this.form.controls.seed.setValue(seed, { emitEvent: false }));
+    this.walletService.generateSeed().subscribe(seed => this.form.controls.seed.setValue(seed));
   }
 
   private initForm() {
@@ -43,12 +43,6 @@ export class CreateWalletComponent implements OnInit {
     this.form.addControl('confirm_seed', new FormControl('', [
       Validators.compose([Validators.required, this.validateAreEqual.bind(this)])
     ]));
-
-    ['seed', 'confirm_seed'].forEach(control =>
-      this.form.get(control).valueChanges.subscribe(v =>
-        this.form.get(control).setValue(v.replace(/\r?\n|\r/g, ' ').replace(/ +/g, ' '), { emitEvent: false })
-      )
-    );
 
     this.generateSeed();
 

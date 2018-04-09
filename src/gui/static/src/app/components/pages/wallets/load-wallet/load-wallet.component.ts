@@ -30,7 +30,7 @@ export class LoadWalletComponent implements OnInit {
   }
 
   loadWallet() {
-    this.walletService.create(this.form.value.label, this.form.value.seed.trim(), this.scan)
+    this.walletService.create(this.form.value.label, this.form.value.seed, this.scan)
       .subscribe(
         () => this.dialogRef.close(),
         error => this.snackbar.open(error['_body'], null, { duration: 5000 })
@@ -42,9 +42,5 @@ export class LoadWalletComponent implements OnInit {
     this.form.addControl('label', new FormControl('', [Validators.required]));
     this.form.addControl('seed', new FormControl('', [Validators.required]));
     this.scan = 100;
-
-    this.form.get('seed').valueChanges.subscribe(v =>
-      this.form.get('seed').setValue(v.replace(/\r?\n|\r/g, ' ').replace(/ +/g, ' '), { emitEvent: false })
-    );
   }
 }

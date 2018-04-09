@@ -212,11 +212,12 @@ Test(hash,TestSHA256FromHex){
   cr_assert(error == SKY_ERROR);
 
   // Valid hex hash
-  char sbuff1[300];
-  strnhex(h,sbuff1,sizeof(h));
-  GoString s2 = {sbuff1,strlen(sbuff1)};
+  // char sbuff1[300];
+  GoString_ s2;
+  // strnhex(h,sbuff1,sizeof(h));
+  SKY_cipher_SHA256_Hex(&h, &s2 );
   SHA256 h2;
-  error = SKY_cipher_SHA256FromHex(s2,&h2);
+  error = SKY_cipher_SHA256FromHex((*((GoString *) &s2)),&h2);
   cr_assert(error == SKY_OK);
   cr_assert(eq(u8[32],h,h2));
 }

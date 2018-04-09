@@ -270,8 +270,8 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 		// Wipes all sensitive data
-		wlt.Erase()
 		rlt := wallet.NewReadableWallet(wlt)
+		rlt.Erase()
 		wh.SendJSONOr500(logger, w, rlt)
 	}
 }
@@ -411,8 +411,8 @@ func walletGet(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 		// Wipes all sensitive data
-		wlt.Erase()
 		rlt := wallet.NewReadableWallet(wlt)
+		rlt.Erase()
 		wh.SendJSONOr500(logger, w, rlt)
 	}
 }
@@ -477,12 +477,14 @@ func walletsHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 			return
 		}
+
+		rlts := wlts.ToReadable()
 		// Erase sensitive data
-		for i := range wlts {
-			wlts[i].Erase()
+		for i := range rlts {
+			rlts[i].Erase()
 		}
 
-		wh.SendJSONOr500(logger, w, wlts.ToReadable())
+		wh.SendJSONOr500(logger, w, rlts)
 	}
 }
 
@@ -693,8 +695,9 @@ func walletEncryptHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		// Make sure the sensitive data are wiped
-		wlt.Erase()
-		wh.SendJSONOr500(logger, w, wallet.NewReadableWallet(wlt))
+		rlt := wallet.NewReadableWallet(wlt)
+		rlt.Erase()
+		wh.SendJSONOr500(logger, w, rlt)
 	}
 }
 
@@ -737,8 +740,9 @@ func walletDecryptHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
+		rlt := wallet.NewReadableWallet(wlt)
 		// Wipes sensitive data in wallet
-		wlt.Erase()
-		wh.SendJSONOr500(logger, w, wallet.NewReadableWallet(wlt))
+		rlt.Erase()
+		wh.SendJSONOr500(logger, w, rlt)
 	}
 }

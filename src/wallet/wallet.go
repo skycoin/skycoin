@@ -195,7 +195,7 @@ func (w *Wallet) lock(password []byte, cryptoType CryptoType) error {
 	defer func() {
 		// Wipes all unencrypted sensitive data
 		ss.erase()
-		wlt.Erase()
+		wlt.erase()
 	}()
 
 	ss.set(secretSeed, wlt.seed())
@@ -235,10 +235,10 @@ func (w *Wallet) lock(password []byte, cryptoType CryptoType) error {
 	wlt.setVersion(Version)
 
 	// Wipes unencrypted sensitive data
-	wlt.Erase()
+	wlt.erase()
 
 	// Wipes the secret fields in w
-	w.Erase()
+	w.erase()
 
 	// Replace the original wallet with new encrypted wallet
 	w.copyFrom(wlt)
@@ -339,8 +339,8 @@ func (w *Wallet) copyFrom(src *Wallet) {
 	}
 }
 
-// Erase wipes secret fields in wallet
-func (w *Wallet) Erase() { // TODO: rename to Erase
+// erase wipes secret fields in wallet
+func (w *Wallet) erase() {
 	// Wipes the seed and last seed
 	w.setSeed("")
 	w.setLastSeed("")
@@ -372,7 +372,7 @@ func (w *Wallet) guardUpdate(password []byte, fn func(w *Wallet) error) error {
 		return err
 	}
 
-	defer wlt.Erase()
+	defer wlt.erase()
 
 	if err := fn(wlt); err != nil {
 		return err
@@ -384,7 +384,7 @@ func (w *Wallet) guardUpdate(password []byte, fn func(w *Wallet) error) error {
 
 	*w = *wlt
 	// Wipes all sensitive data
-	w.Erase()
+	w.erase()
 	return nil
 }
 
@@ -404,7 +404,7 @@ func (w *Wallet) guardView(password []byte, f func(w *Wallet) error) error {
 		return err
 	}
 
-	defer wlt.Erase()
+	defer wlt.erase()
 
 	if err := f(wlt); err != nil {
 		return err

@@ -2014,6 +2014,7 @@ func TestGetWallet(t *testing.T) {
 	w1, err := c.Wallet(w.Filename())
 	require.NoError(t, err)
 	require.Equal(t, *w, *w1)
+	checkNoSensitiveData(t, w1)
 }
 
 func TestGetWallets(t *testing.T) {
@@ -2452,6 +2453,7 @@ func getAddressBalance(t *testing.T, c *gui.Client, addr string) (uint64, uint64
 func checkNoSensitiveData(t *testing.T, w *wallet.Wallet) {
 	require.Empty(t, w.Meta["seed"])
 	require.Empty(t, w.Meta["lastSeed"])
+	require.Empty(t, w.Meta["secrets"])
 	for _, e := range w.Entries {
 		require.Equal(t, cipher.SecKey{}, e.Secret)
 	}

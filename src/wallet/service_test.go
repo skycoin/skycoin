@@ -111,7 +111,7 @@ func TestServiceCreateWallet(t *testing.T) {
 	}
 	for _, tc := range tt {
 		for ct := range cryptoTable {
-			t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
+			t.Run(fmt.Sprintf("%v crypto=%v", tc.name, ct), func(t *testing.T) {
 				dir := prepareWltDir()
 				s, err := NewService(Config{
 					WalletDir:        dir,

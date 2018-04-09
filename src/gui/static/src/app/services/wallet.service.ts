@@ -84,6 +84,8 @@ export class WalletService {
 
   outputsWithWallets(): Observable<any> {
     return Observable.zip(this.all(), this.outputs(), (wallets, outputs) => {
+      wallets = JSON.parse(JSON.stringify(wallets));
+
       return !wallets ? [] : wallets.map(wallet => {
         wallet.addresses = wallet.addresses.map(address => {
           address.outputs = outputs.head_outputs.filter(output => output.address === address.address);

@@ -394,9 +394,6 @@ func (c *Client) CreateWallet(seed, label string, scanN int, encrypt bool, passw
 	v.Add("label", label)
 	if encrypt {
 		v.Add("encrypt", "true")
-		if len(password) == 0 {
-			return nil, errors.New("missing password")
-		}
 		v.Add("password", password)
 	}
 
@@ -420,9 +417,7 @@ func (c *Client) NewWalletAddress(id string, n int, password string) ([]string, 
 		v.Add("num", fmt.Sprint(n))
 	}
 
-	if len(password) != 0 {
-		v.Add("password", password)
-	}
+	v.Add("password", password)
 
 	var obj struct {
 		Addresses []string `json:"addresses"`
@@ -452,9 +447,7 @@ func (c *Client) Spend(id, dst string, coins uint64, password string) (*SpendRes
 	v.Add("id", id)
 	v.Add("dst", dst)
 	v.Add("coins", fmt.Sprint(coins))
-	if len(password) > 0 {
-		v.Add("password", password)
-	}
+	v.Add("password", password)
 
 	var r SpendResult
 	endpoint := "/wallet/spend"
@@ -515,10 +508,6 @@ func (c *Client) NewSeed(entropy int) (string, error) {
 // GetWalletSeed returns seed of wallet of given id,
 // returns ErrWalletNotEncrypted if the wallet is not encrypted.
 func (c *Client) GetWalletSeed(id string, password string) (string, error) {
-	if len(password) == 0 {
-		return "", errors.New("missing password")
-	}
-
 	v := url.Values{}
 	v.Add("id", id)
 	v.Add("password", password)
@@ -747,10 +736,6 @@ func (c *Client) UnloadWallet(id string) error {
 
 // EncryptWallet encrypts specific wallet with given password
 func (c *Client) EncryptWallet(id string, password string) (*wallet.ReadableWallet, error) {
-	if len(password) == 0 {
-		return nil, errors.New("missing password")
-	}
-
 	v := url.Values{}
 	v.Add("id", id)
 	v.Add("password", password)
@@ -764,9 +749,6 @@ func (c *Client) EncryptWallet(id string, password string) (*wallet.ReadableWall
 
 // DecryptWallet decrypts wallet by making a request to /wallet/decrypt
 func (c *Client) DecryptWallet(id string, password string) (*wallet.ReadableWallet, error) {
-	if len(password) == 0 {
-		return nil, errors.New("missing password")
-	}
 	v := url.Values{}
 	v.Add("id", id)
 	v.Add("password", password)

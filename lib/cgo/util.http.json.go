@@ -1,6 +1,6 @@
 package main
 
-import httphelper "github.com/skycoin/skycoin/src/httphelper"
+import http "github.com/skycoin/skycoin/src/util/http"
 
 /*
 
@@ -12,24 +12,24 @@ import httphelper "github.com/skycoin/skycoin/src/httphelper"
 import "C"
 
 // export SKY_httphelper_SendJSON
-func SKY_httphelper_SendJSON(_w *C.ResponseWriter, _m interface{}) (____return_var uint32) {
-	____return_var = 0
+func SKY_httphelper_SendJSON(_w *C.ResponseWriter, _m interface{}) (____error_code uint32) {
+	____error_code = 0
 	defer func() {
-		____return_var = catchApiPanic(recover())
+		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	____return_err := httphelper.SendJSON(w, m)
-	____return_var = libErrorCode(____return_err)
+	____return_err := http.SendJSON(w, m)
+	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
 	}
 	return
 }
 
 // export SKY_httphelper_SendJSONOr500
-func SKY_httphelper_SendJSONOr500(_log *C.Logger, _w *C.ResponseWriter, _m interface{}) (____return_var uint32) {
-	____return_var = 0
+func SKY_httphelper_SendJSONOr500(_log *C.Logger, _w *C.ResponseWriter, _m interface{}) (____error_code uint32) {
+	____error_code = 0
 	defer func() {
-		____return_var = catchApiPanic(recover())
+		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	httphelper.SendJSONOr500(log, w, m)
+	http.SendJSONOr500(log, w, m)
 	return
 }

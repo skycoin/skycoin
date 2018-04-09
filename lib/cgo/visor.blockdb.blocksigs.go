@@ -1,9 +1,6 @@
 package main
 
-import (
-	cipher "github.com/skycoin/skycoin/src/cipher"
-	unsafe "unsafe"
-)
+import "unsafe"
 
 /*
 
@@ -15,14 +12,14 @@ import (
 import "C"
 
 // export SKY_blockdb_blockSigs_Get
-func SKY_blockdb_blockSigs_Get(_bs blockSigs, _hash *C.SHA256, _arg1 *C.Sig, _arg2 *bool) (____return_var uint32) {
-	____return_var = 0
+func SKY_blockdb_blockSigs_Get(_bs blockSigs, _hash *C.SHA256, _arg1 *C.Sig, _arg2 *bool) (____error_code uint32) {
+	____error_code = 0
 	defer func() {
-		____return_var = catchApiPanic(recover())
+		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	bs := *(*cipher.blockSigs)(unsafe.Pointer(_bs))
+	bs := *(*blockSigs)(unsafe.Pointer(_bs))
 	__arg1, __arg2, ____return_err := bs.Get(hash)
-	____return_var = libErrorCode(____return_err)
+	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
 		*_arg2 = __arg2
 	}
@@ -30,14 +27,14 @@ func SKY_blockdb_blockSigs_Get(_bs blockSigs, _hash *C.SHA256, _arg1 *C.Sig, _ar
 }
 
 // export SKY_blockdb_blockSigs_AddWithTx
-func SKY_blockdb_blockSigs_AddWithTx(_bs blockSigs, _tx *C.Tx, _hash *C.SHA256, _sig *C.Sig) (____return_var uint32) {
-	____return_var = 0
+func SKY_blockdb_blockSigs_AddWithTx(_bs blockSigs, _tx *C.Tx, _hash *C.SHA256, _sig *C.Sig) (____error_code uint32) {
+	____error_code = 0
 	defer func() {
-		____return_var = catchApiPanic(recover())
+		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	bs := (*cipher.blockSigs)(unsafe.Pointer(_bs))
+	bs := (*blockSigs)(unsafe.Pointer(_bs))
 	____return_err := bs.AddWithTx(tx, hash, sig)
-	____return_var = libErrorCode(____return_err)
+	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
 	}
 	return

@@ -1,9 +1,8 @@
 package main
 
 import (
-	cipher "github.com/skycoin/skycoin/src/cipher"
-	httphelper "github.com/skycoin/skycoin/src/httphelper"
-	unsafe "unsafe"
+	http "github.com/skycoin/skycoin/src/util/http"
+	"unsafe"
 )
 
 /*
@@ -16,22 +15,22 @@ import (
 import "C"
 
 // export SKY_httphelper_ElapsedHandler
-func SKY_httphelper_ElapsedHandler(_logger *C.FieldLogger, _handler *C.Handler, _arg2 *C.Handler) (____return_var uint32) {
-	____return_var = 0
+func SKY_httphelper_ElapsedHandler(_logger *C.FieldLogger, _handler *C.Handler, _arg2 *C.Handler) (____error_code uint32) {
+	____error_code = 0
 	defer func() {
-		____return_var = catchApiPanic(recover())
+		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	__arg2 := httphelper.ElapsedHandler(logger, handler)
+	__arg2 := http.ElapsedHandler(logger, handler)
 	return
 }
 
 // export SKY_httphelper_wrappedResponseWriter_WriteHeader
-func SKY_httphelper_wrappedResponseWriter_WriteHeader(_lrw wrappedResponseWriter, _code int) (____return_var uint32) {
-	____return_var = 0
+func SKY_httphelper_wrappedResponseWriter_WriteHeader(_lrw wrappedResponseWriter, _code int) (____error_code uint32) {
+	____error_code = 0
 	defer func() {
-		____return_var = catchApiPanic(recover())
+		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	lrw := (*cipher.wrappedResponseWriter)(unsafe.Pointer(_lrw))
+	lrw := (*wrappedResponseWriter)(unsafe.Pointer(_lrw))
 	code := _code
 	lrw.WriteHeader(code)
 	return

@@ -1,9 +1,6 @@
 package main
 
-import (
-	cipher "github.com/skycoin/skycoin/src/cipher"
-	unsafe "unsafe"
-)
+import "unsafe"
 
 /*
 
@@ -15,28 +12,28 @@ import (
 import "C"
 
 // export SKY_wallet_Entry_Verify
-func SKY_wallet_Entry_Verify(_we *C.Entry) (____return_var uint32) {
-	____return_var = 0
+func SKY_wallet_Entry_Verify(_we *C.Entry) (____error_code uint32) {
+	____error_code = 0
 	defer func() {
-		____return_var = catchApiPanic(recover())
+		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	we := (*cipher.Entry)(unsafe.Pointer(_we))
+	we := (*Entry)(unsafe.Pointer(_we))
 	____return_err := we.Verify()
-	____return_var = libErrorCode(____return_err)
+	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
 	}
 	return
 }
 
 // export SKY_wallet_Entry_VerifyPublic
-func SKY_wallet_Entry_VerifyPublic(_we *C.Entry) (____return_var uint32) {
-	____return_var = 0
+func SKY_wallet_Entry_VerifyPublic(_we *C.Entry) (____error_code uint32) {
+	____error_code = 0
 	defer func() {
-		____return_var = catchApiPanic(recover())
+		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	we := (*cipher.Entry)(unsafe.Pointer(_we))
+	we := (*Entry)(unsafe.Pointer(_we))
 	____return_err := we.VerifyPublic()
-	____return_var = libErrorCode(____return_err)
+	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
 	}
 	return

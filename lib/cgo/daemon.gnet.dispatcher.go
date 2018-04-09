@@ -1,10 +1,9 @@
 package main
 
 import (
-	cipher "github.com/skycoin/skycoin/src/cipher"
-	gnet "github.com/skycoin/skycoin/src/gnet"
-	reflect "reflect"
-	unsafe "unsafe"
+	gnet "github.com/skycoin/skycoin/src/daemon/gnet"
+	"reflect"
+	"unsafe"
 )
 
 /*
@@ -17,12 +16,12 @@ import (
 import "C"
 
 // export SKY_gnet_EncodeMessage
-func SKY_gnet_EncodeMessage(_msg *C.Message, _arg1 *C.GoSlice_) (____return_var uint32) {
-	____return_var = 0
+func SKY_gnet_EncodeMessage(_msg *C.Message, _arg1 *C.GoSlice_) (____error_code uint32) {
+	____error_code = 0
 	defer func() {
-		____return_var = catchApiPanic(recover())
+		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	msg := *(*cipher.Message)(unsafe.Pointer(_msg))
+	msg := *(*Message)(unsafe.Pointer(_msg))
 	__arg1 := gnet.EncodeMessage(msg)
 	copyToGoSlice(reflect.ValueOf(__arg1), _arg1)
 	return

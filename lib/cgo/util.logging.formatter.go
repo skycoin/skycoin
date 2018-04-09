@@ -1,9 +1,8 @@
 package main
 
 import (
-	cipher "github.com/skycoin/skycoin/src/cipher"
-	reflect "reflect"
-	unsafe "unsafe"
+	"reflect"
+	"unsafe"
 )
 
 /*
@@ -16,26 +15,26 @@ import (
 import "C"
 
 // export SKY_logging_TextFormatter_SetColorScheme
-func SKY_logging_TextFormatter_SetColorScheme(_f *C.TextFormatter, _colorScheme *C.ColorScheme) (____return_var uint32) {
-	____return_var = 0
+func SKY_logging_TextFormatter_SetColorScheme(_f *C.TextFormatter, _colorScheme *C.ColorScheme) (____error_code uint32) {
+	____error_code = 0
 	defer func() {
-		____return_var = catchApiPanic(recover())
+		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	f := (*cipher.TextFormatter)(unsafe.Pointer(_f))
-	colorScheme := (*cipher.ColorScheme)(unsafe.Pointer(_colorScheme))
+	f := (*TextFormatter)(unsafe.Pointer(_f))
+	colorScheme := (*ColorScheme)(unsafe.Pointer(_colorScheme))
 	f.SetColorScheme(colorScheme)
 	return
 }
 
 // export SKY_logging_TextFormatter_Format
-func SKY_logging_TextFormatter_Format(_f *C.TextFormatter, _entry *C.Entry, _arg1 *C.GoSlice_) (____return_var uint32) {
-	____return_var = 0
+func SKY_logging_TextFormatter_Format(_f *C.TextFormatter, _entry *C.Entry, _arg1 *C.GoSlice_) (____error_code uint32) {
+	____error_code = 0
 	defer func() {
-		____return_var = catchApiPanic(recover())
+		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	f := (*cipher.TextFormatter)(unsafe.Pointer(_f))
+	f := (*TextFormatter)(unsafe.Pointer(_f))
 	__arg1, ____return_err := f.Format(entry)
-	____return_var = libErrorCode(____return_err)
+	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
 		copyToGoSlice(reflect.ValueOf(__arg1), _arg1)
 	}

@@ -1,9 +1,8 @@
 package main
 
 import (
-	cipher "github.com/skycoin/skycoin/src/cipher"
-	strand "github.com/skycoin/skycoin/src/strand"
-	unsafe "unsafe"
+	strand "github.com/skycoin/skycoin/src/daemon/strand"
+	"unsafe"
 )
 
 /*
@@ -16,15 +15,15 @@ import (
 import "C"
 
 // export SKY_strand_Strand
-func SKY_strand_Strand(_logger *C.Logger, _c C.GoChan_, _name string, _f C.Handle, _quit C.GoChan_, _quitErr error) (____return_var uint32) {
-	____return_var = 0
+func SKY_strand_Strand(_logger *C.Logger, _c C.GoChan_, _name string, _f C.Handle, _quit C.GoChan_, _quitErr error) (____error_code uint32) {
+	____error_code = 0
 	defer func() {
-		____return_var = catchApiPanic(recover())
+		____error_code = catchApiPanic(____error_code, recover())
 	}()
 	name := _name
-	quitErr := *(*cipher.error)(unsafe.Pointer(_quitErr))
+	quitErr := *(*error)(unsafe.Pointer(_quitErr))
 	____return_err := strand.Strand(logger, c, name, f, quit, quitErr)
-	____return_var = libErrorCode(____return_err)
+	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
 	}
 	return

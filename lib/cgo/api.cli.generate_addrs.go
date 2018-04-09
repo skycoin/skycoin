@@ -1,8 +1,8 @@
 package main
 
 import (
-	cli "github.com/skycoin/skycoin/src/cli"
-	reflect "reflect"
+	cli "github.com/skycoin/skycoin/src/api/cli"
+	"reflect"
 )
 
 /*
@@ -15,15 +15,15 @@ import (
 import "C"
 
 // export SKY_cli_GenerateAddressesInFile
-func SKY_cli_GenerateAddressesInFile(_walletFile string, _num uint64, _arg2 *C.GoSlice_) (____return_var uint32) {
-	____return_var = 0
+func SKY_cli_GenerateAddressesInFile(_walletFile string, _num uint64, _arg2 *C.GoSlice_) (____error_code uint32) {
+	____error_code = 0
 	defer func() {
-		____return_var = catchApiPanic(recover())
+		____error_code = catchApiPanic(____error_code, recover())
 	}()
 	walletFile := _walletFile
 	num := _num
 	__arg2, ____return_err := cli.GenerateAddressesInFile(walletFile, num)
-	____return_var = libErrorCode(____return_err)
+	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
 		copyToGoSlice(reflect.ValueOf(__arg2), _arg2)
 	}
@@ -31,13 +31,13 @@ func SKY_cli_GenerateAddressesInFile(_walletFile string, _num uint64, _arg2 *C.G
 }
 
 // export SKY_cli_FormatAddressesAsJSON
-func SKY_cli_FormatAddressesAsJSON(_addrs *C.GoSlice_, _arg1 *C.GoString_) (____return_var uint32) {
-	____return_var = 0
+func SKY_cli_FormatAddressesAsJSON(_addrs *C.GoSlice_, _arg1 *C.GoString_) (____error_code uint32) {
+	____error_code = 0
 	defer func() {
-		____return_var = catchApiPanic(recover())
+		____error_code = catchApiPanic(____error_code, recover())
 	}()
 	__arg1, ____return_err := cli.FormatAddressesAsJSON(addrs)
-	____return_var = libErrorCode(____return_err)
+	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
 		copyString(__arg1, _arg1)
 	}
@@ -45,10 +45,10 @@ func SKY_cli_FormatAddressesAsJSON(_addrs *C.GoSlice_, _arg1 *C.GoString_) (____
 }
 
 // export SKY_cli_FormatAddressesAsJoinedArray
-func SKY_cli_FormatAddressesAsJoinedArray(_addrs *C.GoSlice_, _arg1 *C.GoString_) (____return_var uint32) {
-	____return_var = 0
+func SKY_cli_FormatAddressesAsJoinedArray(_addrs *C.GoSlice_, _arg1 *C.GoString_) (____error_code uint32) {
+	____error_code = 0
 	defer func() {
-		____return_var = catchApiPanic(recover())
+		____error_code = catchApiPanic(____error_code, recover())
 	}()
 	__arg1 := cli.FormatAddressesAsJoinedArray(addrs)
 	copyString(__arg1, _arg1)
@@ -56,10 +56,10 @@ func SKY_cli_FormatAddressesAsJoinedArray(_addrs *C.GoSlice_, _arg1 *C.GoString_
 }
 
 // export SKY_cli_AddressesToStrings
-func SKY_cli_AddressesToStrings(_addrs *C.GoSlice_, _arg1 *C.GoSlice_) (____return_var uint32) {
-	____return_var = 0
+func SKY_cli_AddressesToStrings(_addrs *C.GoSlice_, _arg1 *C.GoSlice_) (____error_code uint32) {
+	____error_code = 0
 	defer func() {
-		____return_var = catchApiPanic(recover())
+		____error_code = catchApiPanic(____error_code, recover())
 	}()
 	__arg1 := cli.AddressesToStrings(addrs)
 	copyToGoSlice(reflect.ValueOf(__arg1), _arg1)

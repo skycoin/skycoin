@@ -1,6 +1,6 @@
 package main
 
-import httphelper "github.com/skycoin/skycoin/src/httphelper"
+import http "github.com/skycoin/skycoin/src/util/http"
 
 /*
 
@@ -12,12 +12,12 @@ import httphelper "github.com/skycoin/skycoin/src/httphelper"
 import "C"
 
 // export SKY_httphelper_HostCheck
-func SKY_httphelper_HostCheck(_logger *C.Logger, _host string, _handler *C.Handler, _arg3 *C.Handler) (____return_var uint32) {
-	____return_var = 0
+func SKY_httphelper_HostCheck(_logger *C.Logger, _host string, _handler *C.Handler, _arg3 *C.Handler) (____error_code uint32) {
+	____error_code = 0
 	defer func() {
-		____return_var = catchApiPanic(recover())
+		____error_code = catchApiPanic(____error_code, recover())
 	}()
 	host := _host
-	__arg3 := httphelper.HostCheck(logger, host, handler)
+	__arg3 := http.HostCheck(logger, host, handler)
 	return
 }

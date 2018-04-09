@@ -2,8 +2,8 @@ package main
 
 import (
 	gui "github.com/skycoin/skycoin/src/gui"
-	reflect "reflect"
-	unsafe "unsafe"
+	"reflect"
+	"unsafe"
 )
 
 /*
@@ -16,10 +16,10 @@ import (
 import "C"
 
 // export SKY_gui_NewReadableTransaction
-func SKY_gui_NewReadableTransaction(_t *C.TransactionResult, _inputs *C.GoSlice_, _arg2 *C.ReadableTransaction) (____return_var uint32) {
-	____return_var = 0
+func SKY_gui_NewReadableTransaction(_t *C.TransactionResult, _inputs *C.GoSlice_, _arg2 *C.ReadableTransaction) (____error_code uint32) {
+	____error_code = 0
 	defer func() {
-		____return_var = catchApiPanic(recover())
+		____error_code = catchApiPanic(____error_code, recover())
 	}()
 	__arg2 := gui.NewReadableTransaction(t, inputs)
 	copyToBuffer(reflect.ValueOf(__arg2[:]), unsafe.Pointer(_arg2), uint(SizeofReadableTransaction))

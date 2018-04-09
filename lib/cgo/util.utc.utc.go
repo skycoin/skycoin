@@ -1,6 +1,6 @@
 package main
 
-import utc "github.com/skycoin/skycoin/src/utc"
+import utc "github.com/skycoin/skycoin/src/util/utc"
 
 /*
 
@@ -12,20 +12,20 @@ import utc "github.com/skycoin/skycoin/src/utc"
 import "C"
 
 // export SKY_utc_Now
-func SKY_utc_Now(_arg0 *C.Time) (____return_var uint32) {
-	____return_var = 0
+func SKY_utc_Now(_arg0 *C.Time) (____error_code uint32) {
+	____error_code = 0
 	defer func() {
-		____return_var = catchApiPanic(recover())
+		____error_code = catchApiPanic(____error_code, recover())
 	}()
 	__arg0 := utc.Now()
 	return
 }
 
 // export SKY_utc_UnixNow
-func SKY_utc_UnixNow(_arg0 *int64) (____return_var uint32) {
-	____return_var = 0
+func SKY_utc_UnixNow(_arg0 *int64) (____error_code uint32) {
+	____error_code = 0
 	defer func() {
-		____return_var = catchApiPanic(recover())
+		____error_code = catchApiPanic(____error_code, recover())
 	}()
 	__arg0 := utc.UnixNow()
 	*_arg0 = __arg0

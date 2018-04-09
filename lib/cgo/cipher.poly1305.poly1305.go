@@ -1,8 +1,8 @@
 package main
 
 import (
-	poly1305 "github.com/skycoin/skycoin/src/poly1305"
-	unsafe "unsafe"
+	poly1305 "github.com/skycoin/skycoin/src/cipher/poly1305"
+	"unsafe"
 )
 
 /*
@@ -15,10 +15,10 @@ import (
 import "C"
 
 // export SKY_poly1305_Verify
-func SKY_poly1305_Verify(_mac *[]byte, _m *C.GoSlice_, _key *[]byte, _arg3 *bool) (____return_var uint32) {
-	____return_var = 0
+func SKY_poly1305_Verify(_mac *[]byte, _m *C.GoSlice_, _key *[]byte, _arg3 *bool) (____error_code uint32) {
+	____error_code = 0
 	defer func() {
-		____return_var = catchApiPanic(recover())
+		____error_code = catchApiPanic(____error_code, recover())
 	}()
 	mac := *(*[]byte)(unsafe.Pointer(_mac))
 	m := *(*[]byte)(unsafe.Pointer(_m))

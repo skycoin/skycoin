@@ -62,24 +62,6 @@ Caller is responsible for allocating memory for objects meant to be
 created by libskycoin API. Different approaches are chosen to avoid
 segmentation faults and memory corruption.
 
-<<<<<<< HEAD
-The parameters corresponding to slices returned by libskycoin are
-of `GoSlice *` type. Their `data` field must always be
-set consistently to point at the buffer memory address whereas
-`cap` must always be set to the size in bytes of the memory
-area reserved in advance for that buffer. If the size of the data
-to be returned by a given libskycoin function exceeds the value
-set in `cap` then the only modification that will be applied will
-be setting `len` to a negative value representing the number
-of extra bytes that need to be allocated for the result to fit in
-memory. For instance if `100` bytes have been allocated in advance
-by the caller but libskycoin result occupies `125` bytes then
-`len` field will be set to `-25` as a side-effect of function
-invocation. The caller will be responsible for allocating another
-memory buffer using a higher `cap` and retry.
-
-
-=======
 API functions perform memory allocation for output `GoString *` arguments.
 In that case new memory is allocated dynamically by `libskycoin` code.
 The caller C code is responsible for releasing that memory by passing the pointer
@@ -109,5 +91,4 @@ and `len` field will be set to `-1` as a side-effect of function
 invocation. The caller will be responsible for
 [reallocating another memory buffer](http://en.cppreference.com/w/c/memory/realloc)
 using a higher `cap` and retry.
->>>>>>> d337866aae036c4dadafdbf94243261a4d75919f
 

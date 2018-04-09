@@ -17,6 +17,9 @@ typedef float GoFloat32_;
 typedef double GoFloat64_;
 typedef float _Complex GoComplex64_;
 typedef double _Complex GoComplex128_;
+typedef short bool;
+typedef uint32 error;
+typedef uint32 Handle;
 
 /*
   static assertion to make sure the file is being used on architecture

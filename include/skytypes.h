@@ -29,6 +29,13 @@ typedef void *GoMap_;
 typedef void *GoChan_;
 typedef struct { void *t; void *v; } GoInterface_;
 typedef struct { void *data; GoInt_ len; GoInt_ cap; } GoSlice_;
+
+#include "skytypes.gen.h"
+
+// TODO: Remove declarations below since they should generated and included by skytypes.gen.h
+
+/*
+
 typedef unsigned char Ripemd160[20];
 
 typedef struct {
@@ -85,6 +92,8 @@ typedef struct {
 	GoInt64_ Coins;
 	GoInt64_ Hours;
 } UxBalance;
+
+*/
 
 #endif
 

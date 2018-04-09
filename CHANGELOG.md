@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- #1168, Updated CLI README
+- `-launch-browser` is set to false by default
+
 ### Removed
 
 - Remove dependency [op/go-logging](https://github.com/op/go-logging)

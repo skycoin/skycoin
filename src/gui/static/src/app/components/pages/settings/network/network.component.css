@@ -3,6 +3,11 @@ h3, ngx-datatable {
   margin-right: 20px;
 }
 
+h3 {
+  font-weight: 400;
+  margin-top: 40px;
+}
+
 ngx-datatable {
   margin-bottom: 20px;
 }

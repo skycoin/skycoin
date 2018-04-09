@@ -1,0 +1,1 @@
+typedef GoInterface_ BalanceGetter;

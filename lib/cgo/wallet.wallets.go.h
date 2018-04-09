@@ -1,0 +1,1 @@
+typedef GoMap_ Wallets;

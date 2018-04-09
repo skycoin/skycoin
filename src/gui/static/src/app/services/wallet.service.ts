@@ -10,6 +10,7 @@ import 'rxjs/add/operator/do';
 import 'rxjs/add/operator/filter';
 import 'rxjs/add/operator/first';
 import 'rxjs/add/operator/mergeMap';
+import 'rxjs/add/observable/zip';
 import { Address, Wallet } from '../app.datatypes';
 
 @Injectable()
@@ -79,6 +80,20 @@ export class WalletService {
     return this.addressesAsString()
       .filter(addresses => !!addresses)
       .flatMap(addresses => this.apiService.get('outputs', {addrs: addresses}));
+  }
+
+  outputsWithWallets(): Observable<any> {
+    return Observable.zip(this.all(), this.outputs(), (wallets, outputs) => {
+      return !wallets ? [] : wallets.map(wallet => {
+        wallet.addresses = wallet.addresses.map(address => {
+          address.outputs = outputs.head_outputs.filter(output => output.address === address.address);
+
+          return address;
+        });
+
+        return wallet;
+      });
+    });
   }
 
   pendingTransactions(): Observable<any> {

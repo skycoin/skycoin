@@ -10,8 +10,12 @@
   .-address {
     margin-bottom: 20px;
 
-    h4 + .-output {
-      margin-top: 15px;
+    h4 {
+      margin: 0;
+
+      & + .-output {
+        margin-top: 15px;
+      }
     }
 
     .-output {

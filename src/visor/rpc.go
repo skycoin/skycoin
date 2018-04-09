@@ -158,6 +158,12 @@ func (rpc *RPC) CreateAndSignTransaction(wltID string, password []byte, vld wall
 	return rpc.v.Wallets.CreateAndSignTransaction(wltID, password, vld, unspent, headTime, coins, dest)
 }
 
+//CreateAndSignTransaction creates and sign transaction from wallet
+func (rpc *RPC) CreateAndSignAdvancedTransaction(advancedSpend wallet.AdvancedSpend, sv wallet.Validator,
+	unspent blockdb.UnspentGetter, headTime uint64) (*coin.Transaction, error) {
+	return rpc.v.Wallets.CreateAndSignAdvancedTransaction(advancedSpend, sv, unspent, headTime)
+}
+
 // UpdateWalletLabel updates wallet label
 func (rpc *RPC) UpdateWalletLabel(wltID, label string) error {
 	return rpc.v.Wallets.UpdateWalletLabel(wltID, label)

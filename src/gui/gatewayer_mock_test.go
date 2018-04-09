@@ -7,7 +7,6 @@ package gui
 
 import (
 	"fmt"
-
 	mock "github.com/stretchr/testify/mock"
 
 	cipher "github.com/skycoin/skycoin/src/cipher"
@@ -25,6 +24,33 @@ type GatewayerMock struct {
 
 func NewGatewayerMock() *GatewayerMock {
 	return &GatewayerMock{}
+}
+
+// AdvancedSpend mocked method
+func (m *GatewayerMock) AdvancedSpend(p0 wallet.AdvancedSpend) (*coin.Transaction, error) {
+
+	ret := m.Called(p0)
+
+	var r0 *coin.Transaction
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case *coin.Transaction:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
+
 }
 
 // CreateWallet mocked method

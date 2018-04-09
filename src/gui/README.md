@@ -221,14 +221,14 @@ Result:
     },
     "entries":[
         {
-            address: "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
-            public_key: "030479afcf24dbc1579769522d4d80c13270a6bb829e9aa121e012f600d5aab992",
-            secret_key: ""
+            "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
+            "public_key": "030479afcf24dbc1579769522d4d80c13270a6bb829e9aa121e012f600d5aab992",
+            "secret_key": ""
         },
         {
-            address: "SMnCGfpt7zVXm8BkRSFMLeMRA6LUu3Ewne",
-            public_key: "0258245e0f3a27b70ba8816e9ebd4470624f2924a79240b4b7624aaa129eff399e",
-            secret_key: ""
+            "address": "SMnCGfpt7zVXm8BkRSFMLeMRA6LUu3Ewne",
+            "public_key": "0258245e0f3a27b70ba8816e9ebd4470624f2924a79240b4b7624aaa129eff399e",
+            "secret_key": ""
         },
     ]
 }
@@ -400,11 +400,7 @@ Args:
 Example:
 
 ```sh
-# get csrf first
-curl http://127.0.0.1:6420/csrf
-# send request
 curl -X POST http://127.0.0.1:6420/wallet/create \
- -H 'X-CSRF-Token: $csrf' \
  -H 'Content-Type: application/x-www-form-urlencoded' \
  -d 'seed=$seed' \
  -d 'label=$label' \
@@ -448,11 +444,7 @@ Args:
 Example:
 
 ```sh
-# get csrf first
-curl http://127.0.0.1:6420/csrf
-# send request
 curl -X POST http://127.0.0.1:6420/wallet/newAddress \
- -H 'X-CSRF-Token: $csrf' \
  -H 'Content-Type: x-www-form-urlencoded' \
  -d 'id=2017_05_09_d554.wlt'
 ```
@@ -480,11 +472,7 @@ Args:
 Example:
 
 ```sh
-# get csrf first
-curl http://127.0.0.1:6420/csrf
-# send request
 curl -X POST http://127.0.0.1:6420/wallet/update \
- -H 'X-CSRF-Token: $csrf' \ 
  -H 'Content-Type: application/x-www-form-urlencoded' \
  -d 'id=$id' \
  -d 'label=$label'
@@ -553,15 +541,12 @@ Statuses:
 example, send 1 coin to `2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc` from wallet `2017_05_09_ea42.wlt`:
 
 ```sh
-# get csrf first
-curl http://127.0.0.1:6420/csrf
-# send request
 curl -X POST  http://127.0.0.1:6420/wallet/spend \
-  -H 'X-CSRF-Token: $csrf' \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   -d 'id=2017_05_09_ea42.wlt' \
   -d 'dst=2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc' \
-  -d 'coins=1000000&password=$password'
+  -d 'coins=1000000'
+  -d 'password=$password'
 ```
 
 Result:
@@ -622,11 +607,7 @@ Args:
 Example:
 
 ```sh
-# get csrf first
-curl http://127.0.0.1:6420/csrf
-# send request
 curl -X POST http://127.0.0.1:6420/wallet/unload \
- -H 'X-CSRF-Token: $csrf' \
  -H 'Content-Type: x-www-form-urlencoded' \
  -d 'id=2017_05_09_d554.wlt'
 ```
@@ -644,11 +625,7 @@ Args:
 Example:
 
 ```sh
-# get csrf first
-curl http://127.0.0.1:6420/csrf
-# send request
 curl -X POST http://127.0.0.1:6420/wallet/encrypt \
- -H 'X-CSRF-Token: $csrf' \
  -H 'Content-Type: application/x-www-form-urlencoded' \
  -d 'id=test.wlt' \
  -d 'password=$password'
@@ -665,7 +642,7 @@ Result:
         "filename": "test.wlt",
         "label": "ec",
         "lastSeed": "",
-        "secrets": "dgB7Im4iOjEwNDg1NzYsInIiOjgsInAiOjEsImtleUxlbiI6MzIsInNhbHQiOiJDWGFSWFVSRWJOa2ZmNlV2YWMyYm9QUzRPVU1zREpKWU9YNW1uQ1NJMjdjPSIsIm5vbmNlIjoiZVhOcXlCSVA4Vzg2ZEtBNCJ9q5n7Vl8d65QWb2UrcFbd/QkipXKnqcnwAr7FzDuR44QZ9aMI6xGQpCzs7dBeiyBqpFrehA8Hoax2C8vDJyTG/X4X9EhDBzEdm/LbPQ/rQhZ0Uu7DtmP2XvX5h+3lo2OJjfxpK9tjrNYusWE7FGFR6UoiroQRSB5qNAtdfgWqt7R3aA25bAolXjey/hpBNj7Rnk1o05A3YzeSZCDtsXx94xWiOltjpKOZKEH42bQ1LKlZRDvpN4SGZFAeBZ3endkFgxHftGtM/87vSppnquMxkxmIbtB1e+mbRhLno+bk4ny7htHu/kkhPuVelKpgNBx2RTjcQHHwBH0g/iJ+oQ/bfyREZQ13TT8xoMkuYra+gS9+F4OSLA==",
+        "secrets": "",
         "seed": "",
         "tm": "1521083044",
         "type": "deterministic",
@@ -694,11 +671,7 @@ Args:
 Example:
 
 ```sh
-# get csrf first
-curl http://127.0.0.1:6420/csrf
-# send request
 curl -X POST http://127.0.0.1:6420/wallet/decrypt \
- -H 'X-CSRF-Token: $csrf' \
  -H 'Content-Type: application/x-www-form-urlencoded' \
  -d 'id=test.wlt' \
  -d 'password=$password'
@@ -733,7 +706,7 @@ Result:
 
 ### Get wallet seed
 
-This api is supported only when `-enable-seed-api` option is set.
+This api is supported only when `-enable-seed-api` option is enabled and the wallet is encrypted.
 
 ```
 URI: /wallet/seed

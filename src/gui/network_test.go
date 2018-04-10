@@ -413,8 +413,8 @@ func TestGetDefaultStatus(t *testing.T) {
 				TotalAlive:   2,
 				TotalOffline: 0,
 				Connections: []ConnectionStatus{
-					{Status: "Connected", Connection: "11.44.66.88:9000", isAlive: true},
-					{Status: "Connected", Connection: "44.33.22.11:9000", isAlive: true},
+					{Status: "Disconnected", Connection: "11.44.66.88:9000", isAlive: false},
+					{Status: "Disconnected", Connection: "44.33.22.11:9000", isAlive: false},
 				},
 			}
 

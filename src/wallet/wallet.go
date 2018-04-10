@@ -30,6 +30,8 @@ var (
 
 	// ErrInsufficientBalance is returned if a wallet does not have enough balance for a spend
 	ErrInsufficientBalance = errors.New("balance is not sufficient")
+	// ErrZeroSpend is returned if a transaction is trying to spend 0 coins
+	ErrZeroSpend = errors.New("zero spend amount")
 	// ErrSpendingUnconfirmed is returned if caller attempts to spend unconfirmed outputs
 	ErrSpendingUnconfirmed = errors.New("please spend after your pending transaction is confirmed")
 	// ErrInvalidEncryptedField is returned if a wallet's Meta.encrypted value is invalid.
@@ -97,6 +99,35 @@ type Options struct {
 	Encrypt    bool       // whether the wallet need to be encrypted.
 	Password   []byte     // password that would be used for encryption, and would only be used when 'Encrypt' is true.
 	CryptoType CryptoType // wallet encryption type, scrypt-chacha20poly1305 or sha256-xor.
+}
+
+type Receiver struct {
+	Address string `json:"address"`
+	Coins   string `json:"coins"`
+	Hours   string `json:"hours"`
+}
+
+type HoursSelection struct {
+	Type        string  `json:"type"`
+	Mode        string  `json:"mode"`
+	ShareFactor string `json:"share_factor"`
+}
+
+type AdvancedSpendRequest struct {
+	HoursSelection HoursSelection `json:"hours_selection"`
+	//Outputs        []string       `json:"outputs"`
+	Addresses     []string   `json:"addresses"`
+	Wallets       []string   `json:"wallets"`
+	ChangeAddress string     `json:"change_address"`
+	To            []Receiver `json:"to"`
+}
+
+type AdvancedSpend struct {
+	HoursSelection HoursSelection
+	//Outputs        []string
+	Entries       map[cipher.Address]Entry
+	ChangeAddress cipher.Address
+	To            []coin.TransactionOutput
 }
 
 // newWalletFilename check for collisions and retry if failure
@@ -1004,7 +1035,7 @@ func cmpUxOutByHash(a, b UxBalance) bool {
 // It then chooses remaining uxouts with nonzero coinhours, ordered by sortStrategy
 func ChooseSpends(uxa []UxBalance, coins uint64, sortStrategy func([]UxBalance)) ([]UxBalance, error) {
 	if coins == 0 {
-		return nil, errors.New("zero spend amount")
+		return nil, ErrZeroSpend
 	}
 
 	if len(uxa) == 0 {

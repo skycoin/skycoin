@@ -243,6 +243,10 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.Se
 	//  failure status.
 	webHandler("/wallet/spend", walletSpendHandler(gateway))
 
+	// Advanced spend allows customization of a transaction
+	// provides more control over the unspents used and hours sent
+	webHandler("/spend/advanced", advancedSpendHandler(gateway))
+
 	// GET Arguments:
 	//      id: Wallet ID
 	// Returns all pending transanction for all addresses by selected Wallet

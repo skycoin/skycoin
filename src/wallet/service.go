@@ -5,10 +5,15 @@ import (
 	"os"
 	"sync"
 
+	"errors"
+	"math"
+
 	"github.com/skycoin/skycoin/src/cipher"
-	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
+	"github.com/skycoin/skycoin/src/cipher/go-bip39"
+	"github.com/skycoin/skycoin/src/util/fee"
+	"strconv"
 )
 
 // BalanceGetter interface for getting the balance of given addresses
@@ -388,6 +393,146 @@ func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, vld
 		}
 	}
 	return tx, nil
+}
+
+func (serv *Service) CreateAndSignAdvancedTransaction(advancedSpend AdvancedSpend, vld Validator,
+	unspent blockdb.UnspentGetter, headTime uint64) (*coin.Transaction, error) {
+	serv.RLock()
+	defer serv.RUnlock()
+
+	// make a list of all addresses
+	addrList := make([]cipher.Address, len(advancedSpend.Entries))
+	for _, entry := range advancedSpend.Entries {
+		addrList = append(addrList, entry.Address)
+	}
+
+	ok, err := vld.HasUnconfirmedSpendTx(addrList)
+	if err != nil {
+		return nil, fmt.Errorf("checking unconfirmed spending failed: %v", err)
+	}
+	if ok {
+		return nil, ErrSpendingUnconfirmed
+	}
+
+	txn := &coin.Transaction{}
+	auxs := unspent.GetUnspentsOfAddrs(addrList)
+
+	// Determine which unspents to spend.
+	uxa := auxs.Flatten()
+	uxb, err := NewUxBalances(headTime, uxa)
+	if err != nil {
+		return nil, err
+	}
+
+	// calculate total coins to send
+	var totalOutCoins uint64
+	for _, to := range advancedSpend.To {
+		totalOutCoins += to.Coins
+	}
+
+	// Use the MinimizeUxOuts strategy, to use least possible uxouts
+	// this will allow more frequent spending
+	// we don't need to check whether we have sufficient balance beforehand as ChooseSpends already checks that
+	spends, err := ChooseSpendsMinimizeUxOuts(uxb, totalOutCoins)
+	if err != nil {
+		return nil, err
+	}
+
+	// calculate total coins in spends
+	var totalInCoins uint64
+	toSign := make([]cipher.SecKey, len(spends))
+	for i, spend := range spends {
+		totalInCoins += spend.Coins
+		toSign[i] = advancedSpend.Entries[spend.Address].Secret
+		txn.PushInput(spend.Hash)
+	}
+
+	// calculate coinhour distribution
+	var totalInputHours uint64
+	var totalAddrHours uint64
+	for _, spend := range spends {
+		totalInputHours += spend.Hours
+	}
+
+	feeHours := fee.RequiredFee(totalInputHours)
+	if feeHours == 0 {
+		return nil, fee.ErrTxnNoFee
+	}
+	remainingHours := totalInputHours - feeHours
+
+	// create outputs
+	var changeHours uint64
+	var changeCoins uint64
+	nAddrs := uint64(len(advancedSpend.To))
+	switch advancedSpend.HoursSelection.Type {
+	case "manual":
+		for _, out := range advancedSpend.To {
+			txn.Out = append(txn.Out, out)
+			totalAddrHours += out.Hours
+		}
+
+		// make sure we have enough coinhours
+		if totalAddrHours > remainingHours {
+			return nil, fee.ErrTxnInsufficientCoinHours
+		}
+
+	case "auto":
+		switch advancedSpend.HoursSelection.Mode {
+		case "split_even":
+			shareFactor, err := strconv.ParseFloat(advancedSpend.HoursSelection.ShareFactor, 64)
+			if err != nil {
+				return nil, err
+			}
+			addrHours := make([]uint64, nAddrs)
+			totalAddrHours = uint64(math.Floor(float64(remainingHours) * shareFactor))
+			// split addrhours evenly among all hours
+			perAddrHour := totalAddrHours / nAddrs
+			for i := range addrHours {
+				addrHours[i] = perAddrHour
+			}
+
+			// give any remaining hours due to rounding to addrs starting from the top
+			extraAddrHours := totalAddrHours - (perAddrHour * nAddrs)
+			i := 0
+			for extraAddrHours > 0 {
+				addrHours[i] = addrHours[i] + 1
+				i++
+				extraAddrHours--
+			}
+
+			for i, out := range advancedSpend.To {
+				out.Hours = addrHours[i]
+				txn.Out = append(txn.Out, out)
+			}
+
+		case "match_coins":
+			for _, out := range advancedSpend.To {
+				spendCoinsAmt := out.Coins / 1e6
+				if spendCoinsAmt == 0 {
+					spendCoinsAmt = 1
+				}
+
+				// hours sent to addresses = coins spent
+				out.Hours = spendCoinsAmt
+				totalAddrHours += out.Hours
+
+				txn.Out = append(txn.Out, out)
+			}
+		}
+
+	default:
+		return nil, errors.New(fmt.Sprintf("invalid hours selection mode: %v", advancedSpend.HoursSelection.Type))
+	}
+
+	// create change output
+	changeHours = remainingHours - totalAddrHours
+	changeCoins = totalInCoins - totalOutCoins
+	txn.PushOutput(advancedSpend.ChangeAddress, changeCoins, changeHours)
+
+	txn.SignInputs(toSign)
+	txn.UpdateHeader()
+
+	return txn, nil
 }
 
 // UpdateWalletLabel updates the wallet label

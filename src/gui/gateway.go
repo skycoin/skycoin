@@ -14,6 +14,7 @@ import (
 // Gatewayer interface for Gateway methods
 type Gatewayer interface {
 	Spend(wltID string, password []byte, coins uint64, dest cipher.Address) (*coin.Transaction, error)
+	AdvancedSpend(advancedSpend wallet.AdvancedSpend) (*coin.Transaction, error)
 	GetWalletBalance(wltID string) (wallet.BalancePair, error)
 	GetWallet(wltID string) (*wallet.Wallet, error)
 	GetWallets() (wallet.Wallets, error)

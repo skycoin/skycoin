@@ -14,11 +14,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/fee"
-	"github.com/stretchr/testify/require"
 )
 
 func prepareWltDir() string {
@@ -763,7 +764,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			},
 			0,
 			addrs[0],
-			errors.New("zero spend amount"),
+			ErrZeroSpend,
 		},
 		{
 			"encrypted=false spend fractional coins",

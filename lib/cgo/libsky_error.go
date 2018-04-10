@@ -1,9 +1,5 @@
 package main
 
-import (
-	"fmt"
-)
-
 const (
 	SKY_OK    = 0
 	SKY_ERROR = 0xFFFFFFFF
@@ -31,7 +27,6 @@ func catchApiPanic(errcode uint32, err interface{}) uint32 {
 		return errcode
 	}
 	if err != nil {
-		fmt.Printf("API panic detected : %v\n", err)
 		// TODO: Fix to be like retVal = libErrorCode(err)
 		return SKY_ERROR
 	}

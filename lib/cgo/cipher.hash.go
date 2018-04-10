@@ -100,7 +100,7 @@ func SKY_cipher_AddSHA256(_a *C.SHA256, _b *C.SHA256, _arg2 *C.SHA256) {
 }
 
 //export SKY_cipher_Merkle
-func SKY_cipher_Merkle(_h0 *C.GoSlice_, _arg1 *C.SHA256) {
+func SKY_cipher_Merkle(_h0 *[]C.SHA256, _arg1 *C.SHA256) {
 	h0 := (*[]cipher.SHA256)(unsafe.Pointer(_h0))
 	h := cipher.Merkle(*h0)
 	copyToBuffer(reflect.ValueOf(h[:]), unsafe.Pointer(_arg1), uint(SizeofSHA256))

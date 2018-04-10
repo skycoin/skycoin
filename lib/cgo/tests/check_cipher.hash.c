@@ -286,18 +286,58 @@ Test(hash,TestXorSHA256){
 
 }
 
-// Test(hash,TestMerkle){
-// // cr_fail("Not implement");
-// GoSlice tmp_slice;
-// randBytes(&tmp_slice,128);
-// SHA256 h;
-// SKY_cipher_SumSHA256(tmp_slice,&h);
-// // Single hash input returns hash
-// SHA256 tmp;
-// GoSlice_ list_sha256;
-// list_sha256.data = &h;
-// list_sha256.len = 1;
-// list_sha256.cap = 4;
-// SKY_cipher_Merkle(&list_sha256,&h);
-// SHA256 h2;
-// }
+Test(hash,TestMerkle){
+  unsigned char buff[129];
+  SHA256 hashlist[5];
+  GoSlice b = { buff, 0, 129 },
+          hashes = { hashlist, 0, 5 };
+  SHA256 h, zero, out, out1, out2, out3, out4;
+  int i;
+
+  memset(zero, 0, sizeof(zero));
+
+  for (i = 0; i < 5; i++) {
+    randBytes(&b, 128);
+    SKY_cipher_SumSHA256(b, &hashlist[i]);
+  }
+
+  // Single hash input returns hash
+  hashes.len = 1;
+  SKY_cipher_Merkle(&hashes, &h);
+  cr_assert(eq(u8[32], hashlist[0], h));
+
+  // 2 hashes should be AddSHA256 of them
+  hashes.len = 2;
+  SKY_cipher_AddSHA256(&hashlist[0], &hashlist[1], &out); 
+  SKY_cipher_Merkle(&hashes, &h);
+  cr_assert(eq(u8[32], out, h));
+
+  // 3 hashes should be Add(Add())
+  hashes.len = 3;
+  SKY_cipher_AddSHA256(&hashlist[0], &hashlist[1], &out1); 
+  SKY_cipher_AddSHA256(&hashlist[2], &zero, &out2); 
+  SKY_cipher_AddSHA256(&out1, &out2, &out); 
+  SKY_cipher_Merkle(&hashes, &h);
+  cr_assert(eq(u8[32], out, h));
+
+  // 4 hashes should be Add(Add())
+  hashes.len = 4;
+  SKY_cipher_AddSHA256(&hashlist[0], &hashlist[1], &out1); 
+  SKY_cipher_AddSHA256(&hashlist[2], &hashlist[3], &out2); 
+  SKY_cipher_AddSHA256(&out1, &out2, &out); 
+  SKY_cipher_Merkle(&hashes, &h);
+  cr_assert(eq(u8[32], out, h));
+
+  // 5 hashes
+  hashes.len = 5;
+  SKY_cipher_AddSHA256(&hashlist[0], &hashlist[1], &out1); 
+  SKY_cipher_AddSHA256(&hashlist[2], &hashlist[3], &out2); 
+  SKY_cipher_AddSHA256(&out1, &out2, &out3); 
+  SKY_cipher_AddSHA256(&hashlist[4], &zero, &out1); 
+  SKY_cipher_AddSHA256(&zero, &zero, &out2); 
+  SKY_cipher_AddSHA256(&out1, &out2, &out4); 
+  SKY_cipher_AddSHA256(&out3, &out4, &out); 
+  SKY_cipher_Merkle(&hashes, &h);
+  cr_assert(eq(u8[32], out, h));
+}
+

@@ -541,7 +541,7 @@ func (m *GatewayerMock) GetUnspentOutputs(p0 ...daemon.OutputsFilter) (*visor.Re
 }
 
 // GetUxOutByID mocked method
-func (m *GatewayerMock) GetUxOutByID(p0 cipher.SHA256) (*historydb.UxOut, error) {
+func (m *GatewayerMock) GGetAddrUxOutsetUxOutByID(p0 cipher.SHA256) (*historydb.UxOut, error) {
 
 	ret := m.Called(p0)
 

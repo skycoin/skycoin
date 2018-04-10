@@ -60,7 +60,7 @@ func getAddrUxOuts(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		uxs, err := gateway.GetAddrUxOuts(cipherAddr)
+		uxs, err := gateway.GetAddrUxOuts([]cipher.Address{cipherAddr})
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return

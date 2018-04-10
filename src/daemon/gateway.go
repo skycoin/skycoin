@@ -10,8 +10,10 @@ import (
 
 	"fmt"
 
+	"context"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/historydb"
+	"time"
 )
 
 // Exposes a read-only api for use by the gui rpc interface
@@ -428,19 +430,48 @@ func (gw *Gateway) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
 }
 
 // GetAddrUxOuts gets all the address affected UxOuts.
-func (gw *Gateway) GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOutJSON, error) {
-	var uxouts []*historydb.UxOut
-	var err error
-	gw.strand("GetAddrUxOuts", func() {
-		uxouts, err = gw.v.GetAddrUxOuts(addr)
-	})
+func (gw *Gateway) GetAddrUxOuts(addresses []cipher.Address) ([]*historydb.UxOut, error) {
+	var (
+		uxOuts   []*historydb.UxOut
+		err      error
+		utxoChan chan []*historydb.UxOut
+		errChan  chan error
+	)
 
-	uxs := make([]*historydb.UxOutJSON, len(uxouts))
-	for i, ux := range uxouts {
-		uxs[i] = historydb.NewUxOutJSON(ux)
+	utxoChan = make(chan []*historydb.UxOut)
+	errChan = make(chan error)
+
+	for _, addr := range addresses {
+		go func(addr cipher.Address, resultChan chan []*historydb.UxOut, errChan chan error) {
+			gw.strand("GetAddrUxOuts", func() {
+				result, err := gw.v.GetAddrUxOuts(addr)
+
+				if err != nil {
+					errChan <- err
+				}
+
+				resultChan <- result
+			})
+		}(addr, utxoChan, errChan)
 	}
 
-	return uxs, err
+	// TODO(stgleb): Take request from somewhere els
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	for range addresses {
+		select {
+		case r := <-utxoChan:
+			uxOuts = append(uxOuts, r...)
+		case e := <-errChan:
+			err = e
+		case <-ctx.Done():
+			err = ctx.Err()
+			break
+		}
+	}
+
+	return uxOuts, err
 }
 
 // GetTimeNow returns the current Unix time

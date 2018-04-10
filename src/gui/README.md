@@ -107,35 +107,43 @@ Response:
 
 ```json
 {
-    "count": 8,
-    "TotalAlive": 8,
-    "TotalOffline": 0,
-    "connections": [
-        {
-            "Connection": "104.237.142.206:6000"
-        },
-        {
-            "Connection": "118.178.135.93:6000"
-        },
-        {
-            "Connection": "120.77.69.188:6000"
-        },
-        {
-            "Connection": "121.41.103.148:6000"
-        },
-        {
-            "Connection": "139.162.7.132:6000"
-        },
-        {
-            "Connection": "172.104.85.6:6000"
-        },
-        {
-            "Connection": "176.58.126.224:6000"
-        },
-        {
-            "Connection": "47.88.33.156:6000"
-        }
-    ]
+"count": 8,
+"total_alive": 8,
+"total_offline": 0,
+"Connections": [
+{
+"Status": "Connected",
+"Connection": "104.237.142.206:6000"
+},
+{
+"Status": "Connected",
+"Connection": "118.178.135.93:6000"
+},
+{
+"Status": "Connected",
+"Connection": "120.77.69.188:6000"
+},
+{
+"Status": "Connected",
+"Connection": "121.41.103.148:6000"
+},
+{
+"Status": "Connected",
+"Connection": "139.162.7.132:6000"
+},
+{
+"Status": "Connected",
+"Connection": "172.104.85.6:6000"
+},
+{
+"Status": "Connected",
+"Connection": "176.58.126.224:6000"
+},
+{
+"Status": "Connected",
+"Connection": "47.88.33.156:6000"
+}
+]
 }
 ```
 

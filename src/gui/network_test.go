@@ -339,8 +339,9 @@ func TestGetDefaultStatus(t *testing.T) {
 
 	// ConnectionStatus structs
 	type ConnectionStatus struct {
-		Connection string `json:connection`
-		isAlive    bool   `json:isalive`
+		Status     string `json:"Status"`
+		Connection string `json:"Connection"`
+		isAlive    bool   `json:"isalive"`
 	}
 
 	// ConnectionsHealth struct
@@ -412,8 +413,8 @@ func TestGetDefaultStatus(t *testing.T) {
 				TotalAlive:   2,
 				TotalOffline: 0,
 				Connections: []ConnectionStatus{
-					{Connection: "11.44.66.88:9000", isAlive: false},
-					{Connection: "44.33.22.11:9000", isAlive: false},
+					{Status: "Connected", Connection: "11.44.66.88:9000", isAlive: true},
+					{Status: "Connected", Connection: "44.33.22.11:9000", isAlive: true},
 				},
 			}
 

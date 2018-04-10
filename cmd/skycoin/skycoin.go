@@ -33,9 +33,8 @@ var (
 	Version = "0.22.0"
 	// Commit id
 	Commit = ""
-	// Branch name
-	Branch = ""
-	help   = false
+
+	help = false
 
 	logger = logging.MustGetLogger("main")
 
@@ -517,7 +516,6 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Visor.Config.BuildInfo = visor.BuildInfo{
 		Version: Version,
 		Commit:  Commit,
-		Branch:  Branch,
 	}
 
 	dc.Gateway.DisableWalletAPI = c.DisableWalletAPI

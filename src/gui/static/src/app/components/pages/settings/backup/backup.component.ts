@@ -5,7 +5,7 @@ import { Wallet } from '../../../../app.datatypes';
 @Component({
   selector: 'app-backup',
   templateUrl: './backup.component.html',
-  styleUrls: ['./backup.component.css']
+  styleUrls: ['./backup.component.scss']
 })
 export class BackupComponent implements OnDestroy, OnInit {
 

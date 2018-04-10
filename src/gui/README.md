@@ -90,7 +90,7 @@ Result:
 
 ## General system checks
 
-### Health check
+### Network check
 
 ```
 URI: /network/connections/default

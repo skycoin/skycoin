@@ -1,24 +1,11 @@
 # skycoin build binaries
 # reference https://github.com/skycoin/skycoin
-FROM golang:1.10 AS build-go
+FROM golang:1.10 AS build
 
 COPY . $GOPATH/src/github.com/skycoin/skycoin
 
 RUN cd $GOPATH/src/github.com/skycoin/skycoin && \
   CGO_ENABLED=0 GOOS=linux go install -a -installsuffix cgo ./...
-
-
-# skycoin gui
-FROM node:8.9 AS build-node
-
-COPY . /skycoin
-
-# `unsafe` flag used as work around to prevent infinite loop in Docker
-# see https://github.com/nodejs/node-gyp/issues/1236
-RUN npm install -g --unsafe @angular/cli && \
-    cd /skycoin/src/gui/static && \
-    yarn && \
-    npm run build
 
 
 # skycoin image
@@ -35,10 +22,10 @@ RUN adduser -D skycoin
 USER skycoin
 
 # copy binaries
-COPY --from=build-go /go/bin/* /usr/bin/
+COPY --from=build /go/bin/* /usr/bin/
 
-# copy gui
-COPY --from=build-node /skycoin/src/gui/static /usr/local/skycoin/src/gui/static
+# copy assets
+COPY --from=build /go/src/github.com/skycoin/skycoin/src/gui/static /usr/local/skycoin/static
 
 # volumes
 VOLUME $WALLET_DIR

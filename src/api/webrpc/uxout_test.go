@@ -4,9 +4,6 @@ import (
 	"errors"
 	"testing"
 
-	"encoding/json"
-	"strings"
-
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"

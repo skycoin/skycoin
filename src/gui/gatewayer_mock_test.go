@@ -55,14 +55,14 @@ func (m *GatewayerMock) CreateWallet(p0 string, p1 wallet.Options) (*wallet.Wall
 }
 
 // GetAddrUxOuts mocked method
-func (m *GatewayerMock) GetAddrUxOuts(p0 cipher.Address) ([]*historydb.UxOutJSON, error) {
+func (m *GatewayerMock) GetAddrUxOuts(p0 []cipher.Address) ([]*historydb.UxOut, error) {
 
 	ret := m.Called(p0)
 
-	var r0 []*historydb.UxOutJSON
+	var r0 []*historydb.UxOut
 	switch res := ret.Get(0).(type) {
 	case nil:
-	case []*historydb.UxOutJSON:
+	case []*historydb.UxOut:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
@@ -541,7 +541,7 @@ func (m *GatewayerMock) GetUnspentOutputs(p0 ...daemon.OutputsFilter) (*visor.Re
 }
 
 // GetUxOutByID mocked method
-func (m *GatewayerMock) GGetAddrUxOutsetUxOutByID(p0 cipher.SHA256) (*historydb.UxOut, error) {
+func (m *GatewayerMock) GetUxOutByID(p0 cipher.SHA256) (*historydb.UxOut, error) {
 
 	ret := m.Called(p0)
 

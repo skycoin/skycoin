@@ -10,9 +10,8 @@ import (
 
 // ConnectionStatus structs
 type ConnectionStatus struct {
-	Status     string `json:"Status"`
 	Connection string `json:"Connection"`
-	isAlive    bool   `json:"isalive"`
+	IsAlive    bool   `json:"Status"`
 }
 
 // ConnectionsHealth struct
@@ -20,7 +19,7 @@ type ConnectionsHealth struct {
 	Count        int                `json:"count"`
 	TotalAlive   int                `json:"total_alive"`
 	TotalOffline int                `json:"total_offline"`
-	Connections  []ConnectionStatus `json:Status`
+	Connections  []ConnectionStatus `json:IsAlive`
 }
 
 func defaultStatus(gateway Gatewayer) ConnectionsHealth {
@@ -37,9 +36,8 @@ func defaultStatus(gateway Gatewayer) ConnectionsHealth {
 	for _, conn := range connsDefault {
 
 		status := ConnectionStatus{
-			Status:     "Disconnected",
 			Connection: conn,
-			isAlive:    false,
+			IsAlive:    false,
 		}
 		connections = append(connections, status)
 		connsMap[conn] = &status
@@ -47,9 +45,8 @@ func defaultStatus(gateway Gatewayer) ConnectionsHealth {
 
 	for _, conn := range connsAll {
 		if status, isDefault := connsMap[conn.Addr]; isDefault {
-			if !status.isAlive {
-				status.isAlive = true
-				status.Status = "Connected"
+			if !status.IsAlive {
+				status.IsAlive = true
 				totalAlive++
 				totalOffline--
 			}

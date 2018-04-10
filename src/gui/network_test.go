@@ -339,17 +339,16 @@ func TestGetDefaultStatus(t *testing.T) {
 
 	// ConnectionStatus structs
 	type ConnectionStatus struct {
-		Status     string `json:"Status"`
 		Connection string `json:"Connection"`
-		isAlive    bool   `json:"isalive"`
+		IsAlive    bool   `json:"Status"`
 	}
 
 	// ConnectionsHealth struct
 	type ConnectionsHealth struct {
 		Count        int                `json:"count"`
-		TotalAlive   int                `json:total_alive`
-		TotalOffline int                `json:total_offline`
-		Connections  []ConnectionStatus `json:"connections"`
+		TotalAlive   int                `json:"total_alive"`
+		TotalOffline int                `json:"total_offline"`
+		Connections  []ConnectionStatus `json:IsAlive`
 	}
 
 	tt := []struct {
@@ -410,11 +409,11 @@ func TestGetDefaultStatus(t *testing.T) {
 
 			resp := ConnectionsHealth{
 				Count:        2,
-				TotalAlive:   0,
+				TotalAlive:   2,
 				TotalOffline: 0,
 				Connections: []ConnectionStatus{
-					{Status: "Disconnected", Connection: "11.44.66.88:9000", isAlive: false},
-					{Status: "Disconnected", Connection: "44.33.22.11:9000", isAlive: false},
+					{Connection: "11.44.66.88:9000", IsAlive: false},
+					{Connection: "44.33.22.11:9000", IsAlive: false},
 				},
 			}
 

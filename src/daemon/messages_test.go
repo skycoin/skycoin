@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
-	"testing"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
@@ -509,8 +508,4 @@ func ExampleNewAnnounceTxnsMessage() {
 	// 0x0044 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x0054 | 00 00 00 00 ....................................... Txns#1
 	// 0x004c |
-}
-
-func TestSucceed(t *testing.T) {
-	// Succeed
 }

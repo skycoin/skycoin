@@ -8,6 +8,8 @@ A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](h
 
 - [CSRF](#csrf)
     - [Get current csrf token](#get-current-csrf-token)
+    +- [General system checks](#general-system-checks)
++    - [Network check](#network-check)
 - [Simple query APIs](#simple-query-apis)
     - [Get node version info](#get-node-version-info)
     - [Get balance of addresses](#get-balance-of-addresses)
@@ -83,6 +85,57 @@ Result:
 ```json
 {
     "csrf_token": "klSgXoMOFTvEnt8KptBvHjhlFnW0OIkzyFVn4i8frDvIus9iLsFukqA9sM9Rxf3pLZHRLr82vBQxTq50vbYA8g"
+}
+```
+
+## General system checks
+
+### Health check
+
+```
+URI: /network/connections/default
+Method: GET
+```
+
+Example:
+
+```sh
+curl http://127.0.0.1:6420/network/connections/default
+```
+
+Response:
+
+```json
+{
+    "count": 8,
+    "TotalAlive": 8,
+    "TotalOffline": 0,
+    "connections": [
+        {
+            "Connection": "104.237.142.206:6000"
+        },
+        {
+            "Connection": "118.178.135.93:6000"
+        },
+        {
+            "Connection": "120.77.69.188:6000"
+        },
+        {
+            "Connection": "121.41.103.148:6000"
+        },
+        {
+            "Connection": "139.162.7.132:6000"
+        },
+        {
+            "Connection": "172.104.85.6:6000"
+        },
+        {
+            "Connection": "176.58.126.224:6000"
+        },
+        {
+            "Connection": "47.88.33.156:6000"
+        }
+    ]
 }
 ```
 

@@ -104,6 +104,9 @@ electron/.electron_output
 electron/.standalone_output
 
 .vscode/
+.do.cfg
+.do.state
+skycoin.do
 
 *.swo
 *.swp

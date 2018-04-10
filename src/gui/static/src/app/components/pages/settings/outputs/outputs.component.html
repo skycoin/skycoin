@@ -1,19 +1,21 @@
 <div class="sky-container sky-container-grey">
   <app-header title="Outputs"></app-header>
 
-  <!--<ngx-datatable #table-->
-                 <!--class="material"-->
-                 <!--[rows]="outputs"-->
-                 <!--columnMode="flex"-->
-                 <!--[headerHeight]="50"-->
-                 <!--[footerHeight]="50"-->
-                 <!--[rowHeight]="50"-->
-                 <!--[limit]="10"-->
-                 <!--[scrollbarH]="true">-->
-    <!--<ngx-datatable-column name="Address" prop="address" [flexGrow]="2"></ngx-datatable-column>-->
-    <!--<ngx-datatable-column name="Coins" prop="coins" [flexGrow]="1"></ngx-datatable-column>-->
-    <!--<ngx-datatable-column name="Coin hours" prop="hours" [flexGrow]="1"></ngx-datatable-column>-->
-  <!--</ngx-datatable>-->
+  <mat-card class="-table">
+    <div class="row -table-header">
+      <div class="col-md-4">Address</div>
+      <div class="col-md-4">Coins</div>
+      <div class="col-md-4">Coin hours</div>
+    </div>
+    <div class="row -table-row" *ngFor="let output of outputs">
+      <div class="col-md-4"><span>{{ output.address }}</span></div>
+      <div class="col-md-4"><span>{{ output.coins }}</span></div>
+      <div class="col-md-4"><span>{{ output.hours }}</span></div>
+    </div>
+    <div class="row -table-row" *ngIf="outputs.length === 0">
+      <div class="col-lg-12">No outputs</div>
+    </div>
+  </mat-card>
 </div>
 
 

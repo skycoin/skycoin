@@ -5,7 +5,7 @@
 
   <mat-card>
     <div class="row">
-      <div class="col-lg-3" *ngFor="let peer of walletService.automaticPeers() | async">
+      <div class="col-lg-3" *ngFor="let peer of networkService.automatic() | async">
         <div class="-peer">
           <span class="-ip">{{ peer.address.split(':')[0] }}</span>
           <span class="-port">:{{ peer.listen_port }}</span>

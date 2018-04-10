@@ -410,8 +410,8 @@ func TestGetDefaultStatus(t *testing.T) {
 
 			resp := ConnectionsHealth{
 				Count:        2,
-				TotalAlive:   2,
-				TotalOffline: 0,
+				TotalAlive:   0,
+				TotalOffline: 2,
 				Connections: []ConnectionStatus{
 					{Status: "Disconnected", Connection: "11.44.66.88:9000", isAlive: false},
 					{Status: "Disconnected", Connection: "44.33.22.11:9000", isAlive: false},

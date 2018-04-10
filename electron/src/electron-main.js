@@ -1,6 +1,6 @@
 'use strict'
 
-const { app, Menu, BrowserWindow, dialog } = require('electron');
+const { app, Menu, BrowserWindow, dialog, shell } = require('electron');
 
 var log = require('electron-log');
 
@@ -9,6 +9,8 @@ const path = require('path');
 const childProcess = require('child_process');
 
 const cwd = require('process').cwd();
+
+const axios = require('axios');
 
 // This adds refresh and devtools console keybindings
 // Page can refresh with cmd+r, ctrl+r, F5
@@ -190,6 +192,17 @@ function createWindow(url) {
       { label: "Copy", accelerator: "CmdOrCtrl+C", selector: "copy:" },
       { label: "Paste", accelerator: "CmdOrCtrl+V", selector: "paste:" },
       { label: "Select All", accelerator: "CmdOrCtrl+A", selector: "selectAll:" }
+    ]
+  }, {
+    label: "Show",
+    submenu: [
+      { label: "Wallets folder", click: function () {
+        axios.get(defaultURL + 'wallets/folderName')
+          .then(response => {
+            shell.showItemInFolder(response.data.address);
+          })
+          .catch(() => {});
+      } }
     ]
   }];
 

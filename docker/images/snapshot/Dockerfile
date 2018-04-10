@@ -1,6 +1,6 @@
 # skycoin build binaries
 # reference https://github.com/skycoin/skycoin
-FROM golang:1.9-alpine AS build-go
+FROM golang:1.10 AS build-go
 
 COPY . $GOPATH/src/github.com/skycoin/skycoin
 

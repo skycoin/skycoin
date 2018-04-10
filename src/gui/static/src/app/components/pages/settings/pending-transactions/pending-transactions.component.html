@@ -1,22 +1,19 @@
 <div class="sky-container sky-container-grey">
   <app-header title="Pending Transaction"></app-header>
 
-  <!--<ngx-datatable #table-->
-                 <!--class="material"-->
-                 <!--[rows]="transactions"-->
-                 <!--columnMode="flex"-->
-                 <!--[headerHeight]="50"-->
-                 <!--[footerHeight]="50"-->
-                 <!--[rowHeight]="50"-->
-                 <!--[limit]="10"-->
-                 <!--[scrollbarH]="true"-->
-                 <!--(activate)="onActivate($event)">-->
-    <!--<ngx-datatable-column name="Timestamp" prop="timestamp" [flexGrow]="2">-->
-      <!--<ng-template let-value="value" ngx-datatable-cell-template>-->
-        <!--<strong>{{ value | dateTime }}</strong>-->
-      <!--</ng-template>-->
-    <!--</ngx-datatable-column>-->
-    <!--<ngx-datatable-column name="Amount" [flexGrow]="1"></ngx-datatable-column>-->
-    <!--<ngx-datatable-column name="Transaction ID" prop="txid" [flexGrow]="8"></ngx-datatable-column>-->
-  <!--</ngx-datatable>-->
+  <mat-card class="-table">
+    <div class="row -table-header">
+      <div class="col-md-4">Timestamp</div>
+      <div class="col-md-4">Amount</div>
+      <div class="col-md-4">Transaction ID</div>
+    </div>
+    <div class="row -table-row" *ngFor="let tx of transactions">
+      <div class="col-md-4"><span>{{ tx.timestamp | dateTime }}</span></div>
+      <div class="col-md-4"><span>{{ tx.amount }}</span></div>
+      <div class="col-md-4"><span>{{ tx.txid }}</span></div>
+    </div>
+    <div class="row -table-row" *ngIf="transactions.length === 0">
+      <div class="col-lg-12">No pending transactions</div>
+    </div>
+  </mat-card>
 </div>

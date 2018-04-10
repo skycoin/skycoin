@@ -10,9 +10,10 @@ import (
 
 	"fmt"
 
-	"context"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/historydb"
+
+	"context"
 	"time"
 )
 

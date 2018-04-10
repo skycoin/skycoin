@@ -67,11 +67,11 @@ func getAddrUxOuts(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		//Convert slice UxOut to slice of UxOutJson
-		uxsJson := make([]*historydb.UxOutJSON, len(uxs))
+		uxsJSON := make([]*historydb.UxOutJSON, len(uxs))
 		for i, ux := range uxs {
-			uxsJson[i] = historydb.NewUxOutJSON(ux)
+			uxsJSON[i] = historydb.NewUxOutJSON(ux)
 		}
 
-		wh.SendJSONOr500(logger, w, uxsJson)
+		wh.SendJSONOr500(logger, w, uxsJSON)
 	}
 }

@@ -241,9 +241,11 @@ type Visor struct {
 	Unconfirmed UnconfirmedTxnPooler
 	Blockchain  Blockchainer
 	Wallets     *wallet.Service
-	history     historyer
-	bcParser    *BlockchainParser
-	db          *bolt.DB
+	StartedAt   time.Time
+
+	history  historyer
+	bcParser *BlockchainParser
+	db       *bolt.DB
 }
 
 // NewVisor creates a Visor for managing the blockchain database
@@ -292,6 +294,7 @@ func NewVisor(c Config, db *bolt.DB) (*Visor, error) {
 		history:     history,
 		bcParser:    bp,
 		Wallets:     wltServ,
+		StartedAt:   time.Now(),
 	}
 
 	return v, nil

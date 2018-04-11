@@ -16,42 +16,40 @@ type BlockchainMetadata struct {
 
 // HealthResponse is returned by the /health endpoint
 type HealthResponse struct {
-	Blockchain      BlockchainMetadata `json:"blockchain"`
-	Version         visor.BuildInfo    `json:"version"`
-	OpenConnections int                `json:"open_connections"`
-	Uptime          wh.Duration        `json:"uptime"`
+	BlockchainMetadata BlockchainMetadata `json:"blockchain"`
+	Version            visor.BuildInfo    `json:"version"`
+	OpenConnections    int                `json:"open_connections"`
+	Uptime             wh.Duration        `json:"uptime"`
 }
 
 // Returns node health data.
 // URI: /health
 // Method: GET
-func healthCheck(gateway Gatewayer, startedAt time.Time) http.HandlerFunc {
+func healthCheck(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}
 
-		metadata, err := gateway.GetBlockchainMetadata()
+		health, err := gateway.GetHealth()
 		if err != nil {
-			logger.WithError(err).Error("gateway.GetBlockchainMetadata failed")
+			logger.WithError(err).Error("gateway.GetHealth failed")
 			wh.Error500Msg(w, err.Error())
 			return
 		}
 
-		elapsedBlockTime := time.Now().UTC().Unix() - int64(metadata.Head.Time)
+		elapsedBlockTime := time.Now().UTC().Unix() - int64(health.BlockchainMetadata.Head.Time)
 		timeSinceLastBlock := time.Second * time.Duration(elapsedBlockTime)
 
-		resp := &HealthResponse{
-			Blockchain: BlockchainMetadata{
-				BlockchainMetadata: metadata,
+		wh.SendJSONOr500(logger, w, HealthResponse{
+			BlockchainMetadata: BlockchainMetadata{
+				BlockchainMetadata: health.BlockchainMetadata,
 				TimeSinceLastBlock: wh.FromDuration(timeSinceLastBlock),
 			},
-			Version:         gateway.GetBuildInfo(),
-			OpenConnections: len(gateway.GetConnections().Connections),
-			Uptime:          wh.FromDuration(time.Since(startedAt)),
-		}
-
-		wh.SendJSONOr500(logger, w, resp)
+			Version:         health.Version,
+			OpenConnections: health.OpenConnections,
+			Uptime:          wh.FromDuration(health.Uptime),
+		})
 	}
 }

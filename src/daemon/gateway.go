@@ -1,6 +1,8 @@
 package daemon
 
 import (
+	"time"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/strand"
@@ -835,4 +837,36 @@ func (gw *Gateway) GetAddressCount() (uint64, error) {
 	}
 
 	return uint64(len(allAccounts)), nil
+}
+
+// Health is returned by the /health endpoint
+type Health struct {
+	BlockchainMetadata *visor.BlockchainMetadata
+	Version            visor.BuildInfo
+	OpenConnections    int
+	Uptime             time.Duration
+}
+
+// GetHealth returns statistics about the running node
+func (gw *Gateway) GetHealth() (*Health, error) {
+	var health *Health
+	var err error
+	gw.strand("GetHealth", func() {
+		var metadata *visor.BlockchainMetadata
+		metadata, err = gw.vrpc.GetBlockchainMetadata(gw.v)
+		if err != nil {
+			return
+		}
+
+		conns := gw.drpc.GetConnections(gw.d)
+
+		health = &Health{
+			BlockchainMetadata: metadata,
+			Version:            gw.v.Config.BuildInfo,
+			OpenConnections:    len(conns.Connections),
+			Uptime:             time.Since(gw.v.StartedAt),
+		}
+	})
+
+	return health, err
 }

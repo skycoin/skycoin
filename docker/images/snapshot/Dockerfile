@@ -33,4 +33,4 @@ EXPOSE 6000 6420 6430
 
 WORKDIR /usr/local/skycoin
 
-CMD ["docker_launcher.sh", "--web-interface-addr=0.0.0.0"]
+CMD ["docker_launcher.sh", "--web-interface-addr=0.0.0.0",  "--rpc-interface-addr=0.0.0.0"]

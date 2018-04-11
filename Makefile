@@ -112,7 +112,7 @@ test-libc: build-libc ## Run tests for libskycoin C client library
 
 docs-libc:
 	doxygen ./.Doxyfile
-	moxygen -a -o $(LIBDOC_DIR)/API.md $(LIBDOC_DIR)/xml/
+	moxygen -o $(LIBDOC_DIR)/API.md $(LIBDOC_DIR)/xml/
 
 docs: docs-libc
 

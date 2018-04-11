@@ -38,6 +38,7 @@ import { TransactionDetailComponent } from './components/pages/transaction-list/
 import { NavBarComponent } from './components/layout/header/nav-bar/nav-bar.component';
 import { WalletDetailComponent } from './components/pages/wallets/wallet-detail/wallet-detail.component';
 import { ModalComponent } from './components/layout/modal/modal.component';
+import { PasswordDialogComponent } from './components/layout/password-dialog/password-dialog.component';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialogModule } from '@angular/material/dialog';
@@ -138,6 +139,7 @@ const ROUTES = [
     NavBarComponent,
     WalletDetailComponent,
     ModalComponent,
+    PasswordDialogComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,
@@ -147,6 +149,7 @@ const ROUTES = [
     QrCodeComponent,
     SendSkycoinComponent,
     TransactionDetailComponent,
+    PasswordDialogComponent,
   ],
   imports: [
     BrowserModule,

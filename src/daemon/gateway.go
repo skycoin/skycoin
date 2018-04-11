@@ -574,7 +574,7 @@ func (gw *Gateway) EncryptWallet(wltName string, password []byte) (*wallet.Walle
 
 // DecryptWallet decrypts wallet
 func (gw *Gateway) DecryptWallet(wltID string, password []byte) (*wallet.Wallet, error) {
-	if gw.Config.DisableWalletAPI {
+	if !gw.Config.EnableWalletAPI {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
@@ -758,11 +758,10 @@ func (gw *Gateway) UnloadWallet(id string) error {
 	return nil
 }
 
-<<<<<<< HEAD
 // GetWalletSeed returns seed of wallet of given id,
 // returns wallet.ErrWalletNotEncrypted if the wallet is not encrypted.
 func (gw *Gateway) GetWalletSeed(id string, password []byte) (string, error) {
-	if gw.Config.DisableWalletAPI {
+	if !gw.Config.EnableWalletAPI {
 		return "", wallet.ErrWalletAPIDisabled
 	}
 
@@ -774,14 +773,9 @@ func (gw *Gateway) GetWalletSeed(id string, password []byte) (string, error) {
 	return seed, err
 }
 
-// IsWalletAPIDisabled returns if all wallet related apis are disabled
-func (gw *Gateway) IsWalletAPIDisabled() bool {
-	return gw.Config.DisableWalletAPI
-=======
 // IsWalletAPIEnabled returns if all wallet related apis are disabled
 func (gw *Gateway) IsWalletAPIEnabled() bool {
 	return gw.Config.EnableWalletAPI
->>>>>>> Change -disable-wallet-api to -enable-wallet-api
 }
 
 // GetBuildInfo returns node build info.

@@ -472,8 +472,10 @@ func TestServiceGetAddress(t *testing.T) {
 					return
 				}
 
-				// get the default wallet
-				w := s.wallets[len(s.wallets)-1]
+				// Get the default wallet
+				var w *Wallet
+				for _, w = range s.wallets {
+				}
 
 				addrs, err := s.GetAddresses(w.Filename())
 				require.NoError(t, err)
@@ -514,7 +516,9 @@ func TestServiceGetWallet(t *testing.T) {
 				}
 
 				// Get the default wallet
-				w := s.wallets[len(s.wallets)-1]
+				var w *Wallet
+				for _, w = range s.wallets {
+				}
 
 				w1, err := s.GetWallet(w.Filename())
 				require.NoError(t, err)
@@ -545,7 +549,7 @@ func TestServiceGetWallets(t *testing.T) {
 				})
 				require.NoError(t, err)
 
-				if enableWalletAPI {
+				if !enableWalletAPI {
 					dirIsEmpty(t, dir)
 
 					require.Empty(t, s.wallets)
@@ -558,7 +562,9 @@ func TestServiceGetWallets(t *testing.T) {
 
 				var wallets []*Wallet
 				// Get the default wallet
-				w1 := s.wallets[len(s.wallets)-1]
+				var w1 *Wallet
+				for _, w1 = range s.wallets {
+				}
 				wallets = append(wallets, w1)
 
 				// Create a new wallet

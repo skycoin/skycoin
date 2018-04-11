@@ -129,6 +129,8 @@ type Config struct {
 	BuildInfo BuildInfo
 	// disables wallet API
 	DisableWalletAPI bool
+	// disables seed API
+	EnableSeedAPI bool
 	// wallet crypto type
 	WalletCryptoType wallet.CryptoType
 }
@@ -274,6 +276,7 @@ func NewVisor(c Config, db *bolt.DB) (*Visor, error) {
 		WalletDir:        c.WalletDirectory,
 		CryptoType:       c.WalletCryptoType,
 		DisableWalletAPI: c.DisableWalletAPI,
+		EnableSeedAPI:    c.EnableSeedAPI,
 	}
 
 	wltServ, err := wallet.NewService(wltServConfig)

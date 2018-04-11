@@ -98,9 +98,11 @@ make run-help
 
 ### Run Skycoin with options
 
+Example:
+
 ```sh
 cd $GOPATH/src/github.com/skycoin/skycoin
-make ARGS="--launch-browser=false" run
+make ARGS="--launch-browser=false -data-dir=/custom/path" run
 ```
 
 ### Docker image

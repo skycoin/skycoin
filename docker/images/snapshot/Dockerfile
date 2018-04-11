@@ -20,7 +20,7 @@ ENV COIN="skycoin" \
 COPY --from=build /go/bin/* /usr/bin/
 
 # copy assets
-COPY --from=build /go/src/github.com/skycoin/skycoin/src/gui/static /usr/local/skycoin/static
+COPY --from=build /go/src/github.com/skycoin/skycoin/src/gui/static /usr/local/skycoin/src/gui/static
 
 # copy launcher
 COPY docker_launcher.sh /usr/local/bin

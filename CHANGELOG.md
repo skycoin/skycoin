@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- libskycoin 0.0.1 released with bindings for cipher/address, cipher/hash, cipher/crypto, cli/create_rawtx
 - Logging migration, now powered by [logrus](https://github.com/sirupsen/logrus)
 - Write specification for skycoin URIs (based upon bip21)
 - Implemented `scrypt-chacha20poly1305` for wallet encryption

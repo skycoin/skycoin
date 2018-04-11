@@ -15,7 +15,7 @@
 // buffer big enough to hold all kind of data needed by test cases
 unsigned char buff[1024];
 
-Test(cipher, TestDecodeBase58Address) {
+Test(cipher_address, TestDecodeBase58Address) {
 
   GoString strAddr = {
     SKYCOIN_ADDRESS_VALID,
@@ -57,7 +57,7 @@ Test(cipher, TestDecodeBase58Address) {
 
 }
 
-Test(cipher, TestAddressFromBytes){
+Test(cipher_address, TestAddressFromBytes){
   GoString strAddr = {
     SKYCOIN_ADDRESS_VALID,
     35
@@ -86,7 +86,7 @@ Test(cipher, TestAddressFromBytes){
   cr_assert(SKY_cipher_BitcoinAddressFromBytes(bytes, &addr2) == SKY_ERROR, "no SKY address due to corrupted bytes");
 }
 
-Test(cipher, TestAddressVerify){
+Test(cipher_address, TestAddressVerify){
 
   PubKey pubkey;
   SecKey seckey;
@@ -109,7 +109,7 @@ Test(cipher, TestAddressVerify){
   cr_assert( SKY_cipher_Address_Verify(&addr,&pubkey) == SKY_ERROR,"  Bad version");
 }
 
-Test(cipher,TestAddressString){
+Test(cipher_address,TestAddressString){
 
 }
 
@@ -204,7 +204,7 @@ Test (cipher, TestBitcoinAddress3){
 
 }
 
-Test(cipher, TestBitcoinWIPRoundTrio){
+Test(cipher_address, TestBitcoinWIPRoundTrio){
 
   SecKey seckey;
   PubKey pubkey;
@@ -244,7 +244,7 @@ Test(cipher, TestBitcoinWIPRoundTrio){
 }
 
 
-Test(cipher, TestBitcoinWIP ){
+Test(cipher_address, TestBitcoinWIP ){
 
   //wallet input format string
   GoString wip[3];
@@ -305,7 +305,7 @@ Test(cipher, TestBitcoinWIP ){
   }
 }
 
-Test(cipher, TestAddressBulk){
+Test(cipher_address, TestAddressBulk){
 
   unsigned char buff[50];
   GoSlice slice = { buff, 0, 50 };

@@ -41,7 +41,7 @@ Test(cipher,TestHashRipemd160){
   cr_assert(eq(u8[20],tmp,r2));
 }
 
-Test(hash,TestRipemd160Set){
+Test(cipher_hash,TestRipemd160Set){
 
   Ripemd160 h;
   unsigned char buff[101];
@@ -72,7 +72,7 @@ Test(hash,TestRipemd160Set){
   cr_assert(eq(u8[20], h, buff));
 }
 
-Test(hash,TestSHA256Set){
+Test(cipher_hash,TestSHA256Set){
 
   SHA256 h;
   unsigned char buff[101];
@@ -102,7 +102,7 @@ Test(hash,TestSHA256Set){
   cr_assert(eq(u8[32], h, slice.data));
 }
 
-Test(hash,TestSHA256Hex){
+Test(cipher_hash,TestSHA256Hex){
 
   SHA256 h;
   unsigned char buff[101];
@@ -130,7 +130,7 @@ Test(hash,TestSHA256Hex){
   cr_assert(eq(type(GoString),s,s2));
 }
 
-Test(hash,TestSHA256KnownValue){
+Test(cipher_hash,TestSHA256KnownValue){
 
 
   typedef struct 
@@ -172,7 +172,7 @@ Test(hash,TestSHA256KnownValue){
   }
 }
 
-Test(hash,TestSumSHA256){
+Test(cipher_hash,TestSumSHA256){
 
   unsigned char bbuff[257],
   cbuff[257];
@@ -192,7 +192,7 @@ Test(hash,TestSumSHA256){
   cr_assert(eq(u8[32],h2,tmp_h2));
 }
 
-Test(hash,TestSHA256FromHex){
+Test(cipher_hash,TestSHA256FromHex){
   unsigned int error;
   SHA256 tmp;
   // Invalid hex hash
@@ -223,7 +223,7 @@ Test(hash,TestSHA256FromHex){
 }
 
 
-Test(hash,TestDoubleSHA256){
+Test(cipher_hash,TestDoubleSHA256){
   unsigned char bbuff[130];
   GoSlice b = { bbuff, 0, 130 };
   randBytes(&b,128);
@@ -235,7 +235,7 @@ Test(hash,TestDoubleSHA256){
   cr_assert(not(eq(u8[32],tmp,h)));
 }
 
-Test(hash,TestAddSHA256){
+Test(cipher_hash,TestAddSHA256){
 
   unsigned char bbuff[130];
   GoSlice b = { bbuff, 0, 130 };
@@ -259,7 +259,7 @@ Test(hash,TestAddSHA256){
   cr_assert(not(eq(u8[32],add,i)));
 }
 
-Test(hash,TestXorSHA256){
+Test(cipher_hash,TestXorSHA256){
 
   unsigned char bbuff[129],
   cbuff[129];
@@ -286,7 +286,7 @@ Test(hash,TestXorSHA256){
 
 }
 
-Test(hash,TestMerkle){
+Test(cipher_hash,TestMerkle){
   unsigned char buff[129];
   SHA256 hashlist[5];
   GoSlice b = { buff, 0, 129 },

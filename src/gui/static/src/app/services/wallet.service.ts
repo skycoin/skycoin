@@ -101,7 +101,15 @@ export class WalletService {
     return this.apiService.post('wallet/update', { id: wallet.filename, label: label })
       .do(() => {
         wallet.label = label;
-        this.updateWallet(wallet)
+        this.updateWallet(wallet);
+      });
+  }
+
+  toggleEncryption(wallet: Wallet, password: string): Observable<Wallet> {
+    return this.apiService.postWalletToggleEncryption(wallet, password)
+      .do(w => {
+        wallet.encrypted = w.meta.encrypted && w.meta.encrypted === 'true';
+        this.updateWallet(w);
       });
   }
 
@@ -153,7 +161,7 @@ export class WalletService {
         });
 
         return transaction;
-      }))
+      }));
   }
 
   private loadData(): void {

@@ -83,6 +83,10 @@ export class ApiService {
       .map((response: PostWalletNewAddressResponse) => ({ address: response.addresses[0], coins: null, hours: null }));
   }
 
+  postWalletToggleEncryption(wallet: Wallet, password: string) {
+    return this.post('wallet/' + (wallet.encrypted ? 'decrypt' : 'encrypt'), { id: wallet.filename, password });
+  }
+
   get(url, params = null, options = {}) {
     return this.http.get(this.getUrl(url, params), this.returnRequestOptions(options))
       .map((res: any) => res.json())

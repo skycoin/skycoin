@@ -3,6 +3,7 @@ import { Wallet } from '../../../../app.datatypes';
 import { WalletService } from '../../../../services/wallet.service';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { ChangeNameComponent } from '../change-name/change-name.component';
+import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 
 @Component({
   selector: 'app-wallet-detail',
@@ -30,6 +31,12 @@ export class WalletDetailComponent {
 
   toggleEmpty() {
     this.wallet.hideEmpty = !this.wallet.hideEmpty;
+  }
+
+  toggleEncryption() {
+    this.dialog.open(PasswordDialogComponent).afterClosed().subscribe((password) => {
+      this.walletService.toggleEncryption(this.wallet, password).subscribe((w) => console.log('hello', w));
+    });
   }
 
   copyAddress(address) {

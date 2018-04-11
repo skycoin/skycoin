@@ -27,7 +27,12 @@ export class ButtonComponent {
   }
 
   setError(error: any) {
-    this.error = error['_body'];
+    this.error = typeof error === 'string' ? error : error['_body'];
     this.state = 2;
+  }
+
+  resetState() {
+    this.state = null;
+    this.error = '';
   }
 }

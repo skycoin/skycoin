@@ -266,10 +266,29 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.Se
 	//     entropy: entropy bitsize.
 	webHandler("/wallet/newSeed", newWalletSeed(gateway))
 
+	// Gets seed of wallet of given id
+	// GET Arguments:
+	//     id: wallet id
+	//     password: wallet password
+	webHandler("/wallet/seed", walletSeedHandler(gateway))
+
 	// unload wallet
 	// POST Argument:
 	//         id: wallet id
 	webHandler("/wallet/unload", walletUnloadHandler(gateway))
+
+	// Encrypts wallet
+	// POST arguments:
+	//     id: wallet id
+	//     password: wallet password
+	// Returns an encrypted wallet json without sensitive data
+	webHandler("/wallet/encrypt", walletEncryptHandler(gateway))
+
+	// Decrypts wallet
+	// POST arguments:
+	//     id: wallet id
+	//     password: wallet password
+	webHandler("/wallet/decrypt", walletDecryptHandler(gateway))
 
 	// Blockchain interface
 
@@ -284,7 +303,6 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.Se
 	webHandler("/last_blocks", getLastBlocks(gateway))
 
 	// Network stats interface
-
 	webHandler("/network/connection", connectionHandler(gateway))
 	webHandler("/network/connections", connectionsHandler(gateway))
 	webHandler("/network/defaultConnections", defaultConnectionsHandler(gateway))
@@ -298,6 +316,9 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.Se
 	webHandler("/pendingTxs", getPendingTxs(gateway))
 	// get txn by txid
 	webHandler("/transaction", getTransactionByID(gateway))
+
+	// Health check handler
+	webHandler("/health", healthCheck(gateway))
 
 	// Returns transactions that match the filters.
 	// Method: GET

@@ -8,8 +8,9 @@ A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](h
 
 - [CSRF](#csrf)
     - [Get current csrf token](#get-current-csrf-token)
-    +- [General system checks](#general-system-checks)
-+    - [Network check](#network-check)
+- [General system checks](#general-system-checks)
+    - [Health check](#health-check)
+    - [Network check](#network-check)
 - [Simple query APIs](#simple-query-apis)
     - [Get node version info](#get-node-version-info)
     - [Get balance of addresses](#get-balance-of-addresses)
@@ -26,6 +27,9 @@ A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](h
     - [Get wallet balance](#get-wallet-balance)
     - [Spend coins from wallet](#spend-coins-from-wallet)
     - [Unload wallet](#unload-wallet)
+    - [Encrypt wallet](#encrypt-wallet)
+    - [Decrypt wallet](#decrypt-wallet)
+    - [Get wallet seed](#get-wallet-seed)
 - [Transaction APIs](#transaction-apis)
     - [Get unconfirmed transactions](#get-unconfirmed-transactions)
     - [Get transaction info by id](#get-transaction-info-by-id)
@@ -89,11 +93,11 @@ Result:
 ```
 
 ## General system checks
-
 ### Network check
 
 ```
 URI: /network/connections/default
+
 Method: GET
 ```
 
@@ -145,6 +149,47 @@ Response:
 "Status": true
 }
 ]
+}
+```
+
+### Health check
+
+```
+URI: /health
+Method: GET
+```
+
+Example:
+
+```sh
+curl http://127.0.0.1:6420/health
+```
+
+Response:
+
+```json
+{
+    "blockchain": {
+        "head": {
+            "seq": 21175,
+            "block_hash": "8a3e0aac619551ae009cfb28c2b36bb1300925f74da770d1512072314f6a4c80",
+            "previous_block_hash": "001eb7911b6a6ab7c75feb88726dd2bc8b87133aebc82201c4404537eb74f7ac",
+            "timestamp": 1523168686,
+            "fee": 2,
+            "version": 0,
+            "tx_body_hash": "36be8d70d1e9f70b340ea7ecf0b247c27086bad10568044c1196fe150f6cea1b"
+        },
+        "unspents": 14750,
+        "unconfirmed": 0,
+        "time_since_last_block": "12m6s"
+    },
+    "version": {
+        "version": "0.22.0",
+        "commit": "f61b4319c2f146a5ad86f7cbda26a1ba6a09998d",
+        "branch": "develop"
+    },
+    "open_connections": 30,
+    "uptime": "13.686460853s"
 }
 ```
 
@@ -268,31 +313,27 @@ Result:
 
 ```json
 {
-    "Meta":{
+    "meta":{
         "coin":"skycoin",
         "filename":"2017_11_25_e5fb.wlt",
         "label":"test",
-        "lastSeed":"c69085fc5c95e8bbc5903baef8ad2d7b7065d7a5c1b3d150101f9a2f357c1537",
-        "seed":"child cruel simple clerk cave",
+        "lastSeed":"",
+        "seed":"",
         "tm":"1511640884",
         "type":"deterministic",
         "version":"0.1"
     },
-    "Entries":[
+    "entries":[
         {
-            "Address":{
-                "Version":0,
-                "Key":[
-
-                ]
-            },
-            "Public":[
-
-            ],
-            "Secret":[
-
-            ]
-        }
+            "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
+            "public_key": "030479afcf24dbc1579769522d4d80c13270a6bb829e9aa121e012f600d5aab992",
+            "secret_key": ""
+        },
+        {
+            "address": "SMnCGfpt7zVXm8BkRSFMLeMRA6LUu3Ewne",
+            "public_key": "0258245e0f3a27b70ba8816e9ebd4470624f2924a79240b4b7624aaa129eff399e",
+            "secret_key": ""
+        },
     ]
 }
 ```
@@ -379,22 +420,22 @@ Result:
             "coin": "skycoin",
             "filename": "2017_11_25_e5fb.wlt",
             "label": "test",
-            "lastSeed": "c69085fc5c95e8bbc5903baef8ad2d7b7065d7a5c1b3d150101f9a2f357c1537",
-            "seed": "child cruel assault pepper miracle hello clerk cave",
+            "lastSeed": "",
+            "seed": "",
             "tm": "1511640884",
             "type": "deterministic",
-            "version": "0.1"
+            "version": "0.2"
         },
         "entries": [
             {
                 "address": "8C5icxR9zdkYTZZTVV3cCX7QoK4EkLuK4p",
                 "public_key": "***",
-                "secret_key": "***"
+                "secret_key": "",
             },
             {
                 "address": "23A1EWMZopUFLCwtXMe2CU9xTCbi5Gth643",
                 "public_key": "***",
-                "secret_key": "***"
+                "secret_key": ""
             }
         ]
     }
@@ -456,12 +497,19 @@ Args:
     seed: wallet seed [required]
     label: wallet label [required]
     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
+    encrypt: encrypt wallet [optional, bool value]
+    password: wallet password[optional, must be provided if encrypt is true]
 ```
 
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/wallet/create -d "seed=$seed&label=$label&scan=5"
+curl -X POST http://127.0.0.1:6420/wallet/create \
+ -H 'Content-Type: application/x-www-form-urlencoded' \
+ -d 'seed=$seed' \
+ -d 'label=$label' \
+ -d 'scan=5' \
+ -d 'password=$password'
 ```
 
 Result:
@@ -469,20 +517,20 @@ Result:
 ```json
 {
     "meta": {
-        "coin": "sky",
+        "coin": "skycoin",
         "filename": "2017_05_09_d554.wlt",
-        "label": "",
-        "lastSeed": "4795eaf6890c0ce1d67daf87d2f85523b1d19245a7a81a38c757fc4a7e3cae3e",
-        "seed": "dish slide planet night tape stick ask element title sound only typical",
+        "label": "label",
+        "lastSeed": "",
+        "seed": "",
         "tm": "1494315855",
         "type": "deterministic",
-        "version": "0.1"
+        "version": "0.2"
     },
     "entries": [
         {
             "address": "y2JeYS4RS8L9GYM7UKdjLRyZanKHXumFoH",
             "public_key": "0343581927c12d07582168d6092d06d0a8cefdef47541f804eae33faf027932245",
-            "secret_key": "6a7215780d7adf26cd697bd5186510f0ecb9e9a1c9d1e17d7f61d703e5087620"
+            "secret_key": ""
         }
     ]
 }
@@ -500,7 +548,9 @@ Args:
 Example:
 
 ```sh
-curl -X POST http://127.0.0.1:6420/wallet/newAddress?id=2017_05_09_d554.wlt
+curl -X POST http://127.0.0.1:6420/wallet/newAddress \
+ -H 'Content-Type: x-www-form-urlencoded' \
+ -d 'id=2017_05_09_d554.wlt'
 ```
 
 Result:
@@ -526,7 +576,10 @@ Args:
 Example:
 
 ```sh
-curl -X POST http://127.0.0.1:6420/wallet/update?id=$id&label=$label
+curl -X POST http://127.0.0.1:6420/wallet/update \
+ -H 'Content-Type: application/x-www-form-urlencoded' \
+ -d 'id=$id' \
+ -d 'label=$label'
 ```
 
 Result:
@@ -574,6 +627,7 @@ Args:
     id: wallet id
     dst: recipient address
     coins: number of coins to send, in droplets. 1 coin equals 1e6 droplets.
+    password: wallet password.
 Response:
     balance: new balance of the wallet
     txn: spent transaction
@@ -583,6 +637,7 @@ Statuses:
     200: successful spend. NOTE: the response may include an "error" field. if this occurs, the spend succeeded
          but the response data could not be prepared. The client should NOT spend again.
     400: Invalid query params, wallet lacks enough coin hours, insufficient balance
+    403: Wallet api disabled
     404: wallet does not exist
     500: other errors
 ```
@@ -590,8 +645,12 @@ Statuses:
 example, send 1 coin to `2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc` from wallet `2017_05_09_ea42.wlt`:
 
 ```sh
-curl -X POST \
-  'http://127.0.0.1:6420/wallet/spend?id=2017_05_09_ea42.wlt&dst=2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc&coins=1000000'
+curl -X POST  http://127.0.0.1:6420/wallet/spend \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'id=2017_05_09_ea42.wlt' \
+  -d 'dst=2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc' \
+  -d 'coins=1000000'
+  -d 'password=$password'
 ```
 
 Result:
@@ -652,8 +711,127 @@ Args:
 Example:
 
 ```sh
-curl -X POST \
-    'http://127.0.0.1:6420/wallet/unload?id=2017_05_09_d554.wlt'
+curl -X POST http://127.0.0.1:6420/wallet/unload \
+ -H 'Content-Type: x-www-form-urlencoded' \
+ -d 'id=2017_05_09_d554.wlt'
+```
+
+### Encrypt wallet
+
+```
+URI: /wallet/encrypt
+Method: POST
+Args: 
+    id: wallet id
+    password: wallet password
+```
+
+Example:
+
+```sh
+curl -X POST http://127.0.0.1:6420/wallet/encrypt \
+ -H 'Content-Type: application/x-www-form-urlencoded' \
+ -d 'id=test.wlt' \
+ -d 'password=$password'
+```
+
+Result:
+
+```json
+{
+    "meta": {
+        "coin": "skycoin",
+        "cryptoType": "scrypt-chacha20poly1305",
+        "encrypted": "true",
+        "filename": "test.wlt",
+        "label": "ec",
+        "lastSeed": "",
+        "secrets": "",
+        "seed": "",
+        "tm": "1521083044",
+        "type": "deterministic",
+        "version": "0.2"
+    },
+    "entries": [
+        {
+            "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+            "public_key": "032a1218cbafc8a93233f363c19c667cf02d42fa5a8a07c0d6feca79e82d72753d",
+            "secret_key": ""
+        }
+    ]
+}
+```
+
+### Decrypt wallet
+
+```
+URI: /wallet/decrypt
+Method: POST
+Args:
+    id: wallet id
+    password: wallet password
+```
+
+Example:
+
+```sh
+curl -X POST http://127.0.0.1:6420/wallet/decrypt \
+ -H 'Content-Type: application/x-www-form-urlencoded' \
+ -d 'id=test.wlt' \
+ -d 'password=$password'
+```
+
+Result:
+
+```json
+{
+    "meta": {
+        "coin": "skycoin",
+        "cryptoType": "",
+        "encrypted": "false",
+        "filename": "test.wlt",
+        "label": "ec",
+        "lastSeed": "",
+        "secrets": "",
+        "seed": "",
+        "tm": "1521083044",
+        "type": "deterministic",
+        "version": "0.2"
+    },
+    "entries": [
+        {
+            "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+            "public_key": "032a1218cbafc8a93233f363c19c667cf02d42fa5a8a07c0d6feca79e82d72753d",
+            "secret_key": ""
+        }
+    ]
+}
+```
+
+### Get wallet seed
+
+This api is supported only when `-enable-seed-api` option is enabled and the wallet is encrypted.
+
+```
+URI: /wallet/seed
+Method: GET
+Args:
+    id: wallet id
+    password: wallet password
+```
+
+Example:
+
+```sh
+curl http://127.0.0.1:6420/wallet/seed?id=test.wlt&password=$password
+```
+
+Result:
+
+```json
+{
+    "seed": "your wallet seed",
+}
 ```
 
 ## Transaction APIs

@@ -1,6 +1,8 @@
 package daemon
 
 import (
+	"time"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/strand"
@@ -147,12 +149,13 @@ func (gw *Gateway) ResendUnconfirmedTxns() (rlt *ResendResult) {
 }
 
 // GetBlockchainMetadata returns a *visor.BlockchainMetadata
-func (gw *Gateway) GetBlockchainMetadata() *visor.BlockchainMetadata {
+func (gw *Gateway) GetBlockchainMetadata() (*visor.BlockchainMetadata, error) {
 	var bcm *visor.BlockchainMetadata
+	var err error
 	gw.strand("GetBlockchainMetadata", func() {
-		bcm = gw.vrpc.GetBlockchainMetadata(gw.v)
+		bcm, err = gw.vrpc.GetBlockchainMetadata(gw.v)
 	})
-	return bcm
+	return bcm, err
 }
 
 // GetBlockByHash returns the block by hash
@@ -559,16 +562,31 @@ func (gw *Gateway) ScanAheadWalletAddresses(wltName string, password []byte, sca
 }
 
 // EncryptWallet encrypts the wallet
-func (gw *Gateway) EncryptWallet(wltName string, password []byte) error {
+func (gw *Gateway) EncryptWallet(wltName string, password []byte) (*wallet.Wallet, error) {
 	if gw.Config.DisableWalletAPI {
-		return wallet.ErrWalletAPIDisabled
+		return nil, wallet.ErrWalletAPIDisabled
 	}
 
 	var err error
+	var w *wallet.Wallet
 	gw.strand("EncryptWallet", func() {
-		err = gw.v.Wallets.EncryptWallet(wltName, password)
+		w, err = gw.v.Wallets.EncryptWallet(wltName, password)
 	})
-	return err
+	return w, err
+}
+
+// DecryptWallet decrypts wallet
+func (gw *Gateway) DecryptWallet(wltID string, password []byte) (*wallet.Wallet, error) {
+	if gw.Config.DisableWalletAPI {
+		return nil, wallet.ErrWalletAPIDisabled
+	}
+
+	var err error
+	var w *wallet.Wallet
+	gw.strand("DecryptWallet", func() {
+		w, err = gw.v.Wallets.DecryptWallet(wltID, password)
+	})
+	return w, err
 }
 
 // GetWalletBalance returns balance pair of specific wallet
@@ -689,10 +707,11 @@ func (gw *Gateway) GetWallets() (wallet.Wallets, error) {
 	}
 
 	var w wallet.Wallets
+	var err error
 	gw.strand("GetWallets", func() {
-		w = gw.v.Wallets.GetWallets()
+		w, err = gw.v.Wallets.GetWallets()
 	})
-	return w, nil
+	return w, err
 }
 
 // GetWalletUnconfirmedTxns returns all unconfirmed transactions in given wallet
@@ -740,6 +759,21 @@ func (gw *Gateway) UnloadWallet(id string) error {
 	})
 
 	return nil
+}
+
+// GetWalletSeed returns seed of wallet of given id,
+// returns wallet.ErrWalletNotEncrypted if the wallet is not encrypted.
+func (gw *Gateway) GetWalletSeed(id string, password []byte) (string, error) {
+	if gw.Config.DisableWalletAPI {
+		return "", wallet.ErrWalletAPIDisabled
+	}
+
+	var seed string
+	var err error
+	gw.strand("GetWalletSeed", func() {
+		seed, err = gw.v.Wallets.GetWalletSeed(id, password)
+	})
+	return seed, err
 }
 
 // IsWalletAPIDisabled returns if all wallet related apis are disabled
@@ -803,4 +837,36 @@ func (gw *Gateway) GetAddressCount() (uint64, error) {
 	}
 
 	return uint64(len(allAccounts)), nil
+}
+
+// Health is returned by the /health endpoint
+type Health struct {
+	BlockchainMetadata *visor.BlockchainMetadata
+	Version            visor.BuildInfo
+	OpenConnections    int
+	Uptime             time.Duration
+}
+
+// GetHealth returns statistics about the running node
+func (gw *Gateway) GetHealth() (*Health, error) {
+	var health *Health
+	var err error
+	gw.strand("GetHealth", func() {
+		var metadata *visor.BlockchainMetadata
+		metadata, err = gw.vrpc.GetBlockchainMetadata(gw.v)
+		if err != nil {
+			return
+		}
+
+		conns := gw.drpc.GetConnections(gw.d)
+
+		health = &Health{
+			BlockchainMetadata: metadata,
+			Version:            gw.v.Config.BuildInfo,
+			OpenConnections:    len(conns.Connections),
+			Uptime:             time.Since(gw.v.StartedAt),
+		}
+	})
+
+	return health, err
 }

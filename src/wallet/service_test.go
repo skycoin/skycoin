@@ -1,5 +1,3 @@
-// build ignore
-
 package wallet
 
 import (
@@ -78,67 +76,95 @@ func TestNewService(t *testing.T) {
 	}
 }
 
-func TestServiceCreateWalletDisabledWalletAPI(t *testing.T) {
-	for ct := range cryptoTable {
-		name := fmt.Sprintf("crypto=%v", ct)
-		t.Run(name, func(t *testing.T) {
-			dir := prepareWltDir()
-			s, err := NewService(Config{
-				WalletDir:        dir,
-				CryptoType:       ct,
-				DisableWalletAPI: true,
-			})
-			require.NoError(t, err)
-			dirIsEmpty(t, dir)
-
-			wltName := "t1.wlt"
-			seed := "seed1"
-			_, err = s.CreateWallet(wltName, Options{
-				Seed: seed,
-			})
-			dirIsEmpty(t, dir)
-			require.Equal(t, ErrWalletAPIDisabled, err)
-		})
-	}
-}
-
 func TestServiceCreateWallet(t *testing.T) {
-	for ct := range cryptoTable {
-		t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
-			dir := prepareWltDir()
-			s, err := NewService(Config{
-				WalletDir:        dir,
-				CryptoType:       ct,
-				DisableWalletAPI: false,
+	tt := []struct {
+		name             string
+		encrypt          bool
+		password         []byte
+		disableWalletAPI bool
+		err              error
+	}{
+		{
+			name:             "encrypt=true password=pwd",
+			encrypt:          true,
+			password:         []byte("pwd"),
+			disableWalletAPI: false,
+		},
+		{
+			name:             "encrypt=true password=pwd",
+			encrypt:          true,
+			password:         []byte("pwd"),
+			disableWalletAPI: true,
+			err:              ErrWalletAPIDisabled,
+		},
+		{
+			name:             "encrypt=false",
+			encrypt:          false,
+			disableWalletAPI: false,
+		},
+		{
+			name:             "encrypt=false",
+			encrypt:          false,
+			disableWalletAPI: true,
+			err:              ErrWalletAPIDisabled,
+		},
+	}
+	for _, tc := range tt {
+		for ct := range cryptoTable {
+			t.Run(fmt.Sprintf("%v crypto=%v", tc.name, ct), func(t *testing.T) {
+				dir := prepareWltDir()
+				s, err := NewService(Config{
+					WalletDir:        dir,
+					CryptoType:       ct,
+					DisableWalletAPI: tc.disableWalletAPI,
+				})
+				require.NoError(t, err)
+
+				wltName := "t1.wlt"
+				seed := "seed1"
+				w, err := s.CreateWallet(wltName, Options{
+					Seed:     seed,
+					Encrypt:  tc.encrypt,
+					Password: tc.password,
+				})
+				require.Equal(t, tc.err, err)
+				if err != nil {
+					return
+				}
+
+				require.NoError(t, err)
+				require.Equal(t, w.IsEncrypted(), tc.encrypt)
+				if tc.encrypt {
+					require.NotEmpty(t, w.secrets())
+					checkNoSensitiveData(t, w)
+
+					// Checks the wallet file doesn't contain sensitive data
+					lw, err := Load(filepath.Join(dir, w.Filename()))
+					require.NoError(t, err)
+					checkNoSensitiveData(t, lw)
+				} else {
+					require.NoError(t, w.Validate())
+				}
+
+				// create wallet with dup wallet name
+				_, err = s.CreateWallet(wltName, Options{Seed: "seed2"})
+				require.Equal(t, err, ErrWalletNameConflict)
+
+				// create wallet with dup seed
+				dupWlt := "dup_wallet.wlt"
+				_, err = s.CreateWallet(dupWlt, Options{
+					Seed: seed,
+				})
+				require.EqualError(t, err, fmt.Sprintf("wallet %s would be duplicate with %v, same seed", dupWlt, wltName))
+
+				// check if the dup wallet is created
+				_, ok := s.wallets[dupWlt]
+				require.False(t, ok)
+
+				_, err = os.Stat(filepath.Join(dir, dupWlt))
+				require.True(t, os.IsNotExist(err))
 			})
-			require.NoError(t, err)
-
-			wltName := "t1.wlt"
-			seed := "seed1"
-			w, err := s.CreateWallet(wltName, Options{
-				Seed: seed,
-			})
-			require.NoError(t, err)
-			require.NoError(t, w.Validate())
-
-			// create wallet with dup wallet name
-			_, err = s.CreateWallet(wltName, Options{Seed: "seed2"})
-			require.Equal(t, err, ErrWalletNameConflict)
-
-			// create wallet with dup seed
-			dupWlt := "dup_wallet.wlt"
-			_, err = s.CreateWallet(dupWlt, Options{
-				Seed: seed,
-			})
-			require.EqualError(t, err, fmt.Sprintf("wallet %s would be duplicate with %v, same seed", dupWlt, wltName))
-
-			// check if the dup wallet is created
-			_, ok := s.wallets[dupWlt]
-			require.False(t, ok)
-
-			_, err = os.Stat(filepath.Join(dir, dupWlt))
-			require.True(t, os.IsNotExist(err))
-		})
+		}
 	}
 }
 
@@ -245,6 +271,16 @@ func TestServiceLoadWallet(t *testing.T) {
 				for i, a := range tc.expectAddrs {
 					require.Equal(t, a, w.Entries[i].Address)
 				}
+
+				require.Equal(t, w.IsEncrypted(), tc.opts.Encrypt)
+				if w.IsEncrypted() {
+					checkNoSensitiveData(t, w)
+					// Checks the wallet file doesn't contain sensitive data
+					wltPath := filepath.Join(dir, w.Filename())
+					lw, err := Load(wltPath)
+					require.NoError(t, err)
+					checkNoSensitiveData(t, lw)
+				}
 			})
 		}
 	}
@@ -261,91 +297,91 @@ func TestServiceNewAddress(t *testing.T) {
 	}
 
 	tt := []struct {
-		name          string
-		opts          Options
-		n             uint64
-		pwd           []byte
-		expectAddrNum int
-		expectAddrs   []cipher.Address
-		expectErr     error
+		name              string
+		opts              Options
+		n                 uint64
+		pwd               []byte
+		walletAPIDisabled bool
+		expectAddrNum     int
+		expectAddrs       []cipher.Address
+		expectErr         error
 	}{
 		{
-			"encrypted=false addresses=0",
-			Options{
+			name: "encrypted=false addresses=0",
+			opts: Options{
 				Label: "label",
 				Seed:  string(seed),
 			},
-			0,
-			nil,
-			0,
-			nil, // CreateWallet will generate a default address, so check from new address
-			nil,
+			n:             0,
+			expectAddrNum: 0,
 		},
 		{
-			"encrypted=false addresses=1",
-			Options{
+			name: "encrypted=false addresses=1",
+			opts: Options{
 				Label: "label",
 				Seed:  string(seed),
 			},
-			2,
-			nil,
-			2,
-			addrs[1:3], // CreateWallet will generate a default address, so check from new address
-			nil,
+			n:             2,
+			expectAddrNum: 2,
+			expectAddrs:   addrs[1:3], // CreateWallet will generate a default address, so check from new address
 		},
 		{
-			"encrypted=false addresses=2",
-			Options{
+			name: "encrypted=false addresses=2",
+			opts: Options{
 				Label: "label",
 				Seed:  string(seed),
 			},
-			2,
-			nil,
-			2,
-			addrs[1:3], // CreateWallet will generate a default address, so check from new address
-			nil,
+			n:             2,
+			expectAddrNum: 2,
+			expectAddrs:   addrs[1:3], // CreateWallet will generate a default address, so check from new address
 		},
 		{
-			"encrypted=true addresses=1",
-			Options{
+			name: "encrypted=true addresses=1",
+			opts: Options{
 				Label:    "label",
 				Seed:     string(seed),
 				Encrypt:  true,
 				Password: []byte("pwd"),
 			},
-			1,
-			[]byte("pwd"),
-			1,
-			addrs[1:2], // CreateWallet will generate a default address, so check from new address
-			nil,
+			n:             1,
+			pwd:           []byte("pwd"),
+			expectAddrNum: 1,
+			expectAddrs:   addrs[1:2], // CreateWallet will generate a default address, so check from new address
 		},
 		{
-			"encrypted=true addresses=2",
-			Options{
+			name: "encrypted=true addresses=2",
+			opts: Options{
 				Label:    "label",
 				Seed:     string(seed),
 				Encrypt:  true,
 				Password: []byte("pwd"),
 			},
-			2,
-			[]byte("pwd"),
-			2,
-			addrs[1:3], // CreateWallet will generate a default address, so check from new address
-			nil,
+			n:             2,
+			pwd:           []byte("pwd"),
+			expectAddrNum: 2,
+			expectAddrs:   addrs[1:3], // CreateWallet will generate a default address, so check from new address
 		},
 		{
-			"encrypted=true wrong password",
-			Options{
+			name: "encrypted=true wrong password",
+			opts: Options{
 				Label:    "label",
 				Seed:     string(seed),
 				Encrypt:  true,
 				Password: []byte("pwd"),
 			},
-			1,
-			[]byte("wrong password"),
-			1,
-			nil,
-			ErrInvalidPassword,
+			n:             1,
+			pwd:           []byte("wrong password"),
+			expectAddrNum: 1,
+			expectErr:     ErrInvalidPassword,
+		},
+		{
+			name: "wallet api disabled",
+			opts: Options{
+				Seed:  "seed",
+				Label: "label",
+			},
+			walletAPIDisabled: true,
+			expectErr:         ErrWalletAPIDisabled,
 		},
 	}
 
@@ -357,14 +393,21 @@ func TestServiceNewAddress(t *testing.T) {
 				s, err := NewService(Config{
 					WalletDir:        dir,
 					CryptoType:       ct,
-					DisableWalletAPI: false,
+					DisableWalletAPI: tc.walletAPIDisabled,
 				})
 				require.NoError(t, err)
 
 				wltName := newWalletFilename()
 
 				w, err := s.CreateWallet(wltName, tc.opts)
-				require.NoError(t, err)
+				if err != nil {
+					require.Equal(t, tc.expectErr, err)
+					return
+				}
+
+				if w.IsEncrypted() {
+					checkNoSensitiveData(t, w)
+				}
 
 				naddrs, err := s.NewAddresses(w.Filename(), tc.pwd, tc.n)
 				require.Equal(t, tc.expectErr, err)
@@ -394,6 +437,9 @@ func TestServiceNewAddress(t *testing.T) {
 				lw, err := Load(filepath.Join(dir, w.Filename()))
 				require.NoError(t, err)
 				require.Equal(t, lw, w)
+				if w.IsEncrypted() {
+					checkNoSensitiveData(t, lw)
+				}
 
 				// Wallet doesn't exist
 				_, err = s.NewAddresses("wallet_not_exist.wlt", tc.pwd, 1)
@@ -403,163 +449,139 @@ func TestServiceNewAddress(t *testing.T) {
 	}
 }
 
-func TestServiceNewAddressDisabledWalletAPI(t *testing.T) {
-	for ct := range cryptoTable {
-		name := fmt.Sprintf("crypto=%v", ct)
-		t.Run(name, func(t *testing.T) {
-			dir := prepareWltDir()
-			s, err := NewService(Config{
-				WalletDir:        dir,
-				CryptoType:       ct,
-				DisableWalletAPI: true,
-			})
-			require.NoError(t, err)
-			dirIsEmpty(t, dir)
-
-			require.Empty(t, s.wallets)
-			addrs, err := s.NewAddresses("", nil, 1)
-			require.Equal(t, ErrWalletNotExist, err)
-			require.Equal(t, 0, len(addrs))
-		})
-	}
-}
-
-func TestServiceGetAddressDisabledWalletAPI(t *testing.T) {
-	for ct := range cryptoTable {
-		name := fmt.Sprintf("crypto=%v", ct)
-		t.Run(name, func(t *testing.T) {
-			dir := prepareWltDir()
-			s, err := NewService(Config{
-				WalletDir:        dir,
-				CryptoType:       ct,
-				DisableWalletAPI: true,
-			})
-			require.NoError(t, err)
-			dirIsEmpty(t, dir)
-
-			require.Empty(t, s.wallets)
-			addrs, err := s.GetAddresses("")
-			require.Equal(t, ErrWalletNotExist, err)
-			require.Equal(t, 0, len(addrs))
-		})
-	}
-}
-
 func TestServiceGetAddress(t *testing.T) {
-	for ct := range cryptoTable {
-		t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
-			dir := prepareWltDir()
-			s, err := NewService(Config{
-				WalletDir:        dir,
-				CryptoType:       ct,
-				DisableWalletAPI: false,
+	for _, disableWalletAPI := range []bool{true, false} {
+		for ct := range cryptoTable {
+			t.Run(fmt.Sprintf("disable wallet api=%v crypto=%v", disableWalletAPI, ct), func(t *testing.T) {
+				dir := prepareWltDir()
+				s, err := NewService(Config{
+					WalletDir:        dir,
+					CryptoType:       ct,
+					DisableWalletAPI: disableWalletAPI,
+				})
+				require.NoError(t, err)
+
+				if disableWalletAPI {
+					dirIsEmpty(t, dir)
+
+					require.Empty(t, s.wallets)
+					addrs, err := s.GetAddresses("")
+					require.Equal(t, ErrWalletAPIDisabled, err)
+					require.Equal(t, 0, len(addrs))
+					return
+				}
+				// get the defaut wallet
+				var w *Wallet
+				for _, w = range s.wallets {
+				}
+
+				addrs, err := s.GetAddresses(w.Filename())
+				require.NoError(t, err)
+				require.Equal(t, 1, len(addrs))
+
+				// test none exist wallet
+				notExistID := "not_exist_id.wlt"
+				_, err = s.GetAddresses(notExistID)
+				require.Equal(t, ErrWalletNotExist, err)
 			})
-			require.NoError(t, err)
+		}
 
-			// get the defaut wallet
-			var w *Wallet
-			for _, w = range s.wallets {
-			}
-
-			addrs, err := s.GetAddresses(w.Filename())
-			require.NoError(t, err)
-			require.Equal(t, 1, len(addrs))
-
-			// test none exist wallet
-			notExistID := "not_exist_id.wlt"
-			_, err = s.GetAddresses(notExistID)
-			require.Equal(t, ErrWalletNotExist, err)
-		})
-	}
-}
-
-func TestServiceGetWalletDisabledWalletAPI(t *testing.T) {
-	for ct := range cryptoTable {
-		name := fmt.Sprintf("crypto=%v", ct)
-		t.Run(name, func(t *testing.T) {
-			dir := prepareWltDir()
-			s, err := NewService(Config{
-				WalletDir:        dir,
-				CryptoType:       ct,
-				DisableWalletAPI: true,
-			})
-			require.NoError(t, err)
-			dirIsEmpty(t, dir)
-
-			require.Empty(t, s.wallets)
-			w, err := s.GetWallet("")
-			require.Equal(t, ErrWalletNotExist, err)
-			var emptyW *Wallet
-			require.Equal(t, w, emptyW)
-		})
 	}
 }
 
 func TestServiceGetWallet(t *testing.T) {
-	for ct := range cryptoTable {
-		t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
-			dir := prepareWltDir()
+	for _, disableWalletAPI := range []bool{true, false} {
+		for ct := range cryptoTable {
+			t.Run(fmt.Sprintf("disable wallet api=%v crypto=%v", disableWalletAPI, ct), func(t *testing.T) {
+				dir := prepareWltDir()
 
-			s, err := NewService(Config{
-				WalletDir:        dir,
-				CryptoType:       ct,
-				DisableWalletAPI: false,
+				s, err := NewService(Config{
+					WalletDir:        dir,
+					CryptoType:       ct,
+					DisableWalletAPI: disableWalletAPI,
+				})
+				require.NoError(t, err)
+
+				if disableWalletAPI {
+					dirIsEmpty(t, dir)
+
+					require.Empty(t, s.wallets)
+					w, err := s.GetWallet("")
+					require.Equal(t, ErrWalletAPIDisabled, err)
+					var emptyW *Wallet
+					require.Equal(t, w, emptyW)
+					return
+				}
+
+				// Get the defaut wallet
+				var w *Wallet
+				for _, w = range s.wallets {
+				}
+				require.NoError(t, err)
+
+				w1, err := s.GetWallet(w.Filename())
+				require.NoError(t, err)
+
+				// Check if change original wallet would change the returned wallet
+				w.setLabel("new_label")
+
+				require.NotEqual(t, "new_label", w1.Label())
+
+				// Get wallet doesn't exist
+				wltName := "does_not_exist.wlt"
+				_, err = s.GetWallet(wltName)
+				require.Equal(t, ErrWalletNotExist, err)
 			})
-			require.NoError(t, err)
-
-			// Get the defaut wallet
-			var w *Wallet
-			for _, w = range s.wallets {
-			}
-			require.NoError(t, err)
-
-			w1, err := s.GetWallet(w.Filename())
-			require.NoError(t, err)
-
-			// Check if change original wallet would change the returned wallet
-			w.setLabel("new_label")
-
-			require.NotEqual(t, "new_label", w1.Label())
-
-			// Get wallet doesn't exist
-			wltName := "does_not_exist.wlt"
-			_, err = s.GetWallet(wltName)
-			require.Equal(t, ErrWalletNotExist, err)
-		})
+		}
 	}
 }
 
 func TestServiceGetWallets(t *testing.T) {
-	for ct := range cryptoTable {
-		dir := prepareWltDir()
-		s, err := NewService(Config{
-			WalletDir:        dir,
-			CryptoType:       ct,
-			DisableWalletAPI: false,
-		})
-		require.NoError(t, err)
+	for _, disableWalletAPI := range []bool{true, false} {
+		for ct := range cryptoTable {
+			t.Run(fmt.Sprintf("disable wallet=%v crypto=%v", disableWalletAPI, ct), func(t *testing.T) {
+				dir := prepareWltDir()
+				s, err := NewService(Config{
+					WalletDir:        dir,
+					CryptoType:       ct,
+					DisableWalletAPI: disableWalletAPI,
+				})
+				require.NoError(t, err)
 
-		var wallets []*Wallet
-		// Get the default wallet
-		var w1 *Wallet
-		for _, w1 = range s.wallets {
-		}
-		wallets = append(wallets, w1)
+				if disableWalletAPI {
+					dirIsEmpty(t, dir)
 
-		// Create a new wallet
-		wltName := newWalletFilename()
-		w2, err := s.CreateWallet(wltName, Options{
-			Seed:  "seed",
-			Label: "label",
-		})
-		require.NoError(t, err)
-		wallets = append(wallets, w2)
+					require.Empty(t, s.wallets)
+					w, err := s.GetWallets()
+					require.Equal(t, ErrWalletAPIDisabled, err)
+					var emptyW Wallets
+					require.Equal(t, w, emptyW)
+					return
+				}
 
-		ws := s.GetWallets()
-		for _, w := range wallets {
-			ww, ok := ws[w.Filename()]
-			require.True(t, ok)
-			require.Equal(t, w, ww)
+				var wallets []*Wallet
+				// Get the default wallet
+				var w1 *Wallet
+				for _, w1 = range s.wallets {
+				}
+				wallets = append(wallets, w1)
+
+				// Create a new wallet
+				wltName := newWalletFilename()
+				w2, err := s.CreateWallet(wltName, Options{
+					Seed:  "seed",
+					Label: "label",
+				})
+				require.NoError(t, err)
+				wallets = append(wallets, w2)
+
+				ws, err := s.GetWallets()
+				for _, w := range wallets {
+					ww, ok := ws[w.Filename()]
+					require.True(t, ok)
+					require.Equal(t, w, ww)
+				}
+			})
 		}
 	}
 }
@@ -669,143 +691,141 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 	}
 
 	tt := []struct {
-		name     string
-		opts     Options
-		pwd      []byte
-		unspents []coin.UxOut
-		vld      Validator
-		coins    uint64
-		dest     cipher.Address
-		err      error
+		name             string
+		opts             Options
+		pwd              []byte
+		unspents         []coin.UxOut
+		vld              Validator
+		coins            uint64
+		dest             cipher.Address
+		disableWalletAPI bool
+		err              error
 	}{
 		{
-			"encrypted=false has change=no",
-			Options{
+			name: "encrypted=false has change=no",
+			opts: Options{
 				Seed: string(seed),
 			},
-			nil,
-			uxouts[:],
-			&dummyValidator{
+			unspents: uxouts[:],
+			vld: &dummyValidator{
 				ok: false,
 			},
-			2e6,
-			addrs[0],
-			nil,
+			coins: 2e6,
+			dest:  addrs[0],
 		},
 		{
-			"encrypted=true has change=no",
-			Options{
+			name: "encrypted=true has change=no",
+			opts: Options{
 				Seed:     string(seed),
 				Encrypt:  true,
 				Password: []byte("pwd"),
 			},
-			[]byte("pwd"),
-			uxouts[:],
-			&dummyValidator{
+			pwd:      []byte("pwd"),
+			unspents: uxouts[:],
+			vld: &dummyValidator{
 				ok: false,
 			},
-			2e6,
-			addrs[0],
-			nil,
+			coins: 2e6,
+			dest:  addrs[0],
 		},
 		{
-			"encrypted=false has change=yes",
-			Options{
+			name: "encrypted=false has change=yes",
+			opts: Options{
 				Seed: string(seed),
 			},
-			nil,
-			uxouts[:],
-			&dummyValidator{
+			unspents: uxouts[:],
+			vld: &dummyValidator{
 				ok: false,
 			},
-			1e6,
-			addrs[0],
-			nil,
+			coins: 1e6,
+			dest:  addrs[0],
 		},
 		{
-			"encrypted=false has unconfirmed spending transaction",
-			Options{
+			name: "encrypted=false has unconfirmed spending transaction",
+			opts: Options{
 				Seed: string(seed),
 			},
-			nil,
-			uxouts[:],
-			&dummyValidator{
+			unspents: uxouts[:],
+			vld: &dummyValidator{
 				ok: true,
 			},
-			2e6,
-			addrs[0],
-			errors.New("please spend after your pending transaction is confirmed"),
+			coins: 2e6,
+			dest:  addrs[0],
+			err:   errors.New("please spend after your pending transaction is confirmed"),
 		},
 		{
-			"encrypted=false unconfirmed spend failed",
-			Options{
+			name: "encrypted=false unconfirmed spend failed",
+			opts: Options{
 				Seed: string(seed),
 			},
-			nil,
-			uxouts[:],
-			&dummyValidator{
+			unspents: uxouts[:],
+			vld: &dummyValidator{
 				ok:  false,
 				err: errors.New("fail intentionally"),
 			},
-			2e6,
-			addrs[0],
-			errors.New("checking unconfirmed spending failed: fail intentionally"),
+			coins: 2e6,
+			dest:  addrs[0],
+			err:   errors.New("checking unconfirmed spending failed: fail intentionally"),
 		},
 		{
-			"encrypted=false spend zero",
-			Options{
+			name: "encrypted=false spend zero",
+			opts: Options{
 				Seed: string(seed),
 			},
-			nil,
-			uxouts[:],
-			&dummyValidator{
+			unspents: uxouts[:],
+			vld: &dummyValidator{
 				ok: false,
 			},
-			0,
-			addrs[0],
-			errors.New("zero spend amount"),
+			dest: addrs[0],
+			err:  errors.New("zero spend amount"),
 		},
 		{
-			"encrypted=false spend fractional coins",
-			Options{
+			name: "encrypted=false spend fractional coins",
+			opts: Options{
 				Seed: string(seed),
 			},
-			nil,
-			uxouts[:],
-			&dummyValidator{
+			unspents: uxouts[:],
+			vld: &dummyValidator{
 				ok: false,
 			},
-			1e3,
-			addrs[0],
-			nil,
+			coins: 1e3,
+			dest:  addrs[0],
 		},
 		{
-			"encrypted=false not enough confirmed coins",
-			Options{
+			name: "encrypted=false not enough confirmed coins",
+			opts: Options{
 				Seed: string(seed),
 			},
-			nil,
-			uxouts[:],
-			&dummyValidator{
+			unspents: uxouts[:],
+			vld: &dummyValidator{
 				ok: false,
 			},
-			100e6,
-			addrs[0],
-			ErrInsufficientBalance,
+			coins: 100e6,
+			dest:  addrs[0],
+			err:   ErrInsufficientBalance,
 		},
 		{
-			"encrypted=false no coin hours in inputs",
-			Options{
+			name: "encrypted=false no coin hours in inputs",
+			opts: Options{
 				Seed: string(seed),
 			},
-			nil,
-			uxoutsNoHours[:],
-			&dummyValidator{
+			unspents: uxoutsNoHours[:],
+			vld: &dummyValidator{
 				ok: false,
 			},
-			1e6,
-			addrsNoHours[0],
-			fee.ErrTxnNoFee,
+			coins: 1e6,
+			dest:  addrsNoHours[0],
+			err:   fee.ErrTxnNoFee,
+		},
+		{
+			name: "disable wallet api=true",
+			opts: Options{
+				Seed:  string(seed),
+				Label: "label",
+			},
+			vld:              &dummyValidator{},
+			disableWalletAPI: true,
+			err:              ErrWalletAPIDisabled,
 		},
 	}
 
@@ -828,9 +848,15 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 				s, err := NewService(Config{
 					WalletDir:        dir,
 					CryptoType:       ct,
-					DisableWalletAPI: false,
+					DisableWalletAPI: tc.disableWalletAPI,
 				})
 				require.NoError(t, err)
+
+				if tc.disableWalletAPI {
+					_, err = s.CreateAndSignTransaction("", tc.pwd, tc.vld, unspents, uint64(headTime), tc.coins, tc.dest)
+					require.Equal(t, tc.err, err)
+					return
+				}
 
 				wltName := newWalletFilename()
 
@@ -858,34 +884,44 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 
 func TestServiceUpdateWalletLabel(t *testing.T) {
 	tt := []struct {
-		name          string
-		wltName       string
-		opts          Options
-		updateWltName string
-		label         string
-		err           error
+		name             string
+		wltName          string
+		opts             Options
+		updateWltName    string
+		label            string
+		disableWalletAPI bool
+		err              error
 	}{
 		{
-			"ok",
-			"t.wlt",
-			Options{
+			name:    "ok",
+			wltName: "t.wlt",
+			opts: Options{
 				Seed:  "seed",
 				Label: "label",
 			},
-			"t.wlt",
-			"new-label",
-			nil,
+			updateWltName: "t.wlt",
+			label:         "new-label",
 		},
 		{
-			"wallet doesn't exist",
-			"t.wlt",
-			Options{
+			name:    "wallet doesn't exist",
+			wltName: "t.wlt",
+			opts: Options{
 				Seed:  "seed",
 				Label: "label",
 			},
-			"t1.wlt",
-			"new-label",
-			ErrWalletNotExist,
+			updateWltName: "t1.wlt",
+			label:         "new-label",
+			err:           ErrWalletNotExist,
+		},
+		{
+			name:    "wallet api disabled",
+			wltName: "t.wlt",
+			opts: Options{
+				Seed:  "seed",
+				Label: "label",
+			},
+			disableWalletAPI: true,
+			err:              ErrWalletAPIDisabled,
 		},
 	}
 
@@ -897,9 +933,15 @@ func TestServiceUpdateWalletLabel(t *testing.T) {
 				s, err := NewService(Config{
 					WalletDir:        dir,
 					CryptoType:       ct,
-					DisableWalletAPI: false,
+					DisableWalletAPI: tc.disableWalletAPI,
 				})
 				require.NoError(t, err)
+
+				if tc.disableWalletAPI {
+					err = s.UpdateWalletLabel("", "new label")
+					require.Equal(t, tc.err, err)
+					return
+				}
 
 				// Create a new wallet
 				w, err := s.CreateWallet(tc.wltName, tc.opts)
@@ -924,44 +966,56 @@ func TestServiceUpdateWalletLabel(t *testing.T) {
 
 func TestServiceEncryptWallet(t *testing.T) {
 	tt := []struct {
-		name       string
-		wltName    string
-		opts       Options
-		encWltName string
-		pwd        []byte
-		err        error
+		name             string
+		wltName          string
+		opts             Options
+		encWltName       string
+		pwd              []byte
+		disableWalletAPI bool
+		err              error
 	}{
 		{
-			"ok",
-			"t.wlt",
-			Options{
+			name:    "ok",
+			wltName: "t.wlt",
+			opts: Options{
 				Seed: "seed",
 			},
-			"t.wlt",
-			[]byte("pwd"),
-			nil,
+			encWltName: "t.wlt",
+			pwd:        []byte("pwd"),
 		},
 		{
-			"wallet doesn't exist",
-			"t.wlt",
-			Options{
+			name:    "wallet doesn't exist",
+			wltName: "t.wlt",
+			opts: Options{
 				Seed: "seed",
 			},
-			"t2.wlt",
-			nil,
-			ErrWalletNotExist,
+			encWltName: "t2.wlt",
+			err:        ErrWalletNotExist,
 		},
 		{
-			"wallet already encrypted",
-			"t.wlt",
-			Options{
+			name:    "wallet already encrypted",
+			wltName: "t.wlt",
+			opts: Options{
 				Seed:     "seed",
 				Encrypt:  true,
 				Password: []byte("pwd"),
 			},
-			"t.wlt",
-			[]byte("pwd"),
-			ErrWalletEncrypted,
+			encWltName: "t.wlt",
+			pwd:        []byte("pwd"),
+			err:        ErrWalletEncrypted,
+		},
+		{
+			name:    "wallet api disabled",
+			wltName: "t.wlt",
+			opts: Options{
+				Seed:     "seed",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			encWltName:       "t.wlt",
+			pwd:              []byte("pwd"),
+			disableWalletAPI: true,
+			err:              ErrWalletAPIDisabled,
 		},
 	}
 
@@ -974,29 +1028,36 @@ func TestServiceEncryptWallet(t *testing.T) {
 				s, err := NewService(Config{
 					WalletDir:        dir,
 					CryptoType:       ct,
-					DisableWalletAPI: false,
+					DisableWalletAPI: tc.disableWalletAPI,
 				})
 				require.NoError(t, err)
+
+				if tc.disableWalletAPI {
+					_, err = s.EncryptWallet("", tc.pwd)
+					require.Equal(t, tc.err, err)
+					return
+				}
 
 				// Create a new wallet
 				w, err := s.CreateWallet(tc.wltName, tc.opts)
 				require.NoError(t, err)
 
 				// Encrypt the wallet
-				err = s.EncryptWallet(tc.encWltName, tc.pwd)
+				encWlt, err := s.EncryptWallet(tc.encWltName, tc.pwd)
 				require.Equal(t, tc.err, err)
 				if err != nil {
 					return
 				}
 
-				encWlt, err := s.getWallet(tc.encWltName)
+				encWlt1, err := s.getWallet(tc.encWltName)
 				require.NoError(t, err)
+				require.Equal(t, encWlt, encWlt1)
 
 				// Check the encrypted wallet
 				require.True(t, encWlt.IsEncrypted())
 				require.Equal(t, cipher.SecKey{}, encWlt.Entries[0].Secret)
-				require.NotEqual(t, w.seed(), encWlt.seed())
-				require.NotEqual(t, w.lastSeed(), encWlt.lastSeed())
+				require.Empty(t, encWlt.seed())
+				require.Empty(t, encWlt.lastSeed())
 
 				// Check the decrypted seeds
 				decWlt, err := encWlt.unlock(tc.pwd)
@@ -1004,7 +1065,7 @@ func TestServiceEncryptWallet(t *testing.T) {
 				require.Equal(t, w.seed(), decWlt.seed())
 				require.Equal(t, w.lastSeed(), decWlt.lastSeed())
 
-				// Check if the wallet file exist
+				// Check if the wallet file does exist
 				path := filepath.Join(dir, w.Filename())
 				_, err = os.Stat(path)
 				require.True(t, !os.IsNotExist(err))
@@ -1020,78 +1081,96 @@ func TestServiceEncryptWallet(t *testing.T) {
 
 func TestServiceDecryptWallet(t *testing.T) {
 	tt := []struct {
-		name           string
-		wltName        string
-		opts           Options
-		decryptWltName string
-		password       []byte
-		err            error
+		name             string
+		wltName          string
+		opts             Options
+		decryptWltName   string
+		password         []byte
+		disableWalletAPI bool
+		err              error
 	}{
 		{
-			"ok",
-			"test.wlt",
-			Options{
+			name:    "ok",
+			wltName: "test.wlt",
+			opts: Options{
 				Seed:     "seed",
 				Encrypt:  true,
 				Password: []byte("pwd"),
 			},
-			"test.wlt",
-			[]byte("pwd"),
-			nil,
+			decryptWltName: "test.wlt",
+			password:       []byte("pwd"),
 		},
 		{
-			"wallet not exist",
-			"test.wlt",
-			Options{
+			name:    "wallet not exist",
+			wltName: "test.wlt",
+			opts: Options{
 				Seed:     "seed",
 				Encrypt:  true,
 				Password: []byte("pwd"),
 			},
-			"t.wlt",
-			[]byte("pwd"),
-			ErrWalletNotExist,
+			decryptWltName: "t.wlt",
+			password:       []byte("pwd"),
+			err:            ErrWalletNotExist,
 		},
 		{
-			"wallet not encrypted",
-			"test.wlt",
-			Options{
+			name:    "wallet not encrypted",
+			wltName: "test.wlt",
+			opts: Options{
 				Seed: "seed",
 			},
-			"test.wlt",
-			[]byte("pwd"),
-			ErrWalletNotEncrypted,
+			decryptWltName: "test.wlt",
+			password:       []byte("pwd"),
+			err:            ErrWalletNotEncrypted,
 		},
 		{
-			"invalid password",
-			"test.wlt",
-			Options{
+			name:    "invalid password",
+			wltName: "test.wlt",
+			opts: Options{
 				Seed:     "seed",
 				Encrypt:  true,
 				Password: []byte("pwd"),
 			},
-			"test.wlt",
-			[]byte("wrong password"),
-			ErrInvalidPassword,
+			decryptWltName: "test.wlt",
+			password:       []byte("wrong password"),
+			err:            ErrInvalidPassword,
+		},
+		{
+			name:    "wallet api disabled",
+			wltName: "test.wlt",
+			opts: Options{
+				Seed:     "seed",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			decryptWltName:   "test.wlt",
+			password:         []byte("pwd"),
+			disableWalletAPI: true,
+			err:              ErrWalletAPIDisabled,
 		},
 	}
 
 	for _, tc := range tt {
 		for ct := range cryptoTable {
-
 			name := fmt.Sprintf("crypto=%v %v", ct, tc.name)
 			t.Run(name, func(t *testing.T) {
 				dir := prepareWltDir()
 				s, err := NewService(Config{
 					WalletDir:        dir,
 					CryptoType:       ct,
-					DisableWalletAPI: false,
+					DisableWalletAPI: tc.disableWalletAPI,
 				})
 				require.NoError(t, err)
+
+				if tc.disableWalletAPI {
+					_, err = s.DecryptWallet(tc.decryptWltName, tc.password)
+					require.Equal(t, tc.err, err)
+					return
+				}
 
 				_, err = s.CreateWallet(tc.wltName, tc.opts)
 				require.NoError(t, err)
 
-				err = s.DecryptWallet(tc.decryptWltName, tc.password)
+				_, err = s.DecryptWallet(tc.decryptWltName, tc.password)
 				require.Equal(t, tc.err, err)
 				if err != nil {
 					return
@@ -1114,6 +1193,9 @@ func TestServiceDecryptWallet(t *testing.T) {
 						require.Equal(t, a, wlt.Entries[i].Address)
 						require.Equal(t, seckeys[i], wlt.Entries[i].Secret)
 					}
+
+					require.Empty(t, wlt.secrets())
+					require.Empty(t, wlt.cryptoType())
 				}
 
 				// Checks the decrypted wallet in service
@@ -1131,7 +1213,6 @@ func TestServiceDecryptWallet(t *testing.T) {
 				require.NoError(t, err)
 				verifyDecryptedWlt(w1)
 			})
-
 		}
 	}
 }
@@ -1153,22 +1234,21 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 	}
 
 	tt := []struct {
-		name      string
-		opts      Options
-		pwd       []byte
-		scanN     uint64
-		balGetter BalanceGetter
-		expect    exp
+		name             string
+		opts             Options
+		pwd              []byte
+		scanN            uint64
+		balGetter        BalanceGetter
+		disableWalletAPI bool
+		expect           exp
 	}{
 		{
-			"no coins and scan 0, unencrypted",
-			Options{
+			name: "no coins and scan 0, unencrypted",
+			opts: Options{
 				Seed: "seed1",
 			},
-			nil,
-			0,
-			bg,
-			exp{
+			balGetter: bg,
+			expect: exp{
 				err:              nil,
 				seed:             "seed1",
 				lastSeed:         childSeedsOfSeed1[0],
@@ -1178,16 +1258,15 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 			},
 		},
 		{
-			"no coins and scan 0, encrypted",
-			Options{
+			name: "no coins and scan 0, encrypted",
+			opts: Options{
 				Seed:     "seed1",
 				Encrypt:  true,
 				Password: []byte("pwd"),
 			},
-			[]byte("pwd"),
-			0,
-			bg,
-			exp{
+			pwd:       []byte("pwd"),
+			balGetter: bg,
+			expect: exp{
 				err:              nil,
 				seed:             "seed1",
 				lastSeed:         childSeedsOfSeed1[0],
@@ -1197,14 +1276,13 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 			},
 		},
 		{
-			"no coins and scan 1, unencrypted",
-			Options{
+			name: "no coins and scan 1, unencrypted",
+			opts: Options{
 				Seed: "seed1",
 			},
-			nil,
-			1,
-			bg,
-			exp{
+			scanN:     1,
+			balGetter: bg,
+			expect: exp{
 				err:              nil,
 				seed:             "seed1",
 				lastSeed:         childSeedsOfSeed1[0],
@@ -1214,16 +1292,16 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 			},
 		},
 		{
-			"no coins and scan 1, encrypted",
-			Options{
+			name: "no coins and scan 1, encrypted",
+			opts: Options{
 				Seed:     "seed1",
 				Encrypt:  true,
 				Password: []byte("pwd"),
 			},
-			[]byte("pwd"),
-			1,
-			bg,
-			exp{
+			pwd:       []byte("pwd"),
+			scanN:     1,
+			balGetter: bg,
+			expect: exp{
 				err:              nil,
 				seed:             "seed1",
 				lastSeed:         childSeedsOfSeed1[0],
@@ -1233,14 +1311,13 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 			},
 		},
 		{
-			"no coins and scan 10, unencrypted",
-			Options{
+			name: "no coins and scan 10, unencrypted",
+			opts: Options{
 				Seed: "seed1",
 			},
-			nil,
-			10,
-			bg,
-			exp{
+			scanN:     10,
+			balGetter: bg,
+			expect: exp{
 				err:              nil,
 				seed:             "seed1",
 				lastSeed:         childSeedsOfSeed1[0],
@@ -1250,16 +1327,15 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 			},
 		},
 		{
-			"scan 5 get 5, unencrypted",
-			Options{
+			name: "scan 5 get 5, unencrypted",
+			opts: Options{
 				Seed: "seed1",
 			},
-			nil,
-			5,
-			mockBalanceGetter{
+			scanN: 5,
+			balGetter: mockBalanceGetter{
 				addrs[4]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 			},
-			exp{
+			expect: exp{
 				err:              nil,
 				seed:             "seed1",
 				lastSeed:         childSeedsOfSeed1[5],
@@ -1269,18 +1345,18 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 			},
 		},
 		{
-			"scan 5 get 5, encrypted",
-			Options{
+			name: "scan 5 get 5, encrypted",
+			opts: Options{
 				Seed:     "seed1",
 				Encrypt:  true,
 				Password: []byte("pwd"),
 			},
-			[]byte("pwd"),
-			5,
-			mockBalanceGetter{
+			pwd:   []byte("pwd"),
+			scanN: 5,
+			balGetter: mockBalanceGetter{
 				addrs[4]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 			},
-			exp{
+			expect: exp{
 				err:              nil,
 				seed:             "seed1",
 				lastSeed:         childSeedsOfSeed1[5],
@@ -1290,17 +1366,16 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 			},
 		},
 		{
-			"scan 5 get 4, unencrypted",
-			Options{
+			name: "scan 5 get 4, unencrypted",
+			opts: Options{
 				Seed: "seed1",
 			},
-			nil,
-			5,
-			mockBalanceGetter{
+			scanN: 5,
+			balGetter: mockBalanceGetter{
 				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 				addrs[3]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 			},
-			exp{
+			expect: exp{
 				err:              nil,
 				seed:             "seed1",
 				lastSeed:         childSeedsOfSeed1[4],
@@ -1310,19 +1385,19 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 			},
 		},
 		{
-			"scan 5 get 4, encrypted",
-			Options{
+			name: "scan 5 get 4, encrypted",
+			opts: Options{
 				Seed:     "seed1",
 				Encrypt:  true,
 				Password: []byte("pwd"),
 			},
-			[]byte("pwd"),
-			5,
-			mockBalanceGetter{
+			pwd:   []byte("pwd"),
+			scanN: 5,
+			balGetter: mockBalanceGetter{
 				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 				addrs[3]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 			},
-			exp{
+			expect: exp{
 				err:              nil,
 				seed:             "seed1",
 				lastSeed:         childSeedsOfSeed1[4],
@@ -1332,18 +1407,17 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 			},
 		},
 		{
-			"scan 5 get 4 have 6, unencrypted",
-			Options{
+			name: "scan 5 get 4 have 6, unencrypted",
+			opts: Options{
 				Seed: "seed1",
 			},
-			nil,
-			5,
-			mockBalanceGetter{
+			scanN: 5,
+			balGetter: mockBalanceGetter{
 				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 				addrs[3]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 				addrs[6]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 			},
-			exp{
+			expect: exp{
 				err:              nil,
 				seed:             "seed1",
 				lastSeed:         childSeedsOfSeed1[4],
@@ -1353,17 +1427,16 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 			},
 		},
 		{
-			"confirmed and predicted, unencrypted",
-			Options{
+			name: "confirmed and predicted, unencrypted",
+			opts: Options{
 				Seed: "seed1",
 			},
-			nil,
-			5,
-			mockBalanceGetter{
+			scanN: 5,
+			balGetter: mockBalanceGetter{
 				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 				addrs[3]: BalancePair{Predicted: Balance{Coins: 10, Hours: 100}},
 			},
-			exp{
+			expect: exp{
 				err:              nil,
 				seed:             "seed1",
 				lastSeed:         childSeedsOfSeed1[4],
@@ -1373,19 +1446,19 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 			},
 		},
 		{
-			"confirmed and predicted, encrypted",
-			Options{
+			name: "confirmed and predicted, encrypted",
+			opts: Options{
 				Seed:     "seed1",
 				Encrypt:  true,
 				Password: []byte("pwd"),
 			},
-			[]byte("pwd"),
-			5,
-			mockBalanceGetter{
+			pwd:   []byte("pwd"),
+			scanN: 5,
+			balGetter: mockBalanceGetter{
 				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 				addrs[3]: BalancePair{Predicted: Balance{Coins: 10, Hours: 100}},
 			},
-			exp{
+			expect: exp{
 				err:              nil,
 				seed:             "seed1",
 				lastSeed:         childSeedsOfSeed1[4],
@@ -1395,20 +1468,35 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 			},
 		},
 		{
-			"confirmed and predicted, wrong password",
-			Options{
+			name: "confirmed and predicted, wrong password",
+			opts: Options{
 				Seed:     "seed1",
 				Encrypt:  true,
 				Password: []byte("pwd"),
 			},
-			[]byte("wrong password"),
-			5,
-			mockBalanceGetter{
+			pwd:   []byte("wrong password"),
+			scanN: 5,
+			balGetter: mockBalanceGetter{
 				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 				addrs[3]: BalancePair{Predicted: Balance{Coins: 10, Hours: 100}},
 			},
-			exp{
+			expect: exp{
 				err: ErrInvalidPassword,
+			},
+		},
+		{
+			name: "wallet api disabled",
+			opts: Options{
+				Seed:     "seed",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			pwd:              []byte("pwd"),
+			scanN:            5,
+			balGetter:        mockBalanceGetter{},
+			disableWalletAPI: true,
+			expect: exp{
+				err: ErrWalletAPIDisabled,
 			},
 		},
 	}
@@ -1421,9 +1509,15 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 				s, err := NewService(Config{
 					WalletDir:        dir,
 					CryptoType:       ct,
-					DisableWalletAPI: false,
+					DisableWalletAPI: tc.disableWalletAPI,
 				})
 				require.NoError(t, err)
+
+				if tc.disableWalletAPI {
+					_, err = s.ScanAheadWalletAddresses("", tc.pwd, tc.scanN, tc.balGetter)
+					require.Equal(t, tc.expect.err, err)
+					return
+				}
 
 				wltName := newWalletFilename()
 				w, err := s.CreateWallet(wltName, tc.opts)
@@ -1441,6 +1535,117 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 				for i := range w1.Entries {
 					require.Equal(t, addrsOfSeed1[i], w1.Entries[i].Address.String())
 				}
+			})
+		}
+	}
+}
+
+func TestGetWalletSeed(t *testing.T) {
+	tt := []struct {
+		name             string
+		wltName          string
+		opts             Options
+		id               string
+		pwd              []byte
+		disableWalletAPI bool
+		enableSeedAPI    bool
+		expectErr        error
+	}{
+		{
+			name:    "wallet is not encrypted",
+			wltName: "wallet.wlt",
+			opts: Options{
+				Seed:  "seed",
+				Label: "label",
+			},
+			id:            "wallet.wlt",
+			enableSeedAPI: true,
+			expectErr:     ErrWalletNotEncrypted,
+		},
+		{
+			name:    "wallet api disabled",
+			wltName: "wallet.wlt",
+			opts: Options{
+				Seed:  "seed",
+				Label: "label",
+			},
+			id:               "wallet.wlt",
+			enableSeedAPI:    true,
+			disableWalletAPI: true,
+			expectErr:        ErrWalletAPIDisabled,
+		},
+		{
+			name:    "ok",
+			wltName: "wallet.wlt",
+			opts: Options{
+				Seed:     "seed",
+				Label:    "label",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			enableSeedAPI: true,
+			id:            "wallet.wlt",
+			pwd:           []byte("pwd"),
+		},
+		{
+			name:    "wallet does not exist",
+			wltName: "wallet.wlt",
+			opts: Options{
+				Seed:     "seed",
+				Label:    "label",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			enableSeedAPI: true,
+			pwd:           []byte("pwd"),
+			id:            "none-exist.wlt",
+			expectErr:     ErrWalletNotExist,
+		},
+		{
+			name:    "disable seed api",
+			wltName: "wallet.wlt",
+			opts: Options{
+				Seed:     "seed",
+				Label:    "label",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			pwd:           []byte("pwd"),
+			id:            "wallet.wlt",
+			enableSeedAPI: false,
+			expectErr:     ErrSeedAPIDisabled,
+		},
+	}
+
+	for _, tc := range tt {
+		for ct := range cryptoTable {
+			t.Run(tc.name, func(t *testing.T) {
+				dir := prepareWltDir()
+				s, err := NewService(Config{
+					WalletDir:        dir,
+					CryptoType:       ct,
+					DisableWalletAPI: tc.disableWalletAPI,
+					EnableSeedAPI:    tc.enableSeedAPI,
+				})
+				require.NoError(t, err)
+
+				if tc.disableWalletAPI {
+					_, err = s.GetWalletSeed("", tc.pwd)
+					require.Equal(t, tc.expectErr, err)
+					return
+				}
+
+				// Create a wallet
+				_, err = s.CreateWallet(tc.wltName, tc.opts)
+				require.NoError(t, err)
+
+				seed, err := s.GetWalletSeed(tc.id, tc.pwd)
+				require.Equal(t, tc.expectErr, err)
+				if err != nil {
+					return
+				}
+
+				require.Equal(t, tc.opts.Seed, seed)
 			})
 		}
 	}
@@ -1489,5 +1694,14 @@ func makeUxBody(t *testing.T, s cipher.SecKey, coins, hours uint64) coin.UxBody 
 		Address:        cipher.AddressFromPubKey(p),
 		Coins:          coins,
 		Hours:          hours,
+	}
+}
+
+func checkNoSensitiveData(t *testing.T, w *Wallet) {
+	require.Empty(t, w.seed())
+	require.Empty(t, w.lastSeed())
+	var empty cipher.SecKey
+	for _, e := range w.Entries {
+		require.Equal(t, empty, e.Secret)
 	}
 }

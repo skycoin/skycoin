@@ -559,16 +559,31 @@ func (gw *Gateway) ScanAheadWalletAddresses(wltName string, password []byte, sca
 }
 
 // EncryptWallet encrypts the wallet
-func (gw *Gateway) EncryptWallet(wltName string, password []byte) error {
+func (gw *Gateway) EncryptWallet(wltName string, password []byte) (*wallet.Wallet, error) {
 	if gw.Config.DisableWalletAPI {
-		return wallet.ErrWalletAPIDisabled
+		return nil, wallet.ErrWalletAPIDisabled
 	}
 
 	var err error
+	var w *wallet.Wallet
 	gw.strand("EncryptWallet", func() {
-		err = gw.v.Wallets.EncryptWallet(wltName, password)
+		w, err = gw.v.Wallets.EncryptWallet(wltName, password)
 	})
-	return err
+	return w, err
+}
+
+// DecryptWallet decrypts wallet
+func (gw *Gateway) DecryptWallet(wltID string, password []byte) (*wallet.Wallet, error) {
+	if gw.Config.DisableWalletAPI {
+		return nil, wallet.ErrWalletAPIDisabled
+	}
+
+	var err error
+	var w *wallet.Wallet
+	gw.strand("DecryptWallet", func() {
+		w, err = gw.v.Wallets.DecryptWallet(wltID, password)
+	})
+	return w, err
 }
 
 // GetWalletBalance returns balance pair of specific wallet
@@ -689,10 +704,11 @@ func (gw *Gateway) GetWallets() (wallet.Wallets, error) {
 	}
 
 	var w wallet.Wallets
+	var err error
 	gw.strand("GetWallets", func() {
-		w = gw.v.Wallets.GetWallets()
+		w, err = gw.v.Wallets.GetWallets()
 	})
-	return w, nil
+	return w, err
 }
 
 // GetWalletUnconfirmedTxns returns all unconfirmed transactions in given wallet
@@ -740,6 +756,21 @@ func (gw *Gateway) UnloadWallet(id string) error {
 	})
 
 	return nil
+}
+
+// GetWalletSeed returns seed of wallet of given id,
+// returns wallet.ErrWalletNotEncrypted if the wallet is not encrypted.
+func (gw *Gateway) GetWalletSeed(id string, password []byte) (string, error) {
+	if gw.Config.DisableWalletAPI {
+		return "", wallet.ErrWalletAPIDisabled
+	}
+
+	var seed string
+	var err error
+	gw.strand("GetWalletSeed", func() {
+		seed, err = gw.v.Wallets.GetWalletSeed(id, password)
+	})
+	return seed, err
 }
 
 // IsWalletAPIDisabled returns if all wallet related apis are disabled

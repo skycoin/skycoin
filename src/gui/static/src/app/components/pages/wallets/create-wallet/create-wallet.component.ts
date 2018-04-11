@@ -28,21 +28,23 @@ export class CreateWalletComponent implements OnInit {
   }
 
   createWallet() {
-    this.walletService.create(this.form.value.label, this.form.value.seed, this.scan)
+    this.walletService.create(this.form.value.label, this.form.value.seed, this.scan, this.form.value.password)
       .subscribe(() => this.dialogRef.close());
   }
 
   generateSeed() {
-    this.walletService.generateSeed().subscribe(seed => this.form.controls.seed.setValue(seed));
+    this.walletService.generateSeed().subscribe(seed => this.form.get('seed').setValue(seed));
   }
 
   private initForm() {
-    this.form = new FormGroup({});
+    this.form = new FormGroup({}, [this.validatePassword.bind(this)]);
     this.form.addControl('label', new FormControl('', [Validators.required]));
     this.form.addControl('seed', new FormControl('', [Validators.required]));
     this.form.addControl('confirm_seed', new FormControl('', [
       Validators.compose([Validators.required, this.validateAreEqual.bind(this)])
     ]));
+    this.form.addControl('password', new FormControl('', []));
+    this.form.addControl('confirm_password', new FormControl('', []));
 
     this.generateSeed();
 
@@ -51,5 +53,17 @@ export class CreateWalletComponent implements OnInit {
 
   private validateAreEqual(fieldControl: FormControl){
     return fieldControl.value === this.form.get('seed').value ? null : { NotEqual: true };
+  }
+
+  private validatePassword() {
+    if (this.form && this.form.get('password') && this.form.get('confirm_password')) {
+      if (this.form.get('password').value) {
+        if (this.form.get('password').value !== this.form.get('confirm_password').value) {
+          return { NotEqual: true };
+        }
+      }
+    }
+
+    return null;
   }
 }

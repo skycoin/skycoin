@@ -12,6 +12,14 @@
       <label for="confirm_seed">Confirm seed</label>
       <textarea formControlName="confirm_seed" id="confirm_seed" row="2"></textarea>
     </div>
+    <div class="form-field">
+      <label for="password">Password</label>
+      <input formControlName="password" id="password">
+    </div>
+    <div class="form-field">
+      <label for="confirm_password">Confirm password</label>
+      <input formControlName="confirm_password" id="confirm_password">
+    </div>
   </div>
   <div class="-buttons">
     <app-button (action)="closePopup()">

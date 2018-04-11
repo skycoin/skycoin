@@ -29,8 +29,10 @@ BUILDLIB_DIR = $(BUILD_DIR)/libskycoin
 LIB_DIR = lib
 LIB_FILES = $(shell find ./lib/cgo -type f -name "*.go")
 BIN_DIR = bin
+DOC_DIR = docs
 INCLUDE_DIR = include
 LIBSRC_DIR = lib/cgo
+LIBDOC_DIR = $(DOC_DIR)/libc
 
 # Compilation flags
 CC = gcc
@@ -107,6 +109,12 @@ test-libc: build-libc ## Run tests for libskycoin C client library
 	$(CC) -o $(BIN_DIR)/test_libskycoin_static $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/libskycoin.a $(LDLIBS) $(LDFLAGS)
 	$(LDPATHVAR)="$(LDPATH):$(BUILD_DIR)/usr/lib:$(BUILDLIB_DIR)" $(BIN_DIR)/test_libskycoin_shared
 	$(LDPATHVAR)="$(LDPATH):$(BUILD_DIR)/usr/lib"                 $(BIN_DIR)/test_libskycoin_static
+
+docs-libc:
+	doxygen ./.Doxyfile
+	moxygen -a -o $(LIBDOC_DIR)/API.md $(LIBDOC_DIR)/xml/
+
+docs: docs-libc
 
 lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...

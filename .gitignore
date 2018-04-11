@@ -133,4 +133,9 @@ include/libskycoin.h
 .metadata/**
 .project
 
+# Generated docs
+docs/libc/latex
+docs/libc/man
+docs/libc/xml
+
 

@@ -18,6 +18,8 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/logging"
 )
@@ -101,25 +103,10 @@ type Options struct {
 	CryptoType CryptoType // wallet encryption type, scrypt-chacha20poly1305 or sha256-xor.
 }
 
-type Receiver struct {
-	Address string `json:"address"`
-	Coins   string `json:"coins"`
-	Hours   string `json:"hours"`
-}
-
 type HoursSelection struct {
-	Type        string  `json:"type"`
-	Mode        string  `json:"mode"`
-	ShareFactor string `json:"share_factor"`
-}
-
-type AdvancedSpendRequest struct {
-	HoursSelection HoursSelection `json:"hours_selection"`
-	//Outputs        []string       `json:"outputs"`
-	Addresses     []string   `json:"addresses"`
-	Wallets       []string   `json:"wallets"`
-	ChangeAddress string     `json:"change_address"`
-	To            []Receiver `json:"to"`
+	Type        string           `json:"type"`
+	Mode        string           `json:"mode"`
+	ShareFactor *decimal.Decimal `json:"share_factor"`
 }
 
 type AdvancedSpend struct {

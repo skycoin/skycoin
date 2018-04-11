@@ -1,22 +1,25 @@
 package gui
 
 import (
-	"testing"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/wallet"
-	"net/http"
 	"bytes"
-	"github.com/stretchr/testify/require"
 	"encoding/json"
+	"net/http"
 	"net/http/httptest"
 	"strings"
+	"testing"
+
+	"github.com/shopspring/decimal"
+	"github.com/stretchr/testify/require"
+
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 func TestAdvancedSpend(t *testing.T) {
 	tt := []struct {
 		name                       string
 		method                     string
-		body                       *wallet.AdvancedSpendRequest
+		body                       *AdvancedSpendRequest
 		status                     int
 		err                        string
 		gatewayAdvancedSpendResult *coin.Transaction
@@ -35,14 +38,14 @@ func TestAdvancedSpend(t *testing.T) {
 		{
 			name:   "400 - missing hours selection type",
 			method: http.MethodPost,
-			body:   &wallet.AdvancedSpendRequest{},
+			body:   &AdvancedSpendRequest{},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - missing hours selection type",
 		},
 		{
 			name:   "400 - missing hours selection type",
 			method: http.MethodPost,
-			body: &wallet.AdvancedSpendRequest{
+			body: &AdvancedSpendRequest{
 				HoursSelection: wallet.HoursSelection{
 					Type: "",
 				},
@@ -53,7 +56,7 @@ func TestAdvancedSpend(t *testing.T) {
 		{
 			name:   "400 - missing hours selection mode",
 			method: http.MethodPost,
-			body: &wallet.AdvancedSpendRequest{
+			body: &AdvancedSpendRequest{
 				HoursSelection: wallet.HoursSelection{
 					Type: "auto",
 				},
@@ -64,7 +67,7 @@ func TestAdvancedSpend(t *testing.T) {
 		{
 			name:   "400 -  missing hours selection share factor",
 			method: http.MethodPost,
-			body: &wallet.AdvancedSpendRequest{
+			body: &AdvancedSpendRequest{
 				HoursSelection: wallet.HoursSelection{
 					Type: "auto",
 					Mode: "split_even",
@@ -74,9 +77,35 @@ func TestAdvancedSpend(t *testing.T) {
 			err:    "400 Bad Request - missing hours selection share factor when mode is split_even",
 		},
 		{
+			name:   "400 -  negative share factor",
+			method: http.MethodPost,
+			body: &AdvancedSpendRequest{
+				HoursSelection: wallet.HoursSelection{
+					Type:        "auto",
+					Mode:        "split_even",
+					ShareFactor: NewShareFactor(-1),
+				},
+			},
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - share factor cannot be negative",
+		},
+		{
+			name:   "400 - share factor greater than 1",
+			method: http.MethodPost,
+			body: &AdvancedSpendRequest{
+				HoursSelection: wallet.HoursSelection{
+					Type:        "auto",
+					Mode:        "split_even",
+					ShareFactor: NewShareFactor(2),
+				},
+			},
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - share factor cannot be more than 1",
+		},
+		{
 			name:   "400 - no sender address provided",
 			method: http.MethodPost,
-			body: &wallet.AdvancedSpendRequest{
+			body: &AdvancedSpendRequest{
 				HoursSelection: wallet.HoursSelection{
 					Type: "manual",
 				},
@@ -89,7 +118,7 @@ func TestAdvancedSpend(t *testing.T) {
 		{
 			name:   "400 - empty sender address",
 			method: http.MethodPost,
-			body: &wallet.AdvancedSpendRequest{
+			body: &AdvancedSpendRequest{
 				HoursSelection: wallet.HoursSelection{
 					Type: "manual",
 				},
@@ -100,9 +129,22 @@ func TestAdvancedSpend(t *testing.T) {
 			err:    "400 Bad Request - empty sender address",
 		},
 		{
+			name:   "400 - address not in any wallet",
+			method: http.MethodPost,
+			body: &AdvancedSpendRequest{
+				HoursSelection: wallet.HoursSelection{
+					Type: "manual",
+				},
+				Addresses:     []string{"tWPDM36ex9zLjJw1aPMfYTVPbYgkL2Xp9V"},
+				ChangeAddress: "2mEgmYt6NZHA1erYqbAeXmGPD5gqLZ9toFv",
+			},
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - address tWPDM36ex9zLjJw1aPMfYTVPbYgkL2Xp9V not found in any wallet",
+		},
+		{
 			name:   "400 - invalid change address",
 			method: http.MethodPost,
-			body: &wallet.AdvancedSpendRequest{
+			body: &AdvancedSpendRequest{
 				HoursSelection: wallet.HoursSelection{
 					Type: "manual",
 				},
@@ -115,7 +157,7 @@ func TestAdvancedSpend(t *testing.T) {
 		{
 			name:   "400 - invalid change address",
 			method: http.MethodPost,
-			body: &wallet.AdvancedSpendRequest{
+			body: &AdvancedSpendRequest{
 				HoursSelection: wallet.HoursSelection{
 					Type: "manual",
 				},
@@ -125,6 +167,42 @@ func TestAdvancedSpend(t *testing.T) {
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - invalid change address: Invalid checksum",
 		},
+		{
+			name:   "400 - invalid change address",
+			method: http.MethodPost,
+			body: &AdvancedSpendRequest{
+				HoursSelection: wallet.HoursSelection{
+					Type: "manual",
+				},
+				Addresses:     []string{"tWPDM36ex9zLjJw1aPMfYTVPbYgkL2Xp9V"},
+				ChangeAddress: "2mEgmYt6NZHA1erYqbAeXmGPD5gqLZ9toFx",
+			},
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - invalid change address: Invalid checksum",
+		},
+		//{
+		//	name:   "400 - zero spend amount",
+		//	method: http.MethodPost,
+		//	body: &AdvancedSpendRequest{
+		//		HoursSelection: wallet.HoursSelection{
+		//			Type: "manual",
+		//		},
+		//		Addresses:     []string{"tWPDM36ex9zLjJw1aPMfYTVPbYgkL2Xp9V"},
+		//		ChangeAddress: "2mEgmYt6NZHA1erYqbAeXmGPD5gqLZ9toFv",
+		//	},
+		//	gatewayGetWalletResult: wallet.Wallets{
+		//		"test.wlt": &wallet.Wallet{
+		//			Meta:    map[string]string{},
+		//			Entries: []wallet.Entry{
+		//				wallet.Entry{
+		//					Address: addr,
+		//				},
+		//			},
+		//		},
+		//	},
+		//	status: http.StatusBadRequest,
+		//	err:    "400 Bad Request - zero spend amount",
+		//},
 	}
 
 	for _, tc := range tt {
@@ -175,4 +253,9 @@ func TestAdvancedSpend(t *testing.T) {
 			}
 		})
 	}
+}
+
+func NewShareFactor(sh int64) *decimal.Decimal {
+	shareFactor := decimal.New(sh, 64)
+	return &shareFactor
 }

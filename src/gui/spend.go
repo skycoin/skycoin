@@ -6,19 +6,37 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util/droplet"
-	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
-	"github.com/skycoin/skycoin/src/wallet"
 	"github.com/skycoin/skycoin/src/util/fee"
+	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 type AdvancedSpendResult struct {
 	Transaction *visor.ReadableTransaction `json:"txn,omitempty"`
 	Error       string                     `json:"error,omitempty"`
 }
+
+type AdvancedSpendRequest struct {
+	HoursSelection wallet.HoursSelection `json:"hours_selection"`
+	//Outputs        []string       `json:"outputs"`
+	Addresses     []string   `json:"addresses"`
+	Wallets       []string   `json:"wallets"`
+	ChangeAddress string     `json:"change_address"`
+	To            []Receiver `json:"to"`
+}
+
+type Receiver struct {
+	Address string `json:"address"`
+	Coins   string `json:"coins"`
+	Hours   string `json:"hours"`
+}
+
 func advancedSpendHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -26,18 +44,13 @@ func advancedSpendHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		var advancedSpend wallet.AdvancedSpendRequest
+		var advancedSpend AdvancedSpendRequest
 		err := json.NewDecoder(r.Body).Decode(&advancedSpend)
 		if err != nil {
 			logger.Errorf("Invalid advanced spend request: %v", err)
 			wh.Error400(w, fmt.Sprintf("Bad Request: %v", err))
 			return
 		}
-		defer func() {
-			if err := r.Body.Close(); err != nil {
-				logger.Errorf("Failed to close response body: %v", err)
-			}
-		}()
 
 		switch advancedSpend.HoursSelection.Type {
 		case "manual", "auto":
@@ -55,21 +68,20 @@ func advancedSpendHandler(gateway Gatewayer) http.HandlerFunc {
 			switch advancedSpend.HoursSelection.Mode {
 			case "split_even":
 				switch advancedSpend.HoursSelection.ShareFactor {
-				case "":
+				case nil:
 					logger.Error("missing hours selection share factor when mode is `split_even`")
 					wh.Error400(w, "missing hours selection share factor when mode is split_even")
 					return
 				default:
-					shareFactor, err := strconv.ParseFloat(advancedSpend.HoursSelection.ShareFactor, 64)
-					if err != nil {
-						logger.Error(err)
-						wh.Error400(w, fmt.Sprintf("invalid share factor: %v", shareFactor))
-						return
-					}
-
-					if shareFactor < 0 {
+					// make sure that share factor is in range [0,1]
+					switch {
+					case advancedSpend.HoursSelection.ShareFactor.LessThan(decimal.New(0, 64)):
 						logger.Warning("negative share factor")
 						wh.Error400(w, "share factor cannot be negative")
+						return
+					case advancedSpend.HoursSelection.ShareFactor.GreaterThan(decimal.New(1, 64)):
+						logger.Warning("share factor greater than 1")
+						wh.Error400(w, "share factor cannot be more than 1")
 						return
 					}
 				}
@@ -152,8 +164,12 @@ func advancedSpendHandler(gateway Gatewayer) http.HandlerFunc {
 		// fetch all wallets on the system
 		wallets, err := gateway.GetWallets()
 		if err != nil {
-			logger.Error(err)
-			wh.Error500(w)
+			switch err {
+			case wallet.ErrWalletAPIDisabled:
+				wh.Error403(w)
+			default:
+				wh.Error500(w)
+			}
 			return
 		}
 
@@ -174,6 +190,8 @@ func advancedSpendHandler(gateway Gatewayer) http.HandlerFunc {
 					entryMap[wltEntry.Address] = wltEntry
 				}
 			} else {
+				// create addrMap of addresses in other wallets
+				// addrMap is used to look for addresses provided as inputs in wallets on the system
 				for _, wltEntry := range wlt.Entries {
 					addrMap[wltEntry.Address.String()] = wltEntry
 				}
@@ -193,7 +211,7 @@ func advancedSpendHandler(gateway Gatewayer) http.HandlerFunc {
 				wltEntry := addrMap[addr]
 				entryMap[wltEntry.Address] = wltEntry
 			} else {
-				logger.Warningf("empty sender address")
+				logger.Warning("empty sender address")
 				wh.Error400(w, "empty sender address")
 				return
 			}
@@ -205,7 +223,7 @@ func advancedSpendHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		tx, err :=gateway.AdvancedSpend(
+		tx, err := gateway.AdvancedSpend(
 			wallet.AdvancedSpend{
 				HoursSelection: advancedSpend.HoursSelection,
 				Entries:        entryMap,

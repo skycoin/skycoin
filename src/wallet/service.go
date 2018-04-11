@@ -6,14 +6,14 @@ import (
 	"sync"
 
 	"errors"
-	"math"
+
+	"github.com/shopspring/decimal"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/cipher/go-bip39"
+	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util/fee"
-	"strconv"
+	"github.com/skycoin/skycoin/src/visor/blockdb"
 )
 
 // BalanceGetter interface for getting the balance of given addresses
@@ -479,12 +479,10 @@ func (serv *Service) CreateAndSignAdvancedTransaction(advancedSpend AdvancedSpen
 	case "auto":
 		switch advancedSpend.HoursSelection.Mode {
 		case "split_even":
-			shareFactor, err := strconv.ParseFloat(advancedSpend.HoursSelection.ShareFactor, 64)
-			if err != nil {
-				return nil, err
-			}
+
 			addrHours := make([]uint64, nAddrs)
-			totalAddrHours = uint64(math.Floor(float64(remainingHours) * shareFactor))
+			// multiply remaining hours after fee burn with share factor
+			totalAddrHours = uint64(advancedSpend.HoursSelection.ShareFactor.Mul(decimal.New(int64(remainingHours), 64)).IntPart())
 			// split addrhours evenly among all hours
 			perAddrHour := totalAddrHours / nAddrs
 			for i := range addrHours {

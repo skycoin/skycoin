@@ -266,10 +266,29 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.Se
 	//     entropy: entropy bitsize.
 	webHandler("/wallet/newSeed", newWalletSeed(gateway))
 
+	// Gets seed of wallet of given id
+	// GET Arguments:
+	//     id: wallet id
+	//     password: wallet password
+	webHandler("/wallet/seed", walletSeedHandler(gateway))
+
 	// unload wallet
 	// POST Argument:
 	//         id: wallet id
 	webHandler("/wallet/unload", walletUnloadHandler(gateway))
+
+	// Encrypts wallet
+	// POST arguments:
+	//     id: wallet id
+	//     password: wallet password
+	// Returns an encrypted wallet json without sensitive data
+	webHandler("/wallet/encrypt", walletEncryptHandler(gateway))
+
+	// Decrypts wallet
+	// POST arguments:
+	//     id: wallet id
+	//     password: wallet password
+	webHandler("/wallet/decrypt", walletDecryptHandler(gateway))
 
 	// Blockchain interface
 

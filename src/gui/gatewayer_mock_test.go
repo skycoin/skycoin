@@ -54,6 +54,60 @@ func (m *GatewayerMock) CreateWallet(p0 string, p1 wallet.Options) (*wallet.Wall
 
 }
 
+// DecryptWallet mocked method
+func (m *GatewayerMock) DecryptWallet(p0 string, p1 []byte) (*wallet.Wallet, error) {
+
+	ret := m.Called(p0, p1)
+
+	var r0 *wallet.Wallet
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case *wallet.Wallet:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
+
+}
+
+// EncryptWallet mocked method
+func (m *GatewayerMock) EncryptWallet(p0 string, p1 []byte) (*wallet.Wallet, error) {
+
+	ret := m.Called(p0, p1)
+
+	var r0 *wallet.Wallet
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case *wallet.Wallet:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
+
+}
+
 // GetAddrUxOuts mocked method
 func (m *GatewayerMock) GetAddrUxOuts(p0 cipher.Address) ([]*historydb.UxOutJSON, error) {
 
@@ -634,6 +688,33 @@ func (m *GatewayerMock) GetWalletBalance(p0 string) (wallet.BalancePair, error) 
 func (m *GatewayerMock) GetWalletDir() (string, error) {
 
 	ret := m.Called()
+
+	var r0 string
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case string:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
+
+}
+
+// GetWalletSeed mocked method
+func (m *GatewayerMock) GetWalletSeed(p0 string, p1 []byte) (string, error) {
+
+	ret := m.Called(p0, p1)
 
 	var r0 string
 	switch res := ret.Get(0).(type) {

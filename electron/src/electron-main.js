@@ -71,7 +71,8 @@ function startSkycoin() {
     '-gui-dir=' + path.dirname(exe),
     '-color-log=false', // must be disabled or web interface detection
     '-logtofile=true',
-    '-download-peerlist=true'
+    '-download-peerlist=true',
+    '-enable-seed-api=true'
     // will break
     // broken (automatically generated certs do not work):
     // '-web-interface-https=true',

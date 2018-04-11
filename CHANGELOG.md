@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Add `/health` endpoint
 - Logging migration, now powered by [logrus](https://github.com/sirupsen/logrus)
 - Write specification for skycoin URIs (based upon bip21)
 - Implemented `scrypt-chacha20poly1305` for wallet encryption

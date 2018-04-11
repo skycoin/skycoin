@@ -289,7 +289,7 @@ func (m *GatewayerMock) GetBlockBySeq(p0 uint64) (coin.SignedBlock, bool) {
 }
 
 // GetBlockchainMetadata mocked method
-func (m *GatewayerMock) GetBlockchainMetadata() *visor.BlockchainMetadata {
+func (m *GatewayerMock) GetBlockchainMetadata() (*visor.BlockchainMetadata, error) {
 
 	ret := m.Called()
 
@@ -302,7 +302,16 @@ func (m *GatewayerMock) GetBlockchainMetadata() *visor.BlockchainMetadata {
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	return r0
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
 
 }
 
@@ -951,5 +960,32 @@ func (m *GatewayerMock) UpdateWalletLabel(p0 string, p1 string) error {
 	}
 
 	return r0
+
+}
+
+// GetHealth mocked method
+func (m *GatewayerMock) GetHealth() (*daemon.Health, error) {
+
+	ret := m.Called()
+
+	var r0 *daemon.Health
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case *daemon.Health:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
 
 }

@@ -108,7 +108,7 @@ typedef struct {
 } GoSlice_;
 
 /**
- * TODO: Document
+ * RIPEMD-160 hash.
  */
 typedef unsigned char Ripemd160[20];
 

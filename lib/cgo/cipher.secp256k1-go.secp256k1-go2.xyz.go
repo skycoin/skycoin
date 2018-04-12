@@ -87,7 +87,7 @@ func SKY_secp256k1go_XYZ_Equals(_xyz *C.secp256k1go__XYZ, _b *C.secp256k1go__XYZ
 }
 
 // export SKY_secp256k1go_XYZ_ECmult
-func SKY_secp256k1go_XYZ_ECmult(_xyz *C.secp256k1go__XYZ, _r *C.secp256k1go__XYZ, _na, _ng *C.secp256k1go__Number) (____error_code uint32) {
+func SKY_secp256k1go_XYZ_ECmult(_xyz *C.secp256k1go__XYZ, _r *C.secp256k1go__XYZ, _na, _ng *C.Number) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -151,7 +151,7 @@ func SKY_secp256k1go_XYZ_Add(_xyz *C.secp256k1go__XYZ, _r, _b *C.secp256k1go__XY
 }
 
 // export SKY_secp256k1go_ECmultGen
-func SKY_secp256k1go_ECmultGen(_r *C.secp256k1go__XYZ, _a *C.secp256k1go__Number) (____error_code uint32) {
+func SKY_secp256k1go_ECmultGen(_r *C.secp256k1go__XYZ, _a *C.Number) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())

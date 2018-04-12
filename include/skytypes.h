@@ -121,13 +121,34 @@ typedef struct {
 	//TODO: stdevEclipse Define Big Int Number
 	int number;
 	
-} secp256k1go__Number;
+} Number;
 
 typedef struct {	
 	//TODO: stdevEclipse Define Signature
-	int number;
+	Number a;
+	Number b;
 	
-} secp256k1go__Signature;
+} Signature;
+
+typedef struct {	
+	//TODO: stdevEclipse Define App
+	Number a;
+} App;
+
+typedef struct {	
+	//TODO: stdevEclipse Define Client
+	Number a;
+} Client;
+
+typedef struct {	
+	//TODO: stdevEclipse Define Config
+	Number a;
+} Config;
+
+typedef struct {	
+	//TODO: stdevEclipse Define Context
+	Number a;
+} Context;
 
 #include "skytypes.gen.h"
 

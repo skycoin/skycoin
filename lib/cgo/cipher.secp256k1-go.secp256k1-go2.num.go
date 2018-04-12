@@ -15,7 +15,7 @@ import (
 import "C"
 
 // export SKY_secp256k1go_Number_Print
-func SKY_secp256k1go_Number_Print(_num *C.secp256k1go__Number, _label string) (____error_code uint32) {
+func SKY_secp256k1go_Number_Print(_num *C.Number, _label string) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -27,7 +27,7 @@ func SKY_secp256k1go_Number_Print(_num *C.secp256k1go__Number, _label string) (_
 }
 
 // export SKY_secp256k1go_Number_SetHex
-func SKY_secp256k1go_Number_SetHex(_num *C.secp256k1go__Number, _s string) (____error_code uint32) {
+func SKY_secp256k1go_Number_SetHex(_num *C.Number, _s string) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -39,7 +39,7 @@ func SKY_secp256k1go_Number_SetHex(_num *C.secp256k1go__Number, _s string) (____
 }
 
 // export SKY_secp256k1go_Number_IsOdd
-func SKY_secp256k1go_Number_IsOdd(_num *C.secp256k1go__Number, _arg0 *bool) (____error_code uint32) {
+func SKY_secp256k1go_Number_IsOdd(_num *C.Number, _arg0 *bool) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())

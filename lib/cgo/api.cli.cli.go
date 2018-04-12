@@ -2,6 +2,7 @@ package main
 
 import (
 	cli "github.com/skycoin/skycoin/src/api/cli"
+	gcli "github.com/urfave/cli"
 	"unsafe"
 ) 
 
@@ -51,17 +52,16 @@ func SKY_cli_Config_FullDBPath(_c *C.cli__Config, _arg0 *C.GoString_) (____error
 	copyString(__arg0, _arg0)
 	return
 }
-/*
-TODO: stdevEclipse Commented due to missing type App
+
 // export SKY_cli_NewApp
 func SKY_cli_NewApp(_cfg *C.cli__Config, _arg1 *C.App) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	cfg := *(*Config)(unsafe.Pointer(_cfg))
+	cfg := *(*cli.Config)(unsafe.Pointer(_cfg))
 	__arg1 := cli.NewApp(cfg)
-	copyToBuffer(reflect.ValueOf((*__arg1)[:]), unsafe.Pointer(_arg1), uint(SizeofApp))
+	*_arg1 = *(*C.App)(unsafe.Pointer(&__arg1))
 	return
 }
 
@@ -71,7 +71,7 @@ func SKY_cli_App_Run(_app *C.App, _args *C.GoSlice_) (____error_code uint32) {
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	app := (*App)(unsafe.Pointer(_app))
+	app := (*cli.App)(unsafe.Pointer(_app))
 	args := *(*[]string)(unsafe.Pointer(_args))
 	____return_err := app.Run(args)
 	____error_code = libErrorCode(____return_err)
@@ -86,7 +86,9 @@ func SKY_cli_RPCClientFromContext(_c *C.Context, _arg1 *C.Client) (____error_cod
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	c := (*gcli.Context)(unsafe.Pointer(_c))
 	__arg1 := cli.RPCClientFromContext(c)
+	*_arg1 = *(*C.Client)(unsafe.Pointer(&__arg1))
 	return
 }
  
@@ -96,7 +98,8 @@ func SKY_cli_ConfigFromContext(_c *C.Context, _arg1 *C.Config) (____error_code u
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	c := (*gcli.Context)(unsafe.Pointer(_c))
 	__arg1 := cli.ConfigFromContext(c)
-	copyToBuffer(reflect.ValueOf(__arg1[:]), unsafe.Pointer(_arg1), uint(SizeofConfig))
+	*_arg1 = *(*C.Config)(unsafe.Pointer(&__arg1))
 	return
-}*/
+}

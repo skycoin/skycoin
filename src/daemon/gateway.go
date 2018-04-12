@@ -431,19 +431,24 @@ func (gw *Gateway) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
 }
 
 // GetAddrUxOuts gets all the address affected UxOuts.
-func (gw *Gateway) GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOutJSON, error) {
-	var uxouts []*historydb.UxOut
-	var err error
-	gw.strand("GetAddrUxOuts", func() {
-		uxouts, err = gw.v.GetAddrUxOuts(addr)
-	})
+func (gw *Gateway) GetAddrUxOuts(addresses []cipher.Address) ([]*historydb.UxOut, error) {
+	var (
+		uxOuts []*historydb.UxOut
+		err    error
+	)
 
-	uxs := make([]*historydb.UxOutJSON, len(uxouts))
-	for i, ux := range uxouts {
-		uxs[i] = historydb.NewUxOutJSON(ux)
+	for _, addr := range addresses {
+		result, e := gw.v.GetAddrUxOuts(addr)
+
+		if e != nil {
+			err = e
+			continue
+		}
+
+		uxOuts = append(uxOuts, result...)
 	}
 
-	return uxs, err
+	return uxOuts, err
 }
 
 // GetTimeNow returns the current Unix time

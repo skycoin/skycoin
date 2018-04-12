@@ -48,7 +48,7 @@ type Gatewayer interface {
 	InjectBroadcastTransaction(txn coin.Transaction) error
 	ResendUnconfirmedTxns() *daemon.ResendResult
 	GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error)
-	GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOutJSON, error)
+	GetAddrUxOuts(addr []cipher.Address) ([]*historydb.UxOut, error)
 	GetAddressTxns(a cipher.Address) (*visor.TransactionResults, error)
 	GetRichlist(includeDistribution bool) (visor.Richlist, error)
 	GetAddressCount() (uint64, error)

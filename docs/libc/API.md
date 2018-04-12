@@ -521,7 +521,7 @@ Instances are integral part of transactions included in blocks.
 --------------------------------|---------------------------------------------
 `public `[`Address`](#struct_address)` `[`Address`](#struct_transaction_output_1a0f1895b2f69382d62e5bdc459d30cae1) | Receipient address.
 `public GoInt64_ `[`Coins`](#struct_transaction_output_1a7733f16af3115d3cfc712f2f687b73e4) | Amount sent to the receipient address.
-`public GoInt64_ `[`Hours`](#struct_transaction_output_1a7aef551ad5991173b5a6160fd8fe1594) | TODO: Document [TransactionOutput.Hours](#struct_transaction_output_1a7aef551ad5991173b5a6160fd8fe1594).
+`public GoInt64_ `[`Hours`](#struct_transaction_output_1a7aef551ad5991173b5a6160fd8fe1594) | Amount of Coin Hours sent to the receipient address.
 
 ## Members
 
@@ -535,7 +535,7 @@ Amount sent to the receipient address.
 
 #### `public GoInt64_ `[`Hours`](#struct_transaction_output_1a7aef551ad5991173b5a6160fd8fe1594) 
 
-TODO: Document [TransactionOutput.Hours](#struct_transaction_output_1a7aef551ad5991173b5a6160fd8fe1594).
+Amount of Coin Hours sent to the receipient address.
 
 # struct `UxBalance` 
 

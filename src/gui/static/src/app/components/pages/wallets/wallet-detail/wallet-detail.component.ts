@@ -26,7 +26,15 @@ export class WalletDetailComponent {
   }
 
   newAddress() {
-    this.walletService.addAddress(this.wallet).subscribe();
+    if (this.wallet.encrypted) {
+      this.dialog.open(PasswordDialogComponent).componentInstance.passwordSubmit
+        .subscribe(passwordDialog => {
+          this.walletService.addAddress(this.wallet, passwordDialog.password)
+            .subscribe(() => passwordDialog.close(), () => passwordDialog.error());
+        });
+    } else {
+      this.walletService.addAddress(this.wallet).subscribe();
+    }
   }
 
   toggleEmpty() {

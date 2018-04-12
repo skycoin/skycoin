@@ -40,8 +40,8 @@ export class WalletService {
     }).join(','));
   }
 
-  addAddress(wallet: Wallet) {
-    return this.apiService.postWalletNewAddress(wallet)
+  addAddress(wallet: Wallet, password?: string) {
+    return this.apiService.postWalletNewAddress(wallet, password)
       .do(address => {
         wallet.addresses.push(address);
         this.refreshBalances();

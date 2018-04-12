@@ -83,8 +83,8 @@ export class ApiService {
         }));
   }
 
-  postWalletNewAddress(wallet: Wallet): Observable<Address> {
-    return this.post('wallet/newAddress', { id: wallet.filename })
+  postWalletNewAddress(wallet: Wallet, password?: string): Observable<Address> {
+    return this.post('wallet/newAddress', { id: wallet.filename, password })
       .map((response: PostWalletNewAddressResponse) => ({ address: response.addresses[0], coins: null, hours: null }));
   }
 

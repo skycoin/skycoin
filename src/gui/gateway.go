@@ -20,8 +20,7 @@ type Gatewayer interface {
 	GetWallets() (wallet.Wallets, error)
 	UpdateWalletLabel(wltID, label string) error
 	GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTxn, error)
-	CreateWallet(wltName string, options wallet.Options) (*wallet.Wallet, error)
-	ScanAheadWalletAddresses(wltName string, password []byte, scanN uint64) (*wallet.Wallet, error)
+	CreateWallet(wltName string, options wallet.Options, scanN uint64) (*wallet.Wallet, error)
 	NewAddresses(wltID string, password []byte, n uint64) ([]cipher.Address, error)
 	GetWalletDir() (string, error)
 	IsWalletAPIEnabled() bool

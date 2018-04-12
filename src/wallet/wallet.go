@@ -178,6 +178,77 @@ func NewWallet(wltName string, opts Options) (*Wallet, error) {
 	return w, nil
 }
 
+// NewWalletWithScan create wallet and scan ahead N address
+func NewWalletWithScan(wltName string, opts Options, scanN uint64, bg BalanceGetter) (*Wallet, error) {
+	if opts.Seed == "" {
+		return nil, ErrMissingSeed
+	}
+
+	coin := opts.Coin
+	if coin == "" {
+		coin = CoinTypeSkycoin
+	}
+
+	w := &Wallet{
+		Meta: map[string]string{
+			metaFilename:   wltName,
+			metaVersion:    Version,
+			metaLabel:      opts.Label,
+			metaSeed:       opts.Seed,
+			metaLastSeed:   opts.Seed,
+			metaTm:         fmt.Sprintf("%v", time.Now().Unix()),
+			metaType:       "deterministic",
+			metaCoin:       string(coin),
+			metaEncrypted:  "false",
+			metaCryptoType: "",
+			metaSecrets:    "",
+		},
+	}
+
+	// Create a default wallet
+	_, err := w.GenerateAddresses(1)
+	if err != nil {
+		return nil, err
+	}
+
+	// Scan for addresses with balances
+	if scanN > 1 && bg != nil {
+		if err := w.ScanAddresses(scanN-1, bg); err != nil {
+			return nil, err
+		}
+	}
+
+	// Checks if the wallet need to encrypt
+	if !opts.Encrypt {
+		if len(opts.Password) != 0 {
+			return nil, ErrMissingEncrypt
+		}
+		return w, nil
+	}
+
+	// Checks if the password is provided
+	if len(opts.Password) == 0 {
+		return nil, ErrMissingPassword
+	}
+
+	// Checks crypto type
+	if _, err := getCrypto(opts.CryptoType); err != nil {
+		return nil, err
+	}
+
+	// Encrypt the wallet
+	if err := w.lock(opts.Password, opts.CryptoType); err != nil {
+		return nil, err
+	}
+
+	// Validate the wallet
+	if err := w.Validate(); err != nil {
+		return nil, err
+	}
+
+	return w, nil
+}
+
 // lock encrypts the wallet with the given password and specific crypto type
 func (w *Wallet) lock(password []byte, cryptoType CryptoType) error {
 	if len(password) == 0 {

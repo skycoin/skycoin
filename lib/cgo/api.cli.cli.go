@@ -52,6 +52,7 @@ func SKY_cli_Config_FullDBPath(_c *C.cli__Config, _arg0 *C.GoString_) (____error
 	return
 }
 /*
+TODO: stdevEclipse Commented due to missing type App
 // export SKY_cli_NewApp
 func SKY_cli_NewApp(_cfg *C.cli__Config, _arg1 *C.App) (____error_code uint32) {
 	____error_code = 0

@@ -17,9 +17,13 @@ import "C"
 // export SKY_poly1305_Verify
 func SKY_poly1305_Verify(_mac *[]byte, _m *C.GoSlice_, _key *[]byte, _arg3 *bool) (____error_code uint32) {
 	____error_code = 0
-	mac := *(*[]byte)(unsafe.Pointer(_mac))
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	//TODO: stdevEclipse Check Pointer casting
+	mac := (*[16]byte)(unsafe.Pointer(_mac))
 	m := *(*[]byte)(unsafe.Pointer(_m))
-	key := *(*[]byte)(unsafe.Pointer(_key))
+	key := (*[32]byte)(unsafe.Pointer(_key))
 	__arg3 := poly1305.Verify(mac, m, key)
 	*_arg3 = __arg3
 	return

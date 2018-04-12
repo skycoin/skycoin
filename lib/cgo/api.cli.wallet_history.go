@@ -1,6 +1,9 @@
 package main
-
-import "unsafe"
+/*
+import (
+	"unsafe"
+	cli "github.com/skycoin/skycoin/src/api/cli"
+)*/
 
 /*
 
@@ -10,10 +13,14 @@ import "unsafe"
   #include "../../include/skytypes.h"
 */
 import "C"
-
+/*
+TODO: stdevEclipse Can't export function with unexported type
 // export SKY_cli_byTime_Less
 func SKY_cli_byTime_Less(_obt *C.cli__byTime, _i, _j int, _arg1 *bool) (____error_code uint32) {
 	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
 	obt := *(*cli.byTime)(unsafe.Pointer(_obt))
 	i := _i
 	j := _j
@@ -25,6 +32,9 @@ func SKY_cli_byTime_Less(_obt *C.cli__byTime, _i, _j int, _arg1 *bool) (____erro
 // export SKY_cli_byTime_Swap
 func SKY_cli_byTime_Swap(_obt *C.cli__byTime, _i, _j int) (____error_code uint32) {
 	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
 	obt := *(*cli.byTime)(unsafe.Pointer(_obt))
 	i := _i
 	j := _j
@@ -35,8 +45,12 @@ func SKY_cli_byTime_Swap(_obt *C.cli__byTime, _i, _j int) (____error_code uint32
 // export SKY_cli_byTime_Len
 func SKY_cli_byTime_Len(_obt *C.cli__byTime, _arg0 *int) (____error_code uint32) {
 	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
 	obt := *(*cli.byTime)(unsafe.Pointer(_obt))
 	__arg0 := obt.Len()
 	*_arg0 = __arg0
 	return
 }
+*/

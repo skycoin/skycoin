@@ -16,6 +16,8 @@ import (
 */
 import "C"
 
+
+
 //export SKY_cipher_PubKeySlice_Len
 func SKY_cipher_PubKeySlice_Len(_slice *C.cipher__PubKeySlice) int {
 	slice := inplacePubKeySlice(_slice)
@@ -40,8 +42,9 @@ func SKY_cipher_RandByte(_n int, _arg1 *C.GoSlice_) {
 	copyToGoSlice(reflect.ValueOf(b), _arg1)
 }
 
+//TODO: stdevEclipse Check change in return var name
 //export SKY_cipher_NewPubKey
-func SKY_cipher_NewPubKey(_b []byte, _arg1 *C.cipher__PubKey) (retVal uint32) {
+func SKY_cipher_NewPubKey(_b []byte, _arg1 *C.cipher__PubKey) (errcode uint32) {
 	defer func() {
 		errcode = catchApiPanic(errcode, recover())
 	}()
@@ -52,7 +55,7 @@ func SKY_cipher_NewPubKey(_b []byte, _arg1 *C.cipher__PubKey) (retVal uint32) {
 }
 
 //export SKY_cipher_PubKeyFromHex
-func SKY_cipher_PubKeyFromHex(_s string, _arg1 *C.cipher__PubKey) (retVal uint32) {
+func SKY_cipher_PubKeyFromHex(_s string, _arg1 *C.cipher__PubKey) (errcode uint32) {
 	defer func() {
 		errcode = catchApiPanic(errcode, recover())
 	}()
@@ -66,7 +69,7 @@ func SKY_cipher_PubKeyFromHex(_s string, _arg1 *C.cipher__PubKey) (retVal uint32
 }
 
 //export SKY_cipher_PubKeyFromSecKey
-func SKY_cipher_PubKeyFromSecKey(_seckey *C.cipher__SecKey, _arg1 *C.cipher__PubKey) (retVal uint32) {
+func SKY_cipher_PubKeyFromSecKey(_seckey *C.cipher__SecKey, _arg1 *C.cipher__PubKey) (errcode uint32) {
 	defer func() {
 		errcode = catchApiPanic(errcode, recover())
 	}()
@@ -117,7 +120,7 @@ func SKY_cipher_PubKey_ToAddressHash(_pk *C.cipher__PubKey, _arg0 *C.cipher__Rip
 }
 
 //export SKY_cipher_NewSecKey
-func SKY_cipher_NewSecKey(_b []byte, _arg1 *C.cipher__SecKey) (retVal uint32) {
+func SKY_cipher_NewSecKey(_b []byte, _arg1 *C.cipher__SecKey) (errcode uint32) {
 	defer func() {
 		errcode = catchApiPanic(errcode, recover())
 	}()
@@ -160,7 +163,7 @@ func SKY_cipher_ECDH(_pub *C.cipher__PubKey, _sec *C.cipher__SecKey, _arg2 *C.Go
 }
 
 //export SKY_cipher_NewSig
-func SKY_cipher_NewSig(_b []byte, _arg1 *C.cipher__Sig) (retVal uint32) {
+func SKY_cipher_NewSig(_b []byte, _arg1 *C.cipher__Sig) (errcode uint32) {
 	defer func() {
 		errcode = catchApiPanic(errcode, recover())
 	}()

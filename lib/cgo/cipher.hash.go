@@ -15,9 +15,8 @@ import (
   #include "../../include/skytypes.h"
 */
 import "C"
-
 //export SKY_cipher_Ripemd160_Set
-func SKY_cipher_Ripemd160_Set(_rd *C.cipher__Ripemd160, _b []byte) (retVal uint32) {
+func SKY_cipher_Ripemd160_Set(_rd *C.cipher__Ripemd160, _b []byte) (errcode uint32) {
 	defer func() {
 		errcode = catchApiPanic(errcode, recover())
 	}()
@@ -36,7 +35,7 @@ func SKY_cipher_HashRipemd160(_data []byte, _arg1 *C.cipher__Ripemd160) {
 }
 
 //export SKY_cipher_SHA256_Set
-func SKY_cipher_SHA256_Set(_g *C.cipher__SHA256, _b []byte) (retVal uint32) {
+func SKY_cipher_SHA256_Set(_g *C.cipher__SHA256, _b []byte) (errcode uint32) {
 	defer func() {
 		errcode = catchApiPanic(errcode, recover())
 	}()
@@ -63,7 +62,7 @@ func SKY_cipher_SHA256_Xor(_g *C.cipher__SHA256, _b *C.cipher__SHA256, _arg1 *C.
 }
 
 //export SKY_cipher_SumSHA256
-func SKY_cipher_SumSHA256(_b []byte, _arg1 *C.cipher__SHA256) (retVal uint32) {
+func SKY_cipher_SumSHA256(_b []byte, _arg1 *C.cipher__SHA256) (errcode uint32) {
 	defer func() {
 		errcode = catchApiPanic(errcode, recover())
 	}()

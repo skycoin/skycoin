@@ -18,6 +18,9 @@ import "C"
 // export SKY_cli_AddPrivateKey
 func SKY_cli_AddPrivateKey(_wlt *C.wallet__Wallet, _key string) (____error_code uint32) {
 	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
 	wlt := (*wallet.Wallet)(unsafe.Pointer(_wlt))
 	key := _key
 	____return_err := cli.AddPrivateKey(wlt, key)
@@ -30,6 +33,9 @@ func SKY_cli_AddPrivateKey(_wlt *C.wallet__Wallet, _key string) (____error_code 
 // export SKY_cli_AddPrivateKeyToFile
 func SKY_cli_AddPrivateKeyToFile(_walletFile, _key string) (____error_code uint32) {
 	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
 	walletFile := _walletFile
 	key := _key
 	____return_err := cli.AddPrivateKeyToFile(walletFile, key)

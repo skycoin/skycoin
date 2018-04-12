@@ -1,6 +1,9 @@
 package main
 
-import "unsafe"
+import (
+	"unsafe"
+	secp256k1go "github.com/skycoin/skycoin/src/cipher/secp256k1-go/secp256k1-go2"
+)
 
 /*
 
@@ -14,6 +17,9 @@ import "C"
 // export SKY_secp256k1go_XYZ_Print
 func SKY_secp256k1go_XYZ_Print(_xyz *C.secp256k1go__XYZ, _lab string) (____error_code uint32) {
 	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
 	xyz := *(*secp256k1go.XYZ)(unsafe.Pointer(_xyz))
 	lab := _lab
 	xyz.Print(lab)
@@ -23,6 +29,9 @@ func SKY_secp256k1go_XYZ_Print(_xyz *C.secp256k1go__XYZ, _lab string) (____error
 // export SKY_secp256k1go_XYZ_SetXY
 func SKY_secp256k1go_XYZ_SetXY(_xyz *C.secp256k1go__XYZ, _a *C.secp256k1go__XY) (____error_code uint32) {
 	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
 	xyz := (*secp256k1go.XYZ)(unsafe.Pointer(_xyz))
 	a := (*secp256k1go.XY)(unsafe.Pointer(_a))
 	xyz.SetXY(a)
@@ -32,6 +41,9 @@ func SKY_secp256k1go_XYZ_SetXY(_xyz *C.secp256k1go__XYZ, _a *C.secp256k1go__XY) 
 // export SKY_secp256k1go_XYZ_IsInfinity
 func SKY_secp256k1go_XYZ_IsInfinity(_xyz *C.secp256k1go__XYZ, _arg0 *bool) (____error_code uint32) {
 	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
 	xyz := (*secp256k1go.XYZ)(unsafe.Pointer(_xyz))
 	__arg0 := xyz.IsInfinity()
 	*_arg0 = __arg0
@@ -41,6 +53,9 @@ func SKY_secp256k1go_XYZ_IsInfinity(_xyz *C.secp256k1go__XYZ, _arg0 *bool) (____
 // export SKY_secp256k1go_XYZ_IsValid
 func SKY_secp256k1go_XYZ_IsValid(_xyz *C.secp256k1go__XYZ, _arg0 *bool) (____error_code uint32) {
 	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
 	xyz := (*secp256k1go.XYZ)(unsafe.Pointer(_xyz))
 	__arg0 := xyz.IsValid()
 	*_arg0 = __arg0
@@ -50,6 +65,9 @@ func SKY_secp256k1go_XYZ_IsValid(_xyz *C.secp256k1go__XYZ, _arg0 *bool) (____err
 // export SKY_secp256k1go_XYZ_Normalize
 func SKY_secp256k1go_XYZ_Normalize(_xyz *C.secp256k1go__XYZ) (____error_code uint32) {
 	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
 	xyz := (*secp256k1go.XYZ)(unsafe.Pointer(_xyz))
 	xyz.Normalize()
 	return
@@ -58,6 +76,9 @@ func SKY_secp256k1go_XYZ_Normalize(_xyz *C.secp256k1go__XYZ) (____error_code uin
 // export SKY_secp256k1go_XYZ_Equals
 func SKY_secp256k1go_XYZ_Equals(_xyz *C.secp256k1go__XYZ, _b *C.secp256k1go__XYZ, _arg1 *bool) (____error_code uint32) {
 	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
 	xyz := (*secp256k1go.XYZ)(unsafe.Pointer(_xyz))
 	b := (*secp256k1go.XYZ)(unsafe.Pointer(_b))
 	__arg1 := xyz.Equals(b)
@@ -68,6 +89,9 @@ func SKY_secp256k1go_XYZ_Equals(_xyz *C.secp256k1go__XYZ, _b *C.secp256k1go__XYZ
 // export SKY_secp256k1go_XYZ_Neg
 func SKY_secp256k1go_XYZ_Neg(_xyz *C.secp256k1go__XYZ, _r *C.secp256k1go__XYZ) (____error_code uint32) {
 	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
 	xyz := (*secp256k1go.XYZ)(unsafe.Pointer(_xyz))
 	r := (*secp256k1go.XYZ)(unsafe.Pointer(_r))
 	xyz.Neg(r)
@@ -77,6 +101,9 @@ func SKY_secp256k1go_XYZ_Neg(_xyz *C.secp256k1go__XYZ, _r *C.secp256k1go__XYZ) (
 // export SKY_secp256k1go_XYZ_Double
 func SKY_secp256k1go_XYZ_Double(_xyz *C.secp256k1go__XYZ, _r *C.secp256k1go__XYZ) (____error_code uint32) {
 	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
 	xyz := (*secp256k1go.XYZ)(unsafe.Pointer(_xyz))
 	r := (*secp256k1go.XYZ)(unsafe.Pointer(_r))
 	xyz.Double(r)
@@ -86,6 +113,9 @@ func SKY_secp256k1go_XYZ_Double(_xyz *C.secp256k1go__XYZ, _r *C.secp256k1go__XYZ
 // export SKY_secp256k1go_XYZ_AddXY
 func SKY_secp256k1go_XYZ_AddXY(_xyz *C.secp256k1go__XYZ, _r *C.secp256k1go__XYZ, _b *C.secp256k1go__XY) (____error_code uint32) {
 	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
 	xyz := (*secp256k1go.XYZ)(unsafe.Pointer(_xyz))
 	r := (*secp256k1go.XYZ)(unsafe.Pointer(_r))
 	b := (*secp256k1go.XY)(unsafe.Pointer(_b))
@@ -96,6 +126,9 @@ func SKY_secp256k1go_XYZ_AddXY(_xyz *C.secp256k1go__XYZ, _r *C.secp256k1go__XYZ,
 // export SKY_secp256k1go_XYZ_Add
 func SKY_secp256k1go_XYZ_Add(_xyz *C.secp256k1go__XYZ, _r, _b *C.secp256k1go__XYZ) (____error_code uint32) {
 	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
 	xyz := (*secp256k1go.XYZ)(unsafe.Pointer(_xyz))
 	r := (*secp256k1go.XYZ)(unsafe.Pointer(_r))
 	b := (*secp256k1go.XYZ)(unsafe.Pointer(_b))

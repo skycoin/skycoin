@@ -1,10 +1,4 @@
 package main
-
-import (
-	"reflect"
-	"unsafe"
-)
-
 /*
 
   #include <string.h>
@@ -14,9 +8,21 @@ import (
 */
 import "C"
 
+/*
+import (
+	"reflect"
+	"unsafe"
+	ripemd160 "github.com/skycoin/skycoin/src/cipher/ripemd160"
+)*/
+
+/*
+TODO: stdevEclipse Check use of unexported type digest
 // export SKY_ripemd160_digest_Reset
 func SKY_ripemd160_digest_Reset(_d *C.ripemd160__digest) (____error_code uint32) {
 	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
 	d := (*ripemd160.digest)(unsafe.Pointer(_d))
 	d.Reset()
 	return
@@ -25,6 +31,9 @@ func SKY_ripemd160_digest_Reset(_d *C.ripemd160__digest) (____error_code uint32)
 // export SKY_ripemd160_digest_Size
 func SKY_ripemd160_digest_Size(_d *C.ripemd160__digest, _arg0 *int) (____error_code uint32) {
 	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
 	d := (*ripemd160.digest)(unsafe.Pointer(_d))
 	__arg0 := d.Size()
 	*_arg0 = __arg0
@@ -34,6 +43,9 @@ func SKY_ripemd160_digest_Size(_d *C.ripemd160__digest, _arg0 *int) (____error_c
 // export SKY_ripemd160_digest_BlockSize
 func SKY_ripemd160_digest_BlockSize(_d *C.ripemd160__digest, _arg0 *int) (____error_code uint32) {
 	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
 	d := (*ripemd160.digest)(unsafe.Pointer(_d))
 	__arg0 := d.BlockSize()
 	*_arg0 = __arg0
@@ -43,6 +55,9 @@ func SKY_ripemd160_digest_BlockSize(_d *C.ripemd160__digest, _arg0 *int) (____er
 // export SKY_ripemd160_digest_Write
 func SKY_ripemd160_digest_Write(_d *C.ripemd160__digest, _p *C.GoSlice_, _arg1 *int) (____error_code uint32) {
 	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
 	d := (*ripemd160.digest)(unsafe.Pointer(_d))
 	p := *(*[]byte)(unsafe.Pointer(_p))
 	__arg1, ____return_err := d.Write(p)
@@ -56,9 +71,13 @@ func SKY_ripemd160_digest_Write(_d *C.ripemd160__digest, _p *C.GoSlice_, _arg1 *
 // export SKY_ripemd160_digest_Sum
 func SKY_ripemd160_digest_Sum(_d0 *C.ripemd160__digest, _in *C.GoSlice_, _arg1 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
 	d0 := (*ripemd160.digest)(unsafe.Pointer(_d0))
 	in := *(*[]byte)(unsafe.Pointer(_in))
 	__arg1 := d0.Sum(in)
 	copyToGoSlice(reflect.ValueOf(__arg1), _arg1)
 	return
 }
+*/

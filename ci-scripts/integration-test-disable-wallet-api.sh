@@ -1,6 +1,6 @@
 #!/bin/bash
 # Runs "disable-wallet-api"-mode tests against a skycoin node configured with -disable-wallet-api option
-# "disable-wallet-api"-mode confirms that no wallet related apis work, that the main index.html page 
+# "disable-wallet-api"-mode confirms that no wallet related apis work, that the main index.html page
 # does not load, and that a new wallet file is not created.
 
 #Set Script Name variable

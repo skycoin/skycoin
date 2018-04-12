@@ -43,7 +43,7 @@ func SKY_cipher_RandByte(_n int, _arg1 *C.GoSlice_) {
 //export SKY_cipher_NewPubKey
 func SKY_cipher_NewPubKey(_b []byte, _arg1 *C.cipher__PubKey) (retVal uint32) {
 	defer func() {
-		retVal = catchApiPanic(recover())
+		errcode = catchApiPanic(errcode, recover())
 	}()
 
 	pubkey := cipher.NewPubKey(_b)
@@ -54,11 +54,11 @@ func SKY_cipher_NewPubKey(_b []byte, _arg1 *C.cipher__PubKey) (retVal uint32) {
 //export SKY_cipher_PubKeyFromHex
 func SKY_cipher_PubKeyFromHex(_s string, _arg1 *C.cipher__PubKey) (retVal uint32) {
 	defer func() {
-		retVal = catchApiPanic(recover())
+		errcode = catchApiPanic(errcode, recover())
 	}()
 
 	pubkey, err := cipher.PubKeyFromHex(_s)
-	errcode := libErrorCode(err)
+	errcode = libErrorCode(err)
 	if err == nil {
 		copyToBuffer(reflect.ValueOf(pubkey[:]), unsafe.Pointer(_arg1), uint(SizeofPubKey))
 	}
@@ -68,7 +68,7 @@ func SKY_cipher_PubKeyFromHex(_s string, _arg1 *C.cipher__PubKey) (retVal uint32
 //export SKY_cipher_PubKeyFromSecKey
 func SKY_cipher_PubKeyFromSecKey(_seckey *C.cipher__SecKey, _arg1 *C.cipher__PubKey) (retVal uint32) {
 	defer func() {
-		retVal = catchApiPanic(recover())
+		errcode = catchApiPanic(errcode, recover())
 	}()
 
 	seckey := (*cipher.SecKey)(unsafe.Pointer(_seckey))
@@ -87,7 +87,7 @@ func SKY_cipher_PubKeyFromSig(_sig *C.cipher__Sig, _hash *C.cipher__SHA256, _arg
 	pubkey, err := cipher.PubKeyFromSig(*sig, *hash)
 
 	errcode := libErrorCode(err)
-	if err != nil {
+	if err == nil {
 		copyToBuffer(reflect.ValueOf(pubkey[:]), unsafe.Pointer(_arg2), uint(SizeofPubKey))
 	}
 	return errcode
@@ -119,7 +119,7 @@ func SKY_cipher_PubKey_ToAddressHash(_pk *C.cipher__PubKey, _arg0 *C.cipher__Rip
 //export SKY_cipher_NewSecKey
 func SKY_cipher_NewSecKey(_b []byte, _arg1 *C.cipher__SecKey) (retVal uint32) {
 	defer func() {
-		retVal = catchApiPanic(recover())
+		errcode = catchApiPanic(errcode, recover())
 	}()
 
 	sk := cipher.NewSecKey(_b)
@@ -131,7 +131,7 @@ func SKY_cipher_NewSecKey(_b []byte, _arg1 *C.cipher__SecKey) (retVal uint32) {
 func SKY_cipher_SecKeyFromHex(_s string, _arg1 *C.cipher__SecKey) uint32 {
 	sk, err := cipher.SecKeyFromHex(_s)
 	errcode := libErrorCode(err)
-	if err != nil {
+	if err == nil {
 		copyToBuffer(reflect.ValueOf(sk[:]), unsafe.Pointer(_arg1), uint(SizeofSecKey))
 	}
 	return errcode
@@ -162,7 +162,7 @@ func SKY_cipher_ECDH(_pub *C.cipher__PubKey, _sec *C.cipher__SecKey, _arg2 *C.Go
 //export SKY_cipher_NewSig
 func SKY_cipher_NewSig(_b []byte, _arg1 *C.cipher__Sig) (retVal uint32) {
 	defer func() {
-		retVal = catchApiPanic(recover())
+		errcode = catchApiPanic(errcode, recover())
 	}()
 
 	s := cipher.NewSig(_b)
@@ -175,7 +175,7 @@ func SKY_cipher_NewSig(_b []byte, _arg1 *C.cipher__Sig) (retVal uint32) {
 func SKY_cipher_SigFromHex(_s string, _arg1 *C.cipher__Sig) uint32 {
 	s, err := cipher.SigFromHex(_s)
 	errcode := libErrorCode(err)
-	if err != nil {
+	if err == nil {
 		copyToBuffer(reflect.ValueOf(s[:]), unsafe.Pointer(_arg1), uint(SizeofSig))
 	}
 	return errcode

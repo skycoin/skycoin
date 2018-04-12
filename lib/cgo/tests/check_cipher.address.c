@@ -15,7 +15,7 @@
 // buffer big enough to hold all kind of data needed by test cases
 unsigned char buff[1024];
 
-Test(cipher, TestDecodeBase58Address) {
+Test(cipher_address, TestDecodeBase58Address) {
 
   GoString strAddr = {
     SKYCOIN_ADDRESS_VALID,
@@ -57,7 +57,7 @@ Test(cipher, TestDecodeBase58Address) {
 
 }
 
-Test(cipher, TestAddressFromBytes){
+Test(cipher_address, TestAddressFromBytes){
   GoString strAddr = {
     SKYCOIN_ADDRESS_VALID,
     35
@@ -86,7 +86,7 @@ Test(cipher, TestAddressFromBytes){
   cr_assert(SKY_cipher_BitcoinAddressFromBytes(bytes, &addr2) == SKY_ERROR, "no SKY address due to corrupted bytes");
 }
 
-Test(cipher, TestAddressVerify){
+Test(cipher_address, TestAddressVerify){
 
   PubKey pubkey;
   SecKey seckey;
@@ -109,7 +109,7 @@ Test(cipher, TestAddressVerify){
   cr_assert( SKY_cipher_Address_Verify(&addr,&pubkey) == SKY_ERROR,"  Bad version");
 }
 
-Test(cipher,TestAddressString){
+Test(cipher_address,TestAddressString){
 
 }
 
@@ -204,7 +204,7 @@ Test (cipher, TestBitcoinAddress3){
 
 }
 
-Test(cipher, TestBitcoinWIPRoundTrio){
+Test(cipher_address, TestBitcoinWIPRoundTrio){
 
   SecKey seckey;
   PubKey pubkey;
@@ -231,25 +231,23 @@ Test(cipher, TestBitcoinWIPRoundTrio){
 
   cr_assert(err == SKY_OK);
 
-  // cr_assert(eq(type(SecKey),seckey,seckey2));
+  cr_assert(eq(u8[sizeof(SecKey)],seckey,seckey2));
 
   GoString_ seckeyhex1;
   GoString_ seckeyhex2;
 
   SKY_cipher_SecKey_Hex(&seckey,&seckeyhex1);
   SKY_cipher_SecKey_Hex(&seckey2,&seckeyhex2);
-  cr_assert(eq(type(GoString_), seckeyhex1, seckeyhex2));
-  cr_assert(eq(type(GoString_), wip1, wip2));
+  cr_assert(eq(type(GoString), (*(GoString*)&seckeyhex1),(*(GoString*)&seckeyhex2) ));
+  cr_assert(eq(type(GoString), (*(GoString*)&wip1),(*(GoString*)&wip2) ));
 
 }
 
 
-// func TestBitcoinWIP(t *testing.T) {
-
-Test(cipher, TestBitcoinWIP ){
+Test(cipher_address, TestBitcoinWIP ){
 
   //wallet input format string
-  GoString_ wip[3];
+  GoString wip[3];
 
   wip[0].p = "KwntMbt59tTsj8xqpqYqRRWufyjGunvhSyeMo3NTYpFYzZbXJ5Hp";
   wip[1].p = "L4ezQvyC6QoBhxB4GVs9fAPhUKtbaXYUn8YTqoeXwbevQq4U92vN";
@@ -272,7 +270,7 @@ Test(cipher, TestBitcoinWIP ){
 
   // //the expected addrss to generate
 
-  GoString_ addr[3];
+  GoString addr[3];
 
   addr[0].p="1Q1pE5vPGEEMqRcVRMbtBK842Y6Pzo6nK9";
   addr[1].p="1NKRhS7iYUGTaAfaR5z8BueAJesqaTyc4a";
@@ -283,14 +281,12 @@ Test(cipher, TestBitcoinWIP ){
   addr[2].n=34;
 
 
-  for (int i = 0; i < 3; ++i)
+  for (int i = 0; i < 3; i++)
   {
     SecKey seckey;
-
     unsigned int err;
 
-    err = SKY_cipher_SecKeyFromWalletImportFormat( (*((GoString *) &wip[i])),&seckey);
-
+    err = SKY_cipher_SecKeyFromWalletImportFormat(wip[i],&seckey);
     cr_assert(err==SKY_OK);
 
     PubKey pubkey;
@@ -298,50 +294,42 @@ Test(cipher, TestBitcoinWIP ){
     SKY_cipher_PubKeyFromSecKey(&seckey,&pubkey);
 
     unsigned char * pubkeyhextmp;
-
     GoString_ string;
 
     SKY_cipher_PubKey_Hex(&pubkey,&string);
-
-    cr_assert(eq(type(GoString_),string,pub[i]));
-
-    GoString_ bitcoinAddr;
-
+    cr_assert(eq(type(GoString), (*(GoString*)&string),(*(GoString*)&pub[i]) ));
+    GoString bitcoinAddr;
     SKY_cipher_BitcoinAddressFromPubkey(&pubkey,&bitcoinAddr);
-
-    cr_assert(eq(type(GoString_),addr[i],bitcoinAddr));
+    cr_assert(eq(type(GoString),addr[i],bitcoinAddr));
 
   }
 }
 
-Test(cipher, TestAddressBulk){
+Test(cipher_address, TestAddressBulk){
+
+  unsigned char buff[50];
+  GoSlice slice = { buff, 0, 50 };
 
   for (int i = 0; i < 1024; ++i)
   {
-    GoSlice slice;
     randBytes(&slice,32);
     PubKey pubkey;
     SecKey seckey;
-    //  SKY_cipher_GenerateDeterministicKeyPair( slice,&pubkey,&seckey);
+    SKY_cipher_GenerateDeterministicKeyPair( slice,&pubkey,&seckey);
     Address addr;
     SKY_cipher_AddressFromPubKey(&pubkey,&addr);
     unsigned int err;
     err = SKY_cipher_Address_Verify(&addr,&pubkey);
     cr_assert(err == SKY_OK);
-    GoString_ strAddr;
-    SKY_cipher_Address_String(&addr,&strAddr);
+    GoString strAddr;
+    SKY_cipher_Address_String(&addr, (GoString_ *)&strAddr);
+    registerMemCleanup(strAddr.p);
     Address addr2;
 
-    err = SKY_cipher_DecodeBase58Address((*((GoString *) &strAddr)),&addr2);
+    err = SKY_cipher_DecodeBase58Address(strAddr,&addr2);
     cr_assert(err == SKY_OK);
     cr_assert(eq(type(Address),addr,addr2));
   }
 
 }
-
-
-
-
-
-
 

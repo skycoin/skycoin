@@ -20,48 +20,35 @@ void freshSumSHA256(GoSlice bytes, SHA256* sha256){
 }
 
 Test(cipher,TestHashRipemd160){
-
-  Ripemd160 rp2;
-  Ripemd160 rp3;
-  Ripemd160 rp1;
-
-  unsigned char buff[129];
-  GoSlice slice = { buff, 0, 129 };
+  Ripemd160 tmp;
+  Ripemd160 r;
+  Ripemd160 r2;
+  unsigned char buff[257];
+  GoSlice slice = { buff, 0, 257 };
 
   randBytes(&slice,128);
+  SKY_cipher_HashRipemd160(slice,&tmp);
+  randBytes(&slice,160);
+  SKY_cipher_HashRipemd160(slice,&r);
+  cr_assert(not(eq(u8[sizeof(Ripemd160)],tmp,r)));
 
-  SKY_cipher_HashRipemd160(slice,&rp1);
-
-  unsigned char buff1[170];
-  GoSlice slice1 = { buff1, 0, 170 };
-
-  randBytes(&slice1,160);
-
-  SKY_cipher_HashRipemd160(slice1,&rp2);
-
-  cr_assert(not(eq(u8[32],rp1,rp2)));
-
-  unsigned char buff2[257];
-  GoSlice slice2;
-
-  randBytes(&slice2,256);
-
-  SKY_cipher_HashRipemd160(slice2,&rp3);
-
-  cr_assert(eq(u8[32],rp3,rp2));
-
-  freshSumRipemd160(slice2,&rp3);
-
-  cr_assert(eq(u8[32],rp3,rp2));
+  unsigned char buff1[257];
+  GoSlice b = { buff1, 0, 257 };
+  randBytes(&b,256);
+  SKY_cipher_HashRipemd160(b,&r2);
+  cr_assert(not(eq(u8[sizeof(Ripemd160)],r2,tmp)));
+  freshSumRipemd160(b,&tmp);
+  cr_assert(eq(u8[20],tmp,r2));
 }
 
-Test(hash,TestRipemd160Set){
+Test(cipher_hash,TestRipemd160Set){
 
   Ripemd160 h;
   unsigned char buff[101];
-  GoSlice slice;
+  GoSlice slice = { buff, 0, 101 };
   int error;
 
+  memset(h, 0, sizeof(Ripemd160));
   randBytes(&slice,21);
 
   error = SKY_cipher_Ripemd160_Set(&h,slice);
@@ -82,11 +69,10 @@ Test(hash,TestRipemd160Set){
   randBytes(&slice,20);
   error = SKY_cipher_Ripemd160_Set(&h,slice);
   cr_assert(error == SKY_OK);
-  printf(slice.data);
-  cr_assert(eq(u8[21], slice.data, h));
+  cr_assert(eq(u8[20], h, buff));
 }
 
-Test(hash,TestSHA256Set){
+Test(cipher_hash,TestSHA256Set){
 
   SHA256 h;
   unsigned char buff[101];
@@ -116,7 +102,7 @@ Test(hash,TestSHA256Set){
   cr_assert(eq(u8[32], h, slice.data));
 }
 
-Test(hash,TestSHA256Hex){
+Test(cipher_hash,TestSHA256Hex){
 
   SHA256 h;
   unsigned char buff[101];
@@ -129,7 +115,7 @@ Test(hash,TestSHA256Hex){
   GoString s;
 
   SKY_cipher_SHA256_Hex(&h, (GoString_ *)&s);
-  registerMemCleanup(s.p);
+  registerMemCleanup(&s.p);
 
   SHA256 h2;
 
@@ -140,13 +126,13 @@ Test(hash,TestSHA256Hex){
   GoString s2;
 
   SKY_cipher_SHA256_Hex(&h2, (GoString_ *) &s2);
-  registerMemCleanup(s2.p);
+  registerMemCleanup(&s2.p);
   cr_assert(eq(type(GoString),s,s2));
 }
 
-Test(hash,TestSHA256KnownValue){
+Test(cipher_hash,TestSHA256KnownValue){
 
-  
+
   typedef struct 
   {
     char *input;
@@ -166,7 +152,6 @@ Test(hash,TestSHA256KnownValue){
 
   for (int i = 0; i < 3; ++i)
   {
-    // FIXME: Review
     GoSlice slice_input;
     GoSlice slice_output;
 
@@ -181,88 +166,64 @@ Test(hash,TestSHA256KnownValue){
     GoString_ tmp_output;
 
     SKY_cipher_SHA256_Hex(&sha,&tmp_output);
-    registerMemCleanup(tmp_output.p);
+    registerMemCleanup(&tmp_output.p);
 
-    cr_assert( tmp_output.p == vals[i].output );
+    cr_assert(strcmp(tmp_output.p,vals[i].output)== SKY_OK);
   }
-
 }
 
-Test(hash,TestSumSHA256){
+Test(cipher_hash,TestSumSHA256){
 
   unsigned char bbuff[257],
   cbuff[257];
   GoSlice b = { bbuff, 0, 257 };
   SHA256 h1;
-
   randBytes(&b,256);
-
   SKY_cipher_SumSHA256(b,&h1);
-
   SHA256 tmp;
-
   cr_assert(not(eq(u8[32],h1,tmp)));
-
   GoSlice c = { cbuff, 0, 257 };
-
   randBytes(&c,256);
   SHA256 h2;
   SKY_cipher_SumSHA256(c,&h2);
-
-
   cr_assert(not(eq(u8[32],h2,tmp)));
-
   SHA256 tmp_h2;
-
   freshSumSHA256(c,&tmp_h2);
-
   cr_assert(eq(u8[32],h2,tmp_h2));
-
 }
 
-Test(hash,TestSHA256FromHex){
-
+Test(cipher_hash,TestSHA256FromHex){
+  unsigned int error;
+  SHA256 tmp;
   // Invalid hex hash
-  GoString string;
-  int error;
-  SHA256 sha;
-  string.p = "cawcd";
-  string.n = 5;
-  error = SKY_cipher_SHA256FromHex(string,&sha);
-
-  cr_assert(error != NULL);
-
-  // 	// Truncated hex hash
-  SHA256 sha1;
-  unsigned char buff[130],
-  sbuff[300];
-  GoSlice slice = { buff, 0, 130 };
-
+  GoString tmp_string = {"cawcd",5};
+  error = SKY_cipher_SHA256FromHex(tmp_string,&tmp);
+  cr_assert(error == SKY_ERROR);
+  // Truncated hex hash
+  SHA256 h;
+  unsigned char buff[130];
+  char sbuff[300];
+  GoSlice slice = { buff,0,130 };
   randBytes(&slice,128);
-  SKY_cipher_SumSHA256(slice,&sha1);
-  int len = sizeof(sha1);
-
-  strnhex(&sha1,&sbuff,len/2);
+  SKY_cipher_SumSHA256(slice,&h);
+  strnhex(h,sbuff,sizeof(h) >> 1);
   GoString s1 = { sbuff, strlen(sbuff) };
-
-  error = SKY_cipher_SHA256FromHex(s1,&sha1);
-  cr_assert(error != NULL);
+  error = SKY_cipher_SHA256FromHex(s1,&h);
+  cr_assert(error == SKY_ERROR);
 
   // Valid hex hash
-
-  strhex(&sha1,&sbuff);
+  // char sbuff1[300];
+  GoString_ s2;
+  // strnhex(h,sbuff1,sizeof(h));
+  SKY_cipher_SHA256_Hex(&h, &s2 );
   SHA256 h2;
-  GoString s2 = { sbuff, strlen(sbuff) };
-
-  error = SKY_cipher_SHA256FromHex(s2,&h2);
-
-  cr_assert(eq(u8[32],sha1,h2));
-
-  cr_assert(error == NULL);
-
+  error = SKY_cipher_SHA256FromHex((*((GoString *) &s2)),&h2);
+  cr_assert(error == SKY_OK);
+  cr_assert(eq(u8[32],h,h2));
 }
 
-Test(hash,TestDoubleSHA256){
+
+Test(cipher_hash,TestDoubleSHA256){
   unsigned char bbuff[130];
   GoSlice b = { bbuff, 0, 130 };
   randBytes(&b,128);
@@ -274,7 +235,7 @@ Test(hash,TestDoubleSHA256){
   cr_assert(not(eq(u8[32],tmp,h)));
 }
 
-Test(hash,TestAddSHA256){
+Test(cipher_hash,TestAddSHA256){
 
   unsigned char bbuff[130];
   GoSlice b = { bbuff, 0, 130 };
@@ -291,14 +252,14 @@ Test(hash,TestAddSHA256){
   SHA256 add;
   SHA256 tmp;
 
-  SKY_cipher_AddSHA256(h,i,&add);
+  SKY_cipher_AddSHA256(&h,&i,&add);
 
   cr_assert(not(eq(u8[32],add,tmp)));
   cr_assert(not(eq(u8[32],add,h)));
   cr_assert(not(eq(u8[32],add,i)));
 }
 
-Test(hash,TestXorSHA256){
+Test(cipher_hash,TestXorSHA256){
 
   unsigned char bbuff[129],
   cbuff[129];
@@ -325,36 +286,58 @@ Test(hash,TestXorSHA256){
 
 }
 
-Test(hash,TestMerkle){
+Test(cipher_hash,TestMerkle){
+  unsigned char buff[129];
+  SHA256 hashlist[5];
+  GoSlice b = { buff, 0, 129 },
+          hashes = { hashlist, 0, 5 };
+  SHA256 h, zero, out, out1, out2, out3, out4;
+  int i;
 
-  cr_fail("Not implement");
+  memset(zero, 0, sizeof(zero));
 
-  // GoSlice slice;
-  // SHA256 h;
-  // SHA256 tmp;
+  for (i = 0; i < 5; i++) {
+    randBytes(&b, 128);
+    SKY_cipher_SumSHA256(b, &hashlist[i]);
+  }
 
-  // randBytes(&slice,128);
+  // Single hash input returns hash
+  hashes.len = 1;
+  SKY_cipher_Merkle(&hashes, &h);
+  cr_assert(eq(u8[32], hashlist[0], h));
 
-  // SKY_cipher_SumSHA256(slice,&h);
+  // 2 hashes should be AddSHA256 of them
+  hashes.len = 2;
+  SKY_cipher_AddSHA256(&hashlist[0], &hashlist[1], &out); 
+  SKY_cipher_Merkle(&hashes, &h);
+  cr_assert(eq(u8[32], out, h));
 
-  // // Single hash input returns hash
+  // 3 hashes should be Add(Add())
+  hashes.len = 3;
+  SKY_cipher_AddSHA256(&hashlist[0], &hashlist[1], &out1); 
+  SKY_cipher_AddSHA256(&hashlist[2], &zero, &out2); 
+  SKY_cipher_AddSHA256(&out1, &out2, &out); 
+  SKY_cipher_Merkle(&hashes, &h);
+  cr_assert(eq(u8[32], out, h));
 
-  // assert.Equal(t, Merkle([]SHA256{h}), h)
-  // h2 := SumSHA256(randBytes(t, 128))
-  // // 2 hashes should be AddSHA256 of them
-  // assert.Equal(t, Merkle([]SHA256{h, h2}), AddSHA256(h, h2))
-  // // 3 hashes should be Add(Add())
-  // h3 := SumSHA256(randBytes(t, 128))
-  // out := AddSHA256(AddSHA256(h, h2), AddSHA256(h3, SHA256{}))
-  // assert.Equal(t, Merkle([]SHA256{h, h2, h3}), out)
-  // // 4 hashes should be Add(Add())
-  // h4 := SumSHA256(randBytes(t, 128))
-  // out = AddSHA256(AddSHA256(h, h2), AddSHA256(h3, h4))
-  // assert.Equal(t, Merkle([]SHA256{h, h2, h3, h4}), out)
-  // // 5 hashes
-  // h5 := SumSHA256(randBytes(t, 128))
-  // out = AddSHA256(AddSHA256(h, h2), AddSHA256(h3, h4))
-  // out = AddSHA256(out, AddSHA256(AddSHA256(h5, SHA256{}),
-  // 	AddSHA256(SHA256{}, SHA256{})))
-  // assert.Equal(t, Merkle([]SHA256{h, h2, h3, h4, h5}), out)
+  // 4 hashes should be Add(Add())
+  hashes.len = 4;
+  SKY_cipher_AddSHA256(&hashlist[0], &hashlist[1], &out1); 
+  SKY_cipher_AddSHA256(&hashlist[2], &hashlist[3], &out2); 
+  SKY_cipher_AddSHA256(&out1, &out2, &out); 
+  SKY_cipher_Merkle(&hashes, &h);
+  cr_assert(eq(u8[32], out, h));
+
+  // 5 hashes
+  hashes.len = 5;
+  SKY_cipher_AddSHA256(&hashlist[0], &hashlist[1], &out1); 
+  SKY_cipher_AddSHA256(&hashlist[2], &hashlist[3], &out2); 
+  SKY_cipher_AddSHA256(&out1, &out2, &out3); 
+  SKY_cipher_AddSHA256(&hashlist[4], &zero, &out1); 
+  SKY_cipher_AddSHA256(&zero, &zero, &out2); 
+  SKY_cipher_AddSHA256(&out1, &out2, &out4); 
+  SKY_cipher_AddSHA256(&out3, &out4, &out); 
+  SKY_cipher_Merkle(&hashes, &h);
+  cr_assert(eq(u8[32], out, h));
 }
+

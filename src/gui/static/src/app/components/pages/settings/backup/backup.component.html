@@ -20,7 +20,7 @@
     <ngx-datatable-column name="File name" prop="filename" [flexGrow]="1"></ngx-datatable-column>
     <ngx-datatable-column name="Download" [flexGrow]="1">
       <ng-template let-row="row" ngx-datatable-cell-template>
-        <button mat-raised-button color="primary" (click)="download(row)">Download</button>
+        <button mat-raised-button color="primary" (click)="download(row)" class="in-table">Download</button>
       </ng-template>
     </ngx-datatable-column>
   </ngx-datatable>

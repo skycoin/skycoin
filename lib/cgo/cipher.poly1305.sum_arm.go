@@ -2,7 +2,6 @@ package main
 
 import (
 	poly1305 "github.com/skycoin/skycoin/src/cipher/poly1305"
-	"unsafe"
 )
 
 /*
@@ -15,15 +14,12 @@ import (
 import "C"
 
 // export SKY_poly1305_Sum
-func SKY_poly1305_Sum_arm(_out *[]byte, _m *C.GoSlice_, _key *[]byte) (____error_code uint32) {
+func SKY_poly1305_Sum_arm(_out *[16]byte, _m []byte, _key *[32]byte) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
 	//TODO: stdevEclipse Check Pointer Casting
-	out := (*[16]byte)(unsafe.Pointer(_out))
-	m := *(*[]byte)(unsafe.Pointer(_m))
-	key := (*[32]byte)(unsafe.Pointer(_key))
-	poly1305.Sum(out, m, key)
+	poly1305.Sum(_out, _m, _key)
 	return
 }

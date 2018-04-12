@@ -42,7 +42,6 @@ func SKY_cipher_RandByte(_n int, _arg1 *C.GoSlice_) {
 	copyToGoSlice(reflect.ValueOf(b), _arg1)
 }
 
-//TODO: stdevEclipse Check change in return var name
 //export SKY_cipher_NewPubKey
 func SKY_cipher_NewPubKey(_b []byte, _arg1 *C.cipher__PubKey) (errcode uint32) {
 	defer func() {

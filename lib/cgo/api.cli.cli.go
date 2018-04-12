@@ -101,6 +101,7 @@ func SKY_cli_App_Run(_app *C.Handle, _args *C.GoSlice_) (____error_code uint32) 
 	return
 }
 
+//TODO: stdevEclipse Check if a handle is right for the context parameter
 // export SKY_cli_RPCClientFromContext
 func SKY_cli_RPCClientFromContext(_c *C.Handle, _client *C.Handle) (____error_code uint32) {
 	____error_code = 0

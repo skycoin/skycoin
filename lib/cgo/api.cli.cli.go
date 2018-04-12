@@ -2,7 +2,6 @@ package main
 
 import (
 	cli "github.com/skycoin/skycoin/src/api/cli"
-	"reflect"
 	"unsafe"
 ) 
 
@@ -24,7 +23,7 @@ func SKY_cli_LoadConfig(_arg0 *C.cli__Config) (____error_code uint32) {
 	__arg0, ____return_err := cli.LoadConfig()
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		copyToBuffer(reflect.ValueOf(__arg0[:]), unsafe.Pointer(_arg0), uint(SizeofConfig))
+		*_arg0 = *(*C.cli__Config)(unsafe.Pointer(&__arg0))
 	}
 	return
 }

@@ -15,7 +15,14 @@ import (
 
 func blockchainHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		wh.SendJSONOr500(logger, w, gateway.GetBlockchainMetadata())
+		metadata, err := gateway.GetBlockchainMetadata()
+		if err != nil {
+			logger.WithError(err).Error("gateway.GetBlockchainMetadata failed")
+			wh.Error500Msg(w, err.Error())
+			return
+		}
+
+		wh.SendJSONOr500(logger, w, metadata)
 	}
 }
 

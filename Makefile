@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: run run-help test test-core test-libc test-lint build-libc check cover integration-test-stable integration-test-live install-linters format release clean help
+.PHONY: run run-help test test-core test-libc test-lint build-libc check cover integration-test-stable integration-test-live integration-test-disable-wallet-api integration-test-enable-seed-api install-linters format release clean help
 
 # Static files directory
 STATIC_DIR = src/gui/static
@@ -60,14 +60,14 @@ else
 endif
 
 run:  ## Run the skycoin node. To add arguments, do 'make ARGS="--foo" run'.
-	go run cmd/skycoin/skycoin.go --gui-dir="./${STATIC_DIR}" ${ARGS}
+	./run.sh ${ARGS}
 
 run-help: ## Show skycoin node help
 	@go run cmd/skycoin/skycoin.go --help
 
 test: ## Run tests for Skycoin
-	go test ./cmd/... -timeout=1m
-	go test ./src/... -timeout=1m
+	go test ./cmd/... -timeout=5m
+	go test ./src/... -timeout=5m
 
 test-386: ## Run tests for Skycoin with GOARCH=386
 	GOARCH=386 go test ./cmd/... -timeout=5m
@@ -117,6 +117,9 @@ integration-test-live: ## Run live integration tests
 
 integration-test-disable-wallet-api: ## Run disable wallet api integration tests
 	./ci-scripts/integration-test-disable-wallet-api.sh -v
+
+integration-test-enable-seed-api: ## Run enable seed api integration test
+	./ci-scripts/integration-test-enable-seed-api.sh -v -w
 
 cover: ## Runs tests on ./src/ with HTML code coverage
 	go test -cover -coverprofile=cover.out -coverpkg=github.com/skycoin/skycoin/... ./src/...

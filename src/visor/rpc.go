@@ -77,9 +77,8 @@ func MakeRPC(v *Visor) RPC {
 }
 
 // GetBlockchainMetadata get blockchain meta data
-func (rpc RPC) GetBlockchainMetadata(v *Visor) *BlockchainMetadata {
-	bm := v.GetBlockchainMetadata()
-	return &bm
+func (rpc RPC) GetBlockchainMetadata(v *Visor) (*BlockchainMetadata, error) {
+	return v.GetBlockchainMetadata()
 }
 
 // GetUnspent gets unspent
@@ -175,7 +174,7 @@ func (rpc *RPC) GetWallet(wltID string) (*wallet.Wallet, error) {
 }
 
 // GetWallets returns all wallet
-func (rpc *RPC) GetWallets() wallet.Wallets {
+func (rpc *RPC) GetWallets() (wallet.Wallets, error) {
 	return rpc.v.Wallets.GetWallets()
 }
 

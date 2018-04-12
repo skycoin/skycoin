@@ -1,6 +1,8 @@
 package daemon
 
 import (
+	"time"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/strand"
@@ -18,15 +20,15 @@ import (
 
 // GatewayConfig configuration set of gateway.
 type GatewayConfig struct {
-	BufferSize       int
-	DisableWalletAPI bool
+	BufferSize      int
+	EnableWalletAPI bool
 }
 
 // NewGatewayConfig create and init an GatewayConfig
 func NewGatewayConfig() GatewayConfig {
 	return GatewayConfig{
-		BufferSize:       32,
-		DisableWalletAPI: false,
+		BufferSize:      32,
+		EnableWalletAPI: false,
 	}
 }
 
@@ -147,12 +149,13 @@ func (gw *Gateway) ResendUnconfirmedTxns() (rlt *ResendResult) {
 }
 
 // GetBlockchainMetadata returns a *visor.BlockchainMetadata
-func (gw *Gateway) GetBlockchainMetadata() *visor.BlockchainMetadata {
+func (gw *Gateway) GetBlockchainMetadata() (*visor.BlockchainMetadata, error) {
 	var bcm *visor.BlockchainMetadata
+	var err error
 	gw.strand("GetBlockchainMetadata", func() {
-		bcm = gw.vrpc.GetBlockchainMetadata(gw.v)
+		bcm, err = gw.vrpc.GetBlockchainMetadata(gw.v)
 	})
-	return bcm
+	return bcm, err
 }
 
 // GetBlockByHash returns the block by hash
@@ -428,19 +431,24 @@ func (gw *Gateway) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
 }
 
 // GetAddrUxOuts gets all the address affected UxOuts.
-func (gw *Gateway) GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOutJSON, error) {
-	var uxouts []*historydb.UxOut
-	var err error
-	gw.strand("GetAddrUxOuts", func() {
-		uxouts, err = gw.v.GetAddrUxOuts(addr)
-	})
+func (gw *Gateway) GetAddrUxOuts(addresses []cipher.Address) ([]*historydb.UxOut, error) {
+	var (
+		uxOuts []*historydb.UxOut
+		err    error
+	)
 
-	uxs := make([]*historydb.UxOutJSON, len(uxouts))
-	for i, ux := range uxouts {
-		uxs[i] = historydb.NewUxOutJSON(ux)
+	for _, addr := range addresses {
+		result, e := gw.v.GetAddrUxOuts(addr)
+
+		if e != nil {
+			err = e
+			continue
+		}
+
+		uxOuts = append(uxOuts, result...)
 	}
 
-	return uxs, err
+	return uxOuts, err
 }
 
 // GetTimeNow returns the current Unix time
@@ -501,7 +509,7 @@ func (sv spendValidator) HasUnconfirmedSpendTx(addr []cipher.Address) (bool, err
 // set password as nil if wallet is not encrypted, otherwise the password must be provied.
 // return transaction or error.
 func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
-	if gw.Config.DisableWalletAPI {
+	if !gw.Config.EnableWalletAPI {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
@@ -564,7 +572,7 @@ func (gw *Gateway) AdvancedSpend(advancedSpend wallet.AdvancedSpend) (*coin.Tran
 
 // CreateWallet creates wallet
 func (gw *Gateway) CreateWallet(wltName string, options wallet.Options) (*wallet.Wallet, error) {
-	if gw.Config.DisableWalletAPI {
+	if !gw.Config.EnableWalletAPI {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
@@ -579,7 +587,7 @@ func (gw *Gateway) CreateWallet(wltName string, options wallet.Options) (*wallet
 // ScanAheadWalletAddresses loads wallet from given seed and scan ahead N addresses
 // Set password as nil if the wallet is not encrypted, otherwise the password must be provided
 func (gw *Gateway) ScanAheadWalletAddresses(wltName string, password []byte, scanN uint64) (*wallet.Wallet, error) {
-	if gw.Config.DisableWalletAPI {
+	if !gw.Config.EnableWalletAPI {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
@@ -592,22 +600,37 @@ func (gw *Gateway) ScanAheadWalletAddresses(wltName string, password []byte, sca
 }
 
 // EncryptWallet encrypts the wallet
-func (gw *Gateway) EncryptWallet(wltName string, password []byte) error {
-	if gw.Config.DisableWalletAPI {
-		return wallet.ErrWalletAPIDisabled
+func (gw *Gateway) EncryptWallet(wltName string, password []byte) (*wallet.Wallet, error) {
+	if !gw.Config.EnableWalletAPI {
+		return nil, wallet.ErrWalletAPIDisabled
 	}
 
 	var err error
+	var w *wallet.Wallet
 	gw.strand("EncryptWallet", func() {
-		err = gw.v.Wallets.EncryptWallet(wltName, password)
+		w, err = gw.v.Wallets.EncryptWallet(wltName, password)
 	})
-	return err
+	return w, err
+}
+
+// DecryptWallet decrypts wallet
+func (gw *Gateway) DecryptWallet(wltID string, password []byte) (*wallet.Wallet, error) {
+	if !gw.Config.EnableWalletAPI {
+		return nil, wallet.ErrWalletAPIDisabled
+	}
+
+	var err error
+	var w *wallet.Wallet
+	gw.strand("DecryptWallet", func() {
+		w, err = gw.v.Wallets.DecryptWallet(wltID, password)
+	})
+	return w, err
 }
 
 // GetWalletBalance returns balance pair of specific wallet
 func (gw *Gateway) GetWalletBalance(wltID string) (wallet.BalancePair, error) {
 	var balance wallet.BalancePair
-	if gw.Config.DisableWalletAPI {
+	if !gw.Config.EnableWalletAPI {
 		return balance, wallet.ErrWalletAPIDisabled
 	}
 
@@ -668,7 +691,7 @@ func (gw *Gateway) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePa
 
 // GetWalletDir returns path for storing wallet files
 func (gw *Gateway) GetWalletDir() (string, error) {
-	if gw.Config.DisableWalletAPI {
+	if !gw.Config.EnableWalletAPI {
 		return "", wallet.ErrWalletAPIDisabled
 	}
 	return gw.v.Config.WalletDirectory, nil
@@ -676,7 +699,7 @@ func (gw *Gateway) GetWalletDir() (string, error) {
 
 // NewAddresses generate addresses in given wallet
 func (gw *Gateway) NewAddresses(wltID string, password []byte, n uint64) ([]cipher.Address, error) {
-	if gw.Config.DisableWalletAPI {
+	if !gw.Config.EnableWalletAPI {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
@@ -690,7 +713,7 @@ func (gw *Gateway) NewAddresses(wltID string, password []byte, n uint64) ([]ciph
 
 // UpdateWalletLabel updates the label of wallet
 func (gw *Gateway) UpdateWalletLabel(wltID, label string) error {
-	if gw.Config.DisableWalletAPI {
+	if !gw.Config.EnableWalletAPI {
 		return wallet.ErrWalletAPIDisabled
 	}
 
@@ -703,7 +726,7 @@ func (gw *Gateway) UpdateWalletLabel(wltID, label string) error {
 
 // GetWallet returns wallet by id
 func (gw *Gateway) GetWallet(wltID string) (*wallet.Wallet, error) {
-	if gw.Config.DisableWalletAPI {
+	if !gw.Config.EnableWalletAPI {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
@@ -717,20 +740,21 @@ func (gw *Gateway) GetWallet(wltID string) (*wallet.Wallet, error) {
 
 // GetWallets returns wallets
 func (gw *Gateway) GetWallets() (wallet.Wallets, error) {
-	if gw.Config.DisableWalletAPI {
+	if !gw.Config.EnableWalletAPI {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
 	var w wallet.Wallets
+	var err error
 	gw.strand("GetWallets", func() {
-		w = gw.v.Wallets.GetWallets()
+		w, err = gw.v.Wallets.GetWallets()
 	})
-	return w, nil
+	return w, err
 }
 
 // GetWalletUnconfirmedTxns returns all unconfirmed transactions in given wallet
 func (gw *Gateway) GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTxn, error) {
-	if gw.Config.DisableWalletAPI {
+	if !gw.Config.EnableWalletAPI {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
@@ -751,7 +775,7 @@ func (gw *Gateway) GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTx
 
 // ReloadWallets reloads all wallets
 func (gw *Gateway) ReloadWallets() error {
-	if gw.Config.DisableWalletAPI {
+	if !gw.Config.EnableWalletAPI {
 		return wallet.ErrWalletAPIDisabled
 	}
 
@@ -764,7 +788,7 @@ func (gw *Gateway) ReloadWallets() error {
 
 // UnloadWallet removes wallet of given id from memory.
 func (gw *Gateway) UnloadWallet(id string) error {
-	if gw.Config.DisableWalletAPI {
+	if !gw.Config.EnableWalletAPI {
 		return wallet.ErrWalletAPIDisabled
 	}
 
@@ -775,9 +799,24 @@ func (gw *Gateway) UnloadWallet(id string) error {
 	return nil
 }
 
-// IsWalletAPIDisabled returns if all wallet related apis are disabled
-func (gw *Gateway) IsWalletAPIDisabled() bool {
-	return gw.Config.DisableWalletAPI
+// GetWalletSeed returns seed of wallet of given id,
+// returns wallet.ErrWalletNotEncrypted if the wallet is not encrypted.
+func (gw *Gateway) GetWalletSeed(id string, password []byte) (string, error) {
+	if !gw.Config.EnableWalletAPI {
+		return "", wallet.ErrWalletAPIDisabled
+	}
+
+	var seed string
+	var err error
+	gw.strand("GetWalletSeed", func() {
+		seed, err = gw.v.Wallets.GetWalletSeed(id, password)
+	})
+	return seed, err
+}
+
+// IsWalletAPIEnabled returns if all wallet related apis are disabled
+func (gw *Gateway) IsWalletAPIEnabled() bool {
+	return gw.Config.EnableWalletAPI
 }
 
 // GetBuildInfo returns node build info.
@@ -836,4 +875,36 @@ func (gw *Gateway) GetAddressCount() (uint64, error) {
 	}
 
 	return uint64(len(allAccounts)), nil
+}
+
+// Health is returned by the /health endpoint
+type Health struct {
+	BlockchainMetadata *visor.BlockchainMetadata
+	Version            visor.BuildInfo
+	OpenConnections    int
+	Uptime             time.Duration
+}
+
+// GetHealth returns statistics about the running node
+func (gw *Gateway) GetHealth() (*Health, error) {
+	var health *Health
+	var err error
+	gw.strand("GetHealth", func() {
+		var metadata *visor.BlockchainMetadata
+		metadata, err = gw.vrpc.GetBlockchainMetadata(gw.v)
+		if err != nil {
+			return
+		}
+
+		conns := gw.drpc.GetConnections(gw.d)
+
+		health = &Health{
+			BlockchainMetadata: metadata,
+			Version:            gw.v.Config.BuildInfo,
+			OpenConnections:    len(conns.Connections),
+			Uptime:             time.Since(gw.v.StartedAt),
+		}
+	})
+
+	return health, err
 }

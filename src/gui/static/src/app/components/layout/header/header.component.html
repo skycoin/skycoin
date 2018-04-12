@@ -35,4 +35,7 @@
       Security vulnerability: CSRF is not working, please exit immediately.
     </div>
   </mat-toolbar>
+  <mat-toolbar class="notification-bar" *ngIf="hasPendingTxs">
+    <div>There are some <a routerLink="/settings/pending-transactions">pending trasactions</a>. Data you see may not be updated.</div>
+  </mat-toolbar>
 </div>

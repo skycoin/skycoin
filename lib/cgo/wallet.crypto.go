@@ -16,11 +16,8 @@ import (
 import "C"
 
 // export SKY_wallet_CryptoTypeFromString
-func SKY_wallet_CryptoTypeFromString(_s string, _arg1 *C.CryptoType) (____error_code uint32) {
+func SKY_wallet_CryptoTypeFromString(_s string, _arg1 *C.wallet__CryptoType) (____error_code uint32) {
 	____error_code = 0
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
 	s := _s
 	__arg1, ____return_err := wallet.CryptoTypeFromString(s)
 	____error_code = libErrorCode(____return_err)

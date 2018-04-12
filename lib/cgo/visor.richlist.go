@@ -16,11 +16,8 @@ import (
 import "C"
 
 // export SKY_visor_NewRichlist
-func SKY_visor_NewRichlist(_allAccounts map[string]uint64, _lockedAddrs map[string]struct{}, _arg2 *C.Richlist) (____error_code uint32) {
+func SKY_visor_NewRichlist(_allAccounts map[string]uint64, _lockedAddrs map[string]struct{}, _arg2 *C.visor__Richlist) (____error_code uint32) {
 	____error_code = 0
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
 	__arg2, ____return_err := visor.NewRichlist(allAccounts, lockedAddrs)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
@@ -30,12 +27,9 @@ func SKY_visor_NewRichlist(_allAccounts map[string]uint64, _lockedAddrs map[stri
 }
 
 // export SKY_visor_Richlist_FilterAddresses
-func SKY_visor_Richlist_FilterAddresses(_r *C.Richlist, _addrs map[string]struct{}, _arg1 *C.Richlist) (____error_code uint32) {
+func SKY_visor_Richlist_FilterAddresses(_r *C.visor__Richlist, _addrs map[string]struct{}, _arg1 *C.visor__Richlist) (____error_code uint32) {
 	____error_code = 0
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	r := *(*Richlist)(unsafe.Pointer(_r))
+	r := *(*visor.Richlist)(unsafe.Pointer(_r))
 	__arg1 := r.FilterAddresses(addrs)
 	copyToBuffer(reflect.ValueOf(__arg1[:]), unsafe.Pointer(_arg1), uint(SizeofRichlist))
 	return

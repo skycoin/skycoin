@@ -9,7 +9,7 @@ typedef struct{
     GoString_ TimestampStyle;
     GoString_ CallContextStyle;
     GoString_ CriticalStyle;
-} ColorScheme;
+} logging__ColorScheme;
 typedef struct{
     Handle InfoLevelColor;
     Handle WarnLevelColor;
@@ -21,23 +21,4 @@ typedef struct{
     Handle TimestampColor;
     Handle CallContextColor;
     Handle CriticalColor;
-} compiledColorScheme;
-typedef struct{
-    GoString_ PriorityKey;
-    GoString_ HighlightPriorityValue;
-    bool ForceColors;
-    bool DisableColors;
-    bool ForceFormatting;
-    bool DisableTimestamp;
-    bool DisableUppercase;
-    bool FullTimestamp;
-    GoString_ TimestampFormat;
-    bool DisableSorting;
-    bool QuoteEmptyFields;
-    GoString_ QuoteCharacter;
-    GoInt_ SpacePadding;
-    bool AlwaysQuoteStrings;
-    compiledColorScheme * colorScheme;
-    bool isTerminal;
-;
-} TextFormatter;
+} logging__compiledColorScheme;

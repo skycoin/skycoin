@@ -1,1 +1,1 @@
-typedef GoSlice_ byTime;
+typedef GoSlice_  cli__byTime;

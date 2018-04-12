@@ -1,3 +1,6 @@
 typedef struct{
     GoString_ Txid;
-} TxIDJson;
+} webrpc__TxIDJson;
+typedef struct{
+    visor__TransactionResult * Transaction;
+} webrpc__TxnResult;

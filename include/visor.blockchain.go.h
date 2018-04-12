@@ -1,3 +1,3 @@
-typedef GoInterface_ chainStore;
-typedef Handle BlockListener;
-typedef Handle Option;
+typedef GoInterface_ visor__chainStore;
+typedef Handle visor__BlockListener;
+typedef Handle visor__Option;

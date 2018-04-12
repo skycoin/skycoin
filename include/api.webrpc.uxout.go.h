@@ -1,4 +1,4 @@
 typedef struct{
     GoString_ Address;
-    GoSlice_ UxOuts;
-} AddrUxoutResult;
+    GoSlice_  UxOuts;
+} webrpc__AddrUxoutResult;

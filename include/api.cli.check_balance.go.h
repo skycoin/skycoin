@@ -1,16 +1,16 @@
 typedef struct{
     GoString_ Coins;
     GoString_ Hours;
-} Balance;
+} cli__Balance;
 typedef struct{
-    Balance Confirmed;
-    Balance Spendable;
-    Balance Expected;
+    cli__Balance Confirmed;
+    cli__Balance Spendable;
+    cli__Balance Expected;
     GoString_ Address;
-} AddressBalance;
+} cli__AddressBalance;
 typedef struct{
-    Balance Confirmed;
-    Balance Spendable;
-    Balance Expected;
-    GoSlice_ Addresses;
-} BalanceResult;
+    cli__Balance Confirmed;
+    cli__Balance Spendable;
+    cli__Balance Expected;
+    GoSlice_  Addresses;
+} cli__BalanceResult;

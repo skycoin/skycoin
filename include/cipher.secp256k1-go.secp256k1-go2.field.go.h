@@ -1,3 +1,3 @@
 typedef struct{
     GoUint32_  n[10];
-} Field;
+} secp256k1go__Field;

@@ -1,14 +1,14 @@
 typedef struct{
     GoString_ Version;
     GoString_ Commit;
-} BuildInfo;
-typedef GoInterface_ historyer;
-typedef GoInterface_ Blockchainer;
-typedef GoInterface_ UnconfirmedTxnPooler;
-typedef GoInterface_ TxFilter;
+} visor__BuildInfo;
+typedef GoInterface_ visor__historyer;
+typedef GoInterface_ visor__Blockchainer;
+typedef GoInterface_ visor__UnconfirmedTxnPooler;
+typedef GoInterface_ visor__TxFilter;
 typedef struct{
     Handle f;
-} baseFilter;
+} visor__baseFilter;
 typedef struct{
-    GoSlice_ Addrs;
-} addrsFilter;
+    GoSlice_  Addrs;
+} visor__addrsFilter;

@@ -3,4 +3,4 @@ typedef struct{
     GoUint64_ BlockNum;
     GoString_ LastBlockHash;
     GoString_ TimeSinceLastBlock;
-} StatusResult;
+} webrpc__StatusResult;

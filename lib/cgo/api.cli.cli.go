@@ -4,7 +4,7 @@ import (
 	cli "github.com/skycoin/skycoin/src/api/cli"
 	"reflect"
 	"unsafe"
-)
+) 
 
 /*
 
@@ -16,7 +16,7 @@ import (
 import "C"
 
 // export SKY_cli_LoadConfig
-func SKY_cli_LoadConfig(_arg0 *C.Config) (____error_code uint32) {
+func SKY_cli_LoadConfig(_arg0 *C.cli__Config) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -30,7 +30,7 @@ func SKY_cli_LoadConfig(_arg0 *C.Config) (____error_code uint32) {
 }
 
 // export SKY_cli_Config_FullWalletPath
-func SKY_cli_Config_FullWalletPath(_c *C.Config, _arg0 *C.GoString_) (____error_code uint32) {
+func SKY_cli_Config_FullWalletPath(_c *C.cli__Config, _arg0 *C.GoString_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -42,7 +42,7 @@ func SKY_cli_Config_FullWalletPath(_c *C.Config, _arg0 *C.GoString_) (____error_
 }
 
 // export SKY_cli_Config_FullDBPath
-func SKY_cli_Config_FullDBPath(_c *C.Config, _arg0 *C.GoString_) (____error_code uint32) {
+func SKY_cli_Config_FullDBPath(_c *C.cli__Config, _arg0 *C.GoString_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -52,9 +52,9 @@ func SKY_cli_Config_FullDBPath(_c *C.Config, _arg0 *C.GoString_) (____error_code
 	copyString(__arg0, _arg0)
 	return
 }
-
+/*
 // export SKY_cli_NewApp
-func SKY_cli_NewApp(_cfg *C.Config, _arg1 *C.App) (____error_code uint32) {
+func SKY_cli_NewApp(_cfg *C.cli__Config, _arg1 *C.App) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -89,7 +89,7 @@ func SKY_cli_RPCClientFromContext(_c *C.Context, _arg1 *C.Client) (____error_cod
 	__arg1 := cli.RPCClientFromContext(c)
 	return
 }
-
+ 
 // export SKY_cli_ConfigFromContext
 func SKY_cli_ConfigFromContext(_c *C.Context, _arg1 *C.Config) (____error_code uint32) {
 	____error_code = 0
@@ -99,4 +99,4 @@ func SKY_cli_ConfigFromContext(_c *C.Context, _arg1 *C.Config) (____error_code u
 	__arg1 := cli.ConfigFromContext(c)
 	copyToBuffer(reflect.ValueOf(__arg1[:]), unsafe.Pointer(_arg1), uint(SizeofConfig))
 	return
-}
+}*/

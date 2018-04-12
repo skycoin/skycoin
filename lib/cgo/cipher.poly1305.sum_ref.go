@@ -17,9 +17,6 @@ import "C"
 // export SKY_poly1305_Sum
 func SKY_poly1305_Sum(_out *[]byte, _msg *C.GoSlice_, _key *[]byte) (____error_code uint32) {
 	____error_code = 0
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
 	out := *(*[]byte)(unsafe.Pointer(_out))
 	msg := *(*[]byte)(unsafe.Pointer(_msg))
 	key := *(*[]byte)(unsafe.Pointer(_key))

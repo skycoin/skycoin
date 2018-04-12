@@ -1,1 +1,1 @@
-typedef GoString_ Base58;
+typedef GoString_ base58__Base58;

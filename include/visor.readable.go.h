@@ -4,19 +4,19 @@ typedef struct{
     GoUint64_ Height;
     GoUint64_ BlockSeq;
     bool Unknown;
-} TransactionStatus;
+} visor__TransactionStatus;
 typedef struct{
     GoString_ Hash;
     GoString_ Address;
     GoString_ Coins;
     GoUint64_ Hours;
-} ReadableTransactionOutput;
+} visor__ReadableTransactionOutput;
 typedef struct{
     GoString_ Hash;
     GoString_ Address;
     GoString_ Coins;
     GoUint64_ Hours;
-} ReadableTransactionInput;
+} visor__ReadableTransactionInput;
 typedef struct{
     GoString_ Hash;
     GoUint64_ Time;
@@ -26,18 +26,18 @@ typedef struct{
     GoString_ Coins;
     GoUint64_ Hours;
     GoUint64_ CalculatedHours;
-} ReadableOutput;
-typedef GoSlice_ ReadableOutputs;
+} visor__ReadableOutput;
+typedef GoSlice_  visor__ReadableOutputs;
 typedef struct{
     GoUint32_ Length;
     GoUint8_ Type;
     GoString_ Hash;
     GoString_ InnerHash;
     GoUint64_ Timestamp;
-    GoSlice_ Sigs;
-    GoSlice_ In;
-    GoSlice_ Out;
-} ReadableTransaction;
+    GoSlice_  Sigs;
+    GoSlice_  In;
+    GoSlice_  Out;
+} visor__ReadableTransaction;
 typedef struct{
     GoUint64_ BkSeq;
     GoString_ BlockHash;
@@ -46,35 +46,40 @@ typedef struct{
     GoUint64_ Fee;
     GoUint32_ Version;
     GoString_ BodyHash;
-} ReadableBlockHeader;
+} visor__ReadableBlockHeader;
 typedef struct{
-    GoSlice_ Transactions;
-} ReadableBlockBody;
+    GoSlice_  Transactions;
+} visor__ReadableBlockBody;
 typedef struct{
-    ReadableBlockHeader Head;
-    ReadableBlockBody Body;
-} ReadableBlock;
+    visor__ReadableBlockHeader Head;
+    visor__ReadableBlockBody Body;
+} visor__ReadableBlock;
 typedef struct{
     GoString_ Hash;
     GoString_ SourceTransaction;
     GoString_ Address;
     GoString_ Coins;
     GoUint64_ Hours;
-} TransactionOutputJSON;
+} visor__TransactionOutputJSON;
 typedef struct{
     GoString_ Hash;
     GoString_ InnerHash;
-    GoSlice_ Sigs;
-    GoSlice_ In;
-    GoSlice_ Out;
-} TransactionJSON;
+    GoSlice_  Sigs;
+    GoSlice_  In;
+    GoSlice_  Out;
+} visor__TransactionJSON;
 typedef struct{
-    ReadableBlockHeader Head;
+    visor__ReadableBlockHeader Head;
     GoUint64_ Unspents;
     GoUint64_ Unconfirmed;
-} BlockchainMetadata;
+} visor__BlockchainMetadata;
 typedef struct{
-    ReadableOutputs HeadOutputs;
-    ReadableOutputs OutgoingOutputs;
-    ReadableOutputs IncomingOutputs;
-} ReadableOutputSet;
+    visor__ReadableOutputs HeadOutputs;
+    visor__ReadableOutputs OutgoingOutputs;
+    visor__ReadableOutputs IncomingOutputs;
+} visor__ReadableOutputSet;
+typedef struct{
+    coin__Transaction Txn;
+    visor__TransactionStatus Status;
+    GoUint64_ Time;
+} visor__Transaction;

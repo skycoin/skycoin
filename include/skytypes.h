@@ -35,6 +35,11 @@ typedef struct { void *data; GoInt_ len; GoInt_ cap; } GoSlice_;
 
 #include "skytypes.gen.h"
 
+typedef struct {
+	GoMap_ Meta;
+	GoSlice_ Entries;
+} Wallet;
+
 // TODO: Remove declarations below since they should generated and included by skytypes.gen.h
 
 /*
@@ -77,10 +82,7 @@ typedef struct {
 	GoSlice_ Out;
 } Transaction;
 
-typedef struct {
-	GoMap_ Meta;
-	GoSlice_ Entries;
-} Wallet;
+
 
 typedef struct {
 	Address Address;

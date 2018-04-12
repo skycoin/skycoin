@@ -1,1 +1,1 @@
-typedef GoMap_ Wallets;
+typedef GoMap_ wallet__Wallets;

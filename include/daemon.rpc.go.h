@@ -7,17 +7,17 @@ typedef struct{
     bool Introduced;
     GoUint32_ Mirror;
     GoUint16_ ListenPort;
-} Connection;
+} daemon__Connection;
 typedef struct{
-    GoSlice_ Connections;
-} Connections;
+    GoSlice_  Connections;
+} daemon__Connections;
 typedef struct{
     GoUint64_ Current;
     GoUint64_ Highest;
-    GoSlice_ Peers;
-} BlockchainProgress;
+    GoSlice_  Peers;
+} daemon__BlockchainProgress;
 typedef struct{
-    GoSlice_ Txids;
-} ResendResult;
+    GoSlice_  Txids;
+} daemon__ResendResult;
 typedef struct{
-} RPC;
+} daemon__RPC;

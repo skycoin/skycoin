@@ -1,2 +1,2 @@
-typedef GoInterface_ cryptor;
-typedef GoString_ CryptoType;
+typedef GoInterface_ wallet__cryptor;
+typedef GoString_ wallet__CryptoType;

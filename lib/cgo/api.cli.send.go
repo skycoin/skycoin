@@ -2,6 +2,7 @@ package main
 
 import (
 	cli "github.com/skycoin/skycoin/src/api/cli"
+	webrpc "github.com/skycoin/skycoin/src/api/webrpc"
 	"unsafe"
 )
 
@@ -15,11 +16,9 @@ import (
 import "C"
 
 // export SKY_cli_SendFromWallet
-func SKY_cli_SendFromWallet(_c *C.Client, _walletFile, _chgAddr string, _toAddrs *C.GoSlice_, _arg3 *C.GoString_) (____error_code uint32) {
+func SKY_cli_SendFromWallet(_c *C.webrpc__Client, _walletFile, _chgAddr string, _toAddrs *C.GoSlice_, _arg3 *C.GoString_) (____error_code uint32) {
 	____error_code = 0
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
+	c := (*webrpc.Client)(unsafe.Pointer(_c))
 	walletFile := _walletFile
 	chgAddr := _chgAddr
 	toAddrs := *(*[]SendAmount)(unsafe.Pointer(_toAddrs))
@@ -32,11 +31,9 @@ func SKY_cli_SendFromWallet(_c *C.Client, _walletFile, _chgAddr string, _toAddrs
 }
 
 // export SKY_cli_SendFromAddress
-func SKY_cli_SendFromAddress(_c *C.Client, _addr, _walletFile, _chgAddr string, _toAddrs *C.GoSlice_, _arg3 *C.GoString_) (____error_code uint32) {
+func SKY_cli_SendFromAddress(_c *C.webrpc__Client, _addr, _walletFile, _chgAddr string, _toAddrs *C.GoSlice_, _arg3 *C.GoString_) (____error_code uint32) {
 	____error_code = 0
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
+	c := (*webrpc.Client)(unsafe.Pointer(_c))
 	addr := _addr
 	walletFile := _walletFile
 	chgAddr := _chgAddr

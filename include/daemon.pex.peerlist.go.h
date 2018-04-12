@@ -1,8 +1,8 @@
-typedef GoSlice_ Peers;
+typedef GoSlice_  pex__Peers;
 typedef struct{
     GoMap_ peers;
-} peerlist;
-typedef Handle Filter;
+} pex__peerlist;
+typedef Handle pex__Filter;
 typedef struct{
     GoString_ Addr;
     GoInterface_ LastSeen;
@@ -10,4 +10,4 @@ typedef struct{
     bool Trusted;
     bool * HasIncomePort;
     bool * HasIncomingPort;
-} PeerJSON;
+} pex__PeerJSON;

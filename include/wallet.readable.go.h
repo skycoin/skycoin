@@ -2,9 +2,9 @@ typedef struct{
     GoString_ Address;
     GoString_ Public;
     GoString_ Secret;
-} ReadableEntry;
-typedef GoSlice_ ReadableEntries;
+} wallet__ReadableEntry;
+typedef GoSlice_  wallet__ReadableEntries;
 typedef struct{
     GoMap_ Meta;
-    ReadableEntries Entries;
-} ReadableWallet;
+    wallet__ReadableEntries Entries;
+} wallet__ReadableWallet;

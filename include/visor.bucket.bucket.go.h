@@ -1,2 +1,2 @@
-typedef Handle Rollback;
-typedef Handle TxHandler;
+typedef Handle bucket__Rollback;
+typedef Handle bucket__TxHandler;

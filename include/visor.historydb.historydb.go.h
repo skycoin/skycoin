@@ -1,1 +1,1 @@
-typedef GoInterface_ Blockchainer;
+typedef GoInterface_ historydb__Blockchainer;

@@ -1,6 +1,11 @@
 typedef struct{
-    GoSlice_ Blocks;
-} ReadableBlocks;
+    GoSlice_  Blocks;
+} visor__ReadableBlocks;
 typedef struct{
-    GoSlice_ Txns;
-} TransactionResults;
+    GoSlice_  Txns;
+} visor__TransactionResults;
+typedef struct{
+    visor__TransactionStatus Status;
+    GoUint64_ Time;
+    visor__ReadableTransaction Transaction;
+} visor__TransactionResult;

@@ -1,2 +1,2 @@
 typedef struct{
-} Sha256Xor;
+} encrypt__Sha256Xor;

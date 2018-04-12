@@ -1,1 +1,1 @@
-typedef Handle TestValuePredicate;
+typedef Handle testutil__TestValuePredicate;

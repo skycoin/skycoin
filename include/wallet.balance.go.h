@@ -1,8 +1,8 @@
 typedef struct{
     GoUint64_ Coins;
     GoUint64_ Hours;
-} Balance;
+} wallet__Balance;
 typedef struct{
-    Balance Confirmed;
-    Balance Predicted;
-} BalancePair;
+    wallet__Balance Confirmed;
+    wallet__Balance Predicted;
+} wallet__BalancePair;

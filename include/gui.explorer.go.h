@@ -4,6 +4,20 @@ typedef struct{
     GoString_ MaxSupply;
     GoString_ CurrentCoinHourSupply;
     GoString_ TotalCoinHourSupply;
-    GoSlice_ UnlockedAddresses;
-    GoSlice_ LockedAddresses;
-} CoinSupply;
+    GoSlice_  UnlockedAddresses;
+    GoSlice_  LockedAddresses;
+} gui__CoinSupply;
+typedef struct{
+    visor__Richlist Richlist;
+} gui__Richlist;
+typedef struct{
+    visor__TransactionStatus Status;
+    GoUint32_ Length;
+    GoUint8_ Type;
+    GoString_ Hash;
+    GoString_ InnerHash;
+    GoUint64_ Timestamp;
+    GoSlice_  Sigs;
+    GoSlice_  In;
+    GoSlice_  Out;
+} gui__ReadableTransaction;

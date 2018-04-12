@@ -1,1 +1,1 @@
-typedef GoInterface_ Gatewayer;
+typedef GoInterface_ webrpc__Gatewayer;

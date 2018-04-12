@@ -1,1 +1,1 @@
-typedef GoInterface_ ConnectionManagerInterface;
+typedef GoInterface_ consensus__ConnectionManagerInterface;

@@ -1,17 +1,35 @@
 typedef struct{
-    GoSlice_ Messages;
-} MessagesConfig;
+    GoSlice_  Messages;
+} daemon__MessagesConfig;
 typedef struct{
-    MessagesConfig Config;
+    daemon__MessagesConfig Config;
     GoUint32_ Mirror;
-} Messages;
+} daemon__Messages;
 typedef struct{
     GoUint32_ IP;
     GoUint16_ Port;
-} IPAddr;
-typedef GoInterface_ AsyncMessage;
+} daemon__IPAddr;
+typedef GoInterface_ daemon__AsyncMessage;
 typedef struct{
     GoString_ addr;
-} GetPeersMessage;
+} daemon__GetPeersMessage;
 typedef struct{
-} PongMessage;
+} daemon__PongMessage;
+typedef struct{
+    gnet__MessagePrefix Prefix;
+    GoInterface_ Message;
+} daemon__MessageConfig;
+typedef struct{
+    GoSlice_  Peers;
+    gnet__MessageContext * c;
+} daemon__GivePeersMessage;
+typedef struct{
+    GoUint32_ Mirror;
+    GoUint16_ Port;
+    GoInt32_ Version;
+    gnet__MessageContext * c;
+    bool valid;
+} daemon__IntroductionMessage;
+typedef struct{
+    gnet__MessageContext * c;
+} daemon__PingMessage;

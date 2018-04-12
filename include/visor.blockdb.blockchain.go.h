@@ -1,11 +1,8 @@
 typedef struct{
     GoUint64_ Seq;
     GoString_ Hash;
-} ErrMissingSignature;
-typedef struct{
-;
-} chainMeta;
-typedef GoInterface_ BlockTree;
-typedef GoInterface_ BlockSigs;
-typedef GoInterface_ UnspentPool;
-typedef Handle Walker;
+} blockdb__ErrMissingSignature;
+typedef GoInterface_ blockdb__BlockTree;
+typedef GoInterface_ blockdb__BlockSigs;
+typedef GoInterface_ blockdb__UnspentPool;
+typedef Handle blockdb__Walker;

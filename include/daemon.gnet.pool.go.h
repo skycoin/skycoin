@@ -1,2 +1,3 @@
-typedef Handle DisconnectCallback;
-typedef Handle ConnectCallback;
+typedef GoInt32_ gnet__DisconnectReason;
+typedef Handle gnet__DisconnectCallback;
+typedef Handle gnet__ConnectCallback;

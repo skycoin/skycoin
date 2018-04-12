@@ -1,1 +1,1 @@
-typedef GoMap_ secrets;
+typedef GoMap_ wallet__secrets;

@@ -389,7 +389,7 @@ Performs these actions before releasing:
     * Load a test wallet with nonzero balance from seed to confirm wallet loading works
     * Send coins to another wallet to confirm spending works
     * Restart the client, confirm that it reloads properly
-* `./run.sh -disable-wallet-api` and check that the wallet does not load, and `/wallets` and `/spend` fail
+* `./run.sh -enable-wallet-api=false` and check that the wallet does not load, and `/wallets` and `/spend` fail
 
 #### Creating release builds
 

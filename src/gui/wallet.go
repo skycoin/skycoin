@@ -532,7 +532,7 @@ func newWalletSeed(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if gateway.IsWalletAPIDisabled() {
+		if !gateway.IsWalletAPIEnabled() {
 			wh.Error403(w)
 			return
 		}

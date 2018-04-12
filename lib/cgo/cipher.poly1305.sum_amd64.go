@@ -2,7 +2,6 @@ package main
 
 import (
 	poly1305 "github.com/skycoin/skycoin/src/cipher/poly1305"
-	"unsafe"
 )
 
 /*

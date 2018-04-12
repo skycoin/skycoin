@@ -75,6 +75,7 @@ func DropletPrecisionCheck(amount uint64) error {
 type BuildInfo struct {
 	Version string `json:"version"` // version number
 	Commit  string `json:"commit"`  // git commit id
+	Branch  string `json:"branch"`  // git branch name
 }
 
 // Config configuration parameters for the Visor
@@ -240,9 +241,11 @@ type Visor struct {
 	Unconfirmed UnconfirmedTxnPooler
 	Blockchain  Blockchainer
 	Wallets     *wallet.Service
-	history     historyer
-	bcParser    *BlockchainParser
-	db          *bolt.DB
+	StartedAt   time.Time
+
+	history  historyer
+	bcParser *BlockchainParser
+	db       *bolt.DB
 }
 
 // NewVisor creates a Visor for managing the blockchain database
@@ -291,6 +294,7 @@ func NewVisor(c Config, db *bolt.DB) (*Visor, error) {
 		history:     history,
 		bcParser:    bp,
 		Wallets:     wltServ,
+		StartedAt:   time.Now(),
 	}
 
 	return v, nil
@@ -549,7 +553,7 @@ func (vs *Visor) HeadBkSeq() uint64 {
 }
 
 // GetBlockchainMetadata returns descriptive Blockchain information
-func (vs *Visor) GetBlockchainMetadata() BlockchainMetadata {
+func (vs *Visor) GetBlockchainMetadata() (*BlockchainMetadata, error) {
 	return NewBlockchainMetadata(vs)
 }
 

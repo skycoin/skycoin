@@ -35,7 +35,7 @@ type Gatewayer interface {
 	GetBuildInfo() visor.BuildInfo
 	GetUnspentOutputs(filters ...daemon.OutputsFilter) (*visor.ReadableOutputSet, error)
 	GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair, error)
-	GetBlockchainMetadata() *visor.BlockchainMetadata
+	GetBlockchainMetadata() (*visor.BlockchainMetadata, error)
 	GetBlockchainProgress() *daemon.BlockchainProgress
 	GetConnection(addr string) *daemon.Connection
 	GetConnections() *daemon.Connections
@@ -52,5 +52,6 @@ type Gatewayer interface {
 	GetAddressTxns(a cipher.Address) (*visor.TransactionResults, error)
 	GetRichlist(includeDistribution bool) (visor.Richlist, error)
 	GetAddressCount() (uint64, error)
+	GetHealth() (*daemon.Health, error)
 	UnloadWallet(id string) error
 }

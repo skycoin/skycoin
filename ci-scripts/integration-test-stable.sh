@@ -20,6 +20,10 @@ RUN_TESTS=""
 # run wallet tests
 TEST_WALLET=""
 
+COMMIT=$(git rev-parse HEAD)
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+GOLDFLAGS="-X main.Commit=${COMMIT} -X main.Branch=${BRANCH}"
+
 usage () {
   echo "Usage: $SCRIPT"
   echo "Optional command line arguments"
@@ -57,7 +61,7 @@ fi
 # Compile the skycoin node
 # We can't use "go run" because this creates two processes which doesn't allow us to kill it at the end
 echo "compiling skycoin"
-go build -o "$BINARY" cmd/skycoin/skycoin.go
+go build -o "$BINARY" -ldflags "${GOLDFLAGS}" cmd/skycoin/skycoin.go
 
 # Run skycoin node with pinned blockchain database
 echo "starting skycoin node in background with http listener on $HOST"

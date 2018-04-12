@@ -8,6 +8,8 @@ A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](h
 
 - [CSRF](#csrf)
     - [Get current csrf token](#get-current-csrf-token)
+- [General system checks](#general-system-checks)
+    - [Health check](#health-check)
 - [Simple query APIs](#simple-query-apis)
     - [Get node version info](#get-node-version-info)
     - [Get balance of addresses](#get-balance-of-addresses)
@@ -86,6 +88,49 @@ Result:
 ```json
 {
     "csrf_token": "klSgXoMOFTvEnt8KptBvHjhlFnW0OIkzyFVn4i8frDvIus9iLsFukqA9sM9Rxf3pLZHRLr82vBQxTq50vbYA8g"
+}
+```
+
+## General system checks
+
+### Health check
+
+```
+URI: /health
+Method: GET
+```
+
+Example:
+
+```sh
+curl http://127.0.0.1:6420/health
+```
+
+Response:
+
+```json
+{
+    "blockchain": {
+        "head": {
+            "seq": 21175,
+            "block_hash": "8a3e0aac619551ae009cfb28c2b36bb1300925f74da770d1512072314f6a4c80",
+            "previous_block_hash": "001eb7911b6a6ab7c75feb88726dd2bc8b87133aebc82201c4404537eb74f7ac",
+            "timestamp": 1523168686,
+            "fee": 2,
+            "version": 0,
+            "tx_body_hash": "36be8d70d1e9f70b340ea7ecf0b247c27086bad10568044c1196fe150f6cea1b"
+        },
+        "unspents": 14750,
+        "unconfirmed": 0,
+        "time_since_last_block": "12m6s"
+    },
+    "version": {
+        "version": "0.22.0",
+        "commit": "f61b4319c2f146a5ad86f7cbda26a1ba6a09998d",
+        "branch": "develop"
+    },
+    "open_connections": 30,
+    "uptime": "13.686460853s"
 }
 ```
 

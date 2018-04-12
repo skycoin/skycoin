@@ -1845,7 +1845,7 @@ func TestLiveWalletSpend(t *testing.T) {
 		return
 	}
 
-	doLiveEnvCheck(t)
+	requireWalletEnv(t)
 
 	if !doWallet(t) {
 		return
@@ -2146,7 +2146,7 @@ func TestLiveWalletbalance(t *testing.T) {
 		return
 	}
 
-	doLiveEnvCheck(t)
+	requireWalletEnv(t)
 
 	c := gui.NewClient(nodeAddress())
 	_, walletName, _ := getWalletFromEnv(t, c)
@@ -2195,7 +2195,7 @@ func TestLiveWalletTransactions(t *testing.T) {
 		return
 	}
 
-	doLiveEnvCheck(t)
+	requireWalletEnv(t)
 
 	c := gui.NewClient(nodeAddress())
 	w, _, _, _ := prepareAndCheckWallet(t, c, 1e6, 1)
@@ -2430,7 +2430,7 @@ func getWalletFromEnv(t *testing.T, c *gui.Client) (string, string, string) {
 	return walletDir, walletName, walletPassword
 }
 
-func doLiveEnvCheck(t *testing.T) {
+func requireWalletEnv(t *testing.T) {
 	t.Helper()
 
 	walletName := os.Getenv("WALLET_NAME")
@@ -2705,4 +2705,49 @@ func TestDisableWalletApi(t *testing.T) {
 	// Confirms that the wallet directory does not exist
 	_, err := os.Stat(walletDir)
 	require.True(t, os.IsNotExist(err))
+}
+
+func checkHealthResponse(t *testing.T, r *gui.HealthResponse) {
+	require.NotEmpty(t, r.BlockchainMetadata.Unspents)
+	require.NotEmpty(t, r.BlockchainMetadata.Head.BkSeq)
+	require.NotEmpty(t, r.BlockchainMetadata.Head.Time)
+	require.NotEmpty(t, r.Version.Version)
+	require.True(t, r.Uptime.Duration > time.Duration(0))
+	require.True(t, r.BlockchainMetadata.TimeSinceLastBlock.Duration >= time.Duration(0))
+}
+
+func TestStableHealth(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	r, err := c.Health()
+	require.NoError(t, err)
+
+	checkHealthResponse(t, r)
+
+	require.Equal(t, 0, r.OpenConnections)
+
+	// The stable node is always run with the commit and branch ldflags, so they should appear
+	require.NotEmpty(t, r.Version.Commit)
+	require.NotEmpty(t, r.Version.Branch)
+}
+
+func TestLiveHealth(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	r, err := c.Health()
+	require.NoError(t, err)
+
+	checkHealthResponse(t, r)
+
+	require.NotEqual(t, 0, r.OpenConnections)
+
+	// The live node is not necessarily run with the commit and branch ldflags, so don't check them
 }

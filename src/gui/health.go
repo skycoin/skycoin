@@ -20,6 +20,7 @@ type HealthResponse struct {
 	Version            visor.BuildInfo    `json:"version"`
 	OpenConnections    int                `json:"open_connections"`
 	Uptime             wh.Duration        `json:"uptime"`
+	ConnectionsHealth  ConnectionsHealth  `json:"ConnectionStatus"`
 }
 
 // Returns node health data.
@@ -41,15 +42,17 @@ func healthCheck(gateway Gatewayer) http.HandlerFunc {
 
 		elapsedBlockTime := time.Now().UTC().Unix() - int64(health.BlockchainMetadata.Head.Time)
 		timeSinceLastBlock := time.Second * time.Duration(elapsedBlockTime)
+		defaultstatus := defaultStatus(gateway)
 
 		wh.SendJSONOr500(logger, w, HealthResponse{
 			BlockchainMetadata: BlockchainMetadata{
 				BlockchainMetadata: health.BlockchainMetadata,
 				TimeSinceLastBlock: wh.FromDuration(timeSinceLastBlock),
 			},
-			Version:         health.Version,
-			OpenConnections: health.OpenConnections,
-			Uptime:          wh.FromDuration(health.Uptime),
+			Version:           health.Version,
+			OpenConnections:   health.OpenConnections,
+			Uptime:            wh.FromDuration(health.Uptime),
+			ConnectionsHealth: defaultstatus,
 		})
 	}
 }

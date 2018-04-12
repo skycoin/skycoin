@@ -3,6 +3,7 @@ package pex
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
 	"os"
 	"time"
@@ -41,18 +42,25 @@ type Filter func(peer Peer) bool
 // return nil if the file doesn't exist
 func loadPeersFromFile(path string) (map[string]*Peer, error) {
 	// check if the file does exist
+
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return nil, nil
 	}
 
 	peersJSON := make(map[string]PeerJSON)
-	if err := file.LoadJSON(path, &peersJSON); err != nil {
+	err := file.LoadJSON(path, &peersJSON)
+
+	if err == io.EOF {
+		logger.Error(" %s corrupt or empty file, rewriting file", path)
+		return nil, nil
+
+	} else if err != nil {
 		return nil, err
 	}
-
 	peers := make(map[string]*Peer, len(peersJSON))
 	for addr, peerJSON := range peersJSON {
 		a, err := validateAddress(addr, true)
+
 		if err != nil {
 			logger.Errorf("Invalid address in peers JSON file %s: %v", addr, err)
 			continue
@@ -71,6 +79,8 @@ func loadPeersFromFile(path string) (map[string]*Peer, error) {
 
 		peers[a] = peer
 	}
+
+	logger.Info("Return PeersList")
 
 	return peers, nil
 }

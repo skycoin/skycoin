@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Removed
 
 - Remove dependency [op/go-logging](https://github.com/op/go-logging)
+- Remove `seed`, `lastSeed`, `secrets` and `secret_key` in address entries from wallet apis response
 
 ## [0.22.0] - 2018-03-20
 

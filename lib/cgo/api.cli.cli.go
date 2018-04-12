@@ -16,90 +16,123 @@ import (
 import "C"
 
 // export SKY_cli_LoadConfig
-func SKY_cli_LoadConfig(_arg0 *C.cli__Config) (____error_code uint32) {
+func SKY_cli_LoadConfig(_config *C.Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	__arg0, ____return_err := cli.LoadConfig()
+	config, ____return_err := cli.LoadConfig()
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		*_arg0 = *(*C.cli__Config)(unsafe.Pointer(&__arg0))
+		*_config = (C.Handle)(openHandle(config))
 	}
 	return
 }
 
 // export SKY_cli_Config_FullWalletPath
-func SKY_cli_Config_FullWalletPath(_c *C.cli__Config, _arg0 *C.GoString_) (____error_code uint32) {
-	____error_code = 0
+func SKY_cli_Config_FullWalletPath(_c *C.Handle, _path *C.GoString_) (____error_code uint32) {
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	c := *(*cli.Config)(unsafe.Pointer(_c))
-	__arg0 := c.FullWalletPath()
-	copyString(__arg0, _arg0)
+	obj, ok := lookupHandleObj(Handle(*_c))
+	____error_code = SKY_ERROR
+	if ok {
+		if config, isConfig := (obj).(*cli.Config); isConfig {
+			path := config.FullWalletPath()
+			copyString(path, _path)
+			____error_code = SKY_OK
+		}
+	} 
 	return
 }
 
 // export SKY_cli_Config_FullDBPath
-func SKY_cli_Config_FullDBPath(_c *C.cli__Config, _arg0 *C.GoString_) (____error_code uint32) {
-	____error_code = 0
+func SKY_cli_Config_FullDBPath(_c *C.Handle, _path *C.GoString_) (____error_code uint32) {
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	c := *(*cli.Config)(unsafe.Pointer(_c))
-	__arg0 := c.FullDBPath()
-	copyString(__arg0, _arg0)
+	obj, ok := lookupHandleObj(Handle(*_c))
+	____error_code = SKY_ERROR
+	if ok {
+		if config, isConfig := (obj).(*cli.Config); isConfig {
+			path := config.FullDBPath()
+			copyString(path, _path)
+			____error_code = SKY_OK
+		}
+	} 
 	return
 }
 
 // export SKY_cli_NewApp
-func SKY_cli_NewApp(_cfg *C.cli__Config, _arg1 *C.App) (____error_code uint32) {
-	____error_code = 0
+func SKY_cli_NewApp(_cfg *C.Handle, _app *C.Handle) (____error_code uint32) {
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	cfg := *(*cli.Config)(unsafe.Pointer(_cfg))
-	__arg1 := cli.NewApp(cfg)
-	*_arg1 = *(*C.App)(unsafe.Pointer(&__arg1))
+	obj, ok := lookupHandleObj(Handle(*_cfg))
+	____error_code = SKY_ERROR
+	if ok {
+		if config, isConfig := (obj).(*cli.Config); isConfig {
+			app := cli.NewApp(*config)
+			*_app = (C.Handle)(openHandle( app ))
+			____error_code = SKY_OK
+		}
+	} 
 	return
 }
 
 // export SKY_cli_App_Run
-func SKY_cli_App_Run(_app *C.App, _args *C.GoSlice_) (____error_code uint32) {
+func SKY_cli_App_Run(_app *C.Handle, _args *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	app := (*cli.App)(unsafe.Pointer(_app))
-	args := *(*[]string)(unsafe.Pointer(_args))
-	____return_err := app.Run(args)
-	____error_code = libErrorCode(____return_err)
-	if ____return_err == nil {
+	obj, ok := lookupHandleObj(Handle(*_app))
+	if ok {
+		if app, isApp := (obj).(*cli.App); isApp {
+			args := *(*[]string)(unsafe.Pointer(_args))
+			____return_err := app.Run(args)
+			____error_code = libErrorCode(____return_err)
+		} else {
+			____error_code = SKY_ERROR
+		}
+	} else {
+		____error_code = SKY_ERROR
 	}
 	return
 }
 
 // export SKY_cli_RPCClientFromContext
-func SKY_cli_RPCClientFromContext(_c *C.Context, _arg1 *C.Client) (____error_code uint32) {
+func SKY_cli_RPCClientFromContext(_c *C.Handle, _client *C.Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	c := (*gcli.Context)(unsafe.Pointer(_c))
-	__arg1 := cli.RPCClientFromContext(c)
-	*_arg1 = *(*C.Client)(unsafe.Pointer(&__arg1))
+	obj, ok := lookupHandleObj(Handle(*_c))
+	____error_code = SKY_ERROR
+	if ok {
+		if context, isContext := (obj).(*gcli.Context); isContext {
+			client := cli.RPCClientFromContext(context)
+			*_client = (C.Handle)(openHandle( client ))
+			____error_code = SKY_OK
+		}
+	} 
 	return
 }
  
 // export SKY_cli_ConfigFromContext
-func SKY_cli_ConfigFromContext(_c *C.Context, _arg1 *C.Config) (____error_code uint32) {
+func SKY_cli_ConfigFromContext(_c *C.Handle, _config *C.Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	c := (*gcli.Context)(unsafe.Pointer(_c))
-	__arg1 := cli.ConfigFromContext(c)
-	*_arg1 = *(*C.Config)(unsafe.Pointer(&__arg1))
+	obj, ok := lookupHandleObj(Handle(*_c))
+	____error_code = SKY_ERROR
+	if ok {
+		if context, isContext := (obj).(*gcli.Context); isContext {
+			config := cli.ConfigFromContext(context)
+			*_config = (C.Handle)(openHandle( config ))
+			____error_code = SKY_OK
+		}
+	} 
 	return
 }

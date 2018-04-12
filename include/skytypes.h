@@ -134,26 +134,11 @@ typedef struct {
 	Number b;
 	
 } Signature;
-
-typedef struct {	
-	//TODO: stdevEclipse Define App
-	Number a;
-} App;
-
-typedef struct {	
-	//TODO: stdevEclipse Define Client
-	Number a;
-} Client;
-
-typedef struct {	
-	//TODO: stdevEclipse Define Config
-	Number a;
-} Config;
-
+/*
 typedef struct {	
 	//TODO: stdevEclipse Define Context
 	Number a;
-} Context;
+} Context;*/
 
 #include "skytypes.gen.h"
 /**

@@ -1037,8 +1037,8 @@ func (vs Visor) GetAddrUxOuts(address cipher.Address) ([]*historydb.UxOut, error
 }
 
 // CreateWallet creates wallet and scans ahead N addresses to look for a none-empty balance
-func (vs *Visor) CreateWallet(wltName string, opts wallet.Options, scanN uint64) (*wallet.Wallet, error) {
-	return vs.Wallets.CreateWallet(wltName, opts, scanN, vs)
+func (vs *Visor) CreateWallet(wltName string, opts wallet.Options) (*wallet.Wallet, error) {
+	return vs.Wallets.CreateWallet(wltName, opts, vs)
 }
 
 // GetBalanceOfAddrs returns balance pairs of given addreses

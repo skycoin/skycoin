@@ -538,7 +538,7 @@ func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest ciphe
 }
 
 // CreateWallet creates wallet
-func (gw *Gateway) CreateWallet(wltName string, options wallet.Options, scanN uint64) (*wallet.Wallet, error) {
+func (gw *Gateway) CreateWallet(wltName string, options wallet.Options) (*wallet.Wallet, error) {
 	if !gw.Config.EnableWalletAPI {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
@@ -546,7 +546,7 @@ func (gw *Gateway) CreateWallet(wltName string, options wallet.Options, scanN ui
 	var wlt *wallet.Wallet
 	var err error
 	gw.strand("CreateWallet", func() {
-		wlt, err = gw.v.CreateWallet(wltName, options, scanN)
+		wlt, err = gw.v.CreateWallet(wltName, options)
 	})
 	return wlt, err
 }

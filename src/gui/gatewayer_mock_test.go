@@ -28,9 +28,9 @@ func NewGatewayerMock() *GatewayerMock {
 }
 
 // CreateWallet mocked method
-func (m *GatewayerMock) CreateWallet(p0 string, p1 wallet.Options, p2 uint64) (*wallet.Wallet, error) {
+func (m *GatewayerMock) CreateWallet(p0 string, p1 wallet.Options) (*wallet.Wallet, error) {
 
-	ret := m.Called(p0, p1, p2)
+	ret := m.Called(p0, p1)
 
 	var r0 *wallet.Wallet
 	switch res := ret.Get(0).(type) {

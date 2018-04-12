@@ -371,7 +371,7 @@ func TestGateway_CreateWallet(t *testing.T) {
 					EnableWalletAPI: tc.enableWalletAPI,
 				},
 			}
-			res, err := gw.CreateWallet(tc.wltName, tc.options, 0)
+			res, err := gw.CreateWallet(tc.wltName, tc.options)
 			if tc.err != nil {
 				require.Equal(t, tc.err, err)
 				return

@@ -66,7 +66,6 @@ typedef float _Complex GoComplex64_;
 typedef double _Complex GoComplex128_;
 typedef short bool;
 typedef GoUint32_ error;
-typedef GoUint32_ Handle;
 
 /*
   static assertion to make sure the file is being used on architecture
@@ -90,22 +89,14 @@ typedef void *GoMap_;
  * Instances of Go `chan` channel types.
  */
 typedef void *GoChan_;
-<<<<<<< HEAD
-typedef struct { void *t; void *v; } GoInterface_;
-typedef struct { void *data; GoInt_ len; GoInt_ cap; } GoSlice_;
 
-#include "skytypes.gen.h"
+/**
+ * Memory handles returned back to the caller and manipulated
+ * internally by API functions. Usually used to avoid type dependencies
+ * with internal implementation types.
+ */
+typedef GoInt64_ Handle;
 
-typedef struct {
-	GoMap_ Meta;
-	GoSlice_ Entries;
-} Wallet;
-
-// TODO: Remove declarations below since they should generated and included by skytypes.gen.h
-
-/*
-
-=======
 /**
  * Instances of Go interface types.
  */
@@ -126,124 +117,20 @@ typedef struct {
                 ///< size.
 } GoSlice_;
 
-/**
- * TODO: Document
- */
->>>>>>> remotes/github/olemis_t992_libskycoin_tests
-typedef unsigned char Ripemd160[20];
+#include "skytypes.gen.h"
 
-/**
- * Addresses of SKY accounts
- */
-typedef struct {
-	unsigned char Version;  ///< Address version identifier.
-                          ///< Used to differentiate testnet
-                          ///< vs mainnet addresses, for instance.
-	Ripemd160 Key;          ///< Address hash identifier.
-} Address;
-
-/**
- * Public key, 33-bytes long.
- */
-typedef unsigned char PubKey[33];
-/**
- * Container type suitable for storing a variable number of
- * public keys.
- */
-typedef GoSlice_ PubKeySlice;
-/**
- * Secret key, 32 bytes long.
- */
-typedef unsigned char SecKey[32];
-/**
- * Integrity checksum, 4-bytes long.
- */
-typedef unsigned char Checksum[4];
-
-/**
- * Structure used to specify amounts transferred in a transaction.
- */
-typedef struct {
-	GoString_ Addr; ///< Sender / receipient address.
-	GoInt64_ Coins; ///< Amount transferred (e.g. measured in SKY)
-} SendAmount;
-
-/**
- * Memory handles returned back to the caller and manipulated
- * internally by API functions. Usually used to avoid type dependencies
- * with internal implementation types.
- */
-typedef GoInt64_ Handle;
-
-/**
- * Hash obtained using SHA256 algorithm, 32 bytes long.
- */
-typedef unsigned char SHA256[32];
-/**
- * Hash signed using a secret key, 65 bytes long.
- */
-typedef unsigned char Sig[65];
-
-/**
- * Skycoin transaction output.
- *
- * Instances are integral part of transactions included in blocks.
- */
-typedef struct {
-	Address Address;  ///< Receipient address.
-	GoInt64_ Coins;   ///< Amount sent to the receipient address.
-	GoInt64_ Hours;   ///< TODO: Document TransactionOutput.Hours
-} TransactionOutput;
-
-/**
- * Skycoin transaction.
- *
- * Instances of this struct are included in blocks.
- */
-typedef struct {
-	GoInt32_ Length;    ///< TODO: Document Transaction.Length
-	GoInt8_  Type;      ///< TODO: Document Transaction.Type
-	SHA256  InnerHash;  ///< TODO: Document Transaction.InnerHash
-
-	GoSlice_ Sigs;      ///< TODO: Document Transaction.Sigs
-	GoSlice_ In;        ///< TODO: Document Transaction.In
-	GoSlice_ Out;       ///< TODO: Document Transaction.Out
-} Transaction;
-
-<<<<<<< HEAD
-
-=======
 /**
  * Internal representation of a Skycoin wallet.
  */
 typedef struct {
-	GoMap_ Meta;        ///< TODO: Document Wallet.Meta
-	GoSlice_ Entries;   ///< TODO: Document Wallet.Entries
+	GoMap_ Meta;
+	GoSlice_ Entries;
 } Wallet;
->>>>>>> remotes/github/olemis_t992_libskycoin_tests
 
-/**
- * Wallet entry.
- */
-typedef struct {
-	Address Address;    ///< Wallet address.
-	PubKey  Public;     ///< Public key used to generate address.
-	SecKey  Secret;     ///< Secret key used to generate address.
-} Entry;
 
-/**
- * TODO: Document UxBalance
- */
-typedef struct {
-	SHA256   Hash;      ///< TODO: Document
-	GoInt64_ BkSeq;     ///< Block height corresponding to the
-                      ///< moment balance calculation is performed at.
-	Address  Address;   ///< Account holder address.
-	GoInt64_ Coins;     ///< Coins amount (e.g. in SKY).
-	GoInt64_ Hours;     ///< TODO: Document UxBalance.Hours
-} UxBalance;
 
-*/
+
+
 
 #endif
 

@@ -59,7 +59,7 @@ export class ApiService {
                 hours: null,
               };
             }),
-            encrypted: wallet.meta.encrypted && wallet.meta.encrypted === 'true',
+            encrypted: wallet.meta.encrypted,
           });
         });
         return wallets;
@@ -79,7 +79,7 @@ export class ApiService {
           coins: null,
           hours: null,
           addresses: response.entries.map(entry => ({ address: entry.address, coins: null, hours: null })),
-          encrypted: response.meta.encrypted && response.meta.encrypted === 'true',
+          encrypted: response.meta.encrypted,
         }));
   }
 

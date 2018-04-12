@@ -35,12 +35,19 @@ func getAddrUxOutsHandler(req Request, gateway Gatewayer) Response {
 			return makeErrorResponse(errCodeInvalidParams, fmt.Sprintf("%v", err))
 		}
 		results[i].Address = addr
-		uxouts, err := gateway.GetAddrUxOuts(a)
+		uxouts, err := gateway.GetAddrUxOuts([]cipher.Address{a})
 		if err != nil {
 			logger.Error(err)
 			return makeErrorResponse(errCodeInternalError, errMsgInternalError)
 		}
-		results[i].UxOuts = append(results[i].UxOuts, uxouts...)
+
+		//Convert slice UxOut to slice of UxOutJson
+		uxs := make([]*historydb.UxOutJSON, len(uxouts))
+		for i, ux := range uxouts {
+			uxs[i] = historydb.NewUxOutJSON(ux)
+		}
+
+		results[i].UxOuts = append(results[i].UxOuts, uxs...)
 	}
 
 	return makeSuccessResponse(req.ID, &results)

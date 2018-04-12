@@ -51,8 +51,8 @@ export class CreateWalletComponent implements OnInit {
     this.scan = 100;
   }
 
-  private validateAreEqual(fieldControl: FormControl){
-    return fieldControl.value === this.form.get('seed').value ? null : { NotEqual: true };
+  private validateAreEqual(fieldControl: FormControl) {
+    return fieldControl.value.trim() === this.form.get('seed').value.trim() ? null : { NotEqual: true };
   }
 
   private validatePassword() {

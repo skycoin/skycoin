@@ -57,6 +57,8 @@ export class WalletService {
   }
 
   create(label, seed, scan, password) {
+    seed = seed.replace(/\r?\n|\r/g, ' ').replace(/ +/g, ' ').trim();
+
     return this.apiService.postWalletCreate(label ? label : 'undefined', seed, scan ? scan : 100, password)
       .do(wallet => {
         console.log(wallet);

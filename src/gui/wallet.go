@@ -28,26 +28,28 @@ type UnconfirmedTxnsResponse struct {
 	Transactions []visor.ReadableUnconfirmedTxn `json:"transactions"`
 }
 
-type walletEntry struct {
+// WalletEntry the wallet entry struct
+type WalletEntry struct {
 	Address string `json:"address"`
 	Public  string `json:"public_key"`
 }
 
-type walletMeta struct {
+// WalletMeta the wallet meta struct
+type WalletMeta struct {
 	Coin       string `json:"coin"`
 	Filename   string `json:"filename"`
 	Label      string `json:"label"`
 	Type       string `json:"type"`
 	Version    string `json:"version"`
-	CryptoType string `json:"cryptoType"`
+	CryptoType string `json:"crypto_type"`
 	Timestamp  int64  `json:"timestamp"`
 	Encrypted  bool   `json:"encrypted"`
 }
 
 // WalletResponse wallet response struct for http apis
 type WalletResponse struct {
-	Meta    walletMeta    `json:"meta"`
-	Entries []walletEntry `json:"entries"`
+	Meta    WalletMeta    `json:"meta"`
+	Entries []WalletEntry `json:"entries"`
 }
 
 // NewWalletResponse creates WalletResponse struct from *wallet.Wallet
@@ -80,44 +82,13 @@ func NewWalletResponse(w *wallet.Wallet) (*WalletResponse, error) {
 	}
 
 	for _, e := range w.Entries {
-		wr.Entries = append(wr.Entries, walletEntry{
+		wr.Entries = append(wr.Entries, WalletEntry{
 			Address: e.Address.String(),
 			Public:  e.Public.Hex(),
 		})
 	}
 
 	return &wr, nil
-}
-
-// ToWallet converts WalletResponse to wallet.Wallet
-func (wr *WalletResponse) ToWallet() (*wallet.Wallet, error) {
-	w := wallet.Wallet{Meta: make(map[string]string)}
-	w.Meta["coin"] = wr.Meta.Coin
-	w.Meta["filename"] = wr.Meta.Filename
-	w.Meta["label"] = wr.Meta.Label
-	w.Meta["type"] = wr.Meta.Type
-	w.Meta["version"] = wr.Meta.Version
-	w.Meta["cryptoType"] = wr.Meta.CryptoType
-	w.Meta["tm"] = strconv.FormatInt(wr.Meta.Timestamp, 10)
-	w.Meta["encrypted"] = strconv.FormatBool(wr.Meta.Encrypted)
-
-	for _, e := range wr.Entries {
-		addr, err := cipher.DecodeBase58Address(e.Address)
-		if err != nil {
-			return nil, err
-		}
-
-		pubkey, err := cipher.PubKeyFromHex(e.Public)
-		if err != nil {
-			return nil, err
-		}
-		w.Entries = append(w.Entries, wallet.Entry{
-			Address: addr,
-			Public:  pubkey,
-		})
-	}
-
-	return &w, nil
 }
 
 // Returns the wallet's balance, both confirmed and predicted.  The predicted

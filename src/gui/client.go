@@ -364,7 +364,7 @@ func (c *Client) AddressUxOuts(addr string) ([]*historydb.UxOutJSON, error) {
 }
 
 // Wallet makes a request to /wallet
-func (c *Client) Wallet(id string) (*wallet.Wallet, error) {
+func (c *Client) Wallet(id string) (*WalletResponse, error) {
 	v := url.Values{}
 	v.Add("id", id)
 	endpoint := "/wallet?" + v.Encode()
@@ -374,31 +374,23 @@ func (c *Client) Wallet(id string) (*wallet.Wallet, error) {
 		return nil, err
 	}
 
-	return wr.ToWallet()
+	return &wr, nil
 }
 
 // Wallets makes a request to /wallets
-func (c *Client) Wallets() ([]*wallet.Wallet, error) {
+func (c *Client) Wallets() ([]*WalletResponse, error) {
 	var wrs []*WalletResponse
 	if err := c.Get("/wallets", &wrs); err != nil {
 		return nil, err
 	}
 
-	var ws []*wallet.Wallet
-	for _, rw := range wrs {
-		w, err := rw.ToWallet()
-		if err != nil {
-			return nil, err
-		}
-		ws = append(ws, w)
-	}
-	return ws, nil
+	return wrs, nil
 }
 
 // CreateUnencryptedWallet makes a request to /wallet/create and create
 // a wallet without no encryption
 // If scanN is <= 0, the scan number defaults to 1
-func (c *Client) CreateUnencryptedWallet(seed, label string, scanN int) (*wallet.Wallet, error) {
+func (c *Client) CreateUnencryptedWallet(seed, label string, scanN int) (*WalletResponse, error) {
 	v := url.Values{}
 	v.Add("seed", seed)
 	v.Add("label", label)
@@ -412,13 +404,13 @@ func (c *Client) CreateUnencryptedWallet(seed, label string, scanN int) (*wallet
 	if err := c.PostForm("/wallet/create", strings.NewReader(v.Encode()), &w); err != nil {
 		return nil, err
 	}
-	return w.ToWallet()
+	return &w, nil
 }
 
 // CreateEncryptedWallet makes a request to /wallet/create and try to create
 // a wallet with encryption.
 // If scanN is <= 0, the scan number defaults to 1
-func (c *Client) CreateEncryptedWallet(seed, label, password string, scanN int) (*wallet.Wallet, error) {
+func (c *Client) CreateEncryptedWallet(seed, label, password string, scanN int) (*WalletResponse, error) {
 	v := url.Values{}
 	v.Add("seed", seed)
 	v.Add("label", label)
@@ -433,7 +425,7 @@ func (c *Client) CreateEncryptedWallet(seed, label, password string, scanN int) 
 	if err := c.PostForm("/wallet/create", strings.NewReader(v.Encode()), &w); err != nil {
 		return nil, err
 	}
-	return w.ToWallet()
+	return &w, nil
 }
 
 // NewWalletAddress makes a request to /wallet/newAddress
@@ -773,7 +765,7 @@ func (c *Client) Health() (*HealthResponse, error) {
 }
 
 // EncryptWallet encrypts specific wallet with given password
-func (c *Client) EncryptWallet(id string, password string) (*wallet.Wallet, error) {
+func (c *Client) EncryptWallet(id string, password string) (*WalletResponse, error) {
 	v := url.Values{}
 	v.Add("id", id)
 	v.Add("password", password)
@@ -782,11 +774,11 @@ func (c *Client) EncryptWallet(id string, password string) (*wallet.Wallet, erro
 		return nil, err
 	}
 
-	return wlt.ToWallet()
+	return &wlt, nil
 }
 
 // DecryptWallet decrypts wallet by making a request to /wallet/decrypt
-func (c *Client) DecryptWallet(id string, password string) (*wallet.Wallet, error) {
+func (c *Client) DecryptWallet(id string, password string) (*WalletResponse, error) {
 	v := url.Values{}
 	v.Add("id", id)
 	v.Add("password", password)
@@ -795,5 +787,5 @@ func (c *Client) DecryptWallet(id string, password string) (*wallet.Wallet, erro
 		return nil, err
 	}
 
-	return wlt.ToWallet()
+	return &wlt, nil
 }

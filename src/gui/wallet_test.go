@@ -1159,7 +1159,7 @@ func TestWalletCreateHandler(t *testing.T) {
 				Entries: cloneEntries(entries),
 			},
 			responseBody: WalletResponse{
-				Meta: walletMeta{
+				Meta: WalletMeta{
 					Filename: "filename",
 				},
 				Entries: responseEntries[:],
@@ -1194,7 +1194,7 @@ func TestWalletCreateHandler(t *testing.T) {
 				},
 			},
 			responseBody: WalletResponse{
-				Meta: walletMeta{
+				Meta: WalletMeta{
 					Filename: "filename",
 				},
 			},
@@ -1237,7 +1237,7 @@ func TestWalletCreateHandler(t *testing.T) {
 				},
 			},
 			responseBody: WalletResponse{
-				Meta: walletMeta{
+				Meta: WalletMeta{
 					Filename:  "filename",
 					Label:     "bar",
 					Encrypted: true,
@@ -1983,7 +1983,7 @@ func TestEncryptWallet(t *testing.T) {
 			},
 			status: http.StatusOK,
 			expectWallet: WalletResponse{
-				Meta: walletMeta{
+				Meta: WalletMeta{
 					Filename:  "wallet.wlt",
 					Encrypted: true,
 				},
@@ -2135,7 +2135,7 @@ func TestDecryptWallet(t *testing.T) {
 			},
 			status: http.StatusOK,
 			expectWallet: WalletResponse{
-				Meta: walletMeta{
+				Meta: WalletMeta{
 					Filename:  "wallet",
 					Encrypted: false,
 				},
@@ -2253,10 +2253,10 @@ func TestDecryptWallet(t *testing.T) {
 // makeEntries derives N wallet address entries from given seed
 // Returns set of wallet.Entry and wallet.ReadableEntry, the readable
 // entries' secrets are removed.
-func makeEntries(seed []byte, n int) ([]wallet.Entry, []walletEntry) {
+func makeEntries(seed []byte, n int) ([]wallet.Entry, []WalletEntry) {
 	seckeys := cipher.GenerateDeterministicKeyPairs(seed, n)
 	var entries []wallet.Entry
-	var responseEntries []walletEntry
+	var responseEntries []WalletEntry
 	for i, seckey := range seckeys {
 		pubkey := cipher.PubKeyFromSecKey(seckey)
 		entries = append(entries, wallet.Entry{
@@ -2264,7 +2264,7 @@ func makeEntries(seed []byte, n int) ([]wallet.Entry, []walletEntry) {
 			Public:  pubkey,
 			Secret:  seckey,
 		})
-		responseEntries = append(responseEntries, walletEntry{
+		responseEntries = append(responseEntries, WalletEntry{
 			Address: entries[i].Address.String(),
 			Public:  entries[i].Public.Hex(),
 		})

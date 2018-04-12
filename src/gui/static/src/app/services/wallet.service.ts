@@ -113,6 +113,10 @@ export class WalletService {
       });
   }
 
+  getWalletSeed(wallet: Wallet, password: string): Observable<string> {
+    return this.apiService.getWalletSeed(wallet, password);
+  }
+
   sendSkycoin(wallet: Wallet, address: string, amount: number) {
     return this.apiService.post('wallet/spend', {id: wallet.filename, dst: address, coins: amount})
   }

@@ -66,6 +66,11 @@ export class ApiService {
       });
   }
 
+  getWalletSeed(wallet: Wallet, password: string): Observable<string> {
+    return this.get('wallet/seed', { id: wallet.filename, password })
+      .map(response => response.seed);
+  }
+
   postWalletCreate(label: string, seed: string, scan: number, password: string): Observable<Wallet> {
     return this.post('wallet/create', { label, seed, scan, password, encrypt: !!password })
       .map(response => ({

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Runs "disable-wallet-api"-mode tests against a skycoin node configured with -disable-wallet-api option
+# Runs "disable-wallet-api"-mode tests against a skycoin node configured with -enable-wallet-api=false
 # "disable-wallet-api"-mode confirms that no wallet related apis work, that the main index.html page
 # does not load, and that a new wallet file is not created.
 
@@ -19,6 +19,10 @@ VERBOSE=""
 RUN_TESTS=""
 # run wallet tests
 TEST_WALLET=""
+
+COMMIT=$(git rev-parse HEAD)
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+GOLDFLAGS="-X main.Commit=${COMMIT} -X main.Branch=${BRANCH}"
 
 usage () {
   echo "Usage: $SCRIPT"
@@ -57,7 +61,7 @@ fi
 # Compile the skycoin node
 # We can't use "go run" because this creates two processes which doesn't allow us to kill it at the end
 echo "compiling skycoin"
-go build -o "$BINARY" cmd/skycoin/skycoin.go
+go build -o "$BINARY" -ldflags "${GOLDFLAGS}" cmd/skycoin/skycoin.go
 
 # Run skycoin node with pinned blockchain database
 echo "starting skycoin node in background with http listener on $HOST"
@@ -72,7 +76,7 @@ echo "starting skycoin node in background with http listener on $HOST"
                       -launch-browser=false \
                       -data-dir="$DATA_DIR" \
                       -wallet-dir="$WALLET_DIR" \
-                      -disable-wallet-api=true &
+                      -enable-wallet-api=false &
 SKYCOIN_PID=$!
 
 echo "skycoin node pid=$SKYCOIN_PID"

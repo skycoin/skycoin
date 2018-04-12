@@ -8,6 +8,8 @@ A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](h
 
 - [CSRF](#csrf)
     - [Get current csrf token](#get-current-csrf-token)
+- [General system checks](#general-system-checks)
+    - [Health check](#health-check)
 - [Simple query APIs](#simple-query-apis)
     - [Get node version info](#get-node-version-info)
     - [Get balance of addresses](#get-balance-of-addresses)
@@ -86,6 +88,49 @@ Result:
 ```json
 {
     "csrf_token": "klSgXoMOFTvEnt8KptBvHjhlFnW0OIkzyFVn4i8frDvIus9iLsFukqA9sM9Rxf3pLZHRLr82vBQxTq50vbYA8g"
+}
+```
+
+## General system checks
+
+### Health check
+
+```
+URI: /health
+Method: GET
+```
+
+Example:
+
+```sh
+curl http://127.0.0.1:6420/health
+```
+
+Response:
+
+```json
+{
+    "blockchain": {
+        "head": {
+            "seq": 21175,
+            "block_hash": "8a3e0aac619551ae009cfb28c2b36bb1300925f74da770d1512072314f6a4c80",
+            "previous_block_hash": "001eb7911b6a6ab7c75feb88726dd2bc8b87133aebc82201c4404537eb74f7ac",
+            "timestamp": 1523168686,
+            "fee": 2,
+            "version": 0,
+            "tx_body_hash": "36be8d70d1e9f70b340ea7ecf0b247c27086bad10568044c1196fe150f6cea1b"
+        },
+        "unspents": 14750,
+        "unconfirmed": 0,
+        "time_since_last_block": "12m6s"
+    },
+    "version": {
+        "version": "0.22.0",
+        "commit": "f61b4319c2f146a5ad86f7cbda26a1ba6a09998d",
+        "branch": "develop"
+    },
+    "open_connections": 30,
+    "uptime": "13.686460853s"
 }
 ```
 
@@ -210,25 +255,23 @@ Result:
 ```json
 {
     "meta":{
-        "coin":"skycoin",
-        "filename":"2017_11_25_e5fb.wlt",
-        "label":"test",
-        "lastSeed":"",
-        "seed":"",
-        "tm":"1511640884",
-        "type":"deterministic",
-        "version":"0.1"
+        "coin": "skycoin",
+        "filename": "2017_11_25_e5fb.wlt",
+        "label": "test",
+        "type": "deterministic",
+        "version": "0.2",
+        "cryptoType": "",
+        "timestamp": 1511640884,
+        "encrypted": false,
     },
     "entries":[
         {
             "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
-            "public_key": "030479afcf24dbc1579769522d4d80c13270a6bb829e9aa121e012f600d5aab992",
-            "secret_key": ""
+            "public_key": "***",
         },
         {
             "address": "SMnCGfpt7zVXm8BkRSFMLeMRA6LUu3Ewne",
-            "public_key": "0258245e0f3a27b70ba8816e9ebd4470624f2924a79240b4b7624aaa129eff399e",
-            "secret_key": ""
+            "public_key": "***",
         },
     ]
 }
@@ -316,22 +359,20 @@ Result:
             "coin": "skycoin",
             "filename": "2017_11_25_e5fb.wlt",
             "label": "test",
-            "lastSeed": "",
-            "seed": "",
-            "tm": "1511640884",
             "type": "deterministic",
-            "version": "0.2"
+            "version": "0.2",
+            "cryptoType": "",
+            "timestamp": 1511640884,
+            "encrypted": false,
         },
         "entries": [
             {
                 "address": "8C5icxR9zdkYTZZTVV3cCX7QoK4EkLuK4p",
                 "public_key": "***",
-                "secret_key": "",
             },
             {
                 "address": "23A1EWMZopUFLCwtXMe2CU9xTCbi5Gth643",
                 "public_key": "***",
-                "secret_key": ""
             }
         ]
     }
@@ -415,18 +456,17 @@ Result:
     "meta": {
         "coin": "skycoin",
         "filename": "2017_05_09_d554.wlt",
-        "label": "label",
-        "lastSeed": "",
-        "seed": "",
-        "tm": "1494315855",
+        "label": "test",
         "type": "deterministic",
-        "version": "0.2"
+        "version": "0.2",
+        "cryptoType": "",
+        "timestamp": 1511640884,
+        "encrypted": false,
     },
     "entries": [
         {
             "address": "y2JeYS4RS8L9GYM7UKdjLRyZanKHXumFoH",
-            "public_key": "0343581927c12d07582168d6092d06d0a8cefdef47541f804eae33faf027932245",
-            "secret_key": ""
+            "public_key": "***",
         }
     ]
 }
@@ -439,6 +479,8 @@ URI: /wallet/newAddress
 Method: POST
 Args:
     id: wallet file name
+    num: the number you want to generate
+    password: wallet password
 ```
 
 Example:
@@ -446,7 +488,9 @@ Example:
 ```sh
 curl -X POST http://127.0.0.1:6420/wallet/newAddress \
  -H 'Content-Type: x-www-form-urlencoded' \
- -d 'id=2017_05_09_d554.wlt'
+ -d 'id=2017_05_09_d554.wlt' \
+ -d 'num=2' \
+ -d 'password=$password'
 ```
 
 Result:
@@ -637,22 +681,18 @@ Result:
 {
     "meta": {
         "coin": "skycoin",
-        "cryptoType": "scrypt-chacha20poly1305",
-        "encrypted": "true",
         "filename": "test.wlt",
-        "label": "ec",
-        "lastSeed": "",
-        "secrets": "",
-        "seed": "",
-        "tm": "1521083044",
+        "label": "test",
         "type": "deterministic",
-        "version": "0.2"
+        "version": "0.2",
+        "cryptoType": "scrypt-chacha20poly1305",
+        "timestamp": 1521083044,
+        "encrypted": true,
     },
     "entries": [
         {
             "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
-            "public_key": "032a1218cbafc8a93233f363c19c667cf02d42fa5a8a07c0d6feca79e82d72753d",
-            "secret_key": ""
+            "public_key": "***",
         }
     ]
 }
@@ -683,16 +723,13 @@ Result:
 {
     "meta": {
         "coin": "skycoin",
-        "cryptoType": "",
-        "encrypted": "false",
         "filename": "test.wlt",
-        "label": "ec",
-        "lastSeed": "",
-        "secrets": "",
-        "seed": "",
-        "tm": "1521083044",
+        "label": "test",
         "type": "deterministic",
-        "version": "0.2"
+        "version": "0.2",
+        "cryptoType": "",
+        "timestamp": 1521083044,
+        "encrypted": false,
     },
     "entries": [
         {

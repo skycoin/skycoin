@@ -28,6 +28,69 @@ type UnconfirmedTxnsResponse struct {
 	Transactions []visor.ReadableUnconfirmedTxn `json:"transactions"`
 }
 
+// WalletEntry the wallet entry struct
+type WalletEntry struct {
+	Address string `json:"address"`
+	Public  string `json:"public_key"`
+}
+
+// WalletMeta the wallet meta struct
+type WalletMeta struct {
+	Coin       string `json:"coin"`
+	Filename   string `json:"filename"`
+	Label      string `json:"label"`
+	Type       string `json:"type"`
+	Version    string `json:"version"`
+	CryptoType string `json:"crypto_type"`
+	Timestamp  int64  `json:"timestamp"`
+	Encrypted  bool   `json:"encrypted"`
+}
+
+// WalletResponse wallet response struct for http apis
+type WalletResponse struct {
+	Meta    WalletMeta    `json:"meta"`
+	Entries []WalletEntry `json:"entries"`
+}
+
+// NewWalletResponse creates WalletResponse struct from *wallet.Wallet
+func NewWalletResponse(w *wallet.Wallet) (*WalletResponse, error) {
+	var wr WalletResponse
+
+	wr.Meta.Coin = w.Meta["coin"]
+	wr.Meta.Filename = w.Meta["filename"]
+	wr.Meta.Label = w.Meta["label"]
+	wr.Meta.Type = w.Meta["type"]
+	wr.Meta.Version = w.Meta["version"]
+	wr.Meta.CryptoType = w.Meta["cryptoType"]
+
+	// Converts "encrypted" string to boolean if any
+	if encryptedStr, ok := w.Meta["encrypted"]; ok {
+		encrypted, err := strconv.ParseBool(encryptedStr)
+		if err != nil {
+			return nil, err
+		}
+		wr.Meta.Encrypted = encrypted
+	}
+
+	if tmStr, ok := w.Meta["tm"]; ok {
+		// Converts "tm" string to integer timestamp.
+		tm, err := strconv.ParseInt(tmStr, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		wr.Meta.Timestamp = tm
+	}
+
+	for _, e := range w.Entries {
+		wr.Entries = append(wr.Entries, WalletEntry{
+			Address: e.Address.String(),
+			Public:  e.Public.Hex(),
+		})
+	}
+
+	return &wr, nil
+}
+
 // Returns the wallet's balance, both confirmed and predicted.  The predicted
 // balance is the confirmed balance minus the pending spends.
 // URI: /wallet/balance
@@ -270,8 +333,11 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 		// Wipes all sensitive data
-		rlt := wallet.NewReadableWallet(wlt)
-		rlt.Erase()
+		rlt, err := NewWalletResponse(wlt)
+		if err != nil {
+			wh.Error500Msg(w, err.Error())
+			return
+		}
 		wh.SendJSONOr500(logger, w, rlt)
 	}
 }
@@ -410,9 +476,11 @@ func walletGet(gateway Gatewayer) http.HandlerFunc {
 			}
 			return
 		}
-		// Wipes all sensitive data
-		rlt := wallet.NewReadableWallet(wlt)
-		rlt.Erase()
+		rlt, err := NewWalletResponse(wlt)
+		if err != nil {
+			wh.Error500Msg(w, err.Error())
+			return
+		}
 		wh.SendJSONOr500(logger, w, rlt)
 	}
 }
@@ -478,13 +546,17 @@ func walletsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		rlts := wlts.ToReadable()
-		// Erase sensitive data
-		for i := range rlts {
-			rlts[i].Erase()
-		}
+		var wrs []*WalletResponse
+		for _, wlt := range wlts {
+			wr, err := NewWalletResponse(wlt)
+			if err != nil {
+				wh.Error500Msg(w, err.Error())
+				return
+			}
 
-		wh.SendJSONOr500(logger, w, rlts)
+			wrs = append(wrs, wr)
+		}
+		wh.SendJSONOr500(logger, w, wrs)
 	}
 }
 
@@ -532,7 +604,7 @@ func newWalletSeed(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if gateway.IsWalletAPIDisabled() {
+		if !gateway.IsWalletAPIEnabled() {
 			wh.Error403(w)
 			return
 		}
@@ -695,8 +767,11 @@ func walletEncryptHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		// Make sure the sensitive data are wiped
-		rlt := wallet.NewReadableWallet(wlt)
-		rlt.Erase()
+		rlt, err := NewWalletResponse(wlt)
+		if err != nil {
+			wh.Error500Msg(w, err.Error())
+			return
+		}
 		wh.SendJSONOr500(logger, w, rlt)
 	}
 }
@@ -740,9 +815,11 @@ func walletDecryptHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		rlt := wallet.NewReadableWallet(wlt)
-		// Wipes sensitive data in wallet
-		rlt.Erase()
+		rlt, err := NewWalletResponse(wlt)
+		if err != nil {
+			wh.Error500Msg(w, err.Error())
+			return
+		}
 		wh.SendJSONOr500(logger, w, rlt)
 	}
 }

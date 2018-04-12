@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Add `/health` endpoint
 - Logging migration, now powered by [logrus](https://github.com/sirupsen/logrus)
 - Write specification for skycoin URIs (based upon bip21)
 - Implemented `scrypt-chacha20poly1305` for wallet encryption
@@ -24,7 +25,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
-- #1168, Updated CLI README
+- Change `-disable-wallet-api` to `-enable-wallet-api`, and disable the wallet API by default
 - `-launch-browser` is set to false by default
 - `/wallet` API endpoint, remove sensitive data from the response, and fix the data format to be the same as `/wallet/create`
 - `/wallets` API endpoint, remove sensitive data from the response
@@ -32,10 +33,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `/wallet/newAddress` API endpoint, add `password` argument
 - `/wallet/spend` API endpoint, add `password` argument
 
-
 ### Removed
 
 - Remove dependency [op/go-logging](https://github.com/op/go-logging)
+- Remove `seed`, `lastSeed`, `secrets` and `secret_key` in address entries from wallet apis response
 
 ## [0.22.0] - 2018-03-20
 

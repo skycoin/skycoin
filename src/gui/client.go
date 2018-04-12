@@ -369,23 +369,23 @@ func (c *Client) Wallet(id string) (*wallet.Wallet, error) {
 	v.Add("id", id)
 	endpoint := "/wallet?" + v.Encode()
 
-	var rw wallet.ReadableWallet
-	if err := c.Get(endpoint, &rw); err != nil {
+	var wr WalletResponse
+	if err := c.Get(endpoint, &wr); err != nil {
 		return nil, err
 	}
 
-	return rw.ToWallet()
+	return wr.ToWallet()
 }
 
 // Wallets makes a request to /wallets
 func (c *Client) Wallets() ([]*wallet.Wallet, error) {
-	var rws []*wallet.ReadableWallet
-	if err := c.Get("/wallets", &rws); err != nil {
+	var wrs []*WalletResponse
+	if err := c.Get("/wallets", &wrs); err != nil {
 		return nil, err
 	}
 
 	var ws []*wallet.Wallet
-	for _, rw := range rws {
+	for _, rw := range wrs {
 		w, err := rw.ToWallet()
 		if err != nil {
 			return nil, err
@@ -408,7 +408,7 @@ func (c *Client) CreateUnencryptedWallet(seed, label string, scanN int) (*wallet
 		v.Add("scan", fmt.Sprint(scanN))
 	}
 
-	var w wallet.ReadableWallet
+	var w WalletResponse
 	if err := c.PostForm("/wallet/create", strings.NewReader(v.Encode()), &w); err != nil {
 		return nil, err
 	}
@@ -429,7 +429,7 @@ func (c *Client) CreateEncryptedWallet(seed, label, password string, scanN int) 
 		v.Add("scan", fmt.Sprint(scanN))
 	}
 
-	var w wallet.ReadableWallet
+	var w WalletResponse
 	if err := c.PostForm("/wallet/create", strings.NewReader(v.Encode()), &w); err != nil {
 		return nil, err
 	}
@@ -777,7 +777,7 @@ func (c *Client) EncryptWallet(id string, password string) (*wallet.Wallet, erro
 	v := url.Values{}
 	v.Add("id", id)
 	v.Add("password", password)
-	var wlt wallet.ReadableWallet
+	var wlt WalletResponse
 	if err := c.PostForm("/wallet/encrypt", strings.NewReader(v.Encode()), &wlt); err != nil {
 		return nil, err
 	}
@@ -790,7 +790,7 @@ func (c *Client) DecryptWallet(id string, password string) (*wallet.Wallet, erro
 	v := url.Values{}
 	v.Add("id", id)
 	v.Add("password", password)
-	var wlt wallet.ReadableWallet
+	var wlt WalletResponse
 	if err := c.PostForm("/wallet/decrypt", strings.NewReader(v.Encode()), &wlt); err != nil {
 		return nil, err
 	}

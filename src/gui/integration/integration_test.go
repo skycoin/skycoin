@@ -2514,9 +2514,6 @@ func createWallet(t *testing.T, c *gui.Client, encrypt bool, password string) (*
 	require.NoError(t, err)
 	checkNoSensitiveData(t, w)
 
-	err = w.Validate()
-	require.NoError(t, err)
-
 	walletDir := getWalletDir(t, c)
 
 	return w, seed, func() {

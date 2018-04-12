@@ -35,7 +35,7 @@ func SKY_cli_Config_FullWalletPath(_c *C.cli__Config, _arg0 *C.GoString_) (____e
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	c := *(*Config)(unsafe.Pointer(_c))
+	c := *(*cli.Config)(unsafe.Pointer(_c))
 	__arg0 := c.FullWalletPath()
 	copyString(__arg0, _arg0)
 	return
@@ -47,7 +47,7 @@ func SKY_cli_Config_FullDBPath(_c *C.cli__Config, _arg0 *C.GoString_) (____error
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	c := *(*Config)(unsafe.Pointer(_c))
+	c := *(*cli.Config)(unsafe.Pointer(_c))
 	__arg0 := c.FullDBPath()
 	copyString(__arg0, _arg0)
 	return

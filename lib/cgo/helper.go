@@ -52,6 +52,9 @@ func copyToFunc(f C.Handle) func() hash.Hash {
 func copyStringMap( source map[string]string, dest *C.GoMap_ ){
 }
 
+func main(){
+}
+
 //TODO: stdevEclipse Get Sizes
 var (
 	SKY_OK				uint32 	= 0
@@ -61,3 +64,4 @@ var (
 	SizeofSig			uint 	= 32
 	SizeofSHA256		uint 	= 32
 )
+

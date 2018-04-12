@@ -30,7 +30,7 @@ export class LoadWalletComponent implements OnInit {
   }
 
   loadWallet() {
-    this.walletService.create(this.form.value.label, this.form.value.seed, this.scan, this.form.password.value)
+    this.walletService.create(this.form.value.label, this.form.value.seed, this.scan, this.form.value.password)
       .subscribe(
         () => this.dialogRef.close(),
         error => this.snackbar.open(error['_body'], null, { duration: 5000 })

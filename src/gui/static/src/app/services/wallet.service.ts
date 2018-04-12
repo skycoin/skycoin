@@ -16,14 +16,19 @@ import { Address, Wallet } from '../app.datatypes';
 export class WalletService {
   addresses: Address[];
   wallets: Subject<Wallet[]> = new BehaviorSubject<Wallet[]>([]);
+  pendingTxs: Subject<any[]> = new BehaviorSubject<any[]>([]);
 
   constructor(
     private apiService: ApiService
   ) {
     this.loadData();
+
     IntervalObservable
       .create(30000)
       .subscribe(() => this.refreshBalances());
+
+    IntervalObservable.create(10000)
+      .subscribe(() => this.refreshPendingTransactions());
   }
 
   addressesAsString(): Observable<string> {
@@ -82,7 +87,13 @@ export class WalletService {
   }
 
   pendingTransactions(): Observable<any> {
-    return this.apiService.get('pendingTxs');
+    return this.pendingTxs.asObservable();
+  }
+
+  refreshPendingTransactions() {
+    this.apiService.get('pendingTxs').subscribe(txs => {
+      this.pendingTxs.next(txs);
+    });
   }
 
   refreshBalances() {

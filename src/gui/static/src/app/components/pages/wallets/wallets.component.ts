@@ -27,7 +27,7 @@ export class WalletsComponent implements OnInit, OnDestroy {
     this.walletSubscription = this.walletService.all().subscribe(wallets => {
       this.coins = wallets.map(wallet => wallet.coins >= 0 ? wallet.coins : 0).reduce((a , b) => a + b, 0);
       this.hours = wallets.map(wallet => wallet.hours >= 0 ? wallet.hours : 0).reduce((a , b) => a + b, 0);
-    })
+    });
   }
 
   ngOnDestroy() {
@@ -37,13 +37,13 @@ export class WalletsComponent implements OnInit, OnDestroy {
   addWallet() {
     const config = new MatDialogConfig();
     config.width = '566px';
-    this.dialog.open(CreateWalletComponent, config).afterClosed().subscribe();
+    this.dialog.open(CreateWalletComponent, config);
   }
 
   loadWallet() {
     const config = new MatDialogConfig();
     config.width = '566px';
-    this.dialog.open(LoadWalletComponent, config).afterClosed().subscribe();
+    this.dialog.open(LoadWalletComponent, config);
   }
 
   toggleWallet(wallet: Wallet) {

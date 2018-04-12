@@ -44,7 +44,6 @@ export class Wallet {
   hours: number;
   addresses: Address[];
   encrypted: boolean;
-  visible?: boolean;
   hideEmpty?: boolean;
   opened?: boolean;
 }

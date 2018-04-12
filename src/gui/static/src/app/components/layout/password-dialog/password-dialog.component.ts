@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit, ViewChild } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatDialogRef } from '@angular/material';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
@@ -10,11 +10,11 @@ import { Observable } from 'rxjs/Observable';
   templateUrl: './password-dialog.component.html',
   styleUrls: ['./password-dialog.component.css']
 })
-export class PasswordDialogComponent implements OnInit {
+export class PasswordDialogComponent implements OnInit, OnDestroy {
 
   @ViewChild('button') button: ButtonComponent;
   form: FormGroup;
-  passwordSubmit: Observable;
+  passwordSubmit: Observable<any>;
   private passwordChanged;
 
   constructor(
@@ -25,7 +25,7 @@ export class PasswordDialogComponent implements OnInit {
       this.passwordChanged = password => {
         observer.next({
           password,
-          close: this.close,
+          close: this.close.bind(this),
           error: this.error.bind(this),
         });
       };
@@ -42,7 +42,12 @@ export class PasswordDialogComponent implements OnInit {
     });
   }
 
+  ngOnDestroy() {
+    this.form.get('password').setValue('');
+  }
+
   proceed() {
+    this.button.setLoading();
     this.passwordChanged(this.form.get('password').value);
   }
 

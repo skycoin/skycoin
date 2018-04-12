@@ -117,6 +117,18 @@ typedef struct {
                 ///< size.
 } GoSlice_;
 
+typedef struct {	
+	//TODO: stdevEclipse Define Big Int Number
+	int number;
+	
+} secp256k1go__Number;
+
+typedef struct {	
+	//TODO: stdevEclipse Define Signature
+	int number;
+	
+} secp256k1go__Signature;
+
 #include "skytypes.gen.h"
 
 /**

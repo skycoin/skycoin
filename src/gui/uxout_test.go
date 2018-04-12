@@ -177,8 +177,8 @@ func TestGetAddrUxOuts(t *testing.T) {
 		status                int
 		err                   string
 		httpBody              *httpBody
-		getAddrUxOutsArg      cipher.Address
-		getAddrUxOutsResponse []*historydb.UxOutJSON
+		getAddrUxOutsArg      []cipher.Address
+		getAddrUxOutsResponse []*historydb.UxOut
 		getAddrUxOutsError    error
 		httpResponse          []*historydb.UxOutJSON
 		csrfDisabled          bool
@@ -215,7 +215,7 @@ func TestGetAddrUxOuts(t *testing.T) {
 			httpBody: &httpBody{
 				address: addressForGwError.String(),
 			},
-			getAddrUxOutsArg:   addressForGwError,
+			getAddrUxOutsArg:   []cipher.Address{addressForGwError},
 			getAddrUxOutsError: errors.New("getAddrUxOutsError"),
 		},
 		{
@@ -225,8 +225,8 @@ func TestGetAddrUxOuts(t *testing.T) {
 			httpBody: &httpBody{
 				address: addressForGwResponse.String(),
 			},
-			getAddrUxOutsArg:      addressForGwResponse,
-			getAddrUxOutsResponse: []*historydb.UxOutJSON{},
+			getAddrUxOutsArg:      []cipher.Address{addressForGwResponse},
+			getAddrUxOutsResponse: []*historydb.UxOut{},
 			httpResponse:          []*historydb.UxOutJSON{},
 		},
 	}

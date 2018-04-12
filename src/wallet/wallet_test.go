@@ -7,7 +7,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"math/rand"
 	"testing"
 	"time"
@@ -18,6 +17,11 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/encrypt"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/fee"
+	"github.com/skycoin/skycoin/src/util/logging"
+)
+
+var (
+	log = logging.MustGetLogger("wallet")
 )
 
 // set rand seed.

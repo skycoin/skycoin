@@ -121,7 +121,7 @@ export class WalletService {
   toggleEncryption(wallet: Wallet, password: string): Observable<Wallet> {
     return this.apiService.postWalletToggleEncryption(wallet, password)
       .do(w => {
-        wallet.encrypted = w.meta.encrypted && w.meta.encrypted === 'true';
+        wallet.encrypted = w.meta.encrypted;
         this.updateWallet(w);
       });
   }

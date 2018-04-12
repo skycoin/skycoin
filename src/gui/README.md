@@ -479,6 +479,8 @@ URI: /wallet/newAddress
 Method: POST
 Args:
     id: wallet file name
+    num: the number you want to generate
+    password: wallet password
 ```
 
 Example:
@@ -486,7 +488,9 @@ Example:
 ```sh
 curl -X POST http://127.0.0.1:6420/wallet/newAddress \
  -H 'Content-Type: x-www-form-urlencoded' \
- -d 'id=2017_05_09_d554.wlt'
+ -d 'id=2017_05_09_d554.wlt' \
+ -d 'num=2' \
+ -d 'password=$password'
 ```
 
 Result:

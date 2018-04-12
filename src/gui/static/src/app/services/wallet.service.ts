@@ -117,8 +117,8 @@ export class WalletService {
     return this.apiService.getWalletSeed(wallet, password);
   }
 
-  sendSkycoin(wallet: Wallet, address: string, amount: number) {
-    return this.apiService.post('wallet/spend', {id: wallet.filename, dst: address, coins: amount})
+  sendSkycoin(wallet: Wallet, address: string, amount: number, password: string|null) {
+    return this.apiService.post('wallet/spend', {id: wallet.filename, dst: address, coins: amount, password});
   }
 
   sum(): Observable<number> {

@@ -34,9 +34,12 @@ export class WalletDetailComponent {
   }
 
   toggleEncryption() {
-    this.dialog.open(PasswordDialogComponent).afterClosed().subscribe((password) => {
-      this.walletService.toggleEncryption(this.wallet, password).subscribe((w) => console.log('hello', w));
-    });
+    this.dialog.open(PasswordDialogComponent).componentInstance.passwordSubmit
+      .subscribe(passwordDialog => {
+        this.walletService.toggleEncryption(this.wallet, passwordDialog.password).subscribe(() => {
+          passwordDialog.close();
+        }, () => passwordDialog.error());
+      });
   }
 
   copyAddress(address) {

@@ -2708,12 +2708,12 @@ func TestDisableWalletApi(t *testing.T) {
 }
 
 func checkHealthResponse(t *testing.T, r *gui.HealthResponse) {
-	require.NotEmpty(t, r.Blockchain.Unspents)
-	require.NotEmpty(t, r.Blockchain.Head.BkSeq)
-	require.NotEmpty(t, r.Blockchain.Head.Time)
+	require.NotEmpty(t, r.BlockchainMetadata.Unspents)
+	require.NotEmpty(t, r.BlockchainMetadata.Head.BkSeq)
+	require.NotEmpty(t, r.BlockchainMetadata.Head.Time)
 	require.NotEmpty(t, r.Version.Version)
 	require.True(t, r.Uptime.Duration > time.Duration(0))
-	require.True(t, r.Blockchain.TimeSinceLastBlock.Duration >= time.Duration(0))
+	require.True(t, r.BlockchainMetadata.TimeSinceLastBlock.Duration >= time.Duration(0))
 }
 
 func TestStableHealth(t *testing.T) {

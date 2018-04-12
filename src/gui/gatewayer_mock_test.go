@@ -109,14 +109,14 @@ func (m *GatewayerMock) EncryptWallet(p0 string, p1 []byte) (*wallet.Wallet, err
 }
 
 // GetAddrUxOuts mocked method
-func (m *GatewayerMock) GetAddrUxOuts(p0 cipher.Address) ([]*historydb.UxOutJSON, error) {
+func (m *GatewayerMock) GetAddrUxOuts(p0 []cipher.Address) ([]*historydb.UxOut, error) {
 
 	ret := m.Called(p0)
 
-	var r0 []*historydb.UxOutJSON
+	var r0 []*historydb.UxOut
 	switch res := ret.Get(0).(type) {
 	case nil:
-	case []*historydb.UxOutJSON:
+	case []*historydb.UxOut:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
@@ -810,8 +810,8 @@ func (m *GatewayerMock) InjectBroadcastTransaction(p0 coin.Transaction) error {
 
 }
 
-// IsWalletAPIDisabled mocked method
-func (m *GatewayerMock) IsWalletAPIDisabled() bool {
+// IsWalletAPIEnabled mocked method
+func (m *GatewayerMock) IsWalletAPIEnabled() bool {
 
 	ret := m.Called()
 
@@ -960,5 +960,32 @@ func (m *GatewayerMock) UpdateWalletLabel(p0 string, p1 string) error {
 	}
 
 	return r0
+
+}
+
+// GetHealth mocked method
+func (m *GatewayerMock) GetHealth() (*daemon.Health, error) {
+
+	ret := m.Called()
+
+	var r0 *daemon.Health
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case *daemon.Health:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
 
 }

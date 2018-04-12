@@ -27,14 +27,14 @@ func NewGatewayerMock() *GatewayerMock {
 }
 
 // GetAddrUxOuts mocked method
-func (m *GatewayerMock) GetAddrUxOuts(p0 cipher.Address) ([]*historydb.UxOutJSON, error) {
+func (m *GatewayerMock) GetAddrUxOuts(p0 []cipher.Address) ([]*historydb.UxOut, error) {
 
 	ret := m.Called(p0)
 
-	var r0 []*historydb.UxOutJSON
+	var r0 []*historydb.UxOut
 	switch res := ret.Get(0).(type) {
 	case nil:
-	case []*historydb.UxOutJSON:
+	case []*historydb.UxOut:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))

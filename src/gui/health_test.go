@@ -18,10 +18,10 @@ import (
 func TestHealthCheckHandler(t *testing.T) {
 
 	cases := []struct {
-		name                     string
-		method                   string
-		code                     int
-		getBlockchainMetadataErr error
+		name         string
+		method       string
+		code         int
+		getHealthErr error
 	}{
 		{
 			name:   "valid response",
@@ -34,10 +34,10 @@ func TestHealthCheckHandler(t *testing.T) {
 			code:   http.StatusMethodNotAllowed,
 		},
 		{
-			name:   "gateway.GetBlockchainMetadata error",
-			method: http.MethodGet,
-			code:   http.StatusInternalServerError,
-			getBlockchainMetadataErr: errors.New("GetBlockchainMetadata failed"),
+			name:         "gateway.GetHealth error",
+			method:       http.MethodGet,
+			code:         http.StatusInternalServerError,
+			getHealthErr: errors.New("GetHealth failed"),
 		},
 	}
 
@@ -45,23 +45,6 @@ func TestHealthCheckHandler(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			unspents := uint64(10)
 			unconfirmed := uint64(20)
-
-			connections := &daemon.Connections{
-				Connections: []*daemon.Connection{
-					{
-						ID:   1,
-						Addr: "127.0.0.1:4343",
-					},
-					{
-						ID:   2,
-						Addr: "127.0.0.1:5454",
-					},
-					{
-						ID:   3,
-						Addr: "127.0.0.1:6565",
-					},
-				},
-			}
 
 			metadata := &visor.BlockchainMetadata{
 				Head: visor.ReadableBlockHeader{
@@ -83,13 +66,18 @@ func TestHealthCheckHandler(t *testing.T) {
 				Branch:  "develop",
 			}
 
+			health := &daemon.Health{
+				BlockchainMetadata: metadata,
+				OpenConnections:    3,
+				Version:            buildInfo,
+				Uptime:             time.Second * 4,
+			}
+
 			gateway := NewGatewayerMock()
-			gateway.On("GetConnections").Return(connections)
-			gateway.On("GetBuildInfo").Return(buildInfo)
-			if tc.getBlockchainMetadataErr != nil {
-				gateway.On("GetBlockchainMetadata").Return(nil, tc.getBlockchainMetadataErr)
+			if tc.getHealthErr != nil {
+				gateway.On("GetHealth").Return(nil, tc.getHealthErr)
 			} else {
-				gateway.On("GetBlockchainMetadata").Return(metadata, nil)
+				gateway.On("GetHealth").Return(health, nil)
 			}
 
 			endpoint := "/health"
@@ -118,13 +106,14 @@ func TestHealthCheckHandler(t *testing.T) {
 			require.Equal(t, buildInfo.Version, r.Version.Version)
 			require.Equal(t, buildInfo.Commit, r.Version.Commit)
 			require.Equal(t, buildInfo.Branch, r.Version.Branch)
+			require.Equal(t, health.Uptime, r.Uptime.Duration)
 
-			require.Equal(t, len(connections.Connections), r.OpenConnections)
+			require.Equal(t, health.OpenConnections, r.OpenConnections)
 
-			require.Equal(t, unconfirmed, r.Blockchain.Unconfirmed)
-			require.Equal(t, unspents, r.Blockchain.Unspents)
-			require.True(t, r.Blockchain.TimeSinceLastBlock.Duration > time.Duration(0))
-			require.Equal(t, metadata.Head, r.Blockchain.Head)
+			require.Equal(t, unconfirmed, r.BlockchainMetadata.Unconfirmed)
+			require.Equal(t, unspents, r.BlockchainMetadata.Unspents)
+			require.True(t, r.BlockchainMetadata.TimeSinceLastBlock.Duration > time.Duration(0))
+			require.Equal(t, metadata.Head, r.BlockchainMetadata.Head)
 		})
 	}
 }

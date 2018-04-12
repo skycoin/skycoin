@@ -127,9 +127,9 @@ type Config struct {
 	WalletDirectory string
 	// build info, including version, build time etc.
 	BuildInfo BuildInfo
-	// disables wallet API
-	DisableWalletAPI bool
-	// disables seed API
+	// enables wallet API
+	EnableWalletAPI bool
+	// enables seed API
 	EnableSeedAPI bool
 	// wallet crypto type
 	WalletCryptoType wallet.CryptoType
@@ -241,9 +241,11 @@ type Visor struct {
 	Unconfirmed UnconfirmedTxnPooler
 	Blockchain  Blockchainer
 	Wallets     *wallet.Service
-	history     historyer
-	bcParser    *BlockchainParser
-	db          *bolt.DB
+	StartedAt   time.Time
+
+	history  historyer
+	bcParser *BlockchainParser
+	db       *bolt.DB
 }
 
 // NewVisor creates a Visor for managing the blockchain database
@@ -273,10 +275,10 @@ func NewVisor(c Config, db *bolt.DB) (*Visor, error) {
 	bc.BindListener(bp.FeedBlock)
 
 	wltServConfig := wallet.Config{
-		WalletDir:        c.WalletDirectory,
-		CryptoType:       c.WalletCryptoType,
-		DisableWalletAPI: c.DisableWalletAPI,
-		EnableSeedAPI:    c.EnableSeedAPI,
+		WalletDir:       c.WalletDirectory,
+		CryptoType:      c.WalletCryptoType,
+		EnableWalletAPI: c.EnableWalletAPI,
+		EnableSeedAPI:   c.EnableSeedAPI,
 	}
 
 	wltServ, err := wallet.NewService(wltServConfig)
@@ -292,6 +294,7 @@ func NewVisor(c Config, db *bolt.DB) (*Visor, error) {
 		history:     history,
 		bcParser:    bp,
 		Wallets:     wltServ,
+		StartedAt:   time.Now(),
 	}
 
 	return v, nil

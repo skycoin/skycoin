@@ -26,14 +26,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
-- #1168, Updated CLI README
+- Change `-disable-wallet-api` to `-enable-wallet-api`, and disable the wallet API by default
 - `-launch-browser` is set to false by default
 - `/wallet` API endpoint, remove sensitive data from the response, and fix the data format to be the same as `/wallet/create`
 - `/wallets` API endpoint, remove sensitive data from the response
 - `/wallet/create` API endpoint, add `encrypt(bool)` and `password` argument
 - `/wallet/newAddress` API endpoint, add `password` argument
 - `/wallet/spend` API endpoint, add `password` argument
-
 
 ### Removed
 

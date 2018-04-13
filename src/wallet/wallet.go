@@ -99,7 +99,7 @@ type Options struct {
 	Encrypt    bool       // whether the wallet need to be encrypted.
 	Password   []byte     // password that would be used for encryption, and would only be used when 'Encrypt' is true.
 	CryptoType CryptoType // wallet encryption type, scrypt-chacha20poly1305 or sha256-xor.
-	ScanN      uint64     // number of addresses that're going to be scanned, at least one address would be generated if ScanN > 0
+	ScanN      uint64     // number of addresses that're going to be scanned
 }
 
 // newWalletFilename check for collisions and retry if failure
@@ -196,6 +196,9 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 
 // NewWallet creates wallet without scanning addresses
 func NewWallet(wltName string, opts Options) (*Wallet, error) {
+	if opts.ScanN != 0 {
+		return nil, errors.New("scan number must be 0")
+	}
 	return newWallet(wltName, opts, nil)
 }
 

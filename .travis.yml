@@ -31,7 +31,9 @@ cache:
 
 install:
   # Clone to specific folder
-  - git clone https://github.com/$TRAVIS_REPO_SLUG.git /home/travis/gopath/src/github.com/skycoin/skycoin
+  - git clone https://github.com/$TRAVIS_REPO_SLUG.git $GOPATH/src/github.com/skycoin/skycoin
+  - cd $GOPATH/src/github.com/skycoin/skycoin
+  - git checkout -qf $TRAVIS_COMMIT
   # Install gox
   - go get github.com/gz-c/gox
   # Install dependences for building wallet

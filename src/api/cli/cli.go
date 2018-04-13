@@ -15,6 +15,7 @@ import (
 	"os"
 
 	gcli "github.com/urfave/cli"
+	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/util/file"
@@ -284,7 +285,7 @@ func onCommandUsageError(command string) gcli.OnUsageErrorFunc {
 }
 
 func errorWithHelp(c *gcli.Context, err error) {
-	fmt.Fprintf(c.App.Writer, "ERROR: %v. See '%s %s --help'\n\n", err, c.App.HelpName, c.Command.Name)
+	fmt.Fprintf(c.App.Writer, "Error: %v. See '%s %s --help'\n\n", err, c.App.HelpName, c.Command.Name)
 }
 
 func formatJSON(obj interface{}) ([]byte, error) {
@@ -304,4 +305,21 @@ func printJSON(obj interface{}) error {
 	fmt.Println(string(d))
 
 	return nil
+}
+
+// gePassword reads password from -p flag, or promotes user to enter password
+// and read it.
+func getPassword(c *gcli.Context) (string, error) {
+	password := c.String("p")
+	if len(password) == 0 {
+		// Promotes to enter the wallet password
+		fmt.Fprint(os.Stdout, "enter password:")
+		bp, err := terminal.ReadPassword(0)
+		if err != nil {
+			return "", err
+		}
+		password = string(bp)
+		fmt.Fprintln(os.Stdout, "")
+	}
+	return password, nil
 }

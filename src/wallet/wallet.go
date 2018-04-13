@@ -458,7 +458,6 @@ func (w *Wallet) unlock(password []byte) (*Wallet, error) {
 	// Decrypts the secrets
 	sb, err := crypto.Decrypt([]byte(sstr), password)
 	if err != nil {
-		logger.Errorf("Decrypt wallet failed: %v", err)
 		return nil, ErrInvalidPassword
 	}
 
@@ -534,9 +533,9 @@ func (w *Wallet) erase() {
 	}
 }
 
-// guardUpdate executes a function within the context of a read-wirte managed decrypted wallet.
+// GuardUpdate executes a function within the context of a read-wirte managed decrypted wallet.
 // Returns ErrWalletNotEncrypted if wallet is not encrypted.
-func (w *Wallet) guardUpdate(password []byte, fn func(w *Wallet) error) error {
+func (w *Wallet) GuardUpdate(password []byte, fn func(w *Wallet) error) error {
 	if !w.IsEncrypted() {
 		return ErrWalletNotEncrypted
 	}
@@ -567,9 +566,9 @@ func (w *Wallet) guardUpdate(password []byte, fn func(w *Wallet) error) error {
 	return nil
 }
 
-// guardView executes a function within the context of a read-only managed decrypted wallet.
+// GuardView executes a function within the context of a read-only managed decrypted wallet.
 // Returns ErrWalletNotEncrypted if wallet is not encrypted.
-func (w *Wallet) guardView(password []byte, f func(w *Wallet) error) error {
+func (w *Wallet) GuardView(password []byte, f func(w *Wallet) error) error {
 	if !w.IsEncrypted() {
 		return ErrWalletNotEncrypted
 	}

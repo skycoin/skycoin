@@ -868,7 +868,7 @@ func TestWalletGuard(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			require.NoError(t, w.guardUpdate([]byte("pwd"), func(w *Wallet) error {
+			require.NoError(t, w.GuardUpdate([]byte("pwd"), func(w *Wallet) error {
 				require.Equal(t, "seed", w.seed())
 				w.setLabel("label")
 				return nil
@@ -876,7 +876,7 @@ func TestWalletGuard(t *testing.T) {
 			require.Equal(t, "label", w.Label())
 			validate(w)
 
-			w.guardView([]byte("pwd"), func(w *Wallet) error {
+			w.GuardView([]byte("pwd"), func(w *Wallet) error {
 				require.Equal(t, "label", w.Label())
 				w.setLabel("new label")
 				return nil

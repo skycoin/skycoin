@@ -217,7 +217,7 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]
 	}
 
 	if w.IsEncrypted() {
-		if err := w.guardUpdate(password, f); err != nil {
+		if err := w.GuardUpdate(password, f); err != nil {
 			return nil, err
 		}
 	} else {
@@ -327,7 +327,7 @@ func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, vld
 	}
 
 	if w.IsEncrypted() {
-		if err := w.guardView(password, f); err != nil {
+		if err := w.GuardView(password, f); err != nil {
 			return nil, err
 		}
 	} else {
@@ -483,7 +483,7 @@ func (serv *Service) GetWalletSeed(wltID string, password []byte) (string, error
 	}
 
 	var seed string
-	if err := w.guardView(password, func(wlt *Wallet) error {
+	if err := w.GuardView(password, func(wlt *Wallet) error {
 		seed = wlt.seed()
 		return nil
 	}); err != nil {

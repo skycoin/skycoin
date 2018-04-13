@@ -36,6 +36,10 @@ func generateAddrsCmd(cfg Config) gcli.Command {
 				Value: cfg.FullWalletPath(),
 				Usage: `[wallet file or path] Generate addresses in the wallet`,
 			},
+			gcli.StringFlag{
+				Name:  "p",
+				Usage: `[password] wallet password`,
+			},
 			gcli.BoolFlag{
 				Name:  "json,j",
 				Usage: "Returns the results in JSON format",
@@ -44,7 +48,6 @@ func generateAddrsCmd(cfg Config) gcli.Command {
 		OnUsageError: onCommandUsageError(name),
 		Action:       generateAddrs,
 	}
-	// Commands = append(Commands, cmd)
 }
 
 func generateAddrs(c *gcli.Context) error {
@@ -63,7 +66,7 @@ func generateAddrs(c *gcli.Context) error {
 		return err
 	}
 
-	addrs, err := GenerateAddressesInFile(w, num)
+	addrs, err := GenerateAddressesInFile(w, num, c)
 
 	switch err.(type) {
 	case nil:
@@ -90,15 +93,32 @@ func generateAddrs(c *gcli.Context) error {
 }
 
 // GenerateAddressesInFile generates addresses in given wallet file
-func GenerateAddressesInFile(walletFile string, num uint64) ([]cipher.Address, error) {
+func GenerateAddressesInFile(walletFile string, num uint64, c *gcli.Context) ([]cipher.Address, error) {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
 		return nil, WalletLoadError(err)
 	}
 
-	addrs, err := wlt.GenerateAddresses(num)
-	if err != nil {
-		return nil, err
+	var addrs []cipher.Address
+	if wlt.IsEncrypted() {
+		password, err := getPassword(c)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := wlt.GuardUpdate([]byte(password), func(w *wallet.Wallet) error {
+			var err error
+			addrs, err = w.GenerateAddresses(num)
+			return err
+		}); err != nil {
+			return nil, err
+		}
+	} else {
+		var err error
+		addrs, err = wlt.GenerateAddresses(num)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	dir, err := filepath.Abs(filepath.Dir(walletFile))

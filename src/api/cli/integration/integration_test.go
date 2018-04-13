@@ -43,7 +43,8 @@ const (
 
 	testFixturesDir = "test-fixtures"
 
-	stableWalletName = "integration-test.wlt"
+	stableWalletName        = "integration-test.wlt"
+	stableEncryptWalletName = "integration-test-encrypted.wlt"
 )
 
 var (
@@ -99,27 +100,36 @@ func nodeAddress() string {
 	return addr
 }
 
-// createTempWalletFile creates a temporary dir, and copy the 'from' file to dir.
+// createTempWalletFile creates a temporary dir, and if encrypt is true, copy
+// the test-fixtures/$stableEncryptedWalletName file to the dir. If it's false, then
+// copy the test-fixtures/$stableWalletName file to the dir
 // returns the temporary wallet path, cleanup callback function, and error if any.
-func createTempWalletFile(t *testing.T) (string, func()) {
+func createTempWalletFile(t *testing.T, encrypt bool) (string, func()) {
 	dir, err := ioutil.TempDir("", "wallet-data-dir")
 	require.NoError(t, err)
 
 	// Copy the testdata/$stableWalletName to the temporary dir.
-	walletPath := filepath.Join(dir, stableWalletName)
+	var wltName string
+	if encrypt {
+		wltName = stableEncryptWalletName
+	} else {
+		wltName = stableWalletName
+	}
+
+	walletPath := filepath.Join(dir, wltName)
 	f, err := os.Create(walletPath)
 	require.NoError(t, err)
 
 	defer f.Close()
 
-	rf, err := os.Open(filepath.Join(testFixturesDir, stableWalletName))
+	rf, err := os.Open(filepath.Join(testFixturesDir, wltName))
 	require.NoError(t, err)
 
 	defer rf.Close()
 	io.Copy(f, rf)
 
 	os.Setenv("WALLET_DIR", dir)
-	os.Setenv("WALLET_NAME", stableWalletName)
+	os.Setenv("WALLET_NAME", wltName)
 
 	fun := func() {
 		os.Setenv("WALLET_DIR", "")
@@ -301,33 +311,50 @@ func TestStableGenerateAddresses(t *testing.T) {
 
 	tt := []struct {
 		name         string
+		encrypted    bool
 		args         []string
 		expectOutput []byte
 		goldenFile   string
 	}{
 		{
-			"generateAddresses",
-			[]string{"generateAddresses"},
-			[]byte("7g3M372kxwNwwQEAmrronu4anXTW8aD1XC\n"),
-			"generate-addresses.golden",
+			name:         "generateAddresses",
+			encrypted:    false,
+			args:         []string{"generateAddresses"},
+			expectOutput: []byte("7g3M372kxwNwwQEAmrronu4anXTW8aD1XC\n"),
+			goldenFile:   "generate-addresses.golden",
 		},
 		{
-			"generateAddresses -n 2 -j",
-			[]string{"generateAddresses", "-n", "2", "-j"},
-			[]byte("{\n    \"addresses\": [\n        \"7g3M372kxwNwwQEAmrronu4anXTW8aD1XC\",\n        \"2EDapDfn1VC6P2hx4nTH2cRUkboGAE16evV\"\n    ]\n}\n"),
-			"generate-addresses-2.golden",
+			name:         "generateAddresses -n 2 -j",
+			encrypted:    false,
+			args:         []string{"generateAddresses", "-n", "2", "-j"},
+			expectOutput: []byte("{\n    \"addresses\": [\n        \"7g3M372kxwNwwQEAmrronu4anXTW8aD1XC\",\n        \"2EDapDfn1VC6P2hx4nTH2cRUkboGAE16evV\"\n    ]\n}\n"),
+			goldenFile:   "generate-addresses-2.golden",
 		},
 		{
-			"generateAddresses -n -2 -j",
-			[]string{"generateAddresses", "-n", "-2", "-j"},
-			[]byte("Error: invalid value \"-2\" for flag -n: strconv.ParseUint: parsing \"-2\": invalid syntax"),
-			"generate-addresses-2.golden",
+			name:         "generateAddresses -n -2 -j",
+			encrypted:    false,
+			args:         []string{"generateAddresses", "-n", "-2", "-j"},
+			expectOutput: []byte("Error: invalid value \"-2\" for flag -n: strconv.ParseUint: parsing \"-2\": invalid syntax"),
+			goldenFile:   "generate-addresses-2.golden",
+		},
+		{
+			name:         "generateAddresses in encrypted wallet",
+			encrypted:    true,
+			args:         []string{"generateAddresses", "-p", "pwd", "-j"},
+			expectOutput: []byte("{\n    \"addresses\": [\n        \"7g3M372kxwNwwQEAmrronu4anXTW8aD1XC\"\n    ]\n}\n"),
+			goldenFile:   "generate-addresses-encrypted.golden",
+		},
+		{
+			name:         "generateAddresses in encrypted wallet with invalid password",
+			encrypted:    true,
+			args:         []string{"generateAddresses", "-p", "invalid password", "-j"},
+			expectOutput: []byte("Error: invalid password. See 'skycoin-cli generateAddresses --help'\n\n"),
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			walletPath, clean := createTempWalletFile(t)
+			walletPath, clean := createTempWalletFile(t, tc.encrypted)
 			defer clean()
 
 			output, err := exec.Command(binaryPath, tc.args...).CombinedOutput()
@@ -347,6 +374,11 @@ func TestStableGenerateAddresses(t *testing.T) {
 			goldenFile := filepath.Join(testFixturesDir, tc.goldenFile)
 			var expect wallet.ReadableWallet
 			loadJSON(t, goldenFile, &expect)
+			if tc.encrypted {
+				// wips secrets as it's not stable
+				expect.Meta["secrets"] = ""
+				w.Meta["secrets"] = ""
+			}
 			require.Equal(t, expect, w)
 		})
 	}
@@ -1519,7 +1551,7 @@ func TestLiveSend(t *testing.T) {
 				return []string{"send", "-a", w.Entries[2].Address.String(),
 					w.Entries[1].Address.String(), "1"}
 			},
-			errMsg:  []byte("ERROR: Transaction has zero coinhour fee. See 'skycoin-cli send --help'"),
+			errMsg:  []byte("Error: Transaction has zero coinhour fee. See 'skycoin-cli send --help'"),
 			checkTx: func(t *testing.T, txid string) {},
 		},
 	}
@@ -1533,7 +1565,7 @@ func TestLiveSend(t *testing.T) {
 			}
 			require.NoError(t, err)
 			output = bytes.TrimRight(output, "\n")
-			if bytes.Contains(output, []byte("ERROR:")) {
+			if bytes.Contains(output, []byte("Error:")) {
 				require.Equal(t, tc.errMsg, output)
 				return
 			}
@@ -1567,7 +1599,7 @@ func TestLiveSend(t *testing.T) {
 
 	// Send with too small decimal value
 	// CLI send is a litte bit slow, almost 300ms each. so we only test 20 invalid decimal coin.
-	errMsg := []byte("ERROR: invalid amount, too many decimal places. See 'skycoin-cli send --help'")
+	errMsg := []byte("Error: invalid amount, too many decimal places. See 'skycoin-cli send --help'")
 	for i := uint64(1); i < uint64(20); i++ {
 		v, err := droplet.ToString(i)
 		require.NoError(t, err)
@@ -1666,7 +1698,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 			}
 			require.NoError(t, err)
 			output = bytes.TrimRight(output, "\n")
-			if bytes.Contains(output, []byte("ERROR:")) {
+			if bytes.Contains(output, []byte("Error:")) {
 				require.Equal(t, tc.errMsg, output)
 				return
 			}
@@ -1699,7 +1731,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 	}
 
 	// Send with too small decimal value
-	errMsg := []byte("ERROR: invalid amount, too many decimal places. See 'skycoin-cli createRawTransaction --help'")
+	errMsg := []byte("Error: invalid amount, too many decimal places. See 'skycoin-cli createRawTransaction --help'")
 	for i := uint64(1); i < uint64(20); i++ {
 		v, err := droplet.ToString(i)
 		require.NoError(t, err)
@@ -2053,10 +2085,10 @@ func TestStableGenerateWallet(t *testing.T) {
 			name: "generate wallet with duplicate wallet name",
 			args: []string{},
 			setup: func(t *testing.T) func() {
-				_, clean := createTempWalletFile(t)
+				_, clean := createTempWalletFile(t, false)
 				return clean
 			},
-			errMsg: []byte("ERROR: integration-test.wlt already exist. See 'skycoin-cli generateWallet --help'"),
+			errMsg: []byte("Error: integration-test.wlt already exist. See 'skycoin-cli generateWallet --help'"),
 		},
 	}
 
@@ -2074,7 +2106,7 @@ func TestStableGenerateWallet(t *testing.T) {
 
 			// Checks if the output is start with "Error: ",
 			// confirms the error message are matched.
-			if bytes.Contains(output, []byte("ERROR: ")) {
+			if bytes.Contains(output, []byte("Error: ")) {
 				require.Equal(t, tc.errMsg, output)
 				return
 			}
@@ -2201,7 +2233,7 @@ func TestLiveGUIInjectTransaction(t *testing.T) {
 			}
 			require.NoError(t, err)
 			output = bytes.TrimRight(output, "\n")
-			if bytes.Contains(output, []byte("ERROR:")) {
+			if bytes.Contains(output, []byte("Error:")) {
 				require.Equal(t, tc.errMsg, output)
 				return
 			}

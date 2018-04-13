@@ -137,8 +137,8 @@ func (rpc RPC) GetAddressTxns(v *Visor, addr cipher.Address) ([]Transaction, err
 }
 
 // CreateWallet creates new wallet
-func (rpc *RPC) CreateWallet(wltName string, options wallet.Options) (*wallet.Wallet, error) {
-	return rpc.v.Wallets.CreateWallet(wltName, options)
+func (rpc *RPC) CreateWallet(wltName string, options wallet.Options, bg wallet.BalanceGetter) (*wallet.Wallet, error) {
+	return rpc.v.Wallets.CreateWallet(wltName, options, bg)
 }
 
 // NewAddresses generates new addresses in given wallet

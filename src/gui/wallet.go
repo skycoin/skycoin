@@ -314,6 +314,7 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 			Label:    label,
 			Encrypt:  encrypt,
 			Password: []byte(password),
+			ScanN:    scanN,
 		})
 		if err != nil {
 			switch err {
@@ -326,13 +327,6 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 			}
 		}
 
-		wlt, err = gateway.ScanAheadWalletAddresses(wlt.Filename(), []byte(password), scanN-1)
-		if err != nil {
-			logger.Errorf("gateway.ScanAheadWalletAddresses failed: %v", err)
-			wh.Error500(w)
-			return
-		}
-		// Wipes all sensitive data
 		rlt, err := NewWalletResponse(wlt)
 		if err != nil {
 			wh.Error500Msg(w, err.Error())

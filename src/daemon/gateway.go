@@ -546,22 +546,7 @@ func (gw *Gateway) CreateWallet(wltName string, options wallet.Options) (*wallet
 	var wlt *wallet.Wallet
 	var err error
 	gw.strand("CreateWallet", func() {
-		wlt, err = gw.vrpc.CreateWallet(wltName, options)
-	})
-	return wlt, err
-}
-
-// ScanAheadWalletAddresses loads wallet from given seed and scan ahead N addresses
-// Set password as nil if the wallet is not encrypted, otherwise the password must be provided
-func (gw *Gateway) ScanAheadWalletAddresses(wltName string, password []byte, scanN uint64) (*wallet.Wallet, error) {
-	if !gw.Config.EnableWalletAPI {
-		return nil, wallet.ErrWalletAPIDisabled
-	}
-
-	var wlt *wallet.Wallet
-	var err error
-	gw.strand("ScanAheadWalletAddresses", func() {
-		wlt, err = gw.v.ScanAheadWalletAddresses(wltName, password, scanN)
+		wlt, err = gw.v.CreateWallet(wltName, options)
 	})
 	return wlt, err
 }

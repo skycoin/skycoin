@@ -1011,7 +1011,6 @@ func TestWalletCreateHandler(t *testing.T) {
 		status                    int
 		err                       string
 		wltName                   string
-		scnN                      uint64
 		options                   wallet.Options
 		gatewayCreateWalletResult wallet.Wallet
 		gatewayCreateWalletErr    error
@@ -1087,30 +1086,6 @@ func TestWalletCreateHandler(t *testing.T) {
 			gatewayCreateWalletErr: errors.New("gateway.CreateWallet error"),
 		},
 		{
-			name:   "500 - gateway.ScanAheadWalletAddresses error",
-			method: http.MethodPost,
-			body: &httpBody{
-				Seed:  "foo",
-				Label: "bar",
-				ScanN: "2",
-			},
-			status:  http.StatusInternalServerError,
-			err:     "500 Internal Server Error",
-			wltName: "filename",
-			scnN:    2,
-			options: wallet.Options{
-				Label:    "bar",
-				Seed:     "foo",
-				Password: []byte{},
-			},
-			gatewayCreateWalletResult: wallet.Wallet{
-				Meta: map[string]string{
-					"filename": "filename",
-				},
-			},
-			scanWalletAddressesError: errors.New("gateway.ScanAheadWalletAddresses error"),
-		},
-		{
 			name:   "403 - Forbidden - wallet API disabled",
 			method: http.MethodPost,
 			body: &httpBody{
@@ -1121,11 +1096,11 @@ func TestWalletCreateHandler(t *testing.T) {
 			status:  http.StatusForbidden,
 			err:     "403 Forbidden",
 			wltName: "filename",
-			scnN:    2,
 			options: wallet.Options{
 				Label:    "bar",
 				Seed:     "foo",
 				Password: []byte{},
+				ScanN:    2,
 			},
 			gatewayCreateWalletErr: wallet.ErrWalletAPIDisabled,
 		},
@@ -1140,11 +1115,11 @@ func TestWalletCreateHandler(t *testing.T) {
 			status:  http.StatusOK,
 			err:     "",
 			wltName: "filename",
-			scnN:    2,
 			options: wallet.Options{
 				Label:    "bar",
 				Seed:     "foo",
 				Password: []byte{},
+				ScanN:    2,
 			},
 			gatewayCreateWalletResult: wallet.Wallet{
 				Meta: map[string]string{
@@ -1177,11 +1152,11 @@ func TestWalletCreateHandler(t *testing.T) {
 			status:  http.StatusOK,
 			err:     "",
 			wltName: "filename",
-			scnN:    2,
 			options: wallet.Options{
 				Label:    "bar",
 				Seed:     "foo",
 				Password: []byte{},
+				ScanN:    2,
 			},
 			gatewayCreateWalletResult: wallet.Wallet{
 				Meta: map[string]string{
@@ -1218,8 +1193,8 @@ func TestWalletCreateHandler(t *testing.T) {
 				Seed:     "foo",
 				Encrypt:  true,
 				Password: []byte("pwd"),
+				ScanN:    2,
 			},
-			scnN: 2,
 			gatewayCreateWalletResult: wallet.Wallet{
 				Meta: map[string]string{
 					"filename":  "filename",
@@ -1260,8 +1235,11 @@ func TestWalletCreateHandler(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &GatewayerMock{}
+			if tc.options.ScanN == 0 {
+				tc.options.ScanN = 1
+			}
 			gateway.On("CreateWallet", "", tc.options).Return(&tc.gatewayCreateWalletResult, tc.gatewayCreateWalletErr)
-			gateway.On("ScanAheadWalletAddresses", tc.wltName, tc.options.Password, tc.scnN-1).Return(&tc.scanWalletAddressesResult, tc.scanWalletAddressesError)
+			// gateway.On("ScanAheadWalletAddresses", tc.wltName, tc.options.Password, tc.scnN-1).Return(&tc.scanWalletAddressesResult, tc.scanWalletAddressesError)
 
 			endpoint := "/wallet/create"
 

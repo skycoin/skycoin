@@ -128,19 +128,15 @@ install-linters: ## Install linters
 	gometalinter --vendored-linters --install
 
 install-deps-libc: configure-build ## Install locally dependencies for testing libskycoin
-	# wget -O $(BUILD_DIR)/usr/tmp/criterion-v2.3.2-$(OSNAME)-x86_64.tar.bz2 https://github.com/Snaipe/Criterion/releases/download/v2.3.2/criterion-v2.3.2-$(OSNAME)-x86_64.tar.bz2
-	wget -O $(BUILD_DIR)/usr/tmp/criterion-bleeding-branch.zip https://github.com/Snaipe/Criterion/archive/bleeding.zip
-	# tar -x -C $(BUILD_DIR)/usr/tmp/ -j -f $(BUILD_DIR)/usr/tmp/criterion-v2.3.2-$(OSNAME)-x86_64.tar.bz2
+	wget -O $(BUILD_DIR)/usr/tmp/criterion-v2.3.2-$(OSNAME)-x86_64.tar.bz2 https://github.com/Snaipe/Criterion/releases/download/v2.3.2/criterion-v2.3.2-$(OSNAME)-x86_64.tar.bz2
+	tar -x -C $(BUILD_DIR)/usr/tmp/ -j -f $(BUILD_DIR)/usr/tmp/criterion-v2.3.2-$(OSNAME)-x86_64.tar.bz2
+	ls $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/include
+	ls -1 $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/lib     | xargs -I NAME mv $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/lib/NAME     $(BUILD_DIR)/usr/lib/NAME
+	ls -1 $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/include | xargs -I NAME mv $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/include/NAME $(BUILD_DIR)/usr/include/NAME
+    wget -O $(BUILD_DIR)/usr/tmp/criterion-bleeding-branch.zip https://github.com/Snaipe/Criterion/archive/bleeding.zip
 	unzip $(BUILD_DIR)/usr/tmp/criterion-bleeding-branch.zip -d $(BUILD_DIR)/usr/tmp/
-	cd $(BUILD_DIR)/usr/tmp/Criterion-bleeding
-	mkdir $(BUILD_DIR)/usr/tmp/Criterion-bleeding/.build
-	cd $(BUILD_DIR)/usr/tmp/Criterion-bleeding/.build
-	cmake $(BUILD_DIR)/usr/tmp/Criterion-bleeding/
-	cmake --build $(BUILD_DIR)/usr/tmp/Criterion-bleeding/.build
-	make install $(BUILD_DIR)/usr/tmp/Criterion-bleeding/.build
-	ls $(BUILD_DIR)/usr/tmp/Criterion-bleeding/.build/include
-	ls -1 $(BUILD_DIR)/usr/tmp/Criterion-bleeding/.build/lib     | xargs -I NAME mv $(BUILD_DIR)/usr/tmp/Criterion-bleeding/.build/lib/NAME     $(BUILD_DIR)/usr/lib/NAME
-	ls -1 $(BUILD_DIR)/usr/tmp/Criterion-bleeding/.build/include | xargs -I NAME mv $(BUILD_DIR)/usr/tmp/Criterion-bleeding/.build/include/NAME $(BUILD_DIR)/usr/include/NAME
+	cd $(BUILD_DIR)/usr/tmp/Criterion-bleeding/include
+	cp $(BUILD_DIR)/usr/tmp/Criterion-bleeding/include/criterion $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/include
 
 format: ## Formats the code. Must have goimports installed (use make install-linters).
 	goimports -w -local github.com/skycoin/skycoin ./cmd

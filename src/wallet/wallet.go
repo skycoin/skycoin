@@ -52,8 +52,10 @@ var (
 	ErrWrongCryptoType = errors.New("wrong crypto type")
 	// ErrWalletNotExist is returned if a wallet does not exist
 	ErrWalletNotExist = errors.New("wallet doesn't exist")
-	// ErrWalletAPIDisabled is returned when trying to do wallet actions while the DisableWalletAPI option is enabled.
-	ErrWalletAPIDisabled = errors.New("wallet api disabled")
+	// ErrWalletAPIDisabled is returned when trying to do wallet actions while the EnableWalletAPI option is false
+	ErrWalletAPIDisabled = errors.New("wallet api is disabled")
+	// ErrSeedAPIDisabled is returned when trying to get seed of wallet while the EnableWalletAPI or EnableSeedAPI is false
+	ErrSeedAPIDisabled = errors.New("wallet seed api is disabled")
 	// ErrWalletNameConflict represents the wallet name conflict error
 	ErrWalletNameConflict = errors.New("wallet name would conflict with existing wallet, renaming")
 )
@@ -228,6 +230,9 @@ func (w *Wallet) lock(password []byte, cryptoType CryptoType) error {
 
 	// Sets wallet as encrypted
 	wlt.setEncrypted(true)
+
+	// Sets the wallet version
+	wlt.setVersion(Version)
 
 	// Wipes unencrypted sensitive data
 	wlt.erase()

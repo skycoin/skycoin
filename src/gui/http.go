@@ -44,18 +44,18 @@ type Server struct {
 
 // Config configures Server
 type Config struct {
-	StaticDir        string
-	DisableCSRF      bool
-	DisableWalletAPI bool
-	ReadTimeout      time.Duration
-	WriteTimeout     time.Duration
-	IdleTimeout      time.Duration
+	StaticDir       string
+	DisableCSRF     bool
+	EnableWalletAPI bool
+	ReadTimeout     time.Duration
+	WriteTimeout    time.Duration
+	IdleTimeout     time.Duration
 }
 
 type muxConfig struct {
-	host             string
-	appLoc           string
-	disableWalletAPI bool
+	host            string
+	appLoc          string
+	enableWalletAPI bool
 }
 
 func create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
@@ -83,9 +83,9 @@ func create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
 	}
 
 	mc := muxConfig{
-		host:             host,
-		appLoc:           appLoc,
-		disableWalletAPI: c.DisableWalletAPI,
+		host:            host,
+		appLoc:          appLoc,
+		enableWalletAPI: c.EnableWalletAPI,
 	}
 
 	srvMux := newServerMux(mc, daemon.Gateway, csrfStore)
@@ -184,7 +184,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.Se
 		mux.Handle(endpoint, handler)
 	}
 
-	if !c.disableWalletAPI {
+	if c.enableWalletAPI {
 		webHandler("/", newIndexHandler(c.appLoc))
 
 		fileInfos, _ := ioutil.ReadDir(c.appLoc)
@@ -266,10 +266,29 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.Se
 	//     entropy: entropy bitsize.
 	webHandler("/wallet/newSeed", newWalletSeed(gateway))
 
+	// Gets seed of wallet of given id
+	// GET Arguments:
+	//     id: wallet id
+	//     password: wallet password
+	webHandler("/wallet/seed", walletSeedHandler(gateway))
+
 	// unload wallet
 	// POST Argument:
 	//         id: wallet id
 	webHandler("/wallet/unload", walletUnloadHandler(gateway))
+
+	// Encrypts wallet
+	// POST arguments:
+	//     id: wallet id
+	//     password: wallet password
+	// Returns an encrypted wallet json without sensitive data
+	webHandler("/wallet/encrypt", walletEncryptHandler(gateway))
+
+	// Decrypts wallet
+	// POST arguments:
+	//     id: wallet id
+	//     password: wallet password
+	webHandler("/wallet/decrypt", walletDecryptHandler(gateway))
 
 	// Blockchain interface
 
@@ -284,7 +303,6 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.Se
 	webHandler("/last_blocks", getLastBlocks(gateway))
 
 	// Network stats interface
-
 	webHandler("/network/connection", connectionHandler(gateway))
 	webHandler("/network/connections", connectionsHandler(gateway))
 	webHandler("/network/defaultConnections", defaultConnectionsHandler(gateway))
@@ -297,6 +315,9 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.Se
 	webHandler("/pendingTxs", getPendingTxs(gateway))
 	// get txn by txid
 	webHandler("/transaction", getTransactionByID(gateway))
+
+	// Health check handler
+	webHandler("/health", healthCheck(gateway))
 
 	// Returns transactions that match the filters.
 	// Method: GET

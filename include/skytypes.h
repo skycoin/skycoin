@@ -64,7 +64,7 @@ typedef float _Complex GoComplex64_;
  * Instances of Go `complex` type.
  */
 typedef double _Complex GoComplex128_;
-typedef short bool;
+typedef GoUint32_ bool;
 typedef GoUint32_ error;
 
 /*

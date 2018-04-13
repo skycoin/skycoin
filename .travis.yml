@@ -30,6 +30,8 @@ cache:
   - $HOME/.npm/_prebuilds
 
 install:
+  # Clone to specific folder
+  - git clone https://github.com/$TRAVIS_REPO_SLUG.git /home/travis/gopath/src/github.com/skycoin/skycoin
   # Install gox
   - go get github.com/gz-c/gox
   # Install dependences for building wallet

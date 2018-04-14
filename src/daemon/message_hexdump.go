@@ -11,6 +11,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 
 	"reflect"
+	"github.com/skycoin/skycoin/src/util"
 )
 
 var registered = false
@@ -140,4 +141,47 @@ func printFinalHex(i int) {
 	finalHex = "0x" + finalHex
 	finalHex = finalHex + " | "
 	fmt.Println(finalHex)
+}
+
+type MessagesAnnotationsGenerator struct {
+	Message gnet.Message
+}
+
+func (mag *MessagesAnnotationsGenerator) GenerateAnnotations() []util.Annotation {
+	//printLHexDumpWithFormat(0, "Length", serializedMsg[0:4])
+	var annotations = make([]util.Annotation,2)
+	annotations[0] = util.Annotation{Size:4,Name:"Length"}
+	//printLHexDumpWithFormat(4, "Prefix", serializedMsg[4:8])
+	annotations[1] = util.Annotation{Size:4,Name:"Prefix"}
+	//offset += len(serializedMsg[0:8])
+	var v = reflect.Indirect(reflect.ValueOf(mag.Message))
+
+	t := v.Type()
+	for i := 0; i < v.NumField(); i++ {
+		v_f := v.Field(i)
+		f := t.Field(i)
+		if f.Tag.Get("enc") != "-" {
+			if v_f.CanSet() || f.Name != "_" {
+				if v.Field(i).Kind() == reflect.Slice {
+					//printLHexDumpWithFormat(offset, f.Name+" length", encoder.Serialize(v.Field(i).Slice(0, v.Field(i).Len()).Interface())[0:4])
+					annotations = append(annotations, util.Annotation{Size:4,Name:f.Name+" length"})
+					//offset += len(encoder.Serialize(v.Field(i).Slice(0, v.Field(i).Len()).Interface())[0:4])
+
+					for j := 0; j < v.Field(i).Len(); j++ {
+						//printLHexDumpWithFormat(offset, f.Name+"#"+strconv.Itoa(j), encoder.Serialize(v.Field(i).Slice(j, j+1).Interface()))
+						annotations = append(annotations, util.Annotation{Size:len(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())),Name:f.Name+"#"+strconv.Itoa(j)})
+						//offset += len(encoder.Serialize(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())))
+					}
+				} else {
+					//printLHexDumpWithFormat(offset, f.Name, encoder.Serialize(v.Field(i).Interface()))
+					annotations = append(annotations, util.Annotation{Size:len(encoder.Serialize(v.Field(i).Interface())),Name:f.Name})
+					//offset += len(encoder.Serialize(v.Field(i).Interface()))
+				}
+			} else {
+				//don't write anything
+			}
+		}
+	}
+
+	return annotations
 }

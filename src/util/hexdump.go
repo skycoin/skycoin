@@ -2,9 +2,10 @@ package util
 
 import (
 	"io"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"strconv"
 	"fmt"
+	"bufio"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 )
 
 type Annotation struct {
@@ -13,20 +14,29 @@ type Annotation struct {
 }
 
 type IAnnotationsGenerator interface {
-	GenerateAnnotations(data interface{}) []Annotation
+	GenerateAnnotations() []Annotation
 }
 
 func writeHexdumpMember(offset int, size int, writer io.Writer, buffer []byte, name string) {
 	var hexBuff = make([]string, size)
+	var j = 0
 	for i := offset; i < offset + size; i++ {
-		hexBuff[i] = strconv.FormatInt(int64(buffer[i]), 16)
+		hexBuff[j] = strconv.FormatInt(int64(buffer[i]), 16)
+		j++
 	}
-	for i := 0; i < len(buffer); i++ {
+	for i := 0; i < len(hexBuff); i++ {
 		if len(hexBuff[i]) == 1 {
 			hexBuff[i] = "0" + hexBuff[i]
 		}
 	}
-	writer.Write(encoder.Serialize(getSliceContentsString(hexBuff, offset) + " " + name))
+
+	var sliceContents = getSliceContentsString(hexBuff, offset)
+	var serialized = encoder.Serialize(sliceContents + " " + name + "\n")
+
+	f := bufio.NewWriter(writer)
+	defer f.Flush()
+	f.Write(serialized[4:])
+
 }
 
 func getSliceContentsString(sl []string, offset int) string {
@@ -81,13 +91,13 @@ func printFinalHex(i int, writer io.Writer) {
 
 
 
-func HexDump(data interface{}, annotations []Annotation, writer io.Writer) {
-	var serializedData = encoder.Serialize(data)
+func HexDump(buffer []byte, annotations []Annotation, writer io.Writer) {
+	//var serializedData = encoder.Serialize(data)
 
 	var currentOffset = 0
 
 	for _, element := range annotations {
-		writeHexdumpMember(currentOffset,element.Size,writer,serializedData,element.Name)
+		writeHexdumpMember(currentOffset,element.Size,writer,buffer,element.Name)
 		currentOffset += element.Size
 	}
 

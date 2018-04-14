@@ -3,17 +3,17 @@ package daemon
 import (
 	"crypto/sha256"
 	"fmt"
-	"reflect"
-	"strconv"
 	"testing"
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/util"
+	"bufio"
+	"os"
 )
 
 func GenerateRandomSha256() cipher.SHA256 {
@@ -26,6 +26,7 @@ func setupMsgEncoding() {
 	messagesConfig.Register()
 }
 
+/*
 func MessageHexDump(message gnet.Message, printFull bool) {
 	var serializedMsg = gnet.EncodeMessage(message)
 
@@ -64,14 +65,22 @@ func MessageHexDump(message gnet.Message, printFull bool) {
 
 	testutil.PrintFinalHex(len(serializedMsg))
 }
+*/
 
-func ExampleNewIntroductionMessage() {
+func MessageHexDump(a interface{},b interface{}){
+
+}
+
+func TestNewIntroductionMessage(t *testing.T) {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
 
 	var message = NewIntroductionMessage(1234, 5, 7890)
 	fmt.Println("IntroductionMessage:")
-	MessageHexDump(message, true)
+	var mag = MessagesAnnotationsGenerator{Message:message}
+	w := bufio.NewWriter(os.Stdout)
+	util.HexDump(gnet.EncodeMessage(message),mag.GenerateAnnotations(),w)
+	//MessageHexDump(message, true)
 	// Output:
 }
 

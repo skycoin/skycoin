@@ -127,7 +127,7 @@ func TestServiceCreateWallet(t *testing.T) {
 					Seed:     seed,
 					Encrypt:  tc.encrypt,
 					Password: tc.password,
-				})
+				}, nil)
 				require.Equal(t, tc.err, err)
 				if err != nil {
 					return
@@ -148,14 +148,14 @@ func TestServiceCreateWallet(t *testing.T) {
 				}
 
 				// create wallet with dup wallet name
-				_, err = s.CreateWallet(wltName, Options{Seed: "seed2"})
+				_, err = s.CreateWallet(wltName, Options{Seed: "seed2"}, nil)
 				require.Equal(t, err, ErrWalletNameConflict)
 
 				// create wallet with dup seed
 				dupWlt := "dup_wallet.wlt"
 				_, err = s.CreateWallet(dupWlt, Options{
 					Seed: seed,
-				})
+				}, nil)
 				require.EqualError(t, err, fmt.Sprintf("wallet %s would be duplicate with %v, same seed", dupWlt, wltName))
 
 				// check if the dup wallet is created
@@ -181,7 +181,6 @@ func TestServiceLoadWallet(t *testing.T) {
 	tt := []struct {
 		name          string
 		opts          Options
-		scanN         uint64
 		bg            BalanceGetter
 		err           error
 		expectAddrNum int
@@ -192,8 +191,8 @@ func TestServiceLoadWallet(t *testing.T) {
 			Options{
 				Seed:  "seed",
 				Label: "wallet",
+				ScanN: 5,
 			},
-			5,
 			mockBalanceGetter{
 				addrs[0]: BalancePair{Confirmed: Balance{Coins: 1e6, Hours: 100}},
 			},
@@ -206,8 +205,8 @@ func TestServiceLoadWallet(t *testing.T) {
 			Options{
 				Seed:  "seed",
 				Label: "wallet",
+				ScanN: 5,
 			},
-			5,
 			mockBalanceGetter{
 				addrs[1]: BalancePair{Confirmed: Balance{Coins: 1e6, Hours: 100}},
 			},
@@ -222,8 +221,8 @@ func TestServiceLoadWallet(t *testing.T) {
 				Label:    "wallet",
 				Encrypt:  true,
 				Password: []byte("pwd"),
+				ScanN:    5,
 			},
-			5,
 			mockBalanceGetter{
 				addrs[0]: BalancePair{Confirmed: Balance{Coins: 1e6, Hours: 100}},
 			},
@@ -238,8 +237,8 @@ func TestServiceLoadWallet(t *testing.T) {
 				Label:    "wallet",
 				Encrypt:  true,
 				Password: []byte("pwd"),
+				ScanN:    5,
 			},
-			5,
 			mockBalanceGetter{
 				addrs[1]: BalancePair{Confirmed: Balance{Coins: 1e6, Hours: 100}},
 			},
@@ -262,7 +261,7 @@ func TestServiceLoadWallet(t *testing.T) {
 				require.NoError(t, err)
 				wltName := newWalletFilename()
 
-				w, err := s.loadWallet(wltName, tc.opts, tc.scanN, tc.bg)
+				w, err := s.loadWallet(wltName, tc.opts, tc.bg)
 				require.Equal(t, tc.err, err)
 				if err != nil {
 					return
@@ -400,7 +399,7 @@ func TestServiceNewAddress(t *testing.T) {
 
 				wltName := newWalletFilename()
 
-				w, err := s.CreateWallet(wltName, tc.opts)
+				w, err := s.CreateWallet(wltName, tc.opts, nil)
 				if err != nil {
 					require.Equal(t, tc.expectErr, err)
 					return
@@ -572,7 +571,7 @@ func TestServiceGetWallets(t *testing.T) {
 				w2, err := s.CreateWallet(wltName, Options{
 					Seed:  "seed",
 					Label: "label",
-				})
+				}, nil)
 				require.NoError(t, err)
 				wallets = append(wallets, w2)
 
@@ -630,7 +629,7 @@ func TestServiceReloadWallets(t *testing.T) {
 			}
 
 			wltName := "t1.wlt"
-			w1, err := s.CreateWallet(wltName, Options{Seed: "seed1"})
+			w1, err := s.CreateWallet(wltName, Options{Seed: "seed1"}, nil)
 			require.NoError(t, err)
 
 			fmt.Println(dir, w1.Filename())
@@ -861,7 +860,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 
 				wltName := newWalletFilename()
 
-				w, err := s.CreateWallet(wltName, tc.opts)
+				w, err := s.CreateWallet(wltName, tc.opts, nil)
 				require.NoError(t, err)
 
 				tx, err := s.CreateAndSignTransaction(w.Filename(), tc.pwd, tc.vld, unspents, uint64(headTime), tc.coins, tc.dest)
@@ -945,7 +944,7 @@ func TestServiceUpdateWalletLabel(t *testing.T) {
 				}
 
 				// Create a new wallet
-				w, err := s.CreateWallet(tc.wltName, tc.opts)
+				w, err := s.CreateWallet(tc.wltName, tc.opts, nil)
 				require.NoError(t, err)
 
 				err = s.UpdateWalletLabel(tc.updateWltName, tc.label)
@@ -1040,7 +1039,7 @@ func TestServiceEncryptWallet(t *testing.T) {
 				}
 
 				// Create a new wallet
-				w, err := s.CreateWallet(tc.wltName, tc.opts)
+				w, err := s.CreateWallet(tc.wltName, tc.opts, nil)
 				require.NoError(t, err)
 
 				// Encrypt the wallet
@@ -1168,7 +1167,7 @@ func TestServiceDecryptWallet(t *testing.T) {
 					return
 				}
 
-				_, err = s.CreateWallet(tc.wltName, tc.opts)
+				_, err = s.CreateWallet(tc.wltName, tc.opts, nil)
 				require.NoError(t, err)
 
 				_, err = s.DecryptWallet(tc.decryptWltName, tc.password)
@@ -1218,7 +1217,7 @@ func TestServiceDecryptWallet(t *testing.T) {
 	}
 }
 
-func TestServiceScanAheadWalletAddresses(t *testing.T) {
+func TestServiceCreateWalletWithScan(t *testing.T) {
 	bg := make(mockBalanceGetter, len(addrsOfSeed1))
 	addrs := fromAddrString(t, addrsOfSeed1)
 	for _, a := range addrs {
@@ -1237,8 +1236,6 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 	tt := []struct {
 		name             string
 		opts             Options
-		pwd              []byte
-		scanN            uint64
 		balGetter        BalanceGetter
 		disableWalletAPI bool
 		expect           exp
@@ -1265,7 +1262,6 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 				Encrypt:  true,
 				Password: []byte("pwd"),
 			},
-			pwd:       []byte("pwd"),
 			balGetter: bg,
 			expect: exp{
 				err:              nil,
@@ -1279,9 +1275,9 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 		{
 			name: "no coins and scan 1, unencrypted",
 			opts: Options{
-				Seed: "seed1",
+				Seed:  "seed1",
+				ScanN: 1,
 			},
-			scanN:     1,
 			balGetter: bg,
 			expect: exp{
 				err:              nil,
@@ -1298,9 +1294,8 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 				Seed:     "seed1",
 				Encrypt:  true,
 				Password: []byte("pwd"),
+				ScanN:    1,
 			},
-			pwd:       []byte("pwd"),
-			scanN:     1,
 			balGetter: bg,
 			expect: exp{
 				err:              nil,
@@ -1314,9 +1309,9 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 		{
 			name: "no coins and scan 10, unencrypted",
 			opts: Options{
-				Seed: "seed1",
+				Seed:  "seed1",
+				ScanN: 10,
 			},
-			scanN:     10,
 			balGetter: bg,
 			expect: exp{
 				err:              nil,
@@ -1330,9 +1325,9 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 		{
 			name: "scan 5 get 5, unencrypted",
 			opts: Options{
-				Seed: "seed1",
+				Seed:  "seed1",
+				ScanN: 5,
 			},
-			scanN: 5,
 			balGetter: mockBalanceGetter{
 				addrs[4]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 			},
@@ -1351,9 +1346,8 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 				Seed:     "seed1",
 				Encrypt:  true,
 				Password: []byte("pwd"),
+				ScanN:    5,
 			},
-			pwd:   []byte("pwd"),
-			scanN: 5,
 			balGetter: mockBalanceGetter{
 				addrs[4]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 			},
@@ -1369,9 +1363,9 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 		{
 			name: "scan 5 get 4, unencrypted",
 			opts: Options{
-				Seed: "seed1",
+				Seed:  "seed1",
+				ScanN: 5,
 			},
-			scanN: 5,
 			balGetter: mockBalanceGetter{
 				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 				addrs[3]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
@@ -1391,9 +1385,8 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 				Seed:     "seed1",
 				Encrypt:  true,
 				Password: []byte("pwd"),
+				ScanN:    5,
 			},
-			pwd:   []byte("pwd"),
-			scanN: 5,
 			balGetter: mockBalanceGetter{
 				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 				addrs[3]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
@@ -1410,9 +1403,9 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 		{
 			name: "scan 5 get 4 have 6, unencrypted",
 			opts: Options{
-				Seed: "seed1",
+				Seed:  "seed1",
+				ScanN: 5,
 			},
-			scanN: 5,
 			balGetter: mockBalanceGetter{
 				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 				addrs[3]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
@@ -1430,9 +1423,9 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 		{
 			name: "confirmed and predicted, unencrypted",
 			opts: Options{
-				Seed: "seed1",
+				Seed:  "seed1",
+				ScanN: 5,
 			},
-			scanN: 5,
 			balGetter: mockBalanceGetter{
 				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 				addrs[3]: BalancePair{Predicted: Balance{Coins: 10, Hours: 100}},
@@ -1452,9 +1445,8 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 				Seed:     "seed1",
 				Encrypt:  true,
 				Password: []byte("pwd"),
+				ScanN:    5,
 			},
-			pwd:   []byte("pwd"),
-			scanN: 5,
 			balGetter: mockBalanceGetter{
 				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
 				addrs[3]: BalancePair{Predicted: Balance{Coins: 10, Hours: 100}},
@@ -1469,31 +1461,13 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 			},
 		},
 		{
-			name: "confirmed and predicted, wrong password",
-			opts: Options{
-				Seed:     "seed1",
-				Encrypt:  true,
-				Password: []byte("pwd"),
-			},
-			pwd:   []byte("wrong password"),
-			scanN: 5,
-			balGetter: mockBalanceGetter{
-				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
-				addrs[3]: BalancePair{Predicted: Balance{Coins: 10, Hours: 100}},
-			},
-			expect: exp{
-				err: ErrInvalidPassword,
-			},
-		},
-		{
 			name: "wallet api disabled",
 			opts: Options{
 				Seed:     "seed",
 				Encrypt:  true,
 				Password: []byte("pwd"),
+				ScanN:    5,
 			},
-			pwd:              []byte("pwd"),
-			scanN:            5,
 			balGetter:        mockBalanceGetter{},
 			disableWalletAPI: true,
 			expect: exp{
@@ -1514,27 +1488,17 @@ func TestServiceScanAheadWalletAddresses(t *testing.T) {
 				})
 				require.NoError(t, err)
 
-				if tc.disableWalletAPI {
-					_, err = s.ScanAheadWalletAddresses("", tc.pwd, tc.scanN, tc.balGetter)
-					require.Equal(t, tc.expect.err, err)
-					return
-				}
-
 				wltName := newWalletFilename()
-				w, err := s.CreateWallet(wltName, tc.opts)
-				require.NoError(t, err)
-
-				require.NoError(t, w.Validate())
-
-				w1, err := s.ScanAheadWalletAddresses(wltName, tc.pwd, tc.scanN, tc.balGetter)
+				w, err := s.CreateWallet(wltName, tc.opts, tc.balGetter)
 				require.Equal(t, tc.expect.err, err)
 				if err != nil {
 					return
 				}
 
-				require.Len(t, w1.Entries, tc.expect.entryNum)
-				for i := range w1.Entries {
-					require.Equal(t, addrsOfSeed1[i], w1.Entries[i].Address.String())
+				require.NoError(t, w.Validate())
+				require.Len(t, w.Entries, tc.expect.entryNum)
+				for i := range w.Entries {
+					require.Equal(t, addrsOfSeed1[i], w.Entries[i].Address.String())
 				}
 			})
 		}
@@ -1637,7 +1601,7 @@ func TestGetWalletSeed(t *testing.T) {
 				}
 
 				// Create a wallet
-				_, err = s.CreateWallet(tc.wltName, tc.opts)
+				_, err = s.CreateWallet(tc.wltName, tc.opts, nil)
 				require.NoError(t, err)
 
 				seed, err := s.GetWalletSeed(tc.id, tc.pwd)

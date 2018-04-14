@@ -12,6 +12,10 @@ type Annotation struct {
 	Size int
 }
 
+type IAnnotationsGenerator interface {
+	GenerateAnnotations(data interface{}) []Annotation
+}
+
 func writeHexdumpMember(offset int, size int, writer io.Writer, buffer []byte, name string) {
 	var hexBuff = make([]string, size)
 	for i := offset; i < offset + size; i++ {
@@ -74,6 +78,8 @@ func printFinalHex(i int, writer io.Writer) {
 	finalHex = finalHex + " | "
 	fmt.Println(finalHex)
 }
+
+
 
 func HexDump(data interface{}, annotations []Annotation, writer io.Writer) {
 	var serializedData = encoder.Serialize(data)

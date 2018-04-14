@@ -53,7 +53,6 @@ func loadPeersFromFile(path string) (map[string]*Peer, error) {
 	if err == io.EOF {
 		logger.WithField("path", path).Error("corrupt or empty file, rewriting file")
 		return nil, nil
-
 	} else if err != nil {
 		return nil, err
 	}

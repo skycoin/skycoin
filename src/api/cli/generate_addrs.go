@@ -66,7 +66,7 @@ func generateAddrs(c *gcli.Context) error {
 		return err
 	}
 
-	addrs, err := GenerateAddressesInFile(w, num, c)
+	addrs, err := GenerateAddressesInFile(w, num, []byte(c.String("p")))
 
 	switch err.(type) {
 	case nil:
@@ -93,18 +93,17 @@ func generateAddrs(c *gcli.Context) error {
 }
 
 // GenerateAddressesInFile generates addresses in given wallet file
-func GenerateAddressesInFile(walletFile string, num uint64, c *gcli.Context) ([]cipher.Address, error) {
+func GenerateAddressesInFile(walletFile string, num uint64, password []byte) ([]cipher.Address, error) {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
 		return nil, WalletLoadError(err)
 	}
 
 	var addrs []cipher.Address
-	password := []byte(c.String("p"))
 	if wlt.IsEncrypted() {
 		if len(password) == 0 {
 			var err error
-			password, err = readPasswordFromTerminal(c)
+			password, err = readPasswordFromTerminal()
 			if err != nil {
 				return nil, err
 			}

@@ -3,7 +3,6 @@ package main
 import (
 	cli "github.com/skycoin/skycoin/src/api/cli"
 	wallet "github.com/skycoin/skycoin/src/wallet"
-	"unsafe"
 )
 
 /*
@@ -16,17 +15,19 @@ import (
 import "C"
 
 //export SKY_cli_AddPrivateKey
-func SKY_cli_AddPrivateKey(_wlt *C.wallet__Wallet, _key string) (____error_code uint32) {
+func SKY_cli_AddPrivateKey(_wlt *C.Handle, _key string) (____error_code uint32) {
 	//TODO: Wallet must be Handle
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	wlt := (*wallet.Wallet)(unsafe.Pointer(_wlt))
-	key := _key
-	____return_err := cli.AddPrivateKey(wlt, key)
-	____error_code = libErrorCode(____return_err)
-	if ____return_err == nil {
+	obj, ok := lookupHandleObj(Handle(*_wlt))
+	____error_code = SKY_ERROR
+	if ok {
+		if wlt, isWallet := (obj).(*wallet.Wallet); isWallet {
+			____return_err := cli.AddPrivateKey(wlt, _key)
+			____error_code = libErrorCode(____return_err)
+		}
 	}
 	return
 }
@@ -41,7 +42,5 @@ func SKY_cli_AddPrivateKeyToFile(_walletFile, _key string) (____error_code uint3
 	key := _key
 	____return_err := cli.AddPrivateKeyToFile(walletFile, key)
 	____error_code = libErrorCode(____return_err)
-	if ____return_err == nil {
-	}
 	return
 }

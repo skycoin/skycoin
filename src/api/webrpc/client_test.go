@@ -1,7 +1,6 @@
 package webrpc
 
 import (
-	"log"
 	"sort"
 	"strings"
 	"testing"
@@ -12,7 +11,12 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/visor"
+)
+
+var (
+	log = logging.MustGetLogger("webrpc_test")
 )
 
 // Tests are setup as subtests, to retain a single *WebRPC instance for scaffolding

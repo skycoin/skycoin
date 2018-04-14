@@ -15,13 +15,13 @@ matrix:
           packages:
             - g++-4.9
       env:
-         - MATRIX_EVAL="CC=gcc-4.9 && CXX=g++-4.9"
+        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
     - os: osx
       # Do not start osx build for PR
       if: type != pull_request
       osx_image: xcode8
       env:
-        - MATRIX_EVAL="CC=gcc-4.9 && CXX=g++-4.9"
+        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
 
 before_install:
   - eval "${MATRIX_EVAL}"

@@ -26,6 +26,7 @@ func SKY_encoder_StructField_String(_s *C.encoder__StructField, _arg0 *C.GoStrin
 	return
 }
 
+//TODO: stdevEclipse Deal with interfaces
 //export SKY_encoder_DeserializeField
 func SKY_encoder_DeserializeField(_in *C.GoSlice_, _fields *C.GoSlice_, _fieldName string, _field *C.GoInterface_) (____error_code uint32) {
 	____error_code = 0

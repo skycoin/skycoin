@@ -21,7 +21,7 @@ var (
 	handleMap = make(map[Handle]interface{})
 )
 
-func openHandle(obj interface{}) Handle {
+func registerHandle(obj interface{}) Handle {
 	ptr := &obj
 	handle := *(*Handle)(unsafe.Pointer(&ptr))
 	handleMap[handle] = obj
@@ -33,6 +33,10 @@ func lookupHandleObj(handle Handle) (interface{}, bool) {
 	return obj, ok
 }
 
+func registerWebRpcClientHandle(obj *webrpc.Client) C.WebrpcClient__Handle{
+	return (C.WebrpcClient__Handle)(registerHandle(obj))
+}
+
 func lookupWebRpcClientHandle(handle C.WebrpcClient__Handle) (*webrpc.Client, bool){
 	obj, ok := lookupHandleObj(Handle(handle))
 	if ok {
@@ -41,6 +45,10 @@ func lookupWebRpcClientHandle(handle C.WebrpcClient__Handle) (*webrpc.Client, bo
 		}
 	}
 	return nil, false
+}
+
+func registerWalletHandle(obj *wallet.Wallet) C.Wallet__Handle{
+	return (C.Wallet__Handle)(registerHandle(obj))
 }
 
 func lookupWalletHandle(handle C.Wallet__Handle) (*wallet.Wallet, bool){

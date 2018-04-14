@@ -128,6 +128,6 @@ func copyToFunc(f C.Handle) func() hash.Hash {
 }
 
 func copyToStringMap( gomap map[string]string, dest *C.GoStringMap_ ){
-	*dest = (C.GoStringMap_)(openHandle( gomap ))
+	*dest = (C.GoStringMap_)(registerHandle( gomap ))
 }
 

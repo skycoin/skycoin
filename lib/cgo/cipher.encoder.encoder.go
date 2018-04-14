@@ -15,6 +15,7 @@ import (
 */
 import "C"
 
+//TODO: stdevEclipse Deal with interfaces
 //export SKY_encoder_EncodeInt
 func SKY_encoder_EncodeInt(_b *C.GoSlice_, _data *C.GoInterface_) (____error_code uint32) {
 	____error_code = 0

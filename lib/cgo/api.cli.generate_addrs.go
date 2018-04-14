@@ -38,6 +38,7 @@ func SKY_cli_FormatAddressesAsJSON(_addrs *C.GoSlice_, _arg1 *C.GoString_) (____
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	//TODO: Test typecast from *GoSlice to *[]
 	addrs := *(*[]cipher.Address)(unsafe.Pointer(_addrs))
 	__arg1, ____return_err := cli.FormatAddressesAsJSON(addrs)
 	____error_code = libErrorCode(____return_err)

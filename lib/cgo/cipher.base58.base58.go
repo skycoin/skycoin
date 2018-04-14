@@ -23,6 +23,7 @@ func SKY_base58_String2Hex(_s string, _arg1 *C.GoSlice_) (____error_code uint32)
 	}()
 	s := _s
 	__arg1 := base58.String2Hex(s)
+	//TODO: stdevEclipse Test this pointer typecast
 	copyToGoSlice(reflect.ValueOf(__arg1), _arg1)
 	return
 }

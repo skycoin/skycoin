@@ -15,6 +15,7 @@ import (
 */
 import "C"
 
+//TODO: Create specific handle type for config
 //export SKY_cli_LoadConfig
 func SKY_cli_LoadConfig(_config *C.Handle) (____error_code uint32) {
 	____error_code = 0
@@ -24,11 +25,12 @@ func SKY_cli_LoadConfig(_config *C.Handle) (____error_code uint32) {
 	config, ____return_err := cli.LoadConfig()
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		*_config = (C.Handle)(openHandle(config))
+		*_config = (C.Handle)(registerHandle(config))
 	}
 	return
 }
 
+//TODO: Create specific handle type for config
 //export SKY_cli_Config_FullWalletPath
 func SKY_cli_Config_FullWalletPath(_c *C.Handle, _path *C.GoString_) (____error_code uint32) {
 	defer func() {
@@ -46,6 +48,7 @@ func SKY_cli_Config_FullWalletPath(_c *C.Handle, _path *C.GoString_) (____error_
 	return
 }
 
+//TODO: Create specific handle type for config
 //export SKY_cli_Config_FullDBPath
 func SKY_cli_Config_FullDBPath(_c *C.Handle, _path *C.GoString_) (____error_code uint32) {
 	defer func() {
@@ -63,6 +66,7 @@ func SKY_cli_Config_FullDBPath(_c *C.Handle, _path *C.GoString_) (____error_code
 	return
 }
 
+//TODO: Create specific handle type for config
 //export SKY_cli_NewApp
 func SKY_cli_NewApp(_cfg *C.Handle, _app *C.Handle) (____error_code uint32) {
 	defer func() {
@@ -73,13 +77,14 @@ func SKY_cli_NewApp(_cfg *C.Handle, _app *C.Handle) (____error_code uint32) {
 	if ok {
 		if config, isConfig := (obj).(cli.Config); isConfig {
 			app := cli.NewApp(config)
-			*_app = (C.Handle)(openHandle( app ))
+			*_app = (C.Handle)(registerHandle( app ))
 			____error_code = SKY_OK
 		}
 	} 
 	return
 }
 
+//TODO: Create specific handle type for App
 //export SKY_cli_App_Run
 func SKY_cli_App_Run(_app *C.Handle, _args *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
@@ -102,8 +107,9 @@ func SKY_cli_App_Run(_app *C.Handle, _args *C.GoSlice_) (____error_code uint32) 
 	return
 }
 
+//TODO: Create specific handle type for App
 //export SKY_cli_RPCClientFromContext
-func SKY_cli_RPCClientFromContext(_c *C.Handle, _client *C.Handle) (____error_code uint32) {
+func SKY_cli_RPCClientFromContext(_c *C.Handle, _client *C.WebrpcClient__Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -113,13 +119,14 @@ func SKY_cli_RPCClientFromContext(_c *C.Handle, _client *C.Handle) (____error_co
 	if ok {
 		if context, isContext := (obj).(*gcli.Context); isContext {
 			client := cli.RPCClientFromContext(context)
-			*_client = (C.Handle)(openHandle( client ))
+			*_client = registerWebRpcClientHandle( client )
 			____error_code = SKY_OK
 		}
 	} 
 	return
 }
- 
+
+//TODO: Create specific handle type for config
 //export SKY_cli_ConfigFromContext
 func SKY_cli_ConfigFromContext(_c *C.Handle, _config *C.Handle) (____error_code uint32) {
 	____error_code = 0
@@ -131,7 +138,7 @@ func SKY_cli_ConfigFromContext(_c *C.Handle, _config *C.Handle) (____error_code 
 	if ok {
 		if context, isContext := (obj).(*gcli.Context); isContext {
 			config := cli.ConfigFromContext(context)
-			*_config = (C.Handle)(openHandle( config ))
+			*_config = (C.Handle)(registerHandle( config ))
 			____error_code = SKY_OK
 		}
 	} 

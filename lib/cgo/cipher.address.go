@@ -39,6 +39,7 @@ func SKY_cipher_AddressFromPubKey(_pubKey *C.cipher__PubKey, _arg1 *C.cipher__Ad
 //export SKY_cipher_AddressFromSecKey
 func SKY_cipher_AddressFromSecKey(_secKey *C.cipher__SecKey, _arg1 *C.cipher__Address) {
 	var secKey cipher.SecKey
+	//TODO: stdevEclipse Test pointer casting
 	secKey = *(*cipher.SecKey)(unsafe.Pointer(_secKey))
 	addr := cipher.AddressFromSecKey(secKey)
 	*_arg1 = *(*C.cipher__Address)(unsafe.Pointer(&addr))

@@ -15,6 +15,7 @@ import (
 */
 import "C"
 
+//Set a type for _password
 //export SKY_scrypt_Key
 func SKY_scrypt_Key(_password, _salt *C.GoSlice_, _N, _r, _p, _keyLen int, _arg2 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0

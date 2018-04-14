@@ -26,7 +26,7 @@ func SKY_cli_GenerateWallet(_walletFile, _label, _seed string, _numAddrs uint64,
 	__arg2, ____return_err := cli.GenerateWallet(walletFile, label, seed, numAddrs)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		*_arg2 = (C.Wallet__Handle)(openHandle(__arg2))
+		*_arg2 = registerWalletHandle(__arg2)
 	}
 	return
 }

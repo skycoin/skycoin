@@ -68,6 +68,7 @@ func SKY_secp256k1go_BaseMultiply(_k *C.GoSlice_, _arg1 *C.GoSlice_) (____error_
 	return
 }
 
+//TODO: stdevEclipse set a type for _xy
 //export SKY_secp256k1go_BaseMultiplyAdd
 func SKY_secp256k1go_BaseMultiplyAdd(_xy, _k *C.GoSlice_, _arg1 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0

@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/skycoin/skycoin/src/daemon"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/visor"
 )
@@ -16,11 +17,11 @@ type BlockchainMetadata struct {
 
 // HealthResponse is returned by the /health endpoint
 type HealthResponse struct {
-	BlockchainMetadata BlockchainMetadata `json:"blockchain"`
-	Version            visor.BuildInfo    `json:"version"`
-	OpenConnections    int                `json:"open_connections"`
-	Uptime             wh.Duration        `json:"uptime"`
-	ConnectionsHealth  ConnectionsHealth  `json:"ConnectionStatus"`
+	BlockchainMetadata BlockchainMetadata        `json:"blockchain"`
+	Version            visor.BuildInfo           `json:"version"`
+	OpenConnections    int                       `json:"open_connections"`
+	Uptime             wh.Duration               `json:"uptime"`
+	ConnectionsHealth  *daemon.ConnectionsHealth `json:"ConnectionStatus"`
 }
 
 // Returns node health data.
@@ -42,7 +43,7 @@ func healthCheck(gateway Gatewayer) http.HandlerFunc {
 
 		elapsedBlockTime := time.Now().UTC().Unix() - int64(health.BlockchainMetadata.Head.Time)
 		timeSinceLastBlock := time.Second * time.Duration(elapsedBlockTime)
-		defaultstatus := defaultStatus(gateway)
+		connectionshealth := gateway.GetDefaultStatus()
 
 		wh.SendJSONOr500(logger, w, HealthResponse{
 			BlockchainMetadata: BlockchainMetadata{
@@ -52,7 +53,7 @@ func healthCheck(gateway Gatewayer) http.HandlerFunc {
 			Version:           health.Version,
 			OpenConnections:   health.OpenConnections,
 			Uptime:            wh.FromDuration(health.Uptime),
-			ConnectionsHealth: defaultstatus,
+			ConnectionsHealth: connectionshealth,
 		})
 	}
 }

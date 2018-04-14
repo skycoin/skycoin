@@ -339,16 +339,16 @@ func TestGetDefaultStatus(t *testing.T) {
 
 	// ConnectionStatus structs
 	type ConnectionStatus struct {
-		Connection string `json:"Connection"`
-		IsAlive    bool   `json:"Status"`
+		Connection string
+		IsAlive    bool
 	}
 
 	// ConnectionsHealth struct
 	type ConnectionsHealth struct {
-		Count        int                `json:"count"`
-		TotalAlive   int                `json:"total_alive"`
-		TotalOffline int                `json:"total_offline"`
-		Connections  []ConnectionStatus `json:IsAlive`
+		Count        int
+		TotalAlive   int
+		TotalOffline int
+		Connections  []ConnectionStatus
 	}
 
 	tt := []struct {
@@ -403,19 +403,16 @@ func TestGetDefaultStatus(t *testing.T) {
 					},
 				},
 			}
-
-			gateway.On("GetDefaultConnections").Return(GetDefaultConnections).
-				On("GetConnections").Return(gatewayGetConnectionsResult)
-
 			resp := ConnectionsHealth{
 				Count:        2,
 				TotalAlive:   2,
 				TotalOffline: 0,
 				Connections: []ConnectionStatus{
-					{Connection: "11.44.66.88:9000", IsAlive: false},
-					{Connection: "44.33.22.11:9000", IsAlive: false},
+					{Connection: "11.44.66.88:9000", IsAlive: true},
+					{Connection: "44.33.22.11:9000", IsAlive: true},
 				},
 			}
+			gateway.On("GetDefaultConnections").Return(GetDefaultConnections).On("GetConnections").Return(gatewayGetConnectionsResult)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)

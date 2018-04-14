@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"sort"
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -850,6 +851,21 @@ type Health struct {
 	Version            visor.BuildInfo
 	OpenConnections    int
 	Uptime             time.Duration
+	ConnectionsHealth  *ConnectionsHealth
+}
+
+// ConnectionStatus structs
+type ConnectionStatus struct {
+	Connection string `json:"connection"`
+	IsAlive    bool   `json:"isAlive"`
+}
+
+// ConnectionsHealth struct
+type ConnectionsHealth struct {
+	Count        int                `json:"count"`
+	TotalAlive   int                `json:"totalAlive"`
+	TotalOffline int                `json:"totalOffline"`
+	Connections  []ConnectionStatus `json:"connections"`
 }
 
 // GetHealth returns statistics about the running node
@@ -874,4 +890,58 @@ func (gw *Gateway) GetHealth() (*Health, error) {
 	})
 
 	return health, err
+}
+
+// GetDefaultStatus returns
+func (gw *Gateway) GetDefaultStatus() *ConnectionsHealth {
+	var defaultstatus *ConnectionsHealth
+	gw.strand("GetDefaultStatus", func() {
+
+		connsDefault := gw.drpc.GetDefaultConnections(gw.d)
+		sort.Strings(connsDefault)
+		connsAll := gw.drpc.GetConnections(gw.d).Connections
+
+		countDefault, totalAlive := len(connsDefault), 0
+		totalOffline := countDefault
+
+		var connections []ConnectionStatus
+		connsMap := make(map[string]*ConnectionStatus, countDefault)
+		for _, conn := range connsDefault {
+			status := ConnectionStatus{
+				Connection: conn,
+				IsAlive:    false,
+			}
+
+			connsMap[conn] = &status
+		}
+
+		for _, conn := range connsAll {
+			if status, isDefault := connsMap[conn.Addr]; isDefault {
+				if !status.IsAlive {
+					status.IsAlive = true
+					connsMap[conn.Addr] = status
+					totalAlive++
+					totalOffline--
+				}
+			}
+		}
+
+		for _, conn := range connsMap {
+			status := ConnectionStatus{
+				Connection: conn.Connection,
+				IsAlive:    conn.IsAlive,
+			}
+			connections = append(connections, status)
+
+		}
+		defaultstatus = &ConnectionsHealth{
+			Count:        countDefault,
+			TotalAlive:   totalAlive,
+			TotalOffline: totalOffline,
+			Connections:  connections,
+		}
+	})
+
+	return defaultstatus
+
 }

@@ -54,4 +54,5 @@ type Gatewayer interface {
 	GetAddressCount() (uint64, error)
 	GetHealth() (*daemon.Health, error)
 	UnloadWallet(id string) error
+	GetDefaultStatus() *daemon.ConnectionsHealth
 }

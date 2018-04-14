@@ -66,11 +66,22 @@ func TestHealthCheckHandler(t *testing.T) {
 				Branch:  "develop",
 			}
 
+			connectionshealth := &daemon.ConnectionsHealth{
+				Count:        2,
+				TotalAlive:   2,
+				TotalOffline: 0,
+				Connections: []daemon.ConnectionStatus{
+					{Connection: "11.44.66.88:9000", IsAlive: true},
+					{Connection: "44.33.22.11:9000", IsAlive: true},
+				},
+			}
+
 			health := &daemon.Health{
 				BlockchainMetadata: metadata,
 				OpenConnections:    3,
 				Version:            buildInfo,
 				Uptime:             time.Second * 4,
+				ConnectionsHealth:  connectionshealth,
 			}
 
 			gateway := NewGatewayerMock()
@@ -79,6 +90,33 @@ func TestHealthCheckHandler(t *testing.T) {
 			} else {
 				gateway.On("GetHealth").Return(health, nil)
 			}
+			GetDefaultConnections := []string{"44.33.22.11:9000", "11.44.66.88:9000"}
+
+			gatewayGetConnectionsResult := &daemon.Connections{
+				Connections: []*daemon.Connection{
+					{
+						ID:           1,
+						Addr:         "44.33.22.11:9000",
+						LastSent:     99999,
+						LastReceived: 1111111,
+						Outgoing:     true,
+						Introduced:   true,
+						Mirror:       9876,
+						ListenPort:   9877,
+					},
+					{
+						ID:           2,
+						Addr:         "11.44.66.88:9000",
+						LastSent:     99999,
+						LastReceived: 1111111,
+						Outgoing:     true,
+						Introduced:   true,
+						Mirror:       9876,
+						ListenPort:   9877,
+					},
+				},
+			}
+			gateway.On("GetDefaultConnections").Return(GetDefaultConnections).On("GetConnections").Return(gatewayGetConnectionsResult).On("GetDefaultStatus").Return(GetDefaultConnections, gatewayGetConnectionsResult)
 
 			endpoint := "/health"
 			req, err := http.NewRequest(tc.method, endpoint, nil)

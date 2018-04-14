@@ -85,6 +85,7 @@ typedef struct {
  * Instances of Go `map` type.
  */
 typedef void *GoMap_;
+
 /**
  * Instances of Go `chan` channel types.
  */
@@ -96,6 +97,11 @@ typedef void *GoChan_;
  * with internal implementation types.
  */
 typedef GoInt64_ Handle;
+
+/**
+ * Instances of Go `map` type, deal map[string] as handle
+ */
+typedef Handle GoStringMap_;
 
 /**
  * Instances of Go interface types.

@@ -35,7 +35,7 @@ func SKY_encoder_DeserializeField(_in *C.GoSlice_, _fields *C.GoSlice_, _fieldNa
 	in := *(*[]byte)(unsafe.Pointer(_in))
 	fields := *(*[]encoder.StructField)(unsafe.Pointer(_fields))
 	fieldName := _fieldName
-	field := copyToInterface(_field)
+	field := convertToInterface(_field)
 	____return_err := encoder.DeserializeField(in, fields, fieldName, field)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
@@ -44,7 +44,7 @@ func SKY_encoder_DeserializeField(_in *C.GoSlice_, _fields *C.GoSlice_, _fieldNa
 }
 
 //export SKY_encoder_ParseFields
-func SKY_encoder_ParseFields(_in *C.GoSlice_, _fields *C.GoSlice_, _arg2 *C.GoMap_) (____error_code uint32) {
+func SKY_encoder_ParseFields(_in *C.GoSlice_, _fields *C.GoSlice_, _arg2 *C.GoStringMap_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -52,6 +52,6 @@ func SKY_encoder_ParseFields(_in *C.GoSlice_, _fields *C.GoSlice_, _arg2 *C.GoMa
 	in := *(*[]byte)(unsafe.Pointer(_in))
 	fields := *(*[]encoder.StructField)(unsafe.Pointer(_fields))
 	__arg2 := encoder.ParseFields(in, fields)
-	copyStringMap(__arg2, _arg2)
+	copyToStringMap(__arg2, _arg2)
 	return
 }

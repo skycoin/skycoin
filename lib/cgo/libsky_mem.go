@@ -138,13 +138,17 @@ func copyToGoSlice(src reflect.Value, dest *C.GoSlice_) {
 	}
 }
 
-func copyToInterface(a *C.GoInterface_) interface{}{
+func convertToInterface(a *C.GoInterface_) interface{}{
+	//TODO: Implement
 	return nil
 }
 
 func copyToFunc(f C.Handle) func() hash.Hash {
+	//TODO: Implement
 	return nil
 }
 
-func copyStringMap( source map[string]string, dest *C.GoMap_ ){
+func copyToStringMap( gomap map[string]string, dest *C.GoStringMap_ ){
+	*dest = (C.GoStringMap_)(openHandle( gomap ))
 }
+

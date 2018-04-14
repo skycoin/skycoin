@@ -37,7 +37,7 @@ func SKY_cli_Config_FullWalletPath(_c *C.Handle, _path *C.GoString_) (____error_
 	obj, ok := lookupHandleObj(Handle(*_c))
 	____error_code = SKY_ERROR
 	if ok {
-		if config, isConfig := (obj).(*cli.Config); isConfig {
+		if config, isConfig := (obj).(cli.Config); isConfig {
 			path := config.FullWalletPath()
 			copyString(path, _path)
 			____error_code = SKY_OK
@@ -54,7 +54,7 @@ func SKY_cli_Config_FullDBPath(_c *C.Handle, _path *C.GoString_) (____error_code
 	obj, ok := lookupHandleObj(Handle(*_c))
 	____error_code = SKY_ERROR
 	if ok {
-		if config, isConfig := (obj).(*cli.Config); isConfig {
+		if config, isConfig := (obj).(cli.Config); isConfig {
 			path := config.FullDBPath()
 			copyString(path, _path)
 			____error_code = SKY_OK
@@ -71,8 +71,8 @@ func SKY_cli_NewApp(_cfg *C.Handle, _app *C.Handle) (____error_code uint32) {
 	obj, ok := lookupHandleObj(Handle(*_cfg))
 	____error_code = SKY_ERROR
 	if ok {
-		if config, isConfig := (obj).(*cli.Config); isConfig {
-			app := cli.NewApp(*config)
+		if config, isConfig := (obj).(cli.Config); isConfig {
+			app := cli.NewApp(config)
 			*_app = (C.Handle)(openHandle( app ))
 			____error_code = SKY_OK
 		}

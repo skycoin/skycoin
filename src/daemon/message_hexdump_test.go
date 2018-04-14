@@ -5,7 +5,10 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/pex"
-	"github.com/skycoin/skycoin/src/testutil"
+	"bufio"
+	"os"
+	"github.com/skycoin/skycoin/src/util"
+	"github.com/skycoin/skycoin/src/daemon/gnet"
 )
 
 
@@ -22,6 +25,18 @@ var hashes = []cipher.SHA256 {
 	GetSHAFromHex("151"),
 }
 
+var secKey1 = (cipher.NewSecKey([]byte{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32}))
+var secKey2 = cipher.NewSecKey([]byte{33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64})
+var secKey3 = cipher.NewSecKey([]byte{65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96})
+var secKey4 = cipher.NewSecKey([]byte{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96})
+
+var addresses = []cipher.Address {
+	cipher.AddressFromSecKey(secKey1),
+	cipher.AddressFromSecKey(secKey2),
+	cipher.AddressFromSecKey(secKey3),
+	cipher.AddressFromSecKey(secKey4),
+}
+
 func GetSHAFromHex(hex string) cipher.SHA256 {
 	var sha, _ = cipher.SHA256FromHex(hex)
 	return sha
@@ -29,14 +44,15 @@ func GetSHAFromHex(hex string) cipher.SHA256 {
 
 
 func ExampleIntroductionMessage() {
+	defer gnet.EraseMessages()
+	setupMsgEncoding()
 	var message = NewIntroductionMessage(1234, 5, 7890)
 	fmt.Println("IntroductionMessage:")
-	fmt.Println(HexDump(message))
+	var mag = MessagesAnnotationsGenerator{Message:message}
+	w := bufio.NewWriter(os.Stdout)
+	util.HexDump(gnet.EncodeMessage(message),mag.GenerateAnnotations(),w)
 	// Output:
 	// IntroductionMessage:
-	// 0e 00 00 00 49 4e 54 52 d2 04 00 00 d2 1e 05 00
-	// 00 00 ............................................. Full message
-	// ------------------------------------------------------------------------
 	// 0x0000 | 0e 00 00 00 ....................................... Length
 	// 0x0004 | 49 4e 54 52 ....................................... Prefix
 	// 0x0008 | d2 04 00 00 ....................................... Mirror
@@ -46,19 +62,23 @@ func ExampleIntroductionMessage() {
 }
 
 func ExampleGetPeersMessage() {
+	defer gnet.EraseMessages()
+	setupMsgEncoding()
 	var message = NewGetPeersMessage()
 	fmt.Println("GetPeersMessage:")
-	fmt.Println(HexDump(message))
+	var mag = MessagesAnnotationsGenerator{Message:message}
+	w := bufio.NewWriter(os.Stdout)
+	util.HexDump(gnet.EncodeMessage(message),mag.GenerateAnnotations(),w)
 	// Output:
 	// GetPeersMessage:
-	// 04 00 00 00 47 45 54 50 ........................... Full message
-	// ------------------------------------------------------------------------
 	// 0x0000 | 04 00 00 00 ....................................... Length
 	// 0x0004 | 47 45 54 50 ....................................... Prefix
 	// 0x0008 |
 }
 
 func ExampleGivePeersMessage() {
+	defer gnet.EraseMessages()
+	setupMsgEncoding()
 	var peers = make([]pex.Peer, 3)
 	var peer0 pex.Peer = *pex.NewPeer("118.178.135.93:6000")
 	var peer1 pex.Peer = *pex.NewPeer("47.88.33.156:6000")
@@ -66,30 +86,30 @@ func ExampleGivePeersMessage() {
 	peers = append(peers, peer0, peer1, peer2)
 	var message = NewGivePeersMessage(peers)
 	fmt.Println("GivePeersMessage:")
-	fmt.Println(HexDump(message))
+	var mag = MessagesAnnotationsGenerator{Message:message}
+	w := bufio.NewWriter(os.Stdout)
+	util.HexDump(gnet.EncodeMessage(message),mag.GenerateAnnotations(),w)
 	// Output:
-	// GivePeersMessage:
-	// 1a 00 00 00 47 49 56 50 03 00 00 00 5d 87 b2 76
-	// 70 17 9c 21 58 2f 70 17 94 67 29 79 70 17 ......... Full message
-	// ------------------------------------------------------------------------
+    // GivePeersMessage:
 	// 0x0000 | 1a 00 00 00 ....................................... Length
 	// 0x0004 | 47 49 56 50 ....................................... Prefix
 	// 0x0008 | 03 00 00 00 ....................................... Peers length
-	// 0x000c | 01 00 00 00 5d 87 b2 76 70 17 ..................... Peers#0
-	// 0x001a | 01 00 00 00 9c 21 58 2f 70 17 ..................... Peers#1
-	// 0x0028 | 01 00 00 00 94 67 29 79 70 17 ..................... Peers#2
+	// 0x000c | 5d 87 b2 76 70 17 ................................. Peers#0
+	// 0x0012 | 9c 21 58 2f 70 17 ................................. Peers#1
+	// 0x0018 | 94 67 29 79 70 17 ................................. Peers#2
 	// 0x001e |
 }
 
 func ExampleGetBlocksMessage() {
+	defer gnet.EraseMessages()
+	setupMsgEncoding()
 	var message = NewGetBlocksMessage(1234, 5678)
 	fmt.Println("GetBlocksMessage:")
-	fmt.Println(HexDump(message))
+	var mag = MessagesAnnotationsGenerator{Message:message}
+	w := bufio.NewWriter(os.Stdout)
+	util.HexDump(gnet.EncodeMessage(message),mag.GenerateAnnotations(),w)
 	// Output:
 	// GetBlocksMessage:
-	// 14 00 00 00 47 45 54 42 d2 04 00 00 00 00 00 00
-	// 2e 16 00 00 00 00 00 00 ........................... Full message
-	// ------------------------------------------------------------------------
 	// 0x0000 | 14 00 00 00 ....................................... Length
 	// 0x0004 | 47 45 54 42 ....................................... Prefix
 	// 0x0008 | d2 04 00 00 00 00 00 00 ........................... LastBlock
@@ -98,6 +118,8 @@ func ExampleGetBlocksMessage() {
 }
 
 func ExampleGiveBlocksMessage() {
+	defer gnet.EraseMessages()
+	setupMsgEncoding()
 	var blocks = make([]coin.SignedBlock, 1)
 	var body1 = coin.BlockBody{
 		Transactions: make([]coin.Transaction, 0),
@@ -120,39 +142,15 @@ func ExampleGiveBlocksMessage() {
 	blocks = append(blocks, signedBlock)
 	var message = NewGiveBlocksMessage(blocks)
 	fmt.Println("GiveBlocksMessage:")
-	fmt.Println(HexDump(message))
+	var mag = MessagesAnnotationsGenerator{Message:message}
+	w := bufio.NewWriter(os.Stdout)
+	util.HexDump(gnet.EncodeMessage(message),mag.GenerateAnnotations(),w)
 	// Output:
 	// GiveBlocksMessage:
-	// 8a 01 00 00 47 49 56 42 02 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 02 00 00
-	// 00 64 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 0a 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ......... Full message
-	// ------------------------------------------------------------------------
 	// 0x0000 | 8a 01 00 00 ....................................... Length
 	// 0x0004 | 47 49 56 42 ....................................... Prefix
 	// 0x0008 | 02 00 00 00 ....................................... Blocks length
-	// 0x000c | 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x000c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x001c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x002c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x003c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
@@ -164,86 +162,85 @@ func ExampleGiveBlocksMessage() {
 	// 0x009c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x00ac | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x00bc | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00cc | 00 00 00 00 00 .................................... Blocks#0
-	// 0x00d5 | 01 00 00 00 02 00 00 00 64 00 00 00 00 00 00 00
-	// 0x00e5 | 00 00 00 00 00 00 00 00 0a 00 00 00 00 00 00 00
-	// 0x00f5 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0105 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0115 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0125 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0135 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0145 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0155 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0165 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0175 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0185 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0195 | 00 00 00 00 00 .................................... Blocks#1
+	// 0x00cc | 00 ................................................ Blocks#0
+	// 0x00cd | 02 00 00 00 64 00 00 00 00 00 00 00 00 00 00 00
+	// 0x00dd | 00 00 00 00 0a 00 00 00 00 00 00 00 00 00 00 00
+	// 0x00ed | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x00fd | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x010d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x011d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x012d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x013d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x014d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x015d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x016d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x017d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x018d | 00 ................................................ Blocks#1
 	// 0x018e |
 }
 
 func ExampleAnnounceBlocksMessage() {
+	defer gnet.EraseMessages()
+	setupMsgEncoding()
 	var message = NewAnnounceBlocksMessage(123456)
 	fmt.Println("AnnounceBlocksMessage:")
-	fmt.Println(HexDump(message))
+	var mag = MessagesAnnotationsGenerator{Message:message}
+	w := bufio.NewWriter(os.Stdout)
+	util.HexDump(gnet.EncodeMessage(message),mag.GenerateAnnotations(),w)
 	// Output:
 	// AnnounceBlocksMessage:
-	// 0c 00 00 00 41 4e 4e 42 40 e2 01 00 00 00 00 00
-	// ................................................... Full message
-	// ------------------------------------------------------------------------
 	// 0x0000 | 0c 00 00 00 ....................................... Length
 	// 0x0004 | 41 4e 4e 42 ....................................... Prefix
 	// 0x0008 | 40 e2 01 00 00 00 00 00 ........................... MaxBkSeq
 	// 0x0010 |
 }
 
-func ExampleGetTxnsMessage() { //TODO: Conflict Here
+func ExampleGetTxnsMessage() {
+	defer gnet.EraseMessages()
+	setupMsgEncoding()
 	var shas = make([]cipher.SHA256, 0)
 
 	shas = append(shas, hashes[1], hashes[2])
 	var message = NewGetTxnsMessage(shas)
 	fmt.Println("GetTxnsMessage:")
-	fmt.Println(HexDump(message))
+	var mag = MessagesAnnotationsGenerator{Message:message}
+	w := bufio.NewWriter(os.Stdout)
+	util.HexDump(gnet.EncodeMessage(message),mag.GenerateAnnotations(),w)
 	// Output:
 	// GetTxnsMessage:
-	// 48 00 00 00 47 45 54 54 02 00 00 00 81 53 df 72
-	// 1b 46 7a a3 94 2d 8c a4 e9 bc e5 13 45 ef ca 14
-	// 12 bd cd 65 ab d8 a3 7c a7 9e d6 3a 07 ac 56 ca
-	// 77 a9 4b cf 88 54 c2 90 d1 8d 66 ef 4e a3 62 cd
-	// 90 fb e4 5b d9 ef f4 e5 38 1f db 73 ............... Full message
-	// ------------------------------------------------------------------------
 	// 0x0000 | 48 00 00 00 ....................................... Length
 	// 0x0004 | 47 45 54 54 ....................................... Prefix
 	// 0x0008 | 02 00 00 00 ....................................... Txns length
-	// 0x000c | 01 00 00 00 81 53 df 72 1b 46 7a a3 94 2d 8c a4
-	// 0x001c | e9 bc e5 13 45 ef ca 14 12 bd cd 65 ab d8 a3 7c
-	// 0x002c | a7 9e d6 3a ....................................... Txns#0
-	// 0x0034 | 01 00 00 00 07 ac 56 ca 77 a9 4b cf 88 54 c2 90
-	// 0x0044 | d1 8d 66 ef 4e a3 62 cd 90 fb e4 5b d9 ef f4 e5
-	// 0x0054 | 38 1f db 73 ....................................... Txns#1
+	// 0x000c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x001c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns#0
+	// 0x002c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x003c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns#1
 	// 0x004c |
 }
 
 func ExampleGiveTxnsMessage() {
+	defer gnet.EraseMessages()
+	setupMsgEncoding()
 	var transactions coin.Transactions = make([]coin.Transaction, 0)
 	var transactionOutputs0 []coin.TransactionOutput = make([]coin.TransactionOutput, 0)
 	var transactionOutputs1 []coin.TransactionOutput = make([]coin.TransactionOutput, 0)
 	var txOutput0 = coin.TransactionOutput{
-		Address: testutil.MakeAddress(),
+		Address: addresses[0],
 		Coins:   12,
 		Hours:   34,
 	}
 	var txOutput1 = coin.TransactionOutput{
-		Address: testutil.MakeAddress(),
+		Address: addresses[1],
 		Coins:   56,
 		Hours:   78,
 	}
 	var txOutput2 = coin.TransactionOutput{
-		Address: testutil.MakeAddress(),
+		Address: addresses[3],
 		Coins:   9,
 		Hours:   12,
 	}
 	var txOutput3 = coin.TransactionOutput{
-		Address: testutil.MakeAddress(),
+		Address: addresses[2],
 		Coins:   34,
 		Hours:   56,
 	}
@@ -258,7 +255,7 @@ func ExampleGiveTxnsMessage() {
 	var transaction0 = coin.Transaction{
 		Type:      123,
 		In:        []cipher.SHA256{hashes[3], hashes[4]},
-		InnerHash: GenerateRandomSha256(),
+		InnerHash: hashes[5],
 		Length:    5000,
 		Out:       transactionOutputs0,
 		Sigs:      []cipher.Sig{sig0, sig1},
@@ -266,7 +263,7 @@ func ExampleGiveTxnsMessage() {
 	var transaction1 = coin.Transaction{
 		Type:      123,
 		In:        []cipher.SHA256{hashes[5], hashes[6]},
-		InnerHash: GenerateRandomSha256(),
+		InnerHash: hashes[6],
 		Length:    5000,
 		Out:       transactionOutputs1,
 		Sigs:      []cipher.Sig{sig2, sig3},
@@ -274,57 +271,17 @@ func ExampleGiveTxnsMessage() {
 	transactions = append(transactions, transaction0, transaction1)
 	var message = NewGiveTxnsMessage(transactions)
 	fmt.Println("GiveTxnsMessage:")
-	fmt.Println(HexDump(message))
+	var mag = MessagesAnnotationsGenerator{Message:message}
+	w := bufio.NewWriter(os.Stdout)
+	util.HexDump(gnet.EncodeMessage(message),mag.GenerateAnnotations(),w)
 	// Output:
 	// GiveTxnsMessage:
-	// 82 02 00 00 47 49 56 54 02 00 00 00 88 13 00 00
-	// 7b 91 fe 83 9d 92 d1 e4 d1 77 a0 33 1a 90 c9 1e
-	// ea 0e 3c 09 0c 73 c6 c4 b3 6e 38 f0 08 be ae 8c
-	// 26 02 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 02 00 00 00 31 79 64 90 a8
-	// d2 0d 56 5e 4b 33 bd 0f e8 66 d6 db c0 4a 6f ce
-	// 83 e7 1b de a9 2a 27 6b e7 04 eb 6b 1e e4 fb 9c
-	// 0f d8 69 50 de 98 c3 fd 04 4c f3 26 8e 88 a6 f8
-	// 25 d7 29 1d 25 ee a7 5d f8 bb 01 02 00 00 00 00
-	// d5 9b 21 22 d8 f0 69 99 eb 27 86 59 9f b1 12 08
-	// 02 84 cc 66 0c 00 00 00 00 00 00 00 22 00 00 00
-	// 00 00 00 00 00 56 04 df 45 c3 0f f0 29 bb bd dd
-	// b2 53 76 a2 26 f9 1f ca d4 38 00 00 00 00 00 00
-	// 00 4e 00 00 00 00 00 00 00 88 13 00 00 7b e5 d2
-	// a9 03 5a 69 d2 34 23 33 28 47 f3 66 3c b8 6e 52
-	// c8 7a 20 3f 65 1a c3 25 c9 1a 00 40 cc cc 02 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 00 00 00 00 02 00 00 00 01 9b e9 28 40 5e fa 49
-	// 42 f8 ca 89 52 31 f4 0d 5a 73 62 d7 c7 c1 29 1c
-	// e8 44 ea 2d 59 04 c5 7f a2 13 2e f3 5e f3 c0 00
-	// 27 e8 73 e5 d2 dc f8 a0 8b 07 8e d3 68 8e fb da
-	// 54 de 73 51 4b 8f 9a 68 02 00 00 00 00 4e 55 f7
-	// 8c 22 d3 8a f3 73 a9 93 14 21 1b 55 96 99 c6 2f
-	// e6 09 00 00 00 00 00 00 00 0c 00 00 00 00 00 00
-	// 00 00 20 28 01 fe f3 4a de 97 6b f2 ea 18 c3 17
-	// f9 f9 0a f1 6f 19 22 00 00 00 00 00 00 00 38 00
-	// 00 00 00 00 00 00 ................................. Full message
-	// ------------------------------------------------------------------------
 	// 0x0000 | 82 02 00 00 ....................................... Length
 	// 0x0004 | 47 49 56 54 ....................................... Prefix
 	// 0x0008 | 02 00 00 00 ....................................... Txns length
-	// 0x000c | 01 00 00 00 88 13 00 00 7b 91 fe 83 9d 92 d1 e4
-	// 0x001c | d1 77 a0 33 1a 90 c9 1e ea 0e 3c 09 0c 73 c6 c4
-	// 0x002c | b3 6e 38 f0 08 be ae 8c 26 02 00 00 00 00 00 00
+	// 0x000c | 88 13 00 00 7b 00 00 00 00 00 00 00 00 00 00 00
+	// 0x001c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x002c | 00 00 00 00 00 02 00 00 00 00 00 00 00 00 00 00
 	// 0x003c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x004c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x005c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
@@ -332,61 +289,55 @@ func ExampleGiveTxnsMessage() {
 	// 0x007c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x008c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x009c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00ac | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 02
-	// 0x00bc | 00 00 00 31 79 64 90 a8 d2 0d 56 5e 4b 33 bd 0f
-	// 0x00cc | e8 66 d6 db c0 4a 6f ce 83 e7 1b de a9 2a 27 6b
-	// 0x00dc | e7 04 eb 6b 1e e4 fb 9c 0f d8 69 50 de 98 c3 fd
-	// 0x00ec | 04 4c f3 26 8e 88 a6 f8 25 d7 29 1d 25 ee a7 5d
-	// 0x00fc | f8 bb 01 02 00 00 00 00 d5 9b 21 22 d8 f0 69 99
-	// 0x010c | eb 27 86 59 9f b1 12 08 02 84 cc 66 0c 00 00 00
-	// 0x011c | 00 00 00 00 22 00 00 00 00 00 00 00 00 56 04 df
-	// 0x012c | 45 c3 0f f0 29 bb bd dd b2 53 76 a2 26 f9 1f ca
-	// 0x013c | d4 38 00 00 00 00 00 00 00 4e 00 00 00 00 00 00
-	// 0x014c | 00 ................................................ Txns#0
-	// 0x0151 | 01 00 00 00 88 13 00 00 7b e5 d2 a9 03 5a 69 d2
-	// 0x0161 | 34 23 33 28 47 f3 66 3c b8 6e 52 c8 7a 20 3f 65
-	// 0x0171 | 1a c3 25 c9 1a 00 40 cc cc 02 00 00 00 00 00 00
-	// 0x0181 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x0191 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x01a1 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x01b1 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x01c1 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x01d1 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x01e1 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x01f1 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 02
-	// 0x0201 | 00 00 00 01 9b e9 28 40 5e fa 49 42 f8 ca 89 52
-	// 0x0211 | 31 f4 0d 5a 73 62 d7 c7 c1 29 1c e8 44 ea 2d 59
-	// 0x0221 | 04 c5 7f a2 13 2e f3 5e f3 c0 00 27 e8 73 e5 d2
-	// 0x0231 | dc f8 a0 8b 07 8e d3 68 8e fb da 54 de 73 51 4b
-	// 0x0241 | 8f 9a 68 02 00 00 00 00 4e 55 f7 8c 22 d3 8a f3
-	// 0x0251 | 73 a9 93 14 21 1b 55 96 99 c6 2f e6 09 00 00 00
-	// 0x0261 | 00 00 00 00 0c 00 00 00 00 00 00 00 00 20 28 01
-	// 0x0271 | fe f3 4a de 97 6b f2 ea 18 c3 17 f9 f9 0a f1 6f
-	// 0x0281 | 19 22 00 00 00 00 00 00 00 38 00 00 00 00 00 00
-	// 0x0291 | 00 ................................................ Txns#1
+	// 0x00ac | 00 00 00 00 00 00 00 00 00 00 00 02 00 00 00 00
+	// 0x00bc | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x00cc | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x00dc | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x00ec | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 02
+	// 0x00fc | 00 00 00 00 07 6d ca 32 de 03 4e 48 67 fa 7a 2a
+	// 0x010c | a9 ee fe 91 f2 0b a0 74 0c 00 00 00 00 00 00 00
+	// 0x011c | 22 00 00 00 00 00 00 00 00 e9 cb 47 35 e3 95 cf
+	// 0x012c | 36 b0 d1 a6 f2 21 bb 23 b3 f7 bf b1 f9 38 00 00
+	// 0x013c | 00 00 00 00 00 4e 00 00 00 00 00 00 00 ............ Txns#0
+	// 0x0149 | 88 13 00 00 7b 00 00 00 00 00 00 00 00 00 00 00
+	// 0x0159 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x0169 | 00 00 00 00 00 02 00 00 00 00 00 00 00 00 00 00
+	// 0x0179 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x0189 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x0199 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x01a9 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x01b9 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x01c9 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x01d9 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x01e9 | 00 00 00 00 00 00 00 00 00 00 00 02 00 00 00 00
+	// 0x01f9 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x0209 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x0219 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x0229 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 02
+	// 0x0239 | 00 00 00 00 7e f9 b1 b9 40 6f 8d b3 99 b2 5f d0
+	// 0x0249 | e9 f4 f0 88 7b 08 4b 43 09 00 00 00 00 00 00 00
+	// 0x0259 | 0c 00 00 00 00 00 00 00 00 83 f1 96 59 16 14 99
+	// 0x0269 | 2f a6 03 13 38 6f 72 88 ac 40 14 c8 bc 22 00 00
+	// 0x0279 | 00 00 00 00 00 38 00 00 00 00 00 00 00 ............ Txns#1
 	// 0x0286 |
 }
 
 func ExampleAnnounceTxnsMessage() {
+	defer gnet.EraseMessages()
+	setupMsgEncoding()
 	var message = NewAnnounceTxnsMessage([]cipher.SHA256{hashes[7], hashes[8]})
 	fmt.Println("AnnounceTxnsMessage:")
-	fmt.Println(HexDump(message))
+	var mag = MessagesAnnotationsGenerator{Message:message}
+	w := bufio.NewWriter(os.Stdout)
+	util.HexDump(gnet.EncodeMessage(message),mag.GenerateAnnotations(),w)
 	// Output:
 	// AnnounceTxnsMessage:
-	// 48 00 00 00 41 4e 4e 54 02 00 00 00 37 07 e8 23
-	// 50 93 3d f7 e6 09 dc 41 3d c1 77 3c ae 9d ba af
-	// fd fc 56 7a 43 5d 2f e9 e0 fb 63 20 50 4c 6a 6e
-	// 6d 17 a4 91 29 42 8e 14 41 df 1f 50 b2 2b 03 75
-	// f8 34 99 ce 47 24 59 e5 86 f2 9c 8d ............... Full message
-	// ------------------------------------------------------------------------
 	// 0x0000 | 48 00 00 00 ....................................... Length
 	// 0x0004 | 41 4e 4e 54 ....................................... Prefix
 	// 0x0008 | 02 00 00 00 ....................................... Txns length
-	// 0x000c | 01 00 00 00 37 07 e8 23 50 93 3d f7 e6 09 dc 41
-	// 0x001c | 3d c1 77 3c ae 9d ba af fd fc 56 7a 43 5d 2f e9
-	// 0x002c | e0 fb 63 20 ....................................... Txns#0
-	// 0x0034 | 01 00 00 00 50 4c 6a 6e 6d 17 a4 91 29 42 8e 14
-	// 0x0044 | 41 df 1f 50 b2 2b 03 75 f8 34 99 ce 47 24 59 e5
-	// 0x0054 | 86 f2 9c 8d ....................................... Txns#1
+	// 0x000c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x001c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns#0
+	// 0x002c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+	// 0x003c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns#1
 	// 0x004c |
 }

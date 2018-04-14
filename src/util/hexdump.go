@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"bufio"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
+	"strings"
 )
 
 type Annotation struct {
@@ -55,19 +56,25 @@ func getSliceContentsString(sl []string, offset int) string {
 		counter++
 		res += sl[i] + " "
 		if counter == 16 {
-			res += "\n"
-			currentOff += 16
-			if offset != -1 {
-				//res += "         " //9 spaces
-				var hex = strconv.FormatInt(int64(currentOff), 16)
-				var l = len(hex)
-				for i := 0; i < 4-l; i++ {
-					hex = "0" + hex
+			if (i != len(sl) - 1) {
+				res = strings.TrimRight(res," ")
+				res += "\n"
+				currentOff += 16
+				if offset != -1 {
+					//res += "         " //9 spaces
+					var hex= strconv.FormatInt(int64(currentOff), 16)
+					var l= len(hex)
+					for i := 0; i < 4-l; i++ {
+						hex = "0" + hex
+					}
+					hex = "0x" + hex
+					res += hex + " | "
 				}
-				hex = "0x" + hex
-				res += hex + " | "
+				counter = 0
+			} else{
+				res += "..."
+				return res
 			}
-			counter = 0
 		}
 	}
 	for i := 0; i < (16 - counter); i++ {

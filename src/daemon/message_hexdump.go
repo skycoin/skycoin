@@ -169,7 +169,7 @@ func (mag *MessagesAnnotationsGenerator) GenerateAnnotations() []util.Annotation
 
 					for j := 0; j < v.Field(i).Len(); j++ {
 						//printLHexDumpWithFormat(offset, f.Name+"#"+strconv.Itoa(j), encoder.Serialize(v.Field(i).Slice(j, j+1).Interface()))
-						annotations = append(annotations, util.Annotation{Size:len(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())),Name:f.Name+"#"+strconv.Itoa(j)})
+						annotations = append(annotations, util.Annotation{Size:len(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())[4:]),Name:f.Name+"#"+strconv.Itoa(j)})
 						//offset += len(encoder.Serialize(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())))
 					}
 				} else {

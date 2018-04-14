@@ -19,7 +19,7 @@ func generateAddrsCmd(cfg Config) gcli.Command {
 		Usage:     "Generate additional addresses for a wallet",
 		ArgsUsage: " ",
 		Description: fmt.Sprintf(`The default wallet (%s) will
-		be used if no wallet and address was specified.
+		be used if no wallet was specified.
 
 		Use caution when using the "-p" command. If you have command
 		history enabled your wallet encryption password can be recovered from the
@@ -100,10 +100,14 @@ func GenerateAddressesInFile(walletFile string, num uint64, c *gcli.Context) ([]
 	}
 
 	var addrs []cipher.Address
+	password := []byte(c.String("p"))
 	if wlt.IsEncrypted() {
-		password, err := getPassword(c)
-		if err != nil {
-			return nil, err
+		if len(password) == 0 {
+			var err error
+			password, err = readPasswordFromTerminal(c)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		if err := wlt.GuardUpdate([]byte(password), func(w *wallet.Wallet) error {
@@ -114,6 +118,10 @@ func GenerateAddressesInFile(walletFile string, num uint64, c *gcli.Context) ([]
 			return nil, err
 		}
 	} else {
+		if len(password) != 0 {
+			return nil, wallet.ErrWalletNotEncrypted
+		}
+
 		var err error
 		addrs, err = wlt.GenerateAddresses(num)
 		if err != nil {

@@ -350,6 +350,12 @@ func TestStableGenerateAddresses(t *testing.T) {
 			args:         []string{"generateAddresses", "-p", "invalid password", "-j"},
 			expectOutput: []byte("Error: invalid password. See 'skycoin-cli generateAddresses --help'\n\n"),
 		},
+		{
+			name:         "generateAddresses in unencrypted wallet with password",
+			encrypted:    false,
+			args:         []string{"generateAddresses", "-p", "pwd"},
+			expectOutput: []byte("Error: wallet is not encrypted. See 'skycoin-cli generateAddresses --help'\n\n"),
+		},
 	}
 
 	for _, tc := range tt {

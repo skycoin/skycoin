@@ -307,19 +307,14 @@ func printJSON(obj interface{}) error {
 	return nil
 }
 
-// gePassword reads password from -p flag, or promotes user to enter password
-// and read it.
-func getPassword(c *gcli.Context) (string, error) {
-	password := c.String("p")
-	if len(password) == 0 {
-		// Promotes to enter the wallet password
-		fmt.Fprint(os.Stdout, "enter password:")
-		bp, err := terminal.ReadPassword(0)
-		if err != nil {
-			return "", err
-		}
-		password = string(bp)
-		fmt.Fprintln(os.Stdout, "")
+// readPasswordFromTerminal promotes user to enter password and read it.
+func readPasswordFromTerminal(c *gcli.Context) ([]byte, error) {
+	// Promotes to enter the wallet password
+	fmt.Fprint(os.Stdout, "enter password:")
+	bp, err := terminal.ReadPassword(0)
+	if err != nil {
+		return nil, err
 	}
-	return password, nil
+	fmt.Fprintln(os.Stdout, "")
+	return bp, nil
 }

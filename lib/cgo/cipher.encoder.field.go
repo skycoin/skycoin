@@ -32,6 +32,7 @@ func SKY_encoder_DeserializeField(_in *C.GoSlice_, _fields *C.GoSlice_, _fieldNa
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	//TODO: stdevEclipse Check pointer casting
 	in := *(*[]byte)(unsafe.Pointer(_in))
 	fields := *(*[]encoder.StructField)(unsafe.Pointer(_fields))
 	fieldName := _fieldName
@@ -49,6 +50,7 @@ func SKY_encoder_ParseFields(_in *C.GoSlice_, _fields *C.GoSlice_, _arg2 *C.GoSt
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	//TODO: stdevEclipse Check pointer casting
 	in := *(*[]byte)(unsafe.Pointer(_in))
 	fields := *(*[]encoder.StructField)(unsafe.Pointer(_fields))
 	__arg2 := encoder.ParseFields(in, fields)

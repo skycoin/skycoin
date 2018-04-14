@@ -15,6 +15,8 @@ import (
 */
 import "C"
 
+
+//TODO: stdevEclipse Verify conversion from GoSlice_ to []byte
 //export SKY_encrypt_Sha256Xor_Encrypt
 func SKY_encrypt_Sha256Xor_Encrypt(_s *C.encrypt__Sha256Xor, _data *C.GoSlice_, _password *C.GoSlice_, _arg2 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0

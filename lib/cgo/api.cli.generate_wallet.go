@@ -14,8 +14,7 @@ import (
 import "C"
 
 //export SKY_cli_GenerateWallet
-func SKY_cli_GenerateWallet(_walletFile, _label, _seed string, _numAddrs uint64, _arg2 *C.Handle) (____error_code uint32) {
-	//TODO: Wallet must be Handle
+func SKY_cli_GenerateWallet(_walletFile, _label, _seed string, _numAddrs uint64, _arg2 *C.Wallet__Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -27,7 +26,7 @@ func SKY_cli_GenerateWallet(_walletFile, _label, _seed string, _numAddrs uint64,
 	__arg2, ____return_err := cli.GenerateWallet(walletFile, label, seed, numAddrs)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		*_arg2 = (C.Handle)(openHandle(__arg2))
+		*_arg2 = (C.Wallet__Handle)(openHandle(__arg2))
 	}
 	return
 }

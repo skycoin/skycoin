@@ -2,7 +2,6 @@ package main
 
 import (
 	cli "github.com/skycoin/skycoin/src/api/cli"
-	wallet "github.com/skycoin/skycoin/src/wallet"
 )
 
 /*
@@ -15,19 +14,17 @@ import (
 import "C"
 
 //export SKY_cli_AddPrivateKey
-func SKY_cli_AddPrivateKey(_wlt *C.Handle, _key string) (____error_code uint32) {
+func SKY_cli_AddPrivateKey(_wlt *C.Wallet__Handle, _key string) (____error_code uint32) {
 	//TODO: Wallet must be Handle
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	obj, ok := lookupHandleObj(Handle(*_wlt))
+	wlt, ok := lookupWalletHandle(*_wlt)
 	____error_code = SKY_ERROR
 	if ok {
-		if wlt, isWallet := (obj).(*wallet.Wallet); isWallet {
-			____return_err := cli.AddPrivateKey(wlt, _key)
-			____error_code = libErrorCode(____return_err)
-		}
+		____return_err := cli.AddPrivateKey(wlt, _key)
+		____error_code = libErrorCode(____return_err)
 	}
 	return
 }

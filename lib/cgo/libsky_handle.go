@@ -9,7 +9,55 @@ package main
 */
 import "C"
 
+import (
+	"unsafe"
+	webrpc "github.com/skycoin/skycoin/src/api/webrpc"
+	wallet "github.com/skycoin/skycoin/src/wallet"
+)
+
+type Handle uint64
+
+var (
+	handleMap = make(map[Handle]interface{})
+)
+
+func openHandle(obj interface{}) Handle {
+	ptr := &obj
+	handle := *(*Handle)(unsafe.Pointer(&ptr))
+	handleMap[handle] = obj
+	return handle
+}
+
+func lookupHandleObj(handle Handle) (interface{}, bool) {
+	obj, ok := handleMap[handle]
+	return obj, ok
+}
+
+func lookupWebRpcClientHandle(handle C.WebrpcClient__Handle) (*webrpc.Client, bool){
+	obj, ok := lookupHandleObj(Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*webrpc.Client); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func lookupWalletHandle(handle C.Wallet__Handle) (*wallet.Wallet, bool){
+	obj, ok := lookupHandleObj(Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*wallet.Wallet); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func closeHandle(handle Handle) {
+	delete(handleMap, handle)
+}
+
 //export SKY_handle_close
-func SKY_handle_close(handle *C.Handle){
-	closeHandle(Handle(*handle))
+func SKY_handle_close(handle C.Handle){
+	closeHandle(Handle(handle))
 }

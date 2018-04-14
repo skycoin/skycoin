@@ -15,6 +15,7 @@ import (
 */
 import "C"
 
+//TODO: stdevEclipse Verify conversion from GoSlice_ to []byte
 //export SKY_encrypt_ScryptChacha20poly1305_Encrypt
 func SKY_encrypt_ScryptChacha20poly1305_Encrypt(_s *C.encrypt__ScryptChacha20poly1305, _data, _password *C.GoSlice_, _arg1 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0

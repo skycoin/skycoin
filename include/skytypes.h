@@ -99,6 +99,16 @@ typedef void *GoChan_;
 typedef GoInt64_ Handle;
 
 /**
+ * Webrpc Client Handle
+*/
+typedef Handle WebrpcClient__Handle;
+
+/**
+ * Wallet Handle
+*/
+typedef Handle Wallet__Handle;
+
+/**
  * Instances of Go `map` type, deal map[string] as handle
  */
 typedef Handle GoStringMap_;

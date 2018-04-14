@@ -45,6 +45,7 @@ func SKY_cli_GetBalanceOfAddresses(_c *C.Handle, _addrs *C.GoSlice_, _arg2 *C.cl
 	____error_code = SKY_ERROR
 	if ok {
 		if client, isClient := (obj).(*webrpc.Client); isClient {
+			//TODO: stdevEclipse Test this typecast
 			addrs := *(*[]string)(unsafe.Pointer(_addrs))
 			__arg2, ____return_err := cli.GetBalanceOfAddresses(client, addrs)
 			____error_code = libErrorCode(____return_err)

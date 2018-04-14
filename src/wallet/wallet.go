@@ -332,7 +332,7 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 	}
 
 	// Encrypt the wallet
-	if err := w.lock(opts.Password, opts.CryptoType); err != nil {
+	if err := w.Lock(opts.Password, opts.CryptoType); err != nil {
 		return nil, err
 	}
 
@@ -357,8 +357,8 @@ func NewWalletScanAhead(wltName string, opts Options, bg BalanceGetter) (*Wallet
 	return newWallet(wltName, opts, bg)
 }
 
-// lock encrypts the wallet with the given password and specific crypto type
-func (w *Wallet) lock(password []byte, cryptoType CryptoType) error {
+// Lock encrypts the wallet with the given password and specific crypto type
+func (w *Wallet) Lock(password []byte, cryptoType CryptoType) error {
 	if len(password) == 0 {
 		return ErrMissingPassword
 	}
@@ -424,10 +424,10 @@ func (w *Wallet) lock(password []byte, cryptoType CryptoType) error {
 	return nil
 }
 
-// unlock decrypts the wallet into a temporary decrypted copy of the wallet
+// Unlock decrypts the wallet into a temporary decrypted copy of the wallet
 // Returns error if the decryption fails
 // The temporary decrypted wallet should be erased from memory when done.
-func (w *Wallet) unlock(password []byte) (*Wallet, error) {
+func (w *Wallet) Unlock(password []byte) (*Wallet, error) {
 	if !w.IsEncrypted() {
 		return nil, ErrWalletNotEncrypted
 	}
@@ -545,7 +545,7 @@ func (w *Wallet) GuardUpdate(password []byte, fn func(w *Wallet) error) error {
 	}
 
 	cryptoType := w.cryptoType()
-	wlt, err := w.unlock(password)
+	wlt, err := w.Unlock(password)
 	if err != nil {
 		return err
 	}
@@ -556,7 +556,7 @@ func (w *Wallet) GuardUpdate(password []byte, fn func(w *Wallet) error) error {
 		return err
 	}
 
-	if err := wlt.lock(password, cryptoType); err != nil {
+	if err := wlt.Lock(password, cryptoType); err != nil {
 		return err
 	}
 
@@ -577,7 +577,7 @@ func (w *Wallet) GuardView(password []byte, f func(w *Wallet) error) error {
 		return ErrMissingPassword
 	}
 
-	wlt, err := w.unlock(password)
+	wlt, err := w.Unlock(password)
 	if err != nil {
 		return err
 	}

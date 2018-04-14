@@ -145,7 +145,7 @@ func (serv *Service) EncryptWallet(wltID string, password []byte) (*Wallet, erro
 		return nil, ErrWalletEncrypted
 	}
 
-	if err := w.lock(password, serv.cryptoType); err != nil {
+	if err := w.Lock(password, serv.cryptoType); err != nil {
 		return nil, err
 	}
 
@@ -178,7 +178,7 @@ func (serv *Service) DecryptWallet(wltID string, password []byte) (*Wallet, erro
 	}
 
 	// Unlocks the wallet
-	unlockWlt, err := w.unlock(password)
+	unlockWlt, err := w.Unlock(password)
 	if err != nil {
 		return nil, err
 	}

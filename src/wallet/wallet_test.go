@@ -66,7 +66,7 @@ func init() {
 			log.Panic(err)
 		}
 
-		if err := w.lock([]byte("pwd"), CryptoTypeScryptChacha20poly1305); err != nil {
+		if err := w.Lock([]byte("pwd"), CryptoTypeScryptChacha20poly1305); err != nil {
 			log.Panic(err)
 		}
 
@@ -368,7 +368,7 @@ func TestWalletLock(t *testing.T) {
 					require.NoError(t, err)
 				}
 
-				err = w.lock(tc.lockPwd, ct)
+				err = w.Lock(tc.lockPwd, ct)
 				require.Equal(t, tc.err, err)
 				if err != nil {
 					return
@@ -494,7 +494,7 @@ func TestLockAndUnLock(t *testing.T) {
 			require.Equal(t, w, cw)
 
 			// lock the cloned wallet
-			err = cw.lock([]byte("pwd"), ct)
+			err = cw.Lock([]byte("pwd"), ct)
 			require.NoError(t, err)
 
 			// unlock the cloned wallet
@@ -519,7 +519,7 @@ func makeWallet(t *testing.T, opts Options, addrNum uint64) *Wallet {
 		require.NoError(t, err)
 	}
 	if preOpts.Encrypt {
-		err = w.lock(preOpts.Password, preOpts.CryptoType)
+		err = w.Lock(preOpts.Password, preOpts.CryptoType)
 		require.NoError(t, err)
 	}
 	return w

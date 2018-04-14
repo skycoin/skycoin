@@ -304,8 +304,8 @@ func rpcAddress() string {
 	return rpcAddr
 }
 
-func TestStableGenerateAddresses(t *testing.T) {
-	if !doStable(t) {
+func TestGenerateAddresses(t *testing.T) {
+	if !doLiveOrStable(t) {
 		return
 	}
 

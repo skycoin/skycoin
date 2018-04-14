@@ -16,6 +16,7 @@ import "C"
 
 //export SKY_cli_GenerateWallet
 func SKY_cli_GenerateWallet(_walletFile, _label, _seed string, _numAddrs uint64, _arg2 *C.Wallet) (____error_code uint32) {
+	//TODO: Wallet must be Handle
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())

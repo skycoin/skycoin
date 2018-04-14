@@ -18,8 +18,8 @@ func SKY_map_get(gomap *C.GoStringMap_ , key string, value *C.GoString_) (____er
 			result, ok := m[key]
 			if ok {
 				copyString(result, value)
+				____error_code = SKY_OK
 			}
-			____error_code = SKY_OK
 		}
 	} 
 	return

@@ -17,6 +17,13 @@ type IAnnotationsGenerator interface {
 	GenerateAnnotations() []Annotation
 }
 
+type IAnnotationsIterator interface {
+
+	Next() (Annotation,bool)
+	SetCurrent(annotation Annotation)
+	GetCurrent() Annotation
+}
+
 func writeHexdumpMember(offset int, size int, writer io.Writer, buffer []byte, name string) {
 	var hexBuff = make([]string, size)
 	var j = 0
@@ -115,3 +122,22 @@ func HexDump(buffer []byte, annotations []Annotation, writer io.Writer) {
 	printFinalHex(currentOffset,writer)
 }
 
+func HexDumpFromIterator(buffer []byte, annotationsIterator IAnnotationsIterator, writer io.Writer) {
+	//var serializedData = encoder.Serialize(data)
+
+	var currentOffset = 0
+
+	var current, valid = annotationsIterator.Next()
+
+	for ; ;  {
+		if !valid {
+			break
+		}
+		writeHexdumpMember(currentOffset,current.Size,writer,buffer,current.Name)
+		currentOffset += current.Size
+	}
+
+
+
+	printFinalHex(currentOffset,writer)
+}

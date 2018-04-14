@@ -5,13 +5,16 @@
 [![GoDoc](https://godoc.org/github.com/skycoin/skycoin?status.svg)](https://godoc.org/github.com/skycoin/skycoin)
 [![Go Report Card](https://goreportcard.com/badge/github.com/skycoin/skycoin)](https://goreportcard.com/report/github.com/skycoin/skycoin)
 
-Skycoin C client library (a.k.a libskycoin) provides access to Skicoin Core
+Skycoin C client library (a.k.a libskycoin) provides access to Skycoin Core
 internal and API functions for implementing third-party applications.
+
+## API Interface
+
+The API interface is defined in the [libskycoin header file](/include/libskycoin.h).
 
 ## Building
 
 ```sh
-
 $ make build-libc
 ```
 
@@ -28,7 +31,7 @@ In order to test the C client libraries follow these steps
 
 The following files will be generated
 
-- `build/libskycoin.h` - Header file for including libskycoin symbols in your app code
+- `include/libskycoin.h` - Platform-specific header file for including libskycoin symbols in your app code
 - `build/libskycoin.a` - Static library.
 - `build/libskycoin.so` - Shared library object.
 

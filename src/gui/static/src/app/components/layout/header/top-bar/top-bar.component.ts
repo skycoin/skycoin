@@ -1,4 +1,5 @@
 import { Component, Input } from '@angular/core';
+import { AppService } from '../../../../services/app.service';
 
 @Component({
   selector: 'app-top-bar',
@@ -7,4 +8,8 @@ import { Component, Input } from '@angular/core';
 })
 export class TopBarComponent {
   @Input() title: string;
+
+  constructor(
+    public appService: AppService,
+  ) {}
 }

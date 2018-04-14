@@ -1,5 +1,5 @@
 /*
-Implements an interface for creating a CLI application.
+Package cli implements an interface for creating a CLI application.
 Includes methods for manipulating wallets files and interacting with the
 webrpc API to query a skycoin node's status.
 */
@@ -20,15 +20,14 @@ import (
 	"github.com/skycoin/skycoin/src/util/file"
 )
 
-// Commands all cmds that we support
-
 const (
-	Version           = "0.21.1"
+	// Version is the CLI Version
+	Version           = "0.22.0"
 	walletExt         = ".wlt"
 	defaultCoin       = "skycoin"
 	defaultWalletName = "$COIN_cli" + walletExt
 	defaultWalletDir  = "$HOME/.$COIN/wallets"
-	defaultRpcAddress = "127.0.0.1:6430"
+	defaultRPCAddress = "127.0.0.1:6430"
 )
 
 var (
@@ -36,7 +35,7 @@ var (
     RPC_ADDR: Address of RPC node. Default "%s"
     COIN: Name of the coin. Default "%s"
     WALLET_DIR: Directory where wallets are stored. This value is overriden by any subcommand flag specifying a wallet filename, if that filename includes a path. Default "%s"
-    WALLET_NAME: Name of wallet file (without path). This value is overriden by any subcommand flag specifying a wallet filename. Default "%s"`, defaultRpcAddress, defaultCoin, defaultWalletDir, defaultWalletName)
+    WALLET_NAME: Name of wallet file (without path). This value is overriden by any subcommand flag specifying a wallet filename. Default "%s"`, defaultRPCAddress, defaultCoin, defaultWalletDir, defaultWalletName)
 
 	commandHelpTemplate = fmt.Sprintf(`USAGE:
         {{.HelpName}}{{if .VisibleFlags}} [command options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[arguments...]{{end}}{{if .Category}}
@@ -82,8 +81,11 @@ COPYRIGHT:
 %s
 `, envVarsHelp)
 
-	ErrWalletName  = fmt.Errorf("error wallet file name, must have %s extension", walletExt)
-	ErrAddress     = errors.New("invalid address")
+	// ErrWalletName is returned if the wallet file name is invalid
+	ErrWalletName = fmt.Errorf("error wallet file name, must have %s extension", walletExt)
+	// ErrAddress is returned if an address is invalid
+	ErrAddress = errors.New("invalid address")
+	// ErrJSONMarshal is returned if JSON marshaling failed
 	ErrJSONMarshal = errors.New("json marshal failed")
 )
 
@@ -99,7 +101,7 @@ type Config struct {
 	WalletName string
 	DataDir    string
 	Coin       string
-	RpcAddress string
+	RPCAddress string
 }
 
 // LoadConfig loads config from environment, prior to parsing CLI flags
@@ -113,7 +115,7 @@ func LoadConfig() (Config, error) {
 	// get rpc address from env
 	rpcAddr := os.Getenv("RPC_ADDR")
 	if rpcAddr == "" {
-		rpcAddr = defaultRpcAddress
+		rpcAddr = defaultRPCAddress
 	}
 
 	home := file.UserHome()
@@ -141,14 +143,16 @@ func LoadConfig() (Config, error) {
 		WalletName: wltName,
 		DataDir:    dataDir,
 		Coin:       coin,
-		RpcAddress: rpcAddr,
+		RPCAddress: rpcAddr,
 	}, nil
 }
 
+// FullWalletPath returns the joined wallet dir and wallet name path
 func (c Config) FullWalletPath() string {
 	return filepath.Join(c.WalletDir, c.WalletName)
 }
 
+// FullDBPath returns the joined data directory and db file name path
 func (c Config) FullDBPath() string {
 	return filepath.Join(c.DataDir, "data.db")
 }
@@ -212,6 +216,7 @@ func NewApp(cfg Config) *App {
 		addressOutputsCmd(),
 		blocksCmd(),
 		broadcastTxCmd(),
+		checkdbCmd(),
 		createRawTxCmd(cfg),
 		decodeRawTxCmd(),
 		generateAddrsCmd(cfg),
@@ -222,13 +227,12 @@ func NewApp(cfg Config) *App {
 		sendCmd(),
 		statusCmd(),
 		transactionCmd(),
+		verifyAddressCmd(),
 		versionCmd(),
 		walletBalanceCmd(cfg),
 		walletDirCmd(),
 		walletHisCmd(),
 		walletOutputsCmd(cfg),
-		checkdbCmd(),
-		verifyAddressCmd(),
 	}
 
 	app.Name = fmt.Sprintf("%s-cli", cfg.Coin)
@@ -249,7 +253,7 @@ func NewApp(cfg Config) *App {
 	app.Metadata = map[string]interface{}{
 		"config": cfg,
 		"rpc": &webrpc.Client{
-			Addr: cfg.RpcAddress,
+			Addr: cfg.RPCAddress,
 		},
 	}
 
@@ -261,10 +265,12 @@ func (app *App) Run(args []string) error {
 	return app.App.Run(args)
 }
 
-func RpcClientFromContext(c *gcli.Context) *webrpc.Client {
+// RPCClientFromContext returns a webrpc.Client from a urfave/cli Context
+func RPCClientFromContext(c *gcli.Context) *webrpc.Client {
 	return c.App.Metadata["rpc"].(*webrpc.Client)
 }
 
+// ConfigFromContext returns a Config from a urfave/cli Context
 func ConfigFromContext(c *gcli.Context) Config {
 	return c.App.Metadata["config"].(Config)
 }
@@ -281,7 +287,7 @@ func errorWithHelp(c *gcli.Context, err error) {
 	fmt.Fprintf(c.App.Writer, "ERROR: %v. See '%s %s --help'\n\n", err, c.App.HelpName, c.Command.Name)
 }
 
-func formatJson(obj interface{}) ([]byte, error) {
+func formatJSON(obj interface{}) ([]byte, error) {
 	d, err := json.MarshalIndent(obj, "", "    ")
 	if err != nil {
 		return nil, ErrJSONMarshal
@@ -289,8 +295,8 @@ func formatJson(obj interface{}) ([]byte, error) {
 	return d, nil
 }
 
-func printJson(obj interface{}) error {
-	d, err := formatJson(obj)
+func printJSON(obj interface{}) error {
+	d, err := formatJSON(obj)
 	if err != nil {
 		return err
 	}

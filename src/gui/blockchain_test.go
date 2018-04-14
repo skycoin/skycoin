@@ -213,7 +213,7 @@ func TestGetBlock(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 
 			handler.ServeHTTP(rr, req)
 
@@ -340,7 +340,7 @@ func TestGetBlocks(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 
 			handler.ServeHTTP(rr, req)
 
@@ -449,7 +449,8 @@ func TestGetLastBlocks(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 
 			handler.ServeHTTP(rr, req)
 

@@ -257,7 +257,7 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			} else {
 				setCSRFParameters(csrfStore, tokenInvalid, req)
 			}
-			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -379,7 +379,7 @@ func TestCoinSupply(t *testing.T) {
 			} else {
 				setCSRFParameters(csrfStore, tokenInvalid, req)
 			}
-			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -604,7 +604,7 @@ func TestGetRichlist(t *testing.T) {
 			} else {
 				setCSRFParameters(csrfStore, tokenInvalid, req)
 			}
-			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -679,7 +679,7 @@ func TestGetAddressCount(t *testing.T) {
 			} else {
 				setCSRFParameters(csrfStore, tokenInvalid, req)
 			}
-			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

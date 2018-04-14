@@ -56,6 +56,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { HttpClientModule } from '@angular/common/http';
+import { AppService } from './services/app.service';
 
 
 const ROUTES = [
@@ -174,6 +175,7 @@ const ROUTES = [
   ],
   providers: [
     ApiService,
+    AppService,
     BlockchainService,
     NetworkService,
     PriceService,

@@ -36,7 +36,7 @@ func listAddresses(c *gcli.Context) error {
 
 	addrs := wlt.GetAddresses()
 
-	s, err := FormatAddressesAsJson(addrs)
+	s, err := FormatAddressesAsJSON(addrs)
 	if err != nil {
 		return err
 	}

@@ -15,24 +15,36 @@ TEST=""
 UPDATE=""
 # run go test with -v flag
 VERBOSE=""
+# run go test with -run flag
+RUN_TESTS=""
+# run wallet tests
+TEST_WALLET=""
+
+COMMIT=$(git rev-parse HEAD)
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+GOLDFLAGS="-X main.Commit=${COMMIT} -X main.Branch=${BRANCH}"
 
 usage () {
   echo "Usage: $SCRIPT"
   echo "Optional command line arguments"
   echo "-t <string>  -- Test to run, gui or cli; empty runs both tests"
+  echo "-r <string>  -- Run test with -run flag"
   echo "-u <boolean> -- Update stable testdata"
   echo "-v <boolean> -- Run test with -v flag"
+  echo "-w <boolean> -- Run wallet tests"
   exit 1
 }
 
-while getopts "h?t:uv" args; do
+while getopts "h?t:r:uvw" args; do
   case $args in
     h|\?)
         usage;
         exit;;
     t ) TEST=${OPTARG};;
+    r ) RUN_TESTS="-run ${OPTARG}";;
     u ) UPDATE="--update";;
     v ) VERBOSE="-v";;
+    w ) TEST_WALLET="--test-wallet"
   esac
 done
 
@@ -49,7 +61,7 @@ fi
 # Compile the skycoin node
 # We can't use "go run" because this creates two processes which doesn't allow us to kill it at the end
 echo "compiling skycoin"
-go build -o "$BINARY" cmd/skycoin/skycoin.go
+go build -o "$BINARY" -ldflags "${GOLDFLAGS}" cmd/skycoin/skycoin.go
 
 # Run skycoin node with pinned blockchain database
 echo "starting skycoin node in background with http listener on $HOST"
@@ -63,6 +75,7 @@ echo "starting skycoin node in background with http listener on $HOST"
                       -rpc-interface-port=$RPC_PORT \
                       -launch-browser=false \
                       -data-dir="$DATA_DIR" \
+                      -enable-wallet-api=true \
                       -wallet-dir="$WALLET_DIR" &
 SKYCOIN_PID=$!
 
@@ -76,7 +89,7 @@ set +e
 
 if [[ -z $TEST || $TEST = "gui" ]]; then
 
-SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST go test ./src/gui/integration/... $UPDATE -timeout=30s $VERBOSE
+SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST go test ./src/gui/integration/... $UPDATE -timeout=3m $VERBOSE $RUN_TESTS $TEST_WALLET
 
 GUI_FAIL=$?
 
@@ -84,7 +97,7 @@ fi
 
 if [[ -z $TEST  || $TEST = "cli" ]]; then
 
-SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR go test ./src/api/cli/integration/... $UPDATE -timeout=30s $VERBOSE
+SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR go test ./src/api/cli/integration/... $UPDATE -timeout=3m $VERBOSE $RUN_TESTS $TEST_WALLET
 
 CLI_FAIL=$?
 

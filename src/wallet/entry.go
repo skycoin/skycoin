@@ -13,31 +13,6 @@ type Entry struct {
 	Secret  cipher.SecKey
 }
 
-// NewEntryFromReadable creates WalletEntry base one ReadableWalletEntry
-func NewEntryFromReadable(w *ReadableEntry) (*Entry, error) {
-	if w.Secret == "" {
-		return nil, errors.New("secret field is empty")
-	}
-
-	s, err := cipher.SecKeyFromHex(w.Secret)
-	if err != nil {
-		return nil, err
-	}
-
-	a := cipher.AddressFromSecKey(s)
-	if w.Address != "" {
-		if a.String() != w.Address {
-			return nil, errors.New("address does not match the secret")
-		}
-	}
-
-	return &Entry{
-		Address: a,
-		Public:  cipher.PubKeyFromSecKey(s),
-		Secret:  s,
-	}, nil
-}
-
 // Verify checks that the public key is derivable from the secret key,
 // and that the public key is associated with the address
 func (we *Entry) Verify() error {

@@ -2,7 +2,6 @@ package bip39
 
 import (
 	"crypto/sha256"
-	"crypto/sha512"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -10,8 +9,6 @@ import (
 	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher"
-
-	"golang.org/x/crypto/pbkdf2"
 )
 
 // Some bitwise operands for working with big.Ints
@@ -165,19 +162,19 @@ func MnemonicToByteArray(mnemonic string) ([]byte, error) {
 
 // NewSeedWithErrorChecking creates a hashed seed output given the mnemonic string and a password.
 // An error is returned if the mnemonic is not convertible to a byte array.
-func NewSeedWithErrorChecking(mnemonic string, password string) ([]byte, error) {
-	_, err := MnemonicToByteArray(mnemonic)
-	if err != nil {
-		return nil, err
-	}
-	return NewSeed(mnemonic, password), nil
-}
+// func NewSeedWithErrorChecking(mnemonic string, password string) ([]byte, error) {
+// 	_, err := MnemonicToByteArray(mnemonic)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return NewSeed(mnemonic, password), nil
+// }
 
 // NewSeed creates a hashed seed output given a provided string and password.
 // No checking is performed to validate that the string provided is a valid mnemonic.
-func NewSeed(mnemonic string, password string) []byte {
-	return pbkdf2.Key([]byte(mnemonic), []byte("mnemonic"+password), 2048, 64, sha512.New)
-}
+// func NewSeed(mnemonic string, password string) []byte {
+// 	return pbkdf2.Key([]byte(mnemonic), []byte("mnemonic"+password), 2048, 64, sha512.New)
+// }
 
 // Appends to data the first (len(data) / 32)bits of the result of sha256(data)
 // Currently only supports data up to 32 bytes

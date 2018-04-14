@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -26,30 +25,20 @@ import (
 	"github.com/skycoin/skycoin/src/util/file"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 var (
 	// Version node version which will be set when build wallet by LDFLAGS
-	Version = "0.21.1"
+	Version = "0.22.0"
 	// Commit id
 	Commit = ""
+	// Branch name
+	Branch = ""
 
 	help = false
 
-	logger     = logging.MustGetLogger("main")
-	logFormat  = "[skycoin.%{module}:%{level}] %{message}"
-	logModules = []string{
-		"main",
-		"daemon",
-		"coin",
-		"gui",
-		"file",
-		"visor",
-		"wallet",
-		"gnet",
-		"pex",
-		"webrpc",
-	}
+	logger = logging.MustGetLogger("main")
 
 	// GenesisSignatureStr hex string of genesis signature
 	GenesisSignatureStr = "eb10468d10054d15f2b6f8946cd46797779aa20a7617ceb4be884189f219bc9a164e56a5b9f7bec392a804ff3740210348d73db77a37adb542a8e08d429ac92700"
@@ -93,9 +82,11 @@ type Config struct {
 	// Disables networking altogether
 	DisableNetworking bool
 	// Disables wallet API
-	DisableWalletApi bool
+	EnableWalletAPI bool
 	// Disable CSRF check in the wallet api
 	DisableCSRF bool
+	// Enable /wallet/seed api endpoint
+	EnableSeedAPI bool
 
 	// Only run on localhost and only connect to others on localhost
 	LocalhostOnly bool
@@ -135,6 +126,10 @@ type Config struct {
 	// GUI directory contains assets for the html gui
 	GUIDirectory string
 
+	ReadTimeout  time.Duration
+	WriteTimeout time.Duration
+	IdleTimeout  time.Duration
+
 	// Logging
 	ColorLog bool
 	// This is the value registered with flag, it is converted to LogLevel after parsing
@@ -145,6 +140,8 @@ type Config struct {
 	// Wallets
 	// Defaults to ${DataDirectory}/wallets/
 	WalletDirectory string
+	// Wallet crypto type
+	WalletCryptoType string
 
 	RunMaster bool
 
@@ -184,8 +181,9 @@ func (c *Config) register() {
 	flag.BoolVar(&c.DisableOutgoingConnections, "disable-outgoing", c.DisableOutgoingConnections, "Don't make outgoing connections")
 	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming", c.DisableIncomingConnections, "Don't make incoming connections")
 	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
-	flag.BoolVar(&c.DisableWalletApi, "disable-wallet-api", c.DisableWalletApi, "Disable the wallet API")
+	flag.BoolVar(&c.EnableWalletAPI, "enable-wallet-api", c.EnableWalletAPI, "Enable the wallet API")
 	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable csrf check")
+	flag.BoolVar(&c.EnableSeedAPI, "enable-seed-api", false, "enable /wallet/seed api")
 	flag.StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
 
@@ -234,6 +232,7 @@ func (c *Config) register() {
 	flag.BoolVar(&c.Arbitrating, "arbitrating", c.Arbitrating, "Run node in arbitrating mode")
 	flag.BoolVar(&c.Logtogui, "logtogui", true, "log to gui")
 	flag.IntVar(&c.LogBuffSize, "logbufsize", c.LogBuffSize, "Log size saved in memeory for gui show")
+	flag.StringVar(&c.WalletCryptoType, "wallet-crypto-type", c.WalletCryptoType, "wallet crypto type. Can be sha256-xor or scrypt-chacha20poly1305")
 }
 
 var home = file.UserHome()
@@ -247,8 +246,10 @@ var devConfig = Config{
 	DisableIncomingConnections: false,
 	// Disables networking altogether
 	DisableNetworking: false,
-	// Disable wallet API
-	DisableWalletApi: false,
+	// Enable wallet API
+	EnableWalletAPI: false,
+	// Enable seed API
+	EnableSeedAPI: false,
 	// Disable CSRF check in the wallet api
 	DisableCSRF: false,
 	// Only run on localhost and only connect to others on localhost
@@ -281,7 +282,7 @@ var devConfig = Config{
 	RPCInterfaceAddr: "127.0.0.1",
 	RPCThreadNum:     5,
 
-	LaunchBrowser: true,
+	LaunchBrowser: false,
 	// Data directory holds app data -- defaults to ~/.skycoin
 	DataDirectory: filepath.Join(home, ".skycoin"),
 	// Web GUI static resources
@@ -291,7 +292,14 @@ var devConfig = Config{
 	LogLevel: "DEBUG",
 
 	// Wallets
-	WalletDirectory: "",
+	WalletDirectory:  "",
+	WalletCryptoType: string(wallet.CryptoTypeScryptChacha20poly1305),
+
+	// Timeout settings for http.Server
+	// https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
+	ReadTimeout:  10 * time.Second,
+	WriteTimeout: 60 * time.Second,
+	IdleTimeout:  120 * time.Second,
 
 	// Centralized network configuration
 	RunMaster:        false,
@@ -372,6 +380,11 @@ func (c *Config) postProcess() {
 		// Run in arbitrating mode if the node is master
 		c.Arbitrating = true
 	}
+
+	// Don't open browser to load wallets if wallet apis are disabled.
+	if !c.EnableWalletAPI {
+		c.LaunchBrowser = false
+	}
 }
 
 func panicIfError(err error, msg string, args ...interface{}) {
@@ -427,15 +440,19 @@ func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) (*g
 	var s *gui.Server
 	var err error
 
-	config := gui.ServerConfig{
-		StaticDir:   c.GUIDirectory,
-		DisableCSRF: c.DisableCSRF,
+	config := gui.Config{
+		StaticDir:       c.GUIDirectory,
+		DisableCSRF:     c.DisableCSRF,
+		EnableWalletAPI: c.EnableWalletAPI,
+		ReadTimeout:     c.ReadTimeout,
+		WriteTimeout:    c.WriteTimeout,
+		IdleTimeout:     c.IdleTimeout,
 	}
 
 	if c.WebInterfaceHTTPS {
 		// Verify cert/key parameters, and if neither exist, create them
 		if err := cert.CreateCertIfNotExists(host, c.WebInterfaceCert, c.WebInterfaceKey, "Skycoind"); err != nil {
-			logger.Error("gui.CreateCertIfNotExists failure: %v", err)
+			logger.Errorf("gui.CreateCertIfNotExists failure: %v", err)
 			return nil, err
 		}
 
@@ -444,49 +461,11 @@ func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) (*g
 		s, err = gui.Create(host, config, d)
 	}
 	if err != nil {
-		logger.Error("Failed to start web GUI: %v", err)
+		logger.Errorf("Failed to start web GUI: %v", err)
 		return nil, err
 	}
 
 	return s, nil
-}
-
-// init logging settings
-func initLogging(dataDir string, level string, color, logtofile bool) (func(), error) {
-	logCfg := logging.DevLogConfig(logModules)
-	logCfg.Format = logFormat
-	logCfg.Colors = color
-	logCfg.Level = level
-
-	var fd *os.File
-	if logtofile {
-		logDir := filepath.Join(dataDir, "logs")
-		if err := createDirIfNotExist(logDir); err != nil {
-			log.Println("initial logs folder failed", err)
-			return nil, fmt.Errorf("init log folder fail, %v", err)
-		}
-
-		// open log file
-		tf := "2006-01-02-030405"
-		logfile := filepath.Join(logDir,
-			fmt.Sprintf("%s-v%s.log", time.Now().Format(tf), Version))
-		var err error
-		fd, err = os.OpenFile(logfile, os.O_RDWR|os.O_CREATE, 0666)
-		if err != nil {
-			return nil, err
-		}
-
-		logCfg.Output = io.MultiWriter(os.Stdout, fd)
-	}
-
-	logCfg.InitLogger()
-
-	return func() {
-		logger.Info("Log file closed")
-		if fd != nil {
-			fd.Close()
-		}
-	}, nil
 }
 
 func initProfiling(httpProf, profileCPU bool, profileCPUFile string) {
@@ -539,13 +518,24 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Visor.Config.DBPath = c.DBPath
 	dc.Visor.Config.DBReadOnly = c.DBReadOnly
 	dc.Visor.Config.Arbitrating = c.Arbitrating
+	dc.Visor.Config.EnableWalletAPI = c.EnableWalletAPI
 	dc.Visor.Config.WalletDirectory = c.WalletDirectory
 	dc.Visor.Config.BuildInfo = visor.BuildInfo{
 		Version: Version,
 		Commit:  Commit,
+		Branch:  Branch,
+	}
+	dc.Visor.Config.EnableSeedAPI = c.EnableSeedAPI
+
+	dc.Gateway.EnableWalletAPI = c.EnableWalletAPI
+
+	// Initialize wallet default crypto type
+	cryptoType, err := wallet.CryptoTypeFromString(c.WalletCryptoType)
+	if err != nil {
+		log.Panic(err)
 	}
 
-	dc.Gateway.DisableWalletAPI = c.DisableWalletApi
+	dc.Visor.Config.WalletCryptoType = cryptoType
 
 	return dc
 }
@@ -555,7 +545,7 @@ func Run(c *Config) {
 	defer func() {
 		// try catch panic in main thread
 		if r := recover(); r != nil {
-			logger.Error("recover: %v\nstack:%v", r, string(debug.Stack()))
+			logger.Errorf("recover: %v\nstack:%v", r, string(debug.Stack()))
 		}
 	}()
 
@@ -567,18 +557,12 @@ func Run(c *Config) {
 	}
 	host := fmt.Sprintf("%s:%d", c.WebInterfaceAddr, c.WebInterfacePort)
 	fullAddress := fmt.Sprintf("%s://%s", scheme, host)
-	logger.Critical("Full address: %s", fullAddress)
+	logger.Noticef("Full address: %s", fullAddress)
 	if c.PrintWebInterfaceAddress {
 		fmt.Println(fullAddress)
 	}
 
 	initProfiling(c.HTTPProf, c.ProfileCPU, c.ProfileCPUFile)
-
-	closelog, err := initLogging(c.DataDirectory, c.LogLevel, c.ColorLog, c.Logtofile)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
 
 	var wg sync.WaitGroup
 
@@ -601,25 +585,31 @@ func Run(c *Config) {
 	// creates blockchain instance
 	dconf := configureDaemon(c)
 
-	logger.Info("Opening database %s", dconf.Visor.Config.DBPath)
+	logger.Infof("Opening database %s", dconf.Visor.Config.DBPath)
 	db, err := visor.OpenDB(dconf.Visor.Config.DBPath, dconf.Visor.Config.DBReadOnly)
 	if err != nil {
-		logger.Error("Database failed to open: %v. Is another skycoin instance running?", err)
+		logger.Errorf("Database failed to open: %v. Is another skycoin instance running?", err)
 		return
 	}
 
 	d, err := daemon.NewDaemon(dconf, db, DefaultConnections)
 	if err != nil {
-		logger.Error("%v", err)
+		logger.Error(err)
 		return
 	}
 
 	var rpc *webrpc.WebRPC
 	if c.RPCInterface {
 		rpcAddr := fmt.Sprintf("%v:%v", c.RPCInterfaceAddr, c.RPCInterfacePort)
-		rpc, err = webrpc.New(rpcAddr, d.Gateway)
+		rpc, err = webrpc.New(rpcAddr, webrpc.Config{
+			ReadTimeout:  c.ReadTimeout,
+			WriteTimeout: c.WriteTimeout,
+			IdleTimeout:  c.IdleTimeout,
+			ChanBuffSize: 1000,
+			WorkerNum:    c.RPCThreadNum,
+		}, d.Gateway)
 		if err != nil {
-			logger.Error("%v", err)
+			logger.Error(err)
 			return
 		}
 		rpc.ChanBuffSize = 1000
@@ -630,7 +620,7 @@ func Run(c *Config) {
 	if c.WebInterface {
 		webInterface, err = createGUI(c, d, host, quit)
 		if err != nil {
-			logger.Error("%v", err)
+			logger.Error(err)
 			return
 		}
 	}
@@ -638,7 +628,7 @@ func Run(c *Config) {
 	// Debug only - forces connection on start.  Violates thread safety.
 	if c.ConnectTo != "" {
 		if err := d.Pool.Pool.Connect(c.ConnectTo); err != nil {
-			logger.Error("Force connect %s failed, %v", c.ConnectTo, err)
+			logger.Errorf("Force connect %s failed, %v", c.ConnectTo, err)
 			return
 		}
 	}
@@ -674,7 +664,7 @@ func Run(c *Config) {
 	go func() {
 		defer wg.Done()
 		if err := d.Run(); err != nil {
-			logger.Error("%v", err)
+			logger.Error(err)
 			errC <- err
 		}
 	}()
@@ -685,7 +675,7 @@ func Run(c *Config) {
 		go func() {
 			defer wg.Done()
 			if err := rpc.Run(); err != nil {
-				logger.Error("%v", err)
+				logger.Error(err)
 				errC <- err
 			}
 		}()
@@ -696,7 +686,7 @@ func Run(c *Config) {
 		go func() {
 			defer wg.Done()
 			if err := webInterface.Serve(); err != nil {
-				logger.Error("%v", err)
+				logger.Error(err)
 				errC <- err
 			}
 		}()
@@ -709,9 +699,9 @@ func Run(c *Config) {
 				// Wait a moment just to make sure the http interface is up
 				time.Sleep(time.Millisecond * 100)
 
-				logger.Info("Launching System Browser with %s", fullAddress)
+				logger.Infof("Launching System Browser with %s", fullAddress)
 				if err := browser.Open(fullAddress); err != nil {
-					logger.Error(err.Error())
+					logger.Error(err)
 					return
 				}
 			}()
@@ -747,7 +737,7 @@ func Run(c *Config) {
 	select {
 	case <-quit:
 	case err := <-errC:
-		logger.Error("%v", err)
+		logger.Error(err)
 	}
 
 	logger.Info("Shutting down...")
@@ -758,7 +748,6 @@ func Run(c *Config) {
 		webInterface.Shutdown()
 	}
 	d.Shutdown()
-	closelog()
 	wg.Wait()
 	logger.Info("Goodbye")
 }

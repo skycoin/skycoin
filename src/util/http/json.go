@@ -5,6 +5,7 @@ package httphelper
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/skycoin/skycoin/src/util/logging"
 )
@@ -28,25 +29,43 @@ func SendJSON(w http.ResponseWriter, m interface{}) error {
 // SendJSONOr500 writes an object as JSON, writing a 500 error if it fails
 func SendJSONOr500(log *logging.Logger, w http.ResponseWriter, m interface{}) {
 	if err := SendJSON(w, m); err != nil {
-		log.Error("%v", err)
+		log.Errorf("%v", err)
 		Error500(w)
 	}
 }
 
-// SendOr404 sends an interface as JSON if its not nil (404) or fails (500)
-func SendOr404(w http.ResponseWriter, m interface{}) {
-	if m == nil {
-		Error404(w)
-	} else if SendJSON(w, m) != nil {
-		Error500(w)
-	}
+// Duration JSON type copied from https://github.com/vrischmann/jsonutil, MIT License
+
+// Duration is a wrapper around time.Duration which implements json.Unmarshaler and json.Marshaler.
+// It marshals and unmarshals the duration as a string in the format accepted by time.ParseDuration and returned by time.Duration.String.
+type Duration struct {
+	time.Duration
 }
 
-// SendOr500 sends an interface as JSON if its not nil (500) or fails (500)
-func SendOr500(w http.ResponseWriter, m interface{}) {
-	if m == nil {
-		Error500(w)
-	} else if SendJSON(w, m) != nil {
-		Error500(w)
+// FromDuration is a convenience factory to create a Duration instance from the
+// given time.Duration value.
+func FromDuration(d time.Duration) Duration {
+	return Duration{d}
+}
+
+// MarshalJSON implements the json.Marshaler interface. The duration is a quoted-string in the format accepted by time.ParseDuration and returned by time.Duration.String.
+func (d Duration) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + d.String() + `"`), nil
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface. The duration is expected to be a quoted-string of a duration in the format accepted by time.ParseDuration.
+func (d *Duration) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
 	}
+
+	tmp, err := time.ParseDuration(s)
+	if err != nil {
+		return err
+	}
+
+	d.Duration = tmp
+
+	return nil
 }

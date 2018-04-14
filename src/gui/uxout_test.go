@@ -143,7 +143,7 @@ func TestGetUxOutByID(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -177,8 +177,8 @@ func TestGetAddrUxOuts(t *testing.T) {
 		status                int
 		err                   string
 		httpBody              *httpBody
-		getAddrUxOutsArg      cipher.Address
-		getAddrUxOutsResponse []*historydb.UxOutJSON
+		getAddrUxOutsArg      []cipher.Address
+		getAddrUxOutsResponse []*historydb.UxOut
 		getAddrUxOutsError    error
 		httpResponse          []*historydb.UxOutJSON
 		csrfDisabled          bool
@@ -215,7 +215,7 @@ func TestGetAddrUxOuts(t *testing.T) {
 			httpBody: &httpBody{
 				address: addressForGwError.String(),
 			},
-			getAddrUxOutsArg:   addressForGwError,
+			getAddrUxOutsArg:   []cipher.Address{addressForGwError},
 			getAddrUxOutsError: errors.New("getAddrUxOutsError"),
 		},
 		{
@@ -225,8 +225,8 @@ func TestGetAddrUxOuts(t *testing.T) {
 			httpBody: &httpBody{
 				address: addressForGwResponse.String(),
 			},
-			getAddrUxOutsArg:      addressForGwResponse,
-			getAddrUxOutsResponse: []*historydb.UxOutJSON{},
+			getAddrUxOutsArg:      []cipher.Address{addressForGwResponse},
+			getAddrUxOutsResponse: []*historydb.UxOut{},
 			httpResponse:          []*historydb.UxOutJSON{},
 		},
 	}
@@ -259,7 +259,7 @@ func TestGetAddrUxOuts(t *testing.T) {
 				setCSRFParameters(csrfStore, tokenInvalid, req)
 			}
 			rr := httptest.NewRecorder()
-			handler := NewServerMux(configuredHost, ".", gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

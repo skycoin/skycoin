@@ -23,7 +23,7 @@ import (
 const testWebRPCAddr = "127.0.0.1:8081"
 
 func setupWebRPC(t *testing.T) *WebRPC {
-	rpc, err := New(testWebRPCAddr, &fakeGateway{})
+	rpc, err := New(testWebRPCAddr, Config{}, &fakeGateway{})
 	require.NoError(t, err)
 	rpc.WorkerNum = 1
 	rpc.ChanBuffSize = 2
@@ -103,7 +103,7 @@ func (fg *fakeGateway) InjectBroadcastTransaction(txn coin.Transaction) error {
 	return errors.New("fake gateway inject transaction failed")
 }
 
-func (fg fakeGateway) GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOutJSON, error) {
+func (fg fakeGateway) GetAddrUxOuts(addr []cipher.Address) ([]*historydb.UxOut, error) {
 	return nil, nil
 }
 
@@ -194,7 +194,7 @@ func Test_rpcHandler_Handler(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			rpc.ServeHTTP(rr, r)
+			rpc.mux.ServeHTTP(rr, r)
 
 			require.Equal(t, tt.status, rr.Code)
 

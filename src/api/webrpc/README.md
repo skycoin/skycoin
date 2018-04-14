@@ -1,7 +1,10 @@
 # Webrpc
 
+**WARNING: The JSON-RPC 2.0 API interface is deprecated. Do not interface with it directly**
+
 This is a description about skycoin webrpc, which implemented the [json-rpc 2.0](http://www.jsonrpc.org/specification) protocol.
 The rpc service entry point is /webrpc, and only accept the HTTP `POST` requests.
+The rpc service is exposed on port `6430`.
 
 ## Get Status
 

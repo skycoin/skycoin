@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import 'rxjs/add/operator/takeWhile';
 import { ApiService } from './services/api.service';
+import { AppService } from './services/app.service';
 
 @Component({
   selector: 'app-root',
@@ -10,10 +11,10 @@ import { ApiService } from './services/api.service';
 export class AppComponent implements OnInit {
 
   constructor(
-    private api: ApiService,
+    private appService: AppService,
   ) {}
 
   ngOnInit() {
-    this.api.testBackend();
+    this.appService.testBackend();
   }
 }

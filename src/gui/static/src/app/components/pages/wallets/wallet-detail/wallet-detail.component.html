@@ -1,9 +1,11 @@
 <ng-container *ngFor="let address of (wallet ? wallet.addresses : []); let i = index">
   <div class="-record" *ngIf="!wallet.hideEmpty || address.coins">
     <div class="id-column">{{ i + 1 }}</div>
-    <div class="address-column" (click)="copyAddress(address.address, i)" (mouseenter)="toggleClass(i)" (mouseleave)="toggleClass(i)">
+    <div class="address-column" (click)="copyAddress(address)">
       <img src="../../../../../assets/img/qr-code-black.png">
-      <p class="click-to-copy">{{ address.address }} <span data-label="Copied" class="copy-label hidden">Copy</span></p>
+      <p class="click-to-copy" [ngClass]="{ copying: address.copying }">
+        {{ address.address }} <span data-label="Copied" class="copy-label">Copy</span>
+      </p>
     </div>
     <div class="hours-column">{{ (address.hours ? address.hours : 0) | number:'1.0-6' }}</div>
     <div class="coins-column">{{ (address.coins ? address.coins : 0) | number:'1.0-6' }}</div>

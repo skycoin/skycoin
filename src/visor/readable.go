@@ -8,11 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/skycoin/skycoin/src/util/droplet"
-	"github.com/skycoin/skycoin/src/wallet"
-
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 // BlockchainMetadata encapsulates useful information from the coin.Blockchain
@@ -26,18 +25,17 @@ type BlockchainMetadata struct {
 }
 
 // NewBlockchainMetadata creates blockchain meta data
-func NewBlockchainMetadata(v *Visor) BlockchainMetadata {
+func NewBlockchainMetadata(v *Visor) (*BlockchainMetadata, error) {
 	head, err := v.Blockchain.Head()
 	if err != nil {
-		logger.Error("%v", err)
-		return BlockchainMetadata{}
+		return nil, err
 	}
 
-	return BlockchainMetadata{
+	return &BlockchainMetadata{
 		Head:        NewReadableBlockHeader(&head.Head),
 		Unspents:    v.Blockchain.Unspent().Len(),
 		Unconfirmed: uint64(v.Unconfirmed.Len()),
-	}
+	}, nil
 }
 
 // Transaction wraps around coin.Transaction, tagged with its status.  This allows us

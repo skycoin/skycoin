@@ -1,19 +1,25 @@
-package gui_integration_test
+// package integration_test implements GUI integration tests
+package integration_test
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/gui"
 	"github.com/skycoin/skycoin/src/util/droplet"
@@ -44,8 +50,10 @@ When update flag is set to true all tests pass
 */
 
 const (
-	testModeStable = "stable"
-	testModeLive   = "live"
+	testModeStable           = "stable"
+	testModeLive             = "live"
+	testModeDisableWalletApi = "disable-wallet-api"
+	testModeEnableSeedApi    = "enable-seed-api"
 
 	testFixturesDir = "test-fixtures"
 )
@@ -56,6 +64,7 @@ type TestData struct {
 }
 
 var update = flag.Bool("update", false, "update golden files")
+var testWallet = flag.Bool("test-wallet", false, "run wallet tests")
 
 func nodeAddress() string {
 	addr := os.Getenv("SKYCOIN_NODE_HOST")
@@ -70,9 +79,12 @@ func mode(t *testing.T) string {
 	switch mode {
 	case "":
 		mode = testModeStable
-	case testModeLive, testModeStable:
+	case testModeLive,
+		testModeStable,
+		testModeDisableWalletApi,
+		testModeEnableSeedApi:
 	default:
-		t.Fatal("Invalid test mode, must be stable or live")
+		t.Fatal("Invalid test mode, must be stable, live or disable-wallet-api")
 	}
 	return mode
 }
@@ -99,6 +111,24 @@ func doLive(t *testing.T) bool {
 	return false
 }
 
+func doDisableWalletApi(t *testing.T) bool {
+	if enabled() && mode(t) == testModeDisableWalletApi {
+		return true
+	}
+
+	t.Skip("DisableWalletApi tests disabled")
+	return false
+}
+
+func doEnableSeedApi(t *testing.T) bool {
+	if enabled() && mode(t) == testModeEnableSeedApi {
+		return true
+	}
+
+	t.Skip("EnableSeedAPI tests disabled")
+	return false
+}
+
 func doLiveOrStable(t *testing.T) bool {
 	if enabled() {
 		switch mode(t) {
@@ -108,6 +138,15 @@ func doLiveOrStable(t *testing.T) bool {
 	}
 
 	t.Skip("Live and stable tests disabled")
+	return false
+}
+
+func doWallet(t *testing.T) bool {
+	if *testWallet {
+		return true
+	}
+
+	t.Skip("Wallet tests disabled")
 	return false
 }
 
@@ -138,9 +177,10 @@ func loadGoldenFile(t *testing.T, filename string, testData TestData) {
 }
 
 func updateGoldenFile(t *testing.T, filename string, content interface{}) {
-	contentJson, err := json.MarshalIndent(content, "", "\t")
+	contentJSON, err := json.MarshalIndent(content, "", "\t")
 	require.NoError(t, err)
-	err = ioutil.WriteFile(filename, contentJson, 0644)
+	contentJSON = append(contentJSON, '\n')
+	err = ioutil.WriteFile(filename, contentJSON, 0644)
 	require.NoError(t, err)
 }
 
@@ -1067,7 +1107,7 @@ func TestLiveTransaction(t *testing.T) {
 			}
 			var expected *visor.ReadableTransaction
 			loadGoldenFile(t, tc.goldenFile, TestData{tx, &expected})
-			require.Equal(t, expected, tx)
+			require.Equal(t, expected, &tx.Transaction)
 		})
 	}
 }
@@ -1131,7 +1171,7 @@ func TestStableTransaction(t *testing.T) {
 
 			var expected *visor.ReadableTransaction
 			loadGoldenFile(t, tc.goldenFile, TestData{tx, &expected})
-			require.Equal(t, expected, tx)
+			require.Equal(t, expected, &tx.Transaction)
 		})
 	}
 }
@@ -1514,6 +1554,10 @@ func TestWalletNewSeed(t *testing.T) {
 		return
 	}
 
+	if !doWallet(t) {
+		return
+	}
+
 	cases := []struct {
 		name     string
 		entropy  int
@@ -1595,7 +1639,22 @@ func TestStableAddressTransactions(t *testing.T) {
 		},
 	}
 
-	testAddressTransactions(t, cases)
+	c := gui.NewClient(nodeAddress())
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			txns, err := c.AddressTransactions(tc.address)
+			if tc.errMsg != "" {
+				assertResponseError(t, err, tc.errCode, tc.errMsg)
+				return
+			}
+
+			require.NoError(t, err)
+
+			var expected []gui.ReadableTransaction
+			loadGoldenFile(t, tc.golden, TestData{txns, &expected})
+			require.Equal(t, expected, txns)
+		})
+	}
 }
 
 func TestLiveAddressTransactions(t *testing.T) {
@@ -1627,11 +1686,10 @@ func TestLiveAddressTransactions(t *testing.T) {
 		},
 	}
 
-	testAddressTransactions(t, cases)
-}
-
-func testAddressTransactions(t *testing.T, cases []addressTransactionsTestCase) {
 	c := gui.NewClient(nodeAddress())
+	// Get current blockchain height
+	bp, err := c.BlockchainProgress()
+	require.NoError(t, err)
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			txns, err := c.AddressTransactions(tc.address)
@@ -1644,6 +1702,12 @@ func testAddressTransactions(t *testing.T, cases []addressTransactionsTestCase) 
 
 			var expected []gui.ReadableTransaction
 			loadGoldenFile(t, tc.golden, TestData{txns, &expected})
+
+			// Recaculate the height if it's live test
+			for i := range expected {
+				expected[i].Status.Height = bp.Current - expected[i].Status.BlockSeq + 1
+			}
+
 			require.Equal(t, expected, txns)
 		})
 	}
@@ -1774,4 +1838,898 @@ func TestLivePendingTransactions(t *testing.T) {
 
 	_, err := c.PendingTransactions()
 	require.NoError(t, err)
+}
+
+func TestLiveWalletSpend(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	requireWalletEnv(t)
+
+	if !doWallet(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+	w, totalCoins, _, password := prepareAndCheckWallet(t, c, 2e6, 2)
+	tt := []struct {
+		name    string
+		to      string
+		coins   uint64
+		errMsg  []byte
+		checkTx func(t *testing.T, tx *visor.TransactionResult)
+	}{
+		{
+			name:  "send all coins to the first address",
+			to:    w.Entries[0].Address.String(),
+			coins: totalCoins,
+			checkTx: func(t *testing.T, tx *visor.TransactionResult) {
+				// Confirms the total output coins are equal to the totalCoins
+				var coins uint64
+				for _, o := range tx.Transaction.Out {
+					c, err := droplet.FromString(o.Coins)
+					require.NoError(t, err)
+					coins += c
+				}
+				require.Equal(t, totalCoins, coins)
+
+				// Confirms the address balance are equal to the totoalCoins
+				coins, _ = getAddressBalance(t, c, w.Entries[0].Address.String())
+				require.Equal(t, totalCoins, coins)
+			},
+		},
+		{
+			// send 0.001 coin to the second address,
+			name:  "send 0.001 coin to second address",
+			to:    w.Entries[1].Address.String(),
+			coins: 1e3,
+			checkTx: func(t *testing.T, tx *visor.TransactionResult) {
+				// Confirms there're two outputs, one to the second address, one as change output to the first address.
+				require.Len(t, tx.Transaction.Out, 2)
+
+				// Gets the output of the second address in the transaction
+				getAddrOutputInTx := func(t *testing.T, tx *visor.TransactionResult, addr string) *visor.ReadableTransactionOutput {
+					for _, output := range tx.Transaction.Out {
+						if output.Address == addr {
+							return &output
+						}
+					}
+					t.Fatalf("transaction doesn't have output to address: %v", addr)
+					return nil
+				}
+
+				out := getAddrOutputInTx(t, tx, w.Entries[1].Address.String())
+
+				// Confirms the second address has 0.001 coin
+				require.Equal(t, out.Coins, "0.001000")
+				require.Equal(t, out.Address, w.Entries[1].Address.String())
+
+				coin, err := droplet.FromString(out.Coins)
+				require.NoError(t, err)
+
+				// Gets the expected change coins
+				expectChangeCoins := totalCoins - coin
+
+				// Gets the real change coins
+				changeOut := getAddrOutputInTx(t, tx, w.Entries[0].Address.String())
+				changeCoins, err := droplet.FromString(changeOut.Coins)
+				require.NoError(t, err)
+				// Confirms the change coins are matched.
+				require.Equal(t, expectChangeCoins, changeCoins)
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := c.Spend(w.Filename(), tc.to, tc.coins, password)
+			if err != nil {
+				t.Fatalf("spend failed: %v", err)
+			}
+
+			tk := time.NewTicker(time.Second)
+			var tx *visor.TransactionResult
+		loop:
+			for {
+				select {
+				case <-time.After(30 * time.Second):
+					t.Fatal("Waiting for transaction to be confirmed timeout")
+				case <-tk.C:
+					tx = getTransaction(t, c, result.Transaction.Hash)
+					if tx.Status.Confirmed {
+						break loop
+					}
+				}
+			}
+			tc.checkTx(t, tx)
+		})
+	}
+
+	// Return if wallet is encrypted, cause the rest of the tests will spend a lot of time.
+	if w.IsEncrypted() {
+		return
+	}
+
+	// Confirms sending coins less than 0.001 is not allowed
+	errMsg := "500 Internal Server Error - Transaction violates soft constraint: invalid amount, too many decimal places\n"
+	for i := uint64(1); i < uint64(1000); i++ {
+		cs, err := droplet.ToString(i)
+		require.NoError(t, err)
+		name := fmt.Sprintf("send invalid coin %v", cs)
+		t.Run(name, func(t *testing.T) {
+			result, err := c.Spend(w.Filename(), w.Entries[0].Address.String(), i, password)
+			if w.IsEncrypted() && len(password) == 0 {
+				require.EqualError(t, err, "400 Bad Request - missing password\n")
+				return
+			}
+			require.Equal(t, errMsg, err.Error())
+			require.Nil(t, result)
+		})
+	}
+}
+
+func TestCreateWallet(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	w, seed, clean := createWallet(t, c, false, "")
+	defer clean()
+	require.False(t, w.Meta.Encrypted)
+
+	walletDir := getWalletDir(t, c)
+
+	// Confirms the wallet does exist
+	walletPath := filepath.Join(walletDir, w.Meta.Filename)
+	_, err := os.Stat(walletPath)
+	require.NoError(t, err)
+
+	// Loads the wallet and confirms that the wallet has the same seed
+	lw, err := wallet.Load(walletPath)
+	require.NoError(t, err)
+	require.False(t, lw.IsEncrypted())
+	require.Equal(t, seed, lw.Meta["seed"])
+	require.Equal(t, len(w.Entries), len(lw.Entries))
+
+	for i := range w.Entries {
+		require.Equal(t, w.Entries[i].Address, lw.Entries[i].Address.String())
+		require.Equal(t, w.Entries[i].Public, lw.Entries[i].Public.Hex())
+	}
+
+	// Creates wallet with encryption
+	encW, _, encWClean := createWallet(t, c, true, "pwd")
+	defer encWClean()
+	require.True(t, encW.Meta.Encrypted)
+
+	walletPath = filepath.Join(walletDir, encW.Meta.Filename)
+	encLW, err := wallet.Load(walletPath)
+	require.NoError(t, err)
+
+	// Confirms the loaded wallet is encrypted and has the same address entries
+	require.True(t, encLW.IsEncrypted())
+	require.Equal(t, len(encW.Entries), len(encLW.Entries))
+
+	for i := range encW.Entries {
+		require.Equal(t, encW.Entries[i].Address, encLW.Entries[i].Address.String())
+		require.Equal(t, encW.Entries[i].Public, encLW.Entries[i].Public.Hex())
+	}
+}
+
+func TestGetWallet(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	// Create a wallet
+	w, _, clean := createWallet(t, c, false, "")
+	defer clean()
+
+	// Confirms the wallet can be acquired
+	w1, err := c.Wallet(w.Meta.Filename)
+	require.NoError(t, err)
+	require.Equal(t, *w, *w1)
+}
+
+func TestGetWallets(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	// Creates 2 new wallets
+	var ws []gui.WalletResponse
+	for i := 0; i < 2; i++ {
+		w, _, clean := createWallet(t, c, false, "")
+		defer clean()
+		// cleaners = append(cleaners, clean)
+		ws = append(ws, *w)
+	}
+
+	// Gets wallet from node
+	wlts, err := c.Wallets()
+	require.NoError(t, err)
+
+	// Create the wallet map
+	walletMap := make(map[string]gui.WalletResponse)
+	for _, w := range wlts {
+		walletMap[w.Meta.Filename] = *w
+	}
+
+	// Confirms the returned wallets contains the wallet we created.
+	for _, w := range ws {
+		retW, ok := walletMap[w.Meta.Filename]
+		require.True(t, ok)
+		require.Equal(t, w, retW)
+	}
+}
+
+// TestWalletNewAddress will generate 30 wallets for testing, and they will
+// be removed automatically after testing.
+func TestWalletNewAddress(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+
+	// We only test 30 cases, cause the more addresses we generate, the longer
+	// it takes, we don't want to spend much time here.
+	for i := 1; i <= 30; i++ {
+		name := fmt.Sprintf("generate %v addresses", i)
+		t.Run(name, func(t *testing.T) {
+			c := gui.NewClient(nodeAddress())
+			var encrypt bool
+			var password string
+			// Test wallet with encryption only when i == 2, so that
+			// the tests won't time out.
+			if i == 2 {
+				encrypt = true
+				password = "pwd"
+			}
+
+			w, seed, clean := createWallet(t, c, encrypt, password)
+			defer clean()
+
+			addrs, err := c.NewWalletAddress(w.Meta.Filename, i, password)
+			if err != nil {
+				t.Fatalf("%v", err)
+				return
+			}
+			require.NoError(t, err)
+
+			seckeys := cipher.GenerateDeterministicKeyPairs([]byte(seed), i+1)
+			var as []string
+			for _, k := range seckeys {
+				as = append(as, cipher.AddressFromSecKey(k).String())
+			}
+
+			// Confirms thoses new generated addresses are the same.
+			require.Equal(t, len(addrs), len(as)-1)
+			for i := range addrs {
+				require.Equal(t, as[i+1], addrs[i])
+			}
+		})
+	}
+}
+
+func TestStableWalletBalance(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+	w, _, clean := createWallet(t, c, false, "")
+	defer clean()
+
+	bp, err := c.WalletBalance(w.Meta.Filename)
+	require.NoError(t, err)
+
+	var expect wallet.BalancePair
+	loadGoldenFile(t, "wallet-balance.golden", TestData{bp, &expect})
+	require.Equal(t, expect, *bp)
+}
+
+func TestLiveWalletbalance(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	requireWalletEnv(t)
+
+	c := gui.NewClient(nodeAddress())
+	_, walletName, _ := getWalletFromEnv(t, c)
+	bp, err := c.WalletBalance(walletName)
+	require.NoError(t, err)
+	require.NotNil(t, bp)
+}
+
+func TestWalletUpdate(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+	w, _, clean := createWallet(t, c, false, "")
+	defer clean()
+
+	err := c.UpdateWallet(w.Meta.Filename, "new wallet")
+	require.NoError(t, err)
+
+	// Confirms the wallet has label of "new wallet"
+	w1, err := c.Wallet(w.Meta.Filename)
+	require.NoError(t, err)
+	require.Equal(t, w1.Meta.Label, "new wallet")
+}
+
+func TestStableWalletTransactions(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+	w, _, clean := createWallet(t, c, false, "")
+	defer clean()
+
+	txns, err := c.WalletTransactions(w.Meta.Filename)
+	require.NoError(t, err)
+
+	var expect gui.UnconfirmedTxnsResponse
+	loadGoldenFile(t, "wallet-transactions.golden", TestData{txns, &expect})
+	require.Equal(t, expect, *txns)
+}
+
+func TestLiveWalletTransactions(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	requireWalletEnv(t)
+
+	c := gui.NewClient(nodeAddress())
+	w, _, _, _ := prepareAndCheckWallet(t, c, 1e6, 1)
+	txns, err := c.WalletTransactions(w.Filename())
+	require.NoError(t, err)
+
+	bp, err := c.WalletBalance(w.Filename())
+	require.NoError(t, err)
+	// There's pending transactions if predicted coins are not the same as confirmed coins
+	if bp.Predicted.Coins != bp.Confirmed.Coins {
+		require.NotEmpty(t, txns.Transactions)
+		return
+	}
+
+	require.Empty(t, txns.Transactions)
+}
+
+func TestWalletFolderName(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+	folderName, err := c.WalletFolderName()
+	require.NoError(t, err)
+
+	require.NotNil(t, folderName)
+	require.NotEmpty(t, folderName.Address)
+}
+
+func TestEncryptWallet(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+
+	if !doWallet(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	// Create a unencrypted wallet
+	w, _, clean := createWallet(t, c, false, "")
+	defer clean()
+
+	// Encrypts the wallet
+	rlt, err := c.EncryptWallet(w.Meta.Filename, "pwd")
+	require.NoError(t, err)
+	require.NotEmpty(t, rlt.Meta.CryptoType)
+	require.True(t, rlt.Meta.Encrypted)
+
+	//  Encrypt the wallet again, should returns error
+	_, err = c.EncryptWallet(w.Meta.Filename, "pwd")
+	require.EqualError(t, err, "400 Bad Request - wallet is already encrypted\n")
+
+	// Confirms that no sensitive data do exist in wallet file
+	wf, err := c.WalletFolderName()
+	require.NoError(t, err)
+	wltPath := filepath.Join(wf.Address, w.Meta.Filename)
+	lw, err := wallet.Load(wltPath)
+	require.NoError(t, err)
+	require.Empty(t, lw.Meta["seed"])
+	require.Empty(t, lw.Meta["lastSeed"])
+	require.NotEmpty(t, lw.Meta["secrets"])
+
+	// Decrypts the wallet, and confirms that the
+	// seed and address entries are the same as it was before being encrypted.
+	dw, err := c.DecryptWallet(w.Meta.Filename, "pwd")
+	require.NoError(t, err)
+	require.Equal(t, w, dw)
+}
+
+func TestDecryptWallet(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+
+	if !doWallet(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+	w, seed, clean := createWallet(t, c, true, "pwd")
+	defer clean()
+
+	// Decrypt wallet with different password, must fail
+	_, err := c.DecryptWallet(w.Meta.Filename, "pwd1")
+	require.EqualError(t, err, "400 Bad Request - invalid password\n")
+
+	// Decrypts wallet with correct password
+	dw, err := c.DecryptWallet(w.Meta.Filename, "pwd")
+	require.NoError(t, err)
+
+	// Confirms that no sensitive data are returned
+	require.Empty(t, dw.Meta.CryptoType)
+	require.False(t, dw.Meta.Encrypted)
+
+	// Loads wallet from file
+	wf, err := c.WalletFolderName()
+	require.NoError(t, err)
+	wltPath := filepath.Join(wf.Address, w.Meta.Filename)
+	lw, err := wallet.Load(wltPath)
+	require.NoError(t, err)
+
+	require.Equal(t, lw.Meta["seed"], seed)
+	require.Len(t, lw.Entries, 1)
+
+	// Confirms the last seed is matched
+	lseed, seckeys := cipher.GenerateDeterministicKeyPairsSeed([]byte(seed), 1)
+	require.Equal(t, hex.EncodeToString(lseed), lw.Meta["lastSeed"])
+
+	// Confirms that the first address is derivied from the private key
+	pubkey := cipher.PubKeyFromSecKey(seckeys[0])
+	require.Equal(t, w.Entries[0].Address, cipher.AddressFromPubKey(pubkey).String())
+	require.Equal(t, lw.Entries[0].Address.String(), w.Entries[0].Address)
+}
+
+func TestGetWalletSeed(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+
+	if !doWallet(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	// Create an encrypted wallet
+	w, _, clean := createWallet(t, c, true, "pwd")
+	defer clean()
+
+	_, err := c.GetWalletSeed(w.Meta.Filename, "pwd")
+	require.EqualError(t, err, "403 Forbidden\n")
+}
+
+func TestEnableSeedAPIAndGetWalletSeed(t *testing.T) {
+	if !doEnableSeedApi(t) {
+		return
+	}
+
+	if !doWallet(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	// Create an encrypted wallet
+	w, seed, clean := createWallet(t, c, true, "pwd")
+	defer clean()
+
+	sd, err := c.GetWalletSeed(w.Meta.Filename, "pwd")
+	require.NoError(t, err)
+
+	// Confirms the seed are matched
+	require.Equal(t, seed, sd)
+
+	// Get seed of wrong wallet id
+	_, err = c.GetWalletSeed("w.wlt", "pwd")
+	require.EqualError(t, err, "404 Not Found\n")
+
+	// Check with invalid password
+	_, err = c.GetWalletSeed(w.Meta.Filename, "wrong password")
+	require.EqualError(t, err, "400 Bad Request - invalid password\n")
+
+	// Creates none encrypted wallet
+	nw, _, nclean := createWallet(t, c, false, "")
+	defer nclean()
+	_, err = c.GetWalletSeed(nw.Meta.Filename, "pwd")
+	require.EqualError(t, err, "403 Forbidden\n")
+}
+
+// prepareAndCheckWallet gets wallet from environment, and confirms:
+// 1. The minimal coins and coin hours requirements are met.
+// 2. The wallet has at least two address entry.
+// Returns the loaded wallet, total coins, total coin hours and password of the wallet.
+func prepareAndCheckWallet(t *testing.T, c *gui.Client, miniCoins, miniCoinHours uint64) (*wallet.Wallet, uint64, uint64, string) {
+	walletDir, walletName, password := getWalletFromEnv(t, c)
+	walletPath := filepath.Join(walletDir, walletName)
+
+	// Checks if the wallet does exist
+	if _, err := os.Stat(walletPath); os.IsNotExist(err) {
+		t.Fatalf("Wallet %v doesn't exist", walletPath)
+	}
+
+	w, err := wallet.Load(walletPath)
+	if err != nil {
+		t.Fatalf("Load wallet %v failed: %v", walletPath, err)
+	}
+
+	// Generate more addresses if address entries less than 2.
+	if len(w.Entries) < 2 {
+		_, err := c.NewWalletAddress(w.Filename(), 2-len(w.Entries), password)
+		if err != nil {
+			t.Fatalf("New wallet address failed: %v", err)
+		}
+	}
+
+	coins, hours := getWalletBalance(t, c, walletName)
+	if coins < miniCoins {
+		t.Fatalf("Wallet must have at least %d coins", miniCoins)
+	}
+
+	if hours < miniCoinHours {
+		t.Fatalf("Wallet must have at least %d coin hours", miniCoinHours)
+	}
+
+	if err := w.Save(walletDir); err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	return w, coins, hours, password
+}
+
+// getWalletFromEnv loads wallet from envrionment variables.
+// Returns wallet dir, wallet name and wallet password is any.
+func getWalletFromEnv(t *testing.T, c *gui.Client) (string, string, string) {
+	walletDir := getWalletDir(t, c)
+
+	walletName := os.Getenv("WALLET_NAME")
+	if walletName == "" {
+		t.Fatal("Missing WALLET_NAME environment value")
+	}
+
+	walletPassword := os.Getenv("WALLET_PASSWORD")
+	return walletDir, walletName, walletPassword
+}
+
+func requireWalletEnv(t *testing.T) {
+	t.Helper()
+
+	walletName := os.Getenv("WALLET_NAME")
+	if walletName == "" {
+		t.Fatal("missing WALLET_NAME environment value")
+	}
+}
+
+// getWalletBalance gets wallet balance.
+// Returns coins and hours
+func getWalletBalance(t *testing.T, c *gui.Client, walletName string) (uint64, uint64) {
+	wp, err := c.WalletBalance(walletName)
+	if err != nil {
+		t.Fatalf("Get wallet balance of %v failed: %v", walletName, err)
+	}
+
+	return wp.Confirmed.Coins, wp.Confirmed.Hours
+}
+
+func getTransaction(t *testing.T, c *gui.Client, txid string) *visor.TransactionResult {
+	tx, err := c.Transaction(txid)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	return tx
+}
+
+// getAddressBalance gets balance of given address.
+// Returns coins and coin hours.
+func getAddressBalance(t *testing.T, c *gui.Client, addr string) (uint64, uint64) {
+	bp, err := c.Balance([]string{addr})
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	return bp.Confirmed.Coins, bp.Confirmed.Hours
+}
+
+func checkNoSensitiveData(t *testing.T, w *wallet.Wallet) {
+	require.Empty(t, w.Meta["seed"])
+	require.Empty(t, w.Meta["lastSeed"])
+	require.Empty(t, w.Meta["secrets"])
+	for _, e := range w.Entries {
+		require.Equal(t, cipher.SecKey{}, e.Secret)
+	}
+}
+
+// checkWalletEntriesAndLastSeed confirms the wallet entries and lastSeed are derivied
+// from the seed.
+func checkWalletEntriesAndLastSeed(t *testing.T, w *wallet.Wallet) {
+	seed, ok := w.Meta["seed"]
+	require.True(t, ok)
+	newSeed, seckeys := cipher.GenerateDeterministicKeyPairsSeed([]byte(seed), len(w.Entries))
+	require.Len(t, seckeys, len(w.Entries))
+	for i, sk := range seckeys {
+		require.Equal(t, w.Entries[i].Secret, sk)
+		pk := cipher.PubKeyFromSecKey(sk)
+		require.Equal(t, w.Entries[i].Public, pk)
+	}
+	lastSeed, ok := w.Meta["lastSeed"]
+	require.True(t, ok)
+	require.Equal(t, lastSeed, hex.EncodeToString(newSeed))
+}
+
+// createWallet creates a wallet with rand seed.
+// Returns the generated wallet, seed and clean up function.
+func createWallet(t *testing.T, c *gui.Client, encrypt bool, password string) (*gui.WalletResponse, string, func()) {
+	if !doWallet(t) {
+		return nil, "", func() {}
+	}
+	seed := hex.EncodeToString(cipher.RandByte(32))
+	// Use the first 6 letter of the seed as label.
+	var w *gui.WalletResponse
+	var err error
+	if encrypt {
+		w, err = c.CreateEncryptedWallet(seed, seed[:6], password, 0)
+	} else {
+		w, err = c.CreateUnencryptedWallet(seed, seed[:6], 0)
+	}
+
+	require.NoError(t, err)
+
+	walletDir := getWalletDir(t, c)
+
+	return w, seed, func() {
+		// Cleaner function to delete the wallet and bak wallet
+		walletPath := filepath.Join(walletDir, w.Meta.Filename)
+		err = os.Remove(walletPath)
+		require.NoError(t, err)
+
+		bakWalletPath := walletPath + ".bak"
+		if _, err := os.Stat(bakWalletPath); !os.IsNotExist(err) {
+			// Return directly if no .bak file does exist
+			err = os.Remove(bakWalletPath)
+		}
+
+		require.NoError(t, err)
+
+		// Removes the wallet from memory
+		c.UnloadWallet(w.Meta.Filename)
+	}
+}
+
+func getWalletDir(t *testing.T, c *gui.Client) string {
+	wf, err := c.WalletFolderName()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	return wf.Address
+}
+
+func TestDisableWalletApi(t *testing.T) {
+	if !doDisableWalletApi(t) {
+		return
+	}
+
+	tt := []struct {
+		name      string
+		method    string
+		endpoint  string
+		body      func() io.Reader
+		expectErr string
+	}{
+		{
+			name:      "get wallet",
+			method:    http.MethodGet,
+			endpoint:  "/wallet?id=test.wlt",
+			expectErr: "403 Forbidden\n",
+		},
+		{
+			name:     "create wallet",
+			method:   http.MethodPost,
+			endpoint: "/wallet/create",
+			body: func() io.Reader {
+				v := url.Values{}
+				v.Add("seed", "seed")
+				v.Add("label", "label")
+				v.Add("scan", "1")
+				return strings.NewReader(v.Encode())
+			},
+			expectErr: "403 Forbidden\n",
+		},
+		{
+			name:     "generate new address",
+			method:   http.MethodPost,
+			endpoint: "/wallet/newAddress",
+			body: func() io.Reader {
+				v := url.Values{}
+				v.Add("id", "test.wlt")
+				return strings.NewReader(v.Encode())
+			},
+			expectErr: "403 Forbidden\n",
+		},
+		{
+			name:      "get wallet balance",
+			method:    http.MethodGet,
+			endpoint:  "/wallet/balance?id=test.wlt",
+			expectErr: "403 Forbidden\n",
+		},
+		{
+			name:     "wallet spending",
+			method:   http.MethodPost,
+			endpoint: "/wallet/spend",
+			body: func() io.Reader {
+				v := url.Values{}
+				v.Add("id", "test.wlt")
+				v.Add("coins", "100000") // 1e5
+				v.Add("dst", "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6")
+				return strings.NewReader(v.Encode())
+			},
+			expectErr: "403 Forbidden\n",
+		},
+		{
+			name:      "get wallet unconfirmed transactions",
+			method:    http.MethodGet,
+			endpoint:  "/wallet/transactions?id=test.wlt",
+			expectErr: "403 Forbidden\n",
+		},
+		{
+			name:     "update wallet label",
+			method:   http.MethodPost,
+			endpoint: "/wallet/update",
+			body: func() io.Reader {
+				v := url.Values{}
+				v.Add("id", "test.wlt")
+				v.Add("label", "label")
+				return strings.NewReader(v.Encode())
+			},
+			expectErr: "403 Forbidden\n",
+		},
+		{
+			name:      "new seed",
+			method:    http.MethodGet,
+			endpoint:  "/wallet/newSeed",
+			expectErr: "403 Forbidden\n",
+		},
+		{
+			name:      "get wallets",
+			method:    http.MethodGet,
+			endpoint:  "/wallets",
+			expectErr: "403 Forbidden\n",
+		},
+		{
+			name:      "get wallets folder name",
+			method:    http.MethodGet,
+			endpoint:  "/wallets/folderName",
+			expectErr: "403 Forbidden\n",
+		},
+		{
+			name:      "main index.html 404 not found",
+			method:    http.MethodGet,
+			endpoint:  "/",
+			expectErr: "404 page not found\n",
+		},
+		{
+			name:     "encrypt wallet",
+			method:   http.MethodPost,
+			endpoint: "/wallet/encrypt",
+			body: func() io.Reader {
+				v := url.Values{}
+				v.Add("id", "test.wlt")
+				v.Add("password", "pwd")
+				return strings.NewReader(v.Encode())
+			},
+			expectErr: "403 Forbidden\n",
+		},
+		{
+			name:     "decrypt wallet",
+			method:   http.MethodPost,
+			endpoint: "/wallet/decrypt",
+			body: func() io.Reader {
+				v := url.Values{}
+				v.Add("id", "test.wlt")
+				v.Add("password", "pwd")
+				return strings.NewReader(v.Encode())
+			},
+			expectErr: "403 Forbidden\n",
+		},
+		{
+			name:      "get wallet seed",
+			method:    http.MethodGet,
+			endpoint:  "/wallet/seed?id=test.wlt&password=pwd",
+			expectErr: "403 Forbidden\n",
+		},
+	}
+
+	c := gui.NewClient(nodeAddress())
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			var err error
+			switch tc.method {
+			case http.MethodGet:
+				err = c.Get(tc.endpoint, nil)
+			case http.MethodPost:
+				err = c.PostForm(tc.endpoint, tc.body(), nil)
+			}
+			require.EqualError(t, err, tc.expectErr)
+		})
+	}
+
+	// Confirms that no new wallet is created
+	// WALLET_DIR environment variable is set in ci-script/integration-test-disable-wallet-api.sh
+	walletDir := os.Getenv("WALLET_DIR")
+	if walletDir == "" {
+		t.Fatal("WALLET_DIR is not set")
+	}
+
+	// Confirms that the wallet directory does not exist
+	_, err := os.Stat(walletDir)
+	require.True(t, os.IsNotExist(err))
+}
+
+func checkHealthResponse(t *testing.T, r *gui.HealthResponse) {
+	require.NotEmpty(t, r.BlockchainMetadata.Unspents)
+	require.NotEmpty(t, r.BlockchainMetadata.Head.BkSeq)
+	require.NotEmpty(t, r.BlockchainMetadata.Head.Time)
+	require.NotEmpty(t, r.Version.Version)
+	require.True(t, r.Uptime.Duration > time.Duration(0))
+	require.True(t, r.BlockchainMetadata.TimeSinceLastBlock.Duration >= time.Duration(0))
+}
+
+func TestStableHealth(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	r, err := c.Health()
+	require.NoError(t, err)
+
+	checkHealthResponse(t, r)
+
+	require.Equal(t, 0, r.OpenConnections)
+
+	// The stable node is always run with the commit and branch ldflags, so they should appear
+	require.NotEmpty(t, r.Version.Commit)
+	require.NotEmpty(t, r.Version.Branch)
+}
+
+func TestLiveHealth(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	r, err := c.Health()
+	require.NoError(t, err)
+
+	checkHealthResponse(t, r)
+
+	require.NotEqual(t, 0, r.OpenConnections)
+
+	// The live node is not necessarily run with the commit and branch ldflags, so don't check them
 }

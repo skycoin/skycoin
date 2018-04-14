@@ -8,6 +8,7 @@
     <button mat-menu-item [routerLink]="['/settings/blockchain']"> Blockchain </button>
     <button mat-menu-item [routerLink]="['/settings/outputs']"> Outputs </button>
     <button mat-menu-item [routerLink]="['/settings/pending-transactions']"> Pending Transactions </button>
+    <button mat-menu-item [disabled]="true" *ngIf="appService.version"> v{{ appService.version.version }} </button>
   </mat-menu>
 
   <mat-menu #menuMenu="matMenu" [overlapTrigger]="false">

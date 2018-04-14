@@ -120,7 +120,7 @@ func (cfg *Config) preprocess() Config {
 }
 
 // DaemonConfig configuration for the Daemon
-type DaemonConfig struct {
+type DaemonConfig struct { // nolint: golint
 	// Application version. TODO -- manage version better
 	Version int32
 	// IP Address to serve on. Leave empty for automatic assignment
@@ -411,7 +411,7 @@ loop:
 
 			m := NewGetPeersMessage()
 			if err := dm.Pool.Pool.BroadcastMessage(m); err != nil {
-				logger.Error("%v", err)
+				logger.Error(err)
 			}
 
 		case <-clearStaleConnectionsTicker:
@@ -503,13 +503,13 @@ loop:
 			if dm.Visor.Config.Config.IsMaster {
 				sb, err := dm.Visor.CreateAndPublishBlock(dm.Pool)
 				if err != nil {
-					logger.Error("Failed to create block: %v", err)
+					logger.Errorf("Failed to create block: %v", err)
 					continue
 				}
 
 				// Not a critical error, but we want it visible in logs
 				head := sb.Block.Head
-				logger.Critical("Created and published a new block, version=%d seq=%d time=%d", head.Version, head.BkSeq, head.Time)
+				logger.Noticef("Created and published a new block, version=%d seq=%d time=%d", head.Version, head.BkSeq, head.Time)
 			}
 
 		case <-unconfirmedRefreshTicker:
@@ -517,7 +517,7 @@ loop:
 			// Get the transactions that turn to valid
 			validTxns, err := dm.Visor.RefreshUnconfirmed()
 			if err != nil {
-				logger.Error("dm.Visor.RefreshUnconfirmed failed: %v", err)
+				logger.Errorf("dm.Visor.RefreshUnconfirmed failed: %v", err)
 				continue
 			}
 			// Announce these transactions
@@ -528,11 +528,11 @@ loop:
 			// Remove transactions that become invalid (violating hard constraints)
 			removedTxns, err := dm.Visor.RemoveInvalidUnconfirmed()
 			if err != nil {
-				logger.Error("dm.Visor.RemoveInvalidUnconfirmed failed: %v", err)
+				logger.Errorf("dm.Visor.RemoveInvalidUnconfirmed failed: %v", err)
 				continue
 			}
 			if len(removedTxns) > 0 {
-				logger.Info("Remove %d txns from pool that began violating hard constraints", len(removedTxns))
+				logger.Infof("Remove %d txns from pool that began violating hard constraints", len(removedTxns))
 			}
 
 		case <-blocksRequestTicker:
@@ -563,7 +563,7 @@ func (dm *Daemon) GetListenPort(addr string) uint16 {
 
 	ip, _, err := iputil.SplitAddr(addr)
 	if err != nil {
-		logger.Error("GetListenPort received invalid addr: %v", err)
+		logger.Errorf("GetListenPort received invalid addr: %v", err)
 		return 0
 	}
 
@@ -584,7 +584,7 @@ func (dm *Daemon) connectToPeer(p pex.Peer) error {
 
 	a, _, err := iputil.SplitAddr(p.Addr)
 	if err != nil {
-		logger.Warning("PEX gave us an invalid peer: %v", err)
+		logger.Warningf("PEX gave us an invalid peer: %v", err)
 		return errors.New("Invalid peer")
 	}
 	if dm.Config.LocalhostOnly && !iputil.IsLocalhost(a) {
@@ -608,7 +608,7 @@ func (dm *Daemon) connectToPeer(p pex.Peer) error {
 		return errors.New("Already connected to a peer with this base IP")
 	}
 
-	logger.Debug("Trying to connect to %s", p.Addr)
+	logger.Debugf("Trying to connect to %s", p.Addr)
 	dm.pendingConnections.Add(p.Addr, p)
 	go func() {
 		if err := dm.Pool.Pool.Connect(p.Addr); err != nil {
@@ -626,9 +626,9 @@ func (dm *Daemon) makePrivateConnections() {
 
 	peers := dm.Pex.Private()
 	for _, p := range peers {
-		logger.Info("Private peer attempt: %s", p.Addr)
+		logger.Infof("Private peer attempt: %s", p.Addr)
 		if err := dm.connectToPeer(p); err != nil {
-			logger.Debug("Did not connect to private peer: %v", err)
+			logger.Debugf("Did not connect to private peer: %v", err)
 		}
 	}
 }
@@ -677,7 +677,7 @@ func (dm *Daemon) connectToRandomPeer() {
 // We remove a peer from the Pex if we failed to connect
 // TODO - On failure to connect, use exponential backoff, not peer list
 func (dm *Daemon) handleConnectionError(c ConnectionError) {
-	logger.Debug("Failed to connect to %s with error: %v", c.Addr, c.Error)
+	logger.Debugf("Failed to connect to %s with error: %v", c.Addr, c.Error)
 	dm.pendingConnections.Remove(c.Addr)
 
 	dm.Pex.IncreaseRetryTimes(c.Addr)
@@ -711,21 +711,21 @@ func (dm *Daemon) cullInvalidConnections() {
 		})
 
 	if err != nil {
-		logger.Error("expectingIntroduction cull invalid connections failed: %v", err)
+		logger.Errorf("expectingIntroduction cull invalid connections failed: %v", err)
 		return
 	}
 
 	for _, a := range addrs {
 		exist, err := dm.Pool.Pool.IsConnExist(a)
 		if err != nil {
-			logger.Error("%v", err)
+			logger.Error(err)
 			return
 		}
 
 		if exist {
-			logger.Info("Removing %s for not sending a version", a)
+			logger.Infof("Removing %s for not sending a version", a)
 			if err := dm.Pool.Pool.Disconnect(a, ErrDisconnectIntroductionTimeout); err != nil {
-				logger.Error("%v", err)
+				logger.Error(err)
 				return
 			}
 			dm.Pex.RemovePeer(a)
@@ -777,16 +777,16 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 	a := e.Addr
 
 	if e.Solicited {
-		logger.Info("Connected to peer: %s (outgoing)", a)
+		logger.Infof("Connected to peer: %s (outgoing)", a)
 	} else {
-		logger.Info("Connected to peer: %s (incoming)", a)
+		logger.Infof("Connected to peer: %s (incoming)", a)
 	}
 
 	dm.pendingConnections.Remove(a)
 
 	exist, err := dm.Pool.Pool.IsConnExist(a)
 	if err != nil {
-		logger.Error("%v", err)
+		logger.Error(err)
 		return
 	}
 
@@ -796,7 +796,7 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 	}
 
 	if dm.ipCountMaxed(a) {
-		logger.Info("Max connections for %s reached, disconnecting", a)
+		logger.Infof("Max connections for %s reached, disconnecting", a)
 		dm.Pool.Pool.Disconnect(a, ErrDisconnectIPLimitReached)
 		return
 	}
@@ -808,15 +808,15 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 	}
 
 	dm.expectingIntroductions.Add(a, utc.Now())
-	logger.Debug("Sending introduction message to %s, mirror:%d", a, dm.Messages.Mirror)
+	logger.Debugf("Sending introduction message to %s, mirror:%d", a, dm.Messages.Mirror)
 	m := NewIntroductionMessage(dm.Messages.Mirror, dm.Config.Version, dm.Pool.Pool.Config.Port)
 	if err := dm.Pool.Pool.SendMessage(a, m); err != nil {
-		logger.Error("Send IntroductionMessage to %s failed: %v", a, err)
+		logger.Errorf("Send IntroductionMessage to %s failed: %v", a, err)
 	}
 }
 
 func (dm *Daemon) onDisconnect(e DisconnectEvent) {
-	logger.Info("%s disconnected because: %v", e.Addr, e.Reason)
+	logger.Infof("%s disconnected because: %v", e.Addr, e.Reason)
 
 	dm.outgoingConnections.Remove(e.Addr)
 	dm.expectingIntroductions.Remove(e.Addr)
@@ -847,7 +847,7 @@ func (dm *Daemon) onGnetConnect(addr string, solicited bool) {
 func (dm *Daemon) ipCountMaxed(addr string) bool {
 	ip, _, err := iputil.SplitAddr(addr)
 	if err != nil {
-		logger.Warning("ipCountMaxed called with invalid addr: %v", err)
+		logger.Warningf("ipCountMaxed called with invalid addr: %v", err)
 		return true
 	}
 
@@ -861,7 +861,7 @@ func (dm *Daemon) ipCountMaxed(addr string) bool {
 func (dm *Daemon) recordIPCount(addr string) {
 	ip, _, err := iputil.SplitAddr(addr)
 	if err != nil {
-		logger.Warning("recordIPCount called with invalid addr: %v", err)
+		logger.Warningf("recordIPCount called with invalid addr: %v", err)
 		return
 	}
 	dm.ipCounts.Increase(ip)
@@ -871,7 +871,7 @@ func (dm *Daemon) recordIPCount(addr string) {
 func (dm *Daemon) removeIPCount(addr string) {
 	ip, _, err := iputil.SplitAddr(addr)
 	if err != nil {
-		logger.Warning("removeIPCount called with invalid addr: %v", err)
+		logger.Warningf("removeIPCount called with invalid addr: %v", err)
 		return
 	}
 	dm.ipCounts.Decrease(ip)
@@ -881,7 +881,7 @@ func (dm *Daemon) removeIPCount(addr string) {
 func (dm *Daemon) recordConnectionMirror(addr string, mirror uint32) error {
 	ip, port, err := iputil.SplitAddr(addr)
 	if err != nil {
-		logger.Warning("recordConnectionMirror called with invalid addr: %v", err)
+		logger.Warningf("recordConnectionMirror called with invalid addr: %v", err)
 		return err
 	}
 	dm.connectionMirrors.Add(addr, mirror)
@@ -897,7 +897,7 @@ func (dm *Daemon) removeConnectionMirror(addr string) {
 	}
 	ip, _, err := iputil.SplitAddr(addr)
 	if err != nil {
-		logger.Warning("removeConnectionMirror called with invalid addr: %v", err)
+		logger.Warningf("removeConnectionMirror called with invalid addr: %v", err)
 		return
 	}
 
@@ -911,7 +911,7 @@ func (dm *Daemon) removeConnectionMirror(addr string) {
 func (dm *Daemon) getMirrorPort(addr string, mirror uint32) (uint16, bool) {
 	ip, _, err := iputil.SplitAddr(addr)
 	if err != nil {
-		logger.Warning("getMirrorPort called with invalid addr: %v", err)
+		logger.Warningf("getMirrorPort called with invalid addr: %v", err)
 		return 0, false
 	}
 	return dm.mirrorConnections.Get(mirror, ip)
@@ -920,7 +920,7 @@ func (dm *Daemon) getMirrorPort(addr string, mirror uint32) (uint16, bool) {
 // When an async message send finishes, its result is handled by this
 func (dm *Daemon) handleMessageSendResult(r gnet.SendResult) {
 	if r.Error != nil {
-		logger.Warning("Failed to send %s to %s: %v", reflect.TypeOf(r.Message), r.Addr, r.Error)
+		logger.Warningf("Failed to send %s to %s: %v", reflect.TypeOf(r.Message), r.Addr, r.Error)
 		return
 	}
 	switch r.Message.(type) {

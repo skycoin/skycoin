@@ -20,8 +20,6 @@ type IAnnotationsGenerator interface {
 type IAnnotationsIterator interface {
 
 	Next() (Annotation,bool)
-	SetCurrent(annotation Annotation)
-	GetCurrent() Annotation
 }
 
 func writeHexdumpMember(offset int, size int, writer io.Writer, buffer []byte, name string) {
@@ -135,6 +133,7 @@ func HexDumpFromIterator(buffer []byte, annotationsIterator IAnnotationsIterator
 		}
 		writeHexdumpMember(currentOffset,current.Size,writer,buffer,current.Name)
 		currentOffset += current.Size
+		current, valid = annotationsIterator.Next()
 	}
 
 

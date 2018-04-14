@@ -192,29 +192,39 @@ type MessagesAnnotationsIterator struct {
 	PrefixCalled bool
 	CurrentField int
 	MaxField int
+	CurrentIndex int
 }
 
-func (mai *MessagesAnnotationsIterator) NewMessagesAnnotationsIterator(message gnet.Message){
+func NewMessagesAnnotationsIterator(message gnet.Message) MessagesAnnotationsIterator  {
+	var mai = MessagesAnnotationsIterator{}
 	mai.Message = message
 	mai.LengthCalled = false
 	mai.PrefixCalled = false
 	mai.CurrentField = 0
+	mai.CurrentIndex = -1
 	mai.MaxField = reflect.Indirect(reflect.ValueOf(mai.Message)).NumField()
+
+	return mai
 }
 
 func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 	if !mai.LengthCalled {
+		mai.LengthCalled = true
 		return util.Annotation{Size:4,Name:"Length"},true
+
 	}
 	if !mai.PrefixCalled {
+		mai.PrefixCalled = true
 		return util.Annotation{Size:4,Name:"Prefix"},true
+
 	}
 	if mai.CurrentField == mai.MaxField {
 		return util.Annotation{},false
 	}
 
 	var i = mai.CurrentField
-	mai.CurrentField++
+	var j = mai.CurrentIndex
+
 	var v = reflect.Indirect(reflect.ValueOf(mai.Message))
 	t := v.Type()
 	v_f := v.Field(i)
@@ -222,16 +232,26 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 	if f.Tag.Get("enc") != "-" {
 		if v_f.CanSet() || f.Name != "_" {
 			if v.Field(i).Kind() == reflect.Slice {
-				//printLHexDumpWithFormat(offset, f.Name+" length", encoder.Serialize(v.Field(i).Slice(0, v.Field(i).Len()).Interface())[0:4])
-				return util.Annotation{Size:4,Name:f.Name+" length"},true
-				//offset += len(encoder.Serialize(v.Field(i).Slice(0, v.Field(i).Len()).Interface())[0:4])
+				if mai.CurrentIndex == -1 {
+					mai.CurrentIndex = 0
+					//printLHexDumpWithFormat(offset, f.Name+" length", encoder.Serialize(v.Field(i).Slice(0, v.Field(i).Len()).Interface())[0:4])
+					return util.Annotation{Size: 4, Name: f.Name + " length"}, true
+					//offset += len(encoder.Serialize(v.Field(i).Slice(0, v.Field(i).Len()).Interface())[0:4])
+				} else {
+						mai.CurrentIndex++
+						if mai.CurrentIndex == v.Field(i).Len() {
+							mai.CurrentIndex = -1
+							mai.CurrentField++
+						}
+					//for j := 0; j < v.Field(i).Len(); j++ {
+						//printLHexDumpWithFormat(offset, f.Name+"#"+strconv.Itoa(j), encoder.Serialize(v.Field(i).Slice(j, j+1).Interface()))
+						return util.Annotation{Size: len(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())[4:]), Name: f.Name + "#" + strconv.Itoa(j)}, true
+						//offset += len(encoder.Serialize(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())))
 
-				for j := 0; j < v.Field(i).Len(); j++ {
-					//printLHexDumpWithFormat(offset, f.Name+"#"+strconv.Itoa(j), encoder.Serialize(v.Field(i).Slice(j, j+1).Interface()))
-					return util.Annotation{Size:len(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())[4:]),Name:f.Name+"#"+strconv.Itoa(j)}, true
-					//offset += len(encoder.Serialize(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())))
+
 				}
 			} else {
+				mai.CurrentField++
 				//printLHexDumpWithFormat(offset, f.Name, encoder.Serialize(v.Field(i).Interface()))
 				return util.Annotation{Size:len(encoder.Serialize(v.Field(i).Interface())),Name:f.Name}, true
 				//offset += len(encoder.Serialize(v.Field(i).Interface()))

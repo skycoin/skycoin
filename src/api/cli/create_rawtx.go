@@ -487,7 +487,7 @@ func chooseSpends(uxouts visor.ReadableOutputSet, coins uint64) ([]wallet.UxBala
 				return nil, otherErr
 			}
 
-			if _, otherErr := wallet.ChooseSpendsMinimizeUxOuts(expectedOutputs, coins); otherErr != nil {
+			if _, otherErr := wallet.ChooseSpendsMinimizeUxOuts(expectedOutputs, coins, 0); otherErr != nil {
 				return nil, err
 			}
 

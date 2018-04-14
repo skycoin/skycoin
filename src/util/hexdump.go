@@ -3,7 +3,6 @@ package util
 import (
 	"io"
 	"strconv"
-	"fmt"
 	"bufio"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 )
@@ -86,7 +85,12 @@ func printFinalHex(i int, writer io.Writer) {
 	}
 	finalHex = "0x" + finalHex
 	finalHex = finalHex + " | "
-	fmt.Println(finalHex)
+
+	var serialized = encoder.Serialize(finalHex)
+
+	f := bufio.NewWriter(writer)
+	defer f.Flush()
+	f.Write(serialized[4:])
 }
 
 

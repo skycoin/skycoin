@@ -964,33 +964,6 @@ func (m *GatewayerMock) UpdateWalletLabel(p0 string, p1 string) error {
 
 }
 
-// GetHealth mocked method
-func (m *GatewayerMock) GetHealth() (*daemon.Health, error) {
-
-	ret := m.Called()
-
-	var r0 *daemon.Health
-	switch res := ret.Get(0).(type) {
-	case nil:
-	case *daemon.Health:
-		r0 = res
-	default:
-		panic(fmt.Sprintf("unexpected type: %v", res))
-	}
-
-	var r1 error
-	switch res := ret.Get(1).(type) {
-	case nil:
-	case error:
-		r1 = res
-	default:
-		panic(fmt.Sprintf("unexpected type: %v", res))
-	}
-
-	return r0, r1
-
-}
-
 // GetDefaultStatus mocked method
 func (m *GatewayerMock) GetDefaultStatus() *daemon.ConnectionsHealth {
 

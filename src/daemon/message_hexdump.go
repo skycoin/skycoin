@@ -69,7 +69,7 @@ func printLHexDumpWithFormat(offset int, name string, buffer []byte) {
 	fmt.Println(getSliceContentsString(hexBuff, offset), name)
 }
 
-func HexDump(message gnet.Message) string {
+func NoGenericHexDump(message gnet.Message) string {
 
 	//setting stdout to a temp file
 	defaultStdOut := os.Stdout
@@ -148,12 +148,9 @@ type MessagesAnnotationsGenerator struct {
 }
 
 func (mag *MessagesAnnotationsGenerator) GenerateAnnotations() []util.Annotation {
-	//printLHexDumpWithFormat(0, "Length", serializedMsg[0:4])
 	var annotations = make([]util.Annotation,2)
 	annotations[0] = util.Annotation{Size:4,Name:"Length"}
-	//printLHexDumpWithFormat(4, "Prefix", serializedMsg[4:8])
 	annotations[1] = util.Annotation{Size:4,Name:"Prefix"}
-	//offset += len(serializedMsg[0:8])
 	var v = reflect.Indirect(reflect.ValueOf(mag.Message))
 
 	t := v.Type()
@@ -163,19 +160,12 @@ func (mag *MessagesAnnotationsGenerator) GenerateAnnotations() []util.Annotation
 		if f.Tag.Get("enc") != "-" {
 			if v_f.CanSet() || f.Name != "_" {
 				if v.Field(i).Kind() == reflect.Slice {
-					//printLHexDumpWithFormat(offset, f.Name+" length", encoder.Serialize(v.Field(i).Slice(0, v.Field(i).Len()).Interface())[0:4])
 					annotations = append(annotations, util.Annotation{Size:4,Name:f.Name+" length"})
-					//offset += len(encoder.Serialize(v.Field(i).Slice(0, v.Field(i).Len()).Interface())[0:4])
-
 					for j := 0; j < v.Field(i).Len(); j++ {
-						//printLHexDumpWithFormat(offset, f.Name+"#"+strconv.Itoa(j), encoder.Serialize(v.Field(i).Slice(j, j+1).Interface()))
 						annotations = append(annotations, util.Annotation{Size:len(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())[4:]),Name:f.Name+"#"+strconv.Itoa(j)})
-						//offset += len(encoder.Serialize(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())))
 					}
 				} else {
-					//printLHexDumpWithFormat(offset, f.Name, encoder.Serialize(v.Field(i).Interface()))
 					annotations = append(annotations, util.Annotation{Size:len(encoder.Serialize(v.Field(i).Interface())),Name:f.Name})
-					//offset += len(encoder.Serialize(v.Field(i).Interface()))
 				}
 			} else {
 				//don't write anything
@@ -202,6 +192,7 @@ func NewMessagesAnnotationsIterator(message gnet.Message) MessagesAnnotationsIte
 	mai.PrefixCalled = false
 	mai.CurrentField = 0
 	mai.CurrentIndex = -1
+
 	mai.MaxField = reflect.Indirect(reflect.ValueOf(mai.Message)).NumField()
 
 	return mai
@@ -234,27 +225,18 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 			if v.Field(i).Kind() == reflect.Slice {
 				if mai.CurrentIndex == -1 {
 					mai.CurrentIndex = 0
-					//printLHexDumpWithFormat(offset, f.Name+" length", encoder.Serialize(v.Field(i).Slice(0, v.Field(i).Len()).Interface())[0:4])
 					return util.Annotation{Size: 4, Name: f.Name + " length"}, true
-					//offset += len(encoder.Serialize(v.Field(i).Slice(0, v.Field(i).Len()).Interface())[0:4])
 				} else {
 						mai.CurrentIndex++
 						if mai.CurrentIndex == v.Field(i).Len() {
 							mai.CurrentIndex = -1
 							mai.CurrentField++
 						}
-					//for j := 0; j < v.Field(i).Len(); j++ {
-						//printLHexDumpWithFormat(offset, f.Name+"#"+strconv.Itoa(j), encoder.Serialize(v.Field(i).Slice(j, j+1).Interface()))
 						return util.Annotation{Size: len(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())[4:]), Name: f.Name + "#" + strconv.Itoa(j)}, true
-						//offset += len(encoder.Serialize(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())))
-
-
 				}
 			} else {
 				mai.CurrentField++
-				//printLHexDumpWithFormat(offset, f.Name, encoder.Serialize(v.Field(i).Interface()))
 				return util.Annotation{Size:len(encoder.Serialize(v.Field(i).Interface())),Name:f.Name}, true
-				//offset += len(encoder.Serialize(v.Field(i).Interface()))
 			}
 		} else {
 			//don't write anything

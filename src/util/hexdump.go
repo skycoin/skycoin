@@ -61,7 +61,7 @@ func getSliceContentsString(sl []string, offset int) string {
 		counter++
 		res += sl[i] + " "
 		if counter == 16 {
-			if (i != len(sl) - 1) {
+			if i != len(sl) - 1 {
 				res = strings.TrimRight(res," ")
 				res += "\n"
 				currentOff += 16
@@ -108,8 +108,6 @@ func printFinalHex(i int, writer io.Writer) {
 
 
 func HexDump(buffer []byte, annotations []Annotation, writer io.Writer) {
-	//var serializedData = encoder.Serialize(data)
-
 	var currentOffset = 0
 
 	for _, element := range annotations {
@@ -121,8 +119,6 @@ func HexDump(buffer []byte, annotations []Annotation, writer io.Writer) {
 }
 
 func HexDumpFromIterator(buffer []byte, annotationsIterator IAnnotationsIterator, writer io.Writer) {
-	//var serializedData = encoder.Serialize(data)
-
 	var currentOffset = 0
 
 	var current, valid = annotationsIterator.Next()

@@ -51,7 +51,7 @@ func addPrivateKeyCmd(cfg Config) gcli.Command {
 				return err
 			}
 
-			err = AddPrivateKeyToFile(w, skStr, c)
+			err = AddPrivateKeyToFile(w, skStr, []byte(c.String("p")))
 
 			switch err.(type) {
 			case nil:
@@ -97,14 +97,12 @@ func AddPrivateKey(wlt *wallet.Wallet, key string) error {
 }
 
 // AddPrivateKeyToFile adds a private key to a wallet based on filename.  Will save the wallet after modifying.
-func AddPrivateKeyToFile(walletFile, key string, c *gcli.Context) error {
+func AddPrivateKeyToFile(walletFile, key string, password []byte) error {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
 		return WalletLoadError(err)
 	}
 
-	// read password from -p flag
-	password := []byte(c.String("p"))
 	if !wlt.IsEncrypted() {
 		if len(password) != 0 {
 			return wallet.ErrWalletNotEncrypted
@@ -116,7 +114,7 @@ func AddPrivateKeyToFile(walletFile, key string, c *gcli.Context) error {
 	} else {
 		if len(password) == 0 {
 			var err error
-			password, err = readPasswordFromTerminal(c)
+			password, err = readPasswordFromTerminal()
 			if err != nil {
 				return err
 			}

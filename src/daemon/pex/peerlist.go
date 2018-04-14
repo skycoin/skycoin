@@ -51,7 +51,7 @@ func loadPeersFromFile(path string) (map[string]*Peer, error) {
 	err := file.LoadJSON(path, &peersJSON)
 
 	if err == io.EOF {
-		logger.Error(" %s corrupt or empty file, rewriting file", path)
+		logger.WithField("path", path).Error("corrupt or empty file, rewriting file")
 		return nil, nil
 
 	} else if err != nil {
@@ -79,8 +79,6 @@ func loadPeersFromFile(path string) (map[string]*Peer, error) {
 
 		peers[a] = peer
 	}
-
-	logger.Info("Return PeersList")
 
 	return peers, nil
 }

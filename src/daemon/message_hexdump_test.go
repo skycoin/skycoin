@@ -1,18 +1,18 @@
 package daemon
 
 import (
+	"bufio"
 	"fmt"
+	"os"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon/pex"
-	"bufio"
-	"os"
-	"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
+	"github.com/skycoin/skycoin/src/daemon/pex"
+	"github.com/skycoin/skycoin/src/util"
 )
 
-
-var hashes = []cipher.SHA256 {
+var hashes = []cipher.SHA256{
 	GetSHAFromHex("123"),
 	GetSHAFromHex("456"),
 	GetSHAFromHex("789"),
@@ -25,12 +25,12 @@ var hashes = []cipher.SHA256 {
 	GetSHAFromHex("151"),
 }
 
-var secKey1 = (cipher.NewSecKey([]byte{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32}))
-var secKey2 = cipher.NewSecKey([]byte{33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64})
-var secKey3 = cipher.NewSecKey([]byte{65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96})
-var secKey4 = cipher.NewSecKey([]byte{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96})
+var secKey1 = (cipher.NewSecKey([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32}))
+var secKey2 = cipher.NewSecKey([]byte{33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64})
+var secKey3 = cipher.NewSecKey([]byte{65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96})
+var secKey4 = cipher.NewSecKey([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96})
 
-var addresses = []cipher.Address {
+var addresses = []cipher.Address{
 	cipher.AddressFromSecKey(secKey1),
 	cipher.AddressFromSecKey(secKey2),
 	cipher.AddressFromSecKey(secKey3),
@@ -42,15 +42,14 @@ func GetSHAFromHex(hex string) cipher.SHA256 {
 	return sha
 }
 
-
 func ExampleIntroductionMessage() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
 	var message = NewIntroductionMessage(1234, 5, 7890)
 	fmt.Println("IntroductionMessage:")
-	var mag = MessagesAnnotationsGenerator{Message:message}
+	var mag = MessagesAnnotationsGenerator{Message: message}
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message),mag.GenerateAnnotations(),w)
+	util.HexDump(gnet.EncodeMessage(message), mag.GenerateAnnotations(), w)
 	// Output:
 	// IntroductionMessage:
 	// 0x0000 | 0e 00 00 00 ....................................... Length
@@ -61,15 +60,14 @@ func ExampleIntroductionMessage() {
 	// 0x0012 |
 }
 
-
 func ExampleGetPeersMessage() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
 	var message = NewGetPeersMessage()
 	fmt.Println("GetPeersMessage:")
-	var mag = MessagesAnnotationsGenerator{Message:message}
+	var mag = MessagesAnnotationsGenerator{Message: message}
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message),mag.GenerateAnnotations(),w)
+	util.HexDump(gnet.EncodeMessage(message), mag.GenerateAnnotations(), w)
 	// Output:
 	// GetPeersMessage:
 	// 0x0000 | 04 00 00 00 ....................................... Length
@@ -87,11 +85,11 @@ func ExampleGivePeersMessage() {
 	peers = append(peers, peer0, peer1, peer2)
 	var message = NewGivePeersMessage(peers)
 	fmt.Println("GivePeersMessage:")
-	var mag = MessagesAnnotationsGenerator{Message:message}
+	var mag = MessagesAnnotationsGenerator{Message: message}
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message),mag.GenerateAnnotations(),w)
+	util.HexDump(gnet.EncodeMessage(message), mag.GenerateAnnotations(), w)
 	// Output:
-    // GivePeersMessage:
+	// GivePeersMessage:
 	// 0x0000 | 1a 00 00 00 ....................................... Length
 	// 0x0004 | 47 49 56 50 ....................................... Prefix
 	// 0x0008 | 03 00 00 00 ....................................... Peers length
@@ -106,9 +104,9 @@ func ExampleGetBlocksMessage() {
 	setupMsgEncoding()
 	var message = NewGetBlocksMessage(1234, 5678)
 	fmt.Println("GetBlocksMessage:")
-	var mag = MessagesAnnotationsGenerator{Message:message}
+	var mag = MessagesAnnotationsGenerator{Message: message}
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message),mag.GenerateAnnotations(),w)
+	util.HexDump(gnet.EncodeMessage(message), mag.GenerateAnnotations(), w)
 	// Output:
 	// GetBlocksMessage:
 	// 0x0000 | 14 00 00 00 ....................................... Length
@@ -143,9 +141,9 @@ func ExampleGiveBlocksMessage() {
 	blocks = append(blocks, signedBlock)
 	var message = NewGiveBlocksMessage(blocks)
 	fmt.Println("GiveBlocksMessage:")
-	var mag = MessagesAnnotationsGenerator{Message:message}
+	var mag = MessagesAnnotationsGenerator{Message: message}
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message),mag.GenerateAnnotations(),w)
+	util.HexDump(gnet.EncodeMessage(message), mag.GenerateAnnotations(), w)
 	// Output:
 	// GiveBlocksMessage:
 	// 0x0000 | 8a 01 00 00 ....................................... Length
@@ -185,9 +183,9 @@ func ExampleAnnounceBlocksMessage() {
 	setupMsgEncoding()
 	var message = NewAnnounceBlocksMessage(123456)
 	fmt.Println("AnnounceBlocksMessage:")
-	var mag = MessagesAnnotationsGenerator{Message:message}
+	var mag = MessagesAnnotationsGenerator{Message: message}
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message),mag.GenerateAnnotations(),w)
+	util.HexDump(gnet.EncodeMessage(message), mag.GenerateAnnotations(), w)
 	// Output:
 	// AnnounceBlocksMessage:
 	// 0x0000 | 0c 00 00 00 ....................................... Length
@@ -204,9 +202,9 @@ func ExampleGetTxnsMessage() {
 	shas = append(shas, hashes[1], hashes[2])
 	var message = NewGetTxnsMessage(shas)
 	fmt.Println("GetTxnsMessage:")
-	var mag = MessagesAnnotationsGenerator{Message:message}
+	var mag = MessagesAnnotationsGenerator{Message: message}
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message),mag.GenerateAnnotations(),w)
+	util.HexDump(gnet.EncodeMessage(message), mag.GenerateAnnotations(), w)
 	// Output:
 	// GetTxnsMessage:
 	// 0x0000 | 48 00 00 00 ....................................... Length
@@ -272,9 +270,9 @@ func ExampleGiveTxnsMessage() {
 	transactions = append(transactions, transaction0, transaction1)
 	var message = NewGiveTxnsMessage(transactions)
 	fmt.Println("GiveTxnsMessage:")
-	var mag = MessagesAnnotationsGenerator{Message:message}
+	var mag = MessagesAnnotationsGenerator{Message: message}
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message),mag.GenerateAnnotations(),w)
+	util.HexDump(gnet.EncodeMessage(message), mag.GenerateAnnotations(), w)
 	// Output:
 	// GiveTxnsMessage:
 	// 0x0000 | 82 02 00 00 ....................................... Length
@@ -328,9 +326,9 @@ func ExampleAnnounceTxnsMessage() {
 	setupMsgEncoding()
 	var message = NewAnnounceTxnsMessage([]cipher.SHA256{hashes[7], hashes[8]})
 	fmt.Println("AnnounceTxnsMessage:")
-	var mag = MessagesAnnotationsGenerator{Message:message}
+	var mag = MessagesAnnotationsGenerator{Message: message}
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDump(gnet.EncodeMessage(message),mag.GenerateAnnotations(),w)
+	util.HexDump(gnet.EncodeMessage(message), mag.GenerateAnnotations(), w)
 	// Output:
 	// AnnounceTxnsMessage:
 	// 0x0000 | 48 00 00 00 ....................................... Length
@@ -350,7 +348,7 @@ func ExampleIntroductionMessageWithIterator() {
 	fmt.Println("IntroductionMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDumpFromIterator(gnet.EncodeMessage(message),&mai,w)
+	util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
 	// Output:
 	// IntroductionMessage:
 	// 0x0000 | 0e 00 00 00 ....................................... Length
@@ -361,7 +359,6 @@ func ExampleIntroductionMessageWithIterator() {
 	// 0x0012 |
 }
 
-
 func ExampleGetPeersMessageWithIterator() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
@@ -369,7 +366,7 @@ func ExampleGetPeersMessageWithIterator() {
 	fmt.Println("GetPeersMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDumpFromIterator(gnet.EncodeMessage(message),&mai,w)
+	util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
 	// Output:
 	// GetPeersMessage:
 	// 0x0000 | 04 00 00 00 ....................................... Length
@@ -389,7 +386,7 @@ func ExampleGivePeersMessageWithIterator() {
 	fmt.Println("GivePeersMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDumpFromIterator(gnet.EncodeMessage(message),&mai,w)
+	util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
 	// Output:
 	// GivePeersMessage:
 	// 0x0000 | 1a 00 00 00 ....................................... Length
@@ -408,7 +405,7 @@ func ExampleGetBlocksMessageWithIterator() {
 	fmt.Println("GetBlocksMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDumpFromIterator(gnet.EncodeMessage(message),&mai,w)
+	util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
 	// Output:
 	// GetBlocksMessage:
 	// 0x0000 | 14 00 00 00 ....................................... Length
@@ -445,7 +442,7 @@ func ExampleGiveBlocksMessageWithIterator() {
 	fmt.Println("GiveBlocksMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDumpFromIterator(gnet.EncodeMessage(message),&mai,w)
+	util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
 	// Output:
 	// GiveBlocksMessage:
 	// 0x0000 | 8a 01 00 00 ....................................... Length
@@ -487,7 +484,7 @@ func ExampleAnnounceBlocksMessageWithIterator() {
 	fmt.Println("AnnounceBlocksMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDumpFromIterator(gnet.EncodeMessage(message),&mai,w)
+	util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
 	// Output:
 	// AnnounceBlocksMessage:
 	// 0x0000 | 0c 00 00 00 ....................................... Length
@@ -506,7 +503,7 @@ func ExampleGetTxnsMessageWithIterator() {
 	fmt.Println("GetTxnsMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDumpFromIterator(gnet.EncodeMessage(message),&mai,w)
+	util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
 	// Output:
 	// GetTxnsMessage:
 	// 0x0000 | 48 00 00 00 ....................................... Length
@@ -574,7 +571,7 @@ func ExampleGiveTxnsMessageWithIterator() {
 	fmt.Println("GiveTxnsMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDumpFromIterator(gnet.EncodeMessage(message),&mai,w)
+	util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
 	// Output:
 	// GiveTxnsMessage:
 	// 0x0000 | 82 02 00 00 ....................................... Length
@@ -630,7 +627,7 @@ func ExampleAnnounceTxnsMessageWithIterator() {
 	fmt.Println("AnnounceTxnsMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
-	util.HexDumpFromIterator(gnet.EncodeMessage(message),&mai,w)
+	util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
 	// Output:
 	// AnnounceTxnsMessage:
 	// 0x0000 | 48 00 00 00 ....................................... Length
@@ -642,4 +639,3 @@ func ExampleAnnounceTxnsMessageWithIterator() {
 	// 0x003c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns#1
 	// 0x004c |
 }
-

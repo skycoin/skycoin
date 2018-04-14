@@ -35,6 +35,7 @@ LIBSRC_DIR = lib/cgo
 LIBDOC_DIR = $(DOC_DIR)/libc
 
 # Compilation flags
+CC_VERSION = $(sh -c '$(CC) -dumpversion')
 STDC_FLAG = $(python -c "if tuple(map(int, '$(CC_VERSION)'.split('.'))) < (6,): print('-std=C99'")
 ifndef CC
   ifndef STDC_FLAG
@@ -45,7 +46,6 @@ ifndef CC
 endif
 LIBC_LIBS = -lcriterion
 LIBC_FLAGS = -I$(LIBSRC_DIR) -I$(INCLUDE_DIR) -I$(BUILD_DIR)/usr/include -L $(BUILDLIB_DIR) -L$(BUILD_DIR)/usr/lib
-CC_VERSION = $(sh -c '$(CC) -dumpversion')
 
 # Platform specific checks
 OSNAME = $(TRAVIS_OS_NAME)
@@ -113,6 +113,7 @@ build-libc-dbg: configure-build
 	$(CC) -g -o $(BIN_DIR)/test_libskycoin_static $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/libskycoin.a $(LDLIBS) $(LDFLAGS)
 
 test-libc: build-libc ## Run tests for libskycoin C client library
+	echo "Compiling with gcc $(CC_VERSION)"
 	$(CC) -o $(BIN_DIR)/test_libskycoin_shared $(LIB_DIR)/cgo/tests/*.c -lskycoin                    $(LDLIBS) $(LDFLAGS)
 	$(CC) -o $(BIN_DIR)/test_libskycoin_static $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/libskycoin.a $(LDLIBS) $(LDFLAGS)
 	$(LDPATHVAR)="$(LDPATH):$(BUILD_DIR)/usr/lib:$(BUILDLIB_DIR)" $(BIN_DIR)/test_libskycoin_shared

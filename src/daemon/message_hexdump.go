@@ -11,11 +11,11 @@ import (
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 
 	"reflect"
+
 	"github.com/skycoin/skycoin/src/util"
 )
 
 var registered = false
-
 
 func getSliceContentsString(sl []string, offset int) string {
 	var res string = ""
@@ -148,9 +148,9 @@ type MessagesAnnotationsGenerator struct {
 }
 
 func (mag *MessagesAnnotationsGenerator) GenerateAnnotations() []util.Annotation {
-	var annotations = make([]util.Annotation,2)
-	annotations[0] = util.Annotation{Size:4,Name:"Length"}
-	annotations[1] = util.Annotation{Size:4,Name:"Prefix"}
+	var annotations = make([]util.Annotation, 2)
+	annotations[0] = util.Annotation{Size: 4, Name: "Length"}
+	annotations[1] = util.Annotation{Size: 4, Name: "Prefix"}
 	var v = reflect.Indirect(reflect.ValueOf(mag.Message))
 
 	t := v.Type()
@@ -160,12 +160,12 @@ func (mag *MessagesAnnotationsGenerator) GenerateAnnotations() []util.Annotation
 		if f.Tag.Get("enc") != "-" {
 			if v_f.CanSet() || f.Name != "_" {
 				if v.Field(i).Kind() == reflect.Slice {
-					annotations = append(annotations, util.Annotation{Size:4,Name:f.Name+" length"})
+					annotations = append(annotations, util.Annotation{Size: 4, Name: f.Name + " length"})
 					for j := 0; j < v.Field(i).Len(); j++ {
-						annotations = append(annotations, util.Annotation{Size:len(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())[4:]),Name:f.Name+"#"+strconv.Itoa(j)})
+						annotations = append(annotations, util.Annotation{Size: len(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())[4:]), Name: f.Name + "#" + strconv.Itoa(j)})
 					}
 				} else {
-					annotations = append(annotations, util.Annotation{Size:len(encoder.Serialize(v.Field(i).Interface())),Name:f.Name})
+					annotations = append(annotations, util.Annotation{Size: len(encoder.Serialize(v.Field(i).Interface())), Name: f.Name})
 				}
 			} else {
 				//don't write anything
@@ -177,15 +177,15 @@ func (mag *MessagesAnnotationsGenerator) GenerateAnnotations() []util.Annotation
 }
 
 type MessagesAnnotationsIterator struct {
-	Message gnet.Message
+	Message      gnet.Message
 	LengthCalled bool
 	PrefixCalled bool
 	CurrentField int
-	MaxField int
+	MaxField     int
 	CurrentIndex int
 }
 
-func NewMessagesAnnotationsIterator(message gnet.Message) MessagesAnnotationsIterator  {
+func NewMessagesAnnotationsIterator(message gnet.Message) MessagesAnnotationsIterator {
 	var mai = MessagesAnnotationsIterator{}
 	mai.Message = message
 	mai.LengthCalled = false
@@ -201,16 +201,16 @@ func NewMessagesAnnotationsIterator(message gnet.Message) MessagesAnnotationsIte
 func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 	if !mai.LengthCalled {
 		mai.LengthCalled = true
-		return util.Annotation{Size:4,Name:"Length"},true
+		return util.Annotation{Size: 4, Name: "Length"}, true
 
 	}
 	if !mai.PrefixCalled {
 		mai.PrefixCalled = true
-		return util.Annotation{Size:4,Name:"Prefix"},true
+		return util.Annotation{Size: 4, Name: "Prefix"}, true
 
 	}
 	if mai.CurrentField == mai.MaxField {
-		return util.Annotation{},false
+		return util.Annotation{}, false
 	}
 
 	var i = mai.CurrentField
@@ -227,21 +227,21 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 					mai.CurrentIndex = 0
 					return util.Annotation{Size: 4, Name: f.Name + " length"}, true
 				} else {
-						mai.CurrentIndex++
-						if mai.CurrentIndex == v.Field(i).Len() {
-							mai.CurrentIndex = -1
-							mai.CurrentField++
-						}
-						return util.Annotation{Size: len(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())[4:]), Name: f.Name + "#" + strconv.Itoa(j)}, true
+					mai.CurrentIndex++
+					if mai.CurrentIndex == v.Field(i).Len() {
+						mai.CurrentIndex = -1
+						mai.CurrentField++
+					}
+					return util.Annotation{Size: len(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())[4:]), Name: f.Name + "#" + strconv.Itoa(j)}, true
 				}
 			} else {
 				mai.CurrentField++
-				return util.Annotation{Size:len(encoder.Serialize(v.Field(i).Interface())),Name:f.Name}, true
+				return util.Annotation{Size: len(encoder.Serialize(v.Field(i).Interface())), Name: f.Name}, true
 			}
 		} else {
 			//don't write anything
 		}
 	}
 
-	return util.Annotation{},false
+	return util.Annotation{}, false
 }

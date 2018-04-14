@@ -1,11 +1,12 @@
 package util
 
 import (
+	"bufio"
 	"io"
 	"strconv"
-	"bufio"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"strings"
+
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 )
 
 type Annotation struct {
@@ -18,14 +19,13 @@ type IAnnotationsGenerator interface {
 }
 
 type IAnnotationsIterator interface {
-
-	Next() (Annotation,bool)
+	Next() (Annotation, bool)
 }
 
 func writeHexdumpMember(offset int, size int, writer io.Writer, buffer []byte, name string) {
 	var hexBuff = make([]string, size)
 	var j = 0
-	for i := offset; i < offset + size; i++ {
+	for i := offset; i < offset+size; i++ {
 		hexBuff[j] = strconv.FormatInt(int64(buffer[i]), 16)
 		j++
 	}
@@ -61,14 +61,14 @@ func getSliceContentsString(sl []string, offset int) string {
 		counter++
 		res += sl[i] + " "
 		if counter == 16 {
-			if i != len(sl) - 1 {
-				res = strings.TrimRight(res," ")
+			if i != len(sl)-1 {
+				res = strings.TrimRight(res, " ")
 				res += "\n"
 				currentOff += 16
 				if offset != -1 {
 					//res += "         " //9 spaces
-					var hex= strconv.FormatInt(int64(currentOff), 16)
-					var l= len(hex)
+					var hex = strconv.FormatInt(int64(currentOff), 16)
+					var l = len(hex)
 					for i := 0; i < 4-l; i++ {
 						hex = "0" + hex
 					}
@@ -76,7 +76,7 @@ func getSliceContentsString(sl []string, offset int) string {
 					res += hex + " | "
 				}
 				counter = 0
-			} else{
+			} else {
 				res += "..."
 				return res
 			}
@@ -105,17 +105,15 @@ func printFinalHex(i int, writer io.Writer) {
 	f.Write(serialized[4:])
 }
 
-
-
 func HexDump(buffer []byte, annotations []Annotation, writer io.Writer) {
 	var currentOffset = 0
 
 	for _, element := range annotations {
-		writeHexdumpMember(currentOffset,element.Size,writer,buffer,element.Name)
+		writeHexdumpMember(currentOffset, element.Size, writer, buffer, element.Name)
 		currentOffset += element.Size
 	}
 
-	printFinalHex(currentOffset,writer)
+	printFinalHex(currentOffset, writer)
 }
 
 func HexDumpFromIterator(buffer []byte, annotationsIterator IAnnotationsIterator, writer io.Writer) {
@@ -123,16 +121,14 @@ func HexDumpFromIterator(buffer []byte, annotationsIterator IAnnotationsIterator
 
 	var current, valid = annotationsIterator.Next()
 
-	for ; ;  {
+	for {
 		if !valid {
 			break
 		}
-		writeHexdumpMember(currentOffset,current.Size,writer,buffer,current.Name)
+		writeHexdumpMember(currentOffset, current.Size, writer, buffer, current.Name)
 		currentOffset += current.Size
 		current, valid = annotationsIterator.Next()
 	}
 
-
-
-	printFinalHex(currentOffset,writer)
+	printFinalHex(currentOffset, writer)
 }

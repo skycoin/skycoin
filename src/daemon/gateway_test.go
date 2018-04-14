@@ -381,39 +381,6 @@ func TestGateway_CreateWallet(t *testing.T) {
 	}
 }
 
-func TestGateway_ScanAheadWalletAddresses(t *testing.T) {
-	tests := []struct {
-		name            string
-		enableWalletAPI bool
-		wltName         string
-		scanN           uint64
-		result          wallet.Wallet
-		err             error
-	}{
-		{
-			name:            "wallet api disabled",
-			enableWalletAPI: false,
-			err:             wallet.ErrWalletAPIDisabled,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			gw := &Gateway{
-				Config: GatewayConfig{
-					EnableWalletAPI: tc.enableWalletAPI,
-				},
-			}
-			res, err := gw.ScanAheadWalletAddresses(tc.wltName, nil, tc.scanN)
-			if tc.err != nil {
-				require.Equal(t, tc.err, err)
-				return
-			}
-			require.Equal(t, tc.result, res)
-		})
-	}
-}
-
 func TestGateway_GetWalletBalance(t *testing.T) {
 	tests := []struct {
 		name            string

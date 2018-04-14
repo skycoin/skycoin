@@ -184,7 +184,7 @@ export class WalletService {
 
   private updateWallet(wallet: Wallet) {
     this.wallets.first().subscribe(wallets => {
-      const index = wallets.findIndex(w => w.seed === wallet.seed);
+      const index = wallets.findIndex(w => w.filename === wallet.filename);
       wallets[index] = wallet;
       this.wallets.next(wallets);
     });

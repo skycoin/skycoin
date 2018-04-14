@@ -1978,12 +1978,12 @@ func TestCreateWallet(t *testing.T) {
 
 	w, seed, clean := createWallet(t, c, false, "")
 	defer clean()
-	require.False(t, w.IsEncrypted())
+	require.False(t, w.Meta.Encrypted)
 
 	walletDir := getWalletDir(t, c)
 
 	// Confirms the wallet does exist
-	walletPath := filepath.Join(walletDir, w.Filename())
+	walletPath := filepath.Join(walletDir, w.Meta.Filename)
 	_, err := os.Stat(walletPath)
 	require.NoError(t, err)
 
@@ -1995,16 +1995,16 @@ func TestCreateWallet(t *testing.T) {
 	require.Equal(t, len(w.Entries), len(lw.Entries))
 
 	for i := range w.Entries {
-		require.Equal(t, w.Entries[i].Address, lw.Entries[i].Address)
-		require.Equal(t, w.Entries[i].Public, lw.Entries[i].Public)
+		require.Equal(t, w.Entries[i].Address, lw.Entries[i].Address.String())
+		require.Equal(t, w.Entries[i].Public, lw.Entries[i].Public.Hex())
 	}
 
 	// Creates wallet with encryption
 	encW, _, encWClean := createWallet(t, c, true, "pwd")
 	defer encWClean()
-	require.True(t, encW.IsEncrypted())
+	require.True(t, encW.Meta.Encrypted)
 
-	walletPath = filepath.Join(walletDir, encW.Filename())
+	walletPath = filepath.Join(walletDir, encW.Meta.Filename)
 	encLW, err := wallet.Load(walletPath)
 	require.NoError(t, err)
 
@@ -2013,15 +2013,8 @@ func TestCreateWallet(t *testing.T) {
 	require.Equal(t, len(encW.Entries), len(encLW.Entries))
 
 	for i := range encW.Entries {
-		require.Equal(t, encW.Entries[i].Address, encLW.Entries[i].Address)
-		require.Equal(t, encW.Entries[i].Public, encLW.Entries[i].Public)
-	}
-
-	// Confirms that no sensitive data are exist in encrypted wallet file
-	require.Empty(t, w.Meta["seed"])
-	require.Empty(t, w.Meta["lastSeed"])
-	for _, e := range w.Entries {
-		require.Equal(t, cipher.SecKey{}, e.Secret)
+		require.Equal(t, encW.Entries[i].Address, encLW.Entries[i].Address.String())
+		require.Equal(t, encW.Entries[i].Public, encLW.Entries[i].Public.Hex())
 	}
 }
 
@@ -2037,10 +2030,9 @@ func TestGetWallet(t *testing.T) {
 	defer clean()
 
 	// Confirms the wallet can be acquired
-	w1, err := c.Wallet(w.Filename())
+	w1, err := c.Wallet(w.Meta.Filename)
 	require.NoError(t, err)
 	require.Equal(t, *w, *w1)
-	checkNoSensitiveData(t, w1)
 }
 
 func TestGetWallets(t *testing.T) {
@@ -2051,7 +2043,7 @@ func TestGetWallets(t *testing.T) {
 	c := gui.NewClient(nodeAddress())
 
 	// Creates 2 new wallets
-	var ws []wallet.Wallet
+	var ws []gui.WalletResponse
 	for i := 0; i < 2; i++ {
 		w, _, clean := createWallet(t, c, false, "")
 		defer clean()
@@ -2064,14 +2056,14 @@ func TestGetWallets(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create the wallet map
-	walletMap := make(map[string]wallet.Wallet)
+	walletMap := make(map[string]gui.WalletResponse)
 	for _, w := range wlts {
-		walletMap[w.Filename()] = *w
+		walletMap[w.Meta.Filename] = *w
 	}
 
 	// Confirms the returned wallets contains the wallet we created.
 	for _, w := range ws {
-		retW, ok := walletMap[w.Filename()]
+		retW, ok := walletMap[w.Meta.Filename]
 		require.True(t, ok)
 		require.Equal(t, w, retW)
 	}
@@ -2102,7 +2094,7 @@ func TestWalletNewAddress(t *testing.T) {
 			w, seed, clean := createWallet(t, c, encrypt, password)
 			defer clean()
 
-			addrs, err := c.NewWalletAddress(w.Filename(), i, password)
+			addrs, err := c.NewWalletAddress(w.Meta.Filename, i, password)
 			if err != nil {
 				t.Fatalf("%v", err)
 				return
@@ -2133,7 +2125,7 @@ func TestStableWalletBalance(t *testing.T) {
 	w, _, clean := createWallet(t, c, false, "")
 	defer clean()
 
-	bp, err := c.WalletBalance(w.Filename())
+	bp, err := c.WalletBalance(w.Meta.Filename)
 	require.NoError(t, err)
 
 	var expect wallet.BalancePair
@@ -2164,13 +2156,13 @@ func TestWalletUpdate(t *testing.T) {
 	w, _, clean := createWallet(t, c, false, "")
 	defer clean()
 
-	err := c.UpdateWallet(w.Filename(), "new wallet")
+	err := c.UpdateWallet(w.Meta.Filename, "new wallet")
 	require.NoError(t, err)
 
 	// Confirms the wallet has label of "new wallet"
-	w1, err := c.Wallet(w.Filename())
+	w1, err := c.Wallet(w.Meta.Filename)
 	require.NoError(t, err)
-	require.Equal(t, w1.Label(), "new wallet")
+	require.Equal(t, w1.Meta.Label, "new wallet")
 }
 
 func TestStableWalletTransactions(t *testing.T) {
@@ -2182,7 +2174,7 @@ func TestStableWalletTransactions(t *testing.T) {
 	w, _, clean := createWallet(t, c, false, "")
 	defer clean()
 
-	txns, err := c.WalletTransactions(w.Filename())
+	txns, err := c.WalletTransactions(w.Meta.Filename)
 	require.NoError(t, err)
 
 	var expect gui.UnconfirmedTxnsResponse
@@ -2241,23 +2233,20 @@ func TestEncryptWallet(t *testing.T) {
 	w, _, clean := createWallet(t, c, false, "")
 	defer clean()
 
-	checkNoSensitiveData(t, w)
-
 	// Encrypts the wallet
-	rlt, err := c.EncryptWallet(w.Filename(), "pwd")
+	rlt, err := c.EncryptWallet(w.Meta.Filename, "pwd")
 	require.NoError(t, err)
-	checkNoSensitiveData(t, rlt)
-	require.NotEmpty(t, rlt.Meta["cryptoType"])
-	require.Equal(t, rlt.Meta["encrypted"], "true")
+	require.NotEmpty(t, rlt.Meta.CryptoType)
+	require.True(t, rlt.Meta.Encrypted)
 
 	//  Encrypt the wallet again, should returns error
-	_, err = c.EncryptWallet(w.Filename(), "pwd")
+	_, err = c.EncryptWallet(w.Meta.Filename, "pwd")
 	require.EqualError(t, err, "400 Bad Request - wallet is already encrypted\n")
 
 	// Confirms that no sensitive data do exist in wallet file
 	wf, err := c.WalletFolderName()
 	require.NoError(t, err)
-	wltPath := filepath.Join(wf.Address, w.Filename())
+	wltPath := filepath.Join(wf.Address, w.Meta.Filename)
 	lw, err := wallet.Load(wltPath)
 	require.NoError(t, err)
 	require.Empty(t, lw.Meta["seed"])
@@ -2266,7 +2255,7 @@ func TestEncryptWallet(t *testing.T) {
 
 	// Decrypts the wallet, and confirms that the
 	// seed and address entries are the same as it was before being encrypted.
-	dw, err := c.DecryptWallet(w.Filename(), "pwd")
+	dw, err := c.DecryptWallet(w.Meta.Filename, "pwd")
 	require.NoError(t, err)
 	require.Equal(t, w, dw)
 }
@@ -2284,25 +2273,22 @@ func TestDecryptWallet(t *testing.T) {
 	w, seed, clean := createWallet(t, c, true, "pwd")
 	defer clean()
 
-	checkNoSensitiveData(t, w)
-
 	// Decrypt wallet with different password, must fail
-	_, err := c.DecryptWallet(w.Filename(), "pwd1")
+	_, err := c.DecryptWallet(w.Meta.Filename, "pwd1")
 	require.EqualError(t, err, "400 Bad Request - invalid password\n")
 
 	// Decrypts wallet with correct password
-	dw, err := c.DecryptWallet(w.Filename(), "pwd")
+	dw, err := c.DecryptWallet(w.Meta.Filename, "pwd")
 	require.NoError(t, err)
 
 	// Confirms that no sensitive data are returned
-	checkNoSensitiveData(t, dw)
-	require.Empty(t, dw.Meta["cryptoType"])
-	require.Equal(t, dw.Meta["encrypted"], "false")
+	require.Empty(t, dw.Meta.CryptoType)
+	require.False(t, dw.Meta.Encrypted)
 
 	// Loads wallet from file
 	wf, err := c.WalletFolderName()
 	require.NoError(t, err)
-	wltPath := filepath.Join(wf.Address, w.Filename())
+	wltPath := filepath.Join(wf.Address, w.Meta.Filename)
 	lw, err := wallet.Load(wltPath)
 	require.NoError(t, err)
 
@@ -2315,8 +2301,8 @@ func TestDecryptWallet(t *testing.T) {
 
 	// Confirms that the first address is derivied from the private key
 	pubkey := cipher.PubKeyFromSecKey(seckeys[0])
-	require.Equal(t, w.Entries[0].Address, cipher.AddressFromPubKey(pubkey))
-	require.Equal(t, lw.Entries[0].Address, w.Entries[0].Address)
+	require.Equal(t, w.Entries[0].Address, cipher.AddressFromPubKey(pubkey).String())
+	require.Equal(t, lw.Entries[0].Address.String(), w.Entries[0].Address)
 }
 
 func TestGetWalletSeed(t *testing.T) {
@@ -2334,7 +2320,7 @@ func TestGetWalletSeed(t *testing.T) {
 	w, _, clean := createWallet(t, c, true, "pwd")
 	defer clean()
 
-	_, err := c.GetWalletSeed(w.Filename(), "pwd")
+	_, err := c.GetWalletSeed(w.Meta.Filename, "pwd")
 	require.EqualError(t, err, "403 Forbidden\n")
 }
 
@@ -2353,7 +2339,7 @@ func TestEnableSeedAPIAndGetWalletSeed(t *testing.T) {
 	w, seed, clean := createWallet(t, c, true, "pwd")
 	defer clean()
 
-	sd, err := c.GetWalletSeed(w.Filename(), "pwd")
+	sd, err := c.GetWalletSeed(w.Meta.Filename, "pwd")
 	require.NoError(t, err)
 
 	// Confirms the seed are matched
@@ -2364,13 +2350,13 @@ func TestEnableSeedAPIAndGetWalletSeed(t *testing.T) {
 	require.EqualError(t, err, "404 Not Found\n")
 
 	// Check with invalid password
-	_, err = c.GetWalletSeed(w.Filename(), "wrong password")
+	_, err = c.GetWalletSeed(w.Meta.Filename, "wrong password")
 	require.EqualError(t, err, "400 Bad Request - invalid password\n")
 
 	// Creates none encrypted wallet
 	nw, _, nclean := createWallet(t, c, false, "")
 	defer nclean()
-	_, err = c.GetWalletSeed(nw.Filename(), "pwd")
+	_, err = c.GetWalletSeed(nw.Meta.Filename, "pwd")
 	require.EqualError(t, err, "403 Forbidden\n")
 }
 
@@ -2497,13 +2483,13 @@ func checkWalletEntriesAndLastSeed(t *testing.T, w *wallet.Wallet) {
 
 // createWallet creates a wallet with rand seed.
 // Returns the generated wallet, seed and clean up function.
-func createWallet(t *testing.T, c *gui.Client, encrypt bool, password string) (*wallet.Wallet, string, func()) {
+func createWallet(t *testing.T, c *gui.Client, encrypt bool, password string) (*gui.WalletResponse, string, func()) {
 	if !doWallet(t) {
 		return nil, "", func() {}
 	}
 	seed := hex.EncodeToString(cipher.RandByte(32))
 	// Use the first 6 letter of the seed as label.
-	var w *wallet.Wallet
+	var w *gui.WalletResponse
 	var err error
 	if encrypt {
 		w, err = c.CreateEncryptedWallet(seed, seed[:6], password, 0)
@@ -2512,16 +2498,12 @@ func createWallet(t *testing.T, c *gui.Client, encrypt bool, password string) (*
 	}
 
 	require.NoError(t, err)
-	checkNoSensitiveData(t, w)
-
-	err = w.Validate()
-	require.NoError(t, err)
 
 	walletDir := getWalletDir(t, c)
 
 	return w, seed, func() {
 		// Cleaner function to delete the wallet and bak wallet
-		walletPath := filepath.Join(walletDir, w.Filename())
+		walletPath := filepath.Join(walletDir, w.Meta.Filename)
 		err = os.Remove(walletPath)
 		require.NoError(t, err)
 
@@ -2534,7 +2516,7 @@ func createWallet(t *testing.T, c *gui.Client, encrypt bool, password string) (*
 		require.NoError(t, err)
 
 		// Removes the wallet from memory
-		c.UnloadWallet(w.Filename())
+		c.UnloadWallet(w.Meta.Filename)
 	}
 }
 

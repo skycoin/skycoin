@@ -38,15 +38,17 @@ LIBDOC_DIR = $(DOC_DIR)/libc
 CC = gcc
 LIBC_LIBS = -lcriterion
 LIBC_FLAGS = -I$(LIBSRC_DIR) -I$(INCLUDE_DIR) -I$(BUILD_DIR)/usr/include -L $(BUILDLIB_DIR) -L$(BUILD_DIR)/usr/lib
+CC_VERSION = $(sh -c '$(CC) -dumpversion')
+STDC_FLAG = $(python -c "if tuple(map(int, '$(CC_VERSION)'.split('.'))) < (6,): print('-std=C99'")
 
 # Platform specific checks
 OSNAME = $(TRAVIS_OS_NAME)
 
 ifeq ($(shell uname -s),Linux)
   LDLIBS=$(LIBC_LIBS) -lpthread
-	LDPATH=$(shell printenv LD_LIBRARY_PATH)
-	LDPATHVAR=LD_LIBRARY_PATH
-	LDFLAGS=$(LIBC_FLAGS)
+  LDPATH=$(shell printenv LD_LIBRARY_PATH)
+  LDPATHVAR=LD_LIBRARY_PATH
+  LDFLAGS=$(LIBC_FLAGS) $(STDC_FLAG) 
 ifndef OSNAME
   OSNAME = linux
 endif
@@ -54,15 +56,15 @@ else ifeq ($(shell uname -s),Darwin)
 ifndef OSNAME
   OSNAME = osx
 endif
-	LDLIBS = $(LIBC_LIBS)
-	LDPATH=$(shell printenv DYLD_LIBRARY_PATH)
-	LDPATHVAR=DYLD_LIBRARY_PATH
-	LDFLAGS=$(LIBC_FLAGS) -framework CoreFoundation -framework Security
+  LDLIBS = $(LIBC_LIBS)
+  LDPATH=$(shell printenv DYLD_LIBRARY_PATH)
+  LDPATHVAR=DYLD_LIBRARY_PATH
+  LDFLAGS=$(LIBC_FLAGS) -framework CoreFoundation -framework Security
 else
-	LDLIBS = $(LIBC_LIBS)
-	LDPATH=$(shell printenv LD_LIBRARY_PATH)
-	LDPATHVAR=LD_LIBRARY_PATH
-	LDFLAGS=$(LIBC_FLAGS)
+  LDLIBS = $(LIBC_LIBS)
+  LDPATH=$(shell printenv LD_LIBRARY_PATH)
+  LDPATHVAR=LD_LIBRARY_PATH
+  LDFLAGS=$(LIBC_FLAGS)
 endif
 
 run:  ## Run the skycoin node. To add arguments, do 'make ARGS="--foo" run'.

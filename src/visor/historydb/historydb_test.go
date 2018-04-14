@@ -24,7 +24,7 @@ var (
 	transactionBkt       = []byte("transactions")
 	outputBkt            = []byte("uxouts")
 	addressInBkt         = []byte("address_in")
-	log                  = logging.MustGetLogger("historydb")
+	log                  = logging.MustGetLogger("historydb_test")
 )
 
 var _genTime uint64 = 1000

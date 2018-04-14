@@ -21,7 +21,7 @@ import (
 )
 
 var (
-	log = logging.MustGetLogger("wallet")
+	log = logging.MustGetLogger("wallet_test")
 )
 
 // set rand seed.

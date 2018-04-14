@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	log = logging.MustGetLogger("webrpc")
+	log = logging.MustGetLogger("webrpc_test")
 )
 
 // Tests are setup as subtests, to retain a single *WebRPC instance for scaffolding

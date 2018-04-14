@@ -543,7 +543,7 @@ func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*co
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
-	var tx *coin.Transaction
+	var txn *coin.Transaction
 	var err error
 
 	gw.strand("CreateTransaction", func() {
@@ -552,16 +552,23 @@ func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*co
 		sv := newSpendValidator(gw.v.Unconfirmed, unspent)
 
 		// create and sign transaction
-		tx, err = gw.vrpc.CreateAndSignTransactionAdvanced(params, sv, unspent, gw.v.Blockchain.Time())
+		txn, err = gw.vrpc.CreateAndSignTransactionAdvanced(params, sv, unspent, gw.v.Blockchain.Time())
 		if err != nil {
-			logger.Errorf("Create transaction failed: %v", err)
+			logger.WithError(err).Error("CreateAndSignTransactionAdvanced failed")
+			return
+		}
+
+		err = gw.v.Blockchain.VerifySingleTxnAllConstraints(*txn, visor.DefaultMaxBlockSize)
+		if err != nil {
+			txn = nil
+			logger.WithError(err).Error("Created transaction violates transaction constraints")
 			return
 		}
 
 		return
 	})
 
-	return tx, err
+	return txn, err
 }
 
 // CreateWallet creates wallet

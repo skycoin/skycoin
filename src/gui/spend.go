@@ -127,6 +127,10 @@ func (r CreateTransactionRequest) Validate() error {
 		if to.Coins == 0 {
 			return fmt.Errorf("to[%d].coins must not be zero", i)
 		}
+
+		if to.Coins.Value()%visor.MaxDropletDivisor() != 0 {
+			return fmt.Errorf("to[%d].coins has too many decimal places", i)
+		}
 	}
 
 	if len(r.To) == 0 {

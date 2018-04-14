@@ -519,6 +519,29 @@ func TestCreateTransaction(t *testing.T) {
 		},
 
 		{
+			name:   "400 - coins has too many decimals",
+			method: http.MethodPost,
+			body: &rawRequest{
+				HoursSelection: rawHoursSelection{
+					Type: wallet.HoursSelectionTypeAuto,
+					Mode: wallet.HoursSelectionModeMatchCoins,
+				},
+				To: []rawReceiver{
+					{
+						Address: destinationAddress.String(),
+						Coins:   "1.1234",
+					},
+				},
+				ChangeAddress: changeAddress.String(),
+				Wallet: rawWalletRequest{
+					ID: "foo.wlt",
+				},
+			},
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - to[0].coins has too many decimal places",
+		},
+
+		{
 			name:   "400 - empty to",
 			method: http.MethodPost,
 			body: &rawRequest{

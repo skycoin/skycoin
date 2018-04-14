@@ -425,6 +425,7 @@ func TestGateway_GetWalletBalance(t *testing.T) {
 		{
 			name:            "wallet api disabled",
 			enableWalletAPI: false,
+			walletID:        "foo.wlt",
 			err:             wallet.ErrWalletAPIDisabled,
 		},
 	}
@@ -437,6 +438,39 @@ func TestGateway_GetWalletBalance(t *testing.T) {
 				},
 			}
 			res, err := gw.GetWalletBalance(tc.walletID)
+			if tc.err != nil {
+				require.Equal(t, tc.err, err)
+				return
+			}
+			require.Equal(t, tc.result, res)
+		})
+	}
+}
+
+func TestGateway_CreateTransaction(t *testing.T) {
+	tests := []struct {
+		name            string
+		enableWalletAPI bool
+		result          wallet.BalancePair
+		err             error
+		params          wallet.CreateTransactionParams
+	}{
+		{
+			name:            "wallet api disabled",
+			enableWalletAPI: false,
+			err:             wallet.ErrWalletAPIDisabled,
+			params:          wallet.CreateTransactionParams{},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			gw := &Gateway{
+				Config: GatewayConfig{
+					EnableWalletAPI: tc.enableWalletAPI,
+				},
+			}
+			res, err := gw.CreateTransaction(tc.params)
 			if tc.err != nil {
 				require.Equal(t, tc.err, err)
 				return

@@ -16,7 +16,7 @@ import (
 */
 import "C"
 
-// export SKY_cli_GetWalletOutputsFromFile
+//export SKY_cli_GetWalletOutputsFromFile
 func SKY_cli_GetWalletOutputsFromFile(_c *C.Handle, _walletFile string, _arg2 *C.webrpc__OutputsResult) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -37,7 +37,7 @@ func SKY_cli_GetWalletOutputsFromFile(_c *C.Handle, _walletFile string, _arg2 *C
 	return
 }
 
-// export SKY_cli_GetWalletOutputs
+//export SKY_cli_GetWalletOutputs
 func SKY_cli_GetWalletOutputs(_c *C.Handle, _wlt *C.wallet__Wallet, _arg2 *C.webrpc__OutputsResult) (____error_code uint32) {
 	____error_code = 0
 	defer func() {

@@ -15,7 +15,7 @@ import (
 */
 import "C"
 
-// export SKY_bip39_NewDefaultMnemomic
+//export SKY_bip39_NewDefaultMnemomic
 func SKY_bip39_NewDefaultMnemomic(_arg0 *C.GoString_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -29,7 +29,7 @@ func SKY_bip39_NewDefaultMnemomic(_arg0 *C.GoString_) (____error_code uint32) {
 	return
 }
 
-// export SKY_bip39_NewEntropy
+//export SKY_bip39_NewEntropy
 func SKY_bip39_NewEntropy(_bitSize int, _arg1 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -44,7 +44,7 @@ func SKY_bip39_NewEntropy(_bitSize int, _arg1 *C.GoSlice_) (____error_code uint3
 	return
 }
 
-// export SKY_bip39_NewMnemonic
+//export SKY_bip39_NewMnemonic
 func SKY_bip39_NewMnemonic(_entropy *C.GoSlice_, _arg1 *C.GoString_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -59,7 +59,7 @@ func SKY_bip39_NewMnemonic(_entropy *C.GoSlice_, _arg1 *C.GoString_) (____error_
 	return
 }
 
-// export SKY_bip39_MnemonicToByteArray
+//export SKY_bip39_MnemonicToByteArray
 func SKY_bip39_MnemonicToByteArray(_mnemonic string, _arg1 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -74,7 +74,7 @@ func SKY_bip39_MnemonicToByteArray(_mnemonic string, _arg1 *C.GoSlice_) (____err
 	return
 }
 
-// export SKY_bip39_IsMnemonicValid
+//export SKY_bip39_IsMnemonicValid
 func SKY_bip39_IsMnemonicValid(_mnemonic string, _arg1 *bool) (____error_code uint32) {
 	____error_code = 0
 	defer func() {

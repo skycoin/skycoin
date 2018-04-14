@@ -16,7 +16,7 @@ import (
 import "C"
 /*
 Commented to avoid bugs
-// export SKY_encoder_EncodeInt
+//export SKY_encoder_EncodeInt
 func SKY_encoder_EncodeInt(_b *C.GoSlice_, _data *C.GoInterface_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -28,7 +28,7 @@ func SKY_encoder_EncodeInt(_b *C.GoSlice_, _data *C.GoInterface_) (____error_cod
 	return
 }
 
-// export SKY_encoder_DecodeInt
+//export SKY_encoder_DecodeInt
 func SKY_encoder_DecodeInt(_in *C.GoSlice_, _data *C.GoInterface_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -40,7 +40,7 @@ func SKY_encoder_DecodeInt(_in *C.GoSlice_, _data *C.GoInterface_) (____error_co
 	return
 }
 
-// export SKY_encoder_DeserializeAtomic
+//export SKY_encoder_DeserializeAtomic
 func SKY_encoder_DeserializeAtomic(_in *C.GoSlice_, _data *C.GoInterface_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -52,7 +52,7 @@ func SKY_encoder_DeserializeAtomic(_in *C.GoSlice_, _data *C.GoInterface_) (____
 	return
 }
 
-// export SKY_encoder_DeserializeRaw
+//export SKY_encoder_DeserializeRaw
 func SKY_encoder_DeserializeRaw(_in *C.GoSlice_, _data *C.GoInterface_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -67,7 +67,7 @@ func SKY_encoder_DeserializeRaw(_in *C.GoSlice_, _data *C.GoInterface_) (____err
 	return
 }
 
-// export SKY_encoder_SerializeAtomic
+//export SKY_encoder_SerializeAtomic
 func SKY_encoder_SerializeAtomic(_data interface{}, _arg1 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -78,7 +78,7 @@ func SKY_encoder_SerializeAtomic(_data interface{}, _arg1 *C.GoSlice_) (____erro
 	return
 }
 
-// export SKY_encoder_Serialize
+//export SKY_encoder_Serialize
 func SKY_encoder_Serialize(_data interface{}, _arg1 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -89,7 +89,7 @@ func SKY_encoder_Serialize(_data interface{}, _arg1 *C.GoSlice_) (____error_code
 	return
 }
 
-// export SKY_encoder_Size
+//export SKY_encoder_Size
 func SKY_encoder_Size(_v interface{}, _arg1 *int) (____error_code uint32) {
 	____error_code = 0
 	defer func() {

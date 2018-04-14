@@ -15,7 +15,7 @@ import (
 */
 import "C"
 
-// export SKY_secp256k1_GenerateKeyPair
+//export SKY_secp256k1_GenerateKeyPair
 func SKY_secp256k1_GenerateKeyPair(_arg0 *C.GoSlice_, _arg1 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -27,7 +27,7 @@ func SKY_secp256k1_GenerateKeyPair(_arg0 *C.GoSlice_, _arg1 *C.GoSlice_) (____er
 	return
 }
 
-// export SKY_secp256k1_PubkeyFromSeckey
+//export SKY_secp256k1_PubkeyFromSeckey
 func SKY_secp256k1_PubkeyFromSeckey(_seckey *C.GoSlice_, _arg1 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -39,7 +39,7 @@ func SKY_secp256k1_PubkeyFromSeckey(_seckey *C.GoSlice_, _arg1 *C.GoSlice_) (___
 	return
 }
 
-// export SKY_secp256k1_UncompressPubkey
+//export SKY_secp256k1_UncompressPubkey
 func SKY_secp256k1_UncompressPubkey(_pubkey *C.GoSlice_, _arg1 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -51,7 +51,7 @@ func SKY_secp256k1_UncompressPubkey(_pubkey *C.GoSlice_, _arg1 *C.GoSlice_) (___
 	return
 }
 
-// export SKY_secp256k1_UncompressedPubkeyFromSeckey
+//export SKY_secp256k1_UncompressedPubkeyFromSeckey
 func SKY_secp256k1_UncompressedPubkeyFromSeckey(_seckey *C.GoSlice_, _arg1 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -63,7 +63,7 @@ func SKY_secp256k1_UncompressedPubkeyFromSeckey(_seckey *C.GoSlice_, _arg1 *C.Go
 	return
 }
 
-// export SKY_secp256k1_Secp256k1Hash
+//export SKY_secp256k1_Secp256k1Hash
 func SKY_secp256k1_Secp256k1Hash(_hash *C.GoSlice_, _arg1 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -75,7 +75,7 @@ func SKY_secp256k1_Secp256k1Hash(_hash *C.GoSlice_, _arg1 *C.GoSlice_) (____erro
 	return
 }
 
-// export SKY_secp256k1_GenerateDeterministicKeyPair
+//export SKY_secp256k1_GenerateDeterministicKeyPair
 func SKY_secp256k1_GenerateDeterministicKeyPair(_seed *C.GoSlice_, _arg1 *C.GoSlice_, _arg2 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -88,7 +88,7 @@ func SKY_secp256k1_GenerateDeterministicKeyPair(_seed *C.GoSlice_, _arg1 *C.GoSl
 	return
 }
 
-// export SKY_secp256k1_DeterministicKeyPairIterator
+//export SKY_secp256k1_DeterministicKeyPairIterator
 func SKY_secp256k1_DeterministicKeyPairIterator(_seedIn *C.GoSlice_, _arg1 *C.GoSlice_, _arg2 *C.GoSlice_, _arg3 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -102,7 +102,7 @@ func SKY_secp256k1_DeterministicKeyPairIterator(_seedIn *C.GoSlice_, _arg1 *C.Go
 	return
 }
 
-// export SKY_secp256k1_Sign
+//export SKY_secp256k1_Sign
 func SKY_secp256k1_Sign(_msg *C.GoSlice_, _seckey *C.GoSlice_, _arg2 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -115,7 +115,7 @@ func SKY_secp256k1_Sign(_msg *C.GoSlice_, _seckey *C.GoSlice_, _arg2 *C.GoSlice_
 	return
 }
 
-// export SKY_secp256k1_SignDeterministic
+//export SKY_secp256k1_SignDeterministic
 func SKY_secp256k1_SignDeterministic(_msg *C.GoSlice_, _seckey *C.GoSlice_, _nonceSeed *C.GoSlice_, _arg3 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -129,7 +129,7 @@ func SKY_secp256k1_SignDeterministic(_msg *C.GoSlice_, _seckey *C.GoSlice_, _non
 	return
 }
 
-// export SKY_secp256k1_VerifySeckey
+//export SKY_secp256k1_VerifySeckey
 func SKY_secp256k1_VerifySeckey(_seckey *C.GoSlice_, _arg1 *int) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -141,7 +141,7 @@ func SKY_secp256k1_VerifySeckey(_seckey *C.GoSlice_, _arg1 *int) (____error_code
 	return
 }
 
-// export SKY_secp256k1_VerifyPubkey
+//export SKY_secp256k1_VerifyPubkey
 func SKY_secp256k1_VerifyPubkey(_pubkey *C.GoSlice_, _arg1 *int) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -153,7 +153,7 @@ func SKY_secp256k1_VerifyPubkey(_pubkey *C.GoSlice_, _arg1 *int) (____error_code
 	return
 }
 
-// export SKY_secp256k1_VerifySignatureValidity
+//export SKY_secp256k1_VerifySignatureValidity
 func SKY_secp256k1_VerifySignatureValidity(_sig *C.GoSlice_, _arg1 *int) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -165,7 +165,7 @@ func SKY_secp256k1_VerifySignatureValidity(_sig *C.GoSlice_, _arg1 *int) (____er
 	return
 }
 
-// export SKY_secp256k1_VerifySignature
+//export SKY_secp256k1_VerifySignature
 func SKY_secp256k1_VerifySignature(_msg *C.GoSlice_, _sig *C.GoSlice_, _pubkey1 *C.GoSlice_, _arg3 *int) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -179,7 +179,7 @@ func SKY_secp256k1_VerifySignature(_msg *C.GoSlice_, _sig *C.GoSlice_, _pubkey1 
 	return
 }
 
-// export SKY_secp256k1_SignatureErrorString
+//export SKY_secp256k1_SignatureErrorString
 func SKY_secp256k1_SignatureErrorString(_msg *C.GoSlice_, _sig *C.GoSlice_, _pubkey1 *C.GoSlice_, _arg3 *C.GoString_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -193,7 +193,7 @@ func SKY_secp256k1_SignatureErrorString(_msg *C.GoSlice_, _sig *C.GoSlice_, _pub
 	return
 }
 
-// export SKY_secp256k1_RecoverPubkey
+//export SKY_secp256k1_RecoverPubkey
 func SKY_secp256k1_RecoverPubkey(_msg *C.GoSlice_, _sig *C.GoSlice_, _arg2 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -206,7 +206,7 @@ func SKY_secp256k1_RecoverPubkey(_msg *C.GoSlice_, _sig *C.GoSlice_, _arg2 *C.Go
 	return
 }
 
-// export SKY_secp256k1_ECDH
+//export SKY_secp256k1_ECDH
 func SKY_secp256k1_ECDH(_pub *C.GoSlice_, _sec *C.GoSlice_, _arg2 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {

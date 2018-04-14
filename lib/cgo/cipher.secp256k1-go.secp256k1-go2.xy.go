@@ -15,7 +15,7 @@ import (
 */
 import "C"
 
-// export SKY_secp256k1go_XY_Print
+//export SKY_secp256k1go_XY_Print
 func SKY_secp256k1go_XY_Print(_xy *C.secp256k1go__XY, _lab string) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -27,7 +27,7 @@ func SKY_secp256k1go_XY_Print(_xy *C.secp256k1go__XY, _lab string) (____error_co
 	return
 }
 
-// export SKY_secp256k1go_XY_ParsePubkey
+//export SKY_secp256k1go_XY_ParsePubkey
 func SKY_secp256k1go_XY_ParsePubkey(_xy *C.secp256k1go__XY, _pub *C.GoSlice_, _arg1 *bool) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -40,7 +40,7 @@ func SKY_secp256k1go_XY_ParsePubkey(_xy *C.secp256k1go__XY, _pub *C.GoSlice_, _a
 	return
 }
 
-// export SKY_secp256k1go_XY_Bytes
+//export SKY_secp256k1go_XY_Bytes
 func SKY_secp256k1go_XY_Bytes(_xy *C.secp256k1go__XY, _arg0 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -52,7 +52,7 @@ func SKY_secp256k1go_XY_Bytes(_xy *C.secp256k1go__XY, _arg0 *C.GoSlice_) (____er
 	return
 }
 
-// export SKY_secp256k1go_XY_BytesUncompressed
+//export SKY_secp256k1go_XY_BytesUncompressed
 func SKY_secp256k1go_XY_BytesUncompressed(_xy *C.secp256k1go__XY, _arg0 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -64,7 +64,7 @@ func SKY_secp256k1go_XY_BytesUncompressed(_xy *C.secp256k1go__XY, _arg0 *C.GoSli
 	return
 }
 
-// export SKY_secp256k1go_XY_SetXY
+//export SKY_secp256k1go_XY_SetXY
 func SKY_secp256k1go_XY_SetXY(_xy *C.secp256k1go__XY, _X, _Y *C.secp256k1go__Field) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -77,7 +77,7 @@ func SKY_secp256k1go_XY_SetXY(_xy *C.secp256k1go__XY, _X, _Y *C.secp256k1go__Fie
 	return
 }
 
-// export SKY_secp256k1go_XY_IsValid
+//export SKY_secp256k1go_XY_IsValid
 func SKY_secp256k1go_XY_IsValid(_xy *C.secp256k1go__XY, _arg0 *bool) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -89,7 +89,7 @@ func SKY_secp256k1go_XY_IsValid(_xy *C.secp256k1go__XY, _arg0 *bool) (____error_
 	return
 }
 
-// export SKY_secp256k1go_XY_SetXYZ
+//export SKY_secp256k1go_XY_SetXYZ
 func SKY_secp256k1go_XY_SetXYZ(_xy *C.secp256k1go__XY, _a *C.secp256k1go__XYZ) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -101,7 +101,7 @@ func SKY_secp256k1go_XY_SetXYZ(_xy *C.secp256k1go__XY, _a *C.secp256k1go__XYZ) (
 	return
 }
 
-// export SKY_secp256k1go_XY_Neg
+//export SKY_secp256k1go_XY_Neg
 func SKY_secp256k1go_XY_Neg(_xy *C.secp256k1go__XY, _r *C.secp256k1go__XY) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -113,7 +113,7 @@ func SKY_secp256k1go_XY_Neg(_xy *C.secp256k1go__XY, _r *C.secp256k1go__XY) (____
 	return
 }
 
-// export SKY_secp256k1go_XY_SetXO
+//export SKY_secp256k1go_XY_SetXO
 func SKY_secp256k1go_XY_SetXO(_xy *C.secp256k1go__XY, _X *C.secp256k1go__Field, _odd bool) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -126,7 +126,7 @@ func SKY_secp256k1go_XY_SetXO(_xy *C.secp256k1go__XY, _X *C.secp256k1go__Field, 
 	return
 }
 
-// export SKY_secp256k1go_XY_AddXY
+//export SKY_secp256k1go_XY_AddXY
 func SKY_secp256k1go_XY_AddXY(_xy *C.secp256k1go__XY, _a *C.secp256k1go__XY) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -138,7 +138,7 @@ func SKY_secp256k1go_XY_AddXY(_xy *C.secp256k1go__XY, _a *C.secp256k1go__XY) (__
 	return
 }
 
-// export SKY_secp256k1go_XY_GetPublicKey
+//export SKY_secp256k1go_XY_GetPublicKey
 func SKY_secp256k1go_XY_GetPublicKey(_xy *C.secp256k1go__XY, _arg0 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {

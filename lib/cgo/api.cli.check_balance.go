@@ -15,7 +15,7 @@ import (
 */
 import "C"
 
-// export SKY_cli_CheckWalletBalance
+//export SKY_cli_CheckWalletBalance
 func SKY_cli_CheckWalletBalance(_c *C.Handle, _walletFile string, _arg2 *C.cli__BalanceResult) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -35,7 +35,7 @@ func SKY_cli_CheckWalletBalance(_c *C.Handle, _walletFile string, _arg2 *C.cli__
 	return
 }
 
-// export SKY_cli_GetBalanceOfAddresses
+//export SKY_cli_GetBalanceOfAddresses
 func SKY_cli_GetBalanceOfAddresses(_c *C.Handle, _addrs *C.GoSlice_, _arg2 *C.cli__BalanceResult) (____error_code uint32) {
 	____error_code = 0
 	defer func() {

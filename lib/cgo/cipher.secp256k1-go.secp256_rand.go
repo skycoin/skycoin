@@ -15,7 +15,7 @@ import (
 */
 import "C"
 
-// export SKY_secp256k1_SumSHA256
+//export SKY_secp256k1_SumSHA256
 func SKY_secp256k1_SumSHA256(_b *C.GoSlice_, _arg1 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -27,7 +27,7 @@ func SKY_secp256k1_SumSHA256(_b *C.GoSlice_, _arg1 *C.GoSlice_) (____error_code 
 	return
 }
 
-// export SKY_secp256k1_RandByte
+//export SKY_secp256k1_RandByte
 func SKY_secp256k1_RandByte(_n int, _arg1 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {

@@ -15,7 +15,7 @@ import (
 */
 import "C"
 
-// export SKY_cli_LoadConfig
+//export SKY_cli_LoadConfig
 func SKY_cli_LoadConfig(_config *C.Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -29,7 +29,7 @@ func SKY_cli_LoadConfig(_config *C.Handle) (____error_code uint32) {
 	return
 }
 
-// export SKY_cli_Config_FullWalletPath
+//export SKY_cli_Config_FullWalletPath
 func SKY_cli_Config_FullWalletPath(_c *C.Handle, _path *C.GoString_) (____error_code uint32) {
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -46,7 +46,7 @@ func SKY_cli_Config_FullWalletPath(_c *C.Handle, _path *C.GoString_) (____error_
 	return
 }
 
-// export SKY_cli_Config_FullDBPath
+//export SKY_cli_Config_FullDBPath
 func SKY_cli_Config_FullDBPath(_c *C.Handle, _path *C.GoString_) (____error_code uint32) {
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -63,7 +63,7 @@ func SKY_cli_Config_FullDBPath(_c *C.Handle, _path *C.GoString_) (____error_code
 	return
 }
 
-// export SKY_cli_NewApp
+//export SKY_cli_NewApp
 func SKY_cli_NewApp(_cfg *C.Handle, _app *C.Handle) (____error_code uint32) {
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -80,7 +80,7 @@ func SKY_cli_NewApp(_cfg *C.Handle, _app *C.Handle) (____error_code uint32) {
 	return
 }
 
-// export SKY_cli_App_Run
+//export SKY_cli_App_Run
 func SKY_cli_App_Run(_app *C.Handle, _args *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -101,8 +101,7 @@ func SKY_cli_App_Run(_app *C.Handle, _args *C.GoSlice_) (____error_code uint32) 
 	return
 }
 
-//TODO: stdevEclipse Check if a handle is right for the context parameter
-// export SKY_cli_RPCClientFromContext
+//export SKY_cli_RPCClientFromContext
 func SKY_cli_RPCClientFromContext(_c *C.Handle, _client *C.Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -120,7 +119,7 @@ func SKY_cli_RPCClientFromContext(_c *C.Handle, _client *C.Handle) (____error_co
 	return
 }
  
-// export SKY_cli_ConfigFromContext
+//export SKY_cli_ConfigFromContext
 func SKY_cli_ConfigFromContext(_c *C.Handle, _config *C.Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {

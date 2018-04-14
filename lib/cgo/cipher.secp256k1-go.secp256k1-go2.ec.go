@@ -15,7 +15,7 @@ import (
 */
 import "C"
 
-// export SKY_secp256k1go_DecompressPoint
+//export SKY_secp256k1go_DecompressPoint
 func SKY_secp256k1go_DecompressPoint(_X *C.GoSlice_, _off bool, _Y *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -28,7 +28,7 @@ func SKY_secp256k1go_DecompressPoint(_X *C.GoSlice_, _off bool, _Y *C.GoSlice_) 
 	return
 }
 
-// export SKY_secp256k1go_RecoverPublicKey
+//export SKY_secp256k1go_RecoverPublicKey
 func SKY_secp256k1go_RecoverPublicKey(_sigByte *C.GoSlice_, _h *C.GoSlice_, _recid int, _arg3 *C.GoSlice_, _arg4 *int) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -43,7 +43,7 @@ func SKY_secp256k1go_RecoverPublicKey(_sigByte *C.GoSlice_, _h *C.GoSlice_, _rec
 	return
 }
 
-// export SKY_secp256k1go_Multiply
+//export SKY_secp256k1go_Multiply
 func SKY_secp256k1go_Multiply(_xy, _k *C.GoSlice_, _arg1 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -56,7 +56,7 @@ func SKY_secp256k1go_Multiply(_xy, _k *C.GoSlice_, _arg1 *C.GoSlice_) (____error
 	return
 }
 
-// export SKY_secp256k1go_BaseMultiply
+//export SKY_secp256k1go_BaseMultiply
 func SKY_secp256k1go_BaseMultiply(_k *C.GoSlice_, _arg1 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -68,7 +68,7 @@ func SKY_secp256k1go_BaseMultiply(_k *C.GoSlice_, _arg1 *C.GoSlice_) (____error_
 	return
 }
 
-// export SKY_secp256k1go_BaseMultiplyAdd
+//export SKY_secp256k1go_BaseMultiplyAdd
 func SKY_secp256k1go_BaseMultiplyAdd(_xy, _k *C.GoSlice_, _arg1 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -81,7 +81,7 @@ func SKY_secp256k1go_BaseMultiplyAdd(_xy, _k *C.GoSlice_, _arg1 *C.GoSlice_) (__
 	return
 }
 
-// export SKY_secp256k1go_GeneratePublicKey
+//export SKY_secp256k1go_GeneratePublicKey
 func SKY_secp256k1go_GeneratePublicKey(_k *C.GoSlice_, _arg1 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -93,7 +93,7 @@ func SKY_secp256k1go_GeneratePublicKey(_k *C.GoSlice_, _arg1 *C.GoSlice_) (____e
 	return
 }
 
-// export SKY_secp256k1go_SeckeyIsValid
+//export SKY_secp256k1go_SeckeyIsValid
 func SKY_secp256k1go_SeckeyIsValid(_seckey *C.GoSlice_, _arg1 *int) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -105,7 +105,7 @@ func SKY_secp256k1go_SeckeyIsValid(_seckey *C.GoSlice_, _arg1 *int) (____error_c
 	return
 }
 
-// export SKY_secp256k1go_PubkeyIsValid
+//export SKY_secp256k1go_PubkeyIsValid
 func SKY_secp256k1go_PubkeyIsValid(_pubkey *C.GoSlice_, _arg1 *int) (____error_code uint32) {
 	____error_code = 0
 	defer func() {

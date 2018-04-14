@@ -14,7 +14,7 @@ import (
 */
 import "C"
 
-// export SKY_cli_GenerateWallet
+//export SKY_cli_GenerateWallet
 func SKY_cli_GenerateWallet(_walletFile, _label, _seed string, _numAddrs uint64, _arg2 *C.Wallet) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -32,7 +32,7 @@ func SKY_cli_GenerateWallet(_walletFile, _label, _seed string, _numAddrs uint64,
 	return
 }
 
-// export SKY_cli_MakeAlphanumericSeed
+//export SKY_cli_MakeAlphanumericSeed
 func SKY_cli_MakeAlphanumericSeed(_arg0 *C.GoString_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {

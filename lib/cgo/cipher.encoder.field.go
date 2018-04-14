@@ -14,7 +14,7 @@ import (
 */
 import "C"
 
-// export SKY_encoder_StructField_String
+//export SKY_encoder_StructField_String
 func SKY_encoder_StructField_String(_s *C.encoder__StructField, _arg0 *C.GoString_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -26,7 +26,7 @@ func SKY_encoder_StructField_String(_s *C.encoder__StructField, _arg0 *C.GoStrin
 	return
 }
 
-// export SKY_encoder_DeserializeField
+//export SKY_encoder_DeserializeField
 func SKY_encoder_DeserializeField(_in *C.GoSlice_, _fields *C.GoSlice_, _fieldName string, _field *C.GoInterface_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -43,7 +43,7 @@ func SKY_encoder_DeserializeField(_in *C.GoSlice_, _fields *C.GoSlice_, _fieldNa
 	return
 }
 
-// export SKY_encoder_ParseFields
+//export SKY_encoder_ParseFields
 func SKY_encoder_ParseFields(_in *C.GoSlice_, _fields *C.GoSlice_, _arg2 *C.GoMap_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {

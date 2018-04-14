@@ -15,7 +15,7 @@ import (
 */
 import "C"
 
-// export SKY_cli_AddPrivateKey
+//export SKY_cli_AddPrivateKey
 func SKY_cli_AddPrivateKey(_wlt *C.wallet__Wallet, _key string) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -30,7 +30,7 @@ func SKY_cli_AddPrivateKey(_wlt *C.wallet__Wallet, _key string) (____error_code 
 	return
 }
 
-// export SKY_cli_AddPrivateKeyToFile
+//export SKY_cli_AddPrivateKeyToFile
 func SKY_cli_AddPrivateKeyToFile(_walletFile, _key string) (____error_code uint32) {
 	____error_code = 0
 	defer func() {

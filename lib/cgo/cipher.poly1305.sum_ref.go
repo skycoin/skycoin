@@ -14,7 +14,7 @@ import (
 */
 import "C"
 
-// export SKY_poly1305_Sum
+//export SKY_poly1305_Sum
 func SKY_poly1305_Sum(_out *[]byte, _msg *C.GoSlice_, _key *[]byte) (____error_code uint32) {
 	____error_code = 0
 	defer func() {

@@ -15,7 +15,7 @@ import (
 */
 import "C"
 
-// export SKY_encrypt_Sha256Xor_Encrypt
+//export SKY_encrypt_Sha256Xor_Encrypt
 func SKY_encrypt_Sha256Xor_Encrypt(_s *C.encrypt__Sha256Xor, _data *C.GoSlice_, _password *C.GoSlice_, _arg2 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -32,7 +32,7 @@ func SKY_encrypt_Sha256Xor_Encrypt(_s *C.encrypt__Sha256Xor, _data *C.GoSlice_, 
 	return
 }
 
-// export SKY_encrypt_Sha256Xor_Decrypt
+//export SKY_encrypt_Sha256Xor_Decrypt
 func SKY_encrypt_Sha256Xor_Decrypt(_s *C.encrypt__Sha256Xor, _data *C.GoSlice_, _password *C.GoSlice_, _arg2 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {

@@ -15,7 +15,7 @@ import (
 */
 import "C"
 
-// export SKY_cli_SendFromWallet
+//export SKY_cli_SendFromWallet
 func SKY_cli_SendFromWallet(_c *C.Handle, _walletFile, _chgAddr string, _toAddrs *C.GoSlice_, _arg3 *C.GoString_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -37,7 +37,7 @@ func SKY_cli_SendFromWallet(_c *C.Handle, _walletFile, _chgAddr string, _toAddrs
 	return
 }
 
-// export SKY_cli_SendFromAddress
+//export SKY_cli_SendFromAddress
 func SKY_cli_SendFromAddress(_c *C.Handle, _addr, _walletFile, _chgAddr string, _toAddrs *C.GoSlice_, _arg3 *C.GoString_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {

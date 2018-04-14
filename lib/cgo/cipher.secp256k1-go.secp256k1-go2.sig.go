@@ -15,7 +15,7 @@ import (
 */
 import "C"
 
-// export SKY_secp256k1go_Signature_Print
+//export SKY_secp256k1go_Signature_Print
 func SKY_secp256k1go_Signature_Print(_sig *C.Number, _lab string) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -27,7 +27,7 @@ func SKY_secp256k1go_Signature_Print(_sig *C.Number, _lab string) (____error_cod
 	return
 }
 
-// export SKY_secp256k1go_Signature_Verify
+//export SKY_secp256k1go_Signature_Verify
 func SKY_secp256k1go_Signature_Verify(_sig *C.Number, _pubkey *C.secp256k1go__XY, _message *C.Number, _arg2 *bool) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -41,7 +41,7 @@ func SKY_secp256k1go_Signature_Verify(_sig *C.Number, _pubkey *C.secp256k1go__XY
 	return
 }
 
-// export SKY_secp256k1go_Signature_Recover
+//export SKY_secp256k1go_Signature_Recover
 func SKY_secp256k1go_Signature_Recover(_sig *C.Number, _pubkey *C.secp256k1go__XY, _m *C.Number, _recid int, _arg3 *bool) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -56,7 +56,7 @@ func SKY_secp256k1go_Signature_Recover(_sig *C.Number, _pubkey *C.secp256k1go__X
 	return
 }
 
-// export SKY_secp256k1go_Signature_Sign
+//export SKY_secp256k1go_Signature_Sign
 func SKY_secp256k1go_Signature_Sign(_sig *C.Number, _seckey, _message, _nonce *C.Number, _recid *int, _arg2 *int) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -72,7 +72,7 @@ func SKY_secp256k1go_Signature_Sign(_sig *C.Number, _seckey, _message, _nonce *C
 	return
 }
 
-// export SKY_secp256k1go_Signature_ParseBytes
+//export SKY_secp256k1go_Signature_ParseBytes
 func SKY_secp256k1go_Signature_ParseBytes(_sig *C.Number, _v *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -84,7 +84,7 @@ func SKY_secp256k1go_Signature_ParseBytes(_sig *C.Number, _v *C.GoSlice_) (____e
 	return
 }
 
-// export SKY_secp256k1go_Signature_Bytes
+//export SKY_secp256k1go_Signature_Bytes
 func SKY_secp256k1go_Signature_Bytes(_sig *C.Number, _arg0 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {

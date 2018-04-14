@@ -16,7 +16,7 @@ import (
 */
 import "C"
 
-// export SKY_cli_GenerateAddressesInFile
+//export SKY_cli_GenerateAddressesInFile
 func SKY_cli_GenerateAddressesInFile(_walletFile string, _num uint64, _arg2 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -32,7 +32,7 @@ func SKY_cli_GenerateAddressesInFile(_walletFile string, _num uint64, _arg2 *C.G
 	return
 }
 
-// export SKY_cli_FormatAddressesAsJSON
+//export SKY_cli_FormatAddressesAsJSON
 func SKY_cli_FormatAddressesAsJSON(_addrs *C.GoSlice_, _arg1 *C.GoString_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -47,7 +47,7 @@ func SKY_cli_FormatAddressesAsJSON(_addrs *C.GoSlice_, _arg1 *C.GoString_) (____
 	return
 }
 
-// export SKY_cli_FormatAddressesAsJoinedArray
+//export SKY_cli_FormatAddressesAsJoinedArray
 func SKY_cli_FormatAddressesAsJoinedArray(_addrs *C.GoSlice_, _arg1 *C.GoString_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -59,7 +59,7 @@ func SKY_cli_FormatAddressesAsJoinedArray(_addrs *C.GoSlice_, _arg1 *C.GoString_
 	return
 }
 
-// export SKY_cli_AddressesToStrings
+//export SKY_cli_AddressesToStrings
 func SKY_cli_AddressesToStrings(_addrs *C.GoSlice_, _arg1 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {

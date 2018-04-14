@@ -15,7 +15,7 @@ import (
 */
 import "C"
 
-// export SKY_base58_String2Hex
+//export SKY_base58_String2Hex
 func SKY_base58_String2Hex(_s string, _arg1 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -27,7 +27,7 @@ func SKY_base58_String2Hex(_s string, _arg1 *C.GoSlice_) (____error_code uint32)
 	return
 }
 
-// export SKY_base58_Base58_ToInt
+//export SKY_base58_Base58_ToInt
 func SKY_base58_Base58_ToInt(_b *C.base58__Base58, _arg0 *int) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -42,7 +42,7 @@ func SKY_base58_Base58_ToInt(_b *C.base58__Base58, _arg0 *int) (____error_code u
 	return
 }
 
-// export SKY_base58_Base58_ToHex
+//export SKY_base58_Base58_ToHex
 func SKY_base58_Base58_ToHex(_b *C.base58__Base58, _arg0 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -57,7 +57,7 @@ func SKY_base58_Base58_ToHex(_b *C.base58__Base58, _arg0 *C.GoSlice_) (____error
 	return
 }
 
-// export SKY_base58_Base58_Base582Int
+//export SKY_base58_Base58_Base582Int
 func SKY_base58_Base58_Base582Int(_b *C.base58__Base58, _arg0 *int) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -72,7 +72,7 @@ func SKY_base58_Base58_Base582Int(_b *C.base58__Base58, _arg0 *int) (____error_c
 	return
 }
 
-// export SKY_base58_Base582Hex
+//export SKY_base58_Base582Hex
 func SKY_base58_Base582Hex(_b string, _arg1 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -87,7 +87,7 @@ func SKY_base58_Base582Hex(_b string, _arg1 *C.GoSlice_) (____error_code uint32)
 	return
 }
 
-// export SKY_base58_Base58_BitHex
+//export SKY_base58_Base58_BitHex
 func SKY_base58_Base58_BitHex(_b *C.base58__Base58, _arg0 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -102,7 +102,7 @@ func SKY_base58_Base58_BitHex(_b *C.base58__Base58, _arg0 *C.GoSlice_) (____erro
 	return
 }
 
-// export SKY_base58_Int2Base58
+//export SKY_base58_Int2Base58
 func SKY_base58_Int2Base58(_val int, _arg1 *C.GoString_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -114,7 +114,7 @@ func SKY_base58_Int2Base58(_val int, _arg1 *C.GoString_) (____error_code uint32)
 	return
 }
 
-// export SKY_base58_Hex2Base58
+//export SKY_base58_Hex2Base58
 func SKY_base58_Hex2Base58(_val *C.GoSlice_, _arg1 *C.GoString_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -126,7 +126,7 @@ func SKY_base58_Hex2Base58(_val *C.GoSlice_, _arg1 *C.GoString_) (____error_code
 	return
 }
 
-// export SKY_base58_Hex2Base58String
+//export SKY_base58_Hex2Base58String
 func SKY_base58_Hex2Base58String(_val *C.GoSlice_, _arg1 *C.GoString_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -138,7 +138,7 @@ func SKY_base58_Hex2Base58String(_val *C.GoSlice_, _arg1 *C.GoString_) (____erro
 	return
 }
 
-// export SKY_base58_Hex2Base58Str
+//export SKY_base58_Hex2Base58Str
 func SKY_base58_Hex2Base58Str(_val *C.GoSlice_, _arg1 *C.GoString_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {

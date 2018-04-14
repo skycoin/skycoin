@@ -14,7 +14,7 @@ import (
 */
 import "C"
 
-// export SKY_secp256k1go_Number_Print
+//export SKY_secp256k1go_Number_Print
 func SKY_secp256k1go_Number_Print(_num *C.Number, _label string) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -26,7 +26,7 @@ func SKY_secp256k1go_Number_Print(_num *C.Number, _label string) (____error_code
 	return
 }
 
-// export SKY_secp256k1go_Number_SetHex
+//export SKY_secp256k1go_Number_SetHex
 func SKY_secp256k1go_Number_SetHex(_num *C.Number, _s string) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -38,7 +38,7 @@ func SKY_secp256k1go_Number_SetHex(_num *C.Number, _s string) (____error_code ui
 	return
 }
 
-// export SKY_secp256k1go_Number_IsOdd
+//export SKY_secp256k1go_Number_IsOdd
 func SKY_secp256k1go_Number_IsOdd(_num *C.Number, _arg0 *bool) (____error_code uint32) {
 	____error_code = 0
 	defer func() {

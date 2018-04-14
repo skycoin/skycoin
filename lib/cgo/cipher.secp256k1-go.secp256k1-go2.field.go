@@ -14,7 +14,7 @@ import (
 */
 import "C"
 
-// export SKY_secp256k1go_Field_String
+//export SKY_secp256k1go_Field_String
 func SKY_secp256k1go_Field_String(_fd *C.secp256k1go__Field, _arg0 *C.GoString_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -26,7 +26,7 @@ func SKY_secp256k1go_Field_String(_fd *C.secp256k1go__Field, _arg0 *C.GoString_)
 	return
 }
 
-// export SKY_secp256k1go_Field_Print
+//export SKY_secp256k1go_Field_Print
 func SKY_secp256k1go_Field_Print(_fd *C.secp256k1go__Field, _lab string) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -38,7 +38,7 @@ func SKY_secp256k1go_Field_Print(_fd *C.secp256k1go__Field, _lab string) (____er
 	return
 }
 
-// export SKY_secp256k1go_Field_SetB32
+//export SKY_secp256k1go_Field_SetB32
 func SKY_secp256k1go_Field_SetB32(_fd *C.secp256k1go__Field, _a *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -50,7 +50,7 @@ func SKY_secp256k1go_Field_SetB32(_fd *C.secp256k1go__Field, _a *C.GoSlice_) (__
 	return
 }
 
-// export SKY_secp256k1go_Field_SetBytes
+//export SKY_secp256k1go_Field_SetBytes
 func SKY_secp256k1go_Field_SetBytes(_fd *C.secp256k1go__Field, _a *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -62,7 +62,7 @@ func SKY_secp256k1go_Field_SetBytes(_fd *C.secp256k1go__Field, _a *C.GoSlice_) (
 	return
 }
 
-// export SKY_secp256k1go_Field_SetHex
+//export SKY_secp256k1go_Field_SetHex
 func SKY_secp256k1go_Field_SetHex(_fd *C.secp256k1go__Field, _s string) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -74,7 +74,7 @@ func SKY_secp256k1go_Field_SetHex(_fd *C.secp256k1go__Field, _s string) (____err
 	return
 }
 
-// export SKY_secp256k1go_Field_IsOdd
+//export SKY_secp256k1go_Field_IsOdd
 func SKY_secp256k1go_Field_IsOdd(_fd *C.secp256k1go__Field, _arg0 *bool) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -86,7 +86,7 @@ func SKY_secp256k1go_Field_IsOdd(_fd *C.secp256k1go__Field, _arg0 *bool) (____er
 	return
 }
 
-// export SKY_secp256k1go_Field_IsZero
+//export SKY_secp256k1go_Field_IsZero
 func SKY_secp256k1go_Field_IsZero(_fd *C.secp256k1go__Field, _arg0 *bool) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -98,7 +98,7 @@ func SKY_secp256k1go_Field_IsZero(_fd *C.secp256k1go__Field, _arg0 *bool) (____e
 	return
 }
 
-// export SKY_secp256k1go_Field_SetInt
+//export SKY_secp256k1go_Field_SetInt
 func SKY_secp256k1go_Field_SetInt(_fd *C.secp256k1go__Field, _a uint32) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -110,7 +110,7 @@ func SKY_secp256k1go_Field_SetInt(_fd *C.secp256k1go__Field, _a uint32) (____err
 	return
 }
 
-// export SKY_secp256k1go_Field_Normalize
+//export SKY_secp256k1go_Field_Normalize
 func SKY_secp256k1go_Field_Normalize(_fd *C.secp256k1go__Field) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -121,7 +121,7 @@ func SKY_secp256k1go_Field_Normalize(_fd *C.secp256k1go__Field) (____error_code 
 	return
 }
 
-// export SKY_secp256k1go_Field_GetB32
+//export SKY_secp256k1go_Field_GetB32
 func SKY_secp256k1go_Field_GetB32(_fd *C.secp256k1go__Field, _r *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -133,7 +133,7 @@ func SKY_secp256k1go_Field_GetB32(_fd *C.secp256k1go__Field, _r *C.GoSlice_) (__
 	return
 }
 
-// export SKY_secp256k1go_Field_Equals
+//export SKY_secp256k1go_Field_Equals
 func SKY_secp256k1go_Field_Equals(_fd *C.secp256k1go__Field, _b *C.secp256k1go__Field, _arg1 *bool) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -146,7 +146,7 @@ func SKY_secp256k1go_Field_Equals(_fd *C.secp256k1go__Field, _b *C.secp256k1go__
 	return
 }
 
-// export SKY_secp256k1go_Field_SetAdd
+//export SKY_secp256k1go_Field_SetAdd
 func SKY_secp256k1go_Field_SetAdd(_fd *C.secp256k1go__Field, _a *C.secp256k1go__Field) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -158,7 +158,7 @@ func SKY_secp256k1go_Field_SetAdd(_fd *C.secp256k1go__Field, _a *C.secp256k1go__
 	return
 }
 
-// export SKY_secp256k1go_Field_MulInt
+//export SKY_secp256k1go_Field_MulInt
 func SKY_secp256k1go_Field_MulInt(_fd *C.secp256k1go__Field, _a uint32) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -170,7 +170,7 @@ func SKY_secp256k1go_Field_MulInt(_fd *C.secp256k1go__Field, _a uint32) (____err
 	return
 }
 
-// export SKY_secp256k1go_Field_Negate
+//export SKY_secp256k1go_Field_Negate
 func SKY_secp256k1go_Field_Negate(_fd *C.secp256k1go__Field, _r *C.secp256k1go__Field, _m uint32) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -183,7 +183,7 @@ func SKY_secp256k1go_Field_Negate(_fd *C.secp256k1go__Field, _r *C.secp256k1go__
 	return
 }
 
-// export SKY_secp256k1go_Field_Inv
+//export SKY_secp256k1go_Field_Inv
 func SKY_secp256k1go_Field_Inv(_fd *C.secp256k1go__Field, _r *C.secp256k1go__Field) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -195,7 +195,7 @@ func SKY_secp256k1go_Field_Inv(_fd *C.secp256k1go__Field, _r *C.secp256k1go__Fie
 	return
 }
 
-// export SKY_secp256k1go_Field_Sqrt
+//export SKY_secp256k1go_Field_Sqrt
 func SKY_secp256k1go_Field_Sqrt(_fd *C.secp256k1go__Field, _r *C.secp256k1go__Field) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -207,7 +207,7 @@ func SKY_secp256k1go_Field_Sqrt(_fd *C.secp256k1go__Field, _r *C.secp256k1go__Fi
 	return
 }
 
-// export SKY_secp256k1go_Field_InvVar
+//export SKY_secp256k1go_Field_InvVar
 func SKY_secp256k1go_Field_InvVar(_fd *C.secp256k1go__Field, _r *C.secp256k1go__Field) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -219,7 +219,7 @@ func SKY_secp256k1go_Field_InvVar(_fd *C.secp256k1go__Field, _r *C.secp256k1go__
 	return
 }
 
-// export SKY_secp256k1go_Field_Mul
+//export SKY_secp256k1go_Field_Mul
 func SKY_secp256k1go_Field_Mul(_fd *C.secp256k1go__Field, _r, _b *C.secp256k1go__Field) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
@@ -232,7 +232,7 @@ func SKY_secp256k1go_Field_Mul(_fd *C.secp256k1go__Field, _r, _b *C.secp256k1go_
 	return
 }
 
-// export SKY_secp256k1go_Field_Sqr
+//export SKY_secp256k1go_Field_Sqr
 func SKY_secp256k1go_Field_Sqr(_fd *C.secp256k1go__Field, _r *C.secp256k1go__Field) (____error_code uint32) {
 	____error_code = 0
 	defer func() {

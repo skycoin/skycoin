@@ -19,6 +19,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/util/file"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 const (
@@ -305,6 +306,19 @@ func printJSON(obj interface{}) error {
 	fmt.Println(string(d))
 
 	return nil
+}
+
+func getPassword(c *gcli.Context, isWltEncrypted bool) ([]byte, error) {
+	password := []byte(c.String("p"))
+	if !isWltEncrypted {
+		return nil, wallet.ErrWalletNotEncrypted
+	}
+
+	if len(password) == 0 {
+		return readPasswordFromTerminal(c)
+	}
+
+	return password, nil
 }
 
 // readPasswordFromTerminal promotes user to enter password and read it.

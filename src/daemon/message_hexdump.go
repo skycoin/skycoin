@@ -185,3 +185,61 @@ func (mag *MessagesAnnotationsGenerator) GenerateAnnotations() []util.Annotation
 
 	return annotations
 }
+
+type MessagesAnnotationsIterator struct {
+	Message gnet.Message
+	LengthCalled bool
+	PrefixCalled bool
+	CurrentField int
+	MaxField int
+}
+
+func (mai *MessagesAnnotationsIterator) NewMessagesAnnotationsIterator(message gnet.Message){
+	mai.Message = message
+	mai.LengthCalled = false
+	mai.PrefixCalled = false
+	mai.CurrentField = 0
+	mai.MaxField = reflect.Indirect(reflect.ValueOf(mai.Message)).NumField()
+}
+
+func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
+	if !mai.LengthCalled {
+		return util.Annotation{Size:4,Name:"Length"},true
+	}
+	if !mai.PrefixCalled {
+		return util.Annotation{Size:4,Name:"Prefix"},true
+	}
+	if mai.CurrentField == mai.MaxField {
+		return util.Annotation{},false
+	}
+
+	var i = mai.CurrentField
+	mai.CurrentField++
+	var v = reflect.Indirect(reflect.ValueOf(mai.Message))
+	t := v.Type()
+	v_f := v.Field(i)
+	f := t.Field(i)
+	if f.Tag.Get("enc") != "-" {
+		if v_f.CanSet() || f.Name != "_" {
+			if v.Field(i).Kind() == reflect.Slice {
+				//printLHexDumpWithFormat(offset, f.Name+" length", encoder.Serialize(v.Field(i).Slice(0, v.Field(i).Len()).Interface())[0:4])
+				return util.Annotation{Size:4,Name:f.Name+" length"},true
+				//offset += len(encoder.Serialize(v.Field(i).Slice(0, v.Field(i).Len()).Interface())[0:4])
+
+				for j := 0; j < v.Field(i).Len(); j++ {
+					//printLHexDumpWithFormat(offset, f.Name+"#"+strconv.Itoa(j), encoder.Serialize(v.Field(i).Slice(j, j+1).Interface()))
+					return util.Annotation{Size:len(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())[4:]),Name:f.Name+"#"+strconv.Itoa(j)}, true
+					//offset += len(encoder.Serialize(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())))
+				}
+			} else {
+				//printLHexDumpWithFormat(offset, f.Name, encoder.Serialize(v.Field(i).Interface()))
+				return util.Annotation{Size:len(encoder.Serialize(v.Field(i).Interface())),Name:f.Name}, true
+				//offset += len(encoder.Serialize(v.Field(i).Interface()))
+			}
+		} else {
+			//don't write anything
+		}
+	}
+
+	return util.Annotation{},false
+}

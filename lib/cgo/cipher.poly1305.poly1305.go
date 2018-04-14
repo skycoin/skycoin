@@ -13,14 +13,18 @@ import (
 */
 import "C"
 
-// export SKY_poly1305_Verify
-func SKY_poly1305_Verify(_mac *[16]byte, _m []byte, _key *[32]byte, _arg3 *bool) (____error_code uint32) {
+import "unsafe"
+
+//export SKY_poly1305_Verify
+func SKY_poly1305_Verify(__mac *C.poly1305__Mac, __m []byte, __key *C.poly1305__Key, _arg3 *bool) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
 	//TODO: stdevEclipse Check Pointer casting
-	__arg3 := poly1305.Verify(_mac, _m, _key)
+	_mac := (*[16]byte)(unsafe.Pointer(__mac))
+	_key := (*[32]byte)(unsafe.Pointer(__key))
+	__arg3 := poly1305.Verify(_mac, __m, _key)
 	*_arg3 = __arg3
 	return
 }

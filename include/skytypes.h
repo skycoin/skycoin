@@ -143,6 +143,8 @@ typedef struct {
 	GoSlice_ Entries;   ///< Entries field stores the address entries that are deterministically generated from seed.
 } Wallet;
 
+typedef GoUint8_  poly1305__Mac[16];
+typedef GoUint8_  poly1305__Key[32];
 
 #endif
 

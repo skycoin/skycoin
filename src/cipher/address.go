@@ -116,6 +116,11 @@ func addressFromBytes(b []byte) (addr Address, err error) {
 	return a, nil
 }
 
+// Empty returns true if the address is it's empty value
+func (addr Address) Empty() bool {
+	return addr == Address{}
+}
+
 // Bytes return address as a byte slice
 func (addr *Address) Bytes() []byte {
 	b := make([]byte, 20+1+4)

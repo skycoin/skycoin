@@ -5,14 +5,9 @@ import (
 	"os"
 	"sync"
 
-	"errors"
-
-	"github.com/shopspring/decimal"
-
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/go-bip39"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 )
 
@@ -395,8 +390,8 @@ func (serv *Service) ReloadWallets() error {
 	return nil
 }
 
-// CreateAndSignTransaction creates and sign transaction from wallet
-// Set password as nil if the wallet is not encrypted, otherwise the password must be provided
+// CreateAndSignTransaction creates and signs a transaction from wallet.
+// Set the password as nil if the wallet is not encrypted, otherwise the password must be provided
 func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, vld Validator, unspent blockdb.UnspentGetter,
 	headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
 	serv.RLock()
@@ -429,142 +424,55 @@ func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, vld
 	return tx, nil
 }
 
-func (serv *Service) CreateAndSignAdvancedTransaction(advancedSpend AdvancedSpend, vld Validator,
+// CreateAndSignTransactionAdvanced creates and signs a transaction based upon CreateTransactionParams.
+// Set the password as nil if the wallet is not encrypted, otherwise the password must be provided
+func (serv *Service) CreateAndSignTransactionAdvanced(params CreateTransactionParams, vld Validator,
 	unspent blockdb.UnspentGetter, headTime uint64) (*coin.Transaction, error) {
 	serv.RLock()
 	defer serv.RUnlock()
 
-	// make a list of all addresses
-	addrList := make([]cipher.Address, len(advancedSpend.Entries))
-	for _, entry := range advancedSpend.Entries {
-		addrList = append(addrList, entry.Address)
+	if !serv.enableWalletAPI {
+		return nil, ErrWalletAPIDisabled
 	}
 
-	ok, err := vld.HasUnconfirmedSpendTx(addrList)
-	if err != nil {
-		return nil, fmt.Errorf("checking unconfirmed spending failed: %v", err)
-	}
-	if ok {
-		return nil, ErrSpendingUnconfirmed
+	if err := params.Validate(); err != nil {
+		return nil, err
 	}
 
-	txn := &coin.Transaction{}
-	auxs := unspent.GetUnspentsOfAddrs(addrList)
-
-	// Determine which unspents to spend.
-	uxa := auxs.Flatten()
-	uxb, err := NewUxBalances(headTime, uxa)
+	w, err := serv.getWallet(params.Wallet.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	// calculate total coins to send
-	var totalOutCoins uint64
-	for _, to := range advancedSpend.To {
-		totalOutCoins += to.Coins
-	}
-
-	// Use the MinimizeUxOuts strategy, to use least possible uxouts
-	// this will allow more frequent spending
-	// we don't need to check whether we have sufficient balance beforehand as ChooseSpends already checks that
-	spends, err := ChooseSpendsMinimizeUxOuts(uxb, totalOutCoins)
-	if err != nil {
-		return nil, err
-	}
-
-	// calculate total coins in spends
-	var totalInCoins uint64
-	toSign := make([]cipher.SecKey, len(spends))
-	for i, spend := range spends {
-		totalInCoins += spend.Coins
-		toSign[i] = advancedSpend.Entries[spend.Address].Secret
-		txn.PushInput(spend.Hash)
-	}
-
-	// calculate coinhour distribution
-	var totalInputHours uint64
-	var totalAddrHours uint64
-	for _, spend := range spends {
-		totalInputHours += spend.Hours
-	}
-
-	feeHours := fee.RequiredFee(totalInputHours)
-	if feeHours == 0 {
-		return nil, fee.ErrTxnNoFee
-	}
-	remainingHours := totalInputHours - feeHours
-
-	// create outputs
-	var changeHours uint64
-	var changeCoins uint64
-	nAddrs := uint64(len(advancedSpend.To))
-	switch advancedSpend.HoursSelection.Type {
-	case "manual":
-		for _, out := range advancedSpend.To {
-			txn.Out = append(txn.Out, out)
-			totalAddrHours += out.Hours
+	// Check if the wallet needs a password
+	if w.IsEncrypted() {
+		if len(params.Wallet.Password) == 0 {
+			return nil, ErrMissingPassword
 		}
-
-		// make sure we have enough coinhours
-		if totalAddrHours > remainingHours {
-			return nil, fee.ErrTxnInsufficientCoinHours
+	} else {
+		if len(params.Wallet.Password) != 0 {
+			return nil, ErrWalletNotEncrypted
 		}
-
-	case "auto":
-		switch advancedSpend.HoursSelection.Mode {
-		case "split_even":
-
-			addrHours := make([]uint64, nAddrs)
-			// multiply remaining hours after fee burn with share factor
-			totalAddrHours = uint64(advancedSpend.HoursSelection.ShareFactor.Mul(decimal.New(int64(remainingHours), 64)).IntPart())
-			// split addrhours evenly among all hours
-			perAddrHour := totalAddrHours / nAddrs
-			for i := range addrHours {
-				addrHours[i] = perAddrHour
-			}
-
-			// give any remaining hours due to rounding to addrs starting from the top
-			extraAddrHours := totalAddrHours - (perAddrHour * nAddrs)
-			i := 0
-			for extraAddrHours > 0 {
-				addrHours[i] = addrHours[i] + 1
-				i++
-				extraAddrHours--
-			}
-
-			for i, out := range advancedSpend.To {
-				out.Hours = addrHours[i]
-				txn.Out = append(txn.Out, out)
-			}
-
-		case "match_coins":
-			for _, out := range advancedSpend.To {
-				spendCoinsAmt := out.Coins / 1e6
-				if spendCoinsAmt == 0 {
-					spendCoinsAmt = 1
-				}
-
-				// hours sent to addresses = coins spent
-				out.Hours = spendCoinsAmt
-				totalAddrHours += out.Hours
-
-				txn.Out = append(txn.Out, out)
-			}
-		}
-
-	default:
-		return nil, errors.New(fmt.Sprintf("invalid hours selection mode: %v", advancedSpend.HoursSelection.Type))
 	}
 
-	// create change output
-	changeHours = remainingHours - totalAddrHours
-	changeCoins = totalInCoins - totalOutCoins
-	txn.PushOutput(advancedSpend.ChangeAddress, changeCoins, changeHours)
+	var tx *coin.Transaction
+	f := func(wlt *Wallet) error {
+		var err error
+		tx, err = wlt.CreateAndSignTransactionAdvanced(params, vld, unspent, headTime)
+		return err
+	}
 
-	txn.SignInputs(toSign)
-	txn.UpdateHeader()
+	if w.IsEncrypted() {
+		if err := w.guardView(params.Wallet.Password, f); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := f(w); err != nil {
+			return nil, err
+		}
+	}
+	return tx, nil
 
-	return txn, nil
 }
 
 // UpdateWalletLabel updates the wallet label

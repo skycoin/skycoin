@@ -437,19 +437,21 @@ func NewGenesisReadableTransaction(t *Transaction) (*ReadableTransaction, error)
 	for i := range t.Txn.In {
 		in[i] = t.Txn.In[i].Hex()
 	}
+
 	out := make([]ReadableTransactionOutput, len(t.Txn.Out))
 	for i := range t.Txn.Out {
 		o, err := NewReadableTransactionOutput(&t.Txn.Out[i], txid)
 		if err != nil {
-			return &ReadableTransaction{}, err
+			return nil, err
 		}
 
 		out[i] = *o
 	}
+
 	return &ReadableTransaction{
 		Length:    t.Txn.Length,
 		Type:      t.Txn.Type,
-		Hash:      t.Txn.Hash().Hex(),
+		Hash:      t.Txn.TxIDHex(),
 		InnerHash: t.Txn.InnerHash.Hex(),
 		Timestamp: t.Time,
 
@@ -471,6 +473,7 @@ func NewReadableTransaction(t *Transaction) (*ReadableTransaction, error) {
 	for i := range t.Txn.In {
 		in[i] = t.Txn.In[i].Hex()
 	}
+
 	out := make([]ReadableTransactionOutput, len(t.Txn.Out))
 	for i := range t.Txn.Out {
 		o, err := NewReadableTransactionOutput(&t.Txn.Out[i], txid)
@@ -480,10 +483,11 @@ func NewReadableTransaction(t *Transaction) (*ReadableTransaction, error) {
 
 		out[i] = *o
 	}
+
 	return &ReadableTransaction{
 		Length:    t.Txn.Length,
 		Type:      t.Txn.Type,
-		Hash:      t.Txn.Hash().Hex(),
+		Hash:      t.Txn.TxIDHex(),
 		InnerHash: t.Txn.InnerHash.Hex(),
 		Timestamp: t.Time,
 
@@ -628,6 +632,7 @@ type TransactionJSON struct {
 }
 
 // TransactionToJSON convert transaction to json string
+// TODO -- remove in favor of ReadableTransaction?
 func TransactionToJSON(tx coin.Transaction) (string, error) {
 	var o TransactionJSON
 

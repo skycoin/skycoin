@@ -57,6 +57,7 @@ var endpoints = []string{
 	"/wallet/newAddress",
 	"/wallet/balance",
 	"/wallet/spend",
+	"/wallet/transaction",
 	"/wallet/transactions",
 	"/wallet/update",
 	"/wallets",

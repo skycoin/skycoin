@@ -537,34 +537,28 @@ func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest ciphe
 	return tx, err
 }
 
-func (gw *Gateway) AdvancedSpend(advancedSpend wallet.AdvancedSpend) (*coin.Transaction, error) {
-	if gw.Config.DisableWalletAPI {
+// CreateTransaction creates a transaction based upon parameters in wallet.CreateTransactionParams
+func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*coin.Transaction, error) {
+	if !gw.Config.EnableWalletAPI {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
 	var tx *coin.Transaction
 	var err error
 
-	gw.strand("AdvancedSpend", func() {
+	gw.strand("CreateTransaction", func() {
 		// create spend validator
 		unspent := gw.v.Blockchain.Unspent()
 		sv := newSpendValidator(gw.v.Unconfirmed, unspent)
 
 		// create and sign transaction
-		tx, err = gw.vrpc.CreateAndSignAdvancedTransaction(advancedSpend, sv, unspent, gw.v.Blockchain.Time())
+		tx, err = gw.vrpc.CreateAndSignTransactionAdvanced(params, sv, unspent, gw.v.Blockchain.Time())
 		if err != nil {
 			logger.Errorf("Create transaction failed: %v", err)
 			return
 		}
 
 		return
-		// Inject transaction
-		//err = gw.d.Visor.InjectBroadcastTransaction(*tx, gw.d.Pool)
-		//if err != nil {
-		//	logger.Errorf("Inject transaction failed: %v", err)
-		//	return
-		//}
-
 	})
 
 	return tx, err

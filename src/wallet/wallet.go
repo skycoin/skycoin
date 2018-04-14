@@ -20,9 +20,23 @@ import (
 
 	"github.com/shopspring/decimal"
 
+	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/logging"
 )
+
+// Error wraps wallet related errors
+type Error struct {
+	error
+}
+
+// NewError creates an Error
+func NewError(err error) error {
+	if err == nil {
+		return nil
+	}
+	return Error{err}
+}
 
 var (
 	// Version represents the current wallet version
@@ -31,37 +45,43 @@ var (
 	logger = logging.MustGetLogger("wallet")
 
 	// ErrInsufficientBalance is returned if a wallet does not have enough balance for a spend
-	ErrInsufficientBalance = errors.New("balance is not sufficient")
+	ErrInsufficientBalance = NewError(errors.New("balance is not sufficient"))
+	// ErrInsufficientHours is returned if a wallet does not have enough hours for a spend with requested hours
+	ErrInsufficientHours = NewError(errors.New("hours are not sufficient"))
 	// ErrZeroSpend is returned if a transaction is trying to spend 0 coins
-	ErrZeroSpend = errors.New("zero spend amount")
+	ErrZeroSpend = NewError(errors.New("zero spend amount"))
 	// ErrSpendingUnconfirmed is returned if caller attempts to spend unconfirmed outputs
-	ErrSpendingUnconfirmed = errors.New("please spend after your pending transaction is confirmed")
+	ErrSpendingUnconfirmed = NewError(errors.New("please spend after your pending transaction is confirmed"))
 	// ErrInvalidEncryptedField is returned if a wallet's Meta.encrypted value is invalid.
-	ErrInvalidEncryptedField = errors.New(`encrypted field value is not valid, must be "true", "false" or ""`)
+	ErrInvalidEncryptedField = NewError(errors.New(`encrypted field value is not valid, must be "true", "false" or ""`))
 	// ErrWalletEncrypted is returned when trying to generate addresses or sign tx in encrypted wallet
-	ErrWalletEncrypted = errors.New("wallet is encrypted")
+	ErrWalletEncrypted = NewError(errors.New("wallet is encrypted"))
 	// ErrWalletNotEncrypted is returned when trying to decrypt unencrypted wallet
-	ErrWalletNotEncrypted = errors.New("wallet is not encrypted")
+	ErrWalletNotEncrypted = NewError(errors.New("wallet is not encrypted"))
 	// ErrMissingPassword is returned when trying to create wallet with encryption, but password is not provided.
-	ErrMissingPassword = errors.New("missing password")
+	ErrMissingPassword = NewError(errors.New("missing password"))
 	// ErrMissingEncrypt is returned when trying to create wallet with password, but options.Encrypt is not set.
-	ErrMissingEncrypt = errors.New("missing encrypt")
+	ErrMissingEncrypt = NewError(errors.New("missing encrypt"))
 	// ErrInvalidPassword is returned if decrypts secrets failed
-	ErrInvalidPassword = errors.New("invalid password")
+	ErrInvalidPassword = NewError(errors.New("invalid password"))
 	// ErrMissingSeed is returned when trying to create wallet without a seed
-	ErrMissingSeed = errors.New("missing seed")
+	ErrMissingSeed = NewError(errors.New("missing seed"))
 	// ErrMissingAuthenticated is returned if try to decrypt a scrypt chacha20poly1305 encrypted wallet, and find no authenticated metadata.
-	ErrMissingAuthenticated = errors.New("missing authenticated metadata")
+	ErrMissingAuthenticated = NewError(errors.New("missing authenticated metadata"))
 	// ErrWrongCryptoType is returned when decrypting wallet with wrong crypto method
-	ErrWrongCryptoType = errors.New("wrong crypto type")
+	ErrWrongCryptoType = NewError(errors.New("wrong crypto type"))
 	// ErrWalletNotExist is returned if a wallet does not exist
-	ErrWalletNotExist = errors.New("wallet doesn't exist")
+	ErrWalletNotExist = NewError(errors.New("wallet doesn't exist"))
 	// ErrWalletAPIDisabled is returned when trying to do wallet actions while the EnableWalletAPI option is false
-	ErrWalletAPIDisabled = errors.New("wallet api is disabled")
+	ErrWalletAPIDisabled = NewError(errors.New("wallet api is disabled"))
 	// ErrSeedAPIDisabled is returned when trying to get seed of wallet while the EnableWalletAPI or EnableSeedAPI is false
-	ErrSeedAPIDisabled = errors.New("wallet seed api is disabled")
+	ErrSeedAPIDisabled = NewError(errors.New("wallet seed api is disabled"))
 	// ErrWalletNameConflict represents the wallet name conflict error
-	ErrWalletNameConflict = errors.New("wallet name would conflict with existing wallet, renaming")
+	ErrWalletNameConflict = NewError(errors.New("wallet name would conflict with existing wallet, renaming"))
+	// ErrInvalidHoursSelectionMode for invalid HoursSelection mode values
+	ErrInvalidHoursSelectionMode = NewError(errors.New("invalid hours selection mode"))
+	// ErrUnknownAddress is returned if an address is not found in a wallet
+	ErrUnknownAddress = NewError(errors.New("Address not found in wallet"))
 )
 
 const (
@@ -105,18 +125,114 @@ type Options struct {
 	CryptoType CryptoType // wallet encryption type, scrypt-chacha20poly1305 or sha256-xor.
 }
 
+const (
+	// HoursSelectionTypeManual is used to specify manual hours selection in advanced spend
+	HoursSelectionTypeManual = "manual"
+	// HoursSelectionTypeAuto is used to specify automatic hours selection in advanced spend
+	HoursSelectionTypeAuto = "auto"
+
+	// HoursSelectionModeSplitEven will distribute coin hours equally amongst destinations
+	HoursSelectionModeSplitEven = "split_even"
+	// HoursSelectionModeMatchCoins will automatically send coin hours less than or equal to the amount of coins being sent, per destination
+	HoursSelectionModeMatchCoins = "match_coins"
+)
+
+// HoursSelection defines options for hours distribution
 type HoursSelection struct {
-	Type        string           `json:"type"`
-	Mode        string           `json:"mode"`
-	ShareFactor *decimal.Decimal `json:"share_factor"`
+	Type        string
+	Mode        string
+	ShareFactor *decimal.Decimal
 }
 
-type AdvancedSpend struct {
+// CreateTransactionWalletParams defines a wallet to spend from and optionally which addresses in the wallet
+type CreateTransactionWalletParams struct {
+	ID        string
+	Addresses []cipher.Address
+	Password  []byte
+}
+
+// CreateTransactionParams defines control parameters for transaction construction
+type CreateTransactionParams struct {
 	HoursSelection HoursSelection
-	//Outputs        []string
-	Entries       map[cipher.Address]Entry
-	ChangeAddress cipher.Address
-	To            []coin.TransactionOutput
+	Wallet         CreateTransactionWalletParams
+	ChangeAddress  cipher.Address
+	To             []coin.TransactionOutput
+}
+
+// Validate validates CreateTransactionParams
+func (c CreateTransactionParams) Validate() error {
+	if c.ChangeAddress.Empty() {
+		return NewError(errors.New("ChangeAddress is required"))
+	}
+
+	if len(c.To) == 0 {
+		return NewError(errors.New("To is required"))
+	}
+
+	for _, to := range c.To {
+		if to.Coins == 0 {
+			return NewError(errors.New("To.Coins must not be zero"))
+		}
+
+		if to.Address.Empty() {
+			return NewError(errors.New("To.Address must not be empty"))
+		}
+	}
+
+	if c.Wallet.ID == "" {
+		return NewError(errors.New("Wallet.ID is required"))
+	}
+
+	for _, a := range c.Wallet.Addresses {
+		if a.Empty() {
+			return NewError(errors.New("Wallet.Addresses must not contain an empty value"))
+		}
+	}
+
+	switch c.HoursSelection.Type {
+	case HoursSelectionTypeAuto:
+		for _, to := range c.To {
+			if to.Hours != 0 {
+				return NewError(errors.New("To.Hours must be zero for auto type hours selection"))
+			}
+		}
+
+		if c.HoursSelection.Mode == "" {
+			return NewError(errors.New("HoursSelection.Mode is required for auto type hours selection"))
+		}
+
+		switch c.HoursSelection.Mode {
+		case HoursSelectionModeMatchCoins, HoursSelectionModeSplitEven:
+		default:
+			return NewError(errors.New("Invalid HoursSelection.Mode"))
+		}
+
+	case HoursSelectionTypeManual:
+		if c.HoursSelection.Mode != "" {
+			return NewError(errors.New("HoursSelection.Mode cannot be used for manual type hours selection"))
+		}
+
+	default:
+		return NewError(errors.New("Invalid HoursSelection.Type"))
+	}
+
+	if c.HoursSelection.ShareFactor == nil {
+		if c.HoursSelection.Mode == HoursSelectionModeSplitEven {
+			return NewError(errors.New("HoursSelection.ShareFactor must be set for split_even mode"))
+		}
+	} else {
+		if c.HoursSelection.Mode != HoursSelectionModeSplitEven {
+			return NewError(errors.New("HoursSelection.ShareFactor can only be used for split_even mode"))
+		}
+
+		zero := decimal.New(0, 0)
+		one := decimal.New(1, 0)
+		if c.HoursSelection.ShareFactor.LessThan(zero) || c.HoursSelection.ShareFactor.GreaterThan(one) {
+			return NewError(errors.New("HoursSelection.ShareFactor must be >= 0 and <= 1"))
+		}
+	}
+
+	return nil
 }
 
 // newWalletFilename check for collisions and retry if failure
@@ -806,7 +922,7 @@ func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspent
 		return nil, err
 	}
 
-	spends, err := ChooseSpendsMaximizeUxOuts(uxb, coins)
+	spends, err := ChooseSpendsMaximizeUxOuts(uxb, coins, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -817,7 +933,7 @@ func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspent
 	for i, au := range spends {
 		entry, exists := w.GetEntry(au.Address)
 		if !exists {
-			return nil, fmt.Errorf("address:%v does not exist in wallet:%v", au.Address, w.Filename())
+			return nil, NewError(fmt.Errorf("address:%v does not exist in wallet: %v", au.Address, w.Filename()))
 		}
 
 		txn.PushInput(au.Hash)
@@ -858,6 +974,249 @@ func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspent
 	txn.UpdateHeader()
 
 	return &txn, nil
+}
+
+// CreateAndSignTransactionAdvanced creates and signs a transaction based upon CreateTransactionParams.
+// Set the password as nil if the wallet is not encrypted, otherwise the password must be provided
+func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams, vld Validator,
+	unspent blockdb.UnspentGetter, headTime uint64) (*coin.Transaction, error) {
+	if err := params.Validate(); err != nil {
+		return nil, err
+	}
+
+	if params.Wallet.ID != w.Filename() {
+		return nil, NewError(errors.New("params.Wallet.ID does not match wallet"))
+	}
+
+	// Check if the wallet needs a password
+	if w.IsEncrypted() {
+		if len(params.Wallet.Password) == 0 {
+			return nil, ErrMissingPassword
+		}
+	} else {
+		if len(params.Wallet.Password) != 0 {
+			return nil, ErrWalletNotEncrypted
+		}
+	}
+
+	addrList := make([]cipher.Address, 0)
+	entriesMap := make(map[cipher.Address]Entry)
+	if len(params.Wallet.Addresses) == 0 {
+		for _, e := range w.Entries {
+			addrList = append(addrList, e.Address)
+			entriesMap[e.Address] = e
+		}
+	} else {
+		for _, a := range params.Wallet.Addresses {
+			e, ok := w.GetEntry(a)
+			if !ok {
+				return nil, ErrUnknownAddress
+			}
+			addrList = append(addrList, e.Address)
+			entriesMap[e.Address] = e
+		}
+	}
+
+	ok, err := vld.HasUnconfirmedSpendTx(addrList)
+	if err != nil {
+		return nil, fmt.Errorf("checking unconfirmed spending failed: %v", err)
+	}
+	if ok {
+		return nil, ErrSpendingUnconfirmed
+	}
+
+	txn := &coin.Transaction{}
+	auxs := unspent.GetUnspentsOfAddrs(addrList)
+
+	// Determine which unspents to spend
+	uxa := auxs.Flatten()
+	uxb, err := NewUxBalances(headTime, uxa)
+	if err != nil {
+		return nil, err
+	}
+
+	// calculate total coins and minimum hours to send
+	var totalOutCoins uint64
+	var requestedHours uint64
+	for _, to := range params.To {
+		totalOutCoins, err = coin.AddUint64(totalOutCoins, to.Coins)
+		if err != nil {
+			return nil, NewError(fmt.Errorf("total output coins error: %v", err))
+		}
+
+		requestedHours, err = coin.AddUint64(requestedHours, to.Hours)
+		if err != nil {
+			return nil, NewError(fmt.Errorf("requested hours error: %v", err))
+		}
+	}
+
+	// Use the MinimizeUxOuts strategy, to use least possible uxouts
+	// this will allow more frequent spending
+	// we don't need to check whether we have sufficient balance beforehand as ChooseSpends already checks that
+	spends, err := ChooseSpendsMinimizeUxOuts(uxb, totalOutCoins, requestedHours)
+	if err != nil {
+		return nil, err
+	}
+
+	// calculate total coins and hours in spends
+	var totalInputCoins uint64
+	var totalInputHours uint64
+	toSign := make([]cipher.SecKey, len(spends))
+	for i, spend := range spends {
+		totalInputCoins, err = coin.AddUint64(totalInputCoins, spend.Coins)
+		if err != nil {
+			return nil, err
+		}
+
+		totalInputHours, err = coin.AddUint64(totalInputHours, spend.Hours)
+		if err != nil {
+			return nil, err
+		}
+
+		toSign[i] = entriesMap[spend.Address].Secret
+		txn.PushInput(spend.Hash)
+	}
+
+	feeHours := fee.RequiredFee(totalInputHours)
+	if feeHours == 0 {
+		return nil, fee.ErrTxnNoFee
+	}
+	remainingHours := totalInputHours - feeHours
+
+	switch params.HoursSelection.Type {
+	case HoursSelectionTypeManual:
+		for _, out := range params.To {
+			txn.Out = append(txn.Out, out)
+		}
+
+	case HoursSelectionTypeAuto:
+		var addrHours []uint64
+
+		switch params.HoursSelection.Mode {
+		case HoursSelectionModeSplitEven:
+			// multiply remaining hours after fee burn with share factor
+			hours, err := coin.Uint64ToInt64(remainingHours)
+			if err != nil {
+				return nil, err
+			}
+
+			allocatedHoursInt := params.HoursSelection.ShareFactor.Mul(decimal.New(hours, 0)).IntPart()
+			allocatedHours, err := coin.Int64ToUint64(allocatedHoursInt)
+			if err != nil {
+				return nil, err
+			}
+
+			addrHours, err = DistributeCoinHoursSplitEven(uint64(len(params.To)), allocatedHours)
+			if err != nil {
+				return nil, err
+			}
+
+		case HoursSelectionModeMatchCoins:
+			// Sends hours equal to the amount of coins, with a minimum of 1 hour
+			var err error
+			toCoins := make([]uint64, len(params.To))
+			for i, to := range params.To {
+				toCoins[i] = to.Coins
+			}
+			addrHours, err = DistributeCoinHoursMatchCoins(toCoins, remainingHours)
+			if err != nil {
+				return nil, err
+			}
+
+		}
+
+		for i, out := range params.To {
+			out.Hours = addrHours[i]
+			txn.Out = append(txn.Out, out)
+		}
+
+	default:
+		return nil, ErrInvalidHoursSelectionMode
+	}
+
+	totalOutHours, err := txn.OutputHours()
+	if err != nil {
+		return nil, err
+	}
+
+	// Make sure we have enough coinhours
+	// If we don't at this point, then ChooseSpends has a bug, it should have returned this error already
+	if totalOutHours > remainingHours {
+		logger.WithError(fee.ErrTxnInsufficientCoinHours).Error("Insufficient hours after choosing spends or distributing hours, this should not occur")
+		return nil, fee.ErrTxnInsufficientCoinHours
+	}
+
+	if totalOutCoins > totalInputCoins {
+		logger.WithError(ErrInsufficientBalance).Error("Insufficient coins after choosing spends, this should not occur")
+		return nil, ErrInsufficientBalance
+	}
+
+	// create change output
+	changeCoins := totalInputCoins - totalOutCoins
+	changeHours := remainingHours - totalOutHours
+
+	// If there are no change coins but there are change hours, try to add another
+	// input to save the change hours.
+	// This chooses an available input with the least number of coin hours;
+	// if the extra coin hour fee incurred by this additional input is less than
+	// the remaining coin hours, the input is added.
+	if changeCoins == 0 && changeHours > 0 {
+		// Find the output with the least coin hours
+		// If size of the fee for this output is less than the changeHours, add it
+		// Update changeCoins and changeHours
+		z := uxBalancesSub(uxb, spends)
+		if len(z) > 0 {
+			extra := z[0]
+
+			// Calculate the new hours being spent
+			newTotalHours, err := coin.AddUint64(totalInputHours, extra.Hours)
+			if err != nil {
+				return nil, err
+			}
+
+			// Calculate the new fee for this new amount of hours
+			newFee := fee.RequiredFee(newTotalHours)
+			if newFee < feeHours {
+				err := errors.New("updated fee after adding extra input for change is unexpectedly less than it was initially")
+				logger.WithError(err).Error()
+				return nil, err
+			}
+
+			// If the cost of adding this extra input is less than the amount of change hours we
+			// can save, use the input
+			additionalFee := newFee - feeHours
+			if additionalFee < changeHours {
+				changeCoins, err = coin.AddUint64(changeCoins, extra.Coins)
+				if err != nil {
+					return nil, err
+				}
+
+				if extra.Hours < additionalFee {
+					err := errors.New("calculated additional fee is unexpectedly higher than the extra input's hours")
+					logger.WithError(err).Error()
+					return nil, err
+				}
+
+				additionalHours := extra.Hours - additionalFee
+				changeHours, err = coin.AddUint64(changeHours, additionalHours)
+				if err != nil {
+					return nil, err
+				}
+
+				txn.PushInput(extra.Hash)
+				toSign = append(toSign, entriesMap[extra.Address].Secret)
+			}
+		}
+	}
+
+	if changeCoins > 0 {
+		txn.PushOutput(params.ChangeAddress, changeCoins, changeHours)
+	}
+
+	txn.SignInputs(toSign)
+	txn.UpdateHeader()
+
+	return txn, nil
 }
 
 // DistributeSpendHours calculates how many coin hours to transfer to the change address and how
@@ -918,6 +1277,121 @@ func DistributeSpendHours(inputHours, nAddrs uint64, haveChange bool) (uint64, [
 	return changeHours, addrHours, spendHours
 }
 
+// DistributeCoinHoursSplitEven distributes hours evenly across a number of destinations.
+// If n is not a divisor of hours, the remaining hours are allocated to the first m destinations.
+func DistributeCoinHoursSplitEven(n, hours uint64) ([]uint64, error) {
+	addrHours := make([]uint64, n)
+
+	// split addrhours evenly among all hours
+	perAddrHour := hours / n
+	for i := range addrHours {
+		addrHours[i] = perAddrHour
+	}
+
+	// give any remaining hours due to rounding to addrs starting from the top
+	extraAddrHours := hours - (perAddrHour * n)
+	var i uint64
+	for i < extraAddrHours {
+		addrHours[i] = addrHours[i] + 1
+		i++
+	}
+
+	return addrHours, nil
+}
+
+// DistributeCoinHoursMatchCoins distributes coin hours less than or equal to an amount of whole coins sent,
+// with a minimum of 1 if the coin amount is less than 1 whole coin.
+// If the total amount of coins exceeds hours, allocated hours are reduced appropriately.
+func DistributeCoinHoursMatchCoins(coins []uint64, maxHours uint64) ([]uint64, error) {
+	addrHours := make([]uint64, len(coins))
+
+	var totalMax uint64
+	for i, c := range coins {
+		sendHours := c / droplet.Multiplier
+		if sendHours == 0 {
+			sendHours = 1
+		}
+		addrHours[i] = sendHours
+		totalMax += sendHours
+	}
+
+	if totalMax <= maxHours {
+		return addrHours, nil
+	}
+
+	// If the total number of whole coins exceeds the max hours, distribute proportionally
+	return DistributeCoinHoursProportional(coins, maxHours)
+}
+
+// DistributeCoinHoursProportional distributes hours amongst coins proportional to the coins amount
+func DistributeCoinHoursProportional(coins []uint64, hours uint64) ([]uint64, error) {
+	coinsDec := make([]decimal.Decimal, len(coins))
+
+	total := decimal.New(0, 0)
+	for i, c := range coins {
+		cInt, err := coin.Uint64ToInt64(c)
+		if err != nil {
+			return nil, err
+		}
+		coinsDec[i] = decimal.New(cInt, 0)
+
+		total = total.Add(coinsDec[i])
+	}
+
+	hoursInt, err := coin.Uint64ToInt64(hours)
+	if err != nil {
+		return nil, err
+	}
+	hoursDec := decimal.New(hoursInt, 0)
+
+	var assignedHours uint64
+	addrHours := make([]uint64, len(coins))
+	for i, c := range coinsDec {
+		frac := c.Div(total)
+		fracHours, err := coin.Int64ToUint64(hoursDec.Mul(frac).IntPart())
+		if err != nil {
+			return nil, err
+		}
+
+		addrHours[i] = fracHours
+		assignedHours, err = coin.AddUint64(assignedHours, fracHours)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if hours < assignedHours {
+		return nil, errors.New("DistributeCoinHoursProportional assigned hours exceeding input hours, this is a bug")
+	}
+
+	remainingHours := hours - assignedHours
+
+	if remainingHours > uint64(len(coins)) {
+		return nil, errors.New("DistributeCoinHoursProportional remaining hours exceed len(coins), this is a bug")
+	}
+
+	// For remaining hours lost due to fractional cutoff when scaling,
+	// first provide at least 1 coin hour to coins that were assigned 0.
+	i := 0
+	for remainingHours > 0 {
+		if addrHours[i] == 0 {
+			addrHours[i] = 1
+			remainingHours--
+		}
+		i++
+	}
+
+	// Then, assign the extra coin hours
+	i = 0
+	for remainingHours > 0 {
+		addrHours[i] = addrHours[i] + 1
+		remainingHours--
+		i++
+	}
+
+	return addrHours, nil
+}
+
 // UxBalance is an intermediate representation of a UxOut for sorting and spend choosing
 type UxBalance struct {
 	Hash    cipher.SHA256
@@ -951,6 +1425,23 @@ func NewUxBalances(headTime uint64, uxa coin.UxArray) ([]UxBalance, error) {
 	return uxb, nil
 }
 
+func uxBalancesSub(a, b []UxBalance) []UxBalance {
+	var x []UxBalance
+
+	bMap := make(map[cipher.SHA256]struct{}, len(b))
+	for _, i := range b {
+		bMap[i.Hash] = struct{}{}
+	}
+
+	for _, i := range a {
+		if _, ok := bMap[i.Hash]; !ok {
+			x = append(x, i)
+		}
+	}
+
+	return x
+}
+
 // ChooseSpendsMinimizeUxOuts chooses uxout spends to satisfy an amount, using the least number of uxouts
 //     -- PRO: Allows more frequent spending, less waiting for confirmations, useful for exchanges.
 //     -- PRO: When transaction is volume is higher, transactions are prioritized by fee/size. Minimizing uxouts minimizes size.
@@ -958,8 +1449,8 @@ func NewUxBalances(headTime uint64, uxa coin.UxArray) ([]UxBalance, error) {
 // Users with high transaction frequency will want to use this so that they will not need to wait as frequently
 // for unconfirmed spends to complete before sending more.
 // Alternatively, or in addition to this, they should batch sends into single transactions.
-func ChooseSpendsMinimizeUxOuts(uxa []UxBalance, coins uint64) ([]UxBalance, error) {
-	return ChooseSpends(uxa, coins, sortSpendsCoinsHighToLow)
+func ChooseSpendsMinimizeUxOuts(uxa []UxBalance, coins, hours uint64) ([]UxBalance, error) {
+	return ChooseSpends(uxa, coins, hours, sortSpendsCoinsHighToLow)
 }
 
 // sortSpendsCoinsHighToLow sorts uxout spends with highest balance to lowest
@@ -973,8 +1464,8 @@ func sortSpendsCoinsHighToLow(uxa []UxBalance) {
 // See the pros and cons of ChooseSpendsMinimizeUxOuts.
 // This should be the default mode, because this keeps the unconfirmed pool smaller which will allow
 // the network to scale better.
-func ChooseSpendsMaximizeUxOuts(uxa []UxBalance, coins uint64) ([]UxBalance, error) {
-	return ChooseSpends(uxa, coins, sortSpendsCoinsLowToHigh)
+func ChooseSpendsMaximizeUxOuts(uxa []UxBalance, coins, hours uint64) ([]UxBalance, error) {
+	return ChooseSpends(uxa, coins, hours, sortSpendsCoinsLowToHigh)
 }
 
 // sortSpendsCoinsLowToHigh sorts uxout spends with lowest balance to highest
@@ -984,16 +1475,17 @@ func sortSpendsCoinsLowToHigh(uxa []UxBalance) {
 	}))
 }
 
-// Sorts UxOuts by those with zero coinhours last.
-// Within uxouts that have coinhours and don't have coinhours, respecitvely, they
-// they are sorted by ascending or descending coins (depending on coinsCmp).
-// If coins are equal, then they are sorted by least hours first
-// If hours are equal, then they are sorted by oldest first
-// If they are equally old, the UxOut's hash is used to break the tie.
+// sortSpendsHoursLowToHigh sorts uxout spends with lowest hours to highest
+func sortSpendsHoursLowToHigh(uxa []UxBalance) {
+	sort.Slice(uxa, makeCmpUxOutByHours(uxa, func(a, b uint64) bool {
+		return a < b
+	}))
+}
+
 func makeCmpUxOutByCoins(uxa []UxBalance, coinsCmp func(a, b uint64) bool) func(i, j int) bool {
 	// Sort by:
 	// coins highest or lowest depending on coinsCmp
-	//  hours lowest, unless zero, then last
+	//  hours lowest
 	//   oldest first
 	//    tie break with hash comparison
 	return func(i, j int) bool {
@@ -1013,6 +1505,29 @@ func makeCmpUxOutByCoins(uxa []UxBalance, coinsCmp func(a, b uint64) bool) func(
 	}
 }
 
+func makeCmpUxOutByHours(uxa []UxBalance, hoursCmp func(a, b uint64) bool) func(i, j int) bool {
+	// Sort by:
+	// hours highest or lowest depending on hoursCmp
+	//  coins lowest
+	//   oldest first
+	//    tie break with hash comparison
+	return func(i, j int) bool {
+		a := uxa[i]
+		b := uxa[j]
+
+		if a.Hours == b.Hours {
+			if a.Coins == b.Coins {
+				if a.BkSeq == b.BkSeq {
+					return cmpUxOutByHash(a, b)
+				}
+				return a.BkSeq < b.BkSeq
+			}
+			return a.Coins < b.Coins
+		}
+		return hoursCmp(a.Hours, b.Hours)
+	}
+}
+
 func cmpUxOutByHash(a, b UxBalance) bool {
 	cmp := bytes.Compare(a.Hash[:], b.Hash[:])
 	if cmp == 0 {
@@ -1025,13 +1540,13 @@ func cmpUxOutByHash(a, b UxBalance) bool {
 // It first chooses the uxout with the most number of coins that has nonzero coinhours.
 // It then chooses uxouts with zero coinhours, ordered by sortStrategy
 // It then chooses remaining uxouts with nonzero coinhours, ordered by sortStrategy
-func ChooseSpends(uxa []UxBalance, coins uint64, sortStrategy func([]UxBalance)) ([]UxBalance, error) {
+func ChooseSpends(uxa []UxBalance, coins, hours uint64, sortStrategy func([]UxBalance)) ([]UxBalance, error) {
 	if coins == 0 {
 		return nil, ErrZeroSpend
 	}
 
 	if len(uxa) == 0 {
-		return nil, errors.New("no unspents to spend")
+		return nil, NewError(errors.New("no unspents to spend"))
 	}
 
 	for _, ux := range uxa {
@@ -1041,7 +1556,7 @@ func ChooseSpends(uxa []UxBalance, coins uint64, sortStrategy func([]UxBalance))
 		}
 	}
 
-	// Split split UxBalances into those with and without hours
+	// Split UxBalances into those with and without hours
 	var nonzero, zero []UxBalance
 	for _, ux := range uxa {
 		if ux.Hours == 0 {
@@ -1075,7 +1590,7 @@ func ChooseSpends(uxa []UxBalance, coins uint64, sortStrategy func([]UxBalance))
 	have.Coins += firstNonzero.Coins
 	have.Hours += firstNonzero.Hours
 
-	if have.Coins >= coins {
+	if have.Coins >= coins && have.Hours >= hours {
 		return spending, nil
 	}
 
@@ -1089,8 +1604,12 @@ func ChooseSpends(uxa []UxBalance, coins uint64, sortStrategy func([]UxBalance))
 		have.Hours += ux.Hours
 
 		if have.Coins >= coins {
-			return spending, nil
+			break
 		}
+	}
+
+	if have.Coins >= coins && have.Hours >= hours {
+		return spending, nil
 	}
 
 	// Sort remaining uxouts with hours according to the sorting strategy
@@ -1102,10 +1621,14 @@ func ChooseSpends(uxa []UxBalance, coins uint64, sortStrategy func([]UxBalance))
 		have.Coins += ux.Coins
 		have.Hours += ux.Hours
 
-		if have.Coins >= coins {
+		if have.Coins >= coins && have.Hours >= hours {
 			return spending, nil
 		}
 	}
 
-	return nil, ErrInsufficientBalance
+	if have.Coins < coins {
+		return nil, ErrInsufficientBalance
+	}
+
+	return nil, ErrInsufficientHours
 }

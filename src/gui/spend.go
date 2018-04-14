@@ -2,273 +2,246 @@ package gui
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/shopspring/decimal"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-type AdvancedSpendResult struct {
-	Transaction *visor.ReadableTransaction `json:"txn,omitempty"`
-	Error       string                     `json:"error,omitempty"`
+// CreateTransactionResult is returned by /wallet/transaction
+type CreateTransactionResult struct {
+	Transaction visor.ReadableTransaction `json:"transaction"`
 }
 
-type AdvancedSpendRequest struct {
-	HoursSelection wallet.HoursSelection `json:"hours_selection"`
-	//Outputs        []string       `json:"outputs"`
-	Addresses     []string   `json:"addresses"`
-	Wallets       []string   `json:"wallets"`
-	ChangeAddress string     `json:"change_address"`
-	To            []Receiver `json:"to"`
+// CreateTransactionRequest is sent to /wallet/transaction
+type CreateTransactionRequest struct {
+	HoursSelection HoursSelection                 `json:"hours_selection"`
+	Wallet         CreateTransactionWalletRequest `json:"wallet"`
+	ChangeAddress  *wh.Address                    `json:"change_address"`
+	To             []Receiver                     `json:"to"`
+	Password       string                         `json:"password"`
 }
 
+// CreateTransactionWalletRequest defines a wallet to spend from and optionally which addresses in the wallet
+type CreateTransactionWalletRequest struct {
+	ID        string       `json:"id"`
+	Addresses []wh.Address `json:"addresses,omitempty"`
+	Password  string       `json:"password"`
+}
+
+// HoursSelection defines options for hours distribution
+type HoursSelection struct {
+	Type        string           `json:"type"`
+	Mode        string           `json:"mode"`
+	ShareFactor *decimal.Decimal `json:"share_factor,omitempty"`
+}
+
+// Receiver specifies a spend destination
 type Receiver struct {
-	Address string `json:"address"`
-	Coins   string `json:"coins"`
-	Hours   string `json:"hours"`
+	Address wh.Address `json:"address"`
+	Coins   wh.Coins   `json:"coins"`
+	Hours   *wh.Hours  `json:"hours,omitempty"`
 }
 
-func advancedSpendHandler(gateway Gatewayer) http.HandlerFunc {
+// Validate validates CreateTransactionRequest data
+func (r CreateTransactionRequest) Validate() error {
+	switch r.HoursSelection.Type {
+	case wallet.HoursSelectionTypeAuto:
+		for i, to := range r.To {
+			if to.Hours != nil {
+				return fmt.Errorf("to[%d].hours must not be specified for auto hours_selection.mode", i)
+			}
+		}
+
+		switch r.HoursSelection.Mode {
+		case wallet.HoursSelectionModeMatchCoins, wallet.HoursSelectionModeSplitEven:
+		case "":
+			return errors.New("missing hours_selection.mode")
+		default:
+			return errors.New("invalid hours_selection.mode")
+		}
+
+	case wallet.HoursSelectionTypeManual:
+		for i, to := range r.To {
+			if to.Hours == nil {
+				return fmt.Errorf("to[%d].hours must be specified for manual hours_selection.mode", i)
+			}
+		}
+
+		if r.HoursSelection.Mode != "" {
+			return errors.New("hours_selection.mode cannot be used for manual hours_selection.type")
+		}
+
+	case "":
+		return errors.New("missing hours_selection.type")
+	default:
+		return errors.New("invalid hours_selection.type")
+	}
+
+	if r.HoursSelection.ShareFactor == nil {
+		if r.HoursSelection.Mode == wallet.HoursSelectionModeSplitEven {
+			return errors.New("missing hours_selection.share_factor when hours_selection.mode is split_even")
+		}
+	} else {
+		if r.HoursSelection.Mode != wallet.HoursSelectionModeSplitEven {
+			return errors.New("hours_selection.share_factor can only be used when hours_selection.mode is split_even")
+		}
+
+		switch {
+		case r.HoursSelection.ShareFactor.LessThan(decimal.New(0, 0)):
+			return errors.New("hours_selection.share_factor cannot be negative")
+		case r.HoursSelection.ShareFactor.GreaterThan(decimal.New(1, 0)):
+			return errors.New("hours_selection.share_factor cannot be more than 1")
+		}
+	}
+
+	if r.ChangeAddress == nil {
+		return errors.New("missing change_address")
+	} else if r.ChangeAddress.Empty() {
+		return errors.New("change_address is an empty address")
+	}
+
+	if r.Wallet.ID == "" {
+		return errors.New("missing wallet.id")
+	}
+
+	for i, a := range r.Wallet.Addresses {
+		if a.Empty() {
+			return fmt.Errorf("wallet.addresses[%d] is empty", i)
+		}
+	}
+
+	for i, to := range r.To {
+		if to.Address.Empty() {
+			return fmt.Errorf("to[%d].address is empty", i)
+		}
+
+		if to.Coins == 0 {
+			return fmt.Errorf("to[%d].coins must not be zero", i)
+		}
+	}
+
+	if len(r.To) == 0 {
+		return errors.New("to is empty")
+	}
+
+	return nil
+}
+
+// ToWalletParams converts CreateTransactionRequest to wallet.CreateTransactionParams
+func (r CreateTransactionRequest) ToWalletParams() wallet.CreateTransactionParams {
+	addresses := make([]cipher.Address, len(r.Wallet.Addresses))
+	for i, a := range r.Wallet.Addresses {
+		addresses[i] = a.Address
+	}
+
+	walletParams := wallet.CreateTransactionWalletParams{
+		ID:        r.Wallet.ID,
+		Addresses: addresses,
+		Password:  []byte(r.Wallet.Password),
+	}
+
+	to := make([]coin.TransactionOutput, len(r.To))
+	for i, t := range r.To {
+		var hours uint64
+		if t.Hours != nil {
+			hours = t.Hours.Value()
+		}
+
+		to[i] = coin.TransactionOutput{
+			Address: t.Address.Address,
+			Coins:   t.Coins.Value(),
+			Hours:   hours,
+		}
+	}
+
+	var changeAddress cipher.Address
+	if r.ChangeAddress != nil {
+		changeAddress = r.ChangeAddress.Address
+	}
+
+	return wallet.CreateTransactionParams{
+		HoursSelection: wallet.HoursSelection{
+			Type:        r.HoursSelection.Type,
+			Mode:        r.HoursSelection.Mode,
+			ShareFactor: r.HoursSelection.ShareFactor,
+		},
+		Wallet:        walletParams,
+		ChangeAddress: changeAddress,
+		To:            to,
+	}
+}
+
+func createTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			wh.Error405(w)
 			return
 		}
 
-		var advancedSpend AdvancedSpendRequest
-		err := json.NewDecoder(r.Body).Decode(&advancedSpend)
+		if r.Header.Get("Content-Type") != "application/json" {
+			wh.Error415(w)
+			return
+		}
+
+		var params CreateTransactionRequest
+		err := json.NewDecoder(r.Body).Decode(&params)
 		if err != nil {
-			logger.Errorf("Invalid advanced spend request: %v", err)
-			wh.Error400(w, fmt.Sprintf("Bad Request: %v", err))
-			return
-		}
-
-		switch advancedSpend.HoursSelection.Type {
-		case "manual", "auto":
-		case "":
-			logger.Error("missing hours selection type")
-			wh.Error400(w, "missing hours selection type")
-			return
-		default:
-			logger.Errorf("invalid hours selection type: %v", advancedSpend.HoursSelection.Type)
-			wh.Error400(w, fmt.Sprintf("invalid hours selection type: %v", advancedSpend.HoursSelection.Type))
-			return
-		}
-
-		if advancedSpend.HoursSelection.Type == "auto" {
-			switch advancedSpend.HoursSelection.Mode {
-			case "split_even":
-				switch advancedSpend.HoursSelection.ShareFactor {
-				case nil:
-					logger.Error("missing hours selection share factor when mode is `split_even`")
-					wh.Error400(w, "missing hours selection share factor when mode is split_even")
-					return
-				default:
-					// make sure that share factor is in range [0,1]
-					switch {
-					case advancedSpend.HoursSelection.ShareFactor.LessThan(decimal.New(0, 64)):
-						logger.Warning("negative share factor")
-						wh.Error400(w, "share factor cannot be negative")
-						return
-					case advancedSpend.HoursSelection.ShareFactor.GreaterThan(decimal.New(1, 64)):
-						logger.Warning("share factor greater than 1")
-						wh.Error400(w, "share factor cannot be more than 1")
-						return
-					}
-				}
-
-			case "match_coins":
-			case "":
-				logger.Error("missing hours selection mode when type is auto")
-				wh.Error400(w, "missing hours selection mode when type is auto")
-				return
-			default:
-				logger.Errorf("invalid hours selection mode: %v", advancedSpend.HoursSelection.Mode)
-				wh.Error400(w, fmt.Sprintf("invalid hours selection mode: %v", advancedSpend.HoursSelection.Mode))
-				return
-			}
-		}
-
-		if advancedSpend.ChangeAddress == "" {
-			logger.Warning("missing change address")
-			wh.Error400(w, "missing change address")
-			return
-		}
-
-		changeAddr, err := cipher.DecodeBase58Address(advancedSpend.ChangeAddress)
-		if err != nil {
-			logger.Errorf("invalid change address: %v", err)
-			wh.Error400(w, fmt.Sprintf("invalid change address: %v", err))
-			return
-		}
-
-		// check whether destination addresses are correct or not
-		destList := make([]coin.TransactionOutput, len(advancedSpend.To))
-		for idx, to := range advancedSpend.To {
-			// check that the address is valid
-			toAddress, err := cipher.DecodeBase58Address(to.Address)
-			if err != nil {
-				logger.Errorf("invalid destination address %v", to.Address)
-				wh.Error400(w, fmt.Sprintf("invalid destination address %v", to.Address))
-				return
-			}
-
-			// convert coins to droplets
-			coins, err := droplet.FromString(to.Coins)
-			if err != nil {
-				logger.Errorf("unable to convert coins to droplet: %v", err)
-				wh.Error400(w, fmt.Sprintf("invalid coin amount %v", to.Coins))
-				return
-			}
-
-			destList[idx] = coin.TransactionOutput{
-				Address: toAddress,
-				Coins:   coins,
-			}
-
-			// parse coinhours
-			// when mode is auto the Hours field can be empty
-			// when mode is manual Hours field cannot be empty
-			if to.Hours != "" {
-				hours, err := strconv.ParseUint(to.Hours, 10, 64)
-				if err != nil {
-					logger.Errorf("unable to parse coinhours: %v", err)
-					wh.Error400(w, fmt.Sprintf("invalid coinhours %v", to.Hours))
-					return
-				}
-
-				destList[idx].Hours = hours
-			} else if advancedSpend.HoursSelection.Type == "manual" {
-				logger.Errorf("coinhours value missing for %v when mode is manual", to.Address)
-				wh.Error400(w, fmt.Sprintf("coinhours value missing for %v when mode is manual", to.Address))
-				return
-			}
-
-		}
-
-		// create a wltmap
-		wltMap := make(map[string]struct{})
-		for _, wlt := range advancedSpend.Wallets {
-			wltMap[wlt] = struct{}{}
-		}
-
-		// fetch all wallets on the system
-		wallets, err := gateway.GetWallets()
-		if err != nil {
-			switch err {
-			case wallet.ErrWalletAPIDisabled:
-				wh.Error403(w)
-			default:
-				wh.Error500(w)
-			}
-			return
-		}
-
-		// entry map
-		// stores all entries to be used in creating the transaction
-		entryMap := make(map[cipher.Address]wallet.Entry)
-
-		// addr map to check if provided input addresses
-		// are in the wallets on the system
-		addrMap := make(map[string]wallet.Entry)
-
-		// iterate over all the wallets
-		// look for wallets provided in the input
-		// collect all entries of those wallets
-		for _, wlt := range wallets {
-			if _, ok := wltMap[wlt.Label()]; ok {
-				for _, wltEntry := range wlt.Entries {
-					entryMap[wltEntry.Address] = wltEntry
-				}
-			} else {
-				// create addrMap of addresses in other wallets
-				// addrMap is used to look for addresses provided as inputs in wallets on the system
-				for _, wltEntry := range wlt.Entries {
-					addrMap[wltEntry.Address.String()] = wltEntry
-				}
-			}
-		}
-
-		// check that provided addresses are in the addrMap
-		for _, addr := range advancedSpend.Addresses {
-			// check that address is not an empty string
-			if addr != "" {
-				if _, ok := addrMap[addr]; !ok {
-					logger.Errorf("address %v not found in any wallet", addr)
-					wh.Error400(w, fmt.Sprintf("address %v not found in any wallet", addr))
-					return
-				}
-
-				wltEntry := addrMap[addr]
-				entryMap[wltEntry.Address] = wltEntry
-			} else {
-				logger.Warning("empty sender address")
-				wh.Error400(w, "empty sender address")
-				return
-			}
-		}
-
-		if len(entryMap) == 0 {
-			logger.Error("no sender addresses found")
-			wh.Error400(w, "no sender addresses found")
-			return
-		}
-
-		tx, err := gateway.AdvancedSpend(
-			wallet.AdvancedSpend{
-				HoursSelection: advancedSpend.HoursSelection,
-				Entries:        entryMap,
-				ChangeAddress:  changeAddr,
-				To:             destList,
-			},
-		)
-
-		switch err {
-		case nil:
-		case fee.ErrTxnNoFee, wallet.ErrSpendingUnconfirmed, wallet.ErrInsufficientBalance, wallet.ErrZeroSpend:
+			logger.WithError(err).Error("Invalid advanced spend request")
 			wh.Error400(w, err.Error())
 			return
-		case wallet.ErrWalletNotExist:
-			wh.Error404(w)
+		}
+
+		if err := params.Validate(); err != nil {
+			logger.WithError(err).Error("Invalid advanced spend request")
+			wh.Error400(w, err.Error())
 			return
-		case wallet.ErrWalletAPIDisabled:
-			wh.Error403(w)
+		}
+
+		txn, err := gateway.CreateTransaction(params.ToWalletParams())
+		if err != nil {
+			fmt.Printf("Error type %T: %v\n", err, err)
+			switch err.(type) {
+			case wallet.Error:
+				switch err {
+				case wallet.ErrWalletAPIDisabled:
+					wh.Error403(w)
+				case wallet.ErrWalletNotExist:
+					wh.Error404Msg(w, err.Error())
+				default:
+					wh.Error400(w, err.Error())
+				}
+			default:
+				switch err {
+				case fee.ErrTxnNoFee, fee.ErrTxnInsufficientCoinHours:
+					wh.Error400(w, err.Error())
+				default:
+					wh.Error500Msg(w, err.Error())
+				}
+			}
 			return
-		default:
+		}
+
+		readableTxn, err := visor.NewReadableTransaction(&visor.Transaction{
+			Txn: *txn,
+		})
+		if err != nil {
+			err = fmt.Errorf("visor.NewReadableTransaction failed: %v", err)
+			logger.WithError(err).Error()
 			wh.Error500Msg(w, err.Error())
 			return
 		}
 
-		txStr, err := visor.TransactionToJSON(*tx)
-		if err != nil {
-			logger.Error(err)
-			wh.SendJSONOr500(logger, w, SpendResult{
-				Error: err.Error(),
-			})
-			return
-		}
-
-		logger.Infof("Spend: \ntx= \n %s \n", txStr)
-
-		var ret AdvancedSpendResult
-		ret.Transaction, err = visor.NewReadableTransaction(&visor.Transaction{Txn: *tx})
-		if err != nil {
-			err = fmt.Errorf("Creation of new readable transaction failed: %v", err)
-			logger.Error(err)
-			ret.Error = err.Error()
-			wh.SendJSONOr500(logger, w, ret)
-			return
-		}
-
-		wh.SendJSONOr500(logger, w, ret)
+		wh.SendJSONOr500(logger, w, CreateTransactionResult{
+			Transaction: *readableTxn,
+		})
 	}
 }

@@ -27,8 +27,8 @@ func NewGatewayerMock() *GatewayerMock {
 	return &GatewayerMock{}
 }
 
-// AdvancedSpend mocked method
-func (m *GatewayerMock) AdvancedSpend(p0 wallet.AdvancedSpend) (*coin.Transaction, error) {
+// CreateTransaction mocked method
+func (m *GatewayerMock) CreateTransaction(p0 wallet.CreateTransactionParams) (*coin.Transaction, error) {
 
 	ret := m.Called(p0)
 

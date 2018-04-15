@@ -35,7 +35,7 @@ LIBSRC_DIR = lib/cgo
 LIBDOC_DIR = $(DOC_DIR)/libc
 
 # Compilation flags
-CC_VERSION = $(sh -c '$(CC) -dumpversion')
+CC_VERSION = $(shell $(CC) -dumpversion)
 STDC_FLAG = $(python -c "if tuple(map(int, '$(CC_VERSION)'.split('.'))) < (6,): print('-std=C99'")
 ifndef CC
   ifndef STDC_FLAG
@@ -113,7 +113,7 @@ build-libc-dbg: configure-build
 	$(CC) -g -o $(BIN_DIR)/test_libskycoin_static $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/libskycoin.a $(LDLIBS) $(LDFLAGS)
 
 test-libc: build-libc ## Run tests for libskycoin C client library
-	echo "Compiling with gcc $(CC_VERSION)"
+	echo "Compiling with $(CC) $(CC_VERSION) $(STDC_FLAG)"
 	$(CC) -o $(BIN_DIR)/test_libskycoin_shared $(LIB_DIR)/cgo/tests/*.c -lskycoin                    $(LDLIBS) $(LDFLAGS)
 	$(CC) -o $(BIN_DIR)/test_libskycoin_static $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/libskycoin.a $(LDLIBS) $(LDFLAGS)
 	$(LDPATHVAR)="$(LDPATH):$(BUILD_DIR)/usr/lib:$(BUILDLIB_DIR)" $(BIN_DIR)/test_libskycoin_shared

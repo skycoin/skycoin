@@ -116,6 +116,7 @@ func TestHealthCheckHandler(t *testing.T) {
 					},
 				},
 			}
+
 			gateway.On("GetDefaultConnections").Return(GetDefaultConnections).On("GetConnections").Return(gatewayGetConnectionsResult).On("GetDefaultStatus").Return(GetDefaultConnections, gatewayGetConnectionsResult)
 
 			endpoint := "/health"

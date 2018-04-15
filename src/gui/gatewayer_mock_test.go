@@ -7,6 +7,7 @@ package gui
 
 import (
 	"fmt"
+	"sort"
 
 	mock "github.com/stretchr/testify/mock"
 
@@ -967,7 +968,7 @@ func (m *GatewayerMock) UpdateWalletLabel(p0 string, p1 string) error {
 func (m *GatewayerMock) GetDefaultStatus() *daemon.ConnectionsHealth {
 
 	connsDefault := m.GetDefaultConnections()
-	// sort.Strings(connsDefault)
+	sort.Strings(connsDefault)
 	connsAll := m.GetConnections().Connections
 
 	countDefault, totalAlive := len(connsDefault), 0

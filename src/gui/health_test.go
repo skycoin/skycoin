@@ -90,13 +90,13 @@ func TestHealthCheckHandler(t *testing.T) {
 			} else {
 				gateway.On("GetHealth").Return(health, nil)
 			}
-			GetDefaultConnections := []string{"44.33.22.11:9000", "11.44.66.88:9000"}
+			GetDefaultConnections := []string{"11.44.66.88:9000", "44.33.22.11:9000"}
 
 			gatewayGetConnectionsResult := &daemon.Connections{
 				Connections: []*daemon.Connection{
 					{
 						ID:           1,
-						Addr:         "44.33.22.11:9000",
+						Addr:         "11.44.66.88:9000",
 						LastSent:     99999,
 						LastReceived: 1111111,
 						Outgoing:     true,
@@ -106,7 +106,7 @@ func TestHealthCheckHandler(t *testing.T) {
 					},
 					{
 						ID:           2,
-						Addr:         "11.44.66.88:9000",
+						Addr:         "44.33.22.11:9000",
 						LastSent:     99999,
 						LastReceived: 1111111,
 						Outgoing:     true,

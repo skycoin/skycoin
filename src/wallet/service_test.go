@@ -756,7 +756,7 @@ func TestServiceCreateAndSignTransaction(t *testing.T) {
 			},
 			coins: 2e6,
 			dest:  addrs[0],
-			err:   errors.New("please spend after your pending transaction is confirmed"),
+			err:   ErrSpendingUnconfirmed,
 		},
 		{
 			name: "encrypted=false unconfirmed spend failed",
@@ -869,10 +869,13 @@ func TestServiceCreateAndSignTransaction(t *testing.T) {
 				require.NoError(t, err)
 
 				tx, err := s.CreateAndSignTransaction(w.Filename(), tc.pwd, tc.vld, unspents, uint64(headTime), tc.coins, tc.dest)
-				require.Equal(t, tc.err, err)
-				if err != nil {
+
+				if tc.err != nil {
+					require.Equal(t, tc.err, err, err.Error())
 					return
 				}
+
+				require.NoError(t, err)
 
 				// check the IN of tx
 				for _, inUxid := range tx.In {
@@ -1151,13 +1154,6 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 			err:      ErrInsufficientHours,
 		},
 
-		// manual, 1 output, no change
-		// manual, 1 output, change
-		// manual, 1 output, forced change
-		// manual, 1 output, forced change rejected
-		// manual, multiple outputs
-		// auto share multiple outputs
-
 		{
 			name: "manual, 1 output, no change",
 			params: CreateTransactionParams{
@@ -1234,7 +1230,7 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 				To: []coin.TransactionOutput{
 					{
 						Address: addrs[0],
-						Hours:   101,
+						Hours:   0,
 						Coins:   2e6 * 2,
 					},
 				},
@@ -1243,9 +1239,31 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 			chosenUnspents: []coin.UxOut{originalUxouts[0], originalUxouts[1], originalUxouts[2]},
 			changeOutput: &coin.TransactionOutput{
 				Address: changeAddress,
-				Hours:   50,
+				Hours:   151,
 				Coins:   2e6,
 			},
+		},
+
+		{
+			// there are leftover coin hours and no coins change,
+			// but there are no more unspents to use to force a change output
+			name: "manual, 1 output, forced change rejected no more unspents",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeManual,
+				},
+				To: []coin.TransactionOutput{
+					{
+						Address: addrs[0],
+						Hours:   80,
+						Coins:   2e6 * 2,
+					},
+				},
+			},
+			unspents:       originalUxouts[:2],
+			chosenUnspents: []coin.UxOut{originalUxouts[0], originalUxouts[1]},
+			changeOutput:   nil,
 		},
 
 		{
@@ -1591,10 +1609,6 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 					if !w.IsEncrypted() {
 						_, err := s.NewAddresses(w.Filename(), nil, 10)
 						require.NoError(t, err)
-					}
-
-					for i, e := range w.Entries[1:] {
-						fmt.Println(e.Address, extraWalletAddrs[i])
 					}
 
 					tc.params.Wallet.ID = wltName

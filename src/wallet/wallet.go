@@ -1155,6 +1155,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 		// If size of the fee for this output is less than the changeHours, add it
 		// Update changeCoins and changeHours
 		z := uxBalancesSub(uxb, spends)
+		sortSpendsHoursLowToHigh(z)
 		if len(z) > 0 {
 			extra := z[0]
 

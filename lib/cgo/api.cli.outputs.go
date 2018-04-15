@@ -14,7 +14,6 @@ import (
 */
 import "C"
 
-//TODO: Use WebRpc.Client specific handle type
 //export SKY_cli_GetWalletOutputsFromFile
 func SKY_cli_GetWalletOutputsFromFile(_c *C.WebrpcClient__Handle, _walletFile string, _arg2 *C.webrpc__OutputsResult) (____error_code uint32) {
 	____error_code = 0
@@ -34,7 +33,6 @@ func SKY_cli_GetWalletOutputsFromFile(_c *C.WebrpcClient__Handle, _walletFile st
 	return
 }
 
-//TODO: Use WebRpc.Client specific handle type
 //export SKY_cli_GetWalletOutputs
 func SKY_cli_GetWalletOutputs(_c *C.WebrpcClient__Handle, _wlt *C.Wallet__Handle, _arg2 *C.webrpc__OutputsResult) (____error_code uint32) {
 	____error_code = 0

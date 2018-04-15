@@ -14,7 +14,6 @@ import (
 */
 import "C"
 
-//TODO: Use WebRpc.Client specific handle type
 //export SKY_cli_SendFromWallet
 func SKY_cli_SendFromWallet(_c *C.WebrpcClient__Handle, _walletFile, _chgAddr string, _toAddrs *C.GoSlice_, _arg3 *C.GoString_) (____error_code uint32) {
 	____error_code = 0

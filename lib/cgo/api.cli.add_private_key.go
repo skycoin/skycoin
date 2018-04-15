@@ -15,7 +15,6 @@ import "C"
 
 //export SKY_cli_AddPrivateKey
 func SKY_cli_AddPrivateKey(_wlt *C.Wallet__Handle, _key string) (____error_code uint32) {
-	//TODO: Wallet must be Handle
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())

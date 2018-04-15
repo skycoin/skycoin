@@ -13,6 +13,9 @@ import (
 	"unsafe"
 	webrpc "github.com/skycoin/skycoin/src/api/webrpc"
 	wallet "github.com/skycoin/skycoin/src/wallet"
+	cli "github.com/skycoin/skycoin/src/api/cli"
+	gcli "github.com/urfave/cli"
+
 )
 
 type Handle uint64
@@ -55,6 +58,49 @@ func lookupWalletHandle(handle C.Wallet__Handle) (*wallet.Wallet, bool){
 	obj, ok := lookupHandleObj(Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(*wallet.Wallet); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerConfigHandle(obj *cli.Config) C.Config__Handle{
+	return (C.Config__Handle)(registerHandle(obj))
+}
+
+func lookupConfigHandle(handle C.Config__Handle) (*cli.Config, bool){
+	obj, ok := lookupHandleObj(Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*cli.Config); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerAppHandle(obj *cli.App) C.App__Handle{
+	return (C.App__Handle)(registerHandle(obj))
+}
+
+func lookupAppHandle(handle C.App__Handle) (*cli.App, bool){
+	obj, ok := lookupHandleObj(Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*cli.App); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+
+func registerContextHandle(obj *gcli.Context) C.GcliContext__Handle{
+	return (C.GcliContext__Handle)(registerHandle(obj))
+}
+
+func lookupContextHandle(handle C.GcliContext__Handle) (*gcli.Context, bool){
+	obj, ok := lookupHandleObj(Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*gcli.Context); isOK {
 			return obj, true
 		}
 	}

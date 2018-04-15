@@ -109,6 +109,21 @@ typedef Handle WebrpcClient__Handle;
 typedef Handle Wallet__Handle;
 
 /**
+ * Config Handle
+*/
+typedef Handle Config__Handle;
+
+/**
+ * App Handle
+*/
+typedef Handle App__Handle;
+
+/**
+ * Gcli Context Handle
+*/
+typedef Handle GcliContext__Handle;
+
+/**
  * Instances of Go `map` type, deal map[string] as handle
  */
 typedef Handle GoStringMap_;

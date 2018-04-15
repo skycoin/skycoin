@@ -451,8 +451,8 @@ func TestGateway_CreateTransaction(t *testing.T) {
 	tests := []struct {
 		name            string
 		enableWalletAPI bool
-		result          wallet.BalancePair
 		err             error
+		result          *coin.Transaction
 		params          wallet.CreateTransactionParams
 	}{
 		{
@@ -470,12 +470,14 @@ func TestGateway_CreateTransaction(t *testing.T) {
 					EnableWalletAPI: tc.enableWalletAPI,
 				},
 			}
+
 			res, err := gw.CreateTransaction(tc.params)
 			if tc.err != nil {
 				require.Equal(t, tc.err, err)
-				return
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tc.result, res)
 			}
-			require.Equal(t, tc.result, res)
 		})
 	}
 }

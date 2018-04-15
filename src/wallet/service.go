@@ -456,23 +456,20 @@ func (serv *Service) CreateAndSignTransactionAdvanced(params CreateTransactionPa
 	}
 
 	var tx *coin.Transaction
-	f := func(wlt *Wallet) error {
-		var err error
-		tx, err = wlt.CreateAndSignTransactionAdvanced(params, vld, unspent, headTime)
-		return err
-	}
-
 	if w.IsEncrypted() {
-		if err := w.guardView(params.Wallet.Password, f); err != nil {
-			return nil, err
-		}
+		err = w.guardView(params.Wallet.Password, func(wlt *Wallet) error {
+			var err error
+			tx, err = wlt.CreateAndSignTransactionAdvanced(params, vld, unspent, headTime)
+			return err
+		})
 	} else {
-		if err := f(w); err != nil {
-			return nil, err
-		}
+		tx, err = w.CreateAndSignTransactionAdvanced(params, vld, unspent, headTime)
 	}
-	return tx, nil
+	if err != nil {
+		return nil, err
+	}
 
+	return tx, nil
 }
 
 // UpdateWalletLabel updates the wallet label

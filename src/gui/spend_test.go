@@ -156,25 +156,24 @@ func TestCreateTransaction(t *testing.T) {
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
 					Type: wallet.HoursSelectionTypeAuto,
-					Mode: wallet.HoursSelectionModeSplitEven,
+					Mode: wallet.HoursSelectionModeShare,
 				},
 			},
 			status: http.StatusBadRequest,
-			err:    "400 Bad Request - missing hours_selection.share_factor when hours_selection.mode is split_even",
+			err:    "400 Bad Request - missing hours_selection.share_factor when hours_selection.mode is share",
 		},
 
 		{
-			name:   "400 - share factor set but mode is not split_even",
+			name:   "400 - share factor set but mode is not share",
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type:        wallet.HoursSelectionTypeAuto,
-					Mode:        wallet.HoursSelectionModeMatchCoins,
+					Type:        wallet.HoursSelectionTypeManual,
 					ShareFactor: newStrPtr("0.5"),
 				},
 			},
 			status: http.StatusBadRequest,
-			err:    "400 Bad Request - hours_selection.share_factor can only be used when hours_selection.mode is split_even",
+			err:    "400 Bad Request - hours_selection.share_factor can only be used when hours_selection.mode is share",
 		},
 
 		{
@@ -183,7 +182,7 @@ func TestCreateTransaction(t *testing.T) {
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
 					Type:        wallet.HoursSelectionTypeAuto,
-					Mode:        wallet.HoursSelectionModeSplitEven,
+					Mode:        wallet.HoursSelectionModeShare,
 					ShareFactor: newStrPtr("-1"),
 				},
 			},
@@ -197,7 +196,7 @@ func TestCreateTransaction(t *testing.T) {
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
 					Type:        wallet.HoursSelectionTypeAuto,
-					Mode:        wallet.HoursSelectionModeSplitEven,
+					Mode:        wallet.HoursSelectionModeShare,
 					ShareFactor: newStrPtr("1.1"),
 				},
 			},
@@ -280,29 +279,9 @@ func TestCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type: wallet.HoursSelectionTypeAuto,
-					Mode: wallet.HoursSelectionModeMatchCoins,
-				},
-				To: []rawReceiver{
-					{
-						Address: destinationAddress.String(),
-						Hours:   "100",
-						Coins:   "1.01",
-					},
-				},
-				ChangeAddress: changeAddress.String(),
-			},
-			status: http.StatusBadRequest,
-			err:    "400 Bad Request - to[0].hours must not be specified for auto hours_selection.mode",
-		},
-
-		{
-			name:   "400 - auto type destination has hours",
-			method: http.MethodPost,
-			body: &rawRequest{
-				HoursSelection: rawHoursSelection{
-					Type: wallet.HoursSelectionTypeAuto,
-					Mode: wallet.HoursSelectionModeMatchCoins,
+					Type:        wallet.HoursSelectionTypeAuto,
+					Mode:        wallet.HoursSelectionModeShare,
+					ShareFactor: newStrPtr("0.5"),
 				},
 				To: []rawReceiver{
 					{
@@ -342,7 +321,7 @@ func TestCreateTransaction(t *testing.T) {
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
-					Mode: wallet.HoursSelectionModeMatchCoins,
+					Mode: wallet.HoursSelectionModeShare,
 				},
 				To: []rawReceiver{
 					{
@@ -499,8 +478,9 @@ func TestCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type: wallet.HoursSelectionTypeAuto,
-					Mode: wallet.HoursSelectionModeMatchCoins,
+					Type:        wallet.HoursSelectionTypeAuto,
+					Mode:        wallet.HoursSelectionModeShare,
+					ShareFactor: newStrPtr("0.5"),
 				},
 				To: []rawReceiver{
 					{
@@ -523,8 +503,9 @@ func TestCreateTransaction(t *testing.T) {
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
-					Type: wallet.HoursSelectionTypeAuto,
-					Mode: wallet.HoursSelectionModeMatchCoins,
+					Type:        wallet.HoursSelectionTypeAuto,
+					Mode:        wallet.HoursSelectionModeShare,
+					ShareFactor: newStrPtr("0.5"),
 				},
 				To: []rawReceiver{
 					{
@@ -558,36 +539,12 @@ func TestCreateTransaction(t *testing.T) {
 		},
 
 		{
-			name:   "200 - auto type match coins",
-			method: http.MethodPost,
-			body: &rawRequest{
-				HoursSelection: rawHoursSelection{
-					Type: wallet.HoursSelectionTypeAuto,
-					Mode: wallet.HoursSelectionModeMatchCoins,
-				},
-				To: []rawReceiver{
-					{
-						Address: destinationAddress.String(),
-						Coins:   "100",
-					},
-				},
-				ChangeAddress: changeAddress.String(),
-				Wallet: rawWalletRequest{
-					ID: "foo.wlt",
-				},
-			},
-			status: http.StatusOK,
-			gatewayCreateTransactionResult: txn,
-			createTransactionResult:        createTxnResult,
-		},
-
-		{
 			name:   "200 - auto type split even",
 			method: http.MethodPost,
 			body: &rawRequest{
 				HoursSelection: rawHoursSelection{
 					Type:        wallet.HoursSelectionTypeAuto,
-					Mode:        wallet.HoursSelectionModeSplitEven,
+					Mode:        wallet.HoursSelectionModeShare,
 					ShareFactor: newStrPtr("0.5"),
 				},
 				To: []rawReceiver{

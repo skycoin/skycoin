@@ -558,14 +558,15 @@ func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*co
 			return
 		}
 
+		// The wallet can create transactions that would not pass all validation, such as the decimal restriction,
+		// because the wallet is not aware of visor-level constraints.
+		// Check that the transaction is valid before returning it to the caller.
 		err = gw.v.Blockchain.VerifySingleTxnAllConstraints(*txn, visor.DefaultMaxBlockSize)
 		if err != nil {
 			txn = nil
 			logger.WithError(err).Error("Created transaction violates transaction constraints")
 			return
 		}
-
-		return
 	})
 
 	return txn, err

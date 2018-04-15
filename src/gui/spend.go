@@ -62,7 +62,7 @@ func (r CreateTransactionRequest) Validate() error {
 		}
 
 		switch r.HoursSelection.Mode {
-		case wallet.HoursSelectionModeMatchCoins, wallet.HoursSelectionModeSplitEven:
+		case wallet.HoursSelectionModeShare:
 		case "":
 			return errors.New("missing hours_selection.mode")
 		default:
@@ -87,12 +87,12 @@ func (r CreateTransactionRequest) Validate() error {
 	}
 
 	if r.HoursSelection.ShareFactor == nil {
-		if r.HoursSelection.Mode == wallet.HoursSelectionModeSplitEven {
-			return errors.New("missing hours_selection.share_factor when hours_selection.mode is split_even")
+		if r.HoursSelection.Mode == wallet.HoursSelectionModeShare {
+			return errors.New("missing hours_selection.share_factor when hours_selection.mode is share")
 		}
 	} else {
-		if r.HoursSelection.Mode != wallet.HoursSelectionModeSplitEven {
-			return errors.New("hours_selection.share_factor can only be used when hours_selection.mode is split_even")
+		if r.HoursSelection.Mode != wallet.HoursSelectionModeShare {
+			return errors.New("hours_selection.share_factor can only be used when hours_selection.mode is share")
 		}
 
 		switch {

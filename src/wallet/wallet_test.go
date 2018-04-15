@@ -1758,12 +1758,12 @@ func verifyChosenCoins(t *testing.T, uxb []UxBalance, coins uint64, chooseSpends
 	chosen, err := chooseSpends(uxb, coins, 0)
 
 	if coins == 0 {
-		testutil.RequireError(t, err, "zero spend amount")
+		testutil.RequireError(t, err, ErrZeroSpend.Error())
 		return
 	}
 
 	if len(uxb) == 0 {
-		testutil.RequireError(t, err, "no unspents to spend")
+		testutil.RequireError(t, err, ErrNoUnspents.Error())
 		return
 	}
 
@@ -2032,7 +2032,7 @@ func TestCreateWalletParamsVerify(t *testing.T) {
 				},
 				HoursSelection: HoursSelection{
 					Type: HoursSelectionTypeManual,
-					Mode: HoursSelectionModeMatchCoins,
+					Mode: HoursSelectionModeShare,
 				},
 			},
 			err: "HoursSelection.Mode cannot be used for manual type hours selection",
@@ -2098,32 +2098,14 @@ func TestCreateWalletParamsVerify(t *testing.T) {
 				},
 				HoursSelection: HoursSelection{
 					Type: HoursSelectionTypeAuto,
-					Mode: HoursSelectionModeSplitEven,
+					Mode: HoursSelectionModeShare,
 				},
 			},
-			err: "HoursSelection.ShareFactor must be set for split_even mode",
+			err: "HoursSelection.ShareFactor must be set for share mode",
 		},
 
 		{
 			name: "share factor set but not split even mode",
-			params: CreateTransactionParams{
-				ChangeAddress: changeAddress,
-				To:            toAuto,
-				Wallet: CreateTransactionWalletParams{
-					ID:        "foo.wlt",
-					Addresses: []cipher.Address{},
-				},
-				HoursSelection: HoursSelection{
-					Type:        HoursSelectionTypeAuto,
-					Mode:        HoursSelectionModeMatchCoins,
-					ShareFactor: &one,
-				},
-			},
-			err: "HoursSelection.ShareFactor can only be used for split_even mode",
-		},
-
-		{
-			name: "share factor set but not split even mode 2",
 			params: CreateTransactionParams{
 				ChangeAddress: changeAddress,
 				To:            toManual,
@@ -2136,7 +2118,7 @@ func TestCreateWalletParamsVerify(t *testing.T) {
 					ShareFactor: &one,
 				},
 			},
-			err: "HoursSelection.ShareFactor can only be used for split_even mode",
+			err: "HoursSelection.ShareFactor can only be used for share mode",
 		},
 
 		{
@@ -2150,7 +2132,7 @@ func TestCreateWalletParamsVerify(t *testing.T) {
 				},
 				HoursSelection: HoursSelection{
 					Type:        HoursSelectionTypeAuto,
-					Mode:        HoursSelectionModeSplitEven,
+					Mode:        HoursSelectionModeShare,
 					ShareFactor: &negativeOne,
 				},
 			},
@@ -2168,7 +2150,7 @@ func TestCreateWalletParamsVerify(t *testing.T) {
 				},
 				HoursSelection: HoursSelection{
 					Type:        HoursSelectionTypeAuto,
-					Mode:        HoursSelectionModeSplitEven,
+					Mode:        HoursSelectionModeShare,
 					ShareFactor: &onePointOne,
 				},
 			},
@@ -2186,24 +2168,8 @@ func TestCreateWalletParamsVerify(t *testing.T) {
 				},
 				HoursSelection: HoursSelection{
 					Type:        HoursSelectionTypeAuto,
-					Mode:        HoursSelectionModeSplitEven,
+					Mode:        HoursSelectionModeShare,
 					ShareFactor: &pointOneOne,
-				},
-			},
-		},
-
-		{
-			name: "valid auto match coins",
-			params: CreateTransactionParams{
-				ChangeAddress: changeAddress,
-				To:            toAuto,
-				Wallet: CreateTransactionWalletParams{
-					ID:        "foo.wlt",
-					Addresses: []cipher.Address{},
-				},
-				HoursSelection: HoursSelection{
-					Type: HoursSelectionTypeAuto,
-					Mode: HoursSelectionModeMatchCoins,
 				},
 			},
 		},
@@ -2228,7 +2194,7 @@ func TestCreateWalletParamsVerify(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			err := tc.params.Validate()
 			if tc.err != "" {
-				require.Equal(t, errors.New(tc.err), err)
+				require.Equal(t, NewError(errors.New(tc.err)), err, err.Error())
 			} else {
 				require.NoError(t, err)
 			}

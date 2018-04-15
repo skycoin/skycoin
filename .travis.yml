@@ -63,9 +63,9 @@ script:
   # stable integration tests
   - make integration-test-stable
   # libskycoin tests
-  - make test-libc
+  - CC=gcc-6 make test-libc
   # TODO: test pyskycoin
-  # - make test-libpy
+  # - CC=gcc-6 make test-libpy
   # build wallets
   - if [[ "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/build-wallet.sh; fi
 

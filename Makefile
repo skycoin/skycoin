@@ -37,13 +37,6 @@ LIBDOC_DIR = $(DOC_DIR)/libc
 # Compilation flags
 CC_VERSION = $(shell $(CC) -dumpversion)
 STDC_FLAG = $(python -c "if tuple(map(int, '$(CC_VERSION)'.split('.'))) < (6,): print('-std=C99'")
-ifndef CC
-  ifndef STDC_FLAG
-    CC = gcc
-  else
-    CC = gcc-6
-  endif
-endif
 LIBC_LIBS = -lcriterion
 LIBC_FLAGS = -I$(LIBSRC_DIR) -I$(INCLUDE_DIR) -I$(BUILD_DIR)/usr/include -L $(BUILDLIB_DIR) -L$(BUILD_DIR)/usr/lib
 

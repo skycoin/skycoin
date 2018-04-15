@@ -56,6 +56,6 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
   }
 
   private error(error: any) {
-    this.button.setError(error ? error : 'Incorret password');
+    this.button.setError(error ? error : 'Incorrect password');
   }
 }

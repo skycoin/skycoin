@@ -119,9 +119,18 @@ $ docker run -ti --rm \
     skycoin/skycoin
 ```
 
-With this image, the skycoin daemon will run as root by default inside the
-container. When you mount a volume in /data, the container will detect for the
-folder's owner UID and will create a skycoin user with the same UID.
+This image has a `skycoin` user for the skycoin daemon to run, with UID and GID 10000.
+When you mount the volumes, the container will change their owner, so you
+must be aware that if you are mounting an existing host folder any content you
+have there will be own by 10000.
+
+The container will run with some default options, but you can change them
+by just appending flags at the end of the `docker run` command. The following
+example will show you the available options.
+
+```sh
+docker run --rm skycoin/skycoin -help
+```
 
 Access the dashboard: [http://localhost:6420](http://localhost:6420).
 

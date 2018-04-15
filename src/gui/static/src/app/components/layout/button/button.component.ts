@@ -8,13 +8,16 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 
 export class ButtonComponent {
   @Input() disabled: any;
+  @Input() emit = false;
   @Output() action = new EventEmitter();
 
   error: string;
   state: number;
 
   onClick() {
-    if (!this.disabled) this.action.emit();
+    if (!this.disabled || this.emit) {
+      this.action.emit();
+    }
   }
 
   setLoading() {

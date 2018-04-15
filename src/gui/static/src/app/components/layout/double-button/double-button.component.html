@@ -1,0 +1,8 @@
+<div class="-buttons-container">
+  <app-button class="-toggle dark -small-button" [disabled]="rightActive" (action)="onLeftClick()" [emit]="true">
+    {{ leftButtonText }}
+  </app-button>
+  <app-button class="-toggle dark -small-button" [disabled]="!rightActive" (action)="onRightClick()" [emit]="true">
+    {{ rightButtonText }}
+  </app-button>
+</div>

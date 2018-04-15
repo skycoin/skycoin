@@ -59,6 +59,17 @@ else
 	LDPATHVAR=LD_LIBRARY_PATH
 endif
 
+# to know if there are any changes in the files in 2 min
+ifeq ($(shell find ./lib/cgo -type f -name "*.go" -mmin -2),  )
+ifndef CFF
+ CFF = 
+endif
+else
+ifndef CFF
+CFF = go build -buildmode=c-shared  -o $(BUILDLIB_DIR)/libskycoin.so $(LIB_FILES) && mv $(BUILDLIB_DIR)/libskycoin.h $(INCLUDE_DIR)/
+endif
+endif
+
 run:  ## Run the skycoin node. To add arguments, do 'make ARGS="--foo" run'.
 	./run.sh ${ARGS}
 
@@ -82,10 +93,7 @@ configure-build:
 	mkdir -p $(BUILDLIB_DIR) $(BIN_DIR) $(INCLUDE_DIR)
 
 build-libc: configure-build ## Build libskycoin C client library
-	rm -Rf $(BUILDLIB_DIR)/*
-	go build -buildmode=c-shared  -o $(BUILDLIB_DIR)/libskycoin.so $(LIB_FILES)
-	go build -buildmode=c-archive -o $(BUILDLIB_DIR)/libskycoin.a  $(LIB_FILES)
-	mv $(BUILDLIB_DIR)/libskycoin.h $(INCLUDE_DIR)/
+	$(CFF)
 
 test-libc: build-libc ## Run tests for libskycoin C client library
 	cp $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/

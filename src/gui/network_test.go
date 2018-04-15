@@ -408,8 +408,8 @@ func TestGetDefaultStatus(t *testing.T) {
 				TotalAlive:   2,
 				TotalOffline: 0,
 				Connections: []ConnectionStatus{
-					{Connection: "11.44.66.88:9000", IsAlive: true},
 					{Connection: "44.33.22.11:9000", IsAlive: true},
+					{Connection: "11.44.66.88:9000", IsAlive: true},
 				},
 			}
 			gateway.On("GetDefaultConnections").Return(GetDefaultConnections).On("GetConnections").Return(gatewayGetConnectionsResult)

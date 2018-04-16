@@ -299,7 +299,7 @@ Test(cipher_address, TestBitcoinWIP ){
     SKY_cipher_PubKey_Hex(&pubkey,&string);
     cr_assert(eq(type(GoString), (*(GoString*)&string),(*(GoString*)&pub[i]) ));
     GoString bitcoinAddr;
-    SKY_cipher_BitcoinAddressFromPubkey(&pubkey,&bitcoinAddr);
+    SKY_cipher_BitcoinAddressFromPubkey(&pubkey, (GoString_ *)&bitcoinAddr);
     cr_assert(eq(type(GoString),addr[i],bitcoinAddr));
 
   }
@@ -323,7 +323,7 @@ Test(cipher_address, TestAddressBulk){
     cr_assert(err == SKY_OK);
     GoString strAddr;
     SKY_cipher_Address_String(&addr, (GoString_ *)&strAddr);
-    registerMemCleanup(strAddr.p);
+    registerMemCleanup((void *) strAddr.p);
     Address addr2;
 
     err = SKY_cipher_DecodeBase58Address(strAddr,&addr2);

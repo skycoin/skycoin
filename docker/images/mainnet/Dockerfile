@@ -1,8 +1,8 @@
 # skycoin build
 # reference https://github.com/skycoin/skycoin
-FROM golang:1.9 AS build
+FROM golang:1.10 AS build
 
-ENV SKYCOIN_VERSION=0.22.0
+ARG SKYCOIN_VERSION=0.22.0
 
 # dirs
 RUN mkdir -p $GOPATH/src/github.com/skycoin/skycoin
@@ -31,7 +31,7 @@ FROM alpine:3.7
 
 ENV COIN="skycoin" \
     RPC_ADDR="0.0.0.0:6430" \
-    DATA_DIR="/root/.$COIN" \
+    DATA_DIR="/data/.$COIN" \
     WALLET_DIR="/wallet" \
     WALLET_NAME="$COIN_cli.wlt"
 
@@ -39,7 +39,7 @@ ENV COIN="skycoin" \
 COPY --from=build /go/bin/* /usr/bin/
 
 # copy assets
-COPY --from=build /go/src/github.com/skycoin/skycoin/src/gui/static /usr/local/skycoin/static
+COPY --from=build /go/src/github.com/skycoin/skycoin/src/gui/static /usr/local/skycoin/src/gui/static
 
 # volumes
 VOLUME $WALLET_DIR
@@ -47,4 +47,5 @@ VOLUME $DATA_DIR
 
 EXPOSE 6000 6420 6430
 
-CMD ["/usr/bin/skycoin", "--gui-dir=/usr/local/skycoin/static", "--web-interface-addr=0.0.0.0"]
+ENTRYPOINT ["/usr/bin/skycoin"]
+CMD ["--web-interface-addr=0.0.0.0",  "--rpc-interface-addr=0.0.0.0"]

@@ -105,7 +105,9 @@ cd $GOPATH/src/github.com/skycoin/skycoin
 make ARGS="--launch-browser=false -data-dir=/custom/path" run
 ```
 
-### Docker image
+### Docker images
+
+This is the quickest way to start using Skycoin using Docker.
 
 ```sh
 $ docker volume create skycoin-data
@@ -135,6 +137,34 @@ docker run --rm skycoin/skycoin -help
 Access the dashboard: [http://localhost:6420](http://localhost:6420).
 
 Access the API: [http://localhost:6420/version](http://localhost:6420/version).
+
+### Building your own images
+
+There are some folders in the `docker/images/` folder. You can build different
+images with the Dockerfiles they contain for different purposes.
+
+#### Mainnet
+
+When you build this Dockerfile, docker will download the source code from
+github on the specified tag and make an image out of it. The stable image
+should come from this one. The `--build-arg` is optional as there is a default
+in the Dockerfile.
+
+```sh
+$ cd docker/images/mainnet
+$ docker build -t skycoin:stable --build-arg=SKYCOIN_VERSION=0.22.0
+```
+
+#### Snapshot
+
+This Dockerfile it's used to build the current state of the source you are
+working on. Notice that the source code should be in the folder docker uploads
+as context.
+
+```sh
+$ cd $GOPATH/src/github.com/skycoin/skycoin
+$ docker build -t skycoin:snapshot -f docker/images/snapshot/Dockerfile .
+```
 
 ## API Documentation
 

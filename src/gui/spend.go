@@ -214,7 +214,6 @@ func createTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 
 		txn, err := gateway.CreateTransaction(params.ToWalletParams())
 		if err != nil {
-			fmt.Printf("Error type %T: %v\n", err, err)
 			switch err.(type) {
 			case wallet.Error:
 				switch err {

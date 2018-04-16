@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,7 +19,8 @@ import (
 
 // CreateTransactionResponse is returned by /wallet/transaction
 type CreateTransactionResponse struct {
-	Transaction visor.ReadableTransaction `json:"transaction"`
+	Transaction        visor.ReadableTransaction `json:"transaction"`
+	EncodedTransaction string                    `json:"encoded_transaction"`
 }
 
 // createTransactionRequest is sent to /wallet/transaction
@@ -245,7 +247,8 @@ func createTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		wh.SendJSONOr500(logger, w, CreateTransactionResponse{
-			Transaction: *readableTxn,
+			Transaction:        *readableTxn,
+			EncodedTransaction: hex.EncodeToString(txn.Serialize()),
 		})
 	}
 }

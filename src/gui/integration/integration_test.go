@@ -1878,7 +1878,7 @@ func TestLiveWalletSpend(t *testing.T) {
 				}
 				require.Equal(t, totalCoins, coins)
 
-				// Confirms the address balance are equal to the totoalCoins
+				// Confirms the address balance are equal to the totalCoins
 				coins, _ = getAddressBalance(t, c, w.Entries[0].Address.String())
 				require.Equal(t, totalCoins, coins)
 			},
@@ -2330,6 +2330,13 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 					require.Equal(t, o.Hours, hours, "[%d] %d != %d", i, o.Hours, hours)
 				}
 			}
+
+			require.NotEmpty(t, result.EncodedTransaction)
+			emptyTxn := &coin.Transaction{}
+			require.NotEqual(t, hex.EncodeToString(emptyTxn.Serialize()), result.EncodedTransaction)
+			txn, err := result.Transaction.Unreadable()
+			require.NoError(t, err)
+			require.Equal(t, hex.EncodeToString(txn.Serialize()), result.EncodedTransaction)
 		})
 	}
 }

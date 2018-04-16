@@ -2,6 +2,7 @@ package gui
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -51,14 +52,27 @@ func TestCreateTransaction(t *testing.T) {
 	destinationAddress := testutil.MakeAddress()
 	emptyAddress := cipher.Address{}
 
-	txn := &coin.Transaction{}
+	txn := &coin.Transaction{
+		Length:    100,
+		Type:      0,
+		InnerHash: testutil.RandSHA256(t),
+		In:        []cipher.SHA256{testutil.RandSHA256(t)},
+		Out: []coin.TransactionOutput{
+			{
+				Address: destinationAddress,
+				Coins:   1e6,
+				Hours:   100,
+			},
+		},
+	}
 	visorTxn := &visor.Transaction{
 		Txn: *txn,
 	}
 	readableTxn, err := visor.NewReadableTransaction(visorTxn)
 	require.NoError(t, err)
 	createTxnResponse := &CreateTransactionResponse{
-		Transaction: *readableTxn,
+		Transaction:        *readableTxn,
+		EncodedTransaction: hex.EncodeToString(txn.Serialize()),
 	}
 
 	validBody := &rawRequest{
@@ -687,7 +701,7 @@ func TestCreateTransaction(t *testing.T) {
 			// If the rawRequestBody is can be deserialized to CreateTransactionRequest, use it to mock gateway.CreateTransaction
 			serializedBody, err := json.Marshal(tc.body)
 			require.NoError(t, err)
-			var body CreateTransactionRequest
+			var body createTransactionRequest
 			err = json.Unmarshal(serializedBody, &body)
 			if err == nil {
 				gateway.On("CreateTransaction", body.ToWalletParams()).Return(tc.gatewayCreateTransactionResult, tc.gatewayCreateTransactionErr)

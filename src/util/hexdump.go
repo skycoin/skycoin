@@ -9,15 +9,18 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 )
 
+// Annotation: Denotes a chunk of data to be dumped
 type Annotation struct {
 	Name string
 	Size int
 }
 
+// IAnnotationsGenerator: Interface to implement by types to use HexDump
 type IAnnotationsGenerator interface {
 	GenerateAnnotations() []Annotation
 }
 
+// IAnnotationsIterator: Interface to implement by types to use HexDumpFromIterator
 type IAnnotationsIterator interface {
 	Next() (Annotation, bool)
 }
@@ -45,8 +48,8 @@ func writeHexdumpMember(offset int, size int, writer io.Writer, buffer []byte, n
 }
 
 func getSliceContentsString(sl []string, offset int) string {
-	var res string = ""
-	var counter int = 0
+	var res = ""
+	var counter = 0
 	var currentOff = offset
 	if offset != -1 {
 		var hex = strconv.FormatInt(int64(offset), 16)
@@ -105,6 +108,7 @@ func printFinalHex(i int, writer io.Writer) {
 	f.Write(serialized[4:])
 }
 
+// HexDump: Returns hexdump of buffer according to annotations, via writer
 func HexDump(buffer []byte, annotations []Annotation, writer io.Writer) {
 	var currentOffset = 0
 
@@ -116,6 +120,7 @@ func HexDump(buffer []byte, annotations []Annotation, writer io.Writer) {
 	printFinalHex(currentOffset, writer)
 }
 
+// HexDumpFromIterator: Returns hexdump of buffer according to annotationsIterator, via writer
 func HexDumpFromIterator(buffer []byte, annotationsIterator IAnnotationsIterator, writer io.Writer) {
 	var currentOffset = 0
 

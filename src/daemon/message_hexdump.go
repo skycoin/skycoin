@@ -18,8 +18,8 @@ import (
 var registered = false
 
 func getSliceContentsString(sl []string, offset int) string {
-	var res string = ""
-	var counter int = 0
+	var res = ""
+	var counter = 0
 	var currentOff = offset
 	if offset != -1 {
 		var hex = strconv.FormatInt(int64(offset), 16)
@@ -69,7 +69,8 @@ func printLHexDumpWithFormat(offset int, name string, buffer []byte) {
 	fmt.Println(getSliceContentsString(hexBuff, offset), name)
 }
 
-func NoGenericHexDump(message gnet.Message) string {
+// 	NonGenericHexDump: version of hexdump without Annotations
+func NonGenericHexDump(message gnet.Message) string {
 
 	//setting stdout to a temp file
 	defaultStdOut := os.Stdout
@@ -87,7 +88,7 @@ func NoGenericHexDump(message gnet.Message) string {
 	printLHexDumpWithFormat(-1, "Full message", serializedMsg)
 
 	fmt.Println("------------------------------------------------------------------------")
-	var offset int = 0
+	var offset = 0
 	printLHexDumpWithFormat(0, "Length", serializedMsg[0:4])
 	printLHexDumpWithFormat(4, "Prefix", serializedMsg[4:8])
 	offset += len(serializedMsg[0:8])
@@ -95,10 +96,10 @@ func NoGenericHexDump(message gnet.Message) string {
 
 	t := v.Type()
 	for i := 0; i < v.NumField(); i++ {
-		v_f := v.Field(i)
+		vF := v.Field(i)
 		f := t.Field(i)
 		if f.Tag.Get("enc") != "-" {
-			if v_f.CanSet() || f.Name != "_" {
+			if vF.CanSet() || f.Name != "_" {
 				if v.Field(i).Kind() == reflect.Slice {
 					printLHexDumpWithFormat(offset, f.Name+" length", encoder.Serialize(v.Field(i).Slice(0, v.Field(i).Len()).Interface())[0:4])
 					offset += len(encoder.Serialize(v.Field(i).Slice(0, v.Field(i).Len()).Interface())[0:4])
@@ -123,7 +124,7 @@ func NoGenericHexDump(message gnet.Message) string {
 	out, _ := ioutil.ReadAll(r)
 	os.Stdout = defaultStdOut
 
-	var strOut string = ""
+	var strOut = ""
 
 	for i := 0; i < len(out); i++ {
 		strOut += string(out[i])
@@ -143,6 +144,7 @@ func printFinalHex(i int) {
 	fmt.Println(finalHex)
 }
 
+// MessagesAnnotationsGenerator: Implementation of IAnnotationsGenerator for type gnet.Message
 type MessagesAnnotationsGenerator struct {
 	Message gnet.Message
 }
@@ -155,10 +157,10 @@ func (mag *MessagesAnnotationsGenerator) GenerateAnnotations() []util.Annotation
 
 	t := v.Type()
 	for i := 0; i < v.NumField(); i++ {
-		v_f := v.Field(i)
+		vF := v.Field(i)
 		f := t.Field(i)
 		if f.Tag.Get("enc") != "-" {
-			if v_f.CanSet() || f.Name != "_" {
+			if vF.CanSet() || f.Name != "_" {
 				if v.Field(i).Kind() == reflect.Slice {
 					annotations = append(annotations, util.Annotation{Size: 4, Name: f.Name + " length"})
 					for j := 0; j < v.Field(i).Len(); j++ {
@@ -176,6 +178,7 @@ func (mag *MessagesAnnotationsGenerator) GenerateAnnotations() []util.Annotation
 	return annotations
 }
 
+// MessagesAnnotationsIterator: Implementation of IAnnotationsIterator for type gnet.Message
 type MessagesAnnotationsIterator struct {
 	Message      gnet.Message
 	LengthCalled bool
@@ -185,6 +188,7 @@ type MessagesAnnotationsIterator struct {
 	CurrentIndex int
 }
 
+// NewMessagesAnnotationsIterator: Initializes struct MessagesAnnotationsIterator
 func NewMessagesAnnotationsIterator(message gnet.Message) MessagesAnnotationsIterator {
 	var mai = MessagesAnnotationsIterator{}
 	mai.Message = message
@@ -198,6 +202,7 @@ func NewMessagesAnnotationsIterator(message gnet.Message) MessagesAnnotationsIte
 	return mai
 }
 
+// Next: Yields next element of MessagesAnnotationsIterator
 func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 	if !mai.LengthCalled {
 		mai.LengthCalled = true
@@ -218,20 +223,19 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 
 	var v = reflect.Indirect(reflect.ValueOf(mai.Message))
 	t := v.Type()
-	v_f := v.Field(i)
+	vF := v.Field(i)
 	f := t.Field(i)
 	if f.Tag.Get("enc") != "-" {
-		if v_f.CanSet() || f.Name != "_" {
+		if vF.CanSet() || f.Name != "_" {
 			if v.Field(i).Kind() == reflect.Slice {
 				if mai.CurrentIndex == -1 {
 					mai.CurrentIndex = 0
 					return util.Annotation{Size: 4, Name: f.Name + " length"}, true
-				} else {
-					mai.CurrentIndex++
-					if mai.CurrentIndex == v.Field(i).Len() {
-						mai.CurrentIndex = -1
-						mai.CurrentField++
-					}
+				}
+				mai.CurrentIndex++
+				if mai.CurrentIndex == v.Field(i).Len() {
+					mai.CurrentIndex = -1
+					mai.CurrentField++
 					return util.Annotation{Size: len(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())[4:]), Name: f.Name + "#" + strconv.Itoa(j)}, true
 				}
 			} else {

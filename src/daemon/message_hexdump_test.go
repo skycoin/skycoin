@@ -79,9 +79,9 @@ func ExampleGivePeersMessage() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
 	var peers = make([]pex.Peer, 3)
-	var peer0 pex.Peer = *pex.NewPeer("118.178.135.93:6000")
-	var peer1 pex.Peer = *pex.NewPeer("47.88.33.156:6000")
-	var peer2 pex.Peer = *pex.NewPeer("121.41.103.148:6000")
+	var peer0 = *pex.NewPeer("118.178.135.93:6000")
+	var peer1 = *pex.NewPeer("47.88.33.156:6000")
+	var peer2 = *pex.NewPeer("121.41.103.148:6000")
 	peers = append(peers, peer0, peer1, peer2)
 	var message = NewGivePeersMessage(peers)
 	fmt.Println("GivePeersMessage:")
@@ -123,7 +123,7 @@ func ExampleGiveBlocksMessage() {
 	var body1 = coin.BlockBody{
 		Transactions: make([]coin.Transaction, 0),
 	}
-	var block1 coin.Block = coin.Block{
+	var block1 = coin.Block{
 		Body: body1,
 		Head: coin.BlockHeader{
 			Version:  0x02,
@@ -221,8 +221,8 @@ func ExampleGiveTxnsMessage() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
 	var transactions coin.Transactions = make([]coin.Transaction, 0)
-	var transactionOutputs0 []coin.TransactionOutput = make([]coin.TransactionOutput, 0)
-	var transactionOutputs1 []coin.TransactionOutput = make([]coin.TransactionOutput, 0)
+	var transactionOutputs0 = make([]coin.TransactionOutput, 0)
+	var transactionOutputs1 = make([]coin.TransactionOutput, 0)
 	var txOutput0 = coin.TransactionOutput{
 		Address: addresses[0],
 		Coins:   12,
@@ -378,9 +378,9 @@ func ExampleGivePeersMessageWithIterator() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
 	var peers = make([]pex.Peer, 3)
-	var peer0 pex.Peer = *pex.NewPeer("118.178.135.93:6000")
-	var peer1 pex.Peer = *pex.NewPeer("47.88.33.156:6000")
-	var peer2 pex.Peer = *pex.NewPeer("121.41.103.148:6000")
+	var peer0 = *pex.NewPeer("118.178.135.93:6000")
+	var peer1 = *pex.NewPeer("47.88.33.156:6000")
+	var peer2 = *pex.NewPeer("121.41.103.148:6000")
 	peers = append(peers, peer0, peer1, peer2)
 	var message = NewGivePeersMessage(peers)
 	fmt.Println("GivePeersMessage:")
@@ -422,7 +422,7 @@ func ExampleGiveBlocksMessageWithIterator() {
 	var body1 = coin.BlockBody{
 		Transactions: make([]coin.Transaction, 0),
 	}
-	var block1 coin.Block = coin.Block{
+	var block1 = coin.Block{
 		Body: body1,
 		Head: coin.BlockHeader{
 			Version:  0x02,
@@ -520,8 +520,8 @@ func ExampleGiveTxnsMessageWithIterator() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
 	var transactions coin.Transactions = make([]coin.Transaction, 0)
-	var transactionOutputs0 []coin.TransactionOutput = make([]coin.TransactionOutput, 0)
-	var transactionOutputs1 []coin.TransactionOutput = make([]coin.TransactionOutput, 0)
+	var transactionOutputs0 = make([]coin.TransactionOutput, 0)
+	var transactionOutputs1 = make([]coin.TransactionOutput, 0)
 	var txOutput0 = coin.TransactionOutput{
 		Address: addresses[0],
 		Coins:   12,

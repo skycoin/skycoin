@@ -70,7 +70,6 @@ func SKY_cli_CreateRawTx(_c *C.WebrpcClient__Handle, _wlt *C.Wallet__Handle, _in
 		if wlt, isWallet := lookupWalletHandle(*_wlt); isWallet {
 			inAddrs := *(*[]string)(unsafe.Pointer(_inAddrs))
 			chgAddr := _chgAddr
-			//TODO: stdevEclipse Test this typecast
 			toAddrs := *(*[]cli.SendAmount)(unsafe.Pointer(&_toAddrs))
 			__arg5, ____return_err := cli.CreateRawTx(c, wlt, inAddrs, chgAddr, toAddrs)
 			____error_code = libErrorCode(____return_err)

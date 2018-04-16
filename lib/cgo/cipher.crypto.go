@@ -49,7 +49,6 @@ func SKY_cipher_NewPubKey(_b []byte, _arg1 *C.cipher__PubKey) (errcode uint32) {
 	}()
 
 	pubkey := cipher.NewPubKey(_b)
-	//TODO: stdevEclipse Test copyToBuffer
 	copyToBuffer(reflect.ValueOf(pubkey[:]), unsafe.Pointer(_arg1), uint(SizeofPubKey))
 	return libErrorCode(nil)
 }

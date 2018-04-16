@@ -82,7 +82,6 @@ func SKY_cli_App_Run(_app *C.App__Handle, _args *C.GoSlice_) (____error_code uin
 	____error_code = SKY_ERROR
 	app, ok := lookupAppHandle(*_app)
 	if ok {
-		//TODO: stdevEclipse Test this typecast
 		args := *(*[]string)(unsafe.Pointer(_args))
 		____return_err := app.Run(args)
 		____error_code = libErrorCode(____return_err)

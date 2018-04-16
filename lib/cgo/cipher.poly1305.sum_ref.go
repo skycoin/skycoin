@@ -21,7 +21,6 @@ func SKY_poly1305_Sum(_out *C.poly1305__Mac, _msg []byte, _key *C.poly1305__Key)
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	//TODO: stdevEclipse Check Pointer Casting
 	out := (*[16]byte)(unsafe.Pointer(_out))
 	key := (*[32]byte)(unsafe.Pointer(_key))
 	poly1305.Sum(out, _msg, key)

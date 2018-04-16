@@ -10,7 +10,7 @@
     </div>
     <div class="hour-balance">
       <p *ngIf="loading">Syncing blocks {{ current && highest ?  '(' + current + '/'  + highest + ')' : '..' }}</p>
-      <p *ngIf="!loading">{{ hours }} SKY Hours</p>
+      <p *ngIf="!loading">{{ hours | number }} SKY Hours</p>
     </div>
   </div>
   <app-nav-bar></app-nav-bar>

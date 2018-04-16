@@ -16,7 +16,11 @@
         <strong>{{ value | dateTime }}</strong>
       </ng-template>
     </ngx-datatable-column>
-    <ngx-datatable-column name="Amount" [flexGrow]="1"></ngx-datatable-column>
+    <ngx-datatable-column name="Amount" [flexGrow]="1">
+      <ng-template let-value="value" ngx-datatable-cell-template>
+        {{ value | number:'1.0-6' }}
+      </ng-template>
+    </ngx-datatable-column>
     <ngx-datatable-column name="Transaction ID" prop="txid" [flexGrow]="8"></ngx-datatable-column>
   </ngx-datatable>
 </div>

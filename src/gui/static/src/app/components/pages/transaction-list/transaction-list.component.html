@@ -15,7 +15,7 @@
           <p>{{ transaction.addresses.join(', ') }}</p>
         </div>
         <div class="-balance">
-          <h4>{{ transaction.balance }} SKY</h4>
+          <h4>{{ transaction.balance | number:'1.0-6' }} SKY</h4>
           <p *ngIf="price">{{ transaction.balance * price | currency:'USD':'symbol':'1.2-2' }}</p>
         </div>
       </div>

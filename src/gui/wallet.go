@@ -540,7 +540,7 @@ func walletsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		var wrs []*WalletResponse
+		wrs := make([]*WalletResponse, 0, len(wlts))
 		for _, wlt := range wlts {
 			wr, err := NewWalletResponse(wlt)
 			if err != nil {

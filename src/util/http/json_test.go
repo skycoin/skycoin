@@ -175,6 +175,10 @@ func TestCoinsUnmarshalJSON(t *testing.T) {
 			c:   "inf",
 			err: "can't convert inf to decimal",
 		},
+		{
+			c:        "9223372036854.775807",
+			expected: uint64(math.MaxInt64),
+		},
 	}
 
 	for _, tc := range cases {

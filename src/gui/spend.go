@@ -16,43 +16,43 @@ import (
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-// CreateTransactionResult is returned by /wallet/transaction
-type CreateTransactionResult struct {
+// CreateTransactionResponse is returned by /wallet/transaction
+type CreateTransactionResponse struct {
 	Transaction visor.ReadableTransaction `json:"transaction"`
 }
 
-// CreateTransactionRequest is sent to /wallet/transaction
-type CreateTransactionRequest struct {
-	HoursSelection HoursSelection                 `json:"hours_selection"`
-	Wallet         CreateTransactionWalletRequest `json:"wallet"`
+// createTransactionRequest is sent to /wallet/transaction
+type createTransactionRequest struct {
+	HoursSelection hoursSelection                 `json:"hours_selection"`
+	Wallet         createTransactionWalletRequest `json:"wallet"`
 	ChangeAddress  *wh.Address                    `json:"change_address"`
-	To             []Receiver                     `json:"to"`
+	To             []receiver                     `json:"to"`
 	Password       string                         `json:"password"`
 }
 
-// CreateTransactionWalletRequest defines a wallet to spend from and optionally which addresses in the wallet
-type CreateTransactionWalletRequest struct {
+// createTransactionWalletRequest defines a wallet to spend from and optionally which addresses in the wallet
+type createTransactionWalletRequest struct {
 	ID        string       `json:"id"`
 	Addresses []wh.Address `json:"addresses,omitempty"`
 	Password  string       `json:"password"`
 }
 
-// HoursSelection defines options for hours distribution
-type HoursSelection struct {
+// hoursSelection defines options for hours distribution
+type hoursSelection struct {
 	Type        string           `json:"type"`
 	Mode        string           `json:"mode"`
 	ShareFactor *decimal.Decimal `json:"share_factor,omitempty"`
 }
 
-// Receiver specifies a spend destination
-type Receiver struct {
+// receiver specifies a spend destination
+type receiver struct {
 	Address wh.Address `json:"address"`
 	Coins   wh.Coins   `json:"coins"`
 	Hours   *wh.Hours  `json:"hours,omitempty"`
 }
 
-// Validate validates CreateTransactionRequest data
-func (r CreateTransactionRequest) Validate() error {
+// Validate validates createTransactionRequest data
+func (r createTransactionRequest) Validate() error {
 	switch r.HoursSelection.Type {
 	case wallet.HoursSelectionTypeAuto:
 		for i, to := range r.To {
@@ -140,8 +140,8 @@ func (r CreateTransactionRequest) Validate() error {
 	return nil
 }
 
-// ToWalletParams converts CreateTransactionRequest to wallet.CreateTransactionParams
-func (r CreateTransactionRequest) ToWalletParams() wallet.CreateTransactionParams {
+// ToWalletParams converts createTransactionRequest to wallet.CreateTransactionParams
+func (r createTransactionRequest) ToWalletParams() wallet.CreateTransactionParams {
 	addresses := make([]cipher.Address, len(r.Wallet.Addresses))
 	for i, a := range r.Wallet.Addresses {
 		addresses[i] = a.Address
@@ -196,16 +196,16 @@ func createTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		var params CreateTransactionRequest
+		var params createTransactionRequest
 		err := json.NewDecoder(r.Body).Decode(&params)
 		if err != nil {
-			logger.WithError(err).Error("Invalid advanced spend request")
+			logger.WithError(err).Error("Invalid create transaction request")
 			wh.Error400(w, err.Error())
 			return
 		}
 
 		if err := params.Validate(); err != nil {
-			logger.WithError(err).Error("Invalid advanced spend request")
+			logger.WithError(err).Error("Invalid create transaction request")
 			wh.Error400(w, err.Error())
 			return
 		}
@@ -244,7 +244,7 @@ func createTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendJSONOr500(logger, w, CreateTransactionResult{
+		wh.SendJSONOr500(logger, w, CreateTransactionResponse{
 			Transaction: *readableTxn,
 		})
 	}

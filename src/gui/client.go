@@ -111,8 +111,13 @@ func (c *Client) PostForm(endpoints string, body io.Reader, obj interface{}) err
 }
 
 // PostJSON makes a POST request to an endpoint with body of json data.
-func (c *Client) PostJSON(endpoints string, body io.Reader, obj interface{}) error {
-	return c.post(endpoints, "application/json", body, obj)
+func (c *Client) PostJSON(endpoints string, reqObj, respObj interface{}) error {
+	body, err := json.Marshal(reqObj)
+	if err != nil {
+		return err
+	}
+
+	return c.post(endpoints, "application/json", bytes.NewReader(body), respObj)
 }
 
 // Post makes a POST request to an endpoint. Caller must close response body.
@@ -478,6 +483,47 @@ func (c *Client) Spend(id, dst string, coins uint64, password string) (*SpendRes
 	return &r, nil
 }
 
+// CreateTransactionRequest is sent to /wallet/transaction
+type CreateTransactionRequest struct {
+	HoursSelection HoursSelection                 `json:"hours_selection"`
+	Wallet         CreateTransactionWalletRequest `json:"wallet"`
+	ChangeAddress  string                         `json:"change_address"`
+	To             []Receiver                     `json:"to"`
+	Password       string                         `json:"password"`
+}
+
+// CreateTransactionWalletRequest defines a wallet to spend from and optionally which addresses in the wallet
+type CreateTransactionWalletRequest struct {
+	ID        string   `json:"id"`
+	Addresses []string `json:"addresses,omitempty"`
+	Password  string   `json:"password"`
+}
+
+// HoursSelection defines options for hours distribution
+type HoursSelection struct {
+	Type        string `json:"type"`
+	Mode        string `json:"mode"`
+	ShareFactor string `json:"share_factor,omitempty"`
+}
+
+// Receiver specifies a spend destination
+type Receiver struct {
+	Address string `json:"address"`
+	Coins   string `json:"coins"`
+	Hours   string `json:"hours,omitempty"`
+}
+
+// CreateTransaction makes a request to POST /wallet/transaction
+func (c *Client) CreateTransaction(req CreateTransactionRequest) (*CreateTransactionResponse, error) {
+	var r CreateTransactionResponse
+	endpoint := "/wallet/transaction"
+	if err := c.PostJSON(endpoint, req, &r); err != nil {
+		return nil, err
+	}
+
+	return &r, nil
+}
+
 // WalletTransactions makes a request to /wallet/transactions
 func (c *Client) WalletTransactions(id string) (*UnconfirmedTxnsResponse, error) {
 	v := url.Values{}
@@ -664,13 +710,8 @@ func (c *Client) InjectTransaction(rawTx string) (string, error) {
 		Rawtx: rawTx,
 	}
 
-	d, err := json.Marshal(v)
-	if err != nil {
-		return "", err
-	}
-
 	var txid string
-	if err := c.PostJSON("/injectTransaction", bytes.NewReader(d), &txid); err != nil {
+	if err := c.PostJSON("/injectTransaction", v, &txid); err != nil {
 		return "", err
 	}
 	return txid, nil

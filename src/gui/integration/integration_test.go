@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"net/url"
 	"os"
@@ -20,9 +21,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/gui"
-	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/skycoin/skycoin/src/util/droplet" //http,json helpers
+	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -1853,6 +1856,7 @@ func TestLiveWalletSpend(t *testing.T) {
 
 	c := gui.NewClient(nodeAddress())
 	w, totalCoins, _, password := prepareAndCheckWallet(t, c, 2e6, 2)
+
 	tt := []struct {
 		name    string
 		to      string
@@ -1965,6 +1969,367 @@ func TestLiveWalletSpend(t *testing.T) {
 			}
 			require.Equal(t, errMsg, err.Error())
 			require.Nil(t, result)
+		})
+	}
+}
+
+func TestLiveWalletCreateTransaction(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	requireWalletEnv(t)
+
+	if !doWallet(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	w, totalCoins, totalHours, password := prepareAndCheckWallet(t, c, 2e6, 2)
+
+	remainingHours := fee.RemainingHours(totalHours)
+	require.True(t, remainingHours > 1)
+
+	toDropletString := func(i uint64) string {
+		x, err := droplet.ToString(i)
+		require.NoError(t, err)
+		return x
+	}
+
+	type testCase struct {
+		name        string
+		req         gui.CreateTransactionRequest
+		outputs     []coin.TransactionOutput
+		err         string
+		ignoreHours bool
+	}
+
+	cases := []testCase{
+		{
+			name: "invalid decimals",
+			req: gui.CreateTransactionRequest{
+				HoursSelection: gui.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: gui.CreateTransactionWalletRequest{
+					ID:       w.Filename(),
+					Password: password,
+				},
+				ChangeAddress: w.Entries[0].Address.String(),
+				To: []gui.Receiver{
+					{
+						Address: w.Entries[0].Address.String(),
+						Coins:   "0.0001",
+						Hours:   "1",
+					},
+				},
+			},
+			err: "400 Bad Request - to[0].coins has too many decimal places\n",
+		},
+
+		{
+			name: "overflowing hours",
+			req: gui.CreateTransactionRequest{
+				HoursSelection: gui.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: gui.CreateTransactionWalletRequest{
+					ID:       w.Filename(),
+					Password: password,
+				},
+				ChangeAddress: w.Entries[0].Address.String(),
+				To: []gui.Receiver{
+					{
+						Address: w.Entries[0].Address.String(),
+						Coins:   "0.001",
+						Hours:   "1",
+					},
+					{
+						Address: w.Entries[0].Address.String(),
+						Coins:   "0.001",
+						Hours:   fmt.Sprint(uint64(math.MaxUint64)),
+					},
+					{
+						Address: w.Entries[0].Address.String(),
+						Coins:   "0.001",
+						Hours:   fmt.Sprint(uint64(math.MaxUint64)),
+					},
+				},
+			},
+			err: "400 Bad Request - total output hours error: uint64 addition overflow\n",
+		},
+
+		{
+			name: "insufficient coins",
+			req: gui.CreateTransactionRequest{
+				HoursSelection: gui.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: gui.CreateTransactionWalletRequest{
+					ID:       w.Filename(),
+					Password: password,
+				},
+				ChangeAddress: w.Entries[0].Address.String(),
+				To: []gui.Receiver{
+					{
+						Address: w.Entries[0].Address.String(),
+						Coins:   fmt.Sprint(totalCoins + 1),
+						Hours:   "1",
+					},
+				},
+			},
+			err: "400 Bad Request - balance is not sufficient\n",
+		},
+
+		{
+			name: "insufficient hours",
+			req: gui.CreateTransactionRequest{
+				HoursSelection: gui.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: gui.CreateTransactionWalletRequest{
+					ID:       w.Filename(),
+					Password: password,
+				},
+				ChangeAddress: w.Entries[0].Address.String(),
+				To: []gui.Receiver{
+					{
+						Address: w.Entries[0].Address.String(),
+						Coins:   toDropletString(totalCoins),
+						Hours:   fmt.Sprint(totalHours + 1),
+					},
+				},
+			},
+			err: "400 Bad Request - hours are not sufficient\n",
+		},
+
+		{
+			name: "valid request, manual one output with change",
+			req: gui.CreateTransactionRequest{
+				HoursSelection: gui.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: gui.CreateTransactionWalletRequest{
+					ID:       w.Filename(),
+					Password: password,
+				},
+				ChangeAddress: w.Entries[0].Address.String(),
+				To: []gui.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(totalCoins - 1e3),
+						Hours:   "1",
+					},
+				},
+			},
+			outputs: []coin.TransactionOutput{
+				{
+					Address: w.Entries[1].Address,
+					Coins:   totalCoins - 1e3,
+					Hours:   1,
+				},
+				{
+					Address: w.Entries[0].Address,
+					Coins:   1e3,
+					Hours:   remainingHours - 1,
+				},
+			},
+		},
+
+		{
+			name: "valid request, manual one output no change",
+			req: gui.CreateTransactionRequest{
+				HoursSelection: gui.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: gui.CreateTransactionWalletRequest{
+					ID:       w.Filename(),
+					Password: password,
+				},
+				ChangeAddress: w.Entries[0].Address.String(),
+				To: []gui.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(totalCoins),
+						Hours:   "1",
+					},
+				},
+			},
+			outputs: []coin.TransactionOutput{
+				{
+					Address: w.Entries[1].Address,
+					Coins:   totalCoins,
+					Hours:   1,
+				},
+			},
+		},
+
+		{
+			name: "valid request, auto one output no change",
+			req: gui.CreateTransactionRequest{
+				HoursSelection: gui.HoursSelection{
+					Type:        wallet.HoursSelectionTypeAuto,
+					Mode:        wallet.HoursSelectionModeShare,
+					ShareFactor: "0.5",
+				},
+				Wallet: gui.CreateTransactionWalletRequest{
+					ID:       w.Filename(),
+					Password: password,
+				},
+				ChangeAddress: w.Entries[0].Address.String(),
+				To: []gui.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(totalCoins),
+					},
+				},
+			},
+			outputs: []coin.TransactionOutput{
+				{
+					Address: w.Entries[1].Address,
+					Coins:   totalCoins,
+					Hours:   remainingHours / 2,
+				},
+			},
+		},
+
+		{
+			name: "valid request, auto two outputs with change",
+			req: gui.CreateTransactionRequest{
+				HoursSelection: gui.HoursSelection{
+					Type:        wallet.HoursSelectionTypeAuto,
+					Mode:        wallet.HoursSelectionModeShare,
+					ShareFactor: "0.5",
+				},
+				Wallet: gui.CreateTransactionWalletRequest{
+					ID:       w.Filename(),
+					Password: password,
+				},
+				ChangeAddress: w.Entries[0].Address.String(),
+				To: []gui.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(1e6),
+					},
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(totalCoins - 1e6 - 1e4),
+					},
+				},
+			},
+			outputs: []coin.TransactionOutput{
+				{
+					Address: w.Entries[1].Address,
+					Coins:   1e6,
+				},
+				{
+					Address: w.Entries[1].Address,
+					Coins:   totalCoins - 1e6 - 1e4,
+				},
+				{
+					Address: w.Entries[0].Address,
+					Coins:   1e4,
+				},
+			},
+			ignoreHours: true, // the hours are too unpredictable
+		},
+	}
+
+	if w.IsEncrypted() {
+		cases = append(cases, testCase{
+			name: "invalid password",
+			req: gui.CreateTransactionRequest{
+				HoursSelection: gui.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: gui.CreateTransactionWalletRequest{
+					ID:       w.Filename(),
+					Password: password + "foo",
+				},
+				ChangeAddress: w.Entries[0].Address.String(),
+				To: []gui.Receiver{
+					{
+						Address: w.Entries[0].Address.String(),
+						Coins:   "1000",
+						Hours:   "1",
+					},
+				},
+			},
+			err: "400 Bad Request - TODO\n",
+		})
+
+		cases = append(cases, testCase{
+			name: "password not provided",
+			req: gui.CreateTransactionRequest{
+				HoursSelection: gui.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: gui.CreateTransactionWalletRequest{
+					ID:       w.Filename(),
+					Password: "",
+				},
+				ChangeAddress: w.Entries[0].Address.String(),
+				To: []gui.Receiver{
+					{
+						Address: w.Entries[0].Address.String(),
+						Coins:   "1000",
+						Hours:   "1",
+					},
+				},
+			},
+			err: "400 Bad Request - TODO\n",
+		})
+
+	} else {
+		cases = append(cases, testCase{
+			name: "password provided for unencrypted wallet",
+			req: gui.CreateTransactionRequest{
+				HoursSelection: gui.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: gui.CreateTransactionWalletRequest{
+					ID:       w.Filename(),
+					Password: password + "foo",
+				},
+				ChangeAddress: w.Entries[0].Address.String(),
+				To: []gui.Receiver{
+					{
+						Address: w.Entries[0].Address.String(),
+						Coins:   "1000",
+						Hours:   "1",
+					},
+				},
+			},
+			err: "400 Bad Request - wallet is not encrypted\n",
+		})
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := c.CreateTransaction(tc.req)
+			if tc.err != "" {
+				require.Error(t, err)
+				require.Equal(t, tc.err, err.Error())
+				return
+			}
+
+			require.NoError(t, err)
+
+			require.Equal(t, len(tc.outputs), len(result.Transaction.Out))
+
+			for i, o := range tc.outputs {
+				require.Equal(t, o.Address.String(), result.Transaction.Out[i].Address)
+
+				coins, err := droplet.FromString(result.Transaction.Out[i].Coins)
+				require.NoError(t, err)
+				require.Equal(t, o.Coins, coins, "[%d] %d != %d", i, o.Coins, coins)
+
+				if !tc.ignoreHours {
+					hours := result.Transaction.Out[i].Hours
+					require.Equal(t, o.Hours, hours, "[%d] %d != %d", i, o.Hours, hours)
+				}
+			}
 		})
 	}
 }
@@ -2383,6 +2748,11 @@ func prepareAndCheckWallet(t *testing.T, c *gui.Client, miniCoins, miniCoinHours
 		_, err := c.NewWalletAddress(w.Filename(), 2-len(w.Entries), password)
 		if err != nil {
 			t.Fatalf("New wallet address failed: %v", err)
+		}
+
+		w, err = wallet.Load(walletPath)
+		if err != nil {
+			t.Fatalf("Reload wallet %v failed: %v", walletPath, err)
 		}
 	}
 

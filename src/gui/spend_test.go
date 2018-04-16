@@ -57,7 +57,7 @@ func TestCreateTransaction(t *testing.T) {
 	}
 	readableTxn, err := visor.NewReadableTransaction(visorTxn)
 	require.NoError(t, err)
-	createTxnResult := &CreateTransactionResult{
+	createTxnResponse := &CreateTransactionResponse{
 		Transaction: *readableTxn,
 	}
 
@@ -86,7 +86,7 @@ func TestCreateTransaction(t *testing.T) {
 		err                            string
 		gatewayCreateTransactionResult *coin.Transaction
 		gatewayCreateTransactionErr    error
-		createTransactionResult        *CreateTransactionResult
+		createTransactionResponse      *CreateTransactionResponse
 		csrfDisabled                   bool
 		contentType                    string
 	}{
@@ -560,7 +560,7 @@ func TestCreateTransaction(t *testing.T) {
 			},
 			status: http.StatusOK,
 			gatewayCreateTransactionResult: txn,
-			createTransactionResult:        createTxnResult,
+			createTransactionResponse:      createTxnResponse,
 		},
 
 		{
@@ -584,7 +584,7 @@ func TestCreateTransaction(t *testing.T) {
 			},
 			status: http.StatusOK,
 			gatewayCreateTransactionResult: txn,
-			createTransactionResult:        createTxnResult,
+			createTransactionResponse:      createTxnResponse,
 		},
 
 		{
@@ -608,7 +608,7 @@ func TestCreateTransaction(t *testing.T) {
 			},
 			status: http.StatusOK,
 			gatewayCreateTransactionResult: txn,
-			createTransactionResult:        createTxnResult,
+			createTransactionResponse:      createTxnResponse,
 		},
 
 		{
@@ -617,7 +617,7 @@ func TestCreateTransaction(t *testing.T) {
 			body:   validBody,
 			status: http.StatusOK,
 			gatewayCreateTransactionResult: txn,
-			createTransactionResult:        createTxnResult,
+			createTransactionResponse:      createTxnResponse,
 			csrfDisabled:                   true,
 		},
 
@@ -729,11 +729,11 @@ func TestCreateTransaction(t *testing.T) {
 			if status != http.StatusOK {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()))
 			} else {
-				var msg CreateTransactionResult
+				var msg CreateTransactionResponse
 				err := json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
-				require.NotNil(t, tc.createTransactionResult)
-				require.Equal(t, *tc.createTransactionResult, msg)
+				require.NotNil(t, tc.createTransactionResponse)
+				require.Equal(t, *tc.createTransactionResponse, msg)
 			}
 		})
 	}

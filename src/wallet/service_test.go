@@ -1602,7 +1602,7 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 					if opts.Encrypt && len(opts.Password) == 0 {
 						opts.Password = []byte("password")
 					}
-					w, err := s.CreateWallet(wltName, opts)
+					w, err := s.CreateWallet(wltName, opts, nil)
 					require.NoError(t, err)
 
 					if !w.IsEncrypted() {

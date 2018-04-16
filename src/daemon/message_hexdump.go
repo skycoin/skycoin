@@ -243,11 +243,11 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 				mai.CurrentField++
 				return util.Annotation{Size: len(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())[4:]), Name: f.Name + "#" + strconv.Itoa(j)}, true
 
-			} else {
-
-				mai.CurrentField++
-				return util.Annotation{Size: len(encoder.Serialize(v.Field(i).Interface())), Name: f.Name}, true
 			}
+
+			mai.CurrentField++
+			return util.Annotation{Size: len(encoder.Serialize(v.Field(i).Interface())), Name: f.Name}, true
+
 		} else {
 			//don't write anything
 		}

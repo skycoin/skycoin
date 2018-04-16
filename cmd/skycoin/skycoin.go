@@ -382,8 +382,9 @@ func (c *Config) postProcess() {
 	}
 
 	// Don't open browser to load wallets if wallet apis are disabled.
-	if !c.EnableWalletAPI {
-		c.LaunchBrowser = false
+	if c.EnableWalletAPI {
+		c.LaunchBrowser = true
+		c.GUIDirectory = file.ResolveResourceDirectory(c.GUIDirectory)
 	}
 }
 
@@ -548,8 +549,6 @@ func Run(c *Config) {
 			logger.Errorf("recover: %v\nstack:%v", r, string(debug.Stack()))
 		}
 	}()
-
-	c.GUIDirectory = file.ResolveResourceDirectory(c.GUIDirectory)
 
 	scheme := "http"
 	if c.WebInterfaceHTTPS {

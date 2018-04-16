@@ -10,8 +10,8 @@ RUN cd $GOPATH/src/github.com/skycoin/skycoin && \
 # skycoin image
 FROM alpine:3.7
 
-ENV COIN="skycoin" \
-    RPC_ADDR="0.0.0.0:6430" \
+ENV COIN="skycoin"
+ENV RPC_ADDR="0.0.0.0:6430" \
     DATA_DIR="/data/.$COIN" \
     WALLET_DIR="/wallet" \
     WALLET_NAME="$COIN_cli.wlt"

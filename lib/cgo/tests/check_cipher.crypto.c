@@ -416,7 +416,7 @@ Test(cipher_crypto, TestNewSig) {
 
 Test(cipher_crypto, TestMustSigFromHex) {
   unsigned char buff[101];
-  char strBuff[101];
+  char strBuff[257];
   GoSlice b = { buff, 0, 101 };
   GoString str;
   Sig s, s2;

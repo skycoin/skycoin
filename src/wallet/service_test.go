@@ -58,7 +58,7 @@ func TestNewService(t *testing.T) {
 
 			require.Equal(t, dir, s.walletDirectory)
 
-			require.Equal(t, 1, len(s.wallets))
+			require.Equal(t, 0, len(s.wallets))
 
 			// test load wallets
 			s, err = NewService(Config{
@@ -459,7 +459,7 @@ func TestServiceGetAddress(t *testing.T) {
 			t.Run(fmt.Sprintf("enable wallet api=%v crypto=%v", enableWalletAPI, ct), func(t *testing.T) {
 				dir := prepareWltDir()
 				s, err := NewService(Config{
-					WalletDir:       dir,
+					WalletDir:       "./testdata",
 					CryptoType:      ct,
 					EnableWalletAPI: enableWalletAPI,
 				})
@@ -475,12 +475,7 @@ func TestServiceGetAddress(t *testing.T) {
 					return
 				}
 
-				// Get the default wallet
-				var w *Wallet
-				for _, w = range s.wallets {
-				}
-
-				addrs, err := s.GetAddresses(w.Filename())
+				addrs, err := s.GetAddresses("test1.wlt")
 				require.NoError(t, err)
 				require.Equal(t, 1, len(addrs))
 
@@ -518,10 +513,12 @@ func TestServiceGetWallet(t *testing.T) {
 					return
 				}
 
-				// Get the default wallet
-				var w *Wallet
-				for _, w = range s.wallets {
-				}
+				// Create a wallet
+				w, err := s.CreateWallet("t.wlt", Options{
+					Label: "label",
+					Seed:  "seed",
+				}, nil)
+				require.NoError(t, err)
 
 				w1, err := s.GetWallet(w.Filename())
 				require.NoError(t, err)
@@ -563,21 +560,25 @@ func TestServiceGetWallets(t *testing.T) {
 					return
 				}
 
+				// Creates a wallet
+				w, err := s.CreateWallet("t.wlt", Options{
+					Label: "label",
+					Seed:  "seed",
+				}, nil)
+				require.NoError(t, err)
+
 				var wallets []*Wallet
 				// Get the default wallet
-				var w1 *Wallet
-				for _, w1 = range s.wallets {
-				}
-				wallets = append(wallets, w1)
+				wallets = append(wallets, w)
 
 				// Create a new wallet
 				wltName := newWalletFilename()
-				w2, err := s.CreateWallet(wltName, Options{
-					Seed:  "seed",
-					Label: "label",
+				w1, err := s.CreateWallet(wltName, Options{
+					Label: "label1",
+					Seed:  "seed1",
 				}, nil)
 				require.NoError(t, err)
-				wallets = append(wallets, w2)
+				wallets = append(wallets, w1)
 
 				ws, err := s.GetWallets()
 				for _, w := range wallets {
@@ -621,35 +622,29 @@ func TestServiceReloadWallets(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			var w *Wallet
-			for _, w = range s.wallets {
-			}
-
-			defaultWltID := w.Filename()
-
-			var defaultAddr string
-			for defaultAddr = range s.firstAddrIDMap {
-				break
-			}
+			// Creates a wallet
+			w, err := s.CreateWallet("t.wlt", Options{
+				Label: "label",
+				Seed:  "seed",
+			}, nil)
+			require.NoError(t, err)
 
 			wltName := "t1.wlt"
 			w1, err := s.CreateWallet(wltName, Options{Seed: "seed1"}, nil)
 			require.NoError(t, err)
 
-			fmt.Println(dir, w1.Filename())
-
 			err = s.ReloadWallets()
 			require.NoError(t, err)
 
 			// check if create dup wallet will return error
-			_, ok := s.wallets[defaultWltID]
+			_, ok := s.wallets[w.Filename()]
 			require.True(t, ok)
 
 			_, ok = s.wallets["t1.wlt"]
 			require.True(t, ok)
 
 			// check if the first address of each wallet is reloaded
-			_, ok = s.firstAddrIDMap[defaultAddr]
+			_, ok = s.firstAddrIDMap[w.Entries[0].Address.String()]
 			require.True(t, ok)
 
 			_, ok = s.firstAddrIDMap[w1.Entries[0].Address.String()]

@@ -72,8 +72,11 @@ export class OnboardingCreateWalletComponent implements OnInit {
   }
 
   loadWallet() {
-    this.walletService.create(this.form.value.label, this.form.value.seed, 100);
-    this.router.navigate(['/wallets']);
+    this.button.setLoading();
+
+    this.walletService.create(this.form.value.label, this.form.value.seed, 100).subscribe(wallet => {
+      this.router.navigate(['/wallets']);
+    });
   }
 
   generateSeed() {

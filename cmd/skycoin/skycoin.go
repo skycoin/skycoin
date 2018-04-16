@@ -383,8 +383,9 @@ func (c *Config) postProcess() {
 
 	// Don't open browser to load wallets if wallet apis are disabled.
 	if c.EnableWalletAPI {
-		c.LaunchBrowser = true
 		c.GUIDirectory = file.ResolveResourceDirectory(c.GUIDirectory)
+	} else {
+		c.LaunchBrowser = false
 	}
 }
 

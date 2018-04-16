@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 
 - #665, update wallet apis to support wallet encryption
+- #1077, disable initial wallet creating
 
 ### Changed
 
@@ -33,6 +34,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `/wallet/create` API endpoint, add `encrypt(bool)` and `password` argument
 - `/wallet/newAddress` API endpoint, add `password` argument
 - `/wallet/spend` API endpoint, add `password` argument
+- No default wallet will be created when first time the node start
 
 ### Removed
 

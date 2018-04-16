@@ -136,6 +136,10 @@ install-deps-libc: configure-build ## Install locally dependencies for testing l
 	ls $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/include
 	ls -1 $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/lib     | xargs -I NAME mv $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/lib/NAME     $(BUILD_DIR)/usr/lib/NAME
 	ls -1 $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/include | xargs -I NAME mv $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/include/NAME $(BUILD_DIR)/usr/include/NAME
+    wget -O $(BUILD_DIR)/usr/tmp/criterion-bleeding-branch.zip https://github.com/Snaipe/Criterion/archive/bleeding.zip
+	unzip $(BUILD_DIR)/usr/tmp/criterion-bleeding-branch.zip -d $(BUILD_DIR)/usr/tmp/
+	cd $(BUILD_DIR)/usr/tmp/Criterion-bleeding/include
+	cp $(BUILD_DIR)/usr/tmp/Criterion-bleeding/include/criterion $(BUILD_DIR)/usr/tmp/criterion-v2.3.2/include
 
 format: ## Formats the code. Must have goimports installed (use make install-linters).
 	goimports -w -local github.com/skycoin/skycoin ./cmd

@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	bip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 )
@@ -66,27 +65,6 @@ func NewService(c Config) (*Service, error) {
 	}
 
 	serv.wallets = serv.removeDup(w)
-
-	if len(serv.wallets) == 0 {
-		seed, err := bip39.NewDefaultMnemomic()
-		if err != nil {
-			return nil, err
-		}
-
-		// Create default wallet
-		w, err := serv.CreateWallet("", Options{
-			Label: "Your Wallet",
-			Seed:  seed,
-			ScanN: 1,
-		}, nil)
-		if err != nil {
-			return nil, err
-		}
-
-		if err := w.Save(serv.walletDirectory); err != nil {
-			return nil, fmt.Errorf("failed to save wallets to %s: %v", serv.walletDirectory, err)
-		}
-	}
 
 	return serv, nil
 }

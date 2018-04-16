@@ -148,7 +148,7 @@ func printFinalHex(i int) {
 type MessagesAnnotationsGenerator struct {
 	Message gnet.Message
 }
-
+// GenerateAnnotations : Implementation of IAnnotationsGenerator.GenerateAnnotations for type gnet.Message
 func (mag *MessagesAnnotationsGenerator) GenerateAnnotations() []util.Annotation {
 	var annotations = make([]util.Annotation, 2)
 	annotations[0] = util.Annotation{Size: 4, Name: "Length"}

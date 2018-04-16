@@ -9,7 +9,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 )
 
-// Annotation: Denotes a chunk of data to be dumped
+// Annotation : Denotes a chunk of data to be dumped
 type Annotation struct {
 	Name string
 	Size int

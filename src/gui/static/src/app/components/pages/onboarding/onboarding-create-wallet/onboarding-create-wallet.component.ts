@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { Router } from '@angular/router';
@@ -7,6 +7,7 @@ import { DoubleButtonActive } from '../../../layout/double-button/double-button.
 import { OnboardingDisclaimerComponent } from './onboarding-disclaimer/onboarding-disclaimer.component';
 import { OnboardingSafeguardComponent } from './onboarding-safeguard/onboarding-safeguard.component';
 import { MatDialogRef } from '@angular/material';
+import { ButtonComponent } from '../../../layout/button/button.component';
 
 @Component({
   selector: 'app-onboarding-create-wallet',
@@ -14,13 +15,14 @@ import { MatDialogRef } from '@angular/material';
   styleUrls: ['./onboarding-create-wallet.component.scss'],
 })
 export class OnboardingCreateWalletComponent implements OnInit {
+  @ViewChild('button') button: ButtonComponent;
   showNewForm = true;
   form: FormGroup;
   doubleButtonActive = DoubleButtonActive.LeftButton;
 
   constructor(
     private dialog: MatDialog,
-    public walletService: WalletService,
+    private walletService: WalletService,
     private router: Router,
     private formBuilder: FormBuilder,
   ) {
@@ -56,24 +58,15 @@ export class OnboardingCreateWalletComponent implements OnInit {
     this.initForm();
   }
 
-  showDisclaimer() {
-    const config = new MatDialogConfig();
-    config.width = '450px';
-    config.disableClose = true;
-    this.dialog.open(OnboardingDisclaimerComponent, config);
-  }
-
-  showSafe(): MatDialogRef {
-    const config = new MatDialogConfig();
-    config.width = '450px';
-    return this.dialog.open(OnboardingSafeguardComponent, config);
-  }
-
   createWallet() {
     this.showSafe().afterClosed().subscribe(result => {
       if (result) {
-        this.walletService.create(this.form.value.label, this.form.value.seed, 100);
-        this.router.navigate(['/wizard/encrypt']);
+        this.button.setLoading();
+
+        this.walletService.create(this.form.value.label, this.form.value.seed, 100).subscribe(wallet => {
+          // this.router.navigate(['/wizard/encrypt'], { queryParams: { wallet: wallet.filename }});
+          this.router.navigate(['/wallets']);
+        });
       }
     });
   }
@@ -94,4 +87,16 @@ export class OnboardingCreateWalletComponent implements OnInit {
       ? null : { mismatch: true };
   }
 
+  private showDisclaimer() {
+    const config = new MatDialogConfig();
+    config.width = '450px';
+    config.disableClose = true;
+    this.dialog.open(OnboardingDisclaimerComponent, config);
+  }
+
+  private showSafe(): MatDialogRef<OnboardingSafeguardComponent> {
+    const config = new MatDialogConfig();
+    config.width = '450px';
+    return this.dialog.open(OnboardingSafeguardComponent, config);
+  }
 }

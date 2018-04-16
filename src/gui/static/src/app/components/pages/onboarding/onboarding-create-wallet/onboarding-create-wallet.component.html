@@ -40,7 +40,7 @@
   </div>
   <div class="row -buttons-footer">
     <app-button class="dark -button-min-margin" [disabled]="!form.valid"
-                (action)="showNewForm?createWallet():loadWallet()">
+                (action)="showNewForm?createWallet():loadWallet()" #button>
       Create
     </app-button>
     <app-button *ngIf="haveWallets"

@@ -1,5 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { WalletService } from '../../../../services/wallet.service';
+import { ButtonComponent } from '../../../layout/button/button.component';
 
 @Component({
   selector: 'app-onboarding-encrypt-wallet',
@@ -7,11 +10,15 @@ import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms'
   styleUrls: ['./onboarding-encrypt-wallet.component.scss'],
 })
 export class OnboardingEncryptWalletComponent implements OnInit {
+  @ViewChild('button') button: ButtonComponent;
   form: FormGroup;
 
   constructor(
     private formBuilder: FormBuilder,
-  ) { }
+    private router: Router,
+    private route: ActivatedRoute,
+    private walletService: WalletService,
+) { }
 
   ngOnInit() {
     this.initEncryptForm();
@@ -36,6 +43,19 @@ export class OnboardingEncryptWalletComponent implements OnInit {
 
   setEncrypt(event) {
     event.checked ? this.form.enable() : this.form.disable();
+  }
+
+  encryptWallet() {
+    this.button.setLoading();
+
+    this.walletService.find(this.route.snapshot.queryParams['wallet']).subscribe(wallet => {
+      // TODO: encrypt the wallet
+      this.skip();
+    });
+  }
+
+  skip() {
+    this.router.navigate(['/wallets']);
   }
 
   private passwordMatchValidator(g: FormGroup) {

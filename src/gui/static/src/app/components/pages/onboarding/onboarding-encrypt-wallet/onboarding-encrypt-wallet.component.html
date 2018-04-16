@@ -35,10 +35,10 @@
     </div>
   </div>
   <div class="row -buttons-footer">
-    <app-button class="dark -button-min-margin" [disabled]="!form.valid" >
+    <app-button class="dark -button-min-margin" [disabled]="!form.valid" (action)="encryptWallet()" #button>
       Finish
     </app-button>
-    <app-button class="ghost -button-min-margin">
+    <app-button class="ghost -button-min-margin" (action)="skip()">
       Skip
     </app-button>
   </div>

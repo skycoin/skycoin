@@ -1042,6 +1042,13 @@ Content-Type: application/json
 Body: {"rawtx": "raw transaction"}
 ```
 
+Broadcasts an encoded transaction to the network.
+
+If there are no available connections, the API responds with a 503 Service Unavailable error.
+
+Note that in some circumstances the transaction can fail to broadcast but this endpoint will still return successfully.
+This can happen if the node's network has recently become unavailable but its connections have not timed out yet.
+
 Example:
 
 ```sh

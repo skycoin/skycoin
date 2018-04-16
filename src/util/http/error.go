@@ -73,3 +73,8 @@ func Error500(w http.ResponseWriter) {
 func Error500Msg(w http.ResponseWriter, msg string) {
 	errorXXXMsg(w, http.StatusInternalServerError, msg)
 }
+
+// Error503Msg respond with a 503 error and include a message
+func Error503Msg(w http.ResponseWriter, msg string) {
+	errorXXXMsg(w, http.StatusServiceUnavailable, msg)
+}

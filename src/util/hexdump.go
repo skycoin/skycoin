@@ -15,12 +15,12 @@ type Annotation struct {
 	Size int
 }
 
-// IAnnotationsGenerator: Interface to implement by types to use HexDump
+// IAnnotationsGenerator : Interface to implement by types to use HexDump
 type IAnnotationsGenerator interface {
 	GenerateAnnotations() []Annotation
 }
 
-// IAnnotationsIterator: Interface to implement by types to use HexDumpFromIterator
+// IAnnotationsIterator : Interface to implement by types to use HexDumpFromIterator
 type IAnnotationsIterator interface {
 	Next() (Annotation, bool)
 }
@@ -108,7 +108,7 @@ func printFinalHex(i int, writer io.Writer) {
 	f.Write(serialized[4:])
 }
 
-// HexDump: Returns hexdump of buffer according to annotations, via writer
+// HexDump : Returns hexdump of buffer according to annotations, via writer
 func HexDump(buffer []byte, annotations []Annotation, writer io.Writer) {
 	var currentOffset = 0
 
@@ -120,7 +120,7 @@ func HexDump(buffer []byte, annotations []Annotation, writer io.Writer) {
 	printFinalHex(currentOffset, writer)
 }
 
-// HexDumpFromIterator: Returns hexdump of buffer according to annotationsIterator, via writer
+// HexDumpFromIterator : Returns hexdump of buffer according to annotationsIterator, via writer
 func HexDumpFromIterator(buffer []byte, annotationsIterator IAnnotationsIterator, writer io.Writer) {
 	var currentOffset = 0
 

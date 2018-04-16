@@ -69,7 +69,7 @@ func printLHexDumpWithFormat(offset int, name string, buffer []byte) {
 	fmt.Println(getSliceContentsString(hexBuff, offset), name)
 }
 
-// 	NonGenericHexDump: version of hexdump without Annotations
+// NonGenericHexDump : version of hexdump without Annotations
 func NonGenericHexDump(message gnet.Message) string {
 
 	//setting stdout to a temp file
@@ -144,7 +144,7 @@ func printFinalHex(i int) {
 	fmt.Println(finalHex)
 }
 
-// MessagesAnnotationsGenerator: Implementation of IAnnotationsGenerator for type gnet.Message
+// MessagesAnnotationsGenerator : Implementation of IAnnotationsGenerator for type gnet.Message
 type MessagesAnnotationsGenerator struct {
 	Message gnet.Message
 }
@@ -178,7 +178,7 @@ func (mag *MessagesAnnotationsGenerator) GenerateAnnotations() []util.Annotation
 	return annotations
 }
 
-// MessagesAnnotationsIterator: Implementation of IAnnotationsIterator for type gnet.Message
+// MessagesAnnotationsIterator : Implementation of IAnnotationsIterator for type gnet.Message
 type MessagesAnnotationsIterator struct {
 	Message      gnet.Message
 	LengthCalled bool
@@ -188,7 +188,7 @@ type MessagesAnnotationsIterator struct {
 	CurrentIndex int
 }
 
-// NewMessagesAnnotationsIterator: Initializes struct MessagesAnnotationsIterator
+// NewMessagesAnnotationsIterator : Initializes struct MessagesAnnotationsIterator
 func NewMessagesAnnotationsIterator(message gnet.Message) MessagesAnnotationsIterator {
 	var mai = MessagesAnnotationsIterator{}
 	mai.Message = message
@@ -202,7 +202,7 @@ func NewMessagesAnnotationsIterator(message gnet.Message) MessagesAnnotationsIte
 	return mai
 }
 
-// Next: Yields next element of MessagesAnnotationsIterator
+// Next : Yields next element of MessagesAnnotationsIterator
 func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 	if !mai.LengthCalled {
 		mai.LengthCalled = true

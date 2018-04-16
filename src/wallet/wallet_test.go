@@ -7,7 +7,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"math/rand"
 	"testing"
 	"time"
@@ -20,6 +19,11 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/fee"
+	"github.com/skycoin/skycoin/src/util/logging"
+)
+
+var (
+	log = logging.MustGetLogger("wallet_test")
 )
 
 // set rand seed.
@@ -300,7 +304,7 @@ func TestNewWallet(t *testing.T) {
 					require.Equal(t, "", w.lastSeed())
 
 					for _, e := range w.Entries {
-						require.Empty(t, e.Secret)
+						require.Equal(t, emptySeckey, e.Secret)
 					}
 
 					// Confirms that secrets field is not empty
@@ -480,7 +484,7 @@ func TestLockAndUnLock(t *testing.T) {
 				Seed:  "seed",
 			})
 			require.NoError(t, err)
-			_, err = w.GenerateAddresses(10)
+			_, err = w.GenerateAddresses(9)
 			require.NoError(t, err)
 			require.Len(t, w.Entries, 10)
 
@@ -509,8 +513,10 @@ func makeWallet(t *testing.T, opts Options, addrNum uint64) *Wallet {
 	w, err := NewWallet("t.wlt", opts)
 	require.NoError(t, err)
 
-	_, err = w.GenerateAddresses(addrNum)
-	require.NoError(t, err)
+	if addrNum > 1 {
+		_, err = w.GenerateAddresses(addrNum - 1)
+		require.NoError(t, err)
+	}
 	if preOpts.Encrypt {
 		err = w.lock(preOpts.Password, preOpts.CryptoType)
 		require.NoError(t, err)
@@ -725,13 +731,13 @@ func TestWalletGenerateAddress(t *testing.T) {
 
 				// generate addresses
 				if tc.oneAddressEachTime {
-					_, err = w.GenerateAddresses(tc.num)
+					_, err = w.GenerateAddresses(tc.num - 1)
 					require.Equal(t, tc.err, err)
 					if err != nil {
 						return
 					}
 				} else {
-					for i := uint64(0); i < tc.num; i++ {
+					for i := uint64(0); i < tc.num-1; i++ {
 						_, err := w.GenerateAddresses(1)
 						require.Equal(t, tc.err, err)
 						if err != nil {

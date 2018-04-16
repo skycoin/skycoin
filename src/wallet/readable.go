@@ -189,9 +189,9 @@ func (rw *ReadableWallet) time() string {
 
 // Erase remove sensitive data
 func (rw *ReadableWallet) Erase() {
-	rw.Meta["seed"] = ""
-	rw.Meta["lastSeed"] = ""
-	rw.Meta["secrets"] = ""
+	delete(rw.Meta, metaSeed)
+	delete(rw.Meta, metaLastSeed)
+	delete(rw.Meta, metaSecrets)
 	for i := range rw.Entries {
 		rw.Entries[i].Secret = ""
 	}

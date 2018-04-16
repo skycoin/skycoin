@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Add `"size"` to block API response data (affects `/block`, `/blocks` and `/last_blocks`)
 - Add `/health` endpoint
 - Logging migration, now powered by [logrus](https://github.com/sirupsen/logrus)
 - Write specification for skycoin URIs (based upon bip21)
@@ -36,6 +37,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Removed
 
 - Remove dependency [op/go-logging](https://github.com/op/go-logging)
+- Remove `seed`, `lastSeed`, `secrets` and `secret_key` in address entries from wallet apis response
 
 ## [0.22.0] - 2018-03-20
 

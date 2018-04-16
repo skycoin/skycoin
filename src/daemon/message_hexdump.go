@@ -248,8 +248,6 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 			mai.CurrentField++
 			return util.Annotation{Size: len(encoder.Serialize(v.Field(i).Interface())), Name: f.Name}, true
 
-		} else {
-			//don't write anything
 		}
 	}
 

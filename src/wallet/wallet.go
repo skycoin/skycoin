@@ -1297,28 +1297,6 @@ func DistributeSpendHours(inputHours, nAddrs uint64, haveChange bool) (uint64, [
 	return changeHours, addrHours, spendHours
 }
 
-// DistributeCoinHoursSplitEven distributes hours evenly across a number of destinations.
-// If n is not a divisor of hours, the remaining hours are allocated to the first m destinations.
-func DistributeCoinHoursSplitEven(n, hours uint64) ([]uint64, error) {
-	addrHours := make([]uint64, n)
-
-	// split addrhours evenly among all hours
-	perAddrHour := hours / n
-	for i := range addrHours {
-		addrHours[i] = perAddrHour
-	}
-
-	// give any remaining hours due to rounding to addrs starting from the top
-	extraAddrHours := hours - (perAddrHour * n)
-	var i uint64
-	for i < extraAddrHours {
-		addrHours[i] = addrHours[i] + 1
-		i++
-	}
-
-	return addrHours, nil
-}
-
 // DistributeCoinHoursProportional distributes hours amongst coins proportional to the coins amount
 func DistributeCoinHoursProportional(coins []uint64, hours uint64) ([]uint64, error) {
 	coinsDec := make([]decimal.Decimal, len(coins))

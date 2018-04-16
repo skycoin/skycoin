@@ -59,6 +59,7 @@ export class OnboardingCreateWalletComponent implements OnInit {
   showDisclaimer() {
     const config = new MatDialogConfig();
     config.width = '450px';
+    config.disableClose = true;
     this.dialog.open(OnboardingDisclaimerComponent, config);
   }
 

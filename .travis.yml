@@ -8,23 +8,14 @@ go:
 matrix:
   include:
     - os: linux
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-6
-      env:
-        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
     - os: osx
       # Do not start osx build for PR
       if: type != pull_request
       osx_image: xcode8
-      env:
-        - MATRIX_EVAL="brew install gcc6 && CC=gcc-6 && CXX=g++-6"
 
 before_install:
-  - eval "${MATRIX_EVAL}"
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test && sudo apt-get update -qq; fi
+  - eval "CC=gcc-6 && CXX=g++-6"
 
 env:
   global:
@@ -51,6 +42,8 @@ install:
   # for test
   - go get -t ./...
   - make install-linters
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq g++-6 && sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 90; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then brew install gcc6; fi
   - make install-deps-libc
 
 before_script:

@@ -1206,10 +1206,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 			// can save, use the input
 			additionalFee := newFee - feeHours
 			if additionalFee < changeHours {
-				changeCoins, err = coin.AddUint64(changeCoins, extra.Coins)
-				if err != nil {
-					return nil, err
-				}
+				changeCoins = extra.Coins
 
 				if extra.Hours < additionalFee {
 					err := errors.New("calculated additional fee is unexpectedly higher than the extra input's hours")

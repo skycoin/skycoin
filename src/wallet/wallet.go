@@ -146,8 +146,8 @@ type HoursSelection struct {
 	ShareFactor *decimal.Decimal
 }
 
-// CreateTransactionParamsWallet defines a wallet to spend from and optionally which addresses in the wallet
-type CreateTransactionParamsWallet struct {
+// CreateTransactionWalletParams defines a wallet to spend from and optionally which addresses in the wallet
+type CreateTransactionWalletParams struct {
 	ID        string
 	Addresses []cipher.Address
 	Password  []byte
@@ -156,7 +156,7 @@ type CreateTransactionParamsWallet struct {
 // CreateTransactionParams defines control parameters for transaction construction
 type CreateTransactionParams struct {
 	HoursSelection HoursSelection
-	Wallet         CreateTransactionParamsWallet
+	Wallet         CreateTransactionWalletParams
 	ChangeAddress  cipher.Address
 	To             []coin.TransactionOutput
 }

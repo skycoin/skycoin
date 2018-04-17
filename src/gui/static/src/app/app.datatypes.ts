@@ -68,7 +68,7 @@ export class PostWalletNewAddressResponse {
 export class GetWalletsResponseMeta {
   label: string;
   filename: string;
-  encrypted?: any;
+  encrypted: boolean;
 }
 
 export class GetWalletsResponseEntry {

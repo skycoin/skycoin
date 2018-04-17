@@ -145,8 +145,18 @@ format: ## Formats the code. Must have goimports installed (use make install-lin
 install-deps-ui:  ## Install the UI dependencies
 	cd $(GUI_STATIC_DIR) && npm install
 
+lint-ui:  ## Lint the UI code
+	cd $(GUI_STATIC_DIR) && npm run lint
+
+test-ui:  ## Run UI tests
+	cd $(GUI_STATIC_DIR) && npm run test
+	cd $(GUI_STATIC_DIR) && npm run e2e
+
 build-ui:  ## Builds the UI
 	cd $(GUI_STATIC_DIR) && npm run build
+
+build-ui-travis:  ## Builds the UI for travis
+	cd $(GUI_STATIC_DIR) && npm run build-travis
 
 release: ## Build electron apps, the builds are located in electron/release folder.
 	cd $(ELECTRON_DIR) && ./build.sh

@@ -19,6 +19,7 @@ env:
     - BUILD_DIR: build
     - BUILDLIB_DIR: $BUILD_DIR/libskycoin
     - LIB_DIR: lib
+    - BUILD_UI_TRAVIS_DIR: HOME/.skycoin-ui-travis
 
 cache:
   directories:
@@ -53,8 +54,14 @@ script:
   - make test-libc
   # TODO: test pyskycoin
   # - make test-libpy
+  # TODO: test ui
+  # - make test-ui
+  # TODO: lint ui
+  # - make lint-ui
+  # Check that the UI can build. Don't use make build-ui since it will rewrite the dist folder which will change the wallet release
+  # If the UI tests can be run to verify compilation, we can remove this
+  - make build-ui-travis
   # build wallets
-  - make build-ui
   - if [[ "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/build-wallet.sh; fi
 
 

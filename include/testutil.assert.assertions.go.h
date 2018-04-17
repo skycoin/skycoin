@@ -1,1 +1,0 @@
-typedef Handle testutil__TestValuePredicate;

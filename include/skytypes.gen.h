@@ -59,9 +59,6 @@
 #include "consensus.consensus.go.h"
 #include "consensus.participant.go.h"
 #include "wallet.balance.go.h"
-#include "testutil.assert.assertions.go.h"
-#include "testutil.blockchain.go.h"
-#include "testutil.require.require.go.h"
 #include "wallet.addresses.go.h"
 
 #include "wallet.crypto.go.h"

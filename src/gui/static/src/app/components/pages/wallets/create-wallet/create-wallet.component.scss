@@ -4,6 +4,10 @@
   text-align: center;
 }
 
+.-disabled {
+  display: none;
+}
+
 .-passwords {
   margin-left: 24px;
 
@@ -14,7 +18,7 @@
     line-height: 1.5;
   }
 
-  .-disabled {
+  .-hidden {
     visibility: hidden;
   }
 }

@@ -15,7 +15,7 @@ export class CreateWalletComponent implements OnInit {
   form: FormGroup;
   seed: string;
   scan: Number;
-  encrypt = false;
+  encrypt = true;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data,
@@ -74,7 +74,7 @@ export class CreateWalletComponent implements OnInit {
   }
 
   private validatePasswords() {
-    if (this.encrypt) {
+    if (this.encrypt && this.form && this.form.get('password') && this.form.get('confirm_password')) {
       if (this.form.get('password').value) {
         if (this.form.get('password').value !== this.form.get('confirm_password').value) {
           return { NotEqual: true };

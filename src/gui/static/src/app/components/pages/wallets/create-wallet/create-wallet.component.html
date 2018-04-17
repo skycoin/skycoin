@@ -13,7 +13,7 @@
       <textarea formControlName="confirm_seed" id="confirm_seed" row="2"></textarea>
     </div>
     <div>
-      <mat-checkbox class="-check" (change)="setEncrypt($event)" type="checkbox" id="encrypt">
+      <mat-checkbox class="-check" (change)="setEncrypt($event)" type="checkbox" id="encrypt" [checked]="true">
         <img src="../../../../../assets/img/lock-gold.png">Encrypt Wallet
       </mat-checkbox>
     </div>

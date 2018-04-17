@@ -200,11 +200,12 @@ func (c CreateTransactionParams) Validate() error {
 		}
 
 		if c.HoursSelection.Mode == "" {
-			return NewError(errors.New("HoursSelection.Mode is required for auto type hours selection"))
 		}
 
 		switch c.HoursSelection.Mode {
 		case HoursSelectionModeShare:
+		case "":
+			return NewError(errors.New("HoursSelection.Mode is required for auto type hours selection"))
 		default:
 			return NewError(errors.New("Invalid HoursSelection.Mode"))
 		}
@@ -1042,6 +1043,9 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 
 	ok, err := vld.HasUnconfirmedSpendTx(addrList)
 	if err != nil {
+		// The error from HasUnconfirmedSpendTx isn't wrapped with wallet.Error because
+		// it is from outside the wallet package and is likely some database or other
+		// unexpected failure
 		return nil, fmt.Errorf("checking unconfirmed spending failed: %v", err)
 	}
 	if ok {

@@ -2012,7 +2012,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 				HoursSelection: gui.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: gui.CreateTransactionWalletRequest{
+				Wallet: gui.CreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 				},
@@ -2034,7 +2034,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 				HoursSelection: gui.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: gui.CreateTransactionWalletRequest{
+				Wallet: gui.CreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 				},
@@ -2066,7 +2066,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 				HoursSelection: gui.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: gui.CreateTransactionWalletRequest{
+				Wallet: gui.CreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 				},
@@ -2088,7 +2088,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 				HoursSelection: gui.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: gui.CreateTransactionWalletRequest{
+				Wallet: gui.CreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 				},
@@ -2110,7 +2110,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 				HoursSelection: gui.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: gui.CreateTransactionWalletRequest{
+				Wallet: gui.CreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 				},
@@ -2143,7 +2143,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 				HoursSelection: gui.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: gui.CreateTransactionWalletRequest{
+				Wallet: gui.CreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 				},
@@ -2173,7 +2173,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 					Mode:        wallet.HoursSelectionModeShare,
 					ShareFactor: "0.5",
 				},
-				Wallet: gui.CreateTransactionWalletRequest{
+				Wallet: gui.CreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 				},
@@ -2202,7 +2202,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 					Mode:        wallet.HoursSelectionModeShare,
 					ShareFactor: "0.5",
 				},
-				Wallet: gui.CreateTransactionWalletRequest{
+				Wallet: gui.CreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 				},
@@ -2243,7 +2243,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 				HoursSelection: gui.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: gui.CreateTransactionWalletRequest{
+				Wallet: gui.CreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password + "foo",
 				},
@@ -2256,7 +2256,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 					},
 				},
 			},
-			err: "400 Bad Request - TODO\n",
+			err: "400 Bad Request - invalid password\n",
 		})
 
 		cases = append(cases, testCase{
@@ -2265,7 +2265,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 				HoursSelection: gui.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: gui.CreateTransactionWalletRequest{
+				Wallet: gui.CreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: "",
 				},
@@ -2278,7 +2278,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 					},
 				},
 			},
-			err: "400 Bad Request - TODO\n",
+			err: "400 Bad Request - missing password\n",
 		})
 
 	} else {
@@ -2288,7 +2288,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 				HoursSelection: gui.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: gui.CreateTransactionWalletRequest{
+				Wallet: gui.CreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password + "foo",
 				},

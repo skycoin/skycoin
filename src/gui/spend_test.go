@@ -21,7 +21,7 @@ import (
 )
 
 func TestCreateTransaction(t *testing.T) {
-	type rawWalletRequest struct {
+	type rawRequestWallet struct {
 		ID        string   `json:"id"`
 		Addresses []string `json:"addresses,omitempty"`
 		Password  string   `json:"password"`
@@ -41,14 +41,13 @@ func TestCreateTransaction(t *testing.T) {
 
 	type rawRequest struct {
 		HoursSelection rawHoursSelection `json:"hours_selection"`
-		Wallet         rawWalletRequest  `json:"wallet"`
+		Wallet         rawRequestWallet  `json:"wallet"`
 		ChangeAddress  string            `json:"change_address,omitempty"`
 		To             []rawReceiver     `json:"to"`
 		Password       string            `json:"password"`
 	}
 
 	changeAddress := testutil.MakeAddress()
-	// walletAddress := testutil.MakeAddress()
 	destinationAddress := testutil.MakeAddress()
 	emptyAddress := cipher.Address{}
 
@@ -87,7 +86,7 @@ func TestCreateTransaction(t *testing.T) {
 			},
 		},
 		ChangeAddress: changeAddress.String(),
-		Wallet: rawWalletRequest{
+		Wallet: rawRequestWallet{
 			ID: "foo.wlt",
 		},
 	}
@@ -225,7 +224,7 @@ func TestCreateTransaction(t *testing.T) {
 				HoursSelection: rawHoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: rawWalletRequest{
+				Wallet: rawRequestWallet{
 					Addresses: []string{""},
 				},
 				ChangeAddress: changeAddress.String(),
@@ -241,7 +240,7 @@ func TestCreateTransaction(t *testing.T) {
 				HoursSelection: rawHoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: rawWalletRequest{
+				Wallet: rawRequestWallet{
 					Addresses: []string{"xxx"},
 				},
 				ChangeAddress: changeAddress.String(),
@@ -365,7 +364,7 @@ func TestCreateTransaction(t *testing.T) {
 					},
 				},
 				ChangeAddress: changeAddress.String(),
-				Wallet:        rawWalletRequest{},
+				Wallet:        rawRequestWallet{},
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - missing wallet.id",
@@ -386,7 +385,7 @@ func TestCreateTransaction(t *testing.T) {
 					},
 				},
 				ChangeAddress: changeAddress.String(),
-				Wallet: rawWalletRequest{
+				Wallet: rawRequestWallet{
 					ID:        "foo.wlt",
 					Addresses: []string{emptyAddress.String()},
 				},
@@ -410,7 +409,7 @@ func TestCreateTransaction(t *testing.T) {
 					},
 				},
 				ChangeAddress: changeAddress.String(),
-				Wallet: rawWalletRequest{
+				Wallet: rawRequestWallet{
 					ID: "foo.wlt",
 				},
 			},
@@ -433,7 +432,7 @@ func TestCreateTransaction(t *testing.T) {
 					},
 				},
 				ChangeAddress: changeAddress.String(),
-				Wallet: rawWalletRequest{
+				Wallet: rawRequestWallet{
 					ID: "foo.wlt",
 				},
 			},
@@ -456,7 +455,7 @@ func TestCreateTransaction(t *testing.T) {
 					},
 				},
 				ChangeAddress: changeAddress.String(),
-				Wallet: rawWalletRequest{
+				Wallet: rawRequestWallet{
 					ID: "foo.wlt",
 				},
 			},
@@ -479,7 +478,7 @@ func TestCreateTransaction(t *testing.T) {
 					},
 				},
 				ChangeAddress: changeAddress.String(),
-				Wallet: rawWalletRequest{
+				Wallet: rawRequestWallet{
 					ID: "foo.wlt",
 				},
 			},
@@ -504,7 +503,7 @@ func TestCreateTransaction(t *testing.T) {
 					},
 				},
 				ChangeAddress: changeAddress.String(),
-				Wallet: rawWalletRequest{
+				Wallet: rawRequestWallet{
 					ID: "foo.wlt",
 				},
 			},
@@ -528,7 +527,7 @@ func TestCreateTransaction(t *testing.T) {
 					},
 				},
 				ChangeAddress: changeAddress.String(),
-				Wallet: rawWalletRequest{
+				Wallet: rawRequestWallet{
 					ID: "foo.wlt",
 				},
 			},
@@ -544,7 +543,7 @@ func TestCreateTransaction(t *testing.T) {
 					Type: wallet.HoursSelectionTypeManual,
 				},
 				ChangeAddress: changeAddress.String(),
-				Wallet: rawWalletRequest{
+				Wallet: rawRequestWallet{
 					ID: "foo.wlt",
 				},
 			},
@@ -568,7 +567,7 @@ func TestCreateTransaction(t *testing.T) {
 					},
 				},
 				ChangeAddress: changeAddress.String(),
-				Wallet: rawWalletRequest{
+				Wallet: rawRequestWallet{
 					ID: "foo.wlt",
 				},
 			},
@@ -592,7 +591,7 @@ func TestCreateTransaction(t *testing.T) {
 					},
 				},
 				ChangeAddress: changeAddress.String(),
-				Wallet: rawWalletRequest{
+				Wallet: rawRequestWallet{
 					ID: "foo.wlt",
 				},
 			},
@@ -616,7 +615,7 @@ func TestCreateTransaction(t *testing.T) {
 					},
 				},
 				ChangeAddress: changeAddress.String(),
-				Wallet: rawWalletRequest{
+				Wallet: rawRequestWallet{
 					ID: "foo.wlt",
 				},
 			},
@@ -698,7 +697,7 @@ func TestCreateTransaction(t *testing.T) {
 
 			gateway := &GatewayerMock{}
 
-			// If the rawRequestBody is can be deserialized to CreateTransactionRequest, use it to mock gateway.CreateTransaction
+			// If the rawRequestBody can be deserialized to CreateTransactionRequest, use it to mock gateway.CreateTransaction
 			serializedBody, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 			var body createTransactionRequest

@@ -26,14 +26,14 @@ type CreateTransactionResponse struct {
 // createTransactionRequest is sent to /wallet/transaction
 type createTransactionRequest struct {
 	HoursSelection hoursSelection                 `json:"hours_selection"`
-	Wallet         createTransactionWalletRequest `json:"wallet"`
+	Wallet         createTransactionRequestWallet `json:"wallet"`
 	ChangeAddress  *wh.Address                    `json:"change_address"`
 	To             []receiver                     `json:"to"`
 	Password       string                         `json:"password"`
 }
 
-// createTransactionWalletRequest defines a wallet to spend from and optionally which addresses in the wallet
-type createTransactionWalletRequest struct {
+// createTransactionRequestWallet defines a wallet to spend from and optionally which addresses in the wallet
+type createTransactionRequestWallet struct {
 	ID        string       `json:"id"`
 	Addresses []wh.Address `json:"addresses,omitempty"`
 	Password  string       `json:"password"`

@@ -3,7 +3,7 @@ import { WalletService } from '../../../../services/wallet.service';
 import { Wallet } from '../../../../app.datatypes';
 import { MatDialog, MatDialogConfig } from '@angular/material';
 import { SeedModalComponent } from './seed-modal/seed-modal.component';
-import { PasswordDialogComponent } from "../../../layout/password-dialog/password-dialog.component";
+import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 
 @Component({
   selector: 'app-backup',

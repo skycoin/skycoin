@@ -1987,7 +1987,7 @@ func TestCreateWalletParamsVerify(t *testing.T) {
 			params: CreateTransactionParams{
 				ChangeAddress: changeAddress,
 				To:            toManual,
-				Wallet: CreateTransactionWalletParams{
+				Wallet: CreateTransactionParamsWallet{
 					ID:        "foo.wlt",
 					Addresses: []cipher.Address{cipher.Address{}},
 				},
@@ -2000,7 +2000,7 @@ func TestCreateWalletParamsVerify(t *testing.T) {
 			params: CreateTransactionParams{
 				ChangeAddress: changeAddress,
 				To:            toManual,
-				Wallet: CreateTransactionWalletParams{
+				Wallet: CreateTransactionParamsWallet{
 					ID:        "foo.wlt",
 					Addresses: []cipher.Address{},
 				},
@@ -2016,7 +2016,7 @@ func TestCreateWalletParamsVerify(t *testing.T) {
 			params: CreateTransactionParams{
 				ChangeAddress: changeAddress,
 				To:            toAuto,
-				Wallet: CreateTransactionWalletParams{
+				Wallet: CreateTransactionParamsWallet{
 					ID:        "foo.wlt",
 					Addresses: []cipher.Address{},
 				},
@@ -2032,7 +2032,7 @@ func TestCreateWalletParamsVerify(t *testing.T) {
 			params: CreateTransactionParams{
 				ChangeAddress: changeAddress,
 				To:            toManual,
-				Wallet: CreateTransactionWalletParams{
+				Wallet: CreateTransactionParamsWallet{
 					ID:        "foo.wlt",
 					Addresses: []cipher.Address{},
 				},
@@ -2049,7 +2049,7 @@ func TestCreateWalletParamsVerify(t *testing.T) {
 			params: CreateTransactionParams{
 				ChangeAddress: changeAddress,
 				To:            toAuto,
-				Wallet: CreateTransactionWalletParams{
+				Wallet: CreateTransactionParamsWallet{
 					ID:        "foo.wlt",
 					Addresses: []cipher.Address{},
 				},
@@ -2065,7 +2065,7 @@ func TestCreateWalletParamsVerify(t *testing.T) {
 			params: CreateTransactionParams{
 				ChangeAddress: changeAddress,
 				To:            toAuto,
-				Wallet: CreateTransactionWalletParams{
+				Wallet: CreateTransactionParamsWallet{
 					ID:        "foo.wlt",
 					Addresses: []cipher.Address{},
 				},
@@ -2081,7 +2081,7 @@ func TestCreateWalletParamsVerify(t *testing.T) {
 			params: CreateTransactionParams{
 				ChangeAddress: changeAddress,
 				To:            toAuto,
-				Wallet: CreateTransactionWalletParams{
+				Wallet: CreateTransactionParamsWallet{
 					ID:        "foo.wlt",
 					Addresses: []cipher.Address{},
 				},
@@ -2098,7 +2098,7 @@ func TestCreateWalletParamsVerify(t *testing.T) {
 			params: CreateTransactionParams{
 				ChangeAddress: changeAddress,
 				To:            toAuto,
-				Wallet: CreateTransactionWalletParams{
+				Wallet: CreateTransactionParamsWallet{
 					ID:        "foo.wlt",
 					Addresses: []cipher.Address{},
 				},
@@ -2115,7 +2115,7 @@ func TestCreateWalletParamsVerify(t *testing.T) {
 			params: CreateTransactionParams{
 				ChangeAddress: changeAddress,
 				To:            toManual,
-				Wallet: CreateTransactionWalletParams{
+				Wallet: CreateTransactionParamsWallet{
 					ID:        "foo.wlt",
 					Addresses: []cipher.Address{},
 				},
@@ -2132,7 +2132,7 @@ func TestCreateWalletParamsVerify(t *testing.T) {
 			params: CreateTransactionParams{
 				ChangeAddress: changeAddress,
 				To:            toAuto,
-				Wallet: CreateTransactionWalletParams{
+				Wallet: CreateTransactionParamsWallet{
 					ID:        "foo.wlt",
 					Addresses: []cipher.Address{},
 				},
@@ -2150,7 +2150,7 @@ func TestCreateWalletParamsVerify(t *testing.T) {
 			params: CreateTransactionParams{
 				ChangeAddress: changeAddress,
 				To:            toAuto,
-				Wallet: CreateTransactionWalletParams{
+				Wallet: CreateTransactionParamsWallet{
 					ID:        "foo.wlt",
 					Addresses: []cipher.Address{},
 				},
@@ -2168,7 +2168,7 @@ func TestCreateWalletParamsVerify(t *testing.T) {
 			params: CreateTransactionParams{
 				ChangeAddress: changeAddress,
 				To:            toAuto,
-				Wallet: CreateTransactionWalletParams{
+				Wallet: CreateTransactionParamsWallet{
 					ID:        "foo.wlt",
 					Addresses: []cipher.Address{},
 				},
@@ -2185,7 +2185,7 @@ func TestCreateWalletParamsVerify(t *testing.T) {
 			params: CreateTransactionParams{
 				ChangeAddress: changeAddress,
 				To:            toManual,
-				Wallet: CreateTransactionWalletParams{
+				Wallet: CreateTransactionParamsWallet{
 					ID:        "foo.wlt",
 					Addresses: []cipher.Address{},
 				},

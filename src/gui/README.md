@@ -657,7 +657,7 @@ The `hours_selection` field has two types: `manual` or `auto`.
 If `manual`, all destination hours must be specified.
 
 If `auto`, the `mode` field must be set.  The only valid value for `mode` is `"share"`.
-For the `"share"` mode, `share_factor` must also be set. This must be a decimal value between 0 and 1.
+For the `"share"` mode, `share_factor` must also be set. This must be a decimal value greater than or equal to 0 and less than or equal to 1.
 In the auto share mode, the remaining hours after the fee are shared between the destination addresses as a whole,
 and the change address.  Amongst the destination addresses, the shared hours are distributed proportionally.
 

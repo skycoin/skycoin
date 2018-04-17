@@ -146,8 +146,8 @@ type HoursSelection struct {
 	ShareFactor *decimal.Decimal
 }
 
-// CreateTransactionWalletParams defines a wallet to spend from and optionally which addresses in the wallet
-type CreateTransactionWalletParams struct {
+// CreateTransactionParamsWallet defines a wallet to spend from and optionally which addresses in the wallet
+type CreateTransactionParamsWallet struct {
 	ID        string
 	Addresses []cipher.Address
 	Password  []byte
@@ -156,7 +156,7 @@ type CreateTransactionWalletParams struct {
 // CreateTransactionParams defines control parameters for transaction construction
 type CreateTransactionParams struct {
 	HoursSelection HoursSelection
-	Wallet         CreateTransactionWalletParams
+	Wallet         CreateTransactionParamsWallet
 	ChangeAddress  cipher.Address
 	To             []coin.TransactionOutput
 }
@@ -197,9 +197,6 @@ func (c CreateTransactionParams) Validate() error {
 			if to.Hours != 0 {
 				return NewError(errors.New("To.Hours must be zero for auto type hours selection"))
 			}
-		}
-
-		if c.HoursSelection.Mode == "" {
 		}
 
 		switch c.HoursSelection.Mode {

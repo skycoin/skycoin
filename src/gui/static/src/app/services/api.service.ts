@@ -72,7 +72,14 @@ export class ApiService {
   }
 
   postWalletCreate(label: string, seed: string, scan: number, password: string): Observable<Wallet> {
-    return this.post('wallet/create', { label, seed, scan, password, encrypt: !!password })
+    const params = { label, seed, scan };
+
+    if (password) {
+      params['password'] = password;
+      params['encrypt'] = true;
+    }
+
+    return this.post('wallet/create', params)
       .map(response => ({
           label: response.meta.label,
           filename: response.meta.filename,

@@ -55,6 +55,7 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { HttpClientModule } from '@angular/common/http';
 import { AppService } from './services/app.service';
@@ -174,6 +175,7 @@ const ROUTES = [
     MatTabsModule,
     MatToolbarModule,
     MatTooltipModule,
+    MatCheckboxModule,
     NgxDatatableModule,
     NoopAnimationsModule,
     ReactiveFormsModule,

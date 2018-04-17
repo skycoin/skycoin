@@ -12,13 +12,30 @@
       <label for="confirm_seed">Confirm seed</label>
       <textarea formControlName="confirm_seed" id="confirm_seed" row="2"></textarea>
     </div>
-    <div class="form-field">
-      <label for="password">Password</label>
-      <input formControlName="password" id="password" type="password">
+    <div>
+      <mat-checkbox class="-check" (change)="setEncrypt($event)" type="checkbox" id="encrypt">
+        <img src="../../../../../assets/img/lock-gold.png">Encrypt Wallet
+      </mat-checkbox>
     </div>
-    <div class="form-field">
-      <label for="confirm_password">Confirm password</label>
-      <input formControlName="confirm_password" id="confirm_password" type="password">
+    <div class="row -passwords">
+      <div class="col-md-12">
+        <p class="-info">
+          We suggest that you encrypt each one of your wallets with a password.
+          If you forget your password, you can reset it with your seed.
+        </p>
+      </div>
+      <div class="col-md-6" [ngClass]="{ '-disabled': !encrypt }">
+        <div class="form-field">
+          <label for="password">Password</label>
+          <input formControlName="password" id="password" type="password">
+        </div>
+      </div>
+      <div class="col-md-6" [ngClass]="{ '-disabled': !encrypt }">
+        <div class="form-field">
+          <label for="confirm_password">Confirm password</label>
+          <input formControlName="confirm_password" id="confirm_password" type="password">
+        </div>
+      </div>
     </div>
   </div>
   <div class="-buttons">

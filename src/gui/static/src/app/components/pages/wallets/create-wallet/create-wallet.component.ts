@@ -14,6 +14,7 @@ export class CreateWalletComponent implements OnInit {
   form: FormGroup;
   seed: string;
   scan: Number;
+  encrypt = false;
 
   constructor(
     public dialogRef: MatDialogRef<CreateWalletComponent>,
@@ -31,12 +32,18 @@ export class CreateWalletComponent implements OnInit {
   createWallet() {
     this.button.setLoading();
 
-    this.walletService.create(this.form.value.label, this.form.value.seed, this.scan, this.form.value.password)
+    const password = this.encrypt ? this.form.value.password : null;
+    this.walletService.create(this.form.value.label, this.form.value.seed, this.scan, password)
       .subscribe(() => this.dialogRef.close());
   }
 
   generateSeed() {
     this.walletService.generateSeed().subscribe(seed => this.form.get('seed').setValue(seed));
+  }
+
+  setEncrypt(event) {
+    this.encrypt = event.checked;
+    this.form.updateValueAndValidity();
   }
 
   private initForm() {
@@ -59,11 +66,13 @@ export class CreateWalletComponent implements OnInit {
   }
 
   private validatePassword() {
-    if (this.form && this.form.get('password') && this.form.get('confirm_password')) {
+    if (this.encrypt) {
       if (this.form.get('password').value) {
         if (this.form.get('password').value !== this.form.get('confirm_password').value) {
           return { NotEqual: true };
         }
+      } else {
+        return { Required: true };
       }
     }
 

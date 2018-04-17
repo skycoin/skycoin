@@ -1011,7 +1011,6 @@ func TestWalletCreateHandler(t *testing.T) {
 		status                    int
 		err                       string
 		wltName                   string
-		scnN                      uint64
 		options                   wallet.Options
 		gatewayCreateWalletResult wallet.Wallet
 		gatewayCreateWalletErr    error
@@ -1087,30 +1086,6 @@ func TestWalletCreateHandler(t *testing.T) {
 			gatewayCreateWalletErr: errors.New("gateway.CreateWallet error"),
 		},
 		{
-			name:   "500 - gateway.ScanAheadWalletAddresses error",
-			method: http.MethodPost,
-			body: &httpBody{
-				Seed:  "foo",
-				Label: "bar",
-				ScanN: "2",
-			},
-			status:  http.StatusInternalServerError,
-			err:     "500 Internal Server Error",
-			wltName: "filename",
-			scnN:    2,
-			options: wallet.Options{
-				Label:    "bar",
-				Seed:     "foo",
-				Password: []byte{},
-			},
-			gatewayCreateWalletResult: wallet.Wallet{
-				Meta: map[string]string{
-					"filename": "filename",
-				},
-			},
-			scanWalletAddressesError: errors.New("gateway.ScanAheadWalletAddresses error"),
-		},
-		{
 			name:   "403 - Forbidden - wallet API disabled",
 			method: http.MethodPost,
 			body: &httpBody{
@@ -1121,11 +1096,11 @@ func TestWalletCreateHandler(t *testing.T) {
 			status:  http.StatusForbidden,
 			err:     "403 Forbidden",
 			wltName: "filename",
-			scnN:    2,
 			options: wallet.Options{
 				Label:    "bar",
 				Seed:     "foo",
 				Password: []byte{},
+				ScanN:    2,
 			},
 			gatewayCreateWalletErr: wallet.ErrWalletAPIDisabled,
 		},
@@ -1140,11 +1115,11 @@ func TestWalletCreateHandler(t *testing.T) {
 			status:  http.StatusOK,
 			err:     "",
 			wltName: "filename",
-			scnN:    2,
 			options: wallet.Options{
 				Label:    "bar",
 				Seed:     "foo",
 				Password: []byte{},
+				ScanN:    2,
 			},
 			gatewayCreateWalletResult: wallet.Wallet{
 				Meta: map[string]string{
@@ -1177,11 +1152,11 @@ func TestWalletCreateHandler(t *testing.T) {
 			status:  http.StatusOK,
 			err:     "",
 			wltName: "filename",
-			scnN:    2,
 			options: wallet.Options{
 				Label:    "bar",
 				Seed:     "foo",
 				Password: []byte{},
+				ScanN:    2,
 			},
 			gatewayCreateWalletResult: wallet.Wallet{
 				Meta: map[string]string{
@@ -1218,8 +1193,8 @@ func TestWalletCreateHandler(t *testing.T) {
 				Seed:     "foo",
 				Encrypt:  true,
 				Password: []byte("pwd"),
+				ScanN:    2,
 			},
-			scnN: 2,
 			gatewayCreateWalletResult: wallet.Wallet{
 				Meta: map[string]string{
 					"filename":  "filename",
@@ -1260,8 +1235,11 @@ func TestWalletCreateHandler(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &GatewayerMock{}
+			if tc.options.ScanN == 0 {
+				tc.options.ScanN = 1
+			}
 			gateway.On("CreateWallet", "", tc.options).Return(&tc.gatewayCreateWalletResult, tc.gatewayCreateWalletErr)
-			gateway.On("ScanAheadWalletAddresses", tc.wltName, tc.options.Password, tc.scnN-1).Return(&tc.scanWalletAddressesResult, tc.scanWalletAddressesError)
+			// gateway.On("ScanAheadWalletAddresses", tc.wltName, tc.options.Password, tc.scnN-1).Return(&tc.scanWalletAddressesResult, tc.scanWalletAddressesError)
 
 			endpoint := "/wallet/create"
 
@@ -1859,6 +1837,137 @@ func TestGetWalletFolderHandler(t *testing.T) {
 			var msg WalletFolder
 			json.Unmarshal(rr.Body.Bytes(), &msg)
 			require.NoError(t, err)
+			require.Equal(t, tc.httpResponse, msg, tc.name)
+		}
+	}
+}
+
+func TestGetWallets(t *testing.T) {
+	pubkey, seckey := cipher.GenerateKeyPair()
+	addr := cipher.AddressFromPubKey(pubkey)
+
+	cases := []struct {
+		name               string
+		method             string
+		status             int
+		err                string
+		getWalletsResponse wallet.Wallets
+		getWalletsErr      error
+		httpResponse       []*WalletResponse
+	}{
+		{
+			name:   "405",
+			method: http.MethodPost,
+			status: http.StatusMethodNotAllowed,
+			err:    "405 Method Not Allowed",
+		},
+
+		{
+			name:          "403 - wallet API disabled",
+			method:        http.MethodGet,
+			status:        http.StatusForbidden,
+			err:           "403 Forbidden",
+			getWalletsErr: wallet.ErrWalletAPIDisabled,
+		},
+
+		{
+			name:               "200 no wallets",
+			method:             http.MethodGet,
+			status:             http.StatusOK,
+			getWalletsResponse: nil,
+			httpResponse:       []*WalletResponse{},
+		},
+
+		{
+			name:               "200 no wallets 2",
+			method:             http.MethodGet,
+			status:             http.StatusOK,
+			getWalletsResponse: wallet.Wallets{},
+			httpResponse:       []*WalletResponse{},
+		},
+
+		{
+			name:   "200",
+			method: http.MethodGet,
+			status: http.StatusOK,
+			getWalletsResponse: wallet.Wallets{
+				"foofilename": {
+					Meta: map[string]string{
+						"foo":        "bar",
+						"seed":       "fooseed",
+						"lastSeed":   "foolastseed",
+						"coin":       "foocoin",
+						"filename":   "foofilename",
+						"label":      "foolabel",
+						"type":       "footype",
+						"version":    "fooversion",
+						"cryptoType": "foocryptotype",
+						"tm":         "123456",
+						"encrypted":  "true",
+					},
+					Entries: []wallet.Entry{
+						{
+							Address: addr,
+							Public:  pubkey,
+							Secret:  seckey,
+						},
+					},
+				},
+			},
+			httpResponse: []*WalletResponse{
+				{
+					Meta: WalletMeta{
+						Coin:       "foocoin",
+						Filename:   "foofilename",
+						Label:      "foolabel",
+						Type:       "footype",
+						Version:    "fooversion",
+						CryptoType: "foocryptotype",
+						Timestamp:  123456,
+						Encrypted:  true,
+					},
+					Entries: []WalletEntry{
+						{
+							Address: addr.String(),
+							Public:  pubkey.Hex(),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		gateway := &GatewayerMock{}
+		gateway.On("GetWallets").Return(tc.getWalletsResponse, tc.getWalletsErr)
+
+		endpoint := "/wallets"
+
+		req, err := http.NewRequest(tc.method, endpoint, nil)
+		require.NoError(t, err)
+
+		csrfStore := &CSRFStore{
+			Enabled: true,
+		}
+		setCSRFParameters(csrfStore, tokenValid, req)
+
+		rr := httptest.NewRecorder()
+		handler := newServerMux(mxConfig, gateway, csrfStore)
+
+		handler.ServeHTTP(rr, req)
+
+		status := rr.Code
+		require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
+			tc.name, status, tc.status)
+
+		if status != http.StatusOK {
+			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+		} else {
+			var msg []*WalletResponse
+			json.Unmarshal(rr.Body.Bytes(), &msg)
+			require.NoError(t, err)
+			require.NotNil(t, msg)
 			require.Equal(t, tc.httpResponse, msg, tc.name)
 		}
 	}

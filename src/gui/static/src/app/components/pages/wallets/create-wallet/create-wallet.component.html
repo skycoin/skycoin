@@ -25,7 +25,7 @@
     <app-button (action)="closePopup()">
       Cancel
     </app-button>
-    <app-button (action)="createWallet()" class="primary" [disabled]="!form.valid">
+    <app-button (action)="createWallet()" class="primary" [disabled]="!form.valid" #button>
       Create
     </app-button>
   </div>

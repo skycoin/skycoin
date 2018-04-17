@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { WalletService } from '../../../../services/wallet.service';
 import { MatDialogRef } from '@angular/material/dialog';
+import { ButtonComponent } from '../../../layout/button/button.component';
 
 @Component({
   selector: 'app-create-wallet',
@@ -9,7 +10,7 @@ import { MatDialogRef } from '@angular/material/dialog';
   styleUrls: ['./create-wallet.component.scss']
 })
 export class CreateWalletComponent implements OnInit {
-
+  @ViewChild('button') button: ButtonComponent;
   form: FormGroup;
   seed: string;
   scan: Number;
@@ -28,6 +29,8 @@ export class CreateWalletComponent implements OnInit {
   }
 
   createWallet() {
+    this.button.setLoading();
+
     this.walletService.create(this.form.value.label, this.form.value.seed, this.scan, this.form.value.password)
       .subscribe(() => this.dialogRef.close());
   }

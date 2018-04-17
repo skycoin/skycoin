@@ -23,11 +23,11 @@ export class BackupComponent implements OnDestroy, OnInit {
     this.walletService.all().subscribe(wallets => wallets.forEach(wallet => wallet.visible = false));
   }
 
-  download(wallet: Wallet) {
-    const blob: Blob = new Blob([JSON.stringify({ seed: wallet.seed })], { type: 'application/json'});
-    const link = document.createElement('a');
-    link.href = window.URL.createObjectURL(blob);
-    link['download'] = wallet.filename + '.json';
-    link.click();
-  }
+  // download(wallet: Wallet) {
+  //   const blob: Blob = new Blob([JSON.stringify({ seed: wallet.seed })], { type: 'application/json'});
+  //   const link = document.createElement('a');
+  //   link.href = window.URL.createObjectURL(blob);
+  //   link['download'] = wallet.filename + '.json';
+  //   link.click();
+  // }
 }

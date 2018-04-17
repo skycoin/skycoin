@@ -98,9 +98,11 @@ make run-help
 
 ### Run Skycoin with options
 
+Example:
+
 ```sh
 cd $GOPATH/src/github.com/skycoin/skycoin
-make ARGS="--launch-browser=false" run
+make ARGS="--launch-browser=false -data-dir=/custom/path" run
 ```
 
 ### Docker image
@@ -116,6 +118,10 @@ $ docker run -ti --rm \
     -p 6430:6430 \
     skycoin/skycoin
 ```
+
+With this image, the skycoin daemon will run as root by default inside the
+container. When you mount a volume in /data, the container will detect for the
+folder's owner UID and will create a skycoin user with the same UID.
 
 Access the dashboard: [http://localhost:6420](http://localhost:6420).
 
@@ -383,7 +389,7 @@ Performs these actions before releasing:
     * Load a test wallet with nonzero balance from seed to confirm wallet loading works
     * Send coins to another wallet to confirm spending works
     * Restart the client, confirm that it reloads properly
-* `./run.sh -disable-wallet-api` and check that the wallet does not load, and `/wallets` and `/spend` fail
+* `./run.sh -enable-wallet-api=false` and check that the wallet does not load, and `/wallets` and `/spend` fail
 
 #### Creating release builds
 

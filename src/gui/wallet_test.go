@@ -1842,6 +1842,129 @@ func TestGetWalletFolderHandler(t *testing.T) {
 	}
 }
 
+func TestGetWallets(t *testing.T) {
+	pubkey, seckey := cipher.GenerateKeyPair()
+	addr := cipher.AddressFromPubKey(pubkey)
+
+	cases := []struct {
+		name               string
+		method             string
+		status             int
+		err                string
+		getWalletsResponse wallet.Wallets
+		getWalletsErr      error
+		httpResponse       []*WalletResponse
+	}{
+		{
+			name:   "405",
+			method: http.MethodPost,
+			status: http.StatusMethodNotAllowed,
+			err:    "405 Method Not Allowed",
+		},
+
+		{
+			name:          "403 - wallet API disabled",
+			method:        http.MethodGet,
+			status:        http.StatusForbidden,
+			err:           "403 Forbidden",
+			getWalletsErr: wallet.ErrWalletAPIDisabled,
+		},
+
+		{
+			name:               "200 no wallets",
+			method:             http.MethodGet,
+			status:             http.StatusOK,
+			getWalletsResponse: nil,
+			httpResponse:       []*WalletResponse{},
+		},
+
+		{
+			name:   "200",
+			method: http.MethodGet,
+			status: http.StatusOK,
+			getWalletsResponse: wallet.Wallets{
+				"foofilename": {
+					Meta: map[string]string{
+						"foo":        "bar",
+						"seed":       "fooseed",
+						"lastSeed":   "foolastseed",
+						"coin":       "foocoin",
+						"filename":   "foofilename",
+						"label":      "foolabel",
+						"type":       "footype",
+						"version":    "fooversion",
+						"cryptoType": "foocryptotype",
+						"tm":         "123456",
+						"encrypted":  "true",
+					},
+					Entries: []wallet.Entry{
+						{
+							Address: addr,
+							Public:  pubkey,
+							Secret:  seckey,
+						},
+					},
+				},
+			},
+			httpResponse: []*WalletResponse{
+				{
+					Meta: WalletMeta{
+						Coin:       "foocoin",
+						Filename:   "foofilename",
+						Label:      "foolabel",
+						Type:       "footype",
+						Version:    "fooversion",
+						CryptoType: "foocryptotype",
+						Timestamp:  123456,
+						Encrypted:  true,
+					},
+					Entries: []WalletEntry{
+						{
+							Address: addr.String(),
+							Public:  pubkey.Hex(),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		gateway := &GatewayerMock{}
+		gateway.On("GetWallets").Return(tc.getWalletsResponse, tc.getWalletsErr)
+
+		endpoint := "/wallets"
+
+		req, err := http.NewRequest(tc.method, endpoint, nil)
+		require.NoError(t, err)
+
+		csrfStore := &CSRFStore{
+			Enabled: true,
+		}
+		setCSRFParameters(csrfStore, tokenValid, req)
+
+		rr := httptest.NewRecorder()
+		handler := newServerMux(mxConfig, gateway, csrfStore)
+
+		handler.ServeHTTP(rr, req)
+
+		status := rr.Code
+		require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
+			tc.name, status, tc.status)
+
+		if status != http.StatusOK {
+			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+		} else {
+			var msg []*WalletResponse
+			json.Unmarshal(rr.Body.Bytes(), &msg)
+			require.NoError(t, err)
+			require.NotNil(t, msg)
+			require.Equal(t, tc.httpResponse, msg, tc.name)
+		}
+	}
+}
+
 func TestWalletUnloadHandler(t *testing.T) {
 	tt := []struct {
 		name            string

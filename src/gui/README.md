@@ -254,7 +254,7 @@ Result:
 
 ```json
 {
-    "meta":{
+    "meta": {
         "coin": "skycoin",
         "filename": "2017_11_25_e5fb.wlt",
         "label": "test",
@@ -262,17 +262,17 @@ Result:
         "version": "0.2",
         "crypto_type": "",
         "timestamp": 1511640884,
-        "encrypted": false,
+        "encrypted": false
     },
-    "entries":[
+    "entries": [
         {
             "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
-            "public_key": "***",
+            "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1"
         },
         {
             "address": "SMnCGfpt7zVXm8BkRSFMLeMRA6LUu3Ewne",
-            "public_key": "***",
-        },
+            "public_key": "02539528248a1a2c4f0b73233491103ca83b40249dac3ae9eee9a10b9f9debd9a3"
+        }
     ]
 }
 ```
@@ -363,16 +363,16 @@ Result:
             "version": "0.2",
             "crypto_type": "",
             "timestamp": 1511640884,
-            "encrypted": false,
+            "encrypted": false
         },
         "entries": [
             {
                 "address": "8C5icxR9zdkYTZZTVV3cCX7QoK4EkLuK4p",
-                "public_key": "***",
+                "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1"
             },
             {
                 "address": "23A1EWMZopUFLCwtXMe2CU9xTCbi5Gth643",
-                "public_key": "***",
+                "public_key": "02539528248a1a2c4f0b73233491103ca83b40249dac3ae9eee9a10b9f9debd9a3"
             }
         ]
     }
@@ -461,12 +461,12 @@ Result:
         "version": "0.2",
         "crypto_type": "",
         "timestamp": 1511640884,
-        "encrypted": false,
+        "encrypted": false
     },
     "entries": [
         {
             "address": "y2JeYS4RS8L9GYM7UKdjLRyZanKHXumFoH",
-            "public_key": "***",
+            "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1"
         }
     ]
 }
@@ -661,7 +661,7 @@ curl -X POST http://127.0.0.1:6420/wallet/unload \
 ```
 URI: /wallet/encrypt
 Method: POST
-Args: 
+Args:
     id: wallet id
     password: wallet password
 ```
@@ -687,12 +687,12 @@ Result:
         "version": "0.2",
         "crypto_type": "scrypt-chacha20poly1305",
         "timestamp": 1521083044,
-        "encrypted": true,
+        "encrypted": true
     },
     "entries": [
         {
             "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
-            "public_key": "***",
+            "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1"
         }
     ]
 }
@@ -729,13 +729,12 @@ Result:
         "version": "0.2",
         "crypto_type": "",
         "timestamp": 1521083044,
-        "encrypted": false,
+        "encrypted": false
     },
     "entries": [
         {
             "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
-            "public_key": "032a1218cbafc8a93233f363c19c667cf02d42fa5a8a07c0d6feca79e82d72753d",
-            "secret_key": ""
+            "public_key": "032a1218cbafc8a93233f363c19c667cf02d42fa5a8a07c0d6feca79e82d72753d"
         }
     ]
 }
@@ -1100,7 +1099,7 @@ Result:
 
 ```json
 {
-    "head":{
+    "head": {
         "seq": 17936,
         "block_hash": "b91663fa8ff14aab529cd7bfd48bde5bd86e3c2db154d601528801ee0d064d19",
         "previous_block_hash": "b57d3b644898f95c9f7a9281e786a0ae2a567e9dc573654363ffafaa41ab4caf",

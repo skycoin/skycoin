@@ -10,7 +10,7 @@ export class SeedModalComponent implements OnDestroy {
 
   constructor(
     public dialogRef: MatDialogRef<SeedModalComponent>,
-    @Inject(MAT_DIALOG_DATA) private data: any,
+    @Inject(MAT_DIALOG_DATA) public data: any,
   ) {}
 
   ngOnDestroy() {

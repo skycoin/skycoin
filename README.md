@@ -140,30 +140,26 @@ Access the API: [http://localhost:6420/version](http://localhost:6420/version).
 
 ### Building your own images
 
-There are some folders in the `docker/images/` folder. You can build different
-images with the Dockerfiles they contain for different purposes.
+There is a Dockerfile in docker/images/mainnet that you can use to build your
+own image. By default it will build your working copy, but if you pass the
+SKYCOIN_VERSION build argument to the `docker build` command, it will checkout
+to the branch, a tag or a commit you specify on that variable.
 
-#### Mainnet
-
-When you build this Dockerfile, docker will download the source code from
-github on the specified tag and make an image out of it. The stable image
-should come from this one. The `--build-arg` is optional as there is a default
-in the Dockerfile.
+Example
 
 ```sh
-$ cd docker/images/mainnet
-$ docker build -t skycoin:stable --build-arg=SKYCOIN_VERSION=0.22.0
+$ SKYCOIN_VERSION=v0.22.0
+$ docker build -f docker/images/mainnet/Dockerfile \
+  --build-arg=SKYCOIN_VERSION=$SKYCOIN_VERSION \
+  -t skycoin:$SKYCOIN_VERSION .
 ```
 
-#### Snapshot
-
-This Dockerfile it's used to build the current state of the source you are
-working on. Notice that the source code should be in the folder docker uploads
-as context.
+or just
 
 ```sh
-$ cd $GOPATH/src/github.com/skycoin/skycoin
-$ docker build -t skycoin:snapshot -f docker/images/snapshot/Dockerfile .
+$ docker build -f docker/images/mainnet/Dockerfile \
+  --build-arg=SKYCOIN_VERSION=v0.22.0 \
+  -t skycoin:v0.22.0 .
 ```
 
 ## API Documentation

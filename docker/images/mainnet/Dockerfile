@@ -2,29 +2,23 @@
 # reference https://github.com/skycoin/skycoin
 FROM golang:1.10 AS build
 
-ARG SKYCOIN_VERSION=0.22.0
+ARG SKYCOIN_VERSION
 
-# dirs
-RUN mkdir -p $GOPATH/src/github.com/skycoin/skycoin
+COPY . $GOPATH/src/github.com/skycoin/skycoin
 
-# clone
-RUN wget -c https://github.com/skycoin/skycoin/archive/v${SKYCOIN_VERSION}.tar.gz
+# This code checks if SKYCOIN_VERSION is set and checkouts to that version if
+# so. The git stash line prevents the build to fail if there are any uncommited
+# changes in the working copy. It won't affect the host working copy.
+RUN sh -c \
+    'if test ${SKYCOIN_VERSION};then \
+        echo "Revision is set to: "${SKYCOIN_VERSION}; \
+        cd $GOPATH/src/github.com/skycoin/skycoin; \
+        git stash; \
+        git checkout ${SKYCOIN_VERSION}; \
+     fi'
 
-# uncompress
-RUN tar zxf v${SKYCOIN_VERSION}.tar.gz -C $GOPATH/src/github.com/skycoin/skycoin/ --strip-components=1
-
-# install cli
-RUN cd $GOPATH/src/github.com/skycoin/skycoin/cmd/cli && \
-  CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /go/bin/skycoin-cli .
-
-# install skycoin
-RUN cd $GOPATH/src/github.com/skycoin/skycoin/cmd/skycoin && \
-  CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /go/bin/skycoin .
-
-# install address_gen
-RUN cd $GOPATH/src/github.com/skycoin/skycoin/cmd/address_gen && \
-  CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /go/bin/address_gen .
-
+RUN cd $GOPATH/src/github.com/skycoin/skycoin && \
+  CGO_ENABLED=0 GOOS=linux go install -a -installsuffix cgo ./...
 
 # skycoin image
 FROM alpine:3.7
@@ -41,11 +35,14 @@ COPY --from=build /go/bin/* /usr/bin/
 # copy assets
 COPY --from=build /go/src/github.com/skycoin/skycoin/src/gui/static /usr/local/skycoin/src/gui/static
 
+# copy launcher
+COPY docker_launcher.sh /usr/local/bin
+
 # volumes
 VOLUME $WALLET_DIR
 VOLUME $DATA_DIR
 
 EXPOSE 6000 6420 6430
 
-ENTRYPOINT ["/usr/bin/skycoin"]
-CMD ["--web-interface-addr=0.0.0.0",  "--rpc-interface-addr=0.0.0.0"]
+ENTRYPOINT ["docker_launcher.sh"]
+CMD ["--web-interface-addr=0.0.0.0", "--rpc-interface-addr=0.0.0.0", "--gui-dir=/usr/local/skycoin/src/gui/static"]

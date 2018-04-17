@@ -62,7 +62,7 @@ func create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
 	var appLoc string
 	if c.EnableWalletAPI {
 		var err error
-		appLoc, err := file.DetermineResourcePath(c.StaticDir, resourceDir, devDir)
+		appLoc, err = file.DetermineResourcePath(c.StaticDir, resourceDir, devDir)
 		if err != nil {
 			return nil, err
 		}

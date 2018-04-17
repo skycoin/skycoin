@@ -114,7 +114,7 @@ func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 			logger.Errorf("Get wallet balance failed: %v", err)
 			switch err {
 			case wallet.ErrWalletNotExist:
-				wh.Error404(w)
+				wh.Error404(w, r)
 				break
 			case wallet.ErrWalletAPIDisabled:
 				wh.Error403(w)
@@ -192,7 +192,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 			wh.Error400(w, err.Error())
 			return
 		case wallet.ErrWalletNotExist:
-			wh.Error404(w)
+			wh.Error404(w, r)
 			return
 		case wallet.ErrWalletAPIDisabled:
 			wh.Error403(w)
@@ -429,7 +429,7 @@ func walletUpdateHandler(gateway Gatewayer) http.HandlerFunc {
 
 			switch err {
 			case wallet.ErrWalletNotExist:
-				wh.Error404(w)
+				wh.Error404(w, r)
 			case wallet.ErrWalletAPIDisabled:
 				wh.Error403(w)
 			default:
@@ -502,7 +502,7 @@ func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 			logger.Errorf("get wallet unconfirmed transactions failed: %v", err)
 			switch err {
 			case wallet.ErrWalletNotExist:
-				wh.Error404(w)
+				wh.Error404(w, r)
 			case wallet.ErrWalletAPIDisabled:
 				wh.Error403(w)
 			default:
@@ -685,7 +685,7 @@ func walletSeedHandler(gateway Gatewayer) http.HandlerFunc {
 				wallet.ErrSeedAPIDisabled:
 				wh.Error403(w)
 			case wallet.ErrWalletNotExist:
-				wh.Error404(w)
+				wh.Error404(w, r)
 			default:
 				wh.Error500(w)
 			}
@@ -758,7 +758,7 @@ func walletEncryptHandler(gateway Gatewayer) http.HandlerFunc {
 			case wallet.ErrInvalidPassword:
 				wh.Error400(w, err.Error())
 			case wallet.ErrWalletNotExist:
-				wh.Error404(w)
+				wh.Error404(w, r)
 			default:
 				wh.Error500(w)
 			}
@@ -807,7 +807,7 @@ func walletDecryptHandler(gateway Gatewayer) http.HandlerFunc {
 				wallet.ErrInvalidPassword:
 				wh.Error400(w, err.Error())
 			case wallet.ErrWalletNotExist:
-				wh.Error404(w)
+				wh.Error404(w, r)
 			default:
 				wh.Error500(w)
 			}

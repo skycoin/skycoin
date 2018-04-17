@@ -34,7 +34,7 @@ func getUxOutByID(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if uxout == nil {
-			wh.Error404(w)
+			wh.Error404(w, r)
 			return
 		}
 

@@ -4,6 +4,12 @@ package httphelper
 import (
 	"fmt"
 	"net/http"
+
+	"github.com/skycoin/skycoin/src/util/logging"
+)
+
+var (
+	logger = logging.MustGetLogger("gui")
 )
 
 // HTTPError wraps http.Error
@@ -36,7 +42,8 @@ func Error403Msg(w http.ResponseWriter, msg string) {
 }
 
 // Error404 respond with a 404 error
-func Error404(w http.ResponseWriter) {
+func Error404(w http.ResponseWriter, r *http.Request) {
+	logger.Errorf("%s %s", "404 Not Found", r.URL.Path)
 	HTTPError(w, http.StatusNotFound, "Not Found")
 }
 

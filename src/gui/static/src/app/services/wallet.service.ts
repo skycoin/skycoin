@@ -189,7 +189,7 @@ export class WalletService {
   }
 
   private retrieveAddressBalance(address: any|any[]) {
-    const addresses = Array.isArray(address) ? address.map(address => address.address).join(',') : address.address;
+    const addresses = Array.isArray(address) ? address.map(addr => addr.address).join(',') : address.address;
     return this.apiService.get('balance', {addrs: addresses});
   }
 

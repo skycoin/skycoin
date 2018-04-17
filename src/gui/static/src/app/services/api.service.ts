@@ -108,7 +108,7 @@ export class ApiService {
     options.headers = this.getHeaders();
 
     if (additionalOptions.csrf) {
-      options.headers.append('X-CSRF-Token', additionalOptions.csrf)
+      options.headers.append('X-CSRF-Token', additionalOptions.csrf);
     }
 
     return options;
@@ -125,7 +125,7 @@ export class ApiService {
       return '';
     }
 
-    return Object.keys(parameters).reduce((array,key) => {
+    return Object.keys(parameters).reduce((array, key) => {
       array.push(key + '=' + encodeURIComponent(parameters[key]));
       return array;
     }, []).join('&');

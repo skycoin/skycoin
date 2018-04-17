@@ -1879,6 +1879,14 @@ func TestGetWallets(t *testing.T) {
 		},
 
 		{
+			name:               "200 no wallets 2",
+			method:             http.MethodGet,
+			status:             http.StatusOK,
+			getWalletsResponse: wallet.Wallets{},
+			httpResponse:       []*WalletResponse{},
+		},
+
+		{
 			name:   "200",
 			method: http.MethodGet,
 			status: http.StatusOK,

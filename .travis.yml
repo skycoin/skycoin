@@ -21,13 +21,13 @@ env:
     - LIB_DIR: lib
 
 cache:
-  yarn: true
   directories:
   - electron/node_modules
   - electron/src/node_modules
   - $HOME/.cache/electron
   - $HOME/.cache/electron-builder
   - $HOME/.npm/_prebuilds
+  - src/gui/static/node_modules
 
 install:
   # Install gox
@@ -38,6 +38,7 @@ install:
   - go get -t ./...
   - make install-linters
   - make install-deps-libc
+  - make install-deps-ui
 
 before_script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" && "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/add-key.sh && npm install -g yarn ;fi
@@ -53,6 +54,7 @@ script:
   # TODO: test pyskycoin
   # - make test-libpy
   # build wallets
+  - make build-ui
   - if [[ "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/build-wallet.sh; fi
 
 

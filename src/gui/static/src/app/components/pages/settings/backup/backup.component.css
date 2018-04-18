@@ -9,3 +9,9 @@ ngx-datatable {
 button.in-table {
   margin-top: -0.9rem;
 }
+
+.mat-icon {
+  color: grey;
+  font-size: 18px;
+  padding-left: 10px;
+}

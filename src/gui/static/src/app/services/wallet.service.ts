@@ -16,14 +16,19 @@ import { Address, Wallet } from '../app.datatypes';
 export class WalletService {
   addresses: Address[];
   wallets: Subject<Wallet[]> = new BehaviorSubject<Wallet[]>([]);
+  pendingTxs: Subject<any[]> = new BehaviorSubject<any[]>([]);
 
   constructor(
     private apiService: ApiService
   ) {
     this.loadData();
+
     IntervalObservable
       .create(30000)
       .subscribe(() => this.refreshBalances());
+
+    IntervalObservable.create(10000)
+      .subscribe(() => this.refreshPendingTransactions());
   }
 
   addressesAsString(): Observable<string> {
@@ -35,8 +40,8 @@ export class WalletService {
     }).join(','));
   }
 
-  addAddress(wallet: Wallet) {
-    return this.apiService.postWalletNewAddress(wallet)
+  addAddress(wallet: Wallet, password?: string) {
+    return this.apiService.postWalletNewAddress(wallet, password)
       .do(address => {
         wallet.addresses.push(address);
         this.refreshBalances();
@@ -51,10 +56,10 @@ export class WalletService {
     return this.all().map(wallets => wallets.reduce((array, wallet) => array.concat(wallet.addresses), []));
   }
 
-  create(label, seed, scan) {
+  create(label, seed, scan, password) {
     seed = seed.replace(/\r?\n|\r/g, ' ').replace(/ +/g, ' ').trim();
 
-    return this.apiService.postWalletCreate(label ? label : 'undefined', seed, scan ? scan : 100)
+    return this.apiService.postWalletCreate(label ? label : 'undefined', seed, scan ? scan : 100, password)
       .do(wallet => {
         console.log(wallet);
         this.wallets.first().subscribe(wallets => {
@@ -84,7 +89,13 @@ export class WalletService {
   }
 
   pendingTransactions(): Observable<any> {
-    return this.apiService.get('pendingTxs');
+    return this.pendingTxs.asObservable();
+  }
+
+  refreshPendingTransactions() {
+    this.apiService.get('pendingTxs').subscribe(txs => {
+      this.pendingTxs.next(txs);
+    });
   }
 
   refreshBalances() {
@@ -107,8 +118,20 @@ export class WalletService {
       });
   }
 
-  sendSkycoin(wallet: Wallet, address: string, amount: number) {
-    return this.apiService.post('wallet/spend', {id: wallet.filename, dst: address, coins: amount});
+  toggleEncryption(wallet: Wallet, password: string): Observable<Wallet> {
+    return this.apiService.postWalletToggleEncryption(wallet, password)
+      .do(w => {
+        wallet.encrypted = w.meta.encrypted;
+        this.updateWallet(w);
+      });
+  }
+
+  getWalletSeed(wallet: Wallet, password: string): Observable<string> {
+    return this.apiService.getWalletSeed(wallet, password);
+  }
+
+  sendSkycoin(wallet: Wallet, address: string, amount: number, password: string|null) {
+    return this.apiService.post('wallet/spend', {id: wallet.filename, dst: address, coins: amount, password});
   }
 
   sum(): Observable<number> {

@@ -62,7 +62,7 @@ func getTransactionByID(gate Gatewayer) http.HandlerFunc {
 			return
 		}
 		if tx == nil {
-			wh.Error404(w, r)
+			wh.Error404(w)
 			return
 		}
 
@@ -232,7 +232,7 @@ func getRawTx(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if tx == nil {
-			wh.Error404(w, r)
+			wh.Error404(w)
 			return
 		}
 

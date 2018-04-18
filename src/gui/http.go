@@ -365,7 +365,7 @@ func newIndexHandler(appLoc string) http.HandlerFunc {
 		if r.URL.Path == "/" {
 			http.ServeFile(w, r, page)
 		} else {
-			wh.Error404(w, r)
+			wh.Error404(w)
 		}
 	}
 }

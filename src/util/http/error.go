@@ -15,6 +15,7 @@ var (
 // HTTPError wraps http.Error
 func HTTPError(w http.ResponseWriter, status int, httpMsg string) {
 	msg := fmt.Sprintf("%d %s", status, httpMsg)
+	logger.Errorf(msg)
 	http.Error(w, msg, status)
 }
 
@@ -42,8 +43,7 @@ func Error403Msg(w http.ResponseWriter, msg string) {
 }
 
 // Error404 respond with a 404 error
-func Error404(w http.ResponseWriter, r *http.Request) {
-	logger.Errorf("%s %s", "404 Not Found", r.URL.Path)
+func Error404(w http.ResponseWriter) {
 	HTTPError(w, http.StatusNotFound, "Not Found")
 }
 

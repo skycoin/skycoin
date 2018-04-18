@@ -16,7 +16,7 @@ import (
 import "C"
 
 //export SKY_secp256k1go_Signature_Print
-func SKY_secp256k1go_Signature_Print(_sig *C.Number, _lab string) (____error_code uint32) {
+func SKY_secp256k1go_Signature_Print(_sig *C.Signature, _lab string) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -28,7 +28,7 @@ func SKY_secp256k1go_Signature_Print(_sig *C.Number, _lab string) (____error_cod
 }
 
 //export SKY_secp256k1go_Signature_Verify
-func SKY_secp256k1go_Signature_Verify(_sig *C.Number, _pubkey *C.secp256k1go__XY, _message *C.Number, _arg2 *bool) (____error_code uint32) {
+func SKY_secp256k1go_Signature_Verify(_sig *C.Signature, _pubkey *C.secp256k1go__XY, _message *C.Number, _arg2 *bool) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -42,7 +42,7 @@ func SKY_secp256k1go_Signature_Verify(_sig *C.Number, _pubkey *C.secp256k1go__XY
 }
 
 //export SKY_secp256k1go_Signature_Recover
-func SKY_secp256k1go_Signature_Recover(_sig *C.Number, _pubkey *C.secp256k1go__XY, _m *C.Number, _recid int, _arg3 *bool) (____error_code uint32) {
+func SKY_secp256k1go_Signature_Recover(_sig *C.Signature, _pubkey *C.secp256k1go__XY, _m *C.Number, _recid int, _arg3 *bool) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -57,7 +57,7 @@ func SKY_secp256k1go_Signature_Recover(_sig *C.Number, _pubkey *C.secp256k1go__X
 }
 
 //export SKY_secp256k1go_Signature_Sign
-func SKY_secp256k1go_Signature_Sign(_sig *C.Number, _seckey, _message, _nonce *C.Number, _recid *int, _arg2 *int) (____error_code uint32) {
+func SKY_secp256k1go_Signature_Sign(_sig *C.Signature, _seckey, _message, _nonce *C.Number, _recid *int, _arg2 *int) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -73,7 +73,7 @@ func SKY_secp256k1go_Signature_Sign(_sig *C.Number, _seckey, _message, _nonce *C
 }
 
 //export SKY_secp256k1go_Signature_ParseBytes
-func SKY_secp256k1go_Signature_ParseBytes(_sig *C.Number, _v *C.GoSlice_) (____error_code uint32) {
+func SKY_secp256k1go_Signature_ParseBytes(_sig *C.Signature, _v *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -85,7 +85,7 @@ func SKY_secp256k1go_Signature_ParseBytes(_sig *C.Number, _v *C.GoSlice_) (____e
 }
 
 //export SKY_secp256k1go_Signature_Bytes
-func SKY_secp256k1go_Signature_Bytes(_sig *C.Number, _arg0 *C.GoSlice_) (____error_code uint32) {
+func SKY_secp256k1go_Signature_Bytes(_sig *C.Signature, _arg0 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())

@@ -38,7 +38,7 @@
     <app-button class="dark -button-min-margin" [disabled]="!form.valid" (action)="encryptWallet()" #button>
       Finish
     </app-button>
-    <app-button class="ghost -button-min-margin" (action)="skip()">
+    <app-button class="ghost -button-min-margin" (action)="skip()" [ngClass]="{ '-hidden': !skipVisible }">
       Skip
     </app-button>
   </div>

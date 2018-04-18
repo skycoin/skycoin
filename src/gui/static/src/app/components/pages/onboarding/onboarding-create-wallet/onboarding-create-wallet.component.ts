@@ -64,8 +64,7 @@ export class OnboardingCreateWalletComponent implements OnInit {
         this.button.setLoading();
 
         this.walletService.create(this.form.value.label, this.form.value.seed, 100, null).subscribe(wallet => {
-          // this.router.navigate(['/wizard/encrypt'], { queryParams: { wallet: wallet.filename }});
-          this.router.navigate(['/wallets']);
+          this.router.navigate(['/wizard/encrypt'], { queryParams: { wallet: wallet.filename }});
         });
       }
     });
@@ -74,7 +73,7 @@ export class OnboardingCreateWalletComponent implements OnInit {
   loadWallet() {
     this.button.setLoading();
 
-    this.walletService.create(this.form.value.label, this.form.value.seed, 100, null).subscribe(wallet => {
+    this.walletService.create(this.form.value.label, this.form.value.seed, 100, null).subscribe(() => {
       this.router.navigate(['/wallets']);
     });
   }

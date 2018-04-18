@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { WalletService } from '../../../../services/wallet.service';
@@ -12,6 +12,7 @@ import { ButtonComponent } from '../../../layout/button/button.component';
 export class OnboardingEncryptWalletComponent implements OnInit {
   @ViewChild('button') button: ButtonComponent;
   form: FormGroup;
+  skipVisible = true;
 
   constructor(
     private formBuilder: FormBuilder,
@@ -47,10 +48,12 @@ export class OnboardingEncryptWalletComponent implements OnInit {
 
   encryptWallet() {
     this.button.setLoading();
+    this.skipVisible = false;
 
-    this.walletService.find(this.route.snapshot.queryParams['wallet']).subscribe(wallet => {
-      // TODO: encrypt the wallet
-      this.skip();
+    this.walletService.find(this.route.snapshot.queryParams['wallet']).first().subscribe(wallet => {
+      this.walletService.toggleEncryption(wallet, this.form.get('password').value).subscribe(() => {
+        this.skip();
+      });
     });
   }
 

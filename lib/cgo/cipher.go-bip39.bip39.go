@@ -45,12 +45,12 @@ func SKY_bip39_NewEntropy(_bitSize int, _arg1 *C.GoSlice_) (____error_code uint3
 }
 
 //export SKY_bip39_NewMnemonic
-func SKY_bip39_NewMnemonic(_entropy *C.GoSlice_, _arg1 *C.GoString_) (____error_code uint32) {
+func SKY_bip39_NewMnemonic(_entropy []byte, _arg1 *C.GoString_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	entropy := *(*[]byte)(unsafe.Pointer(_entropy))
+	entropy := *(*[]byte)(unsafe.Pointer(&_entropy))
 	__arg1, ____return_err := gobip39.NewMnemonic(entropy)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {

@@ -20,15 +20,16 @@ func SKY_cli_GetWalletOutputsFromFile(_c *C.WebRpcClient__Handle, _walletFile st
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	client, ok := lookupWebRpcClientHandle(*_c)
-	____error_code = SKY_ERROR
-	if ok {
-		__arg2, ____return_err := cli.GetWalletOutputsFromFile(client, _walletFile)
-		____error_code = libErrorCode(____return_err)
-		if ____return_err == nil {
-			*_arg2 = *(*C.webrpc__OutputsResult)(unsafe.Pointer(__arg2))
-		}
-		____error_code = libErrorCode(____return_err)
+	c, okc := lookupWebRpcClientHandle(*_c)
+	if !okc {
+		____error_code = SKY_ERROR
+		return
+	}
+	walletFile := _walletFile
+	__arg2, ____return_err := cli.GetWalletOutputsFromFile(c, walletFile)
+	____error_code = libErrorCode(____return_err)
+	if ____return_err == nil {
+		*_arg2 = *(*C.webrpc__OutputsResult)(unsafe.Pointer(__arg2))
 	}
 	return
 }
@@ -39,16 +40,20 @@ func SKY_cli_GetWalletOutputs(_c *C.WebRpcClient__Handle, _wlt *C.Wallet__Handle
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	client, isClient := lookupWebRpcClientHandle(*_c)
-	wlt, isWallet := lookupWalletHandle(*_wlt)
-	____error_code = SKY_ERROR
-	if isClient && isWallet {
-		__arg2, ____return_err := cli.GetWalletOutputs(client, wlt)
-		____error_code = libErrorCode(____return_err)
-		if ____return_err == nil {
-			*_arg2 = *(*C.webrpc__OutputsResult)(unsafe.Pointer(__arg2))
-		}
-		____error_code = libErrorCode(____return_err)
+	c, okc := lookupWebRpcClientHandle(*_c)
+	if !okc {
+		____error_code = SKY_ERROR
+		return
+	}
+	wlt, okwlt := lookupWalletHandle(*_wlt)
+	if !okwlt {
+		____error_code = SKY_ERROR
+		return
+	}
+	__arg2, ____return_err := cli.GetWalletOutputs(c, wlt)
+	____error_code = libErrorCode(____return_err)
+	if ____return_err == nil {
+		*_arg2 = *(*C.webrpc__OutputsResult)(unsafe.Pointer(__arg2))
 	}
 	return
 }

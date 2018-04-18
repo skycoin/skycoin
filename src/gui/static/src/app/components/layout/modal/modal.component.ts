@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { MatDialogRef } from '@angular/material/dialog';
 
 @Component({
@@ -6,11 +6,18 @@ import { MatDialogRef } from '@angular/material/dialog';
   templateUrl: './modal.component.html',
   styleUrls: ['./modal.component.scss']
 })
-export class ModalComponent {
+export class ModalComponent implements OnChanges {
   @Input() dialog: MatDialogRef<any>;
   @Input() title: string;
+  @Input() disableDismiss: boolean;
 
   closePopup() {
-    this.dialog.close();
+    if (!this.disableDismiss) {
+      this.dialog.close();
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    this.dialog.disableClose = changes.disableDismiss.currentValue;
   }
 }

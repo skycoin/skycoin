@@ -15,6 +15,7 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
   @ViewChild('button') button: ButtonComponent;
   form: FormGroup;
   passwordSubmit: Observable<any>;
+  disableDismiss = false;
   private passwordChanged;
 
   constructor(
@@ -49,6 +50,7 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
   proceed() {
     this.button.setLoading();
     this.passwordChanged(this.form.get('password').value);
+    this.disableDismiss = true;
   }
 
   private close() {
@@ -57,5 +59,6 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
 
   private error(error: any) {
     this.button.setError(error ? error : 'Incorrect password');
+    this.disableDismiss = false;
   }
 }

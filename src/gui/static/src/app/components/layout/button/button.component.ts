@@ -8,14 +8,14 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 
 export class ButtonComponent {
   @Input() disabled: any;
-  @Input() emit = false;
+  @Input() forceEmitEvents = false;
   @Output() action = new EventEmitter();
 
   error: string;
   state: number;
 
   onClick() {
-    if (!this.disabled || this.emit) {
+    if (!this.disabled || this.forceEmitEvents) {
       this.action.emit();
     }
   }
@@ -32,10 +32,6 @@ export class ButtonComponent {
   setError(error: any) {
     this.error = typeof error === 'string' ? error : error['_body'];
     this.state = 2;
-  }
-
-  setDisabled() {
-    this.disabled = true;
   }
 
   resetState() {

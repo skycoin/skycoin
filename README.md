@@ -105,7 +105,7 @@ cd $GOPATH/src/github.com/skycoin/skycoin
 make ARGS="--launch-browser=false -data-dir=/custom/path" run
 ```
 
-### Docker images
+### Docker image
 
 This is the quickest way to start using Skycoin using Docker.
 

@@ -44,5 +44,4 @@ VOLUME $DATA_DIR
 
 EXPOSE 6000 6420 6430
 
-ENTRYPOINT ["docker_launcher.sh"]
-CMD ["--web-interface-addr=0.0.0.0", "--rpc-interface-addr=0.0.0.0", "--gui-dir=/usr/local/skycoin/src/gui/static"]
+ENTRYPOINT ["docker_launcher.sh", "--web-interface-addr=0.0.0.0", "--rpc-interface-addr=0.0.0.0", "--gui-dir=/usr/local/skycoin/src/gui/static"]

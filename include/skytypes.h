@@ -109,6 +109,22 @@ typedef Handle WebRpcClient__Handle;
 typedef Handle Wallet__Handle;
 
 /**
+ * ReadableWallet Handle
+*/
+typedef Handle ReadableWallet__Handle;
+
+/**
+ * ReadableEntry Handle
+*/
+typedef Handle ReadableEntry__Handle;
+
+/**
+ * Options Handle
+*/
+typedef Handle Options__Handle;
+
+
+/**
  * Config Handle
 */
 typedef Handle Config__Handle;

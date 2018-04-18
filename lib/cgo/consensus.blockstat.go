@@ -14,65 +14,6 @@ import (
 */
 import "C"
 
-//export SKY_consensus_BlockStat_Init
-func SKY_consensus_BlockStat_Init(_self *C.consensus__BlockStat) (____error_code uint32) {
-	____error_code = 0
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	self := (*consensus.BlockStat)(unsafe.Pointer(_self))
-	self.Init()
-	return
-}
-
-//export SKY_consensus_BlockStat_GetSeqno
-func SKY_consensus_BlockStat_GetSeqno(_self *C.consensus__BlockStat, _arg0 *uint64) (____error_code uint32) {
-	____error_code = 0
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	self := (*consensus.BlockStat)(unsafe.Pointer(_self))
-	__arg0 := self.GetSeqno()
-	*_arg0 = __arg0
-	return
-}
-
-//export SKY_consensus_BlockStat_Clear
-func SKY_consensus_BlockStat_Clear(_self *C.consensus__BlockStat) (____error_code uint32) {
-	____error_code = 0
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	self := (*consensus.BlockStat)(unsafe.Pointer(_self))
-	self.Clear()
-	return
-}
-
-//export SKY_consensus_BlockStat_GetBestHashPubkeySig
-func SKY_consensus_BlockStat_GetBestHashPubkeySig(_self *C.consensus__BlockStat, _arg0 *C.cipher__SHA256, _arg1 *C.cipher__PubKey, _arg2 *C.cipher__Sig) (____error_code uint32) {
-	____error_code = 0
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	self := (*consensus.BlockStat)(unsafe.Pointer(_self))
-	__arg0, __arg1, __arg2 := self.GetBestHashPubkeySig()
-	*_arg0 = *(*C.cipher__SHA256)(unsafe.Pointer(&__arg0))
-	*_arg1 = *(*C.cipher__PubKey)(unsafe.Pointer(&__arg1))
-	*_arg2 = *(*C.cipher__Sig)(unsafe.Pointer(&__arg2))
-	return
-}
-
-//export SKY_consensus_BlockStat_Print
-func SKY_consensus_BlockStat_Print(_self *C.consensus__BlockStat) (____error_code uint32) {
-	____error_code = 0
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	self := (*consensus.BlockStat)(unsafe.Pointer(_self))
-	self.Print()
-	return
-}
-
 //export SKY_consensus_PriorityQueue_Len
 func SKY_consensus_PriorityQueue_Len(_pq *C.consensus__PriorityQueue, _arg0 *int) (____error_code uint32) {
 	____error_code = 0

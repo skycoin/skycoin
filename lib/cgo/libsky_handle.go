@@ -64,6 +64,48 @@ func lookupWalletHandle(handle C.Wallet__Handle) (*wallet.Wallet, bool){
 	return nil, false
 }
 
+func registerReadableWalletHandle(obj *wallet.ReadableWallet) C.ReadableWallet__Handle{
+	return (C.ReadableWallet__Handle)(registerHandle(obj))
+}
+
+func lookupReadableWalletHandle(handle C.ReadableWallet__Handle) (*wallet.ReadableWallet, bool){
+	obj, ok := lookupHandleObj(Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*wallet.ReadableWallet); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerReadableEntryHandle(obj *wallet.ReadableEntry) C.ReadableEntry__Handle{
+	return (C.ReadableEntry__Handle)(registerHandle(obj))
+}
+
+func lookupReadableEntryHandle(handle C.ReadableEntry__Handle) (*wallet.ReadableEntry, bool){
+	obj, ok := lookupHandleObj(Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*wallet.ReadableEntry); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerOptionsHandle(obj *wallet.Options) C.Options__Handle{
+	return (C.Options__Handle)(registerHandle(obj))
+}
+
+func lookupOptionsHandle(handle C.Options__Handle) (*wallet.Options, bool){
+	obj, ok := lookupHandleObj(Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*wallet.Options); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
 func registerConfigHandle(obj *cli.Config) C.Config__Handle{
 	return (C.Config__Handle)(registerHandle(obj))
 }

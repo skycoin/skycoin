@@ -389,7 +389,6 @@ Performs these actions before releasing:
     * Load a test wallet with nonzero balance from seed to confirm wallet loading works
     * Send coins to another wallet to confirm spending works
     * Restart the client, confirm that it reloads properly
-* Run integration tests for `-enable-wallet-api=false`
 * Run live wallet integration tests with unencrypted wallet
 * Run live wallet integration tests with encrypted wallet
 

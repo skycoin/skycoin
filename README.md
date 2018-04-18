@@ -148,6 +148,8 @@ to the branch, a tag or a commit you specify on that variable.
 Example
 
 ```sh
+$ git clone https://github.com/skycoin/skycoin
+$ cd skycoin
 $ SKYCOIN_VERSION=v0.22.0
 $ docker build -f docker/images/mainnet/Dockerfile \
   --build-arg=SKYCOIN_VERSION=$SKYCOIN_VERSION \

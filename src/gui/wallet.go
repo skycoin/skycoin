@@ -4,6 +4,7 @@ package gui
 import (
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -555,6 +556,11 @@ func walletsHandler(gateway Gatewayer) http.HandlerFunc {
 
 			wrs = append(wrs, wr)
 		}
+
+		sort.Slice(wrs, func(i, j int) bool {
+			return wrs[i].Meta.Timestamp < wrs[j].Meta.Timestamp
+		})
+
 		wh.SendJSONOr500(logger, w, wrs)
 	}
 }

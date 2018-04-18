@@ -28,16 +28,17 @@ cache:
   - $HOME/.cache/electron
   - $HOME/.cache/electron-builder
   - $HOME/.npm/_prebuilds
+  - src/gui/static/node_modules
 
 install:
   # Install gox
   - go get github.com/gz-c/gox
   # Install dependences for building wallet
-  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_PULL_REQUEST" == false ]]; then sudo apt-get install --no-install-recommends -y icnsutils graphicsmagick xz-utils  &&nvm install 8; fi
-  # for test
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_PULL_REQUEST" == false ]]; then sudo apt-get install --no-install-recommends -y icnsutils graphicsmagick xz-utils && nvm install 8; fi
   - go get -t ./...
   - make install-linters
   - make install-deps-libc
+  - make install-deps-ui
 
 before_script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" && "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/add-key.sh && npm install -g yarn ;fi
@@ -46,18 +47,27 @@ script:
   - make lint
   - make test-386
   - make test-amd64
-  # stable integration tests
+  # Stable integration tests
   - make integration-test-stable
   # libskycoin tests
   - make test-libc
   # TODO: test pyskycoin
   # - make test-libpy
-  # build wallets
+  # TODO: test ui
+  # - make test-ui
+  - make lint-ui
+  # Build wallets
   - if [[ "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/build-wallet.sh; fi
-
+  # Check that the UI can build. this is done after the wallet build step, because make build-ui
+  # will change the dist/ folder.
+  # If make test-ui can verify that the wallet compiles, we can remove this step after we enable make test-ui
+  - make build-ui
 
 notifications:
-  email: false
+  email:
+    - travis@skycoin.net
+  # https://github.com/kvld/travisci-telegram TravisCI Telegram Bot integration
+  webhooks: https://fathomless-fjord-24024.herokuapp.com/notify
 
 deploy:
   provider: s3

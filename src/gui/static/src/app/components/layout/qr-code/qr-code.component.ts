@@ -11,11 +11,11 @@ declare var QRCode: any;
 export class QrCodeComponent implements OnInit {
   @ViewChild('qr') qr: any;
 
-  size: number = 300;
-  level: string = 'M';
-  colordark: string = '#000000';
-  colorlight: string = '#ffffff';
-  usesvg: boolean = false;
+  size = 300;
+  level = 'M';
+  colordark = '#000000';
+  colorlight = '#ffffff';
+  usesvg = false;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) private data: any,
@@ -23,7 +23,7 @@ export class QrCodeComponent implements OnInit {
   ) { }
 
   ngOnInit() {
-    new QRCode(this.qr.nativeElement, {
+    const qrcode = new QRCode(this.qr.nativeElement, {
       text: this.data.address,
       width: this.size,
       height: this.size,

@@ -59,11 +59,15 @@ type muxConfig struct {
 }
 
 func create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
-	appLoc, err := file.DetermineResourcePath(c.StaticDir, resourceDir, devDir)
-	if err != nil {
-		return nil, err
+	var appLoc string
+	if c.EnableWalletAPI {
+		var err error
+		appLoc, err = file.DetermineResourcePath(c.StaticDir, resourceDir, devDir)
+		if err != nil {
+			return nil, err
+		}
+		logger.Infof("Web resources directory: %s", appLoc)
 	}
-	logger.Infof("Web resources directory: %s", appLoc)
 
 	csrfStore := &CSRFStore{
 		Enabled: !c.DisableCSRF,

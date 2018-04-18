@@ -5,6 +5,8 @@ import { MatSnackBar, MatSnackBarConfig } from '@angular/material/snack-bar';
 import 'rxjs/add/operator/delay';
 import 'rxjs/add/operator/filter';
 import { ButtonComponent } from '../../layout/button/button.component';
+import { PasswordDialogComponent } from '../../layout/password-dialog/password-dialog.component';
+import { MatDialog } from '@angular/material';
 
 @Component({
   selector: 'app-send-skycoin',
@@ -22,6 +24,7 @@ export class SendSkycoinComponent implements OnInit {
     public formBuilder: FormBuilder,
     public walletService: WalletService,
     private snackbar: MatSnackBar,
+    private dialog: MatDialog,
   ) {}
 
   ngOnInit() {
@@ -30,7 +33,24 @@ export class SendSkycoinComponent implements OnInit {
 
   send() {
     this.button.setLoading();
-    this.walletService.sendSkycoin(this.form.value.wallet, this.form.value.address, this.form.value.amount * 1000000)
+
+    if (this.form.value.wallet.encrypted) {
+      this.dialog.open(PasswordDialogComponent).componentInstance.passwordSubmit
+        .subscribe(passwordDialog => {
+          this._send(passwordDialog);
+        });
+    } else {
+      this._send();
+    }
+  }
+
+  private _send(passwordDialog?: any) {
+    this.walletService.sendSkycoin(
+      this.form.value.wallet,
+      this.form.value.address,
+      this.form.value.amount * 1000000,
+      passwordDialog ? passwordDialog.password : null
+    )
       .delay(1000)
       .subscribe(
         () => {
@@ -44,6 +64,10 @@ export class SendSkycoinComponent implements OnInit {
           this.button.setError(error);
         }
       );
+
+    if (passwordDialog) {
+      passwordDialog.close();
+    }
   }
 
   private initForm() {

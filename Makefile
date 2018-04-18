@@ -1,8 +1,8 @@
 .DEFAULT_GOAL := help
-.PHONY: run run-help test test-core test-libc test-lint build-libc check cover integration-test-stable integration-test-live integration-test-disable-wallet-api integration-test-enable-seed-api install-linters format release clean help
+.PHONY: run run-help test test-core test-libc test-lint build-libc check cover integration-test-stable integration-test-live integration-test-disable-wallet-api integration-test-enable-seed-api install-linters format release clean-release install-deps-ui build-ui help
 
 # Static files directory
-STATIC_DIR = src/gui/static
+GUI_STATIC_DIR = src/gui/static
 
 # Electron files directory
 ELECTRON_DIR = electron
@@ -142,11 +142,24 @@ format: ## Formats the code. Must have goimports installed (use make install-lin
 	goimports -w -local github.com/skycoin/skycoin ./src
 	goimports -w -local github.com/skycoin/skycoin ./lib
 
+install-deps-ui:  ## Install the UI dependencies
+	cd $(GUI_STATIC_DIR) && npm install
+
+lint-ui:  ## Lint the UI code
+	cd $(GUI_STATIC_DIR) && npm run lint
+
+test-ui:  ## Run UI tests
+	cd $(GUI_STATIC_DIR) && npm run test
+	cd $(GUI_STATIC_DIR) && npm run e2e
+
+build-ui:  ## Builds the UI
+	cd $(GUI_STATIC_DIR) && npm run build
+
 release: ## Build electron apps, the builds are located in electron/release folder.
 	cd $(ELECTRON_DIR) && ./build.sh
 	@echo release files are in the folder of electron/release
 
-clean: ## Clean dist files and delete all builds in electron/release
+clean-release: ## Clean dist files and delete all builds in electron/release
 	rm $(ELECTRON_DIR)/release/*
 
 help:

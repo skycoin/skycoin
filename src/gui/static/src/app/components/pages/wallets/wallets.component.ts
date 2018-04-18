@@ -4,7 +4,6 @@ import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { CreateWalletComponent } from './create-wallet/create-wallet.component';
 import { Wallet } from '../../../app.datatypes';
 import { Subscription } from 'rxjs/Subscription';
-import { LoadWalletComponent } from './load-wallet/load-wallet.component';
 
 @Component({
   selector: 'app-wallets',
@@ -27,23 +26,18 @@ export class WalletsComponent implements OnInit, OnDestroy {
     this.walletSubscription = this.walletService.all().subscribe(wallets => {
       this.coins = wallets.map(wallet => wallet.coins >= 0 ? wallet.coins : 0).reduce((a , b) => a + b, 0);
       this.hours = wallets.map(wallet => wallet.hours >= 0 ? wallet.hours : 0).reduce((a , b) => a + b, 0);
-    })
+    });
   }
 
   ngOnDestroy() {
     this.walletSubscription.unsubscribe();
   }
 
-  addWallet() {
+  addWallet(create) {
     const config = new MatDialogConfig();
     config.width = '566px';
-    this.dialog.open(CreateWalletComponent, config).afterClosed().subscribe();
-  }
-
-  loadWallet() {
-    const config = new MatDialogConfig();
-    config.width = '566px';
-    this.dialog.open(LoadWalletComponent, config).afterClosed().subscribe();
+    config.data = { create };
+    this.dialog.open(CreateWalletComponent, config);
   }
 
   toggleWallet(wallet: Wallet) {

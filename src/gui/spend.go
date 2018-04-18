@@ -29,7 +29,6 @@ type createTransactionRequest struct {
 	Wallet         createTransactionRequestWallet `json:"wallet"`
 	ChangeAddress  *wh.Address                    `json:"change_address"`
 	To             []receiver                     `json:"to"`
-	Password       string                         `json:"password"`
 }
 
 // createTransactionRequestWallet defines a wallet to spend from and optionally which addresses in the wallet

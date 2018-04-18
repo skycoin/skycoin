@@ -24,6 +24,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/gui"
+	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/droplet" //http,json helpers
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/visor"
@@ -2911,11 +2912,13 @@ func TestDisableWalletApi(t *testing.T) {
 	}
 
 	tt := []struct {
-		name      string
-		method    string
-		endpoint  string
-		body      func() io.Reader
-		expectErr string
+		name        string
+		method      string
+		endpoint    string
+		contentType string
+		body        func() io.Reader
+		json        func() interface{}
+		expectErr   string
 	}{
 		{
 			name:      "get wallet",
@@ -3038,6 +3041,31 @@ func TestDisableWalletApi(t *testing.T) {
 			endpoint:  "/wallet/seed?id=test.wlt&password=pwd",
 			expectErr: "403 Forbidden\n",
 		},
+		{
+			name:        "create transaction",
+			method:      http.MethodPost,
+			endpoint:    "/wallet/transaction",
+			contentType: "application/json",
+			json: func() interface{} {
+				return gui.CreateTransactionRequest{
+					HoursSelection: gui.HoursSelection{
+						Type: wallet.HoursSelectionTypeManual,
+					},
+					Wallet: gui.CreateTransactionRequestWallet{
+						ID: "test.wlt",
+					},
+					ChangeAddress: testutil.MakeAddress().String(),
+					To: []gui.Receiver{
+						{
+							Address: testutil.MakeAddress().String(),
+							Coins:   "0.001",
+							Hours:   "1",
+						},
+					},
+				}
+			},
+			expectErr: "403 Forbidden\n",
+		},
 	}
 
 	c := gui.NewClient(nodeAddress())
@@ -3048,7 +3076,12 @@ func TestDisableWalletApi(t *testing.T) {
 			case http.MethodGet:
 				err = c.Get(tc.endpoint, nil)
 			case http.MethodPost:
-				err = c.PostForm(tc.endpoint, tc.body(), nil)
+				switch tc.contentType {
+				case "application/json":
+					err = c.PostJSON(tc.endpoint, tc.json(), nil)
+				default:
+					err = c.PostForm(tc.endpoint, tc.body(), nil)
+				}
 			}
 			require.EqualError(t, err, tc.expectErr)
 		})

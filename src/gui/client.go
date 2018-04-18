@@ -489,7 +489,6 @@ type CreateTransactionRequest struct {
 	Wallet         CreateTransactionRequestWallet `json:"wallet"`
 	ChangeAddress  string                         `json:"change_address"`
 	To             []Receiver                     `json:"to"`
-	Password       string                         `json:"password"`
 }
 
 // CreateTransactionRequestWallet defines a wallet to spend from and optionally which addresses in the wallet

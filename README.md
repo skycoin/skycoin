@@ -389,7 +389,9 @@ Performs these actions before releasing:
     * Load a test wallet with nonzero balance from seed to confirm wallet loading works
     * Send coins to another wallet to confirm spending works
     * Restart the client, confirm that it reloads properly
-* `./run.sh -enable-wallet-api=false` and check that the wallet does not load, and `/wallets` and `/spend` fail
+* Run integration tests for `-enable-wallet-api=false`
+* Run live wallet integration tests with unencrypted wallet
+* Run live wallet integration tests with encrypted wallet
 
 #### Creating release builds
 

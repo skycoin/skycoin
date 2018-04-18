@@ -15,8 +15,6 @@ import (
 */
 import "C"
 
-
-
 //export SKY_webrpc_Client_GetUnspentOutputs
 func SKY_webrpc_Client_GetUnspentOutputs(_c *C.WebRpcClient__Handle, _addrs []string, _arg1 *C.webrpc__OutputsResult) (____error_code uint32) {
 	____error_code = 0

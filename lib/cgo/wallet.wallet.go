@@ -294,4 +294,3 @@ func SKY_wallet_ChooseSpendsMaximizeUxOuts(_uxa []C.wallet__UxBalance, _coins ui
 	}
 	return
 }
-

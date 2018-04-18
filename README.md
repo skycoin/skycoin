@@ -381,7 +381,7 @@ For example, `v0.20.0` becomes `v0.20.1`, for minor fixes.
 Performs these actions before releasing:
 
 * `make check`
-* `make integration-test-live` (see [live integration tests](#live-integration-tests))
+* `make integration-test-live` (see [live integration tests](#live-integration-tests)) both with an unencrypted and encrypted wallet.
 * `go run cmd/cli/cli.go checkdb` against a synced node
 * On all OSes, make sure that the client runs properly from the command line (`./run.sh`)
 * Build the releases and make sure that the Electron client runs properly on Windows, Linux and macOS.
@@ -389,8 +389,6 @@ Performs these actions before releasing:
     * Load a test wallet with nonzero balance from seed to confirm wallet loading works
     * Send coins to another wallet to confirm spending works
     * Restart the client, confirm that it reloads properly
-* Run live wallet integration tests with unencrypted wallet
-* Run live wallet integration tests with encrypted wallet
 
 #### Creating release builds
 

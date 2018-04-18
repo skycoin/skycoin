@@ -47,8 +47,8 @@ export class PurchaseService {
           filename: wallet.filename,
           recipient_address: address.address,
           status: 'waiting_deposit',
-        }))
-    })
+        }));
+    });
   }
 
   scan(address: string) {
@@ -62,11 +62,11 @@ export class PurchaseService {
   }
 
   private get(url): any {
-    return this.httpClient.get(this.purchaseUrl + url)
+    return this.httpClient.get(this.purchaseUrl + url);
   }
 
   private post(url, parameters = {}): any {
-    return this.httpClient.post(this.purchaseUrl + url, parameters)
+    return this.httpClient.post(this.purchaseUrl + url, parameters);
   }
 
 }

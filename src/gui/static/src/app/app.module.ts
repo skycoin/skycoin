@@ -32,12 +32,12 @@ import { HeaderComponent } from './components/layout/header/header.component';
 import { TopBarComponent } from './components/layout/header/top-bar/top-bar.component';
 import { FooterComponent } from './components/layout/footer/footer.component';
 import { PriceService } from './price.service';
-import { LoadWalletComponent } from './components/pages/wallets/load-wallet/load-wallet.component';
 import { TransactionListComponent } from './components/pages/transaction-list/transaction-list.component';
 import { TransactionDetailComponent } from './components/pages/transaction-list/transaction-detail/transaction-detail.component';
 import { NavBarComponent } from './components/layout/header/nav-bar/nav-bar.component';
 import { WalletDetailComponent } from './components/pages/wallets/wallet-detail/wallet-detail.component';
 import { ModalComponent } from './components/layout/modal/modal.component';
+import { PasswordDialogComponent } from './components/layout/password-dialog/password-dialog.component';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialogModule } from '@angular/material/dialog';
@@ -64,6 +64,7 @@ import { OnboardingEncryptWalletComponent } from './components/pages/onboarding/
 import { OnboardingDisclaimerComponent } from './components/pages/onboarding/onboarding-create-wallet/onboarding-disclaimer/onboarding-disclaimer.component';
 import { OnboardingSafeguardComponent } from './components/pages/onboarding/onboarding-create-wallet/onboarding-safeguard/onboarding-safeguard.component';
 import { DoubleButtonComponent } from './components/layout/double-button/double-button.component';
+import { SeedModalComponent } from './components/pages/settings/backup/seed-modal/seed-modal.component';
 
 
 const ROUTES = [
@@ -153,7 +154,6 @@ const ROUTES = [
     ExplorerComponent,
     FooterComponent,
     HeaderComponent,
-    LoadWalletComponent,
     NetworkComponent,
     OutputsComponent,
     PendingTransactionsComponent,
@@ -173,17 +173,20 @@ const ROUTES = [
     OnboardingDisclaimerComponent,
     OnboardingSafeguardComponent,
     DoubleButtonComponent,
+    PasswordDialogComponent,
+    SeedModalComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,
     CreateWalletComponent,
     ChangeNameComponent,
-    LoadWalletComponent,
     QrCodeComponent,
     SendSkycoinComponent,
     TransactionDetailComponent,
     OnboardingDisclaimerComponent,
     OnboardingSafeguardComponent,
+    PasswordDialogComponent,
+    SeedModalComponent,
   ],
   imports: [
     BrowserModule,

@@ -525,10 +525,15 @@ func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 }
 
 // Returns all loaded wallets
-// RUI: /wallets
+// URI: /wallets
 // Method: GET
 func walletsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
 		wlts, err := gateway.GetWallets()
 		if err != nil {
 			switch err {
@@ -540,7 +545,7 @@ func walletsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		var wrs []*WalletResponse
+		wrs := make([]*WalletResponse, 0, len(wlts))
 		for _, wlt := range wlts {
 			wr, err := NewWalletResponse(wlt)
 			if err != nil {

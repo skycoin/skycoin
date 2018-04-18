@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `/wallet/seed` API endpoint, returns seed of specific wallet
 - `-enable-seed-api` cli option
 - Add wallet setup wizard
+- Added support for encrypted wallets on frontend
 
 ### Fixed
 

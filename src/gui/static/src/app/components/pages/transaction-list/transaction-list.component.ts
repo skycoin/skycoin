@@ -36,6 +36,6 @@ export class TransactionListComponent implements OnInit, OnDestroy {
     const config = new MatDialogConfig();
     config.width = '566px';
     config.data = transaction;
-    this.dialog.open(TransactionDetailComponent, config).afterClosed().subscribe();
+    this.dialog.open(TransactionDetailComponent, config);
   }
 }

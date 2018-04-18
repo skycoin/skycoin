@@ -1,17 +1,17 @@
+@import '../../../../../theme/variables';
+
 mat-card {
   margin: 40px 20px 20px 20px;
 }
 
 ngx-datatable {
-  margin: 0 20px;
+  margin: 0 20px 20px;
 }
 
 button.in-table {
   margin-top: -0.9rem;
 }
 
-.mat-icon {
-  color: grey;
-  font-size: 18px;
-  padding-left: 10px;
+.text-muted {
+  color: $grey-dark;
 }

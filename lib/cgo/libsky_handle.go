@@ -36,11 +36,11 @@ func lookupHandleObj(handle Handle) (interface{}, bool) {
 	return obj, ok
 }
 
-func registerWebRpcClientHandle(obj *webrpc.Client) C.WebrpcClient__Handle{
-	return (C.WebrpcClient__Handle)(registerHandle(obj))
+func registerWebRpcClientHandle(obj *webrpc.Client) C.WebRpcClient__Handle{
+	return (C.WebRpcClient__Handle)(registerHandle(obj))
 }
 
-func lookupWebRpcClientHandle(handle C.WebrpcClient__Handle) (*webrpc.Client, bool){
+func lookupWebRpcClientHandle(handle C.WebRpcClient__Handle) (*webrpc.Client, bool){
 	obj, ok := lookupHandleObj(Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(*webrpc.Client); isOK {
@@ -93,11 +93,11 @@ func lookupAppHandle(handle C.App__Handle) (*cli.App, bool){
 }
 
 
-func registerContextHandle(obj *gcli.Context) C.GcliContext__Handle{
-	return (C.GcliContext__Handle)(registerHandle(obj))
+func registerContextHandle(obj *gcli.Context) C.Context__Handle{
+	return (C.Context__Handle)(registerHandle(obj))
 }
 
-func lookupContextHandle(handle C.GcliContext__Handle) (*gcli.Context, bool){
+func lookupContextHandle(handle C.Context__Handle) (*gcli.Context, bool){
 	obj, ok := lookupHandleObj(Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(*gcli.Context); isOK {

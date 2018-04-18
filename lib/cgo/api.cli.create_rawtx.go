@@ -18,7 +18,7 @@ import (
 import "C"
 
 //export SKY_cli_CreateRawTxFromWallet
-func SKY_cli_CreateRawTxFromWallet(_c *C.WebrpcClient__Handle, _walletFile, _chgAddr string, _toAddrs []C.cli__SendAmount, _arg3 *C.coin__Transaction) (____error_code uint32) {
+func SKY_cli_CreateRawTxFromWallet(_c *C.WebRpcClient__Handle, _walletFile, _chgAddr string, _toAddrs []C.cli__SendAmount, _arg3 *C.coin__Transaction) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -39,7 +39,7 @@ func SKY_cli_CreateRawTxFromWallet(_c *C.WebrpcClient__Handle, _walletFile, _chg
 }
 
 //export SKY_cli_CreateRawTxFromAddress
-func SKY_cli_CreateRawTxFromAddress(_c *C.WebrpcClient__Handle, _addr, _walletFile, _chgAddr string, _toAddrs []C.cli__SendAmount, _arg3 *C.coin__Transaction) (____error_code uint32) {
+func SKY_cli_CreateRawTxFromAddress(_c *C.WebRpcClient__Handle, _addr, _walletFile, _chgAddr string, _toAddrs []C.cli__SendAmount, _arg3 *C.coin__Transaction) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -60,7 +60,7 @@ func SKY_cli_CreateRawTxFromAddress(_c *C.WebrpcClient__Handle, _addr, _walletFi
 }
 
 //export SKY_cli_CreateRawTx
-func SKY_cli_CreateRawTx(_c *C.WebrpcClient__Handle, _wlt *C.Wallet__Handle, _inAddrs *C.GoSlice_, _chgAddr string, _toAddrs []C.cli__SendAmount, _arg5 *C.coin__Transaction) (____error_code uint32) {
+func SKY_cli_CreateRawTx(_c *C.WebRpcClient__Handle, _wlt *C.Wallet__Handle, _inAddrs *C.GoSlice_, _chgAddr string, _toAddrs []C.cli__SendAmount, _arg5 *C.coin__Transaction) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())

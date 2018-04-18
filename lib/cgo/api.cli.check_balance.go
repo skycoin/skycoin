@@ -15,7 +15,7 @@ import (
 import "C"
 
 //export SKY_cli_CheckWalletBalance
-func SKY_cli_CheckWalletBalance(_c *C.WebrpcClient__Handle, _walletFile string, _arg2 *C.cli__BalanceResult) (____error_code uint32) {
+func SKY_cli_CheckWalletBalance(_c *C.WebRpcClient__Handle, _walletFile string, _arg2 *C.cli__BalanceResult) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -33,7 +33,7 @@ func SKY_cli_CheckWalletBalance(_c *C.WebrpcClient__Handle, _walletFile string, 
 }
 
 //export SKY_cli_GetBalanceOfAddresses
-func SKY_cli_GetBalanceOfAddresses(_c *C.WebrpcClient__Handle, _addrs *C.GoSlice_, _arg2 *C.cli__BalanceResult) (____error_code uint32) {
+func SKY_cli_GetBalanceOfAddresses(_c *C.WebRpcClient__Handle, _addrs *C.GoSlice_, _arg2 *C.cli__BalanceResult) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())

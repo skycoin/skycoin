@@ -90,7 +90,7 @@ func SKY_cli_App_Run(_app *C.App__Handle, _args *C.GoSlice_) (____error_code uin
 }
 
 //export SKY_cli_RPCClientFromContext
-func SKY_cli_RPCClientFromContext(_c *C.GcliContext__Handle, _client *C.WebrpcClient__Handle) (____error_code uint32) {
+func SKY_cli_RPCClientFromContext(_c *C.Context__Handle, _client *C.WebRpcClient__Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -106,7 +106,7 @@ func SKY_cli_RPCClientFromContext(_c *C.GcliContext__Handle, _client *C.WebrpcCl
 }
 
 //export SKY_cli_ConfigFromContext
-func SKY_cli_ConfigFromContext(_c *C.GcliContext__Handle, _config *C.Config__Handle) (____error_code uint32) {
+func SKY_cli_ConfigFromContext(_c *C.Context__Handle, _config *C.Config__Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())

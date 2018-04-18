@@ -101,7 +101,7 @@ typedef GoInt64_ Handle;
 /**
  * Webrpc Client Handle
 */
-typedef Handle WebrpcClient__Handle;
+typedef Handle WebRpcClient__Handle;
 
 /**
  * Wallet Handle
@@ -121,7 +121,7 @@ typedef Handle App__Handle;
 /**
  * Gcli Context Handle
 */
-typedef Handle GcliContext__Handle;
+typedef Handle Context__Handle;
 
 /**
  * Instances of Go `map` type, deal map[string] as handle

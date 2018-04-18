@@ -44,7 +44,6 @@ export class Wallet {
   hours: number;
   addresses: Address[];
   encrypted: boolean;
-  visible?: boolean;
   hideEmpty?: boolean;
   opened?: boolean;
 }
@@ -69,7 +68,7 @@ export class PostWalletNewAddressResponse {
 export class GetWalletsResponseMeta {
   label: string;
   filename: string;
-  encrypted?: any;
+  encrypted: boolean;
 }
 
 export class GetWalletsResponseEntry {

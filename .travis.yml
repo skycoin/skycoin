@@ -55,8 +55,7 @@ script:
   # - make test-libpy
   # TODO: test ui
   # - make test-ui
-  # TODO: lint ui
-  # - make lint-ui
+  - make lint-ui
   # Build wallets
   - if [[ "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/build-wallet.sh; fi
   # Check that the UI can build. this is done after the wallet build step, because make build-ui
@@ -67,6 +66,8 @@ script:
 notifications:
   email:
     - travis@skycoin.net
+  # https://github.com/kvld/travisci-telegram TravisCI Telegram Bot integration
+  webhooks: https://fathomless-fjord-24024.herokuapp.com/notify
 
 deploy:
   provider: s3

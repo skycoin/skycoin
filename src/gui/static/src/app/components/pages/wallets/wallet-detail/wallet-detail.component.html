@@ -27,6 +27,10 @@
     </ng-container>
   </div>
   <div class="flex-fill"></div>
+  <div class="-button" (click)="toggleEncryption()">
+    <img src="../../../../../assets/img/unlock-grey.png">
+    <span>{{ wallet.encrypted ? 'Decrypt' : 'Encrypt' }} Wallet</span>
+  </div>
   <div class="-button" (click)="editWallet()">
     <img src="../../../../../assets/img/edit-grey.png">
     <span>Edit Wallet</span>

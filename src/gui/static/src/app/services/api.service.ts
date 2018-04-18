@@ -66,8 +66,20 @@ export class ApiService {
       });
   }
 
-  postWalletCreate(label: string, seed: string, scan: number): Observable<Wallet> {
-    return this.post('wallet/create', { label: label, seed: seed, scan: scan })
+  getWalletSeed(wallet: Wallet, password: string): Observable<string> {
+    return this.get('wallet/seed', { id: wallet.filename, password })
+      .map(response => response.seed);
+  }
+
+  postWalletCreate(label: string, seed: string, scan: number, password: string): Observable<Wallet> {
+    const params = { label, seed, scan };
+
+    if (password) {
+      params['password'] = password;
+      params['encrypt'] = true;
+    }
+
+    return this.post('wallet/create', params)
       .map(response => ({
           label: response.meta.label,
           filename: response.meta.filename,
@@ -78,9 +90,13 @@ export class ApiService {
         }));
   }
 
-  postWalletNewAddress(wallet: Wallet): Observable<Address> {
-    return this.post('wallet/newAddress', { id: wallet.filename })
+  postWalletNewAddress(wallet: Wallet, password?: string): Observable<Address> {
+    return this.post('wallet/newAddress', { id: wallet.filename, password })
       .map((response: PostWalletNewAddressResponse) => ({ address: response.addresses[0], coins: null, hours: null }));
+  }
+
+  postWalletToggleEncryption(wallet: Wallet, password: string) {
+    return this.post('wallet/' + (wallet.encrypted ? 'decrypt' : 'encrypt'), { id: wallet.filename, password });
   }
 
   get(url, params = null, options = {}) {
@@ -108,7 +124,7 @@ export class ApiService {
     options.headers = this.getHeaders();
 
     if (additionalOptions.csrf) {
-      options.headers.append('X-CSRF-Token', additionalOptions.csrf)
+      options.headers.append('X-CSRF-Token', additionalOptions.csrf);
     }
 
     return options;
@@ -125,7 +141,7 @@ export class ApiService {
       return '';
     }
 
-    return Object.keys(parameters).reduce((array,key) => {
+    return Object.keys(parameters).reduce((array, key) => {
       array.push(key + '=' + encodeURIComponent(parameters[key]));
       return array;
     }, []).join('&');

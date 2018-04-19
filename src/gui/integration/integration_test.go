@@ -53,7 +53,7 @@ const (
 	testModeStable           = "stable"
 	testModeLive             = "live"
 	testModeDisableWalletApi = "disable-wallet-api"
-	testModeEnableSeedApi    = "enable-seed-api"
+	testModeDisableSeedApi   = "disable-seed-api"
 
 	testFixturesDir = "test-fixtures"
 )
@@ -82,7 +82,7 @@ func mode(t *testing.T) string {
 	case testModeLive,
 		testModeStable,
 		testModeDisableWalletApi,
-		testModeEnableSeedApi:
+		testModeDisableSeedApi:
 	default:
 		t.Fatal("Invalid test mode, must be stable, live or disable-wallet-api")
 	}
@@ -120,8 +120,8 @@ func doDisableWalletApi(t *testing.T) bool {
 	return false
 }
 
-func doEnableSeedApi(t *testing.T) bool {
-	if enabled() && mode(t) == testModeEnableSeedApi {
+func doDisableSeedApi(t *testing.T) bool {
+	if enabled() && mode(t) == testModeDisableSeedApi {
 		return true
 	}
 
@@ -2294,7 +2294,7 @@ func TestDecryptWallet(t *testing.T) {
 }
 
 func TestGetWalletSeedDisabledAPI(t *testing.T) {
-	if !doLiveOrStable(t) {
+	if !doDisableSeedApi(t) {
 		return
 	}
 
@@ -2309,7 +2309,7 @@ func TestGetWalletSeedDisabledAPI(t *testing.T) {
 }
 
 func TestGetWalletSeedEnabledAPI(t *testing.T) {
-	if !doEnableSeedApi(t) {
+	if !doLiveOrStable(t) {
 		return
 	}
 

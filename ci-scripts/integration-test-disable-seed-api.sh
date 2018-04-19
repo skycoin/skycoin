@@ -1,7 +1,6 @@
 #!/bin/bash
-# Runs "enable-seed-api"-mode tests against a skycoin node configured with -enable-seed-api option
-# "enable-seed-api"-mode confirms that wallet seed api is enabled, and only the wallet with encryption
-# that is allowed to return seed.
+# Runs "disable-seed-api"-mode tests against a skycoin node configured with -enable-seed-api=false
+# and /wallet/seed api endpoint should return 403 forbidden error.
 
 #Set Script Name variable
 SCRIPT=`basename ${BASH_SOURCE[0]}`
@@ -9,7 +8,7 @@ PORT="46422"
 RPC_PORT="46432"
 HOST="http://127.0.0.1:$PORT"
 RPC_ADDR="127.0.0.1:$RPC_PORT"
-MODE="enable-seed-api"
+MODE="disable-seed-api"
 BINARY="skycoin-integration"
 TEST=""
 RUN_TESTS=""
@@ -63,7 +62,8 @@ echo "starting skycoin node in background with http listener on $HOST"
                       -launch-browser=false \
                       -data-dir="$DATA_DIR" \
                       -wallet-dir="$WALLET_DIR" \
-                      -enable-seed-api=true &
+                      -enable-wallet-api=true \
+                      -enable-seed-api=false &
 SKYCOIN_PID=$!
 
 echo "skycoin node pid=$SKYCOIN_PID"

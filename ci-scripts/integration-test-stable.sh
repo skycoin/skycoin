@@ -72,7 +72,8 @@ echo "starting skycoin node in background with http listener on $HOST"
                       -launch-browser=false \
                       -data-dir="$DATA_DIR" \
                       -enable-wallet-api=true \
-                      -wallet-dir="$WALLET_DIR" &
+                      -wallet-dir="$WALLET_DIR" \
+                      -enable-seed-api=true &
 SKYCOIN_PID=$!
 
 echo "skycoin node pid=$SKYCOIN_PID"

@@ -679,8 +679,7 @@ func TestServiceCreateAndSignTransaction(t *testing.T) {
 	var uxoutsNoHours []coin.UxOut
 	addrsNoHours := []cipher.Address{}
 	for i := 0; i < 10; i++ {
-		uxout := makeUxOut(t, secKey, 2e6, 100)
-		uxout.Body.Hours = 0
+		uxout := makeUxOut(t, secKey, 2e6, 0)
 		uxout.Head.Time = uint64(headTime)
 		uxoutsNoHours = append(uxoutsNoHours, uxout)
 
@@ -937,8 +936,7 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 	// Create unspent outputs with no hours
 	var uxoutsNoHours []coin.UxOut
 	for i := 0; i < 10; i++ {
-		uxout := makeUxOut(t, secKey, 2e6, 100)
-		uxout.Body.Hours = 0
+		uxout := makeUxOut(t, secKey, 2e6, 0)
 		uxout.Head.Time = headTime
 		uxoutsNoHours = append(uxoutsNoHours, uxout)
 	}

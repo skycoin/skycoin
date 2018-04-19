@@ -742,11 +742,11 @@ Result:
 
 ### Get wallet seed
 
-This api is supported only when `-enable-seed-api` option is enabled and the wallet is encrypted.
+This endpoint is supported only when `-enable-seed-api` option is enabled and the wallet is encrypted.
 
 ```
 URI: /wallet/seed
-Method: GET
+Method: POST
 Args:
     id: wallet id
     password: wallet password
@@ -762,7 +762,7 @@ Result:
 
 ```json
 {
-    "seed": "your wallet seed",
+    "seed": "your wallet seed"
 }
 ```
 

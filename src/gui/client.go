@@ -525,19 +525,16 @@ func (c *Client) NewSeed(entropy int) (string, error) {
 	return r.Seed, nil
 }
 
-// GetWalletSeed returns seed of wallet of given id,
-// returns ErrWalletNotEncrypted if the wallet is not encrypted.
+// GetWalletSeed makes a request to /wallet/seed
 func (c *Client) GetWalletSeed(id string, password string) (string, error) {
 	v := url.Values{}
 	v.Add("id", id)
 	v.Add("password", password)
 
-	endpoint := "/wallet/seed?" + v.Encode()
-
 	var r struct {
 		Seed string `json:"seed"`
 	}
-	if err := c.Get(endpoint, &r); err != nil {
+	if err := c.PostForm("/wallet/seed", strings.NewReader(v.Encode()), &r); err != nil {
 		return "", err
 	}
 

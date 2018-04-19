@@ -1439,10 +1439,11 @@ func TestGetWalletSeed(t *testing.T) {
 		expectStatus      int
 		expectSeed        string
 		expectErr         string
+		csrfDisabled      bool
 	}{
 		{
 			name:     "200 - OK",
-			method:   http.MethodGet,
+			method:   http.MethodPost,
 			wltID:    "wallet.wlt",
 			password: "pwd",
 			gatewayReturnArgs: []interface{}{
@@ -1453,8 +1454,21 @@ func TestGetWalletSeed(t *testing.T) {
 			expectSeed:   "seed",
 		},
 		{
+			name:     "200 - OK - CSRF disabled",
+			method:   http.MethodPost,
+			wltID:    "wallet.wlt",
+			password: "pwd",
+			gatewayReturnArgs: []interface{}{
+				"seed",
+				nil,
+			},
+			expectStatus: http.StatusOK,
+			expectSeed:   "seed",
+			csrfDisabled: true,
+		},
+		{
 			name:              "400 - missing wallet id ",
-			method:            http.MethodGet,
+			method:            http.MethodPost,
 			wltID:             "",
 			password:          "pwd",
 			gatewayReturnArgs: []interface{}{},
@@ -1462,17 +1476,20 @@ func TestGetWalletSeed(t *testing.T) {
 			expectErr:         "400 Bad Request - missing wallet id",
 		},
 		{
-			name:              "400 - missing password",
-			method:            http.MethodGet,
-			wltID:             "wallet.wlt",
-			password:          "",
-			gatewayReturnArgs: []interface{}{},
-			expectStatus:      http.StatusBadRequest,
-			expectErr:         "400 Bad Request - missing password",
+			name:     "400 - missing password",
+			method:   http.MethodPost,
+			wltID:    "wallet.wlt",
+			password: "",
+			gatewayReturnArgs: []interface{}{
+				nil,
+				wallet.ErrMissingPassword,
+			},
+			expectStatus: http.StatusBadRequest,
+			expectErr:    "400 Bad Request - missing password",
 		},
 		{
 			name:     "400 - invalid password",
-			method:   http.MethodGet,
+			method:   http.MethodPost,
 			wltID:    "wallet.wlt",
 			password: "pwd",
 			gatewayReturnArgs: []interface{}{
@@ -1484,7 +1501,7 @@ func TestGetWalletSeed(t *testing.T) {
 		},
 		{
 			name:     "403 - wallet not encrypted",
-			method:   http.MethodGet,
+			method:   http.MethodPost,
 			wltID:    "wallet.wlt",
 			password: "pwd",
 			gatewayReturnArgs: []interface{}{
@@ -1496,7 +1513,7 @@ func TestGetWalletSeed(t *testing.T) {
 		},
 		{
 			name:     "404 - wallet does not exist",
-			method:   http.MethodGet,
+			method:   http.MethodPost,
 			wltID:    "wallet.wlt",
 			password: "pwd",
 			gatewayReturnArgs: []interface{}{
@@ -1508,7 +1525,7 @@ func TestGetWalletSeed(t *testing.T) {
 		},
 		{
 			name:         "405 - Method Not Allowed",
-			method:       http.MethodPost,
+			method:       http.MethodGet,
 			expectStatus: http.StatusMethodNotAllowed,
 			expectErr:    "405 Method Not Allowed",
 		},
@@ -1519,18 +1536,20 @@ func TestGetWalletSeed(t *testing.T) {
 			gateway := NewGatewayerMock()
 			gateway.On("GetWalletSeed", tc.wltID, []byte(tc.password)).Return(tc.gatewayReturnArgs...)
 
+			endpoint := "/wallet/seed"
+
 			v := url.Values{}
 			v.Add("id", tc.wltID)
 			if len(tc.password) > 0 {
 				v.Add("password", tc.password)
 			}
-			endpoint := "/wallet/seed?" + v.Encode()
 
-			req, err := http.NewRequest(tc.method, endpoint, nil)
+			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(v.Encode()))
 			require.NoError(t, err)
+			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 			csrfStore := &CSRFStore{
-				Enabled: true,
+				Enabled: !tc.csrfDisabled,
 			}
 			setCSRFParameters(csrfStore, tokenValid, req)
 
@@ -2217,10 +2236,13 @@ func TestEncryptWallet(t *testing.T) {
 			expectErr: "405 Method Not Allowed",
 		},
 		{
-			name:      "400 - Missing Password",
-			method:    http.MethodPost,
-			wltID:     "wallet.wlt",
-			password:  "",
+			name:     "400 - Missing Password",
+			method:   http.MethodPost,
+			wltID:    "wallet.wlt",
+			password: "",
+			gatewayReturn: gatewayReturnPair{
+				err: wallet.ErrMissingPassword,
+			},
 			status:    http.StatusBadRequest,
 			expectErr: "400 Bad Request - missing password",
 		},
@@ -2254,7 +2276,7 @@ func TestEncryptWallet(t *testing.T) {
 			expectErr: "404 Not Found",
 		},
 		{
-			name:     "400 - Wallet Is Already Encrypted",
+			name:     "400 - Wallet Is Encrypted",
 			method:   http.MethodPost,
 			wltID:    "wallet.wlt",
 			password: "pwd",
@@ -2262,7 +2284,7 @@ func TestEncryptWallet(t *testing.T) {
 				err: wallet.ErrWalletEncrypted,
 			},
 			status:    http.StatusBadRequest,
-			expectErr: "400 Bad Request - wallet is already encrypted",
+			expectErr: "400 Bad Request - wallet is encrypted",
 		},
 	}
 
@@ -2322,6 +2344,7 @@ func TestDecryptWallet(t *testing.T) {
 		status        int
 		expectWallet  WalletResponse
 		expectErr     string
+		csrfDisabled  bool
 	}{
 		{
 			name:     "200 OK",
@@ -2350,6 +2373,34 @@ func TestDecryptWallet(t *testing.T) {
 			},
 		},
 		{
+			name:     "200 OK CSRF disabled",
+			method:   http.MethodPost,
+			wltID:    "wallet.wlt",
+			password: "pwd",
+			gatewayReturn: gatewayReturnPair{
+				w: &wallet.Wallet{
+					Meta: map[string]string{
+						"filename":  "wallet",
+						"seed":      "seed",
+						"lastSeed":  "lastSeed",
+						"secrets":   "",
+						"encrypted": "false",
+					},
+					Entries: cloneEntries(entries),
+				},
+			},
+			status: http.StatusOK,
+			expectWallet: WalletResponse{
+				Meta: WalletMeta{
+					Filename:  "wallet",
+					Encrypted: false,
+				},
+				Entries: responseEntries,
+			},
+			csrfDisabled: true,
+		},
+
+		{
 			name:     "403 Forbidden",
 			method:   http.MethodPost,
 			wltID:    "wallet.wlt",
@@ -2375,10 +2426,13 @@ func TestDecryptWallet(t *testing.T) {
 			expectErr: "400 Bad Request - missing wallet id",
 		},
 		{
-			name:      "400 - Missing Password",
-			method:    http.MethodPost,
-			wltID:     "wallet.wlt",
-			password:  "",
+			name:     "400 - Missing Password",
+			method:   http.MethodPost,
+			wltID:    "wallet.wlt",
+			password: "",
+			gatewayReturn: gatewayReturnPair{
+				err: wallet.ErrMissingPassword,
+			},
 			status:    http.StatusBadRequest,
 			expectErr: "400 Bad Request - missing password",
 		},
@@ -2432,7 +2486,7 @@ func TestDecryptWallet(t *testing.T) {
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 			csrfStore := &CSRFStore{
-				Enabled: true,
+				Enabled: !tc.csrfDisabled,
 			}
 			setCSRFParameters(csrfStore, tokenValid, req)
 

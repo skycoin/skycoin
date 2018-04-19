@@ -61,7 +61,6 @@ import { AppService } from './services/app.service';
 import { WizardGuardService } from './services/wizard-guard.service';
 import { OnboardingCreateWalletComponent } from './components/pages/onboarding/onboarding-create-wallet/onboarding-create-wallet.component';
 import { OnboardingEncryptWalletComponent } from './components/pages/onboarding/onboarding-encrypt-wallet/onboarding-encrypt-wallet.component';
-import { OnboardingDisclaimerComponent } from './components/pages/onboarding/onboarding-create-wallet/onboarding-disclaimer/onboarding-disclaimer.component';
 import { OnboardingSafeguardComponent } from './components/pages/onboarding/onboarding-create-wallet/onboarding-safeguard/onboarding-safeguard.component';
 import { DoubleButtonComponent } from './components/layout/double-button/double-button.component';
 import { SeedModalComponent } from './components/pages/settings/backup/seed-modal/seed-modal.component';
@@ -170,7 +169,6 @@ const ROUTES = [
     ModalComponent,
     OnboardingCreateWalletComponent,
     OnboardingEncryptWalletComponent,
-    OnboardingDisclaimerComponent,
     OnboardingSafeguardComponent,
     DoubleButtonComponent,
     PasswordDialogComponent,
@@ -183,7 +181,6 @@ const ROUTES = [
     QrCodeComponent,
     SendSkycoinComponent,
     TransactionDetailComponent,
-    OnboardingDisclaimerComponent,
     OnboardingSafeguardComponent,
     PasswordDialogComponent,
     SeedModalComponent,

@@ -4,7 +4,6 @@ import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { WalletService } from '../../../../services/wallet.service';
 import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
-import { OnboardingDisclaimerComponent } from './onboarding-disclaimer/onboarding-disclaimer.component';
 import { OnboardingSafeguardComponent } from './onboarding-safeguard/onboarding-safeguard.component';
 import { MatDialogRef } from '@angular/material';
 import { ButtonComponent } from '../../../layout/button/button.component';
@@ -25,9 +24,7 @@ export class OnboardingCreateWalletComponent implements OnInit {
     private walletService: WalletService,
     private router: Router,
     private formBuilder: FormBuilder,
-  ) {
-    this.showDisclaimer();
-  }
+  ) { }
 
   ngOnInit() {
     this.initForm();
@@ -87,13 +84,6 @@ export class OnboardingCreateWalletComponent implements OnInit {
   private seedMatchValidator(g: FormGroup) {
     return g.get('seed').value === g.get('confirm_seed').value
       ? null : { mismatch: true };
-  }
-
-  private showDisclaimer() {
-    const config = new MatDialogConfig();
-    config.width = '450px';
-    config.disableClose = true;
-    this.dialog.open(OnboardingDisclaimerComponent, config);
   }
 
   private showSafe(): MatDialogRef<OnboardingSafeguardComponent> {

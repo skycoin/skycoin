@@ -118,8 +118,8 @@ integration-test-live: ## Run live integration tests
 integration-test-disable-wallet-api: ## Run disable wallet api integration tests
 	./ci-scripts/integration-test-disable-wallet-api.sh
 
-integration-test-enable-seed-api: ## Run enable seed api integration test
-	./ci-scripts/integration-test-enable-seed-api.sh -w
+integration-test-disable-seed-api: ## Run enable seed api integration test
+	./ci-scripts/integration-test-disable-seed-api.sh -w
 
 cover: ## Runs tests on ./src/ with HTML code coverage
 	go test -cover -coverprofile=cover.out -coverpkg=github.com/skycoin/skycoin/... ./src/...

@@ -2655,9 +2655,15 @@ func TestDisableWalletApi(t *testing.T) {
 			code:      http.StatusForbidden,
 		},
 		{
-			name:      "get wallet seed",
-			method:    http.MethodGet,
-			endpoint:  "/wallet/seed?id=test.wlt&password=pwd",
+			name:     "get wallet seed",
+			method:   http.MethodPost,
+			endpoint: "/wallet/seed",
+			body: func() io.Reader {
+				v := url.Values{}
+				v.Add("id", "test.wlt")
+				v.Add("password", "pwd")
+				return strings.NewReader(v.Encode())
+			},
 			expectErr: "403 Forbidden\n",
 			code:      http.StatusForbidden,
 		},

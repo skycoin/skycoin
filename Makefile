@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: run run-help test test-core test-libc test-lint build-libc check cover integration-test-stable integration-test-live integration-test-disable-wallet-api integration-test-enable-seed-api install-linters format release clean-release install-deps-ui build-ui help
+.PHONY: run run-help test test-core test-libc test-lint build-libc check cover integration-test-stable integration-test-live integration-test-disable-wallet-api integration-test-disable-seed-api install-linters format release clean-release install-deps-ui build-ui help
 
 # Static files directory
 GUI_STATIC_DIR = src/gui/static

@@ -93,6 +93,12 @@ build-libc: configure-build ## Build libskycoin C client library
 		rm -Rf $(BUILDLIB_DIR)/* ; \
 		go build -buildmode=c-shared -o $(BUILDLIB_DIR)/libskycoin.so $(LIB_FILES) && \
 		mv $(BUILDLIB_DIR)/libskycoin.h $(INCLUDE_DIR)/ ; \
+	fi
+
+	@if [ ! -f "$(BUILDLIB_DIR)/libskycoin.so" ]; then\
+		rm -Rf $(BUILDLIB_DIR)/* ; \
+		go build -buildmode=c-shared -o $(BUILDLIB_DIR)/libskycoin.so $(LIB_FILES) && \
+		mv $(BUILDLIB_DIR)/libskycoin.h $(INCLUDE_DIR)/ ; \
     fi
 
     

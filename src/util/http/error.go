@@ -28,6 +28,11 @@ func Error400(w http.ResponseWriter, msg string) {
 	HTTPError(w, http.StatusBadRequest, httpMsg)
 }
 
+// Error401 response with a 401 error
+func Error401(w http.ResponseWriter) {
+	HTTPError(w, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+}
+
 // Error403 respond with a 403 error
 func Error403(w http.ResponseWriter) {
 	HTTPError(w, http.StatusForbidden, "Forbidden")

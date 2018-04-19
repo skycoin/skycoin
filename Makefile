@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: run run-help test test-core test-libc test-lint build-libc check cover integration-test-stable integration-test-live integration-test-disable-wallet-api integration-test-enable-seed-api install-linters format release clean-release install-deps-ui build-ui help
+.PHONY: run run-help test test-core test-libc test-lint build-libc check cover integration-test-stable integration-test-live integration-test-disable-wallet-api integration-test-disable-seed-api install-linters format release clean-release install-deps-ui build-ui help
 
 # Static files directory
 GUI_STATIC_DIR = src/gui/static
@@ -118,8 +118,8 @@ integration-test-live: ## Run live integration tests
 integration-test-disable-wallet-api: ## Run disable wallet api integration tests
 	./ci-scripts/integration-test-disable-wallet-api.sh
 
-integration-test-enable-seed-api: ## Run enable seed api integration test
-	./ci-scripts/integration-test-enable-seed-api.sh -w
+integration-test-disable-seed-api: ## Run enable seed api integration test
+	./ci-scripts/integration-test-disable-seed-api.sh -w
 
 cover: ## Runs tests on ./src/ with HTML code coverage
 	go test -cover -coverprofile=cover.out -coverpkg=github.com/skycoin/skycoin/... ./src/...

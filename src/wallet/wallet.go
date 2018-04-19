@@ -1302,7 +1302,7 @@ func DistributeCoinHoursProportional(coins []uint64, hours uint64) ([]uint64, er
 		return nil, errors.New("DistributeCoinHoursProportional coins array must not be empty")
 	}
 
-	coinsInt := make([]int64, len(coins))
+	coinsInt := make([]*big.Int, len(coins))
 
 	var total uint64
 	for i, c := range coins {
@@ -1310,6 +1310,7 @@ func DistributeCoinHoursProportional(coins []uint64, hours uint64) ([]uint64, er
 			return nil, errors.New("DistributeCoinHoursProportional coins array has a zero value")
 		}
 
+		var err error
 		total, err = coin.AddUint64(total, c)
 		if err != nil {
 			return nil, err
@@ -1342,7 +1343,7 @@ func DistributeCoinHoursProportional(coins []uint64, hours uint64) ([]uint64, er
 		// (coins * totalHours) / totalCoins
 		// The remainder is truncated, remaining hours are appended after this
 		num := &big.Int{}
-		num.Mul(big.NewInt(c), hoursInt)
+		num.Mul(c, hoursInt)
 
 		fracInt := big.Int{}
 		fracInt.Div(num, totalInt)

@@ -2,14 +2,15 @@
   <app-header title="Backup"></app-header>
 
   <mat-card>
-    <p>
-      Wallet Directory: {{ folder }}
-      <mat-icon matTooltip="Wallet Directory contains .wlt files with seeds.
-      You will be able to read only unencrypted wallet files.
-      Use the table below to get seeds from your encrypted wallets.">help_outline</mat-icon>
-    </p>
+    <p>Wallet Directory: {{ folder }}</p>
 
     <p>BACKUP YOUR SEED. ON PAPER. IN A SAFE PLACE. As long as you have your seed, you can recover your coins.</p>
+
+    <p class="text-muted"><small>
+      Use the table below to get seeds from your encrypted wallets. <br>
+      To get seeds from unencrypted wallets, open the folder above,
+      open the .wlt files in a text editor and recover the seeds.
+    </small></p>
   </mat-card>
 
   <ngx-datatable #table

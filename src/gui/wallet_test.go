@@ -351,7 +351,7 @@ func TestWalletSpendHandler(t *testing.T) {
 			password:        "pwd",
 			status:          http.StatusUnauthorized,
 			gatewaySpendErr: wallet.ErrInvalidPassword,
-			err:             "401 Unauthorized",
+			err:             "401 Unauthorized - invalid password",
 			walletID:        "wallet.wlt",
 			coins:           1,
 			dst:             "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
@@ -451,6 +451,9 @@ func TestWalletSpendHandler(t *testing.T) {
 
 			if status != http.StatusOK {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()))
+				if status == http.StatusUnauthorized {
+					require.Equal(t, HTTP401AuthHeader, rr.Header().Get("WWW-Authenticate"))
+				}
 			} else {
 				var msg SpendResult
 				err := json.Unmarshal(rr.Body.Bytes(), &msg)
@@ -1480,7 +1483,7 @@ func TestGetWalletSeed(t *testing.T) {
 				wallet.ErrInvalidPassword,
 			},
 			expectStatus: http.StatusUnauthorized,
-			expectErr:    "401 Unauthorized",
+			expectErr:    "401 Unauthorized - invalid password",
 		},
 		{
 			name:     "403 - wallet not encrypted",
@@ -1544,6 +1547,9 @@ func TestGetWalletSeed(t *testing.T) {
 
 			if status != http.StatusOK {
 				require.Equal(t, tc.expectErr, strings.TrimSpace(rr.Body.String()))
+				if status == http.StatusUnauthorized {
+					require.Equal(t, HTTP401AuthHeader, rr.Header().Get("WWW-Authenticate"))
+				}
 			} else {
 				var r struct {
 					Seed string `json:"seed"`
@@ -1661,7 +1667,7 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 				Num: "1",
 			},
 			status:   http.StatusUnauthorized,
-			err:      "401 Unauthorized",
+			err:      "401 Unauthorized - invalid password",
 			walletID: "foo",
 			n:        1,
 			gatewayNewAddressesErr: wallet.ErrInvalidPassword,
@@ -1763,6 +1769,9 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 			if status != http.StatusOK {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %d, want `%v`",
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				if status == http.StatusUnauthorized {
+					require.Equal(t, HTTP401AuthHeader, rr.Header().Get("WWW-Authenticate"))
+				}
 			} else {
 				var msg Addresses
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
@@ -2240,7 +2249,7 @@ func TestEncryptWallet(t *testing.T) {
 				err: wallet.ErrInvalidPassword,
 			},
 			status:    http.StatusUnauthorized,
-			expectErr: "401 Unauthorized",
+			expectErr: "401 Unauthorized - invalid password",
 		},
 		{
 			name:     "404 - Wallet Not Found",
@@ -2295,6 +2304,9 @@ func TestEncryptWallet(t *testing.T) {
 
 			if status != http.StatusOK {
 				require.Equal(t, tc.expectErr, strings.TrimSpace(rr.Body.String()))
+				if status == http.StatusUnauthorized {
+					require.Equal(t, HTTP401AuthHeader, rr.Header().Get("WWW-Authenticate"))
+				}
 				return
 			}
 
@@ -2402,7 +2414,7 @@ func TestDecryptWallet(t *testing.T) {
 				err: wallet.ErrInvalidPassword,
 			},
 			status:    http.StatusUnauthorized,
-			expectErr: "401 Unauthorized",
+			expectErr: "401 Unauthorized - invalid password",
 		},
 		{
 			name:     "404 - Wallet Does Not Exist",
@@ -2446,6 +2458,9 @@ func TestDecryptWallet(t *testing.T) {
 
 			if status != http.StatusOK {
 				require.Equal(t, tc.expectErr, strings.TrimSpace(rr.Body.String()))
+				if status == http.StatusUnauthorized {
+					require.Equal(t, HTTP401AuthHeader, rr.Header().Get("WWW-Authenticate"))
+				}
 				return
 			}
 

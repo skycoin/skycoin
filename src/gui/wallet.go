@@ -17,6 +17,9 @@ import (
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
+// HTTP401AuthHeader WWW-Authenticate value
+const HTTP401AuthHeader = "SkycoinWallet"
+
 // SpendResult represents the result of spending
 type SpendResult struct {
 	Balance     *wallet.BalancePair        `json:"balance,omitempty"`
@@ -192,7 +195,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 			wh.Error400(w, err.Error())
 			return
 		case wallet.ErrInvalidPassword:
-			wh.Error401(w)
+			wh.Error401(w, HTTP401AuthHeader, err.Error())
 			return
 		case wallet.ErrWalletAPIDisabled:
 			wh.Error403(w)
@@ -380,7 +383,7 @@ func walletNewAddresses(gateway Gatewayer) http.HandlerFunc {
 		if err != nil {
 			switch err {
 			case wallet.ErrInvalidPassword:
-				wh.Error401(w)
+				wh.Error401(w, HTTP401AuthHeader, err.Error())
 			case wallet.ErrWalletAPIDisabled:
 				wh.Error403(w)
 			default:
@@ -688,7 +691,7 @@ func walletSeedHandler(gateway Gatewayer) http.HandlerFunc {
 		if err != nil {
 			switch err {
 			case wallet.ErrInvalidPassword:
-				wh.Error401(w)
+				wh.Error401(w, HTTP401AuthHeader, err.Error())
 			case wallet.ErrWalletAPIDisabled,
 				wallet.ErrWalletNotEncrypted,
 				wallet.ErrSeedAPIDisabled:
@@ -763,7 +766,7 @@ func walletEncryptHandler(gateway Gatewayer) http.HandlerFunc {
 			case wallet.ErrWalletEncrypted:
 				wh.Error400(w, "wallet is already encrypted")
 			case wallet.ErrInvalidPassword:
-				wh.Error401(w)
+				wh.Error401(w, HTTP401AuthHeader, err.Error())
 			case wallet.ErrWalletAPIDisabled:
 				wh.Error403(w)
 			case wallet.ErrWalletNotExist:
@@ -813,7 +816,7 @@ func walletDecryptHandler(gateway Gatewayer) http.HandlerFunc {
 			case wallet.ErrWalletNotEncrypted:
 				wh.Error400(w, err.Error())
 			case wallet.ErrInvalidPassword:
-				wh.Error401(w)
+				wh.Error401(w, HTTP401AuthHeader, err.Error())
 			case wallet.ErrWalletAPIDisabled:
 				wh.Error403(w)
 			case wallet.ErrWalletNotExist:

@@ -29,8 +29,13 @@ func Error400(w http.ResponseWriter, msg string) {
 }
 
 // Error401 response with a 401 error
-func Error401(w http.ResponseWriter) {
-	HTTPError(w, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+func Error401(w http.ResponseWriter, auth, msg string) {
+	w.Header().Set("WWW-Authenticate", auth)
+	httpMsg := http.StatusText(http.StatusUnauthorized)
+	if msg != "" {
+		httpMsg = fmt.Sprintf("%s - %s", httpMsg, msg)
+	}
+	HTTPError(w, http.StatusUnauthorized, httpMsg)
 }
 
 // Error403 respond with a 403 error

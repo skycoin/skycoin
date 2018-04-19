@@ -2275,7 +2275,7 @@ func TestDecryptWallet(t *testing.T) {
 
 	// Decrypt wallet with different password, must fail
 	_, err := c.DecryptWallet(w.Meta.Filename, "pwd1")
-	require.EqualError(t, err, "401 Unauthorized\n")
+	require.EqualError(t, err, "401 Unauthorized - invalid password\n")
 
 	// Decrypts wallet with correct password
 	dw, err := c.DecryptWallet(w.Meta.Filename, "pwd")
@@ -2351,7 +2351,7 @@ func TestWalletSeed(t *testing.T) {
 
 	// Check with invalid password
 	_, err = c.GetWalletSeed(w.Meta.Filename, "wrong password")
-	require.EqualError(t, err, "401 Unauthorized\n")
+	require.EqualError(t, err, "401 Unauthorized - invalid password\n")
 
 	// Creates none encrypted wallet
 	nw, _, nclean := createWallet(t, c, false, "")

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math/big"
 	"os"
 	"path/filepath"
 	"sort"
@@ -1297,33 +1298,60 @@ func DistributeSpendHours(inputHours, nAddrs uint64, haveChange bool) (uint64, [
 
 // DistributeCoinHoursProportional distributes hours amongst coins proportional to the coins amount
 func DistributeCoinHoursProportional(coins []uint64, hours uint64) ([]uint64, error) {
-	coinsDec := make([]decimal.Decimal, len(coins))
+	if len(coins) == 0 {
+		return nil, errors.New("DistributeCoinHoursProportional coins array must not be empty")
+	}
 
-	total := decimal.New(0, 0)
+	coinsInt := make([]int64, len(coins))
+
+	var total uint64
 	for i, c := range coins {
-		cInt, err := coin.Uint64ToInt64(c)
+		if c == 0 {
+			return nil, errors.New("DistributeCoinHoursProportional coins array has a zero value")
+		}
+
+		total, err = coin.AddUint64(total, c)
 		if err != nil {
 			return nil, err
 		}
-		coinsDec[i] = decimal.New(cInt, 0)
 
-		total = total.Add(coinsDec[i])
+		cInt64, err := coin.Uint64ToInt64(c)
+		if err != nil {
+			return nil, err
+		}
+
+		coinsInt[i] = big.NewInt(cInt64)
 	}
 
-	hoursInt, err := coin.Uint64ToInt64(hours)
+	totalInt64, err := coin.Uint64ToInt64(total)
 	if err != nil {
 		return nil, err
 	}
-	hoursDec := decimal.New(hoursInt, 0)
+	totalInt := big.NewInt(totalInt64)
+
+	hoursInt64, err := coin.Uint64ToInt64(hours)
+	if err != nil {
+		return nil, err
+	}
+	hoursInt := big.NewInt(hoursInt64)
 
 	var assignedHours uint64
 	addrHours := make([]uint64, len(coins))
-	for i, c := range coinsDec {
-		frac := c.Div(total)
-		fracHours, err := coin.Int64ToUint64(hoursDec.Mul(frac).IntPart())
-		if err != nil {
-			return nil, err
+	for i, c := range coinsInt {
+		// Scale the ratio of coins to total coins proportionally by calculating
+		// (coins * totalHours) / totalCoins
+		// The remainder is truncated, remaining hours are appended after this
+		num := &big.Int{}
+		num.Mul(big.NewInt(c), hoursInt)
+
+		fracInt := big.Int{}
+		fracInt.Div(num, totalInt)
+
+		if !fracInt.IsUint64() {
+			return nil, errors.New("DistributeCoinHoursProportional calculated fractional hours is not representable as a uint64")
 		}
+
+		fracHours := fracInt.Uint64()
 
 		addrHours[i] = fracHours
 		assignedHours, err = coin.AddUint64(assignedHours, fracHours)

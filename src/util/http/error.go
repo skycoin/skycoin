@@ -4,11 +4,18 @@ package httphelper
 import (
 	"fmt"
 	"net/http"
+
+	"github.com/skycoin/skycoin/src/util/logging"
+)
+
+var (
+	logger = logging.MustGetLogger("gui")
 )
 
 // HTTPError wraps http.Error
 func HTTPError(w http.ResponseWriter, status int, httpMsg string) {
 	msg := fmt.Sprintf("%d %s", status, httpMsg)
+	logger.Errorf(msg)
 	http.Error(w, msg, status)
 }
 

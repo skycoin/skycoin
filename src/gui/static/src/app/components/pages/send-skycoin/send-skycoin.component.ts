@@ -5,6 +5,8 @@ import { MatSnackBar, MatSnackBarConfig } from '@angular/material/snack-bar';
 import 'rxjs/add/operator/delay';
 import 'rxjs/add/operator/filter';
 import { ButtonComponent } from '../../layout/button/button.component';
+import { PasswordDialogComponent } from '../../layout/password-dialog/password-dialog.component';
+import { MatDialog } from '@angular/material';
 
 @Component({
   selector: 'app-send-skycoin',
@@ -15,13 +17,13 @@ export class SendSkycoinComponent implements OnInit {
   @ViewChild('button') button: ButtonComponent;
 
   form: FormGroup;
-  records = [];
   transactions = [];
 
   constructor(
     public formBuilder: FormBuilder,
     public walletService: WalletService,
     private snackbar: MatSnackBar,
+    private dialog: MatDialog,
   ) {}
 
   ngOnInit() {
@@ -29,8 +31,27 @@ export class SendSkycoinComponent implements OnInit {
   }
 
   send() {
+    this.button.resetState();
     this.button.setLoading();
-    this.walletService.sendSkycoin(this.form.value.wallet, this.form.value.address, this.form.value.amount * 1000000)
+    this.snackbar.dismiss();
+
+    if (this.form.value.wallet.encrypted) {
+      this.dialog.open(PasswordDialogComponent).componentInstance.passwordSubmit
+        .subscribe(passwordDialog => {
+          this._send(passwordDialog);
+        });
+    } else {
+      this._send();
+    }
+  }
+
+  private _send(passwordDialog?: any) {
+    this.walletService.sendSkycoin(
+      this.form.value.wallet,
+      this.form.value.address,
+      this.form.value.amount * 1000000,
+      passwordDialog ? passwordDialog.password : null
+    )
       .delay(1000)
       .subscribe(
         () => {
@@ -44,6 +65,10 @@ export class SendSkycoinComponent implements OnInit {
           this.button.setError(error);
         }
       );
+
+    if (passwordDialog) {
+      passwordDialog.close();
+    }
   }
 
   private initForm() {
@@ -53,21 +78,21 @@ export class SendSkycoinComponent implements OnInit {
       amount: ['', [Validators.required, Validators.min(0), Validators.max(0)]],
       notes: [''],
     });
-    this.form.controls['wallet'].valueChanges.subscribe(value => {
+    this.form.get('wallet').valueChanges.subscribe(value => {
       console.log(value);
       const balance = value && value.coins ? value.coins : 0;
-      this.form.controls['amount'].setValidators([
+      this.form.get('amount').setValidators([
         Validators.required,
         Validators.min(0),
         Validators.max(balance),
       ]);
-      this.form.controls['amount'].updateValueAndValidity();
+      this.form.get('amount').updateValueAndValidity();
     });
   }
 
   private resetForm() {
-    this.form.controls.wallet.reset(undefined);
-    this.form.controls.address.reset(undefined);
-    this.form.controls.amount.reset(undefined);
+    this.form.get('wallet').reset(undefined);
+    this.form.get('address').reset(undefined);
+    this.form.get('amount').reset(undefined);
   }
 }

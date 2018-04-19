@@ -7,6 +7,10 @@
     <div class="form-field">
       <label for="seed">Seed</label>
       <textarea formControlName="seed" id="seed" row="2"></textarea>
+      <p class="-warning">
+        Remember this seed! Keep it in a safe place.
+        If you forget your seed, you will not be able to recover your wallet!
+      </p>
     </div>
     <div class="form-field" [ngClass]="{ '-disabled': !data.create }">
       <label for="confirm_seed">Confirm seed</label>

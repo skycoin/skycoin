@@ -10,7 +10,6 @@
           encrypted. Only those with the password will be able access the wallet and remove funds.
         </p>
       </div>
-
     </div>
   </div>
   <div class="row justify-content-center">
@@ -35,11 +34,8 @@
     </div>
   </div>
   <div class="row -buttons-footer">
-    <app-button class="dark -button-min-margin" [disabled]="!form.valid" (action)="encryptWallet()" #button>
+    <app-button class="dark -button-min-margin" [disabled]="form.enabled && !form.valid" (action)="emitCreatedPassword()" #button>
       Finish
-    </app-button>
-    <app-button class="ghost -button-min-margin" (action)="skip()" [ngClass]="{ '-hidden': !skipVisible }">
-      Skip
     </app-button>
   </div>
 </div>

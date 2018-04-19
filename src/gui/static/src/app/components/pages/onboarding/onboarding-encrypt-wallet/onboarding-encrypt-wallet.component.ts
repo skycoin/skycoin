@@ -1,7 +1,5 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { WalletService } from '../../../../services/wallet.service';
 import { ButtonComponent } from '../../../layout/button/button.component';
 
 @Component({
@@ -11,15 +9,10 @@ import { ButtonComponent } from '../../../layout/button/button.component';
 })
 export class OnboardingEncryptWalletComponent implements OnInit {
   @ViewChild('button') button: ButtonComponent;
+  @Output() onPasswordCreated = new EventEmitter<string|null>();
   form: FormGroup;
-  skipVisible = true;
 
-  constructor(
-    private formBuilder: FormBuilder,
-    private router: Router,
-    private route: ActivatedRoute,
-    private walletService: WalletService,
-) { }
+  constructor(private formBuilder: FormBuilder) { }
 
   ngOnInit() {
     this.initEncryptForm();
@@ -46,19 +39,10 @@ export class OnboardingEncryptWalletComponent implements OnInit {
     event.checked ? this.form.enable() : this.form.disable();
   }
 
-  encryptWallet() {
+  emitCreatedPassword() {
     this.button.setLoading();
-    this.skipVisible = false;
 
-    this.walletService.find(this.route.snapshot.queryParams['wallet']).first().subscribe(wallet => {
-      this.walletService.toggleEncryption(wallet, this.form.get('password').value).subscribe(() => {
-        this.skip();
-      });
-    });
-  }
-
-  skip() {
-    this.router.navigate(['/wallets']);
+    this.onPasswordCreated.emit(this.form.enabled ? this.form.get('password').value : null);
   }
 
   private passwordMatchValidator(g: FormGroup) {

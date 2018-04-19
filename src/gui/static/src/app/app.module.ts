@@ -64,6 +64,7 @@ import { OnboardingEncryptWalletComponent } from './components/pages/onboarding/
 import { OnboardingSafeguardComponent } from './components/pages/onboarding/onboarding-create-wallet/onboarding-safeguard/onboarding-safeguard.component';
 import { DoubleButtonComponent } from './components/layout/double-button/double-button.component';
 import { SeedModalComponent } from './components/pages/settings/backup/seed-modal/seed-modal.component';
+import { OnboardingComponent } from './components/pages/onboarding/onboarding.component';
 
 
 const ROUTES = [
@@ -120,21 +121,7 @@ const ROUTES = [
   },
   {
     path: 'wizard',
-    children: [
-      {
-        path: '',
-        redirectTo: 'create',
-        pathMatch: 'full',
-      },
-      {
-        path: 'create',
-        component: OnboardingCreateWalletComponent,
-      },
-      {
-        path: 'encrypt',
-        component: OnboardingEncryptWalletComponent,
-      },
-    ],
+    component: OnboardingComponent,
   },
 ];
 
@@ -173,6 +160,7 @@ const ROUTES = [
     DoubleButtonComponent,
     PasswordDialogComponent,
     SeedModalComponent,
+    OnboardingComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,

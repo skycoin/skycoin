@@ -1,12 +1,10 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { Router } from '@angular/router';
 import { WalletService } from '../../../../services/wallet.service';
 import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
 import { OnboardingSafeguardComponent } from './onboarding-safeguard/onboarding-safeguard.component';
 import { MatDialogRef } from '@angular/material';
-import { ButtonComponent } from '../../../layout/button/button.component';
 
 @Component({
   selector: 'app-onboarding-create-wallet',
@@ -14,7 +12,7 @@ import { ButtonComponent } from '../../../layout/button/button.component';
   styleUrls: ['./onboarding-create-wallet.component.scss'],
 })
 export class OnboardingCreateWalletComponent implements OnInit {
-  @ViewChild('button') button: ButtonComponent;
+  @Output() onLabelAndSeedCreated = new EventEmitter<[string, string]>();
   showNewForm = true;
   form: FormGroup;
   doubleButtonActive = DoubleButtonActive.LeftButton;
@@ -22,7 +20,6 @@ export class OnboardingCreateWalletComponent implements OnInit {
   constructor(
     private dialog: MatDialog,
     private walletService: WalletService,
-    private router: Router,
     private formBuilder: FormBuilder,
   ) { }
 
@@ -58,13 +55,13 @@ export class OnboardingCreateWalletComponent implements OnInit {
   createWallet() {
     this.showSafe().afterClosed().subscribe(result => {
       if (result) {
-        this.createWalletAndContinue();
+        this.emitCreatedData();
       }
     });
   }
 
   loadWallet() {
-    this.createWalletAndContinue();
+    this.emitCreatedData();
   }
 
   generateSeed() {
@@ -73,12 +70,8 @@ export class OnboardingCreateWalletComponent implements OnInit {
     });
   }
 
-  private createWalletAndContinue() {
-    this.button.setLoading();
-
-    this.walletService.create(this.form.value.label, this.form.value.seed, 100, null).subscribe(wallet => {
-      this.router.navigate(['/wizard/encrypt'], { queryParams: { wallet: wallet.filename }});
-    });
+  private emitCreatedData() {
+    this.onLabelAndSeedCreated.emit([this.form.get('label').value, this.form.get('seed').value]);
   }
 
   private seedMatchValidator(g: FormGroup) {

@@ -1,0 +1,9 @@
+<app-onboarding-create-wallet
+  *ngIf="step === 1"
+  (onLabelAndSeedCreated)="onLabelAndSeedCreated($event)"
+></app-onboarding-create-wallet>
+
+<app-onboarding-encrypt-wallet
+  *ngIf="step === 2"
+  (onPasswordCreated)="onPasswordCreated($event)"
+></app-onboarding-encrypt-wallet>

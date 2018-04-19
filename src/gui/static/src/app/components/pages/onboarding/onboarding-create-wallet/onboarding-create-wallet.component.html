@@ -8,10 +8,8 @@
         <p>
           If you don't have a Skycoin wallet, use the generated seed to create a new one.
           If you already have a wallet, toggle over to "Load Wallet" and enter your seed.
-
         </p>
       </div>
-
     </div>
   </div>
   <div class="row justify-content-center">
@@ -40,7 +38,7 @@
   </div>
   <div class="row -buttons-footer">
     <app-button class="dark -button-min-margin" [disabled]="!form.valid"
-                (action)="showNewForm?createWallet():loadWallet()" #button>
+                (action)="showNewForm?createWallet():loadWallet()">
       Create
     </app-button>
   </div>

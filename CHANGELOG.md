@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Add `"size"` to block API response data (affects `/block`, `/blocks` and `/last_blocks`)
 - Add `/health` endpoint
 - Logging migration, now powered by [logrus](https://github.com/sirupsen/logrus)
 - Write specification for skycoin URIs (based upon bip21)
@@ -18,10 +19,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `/wallet/decrypt` API endpoint, decrypts wallet and returns decrypted wallet without sensitive data
 - `/wallet/seed` API endpoint, returns seed of specific wallet
 - `-enable-seed-api` cli option
+- Added support for encrypted wallets on frontend
 
 ### Fixed
 
 - #665, update wallet apis to support wallet encryption
+- #1077, disable initial wallet creating
+- #1270, disable RPC interface by default for run.sh and electron
 
 ### Changed
 
@@ -32,6 +36,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `/wallet/create` API endpoint, add `encrypt(bool)` and `password` argument
 - `/wallet/newAddress` API endpoint, add `password` argument
 - `/wallet/spend` API endpoint, add `password` argument
+- No default wallet will be created when first time the node start
 
 ### Removed
 

@@ -1,4 +1,4 @@
-import { Component, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { PurchaseService } from '../../../services/purchase.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { WalletService } from '../../../services/wallet.service';
@@ -11,7 +11,7 @@ import { ButtonComponent } from '../../layout/button/button.component';
   templateUrl: './buy.component.html',
   styleUrls: ['./buy.component.scss']
 })
-export class BuyComponent {
+export class BuyComponent implements OnInit {
   @ViewChild('button') button: ButtonComponent;
 
   address: Address;
@@ -53,14 +53,14 @@ export class BuyComponent {
       wallet: ['', Validators.required],
     });
 
-    this.form.controls.wallet.valueChanges.subscribe(filename => {
-      const wallet = this.wallets.find(wallet => wallet.filename === filename);
+    this.form.get('wallet').valueChanges.subscribe(filename => {
+      const wallet = this.wallets.find(wlt => wlt.filename === filename);
       console.log('changing wallet value', filename);
       this.purchaseService.generate(wallet).subscribe(
         order => this.saveData(order),
         error => this.snackBar.open(error.toString())
       );
-    })
+    });
   }
 
   private loadConfig() {
@@ -78,7 +78,7 @@ export class BuyComponent {
       this.wallets = wallets;
 
       if (this.order) {
-        this.form.controls.wallet.setValue(this.order.filename, { emitEvent: false });
+        this.form.get('wallet').setValue(this.order.filename, { emitEvent: false });
       }
     });
   }

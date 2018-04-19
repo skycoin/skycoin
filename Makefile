@@ -28,6 +28,10 @@ BUILD_DIR = build
 BUILDLIB_DIR = $(BUILD_DIR)/libskycoin
 LIB_DIR = lib
 LIB_FILES = $(shell find ./lib/cgo -type f -name "*.go")
+
+# to know if there are any changes in the files in 2 min
+LIB_FILES_ISMODIFIC = $(shell find ./lib/cgo -type f -name "*.go" -mmin -2)
+
 BIN_DIR = bin
 INCLUDE_DIR = include
 
@@ -59,16 +63,8 @@ else
 	LDPATHVAR=LD_LIBRARY_PATH
 endif
 
-# to know if there are any changes in the files in 2 min
-ifeq ($(shell find ./lib/cgo -type f -name "*.go" -mmin -2),  )
-ifndef CFF
- CFF = 
-endif
-else
-ifndef CFF
-CFF = go build -buildmode=c-shared  -o $(BUILDLIB_DIR)/libskycoin.so $(LIB_FILES) && mv $(BUILDLIB_DIR)/libskycoin.h $(INCLUDE_DIR)/
-endif
-endif
+
+
 
 run:  ## Run the skycoin node. To add arguments, do 'make ARGS="--foo" run'.
 	./run.sh ${ARGS}
@@ -93,13 +89,16 @@ configure-build:
 	mkdir -p $(BUILDLIB_DIR) $(BIN_DIR) $(INCLUDE_DIR)
 
 build-libc: configure-build ## Build libskycoin C client library
-	$(CFF)
+	@if [ ! "$(LIB_FILES_ISMODIFIC)" = "" ]; then\
+		rm -Rf $(BUILDLIB_DIR)/* ; \
+		go build -buildmode=c-shared -o $(BUILDLIB_DIR)/libskycoin.so $(LIB_FILES) && \
+		mv $(BUILDLIB_DIR)/libskycoin.h $(INCLUDE_DIR)/ ; \
+    fi
 
-test-libc: build-libc ## Run tests for libskycoin C client library
+    
+test-libc: build-libc  ## Run tests for libskycoin C client library
 	cp $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/
 	$(CC) -o $(BIN_DIR)/test_libskycoin_shared $(BUILDLIB_DIR)/*.c -lskycoin                    $(LDLIBS) $(LDFLAGS)
-	$(CC) -o $(BIN_DIR)/test_libskycoin_static $(BUILDLIB_DIR)/*.c $(BUILDLIB_DIR)/libskycoin.a $(LDLIBS) $(LDFLAGS)
-	$(LDPATHVAR)="$(LDPATH):$(BUILD_DIR)/usr/lib"                 $(BIN_DIR)/test_libskycoin_static
 	$(LDPATHVAR)="$(LDPATH):$(BUILD_DIR)/usr/lib:$(BUILDLIB_DIR)" $(BIN_DIR)/test_libskycoin_shared
 
 lint: ## Run linters. Use make install-linters first.

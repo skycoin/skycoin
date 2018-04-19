@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"math/rand"
 	"testing"
 	"time"
@@ -2205,5 +2206,174 @@ func TestCreateWalletParamsVerify(t *testing.T) {
 				require.NoError(t, err)
 			}
 		})
+	}
+}
+
+func TestDistributeCoinHoursProportional(t *testing.T) {
+	cases := []struct {
+		name   string
+		coins  []uint64
+		hours  uint64
+		output []uint64
+		err    error
+	}{
+		{
+			name:  "no coins",
+			hours: 1,
+			err:   errors.New("DistributeCoinHoursProportional coins array must not be empty"),
+		},
+		{
+			name:  "coins have 0 in them",
+			coins: []uint64{1, 2, 0, 3},
+			hours: 1,
+			err:   errors.New("DistributeCoinHoursProportional coins array has a zero value"),
+		},
+		{
+			name:  "total coins too large while adding",
+			coins: []uint64{10, math.MaxUint64 - 9},
+			hours: 1,
+			err:   coin.ErrUint64AddOverflow,
+		},
+		{
+			name:  "total coins too large after adding",
+			coins: []uint64{10, math.MaxInt64},
+			hours: 1,
+			err:   coin.ErrUint64OverflowsInt64,
+		},
+		{
+			name:  "single coin too large",
+			coins: []uint64{10, math.MaxInt64 + 1},
+			hours: 1,
+			err:   coin.ErrUint64OverflowsInt64,
+		},
+		{
+			name:  "hours too large",
+			coins: []uint64{10},
+			hours: math.MaxInt64 + 1,
+			err:   coin.ErrUint64OverflowsInt64,
+		},
+
+		{
+			name:   "valid, one input",
+			coins:  []uint64{1},
+			hours:  1,
+			output: []uint64{1},
+		},
+
+		{
+			name:   "zero hours",
+			coins:  []uint64{1},
+			hours:  0,
+			output: []uint64{0},
+		},
+
+		{
+			name:   "valid, multiple inputs, all equal",
+			coins:  []uint64{2, 4, 8, 16},
+			hours:  30,
+			output: []uint64{2, 4, 8, 16},
+		},
+
+		{
+			name:   "valid, multiple inputs, rational division in coins and hours",
+			coins:  []uint64{2, 4, 8, 16},
+			hours:  30,
+			output: []uint64{2, 4, 8, 16},
+		},
+
+		{
+			name:   "valid, multiple inputs, rational division in coins, irrational in hours",
+			coins:  []uint64{2, 4, 8, 16},
+			hours:  31,
+			output: []uint64{3, 4, 8, 16},
+		},
+
+		{
+			name:   "valid, multiple inputs, irrational division in coins, rational in hours",
+			coins:  []uint64{2, 3, 5, 7, 11, 13},
+			hours:  41,
+			output: []uint64{2, 3, 5, 7, 11, 13},
+		},
+
+		{
+			name:   "valid, multiple inputs, irrational division in coins and hours",
+			coins:  []uint64{2, 3, 5, 7, 11, 13},
+			hours:  50,
+			output: []uint64{3, 4, 7, 8, 13, 15},
+		},
+
+		{
+			name:   "valid, multiple inputs that would receive 0 hours but get compensated from remainder as priority",
+			coins:  []uint64{16, 8, 4, 2, 1, 1},
+			hours:  14,
+			output: []uint64{7, 3, 1, 1, 1, 1},
+		},
+
+		{
+			name:   "not enough hours for everyone",
+			coins:  []uint64{1, 1, 1, 1, 1},
+			hours:  1,
+			output: []uint64{1, 0, 0, 0, 0},
+		},
+
+		{
+			name:   "not enough hours for everyone 2",
+			coins:  []uint64{1, 1, 1, 1, 1},
+			hours:  3,
+			output: []uint64{1, 1, 1, 0, 0},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			hours, err := DistributeCoinHoursProportional(tc.coins, tc.hours)
+			if tc.err != nil {
+				require.Equal(t, tc.err, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tc.output, hours)
+			}
+		})
+	}
+
+	// Randomized tests
+	iterations := 10000
+	maxCoinsLen := 300
+	maxMaxCoins := 100000
+	maxHours := 15000000
+	coins := make([]uint64, maxCoinsLen)
+	for i := 0; i < iterations; i++ {
+		coinsLen := rand.Intn(maxCoinsLen) + 1
+
+		maxCoins := rand.Intn(maxMaxCoins) + 1
+
+		var totalCoins uint64
+		for i := 0; i < coinsLen; i++ {
+			coins[i] = uint64(rand.Intn(maxCoins) + 1)
+
+			var err error
+			totalCoins, err = coin.AddUint64(totalCoins, coins[i])
+			require.NoError(t, err)
+		}
+
+		hours := uint64(rand.Intn(maxHours))
+
+		output, err := DistributeCoinHoursProportional(coins[:coinsLen], hours)
+		require.NoError(t, err)
+
+		require.Equal(t, coinsLen, len(output))
+
+		var totalHours uint64
+		for _, h := range output {
+			if hours >= totalCoins {
+				require.NotEqual(t, uint64(0), h)
+			}
+
+			var err error
+			totalHours, err = coin.AddUint64(totalHours, h)
+			require.NoError(t, err)
+		}
+
+		require.Equal(t, hours, totalHours)
 	}
 }

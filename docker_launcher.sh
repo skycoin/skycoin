@@ -1,10 +1,16 @@
 #!/bin/sh
 COMMAND="skycoin --data-dir $DATA_DIR --wallet-dir $WALLET_DIR $@"
-VOLUME_USERNAME=`stat -c %U $DATA_DIR`
-VOLUME_UID=`stat -c %u $DATA_DIR`
-if [[ $VOLUME_USERNAME = "UNKNOWN" ]] ; then
-    adduser -D -u $VOLUME_UID skycoin
-    su skycoin -c "$COMMAND"
-else
-    su $VOLUME_USERNAME -c "$COMMAND"
+
+adduser -D -u 10000 skycoin
+
+if [[ \! -d $DATA_DIR ]]; then
+    mkdir -p $DATA_DIR
 fi
+if [[ \! -d $WALLET_DIR ]]; then
+    mkdir -p $WALLET_DIR
+fi
+
+chown -R skycoin:skycoin $( realpath $DATA_DIR )
+chown -R skycoin:skycoin $( realpath $WALLET_DIR )
+
+su skycoin -c "$COMMAND"

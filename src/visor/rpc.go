@@ -154,7 +154,7 @@ func (rpc *RPC) CreateAndSignTransaction(wltID string, password []byte, vld wall
 
 // CreateAndSignTransactionAdvanced creates and sign transaction from wallet
 func (rpc *RPC) CreateAndSignTransactionAdvanced(params wallet.CreateTransactionParams, sv wallet.Validator,
-	unspent blockdb.UnspentGetter, headTime uint64) (*coin.Transaction, error) {
+	unspent blockdb.UnspentGetter, headTime uint64) (*coin.Transaction, coin.UxArray, error) {
 	return rpc.v.Wallets.CreateAndSignTransactionAdvanced(params, sv, unspent, headTime)
 }
 

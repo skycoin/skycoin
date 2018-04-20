@@ -419,7 +419,8 @@ func TestGateway_CreateTransaction(t *testing.T) {
 		name            string
 		enableWalletAPI bool
 		err             error
-		result          *coin.Transaction
+		txn             *coin.Transaction
+		inputs          coin.UxArray
 		params          wallet.CreateTransactionParams
 	}{
 		{
@@ -438,12 +439,13 @@ func TestGateway_CreateTransaction(t *testing.T) {
 				},
 			}
 
-			res, err := gw.CreateTransaction(tc.params)
+			txn, inputs, err := gw.CreateTransaction(tc.params)
 			if tc.err != nil {
 				require.Equal(t, tc.err, err)
 			} else {
 				require.NoError(t, err)
-				require.Equal(t, tc.result, res)
+				require.Equal(t, tc.txn, txn)
+				require.Equal(t, tc.inputs, inputs)
 			}
 		})
 	}

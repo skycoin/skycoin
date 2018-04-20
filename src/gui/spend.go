@@ -6,11 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/shopspring/decimal"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 	"github.com/skycoin/skycoin/src/visor"
@@ -19,8 +21,219 @@ import (
 
 // CreateTransactionResponse is returned by /wallet/transaction
 type CreateTransactionResponse struct {
-	Transaction        visor.ReadableTransaction `json:"transaction"`
-	EncodedTransaction string                    `json:"encoded_transaction"`
+	Transaction        CreatedTransaction `json:"transaction"`
+	EncodedTransaction string             `json:"encoded_transaction"`
+}
+
+// NewCreateTransactionResponse creates a CreateTransactionResponse
+func NewCreateTransactionResponse(txn *coin.Transaction, inputs coin.UxArray) (*CreateTransactionResponse, error) {
+	cTxn, err := NewCreatedTransaction(txn, inputs)
+	if err != nil {
+		return nil, err
+	}
+
+	return &CreateTransactionResponse{
+		Transaction:        *cTxn,
+		EncodedTransaction: hex.EncodeToString(txn.Serialize()),
+	}, nil
+}
+
+// CreatedTransaction represents a transaction created by /wallet/transaction
+type CreatedTransaction struct {
+	Length    uint32 `json:"length"`
+	Type      uint8  `json:"type"`
+	Hash      string `json:"txid"`
+	InnerHash string `json:"inner_hash"`
+	Fee       string `json:"fee"`
+
+	Sigs []string                   `json:"sigs"`
+	In   []CreatedTransactionInput  `json:"inputs"`
+	Out  []CreatedTransactionOutput `json:"outputs"`
+}
+
+// NewCreatedTransaction returns a CreatedTransaction
+func NewCreatedTransaction(txn *coin.Transaction, inputs coin.UxArray) (*CreatedTransaction, error) {
+	if len(txn.In) != len(inputs) {
+		return nil, errors.New("len(txn.In) != len(inputs)")
+	}
+
+	var outputHours uint64
+	for _, o := range txn.Out {
+		outputHours += o.Hours
+	}
+
+	var inputHours uint64
+	for _, i := range inputs {
+		inputHours += i.Body.Hours
+	}
+
+	if inputHours < outputHours {
+		return nil, errors.New("inputHours unexpectedly less than output hours")
+	}
+
+	fee := inputHours - outputHours
+
+	sigs := make([]string, len(txn.Sigs))
+	for i, s := range txn.Sigs {
+		sigs[i] = s.Hex()
+	}
+
+	txid := txn.Hash()
+	out := make([]CreatedTransactionOutput, len(txn.Out))
+	for i, o := range txn.Out {
+		co, err := NewCreatedTransactionOutput(o, txid)
+		if err != nil {
+			return nil, err
+		}
+		out[i] = *co
+	}
+
+	in := make([]CreatedTransactionInput, len(inputs))
+	for i, o := range inputs {
+		ci, err := NewCreatedTransactionInput(o)
+		if err != nil {
+			return nil, err
+		}
+		in[i] = *ci
+	}
+
+	return &CreatedTransaction{
+		Length:    txn.Length,
+		Type:      txn.Type,
+		Hash:      txid.Hex(),
+		InnerHash: txn.InnerHash.Hex(),
+		Fee:       fmt.Sprint(fee),
+
+		Sigs: sigs,
+		In:   in,
+		Out:  out,
+	}, nil
+}
+
+// ToTransaction converts a CreatedTransaction back to a coin.Transaction
+func (r *CreatedTransaction) ToTransaction() (*coin.Transaction, error) {
+	t := coin.Transaction{}
+
+	t.Length = r.Length
+	t.Type = r.Type
+
+	var err error
+	t.InnerHash, err = cipher.SHA256FromHex(r.InnerHash)
+	if err != nil {
+		return nil, err
+	}
+
+	sigs := make([]cipher.Sig, len(r.Sigs))
+	for i, s := range r.Sigs {
+		sigs[i], err = cipher.SigFromHex(s)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	t.Sigs = sigs
+
+	in := make([]cipher.SHA256, len(r.In))
+	for i, n := range r.In {
+		in[i], err = cipher.SHA256FromHex(n.UxID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	t.In = in
+
+	out := make([]coin.TransactionOutput, len(r.Out))
+	for i, o := range r.Out {
+		addr, err := cipher.DecodeBase58Address(o.Address)
+		if err != nil {
+			return nil, err
+		}
+
+		coins, err := droplet.FromString(o.Coins)
+		if err != nil {
+			return nil, err
+		}
+
+		hours, err := strconv.ParseUint(o.Hours, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+
+		out[i] = coin.TransactionOutput{
+			Address: addr,
+			Coins:   coins,
+			Hours:   hours,
+		}
+	}
+
+	t.Out = out
+
+	hash, err := cipher.SHA256FromHex(r.Hash)
+	if err != nil {
+		return nil, err
+	}
+	if t.Hash() != hash {
+		return nil, errors.New("ReadableTransaction.Hash does not match parsed transaction hash")
+	}
+
+	return &t, nil
+}
+
+// CreatedTransactionOutput is a transaction output
+type CreatedTransactionOutput struct {
+	UxID    string `json:"uxid"`
+	Address string `json:"address"`
+	Coins   string `json:"coins"`
+	Hours   string `json:"hours"`
+}
+
+// NewCreatedTransactionOutput creates CreatedTransactionOutput
+func NewCreatedTransactionOutput(out coin.TransactionOutput, txid cipher.SHA256) (*CreatedTransactionOutput, error) {
+	coinStr, err := droplet.ToString(out.Coins)
+	if err != nil {
+		return nil, err
+	}
+
+	return &CreatedTransactionOutput{
+		UxID:    out.UxID(txid).Hex(),
+		Address: out.Address.String(),
+		Coins:   coinStr,
+		Hours:   fmt.Sprint(out.Hours),
+	}, nil
+}
+
+// CreatedTransactionInput is a verbose transaction input
+type CreatedTransactionInput struct {
+	UxID    string `json:"uxid"`
+	Address string `json:"address"`
+	Coins   string `json:"coins"`
+	Hours   string `json:"hours"`
+	Time    uint64 `json:"timestamp"`
+	Block   uint64 `json:"block"`
+	TxID    string `json:"txid"`
+}
+
+// NewCreatedTransactionInput creates CreatedTransactionInput
+func NewCreatedTransactionInput(out coin.UxOut) (*CreatedTransactionInput, error) {
+	coinStr, err := droplet.ToString(out.Body.Coins)
+	if err != nil {
+		return nil, err
+	}
+
+	if out.Body.SrcTransaction.Empty() {
+		return nil, errors.New("NewCreatedTransactionInput UxOut.SrcTransaction is not initialized")
+	}
+
+	return &CreatedTransactionInput{
+		UxID:    out.Hash().Hex(),
+		Address: out.Body.Address.String(),
+		Coins:   coinStr,
+		Hours:   fmt.Sprint(out.Body.Hours),
+		Time:    out.Head.Time,
+		Block:   out.Head.BkSeq,
+		TxID:    out.Body.SrcTransaction.Hex(),
+	}, nil
 }
 
 // createTransactionRequest is sent to /wallet/transaction
@@ -234,7 +447,7 @@ func createTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		txn, err := gateway.CreateTransaction(params.ToWalletParams())
+		txn, inputs, err := gateway.CreateTransaction(params.ToWalletParams())
 		if err != nil {
 			switch err.(type) {
 			case wallet.Error:
@@ -257,19 +470,14 @@ func createTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		readableTxn, err := visor.NewReadableTransaction(&visor.Transaction{
-			Txn: *txn,
-		})
+		txnResp, err := NewCreateTransactionResponse(txn, inputs)
 		if err != nil {
-			err = fmt.Errorf("visor.NewReadableTransaction failed: %v", err)
+			err = fmt.Errorf("NewCreateTransactionResponse failed: %v", err)
 			logger.WithError(err).Error()
 			wh.Error500Msg(w, err.Error())
 			return
 		}
 
-		wh.SendJSONOr500(logger, w, CreateTransactionResponse{
-			Transaction:        *readableTxn,
-			EncodedTransaction: hex.EncodeToString(txn.Serialize()),
-		})
+		wh.SendJSONOr500(logger, w, txnResp)
 	}
 }

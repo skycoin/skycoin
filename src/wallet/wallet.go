@@ -1022,17 +1022,17 @@ func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspent
 // CreateAndSignTransactionAdvanced creates and signs a transaction based upon CreateTransactionParams.
 // Set the password as nil if the wallet is not encrypted, otherwise the password must be provided
 func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams, vld Validator,
-	unspent blockdb.UnspentGetter, headTime uint64) (*coin.Transaction, error) {
+	unspent blockdb.UnspentGetter, headTime uint64) (*coin.Transaction, coin.UxArray, error) {
 	if err := params.Validate(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if params.Wallet.ID != w.Filename() {
-		return nil, NewError(errors.New("params.Wallet.ID does not match wallet"))
+		return nil, nil, NewError(errors.New("params.Wallet.ID does not match wallet"))
 	}
 
 	if w.IsEncrypted() {
-		return nil, ErrWalletEncrypted
+		return nil, nil, ErrWalletEncrypted
 	}
 
 	addrList := make([]cipher.Address, 0)
@@ -1046,7 +1046,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 		for _, a := range params.Wallet.Addresses {
 			e, ok := w.GetEntry(a)
 			if !ok {
-				return nil, ErrUnknownAddress
+				return nil, nil, ErrUnknownAddress
 			}
 			addrList = append(addrList, e.Address)
 			entriesMap[e.Address] = e
@@ -1058,10 +1058,10 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 		// The error from HasUnconfirmedSpendTx isn't wrapped with wallet.Error because
 		// it is from outside the wallet package and is likely some database or other
 		// unexpected failure
-		return nil, fmt.Errorf("checking unconfirmed spending failed: %v", err)
+		return nil, nil, fmt.Errorf("checking unconfirmed spending failed: %v", err)
 	}
 	if ok {
-		return nil, ErrSpendingUnconfirmed
+		return nil, nil, ErrSpendingUnconfirmed
 	}
 
 	txn := &coin.Transaction{}
@@ -1070,9 +1070,15 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 	// Determine which unspents to spend
 	uxa := auxs.Flatten()
 
+	// Reverse lookup set to recover the inputs
+	uxaSet, err := uxa.Map()
+	if err != nil {
+		return nil, nil, err
+	}
+
 	uxb, err := NewUxBalances(headTime, uxa)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// calculate total coins and minimum hours to send
@@ -1081,12 +1087,12 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 	for _, to := range params.To {
 		totalOutCoins, err = coin.AddUint64(totalOutCoins, to.Coins)
 		if err != nil {
-			return nil, NewError(fmt.Errorf("total output coins error: %v", err))
+			return nil, nil, NewError(fmt.Errorf("total output coins error: %v", err))
 		}
 
 		requestedHours, err = coin.AddUint64(requestedHours, to.Hours)
 		if err != nil {
-			return nil, NewError(fmt.Errorf("total output hours error: %v", err))
+			return nil, nil, NewError(fmt.Errorf("total output hours error: %v", err))
 		}
 	}
 
@@ -1096,7 +1102,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 
 	spends, err := ChooseSpendsMinimizeUxOuts(uxb, totalOutCoins, requestedHours)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// calculate total coins and hours in spends
@@ -1106,12 +1112,12 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 	for i, spend := range spends {
 		totalInputCoins, err = coin.AddUint64(totalInputCoins, spend.Coins)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		totalInputHours, err = coin.AddUint64(totalInputHours, spend.Hours)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		toSign[i] = entriesMap[spend.Address].Secret
@@ -1120,7 +1126,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 
 	feeHours := fee.RequiredFee(totalInputHours)
 	if feeHours == 0 {
-		return nil, fee.ErrTxnNoFee
+		return nil, nil, fee.ErrTxnNoFee
 	}
 	remainingHours := totalInputHours - feeHours
 
@@ -1138,13 +1144,13 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 			// multiply remaining hours after fee burn with share factor
 			hours, err := coin.Uint64ToInt64(remainingHours)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 
 			allocatedHoursInt := params.HoursSelection.ShareFactor.Mul(decimal.New(hours, 0)).IntPart()
 			allocatedHours, err := coin.Int64ToUint64(allocatedHoursInt)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 
 			toCoins := make([]uint64, len(params.To))
@@ -1154,10 +1160,10 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 
 			addrHours, err = DistributeCoinHoursProportional(toCoins, allocatedHours)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 		default:
-			return nil, ErrInvalidHoursSelectionType
+			return nil, nil, ErrInvalidHoursSelectionType
 		}
 
 		for i, out := range params.To {
@@ -1166,24 +1172,24 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 		}
 
 	default:
-		return nil, ErrInvalidHoursSelectionMode
+		return nil, nil, ErrInvalidHoursSelectionMode
 	}
 
 	totalOutHours, err := txn.OutputHours()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Make sure we have enough coinhours
 	// If we don't at this point, then ChooseSpends has a bug, it should have returned this error already
 	if totalOutHours > remainingHours {
 		logger.WithError(fee.ErrTxnInsufficientCoinHours).Error("Insufficient hours after choosing spends or distributing hours, this should not occur")
-		return nil, fee.ErrTxnInsufficientCoinHours
+		return nil, nil, fee.ErrTxnInsufficientCoinHours
 	}
 
 	if totalOutCoins > totalInputCoins {
 		logger.WithError(ErrInsufficientBalance).Error("Insufficient coins after choosing spends, this should not occur")
-		return nil, ErrInsufficientBalance
+		return nil, nil, ErrInsufficientBalance
 	}
 
 	// create change output
@@ -1207,7 +1213,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 			// Calculate the new hours being spent
 			newTotalHours, err := coin.AddUint64(totalInputHours, extra.Hours)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 
 			// Calculate the new fee for this new amount of hours
@@ -1215,7 +1221,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 			if newFee < feeHours {
 				err := errors.New("updated fee after adding extra input for change is unexpectedly less than it was initially")
 				logger.WithError(err).Error()
-				return nil, err
+				return nil, nil, err
 			}
 
 			// If the cost of adding this extra input is less than the amount of change hours we
@@ -1227,13 +1233,13 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 				if extra.Hours < additionalFee {
 					err := errors.New("calculated additional fee is unexpectedly higher than the extra input's hours")
 					logger.WithError(err).Error()
-					return nil, err
+					return nil, nil, err
 				}
 
 				additionalHours := extra.Hours - additionalFee
 				changeHours, err = coin.AddUint64(changeHours, additionalHours)
 				if err != nil {
-					return nil, err
+					return nil, nil, err
 				}
 
 				toSign = append(toSign, entriesMap[extra.Address].Secret)
@@ -1249,7 +1255,16 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 	txn.SignInputs(toSign)
 	txn.UpdateHeader()
 
-	return txn, nil
+	inputs := make(coin.UxArray, len(txn.In))
+	for i, h := range txn.In {
+		uxOut, ok := uxaSet[h]
+		if !ok {
+			return nil, nil, errors.New("Created transaction's input is not in the UxHashSet, this should not occur")
+		}
+		inputs[i] = uxOut
+	}
+
+	return txn, inputs, nil
 }
 
 // DistributeSpendHours calculates how many coin hours to transfer to the change address and how

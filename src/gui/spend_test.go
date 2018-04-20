@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -16,7 +17,6 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil" //http,json helpers
 	"github.com/skycoin/skycoin/src/util/fee"
-	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -64,13 +64,27 @@ func TestCreateTransaction(t *testing.T) {
 			},
 		},
 	}
-	visorTxn := &visor.Transaction{
-		Txn: *txn,
+
+	inputs := coin.UxArray{
+		coin.UxOut{
+			Head: coin.UxHead{
+				Time:  uint64(time.Now().UTC().Unix()),
+				BkSeq: 9999,
+			},
+			Body: coin.UxBody{
+				SrcTransaction: testutil.RandSHA256(t),
+				Address:        testutil.MakeAddress(),
+				Coins:          1e6,
+				Hours:          200,
+			},
+		},
 	}
-	readableTxn, err := visor.NewReadableTransaction(visorTxn)
+
+	createdTxn, err := NewCreatedTransaction(txn, inputs)
 	require.NoError(t, err)
+
 	createTxnResponse := &CreateTransactionResponse{
-		Transaction:        *readableTxn,
+		Transaction:        *createdTxn,
 		EncodedTransaction: hex.EncodeToString(txn.Serialize()),
 	}
 
@@ -98,6 +112,7 @@ func TestCreateTransaction(t *testing.T) {
 		status                         int
 		err                            string
 		gatewayCreateTransactionResult *coin.Transaction
+		gatewayCreateTransactionInputs coin.UxArray
 		gatewayCreateTransactionErr    error
 		createTransactionResponse      *CreateTransactionResponse
 		csrfDisabled                   bool
@@ -629,6 +644,7 @@ func TestCreateTransaction(t *testing.T) {
 			},
 			status: http.StatusOK,
 			gatewayCreateTransactionResult: txn,
+			gatewayCreateTransactionInputs: inputs,
 			createTransactionResponse:      createTxnResponse,
 		},
 
@@ -653,6 +669,7 @@ func TestCreateTransaction(t *testing.T) {
 			},
 			status: http.StatusOK,
 			gatewayCreateTransactionResult: txn,
+			gatewayCreateTransactionInputs: inputs,
 			createTransactionResponse:      createTxnResponse,
 		},
 
@@ -677,6 +694,7 @@ func TestCreateTransaction(t *testing.T) {
 			},
 			status: http.StatusOK,
 			gatewayCreateTransactionResult: txn,
+			gatewayCreateTransactionInputs: inputs,
 			createTransactionResponse:      createTxnResponse,
 		},
 
@@ -686,6 +704,7 @@ func TestCreateTransaction(t *testing.T) {
 			body:   validBody,
 			status: http.StatusOK,
 			gatewayCreateTransactionResult: txn,
+			gatewayCreateTransactionInputs: inputs,
 			createTransactionResponse:      createTxnResponse,
 			csrfDisabled:                   true,
 		},
@@ -747,10 +766,6 @@ func TestCreateTransaction(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			if tc.gatewayCreateTransactionResult == nil {
-				tc.gatewayCreateTransactionResult = &coin.Transaction{}
-			}
-
 			gateway := &GatewayerMock{}
 
 			// If the rawRequestBody can be deserialized to CreateTransactionRequest, use it to mock gateway.CreateTransaction
@@ -759,7 +774,7 @@ func TestCreateTransaction(t *testing.T) {
 			var body createTransactionRequest
 			err = json.Unmarshal(serializedBody, &body)
 			if err == nil {
-				gateway.On("CreateTransaction", body.ToWalletParams()).Return(tc.gatewayCreateTransactionResult, tc.gatewayCreateTransactionErr)
+				gateway.On("CreateTransaction", body.ToWalletParams()).Return(tc.gatewayCreateTransactionResult, tc.gatewayCreateTransactionInputs, tc.gatewayCreateTransactionErr)
 			}
 
 			endpoint := "/wallet/transaction"

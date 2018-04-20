@@ -1608,7 +1608,7 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 
 				s.enableWalletAPI = !tc.disableWalletAPI
 
-				txn, err := s.CreateAndSignTransactionAdvanced(tc.params, tc.vld, unspents, tc.headTime)
+				txn, inputs, err := s.CreateAndSignTransactionAdvanced(tc.params, tc.vld, unspents, tc.headTime)
 				if tc.err != nil {
 					require.Equal(t, tc.err, err)
 					return
@@ -1619,25 +1619,53 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 				err = txn.Verify()
 				require.NoError(t, err)
 
-				for _, inUxid := range txn.In {
+				require.Equal(t, len(inputs), len(txn.In))
+
+				// Checks duplicate inputs in array
+				_, err = inputs.Map()
+				require.NoError(t, err)
+
+				for i, inUxid := range txn.In {
 					_, ok := unspents.unspents[inUxid]
 					require.True(t, ok)
+
+					require.Equal(t, inUxid, inputs[i].Hash())
 				}
 
 				// Compare the transaction inputs
-				chosenUnspents := make([]cipher.SHA256, len(tc.chosenUnspents))
+				chosenUnspents := make([]coin.UxOut, len(tc.chosenUnspents))
+				chosenUnspentHashes := make([]cipher.SHA256, len(tc.chosenUnspents))
 				for i, u := range tc.chosenUnspents {
-					chosenUnspents[i] = u.Hash()
+					chosenUnspents[i] = u
+					chosenUnspentHashes[i] = u.Hash()
 				}
+				sort.Slice(chosenUnspentHashes, func(i, j int) bool {
+					return bytes.Compare(chosenUnspentHashes[i][:], chosenUnspentHashes[j][:]) < 0
+				})
 				sort.Slice(chosenUnspents, func(i, j int) bool {
-					return bytes.Compare(chosenUnspents[i][:], chosenUnspents[j][:]) < 0
+					h1 := chosenUnspents[i].Hash()
+					h2 := chosenUnspents[j].Hash()
+					return bytes.Compare(h1[:], h2[:]) < 0
 				})
 
-				sort.Slice(txn.In, func(i, j int) bool {
-					return bytes.Compare(txn.In[i][:], txn.In[j][:]) < 0
+				sortedTxnIn := make([]cipher.SHA256, len(txn.In))
+				for i, x := range txn.In {
+					sortedTxnIn[i] = x
+				}
+
+				sort.Slice(sortedTxnIn, func(i, j int) bool {
+					return bytes.Compare(sortedTxnIn[i][:], sortedTxnIn[j][:]) < 0
 				})
 
-				require.Equal(t, chosenUnspents, txn.In)
+				require.Equal(t, chosenUnspentHashes, sortedTxnIn)
+
+				sort.Slice(inputs, func(i, j int) bool {
+					h1 := inputs[i].Hash()
+					h2 := inputs[j].Hash()
+					return bytes.Compare(h1[:], h2[:]) < 0
+				})
+
+				require.Equal(t, chosenUnspents, []coin.UxOut(inputs))
 
 				// Assign expected hours for comparison
 				var to []coin.TransactionOutput

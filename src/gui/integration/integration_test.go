@@ -2058,7 +2058,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 					{
 						Address: w.Entries[0].Address.String(),
 						Coins:   "0.001",
-						Hours:   fmt.Sprint(uint64(math.MaxUint64)),
+						Hours:   fmt.Sprint(uint64(math.MaxUint64) - 1),
 					},
 				},
 			},
@@ -2320,12 +2320,16 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 		require.NotEmpty(t, result.EncodedTransaction)
 		emptyTxn := &coin.Transaction{}
 		require.NotEqual(t, hex.EncodeToString(emptyTxn.Serialize()), result.EncodedTransaction)
-		txn, err := result.Transaction.Unreadable()
+		txn, err := result.Transaction.ToTransaction()
 		require.NoError(t, err)
-		require.Equal(t, hex.EncodeToString(txn.Serialize()), result.EncodedTransaction)
+
+		serializedTxn := txn.Serialize()
+		require.Equal(t, hex.EncodeToString(serializedTxn), result.EncodedTransaction)
+
+		require.Equal(t, int(txn.Length), len(serializedTxn))
 	}
 
-	assertRequestedCoins := func(t *testing.T, to []gui.Receiver, out []visor.ReadableTransactionOutput) {
+	assertRequestedCoins := func(t *testing.T, to []gui.Receiver, out []gui.CreatedTransactionOutput) {
 		var requestedCoins uint64
 		for _, o := range to {
 			c, err := droplet.FromString(o.Coins)
@@ -2343,12 +2347,61 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 		require.Equal(t, requestedCoins, sentCoins)
 	}
 
-	assertRequestedHours := func(t *testing.T, to []gui.Receiver, out []visor.ReadableTransactionOutput) {
+	assertRequestedHours := func(t *testing.T, to []gui.Receiver, out []gui.CreatedTransactionOutput) {
 		for i, o := range out[:len(to)] { // exclude change output
-			h, err := strconv.ParseUint(to[i].Hours, 10, 64)
+			toHours, err := strconv.ParseUint(to[i].Hours, 10, 64)
 			require.NoError(t, err)
-			require.Equal(t, h, o.Hours)
+
+			outHours, err := strconv.ParseUint(o.Hours, 10, 64)
+
+			require.Equal(t, toHours, outHours)
 		}
+	}
+
+	assertCreatedTransactionValid := func(t *testing.T, r gui.CreatedTransaction) {
+		require.NotEmpty(t, r.In)
+		require.NotEmpty(t, r.Out)
+
+		fee, err := strconv.ParseUint(r.Fee, 10, 64)
+		require.NoError(t, err)
+
+		require.NotEqual(t, uint64(0), fee)
+
+		var inputHours uint64
+		var inputCoins uint64
+		for _, in := range r.In {
+			hours, err := strconv.ParseUint(in.Hours, 10, 64)
+			require.NoError(t, err)
+			inputHours, err = coin.AddUint64(inputHours, hours)
+			require.NoError(t, err)
+
+			coins, err := droplet.FromString(in.Coins)
+			require.NoError(t, err)
+			inputCoins, err = coin.AddUint64(inputCoins, coins)
+			require.NoError(t, err)
+		}
+
+		var outputHours uint64
+		var outputCoins uint64
+		for _, out := range r.Out {
+			hours, err := strconv.ParseUint(out.Hours, 10, 64)
+			require.NoError(t, err)
+			outputHours, err = coin.AddUint64(outputHours, hours)
+			require.NoError(t, err)
+
+			coins, err := droplet.FromString(out.Coins)
+			require.NoError(t, err)
+			outputCoins, err = coin.AddUint64(outputCoins, coins)
+			require.NoError(t, err)
+		}
+
+		require.True(t, inputHours > outputHours)
+		require.Equal(t, inputHours-outputHours, fee)
+
+		require.Equal(t, inputCoins, outputCoins)
+
+		require.Equal(t, uint8(0), r.Type)
+		require.NotEmpty(t, r.Length)
 	}
 
 	for _, tc := range cases {
@@ -2371,13 +2424,15 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 				require.Equal(t, o.Coins, coins, "[%d] %d != %d", i, o.Coins, coins)
 
 				if !tc.ignoreHours {
-					hours := result.Transaction.Out[i].Hours
+					hours, err := strconv.ParseUint(result.Transaction.Out[i].Hours, 10, 64)
+					require.NoError(t, err)
 					require.Equal(t, o.Hours, hours, "[%d] %d != %d", i, o.Hours, hours)
 				}
 			}
 
 			assertEncodeTxnMatchesTxn(t, result)
 			assertRequestedCoins(t, tc.req.To, result.Transaction.Out)
+			assertCreatedTransactionValid(t, result.Transaction)
 
 			if tc.req.HoursSelection.Type == wallet.HoursSelectionTypeManual {
 				assertRequestedHours(t, tc.req.To, result.Transaction.Out)
@@ -2546,6 +2601,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 		assertEncodeTxnMatchesTxn(t, result)
 		assertTxnOutputCount(t, changeAddress, nAutoOutputs, result)
 		assertRequestedCoins(t, autoTo, result.Transaction.Out)
+		assertCreatedTransactionValid(t, result.Transaction)
 
 		// Auto, share factor 0
 
@@ -2567,10 +2623,11 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 		assertEncodeTxnMatchesTxn(t, result)
 		assertTxnOutputCount(t, changeAddress, nAutoOutputs, result)
 		assertRequestedCoins(t, autoTo, result.Transaction.Out)
+		assertCreatedTransactionValid(t, result.Transaction)
 
 		// Check that the non-change outputs have 0 hours
 		for _, o := range result.Transaction.Out[:nAutoOutputs] {
-			require.Equal(t, uint64(0), o.Hours)
+			require.Equal(t, "0", o.Hours)
 		}
 
 		// Auto, share factor 1
@@ -2593,10 +2650,11 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 		assertEncodeTxnMatchesTxn(t, result)
 		assertTxnOutputCount(t, changeAddress, nAutoOutputs, result)
 		assertRequestedCoins(t, autoTo, result.Transaction.Out)
+		assertCreatedTransactionValid(t, result.Transaction)
 
 		// Check that the change output has 0 hours
 		if len(result.Transaction.Out) > nAutoOutputs {
-			require.Equal(t, uint64(0), result.Transaction.Out[nAutoOutputs].Hours)
+			require.Equal(t, "0", result.Transaction.Out[nAutoOutputs].Hours)
 		}
 
 		// Manual
@@ -2618,6 +2676,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 		assertTxnOutputCount(t, changeAddress, nOutputs, result)
 		assertRequestedCoins(t, to, result.Transaction.Out)
 		assertRequestedHours(t, to, result.Transaction.Out)
+		assertCreatedTransactionValid(t, result.Transaction)
 	}
 }
 

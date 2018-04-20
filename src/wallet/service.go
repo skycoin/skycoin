@@ -341,49 +341,50 @@ func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, vld
 // CreateAndSignTransactionAdvanced creates and signs a transaction based upon CreateTransactionParams.
 // Set the password as nil if the wallet is not encrypted, otherwise the password must be provided
 func (serv *Service) CreateAndSignTransactionAdvanced(params CreateTransactionParams, vld Validator,
-	unspent blockdb.UnspentGetter, headTime uint64) (*coin.Transaction, error) {
+	unspent blockdb.UnspentGetter, headTime uint64) (*coin.Transaction, coin.UxArray, error) {
 	serv.RLock()
 	defer serv.RUnlock()
 
 	if !serv.enableWalletAPI {
-		return nil, ErrWalletAPIDisabled
+		return nil, nil, ErrWalletAPIDisabled
 	}
 
 	if err := params.Validate(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	w, err := serv.getWallet(params.Wallet.ID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Check if the wallet needs a password
 	if w.IsEncrypted() {
 		if len(params.Wallet.Password) == 0 {
-			return nil, ErrMissingPassword
+			return nil, nil, ErrMissingPassword
 		}
 	} else {
 		if len(params.Wallet.Password) != 0 {
-			return nil, ErrWalletNotEncrypted
+			return nil, nil, ErrWalletNotEncrypted
 		}
 	}
 
 	var tx *coin.Transaction
+	var inputs coin.UxArray
 	if w.IsEncrypted() {
 		err = w.guardView(params.Wallet.Password, func(wlt *Wallet) error {
 			var err error
-			tx, err = wlt.CreateAndSignTransactionAdvanced(params, vld, unspent, headTime)
+			tx, inputs, err = wlt.CreateAndSignTransactionAdvanced(params, vld, unspent, headTime)
 			return err
 		})
 	} else {
-		tx, err = w.CreateAndSignTransactionAdvanced(params, vld, unspent, headTime)
+		tx, inputs, err = w.CreateAndSignTransactionAdvanced(params, vld, unspent, headTime)
 	}
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return tx, nil
+	return tx, inputs, nil
 }
 
 // UpdateWalletLabel updates the wallet label

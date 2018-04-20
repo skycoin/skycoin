@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -270,7 +271,7 @@ var devConfig = Config{
 	//AddressVersion: "test",
 	// Remote web interface
 	WebInterface:             true,
-	WebInterfacePort:         6420,
+	WebInterfacePort:         rand.Intn(65535),
 	WebInterfaceAddr:         "127.0.0.1",
 	WebInterfaceCert:         "",
 	WebInterfaceKey:          "",

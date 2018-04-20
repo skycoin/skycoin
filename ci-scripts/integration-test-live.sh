@@ -30,9 +30,8 @@ usage () {
   echo "-r <string>  -- Run test with -run flag"
   echo "-u <boolean> -- Update stable testdata"
   echo "-v <boolean> -- Run test with -v flag"
-  echo "-w <boolean> -- Run wallet tests"
+  echo "-w <boolean> -- Run wallet tests. NOTE: skycoin node must be run with -enable-wallet-api=true"
   echo "-f <boolean> -- Run test with -failfast flag"
-  echo "NOTE: skycoin node must be run with -enable-wallet-api=true"
   exit 1
 }
 

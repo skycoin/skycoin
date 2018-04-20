@@ -10,6 +10,7 @@ import { ButtonComponent } from '../../../layout/button/button.component';
 export class OnboardingEncryptWalletComponent implements OnInit {
   @ViewChild('button') button: ButtonComponent;
   @Output() onPasswordCreated = new EventEmitter<string|null>();
+  @Output() onBack = new EventEmitter();
   form: FormGroup;
 
   constructor(private formBuilder: FormBuilder) { }
@@ -43,6 +44,10 @@ export class OnboardingEncryptWalletComponent implements OnInit {
     this.button.setLoading();
 
     this.onPasswordCreated.emit(this.form.enabled ? this.form.get('password').value : null);
+  }
+
+  emitBack() {
+    this.onBack.emit();
   }
 
   private passwordMatchValidator(g: FormGroup) {

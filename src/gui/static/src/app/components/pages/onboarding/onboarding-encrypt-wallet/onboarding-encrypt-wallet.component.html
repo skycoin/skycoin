@@ -37,5 +37,8 @@
     <app-button class="dark -button-min-margin" [disabled]="form.enabled && !form.valid" (action)="emitCreatedPassword()" #button>
       Finish
     </app-button>
+    <app-button class="ghost -button-min-margin" (action)="emitBack()">
+      Back
+    </app-button>
   </div>
 </div>

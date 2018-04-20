@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { WalletService } from '../../../../services/wallet.service';
@@ -12,6 +12,7 @@ import { MatDialogRef } from '@angular/material';
   styleUrls: ['./onboarding-create-wallet.component.scss'],
 })
 export class OnboardingCreateWalletComponent implements OnInit {
+  @Input() fill = null;
   @Output() onLabelAndSeedCreated = new EventEmitter<[string, string]>();
   showNewForm = true;
   form: FormGroup;
@@ -42,13 +43,18 @@ export class OnboardingCreateWalletComponent implements OnInit {
       this.showNewForm ? { validator: this.seedMatchValidator.bind(this) } : {},
     );
 
-    if (this.showNewForm) {
+    if (this.fill) {
+      this.form.get('label').setValue(this.fill['label']);
+      this.form.get('seed').setValue(this.fill['seed']);
+      this.form.get('confirm_seed').setValue(this.fill['seed']);
+    } else if (this.showNewForm) {
       this.generateSeed();
     }
   }
 
   changeForm(newState) {
     this.showNewForm = newState === DoubleButtonActive.LeftButton;
+    this.fill = null;
     this.initForm();
   }
 

@@ -32,12 +32,7 @@ export class WalletService {
   }
 
   addressesAsString(): Observable<string> {
-    return this.all().map(wallets => wallets.map(wallet => {
-      return wallet.addresses.reduce((a, b) => {
-        a.push(b.address);
-        return a;
-      }, []).join(',');
-    }).join(','));
+    return this.allAddresses().map(addrs => addrs.map(addr => addr.address)).map(addrs => addrs.join(','));
   }
 
   addAddress(wallet: Wallet, password?: string) {
@@ -93,8 +88,10 @@ export class WalletService {
   }
 
   refreshPendingTransactions() {
-    this.apiService.get('pendingTxs').subscribe(txs => {
-      this.pendingTxs.next(txs);
+    this.addressesAsString().first().subscribe(addrs => {
+      this.apiService.get('transactions', { confirmed: 0, addrs }).subscribe(txs => {
+        this.pendingTxs.next(txs);
+      });
     });
   }
 

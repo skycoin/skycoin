@@ -45,7 +45,7 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
       });
     });
 
-    if (this.data.confirm) {
+    if (this.requiresConfirmation) {
       this.form.get('confirm_password').enable();
     } else {
       this.form.get('confirm_password').disable();
@@ -62,13 +62,17 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
     this.passwordChanged(this.form.get('password').value);
   }
 
+  get requiresConfirmation() {
+    return this.data && this.data.confirm === true;
+  }
+
   private validateForm() {
     if (this.form && this.form.get('password') && this.form.get('confirm_password')) {
       if (this.form.get('password').value.length === 0) {
         return { Required: true };
       }
 
-      if (this.data.confirm && this.form.get('password').value !== this.form.get('confirm_password').value) {
+      if (this.requiresConfirmation && this.form.get('password').value !== this.form.get('confirm_password').value) {
         return { NotEqual: true };
       }
     }

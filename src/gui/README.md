@@ -655,9 +655,18 @@ The `encoded_transaction` can be provided to `POST /injectTransaction` to broadc
 The `hours_selection` field has two types: `manual` or `auto`.
 
 If `manual`, all destination hours must be specified.
+
+If `auto`, the `mode` field must be set. The only valid value for `mode` is `"share"`.
+For the `"share"` mode, `share_factor` must also be set. This must be a decimal value greater than or equal to 0 and less than or equal to 1.
+In the auto share mode, the remaining hours after the fee are shared between the destination addresses as a whole,
+and the change address. Amongst the destination addresses, the shared hours are distributed proportionally.
+
+Note that if there are remaining coin hours as change, but no coins are available as change from the wallet,
+these remaining coin hours will be burned as an additional fee.
+
 All objects in `to` must be unique; a single transaction cannot create multiple outputs with the same `address`, `coins` and `hours`.
 
-For example, this is a valid value for `to`:
+For example, this is a valid value for `to`, if `hours_selection.type` is `"manual"`:
 
 ```json
 [{
@@ -671,7 +680,7 @@ For example, this is a valid value for `to`:
 }]
 ```
 
-But this is an invalid value for `to`:
+But this is an invalid value for `to`, if `hours_selection.type` is `"manual"`:
 
 ```json
 [{
@@ -685,18 +694,29 @@ But this is an invalid value for `to`:
 }]
 ```
 
-If `auto`, the `mode` field must be set. The only valid value for `mode` is `"share"`.
-For the `"share"` mode, `share_factor` must also be set. This must be a decimal value greater than or equal to 0 and less than or equal to 1.
-In the auto share mode, the remaining hours after the fee are shared between the destination addresses as a whole,
-and the change address. Amongst the destination addresses, the shared hours are distributed proportionally.
+And this is a valid value for `to`, if `hours_selection.type` is `"auto"`:
 
-Note that if there are remaining coin hours as change, but no coins are available as change from the wallet,
-these remaining coin hours will be burned as an additional fee.
+```json
+[{
+    "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+    "coins": "1.2"
+}, {
+    "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+    "coins": "1.201"
+}]
+```
 
-In some edge cases, a transaction that does not contain duplicate output is unable to be created.
-For example, if you only have 1 coin hour and want to create two outputs, each to the same address with the same number of coins,
-each output would not receive any coin hours due to the required coin hour burn. This would create a transaction
-with two outputs that have the same `(address, coins, hours)`, which is invalid.
+But this is an invalid value for `to`, if `hours_selection.type` is `"auto"`:
+
+```json
+[{
+    "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+    "coins": "1.2"
+}, {
+    "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+    "coins": "1.2"
+}]
+```
 
 If `wallet.addresses` is empty or not provided, then all addresses from the wallet will be considered to use
 for spending. To control which addresses may spend, specify the addresses in this field.

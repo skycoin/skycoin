@@ -4,6 +4,7 @@ import { MatDialogRef, MatSnackBar, MatSnackBarConfig } from '@angular/material'
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { ButtonComponent } from '../button/button.component';
 import { Observable } from 'rxjs/Observable';
+import { parseResponseMessage } from '../../../utils/index';
 
 @Component({
   selector: 'app-password-dialog',
@@ -60,7 +61,7 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
     if (typeof error === 'object') {
       switch (error.status) {
         case 400:
-          error = error['_body'];
+          error = parseResponseMessage(error['_body']);
           break;
         case 401:
           error = 'Incorrect password';
@@ -74,7 +75,7 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
         default:
           const config = new MatSnackBarConfig();
           config.duration = 5000;
-          this.snackbar.open(error['_body'], null, config);
+          this.snackbar.open(parseResponseMessage(error['_body']), null, config);
       }
     }
 

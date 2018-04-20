@@ -42,7 +42,10 @@ export class WalletDetailComponent {
   }
 
   toggleEncryption() {
-    this.dialog.open(PasswordDialogComponent).componentInstance.passwordSubmit
+    const config = new MatDialogConfig();
+    config.data = { confirm: !this.wallet.encrypted };
+
+    this.dialog.open(PasswordDialogComponent, config).componentInstance.passwordSubmit
       .subscribe(passwordDialog => {
         this.walletService.toggleEncryption(this.wallet, passwordDialog.password).subscribe(() => {
           passwordDialog.close();

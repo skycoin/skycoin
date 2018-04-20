@@ -19,7 +19,7 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
 
   constructor(
     public dialogRef: MatDialogRef<PasswordDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) private data: any,
+    @Inject(MAT_DIALOG_DATA) public data: any,
   ) {
     this.passwordSubmit = Observable.create(observer => {
       this.passwordChanged = password => {
@@ -33,22 +33,45 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.form = new FormGroup({});
-    this.form.addControl('password', new FormControl('', [Validators.required]));
-    this.form.get('password').valueChanges.subscribe(() => {
-      if (this.button.state === 2) {
-        this.button.resetState();
-      }
+    this.form = new FormGroup({}, this.validateForm.bind(this));
+    this.form.addControl('password', new FormControl(''));
+    this.form.addControl('confirm_password', new FormControl('', { disabled: true }));
+
+    ['password', 'confirm_password'].forEach(control => {
+      this.form.get(control).valueChanges.subscribe(() => {
+        if (this.button.state === 2) {
+          this.button.resetState();
+        }
+      });
     });
+
+    if (this.data.confirm) {
+      this.form.get('confirm_password').enable();
+    }
   }
 
   ngOnDestroy() {
     this.form.get('password').setValue('');
+    this.form.get('confirm_password').setValue('');
   }
 
   proceed() {
     this.button.setLoading();
     this.passwordChanged(this.form.get('password').value);
+  }
+
+  private validateForm() {
+    if (this.form && this.form.get('password') && this.form.get('confirm_password')) {
+      if (this.form.get('password').value.length === 0) {
+        return { Required: true };
+      }
+
+      if (this.data.confirm && this.form.get('password').value !== this.form.get('confirm_password').value) {
+        return { NotEqual: true };
+      }
+    }
+
+    return null;
   }
 
   private close() {

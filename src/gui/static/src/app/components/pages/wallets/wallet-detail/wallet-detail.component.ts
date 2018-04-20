@@ -43,7 +43,15 @@ export class WalletDetailComponent {
 
   toggleEncryption() {
     const config = new MatDialogConfig();
-    config.data = { confirm: !this.wallet.encrypted };
+    config.data = {
+      confirm: !this.wallet.encrypted,
+      title: this.wallet.encrypted ? 'Decrypt Wallet' : 'Encrypt Wallet',
+    };
+
+    if (!this.wallet.encrypted) {
+      config.data['description'] = 'We suggest that you encrypt each one of your wallets with a password. ' +
+        'If you forget your password, you can reset it with your seed.';
+    }
 
     this.dialog.open(PasswordDialogComponent, config).componentInstance.passwordSubmit
       .subscribe(passwordDialog => {

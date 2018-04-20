@@ -1,14 +1,14 @@
 import { Component, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatDialogRef } from '@angular/material';
-import { FormControl, FormGroup, Validators } from '@angular/forms';
+import { FormControl, FormGroup } from '@angular/forms';
 import { ButtonComponent } from '../button/button.component';
 import { Observable } from 'rxjs/Observable';
 
 @Component({
   selector: 'app-password-dialog',
   templateUrl: './password-dialog.component.html',
-  styleUrls: ['./password-dialog.component.css']
+  styleUrls: ['./password-dialog.component.scss']
 })
 export class PasswordDialogComponent implements OnInit, OnDestroy {
 
@@ -30,6 +30,12 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
         });
       };
     });
+
+    this.data = Object.assign({
+      confirm: false,
+      description: null,
+      title: null,
+    }, data || {});
   }
 
   ngOnInit() {
@@ -45,10 +51,14 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
       });
     });
 
-    if (this.requiresConfirmation) {
+    if (this.data.confirm) {
       this.form.get('confirm_password').enable();
     } else {
       this.form.get('confirm_password').disable();
+    }
+
+    if (this.data.description) {
+      this.dialogRef.updateSize('400px');
     }
   }
 
@@ -62,17 +72,13 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
     this.passwordChanged(this.form.get('password').value);
   }
 
-  get requiresConfirmation() {
-    return this.data && this.data.confirm === true;
-  }
-
   private validateForm() {
     if (this.form && this.form.get('password') && this.form.get('confirm_password')) {
       if (this.form.get('password').value.length === 0) {
         return { Required: true };
       }
 
-      if (this.requiresConfirmation && this.form.get('password').value !== this.form.get('confirm_password').value) {
+      if (this.data.confirm && this.form.get('password').value !== this.form.get('confirm_password').value) {
         return { NotEqual: true };
       }
     }

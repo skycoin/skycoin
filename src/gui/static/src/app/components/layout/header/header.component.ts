@@ -7,7 +7,8 @@ import { Observable } from 'rxjs/Observable';
 import { ApiService } from '../../../services/api.service';
 import { Http } from '@angular/http';
 import { AppService } from '../../../services/app.service';
-import { IntervalObservable } from 'rxjs/observable/IntervalObservable';
+import 'rxjs/add/operator/skip';
+import 'rxjs/add/operator/take';
 
 @Component({
   selector: 'app-header',
@@ -27,6 +28,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   releaseVersion: string;
   updateAvailable: boolean;
   hasPendingTxs: boolean;
+  balancesRefreshed = false;
 
   private price: number;
   private priceSubscription: Subscription;
@@ -52,6 +54,23 @@ export class HeaderComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
+    this.blockchainService.progress
+      .filter(response => !!response)
+      .subscribe(response => {
+        this.querying = false;
+        this.highest = response.highest;
+        this.current = response.current;
+        this.percentage = this.current && this.highest ? (this.current / this.highest) : 0;
+
+        // if (response.current === 999999999999) {
+        //   this.walletService.all().skip(1).take(1).subscribe((w) => {
+        //     console.log(this.balancesRefreshed, w[0].coins);
+        //     this.balancesRefreshed = true;
+        //     console.log(this.balancesRefreshed);
+        //   });
+        // }
+      });
+
     this.setVersion();
     this.priceSubscription = this.priceService.price.subscribe(price => this.price = price);
     this.walletSubscription = this.walletService.allAddresses().subscribe(addresses => {
@@ -62,18 +81,15 @@ export class HeaderComponent implements OnInit, OnDestroy {
         return array;
       }, []);
 
+      console.log('sub')
+      if (this.current === 999999999999) {
+        this.balancesRefreshed = true;
+        console.log('finalsub')
+      }
+
       this.coins = addresses.map(addr => addr.coins >= 0 ? addr.coins : 0).reduce((a, b) => a + b, 0);
       this.hours = addresses.map(addr => addr.hours >= 0 ? addr.hours : 0).reduce((a, b) => a + b, 0);
     });
-
-    this.blockchainService.progress
-      .filter(response => !!response)
-      .subscribe(response => {
-        this.querying = false;
-        this.highest = response.highest;
-        this.current = response.current;
-        this.percentage = this.current && this.highest ? (this.current / this.highest) : 0;
-      });
 
     this.walletService.pendingTransactions().subscribe(txs => {
       this.hasPendingTxs = txs.length > 0;
@@ -87,11 +103,13 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   setVersion() {
     // Set build version
-    this.apiService.getVersion().first()
-      .subscribe(output =>  {
-        this.version = output.version;
-        this.retrieveReleaseVersion();
-      });
+    setTimeout(() => {
+      this.apiService.getVersion().first()
+        .subscribe(output =>  {
+          this.version = output.version;
+          this.retrieveReleaseVersion();
+        });
+    }, 1000);
   }
 
   private higherVersion(first: string, second: string): boolean {

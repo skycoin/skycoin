@@ -182,10 +182,7 @@ export class WalletService {
   }
 
   private loadData(): void {
-    this.apiService.getWallets().first().subscribe(wallets => {
-      this.wallets.next(wallets);
-      this.refreshBalances();
-    });
+    this.apiService.getWallets().first().subscribe(wallets => this.wallets.next(wallets));
   }
 
   private retrieveAddressBalance(address: any|any[]) {

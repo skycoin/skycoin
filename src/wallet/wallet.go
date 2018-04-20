@@ -182,6 +182,19 @@ func (c CreateTransactionParams) Validate() error {
 		}
 	}
 
+	if c.HoursSelection.Type == HoursSelectionTypeManual {
+		// Check for duplicate outputs, a transaction can't have outputs with
+		// the same (address, coins, hours)
+		outputs := make(map[coin.TransactionOutput]struct{}, len(c.To))
+		for _, to := range c.To {
+			outputs[to] = struct{}{}
+		}
+
+		if len(outputs) != len(c.To) {
+			return NewError(errors.New("To contains duplicate values"))
+		}
+	}
+
 	if c.Wallet.ID == "" {
 		return NewError(errors.New("Wallet.ID is required"))
 	}

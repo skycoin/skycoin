@@ -120,6 +120,10 @@ func (r createTransactionRequest) Validate() error {
 		}
 	}
 
+	if len(r.To) == 0 {
+		return errors.New("to is empty")
+	}
+
 	for i, to := range r.To {
 		if to.Address.Empty() {
 			return fmt.Errorf("to[%d].address is empty", i)
@@ -134,8 +138,21 @@ func (r createTransactionRequest) Validate() error {
 		}
 	}
 
-	if len(r.To) == 0 {
-		return errors.New("to is empty")
+	if r.HoursSelection.Type == wallet.HoursSelectionTypeManual {
+		// Check for duplicate outputs, a transaction can't have outputs with
+		// the same (address, coins, hours)
+		outputs := make(map[coin.TransactionOutput]struct{}, len(r.To))
+		for _, to := range r.To {
+			outputs[coin.TransactionOutput{
+				Address: to.Address.Address,
+				Coins:   to.Coins.Value(),
+				Hours:   to.Hours.Value(),
+			}] = struct{}{}
+		}
+
+		if len(outputs) != len(r.To) {
+			return errors.New("to contains duplicate values")
+		}
 	}
 
 	return nil

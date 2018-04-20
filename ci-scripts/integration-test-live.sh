@@ -21,6 +21,8 @@ RUN_TESTS=""
 # run wallet tests
 TEST_WALLET=""
 
+FAILFAST="-failfast"
+
 usage () {
   echo "Usage: $SCRIPT"
   echo "Optional command line arguments"
@@ -59,7 +61,7 @@ fi
 
 if [[ -z $TEST || $TEST = "gui" ]]; then
 
-SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST go test ./src/gui/integration/... $UPDATE -timeout=3m $VERBOSE $RUN_TESTS $TEST_WALLET
+SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST go test ./src/gui/integration/... $FAILFAST $UPDATE -timeout=3m $VERBOSE $RUN_TESTS $TEST_WALLET
 
 fi
 

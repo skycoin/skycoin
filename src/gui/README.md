@@ -64,7 +64,7 @@ A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](h
 ## CSRF
 
 All `POST`, `PUT` and `DELETE` requests require a CSRF token, obtained with a `GET /csrf` call.
-The token must be placed in the `X-CSRF-Token` header.  A token is only valid
+The token must be placed in the `X-CSRF-Token` header. A token is only valid
 for 30 seconds and it is expected that the client obtains a new CSRF token
 for each request.
 
@@ -655,17 +655,51 @@ The `encoded_transaction` can be provided to `POST /injectTransaction` to broadc
 The `hours_selection` field has two types: `manual` or `auto`.
 
 If `manual`, all destination hours must be specified.
+All objects in `to` must be unique; a single transaction cannot create multiple outputs with the same `address`, `coins` and `hours`.
 
-If `auto`, the `mode` field must be set.  The only valid value for `mode` is `"share"`.
+For example, this is a valid value for `to`:
+
+```json
+[{
+    "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+    "coins": "1.2",
+    "hours": "1"
+}, {
+    "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+    "coins": "1.2",
+    "hours": "2"
+}]
+```
+
+But this is an invalid value for `to`:
+
+```json
+[{
+    "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+    "coins": "1.2",
+    "hours": "1"
+}, {
+    "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+    "coins": "1.2",
+    "hours": "1"
+}]
+```
+
+If `auto`, the `mode` field must be set. The only valid value for `mode` is `"share"`.
 For the `"share"` mode, `share_factor` must also be set. This must be a decimal value greater than or equal to 0 and less than or equal to 1.
 In the auto share mode, the remaining hours after the fee are shared between the destination addresses as a whole,
-and the change address.  Amongst the destination addresses, the shared hours are distributed proportionally.
+and the change address. Amongst the destination addresses, the shared hours are distributed proportionally.
 
 Note that if there are remaining coin hours as change, but no coins are available as change from the wallet,
 these remaining coin hours will be burned as an additional fee.
 
+In some edge cases, a transaction that does not contain duplicate output is unable to be created.
+For example, if you only have 1 coin hour and want to create two outputs, each to the same address with the same number of coins,
+each output would not receive any coin hours due to the required coin hour burn. This would create a transaction
+with two outputs that have the same `(address, coins, hours)`, which is invalid.
+
 If `wallet.addresses` is empty or not provided, then all addresses from the wallet will be considered to use
-for spending.  To control which addresses may spend, specify the addresses in this field.
+for spending. To control which addresses may spend, specify the addresses in this field.
 
 `change_address` must be set, but it is not required to be an address in the wallet.
 

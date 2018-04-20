@@ -2165,6 +2165,32 @@ func TestCreateWalletParamsVerify(t *testing.T) {
 		},
 
 		{
+			name: "duplicate output when manual",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				To: []coin.TransactionOutput{
+					{
+						Address: toManual[0].Address,
+						Coins:   1e6,
+						Hours:   100,
+					},
+					{
+						Address: toManual[0].Address,
+						Coins:   1e6,
+						Hours:   100,
+					},
+				},
+				Wallet: CreateTransactionWalletParams{
+					ID: "foo.wlt",
+				},
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeManual,
+				},
+			},
+			err: "To contains duplicate values",
+		},
+
+		{
 			name: "valid auto split even share factor",
 			params: CreateTransactionParams{
 				ChangeAddress: changeAddress,

@@ -9,11 +9,13 @@ import (
 	"io"
 	"io/ioutil"
 	"math"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -2003,6 +2005,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 		req         gui.CreateTransactionRequest
 		outputs     []coin.TransactionOutput
 		err         string
+		code        int
 		ignoreHours bool
 	}
 
@@ -2026,7 +2029,8 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 					},
 				},
 			},
-			err: "400 Bad Request - to[0].coins has too many decimal places\n",
+			err:  "400 Bad Request - to[0].coins has too many decimal places\n",
+			code: http.StatusBadRequest,
 		},
 
 		{
@@ -2058,7 +2062,8 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 					},
 				},
 			},
-			err: "400 Bad Request - total output hours error: uint64 addition overflow\n",
+			err:  "400 Bad Request - total output hours error: uint64 addition overflow\n",
+			code: http.StatusBadRequest,
 		},
 
 		{
@@ -2080,7 +2085,8 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 					},
 				},
 			},
-			err: "400 Bad Request - balance is not sufficient\n",
+			err:  "400 Bad Request - balance is not sufficient\n",
+			code: http.StatusBadRequest,
 		},
 
 		{
@@ -2102,7 +2108,8 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 					},
 				},
 			},
-			err: "400 Bad Request - hours are not sufficient\n",
+			err:  "400 Bad Request - hours are not sufficient\n",
+			code: http.StatusBadRequest,
 		},
 
 		{
@@ -2257,7 +2264,8 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 					},
 				},
 			},
-			err: "400 Bad Request - invalid password\n",
+			err:  "401 Unauthorized - invalid password\n",
+			code: http.StatusUnauthorized,
 		})
 
 		cases = append(cases, testCase{
@@ -2279,7 +2287,8 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 					},
 				},
 			},
-			err: "400 Bad Request - missing password\n",
+			err:  "400 Bad Request - missing password\n",
+			code: http.StatusBadRequest,
 		})
 
 	} else {
@@ -2302,16 +2311,25 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 					},
 				},
 			},
-			err: "400 Bad Request - wallet is not encrypted\n",
+			err:  "400 Bad Request - wallet is not encrypted\n",
+			code: http.StatusBadRequest,
 		})
+	}
+
+	assertEncodeTxnMatchesTxn := func(t *testing.T, result *gui.CreateTransactionResponse) {
+		require.NotEmpty(t, result.EncodedTransaction)
+		emptyTxn := &coin.Transaction{}
+		require.NotEqual(t, hex.EncodeToString(emptyTxn.Serialize()), result.EncodedTransaction)
+		txn, err := result.Transaction.Unreadable()
+		require.NoError(t, err)
+		require.Equal(t, hex.EncodeToString(txn.Serialize()), result.EncodedTransaction)
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			result, err := c.CreateTransaction(tc.req)
 			if tc.err != "" {
-				require.Error(t, err)
-				require.Equal(t, tc.err, err.Error())
+				assertResponseError(t, err, tc.code, tc.err)
 				return
 			}
 
@@ -2332,13 +2350,139 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 				}
 			}
 
-			require.NotEmpty(t, result.EncodedTransaction)
-			emptyTxn := &coin.Transaction{}
-			require.NotEqual(t, hex.EncodeToString(emptyTxn.Serialize()), result.EncodedTransaction)
-			txn, err := result.Transaction.Unreadable()
-			require.NoError(t, err)
-			require.Equal(t, hex.EncodeToString(txn.Serialize()), result.EncodedTransaction)
+			assertEncodeTxnMatchesTxn(t, result)
 		})
+	}
+
+	if w.IsEncrypted() {
+		t.Logf("Skipping random CreateTransaction tests with encrypted wallet")
+		return
+	}
+
+	iterations := 10000
+	maxOutputs := 10
+	destAddrs := make([]cipher.Address, maxOutputs)
+	for i := range destAddrs {
+		destAddrs[i] = testutil.MakeAddress()
+	}
+
+	for i := 0; i < iterations; i++ {
+		t.Log("iteration", i)
+		t.Log("totalCoins", totalCoins)
+		t.Log("totalHours", totalHours)
+
+		coins := rand.Intn(int(totalCoins)) + 1
+		coins -= coins % int(visor.MaxDropletDivisor())
+		hours := rand.Intn(int(totalHours + 1))
+		nOutputs := rand.Intn(maxOutputs) + 1
+
+		t.Log("sendCoins", coins)
+		t.Log("sendHours", hours)
+
+		changeAddress := w.Entries[0].Address.String()
+
+		shareFactor := strconv.FormatFloat(rand.Float64(), 'f', 8, 64)
+
+		t.Log("shareFactor", shareFactor)
+
+		to := make([]gui.Receiver, 0, nOutputs)
+		remainingHours := hours
+		remainingCoins := coins
+		for i := 0; i < nOutputs; i++ {
+			if remainingCoins == 0 {
+				break
+			}
+
+			receiver := gui.Receiver{}
+			receiver.Address = destAddrs[rand.Intn(len(destAddrs))].String()
+
+			if i == nOutputs-1 {
+				var err error
+				receiver.Coins, err = droplet.ToString(uint64(remainingCoins))
+				require.NoError(t, err)
+				receiver.Hours = fmt.Sprint(remainingHours)
+
+				remainingCoins = 0
+				remainingHours = 0
+			} else {
+				receiverCoins := rand.Intn(remainingCoins) + 1
+				receiverCoins -= receiverCoins % int(visor.MaxDropletDivisor())
+				if receiverCoins == 0 {
+					receiverCoins = int(visor.MaxDropletDivisor())
+				}
+
+				var err error
+				receiver.Coins, err = droplet.ToString(uint64(receiverCoins))
+				require.NoError(t, err)
+				remainingCoins -= receiverCoins
+
+				receiverHours := rand.Intn(remainingHours + 1)
+				receiver.Hours = fmt.Sprint(receiverHours)
+				remainingHours -= receiverHours
+			}
+
+			to = append(to, receiver)
+		}
+
+		nOutputs = len(to)
+		t.Log("nOutputs", nOutputs)
+
+		rand.Shuffle(len(to), func(i, j int) {
+			to[i], to[j] = to[j], to[i]
+		})
+
+		autoTo := make([]gui.Receiver, len(to))
+		for i, o := range to {
+			autoTo[i] = gui.Receiver{
+				Address: o.Address,
+				Coins:   o.Coins,
+				Hours:   "",
+			}
+		}
+
+		for i, o := range autoTo {
+			t.Logf("autoTo[%d].Coins %s\n", i, o.Coins)
+		}
+
+		result, err := c.CreateTransaction(gui.CreateTransactionRequest{
+			HoursSelection: gui.HoursSelection{
+				Type:        wallet.HoursSelectionTypeAuto,
+				Mode:        wallet.HoursSelectionModeShare,
+				ShareFactor: shareFactor,
+			},
+			ChangeAddress: changeAddress,
+			Wallet: gui.CreateTransactionRequestWallet{
+				ID:       w.Filename(),
+				Password: password,
+			},
+			To: autoTo,
+		})
+		require.NoError(t, err)
+
+		assertEncodeTxnMatchesTxn(t, result)
+
+		nResultOutputs := len(result.Transaction.Out)
+		require.True(t, nResultOutputs == nOutputs || nResultOutputs == nOutputs+1)
+		hasChange := nResultOutputs == nOutputs+1
+		changeOutput := result.Transaction.Out[nResultOutputs-1]
+		if hasChange {
+			require.Equal(t, changeOutput.Address, changeAddress)
+		}
+
+		t.Log("hasChange", hasChange)
+		if hasChange {
+			t.Log("changeCoins", changeOutput.Coins)
+			t.Log("changeHours", changeOutput.Hours)
+		}
+
+		// var sentHours uint64
+		// for _, o := range result.Transaction.Out {
+		// 	h, err := strconv.ParseUint(o.Hours, 64)
+		// 	require.NoError(t, err)
+		// 	sentHours += h
+		// }
+
+		//       extraBurn := sentHours != fee.RemainingHours(totalHours)
 	}
 }
 

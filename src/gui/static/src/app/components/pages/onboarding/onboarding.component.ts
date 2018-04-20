@@ -12,6 +12,7 @@ export class OnboardingComponent {
   step = 1;
   label: string;
   seed: string;
+  create: boolean;
   password: string|null;
 
   constructor(
@@ -19,9 +20,10 @@ export class OnboardingComponent {
     private walletService: WalletService,
   ) { }
 
-  onLabelAndSeedCreated(data: [string, string]) {
+  onLabelAndSeedCreated(data: [string, string, boolean]) {
     this.label = data[0];
     this.seed = data[1];
+    this.create = data[2];
 
     this.step = 2;
   }
@@ -37,7 +39,7 @@ export class OnboardingComponent {
   }
 
   get fill() {
-    return this.label ? { label: this.label, seed: this.seed } : null;
+    return this.label ? { label: this.label, seed: this.seed, create: this.create } : null;
   }
 
   private createWallet() {

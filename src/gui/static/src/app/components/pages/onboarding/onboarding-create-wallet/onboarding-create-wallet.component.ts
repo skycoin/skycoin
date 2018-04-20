@@ -14,7 +14,6 @@ import { MatDialogRef } from '@angular/material';
 export class OnboardingCreateWalletComponent implements OnInit {
   @Input() fill = null;
   @Output() onLabelAndSeedCreated = new EventEmitter<[string, string]>();
-  showNewForm = true;
   form: FormGroup;
   doubleButtonActive = DoubleButtonActive.LeftButton;
 
@@ -37,23 +36,24 @@ export class OnboardingCreateWalletComponent implements OnInit {
           Validators.required, Validators.minLength(2),
         ])),
         confirm_seed: new FormControl('',
-          Validators.compose(this.showNewForm ? [Validators.required, Validators.minLength(2)] : [])
+          Validators.compose(this.showCreateForm ? [Validators.required, Validators.minLength(2)] : [])
         ),
       },
-      this.showNewForm ? { validator: this.seedMatchValidator.bind(this) } : {},
+      this.showCreateForm ? { validator: this.seedMatchValidator.bind(this) } : {},
     );
 
     if (this.fill) {
       this.form.get('label').setValue(this.fill['label']);
       this.form.get('seed').setValue(this.fill['seed']);
       this.form.get('confirm_seed').setValue(this.fill['seed']);
-    } else if (this.showNewForm) {
+      this.doubleButtonActive = this.fill['create'] ? DoubleButtonActive.LeftButton : DoubleButtonActive.RightButton;
+    } else if (this.showCreateForm) {
       this.generateSeed();
     }
   }
 
   changeForm(newState) {
-    this.showNewForm = newState === DoubleButtonActive.LeftButton;
+    this.doubleButtonActive = newState;
     this.fill = null;
     this.initForm();
   }
@@ -76,8 +76,16 @@ export class OnboardingCreateWalletComponent implements OnInit {
     });
   }
 
+  get showCreateForm() {
+    return this.doubleButtonActive === DoubleButtonActive.LeftButton;
+  }
+
   private emitCreatedData() {
-    this.onLabelAndSeedCreated.emit([this.form.get('label').value, this.form.get('seed').value]);
+    this.onLabelAndSeedCreated.emit([
+      this.form.get('label').value,
+      this.form.get('seed').value,
+      this.doubleButtonActive === DoubleButtonActive.LeftButton,
+    ]);
   }
 
   private seedMatchValidator(g: FormGroup) {

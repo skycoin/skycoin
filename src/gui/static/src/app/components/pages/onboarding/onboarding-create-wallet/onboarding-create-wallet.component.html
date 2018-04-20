@@ -29,7 +29,7 @@
           <label for="seed">Seed</label>
           <textarea formControlName="seed" class="form-control" id="seed" rows="2"></textarea>
         </div>
-        <div class="form-field" [style.visibility]="showNewForm?'visible':'hidden'">
+        <div class="form-field" [style.visibility]="showCreateForm?'visible':'hidden'">
           <label for="confirm_seed">Confirm seed</label>
           <textarea formControlName="confirm_seed" class="form-control" id="confirm_seed" rows="2"></textarea>
         </div>
@@ -38,7 +38,7 @@
   </div>
   <div class="row -buttons-footer">
     <app-button class="dark -button-min-margin" [disabled]="!form.valid"
-                (action)="showNewForm?createWallet():loadWallet()">
+                (action)="showCreateForm?createWallet():loadWallet()">
       Create
     </app-button>
   </div>

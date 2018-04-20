@@ -13,7 +13,7 @@ func ElapsedHandler(logger logrus.FieldLogger, handler http.Handler) http.Handle
 		lrw := newWrappedResponseWriter(w)
 		start := time.Now()
 		handler.ServeHTTP(lrw, r)
-		logger.Infof("%v %s %s %v", lrw.statusCode, r.Method, r.URL.Path, time.Since(start))
+		logger.Infof("%d %s %s %s", lrw.statusCode, r.Method, r.URL.Path, time.Since(start))
 	})
 }
 

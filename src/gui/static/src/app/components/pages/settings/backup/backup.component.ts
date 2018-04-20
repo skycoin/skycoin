@@ -8,7 +8,7 @@ import { PasswordDialogComponent } from '../../../layout/password-dialog/passwor
 @Component({
   selector: 'app-backup',
   templateUrl: './backup.component.html',
-  styleUrls: ['./backup.component.css']
+  styleUrls: ['./backup.component.scss']
 })
 export class BackupComponent implements OnInit {
 

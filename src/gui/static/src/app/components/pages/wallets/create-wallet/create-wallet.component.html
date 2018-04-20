@@ -7,6 +7,10 @@
     <div class="form-field">
       <label for="seed">Seed</label>
       <textarea formControlName="seed" id="seed" row="2"></textarea>
+      <p class="-warning">
+        Remember this seed! Keep it in a safe place.
+        If you forget your seed, you will not be able to recover your wallet!
+      </p>
     </div>
     <div class="form-field" [ngClass]="{ '-disabled': !data.create }">
       <label for="confirm_seed">Confirm seed</label>
@@ -27,13 +31,13 @@
       <div class="col-md-6" [ngClass]="{ '-hidden': !encrypt }">
         <div class="form-field">
           <label for="password">Password</label>
-          <input formControlName="password" id="password" type="password">
+          <input formControlName="password" id="password" type="password" appDontSavePassword>
         </div>
       </div>
       <div class="col-md-6" [ngClass]="{ '-hidden': !encrypt }">
         <div class="form-field">
           <label for="confirm_password">Confirm password</label>
-          <input formControlName="confirm_password" id="confirm_password" type="password">
+          <input formControlName="confirm_password" id="confirm_password" type="password" appDontSavePassword>
         </div>
       </div>
     </div>

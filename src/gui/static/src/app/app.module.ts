@@ -59,6 +59,7 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { HttpClientModule } from '@angular/common/http';
 import { AppService } from './services/app.service';
 import { SeedModalComponent } from './components/pages/settings/backup/seed-modal/seed-modal.component';
+import { DontsavepasswordDirective } from './directives/dontsavepassword.directive';
 
 
 const ROUTES = [
@@ -141,6 +142,7 @@ const ROUTES = [
     ModalComponent,
     PasswordDialogComponent,
     SeedModalComponent,
+    DontsavepasswordDirective,
   ],
   entryComponents: [
     AddDepositAddressComponent,

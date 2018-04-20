@@ -107,6 +107,8 @@ make ARGS="--launch-browser=false -data-dir=/custom/path" run
 
 ### Docker image
 
+This is the quickest way to start using Skycoin using Docker.
+
 ```sh
 $ docker volume create skycoin-data
 $ docker volume create skycoin-wallet
@@ -119,13 +121,48 @@ $ docker run -ti --rm \
     skycoin/skycoin
 ```
 
-With this image, the skycoin daemon will run as root by default inside the
-container. When you mount a volume in /data, the container will detect for the
-folder's owner UID and will create a skycoin user with the same UID.
+This image has a `skycoin` user for the skycoin daemon to run, with UID and GID 10000.
+When you mount the volumes, the container will change their owner, so you
+must be aware that if you are mounting an existing host folder any content you
+have there will be own by 10000.
+
+The container will run with some default options, but you can change them
+by just appending flags at the end of the `docker run` command. The following
+example will show you the available options.
+
+```sh
+docker run --rm skycoin/skycoin -help
+```
 
 Access the dashboard: [http://localhost:6420](http://localhost:6420).
 
 Access the API: [http://localhost:6420/version](http://localhost:6420/version).
+
+### Building your own images
+
+There is a Dockerfile in docker/images/mainnet that you can use to build your
+own image. By default it will build your working copy, but if you pass the
+SKYCOIN_VERSION build argument to the `docker build` command, it will checkout
+to the branch, a tag or a commit you specify on that variable.
+
+Example
+
+```sh
+$ git clone https://github.com/skycoin/skycoin
+$ cd skycoin
+$ SKYCOIN_VERSION=v0.22.0
+$ docker build -f docker/images/mainnet/Dockerfile \
+  --build-arg=SKYCOIN_VERSION=$SKYCOIN_VERSION \
+  -t skycoin:$SKYCOIN_VERSION .
+```
+
+or just
+
+```sh
+$ docker build -f docker/images/mainnet/Dockerfile \
+  --build-arg=SKYCOIN_VERSION=v0.22.0 \
+  -t skycoin:v0.22.0 .
+```
 
 ## API Documentation
 
@@ -387,7 +424,7 @@ For example, `v0.20.0` becomes `v0.20.1`, for minor fixes.
 Performs these actions before releasing:
 
 * `make check`
-* `make integration-test-live` (see [live integration tests](#live-integration-tests))
+* `make integration-test-live` (see [live integration tests](#live-integration-tests)) both with an unencrypted and encrypted wallet.
 * `go run cmd/cli/cli.go checkdb` against a synced node
 * On all OSes, make sure that the client runs properly from the command line (`./run.sh`)
 * Build the releases and make sure that the Electron client runs properly on Windows, Linux and macOS.
@@ -395,7 +432,6 @@ Performs these actions before releasing:
     * Load a test wallet with nonzero balance from seed to confirm wallet loading works
     * Send coins to another wallet to confirm spending works
     * Restart the client, confirm that it reloads properly
-* `./run.sh -enable-wallet-api=false` and check that the wallet does not load, and `/wallets` and `/spend` fail
 
 #### Creating release builds
 

@@ -138,21 +138,27 @@ func (r createTransactionRequest) Validate() error {
 		}
 	}
 
-	if r.HoursSelection.Type == wallet.HoursSelectionTypeManual {
-		// Check for duplicate outputs, a transaction can't have outputs with
-		// the same (address, coins, hours)
-		outputs := make(map[coin.TransactionOutput]struct{}, len(r.To))
-		for _, to := range r.To {
-			outputs[coin.TransactionOutput{
-				Address: to.Address.Address,
-				Coins:   to.Coins.Value(),
-				Hours:   to.Hours.Value(),
-			}] = struct{}{}
+	// Check for duplicate outputs, a transaction can't have outputs with
+	// the same (address, coins, hours)
+	// Auto mode would distribute hours to the outputs and could hypothetically
+	// avoid assigning duplicate hours in many cases, but the complexity for doing
+	// so is very high, so also reject duplicate (address, coins) for auto mode.
+	outputs := make(map[coin.TransactionOutput]struct{}, len(r.To))
+	for _, to := range r.To {
+		var hours uint64
+		if to.Hours != nil {
+			hours = to.Hours.Value()
 		}
 
-		if len(outputs) != len(r.To) {
-			return errors.New("to contains duplicate values")
-		}
+		outputs[coin.TransactionOutput{
+			Address: to.Address.Address,
+			Coins:   to.Coins.Value(),
+			Hours:   hours,
+		}] = struct{}{}
+	}
+
+	if len(outputs) != len(r.To) {
+		return errors.New("to contains duplicate values")
 	}
 
 	return nil

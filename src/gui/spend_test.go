@@ -580,6 +580,34 @@ func TestCreateTransaction(t *testing.T) {
 		},
 
 		{
+			name:   "400 - auto duplicate outputs",
+			method: http.MethodPost,
+			body: &rawRequest{
+				HoursSelection: rawHoursSelection{
+					Type:        wallet.HoursSelectionTypeAuto,
+					Mode:        wallet.HoursSelectionModeShare,
+					ShareFactor: newStrPtr("0.5"),
+				},
+				ChangeAddress: changeAddress.String(),
+				Wallet: rawRequestWallet{
+					ID: "foo.wlt",
+				},
+				To: []rawReceiver{
+					{
+						Address: destinationAddress.String(),
+						Coins:   "1.2",
+					},
+					{
+						Address: destinationAddress.String(),
+						Coins:   "1.2",
+					},
+				},
+			},
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - to contains duplicate values",
+		},
+
+		{
 			name:   "200 - auto type split even",
 			method: http.MethodPost,
 			body: &rawRequest{

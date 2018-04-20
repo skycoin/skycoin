@@ -2168,23 +2168,29 @@ func TestCreateWalletParamsVerify(t *testing.T) {
 			name: "duplicate output when manual",
 			params: CreateTransactionParams{
 				ChangeAddress: changeAddress,
-				To: []coin.TransactionOutput{
-					{
-						Address: toManual[0].Address,
-						Coins:   1e6,
-						Hours:   100,
-					},
-					{
-						Address: toManual[0].Address,
-						Coins:   1e6,
-						Hours:   100,
-					},
-				},
+				To:            []coin.TransactionOutput{toManual[0], toManual[0]},
 				Wallet: CreateTransactionWalletParams{
 					ID: "foo.wlt",
 				},
 				HoursSelection: HoursSelection{
 					Type: HoursSelectionTypeManual,
+				},
+			},
+			err: "To contains duplicate values",
+		},
+
+		{
+			name: "duplicate output when auto",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				To:            []coin.TransactionOutput{toAuto[0], toAuto[0]},
+				Wallet: CreateTransactionWalletParams{
+					ID: "foo.wlt",
+				},
+				HoursSelection: HoursSelection{
+					Type:        HoursSelectionTypeAuto,
+					Mode:        HoursSelectionModeShare,
+					ShareFactor: &pointOneOne,
 				},
 			},
 			err: "To contains duplicate values",

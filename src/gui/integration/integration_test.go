@@ -2343,7 +2343,7 @@ func TestGetWalletSeedEnabledAPI(t *testing.T) {
 	nw, _, nclean := createWallet(t, c, false, "")
 	defer nclean()
 	_, err = c.GetWalletSeed(nw.Meta.Filename, "pwd")
-	assertResponseError(t, err, http.StatusForbidden, "403 Forbidden\n")
+	assertResponseError(t, err, http.StatusBadRequest, "400 Bad Request - wallet is not encrypted\n")
 }
 
 // prepareAndCheckWallet gets wallet from environment, and confirms:

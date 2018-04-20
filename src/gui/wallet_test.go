@@ -1503,7 +1503,7 @@ func TestGetWalletSeed(t *testing.T) {
 			expectErr:    "401 Unauthorized - invalid password",
 		},
 		{
-			name:     "403 - wallet not encrypted",
+			name:     "400 - wallet not encrypted",
 			method:   http.MethodPost,
 			wltID:    "wallet.wlt",
 			password: "pwd",
@@ -1511,8 +1511,8 @@ func TestGetWalletSeed(t *testing.T) {
 				nil,
 				wallet.ErrWalletNotEncrypted,
 			},
-			expectStatus: http.StatusForbidden,
-			expectErr:    "403 Forbidden",
+			expectStatus: http.StatusBadRequest,
+			expectErr:    "400 Bad Request - wallet is not encrypted",
 		},
 		{
 			name:     "404 - wallet does not exist",

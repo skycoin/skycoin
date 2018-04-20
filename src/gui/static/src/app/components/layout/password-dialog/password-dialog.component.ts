@@ -35,7 +35,7 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.form = new FormGroup({}, this.validateForm.bind(this));
     this.form.addControl('password', new FormControl(''));
-    this.form.addControl('confirm_password', new FormControl('', { disabled: true }));
+    this.form.addControl('confirm_password', new FormControl(''));
 
     ['password', 'confirm_password'].forEach(control => {
       this.form.get(control).valueChanges.subscribe(() => {
@@ -47,6 +47,8 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
 
     if (this.data.confirm) {
       this.form.get('confirm_password').enable();
+    } else {
+      this.form.get('confirm_password').disable();
     }
   }
 

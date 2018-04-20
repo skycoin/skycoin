@@ -2259,7 +2259,7 @@ func TestDecryptWallet(t *testing.T) {
 
 	// Decrypt wallet with different password, must fail
 	_, err := c.DecryptWallet(w.Meta.Filename, "pwd1")
-	assertResponseError(t, err, http.StatusBadRequest, "400 Bad Request - invalid password\n")
+	assertResponseError(t, err, http.StatusUnauthorized, "401 Unauthorized - invalid password\n")
 
 	// Decrypt wallet with no password, must fail
 	_, err = c.DecryptWallet(w.Meta.Filename, "")
@@ -2333,7 +2333,7 @@ func TestGetWalletSeedEnabledAPI(t *testing.T) {
 
 	// Check with invalid password
 	_, err = c.GetWalletSeed(w.Meta.Filename, "wrong password")
-	assertResponseError(t, err, http.StatusBadRequest, "400 Bad Request - invalid password\n")
+	assertResponseError(t, err, http.StatusUnauthorized, "401 Unauthorized - invalid password\n")
 
 	// Check with missing password
 	_, err = c.GetWalletSeed(w.Meta.Filename, "")

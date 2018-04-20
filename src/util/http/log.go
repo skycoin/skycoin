@@ -40,6 +40,9 @@ func (lrw *wrappedResponseWriter) WriteHeader(code int) {
 }
 
 func (lrw *wrappedResponseWriter) Write(buff []byte) (int, error) {
-	lrw.response.Write(buff)
-	return lrw.ResponseWriter.Write(buff)
+	retVal, err := lrw.ResponseWriter.Write(buff)
+	if lrw.statusCode >= 400 {
+		lrw.response.Write(buff)
+	}
+	return retVal, err
 }

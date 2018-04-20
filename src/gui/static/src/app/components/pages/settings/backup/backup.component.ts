@@ -41,9 +41,7 @@ export class BackupComponent implements OnInit {
           config.data = { seed };
 
           this.dialog.open(SeedModalComponent, config);
-        }, (err) => {
-          passwordDialog.error(err.status === 403 ? 'Seed decryption is disabled' : 'Invalid password');
-        });
+        }, err => passwordDialog.error(err));
       });
   }
 }

@@ -1,6 +1,6 @@
 import { Component, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { MatDialogRef } from '@angular/material';
+import { MatDialogRef, MatSnackBar, MatSnackBarConfig } from '@angular/material';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { ButtonComponent } from '../button/button.component';
 import { Observable } from 'rxjs/Observable';
@@ -20,6 +20,7 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
   constructor(
     public dialogRef: MatDialogRef<PasswordDialogComponent>,
     @Inject(MAT_DIALOG_DATA) private data: any,
+    private snackbar: MatSnackBar,
   ) {
     this.passwordSubmit = Observable.create(observer => {
       this.passwordChanged = password => {
@@ -56,6 +57,27 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
   }
 
   private error(error: any) {
+    if (typeof error === 'object') {
+      switch (error.status) {
+        case 400:
+          error = error['_body'];
+          break;
+        case 401:
+          error = 'Incorrect password';
+          break;
+        case 403:
+          error = 'API Disabled';
+          break;
+        case 404:
+          error = 'Wallet does not exist';
+          break;
+        default:
+          const config = new MatSnackBarConfig();
+          config.duration = 5000;
+          this.snackbar.open(error['_body'], null, config);
+      }
+    }
+
     this.button.setError(error ? error : 'Incorrect password');
   }
 }

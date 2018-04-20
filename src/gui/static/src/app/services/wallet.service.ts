@@ -83,6 +83,10 @@ export class WalletService {
       .flatMap(addresses => this.apiService.get('outputs', {addrs: addresses}));
   }
 
+  allPendingTransactions(): Observable<any> {
+    return this.apiService.get('pendingTxs');
+  }
+
   pendingTransactions(): Observable<any> {
     return this.pendingTxs.asObservable();
   }

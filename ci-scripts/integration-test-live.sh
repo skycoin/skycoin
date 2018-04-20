@@ -14,14 +14,14 @@ RPC_ADDR="127.0.0.1:$RPC_PORT"
 MODE="live"
 TEST=""
 UPDATE=""
+TIMEOUT="5m"
 # run go test with -v flag
 VERBOSE=""
 # run go test with -run flag
 RUN_TESTS=""
 # run wallet tests
 TEST_WALLET=""
-
-FAILFAST="-failfast"
+FAILFAST=""
 
 usage () {
   echo "Usage: $SCRIPT"
@@ -31,6 +31,7 @@ usage () {
   echo "-u <boolean> -- Update stable testdata"
   echo "-v <boolean> -- Run test with -v flag"
   echo "-w <boolean> -- Run wallet tests"
+  echo "-f <boolean> -- Run test with -failfast flag"
   echo "NOTE: skycoin node must be run with -enable-wallet-api=true"
   exit 1
 }
@@ -44,7 +45,8 @@ case $args in
     r ) RUN_TESTS="-run ${OPTARG}";;
     u ) UPDATE="--update";;
     v ) VERBOSE="-v";;
-    w ) TEST_WALLET="--test-wallet"
+    w ) TEST_WALLET="--test-wallet";;
+    f ) FAILFAST="-failfast"
   esac
 done
 
@@ -61,12 +63,12 @@ fi
 
 if [[ -z $TEST || $TEST = "gui" ]]; then
 
-SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST go test ./src/gui/integration/... $FAILFAST $UPDATE -timeout=3m $VERBOSE $RUN_TESTS $TEST_WALLET
+SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST go test ./src/gui/integration/... $FAILFAST $UPDATE -timeout=$TIMEOUT $VERBOSE $RUN_TESTS $TEST_WALLET
 
 fi
 
 if [[ -z $TEST || $TEST = "cli" ]]; then
 
-SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR SKYCOIN_NODE_HOST=$HOST go test ./src/api/cli/integration/... $UPDATE -timeout=3m $VERBOSE $RUN_TESTS $TEST_WALLET
+SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR SKYCOIN_NODE_HOST=$HOST go test ./src/api/cli/integration/... $FAILFAST $UPDATE -timeout=$TIMEOUT $VERBOSE $RUN_TESTS $TEST_WALLET
 
 fi

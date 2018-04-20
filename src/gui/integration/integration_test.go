@@ -1989,7 +1989,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 
 	c := gui.NewClient(nodeAddress())
 
-	w, totalCoins, totalHours, password := prepareAndCheckWallet(t, c, 2e6, 2)
+	w, totalCoins, totalHours, password := prepareAndCheckWallet(t, c, 2e6, 20)
 
 	remainingHours := fee.RemainingHours(totalHours)
 	require.True(t, remainingHours > 1)
@@ -2325,6 +2325,32 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 		require.Equal(t, hex.EncodeToString(txn.Serialize()), result.EncodedTransaction)
 	}
 
+	assertRequestedCoins := func(t *testing.T, to []gui.Receiver, out []visor.ReadableTransactionOutput) {
+		var requestedCoins uint64
+		for _, o := range to {
+			c, err := droplet.FromString(o.Coins)
+			require.NoError(t, err)
+			requestedCoins += c
+		}
+
+		var sentCoins uint64
+		for _, o := range out[:len(to)] { // exclude change output
+			c, err := droplet.FromString(o.Coins)
+			require.NoError(t, err)
+			sentCoins += c
+		}
+
+		require.Equal(t, requestedCoins, sentCoins)
+	}
+
+	assertRequestedHours := func(t *testing.T, to []gui.Receiver, out []visor.ReadableTransactionOutput) {
+		for i, o := range out[:len(to)] { // exclude change output
+			h, err := strconv.ParseUint(to[i].Hours, 10, 64)
+			require.NoError(t, err)
+			require.Equal(t, h, o.Hours)
+		}
+	}
+
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			result, err := c.CreateTransaction(tc.req)
@@ -2351,6 +2377,11 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 			}
 
 			assertEncodeTxnMatchesTxn(t, result)
+			assertRequestedCoins(t, tc.req.To, result.Transaction.Out)
+
+			if tc.req.HoursSelection.Type == wallet.HoursSelectionTypeManual {
+				assertRequestedHours(t, tc.req.To, result.Transaction.Out)
+			}
 		})
 	}
 
@@ -2359,7 +2390,23 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 		return
 	}
 
-	iterations := 10000
+	assertTxnOutputCount := func(t *testing.T, changeAddress string, nOutputs int, result *gui.CreateTransactionResponse) {
+		nResultOutputs := len(result.Transaction.Out)
+		require.True(t, nResultOutputs == nOutputs || nResultOutputs == nOutputs+1)
+		hasChange := nResultOutputs == nOutputs+1
+		changeOutput := result.Transaction.Out[nResultOutputs-1]
+		if hasChange {
+			require.Equal(t, changeOutput.Address, changeAddress)
+		}
+
+		t.Log("hasChange", hasChange)
+		if hasChange {
+			t.Log("changeCoins", changeOutput.Coins)
+			t.Log("changeHours", changeOutput.Hours)
+		}
+	}
+
+	iterations := 250
 	maxOutputs := 10
 	destAddrs := make([]cipher.Address, maxOutputs)
 	for i := range destAddrs {
@@ -2371,9 +2418,15 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 		t.Log("totalCoins", totalCoins)
 		t.Log("totalHours", totalHours)
 
+		spendableHours := fee.RemainingHours(totalHours)
+		t.Log("spendableHours", spendableHours)
+
 		coins := rand.Intn(int(totalCoins)) + 1
 		coins -= coins % int(visor.MaxDropletDivisor())
-		hours := rand.Intn(int(totalHours + 1))
+		if coins == 0 {
+			coins = int(visor.MaxDropletDivisor())
+		}
+		hours := rand.Intn(int(spendableHours + 1))
 		nOutputs := rand.Intn(maxOutputs) + 1
 
 		t.Log("sendCoins", coins)
@@ -2424,12 +2477,27 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 			to = append(to, receiver)
 		}
 
+		// Remove duplicate outputs
+		dup := make(map[gui.Receiver]struct{}, len(to))
+		newTo := make([]gui.Receiver, 0, len(dup))
+		for _, o := range to {
+			if _, ok := dup[o]; !ok {
+				dup[o] = struct{}{}
+				newTo = append(newTo, o)
+			}
+		}
+		to = newTo
+
 		nOutputs = len(to)
 		t.Log("nOutputs", nOutputs)
 
 		rand.Shuffle(len(to), func(i, j int) {
 			to[i], to[j] = to[j], to[i]
 		})
+
+		for i, o := range to {
+			t.Logf("to[%d].Hours %s\n", i, o.Hours)
+		}
 
 		autoTo := make([]gui.Receiver, len(to))
 		for i, o := range to {
@@ -2440,9 +2508,25 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 			}
 		}
 
+		// Remove duplicate outputs
+		dup = make(map[gui.Receiver]struct{}, len(autoTo))
+		newAutoTo := make([]gui.Receiver, 0, len(dup))
+		for _, o := range autoTo {
+			if _, ok := dup[o]; !ok {
+				dup[o] = struct{}{}
+				newAutoTo = append(newAutoTo, o)
+			}
+		}
+		autoTo = newAutoTo
+
+		nAutoOutputs := len(autoTo)
+		t.Log("nAutoOutputs", nAutoOutputs)
+
 		for i, o := range autoTo {
 			t.Logf("autoTo[%d].Coins %s\n", i, o.Coins)
 		}
+
+		// Auto, random share factor
 
 		result, err := c.CreateTransaction(gui.CreateTransactionRequest{
 			HoursSelection: gui.HoursSelection{
@@ -2460,29 +2544,80 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 		require.NoError(t, err)
 
 		assertEncodeTxnMatchesTxn(t, result)
+		assertTxnOutputCount(t, changeAddress, nAutoOutputs, result)
+		assertRequestedCoins(t, autoTo, result.Transaction.Out)
 
-		nResultOutputs := len(result.Transaction.Out)
-		require.True(t, nResultOutputs == nOutputs || nResultOutputs == nOutputs+1)
-		hasChange := nResultOutputs == nOutputs+1
-		changeOutput := result.Transaction.Out[nResultOutputs-1]
-		if hasChange {
-			require.Equal(t, changeOutput.Address, changeAddress)
+		// Auto, share factor 0
+
+		result, err = c.CreateTransaction(gui.CreateTransactionRequest{
+			HoursSelection: gui.HoursSelection{
+				Type:        wallet.HoursSelectionTypeAuto,
+				Mode:        wallet.HoursSelectionModeShare,
+				ShareFactor: "0",
+			},
+			ChangeAddress: changeAddress,
+			Wallet: gui.CreateTransactionRequestWallet{
+				ID:       w.Filename(),
+				Password: password,
+			},
+			To: autoTo,
+		})
+		require.NoError(t, err)
+
+		assertEncodeTxnMatchesTxn(t, result)
+		assertTxnOutputCount(t, changeAddress, nAutoOutputs, result)
+		assertRequestedCoins(t, autoTo, result.Transaction.Out)
+
+		// Check that the non-change outputs have 0 hours
+		for _, o := range result.Transaction.Out[:nAutoOutputs] {
+			require.Equal(t, uint64(0), o.Hours)
 		}
 
-		t.Log("hasChange", hasChange)
-		if hasChange {
-			t.Log("changeCoins", changeOutput.Coins)
-			t.Log("changeHours", changeOutput.Hours)
+		// Auto, share factor 1
+
+		result, err = c.CreateTransaction(gui.CreateTransactionRequest{
+			HoursSelection: gui.HoursSelection{
+				Type:        wallet.HoursSelectionTypeAuto,
+				Mode:        wallet.HoursSelectionModeShare,
+				ShareFactor: "1",
+			},
+			ChangeAddress: changeAddress,
+			Wallet: gui.CreateTransactionRequestWallet{
+				ID:       w.Filename(),
+				Password: password,
+			},
+			To: autoTo,
+		})
+		require.NoError(t, err)
+
+		assertEncodeTxnMatchesTxn(t, result)
+		assertTxnOutputCount(t, changeAddress, nAutoOutputs, result)
+		assertRequestedCoins(t, autoTo, result.Transaction.Out)
+
+		// Check that the change output has 0 hours
+		if len(result.Transaction.Out) > nAutoOutputs {
+			require.Equal(t, uint64(0), result.Transaction.Out[nAutoOutputs].Hours)
 		}
 
-		// var sentHours uint64
-		// for _, o := range result.Transaction.Out {
-		// 	h, err := strconv.ParseUint(o.Hours, 64)
-		// 	require.NoError(t, err)
-		// 	sentHours += h
-		// }
+		// Manual
 
-		//       extraBurn := sentHours != fee.RemainingHours(totalHours)
+		result, err = c.CreateTransaction(gui.CreateTransactionRequest{
+			HoursSelection: gui.HoursSelection{
+				Type: wallet.HoursSelectionTypeManual,
+			},
+			ChangeAddress: changeAddress,
+			Wallet: gui.CreateTransactionRequestWallet{
+				ID:       w.Filename(),
+				Password: password,
+			},
+			To: to,
+		})
+		require.NoError(t, err)
+
+		assertEncodeTxnMatchesTxn(t, result)
+		assertTxnOutputCount(t, changeAddress, nOutputs, result)
+		assertRequestedCoins(t, to, result.Transaction.Out)
+		assertRequestedHours(t, to, result.Transaction.Out)
 	}
 }
 

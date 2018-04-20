@@ -2546,9 +2546,15 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 		nOutputs = len(to)
 		t.Log("nOutputs", nOutputs)
 
-		rand.Shuffle(len(to), func(i, j int) {
+		for i := range to {
+			j := rand.Intn(i + 1)
 			to[i], to[j] = to[j], to[i]
-		})
+		}
+
+		// TODO -- use rand.Shuffle [go1.10 only]
+		// rand.Shuffle(len(to), func(i, j int) {
+		// 	to[i], to[j] = to[j], to[i]
+		// })
 
 		for i, o := range to {
 			t.Logf("to[%d].Hours %s\n", i, o.Hours)

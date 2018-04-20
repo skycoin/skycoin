@@ -107,6 +107,34 @@ func TestFromString(t *testing.T) {
 			s: "9223372036854775806.000001",
 			e: ErrTooLarge,
 		},
+		{
+			s: "1.1",
+			n: 1e6 + 1e5,
+		},
+		{
+			s: "1.01",
+			n: 1e6 + 1e4,
+		},
+		{
+			s: "1.001",
+			n: 1e6 + 1e3,
+		},
+		{
+			s: "1.0001",
+			n: 1e6 + 1e2,
+		},
+		{
+			s: "1.00001",
+			n: 1e6 + 1e1,
+		},
+		{
+			s: "1.000001",
+			n: 1e6 + 1e0,
+		},
+		{
+			s: "1.0000001",
+			e: ErrTooManyDecimals,
+		},
 	}
 
 	for _, tcc := range cases {

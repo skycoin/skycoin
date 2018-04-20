@@ -49,6 +49,10 @@ script:
   - make test-amd64
   # Stable integration tests
   - make integration-test-stable
+  # Disable wallet api test
+  - make integration-test-disable-wallet-api
+  # Disable seed api test
+  - make integration-test-disable-seed-api
   # libskycoin tests
   - make test-libc
   # TODO: test pyskycoin

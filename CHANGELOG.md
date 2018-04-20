@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - #665, update wallet apis to support wallet encryption
 - #1077, disable initial wallet creating
+- #1270, disable RPC interface by default for run.sh and electron
+- #1267, return 401 Unauthorized for invalid password
 
 ### Changed
 

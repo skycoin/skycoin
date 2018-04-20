@@ -65,6 +65,7 @@ import { OnboardingSafeguardComponent } from './components/pages/onboarding/onbo
 import { DoubleButtonComponent } from './components/layout/double-button/double-button.component';
 import { SeedModalComponent } from './components/pages/settings/backup/seed-modal/seed-modal.component';
 import { OnboardingComponent } from './components/pages/onboarding/onboarding.component';
+import { DontsavepasswordDirective } from './directives/dontsavepassword.directive';
 
 
 const ROUTES = [
@@ -161,6 +162,7 @@ const ROUTES = [
     PasswordDialogComponent,
     SeedModalComponent,
     OnboardingComponent,
+    DontsavepasswordDirective,
   ],
   entryComponents: [
     AddDepositAddressComponent,

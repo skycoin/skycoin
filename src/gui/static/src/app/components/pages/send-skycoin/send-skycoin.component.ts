@@ -17,7 +17,6 @@ export class SendSkycoinComponent implements OnInit {
   @ViewChild('button') button: ButtonComponent;
 
   form: FormGroup;
-  records = [];
   transactions = [];
 
   constructor(
@@ -32,7 +31,9 @@ export class SendSkycoinComponent implements OnInit {
   }
 
   send() {
+    this.button.resetState();
     this.button.setLoading();
+    this.snackbar.dismiss();
 
     if (this.form.value.wallet.encrypted) {
       this.dialog.open(PasswordDialogComponent).componentInstance.passwordSubmit
@@ -77,21 +78,21 @@ export class SendSkycoinComponent implements OnInit {
       amount: ['', [Validators.required, Validators.min(0), Validators.max(0)]],
       notes: [''],
     });
-    this.form.controls['wallet'].valueChanges.subscribe(value => {
+    this.form.get('wallet').valueChanges.subscribe(value => {
       console.log(value);
       const balance = value && value.coins ? value.coins : 0;
-      this.form.controls['amount'].setValidators([
+      this.form.get('amount').setValidators([
         Validators.required,
         Validators.min(0),
         Validators.max(balance),
       ]);
-      this.form.controls['amount'].updateValueAndValidity();
+      this.form.get('amount').updateValueAndValidity();
     });
   }
 
   private resetForm() {
-    this.form.controls.wallet.reset(undefined);
-    this.form.controls.address.reset(undefined);
-    this.form.controls.amount.reset(undefined);
+    this.form.get('wallet').reset(undefined);
+    this.form.get('address').reset(undefined);
+    this.form.get('amount').reset(undefined);
   }
 }

@@ -4,11 +4,18 @@ package httphelper
 import (
 	"fmt"
 	"net/http"
+
+	"github.com/skycoin/skycoin/src/util/logging"
+)
+
+var (
+	logger = logging.MustGetLogger("gui")
 )
 
 // HTTPError wraps http.Error
 func HTTPError(w http.ResponseWriter, status int, httpMsg string) {
 	msg := fmt.Sprintf("%d %s", status, httpMsg)
+	logger.Errorf(msg)
 	http.Error(w, msg, status)
 }
 
@@ -19,6 +26,16 @@ func Error400(w http.ResponseWriter, msg string) {
 		httpMsg = fmt.Sprintf("%s - %s", httpMsg, msg)
 	}
 	HTTPError(w, http.StatusBadRequest, httpMsg)
+}
+
+// Error401 response with a 401 error
+func Error401(w http.ResponseWriter, auth, msg string) {
+	w.Header().Set("WWW-Authenticate", auth)
+	httpMsg := http.StatusText(http.StatusUnauthorized)
+	if msg != "" {
+		httpMsg = fmt.Sprintf("%s - %s", httpMsg, msg)
+	}
+	HTTPError(w, http.StatusUnauthorized, httpMsg)
 }
 
 // Error403 respond with a 403 error

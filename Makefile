@@ -107,7 +107,7 @@ lint: ## Run linters. Use make install-linters first.
 		-E varcheck \
 		./...
 
-check: lint test integration-test-stable ## Run tests and linters
+check: lint test integration-test-stable integration-test-disable-wallet-api integration-test-disable-seed-api ## Run tests and linters
 
 integration-test-stable: ## Run stable integration tests
 	./ci-scripts/integration-test-stable.sh -w

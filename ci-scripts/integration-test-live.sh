@@ -20,7 +20,7 @@ VERBOSE=""
 # run go test with -run flag
 RUN_TESTS=""
 # run wallet tests
-TEST_WALLET=""
+TEST_LIVE_WALLET=""
 FAILFAST=""
 
 usage () {
@@ -44,7 +44,7 @@ case $args in
     r ) RUN_TESTS="-run ${OPTARG}";;
     u ) UPDATE="--update";;
     v ) VERBOSE="-v";;
-    w ) TEST_WALLET="--test-wallet";;
+    w ) TEST_LIVE_WALLET="--test-live-wallet";;
     f ) FAILFAST="-failfast"
   esac
 done
@@ -62,12 +62,14 @@ fi
 
 if [[ -z $TEST || $TEST = "gui" ]]; then
 
-SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST go test ./src/gui/integration/... $FAILFAST $UPDATE -timeout=$TIMEOUT $VERBOSE $RUN_TESTS $TEST_WALLET
+SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST \
+    go test ./src/gui/integration/... $FAILFAST $UPDATE -timeout=3m $VERBOSE $RUN_TESTS $TEST_LIVE_WALLET
 
 fi
 
 if [[ -z $TEST || $TEST = "cli" ]]; then
 
-SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR SKYCOIN_NODE_HOST=$HOST go test ./src/api/cli/integration/... $FAILFAST $UPDATE -timeout=$TIMEOUT $VERBOSE $RUN_TESTS $TEST_WALLET
+SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR SKYCOIN_NODE_HOST=$HOST \
+    go test ./src/api/cli/integration/... $FAILFAST $UPDATE -timeout=3m $VERBOSE $RUN_TESTS $TEST_LIVE_WALLET
 
 fi

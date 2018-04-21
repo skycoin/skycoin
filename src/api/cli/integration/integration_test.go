@@ -49,9 +49,9 @@ const (
 var (
 	binaryPath string
 
-	update     = flag.Bool("update", false, "update golden files")
-	liveTxFull = flag.Bool("live-tx-full", false, "run live transaction test against full blockchain")
-	testWallet = flag.Bool("test-wallet", false, "run wallet tests")
+	update         = flag.Bool("update", false, "update golden files")
+	liveTxFull     = flag.Bool("live-tx-full", false, "run live transaction test against full blockchain")
+	testLiveWallet = flag.Bool("test-live-wallet", false, "run live wallet tests, requires wallet envvars set")
 )
 
 type TestData struct {
@@ -224,18 +224,29 @@ func doLive(t *testing.T) bool {
 	return false
 }
 
-func doWallet(t *testing.T) bool {
-	if *testWallet {
+func doLiveWallet(t *testing.T) bool {
+	if *testLiveWallet {
 		return true
 	}
 
-	t.Skip("Wallet tests disabled")
+	t.Skip("Tests requiring wallet envvars are disabled")
 	return false
 }
 
-// doLiveEnvCheck checks if the WALLET_DIR and WALLET_NAME environment value do exist
-func doLiveEnvCheck(t *testing.T) {
-	t.Helper()
+// requireWalletDir checks if the WALLET_DIR environment value is set
+func requireWalletDir(t *testing.T) {
+	walletDir := os.Getenv("WALLET_DIR")
+	if walletDir == "" {
+		t.Fatal("missing WALLET_DIR environment value")
+	}
+}
+
+// requireWalletEnv checks if the WALLET_DIR and WALLET_NAME environment value are set
+func requireWalletEnv(t *testing.T) {
+	if !doLiveWallet(t) {
+		return
+	}
+
 	walletDir := os.Getenv("WALLET_DIR")
 	if walletDir == "" {
 		t.Fatal("missing WALLET_DIR environment value")
@@ -285,10 +296,6 @@ func rpcAddress() string {
 
 func TestStableGenerateAddresses(t *testing.T) {
 	if !doStable(t) {
-		return
-	}
-
-	if !doWallet(t) {
 		return
 	}
 
@@ -694,10 +701,6 @@ func TestStableListWallets(t *testing.T) {
 		return
 	}
 
-	if !doWallet(t) {
-		return
-	}
-
 	_, clean := createTempWalletFile(t)
 	defer clean()
 
@@ -722,11 +725,7 @@ func TestLiveListWallets(t *testing.T) {
 		return
 	}
 
-	if !doWallet(t) {
-		return
-	}
-
-	doLiveEnvCheck(t)
+	requireWalletDir(t)
 
 	output, err := exec.Command(binaryPath, "listWallets").CombinedOutput()
 	require.NoError(t, err)
@@ -736,14 +735,11 @@ func TestLiveListWallets(t *testing.T) {
 	}
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wlts)
 	require.NoError(t, err)
+	require.NotEmpty(t, wlts.Wallets)
 }
 
 func TestStableListAddress(t *testing.T) {
 	if !doStable(t) {
-		return
-	}
-
-	if !doWallet(t) {
 		return
 	}
 
@@ -771,11 +767,7 @@ func TestLiveListAddresses(t *testing.T) {
 		return
 	}
 
-	if !doWallet(t) {
-		return
-	}
-
-	doLiveEnvCheck(t)
+	requireWalletEnv(t)
 
 	output, err := exec.Command(binaryPath, "listAddresses").CombinedOutput()
 	require.NoError(t, err)
@@ -786,6 +778,8 @@ func TestLiveListAddresses(t *testing.T) {
 
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wltAddresses)
 	require.NoError(t, err)
+
+	require.NotEmpty(t, wltAddresses.Addresses)
 }
 
 func TestStableAddressBalance(t *testing.T) {
@@ -823,10 +817,6 @@ func TestStableWalletBalance(t *testing.T) {
 		return
 	}
 
-	if !doWallet(t) {
-		return
-	}
-
 	_, clean := createTempWalletFile(t)
 	defer clean()
 
@@ -847,11 +837,7 @@ func TestLiveWalletBalance(t *testing.T) {
 		return
 	}
 
-	if !doWallet(t) {
-		return
-	}
-
-	doLiveEnvCheck(t)
+	requireWalletEnv(t)
 
 	output, err := exec.Command(binaryPath, "walletBalance").CombinedOutput()
 	require.NoError(t, err)
@@ -859,14 +845,13 @@ func TestLiveWalletBalance(t *testing.T) {
 	var wltBalance cli.BalanceResult
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wltBalance)
 	require.NoError(t, err)
+
+	require.NotEmpty(t, wltBalance.Confirmed.Coins)
+	require.NotEmpty(t, wltBalance.Addresses)
 }
 
 func TestStableWalletOutputs(t *testing.T) {
 	if !doStable(t) {
-		return
-	}
-
-	if !doWallet(t) {
 		return
 	}
 
@@ -890,11 +875,7 @@ func TestLiveWalletOutputs(t *testing.T) {
 		return
 	}
 
-	if !doWallet(t) {
-		return
-	}
-
-	doLiveEnvCheck(t)
+	requireWalletEnv(t)
 
 	output, err := exec.Command(binaryPath, "walletOutputs").CombinedOutput()
 	require.NoError(t, err)
@@ -902,6 +883,8 @@ func TestLiveWalletOutputs(t *testing.T) {
 	var wltOutput webrpc.OutputsResult
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wltOutput)
 	require.NoError(t, err)
+
+	require.NotEmpty(t, wltOutput.Outputs.HeadOutputs)
 }
 
 func TestStableAddressOutputs(t *testing.T) {
@@ -1389,10 +1372,6 @@ func TestStableWalletDir(t *testing.T) {
 		return
 	}
 
-	if !doWallet(t) {
-		return
-	}
-
 	walletPath, clean := createTempWalletFile(t)
 	defer clean()
 
@@ -1407,11 +1386,7 @@ func TestLiveWalletDir(t *testing.T) {
 		return
 	}
 
-	if !doWallet(t) {
-		return
-	}
-
-	doLiveEnvCheck(t)
+	requireWalletDir(t)
 
 	walletDir := os.Getenv("WALLET_DIR")
 	output, err := exec.Command(binaryPath, "walletDir").CombinedOutput()
@@ -1434,9 +1409,7 @@ func TestLiveSend(t *testing.T) {
 		return
 	}
 
-	if !doWallet(t) {
-		return
-	}
+	requireWalletEnv(t)
 
 	// prepares wallet and confirms the wallet has at least 2 coins and 16 coin hours.
 	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 16)
@@ -1612,9 +1585,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 		return
 	}
 
-	if !doWallet(t) {
-		return
-	}
+	requireWalletEnv(t)
 
 	// prepares wallet and confirms the wallet has at least 2 coins and 2 coin hours.
 	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 2)
@@ -1867,10 +1838,6 @@ func TestStableWalletHistory(t *testing.T) {
 		return
 	}
 
-	if !doWallet(t) {
-		return
-	}
-
 	_, clean := createTempWalletFile(t)
 	defer clean()
 
@@ -1891,11 +1858,7 @@ func TestLiveWalletHistory(t *testing.T) {
 		return
 	}
 
-	if !doWallet(t) {
-		return
-	}
-
-	doLiveEnvCheck(t)
+	requireWalletEnv(t)
 
 	output, err := exec.Command(binaryPath, "walletHistory").CombinedOutput()
 	require.NoError(t, err)
@@ -1980,10 +1943,6 @@ func TestVersion(t *testing.T) {
 
 func TestStableGenerateWallet(t *testing.T) {
 	if !doStable(t) {
-		return
-	}
-
-	if !doWallet(t) {
 		return
 	}
 
@@ -2154,11 +2113,7 @@ func TestLiveGUIInjectTransaction(t *testing.T) {
 		return
 	}
 
-	doLiveEnvCheck(t)
-
-	if !doWallet(t) {
-		return
-	}
+	requireWalletEnv(t)
 
 	c := gui.NewClient(nodeAddress())
 	// prepares wallet and confirms the wallet has at least 2 coins and 2 coin hours.

@@ -133,10 +133,14 @@ func generateWalletHandler(c *gcli.Context) error {
 	rd := c.Bool("rd")
 
 	encrypt := c.Bool("e")
-	cryptoType := c.String("x")
 	password := c.String("p")
 
 	sd, err := makeSeed(s, r, rd)
+	if err != nil {
+		return err
+	}
+
+	cryptoType, err := wallet.CryptoTypeFromString(c.String("x"))
 	if err != nil {
 		return err
 	}
@@ -145,7 +149,7 @@ func generateWalletHandler(c *gcli.Context) error {
 		Label:      label,
 		Seed:       sd,
 		Encrypt:    encrypt,
-		CryptoType: wallet.CryptoType(cryptoType),
+		CryptoType: cryptoType,
 		Password:   []byte(password),
 	}
 

@@ -92,10 +92,21 @@ export class WalletService {
   }
 
   refreshPendingTransactions() {
-    this.addressesAsString().first().subscribe(addrs => {
-      this.apiService.get('transactions', { confirmed: 0, addrs }).subscribe(txs => {
-        this.pendingTxs.next(txs);
-      });
+    this.wallets.first().subscribe(wallets => {
+      Observable.forkJoin(wallets.map(wallet => this.apiService.get('wallet/transactions', { id: wallet.filename })))
+        .subscribe(pending => {
+          this.pendingTxs.next(
+            pending
+              .filter(response => response.transactions.length > 0)
+              .map(response => response.transactions)
+              .reduce((txs, tx) => {
+                if (!txs.find(t => t.transaction.txid === tx.transaction.txid)) {
+                  txs.push(tx);
+                }
+                return txs;
+              }, [])
+          );
+        });
     });
   }
 

@@ -3,6 +3,7 @@ package httphelper
 import (
 	"bytes"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -17,7 +18,7 @@ func ElapsedHandler(logger logrus.FieldLogger, handler http.Handler) http.Handle
 		logMethod := logger.Infof
 		if lrw.statusCode >= 400 {
 			logMethod = logger.WithFields(logrus.Fields{
-				"http.response.text": lrw.response.String(),
+				"body": strings.TrimSpace(lrw.response.String()),
 			}).Errorf
 		}
 		logMethod("%d %s %s %s", lrw.statusCode, r.Method, r.URL.Path, time.Since(start))

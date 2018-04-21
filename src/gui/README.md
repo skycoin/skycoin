@@ -652,6 +652,61 @@ Args: JSON body, see examples
 Creates a transaction, returning the transaction preview and the encoded, serialized transaction.
 The `encoded_transaction` can be provided to `POST /injectTransaction` to broadcast it to the network.
 
+The request body includes:
+
+* A change address
+* A wallet to spend from with the optional ability to restrict which addresses in the wallet to use
+* A list of destinations with address and coins specified, as well as optionally specifying hours
+* A configuration for how destination hours are distributed, either manual or automatic
+
+Example request body with manual hours selection type, unencrypted wallet and all wallet addresses may spend:
+
+```json
+{
+    "hours_selection": {
+        "type": "manual"
+    },
+    "wallet": {
+        "id": "foo.wlt"
+    },
+    "change_address": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
+    "to": [{
+        "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+        "coins": "1.032",
+        "hours": 7
+    }, {
+        "address": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
+        "coins": "99.2",
+        "hours": 0
+    }]
+}
+```
+
+Example request body with auto hours selection type, encrypted wallet, specified spending addresses:
+
+```json
+{
+    "hours_selection": {
+        "type": "auto",
+        "mode": "share",
+        "share_factor": "0.5"
+    },
+    "wallet": {
+        "id": "foo.wlt",
+        "addresses": ["2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc"],
+        "password": "foobar",
+    },
+    "change_address": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
+    "to": [{
+        "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+        "coins": "1.032"
+    }, {
+        "address": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
+        "coins": "99.2"
+    }]
+}
+```
+
 The `hours_selection` field has two types: `manual` or `auto`.
 
 If `manual`, all destination hours must be specified.
@@ -722,54 +777,6 @@ If `wallet.addresses` is empty or not provided, then all addresses from the wall
 for spending. To control which addresses may spend, specify the addresses in this field.
 
 `change_address` must be set, but it is not required to be an address in the wallet.
-
-Example request body with auto hours selection type, encrypted wallet, specified spending addresses:
-
-```json
-{
-    "hours_selection": {
-        "type": "auto",
-        "mode": "share",
-        "share_factor": "0.5"
-    },
-    "wallet": {
-        "id": "foo.wlt",
-        "addresses": ["2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc"],
-        "password": "foobar",
-    },
-    "change_address": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
-    "to": [{
-        "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
-        "coins": "1.032"
-    }, {
-        "address": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
-        "coins": "99.2"
-    }]
-}
-```
-
-Example request body with manual hours selection type, unencrypted wallet and all wallet addresses may spend:
-
-```json
-{
-    "hours_selection": {
-        "type": "manual"
-    },
-    "wallet": {
-        "id": "foo.wlt"
-    },
-    "change_address": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
-    "to": [{
-        "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
-        "coins": "1.032",
-        "hours": 7
-    }, {
-        "address": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
-        "coins": "99.2",
-        "hours": 0
-    }]
-}
-```
 
 Example:
 

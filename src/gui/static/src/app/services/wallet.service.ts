@@ -95,17 +95,17 @@ export class WalletService {
     this.wallets.first().subscribe(wallets => {
       Observable.forkJoin(wallets.map(wallet => this.apiService.get('wallet/transactions', { id: wallet.filename })))
         .subscribe(pending => {
-          this.pendingTxs.next(
+          this.pendingTxs.next([].concat.apply(
+            [],
             pending
               .filter(response => response.transactions.length > 0)
               .map(response => response.transactions)
-              .reduce((txs, tx) => {
-                if (!txs.find(t => t.transaction.txid === tx.transaction.txid)) {
-                  txs.push(tx);
-                }
-                return txs;
-              }, [])
-          );
+          ).reduce((txs, tx) => {
+            if (!txs.find(t => t.transaction.txid === tx.transaction.txid)) {
+              txs.push(tx);
+            }
+            return txs;
+          }, []));
         });
     });
   }

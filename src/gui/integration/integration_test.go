@@ -64,7 +64,7 @@ type TestData struct {
 }
 
 var update = flag.Bool("update", false, "update golden files")
-var testWallet = flag.Bool("test-wallet", false, "run wallet tests")
+var testLiveWallet = flag.Bool("test-live-wallet", false, "run live wallet tests, requires wallet envvars set")
 
 func nodeAddress() string {
 	addr := os.Getenv("SKYCOIN_NODE_HOST")
@@ -141,12 +141,12 @@ func doLiveOrStable(t *testing.T) bool {
 	return false
 }
 
-func doWallet(t *testing.T) bool {
-	if *testWallet {
+func doLiveWallet(t *testing.T) bool {
+	if *testLiveWallet {
 		return true
 	}
 
-	t.Skip("Wallet tests disabled")
+	t.Skip("Tests requiring wallet envvars are disabled")
 	return false
 }
 
@@ -1554,10 +1554,6 @@ func TestWalletNewSeed(t *testing.T) {
 		return
 	}
 
-	if !doWallet(t) {
-		return
-	}
-
 	cases := []struct {
 		name     string
 		entropy  int
@@ -1847,10 +1843,6 @@ func TestLiveWalletSpend(t *testing.T) {
 
 	requireWalletEnv(t)
 
-	if !doWallet(t) {
-		return
-	}
-
 	c := gui.NewClient(nodeAddress())
 	w, totalCoins, _, password := prepareAndCheckWallet(t, c, 2e6, 2)
 	tt := []struct {
@@ -1960,10 +1952,10 @@ func TestLiveWalletSpend(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			result, err := c.Spend(w.Filename(), w.Entries[0].Address.String(), i, password)
 			if w.IsEncrypted() && len(password) == 0 {
-				require.EqualError(t, err, "400 Bad Request - missing password\n")
+				assertResponseError(t, err, http.StatusBadRequest, "400 Bad Request - missing password\n")
 				return
 			}
-			require.Equal(t, errMsg, err.Error())
+			assertResponseError(t, err, http.StatusInternalServerError, errMsg)
 			require.Nil(t, result)
 		})
 	}
@@ -2133,7 +2125,7 @@ func TestStableWalletBalance(t *testing.T) {
 	require.Equal(t, expect, *bp)
 }
 
-func TestLiveWalletbalance(t *testing.T) {
+func TestLiveWalletBalance(t *testing.T) {
 	if !doLive(t) {
 		return
 	}
@@ -2223,10 +2215,6 @@ func TestEncryptWallet(t *testing.T) {
 		return
 	}
 
-	if !doWallet(t) {
-		return
-	}
-
 	c := gui.NewClient(nodeAddress())
 
 	// Create a unencrypted wallet
@@ -2241,7 +2229,7 @@ func TestEncryptWallet(t *testing.T) {
 
 	//  Encrypt the wallet again, should returns error
 	_, err = c.EncryptWallet(w.Meta.Filename, "pwd")
-	require.EqualError(t, err, "400 Bad Request - wallet is already encrypted\n")
+	assertResponseError(t, err, http.StatusBadRequest, "400 Bad Request - wallet is encrypted\n")
 
 	// Confirms that no sensitive data do exist in wallet file
 	wf, err := c.WalletFolderName()
@@ -2265,17 +2253,17 @@ func TestDecryptWallet(t *testing.T) {
 		return
 	}
 
-	if !doWallet(t) {
-		return
-	}
-
 	c := gui.NewClient(nodeAddress())
 	w, seed, clean := createWallet(t, c, true, "pwd")
 	defer clean()
 
 	// Decrypt wallet with different password, must fail
 	_, err := c.DecryptWallet(w.Meta.Filename, "pwd1")
-	require.EqualError(t, err, "401 Unauthorized - invalid password\n")
+	assertResponseError(t, err, http.StatusUnauthorized, "401 Unauthorized - invalid password\n")
+
+	// Decrypt wallet with no password, must fail
+	_, err = c.DecryptWallet(w.Meta.Filename, "")
+	assertResponseError(t, err, http.StatusBadRequest, "400 Bad Request - missing password\n")
 
 	// Decrypts wallet with correct password
 	dw, err := c.DecryptWallet(w.Meta.Filename, "pwd")
@@ -2305,12 +2293,8 @@ func TestDecryptWallet(t *testing.T) {
 	require.Equal(t, lw.Entries[0].Address.String(), w.Entries[0].Address)
 }
 
-func TestStableDisableGetWalletSeed(t *testing.T) {
+func TestGetWalletSeedDisabledAPI(t *testing.T) {
 	if !doDisableSeedApi(t) {
-		return
-	}
-
-	if !doWallet(t) {
 		return
 	}
 
@@ -2321,15 +2305,11 @@ func TestStableDisableGetWalletSeed(t *testing.T) {
 	defer clean()
 
 	_, err := c.GetWalletSeed(w.Meta.Filename, "pwd")
-	require.EqualError(t, err, "403 Forbidden\n")
+	assertResponseError(t, err, http.StatusForbidden, "403 Forbidden\n")
 }
 
-func TestWalletSeed(t *testing.T) {
+func TestGetWalletSeedEnabledAPI(t *testing.T) {
 	if !doLiveOrStable(t) {
-		return
-	}
-
-	if !doWallet(t) {
 		return
 	}
 
@@ -2339,6 +2319,8 @@ func TestWalletSeed(t *testing.T) {
 	w, seed, clean := createWallet(t, c, true, "pwd")
 	defer clean()
 
+	require.NotEmpty(t, seed)
+
 	sd, err := c.GetWalletSeed(w.Meta.Filename, "pwd")
 	require.NoError(t, err)
 
@@ -2347,17 +2329,21 @@ func TestWalletSeed(t *testing.T) {
 
 	// Get seed of wrong wallet id
 	_, err = c.GetWalletSeed("w.wlt", "pwd")
-	require.EqualError(t, err, "404 Not Found\n")
+	assertResponseError(t, err, http.StatusNotFound, "404 Not Found\n")
 
 	// Check with invalid password
 	_, err = c.GetWalletSeed(w.Meta.Filename, "wrong password")
-	require.EqualError(t, err, "401 Unauthorized - invalid password\n")
+	assertResponseError(t, err, http.StatusUnauthorized, "401 Unauthorized - invalid password\n")
 
-	// Creates none encrypted wallet
+	// Check with missing password
+	_, err = c.GetWalletSeed(w.Meta.Filename, "")
+	assertResponseError(t, err, http.StatusBadRequest, "400 Bad Request - missing password\n")
+
+	// Create unencrypted wallet to check against
 	nw, _, nclean := createWallet(t, c, false, "")
 	defer nclean()
 	_, err = c.GetWalletSeed(nw.Meta.Filename, "pwd")
-	require.EqualError(t, err, "403 Forbidden\n")
+	assertResponseError(t, err, http.StatusBadRequest, "400 Bad Request - wallet is not encrypted\n")
 }
 
 // prepareAndCheckWallet gets wallet from environment, and confirms:
@@ -2417,7 +2403,9 @@ func getWalletFromEnv(t *testing.T, c *gui.Client) (string, string, string) {
 }
 
 func requireWalletEnv(t *testing.T) {
-	t.Helper()
+	if !doLiveWallet(t) {
+		return
+	}
 
 	walletName := os.Getenv("WALLET_NAME")
 	if walletName == "" {
@@ -2484,9 +2472,6 @@ func checkWalletEntriesAndLastSeed(t *testing.T, w *wallet.Wallet) {
 // createWallet creates a wallet with rand seed.
 // Returns the generated wallet, seed and clean up function.
 func createWallet(t *testing.T, c *gui.Client, encrypt bool, password string) (*gui.WalletResponse, string, func()) {
-	if !doWallet(t) {
-		return nil, "", func() {}
-	}
 	seed := hex.EncodeToString(cipher.RandByte(32))
 	// Use the first 6 letter of the seed as label.
 	var w *gui.WalletResponse
@@ -2539,12 +2524,14 @@ func TestDisableWalletApi(t *testing.T) {
 		endpoint  string
 		body      func() io.Reader
 		expectErr string
+		code      int
 	}{
 		{
 			name:      "get wallet",
 			method:    http.MethodGet,
 			endpoint:  "/wallet?id=test.wlt",
 			expectErr: "403 Forbidden\n",
+			code:      http.StatusForbidden,
 		},
 		{
 			name:     "create wallet",
@@ -2558,6 +2545,7 @@ func TestDisableWalletApi(t *testing.T) {
 				return strings.NewReader(v.Encode())
 			},
 			expectErr: "403 Forbidden\n",
+			code:      http.StatusForbidden,
 		},
 		{
 			name:     "generate new address",
@@ -2569,12 +2557,14 @@ func TestDisableWalletApi(t *testing.T) {
 				return strings.NewReader(v.Encode())
 			},
 			expectErr: "403 Forbidden\n",
+			code:      http.StatusForbidden,
 		},
 		{
 			name:      "get wallet balance",
 			method:    http.MethodGet,
 			endpoint:  "/wallet/balance?id=test.wlt",
 			expectErr: "403 Forbidden\n",
+			code:      http.StatusForbidden,
 		},
 		{
 			name:     "wallet spending",
@@ -2588,12 +2578,14 @@ func TestDisableWalletApi(t *testing.T) {
 				return strings.NewReader(v.Encode())
 			},
 			expectErr: "403 Forbidden\n",
+			code:      http.StatusForbidden,
 		},
 		{
 			name:      "get wallet unconfirmed transactions",
 			method:    http.MethodGet,
 			endpoint:  "/wallet/transactions?id=test.wlt",
 			expectErr: "403 Forbidden\n",
+			code:      http.StatusForbidden,
 		},
 		{
 			name:     "update wallet label",
@@ -2606,30 +2598,35 @@ func TestDisableWalletApi(t *testing.T) {
 				return strings.NewReader(v.Encode())
 			},
 			expectErr: "403 Forbidden\n",
+			code:      http.StatusForbidden,
 		},
 		{
 			name:      "new seed",
 			method:    http.MethodGet,
 			endpoint:  "/wallet/newSeed",
 			expectErr: "403 Forbidden\n",
+			code:      http.StatusForbidden,
 		},
 		{
 			name:      "get wallets",
 			method:    http.MethodGet,
 			endpoint:  "/wallets",
 			expectErr: "403 Forbidden\n",
+			code:      http.StatusForbidden,
 		},
 		{
 			name:      "get wallets folder name",
 			method:    http.MethodGet,
 			endpoint:  "/wallets/folderName",
 			expectErr: "403 Forbidden\n",
+			code:      http.StatusForbidden,
 		},
 		{
 			name:      "main index.html 404 not found",
 			method:    http.MethodGet,
 			endpoint:  "/",
 			expectErr: "404 page not found\n",
+			code:      http.StatusNotFound,
 		},
 		{
 			name:     "encrypt wallet",
@@ -2642,6 +2639,7 @@ func TestDisableWalletApi(t *testing.T) {
 				return strings.NewReader(v.Encode())
 			},
 			expectErr: "403 Forbidden\n",
+			code:      http.StatusForbidden,
 		},
 		{
 			name:     "decrypt wallet",
@@ -2654,12 +2652,20 @@ func TestDisableWalletApi(t *testing.T) {
 				return strings.NewReader(v.Encode())
 			},
 			expectErr: "403 Forbidden\n",
+			code:      http.StatusForbidden,
 		},
 		{
-			name:      "get wallet seed",
-			method:    http.MethodGet,
-			endpoint:  "/wallet/seed?id=test.wlt&password=pwd",
+			name:     "get wallet seed",
+			method:   http.MethodPost,
+			endpoint: "/wallet/seed",
+			body: func() io.Reader {
+				v := url.Values{}
+				v.Add("id", "test.wlt")
+				v.Add("password", "pwd")
+				return strings.NewReader(v.Encode())
+			},
 			expectErr: "403 Forbidden\n",
+			code:      http.StatusForbidden,
 		},
 	}
 
@@ -2673,7 +2679,7 @@ func TestDisableWalletApi(t *testing.T) {
 			case http.MethodPost:
 				err = c.PostForm(tc.endpoint, tc.body(), nil)
 			}
-			require.EqualError(t, err, tc.expectErr)
+			assertResponseError(t, err, tc.code, tc.expectErr)
 		})
 	}
 

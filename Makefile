@@ -111,7 +111,7 @@ lint: ## Run linters. Use make install-linters first.
 		-E varcheck \
 		./...
 
-check: lint test integration-test-stable integration-test-disable-wallet-api integration-test-disable-seed-api ## Run tests and linters
+check: lint test integration-test-stable integration-test-stable-disable-csrf integration-test-disable-wallet-api integration-test-disable-seed-api ## Run tests and linters
 
 integration-test-stable: ## Run stable integration tests
 	./ci-scripts/integration-test-stable.sh -c
@@ -120,10 +120,13 @@ integration-test-stable-disable-csrf: ## Run stable integration tests with CSRF 
 	./ci-scripts/integration-test-stable.sh
 
 integration-test-live: ## Run live integration tests
-	./ci-scripts/integration-test-live.sh
+	./ci-scripts/integration-test-live.sh -c
 
 integration-test-live-wallet: ## Run live integration tests with wallet
 	./ci-scripts/integration-test-live.sh -w
+
+integration-test-live-disable-csrf: ## Run live integration tests against a node with CSRF disabled
+	./ci-scripts/integration-test-live.sh
 
 integration-test-disable-wallet-api: ## Run disable wallet api integration tests
 	./ci-scripts/integration-test-disable-wallet-api.sh

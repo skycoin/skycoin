@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { WalletService } from '../../../services/wallet.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatSnackBar, MatSnackBarConfig } from '@angular/material/snack-bar';
@@ -13,7 +13,7 @@ import { MatDialog } from '@angular/material';
   templateUrl: './send-skycoin.component.html',
   styleUrls: ['./send-skycoin.component.scss']
 })
-export class SendSkycoinComponent implements OnInit {
+export class SendSkycoinComponent implements OnInit, OnDestroy {
   @ViewChild('button') button: ButtonComponent;
 
   form: FormGroup;
@@ -28,6 +28,10 @@ export class SendSkycoinComponent implements OnInit {
 
   ngOnInit() {
     this.initForm();
+  }
+
+  ngOnDestroy() {
+    this.snackbar.dismiss();
   }
 
   send() {

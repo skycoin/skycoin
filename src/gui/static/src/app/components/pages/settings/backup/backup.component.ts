@@ -8,12 +8,12 @@ import { PasswordDialogComponent } from '../../../layout/password-dialog/passwor
 @Component({
   selector: 'app-backup',
   templateUrl: './backup.component.html',
-  styleUrls: ['./backup.component.css']
+  styleUrls: ['./backup.component.scss']
 })
 export class BackupComponent implements OnInit {
 
   folder: string;
-  wallets: Wallet[];
+  wallets: Wallet[] = [];
 
   constructor(
     public walletService: WalletService,
@@ -41,7 +41,7 @@ export class BackupComponent implements OnInit {
           config.data = { seed };
 
           this.dialog.open(SeedModalComponent, config);
-        }, () => passwordDialog.error());
+        }, err => passwordDialog.error(err));
       });
   }
 }

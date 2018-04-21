@@ -46,7 +46,7 @@ export class WalletDetailComponent {
       .subscribe(passwordDialog => {
         this.walletService.toggleEncryption(this.wallet, passwordDialog.password).subscribe(() => {
           passwordDialog.close();
-        }, () => passwordDialog.error());
+        }, e => passwordDialog.error(e));
       });
   }
 

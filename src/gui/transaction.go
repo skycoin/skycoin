@@ -186,7 +186,7 @@ func injectTransaction(gateway Gatewayer) http.HandlerFunc {
 
 		if err := gateway.InjectBroadcastTransaction(txn); err != nil {
 			logger.Error(err)
-			wh.Error400(w, fmt.Sprintf("inject tx failed: %v", err))
+			wh.Error503Msg(w, fmt.Sprintf("inject tx failed: %v", err))
 			return
 		}
 

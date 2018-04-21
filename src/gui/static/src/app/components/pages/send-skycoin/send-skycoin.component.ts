@@ -7,6 +7,7 @@ import 'rxjs/add/operator/filter';
 import { ButtonComponent } from '../../layout/button/button.component';
 import { PasswordDialogComponent } from '../../layout/password-dialog/password-dialog.component';
 import { MatDialog } from '@angular/material';
+import { parseResponseMessage } from '../../../utils/index';
 
 @Component({
   selector: 'app-send-skycoin',
@@ -17,7 +18,6 @@ export class SendSkycoinComponent implements OnInit {
   @ViewChild('button') button: ButtonComponent;
 
   form: FormGroup;
-  records = [];
   transactions = [];
 
   constructor(
@@ -32,7 +32,9 @@ export class SendSkycoinComponent implements OnInit {
   }
 
   send() {
+    this.button.resetState();
     this.button.setLoading();
+    this.snackbar.dismiss();
 
     if (this.form.value.wallet.encrypted) {
       this.dialog.open(PasswordDialogComponent).componentInstance.passwordSubmit
@@ -48,7 +50,7 @@ export class SendSkycoinComponent implements OnInit {
     this.walletService.sendSkycoin(
       this.form.value.wallet,
       this.form.value.address,
-      this.form.value.amount * 1000000,
+      Math.round(parseFloat(this.form.value.amount) * 1000000),
       passwordDialog ? passwordDialog.password : null
     )
       .delay(1000)
@@ -58,10 +60,11 @@ export class SendSkycoinComponent implements OnInit {
           this.button.setSuccess();
         },
         error => {
+          const errorMessage = parseResponseMessage(error['_body']);
           const config = new MatSnackBarConfig();
           config.duration = 300000;
-          this.snackbar.open(error['_body'], null, config);
-          this.button.setError(error);
+          this.snackbar.open(errorMessage, null, config);
+          this.button.setError(errorMessage);
         }
       );
 
@@ -77,21 +80,21 @@ export class SendSkycoinComponent implements OnInit {
       amount: ['', [Validators.required, Validators.min(0), Validators.max(0)]],
       notes: [''],
     });
-    this.form.controls['wallet'].valueChanges.subscribe(value => {
+    this.form.get('wallet').valueChanges.subscribe(value => {
       console.log(value);
       const balance = value && value.coins ? value.coins : 0;
-      this.form.controls['amount'].setValidators([
+      this.form.get('amount').setValidators([
         Validators.required,
         Validators.min(0),
         Validators.max(balance),
       ]);
-      this.form.controls['amount'].updateValueAndValidity();
+      this.form.get('amount').updateValueAndValidity();
     });
   }
 
   private resetForm() {
-    this.form.controls.wallet.reset(undefined);
-    this.form.controls.address.reset(undefined);
-    this.form.controls.amount.reset(undefined);
+    this.form.get('wallet').reset(undefined);
+    this.form.get('address').reset(undefined);
+    this.form.get('amount').reset(undefined);
   }
 }

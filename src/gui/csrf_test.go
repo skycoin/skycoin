@@ -111,7 +111,11 @@ func TestCSRFWrapper(t *testing.T) {
 					setCSRFParameters(csrfStore, c, req)
 
 					rr := httptest.NewRecorder()
-					handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+					handler := newServerMux(muxConfig{
+						host:            configuredHost,
+						appLoc:          ".",
+						enableJSON20RPC: true,
+					}, gateway, csrfStore, nil)
 
 					handler.ServeHTTP(rr, req)
 
@@ -162,7 +166,11 @@ func TestOriginRefererCheck(t *testing.T) {
 				}
 
 				rr := httptest.NewRecorder()
-				handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+				handler := newServerMux(muxConfig{
+					host:            configuredHost,
+					appLoc:          ".",
+					enableJSON20RPC: true,
+				}, gateway, csrfStore, nil)
 
 				handler.ServeHTTP(rr, req)
 
@@ -190,7 +198,11 @@ func TestHostCheck(t *testing.T) {
 			req.Host = "example.com"
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(muxConfig{
+				host:            configuredHost,
+				appLoc:          ".",
+				enableJSON20RPC: true,
+			}, gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
 
@@ -225,7 +237,11 @@ func TestCSRF(t *testing.T) {
 		}
 
 		rr := httptest.NewRecorder()
-		handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+		handler := newServerMux(muxConfig{
+			host:            configuredHost,
+			appLoc:          ".",
+			enableJSON20RPC: true,
+		}, gateway, csrfStore, nil)
 
 		handler.ServeHTTP(rr, req)
 

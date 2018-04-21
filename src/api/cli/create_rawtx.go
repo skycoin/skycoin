@@ -147,7 +147,7 @@ func getChangeAddress(wltAddr walletAddress, chgAddr string) (string, error) {
 			// get the default wallet's coin base address
 			wlt, err := wallet.Load(wltAddr.Wallet)
 			if err != nil {
-				return "", WalletLoadError(err)
+				return "", WalletLoadError{err}
 			}
 
 			if len(wlt.Entries) > 0 {

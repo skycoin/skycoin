@@ -96,7 +96,7 @@ func generateAddrs(c *gcli.Context) error {
 func GenerateAddressesInFile(walletFile string, num uint64, password []byte) ([]cipher.Address, error) {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
-		return nil, WalletLoadError(err)
+		return nil, WalletLoadError{err}
 	}
 
 	var addrs []cipher.Address
@@ -134,7 +134,7 @@ func GenerateAddressesInFile(walletFile string, num uint64, password []byte) ([]
 	}
 
 	if err := wlt.Save(dir); err != nil {
-		return nil, WalletSaveError(err)
+		return nil, WalletSaveError{err}
 	}
 
 	return addrs, nil

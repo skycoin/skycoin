@@ -234,6 +234,7 @@ func NewApp(cfg Config) *App {
 		walletDirCmd(),
 		walletHisCmd(),
 		walletOutputsCmd(cfg),
+		encryptWalletCmd(cfg),
 	}
 
 	app.Name = fmt.Sprintf("%s-cli", cfg.Coin)
@@ -317,4 +318,24 @@ func readPasswordFromTerminal() ([]byte, error) {
 	}
 	fmt.Fprintln(os.Stdout, "")
 	return bp, nil
+}
+
+// PUBLIC
+
+// WalletLoadError is returned if a wallet could not be loaded
+type WalletLoadError struct {
+	error
+}
+
+func (w WalletLoadError) Error() string {
+	return w.error.Error()
+}
+
+// WalletSaveError is returned if a wallet could not be saved
+type WalletSaveError struct {
+	error
+}
+
+func (w WalletSaveError) Error() string {
+	return w.error.Error()
 }

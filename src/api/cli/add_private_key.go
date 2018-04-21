@@ -69,14 +69,6 @@ func addPrivateKeyCmd(cfg Config) gcli.Command {
 	}
 }
 
-// PUBLIC
-
-// WalletLoadError is returned if a wallet could not be loaded
-type WalletLoadError error
-
-// WalletSaveError is returned if a wallet could not be saved
-type WalletSaveError error
-
 // AddPrivateKey adds a private key to a *wallet.Wallet. Caller should save the wallet afterwards
 func AddPrivateKey(wlt *wallet.Wallet, key string) error {
 	sk, err := cipher.SecKeyFromHex(key)
@@ -100,7 +92,7 @@ func AddPrivateKey(wlt *wallet.Wallet, key string) error {
 func AddPrivateKeyToFile(walletFile, key string, password []byte) error {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
-		return WalletLoadError(err)
+		return WalletLoadError{err}
 	}
 
 	if !wlt.IsEncrypted() {
@@ -132,7 +124,7 @@ func AddPrivateKeyToFile(walletFile, key string, password []byte) error {
 	}
 
 	if err := wlt.Save(dir); err != nil {
-		return WalletSaveError(err)
+		return WalletSaveError{err}
 	}
 
 	return nil

@@ -14,18 +14,19 @@ TEST=""
 RUN_TESTS=""
 # run go test with -v flag
 VERBOSE=""
-FAILFAST=""
+# run wallet tests
+TEST_WALLET=""
 
 usage () {
   echo "Usage: $SCRIPT"
   echo "Optional command line arguments"
   echo "-t <string>  -- Test to run, gui or cli; empty runs both tests"
   echo "-v <boolean> -- Run test with -v flag"
-  echo "-f <boolean> -- Run test with -failfast flag"
+  echo "-w <boolean> -- Run wallet tests"
   exit 1
 }
 
-while getopts "h?t:r:vf" args; do
+while getopts "h?t:r:vw" args; do
   case $args in
     h|\?)
         usage;
@@ -33,7 +34,7 @@ while getopts "h?t:r:vf" args; do
     t ) TEST=${OPTARG};;
     v ) VERBOSE="-v";;
     r ) RUN_TESTS="-run ${OPTARG}";;
-    f ) FAILFAST="-failfast"
+    w ) TEST_WALLET="--test-wallet"
   esac
 done
 
@@ -79,7 +80,7 @@ set +e
 
 if [[ -z $TEST || $TEST = "gui" ]]; then
 
-SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST WALLET_DIR=$WALLET_DIR go test ./src/gui/integration/... -timeout=30s $FAILFAST $VERBOSE $RUN_TESTS
+SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST WALLET_DIR=$WALLET_DIR go test ./src/gui/integration/... -timeout=30s $VERBOSE $RUN_TESTS $TEST_WALLET
 
 GUI_FAIL=$?
 
@@ -87,7 +88,7 @@ fi
 
 if [[ -z $TEST  || $TEST = "cli" ]]; then
 
-# SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR go test ./src/api/cli/integration/... -timeout=30s $FAILFAST $VERBOSE $RUN_TESTS
+# SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR go test ./src/api/cli/integration/... -timeout=30s $VERBOSE $RUN_TESTS $TEST_WALLET
 
 CLI_FAIL=$?
 

@@ -15,11 +15,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Implemented `scrypt-chacha20poly1305` for wallet encryption
 - Implemented `sha256xor` for wallet encryption
 - Add new field of `secrets` to wallet, which records all encrypted sensitive data like seed, public/private keys
-- `/wallet/encrypt` API endpoint, encrypts wallet and returns encrypted wallet without sensitive data
-- `/wallet/decrypt` API endpoint, decrypts wallet and returns decrypted wallet without sensitive data
-- `/wallet/seed` API endpoint, returns seed of specific wallet
-- `-enable-seed-api` cli option
+- `POST /wallet/encrypt` API endpoint, encrypts wallet and returns encrypted wallet without sensitive data
+- `POST /wallet/decrypt` API endpoint, decrypts wallet and returns decrypted wallet without sensitive data
+- `POST /wallet/seed` API endpoint, returns seed of specific wallet
+- `-enable-seed-api` cli option to enable `POST /wallet/seed`
 - `POST /wallet/transaction` API endpoint, creates a transaction, allowing control of spending address and multiple destinations
+- Add wallet setup wizard
 - Added support for encrypted wallets on frontend
 
 ### Fixed
@@ -34,12 +35,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Change `-disable-wallet-api` to `-enable-wallet-api`, and disable the wallet API by default
 - `-launch-browser` is set to false by default
-- `/wallet` API endpoint, remove sensitive data from the response, and fix the data format to be the same as `/wallet/create`
-- `/wallets` API endpoint, remove sensitive data from the response
-- `/wallet/create` API endpoint, add `encrypt(bool)` and `password` argument
-- `/wallet/newAddress` API endpoint, add `password` argument
-- `/wallet/spend` API endpoint, add `password` argument
-- No default wallet will be created when first time the node start
+- `GET /wallet` API endpoint, remove sensitive data from the response, and fix the data format to be the same as `/wallet/create`
+- `GET /wallets` API endpoint, remove sensitive data from the response
+- `POST /wallet/create` API endpoint, add `encrypt(bool)` and `password` argument
+- `POST /wallet/newAddress` API endpoint, add `password` argument
+- `POST /wallet/spend` API endpoint, add `password` argument
+- No default wallet will be created when node starts the first time
 
 ### Removed
 

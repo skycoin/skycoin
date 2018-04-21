@@ -13,7 +13,7 @@ import { PasswordDialogComponent } from '../../../layout/password-dialog/passwor
 export class BackupComponent implements OnInit {
 
   folder: string;
-  wallets: Wallet[];
+  wallets: Wallet[] = [];
 
   constructor(
     public walletService: WalletService,
@@ -41,7 +41,7 @@ export class BackupComponent implements OnInit {
           config.data = { seed };
 
           this.dialog.open(SeedModalComponent, config);
-        }, () => passwordDialog.error());
+        }, err => passwordDialog.error(err));
       });
   }
 }

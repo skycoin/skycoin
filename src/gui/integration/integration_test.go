@@ -1975,10 +1975,6 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 
 	requireWalletEnv(t)
 
-	if !doWallet(t) {
-		return
-	}
-
 	c := gui.NewClient(nodeAddress())
 
 	w, totalCoins, totalHours, password := prepareAndCheckWallet(t, c, 2e6, 20)
@@ -3415,6 +3411,7 @@ func TestDisableWalletApi(t *testing.T) {
 				}
 			},
 			expectErr: "403 Forbidden\n",
+			code:      http.StatusForbidden,
 		},
 	}
 

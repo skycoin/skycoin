@@ -50,7 +50,7 @@ export class SendSkycoinComponent implements OnInit {
     this.walletService.sendSkycoin(
       this.form.value.wallet,
       this.form.value.address,
-      this.form.value.amount * 1000000,
+      Math.round(parseFloat(this.form.value.amount) * 1000000),
       passwordDialog ? passwordDialog.password : null
     )
       .delay(1000)

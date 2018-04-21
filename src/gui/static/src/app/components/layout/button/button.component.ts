@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { parseResponseMessage } from '../../../utils/index';
 
 @Component({
   selector: 'app-button',
@@ -29,7 +30,7 @@ export class ButtonComponent {
   }
 
   setError(error: any) {
-    this.error = typeof error === 'string' ? error : error['_body'];
+    this.error = typeof error === 'string' ? error : parseResponseMessage(error['_body']);
     this.state = 2;
   }
 

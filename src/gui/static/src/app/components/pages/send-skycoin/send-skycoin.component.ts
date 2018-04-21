@@ -7,6 +7,7 @@ import 'rxjs/add/operator/filter';
 import { ButtonComponent } from '../../layout/button/button.component';
 import { PasswordDialogComponent } from '../../layout/password-dialog/password-dialog.component';
 import { MatDialog } from '@angular/material';
+import { parseResponseMessage } from '../../../utils/index';
 
 @Component({
   selector: 'app-send-skycoin',
@@ -49,7 +50,7 @@ export class SendSkycoinComponent implements OnInit {
     this.walletService.sendSkycoin(
       this.form.value.wallet,
       this.form.value.address,
-      this.form.value.amount * 1000000,
+      Math.round(parseFloat(this.form.value.amount) * 1000000),
       passwordDialog ? passwordDialog.password : null
     )
       .delay(1000)
@@ -59,10 +60,11 @@ export class SendSkycoinComponent implements OnInit {
           this.button.setSuccess();
         },
         error => {
+          const errorMessage = parseResponseMessage(error['_body']);
           const config = new MatSnackBarConfig();
           config.duration = 300000;
-          this.snackbar.open(error['_body'], null, config);
-          this.button.setError(error);
+          this.snackbar.open(errorMessage, null, config);
+          this.button.setError(errorMessage);
         }
       );
 

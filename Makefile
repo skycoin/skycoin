@@ -1,5 +1,8 @@
 .DEFAULT_GOAL := help
-.PHONY: run run-help test test-core test-libc test-lint build-libc check cover integration-test-stable integration-test-live integration-test-disable-wallet-api integration-test-disable-seed-api install-linters format release clean-release install-deps-ui build-ui help
+.PHONY: run run-help test test-core test-libc test-lint build-libc check cover
+.PHONY: integration-test-stable integration-test-live integration-test-live-wallet
+.PHONY: integration-test-disable-wallet-api integration-test-disable-seed-api
+.PHONY: install-linters format release clean-release install-deps-ui build-ui help
 
 # Static files directory
 GUI_STATIC_DIR = src/gui/static
@@ -110,16 +113,19 @@ lint: ## Run linters. Use make install-linters first.
 check: lint test integration-test-stable integration-test-disable-wallet-api integration-test-disable-seed-api ## Run tests and linters
 
 integration-test-stable: ## Run stable integration tests
-	./ci-scripts/integration-test-stable.sh -w
+	./ci-scripts/integration-test-stable.sh
 
 integration-test-live: ## Run live integration tests
+	./ci-scripts/integration-test-live.sh
+
+integration-test-live-wallet: ## Run live integration tests with wallet
 	./ci-scripts/integration-test-live.sh -w
 
 integration-test-disable-wallet-api: ## Run disable wallet api integration tests
 	./ci-scripts/integration-test-disable-wallet-api.sh
 
 integration-test-disable-seed-api: ## Run enable seed api integration test
-	./ci-scripts/integration-test-disable-seed-api.sh -w
+	./ci-scripts/integration-test-disable-seed-api.sh
 
 cover: ## Runs tests on ./src/ with HTML code coverage
 	go test -cover -coverprofile=cover.out -coverpkg=github.com/skycoin/skycoin/... ./src/...

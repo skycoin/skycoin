@@ -661,12 +661,14 @@ func newWalletSeed(gateway Gatewayer) http.HandlerFunc {
 }
 
 // Returns seed of wallet of given id
-// Get Arguments:
+// URI: /wallet/seed
+// Method: POST
+// Args:
 //     id: wallet id
 //     password: wallet password
 func walletSeedHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
+		if r.Method != http.MethodPost {
 			wh.Error405(w)
 			return
 		}
@@ -682,19 +684,14 @@ func walletSeedHandler(gateway Gatewayer) http.HandlerFunc {
 			password = ""
 		}()
 
-		if password == "" {
-			wh.Error400(w, "missing password")
-			return
-		}
-
 		seed, err := gateway.GetWalletSeed(id, []byte(password))
 		if err != nil {
 			switch err {
+			case wallet.ErrMissingPassword, wallet.ErrWalletNotEncrypted:
+				wh.Error400(w, err.Error())
 			case wallet.ErrInvalidPassword:
 				wh.Error401(w, HTTP401AuthHeader, err.Error())
-			case wallet.ErrWalletAPIDisabled,
-				wallet.ErrWalletNotEncrypted,
-				wallet.ErrSeedAPIDisabled:
+			case wallet.ErrWalletAPIDisabled, wallet.ErrSeedAPIDisabled:
 				wh.Error403(w)
 			case wallet.ErrWalletNotExist:
 				wh.Error404(w)
@@ -755,16 +752,12 @@ func walletEncryptHandler(gateway Gatewayer) http.HandlerFunc {
 		defer func() {
 			password = ""
 		}()
-		if password == "" {
-			wh.Error400(w, "missing password")
-			return
-		}
 
 		wlt, err := gateway.EncryptWallet(id, []byte(password))
 		if err != nil {
 			switch err {
-			case wallet.ErrWalletEncrypted:
-				wh.Error400(w, "wallet is already encrypted")
+			case wallet.ErrWalletEncrypted, wallet.ErrMissingPassword:
+				wh.Error400(w, err.Error())
 			case wallet.ErrInvalidPassword:
 				wh.Error401(w, HTTP401AuthHeader, err.Error())
 			case wallet.ErrWalletAPIDisabled:
@@ -805,15 +798,10 @@ func walletDecryptHandler(gateway Gatewayer) http.HandlerFunc {
 			password = ""
 		}()
 
-		if password == "" {
-			wh.Error400(w, "missing password")
-			return
-		}
-
 		wlt, err := gateway.DecryptWallet(id, []byte(password))
 		if err != nil {
 			switch err {
-			case wallet.ErrWalletNotEncrypted:
+			case wallet.ErrMissingPassword, wallet.ErrWalletNotEncrypted:
 				wh.Error400(w, err.Error())
 			case wallet.ErrInvalidPassword:
 				wh.Error401(w, HTTP401AuthHeader, err.Error())

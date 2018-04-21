@@ -498,7 +498,7 @@ func (bc Blockchain) processTransactions(txs coin.Transactions) (coin.Transactio
 					}
 				}
 			}
-			uxHashes[h] = byte(1)
+			uxHashes[h] = struct{}{}
 		}
 	}
 

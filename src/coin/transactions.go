@@ -184,12 +184,12 @@ func (txn *Transaction) PushInput(uxOut cipher.SHA256) uint16 {
 }
 
 // UxID compute transaction output id
-func (txOut TransactionOutput) UxID(TxID cipher.SHA256) cipher.SHA256 {
+func (txOut TransactionOutput) UxID(txID cipher.SHA256) cipher.SHA256 {
 	var x UxBody
 	x.Coins = txOut.Coins
 	x.Hours = txOut.Hours
 	x.Address = txOut.Address
-	x.SrcTransaction = TxID
+	x.SrcTransaction = txID
 	return x.Hash()
 }
 
@@ -515,29 +515,4 @@ func VerifyTransactionHoursSpending(headTime uint64, uxIn UxArray, uxOut UxArray
 		return errors.New("Insufficient coin hours")
 	}
 	return nil
-}
-
-func multUint64(a, b uint64) (uint64, error) {
-	c := a * b
-	if a != 0 && c/a != b {
-		return 0, errors.New("uint64 multiplication overflow")
-	}
-	return c, nil
-}
-
-// AddUint64 adds a and b, returning an error if the values would overflow
-func AddUint64(a, b uint64) (uint64, error) {
-	c := a + b
-	if c < a || c < b {
-		return 0, errors.New("uint64 addition overflow")
-	}
-	return c, nil
-}
-
-func addUint32(a, b uint32) (uint32, error) {
-	c := a + b
-	if c < a || c < b {
-		return 0, errors.New("uint32 addition overflow")
-	}
-	return c, nil
 }

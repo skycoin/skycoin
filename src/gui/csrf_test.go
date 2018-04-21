@@ -82,6 +82,7 @@ var endpoints = []string{
 	"/wallet/newSeed",
 	"/wallet/seed",
 	"/wallet/spend",
+	"/wallet/transaction",
 	"/wallet/transactions",
 	"/wallet/unload",
 	"/wallet/update",

@@ -17,6 +17,7 @@ UPDATE=""
 VERBOSE=""
 # run go test with -run flag
 RUN_TESTS=""
+FAILFAST=""
 
 COMMIT=$(git rev-parse HEAD)
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
@@ -29,10 +30,11 @@ usage () {
   echo "-r <string>  -- Run test with -run flag"
   echo "-u <boolean> -- Update stable testdata"
   echo "-v <boolean> -- Run test with -v flag"
+  echo "-f <boolean> -- Run test with -failfast flag"
   exit 1
 }
 
-while getopts "h?t:r:uvw" args; do
+while getopts "h?t:r:uvf" args; do
   case $args in
     h|\?)
         usage;
@@ -41,6 +43,7 @@ while getopts "h?t:r:uvw" args; do
     r ) RUN_TESTS="-run ${OPTARG}";;
     u ) UPDATE="--update";;
     v ) VERBOSE="-v";;
+    f ) FAILFAST="-failfast"
   esac
 done
 
@@ -86,7 +89,7 @@ set +e
 if [[ -z $TEST || $TEST = "gui" ]]; then
 
 SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST WALLET_DIR=$WALLET_DIR \
-    go test ./src/gui/integration/... $UPDATE -timeout=30s $VERBOSE $RUN_TESTS
+    go test ./src/gui/integration/... $FAILFAST $UPDATE -timeout=30s $VERBOSE $RUN_TESTS
 
 GUI_FAIL=$?
 
@@ -95,7 +98,7 @@ fi
 if [[ -z $TEST  || $TEST = "cli" ]]; then
 
 SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR \
-    go test ./src/api/cli/integration/... $UPDATE -timeout=30s $VERBOSE $RUN_TESTS
+    go test ./src/api/cli/integration/... $FAILFAST $UPDATE -timeout=30s $VERBOSE $RUN_TESTS
 
 CLI_FAIL=$?
 

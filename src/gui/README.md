@@ -25,6 +25,7 @@ A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](h
     - [Updates wallet label](#updates-wallet-label)
     - [Get wallet balance](#get-wallet-balance)
     - [Spend coins from wallet](#spend-coins-from-wallet)
+    - [Create transaction](#create-transaction)
     - [Unload wallet](#unload-wallet)
     - [Encrypt wallet](#encrypt-wallet)
     - [Decrypt wallet](#decrypt-wallet)
@@ -63,7 +64,7 @@ A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](h
 ## CSRF
 
 All `POST`, `PUT` and `DELETE` requests require a CSRF token, obtained with a `GET /csrf` call.
-The token must be placed in the `X-CSRF-Token` header.  A token is only valid
+The token must be placed in the `X-CSRF-Token` header. A token is only valid
 for 30 seconds and it is expected that the client obtains a new CSRF token
 for each request.
 
@@ -639,6 +640,216 @@ Result:
 }
 ```
 
+### Create transaction
+
+```
+URI: /wallet/transaction
+Method: POST
+Content-Type: application/json
+Args: JSON body, see examples
+```
+
+Creates a transaction, returning the transaction preview and the encoded, serialized transaction.
+The `encoded_transaction` can be provided to `POST /injectTransaction` to broadcast it to the network.
+
+The request body includes:
+
+* A change address
+* A wallet to spend from with the optional ability to restrict which addresses in the wallet to use
+* A list of destinations with address and coins specified, as well as optionally specifying hours
+* A configuration for how destination hours are distributed, either manual or automatic
+
+Example request body with manual hours selection type, unencrypted wallet and all wallet addresses may spend:
+
+```json
+{
+    "hours_selection": {
+        "type": "manual"
+    },
+    "wallet": {
+        "id": "foo.wlt"
+    },
+    "change_address": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
+    "to": [{
+        "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+        "coins": "1.032",
+        "hours": 7
+    }, {
+        "address": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
+        "coins": "99.2",
+        "hours": 0
+    }]
+}
+```
+
+Example request body with auto hours selection type, encrypted wallet, specified spending addresses:
+
+```json
+{
+    "hours_selection": {
+        "type": "auto",
+        "mode": "share",
+        "share_factor": "0.5"
+    },
+    "wallet": {
+        "id": "foo.wlt",
+        "addresses": ["2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc"],
+        "password": "foobar",
+    },
+    "change_address": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
+    "to": [{
+        "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+        "coins": "1.032"
+    }, {
+        "address": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
+        "coins": "99.2"
+    }]
+}
+```
+
+The `hours_selection` field has two types: `manual` or `auto`.
+
+If `manual`, all destination hours must be specified.
+
+If `auto`, the `mode` field must be set. The only valid value for `mode` is `"share"`.
+For the `"share"` mode, `share_factor` must also be set. This must be a decimal value greater than or equal to 0 and less than or equal to 1.
+In the auto share mode, the remaining hours after the fee are shared between the destination addresses as a whole,
+and the change address. Amongst the destination addresses, the shared hours are distributed proportionally.
+
+Note that if there are remaining coin hours as change, but no coins are available as change from the wallet,
+these remaining coin hours will be burned as an additional fee.
+
+All objects in `to` must be unique; a single transaction cannot create multiple outputs with the same `address`, `coins` and `hours`.
+
+For example, this is a valid value for `to`, if `hours_selection.type` is `"manual"`:
+
+```json
+[{
+    "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+    "coins": "1.2",
+    "hours": "1"
+}, {
+    "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+    "coins": "1.2",
+    "hours": "2"
+}]
+```
+
+But this is an invalid value for `to`, if `hours_selection.type` is `"manual"`:
+
+```json
+[{
+    "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+    "coins": "1.2",
+    "hours": "1"
+}, {
+    "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+    "coins": "1.2",
+    "hours": "1"
+}]
+```
+
+And this is a valid value for `to`, if `hours_selection.type` is `"auto"`:
+
+```json
+[{
+    "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+    "coins": "1.2"
+}, {
+    "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+    "coins": "1.201"
+}]
+```
+
+But this is an invalid value for `to`, if `hours_selection.type` is `"auto"`:
+
+```json
+[{
+    "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+    "coins": "1.2"
+}, {
+    "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+    "coins": "1.2"
+}]
+```
+
+If `wallet.addresses` is empty or not provided, then all addresses from the wallet will be considered to use
+for spending. To control which addresses may spend, specify the addresses in this field.
+
+`change_address` must be set, but it is not required to be an address in the wallet.
+
+Example:
+
+```sh
+curl -X POST http://127.0.0.1:6420/wallet/transaction -H 'content-type: application/json' -d '{
+    "hours_selection": {
+        "type": "auto",
+        "mode": "share",
+        "share_factor": "0.5"
+    },
+    "wallet": {
+        "id": "foo.wlt"
+    },
+    "change_address": "uvcDrKc8rHTjxLrU4mPN56Hyh2tR6RvCvw",
+    "to": [{
+        "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+        "coins": "1",
+    }, {
+        "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+        "coins": "8.99",
+    }]
+}'
+```
+
+Result:
+
+```json
+{
+    "transaction": {
+        "length": 257,
+        "type": 0,
+        "txid": "5f060918d2da468a784ff440fbba80674c829caca355a27ae067f465d0a5e43e",
+        "inner_hash": "97dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11d",
+        "fee": "437691",
+        "sigs": [
+            "6120acebfa61ba4d3970dec5665c3c952374f5d9bbf327674a0b240de62b202b319f61182e2a262b2ca5ef5a592084299504689db5448cd64c04b1f26eb01d9100"
+        ],
+        "inputs": [
+            {
+                "uxid": "7068bfd0f0f914ea3682d0e5cb3231b75cb9f0776bf9013d79b998d96c93ce2b",
+                "address": "g4XmbmVyDnkswsQTSqYRsyoh1YqydDX1wp",
+                "coins": "10.000000",
+                "hours": "862290",
+                "timestamp": 1524242826,
+                "block": 23575,
+                "txid": "ccfbb51e94cb58a619a82502bc986fb028f632df299ce189c2ff2932574a03e7"
+            }
+        ],
+        "outputs": [
+            {
+                "uxid": "519c069a0593e179f226e87b528f60aea72826ec7f99d51279dd8854889ed7e2",
+                "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+                "coins": "1.000000",
+                "hours": "22253"
+            },
+            {
+                "uxid": "4e4e41996297511a40e2ef0046bd6b7118a8362c1f4f09a288c5c3ea2f4dfb85",
+                "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+                "coins": "8.990000",
+                "hours": "200046"
+            },
+            {
+                "uxid": "fdeb3f77408f39e50a8e3b6803ce2347aac2eba8118c494424f9fa4959bab507",
+                "address": "uvcDrKc8rHTjxLrU4mPN56Hyh2tR6RvCvw",
+                "coins": "0.010000",
+                "hours": "222300"
+            }
+        ]
+    },
+    "encoded_transaction": "010100000097dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11d010000006120acebfa61ba4d3970dec5665c3c952374f5d9bbf327674a0b240de62b202b319f61182e2a262b2ca5ef5a592084299504689db5448cd64c04b1f26eb01d9100010000007068bfd0f0f914ea3682d0e5cb3231b75cb9f0776bf9013d79b998d96c93ce2b0300000000ba2a4ac4a5ce4e03a82d2240ae3661419f7081b140420f0000000000ed5600000000000000ba2a4ac4a5ce4e03a82d2240ae3661419f7081b1302d8900000000006e0d0300000000000083874350e65e84aa6e06192408951d7aaac7809e10270000000000005c64030000000000"
+}
+```
+
 ### Unload wallet
 
 ```
@@ -899,6 +1110,13 @@ Method: POST
 Content-Type: application/json
 Body: {"rawtx": "raw transaction"}
 ```
+
+Broadcasts an encoded transaction to the network.
+
+If there are no available connections, the API responds with a 503 Service Unavailable error.
+
+Note that in some circumstances the transaction can fail to broadcast but this endpoint will still return successfully.
+This can happen if the node's network has recently become unavailable but its connections have not timed out yet.
 
 Example:
 

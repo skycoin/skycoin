@@ -8,11 +8,14 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -20,9 +23,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/gui"
-	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/util/droplet" //http,json helpers
+	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -1845,6 +1851,7 @@ func TestLiveWalletSpend(t *testing.T) {
 
 	c := gui.NewClient(nodeAddress())
 	w, totalCoins, _, password := prepareAndCheckWallet(t, c, 2e6, 2)
+
 	tt := []struct {
 		name    string
 		to      string
@@ -1866,7 +1873,7 @@ func TestLiveWalletSpend(t *testing.T) {
 				}
 				require.Equal(t, totalCoins, coins)
 
-				// Confirms the address balance are equal to the totoalCoins
+				// Confirms the address balance are equal to the totalCoins
 				coins, _ = getAddressBalance(t, c, w.Entries[0].Address.String())
 				require.Equal(t, totalCoins, coins)
 			},
@@ -1958,6 +1965,712 @@ func TestLiveWalletSpend(t *testing.T) {
 			assertResponseError(t, err, http.StatusInternalServerError, errMsg)
 			require.Nil(t, result)
 		})
+	}
+}
+
+func TestLiveWalletCreateTransaction(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	requireWalletEnv(t)
+
+	c := gui.NewClient(nodeAddress())
+
+	w, totalCoins, totalHours, password := prepareAndCheckWallet(t, c, 2e6, 20)
+
+	remainingHours := fee.RemainingHours(totalHours)
+	require.True(t, remainingHours > 1)
+
+	toDropletString := func(i uint64) string {
+		x, err := droplet.ToString(i)
+		require.NoError(t, err)
+		return x
+	}
+
+	type testCase struct {
+		name        string
+		req         gui.CreateTransactionRequest
+		outputs     []coin.TransactionOutput
+		err         string
+		code        int
+		ignoreHours bool
+	}
+
+	cases := []testCase{
+		{
+			name: "invalid decimals",
+			req: gui.CreateTransactionRequest{
+				HoursSelection: gui.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: gui.CreateTransactionRequestWallet{
+					ID:       w.Filename(),
+					Password: password,
+				},
+				ChangeAddress: w.Entries[0].Address.String(),
+				To: []gui.Receiver{
+					{
+						Address: w.Entries[0].Address.String(),
+						Coins:   "0.0001",
+						Hours:   "1",
+					},
+				},
+			},
+			err:  "400 Bad Request - to[0].coins has too many decimal places\n",
+			code: http.StatusBadRequest,
+		},
+
+		{
+			name: "overflowing hours",
+			req: gui.CreateTransactionRequest{
+				HoursSelection: gui.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: gui.CreateTransactionRequestWallet{
+					ID:       w.Filename(),
+					Password: password,
+				},
+				ChangeAddress: w.Entries[0].Address.String(),
+				To: []gui.Receiver{
+					{
+						Address: w.Entries[0].Address.String(),
+						Coins:   "0.001",
+						Hours:   "1",
+					},
+					{
+						Address: w.Entries[0].Address.String(),
+						Coins:   "0.001",
+						Hours:   fmt.Sprint(uint64(math.MaxUint64)),
+					},
+					{
+						Address: w.Entries[0].Address.String(),
+						Coins:   "0.001",
+						Hours:   fmt.Sprint(uint64(math.MaxUint64) - 1),
+					},
+				},
+			},
+			err:  "400 Bad Request - total output hours error: uint64 addition overflow\n",
+			code: http.StatusBadRequest,
+		},
+
+		{
+			name: "insufficient coins",
+			req: gui.CreateTransactionRequest{
+				HoursSelection: gui.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: gui.CreateTransactionRequestWallet{
+					ID:       w.Filename(),
+					Password: password,
+				},
+				ChangeAddress: w.Entries[0].Address.String(),
+				To: []gui.Receiver{
+					{
+						Address: w.Entries[0].Address.String(),
+						Coins:   fmt.Sprint(totalCoins + 1),
+						Hours:   "1",
+					},
+				},
+			},
+			err:  "400 Bad Request - balance is not sufficient\n",
+			code: http.StatusBadRequest,
+		},
+
+		{
+			name: "insufficient hours",
+			req: gui.CreateTransactionRequest{
+				HoursSelection: gui.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: gui.CreateTransactionRequestWallet{
+					ID:       w.Filename(),
+					Password: password,
+				},
+				ChangeAddress: w.Entries[0].Address.String(),
+				To: []gui.Receiver{
+					{
+						Address: w.Entries[0].Address.String(),
+						Coins:   toDropletString(totalCoins),
+						Hours:   fmt.Sprint(totalHours + 1),
+					},
+				},
+			},
+			err:  "400 Bad Request - hours are not sufficient\n",
+			code: http.StatusBadRequest,
+		},
+
+		{
+			name: "valid request, manual one output with change",
+			req: gui.CreateTransactionRequest{
+				HoursSelection: gui.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: gui.CreateTransactionRequestWallet{
+					ID:       w.Filename(),
+					Password: password,
+				},
+				ChangeAddress: w.Entries[0].Address.String(),
+				To: []gui.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(totalCoins - 1e3),
+						Hours:   "1",
+					},
+				},
+			},
+			outputs: []coin.TransactionOutput{
+				{
+					Address: w.Entries[1].Address,
+					Coins:   totalCoins - 1e3,
+					Hours:   1,
+				},
+				{
+					Address: w.Entries[0].Address,
+					Coins:   1e3,
+					Hours:   remainingHours - 1,
+				},
+			},
+		},
+
+		{
+			name: "valid request, manual one output no change",
+			req: gui.CreateTransactionRequest{
+				HoursSelection: gui.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: gui.CreateTransactionRequestWallet{
+					ID:       w.Filename(),
+					Password: password,
+				},
+				ChangeAddress: w.Entries[0].Address.String(),
+				To: []gui.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(totalCoins),
+						Hours:   "1",
+					},
+				},
+			},
+			outputs: []coin.TransactionOutput{
+				{
+					Address: w.Entries[1].Address,
+					Coins:   totalCoins,
+					Hours:   1,
+				},
+			},
+		},
+
+		{
+			name: "valid request, auto one output no change",
+			req: gui.CreateTransactionRequest{
+				HoursSelection: gui.HoursSelection{
+					Type:        wallet.HoursSelectionTypeAuto,
+					Mode:        wallet.HoursSelectionModeShare,
+					ShareFactor: "0.5",
+				},
+				Wallet: gui.CreateTransactionRequestWallet{
+					ID:       w.Filename(),
+					Password: password,
+				},
+				ChangeAddress: w.Entries[0].Address.String(),
+				To: []gui.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(totalCoins),
+					},
+				},
+			},
+			outputs: []coin.TransactionOutput{
+				{
+					Address: w.Entries[1].Address,
+					Coins:   totalCoins,
+					Hours:   remainingHours / 2,
+				},
+			},
+		},
+
+		{
+			name: "valid request, auto two outputs with change",
+			req: gui.CreateTransactionRequest{
+				HoursSelection: gui.HoursSelection{
+					Type:        wallet.HoursSelectionTypeAuto,
+					Mode:        wallet.HoursSelectionModeShare,
+					ShareFactor: "0.5",
+				},
+				Wallet: gui.CreateTransactionRequestWallet{
+					ID:       w.Filename(),
+					Password: password,
+				},
+				ChangeAddress: w.Entries[0].Address.String(),
+				To: []gui.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(1e6),
+					},
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(totalCoins - 1e6 - 1e4),
+					},
+				},
+			},
+			outputs: []coin.TransactionOutput{
+				{
+					Address: w.Entries[1].Address,
+					Coins:   1e6,
+				},
+				{
+					Address: w.Entries[1].Address,
+					Coins:   totalCoins - 1e6 - 1e4,
+				},
+				{
+					Address: w.Entries[0].Address,
+					Coins:   1e4,
+				},
+			},
+			ignoreHours: true, // the hours are too unpredictable
+		},
+	}
+
+	if w.IsEncrypted() {
+		cases = append(cases, testCase{
+			name: "invalid password",
+			req: gui.CreateTransactionRequest{
+				HoursSelection: gui.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: gui.CreateTransactionRequestWallet{
+					ID:       w.Filename(),
+					Password: password + "foo",
+				},
+				ChangeAddress: w.Entries[0].Address.String(),
+				To: []gui.Receiver{
+					{
+						Address: w.Entries[0].Address.String(),
+						Coins:   "1000",
+						Hours:   "1",
+					},
+				},
+			},
+			err:  "401 Unauthorized - invalid password\n",
+			code: http.StatusUnauthorized,
+		})
+
+		cases = append(cases, testCase{
+			name: "password not provided",
+			req: gui.CreateTransactionRequest{
+				HoursSelection: gui.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: gui.CreateTransactionRequestWallet{
+					ID:       w.Filename(),
+					Password: "",
+				},
+				ChangeAddress: w.Entries[0].Address.String(),
+				To: []gui.Receiver{
+					{
+						Address: w.Entries[0].Address.String(),
+						Coins:   "1000",
+						Hours:   "1",
+					},
+				},
+			},
+			err:  "400 Bad Request - missing password\n",
+			code: http.StatusBadRequest,
+		})
+
+	} else {
+		cases = append(cases, testCase{
+			name: "password provided for unencrypted wallet",
+			req: gui.CreateTransactionRequest{
+				HoursSelection: gui.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: gui.CreateTransactionRequestWallet{
+					ID:       w.Filename(),
+					Password: password + "foo",
+				},
+				ChangeAddress: w.Entries[0].Address.String(),
+				To: []gui.Receiver{
+					{
+						Address: w.Entries[0].Address.String(),
+						Coins:   "1000",
+						Hours:   "1",
+					},
+				},
+			},
+			err:  "400 Bad Request - wallet is not encrypted\n",
+			code: http.StatusBadRequest,
+		})
+	}
+
+	assertEncodeTxnMatchesTxn := func(t *testing.T, result *gui.CreateTransactionResponse) {
+		require.NotEmpty(t, result.EncodedTransaction)
+		emptyTxn := &coin.Transaction{}
+		require.NotEqual(t, hex.EncodeToString(emptyTxn.Serialize()), result.EncodedTransaction)
+		txn, err := result.Transaction.ToTransaction()
+		require.NoError(t, err)
+
+		serializedTxn := txn.Serialize()
+		require.Equal(t, hex.EncodeToString(serializedTxn), result.EncodedTransaction)
+
+		require.Equal(t, int(txn.Length), len(serializedTxn))
+	}
+
+	assertRequestedCoins := func(t *testing.T, to []gui.Receiver, out []gui.CreatedTransactionOutput) {
+		var requestedCoins uint64
+		for _, o := range to {
+			c, err := droplet.FromString(o.Coins)
+			require.NoError(t, err)
+			requestedCoins += c
+		}
+
+		var sentCoins uint64
+		for _, o := range out[:len(to)] { // exclude change output
+			c, err := droplet.FromString(o.Coins)
+			require.NoError(t, err)
+			sentCoins += c
+		}
+
+		require.Equal(t, requestedCoins, sentCoins)
+	}
+
+	assertRequestedHours := func(t *testing.T, to []gui.Receiver, out []gui.CreatedTransactionOutput) {
+		for i, o := range out[:len(to)] { // exclude change output
+			toHours, err := strconv.ParseUint(to[i].Hours, 10, 64)
+			require.NoError(t, err)
+
+			outHours, err := strconv.ParseUint(o.Hours, 10, 64)
+
+			require.Equal(t, toHours, outHours)
+		}
+	}
+
+	assertCreatedTransactionValid := func(t *testing.T, r gui.CreatedTransaction) {
+		require.NotEmpty(t, r.In)
+		require.NotEmpty(t, r.Out)
+
+		fee, err := strconv.ParseUint(r.Fee, 10, 64)
+		require.NoError(t, err)
+
+		require.NotEqual(t, uint64(0), fee)
+
+		var inputHours uint64
+		var inputCoins uint64
+		for _, in := range r.In {
+			hours, err := strconv.ParseUint(in.Hours, 10, 64)
+			require.NoError(t, err)
+			inputHours, err = coin.AddUint64(inputHours, hours)
+			require.NoError(t, err)
+
+			coins, err := droplet.FromString(in.Coins)
+			require.NoError(t, err)
+			inputCoins, err = coin.AddUint64(inputCoins, coins)
+			require.NoError(t, err)
+		}
+
+		var outputHours uint64
+		var outputCoins uint64
+		for _, out := range r.Out {
+			hours, err := strconv.ParseUint(out.Hours, 10, 64)
+			require.NoError(t, err)
+			outputHours, err = coin.AddUint64(outputHours, hours)
+			require.NoError(t, err)
+
+			coins, err := droplet.FromString(out.Coins)
+			require.NoError(t, err)
+			outputCoins, err = coin.AddUint64(outputCoins, coins)
+			require.NoError(t, err)
+		}
+
+		require.True(t, inputHours > outputHours)
+		require.Equal(t, inputHours-outputHours, fee)
+
+		require.Equal(t, inputCoins, outputCoins)
+
+		require.Equal(t, uint8(0), r.Type)
+		require.NotEmpty(t, r.Length)
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := c.CreateTransaction(tc.req)
+			if tc.err != "" {
+				assertResponseError(t, err, tc.code, tc.err)
+				return
+			}
+
+			require.NoError(t, err)
+
+			require.Equal(t, len(tc.outputs), len(result.Transaction.Out))
+
+			for i, o := range tc.outputs {
+				require.Equal(t, o.Address.String(), result.Transaction.Out[i].Address)
+
+				coins, err := droplet.FromString(result.Transaction.Out[i].Coins)
+				require.NoError(t, err)
+				require.Equal(t, o.Coins, coins, "[%d] %d != %d", i, o.Coins, coins)
+
+				if !tc.ignoreHours {
+					hours, err := strconv.ParseUint(result.Transaction.Out[i].Hours, 10, 64)
+					require.NoError(t, err)
+					require.Equal(t, o.Hours, hours, "[%d] %d != %d", i, o.Hours, hours)
+				}
+			}
+
+			assertEncodeTxnMatchesTxn(t, result)
+			assertRequestedCoins(t, tc.req.To, result.Transaction.Out)
+			assertCreatedTransactionValid(t, result.Transaction)
+
+			if tc.req.HoursSelection.Type == wallet.HoursSelectionTypeManual {
+				assertRequestedHours(t, tc.req.To, result.Transaction.Out)
+			}
+		})
+	}
+
+	if w.IsEncrypted() {
+		t.Logf("Skipping random CreateTransaction tests with encrypted wallet")
+		return
+	}
+
+	assertTxnOutputCount := func(t *testing.T, changeAddress string, nOutputs int, result *gui.CreateTransactionResponse) {
+		nResultOutputs := len(result.Transaction.Out)
+		require.True(t, nResultOutputs == nOutputs || nResultOutputs == nOutputs+1)
+		hasChange := nResultOutputs == nOutputs+1
+		changeOutput := result.Transaction.Out[nResultOutputs-1]
+		if hasChange {
+			require.Equal(t, changeOutput.Address, changeAddress)
+		}
+
+		t.Log("hasChange", hasChange)
+		if hasChange {
+			t.Log("changeCoins", changeOutput.Coins)
+			t.Log("changeHours", changeOutput.Hours)
+		}
+	}
+
+	iterations := 250
+	maxOutputs := 10
+	destAddrs := make([]cipher.Address, maxOutputs)
+	for i := range destAddrs {
+		destAddrs[i] = testutil.MakeAddress()
+	}
+
+	for i := 0; i < iterations; i++ {
+		t.Log("iteration", i)
+		t.Log("totalCoins", totalCoins)
+		t.Log("totalHours", totalHours)
+
+		spendableHours := fee.RemainingHours(totalHours)
+		t.Log("spendableHours", spendableHours)
+
+		coins := rand.Intn(int(totalCoins)) + 1
+		coins -= coins % int(visor.MaxDropletDivisor())
+		if coins == 0 {
+			coins = int(visor.MaxDropletDivisor())
+		}
+		hours := rand.Intn(int(spendableHours + 1))
+		nOutputs := rand.Intn(maxOutputs) + 1
+
+		t.Log("sendCoins", coins)
+		t.Log("sendHours", hours)
+
+		changeAddress := w.Entries[0].Address.String()
+
+		shareFactor := strconv.FormatFloat(rand.Float64(), 'f', 8, 64)
+
+		t.Log("shareFactor", shareFactor)
+
+		to := make([]gui.Receiver, 0, nOutputs)
+		remainingHours := hours
+		remainingCoins := coins
+		for i := 0; i < nOutputs; i++ {
+			if remainingCoins == 0 {
+				break
+			}
+
+			receiver := gui.Receiver{}
+			receiver.Address = destAddrs[rand.Intn(len(destAddrs))].String()
+
+			if i == nOutputs-1 {
+				var err error
+				receiver.Coins, err = droplet.ToString(uint64(remainingCoins))
+				require.NoError(t, err)
+				receiver.Hours = fmt.Sprint(remainingHours)
+
+				remainingCoins = 0
+				remainingHours = 0
+			} else {
+				receiverCoins := rand.Intn(remainingCoins) + 1
+				receiverCoins -= receiverCoins % int(visor.MaxDropletDivisor())
+				if receiverCoins == 0 {
+					receiverCoins = int(visor.MaxDropletDivisor())
+				}
+
+				var err error
+				receiver.Coins, err = droplet.ToString(uint64(receiverCoins))
+				require.NoError(t, err)
+				remainingCoins -= receiverCoins
+
+				receiverHours := rand.Intn(remainingHours + 1)
+				receiver.Hours = fmt.Sprint(receiverHours)
+				remainingHours -= receiverHours
+			}
+
+			to = append(to, receiver)
+		}
+
+		// Remove duplicate outputs
+		dup := make(map[gui.Receiver]struct{}, len(to))
+		newTo := make([]gui.Receiver, 0, len(dup))
+		for _, o := range to {
+			if _, ok := dup[o]; !ok {
+				dup[o] = struct{}{}
+				newTo = append(newTo, o)
+			}
+		}
+		to = newTo
+
+		nOutputs = len(to)
+		t.Log("nOutputs", nOutputs)
+
+		for i := range to {
+			j := rand.Intn(i + 1)
+			to[i], to[j] = to[j], to[i]
+		}
+
+		// TODO -- use rand.Shuffle [go1.10 only]
+		// rand.Shuffle(len(to), func(i, j int) {
+		// 	to[i], to[j] = to[j], to[i]
+		// })
+
+		for i, o := range to {
+			t.Logf("to[%d].Hours %s\n", i, o.Hours)
+		}
+
+		autoTo := make([]gui.Receiver, len(to))
+		for i, o := range to {
+			autoTo[i] = gui.Receiver{
+				Address: o.Address,
+				Coins:   o.Coins,
+				Hours:   "",
+			}
+		}
+
+		// Remove duplicate outputs
+		dup = make(map[gui.Receiver]struct{}, len(autoTo))
+		newAutoTo := make([]gui.Receiver, 0, len(dup))
+		for _, o := range autoTo {
+			if _, ok := dup[o]; !ok {
+				dup[o] = struct{}{}
+				newAutoTo = append(newAutoTo, o)
+			}
+		}
+		autoTo = newAutoTo
+
+		nAutoOutputs := len(autoTo)
+		t.Log("nAutoOutputs", nAutoOutputs)
+
+		for i, o := range autoTo {
+			t.Logf("autoTo[%d].Coins %s\n", i, o.Coins)
+		}
+
+		// Auto, random share factor
+
+		result, err := c.CreateTransaction(gui.CreateTransactionRequest{
+			HoursSelection: gui.HoursSelection{
+				Type:        wallet.HoursSelectionTypeAuto,
+				Mode:        wallet.HoursSelectionModeShare,
+				ShareFactor: shareFactor,
+			},
+			ChangeAddress: changeAddress,
+			Wallet: gui.CreateTransactionRequestWallet{
+				ID:       w.Filename(),
+				Password: password,
+			},
+			To: autoTo,
+		})
+		require.NoError(t, err)
+
+		assertEncodeTxnMatchesTxn(t, result)
+		assertTxnOutputCount(t, changeAddress, nAutoOutputs, result)
+		assertRequestedCoins(t, autoTo, result.Transaction.Out)
+		assertCreatedTransactionValid(t, result.Transaction)
+
+		// Auto, share factor 0
+
+		result, err = c.CreateTransaction(gui.CreateTransactionRequest{
+			HoursSelection: gui.HoursSelection{
+				Type:        wallet.HoursSelectionTypeAuto,
+				Mode:        wallet.HoursSelectionModeShare,
+				ShareFactor: "0",
+			},
+			ChangeAddress: changeAddress,
+			Wallet: gui.CreateTransactionRequestWallet{
+				ID:       w.Filename(),
+				Password: password,
+			},
+			To: autoTo,
+		})
+		require.NoError(t, err)
+
+		assertEncodeTxnMatchesTxn(t, result)
+		assertTxnOutputCount(t, changeAddress, nAutoOutputs, result)
+		assertRequestedCoins(t, autoTo, result.Transaction.Out)
+		assertCreatedTransactionValid(t, result.Transaction)
+
+		// Check that the non-change outputs have 0 hours
+		for _, o := range result.Transaction.Out[:nAutoOutputs] {
+			require.Equal(t, "0", o.Hours)
+		}
+
+		// Auto, share factor 1
+
+		result, err = c.CreateTransaction(gui.CreateTransactionRequest{
+			HoursSelection: gui.HoursSelection{
+				Type:        wallet.HoursSelectionTypeAuto,
+				Mode:        wallet.HoursSelectionModeShare,
+				ShareFactor: "1",
+			},
+			ChangeAddress: changeAddress,
+			Wallet: gui.CreateTransactionRequestWallet{
+				ID:       w.Filename(),
+				Password: password,
+			},
+			To: autoTo,
+		})
+		require.NoError(t, err)
+
+		assertEncodeTxnMatchesTxn(t, result)
+		assertTxnOutputCount(t, changeAddress, nAutoOutputs, result)
+		assertRequestedCoins(t, autoTo, result.Transaction.Out)
+		assertCreatedTransactionValid(t, result.Transaction)
+
+		// Check that the change output has 0 hours
+		if len(result.Transaction.Out) > nAutoOutputs {
+			require.Equal(t, "0", result.Transaction.Out[nAutoOutputs].Hours)
+		}
+
+		// Manual
+
+		result, err = c.CreateTransaction(gui.CreateTransactionRequest{
+			HoursSelection: gui.HoursSelection{
+				Type: wallet.HoursSelectionTypeManual,
+			},
+			ChangeAddress: changeAddress,
+			Wallet: gui.CreateTransactionRequestWallet{
+				ID:       w.Filename(),
+				Password: password,
+			},
+			To: to,
+		})
+		require.NoError(t, err)
+
+		assertEncodeTxnMatchesTxn(t, result)
+		assertTxnOutputCount(t, changeAddress, nOutputs, result)
+		assertRequestedCoins(t, to, result.Transaction.Out)
+		assertRequestedHours(t, to, result.Transaction.Out)
+		assertCreatedTransactionValid(t, result.Transaction)
 	}
 }
 
@@ -2370,6 +3083,11 @@ func prepareAndCheckWallet(t *testing.T, c *gui.Client, miniCoins, miniCoinHours
 		if err != nil {
 			t.Fatalf("New wallet address failed: %v", err)
 		}
+
+		w, err = wallet.Load(walletPath)
+		if err != nil {
+			t.Fatalf("Reload wallet %v failed: %v", walletPath, err)
+		}
 	}
 
 	coins, hours := getWalletBalance(t, c, walletName)
@@ -2519,12 +3237,14 @@ func TestDisableWalletApi(t *testing.T) {
 	}
 
 	tt := []struct {
-		name      string
-		method    string
-		endpoint  string
-		body      func() io.Reader
-		expectErr string
-		code      int
+		name        string
+		method      string
+		endpoint    string
+		contentType string
+		body        func() io.Reader
+		json        func() interface{}
+		expectErr   string
+		code        int
 	}{
 		{
 			name:      "get wallet",
@@ -2667,6 +3387,32 @@ func TestDisableWalletApi(t *testing.T) {
 			expectErr: "403 Forbidden\n",
 			code:      http.StatusForbidden,
 		},
+		{
+			name:        "create transaction",
+			method:      http.MethodPost,
+			endpoint:    "/wallet/transaction",
+			contentType: "application/json",
+			json: func() interface{} {
+				return gui.CreateTransactionRequest{
+					HoursSelection: gui.HoursSelection{
+						Type: wallet.HoursSelectionTypeManual,
+					},
+					Wallet: gui.CreateTransactionRequestWallet{
+						ID: "test.wlt",
+					},
+					ChangeAddress: testutil.MakeAddress().String(),
+					To: []gui.Receiver{
+						{
+							Address: testutil.MakeAddress().String(),
+							Coins:   "0.001",
+							Hours:   "1",
+						},
+					},
+				}
+			},
+			expectErr: "403 Forbidden\n",
+			code:      http.StatusForbidden,
+		},
 	}
 
 	c := gui.NewClient(nodeAddress())
@@ -2677,7 +3423,12 @@ func TestDisableWalletApi(t *testing.T) {
 			case http.MethodGet:
 				err = c.Get(tc.endpoint, nil)
 			case http.MethodPost:
-				err = c.PostForm(tc.endpoint, tc.body(), nil)
+				switch tc.contentType {
+				case "application/json":
+					err = c.PostJSON(tc.endpoint, tc.json(), nil)
+				default:
+					err = c.PostForm(tc.endpoint, tc.body(), nil)
+				}
 			}
 			assertResponseError(t, err, tc.code, tc.expectErr)
 		})

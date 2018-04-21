@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
 import { ApiService } from './api.service';
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
 import { IntervalObservable } from 'rxjs/observable/IntervalObservable';
@@ -11,12 +10,13 @@ import 'rxjs/add/operator/filter';
 import 'rxjs/add/operator/first';
 import 'rxjs/add/operator/mergeMap';
 import { Address, Wallet } from '../app.datatypes';
+import { ReplaySubject } from 'rxjs/ReplaySubject';
 
 @Injectable()
 export class WalletService {
   addresses: Address[];
-  wallets: Subject<Wallet[]> = new BehaviorSubject<Wallet[]>([]);
-  pendingTxs: Subject<any[]> = new BehaviorSubject<any[]>([]);
+  wallets: Subject<Wallet[]> = new ReplaySubject<Wallet[]>();
+  pendingTxs: Subject<any[]> = new ReplaySubject<any[]>();
 
   constructor(
     private apiService: ApiService
@@ -185,6 +185,7 @@ export class WalletService {
     this.apiService.getWallets().first().subscribe(wallets => {
       this.wallets.next(wallets);
       this.refreshBalances();
+      this.refreshPendingTransactions();
     });
   }
 

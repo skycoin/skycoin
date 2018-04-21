@@ -58,7 +58,13 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { HttpClientModule } from '@angular/common/http';
 import { AppService } from './services/app.service';
+import { WizardGuardService } from './services/wizard-guard.service';
+import { OnboardingCreateWalletComponent } from './components/pages/onboarding/onboarding-create-wallet/onboarding-create-wallet.component';
+import { OnboardingEncryptWalletComponent } from './components/pages/onboarding/onboarding-encrypt-wallet/onboarding-encrypt-wallet.component';
+import { OnboardingSafeguardComponent } from './components/pages/onboarding/onboarding-create-wallet/onboarding-safeguard/onboarding-safeguard.component';
+import { DoubleButtonComponent } from './components/layout/double-button/double-button.component';
 import { SeedModalComponent } from './components/pages/settings/backup/seed-modal/seed-modal.component';
+import { OnboardingComponent } from './components/pages/onboarding/onboarding.component';
 import { DontsavepasswordDirective } from './directives/dontsavepassword.directive';
 
 
@@ -71,18 +77,22 @@ const ROUTES = [
   {
     path: 'wallets',
     component: WalletsComponent,
+    canActivate: [WizardGuardService],
   },
   {
     path: 'send',
     component: SendSkycoinComponent,
+    canActivate: [WizardGuardService],
   },
   {
     path: 'transactions',
     component: TransactionListComponent,
+    canActivate: [WizardGuardService],
   },
   {
     path: 'buy',
     component: BuyComponent,
+    canActivate: [WizardGuardService],
   },
   {
     path: 'settings',
@@ -108,6 +118,11 @@ const ROUTES = [
         component: PendingTransactionsComponent,
       },
     ],
+    canActivate: [WizardGuardService],
+  },
+  {
+    path: 'wizard',
+    component: OnboardingComponent,
   },
 ];
 
@@ -140,8 +155,13 @@ const ROUTES = [
     NavBarComponent,
     WalletDetailComponent,
     ModalComponent,
+    OnboardingCreateWalletComponent,
+    OnboardingEncryptWalletComponent,
+    OnboardingSafeguardComponent,
+    DoubleButtonComponent,
     PasswordDialogComponent,
     SeedModalComponent,
+    OnboardingComponent,
     DontsavepasswordDirective,
   ],
   entryComponents: [
@@ -151,6 +171,7 @@ const ROUTES = [
     QrCodeComponent,
     SendSkycoinComponent,
     TransactionDetailComponent,
+    OnboardingSafeguardComponent,
     PasswordDialogComponent,
     SeedModalComponent,
   ],
@@ -188,6 +209,7 @@ const ROUTES = [
     PriceService,
     PurchaseService,
     WalletService,
+    WizardGuardService,
   ],
   bootstrap: [AppComponent]
 })

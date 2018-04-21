@@ -32,6 +32,7 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
     - [Show Skycoin node options](#show-skycoin-node-options)
     - [Run Skycoin with options](#run-skycoin-with-options)
     - [Docker image](#docker-image)
+    - [Building your own images](#building-your-own-images)
 - [API Documentation](#api-documentation)
     - [Wallet REST API](#wallet-rest-api)
     - [JSON-RPC 2.0 API](#json-rpc-20-api)
@@ -117,7 +118,6 @@ $ docker run -ti --rm \
     -v skycoin-wallet:/wallet \
     -p 6000:6000 \
     -p 6420:6420 \
-    -p 6430:6430 \
     skycoin/skycoin
 ```
 

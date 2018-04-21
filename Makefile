@@ -1,6 +1,7 @@
 .DEFAULT_GOAL := help
 .PHONY: run run-help test test-core test-libc test-lint build-libc check cover
-.PHONY: integration-test-stable integration-test-live integration-test-live-wallet
+.PHONY: integration-test-stable integration-test-stable-disable-csrf
+.PHONY: integration-test-live integration-test-live-wallet
 .PHONY: integration-test-disable-wallet-api integration-test-disable-seed-api
 .PHONY: install-linters format release clean-release install-deps-ui build-ui help
 
@@ -113,6 +114,9 @@ lint: ## Run linters. Use make install-linters first.
 check: lint test integration-test-stable integration-test-disable-wallet-api integration-test-disable-seed-api ## Run tests and linters
 
 integration-test-stable: ## Run stable integration tests
+	./ci-scripts/integration-test-stable.sh -c
+
+integration-test-stable-disable-csrf: ## Run stable integration tests with CSRF disabled
 	./ci-scripts/integration-test-stable.sh
 
 integration-test-live: ## Run live integration tests

@@ -1,0 +1,8 @@
+{
+	"wallet_directory": "/Users/steve/.skycoin/wallets",
+	"wallet_name": "skycoin_cli.wlt",
+	"data_directory": "/Users/steve/.skycoin",
+	"coin": "skycoin",
+	"rpc_address": "http://127.0.0.1:46420",
+	"use_csrf": false
+}

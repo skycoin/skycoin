@@ -103,7 +103,7 @@ func Test_getStatusHandler(t *testing.T) {
 				},
 				in1: m,
 			},
-			makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams),
+			MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams),
 		},
 	}
 

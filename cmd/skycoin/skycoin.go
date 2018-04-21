@@ -15,7 +15,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
@@ -111,9 +110,7 @@ type Config struct {
 	WebInterfaceKey   string
 	WebInterfaceHTTPS bool
 
-	RPCInterface     bool
-	RPCInterfacePort int
-	RPCInterfaceAddr string
+	RPCInterface bool
 
 	// Launch System Default Browser after client startup
 	LaunchBrowser bool
@@ -164,13 +161,12 @@ type Config struct {
 	// to show up as a peer
 	ConnectTo string
 
-	DBPath       string
-	DBReadOnly   bool
-	Arbitrating  bool
-	RPCThreadNum uint // rpc number
-	Logtofile    bool
-	Logtogui     bool
-	LogBuffSize  int
+	DBPath      string
+	DBReadOnly  bool
+	Arbitrating bool
+	Logtofile   bool
+	Logtogui    bool
+	LogBuffSize int
 }
 
 func (c *Config) register() {
@@ -182,7 +178,7 @@ func (c *Config) register() {
 	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming", c.DisableIncomingConnections, "Don't make incoming connections")
 	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
 	flag.BoolVar(&c.EnableWalletAPI, "enable-wallet-api", c.EnableWalletAPI, "Enable the wallet API")
-	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable csrf check")
+	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "Disable CSRF check. This can be safely disabled if a browser is not run on the same machine or network as the node")
 	flag.BoolVar(&c.EnableSeedAPI, "enable-seed-api", false, "enable /wallet/seed api")
 	flag.StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
@@ -195,9 +191,6 @@ func (c *Config) register() {
 	flag.BoolVar(&c.WebInterfaceHTTPS, "web-interface-https", c.WebInterfaceHTTPS, "enable HTTPS for web interface")
 
 	flag.BoolVar(&c.RPCInterface, "rpc-interface", c.RPCInterface, "enable the rpc interface")
-	flag.IntVar(&c.RPCInterfacePort, "rpc-interface-port", c.RPCInterfacePort, "port to serve rpc interface on")
-	flag.StringVar(&c.RPCInterfaceAddr, "rpc-interface-addr", c.RPCInterfaceAddr, "addr to serve rpc interface on")
-	flag.UintVar(&c.RPCThreadNum, "rpc-thread-num", 5, "rpc thread number")
 
 	flag.BoolVar(&c.LaunchBrowser, "launch-browser", c.LaunchBrowser, "launch system default webbrowser at client startup")
 	flag.BoolVar(&c.PrintWebInterfaceAddress, "print-web-interface-address", c.PrintWebInterfaceAddress, "print configured web interface address and exit")
@@ -277,10 +270,7 @@ var devConfig = Config{
 	WebInterfaceHTTPS:        false,
 	PrintWebInterfaceAddress: false,
 
-	RPCInterface:     true,
-	RPCInterfacePort: 6430,
-	RPCInterfaceAddr: "127.0.0.1",
-	RPCThreadNum:     5,
+	RPCInterface: true,
 
 	LaunchBrowser: false,
 	// Data directory holds app data -- defaults to ~/.skycoin
@@ -438,7 +428,7 @@ func catchInterruptPanic() {
 	panic("SIGINT")
 }
 
-func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) (*gui.Server, error) {
+func createGUI(c *Config, d *daemon.Daemon, host string) (*gui.Server, error) {
 	var s *gui.Server
 	var err error
 
@@ -446,6 +436,7 @@ func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) (*g
 		StaticDir:       c.GUIDirectory,
 		DisableCSRF:     c.DisableCSRF,
 		EnableWalletAPI: c.EnableWalletAPI,
+		EnableJSON20RPC: c.RPCInterface,
 		ReadTimeout:     c.ReadTimeout,
 		WriteTimeout:    c.WriteTimeout,
 		IdleTimeout:     c.IdleTimeout,
@@ -598,27 +589,9 @@ func Run(c *Config) {
 		return
 	}
 
-	var rpc *webrpc.WebRPC
-	if c.RPCInterface {
-		rpcAddr := fmt.Sprintf("%v:%v", c.RPCInterfaceAddr, c.RPCInterfacePort)
-		rpc, err = webrpc.New(rpcAddr, webrpc.Config{
-			ReadTimeout:  c.ReadTimeout,
-			WriteTimeout: c.WriteTimeout,
-			IdleTimeout:  c.IdleTimeout,
-			ChanBuffSize: 1000,
-			WorkerNum:    c.RPCThreadNum,
-		}, d.Gateway)
-		if err != nil {
-			logger.Error(err)
-			return
-		}
-		rpc.ChanBuffSize = 1000
-		rpc.WorkerNum = c.RPCThreadNum
-	}
-
 	var webInterface *gui.Server
 	if c.WebInterface {
-		webInterface, err = createGUI(c, d, host, quit)
+		webInterface, err = createGUI(c, d, host)
 		if err != nil {
 			logger.Error(err)
 			return
@@ -668,18 +641,6 @@ func Run(c *Config) {
 			errC <- err
 		}
 	}()
-
-	// start the webrpc
-	if c.RPCInterface {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			if err := rpc.Run(); err != nil {
-				logger.Error(err)
-				errC <- err
-			}
-		}()
-	}
 
 	if c.WebInterface {
 		wg.Add(1)
@@ -741,9 +702,6 @@ func Run(c *Config) {
 	}
 
 	logger.Info("Shutting down...")
-	if rpc != nil {
-		rpc.Shutdown()
-	}
 	if webInterface != nil {
 		webInterface.Shutdown()
 	}

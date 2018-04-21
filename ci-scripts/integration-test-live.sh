@@ -8,9 +8,9 @@
 #Set Script Name variable
 SCRIPT=`basename ${BASH_SOURCE[0]}`
 PORT="6420"
-RPC_PORT="6430"
+RPC_PORT="$PORT"
 HOST="http://127.0.0.1:$PORT"
-RPC_ADDR="127.0.0.1:$RPC_PORT"
+RPC_ADDR="http://127.0.0.1:$RPC_PORT"
 MODE="live"
 TEST=""
 UPDATE=""
@@ -21,6 +21,9 @@ VERBOSE=""
 RUN_TESTS=""
 # run wallet tests
 TEST_LIVE_WALLET=""
+# run tests with csrf enabled
+USE_CSRF=""
+DISABLE_CSRF="-disable-csrf"
 FAILFAST=""
 
 usage () {
@@ -32,10 +35,11 @@ usage () {
   echo "-v <boolean> -- Run test with -v flag"
   echo "-w <boolean> -- Run wallet tests."
   echo "-f <boolean> -- Run test with -failfast flag"
+  echo "-c <boolean> -- Run tests with CSRF enabled. If not set, node must be run with -disable-csrf"
   exit 1
 }
 
-while getopts "h?t:r:uvwf" args; do
+while getopts "h?t:r:uvwfc" args; do
 case $args in
     h|\?)
         usage;
@@ -45,7 +49,8 @@ case $args in
     u ) UPDATE="--update";;
     v ) VERBOSE="-v";;
     w ) TEST_LIVE_WALLET="--test-live-wallet";;
-    f ) FAILFAST="-failfast"
+    f ) FAILFAST="-failfast";;
+    c ) USE_CSRF="1";;
   esac
 done
 
@@ -69,7 +74,7 @@ fi
 
 if [[ -z $TEST || $TEST = "cli" ]]; then
 
-SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR SKYCOIN_NODE_HOST=$HOST \
+SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR USE_CSRF=$USE_CSRF \
     go test ./src/api/cli/integration/... $FAILFAST $UPDATE -timeout=3m $VERBOSE $RUN_TESTS $TEST_LIVE_WALLET
 
 fi

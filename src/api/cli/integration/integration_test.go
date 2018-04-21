@@ -26,6 +26,7 @@ import (
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/gui"
+	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -89,14 +90,6 @@ func TestMain(m *testing.M) {
 	}
 
 	os.Exit(ret)
-}
-
-func nodeAddress() string {
-	addr := os.Getenv("SKYCOIN_NODE_HOST")
-	if addr == "" {
-		return "http://127.0.0.1:6420"
-	}
-	return addr
 }
 
 // createTempWalletFile creates a temporary dir, and copy the 'from' file to dir.
@@ -288,10 +281,21 @@ func doLiveOrStable(t *testing.T) bool {
 func rpcAddress() string {
 	rpcAddr := os.Getenv("RPC_ADDR")
 	if rpcAddr == "" {
-		rpcAddr = "127.0.0.1:6430"
+		rpcAddr = "http://127.0.0.1:6420"
 	}
 
 	return rpcAddr
+}
+
+func useCSRF(t *testing.T) bool {
+	x := os.Getenv("USE_CSRF")
+	if x == "" {
+		return false
+	}
+
+	useCSRF, err := strconv.ParseBool(x)
+	require.NoError(t, err)
+	return useCSRF
 }
 
 func TestStableGenerateAddresses(t *testing.T) {
@@ -896,22 +900,37 @@ func TestStableAddressOutputs(t *testing.T) {
 		name       string
 		args       []string
 		goldenFile string
+		err        error
+		errMsg     string
 	}{
 		{
-			"addressOutputs one address",
-			[]string{"addressOutputs", "2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"},
-			"address-outputs.golden",
+			name:       "addressOutputs one address",
+			args:       []string{"addressOutputs", "2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"},
+			goldenFile: "address-outputs.golden",
 		},
 		{
-			"addressOutputs two address",
-			[]string{"addressOutputs", "2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt", "ejJjiCwp86ykmFr5iTJ8LxQXJ2wJPTYmkm"},
-			"two-addresses-outputs.golden",
+			name:       "addressOutputs two address",
+			args:       []string{"addressOutputs", "2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt", "ejJjiCwp86ykmFr5iTJ8LxQXJ2wJPTYmkm"},
+			goldenFile: "two-addresses-outputs.golden",
+		},
+		{
+			name:   "addressOutputs two address one invalid",
+			args:   []string{"addressOutputs", "2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt", "badaddress"},
+			err:    errors.New("exit status 1"),
+			errMsg: "invalid address: badaddress, err: Invalid address length\n",
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			output, err := exec.Command(binaryPath, tc.args...).CombinedOutput()
+
+			if tc.err != nil {
+				testutil.RequireError(t, err, tc.err.Error())
+				require.Equal(t, tc.errMsg, string(output))
+				return
+			}
+
 			require.NoError(t, err)
 
 			var addrOutputs webrpc.OutputsResult
@@ -921,7 +940,6 @@ func TestStableAddressOutputs(t *testing.T) {
 			var expect webrpc.OutputsResult
 			loadGoldenFile(t, tc.goldenFile, TestData{addrOutputs, &expect})
 			require.Equal(t, expect, addrOutputs)
-
 		})
 	}
 }
@@ -939,6 +957,63 @@ func TestLiveAddressOutputs(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestStableShowConfig(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	output, err := exec.Command(binaryPath, "showConfig").CombinedOutput()
+	require.NoError(t, err)
+
+	var ret cli.Config
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&ret)
+	require.NoError(t, err)
+
+	goldenFile := "show-config.golden"
+	if useCSRF(t) {
+		goldenFile = "show-config-use-csrf.golden"
+	}
+
+	var expect cli.Config
+	loadGoldenFile(t, goldenFile, TestData{ret, &expect})
+	require.Equal(t, expect, ret)
+}
+
+func TestLiveShowConfig(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	output, err := exec.Command(binaryPath, "showConfig").CombinedOutput()
+	require.NoError(t, err)
+
+	var ret cli.Config
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&ret)
+	require.NoError(t, err)
+
+	// WalletDir and DataDir can't be checked without essentially reimplement cli.LoadConfig
+	// to conpare values
+	require.NotEmpty(t, ret.WalletDir)
+	require.NotEmpty(t, ret.DataDir)
+
+	walletName := os.Getenv("WALLET_NAME")
+	if walletName == "" {
+		walletName = "skycoin_cli.wlt"
+	}
+	require.Equal(t, walletName, ret.WalletName)
+	require.NotEmpty(t, ret.WalletName)
+
+	coin := os.Getenv("COIN")
+	if coin == "" {
+		coin = "skycoin"
+	}
+	require.Equal(t, coin, ret.Coin)
+
+	require.Equal(t, rpcAddress(), ret.RPCAddress)
+
+	require.Equal(t, useCSRF(t), ret.UseCSRF)
+}
+
 func TestStableStatus(t *testing.T) {
 	if !doStable(t) {
 		return
@@ -946,23 +1021,21 @@ func TestStableStatus(t *testing.T) {
 
 	output, err := exec.Command(binaryPath, "status").CombinedOutput()
 	require.NoError(t, err)
-	var ret struct {
-		webrpc.StatusResult
-		RPCAddress string `json:"webrpc_address"`
-	}
 
+	var ret cli.StatusResult
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&ret)
 	require.NoError(t, err)
 
 	// TimeSinceLastBlock is not stable
 	ret.TimeSinceLastBlock = ""
 
-	var expect struct {
-		webrpc.StatusResult
-		RPCAddress string `json:"webrpc_address"`
+	goldenFile := "status.golden"
+	if useCSRF(t) {
+		goldenFile = "status-use-csrf.golden"
 	}
 
-	loadGoldenFile(t, "status.golden", TestData{ret, &expect})
+	var expect cli.StatusResult
+	loadGoldenFile(t, goldenFile, TestData{ret, &expect})
 	require.Equal(t, expect, ret)
 }
 
@@ -974,15 +1047,12 @@ func TestLiveStatus(t *testing.T) {
 	output, err := exec.Command(binaryPath, "status").CombinedOutput()
 	require.NoError(t, err)
 
-	var ret struct {
-		webrpc.StatusResult
-		RPCAddress string `json:"webrpc_address"`
-	}
-
+	var ret cli.StatusResult
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&ret)
 	require.NoError(t, err)
 	require.True(t, ret.Running)
-	require.Equal(t, ret.RPCAddress, rpcAddress())
+	require.Equal(t, rpcAddress(), ret.RPCAddress)
+	require.Equal(t, useCSRF(t), ret.UseCSRF)
 }
 
 func TestStableTransaction(t *testing.T) {
@@ -998,32 +1068,32 @@ func TestStableTransaction(t *testing.T) {
 		goldenFile string
 	}{
 		{
-			"invalid txid",
-			[]string{"abcd"},
-			errors.New("exit status 1"),
-			"invalid txid\n",
-			"",
+			name:       "invalid txid",
+			args:       []string{"abcd"},
+			err:        errors.New("exit status 1"),
+			errMsg:     "invalid txid\n",
+			goldenFile: "",
 		},
 		{
-			"not exist",
-			[]string{"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947"},
-			errors.New("exit status 1"),
-			"transaction doesn't exist [code: -32600]\n",
-			"",
+			name:       "not exist",
+			args:       []string{"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947"},
+			err:        errors.New("exit status 1"),
+			errMsg:     "transaction doesn't exist [code: -32600]\n",
+			goldenFile: "",
 		},
 		{
-			"empty txid",
-			[]string{""},
-			errors.New("exit status 1"),
-			"txid is empty\n",
-			"",
+			name:       "empty txid",
+			args:       []string{""},
+			err:        errors.New("exit status 1"),
+			errMsg:     "txid is empty\n",
+			goldenFile: "",
 		},
 		{
-			"genesis transaction",
-			[]string{"d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add"},
-			nil,
-			"",
-			"genesis-transaction-cli.golden",
+			name:       "genesis transaction",
+			args:       []string{"d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add"},
+			err:        nil,
+			errMsg:     "",
+			goldenFile: "genesis-transaction-cli.golden",
 		},
 	}
 
@@ -1031,11 +1101,13 @@ func TestStableTransaction(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			args := append([]string{"transaction"}, tc.args...)
 			o, err := exec.Command(binaryPath, args...).CombinedOutput()
-			if err != nil {
-				require.Equal(t, tc.err.Error(), err.Error())
+			if tc.err != nil {
+				testutil.RequireError(t, err, tc.err.Error())
 				require.Equal(t, tc.errMsg, string(o))
 				return
 			}
+
+			require.NoError(t, err)
 
 			// Decode the output into visor.TransactionJSON
 			var tx webrpc.TxnResult
@@ -1118,7 +1190,11 @@ func checkTransactions(t *testing.T, txids []string) {
 	// Start goroutines to check transactions
 	var wg sync.WaitGroup
 	txC := make(chan string, 500)
-	for i := 0; i < 4; i++ {
+	nReq := 4
+	if useCSRF(t) {
+		nReq = 1
+	}
+	for i := 0; i < nReq; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -2115,7 +2191,7 @@ func TestLiveGUIInjectTransaction(t *testing.T) {
 
 	requireWalletEnv(t)
 
-	c := gui.NewClient(nodeAddress())
+	c := gui.NewClient(rpcAddress())
 	// prepares wallet and confirms the wallet has at least 2 coins and 2 coin hours.
 	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 2)
 

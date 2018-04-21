@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `POST /wallet/transaction` API endpoint, creates a transaction, allowing control of spending address and multiple destinations
 - Add wallet setup wizard
 - Added support for encrypted wallets on frontend
+- `USE_CSRF` environment variable for CLI, if the remote node has CSRF enabled (CSRF is enabled by default, use `-disable-csrf` to disable)
 
 ### Fixed
 
@@ -41,11 +42,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `POST /wallet/newAddress` API endpoint, add `password` argument
 - `POST /wallet/spend` API endpoint, add `password` argument
 - No default wallet will be created when node starts the first time
+- JSON 2.0 RPC interface (used by the CLI tool) is now served on the same host interface as the REST API, port `6420`. The additional listener has been removed.
 
 ### Removed
 
 - Remove dependency [op/go-logging](https://github.com/op/go-logging)
 - Remove `seed`, `lastSeed`, `secrets` and `secret_key` in address entries from wallet apis response
+- Remove `-rpc-interface-addr`, `-rpc-interface-port` options.  The RPC interface is now on default port `6420` with the REST API.
+- Remove `-rpc-thread-num` option
 
 ## [0.22.0] - 2018-03-20
 

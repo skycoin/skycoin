@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 set -x
-
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 echo "skycoin binary dir:" "$DIR"
 pushd "$DIR" >/dev/null
@@ -15,6 +14,7 @@ go run -ldflags "${GOLDFLAGS}" cmd/skycoin/skycoin.go \
     -launch-browser=true \
     -enable-wallet-api=true \
     -rpc-interface=false \
+    -web-interface-port $(($RANDOM%65563))  \
     $@
 
 popd >/dev/null

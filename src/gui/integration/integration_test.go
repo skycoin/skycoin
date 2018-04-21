@@ -3027,10 +3027,6 @@ func TestStableDisableGetWalletSeed(t *testing.T) {
 		return
 	}
 
-	if !doWallet(t) {
-		return
-	}
-
 	c := gui.NewClient(nodeAddress())
 
 	// Create an encrypted wallet

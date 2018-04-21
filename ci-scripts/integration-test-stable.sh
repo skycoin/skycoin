@@ -32,12 +32,11 @@ usage () {
   echo "-r <string>  -- Run test with -run flag"
   echo "-u <boolean> -- Update stable testdata"
   echo "-v <boolean> -- Run test with -v flag"
-  echo "-w <boolean> -- Run wallet tests. NOTE: skycoin node must be run with -enable-wallet-api=true"
   echo "-f <boolean> -- Run test with -failfast flag"
   exit 1
 }
 
-while getopts "h?t:r:uvwf" args; do
+while getopts "h?t:r:uvf" args; do
   case $args in
     h|\?)
         usage;
@@ -46,7 +45,6 @@ while getopts "h?t:r:uvwf" args; do
     r ) RUN_TESTS="-run ${OPTARG}";;
     u ) UPDATE="--update";;
     v ) VERBOSE="-v";;
-    w ) TEST_WALLET="--test-wallet";;
     f ) FAILFAST="-failfast"
   esac
 done

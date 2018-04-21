@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - #1077, disable initial wallet creating
 - #1270, disable RPC interface by default for run.sh and electron
 - #1267, return 401 Unauthorized for invalid password
+- #1309, float imprecision error in frontend spend preventing some decimal values from sending
 
 ### Changed
 

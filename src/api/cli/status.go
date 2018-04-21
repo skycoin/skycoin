@@ -42,7 +42,7 @@ func showConfigCmd() gcli.Command {
 	name := "showConfig"
 	return gcli.Command{
 		Name:         name,
-		Usage:        "show cli configuration",
+		Usage:        "Show cli configuration",
 		ArgsUsage:    " ",
 		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {

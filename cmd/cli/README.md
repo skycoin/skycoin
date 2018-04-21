@@ -12,6 +12,7 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
     - [RPC_ADDR](#rpcaddr)
     - [WALLET_DIR](#walletdir)
     - [WALLET_NAME](#walletname)
+    - [USE_CSRF](#usecsrf)
 - [Usage](#usage)
     - [Add Private Key](#add-private-key)
         - [Example](#example)
@@ -41,14 +42,16 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
         - [Example](#example-6)
     - [Send](#send)
         - [Examples](#examples-5)
-    - [Status](#status)
+    - [Show Config](#show-config)
         - [Example](#example-7)
-    - [Get transaction](#get-transaction)
+    - [Status](#status)
         - [Example](#example-8)
-    - [Verify address](#verify-address)
+    - [Get transaction](#get-transaction)
         - [Example](#example-9)
-    - [Check wallet balance](#check-wallet-balance)
+    - [Verify address](#verify-address)
         - [Example](#example-10)
+    - [Check wallet balance](#check-wallet-balance)
+        - [Example](#example-11)
     - [See wallet directory](#see-wallet-directory)
         - [Examples](#examples-6)
     - [List wallet transaction history](#list-wallet-transaction-history)
@@ -116,6 +119,15 @@ The wallet file name must have `.wlt` extension.
 $ export WALLET_NAME=YOUR_WALLET_NAME
 ```
 
+### USE_CSRF
+
+If the remote node to communicate with is not run with `-csrf-disabled`, set this variable.
+CSRF is enabled by default on nodes.
+
+```bash
+$ export USE_CSRF=1
+```
+
 ## Usage
 
 After the installation, you can run `skycoin-cli` to see the usage:
@@ -148,6 +160,7 @@ COMMANDS:
      listAddresses         Lists all addresses in a given wallet
      listWallets           Lists all wallets stored in the wallet directory
      send                  Send skycoin from a wallet or an address to a recipient address
+     showConfig            show cli configuration
      status                Check the status of current skycoin node
      transaction           Show detail info of specific transaction
      verifyAddress         Verify a skycoin address
@@ -1476,6 +1489,28 @@ $ skycoin-cli send -f $WALLET_PATH -a $FROM_ADDRESS --json $RECIPIENT_ADDRESS $A
 }
 ```
 </details>
+
+### Show Config
+Show the CLI tool's local configuration.
+
+#### Example
+```bash
+$ skycoin-cli showConfig
+```
+
+<details>
+ <summary>View Output</summary>
+
+```json
+{
+    "wallet_directory": "/home/user/.skycoin/wallets",
+    "wallet_name": "skycoin_cli.wlt",
+    "data_directory": "/home/user/.skycoin",
+    "coin": "skycoin",
+    "rpc_address": "http://127.0.0.1:6420",
+    "use_csrf": false
+}
+```
 
 ### Status
 #### Example

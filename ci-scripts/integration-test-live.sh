@@ -23,7 +23,6 @@ RUN_TESTS=""
 TEST_LIVE_WALLET=""
 # run tests with csrf enabled
 USE_CSRF=""
-DISABLE_CSRF="-disable-csrf"
 FAILFAST=""
 
 usage () {
@@ -50,7 +49,7 @@ case $args in
     v ) VERBOSE="-v";;
     w ) TEST_LIVE_WALLET="--test-live-wallet";;
     f ) FAILFAST="-failfast";;
-    c ) USE_CSRF="1";;
+    c ) USE_CSRF="1"
   esac
 done
 

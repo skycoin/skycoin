@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add wallet setup wizard
 - Added support for encrypted wallets on frontend
 - `USE_CSRF` environment variable for CLI, if the remote node has CSRF enabled (CSRF is enabled by default, use `-disable-csrf` to disable)
+- `cli showConfig` command to echo the cli's configuration back to the user
 
 ### Fixed
 

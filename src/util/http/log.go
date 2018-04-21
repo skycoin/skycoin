@@ -1,6 +1,7 @@
 package httphelper
 
 import (
+	"bytes"
 	"net/http"
 	"time"
 
@@ -13,20 +14,35 @@ func ElapsedHandler(logger logrus.FieldLogger, handler http.Handler) http.Handle
 		lrw := newWrappedResponseWriter(w)
 		start := time.Now()
 		handler.ServeHTTP(lrw, r)
-		logger.Infof("%d %s %s %s", lrw.statusCode, r.Method, r.URL.Path, time.Since(start))
+		logMethod := logger.Infof
+		if lrw.statusCode >= 400 {
+			logMethod = logger.WithFields(logrus.Fields{
+				"http.response.text": lrw.response.String(),
+			}).Errorf
+		}
+		logMethod("%d %s %s %s", lrw.statusCode, r.Method, r.URL.Path, time.Since(start))
 	})
 }
 
 type wrappedResponseWriter struct {
 	http.ResponseWriter
 	statusCode int
+	response   bytes.Buffer
 }
 
 func newWrappedResponseWriter(w http.ResponseWriter) *wrappedResponseWriter {
-	return &wrappedResponseWriter{w, http.StatusOK}
+	return &wrappedResponseWriter{w, http.StatusOK, bytes.Buffer{}}
 }
 
 func (lrw *wrappedResponseWriter) WriteHeader(code int) {
 	lrw.statusCode = code
 	lrw.ResponseWriter.WriteHeader(code)
+}
+
+func (lrw *wrappedResponseWriter) Write(buff []byte) (int, error) {
+	retVal, err := lrw.ResponseWriter.Write(buff)
+	if lrw.statusCode >= 400 {
+		lrw.response.Write(buff)
+	}
+	return retVal, err
 }

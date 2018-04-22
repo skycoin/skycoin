@@ -89,8 +89,10 @@ func createRawTxCmd(cfg Config) gcli.Command {
 			tx, err := createRawTxCmdHandler(c)
 			switch err.(type) {
 			case nil:
-			case WalletLoadError, WalletSaveError:
+			case WalletLoadError:
 				errorWithHelp(c, err)
+			case WalletSaveError:
+				return errors.New("save wallet failed")
 			default:
 				return err
 			}

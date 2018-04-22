@@ -109,8 +109,7 @@ func generateWalletHandler(c *gcli.Context) error {
 
 	// check if the wallet file does exist
 	if _, err := os.Stat(filepath.Join(cfg.WalletDir, wltName)); err == nil {
-		errorWithHelp(c, fmt.Errorf("%v already exist", wltName))
-		return nil
+		return fmt.Errorf("%v already exist", wltName)
 	}
 
 	// check if the wallet dir does exist.

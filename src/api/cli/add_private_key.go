@@ -63,7 +63,7 @@ func addPrivateKeyCmd(cfg Config) gcli.Command {
 				errorWithHelp(c, err)
 				return nil
 			case WalletSaveError:
-				return errors.New("Save wallet failed")
+				return errors.New("save wallet failed")
 			default:
 				return err
 			}

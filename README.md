@@ -32,8 +32,9 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
     - [Show Skycoin node options](#show-skycoin-node-options)
     - [Run Skycoin with options](#run-skycoin-with-options)
     - [Docker image](#docker-image)
+    - [Building your own images](#building-your-own-images)
 - [API Documentation](#api-documentation)
-    - [Wallet REST API](#wallet-rest-api)
+    - [REST API](#rest-api)
     - [JSON-RPC 2.0 API](#json-rpc-20-api)
     - [Skycoin command line interface](#skycoin-command-line-interface)
 - [Integrating Skycoin with your application](#integrating-skycoin-with-your-application)
@@ -166,11 +167,13 @@ $ docker build -f docker/images/mainnet/Dockerfile \
 
 ## API Documentation
 
-### Wallet REST API
+### REST API
 
-[Wallet REST API](src/gui/README.md).
+[REST API](src/gui/README.md).
 
 ### JSON-RPC 2.0 API
+
+*Deprecated, avoid using this*
 
 [JSON-RPC 2.0 README](src/api/webrpc/README.md).
 
@@ -279,9 +282,15 @@ it also must have been loaded by the node.
 We can specify the wallet by setting two environment variables: `WALLET_DIR` and `WALLET_NAME`. The `WALLET_DIR`
 represents the absolute path of the wallet directory, and `WALLET_NAME` represents the wallet file name.
 
+Note: `WALLET_DIR` is only used by the CLI integration tests. The GUI integration tests use the node's
+configured wallet directory, which can be controlled with `-wallet-dir` when running the node.
+
+If the wallet is encrypted, also set `WALLET_PASSWORD`.
+
 ```sh
-export WALLET_DIR=$HOME/.skycoin/wallets
-export WALLET_NAME=$wallet-file-name-meet-the-requirements
+export WALLET_DIR="$HOME/.skycoin/wallets"
+export WALLET_NAME="$valid_wallet_filename"
+export WALLET_PASSWORD="$wallet_password"
 ```
 
 Then run the tests with the following command:

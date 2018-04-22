@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { WalletService } from '../../../services/wallet.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatSnackBar, MatSnackBarConfig } from '@angular/material/snack-bar';
@@ -7,13 +7,14 @@ import 'rxjs/add/operator/filter';
 import { ButtonComponent } from '../../layout/button/button.component';
 import { PasswordDialogComponent } from '../../layout/password-dialog/password-dialog.component';
 import { MatDialog } from '@angular/material';
+import { parseResponseMessage } from '../../../utils/index';
 
 @Component({
   selector: 'app-send-skycoin',
   templateUrl: './send-skycoin.component.html',
   styleUrls: ['./send-skycoin.component.scss']
 })
-export class SendSkycoinComponent implements OnInit {
+export class SendSkycoinComponent implements OnInit, OnDestroy {
   @ViewChild('button') button: ButtonComponent;
 
   form: FormGroup;
@@ -28,6 +29,10 @@ export class SendSkycoinComponent implements OnInit {
 
   ngOnInit() {
     this.initForm();
+  }
+
+  ngOnDestroy() {
+    this.snackbar.dismiss();
   }
 
   send() {
@@ -49,7 +54,7 @@ export class SendSkycoinComponent implements OnInit {
     this.walletService.sendSkycoin(
       this.form.value.wallet,
       this.form.value.address,
-      this.form.value.amount * 1000000,
+      Math.round(parseFloat(this.form.value.amount) * 1000000),
       passwordDialog ? passwordDialog.password : null
     )
       .delay(1000)
@@ -59,10 +64,11 @@ export class SendSkycoinComponent implements OnInit {
           this.button.setSuccess();
         },
         error => {
+          const errorMessage = parseResponseMessage(error['_body']);
           const config = new MatSnackBarConfig();
           config.duration = 300000;
-          this.snackbar.open(error['_body'], null, config);
-          this.button.setError(error);
+          this.snackbar.open(errorMessage, null, config);
+          this.button.setError(errorMessage);
         }
       );
 

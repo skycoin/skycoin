@@ -125,15 +125,17 @@ func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
 	return totalHours, nil
 }
 
-// UxHashSet set mapping from UxHash to a placeholder value. Ignore the byte value,
-// only check for existence
-type UxHashSet map[cipher.SHA256]byte
+// UxHashSet set mapping from UxHash to a placeholder value
+type UxHashSet map[cipher.SHA256]struct{}
+
+// UxHashMap maps from UxOut.Hash to UxOut
+type UxHashMap map[cipher.SHA256]UxOut
 
 // UxArray Array of Outputs
 // Used by unspent output pool, spent tests
 type UxArray []UxOut
 
-// Hashes returns Array of hashes for the Ux in the UxArray.
+// Hashes returns Array of hashes for the Ux in the UxArray
 func (ua UxArray) Hashes() []cipher.SHA256 {
 	hashes := make([]cipher.SHA256, len(ua))
 	for i, ux := range ua {
@@ -150,28 +152,40 @@ func (ua UxArray) HasDupes() bool {
 		if _, ok := m[h]; ok {
 			return true
 		}
-		m[h] = byte(1)
+		m[h] = struct{}{}
 	}
 	return false
 }
 
-// Set returns the UxArray as a hash to byte map to be used as a set.  The byte's
-// value should be ignored, although it will be 1.  Should only be used for
-// membership detection.
+// Set returns the UxArray as a hash to struct{} map to be used as a set.
+// Should only be used for membership detection
 func (ua UxArray) Set() UxHashSet {
 	m := make(UxHashSet, len(ua))
 	for i := range ua {
-		m[ua[i].Hash()] = byte(1)
+		m[ua[i].Hash()] = struct{}{}
 	}
 	return m
 }
 
-// Sort sorts ux array
+// Map returns a UxHashMap, mapping from UxOut.Hash to UxOut
+func (ua UxArray) Map() (UxHashMap, error) {
+	m := make(UxHashMap, len(ua))
+	for i := range ua {
+		h := ua[i].Hash()
+		if _, ok := m[h]; ok {
+			return nil, errors.New("duplicate UxOut in UxArray")
+		}
+		m[h] = ua[i]
+	}
+	return m, nil
+}
+
+// Sort sorts UxArray
 func (ua UxArray) Sort() {
 	sort.Sort(ua)
 }
 
-// Len returns length of uxarray
+// Len returns length of UxArray
 func (ua UxArray) Len() int {
 	return len(ua)
 }

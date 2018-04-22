@@ -304,8 +304,8 @@ func (serv *Service) ReloadWallets() error {
 	return nil
 }
 
-// CreateAndSignTransaction creates and sign transaction from wallet
-// Set password as nil if the wallet is not encrypted, otherwise the password must be provided
+// CreateAndSignTransaction creates and signs a transaction from wallet.
+// Set the password as nil if the wallet is not encrypted, otherwise the password must be provided
 func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, vld Validator, unspent blockdb.UnspentGetter,
 	headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
 	serv.RLock()
@@ -336,6 +336,55 @@ func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, vld
 		}
 	}
 	return tx, nil
+}
+
+// CreateAndSignTransactionAdvanced creates and signs a transaction based upon CreateTransactionParams.
+// Set the password as nil if the wallet is not encrypted, otherwise the password must be provided
+func (serv *Service) CreateAndSignTransactionAdvanced(params CreateTransactionParams, vld Validator,
+	unspent blockdb.UnspentGetter, headTime uint64) (*coin.Transaction, coin.UxArray, error) {
+	serv.RLock()
+	defer serv.RUnlock()
+
+	if !serv.enableWalletAPI {
+		return nil, nil, ErrWalletAPIDisabled
+	}
+
+	if err := params.Validate(); err != nil {
+		return nil, nil, err
+	}
+
+	w, err := serv.getWallet(params.Wallet.ID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Check if the wallet needs a password
+	if w.IsEncrypted() {
+		if len(params.Wallet.Password) == 0 {
+			return nil, nil, ErrMissingPassword
+		}
+	} else {
+		if len(params.Wallet.Password) != 0 {
+			return nil, nil, ErrWalletNotEncrypted
+		}
+	}
+
+	var tx *coin.Transaction
+	var inputs coin.UxArray
+	if w.IsEncrypted() {
+		err = w.guardView(params.Wallet.Password, func(wlt *Wallet) error {
+			var err error
+			tx, inputs, err = wlt.CreateAndSignTransactionAdvanced(params, vld, unspent, headTime)
+			return err
+		})
+	} else {
+		tx, inputs, err = w.CreateAndSignTransactionAdvanced(params, vld, unspent, headTime)
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return tx, inputs, nil
 }
 
 // UpdateWalletLabel updates the wallet label

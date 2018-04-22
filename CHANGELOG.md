@@ -16,15 +16,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - Add wallet setup wizard
-- Add wallet encryption, using chacha20+poly1305 for encryption and authentication and scrypt for key derivation. Encrypted data is stored in the wallet file in a `"secrets"` metadata field.
+- Add wallet encryption, using chacha20+poly1305 for encryption and authentication and scrypt for key derivation. Encrypted data is stored in the wallet file in a `"secrets"` metadata field
 - Add `GET /health` endpoint
 - Add `POST /wallet/transaction` API endpoint, creates a transaction, allowing control of spending address and multiple destinations
 - Add `POST /wallet/encrypt` API endpoint, encrypts wallet and returns encrypted wallet without sensitive data
 - Add `POST /wallet/decrypt` API endpoint, decrypts wallet and returns decrypted wallet without sensitive data
-- Add `POST /wallet/seed` API endpoint, returns the seed of an encrypted wallet.  Unencrypted wallets will not expose their seeds over the API.  Requires `-enable-seed-api` option.
+- Add `POST /wallet/seed` API endpoint, returns the seed of an encrypted wallet. Unencrypted wallets will not expose their seeds over the API. Requires `-enable-seed-api` option
 - `-enable-seed-api` option to enable `POST /wallet/seed`
 - Add `"size"` to block API response data (affects `/block`, `/blocks` and `/last_blocks`)
-- Write [specification for skycoin URIs](https://github.com/skycoin/skycoin#uri-specification) (based upon bip21).
+- Write [specification for skycoin URIs](https://github.com/skycoin/skycoin#uri-specification) (based upon bip21)
 
 ### Fixed
 
@@ -39,13 +39,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `POST /wallet/spend` API endpoint, add `password` argument
 - Change `-disable-wallet-api` to `-enable-wallet-api`, and disable the wallet API by default
 - `-launch-browser` is set to false by default
-- A default wallet will not be created on startup if there is no wallet. Instead, the wallet setup wizard will run.
+- A default wallet will not be created on startup if there is no wallet. Instead, the wallet setup wizard will run
 - Replace [op/go-logging](https://github.com/op/go-logging) with [logrus](https://github.com/sirupsen/logrus)
 - Disable JSON-RPC 2.0 interface when running the application with `run.sh` and electron
+- Whitespace will be trimmed from the seed string by the frontend client before creating or loading a wallet
+- Notify the user when their wallets have unconfirmed transactions
 
 ### Removed
 
-- Remove `"seed"`, `"lastSeed"` and `"secret_key"` in address entries from wallet API responses. A wallet's seed can be accessed through `POST /wallet/seed` only if the wallet is encrypted and the node is run with `-enable-seed-api`.
+- Remove `"seed"`, `"lastSeed"` and `"secret_key"` in address entries from wallet API responses. A wallet's seed can be accessed through `POST /wallet/seed` only if the wallet is encrypted and the node is run with `-enable-seed-api`
 
 ## [0.22.0] - 2018-03-20
 
@@ -115,7 +117,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
-- CLI's `walletBalance` and `addressBalance` commands return aggregate balances for confirmed, spendable and expected balances.  Coins are formatted as droplet strings.  Hours added as strings.
+- CLI's `walletBalance` and `addressBalance` commands return aggregate balances for confirmed, spendable and expected balances. Coins are formatted as droplet strings. Hours added as strings.
 - When splitting an odd number of hours in a spend, give the extra hour to the fee
 - Add `block_seq` to `get_outputs` and `/outputs` API response
 - Improve UxOut spend selection. Previously, they were spent oldest first. Now they are spent to ensure a non-zero coinhour input and otherwise minimize coinhours.

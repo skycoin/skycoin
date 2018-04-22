@@ -12,12 +12,12 @@ import (
   #include <string.h>
   #include <stdlib.h>
 
-  #include "../../include/skytypes.h"
+  #include "skytypes.h"
 */
 import "C"
 
 //export SKY_cipher_Ripemd160_Set
-func SKY_cipher_Ripemd160_Set(_rd *C.Ripemd160, _b []byte) (errcode uint32) {
+func SKY_cipher_Ripemd160_Set(_rd *C.cipher_Ripemd160, _b []byte) (errcode uint32) {
 	defer func() {
 		errcode = catchApiPanic(errcode, recover())
 	}()
@@ -29,14 +29,14 @@ func SKY_cipher_Ripemd160_Set(_rd *C.Ripemd160, _b []byte) (errcode uint32) {
 }
 
 //export SKY_cipher_HashRipemd160
-func SKY_cipher_HashRipemd160(_data []byte, _arg1 *C.Ripemd160) {
+func SKY_cipher_HashRipemd160(_data []byte, _arg1 *C.cipher_Ripemd160) {
 	rd := cipher.HashRipemd160(_data)
 
 	copyToBuffer(reflect.ValueOf(rd[:]), unsafe.Pointer(_arg1), uint(SizeofRipemd160))
 }
 
 //export SKY_cipher_SHA256_Set
-func SKY_cipher_SHA256_Set(_g *C.SHA256, _b []byte) (errcode uint32) {
+func SKY_cipher_SHA256_Set(_g *C.cipher_SHA256, _b []byte) (errcode uint32) {
 	defer func() {
 		errcode = catchApiPanic(errcode, recover())
 	}()
@@ -48,13 +48,13 @@ func SKY_cipher_SHA256_Set(_g *C.SHA256, _b []byte) (errcode uint32) {
 }
 
 //export SKY_cipher_SHA256_Hex
-func SKY_cipher_SHA256_Hex(_g *C.SHA256, _arg1 *C.GoString_) {
+func SKY_cipher_SHA256_Hex(_g *C.cipher_SHA256, _arg1 *C.GoString_) {
 	g := (*cipher.SHA256)(unsafe.Pointer(_g))
 	copyString(g.Hex(), _arg1)
 }
 
 //export SKY_cipher_SHA256_Xor
-func SKY_cipher_SHA256_Xor(_g *C.SHA256, _b *C.SHA256, _arg1 *C.SHA256) {
+func SKY_cipher_SHA256_Xor(_g *C.cipher_SHA256, _b *C.cipher_SHA256, _arg1 *C.cipher_SHA256) {
 	g := (*cipher.SHA256)(unsafe.Pointer(_g))
 	b := (*cipher.SHA256)(unsafe.Pointer(_b))
 
@@ -63,7 +63,7 @@ func SKY_cipher_SHA256_Xor(_g *C.SHA256, _b *C.SHA256, _arg1 *C.SHA256) {
 }
 
 //export SKY_cipher_SumSHA256
-func SKY_cipher_SumSHA256(_b []byte, _arg1 *C.SHA256) (errcode uint32) {
+func SKY_cipher_SumSHA256(_b []byte, _arg1 *C.cipher_SHA256) (errcode uint32) {
 	defer func() {
 		errcode = catchApiPanic(errcode, recover())
 	}()
@@ -75,7 +75,7 @@ func SKY_cipher_SumSHA256(_b []byte, _arg1 *C.SHA256) (errcode uint32) {
 }
 
 //export SKY_cipher_SHA256FromHex
-func SKY_cipher_SHA256FromHex(_hs string, _arg1 *C.SHA256) uint32 {
+func SKY_cipher_SHA256FromHex(_hs string, _arg1 *C.cipher_SHA256) uint32 {
 	h, err := cipher.SHA256FromHex(_hs)
 	errcode := libErrorCode(err)
 	if err == nil {
@@ -85,13 +85,13 @@ func SKY_cipher_SHA256FromHex(_hs string, _arg1 *C.SHA256) uint32 {
 }
 
 //export SKY_cipher_DoubleSHA256
-func SKY_cipher_DoubleSHA256(_b []byte, _arg1 *C.SHA256) {
+func SKY_cipher_DoubleSHA256(_b []byte, _arg1 *C.cipher_SHA256) {
 	h := cipher.DoubleSHA256(_b)
 	copyToBuffer(reflect.ValueOf(h[:]), unsafe.Pointer(_arg1), uint(SizeofSHA256))
 }
 
 //export SKY_cipher_AddSHA256
-func SKY_cipher_AddSHA256(_a *C.SHA256, _b *C.SHA256, _arg2 *C.SHA256) {
+func SKY_cipher_AddSHA256(_a *C.cipher_SHA256, _b *C.cipher_SHA256, _arg2 *C.cipher_SHA256) {
 	a := (*cipher.SHA256)(unsafe.Pointer(_a))
 	b := (*cipher.SHA256)(unsafe.Pointer(_b))
 
@@ -100,7 +100,7 @@ func SKY_cipher_AddSHA256(_a *C.SHA256, _b *C.SHA256, _arg2 *C.SHA256) {
 }
 
 //export SKY_cipher_Merkle
-func SKY_cipher_Merkle(_h0 *[]C.SHA256, _arg1 *C.SHA256) {
+func SKY_cipher_Merkle(_h0 *[]C.cipher_SHA256, _arg1 *C.cipher_SHA256) {
 	h0 := (*[]cipher.SHA256)(unsafe.Pointer(_h0))
 	h := cipher.Merkle(*h0)
 	copyToBuffer(reflect.ValueOf(h[:]), unsafe.Pointer(_arg1), uint(SizeofSHA256))

@@ -10,7 +10,7 @@ import (
 /*
 	#include <string.h>
 
-  #include "../../include/skytypes.h"
+  #include "skytypes.h"
 
 	void eos(char *str, int len) {
 		str[len] = 0;
@@ -20,20 +20,20 @@ import (
 import "C"
 
 const (
-	SizeofRipemd160         = unsafe.Sizeof(C.Ripemd160{})
-	SizeOfAddress           = unsafe.Sizeof(C.Address{})
-	SizeofPubKey            = unsafe.Sizeof(C.PubKey{})
-	SizeofPubKeySlice       = unsafe.Sizeof(C.PubKeySlice{})
-	SizeofSecKey            = unsafe.Sizeof(C.SecKey{})
-	SizeofSig               = unsafe.Sizeof(C.Sig{})
-	SizeofChecksum          = unsafe.Sizeof(C.Checksum{})
-	SizeofSendAmount        = unsafe.Sizeof(C.SendAmount{})
-	SizeofSHA256            = unsafe.Sizeof(C.SHA256{})
-	SizeofTransactionOutput = unsafe.Sizeof(C.TransactionOutput{})
-	SizeofTransaction       = unsafe.Sizeof(C.Transaction{})
-	SizeofWallet            = unsafe.Sizeof(C.Wallet{})
-	SizeofEntry             = unsafe.Sizeof(C.Entry{})
-	SizeofUxBalance         = unsafe.Sizeof(C.UxBalance{})
+	SizeofRipemd160         = unsafe.Sizeof(C.cipher_Ripemd160{})
+	SizeOfAddress           = unsafe.Sizeof(C.cipher_Address{})
+	SizeofPubKey            = unsafe.Sizeof(C.cipher_PubKey{})
+	SizeofPubKeySlice       = unsafe.Sizeof(C.cipher_PubKeySlice{})
+	SizeofSecKey            = unsafe.Sizeof(C.cipher_SecKey{})
+	SizeofSig               = unsafe.Sizeof(C.cipher_Sig{})
+	SizeofChecksum          = unsafe.Sizeof(C.cipher_Checksum{})
+	SizeofSendAmount        = unsafe.Sizeof(C.cli_SendAmount{})
+	SizeofSHA256            = unsafe.Sizeof(C.cipher_SHA256{})
+	SizeofTransactionOutput = unsafe.Sizeof(C.coin_TransactionOutput{})
+	SizeofTransaction       = unsafe.Sizeof(C.coin_Transaction{})
+	SizeofWallet            = unsafe.Sizeof(C.wallet_Wallet{})
+	SizeofEntry             = unsafe.Sizeof(C.wallet_Entry{})
+	SizeofUxBalance         = unsafe.Sizeof(C.wallet_UxBalance{})
 )
 
 type Handle uint64
@@ -62,11 +62,11 @@ func closeHandle(handle Handle) {
  * Inplace memory references
  */
 
-func inplacePubKeySlice(p *C.PubKeySlice) *cipher.PubKeySlice {
+func inplacePubKeySlice(p *C.cipher_PubKeySlice) *cipher.PubKeySlice {
 	return (*cipher.PubKeySlice)(unsafe.Pointer(p))
 }
 
-func inplaceAddress(p *C.Address) *cipher.Address {
+func inplaceAddress(p *C.cipher_Address) *cipher.Address {
 	return (*cipher.Address)(unsafe.Pointer(p))
 }
 

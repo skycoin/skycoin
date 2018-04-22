@@ -4,7 +4,7 @@ package main
 #include <string.h>
 #include <stdlib.h>
 
-#include "../../include/skytypes.h"
+#include "skytypes.h"
 
 */
 import "C"
@@ -21,11 +21,11 @@ import (
  */
 
 //export SKY_cli_CreateRawTxFromWallet
-func SKY_cli_CreateRawTxFromWallet(_ctx C.Handle, _walletFile, _chgAddr string, _toAddrs []C.SendAmount, _tx *C.Transaction) uint32 {
+func SKY_cli_CreateRawTxFromWallet(_ctx C.Handle, _walletFile, _chgAddr string, _toAddrs []C.cli_SendAmount, _tx *C.coin_Transaction) uint32 {
 	// TODO: Instantiate _ctx . Not used in cli function
 	toAddrs := (*[]cli.SendAmount)(unsafe.Pointer(&_toAddrs))
 	tx, err := cli.CreateRawTxFromWallet(nil, _walletFile, _chgAddr, *toAddrs)
-	*_tx = *(*C.Transaction)(unsafe.Pointer(&tx))
+	*_tx = *(*C.coin_Transaction)(unsafe.Pointer(&tx))
 	if err != nil {
 		return 1
 	}
@@ -33,18 +33,18 @@ func SKY_cli_CreateRawTxFromWallet(_ctx C.Handle, _walletFile, _chgAddr string, 
 }
 
 //export SKY_cli_CreateRawTxFromAddress
-func SKY_cli_CreateRawTxFromAddress(_ctx C.Handle, _addr, _walletFile, _chgAddr string, _toAddrs []C.SendAmount, _tx *C.Transaction) uint32 {
+func SKY_cli_CreateRawTxFromAddress(_ctx C.Handle, _addr, _walletFile, _chgAddr string, _toAddrs []C.cli_SendAmount, _tx *C.coin_Transaction) uint32 {
 	// TODO: Implement
 	return 0
 }
 
 //export SKY_cli_CreateRawTx
-func SKY_cli_CreateRawTx(_ctx C.Handle, _wlt *C.Wallet, _inAddrs []string, _chgAddr string, _toAddrs []C.SendAmount, _tx *C.Transaction) {
+func SKY_cli_CreateRawTx(_ctx C.Handle, _wlt *C.wallet_Wallet, _inAddrs []string, _chgAddr string, _toAddrs []C.cli_SendAmount, _tx *C.coin_Transaction) {
 	// TODO: Implement
 }
 
 //export SKY_cli_NewTransaction
-func SKY_cli_NewTransaction(_utxos []C.UxBalance, _keys []C.SecKey, _outs []C.TransactionOutput, _tx *C.Transaction) {
+func SKY_cli_NewTransaction(_utxos []C.wallet_UxBalance, _keys []C.cipher_SecKey, _outs []C.coin_TransactionOutput, _tx *C.coin_Transaction) {
 	//	utxos := (*wallet.UxBalance)(unsafe.Pointer(_utxos))
 	// TODO: Implement
 }

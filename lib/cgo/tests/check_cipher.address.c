@@ -21,7 +21,7 @@ Test(cipher_address, TestDecodeBase58Address) {
     SKYCOIN_ADDRESS_VALID,
     35
   };
-  Address addr;
+  cipher_Address addr;
 
   cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == SKY_OK, "accept valid address");
 
@@ -62,7 +62,7 @@ Test(cipher_address, TestAddressFromBytes){
     SKYCOIN_ADDRESS_VALID,
     35
   };
-  Address addr, addr2;
+  cipher_Address addr, addr2;
   GoSlice bytes;
 
   bytes.data = buff;
@@ -74,7 +74,7 @@ Test(cipher_address, TestAddressFromBytes){
   cr_assert(bytes.len > 0, "address bytes written");
   cr_assert(SKY_cipher_BitcoinAddressFromBytes(bytes, &addr2) == SKY_OK, "convert bytes to SKY address");
 
-  cr_assert(eq(type(Address), addr, addr2));
+  cr_assert(eq(type(cipher_Address), addr, addr2));
 
   int bytes_len = bytes.len;
 
@@ -88,11 +88,11 @@ Test(cipher_address, TestAddressFromBytes){
 
 Test(cipher_address, TestAddressVerify){
 
-  PubKey pubkey;
-  SecKey seckey;
-  PubKey pubkey2;
-  SecKey seckey2;
-  Address addr;
+  cipher_PubKey pubkey;
+  cipher_SecKey seckey;
+  cipher_PubKey pubkey2;
+  cipher_SecKey seckey2;
+  cipher_Address addr;
 
   SKY_cipher_GenerateKeyPair(&pubkey,&seckey);
   SKY_cipher_AddressFromPubKey(&pubkey,&addr);
@@ -115,8 +115,8 @@ Test(cipher_address,TestAddressString){
 
 Test (cipher, TestBitcoinAddress1){
 
-  SecKey seckey;
-  PubKey pubkey;
+  cipher_SecKey seckey;
+  cipher_PubKey pubkey;
 
   GoString str = {
     "1111111111111111111111111111111111111111111111111111111111111111",
@@ -143,8 +143,8 @@ Test (cipher, TestBitcoinAddress1){
 
 Test (cipher, TestBitcoinAddress2){
 
-  SecKey seckey;
-  PubKey pubkey  ;
+  cipher_SecKey seckey;
+  cipher_PubKey pubkey  ;
   GoString str = {
     "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
     64
@@ -174,8 +174,8 @@ Test (cipher, TestBitcoinAddress2){
 
 Test (cipher, TestBitcoinAddress3){
 
-  SecKey seckey;
-  PubKey pubkey;
+  cipher_SecKey seckey;
+  cipher_PubKey pubkey;
   GoString str = {
     "47f7616ea6f9b923076625b4488115de1ef1187f760e65f89eb6f4f7ff04b012",
     64
@@ -206,8 +206,8 @@ Test (cipher, TestBitcoinAddress3){
 
 Test(cipher_address, TestBitcoinWIPRoundTrio){
 
-  SecKey seckey;
-  PubKey pubkey;
+  cipher_SecKey seckey;
+  cipher_PubKey pubkey;
   GoSlice slice;
   slice.data = buff;
   slice.cap = sizeof(buff);
@@ -219,7 +219,7 @@ Test(cipher_address, TestBitcoinWIPRoundTrio){
 
   SKY_cipher_BitcoinWalletImportFormatFromSeckey(&seckey,&wip1);
 
-  SecKey seckey2;
+  cipher_SecKey seckey2;
 
   unsigned int err;
 
@@ -231,7 +231,7 @@ Test(cipher_address, TestBitcoinWIPRoundTrio){
 
   cr_assert(err == SKY_OK);
 
-  cr_assert(eq(u8[sizeof(SecKey)],seckey,seckey2));
+  cr_assert(eq(u8[sizeof(cipher_SecKey)],seckey,seckey2));
 
   GoString_ seckeyhex1;
   GoString_ seckeyhex2;
@@ -283,13 +283,13 @@ Test(cipher_address, TestBitcoinWIP ){
 
   for (int i = 0; i < 3; i++)
   {
-    SecKey seckey;
+    cipher_SecKey seckey;
     unsigned int err;
 
     err = SKY_cipher_SecKeyFromWalletImportFormat(wip[i],&seckey);
     cr_assert(err==SKY_OK);
 
-    PubKey pubkey;
+    cipher_PubKey pubkey;
 
     SKY_cipher_PubKeyFromSecKey(&seckey,&pubkey);
 
@@ -313,10 +313,10 @@ Test(cipher_address, TestAddressBulk){
   for (int i = 0; i < 1024; ++i)
   {
     randBytes(&slice,32);
-    PubKey pubkey;
-    SecKey seckey;
+    cipher_PubKey pubkey;
+    cipher_SecKey seckey;
     SKY_cipher_GenerateDeterministicKeyPair( slice,&pubkey,&seckey);
-    Address addr;
+    cipher_Address addr;
     SKY_cipher_AddressFromPubKey(&pubkey,&addr);
     unsigned int err;
     err = SKY_cipher_Address_Verify(&addr,&pubkey);
@@ -324,11 +324,11 @@ Test(cipher_address, TestAddressBulk){
     GoString strAddr;
     SKY_cipher_Address_String(&addr, (GoString_ *)&strAddr);
     registerMemCleanup((void *) strAddr.p);
-    Address addr2;
+    cipher_Address addr2;
 
     err = SKY_cipher_DecodeBase58Address(strAddr,&addr2);
     cr_assert(err == SKY_OK);
-    cr_assert(eq(type(Address),addr,addr2));
+    cr_assert(eq(type(cipher_Address),addr,addr2));
   }
 
 }

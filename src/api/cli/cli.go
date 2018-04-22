@@ -236,6 +236,7 @@ func NewApp(cfg Config) *App {
 		walletOutputsCmd(cfg),
 		encryptWalletCmd(cfg),
 		decryptWalletCmd(cfg),
+		showSeedCmd(cfg),
 	}
 
 	app.Name = fmt.Sprintf("%s-cli", cfg.Coin)

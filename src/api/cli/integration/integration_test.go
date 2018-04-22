@@ -313,6 +313,7 @@ func TestGenerateAddresses(t *testing.T) {
 		name         string
 		encrypted    bool
 		args         []string
+		isUsageErr   bool
 		expectOutput []byte
 		goldenFile   string
 	}{
@@ -334,6 +335,7 @@ func TestGenerateAddresses(t *testing.T) {
 			name:         "generateAddresses -n -2 -j",
 			encrypted:    false,
 			args:         []string{"generateAddresses", "-n", "-2", "-j"},
+			isUsageErr:   true,
 			expectOutput: []byte("Error: invalid value \"-2\" for flag -n: strconv.ParseUint: parsing \"-2\": invalid syntax"),
 			goldenFile:   "generate-addresses-2.golden",
 		},
@@ -348,13 +350,13 @@ func TestGenerateAddresses(t *testing.T) {
 			name:         "generateAddresses in encrypted wallet with invalid password",
 			encrypted:    true,
 			args:         []string{"generateAddresses", "-p", "invalid password", "-j"},
-			expectOutput: []byte("Error: invalid password. See 'skycoin-cli generateAddresses --help'\n\n"),
+			expectOutput: []byte("invalid password\n"),
 		},
 		{
 			name:         "generateAddresses in unencrypted wallet with password",
 			encrypted:    false,
 			args:         []string{"generateAddresses", "-p", "pwd"},
-			expectOutput: []byte("Error: wallet is not encrypted. See 'skycoin-cli generateAddresses --help'\n\n"),
+			expectOutput: []byte("wallet is not encrypted\n"),
 		},
 	}
 
@@ -364,13 +366,19 @@ func TestGenerateAddresses(t *testing.T) {
 			defer clean()
 
 			output, err := exec.Command(binaryPath, tc.args...).CombinedOutput()
-			require.NoError(t, err)
-			if bytes.Contains(output, []byte("Error: ")) {
+			if err != nil {
+				require.EqualError(t, err, "exit status 1")
+				return
+			}
+
+			if tc.isUsageErr {
 				require.True(t, bytes.Contains(output, tc.expectOutput))
 				return
 			}
 
-			require.Equal(t, string(tc.expectOutput), string(output))
+			require.Equal(t, tc.expectOutput, output)
+
+			require.NoError(t, err)
 
 			var w wallet.ReadableWallet
 			loadJSON(t, walletPath, &w)
@@ -378,6 +386,7 @@ func TestGenerateAddresses(t *testing.T) {
 			// Use loadJSON instead of loadGoldenFile because this golden file
 			// should not use the *update flag
 			goldenFile := filepath.Join(testFixturesDir, tc.goldenFile)
+			fmt.Println("goldenFile:", goldenFile)
 			var expect wallet.ReadableWallet
 			loadJSON(t, goldenFile, &expect)
 			if tc.encrypted {
@@ -739,7 +748,7 @@ func TestStableListWallets(t *testing.T) {
 		return
 	}
 
-	_, clean := createTempWalletFile(t)
+	_, clean := createTempWalletFile(t, false)
 	defer clean()
 
 	output, err := exec.Command(binaryPath, "listWallets").CombinedOutput()
@@ -781,7 +790,7 @@ func TestStableListAddress(t *testing.T) {
 		return
 	}
 
-	_, clean := createTempWalletFile(t)
+	_, clean := createTempWalletFile(t, false)
 	defer clean()
 
 	output, err := exec.Command(binaryPath, "listAddresses").CombinedOutput()
@@ -855,7 +864,7 @@ func TestStableWalletBalance(t *testing.T) {
 		return
 	}
 
-	_, clean := createTempWalletFile(t)
+	_, clean := createTempWalletFile(t, false)
 	defer clean()
 
 	output, err := exec.Command(binaryPath, "walletBalance").CombinedOutput()
@@ -893,7 +902,7 @@ func TestStableWalletOutputs(t *testing.T) {
 		return
 	}
 
-	_, clean := createTempWalletFile(t)
+	_, clean := createTempWalletFile(t, false)
 	defer clean()
 
 	output, err := exec.Command(binaryPath, "walletOutputs").CombinedOutput()
@@ -1410,7 +1419,7 @@ func TestStableWalletDir(t *testing.T) {
 		return
 	}
 
-	walletPath, clean := createTempWalletFile(t)
+	walletPath, clean := createTempWalletFile(t, false)
 	defer clean()
 
 	dir := filepath.Dir(walletPath)
@@ -1887,7 +1896,7 @@ func TestStableWalletHistory(t *testing.T) {
 		return
 	}
 
-	_, clean := createTempWalletFile(t)
+	_, clean := createTempWalletFile(t, false)
 	defer clean()
 
 	output, err := exec.Command(binaryPath, "walletHistory").CombinedOutput()

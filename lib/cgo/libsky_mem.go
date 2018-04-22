@@ -20,20 +20,20 @@ import (
 import "C"
 
 const (
-	SizeofRipemd160         = unsafe.Sizeof(C.cipher_Ripemd160{})
-	SizeOfAddress           = unsafe.Sizeof(C.cipher_Address{})
-	SizeofPubKey            = unsafe.Sizeof(C.cipher_PubKey{})
-	SizeofPubKeySlice       = unsafe.Sizeof(C.cipher_PubKeySlice{})
-	SizeofSecKey            = unsafe.Sizeof(C.cipher_SecKey{})
-	SizeofSig               = unsafe.Sizeof(C.cipher_Sig{})
-	SizeofChecksum          = unsafe.Sizeof(C.cipher_Checksum{})
-	SizeofSendAmount        = unsafe.Sizeof(C.cli_SendAmount{})
-	SizeofSHA256            = unsafe.Sizeof(C.cipher_SHA256{})
-	SizeofTransactionOutput = unsafe.Sizeof(C.coin_TransactionOutput{})
-	SizeofTransaction       = unsafe.Sizeof(C.coin_Transaction{})
-	SizeofWallet            = unsafe.Sizeof(C.wallet_Wallet{})
-	SizeofEntry             = unsafe.Sizeof(C.wallet_Entry{})
-	SizeofUxBalance         = unsafe.Sizeof(C.wallet_UxBalance{})
+	SizeofRipemd160         = unsafe.Sizeof(C.cipher__Ripemd160{})
+	SizeOfAddress           = unsafe.Sizeof(C.cipher__Address{})
+	SizeofPubKey            = unsafe.Sizeof(C.cipher__PubKey{})
+	SizeofPubKeySlice       = unsafe.Sizeof(C.cipher__PubKeySlice{})
+	SizeofSecKey            = unsafe.Sizeof(C.cipher__SecKey{})
+	SizeofSig               = unsafe.Sizeof(C.cipher__Sig{})
+	SizeofChecksum          = unsafe.Sizeof(C.cipher__Checksum{})
+	SizeofSendAmount        = unsafe.Sizeof(C.cli__SendAmount{})
+	SizeofSHA256            = unsafe.Sizeof(C.cipher__SHA256{})
+	SizeofTransactionOutput = unsafe.Sizeof(C.coin__TransactionOutput{})
+	SizeofTransaction       = unsafe.Sizeof(C.coin__Transaction{})
+	SizeofWallet            = unsafe.Sizeof(C.wallet__Wallet{})
+	SizeofEntry             = unsafe.Sizeof(C.wallet__Entry{})
+	SizeofUxBalance         = unsafe.Sizeof(C.wallet__UxBalance{})
 )
 
 type Handle uint64
@@ -62,11 +62,11 @@ func closeHandle(handle Handle) {
  * Inplace memory references
  */
 
-func inplacePubKeySlice(p *C.cipher_PubKeySlice) *cipher.PubKeySlice {
+func inplacePubKeySlice(p *C.cipher__PubKeySlice) *cipher.PubKeySlice {
 	return (*cipher.PubKeySlice)(unsafe.Pointer(p))
 }
 
-func inplaceAddress(p *C.cipher_Address) *cipher.Address {
+func inplaceAddress(p *C.cipher__Address) *cipher.Address {
 	return (*cipher.Address)(unsafe.Pointer(p))
 }
 

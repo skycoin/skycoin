@@ -151,7 +151,7 @@ Example
 ```sh
 $ git clone https://github.com/skycoin/skycoin
 $ cd skycoin
-$ SKYCOIN_VERSION=v0.22.0
+$ SKYCOIN_VERSION=v0.23.0
 $ docker build -f docker/images/mainnet/Dockerfile \
   --build-arg=SKYCOIN_VERSION=$SKYCOIN_VERSION \
   -t skycoin:$SKYCOIN_VERSION .
@@ -161,8 +161,8 @@ or just
 
 ```sh
 $ docker build -f docker/images/mainnet/Dockerfile \
-  --build-arg=SKYCOIN_VERSION=v0.22.0 \
-  -t skycoin:v0.22.0 .
+  --build-arg=SKYCOIN_VERSION=v0.23.0 \
+  -t skycoin:v0.23.0 .
 ```
 
 ## API Documentation
@@ -431,7 +431,7 @@ Performs these actions before releasing:
 * `go run cmd/cli/cli.go checkdb` against a synced node
 * On all OSes, make sure that the client runs properly from the command line (`./run.sh`)
 * Build the releases and make sure that the Electron client runs properly on Windows, Linux and macOS.
-    * Delete the database file and sync from scratch to confirm syncing works
+    * Use a clean data directory with no wallets or database to sync from scratch and verify the wallet setup wizard.
     * Load a test wallet with nonzero balance from seed to confirm wallet loading works
     * Send coins to another wallet to confirm spending works
     * Restart the client, confirm that it reloads properly

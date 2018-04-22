@@ -19,7 +19,8 @@ require('electron-context-menu')({});
 
 global.eval = function() { throw new Error('bad!!'); }
 
-const defaultURL = 'http://127.0.0.1:6420/';
+const port = Math.floor(Math.random() * (64511)) + 1024;
+const defaultURL = 'http://127.0.0.1:'+port+'/';
 let currentURL;
 
 // Force everything localhost, in case of a leak
@@ -75,6 +76,7 @@ function startSkycoin() {
     '-enable-seed-api=true',
     '-enable-wallet-api=true',
     '-rpc-interface=false',
+    '-web-interface-port='+port,
     // will break
     // broken (automatically generated certs do not work):
     // '-web-interface-https=true',

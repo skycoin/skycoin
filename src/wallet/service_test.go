@@ -160,7 +160,7 @@ func TestServiceCreateWallet(t *testing.T) {
 				_, err = s.CreateWallet(dupWlt, Options{
 					Seed: seed,
 				}, nil)
-				require.EqualError(t, err, fmt.Sprintf("wallet %s would be duplicate with %v, same seed", dupWlt, wltName))
+				require.Equal(t, err, ErrSeedUsed)
 
 				// check if the dup wallet is created
 				_, ok := s.wallets[dupWlt]

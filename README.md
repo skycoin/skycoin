@@ -34,7 +34,7 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
     - [Docker image](#docker-image)
     - [Building your own images](#building-your-own-images)
 - [API Documentation](#api-documentation)
-    - [Wallet REST API](#wallet-rest-api)
+    - [REST API](#rest-api)
     - [JSON-RPC 2.0 API](#json-rpc-20-api)
     - [Skycoin command line interface](#skycoin-command-line-interface)
 - [Integrating Skycoin with your application](#integrating-skycoin-with-your-application)
@@ -166,11 +166,13 @@ $ docker build -f docker/images/mainnet/Dockerfile \
 
 ## API Documentation
 
-### Wallet REST API
+### REST API
 
-[Wallet REST API](src/gui/README.md).
+[REST API](src/gui/README.md).
 
 ### JSON-RPC 2.0 API
+
+*Deprecated, avoid using this*
 
 [JSON-RPC 2.0 README](src/api/webrpc/README.md).
 

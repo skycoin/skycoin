@@ -1,4 +1,4 @@
-# APIs document
+# REST API Documentation
 
 API default service port is `6420`.
 

@@ -67,7 +67,7 @@ export class ApiService {
   }
 
   getWalletSeed(wallet: Wallet, password: string): Observable<string> {
-    return this.get('wallet/seed', { id: wallet.filename, password })
+    return this.post('wallet/seed', { id: wallet.filename, password })
       .map(response => response.seed);
   }
 

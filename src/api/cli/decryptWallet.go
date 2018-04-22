@@ -37,7 +37,9 @@ func decryptWalletCmd(cfg Config) gcli.Command {
 				return err
 			}
 
-			wlt, err := decryptWallet(w, []byte(c.String("p")))
+			pr := NewPasswordReader([]byte(c.String("p")))
+
+			wlt, err := decryptWallet(w, pr)
 			switch err.(type) {
 			case nil:
 			case WalletLoadError:
@@ -55,7 +57,7 @@ func decryptWalletCmd(cfg Config) gcli.Command {
 	}
 }
 
-func decryptWallet(walletFile string, password []byte) (*wallet.Wallet, error) {
+func decryptWallet(walletFile string, pr PasswordReader) (*wallet.Wallet, error) {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
 		return nil, WalletLoadError{err}
@@ -65,12 +67,13 @@ func decryptWallet(walletFile string, password []byte) (*wallet.Wallet, error) {
 		return nil, wallet.ErrWalletNotEncrypted
 	}
 
-	if len(password) == 0 {
-		var err error
-		password, err = readPasswordFromTerminal()
-		if err != nil {
-			return nil, err
-		}
+	if pr == nil {
+		return nil, wallet.ErrMissingPassword
+	}
+
+	password, err := pr.Password()
+	if err != nil {
+		return nil, err
 	}
 
 	unlockedWlt, err := wlt.Unlock(password)

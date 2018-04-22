@@ -133,7 +133,6 @@ func generateWalletHandler(c *gcli.Context) error {
 	rd := c.Bool("rd")
 
 	encrypt := c.Bool("e")
-	password := c.String("p")
 
 	sd, err := makeSeed(s, r, rd)
 	if err != nil {
@@ -143,6 +142,28 @@ func generateWalletHandler(c *gcli.Context) error {
 	cryptoType, err := wallet.CryptoTypeFromString(c.String("x"))
 	if err != nil {
 		return err
+	}
+
+	pr := NewPasswordReader([]byte(c.String("p")))
+	switch pr.(type) {
+	case nil:
+		if encrypt {
+			return wallet.ErrMissingPassword
+		}
+	case PasswordFromBytes:
+		p, _ := pr.Password()
+		if !encrypt && len(p) != 0 {
+			return errors.New("password should not be set as we're not going to create a wallet with encryption")
+		}
+	}
+
+	var password []byte
+	if encrypt {
+		var err error
+		password, err = pr.Password()
+		if err != nil {
+			return err
+		}
 	}
 
 	opts := wallet.Options{
@@ -218,16 +239,7 @@ func GenerateWallet(walletFile string, opts wallet.Options, numAddrs uint64) (*w
 		return wlt, nil
 	}
 
-	password := opts.Password
-	if len(password) == 0 {
-		var err error
-		password, err = readPasswordFromTerminal()
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if err := wlt.Lock(password, opts.CryptoType); err != nil {
+	if err := wlt.Lock(opts.Password, opts.CryptoType); err != nil {
 		return nil, err
 	}
 

@@ -39,7 +39,8 @@ func showSeedCmd(cfg Config) gcli.Command {
 				return err
 			}
 
-			seed, err := getSeed(w, []byte(c.String("p")))
+			pr := NewPasswordReader([]byte(c.String("p")))
+			seed, err := getSeed(w, pr)
 			switch err.(type) {
 			case nil:
 			case WalletLoadError:
@@ -66,22 +67,31 @@ func showSeedCmd(cfg Config) gcli.Command {
 	}
 }
 
-func getSeed(walletFile string, password []byte) (string, error) {
+func getSeed(walletFile string, pr PasswordReader) (string, error) {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
 		return "", WalletLoadError{err}
+	}
+
+	switch pr.(type) {
+	case nil:
+		if wlt.IsEncrypted() {
+			return "", wallet.ErrWalletEncrypted
+		}
+	case PasswordFromBytes:
+		p, _ := pr.Password()
+		if !wlt.IsEncrypted() && len(p) != 0 {
+			return "", wallet.ErrWalletNotEncrypted
+		}
 	}
 
 	if !wlt.IsEncrypted() {
 		return wlt.Meta["seed"], nil
 	}
 
-	if len(password) == 0 {
-		var err error
-		password, err = readPasswordFromTerminal()
-		if err != nil {
-			return "", err
-		}
+	password, err := pr.Password()
+	if err != nil {
+		return "", err
 	}
 
 	var seed string

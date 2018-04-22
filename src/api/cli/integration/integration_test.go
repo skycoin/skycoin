@@ -100,11 +100,19 @@ func nodeAddress() string {
 	return addr
 }
 
-// createTempWalletFile creates a temporary dir, and if encrypt is true, copy
+func createUnEncryptedWallet(t *testing.T) (string, func()) {
+	return createTempWallet(t, false)
+}
+
+func createEncryptedWallet(t *testing.T) (string, func()) {
+	return createTempWallet(t, true)
+}
+
+// createTempWallet creates a temporary dir, and if encrypt is true, copy
 // the test-fixtures/$stableEncryptedWalletName file to the dir. If it's false, then
 // copy the test-fixtures/$stableWalletName file to the dir
 // returns the temporary wallet path, cleanup callback function, and error if any.
-func createTempWalletFile(t *testing.T, encrypt bool) (string, func()) {
+func createTempWallet(t *testing.T, encrypt bool) (string, func()) {
 	dir, err := ioutil.TempDir("", "wallet-data-dir")
 	require.NoError(t, err)
 
@@ -362,7 +370,7 @@ func TestGenerateAddresses(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			walletPath, clean := createTempWalletFile(t, tc.encrypted)
+			walletPath, clean := createTempWallet(t, tc.encrypted)
 			defer clean()
 
 			output, err := exec.Command(binaryPath, tc.args...).CombinedOutput()
@@ -748,7 +756,7 @@ func TestStableListWallets(t *testing.T) {
 		return
 	}
 
-	_, clean := createTempWalletFile(t, false)
+	_, clean := createUnEncryptedWallet(t)
 	defer clean()
 
 	output, err := exec.Command(binaryPath, "listWallets").CombinedOutput()
@@ -790,7 +798,7 @@ func TestStableListAddress(t *testing.T) {
 		return
 	}
 
-	_, clean := createTempWalletFile(t, false)
+	_, clean := createUnEncryptedWallet(t)
 	defer clean()
 
 	output, err := exec.Command(binaryPath, "listAddresses").CombinedOutput()
@@ -864,7 +872,7 @@ func TestStableWalletBalance(t *testing.T) {
 		return
 	}
 
-	_, clean := createTempWalletFile(t, false)
+	_, clean := createUnEncryptedWallet(t)
 	defer clean()
 
 	output, err := exec.Command(binaryPath, "walletBalance").CombinedOutput()
@@ -902,7 +910,7 @@ func TestStableWalletOutputs(t *testing.T) {
 		return
 	}
 
-	_, clean := createTempWalletFile(t, false)
+	_, clean := createUnEncryptedWallet(t)
 	defer clean()
 
 	output, err := exec.Command(binaryPath, "walletOutputs").CombinedOutput()
@@ -1419,7 +1427,7 @@ func TestStableWalletDir(t *testing.T) {
 		return
 	}
 
-	walletPath, clean := createTempWalletFile(t, false)
+	walletPath, clean := createUnEncryptedWallet(t)
 	defer clean()
 
 	dir := filepath.Dir(walletPath)
@@ -1896,7 +1904,7 @@ func TestStableWalletHistory(t *testing.T) {
 		return
 	}
 
-	_, clean := createTempWalletFile(t, false)
+	_, clean := createUnEncryptedWallet(t)
 	defer clean()
 
 	output, err := exec.Command(binaryPath, "walletHistory").CombinedOutput()
@@ -2100,10 +2108,27 @@ func TestStableGenerateWallet(t *testing.T) {
 			name: "generate wallet with duplicate wallet name",
 			args: []string{},
 			setup: func(t *testing.T) func() {
-				_, clean := createTempWalletFile(t, false)
+				_, clean := createUnEncryptedWallet(t)
 				return clean
 			},
 			errMsg: []byte("Error: integration-test.wlt already exist. See 'skycoin-cli generateWallet --help'"),
+		},
+		{
+			name:  "encrypt=true",
+			args:  []string{"-e", "-p", "pwd"},
+			setup: createTempWalletDir,
+			checkWallet: func(t *testing.T, w *wallet.Wallet) {
+				require.Equal(t, "skycoin_cli.wlt", w.Filename())
+				// Confirms the wallet is encrypted
+				require.True(t, w.IsEncrypted())
+				require.Empty(t, w.Meta["seed"])
+				require.Empty(t, w.Meta["lastSeed"])
+
+				// Confirms the secrets in address entries are empty
+				for _, e := range w.Entries {
+					require.Equal(t, cipher.SecKey{}, e.Secret)
+				}
+			},
 		},
 	}
 
@@ -2138,8 +2163,10 @@ func TestStableGenerateWallet(t *testing.T) {
 			err = w.Validate()
 			require.NoError(t, err)
 
-			// Confirms all entries and lastSeed are derived from seed.
-			checkWalletEntriesAndLastSeed(t, w)
+			if !w.IsEncrypted() {
+				// Confirms all entries and lastSeed are derived from seed.
+				checkWalletEntriesAndLastSeed(t, w)
+			}
 
 			// Checks the wallet with provided checking method.
 			tc.checkWallet(t, w)

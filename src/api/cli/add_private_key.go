@@ -51,7 +51,9 @@ func addPrivateKeyCmd(cfg Config) gcli.Command {
 				return err
 			}
 
-			err = AddPrivateKeyToFile(w, skStr, []byte(c.String("p")))
+			pr := NewPasswordReader([]byte(c.String("p")))
+
+			err = AddPrivateKeyToFile(w, skStr, pr)
 
 			switch err.(type) {
 			case nil:
@@ -89,33 +91,43 @@ func AddPrivateKey(wlt *wallet.Wallet, key string) error {
 }
 
 // AddPrivateKeyToFile adds a private key to a wallet based on filename.  Will save the wallet after modifying.
-func AddPrivateKeyToFile(walletFile, key string, password []byte) error {
+func AddPrivateKeyToFile(walletFile, key string, pr PasswordReader) error {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
 		return WalletLoadError{err}
 	}
 
-	if !wlt.IsEncrypted() {
-		if len(password) != 0 {
+	switch pr.(type) {
+	case nil:
+		if wlt.IsEncrypted() {
+			return wallet.ErrMissingPassword
+		}
+	case PasswordFromBytes:
+		p, _ := pr.Password()
+		if !wlt.IsEncrypted() && len(p) != 0 {
 			return wallet.ErrWalletNotEncrypted
 		}
+	}
 
-		if err := AddPrivateKey(wlt, key); err != nil {
-			return err
-		}
-	} else {
-		if len(password) == 0 {
-			var err error
-			password, err = readPasswordFromTerminal()
+	addKey := func(w *wallet.Wallet, key string) error {
+		return AddPrivateKey(w, key)
+	}
+
+	if wlt.IsEncrypted() {
+		addKey = func(w *wallet.Wallet, key string) error {
+			password, err := pr.Password()
 			if err != nil {
 				return err
 			}
+
+			return w.GuardUpdate(password, func(wlt *wallet.Wallet) error {
+				return AddPrivateKey(wlt, key)
+			})
 		}
-		if err := wlt.GuardUpdate(password, func(w *wallet.Wallet) error {
-			return AddPrivateKey(w, key)
-		}); err != nil {
-			return err
-		}
+	}
+
+	if err := addKey(wlt, key); err != nil {
+		return err
 	}
 
 	dir, err := filepath.Abs(filepath.Dir(walletFile))

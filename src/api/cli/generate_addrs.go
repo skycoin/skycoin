@@ -66,7 +66,8 @@ func generateAddrs(c *gcli.Context) error {
 		return err
 	}
 
-	addrs, err := GenerateAddressesInFile(w, num, []byte(c.String("p")))
+	pr := NewPasswordReader([]byte(c.String("p")))
+	addrs, err := GenerateAddressesInFile(w, num, pr)
 
 	switch err.(type) {
 	case nil:
@@ -93,39 +94,51 @@ func generateAddrs(c *gcli.Context) error {
 }
 
 // GenerateAddressesInFile generates addresses in given wallet file
-func GenerateAddressesInFile(walletFile string, num uint64, password []byte) ([]cipher.Address, error) {
+func GenerateAddressesInFile(walletFile string, num uint64, pr PasswordReader) ([]cipher.Address, error) {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
 		return nil, WalletLoadError{err}
 	}
 
-	var addrs []cipher.Address
+	switch pr.(type) {
+	case nil:
+		if wlt.IsEncrypted() {
+			return nil, wallet.ErrWalletEncrypted
+		}
+	case PasswordFromBytes:
+		p, _ := pr.Password()
+		if !wlt.IsEncrypted() && len(p) != 0 {
+			return nil, wallet.ErrWalletNotEncrypted
+		}
+	}
+
+	genAddrsInWallet := func(w *wallet.Wallet, n uint64) ([]cipher.Address, error) {
+		return w.GenerateAddresses(n)
+	}
+
 	if wlt.IsEncrypted() {
-		if len(password) == 0 {
-			var err error
-			password, err = readPasswordFromTerminal()
+		genAddrsInWallet = func(w *wallet.Wallet, n uint64) ([]cipher.Address, error) {
+			password, err := pr.Password()
 			if err != nil {
 				return nil, err
 			}
-		}
 
-		if err := wlt.GuardUpdate([]byte(password), func(w *wallet.Wallet) error {
-			var err error
-			addrs, err = w.GenerateAddresses(num)
-			return err
-		}); err != nil {
-			return nil, err
-		}
-	} else {
-		if len(password) != 0 {
-			return nil, wallet.ErrWalletNotEncrypted
-		}
+			var addrs []cipher.Address
+			if err := w.GuardUpdate(password, func(wlt *wallet.Wallet) error {
+				var err error
+				addrs, err = wlt.GenerateAddresses(n)
+				return err
+			}); err != nil {
+				return nil, err
+			}
 
-		var err error
-		addrs, err = wlt.GenerateAddresses(num)
-		if err != nil {
-			return nil, err
+			return addrs, nil
 		}
+	}
+
+	addrs, err := genAddrsInWallet(wlt, num)
+	if err != nil {
+		return nil, err
 	}
 
 	dir, err := filepath.Abs(filepath.Dir(walletFile))

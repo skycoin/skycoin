@@ -341,3 +341,40 @@ type WalletSaveError struct {
 func (w WalletSaveError) Error() string {
 	return w.error.Error()
 }
+
+// PasswordReader is an interface for getting password
+type PasswordReader interface {
+	Password() ([]byte, error)
+}
+
+// PasswordFromBytes represents an implementation of PasswordReader,
+// which reads password from the bytes itself.
+type PasswordFromBytes []byte
+
+// Password implements the PasswordReader's Password method
+func (p PasswordFromBytes) Password() ([]byte, error) {
+	return []byte(p), nil
+}
+
+// PasswordFromTerm reads password from terminal
+type PasswordFromTerm struct{}
+
+// Password implements the PasswordReader's Password method
+func (p PasswordFromTerm) Password() ([]byte, error) {
+	v, err := readPasswordFromTerminal()
+	if err != nil {
+		return nil, err
+	}
+
+	return v, nil
+}
+
+// NewPasswordReader creats a PasswordReader instance,
+// reads password from the input bytes first, if it's empty, then read from terminal.
+func NewPasswordReader(p []byte) PasswordReader {
+	if len(p) != 0 {
+		return PasswordFromBytes(p)
+	}
+
+	return PasswordFromTerm{}
+}

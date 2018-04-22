@@ -1843,11 +1843,17 @@ func TestLivePendingTransactions(t *testing.T) {
 }
 
 func TestLiveWalletSpend(t *testing.T) {
+	fmt.Println("TestLiveWalletSpend")
+
 	if !doLive(t) {
 		return
 	}
 
+	fmt.Println("TestLiveWalletSpend live enabled")
+
 	requireWalletEnv(t)
+
+	fmt.Println("TestLiveWalletSpend required wallet env found")
 
 	c := gui.NewClient(nodeAddress())
 	w, totalCoins, _, password := prepareAndCheckWallet(t, c, 2e6, 2)
@@ -3075,6 +3081,10 @@ func prepareAndCheckWallet(t *testing.T, c *gui.Client, miniCoins, miniCoinHours
 	w, err := wallet.Load(walletPath)
 	if err != nil {
 		t.Fatalf("Load wallet %v failed: %v", walletPath, err)
+	}
+
+	if w.IsEncrypted() && password == "" {
+		t.Fatalf("Wallet is encrypted, must set WALLET_PASSWORD env var")
 	}
 
 	// Generate more addresses if address entries less than 2.

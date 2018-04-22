@@ -438,7 +438,7 @@ func TestWalletUnlock(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				w := makeWallet(t, tc.opts, 1)
 				// Tests the unlock method
-				wlt, err := w.unlock(tc.unlockPwd)
+				wlt, err := w.Unlock(tc.unlockPwd)
 				require.Equal(t, tc.err, err)
 				if err != nil {
 					return
@@ -498,7 +498,7 @@ func TestLockAndUnLock(t *testing.T) {
 			require.NoError(t, err)
 
 			// unlock the cloned wallet
-			ucw, err := cw.unlock([]byte("pwd"))
+			ucw, err := cw.Unlock([]byte("pwd"))
 			require.NoError(t, err)
 
 			require.Equal(t, w, ucw)

@@ -372,7 +372,7 @@ func (serv *Service) CreateAndSignTransactionAdvanced(params CreateTransactionPa
 	var tx *coin.Transaction
 	var inputs []UxBalance
 	if w.IsEncrypted() {
-		err = w.guardView(params.Wallet.Password, func(wlt *Wallet) error {
+		err = w.GuardView(params.Wallet.Password, func(wlt *Wallet) error {
 			var err error
 			tx, inputs, err = wlt.CreateAndSignTransactionAdvanced(params, vld, unspent, headTime)
 			return err

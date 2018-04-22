@@ -9,13 +9,14 @@ import { parseResponseMessage } from '../../../utils/index';
 
 export class ButtonComponent {
   @Input() disabled: any;
+  @Input() forceEmitEvents = false;
   @Output() action = new EventEmitter();
 
   error: string;
   state: number;
 
   onClick() {
-    if (!this.disabled) {
+    if (!this.disabled || this.forceEmitEvents) {
       this.action.emit();
     }
   }
@@ -32,6 +33,10 @@ export class ButtonComponent {
   setError(error: any) {
     this.error = typeof error === 'string' ? error : parseResponseMessage(error['_body']);
     this.state = 2;
+  }
+
+  setDisabled() {
+    this.disabled = true;
   }
 
   resetState() {

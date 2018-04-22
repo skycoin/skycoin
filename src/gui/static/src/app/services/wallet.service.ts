@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
 import { ApiService } from './api.service';
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
 import { IntervalObservable } from 'rxjs/observable/IntervalObservable';
@@ -11,12 +10,13 @@ import 'rxjs/add/operator/filter';
 import 'rxjs/add/operator/first';
 import 'rxjs/add/operator/mergeMap';
 import { Address, Wallet } from '../app.datatypes';
+import { ReplaySubject } from 'rxjs/ReplaySubject';
 
 @Injectable()
 export class WalletService {
   addresses: Address[];
-  wallets: Subject<Wallet[]> = new BehaviorSubject<Wallet[]>([]);
-  pendingTxs: Subject<any[]> = new BehaviorSubject<any[]>([]);
+  wallets: Subject<Wallet[]> = new ReplaySubject<Wallet[]>();
+  pendingTxs: Subject<any[]> = new ReplaySubject<any[]>();
 
   constructor(
     private apiService: ApiService
@@ -32,12 +32,7 @@ export class WalletService {
   }
 
   addressesAsString(): Observable<string> {
-    return this.all().map(wallets => wallets.map(wallet => {
-      return wallet.addresses.reduce((a, b) => {
-        a.push(b.address);
-        return a;
-      }, []).join(',');
-    }).join(','));
+    return this.allAddresses().map(addrs => addrs.map(addr => addr.address)).map(addrs => addrs.join(','));
   }
 
   addAddress(wallet: Wallet, password?: string) {
@@ -88,13 +83,30 @@ export class WalletService {
       .flatMap(addresses => this.apiService.get('outputs', {addrs: addresses}));
   }
 
+  allPendingTransactions(): Observable<any> {
+    return this.apiService.get('pendingTxs');
+  }
+
   pendingTransactions(): Observable<any> {
     return this.pendingTxs.asObservable();
   }
 
   refreshPendingTransactions() {
-    this.apiService.get('pendingTxs').subscribe(txs => {
-      this.pendingTxs.next(txs);
+    this.wallets.first().subscribe(wallets => {
+      Observable.forkJoin(wallets.map(wallet => this.apiService.get('wallet/transactions', { id: wallet.filename })))
+        .subscribe(pending => {
+          this.pendingTxs.next([].concat.apply(
+            [],
+            pending
+              .filter(response => response.transactions.length > 0)
+              .map(response => response.transactions)
+          ).reduce((txs, tx) => {
+            if (!txs.find(t => t.transaction.txid === tx.transaction.txid)) {
+              txs.push(tx);
+            }
+            return txs;
+          }, []));
+        });
     });
   }
 
@@ -185,6 +197,7 @@ export class WalletService {
     this.apiService.getWallets().first().subscribe(wallets => {
       this.wallets.next(wallets);
       this.refreshBalances();
+      this.refreshPendingTransactions();
     });
   }
 

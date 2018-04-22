@@ -58,6 +58,11 @@ func (g SHA256) Hex() string {
 	return hex.EncodeToString(g[:])
 }
 
+// Empty returns true if the hash is empty
+func (g SHA256) Empty() bool {
+	return g == SHA256{}
+}
+
 // Xor xor
 func (g *SHA256) Xor(b SHA256) SHA256 {
 	c := SHA256{}

@@ -32,8 +32,9 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
     - [Show Skycoin node options](#show-skycoin-node-options)
     - [Run Skycoin with options](#run-skycoin-with-options)
     - [Docker image](#docker-image)
+    - [Building your own images](#building-your-own-images)
 - [API Documentation](#api-documentation)
-    - [Wallet REST API](#wallet-rest-api)
+    - [REST API](#rest-api)
     - [JSON-RPC 2.0 API](#json-rpc-20-api)
     - [Skycoin command line interface](#skycoin-command-line-interface)
 - [Integrating Skycoin with your application](#integrating-skycoin-with-your-application)
@@ -150,7 +151,7 @@ Example
 ```sh
 $ git clone https://github.com/skycoin/skycoin
 $ cd skycoin
-$ SKYCOIN_VERSION=v0.22.0
+$ SKYCOIN_VERSION=v0.23.0
 $ docker build -f docker/images/mainnet/Dockerfile \
   --build-arg=SKYCOIN_VERSION=$SKYCOIN_VERSION \
   -t skycoin:$SKYCOIN_VERSION .
@@ -160,17 +161,19 @@ or just
 
 ```sh
 $ docker build -f docker/images/mainnet/Dockerfile \
-  --build-arg=SKYCOIN_VERSION=v0.22.0 \
-  -t skycoin:v0.22.0 .
+  --build-arg=SKYCOIN_VERSION=v0.23.0 \
+  -t skycoin:v0.23.0 .
 ```
 
 ## API Documentation
 
-### Wallet REST API
+### REST API
 
-[Wallet REST API](src/gui/README.md).
+[REST API](src/gui/README.md).
 
 ### JSON-RPC 2.0 API
+
+*Deprecated, avoid using this*
 
 [JSON-RPC 2.0 README](src/api/webrpc/README.md).
 
@@ -279,9 +282,15 @@ it also must have been loaded by the node.
 We can specify the wallet by setting two environment variables: `WALLET_DIR` and `WALLET_NAME`. The `WALLET_DIR`
 represents the absolute path of the wallet directory, and `WALLET_NAME` represents the wallet file name.
 
+Note: `WALLET_DIR` is only used by the CLI integration tests. The GUI integration tests use the node's
+configured wallet directory, which can be controlled with `-wallet-dir` when running the node.
+
+If the wallet is encrypted, also set `WALLET_PASSWORD`.
+
 ```sh
-export WALLET_DIR=$HOME/.skycoin/wallets
-export WALLET_NAME=$wallet-file-name-meet-the-requirements
+export WALLET_DIR="$HOME/.skycoin/wallets"
+export WALLET_NAME="$valid_wallet_filename"
+export WALLET_PASSWORD="$wallet_password"
 ```
 
 Then run the tests with the following command:
@@ -422,7 +431,7 @@ Performs these actions before releasing:
 * `go run cmd/cli/cli.go checkdb` against a synced node
 * On all OSes, make sure that the client runs properly from the command line (`./run.sh`)
 * Build the releases and make sure that the Electron client runs properly on Windows, Linux and macOS.
-    * Delete the database file and sync from scratch to confirm syncing works
+    * Use a clean data directory with no wallets or database to sync from scratch and verify the wallet setup wizard.
     * Load a test wallet with nonzero balance from seed to confirm wallet loading works
     * Send coins to another wallet to confirm spending works
     * Restart the client, confirm that it reloads properly

@@ -1,4 +1,4 @@
-<app-modal [title]="data.create ? 'Create Wallet' : 'Load Wallet'" [dialog]="dialogRef">
+<app-modal [title]="data.create ? 'Create Wallet' : 'Load Wallet'" [dialog]="dialogRef" [disableDismiss]="disableDismiss">
   <div [formGroup]="form">
     <div class="form-field">
       <label for="label">Name</label>
@@ -26,6 +26,7 @@
         <p class="-info">
           We suggest that you encrypt each one of your wallets with a password.
           If you forget your password, you can reset it with your seed.
+          Make sure you have your seed saved somewhere safe before encrypting your wallet.
         </p>
       </div>
       <div class="col-md-6" [ngClass]="{ '-hidden': !encrypt }">
@@ -43,10 +44,10 @@
     </div>
   </div>
   <div class="-buttons">
-    <app-button (action)="closePopup()">
+    <app-button (action)="closePopup()" #cancelButton>
       Cancel
     </app-button>
-    <app-button (action)="createWallet()" class="primary" [disabled]="!form.valid" #button>
+    <app-button (action)="createWallet()" class="primary" [disabled]="!form.valid" #createButton>
       {{ data.create ? 'Create' : 'Load' }}
     </app-button>
   </div>

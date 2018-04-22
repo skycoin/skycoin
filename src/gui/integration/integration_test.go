@@ -3077,6 +3077,10 @@ func prepareAndCheckWallet(t *testing.T, c *gui.Client, miniCoins, miniCoinHours
 		t.Fatalf("Load wallet %v failed: %v", walletPath, err)
 	}
 
+	if w.IsEncrypted() && password == "" {
+		t.Fatalf("Wallet is encrypted, must set WALLET_PASSWORD env var")
+	}
+
 	// Generate more addresses if address entries less than 2.
 	if len(w.Entries) < 2 {
 		_, err := c.NewWalletAddress(w.Filename(), 2-len(w.Entries), password)

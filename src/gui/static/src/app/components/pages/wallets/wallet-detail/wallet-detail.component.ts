@@ -50,7 +50,8 @@ export class WalletDetailComponent {
 
     if (!this.wallet.encrypted) {
       config.data['description'] = 'We suggest that you encrypt each one of your wallets with a password. ' +
-        'If you forget your password, you can reset it with your seed.';
+        'If you forget your password, you can reset it with your seed. ' +
+        'Make sure you have your seed saved somewhere safe before encrypting your wallet.';
     }
 
     this.dialog.open(PasswordDialogComponent, config).componentInstance.passwordSubmit

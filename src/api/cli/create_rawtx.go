@@ -477,7 +477,7 @@ func chooseSpends(uxouts visor.ReadableOutputSet, coins uint64) ([]wallet.UxBala
 	// application that may need to send frequently.
 	// Using fewer UxOuts will leave more available for other transactions,
 	// instead of waiting for confirmation.
-	outs, err := wallet.ChooseSpendsMinimizeUxOuts(spendableOutputs, coins)
+	outs, err := wallet.ChooseSpendsMinimizeUxOuts(spendableOutputs, coins, 0)
 	if err != nil {
 		// If there is not enough balance in the spendable outputs,
 		// see if there is enough balance when including incoming outputs
@@ -487,7 +487,7 @@ func chooseSpends(uxouts visor.ReadableOutputSet, coins uint64) ([]wallet.UxBala
 				return nil, otherErr
 			}
 
-			if _, otherErr := wallet.ChooseSpendsMinimizeUxOuts(expectedOutputs, coins); otherErr != nil {
+			if _, otherErr := wallet.ChooseSpendsMinimizeUxOuts(expectedOutputs, coins, 0); otherErr != nil {
 				return nil, err
 			}
 

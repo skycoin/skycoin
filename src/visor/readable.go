@@ -44,6 +44,7 @@ type Transaction struct {
 	Txn    coin.Transaction  //`json:"txn"`
 	Status TransactionStatus //`json:"status"`
 	Time   uint64            //`json:"time"`
+	Size   int
 }
 
 // TransactionStatus represents the transaction status
@@ -96,24 +97,6 @@ func NewConfirmedTransactionStatus(height uint64, blockSeq uint64) TransactionSt
 		BlockSeq:    blockSeq,
 	}
 }
-
-/*
-type ReadableTransactionHeader struct {
-	Hash string   `json:"hash"`
-	Sigs []string `json:"sigs"`
-}
-
-func NewReadableTransactionHeader(t *coin.TransactionHeader) ReadableTransactionHeader {
-	sigs := make([]string, len(t.Sigs))
-	for i, _ := range t.Sigs {
-		sigs[i] = t.Sigs[i].Hex()
-	}
-	return ReadableTransactionHeader{
-		Hash: t.Hash.Hex(),
-		Sigs: sigs,
-	}
-}
-*/
 
 // ReadableTransactionOutput readable transaction output
 type ReadableTransactionOutput struct {
@@ -437,19 +420,21 @@ func NewGenesisReadableTransaction(t *Transaction) (*ReadableTransaction, error)
 	for i := range t.Txn.In {
 		in[i] = t.Txn.In[i].Hex()
 	}
+
 	out := make([]ReadableTransactionOutput, len(t.Txn.Out))
 	for i := range t.Txn.Out {
 		o, err := NewReadableTransactionOutput(&t.Txn.Out[i], txid)
 		if err != nil {
-			return &ReadableTransaction{}, err
+			return nil, err
 		}
 
 		out[i] = *o
 	}
+
 	return &ReadableTransaction{
 		Length:    t.Txn.Length,
 		Type:      t.Txn.Type,
-		Hash:      t.Txn.Hash().Hex(),
+		Hash:      t.Txn.TxIDHex(),
 		InnerHash: t.Txn.InnerHash.Hex(),
 		Timestamp: t.Time,
 
@@ -471,6 +456,7 @@ func NewReadableTransaction(t *Transaction) (*ReadableTransaction, error) {
 	for i := range t.Txn.In {
 		in[i] = t.Txn.In[i].Hex()
 	}
+
 	out := make([]ReadableTransactionOutput, len(t.Txn.Out))
 	for i := range t.Txn.Out {
 		o, err := NewReadableTransactionOutput(&t.Txn.Out[i], txid)
@@ -480,10 +466,11 @@ func NewReadableTransaction(t *Transaction) (*ReadableTransaction, error) {
 
 		out[i] = *o
 	}
+
 	return &ReadableTransaction{
 		Length:    t.Txn.Length,
 		Type:      t.Txn.Type,
-		Hash:      t.Txn.Hash().Hex(),
+		Hash:      t.Txn.TxIDHex(),
 		InnerHash: t.Txn.InnerHash.Hex(),
 		Timestamp: t.Time,
 
@@ -550,6 +537,7 @@ func NewReadableBlockBody(b *coin.Block) (*ReadableBlockBody, error) {
 type ReadableBlock struct {
 	Head ReadableBlockHeader `json:"header"`
 	Body ReadableBlockBody   `json:"body"`
+	Size int                 `json:"size"`
 }
 
 // NewReadableBlock creates readable block
@@ -561,7 +549,13 @@ func NewReadableBlock(b *coin.Block) (*ReadableBlock, error) {
 	return &ReadableBlock{
 		Head: NewReadableBlockHeader(&b.Head),
 		Body: *body,
+		Size: b.Size(),
 	}, nil
+}
+
+// ReadableBlocks an array of readable blocks.
+type ReadableBlocks struct {
+	Blocks []ReadableBlock `json:"blocks"`
 }
 
 // NewReadableBlocks converts []coin.SignedBlock to readable blocks
@@ -628,6 +622,7 @@ type TransactionJSON struct {
 }
 
 // TransactionToJSON convert transaction to json string
+// TODO -- remove in favor of ReadableTransaction?
 func TransactionToJSON(tx coin.Transaction) (string, error) {
 	var o TransactionJSON
 

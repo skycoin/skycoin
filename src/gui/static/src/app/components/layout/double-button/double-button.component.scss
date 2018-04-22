@@ -1,0 +1,37 @@
+@import '../../../../theme/_variables';
+
+.-small-button ::ng-deep button {
+  width: unset;
+  height: unset;
+  padding: 0 10px 0 10px;
+  min-width: 100px;
+  margin: unset;
+  font-size: 13px;
+}
+
+.-toggle ::ng-deep button {
+  box-shadow: unset;
+  background-color: $transparent !important;
+  line-height: unset !important;
+  min-height: 26px;
+  span {
+    color: $black;
+    line-height: unset !important;
+  }
+}
+
+.-toggle ::ng-deep button.enabled {
+  background-color: $black !important;
+  span {
+    color: $white;
+  }
+}
+
+.-buttons-container {
+  width: fit-content;
+  padding: 5px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 100px;
+  margin: 0px auto;
+  text-align: center;
+}

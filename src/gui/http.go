@@ -59,11 +59,15 @@ type muxConfig struct {
 }
 
 func create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
-	appLoc, err := file.DetermineResourcePath(c.StaticDir, resourceDir, devDir)
-	if err != nil {
-		return nil, err
+	var appLoc string
+	if c.EnableWalletAPI {
+		var err error
+		appLoc, err = file.DetermineResourcePath(c.StaticDir, resourceDir, devDir)
+		if err != nil {
+			return nil, err
+		}
+		logger.Infof("Web resources directory: %s", appLoc)
 	}
-	logger.Infof("Web resources directory: %s", appLoc)
 
 	csrfStore := &CSRFStore{
 		Enabled: !c.DisableCSRF,
@@ -243,6 +247,9 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.Se
 	//  failure status.
 	webHandler("/wallet/spend", walletSpendHandler(gateway))
 
+	// Creates a transaction from a wallet
+	webHandler("/wallet/transaction", createTransactionHandler(gateway))
+
 	// GET Arguments:
 	//      id: Wallet ID
 	// Returns all pending transanction for all addresses by selected Wallet
@@ -325,7 +332,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.Se
 	//     addrs: Comma seperated addresses [optional, returns all transactions if no address is provided]
 	//     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
 	webHandler("/transactions", getTransactions(gateway))
-	//inject a transaction into network
+	// inject a transaction into network
 	webHandler("/injectTransaction", injectTransaction(gateway))
 	webHandler("/resendUnconfirmedTxns", resendUnconfirmedTxns(gateway))
 	// get raw tx by txid.

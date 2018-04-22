@@ -3,6 +3,7 @@ import { Wallet } from '../../../../app.datatypes';
 import { WalletService } from '../../../../services/wallet.service';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { ChangeNameComponent } from '../change-name/change-name.component';
+import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 
 @Component({
   selector: 'app-wallet-detail',
@@ -25,11 +26,28 @@ export class WalletDetailComponent {
   }
 
   newAddress() {
-    this.walletService.addAddress(this.wallet).subscribe();
+    if (this.wallet.encrypted) {
+      this.dialog.open(PasswordDialogComponent).componentInstance.passwordSubmit
+        .subscribe(passwordDialog => {
+          this.walletService.addAddress(this.wallet, passwordDialog.password)
+            .subscribe(() => passwordDialog.close(), () => passwordDialog.error());
+        });
+    } else {
+      this.walletService.addAddress(this.wallet).subscribe();
+    }
   }
 
   toggleEmpty() {
     this.wallet.hideEmpty = !this.wallet.hideEmpty;
+  }
+
+  toggleEncryption() {
+    this.dialog.open(PasswordDialogComponent).componentInstance.passwordSubmit
+      .subscribe(passwordDialog => {
+        this.walletService.toggleEncryption(this.wallet, passwordDialog.password).subscribe(() => {
+          passwordDialog.close();
+        }, e => passwordDialog.error(e));
+      });
   }
 
   copyAddress(address) {

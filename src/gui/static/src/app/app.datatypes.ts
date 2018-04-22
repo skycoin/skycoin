@@ -40,11 +40,10 @@ export class Version {
 export class Wallet {
   label: string;
   filename: string;
-  seed: string;
   coins: number;
   hours: number;
   addresses: Address[];
-  visible?: boolean;
+  encrypted: boolean;
   hideEmpty?: boolean;
   opened?: boolean;
 }
@@ -69,7 +68,7 @@ export class PostWalletNewAddressResponse {
 export class GetWalletsResponseMeta {
   label: string;
   filename: string;
-  seed: string;
+  encrypted: boolean;
 }
 
 export class GetWalletsResponseEntry {

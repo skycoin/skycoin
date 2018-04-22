@@ -32,11 +32,6 @@ func NewTransactionResult(tx *Transaction) (*TransactionResult, error) {
 	}, nil
 }
 
-// ReadableBlocks an array of readable blocks.
-type ReadableBlocks struct {
-	Blocks []ReadableBlock `json:"blocks"`
-}
-
 // TransactionResults array of transaction results
 type TransactionResults struct {
 	Txns []TransactionResult `json:"txns"`
@@ -137,8 +132,8 @@ func (rpc RPC) GetAddressTxns(v *Visor, addr cipher.Address) ([]Transaction, err
 }
 
 // CreateWallet creates new wallet
-func (rpc *RPC) CreateWallet(wltName string, options wallet.Options) (*wallet.Wallet, error) {
-	return rpc.v.Wallets.CreateWallet(wltName, options)
+func (rpc *RPC) CreateWallet(wltName string, options wallet.Options, bg wallet.BalanceGetter) (*wallet.Wallet, error) {
+	return rpc.v.Wallets.CreateWallet(wltName, options, bg)
 }
 
 // NewAddresses generates new addresses in given wallet
@@ -155,6 +150,12 @@ func (rpc *RPC) GetWalletAddresses(wltID string) ([]cipher.Address, error) {
 func (rpc *RPC) CreateAndSignTransaction(wltID string, password []byte, vld wallet.Validator, unspent blockdb.UnspentGetter,
 	headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
 	return rpc.v.Wallets.CreateAndSignTransaction(wltID, password, vld, unspent, headTime, coins, dest)
+}
+
+// CreateAndSignTransactionAdvanced creates and sign transaction from wallet
+func (rpc *RPC) CreateAndSignTransactionAdvanced(params wallet.CreateTransactionParams, sv wallet.Validator,
+	unspent blockdb.UnspentGetter, headTime uint64) (*coin.Transaction, coin.UxArray, error) {
+	return rpc.v.Wallets.CreateAndSignTransactionAdvanced(params, sv, unspent, headTime)
 }
 
 // UpdateWalletLabel updates wallet label

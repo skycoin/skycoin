@@ -366,6 +366,28 @@ func TestUxArraySwap(t *testing.T) {
 	assert.Equal(t, uxa[0], uxy)
 }
 
+func TestUxArrayMap(t *testing.T) {
+	uxa := make(UxArray, 2)
+	uxx := makeUxOut(t)
+	uxy := makeUxOut(t)
+	uxa[0] = uxx
+	uxa[1] = uxy
+
+	m, err := uxa.Map()
+	require.NoError(t, err)
+	require.Len(t, m, 2)
+
+	_, ok := m[uxx.Hash()]
+	require.True(t, ok)
+	_, ok = m[uxy.Hash()]
+	require.True(t, ok)
+
+	uxa = append(uxa, uxx)
+
+	_, err = uxa.Map()
+	testutil.RequireError(t, err, "duplicate UxOut in UxArray")
+}
+
 func TestAddressUxOutsKeys(t *testing.T) {
 	unspents := make(AddressUxOuts)
 	ux := makeUxOut(t)
@@ -379,8 +401,7 @@ func TestAddressUxOutsKeys(t *testing.T) {
 	dupes := make(map[cipher.Address]byte, 3)
 	for _, k := range keys {
 		dupes[k] = byte(1)
-		assert.True(t, k == ux.Body.Address || k == ux2.Body.Address ||
-			k == ux3.Body.Address)
+		assert.True(t, k == ux.Body.Address || k == ux2.Body.Address || k == ux3.Body.Address)
 	}
 	assert.Equal(t, len(keys), len(dupes))
 }
@@ -559,7 +580,7 @@ func (ua UxArray) removeDupes() UxArray {
 		h := ua[i].Hash()
 		if _, ok := m[h]; !ok {
 			deduped = append(deduped, ua[i])
-			m[h] = byte(1)
+			m[h] = struct{}{}
 		}
 	}
 	return deduped

@@ -49,10 +49,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     private priceService: PriceService,
     private walletService: WalletService,
     private http: Http,
-  ) {
-    IntervalObservable.create(10000)
-      .subscribe(() => this.checkPendingTxs());
-  }
+  ) { }
 
   ngOnInit() {
     this.setVersion();
@@ -77,6 +74,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
         this.current = response.current;
         this.percentage = this.current && this.highest ? (this.current / this.highest) : 0;
       });
+
+    this.walletService.pendingTransactions().subscribe(txs => {
+      this.hasPendingTxs = txs.length > 0;
+    });
   }
 
   ngOnDestroy() {
@@ -91,12 +92,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
         this.version = output.version;
         this.retrieveReleaseVersion();
       });
-  }
-
-  checkPendingTxs() {
-    this.walletService.pendingTransactions().subscribe(txs => {
-      this.hasPendingTxs = txs.length > 0;
-    });
   }
 
   private higherVersion(first: string, second: string): boolean {

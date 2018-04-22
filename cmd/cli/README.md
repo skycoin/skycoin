@@ -1,10 +1,10 @@
-# CLI
+# CLI Documentation
 
 Skycoin command line interface
 
 The CLI command APIs can be used directly from a Go application, see [Skycoin CLI Godoc](https://godoc.org/github.com/skycoin/skycoin/src/api/cli).
 
-<!-- MarkdownTOC depth="3" autolink="true" bracket="round" -->
+<!-- MarkdownTOC autolink="true" bracket="round" -->
 
 - [Install](#install)
     - [Enable command autocomplete](#enable-command-autocomplete)
@@ -13,29 +13,50 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
     - [WALLET_DIR](#walletdir)
     - [WALLET_NAME](#walletname)
 - [Usage](#usage)
-    - [Add private key](#add-private-key)
-    - [Check addresss balance](#check-address-balance)
+    - [Add Private Key](#add-private-key)
+        - [Example](#example)
+    - [Check address balance](#check-address-balance)
+        - [Example](#example-1)
     - [Generate new addresses](#generate-new-addresses)
+        - [Examples](#examples)
     - [Check address outputs](#check-address-outputs)
+        - [Example](#example-2)
     - [Check block data](#check-block-data)
+        - [Example](#example-3)
     - [Check database integrity](#check-database-integrity)
-    - [Create a raw transaction](#create-raw-transaction)
-    - [Decode a raw transaction](#decode-raw-transaction)
-    - [Broadcast a raw transaction](#broadcast-raw-transaction)
-    - [Generate a wallet](#generate-wallet)
-    - [Generate addresses for a wallet](#generate-addresses-for-wallet)
+        - [Example](#example-4)
+    - [Create a raw transaction](#create-a-raw-transaction)
+        - [Examples](#examples-1)
+    - [Decode a raw transaction](#decode-a-raw-transaction)
+        - [Example](#example-5)
+    - [Broadcast a raw transaction](#broadcast-a-raw-transaction)
+    - [Generate a wallet](#generate-a-wallet)
+        - [Examples](#examples-2)
+    - [Generate addresses for a wallet](#generate-addresses-for-a-wallet)
     - [Last blocks](#last-blocks)
+        - [Examples](#examples-3)
     - [List wallet addresses](#list-wallet-addresses)
+        - [Examples](#examples-4)
     - [List wallets](#list-wallets)
+        - [Example](#example-6)
     - [Send](#send)
+        - [Examples](#examples-5)
     - [Status](#status)
+        - [Example](#example-7)
     - [Get transaction](#get-transaction)
+        - [Example](#example-8)
     - [Verify address](#verify-address)
+        - [Example](#example-9)
     - [Check wallet balance](#check-wallet-balance)
+        - [Example](#example-10)
     - [See wallet directory](#see-wallet-directory)
+        - [Examples](#examples-6)
     - [List wallet transaction history](#list-wallet-transaction-history)
+        - [Examples](#examples-7)
     - [List wallet outputs](#list-wallet-outputs)
+        - [Examples](#examples-8)
     - [CLI version](#cli-version)
+        - [Examples](#examples-9)
 - [Note](#note)
 
 <!-- /MarkdownTOC -->

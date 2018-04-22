@@ -148,7 +148,7 @@ func isDefault(p Peer) bool {
 	return p.Default
 }
 
-func IsAutomatic(p Peer) bool {
+func isAutomatic(p Peer) bool {
 	return p.Automatic
 }
 

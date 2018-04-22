@@ -794,12 +794,12 @@ func (pool *ConnectionPool) ClearStaleConnections(idleLimit time.Duration, reaso
 	}
 
 	for _, a := range idleConns {
-		pool.RemoveFromConnCount(a)
+		pool.removeFromConnCount(a)
 		pool.Disconnect(a, reason)
 	}
 	return nil
 }
-func (pool *ConnectionPool) RemoveFromConnCount(address string) {
+func (pool *ConnectionPool) removeFromConnCount(address string) {
 	var p = pool.Config.ConnectionTypes[address]
 	if p.Trusted {
 		pool.Config.CurrentTrusted--

@@ -555,7 +555,7 @@ loop:
 
 		case <-connectionsTicker:
 			elapser.Register("connectionsTicker")
-			dm.AddPeerConnection()
+			dm.addPeerConnection()
 
 		case err = <-errC:
 			break loop
@@ -946,40 +946,40 @@ func (dm *Daemon) handleMessageSendResult(r gnet.SendResult) {
 	}
 }
 
-func (daemon *Daemon) AddPeerConnection() {
-	if daemon.Pool.Pool.Config.CurrentDefault == 0 {
-		daemon.AddDefaultConnection()
+func (dm *Daemon) addPeerConnection() {
+	if dm.Pool.Pool.Config.CurrentDefault == 0 {
+		dm.addDefaultConnection()
 		return
 	}
-	if daemon.Pool.Pool.Config.CurrentTrusted < daemon.Config.TrustedMax {
-		daemon.AddTrustedConnection()
+	if dm.Pool.Pool.Config.CurrentTrusted < dm.Config.TrustedMax {
+		dm.addTrustedConnection()
 		return
 	}
-	if daemon.Pool.Pool.Config.CurrentDefault+daemon.Pool.Pool.Config.CurrentAutomatic < daemon.Config.NonTrustedMax {
-		daemon.AddNonTrustedConnection()
+	if dm.Pool.Pool.Config.CurrentDefault+dm.Pool.Pool.Config.CurrentAutomatic < dm.Config.NonTrustedMax {
+		dm.addNonTrustedConnection()
 	}
 }
 
-func (daemon *Daemon) AddDefaultConnection() {
-	var p = daemon.Pex.GetSingleDefault()
-	if daemon.connectToPeer(p) == nil {
-		daemon.Pool.Pool.Config.CurrentDefault++
+func (dm *Daemon) addDefaultConnection() {
+	var p = dm.Pex.GetSingleDefault()
+	if dm.connectToPeer(p) == nil {
+		dm.Pool.Pool.Config.CurrentDefault++
 	}
 }
-func (daemon *Daemon) AddTrustedConnection() {
-	var p = daemon.Pex.GetSingleTrusted()
-	if daemon.connectToPeer(p) == nil {
-		daemon.Pool.Pool.Config.CurrentTrusted++
+func (dm *Daemon) addTrustedConnection() {
+	var p = dm.Pex.GetSingleTrusted()
+	if dm.connectToPeer(p) == nil {
+		dm.Pool.Pool.Config.CurrentTrusted++
 	}
 }
-func (daemon *Daemon) AddNonTrustedConnection() {
-	var p = daemon.Pex.GetSingleNonTrusted()
-	if daemon.connectToPeer(p) == nil {
+func (dm *Daemon) addNonTrustedConnection() {
+	var p = dm.Pex.GetSingleNonTrusted()
+	if dm.connectToPeer(p) == nil {
 		if p.Default {
-			daemon.Pool.Pool.Config.CurrentDefault++
+			dm.Pool.Pool.Config.CurrentDefault++
 		}
 		if p.Automatic {
-			daemon.Pool.Pool.Config.CurrentAutomatic++
+			dm.Pool.Pool.Config.CurrentAutomatic++
 		}
 
 	}

@@ -468,7 +468,7 @@ func (px *Pex) GetPeerByAddr(addr string) (Peer, bool) {
 	return px.peerlist.getPeerByAddr(addr)
 }
 
-// Default returns trusted peers
+// Trusted returns trusted peers
 func (px *Pex) Trusted() Peers {
 	px.RLock()
 	defer px.RUnlock()
@@ -487,7 +487,7 @@ func (px *Pex) Default() Peers {
 func (px *Pex) Automatic() Peers {
 	px.RLock()
 	defer px.RUnlock()
-	return px.peerlist.getPeers(IsAutomatic)
+	return px.peerlist.getPeers(isAutomatic)
 }
 
 // RandomPublic returns N random public peers
@@ -531,19 +531,24 @@ func (px *Pex) IsFull() bool {
 	defer px.RUnlock()
 	return px.Config.Max > 0 && px.peerlist.len() >= px.Config.Max
 }
-func (pex *Pex) GetSingleDefault() Peer {
-	var peers = pex.Default()
-	rand.Seed(time.Now().Unix())
-	return peers[rand.Intn(len(peers))]
-}
-func (pex *Pex) GetSingleTrusted() Peer {
-	var peers = pex.Trusted()
+
+// GetSingleDefault returns random default peer from peer list
+func (px *Pex) GetSingleDefault() Peer {
+	var peers = px.Default()
 	rand.Seed(time.Now().Unix())
 	return peers[rand.Intn(len(peers))]
 }
 
-func (pex *Pex) GetSingleNonTrusted() Peer {
-	var peers = append(pex.Default(), pex.Automatic()...)
+// GetSingleTrusted returns random trusted peer from peer list
+func (px *Pex) GetSingleTrusted() Peer {
+	var peers = px.Trusted()
+	rand.Seed(time.Now().Unix())
+	return peers[rand.Intn(len(peers))]
+}
+
+// GetSingleNonTrusted returns random non-trusted peer from peer list
+func (px *Pex) GetSingleNonTrusted() Peer {
+	var peers = append(px.Default(), px.Automatic()...)
 	rand.Seed(time.Now().Unix())
 	return peers[rand.Intn(len(peers))]
 }

@@ -126,7 +126,7 @@ Response:
         "time_since_last_block": "12m6s"
     },
     "version": {
-        "version": "0.22.0",
+        "version": "0.23.0",
         "commit": "f61b4319c2f146a5ad86f7cbda26a1ba6a09998d",
         "branch": "develop"
     },

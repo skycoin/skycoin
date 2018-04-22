@@ -72,6 +72,8 @@ var (
 	ErrWrongCryptoType = NewError(errors.New("wrong crypto type"))
 	// ErrWalletNotExist is returned if a wallet does not exist
 	ErrWalletNotExist = NewError(errors.New("wallet doesn't exist"))
+	// ErrSeedUsed is returned if a wallet already exists with the same seed
+	ErrSeedUsed = NewError(errors.New("a wallet already exists with this seed"))
 	// ErrWalletAPIDisabled is returned when trying to do wallet actions while the EnableWalletAPI option is false
 	ErrWalletAPIDisabled = NewError(errors.New("wallet api is disabled"))
 	// ErrSeedAPIDisabled is returned when trying to get seed of wallet while the EnableWalletAPI or EnableSeedAPI is false

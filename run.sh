@@ -8,14 +8,12 @@ pushd "$DIR" >/dev/null
 COMMIT=$(git rev-parse HEAD)
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 GOLDFLAGS="-X main.Commit=${COMMIT} -X main.Branch=${BRANCH}"
-PORT=$(shuf -n 1 -i 1024-65535)
-# PORT=$(tr -dc 0-9 < /dev/urandom | head -c 4 | xargs)
-IS_READY=$(fuser -n tcp $PORT)
+PORT=$(( ( (($RANDOM+$RANDOM)%64512)+1024 ) ))
+IS_AVAILABLE=$(netstat -an | grep $PORT)
 
-while [[ ! $IS_READY = "" ]]; do
-	# PORT=$(tr -dc 0-9 < /dev/urandom | head -c 4 | xargs)
-	PORT=$(shuf -n 1 -i 1024-65535)
-	IS_READY=$(fuser -n tcp $PORT)
+while [[ ! $IS_AVAILABLE = "" ]]; do
+	PORT=$(( ( (($RANDOM+$RANDOM)%64512)+1024 ) ))
+	IS_AVAILABLE=$(netstat -an | grep $PORT)
 done
 
 

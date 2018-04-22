@@ -1843,17 +1843,11 @@ func TestLivePendingTransactions(t *testing.T) {
 }
 
 func TestLiveWalletSpend(t *testing.T) {
-	fmt.Println("TestLiveWalletSpend")
-
 	if !doLive(t) {
 		return
 	}
 
-	fmt.Println("TestLiveWalletSpend live enabled")
-
 	requireWalletEnv(t)
-
-	fmt.Println("TestLiveWalletSpend required wallet env found")
 
 	c := gui.NewClient(nodeAddress())
 	w, totalCoins, _, password := prepareAndCheckWallet(t, c, 2e6, 2)

@@ -969,6 +969,17 @@ func TestStableShowConfig(t *testing.T) {
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&ret)
 	require.NoError(t, err)
 
+	// WalletDir and DataDir can't be checked perfectly without essentially
+	// reimplementing cli.LoadConfig to compare values
+	require.NotEmpty(t, ret.WalletDir)
+	require.NotEmpty(t, ret.DataDir)
+	require.True(t, strings.HasSuffix(ret.WalletDir, ".skycoin/wallets"))
+	require.True(t, strings.HasSuffix(ret.DataDir, ".skycoin"))
+	require.True(t, strings.HasPrefix(ret.WalletDir, ret.DataDir))
+
+	ret.WalletDir = "IGNORED/.skycoin/wallets"
+	ret.DataDir = "IGNORED/.skycoin"
+
 	goldenFile := "show-config.golden"
 	if useCSRF(t) {
 		goldenFile = "show-config-use-csrf.golden"
@@ -991,10 +1002,13 @@ func TestLiveShowConfig(t *testing.T) {
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&ret)
 	require.NoError(t, err)
 
-	// WalletDir and DataDir can't be checked without essentially reimplement cli.LoadConfig
-	// to conpare values
+	// WalletDir and DataDir can't be checked perfectly without essentially
+	// reimplementing cli.LoadConfig to compare values
 	require.NotEmpty(t, ret.WalletDir)
 	require.NotEmpty(t, ret.DataDir)
+	require.True(t, strings.HasSuffix(ret.WalletDir, ".skycoin/wallets"))
+	require.True(t, strings.HasSuffix(ret.DataDir, ".skycoin"))
+	require.True(t, strings.HasPrefix(ret.WalletDir, ret.DataDir))
 
 	walletName := os.Getenv("WALLET_NAME")
 	if walletName == "" {

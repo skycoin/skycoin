@@ -19,11 +19,10 @@ func TestWebRPC(t *testing.T) {
 	}
 
 	cases := []struct {
-		name       string
-		status     int
-		args       args
-		want       webrpc.Response
-		hostHeader string
+		name   string
+		status int
+		args   args
+		want   webrpc.Response
 	}{
 		{
 			name:   "http GET",
@@ -54,15 +53,6 @@ func TestWebRPC(t *testing.T) {
 			},
 			want: webrpc.MakeErrorResponse(webrpc.ErrCodeInvalidParams, webrpc.ErrMsgInvalidJsonrpc),
 		},
-
-		{
-			name: "invalid Host header",
-			args: args{
-				httpMethod: http.MethodGet,
-			},
-			status:     http.StatusForbidden,
-			hostHeader: "example.com",
-		},
 	}
 
 	for _, tc := range cases {
@@ -72,10 +62,6 @@ func TestWebRPC(t *testing.T) {
 
 			req, err := http.NewRequest(tc.args.httpMethod, "/webrpc", bytes.NewBuffer(d))
 			require.NoError(t, err)
-
-			if tc.hostHeader != "" {
-				req.Host = tc.hostHeader
-			}
 
 			csrfStore := &CSRFStore{
 				Enabled: false,

@@ -9,11 +9,11 @@ import (
 	gcli "github.com/urfave/cli"
 )
 
-func encryptWalletCmd(cfg Config) gcli.Command {
-	name := "encryptWallet"
+func decryptWalletCmd(cfg Config) gcli.Command {
+	name := "decryptWallet"
 	return gcli.Command{
 		Name:  name,
-		Usage: "Encrypt wallet",
+		Usage: "Decrypt wallet",
 		Description: fmt.Sprintf(`
 		The default wallet (%s) will be
 		used if no wallet was specified.
@@ -27,11 +27,6 @@ func encryptWalletCmd(cfg Config) gcli.Command {
 				Name:  "p",
 				Usage: "[password] Wallet password",
 			},
-			gcli.StringFlag{
-				Name:  "x,crypto-type",
-				Value: string(wallet.CryptoTypeScryptChacha20poly1305),
-				Usage: "[crypto type] The crypto type for wallet encryption, can be scrypt-chacha20poly1305 or sha256-xor",
-			},
 		},
 		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
@@ -42,13 +37,7 @@ func encryptWalletCmd(cfg Config) gcli.Command {
 				return err
 			}
 
-			cryptoType, err := wallet.CryptoTypeFromString(c.String("x"))
-			if err != nil {
-				errorWithHelp(c, err)
-				return nil
-			}
-
-			wlt, err := encryptWallet(w, []byte(c.String("p")), cryptoType)
+			wlt, err := decryptWallet(w, []byte(c.String("p")))
 			switch err.(type) {
 			case nil:
 			case WalletLoadError:
@@ -66,14 +55,14 @@ func encryptWalletCmd(cfg Config) gcli.Command {
 	}
 }
 
-func encryptWallet(walletFile string, password []byte, cryptoType wallet.CryptoType) (*wallet.Wallet, error) {
+func decryptWallet(walletFile string, password []byte) (*wallet.Wallet, error) {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
 		return nil, WalletLoadError{err}
 	}
 
-	if wlt.IsEncrypted() {
-		return nil, wallet.ErrWalletEncrypted
+	if !wlt.IsEncrypted() {
+		return nil, wallet.ErrWalletNotEncrypted
 	}
 
 	if len(password) == 0 {
@@ -84,7 +73,8 @@ func encryptWallet(walletFile string, password []byte, cryptoType wallet.CryptoT
 		}
 	}
 
-	if err := wlt.Lock(password, cryptoType); err != nil {
+	unlockedWlt, err := wlt.Unlock(password)
+	if err != nil {
 		return nil, err
 	}
 
@@ -94,9 +84,9 @@ func encryptWallet(walletFile string, password []byte, cryptoType wallet.CryptoT
 	}
 
 	// save the wallet
-	if err := wlt.Save(dir); err != nil {
+	if err := unlockedWlt.Save(dir); err != nil {
 		return nil, WalletLoadError{err}
 	}
 
-	return wlt, nil
+	return unlockedWlt, nil
 }

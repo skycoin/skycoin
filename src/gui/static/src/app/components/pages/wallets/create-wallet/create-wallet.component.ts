@@ -34,13 +34,18 @@ export class CreateWalletComponent implements OnInit {
   }
 
   createWallet() {
+    this.createButton.resetState();
     this.createButton.setLoading();
     this.cancelButton.setDisabled();
     this.disableDismiss = true;
 
     const password = this.encrypt ? this.form.value.password : null;
     this.walletService.create(this.form.value.label, this.form.value.seed, this.scan, password)
-      .subscribe(() => this.dialogRef.close());
+      .subscribe(() => this.dialogRef.close(), e => {
+        this.createButton.setError(e);
+        this.cancelButton.disabled = false;
+        this.disableDismiss = false;
+      });
   }
 
   generateSeed() {

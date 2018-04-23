@@ -188,7 +188,7 @@ func injectTransaction(gateway Gatewayer) http.HandlerFunc {
 		// Check that the transaction does not send to an empty address,
 		// if this is happening, assume there is a bug in the code that generated the transaction
 		for _, o := range txn.Out {
-			if o.Address.Empty() {
+			if o.Address.Null() {
 				wh.Error400(w, "Transaction.Out contains an output sending to an empty address")
 				return
 			}

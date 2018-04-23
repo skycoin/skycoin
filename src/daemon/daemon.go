@@ -961,19 +961,28 @@ func (dm *Daemon) addPeerConnection() {
 }
 
 func (dm *Daemon) addDefaultConnection() {
-	var p = dm.Pex.GetSingleDefault()
+	var p, err = dm.Pex.GetSingleDefault()
+	if err == true {
+		return
+	}
 	if dm.connectToPeer(p) == nil {
 		dm.Pool.Pool.Config.CurrentDefault++
 	}
 }
 func (dm *Daemon) addTrustedConnection() {
-	var p = dm.Pex.GetSingleTrusted()
+	var p, err = dm.Pex.GetSingleTrusted()
+	if err == true {
+		return
+	}
 	if dm.connectToPeer(p) == nil {
 		dm.Pool.Pool.Config.CurrentTrusted++
 	}
 }
 func (dm *Daemon) addNonTrustedConnection() {
-	var p = dm.Pex.GetSingleNonTrusted()
+	var p, err = dm.Pex.GetSingleNonTrusted()
+	if err == true {
+		return
+	}
 	if dm.connectToPeer(p) == nil {
 		if p.Default {
 			dm.Pool.Pool.Config.CurrentDefault++

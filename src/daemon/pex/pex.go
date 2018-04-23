@@ -533,24 +533,33 @@ func (px *Pex) IsFull() bool {
 }
 
 // GetSingleDefault returns random default peer from peer list
-func (px *Pex) GetSingleDefault() Peer {
+func (px *Pex) GetSingleDefault() (Peer, bool) {
 	var peers = px.Default()
 	rand.Seed(time.Now().Unix())
-	return peers[rand.Intn(len(peers))]
+	if len(peers) == 0 {
+		return Peer{}, true
+	}
+	return peers[rand.Intn(len(peers))], false
 }
 
 // GetSingleTrusted returns random trusted peer from peer list
-func (px *Pex) GetSingleTrusted() Peer {
+func (px *Pex) GetSingleTrusted() (Peer, bool) {
 	var peers = px.Trusted()
 	rand.Seed(time.Now().Unix())
-	return peers[rand.Intn(len(peers))]
+	if len(peers) == 0 {
+		return Peer{}, true
+	}
+	return peers[rand.Intn(len(peers))], false
 }
 
 // GetSingleNonTrusted returns random non-trusted peer from peer list
-func (px *Pex) GetSingleNonTrusted() Peer {
+func (px *Pex) GetSingleNonTrusted() (Peer, bool) {
 	var peers = append(px.Default(), px.Automatic()...)
 	rand.Seed(time.Now().Unix())
-	return peers[rand.Intn(len(peers))]
+	if len(peers) == 0 {
+		return Peer{}, true
+	}
+	return peers[rand.Intn(len(peers))], false
 }
 
 // downloadText downloads a text format file from url.

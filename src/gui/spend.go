@@ -221,7 +221,7 @@ func NewCreatedTransactionInput(out coin.UxOut) (*CreatedTransactionInput, error
 		return nil, err
 	}
 
-	if out.Body.SrcTransaction.Empty() {
+	if out.Body.SrcTransaction.Null() {
 		return nil, errors.New("NewCreatedTransactionInput UxOut.SrcTransaction is not initialized")
 	}
 
@@ -319,7 +319,7 @@ func (r createTransactionRequest) Validate() error {
 
 	if r.ChangeAddress == nil {
 		return errors.New("missing change_address")
-	} else if r.ChangeAddress.Empty() {
+	} else if r.ChangeAddress.Null() {
 		return errors.New("change_address is an empty address")
 	}
 
@@ -328,7 +328,7 @@ func (r createTransactionRequest) Validate() error {
 	}
 
 	for i, a := range r.Wallet.Addresses {
-		if a.Empty() {
+		if a.Null() {
 			return fmt.Errorf("wallet.addresses[%d] is empty", i)
 		}
 	}
@@ -338,7 +338,7 @@ func (r createTransactionRequest) Validate() error {
 	}
 
 	for i, to := range r.To {
-		if to.Address.Empty() {
+		if to.Address.Null() {
 			return fmt.Errorf("to[%d].address is empty", i)
 		}
 

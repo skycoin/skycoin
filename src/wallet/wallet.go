@@ -166,7 +166,7 @@ type CreateTransactionParams struct {
 
 // Validate validates CreateTransactionParams
 func (c CreateTransactionParams) Validate() error {
-	if c.ChangeAddress.Empty() {
+	if c.ChangeAddress.Null() {
 		return NewError(errors.New("ChangeAddress is required"))
 	}
 
@@ -179,8 +179,8 @@ func (c CreateTransactionParams) Validate() error {
 			return NewError(errors.New("To.Coins must not be zero"))
 		}
 
-		if to.Address.Empty() {
-			return NewError(errors.New("To.Address must not be empty"))
+		if to.Address.Null() {
+			return NewError(errors.New("To.Address must not be the null address"))
 		}
 	}
 
@@ -203,8 +203,8 @@ func (c CreateTransactionParams) Validate() error {
 	}
 
 	for _, a := range c.Wallet.Addresses {
-		if a.Empty() {
-			return NewError(errors.New("Wallet.Addresses must not contain an empty value"))
+		if a.Null() {
+			return NewError(errors.New("Wallet.Addresses must not contain the null address"))
 		}
 	}
 

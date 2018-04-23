@@ -142,8 +142,33 @@ export class WalletService {
     return this.apiService.getWalletSeed(wallet, password);
   }
 
-  sendSkycoin(wallet: Wallet, address: string, amount: number, password: string|null) {
-    return this.apiService.post('wallet/spend', {id: wallet.filename, dst: address, coins: amount, password});
+  createTransaction(wallet: Wallet, address: string, amount: string, password: string|null) {
+    return this.apiService.post(
+      'wallet/transaction',
+      {
+        hours_selection: {
+          type: 'auto',
+          mode: 'share',
+          share_factor: '0.5',
+        },
+        change_address: wallet.addresses[0].address,
+        wallet: {
+          id: wallet.filename,
+          password,
+        },
+        to: [{
+          address,
+          coins: amount,
+        }],
+      },
+      {
+        json: true,
+      }
+    );
+  }
+
+  injectTransaction(encodedTx: string) {
+    return this.apiService.post('injectTransaction', { rawtx: encodedTx }, { json: true });
   }
 
   sum(): Observable<number> {

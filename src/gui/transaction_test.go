@@ -359,10 +359,10 @@ func TestInjectTransaction(t *testing.T) {
 			httpBody: string(invalidTxBodyJSON),
 		},
 		{
-			name:                   "400 - injectTransactionError",
+			name:                   "503 - injectTransactionError",
 			method:                 http.MethodPost,
-			status:                 http.StatusBadRequest,
-			err:                    "400 Bad Request - inject tx failed: injectTransactionError",
+			status:                 http.StatusServiceUnavailable,
+			err:                    "503 Service Unavailable - inject tx failed: injectTransactionError",
 			httpBody:               string(validTxBodyJSON),
 			injectTransactionArg:   validTransaction,
 			injectTransactionError: errors.New("injectTransactionError"),

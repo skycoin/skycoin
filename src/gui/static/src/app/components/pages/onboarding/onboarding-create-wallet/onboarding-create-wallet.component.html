@@ -1,0 +1,45 @@
+<div class="onboarding-container">
+  <div class="row justify-content-center">
+    <div class="col-sm-4">
+      <div class="-header">
+        <span>Create a Wallet</span>
+      </div>
+      <div class="-description">
+        <p>
+          If you don't have a Skycoin wallet, use the generated seed to create a new one.
+          If you already have a wallet, toggle over to "Load Wallet" and enter your seed.
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="row justify-content-center">
+    <div class="col-sm-4 -toggle-container">
+      <app-double-button rightButtonText="Load" leftButtonText="New" [activeButton]="doubleButtonActive"
+                         (onStateChange)="changeForm($event)"></app-double-button>
+    </div>
+  </div>
+  <div class="row justify-content-center">
+    <div class="col-sm-4">
+      <form [formGroup]="form">
+        <div class="form-field">
+          <label for="label">Name</label>
+          <input formControlName="label" id="label">
+        </div>
+        <div class="form-field">
+          <label for="seed">Seed</label>
+          <textarea formControlName="seed" class="form-control" id="seed" rows="2"></textarea>
+        </div>
+        <div class="form-field" [style.visibility]="showCreateForm?'visible':'hidden'">
+          <label for="confirm_seed">Confirm seed</label>
+          <textarea formControlName="confirm_seed" class="form-control" id="confirm_seed" rows="2"></textarea>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="row -buttons-footer">
+    <app-button class="dark -button-min-margin" [disabled]="!form.valid"
+                (action)="showCreateForm?createWallet():loadWallet()">
+      Create
+    </app-button>
+  </div>
+</div>

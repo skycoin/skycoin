@@ -537,6 +537,45 @@ func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest ciphe
 	return tx, err
 }
 
+// CreateTransaction creates a transaction based upon parameters in wallet.CreateTransactionParams
+func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*coin.Transaction, coin.UxArray, error) {
+	if !gw.Config.EnableWalletAPI {
+		return nil, nil, wallet.ErrWalletAPIDisabled
+	}
+
+	var txn *coin.Transaction
+	var inputs coin.UxArray
+	var err error
+
+	gw.strand("CreateTransaction", func() {
+		// Create spend validator
+		unspent := gw.v.Blockchain.Unspent()
+		sv := newSpendValidator(gw.v.Unconfirmed, unspent)
+
+		// Create and sign transaction
+		txn, inputs, err = gw.vrpc.CreateAndSignTransactionAdvanced(params, sv, unspent, gw.v.Blockchain.Time())
+		if err != nil {
+			logger.WithError(err).Error("CreateAndSignTransactionAdvanced failed")
+			return
+		}
+
+		// The wallet can create transactions that would not pass all validation, such as the decimal restriction,
+		// because the wallet is not aware of visor-level constraints.
+		// Check that the transaction is valid before returning it to the caller.
+		err = gw.v.Blockchain.VerifySingleTxnAllConstraints(*txn, visor.DefaultMaxBlockSize)
+		if err != nil {
+			logger.WithError(err).Error("Created transaction violates transaction constraints")
+			return
+		}
+	})
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return txn, inputs, err
+}
+
 // CreateWallet creates wallet
 func (gw *Gateway) CreateWallet(wltName string, options wallet.Options) (*wallet.Wallet, error) {
 	if !gw.Config.EnableWalletAPI {

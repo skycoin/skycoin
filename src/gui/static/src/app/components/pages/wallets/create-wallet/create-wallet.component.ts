@@ -11,11 +11,13 @@ import { MAT_DIALOG_DATA } from '@angular/material';
   styleUrls: ['./create-wallet.component.scss']
 })
 export class CreateWalletComponent implements OnInit {
-  @ViewChild('button') button: ButtonComponent;
+  @ViewChild('createButton') createButton: ButtonComponent;
+  @ViewChild('cancelButton') cancelButton: ButtonComponent;
   form: FormGroup;
   seed: string;
   scan: Number;
   encrypt = true;
+  disableDismiss = false;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data,
@@ -32,11 +34,18 @@ export class CreateWalletComponent implements OnInit {
   }
 
   createWallet() {
-    this.button.setLoading();
+    this.createButton.resetState();
+    this.createButton.setLoading();
+    this.cancelButton.setDisabled();
+    this.disableDismiss = true;
 
     const password = this.encrypt ? this.form.value.password : null;
     this.walletService.create(this.form.value.label, this.form.value.seed, this.scan, password)
-      .subscribe(() => this.dialogRef.close());
+      .subscribe(() => this.dialogRef.close(), e => {
+        this.createButton.setError(e);
+        this.cancelButton.disabled = false;
+        this.disableDismiss = false;
+      });
   }
 
   generateSeed() {

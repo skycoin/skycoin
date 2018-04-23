@@ -8,6 +8,13 @@
   display: none;
 }
 
+.-warning {
+  color: $red;
+  font-size: 12px;
+  padding: 0 10px;
+  line-height: 1.5;
+}
+
 .-passwords {
   margin-left: 24px;
 

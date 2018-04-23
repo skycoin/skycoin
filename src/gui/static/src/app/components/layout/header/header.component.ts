@@ -17,9 +17,9 @@ import 'rxjs/add/operator/take';
 })
 export class HeaderComponent implements OnInit, OnDestroy {
   @Input() title: string;
-  @Input() coins: number;
-  @Input() hours: number;
 
+  coins: number;
+  hours: number;
   current: number;
   highest: number;
   percentage: number;
@@ -28,7 +28,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   releaseVersion: string;
   updateAvailable: boolean;
   hasPendingTxs: boolean;
-  balancesRefreshed = false;
+  balancesRefreshed = true;
 
   private price: number;
   private priceSubscription: Subscription;
@@ -81,7 +81,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
         return array;
       }, []);
 
-      console.log('sub')
+      console.log('sub', addresses)
       if (this.current === 999999999999) {
         this.balancesRefreshed = true;
         console.log('finalsub')

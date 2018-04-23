@@ -32,8 +32,9 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
     - [Show Skycoin node options](#show-skycoin-node-options)
     - [Run Skycoin with options](#run-skycoin-with-options)
     - [Docker image](#docker-image)
+    - [Building your own images](#building-your-own-images)
 - [API Documentation](#api-documentation)
-    - [Wallet REST API](#wallet-rest-api)
+    - [REST API](#rest-api)
     - [JSON-RPC 2.0 API](#json-rpc-20-api)
     - [Skycoin command line interface](#skycoin-command-line-interface)
 - [Integrating Skycoin with your application](#integrating-skycoin-with-your-application)
@@ -107,6 +108,8 @@ make ARGS="--launch-browser=false -data-dir=/custom/path" run
 
 ### Docker image
 
+This is the quickest way to start using Skycoin using Docker.
+
 ```sh
 $ docker volume create skycoin-data
 $ docker volume create skycoin-wallet
@@ -119,21 +122,58 @@ $ docker run -ti --rm \
     skycoin/skycoin
 ```
 
-With this image, the skycoin daemon will run as root by default inside the
-container. When you mount a volume in /data, the container will detect for the
-folder's owner UID and will create a skycoin user with the same UID.
+This image has a `skycoin` user for the skycoin daemon to run, with UID and GID 10000.
+When you mount the volumes, the container will change their owner, so you
+must be aware that if you are mounting an existing host folder any content you
+have there will be own by 10000.
+
+The container will run with some default options, but you can change them
+by just appending flags at the end of the `docker run` command. The following
+example will show you the available options.
+
+```sh
+docker run --rm skycoin/skycoin -help
+```
 
 Access the dashboard: [http://localhost:6420](http://localhost:6420).
 
 Access the API: [http://localhost:6420/version](http://localhost:6420/version).
 
+### Building your own images
+
+There is a Dockerfile in docker/images/mainnet that you can use to build your
+own image. By default it will build your working copy, but if you pass the
+SKYCOIN_VERSION build argument to the `docker build` command, it will checkout
+to the branch, a tag or a commit you specify on that variable.
+
+Example
+
+```sh
+$ git clone https://github.com/skycoin/skycoin
+$ cd skycoin
+$ SKYCOIN_VERSION=v0.23.0
+$ docker build -f docker/images/mainnet/Dockerfile \
+  --build-arg=SKYCOIN_VERSION=$SKYCOIN_VERSION \
+  -t skycoin:$SKYCOIN_VERSION .
+```
+
+or just
+
+```sh
+$ docker build -f docker/images/mainnet/Dockerfile \
+  --build-arg=SKYCOIN_VERSION=v0.23.0 \
+  -t skycoin:v0.23.0 .
+```
+
 ## API Documentation
 
-### Wallet REST API
+### REST API
 
-[Wallet REST API](src/gui/README.md).
+[REST API](src/gui/README.md).
 
 ### JSON-RPC 2.0 API
+
+*Deprecated, avoid using this*
 
 [JSON-RPC 2.0 README](src/api/webrpc/README.md).
 
@@ -242,9 +282,15 @@ it also must have been loaded by the node.
 We can specify the wallet by setting two environment variables: `WALLET_DIR` and `WALLET_NAME`. The `WALLET_DIR`
 represents the absolute path of the wallet directory, and `WALLET_NAME` represents the wallet file name.
 
+Note: `WALLET_DIR` is only used by the CLI integration tests. The GUI integration tests use the node's
+configured wallet directory, which can be controlled with `-wallet-dir` when running the node.
+
+If the wallet is encrypted, also set `WALLET_PASSWORD`.
+
 ```sh
-export WALLET_DIR=$HOME/.skycoin/wallets
-export WALLET_NAME=$wallet-file-name-meet-the-requirements
+export WALLET_DIR="$HOME/.skycoin/wallets"
+export WALLET_NAME="$valid_wallet_filename"
+export WALLET_PASSWORD="$wallet_password"
 ```
 
 Then run the tests with the following command:
@@ -385,7 +431,7 @@ Performs these actions before releasing:
 * `go run cmd/cli/cli.go checkdb` against a synced node
 * On all OSes, make sure that the client runs properly from the command line (`./run.sh`)
 * Build the releases and make sure that the Electron client runs properly on Windows, Linux and macOS.
-    * Delete the database file and sync from scratch to confirm syncing works
+    * Use a clean data directory with no wallets or database to sync from scratch and verify the wallet setup wizard.
     * Load a test wallet with nonzero balance from seed to confirm wallet loading works
     * Send coins to another wallet to confirm spending works
     * Restart the client, confirm that it reloads properly

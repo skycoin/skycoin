@@ -1,12 +1,22 @@
-# skycoin build
-# reference https://github.com/skycoin/skycoin
+# Creates an image for skycoin development
 FROM golang:1.10.0-stretch
 
-# dirs
+# Installs software
 RUN apt-get update && apt-get install -y cmake gdbserver gdb vim ctags vim-scripts screen
-RUN git clone --recurse-submodules -j8 https://github.com/Snaipe/Criterion
-RUN cd /go/Criterion && cmake .  && make install
-RUN go get -u github.com/derekparker/delve/cmd/dlv
+
+# Installs Criterion
+RUN git clone --recurse-submodules -j8 https://github.com/Snaipe/Criterion && \
+    cd /go/Criterion && \
+    cmake . && \
+    make install && \
+    rm -r /go/Criterion
+
+# Installs 
+RUN go get -u github.com/derekparker/delve/cmd/dlv  && \
+    git clone https://github.com/fatih/vim-go /usr/share/vim/vim80/pack/dev/start/vim-go && \
+    git clone https://github.com/tpope/vim-fugitive /usr/share/vim/vim80/pack/dev/start/vim-fugitive && \
+    git clone https://github.com/Shougo/vimshell.vim /usr/share/vim/vim80/pack/dev/start/0vimshell && \
+    git clone https://github.com/Shougo/vimproc.vim /usr/share/vim/vim80/pack/dev/start/0vimproc && \
 
 WORKDIR $GOPATH/src/github.com/skycoin/skycoin
 VOLUME $GOPATH/src/

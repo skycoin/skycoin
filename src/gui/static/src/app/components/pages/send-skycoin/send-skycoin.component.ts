@@ -98,9 +98,9 @@ export class SendSkycoinComponent implements OnInit, OnDestroy {
   }
 
   private resetForm() {
-    this.form.get('wallet').reset(undefined);
-    this.form.get('address').reset(undefined);
-    this.form.get('amount').reset(undefined);
+    this.form.get('wallet').reset('');
+    this.form.get('address').reset('');
+    this.form.get('amount').reset('');
   }
 
   private validateAmount(amountControl: FormControl) {

@@ -1236,37 +1236,37 @@ func TestWalletSortSpendsLowToHigh(t *testing.T) {
 	// UxBalances are sorted with Coins lowest, then following other order rules
 	orderedUxb := []UxBalance{
 		{
-			Hash:  testutil.RandSHA256(t),
+			UxID:  testutil.RandSHA256(t),
 			BkSeq: 5,
 			Coins: 1,
 			Hours: 0,
 		},
 		{
-			Hash:  testutil.RandSHA256(t),
+			UxID:  testutil.RandSHA256(t),
 			BkSeq: 3,
 			Coins: 10,
 			Hours: 1,
 		},
 		{
-			Hash:  testutil.RandSHA256(t),
+			UxID:  testutil.RandSHA256(t),
 			BkSeq: 1,
 			Coins: 10,
 			Hours: 10,
 		},
 		{
-			Hash:  cipher.MustSHA256FromHex("bddf0aaf80f96c144f33ac8a27764a868d37e1c11e568063ebeb1367de859566"),
+			UxID:  cipher.MustSHA256FromHex("bddf0aaf80f96c144f33ac8a27764a868d37e1c11e568063ebeb1367de859566"),
 			BkSeq: 2,
 			Coins: 10,
 			Hours: 10,
 		},
 		{
-			Hash:  cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
+			UxID:  cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
 			BkSeq: 2,
 			Coins: 10,
 			Hours: 10,
 		},
 		{
-			Hash:  testutil.RandSHA256(t),
+			UxID:  testutil.RandSHA256(t),
 			BkSeq: 4,
 			Coins: 100,
 			Hours: 100,
@@ -1314,43 +1314,43 @@ func TestWalletSortSpendsHighToLow(t *testing.T) {
 	// UxBalances are sorted with Coins highest, then following other order rules
 	orderedUxb := []UxBalance{
 		{
-			Hash:  testutil.RandSHA256(t),
+			UxID:  testutil.RandSHA256(t),
 			BkSeq: 4,
 			Coins: 10000,
 			Hours: 0,
 		},
 		{
-			Hash:  testutil.RandSHA256(t),
+			UxID:  testutil.RandSHA256(t),
 			BkSeq: 10,
 			Coins: 1000,
 			Hours: 1,
 		},
 		{
-			Hash:  testutil.RandSHA256(t),
+			UxID:  testutil.RandSHA256(t),
 			BkSeq: 4,
 			Coins: 100,
 			Hours: 100,
 		},
 		{
-			Hash:  testutil.RandSHA256(t),
+			UxID:  testutil.RandSHA256(t),
 			BkSeq: 3,
 			Coins: 10,
 			Hours: 1,
 		},
 		{
-			Hash:  testutil.RandSHA256(t),
+			UxID:  testutil.RandSHA256(t),
 			BkSeq: 1,
 			Coins: 10,
 			Hours: 10,
 		},
 		{
-			Hash:  cipher.MustSHA256FromHex("bddf0aaf80f96c144f33ac8a27764a868d37e1c11e568063ebeb1367de859566"),
+			UxID:  cipher.MustSHA256FromHex("bddf0aaf80f96c144f33ac8a27764a868d37e1c11e568063ebeb1367de859566"),
 			BkSeq: 2,
 			Coins: 10,
 			Hours: 10,
 		},
 		{
-			Hash:  cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
+			UxID:  cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
 			BkSeq: 2,
 			Coins: 10,
 			Hours: 10,
@@ -1737,7 +1737,7 @@ func makeRandomUxBalances(t *testing.T) []UxBalance {
 			Coins: uint64(rand.Intn(10) + 1), // 1-10
 			Hours: uint64(rand.Intn(hasZeroHoursRange)),
 			BkSeq: uint64(rand.Intn(11)), // 0-10
-			Hash:  testutil.RandSHA256(t),
+			UxID:  testutil.RandSHA256(t),
 		}
 
 		uxb[i] = ux
@@ -1877,7 +1877,7 @@ func verifySortedCoins(t *testing.T, uxb []UxBalance, cmpCoins func(a, b UxBalan
 				require.True(t, a.BkSeq <= b.BkSeq)
 
 				if a.BkSeq == b.BkSeq {
-					cmp := bytes.Compare(a.Hash[:], b.Hash[:])
+					cmp := bytes.Compare(a.UxID[:], b.UxID[:])
 					require.True(t, cmp < 0)
 				}
 			}

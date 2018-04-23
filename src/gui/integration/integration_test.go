@@ -2358,10 +2358,15 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 		var inputHours uint64
 		var inputCoins uint64
 		for _, in := range r.In {
+			calculatedHours, err := strconv.ParseUint(in.CalculatedHours, 10, 64)
+			require.NoError(t, err)
+			inputHours, err = coin.AddUint64(inputHours, calculatedHours)
+			require.NoError(t, err)
+
 			hours, err := strconv.ParseUint(in.Hours, 10, 64)
 			require.NoError(t, err)
-			inputHours, err = coin.AddUint64(inputHours, hours)
-			require.NoError(t, err)
+
+			require.True(t, hours <= calculatedHours)
 
 			coins, err := droplet.FromString(in.Coins)
 			require.NoError(t, err)
@@ -2596,6 +2601,11 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 		assertTxnOutputCount(t, changeAddress, nAutoOutputs, result)
 		assertRequestedCoins(t, autoTo, result.Transaction.Out)
 		assertCreatedTransactionValid(t, result.Transaction)
+
+		printme, err := json.MarshalIndent(result, "", "    ")
+		require.NoError(t, err)
+		fmt.Println(string(printme))
+		t.Fatalf("foo")
 
 		// Auto, share factor 0
 

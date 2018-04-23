@@ -588,7 +588,7 @@ func getKeys(wlt *wallet.Wallet, outs []wallet.UxBalance) ([]cipher.SecKey, erro
 func NewTransaction(utxos []wallet.UxBalance, keys []cipher.SecKey, outs []coin.TransactionOutput) *coin.Transaction {
 	tx := coin.Transaction{}
 	for _, u := range utxos {
-		tx.PushInput(u.Hash)
+		tx.PushInput(u.UxID)
 	}
 
 	for _, o := range outs {

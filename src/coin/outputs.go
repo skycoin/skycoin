@@ -128,9 +128,6 @@ func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
 // UxHashSet set mapping from UxHash to a placeholder value
 type UxHashSet map[cipher.SHA256]struct{}
 
-// UxHashMap maps from UxOut.Hash to UxOut
-type UxHashMap map[cipher.SHA256]UxOut
-
 // UxArray Array of Outputs
 // Used by unspent output pool, spent tests
 type UxArray []UxOut
@@ -165,19 +162,6 @@ func (ua UxArray) Set() UxHashSet {
 		m[ua[i].Hash()] = struct{}{}
 	}
 	return m
-}
-
-// Map returns a UxHashMap, mapping from UxOut.Hash to UxOut
-func (ua UxArray) Map() (UxHashMap, error) {
-	m := make(UxHashMap, len(ua))
-	for i := range ua {
-		h := ua[i].Hash()
-		if _, ok := m[h]; ok {
-			return nil, errors.New("duplicate UxOut in UxArray")
-		}
-		m[h] = ua[i]
-	}
-	return m, nil
 }
 
 // Sort sorts UxArray

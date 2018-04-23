@@ -344,12 +344,20 @@ func ReadableOutputsToUxBalances(ros ReadableOutputs) ([]wallet.UxBalance, error
 			return nil, fmt.Errorf("ReadableOutput address is invalid: %v", err)
 		}
 
+		srcTx, err := cipher.SHA256FromHex(ro.SourceTransaction)
+		if err != nil {
+			return nil, fmt.Errorf("ReadableOutput src_tx is invalid: %v", err)
+		}
+
 		b := wallet.UxBalance{
-			Hash:    hash,
-			BkSeq:   ro.BkSeq,
-			Address: addr,
-			Coins:   coins,
-			Hours:   ro.CalculatedHours,
+			UxID:           hash,
+			Time:           ro.Time,
+			BkSeq:          ro.BkSeq,
+			SrcTransaction: srcTx,
+			Address:        addr,
+			Coins:          coins,
+			Hours:          ro.CalculatedHours,
+			InitialHours:   ro.Hours,
 		}
 
 		uxb[i] = b

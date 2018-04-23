@@ -65,18 +65,16 @@ func TestCreateTransaction(t *testing.T) {
 		},
 	}
 
-	inputs := coin.UxArray{
-		coin.UxOut{
-			Head: coin.UxHead{
-				Time:  uint64(time.Now().UTC().Unix()),
-				BkSeq: 9999,
-			},
-			Body: coin.UxBody{
-				SrcTransaction: testutil.RandSHA256(t),
-				Address:        testutil.MakeAddress(),
-				Coins:          1e6,
-				Hours:          200,
-			},
+	inputs := []wallet.UxBalance{
+		{
+			UxID:           testutil.RandSHA256(t),
+			Time:           uint64(time.Now().UTC().Unix()),
+			BkSeq:          9999,
+			SrcTransaction: testutil.RandSHA256(t),
+			Address:        testutil.MakeAddress(),
+			Coins:          1e6,
+			Hours:          200,
+			InitialHours:   100,
 		},
 	}
 
@@ -112,7 +110,7 @@ func TestCreateTransaction(t *testing.T) {
 		status                         int
 		err                            string
 		gatewayCreateTransactionResult *coin.Transaction
-		gatewayCreateTransactionInputs coin.UxArray
+		gatewayCreateTransactionInputs []wallet.UxBalance
 		gatewayCreateTransactionErr    error
 		createTransactionResponse      *CreateTransactionResponse
 		csrfDisabled                   bool

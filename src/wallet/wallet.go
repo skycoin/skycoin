@@ -981,7 +981,7 @@ func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspent
 			return nil, NewError(fmt.Errorf("address:%v does not exist in wallet: %v", au.Address, w.Filename()))
 		}
 
-		txn.PushInput(au.Hash)
+		txn.PushInput(au.UxID)
 
 		if w.IsEncrypted() {
 			return nil, ErrWalletEncrypted
@@ -1024,7 +1024,7 @@ func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspent
 // CreateAndSignTransactionAdvanced creates and signs a transaction based upon CreateTransactionParams.
 // Set the password as nil if the wallet is not encrypted, otherwise the password must be provided
 func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams, vld Validator,
-	unspent blockdb.UnspentGetter, headTime uint64) (*coin.Transaction, coin.UxArray, error) {
+	unspent blockdb.UnspentGetter, headTime uint64) (*coin.Transaction, []UxBalance, error) {
 	if err := params.Validate(); err != nil {
 		return nil, nil, err
 	}
@@ -1072,15 +1072,18 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 	// Determine which unspents to spend
 	uxa := auxs.Flatten()
 
-	// Reverse lookup set to recover the inputs
-	uxaSet, err := uxa.Map()
+	uxb, err := NewUxBalances(headTime, uxa)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	uxb, err := NewUxBalances(headTime, uxa)
-	if err != nil {
-		return nil, nil, err
+	// Reverse lookup set to recover the inputs
+	uxbMap := make(map[cipher.SHA256]UxBalance, len(uxb))
+	for _, u := range uxb {
+		if _, ok := uxbMap[u.UxID]; ok {
+			return nil, nil, errors.New("Duplicate UxBalance in array")
+		}
+		uxbMap[u.UxID] = u
 	}
 
 	// calculate total coins and minimum hours to send
@@ -1123,7 +1126,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 		}
 
 		toSign[i] = entriesMap[spend.Address].Secret
-		txn.PushInput(spend.Hash)
+		txn.PushInput(spend.UxID)
 	}
 
 	feeHours := fee.RequiredFee(totalInputHours)
@@ -1245,7 +1248,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 				}
 
 				toSign = append(toSign, entriesMap[extra.Address].Secret)
-				txn.PushInput(extra.Hash)
+				txn.PushInput(extra.UxID)
 			}
 		}
 	}
@@ -1257,13 +1260,13 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 	txn.SignInputs(toSign)
 	txn.UpdateHeader()
 
-	inputs := make(coin.UxArray, len(txn.In))
+	inputs := make([]UxBalance, len(txn.In))
 	for i, h := range txn.In {
-		uxOut, ok := uxaSet[h]
+		uxBalance, ok := uxbMap[h]
 		if !ok {
-			return nil, nil, errors.New("Created transaction's input is not in the UxHashSet, this should not occur")
+			return nil, nil, errors.New("Created transaction's input is not in the UxBalanceSet, this should not occur")
 		}
-		inputs[i] = uxOut
+		inputs[i] = uxBalance
 	}
 
 	if err := verifyCreatedTransactionInvariants(params, txn, inputs); err != nil {
@@ -1277,7 +1280,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 // verifyCreatedTransactionInvariants checks that the transaction that was created matches expectations.
 // Does not call visor verification methods because that causes import cycle.
 // daemon.Gateway checks that the transaction passes additional visor verification methods.
-func verifyCreatedTransactionInvariants(params CreateTransactionParams, txn *coin.Transaction, inputs coin.UxArray) error {
+func verifyCreatedTransactionInvariants(params CreateTransactionParams, txn *coin.Transaction, inputs []UxBalance) error {
 	for _, o := range txn.Out {
 		// No outputs should be sent to the null address
 		if o.Address.Null() {
@@ -1316,9 +1319,57 @@ func verifyCreatedTransactionInvariants(params CreateTransactionParams, txn *coi
 	}
 
 	for i, h := range txn.In {
-		if inputs[i].Hash() != h {
+		if inputs[i].UxID != h {
 			return errors.New("Transaction input hash does not match UxOut inputs hash")
 		}
+	}
+
+	inputsMap := make(map[cipher.SHA256]struct{}, len(inputs))
+
+	for _, i := range inputs {
+		if i.Hours < i.InitialHours {
+			return errors.New("Calculated input hours are unexpectedly less than the initial hours")
+		}
+
+		if i.SrcTransaction.Null() {
+			return errors.New("Input's source transaction is a null hash")
+		}
+
+		if i.UxID.Null() {
+			return errors.New("Input's hash is a null hash")
+		}
+
+		if _, ok := inputsMap[i.UxID]; ok {
+			return errors.New("Duplicate input in array")
+		}
+
+		inputsMap[i.UxID] = struct{}{}
+	}
+
+	var inputHours uint64
+	for _, i := range inputs {
+		var err error
+		inputHours, err = coin.AddUint64(inputHours, i.Hours)
+		if err != nil {
+			return err
+		}
+	}
+
+	var outputHours uint64
+	for _, i := range txn.Out {
+		var err error
+		outputHours, err = coin.AddUint64(outputHours, i.Hours)
+		if err != nil {
+			return err
+		}
+	}
+
+	if inputHours < outputHours {
+		return errors.New("Total input hours is less than the output hours")
+	}
+
+	if inputHours-outputHours < fee.RequiredFee(inputHours) {
+		return errors.New("Transaction will not satisy required fee")
 	}
 
 	return nil
@@ -1481,35 +1532,47 @@ func DistributeCoinHoursProportional(coins []uint64, hours uint64) ([]uint64, er
 
 // UxBalance is an intermediate representation of a UxOut for sorting and spend choosing
 type UxBalance struct {
-	Hash    cipher.SHA256
-	BkSeq   uint64
-	Address cipher.Address
-	Coins   uint64
-	Hours   uint64
+	UxID           cipher.SHA256
+	BkSeq          uint64
+	Time           uint64
+	Address        cipher.Address
+	Coins          uint64
+	InitialHours   uint64
+	Hours          uint64
+	SrcTransaction cipher.SHA256
 }
 
-// NewUxBalances converts coin.UxArray to []UxBalance.
-// headTime is required to calculate coin hours.
+// NewUxBalances converts coin.UxArray to []UxBalance. headTime is required to calculate coin hours.
 func NewUxBalances(headTime uint64, uxa coin.UxArray) ([]UxBalance, error) {
 	uxb := make([]UxBalance, len(uxa))
 	for i, ux := range uxa {
-		hours, err := ux.CoinHours(headTime)
+		b, err := NewUxBalance(headTime, ux)
 		if err != nil {
 			return nil, err
 		}
-
-		b := UxBalance{
-			Hash:    ux.Hash(),
-			BkSeq:   ux.Head.BkSeq,
-			Address: ux.Body.Address,
-			Coins:   ux.Body.Coins,
-			Hours:   hours,
-		}
-
 		uxb[i] = b
 	}
 
 	return uxb, nil
+}
+
+// NewUxBalance converts coin.UxOut to UxBalance. headTime is required to calculate coin hours.
+func NewUxBalance(headTime uint64, ux coin.UxOut) (UxBalance, error) {
+	hours, err := ux.CoinHours(headTime)
+	if err != nil {
+		return UxBalance{}, err
+	}
+
+	return UxBalance{
+		UxID:           ux.Hash(),
+		BkSeq:          ux.Head.BkSeq,
+		Time:           ux.Head.Time,
+		Address:        ux.Body.Address,
+		Coins:          ux.Body.Coins,
+		InitialHours:   ux.Body.Hours,
+		Hours:          hours,
+		SrcTransaction: ux.Body.SrcTransaction,
+	}, nil
 }
 
 func uxBalancesSub(a, b []UxBalance) []UxBalance {
@@ -1517,11 +1580,11 @@ func uxBalancesSub(a, b []UxBalance) []UxBalance {
 
 	bMap := make(map[cipher.SHA256]struct{}, len(b))
 	for _, i := range b {
-		bMap[i.Hash] = struct{}{}
+		bMap[i.UxID] = struct{}{}
 	}
 
 	for _, i := range a {
-		if _, ok := bMap[i.Hash]; !ok {
+		if _, ok := bMap[i.UxID]; !ok {
 			x = append(x, i)
 		}
 	}
@@ -1582,7 +1645,7 @@ func makeCmpUxOutByCoins(uxa []UxBalance, coinsCmp func(a, b uint64) bool) func(
 		if a.Coins == b.Coins {
 			if a.Hours == b.Hours {
 				if a.BkSeq == b.BkSeq {
-					return cmpUxOutByHash(a, b)
+					return cmpUxBalanceByUxID(a, b)
 				}
 				return a.BkSeq < b.BkSeq
 			}
@@ -1605,7 +1668,7 @@ func makeCmpUxOutByHours(uxa []UxBalance, hoursCmp func(a, b uint64) bool) func(
 		if a.Hours == b.Hours {
 			if a.Coins == b.Coins {
 				if a.BkSeq == b.BkSeq {
-					return cmpUxOutByHash(a, b)
+					return cmpUxBalanceByUxID(a, b)
 				}
 				return a.BkSeq < b.BkSeq
 			}
@@ -1615,8 +1678,8 @@ func makeCmpUxOutByHours(uxa []UxBalance, hoursCmp func(a, b uint64) bool) func(
 	}
 }
 
-func cmpUxOutByHash(a, b UxBalance) bool {
-	cmp := bytes.Compare(a.Hash[:], b.Hash[:])
+func cmpUxBalanceByUxID(a, b UxBalance) bool {
+	cmp := bytes.Compare(a.UxID[:], b.UxID[:])
 	if cmp == 0 {
 		logger.Panic("Duplicate UxOut when sorting")
 	}

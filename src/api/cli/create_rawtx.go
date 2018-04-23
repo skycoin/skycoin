@@ -506,22 +506,35 @@ func createRawTx(uxouts visor.ReadableOutputSet, wlt *wallet.Wallet, inAddrs []s
 		return nil, err
 	}
 
-	var tx *coin.Transaction
-	makeTx := func(w *wallet.Wallet) error {
+	f := func(w *wallet.Wallet) (*coin.Transaction, error) {
 		keys, err := getKeys(w, spendOutputs)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		tx = NewTransaction(spendOutputs, keys, txOuts)
-		return nil
+		return NewTransaction(spendOutputs, keys, txOuts), nil
 	}
 
-	if err := wlt.GuardView(password, makeTx); err != nil {
-		return nil, err
+	makeTx := func() (*coin.Transaction, error) {
+		return f(wlt)
 	}
 
-	return tx, nil
+	if wlt.IsEncrypted() {
+		makeTx = func() (*coin.Transaction, error) {
+			var tx *coin.Transaction
+			if err := wlt.GuardView(password, func(w *wallet.Wallet) error {
+				var err error
+				tx, err = f(w)
+				return err
+			}); err != nil {
+				return nil, err
+			}
+
+			return tx, nil
+		}
+	}
+
+	return makeTx()
 }
 
 func chooseSpends(uxouts visor.ReadableOutputSet, coins uint64) ([]wallet.UxBalance, error) {

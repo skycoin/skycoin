@@ -54,19 +54,19 @@ function startSkycoin() {
   // Resolve skycoin binary location
   var appPath = app.getPath('exe');
   var exe = (() => {
-        switch (process.platform) {
-  case 'darwin':
-    return path.join(appPath, '../../Resources/app/skycoin');
-  case 'win32':
-    // Use only the relative path on windows due to short path length
-    // limits
-    return './resources/app/skycoin.exe';
-  case 'linux':
-    return path.join(path.dirname(appPath), './resources/app/skycoin');
-  default:
-    return './resources/app/skycoin';
-  }
-})()
+    switch (process.platform) {
+      case 'darwin':
+        return path.join(appPath, '../../Resources/app/skycoin');
+      case 'win32':
+        // Use only the relative path on windows due to short path length
+        // limits
+        return './resources/app/skycoin.exe';
+      case 'linux':
+        return path.join(path.dirname(appPath), './resources/app/skycoin');
+      default:
+        return './resources/app/skycoin';
+    }
+  })()
 
   var args = [
     '-launch-browser=false',
@@ -179,33 +179,43 @@ function createWindow(url) {
 
   // create application's main menu
   var template = [{
-    label: "Skycoin",
+    label: 'Skycoin',
     submenu: [
-      { label: "About Skycoin", selector: "orderFrontStandardAboutPanel:" },
-      { type: "separator" },
-      { label: "Quit", accelerator: "Command+Q", click: function() { app.quit(); } }
+      { label: 'About Skycoin', selector: 'orderFrontStandardAboutPanel:' },
+      { type: 'separator' },
+      { label: 'Quit', accelerator: 'Command+Q', click: function() { app.quit(); } }
     ]
   }, {
-    label: "Edit",
+    label: 'Edit',
     submenu: [
-      { label: "Undo", accelerator: "CmdOrCtrl+Z", selector: "undo:" },
-      { label: "Redo", accelerator: "Shift+CmdOrCtrl+Z", selector: "redo:" },
-      { type: "separator" },
-      { label: "Cut", accelerator: "CmdOrCtrl+X", selector: "cut:" },
-      { label: "Copy", accelerator: "CmdOrCtrl+C", selector: "copy:" },
-      { label: "Paste", accelerator: "CmdOrCtrl+V", selector: "paste:" },
-      { label: "Select All", accelerator: "CmdOrCtrl+A", selector: "selectAll:" }
+      { label: 'Undo', accelerator: 'CmdOrCtrl+Z', selector: 'undo:' },
+      { label: 'Redo', accelerator: 'Shift+CmdOrCtrl+Z', selector: 'redo:' },
+      { type: 'separator' },
+      { label: 'Cut', accelerator: 'CmdOrCtrl+X', selector: 'cut:' },
+      { label: 'Copy', accelerator: 'CmdOrCtrl+C', selector: 'copy:' },
+      { label: 'Paste', accelerator: 'CmdOrCtrl+V', selector: 'paste:' },
+      { label: 'Select All', accelerator: 'CmdOrCtrl+A', selector: 'selectAll:' }
     ]
   }, {
-    label: "Show",
+    label: 'Show',
     submenu: [
-      { label: "Wallets folder", click: function () {
-        axios.get(defaultURL + 'wallets/folderName')
-          .then(response => {
-            shell.showItemInFolder(response.data.address);
-          })
-          .catch(() => {});
-      } }
+      {
+        label: "Wallets folder", 
+        click: () => shell.showItemInFolder(walletsFolder), 
+      },
+      {
+        label: "Logs folder", 
+        click: () => shell.showItemInFolder(walletsFolder.replace('wallets', 'logs')), 
+      },
+      {
+        label: 'DevTools',
+        accelerator: process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
+        click: (item, focusedWindow) => {
+          if (focusedWindow) {
+            focusedWindow.toggleDevTools();
+          }
+        }
+      },
     ]
   }];
 
@@ -222,13 +232,15 @@ const alreadyRunning = app.makeSingleInstance((commandLine, workingDirectory) =>
         win.focus();
       } else {
         createWindow(currentURL || defaultURL);
-}
+      }
 });
 
 if (alreadyRunning) {
   app.quit();
   return;
 }
+
+let walletsFolder = null;
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -237,6 +249,11 @@ app.on('ready', startSkycoin);
 
 app.on('skycoin-ready', (e) => {
   createWindow(e.url);
+
+  axios
+    .get(defaultURL + 'wallets/folderName')
+    .then(response => walletsFolder = response.data.address)
+    .catch(() => {});
 });
 
 // Quit when all windows are closed.
@@ -244,16 +261,16 @@ app.on('window-all-closed', () => {
   // On OS X it is common for applications and their menu bar
   // to stay active until the user quits explicitly with Cmd + Q
   if (process.platform !== 'darwin') {
-  app.quit();
-}
+    app.quit();
+  }
 });
 
 app.on('activate', () => {
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   if (win === null) {
-  createWindow();
-}
+    createWindow();
+  }
 });
 
 app.on('will-quit', () => {

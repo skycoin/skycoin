@@ -227,7 +227,7 @@ func NewCreatedTransactionInput(out wallet.UxBalance) (*CreatedTransactionInput,
 	}
 
 	return &CreatedTransactionInput{
-		UxID:            out.UxID.Hex(),
+		UxID:            out.Hash.Hex(),
 		Address:         out.Address.String(),
 		Coins:           coins,
 		Hours:           fmt.Sprint(out.InitialHours),

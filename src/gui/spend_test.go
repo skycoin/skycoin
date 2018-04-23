@@ -67,7 +67,7 @@ func TestCreateTransaction(t *testing.T) {
 
 	inputs := []wallet.UxBalance{
 		{
-			UxID:           testutil.RandSHA256(t),
+			Hash:           testutil.RandSHA256(t),
 			Time:           uint64(time.Now().UTC().Unix()),
 			BkSeq:          9999,
 			SrcTransaction: testutil.RandSHA256(t),

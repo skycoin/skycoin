@@ -16,14 +16,14 @@ func TestMakeChangeOut(t *testing.T) {
 	// single destination test
 	uxOuts := []wallet.UxBalance{
 		{
-			UxID:    cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
+			Hash:    cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
 			Address: cipher.MustDecodeBase58Address("k3rmz3PGbTxd7KL8AL5CeHrWy35C1UcWND"),
 			BkSeq:   10,
 			Coins:   400e6,
 			Hours:   1,
 		},
 		{
-			UxID:    cipher.MustSHA256FromHex("bddf0aaf80f96c144f33ac8a27764a868d37e1c11e568063ebeb1367de859566"),
+			Hash:    cipher.MustSHA256FromHex("bddf0aaf80f96c144f33ac8a27764a868d37e1c11e568063ebeb1367de859566"),
 			Address: cipher.MustDecodeBase58Address("A2h4iWC1SDGmS6UPezatFzEUwirLJtjFUe"),
 			BkSeq:   11,
 			Coins:   300e6,
@@ -62,14 +62,14 @@ func TestMakeChangeOut(t *testing.T) {
 	// multiple destination test
 	uxOuts = []wallet.UxBalance{
 		{
-			UxID:    cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
+			Hash:    cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
 			Address: cipher.MustDecodeBase58Address("k3rmz3PGbTxd7KL8AL5CeHrWy35C1UcWND"),
 			BkSeq:   10,
 			Coins:   10e6,
 			Hours:   8,
 		},
 		{
-			UxID:    cipher.MustSHA256FromHex("bddf0aaf80f96c144f33ac8a27764a868d37e1c11e568063ebeb1367de859566"),
+			Hash:    cipher.MustSHA256FromHex("bddf0aaf80f96c144f33ac8a27764a868d37e1c11e568063ebeb1367de859566"),
 			Address: cipher.MustDecodeBase58Address("A2h4iWC1SDGmS6UPezatFzEUwirLJtjFUe"),
 			BkSeq:   11,
 			Coins:   5e6,
@@ -115,14 +115,14 @@ func TestMakeChangeOut(t *testing.T) {
 func TestMakeChangeOutMinOneCoinHourSend(t *testing.T) {
 	uxOuts := []wallet.UxBalance{
 		{
-			UxID:    cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
+			Hash:    cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
 			Address: cipher.MustDecodeBase58Address("k3rmz3PGbTxd7KL8AL5CeHrWy35C1UcWND"),
 			BkSeq:   10,
 			Coins:   400e6,
 			Hours:   200,
 		},
 		{
-			UxID:    cipher.MustSHA256FromHex("bddf0aaf80f96c144f33ac8a27764a868d37e1c11e568063ebeb1367de859566"),
+			Hash:    cipher.MustSHA256FromHex("bddf0aaf80f96c144f33ac8a27764a868d37e1c11e568063ebeb1367de859566"),
 			Address: cipher.MustDecodeBase58Address("A2h4iWC1SDGmS6UPezatFzEUwirLJtjFUe"),
 			BkSeq:   11,
 			Coins:   300e6,
@@ -162,14 +162,14 @@ func TestMakeChangeOutMinOneCoinHourSend(t *testing.T) {
 func TestMakeChangeOutCoinHourCap(t *testing.T) {
 	uxOuts := []wallet.UxBalance{
 		{
-			UxID:    cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
+			Hash:    cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
 			Address: cipher.MustDecodeBase58Address("k3rmz3PGbTxd7KL8AL5CeHrWy35C1UcWND"),
 			BkSeq:   10,
 			Coins:   400e6,
 			Hours:   2000,
 		},
 		{
-			UxID:    cipher.MustSHA256FromHex("bddf0aaf80f96c144f33ac8a27764a868d37e1c11e568063ebeb1367de859566"),
+			Hash:    cipher.MustSHA256FromHex("bddf0aaf80f96c144f33ac8a27764a868d37e1c11e568063ebeb1367de859566"),
 			Address: cipher.MustDecodeBase58Address("A2h4iWC1SDGmS6UPezatFzEUwirLJtjFUe"),
 			BkSeq:   11,
 			Coins:   300e6,
@@ -211,14 +211,14 @@ func TestMakeChangeOutOneCoinHour(t *testing.T) {
 	// will still succeed
 	uxOuts := []wallet.UxBalance{
 		{
-			UxID:    cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
+			Hash:    cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
 			BkSeq:   10,
 			Address: cipher.MustDecodeBase58Address("k3rmz3PGbTxd7KL8AL5CeHrWy35C1UcWND"),
 			Coins:   400e6,
 			Hours:   0,
 		},
 		{
-			UxID:    cipher.MustSHA256FromHex("bddf0aaf80f96c144f33ac8a27764a868d37e1c11e568063ebeb1367de859566"),
+			Hash:    cipher.MustSHA256FromHex("bddf0aaf80f96c144f33ac8a27764a868d37e1c11e568063ebeb1367de859566"),
 			BkSeq:   11,
 			Address: cipher.MustDecodeBase58Address("A2h4iWC1SDGmS6UPezatFzEUwirLJtjFUe"),
 			Coins:   300e6,
@@ -259,14 +259,14 @@ func TestMakeChangeOutInsufficientCoinHours(t *testing.T) {
 	// because it will not be accepted by the network
 	uxOuts := []wallet.UxBalance{
 		{
-			UxID:    cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
+			Hash:    cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
 			BkSeq:   10,
 			Address: cipher.MustDecodeBase58Address("k3rmz3PGbTxd7KL8AL5CeHrWy35C1UcWND"),
 			Coins:   400e6,
 			Hours:   0,
 		},
 		{
-			UxID:    cipher.MustSHA256FromHex("bddf0aaf80f96c144f33ac8a27764a868d37e1c11e568063ebeb1367de859566"),
+			Hash:    cipher.MustSHA256FromHex("bddf0aaf80f96c144f33ac8a27764a868d37e1c11e568063ebeb1367de859566"),
 			BkSeq:   11,
 			Address: cipher.MustDecodeBase58Address("A2h4iWC1SDGmS6UPezatFzEUwirLJtjFUe"),
 			Coins:   300e6,

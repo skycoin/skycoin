@@ -1624,16 +1624,16 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 				// Checks duplicate inputs in array
 				inputsMap := make(map[cipher.SHA256]struct{})
 				for _, i := range inputs {
-					_, ok := inputsMap[i.UxID]
+					_, ok := inputsMap[i.Hash]
 					require.False(t, ok)
-					inputsMap[i.UxID] = struct{}{}
+					inputsMap[i.Hash] = struct{}{}
 				}
 
 				for i, inUxid := range txn.In {
 					_, ok := unspents.unspents[inUxid]
 					require.True(t, ok)
 
-					require.Equal(t, inUxid, inputs[i].UxID)
+					require.Equal(t, inUxid, inputs[i].Hash)
 				}
 
 				// Compare the transaction inputs
@@ -1664,8 +1664,8 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 				require.Equal(t, chosenUnspentHashes, sortedTxnIn)
 
 				sort.Slice(inputs, func(i, j int) bool {
-					h1 := inputs[i].UxID
-					h2 := inputs[j].UxID
+					h1 := inputs[i].Hash
+					h2 := inputs[j].Hash
 					return bytes.Compare(h1[:], h2[:]) < 0
 				})
 

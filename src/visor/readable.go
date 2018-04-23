@@ -350,7 +350,7 @@ func ReadableOutputsToUxBalances(ros ReadableOutputs) ([]wallet.UxBalance, error
 		}
 
 		b := wallet.UxBalance{
-			UxID:           hash,
+			Hash:           hash,
 			Time:           ro.Time,
 			BkSeq:          ro.BkSeq,
 			SrcTransaction: srcTx,

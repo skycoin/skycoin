@@ -2602,11 +2602,6 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 		assertRequestedCoins(t, autoTo, result.Transaction.Out)
 		assertCreatedTransactionValid(t, result.Transaction)
 
-		printme, err := json.MarshalIndent(result, "", "    ")
-		require.NoError(t, err)
-		fmt.Println(string(printme))
-		t.Fatalf("foo")
-
 		// Auto, share factor 0
 
 		result, err = c.CreateTransaction(gui.CreateTransactionRequest{

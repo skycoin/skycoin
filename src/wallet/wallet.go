@@ -1266,7 +1266,62 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 		inputs[i] = uxOut
 	}
 
+	if err := verifyCreatedTransactionInvariants(params, txn, inputs); err != nil {
+		logger.Criticalf("CreateAndSignTransactionAdvanced created transaction that violates invariants, aborting: %v", err)
+		return nil, nil, fmt.Errorf("Created transaction that violates invariants, this is a bug: %v", err)
+	}
+
 	return txn, inputs, nil
+}
+
+// verifyCreatedTransactionInvariants checks that the transaction that was created matches expectations.
+// Does not call visor verification methods because that causes import cycle.
+// daemon.Gateway checks that the transaction passes additional visor verification methods.
+func verifyCreatedTransactionInvariants(params CreateTransactionParams, txn *coin.Transaction, inputs coin.UxArray) error {
+	for _, o := range txn.Out {
+		// No outputs should be sent to the null address
+		if o.Address.Null() {
+			return errors.New("Output address is null")
+		}
+
+		if o.Coins == 0 {
+			return errors.New("Output coins is 0")
+		}
+	}
+
+	if len(txn.Out) != len(params.To) && len(txn.Out) != len(params.To)+1 {
+		return errors.New("Transaction has unexpected number of outputs")
+	}
+
+	for i, o := range txn.Out[:len(params.To)] {
+		if o.Address != params.To[i].Address {
+			return errors.New("Output address does not match requested address")
+		}
+
+		if o.Coins != params.To[i].Coins {
+			return errors.New("Output coins does not match requested coins")
+		}
+
+		if params.To[i].Hours != 0 && o.Hours != params.To[i].Hours {
+			return errors.New("Output hours does not match requested hours")
+		}
+	}
+
+	if len(txn.Sigs) != len(txn.In) {
+		return errors.New("Number of signatures does not match number of inputs")
+	}
+
+	if len(txn.In) != len(inputs) {
+		return errors.New("Number of UxOut inputs does not match number of transaction inputs")
+	}
+
+	for i, h := range txn.In {
+		if inputs[i].Hash() != h {
+			return errors.New("Transaction input hash does not match UxOut inputs hash")
+		}
+	}
+
+	return nil
 }
 
 // DistributeSpendHours calculates how many coin hours to transfer to the change address and how

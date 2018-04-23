@@ -96,15 +96,15 @@ func TestFbyHashes(t *testing.T) {
 
 func TestGateway_GetWalletDir(t *testing.T) {
 	tests := []struct {
-		name             string
-		disableWalletAPI bool
-		result           string
-		err              error
+		name            string
+		enableWalletAPI bool
+		result          string
+		err             error
 	}{
 		{
-			name:             "wallet api disabled",
-			disableWalletAPI: true,
-			err:              wallet.ErrWalletAPIDisabled,
+			name:            "wallet api disabled",
+			enableWalletAPI: false,
+			err:             wallet.ErrWalletAPIDisabled,
 		},
 	}
 
@@ -112,7 +112,7 @@ func TestGateway_GetWalletDir(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gw := &Gateway{
 				Config: GatewayConfig{
-					DisableWalletAPI: tc.disableWalletAPI,
+					EnableWalletAPI: tc.enableWalletAPI,
 				},
 			}
 			res, err := gw.GetWalletDir()
@@ -127,17 +127,17 @@ func TestGateway_GetWalletDir(t *testing.T) {
 
 func TestGateway_NewAddresses(t *testing.T) {
 	tests := []struct {
-		name             string
-		disableWalletAPI bool
-		walletID         string
-		n                uint64
-		result           []cipher.Address
-		err              error
+		name            string
+		enableWalletAPI bool
+		walletID        string
+		n               uint64
+		result          []cipher.Address
+		err             error
 	}{
 		{
-			name:             "wallet api disabled",
-			disableWalletAPI: true,
-			err:              wallet.ErrWalletAPIDisabled,
+			name:            "wallet api disabled",
+			enableWalletAPI: false,
+			err:             wallet.ErrWalletAPIDisabled,
 		},
 	}
 
@@ -145,7 +145,7 @@ func TestGateway_NewAddresses(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gw := &Gateway{
 				Config: GatewayConfig{
-					DisableWalletAPI: tc.disableWalletAPI,
+					EnableWalletAPI: tc.enableWalletAPI,
 				},
 			}
 			res, err := gw.NewAddresses(tc.walletID, nil, tc.n)
@@ -160,16 +160,16 @@ func TestGateway_NewAddresses(t *testing.T) {
 
 func TestGateway_UpdateWalletLabel(t *testing.T) {
 	tests := []struct {
-		name             string
-		disableWalletAPI bool
-		walletID         string
-		label            string
-		err              error
+		name            string
+		enableWalletAPI bool
+		walletID        string
+		label           string
+		err             error
 	}{
 		{
-			name:             "wallet api disabled",
-			disableWalletAPI: true,
-			err:              wallet.ErrWalletAPIDisabled,
+			name:            "wallet api disabled",
+			enableWalletAPI: false,
+			err:             wallet.ErrWalletAPIDisabled,
 		},
 	}
 
@@ -177,7 +177,7 @@ func TestGateway_UpdateWalletLabel(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gw := &Gateway{
 				Config: GatewayConfig{
-					DisableWalletAPI: tc.disableWalletAPI,
+					EnableWalletAPI: tc.enableWalletAPI,
 				},
 			}
 			err := gw.UpdateWalletLabel(tc.walletID, tc.label)
@@ -191,16 +191,16 @@ func TestGateway_UpdateWalletLabel(t *testing.T) {
 
 func TestGateway_GetWallet(t *testing.T) {
 	tests := []struct {
-		name             string
-		disableWalletAPI bool
-		walletID         string
-		result           wallet.Wallet
-		err              error
+		name            string
+		enableWalletAPI bool
+		walletID        string
+		result          wallet.Wallet
+		err             error
 	}{
 		{
-			name:             "wallet api disabled",
-			disableWalletAPI: true,
-			err:              wallet.ErrWalletAPIDisabled,
+			name:            "wallet api disabled",
+			enableWalletAPI: false,
+			err:             wallet.ErrWalletAPIDisabled,
 		},
 	}
 
@@ -208,7 +208,7 @@ func TestGateway_GetWallet(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gw := &Gateway{
 				Config: GatewayConfig{
-					DisableWalletAPI: tc.disableWalletAPI,
+					EnableWalletAPI: tc.enableWalletAPI,
 				},
 			}
 			res, err := gw.GetWallet(tc.walletID)
@@ -223,16 +223,16 @@ func TestGateway_GetWallet(t *testing.T) {
 
 func TestGateway_GetWallets(t *testing.T) {
 	tests := []struct {
-		name             string
-		disableWalletAPI bool
-		wallets          wallet.Wallets
-		getWalletError   error
-		err              error
+		name            string
+		enableWalletAPI bool
+		wallets         wallet.Wallets
+		getWalletError  error
+		err             error
 	}{
 		{
-			name:             "wallet api disabled",
-			disableWalletAPI: true,
-			err:              wallet.ErrWalletAPIDisabled,
+			name:            "wallet api disabled",
+			enableWalletAPI: false,
+			err:             wallet.ErrWalletAPIDisabled,
 		},
 	}
 
@@ -240,7 +240,7 @@ func TestGateway_GetWallets(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gw := &Gateway{
 				Config: GatewayConfig{
-					DisableWalletAPI: tc.disableWalletAPI,
+					EnableWalletAPI: tc.enableWalletAPI,
 				},
 			}
 			w, err := gw.GetWallets()
@@ -255,16 +255,16 @@ func TestGateway_GetWallets(t *testing.T) {
 
 func TestGateway_GetWalletUnconfirmedTxns(t *testing.T) {
 	tests := []struct {
-		name             string
-		disableWalletAPI bool
-		walletID         string
-		result           []visor.UnconfirmedTxn
-		err              error
+		name            string
+		enableWalletAPI bool
+		walletID        string
+		result          []visor.UnconfirmedTxn
+		err             error
 	}{
 		{
-			name:             "wallet api disabled",
-			disableWalletAPI: true,
-			err:              wallet.ErrWalletAPIDisabled,
+			name:            "wallet api disabled",
+			enableWalletAPI: false,
+			err:             wallet.ErrWalletAPIDisabled,
 		},
 	}
 
@@ -272,7 +272,7 @@ func TestGateway_GetWalletUnconfirmedTxns(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gw := &Gateway{
 				Config: GatewayConfig{
-					DisableWalletAPI: tc.disableWalletAPI,
+					EnableWalletAPI: tc.enableWalletAPI,
 				},
 			}
 			res, err := gw.GetWalletUnconfirmedTxns(tc.walletID)
@@ -287,14 +287,14 @@ func TestGateway_GetWalletUnconfirmedTxns(t *testing.T) {
 
 func TestGateway_ReloadWallets(t *testing.T) {
 	tests := []struct {
-		name             string
-		disableWalletAPI bool
-		err              error
+		name            string
+		enableWalletAPI bool
+		err             error
 	}{
 		{
-			name:             "wallet api disabled",
-			disableWalletAPI: true,
-			err:              wallet.ErrWalletAPIDisabled,
+			name:            "wallet api disabled",
+			enableWalletAPI: false,
+			err:             wallet.ErrWalletAPIDisabled,
 		},
 	}
 
@@ -302,7 +302,7 @@ func TestGateway_ReloadWallets(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gw := &Gateway{
 				Config: GatewayConfig{
-					DisableWalletAPI: tc.disableWalletAPI,
+					EnableWalletAPI: tc.enableWalletAPI,
 				},
 			}
 			err := gw.ReloadWallets()
@@ -316,18 +316,18 @@ func TestGateway_ReloadWallets(t *testing.T) {
 
 func TestGateway_Spend(t *testing.T) {
 	tests := []struct {
-		name             string
-		disableWalletAPI bool
-		walletID         string
-		coins            uint64
-		dest             cipher.Address
-		result           *coin.Transaction
-		err              error
+		name            string
+		enableWalletAPI bool
+		walletID        string
+		coins           uint64
+		dest            cipher.Address
+		result          *coin.Transaction
+		err             error
 	}{
 		{
-			name:             "wallet api disabled",
-			disableWalletAPI: true,
-			err:              wallet.ErrWalletAPIDisabled,
+			name:            "wallet api disabled",
+			enableWalletAPI: false,
+			err:             wallet.ErrWalletAPIDisabled,
 		},
 	}
 
@@ -335,7 +335,7 @@ func TestGateway_Spend(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gw := &Gateway{
 				Config: GatewayConfig{
-					DisableWalletAPI: tc.disableWalletAPI,
+					EnableWalletAPI: tc.enableWalletAPI,
 				},
 			}
 			res, err := gw.Spend(tc.walletID, nil, tc.coins, tc.dest)
@@ -350,17 +350,17 @@ func TestGateway_Spend(t *testing.T) {
 
 func TestGateway_CreateWallet(t *testing.T) {
 	tests := []struct {
-		name             string
-		disableWalletAPI bool
-		wltName          string
-		options          wallet.Options
-		result           wallet.Wallet
-		err              error
+		name            string
+		enableWalletAPI bool
+		wltName         string
+		options         wallet.Options
+		result          wallet.Wallet
+		err             error
 	}{
 		{
-			name:             "wallet api disabled",
-			disableWalletAPI: true,
-			err:              wallet.ErrWalletAPIDisabled,
+			name:            "wallet api disabled",
+			enableWalletAPI: false,
+			err:             wallet.ErrWalletAPIDisabled,
 		},
 	}
 
@@ -368,7 +368,7 @@ func TestGateway_CreateWallet(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gw := &Gateway{
 				Config: GatewayConfig{
-					DisableWalletAPI: tc.disableWalletAPI,
+					EnableWalletAPI: tc.enableWalletAPI,
 				},
 			}
 			res, err := gw.CreateWallet(tc.wltName, tc.options)
@@ -381,19 +381,19 @@ func TestGateway_CreateWallet(t *testing.T) {
 	}
 }
 
-func TestGateway_ScanAheadWalletAddresses(t *testing.T) {
+func TestGateway_GetWalletBalance(t *testing.T) {
 	tests := []struct {
-		name             string
-		disableWalletAPI bool
-		wltName          string
-		scanN            uint64
-		result           wallet.Wallet
-		err              error
+		name            string
+		enableWalletAPI bool
+		walletID        string
+		result          wallet.BalancePair
+		err             error
 	}{
 		{
-			name:             "wallet api disabled",
-			disableWalletAPI: true,
-			err:              wallet.ErrWalletAPIDisabled,
+			name:            "wallet api disabled",
+			enableWalletAPI: false,
+			walletID:        "foo.wlt",
+			err:             wallet.ErrWalletAPIDisabled,
 		},
 	}
 
@@ -401,10 +401,10 @@ func TestGateway_ScanAheadWalletAddresses(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gw := &Gateway{
 				Config: GatewayConfig{
-					DisableWalletAPI: tc.disableWalletAPI,
+					EnableWalletAPI: tc.enableWalletAPI,
 				},
 			}
-			res, err := gw.ScanAheadWalletAddresses(tc.wltName, nil, tc.scanN)
+			res, err := gw.GetWalletBalance(tc.walletID)
 			if tc.err != nil {
 				require.Equal(t, tc.err, err)
 				return
@@ -414,18 +414,20 @@ func TestGateway_ScanAheadWalletAddresses(t *testing.T) {
 	}
 }
 
-func TestGateway_GetWalletBalance(t *testing.T) {
+func TestGateway_CreateTransaction(t *testing.T) {
 	tests := []struct {
-		name             string
-		disableWalletAPI bool
-		walletID         string
-		result           wallet.BalancePair
-		err              error
+		name            string
+		enableWalletAPI bool
+		err             error
+		txn             *coin.Transaction
+		inputs          coin.UxArray
+		params          wallet.CreateTransactionParams
 	}{
 		{
-			name:             "wallet api disabled",
-			disableWalletAPI: true,
-			err:              wallet.ErrWalletAPIDisabled,
+			name:            "wallet api disabled",
+			enableWalletAPI: false,
+			err:             wallet.ErrWalletAPIDisabled,
+			params:          wallet.CreateTransactionParams{},
 		},
 	}
 
@@ -433,15 +435,18 @@ func TestGateway_GetWalletBalance(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gw := &Gateway{
 				Config: GatewayConfig{
-					DisableWalletAPI: tc.disableWalletAPI,
+					EnableWalletAPI: tc.enableWalletAPI,
 				},
 			}
-			res, err := gw.GetWalletBalance(tc.walletID)
+
+			txn, inputs, err := gw.CreateTransaction(tc.params)
 			if tc.err != nil {
 				require.Equal(t, tc.err, err)
-				return
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tc.txn, txn)
+				require.Equal(t, tc.inputs, inputs)
 			}
-			require.Equal(t, tc.result, res)
 		})
 	}
 }

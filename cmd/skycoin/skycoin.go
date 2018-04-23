@@ -30,9 +30,11 @@ import (
 
 var (
 	// Version node version which will be set when build wallet by LDFLAGS
-	Version = "0.22.0"
+	Version = "0.23.0"
 	// Commit id
 	Commit = ""
+	// Branch name
+	Branch = ""
 
 	help = false
 
@@ -80,9 +82,11 @@ type Config struct {
 	// Disables networking altogether
 	DisableNetworking bool
 	// Disables wallet API
-	DisableWalletAPI bool
+	EnableWalletAPI bool
 	// Disable CSRF check in the wallet api
 	DisableCSRF bool
+	// Enable /wallet/seed api endpoint
+	EnableSeedAPI bool
 
 	// Only run on localhost and only connect to others on localhost
 	LocalhostOnly bool
@@ -177,8 +181,9 @@ func (c *Config) register() {
 	flag.BoolVar(&c.DisableOutgoingConnections, "disable-outgoing", c.DisableOutgoingConnections, "Don't make outgoing connections")
 	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming", c.DisableIncomingConnections, "Don't make incoming connections")
 	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
-	flag.BoolVar(&c.DisableWalletAPI, "disable-wallet-api", c.DisableWalletAPI, "Disable the wallet API")
+	flag.BoolVar(&c.EnableWalletAPI, "enable-wallet-api", c.EnableWalletAPI, "Enable the wallet API")
 	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable csrf check")
+	flag.BoolVar(&c.EnableSeedAPI, "enable-seed-api", false, "enable /wallet/seed api")
 	flag.StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
 
@@ -241,8 +246,10 @@ var devConfig = Config{
 	DisableIncomingConnections: false,
 	// Disables networking altogether
 	DisableNetworking: false,
-	// Disable wallet API
-	DisableWalletAPI: false,
+	// Enable wallet API
+	EnableWalletAPI: false,
+	// Enable seed API
+	EnableSeedAPI: false,
 	// Disable CSRF check in the wallet api
 	DisableCSRF: false,
 	// Only run on localhost and only connect to others on localhost
@@ -375,7 +382,9 @@ func (c *Config) postProcess() {
 	}
 
 	// Don't open browser to load wallets if wallet apis are disabled.
-	if c.DisableWalletAPI {
+	if c.EnableWalletAPI {
+		c.GUIDirectory = file.ResolveResourceDirectory(c.GUIDirectory)
+	} else {
 		c.LaunchBrowser = false
 	}
 }
@@ -434,12 +443,12 @@ func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) (*g
 	var err error
 
 	config := gui.Config{
-		StaticDir:        c.GUIDirectory,
-		DisableCSRF:      c.DisableCSRF,
-		DisableWalletAPI: c.DisableWalletAPI,
-		ReadTimeout:      c.ReadTimeout,
-		WriteTimeout:     c.WriteTimeout,
-		IdleTimeout:      c.IdleTimeout,
+		StaticDir:       c.GUIDirectory,
+		DisableCSRF:     c.DisableCSRF,
+		EnableWalletAPI: c.EnableWalletAPI,
+		ReadTimeout:     c.ReadTimeout,
+		WriteTimeout:    c.WriteTimeout,
+		IdleTimeout:     c.IdleTimeout,
 	}
 
 	if c.WebInterfaceHTTPS {
@@ -511,14 +520,16 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Visor.Config.DBPath = c.DBPath
 	dc.Visor.Config.DBReadOnly = c.DBReadOnly
 	dc.Visor.Config.Arbitrating = c.Arbitrating
-	dc.Visor.Config.DisableWalletAPI = c.DisableWalletAPI
+	dc.Visor.Config.EnableWalletAPI = c.EnableWalletAPI
 	dc.Visor.Config.WalletDirectory = c.WalletDirectory
 	dc.Visor.Config.BuildInfo = visor.BuildInfo{
 		Version: Version,
 		Commit:  Commit,
+		Branch:  Branch,
 	}
+	dc.Visor.Config.EnableSeedAPI = c.EnableSeedAPI
 
-	dc.Gateway.DisableWalletAPI = c.DisableWalletAPI
+	dc.Gateway.EnableWalletAPI = c.EnableWalletAPI
 
 	// Initialize wallet default crypto type
 	cryptoType, err := wallet.CryptoTypeFromString(c.WalletCryptoType)
@@ -539,8 +550,6 @@ func Run(c *Config) {
 			logger.Errorf("recover: %v\nstack:%v", r, string(debug.Stack()))
 		}
 	}()
-
-	c.GUIDirectory = file.ResolveResourceDirectory(c.GUIDirectory)
 
 	scheme := "http"
 	if c.WebInterfaceHTTPS {

@@ -46,7 +46,7 @@ var (
 func NewLogger(priorityKey, criticalPriority string) (logger *Logger) {
 	logger = &Logger{
 		Logger: &logrus.Logger{
-			Out: os.Stderr,
+			Out: os.Stdout,
 			Formatter: &TextFormatter{
 				FullTimestamp:          true,
 				AlwaysQuoteStrings:     true,

@@ -13,7 +13,6 @@ import (
 	"github.com/skycoin/skycoin/src/daemon/strand"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/wallet"
 )
 
 //TODO
@@ -466,19 +465,6 @@ func (vs *Visor) EstimateBlockchainHeight() uint64 {
 		return nil
 	})
 	return maxLen
-}
-
-// ScanAheadWalletAddresses loads wallet from seeds and scan ahead N addresses
-// Set password as nil if the wallet is not encrypted, otherwise the password must be provided.
-func (vs *Visor) ScanAheadWalletAddresses(wltName string, password []byte, scanN uint64) (*wallet.Wallet, error) {
-	var wlt *wallet.Wallet
-	var err error
-	vs.strand("ScanAheadWalletAddresses", func() error {
-		wlt, err = vs.v.ScanAheadWalletAddresses(wltName, password, scanN)
-		return nil
-	})
-
-	return wlt, err
 }
 
 // PeerBlockchainHeight is a peer's IP address with their reported blockchain height

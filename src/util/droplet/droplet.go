@@ -5,6 +5,7 @@ import (
 	"math"
 
 	"github.com/shopspring/decimal"
+
 	logging "github.com/skycoin/skycoin/src/util/logging"
 )
 

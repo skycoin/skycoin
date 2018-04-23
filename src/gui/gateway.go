@@ -9,21 +9,25 @@ import (
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
+//go:generate go install
 //go:generate goautomock -template=testify Gatewayer
 
 // Gatewayer interface for Gateway methods
 type Gatewayer interface {
 	Spend(wltID string, password []byte, coins uint64, dest cipher.Address) (*coin.Transaction, error)
+	CreateTransaction(w wallet.CreateTransactionParams) (*coin.Transaction, coin.UxArray, error)
 	GetWalletBalance(wltID string) (wallet.BalancePair, error)
 	GetWallet(wltID string) (*wallet.Wallet, error)
 	GetWallets() (wallet.Wallets, error)
 	UpdateWalletLabel(wltID, label string) error
 	GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTxn, error)
 	CreateWallet(wltName string, options wallet.Options) (*wallet.Wallet, error)
-	ScanAheadWalletAddresses(wltName string, password []byte, scanN uint64) (*wallet.Wallet, error)
 	NewAddresses(wltID string, password []byte, n uint64) ([]cipher.Address, error)
 	GetWalletDir() (string, error)
-	IsWalletAPIDisabled() bool
+	IsWalletAPIEnabled() bool
+	EncryptWallet(wltID string, password []byte) (*wallet.Wallet, error)
+	DecryptWallet(wltID string, password []byte) (*wallet.Wallet, error)
+	GetWalletSeed(wltID string, password []byte) (string, error)
 	GetBlockByHash(hash cipher.SHA256) (block coin.SignedBlock, ok bool)
 	GetBlockBySeq(seq uint64) (block coin.SignedBlock, ok bool)
 	GetBlocks(start, end uint64) (*visor.ReadableBlocks, error)
@@ -31,7 +35,7 @@ type Gatewayer interface {
 	GetBuildInfo() visor.BuildInfo
 	GetUnspentOutputs(filters ...daemon.OutputsFilter) (*visor.ReadableOutputSet, error)
 	GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair, error)
-	GetBlockchainMetadata() *visor.BlockchainMetadata
+	GetBlockchainMetadata() (*visor.BlockchainMetadata, error)
 	GetBlockchainProgress() *daemon.BlockchainProgress
 	GetConnection(addr string) *daemon.Connection
 	GetConnections() *daemon.Connections
@@ -44,9 +48,10 @@ type Gatewayer interface {
 	InjectBroadcastTransaction(txn coin.Transaction) error
 	ResendUnconfirmedTxns() *daemon.ResendResult
 	GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error)
-	GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOutJSON, error)
+	GetAddrUxOuts(addr []cipher.Address) ([]*historydb.UxOut, error)
 	GetAddressTxns(a cipher.Address) (*visor.TransactionResults, error)
 	GetRichlist(includeDistribution bool) (visor.Richlist, error)
 	GetAddressCount() (uint64, error)
+	GetHealth() (*daemon.Health, error)
 	UnloadWallet(id string) error
 }

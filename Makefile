@@ -1,8 +1,11 @@
 .DEFAULT_GOAL := help
-.PHONY: run run-help test test-core test-libc test-lint build-libc check cover integration-test-stable integration-test-live install-linters format release clean help
+.PHONY: run run-help test test-core test-libc test-lint build-libc check cover
+.PHONY: integration-test-stable integration-test-live integration-test-live-wallet
+.PHONY: integration-test-disable-wallet-api integration-test-disable-seed-api
+.PHONY: install-linters format release clean-release install-deps-ui build-ui help
 
 # Static files directory
-STATIC_DIR = src/gui/static
+GUI_STATIC_DIR = src/gui/static
 
 # Electron files directory
 ELECTRON_DIR = electron
@@ -60,14 +63,14 @@ else
 endif
 
 run:  ## Run the skycoin node. To add arguments, do 'make ARGS="--foo" run'.
-	go run cmd/skycoin/skycoin.go --gui-dir="./${STATIC_DIR}" --launch-browser=true ${ARGS}
+	./run.sh ${ARGS}
 
 run-help: ## Show skycoin node help
 	@go run cmd/skycoin/skycoin.go --help
 
 test: ## Run tests for Skycoin
-	go test ./cmd/... -timeout=1m
-	go test ./src/... -timeout=1m
+	go test ./cmd/... -timeout=5m
+	go test ./src/... -timeout=5m
 
 test-386: ## Run tests for Skycoin with GOARCH=386
 	GOARCH=386 go test ./cmd/... -timeout=5m
@@ -107,16 +110,22 @@ lint: ## Run linters. Use make install-linters first.
 		-E varcheck \
 		./...
 
-check: lint test integration-test-stable ## Run tests and linters
+check: lint test integration-test-stable integration-test-disable-wallet-api integration-test-disable-seed-api ## Run tests and linters
 
 integration-test-stable: ## Run stable integration tests
-	./ci-scripts/integration-test-stable.sh -v -w
+	./ci-scripts/integration-test-stable.sh
 
 integration-test-live: ## Run live integration tests
-	./ci-scripts/integration-test-live.sh -v -w
+	./ci-scripts/integration-test-live.sh
+
+integration-test-live-wallet: ## Run live integration tests with wallet
+	./ci-scripts/integration-test-live.sh -w
 
 integration-test-disable-wallet-api: ## Run disable wallet api integration tests
-	./ci-scripts/integration-test-disable-wallet-api.sh -v
+	./ci-scripts/integration-test-disable-wallet-api.sh
+
+integration-test-disable-seed-api: ## Run enable seed api integration test
+	./ci-scripts/integration-test-disable-seed-api.sh
 
 cover: ## Runs tests on ./src/ with HTML code coverage
 	go test -cover -coverprofile=cover.out -coverpkg=github.com/skycoin/skycoin/... ./src/...
@@ -139,11 +148,24 @@ format: ## Formats the code. Must have goimports installed (use make install-lin
 	goimports -w -local github.com/skycoin/skycoin ./src
 	goimports -w -local github.com/skycoin/skycoin ./lib
 
+install-deps-ui:  ## Install the UI dependencies
+	cd $(GUI_STATIC_DIR) && npm install
+
+lint-ui:  ## Lint the UI code
+	cd $(GUI_STATIC_DIR) && npm run lint
+
+test-ui:  ## Run UI tests
+	cd $(GUI_STATIC_DIR) && npm run test
+	cd $(GUI_STATIC_DIR) && npm run e2e
+
+build-ui:  ## Builds the UI
+	cd $(GUI_STATIC_DIR) && npm run build
+
 release: ## Build electron apps, the builds are located in electron/release folder.
 	cd $(ELECTRON_DIR) && ./build.sh
 	@echo release files are in the folder of electron/release
 
-clean: ## Clean dist files and delete all builds in electron/release
+clean-release: ## Clean dist files and delete all builds in electron/release
 	rm $(ELECTRON_DIR)/release/*
 
 help:

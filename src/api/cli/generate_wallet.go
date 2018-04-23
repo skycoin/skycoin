@@ -175,8 +175,10 @@ func GenerateWallet(walletFile, label, seed string, numAddrs uint64) (*wallet.Wa
 		return nil, err
 	}
 
-	if _, err := wlt.GenerateAddresses(numAddrs); err != nil {
-		return nil, err
+	if numAddrs > 1 {
+		if _, err := wlt.GenerateAddresses(numAddrs - 1); err != nil {
+			return nil, err
+		}
 	}
 
 	return wlt, nil

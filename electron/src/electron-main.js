@@ -181,8 +181,6 @@ function createWindow(url) {
   var template = [{
     label: 'Skycoin',
     submenu: [
-      { label: 'About Skycoin', selector: 'orderFrontStandardAboutPanel:' },
-      { type: 'separator' },
       { label: 'Quit', accelerator: 'Command+Q', click: function() { app.quit(); } }
     ]
   }, {

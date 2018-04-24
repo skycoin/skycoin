@@ -3,32 +3,46 @@ package logging
 import (
 	"errors"
 	"io"
+	"io/ioutil"
 	"strings"
 
 	"github.com/sirupsen/logrus"
 )
 
-var log = NewLogger(LogPriorityKey, LogPriorityCritical)
+var log = NewMasterLogger()
 
 const (
 	// LogModuleKey is the key used for the module name data entry
-	LogModuleKey = "module"
+	LogModuleKey = "_module"
 	// LogPriorityKey is the log entry key for priority log statements
-	LogPriorityKey = "priority"
+	LogPriorityKey = "_priority"
 	// LogPriorityCritical is the log entry value for priority log statements
 	LogPriorityCritical = "CRITICAL"
 )
 
-// MustGetLogger safe initialize global logger
-func MustGetLogger(module string) *Logger {
-	return log.MustGetLogger(module)
+// LevelFromString returns a logrus.Level from a string identifier
+func LevelFromString(s string) (logrus.Level, error) {
+	switch strings.ToLower(s) {
+	case "debug":
+		return logrus.DebugLevel, nil
+	case "info", "notice":
+		return logrus.InfoLevel, nil
+	case "warn", "warning":
+		return logrus.WarnLevel, nil
+	case "error":
+		return logrus.ErrorLevel, nil
+	case "fatal", "critical":
+		return logrus.FatalLevel, nil
+	case "panic":
+		return logrus.PanicLevel, nil
+	default:
+		return logrus.DebugLevel, errors.New("could not convert string to log level")
+	}
 }
 
-// Disable disables the logger completely
-func Disable() {
-	for k := range log.moduleLoggers {
-		log.moduleLoggers[k].Disable()
-	}
+// MustGetLogger returns a package-aware logger from the master logger
+func MustGetLogger(module string) *Logger {
+	return log.PackageLogger(module)
 }
 
 // AddHook adds a hook to the global logger
@@ -51,29 +65,12 @@ func SetLevel(level logrus.Level) {
 	log.SetLevel(level)
 }
 
-// LevelFromString returns a logrus.Level from a string identifier
-func LevelFromString(s string) (logrus.Level, error) {
-	switch strings.ToLower(s) {
-	case "debug":
-		return logrus.DebugLevel, nil
-	case "info", "notice":
-		return logrus.InfoLevel, nil
-	case "warn", "warning":
-		return logrus.WarnLevel, nil
-	case "error":
-		return logrus.ErrorLevel, nil
-	case "fatal", "critical":
-		return logrus.FatalLevel, nil
-	case "panic":
-		return logrus.PanicLevel, nil
-	default:
-		return logrus.DebugLevel, errors.New("could not convert string to log level")
-	}
-}
-
 // SetOutputTo sets the logger's output to an io.Writer
 func SetOutputTo(w io.Writer) {
-	for k := range log.moduleLoggers {
-		log.moduleLoggers[k].Out = w
-	}
+	log.Out = w
+}
+
+// Disable disables the logger completely
+func Disable() {
+	log.Out = ioutil.Discard
 }

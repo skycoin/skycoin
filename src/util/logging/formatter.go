@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -277,17 +276,11 @@ func (f *TextFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys 
 	message := entry.Message
 	prefix := ""
 
-	prefixText := ""
-	if prefixValue, ok := entry.Data["prefix"]; ok {
-		prefixText = " " + prefixValue.(string) + ":"
-	} else {
-		prefixValue, trimmedMsg := extractPrefix(entry.Message)
-		if len(prefixValue) > 0 {
-			prefixText = " " + prefixValue + ":"
-			message = trimmedMsg
-		}
+	prefixText := extractPrefix(entry)
+	if prefixText != "" {
+		prefixText = " " + prefixText + ":"
+		prefix = colorScheme.PrefixColor(prefixText)
 	}
-	prefix = colorScheme.PrefixColor(prefixText)
 
 	messageFormat := "%s"
 	if f.SpacePadding != 0 {
@@ -380,14 +373,25 @@ func (f *TextFormatter) needsQuoting(text string) bool {
 	return false
 }
 
-func extractPrefix(msg string) (string, string) {
-	prefix := ""
-	regex := regexp.MustCompile("^\\[(.*?)\\]")
-	if regex.MatchString(msg) {
-		match := regex.FindString(msg)
-		prefix, msg = match[1:len(match)-1], strings.TrimSpace(msg[len(match):])
+func extractPrefix(e *logrus.Entry) string {
+	var module string
+	if iModule, ok := e.Data[LogModuleKey]; ok {
+		module, _ = iModule.(string)
 	}
-	return prefix, msg
+
+	var priority string
+	if iPriority, ok := e.Data[LogPriorityKey]; ok {
+		priority, _ = iPriority.(string)
+	}
+
+	switch {
+	case priority == "":
+		return fmt.Sprintf("[%s]", module)
+	case module == "":
+		return fmt.Sprintf("[%s]", priority)
+	default:
+		return fmt.Sprintf("[%s:%s]", module, priority)
+	}
 }
 
 func (f *TextFormatter) formatKeyValue(key string, value interface{}) string {

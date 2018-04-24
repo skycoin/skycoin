@@ -1270,7 +1270,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 	}
 
 	if err := verifyCreatedTransactionInvariants(params, txn, inputs); err != nil {
-		logger.Criticalf("CreateAndSignTransactionAdvanced created transaction that violates invariants, aborting: %v", err)
+		logger.Critical().Errorf("CreateAndSignTransactionAdvanced created transaction that violates invariants, aborting: %v", err)
 		return nil, nil, fmt.Errorf("Created transaction that violates invariants, this is a bug: %v", err)
 	}
 

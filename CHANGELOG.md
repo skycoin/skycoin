@@ -45,10 +45,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Whitespace will be trimmed from the seed string by the frontend client before creating or loading a wallet
 - Notify the user when their wallets have unconfirmed transactions
 - Return an error when providing a transaction that spends to the null address in `POST /injectTransaction`
+- Change accepted `-log-level` values to `debug`, `info`, `warn`, `error`, `fatal` and `panic` (previously were `debug`, `info`, `notice`, `warning`, `error` and `critical`)
 
 ### Removed
 
 - Remove `"seed"`, `"lastSeed"` and `"secret_key"` in address entries from wallet API responses. A wallet's seed can be accessed through `POST /wallet/seed` only if the wallet is encrypted and the node is run with `-enable-seed-api`
+- Remove unused `-logtogui` and `-logbufsize` options
 
 ## [0.22.0] - 2018-03-20
 

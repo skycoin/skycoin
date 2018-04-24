@@ -1,7 +1,11 @@
 package logging
 
 import (
+	"errors"
 	"io"
+	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
 var log = NewLogger(LogPriorityKey, LogPriorityCritical)
@@ -27,8 +31,48 @@ func Disable() {
 	}
 }
 
-// RedirectTo redirects log to the given io.Wirter
-func RedirectTo(w io.Writer) {
+// AddHook adds a hook to the global logger
+func AddHook(hook logrus.Hook) {
+	log.AddHook(hook)
+}
+
+// EnableColors enables colored logging
+func EnableColors() {
+	log.EnableColors()
+}
+
+// DisableColors disables colored logging
+func DisableColors() {
+	log.DisableColors()
+}
+
+// SetLevel sets the logger's minimum log level
+func SetLevel(level logrus.Level) {
+	log.SetLevel(level)
+}
+
+// LevelFromString returns a logrus.Level from a string identifier
+func LevelFromString(s string) (logrus.Level, error) {
+	switch strings.ToLower(s) {
+	case "debug":
+		return logrus.DebugLevel, nil
+	case "info", "notice":
+		return logrus.InfoLevel, nil
+	case "warn", "warning":
+		return logrus.WarnLevel, nil
+	case "error":
+		return logrus.ErrorLevel, nil
+	case "fatal", "critical":
+		return logrus.FatalLevel, nil
+	case "panic":
+		return logrus.PanicLevel, nil
+	default:
+		return logrus.DebugLevel, errors.New("could not convert string to log level")
+	}
+}
+
+// SetOutputTo sets the logger's output to an io.Writer
+func SetOutputTo(w io.Writer) {
 	for k := range log.moduleLoggers {
 		log.moduleLoggers[k].Out = w
 	}

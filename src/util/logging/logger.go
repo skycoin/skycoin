@@ -25,6 +25,7 @@ type ExtendedFieldLogger interface {
 // Logger wraps sirupsen/logrus.Logger to implement ExtendendFieldLogger
 type Logger struct {
 	*logrus.Logger
+	formatter         *TextFormatter
 	module            string
 	allModulesEnabled bool
 	moduleLoggers     map[string]*Logger
@@ -44,20 +45,23 @@ var (
 
 // NewLogger creates a new modules-aware logger with formatting string
 func NewLogger(priorityKey, criticalPriority string) (logger *Logger) {
+	formatter := &TextFormatter{
+		FullTimestamp:          true,
+		AlwaysQuoteStrings:     true,
+		QuoteEmptyFields:       true,
+		ForceFormatting:        true,
+		PriorityKey:            priorityKey,
+		HighlightPriorityValue: criticalPriority,
+	}
+
 	logger = &Logger{
 		Logger: &logrus.Logger{
-			Out: os.Stdout,
-			Formatter: &TextFormatter{
-				FullTimestamp:          true,
-				AlwaysQuoteStrings:     true,
-				QuoteEmptyFields:       true,
-				ForceFormatting:        true,
-				PriorityKey:            priorityKey,
-				HighlightPriorityValue: criticalPriority,
-			},
-			Hooks: make(logrus.LevelHooks),
-			Level: logrus.InfoLevel,
+			Out:       os.Stdout,
+			Formatter: formatter,
+			Hooks:     make(logrus.LevelHooks),
+			Level:     logrus.InfoLevel,
 		},
+		formatter:         formatter,
 		allModulesEnabled: true,
 		moduleLoggers:     make(map[string]*Logger),
 		PriorityKey:       priorityKey,
@@ -66,17 +70,6 @@ func NewLogger(priorityKey, criticalPriority string) (logger *Logger) {
 	logger.Hooks.Add(NewModuleLogHook(""))
 	logger.moduleLoggers[""] = logger
 	return
-}
-
-// LoggerForModules creates a logger for a set of modules
-func LoggerForModules(priorityKey, criticalPriority string, enabledModules []string) *Logger {
-	logger := NewLogger(priorityKey, criticalPriority)
-	logger.allModulesEnabled = false
-	for _, moduleName := range enabledModules {
-		// Lazy instantiation
-		logger.moduleLoggers[moduleName] = nil
-	}
-	return logger
 }
 
 func (logger *Logger) cloneForModule(moduleName string) *Logger {
@@ -115,25 +108,30 @@ func (logger *Logger) MustGetLogger(moduleName string) *Logger {
 	return newLogger
 }
 
-// DisableAllModules disables all modules
-func (logger *Logger) DisableAllModules() {
-	logger.allModulesEnabled = false
-	for k := range logger.moduleLoggers {
-		delete(logger.moduleLoggers, k)
+// AddHook adds a logrus.Hook to the logger and its module loggers
+func (logger *Logger) AddHook(hook logrus.Hook) {
+	logger.Logger.Hooks.Add(hook)
+	for _, module := range logger.moduleLoggers {
+		module.Logger.Hooks.Add(hook)
 	}
 }
 
-// EnableModules enables a set of modules
-func (logger *Logger) EnableModules(modules []string) {
-	if logger.allModulesEnabled {
-		return
+// SetLevel sets the log level for the logger and its module loggers
+func (logger *Logger) SetLevel(level logrus.Level) {
+	logger.Logger.Level = level
+	for _, module := range logger.moduleLoggers {
+		module.Logger.Level = level
 	}
-	for _, moduleName := range modules {
-		if _, isBound := logger.moduleLoggers[moduleName]; isBound {
-			// Lazy instantiation
-			logger.moduleLoggers[moduleName] = nil
-		}
-	}
+}
+
+// EnableColors enables colored logging
+func (logger *Logger) EnableColors() {
+	logger.formatter.DisableColors = false
+}
+
+// DisableColors disables colored logging
+func (logger *Logger) DisableColors() {
+	logger.formatter.DisableColors = true
 }
 
 // Criticalf formatted log with Critical priority

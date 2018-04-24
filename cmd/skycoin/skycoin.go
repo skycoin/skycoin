@@ -168,9 +168,7 @@ type Config struct {
 	DBReadOnly   bool
 	Arbitrating  bool
 	RPCThreadNum uint // rpc number
-	Logtofile    bool
-	Logtogui     bool
-	LogBuffSize  int
+	LogToFile    bool
 }
 
 func (c *Config) register() {
@@ -208,10 +206,10 @@ func (c *Config) register() {
 	flag.BoolVar(&c.ProfileCPU, "profile-cpu", c.ProfileCPU, "enable cpu profiling")
 	flag.StringVar(&c.ProfileCPUFile, "profile-cpu-file", c.ProfileCPUFile, "where to write the cpu profile file")
 	flag.BoolVar(&c.HTTPProf, "http-prof", c.HTTPProf, "Run the http profiling interface")
-	flag.StringVar(&c.LogLevel, "log-level", c.LogLevel, "Choices are: debug, info, notice, warning, error, critical")
+	flag.StringVar(&c.LogLevel, "log-level", c.LogLevel, "Choices are: debug, info, warn, error, fatal, panic")
 	flag.BoolVar(&c.ColorLog, "color-log", c.ColorLog, "Add terminal colors to log output")
-	flag.BoolVar(&c.DisablePingPong, "no-ping-log", false, `disable "reply to ping" and "received pong" log messages`)
-	flag.BoolVar(&c.Logtofile, "logtofile", false, "log to file")
+	flag.BoolVar(&c.DisablePingPong, "no-ping-log", c.DisablePingPong, `disable "reply to ping" and "received pong" log messages`)
+	flag.BoolVar(&c.LogToFile, "logtofile", c.LogToFile, "log to file")
 	flag.StringVar(&c.GUIDirectory, "gui-dir", c.GUIDirectory, "static content directory for the html gui")
 
 	// Key Configuration Data
@@ -230,8 +228,6 @@ func (c *Config) register() {
 	flag.DurationVar(&c.OutgoingConnectionsRate, "connection-rate", c.OutgoingConnectionsRate, "How often to make an outgoing connection")
 	flag.BoolVar(&c.LocalhostOnly, "localhost-only", c.LocalhostOnly, "Run on localhost and only connect to localhost peers")
 	flag.BoolVar(&c.Arbitrating, "arbitrating", c.Arbitrating, "Run node in arbitrating mode")
-	flag.BoolVar(&c.Logtogui, "logtogui", true, "log to gui")
-	flag.IntVar(&c.LogBuffSize, "logbufsize", c.LogBuffSize, "Log size saved in memeory for gui show")
 	flag.StringVar(&c.WalletCryptoType, "wallet-crypto-type", c.WalletCryptoType, "wallet crypto type. Can be sha256-xor or scrypt-chacha20poly1305")
 }
 
@@ -288,8 +284,10 @@ var devConfig = Config{
 	// Web GUI static resources
 	GUIDirectory: "./src/gui/static/",
 	// Logging
-	ColorLog: true,
-	LogLevel: "DEBUG",
+	ColorLog:        true,
+	LogLevel:        "DEBUG",
+	LogToFile:       false,
+	DisablePingPong: false,
 
 	// Wallets
 	WalletDirectory:  "",
@@ -320,8 +318,7 @@ var devConfig = Config{
 	HTTPProf: false,
 	// Will force it to connect to this ip:port, instead of waiting for it
 	// to show up as a peer
-	ConnectTo:   "",
-	LogBuffSize: 8388608, //1024*1024*8
+	ConnectTo: "",
 }
 
 // Parse prepare the config
@@ -470,6 +467,29 @@ func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) (*g
 	return s, nil
 }
 
+func initLogFile(dataDir string) (*os.File, error) {
+	logDir := filepath.Join(dataDir, "logs")
+	if err := createDirIfNotExist(logDir); err != nil {
+		logger.Errorf("createDirIfNotExist(%s) failed: %v", logDir, err)
+		return nil, fmt.Errorf("createDirIfNotExist(%s) failed: %v", logDir, err)
+	}
+
+	// open log file
+	tf := "2006-01-02-030405"
+	logfile := filepath.Join(logDir, fmt.Sprintf("%s-v%s.log", time.Now().Format(tf), Version))
+
+	f, err := os.OpenFile(logfile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
+	if err != nil {
+		logger.Errorf("os.OpenFile(%s) failed: %v", logfile, err)
+		return nil, err
+	}
+
+	hook := logging.NewWriteHook(f)
+	logging.AddHook(hook)
+
+	return f, nil
+}
+
 func initProfiling(httpProf, profileCPU bool, profileCPUFile string) {
 	if profileCPU {
 		f, err := os.Create(profileCPUFile)
@@ -550,6 +570,30 @@ func Run(c *Config) {
 			logger.Errorf("recover: %v\nstack:%v", r, string(debug.Stack()))
 		}
 	}()
+
+	logLevel, err := logging.LevelFromString(c.LogLevel)
+	if err != nil {
+		logger.Error("Invalid -log-level:", err)
+		return
+	}
+
+	logging.SetLevel(logLevel)
+
+	if c.ColorLog {
+		logging.EnableColors()
+	} else {
+		logging.DisableColors()
+	}
+
+	var logFile *os.File
+	if c.LogToFile {
+		var err error
+		logFile, err = initLogFile(c.DataDirectory)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+	}
 
 	scheme := "http"
 	if c.WebInterfaceHTTPS {
@@ -632,31 +676,6 @@ func Run(c *Config) {
 			return
 		}
 	}
-
-	// POTENTIALLY UNSAFE CODE -- See https://github.com/skycoin/skycoin/issues/838
-	// closelog, err := initLogging(c.DataDirectory, c.LogLevel, c.ColorLog, c.Logtofile, c.Logtogui, &d.LogBuff)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	return
-	// }
-	// if c.Logtogui {
-	// 	go func(buf *bytes.Buffer, quit chan struct{}) {
-	// 		for {
-	// 			select {
-	// 			case <-quit:
-	// 				logger.Info("Logbuff service closed normally")
-	// 				return
-	// 			case <-time.After(1 * time.Second): //insure logbuff size not exceed required size, like lru
-	// 				for buf.Len() > c.LogBuffSize {
-	// 					_, err := buf.ReadString(byte('\n')) //discard one line
-	// 					if err != nil {
-	// 						continue
-	// 					}
-	// 				}
-	// 			}
-	// 		}
-	// 	}(&d.LogBuff, quit)
-	// }
 
 	errC := make(chan error, 10)
 
@@ -749,7 +768,14 @@ func Run(c *Config) {
 	}
 	d.Shutdown()
 	wg.Wait()
+
 	logger.Info("Goodbye")
+
+	if logFile != nil {
+		if err := logFile.Close(); err != nil {
+			fmt.Println("Failed to close log file")
+		}
+	}
 }
 
 func main() {

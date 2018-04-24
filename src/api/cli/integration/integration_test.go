@@ -1414,6 +1414,11 @@ func TestLiveSend(t *testing.T) {
 	// prepares wallet and confirms the wallet has at least 2 coins and 16 coin hours.
 	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 16)
 
+	if w.IsEncrypted() {
+		t.Skip("CLI wallet integration tests do not support encrypted wallets yet")
+		return
+	}
+
 	tt := []struct {
 		name    string
 		args    func() []string
@@ -1590,6 +1595,11 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 	// prepares wallet and confirms the wallet has at least 2 coins and 2 coin hours.
 	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 2)
 
+	if w.IsEncrypted() {
+		t.Skip("CLI wallet integration tests do not support encrypted wallets yet")
+		return
+	}
+
 	tt := []struct {
 		name    string
 		args    func() []string
@@ -1720,6 +1730,9 @@ func getTransaction(t *testing.T, txid string) *webrpc.TxnResult {
 
 func isTxConfirmed(t *testing.T, txid string) bool {
 	tx := getTransaction(t, txid)
+	if tx == nil {
+		return false
+	}
 	return tx.Transaction.Status.Confirmed
 }
 
@@ -2118,6 +2131,11 @@ func TestLiveGUIInjectTransaction(t *testing.T) {
 	c := gui.NewClient(nodeAddress())
 	// prepares wallet and confirms the wallet has at least 2 coins and 2 coin hours.
 	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 2)
+
+	if w.IsEncrypted() {
+		t.Skip("CLI wallet integration tests do not support encrypted wallets yet")
+		return
+	}
 
 	tt := []struct {
 		name    string

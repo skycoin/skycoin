@@ -19,14 +19,12 @@ func NewMasterLogger() *MasterLogger {
 		Logger: &logrus.Logger{
 			Out: os.Stdout,
 			Formatter: &TextFormatter{
-				FullTimestamp:          true,
-				AlwaysQuoteStrings:     true,
-				QuoteEmptyFields:       true,
-				ForceFormatting:        true,
-				DisableColors:          false,
-				ForceColors:            false,
-				PriorityKey:            LogPriorityKey,
-				HighlightPriorityValue: LogPriorityCritical,
+				FullTimestamp:      true,
+				AlwaysQuoteStrings: true,
+				QuoteEmptyFields:   true,
+				ForceFormatting:    true,
+				DisableColors:      false,
+				ForceColors:        false,
 			},
 			Hooks: hooks,
 			Level: logrus.DebugLevel,
@@ -42,13 +40,13 @@ type Logger struct {
 // Critical adds special critical-level fields for specially highlighted logging,
 // since logrus lacks a distinct critical field and does not have configurable log levels
 func (logger *Logger) Critical() logrus.FieldLogger {
-	return logger.WithField(LogPriorityKey, LogPriorityCritical)
+	return logger.WithField(logPriorityKey, logPriorityCritical)
 }
 
 // PackageLogger instantiates a package-aware logger
 func (logger *MasterLogger) PackageLogger(moduleName string) *Logger {
 	return &Logger{
-		FieldLogger: logger.WithField(LogModuleKey, moduleName),
+		FieldLogger: logger.WithField(logModuleKey, moduleName),
 	}
 }
 

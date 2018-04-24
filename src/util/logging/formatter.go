@@ -79,12 +79,6 @@ type compiledColorScheme struct {
 
 // TextFormatter formats log output
 type TextFormatter struct {
-	// Name of the logging field containing priority level
-	PriorityKey string
-
-	// Highlight messages with this priority
-	HighlightPriorityValue string
-
 	// Set to true to bypass checking for a TTY before outputting colors.
 	ForceColors bool
 
@@ -259,8 +253,8 @@ func (f *TextFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys 
 		levelColor = colorScheme.DebugLevelColor
 	}
 
-	priority, ok := entry.Data[f.PriorityKey]
-	hasPriority := ok && priority == f.HighlightPriorityValue
+	priority, ok := entry.Data[logPriorityKey]
+	hasPriority := ok && priority == logPriorityCritical
 
 	if entry.Level != logrus.WarnLevel {
 		levelText = entry.Level.String()
@@ -345,7 +339,7 @@ func (f *TextFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys 
 	}
 
 	for _, k := range keys {
-		if k != "prefix" && k != "file" && k != "func" && k != "line" && k != f.PriorityKey && k != LogModuleKey {
+		if k != "prefix" && k != "file" && k != "func" && k != "line" && k != logPriorityKey && k != logModuleKey {
 			v := entry.Data[k]
 			fmt.Fprintf(b, " %s", f.formatKeyValue(levelColor(k), v))
 		}
@@ -375,12 +369,12 @@ func (f *TextFormatter) needsQuoting(text string) bool {
 
 func extractPrefix(e *logrus.Entry) string {
 	var module string
-	if iModule, ok := e.Data[LogModuleKey]; ok {
+	if iModule, ok := e.Data[logModuleKey]; ok {
 		module, _ = iModule.(string)
 	}
 
 	var priority string
-	if iPriority, ok := e.Data[LogPriorityKey]; ok {
+	if iPriority, ok := e.Data[logPriorityKey]; ok {
 		priority, _ = iPriority.(string)
 	}
 

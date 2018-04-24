@@ -46,6 +46,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Notify the user when their wallets have unconfirmed transactions
 - Return an error when providing a transaction that spends to the null address in `POST /injectTransaction`
 - Change accepted `-log-level` values to `debug`, `info`, `warn`, `error`, `fatal` and `panic` (previously were `debug`, `info`, `notice`, `warning`, `error` and `critical`)
+- Default log level is `info`
 
 ### Removed
 

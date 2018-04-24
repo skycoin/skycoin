@@ -219,7 +219,7 @@ func (vs *Visor) AnnounceAllTxns(pool *Pool) error {
 	})
 
 	if err != nil {
-		logger.Debugf("Broadcast AnnounceTxnsMessage failed, err:%v", err)
+		logger.Debugf("Broadcast AnnounceTxnsMessage failed, err: %v", err)
 	}
 
 	return err

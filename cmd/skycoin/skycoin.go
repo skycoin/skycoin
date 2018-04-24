@@ -590,7 +590,7 @@ func Run(c *Config) {
 		var err error
 		logFile, err = initLogFile(c.DataDirectory)
 		if err != nil {
-			fmt.Println(err)
+			logger.Error(err)
 			return
 		}
 	}
@@ -603,6 +603,7 @@ func Run(c *Config) {
 	fullAddress := fmt.Sprintf("%s://%s", scheme, host)
 	logger.Critical().Infof("Full address: %s", fullAddress)
 	if c.PrintWebInterfaceAddress {
+		// This must be printed without the decorated logger so that electron can parse it properly
 		fmt.Println(fullAddress)
 	}
 

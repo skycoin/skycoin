@@ -12,12 +12,12 @@ import (
 var log = NewMasterLogger()
 
 const (
-	// LogModuleKey is the key used for the module name data entry
-	LogModuleKey = "_module"
-	// LogPriorityKey is the log entry key for priority log statements
-	LogPriorityKey = "_priority"
-	// LogPriorityCritical is the log entry value for priority log statements
-	LogPriorityCritical = "CRITICAL"
+	// logModuleKey is the key used for the module name data entry
+	logModuleKey = "_module"
+	// logPriorityKey is the log entry key for priority log statements
+	logPriorityKey = "_priority"
+	// logPriorityCritical is the log entry value for priority log statements
+	logPriorityCritical = "CRITICAL"
 )
 
 // LevelFromString returns a logrus.Level from a string identifier

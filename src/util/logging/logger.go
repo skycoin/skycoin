@@ -6,6 +6,17 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Logger wraps logrus.FieldLogger
+type Logger struct {
+	logrus.FieldLogger
+}
+
+// Critical adds special critical-level fields for specially highlighted logging,
+// since logrus lacks a distinct critical field and does not have configurable log levels
+func (logger *Logger) Critical() logrus.FieldLogger {
+	return logger.WithField(logPriorityKey, logPriorityCritical)
+}
+
 // MasterLogger wraps logrus.Logger and is able to create new package-aware loggers
 type MasterLogger struct {
 	*logrus.Logger
@@ -30,17 +41,6 @@ func NewMasterLogger() *MasterLogger {
 			Level: logrus.DebugLevel,
 		},
 	}
-}
-
-// Logger wraps logrus.FieldLogger
-type Logger struct {
-	logrus.FieldLogger
-}
-
-// Critical adds special critical-level fields for specially highlighted logging,
-// since logrus lacks a distinct critical field and does not have configurable log levels
-func (logger *Logger) Critical() logrus.FieldLogger {
-	return logger.WithField(logPriorityKey, logPriorityCritical)
 }
 
 // PackageLogger instantiates a package-aware logger

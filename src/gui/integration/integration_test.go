@@ -2105,10 +2105,8 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 			// NOTE: this test will fail if "totalCoins - 1e3" does not require
 			// all of the outputs to be spent, e.g. if there is an output with
 			// "totalCoins - 1e3" coins in it.
-			// TODO -- automate this so that a total amount is chosen such
-			// that it will spend all outputs.
-			// Check that the wallet does not have an output of 0.001, because
-			// then this test cannot be performed, since there is no
+			// TODO -- Check that the wallet does not have an output of 0.001,
+			// because then this test cannot be performed, since there is no
 			// way to use all outputs and produce change in that case.
 			name: "valid request, manual one output with change",
 			req: gui.CreateTransactionRequest{

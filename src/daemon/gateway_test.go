@@ -420,7 +420,7 @@ func TestGateway_CreateTransaction(t *testing.T) {
 		enableWalletAPI bool
 		err             error
 		txn             *coin.Transaction
-		inputs          coin.UxArray
+		inputs          []wallet.UxBalance
 		params          wallet.CreateTransactionParams
 	}{
 		{

@@ -116,8 +116,8 @@ func addressFromBytes(b []byte) (addr Address, err error) {
 	return a, nil
 }
 
-// Empty returns true if the address is it's empty value
-func (addr Address) Empty() bool {
+// Null returns true if the address is null (0x0000....)
+func (addr Address) Null() bool {
 	return addr == Address{}
 }
 

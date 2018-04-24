@@ -33,7 +33,7 @@ export class OnboardingEncryptWalletComponent implements OnInit {
         validator: this.passwordMatchValidator.bind(this),
       });
 
-    this.form.disable();
+    this.form.enable();
   }
 
   setEncrypt(event) {

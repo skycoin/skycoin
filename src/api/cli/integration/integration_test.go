@@ -1730,9 +1730,7 @@ func getTransaction(t *testing.T, txid string) *webrpc.TxnResult {
 
 func isTxConfirmed(t *testing.T, txid string) bool {
 	tx := getTransaction(t, txid)
-	if tx == nil {
-		return false
-	}
+	require.NotNil(t, tx)
 	return tx.Transaction.Status.Confirmed
 }
 

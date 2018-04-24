@@ -20,7 +20,7 @@ export class PendingTransactionsComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.walletService.allPendingTransactions().subscribe(transactions => {
+    this.walletService.pendingTransactions().subscribe(transactions => {
       this.transactions = this.mapTransactions(transactions);
     });
   }

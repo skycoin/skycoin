@@ -12,8 +12,9 @@ import (
 func encryptWalletCmd(cfg Config) gcli.Command {
 	name := "encryptWallet"
 	return gcli.Command{
-		Name:  name,
-		Usage: "Encrypt wallet",
+		Name:      name,
+		Usage:     "Encrypt wallet",
+		ArgsUsage: " ",
 		Description: fmt.Sprintf(`
 		The default wallet (%s) will be
 		used if no wallet was specified.

@@ -53,6 +53,8 @@ var (
 	update         = flag.Bool("update", false, "update golden files")
 	liveTxFull     = flag.Bool("live-tx-full", false, "run live transaction test against full blockchain")
 	testLiveWallet = flag.Bool("test-live-wallet", false, "run live wallet tests, requires wallet envvars set")
+
+	cryptoTypes = []wallet.CryptoType{wallet.CryptoTypeScryptChacha20poly1305, wallet.CryptoTypeSha256Xor}
 )
 
 type TestData struct {
@@ -2323,7 +2325,7 @@ func TestStableEncryptWallet(t *testing.T) {
 		checkWallet func(t *testing.T, w *wallet.Wallet)
 	}{
 		{
-			name: "wallet is encrypt=false -p pwd",
+			name: "wallet is not encrypted",
 			args: []string{"-p", "pwd"},
 			setup: func(t *testing.T) func() {
 				_, clean := createUnEncryptedWallet(t)
@@ -2340,14 +2342,89 @@ func TestStableEncryptWallet(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "wallet is encrypted",
+			args: []string{"-p", "pwd"},
+			setup: func(t *testing.T) func() {
+				_, clean := createEncryptedWallet(t)
+				return clean
+			},
+			errMsg: []byte("wallet is encrypted\n"),
+		},
+	}
+
+	for _, tc := range tt {
+		for _, ct := range cryptoTypes {
+			name := fmt.Sprintf("name=%v crypto type=%v", tc.name, ct)
+			t.Run(name, func(t *testing.T) {
+				clean := tc.setup(t)
+				defer clean()
+				args := append([]string{"encryptWallet", "-x", string(ct)}, tc.args[:]...)
+				output, err := exec.Command(binaryPath, args...).CombinedOutput()
+				if err != nil {
+					require.EqualError(t, err, "exit status 1")
+					require.Equal(t, tc.errMsg, output)
+					return
+				}
+
+				var rlt wallet.ReadableWallet
+				err = json.NewDecoder(bytes.NewReader(output)).Decode(&rlt)
+				require.NoError(t, err)
+				w, err := rlt.ToWallet()
+				require.NoError(t, err)
+				tc.checkWallet(t, w)
+			})
+		}
+	}
+}
+
+func TestStableDecryptWallet(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	tt := []struct {
+		name        string
+		args        []string
+		setup       func(t *testing.T) func()
+		errMsg      []byte
+		checkWallet func(t *testing.T, w *wallet.Wallet)
+	}{
+		{
+			name: "wallet is encrypted",
+			args: []string{"-p", "pwd"},
+			setup: func(t *testing.T) func() {
+				_, clean := createEncryptedWallet(t)
+				return clean
+			},
+			checkWallet: func(t *testing.T, w *wallet.Wallet) {
+				require.False(t, w.IsEncrypted())
+				require.Empty(t, w.Meta["cryptoType"])
+				require.Empty(t, w.Meta["secrets"])
+				require.NotEmpty(t, w.Meta["seed"])
+				require.NotEmpty(t, w.Meta["lastSeed"])
+
+				for _, e := range w.Entries {
+					require.NotEqual(t, cipher.SecKey{}, e.Secret)
+				}
+			},
+		},
+		{
+			name: "wallet is not encrypted",
+			args: []string{"-p", "pwd"},
+			setup: func(t *testing.T) func() {
+				_, clean := createUnEncryptedWallet(t)
+				return clean
+			},
+			errMsg: []byte("wallet is not encrypted\n"),
+		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			clean := tc.setup(t)
 			defer clean()
-
-			args := append([]string{"encryptWallet"}, tc.args[:]...)
+			args := append([]string{"decryptWallet"}, tc.args...)
 			output, err := exec.Command(binaryPath, args...).CombinedOutput()
 			if err != nil {
 				require.EqualError(t, err, "exit status 1")
@@ -2358,10 +2435,10 @@ func TestStableEncryptWallet(t *testing.T) {
 			var rlt wallet.ReadableWallet
 			err = json.NewDecoder(bytes.NewReader(output)).Decode(&rlt)
 			require.NoError(t, err)
+
 			w, err := rlt.ToWallet()
 			require.NoError(t, err)
 			tc.checkWallet(t, w)
 		})
 	}
-
 }

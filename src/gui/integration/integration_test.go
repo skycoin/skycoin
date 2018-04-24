@@ -3461,7 +3461,6 @@ func checkHealthResponse(t *testing.T, r *gui.HealthResponse) {
 	require.NotEmpty(t, r.BlockchainMetadata.Head.Time)
 	require.NotEmpty(t, r.Version.Version)
 	require.True(t, r.Uptime.Duration > time.Duration(0))
-	require.True(t, r.BlockchainMetadata.TimeSinceLastBlock.Duration >= time.Duration(0))
 }
 
 func TestStableHealth(t *testing.T) {
@@ -3477,6 +3476,8 @@ func TestStableHealth(t *testing.T) {
 	checkHealthResponse(t, r)
 
 	require.Equal(t, 0, r.OpenConnections)
+
+	require.True(t, r.BlockchainMetadata.TimeSinceLastBlock.Duration > time.Duration(0))
 
 	// The stable node is always run with the commit and branch ldflags, so they should appear
 	require.NotEmpty(t, r.Version.Commit)
@@ -3497,5 +3498,6 @@ func TestLiveHealth(t *testing.T) {
 
 	require.NotEqual(t, 0, r.OpenConnections)
 
+	// The TimeSinceLastBlock can be any value, including negative values, due to clock skew
 	// The live node is not necessarily run with the commit and branch ldflags, so don't check them
 }

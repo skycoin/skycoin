@@ -15,9 +15,11 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/daemon/strand"
 
+	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/util/elapse"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/utc"
+	//"../pex"
 )
 
 // DisconnectReason is passed to ConnectionPool's DisconnectCallback
@@ -84,6 +86,15 @@ type Config struct {
 	ConnectCallback ConnectCallback
 	// Print debug logs
 	DebugPrint bool
+
+	ConnectionTypes map[string]pex.Peer
+
+	//Number of active trusted connections
+	CurrentTrusted int
+	//Number of active default connections
+	CurrentDefault int
+	//Number of automatic default connections
+	CurrentAutomatic int
 }
 
 // NewConfig returns a Config with defaults set
@@ -102,6 +113,10 @@ func NewConfig() Config {
 		DisconnectCallback:       nil,
 		ConnectCallback:          nil,
 		DebugPrint:               false,
+		ConnectionTypes:          map[string]pex.Peer{},
+		CurrentTrusted:           0,
+		CurrentDefault:           0,
+		CurrentAutomatic:         0,
 	}
 }
 
@@ -612,6 +627,8 @@ func (pool *ConnectionPool) Connect(address string) error {
 	if err != nil {
 		return err
 	}
+	//Assume connection is on from here
+
 	pool.wg.Add(1)
 	go func() {
 		defer pool.wg.Done()
@@ -777,9 +794,22 @@ func (pool *ConnectionPool) ClearStaleConnections(idleLimit time.Duration, reaso
 	}
 
 	for _, a := range idleConns {
+		pool.removeFromConnCount(a)
 		pool.Disconnect(a, reason)
 	}
 	return nil
+}
+func (pool *ConnectionPool) removeFromConnCount(address string) {
+	var p = pool.Config.ConnectionTypes[address]
+	if p.Trusted {
+		pool.Config.CurrentTrusted--
+	}
+	if p.Default {
+		pool.Config.CurrentDefault--
+	}
+	if p.Automatic {
+		pool.Config.CurrentAutomatic--
+	}
 }
 
 // Now returns the current UTC time

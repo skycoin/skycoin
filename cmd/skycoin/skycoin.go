@@ -626,11 +626,13 @@ func Run(c *Config) {
 	}
 
 	// Debug only - forces connection on start.  Violates thread safety.
+
 	if c.ConnectTo != "" {
 		if err := d.Pool.Pool.Connect(c.ConnectTo); err != nil {
 			logger.Errorf("Force connect %s failed, %v", c.ConnectTo, err)
 			return
 		}
+
 	}
 
 	// POTENTIALLY UNSAFE CODE -- See https://github.com/skycoin/skycoin/issues/838

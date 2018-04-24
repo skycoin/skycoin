@@ -3,16 +3,18 @@ package daemon
 import (
 	"bytes"
 	"errors"
+	"fmt"
+	"net"
 	"reflect"
 	"runtime/debug"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/boltdb/bolt"
-
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
-
 	"github.com/skycoin/skycoin/src/util/elapse"
 	"github.com/skycoin/skycoin/src/util/iputil"
 	"github.com/skycoin/skycoin/src/util/logging"
@@ -130,12 +132,12 @@ type DaemonConfig struct { // nolint: golint
 	// Directory where application data is stored
 	DataDirectory string
 	// How often to check and initiate an outgoing connection if needed
-	OutgoingRate time.Duration
+	OutgoingRate time.Duration //TODO:Deprecate
 	// How often to re-attempt to fill any missing private (aka required)
 	// connections
-	PrivateRate time.Duration
+	PrivateRate time.Duration //TODO:Deprecate
 	// Number of outgoing connections to maintain
-	OutgoingMax int
+	OutgoingMax int //Now it's handled at Pool TODO: Deprecate
 	// Maximum number of connections to try at once
 	PendingMax int
 	// How long to wait for a version packet
@@ -154,6 +156,11 @@ type DaemonConfig struct { // nolint: golint
 	LocalhostOnly bool
 	// Log ping and pong messages
 	LogPings bool
+
+	//Number of default and automatic peer connections to maintain
+	NonTrustedMax int
+	//Number of trusted connections to maintain
+	TrustedMax int
 }
 
 // NewDaemonConfig creates daemon config
@@ -174,6 +181,9 @@ func NewDaemonConfig() DaemonConfig {
 		DisableIncomingConnections: false,
 		LocalhostOnly:              false,
 		LogPings:                   true,
+
+		NonTrustedMax: 8,
+		TrustedMax:    8,
 	}
 }
 
@@ -371,13 +381,13 @@ func (dm *Daemon) Run() error {
 	requestPeersTicker := time.Tick(dm.Pex.Config.RequestRate)
 	clearStaleConnectionsTicker := time.Tick(dm.Pool.Config.ClearStaleRate)
 	idleCheckTicker := time.Tick(dm.Pool.Config.IdleCheckRate)
+	connectionsTicker := time.Tick(dm.Pool.Config.PeerConnRate)
 
-	// Connect to trusted peers
 	if !dm.Config.DisableOutgoingConnections {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			dm.connectToTrustPeer()
+			dm.connectToTrustedPeer()
 		}()
 	}
 
@@ -428,7 +438,7 @@ loop:
 				dm.Pool.sendPings()
 			}
 
-		case <-outgoingConnectionsTicker:
+		case <-outgoingConnectionsTicker: //TODO: Deprecate
 			// Fill up our outgoing connections
 			elapser.Register("outgoingConnectionsTicker")
 			trustPeerNum := len(dm.Pex.Trusted())
@@ -438,12 +448,12 @@ loop:
 				dm.connectToRandomPeer()
 			}
 
-		case <-privateConnectionsTicker:
+		case <-privateConnectionsTicker: //TODO Deprecate
 			// Always try to stay connected to our private peers
 			// TODO (also, connect to all of them on start)
 			elapser.Register("privateConnectionsTicker")
 			if !dm.Config.DisableOutgoingConnections {
-				dm.makePrivateConnections()
+				dm.makeTrustedConnections()
 			}
 
 		case r := <-dm.onConnectEvent:
@@ -543,6 +553,10 @@ loop:
 			elapser.Register("blocksAnnounceTicker")
 			dm.Visor.AnnounceBlocks(dm.Pool)
 
+		case <-connectionsTicker:
+			elapser.Register("connectionsTicker")
+			dm.addPeerConnection()
+
 		case err = <-errC:
 			break loop
 		}
@@ -613,18 +627,20 @@ func (dm *Daemon) connectToPeer(p pex.Peer) error {
 	go func() {
 		if err := dm.Pool.Pool.Connect(p.Addr); err != nil {
 			dm.connectionErrors <- ConnectionError{p.Addr, err}
+		} else {
+			dm.Pool.Pool.Config.ConnectionTypes[p.Addr] = p
 		}
 	}()
 	return nil
 }
 
-// Connects to all private peers
-func (dm *Daemon) makePrivateConnections() {
+// Connects to all trusted peers
+func (dm *Daemon) makeTrustedConnections() {
 	if dm.Config.DisableOutgoingConnections {
 		return
 	}
 
-	peers := dm.Pex.Private()
+	peers := dm.Pex.Trusted()
 	for _, p := range peers {
 		logger.Infof("Private peer attempt: %s", p.Addr)
 		if err := dm.connectToPeer(p); err != nil {
@@ -633,14 +649,14 @@ func (dm *Daemon) makePrivateConnections() {
 	}
 }
 
-func (dm *Daemon) connectToTrustPeer() {
+func (dm *Daemon) connectToTrustedPeer() {
 	if dm.Config.DisableIncomingConnections {
 		return
 	}
 
 	logger.Info("Connect to trusted peers")
 	// Make connections to all trusted peers
-	peers := dm.Pex.TrustedPublic()
+	peers := dm.Pex.Trusted()
 	for _, p := range peers {
 		dm.connectToPeer(p)
 	}
@@ -928,4 +944,90 @@ func (dm *Daemon) handleMessageSendResult(r gnet.SendResult) {
 		dm.Visor.SetTxnsAnnounced(r.Message.(SendingTxnsMessage).GetTxns())
 	default:
 	}
+}
+
+func (dm *Daemon) addPeerConnection() {
+	if dm.Pool.Pool.Config.CurrentDefault == 0 {
+		dm.addDefaultConnection()
+		return
+	}
+	if dm.Pool.Pool.Config.CurrentTrusted < dm.Config.TrustedMax {
+		dm.addTrustedConnection()
+		return
+	}
+	if dm.Pool.Pool.Config.CurrentDefault+dm.Pool.Pool.Config.CurrentAutomatic < dm.Config.NonTrustedMax {
+		dm.addNonTrustedConnection()
+	}
+}
+
+func (dm *Daemon) addDefaultConnection() {
+	var p, err = dm.Pex.GetSingleDefault()
+	if err == true {
+		return
+	}
+	if dm.connectToPeer(p) == nil {
+		dm.Pool.Pool.Config.CurrentDefault++
+	}
+}
+func (dm *Daemon) addTrustedConnection() {
+	var p, err = dm.Pex.GetSingleTrusted()
+	if err == true {
+		return
+	}
+	if dm.connectToPeer(p) == nil {
+		dm.Pool.Pool.Config.CurrentTrusted++
+	}
+}
+func (dm *Daemon) addNonTrustedConnection() {
+	var p, err = dm.Pex.GetSingleNonTrusted()
+	if err == true {
+		return
+	}
+	if dm.connectToPeer(p) == nil {
+		if p.Default {
+			dm.Pool.Pool.Config.CurrentDefault++
+		}
+		if p.Automatic {
+			dm.Pool.Pool.Config.CurrentAutomatic++
+		}
+
+	}
+}
+
+// LocalhostIP returns the address for localhost on the machine
+func LocalhostIP() (string, error) {
+	tt, err := net.Interfaces()
+	if err != nil {
+		return "", err
+	}
+	for _, t := range tt {
+		aa, err := t.Addrs()
+		if err != nil {
+			return "", err
+		}
+		for _, a := range aa {
+			if ipnet, ok := a.(*net.IPNet); ok && ipnet.IP.IsLoopback() {
+				return ipnet.IP.String(), nil
+			}
+		}
+	}
+	return "", errors.New("No local IP found")
+}
+
+// IsLocalhost returns true if addr is a localhost address
+func IsLocalhost(addr string) bool {
+	return net.ParseIP(addr).IsLoopback()
+}
+
+// SplitAddr splits an ip:port string to ip, port
+func SplitAddr(addr string) (string, uint16, error) {
+	pts := strings.Split(addr, ":")
+	if len(pts) != 2 {
+		return pts[0], 0, fmt.Errorf("Invalid addr %s", addr)
+	}
+	port64, err := strconv.ParseUint(pts[1], 10, 16)
+	if err != nil {
+		return pts[0], 0, fmt.Errorf("Invalid port in %s", addr)
+	}
+	return pts[0], uint16(port64), nil
 }

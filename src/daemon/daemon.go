@@ -377,7 +377,7 @@ func (dm *Daemon) Run() error {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			dm.connectToTrustPeer()
+			dm.connectToTrustPeer() //Connect to all at start
 		}()
 	}
 
@@ -443,7 +443,7 @@ loop:
 			// TODO (also, connect to all of them on start)
 			elapser.Register("privateConnectionsTicker")
 			if !dm.Config.DisableOutgoingConnections {
-				dm.makePrivateConnections()
+				dm.makePrivateConnections() // connect to new_trusted peers
 			}
 
 		case r := <-dm.onConnectEvent:
@@ -640,7 +640,7 @@ func (dm *Daemon) connectToTrustPeer() {
 
 	logger.Info("Connect to trusted peers")
 	// Make connections to all trusted peers
-	peers := dm.Pex.TrustedPublic()
+	peers := dm.Pex.Trusted()
 	for _, p := range peers {
 		dm.connectToPeer(p)
 	}

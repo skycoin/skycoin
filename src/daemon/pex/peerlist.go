@@ -229,7 +229,6 @@ func (pl *peerlist) setAutomatic(addr string, automatic bool) error {
 	return fmt.Errorf("set peer.Automatic failed: %v does not exist in peer list", addr)
 }
 
-
 // setHasIncomingPort updates whether the peer is valid and has public incoming port
 func (pl *peerlist) setHasIncomingPort(addr string, hasIncomingPort bool) error {
 	if p, ok := pl.peers[addr]; ok {
@@ -332,11 +331,11 @@ type PeerJSON struct {
 	Addr string // An address of the form ip:port
 	// Unix timestamp when this peer was last seen.
 	// This could be a time.Time string or an int64 timestamp
-	LastSeen        interface{}
+	LastSeen interface{}
 	//Private         bool  // Whether it should omitted from public requests
-	Trusted         bool  // Whether this peer is trusted
-	Automatic		bool
-	Default			bool
+	Trusted         bool // Whether this peer is trusted
+	Automatic       bool
+	Default         bool
 	HasIncomePort   *bool `json:"HasIncomePort,omitempty"` // Whether this peer has incoming port [DEPRECATED]
 	HasIncomingPort *bool // Whether this peer has incoming port
 }
@@ -344,12 +343,12 @@ type PeerJSON struct {
 // newPeerJSON returns a PeerJSON from a Peer
 func newPeerJSON(p Peer) PeerJSON {
 	return PeerJSON{
-		Addr:            p.Addr,
-		LastSeen:        p.LastSeen,
+		Addr:     p.Addr,
+		LastSeen: p.LastSeen,
 		//Private:         p.Private,
 		Trusted:         p.Trusted,
-		Default:		 p.Default,
-		Automatic:		 p.Automatic,
+		Default:         p.Default,
+		Automatic:       p.Automatic,
 		HasIncomingPort: &p.HasIncomingPort,
 	}
 }
@@ -389,12 +388,12 @@ func newPeerFromJSON(p PeerJSON) (*Peer, error) {
 	}
 
 	return &Peer{
-		Addr:            addr,
-		LastSeen:        lastSeen,
+		Addr:     addr,
+		LastSeen: lastSeen,
 		//Private:         p.Private,
 		Trusted:         p.Trusted,
-		Automatic:		 p.Automatic,
-		Default:		 p.Default,
+		Automatic:       p.Automatic,
+		Default:         p.Default,
 		HasIncomingPort: hasIncomingPort,
 	}, nil
 }

@@ -93,23 +93,23 @@ func validateAddress(ipPort string, allowLocalhost bool) (string, error) {
 
 // Peer represents a known peer
 type Peer struct {
-	Addr            string // An address of the form ip:port
-	LastSeen        int64  // Unix timestamp when this peer was last seen
+	Addr     string // An address of the form ip:port
+	LastSeen int64  // Unix timestamp when this peer was last seen
 	//Private         bool   // Whether it should omitted from public requests
-	Trusted         bool   // Whether this peer is trusted
-	HasIncomingPort bool   // Whether this peer has accessable public port
-	RetryTimes      int    `json:"-"` // records the retry times
-	Default			bool
-	Automatic		bool
+	Trusted         bool // Whether this peer is trusted
+	HasIncomingPort bool // Whether this peer has accessable public port
+	RetryTimes      int  `json:"-"` // records the retry times
+	Default         bool
+	Automatic       bool
 }
 
 // NewPeer returns a *Peer initialised by an address string of the form ip:port
 func NewPeer(address string) *Peer {
 	p := &Peer{
-		Addr:    address,
+		Addr: address,
 		//Private: false,
-		Trusted: false,
-		Default: false,
+		Trusted:   false,
+		Default:   false,
 		Automatic: false,
 	}
 	p.Seen()
@@ -584,7 +584,8 @@ func (px *Pex) IsFull() bool {
 	return px.Config.Max > 0 && px.peerlist.len() >= px.Config.Max
 }
 
-func (px *Pex) GetPeers(filter... Filter) []Peer {
+// GetPeers exports px.peerlist
+func (px *Pex) GetPeers(filter ...Filter) []Peer {
 	return px.peerlist.getPeers(filter...)
 }
 

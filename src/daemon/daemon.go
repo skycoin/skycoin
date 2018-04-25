@@ -650,10 +650,9 @@ func (dm *Daemon) connectToRandomPeer() {
 		return
 	}
 
-
 	if len(dm.getOutgoingConnections(pex.IsDefault)) == 0 {
 		peers := dm.Pex.RandomDefault(1)
-		if (len(peers) == 1) {
+		if len(peers) == 1 {
 			dm.connectToPeer(peers[0])
 		}
 	} else {
@@ -938,10 +937,10 @@ func (dm *Daemon) handleMessageSendResult(r gnet.SendResult) {
 	}
 }
 
-func (dm *Daemon) getOutgoingConnections(filter... pex.Filter) []pex.Peer {
-	var peers = make([]pex.Peer,0)
+func (dm *Daemon) getOutgoingConnections(filter ...pex.Filter) []pex.Peer {
+	var peers = make([]pex.Peer, 0)
 	for _, p := range dm.Pex.GetPeers(filter...) {
-		var _, flag = dm.outgoingConnections.store.getValue(p.Addr);
+		var _, flag = dm.outgoingConnections.store.getValue(p.Addr)
 		if flag == true {
 			peers = append(peers, p)
 		}

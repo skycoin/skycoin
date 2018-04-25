@@ -440,10 +440,9 @@ loop:
 
 		case <-privateConnectionsTicker:
 			// Always try to stay connected to our private peers
-			// TODO (also, connect to all of them on start)
 			elapser.Register("privateConnectionsTicker")
 			if !dm.Config.DisableOutgoingConnections {
-				dm.makePrivateConnections() // connect to new_trusted peers
+				dm.makeTrustedConnections() // connect to new_trusted peers
 			}
 
 		case r := <-dm.onConnectEvent:
@@ -618,13 +617,13 @@ func (dm *Daemon) connectToPeer(p pex.Peer) error {
 	return nil
 }
 
-// Connects to all private peers
-func (dm *Daemon) makePrivateConnections() {
+// Connects to all trusted peers
+func (dm *Daemon) makeTrustedConnections() {
 	if dm.Config.DisableOutgoingConnections {
 		return
 	}
 
-	peers := dm.Pex.Private()
+	peers := dm.Pex.Trusted()
 	for _, p := range peers {
 		logger.Infof("Private peer attempt: %s", p.Addr)
 		if err := dm.connectToPeer(p); err != nil {
@@ -651,7 +650,7 @@ func (dm *Daemon) connectToRandomPeer() {
 	if dm.Config.DisableOutgoingConnections {
 		return
 	}
-
+	if dm.outgoingConnections
 	// Make a connection to a random (public) peer
 	peers := dm.Pex.RandomPublic(0)
 	for _, p := range peers {
@@ -927,5 +926,10 @@ func (dm *Daemon) handleMessageSendResult(r gnet.SendResult) {
 	case SendingTxnsMessage:
 		dm.Visor.SetTxnsAnnounced(r.Message.(SendingTxnsMessage).GetTxns())
 	default:
+	}
+}
+
+func (dm *Daemon) getOutgoingConnections(filter... pex.Filter) {
+	for _, p := range dm.Pex.GetPeers() {
 	}
 }

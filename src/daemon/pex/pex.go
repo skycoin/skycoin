@@ -561,6 +561,10 @@ func (px *Pex) IsFull() bool {
 	return px.Config.Max > 0 && px.peerlist.len() >= px.Config.Max
 }
 
+func (px *Pex) GetPeers() []Peer {
+	return px.peerlist.getPeers()
+}
+
 // downloadText downloads a text format file from url.
 // Returns the raw response body as a string.
 // TODO -- move to util, add backoff options

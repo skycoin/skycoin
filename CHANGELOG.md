@@ -29,7 +29,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 
 - #1309, Float imprecision error in frontend malformed some spend amounts, preventing the spend
-- Fix one aspect of sync stalling caused by a 5-second blocking channel write, switching it to a non-blocking write
+- Fix one aspect of sync stalling caused by a 5-second blocking channel write by switching it to a non-blocking write, decreasing timeouts and increasing buffer sizes
 
 ### Changed
 

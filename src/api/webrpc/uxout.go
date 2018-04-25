@@ -16,7 +16,7 @@ type AddrUxoutResult struct {
 func getAddrUxOutsHandler(req Request, gateway Gatewayer) Response {
 	var addrs []string
 	if err := req.DecodeParams(&addrs); err != nil {
-		logger.Criticalf("decode params failed:%v", err)
+		logger.Critical().Errorf("decode params failed:%v", err)
 		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
 	}
 

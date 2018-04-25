@@ -37,7 +37,6 @@ export class SendSkycoinComponent implements OnInit, OnDestroy {
 
   send() {
     this.button.resetState();
-    this.button.setLoading();
     this.snackbar.dismiss();
 
     if (this.form.value.wallet.encrypted) {
@@ -51,6 +50,8 @@ export class SendSkycoinComponent implements OnInit, OnDestroy {
   }
 
   private _send(passwordDialog?: any) {
+    this.button.setLoading();
+
     this.walletService.sendSkycoin(
       this.form.value.wallet,
       this.form.value.address,

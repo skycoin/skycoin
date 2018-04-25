@@ -26,7 +26,7 @@ type CreateTransactionResponse struct {
 }
 
 // NewCreateTransactionResponse creates a CreateTransactionResponse
-func NewCreateTransactionResponse(txn *coin.Transaction, inputs coin.UxArray) (*CreateTransactionResponse, error) {
+func NewCreateTransactionResponse(txn *coin.Transaction, inputs []wallet.UxBalance) (*CreateTransactionResponse, error) {
 	cTxn, err := NewCreatedTransaction(txn, inputs)
 	if err != nil {
 		return nil, err
@@ -42,7 +42,7 @@ func NewCreateTransactionResponse(txn *coin.Transaction, inputs coin.UxArray) (*
 type CreatedTransaction struct {
 	Length    uint32 `json:"length"`
 	Type      uint8  `json:"type"`
-	Hash      string `json:"txid"`
+	TxID      string `json:"txid"`
 	InnerHash string `json:"inner_hash"`
 	Fee       string `json:"fee"`
 
@@ -52,7 +52,7 @@ type CreatedTransaction struct {
 }
 
 // NewCreatedTransaction returns a CreatedTransaction
-func NewCreatedTransaction(txn *coin.Transaction, inputs coin.UxArray) (*CreatedTransaction, error) {
+func NewCreatedTransaction(txn *coin.Transaction, inputs []wallet.UxBalance) (*CreatedTransaction, error) {
 	if len(txn.In) != len(inputs) {
 		return nil, errors.New("len(txn.In) != len(inputs)")
 	}
@@ -64,7 +64,7 @@ func NewCreatedTransaction(txn *coin.Transaction, inputs coin.UxArray) (*Created
 
 	var inputHours uint64
 	for _, i := range inputs {
-		inputHours += i.Body.Hours
+		inputHours += i.Hours
 	}
 
 	if inputHours < outputHours {
@@ -100,7 +100,7 @@ func NewCreatedTransaction(txn *coin.Transaction, inputs coin.UxArray) (*Created
 	return &CreatedTransaction{
 		Length:    txn.Length,
 		Type:      txn.Type,
-		Hash:      txid.Hex(),
+		TxID:      txid.Hex(),
 		InnerHash: txn.InnerHash.Hex(),
 		Fee:       fmt.Sprint(fee),
 
@@ -169,7 +169,7 @@ func (r *CreatedTransaction) ToTransaction() (*coin.Transaction, error) {
 
 	t.Out = out
 
-	hash, err := cipher.SHA256FromHex(r.Hash)
+	hash, err := cipher.SHA256FromHex(r.TxID)
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +190,7 @@ type CreatedTransactionOutput struct {
 
 // NewCreatedTransactionOutput creates CreatedTransactionOutput
 func NewCreatedTransactionOutput(out coin.TransactionOutput, txid cipher.SHA256) (*CreatedTransactionOutput, error) {
-	coinStr, err := droplet.ToString(out.Coins)
+	coins, err := droplet.ToString(out.Coins)
 	if err != nil {
 		return nil, err
 	}
@@ -198,41 +198,43 @@ func NewCreatedTransactionOutput(out coin.TransactionOutput, txid cipher.SHA256)
 	return &CreatedTransactionOutput{
 		UxID:    out.UxID(txid).Hex(),
 		Address: out.Address.String(),
-		Coins:   coinStr,
+		Coins:   coins,
 		Hours:   fmt.Sprint(out.Hours),
 	}, nil
 }
 
 // CreatedTransactionInput is a verbose transaction input
 type CreatedTransactionInput struct {
-	UxID    string `json:"uxid"`
-	Address string `json:"address"`
-	Coins   string `json:"coins"`
-	Hours   string `json:"hours"`
-	Time    uint64 `json:"timestamp"`
-	Block   uint64 `json:"block"`
-	TxID    string `json:"txid"`
+	UxID            string `json:"uxid"`
+	Address         string `json:"address"`
+	Coins           string `json:"coins"`
+	Hours           string `json:"hours"`
+	CalculatedHours string `json:"calculated_hours"`
+	Time            uint64 `json:"timestamp"`
+	Block           uint64 `json:"block"`
+	TxID            string `json:"txid"`
 }
 
 // NewCreatedTransactionInput creates CreatedTransactionInput
-func NewCreatedTransactionInput(out coin.UxOut) (*CreatedTransactionInput, error) {
-	coinStr, err := droplet.ToString(out.Body.Coins)
+func NewCreatedTransactionInput(out wallet.UxBalance) (*CreatedTransactionInput, error) {
+	coins, err := droplet.ToString(out.Coins)
 	if err != nil {
 		return nil, err
 	}
 
-	if out.Body.SrcTransaction.Empty() {
+	if out.SrcTransaction.Null() {
 		return nil, errors.New("NewCreatedTransactionInput UxOut.SrcTransaction is not initialized")
 	}
 
 	return &CreatedTransactionInput{
-		UxID:    out.Hash().Hex(),
-		Address: out.Body.Address.String(),
-		Coins:   coinStr,
-		Hours:   fmt.Sprint(out.Body.Hours),
-		Time:    out.Head.Time,
-		Block:   out.Head.BkSeq,
-		TxID:    out.Body.SrcTransaction.Hex(),
+		UxID:            out.Hash.Hex(),
+		Address:         out.Address.String(),
+		Coins:           coins,
+		Hours:           fmt.Sprint(out.InitialHours),
+		CalculatedHours: fmt.Sprint(out.Hours),
+		Time:            out.Time,
+		Block:           out.BkSeq,
+		TxID:            out.SrcTransaction.Hex(),
 	}, nil
 }
 
@@ -319,7 +321,7 @@ func (r createTransactionRequest) Validate() error {
 
 	if r.ChangeAddress == nil {
 		return errors.New("missing change_address")
-	} else if r.ChangeAddress.Empty() {
+	} else if r.ChangeAddress.Null() {
 		return errors.New("change_address is an empty address")
 	}
 
@@ -328,7 +330,7 @@ func (r createTransactionRequest) Validate() error {
 	}
 
 	for i, a := range r.Wallet.Addresses {
-		if a.Empty() {
+		if a.Null() {
 			return fmt.Errorf("wallet.addresses[%d] is empty", i)
 		}
 	}
@@ -338,7 +340,7 @@ func (r createTransactionRequest) Validate() error {
 	}
 
 	for i, to := range r.To {
-		if to.Address.Empty() {
+		if to.Address.Null() {
 			return fmt.Errorf("to[%d].address is empty", i)
 		}
 

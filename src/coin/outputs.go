@@ -100,7 +100,7 @@ func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
 	wholeCoinSeconds, err := multUint64(seconds, wholeCoins)
 	if err != nil {
 		err := fmt.Errorf("UxOut.CoinHours: Calculating whole coin seconds overflows uint64 seconds=%d coins=%d uxid=%s", seconds, wholeCoins, uo.Hash().Hex())
-		logger.Critical(err)
+		logger.Critical().Error(err)
 		return 0, err
 	}
 
@@ -109,7 +109,7 @@ func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
 	dropletSeconds, err := multUint64(seconds, remainderDroplets)
 	if err != nil {
 		err := fmt.Errorf("UxOut.CoinHours: Calculating droplet seconds overflows uint64 seconds=%d droplets=%d uxid=%s", seconds, remainderDroplets, uo.Hash().Hex())
-		logger.Critical(err)
+		logger.Critical().Error(err)
 		return 0, err
 	}
 
@@ -119,7 +119,7 @@ func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
 	coinHours := coinSeconds / 3600                        // coin hours
 	totalHours, err := AddUint64(uo.Body.Hours, coinHours) // starting+earned
 	if err != nil {
-		logger.Criticalf("%v uxid=%s", ErrAddEarnedCoinHoursAdditionOverflow, uo.Hash().Hex())
+		logger.Critical().Errorf("%v uxid=%s", ErrAddEarnedCoinHoursAdditionOverflow, uo.Hash().Hex())
 		return 0, ErrAddEarnedCoinHoursAdditionOverflow
 	}
 	return totalHours, nil
@@ -127,9 +127,6 @@ func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
 
 // UxHashSet set mapping from UxHash to a placeholder value
 type UxHashSet map[cipher.SHA256]struct{}
-
-// UxHashMap maps from UxOut.Hash to UxOut
-type UxHashMap map[cipher.SHA256]UxOut
 
 // UxArray Array of Outputs
 // Used by unspent output pool, spent tests
@@ -165,19 +162,6 @@ func (ua UxArray) Set() UxHashSet {
 		m[ua[i].Hash()] = struct{}{}
 	}
 	return m
-}
-
-// Map returns a UxHashMap, mapping from UxOut.Hash to UxOut
-func (ua UxArray) Map() (UxHashMap, error) {
-	m := make(UxHashMap, len(ua))
-	for i := range ua {
-		h := ua[i].Hash()
-		if _, ok := m[h]; ok {
-			return nil, errors.New("duplicate UxOut in UxArray")
-		}
-		m[h] = ua[i]
-	}
-	return m, nil
 }
 
 // Sort sorts UxArray

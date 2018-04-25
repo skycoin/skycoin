@@ -650,8 +650,8 @@ func (dm *Daemon) connectToRandomPeer() {
 		return
 	}
 
-	if false {
-	//if len(dm.getOutgoingConnections(pex.IsDefault)) == 0 {
+
+	if len(dm.getOutgoingConnections(pex.IsDefault)) == 0 {
 		peers := dm.Pex.RandomDefault(1)
 		if (len(peers) == 1) {
 			dm.connectToPeer(peers[0])

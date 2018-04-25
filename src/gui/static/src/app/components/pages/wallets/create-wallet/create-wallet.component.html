@@ -6,7 +6,7 @@
     </div>
     <div class="form-field">
       <label for="seed">Seed</label>
-      <textarea formControlName="seed" id="seed" row="2"></textarea>
+      <textarea formControlName="seed" id="seed" row="2" (keydown.enter)="createWallet()"></textarea>
       <p class="-warning">
         Remember this seed! Keep it in a safe place.
         If you forget your seed, you will not be able to recover your wallet!
@@ -14,7 +14,7 @@
     </div>
     <div class="form-field" [ngClass]="{ '-disabled': !data.create }">
       <label for="confirm_seed">Confirm seed</label>
-      <textarea formControlName="confirm_seed" id="confirm_seed" row="2"></textarea>
+      <textarea formControlName="confirm_seed" id="confirm_seed" row="2" (keydown.enter)="createWallet()"></textarea>
     </div>
     <div>
       <mat-checkbox class="-check" (change)="setEncrypt($event)" type="checkbox" id="encrypt" [checked]="true">
@@ -38,7 +38,7 @@
       <div class="col-md-6" [ngClass]="{ '-hidden': !encrypt }">
         <div class="form-field">
           <label for="confirm_password">Confirm password</label>
-          <input formControlName="confirm_password" id="confirm_password" type="password" appDontSavePassword>
+          <input formControlName="confirm_password" id="confirm_password" type="password" appDontSavePassword (keydown.enter)="createWallet()">
         </div>
       </div>
     </div>

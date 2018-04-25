@@ -2,7 +2,7 @@
   <div [formGroup]="form">
     <div class="form-field">
       <label for="label">Name</label>
-      <input formControlName="label" id="label">
+      <input formControlName="label" id="label" (keydown.enter)="rename()">
     </div>
   </div>
   <div class="-buttons">

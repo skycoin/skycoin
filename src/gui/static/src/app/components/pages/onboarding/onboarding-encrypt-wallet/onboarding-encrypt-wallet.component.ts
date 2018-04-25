@@ -39,6 +39,10 @@ export class OnboardingEncryptWalletComponent implements OnInit {
   }
 
   emitCreatedPassword() {
+    if (this.form.enabled && !this.form.valid) {
+      return;
+    }
+
     this.button.setLoading();
 
     this.onPasswordCreated.emit(this.form.enabled ? this.form.get('password').value : null);

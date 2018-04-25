@@ -28,6 +28,10 @@ export class ChangeNameComponent implements OnInit {
   }
 
   rename() {
+    if (!this.form.valid) {
+      return;
+    }
+
     this.walletService.renameWallet(this.data, this.form.value.label)
       .subscribe(() => this.dialogRef.close(this.form.value.label));
   }

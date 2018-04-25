@@ -34,6 +34,10 @@ export class CreateWalletComponent implements OnInit {
   }
 
   createWallet() {
+    if (!this.form.valid) {
+      return;
+    }
+
     this.createButton.resetState();
     this.createButton.setLoading();
     this.cancelButton.setDisabled();

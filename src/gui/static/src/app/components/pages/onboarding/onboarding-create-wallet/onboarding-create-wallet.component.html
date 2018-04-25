@@ -31,7 +31,8 @@
         </div>
         <div class="form-field" [style.visibility]="showCreateForm?'visible':'hidden'">
           <label for="confirm_seed">Confirm seed</label>
-          <textarea formControlName="confirm_seed" class="form-control" id="confirm_seed" rows="2"></textarea>
+          <textarea formControlName="confirm_seed" class="form-control" id="confirm_seed" rows="2"
+                    (keydown.enter)="showCreateForm?createWallet():loadWallet()"></textarea>
         </div>
       </form>
     </div>

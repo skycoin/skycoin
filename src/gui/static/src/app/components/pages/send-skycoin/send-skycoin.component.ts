@@ -36,6 +36,10 @@ export class SendSkycoinComponent implements OnInit, OnDestroy {
   }
 
   send() {
+    if (!this.form.valid) {
+      return;
+    }
+
     this.button.resetState();
     this.snackbar.dismiss();
 

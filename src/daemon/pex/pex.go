@@ -515,11 +515,11 @@ func (px *Pex) Private() Peers {
 }
 
 // TrustedPublic returns trusted public peers
-func (px *Pex) TrustedPublic() Peers {
+/*func (px *Pex) TrustedPublic() Peers {
 	px.RLock()
 	defer px.RUnlock()
 	return px.peerlist.getCanTryPeers(IsPublic, IsTrusted)
-}
+}*/
 
 // RandomPublic returns N random public peers
 func (px *Pex) RandomPublic(n int) Peers {

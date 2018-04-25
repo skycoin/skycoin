@@ -451,6 +451,7 @@ func TestPexAddPeers(t *testing.T) {
 	}
 }
 
+/*
 func TestPexTrustedPublic(t *testing.T) {
 	tt := []struct {
 		name   string
@@ -516,6 +517,7 @@ func TestPexTrustedPublic(t *testing.T) {
 		})
 	}
 }
+*/
 
 func TestPexRandomExchangeable(t *testing.T) {
 	tt := []struct {

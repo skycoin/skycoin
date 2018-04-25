@@ -1,5 +1,5 @@
 import { Component, Input, OnDestroy, OnInit } from '@angular/core';
-import { PriceService } from '../../../price.service';
+import { PriceService } from '../../../services/price.service';
 import { Subscription } from 'rxjs/Subscription';
 import { WalletService } from '../../../services/wallet.service';
 import { BlockchainService } from '../../../services/blockchain.service';
@@ -18,8 +18,7 @@ import 'rxjs/add/operator/take';
 export class HeaderComponent implements OnInit, OnDestroy {
   @Input() title: string;
 
-  coins: number;
-  hours: number;
+  addresses = [];
   current: number;
   highest: number;
   percentage: number;
@@ -28,7 +27,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
   releaseVersion: string;
   updateAvailable: boolean;
   hasPendingTxs: boolean;
-  balancesRefreshed = true;
 
   private price: number;
   private priceSubscription: Subscription;
@@ -42,6 +40,14 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   get loading() {
     return !this.current || !this.highest || this.current !== this.highest;
+  }
+
+  get coins() {
+    return this.addresses.map(addr => addr.coins >= 0 ? addr.coins : 0).reduce((a, b) => a + b, 0);
+  }
+
+  get hours() {
+    return this.addresses.map(addr => addr.hours >= 0 ? addr.hours : 0).reduce((a, b) => a + b, 0);
   }
 
   constructor(
@@ -61,34 +67,17 @@ export class HeaderComponent implements OnInit, OnDestroy {
         this.highest = response.highest;
         this.current = response.current;
         this.percentage = this.current && this.highest ? (this.current / this.highest) : 0;
-
-        // if (response.current === 999999999999) {
-        //   this.walletService.all().skip(1).take(1).subscribe((w) => {
-        //     console.log(this.balancesRefreshed, w[0].coins);
-        //     this.balancesRefreshed = true;
-        //     console.log(this.balancesRefreshed);
-        //   });
-        // }
       });
 
     this.setVersion();
     this.priceSubscription = this.priceService.price.subscribe(price => this.price = price);
     this.walletSubscription = this.walletService.allAddresses().subscribe(addresses => {
-      addresses = addresses.reduce((array, item) => {
+      this.addresses = addresses.reduce((array, item) => {
         if (!array.find(addr => addr.address === item.address)) {
           array.push(item);
         }
         return array;
       }, []);
-
-      console.log('sub', addresses)
-      if (this.current === 999999999999) {
-        this.balancesRefreshed = true;
-        console.log('finalsub')
-      }
-
-      this.coins = addresses.map(addr => addr.coins >= 0 ? addr.coins : 0).reduce((a, b) => a + b, 0);
-      this.hours = addresses.map(addr => addr.hours >= 0 ? addr.hours : 0).reduce((a, b) => a + b, 0);
     });
 
     this.walletService.pendingTransactions().subscribe(txs => {

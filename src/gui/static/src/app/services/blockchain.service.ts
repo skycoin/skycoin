@@ -11,6 +11,7 @@ import 'rxjs/add/observable/timer';
 export class BlockchainService {
 
   private progressSubject: Subject<any> = new BehaviorSubject<any>(null);
+  private refreshedBalance = false;
 
   get progress() {
     return this.progressSubject.asObservable();
@@ -20,11 +21,18 @@ export class BlockchainService {
     private apiService: ApiService,
     private walletService: WalletService,
   ) {
-    Observable.timer(0, 1000)
+    Observable.timer(0, 2000)
       .flatMap(() => this.getBlockchainProgress())
       .takeWhile((response: any) => !response.current || response.current !== response.highest)
       .subscribe(
-        response => this.progressSubject.next(response),
+        response => {
+          this.progressSubject.next(response);
+
+          if (! this.refreshedBalance) {
+            this.walletService.refreshBalances();
+            this.refreshedBalance = true;
+          }
+        },
         error => console.log(error),
         () => this.completeLoading()
       );

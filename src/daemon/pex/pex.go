@@ -502,28 +502,28 @@ func (px *Pex) GetPeerByAddr(addr string) (Peer, bool) {
 func (px *Pex) Trusted() Peers {
 	px.RLock()
 	defer px.RUnlock()
-	return px.peerlist.getPeers(isTrusted)
+	return px.peerlist.getPeers(IsTrusted)
 }
 
 // Private returns private peers
 func (px *Pex) Private() Peers {
 	px.RLock()
 	defer px.RUnlock()
-	return px.peerlist.getCanTryPeers(isPrivate)
+	return px.peerlist.getCanTryPeers(IsPrivate)
 }
 
 // TrustedPublic returns trusted public peers
 func (px *Pex) TrustedPublic() Peers {
 	px.RLock()
 	defer px.RUnlock()
-	return px.peerlist.getCanTryPeers(isPublic, isTrusted)
+	return px.peerlist.getCanTryPeers(IsPublic, IsTrusted)
 }
 
 // RandomPublic returns N random public peers
 func (px *Pex) RandomPublic(n int) Peers {
 	px.RLock()
 	defer px.RUnlock()
-	return px.peerlist.random(n, isPublic)
+	return px.peerlist.random(n, IsPublic)
 }
 
 // RandomExchangeable returns N random exchangeable peers

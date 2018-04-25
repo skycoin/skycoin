@@ -136,19 +136,24 @@ loop:
 }
 
 // filters
-func isPrivate(p Peer) bool {
+
+// IsPrivate returns true if p is private
+func IsPrivate(p Peer) bool {
 	return p.Private
 }
 
-func isPublic(p Peer) bool {
+// IsPublic returns true if p is public
+func IsPublic(p Peer) bool {
 	return !p.Private
 }
 
-func isTrusted(p Peer) bool {
+// IsTrusted returns true if p is trusted
+func IsTrusted(p Peer) bool {
 	return p.Trusted
 }
 
-func isAutomatic(p Peer) bool {
+// IsAutomatic returns true if p is automatic
+func IsAutomatic(p Peer) bool {
 	return p.Automatic
 }
 
@@ -165,7 +170,7 @@ func zeroRetryTimes(p Peer) bool {
 }
 
 // isExchangeable filters exchangeable peers
-var isExchangeable = []Filter{hasIncomingPort, isPublic, zeroRetryTimes}
+var isExchangeable = []Filter{hasIncomingPort, IsPublic, zeroRetryTimes}
 
 // removePeer removes peer
 func (pl *peerlist) removePeer(addr string) {

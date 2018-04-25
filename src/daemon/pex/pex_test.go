@@ -1003,7 +1003,6 @@ func TestPexAutomatic(t *testing.T) {
 	}
 }
 
-
 func TestPexResetAllRetryTimes(t *testing.T) {
 	tt := []struct {
 		name   string
@@ -1227,7 +1226,6 @@ func TestPexSetDefault(t *testing.T) {
 	}
 }
 
-
 func TestPexSetTrusted(t *testing.T) {
 	tt := []struct {
 		name      string
@@ -1313,7 +1311,6 @@ func TestPexSetAutomatic(t *testing.T) {
 		})
 	}
 }
-
 
 func TestPexSetHasIncomingPort(t *testing.T) {
 	tt := []struct {

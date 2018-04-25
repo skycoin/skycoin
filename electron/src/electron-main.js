@@ -75,6 +75,7 @@ function startSkycoin() {
     '-enable-seed-api=true',
     '-enable-wallet-api=true',
     '-rpc-interface=false',
+    "-disable-csrf=false"
     // will break
     // broken (automatically generated certs do not work):
     // '-web-interface-https=true',

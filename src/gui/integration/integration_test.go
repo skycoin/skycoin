@@ -1019,9 +1019,9 @@ func TestNetworkDefaultConnections(t *testing.T) {
 }
 
 func TestNetworkTrustedConnections(t *testing.T) {
-	//if !doLiveOrStable(t) {
-	//	return
-	//}
+	if !doLiveOrStable(t) {
+		return
+	}
 
 	c := gui.NewClient(nodeAddress())
 	connections, err := c.NetworkTrustedConnections()

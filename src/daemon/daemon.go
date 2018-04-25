@@ -650,7 +650,7 @@ func (dm *Daemon) connectToRandomPeer() {
 	if dm.Config.DisableOutgoingConnections {
 		return
 	}
-	if dm.outgoingConnections
+	if dm.outgoingConnections(isTrusted)
 	// Make a connection to a random (public) peer
 	peers := dm.Pex.RandomPublic(0)
 	for _, p := range peers {
@@ -929,7 +929,13 @@ func (dm *Daemon) handleMessageSendResult(r gnet.SendResult) {
 	}
 }
 
-func (dm *Daemon) getOutgoingConnections(filter... pex.Filter) {
-	for _, p := range dm.Pex.GetPeers() {
+func (dm *Daemon) getOutgoingConnections(filter... pex.Filter) []pex.Peer {
+	var peers = make([]pex.Peer,0)
+	for _, p := range dm.Pex.GetPeers(filter...) {
+		var _, flag = dm.outgoingConnections.store.getValue(p.Addr);
+		if flag == true {
+			peers = append(peers, p)
+		}
 	}
+	return peers
 }

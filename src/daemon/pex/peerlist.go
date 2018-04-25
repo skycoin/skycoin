@@ -148,6 +148,10 @@ func isTrusted(p Peer) bool {
 	return p.Trusted
 }
 
+func isAutomatic(p Peer) bool {
+	return p.Automatic
+}
+
 func hasIncomingPort(p Peer) bool {
 	return p.HasIncomingPort
 }

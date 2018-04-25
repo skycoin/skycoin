@@ -188,6 +188,17 @@ func (pl *peerlist) setTrusted(addr string, trusted bool) error {
 	return fmt.Errorf("set peer.Trusted failed: %v does not exist in peer list", addr)
 }
 
+// SetDefault sets peer as trusted peer
+func (pl *peerlist) setDefault(addr string, isdefault bool) error {
+	if p, ok := pl.peers[addr]; ok {
+		p.Default = isdefault
+		return nil
+	}
+
+	return fmt.Errorf("set peer.Trusted failed: %v does not exist in peer list", addr)
+}
+
+
 // setHasIncomingPort updates whether the peer is valid and has public incoming port
 func (pl *peerlist) setHasIncomingPort(addr string, hasIncomingPort bool) error {
 	if p, ok := pl.peers[addr]; ok {

@@ -230,7 +230,7 @@ func New(cfg Config, defaultConns []string) (*Pex, error) {
 			logger.Criticalf("add peer failed:%v", err)
 			continue
 		}
-		if err := pex.SetTrusted(addr); err != nil {
+		if err := pex.SetDefault(addr); err != nil {
 			logger.Criticalf("pex.SetTrust failed: %v", err)
 		}
 	}
@@ -426,6 +426,20 @@ func (px *Pex) SetPrivate(addr string, private bool) error {
 
 // SetTrusted updates peer's trusted value
 func (px *Pex) SetTrusted(addr string) error {
+	px.Lock()
+	defer px.Unlock()
+
+	cleanAddr, err := validateAddress(addr, px.Config.AllowLocalhost)
+	if err != nil {
+		logger.Errorf("Invalid address %s: %v", addr, err)
+		return ErrInvalidAddress
+	}
+
+	return px.peerlist.setTrusted(cleanAddr, true)
+}
+
+// SetDefault updates peer's default value
+func (px *Pex) SetDefault(addr string) error {
 	px.Lock()
 	defer px.Unlock()
 

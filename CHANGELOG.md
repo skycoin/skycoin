@@ -8,19 +8,38 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Add `"size"` to block API response data (affects `/block`, `/blocks` and `/last_blocks`)
+- Add `/health` endpoint
 - Logging migration, now powered by [logrus](https://github.com/sirupsen/logrus)
 - Write specification for skycoin URIs (based upon bip21)
 - Implemented `scrypt-chacha20poly1305` for wallet encryption
 - Implemented `sha256xor` for wallet encryption
-- Add new field of `secrets` to wallet, which records all encrypted sensitive data like seed, public/private keys.
+- Add new field of `secrets` to wallet, which records all encrypted sensitive data like seed, public/private keys
+- `/wallet/encrypt` API endpoint, encrypts wallet and returns encrypted wallet without sensitive data
+- `/wallet/decrypt` API endpoint, decrypts wallet and returns decrypted wallet without sensitive data
+- `/wallet/seed` API endpoint, returns seed of specific wallet
+- `-enable-seed-api` cli option
 
 ### Fixed
 
+- #665, update wallet apis to support wallet encryption
+- #1077, disable initial wallet creating
+
 ### Changed
+
+- Change `-disable-wallet-api` to `-enable-wallet-api`, and disable the wallet API by default
+- `-launch-browser` is set to false by default
+- `/wallet` API endpoint, remove sensitive data from the response, and fix the data format to be the same as `/wallet/create`
+- `/wallets` API endpoint, remove sensitive data from the response
+- `/wallet/create` API endpoint, add `encrypt(bool)` and `password` argument
+- `/wallet/newAddress` API endpoint, add `password` argument
+- `/wallet/spend` API endpoint, add `password` argument
+- No default wallet will be created when first time the node start
 
 ### Removed
 
 - Remove dependency [op/go-logging](https://github.com/op/go-logging)
+- Remove `seed`, `lastSeed`, `secrets` and `secret_key` in address entries from wallet apis response
 
 ## [0.22.0] - 2018-03-20
 

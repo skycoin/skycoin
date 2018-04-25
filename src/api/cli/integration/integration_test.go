@@ -1040,7 +1040,7 @@ func TestStableTransaction(t *testing.T) {
 			[]string{"d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add"},
 			nil,
 			"",
-			"genesis-transaction.golden",
+			"genesis-transaction-cli.golden",
 		},
 	}
 

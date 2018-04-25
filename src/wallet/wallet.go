@@ -52,8 +52,10 @@ var (
 	ErrWrongCryptoType = errors.New("wrong crypto type")
 	// ErrWalletNotExist is returned if a wallet does not exist
 	ErrWalletNotExist = errors.New("wallet doesn't exist")
-	// ErrWalletAPIDisabled is returned when trying to do wallet actions while the DisableWalletAPI option is enabled.
-	ErrWalletAPIDisabled = errors.New("wallet api disabled")
+	// ErrWalletAPIDisabled is returned when trying to do wallet actions while the EnableWalletAPI option is false
+	ErrWalletAPIDisabled = errors.New("wallet api is disabled")
+	// ErrSeedAPIDisabled is returned when trying to get seed of wallet while the EnableWalletAPI or EnableSeedAPI is false
+	ErrSeedAPIDisabled = errors.New("wallet seed api is disabled")
 	// ErrWalletNameConflict represents the wallet name conflict error
 	ErrWalletNameConflict = errors.New("wallet name would conflict with existing wallet, renaming")
 )
@@ -97,6 +99,7 @@ type Options struct {
 	Encrypt    bool       // whether the wallet need to be encrypted.
 	Password   []byte     // password that would be used for encryption, and would only be used when 'Encrypt' is true.
 	CryptoType CryptoType // wallet encryption type, scrypt-chacha20poly1305 or sha256-xor.
+	ScanN      uint64     // number of addresses that're going to be scanned
 }
 
 // newWalletFilename check for collisions and retry if failure
@@ -118,8 +121,8 @@ type Wallet struct {
 	Entries []Entry
 }
 
-// NewWallet creates a wallet instance with given name and options.
-func NewWallet(wltName string, opts Options) (*Wallet, error) {
+// newWallet creates a wallet instance with given name and options.
+func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) {
 	if opts.Seed == "" {
 		return nil, ErrMissingSeed
 	}
@@ -143,6 +146,21 @@ func NewWallet(wltName string, opts Options) (*Wallet, error) {
 			metaCryptoType: "",
 			metaSecrets:    "",
 		},
+	}
+
+	// Create a default wallet
+	_, err := w.GenerateAddresses(1)
+	if err != nil {
+		return nil, err
+	}
+
+	if opts.ScanN > 0 {
+		// Scan for addresses with balances
+		if bg != nil {
+			if err := w.ScanAddresses(opts.ScanN-1, bg); err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	// Checks if the wallet need to encrypt
@@ -174,6 +192,19 @@ func NewWallet(wltName string, opts Options) (*Wallet, error) {
 	}
 
 	return w, nil
+}
+
+// NewWallet creates wallet without scanning addresses
+func NewWallet(wltName string, opts Options) (*Wallet, error) {
+	if opts.ScanN != 0 {
+		return nil, errors.New("scan number must be 0")
+	}
+	return newWallet(wltName, opts, nil)
+}
+
+// NewWalletScanAhead creates wallet and scan ahead N addresses
+func NewWalletScanAhead(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) {
+	return newWallet(wltName, opts, bg)
 }
 
 // lock encrypts the wallet with the given password and specific crypto type
@@ -228,6 +259,9 @@ func (w *Wallet) lock(password []byte, cryptoType CryptoType) error {
 
 	// Sets wallet as encrypted
 	wlt.setEncrypted(true)
+
+	// Sets the wallet version
+	wlt.setVersion(Version)
 
 	// Wipes unencrypted sensitive data
 	wlt.erase()

@@ -2,7 +2,6 @@ package httphelper
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 
@@ -26,14 +25,14 @@ func HostCheck(logger *logging.Logger, host string, handler http.Handler) http.H
 		var err error
 		addr, port, err = iputil.SplitAddr(host)
 		if err != nil {
-			log.Panic(err)
+			logger.Panic(err)
 		}
 	}
 
 	isLocalhost := iputil.IsLocalhost(addr)
 
 	if isLocalhost && port == 0 {
-		log.Panic("localhost with no port specified is unsupported")
+		logger.Panic("localhost with no port specified is unsupported")
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

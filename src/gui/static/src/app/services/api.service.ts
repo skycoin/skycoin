@@ -47,10 +47,9 @@ export class ApiService {
       .map((response: GetWalletsResponseWallet[]) => {
         const wallets: Wallet[] = [];
         response.forEach(wallet => {
-          wallets.push({
+          wallets.push(<Wallet>{
             label: wallet.meta.label,
             filename: wallet.meta.filename,
-            seed: wallet.meta.seed,
             coins: null,
             hours: null,
             addresses: wallet.entries.map((entry: GetWalletsResponseEntry) => {
@@ -58,9 +57,10 @@ export class ApiService {
                 address: entry.address,
                 coins: null,
                 hours: null,
-              }
+              };
             }),
-          })
+            encrypted: wallet.meta.encrypted,
+          });
         });
         return wallets;
       });
@@ -71,10 +71,10 @@ export class ApiService {
       .map(response => ({
           label: response.meta.label,
           filename: response.meta.filename,
-          seed: response.meta.seed,
           coins: null,
           hours: null,
           addresses: response.entries.map(entry => ({ address: entry.address, coins: null, hours: null })),
+          encrypted: response.meta.encrypted,
         }));
   }
 
@@ -108,7 +108,7 @@ export class ApiService {
     options.headers = this.getHeaders();
 
     if (additionalOptions.csrf) {
-      options.headers.append('X-CSRF-Token', additionalOptions.csrf)
+      options.headers.append('X-CSRF-Token', additionalOptions.csrf);
     }
 
     return options;
@@ -125,7 +125,7 @@ export class ApiService {
       return '';
     }
 
-    return Object.keys(parameters).reduce((array,key) => {
+    return Object.keys(parameters).reduce((array, key) => {
       array.push(key + '=' + encodeURIComponent(parameters[key]));
       return array;
     }, []).join('&');

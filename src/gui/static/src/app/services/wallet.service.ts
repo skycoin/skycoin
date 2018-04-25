@@ -52,6 +52,8 @@ export class WalletService {
   }
 
   create(label, seed, scan) {
+    seed = seed.replace(/\r?\n|\r/g, ' ').replace(/ +/g, ' ').trim();
+
     return this.apiService.postWalletCreate(label ? label : 'undefined', seed, scan ? scan : 100)
       .do(wallet => {
         console.log(wallet);
@@ -101,12 +103,12 @@ export class WalletService {
     return this.apiService.post('wallet/update', { id: wallet.filename, label: label })
       .do(() => {
         wallet.label = label;
-        this.updateWallet(wallet)
+        this.updateWallet(wallet);
       });
   }
 
   sendSkycoin(wallet: Wallet, address: string, amount: number) {
-    return this.apiService.post('wallet/spend', {id: wallet.filename, dst: address, coins: amount})
+    return this.apiService.post('wallet/spend', {id: wallet.filename, dst: address, coins: amount});
   }
 
   sum(): Observable<number> {
@@ -153,7 +155,7 @@ export class WalletService {
         });
 
         return transaction;
-      }))
+      }));
   }
 
   private loadData(): void {
@@ -164,7 +166,7 @@ export class WalletService {
   }
 
   private retrieveAddressBalance(address: any|any[]) {
-    const addresses = Array.isArray(address) ? address.map(address => address.address).join(',') : address.address;
+    const addresses = Array.isArray(address) ? address.map(addr => addr.address).join(',') : address.address;
     return this.apiService.get('balance', {addrs: addresses});
   }
 
@@ -182,7 +184,7 @@ export class WalletService {
 
   private updateWallet(wallet: Wallet) {
     this.wallets.first().subscribe(wallets => {
-      const index = wallets.findIndex(w => w.seed === wallet.seed);
+      const index = wallets.findIndex(w => w.filename === wallet.filename);
       wallets[index] = wallet;
       this.wallets.next(wallets);
     });

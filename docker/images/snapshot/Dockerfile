@@ -30,15 +30,18 @@ ENV COIN="skycoin" \
     WALLET_DIR="/wallet" \
     WALLET_NAME="$COIN_cli.wlt"
 
-RUN adduser -D skycoin
+# create directories and set ownership
+RUN mkdir -p $DATA_DIR $WALLET_DIR
 
-USER skycoin
 
 # copy binaries
 COPY --from=build-go /go/bin/* /usr/bin/
 
 # copy gui
 COPY --from=build-node /skycoin/src/gui/static /usr/local/skycoin/src/gui/static
+
+# copy launcher
+COPY docker_launcher.sh /usr/local/bin
 
 # volumes
 VOLUME $WALLET_DIR
@@ -48,4 +51,4 @@ EXPOSE 6000 6420 6430
 
 WORKDIR /usr/local/skycoin
 
-CMD ["skycoin", "--web-interface-addr=0.0.0.0"]
+CMD ["docker_launcher.sh", "--web-interface-addr=0.0.0.0",  "--rpc-interface-addr=0.0.0.0"]

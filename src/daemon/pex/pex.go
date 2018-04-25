@@ -455,7 +455,7 @@ func (px *Pex) SetDefault(addr string) error {
 		return ErrInvalidAddress
 	}
 
-	return px.peerlist.setTrusted(cleanAddr, true)
+	return px.peerlist.setDefault(cleanAddr, true)
 }
 
 // SetAutomatic updates peer's automatic value
@@ -507,12 +507,26 @@ func (px *Pex) Trusted() Peers {
 	return px.peerlist.getPeers(IsTrusted)
 }
 
-// Private returns private peers
-func (px *Pex) Private() Peers {
+// Default returns default peers
+func (px *Pex) Default() Peers {
 	px.RLock()
 	defer px.RUnlock()
-	return px.peerlist.getCanTryPeers(IsPrivate)
+	return px.peerlist.getPeers(IsDefault)
 }
+
+// Automatic returns automatic peers
+func (px *Pex) Automatic() Peers {
+	px.RLock()
+	defer px.RUnlock()
+	return px.peerlist.getPeers(IsAutomatic)
+}
+
+// Private returns private peers
+//func (px *Pex) Private() Peers {
+//	px.RLock()
+//	defer px.RUnlock()
+//	return px.peerlist.getCanTryPeers(IsPrivate)
+//}
 
 // TrustedPublic returns trusted public peers
 /*func (px *Pex) TrustedPublic() Peers {

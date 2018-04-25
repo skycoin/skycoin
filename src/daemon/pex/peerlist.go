@@ -209,7 +209,7 @@ func (pl *peerlist) setDefault(addr string, isdefault bool) error {
 		return nil
 	}
 
-	return fmt.Errorf("set peer.Trusted failed: %v does not exist in peer list", addr)
+	return fmt.Errorf("set peer.Default failed: %v does not exist in peer list", addr)
 }
 
 // SetAutomatic sets peer as automatic peer
@@ -219,7 +219,7 @@ func (pl *peerlist) setAutomatic(addr string, automatic bool) error {
 		return nil
 	}
 
-	return fmt.Errorf("set peer.Trusted failed: %v does not exist in peer list", addr)
+	return fmt.Errorf("set peer.Automatic failed: %v does not exist in peer list", addr)
 }
 
 

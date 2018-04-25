@@ -304,6 +304,10 @@ func (px *Pex) downloadPeers() error {
 	n := px.AddPeers(peers)
 	logger.Infof("Added %d/%d peers from downloaded peers list", n, len(peers))
 
+	for _, p := range peers {
+		px.SetAutomatic(p)
+	}
+
 	return nil
 }
 
@@ -450,6 +454,20 @@ func (px *Pex) SetDefault(addr string) error {
 	}
 
 	return px.peerlist.setTrusted(cleanAddr, true)
+}
+
+// SetAutomatic updates peer's automatic value
+func (px *Pex) SetAutomatic(addr string) error {
+	px.Lock()
+	defer px.Unlock()
+
+	cleanAddr, err := validateAddress(addr, px.Config.AllowLocalhost)
+	if err != nil {
+		logger.Errorf("Invalid address %s: %v", addr, err)
+		return ErrInvalidAddress
+	}
+
+	return px.peerlist.setAutomatic(cleanAddr, true)
 }
 
 // SetHasIncomingPort sets if the peer has public port

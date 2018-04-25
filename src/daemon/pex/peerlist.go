@@ -188,10 +188,20 @@ func (pl *peerlist) setTrusted(addr string, trusted bool) error {
 	return fmt.Errorf("set peer.Trusted failed: %v does not exist in peer list", addr)
 }
 
-// SetDefault sets peer as trusted peer
+// SetDefault sets peer as default peer
 func (pl *peerlist) setDefault(addr string, isdefault bool) error {
 	if p, ok := pl.peers[addr]; ok {
 		p.Default = isdefault
+		return nil
+	}
+
+	return fmt.Errorf("set peer.Trusted failed: %v does not exist in peer list", addr)
+}
+
+// SetAutomatic sets peer as automatic peer
+func (pl *peerlist) setAutomatic(addr string, automatic bool) error {
+	if p, ok := pl.peers[addr]; ok {
+		p.Automatic = automatic
 		return nil
 	}
 

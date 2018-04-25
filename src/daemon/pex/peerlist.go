@@ -157,6 +157,11 @@ func IsAutomatic(p Peer) bool {
 	return p.Automatic
 }
 
+// IsDefault returns true if p is automatic
+func IsDefault(p Peer) bool {
+	return p.Default
+}
+
 func hasIncomingPort(p Peer) bool {
 	return p.HasIncomingPort
 }

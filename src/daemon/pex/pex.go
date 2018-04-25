@@ -526,6 +526,13 @@ func (px *Pex) RandomPublic(n int) Peers {
 	return px.peerlist.random(n, IsPublic)
 }
 
+// RandomDefault returns N random default peers
+func (px *Pex) RandomDefault(n int) Peers {
+	px.RLock()
+	defer px.RUnlock()
+	return px.peerlist.random(n, IsDefault)
+}
+
 // RandomExchangeable returns N random exchangeable peers
 func (px *Pex) RandomExchangeable(n int) Peers {
 	px.RLock()

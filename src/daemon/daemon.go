@@ -650,27 +650,34 @@ func (dm *Daemon) connectToRandomPeer() {
 	if dm.Config.DisableOutgoingConnections {
 		return
 	}
-	if dm.outgoingConnections(isTrusted)
-	// Make a connection to a random (public) peer
-	peers := dm.Pex.RandomPublic(0)
-	for _, p := range peers {
-		// Check if the peer has public port
-		if p.HasIncomingPort {
-			// Try to connect the peer if it's ip:mirror does not exist
-			if _, exist := dm.getMirrorPort(p.Addr, dm.Messages.Mirror); !exist {
+
+	if len(dm.getOutgoingConnections(pex.IsDefault)) == 0 {
+		peers := dm.Pex.RandomDefault(1)
+		dm.connectToPeer(peers[0])
+	} else {
+		// Make a connection to a random (public) peer
+		peers := dm.Pex.RandomPublic(0)
+		for _, p := range peers {
+			// Check if the peer has public port
+			if p.HasIncomingPort {
+				// Try to connect the peer if it's ip:mirror does not exist
+				if _, exist := dm.getMirrorPort(p.Addr, dm.Messages.Mirror); !exist {
+					dm.connectToPeer(p)
+					continue
+				}
+			} else {
+				// Try to connect to the peer if we don't know whether the peer have public port
 				dm.connectToPeer(p)
-				continue
 			}
-		} else {
-			// Try to connect to the peer if we don't know whether the peer have public port
-			dm.connectToPeer(p)
 		}
+
+		if len(peers) == 0 {
+			// Reset the retry times of all peers,
+			dm.Pex.ResetAllRetryTimes()
+		}
+
 	}
 
-	if len(peers) == 0 {
-		// Reset the retry times of all peers,
-		dm.Pex.ResetAllRetryTimes()
-	}
 }
 
 // We remove a peer from the Pex if we failed to connect

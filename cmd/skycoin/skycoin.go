@@ -29,12 +29,16 @@ import (
 )
 
 var (
-	// Version node version which will be set when build wallet by LDFLAGS
+	// Version of the node. Can be set by -ldflags
 	Version = "0.23.0"
-	// Commit id
+	// Commit ID. Can be set by -ldflags
 	Commit = ""
-	// Branch name
+	// Branch name. Can be set by -ldflags
 	Branch = ""
+	// ConfigMode (possible values are "", "STANDALONE_CLIENT").
+	// This is used to change the default configuration.
+	// Can be set by -ldflags
+	ConfigMode = ""
 
 	help = false
 
@@ -181,7 +185,7 @@ func (c *Config) register() {
 	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
 	flag.BoolVar(&c.EnableWalletAPI, "enable-wallet-api", c.EnableWalletAPI, "Enable the wallet API")
 	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable csrf check")
-	flag.BoolVar(&c.EnableSeedAPI, "enable-seed-api", false, "enable /wallet/seed api")
+	flag.BoolVar(&c.EnableSeedAPI, "enable-seed-api", c.EnableSeedAPI, "enable /wallet/seed api")
 	flag.StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
 
@@ -195,7 +199,7 @@ func (c *Config) register() {
 	flag.BoolVar(&c.RPCInterface, "rpc-interface", c.RPCInterface, "enable the rpc interface")
 	flag.IntVar(&c.RPCInterfacePort, "rpc-interface-port", c.RPCInterfacePort, "port to serve rpc interface on")
 	flag.StringVar(&c.RPCInterfaceAddr, "rpc-interface-addr", c.RPCInterfaceAddr, "addr to serve rpc interface on")
-	flag.UintVar(&c.RPCThreadNum, "rpc-thread-num", 5, "rpc thread number")
+	flag.UintVar(&c.RPCThreadNum, "rpc-thread-num", c.RPCThreadNum, "rpc thread number")
 
 	flag.BoolVar(&c.LaunchBrowser, "launch-browser", c.LaunchBrowser, "launch system default webbrowser at client startup")
 	flag.BoolVar(&c.PrintWebInterfaceAddress, "print-web-interface-address", c.PrintWebInterfaceAddress, "print configured web interface address and exit")
@@ -223,8 +227,8 @@ func (c *Config) register() {
 	flag.Uint64Var(&c.GenesisTimestamp, "genesis-timestamp", c.GenesisTimestamp, "genesis block timestamp")
 
 	flag.StringVar(&c.WalletDirectory, "wallet-dir", c.WalletDirectory, "location of the wallet files. Defaults to ~/.skycoin/wallet/")
-	flag.IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", 16, "The maximum outgoing connections allowed")
-	flag.IntVar(&c.PeerlistSize, "peerlist-size", 65535, "The peer list size")
+	flag.IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", c.MaxOutgoingConnections, "The maximum outgoing connections allowed")
+	flag.IntVar(&c.PeerlistSize, "peerlist-size", c.PeerlistSize, "The peer list size")
 	flag.DurationVar(&c.OutgoingConnectionsRate, "connection-rate", c.OutgoingConnectionsRate, "How often to make an outgoing connection")
 	flag.BoolVar(&c.LocalhostOnly, "localhost-only", c.LocalhostOnly, "Run on localhost and only connect to localhost peers")
 	flag.BoolVar(&c.Arbitrating, "arbitrating", c.Arbitrating, "Run node in arbitrating mode")
@@ -319,6 +323,28 @@ var devConfig = Config{
 	// Will force it to connect to this ip:port, instead of waiting for it
 	// to show up as a peer
 	ConnectTo: "",
+}
+
+func init() {
+	applyConfigMode()
+}
+
+func applyConfigMode() {
+	switch ConfigMode {
+	case "":
+	case "STANDALONE_CLIENT":
+		devConfig.EnableWalletAPI = true
+		devConfig.EnableSeedAPI = true
+		devConfig.LaunchBrowser = true
+		devConfig.DisableCSRF = false
+		devConfig.DownloadPeerList = true
+		devConfig.RPCInterface = false
+		devConfig.WebInterface = true
+		devConfig.LogToFile = false
+		devConfig.ColorLog = true
+	default:
+		panic("Invalid ConfigMode")
+	}
 }
 
 // Parse prepare the config
@@ -603,7 +629,6 @@ func Run(c *Config) {
 	fullAddress := fmt.Sprintf("%s://%s", scheme, host)
 	logger.Critical().Infof("Full address: %s", fullAddress)
 	if c.PrintWebInterfaceAddress {
-		// This must be printed without the decorated logger so that electron can parse it properly
 		fmt.Println(fullAddress)
 	}
 

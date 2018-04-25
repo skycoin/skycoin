@@ -1,4 +1,4 @@
-# Webrpc
+# JSON 2.0 RPC API Documentation
 
 **WARNING: The JSON-RPC 2.0 API interface is deprecated. Do not interface with it directly**
 

@@ -5,6 +5,7 @@ import (
 	"math"
 
 	"github.com/shopspring/decimal"
+
 	logging "github.com/skycoin/skycoin/src/util/logging"
 )
 
@@ -61,7 +62,7 @@ func FromString(b string) (uint64, error) {
 	// Check that there are no decimal places remaining. This error should not
 	// occur, because of the earlier check of Exponent()
 	if e.Exponent() < 0 {
-		logger.Criticalf("Balance still has decimals after converting to droplets: %s", b)
+		logger.Critical().Errorf("Balance still has decimals after converting to droplets: %s", b)
 		return 0, ErrTooManyDecimals
 	}
 

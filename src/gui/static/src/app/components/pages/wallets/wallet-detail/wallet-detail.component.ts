@@ -3,6 +3,7 @@ import { Wallet } from '../../../../app.datatypes';
 import { WalletService } from '../../../../services/wallet.service';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { ChangeNameComponent } from '../change-name/change-name.component';
+import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 
 @Component({
   selector: 'app-wallet-detail',
@@ -25,11 +26,40 @@ export class WalletDetailComponent {
   }
 
   newAddress() {
-    this.walletService.addAddress(this.wallet).subscribe();
+    if (this.wallet.encrypted) {
+      this.dialog.open(PasswordDialogComponent).componentInstance.passwordSubmit
+        .subscribe(passwordDialog => {
+          this.walletService.addAddress(this.wallet, passwordDialog.password)
+            .subscribe(() => passwordDialog.close(), () => passwordDialog.error());
+        });
+    } else {
+      this.walletService.addAddress(this.wallet).subscribe();
+    }
   }
 
   toggleEmpty() {
     this.wallet.hideEmpty = !this.wallet.hideEmpty;
+  }
+
+  toggleEncryption() {
+    const config = new MatDialogConfig();
+    config.data = {
+      confirm: !this.wallet.encrypted,
+      title: this.wallet.encrypted ? 'Decrypt Wallet' : 'Encrypt Wallet',
+    };
+
+    if (!this.wallet.encrypted) {
+      config.data['description'] = 'We suggest that you encrypt each one of your wallets with a password. ' +
+        'If you forget your password, you can reset it with your seed. ' +
+        'Make sure you have your seed saved somewhere safe before encrypting your wallet.';
+    }
+
+    this.dialog.open(PasswordDialogComponent, config).componentInstance.passwordSubmit
+      .subscribe(passwordDialog => {
+        this.walletService.toggleEncryption(this.wallet, passwordDialog.password).subscribe(() => {
+          passwordDialog.close();
+        }, e => passwordDialog.error(e));
+      });
   }
 
   copyAddress(address) {

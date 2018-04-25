@@ -1,5 +1,5 @@
-<button mat-button type="submit" mat-raised-button color="primary" [disabled]="disabled"
-        [matTooltip]="error ? error : null" (click)="onClick()" [ngClass]="{enabled: !disabled}">
+<button mat-button type="submit" mat-raised-button color="primary" [disabled]="disabled && !forceEmitEvents"
+        [matTooltip]="error ? error : null" (click)="this.state !== 0 ? onClick() : null" [ngClass]="{enabled: !disabled}">
   <ng-content></ng-content>
   <mat-icon *ngIf="state === 1">done</mat-icon>
   <mat-icon *ngIf="state === 2">error</mat-icon>

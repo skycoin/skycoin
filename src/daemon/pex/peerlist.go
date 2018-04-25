@@ -139,12 +139,12 @@ loop:
 
 // IsPrivate returns true if p is private
 func IsPrivate(p Peer) bool {
-	return p.Private
+	return p.Trusted
 }
 
 // IsPublic returns true if p is public
 func IsPublic(p Peer) bool {
-	return !p.Private
+	return !IsPrivate(p)
 }
 
 // IsTrusted returns true if p is trusted
@@ -183,14 +183,14 @@ func (pl *peerlist) removePeer(addr string) {
 }
 
 // SetPrivate sets specific peer as private
-func (pl *peerlist) setPrivate(addr string, private bool) error {
-	if p, ok := pl.peers[addr]; ok {
-		p.Private = private
-		return nil
-	}
-
-	return fmt.Errorf("set peer.Private failed: %v does not exist in peer list", addr)
-}
+//func (pl *peerlist) setPrivate(addr string, private bool) error {
+//	if p, ok := pl.peers[addr]; ok {
+//		p.Private = private
+//		return nil
+//	}
+//
+//	return fmt.Errorf("set peer.Private failed: %v does not exist in peer list", addr)
+//}
 
 // SetTrusted sets peer as trusted peer
 func (pl *peerlist) setTrusted(addr string, trusted bool) error {
@@ -253,7 +253,7 @@ func (pl *peerlist) clearOld(timeAgo time.Duration) {
 	t := utc.Now()
 	for addr, peer := range pl.peers {
 		lastSeen := time.Unix(peer.LastSeen, 0)
-		if !peer.Private && t.Sub(lastSeen) > timeAgo {
+		if !peer.Trusted && t.Sub(lastSeen) > timeAgo {
 			delete(pl.peers, addr)
 		}
 	}

@@ -301,7 +301,7 @@ func (vs *Visor) SetTxnsAnnounced(txns []cipher.SHA256) {
 		now := utc.Now()
 		for _, h := range txns {
 			if err := vs.v.Unconfirmed.SetAnnounced(h, now); err != nil {
-				logger.Error("Failed to set unconfirmed txn announce time")
+				logger.Error("Failed to set unconfirmed txn announce time: ", err)
 			}
 		}
 

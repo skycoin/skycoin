@@ -431,9 +431,8 @@ loop:
 		case <-outgoingConnectionsTicker:
 			// Fill up our outgoing connections
 			elapser.Register("outgoingConnectionsTicker")
-			trustPeerNum := len(dm.Pex.Trusted())
 			if !dm.Config.DisableOutgoingConnections &&
-				dm.outgoingConnections.Len() < (dm.Config.OutgoingMax+trustPeerNum) &&
+				len(dm.getOutgoingConnections(pex.IsPublic)) < dm.Config.OutgoingMax &&
 				dm.pendingConnections.Len() < dm.Config.PendingMax {
 				dm.connectToRandomPeer()
 			}

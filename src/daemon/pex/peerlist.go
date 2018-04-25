@@ -326,8 +326,10 @@ type PeerJSON struct {
 	// Unix timestamp when this peer was last seen.
 	// This could be a time.Time string or an int64 timestamp
 	LastSeen        interface{}
-	Private         bool  // Whether it should omitted from public requests
+	//Private         bool  // Whether it should omitted from public requests
 	Trusted         bool  // Whether this peer is trusted
+	Automatic		bool
+	Default			bool
 	HasIncomePort   *bool `json:"HasIncomePort,omitempty"` // Whether this peer has incoming port [DEPRECATED]
 	HasIncomingPort *bool // Whether this peer has incoming port
 }
@@ -337,8 +339,10 @@ func newPeerJSON(p Peer) PeerJSON {
 	return PeerJSON{
 		Addr:            p.Addr,
 		LastSeen:        p.LastSeen,
-		Private:         p.Private,
+		//Private:         p.Private,
 		Trusted:         p.Trusted,
+		Default:		 p.Default,
+		Automatic:		 p.Automatic,
 		HasIncomingPort: &p.HasIncomingPort,
 	}
 }
@@ -380,8 +384,10 @@ func newPeerFromJSON(p PeerJSON) (*Peer, error) {
 	return &Peer{
 		Addr:            addr,
 		LastSeen:        lastSeen,
-		Private:         p.Private,
+		//Private:         p.Private,
 		Trusted:         p.Trusted,
+		Automatic:		 p.Automatic,
+		Default:		 p.Default,
 		HasIncomingPort: hasIncomingPort,
 	}, nil
 }

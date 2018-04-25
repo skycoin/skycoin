@@ -99,6 +99,8 @@ type Peer struct {
 	Trusted         bool   // Whether this peer is trusted
 	HasIncomingPort bool   // Whether this peer has accessable public port
 	RetryTimes      int    `json:"-"` // records the retry times
+	Default			bool
+	Automatic		bool
 }
 
 // NewPeer returns a *Peer initialised by an address string of the form ip:port

@@ -138,12 +138,15 @@ func createTempWallet(t *testing.T, encrypt bool) (string, func()) {
 	defer rf.Close()
 	io.Copy(f, rf)
 
+	originalWalletDirEnv := os.Getenv("WALLET_DIR")
+	originalWalletNameEnv := os.Getenv("WALLET_NAME")
+
 	os.Setenv("WALLET_DIR", dir)
 	os.Setenv("WALLET_NAME", wltName)
 
 	fun := func() {
-		os.Setenv("WALLET_DIR", "")
-		os.Setenv("WALLET_NAME", "")
+		os.Setenv("WALLET_DIR", originalWalletDirEnv)
+		os.Setenv("WALLET_NAME", originalWalletNameEnv)
 
 		// Delete the temporary dir
 		os.RemoveAll(dir)
@@ -2312,8 +2315,8 @@ func TestLiveGUIInjectTransaction(t *testing.T) {
 	}
 }
 
-func TestStableEncryptWallet(t *testing.T) {
-	if !doStable(t) {
+func TestEncryptWallet(t *testing.T) {
+	if !doLiveOrStable(t) {
 		return
 	}
 
@@ -2322,6 +2325,7 @@ func TestStableEncryptWallet(t *testing.T) {
 		args        []string
 		setup       func(t *testing.T) func()
 		errMsg      []byte
+		errWithHelp bool
 		checkWallet func(t *testing.T, w *wallet.Wallet)
 	}{
 		{
@@ -2351,6 +2355,17 @@ func TestStableEncryptWallet(t *testing.T) {
 			},
 			errMsg: []byte("wallet is encrypted\n"),
 		},
+		{
+			name: "wallet doesn't exist",
+			args: []string{"-p", "pwd"},
+			setup: func(t *testing.T) func() {
+				_, clean := createUnEncryptedWallet(t)
+				os.Setenv("WALLET_NAME", "not-exist.wlt")
+				return clean
+			},
+			errWithHelp: true,
+			errMsg:      []byte("not-exist.wlt doesn't exist."),
+		},
 	}
 
 	for _, tc := range tt {
@@ -2367,6 +2382,11 @@ func TestStableEncryptWallet(t *testing.T) {
 					return
 				}
 
+				if tc.errWithHelp {
+					require.True(t, bytes.Contains(output, tc.errMsg), string(output))
+					return
+				}
+
 				var rlt wallet.ReadableWallet
 				err = json.NewDecoder(bytes.NewReader(output)).Decode(&rlt)
 				require.NoError(t, err)
@@ -2378,8 +2398,8 @@ func TestStableEncryptWallet(t *testing.T) {
 	}
 }
 
-func TestStableDecryptWallet(t *testing.T) {
-	if !doStable(t) {
+func TestDecryptWallet(t *testing.T) {
+	if !doLiveOrStable(t) {
 		return
 	}
 
@@ -2388,6 +2408,7 @@ func TestStableDecryptWallet(t *testing.T) {
 		args        []string
 		setup       func(t *testing.T) func()
 		errMsg      []byte
+		errWithHelp bool
 		checkWallet func(t *testing.T, w *wallet.Wallet)
 	}{
 		{
@@ -2418,6 +2439,26 @@ func TestStableDecryptWallet(t *testing.T) {
 			},
 			errMsg: []byte("wallet is not encrypted\n"),
 		},
+		{
+			name: "invalid password",
+			args: []string{"-p", "wrong password"},
+			setup: func(t *testing.T) func() {
+				_, clean := createEncryptedWallet(t)
+				return clean
+			},
+			errMsg: []byte("invalid password\n"),
+		},
+		{
+			name: "wallet doesn't exist",
+			args: []string{"-p", "pwd"},
+			setup: func(t *testing.T) func() {
+				_, clean := createEncryptedWallet(t)
+				os.Setenv("WALLET_NAME", "not-exist.wlt")
+				return clean
+			},
+			errWithHelp: true,
+			errMsg:      []byte("not-exist.wlt doesn't exist."),
+		},
 	}
 
 	for _, tc := range tt {
@@ -2432,6 +2473,11 @@ func TestStableDecryptWallet(t *testing.T) {
 				return
 			}
 
+			if tc.errWithHelp {
+				require.True(t, bytes.Contains(output, tc.errMsg), string(output))
+				return
+			}
+
 			var rlt wallet.ReadableWallet
 			err = json.NewDecoder(bytes.NewReader(output)).Decode(&rlt)
 			require.NoError(t, err)
@@ -2439,6 +2485,95 @@ func TestStableDecryptWallet(t *testing.T) {
 			w, err := rlt.ToWallet()
 			require.NoError(t, err)
 			tc.checkWallet(t, w)
+		})
+	}
+}
+
+func TestShowSeed(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+
+	tt := []struct {
+		name         string
+		args         []string
+		setup        func(t *testing.T) func()
+		errWithHelp  bool
+		errMsg       []byte
+		expectOutput []byte
+	}{
+		{
+			name: "unencrypted wallet",
+			setup: func(t *testing.T) func() {
+				_, clean := createUnEncryptedWallet(t)
+				return clean
+			},
+			expectOutput: []byte("exchange stage green marine palm tobacco decline shadow cereal chapter lamp copy\n"),
+		},
+		{
+			name: "unencrypted wallet with -j option",
+			args: []string{"-j"},
+			setup: func(t *testing.T) func() {
+				_, clean := createUnEncryptedWallet(t)
+				return clean
+			},
+			expectOutput: []byte("{\n    \"seed\": \"exchange stage green marine palm tobacco decline shadow cereal chapter lamp copy\"\n}\n"),
+		},
+		{
+			name: "encrypted wallet",
+			setup: func(t *testing.T) func() {
+				_, clean := createEncryptedWallet(t)
+				return clean
+			},
+			args:         []string{"-p", "pwd"},
+			expectOutput: []byte("exchange stage green marine palm tobacco decline shadow cereal chapter lamp copy\n"),
+		},
+		{
+			name: "encrypted wallet with -j option",
+			setup: func(t *testing.T) func() {
+				_, clean := createEncryptedWallet(t)
+				return clean
+			},
+			args:         []string{"-p", "pwd", "-j"},
+			expectOutput: []byte("{\n    \"seed\": \"exchange stage green marine palm tobacco decline shadow cereal chapter lamp copy\"\n}\n"),
+		},
+		{
+			name: "encrypted wallet with invalid password",
+			setup: func(t *testing.T) func() {
+				_, clean := createEncryptedWallet(t)
+				return clean
+			},
+			args:         []string{"-p", "wrong password"},
+			expectOutput: []byte("invalid password"),
+		},
+		{
+			name: "wallet doesn't exist",
+			setup: func(t *testing.T) func() {
+				_, clean := createUnEncryptedWallet(t)
+				os.Setenv("WALLET_NAME", "not-exist.wlt")
+				return clean
+			},
+			errWithHelp:  true,
+			expectOutput: []byte("not-exist.wlt doesn't exist."),
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			clean := tc.setup(t)
+			defer clean()
+			args := append([]string{"showSeed"}, tc.args...)
+			output, err := exec.Command(binaryPath, args...).CombinedOutput()
+			if err != nil {
+				require.EqualError(t, err, "exit status 1")
+				return
+			}
+
+			if tc.errWithHelp {
+				require.True(t, bytes.Contains(output, tc.errMsg), string(output))
+				return
+			}
+			require.Equal(t, tc.expectOutput, output)
 		})
 	}
 }

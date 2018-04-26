@@ -1,35 +1,76 @@
 package logging
 
 import (
+	"errors"
 	"io"
+	"io/ioutil"
+	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
-var log = NewLogger(LogPriorityKey, LogPriorityCritical)
+var log = NewMasterLogger()
 
 const (
-	// LogModuleKey is the key used for the module name data entry
-	LogModuleKey = "module"
-	// LogPriorityKey is the log entry key for priority log statements
-	LogPriorityKey = "priority"
-	// LogPriorityCritical is the log entry value for priority log statements
-	LogPriorityCritical = "CRITICAL"
+	// logModuleKey is the key used for the module name data entry
+	logModuleKey = "_module"
+	// logPriorityKey is the log entry key for priority log statements
+	logPriorityKey = "_priority"
+	// logPriorityCritical is the log entry value for priority log statements
+	logPriorityCritical = "CRITICAL"
 )
 
-// MustGetLogger safe initialize global logger
+// LevelFromString returns a logrus.Level from a string identifier
+func LevelFromString(s string) (logrus.Level, error) {
+	switch strings.ToLower(s) {
+	case "debug":
+		return logrus.DebugLevel, nil
+	case "info", "notice":
+		return logrus.InfoLevel, nil
+	case "warn", "warning":
+		return logrus.WarnLevel, nil
+	case "error":
+		return logrus.ErrorLevel, nil
+	case "fatal", "critical":
+		return logrus.FatalLevel, nil
+	case "panic":
+		return logrus.PanicLevel, nil
+	default:
+		return logrus.DebugLevel, errors.New("could not convert string to log level")
+	}
+}
+
+// MustGetLogger returns a package-aware logger from the master logger
 func MustGetLogger(module string) *Logger {
-	return log.MustGetLogger(module)
+	return log.PackageLogger(module)
+}
+
+// AddHook adds a hook to the global logger
+func AddHook(hook logrus.Hook) {
+	log.AddHook(hook)
+}
+
+// EnableColors enables colored logging
+func EnableColors() {
+	log.EnableColors()
+}
+
+// DisableColors disables colored logging
+func DisableColors() {
+	log.DisableColors()
+}
+
+// SetLevel sets the logger's minimum log level
+func SetLevel(level logrus.Level) {
+	log.SetLevel(level)
+}
+
+// SetOutputTo sets the logger's output to an io.Writer
+func SetOutputTo(w io.Writer) {
+	log.Out = w
 }
 
 // Disable disables the logger completely
 func Disable() {
-	for k := range log.moduleLoggers {
-		log.moduleLoggers[k].Disable()
-	}
-}
-
-// RedirectTo redirects log to the given io.Wirter
-func RedirectTo(w io.Writer) {
-	for k := range log.moduleLoggers {
-		log.moduleLoggers[k].Out = w
-	}
+	log.Out = ioutil.Discard
 }

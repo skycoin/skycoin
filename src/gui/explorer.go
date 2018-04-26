@@ -205,7 +205,9 @@ func getTransactionsForAddress(gateway Gatewayer) http.HandlerFunc {
 				in[i] = *tIn
 			}
 
-			resTxs = append(resTxs, NewReadableTransaction(tx, in))
+			rTx := NewReadableTransaction(tx, in)
+
+			resTxs = append(resTxs, rTx)
 		}
 
 		wh.SendJSONOr500(logger, w, &resTxs)

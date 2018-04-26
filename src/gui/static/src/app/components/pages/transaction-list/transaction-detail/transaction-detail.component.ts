@@ -1,7 +1,7 @@
 import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Transaction } from '../../../../app.datatypes';
-import { PriceService } from '../../../../price.service';
+import { PriceService } from '../../../../services/price.service';
 import { Subscription } from 'rxjs/Subscription';
 
 @Component({

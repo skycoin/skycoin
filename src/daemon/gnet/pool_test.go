@@ -652,11 +652,18 @@ func TestPoolSendMessage(t *testing.T) {
 	EraseMessages()
 	RegisterMessage(BytePrefix, ByteMessage{})
 	VerifyMessages()
+
 	cfg := newTestConfig()
 	cfg.WriteTimeout = time.Second
 	cfg.SendResultsSize = 1
-	// cfg.ConnectionWriteQueueSize = 1
+	cfg.ConnectionWriteQueueSize = 8
 	p := NewConnectionPool(cfg, nil)
+
+	// Setup a callback to capture the connection pointer so we can get the address
+	cc := make(chan *Connection)
+	p.Config.ConnectCallback = func(addr string, solicited bool) {
+		cc <- p.pool[1]
+	}
 
 	q := make(chan struct{})
 	go func() {
@@ -665,28 +672,65 @@ func TestPoolSendMessage(t *testing.T) {
 	}()
 	wait()
 
-	require.NotEqual(t, p.Config.ConnectionWriteQueueSize, 0)
-	cc := make(chan *Connection)
-	p.Config.ConnectCallback = func(addr string, solicited bool) {
-		cc <- p.pool[1]
-	}
-
 	_, err := net.Dial("tcp", addr)
 	require.NoError(t, err)
 	wait()
 
 	c := <-cc
 	m := NewByteMessage(88)
-	p.SendMessage(c.Addr(), m)
+	err = p.SendMessage(c.Addr(), m)
+	require.NoError(t, err)
 
-	// queue full
-	for i := 0; i < cap(c.WriteQueue)+1; i++ {
-		c.WriteQueue <- m
+	p.Shutdown()
+	<-q
+}
+
+func TestPoolSendMessageWriteQueueFull(t *testing.T) {
+	resetHandler()
+	EraseMessages()
+	RegisterMessage(BytePrefix, ByteMessage{})
+	VerifyMessages()
+
+	cfg := newTestConfig()
+	cfg.WriteTimeout = time.Second
+	cfg.SendResultsSize = 1
+	cfg.ConnectionWriteQueueSize = 0
+	p := NewConnectionPool(cfg, nil)
+
+	// Setup a callback to capture the connection pointer so we can get the address
+	cc := make(chan *Connection)
+	p.Config.ConnectCallback = func(addr string, solicited bool) {
+		cc <- p.pool[1]
 	}
 
-	fmt.Printf("%v\n", len(c.WriteQueue))
-	err = p.SendMessage(c.Addr(), m)
-	require.Equal(t, ErrWriteQueueFull, err)
+	q := make(chan struct{})
+	go func() {
+		defer close(q)
+		p.Run()
+	}()
+	wait()
+
+	_, err := net.Dial("tcp", addr)
+	require.NoError(t, err)
+	wait()
+
+	c := <-cc
+
+	// Send messages faster than can be processed to trigger ErrWriteQueueFull
+	attempts := 100
+	gotErr := false
+	m := NewByteMessage(88)
+	addr := c.Addr()
+	for i := 0; i < attempts; i++ {
+		go func() {
+			err = p.SendMessage(addr, m)
+			if err == ErrWriteQueueFull {
+				gotErr = true
+			}
+		}()
+	}
+
+	require.True(t, gotErr)
 
 	p.Shutdown()
 	<-q

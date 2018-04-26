@@ -676,7 +676,7 @@ func (pool *ConnectionPool) SendMessage(addr string, msg Message) error {
 		logger.Debugf("Send, Msg Type: %s", reflect.TypeOf(msg))
 	}
 
-	err := pool.strand("SendMessage", func() error {
+	return pool.strand("SendMessage", func() error {
 		if conn, ok := pool.addresses[addr]; ok {
 			select {
 			case conn.WriteQueue <- msg:
@@ -687,8 +687,6 @@ func (pool *ConnectionPool) SendMessage(addr string, msg Message) error {
 		}
 		return nil
 	})
-
-	return err
 }
 
 // BroadcastMessage sends a Message to all connections in the Pool.

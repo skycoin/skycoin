@@ -14,7 +14,9 @@ export class ButtonComponent {
   state: number;
 
   onClick() {
-    if (!this.disabled) this.action.emit();
+    if (!this.disabled) {
+      this.action.emit();
+    }
   }
 
   setLoading() {

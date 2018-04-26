@@ -85,6 +85,7 @@ var endpoints = []string{
 	"/coinSupply",
 	"/richlist",
 	"/addresscount",
+	"/health",
 }
 
 func TestCSRFWrapper(t *testing.T) {

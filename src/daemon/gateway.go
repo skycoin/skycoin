@@ -538,13 +538,13 @@ func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest ciphe
 }
 
 // CreateTransaction creates a transaction based upon parameters in wallet.CreateTransactionParams
-func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*coin.Transaction, coin.UxArray, error) {
+func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*coin.Transaction, []wallet.UxBalance, error) {
 	if !gw.Config.EnableWalletAPI {
 		return nil, nil, wallet.ErrWalletAPIDisabled
 	}
 
 	var txn *coin.Transaction
-	var inputs coin.UxArray
+	var inputs []wallet.UxBalance
 	var err error
 
 	gw.strand("CreateTransaction", func() {

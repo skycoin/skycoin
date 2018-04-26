@@ -1971,7 +1971,7 @@ func TestCreateWalletParamsVerify(t *testing.T) {
 					},
 				},
 			},
-			err: "To.Address must not be empty",
+			err: "To.Address must not be the null address",
 		},
 
 		{
@@ -1993,7 +1993,7 @@ func TestCreateWalletParamsVerify(t *testing.T) {
 					Addresses: []cipher.Address{cipher.Address{}},
 				},
 			},
-			err: "Wallet.Addresses must not contain an empty value",
+			err: "Wallet.Addresses must not contain the null address",
 		},
 
 		{

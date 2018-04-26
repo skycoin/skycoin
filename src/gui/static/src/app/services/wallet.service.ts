@@ -10,6 +10,7 @@ import 'rxjs/add/operator/filter';
 import 'rxjs/add/operator/first';
 import 'rxjs/add/operator/mergeMap';
 import 'rxjs/add/observable/timer';
+import 'rxjs/add/observable/zip';
 import { Address, Wallet } from '../app.datatypes';
 import { ReplaySubject } from 'rxjs/ReplaySubject';
 import { Subscription } from 'rxjs/Subscription';
@@ -83,6 +84,22 @@ export class WalletService {
     return this.addressesAsString()
       .filter(addresses => !!addresses)
       .flatMap(addresses => this.apiService.get('outputs', {addrs: addresses}));
+  }
+
+  outputsWithWallets(): Observable<any> {
+    return Observable.zip(this.all(), this.outputs(), (wallets, outputs) => {
+      wallets = JSON.parse(JSON.stringify(wallets));
+
+      return !wallets ? [] : wallets.map(wallet => {
+        wallet.addresses = wallet.addresses.map(address => {
+          address.outputs = outputs.head_outputs.filter(output => output.address === address.address);
+
+          return address;
+        });
+
+        return wallet;
+      });
+    });
   }
 
   allPendingTransactions(): Observable<any> {
@@ -186,10 +203,7 @@ export class WalletService {
   }
 
   private loadData(): void {
-    this.apiService.getWallets().first().subscribe(wallets => {
-      this.wallets.next(wallets);
-      this.refreshBalances();
-    });
+    this.apiService.getWallets().first().subscribe(wallets => this.wallets.next(wallets));
   }
 
   private retrieveAddressBalance(address: any|any[]) {

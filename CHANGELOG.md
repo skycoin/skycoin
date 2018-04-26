@@ -23,16 +23,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `POST /wallet/decrypt` API endpoint, decrypts wallet and returns decrypted wallet without sensitive data
 - Add `POST /wallet/seed` API endpoint, returns the seed of an encrypted wallet. Unencrypted wallets will not expose their seeds over the API. Requires `-enable-seed-api` option
 - `-enable-seed-api` option to enable `POST /wallet/seed`
-- Add `"size"` to block API response data (affects `/block`, `/blocks` and `/last_blocks`)
+- Add `"size"` to block API response data (affects `GET /block`, `GET /blocks` and `GET /last_blocks`)
 - Write [specification for skycoin URIs](https://github.com/skycoin/skycoin#uri-specification) (based upon bip21)
 
 ### Fixed
 
 - #1309, Float imprecision error in frontend malformed some spend amounts, preventing the spend
+- Fix one aspect of sync stalling caused by a 5-second blocking channel write by switching it to a non-blocking write, decreasing timeouts and increasing buffer sizes
 
 ### Changed
 
-- `GET /wallet` API endpoint, remove sensitive data from the response, and fix the data format to be the same as `/wallet/create`
+- `GET /wallet` API endpoint, remove sensitive data from the response, and fix the data format to be the same as `POST /wallet/create`
 - `GET /wallets` API endpoint, remove sensitive data from the response
 - `POST /wallet/create` API endpoint, add `encrypt(bool)` and `password` argument
 - `POST /wallet/newAddress` API endpoint, add `password` argument
@@ -44,10 +45,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Disable JSON-RPC 2.0 interface when running the application with `run.sh` and electron
 - Whitespace will be trimmed from the seed string by the frontend client before creating or loading a wallet
 - Notify the user when their wallets have unconfirmed transactions
+- Return an error when providing a transaction that spends to the null address in `POST /injectTransaction`
+- Change accepted `-log-level` values to `debug`, `info`, `warn`, `error`, `fatal` and `panic` (previously were `debug`, `info`, `notice`, `warning`, `error` and `critical`)
+- Default log level is `info`
 
 ### Removed
 
 - Remove `"seed"`, `"lastSeed"` and `"secret_key"` in address entries from wallet API responses. A wallet's seed can be accessed through `POST /wallet/seed` only if the wallet is encrypted and the node is run with `-enable-seed-api`
+- Remove unused `-logtogui` and `-logbufsize` options
 
 ## [0.22.0] - 2018-03-20
 

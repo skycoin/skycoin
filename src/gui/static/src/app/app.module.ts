@@ -31,7 +31,7 @@ import { TellerStatusPipe } from './pipes/teller-status.pipe';
 import { HeaderComponent } from './components/layout/header/header.component';
 import { TopBarComponent } from './components/layout/header/top-bar/top-bar.component';
 import { FooterComponent } from './components/layout/footer/footer.component';
-import { PriceService } from './price.service';
+import { PriceService } from './services/price.service';
 import { TransactionListComponent } from './components/pages/transaction-list/transaction-list.component';
 import { TransactionDetailComponent } from './components/pages/transaction-list/transaction-detail/transaction-detail.component';
 import { NavBarComponent } from './components/layout/header/nav-bar/nav-bar.component';

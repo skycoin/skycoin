@@ -27,15 +27,105 @@ func NewGatewayerMock() *GatewayerMock {
 	return &GatewayerMock{}
 }
 
+// CreateTransaction mocked method
+func (m *GatewayerMock) CreateTransaction(p0 wallet.CreateTransactionParams) (*coin.Transaction, []wallet.UxBalance, error) {
+
+	ret := m.Called(p0)
+
+	var r0 *coin.Transaction
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case *coin.Transaction:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 []wallet.UxBalance
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case []wallet.UxBalance:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r2 error
+	switch res := ret.Get(2).(type) {
+	case nil:
+	case error:
+		r2 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1, r2
+
+}
+
 // CreateWallet mocked method
-func (m *GatewayerMock) CreateWallet(p0 string, p1 wallet.Options) (wallet.Wallet, error) {
+func (m *GatewayerMock) CreateWallet(p0 string, p1 wallet.Options) (*wallet.Wallet, error) {
 
 	ret := m.Called(p0, p1)
 
-	var r0 wallet.Wallet
+	var r0 *wallet.Wallet
 	switch res := ret.Get(0).(type) {
 	case nil:
-	case wallet.Wallet:
+	case *wallet.Wallet:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
+
+}
+
+// DecryptWallet mocked method
+func (m *GatewayerMock) DecryptWallet(p0 string, p1 []byte) (*wallet.Wallet, error) {
+
+	ret := m.Called(p0, p1)
+
+	var r0 *wallet.Wallet
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case *wallet.Wallet:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
+
+}
+
+// EncryptWallet mocked method
+func (m *GatewayerMock) EncryptWallet(p0 string, p1 []byte) (*wallet.Wallet, error) {
+
+	ret := m.Called(p0, p1)
+
+	var r0 *wallet.Wallet
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case *wallet.Wallet:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
@@ -55,14 +145,14 @@ func (m *GatewayerMock) CreateWallet(p0 string, p1 wallet.Options) (wallet.Walle
 }
 
 // GetAddrUxOuts mocked method
-func (m *GatewayerMock) GetAddrUxOuts(p0 cipher.Address) ([]*historydb.UxOutJSON, error) {
+func (m *GatewayerMock) GetAddrUxOuts(p0 []cipher.Address) ([]*historydb.UxOut, error) {
 
 	ret := m.Called(p0)
 
-	var r0 []*historydb.UxOutJSON
+	var r0 []*historydb.UxOut
 	switch res := ret.Get(0).(type) {
 	case nil:
-	case []*historydb.UxOutJSON:
+	case []*historydb.UxOut:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
@@ -235,7 +325,7 @@ func (m *GatewayerMock) GetBlockBySeq(p0 uint64) (coin.SignedBlock, bool) {
 }
 
 // GetBlockchainMetadata mocked method
-func (m *GatewayerMock) GetBlockchainMetadata() *visor.BlockchainMetadata {
+func (m *GatewayerMock) GetBlockchainMetadata() (*visor.BlockchainMetadata, error) {
 
 	ret := m.Called()
 
@@ -248,7 +338,16 @@ func (m *GatewayerMock) GetBlockchainMetadata() *visor.BlockchainMetadata {
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	return r0
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
 
 }
 
@@ -384,6 +483,33 @@ func (m *GatewayerMock) GetExchgConnection() []string {
 	}
 
 	return r0
+
+}
+
+// GetHealth mocked method
+func (m *GatewayerMock) GetHealth() (*daemon.Health, error) {
+
+	ret := m.Called()
+
+	var r0 *daemon.Health
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case *daemon.Health:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
 
 }
 
@@ -568,14 +694,14 @@ func (m *GatewayerMock) GetUxOutByID(p0 cipher.SHA256) (*historydb.UxOut, error)
 }
 
 // GetWallet mocked method
-func (m *GatewayerMock) GetWallet(p0 string) (wallet.Wallet, error) {
+func (m *GatewayerMock) GetWallet(p0 string) (*wallet.Wallet, error) {
 
 	ret := m.Called(p0)
 
-	var r0 wallet.Wallet
+	var r0 *wallet.Wallet
 	switch res := ret.Get(0).(type) {
 	case nil:
-	case wallet.Wallet:
+	case *wallet.Wallet:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
@@ -625,6 +751,33 @@ func (m *GatewayerMock) GetWalletBalance(p0 string) (wallet.BalancePair, error) 
 func (m *GatewayerMock) GetWalletDir() (string, error) {
 
 	ret := m.Called()
+
+	var r0 string
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case string:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
+
+}
+
+// GetWalletSeed mocked method
+func (m *GatewayerMock) GetWalletSeed(p0 string, p1 []byte) (string, error) {
+
+	ret := m.Called(p0, p1)
 
 	var r0 string
 	switch res := ret.Get(0).(type) {
@@ -720,10 +873,28 @@ func (m *GatewayerMock) InjectBroadcastTransaction(p0 coin.Transaction) error {
 
 }
 
-// NewAddresses mocked method
-func (m *GatewayerMock) NewAddresses(p0 string, p1 uint64) ([]cipher.Address, error) {
+// IsWalletAPIEnabled mocked method
+func (m *GatewayerMock) IsWalletAPIEnabled() bool {
 
-	ret := m.Called(p0, p1)
+	ret := m.Called()
+
+	var r0 bool
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case bool:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0
+
+}
+
+// NewAddresses mocked method
+func (m *GatewayerMock) NewAddresses(p0 string, p1 []byte, p2 uint64) ([]cipher.Address, error) {
+
+	ret := m.Called(p0, p1, p2)
 
 	var r0 []cipher.Address
 	switch res := ret.Get(0).(type) {
@@ -765,37 +936,10 @@ func (m *GatewayerMock) ResendUnconfirmedTxns() *daemon.ResendResult {
 
 }
 
-// ScanAheadWalletAddresses mocked method
-func (m *GatewayerMock) ScanAheadWalletAddresses(p0 string, p1 uint64) (wallet.Wallet, error) {
-
-	ret := m.Called(p0, p1)
-
-	var r0 wallet.Wallet
-	switch res := ret.Get(0).(type) {
-	case nil:
-	case wallet.Wallet:
-		r0 = res
-	default:
-		panic(fmt.Sprintf("unexpected type: %v", res))
-	}
-
-	var r1 error
-	switch res := ret.Get(1).(type) {
-	case nil:
-	case error:
-		r1 = res
-	default:
-		panic(fmt.Sprintf("unexpected type: %v", res))
-	}
-
-	return r0, r1
-
-}
-
 // Spend mocked method
-func (m *GatewayerMock) Spend(p0 string, p1 uint64, p2 cipher.Address) (*coin.Transaction, error) {
+func (m *GatewayerMock) Spend(p0 string, p1 []byte, p2 uint64, p3 cipher.Address) (*coin.Transaction, error) {
 
-	ret := m.Called(p0, p1, p2)
+	ret := m.Called(p0, p1, p2, p3)
 
 	var r0 *coin.Transaction
 	switch res := ret.Get(0).(type) {
@@ -816,6 +960,24 @@ func (m *GatewayerMock) Spend(p0 string, p1 uint64, p2 cipher.Address) (*coin.Tr
 	}
 
 	return r0, r1
+
+}
+
+// UnloadWallet mocked method
+func (m *GatewayerMock) UnloadWallet(p0 string) error {
+
+	ret := m.Called(p0)
+
+	var r0 error
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case error:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0
 
 }
 

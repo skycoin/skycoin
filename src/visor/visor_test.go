@@ -17,6 +17,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
+	_require "github.com/skycoin/skycoin/src/testutil/require"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
@@ -167,7 +168,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	}
 
 	// CreateBlock panics if called when not master
-	require.PanicsWithValue(t, "Only master chain can create blocks", func() {
+	_require.PanicsWithLogMessage(t, "Only master chain can create blocks", func() {
 		v.CreateBlock(when)
 	})
 
@@ -318,7 +319,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	}
 
 	// CreateBlock panics if called when not master
-	require.PanicsWithValue(t, "Only master chain can create blocks", func() {
+	_require.PanicsWithLogMessage(t, "Only master chain can create blocks", func() {
 		v.CreateBlock(when)
 	})
 
@@ -447,7 +448,7 @@ func TestVisorCalculatePrecision(t *testing.T) {
 		})
 	}
 
-	require.PanicsWithValue(t, "precision must be <= droplet.Exponent", func() {
+	_require.PanicsWithLogMessage(t, "precision must be <= droplet.Exponent", func() {
 		calculateDivisor(7)
 	})
 }

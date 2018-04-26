@@ -1,6 +1,6 @@
-# APIs document
+# REST API Documentation
 
-Apis service port is `6420`.
+API default service port is `6420`.
 
 A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](https://godoc.org/github.com/skycoin/skycoin/src/gui#Client).
 
@@ -8,11 +8,13 @@ A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](h
 
 - [CSRF](#csrf)
     - [Get current csrf token](#get-current-csrf-token)
-- [Simple query apis](#simple-query-apis)
+- [General system checks](#general-system-checks)
+    - [Health check](#health-check)
+- [Simple query APIs](#simple-query-apis)
     - [Get node version info](#get-node-version-info)
     - [Get balance of addresses](#get-balance-of-addresses)
     - [Get unspent output set of address or hash](#get-unspent-output-set-of-address-or-hash)
-- [Wallet apis](#wallet-apis)
+- [Wallet APIs](#wallet-apis)
     - [Get wallet](#get-wallet)
     - [Get wallet transactions](#get-wallet-transactions)
     - [Get wallets](#get-wallets)
@@ -23,22 +25,27 @@ A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](h
     - [Updates wallet label](#updates-wallet-label)
     - [Get wallet balance](#get-wallet-balance)
     - [Spend coins from wallet](#spend-coins-from-wallet)
-- [Transaction apis](#transaction-apis)
+    - [Create transaction](#create-transaction)
+    - [Unload wallet](#unload-wallet)
+    - [Encrypt wallet](#encrypt-wallet)
+    - [Decrypt wallet](#decrypt-wallet)
+    - [Get wallet seed](#get-wallet-seed)
+- [Transaction APIs](#transaction-apis)
     - [Get unconfirmed transactions](#get-unconfirmed-transactions)
     - [Get transaction info by id](#get-transaction-info-by-id)
     - [Get raw transaction by id](#get-raw-transaction-by-id)
     - [Inject raw transaction](#inject-raw-transaction)
     - [Get transactions that are addresses related](#get-transactions-that-are-addresses-related)
     - [Resend unconfirmed transactions](#resend-unconfirmed-transactions)
-- [Block apis](#block-apis)
+- [Block APIs](#block-apis)
     - [Get blockchain metadata](#get-blockchain-metadata)
-    - [Get blochchain progress](#get-blochchain-progress)
+    - [Get blockchain progress](#get-blockchain-progress)
     - [Get block by hash or seq](#get-block-by-hash-or-seq)
     - [Get blocks in specific range](#get-blocks-in-specific-range)
     - [Get last N blocks](#get-last-n-blocks)
-- [Explorer apis](#explorer-apis)
+- [Explorer APIs](#explorer-apis)
     - [Get address affected transactions](#get-address-affected-transactions)
-- [Uxout apis](#uxout-apis)
+- [Uxout APIs](#uxout-apis)
     - [Get uxout](#get-uxout)
     - [Get address affected uxouts](#get-address-affected-uxouts)
 - [Coin supply related information](#coin-supply-related-information)
@@ -57,7 +64,7 @@ A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](h
 ## CSRF
 
 All `POST`, `PUT` and `DELETE` requests require a CSRF token, obtained with a `GET /csrf` call.
-The token must be placed in the `X-CSRF-Token` header.  A token is only valid
+The token must be placed in the `X-CSRF-Token` header. A token is only valid
 for 30 seconds and it is expected that the client obtains a new CSRF token
 for each request.
 
@@ -66,18 +73,18 @@ as the response body.
 
 ### Get current csrf token
 
-```sh
+```
 URI: /csrf
 Method: GET
 ```
 
-example:
+Example:
 
 ```sh
 curl http://127.0.0.1:6420/csrf
 ```
 
-result:
+Result:
 
 ```json
 {
@@ -85,22 +92,65 @@ result:
 }
 ```
 
-## Simple query apis
+## General system checks
+
+### Health check
+
+```
+URI: /health
+Method: GET
+```
+
+Example:
+
+```sh
+curl http://127.0.0.1:6420/health
+```
+
+Response:
+
+```json
+{
+    "blockchain": {
+        "head": {
+            "seq": 21175,
+            "block_hash": "8a3e0aac619551ae009cfb28c2b36bb1300925f74da770d1512072314f6a4c80",
+            "previous_block_hash": "001eb7911b6a6ab7c75feb88726dd2bc8b87133aebc82201c4404537eb74f7ac",
+            "timestamp": 1523168686,
+            "fee": 2,
+            "version": 0,
+            "tx_body_hash": "36be8d70d1e9f70b340ea7ecf0b247c27086bad10568044c1196fe150f6cea1b"
+        },
+        "unspents": 14750,
+        "unconfirmed": 0,
+        "time_since_last_block": "12m6s"
+    },
+    "version": {
+        "version": "0.23.0",
+        "commit": "f61b4319c2f146a5ad86f7cbda26a1ba6a09998d",
+        "branch": "develop"
+    },
+    "open_connections": 30,
+    "uptime": "13.686460853s"
+}
+```
+
+## Simple query APIs
 
 ### Get node version info
 
-```sh
+```
 URI: /version
 Method: GET
 ```
 
-example:
+Example:
 
 ```sh
 curl http://127.0.0.1:6420/version
 ```
 
-result:
+Result:
 
 ```json
 {
@@ -118,13 +168,13 @@ Args:
     addrs: comma-separated list of addresses. must contain at least one address
 ```
 
-example:
+Example:
 
-```bash
+```sh
 curl http://127.0.0.1:6420/balance\?addrs\=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq
 ```
 
-result:
+Result:
 
 ```json
 {
@@ -141,17 +191,17 @@ result:
 
 ### Get unspent output set of address or hash
 
-```sh
+```
 URI: /outputs
 Method: GET
 Args:
-    addrs  // address list, joined with ","
-    hashes // hash list, joined with ","
+    addrs: address list, joined with ","
+    hashes: hash list, joined with ","
 ```
 
 Addrs and hashes cannot be combined.
 
-example:
+Example:
 
 ```sh
 curl http://127.0.0.1:6420/outputs?addrs=6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY
@@ -163,9 +213,9 @@ or
 curl http://127.0.0.1:6420/outputs?hashes=7669ff7350d2c70a88093431a7b30d3e69dda2319dcb048aa80fa0d19e12ebe0
 ```
 
-result:
+Result:
 
-```sh
+```json
 {
     "head_outputs": [
         {
@@ -184,7 +234,7 @@ result:
 }
 ```
 
-## Wallet apis
+## Wallet APIs
 
 ### Get wallet
 
@@ -192,47 +242,44 @@ result:
 URI: /wallet
 Method: GET
 Args:
-    id - Wallet ID [required]
+    id: Wallet ID [required]
 ```
 
-example:
-```bash
-curl http://127.0.0.1:6420/wallet?id=walletId
+Example:
+
+```sh
+curl http://127.0.0.1:6420/wallet?id=2017_11_25_e5fb.wlt
 ```
 
-result:
+Result:
+
 ```json
 {
-    "Meta":{
-        "coin":"skycoin",
-        "filename":"2017_11_25_e5fb.wlt",
-        "label":"test",
-        "lastSeed":"c69085fc5c95e8bbc5903baef8ad2d7b7065d7a5c1b3d150101f9a2f357c1537",
-        "seed":"child cruel simple clerk cave",
-        "tm":"1511640884",
-        "type":"deterministic",
-        "version":"0.1"
+    "meta": {
+        "coin": "skycoin",
+        "filename": "2017_11_25_e5fb.wlt",
+        "label": "test",
+        "type": "deterministic",
+        "version": "0.2",
+        "crypto_type": "",
+        "timestamp": 1511640884,
+        "encrypted": false
     },
-    "Entries":[
+    "entries": [
         {
-            "Address":{
-                "Version":0,
-                "Key":[
-
-                ]
-            },
-            "Public":[
-
-            ],
-            "Secret":[
-
-            ]
+            "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
+            "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1"
+        },
+        {
+            "address": "SMnCGfpt7zVXm8BkRSFMLeMRA6LUu3Ewne",
+            "public_key": "02539528248a1a2c4f0b73233491103ca83b40249dac3ae9eee9a10b9f9debd9a3"
         }
     ]
 }
 ```
 
 ### Get wallet transactions
+
 ```
 URI: /wallet/transactions
 Method: GET
@@ -240,69 +287,72 @@ Args:
 	id: Wallet ID
 ```
 
-// Returns all pending transaction for all addresses by selected Wallet
-example:
-```bash
+Returns all pending transaction for all addresses by selected Wallet
+
+Example:
+
+```sh
 curl http://127.0.0.1:6420/wallet/transactions?id=2017_11_25_e5fb.wlt
 ```
 
-result:
+Result:
 
 ```json
 {
-    "transactions":[
+    "transactions": [
         {
-            "transaction":{
-                "length":317,
-                "type":0,
-                "txid":"76ecbabc53ea2a3be46983058433dda6a3cf7ea0b86ba14d90b932fa97385de7",
-                "inner_hash":"5d55837bb0cbda9c9323ff9aafd7c3d31d0d38638346172fbe2d9078ebaa892a",
-                "sigs":[
+            "transaction": {
+                "length": 317,
+                "type": 0,
+                "txid": "76ecbabc53ea2a3be46983058433dda6a3cf7ea0b86ba14d90b932fa97385de7",
+                "inner_hash": "5d55837bb0cbda9c9323ff9aafd7c3d31d0d38638346172fbe2d9078ebaa892a",
+                "sigs": [
                     "464b7724302178c1cfeacadaaf3556a3b7e5259adf51919476c3acc695747ed244b5ce2187ce7bedb6ad65c71f7f7ff3fa6805e64fe5da3aaa00ad563c7424f600",
                     "1155537b0391d4a6ee5eac07dee5798e953dca3a7c30643403dd2d326582c7d35080a16dc22644782ce1087bfc3bd06c2bf68e9a98e3989d90831646a9be2c9101"
                 ],
-                "inputs":[
+                "inputs": [
                     "782a8662efb0e933cab7d3ae9429ab53c4208cf44d8cdc07c2fbd7204b6b5cad",
                     "2f6b61a44086588c4eaa56a5dd9f1e0be2528861a6731608fcec38891b95db91"
                 ],
-                "outputs":[
+                "outputs": [
                     {
-                        "uxid":"bd302ef776efa8548183b89f21e90649f21b90fe2d2e90ecc1b880f2d995f226",
-                        "dst":"2UXZTg4ZHF6715b6tRhtaqceuQQ3G79GiZg",
-                        "coins":"998.000000",
-                        "hours":247538
+                        "uxid": "bd302ef776efa8548183b89f21e90649f21b90fe2d2e90ecc1b880f2d995f226",
+                        "dst": "2UXZTg4ZHF6715b6tRhtaqceuQQ3G79GiZg",
+                        "coins": "998.000000",
+                        "hours": 247538
                     },
                     {
-                        "uxid":"31058b6bfb30bfd441aec00929e75782bce47c8a75787ba519dbb268f89d2c4b",
-                        "dst":"2awsJ2CR5H6QXCF2hwDjcvcAH9SgyfxCxgz",
-                        "coins":"1.000000",
-                        "hours":247538
+                        "uxid": "31058b6bfb30bfd441aec00929e75782bce47c8a75787ba519dbb268f89d2c4b",
+                        "dst": "2awsJ2CR5H6QXCF2hwDjcvcAH9SgyfxCxgz",
+                        "coins": "1.000000",
+                        "hours": 247538
                     }
                 ]
             },
-            "received":"2018-03-16T18:03:57.139109904+05:30",
-            "checked":"2018-03-16T18:03:57.139109904+05:30",
-            "announced":"0001-01-01T00:00:00Z",
-            "is_valid":true
+            "received": "2018-03-16T18:03:57.139109904+05:30",
+            "checked": "2018-03-16T18:03:57.139109904+05:30",
+            "announced": "0001-01-01T00:00:00Z",
+            "is_valid": true
         }
     ]
 }
 ```
 
 ### Get wallets
+
 ```
 URI: /wallets
 Method: GET
-Args:
-    -
 ```
 
-example:
-```bash
+Example:
+
+```sh
 curl http://127.0.0.1:6420/wallets
 ```
 
-result:
+Result:
+
 ```json
 [
     {
@@ -310,22 +360,20 @@ result:
             "coin": "skycoin",
             "filename": "2017_11_25_e5fb.wlt",
             "label": "test",
-            "lastSeed": "c69085fc5c95e8bbc5903baef8ad2d7b7065d7a5c1b3d150101f9a2f357c1537",
-            "seed": "child cruel assault pepper miracle hello clerk cave",
-            "tm": "1511640884",
             "type": "deterministic",
-            "version": "0.1"
+            "version": "0.2",
+            "crypto_type": "",
+            "timestamp": 1511640884,
+            "encrypted": false
         },
         "entries": [
             {
                 "address": "8C5icxR9zdkYTZZTVV3cCX7QoK4EkLuK4p",
-                "public_key": "***",
-                "secret_key": "***"
+                "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1"
             },
             {
                 "address": "23A1EWMZopUFLCwtXMe2CU9xTCbi5Gth643",
-                "public_key": "***",
-                "secret_key": "***"
+                "public_key": "02539528248a1a2c4f0b73233491103ca83b40249dac3ae9eee9a10b9f9debd9a3"
             }
         ]
     }
@@ -337,17 +385,16 @@ result:
 ```
 URI: /wallets/folderName
 Method: GET
-Args:
-    -
-
 ```
 
-example:
-```bash
+Example:
+
+```sh
 curl http://127.0.0.1:6420/wallets/folderName
 ```
 
-result:
+Result:
+
 ```json
 {
     "address": "/Users/user/.skycoin/wallets"
@@ -365,13 +412,13 @@ Args:
              default: 128
 ```
 
-example:
+Example:
 
-```bash
+```sh
 curl http://127.0.0.1:6420/wallet/newSeed
 ```
 
-result:
+Result:
 
 ```json
 {
@@ -388,33 +435,39 @@ Args:
     seed: wallet seed [required]
     label: wallet label [required]
     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
+    encrypt: encrypt wallet [optional, bool value]
+    password: wallet password[optional, must be provided if encrypt is true]
 ```
 
-example:
+Example:
 
-```bash
-curl http://127.0.0.1:6420/wallet/create -d "seed=$seed&label=$label&scan=5"
+```sh
+curl -X POST http://127.0.0.1:6420/wallet/create \
+ -H 'Content-Type: application/x-www-form-urlencoded' \
+ -d 'seed=$seed' \
+ -d 'label=$label' \
+ -d 'scan=5' \
+ -d 'password=$password'
 ```
 
-result:
+Result:
 
 ```json
 {
     "meta": {
-        "coin": "sky",
+        "coin": "skycoin",
         "filename": "2017_05_09_d554.wlt",
-        "label": "",
-        "lastSeed": "4795eaf6890c0ce1d67daf87d2f85523b1d19245a7a81a38c757fc4a7e3cae3e",
-        "seed": "dish slide planet night tape stick ask element title sound only typical",
-        "tm": "1494315855",
+        "label": "test",
         "type": "deterministic",
-        "version": "0.1"
+        "version": "0.2",
+        "crypto_type": "",
+        "timestamp": 1511640884,
+        "encrypted": false
     },
     "entries": [
         {
             "address": "y2JeYS4RS8L9GYM7UKdjLRyZanKHXumFoH",
-            "public_key": "0343581927c12d07582168d6092d06d0a8cefdef47541f804eae33faf027932245",
-            "secret_key": "6a7215780d7adf26cd697bd5186510f0ecb9e9a1c9d1e17d7f61d703e5087620"
+            "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1"
         }
     ]
 }
@@ -427,15 +480,21 @@ URI: /wallet/newAddress
 Method: POST
 Args:
     id: wallet file name
+    num: the number you want to generate
+    password: wallet password
 ```
 
-example:
+Example:
 
-```bash
-curl -X POST http://127.0.0.1:6420/wallet/newAddress?id=2017_05_09_d554.wlt
+```sh
+curl -X POST http://127.0.0.1:6420/wallet/newAddress \
+ -H 'Content-Type: x-www-form-urlencoded' \
+ -d 'id=2017_05_09_d554.wlt' \
+ -d 'num=2' \
+ -d 'password=$password'
 ```
 
-result:
+Result:
 
 ```json
 {
@@ -455,15 +514,18 @@ Args:
     label: wallet label
 ```
 
-example:
+Example:
 
-```bash
-curl -X POST http://127.0.0.1:6420/wallet/update?id=$id&label=$label
+```sh
+curl -X POST http://127.0.0.1:6420/wallet/update \
+ -H 'Content-Type: application/x-www-form-urlencoded' \
+ -d 'id=$id' \
+ -d 'label=$label'
 ```
 
-result:
+Result:
 
-```
+```json
 "success"
 ```
 
@@ -476,13 +538,13 @@ Args:
     id: wallet file name
 ```
 
-example:
+Example:
 
-```bash
+```sh
 curl http://127.0.0.1:6420/wallet/balance?id=2017_05_09_d554.wlt
 ```
 
-result:
+Result:
 
 ```json
 {
@@ -506,6 +568,7 @@ Args:
     id: wallet id
     dst: recipient address
     coins: number of coins to send, in droplets. 1 coin equals 1e6 droplets.
+    password: wallet password.
 Response:
     balance: new balance of the wallet
     txn: spent transaction
@@ -515,18 +578,23 @@ Statuses:
     200: successful spend. NOTE: the response may include an "error" field. if this occurs, the spend succeeded
          but the response data could not be prepared. The client should NOT spend again.
     400: Invalid query params, wallet lacks enough coin hours, insufficient balance
+    403: Wallet api disabled
     404: wallet does not exist
     500: other errors
 ```
 
 example, send 1 coin to `2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc` from wallet `2017_05_09_ea42.wlt`:
 
-```bash
-curl -X POST \
-  'http://127.0.0.1:6420/wallet/spend?id=2017_05_09_ea42.wlt&dst=2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc&coins=1000000'
+```sh
+curl -X POST  http://127.0.0.1:6420/wallet/spend \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'id=2017_05_09_ea42.wlt' \
+  -d 'dst=2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc' \
+  -d 'coins=1000000'
+  -d 'password=$password'
 ```
 
-result:
+Result:
 
 ```json
 {
@@ -572,7 +640,345 @@ result:
 }
 ```
 
-## Transaction apis
+### Create transaction
+
+```
+URI: /wallet/transaction
+Method: POST
+Content-Type: application/json
+Args: JSON body, see examples
+```
+
+Creates a transaction, returning the transaction preview and the encoded, serialized transaction.
+The `encoded_transaction` can be provided to `POST /injectTransaction` to broadcast it to the network.
+
+The request body includes:
+
+* A change address
+* A wallet to spend from with the optional ability to restrict which addresses in the wallet to use
+* A list of destinations with address and coins specified, as well as optionally specifying hours
+* A configuration for how destination hours are distributed, either manual or automatic
+
+Example request body with manual hours selection type, unencrypted wallet and all wallet addresses may spend:
+
+```json
+{
+    "hours_selection": {
+        "type": "manual"
+    },
+    "wallet": {
+        "id": "foo.wlt"
+    },
+    "change_address": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
+    "to": [{
+        "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+        "coins": "1.032",
+        "hours": 7
+    }, {
+        "address": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
+        "coins": "99.2",
+        "hours": 0
+    }]
+}
+```
+
+Example request body with auto hours selection type, encrypted wallet, specified spending addresses:
+
+```json
+{
+    "hours_selection": {
+        "type": "auto",
+        "mode": "share",
+        "share_factor": "0.5"
+    },
+    "wallet": {
+        "id": "foo.wlt",
+        "addresses": ["2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc"],
+        "password": "foobar",
+    },
+    "change_address": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
+    "to": [{
+        "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+        "coins": "1.032"
+    }, {
+        "address": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
+        "coins": "99.2"
+    }]
+}
+```
+
+The `hours_selection` field has two types: `manual` or `auto`.
+
+If `manual`, all destination hours must be specified.
+
+If `auto`, the `mode` field must be set. The only valid value for `mode` is `"share"`.
+For the `"share"` mode, `share_factor` must also be set. This must be a decimal value greater than or equal to 0 and less than or equal to 1.
+In the auto share mode, the remaining hours after the fee are shared between the destination addresses as a whole,
+and the change address. Amongst the destination addresses, the shared hours are distributed proportionally.
+
+Note that if there are remaining coin hours as change, but no coins are available as change from the wallet,
+these remaining coin hours will be burned as an additional fee.
+
+All objects in `to` must be unique; a single transaction cannot create multiple outputs with the same `address`, `coins` and `hours`.
+
+For example, this is a valid value for `to`, if `hours_selection.type` is `"manual"`:
+
+```json
+[{
+    "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+    "coins": "1.2",
+    "hours": "1"
+}, {
+    "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+    "coins": "1.2",
+    "hours": "2"
+}]
+```
+
+But this is an invalid value for `to`, if `hours_selection.type` is `"manual"`:
+
+```json
+[{
+    "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+    "coins": "1.2",
+    "hours": "1"
+}, {
+    "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+    "coins": "1.2",
+    "hours": "1"
+}]
+```
+
+And this is a valid value for `to`, if `hours_selection.type` is `"auto"`:
+
+```json
+[{
+    "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+    "coins": "1.2"
+}, {
+    "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+    "coins": "1.201"
+}]
+```
+
+But this is an invalid value for `to`, if `hours_selection.type` is `"auto"`:
+
+```json
+[{
+    "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+    "coins": "1.2"
+}, {
+    "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+    "coins": "1.2"
+}]
+```
+
+If `wallet.addresses` is empty or not provided, then all addresses from the wallet will be considered to use
+for spending. To control which addresses may spend, specify the addresses in this field.
+
+`change_address` must be set, but it is not required to be an address in the wallet.
+
+Example:
+
+```sh
+curl -X POST http://127.0.0.1:6420/wallet/transaction -H 'content-type: application/json' -d '{
+    "hours_selection": {
+        "type": "auto",
+        "mode": "share",
+        "share_factor": "0.5"
+    },
+    "wallet": {
+        "id": "foo.wlt"
+    },
+    "change_address": "uvcDrKc8rHTjxLrU4mPN56Hyh2tR6RvCvw",
+    "to": [{
+        "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+        "coins": "1",
+    }, {
+        "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+        "coins": "8.99",
+    }]
+}'
+```
+
+Result:
+
+```json
+{
+    "transaction": {
+        "length": 257,
+        "type": 0,
+        "txid": "5f060918d2da468a784ff440fbba80674c829caca355a27ae067f465d0a5e43e",
+        "inner_hash": "97dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11d",
+        "fee": "437691",
+        "sigs": [
+            "6120acebfa61ba4d3970dec5665c3c952374f5d9bbf327674a0b240de62b202b319f61182e2a262b2ca5ef5a592084299504689db5448cd64c04b1f26eb01d9100"
+        ],
+        "inputs": [
+            {
+                "uxid": "7068bfd0f0f914ea3682d0e5cb3231b75cb9f0776bf9013d79b998d96c93ce2b",
+                "address": "g4XmbmVyDnkswsQTSqYRsyoh1YqydDX1wp",
+                "coins": "10.000000",
+                "hours": "853667",
+                "calculated_hours": "862290",
+                "timestamp": 1524242826,
+                "block": 23575,
+                "txid": "ccfbb51e94cb58a619a82502bc986fb028f632df299ce189c2ff2932574a03e7"
+            }
+        ],
+        "outputs": [
+            {
+                "uxid": "519c069a0593e179f226e87b528f60aea72826ec7f99d51279dd8854889ed7e2",
+                "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+                "coins": "1.000000",
+                "hours": "22253"
+            },
+            {
+                "uxid": "4e4e41996297511a40e2ef0046bd6b7118a8362c1f4f09a288c5c3ea2f4dfb85",
+                "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+                "coins": "8.990000",
+                "hours": "200046"
+            },
+            {
+                "uxid": "fdeb3f77408f39e50a8e3b6803ce2347aac2eba8118c494424f9fa4959bab507",
+                "address": "uvcDrKc8rHTjxLrU4mPN56Hyh2tR6RvCvw",
+                "coins": "0.010000",
+                "hours": "222300"
+            }
+        ]
+    },
+    "encoded_transaction": "010100000097dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11d010000006120acebfa61ba4d3970dec5665c3c952374f5d9bbf327674a0b240de62b202b319f61182e2a262b2ca5ef5a592084299504689db5448cd64c04b1f26eb01d9100010000007068bfd0f0f914ea3682d0e5cb3231b75cb9f0776bf9013d79b998d96c93ce2b0300000000ba2a4ac4a5ce4e03a82d2240ae3661419f7081b140420f0000000000ed5600000000000000ba2a4ac4a5ce4e03a82d2240ae3661419f7081b1302d8900000000006e0d0300000000000083874350e65e84aa6e06192408951d7aaac7809e10270000000000005c64030000000000"
+}
+```
+
+### Unload wallet
+
+```
+URI: /wallet/unload
+Method: POST
+Args:
+    id: wallet file name
+```
+
+Example:
+
+```sh
+curl -X POST http://127.0.0.1:6420/wallet/unload \
+ -H 'Content-Type: x-www-form-urlencoded' \
+ -d 'id=2017_05_09_d554.wlt'
+```
+
+### Encrypt wallet
+
+```
+URI: /wallet/encrypt
+Method: POST
+Args:
+    id: wallet id
+    password: wallet password
+```
+
+Example:
+
+```sh
+curl -X POST http://127.0.0.1:6420/wallet/encrypt \
+ -H 'Content-Type: application/x-www-form-urlencoded' \
+ -d 'id=test.wlt' \
+ -d 'password=$password'
+```
+
+Result:
+
+```json
+{
+    "meta": {
+        "coin": "skycoin",
+        "filename": "test.wlt",
+        "label": "test",
+        "type": "deterministic",
+        "version": "0.2",
+        "crypto_type": "scrypt-chacha20poly1305",
+        "timestamp": 1521083044,
+        "encrypted": true
+    },
+    "entries": [
+        {
+            "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+            "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1"
+        }
+    ]
+}
+```
+
+### Decrypt wallet
+
+```
+URI: /wallet/decrypt
+Method: POST
+Args:
+    id: wallet id
+    password: wallet password
+```
+
+Example:
+
+```sh
+curl -X POST http://127.0.0.1:6420/wallet/decrypt \
+ -H 'Content-Type: application/x-www-form-urlencoded' \
+ -d 'id=test.wlt' \
+ -d 'password=$password'
+```
+
+Result:
+
+```json
+{
+    "meta": {
+        "coin": "skycoin",
+        "filename": "test.wlt",
+        "label": "test",
+        "type": "deterministic",
+        "version": "0.2",
+        "crypto_type": "",
+        "timestamp": 1521083044,
+        "encrypted": false
+    },
+    "entries": [
+        {
+            "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+            "public_key": "032a1218cbafc8a93233f363c19c667cf02d42fa5a8a07c0d6feca79e82d72753d"
+        }
+    ]
+}
+```
+
+### Get wallet seed
+
+This endpoint is supported only when `-enable-seed-api` option is enabled and the wallet is encrypted.
+
+```
+URI: /wallet/seed
+Method: POST
+Args:
+    id: wallet id
+    password: wallet password
+```
+
+Example:
+
+```sh
+curl http://127.0.0.1:6420/wallet/seed?id=test.wlt&password=$password
+```
+
+Result:
+
+```json
+{
+    "seed": "your wallet seed"
+}
+```
+
+## Transaction APIs
 
 ### Get unconfirmed transactions
 
@@ -581,13 +987,13 @@ URI: /pendingTxs
 Method: GET
 ```
 
-example:
+Example:
 
-```bash
+```sh
 curl http://127.0.0.1:6420/pendingTxs
 ```
 
-result:
+Result:
 
 ```json
 [
@@ -637,13 +1043,13 @@ Args:
     txid: transaction id
 ```
 
-example:
+Example:
 
-```bash
+```sh
 curl http://127.0.0.1:6420/transaction?txid=a6446654829a4a844add9f181949d12f8291fdd2c0fcb22200361e90e814e2d3
 ```
 
-result:
+Result:
 
 ```json
 {
@@ -685,17 +1091,16 @@ URI: /rawtx
 Method: GET
 ```
 
-example:
+Example:
 
-```bash
+```sh
 curl http://127.0.0.1:6420/rawtx?txid=a6446654829a4a844add9f181949d12f8291fdd2c0fcb22200361e90e814e2d3
 ```
 
-result:
+Result:
 
-```bash
-"
-b700000000075f255d42ddd2fb228fe488b8b468526810db7a144aeed1fd091e3fd404626e010000009b6fae9a70a42464dda089c943fafbf7bae8b8402e6bf4e4077553206eebc2ed4f7630bb1bd92505131cca5bf8bd82a44477ef53058e1995411bdbf1f5dfad1f00010000005287f390628909dd8c25fad0feb37859c0c1ddcf90da0c040c837c89fefd9191010000000010722f061aa262381dce35193d43eceb112373c300127a0000000000a303000000000000"
+```json
+"b700000000075f255d42ddd2fb228fe488b8b468526810db7a144aeed1fd091e3fd404626e010000009b6fae9a70a42464dda089c943fafbf7bae8b8402e6bf4e4077553206eebc2ed4f7630bb1bd92505131cca5bf8bd82a44477ef53058e1995411bdbf1f5dfad1f00010000005287f390628909dd8c25fad0feb37859c0c1ddcf90da0c040c837c89fefd9191010000000010722f061aa262381dce35193d43eceb112373c300127a0000000000a303000000000000"
 ```
 
 ### Inject raw transaction
@@ -704,22 +1109,27 @@ b700000000075f255d42ddd2fb228fe488b8b468526810db7a144aeed1fd091e3fd404626e010000
 URI: /injectTransaction
 Method: POST
 Content-Type: application/json
-Body: {
-        "rawtx":"raw transaction"
-      }
+Body: {"rawtx": "raw transaction"}
 ```
 
-example:
+Broadcasts an encoded transaction to the network.
 
-```bash
+If there are no available connections, the API responds with a 503 Service Unavailable error.
+
+Note that in some circumstances the transaction can fail to broadcast but this endpoint will still return successfully.
+This can happen if the node's network has recently become unavailable but its connections have not timed out yet.
+
+Example:
+
+```sh
 curl -X POST http://127.0.0.1:6420/injectTransaction -H 'content-type: application/json' -d '{
     "rawtx":"dc0000000008b507528697b11340f5a3fcccbff031c487bad59d26c2bdaea0cd8a0199a1720100000017f36c9d8bce784df96a2d6848f1b7a8f5c890986846b7c53489eb310090b91143c98fd233830055b5959f60030b3ca08d95f22f6b96ba8c20e548d62b342b5e0001000000ec9cf2f6052bab24ec57847c72cfb377c06958a9e04a077d07b6dd5bf23ec106020000000072116096fe2207d857d18565e848b403807cd825c044840300000000330100000000000000575e472f8c5295e8fa644e9bc5e06ec10351c65f40420f000000000066020000000000000"
 }'
 ```
 
-result:
+Result:
 
-```bash
+```json
 "3615fc23cc12a5cb9190878a2151d1cf54129ff0cd90e5fc4f4e7debebad6868"
 ```
 
@@ -735,25 +1145,25 @@ Args:
 
 To get address related confirmed transactions:
 
-```bash
+```sh
 curl http://127.0.0.1:6420/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY&confirmed=1
 ```
 
 To get address related unconfirmed transactions:
-```bash
+```sh
 curl http://127.0.0.1:6420/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY&confirmed=0
 ```
 
 To get all addresses related transactions:
 
-```bash
+```sh
 curl http://127.0.0.1:6420/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY
 ```
 
 
-result:
+Result:
 
-```sh
+```json
 [
     {
         "status": {
@@ -866,19 +1276,20 @@ result:
 ```
 
 ### Resend unconfirmed transactions
+
 ```
 URI: /resendUnconfirmedTxns
 Method: GET
-Args:
-    -
 ```
 
-example:
-```bash
+Example:
+
+```sh
 curl http://127.0.0.1:6420/resendUnconfirmedTxns
 ```
 
-result:
+Result:
+
 ```json
 {
     "txids":[
@@ -888,52 +1299,53 @@ result:
 }
 ```
 
-## Block apis
+## Block APIs
 
 ### Get blockchain metadata
+
 ```
 URI:  /blockchain/metadata
 Method: GET
-Args:
-    -
 ```
 
-example:
-```bash
+Example:
+
+```sh
 curl http://127.0.0.1:6420/blockchain/metadata
 ```
 
-result:
+Result:
+
 ```json
 {
-    "head":{
-        "seq":17936,
-        "block_hash":"b91663fa8ff14aab529cd7bfd48bde5bd86e3c2db154d601528801ee0d064d19",
-        "previous_block_hash":"b57d3b644898f95c9f7a9281e786a0ae2a567e9dc573654363ffafaa41ab4caf",
-        "timestamp":1520967639,
-        "fee":61662,
-        "version":0,
-        "tx_body_hash":"f0e8440f30acf01def3acaa9a88ea91f1fbaea19c0df003726edfe5bd1c7b51d"
+    "head": {
+        "seq": 17936,
+        "block_hash": "b91663fa8ff14aab529cd7bfd48bde5bd86e3c2db154d601528801ee0d064d19",
+        "previous_block_hash": "b57d3b644898f95c9f7a9281e786a0ae2a567e9dc573654363ffafaa41ab4caf",
+        "timestamp": 1520967639,
+        "fee": 61662,
+        "version": 0,
+        "tx_body_hash": "f0e8440f30acf01def3acaa9a88ea91f1fbaea19c0df003726edfe5bd1c7b51d"
     },
-    "unspents":12704,
-    "unconfirmed":0
+    "unspents": 12704,
+    "unconfirmed": 0
 }
 ```
 
 ### Get blockchain progress
 
-```sh
+```
 URI: /blockchain/progress
 Method: GET
 ```
 
-example:
+Example:
 
 ```sh
 curl http://127.0.0.1:6420/blockchain/progress
 ```
 
-result:
+Result:
 
 ```json
 {
@@ -954,16 +1366,16 @@ result:
 
 ### Get block by hash or seq
 
-```sh
+```
 URI: /block
 Method: GET
 Args:
-    hash // get block by hash
-    seq  // get block by sequence number
+    hash: get block by hash
+    seq: get block by sequence number
 ```
 
 ```sh
-curl  http://127.0.0.1:6420/block?hash=6eafd13ab6823223b714246b32c984b56e0043412950faf17defdbb2cbf3fe30
+curl http://127.0.0.1:6420/block?hash=6eafd13ab6823223b714246b32c984b56e0043412950faf17defdbb2cbf3fe30
 ```
 
 or
@@ -972,73 +1384,72 @@ or
 curl http://127.0.0.1:6420/block?seq=2760
 ```
 
-result:
+Result:
 
 ```json
 {
-    {
-        "header": {
-            "seq": 2760,
-            "block_hash": "6eafd13ab6823223b714246b32c984b56e0043412950faf17defdbb2cbf3fe30",
-            "previous_block_hash": "eaccd527ef263573c29000dbfb3c782ee175153c63f42abb671588b7071e877f",
-            "timestamp": 1504220821,
-            "fee": 196130,
-            "version": 0,
-            "tx_body_hash": "825ae95b81ae0ce037cdf9f1cda138bac3f3ed41c51b09e0befb71848e0f3bfd"
-        },
-        "body": {
-            "txns": [
-                {
-                    "length": 220,
-                    "type": 0,
-                    "txid": "825ae95b81ae0ce037cdf9f1cda138bac3f3ed41c51b09e0befb71848e0f3bfd",
-                   "inner_hash": "312e5dd55e06be5f9a0ee43a00d447f2fea47a7f1fb9669ecb477d2768ab04fd",
-                    "sigs": [
-                            "f0d0eb337e3440af6e8f0c105037ec205f36c83770d26a9e3a0fb4b7ec1a2be64764f4e31cbaf6629933c971613d10d58e6acb592704a7d511f19836441f09fb00"
-                    ],
-                    "inputs": [
-                            "e7594379c9a6bb111205cbfa6fac908cac1d136e207960eb0429f15fde09ac8c"
-                    ],
-                    "outputs": [
-                        {
-                            "uxid": "840d0ee483c1dc085e6518e1928c68979af61188b809fc74da9fca982e6a61ba",
-                            "dst": "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv",
-                            "coins": "998.000000",
-                            "hours": 35390
-                        },
-                        {
-                            "uxid": "38177c437ff42f29dc8d682e2f7c278f2203b6b02f42b1a88f9eb6c2392a7f70",
-                            "dst": "2YHKP9yH7baLvkum3U6HCBiJjnAUCLS5Z9U",
-                            "coins": "2.000000",
-                            "hours": 70780
-                        }
-                    ]
-                }
-            ]
-        }
-    }
+    "header": {
+        "seq": 2760,
+        "block_hash": "6eafd13ab6823223b714246b32c984b56e0043412950faf17defdbb2cbf3fe30",
+        "previous_block_hash": "eaccd527ef263573c29000dbfb3c782ee175153c63f42abb671588b7071e877f",
+        "timestamp": 1504220821,
+        "fee": 196130,
+        "version": 0,
+        "tx_body_hash": "825ae95b81ae0ce037cdf9f1cda138bac3f3ed41c51b09e0befb71848e0f3bfd"
+    },
+    "body": {
+        "txns": [
+            {
+                "length": 220,
+                "type": 0,
+                "txid": "825ae95b81ae0ce037cdf9f1cda138bac3f3ed41c51b09e0befb71848e0f3bfd",
+                "inner_hash": "312e5dd55e06be5f9a0ee43a00d447f2fea47a7f1fb9669ecb477d2768ab04fd",
+                "sigs": [
+                    "f0d0eb337e3440af6e8f0c105037ec205f36c83770d26a9e3a0fb4b7ec1a2be64764f4e31cbaf6629933c971613d10d58e6acb592704a7d511f19836441f09fb00"
+                ],
+                "inputs": [
+                    "e7594379c9a6bb111205cbfa6fac908cac1d136e207960eb0429f15fde09ac8c"
+                ],
+                "outputs": [
+                    {
+                        "uxid": "840d0ee483c1dc085e6518e1928c68979af61188b809fc74da9fca982e6a61ba",
+                        "dst": "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv",
+                        "coins": "998.000000",
+                        "hours": 35390
+                    },
+                    {
+                        "uxid": "38177c437ff42f29dc8d682e2f7c278f2203b6b02f42b1a88f9eb6c2392a7f70",
+                        "dst": "2YHKP9yH7baLvkum3U6HCBiJjnAUCLS5Z9U",
+                        "coins": "2.000000",
+                        "hours": 70780
+                    }
+                ]
+            }
+        ]
+    },
+    "size": 220
 }
 ```
 
 ### Get blocks in specific range
 
-```sh
+```
 URI: /blocks
 Method: GET
 Args:
-    start // start seq
-    end // end seq
+    start: start seq
+    end: end seq
 ```
 
-example:
+Example:
 
 ```sh
 curl http://127.0.0.1:6420/blocks?start=1&end=2
 ```
 
-result:
+Result:
 
-```sh
+```json
 {
     "blocks": [
         {
@@ -1074,7 +1485,8 @@ result:
                         ]
                     }
                 ]
-            }
+            },
+            "size": 183
         },
         {
             "header": {
@@ -1109,7 +1521,8 @@ result:
                         ]
                     }
                 ]
-            }
+            },
+            "size": 183
         }
     ]
 }
@@ -1117,128 +1530,130 @@ result:
 
 ### Get last N blocks
 
-```sh
+```
 URI: /last_blocks
 Method: GET
-Args: num
+Args:
+    num: number of most recent blocks to return
 ```
 
-example:
+Example:
 
 ```sh
 curl http://127.0.0.1:6420/last_blocks?num=2
 ```
 
-result:
+Result:
 
-```sh
+```json
 {
     "blocks": [
         {
             "header": {
-                "seq": 2759,
-                "block_hash": "eaccd527ef263573c29000dbfb3c782ee175153c63f42abb671588b7071e877f",
-                "previous_block_hash": "ae92e2b3fa12786243c20b5eb94833dfa80919443d676839911571429aad1ba9",
-                "timestamp": 1504211831,
-                "fee": 332560,
+                "seq": 21182,
+                "block_hash": "a9045e524ff3bef82955198f274a5538ccec3958b3045c396a4b2a591fa1d99c",
+                "previous_block_hash": "819b3f83afef7be9c37ab7819e193ad3a55439fb3cda52cb8691aab62bfc3936",
+                "timestamp": 1523174576,
+                "fee": 34572,
                 "version": 0,
-                "tx_body_hash": "9c5f95902e57b303954ea760df96ff933b6df2b58b58097085ed5fa9fa8a1480"
-            },
-            "body": {
-                "txns": [
-                    {
-                        "length": 317,
-                        "type": 0,
-                        "txid": "9c5f95902e57b303954ea760df96ff933b6df2b58b58097085ed5fa9fa8a1480",
-                        "inner_hash": "9baaf1956aa0cca3e5e4e9d6c247228a99dc718ff507b9b6734bf584479463e5",
-                        "sigs": [
-                            "44e6a0c30b3f55974ff4dccb0f19929ae9f56b2615fce673e37918dd2abb946c2dc6ad3d05aa3b35df35387e90182eed3813d3fd02669449d8bda9a18a4735a201",
-                            "323dfe3c89b8357511483f9faae13ecae23b6f8078a6a475301292799f520c440ebf650cc0795505fcd17ff4bd276c23156c04a39fe1ba23dac0f0e7c1907bee01"
-                        ],
-                        "inputs": [
-                            "aa6a295c7197e4660c2e0c26d8dfab4f68d65c3acdb5f611d70f9781abd3c004",
-                            "bdf3a268e177bbc6c4333c7d585ddf30b8fb123667255f90669956c3e61cda9c"
-                        ],
-                        "outputs": [
-                            {
-                                "uxid": "448c87cdebfa8ae92f009b961463f650bf23dfc696a381e81d0c64bafebe7847",
-                                "dst": "B9UG4KLggfX9MNcVuMJPm11XXNDU5vkRcY",
-                                "coins": "500.000000",
-                                "hours": 55426
-                            },
-                            {
-                                "uxid": "018b4132ad1f110619ff98074f36028cee082992feb824e5409f013cf61c048c",
-                                "dst": "uTHMcHr3YSEwv3M2ne9B1KfoyVkRwyDYF9",
-                                "coins": "350.000000",
-                                "hours": 55426
-                            }
-                        ]
-                    }
-                ]
-            }
-        },
-        {
-            "header": {
-                "seq": 2760,
-                "block_hash": "6eafd13ab6823223b714246b32c984b56e0043412950faf17defdbb2cbf3fe30",
-                "previous_block_hash": "eaccd527ef263573c29000dbfb3c782ee175153c63f42abb671588b7071e877f",
-                "timestamp": 1504220821,
-                "fee": 196130,
-                "version": 0,
-                "tx_body_hash": "825ae95b81ae0ce037cdf9f1cda138bac3f3ed41c51b09e0befb71848e0f3bfd"
+                "tx_body_hash": "99548cd7cc0091ce2d324647c20d22616e44424961f098c7fc81be9e9dc90c62"
             },
             "body": {
                 "txns": [
                     {
                         "length": 220,
                         "type": 0,
-                        "txid": "825ae95b81ae0ce037cdf9f1cda138bac3f3ed41c51b09e0befb71848e0f3bfd",
-                        "inner_hash": "312e5dd55e06be5f9a0ee43a00d447f2fea47a7f1fb9669ecb477d2768ab04fd",
+                        "txid": "99548cd7cc0091ce2d324647c20d22616e44424961f098c7fc81be9e9dc90c62",
+                        "inner_hash": "b283e783a3055c5b9e89449434ebd4f63c88450d48bc0eccd274c39c347a498a",
                         "sigs": [
-                            "f0d0eb337e3440af6e8f0c105037ec205f36c83770d26a9e3a0fb4b7ec1a2be64764f4e31cbaf6629933c971613d10d58e6acb592704a7d511f19836441f09fb00"
+                            "c0e8e1b6252cc9a5e0de3ded8a63f291781cc5866956b4409e1afa165b56245e5adb87dd29e10c73038389a056667ebba76545e0e931d261444da5e09cf4b7d901"
                         ],
                         "inputs": [
-                            "e7594379c9a6bb111205cbfa6fac908cac1d136e207960eb0429f15fde09ac8c"
+                            "0973f15386bbf39ad530c704bcfa3e768ec6515a3798455feaa89a7f00beb276"
                         ],
                         "outputs": [
                             {
-                                "uxid": "840d0ee483c1dc085e6518e1928c68979af61188b809fc74da9fca982e6a61ba",
+                                "uxid": "7c061ba81dedcf9046d6f964efea99860dfa0b07a2de80dd24f658b8c12d2ffc",
                                 "dst": "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv",
-                                "coins": "998.000000",
-                                "hours": 35390
+                                "coins": "648.000000",
+                                "hours": 2
                             },
                             {
-                                "uxid": "38177c437ff42f29dc8d682e2f7c278f2203b6b02f42b1a88f9eb6c2392a7f70",
-                                "dst": "2YHKP9yH7baLvkum3U6HCBiJjnAUCLS5Z9U",
-                                "coins": "2.000000",
-                                "hours": 70780
+                                "uxid": "89835a170bf7b1d5067c77b84c15ddc9b7d62da213eef34d8c4dbe40ab2b3158",
+                                "dst": "2QzAjmkm9UZoYodZLDrDUjEuFCjU3uoNoEm",
+                                "coins": "283.000000",
+                                "hours": 2
                             }
                         ]
                     }
                 ]
-            }
+            },
+            "size": 220
+        },
+        {
+            "header": {
+                "seq": 21183,
+                "block_hash": "96a2f810e56545bf819ad76123609e16e4c82b5d14911b0b18368e4347e8b1b5",
+                "previous_block_hash": "a9045e524ff3bef82955198f274a5538ccec3958b3045c396a4b2a591fa1d99c",
+                "timestamp": 1523174636,
+                "fee": 108118,
+                "version": 0,
+                "tx_body_hash": "c3052a92828873a0594a95a44051a9962f3794b0bcd4948d2d616496f1e06cd7"
+            },
+            "body": {
+                "txns": [
+                    {
+                        "length": 220,
+                        "type": 0,
+                        "txid": "c3052a92828873a0594a95a44051a9962f3794b0bcd4948d2d616496f1e06cd7",
+                        "inner_hash": "a81ae47fdf0a09933576da113ed098b1f8e62b7fdddf318fd5cc70420bad2228",
+                        "sigs": [
+                            "6bb47b0ac89cc3b0bf7b276c98dcf553f6f8980ced386cccca927d439f7cfb9c56cf6019a299f917ce62c4ab3277b7b624a351808513400d1f240f1b900d65b701"
+                        ],
+                        "inputs": [
+                            "898d42774d3cd9910691630fb7c22f786d3ee99a6616bc5bc1b8b813e1499b06"
+                        ],
+                        "outputs": [
+                            {
+                                "uxid": "96f14e7e9d024aa49ad7e3e7b55d98bef8601ce9696f09581391eb07cda42ffe",
+                                "dst": "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv",
+                                "coins": "921.000000",
+                                "hours": 98
+                            },
+                            {
+                                "uxid": "5cd59f80656e92961f824a9c65b30f61badd9265069f0a504f5c73a2bea54990",
+                                "dst": "CP7tbttW82zNdygJ1UBFhzbhu9bbz8Rcez",
+                                "coins": "10.000000",
+                                "hours": 98
+                            }
+                        ]
+                    }
+                ]
+            },
+            "size": 220
         }
     ]
 }
 ```
 
-## Explorer apis
+## Explorer APIs
 
 ### Get address affected transactions
 
-```sh
+```
 URI: /explorer/address
 Method: GET
-Args: address
+Args:
+    address
 ```
 
-example:
+Example:
 
 ```sh
 curl http://127.0.0.1:6420/explorer/address?address=2NfNKsaGJEndpSajJ6TsKJfsdDjW2gFsjXg
 ```
 
-result:
+Result:
 
 ```json
 [
@@ -1278,23 +1693,24 @@ result:
 ]
 ```
 
-## Uxout apis
+## Uxout APIs
 
 ### Get uxout
 
-```sh
+```
 URI: /uxout
 Method: GET
-Args: uxid
+Args:
+    uxid
 ```
 
-example:
+Example:
 
 ```sh
 curl http://127.0.0.1:6420/uxout?uxid=8b64d9b058e10472b9457fd2d05a1d89cbbbd78ce1d97b16587d43379271bed1
 ```
 
-result:
+Result:
 
 ```json
 {
@@ -1312,19 +1728,20 @@ result:
 
 ### Get address affected uxouts
 
-```sh
+```
 URI: /address_uxouts
 Method: GET
-Args: address
+Args:
+    address
 ```
 
-example:
+Example:
 
 ```sh
-curl http://127.0.0.1:6420/address_uxouts?address=
+curl http://127.0.0.1:6420/address_uxouts?address=6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY
 ```
 
-result:
+Result:
 
 ```json
 [
@@ -1351,13 +1768,13 @@ URI: /coinSupply
 Method: GET
 ```
 
-example:
+Example:
 
-```bash
+```sh
 curl http://127.0.0.1:6420/coinSupply
 ```
 
-result:
+Result:
 
 ```json
 {
@@ -1483,13 +1900,13 @@ Args:
     include-distribution: include distribution addresses or not, default false.
 ```
 
-example:
+Example:
 
-```bash
+```sh
 curl "http://127.0.0.1:6420/richlist?n=4&include-distribution=true"
 ```
 
-result:
+Result:
 
 ```json
 {
@@ -1524,13 +1941,14 @@ result:
 URI: /addresscount
 Method: GET
 ```
-example:
 
-```bash
+Example:
+
+```sh
 curl "http://127.0.0.1:6420/addresscount"
 ```
 
-result:
+Result:
 
 ```json
 {
@@ -1549,13 +1967,13 @@ Args:
     addr: ip:port address of a known connection
 ```
 
-example:
+Example:
 
-```bash
+```sh
 curl 'http://127.0.0.1:6420/network/connection?addr=176.9.84.75:6000'
 ```
 
-result:
+Result:
 
 ```json
 {
@@ -1577,13 +1995,13 @@ URI: /network/connections
 Method: GET
 ```
 
-example:
+Example:
 
-```bash
+```sh
 curl 'http://127.0.0.1:6420/network/connections'
 ```
 
-result:
+Result:
 
 ```json
 {
@@ -1630,13 +2048,13 @@ URI: /network/defaultConnections
 Method: GET
 ```
 
-example:
+Example:
 
-```bash
+```sh
 curl 'http://127.0.0.1:6420/network/defaultConnections'
 ```
 
-result:
+Result:
 
 ```json
 [
@@ -1658,13 +2076,13 @@ URI: /network/connections/trust
 Method: GET
 ```
 
-example:
+Example:
 
-```bash
+```sh
 curl 'http://127.0.0.1:6420/network/connections/trust'
 ```
 
-result:
+Result:
 
 ```json
 [
@@ -1686,13 +2104,13 @@ URI: /network/connections/exchange
 Method: GET
 ```
 
-example:
+Example:
 
-```bash
+```sh
 curl 'http://127.0.0.1:6420/network/connections/exchange'
 ```
 
-result:
+Result:
 
 ```json
 [

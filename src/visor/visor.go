@@ -75,6 +75,7 @@ func DropletPrecisionCheck(amount uint64) error {
 type BuildInfo struct {
 	Version string `json:"version"` // version number
 	Commit  string `json:"commit"`  // git commit id
+	Branch  string `json:"branch"`  // git branch name
 }
 
 // Config configuration parameters for the Visor
@@ -126,8 +127,12 @@ type Config struct {
 	WalletDirectory string
 	// build info, including version, build time etc.
 	BuildInfo BuildInfo
-	// disables wallet API
-	DisableWalletAPI bool
+	// enables wallet API
+	EnableWalletAPI bool
+	// enables seed API
+	EnableSeedAPI bool
+	// wallet crypto type
+	WalletCryptoType wallet.CryptoType
 }
 
 // NewVisorConfig put cap on block size, not on transactions/block
@@ -235,10 +240,12 @@ type Visor struct {
 	// Unconfirmed transactions, held for relay until we get block confirmation
 	Unconfirmed UnconfirmedTxnPooler
 	Blockchain  Blockchainer
-	history     historyer
-	bcParser    *BlockchainParser
-	wallets     *wallet.Service
-	db          *bolt.DB
+	Wallets     *wallet.Service
+	StartedAt   time.Time
+
+	history  historyer
+	bcParser *BlockchainParser
+	db       *bolt.DB
 }
 
 // NewVisor creates a Visor for managing the blockchain database
@@ -267,7 +274,14 @@ func NewVisor(c Config, db *bolt.DB) (*Visor, error) {
 
 	bc.BindListener(bp.FeedBlock)
 
-	wltServ, err := wallet.NewService(c.WalletDirectory, c.DisableWalletAPI)
+	wltServConfig := wallet.Config{
+		WalletDir:       c.WalletDirectory,
+		CryptoType:      c.WalletCryptoType,
+		EnableWalletAPI: c.EnableWalletAPI,
+		EnableSeedAPI:   c.EnableSeedAPI,
+	}
+
+	wltServ, err := wallet.NewService(wltServConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -279,7 +293,8 @@ func NewVisor(c Config, db *bolt.DB) (*Visor, error) {
 		Unconfirmed: NewUnconfirmedTxnPool(db),
 		history:     history,
 		bcParser:    bp,
-		wallets:     wltServ,
+		Wallets:     wltServ,
+		StartedAt:   time.Now(),
 	}
 
 	return v, nil
@@ -295,7 +310,7 @@ func (vs *Visor) Run() error {
 	if err != nil {
 		return err
 	}
-	logger.Info("Removed %d invalid txns from pool", len(removed))
+	logger.Infof("Removed %d invalid txns from pool", len(removed))
 
 	return vs.bcParser.Run()
 }
@@ -307,7 +322,7 @@ func (vs *Visor) Shutdown() {
 	vs.bcParser.Shutdown()
 
 	if err := vs.db.Close(); err != nil {
-		logger.Error("db.Close() error: %v", err)
+		logger.Errorf("db.Close() error: %v", err)
 	}
 }
 
@@ -328,7 +343,7 @@ func (vs *Visor) maybeCreateGenesisBlock() error {
 	// record the signature of genesis block
 	if vs.Config.IsMaster {
 		sb = vs.SignBlock(*b)
-		logger.Info("Genesis block signature=%s", sb.Sig.Hex())
+		logger.Infof("Genesis block signature=%s", sb.Sig.Hex())
 	} else {
 		sb = coin.SignedBlock{
 			Block: *b,
@@ -343,7 +358,7 @@ func (vs *Visor) maybeCreateGenesisBlock() error {
 func (vs *Visor) GenesisPreconditions() {
 	if vs.Config.BlockchainSeckey != (cipher.SecKey{}) {
 		if vs.Config.BlockchainPubkey != cipher.PubKeyFromSecKey(vs.Config.BlockchainSeckey) {
-			logger.Panicf("Cannot create genesis block. Invalid secret key for pubkey")
+			logger.Panic("Cannot create genesis block. Invalid secret key for pubkey")
 		}
 	}
 }
@@ -376,13 +391,13 @@ func (vs *Visor) CreateBlock(when uint64) (coin.SignedBlock, error) {
 		return sb, errors.New("No transactions")
 	}
 
-	logger.Info("Unconfirmed pool has %d transactions pending", len(txns))
+	logger.Infof("Unconfirmed pool has %d transactions pending", len(txns))
 
 	// Filter transactions that violate all constraints
 	var filteredTxns coin.Transactions
 	for _, txn := range txns {
 		if err := vs.Blockchain.VerifySingleTxnAllConstraints(txn, vs.Config.MaxBlockSize); err != nil {
-			logger.Warning("Transaction %s violates constraints: %v", txn.TxIDHex(), err)
+			logger.Warningf("Transaction %s violates constraints: %v", txn.TxIDHex(), err)
 		} else {
 			filteredTxns = append(filteredTxns, txn)
 		}
@@ -390,7 +405,7 @@ func (vs *Visor) CreateBlock(when uint64) (coin.SignedBlock, error) {
 
 	nRemoved := len(txns) - len(filteredTxns)
 	if nRemoved > 0 {
-		logger.Info("CreateBlock ignored %d transactions violating constraints", nRemoved)
+		logger.Infof("CreateBlock ignored %d transactions violating constraints", nRemoved)
 	}
 
 	txns = filteredTxns
@@ -410,11 +425,11 @@ func (vs *Visor) CreateBlock(when uint64) (coin.SignedBlock, error) {
 		logger.Panic("TruncateBytesTo removed all transactions")
 	}
 
-	logger.Info("Creating new block with %d transactions, head time %d", len(txns), when)
+	logger.Infof("Creating new block with %d transactions, head time %d", len(txns), when)
 
 	b, err := vs.Blockchain.NewBlock(txns, when)
 	if err != nil {
-		logger.Warning("Blockchain.NewBlock failed: %v", err)
+		logger.Warningf("Blockchain.NewBlock failed: %v", err)
 		return sb, err
 	}
 
@@ -538,7 +553,7 @@ func (vs *Visor) HeadBkSeq() uint64 {
 }
 
 // GetBlockchainMetadata returns descriptive Blockchain information
-func (vs *Visor) GetBlockchainMetadata() BlockchainMetadata {
+func (vs *Visor) GetBlockchainMetadata() (*BlockchainMetadata, error) {
 	return NewBlockchainMetadata(vs)
 }
 
@@ -617,7 +632,7 @@ func (vs *Visor) GetAddressTxns(a cipher.Address) ([]Transaction, error) {
 	for _, ux := range uxs {
 		tx, ok := vs.Unconfirmed.Get(ux.Body.SrcTransaction)
 		if !ok {
-			logger.Critical("Unconfirmed unspent missing unconfirmed txn")
+			logger.Critical().Error("Unconfirmed unspent missing unconfirmed txn")
 			continue
 		}
 		txns = append(txns, Transaction{
@@ -834,7 +849,7 @@ func (vs *Visor) getTransactionsOfAddrs(addrs []cipher.Address) (map[cipher.Addr
 		for _, ux := range uxs {
 			tx, ok := vs.Unconfirmed.Get(ux.Body.SrcTransaction)
 			if !ok {
-				logger.Critical("Unconfirmed unspent missing unconfirmed txn")
+				logger.Critical().Error("Unconfirmed unspent missing unconfirmed txn")
 				continue
 			}
 			txns = append(txns, Transaction{
@@ -1021,9 +1036,9 @@ func (vs Visor) GetAddrUxOuts(address cipher.Address) ([]*historydb.UxOut, error
 	return vs.history.GetAddrUxOuts(address)
 }
 
-// ScanAheadWalletAddresses scans ahead N addresses in a wallet, looking for a non-empty balance
-func (vs Visor) ScanAheadWalletAddresses(wltName string, scanN uint64) (wallet.Wallet, error) {
-	return vs.wallets.ScanAheadWalletAddresses(wltName, scanN, vs)
+// CreateWallet creates wallet and scans ahead N addresses to look for a none-empty balance
+func (vs *Visor) CreateWallet(wltName string, opts wallet.Options) (*wallet.Wallet, error) {
+	return vs.Wallets.CreateWallet(wltName, opts, vs)
 }
 
 // GetBalanceOfAddrs returns balance pairs of given addreses
@@ -1102,6 +1117,5 @@ func (vs Visor) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair,
 
 		bps = append(bps, bp)
 	}
-
 	return bps, nil
 }

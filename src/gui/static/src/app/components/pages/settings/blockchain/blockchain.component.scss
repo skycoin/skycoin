@@ -1,0 +1,21 @@
+@import '../../../../../theme/_variables.scss';
+
+mat-card {
+  margin-left: 20px;
+  margin-right: 20px;
+}
+
+.skycoin-details {
+  margin-top: 40px;
+  margin-bottom: 20px;
+  line-height: 30px;
+}
+
+.skycoin-detail-keys {
+  display: inline-block;
+  color: $grey-dark;
+}
+
+.skycoin-detail-values {
+  display: inline-block;
+}

@@ -32,11 +32,6 @@ func NewTransactionResult(tx *Transaction) (*TransactionResult, error) {
 	}, nil
 }
 
-// ReadableBlocks an array of readable blocks.
-type ReadableBlocks struct {
-	Blocks []ReadableBlock `json:"blocks"`
-}
-
 // TransactionResults array of transaction results
 type TransactionResults struct {
 	Txns []TransactionResult `json:"txns"`
@@ -77,9 +72,8 @@ func MakeRPC(v *Visor) RPC {
 }
 
 // GetBlockchainMetadata get blockchain meta data
-func (rpc RPC) GetBlockchainMetadata(v *Visor) *BlockchainMetadata {
-	bm := v.GetBlockchainMetadata()
-	return &bm
+func (rpc RPC) GetBlockchainMetadata(v *Visor) (*BlockchainMetadata, error) {
+	return v.GetBlockchainMetadata()
 }
 
 // GetUnspent gets unspent
@@ -138,47 +132,58 @@ func (rpc RPC) GetAddressTxns(v *Visor, addr cipher.Address) ([]Transaction, err
 }
 
 // CreateWallet creates new wallet
-func (rpc *RPC) CreateWallet(wltName string, options wallet.Options) (wallet.Wallet, error) {
-	return rpc.v.wallets.CreateWallet(wltName, options)
+func (rpc *RPC) CreateWallet(wltName string, options wallet.Options, bg wallet.BalanceGetter) (*wallet.Wallet, error) {
+	return rpc.v.Wallets.CreateWallet(wltName, options, bg)
 }
 
 // NewAddresses generates new addresses in given wallet
 func (rpc *RPC) NewAddresses(wltName string, num uint64) ([]cipher.Address, error) {
-	return rpc.v.wallets.NewAddresses(wltName, num)
+	return rpc.v.Wallets.NewAddresses(wltName, nil, num)
 }
 
 // GetWalletAddresses returns all addresses in given wallet
 func (rpc *RPC) GetWalletAddresses(wltID string) ([]cipher.Address, error) {
-	return rpc.v.wallets.GetAddresses(wltID)
+	return rpc.v.Wallets.GetAddresses(wltID)
 }
 
 // CreateAndSignTransaction creates and sign transaction from wallet
-func (rpc *RPC) CreateAndSignTransaction(wltID string, vld wallet.Validator, unspent blockdb.UnspentGetter,
+func (rpc *RPC) CreateAndSignTransaction(wltID string, password []byte, vld wallet.Validator, unspent blockdb.UnspentGetter,
 	headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
-	return rpc.v.wallets.CreateAndSignTransaction(wltID, vld, unspent, headTime, coins, dest)
+	return rpc.v.Wallets.CreateAndSignTransaction(wltID, password, vld, unspent, headTime, coins, dest)
+}
+
+// CreateAndSignTransactionAdvanced creates and sign transaction from wallet
+func (rpc *RPC) CreateAndSignTransactionAdvanced(params wallet.CreateTransactionParams, sv wallet.Validator,
+	unspent blockdb.UnspentGetter, headTime uint64) (*coin.Transaction, []wallet.UxBalance, error) {
+	return rpc.v.Wallets.CreateAndSignTransactionAdvanced(params, sv, unspent, headTime)
 }
 
 // UpdateWalletLabel updates wallet label
 func (rpc *RPC) UpdateWalletLabel(wltID, label string) error {
-	return rpc.v.wallets.UpdateWalletLabel(wltID, label)
+	return rpc.v.Wallets.UpdateWalletLabel(wltID, label)
 }
 
 // GetWallet returns wallet by id
-func (rpc *RPC) GetWallet(wltID string) (wallet.Wallet, error) {
-	return rpc.v.wallets.GetWallet(wltID)
+func (rpc *RPC) GetWallet(wltID string) (*wallet.Wallet, error) {
+	return rpc.v.Wallets.GetWallet(wltID)
 }
 
 // GetWallets returns all wallet
-func (rpc *RPC) GetWallets() wallet.Wallets {
-	return rpc.v.wallets.GetWallets()
+func (rpc *RPC) GetWallets() (wallet.Wallets, error) {
+	return rpc.v.Wallets.GetWallets()
 }
 
 // ReloadWallets reloads all wallet from files
 func (rpc *RPC) ReloadWallets() error {
-	return rpc.v.wallets.ReloadWallets()
+	return rpc.v.Wallets.ReloadWallets()
 }
 
 // GetBuildInfo returns node build info, including version, build time, etc.
 func (rpc *RPC) GetBuildInfo() BuildInfo {
 	return rpc.v.Config.BuildInfo
+}
+
+// UnloadWallet removes the wallet of given id from wallet service.
+func (rpc *RPC) UnloadWallet(id string) {
+	rpc.v.Wallets.Remove(id)
 }

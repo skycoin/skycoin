@@ -1,115 +1,76 @@
 package logging
 
 import (
+	"errors"
 	"io"
 	"io/ioutil"
-	"log"
-	"os"
+	"strings"
 
-	logging "github.com/op/go-logging"
+	"github.com/sirupsen/logrus"
 )
+
+var log = NewMasterLogger()
 
 const (
-	defaultLogFormat = "[%{module}:%{level}] %{message}"
+	// logModuleKey is the key used for the module name data entry
+	logModuleKey = "_module"
+	// logPriorityKey is the log entry key for priority log statements
+	logPriorityKey = "_priority"
+	// logPriorityCritical is the log entry value for priority log statements
+	logPriorityCritical = "CRITICAL"
 )
 
-// Logger wraps op/go-logging.Logger
-type Logger struct {
-	*logging.Logger
-}
-
-// Level embedes the logging's level
-type Level int
-
-// Log levels.
-const (
-	CRITICAL Level = iota
-	ERROR
-	WARNING
-	NOTICE
-	INFO
-	DEBUG
-)
-
-// LogConfig logger configurations
-type LogConfig struct {
-	// for internal usage
-	level Level
-	// Level convertes to level during initialization
-	Level string
-	// list of all modules
-	Modules []string
-	// format
-	Format string
-	// enable colors
-	Colors bool
-	// output
-	Output io.Writer
-}
-
-// LogLevel parse the log level string
-func LogLevel(level string) (logging.Level, error) {
-	return logging.LogLevel(level)
-}
-
-// TODO:
-// DefaultLogConfig vs (DevLogConfig + ProdLogConfig) ?
-
-// DevLogConfig default development config for logging
-func DevLogConfig(modules []string) *LogConfig {
-	return &LogConfig{
-		level:   DEBUG,   // int
-		Level:   "debug", // string
-		Modules: modules,
-		Format:  defaultLogFormat,
-		Colors:  true,
-		Output:  os.Stdout,
+// LevelFromString returns a logrus.Level from a string identifier
+func LevelFromString(s string) (logrus.Level, error) {
+	switch strings.ToLower(s) {
+	case "debug":
+		return logrus.DebugLevel, nil
+	case "info", "notice":
+		return logrus.InfoLevel, nil
+	case "warn", "warning":
+		return logrus.WarnLevel, nil
+	case "error":
+		return logrus.ErrorLevel, nil
+	case "fatal", "critical":
+		return logrus.FatalLevel, nil
+	case "panic":
+		return logrus.PanicLevel, nil
+	default:
+		return logrus.DebugLevel, errors.New("could not convert string to log level")
 	}
 }
 
-// ProdLogConfig Default production config for logging
-func ProdLogConfig(modules []string) *LogConfig {
-	return &LogConfig{
-		level:   ERROR,
-		Level:   "error",
-		Modules: modules,
-		Format:  defaultLogFormat,
-		Colors:  false,
-		Output:  os.Stdout,
-	}
-}
-
-// convertes l.Level (string) to l.level (int)
-// or panics if l.Level is invalid
-func (l *LogConfig) initLevel() {
-	level, err := logging.LogLevel(l.Level)
-	if err != nil {
-		log.Panicf("Invalid -log-level %s: %v", l.Level, err)
-	}
-	l.level = Level(level)
-}
-
-// InitLogger initialize logging using this LogConfig;
-// it panics if l.Format is invalid or l.Level is invalid
-func (l *LogConfig) InitLogger() {
-	l.initLevel()
-
-	format := logging.MustStringFormatter(l.Format)
-	logging.SetFormatter(format)
-	for _, s := range l.Modules {
-		logging.SetLevel(logging.Level(l.level), s)
-	}
-	stdout := logging.NewLogBackend(l.Output, "", 0)
-	stdout.Color = l.Colors
-	logging.SetBackend(stdout)
-}
-
-// MustGetLogger safe initialize global logger
+// MustGetLogger returns a package-aware logger from the master logger
 func MustGetLogger(module string) *Logger {
-	return &Logger{logging.MustGetLogger(module)}
+	return log.PackageLogger(module)
+}
+
+// AddHook adds a hook to the global logger
+func AddHook(hook logrus.Hook) {
+	log.AddHook(hook)
+}
+
+// EnableColors enables colored logging
+func EnableColors() {
+	log.EnableColors()
+}
+
+// DisableColors disables colored logging
+func DisableColors() {
+	log.DisableColors()
+}
+
+// SetLevel sets the logger's minimum log level
+func SetLevel(level logrus.Level) {
+	log.SetLevel(level)
+}
+
+// SetOutputTo sets the logger's output to an io.Writer
+func SetOutputTo(w io.Writer) {
+	log.Out = w
 }
 
 // Disable disables the logger completely
 func Disable() {
-	logging.SetBackend(logging.NewLogBackend(ioutil.Discard, "", 0))
+	log.Out = ioutil.Discard
 }

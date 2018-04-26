@@ -7,6 +7,7 @@ import { Observable } from 'rxjs/Observable';
 import { ApiService } from '../../../services/api.service';
 import { Http } from '@angular/http';
 import { AppService } from '../../../services/app.service';
+import { IntervalObservable } from 'rxjs/observable/IntervalObservable';
 
 @Component({
   selector: 'app-header',
@@ -25,6 +26,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   version: string;
   releaseVersion: string;
   updateAvailable: boolean;
+  hasPendingTxs: boolean;
 
   private price: number;
   private priceSubscription: Subscription;
@@ -47,14 +49,21 @@ export class HeaderComponent implements OnInit, OnDestroy {
     private priceService: PriceService,
     private walletService: WalletService,
     private http: Http,
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.setVersion();
     this.priceSubscription = this.priceService.price.subscribe(price => this.price = price);
-    this.walletSubscription = this.walletService.all().subscribe(wallets => {
-      this.coins = wallets.map(wallet => wallet.coins >= 0 ? wallet.coins : 0).reduce((a, b) => a + b, 0);
-      this.hours = wallets.map(wallet => wallet.hours >= 0 ? wallet.hours : 0).reduce((a, b) => a + b, 0);
+    this.walletSubscription = this.walletService.allAddresses().subscribe(addresses => {
+      addresses = addresses.reduce((array, item) => {
+        if (!array.find(addr => addr.address === item.address)) {
+          array.push(item);
+        }
+        return array;
+      }, []);
+
+      this.coins = addresses.map(addr => addr.coins >= 0 ? addr.coins : 0).reduce((a, b) => a + b, 0);
+      this.hours = addresses.map(addr => addr.hours >= 0 ? addr.hours : 0).reduce((a, b) => a + b, 0);
     });
 
     this.blockchainService.progress
@@ -65,6 +74,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
         this.current = response.current;
         this.percentage = this.current && this.highest ? (this.current / this.highest) : 0;
       });
+
+    this.walletService.pendingTransactions().subscribe(txs => {
+      this.hasPendingTxs = txs.length > 0;
+    });
   }
 
   ngOnDestroy() {

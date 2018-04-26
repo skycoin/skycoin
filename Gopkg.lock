@@ -20,10 +20,22 @@
   version = "v1.1.0"
 
 [[projects]]
-  name = "github.com/op/go-logging"
+  name = "github.com/mattn/go-colorable"
   packages = ["."]
-  revision = "b2cb9fa56473e98db8caba80237377e83fe44db5"
-  version = "v1"
+  revision = "167de6bfdfba052fa6b2d3664c8f5272e23c9072"
+  version = "v0.0.9"
+
+[[projects]]
+  name = "github.com/mattn/go-isatty"
+  packages = ["."]
+  revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
+  version = "v0.0.3"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/mgutz/ansi"
+  packages = ["."]
+  revision = "9520e82c474b0a04dd04f8a40959027271bab992"
 
 [[projects]]
   name = "github.com/pmezard/go-difflib"
@@ -38,6 +50,12 @@
   revision = "aed1bfe463fa3c9cc268d60dcc1491db613bff7e"
 
 [[projects]]
+  name = "github.com/sirupsen/logrus"
+  packages = ["."]
+  revision = "c155da19408a8799da419ed3eeb0cb5db0ad5dbc"
+  version = "v1.0.5"
+
+[[projects]]
   branch = "master"
   name = "github.com/stretchr/objx"
   packages = ["."]
@@ -45,7 +63,11 @@
 
 [[projects]]
   name = "github.com/stretchr/testify"
-  packages = ["assert","mock","require"]
+  packages = [
+    "assert",
+    "mock",
+    "require"
+  ]
   revision = "2aa2c176b9dab406a6970f6a55f513e8a8c8b18f"
 
 [[projects]]
@@ -62,12 +84,6 @@
 
 [[projects]]
   branch = "master"
-  name = "golang.org/x/crypto"
-  packages = ["pbkdf2"]
-  revision = "adbae1b6b6fb4b02448a0fc0dbbc9ba2b95b294d"
-
-[[projects]]
-  branch = "master"
   name = "golang.org/x/net"
   packages = ["context"]
   revision = "a8b9294777976932365dabb6640cf1468d95c70f"
@@ -81,6 +97,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "35b5d3198cad3c85f69122223bab608f94bdc5c96284be3c22746f1c8b7f74bc"
+  inputs-digest = "1d8b3690230401d26d294ca7b72d86d7f5f8bb706360023a21dde1f81fff4804"
   solver-name = "gps-cdcl"
   solver-version = 1

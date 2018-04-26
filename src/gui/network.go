@@ -38,7 +38,7 @@ func connectionsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendOr404(w, gateway.GetConnections())
+		wh.SendJSONOr500(logger, w, gateway.GetConnections())
 	}
 }
 

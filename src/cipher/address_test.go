@@ -240,3 +240,12 @@ func TestAddressBulk(t *testing.T) {
 
 	}
 }
+
+func TestAddressNull(t *testing.T) {
+	var a Address
+	require.True(t, a.Null())
+
+	p, _ := GenerateKeyPair()
+	a = AddressFromPubKey(p)
+	require.False(t, a.Null())
+}

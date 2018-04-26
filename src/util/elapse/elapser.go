@@ -6,6 +6,7 @@ import (
 	"github.com/skycoin/skycoin/src/util/logging"
 )
 
+// Elapser measures time elapsed for an operation
 type Elapser struct {
 	name             *string
 	startTime        time.Time
@@ -14,6 +15,7 @@ type Elapser struct {
 	logger           *logging.Logger
 }
 
+// NewElapser creates an Elapser
 func NewElapser(elapsedThreshold time.Duration, logger *logging.Logger) *Elapser {
 	elapser := &Elapser{
 		elapsedThreshold: elapsedThreshold,
@@ -23,6 +25,7 @@ func NewElapser(elapsedThreshold time.Duration, logger *logging.Logger) *Elapser
 	return elapser
 }
 
+// CheckForDone checks if the elapser has triggered and records the elapsed time
 func (e *Elapser) CheckForDone() {
 	select {
 	case <-e.Done:
@@ -31,6 +34,7 @@ func (e *Elapser) CheckForDone() {
 	}
 }
 
+// Register begins an operation to measure
 func (e *Elapser) Register(name string) {
 	e.CheckForDone()
 	e.name = &name
@@ -38,6 +42,7 @@ func (e *Elapser) Register(name string) {
 	e.Done <- true
 }
 
+// ShowCurrentTime logs the elapsed time so far
 func (e *Elapser) ShowCurrentTime(step string) {
 	stopTime := time.Now()
 	if e.name == nil {
@@ -45,10 +50,11 @@ func (e *Elapser) ShowCurrentTime(step string) {
 		return
 	}
 	elapsed := stopTime.Sub(e.startTime)
-	e.logger.Info("%s[%s] elapsed %s", *e.name, step, elapsed)
+	e.logger.Infof("%s[%s] elapsed %s", *e.name, step, elapsed)
 
 }
 
+// Elapsed stops measuring an operation and logs the elapsed time if it exceeds the configured threshold
 func (e *Elapser) Elapsed() {
 	stopTime := time.Now()
 	if e.name == nil {
@@ -57,7 +63,7 @@ func (e *Elapser) Elapsed() {
 	}
 	elapsed := stopTime.Sub(e.startTime)
 	if elapsed >= e.elapsedThreshold {
-		e.logger.Warning("%s elapsed %s", *e.name, elapsed)
+		e.logger.Warningf("%s elapsed %s", *e.name, elapsed)
 	}
 	e.name = nil
 }

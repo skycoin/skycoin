@@ -38,7 +38,7 @@ func getUxOutByID(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendOr404(w, historydb.NewUxOutJSON(uxout))
+		wh.SendJSONOr500(logger, w, historydb.NewUxOutJSON(uxout))
 	}
 }
 
@@ -60,12 +60,18 @@ func getAddrUxOuts(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		uxs, err := gateway.GetAddrUxOuts(cipherAddr)
+		uxs, err := gateway.GetAddrUxOuts([]cipher.Address{cipherAddr})
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return
 		}
 
-		wh.SendOr404(w, uxs)
+		//Convert slice UxOut to slice of UxOutJson
+		uxsJSON := make([]*historydb.UxOutJSON, len(uxs))
+		for i, ux := range uxs {
+			uxsJSON[i] = historydb.NewUxOutJSON(ux)
+		}
+
+		wh.SendJSONOr500(logger, w, uxsJSON)
 	}
 }

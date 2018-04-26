@@ -69,9 +69,13 @@ function startSkycoin() {
   var args = [
     '-launch-browser=false',
     '-gui-dir=' + path.dirname(exe),
-    '-color-log=false', // must be disabled or web interface detection
+    '-color-log=false', // must be disabled for web interface detection
     '-logtofile=true',
-    '-download-peerlist=true'
+    '-download-peerlist=true',
+    '-enable-seed-api=true',
+    '-enable-wallet-api=true',
+    '-rpc-interface=false',
+    "-disable-csrf=false"
     // will break
     // broken (automatically generated certs do not work):
     // '-web-interface-https=true',

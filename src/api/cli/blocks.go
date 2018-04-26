@@ -20,7 +20,7 @@ func blocksCmd() gcli.Command {
 }
 
 func getBlocks(c *gcli.Context) error {
-	rpcClient := RpcClientFromContext(c)
+	rpcClient := RPCClientFromContext(c)
 
 	// get start
 	start := c.Args().Get(0)
@@ -49,5 +49,5 @@ func getBlocks(c *gcli.Context) error {
 		return err
 	}
 
-	return printJson(rlt)
+	return printJSON(rlt)
 }

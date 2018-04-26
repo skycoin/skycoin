@@ -120,7 +120,7 @@ func getCSRFToken(gateway Gatewayer, store *CSRFStore) http.HandlerFunc {
 		// generate a new token
 		store.setToken(newCSRFToken())
 
-		wh.SendOr404(w, &map[string]string{"csrf_token": store.getTokenValue()})
+		wh.SendJSONOr500(logger, w, &map[string]string{"csrf_token": store.getTokenValue()})
 	}
 }
 
@@ -161,13 +161,13 @@ func OriginRefererCheck(host string, handler http.Handler) http.Handler {
 		if toCheck != "" {
 			u, err := url.Parse(toCheck)
 			if err != nil {
-				logger.Critical("Invalid URL in Origin or Referer header: %s %v", toCheck, err)
+				logger.Critical().Errorf("Invalid URL in Origin or Referer header: %s %v", toCheck, err)
 				wh.Error403(w)
 				return
 			}
 
 			if u.Host != host {
-				logger.Critical("Origin or Referer header value %s does not match host", toCheck)
+				logger.Critical().Errorf("Origin or Referer header value %s does not match host", toCheck)
 				wh.Error403(w)
 				return
 			}

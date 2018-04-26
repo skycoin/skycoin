@@ -3,6 +3,7 @@ package pex
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
 	"os"
 	"time"
@@ -41,31 +42,37 @@ type Filter func(peer Peer) bool
 // return nil if the file doesn't exist
 func loadPeersFromFile(path string) (map[string]*Peer, error) {
 	// check if the file does exist
+
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return nil, nil
 	}
 
 	peersJSON := make(map[string]PeerJSON)
-	if err := file.LoadJSON(path, &peersJSON); err != nil {
+	err := file.LoadJSON(path, &peersJSON)
+
+	if err == io.EOF {
+		logger.WithField("path", path).Error("corrupt or empty file, rewriting file")
+		return nil, nil
+	} else if err != nil {
 		return nil, err
 	}
-
 	peers := make(map[string]*Peer, len(peersJSON))
 	for addr, peerJSON := range peersJSON {
 		a, err := validateAddress(addr, true)
+
 		if err != nil {
-			logger.Error("Invalid address in peers JSON file %s: %v", addr, err)
+			logger.Errorf("Invalid address in peers JSON file %s: %v", addr, err)
 			continue
 		}
 
 		peer, err := newPeerFromJSON(peerJSON)
 		if err != nil {
-			logger.Error("newPeerFromJSON failed: %v", err)
+			logger.Errorf("newPeerFromJSON failed: %v", err)
 			continue
 		}
 
 		if a != peer.Addr {
-			logger.Error("address key %s does not match Peer.Addr %s", a, peer.Addr)
+			logger.Errorf("address key %s does not match Peer.Addr %s", a, peer.Addr)
 			continue
 		}
 

@@ -1,4 +1,5 @@
-package cli_integration_test
+// package integration_test implements CLI integration tests
+package integration_test
 
 import (
 	"bytes"
@@ -33,8 +34,9 @@ import (
 const (
 	binaryName = "skycoin-cli"
 
-	testModeStable = "stable"
-	testModeLive   = "live"
+	testModeStable           = "stable"
+	testModeLive             = "live"
+	testModeDisableWalletApi = "disable-wallet-api"
 
 	// Number of random transactions of live transaction test.
 	randomLiveTransactionNum = 500
@@ -47,9 +49,9 @@ const (
 var (
 	binaryPath string
 
-	update     = flag.Bool("update", false, "update golden files")
-	liveTxFull = flag.Bool("live-tx-full", false, "run live transaction test against full blockchain")
-	testWallet = flag.Bool("test-wallet", false, "run wallet tests")
+	update         = flag.Bool("update", false, "update golden files")
+	liveTxFull     = flag.Bool("live-tx-full", false, "run live transaction test against full blockchain")
+	testLiveWallet = flag.Bool("test-live-wallet", false, "run live wallet tests, requires wallet envvars set")
 )
 
 type TestData struct {
@@ -193,9 +195,9 @@ func mode(t *testing.T) string {
 	switch mode {
 	case "":
 		mode = testModeStable
-	case testModeLive, testModeStable:
+	case testModeLive, testModeStable, testModeDisableWalletApi:
 	default:
-		t.Fatal("Invalid test mode, must be stable or live")
+		t.Fatal("Invalid test mode, must be stable, live or disable-wallet-api")
 	}
 	return mode
 }
@@ -222,18 +224,29 @@ func doLive(t *testing.T) bool {
 	return false
 }
 
-func doWallet(t *testing.T) bool {
-	if *testWallet {
+func doLiveWallet(t *testing.T) bool {
+	if *testLiveWallet {
 		return true
 	}
 
-	t.Skip("Wallet tests disabled")
+	t.Skip("Tests requiring wallet envvars are disabled")
 	return false
 }
 
-// doLiveEnvCheck checks if the WALLET_DIR and WALLET_NAME environment value do exist
-func doLiveEnvCheck(t *testing.T) {
-	t.Helper()
+// requireWalletDir checks if the WALLET_DIR environment value is set
+func requireWalletDir(t *testing.T) {
+	walletDir := os.Getenv("WALLET_DIR")
+	if walletDir == "" {
+		t.Fatal("missing WALLET_DIR environment value")
+	}
+}
+
+// requireWalletEnv checks if the WALLET_DIR and WALLET_NAME environment value are set
+func requireWalletEnv(t *testing.T) {
+	if !doLiveWallet(t) {
+		return
+	}
+
 	walletDir := os.Getenv("WALLET_DIR")
 	if walletDir == "" {
 		t.Fatal("missing WALLET_DIR environment value")
@@ -283,10 +296,6 @@ func rpcAddress() string {
 
 func TestStableGenerateAddresses(t *testing.T) {
 	if !doStable(t) {
-		return
-	}
-
-	if !doWallet(t) {
 		return
 	}
 
@@ -692,10 +701,6 @@ func TestStableListWallets(t *testing.T) {
 		return
 	}
 
-	if !doWallet(t) {
-		return
-	}
-
 	_, clean := createTempWalletFile(t)
 	defer clean()
 
@@ -720,11 +725,7 @@ func TestLiveListWallets(t *testing.T) {
 		return
 	}
 
-	if !doWallet(t) {
-		return
-	}
-
-	doLiveEnvCheck(t)
+	requireWalletDir(t)
 
 	output, err := exec.Command(binaryPath, "listWallets").CombinedOutput()
 	require.NoError(t, err)
@@ -734,14 +735,11 @@ func TestLiveListWallets(t *testing.T) {
 	}
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wlts)
 	require.NoError(t, err)
+	require.NotEmpty(t, wlts.Wallets)
 }
 
 func TestStableListAddress(t *testing.T) {
 	if !doStable(t) {
-		return
-	}
-
-	if !doWallet(t) {
 		return
 	}
 
@@ -769,11 +767,7 @@ func TestLiveListAddresses(t *testing.T) {
 		return
 	}
 
-	if !doWallet(t) {
-		return
-	}
-
-	doLiveEnvCheck(t)
+	requireWalletEnv(t)
 
 	output, err := exec.Command(binaryPath, "listAddresses").CombinedOutput()
 	require.NoError(t, err)
@@ -784,6 +778,8 @@ func TestLiveListAddresses(t *testing.T) {
 
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wltAddresses)
 	require.NoError(t, err)
+
+	require.NotEmpty(t, wltAddresses.Addresses)
 }
 
 func TestStableAddressBalance(t *testing.T) {
@@ -821,10 +817,6 @@ func TestStableWalletBalance(t *testing.T) {
 		return
 	}
 
-	if !doWallet(t) {
-		return
-	}
-
 	_, clean := createTempWalletFile(t)
 	defer clean()
 
@@ -845,11 +837,7 @@ func TestLiveWalletBalance(t *testing.T) {
 		return
 	}
 
-	if !doWallet(t) {
-		return
-	}
-
-	doLiveEnvCheck(t)
+	requireWalletEnv(t)
 
 	output, err := exec.Command(binaryPath, "walletBalance").CombinedOutput()
 	require.NoError(t, err)
@@ -857,14 +845,13 @@ func TestLiveWalletBalance(t *testing.T) {
 	var wltBalance cli.BalanceResult
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wltBalance)
 	require.NoError(t, err)
+
+	require.NotEmpty(t, wltBalance.Confirmed.Coins)
+	require.NotEmpty(t, wltBalance.Addresses)
 }
 
 func TestStableWalletOutputs(t *testing.T) {
 	if !doStable(t) {
-		return
-	}
-
-	if !doWallet(t) {
 		return
 	}
 
@@ -888,11 +875,7 @@ func TestLiveWalletOutputs(t *testing.T) {
 		return
 	}
 
-	if !doWallet(t) {
-		return
-	}
-
-	doLiveEnvCheck(t)
+	requireWalletEnv(t)
 
 	output, err := exec.Command(binaryPath, "walletOutputs").CombinedOutput()
 	require.NoError(t, err)
@@ -900,6 +883,8 @@ func TestLiveWalletOutputs(t *testing.T) {
 	var wltOutput webrpc.OutputsResult
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wltOutput)
 	require.NoError(t, err)
+
+	require.NotEmpty(t, wltOutput.Outputs.HeadOutputs)
 }
 
 func TestStableAddressOutputs(t *testing.T) {
@@ -1038,7 +1023,7 @@ func TestStableTransaction(t *testing.T) {
 			[]string{"d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add"},
 			nil,
 			"",
-			"genesis-transaction.golden",
+			"genesis-transaction-cli.golden",
 		},
 	}
 
@@ -1387,10 +1372,6 @@ func TestStableWalletDir(t *testing.T) {
 		return
 	}
 
-	if !doWallet(t) {
-		return
-	}
-
 	walletPath, clean := createTempWalletFile(t)
 	defer clean()
 
@@ -1405,11 +1386,7 @@ func TestLiveWalletDir(t *testing.T) {
 		return
 	}
 
-	if !doWallet(t) {
-		return
-	}
-
-	doLiveEnvCheck(t)
+	requireWalletDir(t)
 
 	walletDir := os.Getenv("WALLET_DIR")
 	output, err := exec.Command(binaryPath, "walletDir").CombinedOutput()
@@ -1432,12 +1409,15 @@ func TestLiveSend(t *testing.T) {
 		return
 	}
 
-	if !doWallet(t) {
-		return
-	}
+	requireWalletEnv(t)
 
 	// prepares wallet and confirms the wallet has at least 2 coins and 16 coin hours.
 	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 16)
+
+	if w.IsEncrypted() {
+		t.Skip("CLI wallet integration tests do not support encrypted wallets yet")
+		return
+	}
 
 	tt := []struct {
 		name    string
@@ -1610,12 +1590,15 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 		return
 	}
 
-	if !doWallet(t) {
-		return
-	}
+	requireWalletEnv(t)
 
 	// prepares wallet and confirms the wallet has at least 2 coins and 2 coin hours.
 	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 2)
+
+	if w.IsEncrypted() {
+		t.Skip("CLI wallet integration tests do not support encrypted wallets yet")
+		return
+	}
 
 	tt := []struct {
 		name    string
@@ -1747,6 +1730,7 @@ func getTransaction(t *testing.T, txid string) *webrpc.TxnResult {
 
 func isTxConfirmed(t *testing.T, txid string) bool {
 	tx := getTransaction(t, txid)
+	require.NotNil(t, tx)
 	return tx.Transaction.Status.Confirmed
 }
 
@@ -1865,10 +1849,6 @@ func TestStableWalletHistory(t *testing.T) {
 		return
 	}
 
-	if !doWallet(t) {
-		return
-	}
-
 	_, clean := createTempWalletFile(t)
 	defer clean()
 
@@ -1889,11 +1869,7 @@ func TestLiveWalletHistory(t *testing.T) {
 		return
 	}
 
-	if !doWallet(t) {
-		return
-	}
-
-	doLiveEnvCheck(t)
+	requireWalletEnv(t)
 
 	output, err := exec.Command(binaryPath, "walletHistory").CombinedOutput()
 	require.NoError(t, err)
@@ -1981,10 +1957,6 @@ func TestStableGenerateWallet(t *testing.T) {
 		return
 	}
 
-	if !doWallet(t) {
-		return
-	}
-
 	tt := []struct {
 		name        string
 		args        []string
@@ -1998,7 +1970,7 @@ func TestStableGenerateWallet(t *testing.T) {
 			setup: createTempWalletDir,
 			checkWallet: func(t *testing.T, w *wallet.Wallet) {
 				// Confirms the default wallet name is skycoin_cli.wlt
-				require.Equal(t, "skycoin_cli.wlt", w.GetFilename())
+				require.Equal(t, "skycoin_cli.wlt", w.Filename())
 
 				// Confirms the seed is a valid hex string
 				_, err := hex.DecodeString(w.Meta["seed"])
@@ -2014,7 +1986,7 @@ func TestStableGenerateWallet(t *testing.T) {
 			setup: createTempWalletDir,
 			checkWallet: func(t *testing.T, w *wallet.Wallet) {
 				// Confirms the default wallet name is skycoin_cli.wlt
-				require.Equal(t, "skycoin_cli.wlt", w.GetFilename())
+				require.Equal(t, "skycoin_cli.wlt", w.Filename())
 
 				// Confirms the seed is consisited of 12 words
 				seed := w.Meta["seed"]
@@ -2031,7 +2003,7 @@ func TestStableGenerateWallet(t *testing.T) {
 			setup: createTempWalletDir,
 			checkWallet: func(t *testing.T, w *wallet.Wallet) {
 				// Confirms the default wallet name is skycoin_cli.wlt
-				require.Equal(t, "skycoin_cli.wlt", w.GetFilename())
+				require.Equal(t, "skycoin_cli.wlt", w.Filename())
 				// Confirms the label is empty
 				require.Empty(t, w.Meta["label"])
 
@@ -2047,7 +2019,7 @@ func TestStableGenerateWallet(t *testing.T) {
 			setup: createTempWalletDir,
 			checkWallet: func(t *testing.T, w *wallet.Wallet) {
 				// Confirms the default wallet name is skycoin_cli.wlt
-				require.Equal(t, "skycoin_cli.wlt", w.GetFilename())
+				require.Equal(t, "skycoin_cli.wlt", w.Filename())
 				// Confirms the label is empty
 				require.Empty(t, w.Meta["label"])
 				// Confirms wallet has 5 address entries
@@ -2060,7 +2032,7 @@ func TestStableGenerateWallet(t *testing.T) {
 			setup: createTempWalletDir,
 			checkWallet: func(t *testing.T, w *wallet.Wallet) {
 				// Confirms the default wallet name is skycoin_cli.wlt
-				require.Equal(t, "integration-cli.wlt", w.GetFilename())
+				require.Equal(t, "integration-cli.wlt", w.Filename())
 				// Confirms the label is empty
 				require.Empty(t, w.Meta["label"])
 			},
@@ -2071,7 +2043,7 @@ func TestStableGenerateWallet(t *testing.T) {
 			setup: createTempWalletDir,
 			checkWallet: func(t *testing.T, w *wallet.Wallet) {
 				// Confirms the default wallet name is skycoin_cli.wlt
-				require.Equal(t, "skycoin_cli.wlt", w.GetFilename())
+				require.Equal(t, "skycoin_cli.wlt", w.Filename())
 				label, ok := w.Meta["label"]
 				require.True(t, ok)
 				require.Equal(t, "integration-cli", label)
@@ -2120,10 +2092,10 @@ func TestStableGenerateWallet(t *testing.T) {
 			require.NoError(t, err)
 
 			// Confirms all entries and lastSeed are derived from seed.
-			checkWalletEntriesAndLastSeed(t, &w)
+			checkWalletEntriesAndLastSeed(t, w)
 
 			// Checks the wallet with provided checking method.
-			tc.checkWallet(t, &w)
+			tc.checkWallet(t, w)
 		})
 	}
 }
@@ -2152,15 +2124,16 @@ func TestLiveGUIInjectTransaction(t *testing.T) {
 		return
 	}
 
-	doLiveEnvCheck(t)
-
-	if !doWallet(t) {
-		return
-	}
+	requireWalletEnv(t)
 
 	c := gui.NewClient(nodeAddress())
 	// prepares wallet and confirms the wallet has at least 2 coins and 2 coin hours.
 	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 2)
+
+	if w.IsEncrypted() {
+		t.Skip("CLI wallet integration tests do not support encrypted wallets yet")
+		return
+	}
 
 	tt := []struct {
 		name    string

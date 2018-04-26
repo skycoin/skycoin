@@ -2,7 +2,6 @@ package httphelper
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 
@@ -26,20 +25,20 @@ func HostCheck(logger *logging.Logger, host string, handler http.Handler) http.H
 		var err error
 		addr, port, err = iputil.SplitAddr(host)
 		if err != nil {
-			log.Panic(err)
+			logger.Panic(err)
 		}
 	}
 
 	isLocalhost := iputil.IsLocalhost(addr)
 
 	if isLocalhost && port == 0 {
-		log.Panic("localhost with no port specified is unsupported")
+		logger.Panic("localhost with no port specified is unsupported")
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// NOTE: The "Host" header is not in http.Request.Header, it's put in the http.Request.Host field
 		if r.Host != "" && isLocalhost && r.Host != fmt.Sprintf("127.0.0.1:%d", port) && r.Host != fmt.Sprintf("localhost:%d", port) {
-			logger.Critical("Detected DNS rebind attempt - configured-host=%s header-host=%s", host, r.Host)
+			logger.Critical().Errorf("Detected DNS rebind attempt - configured-host=%s header-host=%s", host, r.Host)
 			Error403(w)
 			return
 		}

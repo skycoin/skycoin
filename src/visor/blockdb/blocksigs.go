@@ -26,8 +26,8 @@ var (
 	blockSigsBkt = []byte("block_sigs")
 )
 
-// NewBlockSigs create block signature buckets
-func NewBlockSigs(db *bolt.DB) (*blockSigs, error) {
+// newBlockSigs create block signature buckets
+func newBlockSigs(db *bolt.DB) (*blockSigs, error) {
 	sigs, err := bucket.New(blockSigsBkt, db)
 	if err != nil {
 		return nil, err

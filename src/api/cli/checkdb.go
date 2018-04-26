@@ -63,6 +63,7 @@ func checkdb(c *gcli.Context) error {
 	return nil
 }
 
+// IntegrityCheck checks database integrity
 func IntegrityCheck(db *bolt.DB, genesisPubkey cipher.PubKey) error {
 	_, err := visor.NewBlockchain(db, genesisPubkey, visor.Arbitrating(true))
 	return err

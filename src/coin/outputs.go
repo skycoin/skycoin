@@ -100,7 +100,7 @@ func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
 	wholeCoinSeconds, err := multUint64(seconds, wholeCoins)
 	if err != nil {
 		err := fmt.Errorf("UxOut.CoinHours: Calculating whole coin seconds overflows uint64 seconds=%d coins=%d uxid=%s", seconds, wholeCoins, uo.Hash().Hex())
-		logger.Critical(err.Error())
+		logger.Critical().Error(err)
 		return 0, err
 	}
 
@@ -109,7 +109,7 @@ func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
 	dropletSeconds, err := multUint64(seconds, remainderDroplets)
 	if err != nil {
 		err := fmt.Errorf("UxOut.CoinHours: Calculating droplet seconds overflows uint64 seconds=%d droplets=%d uxid=%s", seconds, remainderDroplets, uo.Hash().Hex())
-		logger.Critical(err.Error())
+		logger.Critical().Error(err)
 		return 0, err
 	}
 
@@ -119,21 +119,20 @@ func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
 	coinHours := coinSeconds / 3600                        // coin hours
 	totalHours, err := AddUint64(uo.Body.Hours, coinHours) // starting+earned
 	if err != nil {
-		logger.Critical("%v uxid=%s", ErrAddEarnedCoinHoursAdditionOverflow, uo.Hash().Hex())
+		logger.Critical().Errorf("%v uxid=%s", ErrAddEarnedCoinHoursAdditionOverflow, uo.Hash().Hex())
 		return 0, ErrAddEarnedCoinHoursAdditionOverflow
 	}
 	return totalHours, nil
 }
 
-// UxHashSet set mapping from UxHash to a placeholder value. Ignore the byte value,
-// only check for existence
-type UxHashSet map[cipher.SHA256]byte
+// UxHashSet set mapping from UxHash to a placeholder value
+type UxHashSet map[cipher.SHA256]struct{}
 
 // UxArray Array of Outputs
 // Used by unspent output pool, spent tests
 type UxArray []UxOut
 
-// Hashes returns Array of hashes for the Ux in the UxArray.
+// Hashes returns Array of hashes for the Ux in the UxArray
 func (ua UxArray) Hashes() []cipher.SHA256 {
 	hashes := make([]cipher.SHA256, len(ua))
 	for i, ux := range ua {
@@ -150,28 +149,27 @@ func (ua UxArray) HasDupes() bool {
 		if _, ok := m[h]; ok {
 			return true
 		}
-		m[h] = byte(1)
+		m[h] = struct{}{}
 	}
 	return false
 }
 
-// Set returns the UxArray as a hash to byte map to be used as a set.  The byte's
-// value should be ignored, although it will be 1.  Should only be used for
-// membership detection.
+// Set returns the UxArray as a hash to struct{} map to be used as a set.
+// Should only be used for membership detection
 func (ua UxArray) Set() UxHashSet {
 	m := make(UxHashSet, len(ua))
 	for i := range ua {
-		m[ua[i].Hash()] = byte(1)
+		m[ua[i].Hash()] = struct{}{}
 	}
 	return m
 }
 
-// Sort sorts ux array
+// Sort sorts UxArray
 func (ua UxArray) Sort() {
 	sort.Sort(ua)
 }
 
-// Len returns length of uxarray
+// Len returns length of UxArray
 func (ua UxArray) Len() int {
 	return len(ua)
 }

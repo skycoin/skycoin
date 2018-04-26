@@ -248,7 +248,7 @@ func (rpc *WebRPC) Run() error {
 				errC <- nil
 			default:
 				// the webrpc service failed unexpectedly
-				logger.Info("webrpc.Run, http.Serve error:", err)
+				logger.Infof("webrpc.Run, http.Serve error: %v", err)
 				errC <- err
 			}
 		}
@@ -285,21 +285,21 @@ func (rpc *WebRPC) Handler(w http.ResponseWriter, r *http.Request) {
 	// only support post.
 	if r.Method != http.MethodPost {
 		res := makeErrorResponse(errCodeInvalidRequest, errMsgNotPost)
-		wh.SendOr404(w, &res)
+		wh.SendJSONOr500(logger, w, &res)
 		return
 	}
 
-	// deocder request.
+	// decoder request.
 	req := Request{}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		res := makeErrorResponse(errCodeParseError, errMsgParseError)
-		wh.SendOr404(w, &res)
+		wh.SendJSONOr500(logger, w, &res)
 		return
 	}
 
 	if req.Jsonrpc != jsonRPC {
 		res := makeErrorResponse(errCodeInvalidParams, errMsgInvalidJsonrpc)
-		wh.SendOr404(w, &res)
+		wh.SendJSONOr500(logger, w, &res)
 		return
 	}
 
@@ -307,13 +307,13 @@ func (rpc *WebRPC) Handler(w http.ResponseWriter, r *http.Request) {
 	rpc.ops <- func(rpc *WebRPC) {
 		defer func() {
 			if r := recover(); r != nil {
-				logger.Critical(fmt.Sprintf("%v", r))
+				logger.Critical().Errorf(fmt.Sprintf("%v", r))
 				resC <- makeErrorResponse(errCodeInternalError, errMsgInternalError)
 			}
 		}()
 
 		if handler, ok := rpc.handlers[req.Method]; ok {
-			logger.Info("webrpc handling method: %v", req.Method)
+			logger.Infof("webrpc handling method: %v", req.Method)
 			resC <- handler(req, rpc.Gateway)
 		} else {
 			resC <- makeErrorResponse(errCodeMethodNotFound, errMsgMethodNotFound)
@@ -321,7 +321,7 @@ func (rpc *WebRPC) Handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res := <-resC
-	wh.SendOr404(w, &res)
+	wh.SendJSONOr500(logger, w, &res)
 }
 
 func (rpc *WebRPC) workerThread(seq uint) {
@@ -333,7 +333,7 @@ func (rpc *WebRPC) workerThread(seq uint) {
 			func() {
 				defer func() {
 					if r := recover(); r != nil {
-						logger.Error("recover: %v", r)
+						logger.Errorf("recover: %v", r)
 					}
 				}()
 				op(rpc)

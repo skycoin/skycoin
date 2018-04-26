@@ -61,13 +61,15 @@ func TestBuildDataDirDotOk(t *testing.T) {
 	cleanDir := filepath.Clean(dir)
 	require.True(t, strings.HasSuffix(builtDir, cleanDir))
 
-	home := filepath.Clean(UserHome())
-	if home == "" {
-		require.Equal(t, cleanDir, builtDir)
-	} else {
-		require.True(t, strings.HasPrefix(builtDir, home))
-		require.NotEqual(t, builtDir, filepath.Clean(home))
+	gopath := os.Getenv("GOPATH")
+	// by default go uses GOPATH=$HOME/go if it is not set
+	if gopath == "" {
+		home := filepath.Clean(UserHome())
+		gopath = filepath.Join(home, "go")
 	}
+
+	require.True(t, strings.HasPrefix(builtDir, gopath))
+	require.NotEqual(t, builtDir, filepath.Clean(gopath))
 }
 
 func TestBuildDataDirEmptyError(t *testing.T) {
@@ -157,9 +159,7 @@ func TestSaveJSON(t *testing.T) {
 
 	requireFileMode(t, fn, 0644)
 	requireFileExists(t, fn)
-	requireFileExists(t, fn+".bak")
 	requireFileContents(t, fn, string(b2))
-	requireFileContents(t, fn+".bak", string(b))
 	requireFileNotExists(t, fn+".tmp")
 }
 
@@ -208,10 +208,9 @@ func TestSaveBinary(t *testing.T) {
 
 	err = SaveBinary(fn, b2, 0644)
 	requireFileExists(t, fn)
-	requireFileExists(t, fn+".bak")
 	requireFileNotExists(t, fn+".tmp")
 	requireFileContentsBinary(t, fn, b2)
-	requireFileContentsBinary(t, fn+".bak", b)
+	// requireFileContentsBinary(t, fn+".bak", b)
 	requireFileMode(t, fn, 0644)
-	requireFileMode(t, fn+".bak", 0644)
+	// requireFileMode(t, fn+".bak", 0644)
 }

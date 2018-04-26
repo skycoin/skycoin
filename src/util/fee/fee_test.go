@@ -190,6 +190,9 @@ func TestRequiredFee(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			fee := RequiredFee(tc.hours)
 			require.Equal(t, tc.fee, fee)
+
+			remainingHours := RemainingHours(tc.hours)
+			require.Equal(t, tc.hours-fee, remainingHours)
 		})
 	}
 }

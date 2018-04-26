@@ -5,22 +5,28 @@
     <p>Wallet Directory: {{ folder }}</p>
 
     <p>BACKUP YOUR SEED. ON PAPER. IN A SAFE PLACE. As long as you have your seed, you can recover your coins.</p>
+
+    <p class="text-muted"><small>
+      Use the table below to get seeds from your encrypted wallets. <br>
+      To get seeds from unencrypted wallets, open the folder above,
+      open the .wlt files in a text editor and recover the seeds.
+    </small></p>
   </mat-card>
 
   <ngx-datatable #table
                  class="material"
-                 [rows]="walletService.all() | async"
+                 [rows]="onlyEncrypted"
                  columnMode="flex"
                  [headerHeight]="50"
                  [footerHeight]="50"
                  [rowHeight]="50"
                  [limit]="10"
-                 [scrollbarH]="true">
+                 [scrollbarH]="false">
     <ngx-datatable-column name="Wallet label" prop="label" [flexGrow]="1"></ngx-datatable-column>
     <ngx-datatable-column name="File name" prop="filename" [flexGrow]="1"></ngx-datatable-column>
-    <ngx-datatable-column name="Download" [flexGrow]="1">
+    <ngx-datatable-column name="Seed" [flexGrow]="1">
       <ng-template let-row="row" ngx-datatable-cell-template>
-        <button mat-raised-button color="primary" (click)="download(row)">Download</button>
+        <button mat-raised-button color="primary" (click)="showSeed(row)" class="in-table">Show seed</button>
       </ng-template>
     </ngx-datatable-column>
   </ngx-datatable>

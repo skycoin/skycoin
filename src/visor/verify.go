@@ -171,7 +171,7 @@ func verifyTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn coin.U
 func VerifySingleTxnHardConstraints(txn coin.Transaction, head *coin.SignedBlock, uxIn coin.UxArray) error {
 	// Check for output hours overflow
 	// When verifying a single transaction, this is considered a hard constraint.
-	// For transactions inside of a block, it is a hard constraint.
+	// For transactions inside of a block, it is a soft constraint.
 	// This is due to a bug which allowed some blocks to be published with overflowing hours,
 	// otherwise this would always be a hard constraint.
 	if _, err := txn.OutputHours(); err != nil {

@@ -6,6 +6,6 @@ import { Pipe, PipeTransform } from '@angular/core';
 export class TransactionsAmountPipe implements PipeTransform {
 
   transform(value: any): any {
-    return value.reduce((a, b) => a + b.outputs.reduce((c, d) => c + parseInt(d.coins), 0), 0);
+    return value.reduce((a, b) => a + b.outputs.reduce((c, d) => c + parseInt(d.coins, 10), 0), 0);
   }
 }

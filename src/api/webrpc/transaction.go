@@ -22,7 +22,7 @@ type TxIDJson struct {
 func getTransactionHandler(req Request, gateway Gatewayer) Response {
 	var txid []string
 	if err := req.DecodeParams(&txid); err != nil {
-		logger.Criticalf("decode params failed: %v", err)
+		logger.Critical().Errorf("decode params failed: %v", err)
 		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
 	}
 
@@ -32,7 +32,7 @@ func getTransactionHandler(req Request, gateway Gatewayer) Response {
 
 	t, err := cipher.SHA256FromHex(txid[0])
 	if err != nil {
-		logger.Criticalf("decode txid err: %v", err)
+		logger.Critical().Errorf("decode txid err: %v", err)
 		return makeErrorResponse(errCodeInvalidParams, "invalid transaction hash")
 	}
 	txn, err := gateway.GetTransaction(t)
@@ -57,7 +57,7 @@ func getTransactionHandler(req Request, gateway Gatewayer) Response {
 func injectTransactionHandler(req Request, gateway Gatewayer) Response {
 	var rawtx []string
 	if err := req.DecodeParams(&rawtx); err != nil {
-		logger.Criticalf("decode params failed: %v", err)
+		logger.Critical().Errorf("decode params failed: %v", err)
 		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
 	}
 

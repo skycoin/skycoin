@@ -1,4 +1,4 @@
-@import '../../../../../theme/_variables.scss';
+@import '../../../../../theme/variables';
 
 mat-card {
   margin: 40px 20px 20px 20px;
@@ -20,4 +20,8 @@ mat-card {
       line-height: 40px;
     }
   }
+}
+
+.text-muted {
+  color: $grey-dark;
 }

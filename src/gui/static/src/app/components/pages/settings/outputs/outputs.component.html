@@ -1,24 +1,19 @@
 <div class="sky-container sky-container-grey">
   <app-header title="Outputs"></app-header>
 
-  <mat-card class="-table">
-    <div class="row -table-header">
-      <div class="col-md-4">Address</div>
-      <div class="col-md-4">Coins</div>
-      <div class="col-md-4">Coin hours</div>
-    </div>
-    <ng-container *ngIf="outputs && outputs.length">
-      <div class="row -table-row" *ngFor="let output of outputs">
-        <div class="col-md-4"><span>{{ output.address }}</span></div>
-        <div class="col-md-4"><span>{{ output.coins }}</span></div>
-        <div class="col-md-4"><span>{{ output.hours }}</span></div>
+  <div class="-wallet" *ngFor="let wallet of wallets">
+    <h3>{{ wallet.label }}</h3>
+
+    <mat-card class="-address" *ngFor="let address of wallet.addresses">
+      <h4>{{ address.address }}</h4>
+
+      <div class="-output" *ngFor="let output of address.outputs">
+        <div class="-hash">{{ output.hash }}</div>
+        <div class="-balance">
+          <div class="-item"><span>Coins:</span> {{ output.coins }}</div>
+          <div class="-item"><span>Hours:</span> {{ output.calculated_hours }}</div>
+        </div>
       </div>
-    </ng-container>
-    <div class="row -table-row" *ngIf="outputs && !outputs.length">
-      <div class="col-lg-12">No outputs</div>
-    </div>
-  </mat-card>
+    </mat-card>
+  </div>
 </div>
-
-
-

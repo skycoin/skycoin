@@ -116,6 +116,11 @@ func addressFromBytes(b []byte) (addr Address, err error) {
 	return a, nil
 }
 
+// Null returns true if the address is null (0x0000....)
+func (addr Address) Null() bool {
+	return addr == Address{}
+}
+
 // Bytes return address as a byte slice
 func (addr *Address) Bytes() []byte {
 	b := make([]byte, 20+1+4)

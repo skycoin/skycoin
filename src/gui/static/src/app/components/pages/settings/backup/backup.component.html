@@ -5,19 +5,25 @@
     <p>Wallet Directory: {{ folder }}</p>
 
     <p>BACKUP YOUR SEED. ON PAPER. IN A SAFE PLACE. As long as you have your seed, you can recover your coins.</p>
+
+    <p class="text-muted"><small>
+      Use the table below to get seeds from your encrypted wallets. <br>
+      To get seeds from unencrypted wallets, open the folder above,
+      open the .wlt files in a text editor and recover the seeds.
+    </small></p>
   </mat-card>
 
   <mat-card class="-table">
     <div class="row -table-header">
       <div class="col-md-4">Wallet Label</div>
       <div class="col-md-4">Filename</div>
-      <div class="col-md-4">Download</div>
+      <div class="col-md-4">Seed</div>
     </div>
-    <div class="row -table-row" *ngFor="let wallet of walletService.all() | async">
+    <div class="row -table-row" *ngFor="let wallet of onlyEncrypted">
       <div class="col-md-4"><span>{{ wallet.label }}</span></div>
       <div class="col-md-4"><span>{{ wallet.filename }}</span></div>
       <div class="col-md-4">
-        <button mat-raised-button color="primary" (click)="download(wallet)">Download</button>
+        <button mat-raised-button color="primary" (click)="showSeed(wallet)">Show seed</button>
       </div>
     </div>
   </mat-card>

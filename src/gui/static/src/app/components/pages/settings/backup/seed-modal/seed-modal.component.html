@@ -1,0 +1,11 @@
+<app-modal title="Wallet Seed" [dialog]="dialogRef">
+  <div class="form-field">
+    <label for="seed">Seed</label>
+    <textarea id="seed" readonly>{{ data.seed }}</textarea>
+  </div>
+  <div class="-buttons">
+    <app-button (action)="dialogRef.close()">
+      Close
+    </app-button>
+  </div>
+</app-modal>

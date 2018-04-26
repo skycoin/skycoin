@@ -13,7 +13,6 @@ import (
 	"github.com/skycoin/skycoin/src/daemon/strand"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/wallet"
 )
 
 //TODO
@@ -220,7 +219,7 @@ func (vs *Visor) AnnounceAllTxns(pool *Pool) error {
 	})
 
 	if err != nil {
-		logger.Debugf("Broadcast AnnounceTxnsMessage failed, err:%v", err)
+		logger.Debugf("Broadcast AnnounceTxnsMessage failed, err: %v", err)
 	}
 
 	return err
@@ -302,7 +301,7 @@ func (vs *Visor) SetTxnsAnnounced(txns []cipher.SHA256) {
 		now := utc.Now()
 		for _, h := range txns {
 			if err := vs.v.Unconfirmed.SetAnnounced(h, now); err != nil {
-				logger.Error("Failed to set unconfirmed txn announce time")
+				logger.Error("Failed to set unconfirmed txn announce time: ", err)
 			}
 		}
 
@@ -466,19 +465,6 @@ func (vs *Visor) EstimateBlockchainHeight() uint64 {
 		return nil
 	})
 	return maxLen
-}
-
-// ScanAheadWalletAddresses loads wallet from seeds and scan ahead N addresses
-// Set password as nil if the wallet is not encrypted, otherwise the password must be provided.
-func (vs *Visor) ScanAheadWalletAddresses(wltName string, password []byte, scanN uint64) (*wallet.Wallet, error) {
-	var wlt *wallet.Wallet
-	var err error
-	vs.strand("ScanAheadWalletAddresses", func() error {
-		wlt, err = vs.v.ScanAheadWalletAddresses(wltName, password, scanN)
-		return nil
-	})
-
-	return wlt, err
 }
 
 // PeerBlockchainHeight is a peer's IP address with their reported blockchain height
@@ -645,7 +631,7 @@ func (gbm *GiveBlocksMessage) Handle(mc *gnet.MessageContext,
 // Process process message
 func (gbm *GiveBlocksMessage) Process(d *Daemon) {
 	if d.Visor.Config.DisableNetworking {
-		logger.Notice("Visor disabled, ignoring GiveBlocksMessage")
+		logger.Critical().Info("Visor disabled, ignoring GiveBlocksMessage")
 		return
 	}
 
@@ -664,10 +650,10 @@ func (gbm *GiveBlocksMessage) Process(d *Daemon) {
 
 		err := d.Visor.ExecuteSignedBlock(b)
 		if err == nil {
-			logger.Noticef("Added new block %d", b.Block.Head.BkSeq)
+			logger.Critical().Infof("Added new block %d", b.Block.Head.BkSeq)
 			processed++
 		} else {
-			logger.Criticalf("Failed to execute received block %d: %v", b.Block.Head.BkSeq, err)
+			logger.Critical().Errorf("Failed to execute received block %d: %v", b.Block.Head.BkSeq, err)
 			// Blocks must be received in order, so if one fails its assumed
 			// the rest are failing
 			break

@@ -2233,3 +2233,11 @@ func TestLiveGUIInjectTransaction(t *testing.T) {
 		})
 	}
 }
+
+// requireDataDir checks if the DATA_DIR environment value is set
+func requireDataDir(t *testing.T) {
+	dataDir := os.Getenv("DATA_DIR")
+	if dataDir == "" {
+		t.Fatal("missing DATADIR environment value")
+	}
+}

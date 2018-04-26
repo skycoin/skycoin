@@ -28,6 +28,7 @@ const (
 	defaultWalletName = "$COIN_cli" + walletExt
 	defaultWalletDir  = "$HOME/.$COIN/wallets"
 	defaultRPCAddress = "127.0.0.1:6430"
+	defaultDataDir    = "$HOME/.$COIN/"
 )
 
 var (
@@ -35,7 +36,8 @@ var (
     RPC_ADDR: Address of RPC node. Default "%s"
     COIN: Name of the coin. Default "%s"
     WALLET_DIR: Directory where wallets are stored. This value is overriden by any subcommand flag specifying a wallet filename, if that filename includes a path. Default "%s"
-    WALLET_NAME: Name of wallet file (without path). This value is overriden by any subcommand flag specifying a wallet filename. Default "%s"`, defaultRPCAddress, defaultCoin, defaultWalletDir, defaultWalletName)
+    WALLET_NAME: Name of wallet file (without path). This value is overriden by any subcommand flag specifying a wallet filename. Default "%s"
+    DATA_DIR: Directory where everything is stored. Default "%s"`, defaultRPCAddress, defaultCoin, defaultWalletDir, defaultWalletName, defaultDataDir)
 
 	commandHelpTemplate = fmt.Sprintf(`USAGE:
         {{.HelpName}}{{if .VisibleFlags}} [command options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[arguments...]{{end}}{{if .Category}}
@@ -136,7 +138,11 @@ func LoadConfig() (Config, error) {
 		return Config{}, ErrWalletName
 	}
 
-	dataDir := filepath.Join(home, fmt.Sprintf(".%s", coin))
+	// get data dir dir from env
+	dataDir := os.Getenv("DATA_DIR")
+	if dataDir == "" {
+		dataDir = filepath.Join(home, fmt.Sprintf(".%s", coin))
+	}
 
 	return Config{
 		WalletDir:  wltDir,
@@ -233,6 +239,7 @@ func NewApp(cfg Config) *App {
 		walletDirCmd(),
 		walletHisCmd(),
 		walletOutputsCmd(cfg),
+		dataDirCmd(),
 	}
 
 	app.Name = fmt.Sprintf("%s-cli", cfg.Coin)

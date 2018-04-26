@@ -77,6 +77,16 @@ func TestLoadConfig(t *testing.T) {
 		require.Error(t, err)
 		require.Equal(t, ErrWalletName, err)
 	})
+
+	t.Run("set DATA_DIR", func(t *testing.T) {
+		val := "/home/foo/"
+		os.Setenv("DATA_DIR", val)
+		defer os.Unsetenv("DATA_DIR")
+
+		cfg, err := LoadConfig()
+		require.NoError(t, err)
+		require.Equal(t, cfg.DataDir, val)
+	})
 }
 
 func TestResolveWalletPath(t *testing.T) {

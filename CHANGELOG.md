@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Added
+
 ### Fixed
+
+- Reduce connection disconnects, improves syncing
+
 ### Changed
+
 ### Removed
 
 ## [0.23.0] - 2018-04-22

@@ -654,7 +654,7 @@ func TestPoolSendMessage(t *testing.T) {
 	VerifyMessages()
 	cfg := newTestConfig()
 	cfg.WriteTimeout = time.Second
-	cfg.BroadcastResultSize = 1
+	cfg.SendResultsSize = 1
 	// cfg.ConnectionWriteQueueSize = 1
 	p := NewConnectionPool(cfg, nil)
 
@@ -686,7 +686,7 @@ func TestPoolSendMessage(t *testing.T) {
 
 	fmt.Printf("%v\n", len(c.WriteQueue))
 	err = p.SendMessage(c.Addr(), m)
-	require.Equal(t, ErrDisconnectWriteQueueFull, err)
+	require.Equal(t, ErrWriteQueueFull, err)
 
 	p.Shutdown()
 	<-q

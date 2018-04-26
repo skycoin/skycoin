@@ -1,22 +1,29 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnDestroy } from '@angular/core';
 import { Wallet } from '../../../../app.datatypes';
 import { WalletService } from '../../../../services/wallet.service';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { ChangeNameComponent } from '../change-name/change-name.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
+import { MatSnackBar, MatSnackBarConfig } from '@angular/material';
+import { parseResponseMessage } from '../../../../utils/index';
 
 @Component({
   selector: 'app-wallet-detail',
   templateUrl: './wallet-detail.component.html',
   styleUrls: ['./wallet-detail.component.scss']
 })
-export class WalletDetailComponent {
+export class WalletDetailComponent implements OnDestroy {
   @Input() wallet: Wallet;
 
   constructor(
     private dialog: MatDialog,
     private walletService: WalletService,
+    private snackbar: MatSnackBar,
   ) { }
+
+  ngOnDestroy() {
+    this.snackbar.dismiss();
+  }
 
   editWallet() {
     const config = new MatDialogConfig();
@@ -26,6 +33,8 @@ export class WalletDetailComponent {
   }
 
   newAddress() {
+    this.snackbar.dismiss();
+
     if (this.wallet.encrypted) {
       this.dialog.open(PasswordDialogComponent).componentInstance.passwordSubmit
         .subscribe(passwordDialog => {
@@ -33,7 +42,11 @@ export class WalletDetailComponent {
             .subscribe(() => passwordDialog.close(), () => passwordDialog.error());
         });
     } else {
-      this.walletService.addAddress(this.wallet).subscribe();
+      this.walletService.addAddress(this.wallet).subscribe(null, err => {
+        const config = new MatSnackBarConfig();
+        config.duration = 300000;
+        this.snackbar.open(parseResponseMessage(err['_body']), null, config);
+      });
     }
   }
 

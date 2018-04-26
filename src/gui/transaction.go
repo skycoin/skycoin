@@ -27,8 +27,7 @@ func getPendingTxs(gateway Gatewayer) http.HandlerFunc {
 		for _, unconfirmedTxn := range txns {
 			readable, err := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
 			if err != nil {
-				logger.Error(err)
-				wh.Error500(w)
+				wh.Error500(w, err.Error())
 				return
 			}
 			ret = append(ret, readable)
@@ -68,8 +67,7 @@ func getTransactionByID(gate Gatewayer) http.HandlerFunc {
 
 		rbTx, err := visor.NewReadableTransaction(tx)
 		if err != nil {
-			logger.Error(err)
-			wh.Error500(w)
+			wh.Error500(w, err.Error())
 			return
 		}
 
@@ -119,16 +117,16 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 		// Gets transactions
 		txns, err := gateway.GetTransactions(flts...)
 		if err != nil {
-			logger.Errorf("get transactions failed: %v", err)
-			wh.Error500(w)
+			err = fmt.Errorf("gateway.GetTransactions failed: %v", err)
+			wh.Error500(w, err.Error())
 			return
 		}
 
 		// Converts visor.Transaction to visor.TransactionResult
 		txRlts, err := visor.NewTransactionResults(txns)
 		if err != nil {
-			logger.Errorf("Converts []visor.Transaction to visor.TransactionResults failed: %v", err)
-			wh.Error500(w)
+			err = fmt.Errorf("visor.NewTransactionResults failed: %v", err)
+			wh.Error500(w, err.Error())
 			return
 		}
 
@@ -165,21 +163,18 @@ func injectTransaction(gateway Gatewayer) http.HandlerFunc {
 		}{}
 
 		if err := json.NewDecoder(r.Body).Decode(&v); err != nil {
-			logger.Errorf("bad request: %v", err)
 			wh.Error400(w, err.Error())
 			return
 		}
 
 		b, err := hex.DecodeString(v.Rawtx)
 		if err != nil {
-			logger.Error(err)
 			wh.Error400(w, err.Error())
 			return
 		}
 
 		txn, err := coin.TransactionDeserialize(b)
 		if err != nil {
-			logger.Error(err)
 			wh.Error400(w, err.Error())
 			return
 		}
@@ -195,8 +190,8 @@ func injectTransaction(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if err := gateway.InjectBroadcastTransaction(txn); err != nil {
-			logger.Error(err)
-			wh.Error503Msg(w, fmt.Sprintf("inject tx failed: %v", err))
+			err = fmt.Errorf("inject tx failed: %v", err)
+			wh.Error503Msg(w, err.Error())
 			return
 		}
 
@@ -223,6 +218,7 @@ func getRawTx(gateway Gatewayer) http.HandlerFunc {
 			wh.Error405(w)
 			return
 		}
+
 		txid := r.FormValue("txid")
 		if txid == "" {
 			wh.Error400(w, "txid is empty")

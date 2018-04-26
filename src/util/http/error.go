@@ -81,13 +81,8 @@ func Error501(w http.ResponseWriter) {
 	httpError(w, http.StatusNotImplemented)
 }
 
-// Error500 respond with a 500 error
-func Error500(w http.ResponseWriter) {
-	httpError(w, http.StatusInternalServerError)
-}
-
-// Error500Msg respond with a 500 error and include a message
-func Error500Msg(w http.ResponseWriter, msg string) {
+// Error500 respond with a 500 error and include a message
+func Error500(w http.ResponseWriter, msg string) {
 	errorXXXMsg(w, http.StatusInternalServerError, msg)
 }
 

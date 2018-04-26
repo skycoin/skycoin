@@ -442,8 +442,8 @@ func getOutputsHandler(gateway Gatewayer) http.HandlerFunc {
 
 		outs, err := gateway.GetUnspentOutputs(filters...)
 		if err != nil {
-			logger.Errorf("get unspent outputs failed: %v", err)
-			wh.Error500(w)
+			err = fmt.Errorf("get unspent outputs failed: %v", err)
+			wh.Error500(w, err.Error())
 			return
 		}
 
@@ -473,9 +473,8 @@ func getBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 
 		bals, err := gateway.GetBalanceOfAddrs(addrs)
 		if err != nil {
-			errMsg := fmt.Sprintf("Get balance failed: %v", err)
-			logger.Error(errMsg)
-			wh.Error500Msg(w, errMsg)
+			err = fmt.Errorf("gateway.GetBalanceOfAddrs failed: %v", err)
+			wh.Error500(w, err.Error())
 			return
 		}
 
@@ -484,13 +483,13 @@ func getBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 			var err error
 			balance.Confirmed, err = balance.Confirmed.Add(bal.Confirmed)
 			if err != nil {
-				wh.Error500Msg(w, err.Error())
+				wh.Error500(w, err.Error())
 				return
 			}
 
 			balance.Predicted, err = balance.Predicted.Add(bal.Predicted)
 			if err != nil {
-				wh.Error500Msg(w, err.Error())
+				wh.Error500(w, err.Error())
 				return
 			}
 		}

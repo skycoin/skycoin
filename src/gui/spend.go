@@ -466,7 +466,7 @@ func createTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 				case fee.ErrTxnNoFee, fee.ErrTxnInsufficientCoinHours:
 					wh.Error400(w, err.Error())
 				default:
-					wh.Error500Msg(w, err.Error())
+					wh.Error500(w, err.Error())
 				}
 			}
 			return
@@ -475,8 +475,7 @@ func createTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 		txnResp, err := NewCreateTransactionResponse(txn, inputs)
 		if err != nil {
 			err = fmt.Errorf("NewCreateTransactionResponse failed: %v", err)
-			logger.WithError(err).Error()
-			wh.Error500Msg(w, err.Error())
+			wh.Error500(w, err.Error())
 			return
 		}
 

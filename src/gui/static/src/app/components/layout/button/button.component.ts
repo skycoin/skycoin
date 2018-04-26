@@ -39,7 +39,7 @@ export class ButtonComponent {
     this.state = 2;
 
     if (this.mouseOver) {
-      this.tooltip.show(50);
+      setTimeout(() => this.tooltip.show(), 50);
     }
   }
 

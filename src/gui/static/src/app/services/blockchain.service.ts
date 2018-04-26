@@ -1,16 +1,17 @@
 import { Injectable } from '@angular/core';
 import { ApiService } from './api.service';
 import { Observable } from 'rxjs/Observable';
-import { IntervalObservable } from 'rxjs/observable/IntervalObservable';
 import { Subject } from 'rxjs/Subject';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { TellerConfig } from '../app.datatypes';
 import { WalletService } from './wallet.service';
+import 'rxjs/add/observable/timer';
 
 @Injectable()
 export class BlockchainService {
 
   private progressSubject: Subject<any> = new BehaviorSubject<any>(null);
+  private refreshedBalance = false;
 
   get progress() {
     return this.progressSubject.asObservable();
@@ -20,15 +21,21 @@ export class BlockchainService {
     private apiService: ApiService,
     private walletService: WalletService,
   ) {
-    setTimeout(() => IntervalObservable
-      .create(2000)
+    Observable.timer(0, 2000)
       .flatMap(() => this.getBlockchainProgress())
       .takeWhile((response: any) => !response.current || response.current !== response.highest)
       .subscribe(
-        response => this.progressSubject.next(response),
+        response => {
+          this.progressSubject.next(response);
+
+          if (! this.refreshedBalance) {
+            this.walletService.refreshBalances();
+            this.refreshedBalance = true;
+          }
+        },
         error => console.log(error),
         () => this.completeLoading()
-      ), 3000);
+      );
   }
 
   addressTransactions(id): Observable<any> {

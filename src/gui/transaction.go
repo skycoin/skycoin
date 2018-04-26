@@ -61,7 +61,7 @@ func getTransactionByID(gate Gatewayer) http.HandlerFunc {
 			return
 		}
 		if tx == nil {
-			wh.Error404(w)
+			wh.Error404(w, "")
 			return
 		}
 
@@ -191,7 +191,7 @@ func injectTransaction(gateway Gatewayer) http.HandlerFunc {
 
 		if err := gateway.InjectBroadcastTransaction(txn); err != nil {
 			err = fmt.Errorf("inject tx failed: %v", err)
-			wh.Error503Msg(w, err.Error())
+			wh.Error503(w, err.Error())
 			return
 		}
 
@@ -238,7 +238,7 @@ func getRawTx(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if tx == nil {
-			wh.Error404(w)
+			wh.Error404(w, "")
 			return
 		}
 

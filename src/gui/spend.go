@@ -455,9 +455,9 @@ func createTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 			case wallet.Error:
 				switch err {
 				case wallet.ErrWalletAPIDisabled:
-					wh.Error403(w)
+					wh.Error403(w, "")
 				case wallet.ErrWalletNotExist:
-					wh.Error404Msg(w, err.Error())
+					wh.Error404(w, err.Error())
 				default:
 					wh.Error400(w, err.Error())
 				}

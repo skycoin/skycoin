@@ -73,7 +73,7 @@ func getBlock(gate Gatewayer) http.HandlerFunc {
 		}
 
 		if !exist {
-			wh.Error404(w)
+			wh.Error404(w, "")
 			return
 		}
 

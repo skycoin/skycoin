@@ -1,14 +1,12 @@
 package gui
 
 import (
-	"bytes"
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -59,11 +57,15 @@ type muxConfig struct {
 }
 
 func create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
-	appLoc, err := file.DetermineResourcePath(c.StaticDir, resourceDir, devDir)
-	if err != nil {
-		return nil, err
+	var appLoc string
+	if c.EnableWalletAPI {
+		var err error
+		appLoc, err = file.DetermineResourcePath(c.StaticDir, resourceDir, devDir)
+		if err != nil {
+			return nil, err
+		}
+		logger.Infof("Web resources directory: %s", appLoc)
 	}
-	logger.Infof("Web resources directory: %s", appLoc)
 
 	csrfStore := &CSRFStore{
 		Enabled: !c.DisableCSRF,
@@ -243,6 +245,9 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.Se
 	//  failure status.
 	webHandler("/wallet/spend", walletSpendHandler(gateway))
 
+	// Creates a transaction from a wallet
+	webHandler("/wallet/transaction", createTransactionHandler(gateway))
+
 	// GET Arguments:
 	//      id: Wallet ID
 	// Returns all pending transanction for all addresses by selected Wallet
@@ -325,7 +330,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.Se
 	//     addrs: Comma seperated addresses [optional, returns all transactions if no address is provided]
 	//     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
 	webHandler("/transactions", getTransactions(gateway))
-	//inject a transaction into network
+	// inject a transaction into network
 	webHandler("/injectTransaction", injectTransaction(gateway))
 	webHandler("/resendUnconfirmedTxns", resendUnconfirmedTxns(gateway))
 	// get raw tx by txid.
@@ -502,69 +507,5 @@ func versionHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		wh.SendJSONOr500(logger, w, gateway.GetBuildInfo())
-	}
-}
-
-/*
-attrActualLog remove color char in log
-origin: "\u001b[36m[skycoin.daemon:DEBUG] Trying to connect to 47.88.33.156:6000\u001b[0m",
-*/
-func attrActualLog(logInfo string) string {
-	//return logInfo
-	var actualLog string
-	actualLog = logInfo
-	if strings.HasPrefix(logInfo, "[skycoin") {
-		if strings.Contains(logInfo, "\u001b") {
-			actualLog = logInfo[0 : len(logInfo)-4]
-		}
-	} else {
-		if len(logInfo) > 5 {
-			if strings.Contains(logInfo, "\u001b") {
-				actualLog = logInfo[5 : len(logInfo)-4]
-			}
-		}
-	}
-	return actualLog
-}
-func getLogsHandler(logbuf *bytes.Buffer) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			wh.Error405(w)
-			return
-		}
-
-		var err error
-		defaultLineNum := 1000 // default line numbers
-		linenum := defaultLineNum
-		if lines := r.FormValue("lines"); lines != "" {
-			linenum, err = strconv.Atoi(lines)
-			if err != nil {
-				linenum = defaultLineNum
-			}
-		}
-		keyword := r.FormValue("include")
-		excludeKeyword := r.FormValue("exclude")
-		logs := []string{}
-		logList := strings.Split(logbuf.String(), "\n")
-		for _, logInfo := range logList {
-			if excludeKeyword != "" && strings.Contains(logInfo, excludeKeyword) {
-				continue
-			}
-			if keyword != "" && !strings.Contains(logInfo, keyword) {
-				continue
-			}
-
-			if len(logs) >= linenum {
-				logger.Debugf("logs size %d,total size:%d", len(logs), len(logList))
-				break
-			}
-			log := attrActualLog(logInfo)
-			if "" != log {
-				logs = append(logs, log)
-			}
-
-		}
-
-		wh.SendJSONOr500(logger, w, logs)
 	}
 }

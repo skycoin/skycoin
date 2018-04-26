@@ -71,6 +71,12 @@ func RequiredFee(hours uint64) uint64 {
 	return feeHours
 }
 
+// RemainingHours returns the amount of coinhours leftover after paying the fee for the input.
+func RemainingHours(hours uint64) uint64 {
+	fee := RequiredFee(hours)
+	return hours - fee
+}
+
 // TransactionFee calculates the current transaction fee in coinhours of a Transaction.
 // Returns ErrTxnInsufficientCoinHours if input hours is less than output hours.
 func TransactionFee(tx *coin.Transaction, headTime uint64, inUxs coin.UxArray) (uint64, error) {

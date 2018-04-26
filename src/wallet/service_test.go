@@ -1,17 +1,21 @@
 package wallet
 
 import (
+	"bytes"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"math/rand"
 	"os"
 	"path/filepath"
+	"sort"
 	"testing"
 	"time"
 
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -156,7 +160,7 @@ func TestServiceCreateWallet(t *testing.T) {
 				_, err = s.CreateWallet(dupWlt, Options{
 					Seed: seed,
 				}, nil)
-				require.EqualError(t, err, fmt.Sprintf("wallet %s would be duplicate with %v, same seed", dupWlt, wltName))
+				require.Equal(t, err, ErrSeedUsed)
 
 				// check if the dup wallet is created
 				_, ok := s.wallets[dupWlt]
@@ -650,7 +654,7 @@ func TestServiceReloadWallets(t *testing.T) {
 	}
 }
 
-func TestServiceCreateAndSignTx(t *testing.T) {
+func TestServiceCreateAndSignTransaction(t *testing.T) {
 	headTime := time.Now().UTC().Unix()
 	seed := []byte("seed")
 
@@ -675,8 +679,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 	var uxoutsNoHours []coin.UxOut
 	addrsNoHours := []cipher.Address{}
 	for i := 0; i < 10; i++ {
-		uxout := makeUxOut(t, secKey, 2e6, 100)
-		uxout.Body.Hours = 0
+		uxout := makeUxOut(t, secKey, 2e6, 0)
 		uxout.Head.Time = uint64(headTime)
 		uxoutsNoHours = append(uxoutsNoHours, uxout)
 
@@ -746,7 +749,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 			},
 			coins: 2e6,
 			dest:  addrs[0],
-			err:   errors.New("please spend after your pending transaction is confirmed"),
+			err:   ErrSpendingUnconfirmed,
 		},
 		{
 			name: "encrypted=false unconfirmed spend failed",
@@ -772,7 +775,7 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 				ok: false,
 			},
 			dest: addrs[0],
-			err:  errors.New("zero spend amount"),
+			err:  ErrZeroSpend,
 		},
 		{
 			name: "encrypted=false spend fractional coins",
@@ -859,10 +862,13 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 				require.NoError(t, err)
 
 				tx, err := s.CreateAndSignTransaction(w.Filename(), tc.pwd, tc.vld, unspents, uint64(headTime), tc.coins, tc.dest)
-				require.Equal(t, tc.err, err)
-				if err != nil {
+
+				if tc.err != nil {
+					require.Equal(t, tc.err, err, err.Error())
 					return
 				}
+
+				require.NoError(t, err)
 
 				// check the IN of tx
 				for _, inUxid := range tx.In {
@@ -872,6 +878,826 @@ func TestServiceCreateAndSignTx(t *testing.T) {
 
 				err = tx.Verify()
 				require.NoError(t, err)
+			})
+		}
+	}
+}
+
+func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
+	headTime := uint64(time.Now().UTC().Unix())
+	seed := []byte("seed")
+
+	// Generate first keys
+	_, secKeys := cipher.GenerateDeterministicKeyPairsSeed(seed, 11)
+	secKey := secKeys[0]
+	addr := cipher.AddressFromSecKey(secKey)
+
+	var extraWalletAddrs []cipher.Address
+	for _, s := range secKeys[1:] {
+		extraWalletAddrs = append(extraWalletAddrs, cipher.AddressFromSecKey(s))
+	}
+
+	// Create unspent outputs
+	var uxouts []coin.UxOut
+	var originalUxouts []coin.UxOut
+	addrs := []cipher.Address{}
+	for i := 0; i < 10; i++ {
+		uxout := makeUxOut(t, secKey, 2e6, uint64(100+i))
+		uxout.Head.Time = headTime
+		uxouts = append(uxouts, uxout)
+		originalUxouts = append(originalUxouts, uxout)
+
+		a := testutil.MakeAddress()
+		addrs = append(addrs, a)
+	}
+
+	// shuffle the uxouts to test that the uxout sorting during spend selection is working
+	for i := range uxouts {
+		j := rand.Intn(i + 1)
+		uxouts[i], uxouts[j] = uxouts[j], uxouts[i]
+	}
+
+	// Create extra unspent outputs. These have the same value as uxouts, but are spendable by
+	// keys held in extraWalletAddrs
+	extraUxouts := make([][]coin.UxOut, len(extraWalletAddrs))
+	for j := range extraWalletAddrs {
+		s := secKeys[j+1]
+
+		var uxouts []coin.UxOut
+		for i := 0; i < 10; i++ {
+			uxout := makeUxOut(t, s, 2e6, uint64(100+i))
+			uxout.Head.Time = headTime
+			uxouts = append(uxouts, uxout)
+		}
+
+		extraUxouts[j] = uxouts
+	}
+
+	// Create unspent outputs with no hours
+	var uxoutsNoHours []coin.UxOut
+	for i := 0; i < 10; i++ {
+		uxout := makeUxOut(t, secKey, 2e6, 0)
+		uxout.Head.Time = headTime
+		uxoutsNoHours = append(uxoutsNoHours, uxout)
+	}
+
+	// shuffle the uxouts to test that the uxout sorting during spend selection is working
+	for i := range uxoutsNoHours {
+		j := rand.Intn(i + 1)
+		uxoutsNoHours[i], uxoutsNoHours[j] = uxoutsNoHours[j], uxoutsNoHours[i]
+	}
+
+	changeAddress := testutil.MakeAddress()
+
+	validParams := CreateTransactionParams{
+		HoursSelection: HoursSelection{
+			Type: HoursSelectionTypeManual,
+		},
+		ChangeAddress: changeAddress,
+		To: []coin.TransactionOutput{
+			{
+				Address: addrs[0],
+				Hours:   10,
+				Coins:   1e6,
+			},
+		},
+	}
+
+	validParamsWithPassword := validParams
+	validParamsWithPassword.Wallet.Password = []byte("password")
+
+	newShareFactor := func(a string) *decimal.Decimal {
+		d, err := decimal.NewFromString(a)
+		require.NoError(t, err)
+		return &d
+	}
+
+	cases := []struct {
+		name             string
+		err              error
+		txn              *coin.Transaction
+		params           CreateTransactionParams
+		opts             Options
+		vld              Validator
+		unspents         []coin.UxOut
+		addressUnspents  coin.AddressUxOuts
+		chosenUnspents   []coin.UxOut
+		headTime         uint64
+		disableWalletAPI bool
+		pwd              []byte
+		walletNotExist   bool
+		changeOutput     *coin.TransactionOutput
+		toExpectedHours  []uint64
+	}{
+		{
+			name:             "wallet api disabled",
+			disableWalletAPI: true,
+			err:              ErrWalletAPIDisabled,
+		},
+
+		{
+			name:   "params invalid",
+			params: CreateTransactionParams{},
+			err:    NewError(errors.New("ChangeAddress is required")),
+		},
+
+		{
+			name:           "wallet doesn't exist",
+			params:         validParams,
+			walletNotExist: true,
+			err:            ErrWalletNotExist,
+		},
+
+		{
+			name:   "wallet encrypted and password not provided",
+			params: validParams,
+			opts: Options{
+				Encrypt: true,
+			},
+			err: ErrMissingPassword,
+		},
+
+		{
+			name:   "wallet not encrypted and password provided",
+			params: validParamsWithPassword,
+			opts: Options{
+				Encrypt: false,
+			},
+			err: ErrWalletNotEncrypted,
+		},
+
+		{
+			name:   "unconfirmed validator failed",
+			params: validParams,
+			vld: &dummyValidator{
+				err: errors.New("validator failed"),
+			},
+			err: errors.New("checking unconfirmed spending failed: validator failed"),
+		},
+
+		{
+			name:   "has unconfirmed transactions",
+			params: validParams,
+			vld: &dummyValidator{
+				ok: true,
+			},
+			err: ErrSpendingUnconfirmed,
+		},
+
+		{
+			name: "overflowing coin hours in params",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeManual,
+				},
+				To: []coin.TransactionOutput{
+					{
+						Address: addrs[0],
+						Hours:   math.MaxUint64,
+						Coins:   1e6,
+					},
+					{
+						Address: addrs[1],
+						Hours:   1,
+						Coins:   1e6,
+					},
+				},
+			},
+			err: NewError(errors.New("total output hours error: uint64 addition overflow")),
+		},
+
+		{
+			name: "overflowing coins in params",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeManual,
+				},
+				To: []coin.TransactionOutput{
+					{
+						Address: addrs[0],
+						Hours:   10,
+						Coins:   math.MaxUint64,
+					},
+					{
+						Address: addrs[1],
+						Hours:   1,
+						Coins:   1,
+					},
+				},
+			},
+			err: NewError(errors.New("total output coins error: uint64 addition overflow")),
+		},
+
+		{
+			name: "no unspents",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeManual,
+				},
+				To: []coin.TransactionOutput{
+					{
+						Address: addrs[0],
+						Hours:   10,
+						Coins:   1e6,
+					},
+				},
+			},
+			err: ErrNoUnspents,
+		},
+
+		{
+			name: "insufficient coins",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeManual,
+				},
+				To: []coin.TransactionOutput{
+					{
+						Address: addrs[0],
+						Hours:   10,
+						Coins:   100e6,
+					},
+				},
+			},
+			unspents: uxouts[:1],
+			err:      ErrInsufficientBalance,
+		},
+
+		{
+			name: "insufficient hours",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeManual,
+				},
+				To: []coin.TransactionOutput{
+					{
+						Address: addrs[0],
+						Hours:   100e6,
+						Coins:   1e6,
+					},
+				},
+			},
+			unspents: uxouts[:1],
+			err:      ErrInsufficientHours,
+		},
+
+		{
+			name: "manual, 1 output, no change",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeManual,
+				},
+				To: []coin.TransactionOutput{
+					{
+						Address: addrs[0],
+						Hours:   50,
+						Coins:   2e6,
+					},
+				},
+			},
+			unspents:       uxouts,
+			chosenUnspents: []coin.UxOut{originalUxouts[0]},
+		},
+
+		{
+			name: "manual, 1 output, no change, unknown address",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeManual,
+				},
+				Wallet: CreateTransactionWalletParams{
+					Addresses: append(extraWalletAddrs, testutil.MakeAddress()),
+				},
+				To: []coin.TransactionOutput{
+					{
+						Address: addrs[0],
+						Hours:   50,
+						Coins:   2e6,
+					},
+				},
+			},
+			err: ErrUnknownAddress,
+		},
+
+		{
+			name: "manual, 1 output, change",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeManual,
+				},
+				To: []coin.TransactionOutput{
+					{
+						Address: addrs[0],
+						Hours:   50,
+						Coins:   2e6 + 1,
+					},
+				},
+			},
+			unspents:       uxouts,
+			chosenUnspents: []coin.UxOut{originalUxouts[0], originalUxouts[1]},
+			changeOutput: &coin.TransactionOutput{
+				Address: changeAddress,
+				Hours:   50,
+				Coins:   2e6 - 1,
+			},
+		},
+
+		{
+			// there are leftover coin hours and an additional input is added
+			// to force change to save the leftover coin hours
+			name: "manual, 1 output, forced change",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeManual,
+				},
+				To: []coin.TransactionOutput{
+					{
+						Address: addrs[0],
+						Hours:   0,
+						Coins:   2e6 * 2,
+					},
+				},
+			},
+			unspents:       uxouts,
+			chosenUnspents: []coin.UxOut{originalUxouts[0], originalUxouts[1], originalUxouts[2]},
+			changeOutput: &coin.TransactionOutput{
+				Address: changeAddress,
+				Hours:   151,
+				Coins:   2e6,
+			},
+		},
+
+		{
+			// there are leftover coin hours and no coins change,
+			// but there are no more unspents to use to force a change output
+			name: "manual, 1 output, forced change rejected no more unspents",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeManual,
+				},
+				To: []coin.TransactionOutput{
+					{
+						Address: addrs[0],
+						Hours:   80,
+						Coins:   2e6 * 2,
+					},
+				},
+			},
+			unspents:       originalUxouts[:2],
+			chosenUnspents: []coin.UxOut{originalUxouts[0], originalUxouts[1]},
+			changeOutput:   nil,
+		},
+
+		{
+			// there are leftover coin hours and no coins change,
+			// but the hours cost of saving them with an additional input is less than is leftover
+			name: "manual, 1 output, forced change rejected",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeManual,
+				},
+				To: []coin.TransactionOutput{
+					{
+						Address: addrs[0],
+						Hours:   80,
+						Coins:   2e6 * 2,
+					},
+				},
+			},
+			unspents:       uxouts,
+			chosenUnspents: []coin.UxOut{originalUxouts[0], originalUxouts[1]},
+			changeOutput:   nil,
+		},
+
+		{
+			name: "manual, multiple outputs",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeManual,
+				},
+				To: []coin.TransactionOutput{
+					{
+						Address: addrs[0],
+						Hours:   50,
+						Coins:   1e6,
+					},
+					{
+						Address: addrs[0],
+						Hours:   50,
+						Coins:   1e6 + 1,
+					},
+					{
+						Address: addrs[1],
+						Hours:   70,
+						Coins:   2e6,
+					},
+				},
+			},
+			unspents:       uxouts,
+			chosenUnspents: []coin.UxOut{originalUxouts[0], originalUxouts[1], originalUxouts[2], originalUxouts[3]},
+			changeOutput: &coin.TransactionOutput{
+				Address: changeAddress,
+				Hours:   33,
+				Coins:   4e6 - 1,
+			},
+		},
+
+		{
+			name: "manual, multiple outputs, specific spend addresses",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeManual,
+				},
+				Wallet: CreateTransactionWalletParams{
+					Addresses: extraWalletAddrs,
+				},
+				To: []coin.TransactionOutput{
+					{
+						Address: addrs[0],
+						Hours:   50,
+						Coins:   1e6,
+					},
+					{
+						Address: addrs[0],
+						Hours:   50,
+						Coins:   1e6 + 1,
+					},
+					{
+						Address: addrs[1],
+						Hours:   70,
+						Coins:   2e6,
+					},
+				},
+			},
+			addressUnspents: coin.AddressUxOuts{
+				extraWalletAddrs[0]: []coin.UxOut{extraUxouts[0][0]},
+				extraWalletAddrs[3]: []coin.UxOut{extraUxouts[3][1], extraUxouts[3][2]},
+				addr:                []coin.UxOut{originalUxouts[3], originalUxouts[4], originalUxouts[5]},
+				extraWalletAddrs[5]: []coin.UxOut{extraUxouts[5][6]},
+			},
+			chosenUnspents: []coin.UxOut{extraUxouts[0][0], extraUxouts[3][1], extraUxouts[3][2], extraUxouts[5][6]},
+			changeOutput: &coin.TransactionOutput{
+				Address: changeAddress,
+				Hours:   34,
+				Coins:   4e6 - 1,
+			},
+		},
+
+		{
+			name: "auto, multiple outputs, split even, share factor 0.5",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				HoursSelection: HoursSelection{
+					Type:        HoursSelectionTypeAuto,
+					Mode:        HoursSelectionModeShare,
+					ShareFactor: newShareFactor("0.5"),
+				},
+				To: []coin.TransactionOutput{
+					{
+						Address: addrs[0],
+						Coins:   1e6,
+					},
+					{
+						Address: addrs[0],
+						Coins:   2e6,
+					},
+					{
+						Address: addrs[1],
+						Coins:   2e6,
+					},
+					{
+						Address: addrs[4],
+						Coins:   1e3,
+					},
+				},
+			},
+			unspents:       uxouts,
+			chosenUnspents: []coin.UxOut{originalUxouts[0], originalUxouts[1], originalUxouts[2]},
+			changeOutput: &coin.TransactionOutput{
+				Address: changeAddress,
+				Hours:   76,
+				Coins:   2e6 - (1e6 + 1e3),
+			},
+			toExpectedHours: []uint64{15, 30, 29, 1},
+		},
+
+		{
+			name: "encrypted, auto, multiple outputs, split even, share factor 0.5",
+			opts: Options{
+				Encrypt:  true,
+				Password: []byte("password"),
+			},
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				HoursSelection: HoursSelection{
+					Type:        HoursSelectionTypeAuto,
+					Mode:        HoursSelectionModeShare,
+					ShareFactor: newShareFactor("0.5"),
+				},
+				Wallet: CreateTransactionWalletParams{
+					Password: []byte("password"),
+				},
+				To: []coin.TransactionOutput{
+					{
+						Address: addrs[0],
+						Coins:   1e6,
+					},
+					{
+						Address: addrs[0],
+						Coins:   2e6,
+					},
+					{
+						Address: addrs[1],
+						Coins:   2e6,
+					},
+					{
+						Address: addrs[4],
+						Coins:   1e3,
+					},
+				},
+			},
+			unspents:       uxouts,
+			chosenUnspents: []coin.UxOut{originalUxouts[0], originalUxouts[1], originalUxouts[2]},
+			changeOutput: &coin.TransactionOutput{
+				Address: changeAddress,
+				Hours:   76,
+				Coins:   2e6 - (1e6 + 1e3),
+			},
+			toExpectedHours: []uint64{15, 30, 29, 1},
+		},
+
+		{
+			name: "auto, multiple outputs, split even, share factor 0",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				HoursSelection: HoursSelection{
+					Type:        HoursSelectionTypeAuto,
+					Mode:        HoursSelectionModeShare,
+					ShareFactor: newShareFactor("0"),
+				},
+				To: []coin.TransactionOutput{
+					{
+						Address: addrs[0],
+						Coins:   1e6,
+					},
+					{
+						Address: addrs[0],
+						Coins:   2e6,
+					},
+					{
+						Address: addrs[1],
+						Coins:   2e6,
+					},
+					{
+						Address: addrs[4],
+						Coins:   1e3,
+					},
+				},
+			},
+			unspents:       uxouts,
+			chosenUnspents: []coin.UxOut{originalUxouts[0], originalUxouts[1], originalUxouts[2]},
+			changeOutput: &coin.TransactionOutput{
+				Address: changeAddress,
+				Hours:   151,
+				Coins:   2e6 - (1e6 + 1e3),
+			},
+			toExpectedHours: []uint64{0, 0, 0, 0},
+		},
+
+		{
+			name: "auto, multiple outputs, split even, share factor 1",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				HoursSelection: HoursSelection{
+					Type:        HoursSelectionTypeAuto,
+					Mode:        HoursSelectionModeShare,
+					ShareFactor: newShareFactor("1"),
+				},
+				To: []coin.TransactionOutput{
+					{
+						Address: addrs[0],
+						Coins:   1e6,
+					},
+					{
+						Address: addrs[0],
+						Coins:   2e6,
+					},
+					{
+						Address: addrs[1],
+						Coins:   2e6,
+					},
+					{
+						Address: addrs[4],
+						Coins:   1e3,
+					},
+				},
+			},
+			unspents:       uxouts,
+			chosenUnspents: []coin.UxOut{originalUxouts[0], originalUxouts[1], originalUxouts[2]},
+			changeOutput: &coin.TransactionOutput{
+				Address: changeAddress,
+				Hours:   0,
+				Coins:   2e6 - (1e6 + 1e3),
+			},
+			toExpectedHours: []uint64{30, 60, 60, 1},
+		},
+
+		{
+			name:     "no coin hours in inputs",
+			unspents: uxoutsNoHours[:],
+			params: CreateTransactionParams{
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeManual,
+				},
+				ChangeAddress: changeAddress,
+				To: []coin.TransactionOutput{
+					{
+						Address: addrs[0],
+						Hours:   10,
+						Coins:   1e6,
+					},
+				},
+			},
+			err: fee.ErrTxnNoFee,
+		},
+	}
+
+	var cryptoTypes []CryptoType
+	for ct := range cryptoTable {
+		cryptoTypes = append(cryptoTypes, ct)
+	}
+
+	for _, tc := range cases {
+		cts := cryptoTypes
+		if !tc.opts.Encrypt {
+			cts = cts[:1]
+		}
+
+		for _, ct := range cts {
+			name := fmt.Sprintf("crypto=%v %v", ct, tc.name)
+			fmt.Println(name)
+			t.Run(name, func(t *testing.T) {
+				if tc.vld == nil {
+					tc.vld = &dummyValidator{}
+				}
+
+				if tc.headTime == 0 {
+					tc.headTime = headTime
+				}
+
+				unspents := &dummyUnspentGetter{
+					addrUnspents: coin.AddressUxOuts{
+						addr: tc.unspents,
+					},
+					unspents: map[cipher.SHA256]coin.UxOut{},
+				}
+
+				if tc.addressUnspents != nil {
+					unspents.addrUnspents = tc.addressUnspents
+				}
+
+				for _, uxs := range unspents.addrUnspents {
+					for _, ux := range uxs {
+						unspents.unspents[ux.Hash()] = ux
+					}
+				}
+
+				if tc.opts.Seed == "" {
+					tc.opts.Seed = string(seed)
+				}
+
+				dir := prepareWltDir()
+				s, err := NewService(Config{
+					WalletDir:       dir,
+					CryptoType:      ct,
+					EnableWalletAPI: true,
+				})
+				require.NoError(t, err)
+
+				if tc.walletNotExist {
+					tc.params.Wallet.ID = "foo.wlt"
+				} else {
+					wltName := newWalletFilename()
+					opts := tc.opts
+					if opts.Encrypt && len(opts.Password) == 0 {
+						opts.Password = []byte("password")
+					}
+					w, err := s.CreateWallet(wltName, opts, nil)
+					require.NoError(t, err)
+
+					if !w.IsEncrypted() {
+						_, err := s.NewAddresses(w.Filename(), nil, 10)
+						require.NoError(t, err)
+					}
+
+					tc.params.Wallet.ID = wltName
+				}
+
+				s.enableWalletAPI = !tc.disableWalletAPI
+
+				txn, inputs, err := s.CreateAndSignTransactionAdvanced(tc.params, tc.vld, unspents, tc.headTime)
+				if tc.err != nil {
+					require.Equal(t, tc.err, err)
+					return
+				}
+
+				require.NoError(t, err)
+
+				err = txn.Verify()
+				require.NoError(t, err)
+
+				require.Equal(t, len(inputs), len(txn.In))
+
+				// Checks duplicate inputs in array
+				inputsMap := make(map[cipher.SHA256]struct{})
+				for _, i := range inputs {
+					_, ok := inputsMap[i.Hash]
+					require.False(t, ok)
+					inputsMap[i.Hash] = struct{}{}
+				}
+
+				for i, inUxid := range txn.In {
+					_, ok := unspents.unspents[inUxid]
+					require.True(t, ok)
+
+					require.Equal(t, inUxid, inputs[i].Hash)
+				}
+
+				// Compare the transaction inputs
+				chosenUnspents := make([]coin.UxOut, len(tc.chosenUnspents))
+				chosenUnspentHashes := make([]cipher.SHA256, len(tc.chosenUnspents))
+				for i, u := range tc.chosenUnspents {
+					chosenUnspents[i] = u
+					chosenUnspentHashes[i] = u.Hash()
+				}
+				sort.Slice(chosenUnspentHashes, func(i, j int) bool {
+					return bytes.Compare(chosenUnspentHashes[i][:], chosenUnspentHashes[j][:]) < 0
+				})
+				sort.Slice(chosenUnspents, func(i, j int) bool {
+					h1 := chosenUnspents[i].Hash()
+					h2 := chosenUnspents[j].Hash()
+					return bytes.Compare(h1[:], h2[:]) < 0
+				})
+
+				sortedTxnIn := make([]cipher.SHA256, len(txn.In))
+				for i, x := range txn.In {
+					sortedTxnIn[i] = x
+				}
+
+				sort.Slice(sortedTxnIn, func(i, j int) bool {
+					return bytes.Compare(sortedTxnIn[i][:], sortedTxnIn[j][:]) < 0
+				})
+
+				require.Equal(t, chosenUnspentHashes, sortedTxnIn)
+
+				sort.Slice(inputs, func(i, j int) bool {
+					h1 := inputs[i].Hash
+					h2 := inputs[j].Hash
+					return bytes.Compare(h1[:], h2[:]) < 0
+				})
+
+				chosenUnspentsUxBalances := make([]UxBalance, len(chosenUnspents))
+				for i, o := range chosenUnspents {
+					b, err := NewUxBalance(tc.headTime, o)
+					require.NoError(t, err)
+					chosenUnspentsUxBalances[i] = b
+				}
+
+				require.Equal(t, chosenUnspentsUxBalances, inputs)
+
+				// Assign expected hours for comparison
+				var to []coin.TransactionOutput
+				for _, x := range tc.params.To {
+					to = append(to, x)
+				}
+
+				if len(tc.toExpectedHours) != 0 {
+					require.Equal(t, len(tc.toExpectedHours), len(to))
+					for i, h := range tc.toExpectedHours {
+						to[i].Hours = h
+					}
+				}
+
+				// Add the change output if specified
+				if tc.changeOutput != nil {
+					to = append(to, *tc.changeOutput)
+				}
+
+				// Compare transaction outputs
+				require.Equal(t, to, txn.Out)
 			})
 		}
 	}
@@ -1626,7 +2452,13 @@ type dummyUnspentGetter struct {
 }
 
 func (dug dummyUnspentGetter) GetUnspentsOfAddrs(addrs []cipher.Address) coin.AddressUxOuts {
-	return dug.addrUnspents
+	out := coin.AddressUxOuts{}
+	for _, a := range addrs {
+		if x, ok := dug.addrUnspents[a]; ok {
+			out[a] = x
+		}
+	}
+	return out
 }
 
 func (dug dummyUnspentGetter) Get(uxid cipher.SHA256) (coin.UxOut, bool) {

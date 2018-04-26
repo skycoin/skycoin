@@ -1,4 +1,4 @@
-<app-modal title="Create Wallet" [dialog]="dialogRef">
+<app-modal [title]="data.create ? 'Create Wallet' : 'Load Wallet'" [dialog]="dialogRef" [disableDismiss]="disableDismiss">
   <div [formGroup]="form">
     <div class="form-field">
       <label for="label">Name</label>
@@ -7,18 +7,48 @@
     <div class="form-field">
       <label for="seed">Seed</label>
       <textarea formControlName="seed" id="seed" row="2"></textarea>
+      <p class="-warning">
+        Remember this seed! Keep it in a safe place.
+        If you forget your seed, you will not be able to recover your wallet!
+      </p>
     </div>
-    <div class="form-field">
+    <div class="form-field" [ngClass]="{ '-disabled': !data.create }">
       <label for="confirm_seed">Confirm seed</label>
       <textarea formControlName="confirm_seed" id="confirm_seed" row="2"></textarea>
     </div>
+    <div>
+      <mat-checkbox class="-check" (change)="setEncrypt($event)" type="checkbox" id="encrypt" [checked]="true">
+        <img src="../../../../../assets/img/lock-gold.png">Encrypt Wallet
+      </mat-checkbox>
+    </div>
+    <div class="row -passwords">
+      <div class="col-md-12">
+        <p class="-info">
+          We suggest that you encrypt each one of your wallets with a password.
+          If you forget your password, you can reset it with your seed.
+          Make sure you have your seed saved somewhere safe before encrypting your wallet.
+        </p>
+      </div>
+      <div class="col-md-6" [ngClass]="{ '-hidden': !encrypt }">
+        <div class="form-field">
+          <label for="password">Password</label>
+          <input formControlName="password" id="password" type="password" appDontSavePassword>
+        </div>
+      </div>
+      <div class="col-md-6" [ngClass]="{ '-hidden': !encrypt }">
+        <div class="form-field">
+          <label for="confirm_password">Confirm password</label>
+          <input formControlName="confirm_password" id="confirm_password" type="password" appDontSavePassword>
+        </div>
+      </div>
+    </div>
   </div>
   <div class="-buttons">
-    <app-button (action)="closePopup()">
+    <app-button (action)="closePopup()" #cancelButton>
       Cancel
     </app-button>
-    <app-button (action)="createWallet()" class="primary" [disabled]="!form.valid">
-      Create
+    <app-button (action)="createWallet()" class="primary" [disabled]="!form.valid" #createButton>
+      {{ data.create ? 'Create' : 'Load' }}
     </app-button>
   </div>
 </app-modal>

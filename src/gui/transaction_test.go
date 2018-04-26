@@ -83,6 +83,18 @@ func makeUxBodyWithSecret(t *testing.T) (coin.UxBody, cipher.SecKey) {
 	}, s
 }
 
+func makeTransactionWithEmptyAddressOutput(t *testing.T) coin.Transaction {
+	tx := coin.Transaction{}
+	ux, s := makeUxOutWithSecret(t)
+
+	tx.PushInput(ux.Hash())
+	tx.SignInputs([]cipher.SecKey{s})
+	tx.PushOutput(makeAddress(), 1e6, 50)
+	tx.PushOutput(cipher.Address{}, 5e6, 50)
+	tx.UpdateHeader()
+	return tx
+}
+
 func TestGetPendingTxs(t *testing.T) {
 	invalidTxn := createUnconfirmedTxn(t)
 	invalidTxn.Txn.Out = append(invalidTxn.Txn.Out, coin.TransactionOutput{
@@ -309,8 +321,16 @@ func TestInjectTransaction(t *testing.T) {
 	validTxBody := &httpBody{Rawtx: hex.EncodeToString(validTransaction.Serialize())}
 	validTxBodyJSON, err := json.Marshal(validTxBody)
 	require.NoError(t, err)
+
 	b := &httpBody{Rawtx: hex.EncodeToString(testutil.RandBytes(t, 128))}
 	invalidTxBodyJSON, err := json.Marshal(b)
+	require.NoError(t, err)
+
+	invalidTxEmptyAddress := makeTransactionWithEmptyAddressOutput(t)
+	invalidTxEmptyAddressBody := &httpBody{
+		Rawtx: hex.EncodeToString(invalidTxEmptyAddress.Serialize()),
+	}
+	invalidTxEmptyAddressBodyJSON, err := json.Marshal(invalidTxEmptyAddressBody)
 	require.NoError(t, err)
 
 	tt := []struct {
@@ -359,10 +379,17 @@ func TestInjectTransaction(t *testing.T) {
 			httpBody: string(invalidTxBodyJSON),
 		},
 		{
-			name:                   "400 - injectTransactionError",
+			name:     "400 - txn sends to empty address",
+			method:   http.MethodPost,
+			status:   http.StatusBadRequest,
+			err:      "400 Bad Request - Transaction.Out contains an output sending to an empty address",
+			httpBody: string(invalidTxEmptyAddressBodyJSON),
+		},
+		{
+			name:                   "503 - injectTransactionError",
 			method:                 http.MethodPost,
-			status:                 http.StatusBadRequest,
-			err:                    "400 Bad Request - inject tx failed: injectTransactionError",
+			status:                 http.StatusServiceUnavailable,
+			err:                    "503 Service Unavailable - inject tx failed: injectTransactionError",
 			httpBody:               string(validTxBodyJSON),
 			injectTransactionArg:   validTransaction,
 			injectTransactionError: errors.New("injectTransactionError"),

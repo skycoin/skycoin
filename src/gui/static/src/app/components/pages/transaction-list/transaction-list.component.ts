@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { WalletService } from '../../../services/wallet.service';
-import { PriceService } from '../../../price.service';
+import { PriceService } from '../../../services/price.service';
 import { Subscription } from 'rxjs/Subscription';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { TransactionDetailComponent } from './transaction-detail/transaction-detail.component';
@@ -37,7 +37,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
     const config = new MatDialogConfig();
     config.width = '566px';
     config.data = transaction;
-    this.dialog.open(TransactionDetailComponent, config).afterClosed().subscribe();
+    this.dialog.open(TransactionDetailComponent, config);
   }
 
   showQrCode($event: any, address: string[]) {

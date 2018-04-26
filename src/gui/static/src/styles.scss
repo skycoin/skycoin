@@ -231,3 +231,80 @@ mat-spinner.in-button svg {
   height: 24px !important;
   width: 24px !important;
 }
+
+.empty-row {
+  padding: 0 1.2rem !important;
+  line-height: 50px !important;
+}
+
+.ngx-datatable.material {
+  box-shadow:
+    0 3px 1px -2px rgba(0,0,0,.2),
+    0 2px 2px 0 rgba(0,0,0,.14),
+    0 1px 5px 0 rgba(0,0,0,.12);
+}
+
+/**
+On-boarding components
+ */
+
+.onboarding-container {
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  background: $gradient-blue-dark; /* For browsers that do not support gradients */
+  background: -webkit-linear-gradient(left top, $gradient-blue-dark, $gradient-blue-light); /* For Safari 5.1 to 6.0 */
+  background: -o-linear-gradient(bottom right, $gradient-blue-dark, $gradient-blue-light); /* For Opera 11.1 to 12.0 */
+  background: -moz-linear-gradient(bottom right, $gradient-blue-dark, $gradient-blue-light); /* For Firefox 3.6 to 15 */
+  background: linear-gradient(to bottom right, $gradient-blue-dark, $gradient-blue-light); /* Standard syntax */
+
+  label {
+    color: white;
+  }
+
+  input {
+    border: 2px solid rgba(0, 0, 0, 0.05);
+    border-radius: 6px;
+    box-sizing: border-box;
+    display: block;
+    line-height: 20px;
+    padding: 10px 10px;
+    width: 100%;
+  }
+
+  select {
+    background-color: white;
+    border: 2px solid rgba(0, 0, 0, 0.05);
+    border-radius: 6px;
+    box-sizing: border-box;
+    display: block;
+    line-height: 20px;
+    padding: 10px 10px;
+    width: 100%;
+    -webkit-appearance:none;
+  }
+
+  textarea {
+    border: 2px solid rgba(0, 0, 0, 0.05);
+    border-radius: 6px;
+    box-sizing: border-box;
+    display: block;
+    line-height: 20px;
+    padding: 10px 10px;
+    width: 100%;
+  }
+}
+
+.dark button.enabled {
+  background-color: $black !important;
+  span {
+    color: white;
+  }
+}
+
+.ghost button.enabled {
+  background-color: $transparent !important;
+  span {
+    color: black;
+  }
+}

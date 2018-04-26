@@ -89,16 +89,15 @@ type Config struct {
 // NewConfig returns a Config with defaults set
 func NewConfig() Config {
 	return Config{
-		Address:          "",
-		Port:             0,
-		MaxConnections:   128,
-		MaxMessageLength: 256 * 1024,
-		DialTimeout:      time.Minute,
-		ReadTimeout:      time.Minute,
-		WriteTimeout:     time.Minute,
-		// EventChannelSize:         4096,
-		BroadcastResultSize:      16,
-		ConnectionWriteQueueSize: 32,
+		Address:                  "",
+		Port:                     0,
+		MaxConnections:           128,
+		MaxMessageLength:         256 * 1024,
+		DialTimeout:              time.Second * 30,
+		ReadTimeout:              time.Second * 30,
+		WriteTimeout:             time.Second * 30,
+		BroadcastResultSize:      256,
+		ConnectionWriteQueueSize: 64,
 		DisconnectCallback:       nil,
 		ConnectCallback:          nil,
 		DebugPrint:               false,
@@ -678,6 +677,7 @@ func (pool *ConnectionPool) SendMessage(addr string, msg Message) error {
 			select {
 			case conn.WriteQueue <- msg:
 			default:
+				logger.Critical().Infof("Write queue full for address %s", addr)
 				return ErrDisconnectWriteQueueFull
 			}
 		}
@@ -700,7 +700,8 @@ func (pool *ConnectionPool) BroadcastMessage(msg Message) error {
 		for _, conn := range pool.pool {
 			select {
 			case conn.WriteQueue <- msg:
-			case <-time.After(5 * time.Second):
+			default:
+				logger.Critical().Infof("Write queue full for address %s", conn.Addr())
 				fullWriteQueue = append(fullWriteQueue, conn.Addr())
 			}
 		}

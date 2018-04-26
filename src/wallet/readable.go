@@ -10,6 +10,12 @@ import (
 	"github.com/skycoin/skycoin/src/util/file"
 )
 
+var (
+	emptyAddress = cipher.Address{}
+	emptyPubkey  = cipher.PubKey{}
+	emptySeckey  = cipher.SecKey{}
+)
+
 // ReadableEntry wallet entry with json tags
 type ReadableEntry struct {
 	Address string `json:"address"`
@@ -19,11 +25,20 @@ type ReadableEntry struct {
 
 // NewReadableEntry creates readable wallet entry
 func NewReadableEntry(w Entry) ReadableEntry {
-	return ReadableEntry{
-		Address: w.Address.String(),
-		Public:  w.Public.Hex(),
-		Secret:  w.Secret.Hex(),
+	re := ReadableEntry{}
+	if w.Address != emptyAddress {
+		re.Address = w.Address.String()
 	}
+
+	if w.Public != emptyPubkey {
+		re.Public = w.Public.Hex()
+	}
+
+	if w.Secret != emptySeckey {
+		re.Secret = w.Secret.Hex()
+	}
+
+	return re
 }
 
 // LoadReadableEntry load readable wallet entry from given file
@@ -63,7 +78,7 @@ func (res ReadableEntries) toWalletEntries(isEncrypted bool) ([]Entry, error) {
 		}
 
 		// Verify the wallet if it's not encrypted
-		if !isEncrypted {
+		if !isEncrypted && re.Secret != "" {
 			if err := e.Verify(); err != nil {
 				return nil, err
 			}
@@ -170,4 +185,14 @@ func (rw *ReadableWallet) version() string {
 
 func (rw *ReadableWallet) time() string {
 	return rw.Meta[metaTm]
+}
+
+// Erase remove sensitive data
+func (rw *ReadableWallet) Erase() {
+	delete(rw.Meta, metaSeed)
+	delete(rw.Meta, metaLastSeed)
+	delete(rw.Meta, metaSecrets)
+	for i := range rw.Entries {
+		rw.Entries[i].Secret = ""
+	}
 }

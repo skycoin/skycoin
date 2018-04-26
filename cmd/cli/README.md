@@ -128,7 +128,7 @@ USAGE:
    skycoin-cli [global options] command [command options] [arguments...]
 
 VERSION:
-   0.23.0
+   0.23.1-rc1
 
 COMMANDS:
      addPrivateKey         Add a private key to specific wallet

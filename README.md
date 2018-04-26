@@ -415,9 +415,11 @@ Instructions for doing this:
 5. Follow the steps in [pre-release testing](#pre-release-testing)
 6. Make a PR merging `develop` into `master`
 7. Review the PR and merge it
-8. Tag the master branch with the version number. Version tags start with `v`, e.g. `v0.20.0`. Sign the tag. Example: `git tag -as v0.20.0 $COMMIT_ID`.
+8. Tag the master branch with the version number. Version tags start with `v`, e.g. `v0.20.0`.
+    Sign the tag. If you have your GPG key in github, creating a release on the Github website will automatically tag the release.
+    It can be tagged from the command line with `git tag -as v0.20.0 $COMMIT_ID`, but Github will not recognize it as a "release".
 9. Make sure that the client runs properly from the `master` branch
-10. Create the release builds from the `master` branch (see [Create Release builds](electron/README.md))
+10. Release builds are created and uploaded by travis. To do it manually, checkout the `master` branch and follow the [create release builds](electron/README.md) instructions.
 
 If there are problems discovered after merging to master, start over, and increment the 3rd version number.
 For example, `v0.20.0` becomes `v0.20.1`, for minor fixes.

@@ -126,7 +126,7 @@ Response:
         "time_since_last_block": "12m6s"
     },
     "version": {
-        "version": "0.22.0",
+        "version": "0.23.0",
         "commit": "f61b4319c2f146a5ad86f7cbda26a1ba6a09998d",
         "branch": "develop"
     },
@@ -819,7 +819,8 @@ Result:
                 "uxid": "7068bfd0f0f914ea3682d0e5cb3231b75cb9f0776bf9013d79b998d96c93ce2b",
                 "address": "g4XmbmVyDnkswsQTSqYRsyoh1YqydDX1wp",
                 "coins": "10.000000",
-                "hours": "862290",
+                "hours": "853667",
+                "calculated_hours": "862290",
                 "timestamp": 1524242826,
                 "block": 23575,
                 "txid": "ccfbb51e94cb58a619a82502bc986fb028f632df299ce189c2ff2932574a03e7"

@@ -1879,10 +1879,11 @@ func TestLiveWalletSpend(t *testing.T) {
 			},
 		},
 		{
-			// send 0.001 coin to the second address,
-			name:  "send 0.001 coin to second address",
+			// send 0.003 coin to the second address,
+			// this amount is chosen to not interfere with TestLiveWalletCreateTransaction
+			name:  "send 0.003 coin to second address",
 			to:    w.Entries[1].Address.String(),
-			coins: 1e3,
+			coins: 3e3,
 			checkTx: func(t *testing.T, tx *visor.TransactionResult) {
 				// Confirms there're two outputs, one to the second address, one as change output to the first address.
 				require.Len(t, tx.Transaction.Out, 2)
@@ -1900,8 +1901,8 @@ func TestLiveWalletSpend(t *testing.T) {
 
 				out := getAddrOutputInTx(t, tx, w.Entries[1].Address.String())
 
-				// Confirms the second address has 0.001 coin
-				require.Equal(t, out.Coins, "0.001000")
+				// Confirms the second address has 0.003 coin
+				require.Equal(t, out.Coins, "0.003000")
 				require.Equal(t, out.Address, w.Entries[1].Address.String())
 
 				coin, err := droplet.FromString(out.Coins)
@@ -2101,6 +2102,12 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 		},
 
 		{
+			// NOTE: this test will fail if "totalCoins - 1e3" does not require
+			// all of the outputs to be spent, e.g. if there is an output with
+			// "totalCoins - 1e3" coins in it.
+			// TODO -- Check that the wallet does not have an output of 0.001,
+			// because then this test cannot be performed, since there is no
+			// way to use all outputs and produce change in that case.
 			name: "valid request, manual one output with change",
 			req: gui.CreateTransactionRequest{
 				HoursSelection: gui.HoursSelection{
@@ -2206,26 +2213,26 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 				To: []gui.Receiver{
 					{
 						Address: w.Entries[1].Address.String(),
-						Coins:   toDropletString(1e6),
+						Coins:   toDropletString(1e3),
 					},
 					{
 						Address: w.Entries[1].Address.String(),
-						Coins:   toDropletString(totalCoins - 1e6 - 1e4),
+						Coins:   toDropletString(totalCoins - 2e3),
 					},
 				},
 			},
 			outputs: []coin.TransactionOutput{
 				{
 					Address: w.Entries[1].Address,
-					Coins:   1e6,
+					Coins:   1e3,
 				},
 				{
 					Address: w.Entries[1].Address,
-					Coins:   totalCoins - 1e6 - 1e4,
+					Coins:   totalCoins - 2e3,
 				},
 				{
 					Address: w.Entries[0].Address,
-					Coins:   1e4,
+					Coins:   1e3,
 				},
 			},
 			ignoreHours: true, // the hours are too unpredictable
@@ -2304,94 +2311,6 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 		})
 	}
 
-	assertEncodeTxnMatchesTxn := func(t *testing.T, result *gui.CreateTransactionResponse) {
-		require.NotEmpty(t, result.EncodedTransaction)
-		emptyTxn := &coin.Transaction{}
-		require.NotEqual(t, hex.EncodeToString(emptyTxn.Serialize()), result.EncodedTransaction)
-		txn, err := result.Transaction.ToTransaction()
-		require.NoError(t, err)
-
-		serializedTxn := txn.Serialize()
-		require.Equal(t, hex.EncodeToString(serializedTxn), result.EncodedTransaction)
-
-		require.Equal(t, int(txn.Length), len(serializedTxn))
-	}
-
-	assertRequestedCoins := func(t *testing.T, to []gui.Receiver, out []gui.CreatedTransactionOutput) {
-		var requestedCoins uint64
-		for _, o := range to {
-			c, err := droplet.FromString(o.Coins)
-			require.NoError(t, err)
-			requestedCoins += c
-		}
-
-		var sentCoins uint64
-		for _, o := range out[:len(to)] { // exclude change output
-			c, err := droplet.FromString(o.Coins)
-			require.NoError(t, err)
-			sentCoins += c
-		}
-
-		require.Equal(t, requestedCoins, sentCoins)
-	}
-
-	assertRequestedHours := func(t *testing.T, to []gui.Receiver, out []gui.CreatedTransactionOutput) {
-		for i, o := range out[:len(to)] { // exclude change output
-			toHours, err := strconv.ParseUint(to[i].Hours, 10, 64)
-			require.NoError(t, err)
-
-			outHours, err := strconv.ParseUint(o.Hours, 10, 64)
-
-			require.Equal(t, toHours, outHours)
-		}
-	}
-
-	assertCreatedTransactionValid := func(t *testing.T, r gui.CreatedTransaction) {
-		require.NotEmpty(t, r.In)
-		require.NotEmpty(t, r.Out)
-
-		fee, err := strconv.ParseUint(r.Fee, 10, 64)
-		require.NoError(t, err)
-
-		require.NotEqual(t, uint64(0), fee)
-
-		var inputHours uint64
-		var inputCoins uint64
-		for _, in := range r.In {
-			hours, err := strconv.ParseUint(in.Hours, 10, 64)
-			require.NoError(t, err)
-			inputHours, err = coin.AddUint64(inputHours, hours)
-			require.NoError(t, err)
-
-			coins, err := droplet.FromString(in.Coins)
-			require.NoError(t, err)
-			inputCoins, err = coin.AddUint64(inputCoins, coins)
-			require.NoError(t, err)
-		}
-
-		var outputHours uint64
-		var outputCoins uint64
-		for _, out := range r.Out {
-			hours, err := strconv.ParseUint(out.Hours, 10, 64)
-			require.NoError(t, err)
-			outputHours, err = coin.AddUint64(outputHours, hours)
-			require.NoError(t, err)
-
-			coins, err := droplet.FromString(out.Coins)
-			require.NoError(t, err)
-			outputCoins, err = coin.AddUint64(outputCoins, coins)
-			require.NoError(t, err)
-		}
-
-		require.True(t, inputHours > outputHours)
-		require.Equal(t, inputHours-outputHours, fee)
-
-		require.Equal(t, inputCoins, outputCoins)
-
-		require.Equal(t, uint8(0), r.Type)
-		require.NotEmpty(t, r.Length)
-	}
-
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			result, err := c.CreateTransaction(tc.req)
@@ -2427,11 +2346,26 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 			}
 		})
 	}
+}
 
-	if w.IsEncrypted() {
-		t.Logf("Skipping random CreateTransaction tests with encrypted wallet")
+func TestLiveWalletCreateTransactionRandom(t *testing.T) {
+	if !doLive(t) {
 		return
 	}
+
+	requireWalletEnv(t)
+
+	c := gui.NewClient(nodeAddress())
+
+	w, totalCoins, totalHours, password := prepareAndCheckWallet(t, c, 2e6, 20)
+
+	if w.IsEncrypted() {
+		t.Skip("Skipping TestLiveWalletCreateTransactionRandom tests with encrypted wallet")
+		return
+	}
+
+	remainingHours := fee.RemainingHours(totalHours)
+	require.True(t, remainingHours > 1)
 
 	assertTxnOutputCount := func(t *testing.T, changeAddress string, nOutputs int, result *gui.CreateTransactionResponse) {
 		nResultOutputs := len(result.Transaction.Out)
@@ -2672,6 +2606,99 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 		assertRequestedHours(t, to, result.Transaction.Out)
 		assertCreatedTransactionValid(t, result.Transaction)
 	}
+}
+
+func assertEncodeTxnMatchesTxn(t *testing.T, result *gui.CreateTransactionResponse) {
+	require.NotEmpty(t, result.EncodedTransaction)
+	emptyTxn := &coin.Transaction{}
+	require.NotEqual(t, hex.EncodeToString(emptyTxn.Serialize()), result.EncodedTransaction)
+	txn, err := result.Transaction.ToTransaction()
+	require.NoError(t, err)
+
+	serializedTxn := txn.Serialize()
+	require.Equal(t, hex.EncodeToString(serializedTxn), result.EncodedTransaction)
+
+	require.Equal(t, int(txn.Length), len(serializedTxn))
+}
+
+func assertRequestedCoins(t *testing.T, to []gui.Receiver, out []gui.CreatedTransactionOutput) {
+	var requestedCoins uint64
+	for _, o := range to {
+		c, err := droplet.FromString(o.Coins)
+		require.NoError(t, err)
+		requestedCoins += c
+	}
+
+	var sentCoins uint64
+	for _, o := range out[:len(to)] { // exclude change output
+		c, err := droplet.FromString(o.Coins)
+		require.NoError(t, err)
+		sentCoins += c
+	}
+
+	require.Equal(t, requestedCoins, sentCoins)
+}
+
+func assertRequestedHours(t *testing.T, to []gui.Receiver, out []gui.CreatedTransactionOutput) {
+	for i, o := range out[:len(to)] { // exclude change output
+		toHours, err := strconv.ParseUint(to[i].Hours, 10, 64)
+		require.NoError(t, err)
+
+		outHours, err := strconv.ParseUint(o.Hours, 10, 64)
+
+		require.Equal(t, toHours, outHours)
+	}
+}
+
+func assertCreatedTransactionValid(t *testing.T, r gui.CreatedTransaction) {
+	require.NotEmpty(t, r.In)
+	require.NotEmpty(t, r.Out)
+
+	fee, err := strconv.ParseUint(r.Fee, 10, 64)
+	require.NoError(t, err)
+
+	require.NotEqual(t, uint64(0), fee)
+
+	var inputHours uint64
+	var inputCoins uint64
+	for _, in := range r.In {
+		calculatedHours, err := strconv.ParseUint(in.CalculatedHours, 10, 64)
+		require.NoError(t, err)
+		inputHours, err = coin.AddUint64(inputHours, calculatedHours)
+		require.NoError(t, err)
+
+		hours, err := strconv.ParseUint(in.Hours, 10, 64)
+		require.NoError(t, err)
+
+		require.True(t, hours <= calculatedHours)
+
+		coins, err := droplet.FromString(in.Coins)
+		require.NoError(t, err)
+		inputCoins, err = coin.AddUint64(inputCoins, coins)
+		require.NoError(t, err)
+	}
+
+	var outputHours uint64
+	var outputCoins uint64
+	for _, out := range r.Out {
+		hours, err := strconv.ParseUint(out.Hours, 10, 64)
+		require.NoError(t, err)
+		outputHours, err = coin.AddUint64(outputHours, hours)
+		require.NoError(t, err)
+
+		coins, err := droplet.FromString(out.Coins)
+		require.NoError(t, err)
+		outputCoins, err = coin.AddUint64(outputCoins, coins)
+		require.NoError(t, err)
+	}
+
+	require.True(t, inputHours > outputHours)
+	require.Equal(t, inputHours-outputHours, fee)
+
+	require.Equal(t, inputCoins, outputCoins)
+
+	require.Equal(t, uint8(0), r.Type)
+	require.NotEmpty(t, r.Length)
 }
 
 func TestCreateWallet(t *testing.T) {
@@ -3077,6 +3104,10 @@ func prepareAndCheckWallet(t *testing.T, c *gui.Client, miniCoins, miniCoinHours
 		t.Fatalf("Load wallet %v failed: %v", walletPath, err)
 	}
 
+	if w.IsEncrypted() && password == "" {
+		t.Fatalf("Wallet is encrypted, must set WALLET_PASSWORD env var")
+	}
+
 	// Generate more addresses if address entries less than 2.
 	if len(w.Entries) < 2 {
 		_, err := c.NewWalletAddress(w.Filename(), 2-len(w.Entries), password)
@@ -3452,7 +3483,6 @@ func checkHealthResponse(t *testing.T, r *gui.HealthResponse) {
 	require.NotEmpty(t, r.BlockchainMetadata.Head.Time)
 	require.NotEmpty(t, r.Version.Version)
 	require.True(t, r.Uptime.Duration > time.Duration(0))
-	require.True(t, r.BlockchainMetadata.TimeSinceLastBlock.Duration >= time.Duration(0))
 }
 
 func TestStableHealth(t *testing.T) {
@@ -3468,6 +3498,8 @@ func TestStableHealth(t *testing.T) {
 	checkHealthResponse(t, r)
 
 	require.Equal(t, 0, r.OpenConnections)
+
+	require.True(t, r.BlockchainMetadata.TimeSinceLastBlock.Duration > time.Duration(0))
 
 	// The stable node is always run with the commit and branch ldflags, so they should appear
 	require.NotEmpty(t, r.Version.Commit)
@@ -3488,5 +3520,6 @@ func TestLiveHealth(t *testing.T) {
 
 	require.NotEqual(t, 0, r.OpenConnections)
 
+	// The TimeSinceLastBlock can be any value, including negative values, due to clock skew
 	// The live node is not necessarily run with the commit and branch ldflags, so don't check them
 }

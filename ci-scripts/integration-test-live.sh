@@ -14,7 +14,7 @@ RPC_ADDR="http://127.0.0.1:$RPC_PORT"
 MODE="live"
 TEST=""
 UPDATE=""
-TIMEOUT="5m"
+TIMEOUT="10m"
 # run go test with -v flag
 VERBOSE=""
 # run go test with -run flag
@@ -67,13 +67,13 @@ fi
 if [[ -z $TEST || $TEST = "gui" ]]; then
 
 SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST \
-    go test ./src/gui/integration/... $FAILFAST $UPDATE -timeout=3m $VERBOSE $RUN_TESTS $TEST_LIVE_WALLET
+    go test ./src/gui/integration/... $FAILFAST $UPDATE -timeout=$TIMEOUT $VERBOSE $RUN_TESTS $TEST_LIVE_WALLET
 
 fi
 
 if [[ -z $TEST || $TEST = "cli" ]]; then
 
-SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR USE_CSRF=$USE_CSRF \
-    go test ./src/api/cli/integration/... $FAILFAST $UPDATE -timeout=3m $VERBOSE $RUN_TESTS $TEST_LIVE_WALLET
+SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR SKYCOIN_NODE_HOST=$HOST USE_CSRF=$USE_CSRF \
+    go test ./src/api/cli/integration/... $FAILFAST $UPDATE -timeout=$TIMEOUT $VERBOSE $RUN_TESTS $TEST_LIVE_WALLET
 
 fi

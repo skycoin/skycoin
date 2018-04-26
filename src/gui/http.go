@@ -1,14 +1,12 @@
 package gui
 
 import (
-	"bytes"
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -529,69 +527,5 @@ func versionHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		wh.SendJSONOr500(logger, w, gateway.GetBuildInfo())
-	}
-}
-
-/*
-attrActualLog remove color char in log
-origin: "\u001b[36m[skycoin.daemon:DEBUG] Trying to connect to 47.88.33.156:6000\u001b[0m",
-*/
-func attrActualLog(logInfo string) string {
-	//return logInfo
-	var actualLog string
-	actualLog = logInfo
-	if strings.HasPrefix(logInfo, "[skycoin") {
-		if strings.Contains(logInfo, "\u001b") {
-			actualLog = logInfo[0 : len(logInfo)-4]
-		}
-	} else {
-		if len(logInfo) > 5 {
-			if strings.Contains(logInfo, "\u001b") {
-				actualLog = logInfo[5 : len(logInfo)-4]
-			}
-		}
-	}
-	return actualLog
-}
-func getLogsHandler(logbuf *bytes.Buffer) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			wh.Error405(w)
-			return
-		}
-
-		var err error
-		defaultLineNum := 1000 // default line numbers
-		linenum := defaultLineNum
-		if lines := r.FormValue("lines"); lines != "" {
-			linenum, err = strconv.Atoi(lines)
-			if err != nil {
-				linenum = defaultLineNum
-			}
-		}
-		keyword := r.FormValue("include")
-		excludeKeyword := r.FormValue("exclude")
-		logs := []string{}
-		logList := strings.Split(logbuf.String(), "\n")
-		for _, logInfo := range logList {
-			if excludeKeyword != "" && strings.Contains(logInfo, excludeKeyword) {
-				continue
-			}
-			if keyword != "" && !strings.Contains(logInfo, keyword) {
-				continue
-			}
-
-			if len(logs) >= linenum {
-				logger.Debugf("logs size %d,total size:%d", len(logs), len(logList))
-				break
-			}
-			log := attrActualLog(logInfo)
-			if "" != log {
-				logs = append(logs, log)
-			}
-
-		}
-
-		wh.SendJSONOr500(logger, w, logs)
 	}
 }

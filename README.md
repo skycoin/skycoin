@@ -150,7 +150,7 @@ Example
 ```sh
 $ git clone https://github.com/skycoin/skycoin
 $ cd skycoin
-$ SKYCOIN_VERSION=v0.22.0
+$ SKYCOIN_VERSION=v0.23.0
 $ docker build -f docker/images/mainnet/Dockerfile \
   --build-arg=SKYCOIN_VERSION=$SKYCOIN_VERSION \
   -t skycoin:$SKYCOIN_VERSION .
@@ -160,8 +160,8 @@ or just
 
 ```sh
 $ docker build -f docker/images/mainnet/Dockerfile \
-  --build-arg=SKYCOIN_VERSION=v0.22.0 \
-  -t skycoin:v0.22.0 .
+  --build-arg=SKYCOIN_VERSION=v0.23.0 \
+  -t skycoin:v0.23.0 .
 ```
 
 ## API Documentation
@@ -414,9 +414,11 @@ Instructions for doing this:
 5. Follow the steps in [pre-release testing](#pre-release-testing)
 6. Make a PR merging `develop` into `master`
 7. Review the PR and merge it
-8. Tag the master branch with the version number. Version tags start with `v`, e.g. `v0.20.0`. Sign the tag. Example: `git tag -as v0.20.0 $COMMIT_ID`.
+8. Tag the master branch with the version number. Version tags start with `v`, e.g. `v0.20.0`.
+    Sign the tag. If you have your GPG key in github, creating a release on the Github website will automatically tag the release.
+    It can be tagged from the command line with `git tag -as v0.20.0 $COMMIT_ID`, but Github will not recognize it as a "release".
 9. Make sure that the client runs properly from the `master` branch
-10. Create the release builds from the `master` branch (see [Create Release builds](electron/README.md))
+10. Release builds are created and uploaded by travis. To do it manually, checkout the `master` branch and follow the [create release builds](electron/README.md) instructions.
 
 If there are problems discovered after merging to master, start over, and increment the 3rd version number.
 For example, `v0.20.0` becomes `v0.20.1`, for minor fixes.
@@ -430,7 +432,7 @@ Performs these actions before releasing:
 * `go run cmd/cli/cli.go checkdb` against a synced node
 * On all OSes, make sure that the client runs properly from the command line (`./run.sh`)
 * Build the releases and make sure that the Electron client runs properly on Windows, Linux and macOS.
-    * Delete the database file and sync from scratch to confirm syncing works
+    * Use a clean data directory with no wallets or database to sync from scratch and verify the wallet setup wizard.
     * Load a test wallet with nonzero balance from seed to confirm wallet loading works
     * Send coins to another wallet to confirm spending works
     * Restart the client, confirm that it reloads properly

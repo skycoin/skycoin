@@ -97,8 +97,8 @@ func (serv *Service) loadWallet(wltName string, options Options, bg BalanceGette
 	}
 
 	// Check for duplicate wallets by initial seed
-	if id, ok := serv.firstAddrIDMap[w.Entries[0].Address.String()]; ok {
-		return nil, fmt.Errorf("wallet %s would be duplicate with %v, same seed", w.Filename(), id)
+	if _, ok := serv.firstAddrIDMap[w.Entries[0].Address.String()]; ok {
+		return nil, ErrSeedUsed
 	}
 
 	if err := serv.wallets.add(w); err != nil {
@@ -341,7 +341,7 @@ func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, vld
 // CreateAndSignTransactionAdvanced creates and signs a transaction based upon CreateTransactionParams.
 // Set the password as nil if the wallet is not encrypted, otherwise the password must be provided
 func (serv *Service) CreateAndSignTransactionAdvanced(params CreateTransactionParams, vld Validator,
-	unspent blockdb.UnspentGetter, headTime uint64) (*coin.Transaction, coin.UxArray, error) {
+	unspent blockdb.UnspentGetter, headTime uint64) (*coin.Transaction, []UxBalance, error) {
 	serv.RLock()
 	defer serv.RUnlock()
 
@@ -370,7 +370,7 @@ func (serv *Service) CreateAndSignTransactionAdvanced(params CreateTransactionPa
 	}
 
 	var tx *coin.Transaction
-	var inputs coin.UxArray
+	var inputs []UxBalance
 	if w.IsEncrypted() {
 		err = w.guardView(params.Wallet.Password, func(wlt *Wallet) error {
 			var err error

@@ -4,12 +4,33 @@
   text-align: center;
 }
 
-.generators {
-  padding-left: 10px;
+label[for=seed] {
+  display: flex;
 
-  span {
-    cursor: pointer;
-    color: $gradient-blue-dark;
+  > span:last-child {
+    flex: 1;
+  }
+
+  .generators {
+    text-align: right;
+
+    span {
+      cursor: pointer;
+      color: $gradient-blue-dark-transparent;
+    }
+
+    mat-icon {
+      width: 13px;
+      height: 10px;
+      font-size: 13px;
+      position: relative;
+      top: 2px;
+    }
+
+    .divider {
+      padding: 0 5px;
+      color: $grey-normal;
+    }
   }
 }
 

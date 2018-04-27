@@ -6,11 +6,15 @@
     </div>
     <div class="form-field">
       <label for="seed">
-        Seed
+        <span>Seed</span>
         <span class="generators" *ngIf="data.create">
-          [ <span (click)="generateSeed(128)">128-bit</span>
-          |
-          <span (click)="generateSeed(256)">256-bit</span> ]
+          <span (click)="generateSeed(128)" matTooltip="Generate 12 word seed">
+            <mat-icon>vpn_key</mat-icon> 12 words
+          </span>
+          <span class="divider">|</span>
+          <span (click)="generateSeed(256)" matTooltip="Generate 24 word seed">
+            <mat-icon>lock</mat-icon> 24 words
+          </span>
         </span>
       </label>
       <textarea formControlName="seed" id="seed" row="2"></textarea>

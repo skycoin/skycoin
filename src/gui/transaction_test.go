@@ -121,7 +121,7 @@ func TestGetPendingTxs(t *testing.T) {
 			name:   "500 - bad unconfirmedTxn",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error",
+			err:    "500 Internal Server Error - Droplet string conversion failed: Value is too large",
 			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTxn{
 				invalidTxn,
 			},
@@ -706,7 +706,7 @@ func TestGetTransactions(t *testing.T) {
 			name:   "500 - getTransactionsError",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error",
+			err:    "500 Internal Server Error - gateway.GetTransactions failed: getTransactionsError",
 			httpBody: &httpBody{
 				addrs:     addrsStr,
 				confirmed: "true",
@@ -721,7 +721,7 @@ func TestGetTransactions(t *testing.T) {
 			name:   "500 - visor.NewTransactionResults error",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error",
+			err:    "500 Internal Server Error - visor.NewTransactionResults failed: Droplet string conversion failed: Value is too large",
 			httpBody: &httpBody{
 				addrs:     addrsStr,
 				confirmed: "true",

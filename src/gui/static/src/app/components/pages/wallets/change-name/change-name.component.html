@@ -9,7 +9,7 @@
     <app-button (action)="closePopup()">
       Cancel
     </app-button>
-    <app-button (action)="rename()" class="primary" [disabled]="!form.valid">
+    <app-button (action)="rename()" class="primary" [disabled]="!form.valid" #button>
       Rename
     </app-button>
   </div>

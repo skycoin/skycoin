@@ -58,11 +58,11 @@ export class SendSkycoinComponent implements OnInit, OnDestroy {
       Math.round(parseFloat(this.form.value.amount) * 1000000),
       passwordDialog ? passwordDialog.password : null
     )
-      .delay(1000)
       .subscribe(
         () => {
           this.resetForm();
           this.button.setSuccess();
+          this.walletService.startPendingTxsSubscription();
         },
         error => {
           const errorMessage = parseResponseMessage(error['_body']);
@@ -101,6 +101,7 @@ export class SendSkycoinComponent implements OnInit, OnDestroy {
     this.form.get('wallet').reset('');
     this.form.get('address').reset('');
     this.form.get('amount').reset('');
+    this.form.get('notes').reset('');
   }
 
   private validateAmount(amountControl: FormControl) {

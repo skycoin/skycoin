@@ -3,15 +3,15 @@
 
   <mat-card class="-table">
     <div class="row -table-header">
-      <div class="col-md-4">Timestamp</div>
-      <div class="col-md-4">Amount</div>
-      <div class="col-md-4">Transaction ID</div>
+      <div class="col-md-2">Timestamp</div>
+      <div class="col-md-2">Amount</div>
+      <div class="col-md-8">Transaction ID</div>
     </div>
     <ng-container *ngIf="transactions && transactions.length">
       <div class="row -table-row" *ngFor="let tx of transactions">
-        <div class="col-md-4"><span>{{ tx.timestamp | dateTime }}</span></div>
-        <div class="col-md-4"><span>{{ tx.amount }}</span></div>
-        <div class="col-md-4"><span>{{ tx.txid }}</span></div>
+        <div class="col-md-2"><span>{{ tx.timestamp | dateTime }}</span></div>
+        <div class="col-md-2"><span>{{ tx.amount }}</span></div>
+        <div class="col-md-8"><span>{{ tx.txid }}</span></div>
       </div>
     </ng-container>
     <div class="row -table-row" *ngIf="transactions && !transactions.length">

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -80,12 +79,6 @@ type compiledColorScheme struct {
 
 // TextFormatter formats log output
 type TextFormatter struct {
-	// Name of the logging field containing priority level
-	PriorityKey string
-
-	// Highlight messages with this priority
-	HighlightPriorityValue string
-
 	// Set to true to bypass checking for a TTY before outputting colors.
 	ForceColors bool
 
@@ -260,8 +253,8 @@ func (f *TextFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys 
 		levelColor = colorScheme.DebugLevelColor
 	}
 
-	priority, ok := entry.Data[f.PriorityKey]
-	hasPriority := ok && priority == f.HighlightPriorityValue
+	priority, ok := entry.Data[logPriorityKey]
+	hasPriority := ok && priority == logPriorityCritical
 
 	if entry.Level != logrus.WarnLevel {
 		levelText = entry.Level.String()
@@ -277,17 +270,11 @@ func (f *TextFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys 
 	message := entry.Message
 	prefix := ""
 
-	prefixText := ""
-	if prefixValue, ok := entry.Data["prefix"]; ok {
-		prefixText = " " + prefixValue.(string) + ":"
-	} else {
-		prefixValue, trimmedMsg := extractPrefix(entry.Message)
-		if len(prefixValue) > 0 {
-			prefixText = " " + prefixValue + ":"
-			message = trimmedMsg
-		}
+	prefixText := extractPrefix(entry)
+	if prefixText != "" {
+		prefixText = " " + prefixText + ":"
+		prefix = colorScheme.PrefixColor(prefixText)
 	}
-	prefix = colorScheme.PrefixColor(prefixText)
 
 	messageFormat := "%s"
 	if f.SpacePadding != 0 {
@@ -352,7 +339,7 @@ func (f *TextFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys 
 	}
 
 	for _, k := range keys {
-		if k != "prefix" && k != "file" && k != "func" && k != "line" && k != f.PriorityKey && k != LogModuleKey {
+		if k != "prefix" && k != "file" && k != "func" && k != "line" && k != logPriorityKey && k != logModuleKey {
 			v := entry.Data[k]
 			fmt.Fprintf(b, " %s", f.formatKeyValue(levelColor(k), v))
 		}
@@ -380,14 +367,25 @@ func (f *TextFormatter) needsQuoting(text string) bool {
 	return false
 }
 
-func extractPrefix(msg string) (string, string) {
-	prefix := ""
-	regex := regexp.MustCompile("^\\[(.*?)\\]")
-	if regex.MatchString(msg) {
-		match := regex.FindString(msg)
-		prefix, msg = match[1:len(match)-1], strings.TrimSpace(msg[len(match):])
+func extractPrefix(e *logrus.Entry) string {
+	var module string
+	if iModule, ok := e.Data[logModuleKey]; ok {
+		module, _ = iModule.(string)
 	}
-	return prefix, msg
+
+	var priority string
+	if iPriority, ok := e.Data[logPriorityKey]; ok {
+		priority, _ = iPriority.(string)
+	}
+
+	switch {
+	case priority == "":
+		return fmt.Sprintf("[%s]", module)
+	case module == "":
+		return fmt.Sprintf("[%s]", priority)
+	default:
+		return fmt.Sprintf("[%s:%s]", module, priority)
+	}
 }
 
 func (f *TextFormatter) formatKeyValue(key string, value interface{}) string {

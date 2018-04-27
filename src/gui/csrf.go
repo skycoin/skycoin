@@ -113,7 +113,7 @@ func getCSRFToken(gateway Gatewayer, store *CSRFStore) http.HandlerFunc {
 
 		if !store.Enabled {
 			logger.Warning("CSRF check disabled")
-			wh.Error404(w)
+			wh.Error404(w, "")
 			return
 		}
 
@@ -133,7 +133,7 @@ func CSRFCheck(store *CSRFStore, handler http.Handler) http.Handler {
 				token := r.Header.Get(CSRFHeaderName)
 				if err := store.verifyToken(token); err != nil {
 					logger.Errorf("CSRF token invalid: %v", err)
-					wh.Error403Msg(w, "invalid CSRF token")
+					wh.Error403(w, "invalid CSRF token")
 					return
 				}
 			}
@@ -161,14 +161,14 @@ func OriginRefererCheck(host string, handler http.Handler) http.Handler {
 		if toCheck != "" {
 			u, err := url.Parse(toCheck)
 			if err != nil {
-				logger.Criticalf("Invalid URL in Origin or Referer header: %s %v", toCheck, err)
-				wh.Error403(w)
+				logger.Critical().Errorf("Invalid URL in Origin or Referer header: %s %v", toCheck, err)
+				wh.Error403(w, "")
 				return
 			}
 
 			if u.Host != host {
-				logger.Criticalf("Origin or Referer header value %s does not match host", toCheck)
-				wh.Error403(w)
+				logger.Critical().Errorf("Origin or Referer header value %s does not match host", toCheck)
+				wh.Error403(w, "")
 				return
 			}
 		}

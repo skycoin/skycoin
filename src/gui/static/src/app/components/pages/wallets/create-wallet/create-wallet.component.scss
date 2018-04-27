@@ -1,3 +1,70 @@
+@import '../../../../../theme/variables';
+
 .-buttons {
   text-align: center;
+}
+
+.-disabled {
+  display: none;
+}
+
+.-warning {
+  color: $red;
+  font-size: 12px;
+  padding: 0 10px;
+  line-height: 1.5;
+}
+
+.-passwords {
+  margin-left: 24px;
+
+  .-info {
+    margin: 5px 0 15px;
+    color: $grey-dark;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .-hidden {
+    visibility: hidden;
+  }
+}
+
+.-check ::ng-deep {
+  .mat-checkbox-checkmark-path {
+    position: absolute;
+    width: 18px;
+    height: 8px;
+    left: 4.59px;
+    top: 9px;
+    stroke: $gradient-blue-dark !important;
+  }
+
+  .mat-checkbox-background, .mat-checkbox-frame {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    position: absolute;
+    box-sizing: border-box;
+    pointer-events: none;
+    width: 20px;
+    height: 20px;
+    background: rgba(30, 34, 39, 0.05);
+    border-radius: 6px;
+    border-color: transparent;
+  }
+  span {
+    font-family: Skycoin;
+    line-height: normal;
+    font-size: 14px;
+
+    color: $grey-normal;
+
+    img {
+      width: 38px;
+      height: 38px;
+      vertical-align: middle;
+    }
+  }
 }

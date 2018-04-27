@@ -219,7 +219,7 @@ func (vs *Visor) AnnounceAllTxns(pool *Pool) error {
 	})
 
 	if err != nil {
-		logger.Debugf("Broadcast AnnounceTxnsMessage failed, err:%v", err)
+		logger.Debugf("Broadcast AnnounceTxnsMessage failed, err: %v", err)
 	}
 
 	return err
@@ -301,7 +301,7 @@ func (vs *Visor) SetTxnsAnnounced(txns []cipher.SHA256) {
 		now := utc.Now()
 		for _, h := range txns {
 			if err := vs.v.Unconfirmed.SetAnnounced(h, now); err != nil {
-				logger.Error("Failed to set unconfirmed txn announce time")
+				logger.Error("Failed to set unconfirmed txn announce time: ", err)
 			}
 		}
 
@@ -631,7 +631,7 @@ func (gbm *GiveBlocksMessage) Handle(mc *gnet.MessageContext,
 // Process process message
 func (gbm *GiveBlocksMessage) Process(d *Daemon) {
 	if d.Visor.Config.DisableNetworking {
-		logger.Notice("Visor disabled, ignoring GiveBlocksMessage")
+		logger.Critical().Info("Visor disabled, ignoring GiveBlocksMessage")
 		return
 	}
 
@@ -650,10 +650,10 @@ func (gbm *GiveBlocksMessage) Process(d *Daemon) {
 
 		err := d.Visor.ExecuteSignedBlock(b)
 		if err == nil {
-			logger.Noticef("Added new block %d", b.Block.Head.BkSeq)
+			logger.Critical().Infof("Added new block %d", b.Block.Head.BkSeq)
 			processed++
 		} else {
-			logger.Criticalf("Failed to execute received block %d: %v", b.Block.Head.BkSeq, err)
+			logger.Critical().Errorf("Failed to execute received block %d: %v", b.Block.Head.BkSeq, err)
 			// Blocks must be received in order, so if one fails its assumed
 			// the rest are failing
 			break

@@ -7,6 +7,7 @@ export class Address {
   coins: number;
   hours: number;
   copying?: boolean; // Optional parameter indicating whether the address is being copied to clipboard
+  outputs?: any;
 }
 
 export class PurchaseOrder {
@@ -44,7 +45,6 @@ export class Wallet {
   hours: number;
   addresses: Address[];
   encrypted: boolean;
-  visible?: boolean;
   hideEmpty?: boolean;
   opened?: boolean;
 }
@@ -69,7 +69,7 @@ export class PostWalletNewAddressResponse {
 export class GetWalletsResponseMeta {
   label: string;
   filename: string;
-  encrypted?: any;
+  encrypted: boolean;
 }
 
 export class GetWalletsResponseEntry {

@@ -1,0 +1,44 @@
+<div class="onboarding-container">
+  <div class="row justify-content-center">
+    <div class="col-sm-4">
+      <div class="-header">
+        <span>Encrypt your wallet</span>
+      </div>
+      <div class="-description">
+        <p>
+          Increase security of your wallet by encrypting it. By entering a password below, your wallet will be
+          encrypted. Only those with the password will be able access the wallet and remove funds.
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="row justify-content-center">
+    <div class="col-sm-4 -check-container">
+      <mat-checkbox class="-check" (change)="setEncrypt($event)" [checked]="true"
+                   type="checkbox" id="encrypt"><img src="../../../../../assets/img/lock-gold.png">Encrypt Wallet
+      </mat-checkbox>
+    </div>
+  </div>
+  <div class="row justify-content-center">
+    <div class="col-sm-4">
+      <form [formGroup]="form">
+        <div class="form-field">
+          <label for="password">Password</label>
+          <input class="-input" type="password"  formControlName="password" id="password" [ngClass]="{ disable: form.disabled }">
+        </div>
+        <div class="form-field">
+          <label for="confirm">Confirm password</label>
+          <input  class="-input"  type="password" formControlName="confirm" id="confirm"  [ngClass]="{ disable: form.disabled }">
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="row -buttons-footer">
+    <app-button class="dark -button-min-margin" [disabled]="form.enabled && !form.valid" (action)="emitCreatedPassword()" #button>
+      Finish
+    </app-button>
+    <app-button class="ghost -button-min-margin" (action)="emitBack()" [ngClass]="{ '-hidden': isWorking }">
+      Back
+    </app-button>
+  </div>
+</div>

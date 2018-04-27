@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -46,8 +47,8 @@ func coinSupply(gateway Gatewayer, w http.ResponseWriter, r *http.Request) *Coin
 
 	allUnspents, err := gateway.GetUnspentOutputs()
 	if err != nil {
-		logger.Errorf("gateway.GetUnspentOutputs error: %v", err)
-		wh.Error500(w)
+		err = fmt.Errorf("gateway.GetUnspentOutputs failed: %v", err)
+		wh.Error500(w, err.Error())
 		return nil
 	}
 
@@ -63,8 +64,8 @@ func coinSupply(gateway Gatewayer, w http.ResponseWriter, r *http.Request) *Coin
 		if _, ok := unlockedAddrMap[u.Address]; ok {
 			coins, err := droplet.FromString(u.Coins)
 			if err != nil {
-				logger.Errorf("Invalid unlocked output balance string %s: %v", u.Coins, err)
-				wh.Error500(w)
+				err = fmt.Errorf("Invalid unlocked output balance string %s: %v", u.Coins, err)
+				wh.Error500(w, err.Error())
 				return nil
 			}
 			unlockedSupply += coins
@@ -81,22 +82,22 @@ func coinSupply(gateway Gatewayer, w http.ResponseWriter, r *http.Request) *Coin
 
 	currentSupplyStr, err := droplet.ToString(currentSupply)
 	if err != nil {
-		logger.Errorf("Failed to convert coins to string: %v", err)
-		wh.Error500(w)
+		err = fmt.Errorf("Failed to convert coins to string: %v", err)
+		wh.Error500(w, err.Error())
 		return nil
 	}
 
 	totalSupplyStr, err := droplet.ToString(totalSupply)
 	if err != nil {
-		logger.Errorf("Failed to convert coins to string: %v", err)
-		wh.Error500(w)
+		err = fmt.Errorf("Failed to convert coins to string: %v", err)
+		wh.Error500(w, err.Error())
 		return nil
 	}
 
 	maxSupplyStr, err := droplet.ToString(visor.MaxCoinSupply * droplet.Multiplier)
 	if err != nil {
-		logger.Errorf("Failed to convert coins to string: %v", err)
-		wh.Error500(w)
+		err = fmt.Errorf("Failed to convert coins to string: %v", err)
+		wh.Error500(w, err.Error())
 		return nil
 	}
 
@@ -125,8 +126,8 @@ func coinSupply(gateway Gatewayer, w http.ResponseWriter, r *http.Request) *Coin
 	}
 
 	if err != nil {
-		logger.Errorf("Failed to get total coinhours: %v", err)
-		wh.Error500(w)
+		err = fmt.Errorf("Failed to get total coinhours: %v", err)
+		wh.Error500(w, err.Error())
 		return nil
 	}
 
@@ -166,8 +167,8 @@ func getTransactionsForAddress(gateway Gatewayer) http.HandlerFunc {
 
 		txns, err := gateway.GetAddressTxns(cipherAddr)
 		if err != nil {
-			logger.Errorf("Get address transactions failed: %v", err)
-			wh.Error500(w)
+			err = fmt.Errorf("gateway.GetAddressTxns failed: %v", err)
+			wh.Error500(w, err.Error())
 			return
 		}
 
@@ -178,34 +179,34 @@ func getTransactionsForAddress(gateway Gatewayer) http.HandlerFunc {
 			for i := range tx.Transaction.In {
 				id, err := cipher.SHA256FromHex(tx.Transaction.In[i])
 				if err != nil {
-					logger.Error(err)
-					wh.Error500(w)
+					wh.Error500(w, err.Error())
 					return
 				}
 
 				uxout, err := gateway.GetUxOutByID(id)
 				if err != nil {
-					logger.Error(err)
-					wh.Error500(w)
+					wh.Error500(w, err.Error())
 					return
 				}
 
 				if uxout == nil {
-					logger.Errorf("uxout of %v does not exist in history db", id.Hex())
-					wh.Error500(w)
+					err := fmt.Errorf("uxout of %v does not exist in history db", id.Hex())
+					wh.Error500(w, err.Error())
 					return
 				}
 
 				tIn, err := visor.NewReadableTransactionInput(tx.Transaction.In[i], uxout.Out.Body.Address.String(), uxout.Out.Body.Coins, uxout.Out.Body.Hours)
 				if err != nil {
-					wh.Error500(w)
+					wh.Error500(w, err.Error())
 					return
 				}
 
 				in[i] = *tIn
 			}
 
-			resTxs = append(resTxs, NewReadableTransaction(tx, in))
+			rTx := NewReadableTransaction(tx, in)
+
+			resTxs = append(resTxs, rTx)
 		}
 
 		wh.SendJSONOr500(logger, w, &resTxs)
@@ -254,8 +255,7 @@ func getRichlist(gateway Gatewayer) http.HandlerFunc {
 
 		richlist, err := gateway.GetRichlist(includeDistribution)
 		if err != nil {
-			logger.Error(err)
-			wh.Error500(w)
+			wh.Error500(w, err.Error())
 			return
 		}
 
@@ -280,8 +280,7 @@ func getAddressCount(gateway Gatewayer) http.HandlerFunc {
 
 		addrCount, err := gateway.GetAddressCount()
 		if err != nil {
-			logger.Error(err)
-			wh.Error500(w)
+			wh.Error500(w, err.Error())
 			return
 		}
 

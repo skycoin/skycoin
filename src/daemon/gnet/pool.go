@@ -49,6 +49,8 @@ var (
 	ErrConnectionPoolClosed = errors.New("Connection pool is closed")
 	// ErrWriteQueueFull write queue is full
 	ErrWriteQueueFull = errors.New("Write queue full")
+	// ErrNoReachableConnections when broadcasting a message, no connections were available to send a message to
+	ErrNoReachableConnections = errors.New("All pool connections are unreachable at this time")
 	// Logger
 	logger = logging.MustGetLogger("gnet")
 )
@@ -152,11 +154,12 @@ func (conn *Connection) String() string {
 }
 
 // Close close the connection and write queue
-func (conn *Connection) Close() {
-	conn.Conn.Close()
+func (conn *Connection) Close() error {
+	err := conn.Conn.Close()
 	close(conn.WriteQueue)
 	conn.WriteQueue = nil
 	conn.Buffer = &bytes.Buffer{}
+	return err
 }
 
 // DisconnectCallback triggered on client disconnect
@@ -185,6 +188,7 @@ type ConnectionPool struct {
 	reqC chan strand.Request
 	// quit channel
 	quit chan struct{}
+	done chan struct{}
 	wg   sync.WaitGroup
 }
 
@@ -199,6 +203,7 @@ func NewConnectionPool(c Config, state interface{}) *ConnectionPool {
 		SendResults:  make(chan SendResult, c.SendResultsSize),
 		messageState: state,
 		quit:         make(chan struct{}),
+		done:         make(chan struct{}),
 		reqC:         make(chan strand.Request),
 	}
 
@@ -207,6 +212,7 @@ func NewConnectionPool(c Config, state interface{}) *ConnectionPool {
 
 // Run starts the connection pool
 func (pool *ConnectionPool) Run() error {
+	defer close(pool.done)
 	defer logger.Info("Connection pool closed")
 
 	// start the connection accept loop
@@ -276,11 +282,25 @@ func (pool *ConnectionPool) processStrand() {
 func (pool *ConnectionPool) Shutdown() {
 	close(pool.quit)
 
+	// Wait for all strand() calls to finish
+	pool.strand("waitingToShutdown", func() error {
+		return nil
+	})
+
+	// Close to listener to prevent new connections
 	if pool.listener != nil {
 		pool.listener.Close()
 	}
 
 	pool.listener = nil
+
+	// In readData, reader.Read() sometimes blocks instead of returning an error when the
+	// listener is closed.
+	// Directly close all connections before closing the listener.
+	// TODO -- could conn.Close() block too?
+	pool.disconnectAll()
+
+	<-pool.done
 }
 
 // strand ensures all read and write action of pool's member variable are in one thread.
@@ -397,6 +417,8 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) {
 	case err = <-errC:
 		if err := pool.Disconnect(c.Addr(), err); err != nil {
 			logger.Errorf("Disconnect %s failed: %v", addr, err)
+		} else {
+			logger.Debugf("Disconnected from %s", addr)
 		}
 	}
 	close(qc)
@@ -526,8 +548,7 @@ func decodeData(buf *bytes.Buffer, maxMsgLength int) ([][]byte, error) {
 		length := int(tmpLength)
 		// logger.Debugf("Length is %d", length)
 		// Disconnect if we received an invalid length.
-		if length < messagePrefixLength ||
-			length > maxMsgLength {
+		if length < messagePrefixLength || length > maxMsgLength {
 			return [][]byte{}, ErrDisconnectInvalidMessageLength
 		}
 
@@ -564,6 +585,7 @@ func (pool *ConnectionPool) IsConnExist(addr string) (bool, error) {
 }
 
 func (pool *ConnectionPool) updateLastSent(addr string, t time.Time) error {
+	fmt.Printf("Update last sent address=%s time=%s\n", addr, t)
 	return pool.strand("updateLastSent", func() error {
 		if conn, ok := pool.addresses[addr]; ok {
 			conn.LastSent = t
@@ -628,12 +650,7 @@ func (pool *ConnectionPool) Connect(address string) error {
 func (pool *ConnectionPool) Disconnect(addr string, r DisconnectReason) error {
 	var exist bool
 	if err := pool.strand("Disconnect", func() error {
-		if conn, ok := pool.addresses[addr]; ok {
-			exist = true
-			delete(pool.pool, conn.ID)
-			delete(pool.addresses, addr)
-			conn.Close()
-		}
+		exist = pool.disconnect(addr)
 		return nil
 	}); err != nil {
 		return err
@@ -644,6 +661,32 @@ func (pool *ConnectionPool) Disconnect(addr string, r DisconnectReason) error {
 	}
 
 	return nil
+}
+
+func (pool *ConnectionPool) disconnect(addr string) bool {
+	conn, ok := pool.addresses[addr]
+
+	if !ok {
+		return false
+	}
+
+	delete(pool.pool, conn.ID)
+	delete(pool.addresses, addr)
+	if err := conn.Close(); err != nil {
+		logger.Errorf("conn.Close() error address=%s: %v", addr, err)
+	} else {
+		logger.Debugf("Disconnected from %s", addr)
+	}
+
+	return true
+}
+
+// disconnectAll disconnects all connections. Only safe to call in Shutdown()
+func (pool *ConnectionPool) disconnectAll() {
+	for _, conn := range pool.pool {
+		addr := conn.Addr()
+		pool.disconnect(addr)
+	}
 }
 
 // GetConnections returns an copy of pool connections
@@ -711,7 +754,7 @@ func (pool *ConnectionPool) BroadcastMessage(msg Message) error {
 		}
 
 		if len(fullWriteQueue) == len(pool.pool) {
-			return errors.New("All pool connections are unreachable at this time")
+			return ErrNoReachableConnections
 		}
 
 		return nil

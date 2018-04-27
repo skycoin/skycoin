@@ -9,14 +9,18 @@ import 'rxjs/add/operator/do';
 import 'rxjs/add/operator/filter';
 import 'rxjs/add/operator/first';
 import 'rxjs/add/operator/mergeMap';
+import 'rxjs/add/observable/timer';
+import 'rxjs/add/observable/zip';
 import { Address, Wallet } from '../app.datatypes';
 import { ReplaySubject } from 'rxjs/ReplaySubject';
+import { Subscription } from 'rxjs/Subscription';
 
 @Injectable()
 export class WalletService {
   addresses: Address[];
   wallets: Subject<Wallet[]> = new ReplaySubject<Wallet[]>();
   pendingTxs: Subject<any[]> = new ReplaySubject<any[]>();
+  pendingTxsSubscription: Subscription;
 
   constructor(
     private apiService: ApiService
@@ -27,8 +31,7 @@ export class WalletService {
       .create(30000)
       .subscribe(() => this.refreshBalances());
 
-    IntervalObservable.create(10000)
-      .subscribe(() => this.refreshPendingTransactions());
+    this.startPendingTxsSubscription(10000);
   }
 
   addressesAsString(): Observable<string> {
@@ -83,31 +86,28 @@ export class WalletService {
       .flatMap(addresses => this.apiService.get('outputs', {addrs: addresses}));
   }
 
+  outputsWithWallets(): Observable<any> {
+    return Observable.zip(this.all(), this.outputs(), (wallets, outputs) => {
+      wallets = JSON.parse(JSON.stringify(wallets));
+
+      return !wallets ? [] : wallets.map(wallet => {
+        wallet.addresses = wallet.addresses.map(address => {
+          address.outputs = outputs.head_outputs.filter(output => output.address === address.address);
+
+          return address;
+        });
+
+        return wallet;
+      });
+    });
+  }
+
   allPendingTransactions(): Observable<any> {
     return this.apiService.get('pendingTxs');
   }
 
   pendingTransactions(): Observable<any> {
     return this.pendingTxs.asObservable();
-  }
-
-  refreshPendingTransactions() {
-    this.wallets.first().subscribe(wallets => {
-      Observable.forkJoin(wallets.map(wallet => this.apiService.get('wallet/transactions', { id: wallet.filename })))
-        .subscribe(pending => {
-          this.pendingTxs.next([].concat.apply(
-            [],
-            pending
-              .filter(response => response.transactions.length > 0)
-              .map(response => response.transactions)
-          ).reduce((txs, tx) => {
-            if (!txs.find(t => t.transaction.txid === tx.transaction.txid)) {
-              txs.push(tx);
-            }
-            return txs;
-          }, []));
-        });
-    });
   }
 
   refreshBalances() {
@@ -218,12 +218,17 @@ export class WalletService {
       }));
   }
 
+  startPendingTxsSubscription(delay = 0) {
+    if (this.pendingTxsSubscription) {
+      this.pendingTxsSubscription.unsubscribe();
+    }
+
+    this.pendingTxsSubscription = Observable.timer(delay, 10000)
+      .subscribe(() => this.refreshPendingTransactions());
+  }
+
   private loadData(): void {
-    this.apiService.getWallets().first().subscribe(wallets => {
-      this.wallets.next(wallets);
-      this.refreshBalances();
-      this.refreshPendingTransactions();
-    });
+    this.apiService.getWallets().first().subscribe(wallets => this.wallets.next(wallets));
   }
 
   private retrieveAddressBalance(address: any|any[]) {
@@ -248,6 +253,25 @@ export class WalletService {
       const index = wallets.findIndex(w => w.filename === wallet.filename);
       wallets[index] = wallet;
       this.wallets.next(wallets);
+    });
+  }
+
+  private refreshPendingTransactions() {
+    this.wallets.first().subscribe(wallets => {
+      Observable.forkJoin(wallets.map(wallet => this.apiService.get('wallet/transactions', { id: wallet.filename })))
+        .subscribe(pending => {
+          this.pendingTxs.next([].concat.apply(
+            [],
+            pending
+              .filter(response => response.transactions.length > 0)
+              .map(response => response.transactions)
+          ).reduce((txs, tx) => {
+            if (!txs.find(t => t.transaction.txid === tx.transaction.txid)) {
+              txs.push(tx);
+            }
+            return txs;
+          }, []));
+        });
     });
   }
 }

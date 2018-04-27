@@ -28,7 +28,7 @@ func NewGatewayerMock() *GatewayerMock {
 }
 
 // CreateTransaction mocked method
-func (m *GatewayerMock) CreateTransaction(p0 wallet.CreateTransactionParams) (*coin.Transaction, coin.UxArray, error) {
+func (m *GatewayerMock) CreateTransaction(p0 wallet.CreateTransactionParams) (*coin.Transaction, []wallet.UxBalance, error) {
 
 	ret := m.Called(p0)
 
@@ -41,10 +41,10 @@ func (m *GatewayerMock) CreateTransaction(p0 wallet.CreateTransactionParams) (*c
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	var r1 coin.UxArray
+	var r1 []wallet.UxBalance
 	switch res := ret.Get(1).(type) {
 	case nil:
-	case coin.UxArray:
+	case []wallet.UxBalance:
 		r1 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))

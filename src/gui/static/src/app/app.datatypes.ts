@@ -7,6 +7,7 @@ export class Address {
   coins: number;
   hours: number;
   copying?: boolean; // Optional parameter indicating whether the address is being copied to clipboard
+  outputs?: any;
 }
 
 export class PurchaseOrder {

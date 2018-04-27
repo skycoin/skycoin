@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { WalletService } from '../../../services/wallet.service';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { MatSnackBar, MatSnackBarConfig } from '@angular/material/snack-bar';
 import 'rxjs/add/operator/delay';
 import 'rxjs/add/operator/filter';
@@ -69,15 +69,22 @@ export class SendSkycoinComponent implements OnInit, OnDestroy {
       .then(() => {
         this.resetForm();
         this.button.setSuccess();
+        this.walletService.startPendingTxsSubscription();
       })
-      .catch(err => this.handleError(err));
+      .catch(error => {
+        const errorMessage = parseResponseMessage(error['_body']);
+        const config = new MatSnackBarConfig();
+        config.duration = 300000;
+        this.snackbar.open(errorMessage, null, config);
+        this.button.setError(errorMessage);
+      });
   }
 
   private initForm() {
     this.form = this.formBuilder.group({
       wallet: ['', Validators.required],
       address: ['', Validators.required],
-      amount: ['', [Validators.required, Validators.min(0), Validators.max(0)]],
+      amount: ['', Validators.required],
       notes: [''],
     });
     this.form.get('wallet').valueChanges.subscribe(value => {
@@ -85,24 +92,35 @@ export class SendSkycoinComponent implements OnInit, OnDestroy {
       const balance = value && value.coins ? value.coins : 0;
       this.form.get('amount').setValidators([
         Validators.required,
-        Validators.min(0),
         Validators.max(balance),
+        this.validateAmount,
       ]);
       this.form.get('amount').updateValueAndValidity();
     });
   }
 
   private resetForm() {
-    this.form.get('wallet').reset(undefined);
-    this.form.get('address').reset(undefined);
-    this.form.get('amount').reset(undefined);
+    this.form.get('wallet').reset('');
+    this.form.get('address').reset('');
+    this.form.get('amount').reset('');
+    this.form.get('notes').reset('');
   }
 
-  private handleError(error) {
-    const errorMessage = parseResponseMessage(error['_body']);
-    const config = new MatSnackBarConfig();
-    config.duration = 300000;
-    this.snackbar.open(errorMessage, null, config);
-    this.button.setError(errorMessage);
+  private validateAmount(amountControl: FormControl) {
+    if (isNaN(amountControl.value)) {
+      return { Invalid: true };
+    }
+
+    if (parseFloat(amountControl.value) <= 0) {
+      return { Invalid: true };
+    }
+
+    const parts = amountControl.value.split('.');
+
+    if (parts.length === 2 && parts[1].length > 6) {
+      return { Invalid: true };
+    }
+
+    return null;
   }
 }

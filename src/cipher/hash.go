@@ -58,8 +58,8 @@ func (g SHA256) Hex() string {
 	return hex.EncodeToString(g[:])
 }
 
-// Empty returns true if the hash is empty
-func (g SHA256) Empty() bool {
+// Null returns true if the hash is null (0x0000..)
+func (g SHA256) Null() bool {
 	return g == SHA256{}
 }
 

@@ -23,7 +23,7 @@ func connectionHandler(gateway Gatewayer) http.HandlerFunc {
 
 		c := gateway.GetConnection(addr)
 		if c == nil {
-			wh.Error404(w)
+			wh.Error404(w, "")
 			return
 		}
 

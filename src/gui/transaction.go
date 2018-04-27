@@ -27,8 +27,7 @@ func getPendingTxs(gateway Gatewayer) http.HandlerFunc {
 		for _, unconfirmedTxn := range txns {
 			readable, err := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
 			if err != nil {
-				logger.Error(err)
-				wh.Error500(w)
+				wh.Error500(w, err.Error())
 				return
 			}
 			ret = append(ret, readable)
@@ -62,14 +61,13 @@ func getTransactionByID(gate Gatewayer) http.HandlerFunc {
 			return
 		}
 		if tx == nil {
-			wh.Error404(w)
+			wh.Error404(w, "")
 			return
 		}
 
 		rbTx, err := visor.NewReadableTransaction(tx)
 		if err != nil {
-			logger.Error(err)
-			wh.Error500(w)
+			wh.Error500(w, err.Error())
 			return
 		}
 
@@ -119,16 +117,16 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 		// Gets transactions
 		txns, err := gateway.GetTransactions(flts...)
 		if err != nil {
-			logger.Errorf("get transactions failed: %v", err)
-			wh.Error500(w)
+			err = fmt.Errorf("gateway.GetTransactions failed: %v", err)
+			wh.Error500(w, err.Error())
 			return
 		}
 
 		// Converts visor.Transaction to visor.TransactionResult
 		txRlts, err := visor.NewTransactionResults(txns)
 		if err != nil {
-			logger.Errorf("Converts []visor.Transaction to visor.TransactionResults failed: %v", err)
-			wh.Error500(w)
+			err = fmt.Errorf("visor.NewTransactionResults failed: %v", err)
+			wh.Error500(w, err.Error())
 			return
 		}
 
@@ -165,28 +163,35 @@ func injectTransaction(gateway Gatewayer) http.HandlerFunc {
 		}{}
 
 		if err := json.NewDecoder(r.Body).Decode(&v); err != nil {
-			logger.Errorf("bad request: %v", err)
 			wh.Error400(w, err.Error())
 			return
 		}
 
 		b, err := hex.DecodeString(v.Rawtx)
 		if err != nil {
-			logger.Error(err)
 			wh.Error400(w, err.Error())
 			return
 		}
 
 		txn, err := coin.TransactionDeserialize(b)
 		if err != nil {
-			logger.Error(err)
 			wh.Error400(w, err.Error())
 			return
 		}
 
+		// TODO -- move this to a more general verification layer, see https://github.com/skycoin/skycoin/issues/1342
+		// Check that the transaction does not send to an empty address,
+		// if this is happening, assume there is a bug in the code that generated the transaction
+		for _, o := range txn.Out {
+			if o.Address.Null() {
+				wh.Error400(w, "Transaction.Out contains an output sending to an empty address")
+				return
+			}
+		}
+
 		if err := gateway.InjectBroadcastTransaction(txn); err != nil {
-			logger.Error(err)
-			wh.Error503Msg(w, fmt.Sprintf("inject tx failed: %v", err))
+			err = fmt.Errorf("inject tx failed: %v", err)
+			wh.Error503(w, err.Error())
 			return
 		}
 
@@ -213,6 +218,7 @@ func getRawTx(gateway Gatewayer) http.HandlerFunc {
 			wh.Error405(w)
 			return
 		}
+
 		txid := r.FormValue("txid")
 		if txid == "" {
 			wh.Error400(w, "txid is empty")
@@ -232,7 +238,7 @@ func getRawTx(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if tx == nil {
-			wh.Error404(w)
+			wh.Error404(w, "")
 			return
 		}
 

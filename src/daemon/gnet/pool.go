@@ -261,6 +261,7 @@ loop:
 // RunOffline runs the pool in offline mode. No connections will be accepted,
 // but strand requests are processed.
 func (pool *ConnectionPool) RunOffline() error {
+	defer close(pool.done)
 	pool.processStrand()
 	return nil
 }

@@ -87,7 +87,9 @@ export class WalletDetailComponent {
     }, 500);
   }
 
-  showQrCode(address: string) {
+  showQrCode(event, address: string) {
+    event.stopPropagation();
+
     const config = new MatDialogConfig();
     config.data = { address };
     this.dialog.open(QrCodeComponent, config).afterClosed().subscribe();

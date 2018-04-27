@@ -40,13 +40,11 @@ export class TransactionListComponent implements OnInit, OnDestroy {
     this.dialog.open(TransactionDetailComponent, config);
   }
 
-  showQrCode($event: any, address: string[]) {
-    if (address.length === 1) {
-      $event.stopPropagation();
+  showQrCode($event: any, address: string) {
+    $event.stopPropagation();
 
-      const config = new MatDialogConfig();
-      config.data = { address: address[0] };
-      this.dialog.open(QrCodeComponent, config).afterClosed().subscribe();
-    }
+    const config = new MatDialogConfig();
+    config.data = { address };
+    this.dialog.open(QrCodeComponent, config).afterClosed().subscribe();
   }
 }

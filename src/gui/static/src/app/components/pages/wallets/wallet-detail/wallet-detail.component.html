@@ -2,7 +2,7 @@
   <div class="-record" *ngIf="!wallet.hideEmpty || address.coins">
     <div class="id-column">{{ i + 1 }}</div>
     <div class="address-column" (click)="copyAddress(address)">
-      <img src="../../../../../assets/img/qr-code-black.png" (click)="showQrCode(address.address)">
+      <img src="../../../../../assets/img/qr-code-black.png" (click)="showQrCode($event, address.address)">
       <p class="click-to-copy" [ngClass]="{ copying: address.copying }">
         {{ address.address }} <span data-label="Copied" class="copy-label">Copy</span>
       </p>

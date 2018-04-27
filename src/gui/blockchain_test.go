@@ -151,7 +151,7 @@ func TestGetBlock(t *testing.T) {
 			name:   "500 - NewReadableBlock error",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error",
+			err:    "500 Internal Server Error - Droplet string conversion failed: Value is too large",
 			seqStr: "1",
 			seq:    1,
 			gatewayGetBlockBySeqResult: coin.SignedBlock{

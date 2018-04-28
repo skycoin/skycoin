@@ -3,6 +3,7 @@ import { Wallet } from '../../../../app.datatypes';
 import { WalletService } from '../../../../services/wallet.service';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { ChangeNameComponent } from '../change-name/change-name.component';
+import { QrCodeComponent } from '../../../layout/qr-code/qr-code.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { MatSnackBar, MatSnackBarConfig } from '@angular/material';
 import { parseResponseMessage } from '../../../../utils/index';
@@ -97,6 +98,13 @@ export class WalletDetailComponent implements OnDestroy {
     setTimeout(function () {
       address.copying = false;
     }, 500);
+  }
 
+  showQrCode(event, address: string) {
+    event.stopPropagation();
+
+    const config = new MatDialogConfig();
+    config.data = { address };
+    this.dialog.open(QrCodeComponent, config).afterClosed().subscribe();
   }
 }

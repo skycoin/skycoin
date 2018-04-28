@@ -26,7 +26,7 @@ const (
 	walletExt         = ".wlt"
 	defaultCoin       = "skycoin"
 	defaultWalletName = "$COIN_cli" + walletExt
-	defaultWalletDir  = "$HOME/.$COIN/wallets"
+	defaultWalletDir  = "$DATA_DIR/wallets"
 	defaultRPCAddress = "127.0.0.1:6430"
 	defaultDataDir    = "$HOME/.$COIN/"
 )

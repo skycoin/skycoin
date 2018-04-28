@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - Add environment variable `DATA_DIR` in CLI's
+- Add `-version` flag to show node version
 ### Fixed
 ### Changed
 ### Removed

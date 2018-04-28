@@ -173,6 +173,7 @@ type Config struct {
 	Arbitrating  bool
 	RPCThreadNum uint // rpc number
 	LogToFile    bool
+	Version      bool // show node version
 }
 
 func (c *Config) register() {
@@ -233,6 +234,7 @@ func (c *Config) register() {
 	flag.BoolVar(&c.LocalhostOnly, "localhost-only", c.LocalhostOnly, "Run on localhost and only connect to localhost peers")
 	flag.BoolVar(&c.Arbitrating, "arbitrating", c.Arbitrating, "Run node in arbitrating mode")
 	flag.StringVar(&c.WalletCryptoType, "wallet-crypto-type", c.WalletCryptoType, "wallet crypto type. Can be sha256-xor or scrypt-chacha20poly1305")
+	flag.BoolVar(&c.Version, "version", false, "show node version")
 }
 
 var home = file.UserHome()
@@ -596,6 +598,11 @@ func Run(c *Config) {
 			logger.Errorf("recover: %v\nstack:%v", r, string(debug.Stack()))
 		}
 	}()
+
+	if c.Version {
+		fmt.Println(Version)
+		return
+	}
 
 	logLevel, err := logging.LevelFromString(c.LogLevel)
 	if err != nil {

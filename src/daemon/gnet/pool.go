@@ -586,7 +586,6 @@ func (pool *ConnectionPool) IsConnExist(addr string) (bool, error) {
 }
 
 func (pool *ConnectionPool) updateLastSent(addr string, t time.Time) error {
-	fmt.Printf("Update last sent address=%s time=%s\n", addr, t)
 	return pool.strand("updateLastSent", func() error {
 		if conn, ok := pool.addresses[addr]; ok {
 			conn.LastSent = t

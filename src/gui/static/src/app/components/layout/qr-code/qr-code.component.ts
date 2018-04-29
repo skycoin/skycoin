@@ -1,5 +1,6 @@
 import { Component, Inject, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatDialogRef } from '@angular/material';
 
 declare var QRCode: any;
 
@@ -18,13 +19,14 @@ export class QrCodeComponent implements OnInit {
   usesvg = false;
 
   constructor(
-    @Inject(MAT_DIALOG_DATA) private data: any,
+    public dialogRef: MatDialogRef<QrCodeComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: any,
     private el: ElementRef
   ) { }
 
   ngOnInit() {
     const qrcode = new QRCode(this.qr.nativeElement, {
-      text: this.data.address,
+      text: `skycoin:${this.data.address}`,
       width: this.size,
       height: this.size,
       colorDark: this.colordark,

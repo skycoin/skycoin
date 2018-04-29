@@ -28,7 +28,8 @@
         </div>
         <div class="form-field">
           <label for="confirm">Confirm password</label>
-          <input  class="-input"  type="password" formControlName="confirm" id="confirm"  [ngClass]="{ disable: form.disabled }">
+          <input class="-input" type="password" formControlName="confirm" id="confirm"
+                 [ngClass]="{ disable: form.disabled }" (keydown.enter)="emitCreatedPassword()">
         </div>
       </form>
     </div>

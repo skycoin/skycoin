@@ -1,7 +1,16 @@
 <app-header title="Wallets"></app-header>
 <div class="container">
   <div class="-paper">
-    <app-send-form></app-send-form>
-    <!--<app-send-verify></app-send-verify>-->
+    <app-send-form
+      *ngIf="showForm"
+      [formData]="formData"
+      (onFormSubmitted)="onFormSubmitted($event)"
+    ></app-send-form>
+    <app-send-verify
+      *ngIf="!showForm"
+      [transaction]="formData.response.transaction"
+      [encodedTransaction]="formData.response.encoded_transaction"
+      (onBack)="onBack($event)"
+    ></app-send-verify>
   </div>
 </div>

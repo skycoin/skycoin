@@ -6,5 +6,19 @@ import { Component } from '@angular/core';
   styleUrls: ['./send-skycoin.component.scss']
 })
 export class SendSkycoinComponent {
-  //
+  showForm = true;
+  formData: any;
+
+  onFormSubmitted(data) {
+    this.formData = data;
+    this.showForm = false;
+  }
+
+  onBack(deleteFormData) {
+    if (deleteFormData) {
+      this.formData = null;
+    }
+
+    this.showForm = true;
+  }
 }

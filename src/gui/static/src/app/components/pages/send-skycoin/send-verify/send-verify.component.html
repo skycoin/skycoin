@@ -1,4 +1,39 @@
 <div class="row">
-  <div class="col-md-6">asdq</div>
-  <div class="col-md-6">we</div>
+  <div class="col-md-6">
+    <h4>Inputs</h4>
+
+    <div class="-item" *ngFor="let input of transaction.inputs; let i = index">
+      <div class="-number">{{ i + 1 }}</div>
+      <div class="-info">
+        <div class="-address">{{ input.address }}</div>
+        <div class="-coins">
+          <span>Coins:</span> {{ input.coins | number:'1.0-6' }}
+        </div>
+        <div class="-hours">
+          <span>Hours:</span> {{ input.calculated_hours | number:'1.0-6' }}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <h4>Outputs</h4>
+
+    <div class="-item" *ngFor="let output of transaction.outputs; let i = index">
+      <div class="-number">{{ i + 1 }}</div>
+      <div class="-info">
+        <div class="-address">{{ output.address }}</div>
+        <div class="-coins">
+          <span>Coins:</span> {{ output.coins | number:'1.0-6' }}
+        </div>
+        <div class="-hours">
+          <span>Hours:</span> {{ output.hours | number:'1.0-6' }}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-12">
+    <app-button #sendButton (action)="send()" class="primary">Send</app-button>
+    <app-button #backButton (action)="back()">Back</app-button>
+    <span class="-fee">Transaction will burn {{ transaction.fee }} coin hours.</span>
+  </div>
 </div>

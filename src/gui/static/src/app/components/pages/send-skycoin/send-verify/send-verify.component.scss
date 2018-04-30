@@ -1,0 +1,51 @@
+@import '../../../../../theme/variables';
+
+h4 {
+  font-size: 14px;
+  margin: 0 0 30px;
+}
+
+.-item {
+  margin-bottom: 20px;
+  display: flex;
+  font-size: 13px;
+
+  .-number {
+    padding: 10px;
+    background: $grey-light;
+    align-self: flex-start;
+    border-radius: 10px;
+  }
+
+  .-info {
+    margin-left: 10px;
+    display: flex;
+    flex-direction: column;
+
+    .-address {
+      padding: 10px 0;
+      margin-bottom: 10px;
+    }
+
+    .-coins, .-hours {
+      font-size: 12px;
+      margin-bottom: 10px;
+
+      span {
+        color: $grey-dark;
+        display: inline-block;
+        width: 50px;
+      }
+    }
+  }
+}
+
+.-fee {
+  font-size: 13px;
+  color: $grey-dark;
+  margin-left: 15px;
+}
+
+app-button ::ng-deep button {
+  margin-bottom: 0;
+}

@@ -1,2 +1,4 @@
-<div #qr></div>
-
+<app-modal title="QR Code" [dialog]="dialogRef">
+  <div #qr id="qr"></div>
+  <div class="address">{{ data.address }}</div>
+</app-modal>

@@ -71,6 +71,10 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
   }
 
   proceed() {
+    if (!this.form.valid || this.button.isLoading()) {
+      return;
+    }
+
     this.button.setLoading();
     this.passwordChanged(this.form.get('password').value);
     this.disableDismiss = true;

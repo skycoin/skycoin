@@ -49,7 +49,7 @@
       <div class="col-md-6" [ngClass]="{ '-hidden': !encrypt }">
         <div class="form-field">
           <label for="confirm_password">Confirm password</label>
-          <input formControlName="confirm_password" id="confirm_password" type="password" appDontSavePassword>
+          <input formControlName="confirm_password" id="confirm_password" type="password" appDontSavePassword (keydown.enter)="createWallet()">
         </div>
       </div>
     </div>

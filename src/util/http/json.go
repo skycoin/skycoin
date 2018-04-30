@@ -18,8 +18,7 @@ import (
 func SendJSONOr500(log *logging.Logger, w http.ResponseWriter, m interface{}) {
 	out, err := json.MarshalIndent(m, "", "    ")
 	if err != nil {
-		log.WithError(err).Error("json.MarshalIndent failed")
-		Error500Msg(w, "json.MarshalIndent failed")
+		Error500(w, "json.MarshalIndent failed")
 		return
 	}
 

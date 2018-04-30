@@ -1,0 +1,17 @@
+@import '../../../../../theme/_variables.scss';
+
+mat-card {
+  margin: 40px 20px 20px 20px;
+}
+
+.-table {
+  .-table-header {
+    font-size: 10px;
+    color: $grey-dark;
+    margin-bottom: 20px;
+  }
+
+  .-table-row:not(:last-child) {
+    margin-bottom: 10px;
+  }
+}

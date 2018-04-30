@@ -47,6 +47,7 @@ type Config struct {
 	DisableCSRF     bool
 	EnableWalletAPI bool
 	EnableJSON20RPC bool
+	EnableGUIAPI    bool
 	ReadTimeout     time.Duration
 	WriteTimeout    time.Duration
 	IdleTimeout     time.Duration
@@ -55,15 +56,13 @@ type Config struct {
 type muxConfig struct {
 	host            string
 	appLoc          string
-	enableWalletAPI bool
+	enableGUIAPI    bool
 	enableJSON20RPC bool
 }
 
 func create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
 	var appLoc string
-	if c.EnableWalletAPI {
-		logger.Info("Wallet API enabled")
-
+	if c.EnableGUIAPI {
 		var err error
 		appLoc, err = file.DetermineResourcePath(c.StaticDir, resourceDir, devDir)
 		if err != nil {
@@ -102,7 +101,7 @@ func create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
 	mc := muxConfig{
 		host:            host,
 		appLoc:          appLoc,
-		enableWalletAPI: c.EnableWalletAPI,
+		enableGUIAPI:    c.EnableGUIAPI,
 		enableJSON20RPC: c.EnableJSON20RPC,
 	}
 
@@ -202,7 +201,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 		mux.Handle(endpoint, handler)
 	}
 
-	if c.enableWalletAPI {
+	if c.enableGUIAPI {
 		webHandler("/", newIndexHandler(c.appLoc))
 
 		fileInfos, _ := ioutil.ReadDir(c.appLoc)

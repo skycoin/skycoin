@@ -3523,3 +3523,13 @@ func TestLiveHealth(t *testing.T) {
 	// The TimeSinceLastBlock can be any value, including negative values, due to clock skew
 	// The live node is not necessarily run with the commit and branch ldflags, so don't check them
 }
+
+func TestDisableGUIAPI(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+	err := c.Get("/", nil)
+	assertResponseError(t, err, 404, "404 page not found\n")
+}

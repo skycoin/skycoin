@@ -84,8 +84,10 @@ type Config struct {
 	DisableIncomingConnections bool
 	// Disables networking altogether
 	DisableNetworking bool
-	// Disables wallet API
+	// Enable wallet API
 	EnableWalletAPI bool
+	// Enable gui api
+	EnableGUIAPI bool
 	// Disable CSRF check in the wallet api
 	DisableCSRF bool
 	// Enable /wallet/seed api endpoint
@@ -181,6 +183,7 @@ func (c *Config) register() {
 	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming", c.DisableIncomingConnections, "Don't make incoming connections")
 	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
 	flag.BoolVar(&c.EnableWalletAPI, "enable-wallet-api", c.EnableWalletAPI, "Enable the wallet API")
+	flag.BoolVar(&c.EnableGUIAPI, "enable-gui-api", c.EnableGUIAPI, "Enable the static GUI API")
 	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable CSRF check")
 	flag.BoolVar(&c.EnableSeedAPI, "enable-seed-api", c.EnableSeedAPI, "enable /wallet/seed api")
 	flag.StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
@@ -243,6 +246,8 @@ var devConfig = Config{
 	DisableNetworking: false,
 	// Enable wallet API
 	EnableWalletAPI: false,
+	// Enable GUI API
+	EnableGUIAPI: false,
 	// Enable seed API
 	EnableSeedAPI: false,
 	// Disable CSRF check in the wallet api
@@ -326,6 +331,7 @@ func applyConfigMode() {
 	case "":
 	case "STANDALONE_CLIENT":
 		devConfig.EnableWalletAPI = true
+		devConfig.EnableGUIAPI = true
 		devConfig.EnableSeedAPI = true
 		devConfig.LaunchBrowser = true
 		devConfig.DisableCSRF = false
@@ -397,10 +403,13 @@ func (c *Config) postProcess() {
 	}
 
 	// Don't open browser to load wallets if wallet apis are disabled.
-	if c.EnableWalletAPI {
-		c.GUIDirectory = file.ResolveResourceDirectory(c.GUIDirectory)
-	} else {
+	if !c.EnableWalletAPI {
+		c.EnableGUIAPI = false
 		c.LaunchBrowser = false
+	}
+
+	if c.EnableGUIAPI {
+		c.GUIDirectory = file.ResolveResourceDirectory(c.GUIDirectory)
 	}
 }
 
@@ -462,6 +471,7 @@ func createGUI(c *Config, d *daemon.Daemon, host string) (*gui.Server, error) {
 		DisableCSRF:     c.DisableCSRF,
 		EnableWalletAPI: c.EnableWalletAPI,
 		EnableJSON20RPC: c.RPCInterface,
+		EnableGUIAPI:    c.EnableGUIAPI,
 		ReadTimeout:     c.ReadTimeout,
 		WriteTimeout:    c.WriteTimeout,
 		IdleTimeout:     c.IdleTimeout,

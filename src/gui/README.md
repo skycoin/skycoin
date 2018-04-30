@@ -967,7 +967,7 @@ Args:
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/wallet/seed?id=test.wlt&password=$password
+curl -X POST http://127.0.0.1:6420/wallet/seed?id=test.wlt&password=$password
 ```
 
 Result:

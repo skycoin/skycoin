@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - Add `-version` flag to show node version
+- Add transaction verification step to "Send" page
 
 ### Fixed
 

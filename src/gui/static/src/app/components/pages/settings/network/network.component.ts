@@ -4,7 +4,7 @@ import { NetworkService } from '../../../../services/network.service';
 @Component({
   selector: 'app-network',
   templateUrl: './network.component.html',
-  styleUrls: ['./network.component.css']
+  styleUrls: ['./network.component.scss']
 })
 export class NetworkComponent implements OnInit {
 
@@ -15,7 +15,6 @@ export class NetworkComponent implements OnInit {
   ) { }
 
   ngOnInit() {
-    this.networkService.automatic().subscribe(output => console.log(output));
     this.networkService.retrieveDefaultConnections().first().subscribe(output => this.defaultConnections = output);
   }
 }

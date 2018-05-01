@@ -6,7 +6,14 @@
         <p *ngIf="highest && loading" class="coins"><span>{{ percentage | percent:'1.2-2' }}</span></p>
         <p *ngIf="!loading" class="coins"><span>{{ coins | number:'1.0-6' }}</span> SKY</p>
         <p *ngIf="!highest && loading" class="coins"><span>&nbsp;</span></p>
-        <p class="dollars">{{ balance }}</p>
+        <p class="dollars">
+          <span *ngIf="price">
+            <span *ngIf="!loading">{{ (coins * price) | currency:'USD':'symbol':'1.2-2' }}</span>
+            <span *ngIf="loading">-</span>
+            ({{ price | currency:'USD':'symbol':'1.2-2' }})
+          </span>
+          <span *ngIf="!price">loading..</span>
+        </p>
       </div>
     </div>
     <div class="hour-balance">

@@ -27,8 +27,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
   releaseVersion: string;
   updateAvailable: boolean;
   hasPendingTxs: boolean;
+  price: number;
 
-  private price: number;
   private priceSubscription: Subscription;
   private walletSubscription: Subscription;
 

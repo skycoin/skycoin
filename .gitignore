@@ -123,3 +123,5 @@ skycoin-cli
 # FIXME: see #1027 - Temporary solution to deal with generated file
 include/libskycoin.h
 
+# Do not ignore Docker Cloud build
+!hooks/build

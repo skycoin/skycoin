@@ -8,7 +8,7 @@
   font-size: $font-size-standard;
   line-height: $row-height;
   min-height: $row-height;
-  padding: 0 50px 0 20px;
+  padding: 0 100px 0 20px;
 
   .id-column {
     width: 50px;
@@ -39,13 +39,15 @@
   }
 
   .hours-column {
-    color: rgba(30, 34, 39, 0.5);
+    color: $grey-dark;
     width: 150px;
+    text-align: right;
   }
 
   .coins-column {
     color: black;
     width: 150px;
+    text-align: right;
 
     &:hover {
       .outputs-label {

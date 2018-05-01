@@ -106,7 +106,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   private higherVersion(first: string, second: string): boolean {
     const fa = first.split('.');
-    const fb = second.split('.');
+    const fb = second.split('-')[0].split('.');
     for (let i = 0; i < 3; i++) {
       const na = Number(fa[i]);
       const nb = Number(fb[i]);

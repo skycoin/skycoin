@@ -71,6 +71,10 @@
     height: $row-detail-size;
     width: $row-detail-size;
   }
+
+  &.-opened {
+    background-color: #fefefe;
+  }
 }
 
 .-wallet-detail {

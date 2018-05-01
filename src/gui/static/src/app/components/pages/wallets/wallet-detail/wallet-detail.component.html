@@ -10,35 +10,31 @@
     <div class="hours-column">{{ (address.hours ? address.hours : 0) | number:'1.0-6' }}</div>
     <div class="coins-column">
       {{ (address.coins ? address.coins : 0) | number:'1.0-6' }}
-      <span class="outputs-label"
-            routerLink="/settings/outputs"
-            [queryParams]="{ addr: address.address }"
-      >Outputs</span>
+    </div>
+    <div class="outputs-column">
+      <mat-icon class="outputs-label"
+                routerLink="/settings/outputs"
+                [queryParams]="{ addr: address.address }"
+      >chevron_right</mat-icon>
     </div>
   </div>
 </ng-container>
 <div class="-actions">
   <div class="-button" (click)="newAddress()">
-    <img src="../../../../../assets/img/plus-grey.png">
-    <span>New Address</span>
+    <span class="-img -new-address">New Address</span>
   </div>
   <div class="-button" (click)="toggleEmpty()">
-    <ng-container *ngIf="!wallet.hideEmpty">
-      <img src="../../../../../assets/img/minus-grey.png">
-      <span>Hide Empty</span>
-    </ng-container>
-    <ng-container *ngIf="wallet.hideEmpty">
-      <img src="../../../../../assets/img/plus-grey.png">
-      <span>Show Empty</span>
-    </ng-container>
+    <span [ngClass]="{ '-img': true, '-show-empty': wallet.hideEmpty, '-hide-empty': !wallet.hideEmpty }">
+      {{ wallet.hideEmpty ? 'Show' : 'Hide' }} Empty
+    </span>
   </div>
   <div class="flex-fill"></div>
   <div class="-button" (click)="toggleEncryption()">
-    <img src="../../../../../assets/img/unlock-grey.png">
-    <span>{{ wallet.encrypted ? 'Decrypt' : 'Encrypt' }} Wallet</span>
+    <span [ngClass]="{ '-img': true, '-enable-encryption': !wallet.encrypted, '-disable-encryption': wallet.encrypted }">
+      {{ wallet.encrypted ? 'Decrypt' : 'Encrypt' }} Wallet
+    </span>
   </div>
   <div class="-button" (click)="editWallet()">
-    <img src="../../../../../assets/img/edit-grey.png">
-    <span>Edit Wallet</span>
+    <span class="-img -edit-wallet">Edit Wallet</span>
   </div>
 </div>

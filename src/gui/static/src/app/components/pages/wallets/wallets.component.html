@@ -9,7 +9,7 @@
     </div>
     <div class="-wallets">
       <ng-container *ngFor="let wallet of walletService.all() | async">
-        <div class="-wallet" (click)="toggleWallet(wallet)">
+        <div class="-wallet" (click)="toggleWallet(wallet)" [ngClass]="{ '-opened': wallet.opened }">
           <div class="-width-250 -label">{{ wallet.label }}</div>
           <div class="flex-fill -encryption">
             <img src="../../../../assets/img/lock-gold.png" *ngIf="wallet.encrypted">

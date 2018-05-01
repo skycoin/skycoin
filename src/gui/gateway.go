@@ -38,7 +38,7 @@ type Gatewayer interface {
 	GetBlockchainMetadata() (*visor.BlockchainMetadata, error)
 	GetBlockchainProgress() *daemon.BlockchainProgress
 	GetConnection(addr string) *daemon.Connection
-	GetConnections() *daemon.Connections
+	GetConnections() daemon.ConnectionBlockchain
 	GetDefaultConnections() []string
 	GetTrustConnections() []string
 	GetExchgConnection() []string

@@ -433,14 +433,14 @@ func (m *GatewayerMock) GetConnection(p0 string) *daemon.Connection {
 }
 
 // GetConnections mocked method
-func (m *GatewayerMock) GetConnections() *daemon.Connections {
+func (m *GatewayerMock) GetConnections() daemon.ConnectionBlockchain {
 
 	ret := m.Called()
 
-	var r0 *daemon.Connections
+	var r0 daemon.ConnectionBlockchain
 	switch res := ret.Get(0).(type) {
 	case nil:
-	case *daemon.Connections:
+	case daemon.ConnectionBlockchain:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))

@@ -30,6 +30,8 @@ export class SendVerifyComponent {
       this.sendButton.setSuccess();
       this.sendButton.setDisabled();
 
+      this.walletService.startDataRefreshSubscription();
+
       setTimeout(() => {
         this.onBack.emit(true);
       }, 3000);

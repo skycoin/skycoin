@@ -10,7 +10,7 @@
     <ng-container *ngIf="transactions && transactions.length">
       <div class="row -table-row" *ngFor="let tx of transactions">
         <div class="col-md-2"><span>{{ tx.timestamp | dateTime }}</span></div>
-        <div class="col-md-2"><span>{{ tx.amount }}</span></div>
+        <div class="col-md-2"><span>{{ tx.amount | number:'1.0-6' }}</span></div>
         <div class="col-md-8"><span>{{ tx.txid }}</span></div>
       </div>
     </ng-container>

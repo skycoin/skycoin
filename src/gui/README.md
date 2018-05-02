@@ -967,7 +967,10 @@ Args:
 Example:
 
 ```sh
-curl -X POST http://127.0.0.1:6420/wallet/seed?id=test.wlt&password=$password
+curl -X POST http://127.0.0.1:6420/wallet/seed \
+ -H 'Content-type: application/x-www-form-urlencoded' \
+ -d 'id=test.wlt' \
+ -d 'password=$password'
 ```
 
 Result:

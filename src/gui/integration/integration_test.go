@@ -3531,5 +3531,5 @@ func TestDisableGUIAPI(t *testing.T) {
 
 	c := gui.NewClient(nodeAddress())
 	err := c.Get("/", nil)
-	assertResponseError(t, err, 404, "404 page not found\n")
+	assertResponseError(t, err, http.StatusNotFound, "404 page not found\n")
 }

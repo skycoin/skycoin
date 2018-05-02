@@ -29,13 +29,9 @@
           <label for="seed">
             <span>Seed</span>
             <span class="generators" *ngIf="showCreateForm">
-              <span (click)="generateSeed(128)" matTooltip="Generate 12 word seed">
-                <mat-icon>vpn_key</mat-icon> 12 words
-              </span>
+              <span (click)="generateSeed(128)" matTooltip="Generate 12 word seed">12 words</span>
               <span class="divider">|</span>
-              <span (click)="generateSeed(256)" matTooltip="Generate 24 word seed">
-                <mat-icon>lock</mat-icon> 24 words
-              </span>
+              <span (click)="generateSeed(256)" matTooltip="Generate 24 word seed">24 words</span>
             </span>
           </label>
           <textarea formControlName="seed" class="form-control" id="seed" rows="2"></textarea>

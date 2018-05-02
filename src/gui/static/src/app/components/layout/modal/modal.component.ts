@@ -18,6 +18,8 @@ export class ModalComponent implements OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    this.dialog.disableClose = changes.disableDismiss.currentValue;
+    if (changes.disableDismiss) {
+      this.dialog.disableClose = changes.disableDismiss.currentValue;
+    }
   }
 }

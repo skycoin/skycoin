@@ -36,6 +36,10 @@ export class SendSkycoinComponent implements OnInit, OnDestroy {
   }
 
   send() {
+    if (!this.form.valid || this.button.isLoading()) {
+      return;
+    }
+
     this.button.resetState();
     this.snackbar.dismiss();
 
@@ -69,7 +73,7 @@ export class SendSkycoinComponent implements OnInit, OnDestroy {
       .then(() => {
         this.resetForm();
         this.button.setSuccess();
-        this.walletService.startPendingTxsSubscription();
+        this.walletService.startDataRefreshSubscription();
       })
       .catch(error => {
         const errorMessage = parseResponseMessage(error['_body']);

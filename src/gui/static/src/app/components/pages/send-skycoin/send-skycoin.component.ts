@@ -66,7 +66,7 @@ export class SendSkycoinComponent implements OnInit, OnDestroy {
         () => {
           this.resetForm();
           this.button.setSuccess();
-          this.walletService.startPendingTxsSubscription();
+          this.walletService.startDataRefreshSubscription();
         },
         error => {
           const errorMessage = parseResponseMessage(error['_body']);

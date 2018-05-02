@@ -20,18 +20,14 @@ export class WalletService {
   addresses: Address[];
   wallets: Subject<Wallet[]> = new ReplaySubject<Wallet[]>();
   pendingTxs: Subject<any[]> = new ReplaySubject<any[]>();
-  pendingTxsSubscription: Subscription;
+  dataRefreshSubscription: Subscription;
 
   constructor(
     private apiService: ApiService
   ) {
     this.loadData();
 
-    IntervalObservable
-      .create(30000)
-      .subscribe(() => this.refreshBalances());
-
-    this.startPendingTxsSubscription(10000);
+    this.startDataRefreshSubscription();
   }
 
   addressesAsString(): Observable<string> {
@@ -193,13 +189,16 @@ export class WalletService {
       }));
   }
 
-  startPendingTxsSubscription(delay = 0) {
-    if (this.pendingTxsSubscription) {
-      this.pendingTxsSubscription.unsubscribe();
+  startDataRefreshSubscription() {
+    if (this.dataRefreshSubscription) {
+      this.dataRefreshSubscription.unsubscribe();
     }
 
-    this.pendingTxsSubscription = Observable.timer(delay, 10000)
-      .subscribe(() => this.refreshPendingTransactions());
+    this.dataRefreshSubscription = Observable.timer(0, 10000)
+      .subscribe(() => {
+        this.refreshBalances();
+        this.refreshPendingTransactions();
+      });
   }
 
   private loadData(): void {

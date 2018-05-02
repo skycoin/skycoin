@@ -27,19 +27,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
   releaseVersion: string;
   updateAvailable: boolean;
   hasPendingTxs: boolean;
+  price: number;
 
-  private price: number;
   private priceSubscription: Subscription;
   private walletSubscription: Subscription;
-
-  get balance() {
-    if (this.price === null) { return 'loading..'; }
-
-    const dollarPrice = Math.round(this.price * 100) / 100;
-    const balance = Math.round(this.coins * this.price * 100) / 100;
-
-    return `${this.loading ? '-' : '$' + balance.toFixed(2)} ($${dollarPrice})`;
-  }
 
   get loading() {
     return !this.current || !this.highest || this.current !== this.highest;

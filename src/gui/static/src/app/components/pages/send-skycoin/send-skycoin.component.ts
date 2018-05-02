@@ -54,32 +54,34 @@ export class SendSkycoinComponent implements OnInit, OnDestroy {
   }
 
   private _send(passwordDialog?: any) {
-    this.button.setLoading();
-
-    this.walletService.sendSkycoin(
-      this.form.value.wallet,
-      this.form.value.address,
-      Math.round(parseFloat(this.form.value.amount) * 1000000),
-      passwordDialog ? passwordDialog.password : null
-    )
-      .subscribe(
-        () => {
-          this.resetForm();
-          this.button.setSuccess();
-          this.walletService.startPendingTxsSubscription();
-        },
-        error => {
-          const errorMessage = parseResponseMessage(error['_body']);
-          const config = new MatSnackBarConfig();
-          config.duration = 300000;
-          this.snackbar.open(errorMessage, null, config);
-          this.button.setError(errorMessage);
-        }
-      );
-
     if (passwordDialog) {
       passwordDialog.close();
     }
+
+    this.button.setLoading();
+
+    this.walletService.createTransaction(
+      this.form.value.wallet,
+      this.form.value.address,
+      this.form.value.amount,
+      passwordDialog ? passwordDialog.password : null
+    )
+      .toPromise()
+      .then(response => {
+        return this.walletService.injectTransaction(response.encoded_transaction).toPromise();
+      })
+      .then(() => {
+        this.resetForm();
+        this.button.setSuccess();
+        this.walletService.startDataRefreshSubscription();
+      })
+      .catch(error => {
+        const errorMessage = parseResponseMessage(error['_body']);
+        const config = new MatSnackBarConfig();
+        config.duration = 300000;
+        this.snackbar.open(errorMessage, null, config);
+        this.button.setError(errorMessage);
+      });
   }
 
   private initForm() {

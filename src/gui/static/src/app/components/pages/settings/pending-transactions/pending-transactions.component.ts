@@ -14,7 +14,7 @@ export class PendingTransactionsComponent implements OnInit {
   constructor(
     public walletService: WalletService,
   ) {
-    this.walletService.startPendingTxsSubscription();
+    this.walletService.startDataRefreshSubscription();
   }
 
   ngOnInit() {

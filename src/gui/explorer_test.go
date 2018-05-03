@@ -64,7 +64,8 @@ func makeSuccessCoinSupplyResult(t *testing.T, allUnspents visor.ReadableOutputS
 	var totalCoinHours uint64
 	for _, out := range allUnspents.HeadOutputs {
 		if _, ok := lockedAddrMap[out.Address]; !ok {
-			totalCoinHours += out.Hours
+			hours, _ := strconv.ParseUint(out.Hours, 10, 64)
+			totalCoinHours += hours
 		}
 	}
 
@@ -75,7 +76,8 @@ func makeSuccessCoinSupplyResult(t *testing.T, allUnspents visor.ReadableOutputS
 		if _, ok := lockedAddrMap[out.Address]; !ok {
 			// check if address not in unlocked distribution addresses
 			if _, ok := unlockedAddrMap[out.Address]; !ok {
-				currentCoinHours += out.Hours
+				hours, _ := strconv.ParseUint(out.Hours, 10, 64)
+				currentCoinHours += hours
 			}
 		}
 	}

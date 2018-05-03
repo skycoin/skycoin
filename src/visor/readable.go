@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -153,7 +154,7 @@ type ReadableOutput struct {
 	SourceTransaction string `json:"src_tx"`
 	Address           string `json:"address"`
 	Coins             string `json:"coins"`
-	Hours             uint64 `json:"hours"`
+	Hours             string `json:"hours"`
 	CalculatedHours   uint64 `json:"calculated_hours"`
 }
 
@@ -205,7 +206,7 @@ func (ros ReadableOutputs) ToUxArray() (coin.UxArray, error) {
 		if err != nil {
 			return nil, err
 		}
-
+		hours, _ := strconv.ParseUint(o.Hours, 10, 64)
 		uxs = append(uxs, coin.UxOut{
 			Head: coin.UxHead{
 				Time:  o.Time,
@@ -215,7 +216,7 @@ func (ros ReadableOutputs) ToUxArray() (coin.UxArray, error) {
 				SrcTransaction: srcTx,
 				Address:        addr,
 				Coins:          coins,
-				Hours:          o.Hours,
+				Hours:          hours,
 			},
 		})
 	}
@@ -285,7 +286,7 @@ func NewReadableOutput(headTime uint64, t coin.UxOut) (ReadableOutput, error) {
 	default:
 		return ReadableOutput{}, err
 	}
-
+	hours := strconv.FormatUint(t.Body.Hours, 10)
 	return ReadableOutput{
 		Hash:              t.Hash().Hex(),
 		Time:              t.Head.Time,
@@ -293,7 +294,7 @@ func NewReadableOutput(headTime uint64, t coin.UxOut) (ReadableOutput, error) {
 		SourceTransaction: t.Body.SrcTransaction.Hex(),
 		Address:           t.Body.Address.String(),
 		Coins:             coinStr,
-		Hours:             t.Body.Hours,
+		Hours:             hours,
 		CalculatedHours:   calculatedHours,
 	}, nil
 }
@@ -348,7 +349,7 @@ func ReadableOutputsToUxBalances(ros ReadableOutputs) ([]wallet.UxBalance, error
 		if err != nil {
 			return nil, fmt.Errorf("ReadableOutput src_tx is invalid: %v", err)
 		}
-
+		hours, _ := strconv.ParseUint(ro.Hours, 10, 64)
 		b := wallet.UxBalance{
 			Hash:           hash,
 			Time:           ro.Time,
@@ -357,7 +358,7 @@ func ReadableOutputsToUxBalances(ros ReadableOutputs) ([]wallet.UxBalance, error
 			Address:        addr,
 			Coins:          coins,
 			Hours:          ro.CalculatedHours,
-			InitialHours:   ro.Hours,
+			InitialHours:   hours,
 		}
 
 		uxb[i] = b

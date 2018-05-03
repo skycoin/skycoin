@@ -1,7 +1,7 @@
 # skycoin build
 # reference https://github.com/skycoin/skycoin
 ARG IMAGE_FROM=alpine:3.7
-FROM golang:1.10 AS build
+FROM golang:1.10.1-stretch AS build
 ARG ARCH=amd64
 ARG GOARM
 ARG SKYCOIN_VERSION

@@ -146,7 +146,11 @@ func generateWalletHandler(c *gcli.Context) error {
 	pr := NewPasswordReader([]byte(c.String("p")))
 	switch pr.(type) {
 	case PasswordFromBytes:
-		p, _ := pr.Password()
+		p, err := pr.Password()
+		if err != nil {
+			return err
+		}
+
 		if !encrypt && len(p) != 0 {
 			return errors.New("password should not be set as we're not going to create a wallet with encryption")
 		}

@@ -79,7 +79,11 @@ func getSeed(walletFile string, pr PasswordReader) (string, error) {
 			return "", wallet.ErrWalletEncrypted
 		}
 	case PasswordFromBytes:
-		p, _ := pr.Password()
+		p, err := pr.Password()
+		if err != nil {
+			return "", err
+		}
+
 		if !wlt.IsEncrypted() && len(p) != 0 {
 			return "", wallet.ErrWalletNotEncrypted
 		}

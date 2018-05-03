@@ -103,7 +103,11 @@ func AddPrivateKeyToFile(walletFile, key string, pr PasswordReader) error {
 			return wallet.ErrMissingPassword
 		}
 	case PasswordFromBytes:
-		p, _ := pr.Password()
+		p, err := pr.Password()
+		if err != nil {
+			return err
+		}
+
 		if !wlt.IsEncrypted() && len(p) != 0 {
 			return wallet.ErrWalletNotEncrypted
 		}

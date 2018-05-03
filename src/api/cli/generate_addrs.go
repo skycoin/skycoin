@@ -106,7 +106,11 @@ func GenerateAddressesInFile(walletFile string, num uint64, pr PasswordReader) (
 			return nil, wallet.ErrWalletEncrypted
 		}
 	case PasswordFromBytes:
-		p, _ := pr.Password()
+		p, err := pr.Password()
+		if err != nil {
+			return nil, err
+		}
+
 		if !wlt.IsEncrypted() && len(p) != 0 {
 			return nil, wallet.ErrWalletNotEncrypted
 		}

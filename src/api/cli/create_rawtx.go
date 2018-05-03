@@ -304,7 +304,11 @@ func CreateRawTxFromWallet(c *webrpc.Client, walletFile, chgAddr string, toAddrs
 			return nil, wallet.ErrWalletEncrypted
 		}
 	case PasswordFromBytes:
-		p, _ := pr.Password()
+		p, err := pr.Password()
+		if err != nil {
+			return nil, err
+		}
+
 		if !wlt.IsEncrypted() && len(p) != 0 {
 			return nil, wallet.ErrWalletNotEncrypted
 		}
@@ -364,7 +368,11 @@ func CreateRawTxFromAddress(c *webrpc.Client, addr, walletFile, chgAddr string, 
 			return nil, wallet.ErrWalletEncrypted
 		}
 	case PasswordFromBytes:
-		p, _ := pr.Password()
+		p, err := pr.Password()
+		if err != nil {
+			return nil, err
+		}
+
 		if !wlt.IsEncrypted() && len(p) != 0 {
 			return nil, wallet.ErrWalletNotEncrypted
 		}

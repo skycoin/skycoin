@@ -4,6 +4,7 @@ FROM golang:1.10.0-stretch
 # Installs software
 RUN apt-get update && apt-get install -y --no-install-recommends \
         cmake \
+        libpcre3-dev \
         gdbserver \
         gdb \
         vim \
@@ -20,6 +21,13 @@ RUN git clone --recurse-submodules -j8 https://github.com/Snaipe/Criterion && \
     cmake . && \
     make install && \
     rm -r /go/Criterion
+
+RUN wget http://prdownloads.sourceforge.net/swig/swig-3.0.12.tar.gz \
+    && tar xzf swig-3.0.12.tar.gz \
+    && cd swig-3.0.12 \
+    && sh configure \
+    && make && make install \
+    && cd ../; rm -r swig-3.0.12*
 
 # Installs 
 RUN go get -u github.com/derekparker/delve/cmd/dlv  && \

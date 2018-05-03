@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"os"
 
@@ -314,7 +315,7 @@ func printJSON(obj interface{}) error {
 func readPasswordFromTerminal() ([]byte, error) {
 	// Promotes to enter the wallet password
 	fmt.Fprint(os.Stdout, "enter password:")
-	bp, err := terminal.ReadPassword(0)
+	bp, err := terminal.ReadPassword(int(syscall.Stdin))
 	if err != nil {
 		return nil, err
 	}

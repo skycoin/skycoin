@@ -145,10 +145,6 @@ func generateWalletHandler(c *gcli.Context) error {
 
 	pr := NewPasswordReader([]byte(c.String("p")))
 	switch pr.(type) {
-	case nil:
-		if encrypt {
-			return wallet.ErrMissingPassword
-		}
 	case PasswordFromBytes:
 		p, _ := pr.Password()
 		if !encrypt && len(p) != 0 {

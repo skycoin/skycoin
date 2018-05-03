@@ -329,17 +329,9 @@ type WalletLoadError struct {
 	error
 }
 
-func (w WalletLoadError) Error() string {
-	return w.error.Error()
-}
-
 // WalletSaveError is returned if a wallet could not be saved
 type WalletSaveError struct {
 	error
-}
-
-func (w WalletSaveError) Error() string {
-	return w.error.Error()
 }
 
 // PasswordReader is an interface for getting password

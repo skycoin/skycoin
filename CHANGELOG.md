@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Option to generate 12/24 word seed when creating new wallet
 - Add `-version` flag to show node version
 
 ### Fixed

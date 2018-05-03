@@ -1,4 +1,6 @@
 #!/bin/bash
+echo $DOCKERFILE_PATH
+echo `pwd`
 docker build -f docker/images/mainnet/Dockerfile -t $IMAGE_NAME ../../../
 docker build --build-arg=ARCH=arm --build-arg=GOARM=5 --build-arg=IMAGE_FROM="arm32v5/alpine" -f docker/images/mainnet/Dockerfile -t $IMAGE_NAME-arm32v5 .
 docker build --build-arg=ARCH=arm --build-arg=GOARM=6 --build-arg=IMAGE_FROM="arm32v6/alpine" -f docker/images/mainnet/Dockerfile -t $IMAGE_NAME-arm32v6 .

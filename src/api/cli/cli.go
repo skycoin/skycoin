@@ -11,10 +11,12 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"os"
 
 	gcli "github.com/urfave/cli"
+	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/util/file"
@@ -233,6 +235,9 @@ func NewApp(cfg Config) *App {
 		walletDirCmd(),
 		walletHisCmd(),
 		walletOutputsCmd(cfg),
+		encryptWalletCmd(cfg),
+		decryptWalletCmd(cfg),
+		showSeedCmd(cfg),
 	}
 
 	app.Name = fmt.Sprintf("%s-cli", cfg.Coin)
@@ -284,7 +289,7 @@ func onCommandUsageError(command string) gcli.OnUsageErrorFunc {
 }
 
 func errorWithHelp(c *gcli.Context, err error) {
-	fmt.Fprintf(c.App.Writer, "ERROR: %v. See '%s %s --help'\n\n", err, c.App.HelpName, c.Command.Name)
+	fmt.Fprintf(c.App.Writer, "Error: %v. See '%s %s --help'\n\n", err, c.App.HelpName, c.Command.Name)
 }
 
 func formatJSON(obj interface{}) ([]byte, error) {
@@ -304,4 +309,65 @@ func printJSON(obj interface{}) error {
 	fmt.Println(string(d))
 
 	return nil
+}
+
+// readPasswordFromTerminal promotes user to enter password and read it.
+func readPasswordFromTerminal() ([]byte, error) {
+	// Promotes to enter the wallet password
+	fmt.Fprint(os.Stdout, "enter password:")
+	bp, err := terminal.ReadPassword(int(syscall.Stdin))
+	if err != nil {
+		return nil, err
+	}
+	fmt.Fprintln(os.Stdout, "")
+	return bp, nil
+}
+
+// PUBLIC
+
+// WalletLoadError is returned if a wallet could not be loaded
+type WalletLoadError struct {
+	error
+}
+
+// WalletSaveError is returned if a wallet could not be saved
+type WalletSaveError struct {
+	error
+}
+
+// PasswordReader is an interface for getting password
+type PasswordReader interface {
+	Password() ([]byte, error)
+}
+
+// PasswordFromBytes represents an implementation of PasswordReader,
+// which reads password from the bytes itself.
+type PasswordFromBytes []byte
+
+// Password implements the PasswordReader's Password method
+func (p PasswordFromBytes) Password() ([]byte, error) {
+	return []byte(p), nil
+}
+
+// PasswordFromTerm reads password from terminal
+type PasswordFromTerm struct{}
+
+// Password implements the PasswordReader's Password method
+func (p PasswordFromTerm) Password() ([]byte, error) {
+	v, err := readPasswordFromTerminal()
+	if err != nil {
+		return nil, err
+	}
+
+	return v, nil
+}
+
+// NewPasswordReader creats a PasswordReader instance,
+// reads password from the input bytes first, if it's empty, then read from terminal.
+func NewPasswordReader(p []byte) PasswordReader {
+	if len(p) != 0 {
+		return PasswordFromBytes(p)
+	}
+
+	return PasswordFromTerm{}
 }

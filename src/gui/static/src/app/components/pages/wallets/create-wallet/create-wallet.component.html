@@ -5,7 +5,14 @@
       <input formControlName="label" id="label">
     </div>
     <div class="form-field">
-      <label for="seed">Seed</label>
+      <label for="seed">
+        <span>Seed</span>
+        <span class="generators" *ngIf="data.create">
+          <span (click)="generateSeed(128)" matTooltip="Generate 12 word seed">12 words</span>
+          <span class="divider">|</span>
+          <span (click)="generateSeed(256)" matTooltip="Generate 24 word seed">24 words</span>
+        </span>
+      </label>
       <textarea formControlName="seed" id="seed" row="2"></textarea>
       <p class="-warning">
         Remember this seed! Keep it in a safe place.

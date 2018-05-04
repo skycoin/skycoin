@@ -48,7 +48,7 @@ export class OnboardingCreateWalletComponent implements OnInit {
       this.form.get('confirm_seed').setValue(this.fill['seed']);
       this.doubleButtonActive = this.fill['create'] ? DoubleButtonActive.LeftButton : DoubleButtonActive.RightButton;
     } else if (this.showCreateForm) {
-      this.generateSeed();
+      this.generateSeed(128);
     }
   }
 
@@ -70,10 +70,8 @@ export class OnboardingCreateWalletComponent implements OnInit {
     this.emitCreatedData();
   }
 
-  generateSeed() {
-    this.walletService.generateSeed().subscribe(seed => {
-      this.form.get('seed').setValue(seed);
-    });
+  generateSeed(entropy: number) {
+    this.walletService.generateSeed(entropy).subscribe(seed => this.form.get('seed').setValue(seed));
   }
 
   get showCreateForm() {

@@ -8,11 +8,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Option to generate 12/24 word seed when creating new wallet
 - Add `-version` flag to show node version
+- Add CLI `encryptWallet` command
+- Add CLI `decryptWallet` command
+- Add CLI `showSeed` command
+- Add `password` argument to the CLI commands of `addPrivateKey`, `createRawTransaction`, `generateAddresses`, `generateWallet`, `send`
 
 ### Fixed
 
 - Reduce connection disconnects, improves syncing
+- Fix #1171, update CLI to support wallet encryption
 
 ### Changed
 

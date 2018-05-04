@@ -9,6 +9,7 @@ import { Http } from '@angular/http';
 import { AppService } from '../../../services/app.service';
 import 'rxjs/add/operator/skip';
 import 'rxjs/add/operator/take';
+import { shouldUpgradeVersion } from '../../../utils/semver';
 
 @Component({
   selector: 'app-header',
@@ -27,19 +28,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
   releaseVersion: string;
   updateAvailable: boolean;
   hasPendingTxs: boolean;
+  price: number;
 
-  private price: number;
   private priceSubscription: Subscription;
   private walletSubscription: Subscription;
-
-  get balance() {
-    if (this.price === null) { return 'loading..'; }
-
-    const dollarPrice = Math.round(this.price * 100) / 100;
-    const balance = Math.round(this.coins * this.price * 100) / 100;
-
-    return `${this.loading ? '-' : '$' + balance.toFixed(2)} ($${dollarPrice})`;
-  }
 
   get loading() {
     return !this.current || !this.highest || this.current !== this.highest;
@@ -104,28 +96,13 @@ export class HeaderComponent implements OnInit, OnDestroy {
     }, 1000);
   }
 
-  private higherVersion(first: string, second: string): boolean {
-    const fa = first.split('.');
-    const fb = second.split('.');
-    for (let i = 0; i < 3; i++) {
-      const na = Number(fa[i]);
-      const nb = Number(fb[i]);
-      if (na > nb || !isNaN(na) && isNaN(nb)) {
-        return true;
-      } else if (na < nb || isNaN(na) && !isNaN(nb)) {
-        return false;
-      }
-    }
-    return false;
-  }
-
   private retrieveReleaseVersion() {
     this.http.get('https://api.github.com/repos/skycoin/skycoin/tags')
       .map((res: any) => res.json())
       .catch((error: any) => Observable.throw(error || 'Unable to fetch latest release version from github.'))
       .subscribe(response =>  {
         this.releaseVersion = response.find(element => element['name'].indexOf('rc') === -1)['name'].substr(1);
-        this.updateAvailable = this.higherVersion(this.releaseVersion, this.version);
+        this.updateAvailable = shouldUpgradeVersion(this.version, this.releaseVersion);
       });
   }
 }

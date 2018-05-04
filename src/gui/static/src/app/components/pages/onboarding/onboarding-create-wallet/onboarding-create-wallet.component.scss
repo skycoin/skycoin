@@ -35,3 +35,31 @@
 .-text-align-center{
   text-align: center;
 }
+
+label[for=seed] {
+  display: flex;
+
+  > span:last-child {
+    flex: 1;
+  }
+
+  .generators {
+    text-align: right;
+
+    span {
+      cursor: pointer;
+    }
+
+    mat-icon {
+      width: 13px;
+      height: 10px;
+      font-size: 13px;
+      position: relative;
+      top: 2px;
+    }
+
+    .divider {
+      padding: 0 5px;
+    }
+  }
+}

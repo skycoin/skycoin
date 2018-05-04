@@ -450,11 +450,7 @@ func (vs *Visor) RecordBlockchainHeight(addr string, bkLen uint64) {
 func (vs *Visor) EstimateBlockchainHeight() uint64 {
 	var maxLen uint64
 	vs.strand("EstimateBlockchainHeight", func() error {
-		ourLen := vs.v.HeadBkSeq()
-		if len(vs.blockchainHeights) < 2 {
-			maxLen = ourLen
-			return nil
-		}
+		maxLen = vs.v.HeadBkSeq()
 
 		for _, seq := range vs.blockchainHeights {
 			if maxLen < seq {

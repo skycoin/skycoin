@@ -1,5 +1,5 @@
 export function parseResponseMessage(body: string): string {
-  if (/^[0-9]{3}/.test(body)) {
+  if (body.startsWith('400') || body.startsWith('403')) {
     const parts = body.split(' - ', 2);
 
     return parts.length === 2

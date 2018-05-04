@@ -17,8 +17,8 @@ func blockchainHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		metadata, err := gateway.GetBlockchainMetadata()
 		if err != nil {
-			logger.WithError(err).Error("gateway.GetBlockchainMetadata failed")
-			wh.Error500Msg(w, err.Error())
+			err = fmt.Errorf("gateway.GetBlockchainMetadata failed: %v", err)
+			wh.Error500(w, err.Error())
 			return
 		}
 
@@ -73,14 +73,13 @@ func getBlock(gate Gatewayer) http.HandlerFunc {
 		}
 
 		if !exist {
-			wh.Error404(w)
+			wh.Error404(w, "")
 			return
 		}
 
 		rb, err := visor.NewReadableBlock(&b.Block)
 		if err != nil {
-			logger.Error(err)
-			wh.Error500(w)
+			wh.Error500(w, err.Error())
 			return
 		}
 

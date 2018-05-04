@@ -7,8 +7,8 @@ describe('desktopwallet App', () => {
     page = new DesktopwalletPage();
   });
 
-  it('should display welcome message', () => {
+  it('should show wallets page', () => {
     page.navigateTo();
-    expect(page.getParagraphText()).toEqual('Welcome to app!');
+    expect(page.getParagraphText()).toEqual('Wallets');
   });
 });

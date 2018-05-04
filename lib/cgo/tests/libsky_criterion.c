@@ -3,7 +3,7 @@
 #include "skycriterion.h"
 #include "skystring.h"
 
-int cr_user_Address_eq(cipher__Address *addr1, cipher__Address *addr2){
+int cr_user_cipher__Address_eq(cipher__Address *addr1, cipher__Address *addr2){
   if(addr1->Version != addr2->Version)
     return 0;
   for (int i = 0; i < sizeof(Ripemd160); ++i) {
@@ -13,7 +13,7 @@ int cr_user_Address_eq(cipher__Address *addr1, cipher__Address *addr2){
   return 1;
 }
 
-char *cr_user_Address_tostr(cipher__Address *addr1)
+char *cr_user_cipher__Address_tostr(cipher__Address *addr1)
 {
   char *out;
 
@@ -21,7 +21,7 @@ char *cr_user_Address_tostr(cipher__Address *addr1)
   return out;
 }
 
-int cr_user_Address_noteq(cipher__Address *addr1, cipher__Address *addr2){
+int cr_user_cipher__Address_noteq(cipher__Address *addr1, cipher__Address *addr2){
   if(addr1->Version != addr2->Version)
     return 0;
   for (int i = 0; i < sizeof(Ripemd160); ++i) {
@@ -52,11 +52,11 @@ char *cr_user_GoString__tostr(GoString_ *string) {
   return cr_user_GoString_tostr((GoString *)string);
 }
 
-int cr_user_SecKey_eq(cipher__SecKey *seckey1, cipher__SecKey *seckey2){
+int cr_user_cipher__SecKey_eq(cipher__SecKey *seckey1, cipher__SecKey *seckey2){
   return memcmp((void *)seckey1,(void *)seckey2, sizeof(cipher__SecKey)) == 0;
 }
 
-char *cr_user_SecKey_tostr(cipher__SecKey *seckey1)
+char *cr_user_cipher__SecKey_tostr(cipher__SecKey *seckey1)
 {
   char *out;
   char hexdump[101];
@@ -67,15 +67,15 @@ char *cr_user_SecKey_tostr(cipher__SecKey *seckey1)
 }
 
 
-int cr_user_Ripemd160_noteq(Ripemd160 *rp1, Ripemd160 *rp2){
+int cr_user_cipher__Ripemd160_noteq(Ripemd160 *rp1, Ripemd160 *rp2){
   return memcmp((void *)rp1,(void *)rp2, sizeof(Ripemd160)) != 0;
 }
 
-int cr_user_Ripemd160_eq(Ripemd160 *rp1, Ripemd160 *rp2){
+int cr_user_cipher__Ripemd160_eq(Ripemd160 *rp1, Ripemd160 *rp2){
   return memcmp((void *)rp1,(void *)rp2, sizeof(Ripemd160)) == 0;
 }
 
-char *cr_user_Ripemd160_tostr(Ripemd160 *rp1)
+char *cr_user_cipher__Ripemd160_tostr(Ripemd160 *rp1)
 {
   char *out;
   char hexdump[101];
@@ -84,15 +84,15 @@ char *cr_user_Ripemd160_tostr(Ripemd160 *rp1)
   cr_asprintf(&out, "(Ripemd160) { %s }", hexdump );
 }
 
-int cr_user_SHA256_noteq(cipher__SHA256 *sh1, cipher__SHA256 *sh2){
+int cr_user_cipher__SHA256_noteq(cipher__SHA256 *sh1, cipher__SHA256 *sh2){
   return memcmp((void *)sh1,(void *)sh1, sizeof(cipher__SHA256)) != 0;
 }
 
-int cr_user_SHA256_eq(cipher__SHA256 *sh1, cipher__SHA256 *sh2){
+int cr_user_cipher__SHA256_eq(cipher__SHA256 *sh1, cipher__SHA256 *sh2){
   return memcmp((void *)sh1,(void *)sh1, sizeof(cipher__SHA256)) == 0;
 }
 
-char *cr_user_SHA256_tostr(cipher__SHA256 *sh1) {
+char *cr_user_cipher__SHA256_tostr(cipher__SHA256 *sh1) {
   char *out;
   char hexdump[101];
 

@@ -13,7 +13,7 @@
 Test(cipher_crypto, TestNewPubKey) {
   unsigned char buff[101];
   GoSlice slice;
-  PubKey pk;
+  cipher__PubKey pk;
 
   slice.data = buff;
   slice.cap = 101;
@@ -47,7 +47,7 @@ Test(cipher_crypto, TestNewPubKey) {
 }
 
 Test(cipher_crypto, TestPubKeyFromHex) {
-  PubKey p, p1;
+  cipher__PubKey p, p1;
   GoString s;
   unsigned char buff[51];
   char sbuff[101];
@@ -84,7 +84,7 @@ Test(cipher_crypto, TestPubKeyFromHex) {
 }
 
 Test(cipher_crypto, TestPubKeyHex) {
-  PubKey p, p2;
+  cipher__PubKey p, p2;
   GoString s3, s4;
   unsigned char buff[50];
   GoSlice slice = { buff, 0, 50};
@@ -107,7 +107,7 @@ Test(cipher_crypto, TestPubKeyHex) {
 }
 
 Test(cipher_crypto, TestPubKeyVerify) {
-  PubKey p;
+  cipher__PubKey p;
   unsigned char buff[50];
   GoSlice slice = { buff, 0, 50 };
   unsigned int errcode;
@@ -123,7 +123,7 @@ Test(cipher_crypto, TestPubKeyVerify) {
 }
 
 Test(cipher_crypto, TestPubKeyVerifyNil) {
-  PubKey p = {
+  cipher__PubKey p = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -136,8 +136,8 @@ Test(cipher_crypto, TestPubKeyVerifyNil) {
 }
 
 Test(cipher_crypto, TestPubKeyVerifyDefault1) {
-  PubKey p;
-  SecKey s;
+  cipher__PubKey p;
+  cipher__SecKey s;
 
   SKY_cipher_GenerateKeyPair(&p, &s);
   unsigned int errcode = SKY_cipher_PubKey_Verify(&p);
@@ -145,8 +145,8 @@ Test(cipher_crypto, TestPubKeyVerifyDefault1) {
 }
 
 Test(cipher_crypto, TestPubKeyVerifyDefault2) {
-  PubKey p;
-  SecKey s;
+  cipher__PubKey p;
+  cipher__SecKey s;
   int i;
 
   for (i = 0; i < 1024; ++i) {
@@ -157,8 +157,8 @@ Test(cipher_crypto, TestPubKeyVerifyDefault2) {
 }
 
 Test(cipher_crypto, TestPubKeyToAddressHash) {
-  PubKey p;
-  SecKey s;
+  cipher__PubKey p;
+  cipher__SecKey s;
   Ripemd160 h;
 
   SKY_cipher_GenerateKeyPair(&p, &s);
@@ -176,9 +176,9 @@ Test(cipher_crypto, TestPubKeyToAddressHash) {
 }
 
 Test(cipher_crypto, TestPubKeyToAddress) {
-  PubKey p;
-  SecKey s;
-  Address addr;
+  cipher__PubKey p;
+  cipher__SecKey s;
+  cipher__Address addr;
   Ripemd160 h;
   int errcode;
 
@@ -189,9 +189,9 @@ Test(cipher_crypto, TestPubKeyToAddress) {
 }
 
 Test(cipher_crypto, TestPubKeyToAddress2) {
-  PubKey p;
-  SecKey s;
-  Address addr;
+  cipher__PubKey p;
+  cipher__SecKey s;
+  cipher__Address addr;
   GoString_ addrStr;
   int i, errcode;
 
@@ -213,7 +213,7 @@ Test(cipher_crypto, TestPubKeyToAddress2) {
 Test(cipher_crypto, TestMustNewSecKey) {
   unsigned char buff[101];
   GoSlice b;
-  SecKey sk;
+  cipher__SecKey sk;
   int errcode;
 
   b.data = buff;
@@ -247,7 +247,7 @@ Test(cipher_crypto, TestMustNewSecKey) {
 
 Test(cipher_crypto, TestMustSecKeyFromHex) {
   GoString str;
-  SecKey sk, sk1;
+  cipher__SecKey sk, sk1;
   unsigned int buff[50];
   GoSlice b;
   char strBuff[101];
@@ -287,7 +287,7 @@ Test(cipher_crypto, TestMustSecKeyFromHex) {
 }
 
 Test(cipher_crypto, TestSecKeyHex) {
-  SecKey sk, sk2;
+  cipher__SecKey sk, sk2;
   unsigned char buff[101];
   char strBuff[50];
   GoSlice b;
@@ -315,8 +315,8 @@ Test(cipher_crypto, TestSecKeyHex) {
 }
 
 Test(cipher_crypto, TestSecKeyVerify) {
-  SecKey sk;
-  PubKey pk;
+  cipher__SecKey sk;
+  cipher__PubKey pk;
   int errcode;
 
   // Empty secret key should not be valid
@@ -333,8 +333,8 @@ Test(cipher_crypto, TestSecKeyVerify) {
 }
 
 Test(cipher_crypto, TestECDHonce) {
-  PubKey pub1, pub2;
-  SecKey sec1, sec2;
+  cipher__PubKey pub1, pub2;
+  cipher__SecKey sec1, sec2;
   unsigned char buff1[50], buff2[50];
   GoSlice_ buf1, buf2;
 
@@ -357,8 +357,8 @@ Test(cipher_crypto, TestECDHonce) {
 
 Test(cipher_crypto, TestECDHloop) {
   int i;
-  PubKey pub1, pub2;
-  SecKey sec1, sec2;
+  cipher__PubKey pub1, pub2;
+  cipher__SecKey sec1, sec2;
   unsigned char buff1[50], buff2[50];
   GoSlice_ buf1, buf2;
 
@@ -381,7 +381,7 @@ Test(cipher_crypto, TestECDHloop) {
 Test(cipher_crypto, TestNewSig) {
   unsigned char buff[101];
   GoSlice b;
-  Sig s;
+  cipher__Sig s;
   int errcode;
 
   b.data = buff;
@@ -419,7 +419,7 @@ Test(cipher_crypto, TestMustSigFromHex) {
   char strBuff[101];
   GoSlice b = { buff, 0, 101 };
   GoString str;
-  Sig s, s2;
+  cipher__Sig s, s2;
   int errcode;
 
   // Invalid hex
@@ -459,7 +459,7 @@ Test(cipher_crypto, TestSigHex) {
   strBuff2[150];
   GoString str = {NULL, 0},
            str2 = {NULL, 0};
-  Sig s, s2;
+  cipher__Sig s, s2;
   int errcode;
 
   randBytes((GoSlice_ *)&b, 65);
@@ -479,13 +479,13 @@ Test(cipher_crypto, TestSigHex) {
 }
 
 Test(cipher_crypto, TestChkSig) {
-  PubKey pk, pk2;
-  SecKey sk, sk2;
-  Address addr, addr2;
+  cipher__PubKey pk, pk2;
+  cipher__SecKey sk, sk2;
+  cipher__Address addr, addr2;
   unsigned char buff[257];
   GoSlice b = { buff, 0, 257 };
-  SHA256 h, h2;
-  Sig sig, sig2;
+  cipher__SHA256 h, h2;
+  cipher__Sig sig, sig2;
   int errcode;
 
   SKY_cipher_GenerateKeyPair(&pk, &sk);
@@ -558,13 +558,13 @@ Test(cipher_crypto, TestChkSig) {
 }
 
 Test(cipher_crypto, TestSignHash) {
-  PubKey pk;
-  SecKey sk;
-  Address addr;
+  cipher__PubKey pk;
+  cipher__SecKey sk;
+  cipher__Address addr;
   unsigned char buff[257];
   GoSlice b = { buff, 0, 101 };
-  SHA256 h;
-  Sig sig, sig2;
+  cipher__SHA256 h;
+  cipher__Sig sig, sig2;
   int errcode;
 
   SKY_cipher_GenerateKeyPair(&pk, &sk);
@@ -580,8 +580,8 @@ Test(cipher_crypto, TestSignHash) {
 }
 
 Test(cipher_crypto, TestPubKeyFromSecKey) {
-  PubKey pk, pk2;
-  SecKey sk;
+  cipher__PubKey pk, pk2;
+  cipher__SecKey sk;
   unsigned char buff[101];
   GoSlice b = { buff, 0, 101 };
   int errcode;
@@ -605,10 +605,10 @@ Test(cipher_crypto, TestPubKeyFromSecKey) {
 }
 
 Test(cipher_crypto, TestPubKeyFromSig) {
-  PubKey pk, pk2;
-  SecKey sk;
-  SHA256 h;
-  Sig sig;
+  cipher__PubKey pk, pk2;
+  cipher__SecKey sk;
+  cipher__SHA256 h;
+  cipher__Sig sig;
   unsigned char buff[257];
   GoSlice b = { buff, 0, 257 };
   int errcode;
@@ -629,10 +629,10 @@ Test(cipher_crypto, TestPubKeyFromSig) {
 }
 
 Test(cipher_crypto, TestVerifySignature) {
-  PubKey pk, pk2;
-  SecKey sk, sk2;
-  SHA256 h, h2;
-  Sig sig, sig2;
+  cipher__PubKey pk, pk2;
+  cipher__SecKey sk, sk2;
+  cipher__SHA256 h, h2;
+  cipher__Sig sig, sig2;
   unsigned char buff[257];
   GoSlice b = { buff, 0, 257 };
   int errcode;
@@ -663,8 +663,8 @@ Test(cipher_crypto, TestVerifySignature) {
 }
 
 Test(cipher_crypto, TestGenerateKeyPair) {
-  PubKey pk;
-  SecKey sk;
+  cipher__PubKey pk;
+  cipher__SecKey sk;
   int errcode;
 
   SKY_cipher_GenerateKeyPair(&pk, &sk);
@@ -675,8 +675,8 @@ Test(cipher_crypto, TestGenerateKeyPair) {
 }
 
 Test(cipher_crypto, TestGenerateDeterministicKeyPair) {
-  PubKey pk;
-  SecKey sk;
+  cipher__PubKey pk;
+  cipher__SecKey sk;
   unsigned char buff[33];
   GoSlice seed = { buff, 0, 33 };
   int errcode;
@@ -698,8 +698,8 @@ Test(cipher_crypto, TestGenerateDeterministicKeyPair) {
 }
 
 Test(cipher_crypto, TestSecKeTest) {
-  PubKey pk;
-  SecKey sk;
+  cipher__PubKey pk;
+  cipher__SecKey sk;
   int errcode;
 
   SKY_cipher_GenerateKeyPair(&pk, &sk);
@@ -712,9 +712,9 @@ Test(cipher_crypto, TestSecKeTest) {
 }
 
 Test(cipher_crypto, TestSecKeyHashTest) {
-  PubKey pk;
-  SecKey sk;
-  SHA256 h;
+  cipher__PubKey pk;
+  cipher__SecKey sk;
+  cipher__SHA256 h;
   unsigned char buff[257];
   GoSlice b = { buff, 0, 257};
   int errcode;

@@ -1,8 +1,8 @@
 typedef struct{
     GoString_ Addr;
     GoInt64_ LastSeen;
-    bool Private;
-    bool Trusted;
-    bool HasIncomingPort;
+    BOOL Private;
+    BOOL Trusted;
+    BOOL HasIncomingPort;
     GoInt_ RetryTimes;
 } pex__Peer;

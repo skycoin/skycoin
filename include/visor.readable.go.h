@@ -1,9 +1,9 @@
 typedef struct{
-    bool Confirmed;
-    bool Unconfirmed;
+    BOOL Confirmed;
+    BOOL Unconfirmed;
     GoUint64_ Height;
     GoUint64_ BlockSeq;
-    bool Unknown;
+    BOOL Unknown;
 } visor__TransactionStatus;
 typedef struct{
     GoString_ Hash;

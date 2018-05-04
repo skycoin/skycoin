@@ -3,7 +3,7 @@ typedef struct{
     GoInt_ index;
     GoMap_ hash2info;
     GoUint64_ seqno;
-    bool frozen;
+    BOOL frozen;
     GoInt_ accept_count;
     GoMap_ debug_pubkey2count;
     GoInt_ debug_count;

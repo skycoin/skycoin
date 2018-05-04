@@ -8,7 +8,7 @@ typedef struct{
     wallet__CoinType Coin;
     GoString_ Label;
     GoString_ Seed;
-    bool Encrypt;
+    BOOL Encrypt;
     GoSlice_  Password;
     wallet__CryptoType CryptoType;
 } wallet__Options;

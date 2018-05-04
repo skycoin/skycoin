@@ -6,8 +6,8 @@ typedef Handle pex__Filter;
 typedef struct{
     GoString_ Addr;
     GoInterface_ LastSeen;
-    bool Private;
-    bool Trusted;
-    bool * HasIncomePort;
-    bool * HasIncomingPort;
+    BOOL Private;
+    BOOL Trusted;
+    BOOL * HasIncomePort;
+    BOOL * HasIncomingPort;
 } pex__PeerJSON;

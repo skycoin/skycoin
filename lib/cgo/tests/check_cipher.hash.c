@@ -14,7 +14,7 @@ void freshSumRipemd160(GoSlice bytes, Ripemd160* rp160){
   SKY_cipher_HashRipemd160(bytes, rp160);
 }
 
-void freshSumSHA256(GoSlice bytes, SHA256* sha256){
+void freshSumSHA256(GoSlice bytes, cipher__SHA256* sha256){
 
   SKY_cipher_SumSHA256(bytes, sha256);
 }
@@ -74,7 +74,7 @@ Test(cipher_hash,TestRipemd160Set){
 
 Test(cipher_hash,TestSHA256Set){
 
-  SHA256 h;
+  cipher__SHA256 h;
   unsigned char buff[101];
   GoSlice slice = { buff, 0, 101 };
   int error;
@@ -104,7 +104,7 @@ Test(cipher_hash,TestSHA256Set){
 
 Test(cipher_hash,TestSHA256Hex){
 
-  SHA256 h;
+  cipher__SHA256 h;
   unsigned char buff[101];
   GoSlice slice = { buff, 0, 101 };
   int error;
@@ -117,7 +117,7 @@ Test(cipher_hash,TestSHA256Hex){
   SKY_cipher_SHA256_Hex(&h, (GoString_ *)&s);
   registerMemCleanup(&s.p);
 
-  SHA256 h2;
+  cipher__SHA256 h2;
 
   error = SKY_cipher_SHA256FromHex(s, &h2 );
   cr_assert(error == SKY_OK);
@@ -159,7 +159,7 @@ Test(cipher_hash,TestSHA256KnownValue){
     slice_input.len = strlen(vals[i].input);
     slice_input.cap = strlen(vals[i].input)+1;
 
-    SHA256 sha;
+    cipher__SHA256 sha;
 
     SKY_cipher_SumSHA256(slice_input,&sha);
 
@@ -177,30 +177,30 @@ Test(cipher_hash,TestSumSHA256){
   unsigned char bbuff[257],
   cbuff[257];
   GoSlice b = { bbuff, 0, 257 };
-  SHA256 h1;
+  cipher__SHA256 h1;
   randBytes(&b,256);
   SKY_cipher_SumSHA256(b,&h1);
-  SHA256 tmp;
+  cipher__SHA256 tmp;
   cr_assert(not(eq(u8[32],h1,tmp)));
   GoSlice c = { cbuff, 0, 257 };
   randBytes(&c,256);
-  SHA256 h2;
+  cipher__SHA256 h2;
   SKY_cipher_SumSHA256(c,&h2);
   cr_assert(not(eq(u8[32],h2,tmp)));
-  SHA256 tmp_h2;
+  cipher__SHA256 tmp_h2;
   freshSumSHA256(c,&tmp_h2);
   cr_assert(eq(u8[32],h2,tmp_h2));
 }
 
 Test(cipher_hash,TestSHA256FromHex){
   unsigned int error;
-  SHA256 tmp;
+  cipher__SHA256 tmp;
   // Invalid hex hash
   GoString tmp_string = {"cawcd",5};
   error = SKY_cipher_SHA256FromHex(tmp_string,&tmp);
   cr_assert(error == SKY_ERROR);
   // Truncated hex hash
-  SHA256 h;
+  cipher__SHA256 h;
   unsigned char buff[130];
   char sbuff[300];
   GoSlice slice = { buff,0,130 };
@@ -216,7 +216,7 @@ Test(cipher_hash,TestSHA256FromHex){
   GoString_ s2;
   // strnhex(h,sbuff1,sizeof(h));
   SKY_cipher_SHA256_Hex(&h, &s2 );
-  SHA256 h2;
+  cipher__SHA256 h2;
   error = SKY_cipher_SHA256FromHex((*((GoString *) &s2)),&h2);
   cr_assert(error == SKY_OK);
   cr_assert(eq(u8[32],h,h2));
@@ -227,8 +227,8 @@ Test(cipher_hash,TestDoubleSHA256){
   unsigned char bbuff[130];
   GoSlice b = { bbuff, 0, 130 };
   randBytes(&b,128);
-  SHA256 h;
-  SHA256 tmp;
+  cipher__SHA256 h;
+  cipher__SHA256 tmp;
   SKY_cipher_DoubleSHA256(b,&h);
   cr_assert(not(eq(u8[32],tmp,h)));
   freshSumSHA256(b,&tmp);
@@ -240,17 +240,17 @@ Test(cipher_hash,TestAddSHA256){
   unsigned char bbuff[130];
   GoSlice b = { bbuff, 0, 130 };
   randBytes(&b,128);
-  SHA256 h;
+  cipher__SHA256 h;
   SKY_cipher_SumSHA256(b,&h);
 
   unsigned char cbuff[130];
   GoSlice c = { cbuff, 0, 130 };
   randBytes(&c,64);
-  SHA256 i;
+  cipher__SHA256 i;
   SKY_cipher_SumSHA256(c,&i);
 
-  SHA256 add;
-  SHA256 tmp;
+  cipher__SHA256 add;
+  cipher__SHA256 tmp;
 
   SKY_cipher_AddSHA256(&h,&i,&add);
 
@@ -265,16 +265,16 @@ Test(cipher_hash,TestXorSHA256){
   cbuff[129];
   GoSlice b = { bbuff, 0, 129 } ;
   GoSlice c = { cbuff, 0, 129 };
-  SHA256 h, i;
+  cipher__SHA256 h, i;
 
   randBytes(&b,128);
   SKY_cipher_SumSHA256(b,&h);
   randBytes(&c,128);
   SKY_cipher_SumSHA256(c,&i);
 
-  SHA256 tmp_xor1;
-  SHA256 tmp_xor2;
-  SHA256 tmp;
+  cipher__SHA256 tmp_xor1;
+  cipher__SHA256 tmp_xor2;
+  cipher__SHA256 tmp;
 
   SKY_cipher_SHA256_Xor(&h,&i,&tmp_xor1);
   SKY_cipher_SHA256_Xor(&i,&h,&tmp_xor2);
@@ -288,10 +288,10 @@ Test(cipher_hash,TestXorSHA256){
 
 Test(cipher_hash,TestMerkle){
   unsigned char buff[129];
-  SHA256 hashlist[5];
+  cipher__SHA256 hashlist[5];
   GoSlice b = { buff, 0, 129 },
           hashes = { hashlist, 0, 5 };
-  SHA256 h, zero, out, out1, out2, out3, out4;
+  cipher__SHA256 h, zero, out, out1, out2, out3, out4;
   int i;
 
   memset(zero, 0, sizeof(zero));

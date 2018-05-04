@@ -1,6 +1,6 @@
 typedef struct{
     GoInt_ BufferSize;
-    bool DisableWalletAPI;
+    BOOL DisableWalletAPI;
 } daemon__GatewayConfig;
 typedef Handle daemon__OutputsFilter;
 typedef struct{

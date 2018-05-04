@@ -3,8 +3,8 @@ typedef struct{
     GoString_ Addr;
     GoInt64_ LastSent;
     GoInt64_ LastReceived;
-    bool Outgoing;
-    bool Introduced;
+    BOOL Outgoing;
+    BOOL Introduced;
     GoUint32_ Mirror;
     GoUint16_ ListenPort;
 } daemon__Connection;

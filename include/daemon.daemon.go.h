@@ -1,6 +1,6 @@
 typedef struct{
     GoString_ Addr;
-    bool Solicited;
+    BOOL Solicited;
 } daemon__ConnectEvent;
 typedef struct{
     GoString_ Addr;

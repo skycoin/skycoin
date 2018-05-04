@@ -28,7 +28,7 @@ typedef struct{
     GoUint16_ Port;
     GoInt32_ Version;
     gnet__MessageContext * c;
-    bool valid;
+    BOOL valid;
 } daemon__IntroductionMessage;
 typedef struct{
     gnet__MessageContext * c;

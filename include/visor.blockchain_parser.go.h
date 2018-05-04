@@ -5,5 +5,5 @@ typedef struct{
     GoChan_ quit;
     GoChan_ done;
     visor__Blockchainer bc;
-    bool isStart;
+    BOOL isStart;
 } visor__BlockchainParser;

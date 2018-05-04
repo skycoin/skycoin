@@ -59,13 +59,13 @@ typedef double GoFloat64_;
 /**
  * Instances of Go `complex` type.
  */
-typedef float _Complex GoComplex64_;
+typedef struct{float real; float imaginary;} GoComplex64_;
 /**
  * Instances of Go `complex` type.
  */
-typedef double _Complex GoComplex128_;
-typedef GoUint32_ bool;
-typedef GoUint32_ error;
+typedef struct{double real; double imaginary;} GoComplex128_;
+typedef unsigned int BOOL;
+typedef unsigned int error;
 
 /*
   static assertion to make sure the file is being used on architecture
@@ -165,7 +165,7 @@ typedef struct {
 } GoSlice_;
 
 typedef struct {	
-	bool 		neg;
+	BOOL 		neg;
 	GoSlice_ 	nat;
 } Number;
 

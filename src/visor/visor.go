@@ -213,7 +213,7 @@ type Blockchainer interface {
 // UnconfirmedTxnPooler is the interface that provides methods for
 // accessing the unconfirmed transaction pool
 type UnconfirmedTxnPooler interface {
-	SetAnnounced(hash cipher.SHA256, t time.Time) error
+	SetAnnounced(hash cipher.SHA256, t int64) error
 	InjectTransaction(bc Blockchainer, t coin.Transaction, maxSize int) (bool, *ErrTxnViolatesSoftConstraint, error)
 	RawTxns() coin.Transactions
 	RemoveTransactions(txns []cipher.SHA256) error

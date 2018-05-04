@@ -10,8 +10,6 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
-	time "time"
-
 	bolt "github.com/boltdb/bolt"
 
 	cipher "github.com/skycoin/skycoin/src/cipher"
@@ -378,7 +376,7 @@ func (m *UnconfirmedTxnPoolerMock) RemoveTransactionsWithTx(p0 *bolt.Tx, p1 []ci
 }
 
 // SetAnnounced mocked method
-func (m *UnconfirmedTxnPoolerMock) SetAnnounced(p0 cipher.SHA256, p1 time.Time) error {
+func (m *UnconfirmedTxnPoolerMock) SetAnnounced(p0 cipher.SHA256, p1 int64) error {
 
 	ret := m.Called(p0, p1)
 

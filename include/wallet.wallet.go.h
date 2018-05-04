@@ -1,16 +1,16 @@
-typedef GoString_ wallet__CoinType;
+//typedef GoString_ wallet__CoinType;
 typedef struct{
     GoMap_ Meta;
     GoSlice_  Entries;
 } wallet__Wallet;
 typedef GoInterface_ wallet__Validator;
 typedef struct{
-    wallet__CoinType Coin;
+    GoString_ Coin;
     GoString_ Label;
     GoString_ Seed;
     BOOL Encrypt;
     GoSlice_  Password;
-    wallet__CryptoType CryptoType;
+    GoString_ CryptoType;
 } wallet__Options;
 typedef struct{
     cipher__SHA256 Hash;

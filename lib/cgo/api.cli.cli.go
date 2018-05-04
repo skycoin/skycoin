@@ -28,6 +28,40 @@ func SKY_cli_LoadConfig(_arg0 *C.Config__Handle) (____error_code uint32) {
 	return
 }
 
+//export SKY_cli_Config_GetCoin
+func SKY_cli_Config_GetCoin(_c *C.Config__Handle, _arg0 *C.GoString_) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	__c, okc := lookupConfigHandle(*_c)
+	if !okc {
+		____error_code = SKY_ERROR
+		return
+	}
+	c := *__c
+	__arg0 := c.Coin
+	copyString(__arg0, _arg0)
+	return
+}
+
+//export SKY_cli_Config_GetRPCAddress
+func SKY_cli_Config_GetRPCAddress(_c *C.Config__Handle, _arg0 *C.GoString_) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	__c, okc := lookupConfigHandle(*_c)
+	if !okc {
+		____error_code = SKY_ERROR
+		return
+	}
+	c := *__c
+	__arg0 := c.RPCAddress
+	copyString(__arg0, _arg0)
+	return
+}
+
 //export SKY_cli_Config_FullWalletPath
 func SKY_cli_Config_FullWalletPath(_c *C.Config__Handle, _arg0 *C.GoString_) (____error_code uint32) {
 	____error_code = 0

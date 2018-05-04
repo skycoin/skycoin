@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"strings"
+	"sync"
 	"testing"
 
 	"errors"
@@ -273,6 +274,57 @@ func TestGetBalanceHandler(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, tc.httpResponse, msg, tc.name)
 			}
+		})
+	}
+}
+
+func TestEnableGUI(t *testing.T) {
+	tt := []struct {
+		name       string
+		enableGUI  bool
+		expectCode int
+	}{
+		{
+			name:       "disable gui",
+			enableGUI:  false,
+			expectCode: http.StatusNotFound,
+		},
+		{
+			name:       "enable gui",
+			enableGUI:  true,
+			expectCode: http.StatusOK,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			c := Config{
+				EnableGUI:   tc.enableGUI,
+				DisableCSRF: true,
+				StaticDir:   "./static",
+			}
+
+			host := "127.0.0.1:6423"
+			s, err := Create(host, c, nil)
+			require.NoError(t, err)
+
+			wg := sync.WaitGroup{}
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				s.Serve()
+			}()
+
+			defer func() {
+				s.listener.Close()
+				wg.Wait()
+			}()
+
+			url := "http://" + host
+			rsp, err := http.Get(url)
+			require.NoError(t, err)
+			require.Equal(t, tc.expectCode, rsp.StatusCode)
+			rsp.Body.Close()
 		})
 	}
 }

@@ -60,7 +60,7 @@ type muxConfig struct {
 	enableJSON20RPC bool
 }
 
-func create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
+func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 	var appLoc string
 	if c.EnableGUI {
 		var err error
@@ -82,7 +82,7 @@ func create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
 	if c.EnableJSON20RPC {
 		logger.Info("JSON 2.0 RPC enabled")
 		var err error
-		rpc, err = webrpc.New(daemon.Gateway)
+		rpc, err = webrpc.New(gateway)
 		if err != nil {
 			return nil, err
 		}
@@ -105,7 +105,7 @@ func create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
 		enableJSON20RPC: c.EnableJSON20RPC,
 	}
 
-	srvMux := newServerMux(mc, daemon.Gateway, csrfStore, rpc)
+	srvMux := newServerMux(mc, gateway, csrfStore, rpc)
 	srv := &http.Server{
 		Handler:      srvMux,
 		ReadTimeout:  c.ReadTimeout,
@@ -120,8 +120,8 @@ func create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
 }
 
 // Create creates a new Server instance that listens on HTTP
-func Create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
-	s, err := create(host, c, daemon)
+func Create(host string, c Config, gateway Gatewayer) (*Server, error) {
+	s, err := create(host, c, gateway)
 	if err != nil {
 		return nil, err
 	}
@@ -137,8 +137,8 @@ func Create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
 }
 
 // CreateHTTPS creates a new Server instance that listens on HTTPS
-func CreateHTTPS(host string, c Config, daemon *daemon.Daemon, certFile, keyFile string) (*Server, error) {
-	s, err := create(host, c, daemon)
+func CreateHTTPS(host string, c Config, gateway Gatewayer, certFile, keyFile string) (*Server, error) {
+	s, err := create(host, c, gateway)
 	if err != nil {
 		return nil, err
 	}

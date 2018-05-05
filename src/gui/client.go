@@ -135,7 +135,10 @@ func (c *Client) post(endpoint string, contentType string, body io.Reader, obj i
 		return err
 	}
 
-	req.Header.Set("X-CSRF-Token", csrf)
+	if csrf != "" {
+		req.Header.Set(CSRFHeaderName, csrf)
+	}
+
 	req.Header.Set("Content-Type", contentType)
 
 	resp, err := c.HTTPClient.Do(req)

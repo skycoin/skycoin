@@ -24,9 +24,10 @@ RUN cd $GOPATH/src/github.com/skycoin/skycoin && \
 FROM alpine:3.7
 
 ENV COIN="skycoin"
-ENV RPC_ADDR="0.0.0.0:6430" \
+ENV RPC_ADDR="http://0.0.0.0:6420" \
     DATA_DIR="/data/.$COIN" \
     WALLET_DIR="/wallet" \
+    USE_CSRF="1" \
     WALLET_NAME="$COIN_cli.wlt"
 
 # copy all the binaries
@@ -42,6 +43,6 @@ COPY docker_launcher.sh /usr/local/bin
 VOLUME $WALLET_DIR
 VOLUME $DATA_DIR
 
-EXPOSE 6000 6420 6430
+EXPOSE 6000 6420
 
-ENTRYPOINT ["docker_launcher.sh", "--web-interface-addr=0.0.0.0", "--rpc-interface-addr=0.0.0.0", "--gui-dir=/usr/local/skycoin/src/gui/static"]
+ENTRYPOINT ["docker_launcher.sh", "--web-interface-addr=0.0.0.0", "--gui-dir=/usr/local/skycoin/src/gui/static"]

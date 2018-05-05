@@ -84,7 +84,7 @@ func Test_getTransactionHandler(t *testing.T) {
 				},
 				gateway: &fakeGateway{},
 			},
-			makeErrorResponse(errCodeInvalidRequest, "transaction doesn't exist"),
+			MakeErrorResponse(ErrCodeInvalidRequest, "transaction doesn't exist"),
 		},
 		{
 			"invalid params: invalid transaction hash",
@@ -97,7 +97,7 @@ func Test_getTransactionHandler(t *testing.T) {
 				},
 				gateway: &fakeGateway{},
 			},
-			makeErrorResponse(errCodeInvalidParams, "invalid transaction hash"),
+			MakeErrorResponse(ErrCodeInvalidParams, "invalid transaction hash"),
 		},
 		{
 			"invalid params: decode failed",
@@ -110,7 +110,7 @@ func Test_getTransactionHandler(t *testing.T) {
 				},
 				gateway: &fakeGateway{},
 			},
-			makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams),
+			MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams),
 		},
 		{
 			"empty params",
@@ -122,7 +122,7 @@ func Test_getTransactionHandler(t *testing.T) {
 				},
 				gateway: &fakeGateway{},
 			},
-			makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams),
+			MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams),
 		},
 	}
 
@@ -175,7 +175,7 @@ func Test_injectTransactionHandler(t *testing.T) {
 					Params:  []byte(`["abcdeffedca"]`),
 				},
 			},
-			makeErrorResponse(errCodeInvalidParams, "invalid raw transaction: encoding/hex: odd length hex string"),
+			MakeErrorResponse(ErrCodeInvalidParams, "invalid raw transaction: encoding/hex: odd length hex string"),
 		},
 		{
 			"invalid params type",
@@ -187,7 +187,7 @@ func Test_injectTransactionHandler(t *testing.T) {
 					Params:  []byte("abcdeffedca"),
 				},
 			},
-			makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams),
+			MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams),
 		},
 		{
 			"invalid params: more than one raw transaction",
@@ -199,7 +199,7 @@ func Test_injectTransactionHandler(t *testing.T) {
 					Params:  []byte(fmt.Sprintf("[%q,%q]", rawTx, rawTx)),
 				},
 			},
-			makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams),
+			MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams),
 		},
 		{
 			"internal error",
@@ -212,7 +212,7 @@ func Test_injectTransactionHandler(t *testing.T) {
 				},
 				gateway: &fakeGateway{},
 			},
-			makeErrorResponse(errCodeInternalError, "inject transaction failed: fake gateway inject transaction failed"),
+			MakeErrorResponse(ErrCodeInternalError, "inject transaction failed: fake gateway inject transaction failed"),
 		},
 	}
 

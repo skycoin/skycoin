@@ -36,7 +36,6 @@ func NewGatewayConfig() GatewayConfig {
 type Gateway struct {
 	Config GatewayConfig
 	drpc   RPC
-	vrpc   visor.RPC
 
 	// Backref to Daemon
 	d *Daemon
@@ -52,7 +51,6 @@ func NewGateway(c GatewayConfig, d *Daemon) *Gateway {
 	return &Gateway{
 		Config:   c,
 		drpc:     RPC{},
-		vrpc:     visor.MakeRPC(d.Visor.v),
 		d:        d,
 		v:        d.Visor.v,
 		requests: make(chan strand.Request, c.BufferSize),
@@ -153,7 +151,7 @@ func (gw *Gateway) GetBlockchainMetadata() (*visor.BlockchainMetadata, error) {
 	var bcm *visor.BlockchainMetadata
 	var err error
 	gw.strand("GetBlockchainMetadata", func() {
-		bcm, err = gw.vrpc.GetBlockchainMetadata(gw.v)
+		bcm, err = gw.v.GetBlockchainMetadata()
 	})
 	return bcm, err
 }
@@ -197,7 +195,7 @@ func (gw *Gateway) GetBlockBySeq(seq uint64) (block coin.SignedBlock, ok bool) {
 func (gw *Gateway) GetBlocks(start, end uint64) (*visor.ReadableBlocks, error) {
 	var blocks []coin.SignedBlock
 	gw.strand("GetBlocks", func() {
-		blocks = gw.vrpc.GetBlocks(gw.v, start, end)
+		blocks = gw.v.GetBlocks(start, end)
 	})
 
 	return visor.NewReadableBlocks(blocks)
@@ -211,7 +209,7 @@ func (gw *Gateway) GetBlocksInDepth(vs []uint64) (*visor.ReadableBlocks, error) 
 	gw.strand("GetBlocksInDepth", func() {
 		for _, n := range vs {
 			var b *coin.SignedBlock
-			b, err = gw.vrpc.GetBlockBySeq(gw.v, n)
+			b, err = gw.v.GetBlockBySeq(n)
 			if err != nil {
 				err = fmt.Errorf("get block %v failed: %v", n, err)
 				return
@@ -236,7 +234,7 @@ func (gw *Gateway) GetBlocksInDepth(vs []uint64) (*visor.ReadableBlocks, error) 
 func (gw *Gateway) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error) {
 	var blocks []coin.SignedBlock
 	gw.strand("GetLastBlocks", func() {
-		blocks = gw.vrpc.GetLastBlocks(gw.v, num)
+		blocks = gw.v.GetLastBlocks(num)
 	})
 
 	return visor.NewReadableBlocks(blocks)
@@ -370,19 +368,70 @@ func (gw *Gateway) GetTransaction(txid cipher.SHA256) (tx *visor.Transaction, er
 	return
 }
 
+// TransactionResult represents transaction result
+type TransactionResult struct {
+	Status      visor.TransactionStatus   `json:"status"`
+	Time        uint64                    `json:"time"`
+	Transaction visor.ReadableTransaction `json:"txn"`
+}
+
+// NewTransactionResult converts Transaction to TransactionResult
+func NewTransactionResult(tx *visor.Transaction) (*TransactionResult, error) {
+	if tx == nil {
+		return nil, nil
+	}
+
+	rbTx, err := visor.NewReadableTransaction(tx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &TransactionResult{
+		Transaction: *rbTx,
+		Status:      tx.Status,
+		Time:        tx.Time,
+	}, nil
+}
+
+// TransactionResults array of transaction results
+type TransactionResults struct {
+	Txns []TransactionResult `json:"txns"`
+}
+
+// NewTransactionResults converts []Transaction to []TransactionResults
+func NewTransactionResults(txs []visor.Transaction) (*TransactionResults, error) {
+	txRlts := make([]TransactionResult, 0, len(txs))
+	for _, tx := range txs {
+		rbTx, err := visor.NewReadableTransaction(&tx)
+		if err != nil {
+			return nil, err
+		}
+
+		txRlts = append(txRlts, TransactionResult{
+			Transaction: *rbTx,
+			Status:      tx.Status,
+			Time:        tx.Time,
+		})
+	}
+
+	return &TransactionResults{
+		Txns: txRlts,
+	}, nil
+}
+
 // GetTransactionResult gets transaction result by txid.
-func (gw *Gateway) GetTransactionResult(txid cipher.SHA256) (*visor.TransactionResult, error) {
+func (gw *Gateway) GetTransactionResult(txid cipher.SHA256) (*TransactionResult, error) {
 	var tx *visor.Transaction
 	var err error
 	gw.strand("GetTransactionResult", func() {
-		tx, err = gw.vrpc.GetTransaction(gw.v, txid)
+		tx, err = gw.v.GetTransaction(txid)
 	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	return visor.NewTransactionResult(tx)
+	return NewTransactionResult(tx)
 }
 
 // InjectBroadcastTransaction injects and broadcasts a transaction
@@ -394,20 +443,20 @@ func (gw *Gateway) InjectBroadcastTransaction(txn coin.Transaction) error {
 	return err
 }
 
-// GetAddressTxns returns a *visor.TransactionResults
-func (gw *Gateway) GetAddressTxns(a cipher.Address) (*visor.TransactionResults, error) {
+// GetAddressTxns returns a *TransactionResults
+func (gw *Gateway) GetAddressTxns(a cipher.Address) (*TransactionResults, error) {
 	var txs []visor.Transaction
 	var err error
 
 	gw.strand("GetAddressesTxns", func() {
-		txs, err = gw.vrpc.GetAddressTxns(gw.v, a)
+		txs, err = gw.v.GetAddressTxns(a)
 	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	return visor.NewTransactionResults(txs)
+	return NewTransactionResults(txs)
 }
 
 // GetTransactions returns transactions filtered by zero or more visor.TxFilter
@@ -520,7 +569,7 @@ func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest ciphe
 		unspent := gw.v.Blockchain.Unspent()
 		sv := newSpendValidator(gw.v.Unconfirmed, unspent)
 		// create and sign transaction
-		tx, err = gw.vrpc.CreateAndSignTransaction(wltID, password, sv, unspent, gw.v.Blockchain.Time(), coins, dest)
+		tx, err = gw.v.Wallets.CreateAndSignTransaction(wltID, password, sv, unspent, gw.v.Blockchain.Time(), coins, dest)
 		if err != nil {
 			logger.Errorf("Create transaction failed: %v", err)
 			return
@@ -553,7 +602,7 @@ func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*co
 		sv := newSpendValidator(gw.v.Unconfirmed, unspent)
 
 		// Create and sign transaction
-		txn, inputs, err = gw.vrpc.CreateAndSignTransactionAdvanced(params, sv, unspent, gw.v.Blockchain.Time())
+		txn, inputs, err = gw.v.Wallets.CreateAndSignTransactionAdvanced(params, sv, unspent, gw.v.Blockchain.Time())
 		if err != nil {
 			logger.WithError(err).Error("CreateAndSignTransactionAdvanced failed")
 			return
@@ -632,17 +681,17 @@ func (gw *Gateway) GetWalletBalance(wltID string) (wallet.BalancePair, error) {
 		if err != nil {
 			return
 		}
-		auxs := gw.vrpc.GetUnspent(gw.v).GetUnspentsOfAddrs(addrs)
+		auxs := gw.v.Blockchain.Unspent().GetUnspentsOfAddrs(addrs)
 
 		var spendUxs coin.AddressUxOuts
-		spendUxs, err = gw.vrpc.GetUnconfirmedSpends(gw.v, addrs)
+		spendUxs, err = gw.v.GetUnconfirmedSpends(addrs)
 		if err != nil {
 			err = fmt.Errorf("get unconfimed spending failed when checking wallet balance: %v", err)
 			return
 		}
 
 		var recvUxs coin.AddressUxOuts
-		recvUxs, err = gw.vrpc.GetUnconfirmedReceiving(gw.v, addrs)
+		recvUxs, err = gw.v.GetUnconfirmedReceiving(addrs)
 		if err != nil {
 			err = fmt.Errorf("get unconfirmed receiving failed when when checking wallet balance: %v", err)
 			return
@@ -724,7 +773,7 @@ func (gw *Gateway) GetWallet(wltID string) (*wallet.Wallet, error) {
 	var w *wallet.Wallet
 	var err error
 	gw.strand("GetWallet", func() {
-		w, err = gw.vrpc.GetWallet(wltID)
+		w, err = gw.v.Wallets.GetWallet(wltID)
 	})
 	return w, err
 }
@@ -784,7 +833,7 @@ func (gw *Gateway) UnloadWallet(id string) error {
 	}
 
 	gw.strand("UnloadWallet", func() {
-		gw.vrpc.UnloadWallet(id)
+		gw.v.Wallets.Remove(id)
 	})
 
 	return nil
@@ -882,7 +931,7 @@ func (gw *Gateway) GetHealth() (*Health, error) {
 	var err error
 	gw.strand("GetHealth", func() {
 		var metadata *visor.BlockchainMetadata
-		metadata, err = gw.vrpc.GetBlockchainMetadata(gw.v)
+		metadata, err = gw.v.GetBlockchainMetadata()
 		if err != nil {
 			return
 		}

@@ -140,29 +140,7 @@ Access the API: [http://localhost:6420/version](http://localhost:6420/version).
 
 ### Building your own images
 
-There is a Dockerfile in docker/images/mainnet that you can use to build your
-own image. By default it will build your working copy, but if you pass the
-SKYCOIN_VERSION build argument to the `docker build` command, it will checkout
-to the branch, a tag or a commit you specify on that variable.
-
-Example
-
-```sh
-$ git clone https://github.com/skycoin/skycoin
-$ cd skycoin
-$ SKYCOIN_VERSION=v0.23.0
-$ docker build -f docker/images/mainnet/Dockerfile \
-  --build-arg=SKYCOIN_VERSION=$SKYCOIN_VERSION \
-  -t skycoin:$SKYCOIN_VERSION .
-```
-
-or just
-
-```sh
-$ docker build -f docker/images/mainnet/Dockerfile \
-  --build-arg=SKYCOIN_VERSION=v0.23.0 \
-  -t skycoin:v0.23.0 .
-```
+[DOCKER BUILD](docker/images/mainnet/README.md).
 
 ## API Documentation
 

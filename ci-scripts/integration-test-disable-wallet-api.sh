@@ -6,9 +6,9 @@
 #Set Script Name variable
 SCRIPT=`basename ${BASH_SOURCE[0]}`
 PORT="46421"
-RPC_PORT="46431"
+RPC_PORT="$PORT"
 HOST="http://127.0.0.1:$PORT"
-RPC_ADDR="127.0.0.1:$RPC_PORT"
+RPC_ADDR="http://127.0.0.1:$RPC_PORT"
 MODE="disable-wallet-api"
 BINARY="skycoin-integration"
 TEST=""
@@ -71,7 +71,6 @@ echo "starting skycoin node in background with http listener on $HOST"
                       -db-path=./src/gui/integration/test-fixtures/blockchain-180.db \
                       -db-read-only=true \
                       -rpc-interface=true \
-                      -rpc-interface-port=$RPC_PORT \
                       -launch-browser=false \
                       -data-dir="$DATA_DIR" \
                       -wallet-dir="$WALLET_DIR" \

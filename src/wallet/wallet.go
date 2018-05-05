@@ -17,7 +17,6 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/visor/blockdb"
 
 	"github.com/shopspring/decimal"
 
@@ -939,24 +938,10 @@ type Validator interface {
 
 // CreateAndSignTransaction Creates a Transaction
 // spending coins and hours from wallet
-func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.UnspentGetter,
-	headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
+func (w *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
 	if w.IsEncrypted() {
 		return nil, ErrWalletEncrypted
 	}
-
-	addrs := w.GetAddresses()
-	ok, err := vld.HasUnconfirmedSpendTx(addrs)
-	if err != nil {
-		return nil, fmt.Errorf("checking unconfirmed spending failed: %v", err)
-	}
-
-	if ok {
-		return nil, ErrSpendingUnconfirmed
-	}
-
-	txn := coin.Transaction{}
-	auxs := unspent.GetUnspentsOfAddrs(addrs)
 
 	// Determine which unspents to spend.
 	// Use the MaximizeUxOuts strategy, this will keep the uxout pool smaller
@@ -972,6 +957,7 @@ func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspent
 	}
 
 	// Add these unspents as tx inputs
+	var txn coin.Transaction
 	toSign := make([]cipher.SecKey, len(spends))
 	spending := Balance{Coins: 0, Hours: 0}
 	for i, au := range spends {
@@ -1022,8 +1008,7 @@ func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspent
 
 // CreateAndSignTransactionAdvanced creates and signs a transaction based upon CreateTransactionParams.
 // Set the password as nil if the wallet is not encrypted, otherwise the password must be provided
-func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams, vld Validator,
-	unspent blockdb.UnspentGetter, headTime uint64) (*coin.Transaction, []UxBalance, error) {
+func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []UxBalance, error) {
 	if err := params.Validate(); err != nil {
 		return nil, nil, err
 	}
@@ -1036,11 +1021,9 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 		return nil, nil, ErrWalletEncrypted
 	}
 
-	addrList := make([]cipher.Address, 0)
 	entriesMap := make(map[cipher.Address]Entry)
 	if len(params.Wallet.Addresses) == 0 {
 		for _, e := range w.Entries {
-			addrList = append(addrList, e.Address)
 			entriesMap[e.Address] = e
 		}
 	} else {
@@ -1049,24 +1032,11 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 			if !ok {
 				return nil, nil, ErrUnknownAddress
 			}
-			addrList = append(addrList, e.Address)
 			entriesMap[e.Address] = e
 		}
 	}
 
-	ok, err := vld.HasUnconfirmedSpendTx(addrList)
-	if err != nil {
-		// The error from HasUnconfirmedSpendTx isn't wrapped with wallet.Error because
-		// it is from outside the wallet package and is likely some database or other
-		// unexpected failure
-		return nil, nil, fmt.Errorf("checking unconfirmed spending failed: %v", err)
-	}
-	if ok {
-		return nil, nil, ErrSpendingUnconfirmed
-	}
-
 	txn := &coin.Transaction{}
-	auxs := unspent.GetUnspentsOfAddrs(addrList)
 
 	// Determine which unspents to spend
 	uxa := auxs.Flatten()

@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"errors"
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -16,7 +17,10 @@ import (
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
-// Exposes a read-only api for use by the gui rpc interface
+var (
+	// ErrSpendingUnconfirmed is returned if caller attempts to spend unconfirmed outputs
+	ErrSpendingUnconfirmed = errors.New("please spend after your pending transaction is confirmed")
+)
 
 // GatewayConfig configuration set of gateway.
 type GatewayConfig struct {
@@ -565,11 +569,26 @@ func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest ciphe
 	var tx *coin.Transaction
 	var err error
 	gw.strand("Spend", func() {
-		// create spend validator
-		unspent := gw.v.Blockchain.Unspent()
-		sv := newSpendValidator(gw.v.Unconfirmed, unspent)
-		// create and sign transaction
-		tx, err = gw.v.Wallets.CreateAndSignTransaction(wltID, password, sv, unspent, gw.v.Blockchain.Time(), coins, dest)
+		// Get all addresses from the wallet
+		var addrs []cipher.Address
+		addrs, err = gw.v.Wallets.GetAddresses(wltID)
+		if err != nil {
+			logger.WithError(err).Error("Wallet.GetAddresseses failed")
+			return
+		}
+
+		// Get unspent outputs, while checking that there are no unconfirmed outputs
+		var auxs coin.AddressUxOuts
+		auxs, err = gw.getUnspentsForSpending(addrs)
+		if err != nil {
+			if err != ErrSpendingUnconfirmed {
+				logger.WithError(err).Error("getUnspentsForSpending failed")
+			}
+			return
+		}
+
+		// Create and sign transaction
+		tx, err = gw.v.Wallets.CreateAndSignTransaction(wltID, password, auxs, gw.v.Blockchain.Time(), coins, dest)
 		if err != nil {
 			logger.Errorf("Create transaction failed: %v", err)
 			return
@@ -597,12 +616,28 @@ func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*co
 	var err error
 
 	gw.strand("CreateTransaction", func() {
-		// Create spend validator
-		unspent := gw.v.Blockchain.Unspent()
-		sv := newSpendValidator(gw.v.Unconfirmed, unspent)
+		// Use selected addresses or get all addresses from the wallet
+		addrs := params.Wallet.Addresses
+		if len(addrs) == 0 {
+			addrs, err = gw.v.Wallets.GetAddresseses(params.Wallet.ID)
+			if err != nil {
+				logger.WithError(err).Error("Wallet.GetAddresseses failed")
+				return
+			}
+		}
+
+		// Get unspent outputs, while checking that there are no unconfirmed outputs
+		var auxs coin.AddressUxOuts
+		auxs, err = gw.getUnspentsForSpending(addrs)
+		if err != nil {
+			if err != ErrSpendingUnconfirmed {
+				logger.WithError(err).Error("getUnspentsForSpending failed")
+			}
+			return
+		}
 
 		// Create and sign transaction
-		txn, inputs, err = gw.v.Wallets.CreateAndSignTransactionAdvanced(params, sv, unspent, gw.v.Blockchain.Time())
+		txn, inputs, err = gw.v.Wallets.CreateAndSignTransactionAdvanced(params, auxs, gw.v.Blockchain.Time())
 		if err != nil {
 			logger.WithError(err).Error("CreateAndSignTransactionAdvanced failed")
 			return
@@ -623,6 +658,29 @@ func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*co
 	}
 
 	return txn, inputs, err
+}
+
+// getUnspentsForSpending returns the unspent outputs for a set of addresses,
+// but returns an error if any of the unspents are in the unconfirmed outputs pool
+func (gw *Gateway) getUnspentsForSpending(addrs []cipher.Address) (coin.AddressUxOuts, error) {
+	auxs, err := gw.v.GetUnconfirmedSpends(addrs)
+	if err != nil {
+		err = fmt.Errorf("UnconfirmedSpendsOfAddresses failed: %v", err)
+		return nil, err
+	}
+
+	// Check that this is not trying to spend unconfirmed outputs
+	if len(auxs) > 0 {
+		return nil, ErrSpendingUnconfirmed
+	}
+
+	auxs, err = gw.v.GetUnspentsOfAddrs(addrs)
+	if err != nil {
+		err = fmt.Errorf("GetUnspentsOfAddrs failed: %v", err)
+		return nil, err
+	}
+
+	return auxs, nil
 }
 
 // CreateWallet creates wallet

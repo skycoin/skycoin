@@ -1122,6 +1122,20 @@ func (vs Visor) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair,
 	return bps, nil
 }
 
+// GetUnspentsOfAddrs returns unspent outputs for a set of addresses
+func (vs *Visor) GetUnspentsOfAddrs(addrs []cipher.Address) (coin.AddressUxOuts, error) {
+	var auxs coin.AddressUxOuts
+	if err := vs.db.View(func(tx *bolt.Tx) error {
+		var err error
+		auxs, err = vs.Blockchain.Unspent().GetUnspentsOfAddrs(tx, addrs)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return auxs, nil
+}
+
 // GetUnconfirmedSpends returns unspent outputs that are spent in unconfirmed transactions
 func (vs *Visor) GetUnconfirmedSpends(addrs []cipher.Address) (coin.AddressUxOuts, error) {
 	return vs.Unconfirmed.SpendsOfAddresses(addrs, vs.Blockchain.Unspent())

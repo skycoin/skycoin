@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/boltdb/bolt"
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -19,10 +20,42 @@ var _ = func() int64 {
 	return t
 }()
 
+func TestGetLastTxs(t *testing.T) {
+	testData := []uint64{0, 3, lastTxNum, lastTxNum + 10}
+	for i := range testData {
+		func(i uint64) {
+			db, teardown := testutil.PrepareDB(t)
+			defer teardown()
+
+			txIns, err := newTransactions(db)
+			require.NoError(t, err)
+
+			var txns []cipher.SHA256
+			err = db.Update(func(tx *bolt.Tx) error {
+				for j := uint64(0); j < testData[i]; j++ {
+					txn := makeTransaction(t)
+					txns = append(txns, txn.Hash())
+					err := txIns.Add(tx, &txn)
+					require.NoError(t, err)
+				}
+				return nil
+			})
+			require.NoError(t, err)
+
+			if testData[i] > lastTxNum {
+				txns = txns[len(txns)-lastTxNum:]
+			}
+
+			lastTxHash := txIns.GetLastTxs()
+			require.Equal(t, txns, lastTxHash)
+		}(uint64(i))
+	}
+}
+
 func TestTransactionGet(t *testing.T) {
-	txs := make([]Transaction, 0, 3)
+	txns := make([]Transaction, 0, 3)
 	for i := 0; i < 3; i++ {
-		txs = append(txs, makeTransaction())
+		txns = append(txns, makeTransaction(t))
 	}
 
 	testCases := []struct {
@@ -32,17 +65,17 @@ func TestTransactionGet(t *testing.T) {
 	}{
 		{
 			"get first",
-			txs[0].Hash(),
-			&txs[0],
+			txns[0].Hash(),
+			&txns[0],
 		},
 		{
 			"get second",
-			txs[1].Hash(),
-			&txs[1],
+			txns[1].Hash(),
+			&txns[1],
 		},
 		{
 			"not exist",
-			txs[2].Hash(),
+			txns[2].Hash(),
 			nil,
 		},
 	}
@@ -51,26 +84,36 @@ func TestTransactionGet(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			db, td := testutil.PrepareDB(t)
 			defer td()
-			txsBkt, err := newTransactionsBkt(db)
-			require.Nil(t, err)
+
+			txsBkt, err := newTransactions(db)
+			require.NoError(t, err)
 
 			// init the bkt
-			for _, tx := range txs[:2] {
-				require.Nil(t, txsBkt.Add(&tx))
-			}
+			err = db.Update(func(tx *bolt.Tx) error {
+				for _, txn := range txns[:2] {
+					err := txsBkt.Add(tx, &txn)
+					require.NoError(t, err)
+				}
+				return nil
+			})
+			require.NoError(t, err)
 
 			// get slice
-			ts, err := txsBkt.Get(tc.hash)
-			require.Nil(t, err)
-			require.Equal(t, tc.expect, ts)
+			err = db.View(func(tx *bolt.Tx) error {
+				ts, err := txsBkt.Get(tx, tc.hash)
+				require.NoError(t, err)
+				require.Equal(t, tc.expect, ts)
+				return nil
+			})
+			require.NoError(t, err)
 		})
 	}
 }
 
 func TestTransactionGetSlice(t *testing.T) {
-	txs := make([]Transaction, 0, 4)
+	txns := make([]Transaction, 0, 4)
 	for i := 0; i < 4; i++ {
-		txs = append(txs, makeTransaction())
+		txns = append(txns, makeTransaction(t))
 	}
 
 	testCases := []struct {
@@ -81,33 +124,33 @@ func TestTransactionGetSlice(t *testing.T) {
 		{
 			"get one",
 			[]cipher.SHA256{
-				txs[0].Hash(),
+				txns[0].Hash(),
 			},
-			txs[:1],
+			txns[:1],
 		},
 		{
 			"get two",
 			[]cipher.SHA256{
-				txs[0].Hash(),
-				txs[1].Hash(),
+				txns[0].Hash(),
+				txns[1].Hash(),
 			},
-			txs[:2],
+			txns[:2],
 		},
 		{
 			"get all",
 			[]cipher.SHA256{
-				txs[0].Hash(),
-				txs[1].Hash(),
-				txs[2].Hash(),
+				txns[0].Hash(),
+				txns[1].Hash(),
+				txns[2].Hash(),
 			},
-			txs[:3],
+			txns[:3],
 		},
 		{
 			"not exist",
 			[]cipher.SHA256{
-				txs[3].Hash(),
+				txns[3].Hash(),
 			},
-			[]Transaction{},
+			nil,
 		},
 	}
 
@@ -115,25 +158,34 @@ func TestTransactionGetSlice(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			db, td := testutil.PrepareDB(t)
 			defer td()
-			txsBkt, err := newTransactionsBkt(db)
-			require.Nil(t, err)
+			txsBkt, err := newTransactions(db)
+			require.NoError(t, err)
 
 			// init the bkt
-			for _, tx := range txs[:3] {
-				require.Nil(t, txsBkt.Add(&tx))
-			}
+			err = db.Update(func(tx *bolt.Tx) error {
+				for _, txn := range txns[:3] {
+					err := txsBkt.Add(tx, &txn)
+					require.NoError(t, err)
+				}
+				return nil
+			})
+			require.NoError(t, err)
 
 			// get slice
-			ts, err := txsBkt.GetSlice(tc.hashes)
-			require.Nil(t, err)
-			require.Equal(t, tc.expect, ts)
+			err = db.View(func(tx *bolt.Tx) error {
+				ts, err := txsBkt.GetSlice(tx, tc.hashes)
+				require.NoError(t, err)
+				require.Equal(t, tc.expect, ts)
+				return nil
+			})
+			require.NoError(t, err)
 		})
 	}
 }
 
-func makeTransaction() Transaction {
+func makeTransaction(t *testing.T) Transaction {
 	tx := Transaction{}
-	ux, s := makeUxOutWithSecret()
+	ux, s := makeUxOutWithSecret(t)
 	tx.Tx.PushInput(ux.Hash())
 	tx.Tx.SignInputs([]cipher.SecKey{s})
 	tx.Tx.PushOutput(makeAddress(), 1e6, 50)
@@ -147,18 +199,18 @@ func makeAddress() cipher.Address {
 	return cipher.AddressFromPubKey(p)
 }
 
-func makeUxBodyWithSecret() (coin.UxBody, cipher.SecKey) {
+func makeUxBodyWithSecret(t *testing.T) (coin.UxBody, cipher.SecKey) {
 	p, s := cipher.GenerateKeyPair()
 	return coin.UxBody{
-		SrcTransaction: cipher.SumSHA256(randBytes(128)),
+		SrcTransaction: testutil.RandSHA256(t),
 		Address:        cipher.AddressFromPubKey(p),
 		Coins:          1e6,
 		Hours:          100,
 	}, s
 }
 
-func makeUxOutWithSecret() (coin.UxOut, cipher.SecKey) {
-	body, sec := makeUxBodyWithSecret()
+func makeUxOutWithSecret(t *testing.T) (coin.UxOut, cipher.SecKey) {
+	body, sec := makeUxBodyWithSecret(t)
 	return coin.UxOut{
 		Head: coin.UxHead{
 			Time:  100,
@@ -166,10 +218,4 @@ func makeUxOutWithSecret() (coin.UxOut, cipher.SecKey) {
 		},
 		Body: body,
 	}, sec
-}
-
-func randBytes(n int) []byte {
-	b := make([]byte, n)
-	rand.Read(b)
-	return b
 }

@@ -13,11 +13,12 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
 // loadBlockchain loads blockchain from DB and if any error occurs then delete
 // the db and create an empty blockchain.
-func loadBlockchain(db *bolt.DB, pubkey cipher.PubKey, arbitrating bool) (*bolt.DB, *Blockchain, error) {
+func loadBlockchain(db *dbutil.DB, pubkey cipher.PubKey, arbitrating bool) (*dbutil.DB, *Blockchain, error) {
 	logger.Info("Loading blockchain")
 
 	bc, err := NewBlockchain(db, pubkey, Arbitrating(arbitrating))
@@ -61,7 +62,7 @@ func loadBlockchain(db *bolt.DB, pubkey cipher.PubKey, arbitrating bool) (*bolt.
 }
 
 // OpenDB opens the blockdb
-func OpenDB(dbFile string, readOnly bool) (*bolt.DB, error) {
+func OpenDB(dbFile string, readOnly bool) (*dbutil.DB, error) {
 	db, err := bolt.Open(dbFile, 0600, &bolt.Options{
 		Timeout:  500 * time.Millisecond,
 		ReadOnly: readOnly,
@@ -70,7 +71,7 @@ func OpenDB(dbFile string, readOnly bool) (*bolt.DB, error) {
 		return nil, fmt.Errorf("Open boltdb failed, %v", err)
 	}
 
-	return db, nil
+	return dbutil.WrapDB(db), nil
 }
 
 // moveCorruptDB moves a file to makeCorruptDBPath(dbPath)

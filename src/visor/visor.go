@@ -14,6 +14,7 @@ import (
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
 
@@ -245,11 +246,11 @@ type Visor struct {
 
 	history  historyer
 	bcParser *BlockchainParser
-	db       *bolt.DB
+	db       *dbutil.DB
 }
 
 // NewVisor creates a Visor for managing the blockchain database
-func NewVisor(c Config, db *bolt.DB) (*Visor, error) {
+func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
 	logger.Debug("Creating new visor")
 	if c.IsMaster {
 		logger.Debug("Visor is master")
@@ -321,6 +322,7 @@ func (vs *Visor) Shutdown() {
 
 	vs.bcParser.Shutdown()
 
+	logger.Info("Closing visor bolt DB")
 	if err := vs.db.Close(); err != nil {
 		logger.Errorf("db.Close() error: %v", err)
 	}

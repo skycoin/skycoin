@@ -13,6 +13,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
 var (
@@ -256,7 +257,7 @@ func createGenesisSpendTransaction(t *testing.T, bc *Blockchain, toAddr cipher.A
 	return txn
 }
 
-func executeGenesisSpendTransaction(t *testing.T, db *bolt.DB, bc *Blockchain, txn coin.Transaction) coin.UxOut {
+func executeGenesisSpendTransaction(t *testing.T, db *dbutil.DB, bc *Blockchain, txn coin.Transaction) coin.UxOut {
 	block, err := bc.NewBlock(coin.Transactions{txn}, GenesisTime+TimeIncrement)
 	require.NoError(t, err)
 

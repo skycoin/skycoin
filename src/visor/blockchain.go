@@ -11,6 +11,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
 const (
@@ -58,7 +59,7 @@ type BlockListener func(b coin.Block)
 
 // Blockchain maintains blockchain and provides apis for accessing the chain.
 type Blockchain struct {
-	db          *bolt.DB
+	db          *dbutil.DB
 	pubkey      cipher.PubKey
 	blkListener []BlockListener
 
@@ -78,7 +79,7 @@ func DefaultWalker(hps []coin.HashPair) cipher.SHA256 {
 }
 
 // NewBlockchain use the walker go through the tree and update the head and unspent outputs.
-func NewBlockchain(db *bolt.DB, pubkey cipher.PubKey, ops ...Option) (*Blockchain, error) {
+func NewBlockchain(db *dbutil.DB, pubkey cipher.PubKey, ops ...Option) (*Blockchain, error) {
 	chainstore, err := blockdb.NewBlockchain(db, DefaultWalker)
 	if err != nil {
 		return nil, err

@@ -11,7 +11,12 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
-	"github.com/skycoin/skycoin/src/visor/bucket"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
+)
+
+var (
+	unconfirmedTxnsBkt     = []byte("unconfirmed_txns")
+	unconfirmedUnspentsBkt = []byte("unconfirmed_unspents")
 )
 
 // TxnUnspents maps from coin.Transaction hash to its expected unspents.  The unspents'
@@ -50,18 +55,7 @@ func (ut *UnconfirmedTxn) Hash() cipher.SHA256 {
 }
 
 // unconfirmed transactions bucket
-type uncfmTxnBkt struct {
-	txns *bucket.Bucket
-}
-
-func newUncfmTxBkt(db *bolt.DB) *uncfmTxnBkt {
-	bkt, err := bucket.New([]byte("unconfirmed_txns"), db)
-	if err != nil {
-		panic(err)
-	}
-
-	return &uncfmTxnBkt{txns: bkt}
-}
+type uncfmTxnBkt struct{}
 
 func (utb *uncfmTxnBkt) get(hash cipher.SHA256) (*UnconfirmedTxn, bool) {
 	v := utb.txns.Get([]byte(hash.Hex()))
@@ -167,18 +161,7 @@ func (utb *uncfmTxnBkt) len() int {
 	return utb.txns.Len()
 }
 
-type txUnspents struct {
-	bkt *bucket.Bucket
-}
-
-func newTxUnspents(db *bolt.DB) *txUnspents {
-	bkt, err := bucket.New([]byte("unconfirmed_unspents"), db)
-	if err != nil {
-		panic(err)
-	}
-
-	return &txUnspents{bkt: bkt}
-}
+type txUnspents struct{}
 
 func (txus *txUnspents) putWithTx(tx *bolt.Tx, key cipher.SHA256, uxs coin.UxArray) error {
 	v := encoder.Serialize(uxs)
@@ -250,11 +233,31 @@ type UnconfirmedTxnPool struct {
 }
 
 // NewUnconfirmedTxnPool creates an UnconfirmedTxnPool instance
-func NewUnconfirmedTxnPool(db *bolt.DB) *UnconfirmedTxnPool {
-	return &UnconfirmedTxnPool{
-		txns:    newUncfmTxBkt(db),
-		unspent: newTxUnspents(db),
+func NewUnconfirmedTxnPool(db *dbutil.DB) (*UnconfirmedTxnPool, error) {
+	if err := db.Update(func(tx *bolt.Tx) error {
+		if err := dbutil.CreateBuckets(tx, [][]byte{
+			unconfirmedTxnsBkt,
+			unconfirmedUnspentsBkt,
+		}); err != nil {
+			return err
+		}
+
+		n, err := dbutil.Len(tx, unconfirmedTxnsBkt)
+		if err != nil {
+			return err
+		}
+
+		logger.Info("Unconfirmed transaction pool size: %d", n)
+		return nil
+	}); err != nil {
+		return nil, err
 	}
+
+	return &UnconfirmedTxnPool{
+		db:      db,
+		txns:    &unconfirmedTxns{},
+		unspent: &txUnspents{},
+	}, nil
 }
 
 // SetAnnounced updates announced time of specific tx

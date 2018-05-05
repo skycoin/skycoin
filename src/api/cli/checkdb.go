@@ -10,6 +10,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
 const (
@@ -55,7 +56,7 @@ func checkdb(c *gcli.Context) error {
 		return fmt.Errorf("decode genesis pubkey failed: %v", err)
 	}
 
-	if err := IntegrityCheck(db, pubkey); err != nil {
+	if err := IntegrityCheck(dbutil.WrapDB(db), pubkey); err != nil {
 		return fmt.Errorf("checkdb failed: %v", err)
 	}
 
@@ -64,7 +65,7 @@ func checkdb(c *gcli.Context) error {
 }
 
 // IntegrityCheck checks database integrity
-func IntegrityCheck(db *bolt.DB, genesisPubkey cipher.PubKey) error {
+func IntegrityCheck(db *dbutil.DB, genesisPubkey cipher.PubKey) error {
 	_, err := visor.NewBlockchain(db, genesisPubkey, visor.Arbitrating(true))
 	return err
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
 var (
@@ -67,7 +68,7 @@ func MakeTransactionForChain(t *testing.T, bc *visor.Blockchain, ux coin.UxOut, 
 	return tx
 }
 
-func MakeBlockchain(t *testing.T, db *bolt.DB, seckey cipher.SecKey) *visor.Blockchain {
+func MakeBlockchain(t *testing.T, db *dbutil.DB, seckey cipher.SecKey) *visor.Blockchain {
 	pubkey := cipher.PubKeyFromSecKey(seckey)
 	b, err := visor.NewBlockchain(db, pubkey)
 	require.NoError(t, err)
@@ -111,7 +112,7 @@ func createGenesisSpendTransaction(t *testing.T, bc *visor.Blockchain, toAddr ci
 	return txn
 }
 
-func setupSimpleVisor(db *bolt.DB, bc *visor.Blockchain) *Visor {
+func setupSimpleVisor(db *dbutil.DB, bc *visor.Blockchain) *Visor {
 	visorCfg := NewVisorConfig()
 	visorCfg.DisableNetworking = true
 	visorCfg.Config.DBPath = db.Path()
@@ -121,6 +122,7 @@ func setupSimpleVisor(db *bolt.DB, bc *visor.Blockchain) *Visor {
 			Config:      visorCfg.Config,
 			Unconfirmed: visor.NewUnconfirmedTxnPool(db),
 			Blockchain:  bc,
+			db:          db,
 		},
 		reqC: make(chan strand.Request, 10),
 	}

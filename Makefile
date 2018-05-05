@@ -1,6 +1,7 @@
 .DEFAULT_GOAL := help
 .PHONY: run run-help test test-core test-libc test-lint build-libc check cover
-.PHONY: integration-test-stable integration-test-live integration-test-live-wallet
+.PHONY: integration-test-stable integration-test-stable-disable-csrf
+.PHONY: integration-test-live integration-test-live-wallet
 .PHONY: integration-test-disable-wallet-api integration-test-disable-seed-api
 .PHONY: install-linters format release clean-release install-deps-ui build-ui help
 
@@ -129,21 +130,27 @@ lint: ## Run linters. Use make install-linters first.
 		-E varcheck \
 		./...
 	# lib cgo can't use golint because it needs export directives in function docstrings that do not obey golint rules
-	gometalinter --deadline=3m --concurrency=2 --disable-all --tests --vendor --skip=lib/cgo \
+	gometalinter --deadline=3m --concurrency=2 --disable-all --tests --vendor \
 		-E goimports \
 		-E varcheck \
-		./...
+		./lib/cgo/...
 
-check: lint test integration-test-stable integration-test-disable-wallet-api integration-test-disable-seed-api ## Run tests and linters
+check: lint test integration-test-stable integration-test-stable-disable-csrf integration-test-disable-wallet-api integration-test-disable-seed-api ## Run tests and linters
 
 integration-test-stable: ## Run stable integration tests
+	./ci-scripts/integration-test-stable.sh -c
+
+integration-test-stable-disable-csrf: ## Run stable integration tests with CSRF disabled
 	./ci-scripts/integration-test-stable.sh
 
 integration-test-live: ## Run live integration tests
-	./ci-scripts/integration-test-live.sh
+	./ci-scripts/integration-test-live.sh -c
 
 integration-test-live-wallet: ## Run live integration tests with wallet
 	./ci-scripts/integration-test-live.sh -w
+
+integration-test-live-disable-csrf: ## Run live integration tests against a node with CSRF disabled
+	./ci-scripts/integration-test-live.sh
 
 integration-test-disable-wallet-api: ## Run disable wallet api integration tests
 	./ci-scripts/integration-test-disable-wallet-api.sh

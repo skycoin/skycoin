@@ -209,14 +209,14 @@ func TestXorSHA256(t *testing.T) {
 	assert.Equal(t, h.Xor(i), i.Xor(h))
 }
 
-func TestSHA256Empty(t *testing.T) {
+func TestSHA256Null(t *testing.T) {
 	var x SHA256
-	require.True(t, x.Empty())
+	require.True(t, x.Null())
 
 	b := randBytes(t, 128)
 	x = SumSHA256(b)
 
-	require.False(t, x.Empty())
+	require.False(t, x.Null())
 }
 
 func TestNextPowerOfTwo(t *testing.T) {

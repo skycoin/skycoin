@@ -1,12 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import * as moment from 'moment';
-import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-pending-transactions',
   templateUrl: './pending-transactions.component.html',
-  styleUrls: ['./pending-transactions.component.css']
+  styleUrls: ['./pending-transactions.component.scss']
 })
 export class PendingTransactionsComponent implements OnInit {
 
@@ -14,19 +13,14 @@ export class PendingTransactionsComponent implements OnInit {
 
   constructor(
     public walletService: WalletService,
-    private router: Router,
-  ) { }
+  ) {
+    this.walletService.startDataRefreshSubscription();
+  }
 
   ngOnInit() {
     this.walletService.pendingTransactions().subscribe(transactions => {
       this.transactions = this.mapTransactions(transactions);
     });
-  }
-
-  onActivate(response) {
-    if (response.row && response.row.txid) {
-      this.router.navigate(['/history', response.row.txid]);
-    }
   }
 
   private mapTransactions(transactions) {

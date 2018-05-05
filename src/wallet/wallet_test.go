@@ -66,7 +66,7 @@ func init() {
 			log.Panic(err)
 		}
 
-		if err := w.lock([]byte("pwd"), CryptoTypeScryptChacha20poly1305); err != nil {
+		if err := w.Lock([]byte("pwd"), CryptoTypeScryptChacha20poly1305); err != nil {
 			log.Panic(err)
 		}
 
@@ -368,7 +368,7 @@ func TestWalletLock(t *testing.T) {
 					require.NoError(t, err)
 				}
 
-				err = w.lock(tc.lockPwd, ct)
+				err = w.Lock(tc.lockPwd, ct)
 				require.Equal(t, tc.err, err)
 				if err != nil {
 					return
@@ -438,7 +438,7 @@ func TestWalletUnlock(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				w := makeWallet(t, tc.opts, 1)
 				// Tests the unlock method
-				wlt, err := w.unlock(tc.unlockPwd)
+				wlt, err := w.Unlock(tc.unlockPwd)
 				require.Equal(t, tc.err, err)
 				if err != nil {
 					return
@@ -494,11 +494,11 @@ func TestLockAndUnLock(t *testing.T) {
 			require.Equal(t, w, cw)
 
 			// lock the cloned wallet
-			err = cw.lock([]byte("pwd"), ct)
+			err = cw.Lock([]byte("pwd"), ct)
 			require.NoError(t, err)
 
 			// unlock the cloned wallet
-			ucw, err := cw.unlock([]byte("pwd"))
+			ucw, err := cw.Unlock([]byte("pwd"))
 			require.NoError(t, err)
 
 			require.Equal(t, w, ucw)
@@ -519,7 +519,7 @@ func makeWallet(t *testing.T, opts Options, addrNum uint64) *Wallet {
 		require.NoError(t, err)
 	}
 	if preOpts.Encrypt {
-		err = w.lock(preOpts.Password, preOpts.CryptoType)
+		err = w.Lock(preOpts.Password, preOpts.CryptoType)
 		require.NoError(t, err)
 	}
 	return w
@@ -868,7 +868,7 @@ func TestWalletGuard(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			require.NoError(t, w.guardUpdate([]byte("pwd"), func(w *Wallet) error {
+			require.NoError(t, w.GuardUpdate([]byte("pwd"), func(w *Wallet) error {
 				require.Equal(t, "seed", w.seed())
 				w.setLabel("label")
 				return nil
@@ -876,7 +876,7 @@ func TestWalletGuard(t *testing.T) {
 			require.Equal(t, "label", w.Label())
 			validate(w)
 
-			w.guardView([]byte("pwd"), func(w *Wallet) error {
+			w.GuardView([]byte("pwd"), func(w *Wallet) error {
 				require.Equal(t, "label", w.Label())
 				w.setLabel("new label")
 				return nil
@@ -1971,7 +1971,7 @@ func TestCreateWalletParamsVerify(t *testing.T) {
 					},
 				},
 			},
-			err: "To.Address must not be empty",
+			err: "To.Address must not be the null address",
 		},
 
 		{
@@ -1993,7 +1993,7 @@ func TestCreateWalletParamsVerify(t *testing.T) {
 					Addresses: []cipher.Address{cipher.Address{}},
 				},
 			},
-			err: "Wallet.Addresses must not contain an empty value",
+			err: "Wallet.Addresses must not contain the null address",
 		},
 
 		{

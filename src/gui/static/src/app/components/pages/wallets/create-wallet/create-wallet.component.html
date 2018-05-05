@@ -1,11 +1,18 @@
-<app-modal [title]="data.create ? 'Create Wallet' : 'Load Wallet'" [dialog]="dialogRef">
+<app-modal [title]="data.create ? 'Create Wallet' : 'Load Wallet'" [dialog]="dialogRef" [disableDismiss]="disableDismiss">
   <div [formGroup]="form">
     <div class="form-field">
       <label for="label">Name</label>
       <input formControlName="label" id="label">
     </div>
     <div class="form-field">
-      <label for="seed">Seed</label>
+      <label for="seed">
+        <span>Seed</span>
+        <span class="generators" *ngIf="data.create">
+          <span (click)="generateSeed(128)" matTooltip="Generate 12 word seed">12 words</span>
+          <span class="divider">|</span>
+          <span (click)="generateSeed(256)" matTooltip="Generate 24 word seed">24 words</span>
+        </span>
+      </label>
       <textarea formControlName="seed" id="seed" row="2"></textarea>
       <p class="-warning">
         Remember this seed! Keep it in a safe place.
@@ -26,6 +33,7 @@
         <p class="-info">
           We suggest that you encrypt each one of your wallets with a password.
           If you forget your password, you can reset it with your seed.
+          Make sure you have your seed saved somewhere safe before encrypting your wallet.
         </p>
       </div>
       <div class="col-md-6" [ngClass]="{ '-hidden': !encrypt }">
@@ -37,16 +45,16 @@
       <div class="col-md-6" [ngClass]="{ '-hidden': !encrypt }">
         <div class="form-field">
           <label for="confirm_password">Confirm password</label>
-          <input formControlName="confirm_password" id="confirm_password" type="password" appDontSavePassword>
+          <input formControlName="confirm_password" id="confirm_password" type="password" appDontSavePassword (keydown.enter)="createWallet()">
         </div>
       </div>
     </div>
   </div>
   <div class="-buttons">
-    <app-button (action)="closePopup()">
+    <app-button (action)="closePopup()" #cancelButton>
       Cancel
     </app-button>
-    <app-button (action)="createWallet()" class="primary" [disabled]="!form.valid" #button>
+    <app-button (action)="createWallet()" class="primary" [disabled]="!form.valid" #createButton>
       {{ data.create ? 'Create' : 'Load' }}
     </app-button>
   </div>

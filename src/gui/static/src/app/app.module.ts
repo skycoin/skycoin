@@ -8,7 +8,6 @@ import { WalletsComponent } from './components/pages/wallets/wallets.component';
 import { CreateWalletComponent } from './components/pages/wallets/create-wallet/create-wallet.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { SendSkycoinComponent } from './components/pages/send-skycoin/send-skycoin.component';
-import { NgxDatatableModule } from '@swimlane/ngx-datatable';
 import { DateFromNowPipe } from './pipes/date-from-now.pipe';
 import { RouterModule } from '@angular/router';
 import { ExplorerComponent } from './components/pages/explorer/explorer.component';
@@ -31,7 +30,7 @@ import { TellerStatusPipe } from './pipes/teller-status.pipe';
 import { HeaderComponent } from './components/layout/header/header.component';
 import { TopBarComponent } from './components/layout/header/top-bar/top-bar.component';
 import { FooterComponent } from './components/layout/footer/footer.component';
-import { PriceService } from './price.service';
+import { PriceService } from './services/price.service';
 import { TransactionListComponent } from './components/pages/transaction-list/transaction-list.component';
 import { TransactionDetailComponent } from './components/pages/transaction-list/transaction-detail/transaction-detail.component';
 import { NavBarComponent } from './components/layout/header/nav-bar/nav-bar.component';
@@ -196,7 +195,6 @@ const ROUTES = [
     MatToolbarModule,
     MatTooltipModule,
     MatCheckboxModule,
-    NgxDatatableModule,
     NoopAnimationsModule,
     ReactiveFormsModule,
     RouterModule.forRoot(ROUTES, { useHash: true }),

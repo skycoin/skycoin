@@ -10,6 +10,7 @@ import (
 
 	"github.com/boltdb/bolt"
 
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
 
@@ -142,6 +143,8 @@ type DaemonConfig struct { // nolint: golint
 	IntroductionWait time.Duration
 	// How often to check for peers that have decided to stop communicating
 	CullInvalidRate time.Duration
+	// How often to update the database with transaction announcement timestamps
+	FlushAnnouncedTxnsRate time.Duration
 	// How many connections are allowed from the same base IP
 	IPCountsMax int
 	// Disable all networking activity
@@ -168,6 +171,7 @@ func NewDaemonConfig() DaemonConfig {
 		PendingMax:                 16,
 		IntroductionWait:           time.Second * 30,
 		CullInvalidRate:            time.Second * 3,
+		FlushAnnouncedTxnsRate:     time.Second * 3,
 		IPCountsMax:                3,
 		DisableNetworking:          false,
 		DisableOutgoingConnections: false,
@@ -218,8 +222,10 @@ type Daemon struct {
 	ipCounts *IPCount
 	// Message handling queue
 	messageEvents chan MessageEvent
+	// Cache of announced transactions that are flushed to the database periodically
+	announcedTxns *announcedTxnsCache
 	// quit channel
-	quitC chan chan struct{}
+	quitC chan struct{}
 	// log buffer
 	LogBuff bytes.Buffer
 }
@@ -252,13 +258,14 @@ func NewDaemon(config Config, db *bolt.DB, defaultConns []string) (*Daemon, erro
 		// TODO -- if there are performance problems from blocking chans,
 		// Its because we are connecting to more things than OutgoingMax
 		// if we have private peers
-		onConnectEvent:      make(chan ConnectEvent, config.Daemon.OutgoingMax),
-		onDisconnectEvent:   make(chan DisconnectEvent, config.Daemon.OutgoingMax),
-		connectionErrors:    make(chan ConnectionError, config.Daemon.OutgoingMax),
+		onConnectEvent:      make(chan ConnectEvent, config.Pool.MaxConnections*2),
+		onDisconnectEvent:   make(chan DisconnectEvent, config.Pool.MaxConnections*2),
+		connectionErrors:    make(chan ConnectionError, config.Pool.MaxConnections*2),
 		outgoingConnections: NewOutgoingConnections(config.Daemon.OutgoingMax),
 		pendingConnections:  NewPendingConnections(config.Daemon.PendingMax),
 		messageEvents:       make(chan MessageEvent, config.Pool.EventChannelSize),
-		quitC:               make(chan chan struct{}),
+		announcedTxns:       newAnnouncedTxnsCache(),
+		quitC:               make(chan struct{}),
 	}
 
 	d.Gateway = NewGateway(config.Gateway, d)
@@ -372,6 +379,8 @@ func (dm *Daemon) Run() error {
 	clearStaleConnectionsTicker := time.Tick(dm.Pool.Config.ClearStaleRate)
 	idleCheckTicker := time.Tick(dm.Pool.Config.IdleCheckRate)
 
+	flushAnnouncedTxnsTicker := time.Tick(dm.Config.FlushAnnouncedTxnsRate)
+
 	// Connect to trusted peers
 	if !dm.Config.DisableOutgoingConnections {
 		wg.Add(1)
@@ -382,7 +391,34 @@ func (dm *Daemon) Run() error {
 	}
 
 	var err error
-	var elapser = elapse.NewElapser(daemonRunDurationThreshold, logger)
+	elapser := elapse.NewElapser(daemonRunDurationThreshold, logger)
+
+	// Process SendResults in a separate goroutine, otherwise SendResults
+	// will fill up much faster than can be processed by the daemon run loop
+	// dm.handleMessageSendResult must take care not to perform any operation
+	// that would violate thread safety, since it is not serialized by the daemon run loop
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		elapser := elapse.NewElapser(daemonRunDurationThreshold, logger)
+	loop:
+		for {
+			elapser.CheckForDone()
+			select {
+			case <-dm.quitC:
+				break loop
+
+			case r := <-dm.Pool.Pool.SendResults:
+				// Process message sending results
+				elapser.Register("dm.Pool.Pool.SendResults")
+				if dm.Config.DisableNetworking {
+					logger.Error("There should be nothing in SendResults")
+					return
+				}
+				dm.handleMessageSendResult(r)
+			}
+		}
+	}()
 
 loop:
 	for {
@@ -474,14 +510,10 @@ loop:
 			}
 			dm.handleConnectionError(r)
 
-		case r := <-dm.Pool.Pool.SendResults:
-			// Process message sending results
-			elapser.Register("dm.Pool.Pool.SendResults")
-			if dm.Config.DisableNetworking {
-				logger.Error("There should be nothing in SendResults")
-				return nil
-			}
-			dm.handleMessageSendResult(r)
+		case <-flushAnnouncedTxnsTicker:
+			elapser.Register("flushAnnouncedTxnsTicker")
+			txns := dm.announcedTxns.flush()
+			dm.Visor.SetTxnsAnnounced(txns)
 
 		case m := <-dm.messageEvents:
 			// Message handlers
@@ -509,7 +541,7 @@ loop:
 
 				// Not a critical error, but we want it visible in logs
 				head := sb.Block.Head
-				logger.Noticef("Created and published a new block, version=%d seq=%d time=%d", head.Version, head.BkSeq, head.Time)
+				logger.Critical().Infof("Created and published a new block, version=%d seq=%d time=%d", head.Version, head.BkSeq, head.Time)
 			}
 
 		case <-unconfirmedRefreshTicker:
@@ -834,7 +866,7 @@ func (dm *Daemon) onGnetDisconnect(addr string, reason gnet.DisconnectReason) {
 	select {
 	case dm.onDisconnectEvent <- e:
 	default:
-		logger.Info("onDisconnectEvent channel is full")
+		logger.Warning("onDisconnectEvent channel is full")
 	}
 }
 
@@ -917,7 +949,9 @@ func (dm *Daemon) getMirrorPort(addr string, mirror uint32) (uint16, bool) {
 	return dm.mirrorConnections.Get(mirror, ip)
 }
 
-// When an async message send finishes, its result is handled by this
+// When an async message send finishes, its result is handled by this.
+// This method must take care to perform only thread-safe actions, since it is called
+// outside of the daemon run loop
 func (dm *Daemon) handleMessageSendResult(r gnet.SendResult) {
 	if r.Error != nil {
 		logger.Warningf("Failed to send %s to %s: %v", reflect.TypeOf(r.Message), r.Addr, r.Error)
@@ -925,7 +959,43 @@ func (dm *Daemon) handleMessageSendResult(r gnet.SendResult) {
 	}
 	switch r.Message.(type) {
 	case SendingTxnsMessage:
-		dm.Visor.SetTxnsAnnounced(r.Message.(SendingTxnsMessage).GetTxns())
+		dm.announcedTxns.add(r.Message.(SendingTxnsMessage).GetTxns())
 	default:
 	}
+}
+
+type announcedTxnsCache struct {
+	sync.Mutex
+	cache map[cipher.SHA256]int64
+}
+
+func newAnnouncedTxnsCache() *announcedTxnsCache {
+	return &announcedTxnsCache{
+		cache: make(map[cipher.SHA256]int64),
+	}
+}
+
+func (c *announcedTxnsCache) add(txns []cipher.SHA256) {
+	c.Lock()
+	defer c.Unlock()
+
+	t := utc.Now().UnixNano()
+	for _, txn := range txns {
+		c.cache[txn] = t
+	}
+}
+
+func (c *announcedTxnsCache) flush() map[cipher.SHA256]int64 {
+	c.Lock()
+	defer c.Unlock()
+
+	if len(c.cache) == 0 {
+		return nil
+	}
+
+	cache := c.cache
+
+	c.cache = make(map[cipher.SHA256]int64)
+
+	return cache
 }

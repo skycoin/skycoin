@@ -3,7 +3,7 @@
 A Skycoin node offers multiple interfaces:
 
 * REST API on port 6420
-* JSON-RPC 2.0 API on port 6430 **[deprecated]**
+* JSON-RPC 2.0 API accessible on /webrpc endpoint **[deprecated]**
 
 A CLI tool is provided in `cmd/cli/cli.go`. This tool communicates over the JSON-RPC 2.0 API. In the future it will communicate over the REST API.
 

@@ -46,6 +46,12 @@
   .coins-column {
     color: black;
     width: 150px;
+
+    &:hover {
+      .outputs-label {
+        display: inline-block;
+      }
+    }
   }
 
   > img {
@@ -148,4 +154,11 @@
 .copying .copy-label::after {
   -webkit-animation: floatup .5s ease-in-out;
   animation: floatup .5s ease-in-out;
+}
+
+.outputs-label {
+  color: #0072ff;
+  display: none;
+  font-size: 12px;
+  padding-left: 10px;
 }

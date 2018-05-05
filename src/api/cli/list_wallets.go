@@ -51,7 +51,7 @@ func listWallets(c *gcli.Context) error {
 			path := filepath.Join(cfg.WalletDir, name)
 			w, err := wallet.Load(path)
 			if err != nil {
-				return WalletLoadError(err)
+				return WalletLoadError{err}
 			}
 			wlts.Wallets = append(wlts.Wallets, WalletEntry{
 				Name:       name,

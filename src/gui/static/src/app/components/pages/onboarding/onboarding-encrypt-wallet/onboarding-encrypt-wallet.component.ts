@@ -32,8 +32,6 @@ export class OnboardingEncryptWalletComponent implements OnInit {
       {
         validator: this.passwordMatchValidator.bind(this),
       });
-
-    this.form.disable();
   }
 
   setEncrypt(event) {
@@ -41,6 +39,10 @@ export class OnboardingEncryptWalletComponent implements OnInit {
   }
 
   emitCreatedPassword() {
+    if ((this.form.enabled && !this.form.valid) || this.button.isLoading()) {
+      return;
+    }
+
     this.button.setLoading();
 
     this.onPasswordCreated.emit(this.form.enabled ? this.form.get('password').value : null);
@@ -48,6 +50,10 @@ export class OnboardingEncryptWalletComponent implements OnInit {
 
   emitBack() {
     this.onBack.emit();
+  }
+
+  get isWorking() {
+    return this.button.isLoading();
   }
 
   private passwordMatchValidator(g: FormGroup) {

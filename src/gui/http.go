@@ -1,18 +1,17 @@
 package gui
 
 import (
-	"bytes"
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 	"unicode"
 
+	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/util/file"
@@ -47,6 +46,7 @@ type Config struct {
 	StaticDir       string
 	DisableCSRF     bool
 	EnableWalletAPI bool
+	EnableJSON20RPC bool
 	ReadTimeout     time.Duration
 	WriteTimeout    time.Duration
 	IdleTimeout     time.Duration
@@ -56,11 +56,14 @@ type muxConfig struct {
 	host            string
 	appLoc          string
 	enableWalletAPI bool
+	enableJSON20RPC bool
 }
 
 func create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
 	var appLoc string
 	if c.EnableWalletAPI {
+		logger.Info("Wallet API enabled")
+
 		var err error
 		appLoc, err = file.DetermineResourcePath(c.StaticDir, resourceDir, devDir)
 		if err != nil {
@@ -74,6 +77,16 @@ func create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
 	}
 	if c.DisableCSRF {
 		logger.Warning("CSRF check disabled")
+	}
+
+	var rpc *webrpc.WebRPC
+	if c.EnableJSON20RPC {
+		logger.Info("JSON 2.0 RPC enabled")
+		var err error
+		rpc, err = webrpc.New(daemon.Gateway)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if c.ReadTimeout == 0 {
@@ -90,9 +103,10 @@ func create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
 		host:            host,
 		appLoc:          appLoc,
 		enableWalletAPI: c.EnableWalletAPI,
+		enableJSON20RPC: c.EnableJSON20RPC,
 	}
 
-	srvMux := newServerMux(mc, daemon.Gateway, csrfStore)
+	srvMux := newServerMux(mc, daemon.Gateway, csrfStore, rpc)
 	srv := &http.Server{
 		Handler:      srvMux,
 		ReadTimeout:  c.ReadTimeout,
@@ -171,7 +185,7 @@ func (s *Server) Shutdown() {
 }
 
 // newServerMux creates an http.ServeMux with handlers registered
-func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.ServeMux {
+func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *webrpc.WebRPC) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	headerCheck := func(host string, handler http.Handler) http.Handler {
@@ -199,6 +213,10 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.Se
 			}
 			webHandler(route, http.FileServer(http.Dir(c.appLoc)))
 		}
+	}
+
+	if c.enableJSON20RPC {
+		webHandler("/webrpc", http.HandlerFunc(rpc.Handler))
 	}
 
 	// get the current CSRF token
@@ -368,7 +386,7 @@ func newIndexHandler(appLoc string) http.HandlerFunc {
 		if r.URL.Path == "/" {
 			http.ServeFile(w, r, page)
 		} else {
-			wh.Error404(w)
+			wh.Error404(w, "")
 		}
 	}
 }
@@ -444,8 +462,8 @@ func getOutputsHandler(gateway Gatewayer) http.HandlerFunc {
 
 		outs, err := gateway.GetUnspentOutputs(filters...)
 		if err != nil {
-			logger.Errorf("get unspent outputs failed: %v", err)
-			wh.Error500(w)
+			err = fmt.Errorf("get unspent outputs failed: %v", err)
+			wh.Error500(w, err.Error())
 			return
 		}
 
@@ -475,9 +493,8 @@ func getBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 
 		bals, err := gateway.GetBalanceOfAddrs(addrs)
 		if err != nil {
-			errMsg := fmt.Sprintf("Get balance failed: %v", err)
-			logger.Error(errMsg)
-			wh.Error500Msg(w, errMsg)
+			err = fmt.Errorf("gateway.GetBalanceOfAddrs failed: %v", err)
+			wh.Error500(w, err.Error())
 			return
 		}
 
@@ -486,13 +503,13 @@ func getBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 			var err error
 			balance.Confirmed, err = balance.Confirmed.Add(bal.Confirmed)
 			if err != nil {
-				wh.Error500Msg(w, err.Error())
+				wh.Error500(w, err.Error())
 				return
 			}
 
 			balance.Predicted, err = balance.Predicted.Add(bal.Predicted)
 			if err != nil {
-				wh.Error500Msg(w, err.Error())
+				wh.Error500(w, err.Error())
 				return
 			}
 		}
@@ -509,69 +526,5 @@ func versionHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		wh.SendJSONOr500(logger, w, gateway.GetBuildInfo())
-	}
-}
-
-/*
-attrActualLog remove color char in log
-origin: "\u001b[36m[skycoin.daemon:DEBUG] Trying to connect to 47.88.33.156:6000\u001b[0m",
-*/
-func attrActualLog(logInfo string) string {
-	//return logInfo
-	var actualLog string
-	actualLog = logInfo
-	if strings.HasPrefix(logInfo, "[skycoin") {
-		if strings.Contains(logInfo, "\u001b") {
-			actualLog = logInfo[0 : len(logInfo)-4]
-		}
-	} else {
-		if len(logInfo) > 5 {
-			if strings.Contains(logInfo, "\u001b") {
-				actualLog = logInfo[5 : len(logInfo)-4]
-			}
-		}
-	}
-	return actualLog
-}
-func getLogsHandler(logbuf *bytes.Buffer) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			wh.Error405(w)
-			return
-		}
-
-		var err error
-		defaultLineNum := 1000 // default line numbers
-		linenum := defaultLineNum
-		if lines := r.FormValue("lines"); lines != "" {
-			linenum, err = strconv.Atoi(lines)
-			if err != nil {
-				linenum = defaultLineNum
-			}
-		}
-		keyword := r.FormValue("include")
-		excludeKeyword := r.FormValue("exclude")
-		logs := []string{}
-		logList := strings.Split(logbuf.String(), "\n")
-		for _, logInfo := range logList {
-			if excludeKeyword != "" && strings.Contains(logInfo, excludeKeyword) {
-				continue
-			}
-			if keyword != "" && !strings.Contains(logInfo, keyword) {
-				continue
-			}
-
-			if len(logs) >= linenum {
-				logger.Debugf("logs size %d,total size:%d", len(logs), len(logList))
-				break
-			}
-			log := attrActualLog(logInfo)
-			if "" != log {
-				logs = append(logs, log)
-			}
-
-		}
-
-		wh.SendJSONOr500(logger, w, logs)
 	}
 }

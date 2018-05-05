@@ -23,6 +23,8 @@ type PoolConfig struct {
 	ClearStaleRate time.Duration
 	// Buffer size for gnet.ConnectionPool's network Read events
 	EventChannelSize int
+	// Maximum number of connections to maintain
+	MaxConnections int
 	// These should be assigned by the controlling daemon
 	address string
 	port    int
@@ -41,6 +43,7 @@ func NewPoolConfig() PoolConfig {
 		IdleCheckRate:       1 * time.Second,
 		ClearStaleRate:      1 * time.Second,
 		EventChannelSize:    4096,
+		MaxConnections:      128,
 	}
 }
 
@@ -63,6 +66,7 @@ func NewPool(c PoolConfig, d *Daemon) *Pool {
 	cfg.Address = pool.Config.address
 	cfg.ConnectCallback = d.onGnetConnect
 	cfg.DisconnectCallback = d.onGnetDisconnect
+	cfg.MaxConnections = pool.Config.MaxConnections
 
 	pool.Pool = gnet.NewConnectionPool(cfg, d)
 

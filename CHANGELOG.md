@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Reduce connection disconnects, improves syncing
 - Fix #1171, update CLI to support wallet encryption
 
 ### Changed

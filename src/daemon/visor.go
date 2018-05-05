@@ -11,7 +11,6 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/strand"
-	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor"
 )
 
@@ -296,11 +295,10 @@ func (vs *Visor) RequestBlocksFromAddr(pool *Pool, addr string) error {
 }
 
 // SetTxnsAnnounced sets all txns as announced
-func (vs *Visor) SetTxnsAnnounced(txns []cipher.SHA256) {
+func (vs *Visor) SetTxnsAnnounced(txns map[cipher.SHA256]int64) {
 	vs.strand("SetTxnsAnnounced", func() error {
-		now := utc.Now()
-		for _, h := range txns {
-			if err := vs.v.Unconfirmed.SetAnnounced(h, now); err != nil {
+		for h, t := range txns {
+			if err := vs.v.Unconfirmed.SetAnnounced(h, t); err != nil {
 				logger.Error("Failed to set unconfirmed txn announce time: ", err)
 			}
 		}

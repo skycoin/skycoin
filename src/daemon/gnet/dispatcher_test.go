@@ -177,7 +177,7 @@ func noopSendByteMessage(conn net.Conn, m []byte, tm time.Duration) error {
 }
 
 func failingSendByteMessage(conn net.Conn, m []byte, tm time.Duration) error {
-	return errors.New("failed")
+	return errors.New("send byte message failed")
 }
 
 type CaptureConn struct {

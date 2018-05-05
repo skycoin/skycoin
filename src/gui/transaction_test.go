@@ -187,7 +187,7 @@ func TestGetTransactionByID(t *testing.T) {
 		getTransactionArg     cipher.SHA256
 		getTransactionReponse *visor.Transaction
 		getTransactionError   error
-		httpResponse          visor.TransactionResult
+		httpResponse          daemon.TransactionResult
 	}{
 		{
 			name:              "405",
@@ -256,7 +256,7 @@ func TestGetTransactionByID(t *testing.T) {
 			},
 			getTransactionArg:     testutil.SHA256FromHex(t, validHash),
 			getTransactionReponse: &visor.Transaction{},
-			httpResponse: visor.TransactionResult{
+			httpResponse: daemon.TransactionResult{
 				Transaction: visor.ReadableTransaction{
 					Sigs:      []string{},
 					In:        []string{},
@@ -303,7 +303,7 @@ func TestGetTransactionByID(t *testing.T) {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg visor.TransactionResult
+				var msg daemon.TransactionResult
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.httpResponse, msg, tc.name)
@@ -718,10 +718,10 @@ func TestGetTransactions(t *testing.T) {
 			getTransactionsError: errors.New("getTransactionsError"),
 		},
 		{
-			name:   "500 - visor.NewTransactionResults error",
+			name:   "500 - daemon.NewTransactionResults error",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - visor.NewTransactionResults failed: Droplet string conversion failed: Value is too large",
+			err:    "500 Internal Server Error - daemon.NewTransactionResults failed: Droplet string conversion failed: Value is too large",
 			httpBody: &httpBody{
 				addrs:     addrsStr,
 				confirmed: "true",

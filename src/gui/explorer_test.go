@@ -103,7 +103,7 @@ func TestGetTransactionsForAddress(t *testing.T) {
 		status                      int
 		err                         string
 		addressParam                string
-		gatewayGetAddressTxnsResult *visor.TransactionResults
+		gatewayGetAddressTxnsResult *daemon.TransactionResults
 		gatewayGetAddressTxnsErr    error
 		gatewayGetUxOutByIDArg      cipher.SHA256
 		gatewayGetUxOutByIDResult   *historydb.UxOut
@@ -146,8 +146,8 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			status:       http.StatusInternalServerError,
 			err:          "500 Internal Server Error - encoding/hex: odd length hex string",
 			addressParam: address.String(),
-			gatewayGetAddressTxnsResult: &visor.TransactionResults{
-				Txns: []visor.TransactionResult{
+			gatewayGetAddressTxnsResult: &daemon.TransactionResults{
+				Txns: []daemon.TransactionResult{
 					{
 						Transaction: visor.ReadableTransaction{
 							In: []string{
@@ -164,8 +164,8 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			status:       http.StatusInternalServerError,
 			err:          "500 Internal Server Error - gatewayGetUxOutByIDErr",
 			addressParam: address.String(),
-			gatewayGetAddressTxnsResult: &visor.TransactionResults{
-				Txns: []visor.TransactionResult{
+			gatewayGetAddressTxnsResult: &daemon.TransactionResults{
+				Txns: []daemon.TransactionResult{
 					{
 						Transaction: visor.ReadableTransaction{
 							In: []string{
@@ -184,8 +184,8 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			status:       http.StatusInternalServerError,
 			err:          "500 Internal Server Error - uxout of 79216473e8f2c17095c6887cc9edca6c023afedfac2e0c5460e8b6f359684f8b does not exist in history db",
 			addressParam: address.String(),
-			gatewayGetAddressTxnsResult: &visor.TransactionResults{
-				Txns: []visor.TransactionResult{
+			gatewayGetAddressTxnsResult: &daemon.TransactionResults{
+				Txns: []daemon.TransactionResult{
 					{
 						Transaction: visor.ReadableTransaction{
 							In: []string{
@@ -202,8 +202,8 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			method:       http.MethodGet,
 			status:       http.StatusOK,
 			addressParam: address.String(),
-			gatewayGetAddressTxnsResult: &visor.TransactionResults{
-				Txns: []visor.TransactionResult{
+			gatewayGetAddressTxnsResult: &daemon.TransactionResults{
+				Txns: []daemon.TransactionResult{
 					{
 						Transaction: visor.ReadableTransaction{
 							In: []string{

@@ -106,10 +106,10 @@ lint: ## Run linters. Use make install-linters first.
 		-E varcheck \
 		./...
 	# lib cgo can't use golint because it needs export directives in function docstrings that do not obey golint rules
-	gometalinter --deadline=3m --concurrency=2 --disable-all --tests --vendor --skip=lib/cgo \
+	gometalinter --deadline=3m --concurrency=2 --disable-all --tests --vendor \
 		-E goimports \
 		-E varcheck \
-		./...
+		./lib/cgo/...
 
 check: lint test integration-test-stable integration-test-stable-disable-csrf integration-test-disable-wallet-api integration-test-disable-seed-api ## Run tests and linters
 

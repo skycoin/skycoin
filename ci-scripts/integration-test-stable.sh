@@ -36,7 +36,7 @@ usage () {
   exit 1
 }
 
-while getopts "h?t:r:uvwc" args; do
+while getopts "h?t:r:uvc" args; do
   case $args in
     h|\?)
         usage;

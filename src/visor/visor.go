@@ -214,7 +214,7 @@ type Blockchainer interface {
 // UnconfirmedTxnPooler is the interface that provides methods for
 // accessing the unconfirmed transaction pool
 type UnconfirmedTxnPooler interface {
-	SetAnnounced(hash cipher.SHA256, t time.Time) error
+	SetAnnounced(hash cipher.SHA256, t int64) error
 	InjectTransaction(bc Blockchainer, t coin.Transaction, maxSize int) (bool, *ErrTxnViolatesSoftConstraint, error)
 	RawTxns() coin.Transactions
 	RemoveTransactions(txns []cipher.SHA256) error
@@ -1120,4 +1120,18 @@ func (vs Visor) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair,
 		bps = append(bps, bp)
 	}
 	return bps, nil
+}
+
+// GetUnconfirmedSpends returns unspent outputs that are spent in unconfirmed transactions
+func (vs *Visor) GetUnconfirmedSpends(addrs []cipher.Address) (coin.AddressUxOuts, error) {
+	return vs.Unconfirmed.SpendsOfAddresses(addrs, vs.Blockchain.Unspent())
+}
+
+// GetUnconfirmedReceiving returns unspents outputs that are created by unconfirmed transactions
+func (vs *Visor) GetUnconfirmedReceiving(addrs []cipher.Address) (coin.AddressUxOuts, error) {
+	head, err := vs.Blockchain.Head()
+	if err != nil {
+		return nil, err
+	}
+	return vs.Unconfirmed.RecvOfAddresses(head.Head, addrs)
 }

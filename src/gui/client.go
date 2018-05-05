@@ -135,7 +135,10 @@ func (c *Client) post(endpoint string, contentType string, body io.Reader, obj i
 		return err
 	}
 
-	req.Header.Set("X-CSRF-Token", csrf)
+	if csrf != "" {
+		req.Header.Set(CSRFHeaderName, csrf)
+	}
+
 	req.Header.Set("Content-Type", contentType)
 
 	resp, err := c.HTTPClient.Do(req)
@@ -645,12 +648,12 @@ func (c *Client) PendingTransactions() ([]*visor.ReadableUnconfirmedTxn, error) 
 }
 
 // Transaction makes a request to /transaction
-func (c *Client) Transaction(txid string) (*visor.TransactionResult, error) {
+func (c *Client) Transaction(txid string) (*daemon.TransactionResult, error) {
 	v := url.Values{}
 	v.Add("txid", txid)
 	endpoint := "/transaction?" + v.Encode()
 
-	var r visor.TransactionResult
+	var r daemon.TransactionResult
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}
@@ -658,12 +661,12 @@ func (c *Client) Transaction(txid string) (*visor.TransactionResult, error) {
 }
 
 // Transactions makes a request to /transactions
-func (c *Client) Transactions(addrs []string) (*[]visor.TransactionResult, error) {
+func (c *Client) Transactions(addrs []string) (*[]daemon.TransactionResult, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	endpoint := "/transactions?" + v.Encode()
 
-	var r []visor.TransactionResult
+	var r []daemon.TransactionResult
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}
@@ -671,13 +674,13 @@ func (c *Client) Transactions(addrs []string) (*[]visor.TransactionResult, error
 }
 
 // ConfirmedTransactions makes a request to /transactions?confirmed=true
-func (c *Client) ConfirmedTransactions(addrs []string) (*[]visor.TransactionResult, error) {
+func (c *Client) ConfirmedTransactions(addrs []string) (*[]daemon.TransactionResult, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	v.Add("confirmed", "true")
 	endpoint := "/transactions?" + v.Encode()
 
-	var r []visor.TransactionResult
+	var r []daemon.TransactionResult
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}
@@ -685,13 +688,13 @@ func (c *Client) ConfirmedTransactions(addrs []string) (*[]visor.TransactionResu
 }
 
 // UnconfirmedTransactions makes a request to /transactions?confirmed=false
-func (c *Client) UnconfirmedTransactions(addrs []string) (*[]visor.TransactionResult, error) {
+func (c *Client) UnconfirmedTransactions(addrs []string) (*[]daemon.TransactionResult, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	v.Add("confirmed", "false")
 	endpoint := "/transactions?" + v.Encode()
 
-	var r []visor.TransactionResult
+	var r []daemon.TransactionResult
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}

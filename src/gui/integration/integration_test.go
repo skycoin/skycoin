@@ -1260,7 +1260,7 @@ func TestStableTransactions(t *testing.T) {
 				return
 			}
 
-			var expected *[]visor.TransactionResult
+			var expected *[]daemon.TransactionResult
 			loadGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
 			require.Equal(t, expected, txResult, "case: "+tc.name)
 		})
@@ -1341,7 +1341,7 @@ func TestStableConfirmedTransactions(t *testing.T) {
 				return
 			}
 
-			var expected *[]visor.TransactionResult
+			var expected *[]daemon.TransactionResult
 			loadGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
 			require.Equal(t, expected, txResult, "case: "+tc.name)
 		})
@@ -1401,7 +1401,7 @@ func TestStableUnconfirmedTransactions(t *testing.T) {
 				return
 			}
 
-			var expected *[]visor.TransactionResult
+			var expected *[]daemon.TransactionResult
 			loadGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
 			require.Equal(t, expected, txResult, "case: "+tc.name)
 		})
@@ -1857,13 +1857,13 @@ func TestLiveWalletSpend(t *testing.T) {
 		to      string
 		coins   uint64
 		errMsg  []byte
-		checkTx func(t *testing.T, tx *visor.TransactionResult)
+		checkTx func(t *testing.T, tx *daemon.TransactionResult)
 	}{
 		{
 			name:  "send all coins to the first address",
 			to:    w.Entries[0].Address.String(),
 			coins: totalCoins,
-			checkTx: func(t *testing.T, tx *visor.TransactionResult) {
+			checkTx: func(t *testing.T, tx *daemon.TransactionResult) {
 				// Confirms the total output coins are equal to the totalCoins
 				var coins uint64
 				for _, o := range tx.Transaction.Out {
@@ -1884,12 +1884,12 @@ func TestLiveWalletSpend(t *testing.T) {
 			name:  "send 0.003 coin to second address",
 			to:    w.Entries[1].Address.String(),
 			coins: 3e3,
-			checkTx: func(t *testing.T, tx *visor.TransactionResult) {
+			checkTx: func(t *testing.T, tx *daemon.TransactionResult) {
 				// Confirms there're two outputs, one to the second address, one as change output to the first address.
 				require.Len(t, tx.Transaction.Out, 2)
 
 				// Gets the output of the second address in the transaction
-				getAddrOutputInTx := func(t *testing.T, tx *visor.TransactionResult, addr string) *visor.ReadableTransactionOutput {
+				getAddrOutputInTx := func(t *testing.T, tx *daemon.TransactionResult, addr string) *visor.ReadableTransactionOutput {
 					for _, output := range tx.Transaction.Out {
 						if output.Address == addr {
 							return &output
@@ -1929,7 +1929,7 @@ func TestLiveWalletSpend(t *testing.T) {
 			}
 
 			tk := time.NewTicker(time.Second)
-			var tx *visor.TransactionResult
+			var tx *daemon.TransactionResult
 		loop:
 			for {
 				select {
@@ -3173,7 +3173,7 @@ func getWalletBalance(t *testing.T, c *gui.Client, walletName string) (uint64, u
 	return wp.Confirmed.Coins, wp.Confirmed.Hours
 }
 
-func getTransaction(t *testing.T, c *gui.Client, txid string) *visor.TransactionResult {
+func getTransaction(t *testing.T, c *gui.Client, txid string) *daemon.TransactionResult {
 	tx, err := c.Transaction(txid)
 	if err != nil {
 		t.Fatalf("%v", err)

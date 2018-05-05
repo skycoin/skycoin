@@ -1,8 +1,8 @@
 package logging
 
 import (
+	"bytes"
 	"fmt"
-	"io/ioutil"
 	"strings"
 	"testing"
 
@@ -23,17 +23,23 @@ func (w *TestMsgCollector) Format(entry *logrus.Entry) ([]byte, error) {
 	}
 	text := fmt.Sprintf("%s %s: %s", strings.ToUpper(entry.Level.String()), moduleName, entry.Message)
 	w.Messages = append(w.Messages, text)
-	return []byte{}, nil
+	return append([]byte(text), '\n'), nil
 }
 
-// Independent log levels for packages
-func TestPackageLevel(t *testing.T) {
-	// A master logger logging to a memory buffer at WARN level
+// Independent log levels for packages. Output redirects
+func TestPkgLevelIo(t *testing.T) {
+	var buff1, buff2 bytes.Buffer
+
+	// Empty buffers
+	require.Equal(t, "", buff1.String())
+	require.Equal(t, "", buff2.String())
+
 	var formatter TestMsgCollector
 
+	// A master logger logging to a memory buffer at WARN level
 	log := NewMasterLogger()
 	log.Formatter = &formatter
-	log.Out = ioutil.Discard
+	log.Out = &OutputRealm{Writer: &buff1}
 	log.Level = logrus.WarnLevel
 
 	// Configure package logging levels
@@ -48,21 +54,42 @@ func TestPackageLevel(t *testing.T) {
 		log.PackageLogger("pkgnocfg"),
 	}
 
-	for _, logger := range loggers {
-		logger.Error("Error")
-		logger.Warn("Warn")
-		logger.Info("Info")
-		logger.Debug("Debug")
+	checkAllLevels := func() {
+		// Clear previous log history
+		formatter.Messages = nil
+
+		for _, logger := range loggers {
+			logger.Error("Error")
+			logger.Warn("Warn")
+			logger.Info("Info")
+			logger.Debug("Debug")
+		}
+		require.Equal(t, []string{
+			"ERROR [pkgdebug]: Error",
+			"WARNING [pkgdebug]: Warn",
+			"INFO [pkgdebug]: Info",
+			"DEBUG [pkgdebug]: Debug",
+			"ERROR [pkginfo]: Error",
+			"WARNING [pkginfo]: Warn",
+			"INFO [pkginfo]: Info",
+			"ERROR [pkgnocfg]: Error",
+			"WARNING [pkgnocfg]: Warn",
+		}, formatter.Messages)
 	}
-	require.Equal(t, []string{
-		"ERROR [pkgdebug]: Error",
-		"WARNING [pkgdebug]: Warn",
-		"INFO [pkgdebug]: Info",
-		"DEBUG [pkgdebug]: Debug",
-		"ERROR [pkginfo]: Error",
-		"WARNING [pkginfo]: Warn",
-		"INFO [pkginfo]: Info",
-		"ERROR [pkgnocfg]: Error",
-		"WARNING [pkgnocfg]: Warn",
-	}, formatter.Messages)
+
+	checkAllLevels()
+	logOutput := buff1.String()
+	require.NotEqual(t, "", logOutput)
+	require.Equal(t, "", buff2.String())
+
+	setLoggerOutput(log, &buff2)
+	checkAllLevels()
+	require.Equal(t, logOutput, buff1.String())
+	require.Equal(t, logOutput, buff2.String())
+
+	var buff3 bytes.Buffer
+	setLoggerOutput(log, &buff3)
+	disableLoggerOutput(log)
+	checkAllLevels()
+	require.Equal(t, "", buff3.String())
 }

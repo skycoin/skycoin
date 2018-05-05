@@ -35,7 +35,7 @@ func NewMasterLogger() *MasterLogger {
 
 	return &MasterLogger{
 		Logger: &logrus.Logger{
-			Out: os.Stdout,
+			Out: &OutputRealm{Writer: os.Stdout},
 			Formatter: &TextFormatter{
 				FullTimestamp:      true,
 				AlwaysQuoteStrings: true,

@@ -10,7 +10,7 @@ package main
 import "C"
 
 import (
-	"unsafe"
+	//"unsafe"
 	webrpc "github.com/skycoin/skycoin/src/api/webrpc"
 	wallet "github.com/skycoin/skycoin/src/wallet"
 	cli "github.com/skycoin/skycoin/src/api/cli"
@@ -21,14 +21,16 @@ import (
 type Handle uint64
 
 var (
-	handleMap = make(map[Handle]interface{})
+	handlesCounter uint64 = 0
+	handleMap 		= make(map[Handle]interface{})
 )
 
 func registerHandle(obj interface{}) Handle {
-	ptr := &obj
-	handle := *(*Handle)(unsafe.Pointer(&ptr))
-	handleMap[handle] = obj
-	return handle
+	handlesCounter++
+	handle := handlesCounter
+	//handle := *(*Handle)(unsafe.Pointer(&obj))
+	handleMap[Handle(handle)] = obj
+	return Handle(handle)
 }
 
 func lookupHandleObj(handle Handle) (interface{}, bool) {

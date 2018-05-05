@@ -2,6 +2,7 @@ package main
 
 import (
 	cli "github.com/skycoin/skycoin/src/api/cli"
+	"os"
 	"unsafe"
 )
 
@@ -161,5 +162,26 @@ func SKY_cli_ConfigFromContext(_c *C.Context__Handle, _arg1 *C.Config__Handle) (
 	}
 	__arg1 := cli.ConfigFromContext(c)
 	*_arg1 = registerConfigHandle(&__arg1)
+	return
+}
+
+//export SKY_cli_Getenv
+func SKY_cli_Getenv(varname string, _arg0 *C.GoString_) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	__arg0 := os.Getenv(varname)
+	copyString(__arg0, _arg0)
+	return
+}
+
+//export SKY_cli_Setenv
+func SKY_cli_Setenv(varname string, value string) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	os.Setenv(varname, value)
 	return
 }

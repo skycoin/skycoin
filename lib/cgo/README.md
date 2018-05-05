@@ -18,6 +18,11 @@ The API interface is defined in the [libskycoin header file](/include/libskycoin
 $ make build-libc
 ```
 
+**Important** : `libskycoin.so` shared library
+[can not be compiled on Windows 64 bit systems](t.me/skycoindev/925) due to
+[lack of support for c-shared buildmode in golang 1.9](https://github.com/golang/go/issues/23582).
+Make sure you have installed a go version higher than `1.10`.
+
 ## Testing
 
 In order to test the C client libraries follow these steps

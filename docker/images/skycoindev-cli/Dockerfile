@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         vim-scripts \
         screen \
         sudo \
+        doxygen \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* 
 
@@ -31,10 +32,13 @@ RUN wget http://prdownloads.sourceforge.net/swig/swig-3.0.12.tar.gz \
 
 # Installs 
 RUN go get -u github.com/derekparker/delve/cmd/dlv  && \
+    go get -u github.com/FiloSottile/vendorcheck && \
     git clone https://github.com/fatih/vim-go /usr/share/vim/vim80/pack/dev/start/vim-go && \
     git clone https://github.com/tpope/vim-fugitive /usr/share/vim/vim80/pack/dev/start/vim-fugitive && \
     git clone https://github.com/Shougo/vimshell.vim /usr/share/vim/vim80/pack/dev/start/0vimshell && \
-    git clone https://github.com/Shougo/vimproc.vim /usr/share/vim/vim80/pack/dev/start/0vimproc
+    git clone https://github.com/Shougo/vimproc.vim /usr/share/vim/vim80/pack/dev/start/0vimproc && \
+    cd /usr/share/vim/vim80/pack/dev/start/0vimproc && make && \
+    vim +GoInstallBinaries +qall
 
 WORKDIR $GOPATH/src/github.com/skycoin/skycoin
 VOLUME $GOPATH/src/

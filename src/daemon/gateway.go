@@ -194,9 +194,14 @@ func (gw *Gateway) GetBlockBySeq(seq uint64) (block coin.SignedBlock, ok bool) {
 // GetBlocks returns a *visor.ReadableBlocks
 func (gw *Gateway) GetBlocks(start, end uint64) (*visor.ReadableBlocks, error) {
 	var blocks []coin.SignedBlock
+	var err error
+
 	gw.strand("GetBlocks", func() {
-		blocks = gw.v.GetBlocks(start, end)
+		blocks, err = gw.v.GetBlocks(start, end)
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	return visor.NewReadableBlocks(blocks)
 }
@@ -233,9 +238,13 @@ func (gw *Gateway) GetBlocksInDepth(vs []uint64) (*visor.ReadableBlocks, error) 
 // GetLastBlocks get last N blocks
 func (gw *Gateway) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error) {
 	var blocks []coin.SignedBlock
+	var err error
 	gw.strand("GetLastBlocks", func() {
-		blocks = gw.v.GetLastBlocks(num)
+		blocks, err = gw.v.GetLastBlocks(num)
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	return visor.NewReadableBlocks(blocks)
 }

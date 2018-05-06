@@ -547,8 +547,7 @@ func TestVisorCalculatePrecision(t *testing.T) {
 	})
 }
 
-func makeTestData(t *testing.T, n int) ([]historydb.Transaction,
-	[]coin.SignedBlock, []UnconfirmedTxn, uint64) {
+func makeTestData(t *testing.T, n int) ([]historydb.Transaction, []coin.SignedBlock, []UnconfirmedTxn, uint64) {
 	var txs []historydb.Transaction
 	var blocks []coin.SignedBlock
 	var uncfmTxs []UnconfirmedTxn
@@ -2010,9 +2009,9 @@ func newHistoryerMock2() *historyerMock2 {
 	return &historyerMock2{}
 }
 
-func (h *historyerMock2) ForEach(f func(tx *historydb.Transaction) error) error {
+func (h *historyerMock2) ForEachTxn(tx *bolt.Tx, f func(cipher.SHA256, *historydb.Transaction) error) error {
 	for i := range h.txs {
-		if err := f(&h.txs[i]); err != nil {
+		if err := f(h.txs[i].Hash(), &h.txs[i]); err != nil {
 			return err
 		}
 	}

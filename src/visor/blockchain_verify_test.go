@@ -271,7 +271,8 @@ func createGenesisSpendTransaction(t *testing.T, bc *Blockchain, toAddr cipher.A
 func executeGenesisSpendTransaction(t *testing.T, db *dbutil.DB, bc *Blockchain, txn coin.Transaction) coin.UxOut {
 	var block *coin.Block
 	err := db.View(func(tx *bolt.Tx) error {
-		block, err := bc.NewBlock(tx, coin.Transactions{txn}, GenesisTime+TimeIncrement)
+		var err error
+		block, err = bc.NewBlock(tx, coin.Transactions{txn}, GenesisTime+TimeIncrement)
 		require.NoError(t, err)
 		return nil
 	})
@@ -362,7 +363,8 @@ func TestVerifyTransactionAllConstraints(t *testing.T) {
 	// Create new block to spend the coins
 	var b *coin.Block
 	err = db.View(func(tx *bolt.Tx) error {
-		b, err := bc.NewBlock(tx, coin.Transactions{txn}, genTime+100)
+		var err error
+		b, err = bc.NewBlock(tx, coin.Transactions{txn}, genTime+100)
 		require.NoError(t, err)
 		return nil
 	})

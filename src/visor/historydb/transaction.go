@@ -14,15 +14,10 @@ import (
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
-// lastTxNum reprsents the number of transactions that the GetLastTxs function will return.
-const lastTxNum = 20
-
 var transactionsBkt = []byte("transactions")
 
 // Transactions transaction bucket instance.
-type transactions struct {
-	lastTxs []cipher.SHA256 // records the latest transactions
-}
+type transactions struct{}
 
 // Transaction contains transaction info and the seq of block which executed this block.
 type Transaction struct {
@@ -49,17 +44,9 @@ func newTransactions(db *dbutil.DB) (*transactions, error) {
 }
 
 // Add transaction to the db.
-func (txs *transactions) Add(tx *bolt.Tx, t *Transaction) error {
-	// TODO -- cached data does not rollback on error, remove it
-	// Use a sequence counter to store each hash in a bucket
-	// And iterate this bucket backwards (using tx.Counter()) up to lastTxNum
-	txs.lastTxs = append(txs.lastTxs, t.Hash())
-	if len(txs.lastTxs) > lastTxNum {
-		txs.lastTxs = txs.lastTxs[1:]
-	}
-
-	hash := t.Hash()
-	return dbutil.PutBucketValue(tx, transactionsBkt, hash[:], encoder.Serialize(t))
+func (txs *transactions) Add(tx *bolt.Tx, txn *Transaction) error {
+	hash := txn.Hash()
+	return dbutil.PutBucketValue(tx, transactionsBkt, hash[:], encoder.Serialize(txn))
 }
 
 // Get gets transaction by tx hash, return nil on not found.
@@ -103,7 +90,19 @@ func (txs *transactions) Reset(tx *bolt.Tx) error {
 	return dbutil.Reset(tx, transactionsBkt)
 }
 
-// GetLastTxs get latest tx hash set.
-func (txs *transactions) GetLastTxs() []cipher.SHA256 {
-	return txs.lastTxs
+// ForEach traverses the transactions in db
+func (txs *transactions) ForEach(tx *bolt.Tx, f func(cipher.SHA256, *Transaction) error) error {
+	return dbutil.ForEach(tx, transactionsBkt, func(k, v []byte) error {
+		hash, err := cipher.SHA256FromBytes(k)
+		if err != nil {
+			return err
+		}
+
+		var txn Transaction
+		if err := encoder.DeserializeRaw(v, &txn); err != nil {
+			return err
+		}
+
+		return f(hash, &txn)
+	})
 }

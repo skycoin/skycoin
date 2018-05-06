@@ -188,22 +188,6 @@ func (hd HistoryDB) GetTransaction(tx *bolt.Tx, hash cipher.SHA256) (*Transactio
 	return hd.txns.Get(tx, hash)
 }
 
-// GetLastTxs gets the latest N transactions.
-func (hd HistoryDB) GetLastTxs(tx *bolt.Tx) ([]*Transaction, error) {
-	txHashes := hd.txns.GetLastTxs()
-	txns := make([]*Transaction, len(txHashes))
-
-	for i, h := range txHashes {
-		txn, err := hd.txns.Get(tx, h)
-		if err != nil {
-			return nil, err
-		}
-		txns[i] = txn
-	}
-
-	return txns, nil
-}
-
 // GetAddrUxOuts get all uxout that the address affected.
 func (hd HistoryDB) GetAddrUxOuts(tx *bolt.Tx, address cipher.Address) ([]*UxOut, error) {
 	hashes, err := hd.addrUx.Get(tx, address)
@@ -231,4 +215,9 @@ func (hd HistoryDB) GetAddrTxns(tx *bolt.Tx, address cipher.Address) ([]Transact
 	}
 
 	return hd.txns.GetSlice(tx, hashes)
+}
+
+// ForEachTxn traverses the transactions in db
+func (hd HistoryDB) ForEachTxn(tx *bolt.Tx, f func(cipher.SHA256, *Transaction) error) error {
+	return hd.txns.ForEach(tx, f)
 }

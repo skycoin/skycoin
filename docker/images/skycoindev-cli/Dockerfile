@@ -38,7 +38,7 @@ RUN go get -u github.com/derekparker/delve/cmd/dlv  && \
     git clone https://github.com/Shougo/vimshell.vim /usr/share/vim/vim80/pack/dev/start/0vimshell && \
     git clone https://github.com/Shougo/vimproc.vim /usr/share/vim/vim80/pack/dev/start/0vimproc && \
     cd /usr/share/vim/vim80/pack/dev/start/0vimproc && make && \
-    vim +GoInstallBinaries +qall
+    vim +GoInstallBinaries +qall; echo "Done"
 
 WORKDIR $GOPATH/src/github.com/skycoin/skycoin
 VOLUME $GOPATH/src/

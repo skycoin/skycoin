@@ -192,7 +192,7 @@ func (up *Unspents) GetArray(tx *bolt.Tx, hashes []cipher.SHA256) (coin.UxArray,
 		if err != nil {
 			return nil, err
 		} else if ux == nil {
-			return nil, fmt.Errorf("unspent output does not exist: %s", h.Hex())
+			return nil, NewErrUnspentNotExist(h.Hex())
 		}
 
 		uxa = append(uxa, *ux)

@@ -943,6 +943,20 @@ func (w *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime, coi
 		return nil, ErrWalletEncrypted
 	}
 
+	entriesMap := make(map[cipher.Address]Entry)
+	for _, e := range w.Entries {
+		entriesMap[e.Address] = e
+	}
+
+	// Filter out address unspents that we don't want to use
+	newAuxs := make(coin.AddressUxOuts)
+	for a, uxs := range auxs {
+		if _, ok := entriesMap[a]; ok {
+			newAuxs[a] = uxs
+		}
+	}
+	auxs = newAuxs
+
 	// Determine which unspents to spend.
 	// Use the MaximizeUxOuts strategy, this will keep the uxout pool smaller
 	uxa := auxs.Flatten()
@@ -961,16 +975,12 @@ func (w *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime, coi
 	toSign := make([]cipher.SecKey, len(spends))
 	spending := Balance{Coins: 0, Hours: 0}
 	for i, au := range spends {
-		entry, exists := w.GetEntry(au.Address)
-		if !exists {
-			return nil, NewError(fmt.Errorf("address:%v does not exist in wallet: %v", au.Address, w.Filename()))
+		entry, ok := entriesMap[au.Address]
+		if !ok {
+			return nil, NewError(fmt.Errorf("address %v does not exist in wallet %v", au.Address, w.Filename()))
 		}
 
 		txn.PushInput(au.Hash)
-
-		if w.IsEncrypted() {
-			return nil, ErrWalletEncrypted
-		}
 
 		toSign[i] = entry.Secret
 
@@ -1036,6 +1046,15 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 		}
 	}
 
+	// Filter out address unspents that we don't want to use
+	newAuxs := make(coin.AddressUxOuts)
+	for a, uxs := range auxs {
+		if _, ok := entriesMap[a]; ok {
+			newAuxs[a] = uxs
+		}
+	}
+	auxs = newAuxs
+
 	txn := &coin.Transaction{}
 
 	// Determine which unspents to spend
@@ -1094,7 +1113,12 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 			return nil, nil, err
 		}
 
-		toSign[i] = entriesMap[spend.Address].Secret
+		entry, ok := entriesMap[spend.Address]
+		if !ok {
+			return nil, nil, fmt.Errorf("spend address %s not found in entriesMap", spend.Address.String())
+		}
+
+		toSign[i] = entry.Secret
 		txn.PushInput(spend.Hash)
 	}
 
@@ -1216,7 +1240,12 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 					return nil, nil, err
 				}
 
-				toSign = append(toSign, entriesMap[extra.Address].Secret)
+				entry, ok := entriesMap[extra.Address]
+				if !ok {
+					return nil, nil, fmt.Errorf("extra spend address %s not found in entriesMap", extra.Address.String())
+				}
+
+				toSign = append(toSign, entry.Secret)
 				txn.PushInput(extra.Hash)
 			}
 		}
@@ -1224,6 +1253,11 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 
 	if changeCoins > 0 {
 		txn.PushOutput(params.ChangeAddress, changeCoins, changeHours)
+	}
+
+	logger.Debugf("Signing transaction with %d signatures", len(toSign))
+	for i, s := range toSign {
+		logger.Debug(i, s.Hex())
 	}
 
 	txn.SignInputs(toSign)

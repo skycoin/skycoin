@@ -13,6 +13,7 @@ import (
 
 	"github.com/boltdb/bolt"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -605,7 +606,7 @@ type expectTxResult struct {
 	err      error
 }
 
-func TestGetTransctions(t *testing.T) {
+func TestGetTransactions(t *testing.T) {
 	// Generates test data
 	txs, blocks, uncfmTxs, headSeq := makeTestData(t, 10)
 	// Generates []Transaction
@@ -1709,27 +1710,35 @@ func TestGetTransctions(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			matchTx := mock.MatchedBy(func(tx *bolt.Tx) bool {
+				return true
+			})
+
 			his := newHistoryerMock2()
 			uncfmTxPool := NewUnconfirmedTxnPoolerMock2()
 			for addr, txs := range tc.addrTxns {
-				his.On("GetAddrTxns", addr).Return(txs.Txs, nil)
+				his.On("GetAddrTxns", matchTx, addr).Return(txs.Txs, nil)
 				his.txs = append(his.txs, txs.Txs...)
 
-				uncfmTxPool.On("GetUnspentsOfAddr", addr).Return(makeUncfmUxs(txs.UncfmTxs))
+				uncfmTxPool.On("GetUnspentsOfAddr", matchTx, addr).Return(makeUncfmUxs(txs.UncfmTxs), nil)
 				for i, uncfmTx := range txs.UncfmTxs {
-					uncfmTxPool.On("Get", uncfmTx.Hash()).Return(&txs.UncfmTxs[i], true)
+					uncfmTxPool.On("Get", matchTx, uncfmTx.Hash()).Return(&txs.UncfmTxs[i], nil)
 				}
 				uncfmTxPool.txs = append(uncfmTxPool.txs, txs.UncfmTxs...)
 			}
 
 			bc := NewBlockchainerMock()
 			for i, b := range tc.blocks {
-				bc.On("GetBlockBySeq", b.Seq()).Return(&tc.blocks[i], nil)
+				bc.On("GetSignedBlockBySeq", matchTx, b.Seq()).Return(&tc.blocks[i], nil)
 			}
 
-			bc.On("HeadSeq").Return(tc.bcHeadSeq)
+			bc.On("HeadSeq", matchTx).Return(tc.bcHeadSeq, true, nil)
+
+			db, shutdown := testutil.PrepareDB(t)
+			defer shutdown()
 
 			v := &Visor{
+				db:          db,
 				history:     his,
 				Unconfirmed: uncfmTxPool,
 				Blockchain:  bc,

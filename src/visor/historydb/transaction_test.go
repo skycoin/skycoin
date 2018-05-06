@@ -20,38 +20,6 @@ var _ = func() int64 {
 	return t
 }()
 
-func TestGetLastTxs(t *testing.T) {
-	testData := []uint64{0, 3, lastTxNum, lastTxNum + 10}
-	for i := range testData {
-		func(i uint64) {
-			db, teardown := testutil.PrepareDB(t)
-			defer teardown()
-
-			txIns, err := newTransactions(db)
-			require.NoError(t, err)
-
-			var txns []cipher.SHA256
-			err = db.Update(func(tx *bolt.Tx) error {
-				for j := uint64(0); j < testData[i]; j++ {
-					txn := makeTransaction(t)
-					txns = append(txns, txn.Hash())
-					err := txIns.Add(tx, &txn)
-					require.NoError(t, err)
-				}
-				return nil
-			})
-			require.NoError(t, err)
-
-			if testData[i] > lastTxNum {
-				txns = txns[len(txns)-lastTxNum:]
-			}
-
-			lastTxHash := txIns.GetLastTxs()
-			require.Equal(t, txns, lastTxHash)
-		}(uint64(i))
-	}
-}
-
 func TestTransactionGet(t *testing.T) {
 	txns := make([]Transaction, 0, 3)
 	for i := 0; i < 3; i++ {

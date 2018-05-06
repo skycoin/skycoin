@@ -227,7 +227,7 @@ func TestUnspentPoolGetArray(t *testing.T) {
 		{
 			"get not exist",
 			[]cipher.SHA256{outsideUx.Hash()},
-			fmt.Errorf("unspent output does not exist: %s", outsideUx.Hash().Hex()),
+			NewErrUnspentNotExist(outsideUx.Hash().Hex()),
 			coin.UxArray{},
 		},
 	}

@@ -42,7 +42,7 @@ func makeTransactionForChain(t *testing.T, tx *bolt.Tx, bc *Blockchain, ux coin.
 	knownUx, err := bc.Unspent().Get(tx, ux.Hash())
 	require.NoError(t, err)
 	require.NotNil(t, knownUx)
-	require.Equal(t, knownUx, ux)
+	require.Equal(t, knownUx, &ux)
 
 	txn.PushInput(ux.Hash())
 

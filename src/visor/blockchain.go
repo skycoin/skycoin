@@ -677,7 +677,7 @@ func (bc *Blockchain) verifySigs(tx *bolt.Tx, workers int) error {
 				select {
 				case sh := <-sigHashes:
 					if err := cipher.VerifySignature(bc.pubkey, sh.sig, sh.hash); err != nil {
-						logger.Error("Signature verification failed: %v", err)
+						logger.Errorf("Signature verification failed: %v", err)
 						select {
 						case errC <- err:
 						default:
@@ -719,7 +719,7 @@ func (bc *Blockchain) verifySigs(tx *bolt.Tx, workers int) error {
 				return errStopped
 			}
 		}); err != nil && err != errStopped {
-			logger.Error("bc.store.ForEachBlock failed: %v", err)
+			logger.Errorf("bc.store.ForEachBlock failed: %v", err)
 			select {
 			case errC <- err:
 			default:

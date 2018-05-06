@@ -227,7 +227,7 @@ func NewUnconfirmedTxnPool(db *dbutil.DB) (*UnconfirmedTxnPool, error) {
 			return err
 		}
 
-		logger.Info("Unconfirmed transaction pool size: %d", n)
+		logger.Infof("Unconfirmed transaction pool size: %d", n)
 		return nil
 	}); err != nil {
 		return nil, err
@@ -250,7 +250,7 @@ func (utp *UnconfirmedTxnPool) SetTxnsAnnounced(tx *bolt.Tx, hashes []cipher.SHA
 		}
 
 		if txn == nil {
-			logger.Warning("UnconfirmedTxnPool.SetTxnsAnnounced: UnconfirmedTxn %s not found in DB", h.Hex())
+			logger.Warningf("UnconfirmedTxnPool.SetTxnsAnnounced: UnconfirmedTxn %s not found in DB", h.Hex())
 			continue
 		}
 
@@ -301,21 +301,27 @@ func (utp *UnconfirmedTxnPool) InjectTransaction(tx *bolt.Tx, bc Blockchainer, t
 		}
 	}
 
-	// Update if we already have this txn
-	h := txn.Hash()
-	known := false
-	if err := utp.txns.update(tx, h, func(utxn *UnconfirmedTxn) error {
-		known = true
-		now := utc.Now().UnixNano()
-		utxn.Received = now
-		utxn.Checked = now
-		utxn.IsValid = isValid
-		return nil
-	}); err != nil {
+	hash := txn.Hash()
+
+	known, err := utp.txns.hasKey(tx, hash)
+	if err != nil {
+		logger.Debugf("InjectTransaction check txn exists failed: %v", err)
 		return false, nil, err
 	}
 
+	// Update if we already have this txn
 	if known {
+		if err := utp.txns.update(tx, hash, func(utxn *UnconfirmedTxn) error {
+			now := utc.Now().UnixNano()
+			utxn.Received = now
+			utxn.Checked = now
+			utxn.IsValid = isValid
+			return nil
+		}); err != nil {
+			logger.Debugf("InjectTransaction update known txn failed: %v", err)
+			return false, nil, err
+		}
+
 		return true, softErr, nil
 	}
 
@@ -324,16 +330,19 @@ func (utp *UnconfirmedTxnPool) InjectTransaction(tx *bolt.Tx, bc Blockchainer, t
 
 	// add txn to index
 	if err := utp.txns.put(tx, &utx); err != nil {
+		logger.Debugf("InjectTransaction put new unconfirmed txn failed: %v", err)
 		return false, nil, err
 	}
 
 	head, err := bc.Head(tx)
 	if err != nil {
+		logger.Debugf("InjectTransaction bc.Head() failed: %v", err)
 		return false, nil, err
 	}
 
 	// update unconfirmed unspent
-	if err := utp.unspent.put(tx, h, coin.CreateUnspents(head.Head, txn)); err != nil {
+	if err := utp.unspent.put(tx, hash, coin.CreateUnspents(head.Head, txn)); err != nil {
+		logger.Debugf("InjectTransaction put new unspent outputs: %v", err)
 		return false, nil, err
 	}
 

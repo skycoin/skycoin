@@ -48,6 +48,20 @@ func lookupWebRpcClientHandle(handle C.WebRpcClient__Handle) (*webrpc.Client, bo
 	return nil, false
 }
 
+func registerConfigHandle(obj *cli.Config) C.Config__Handle {
+	return (C.Config__Handle)(registerHandle(obj))
+}
+
+func lookupConfigHandle(handle C.Config__Handle) (*cli.Config, bool) {
+	obj, ok := lookupHandleObj(Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*cli.Config); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
 func registerPasswordReaderHandle(obj cli.PasswordReader) C.PasswordReader__Handle {
 	return (C.PasswordReader__Handle)(registerHandle(obj))
 }

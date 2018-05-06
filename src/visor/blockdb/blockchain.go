@@ -18,19 +18,19 @@ var (
 	ErrNoHeadBlock = fmt.Errorf("found no head block")
 )
 
-// ErrSignatureLost is returned if a block in the db does not have a corresponding signature in the db
-type ErrSignatureLost struct {
+// ErrMissingSignature is returned if a block in the db does not have a corresponding signature in the db
+type ErrMissingSignature struct {
 	b *coin.Block
 }
 
-// NewErrSignatureLost creates ErrSignatureLost from *coin.Block
-func NewErrSignatureLost(b *coin.Block) error {
-	return ErrSignatureLost{
+// NewErrMissingSignature creates ErrMissingSignature from *coin.Block
+func NewErrMissingSignature(b *coin.Block) error {
+	return ErrMissingSignature{
 		b: b,
 	}
 }
 
-func (e ErrSignatureLost) Error() string {
+func (e ErrMissingSignature) Error() string {
 	return fmt.Sprintf("Signature not found for block seq=%d hash=%s", e.b.Head.BkSeq, e.b.HashHeader().Hex())
 }
 
@@ -220,7 +220,7 @@ func (bc *Blockchain) GetSignedBlockByHash(tx *bolt.Tx, hash cipher.SHA256) (*co
 	}
 
 	if !ok {
-		return nil, NewErrSignatureLost(b)
+		return nil, NewErrMissingSignature(b)
 	}
 
 	return &coin.SignedBlock{
@@ -245,7 +245,7 @@ func (bc *Blockchain) GetSignedBlockBySeq(tx *bolt.Tx, seq uint64) (*coin.Signed
 	}
 
 	if !ok {
-		return nil, NewErrSignatureLost(b)
+		return nil, NewErrMissingSignature(b)
 	}
 
 	return &coin.SignedBlock{

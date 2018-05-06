@@ -9,6 +9,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
@@ -439,7 +440,7 @@ func (bc Blockchain) GetBlocks(tx *bolt.Tx, start, end uint64) ([]coin.SignedBlo
 
 	var blocks []coin.SignedBlock
 	for i := start; i <= end; i++ {
-		b, err := bc.store.GetBlockBySeq(tx, i)
+		b, err := bc.store.GetSignedBlockBySeq(tx, i)
 		if err != nil {
 			logger.WithError(err).Error("bc.store.GetBlockBySeq failed")
 			return nil, err
@@ -492,6 +493,11 @@ func (bc Blockchain) processTransactions(tx *bolt.Tx, txs coin.Transactions) (co
 	// copy txs so that the following code won't modify the original txns
 	txns := make(coin.Transactions, len(txs))
 	copy(txns, txs)
+
+	head, err := bc.store.Head(tx)
+	if err != nil {
+		return nil, err
+	}
 
 	// Transactions need to be sorted by fee and hash before arbitrating
 	if bc.arbitrating {
@@ -631,13 +637,13 @@ func (bc Blockchain) processTransactions(tx *bolt.Tx, txs coin.Transactions) (co
 
 // TransactionFee calculates the current transaction fee in coinhours of a Transaction
 func (bc Blockchain) TransactionFee(tx *bolt.Tx, headTime uint64) coin.FeeCalculator {
-	return func(t *coin.Transaction) (uint64, error) {
-		inUxs, err := bc.Unspent().GetArray(tx, t.In)
+	return func(txn *coin.Transaction) (uint64, error) {
+		inUxs, err := bc.Unspent().GetArray(tx, txn.In)
 		if err != nil {
 			return 0, err
 		}
 
-		return TransactionFee(t, headTime, inUxs)
+		return fee.TransactionFee(txn, headTime, inUxs)
 	}
 }
 
@@ -700,7 +706,7 @@ func (bc *Blockchain) verifySigs(tx *bolt.Tx, workers int) error {
 				return err
 			}
 			if !ok {
-				return blockdb.NewErrSignatureLost(block)
+				return blockdb.NewErrMissingSignature(block)
 			}
 
 			select {

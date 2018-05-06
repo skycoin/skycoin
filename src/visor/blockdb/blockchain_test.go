@@ -529,7 +529,7 @@ func TestBlockchainGetBlockByHash(t *testing.T) {
 			},
 			gb.HashHeader(),
 			expect{
-				NewErrSignatureLost(&gb.Block),
+				NewErrMissingSignature(&gb.Block),
 				nil,
 			},
 		},

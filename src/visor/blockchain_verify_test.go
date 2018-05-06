@@ -28,46 +28,51 @@ const (
 	GenesisCoinHours uint64 = 1000 * 1000
 )
 
-func MakeTransactionForChain(t *testing.T, bc *Blockchain, ux coin.UxOut, sec cipher.SecKey, toAddr cipher.Address, amt, hours, fee uint64) coin.Transaction {
-	chrs, err := ux.CoinHours(bc.Time())
+func makeTransactionForChain(t *testing.T, tx *bolt.Tx, bc *Blockchain, ux coin.UxOut, sec cipher.SecKey, toAddr cipher.Address, amt, hours, fee uint64) coin.Transaction {
+	var txn coin.Transaction
+
+	head, err := bc.Head(tx)
+	require.NoError(t, err)
+
+	chrs, err := ux.CoinHours(head.Time())
 	require.NoError(t, err)
 
 	require.Equal(t, cipher.AddressFromPubKey(cipher.PubKeyFromSecKey(sec)), ux.Body.Address)
 
-	knownUx, exists := bc.Unspent().Get(ux.Hash())
-	require.True(t, exists)
+	knownUx, err := bc.Unspent().Get(tx, ux.Hash())
+	require.NoError(t, err)
+	require.NotNil(t, knownUx)
 	require.Equal(t, knownUx, ux)
 
-	tx := coin.Transaction{}
-	tx.PushInput(ux.Hash())
+	txn.PushInput(ux.Hash())
 
-	tx.PushOutput(toAddr, amt, hours)
+	txn.PushOutput(toAddr, amt, hours)
 
 	// Change output
 	coinsOut := ux.Body.Coins - amt
 	if coinsOut > 0 {
-		tx.PushOutput(GenesisAddress, coinsOut, chrs-hours-fee)
+		txn.PushOutput(GenesisAddress, coinsOut, chrs-hours-fee)
 	}
 
-	tx.SignInputs([]cipher.SecKey{sec})
+	txn.SignInputs([]cipher.SecKey{sec})
 
-	require.Equal(t, len(tx.Sigs), 1)
+	require.Equal(t, len(txn.Sigs), 1)
 
-	err = cipher.ChkSig(ux.Body.Address, cipher.AddSHA256(tx.HashInner(), tx.In[0]), tx.Sigs[0])
+	err = cipher.ChkSig(ux.Body.Address, cipher.AddSHA256(txn.HashInner(), txn.In[0]), txn.Sigs[0])
 	require.NoError(t, err)
 
-	tx.UpdateHeader()
+	txn.UpdateHeader()
 
-	err = tx.Verify()
+	err = txn.Verify()
 	require.NoError(t, err)
 
-	err = bc.VerifySingleTxnHardConstraints(tx)
+	err = bc.VerifySingleTxnHardConstraints(tx, txn)
 	require.NoError(t, err)
 
-	return tx
+	return txn
 }
 
-func MakeBlockchain(t *testing.T, db *bolt.DB, seckey cipher.SecKey) *Blockchain {
+func MakeBlockchain(t *testing.T, db *dbutil.DB, seckey cipher.SecKey) *Blockchain {
 	pubkey := cipher.PubKeyFromSecKey(seckey)
 	b, err := NewBlockchain(db, pubkey)
 	require.NoError(t, err)
@@ -77,12 +82,13 @@ func MakeBlockchain(t *testing.T, db *bolt.DB, seckey cipher.SecKey) *Blockchain
 	}
 
 	sig := cipher.SignHash(gb.HashHeader(), seckey)
-	db.Update(func(tx *bolt.Tx) error {
-		return b.ExecuteBlockWithTx(tx, &coin.SignedBlock{
+	err = db.Update(func(tx *bolt.Tx) error {
+		return b.ExecuteBlock(tx, &coin.SignedBlock{
 			Block: *gb,
 			Sig:   sig,
 		})
 	})
+	require.NoError(t, err)
 	return b
 }
 
@@ -93,48 +99,48 @@ func MakeAddress() (cipher.PubKey, cipher.SecKey, cipher.Address) {
 }
 
 func makeLostCoinTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction {
-	tx := coin.Transaction{}
+	txn := coin.Transaction{}
 	var totalCoins uint64
 	var totalHours uint64
 
 	for _, ux := range uxs {
-		tx.PushInput(ux.Hash())
+		txn.PushInput(ux.Hash())
 		totalCoins += ux.Body.Coins
 		totalHours += ux.Body.Hours
 	}
 
-	tx.PushOutput(toAddr, coins, totalHours/4)
+	txn.PushOutput(toAddr, coins, totalHours/4)
 	changeCoins := totalCoins - coins
 	if changeCoins > 0 {
-		tx.PushOutput(uxs[0].Body.Address, changeCoins-1, totalHours/4)
+		txn.PushOutput(uxs[0].Body.Address, changeCoins-1, totalHours/4)
 	}
 
-	tx.SignInputs(keys)
-	tx.UpdateHeader()
-	return tx
+	txn.SignInputs(keys)
+	txn.UpdateHeader()
+	return txn
 }
 
 func makeDuplicateUxOutTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction {
-	tx := coin.Transaction{}
+	txn := coin.Transaction{}
 	var totalCoins uint64
 	var totalHours uint64
 
 	for _, ux := range uxs {
-		tx.PushInput(ux.Hash())
+		txn.PushInput(ux.Hash())
 		totalCoins += ux.Body.Coins
 		totalHours += ux.Body.Hours
 	}
 
-	tx.PushOutput(toAddr, coins, totalHours/8)
-	tx.PushOutput(toAddr, coins, totalHours/8)
+	txn.PushOutput(toAddr, coins, totalHours/8)
+	txn.PushOutput(toAddr, coins, totalHours/8)
 	changeCoins := totalCoins - coins
 	if changeCoins > 0 {
-		tx.PushOutput(uxs[0].Body.Address, changeCoins, totalHours/4)
+		txn.PushOutput(uxs[0].Body.Address, changeCoins, totalHours/4)
 	}
 
-	tx.SignInputs(keys)
-	tx.UpdateHeader()
-	return tx
+	txn.SignInputs(keys)
+	txn.UpdateHeader()
+	return txn
 }
 
 // makeUnspentsTx creates a transaction that has a configurable number of outputs sent to the same address.
@@ -239,27 +245,38 @@ func makeSpendTxWithHoursBurned(t *testing.T, uxs coin.UxArray, keys []cipher.Se
 }
 
 func createGenesisSpendTransaction(t *testing.T, bc *Blockchain, toAddr cipher.Address, coins, hours, fee uint64) coin.Transaction {
-	uxOuts, err := bc.Unspent().GetAll()
+	var txn coin.Transaction
+	err := bc.db.View(func(tx *bolt.Tx) error {
+		uxOuts, err := bc.Unspent().GetAll(tx)
+		require.NoError(t, err)
+		require.Len(t, uxOuts, 1)
+
+		txn = makeTransactionForChain(t, tx, bc, uxOuts[0], GenesisSecret, toAddr, coins, hours, fee)
+		require.Equal(t, txn.Out[0].Address.String(), toAddr.String())
+
+		if coins == GenesisCoins {
+			// No change output
+			require.Len(t, txn.Out, 1)
+		} else {
+			require.Len(t, txn.Out, 2)
+			require.Equal(t, txn.Out[1].Address.String(), GenesisAddress.String())
+		}
+
+		return nil
+	})
 	require.NoError(t, err)
-	require.Len(t, uxOuts, 1)
-
-	txn := MakeTransactionForChain(t, bc, uxOuts[0], GenesisSecret, toAddr, coins, hours, fee)
-	require.Equal(t, txn.Out[0].Address.String(), toAddr.String())
-
-	if coins == GenesisCoins {
-		// No change output
-		require.Len(t, txn.Out, 1)
-	} else {
-		require.Len(t, txn.Out, 2)
-		require.Equal(t, txn.Out[1].Address.String(), GenesisAddress.String())
-	}
-
 	return txn
 }
 
 func executeGenesisSpendTransaction(t *testing.T, db *dbutil.DB, bc *Blockchain, txn coin.Transaction) coin.UxOut {
-	block, err := bc.NewBlock(coin.Transactions{txn}, GenesisTime+TimeIncrement)
+	var block *coin.Block
+	err := db.View(func(tx *bolt.Tx) error {
+		block, err := bc.NewBlock(tx, coin.Transactions{txn}, GenesisTime+TimeIncrement)
+		require.NoError(t, err)
+		return nil
+	})
 	require.NoError(t, err)
+	require.NotNil(t, block)
 
 	sig := cipher.SignHash(block.HashHeader(), GenesisSecret)
 	sb := coin.SignedBlock{
@@ -268,7 +285,7 @@ func executeGenesisSpendTransaction(t *testing.T, db *dbutil.DB, bc *Blockchain,
 	}
 
 	err = db.Update(func(tx *bolt.Tx) error {
-		err = bc.ExecuteBlockWithTx(tx, &sb)
+		err = bc.ExecuteBlock(tx, &sb)
 		require.NoError(t, err)
 		return nil
 	})
@@ -305,14 +322,20 @@ func TestVerifyTransactionAllConstraints(t *testing.T) {
 	toAddr := testutil.MakeAddress()
 	coins := uint64(10e6)
 
-	// create normal spending tx
+	verifySingleTxnAllConstraints := func(txn coin.Transaction, maxBlockSize int) error {
+		return db.View(func(tx *bolt.Tx) error {
+			return bc.VerifySingleTxnAllConstraints(tx, txn, maxBlockSize)
+		})
+	}
+
+	// create normal spending txn
 	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
-	tx := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins)
-	err = bc.VerifySingleTxnAllConstraints(tx, DefaultMaxBlockSize)
+	txn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins)
+	err = verifySingleTxnAllConstraints(txn, DefaultMaxBlockSize)
 	require.NoError(t, err)
 
 	// Transaction size exceeds maxSize
-	err = bc.VerifySingleTxnAllConstraints(tx, tx.Size()-1)
+	err = verifySingleTxnAllConstraints(txn, txn.Size()-1)
 	requireSoftViolation(t, "Transaction size bigger than max block size", err)
 
 	// Invalid transaction fee
@@ -321,28 +344,34 @@ func TestVerifyTransactionAllConstraints(t *testing.T) {
 	for _, ux := range uxs {
 		hours += ux.Body.Hours
 	}
-	tx = makeSpendTxWithHoursBurned(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins, 0)
-	err = bc.VerifySingleTxnAllConstraints(tx, DefaultMaxBlockSize)
+	txn = makeSpendTxWithHoursBurned(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins, 0)
+	err = verifySingleTxnAllConstraints(txn, DefaultMaxBlockSize)
 	requireSoftViolation(t, "Transaction has zero coinhour fee", err)
 
 	// Transaction locking is tested by TestVerifyTransactionIsLocked
 
 	// Test invalid header hash
-	originInnerHash := tx.InnerHash
-	tx.InnerHash = cipher.SHA256{}
-	err = bc.VerifySingleTxnAllConstraints(tx, DefaultMaxBlockSize)
+	originInnerHash := txn.InnerHash
+	txn.InnerHash = cipher.SHA256{}
+	err = verifySingleTxnAllConstraints(txn, DefaultMaxBlockSize)
 	requireHardViolation(t, "Invalid header hash", err)
 
 	// Set back the originInnerHash
-	tx.InnerHash = originInnerHash
+	txn.InnerHash = originInnerHash
 
 	// Create new block to spend the coins
-	b, err := bc.NewBlock(coin.Transactions{tx}, genTime+100)
+	var b *coin.Block
+	err = db.View(func(tx *bolt.Tx) error {
+		b, err := bc.NewBlock(tx, coin.Transactions{txn}, genTime+100)
+		require.NoError(t, err)
+		return nil
+	})
 	require.NoError(t, err)
+	require.NotNil(t, b)
 
 	// Add the block to blockchain
 	err = bc.db.Update(func(tx *bolt.Tx) error {
-		return bc.store.AddBlockWithTx(tx, &coin.SignedBlock{
+		return bc.store.AddBlock(tx, &coin.SignedBlock{
 			Block: *b,
 			Sig:   cipher.SignHash(b.HashHeader(), genSecret),
 		})
@@ -350,30 +379,30 @@ func TestVerifyTransactionAllConstraints(t *testing.T) {
 	require.NoError(t, err)
 
 	// A UxOut does not exist, it was already spent
-	err = bc.VerifySingleTxnAllConstraints(tx, DefaultMaxBlockSize)
-	expectedErr := NewErrTxnViolatesHardConstraint(blockdb.NewErrUnspentNotExist(tx.In[0].Hex()))
+	err = verifySingleTxnAllConstraints(txn, DefaultMaxBlockSize)
+	expectedErr := NewErrTxnViolatesHardConstraint(blockdb.NewErrUnspentNotExist(txn.In[0].Hex()))
 	require.Equal(t, expectedErr, err)
 
 	// Check invalid sig
-	uxs = coin.CreateUnspents(b.Head, tx)
+	uxs = coin.CreateUnspents(b.Head, txn)
 	_, key := cipher.GenerateKeyPair()
 	toAddr2 := testutil.MakeAddress()
 	tx2 := makeSpendTx(t, uxs, []cipher.SecKey{key, key}, toAddr2, 5e6)
-	err = bc.VerifySingleTxnAllConstraints(tx2, DefaultMaxBlockSize)
+	err = verifySingleTxnAllConstraints(tx2, DefaultMaxBlockSize)
 	requireHardViolation(t, "Signature not valid for output being spent", err)
 
 	// Create lost coin transaction
-	uxs2 := coin.CreateUnspents(b.Head, tx)
+	uxs2 := coin.CreateUnspents(b.Head, txn)
 	toAddr3 := testutil.MakeAddress()
 	lostCoinTx := makeLostCoinTx(coin.UxArray{uxs2[1]}, []cipher.SecKey{genSecret}, toAddr3, 10e5)
-	err = bc.VerifySingleTxnAllConstraints(lostCoinTx, DefaultMaxBlockSize)
+	err = verifySingleTxnAllConstraints(lostCoinTx, DefaultMaxBlockSize)
 	requireHardViolation(t, "Transactions may not destroy coins", err)
 
 	// Create transaction with duplicate UxOuts
-	uxs = coin.CreateUnspents(b.Head, tx)
+	uxs = coin.CreateUnspents(b.Head, txn)
 	toAddr4 := testutil.MakeAddress()
 	dupUxOutTx := makeDuplicateUxOutTx(coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr4, 1e6)
-	err = bc.VerifySingleTxnAllConstraints(dupUxOutTx, DefaultMaxBlockSize)
+	err = verifySingleTxnAllConstraints(dupUxOutTx, DefaultMaxBlockSize)
 	requireHardViolation(t, "Duplicate output in transaction", err)
 }
 
@@ -397,15 +426,22 @@ func TestVerifyTxnFeeCoinHoursAdditionFails(t *testing.T) {
 	toAddr := testutil.MakeAddress()
 	coins := uint64(10e6)
 
-	// create normal spending tx
+	// create normal spending txn
 	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
-	tx := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins)
+	txn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins)
 
-	uxIn, err := bc.Unspent().GetArray(tx.In)
-	require.NoError(t, err)
-	require.NotEmpty(t, uxIn)
+	var uxIn coin.UxArray
+	var head *coin.SignedBlock
+	err = db.View(func(tx *bolt.Tx) error {
+		var err error
+		uxIn, err = bc.Unspent().GetArray(tx, txn.In)
+		require.NoError(t, err)
+		require.NotEmpty(t, uxIn)
 
-	head, err := bc.Head()
+		head, err = bc.Head(tx)
+		require.NoError(t, err)
+		return nil
+	})
 	require.NoError(t, err)
 
 	// Set the uxIn's hours high, so that uxIn.CoinHours() returns an error
@@ -414,14 +450,14 @@ func TestVerifyTxnFeeCoinHoursAdditionFails(t *testing.T) {
 	testutil.RequireError(t, coinHoursErr, "UxOut.CoinHours addition of earned coin hours overflow")
 
 	// VerifySingleTxnSoftConstraints should fail on this, when trying to calculate the TransactionFee
-	err = VerifySingleTxnSoftConstraints(tx, head.Time()+1e6, uxIn, DefaultMaxBlockSize)
+	err = VerifySingleTxnSoftConstraints(txn, head.Time()+1e6, uxIn, DefaultMaxBlockSize)
 	testutil.RequireError(t, err, NewErrTxnViolatesSoftConstraint(coinHoursErr).Error())
 
 	// VerifySingleTxnHardConstraints should fail on this, when performing the extra check of
 	// uxIn.CoinHours() errors, which is ignored by VerifyTransactionHoursSpending if the error
 	// is because of the earned hours addition overflow
 	head.Block.Head.Time += 1e6
-	err = VerifySingleTxnHardConstraints(tx, head, uxIn)
+	err = VerifySingleTxnHardConstraints(txn, head, uxIn)
 	testutil.RequireError(t, err, NewErrTxnViolatesHardConstraint(coinHoursErr).Error())
 }
 
@@ -478,10 +514,18 @@ func testVerifyTransactionAddressLocking(t *testing.T, toAddr string, expectedEr
 		},
 	}
 
-	uxIn, err := bc.Unspent().GetArray(txn.In)
-	require.NoError(t, err)
+	var uxIn coin.UxArray
+	var head *coin.SignedBlock
+	err = db.View(func(tx *bolt.Tx) error {
+		var err error
+		uxIn, err = bc.Unspent().GetArray(tx, txn.In)
+		require.NoError(t, err)
+		require.NotEmpty(t, uxIn)
 
-	head, err := bc.Head()
+		head, err = bc.Head(tx)
+		require.NoError(t, err)
+		return nil
+	})
 	require.NoError(t, err)
 
 	err = VerifySingleTxnSoftConstraints(txn, head.Time(), uxIn, DefaultMaxBlockSize)

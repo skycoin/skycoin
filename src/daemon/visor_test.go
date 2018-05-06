@@ -79,7 +79,7 @@ func MakeBlockchain(t *testing.T, db *dbutil.DB, seckey cipher.SecKey) *visor.Bl
 
 	sig := cipher.SignHash(gb.HashHeader(), seckey)
 	db.Update(func(tx *bolt.Tx) error {
-		return b.ExecuteBlockWithTx(tx, &coin.SignedBlock{
+		return b.ExecuteBlock(tx, &coin.SignedBlock{
 			Block: *gb,
 			Sig:   sig,
 		})

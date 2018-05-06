@@ -20,6 +20,22 @@ var (
 	unspentMetaBkt = []byte("unspent_meta")
 )
 
+// ErrUnspentNotExist is returned if an unspent is not found in the pool
+type ErrUnspentNotExist struct {
+	UxID string
+}
+
+// NewErrUnspentNotExist creates ErrUnspentNotExist from a UxID
+func NewErrUnspentNotExist(uxID string) error {
+	return ErrUnspentNotExist{
+		UxID: uxID,
+	}
+}
+
+func (e ErrUnspentNotExist) Error() string {
+	return fmt.Sprintf("unspent output of %s does not exist", e.UxID)
+}
+
 // UnspentGetter provides unspent pool related querying methods
 type UnspentGetter interface {
 	// GetUnspentsOfAddrs returns all unspent outputs of given addresses

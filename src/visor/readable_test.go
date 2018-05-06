@@ -28,7 +28,6 @@ func prepareWltDir() string {
 }
 
 func createGenesisSignature(t *testing.T) cipher.Sig {
-
 	_, s := cipher.GenerateKeyPair()
 	gb, err := coin.NewGenesisBlock(GenesisAddress, GenesisCoins, GenesisTime)
 	if err != nil {
@@ -57,7 +56,7 @@ func setupVisor(t *testing.T) (v *Visor, close func()) {
 }
 
 func transferCoins(t *testing.T, v *Visor) error {
-	head := addGenesisBlock(t, v.Blockchain)
+	head := addGenesisBlock(t, v.Blockchain.(*Blockchain))
 	toAddrs := make([]cipher.Address, 10)
 	keys := make([]cipher.SecKey, 10)
 	for i := 0; i < 10; i++ {
@@ -75,8 +74,15 @@ func transferCoins(t *testing.T, v *Visor) error {
 	}
 	// create normal spending tx
 	uxs := coin.CreateUnspents(head.Head, head.Body.Transactions[0])
-	tx := makeSpendTx(t, coin.UxArray{uxs[spend.UxIndex]}, spend.Keys, spend.ToAddr, spend.Coins)
-	b, err := v.Blockchain.NewBlock(coin.Transactions{tx}, head.Time()+uint64(100))
+	txn := makeSpendTx(t, coin.UxArray{uxs[spend.UxIndex]}, spend.Keys, spend.ToAddr, spend.Coins)
+
+	var b *coin.Block
+	err := v.db.View(func(tx *bolt.Tx) error {
+		var err error
+		b, err = v.Blockchain.NewBlock(tx, coin.Transactions{txn}, head.Time()+uint64(100))
+		require.NoError(t, err)
+		return nil
+	})
 	require.NoError(t, err)
 
 	sb := &coin.SignedBlock{
@@ -86,7 +92,7 @@ func transferCoins(t *testing.T, v *Visor) error {
 	v.db.Update(func(tx *bolt.Tx) error {
 		bcc, ok := v.Blockchain.(*Blockchain)
 		require.True(t, ok)
-		return bcc.store.AddBlockWithTx(tx, sb)
+		return bcc.store.AddBlock(tx, sb)
 	})
 	head = sb
 	return nil
@@ -107,11 +113,11 @@ func TestNewBlockchainMetadata(t *testing.T) {
 	defer close()
 	assert.Nil(t, transferCoins(t, v))
 
-	bcm, err := NewBlockchainMetadata(v)
+	bcm, err := v.GetBlockchainMetadata()
 	require.NoError(t, err)
 	assert.Equal(t, uint64(2), bcm.Unspents)
 	assert.Equal(t, uint64(0), bcm.Unconfirmed)
-	b, err := v.Blockchain.Head()
+	b, err := v.GetHeadBlock()
 	require.NoError(t, err)
 	assertReadableBlockHeader(t, bcm.Head, b.Block.Head)
 	assertJSONSerializability(t, &bcm)
@@ -159,7 +165,7 @@ func TestReadableTransactionOutput(t *testing.T) {
 	v, close := setupVisor(t)
 	defer close()
 	assert.Nil(t, transferCoins(t, v))
-	b, err := v.Blockchain.Head()
+	b, err := v.GetHeadBlock()
 	require.NoError(t, err)
 	to := b.Body.Transactions[0].Out[0]
 
@@ -178,7 +184,7 @@ func TestReadableTransactionInput(t *testing.T) {
 	v, close := setupVisor(t)
 	defer close()
 	assert.Nil(t, transferCoins(t, v))
-	b, err := v.Blockchain.Head()
+	b, err := v.GetHeadBlock()
 	require.NoError(t, err)
 	ti := b.Body.Transactions[0].In[0]
 	rti := ti.Hex()
@@ -202,7 +208,7 @@ func TestReadableTransaction(t *testing.T) {
 	v, close := setupVisor(t)
 	defer close()
 	assert.Nil(t, transferCoins(t, v))
-	b, err := v.Blockchain.Head()
+	b, err := v.GetHeadBlock()
 	require.NoError(t, err)
 	tx := b.Body.Transactions[0]
 
@@ -227,15 +233,15 @@ func TestNewReadableBlockHeader(t *testing.T) {
 	v, close := setupVisor(t)
 	defer close()
 	assert.Nil(t, transferCoins(t, v))
-	bh, err := v.Blockchain.Head()
+
+	bh, err := v.GetHeadBlock()
 	require.NoError(t, err)
 	assert.Equal(t, bh.Head.BkSeq, uint64(1))
 	rb := NewReadableBlockHeader(&bh.Head)
 	assertReadableBlockHeader(t, rb, bh.Head)
 }
 
-func assertReadableBlockBody(t *testing.T, rbb ReadableBlockBody,
-	bb coin.BlockBody) {
+func assertReadableBlockBody(t *testing.T, rbb ReadableBlockBody, bb coin.BlockBody) {
 	assert.Equal(t, len(rbb.Transactions), len(bb.Transactions))
 	for i, rt := range rbb.Transactions {
 		assertReadableTransaction(t, rt, bb.Transactions[i])
@@ -253,7 +259,7 @@ func TestNewReadableBlock(t *testing.T) {
 	v, close := setupVisor(t)
 	defer close()
 	assert.Nil(t, transferCoins(t, v))
-	sb, err := v.Blockchain.Head()
+	sb, err := v.GetHeadBlock()
 	require.NoError(t, err)
 	assert.Equal(t, sb.Head.BkSeq, uint64(1))
 	rb, err := NewReadableBlock(&sb.Block)

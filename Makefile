@@ -32,6 +32,7 @@ BUILD_DIR = build
 BUILDLIB_DIR = $(BUILD_DIR)/libskycoin
 LIB_DIR = lib
 LIB_FILES = $(shell find ./lib/cgo -type f -name "*.go")
+SRC_FILES = $(shell find ./src -type f -name "*.go")
 BIN_DIR = bin
 DOC_DIR = docs
 INCLUDE_DIR = include
@@ -93,7 +94,7 @@ configure-build:
 
 build-libc: configure-build $(BUILDLIB_DIR)/libskycoin.so $(BUILDLIB_DIR)/libskycoin.a ## Build libskycoin C client library
 	
-$(BUILDLIB_DIR)/libskycoin.so $(BUILDLIB_DIR)/libskycoin.a: $(LIB_FILES)
+$(BUILDLIB_DIR)/libskycoin.so $(BUILDLIB_DIR)/libskycoin.a: $(LIB_FILES) $(SRC_FILES)
 	rm -Rf $(BUILDLIB_DIR)/*
 	go build -buildmode=c-shared  -o $(BUILDLIB_DIR)/libskycoin.so $(LIB_FILES)
 	go build -buildmode=c-archive -o $(BUILDLIB_DIR)/libskycoin.a  $(LIB_FILES)
@@ -109,6 +110,7 @@ build-libc-dbg: configure-build
 	mv $(BUILDLIB_DIR)/libskycoin.h $(INCLUDE_DIR)/
 	$(CC) -g -o $(BIN_DIR)/test_libskycoin_shared $(LIB_DIR)/cgo/tests/*.c -lskycoin                    $(LDLIBS) $(LDFLAGS)
 	$(CC) -g -o $(BIN_DIR)/test_libskycoin_static $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/libskycoin.a $(LDLIBS) $(LDFLAGS)
+
 
 test-libc: build-libc ## Run tests for libskycoin C client library
 	$(CC) -o $(BIN_DIR)/test_libskycoin_shared $(LIB_DIR)/cgo/tests/*.c -lskycoin                    $(LDLIBS) $(LDFLAGS)

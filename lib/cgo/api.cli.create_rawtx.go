@@ -18,7 +18,7 @@ import (
 import "C"
 
 //export SKY_cli_CreateRawTxFromWallet
-func SKY_cli_CreateRawTxFromWallet(_c *C.WebRpcClient__Handle, _walletFile, _chgAddr string, _toAddrs []C.cli__SendAmount, _arg3 *C.coin__Transaction) (____error_code uint32) {
+func SKY_cli_CreateRawTxFromWallet(_c *C.WebRpcClient__Handle, _walletFile, _chgAddr string, _toAddrs []C.cli__SendAmount, pwd string, _arg3 *C.coin__Transaction) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -31,7 +31,8 @@ func SKY_cli_CreateRawTxFromWallet(_c *C.WebRpcClient__Handle, _walletFile, _chg
 	walletFile := _walletFile
 	chgAddr := _chgAddr
 	toAddrs := *(*[]cli.SendAmount)(unsafe.Pointer(&_toAddrs))
-	__arg3, ____return_err := cli.CreateRawTxFromWallet(c, walletFile, chgAddr, toAddrs)
+	pr := cli.NewPasswordReader([]byte(pwd))
+	__arg3, ____return_err := cli.CreateRawTxFromWallet(c, walletFile, chgAddr, toAddrs, pr)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
 		*_arg3 = *(*C.coin__Transaction)(unsafe.Pointer(__arg3))
@@ -40,7 +41,7 @@ func SKY_cli_CreateRawTxFromWallet(_c *C.WebRpcClient__Handle, _walletFile, _chg
 }
 
 //export SKY_cli_CreateRawTxFromAddress
-func SKY_cli_CreateRawTxFromAddress(_c *C.WebRpcClient__Handle, _addr, _walletFile, _chgAddr string, _toAddrs []C.cli__SendAmount, _arg3 *C.coin__Transaction) (____error_code uint32) {
+func SKY_cli_CreateRawTxFromAddress(_c *C.WebRpcClient__Handle, _addr, _walletFile, _chgAddr string, _toAddrs []C.cli__SendAmount, pwd string, _arg3 *C.coin__Transaction) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -54,7 +55,8 @@ func SKY_cli_CreateRawTxFromAddress(_c *C.WebRpcClient__Handle, _addr, _walletFi
 	walletFile := _walletFile
 	chgAddr := _chgAddr
 	toAddrs := *(*[]cli.SendAmount)(unsafe.Pointer(&_toAddrs))
-	__arg3, ____return_err := cli.CreateRawTxFromAddress(c, addr, walletFile, chgAddr, toAddrs)
+	pr := cli.NewPasswordReader([]byte(pwd))
+	__arg3, ____return_err := cli.CreateRawTxFromAddress(c, addr, walletFile, chgAddr, toAddrs, pr)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
 		*_arg3 = *(*C.coin__Transaction)(unsafe.Pointer(__arg3))
@@ -63,7 +65,7 @@ func SKY_cli_CreateRawTxFromAddress(_c *C.WebRpcClient__Handle, _addr, _walletFi
 }
 
 //export SKY_cli_CreateRawTx
-func SKY_cli_CreateRawTx(_c *C.WebRpcClient__Handle, _wlt *C.Wallet__Handle, _inAddrs []string, _chgAddr string, _toAddrs []C.cli__SendAmount, _arg5 *C.coin__Transaction) (____error_code uint32) {
+func SKY_cli_CreateRawTx(_c *C.WebRpcClient__Handle, _wlt *C.Wallet__Handle, _inAddrs []string, _chgAddr string, _toAddrs []C.cli__SendAmount, pwd string, _arg5 *C.coin__Transaction) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -81,7 +83,7 @@ func SKY_cli_CreateRawTx(_c *C.WebRpcClient__Handle, _wlt *C.Wallet__Handle, _in
 	inAddrs := *(*[]string)(unsafe.Pointer(&_inAddrs))
 	chgAddr := _chgAddr
 	toAddrs := *(*[]cli.SendAmount)(unsafe.Pointer(&_toAddrs))
-	__arg5, ____return_err := cli.CreateRawTx(c, wlt, inAddrs, chgAddr, toAddrs)
+	__arg5, ____return_err := cli.CreateRawTx(c, wlt, inAddrs, chgAddr, toAddrs, []byte(pwd))
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
 		*_arg5 = *(*C.coin__Transaction)(unsafe.Pointer(__arg5))

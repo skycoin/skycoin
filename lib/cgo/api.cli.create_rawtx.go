@@ -37,7 +37,7 @@ func SKY_cli_CreateRawTxFromWallet(_ctx C.Handle, _walletFile, _chgAddr string, 
 }
 
 //export SKY_cli_CreateRawTxFromAddress
-func SKY_cli_CreateRawTxFromAddress(_ctx C.Handle, _addr, _walletFile, _chgAddr string, _toAddrs []C.cli__SendAmount, _tx *C.coin__Transaction) uint32 {
+func SKY_cli_CreateRawTxFromAddress(_ctx C.WebRpcClient__Handle, _addr, _walletFile, _chgAddr string, _toAddrs []C.cli__SendAmount, _tx *C.coin__Transaction) uint32 {
 	// TODO: Implement
 	return SKY_ERROR
 }

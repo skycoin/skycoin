@@ -121,6 +121,12 @@ typedef GoInt64_ Handle;
  */
 typedef Handle PasswordReader__Handle;
 
+/**
+ * Memory handle granting clients with access to perform Skycoin RPC API calls
+ * encrypted wallets.
+ */
+typedef Handle WebRpcClient__Handle;
+
 #include "cipher.hash.go.h"
 #include "cipher.crypto.go.h"
 #include "cipher.address.go.h"

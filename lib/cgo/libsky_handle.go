@@ -10,8 +10,10 @@ package main
 import "C"
 
 import (
-	cli "github.com/skycoin/skycoin/src/api/cli"
 	"unsafe"
+
+	cli "github.com/skycoin/skycoin/src/api/cli"
+	webrpc "github.com/skycoin/skycoin/src/api/webrpc"
 )
 
 type Handle uint64
@@ -30,6 +32,20 @@ func registerHandle(obj interface{}) Handle {
 func lookupHandleObj(handle Handle) (interface{}, bool) {
 	obj, ok := handleMap[handle]
 	return obj, ok
+}
+
+func registerWebRpcClientHandle(obj *webrpc.Client) C.WebRpcClient__Handle {
+	return (C.WebRpcClient__Handle)(registerHandle(obj))
+}
+
+func lookupWebRpcClientHandle(handle C.WebRpcClient__Handle) (*webrpc.Client, bool) {
+	obj, ok := lookupHandleObj(Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*webrpc.Client); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
 }
 
 func registerPasswordReaderHandle(obj cli.PasswordReader) C.PasswordReader__Handle {

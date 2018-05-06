@@ -35,7 +35,7 @@ func loadBlockchain(db *bolt.DB, pubkey cipher.PubKey, arbitrating bool) (*bolt.
 	dbPath := db.Path()
 	dbReadOnly := db.IsReadOnly()
 
-	logger.Criticalf("Block database signature missing, recreating db: %v", err)
+	logger.Critical().Errorf("Block database signature missing, recreating db: %v", err)
 	if err := db.Close(); err != nil {
 		return nil, nil, fmt.Errorf("failed to close db: %v", err)
 	}
@@ -45,7 +45,7 @@ func loadBlockchain(db *bolt.DB, pubkey cipher.PubKey, arbitrating bool) (*bolt.
 		return nil, nil, fmt.Errorf("Failed to copy corrupted db: %v", err)
 	}
 
-	logger.Criticalf("Moved corrupted db to %s", corruptDBPath)
+	logger.Critical().Errorf("Moved corrupted db to %s", corruptDBPath)
 
 	db, err = OpenDB(dbPath, dbReadOnly)
 	if err != nil {

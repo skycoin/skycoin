@@ -31,7 +31,7 @@ func listAddresses(c *gcli.Context) error {
 
 	wlt, err := wallet.Load(w)
 	if err != nil {
-		return WalletLoadError(err)
+		return WalletLoadError{err}
 	}
 
 	addrs := wlt.GetAddresses()

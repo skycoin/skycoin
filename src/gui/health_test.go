@@ -89,7 +89,7 @@ func TestHealthCheckHandler(t *testing.T) {
 				host:   configuredHost,
 				appLoc: ".",
 			}
-			handler := newServerMux(cfg, gateway, &CSRFStore{})
+			handler := newServerMux(cfg, gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
 
 			if tc.code != http.StatusOK {

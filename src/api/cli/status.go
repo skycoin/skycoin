@@ -6,6 +6,13 @@ import (
 	"github.com/skycoin/skycoin/src/api/webrpc"
 )
 
+// StatusResult is printed by cli status command
+type StatusResult struct {
+	webrpc.StatusResult
+	RPCAddress string `json:"webrpc_address"`
+	UseCSRF    bool   `json:"use_csrf"`
+}
+
 func statusCmd() gcli.Command {
 	name := "status"
 	return gcli.Command{
@@ -20,13 +27,27 @@ func statusCmd() gcli.Command {
 				return err
 			}
 
-			return printJSON(struct {
-				webrpc.StatusResult
-				RPCAddress string `json:"webrpc_address"`
-			}{
+			cfg := ConfigFromContext(c)
+
+			return printJSON(StatusResult{
 				StatusResult: *status,
-				RPCAddress:   rpcClient.Addr,
+				RPCAddress:   cfg.RPCAddress,
+				UseCSRF:      cfg.UseCSRF,
 			})
+		},
+	}
+}
+
+func showConfigCmd() gcli.Command {
+	name := "showConfig"
+	return gcli.Command{
+		Name:         name,
+		Usage:        "Show cli configuration",
+		ArgsUsage:    " ",
+		OnUsageError: onCommandUsageError(name),
+		Action: func(c *gcli.Context) error {
+			cfg := ConfigFromContext(c)
+			return printJSON(cfg)
 		},
 	}
 }

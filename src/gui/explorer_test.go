@@ -103,7 +103,7 @@ func TestGetTransactionsForAddress(t *testing.T) {
 		status                      int
 		err                         string
 		addressParam                string
-		gatewayGetAddressTxnsResult *visor.TransactionResults
+		gatewayGetAddressTxnsResult *daemon.TransactionResults
 		gatewayGetAddressTxnsErr    error
 		gatewayGetUxOutByIDArg      cipher.SHA256
 		gatewayGetUxOutByIDResult   *historydb.UxOut
@@ -136,7 +136,7 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			name:                     "500 - gw GetAddressTxns error",
 			method:                   http.MethodGet,
 			status:                   http.StatusInternalServerError,
-			err:                      "500 Internal Server Error",
+			err:                      "500 Internal Server Error - gateway.GetAddressTxns failed: gatewayGetAddressTxnsErr",
 			addressParam:             address.String(),
 			gatewayGetAddressTxnsErr: errors.New("gatewayGetAddressTxnsErr"),
 		},
@@ -144,10 +144,10 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			name:         "500 - cipher.SHA256FromHex(tx.Transaction.In) error",
 			method:       http.MethodGet,
 			status:       http.StatusInternalServerError,
-			err:          "500 Internal Server Error",
+			err:          "500 Internal Server Error - encoding/hex: odd length hex string",
 			addressParam: address.String(),
-			gatewayGetAddressTxnsResult: &visor.TransactionResults{
-				Txns: []visor.TransactionResult{
+			gatewayGetAddressTxnsResult: &daemon.TransactionResults{
+				Txns: []daemon.TransactionResult{
 					{
 						Transaction: visor.ReadableTransaction{
 							In: []string{
@@ -162,10 +162,10 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			name:         "500 - GetUxOutByID error",
 			method:       http.MethodGet,
 			status:       http.StatusInternalServerError,
-			err:          "500 Internal Server Error",
+			err:          "500 Internal Server Error - gatewayGetUxOutByIDErr",
 			addressParam: address.String(),
-			gatewayGetAddressTxnsResult: &visor.TransactionResults{
-				Txns: []visor.TransactionResult{
+			gatewayGetAddressTxnsResult: &daemon.TransactionResults{
+				Txns: []daemon.TransactionResult{
 					{
 						Transaction: visor.ReadableTransaction{
 							In: []string{
@@ -182,10 +182,10 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			name:         "500 - GetUxOutByID nil result",
 			method:       http.MethodGet,
 			status:       http.StatusInternalServerError,
-			err:          "500 Internal Server Error",
+			err:          "500 Internal Server Error - uxout of 79216473e8f2c17095c6887cc9edca6c023afedfac2e0c5460e8b6f359684f8b does not exist in history db",
 			addressParam: address.String(),
-			gatewayGetAddressTxnsResult: &visor.TransactionResults{
-				Txns: []visor.TransactionResult{
+			gatewayGetAddressTxnsResult: &daemon.TransactionResults{
+				Txns: []daemon.TransactionResult{
 					{
 						Transaction: visor.ReadableTransaction{
 							In: []string{
@@ -202,8 +202,8 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			method:       http.MethodGet,
 			status:       http.StatusOK,
 			addressParam: address.String(),
-			gatewayGetAddressTxnsResult: &visor.TransactionResults{
-				Txns: []visor.TransactionResult{
+			gatewayGetAddressTxnsResult: &daemon.TransactionResults{
+				Txns: []daemon.TransactionResult{
 					{
 						Transaction: visor.ReadableTransaction{
 							In: []string{
@@ -257,7 +257,7 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			} else {
 				setCSRFParameters(csrfStore, tokenInvalid, req)
 			}
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -311,7 +311,7 @@ func TestCoinSupply(t *testing.T) {
 			name:   "500 - gatewayGetUnspentOutputsErr",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error",
+			err:    "500 Internal Server Error - gateway.GetUnspentOutputs failed: gatewayGetUnspentOutputsErr",
 			gatewayGetUnspentOutputsArg: filterInUnlocked,
 			gatewayGetUnspentOutputsErr: errors.New("gatewayGetUnspentOutputsErr"),
 		},
@@ -319,7 +319,7 @@ func TestCoinSupply(t *testing.T) {
 			name:   "500 - gatewayGetUnspentOutputsErr",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error",
+			err:    "500 Internal Server Error - gateway.GetUnspentOutputs failed: gatewayGetUnspentOutputsErr",
 			gatewayGetUnspentOutputsArg: filterInUnlocked,
 			gatewayGetUnspentOutputsErr: errors.New("gatewayGetUnspentOutputsErr"),
 		},
@@ -327,7 +327,7 @@ func TestCoinSupply(t *testing.T) {
 			name:   "500 - too large HeadOutputs item",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error",
+			err:    "500 Internal Server Error - Invalid unlocked output balance string 9223372036854775807: Droplet string conversion failed: Value is too large",
 			gatewayGetUnspentOutputsArg: filterInUnlocked,
 			gatewayGetUnspentOutputsResult: &visor.ReadableOutputSet{
 				HeadOutputs: visor.ReadableOutputs{
@@ -379,7 +379,7 @@ func TestCoinSupply(t *testing.T) {
 			} else {
 				setCSRFParameters(csrfStore, tokenInvalid, req)
 			}
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -444,7 +444,7 @@ func TestGetRichlist(t *testing.T) {
 			name:   "500 - gw GetRichlist error",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error",
+			err:    "500 Internal Server Error - gatewayGetRichlistErr",
 			httpParams: &httpParams{
 				topn:                "1",
 				includeDistribution: "false",
@@ -604,7 +604,7 @@ func TestGetRichlist(t *testing.T) {
 			} else {
 				setCSRFParameters(csrfStore, tokenInvalid, req)
 			}
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -647,7 +647,7 @@ func TestGetAddressCount(t *testing.T) {
 			name:   "500 - gw GetAddressCount error",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error",
+			err:    "500 Internal Server Error - gatewayGetAddressCountErr",
 			gatewayGetAddressCountErr: errors.New("gatewayGetAddressCountErr"),
 		},
 		{
@@ -679,7 +679,7 @@ func TestGetAddressCount(t *testing.T) {
 			} else {
 				setCSRFParameters(csrfStore, tokenInvalid, req)
 			}
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

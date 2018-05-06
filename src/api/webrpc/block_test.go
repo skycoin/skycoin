@@ -109,7 +109,7 @@ func Test_getLastBlocksHandler(t *testing.T) {
 				},
 				gateway: &fakeGateway{},
 			},
-			makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams),
+			MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams),
 		},
 		{
 			"invalid params: no num value",
@@ -122,7 +122,7 @@ func Test_getLastBlocksHandler(t *testing.T) {
 				},
 				gateway: &fakeGateway{},
 			},
-			makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams),
+			MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams),
 		},
 		{
 			"invalid params: empty params",
@@ -134,7 +134,7 @@ func Test_getLastBlocksHandler(t *testing.T) {
 				},
 				gateway: &fakeGateway{},
 			},
-			makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams),
+			MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams),
 		},
 		{
 			"invalid params: more than one param",
@@ -147,7 +147,7 @@ func Test_getLastBlocksHandler(t *testing.T) {
 				},
 				gateway: &fakeGateway{},
 			},
-			makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams),
+			MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams),
 		},
 	}
 
@@ -194,7 +194,7 @@ func Test_getBlocksHandler(t *testing.T) {
 				},
 				gateway: &fakeGateway{},
 			},
-			makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams),
+			MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams),
 		},
 		{
 			"invalid params:lost start",
@@ -207,7 +207,7 @@ func Test_getBlocksHandler(t *testing.T) {
 				},
 				gateway: &fakeGateway{},
 			},
-			makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams),
+			MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams),
 		},
 		{
 			"invalid params: start = abc",
@@ -220,7 +220,7 @@ func Test_getBlocksHandler(t *testing.T) {
 				},
 				gateway: &fakeGateway{},
 			},
-			makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams),
+			MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams),
 		},
 		{
 			"empty params",
@@ -232,7 +232,7 @@ func Test_getBlocksHandler(t *testing.T) {
 				},
 				gateway: &fakeGateway{},
 			},
-			makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams),
+			MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams),
 		},
 		{
 			"start > end",
@@ -309,7 +309,7 @@ func Test_getBlocksBySeqHandler(t *testing.T) {
 				},
 				gateway: m,
 			},
-			makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams),
+			MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams),
 		},
 		{
 			"empty param",
@@ -322,7 +322,7 @@ func Test_getBlocksBySeqHandler(t *testing.T) {
 				},
 				gateway: m,
 			},
-			makeErrorResponse(errCodeInvalidParams, "empty params"),
+			MakeErrorResponse(ErrCodeInvalidParams, "empty params"),
 		},
 	}
 

@@ -66,13 +66,25 @@ func generateWalletCmd(cfg Config) gcli.Command {
 				Name:  "l",
 				Usage: "[label] Label used to idetify your wallet.",
 			},
+			gcli.BoolFlag{
+				Name:  "e,encrypt",
+				Usage: `Whether creates wallet with encryption `,
+			},
+			gcli.StringFlag{
+				Name:  "x,crypto-type",
+				Value: string(wallet.CryptoTypeScryptChacha20poly1305),
+				Usage: "[crypto type] The crypto type for wallet encryption, can be scrypt-chacha20poly1305 or sha256-xor",
+			},
+			gcli.StringFlag{
+				Name:  "p",
+				Usage: "[password] Wallet password",
+			},
 		},
-		Action: generateWallet,
+		Action: generateWalletHandler,
 	}
-	// Commands = append(Commands, cmd)
 }
 
-func generateWallet(c *gcli.Context) error {
+func generateWalletHandler(c *gcli.Context) error {
 	cfg := ConfigFromContext(c)
 
 	// create wallet dir if not exist
@@ -97,8 +109,7 @@ func generateWallet(c *gcli.Context) error {
 
 	// check if the wallet file does exist
 	if _, err := os.Stat(filepath.Join(cfg.WalletDir, wltName)); err == nil {
-		errorWithHelp(c, fmt.Errorf("%v already exist", wltName))
-		return nil
+		return fmt.Errorf("%v already exist", wltName)
 	}
 
 	// check if the wallet dir does exist.
@@ -120,11 +131,49 @@ func generateWallet(c *gcli.Context) error {
 	r := c.Bool("r")
 	rd := c.Bool("rd")
 
+	encrypt := c.Bool("e")
+
 	sd, err := makeSeed(s, r, rd)
 	if err != nil {
 		return err
 	}
-	wlt, err := GenerateWallet(wltName, label, sd, num)
+
+	cryptoType, err := wallet.CryptoTypeFromString(c.String("x"))
+	if err != nil {
+		return err
+	}
+
+	pr := NewPasswordReader([]byte(c.String("p")))
+	switch pr.(type) {
+	case PasswordFromBytes:
+		p, err := pr.Password()
+		if err != nil {
+			return err
+		}
+
+		if !encrypt && len(p) != 0 {
+			return errors.New("password should not be set as we're not going to create a wallet with encryption")
+		}
+	}
+
+	var password []byte
+	if encrypt {
+		var err error
+		password, err = pr.Password()
+		if err != nil {
+			return err
+		}
+	}
+
+	opts := wallet.Options{
+		Label:      label,
+		Seed:       sd,
+		Encrypt:    encrypt,
+		CryptoType: cryptoType,
+		Password:   []byte(password),
+	}
+
+	wlt, err := GenerateWallet(wltName, opts, num)
 	if err != nil {
 		return err
 	}
@@ -164,18 +213,32 @@ func makeSeed(s string, r, rd bool) (string, error) {
 
 // GenerateWallet generates a new wallet with filename walletFile, label, seed and number of addresses.
 // Caller should save the wallet file to its chosen directory
-func GenerateWallet(walletFile, label, seed string, numAddrs uint64) (*wallet.Wallet, error) {
+func GenerateWallet(walletFile string, opts wallet.Options, numAddrs uint64) (*wallet.Wallet, error) {
 	walletFile = filepath.Base(walletFile)
 
 	wlt, err := wallet.NewWallet(walletFile, wallet.Options{
-		Seed:  seed,
-		Label: label,
+		Seed:  opts.Seed,
+		Label: opts.Label,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	if _, err := wlt.GenerateAddresses(numAddrs); err != nil {
+	if numAddrs > 1 {
+		if _, err := wlt.GenerateAddresses(numAddrs - 1); err != nil {
+			return nil, err
+		}
+	}
+
+	if !opts.Encrypt {
+		if len(opts.Password) != 0 {
+			return nil, wallet.ErrWalletNotEncrypted
+		}
+
+		return wlt, nil
+	}
+
+	if err := wlt.Lock(opts.Password, opts.CryptoType); err != nil {
 		return nil, err
 	}
 

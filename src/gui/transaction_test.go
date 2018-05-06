@@ -83,6 +83,18 @@ func makeUxBodyWithSecret(t *testing.T) (coin.UxBody, cipher.SecKey) {
 	}, s
 }
 
+func makeTransactionWithEmptyAddressOutput(t *testing.T) coin.Transaction {
+	tx := coin.Transaction{}
+	ux, s := makeUxOutWithSecret(t)
+
+	tx.PushInput(ux.Hash())
+	tx.SignInputs([]cipher.SecKey{s})
+	tx.PushOutput(makeAddress(), 1e6, 50)
+	tx.PushOutput(cipher.Address{}, 5e6, 50)
+	tx.UpdateHeader()
+	return tx
+}
+
 func TestGetPendingTxs(t *testing.T) {
 	invalidTxn := createUnconfirmedTxn(t)
 	invalidTxn.Txn.Out = append(invalidTxn.Txn.Out, coin.TransactionOutput{
@@ -109,7 +121,7 @@ func TestGetPendingTxs(t *testing.T) {
 			name:   "500 - bad unconfirmedTxn",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error",
+			err:    "500 Internal Server Error - Droplet string conversion failed: Value is too large",
 			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTxn{
 				invalidTxn,
 			},
@@ -137,7 +149,7 @@ func TestGetPendingTxs(t *testing.T) {
 			}
 			setCSRFParameters(csrfStore, tokenValid, req)
 
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
 			rr := httptest.NewRecorder()
 			handler.ServeHTTP(rr, req)
 
@@ -175,7 +187,7 @@ func TestGetTransactionByID(t *testing.T) {
 		getTransactionArg     cipher.SHA256
 		getTransactionReponse *visor.Transaction
 		getTransactionError   error
-		httpResponse          visor.TransactionResult
+		httpResponse          daemon.TransactionResult
 	}{
 		{
 			name:              "405",
@@ -244,7 +256,7 @@ func TestGetTransactionByID(t *testing.T) {
 			},
 			getTransactionArg:     testutil.SHA256FromHex(t, validHash),
 			getTransactionReponse: &visor.Transaction{},
-			httpResponse: visor.TransactionResult{
+			httpResponse: daemon.TransactionResult{
 				Transaction: visor.ReadableTransaction{
 					Sigs:      []string{},
 					In:        []string{},
@@ -281,7 +293,7 @@ func TestGetTransactionByID(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
@@ -291,7 +303,7 @@ func TestGetTransactionByID(t *testing.T) {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg visor.TransactionResult
+				var msg daemon.TransactionResult
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.httpResponse, msg, tc.name)
@@ -309,8 +321,16 @@ func TestInjectTransaction(t *testing.T) {
 	validTxBody := &httpBody{Rawtx: hex.EncodeToString(validTransaction.Serialize())}
 	validTxBodyJSON, err := json.Marshal(validTxBody)
 	require.NoError(t, err)
+
 	b := &httpBody{Rawtx: hex.EncodeToString(testutil.RandBytes(t, 128))}
 	invalidTxBodyJSON, err := json.Marshal(b)
+	require.NoError(t, err)
+
+	invalidTxEmptyAddress := makeTransactionWithEmptyAddressOutput(t)
+	invalidTxEmptyAddressBody := &httpBody{
+		Rawtx: hex.EncodeToString(invalidTxEmptyAddress.Serialize()),
+	}
+	invalidTxEmptyAddressBodyJSON, err := json.Marshal(invalidTxEmptyAddressBody)
 	require.NoError(t, err)
 
 	tt := []struct {
@@ -359,10 +379,17 @@ func TestInjectTransaction(t *testing.T) {
 			httpBody: string(invalidTxBodyJSON),
 		},
 		{
-			name:                   "400 - injectTransactionError",
+			name:     "400 - txn sends to empty address",
+			method:   http.MethodPost,
+			status:   http.StatusBadRequest,
+			err:      "400 Bad Request - Transaction.Out contains an output sending to an empty address",
+			httpBody: string(invalidTxEmptyAddressBodyJSON),
+		},
+		{
+			name:                   "503 - injectTransactionError",
 			method:                 http.MethodPost,
-			status:                 http.StatusBadRequest,
-			err:                    "400 Bad Request - inject tx failed: injectTransactionError",
+			status:                 http.StatusServiceUnavailable,
+			err:                    "503 Service Unavailable - inject tx failed: injectTransactionError",
 			httpBody:               string(validTxBodyJSON),
 			injectTransactionArg:   validTransaction,
 			injectTransactionError: errors.New("injectTransactionError"),
@@ -405,7 +432,7 @@ func TestInjectTransaction(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -464,7 +491,7 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -597,7 +624,7 @@ func TestGetRawTx(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -679,7 +706,7 @@ func TestGetTransactions(t *testing.T) {
 			name:   "500 - getTransactionsError",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error",
+			err:    "500 Internal Server Error - gateway.GetTransactions failed: getTransactionsError",
 			httpBody: &httpBody{
 				addrs:     addrsStr,
 				confirmed: "true",
@@ -691,10 +718,10 @@ func TestGetTransactions(t *testing.T) {
 			getTransactionsError: errors.New("getTransactionsError"),
 		},
 		{
-			name:   "500 - visor.NewTransactionResults error",
+			name:   "500 - daemon.NewTransactionResults error",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error",
+			err:    "500 Internal Server Error - daemon.NewTransactionResults failed: Droplet string conversion failed: Value is too large",
 			httpBody: &httpBody{
 				addrs:     addrsStr,
 				confirmed: "true",
@@ -758,7 +785,7 @@ func TestGetTransactions(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
 

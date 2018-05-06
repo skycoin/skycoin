@@ -3,8 +3,9 @@
   "license": "MIT",
   "description": "skycoin wallet",
   "dependencies": {
+    "axios": "^0.18.0",
+    "electron-context-menu": "^0.9.1",
     "electron-debug": "^1.0.1",
-    "electron-log": "^1.2.2",
-    "electron-context-menu": "^0.9.1"
+    "electron-log": "^1.2.2"
   }
 }

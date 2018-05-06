@@ -19,24 +19,73 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `/wallet/decrypt` API endpoint, decrypts wallet and returns decrypted wallet without sensitive data
 - `/wallet/seed` API endpoint, returns seed of specific wallet
 - `-enable-seed-api` cli option
+- `USE_CSRF` environment variable for CLI, if the remote node has CSRF enabled (CSRF is enabled by default, use `-disable-csrf` to disable)
+- `cli showConfig` command to echo the cli's configuration back to the user
+- Option to generate 12/24 word seed when creating new wallet
+- Add `-version` flag to show node version
+- Add CLI `encryptWallet` command
+- Add CLI `decryptWallet` command
+- Add CLI `showSeed` command
+- Add `password` argument to the CLI commands of `addPrivateKey`, `createRawTransaction`, `generateAddresses`, `generateWallet`, `send`
+
 
 ### Fixed
 
-- #665, update wallet apis to support wallet encryption
+- Reduce connection disconnects, improves syncing
+- Fix #1171, update CLI to support wallet encryption
 
 ### Changed
 
-- Change `-disable-wallet-api` to `-enable-wallet-api`, and disable the wallet API by default
-- `-launch-browser` is set to false by default
-- `/wallet` API endpoint, remove sensitive data from the response, and fix the data format to be the same as `/wallet/create`
-- `/wallets` API endpoint, remove sensitive data from the response
-- `/wallet/create` API endpoint, add `encrypt(bool)` and `password` argument
-- `/wallet/newAddress` API endpoint, add `password` argument
-- `/wallet/spend` API endpoint, add `password` argument
+- JSON 2.0 RPC interface (used by the CLI tool) is now served on the same host interface as the REST API, port `6420`. The additional listener has been removed.
+- CLI's `RPC_ADDR` environment variable must now start with a scheme e.g. `http://127.0.0.1:6420`, previously it did not use a scheme.
 
 ### Removed
 
-- Remove dependency [op/go-logging](https://github.com/op/go-logging)
+- Remove `-rpc-interface-addr`, `-rpc-interface-port` options.  The RPC interface is now on default port `6420` with the REST API.
+- Remove `-rpc-thread-num` option
+
+## [0.23.0] - 2018-04-22
+
+### Added
+
+- Add wallet setup wizard
+- Add wallet encryption, using chacha20+poly1305 for encryption and authentication and scrypt for key derivation. Encrypted data is stored in the wallet file in a `"secrets"` metadata field
+- Add `GET /health` endpoint
+- Add `POST /wallet/transaction` API endpoint, creates a transaction, allowing control of spending address and multiple destinations
+- Add `POST /wallet/encrypt` API endpoint, encrypts wallet and returns encrypted wallet without sensitive data
+- Add `POST /wallet/decrypt` API endpoint, decrypts wallet and returns decrypted wallet without sensitive data
+- Add `POST /wallet/seed` API endpoint, returns the seed of an encrypted wallet. Unencrypted wallets will not expose their seeds over the API. Requires `-enable-seed-api` option
+- `-enable-seed-api` option to enable `POST /wallet/seed`
+- Add `"size"` to block API response data (affects `GET /block`, `GET /blocks` and `GET /last_blocks`)
+- Write [specification for skycoin URIs](https://github.com/skycoin/skycoin#uri-specification) (based upon bip21)
+
+### Fixed
+
+- #1309, Float imprecision error in frontend malformed some spend amounts, preventing the spend
+- Fix one aspect of sync stalling caused by a 5-second blocking channel write by switching it to a non-blocking write, decreasing timeouts and increasing buffer sizes
+
+### Changed
+
+- `GET /wallet` API endpoint, remove sensitive data from the response, and fix the data format to be the same as `POST /wallet/create`
+- `GET /wallets` API endpoint, remove sensitive data from the response
+- `POST /wallet/create` API endpoint, add `encrypt(bool)` and `password` argument
+- `POST /wallet/newAddress` API endpoint, add `password` argument
+- `POST /wallet/spend` API endpoint, add `password` argument
+- Change `-disable-wallet-api` to `-enable-wallet-api`, and disable the wallet API by default
+- `-launch-browser` is set to false by default
+- A default wallet will not be created on startup if there is no wallet. Instead, the wallet setup wizard will run
+- Replace [op/go-logging](https://github.com/op/go-logging) with [logrus](https://github.com/sirupsen/logrus)
+- Disable JSON-RPC 2.0 interface when running the application with `run.sh` and electron
+- Whitespace will be trimmed from the seed string by the frontend client before creating or loading a wallet
+- Notify the user when their wallets have unconfirmed transactions
+- Return an error when providing a transaction that spends to the null address in `POST /injectTransaction`
+- Change accepted `-log-level` values to `debug`, `info`, `warn`, `error`, `fatal` and `panic` (previously were `debug`, `info`, `notice`, `warning`, `error` and `critical`)
+- Default log level is `info`
+
+### Removed
+
+- Remove `"seed"`, `"lastSeed"` and `"secret_key"` in address entries from wallet API responses. A wallet's seed can be accessed through `POST /wallet/seed` only if the wallet is encrypted and the node is run with `-enable-seed-api`
+- Remove unused `-logtogui` and `-logbufsize` options
 
 ## [0.22.0] - 2018-03-20
 
@@ -106,7 +155,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
-- CLI's `walletBalance` and `addressBalance` commands return aggregate balances for confirmed, spendable and expected balances.  Coins are formatted as droplet strings.  Hours added as strings.
+- CLI's `walletBalance` and `addressBalance` commands return aggregate balances for confirmed, spendable and expected balances. Coins are formatted as droplet strings. Hours added as strings.
 - When splitting an odd number of hours in a spend, give the extra hour to the fee
 - Add `block_seq` to `get_outputs` and `/outputs` API response
 - Improve UxOut spend selection. Previously, they were spent oldest first. Now they are spent to ensure a non-zero coinhour input and otherwise minimize coinhours.
@@ -224,6 +273,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - #350 Wallet name always 'undefined' after loading wallet from seed
 
 [Unreleased]: https://github.com/skycoin/skycoin/compare/master...develop
+[0.23.0]: https://github.com/skycoin/skycoin/compare/v0.22.0...v0.23.0
 [0.22.0]: https://github.com/skycoin/skycoin/compare/v0.21.1...v0.22.0
 [0.21.1]: https://github.com/skycoin/skycoin/compare/v0.21.0...v0.21.1
 [0.21.0]: https://github.com/skycoin/skycoin/compare/v0.20.4...v0.21.0

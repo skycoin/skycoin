@@ -115,6 +115,12 @@ typedef struct {
  */
 typedef GoInt64_ Handle;
 
+/**
+ * Memory handle for internal object retrieving password to read
+ * encrypted wallets.
+ */
+typedef Handle PasswordReader__Handle;
+
 #include "cipher.hash.go.h"
 #include "cipher.crypto.go.h"
 #include "cipher.address.go.h"

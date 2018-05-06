@@ -1,8 +1,8 @@
 package main
 
 const (
-	SKY_OK    = 0
 	SKY_ERROR = 0xFFFFFFFF
+	SKY_OK    = 0
 )
 
 func libErrorCode(err error) uint32 {

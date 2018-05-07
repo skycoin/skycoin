@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Add `/health` endpoint
+- libskycoin 0.0.1 released with bindings for cipher/address, cipher/hash, cipher/crypto, cli/create_rawtx
+- Logging migration, now powered by [logrus](https://github.com/sirupsen/logrus)
+- Write specification for skycoin URIs (based upon bip21)
+- Implemented `scrypt-chacha20poly1305` for wallet encryption
+- Implemented `sha256xor` for wallet encryption
+- Add new field of `secrets` to wallet, which records all encrypted sensitive data like seed, public/private keys
+- `/wallet/encrypt` API endpoint, encrypts wallet and returns encrypted wallet without sensitive data
+- `/wallet/decrypt` API endpoint, decrypts wallet and returns decrypted wallet without sensitive data
+- `/wallet/seed` API endpoint, returns seed of specific wallet
+- `-enable-seed-api` cli option
 - `USE_CSRF` environment variable for CLI, if the remote node has CSRF enabled (CSRF is enabled by default, use `-disable-csrf` to disable)
 - `cli showConfig` command to echo the cli's configuration back to the user
 - Option to generate 12/24 word seed when creating new wallet
@@ -17,6 +28,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add CLI `showSeed` command
 - Add `password` argument to the CLI commands of `addPrivateKey`, `createRawTransaction`, `generateAddresses`, `generateWallet`, `send`
 - Support for decoding map values in cipher binary encoder
+
 
 
 ### Fixed

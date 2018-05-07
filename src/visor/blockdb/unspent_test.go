@@ -38,7 +38,7 @@ func makeUxBodyWithSecret(t *testing.T) (coin.UxBody, cipher.SecKey) {
 	}, s
 }
 
-func makeUxOutWithSecret(t *testing.T) (coin.UxOut, cipher.SecKey) { // nolint: unparam
+func makeUxOutWithSecret(t *testing.T) (coin.UxOut, cipher.SecKey) {
 	body, sec := makeUxBodyWithSecret(t)
 	return coin.UxOut{
 		Head: coin.UxHead{

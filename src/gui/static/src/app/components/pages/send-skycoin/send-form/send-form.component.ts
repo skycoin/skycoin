@@ -5,7 +5,8 @@ import 'rxjs/add/operator/delay';
 import 'rxjs/add/operator/filter';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
-import { MatDialog } from '@angular/material';
+import { MatDialog, MatSnackBar, MatSnackBarConfig } from '@angular/material';
+import { parseResponseMessage } from '../../../../utils/index';
 
 @Component({
   selector: 'app-send-form',
@@ -24,6 +25,7 @@ export class SendFormComponent implements OnInit {
     public formBuilder: FormBuilder,
     public walletService: WalletService,
     private dialog: MatDialog,
+    private snackbar: MatSnackBar,
   ) {}
 
   ngOnInit() {
@@ -35,6 +37,7 @@ export class SendFormComponent implements OnInit {
       return;
     }
 
+    this.snackbar.dismiss();
     this.button.resetState();
 
     if (this.form.value.wallet.encrypted) {
@@ -68,7 +71,13 @@ export class SendFormComponent implements OnInit {
           notes: this.form.value.notes,
           response,
         });
-      }, error => this.button.setError(error['_body']));
+      }, error => {
+        const errorMessage = parseResponseMessage(error);
+        const config = new MatSnackBarConfig();
+        config.duration = 300000;
+        this.snackbar.open(errorMessage, null, config);
+        this.button.setError(errorMessage);
+      });
   }
 
   private initForm() {

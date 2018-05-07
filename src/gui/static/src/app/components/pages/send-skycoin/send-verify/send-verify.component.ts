@@ -1,6 +1,8 @@
 import { Component, EventEmitter, Input, Output, ViewChild } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { ButtonComponent } from '../../../layout/button/button.component';
+import { MatSnackBar, MatSnackBarConfig } from '@angular/material';
+import { parseResponseMessage } from '../../../../utils/index';
 
 @Component({
   selector: 'app-send-verify',
@@ -16,6 +18,7 @@ export class SendVerifyComponent {
 
   constructor(
     private walletService: WalletService,
+    private snackbar: MatSnackBar,
   ) {}
 
   send() {
@@ -23,6 +26,8 @@ export class SendVerifyComponent {
       return;
     }
 
+    this.snackbar.dismiss();
+    this.sendButton.resetState();
     this.sendButton.setLoading();
     this.backButton.setDisabled();
 
@@ -35,7 +40,13 @@ export class SendVerifyComponent {
       setTimeout(() => {
         this.onBack.emit(true);
       }, 3000);
-    }, error => this.sendButton.setError(error));
+    }, error => {
+      const errorMessage = parseResponseMessage(error);
+      const config = new MatSnackBarConfig();
+      config.duration = 300000;
+      this.snackbar.open(errorMessage, null, config);
+      this.sendButton.setError(errorMessage);
+    });
   }
 
   back() {

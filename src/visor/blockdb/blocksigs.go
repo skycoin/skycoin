@@ -6,6 +6,11 @@ import (
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
+var (
+	// BlockSigsBkt holds block signatures
+	BlockSigsBkt = []byte("block_sigs")
+)
+
 // blockSigs manages known blockSigs as received.
 // TODO -- support out of order blocks.  This requires a change to the
 // message protocol to support ranges similar to bitcoin's locator hashes.
@@ -18,28 +23,11 @@ import (
 // because we can check the signature independently of the blockchain.
 type blockSigs struct{}
 
-var (
-	blockSigsBkt = []byte("block_sigs")
-)
-
-// newBlockSigs create block signature bucket
-func newBlockSigs(db *dbutil.DB) (*blockSigs, error) {
-	if err := db.Update(func(tx *dbutil.Tx) error {
-		return dbutil.CreateBuckets(tx, [][]byte{
-			blockSigsBkt,
-		})
-	}); err != nil {
-		return nil, err
-	}
-
-	return &blockSigs{}, nil
-}
-
 // Get returns the signature of a specific block
 func (bs blockSigs) Get(tx *dbutil.Tx, hash cipher.SHA256) (cipher.Sig, bool, error) {
 	var sig cipher.Sig
 
-	if ok, err := dbutil.GetBucketObjectDecoded(tx, blockSigsBkt, hash[:], &sig); err != nil {
+	if ok, err := dbutil.GetBucketObjectDecoded(tx, BlockSigsBkt, hash[:], &sig); err != nil {
 		return cipher.Sig{}, false, err
 	} else if !ok {
 		return cipher.Sig{}, false, nil
@@ -50,12 +38,12 @@ func (bs blockSigs) Get(tx *dbutil.Tx, hash cipher.SHA256) (cipher.Sig, bool, er
 
 // Add adds a signed block to the db
 func (bs *blockSigs) Add(tx *dbutil.Tx, hash cipher.SHA256, sig cipher.Sig) error {
-	return dbutil.PutBucketValue(tx, blockSigsBkt, hash[:], encoder.Serialize(sig))
+	return dbutil.PutBucketValue(tx, BlockSigsBkt, hash[:], encoder.Serialize(sig))
 }
 
 // ForEach iterates all signatures and calls f on them
 func (bs *blockSigs) ForEach(tx *dbutil.Tx, f func(cipher.SHA256, cipher.Sig) error) error {
-	return dbutil.ForEach(tx, blocksBkt, func(k, v []byte) error {
+	return dbutil.ForEach(tx, BlockSigsBkt, func(k, v []byte) error {
 		hash, err := cipher.SHA256FromBytes(k)
 		if err != nil {
 			return err

@@ -120,8 +120,6 @@ type Config struct {
 	GenesisCoinVolume uint64
 	// bolt db file path
 	DBPath string
-	// open bolt db read-only
-	DBReadOnly bool
 	// enable arbitrating mode
 	Arbitrating bool
 	// wallet directory
@@ -261,10 +259,7 @@ func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
 		return nil, err
 	}
 
-	history, err := historydb.New(db)
-	if err != nil {
-		return nil, err
-	}
+	history := historydb.New()
 
 	// creates blockchain parser instance
 	bp := NewBlockchainParser(db, history, bc)

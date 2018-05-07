@@ -13,49 +13,34 @@ import (
 
 var logger = logging.MustGetLogger("historydb")
 
-// HistoryDB provides apis for blockchain explorer.
+// CreateBuckets creates bolt.DB buckets used by the historydb
+func CreateBuckets(tx *dbutil.Tx) error {
+	return dbutil.CreateBuckets(tx, [][]byte{
+		AddressTxnsBkt,
+		AddressUxBkt,
+		HistoryMetaBkt,
+		UxOutsBkt,
+		TransactionsBkt,
+	})
+}
+
+// HistoryDB provides APIs for blockchain explorer
 type HistoryDB struct {
-	db           *dbutil.DB    // bolt db instance.
-	txns         *transactions // transactions bucket.
-	outputs      *UxOuts       // outputs bucket.
-	addrUx       *addressUx    // bucket which stores all UxOuts that address recved.
-	addrTxns     *addressTxns  //  address related transaction bucket
+	txns         *transactions // transactions bucket
+	outputs      *UxOuts       // outputs bucket
+	addrUx       *addressUx    // bucket which stores all UxOuts that address received
+	addrTxns     *addressTxns  // address related transaction bucket
 	*historyMeta               // stores history meta info
 }
 
-// New create historydb instance and create corresponding buckets if does not exist.
-func New(db *dbutil.DB) (*HistoryDB, error) {
-	hd := HistoryDB{
-		db: db,
+// New create HistoryDB instance
+func New() *HistoryDB {
+	return &HistoryDB{
+		outputs:  &UxOuts{},
+		txns:     &transactions{},
+		addrUx:   &addressUx{},
+		addrTxns: &addressTxns{},
 	}
-
-	var err error
-	hd.txns, err = newTransactions(db)
-	if err != nil {
-		return nil, err
-	}
-
-	hd.outputs, err = newUxOuts(db)
-	if err != nil {
-		return nil, err
-	}
-
-	hd.addrUx, err = newAddressUx(db)
-	if err != nil {
-		return nil, err
-	}
-
-	hd.historyMeta, err = newHistoryMeta(db)
-	if err != nil {
-		return nil, err
-	}
-
-	hd.addrTxns, err = newAddressTxns(db)
-	if err != nil {
-		return nil, err
-	}
-
-	return &hd, nil
 }
 
 // ResetIfNeed checks if need to reset the parsed block history,
@@ -97,7 +82,7 @@ func (hd *HistoryDB) ResetIfNeed(tx *dbutil.Tx) error {
 }
 
 func (hd *HistoryDB) reset(tx *dbutil.Tx) error {
-	logger.Info("History db reset")
+	logger.Debug("HistoryDB.reset")
 	if err := hd.addrTxns.Reset(tx); err != nil {
 		return err
 	}
@@ -215,7 +200,7 @@ func (hd HistoryDB) GetAddrTxns(tx *dbutil.Tx, address cipher.Address) ([]Transa
 	return hd.txns.GetSlice(tx, hashes)
 }
 
-// ForEachTxn traverses the transactions in db
+// ForEachTxn traverses the transactions bucket
 func (hd HistoryDB) ForEachTxn(tx *dbutil.Tx, f func(cipher.SHA256, *Transaction) error) error {
 	return hd.txns.ForEach(tx, f)
 }

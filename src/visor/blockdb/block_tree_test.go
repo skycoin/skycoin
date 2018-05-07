@@ -7,7 +7,6 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
@@ -25,11 +24,10 @@ type blockCase struct {
 }
 
 func testCase(t *testing.T, cases []blockCase) {
-	db, close := testutil.PrepareDB(t)
+	db, close := prepareDB(t)
 	defer close()
 
-	btree, err := newBlockTree(db)
-	require.NoError(t, err)
+	btree := &blockTree{}
 	blocks := make([]coin.Block, len(cases))
 	for i, d := range cases {
 		var preHash cipher.SHA256
@@ -163,11 +161,10 @@ func TestRemoveBlock(t *testing.T) {
 }
 
 func TestGetBlockInDepth(t *testing.T) {
-	db, teardown := testutil.PrepareDB(t)
+	db, teardown := prepareDB(t)
 	defer teardown()
 
-	bc, err := newBlockTree(db)
-	require.NoError(t, err)
+	bc := &blockTree{}
 	blocks := []coin.Block{
 		coin.Block{
 			Head: coin.BlockHeader{
@@ -190,7 +187,7 @@ func TestGetBlockInDepth(t *testing.T) {
 		},
 	}
 
-	err = db.Update(func(tx *dbutil.Tx) error {
+	err := db.Update(func(tx *dbutil.Tx) error {
 		err := bc.AddBlock(tx, &blocks[0])
 		require.NoError(t, err)
 

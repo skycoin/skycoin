@@ -5,28 +5,17 @@ import (
 )
 
 var (
-	historyMetaBkt  = []byte("history_meta")
+	// HistoryMetaBkt holds history metadata
+	HistoryMetaBkt  = []byte("history_meta")
 	parsedHeightKey = []byte("parsed_height")
 )
 
 // historyMeta bucket for storing block history meta info
 type historyMeta struct{}
 
-func newHistoryMeta(db *dbutil.DB) (*historyMeta, error) {
-	if err := db.Update(func(tx *dbutil.Tx) error {
-		return dbutil.CreateBuckets(tx, [][]byte{
-			historyMetaBkt,
-		})
-	}); err != nil {
-		return nil, err
-	}
-
-	return &historyMeta{}, nil
-}
-
 // Height returns history parsed height, if no block was parsed, return -1.
 func (hm *historyMeta) ParsedHeight(tx *dbutil.Tx) (int64, error) {
-	v, err := dbutil.GetBucketValue(tx, historyMetaBkt, parsedHeightKey)
+	v, err := dbutil.GetBucketValue(tx, HistoryMetaBkt, parsedHeightKey)
 	if err != nil {
 		return 0, err
 	} else if v == nil {
@@ -38,15 +27,15 @@ func (hm *historyMeta) ParsedHeight(tx *dbutil.Tx) (int64, error) {
 
 // SetParsedHeight updates history parsed height
 func (hm *historyMeta) SetParsedHeight(tx *dbutil.Tx, h uint64) error {
-	return dbutil.PutBucketValue(tx, historyMetaBkt, parsedHeightKey, dbutil.Itob(h))
+	return dbutil.PutBucketValue(tx, HistoryMetaBkt, parsedHeightKey, dbutil.Itob(h))
 }
 
 // IsEmpty checks if history meta bucket is empty
 func (hm *historyMeta) IsEmpty(tx *dbutil.Tx) (bool, error) {
-	return dbutil.IsEmpty(tx, historyMetaBkt)
+	return dbutil.IsEmpty(tx, HistoryMetaBkt)
 }
 
 // Reset resets the bucket
 func (hm *historyMeta) Reset(tx *dbutil.Tx) error {
-	return dbutil.Reset(tx, historyMetaBkt)
+	return dbutil.Reset(tx, HistoryMetaBkt)
 }

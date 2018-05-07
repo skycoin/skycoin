@@ -21,7 +21,12 @@ import (
 func loadBlockchain(db *dbutil.DB, pubkey cipher.PubKey, arbitrating bool) (*dbutil.DB, *Blockchain, error) {
 	logger.Info("Loading blockchain")
 
-	bc, err := NewBlockchain(db, pubkey, Arbitrating(arbitrating))
+	dbReadOnly := db.IsReadOnly()
+
+	bc, err := NewBlockchain(db, BlockchainConfig{
+		Pubkey:      pubkey,
+		Arbitrating: arbitrating,
+	})
 	if err == nil {
 		return db, bc, nil
 	}
@@ -34,7 +39,6 @@ func loadBlockchain(db *dbutil.DB, pubkey cipher.PubKey, arbitrating bool) (*dbu
 
 	// Recreate the block database if ErrMissingSignature occurs
 	dbPath := db.Path()
-	dbReadOnly := db.IsReadOnly()
 
 	logger.Critical().Errorf("Block database signature missing, recreating db: %v", err)
 	if err := db.Close(); err != nil {
@@ -53,7 +57,10 @@ func loadBlockchain(db *dbutil.DB, pubkey cipher.PubKey, arbitrating bool) (*dbu
 		return nil, nil, err
 	}
 
-	bc, err = NewBlockchain(db, pubkey, Arbitrating(arbitrating))
+	bc, err = NewBlockchain(db, BlockchainConfig{
+		Pubkey:      pubkey,
+		Arbitrating: arbitrating,
+	})
 	if err != nil {
 		return nil, nil, err
 	}

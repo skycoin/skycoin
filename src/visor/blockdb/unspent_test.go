@@ -50,14 +50,13 @@ func makeUxOutWithSecret(t *testing.T) (coin.UxOut, cipher.SecKey) {
 }
 
 func TestNewUnspentPool(t *testing.T) {
-	db, teardown := testutil.PrepareDB(t)
+	db, teardown := prepareDB(t)
 	defer teardown()
 
-	up, err := NewUnspentPool(db)
-	require.NoError(t, err)
+	up := NewUnspentPool()
 
-	err = db.View(func(tx *dbutil.Tx) error {
-		length, err := dbutil.Len(tx, unspentPoolBkt)
+	err := db.View(func(tx *dbutil.Tx) error {
+		length, err := dbutil.Len(tx, UnspentPoolBkt)
 		require.NoError(t, err)
 		require.Equal(t, uint64(0), length)
 
@@ -105,17 +104,16 @@ func TestUnspentPoolGet(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db, teardown := testutil.PrepareDB(t)
+			db, teardown := prepareDB(t)
 			defer teardown()
 
-			up, err := NewUnspentPool(db)
-			require.NoError(t, err)
+			up := NewUnspentPool()
 			for _, ux := range tc.unspents {
 				err := addUxOut(db, up, ux)
 				require.NoError(t, err)
 			}
 
-			err = db.View(func(tx *dbutil.Tx) error {
+			err := db.View(func(tx *dbutil.Tx) error {
 				ux, err := up.Get(tx, tc.hash)
 				require.NoError(t, err)
 				require.Equal(t, tc.ux, ux)
@@ -133,18 +131,17 @@ func TestUnspentPoolLen(t *testing.T) {
 		uxs = append(uxs, ux)
 	}
 
-	db, closedb := testutil.PrepareDB(t)
+	db, closedb := prepareDB(t)
 	defer closedb()
 
-	up, err := NewUnspentPool(db)
-	require.NoError(t, err)
+	up := NewUnspentPool()
 
 	for _, ux := range uxs {
 		err := addUxOut(db, up, ux)
 		require.NoError(t, err)
 	}
 
-	err = db.View(func(tx *dbutil.Tx) error {
+	err := db.View(func(tx *dbutil.Tx) error {
 		length, err := up.Len(tx)
 		require.NoError(t, err)
 		require.Equal(t, uint64(5), length)
@@ -160,11 +157,10 @@ func TestUnspentPoolGetUxHash(t *testing.T) {
 		uxs = append(uxs, ux)
 	}
 
-	db, closedb := testutil.PrepareDB(t)
+	db, closedb := prepareDB(t)
 	defer closedb()
 
-	up, err := NewUnspentPool(db)
-	require.NoError(t, err)
+	up := NewUnspentPool()
 
 	for _, ux := range uxs {
 		err := addUxOut(db, up, ux)
@@ -183,16 +179,15 @@ func TestUnspentPoolGetUxHash(t *testing.T) {
 }
 
 func TestUnspentPoolGetArray(t *testing.T) {
-	db, teardown := testutil.PrepareDB(t)
+	db, teardown := prepareDB(t)
 	defer teardown()
 
-	up, err := NewUnspentPool(db)
-	require.NoError(t, err)
+	up := NewUnspentPool()
 
 	var uxs coin.UxArray
 	for i := 0; i < 5; i++ {
 		ux := makeUxOut(t)
-		err = addUxOut(db, up, ux)
+		err := addUxOut(db, up, ux)
 		require.NoError(t, err)
 		uxs = append(uxs, ux)
 	}
@@ -277,17 +272,16 @@ func TestUnspentPoolGetAll(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db, teardown := testutil.PrepareDB(t)
+			db, teardown := prepareDB(t)
 			defer teardown()
 
-			up, err := NewUnspentPool(db)
-			require.NoError(t, err)
+			up := NewUnspentPool()
 			for _, ux := range tc.unspents {
 				err := addUxOut(db, up, ux)
 				require.NoError(t, err)
 			}
 
-			err = db.View(func(tx *dbutil.Tx) error {
+			err := db.View(func(tx *dbutil.Tx) error {
 				unspents, err := up.GetAll(tx)
 				require.NoError(t, err)
 
@@ -310,13 +304,10 @@ func TestUnspentPoolGetAll(t *testing.T) {
 
 func BenchmarkUnspentPoolGetAll(b *testing.B) {
 	var t testing.T
-	db, teardown := testutil.PrepareDB(&t)
+	db, teardown := prepareDB(&t)
 	defer teardown()
 
-	up, err := NewUnspentPool(db)
-	if err != nil {
-		b.Fatal(err)
-	}
+	up := NewUnspentPool()
 
 	for i := 0; i < 1000; i++ {
 		ux := makeUxOut(&t)
@@ -328,7 +319,7 @@ func BenchmarkUnspentPoolGetAll(b *testing.B) {
 	start := time.Now()
 	for i := 0; i < b.N; i++ {
 		err := db.View(func(tx *dbutil.Tx) error {
-			_, err = up.GetAll(tx)
+			_, err := up.GetAll(tx)
 			return err
 		})
 		if err != nil {
@@ -391,18 +382,17 @@ func TestGetUnspentOfAddrs(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db, teardown := testutil.PrepareDB(t)
+			db, teardown := prepareDB(t)
 			defer teardown()
 
-			up, err := NewUnspentPool(db)
-			require.NoError(t, err)
+			up := NewUnspentPool()
 			for _, ux := range tc.unspents {
 				err := addUxOut(db, up, ux)
 				require.NoError(t, err)
 			}
 
 			var unspents coin.AddressUxOuts
-			err = db.View(func(tx *dbutil.Tx) error {
+			err := db.View(func(tx *dbutil.Tx) error {
 				var err error
 				unspents, err = up.GetUnspentsOfAddrs(tx, tc.addrs)
 				require.NoError(t, err)
@@ -448,11 +438,10 @@ func TestUnspentProcessBlock(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			db, closedb := testutil.PrepareDB(t)
+			db, closedb := prepareDB(t)
 			defer closedb()
 
-			up, err := NewUnspentPool(db)
-			require.NoError(t, err)
+			up := NewUnspentPool()
 
 			for _, ux := range tc.init {
 				err := addUxOut(db, up, ux)
@@ -470,7 +459,7 @@ func TestUnspentProcessBlock(t *testing.T) {
 			var block *coin.Block
 			var oldUxHash cipher.SHA256
 
-			err = db.Update(func(tx *dbutil.Tx) error {
+			err := db.Update(func(tx *dbutil.Tx) error {
 				uxHash, err := up.GetUxHash(tx)
 				require.NoError(t, err)
 

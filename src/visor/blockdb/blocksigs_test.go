@@ -11,22 +11,6 @@ import (
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
-func TestNewBlockSigs(t *testing.T) {
-	db, closeDB := testutil.PrepareDB(t)
-	defer closeDB()
-
-	_, err := newBlockSigs(db)
-	require.NoError(t, err)
-
-	err = db.View(func(tx *dbutil.Tx) error {
-		bkt := tx.Bucket(blockSigsBkt)
-		require.NotNil(t, bkt)
-		return nil
-	})
-
-	require.NoError(t, err)
-}
-
 func TestBlockSigsGet(t *testing.T) {
 	type hashSig struct {
 		hash cipher.SHA256
@@ -81,12 +65,12 @@ func TestBlockSigsGet(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			db, closeDB := testutil.PrepareDB(t)
+			db, closeDB := prepareDB(t)
 			defer closeDB()
 
 			// init db
 			err := db.Update(func(tx *dbutil.Tx) error {
-				bkt, err := tx.CreateBucketIfNotExists(blockSigsBkt)
+				bkt, err := tx.CreateBucketIfNotExists(BlockSigsBkt)
 				require.NoError(t, err)
 				for _, hs := range tc.init {
 					err = bkt.Put(hs.hash[:], encoder.Serialize(hs.sig))
@@ -96,8 +80,7 @@ func TestBlockSigsGet(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			sigs, err := newBlockSigs(db)
-			require.NoError(t, err)
+			sigs := &blockSigs{}
 
 			err = db.View(func(tx *dbutil.Tx) error {
 				sg, ok, err := sigs.Get(tx, tc.hash)
@@ -115,24 +98,23 @@ func TestBlockSigsGet(t *testing.T) {
 }
 
 func TestBlockSigsAddWithTx(t *testing.T) {
-	db, closeDB := testutil.PrepareDB(t)
+	db, closeDB := prepareDB(t)
 	defer closeDB()
 
 	_, s := cipher.GenerateKeyPair()
 	h := testutil.RandSHA256(t)
 	sig := cipher.SignHash(h, s)
 
-	sigs, err := newBlockSigs(db)
-	require.NoError(t, err)
+	sigs := &blockSigs{}
 
-	err = db.Update(func(tx *dbutil.Tx) error {
+	err := db.Update(func(tx *dbutil.Tx) error {
 		return sigs.Add(tx, h, sig)
 	})
 	require.NoError(t, err)
 
 	// check the db
 	err = db.View(func(tx *dbutil.Tx) error {
-		bkt := tx.Bucket(blockSigsBkt)
+		bkt := tx.Bucket(BlockSigsBkt)
 		v := bkt.Get(h[:])
 		require.NotNil(t, v)
 		var s cipher.Sig

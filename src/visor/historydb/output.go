@@ -7,7 +7,8 @@ import (
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
-var uxOutsBkt = []byte("uxouts")
+// UxOutsBkt holds unspent outputs
+var UxOutsBkt = []byte("uxouts")
 
 // UxOut expend coin.UxOut struct
 type UxOut struct {
@@ -56,29 +57,17 @@ func (o UxOut) Hash() cipher.SHA256 {
 // UxOuts bucket stores outputs, UxOut hash as key and Output as value.
 type UxOuts struct{}
 
-func newUxOuts(db *dbutil.DB) (*UxOuts, error) {
-	if err := db.Update(func(tx *dbutil.Tx) error {
-		return dbutil.CreateBuckets(tx, [][]byte{
-			uxOutsBkt,
-		})
-	}); err != nil {
-		return nil, err
-	}
-
-	return &UxOuts{}, nil
-}
-
 // Set sets out value
 func (ux *UxOuts) Set(tx *dbutil.Tx, out UxOut) error {
 	hash := out.Hash()
-	return dbutil.PutBucketValue(tx, uxOutsBkt, hash[:], encoder.Serialize(out))
+	return dbutil.PutBucketValue(tx, UxOutsBkt, hash[:], encoder.Serialize(out))
 }
 
 // Get gets UxOut of given id
 func (ux *UxOuts) Get(tx *dbutil.Tx, uxID cipher.SHA256) (*UxOut, error) {
 	var out UxOut
 
-	if ok, err := dbutil.GetBucketObjectDecoded(tx, uxOutsBkt, uxID[:], &out); err != nil {
+	if ok, err := dbutil.GetBucketObjectDecoded(tx, UxOutsBkt, uxID[:], &out); err != nil {
 		return nil, err
 	} else if !ok {
 		return nil, nil
@@ -89,10 +78,10 @@ func (ux *UxOuts) Get(tx *dbutil.Tx, uxID cipher.SHA256) (*UxOut, error) {
 
 // IsEmpty checks if the uxout bucekt is empty
 func (ux *UxOuts) IsEmpty(tx *dbutil.Tx) (bool, error) {
-	return dbutil.IsEmpty(tx, uxOutsBkt)
+	return dbutil.IsEmpty(tx, UxOutsBkt)
 }
 
 // Reset resets the bucket
 func (ux *UxOuts) Reset(tx *dbutil.Tx) error {
-	return dbutil.Reset(tx, uxOutsBkt)
+	return dbutil.Reset(tx, UxOutsBkt)
 }

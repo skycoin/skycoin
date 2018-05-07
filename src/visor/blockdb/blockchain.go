@@ -32,6 +32,18 @@ func (e ErrMissingSignature) Error() string {
 	return fmt.Sprintf("Signature not found for block seq=%d hash=%s", e.b.Head.BkSeq, e.b.HashHeader().Hex())
 }
 
+// CreateBuckets creates bolt.DB buckets used by the blockdb
+func CreateBuckets(tx *dbutil.Tx) error {
+	return dbutil.CreateBuckets(tx, [][]byte{
+		BlockSigsBkt,
+		BlocksBkt,
+		TreeBkt,
+		BlockchainMetaBkt,
+		UnspentPoolBkt,
+		UnspentMetaBkt,
+	})
+}
+
 // BlockTree block storage
 type BlockTree interface {
 	AddBlock(*dbutil.Tx, *coin.Block) error
@@ -88,32 +100,12 @@ func NewBlockchain(db *dbutil.DB, walker Walker) (*Blockchain, error) {
 		return nil, errors.New("blockchain walker is nil")
 	}
 
-	unspent, err := NewUnspentPool(db)
-	if err != nil {
-		return nil, fmt.Errorf("NewUnspentPool failed: %v", err)
-	}
-
-	tree, err := newBlockTree(db)
-	if err != nil {
-		return nil, fmt.Errorf("newBlockTree failed: %v", err)
-	}
-
-	sigs, err := newBlockSigs(db)
-	if err != nil {
-		return nil, fmt.Errorf("newBlockSigs failed: %v", err)
-	}
-
-	meta, err := newChainMeta(db)
-	if err != nil {
-		return nil, fmt.Errorf("newChainMeta failed: %v", err)
-	}
-
 	return &Blockchain{
 		db:      db,
-		unspent: unspent,
-		meta:    meta,
-		tree:    tree,
-		sigs:    sigs,
+		unspent: NewUnspentPool(),
+		meta:    &chainMeta{},
+		tree:    &blockTree{},
+		sigs:    &blockSigs{},
 		walker:  walker,
 	}, nil
 }

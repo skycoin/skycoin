@@ -102,7 +102,10 @@ func TestErrMissingSignatureRecreateDB(t *testing.T) {
 			assert.NoError(t, err)
 		}()
 
-		_, err = NewBlockchain(db, pubkey, Arbitrating(false))
+		_, err = NewBlockchain(db, BlockchainConfig{
+			Pubkey:      pubkey,
+			Arbitrating: false,
+		})
 		require.Error(t, err)
 		require.IsType(t, blockdb.ErrMissingSignature{}, err)
 	}()
@@ -139,7 +142,10 @@ func TestErrMissingSignatureRecreateDB(t *testing.T) {
 		}()
 
 		// The new db is not corrupted and loads without error
-		bc, err := NewBlockchain(db, pubkey, Arbitrating(false))
+		bc, err := NewBlockchain(db, BlockchainConfig{
+			Pubkey:      pubkey,
+			Arbitrating: false,
+		})
 		require.NoError(t, err)
 		require.NotNil(t, bc)
 	}()

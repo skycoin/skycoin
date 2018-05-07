@@ -50,7 +50,7 @@ func TestTransactionGet(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db, td := testutil.PrepareDB(t)
+			db, td := prepareDB(t)
 			defer td()
 
 			txsBkt, err := newTransactions(db)
@@ -124,7 +124,7 @@ func TestTransactionGetSlice(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db, td := testutil.PrepareDB(t)
+			db, td := prepareDB(t)
 			defer td()
 			txsBkt, err := newTransactions(db)
 			require.NoError(t, err)

@@ -10,6 +10,7 @@ import (
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
 const (
@@ -59,22 +60,6 @@ type chainStore interface {
 // BlockListener notify the register when new block is appended to the chain
 type BlockListener func(b coin.Block)
 
-// Blockchain maintains blockchain and provides apis for accessing the chain.
-type Blockchain struct {
-	db          *dbutil.DB
-	pubkey      cipher.PubKey
-	blkListener []BlockListener
-
-	// arbitrating mode, if in arbitrating mode, when master node execute blocks,
-	// the invalid transaction will be skipped and continue the next; otherwise,
-	// node will throw the error and return.
-	arbitrating bool
-	store       chainStore
-}
-
-// Option represents the option when creating the blockchain
-type Option func(*Blockchain)
-
 // DefaultWalker default blockchain walker
 func DefaultWalker(tx *dbutil.Tx, hps []coin.HashPair) (cipher.SHA256, bool) {
 	if len(hps) == 0 {
@@ -83,21 +68,59 @@ func DefaultWalker(tx *dbutil.Tx, hps []coin.HashPair) (cipher.SHA256, bool) {
 	return hps[0].Hash, true
 }
 
+// CreateBuckets creates the buckets used by the blockdb
+func CreateBuckets(db *dbutil.DB) error {
+	return db.Update(func(tx *dbutil.Tx) error {
+		if err := historydb.CreateBuckets(tx); err != nil {
+			return err
+		}
+
+		if err := blockdb.CreateBuckets(tx); err != nil {
+			return err
+		}
+
+		return dbutil.CreateBuckets(tx, [][]byte{
+			UnconfirmedTxnsBkt,
+			UnconfirmedUnspentsBkt,
+		})
+	})
+}
+
+// BlockchainConfig configures Blockchain options
+type BlockchainConfig struct {
+	// Arbitrating mode: if in arbitrating mode, when master node execute blocks,
+	// the invalid transaction will be skipped and continue the next; otherwise,
+	// node will throw the error and return.
+	Arbitrating bool
+	Pubkey      cipher.PubKey
+}
+
+// Blockchain maintains blockchain and provides apis for accessing the chain.
+type Blockchain struct {
+	db          *dbutil.DB
+	blkListener []BlockListener
+	cfg         BlockchainConfig
+	store       chainStore
+}
+
 // NewBlockchain use the walker go through the tree and update the head and unspent outputs.
-func NewBlockchain(db *dbutil.DB, pubkey cipher.PubKey, ops ...Option) (*Blockchain, error) {
+func NewBlockchain(db *dbutil.DB, cfg BlockchainConfig) (*Blockchain, error) {
+	if !db.IsReadOnly() {
+		if err := CreateBuckets(db); err != nil {
+			logger.WithError(err).Error("CreateBuckets failed")
+			return nil, err
+		}
+	}
+
 	chainstore, err := blockdb.NewBlockchain(db, DefaultWalker)
 	if err != nil {
 		return nil, err
 	}
 
 	bc := &Blockchain{
-		db:     db,
-		pubkey: pubkey,
-		store:  chainstore,
-	}
-
-	for _, op := range ops {
-		op(bc)
+		cfg:   cfg,
+		db:    db,
+		store: chainstore,
 	}
 
 	// verify signature
@@ -108,13 +131,6 @@ func NewBlockchain(db *dbutil.DB, pubkey cipher.PubKey, ops ...Option) (*Blockch
 	}
 
 	return bc, nil
-}
-
-// Arbitrating option to change the mode
-func Arbitrating(enable bool) Option {
-	return func(bc *Blockchain) {
-		bc.arbitrating = enable
-	}
 }
 
 // GetGenesisBlock returns genesis block
@@ -499,13 +515,13 @@ func (bc Blockchain) processTransactions(tx *dbutil.Tx, txs coin.Transactions) (
 	}
 
 	// Transactions need to be sorted by fee and hash before arbitrating
-	if bc.arbitrating {
+	if bc.cfg.Arbitrating {
 		txns = coin.SortTransactions(txns, bc.TransactionFee(tx, head.Time()))
 	}
 
 	//TODO: audit
 	if len(txns) == 0 {
-		if bc.arbitrating {
+		if bc.cfg.Arbitrating {
 			return txns, nil
 		}
 
@@ -521,7 +537,7 @@ func (bc Blockchain) processTransactions(tx *dbutil.Tx, txs coin.Transactions) (
 		if err := bc.VerifyBlockTxnConstraints(tx, txn); err != nil {
 			switch err.(type) {
 			case ErrTxnViolatesHardConstraint, ErrTxnViolatesSoftConstraint:
-				if bc.arbitrating {
+				if bc.cfg.Arbitrating {
 					skip[i] = struct{}{}
 					continue
 				}
@@ -543,7 +559,7 @@ func (bc Blockchain) processTransactions(tx *dbutil.Tx, txs coin.Transactions) (
 			h := uxb.Hash()
 			_, exists := uxHashes[h]
 			if exists {
-				if bc.arbitrating {
+				if bc.cfg.Arbitrating {
 					skip[i] = struct{}{}
 					continue
 				} else {
@@ -557,7 +573,7 @@ func (bc Blockchain) processTransactions(tx *dbutil.Tx, txs coin.Transactions) (
 				if contains, err := bc.Unspent().Contains(tx, h); err != nil {
 					return nil, err
 				} else if contains {
-					if bc.arbitrating {
+					if bc.cfg.Arbitrating {
 						skip[i] = struct{}{}
 						continue
 					} else {
@@ -605,7 +621,7 @@ func (bc Blockchain) processTransactions(tx *dbutil.Tx, txs coin.Transactions) (
 			for a := range s.In {
 				for b := range t.In {
 					if s.In[a] == t.In[b] {
-						if bc.arbitrating {
+						if bc.cfg.Arbitrating {
 							// The txn with the highest fee and lowest hash
 							// is chosen when attempting a double spend.
 							// Since the txns are sorted, we skip the 2nd
@@ -675,7 +691,7 @@ func (bc *Blockchain) verifySigs(tx *dbutil.Tx, workers int) error {
 			for {
 				select {
 				case sh := <-sigHashes:
-					if err := cipher.VerifySignature(bc.pubkey, sh.sig, sh.hash); err != nil {
+					if err := cipher.VerifySignature(bc.cfg.Pubkey, sh.sig, sh.hash); err != nil {
 						logger.Errorf("Signature verification failed: %v", err)
 						select {
 						case errC <- err:

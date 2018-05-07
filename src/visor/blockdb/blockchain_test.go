@@ -14,6 +14,17 @@ import (
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
+func prepareDB(t *testing.T) (*dbutil.DB, func()) {
+	db, shutdown := testutil.PrepareDB(t)
+
+	err := db.Update(func(tx *dbutil.Tx) error {
+		return CreateBuckets(tx)
+	})
+	require.NoError(t, err)
+
+	return db, shutdown
+}
+
 var (
 	genPublic, genSecret = cipher.GenerateKeyPair()
 	genAddress           = cipher.AddressFromPubKey(genPublic)
@@ -335,7 +346,7 @@ func TestBlockchainAddBlockWithTx(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			db, closeDB := testutil.PrepareDB(t)
+			db, closeDB := prepareDB(t)
 			defer closeDB()
 
 			tc.fakeStorage.tree.saveFailed = tc.failedSaves.tree
@@ -412,7 +423,7 @@ func TestBlockchainAddBlockWithTx(t *testing.T) {
 }
 
 func TestBlockchainHead(t *testing.T) {
-	db, closeDB := testutil.PrepareDB(t)
+	db, closeDB := prepareDB(t)
 	defer closeDB()
 
 	bc, err := NewBlockchain(db, DefaultWalker)
@@ -437,7 +448,7 @@ func TestBlockchainHead(t *testing.T) {
 }
 
 func TestBlockchainLen(t *testing.T) {
-	db, closeDB := testutil.PrepareDB(t)
+	db, closeDB := prepareDB(t)
 	defer closeDB()
 
 	bc, err := NewBlockchain(db, DefaultWalker)
@@ -552,7 +563,7 @@ func TestBlockchainGetBlockByHash(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			db, closeDB := testutil.PrepareDB(t)
+			db, closeDB := prepareDB(t)
 			defer closeDB()
 
 			bc, err := NewBlockchain(db, DefaultWalker)

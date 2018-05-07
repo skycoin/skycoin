@@ -5,18 +5,16 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
 func TestHistoryMetaGetSetParsedHeight(t *testing.T) {
-	db, td := testutil.PrepareDB(t)
+	db, td := prepareDB(t)
 	defer td()
 
-	hm, err := newHistoryMeta(db)
-	require.NoError(t, err)
+	hm := &historyMeta{}
 
-	err = db.View(func(tx *dbutil.Tx) error {
+	err := db.View(func(tx *dbutil.Tx) error {
 		height, err := hm.ParsedHeight(tx)
 		require.NoError(t, err)
 		require.Equal(t, int64(-1), height)

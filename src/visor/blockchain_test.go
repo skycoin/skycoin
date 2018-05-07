@@ -671,15 +671,20 @@ func TestProcessTransactions(t *testing.T) {
 			db, closeDB := testutil.PrepareDB(t)
 			defer closeDB()
 
+			err := CreateBuckets(db)
+			require.NoError(t, err)
+
 			// create chain store
 			store, err := blockdb.NewBlockchain(db, DefaultWalker)
 			require.NoError(t, err)
 
 			// create Blockchain
 			bc := &Blockchain{
-				arbitrating: tc.arbitrating,
-				db:          db,
-				store:       store,
+				cfg: BlockchainConfig{
+					Arbitrating: tc.arbitrating,
+				},
+				db:    db,
+				store: store,
 			}
 
 			// init chain
@@ -736,6 +741,9 @@ func TestVerifyUxHash(t *testing.T) {
 	db, closeDB := testutil.PrepareDB(t)
 	defer closeDB()
 
+	err := CreateBuckets(db)
+	require.NoError(t, err)
+
 	store, err := blockdb.NewBlockchain(db, DefaultWalker)
 	require.NoError(t, err)
 
@@ -771,6 +779,9 @@ func TestVerifyUxHash(t *testing.T) {
 func TestProcessBlock(t *testing.T) {
 	db, closeDB := testutil.PrepareDB(t)
 	defer closeDB()
+
+	err := CreateBuckets(db)
+	require.NoError(t, err)
 
 	store, err := blockdb.NewBlockchain(db, DefaultWalker)
 	require.NoError(t, err)
@@ -826,6 +837,9 @@ func TestProcessBlock(t *testing.T) {
 func TestExecuteBlock(t *testing.T) {
 	db, closeDB := testutil.PrepareDB(t)
 	defer closeDB()
+
+	err := CreateBuckets(db)
+	require.NoError(t, err)
 
 	store, err := blockdb.NewBlockchain(db, DefaultWalker)
 	require.NoError(t, err)

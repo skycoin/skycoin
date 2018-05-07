@@ -44,7 +44,9 @@ func init() {
 // MakeBlockchain creates a new blockchain with a genesis block
 func MakeBlockchain(t *testing.T, db *dbutil.DB, seckey cipher.SecKey) *visor.Blockchain {
 	pubkey := cipher.PubKeyFromSecKey(seckey)
-	b, err := visor.NewBlockchain(db, pubkey)
+	b, err := visor.NewBlockchain(db, visor.BlockchainConfig{
+		Pubkey: pubkey,
+	})
 	require.NoError(t, err)
 	gb, err := coin.NewGenesisBlock(GenesisAddress, GenesisCoins, GenesisTime)
 	if err != nil {

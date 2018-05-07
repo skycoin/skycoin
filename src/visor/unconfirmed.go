@@ -12,8 +12,10 @@ import (
 )
 
 var (
-	unconfirmedTxnsBkt     = []byte("unconfirmed_txns")
-	unconfirmedUnspentsBkt = []byte("unconfirmed_unspents")
+	// UnconfirmedTxnsBkt holds unconfirmed transactions
+	UnconfirmedTxnsBkt = []byte("unconfirmed_txns")
+	// UnconfirmedUnspentsBkt holds unconfirmed unspent outputs
+	UnconfirmedUnspentsBkt = []byte("unconfirmed_unspents")
 
 	errUpdateObjectDoesNotExist = errors.New("object does not exist in bucket")
 )
@@ -59,7 +61,7 @@ type unconfirmedTxns struct{}
 func (utb *unconfirmedTxns) get(tx *dbutil.Tx, hash cipher.SHA256) (*UnconfirmedTxn, error) {
 	var txn UnconfirmedTxn
 
-	if ok, err := dbutil.GetBucketObjectDecoded(tx, unconfirmedTxnsBkt, []byte(hash.Hex()), &txn); err != nil {
+	if ok, err := dbutil.GetBucketObjectDecoded(tx, UnconfirmedTxnsBkt, []byte(hash.Hex()), &txn); err != nil {
 		return nil, err
 	} else if !ok {
 		return nil, nil
@@ -69,7 +71,7 @@ func (utb *unconfirmedTxns) get(tx *dbutil.Tx, hash cipher.SHA256) (*Unconfirmed
 }
 
 func (utb *unconfirmedTxns) put(tx *dbutil.Tx, v *UnconfirmedTxn) error {
-	return dbutil.PutBucketValue(tx, unconfirmedTxnsBkt, []byte(v.Hash().Hex()), encoder.Serialize(v))
+	return dbutil.PutBucketValue(tx, UnconfirmedTxnsBkt, []byte(v.Hash().Hex()), encoder.Serialize(v))
 }
 
 func (utb *unconfirmedTxns) update(tx *dbutil.Tx, hash cipher.SHA256, f func(v *UnconfirmedTxn) error) error {
@@ -90,13 +92,13 @@ func (utb *unconfirmedTxns) update(tx *dbutil.Tx, hash cipher.SHA256, f func(v *
 }
 
 func (utb *unconfirmedTxns) delete(tx *dbutil.Tx, hash cipher.SHA256) error {
-	return dbutil.Delete(tx, unconfirmedTxnsBkt, []byte(hash.Hex()))
+	return dbutil.Delete(tx, UnconfirmedTxnsBkt, []byte(hash.Hex()))
 }
 
 func (utb *unconfirmedTxns) getAll(tx *dbutil.Tx) ([]UnconfirmedTxn, error) {
 	var txns []UnconfirmedTxn
 
-	if err := dbutil.ForEach(tx, unconfirmedTxnsBkt, func(_, v []byte) error {
+	if err := dbutil.ForEach(tx, UnconfirmedTxnsBkt, func(_, v []byte) error {
 		var txn UnconfirmedTxn
 		if err := encoder.DeserializeRaw(v, &txn); err != nil {
 			return err
@@ -112,11 +114,11 @@ func (utb *unconfirmedTxns) getAll(tx *dbutil.Tx) ([]UnconfirmedTxn, error) {
 }
 
 func (utb *unconfirmedTxns) hasKey(tx *dbutil.Tx, hash cipher.SHA256) (bool, error) {
-	return dbutil.BucketHasKey(tx, unconfirmedTxnsBkt, []byte(hash.Hex()))
+	return dbutil.BucketHasKey(tx, UnconfirmedTxnsBkt, []byte(hash.Hex()))
 }
 
 func (utb *unconfirmedTxns) forEach(tx *dbutil.Tx, f func(hash cipher.SHA256, tx UnconfirmedTxn) error) error {
-	return dbutil.ForEach(tx, unconfirmedTxnsBkt, func(k, v []byte) error {
+	return dbutil.ForEach(tx, UnconfirmedTxnsBkt, func(k, v []byte) error {
 		hash, err := cipher.SHA256FromHex(string(k))
 		if err != nil {
 			return err
@@ -132,19 +134,19 @@ func (utb *unconfirmedTxns) forEach(tx *dbutil.Tx, f func(hash cipher.SHA256, tx
 }
 
 func (utb *unconfirmedTxns) length(tx *dbutil.Tx) (uint64, error) {
-	return dbutil.Len(tx, unconfirmedTxnsBkt)
+	return dbutil.Len(tx, UnconfirmedTxnsBkt)
 }
 
 type txUnspents struct{}
 
 func (txus *txUnspents) put(tx *dbutil.Tx, hash cipher.SHA256, uxs coin.UxArray) error {
-	return dbutil.PutBucketValue(tx, unconfirmedUnspentsBkt, []byte(hash.Hex()), encoder.Serialize(uxs))
+	return dbutil.PutBucketValue(tx, UnconfirmedUnspentsBkt, []byte(hash.Hex()), encoder.Serialize(uxs))
 }
 
 func (txus *txUnspents) get(tx *dbutil.Tx, hash cipher.SHA256) (coin.UxArray, error) {
 	var uxs coin.UxArray
 
-	if ok, err := dbutil.GetBucketObjectDecoded(tx, unconfirmedUnspentsBkt, []byte(hash.Hex()), &uxs); err != nil {
+	if ok, err := dbutil.GetBucketObjectDecoded(tx, UnconfirmedUnspentsBkt, []byte(hash.Hex()), &uxs); err != nil {
 		return nil, err
 	} else if !ok {
 		return nil, nil
@@ -154,17 +156,17 @@ func (txus *txUnspents) get(tx *dbutil.Tx, hash cipher.SHA256) (coin.UxArray, er
 }
 
 func (txus *txUnspents) length(tx *dbutil.Tx) (uint64, error) {
-	return dbutil.Len(tx, unconfirmedUnspentsBkt)
+	return dbutil.Len(tx, UnconfirmedUnspentsBkt)
 }
 
 func (txus *txUnspents) delete(tx *dbutil.Tx, hash cipher.SHA256) error {
-	return dbutil.Delete(tx, unconfirmedUnspentsBkt, []byte(hash.Hex()))
+	return dbutil.Delete(tx, UnconfirmedUnspentsBkt, []byte(hash.Hex()))
 }
 
 func (txus *txUnspents) getByAddr(tx *dbutil.Tx, a cipher.Address) (coin.UxArray, error) {
 	var uxo coin.UxArray
 
-	if err := dbutil.ForEach(tx, unconfirmedUnspentsBkt, func(_, v []byte) error {
+	if err := dbutil.ForEach(tx, UnconfirmedUnspentsBkt, func(_, v []byte) error {
 		var uxa coin.UxArray
 		if err := encoder.DeserializeRaw(v, &uxa); err != nil {
 			return err
@@ -185,7 +187,7 @@ func (txus *txUnspents) getByAddr(tx *dbutil.Tx, a cipher.Address) (coin.UxArray
 }
 
 func (txus *txUnspents) forEach(tx *dbutil.Tx, f func(cipher.SHA256, coin.UxArray) error) error {
-	return dbutil.ForEach(tx, unconfirmedUnspentsBkt, func(k, v []byte) error {
+	return dbutil.ForEach(tx, UnconfirmedUnspentsBkt, func(k, v []byte) error {
 		hash, err := cipher.SHA256FromHex(string(k))
 		if err != nil {
 			return err
@@ -212,15 +214,8 @@ type UnconfirmedTxnPool struct {
 
 // NewUnconfirmedTxnPool creates an UnconfirmedTxnPool instance
 func NewUnconfirmedTxnPool(db *dbutil.DB) (*UnconfirmedTxnPool, error) {
-	if err := db.Update(func(tx *dbutil.Tx) error {
-		if err := dbutil.CreateBuckets(tx, [][]byte{
-			unconfirmedTxnsBkt,
-			unconfirmedUnspentsBkt,
-		}); err != nil {
-			return err
-		}
-
-		n, err := dbutil.Len(tx, unconfirmedTxnsBkt)
+	if err := db.View(func(tx *dbutil.Tx) error {
+		n, err := dbutil.Len(tx, UnconfirmedTxnsBkt)
 		if err != nil {
 			return err
 		}

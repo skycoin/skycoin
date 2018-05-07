@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
@@ -104,13 +103,12 @@ func TestAddAddressTxns(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db, td := testutil.PrepareDB(t)
+			db, td := prepareDB(t)
 			defer td()
 
-			addrTxns, err := newAddressTxns(db)
-			require.NoError(t, err)
+			addrTxns := &addressTxns{}
 
-			err = db.Update(func(tx *dbutil.Tx) error {
+			err := db.Update(func(tx *dbutil.Tx) error {
 				for _, pr := range tc.addPairs {
 					err := addrTxns.Add(tx, pr.addr, pr.txHash)
 					require.NoError(t, err)
@@ -226,13 +224,12 @@ func TestGetAddressTxns(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db, td := testutil.PrepareDB(t)
+			db, td := prepareDB(t)
 			defer td()
 
-			addrTxns, err := newAddressTxns(db)
-			require.NoError(t, err)
+			addrTxns := &addressTxns{}
 
-			err = db.Update(func(tx *dbutil.Tx) error {
+			err := db.Update(func(tx *dbutil.Tx) error {
 				for _, pr := range tc.addPairs {
 					err := addrTxns.Add(tx, pr.addr, pr.txHash)
 					require.NoError(t, err)

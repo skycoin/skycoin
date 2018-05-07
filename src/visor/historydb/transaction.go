@@ -12,7 +12,8 @@ import (
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
-var transactionsBkt = []byte("transactions")
+// TransactionsBkt holds Transactions
+var TransactionsBkt = []byte("transactions")
 
 // Transactions transaction bucket instance.
 type transactions struct{}
@@ -30,28 +31,20 @@ func (tx *Transaction) Hash() cipher.SHA256 {
 
 // New create a transaction db instance.
 func newTransactions(db *dbutil.DB) (*transactions, error) {
-	if err := db.Update(func(tx *dbutil.Tx) error {
-		return dbutil.CreateBuckets(tx, [][]byte{
-			transactionsBkt,
-		})
-	}); err != nil {
-		return nil, err
-	}
-
 	return &transactions{}, nil
 }
 
 // Add transaction to the db.
 func (txs *transactions) Add(tx *dbutil.Tx, txn *Transaction) error {
 	hash := txn.Hash()
-	return dbutil.PutBucketValue(tx, transactionsBkt, hash[:], encoder.Serialize(txn))
+	return dbutil.PutBucketValue(tx, TransactionsBkt, hash[:], encoder.Serialize(txn))
 }
 
 // Get gets transaction by tx hash, return nil on not found.
 func (txs *transactions) Get(tx *dbutil.Tx, hash cipher.SHA256) (*Transaction, error) {
 	var txn Transaction
 
-	if ok, err := dbutil.GetBucketObjectDecoded(tx, transactionsBkt, hash[:], &txn); err != nil {
+	if ok, err := dbutil.GetBucketObjectDecoded(tx, TransactionsBkt, hash[:], &txn); err != nil {
 		return nil, err
 	} else if !ok {
 		return nil, nil
@@ -66,7 +59,7 @@ func (txs *transactions) GetSlice(tx *dbutil.Tx, hashes []cipher.SHA256) ([]Tran
 	for _, h := range hashes {
 		var txn Transaction
 
-		if ok, err := dbutil.GetBucketObjectDecoded(tx, transactionsBkt, h[:], &txn); err != nil {
+		if ok, err := dbutil.GetBucketObjectDecoded(tx, TransactionsBkt, h[:], &txn); err != nil {
 			return nil, err
 		} else if !ok {
 			continue
@@ -80,17 +73,17 @@ func (txs *transactions) GetSlice(tx *dbutil.Tx, hashes []cipher.SHA256) ([]Tran
 
 // IsEmpty checks if transaction bucket is empty
 func (txs *transactions) IsEmpty(tx *dbutil.Tx) (bool, error) {
-	return dbutil.IsEmpty(tx, transactionsBkt)
+	return dbutil.IsEmpty(tx, TransactionsBkt)
 }
 
 // Reset resets the bucket
 func (txs *transactions) Reset(tx *dbutil.Tx) error {
-	return dbutil.Reset(tx, transactionsBkt)
+	return dbutil.Reset(tx, TransactionsBkt)
 }
 
 // ForEach traverses the transactions in db
 func (txs *transactions) ForEach(tx *dbutil.Tx, f func(cipher.SHA256, *Transaction) error) error {
-	return dbutil.ForEach(tx, transactionsBkt, func(k, v []byte) error {
+	return dbutil.ForEach(tx, TransactionsBkt, func(k, v []byte) error {
 		hash, err := cipher.SHA256FromBytes(k)
 		if err != nil {
 			return err

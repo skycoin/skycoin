@@ -43,7 +43,9 @@ func init() {
 // MakeBlockchain creates a new blockchain with a genesis block
 func MakeBlockchain(t *testing.T, db *dbutil.DB, seckey cipher.SecKey) *Blockchain {
 	pubkey := cipher.PubKeyFromSecKey(seckey)
-	b, err := NewBlockchain(db, pubkey)
+	b, err := NewBlockchain(db, BlockchainConfig{
+		Pubkey: pubkey,
+	})
 	require.NoError(t, err)
 	gb, err := coin.NewGenesisBlock(GenesisAddress, GenesisCoins, GenesisTime)
 	if err != nil {
@@ -318,6 +320,9 @@ func TestVerifyTransactionAllConstraints(t *testing.T) {
 	db, closeDB := testutil.PrepareDB(t)
 	defer closeDB()
 
+	err := CreateBuckets(db)
+	require.NoError(t, err)
+
 	store, err := blockdb.NewBlockchain(db, DefaultWalker)
 	require.NoError(t, err)
 
@@ -422,6 +427,9 @@ func TestVerifyTxnFeeCoinHoursAdditionFails(t *testing.T) {
 	// that is being tested through the blockchain verify API wrappers
 	db, closeDB := testutil.PrepareDB(t)
 	defer closeDB()
+
+	err := CreateBuckets(db)
+	require.NoError(t, err)
 
 	store, err := blockdb.NewBlockchain(db, DefaultWalker)
 	require.NoError(t, err)

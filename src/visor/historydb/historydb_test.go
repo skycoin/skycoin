@@ -16,6 +16,17 @@ import (
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
+func prepareDB(t *testing.T) (*dbutil.DB, func()) {
+	db, shutdown := testutil.PrepareDB(t)
+
+	err := db.Update(func(tx *dbutil.Tx) error {
+		return CreateBuckets(tx)
+	})
+	require.NoError(t, err)
+
+	return db, shutdown
+}
+
 var (
 	genPublic, genSecret = cipher.GenerateKeyPair()
 	genAddress           = cipher.AddressFromPubKey(genPublic)
@@ -164,15 +175,14 @@ func (fbc fakeBlockchain) GetBlock(hash cipher.SHA256) *coin.Block {
 }
 
 func TestProcessGenesisBlock(t *testing.T) {
-	db, teardown := testutil.PrepareDB(t)
+	db, teardown := prepareDB(t)
 	defer teardown()
 
 	bc := newBlockchain()
 	gb := bc.CreateGenesisBlock(genAddress, genCoins, genTime)
-	hisDB, err := New(db)
-	require.NoError(t, err)
+	hisDB := New()
 
-	err = db.Update(func(tx *dbutil.Tx) error {
+	err := db.Update(func(tx *dbutil.Tx) error {
 		err := hisDB.ParseBlock(tx, &gb)
 		require.NoError(t, err)
 		return nil
@@ -182,12 +192,12 @@ func TestProcessGenesisBlock(t *testing.T) {
 	// check transactions bucket.
 	var tx Transaction
 	txHash := gb.Body.Transactions[0].Hash()
-	mustGetBucketValue(t, db, transactionsBkt, txHash[:], &tx)
+	mustGetBucketValue(t, db, TransactionsBkt, txHash[:], &tx)
 	require.Equal(t, tx.Tx, gb.Body.Transactions[0])
 
 	// check address in
 	outID := []cipher.SHA256{}
-	mustGetBucketValue(t, db, addressUxBkt, genAddress.Bytes(), &outID)
+	mustGetBucketValue(t, db, AddressUxBkt, genAddress.Bytes(), &outID)
 
 	ux, ok := bc.unspent[outID[0].Hex()]
 	require.True(t, ok)
@@ -195,7 +205,7 @@ func TestProcessGenesisBlock(t *testing.T) {
 
 	// check outputs
 	output := UxOut{}
-	mustGetBucketValue(t, db, uxOutsBkt, outID[0][:], &output)
+	mustGetBucketValue(t, db, UxOutsBkt, outID[0][:], &output)
 
 	require.Equal(t, output.Out, ux)
 }
@@ -242,16 +252,15 @@ func getUx(bc Blockchainer, seq uint64, txID cipher.SHA256, addr string) (*coin.
 }
 
 func TestProcessBlock(t *testing.T) {
-	db, teardown := testutil.PrepareDB(t)
+	db, teardown := prepareDB(t)
 	defer teardown()
 	bc := newBlockchain()
 	gb := bc.CreateGenesisBlock(genAddress, genCoins, genTime)
 
 	// create
-	hisDB, err := New(db)
-	require.NoError(t, err)
+	hisDB := New()
 
-	err = db.Update(func(tx *dbutil.Tx) error {
+	err := db.Update(func(tx *dbutil.Tx) error {
 		err := hisDB.ParseBlock(tx, &gb)
 		require.NoError(t, err)
 		return nil
@@ -346,7 +355,7 @@ func testEngine(t *testing.T, tds []testData, bc *fakeBlockchain, hdb *HistoryDB
 		// check tx
 		txInBkt := Transaction{}
 		k := tx.Hash()
-		mustGetBucketValue(t, db, transactionsBkt, k[:], &txInBkt)
+		mustGetBucketValue(t, db, TransactionsBkt, k[:], &txInBkt)
 		require.Equal(t, &txInBkt.Tx, tx)
 
 		// check outputs
@@ -356,7 +365,7 @@ func testEngine(t *testing.T, tds []testData, bc *fakeBlockchain, hdb *HistoryDB
 
 			uxInDB := UxOut{}
 			uxKey := ux.Hash()
-			mustGetBucketValue(t, db, uxOutsBkt, uxKey[:], &uxInDB)
+			mustGetBucketValue(t, db, UxOutsBkt, uxKey[:], &uxInDB)
 			require.Equal(t, &uxInDB.Out, ux)
 		}
 
@@ -364,7 +373,7 @@ func testEngine(t *testing.T, tds []testData, bc *fakeBlockchain, hdb *HistoryDB
 		for _, o := range td.Vouts {
 			addr := cipher.MustDecodeBase58Address(o.ToAddr)
 			uxHashes := []cipher.SHA256{}
-			mustGetBucketValue(t, db, addressUxBkt, addr.Bytes(), &uxHashes)
+			mustGetBucketValue(t, db, AddressUxBkt, addr.Bytes(), &uxHashes)
 			require.Equal(t, len(uxHashes), td.AddrInNum[o.ToAddr])
 		}
 	}

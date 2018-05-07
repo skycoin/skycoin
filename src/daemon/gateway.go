@@ -71,11 +71,20 @@ func (gw *Gateway) strand(name string, f func()) {
 	}, gw.quit, nil)
 }
 
+// ConnectionBlockchain link GetConnections with GetBlockchainProgress
+type ConnectionBlockchain struct {
+	Connection         *Connections
+	BlockchainProgress *BlockchainProgress
+}
+
 // GetConnections returns a *Connections
-func (gw *Gateway) GetConnections() *Connections {
-	var conns *Connections
+func (gw *Gateway) GetConnections() ConnectionBlockchain {
+	var conns ConnectionBlockchain
 	gw.strand("GetConnections", func() {
-		conns = gw.drpc.GetConnections(gw.d)
+		conns = ConnectionBlockchain{
+			Connection:         gw.drpc.GetConnections(gw.d),
+			BlockchainProgress: gw.drpc.GetBlockchainProgress(gw.d.Visor),
+		}
 	})
 	return conns
 }

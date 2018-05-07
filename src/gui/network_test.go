@@ -107,8 +107,8 @@ func TestConnections(t *testing.T) {
 		method                      string
 		status                      int
 		err                         string
-		gatewayGetConnectionsResult *daemon.Connections
-		result                      *daemon.Connections
+		gatewayGetConnectionsResult daemon.ConnectionBlockchain
+		result                      daemon.ConnectionBlockchain
 	}{
 		{
 			name:   "405",
@@ -121,31 +121,35 @@ func TestConnections(t *testing.T) {
 			method: http.MethodGet,
 			status: http.StatusOK,
 			err:    "",
-			gatewayGetConnectionsResult: &daemon.Connections{
-				Connections: []*daemon.Connection{
-					&daemon.Connection{
-						ID:           1,
-						Addr:         "127.0.0.1",
-						LastSent:     99999,
-						LastReceived: 1111111,
-						Outgoing:     true,
-						Introduced:   true,
-						Mirror:       9876,
-						ListenPort:   9877,
+			gatewayGetConnectionsResult: daemon.ConnectionBlockchain{
+				Connection: &daemon.Connections{
+					Connections: []*daemon.Connection{
+						&daemon.Connection{
+							ID:           1,
+							Addr:         "127.0.0.1",
+							LastSent:     99999,
+							LastReceived: 1111111,
+							Outgoing:     true,
+							Introduced:   true,
+							Mirror:       9876,
+							ListenPort:   9877,
+						},
 					},
 				},
 			},
-			result: &daemon.Connections{
-				Connections: []*daemon.Connection{
-					&daemon.Connection{
-						ID:           1,
-						Addr:         "127.0.0.1",
-						LastSent:     99999,
-						LastReceived: 1111111,
-						Outgoing:     true,
-						Introduced:   true,
-						Mirror:       9876,
-						ListenPort:   9877,
+			result: daemon.ConnectionBlockchain{
+				Connection: &daemon.Connections{
+					Connections: []*daemon.Connection{
+						&daemon.Connection{
+							ID:           1,
+							Addr:         "127.0.0.1",
+							LastSent:     99999,
+							LastReceived: 1111111,
+							Outgoing:     true,
+							Introduced:   true,
+							Mirror:       9876,
+							ListenPort:   9877,
+						},
 					},
 				},
 			},
@@ -170,7 +174,7 @@ func TestConnections(t *testing.T) {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %d, want `%v`",
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg *daemon.Connections
+				var msg daemon.ConnectionBlockchain
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.result, msg)

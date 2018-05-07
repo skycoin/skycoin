@@ -167,21 +167,6 @@ func SKY_cli_RPCClientFromApp(_app *C.App__Handle, _arg1 *C.WebRpcClient__Handle
 	return
 }
 
-//export SKY_cli_NewWebRPCClient
-func SKY_cli_NewWebRPCClient(address string, _arg1 *C.WebRpcClient__Handle) (____error_code uint32) {
-	____error_code = 0
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	client, err := webrpc.NewClient(address)
-	if err == nil {
-		*_arg1 = registerWebRpcClientHandle(client)
-	} else {
-		____error_code = libErrorCode(err)
-	}
-	return
-}
-
 //export SKY_cli_ConfigFromContext
 func SKY_cli_ConfigFromContext(_c *C.Context__Handle, _arg1 *C.Config__Handle) (____error_code uint32) {
 	____error_code = 0

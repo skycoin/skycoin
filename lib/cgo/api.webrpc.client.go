@@ -2,6 +2,7 @@ package main
 
 import (
 	coin "github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/api/webrpc"
 	"reflect"
 	"unsafe"
 )
@@ -14,6 +15,21 @@ import (
   #include "../../include/skytypes.h"
 */
 import "C"
+
+//export SKY_cli_NewWebRPCClient
+func SKY_cli_NewWebRPCClient(address string, _arg1 *C.WebRpcClient__Handle) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	client, err := webrpc.NewClient(address)
+	if err == nil {
+		*_arg1 = registerWebRpcClientHandle(client)
+	} else {
+		____error_code = libErrorCode(err)
+	}
+	return
+}
 
 //export SKY_webrpc_Client_GetUnspentOutputs
 func SKY_webrpc_Client_GetUnspentOutputs(_c *C.WebRpcClient__Handle, _addrs []string, _arg1 *C.webrpc__OutputsResult) (____error_code uint32) {

@@ -2,6 +2,7 @@ package main
 
 import (
 	cli "github.com/skycoin/skycoin/src/api/cli"
+	"github.com/skycoin/skycoin/src/api/webrpc"
 	"os"
 	"unsafe"
 )
@@ -147,6 +148,37 @@ func SKY_cli_RPCClientFromContext(_c *C.Context__Handle, _arg1 *C.WebRpcClient__
 	}
 	__arg1 := cli.RPCClientFromContext(c)
 	*_arg1 = registerWebRpcClientHandle(__arg1)
+	return
+}
+
+//export SKY_cli_RPCClientFromApp
+func SKY_cli_RPCClientFromApp(_app *C.App__Handle, _arg1 *C.WebRpcClient__Handle) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	app, okapp := lookupAppHandle(*_app)
+	if !okapp {
+		____error_code = SKY_ERROR
+		return
+	}
+	__arg1 := app.App.Metadata["rpc"].(*webrpc.Client)
+	*_arg1 = registerWebRpcClientHandle(__arg1)
+	return
+}
+
+//export SKY_cli_NewWebRPCClient
+func SKY_cli_NewWebRPCClient(address string, _arg1 *C.WebRpcClient__Handle) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	client, err := webrpc.NewClient(address)
+	if err == nil {
+		*_arg1 = registerWebRpcClientHandle(client)
+	} else {
+		____error_code = libErrorCode(err)
+	}
 	return
 }
 

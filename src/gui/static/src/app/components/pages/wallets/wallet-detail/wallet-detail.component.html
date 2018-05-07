@@ -3,12 +3,12 @@
     <div class="id-column">{{ i + 1 }}</div>
     <div class="address-column" (click)="copyAddress(address)">
       <img src="../../../../../assets/img/qr-code-black.png" (click)="showQrCode($event, address.address)">
-      <p class="click-to-copy" [ngClass]="{ copying: address.copying }">{{ address.address }}</p>
+      <p>{{ address.address }}</p>
     </div>
     <div class="hours-column">{{ (address.hours ? address.hours : 0) | number:'1.0-6' }}</div>
     <div class="coins-column">{{ (address.coins ? address.coins : 0) | number:'1.0-6' }}</div>
     <div class="outputs-column">
-      <mat-icon class="outputs-label" [matMenuTriggerFor]="optionsMenu">more_vert</mat-icon>
+      <mat-icon [matMenuTriggerFor]="optionsMenu">more_vert</mat-icon>
     </div>
   </div>
 

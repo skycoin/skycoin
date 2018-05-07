@@ -725,7 +725,6 @@ func (vs *Visor) GetBlocks(start, end uint64) ([]coin.SignedBlock, error) {
 	}
 
 	return blocks, nil
-}
 
 // InjectTransaction records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
 // already in the blockchain.

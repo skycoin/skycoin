@@ -182,6 +182,7 @@ func (gw *Gateway) GetSignedBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
 func (gw *Gateway) GetBlocks(start, end uint64) (*visor.ReadableBlocks, error) {
 	var blocks []coin.SignedBlock
 	var err error
+
 	gw.strand("GetBlocks", func() {
 		blocks, err = gw.v.GetBlocks(start, end)
 	})

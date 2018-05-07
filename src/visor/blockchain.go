@@ -450,6 +450,7 @@ func (bc Blockchain) GetBlocks(tx *dbutil.Tx, start, end uint64) ([]coin.SignedB
 
 		blocks = append(blocks, *b)
 	}
+
 	return blocks, nil
 }
 

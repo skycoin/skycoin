@@ -28,6 +28,10 @@ func SKY_encrypt_ScryptChacha20poly1305_Encrypt(_s *C.encrypt__ScryptChacha20pol
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
 		copyToGoSlice(reflect.ValueOf(__arg1), _arg1)
+		if _arg1.len < 0 {
+			//TODO: Set an error code if overflow
+			____error_code = SKY_ERROR
+		}
 	}
 	return
 }
@@ -45,6 +49,10 @@ func SKY_encrypt_ScryptChacha20poly1305_Decrypt(_s *C.encrypt__ScryptChacha20pol
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
 		copyToGoSlice(reflect.ValueOf(__arg1), _arg1)
+		if _arg1.len < 0 {
+			//TODO: Set an error code if overflow
+			____error_code = SKY_ERROR
+		}
 	}
 	return
 }

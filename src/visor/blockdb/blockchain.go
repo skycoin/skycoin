@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/boltdb/bolt"
-
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util/logging"
@@ -36,36 +34,36 @@ func (e ErrMissingSignature) Error() string {
 
 // BlockTree block storage
 type BlockTree interface {
-	AddBlock(*bolt.Tx, *coin.Block) error
-	GetBlock(*bolt.Tx, cipher.SHA256) (*coin.Block, error)
-	GetBlockInDepth(*bolt.Tx, uint64, Walker) (*coin.Block, error)
-	ForEachBlock(*bolt.Tx, func(*coin.Block) error) error
+	AddBlock(*dbutil.Tx, *coin.Block) error
+	GetBlock(*dbutil.Tx, cipher.SHA256) (*coin.Block, error)
+	GetBlockInDepth(*dbutil.Tx, uint64, Walker) (*coin.Block, error)
+	ForEachBlock(*dbutil.Tx, func(*coin.Block) error) error
 }
 
 // BlockSigs block signature storage
 type BlockSigs interface {
-	Add(*bolt.Tx, cipher.SHA256, cipher.Sig) error
-	Get(*bolt.Tx, cipher.SHA256) (cipher.Sig, bool, error)
-	ForEach(*bolt.Tx, func(cipher.SHA256, cipher.Sig) error) error
+	Add(*dbutil.Tx, cipher.SHA256, cipher.Sig) error
+	Get(*dbutil.Tx, cipher.SHA256) (cipher.Sig, bool, error)
+	ForEach(*dbutil.Tx, func(cipher.SHA256, cipher.Sig) error) error
 }
 
 // UnspentPool unspent outputs pool
 type UnspentPool interface {
-	Len(*bolt.Tx) (uint64, error)
-	Contains(*bolt.Tx, cipher.SHA256) (bool, error)
-	Get(*bolt.Tx, cipher.SHA256) (*coin.UxOut, error)
-	GetAll(*bolt.Tx) (coin.UxArray, error)
-	GetArray(*bolt.Tx, []cipher.SHA256) (coin.UxArray, error)
-	GetUxHash(*bolt.Tx) (cipher.SHA256, error)
-	GetUnspentsOfAddrs(*bolt.Tx, []cipher.Address) (coin.AddressUxOuts, error)
-	ProcessBlock(*bolt.Tx, *coin.SignedBlock) error
-	// GetForTransactionInputs(*bolt.Tx, coin.Transactions) (coin.TransactionUnspents, error)
+	Len(*dbutil.Tx) (uint64, error)
+	Contains(*dbutil.Tx, cipher.SHA256) (bool, error)
+	Get(*dbutil.Tx, cipher.SHA256) (*coin.UxOut, error)
+	GetAll(*dbutil.Tx) (coin.UxArray, error)
+	GetArray(*dbutil.Tx, []cipher.SHA256) (coin.UxArray, error)
+	GetUxHash(*dbutil.Tx) (cipher.SHA256, error)
+	GetUnspentsOfAddrs(*dbutil.Tx, []cipher.Address) (coin.AddressUxOuts, error)
+	ProcessBlock(*dbutil.Tx, *coin.SignedBlock) error
+	// GetForTransactionInputs(*dbutil.Tx, coin.Transactions) (coin.TransactionUnspents, error)
 }
 
 // ChainMeta blockchain metadata
 type ChainMeta interface {
-	GetHeadSeq(*bolt.Tx) (uint64, bool, error)
-	SetHeadSeq(*bolt.Tx, uint64) error
+	GetHeadSeq(*dbutil.Tx) (uint64, bool, error)
+	SetHeadSeq(*dbutil.Tx, uint64) error
 }
 
 // Blockchain maintain the buckets for blockchain
@@ -124,7 +122,7 @@ func (bc *Blockchain) UnspentPool() UnspentPool {
 }
 
 // AddBlock adds signed block
-func (bc *Blockchain) AddBlock(tx *bolt.Tx, sb *coin.SignedBlock) error {
+func (bc *Blockchain) AddBlock(tx *dbutil.Tx, sb *coin.SignedBlock) error {
 	if err := bc.sigs.Add(tx, sb.HashHeader(), sb.Sig); err != nil {
 		return fmt.Errorf("save signature failed: %v", err)
 	}
@@ -142,7 +140,7 @@ func (bc *Blockchain) AddBlock(tx *bolt.Tx, sb *coin.SignedBlock) error {
 }
 
 // processBlock processes a block and updates the db
-func (bc *Blockchain) processBlock(tx *bolt.Tx, b *coin.SignedBlock) error {
+func (bc *Blockchain) processBlock(tx *dbutil.Tx, b *coin.SignedBlock) error {
 	if err := bc.unspent.ProcessBlock(tx, b); err != nil {
 		return err
 	}
@@ -151,7 +149,7 @@ func (bc *Blockchain) processBlock(tx *bolt.Tx, b *coin.SignedBlock) error {
 }
 
 // Head returns head block, returns error if no head block exists
-func (bc *Blockchain) Head(tx *bolt.Tx) (*coin.SignedBlock, error) {
+func (bc *Blockchain) Head(tx *dbutil.Tx) (*coin.SignedBlock, error) {
 	seq, ok, err := bc.HeadSeq(tx)
 	if err != nil {
 		return nil, err
@@ -172,12 +170,12 @@ func (bc *Blockchain) Head(tx *bolt.Tx) (*coin.SignedBlock, error) {
 }
 
 // HeadSeq returns the head block sequence
-func (bc *Blockchain) HeadSeq(tx *bolt.Tx) (uint64, bool, error) {
+func (bc *Blockchain) HeadSeq(tx *dbutil.Tx) (uint64, bool, error) {
 	return bc.meta.GetHeadSeq(tx)
 }
 
 // Len returns blockchain length
-func (bc *Blockchain) Len(tx *bolt.Tx) (uint64, error) {
+func (bc *Blockchain) Len(tx *dbutil.Tx) (uint64, error) {
 	seq, ok, err := bc.meta.GetHeadSeq(tx)
 	if err != nil {
 		return 0, err
@@ -189,12 +187,12 @@ func (bc *Blockchain) Len(tx *bolt.Tx) (uint64, error) {
 }
 
 // GetBlockSignature returns the signature of a block
-func (bc *Blockchain) GetBlockSignature(tx *bolt.Tx, b *coin.Block) (cipher.Sig, bool, error) {
+func (bc *Blockchain) GetBlockSignature(tx *dbutil.Tx, b *coin.Block) (cipher.Sig, bool, error) {
 	return bc.sigs.Get(tx, b.HashHeader())
 }
 
 // GetBlockByHash returns block of given hash
-func (bc *Blockchain) GetBlockByHash(tx *bolt.Tx, hash cipher.SHA256) (*coin.Block, error) {
+func (bc *Blockchain) GetBlockByHash(tx *dbutil.Tx, hash cipher.SHA256) (*coin.Block, error) {
 	b, err := bc.tree.GetBlock(tx, hash)
 	if err != nil {
 		return nil, err
@@ -204,7 +202,7 @@ func (bc *Blockchain) GetBlockByHash(tx *bolt.Tx, hash cipher.SHA256) (*coin.Blo
 }
 
 // GetSignedBlockByHash returns signed block of given hash
-func (bc *Blockchain) GetSignedBlockByHash(tx *bolt.Tx, hash cipher.SHA256) (*coin.SignedBlock, error) {
+func (bc *Blockchain) GetSignedBlockByHash(tx *dbutil.Tx, hash cipher.SHA256) (*coin.SignedBlock, error) {
 	b, err := bc.tree.GetBlock(tx, hash)
 	if err != nil {
 		return nil, err
@@ -230,7 +228,7 @@ func (bc *Blockchain) GetSignedBlockByHash(tx *bolt.Tx, hash cipher.SHA256) (*co
 }
 
 // GetSignedBlockBySeq returns signed block of given seq
-func (bc *Blockchain) GetSignedBlockBySeq(tx *bolt.Tx, seq uint64) (*coin.SignedBlock, error) {
+func (bc *Blockchain) GetSignedBlockBySeq(tx *dbutil.Tx, seq uint64) (*coin.SignedBlock, error) {
 	b, err := bc.tree.GetBlockInDepth(tx, seq, bc.walker)
 	if err != nil {
 		return nil, fmt.Errorf("bc.tree.GetBlockInDepth failed: %v", err)
@@ -255,16 +253,16 @@ func (bc *Blockchain) GetSignedBlockBySeq(tx *bolt.Tx, seq uint64) (*coin.Signed
 }
 
 // GetGenesisBlock returns genesis block
-func (bc *Blockchain) GetGenesisBlock(tx *bolt.Tx) (*coin.SignedBlock, error) {
+func (bc *Blockchain) GetGenesisBlock(tx *dbutil.Tx) (*coin.SignedBlock, error) {
 	return bc.GetSignedBlockBySeq(tx, 0)
 }
 
 // ForEachSignature iterates all signatures and calls f on them
-func (bc *Blockchain) ForEachSignature(tx *bolt.Tx, f func(cipher.SHA256, cipher.Sig) error) error {
+func (bc *Blockchain) ForEachSignature(tx *dbutil.Tx, f func(cipher.SHA256, cipher.Sig) error) error {
 	return bc.sigs.ForEach(tx, f)
 }
 
 // ForEachBlock iterates all blocks and calls f on them
-func (bc *Blockchain) ForEachBlock(tx *bolt.Tx, f func(b *coin.Block) error) error {
+func (bc *Blockchain) ForEachBlock(tx *dbutil.Tx, f func(b *coin.Block) error) error {
 	return bc.tree.ForEachBlock(tx, f)
 }

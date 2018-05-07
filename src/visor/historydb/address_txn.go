@@ -1,8 +1,6 @@
 package historydb
 
 import (
-	"github.com/boltdb/bolt"
-
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
@@ -15,7 +13,7 @@ var addressTxnsBkt = []byte("address_txns")
 type addressTxns struct{}
 
 func newAddressTxns(db *dbutil.DB) (*addressTxns, error) {
-	if err := db.Update(func(tx *bolt.Tx) error {
+	if err := db.Update(func(tx *dbutil.Tx) error {
 		return dbutil.CreateBuckets(tx, [][]byte{
 			addressTxnsBkt,
 		})
@@ -27,7 +25,7 @@ func newAddressTxns(db *dbutil.DB) (*addressTxns, error) {
 }
 
 // Get returns the transaction hashes of given address
-func (atx *addressTxns) Get(tx *bolt.Tx, address cipher.Address) ([]cipher.SHA256, error) {
+func (atx *addressTxns) Get(tx *dbutil.Tx, address cipher.Address) ([]cipher.SHA256, error) {
 	var txHashes []cipher.SHA256
 	if ok, err := dbutil.GetBucketObjectDecoded(tx, addressTxnsBkt, address.Bytes(), &txHashes); err != nil {
 		return nil, err
@@ -39,7 +37,7 @@ func (atx *addressTxns) Get(tx *bolt.Tx, address cipher.Address) ([]cipher.SHA25
 }
 
 // Add adds a hash to an address's hash list
-func (atx *addressTxns) Add(tx *bolt.Tx, addr cipher.Address, hash cipher.SHA256) error {
+func (atx *addressTxns) Add(tx *dbutil.Tx, addr cipher.Address, hash cipher.SHA256) error {
 	hashes, err := atx.Get(tx, addr)
 	if err != nil {
 		return err
@@ -57,11 +55,11 @@ func (atx *addressTxns) Add(tx *bolt.Tx, addr cipher.Address, hash cipher.SHA256
 }
 
 // IsEmpty checks if address transactions bucket is empty
-func (atx *addressTxns) IsEmpty(tx *bolt.Tx) (bool, error) {
+func (atx *addressTxns) IsEmpty(tx *dbutil.Tx) (bool, error) {
 	return dbutil.IsEmpty(tx, addressTxnsBkt)
 }
 
 // Reset resets the bucket
-func (atx *addressTxns) Reset(tx *bolt.Tx) error {
+func (atx *addressTxns) Reset(tx *dbutil.Tx) error {
 	return dbutil.Reset(tx, addressTxnsBkt)
 }

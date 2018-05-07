@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/boltdb/bolt"
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -78,7 +77,7 @@ func MakeBlockchain(t *testing.T, db *dbutil.DB, seckey cipher.SecKey) *visor.Bl
 	}
 
 	sig := cipher.SignHash(gb.HashHeader(), seckey)
-	db.Update(func(tx *bolt.Tx) error {
+	db.Update(func(tx *dbutil.Tx) error {
 		return b.ExecuteBlock(tx, &coin.SignedBlock{
 			Block: *gb,
 			Sig:   sig,

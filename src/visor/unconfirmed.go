@@ -4,8 +4,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/boltdb/bolt"
-
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
@@ -58,7 +56,7 @@ func (ut *UnconfirmedTxn) Hash() cipher.SHA256 {
 // unconfirmed transactions bucket
 type unconfirmedTxns struct{}
 
-func (utb *unconfirmedTxns) get(tx *bolt.Tx, hash cipher.SHA256) (*UnconfirmedTxn, error) {
+func (utb *unconfirmedTxns) get(tx *dbutil.Tx, hash cipher.SHA256) (*UnconfirmedTxn, error) {
 	var txn UnconfirmedTxn
 
 	if ok, err := dbutil.GetBucketObjectDecoded(tx, unconfirmedTxnsBkt, []byte(hash.Hex()), &txn); err != nil {
@@ -70,11 +68,11 @@ func (utb *unconfirmedTxns) get(tx *bolt.Tx, hash cipher.SHA256) (*UnconfirmedTx
 	return &txn, nil
 }
 
-func (utb *unconfirmedTxns) put(tx *bolt.Tx, v *UnconfirmedTxn) error {
+func (utb *unconfirmedTxns) put(tx *dbutil.Tx, v *UnconfirmedTxn) error {
 	return dbutil.PutBucketValue(tx, unconfirmedTxnsBkt, []byte(v.Hash().Hex()), encoder.Serialize(v))
 }
 
-func (utb *unconfirmedTxns) update(tx *bolt.Tx, hash cipher.SHA256, f func(v *UnconfirmedTxn) error) error {
+func (utb *unconfirmedTxns) update(tx *dbutil.Tx, hash cipher.SHA256, f func(v *UnconfirmedTxn) error) error {
 	txn, err := utb.get(tx, hash)
 	if err != nil {
 		return err
@@ -91,11 +89,11 @@ func (utb *unconfirmedTxns) update(tx *bolt.Tx, hash cipher.SHA256, f func(v *Un
 	return utb.put(tx, txn)
 }
 
-func (utb *unconfirmedTxns) delete(tx *bolt.Tx, hash cipher.SHA256) error {
+func (utb *unconfirmedTxns) delete(tx *dbutil.Tx, hash cipher.SHA256) error {
 	return dbutil.Delete(tx, unconfirmedTxnsBkt, []byte(hash.Hex()))
 }
 
-func (utb *unconfirmedTxns) getAll(tx *bolt.Tx) ([]UnconfirmedTxn, error) {
+func (utb *unconfirmedTxns) getAll(tx *dbutil.Tx) ([]UnconfirmedTxn, error) {
 	var txns []UnconfirmedTxn
 
 	if err := dbutil.ForEach(tx, unconfirmedTxnsBkt, func(_, v []byte) error {
@@ -113,11 +111,11 @@ func (utb *unconfirmedTxns) getAll(tx *bolt.Tx) ([]UnconfirmedTxn, error) {
 	return txns, nil
 }
 
-func (utb *unconfirmedTxns) hasKey(tx *bolt.Tx, hash cipher.SHA256) (bool, error) {
+func (utb *unconfirmedTxns) hasKey(tx *dbutil.Tx, hash cipher.SHA256) (bool, error) {
 	return dbutil.BucketHasKey(tx, unconfirmedTxnsBkt, []byte(hash.Hex()))
 }
 
-func (utb *unconfirmedTxns) forEach(tx *bolt.Tx, f func(hash cipher.SHA256, tx UnconfirmedTxn) error) error {
+func (utb *unconfirmedTxns) forEach(tx *dbutil.Tx, f func(hash cipher.SHA256, tx UnconfirmedTxn) error) error {
 	return dbutil.ForEach(tx, unconfirmedTxnsBkt, func(k, v []byte) error {
 		hash, err := cipher.SHA256FromHex(string(k))
 		if err != nil {
@@ -133,17 +131,17 @@ func (utb *unconfirmedTxns) forEach(tx *bolt.Tx, f func(hash cipher.SHA256, tx U
 	})
 }
 
-func (utb *unconfirmedTxns) length(tx *bolt.Tx) (uint64, error) {
+func (utb *unconfirmedTxns) length(tx *dbutil.Tx) (uint64, error) {
 	return dbutil.Len(tx, unconfirmedTxnsBkt)
 }
 
 type txUnspents struct{}
 
-func (txus *txUnspents) put(tx *bolt.Tx, hash cipher.SHA256, uxs coin.UxArray) error {
+func (txus *txUnspents) put(tx *dbutil.Tx, hash cipher.SHA256, uxs coin.UxArray) error {
 	return dbutil.PutBucketValue(tx, unconfirmedUnspentsBkt, []byte(hash.Hex()), encoder.Serialize(uxs))
 }
 
-func (txus *txUnspents) get(tx *bolt.Tx, hash cipher.SHA256) (coin.UxArray, error) {
+func (txus *txUnspents) get(tx *dbutil.Tx, hash cipher.SHA256) (coin.UxArray, error) {
 	var uxs coin.UxArray
 
 	if ok, err := dbutil.GetBucketObjectDecoded(tx, unconfirmedUnspentsBkt, []byte(hash.Hex()), &uxs); err != nil {
@@ -155,15 +153,15 @@ func (txus *txUnspents) get(tx *bolt.Tx, hash cipher.SHA256) (coin.UxArray, erro
 	return uxs, nil
 }
 
-func (txus *txUnspents) length(tx *bolt.Tx) (uint64, error) {
+func (txus *txUnspents) length(tx *dbutil.Tx) (uint64, error) {
 	return dbutil.Len(tx, unconfirmedUnspentsBkt)
 }
 
-func (txus *txUnspents) delete(tx *bolt.Tx, hash cipher.SHA256) error {
+func (txus *txUnspents) delete(tx *dbutil.Tx, hash cipher.SHA256) error {
 	return dbutil.Delete(tx, unconfirmedUnspentsBkt, []byte(hash.Hex()))
 }
 
-func (txus *txUnspents) getByAddr(tx *bolt.Tx, a cipher.Address) (coin.UxArray, error) {
+func (txus *txUnspents) getByAddr(tx *dbutil.Tx, a cipher.Address) (coin.UxArray, error) {
 	var uxo coin.UxArray
 
 	if err := dbutil.ForEach(tx, unconfirmedUnspentsBkt, func(_, v []byte) error {
@@ -186,7 +184,7 @@ func (txus *txUnspents) getByAddr(tx *bolt.Tx, a cipher.Address) (coin.UxArray, 
 	return uxo, nil
 }
 
-func (txus *txUnspents) forEach(tx *bolt.Tx, f func(cipher.SHA256, coin.UxArray) error) error {
+func (txus *txUnspents) forEach(tx *dbutil.Tx, f func(cipher.SHA256, coin.UxArray) error) error {
 	return dbutil.ForEach(tx, unconfirmedUnspentsBkt, func(k, v []byte) error {
 		hash, err := cipher.SHA256FromHex(string(k))
 		if err != nil {
@@ -214,7 +212,7 @@ type UnconfirmedTxnPool struct {
 
 // NewUnconfirmedTxnPool creates an UnconfirmedTxnPool instance
 func NewUnconfirmedTxnPool(db *dbutil.DB) (*UnconfirmedTxnPool, error) {
-	if err := db.Update(func(tx *bolt.Tx) error {
+	if err := db.Update(func(tx *dbutil.Tx) error {
 		if err := dbutil.CreateBuckets(tx, [][]byte{
 			unconfirmedTxnsBkt,
 			unconfirmedUnspentsBkt,
@@ -241,7 +239,7 @@ func NewUnconfirmedTxnPool(db *dbutil.DB) (*UnconfirmedTxnPool, error) {
 }
 
 // SetTxnsAnnounced updates announced time of specific tx
-func (utp *UnconfirmedTxnPool) SetTxnsAnnounced(tx *bolt.Tx, hashes []cipher.SHA256, t int64) error {
+func (utp *UnconfirmedTxnPool) SetTxnsAnnounced(tx *dbutil.Tx, hashes []cipher.SHA256, t int64) error {
 	var txns []*UnconfirmedTxn
 	for _, h := range hashes {
 		txn, err := utp.txns.get(tx, h)
@@ -284,7 +282,7 @@ func createUnconfirmedTxn(txn coin.Transaction) UnconfirmedTxn {
 // existed in the pool.
 // If the transaction violates hard constraints, it is rejected.
 // Soft constraints violations mark a txn as invalid, but the txn is inserted. The soft violation is returned.
-func (utp *UnconfirmedTxnPool) InjectTransaction(tx *bolt.Tx, bc Blockchainer, txn coin.Transaction, maxSize int) (bool, *ErrTxnViolatesSoftConstraint, error) {
+func (utp *UnconfirmedTxnPool) InjectTransaction(tx *dbutil.Tx, bc Blockchainer, txn coin.Transaction, maxSize int) (bool, *ErrTxnViolatesSoftConstraint, error) {
 	var isValid int8 = 1
 	var softErr *ErrTxnViolatesSoftConstraint
 	if err := bc.VerifySingleTxnAllConstraints(tx, txn, maxSize); err != nil {
@@ -350,7 +348,7 @@ func (utp *UnconfirmedTxnPool) InjectTransaction(tx *bolt.Tx, bc Blockchainer, t
 }
 
 // RawTxns returns underlying coin.Transactions
-func (utp *UnconfirmedTxnPool) RawTxns(tx *bolt.Tx) (coin.Transactions, error) {
+func (utp *UnconfirmedTxnPool) RawTxns(tx *dbutil.Tx) (coin.Transactions, error) {
 	utxns, err := utp.txns.getAll(tx)
 	if err != nil {
 		return nil, err
@@ -364,7 +362,7 @@ func (utp *UnconfirmedTxnPool) RawTxns(tx *bolt.Tx) (coin.Transactions, error) {
 }
 
 // Remove a single txn by hash
-func (utp *UnconfirmedTxnPool) removeTxn(tx *bolt.Tx, txHash cipher.SHA256) error {
+func (utp *UnconfirmedTxnPool) removeTxn(tx *dbutil.Tx, txHash cipher.SHA256) error {
 	if err := utp.txns.delete(tx, txHash); err != nil {
 		return err
 	}
@@ -372,8 +370,8 @@ func (utp *UnconfirmedTxnPool) removeTxn(tx *bolt.Tx, txHash cipher.SHA256) erro
 	return utp.unspent.delete(tx, txHash)
 }
 
-// RemoveTransactions remove transactions with bolt.Tx
-func (utp *UnconfirmedTxnPool) RemoveTransactions(tx *bolt.Tx, txHashes []cipher.SHA256) error {
+// RemoveTransactions remove transactions with dbutil.Tx
+func (utp *UnconfirmedTxnPool) RemoveTransactions(tx *dbutil.Tx, txHashes []cipher.SHA256) error {
 	for i := range txHashes {
 		if err := utp.removeTxn(tx, txHashes[i]); err != nil {
 			return err
@@ -386,7 +384,7 @@ func (utp *UnconfirmedTxnPool) RemoveTransactions(tx *bolt.Tx, txHashes []cipher
 // Refresh checks all unconfirmed txns against the blockchain.
 // If the transaction becomes invalid it is marked invalid.
 // If the transaction becomes valid it is marked valid and is returned to the caller.
-func (utp *UnconfirmedTxnPool) Refresh(tx *bolt.Tx, bc Blockchainer, maxBlockSize int) ([]cipher.SHA256, error) {
+func (utp *UnconfirmedTxnPool) Refresh(tx *dbutil.Tx, bc Blockchainer, maxBlockSize int) ([]cipher.SHA256, error) {
 	utxns, err := utp.txns.getAll(tx)
 	if err != nil {
 		return nil, err
@@ -423,7 +421,7 @@ func (utp *UnconfirmedTxnPool) Refresh(tx *bolt.Tx, bc Blockchainer, maxBlockSiz
 // RemoveInvalid checks all unconfirmed txns against the blockchain.
 // If a transaction violates hard constraints it is removed from the pool.
 // The transactions that were removed are returned.
-func (utp *UnconfirmedTxnPool) RemoveInvalid(tx *bolt.Tx, bc Blockchainer) ([]cipher.SHA256, error) {
+func (utp *UnconfirmedTxnPool) RemoveInvalid(tx *dbutil.Tx, bc Blockchainer) ([]cipher.SHA256, error) {
 	var removeUtxns []cipher.SHA256
 
 	utxns, err := utp.txns.getAll(tx)
@@ -451,7 +449,7 @@ func (utp *UnconfirmedTxnPool) RemoveInvalid(tx *bolt.Tx, bc Blockchainer) ([]ci
 }
 
 // GetUnknown returns txn hashes with known ones removed
-func (utp *UnconfirmedTxnPool) GetUnknown(tx *bolt.Tx, txns []cipher.SHA256) ([]cipher.SHA256, error) {
+func (utp *UnconfirmedTxnPool) GetUnknown(tx *dbutil.Tx, txns []cipher.SHA256) ([]cipher.SHA256, error) {
 	var unknown []cipher.SHA256
 
 	for _, h := range txns {
@@ -466,7 +464,7 @@ func (utp *UnconfirmedTxnPool) GetUnknown(tx *bolt.Tx, txns []cipher.SHA256) ([]
 }
 
 // GetKnown returns all known coin.Transactions from the pool, given hashes to select
-func (utp *UnconfirmedTxnPool) GetKnown(tx *bolt.Tx, txns []cipher.SHA256) (coin.Transactions, error) {
+func (utp *UnconfirmedTxnPool) GetKnown(tx *dbutil.Tx, txns []cipher.SHA256) (coin.Transactions, error) {
 	var known coin.Transactions
 
 	for _, h := range txns {
@@ -481,7 +479,7 @@ func (utp *UnconfirmedTxnPool) GetKnown(tx *bolt.Tx, txns []cipher.SHA256) (coin
 }
 
 // RecvOfAddresses returns unconfirmed receiving uxouts of addresses
-func (utp *UnconfirmedTxnPool) RecvOfAddresses(tx *bolt.Tx, bh coin.BlockHeader, addrs []cipher.Address) (coin.AddressUxOuts, error) {
+func (utp *UnconfirmedTxnPool) RecvOfAddresses(tx *dbutil.Tx, bh coin.BlockHeader, addrs []cipher.Address) (coin.AddressUxOuts, error) {
 	addrm := make(map[cipher.Address]struct{}, len(addrs))
 	for _, addr := range addrs {
 		addrm[addr] = struct{}{}
@@ -508,7 +506,7 @@ func (utp *UnconfirmedTxnPool) RecvOfAddresses(tx *bolt.Tx, bh coin.BlockHeader,
 }
 
 // GetIncomingOutputs returns all predicted incoming outputs.
-func (utp *UnconfirmedTxnPool) GetIncomingOutputs(tx *bolt.Tx, bh coin.BlockHeader) (coin.UxArray, error) {
+func (utp *UnconfirmedTxnPool) GetIncomingOutputs(tx *dbutil.Tx, bh coin.BlockHeader) (coin.UxArray, error) {
 	var outs coin.UxArray
 
 	if err := utp.txns.forEach(tx, func(_ cipher.SHA256, txn UnconfirmedTxn) error {
@@ -523,12 +521,12 @@ func (utp *UnconfirmedTxnPool) GetIncomingOutputs(tx *bolt.Tx, bh coin.BlockHead
 }
 
 // Get returns the unconfirmed transaction of given tx hash.
-func (utp *UnconfirmedTxnPool) Get(tx *bolt.Tx, hash cipher.SHA256) (*UnconfirmedTxn, error) {
+func (utp *UnconfirmedTxnPool) Get(tx *dbutil.Tx, hash cipher.SHA256) (*UnconfirmedTxn, error) {
 	return utp.txns.get(tx, hash)
 }
 
 // GetTxns returns all transactions that can pass the filter
-func (utp *UnconfirmedTxnPool) GetTxns(tx *bolt.Tx, filter func(UnconfirmedTxn) bool) ([]UnconfirmedTxn, error) {
+func (utp *UnconfirmedTxnPool) GetTxns(tx *dbutil.Tx, filter func(UnconfirmedTxn) bool) ([]UnconfirmedTxn, error) {
 	var txns []UnconfirmedTxn
 
 	if err := utp.txns.forEach(tx, func(_ cipher.SHA256, txn UnconfirmedTxn) error {
@@ -545,7 +543,7 @@ func (utp *UnconfirmedTxnPool) GetTxns(tx *bolt.Tx, filter func(UnconfirmedTxn) 
 }
 
 // GetTxHashes returns transaction hashes that can pass the filter
-func (utp *UnconfirmedTxnPool) GetTxHashes(tx *bolt.Tx, filter func(UnconfirmedTxn) bool) ([]cipher.SHA256, error) {
+func (utp *UnconfirmedTxnPool) GetTxHashes(tx *dbutil.Tx, filter func(UnconfirmedTxn) bool) ([]cipher.SHA256, error) {
 	var hashes []cipher.SHA256
 
 	if err := utp.txns.forEach(tx, func(hash cipher.SHA256, txn UnconfirmedTxn) error {
@@ -562,12 +560,12 @@ func (utp *UnconfirmedTxnPool) GetTxHashes(tx *bolt.Tx, filter func(UnconfirmedT
 }
 
 // ForEach iterate the pool with given callback function
-func (utp *UnconfirmedTxnPool) ForEach(tx *bolt.Tx, f func(cipher.SHA256, UnconfirmedTxn) error) error {
+func (utp *UnconfirmedTxnPool) ForEach(tx *dbutil.Tx, f func(cipher.SHA256, UnconfirmedTxn) error) error {
 	return utp.txns.forEach(tx, f)
 }
 
 // GetUnspentsOfAddr returns unspent outputs of given address in unspent tx pool
-func (utp *UnconfirmedTxnPool) GetUnspentsOfAddr(tx *bolt.Tx, addr cipher.Address) (coin.UxArray, error) {
+func (utp *UnconfirmedTxnPool) GetUnspentsOfAddr(tx *dbutil.Tx, addr cipher.Address) (coin.UxArray, error) {
 	return utp.unspent.getByAddr(tx, addr)
 }
 
@@ -582,7 +580,7 @@ func All(tx UnconfirmedTxn) bool {
 }
 
 // Len returns the number of unconfirmed transactions
-func (utp *UnconfirmedTxnPool) Len(tx *bolt.Tx) (uint64, error) {
+func (utp *UnconfirmedTxnPool) Len(tx *dbutil.Tx) (uint64, error) {
 	return utp.txns.length(tx)
 }
 

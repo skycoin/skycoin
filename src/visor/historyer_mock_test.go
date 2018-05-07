@@ -7,11 +7,12 @@ package visor
 
 import (
 	"fmt"
+
 	mock "github.com/stretchr/testify/mock"
 
-	bolt "github.com/boltdb/bolt"
 	cipher "github.com/skycoin/skycoin/src/cipher"
 	coin "github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 	historydb "github.com/skycoin/skycoin/src/visor/historydb"
 )
 
@@ -25,7 +26,7 @@ func NewHistoryerMock() *historyerMock {
 }
 
 // ForEachTxn mocked method
-func (m *historyerMock) ForEachTxn(p0 *bolt.Tx, p1 func(cipher.SHA256, *historydb.Transaction) error) error {
+func (m *historyerMock) ForEachTxn(p0 *dbutil.Tx, p1 func(cipher.SHA256, *historydb.Transaction) error) error {
 
 	ret := m.Called(p0, p1)
 
@@ -43,7 +44,7 @@ func (m *historyerMock) ForEachTxn(p0 *bolt.Tx, p1 func(cipher.SHA256, *historyd
 }
 
 // GetAddrTxns mocked method
-func (m *historyerMock) GetAddrTxns(p0 *bolt.Tx, p1 cipher.Address) ([]historydb.Transaction, error) {
+func (m *historyerMock) GetAddrTxns(p0 *dbutil.Tx, p1 cipher.Address) ([]historydb.Transaction, error) {
 
 	ret := m.Called(p0, p1)
 
@@ -70,7 +71,7 @@ func (m *historyerMock) GetAddrTxns(p0 *bolt.Tx, p1 cipher.Address) ([]historydb
 }
 
 // GetAddrUxOuts mocked method
-func (m *historyerMock) GetAddrUxOuts(p0 *bolt.Tx, p1 cipher.Address) ([]*historydb.UxOut, error) {
+func (m *historyerMock) GetAddrUxOuts(p0 *dbutil.Tx, p1 cipher.Address) ([]*historydb.UxOut, error) {
 
 	ret := m.Called(p0, p1)
 
@@ -97,7 +98,7 @@ func (m *historyerMock) GetAddrUxOuts(p0 *bolt.Tx, p1 cipher.Address) ([]*histor
 }
 
 // GetTransaction mocked method
-func (m *historyerMock) GetTransaction(p0 *bolt.Tx, p1 cipher.SHA256) (*historydb.Transaction, error) {
+func (m *historyerMock) GetTransaction(p0 *dbutil.Tx, p1 cipher.SHA256) (*historydb.Transaction, error) {
 
 	ret := m.Called(p0, p1)
 
@@ -124,7 +125,7 @@ func (m *historyerMock) GetTransaction(p0 *bolt.Tx, p1 cipher.SHA256) (*historyd
 }
 
 // GetUxout mocked method
-func (m *historyerMock) GetUxout(p0 *bolt.Tx, p1 cipher.SHA256) (*historydb.UxOut, error) {
+func (m *historyerMock) GetUxout(p0 *dbutil.Tx, p1 cipher.SHA256) (*historydb.UxOut, error) {
 
 	ret := m.Called(p0, p1)
 
@@ -151,7 +152,7 @@ func (m *historyerMock) GetUxout(p0 *bolt.Tx, p1 cipher.SHA256) (*historydb.UxOu
 }
 
 // ParseBlock mocked method
-func (m *historyerMock) ParseBlock(p0 *bolt.Tx, p1 *coin.Block) error {
+func (m *historyerMock) ParseBlock(p0 *dbutil.Tx, p1 *coin.Block) error {
 
 	ret := m.Called(p0, p1)
 
@@ -169,7 +170,7 @@ func (m *historyerMock) ParseBlock(p0 *bolt.Tx, p1 *coin.Block) error {
 }
 
 // ParsedHeight mocked method
-func (m *historyerMock) ParsedHeight(p0 *bolt.Tx) (int64, error) {
+func (m *historyerMock) ParsedHeight(p0 *dbutil.Tx) (int64, error) {
 
 	ret := m.Called(p0)
 
@@ -196,7 +197,7 @@ func (m *historyerMock) ParsedHeight(p0 *bolt.Tx) (int64, error) {
 }
 
 // ResetIfNeed mocked method
-func (m *historyerMock) ResetIfNeed(p0 *bolt.Tx) error {
+func (m *historyerMock) ResetIfNeed(p0 *dbutil.Tx) error {
 
 	ret := m.Called(p0)
 

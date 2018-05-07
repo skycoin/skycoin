@@ -7,11 +7,11 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/boltdb/bolt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -77,7 +77,7 @@ func transferCoins(t *testing.T, v *Visor) error {
 	txn := makeSpendTx(t, coin.UxArray{uxs[spend.UxIndex]}, spend.Keys, spend.ToAddr, spend.Coins)
 
 	var b *coin.Block
-	err := v.db.View(func(tx *bolt.Tx) error {
+	err := v.db.View(func(tx *dbutil.Tx) error {
 		var err error
 		b, err = v.Blockchain.NewBlock(tx, coin.Transactions{txn}, head.Time()+uint64(100))
 		require.NoError(t, err)
@@ -89,7 +89,7 @@ func transferCoins(t *testing.T, v *Visor) error {
 		Block: *b,
 		Sig:   cipher.SignHash(b.HashHeader(), genSecret),
 	}
-	v.db.Update(func(tx *bolt.Tx) error {
+	v.db.Update(func(tx *dbutil.Tx) error {
 		bcc, ok := v.Blockchain.(*Blockchain)
 		require.True(t, ok)
 		return bcc.store.AddBlock(tx, sb)

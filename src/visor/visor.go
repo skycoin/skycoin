@@ -7,7 +7,6 @@ import (
 
 	"time"
 
-	"github.com/boltdb/bolt"
 	"github.com/sirupsen/logrus"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -179,34 +178,34 @@ func (c Config) Verify() error {
 
 // historyer is the interface that provides methods for accessing history data that are parsed from blockchain.
 type historyer interface {
-	GetUxout(tx *bolt.Tx, uxid cipher.SHA256) (*historydb.UxOut, error)
-	ParseBlock(tx *bolt.Tx, b *coin.Block) error
-	GetTransaction(tx *bolt.Tx, hash cipher.SHA256) (*historydb.Transaction, error)
-	GetAddrUxOuts(tx *bolt.Tx, address cipher.Address) ([]*historydb.UxOut, error)
-	GetAddrTxns(tx *bolt.Tx, address cipher.Address) ([]historydb.Transaction, error)
-	ResetIfNeed(tx *bolt.Tx) error
-	ParsedHeight(tx *bolt.Tx) (int64, error)
-	ForEachTxn(tx *bolt.Tx, f func(cipher.SHA256, *historydb.Transaction) error) error
+	GetUxout(tx *dbutil.Tx, uxid cipher.SHA256) (*historydb.UxOut, error)
+	ParseBlock(tx *dbutil.Tx, b *coin.Block) error
+	GetTransaction(tx *dbutil.Tx, hash cipher.SHA256) (*historydb.Transaction, error)
+	GetAddrUxOuts(tx *dbutil.Tx, address cipher.Address) ([]*historydb.UxOut, error)
+	GetAddrTxns(tx *dbutil.Tx, address cipher.Address) ([]historydb.Transaction, error)
+	ResetIfNeed(tx *dbutil.Tx) error
+	ParsedHeight(tx *dbutil.Tx) (int64, error)
+	ForEachTxn(tx *dbutil.Tx, f func(cipher.SHA256, *historydb.Transaction) error) error
 }
 
 // Blockchainer is the interface that provides methods for accessing the blockchain data
 type Blockchainer interface {
-	GetGenesisBlock(tx *bolt.Tx) (*coin.SignedBlock, error)
-	GetBlocks(tx *bolt.Tx, start, end uint64) ([]coin.SignedBlock, error)
-	GetLastBlocks(tx *bolt.Tx, n uint64) ([]coin.SignedBlock, error)
-	GetSignedBlockByHash(tx *bolt.Tx, hash cipher.SHA256) (*coin.SignedBlock, error)
-	GetSignedBlockBySeq(tx *bolt.Tx, seq uint64) (*coin.SignedBlock, error)
+	GetGenesisBlock(tx *dbutil.Tx) (*coin.SignedBlock, error)
+	GetBlocks(tx *dbutil.Tx, start, end uint64) ([]coin.SignedBlock, error)
+	GetLastBlocks(tx *dbutil.Tx, n uint64) ([]coin.SignedBlock, error)
+	GetSignedBlockByHash(tx *dbutil.Tx, hash cipher.SHA256) (*coin.SignedBlock, error)
+	GetSignedBlockBySeq(tx *dbutil.Tx, seq uint64) (*coin.SignedBlock, error)
 	Unspent() blockdb.UnspentPool
-	Len(tx *bolt.Tx) (uint64, error)
-	Head(tx *bolt.Tx) (*coin.SignedBlock, error)
-	HeadSeq(tx *bolt.Tx) (uint64, bool, error)
-	Time(tx *bolt.Tx) (uint64, error)
-	NewBlock(tx *bolt.Tx, txns coin.Transactions, currentTime uint64) (*coin.Block, error)
-	ExecuteBlock(tx *bolt.Tx, sb *coin.SignedBlock) error
-	VerifyBlockTxnConstraints(tx *bolt.Tx, txn coin.Transaction) error
-	VerifySingleTxnHardConstraints(tx *bolt.Tx, txn coin.Transaction) error
-	VerifySingleTxnAllConstraints(tx *bolt.Tx, txn coin.Transaction, maxSize int) error
-	TransactionFee(tx *bolt.Tx, hours uint64) coin.FeeCalculator
+	Len(tx *dbutil.Tx) (uint64, error)
+	Head(tx *dbutil.Tx) (*coin.SignedBlock, error)
+	HeadSeq(tx *dbutil.Tx) (uint64, bool, error)
+	Time(tx *dbutil.Tx) (uint64, error)
+	NewBlock(tx *dbutil.Tx, txns coin.Transactions, currentTime uint64) (*coin.Block, error)
+	ExecuteBlock(tx *dbutil.Tx, sb *coin.SignedBlock) error
+	VerifyBlockTxnConstraints(tx *dbutil.Tx, txn coin.Transaction) error
+	VerifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction) error
+	VerifySingleTxnAllConstraints(tx *dbutil.Tx, txn coin.Transaction, maxSize int) error
+	TransactionFee(tx *dbutil.Tx, hours uint64) coin.FeeCalculator
 	Notify(b coin.Block)
 	BindListener(bl BlockListener)
 }
@@ -214,22 +213,22 @@ type Blockchainer interface {
 // UnconfirmedTxnPooler is the interface that provides methods for
 // accessing the unconfirmed transaction pool
 type UnconfirmedTxnPooler interface {
-	SetTxnsAnnounced(tx *bolt.Tx, hashes []cipher.SHA256, t int64) error
-	InjectTransaction(tx *bolt.Tx, bc Blockchainer, t coin.Transaction, maxSize int) (bool, *ErrTxnViolatesSoftConstraint, error)
-	RawTxns(tx *bolt.Tx) (coin.Transactions, error)
-	RemoveTransactions(tx *bolt.Tx, txns []cipher.SHA256) error
-	Refresh(tx *bolt.Tx, bc Blockchainer, maxBlockSize int) ([]cipher.SHA256, error)
-	RemoveInvalid(tx *bolt.Tx, bc Blockchainer) ([]cipher.SHA256, error)
-	GetUnknown(tx *bolt.Tx, txns []cipher.SHA256) ([]cipher.SHA256, error)
-	GetKnown(tx *bolt.Tx, txns []cipher.SHA256) (coin.Transactions, error)
-	RecvOfAddresses(tx *bolt.Tx, bh coin.BlockHeader, addrs []cipher.Address) (coin.AddressUxOuts, error)
-	GetIncomingOutputs(tx *bolt.Tx, bh coin.BlockHeader) (coin.UxArray, error)
-	Get(tx *bolt.Tx, hash cipher.SHA256) (*UnconfirmedTxn, error)
-	GetTxns(tx *bolt.Tx, filter func(tx UnconfirmedTxn) bool) ([]UnconfirmedTxn, error)
-	GetTxHashes(tx *bolt.Tx, filter func(tx UnconfirmedTxn) bool) ([]cipher.SHA256, error)
-	ForEach(tx *bolt.Tx, f func(cipher.SHA256, UnconfirmedTxn) error) error
-	GetUnspentsOfAddr(tx *bolt.Tx, addr cipher.Address) (coin.UxArray, error)
-	Len(tx *bolt.Tx) (uint64, error)
+	SetTxnsAnnounced(tx *dbutil.Tx, hashes []cipher.SHA256, t int64) error
+	InjectTransaction(tx *dbutil.Tx, bc Blockchainer, t coin.Transaction, maxSize int) (bool, *ErrTxnViolatesSoftConstraint, error)
+	RawTxns(tx *dbutil.Tx) (coin.Transactions, error)
+	RemoveTransactions(tx *dbutil.Tx, txns []cipher.SHA256) error
+	Refresh(tx *dbutil.Tx, bc Blockchainer, maxBlockSize int) ([]cipher.SHA256, error)
+	RemoveInvalid(tx *dbutil.Tx, bc Blockchainer) ([]cipher.SHA256, error)
+	GetUnknown(tx *dbutil.Tx, txns []cipher.SHA256) ([]cipher.SHA256, error)
+	GetKnown(tx *dbutil.Tx, txns []cipher.SHA256) (coin.Transactions, error)
+	RecvOfAddresses(tx *dbutil.Tx, bh coin.BlockHeader, addrs []cipher.Address) (coin.AddressUxOuts, error)
+	GetIncomingOutputs(tx *dbutil.Tx, bh coin.BlockHeader) (coin.UxArray, error)
+	Get(tx *dbutil.Tx, hash cipher.SHA256) (*UnconfirmedTxn, error)
+	GetTxns(tx *dbutil.Tx, filter func(tx UnconfirmedTxn) bool) ([]UnconfirmedTxn, error)
+	GetTxHashes(tx *dbutil.Tx, filter func(tx UnconfirmedTxn) bool) ([]cipher.SHA256, error)
+	ForEach(tx *dbutil.Tx, f func(cipher.SHA256, UnconfirmedTxn) error) error
+	GetUnspentsOfAddr(tx *dbutil.Tx, addr cipher.Address) (coin.UxArray, error)
+	Len(tx *dbutil.Tx) (uint64, error)
 }
 
 // Visor manages the Blockchain as both a Master and a Normal
@@ -305,7 +304,7 @@ func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
 
 // Run starts the visor
 func (vs *Visor) Run() error {
-	if err := vs.db.Update(func(tx *bolt.Tx) error {
+	if err := vs.db.Update(func(tx *dbutil.Tx) error {
 		if err := vs.maybeCreateGenesisBlock(tx); err != nil {
 			return err
 		}
@@ -337,7 +336,7 @@ func (vs *Visor) Shutdown() {
 }
 
 // maybeCreateGenesisBlock creates a genesis block if necessary
-func (vs *Visor) maybeCreateGenesisBlock(tx *bolt.Tx) error {
+func (vs *Visor) maybeCreateGenesisBlock(tx *dbutil.Tx) error {
 	gb, err := vs.Blockchain.GetGenesisBlock(tx)
 	if err != nil {
 		return err
@@ -381,7 +380,7 @@ func (vs *Visor) GenesisPreconditions() {
 // all transaction that turn to valid.
 func (vs *Visor) RefreshUnconfirmed() ([]cipher.SHA256, error) {
 	var hashes []cipher.SHA256
-	if err := vs.db.Update(func(tx *bolt.Tx) error {
+	if err := vs.db.Update(func(tx *dbutil.Tx) error {
 		var err error
 		hashes, err = vs.Unconfirmed.Refresh(tx, vs.Blockchain, vs.Config.MaxBlockSize)
 		return err
@@ -397,7 +396,7 @@ func (vs *Visor) RefreshUnconfirmed() ([]cipher.SHA256, error) {
 // Returns the transaction hashes that were removed.
 func (vs *Visor) RemoveInvalidUnconfirmed() ([]cipher.SHA256, error) {
 	var hashes []cipher.SHA256
-	if err := vs.db.Update(func(tx *bolt.Tx) error {
+	if err := vs.db.Update(func(tx *dbutil.Tx) error {
 		var err error
 		hashes, err = vs.Unconfirmed.RemoveInvalid(tx, vs.Blockchain)
 		return err
@@ -409,7 +408,7 @@ func (vs *Visor) RemoveInvalidUnconfirmed() ([]cipher.SHA256, error) {
 }
 
 // CreateBlock creates a SignedBlock from pending transactions
-func (vs *Visor) createBlock(tx *bolt.Tx, when uint64) (coin.SignedBlock, error) {
+func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, error) {
 	if !vs.Config.IsMaster {
 		logger.Panic("Only master chain can create blocks")
 	}
@@ -483,7 +482,7 @@ func (vs *Visor) createBlock(tx *bolt.Tx, when uint64) (coin.SignedBlock, error)
 func (vs *Visor) CreateAndExecuteBlock() (coin.SignedBlock, error) {
 	var sb coin.SignedBlock
 
-	err := vs.db.Update(func(tx *bolt.Tx) error {
+	err := vs.db.Update(func(tx *dbutil.Tx) error {
 		var err error
 		sb, err = vs.createBlock(tx, uint64(utc.UnixNow()))
 		if err != nil {
@@ -498,7 +497,7 @@ func (vs *Visor) CreateAndExecuteBlock() (coin.SignedBlock, error) {
 
 // ExecuteSignedBlock adds a block to the blockchain, or returns error.
 // Blocks must be executed in sequence, and be signed by the master server
-func (vs *Visor) executeSignedBlock(tx *bolt.Tx, b coin.SignedBlock) error {
+func (vs *Visor) executeSignedBlock(tx *dbutil.Tx, b coin.SignedBlock) error {
 	if err := b.VerifySignature(vs.Config.BlockchainPubkey); err != nil {
 		return err
 	}
@@ -543,7 +542,7 @@ func (vs *Visor) signBlock(b coin.Block) coin.SignedBlock {
 // GetUnspentOutputs returns all unspent outputs
 func (vs *Visor) GetUnspentOutputs() ([]coin.UxOut, error) {
 	var ux []coin.UxOut
-	if err := vs.db.View(func(tx *bolt.Tx) error {
+	if err := vs.db.View(func(tx *dbutil.Tx) error {
 		var err error
 		ux, err = vs.Blockchain.Unspent().GetAll(tx)
 		return err
@@ -558,7 +557,7 @@ func (vs *Visor) GetUnspentOutputs() ([]coin.UxOut, error) {
 func (vs *Visor) UnconfirmedSpendingOutputs() (coin.UxArray, error) {
 	var uxa coin.UxArray
 
-	if err := vs.db.View(func(tx *bolt.Tx) error {
+	if err := vs.db.View(func(tx *dbutil.Tx) error {
 		var inputs []cipher.SHA256
 		txns, err := vs.Unconfirmed.RawTxns(tx)
 		if err != nil {
@@ -582,7 +581,7 @@ func (vs *Visor) UnconfirmedSpendingOutputs() (coin.UxArray, error) {
 func (vs *Visor) UnconfirmedIncomingOutputs() (coin.UxArray, error) {
 	var uxa coin.UxArray
 
-	if err := vs.db.View(func(tx *bolt.Tx) error {
+	if err := vs.db.View(func(tx *dbutil.Tx) error {
 		head, err := vs.Blockchain.Head(tx)
 		if err != nil {
 			return err
@@ -601,7 +600,7 @@ func (vs *Visor) UnconfirmedIncomingOutputs() (coin.UxArray, error) {
 func (vs *Visor) GetSignedBlocksSince(seq, ct uint64) ([]coin.SignedBlock, error) {
 	var blocks []coin.SignedBlock
 
-	if err := vs.db.View(func(tx *bolt.Tx) error {
+	if err := vs.db.View(func(tx *dbutil.Tx) error {
 		avail := uint64(0)
 		head, err := vs.Blockchain.Head(tx)
 		if err != nil {
@@ -644,7 +643,7 @@ func (vs *Visor) HeadBkSeq() (uint64, bool, error) {
 	var headSeq uint64
 	var ok bool
 
-	if err := vs.db.View(func(tx *bolt.Tx) error {
+	if err := vs.db.View(func(tx *dbutil.Tx) error {
 		var err error
 		headSeq, ok, err = vs.Blockchain.HeadSeq(tx)
 		return err
@@ -660,7 +659,7 @@ func (vs *Visor) GetBlockchainMetadata() (*BlockchainMetadata, error) {
 	var head *coin.SignedBlock
 	var unconfirmedLen, unspentsLen uint64
 
-	if err := vs.db.View(func(tx *bolt.Tx) error {
+	if err := vs.db.View(func(tx *dbutil.Tx) error {
 		var err error
 		head, err = vs.Blockchain.Head(tx)
 		if err != nil {
@@ -685,7 +684,7 @@ func (vs *Visor) GetBlockchainMetadata() (*BlockchainMetadata, error) {
 func (vs *Visor) GetBlock(seq uint64) (*coin.SignedBlock, error) {
 	var b *coin.SignedBlock
 
-	if err := vs.db.View(func(tx *bolt.Tx) error {
+	if err := vs.db.View(func(tx *dbutil.Tx) error {
 		headSeq, ok, err := vs.Blockchain.HeadSeq(tx)
 		if err != nil {
 			return err
@@ -709,7 +708,7 @@ func (vs *Visor) GetBlock(seq uint64) (*coin.SignedBlock, error) {
 func (vs *Visor) GetBlocks(start, end uint64) ([]coin.SignedBlock, error) {
 	var blocks []coin.SignedBlock
 
-	if err := vs.db.View(func(tx *bolt.Tx) error {
+	if err := vs.db.View(func(tx *dbutil.Tx) error {
 		var err error
 		blocks, err = vs.Blockchain.GetBlocks(tx, start, end)
 		return err
@@ -729,7 +728,7 @@ func (vs *Visor) InjectTransaction(txn coin.Transaction) (bool, *ErrTxnViolatesS
 	var known bool
 	var softErr *ErrTxnViolatesSoftConstraint
 
-	if err := vs.db.Update(func(tx *bolt.Tx) error {
+	if err := vs.db.Update(func(tx *dbutil.Tx) error {
 		var err error
 		known, softErr, err = vs.Unconfirmed.InjectTransaction(tx, vs.Blockchain, txn, vs.Config.MaxBlockSize)
 		return err
@@ -747,7 +746,7 @@ func (vs *Visor) InjectTransaction(txn coin.Transaction) (bool, *ErrTxnViolatesS
 func (vs *Visor) InjectTransactionStrict(txn coin.Transaction) (bool, error) {
 	var known bool
 
-	if err := vs.db.Update(func(tx *bolt.Tx) error {
+	if err := vs.db.Update(func(tx *dbutil.Tx) error {
 		err := vs.Blockchain.VerifySingleTxnAllConstraints(tx, txn, vs.Config.MaxBlockSize)
 		if err != nil {
 			return err
@@ -767,7 +766,7 @@ func (vs *Visor) InjectTransactionStrict(txn coin.Transaction) (bool, error) {
 func (vs *Visor) GetAddressTxns(a cipher.Address) ([]Transaction, error) {
 	var txns []Transaction
 
-	if err := vs.db.View(func(tx *bolt.Tx) error {
+	if err := vs.db.View(func(tx *dbutil.Tx) error {
 		txs, err := vs.history.GetAddrTxns(tx, a)
 		if err != nil {
 			return err
@@ -841,7 +840,7 @@ func (vs *Visor) GetAddressTxns(a cipher.Address) ([]Transaction, error) {
 func (vs *Visor) GetTransaction(txHash cipher.SHA256) (*Transaction, error) {
 	var txn *Transaction
 
-	if err := vs.db.View(func(tx *bolt.Tx) error {
+	if err := vs.db.View(func(tx *dbutil.Tx) error {
 		// Look in the unconfirmed pool
 		utxn, err := vs.Unconfirmed.Get(tx, txHash)
 		if err != nil {
@@ -959,7 +958,7 @@ func (vs *Visor) GetTransactions(flts ...TxFilter) ([]Transaction, error) {
 	// Traverses all transactions to do collection if there's no address filter.
 	if len(addrs) == 0 {
 		var txns []Transaction
-		if err := vs.db.View(func(tx *bolt.Tx) error {
+		if err := vs.db.View(func(tx *dbutil.Tx) error {
 			var err error
 			txns, err = vs.traverseTxns(tx, otherFlts...)
 			return err
@@ -971,7 +970,7 @@ func (vs *Visor) GetTransactions(flts ...TxFilter) ([]Transaction, error) {
 
 	// Gets addresses related transactions
 	var addrTxns map[cipher.Address][]Transaction
-	if err := vs.db.View(func(tx *bolt.Tx) error {
+	if err := vs.db.View(func(tx *dbutil.Tx) error {
 		var err error
 		addrTxns, err = vs.getTransactionsOfAddrs(tx, addrs)
 		return err
@@ -1032,7 +1031,7 @@ func accumulateAddressInFilter(afs []addrsFilter) []cipher.Address {
 
 // getTransactionsOfAddrs returns all addresses related transactions.
 // Including both confirmed and unconfirmed transactions.
-func (vs *Visor) getTransactionsOfAddrs(tx *bolt.Tx, addrs []cipher.Address) (map[cipher.Address][]Transaction, error) {
+func (vs *Visor) getTransactionsOfAddrs(tx *dbutil.Tx, addrs []cipher.Address) (map[cipher.Address][]Transaction, error) {
 	// Initialize the address transactions map
 	addrTxs := make(map[cipher.Address][]Transaction)
 
@@ -1112,7 +1111,7 @@ func (vs *Visor) getTransactionsOfAddrs(tx *bolt.Tx, addrs []cipher.Address) (ma
 
 // traverseTxns traverses transactions in historydb and unconfirmed tx pool in db,
 // returns transactions that can pass the filters.
-func (vs *Visor) traverseTxns(tx *bolt.Tx, flts ...TxFilter) ([]Transaction, error) {
+func (vs *Visor) traverseTxns(tx *dbutil.Tx, flts ...TxFilter) ([]Transaction, error) {
 	// Get the head block seq, for calculating the tx status
 	headBkSeq, ok, err := vs.Blockchain.HeadSeq(tx)
 	if err != nil {
@@ -1239,7 +1238,7 @@ func (vs *Visor) AddressBalance(head *coin.SignedBlock, auxs coin.AddressUxOuts)
 func (vs *Visor) GetUnconfirmedTxns(filter func(UnconfirmedTxn) bool) ([]UnconfirmedTxn, error) {
 	var txns []UnconfirmedTxn
 
-	if err := vs.db.View(func(tx *bolt.Tx) error {
+	if err := vs.db.View(func(tx *dbutil.Tx) error {
 		var err error
 		txns, err = vs.Unconfirmed.GetTxns(tx, filter)
 		return err
@@ -1269,7 +1268,7 @@ func ToAddresses(addresses []cipher.Address) func(UnconfirmedTxn) bool {
 func (vs *Visor) GetAllUnconfirmedTxns() ([]UnconfirmedTxn, error) {
 	var txns []UnconfirmedTxn
 
-	if err := vs.db.View(func(tx *bolt.Tx) error {
+	if err := vs.db.View(func(tx *dbutil.Tx) error {
 		var err error
 		txns, err = vs.Unconfirmed.GetTxns(tx, All)
 		return err
@@ -1284,7 +1283,7 @@ func (vs *Visor) GetAllUnconfirmedTxns() ([]UnconfirmedTxn, error) {
 func (vs *Visor) GetAllValidUnconfirmedTxHashes() ([]cipher.SHA256, error) {
 	var hashes []cipher.SHA256
 
-	if err := vs.db.View(func(tx *bolt.Tx) error {
+	if err := vs.db.View(func(tx *dbutil.Tx) error {
 		var err error
 		hashes, err = vs.Unconfirmed.GetTxHashes(tx, IsValid)
 		return err
@@ -1299,7 +1298,7 @@ func (vs *Visor) GetAllValidUnconfirmedTxHashes() ([]cipher.SHA256, error) {
 func (vs *Visor) GetSignedBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, error) {
 	var sb *coin.SignedBlock
 
-	if err := vs.db.View(func(tx *bolt.Tx) error {
+	if err := vs.db.View(func(tx *dbutil.Tx) error {
 		var err error
 		sb, err = vs.Blockchain.GetSignedBlockByHash(tx, hash)
 		return err
@@ -1314,7 +1313,7 @@ func (vs *Visor) GetSignedBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, er
 func (vs *Visor) GetSignedBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
 	var b *coin.SignedBlock
 
-	if err := vs.db.View(func(tx *bolt.Tx) error {
+	if err := vs.db.View(func(tx *dbutil.Tx) error {
 		var err error
 		b, err = vs.Blockchain.GetSignedBlockBySeq(tx, seq)
 		return err
@@ -1329,7 +1328,7 @@ func (vs *Visor) GetSignedBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
 func (vs *Visor) GetLastBlocks(num uint64) ([]coin.SignedBlock, error) {
 	var blocks []coin.SignedBlock
 
-	if err := vs.db.View(func(tx *bolt.Tx) error {
+	if err := vs.db.View(func(tx *dbutil.Tx) error {
 		var err error
 		blocks, err = vs.Blockchain.GetLastBlocks(tx, num)
 		return err
@@ -1344,7 +1343,7 @@ func (vs *Visor) GetLastBlocks(num uint64) ([]coin.SignedBlock, error) {
 func (vs Visor) GetHeadBlock() (*coin.SignedBlock, error) {
 	var b *coin.SignedBlock
 
-	if err := vs.db.View(func(tx *bolt.Tx) error {
+	if err := vs.db.View(func(tx *dbutil.Tx) error {
 		var err error
 		b, err = vs.Blockchain.Head(tx)
 		return err
@@ -1359,7 +1358,7 @@ func (vs Visor) GetHeadBlock() (*coin.SignedBlock, error) {
 func (vs Visor) GetHeadBlockTime() (uint64, error) {
 	var t uint64
 
-	if err := vs.db.View(func(tx *bolt.Tx) error {
+	if err := vs.db.View(func(tx *dbutil.Tx) error {
 		var err error
 		t, err = vs.Blockchain.Time(tx)
 		return err
@@ -1374,7 +1373,7 @@ func (vs Visor) GetHeadBlockTime() (uint64, error) {
 func (vs Visor) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
 	var out *historydb.UxOut
 
-	if err := vs.db.View(func(tx *bolt.Tx) error {
+	if err := vs.db.View(func(tx *dbutil.Tx) error {
 		var err error
 		out, err = vs.history.GetUxout(tx, id)
 		return err
@@ -1389,7 +1388,7 @@ func (vs Visor) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
 func (vs Visor) GetAddrUxOuts(address cipher.Address) ([]*historydb.UxOut, error) {
 	var out []*historydb.UxOut
 
-	if err := vs.db.View(func(tx *bolt.Tx) error {
+	if err := vs.db.View(func(tx *dbutil.Tx) error {
 		var err error
 		out, err = vs.history.GetAddrUxOuts(tx, address)
 		return err
@@ -1404,7 +1403,7 @@ func (vs Visor) GetAddrUxOuts(address cipher.Address) ([]*historydb.UxOut, error
 func (vs *Visor) RecvOfAddresses(addrs []cipher.Address) (coin.AddressUxOuts, error) {
 	var uxouts coin.AddressUxOuts
 
-	if err := vs.db.View(func(tx *bolt.Tx) error {
+	if err := vs.db.View(func(tx *dbutil.Tx) error {
 		head, err := vs.Blockchain.Head(tx)
 		if err != nil {
 			return err
@@ -1423,7 +1422,7 @@ func (vs *Visor) RecvOfAddresses(addrs []cipher.Address) (coin.AddressUxOuts, er
 func (vs *Visor) GetIncomingOutputs() (coin.UxArray, error) {
 	var uxa coin.UxArray
 
-	if err := vs.db.View(func(tx *bolt.Tx) error {
+	if err := vs.db.View(func(tx *dbutil.Tx) error {
 		head, err := vs.Blockchain.Head(tx)
 		if err != nil {
 			return err
@@ -1442,7 +1441,7 @@ func (vs *Visor) GetIncomingOutputs() (coin.UxArray, error) {
 func (vs *Visor) GetUnconfirmedTxn(hash cipher.SHA256) (*UnconfirmedTxn, error) {
 	var txn *UnconfirmedTxn
 
-	if err := vs.db.View(func(tx *bolt.Tx) error {
+	if err := vs.db.View(func(tx *dbutil.Tx) error {
 		var err error
 		txn, err = vs.Unconfirmed.Get(tx, hash)
 		return err
@@ -1457,7 +1456,7 @@ func (vs *Visor) GetUnconfirmedTxn(hash cipher.SHA256) (*UnconfirmedTxn, error) 
 func (vs *Visor) GetUnconfirmedUnknown(txns []cipher.SHA256) ([]cipher.SHA256, error) {
 	var hashes []cipher.SHA256
 
-	if err := vs.db.View(func(tx *bolt.Tx) error {
+	if err := vs.db.View(func(tx *dbutil.Tx) error {
 		var err error
 		hashes, err = vs.Unconfirmed.GetUnknown(tx, txns)
 		return err
@@ -1472,7 +1471,7 @@ func (vs *Visor) GetUnconfirmedUnknown(txns []cipher.SHA256) ([]cipher.SHA256, e
 func (vs *Visor) GetUnconfirmedKnown(txns []cipher.SHA256) (coin.Transactions, error) {
 	var hashes coin.Transactions
 
-	if err := vs.db.View(func(tx *bolt.Tx) error {
+	if err := vs.db.View(func(tx *dbutil.Tx) error {
 		var err error
 		hashes, err = vs.Unconfirmed.GetKnown(tx, txns)
 		return err
@@ -1487,7 +1486,7 @@ func (vs *Visor) GetUnconfirmedKnown(txns []cipher.SHA256) (coin.Transactions, e
 func (vs *Visor) UnconfirmedSpendsOfAddresses(addrs []cipher.Address) (coin.AddressUxOuts, error) {
 	var outs coin.AddressUxOuts
 
-	if err := vs.db.View(func(tx *bolt.Tx) error {
+	if err := vs.db.View(func(tx *dbutil.Tx) error {
 		var err error
 		outs, err = vs.unconfirmedSpendsOfAddresses(tx, addrs)
 		return err
@@ -1499,7 +1498,7 @@ func (vs *Visor) UnconfirmedSpendsOfAddresses(addrs []cipher.Address) (coin.Addr
 }
 
 // unconfirmedSpendsOfAddresses returns all unconfirmed coin.UxOut spends of addresses
-func (vs *Visor) unconfirmedSpendsOfAddresses(tx *bolt.Tx, addrs []cipher.Address) (coin.AddressUxOuts, error) {
+func (vs *Visor) unconfirmedSpendsOfAddresses(tx *dbutil.Tx, addrs []cipher.Address) (coin.AddressUxOuts, error) {
 	txns, err := vs.Unconfirmed.RawTxns(tx)
 	if err != nil {
 		return nil, err
@@ -1533,7 +1532,7 @@ func (vs *Visor) unconfirmedSpendsOfAddresses(tx *bolt.Tx, addrs []cipher.Addres
 
 // SetTxnsAnnounced updates announced time of specific tx
 func (vs *Visor) SetTxnsAnnounced(txns []cipher.SHA256, t int64) error {
-	return vs.db.Update(func(tx *bolt.Tx) error {
+	return vs.db.Update(func(tx *dbutil.Tx) error {
 		return vs.Unconfirmed.SetTxnsAnnounced(tx, txns, t)
 	})
 }
@@ -1542,7 +1541,7 @@ func (vs *Visor) SetTxnsAnnounced(txns []cipher.SHA256, t int64) error {
 func (vs Visor) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair, error) {
 	var bps []wallet.BalancePair
 
-	if err := vs.db.View(func(tx *bolt.Tx) error {
+	if err := vs.db.View(func(tx *dbutil.Tx) error {
 		auxs, err := vs.Blockchain.Unspent().GetUnspentsOfAddrs(tx, addrs)
 		if err != nil {
 			return fmt.Errorf("GetUnspentsOfAddrs failed when checking addresses balance: %v", err)
@@ -1634,7 +1633,7 @@ func (vs *Visor) GetTxnVerificationData(txn coin.Transaction) (coin.UxArray, uin
 	var uxa coin.UxArray
 	var headTime uint64
 
-	if err := vs.db.View(func(tx *bolt.Tx) error {
+	if err := vs.db.View(func(tx *dbutil.Tx) error {
 		var err error
 		uxa, err = vs.Blockchain.Unspent().GetArray(tx, txn.In)
 		if err != nil {
@@ -1654,7 +1653,7 @@ func (vs *Visor) GetTxnVerificationData(txn coin.Transaction) (coin.UxArray, uin
 func (vs *Visor) GetUnspentsOfAddrs(addrs []cipher.Address) (coin.AddressUxOuts, error) {
 	var uxa coin.AddressUxOuts
 
-	if err := vs.db.View(func(tx *bolt.Tx) error {
+	if err := vs.db.View(func(tx *dbutil.Tx) error {
 		var err error
 		uxa, err = vs.Blockchain.Unspent().GetUnspentsOfAddrs(tx, addrs)
 		return err

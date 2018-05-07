@@ -1,8 +1,6 @@
 package historydb
 
 import (
-	"github.com/boltdb/bolt"
-
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
@@ -15,7 +13,7 @@ type addressUx struct{}
 
 // create address affected UxOuts bucket.
 func newAddressUx(db *dbutil.DB) (*addressUx, error) {
-	if err := db.Update(func(tx *bolt.Tx) error {
+	if err := db.Update(func(tx *dbutil.Tx) error {
 		return dbutil.CreateBuckets(tx, [][]byte{
 			addressUxBkt,
 		})
@@ -27,7 +25,7 @@ func newAddressUx(db *dbutil.DB) (*addressUx, error) {
 }
 
 // Get return nil on not found.
-func (au *addressUx) Get(tx *bolt.Tx, address cipher.Address) ([]cipher.SHA256, error) {
+func (au *addressUx) Get(tx *dbutil.Tx, address cipher.Address) ([]cipher.SHA256, error) {
 	var uxHashes []cipher.SHA256
 
 	if ok, err := dbutil.GetBucketObjectDecoded(tx, addressUxBkt, address.Bytes(), &uxHashes); err != nil {
@@ -40,7 +38,7 @@ func (au *addressUx) Get(tx *bolt.Tx, address cipher.Address) ([]cipher.SHA256, 
 }
 
 // Add adds a hash to an address's hash list
-func (au *addressUx) Add(tx *bolt.Tx, address cipher.Address, uxHash cipher.SHA256) error {
+func (au *addressUx) Add(tx *dbutil.Tx, address cipher.Address, uxHash cipher.SHA256) error {
 	hashes, err := au.Get(tx, address)
 	if err != nil {
 		return err
@@ -58,11 +56,11 @@ func (au *addressUx) Add(tx *bolt.Tx, address cipher.Address, uxHash cipher.SHA2
 }
 
 // IsEmpty checks if the addressUx bucket is empty
-func (au *addressUx) IsEmpty(tx *bolt.Tx) (bool, error) {
+func (au *addressUx) IsEmpty(tx *dbutil.Tx) (bool, error) {
 	return dbutil.IsEmpty(tx, addressUxBkt)
 }
 
 // Reset resets the bucket
-func (au *addressUx) Reset(tx *bolt.Tx) error {
+func (au *addressUx) Reset(tx *dbutil.Tx) error {
 	return dbutil.Reset(tx, addressUxBkt)
 }

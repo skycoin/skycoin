@@ -11,6 +11,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
 var (
@@ -61,7 +62,7 @@ func newFakeBlockTree(failedWhenSaved *bool) *fakeBlockTree {
 	}
 }
 
-func (bt *fakeBlockTree) AddBlock(tx *bolt.Tx, b *coin.Block) error {
+func (bt *fakeBlockTree) AddBlock(tx *dbutil.Tx, b *coin.Block) error {
 	if bt.saveFailed {
 		if bt.failedWhenSaved != nil {
 			*bt.failedWhenSaved = true
@@ -72,14 +73,14 @@ func (bt *fakeBlockTree) AddBlock(tx *bolt.Tx, b *coin.Block) error {
 	return nil
 }
 
-func (bt *fakeBlockTree) GetBlock(tx *bolt.Tx, hash cipher.SHA256) (*coin.Block, error) {
+func (bt *fakeBlockTree) GetBlock(tx *dbutil.Tx, hash cipher.SHA256) (*coin.Block, error) {
 	if bt.failedWhenSaved != nil && *bt.failedWhenSaved {
 		return nil, nil
 	}
 	return bt.blocks[hash.Hex()], nil
 }
 
-func (bt *fakeBlockTree) GetBlockInDepth(tx *bolt.Tx, dep uint64, filter Walker) (*coin.Block, error) {
+func (bt *fakeBlockTree) GetBlockInDepth(tx *dbutil.Tx, dep uint64, filter Walker) (*coin.Block, error) {
 	if bt.failedWhenSaved != nil && *bt.failedWhenSaved {
 		return nil, nil
 	}
@@ -93,7 +94,7 @@ func (bt *fakeBlockTree) GetBlockInDepth(tx *bolt.Tx, dep uint64, filter Walker)
 	return nil, nil
 }
 
-func (bt *fakeBlockTree) ForEachBlock(tx *bolt.Tx, f func(*coin.Block) error) error {
+func (bt *fakeBlockTree) ForEachBlock(tx *dbutil.Tx, f func(*coin.Block) error) error {
 	return nil
 }
 
@@ -113,7 +114,7 @@ func newFakeSigStore(failedWhenSaved *bool) *fakeSignatureStore {
 	}
 }
 
-func (ss *fakeSignatureStore) Add(tx *bolt.Tx, hash cipher.SHA256, sig cipher.Sig) error {
+func (ss *fakeSignatureStore) Add(tx *dbutil.Tx, hash cipher.SHA256, sig cipher.Sig) error {
 	if ss.saveFailed {
 		if ss.failedWhenSaved != nil {
 			*ss.failedWhenSaved = true
@@ -125,7 +126,7 @@ func (ss *fakeSignatureStore) Add(tx *bolt.Tx, hash cipher.SHA256, sig cipher.Si
 	return nil
 }
 
-func (ss *fakeSignatureStore) Get(tx *bolt.Tx, hash cipher.SHA256) (cipher.Sig, bool, error) {
+func (ss *fakeSignatureStore) Get(tx *dbutil.Tx, hash cipher.SHA256) (cipher.Sig, bool, error) {
 	if ss.failedWhenSaved != nil && *ss.failedWhenSaved {
 		return cipher.Sig{}, false, nil
 	}
@@ -138,7 +139,7 @@ func (ss *fakeSignatureStore) Get(tx *bolt.Tx, hash cipher.SHA256) (cipher.Sig, 
 	return sig, ok, nil
 }
 
-func (ss *fakeSignatureStore) ForEach(tx *bolt.Tx, f func(cipher.SHA256, cipher.Sig) error) error {
+func (ss *fakeSignatureStore) ForEach(tx *dbutil.Tx, f func(cipher.SHA256, cipher.Sig) error) error {
 	return nil
 }
 
@@ -157,11 +158,11 @@ func newFakeUnspentPool(failedWhenSaved *bool) *fakeUnspentPool {
 	}
 }
 
-func (fup *fakeUnspentPool) Len(tx *bolt.Tx) (uint64, error) {
+func (fup *fakeUnspentPool) Len(tx *dbutil.Tx) (uint64, error) {
 	return uint64(len(fup.outs)), nil
 }
 
-func (fup *fakeUnspentPool) Get(tx *bolt.Tx, h cipher.SHA256) (*coin.UxOut, error) {
+func (fup *fakeUnspentPool) Get(tx *dbutil.Tx, h cipher.SHA256) (*coin.UxOut, error) {
 	out, ok := fup.outs[h]
 	if !ok {
 		return nil, nil
@@ -169,7 +170,7 @@ func (fup *fakeUnspentPool) Get(tx *bolt.Tx, h cipher.SHA256) (*coin.UxOut, erro
 	return &out, nil
 }
 
-func (fup *fakeUnspentPool) GetAll(tx *bolt.Tx) (coin.UxArray, error) {
+func (fup *fakeUnspentPool) GetAll(tx *dbutil.Tx) (coin.UxArray, error) {
 	outs := make(coin.UxArray, 0, len(fup.outs))
 	for _, out := range fup.outs {
 		outs = append(outs, out)
@@ -178,7 +179,7 @@ func (fup *fakeUnspentPool) GetAll(tx *bolt.Tx) (coin.UxArray, error) {
 	return outs, nil
 }
 
-func (fup *fakeUnspentPool) GetArray(tx *bolt.Tx, hashes []cipher.SHA256) (coin.UxArray, error) {
+func (fup *fakeUnspentPool) GetArray(tx *dbutil.Tx, hashes []cipher.SHA256) (coin.UxArray, error) {
 	outs := make(coin.UxArray, 0, len(hashes))
 	for _, h := range hashes {
 		ux, ok := fup.outs[h]
@@ -191,11 +192,11 @@ func (fup *fakeUnspentPool) GetArray(tx *bolt.Tx, hashes []cipher.SHA256) (coin.
 	return outs, nil
 }
 
-func (fup *fakeUnspentPool) GetUxHash(tx *bolt.Tx) (cipher.SHA256, error) {
+func (fup *fakeUnspentPool) GetUxHash(tx *dbutil.Tx) (cipher.SHA256, error) {
 	return fup.uxHash, nil
 }
 
-func (fup *fakeUnspentPool) GetUnspentsOfAddrs(tx *bolt.Tx, addrs []cipher.Address) (coin.AddressUxOuts, error) {
+func (fup *fakeUnspentPool) GetUnspentsOfAddrs(tx *dbutil.Tx, addrs []cipher.Address) (coin.AddressUxOuts, error) {
 	addrm := make(map[cipher.Address]struct{}, len(addrs))
 	for _, a := range addrs {
 		addrm[a] = struct{}{}
@@ -210,7 +211,7 @@ func (fup *fakeUnspentPool) GetUnspentsOfAddrs(tx *bolt.Tx, addrs []cipher.Addre
 	return addrOutMap, nil
 }
 
-func (fup *fakeUnspentPool) ProcessBlock(tx *bolt.Tx, b *coin.SignedBlock) error {
+func (fup *fakeUnspentPool) ProcessBlock(tx *dbutil.Tx, b *coin.SignedBlock) error {
 	if fup.saveFailed {
 		if fup.failedWhenSaved != nil {
 			*fup.failedWhenSaved = true
@@ -220,7 +221,7 @@ func (fup *fakeUnspentPool) ProcessBlock(tx *bolt.Tx, b *coin.SignedBlock) error
 	return nil
 }
 
-func (fup *fakeUnspentPool) Contains(tx *bolt.Tx, h cipher.SHA256) (bool, error) {
+func (fup *fakeUnspentPool) Contains(tx *dbutil.Tx, h cipher.SHA256) (bool, error) {
 	_, ok := fup.outs[h]
 	return ok, nil
 }
@@ -234,7 +235,7 @@ func newFakeChainMeta() *fakeChainMeta {
 	return &fakeChainMeta{}
 }
 
-func (fcm *fakeChainMeta) GetHeadSeq(tx *bolt.Tx) (uint64, bool, error) {
+func (fcm *fakeChainMeta) GetHeadSeq(tx *dbutil.Tx) (uint64, bool, error) {
 	if !fcm.didSetSeq {
 		return 0, false, nil
 	}
@@ -242,13 +243,13 @@ func (fcm *fakeChainMeta) GetHeadSeq(tx *bolt.Tx) (uint64, bool, error) {
 	return fcm.headSeq, true, nil
 }
 
-func (fcm *fakeChainMeta) SetHeadSeq(tx *bolt.Tx, seq uint64) error {
+func (fcm *fakeChainMeta) SetHeadSeq(tx *dbutil.Tx, seq uint64) error {
 	fcm.headSeq = seq
 	fcm.didSetSeq = true
 	return nil
 }
 
-func DefaultWalker(tx *bolt.Tx, hps []coin.HashPair) (cipher.SHA256, bool) {
+func DefaultWalker(tx *dbutil.Tx, hps []coin.HashPair) (cipher.SHA256, bool) {
 	return hps[0].Hash, true
 }
 
@@ -355,7 +356,7 @@ func TestBlockchainAddBlockWithTx(t *testing.T) {
 
 			gb := makeGenesisBlock(t)
 
-			err := db.Update(func(tx *bolt.Tx) error {
+			err := db.Update(func(tx *dbutil.Tx) error {
 				err := bc.AddBlock(tx, &gb)
 				require.Equal(t, tc.expect.err, err)
 				return nil
@@ -363,7 +364,7 @@ func TestBlockchainAddBlockWithTx(t *testing.T) {
 			require.NoError(t, err)
 
 			// check sig
-			err = db.View(func(tx *bolt.Tx) error {
+			err = db.View(func(tx *dbutil.Tx) error {
 				_, ok, err := tc.fakeStorage.sigs.Get(tx, gb.HashHeader())
 				require.NoError(t, err)
 				require.Equal(t, tc.expect.sigSaved, ok)
@@ -420,7 +421,7 @@ func TestBlockchainHead(t *testing.T) {
 	bc, err := NewBlockchain(db, DefaultWalker)
 	require.NoError(t, err)
 
-	err = db.Update(func(tx *bolt.Tx) error {
+	err = db.Update(func(tx *dbutil.Tx) error {
 		_, err = bc.Head(tx)
 		require.Equal(t, err, ErrNoHeadBlock)
 
@@ -445,7 +446,7 @@ func TestBlockchainLen(t *testing.T) {
 	bc, err := NewBlockchain(db, DefaultWalker)
 	require.NoError(t, err)
 
-	err = db.View(func(tx *bolt.Tx) error {
+	err = db.View(func(tx *dbutil.Tx) error {
 		length, err := bc.Len(tx)
 		require.NoError(t, err)
 		require.Equal(t, uint64(0), length)
@@ -454,14 +455,14 @@ func TestBlockchainLen(t *testing.T) {
 	require.NoError(t, err)
 
 	gb := makeGenesisBlock(t)
-	err = db.Update(func(tx *bolt.Tx) error {
+	err = db.Update(func(tx *dbutil.Tx) error {
 		err := bc.AddBlock(tx, &gb)
 		require.NoError(t, err)
 		return nil
 	})
 	require.NoError(t, err)
 
-	err = db.View(func(tx *bolt.Tx) error {
+	err = db.View(func(tx *dbutil.Tx) error {
 		length, err := bc.Len(tx)
 		require.NoError(t, err)
 		require.Equal(t, uint64(1), length)
@@ -563,7 +564,7 @@ func TestBlockchainGetBlockByHash(t *testing.T) {
 			bc.tree = tc.tree
 			bc.sigs = tc.sigs
 
-			err = db.View(func(tx *bolt.Tx) error {
+			err = db.View(func(tx *dbutil.Tx) error {
 				b, err := bc.GetSignedBlockByHash(tx, tc.hash)
 				require.Equal(t, tc.expect.err, err)
 				require.Equal(t, tc.expect.b, b)

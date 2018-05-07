@@ -7,11 +7,12 @@ package visor
 
 import (
 	"fmt"
+
 	mock "github.com/stretchr/testify/mock"
 
-	bolt "github.com/boltdb/bolt"
 	cipher "github.com/skycoin/skycoin/src/cipher"
 	coin "github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
 // UnconfirmedTxnPoolerMock mock
@@ -24,7 +25,7 @@ func NewUnconfirmedTxnPoolerMock() *UnconfirmedTxnPoolerMock {
 }
 
 // ForEach mocked method
-func (m *UnconfirmedTxnPoolerMock) ForEach(p0 *bolt.Tx, p1 func(cipher.SHA256, UnconfirmedTxn) error) error {
+func (m *UnconfirmedTxnPoolerMock) ForEach(p0 *dbutil.Tx, p1 func(cipher.SHA256, UnconfirmedTxn) error) error {
 
 	ret := m.Called(p0, p1)
 
@@ -42,7 +43,7 @@ func (m *UnconfirmedTxnPoolerMock) ForEach(p0 *bolt.Tx, p1 func(cipher.SHA256, U
 }
 
 // Get mocked method
-func (m *UnconfirmedTxnPoolerMock) Get(p0 *bolt.Tx, p1 cipher.SHA256) (*UnconfirmedTxn, error) {
+func (m *UnconfirmedTxnPoolerMock) Get(p0 *dbutil.Tx, p1 cipher.SHA256) (*UnconfirmedTxn, error) {
 
 	ret := m.Called(p0, p1)
 
@@ -69,7 +70,7 @@ func (m *UnconfirmedTxnPoolerMock) Get(p0 *bolt.Tx, p1 cipher.SHA256) (*Unconfir
 }
 
 // GetIncomingOutputs mocked method
-func (m *UnconfirmedTxnPoolerMock) GetIncomingOutputs(p0 *bolt.Tx, p1 coin.BlockHeader) (coin.UxArray, error) {
+func (m *UnconfirmedTxnPoolerMock) GetIncomingOutputs(p0 *dbutil.Tx, p1 coin.BlockHeader) (coin.UxArray, error) {
 
 	ret := m.Called(p0, p1)
 
@@ -96,7 +97,7 @@ func (m *UnconfirmedTxnPoolerMock) GetIncomingOutputs(p0 *bolt.Tx, p1 coin.Block
 }
 
 // GetKnown mocked method
-func (m *UnconfirmedTxnPoolerMock) GetKnown(p0 *bolt.Tx, p1 []cipher.SHA256) (coin.Transactions, error) {
+func (m *UnconfirmedTxnPoolerMock) GetKnown(p0 *dbutil.Tx, p1 []cipher.SHA256) (coin.Transactions, error) {
 
 	ret := m.Called(p0, p1)
 
@@ -123,7 +124,7 @@ func (m *UnconfirmedTxnPoolerMock) GetKnown(p0 *bolt.Tx, p1 []cipher.SHA256) (co
 }
 
 // GetTxHashes mocked method
-func (m *UnconfirmedTxnPoolerMock) GetTxHashes(p0 *bolt.Tx, p1 func(tx UnconfirmedTxn) bool) ([]cipher.SHA256, error) {
+func (m *UnconfirmedTxnPoolerMock) GetTxHashes(p0 *dbutil.Tx, p1 func(tx UnconfirmedTxn) bool) ([]cipher.SHA256, error) {
 
 	ret := m.Called(p0, p1)
 
@@ -150,7 +151,7 @@ func (m *UnconfirmedTxnPoolerMock) GetTxHashes(p0 *bolt.Tx, p1 func(tx Unconfirm
 }
 
 // GetTxns mocked method
-func (m *UnconfirmedTxnPoolerMock) GetTxns(p0 *bolt.Tx, p1 func(tx UnconfirmedTxn) bool) ([]UnconfirmedTxn, error) {
+func (m *UnconfirmedTxnPoolerMock) GetTxns(p0 *dbutil.Tx, p1 func(tx UnconfirmedTxn) bool) ([]UnconfirmedTxn, error) {
 
 	ret := m.Called(p0, p1)
 
@@ -177,7 +178,7 @@ func (m *UnconfirmedTxnPoolerMock) GetTxns(p0 *bolt.Tx, p1 func(tx UnconfirmedTx
 }
 
 // GetUnknown mocked method
-func (m *UnconfirmedTxnPoolerMock) GetUnknown(p0 *bolt.Tx, p1 []cipher.SHA256) ([]cipher.SHA256, error) {
+func (m *UnconfirmedTxnPoolerMock) GetUnknown(p0 *dbutil.Tx, p1 []cipher.SHA256) ([]cipher.SHA256, error) {
 
 	ret := m.Called(p0, p1)
 
@@ -204,7 +205,7 @@ func (m *UnconfirmedTxnPoolerMock) GetUnknown(p0 *bolt.Tx, p1 []cipher.SHA256) (
 }
 
 // GetUnspentsOfAddr mocked method
-func (m *UnconfirmedTxnPoolerMock) GetUnspentsOfAddr(p0 *bolt.Tx, p1 cipher.Address) (coin.UxArray, error) {
+func (m *UnconfirmedTxnPoolerMock) GetUnspentsOfAddr(p0 *dbutil.Tx, p1 cipher.Address) (coin.UxArray, error) {
 
 	ret := m.Called(p0, p1)
 
@@ -231,7 +232,7 @@ func (m *UnconfirmedTxnPoolerMock) GetUnspentsOfAddr(p0 *bolt.Tx, p1 cipher.Addr
 }
 
 // InjectTransaction mocked method
-func (m *UnconfirmedTxnPoolerMock) InjectTransaction(p0 *bolt.Tx, p1 Blockchainer, p2 coin.Transaction, p3 int) (bool, *ErrTxnViolatesSoftConstraint, error) {
+func (m *UnconfirmedTxnPoolerMock) InjectTransaction(p0 *dbutil.Tx, p1 Blockchainer, p2 coin.Transaction, p3 int) (bool, *ErrTxnViolatesSoftConstraint, error) {
 
 	ret := m.Called(p0, p1, p2, p3)
 
@@ -267,7 +268,7 @@ func (m *UnconfirmedTxnPoolerMock) InjectTransaction(p0 *bolt.Tx, p1 Blockchaine
 }
 
 // Len mocked method
-func (m *UnconfirmedTxnPoolerMock) Len(p0 *bolt.Tx) (uint64, error) {
+func (m *UnconfirmedTxnPoolerMock) Len(p0 *dbutil.Tx) (uint64, error) {
 
 	ret := m.Called(p0)
 
@@ -294,7 +295,7 @@ func (m *UnconfirmedTxnPoolerMock) Len(p0 *bolt.Tx) (uint64, error) {
 }
 
 // RawTxns mocked method
-func (m *UnconfirmedTxnPoolerMock) RawTxns(p0 *bolt.Tx) (coin.Transactions, error) {
+func (m *UnconfirmedTxnPoolerMock) RawTxns(p0 *dbutil.Tx) (coin.Transactions, error) {
 
 	ret := m.Called(p0)
 
@@ -321,7 +322,7 @@ func (m *UnconfirmedTxnPoolerMock) RawTxns(p0 *bolt.Tx) (coin.Transactions, erro
 }
 
 // RecvOfAddresses mocked method
-func (m *UnconfirmedTxnPoolerMock) RecvOfAddresses(p0 *bolt.Tx, p1 coin.BlockHeader, p2 []cipher.Address) (coin.AddressUxOuts, error) {
+func (m *UnconfirmedTxnPoolerMock) RecvOfAddresses(p0 *dbutil.Tx, p1 coin.BlockHeader, p2 []cipher.Address) (coin.AddressUxOuts, error) {
 
 	ret := m.Called(p0, p1, p2)
 
@@ -348,7 +349,7 @@ func (m *UnconfirmedTxnPoolerMock) RecvOfAddresses(p0 *bolt.Tx, p1 coin.BlockHea
 }
 
 // Refresh mocked method
-func (m *UnconfirmedTxnPoolerMock) Refresh(p0 *bolt.Tx, p1 Blockchainer, p2 int) ([]cipher.SHA256, error) {
+func (m *UnconfirmedTxnPoolerMock) Refresh(p0 *dbutil.Tx, p1 Blockchainer, p2 int) ([]cipher.SHA256, error) {
 
 	ret := m.Called(p0, p1, p2)
 
@@ -375,7 +376,7 @@ func (m *UnconfirmedTxnPoolerMock) Refresh(p0 *bolt.Tx, p1 Blockchainer, p2 int)
 }
 
 // RemoveInvalid mocked method
-func (m *UnconfirmedTxnPoolerMock) RemoveInvalid(p0 *bolt.Tx, p1 Blockchainer) ([]cipher.SHA256, error) {
+func (m *UnconfirmedTxnPoolerMock) RemoveInvalid(p0 *dbutil.Tx, p1 Blockchainer) ([]cipher.SHA256, error) {
 
 	ret := m.Called(p0, p1)
 
@@ -402,7 +403,7 @@ func (m *UnconfirmedTxnPoolerMock) RemoveInvalid(p0 *bolt.Tx, p1 Blockchainer) (
 }
 
 // RemoveTransactions mocked method
-func (m *UnconfirmedTxnPoolerMock) RemoveTransactions(p0 *bolt.Tx, p1 []cipher.SHA256) error {
+func (m *UnconfirmedTxnPoolerMock) RemoveTransactions(p0 *dbutil.Tx, p1 []cipher.SHA256) error {
 
 	ret := m.Called(p0, p1)
 
@@ -420,7 +421,7 @@ func (m *UnconfirmedTxnPoolerMock) RemoveTransactions(p0 *bolt.Tx, p1 []cipher.S
 }
 
 // SetTxnsAnnounced mocked method
-func (m *UnconfirmedTxnPoolerMock) SetTxnsAnnounced(p0 *bolt.Tx, p1 []cipher.SHA256, p2 int64) error {
+func (m *UnconfirmedTxnPoolerMock) SetTxnsAnnounced(p0 *dbutil.Tx, p1 []cipher.SHA256, p2 int64) error {
 
 	ret := m.Called(p0, p1, p2)
 

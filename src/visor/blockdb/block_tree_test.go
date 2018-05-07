@@ -3,12 +3,12 @@ package blockdb
 import (
 	"testing"
 
-	"github.com/boltdb/bolt"
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
 type blockInfo struct {
@@ -47,7 +47,7 @@ func testCase(t *testing.T, cases []blockCase) {
 		}
 		blocks[i] = b
 
-		err := db.Update(func(tx *bolt.Tx) error {
+		err := db.Update(func(tx *dbutil.Tx) error {
 			switch d.Action {
 			case "add":
 				err := btree.AddBlock(tx, &b)
@@ -190,7 +190,7 @@ func TestGetBlockInDepth(t *testing.T) {
 		},
 	}
 
-	err = db.Update(func(tx *bolt.Tx) error {
+	err = db.Update(func(tx *dbutil.Tx) error {
 		err := bc.AddBlock(tx, &blocks[0])
 		require.NoError(t, err)
 
@@ -208,9 +208,9 @@ func TestGetBlockInDepth(t *testing.T) {
 	require.NoError(t, err)
 
 	var block *coin.Block
-	err = db.View(func(tx *bolt.Tx) error {
+	err = db.View(func(tx *dbutil.Tx) error {
 		var err error
-		block, err = bc.GetBlockInDepth(tx, 1, func(tx *bolt.Tx, hps []coin.HashPair) (cipher.SHA256, bool) {
+		block, err = bc.GetBlockInDepth(tx, 1, func(tx *dbutil.Tx, hps []coin.HashPair) (cipher.SHA256, bool) {
 			for _, hp := range hps {
 				b, err := bc.GetBlock(tx, hp.Hash)
 				require.NoError(t, err)

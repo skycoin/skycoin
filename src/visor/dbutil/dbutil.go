@@ -21,6 +21,18 @@ var (
 	txUpdateTrace = false
 )
 
+// Tx wraps a Tx
+type Tx struct {
+	*bolt.Tx
+}
+
+// String is implemented to prevent a panic when mocking methods with *Tx arguments.
+// The mock library forces arguments to be printed with %s which causes Tx to panic.
+// See https://github.com/stretchr/testify/pull/596
+func (tx *Tx) String() string {
+	return fmt.Sprintf("%v", tx.Tx)
+}
+
 // DB wraps a bolt.DB to add logging
 type DB struct {
 	ViewLog     bool
@@ -31,7 +43,7 @@ type DB struct {
 }
 
 // View wraps *bolt.DB.View to add logging
-func (db DB) View(f func(*bolt.Tx) error) error {
+func (db DB) View(f func(*Tx) error) error {
 	if db.ViewLog {
 		logger.Debug("db.View starting")
 		defer logger.Debug("db.View done")
@@ -39,11 +51,14 @@ func (db DB) View(f func(*bolt.Tx) error) error {
 	if db.ViewTrace {
 		debug.PrintStack()
 	}
-	return db.DB.View(f)
+
+	return db.DB.View(func(tx *bolt.Tx) error {
+		return f(&Tx{tx})
+	})
 }
 
 // Update wraps *bolt.DB.Update to add logging
-func (db DB) Update(f func(*bolt.Tx) error) error {
+func (db DB) Update(f func(*Tx) error) error {
 	if db.UpdateLog {
 		logger.Debug("db.Update starting")
 		defer logger.Debug("db.Update done")
@@ -51,7 +66,9 @@ func (db DB) Update(f func(*bolt.Tx) error) error {
 	if db.UpdateTrace {
 		debug.PrintStack()
 	}
-	return db.DB.Update(f)
+	return db.DB.Update(func(tx *bolt.Tx) error {
+		return f(&Tx{tx})
+	})
 }
 
 // WrapDB returns WrapDB
@@ -100,7 +117,7 @@ func NewErrBucketNotExist(bucket []byte) error {
 }
 
 // CreateBuckets creates multiple buckets
-func CreateBuckets(tx *bolt.Tx, buckets [][]byte) error {
+func CreateBuckets(tx *Tx, buckets [][]byte) error {
 	for _, b := range buckets {
 		if _, err := tx.CreateBucketIfNotExists(b); err != nil {
 			return NewErrCreateBucketFailed(b, err)
@@ -111,7 +128,7 @@ func CreateBuckets(tx *bolt.Tx, buckets [][]byte) error {
 }
 
 // GetBucketObjectDecoded returns an encoder-serialized value from a bucket, decoded to an object
-func GetBucketObjectDecoded(tx *bolt.Tx, bktName, key []byte, obj interface{}) (bool, error) {
+func GetBucketObjectDecoded(tx *Tx, bktName, key []byte, obj interface{}) (bool, error) {
 	v, err := getBucketValue(tx, bktName, key)
 	if err != nil {
 		return false, err
@@ -127,7 +144,7 @@ func GetBucketObjectDecoded(tx *bolt.Tx, bktName, key []byte, obj interface{}) (
 }
 
 // GetBucketObjectJSON returns a JSON value from a bucket, unmarshaled to an object
-func GetBucketObjectJSON(tx *bolt.Tx, bktName, key []byte, obj interface{}) (bool, error) {
+func GetBucketObjectJSON(tx *Tx, bktName, key []byte, obj interface{}) (bool, error) {
 	v, err := getBucketValue(tx, bktName, key)
 	if err != nil {
 		return false, err
@@ -143,7 +160,7 @@ func GetBucketObjectJSON(tx *bolt.Tx, bktName, key []byte, obj interface{}) (boo
 }
 
 // GetBucketString returns a string value from a bucket
-func GetBucketString(tx *bolt.Tx, bktName, key []byte) (string, bool, error) {
+func GetBucketString(tx *Tx, bktName, key []byte) (string, bool, error) {
 	v, err := getBucketValue(tx, bktName, key)
 	if err != nil {
 		return "", false, err
@@ -155,7 +172,7 @@ func GetBucketString(tx *bolt.Tx, bktName, key []byte) (string, bool, error) {
 }
 
 // GetBucketValue returns a []byte value from a bucket
-func GetBucketValue(tx *bolt.Tx, bktName, key []byte) ([]byte, error) {
+func GetBucketValue(tx *Tx, bktName, key []byte) ([]byte, error) {
 	v, err := getBucketValue(tx, bktName, key)
 	if err != nil {
 		return nil, err
@@ -173,7 +190,7 @@ func GetBucketValue(tx *bolt.Tx, bktName, key []byte) ([]byte, error) {
 
 // getBucketValue returns a value from a bucket. If the value does not exist,
 // it returns an error of type ErrBucketNotExist
-func getBucketValue(tx *bolt.Tx, bktName, key []byte) ([]byte, error) {
+func getBucketValue(tx *Tx, bktName, key []byte) ([]byte, error) {
 	bkt := tx.Bucket(bktName)
 	if bkt == nil {
 		return nil, NewErrBucketNotExist(bktName)
@@ -183,7 +200,7 @@ func getBucketValue(tx *bolt.Tx, bktName, key []byte) ([]byte, error) {
 }
 
 // PutBucketValue puts a value into a bucket under key.
-func PutBucketValue(tx *bolt.Tx, bktName, key, val []byte) error {
+func PutBucketValue(tx *Tx, bktName, key, val []byte) error {
 	bkt := tx.Bucket(bktName)
 	if bkt == nil {
 		return NewErrBucketNotExist(bktName)
@@ -193,7 +210,7 @@ func PutBucketValue(tx *bolt.Tx, bktName, key, val []byte) error {
 }
 
 // BucketHasKey returns true if a bucket has a non-nil value for a key
-func BucketHasKey(tx *bolt.Tx, bktName, key []byte) (bool, error) {
+func BucketHasKey(tx *Tx, bktName, key []byte) (bool, error) {
 	bkt := tx.Bucket(bktName)
 	if bkt == nil {
 		return false, NewErrBucketNotExist(bktName)
@@ -204,7 +221,7 @@ func BucketHasKey(tx *bolt.Tx, bktName, key []byte) (bool, error) {
 }
 
 // NextSequence returns the NextSequence() from the bucket
-func NextSequence(tx *bolt.Tx, bktName []byte) (uint64, error) {
+func NextSequence(tx *Tx, bktName []byte) (uint64, error) {
 	bkt := tx.Bucket(bktName)
 	if bkt == nil {
 		return 0, NewErrBucketNotExist(bktName)
@@ -214,7 +231,7 @@ func NextSequence(tx *bolt.Tx, bktName []byte) (uint64, error) {
 }
 
 // ForEach calls ForEach on the bucket
-func ForEach(tx *bolt.Tx, bktName []byte, f func(k, v []byte) error) error {
+func ForEach(tx *Tx, bktName []byte, f func(k, v []byte) error) error {
 	bkt := tx.Bucket(bktName)
 	if bkt == nil {
 		return NewErrBucketNotExist(bktName)
@@ -224,7 +241,7 @@ func ForEach(tx *bolt.Tx, bktName []byte, f func(k, v []byte) error) error {
 }
 
 // Delete deletes from a bucket
-func Delete(tx *bolt.Tx, bktName, key []byte) error {
+func Delete(tx *Tx, bktName, key []byte) error {
 	bkt := tx.Bucket(bktName)
 	if bkt == nil {
 		return NewErrBucketNotExist(bktName)
@@ -234,7 +251,7 @@ func Delete(tx *bolt.Tx, bktName, key []byte) error {
 }
 
 // Len returns the number of keys in a bucket
-func Len(tx *bolt.Tx, bktName []byte) (uint64, error) {
+func Len(tx *Tx, bktName []byte) (uint64, error) {
 	bkt := tx.Bucket(bktName)
 	if bkt == nil {
 		return 0, NewErrBucketNotExist(bktName)
@@ -250,7 +267,7 @@ func Len(tx *bolt.Tx, bktName []byte) (uint64, error) {
 }
 
 // IsEmpty returns true if the bucket is empty
-func IsEmpty(tx *bolt.Tx, bktName []byte) (bool, error) {
+func IsEmpty(tx *Tx, bktName []byte) (bool, error) {
 	length, err := Len(tx, bktName)
 	if err != nil {
 		return false, err
@@ -259,7 +276,7 @@ func IsEmpty(tx *bolt.Tx, bktName []byte) (bool, error) {
 }
 
 // Reset resets the bucket
-func Reset(tx *bolt.Tx, bktName []byte) error {
+func Reset(tx *Tx, bktName []byte) error {
 	if err := tx.DeleteBucket(bktName); err != nil {
 		return err
 	}

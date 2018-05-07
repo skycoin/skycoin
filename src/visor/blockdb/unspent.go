@@ -3,8 +3,6 @@ package blockdb
 import (
 	"fmt"
 
-	"github.com/boltdb/bolt"
-
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
@@ -39,13 +37,13 @@ func (e ErrUnspentNotExist) Error() string {
 // UnspentGetter provides unspent pool related querying methods
 type UnspentGetter interface {
 	// GetUnspentsOfAddrs returns all unspent outputs of given addresses
-	GetUnspentsOfAddrs(*bolt.Tx, []cipher.Address) coin.AddressUxOuts
-	Get(*bolt.Tx, cipher.SHA256) (coin.UxOut, bool)
+	GetUnspentsOfAddrs(*dbutil.Tx, []cipher.Address) coin.AddressUxOuts
+	Get(*dbutil.Tx, cipher.SHA256) (coin.UxOut, bool)
 }
 
 type unspentMeta struct{}
 
-func (m unspentMeta) getXorHash(tx *bolt.Tx) (cipher.SHA256, error) {
+func (m unspentMeta) getXorHash(tx *dbutil.Tx) (cipher.SHA256, error) {
 	v, err := dbutil.GetBucketValue(tx, unspentMetaBkt, xorhashKey)
 	if err != nil {
 		return cipher.SHA256{}, err
@@ -58,13 +56,13 @@ func (m unspentMeta) getXorHash(tx *bolt.Tx) (cipher.SHA256, error) {
 	return hash, nil
 }
 
-func (m *unspentMeta) setXorHash(tx *bolt.Tx, hash cipher.SHA256) error {
+func (m *unspentMeta) setXorHash(tx *dbutil.Tx, hash cipher.SHA256) error {
 	return dbutil.PutBucketValue(tx, unspentMetaBkt, xorhashKey, hash[:])
 }
 
 type pool struct{}
 
-func (pl pool) get(tx *bolt.Tx, hash cipher.SHA256) (*coin.UxOut, error) {
+func (pl pool) get(tx *dbutil.Tx, hash cipher.SHA256) (*coin.UxOut, error) {
 	var out coin.UxOut
 
 	if ok, err := dbutil.GetBucketObjectDecoded(tx, unspentPoolBkt, hash[:], &out); err != nil {
@@ -76,7 +74,7 @@ func (pl pool) get(tx *bolt.Tx, hash cipher.SHA256) (*coin.UxOut, error) {
 	return &out, nil
 }
 
-func (pl pool) getAll(tx *bolt.Tx) (coin.UxArray, error) {
+func (pl pool) getAll(tx *dbutil.Tx) (coin.UxArray, error) {
 	var uxa coin.UxArray
 
 	if err := dbutil.ForEach(tx, unspentPoolBkt, func(_, v []byte) error {
@@ -94,11 +92,11 @@ func (pl pool) getAll(tx *bolt.Tx) (coin.UxArray, error) {
 	return uxa, nil
 }
 
-func (pl pool) set(tx *bolt.Tx, hash cipher.SHA256, ux coin.UxOut) error {
+func (pl pool) set(tx *dbutil.Tx, hash cipher.SHA256, ux coin.UxOut) error {
 	return dbutil.PutBucketValue(tx, unspentPoolBkt, hash[:], encoder.Serialize(ux))
 }
 
-func (pl *pool) delete(tx *bolt.Tx, hash cipher.SHA256) error {
+func (pl *pool) delete(tx *dbutil.Tx, hash cipher.SHA256) error {
 	return dbutil.Delete(tx, unspentPoolBkt, hash[:])
 }
 
@@ -110,7 +108,7 @@ type Unspents struct {
 
 // NewUnspentPool creates new unspent pool instance
 func NewUnspentPool(db *dbutil.DB) (*Unspents, error) {
-	if err := db.Update(func(tx *bolt.Tx) error {
+	if err := db.Update(func(tx *dbutil.Tx) error {
 		return dbutil.CreateBuckets(tx, [][]byte{
 			unspentPoolBkt,
 			unspentMetaBkt,
@@ -128,7 +126,7 @@ func NewUnspentPool(db *dbutil.DB) (*Unspents, error) {
 }
 
 // ProcessBlock adds unspents from a block to the unspent pool
-func (up *Unspents) ProcessBlock(tx *bolt.Tx, b *coin.SignedBlock) error {
+func (up *Unspents) ProcessBlock(tx *dbutil.Tx, b *coin.SignedBlock) error {
 	// Gather all transaction inputs
 	var inputs []cipher.SHA256
 	var txnUxs coin.UxArray
@@ -184,7 +182,7 @@ func (up *Unspents) ProcessBlock(tx *bolt.Tx, b *coin.SignedBlock) error {
 }
 
 // GetArray returns UxOut for a set of hashes, will return error if any of the hashes do not exist in the pool.
-func (up *Unspents) GetArray(tx *bolt.Tx, hashes []cipher.SHA256) (coin.UxArray, error) {
+func (up *Unspents) GetArray(tx *dbutil.Tx, hashes []cipher.SHA256) (coin.UxArray, error) {
 	var uxa coin.UxArray
 
 	for _, h := range hashes {
@@ -202,28 +200,28 @@ func (up *Unspents) GetArray(tx *bolt.Tx, hashes []cipher.SHA256) (coin.UxArray,
 }
 
 // Get returns the uxout value of given hash
-func (up *Unspents) Get(tx *bolt.Tx, h cipher.SHA256) (*coin.UxOut, error) {
+func (up *Unspents) Get(tx *dbutil.Tx, h cipher.SHA256) (*coin.UxOut, error) {
 	return up.pool.get(tx, h)
 }
 
 // GetAll returns Pool as an array. Note: they are not in any particular order.
-func (up *Unspents) GetAll(tx *bolt.Tx) (coin.UxArray, error) {
+func (up *Unspents) GetAll(tx *dbutil.Tx) (coin.UxArray, error) {
 	return up.pool.getAll(tx)
 }
 
 // Len returns the unspent outputs num
-func (up *Unspents) Len(tx *bolt.Tx) (uint64, error) {
+func (up *Unspents) Len(tx *dbutil.Tx) (uint64, error) {
 	return dbutil.Len(tx, unspentPoolBkt)
 }
 
 // Contains check if the hash of uxout does exist in the pool
-func (up *Unspents) Contains(tx *bolt.Tx, h cipher.SHA256) (bool, error) {
+func (up *Unspents) Contains(tx *dbutil.Tx, h cipher.SHA256) (bool, error) {
 	return dbutil.BucketHasKey(tx, unspentPoolBkt, h[:])
 }
 
 // GetUnspentsOfAddrs returns unspent outputs map of given addresses,
 // the address as return map key, unspent outputs as value.
-func (up *Unspents) GetUnspentsOfAddrs(tx *bolt.Tx, addrs []cipher.Address) (coin.AddressUxOuts, error) {
+func (up *Unspents) GetUnspentsOfAddrs(tx *dbutil.Tx, addrs []cipher.Address) (coin.AddressUxOuts, error) {
 	addrm := make(map[cipher.Address]struct{}, len(addrs))
 	for _, a := range addrs {
 		addrm[a] = struct{}{}
@@ -253,6 +251,6 @@ func (up *Unspents) GetUnspentsOfAddrs(tx *bolt.Tx, addrs []cipher.Address) (coi
 // GetUxHash returns unspent output checksum for the Block.
 // Must be called after Block is fully initialized,
 // and before its outputs are added to the unspent pool
-func (up *Unspents) GetUxHash(tx *bolt.Tx) (cipher.SHA256, error) {
+func (up *Unspents) GetUxHash(tx *dbutil.Tx) (cipher.SHA256, error) {
 	return up.meta.getXorHash(tx)
 }

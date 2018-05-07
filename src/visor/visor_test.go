@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boltdb/bolt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -23,6 +22,7 @@ import (
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
@@ -172,7 +172,7 @@ func TestVisorCreateBlock(t *testing.T) {
 
 	// CreateBlock panics if called when not master
 	_require.PanicsWithLogMessage(t, "Only master chain can create blocks", func() {
-		err := db.Update(func(tx *bolt.Tx) error {
+		err := db.Update(func(tx *dbutil.Tx) error {
 			_, err := v.createBlock(tx, when)
 			return err
 		})
@@ -184,7 +184,7 @@ func TestVisorCreateBlock(t *testing.T) {
 
 	addGenesisBlock(t, v.Blockchain.(*Blockchain))
 	var gb *coin.SignedBlock
-	err = db.View(func(tx *bolt.Tx) error {
+	err = db.View(func(tx *dbutil.Tx) error {
 		var err error
 		gb, err = v.Blockchain.GetGenesisBlock(tx)
 		return err
@@ -193,7 +193,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	require.NotNil(t, gb)
 
 	// If no transactions in the unconfirmed pool, return an error
-	err = db.Update(func(tx *bolt.Tx) error {
+	err = db.Update(func(tx *dbutil.Tx) error {
 		_, err = v.createBlock(tx, when)
 		testutil.RequireError(t, err, "No transactions")
 		return nil
@@ -208,7 +208,7 @@ func TestVisorCreateBlock(t *testing.T) {
 
 	var known bool
 	var softErr *ErrTxnViolatesSoftConstraint
-	err = db.Update(func(tx *bolt.Tx) error {
+	err = db.Update(func(tx *dbutil.Tx) error {
 		var err error
 		known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, v.Config.MaxBlockSize)
 		return err
@@ -223,7 +223,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	require.Equal(t, 1, len(sb.Body.Transactions))
 
 	var length uint64
-	err = db.View(func(tx *bolt.Tx) error {
+	err = db.View(func(tx *dbutil.Tx) error {
 		var err error
 		length, err = unconfirmed.Len(tx)
 		return err
@@ -291,7 +291,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	// Inject transactions into the unconfirmed pool
 	for _, txn := range txns {
 		var known bool
-		err = db.Update(func(tx *bolt.Tx) error {
+		err = db.Update(func(tx *dbutil.Tx) error {
 			var err error
 			known, _, err = unconfirmed.InjectTransaction(tx, bc, txn, v.Config.MaxBlockSize)
 			return err
@@ -300,7 +300,7 @@ func TestVisorCreateBlock(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	err = db.Update(func(tx *bolt.Tx) error {
+	err = db.Update(func(tx *dbutil.Tx) error {
 		var err error
 		sb, err = v.createBlock(tx, when+100)
 		return err
@@ -313,7 +313,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	require.Equal(t, 18, len(blockTxns))
 
 	// Check fee ordering
-	err = db.View(func(tx *bolt.Tx) error {
+	err = db.View(func(tx *dbutil.Tx) error {
 		inUxs, err := v.Blockchain.Unspent().GetArray(tx, blockTxns[0].In)
 		require.NoError(t, err)
 		prevFee, err := fee.TransactionFee(&blockTxns[0], sb.Head.Time, inUxs)
@@ -369,7 +369,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 
 	// CreateBlock panics if called when not master
 	_require.PanicsWithLogMessage(t, "Only master chain can create blocks", func() {
-		err := db.Update(func(tx *bolt.Tx) error {
+		err := db.Update(func(tx *dbutil.Tx) error {
 			_, err := v.createBlock(tx, when)
 			return err
 		})
@@ -382,7 +382,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	addGenesisBlock(t, v.Blockchain.(*Blockchain))
 
 	var gb *coin.SignedBlock
-	err = db.View(func(tx *bolt.Tx) error {
+	err = db.View(func(tx *dbutil.Tx) error {
 		var err error
 		gb, err = v.Blockchain.GetGenesisBlock(tx)
 		return err
@@ -391,7 +391,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	require.NotNil(t, gb)
 
 	// If no transactions in the unconfirmed pool, return an error
-	err = db.Update(func(tx *bolt.Tx) error {
+	err = db.Update(func(tx *dbutil.Tx) error {
 		_, err := v.createBlock(tx, when)
 		return err
 	})
@@ -415,7 +415,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	require.Equal(t, 1, len(sb.Body.Transactions))
 	require.Equal(t, 2, len(sb.Body.Transactions[0].Out))
 
-	err = db.View(func(tx *bolt.Tx) error {
+	err = db.View(func(tx *dbutil.Tx) error {
 		length, err := unconfirmed.Len(tx)
 		require.NoError(t, err)
 		require.Equal(t, uint64(0), length)
@@ -437,7 +437,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	testutil.RequireError(t, err.(ErrTxnViolatesHardConstraint).Err, "Output coins overflow")
 	require.Nil(t, softErr)
 
-	err = db.View(func(tx *bolt.Tx) error {
+	err = db.View(func(tx *dbutil.Tx) error {
 		length, err := unconfirmed.Len(tx)
 		require.NoError(t, err)
 		require.Equal(t, uint64(0), length)
@@ -454,7 +454,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	require.IsType(t, ErrTxnViolatesHardConstraint{}, err)
 	testutil.RequireError(t, err.(ErrTxnViolatesHardConstraint).Err, "Transaction output hours overflow")
 
-	err = db.View(func(tx *bolt.Tx) error {
+	err = db.View(func(tx *dbutil.Tx) error {
 		length, err := unconfirmed.Len(tx)
 		require.NoError(t, err)
 		require.Equal(t, uint64(0), length)
@@ -470,7 +470,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	require.NoError(t, err)
 	testutil.RequireError(t, softErr.Err, errInvalidDecimals.Error())
 
-	err = db.View(func(tx *bolt.Tx) error {
+	err = db.View(func(tx *dbutil.Tx) error {
 		length, err := unconfirmed.Len(tx)
 		require.NoError(t, err)
 		require.Equal(t, uint64(1), length)
@@ -1710,7 +1710,7 @@ func TestGetTransactions(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			matchTx := mock.MatchedBy(func(tx *bolt.Tx) bool {
+			matchTx := mock.MatchedBy(func(tx *dbutil.Tx) bool {
 				return true
 			})
 
@@ -1806,7 +1806,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 
 	addGenesisBlock(t, v.Blockchain.(*Blockchain))
 	var gb *coin.SignedBlock
-	err = db.View(func(tx *bolt.Tx) error {
+	err = db.View(func(tx *dbutil.Tx) error {
 		var err error
 		gb, err = v.Blockchain.GetGenesisBlock(tx)
 		return err
@@ -1826,7 +1826,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	require.Nil(t, softErr)
 	require.NoError(t, err)
 
-	err = db.View(func(tx *bolt.Tx) error {
+	err = db.View(func(tx *dbutil.Tx) error {
 		length, err := unconfirmed.Len(tx)
 		require.NoError(t, err)
 		require.Equal(t, uint64(1), length)
@@ -1843,7 +1843,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	require.NoError(t, err)
 	testutil.RequireError(t, softErr.Err, errInvalidDecimals.Error())
 
-	err = db.View(func(tx *bolt.Tx) error {
+	err = db.View(func(tx *dbutil.Tx) error {
 		length, err := unconfirmed.Len(tx)
 		require.NoError(t, err)
 		require.Equal(t, uint64(2), length)
@@ -1860,7 +1860,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	require.NoError(t, err)
 	testutil.RequireError(t, softErr.Err, errTxnExceedsMaxBlockSize.Error())
 
-	err = db.View(func(tx *bolt.Tx) error {
+	err = db.View(func(tx *dbutil.Tx) error {
 		length, err := unconfirmed.Len(tx)
 		require.NoError(t, err)
 		require.Equal(t, uint64(3), length)
@@ -1930,7 +1930,7 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 
 	addGenesisBlock(t, v.Blockchain.(*Blockchain))
 	var gb *coin.SignedBlock
-	err = db.View(func(tx *bolt.Tx) error {
+	err = db.View(func(tx *dbutil.Tx) error {
 		var err error
 		gb, err = v.Blockchain.GetGenesisBlock(tx)
 		return err
@@ -1952,7 +1952,7 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 	require.Nil(t, softErr)
 	require.NoError(t, err)
 
-	err = db.View(func(tx *bolt.Tx) error {
+	err = db.View(func(tx *dbutil.Tx) error {
 		length, err := unconfirmed.Len(tx)
 		require.NoError(t, err)
 		require.Equal(t, uint64(1), length)
@@ -1967,7 +1967,7 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 	require.Nil(t, softErr)
 	require.NoError(t, err)
 
-	err = db.View(func(tx *bolt.Tx) error {
+	err = db.View(func(tx *dbutil.Tx) error {
 		length, err := unconfirmed.Len(tx)
 		require.NoError(t, err)
 		require.Equal(t, uint64(2), length)
@@ -1982,7 +1982,7 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 	require.Equal(t, 2, len(sb.Body.Transactions[0].Out))
 	require.Equal(t, txn2.TxIDHex(), sb.Body.Transactions[0].TxIDHex())
 
-	err = db.View(func(tx *bolt.Tx) error {
+	err = db.View(func(tx *dbutil.Tx) error {
 		length, err := unconfirmed.Len(tx)
 		require.NoError(t, err)
 		require.Equal(t, uint64(1), length)
@@ -1999,7 +1999,7 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 	removed, err := v.RemoveInvalidUnconfirmed()
 	require.NoError(t, err)
 	require.Equal(t, []cipher.SHA256{txn1.Hash()}, removed)
-	err = db.View(func(tx *bolt.Tx) error {
+	err = db.View(func(tx *dbutil.Tx) error {
 		length, err := unconfirmed.Len(tx)
 		require.NoError(t, err)
 		require.Equal(t, uint64(0), length)
@@ -2018,7 +2018,7 @@ func newHistoryerMock2() *historyerMock2 {
 	return &historyerMock2{}
 }
 
-func (h *historyerMock2) ForEachTxn(tx *bolt.Tx, f func(cipher.SHA256, *historydb.Transaction) error) error {
+func (h *historyerMock2) ForEachTxn(tx *dbutil.Tx, f func(cipher.SHA256, *historydb.Transaction) error) error {
 	for i := range h.txs {
 		if err := f(h.txs[i].Hash(), &h.txs[i]); err != nil {
 			return err
@@ -2037,7 +2037,7 @@ func NewUnconfirmedTxnPoolerMock2() *UnconfirmedTxnPoolerMock2 {
 	return &UnconfirmedTxnPoolerMock2{}
 }
 
-func (m *UnconfirmedTxnPoolerMock2) GetTxns(tx *bolt.Tx, f func(tx UnconfirmedTxn) bool) ([]UnconfirmedTxn, error) {
+func (m *UnconfirmedTxnPoolerMock2) GetTxns(tx *dbutil.Tx, f func(tx UnconfirmedTxn) bool) ([]UnconfirmedTxn, error) {
 	var txs []UnconfirmedTxn
 	for i := range m.txs {
 		if f(m.txs[i]) {

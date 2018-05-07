@@ -1,8 +1,6 @@
 package blockdb
 
 import (
-	"github.com/boltdb/bolt"
-
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
@@ -16,7 +14,7 @@ var (
 type chainMeta struct{}
 
 func newChainMeta(db *dbutil.DB) (*chainMeta, error) {
-	if err := db.Update(func(tx *bolt.Tx) error {
+	if err := db.Update(func(tx *dbutil.Tx) error {
 		return dbutil.CreateBuckets(tx, [][]byte{
 			blockchainMetaBkt,
 		})
@@ -27,11 +25,11 @@ func newChainMeta(db *dbutil.DB) (*chainMeta, error) {
 	return &chainMeta{}, nil
 }
 
-func (m chainMeta) SetHeadSeq(tx *bolt.Tx, seq uint64) error {
+func (m chainMeta) SetHeadSeq(tx *dbutil.Tx, seq uint64) error {
 	return dbutil.PutBucketValue(tx, blockchainMetaBkt, headSeqKey, dbutil.Itob(seq))
 }
 
-func (m chainMeta) GetHeadSeq(tx *bolt.Tx) (uint64, bool, error) {
+func (m chainMeta) GetHeadSeq(tx *dbutil.Tx) (uint64, bool, error) {
 	v, err := dbutil.GetBucketValue(tx, blockchainMetaBkt, headSeqKey)
 	if err != nil {
 		return 0, false, err

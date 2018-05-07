@@ -3,8 +3,6 @@ package visor
 import (
 	"fmt"
 
-	"github.com/boltdb/bolt"
-
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/visor/historydb"
@@ -43,7 +41,7 @@ func (bcp *BlockchainParser) FeedBlock(b coin.Block) {
 }
 
 // Init initializes blockchain parser
-func (bcp *BlockchainParser) Init(tx *bolt.Tx) error {
+func (bcp *BlockchainParser) Init(tx *dbutil.Tx) error {
 	logger.Info("Blockchain parser initializing")
 	defer logger.Info("Blockchain parser initialization completed")
 
@@ -73,7 +71,7 @@ func (bcp *BlockchainParser) Run() error {
 		case <-bcp.quit:
 			return nil
 		case b := <-bcp.blkC:
-			if err := bcp.db.Update(func(tx *bolt.Tx) error {
+			if err := bcp.db.Update(func(tx *dbutil.Tx) error {
 				return bcp.historyDB.ParseBlock(tx, &b)
 			}); err != nil {
 				logger.Errorf("BlockchainParser.historyDB.ParseBlock failed: %v", err)
@@ -89,7 +87,7 @@ func (bcp *BlockchainParser) Shutdown() {
 	<-bcp.done
 }
 
-func (bcp *BlockchainParser) parseTo(tx *bolt.Tx, bcHeight uint64) error {
+func (bcp *BlockchainParser) parseTo(tx *dbutil.Tx, bcHeight uint64) error {
 	parsedHeight, err := bcp.historyDB.ParsedHeight(tx)
 	if err != nil {
 		return err

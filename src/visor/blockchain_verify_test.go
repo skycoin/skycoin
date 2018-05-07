@@ -6,7 +6,6 @@ import (
 	"math"
 	"testing"
 
-	"github.com/boltdb/bolt"
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -28,7 +27,7 @@ const (
 	GenesisCoinHours uint64 = 1000 * 1000
 )
 
-func makeTransactionForChain(t *testing.T, tx *bolt.Tx, bc *Blockchain, ux coin.UxOut, sec cipher.SecKey, toAddr cipher.Address, amt, hours, fee uint64) coin.Transaction {
+func makeTransactionForChain(t *testing.T, tx *dbutil.Tx, bc *Blockchain, ux coin.UxOut, sec cipher.SecKey, toAddr cipher.Address, amt, hours, fee uint64) coin.Transaction {
 	var txn coin.Transaction
 
 	head, err := bc.Head(tx)
@@ -82,7 +81,7 @@ func MakeBlockchain(t *testing.T, db *dbutil.DB, seckey cipher.SecKey) *Blockcha
 	}
 
 	sig := cipher.SignHash(gb.HashHeader(), seckey)
-	err = db.Update(func(tx *bolt.Tx) error {
+	err = db.Update(func(tx *dbutil.Tx) error {
 		return b.ExecuteBlock(tx, &coin.SignedBlock{
 			Block: *gb,
 			Sig:   sig,
@@ -246,7 +245,7 @@ func makeSpendTxWithHoursBurned(t *testing.T, uxs coin.UxArray, keys []cipher.Se
 
 func createGenesisSpendTransaction(t *testing.T, bc *Blockchain, toAddr cipher.Address, coins, hours, fee uint64) coin.Transaction {
 	var txn coin.Transaction
-	err := bc.db.View(func(tx *bolt.Tx) error {
+	err := bc.db.View(func(tx *dbutil.Tx) error {
 		uxOuts, err := bc.Unspent().GetAll(tx)
 		require.NoError(t, err)
 		require.Len(t, uxOuts, 1)
@@ -270,7 +269,7 @@ func createGenesisSpendTransaction(t *testing.T, bc *Blockchain, toAddr cipher.A
 
 func executeGenesisSpendTransaction(t *testing.T, db *dbutil.DB, bc *Blockchain, txn coin.Transaction) coin.UxOut {
 	var block *coin.Block
-	err := db.View(func(tx *bolt.Tx) error {
+	err := db.View(func(tx *dbutil.Tx) error {
 		var err error
 		block, err = bc.NewBlock(tx, coin.Transactions{txn}, GenesisTime+TimeIncrement)
 		require.NoError(t, err)
@@ -285,7 +284,7 @@ func executeGenesisSpendTransaction(t *testing.T, db *dbutil.DB, bc *Blockchain,
 		Sig:   sig,
 	}
 
-	err = db.Update(func(tx *bolt.Tx) error {
+	err = db.Update(func(tx *dbutil.Tx) error {
 		err = bc.ExecuteBlock(tx, &sb)
 		require.NoError(t, err)
 		return nil
@@ -324,7 +323,7 @@ func TestVerifyTransactionAllConstraints(t *testing.T) {
 	coins := uint64(10e6)
 
 	verifySingleTxnAllConstraints := func(txn coin.Transaction, maxBlockSize int) error {
-		return db.View(func(tx *bolt.Tx) error {
+		return db.View(func(tx *dbutil.Tx) error {
 			return bc.VerifySingleTxnAllConstraints(tx, txn, maxBlockSize)
 		})
 	}
@@ -362,7 +361,7 @@ func TestVerifyTransactionAllConstraints(t *testing.T) {
 
 	// Create new block to spend the coins
 	var b *coin.Block
-	err = db.View(func(tx *bolt.Tx) error {
+	err = db.View(func(tx *dbutil.Tx) error {
 		var err error
 		b, err = bc.NewBlock(tx, coin.Transactions{txn}, genTime+100)
 		require.NoError(t, err)
@@ -372,7 +371,7 @@ func TestVerifyTransactionAllConstraints(t *testing.T) {
 	require.NotNil(t, b)
 
 	// Add the block to blockchain
-	err = bc.db.Update(func(tx *bolt.Tx) error {
+	err = bc.db.Update(func(tx *dbutil.Tx) error {
 		return bc.store.AddBlock(tx, &coin.SignedBlock{
 			Block: *b,
 			Sig:   cipher.SignHash(b.HashHeader(), genSecret),
@@ -434,7 +433,7 @@ func TestVerifyTxnFeeCoinHoursAdditionFails(t *testing.T) {
 
 	var uxIn coin.UxArray
 	var head *coin.SignedBlock
-	err = db.View(func(tx *bolt.Tx) error {
+	err = db.View(func(tx *dbutil.Tx) error {
 		var err error
 		uxIn, err = bc.Unspent().GetArray(tx, txn.In)
 		require.NoError(t, err)
@@ -518,7 +517,7 @@ func testVerifyTransactionAddressLocking(t *testing.T, toAddr string, expectedEr
 
 	var uxIn coin.UxArray
 	var head *coin.SignedBlock
-	err = db.View(func(tx *bolt.Tx) error {
+	err = db.View(func(tx *dbutil.Tx) error {
 		var err error
 		uxIn, err = bc.Unspent().GetArray(tx, txn.In)
 		require.NoError(t, err)

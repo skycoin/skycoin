@@ -1,8 +1,6 @@
 package historydb
 
 import (
-	"github.com/boltdb/bolt"
-
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
@@ -59,7 +57,7 @@ func (o UxOut) Hash() cipher.SHA256 {
 type UxOuts struct{}
 
 func newUxOuts(db *dbutil.DB) (*UxOuts, error) {
-	if err := db.Update(func(tx *bolt.Tx) error {
+	if err := db.Update(func(tx *dbutil.Tx) error {
 		return dbutil.CreateBuckets(tx, [][]byte{
 			uxOutsBkt,
 		})
@@ -71,13 +69,13 @@ func newUxOuts(db *dbutil.DB) (*UxOuts, error) {
 }
 
 // Set sets out value
-func (ux *UxOuts) Set(tx *bolt.Tx, out UxOut) error {
+func (ux *UxOuts) Set(tx *dbutil.Tx, out UxOut) error {
 	hash := out.Hash()
 	return dbutil.PutBucketValue(tx, uxOutsBkt, hash[:], encoder.Serialize(out))
 }
 
 // Get gets UxOut of given id
-func (ux *UxOuts) Get(tx *bolt.Tx, uxID cipher.SHA256) (*UxOut, error) {
+func (ux *UxOuts) Get(tx *dbutil.Tx, uxID cipher.SHA256) (*UxOut, error) {
 	var out UxOut
 
 	if ok, err := dbutil.GetBucketObjectDecoded(tx, uxOutsBkt, uxID[:], &out); err != nil {
@@ -90,11 +88,11 @@ func (ux *UxOuts) Get(tx *bolt.Tx, uxID cipher.SHA256) (*UxOut, error) {
 }
 
 // IsEmpty checks if the uxout bucekt is empty
-func (ux *UxOuts) IsEmpty(tx *bolt.Tx) (bool, error) {
+func (ux *UxOuts) IsEmpty(tx *dbutil.Tx) (bool, error) {
 	return dbutil.IsEmpty(tx, uxOutsBkt)
 }
 
 // Reset resets the bucket
-func (ux *UxOuts) Reset(tx *bolt.Tx) error {
+func (ux *UxOuts) Reset(tx *dbutil.Tx) error {
 	return dbutil.Reset(tx, uxOutsBkt)
 }

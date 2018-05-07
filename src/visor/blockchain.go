@@ -5,8 +5,6 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/boltdb/bolt"
-
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util/fee"
@@ -44,18 +42,18 @@ const (
 
 // chainStore
 type chainStore interface {
-	Head(*bolt.Tx) (*coin.SignedBlock, error)
-	HeadSeq(*bolt.Tx) (uint64, bool, error)
-	Len(*bolt.Tx) (uint64, error)
-	AddBlock(*bolt.Tx, *coin.SignedBlock) error
-	GetBlockByHash(*bolt.Tx, cipher.SHA256) (*coin.Block, error)
-	GetSignedBlockByHash(*bolt.Tx, cipher.SHA256) (*coin.SignedBlock, error)
-	GetSignedBlockBySeq(*bolt.Tx, uint64) (*coin.SignedBlock, error)
+	Head(*dbutil.Tx) (*coin.SignedBlock, error)
+	HeadSeq(*dbutil.Tx) (uint64, bool, error)
+	Len(*dbutil.Tx) (uint64, error)
+	AddBlock(*dbutil.Tx, *coin.SignedBlock) error
+	GetBlockByHash(*dbutil.Tx, cipher.SHA256) (*coin.Block, error)
+	GetSignedBlockByHash(*dbutil.Tx, cipher.SHA256) (*coin.SignedBlock, error)
+	GetSignedBlockBySeq(*dbutil.Tx, uint64) (*coin.SignedBlock, error)
 	UnspentPool() blockdb.UnspentPool
-	GetGenesisBlock(*bolt.Tx) (*coin.SignedBlock, error)
-	GetBlockSignature(*bolt.Tx, *coin.Block) (cipher.Sig, bool, error)
-	ForEachBlock(*bolt.Tx, func(*coin.Block) error) error
-	ForEachSignature(*bolt.Tx, func(cipher.SHA256, cipher.Sig) error) error
+	GetGenesisBlock(*dbutil.Tx) (*coin.SignedBlock, error)
+	GetBlockSignature(*dbutil.Tx, *coin.Block) (cipher.Sig, bool, error)
+	ForEachBlock(*dbutil.Tx, func(*coin.Block) error) error
+	ForEachSignature(*dbutil.Tx, func(cipher.SHA256, cipher.Sig) error) error
 }
 
 // BlockListener notify the register when new block is appended to the chain
@@ -78,7 +76,7 @@ type Blockchain struct {
 type Option func(*Blockchain)
 
 // DefaultWalker default blockchain walker
-func DefaultWalker(tx *bolt.Tx, hps []coin.HashPair) (cipher.SHA256, bool) {
+func DefaultWalker(tx *dbutil.Tx, hps []coin.HashPair) (cipher.SHA256, bool) {
 	if len(hps) == 0 {
 		return cipher.SHA256{}, false
 	}
@@ -103,7 +101,7 @@ func NewBlockchain(db *dbutil.DB, pubkey cipher.PubKey, ops ...Option) (*Blockch
 	}
 
 	// verify signature
-	if err := db.View(func(tx *bolt.Tx) error {
+	if err := db.View(func(tx *dbutil.Tx) error {
 		return bc.verifySigs(tx, SigVerifyTheadNum)
 	}); err != nil {
 		return nil, err
@@ -120,22 +118,22 @@ func Arbitrating(enable bool) Option {
 }
 
 // GetGenesisBlock returns genesis block
-func (bc *Blockchain) GetGenesisBlock(tx *bolt.Tx) (*coin.SignedBlock, error) {
+func (bc *Blockchain) GetGenesisBlock(tx *dbutil.Tx) (*coin.SignedBlock, error) {
 	return bc.store.GetGenesisBlock(tx)
 }
 
 // GetSignedBlockByHash returns block of given hash
-func (bc *Blockchain) GetSignedBlockByHash(tx *bolt.Tx, hash cipher.SHA256) (*coin.SignedBlock, error) {
+func (bc *Blockchain) GetSignedBlockByHash(tx *dbutil.Tx, hash cipher.SHA256) (*coin.SignedBlock, error) {
 	return bc.store.GetSignedBlockByHash(tx, hash)
 }
 
 // GetSignedBlockBySeq returns block of given seq
-func (bc *Blockchain) GetSignedBlockBySeq(tx *bolt.Tx, seq uint64) (*coin.SignedBlock, error) {
+func (bc *Blockchain) GetSignedBlockBySeq(tx *dbutil.Tx, seq uint64) (*coin.SignedBlock, error) {
 	return bc.store.GetSignedBlockBySeq(tx, seq)
 }
 
 // Head returns the most recent confirmed block
-func (bc Blockchain) Head(tx *bolt.Tx) (*coin.SignedBlock, error) {
+func (bc Blockchain) Head(tx *dbutil.Tx) (*coin.SignedBlock, error) {
 	return bc.store.Head(tx)
 }
 
@@ -145,19 +143,19 @@ func (bc *Blockchain) Unspent() blockdb.UnspentPool {
 }
 
 // Len returns the length of current blockchain.
-func (bc Blockchain) Len(tx *bolt.Tx) (uint64, error) {
+func (bc Blockchain) Len(tx *dbutil.Tx) (uint64, error) {
 	return bc.store.Len(tx)
 }
 
 // HeadSeq returns the sequence of head block
-func (bc *Blockchain) HeadSeq(tx *bolt.Tx) (uint64, bool, error) {
+func (bc *Blockchain) HeadSeq(tx *dbutil.Tx) (uint64, bool, error) {
 	return bc.store.HeadSeq(tx)
 }
 
 // Time returns time of last block
 // used as system clock indepedent clock for coin hour calculations
 // TODO: Deprecate
-func (bc *Blockchain) Time(tx *bolt.Tx) (uint64, error) {
+func (bc *Blockchain) Time(tx *dbutil.Tx) (uint64, error) {
 	b, err := bc.Head(tx)
 	if err != nil {
 		if err == blockdb.ErrNoHeadBlock {
@@ -173,7 +171,7 @@ func (bc *Blockchain) Time(tx *bolt.Tx) (uint64, error) {
 // Only hard constraints are applied to transactions in the block.
 // The caller of this function should apply any additional soft constraints,
 // and choose which transactions to place into the block.
-func (bc Blockchain) NewBlock(tx *bolt.Tx, txns coin.Transactions, currentTime uint64) (*coin.Block, error) {
+func (bc Blockchain) NewBlock(tx *dbutil.Tx, txns coin.Transactions, currentTime uint64) (*coin.Block, error) {
 	if len(txns) == 0 {
 		return nil, errors.New("No transactions")
 	}
@@ -218,7 +216,7 @@ func (bc Blockchain) NewBlock(tx *bolt.Tx, txns coin.Transactions, currentTime u
 	return b, nil
 }
 
-func (bc *Blockchain) processBlock(tx *bolt.Tx, b coin.SignedBlock) (coin.SignedBlock, error) {
+func (bc *Blockchain) processBlock(tx *dbutil.Tx, b coin.SignedBlock) (coin.SignedBlock, error) {
 	length, err := bc.Len(tx)
 	if err != nil {
 		return coin.SignedBlock{}, err
@@ -253,8 +251,8 @@ func (bc *Blockchain) processBlock(tx *bolt.Tx, b coin.SignedBlock) (coin.Signed
 	return b, nil
 }
 
-// ExecuteBlock attempts to append block to blockchain with *bolt.Tx
-func (bc *Blockchain) ExecuteBlock(tx *bolt.Tx, sb *coin.SignedBlock) error {
+// ExecuteBlock attempts to append block to blockchain with *dbutil.Tx
+func (bc *Blockchain) ExecuteBlock(tx *dbutil.Tx, sb *coin.SignedBlock) error {
 	length, err := bc.Len(tx)
 	if err != nil {
 		return err
@@ -283,7 +281,7 @@ func (bc *Blockchain) ExecuteBlock(tx *bolt.Tx, sb *coin.SignedBlock) error {
 }
 
 // isGenesisBlock checks if the block is genesis block
-func (bc Blockchain) isGenesisBlock(tx *bolt.Tx, b coin.Block) (bool, error) {
+func (bc Blockchain) isGenesisBlock(tx *dbutil.Tx, b coin.Block) (bool, error) {
 	gb, err := bc.store.GetGenesisBlock(tx)
 	if err != nil {
 		return false, err
@@ -297,7 +295,7 @@ func (bc Blockchain) isGenesisBlock(tx *bolt.Tx, b coin.Block) (bool, error) {
 
 // Compares the state of the current UxHash hash to state of unspent
 // output pool.
-func (bc Blockchain) verifyUxHash(tx *bolt.Tx, b coin.Block) error {
+func (bc Blockchain) verifyUxHash(tx *dbutil.Tx, b coin.Block) error {
 	uxHash, err := bc.Unspent().GetUxHash(tx)
 	if err != nil {
 		return err
@@ -312,7 +310,7 @@ func (bc Blockchain) verifyUxHash(tx *bolt.Tx, b coin.Block) error {
 
 // VerifyBlockTxnConstraints checks that the transaction does not violate hard constraints,
 // for transactions that are already included in a block.
-func (bc Blockchain) VerifyBlockTxnConstraints(tx *bolt.Tx, txn coin.Transaction) error {
+func (bc Blockchain) VerifyBlockTxnConstraints(tx *dbutil.Tx, txn coin.Transaction) error {
 	// NOTE: Unspent().GetArray() returns an error if not all txn.In can be found
 	// This prevents double spends
 	uxIn, err := bc.Unspent().GetArray(tx, txn.In)
@@ -333,7 +331,7 @@ func (bc Blockchain) VerifyBlockTxnConstraints(tx *bolt.Tx, txn coin.Transaction
 	return bc.verifyBlockTxnHardConstraints(tx, txn, head, uxIn)
 }
 
-func (bc Blockchain) verifyBlockTxnHardConstraints(tx *bolt.Tx, txn coin.Transaction, head *coin.SignedBlock, uxIn coin.UxArray) error {
+func (bc Blockchain) verifyBlockTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction, head *coin.SignedBlock, uxIn coin.UxArray) error {
 	if err := VerifyBlockTxnConstraints(txn, head, uxIn); err != nil {
 		return err
 	}
@@ -361,7 +359,7 @@ func (bc Blockchain) verifyBlockTxnHardConstraints(tx *bolt.Tx, txn coin.Transac
 
 // VerifySingleTxnHardConstraints checks that the transaction does not violate hard constraints.
 // for transactions that are not included in a block.
-func (bc Blockchain) VerifySingleTxnHardConstraints(tx *bolt.Tx, txn coin.Transaction) error {
+func (bc Blockchain) VerifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction) error {
 	// NOTE: Unspent().GetArray() returns an error if not all txn.In can be found
 	// This prevents double spends
 	uxIn, err := bc.Unspent().GetArray(tx, txn.In)
@@ -385,7 +383,7 @@ func (bc Blockchain) VerifySingleTxnHardConstraints(tx *bolt.Tx, txn coin.Transa
 // VerifySingleTxnAllConstraints checks that the transaction does not violate hard or soft constraints,
 // for transactions that are not included in a block.
 // Hard constraints are checked before soft constraints.
-func (bc Blockchain) VerifySingleTxnAllConstraints(tx *bolt.Tx, txn coin.Transaction, maxSize int) error {
+func (bc Blockchain) VerifySingleTxnAllConstraints(tx *dbutil.Tx, txn coin.Transaction, maxSize int) error {
 	// NOTE: Unspent().GetArray() returns an error if not all txn.In can be found
 	// This prevents double spends
 	uxIn, err := bc.Unspent().GetArray(tx, txn.In)
@@ -406,7 +404,7 @@ func (bc Blockchain) VerifySingleTxnAllConstraints(tx *bolt.Tx, txn coin.Transac
 	return VerifySingleTxnSoftConstraints(txn, head.Time(), uxIn, maxSize)
 }
 
-func (bc Blockchain) verifySingleTxnHardConstraints(tx *bolt.Tx, txn coin.Transaction, head *coin.SignedBlock, uxIn coin.UxArray) error {
+func (bc Blockchain) verifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction, head *coin.SignedBlock, uxIn coin.UxArray) error {
 	if err := VerifySingleTxnHardConstraints(txn, head, uxIn); err != nil {
 		return err
 	}
@@ -433,7 +431,7 @@ func (bc Blockchain) verifySingleTxnHardConstraints(tx *bolt.Tx, txn coin.Transa
 }
 
 // GetBlocks return blocks whose seq are in the range of start and end.
-func (bc Blockchain) GetBlocks(tx *bolt.Tx, start, end uint64) ([]coin.SignedBlock, error) {
+func (bc Blockchain) GetBlocks(tx *dbutil.Tx, start, end uint64) ([]coin.SignedBlock, error) {
 	if start > end {
 		return nil, nil
 	}
@@ -456,7 +454,7 @@ func (bc Blockchain) GetBlocks(tx *bolt.Tx, start, end uint64) ([]coin.SignedBlo
 }
 
 // GetLastBlocks return the latest N blocks.
-func (bc Blockchain) GetLastBlocks(tx *bolt.Tx, num uint64) ([]coin.SignedBlock, error) {
+func (bc Blockchain) GetLastBlocks(tx *dbutil.Tx, num uint64) ([]coin.SignedBlock, error) {
 	if num == 0 {
 		return nil, nil
 	}
@@ -489,7 +487,7 @@ func (bc Blockchain) GetLastBlocks(tx *bolt.Tx, num uint64) ([]coin.SignedBlock,
 // TODO:
 //  - move arbitration to visor
 //  - blockchain should have strict checking
-func (bc Blockchain) processTransactions(tx *bolt.Tx, txs coin.Transactions) (coin.Transactions, error) {
+func (bc Blockchain) processTransactions(tx *dbutil.Tx, txs coin.Transactions) (coin.Transactions, error) {
 	// copy txs so that the following code won't modify the original txns
 	txns := make(coin.Transactions, len(txs))
 	copy(txns, txs)
@@ -636,7 +634,7 @@ func (bc Blockchain) processTransactions(tx *bolt.Tx, txs coin.Transactions) (co
 }
 
 // TransactionFee calculates the current transaction fee in coinhours of a Transaction
-func (bc Blockchain) TransactionFee(tx *bolt.Tx, headTime uint64) coin.FeeCalculator {
+func (bc Blockchain) TransactionFee(tx *dbutil.Tx, headTime uint64) coin.FeeCalculator {
 	return func(txn *coin.Transaction) (uint64, error) {
 		inUxs, err := bc.Unspent().GetArray(tx, txn.In)
 		if err != nil {
@@ -654,7 +652,7 @@ type sigHash struct {
 
 // verifySigs checks that BlockSigs state correspond with coin.Blockchain state
 // and that all signatures are valid.
-func (bc *Blockchain) verifySigs(tx *bolt.Tx, workers int) error {
+func (bc *Blockchain) verifySigs(tx *dbutil.Tx, workers int) error {
 	if length, err := bc.Len(tx); err != nil {
 		return err
 	} else if length == 0 {
@@ -748,7 +746,7 @@ loop:
 }
 
 // VerifyBlockHeader Returns error if the BlockHeader is not valid
-func (bc Blockchain) verifyBlockHeader(tx *bolt.Tx, b coin.Block) error {
+func (bc Blockchain) verifyBlockHeader(tx *dbutil.Tx, b coin.Block) error {
 	head, err := bc.Head(tx)
 	if err != nil {
 		return err

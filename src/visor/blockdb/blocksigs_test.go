@@ -3,12 +3,12 @@ package blockdb
 import (
 	"testing"
 
-	"github.com/boltdb/bolt"
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
 func TestNewBlockSigs(t *testing.T) {
@@ -18,7 +18,7 @@ func TestNewBlockSigs(t *testing.T) {
 	_, err := newBlockSigs(db)
 	require.NoError(t, err)
 
-	err = db.View(func(tx *bolt.Tx) error {
+	err = db.View(func(tx *dbutil.Tx) error {
 		bkt := tx.Bucket(blockSigsBkt)
 		require.NotNil(t, bkt)
 		return nil
@@ -85,7 +85,7 @@ func TestBlockSigsGet(t *testing.T) {
 			defer closeDB()
 
 			// init db
-			err := db.Update(func(tx *bolt.Tx) error {
+			err := db.Update(func(tx *dbutil.Tx) error {
 				bkt, err := tx.CreateBucketIfNotExists(blockSigsBkt)
 				require.NoError(t, err)
 				for _, hs := range tc.init {
@@ -99,7 +99,7 @@ func TestBlockSigsGet(t *testing.T) {
 			sigs, err := newBlockSigs(db)
 			require.NoError(t, err)
 
-			err = db.View(func(tx *bolt.Tx) error {
+			err = db.View(func(tx *dbutil.Tx) error {
 				sg, ok, err := sigs.Get(tx, tc.hash)
 				require.Equal(t, tc.expect.err, err)
 				require.Equal(t, tc.expect.exist, ok)
@@ -125,13 +125,13 @@ func TestBlockSigsAddWithTx(t *testing.T) {
 	sigs, err := newBlockSigs(db)
 	require.NoError(t, err)
 
-	err = db.Update(func(tx *bolt.Tx) error {
+	err = db.Update(func(tx *dbutil.Tx) error {
 		return sigs.Add(tx, h, sig)
 	})
 	require.NoError(t, err)
 
 	// check the db
-	err = db.View(func(tx *bolt.Tx) error {
+	err = db.View(func(tx *dbutil.Tx) error {
 		bkt := tx.Bucket(blockSigsBkt)
 		v := bkt.Get(h[:])
 		require.NotNil(t, v)

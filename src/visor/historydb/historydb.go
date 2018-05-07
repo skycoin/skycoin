@@ -5,8 +5,6 @@ package historydb
 import (
 	"errors"
 
-	"github.com/boltdb/bolt"
-
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util/logging"
@@ -63,7 +61,7 @@ func New(db *dbutil.DB) (*HistoryDB, error) {
 // ResetIfNeed checks if need to reset the parsed block history,
 // If we have a new added bucket, we need to reset to parse
 // blockchain again to get the new bucket filled.
-func (hd *HistoryDB) ResetIfNeed(tx *bolt.Tx) error {
+func (hd *HistoryDB) ResetIfNeed(tx *dbutil.Tx) error {
 	if height, err := hd.historyMeta.ParsedHeight(tx); err != nil {
 		return err
 	} else if height == 0 {
@@ -98,7 +96,7 @@ func (hd *HistoryDB) ResetIfNeed(tx *bolt.Tx) error {
 	return nil
 }
 
-func (hd *HistoryDB) reset(tx *bolt.Tx) error {
+func (hd *HistoryDB) reset(tx *dbutil.Tx) error {
 	logger.Info("History db reset")
 	if err := hd.addrTxns.Reset(tx); err != nil {
 		return err
@@ -120,12 +118,12 @@ func (hd *HistoryDB) reset(tx *bolt.Tx) error {
 }
 
 // GetUxout get UxOut of specific uxID.
-func (hd *HistoryDB) GetUxout(tx *bolt.Tx, uxID cipher.SHA256) (*UxOut, error) {
+func (hd *HistoryDB) GetUxout(tx *dbutil.Tx, uxID cipher.SHA256) (*UxOut, error) {
 	return hd.outputs.Get(tx, uxID)
 }
 
 // ParseBlock will index the transaction, outputs,etc.
-func (hd *HistoryDB) ParseBlock(tx *bolt.Tx, b *coin.Block) error {
+func (hd *HistoryDB) ParseBlock(tx *dbutil.Tx, b *coin.Block) error {
 	if b == nil {
 		return errors.New("process nil block")
 	}
@@ -184,12 +182,12 @@ func (hd *HistoryDB) ParseBlock(tx *bolt.Tx, b *coin.Block) error {
 }
 
 // GetTransaction get transaction by hash.
-func (hd HistoryDB) GetTransaction(tx *bolt.Tx, hash cipher.SHA256) (*Transaction, error) {
+func (hd HistoryDB) GetTransaction(tx *dbutil.Tx, hash cipher.SHA256) (*Transaction, error) {
 	return hd.txns.Get(tx, hash)
 }
 
 // GetAddrUxOuts get all uxout that the address affected.
-func (hd HistoryDB) GetAddrUxOuts(tx *bolt.Tx, address cipher.Address) ([]*UxOut, error) {
+func (hd HistoryDB) GetAddrUxOuts(tx *dbutil.Tx, address cipher.Address) ([]*UxOut, error) {
 	hashes, err := hd.addrUx.Get(tx, address)
 	if err != nil {
 		return nil, err
@@ -208,7 +206,7 @@ func (hd HistoryDB) GetAddrUxOuts(tx *bolt.Tx, address cipher.Address) ([]*UxOut
 }
 
 // GetAddrTxns returns all the address related transactions
-func (hd HistoryDB) GetAddrTxns(tx *bolt.Tx, address cipher.Address) ([]Transaction, error) {
+func (hd HistoryDB) GetAddrTxns(tx *dbutil.Tx, address cipher.Address) ([]Transaction, error) {
 	hashes, err := hd.addrTxns.Get(tx, address)
 	if err != nil {
 		return nil, err
@@ -218,6 +216,6 @@ func (hd HistoryDB) GetAddrTxns(tx *bolt.Tx, address cipher.Address) ([]Transact
 }
 
 // ForEachTxn traverses the transactions in db
-func (hd HistoryDB) ForEachTxn(tx *bolt.Tx, f func(cipher.SHA256, *Transaction) error) error {
+func (hd HistoryDB) ForEachTxn(tx *dbutil.Tx, f func(cipher.SHA256, *Transaction) error) error {
 	return hd.txns.ForEach(tx, f)
 }

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/boltdb/bolt"
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -43,7 +42,7 @@ func addGenesisBlock(t *testing.T, bc *Blockchain) *coin.SignedBlock {
 	gbSig := cipher.SignHash(gb.HashHeader(), genSecret)
 
 	// add genesis block to blockchain
-	err = bc.db.Update(func(tx *bolt.Tx) error {
+	err = bc.db.Update(func(tx *dbutil.Tx) error {
 		return bc.store.AddBlock(tx, &coin.SignedBlock{
 			Block: *gb,
 			Sig:   gbSig,
@@ -87,7 +86,7 @@ type fakeChainStore struct {
 	up     blockdb.UnspentPool
 }
 
-func (fcs *fakeChainStore) Head(tx *bolt.Tx) (*coin.SignedBlock, error) {
+func (fcs *fakeChainStore) Head(tx *dbutil.Tx) (*coin.SignedBlock, error) {
 	l := len(fcs.blocks)
 	if l == 0 {
 		return nil, blockdb.ErrNoHeadBlock
@@ -96,7 +95,7 @@ func (fcs *fakeChainStore) Head(tx *bolt.Tx) (*coin.SignedBlock, error) {
 	return &fcs.blocks[l-1], nil
 }
 
-func (fcs *fakeChainStore) HeadSeq(tx *bolt.Tx) (uint64, bool, error) {
+func (fcs *fakeChainStore) HeadSeq(tx *dbutil.Tx) (uint64, bool, error) {
 	h, err := fcs.Head(tx)
 	if err != nil {
 		if err == blockdb.ErrNoHeadBlock {
@@ -107,27 +106,27 @@ func (fcs *fakeChainStore) HeadSeq(tx *bolt.Tx) (uint64, bool, error) {
 	return h.Seq(), true, nil
 }
 
-func (fcs *fakeChainStore) Len(tx *bolt.Tx) (uint64, error) {
+func (fcs *fakeChainStore) Len(tx *dbutil.Tx) (uint64, error) {
 	return uint64(len(fcs.blocks)), nil
 }
 
-func (fcs *fakeChainStore) AddBlock(tx *bolt.Tx, b *coin.SignedBlock) error {
+func (fcs *fakeChainStore) AddBlock(tx *dbutil.Tx, b *coin.SignedBlock) error {
 	return nil
 }
 
-func (fcs *fakeChainStore) GetBlockSignature(tx *bolt.Tx, b *coin.Block) (cipher.Sig, bool, error) {
+func (fcs *fakeChainStore) GetBlockSignature(tx *dbutil.Tx, b *coin.Block) (cipher.Sig, bool, error) {
 	return cipher.Sig{}, false, nil
 }
 
-func (fcs *fakeChainStore) GetBlockByHash(tx *bolt.Tx, hash cipher.SHA256) (*coin.Block, error) {
+func (fcs *fakeChainStore) GetBlockByHash(tx *dbutil.Tx, hash cipher.SHA256) (*coin.Block, error) {
 	return nil, nil
 }
 
-func (fcs *fakeChainStore) GetSignedBlockByHash(tx *bolt.Tx, hash cipher.SHA256) (*coin.SignedBlock, error) {
+func (fcs *fakeChainStore) GetSignedBlockByHash(tx *dbutil.Tx, hash cipher.SHA256) (*coin.SignedBlock, error) {
 	return nil, nil
 }
 
-func (fcs *fakeChainStore) GetSignedBlockBySeq(tx *bolt.Tx, seq uint64) (*coin.SignedBlock, error) {
+func (fcs *fakeChainStore) GetSignedBlockBySeq(tx *dbutil.Tx, seq uint64) (*coin.SignedBlock, error) {
 	l := len(fcs.blocks)
 	if seq >= uint64(l) {
 		return nil, nil
@@ -140,18 +139,18 @@ func (fcs *fakeChainStore) UnspentPool() blockdb.UnspentPool {
 	return nil
 }
 
-func (fcs *fakeChainStore) GetGenesisBlock(tx *bolt.Tx) (*coin.SignedBlock, error) {
+func (fcs *fakeChainStore) GetGenesisBlock(tx *dbutil.Tx) (*coin.SignedBlock, error) {
 	if len(fcs.blocks) > 0 {
 		return &fcs.blocks[0], nil
 	}
 	return nil, nil
 }
 
-func (fcs *fakeChainStore) ForEachBlock(tx *bolt.Tx, f func(*coin.Block) error) error {
+func (fcs *fakeChainStore) ForEachBlock(tx *dbutil.Tx, f func(*coin.Block) error) error {
 	return nil
 }
 
-func (fcs *fakeChainStore) ForEachSignature(tx *bolt.Tx, f func(cipher.SHA256, cipher.Sig) error) error {
+func (fcs *fakeChainStore) ForEachSignature(tx *dbutil.Tx, f func(cipher.SHA256, cipher.Sig) error) error {
 	return nil
 }
 
@@ -213,7 +212,7 @@ func TestBlockchainTime(t *testing.T) {
 				store: tc.store,
 			}
 
-			err := db.View(func(tx *bolt.Tx) error {
+			err := db.View(func(tx *dbutil.Tx) error {
 				tm, err := bc.Time(tx)
 				require.NoError(t, err)
 				require.Equal(t, tc.time, tm)
@@ -339,7 +338,7 @@ func TestVerifyBlockHeader(t *testing.T) {
 				store: tc.store,
 			}
 
-			err := db.View(func(tx *bolt.Tx) error {
+			err := db.View(func(tx *dbutil.Tx) error {
 				err := bc.verifyBlockHeader(tx, tc.b)
 				require.Equal(t, tc.err, err)
 				return nil
@@ -442,7 +441,7 @@ func TestGetBlocks(t *testing.T) {
 				store: tc.store,
 			}
 
-			err := db.View(func(tx *bolt.Tx) error {
+			err := db.View(func(tx *dbutil.Tx) error {
 				bs, err := bc.GetBlocks(tx, tc.req.st, tc.req.ed)
 				require.NoError(t, err)
 				require.Equal(t, len(tc.expect), len(bs))
@@ -504,7 +503,7 @@ func TestGetLastBlocks(t *testing.T) {
 				store: tc.store,
 			}
 
-			err := db.View(func(tx *bolt.Tx) error {
+			err := db.View(func(tx *dbutil.Tx) error {
 				bs, err := bc.GetLastBlocks(tx, tc.n)
 				require.NoError(t, err)
 				require.Equal(t, tc.expect, bs)
@@ -516,10 +515,10 @@ func TestGetLastBlocks(t *testing.T) {
 
 }
 
-// newBlock calls bc.NewBlock in a bolt.Tx
+// newBlock calls bc.NewBlock in a dbutil.Tx
 func newBlock(t *testing.T, bc *Blockchain, txn coin.Transaction, timestamp uint64) *coin.Block {
 	var b *coin.Block
-	err := bc.db.View(func(tx *bolt.Tx) error {
+	err := bc.db.View(func(tx *dbutil.Tx) error {
 		var err error
 		b, err = bc.NewBlock(tx, coin.Transactions{txn}, timestamp)
 		require.NoError(t, err)
@@ -529,10 +528,10 @@ func newBlock(t *testing.T, bc *Blockchain, txn coin.Transaction, timestamp uint
 	return b
 }
 
-// blockchainHead calls bc.Head in a bolt.Tx
+// blockchainHead calls bc.Head in a dbutil.Tx
 func blockchainHead(t *testing.T, bc *Blockchain) *coin.SignedBlock {
 	var head *coin.SignedBlock
-	err := bc.db.View(func(tx *bolt.Tx) error {
+	err := bc.db.View(func(tx *dbutil.Tx) error {
 		var err error
 		head, err = bc.Head(tx)
 		require.NoError(t, err)
@@ -701,7 +700,7 @@ func TestProcessTransactions(t *testing.T) {
 					Block: *b,
 					Sig:   cipher.SignHash(b.HashHeader(), genSecret),
 				}
-				err = db.Update(func(tx *bolt.Tx) error {
+				err = db.Update(func(tx *dbutil.Tx) error {
 					return bc.store.AddBlock(tx, sb)
 				})
 				require.NoError(t, err)
@@ -716,7 +715,7 @@ func TestProcessTransactions(t *testing.T) {
 				txs[i] = tx
 			}
 
-			err = db.View(func(tx *bolt.Tx) error {
+			err = db.View(func(tx *dbutil.Tx) error {
 				_, err := bc.processTransactions(tx, txs)
 				require.EqualValues(t, tc.err, err)
 				return nil
@@ -729,7 +728,7 @@ func TestProcessTransactions(t *testing.T) {
 
 func getUxHash(t *testing.T, db *dbutil.DB, bc *Blockchain) cipher.SHA256 {
 	var uxHash cipher.SHA256
-	err := db.View(func(tx *bolt.Tx) error {
+	err := db.View(func(tx *dbutil.Tx) error {
 		var err error
 		uxHash, err = bc.Unspent().GetUxHash(tx)
 		return err
@@ -756,7 +755,7 @@ func TestVerifyUxHash(t *testing.T) {
 	b, err := coin.NewBlock(gb.Block, genTime+100, uxHash, coin.Transactions{txn}, feeCalc)
 	require.NoError(t, err)
 
-	err = db.View(func(tx *bolt.Tx) error {
+	err = db.View(func(tx *dbutil.Tx) error {
 		err = bc.verifyUxHash(tx, *b)
 		require.NoError(t, err)
 		return nil
@@ -766,7 +765,7 @@ func TestVerifyUxHash(t *testing.T) {
 	b2, err := coin.NewBlock(gb.Block, genTime+10, testutil.RandSHA256(t), coin.Transactions{txn}, feeCalc)
 	require.NoError(t, err)
 
-	err = db.View(func(tx *bolt.Tx) error {
+	err = db.View(func(tx *dbutil.Tx) error {
 		err = bc.verifyUxHash(tx, *b2)
 		require.Equal(t, errors.New("UxHash does not match"), err)
 		return nil
@@ -795,7 +794,7 @@ func TestProcessBlock(t *testing.T) {
 	}
 
 	// Test with empty blockchain
-	err = db.Update(func(tx *bolt.Tx) error {
+	err = db.Update(func(tx *dbutil.Tx) error {
 		_, err := bc.processBlock(tx, sb)
 		require.NoError(t, err)
 		return nil
@@ -803,7 +802,7 @@ func TestProcessBlock(t *testing.T) {
 	require.NoError(t, err)
 
 	// Add genesis block to chain store
-	err = db.Update(func(tx *bolt.Tx) error {
+	err = db.Update(func(tx *dbutil.Tx) error {
 		err := bc.store.AddBlock(tx, &sb)
 		require.NoError(t, err)
 		return nil
@@ -818,7 +817,7 @@ func TestProcessBlock(t *testing.T) {
 	b, err := coin.NewBlock(*gb, genTime+100, uxHash, coin.Transactions{tx}, feeCalc)
 	require.NoError(t, err)
 
-	err = db.Update(func(tx *bolt.Tx) error {
+	err = db.Update(func(tx *dbutil.Tx) error {
 		_, err := bc.processBlock(tx, coin.SignedBlock{
 			Block: *b,
 			Sig:   cipher.SignHash(b.HashHeader(), genSecret),
@@ -850,7 +849,7 @@ func TestExecuteBlock(t *testing.T) {
 	}
 
 	// test with empty chain
-	err = db.Update(func(tx *bolt.Tx) error {
+	err = db.Update(func(tx *dbutil.Tx) error {
 		err := bc.ExecuteBlock(tx, &sb)
 		require.NoError(t, err)
 		return nil
@@ -864,7 +863,7 @@ func TestExecuteBlock(t *testing.T) {
 	uxHash := getUxHash(t, db, bc)
 	b, err := coin.NewBlock(*gb, genTime+100, uxHash, coin.Transactions{tx}, feeCalc)
 	require.NoError(t, err)
-	err = db.Update(func(tx *bolt.Tx) error {
+	err = db.Update(func(tx *dbutil.Tx) error {
 		err := bc.ExecuteBlock(tx, &coin.SignedBlock{
 			Block: *b,
 			Sig:   cipher.SignHash(b.HashHeader(), genSecret),

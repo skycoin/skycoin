@@ -239,9 +239,9 @@ func NewUnconfirmedTxnPool(db *dbutil.DB) (*UnconfirmedTxnPool, error) {
 }
 
 // SetTxnsAnnounced updates announced time of specific tx
-func (utp *UnconfirmedTxnPool) SetTxnsAnnounced(tx *dbutil.Tx, hashes []cipher.SHA256, t int64) error {
+func (utp *UnconfirmedTxnPool) SetTxnsAnnounced(tx *dbutil.Tx, hashes map[cipher.SHA256]int64) error {
 	var txns []*UnconfirmedTxn
-	for _, h := range hashes {
+	for h, t := range hashes {
 		txn, err := utp.txns.get(tx, h)
 		if err != nil {
 			return err
@@ -253,12 +253,12 @@ func (utp *UnconfirmedTxnPool) SetTxnsAnnounced(tx *dbutil.Tx, hashes []cipher.S
 		}
 
 		if t > txn.Announced {
+			txn.Announced = t
 			txns = append(txns, txn)
 		}
 	}
 
 	for _, txn := range txns {
-		txn.Announced = t
 		if err := utp.txns.put(tx, txn); err != nil {
 			return err
 		}

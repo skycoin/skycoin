@@ -15,25 +15,113 @@ import (
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
-var (
-	GenesisPublic, GenesisSecret = cipher.GenerateKeyPair()
-	GenesisAddress               = cipher.AddressFromPubKey(GenesisPublic)
-)
-
 const (
-	TimeIncrement    uint64 = 3600 * 1000
-	GenesisTime      uint64 = 1000
-	GenesisCoins     uint64 = 1000e6
+	// GenesisTime is the time of the genesis block created in MakeBlockchain
+	GenesisTime uint64 = 1000
+	// GenesisCoins is the amount of coins in the genesis block created in MakeBlockchain
+	GenesisCoins uint64 = 1000e6
+	// GenesisCoinHours is the amount of coin hours in the genesis block created in MakeBlockchain
 	GenesisCoinHours uint64 = 1000 * 1000
+	// TimeIncrement is the default time increment used when creating a block with CreateGenesisSpendTransaction
+	TimeIncrement uint64 = 3600 * 1000
 )
 
-func makeTransactionForChain(t *testing.T, tx *dbutil.Tx, bc *Blockchain, ux coin.UxOut, sec cipher.SecKey, toAddr cipher.Address, amt, hours, fee uint64) coin.Transaction {
-	var txn coin.Transaction
+var (
+	// GenesisPublic is the public key used in the genesis block created in MakeBlockchain
+	GenesisPublic cipher.PubKey
+	// GenesisSecret is the secret key used in the genesis block created in MakeBlockchain
+	GenesisSecret cipher.SecKey
+	// GenesisAddress is the address used in the genesis block created in MakeBlockchain
+	GenesisAddress cipher.Address
+)
 
-	head, err := bc.Head(tx)
+func init() {
+	GenesisPublic, GenesisSecret = cipher.GenerateKeyPair()
+	GenesisAddress = cipher.AddressFromPubKey(GenesisPublic)
+}
+
+// MakeBlockchain creates a new blockchain with a genesis block
+func MakeBlockchain(t *testing.T, db *dbutil.DB, seckey cipher.SecKey) *Blockchain {
+	pubkey := cipher.PubKeyFromSecKey(seckey)
+	b, err := NewBlockchain(db, pubkey)
+	require.NoError(t, err)
+	gb, err := coin.NewGenesisBlock(GenesisAddress, GenesisCoins, GenesisTime)
+	if err != nil {
+		panic(fmt.Errorf("create genesis block failed: %v", err))
+	}
+
+	sig := cipher.SignHash(gb.HashHeader(), seckey)
+	db.Update(func(tx *dbutil.Tx) error {
+		return b.ExecuteBlock(tx, &coin.SignedBlock{
+			Block: *gb,
+			Sig:   sig,
+		})
+	})
+	return b
+}
+
+// CreateGenesisSpendTransaction creates the initial post-genesis transaction that moves genesis coins to another address
+func CreateGenesisSpendTransaction(t *testing.T, db *dbutil.DB, bc *Blockchain, toAddr cipher.Address, coins, hours, fee uint64) coin.Transaction {
+	var txn coin.Transaction
+	err := db.View(func(tx *dbutil.Tx) error {
+		uxOuts, err := bc.Unspent().GetAll(tx)
+		require.NoError(t, err)
+		require.Len(t, uxOuts, 1)
+
+		txn = makeTransactionForChain(t, tx, bc, uxOuts[0], GenesisSecret, toAddr, coins, hours, fee)
+		require.Equal(t, txn.Out[0].Address.String(), toAddr.String())
+
+		if coins == GenesisCoins {
+			// No change output
+			require.Len(t, txn.Out, 1)
+		} else {
+			require.Len(t, txn.Out, 2)
+			require.Equal(t, txn.Out[1].Address.String(), GenesisAddress.String())
+		}
+
+		return nil
+	})
+	require.NoError(t, err)
+	return txn
+}
+
+// ExecuteGenesisSpendTransaction executes a genesis block created with CreateGenesisSpendTransaction against a blockchain
+// created with MakeBlockchain
+func ExecuteGenesisSpendTransaction(t *testing.T, db *dbutil.DB, bc *Blockchain, txn coin.Transaction) coin.UxOut {
+	var block *coin.Block
+	err := db.View(func(tx *dbutil.Tx) error {
+		var err error
+		block, err = bc.NewBlock(tx, coin.Transactions{txn}, GenesisTime+TimeIncrement)
+		require.NoError(t, err)
+		return nil
+	})
+	require.NoError(t, err)
+	require.NotNil(t, block)
+
+	sig := cipher.SignHash(block.HashHeader(), GenesisSecret)
+	sb := coin.SignedBlock{
+		Block: *block,
+		Sig:   sig,
+	}
+
+	err = db.Update(func(tx *dbutil.Tx) error {
+		err = bc.ExecuteBlock(tx, &sb)
+		require.NoError(t, err)
+		return nil
+	})
 	require.NoError(t, err)
 
-	chrs, err := ux.CoinHours(head.Time())
+	uxOut, err := coin.CreateUnspent(block.Head, txn, 0)
+	require.NoError(t, err)
+
+	return uxOut
+}
+
+func makeTransactionForChain(t *testing.T, tx *dbutil.Tx, bc *Blockchain, ux coin.UxOut, sec cipher.SecKey, toAddr cipher.Address, amt, hours, fee uint64) coin.Transaction {
+	tim, err := bc.Time(tx)
+	require.NoError(t, err)
+
+	chrs, err := ux.CoinHours(tim)
 	require.NoError(t, err)
 
 	require.Equal(t, cipher.AddressFromPubKey(cipher.PubKeyFromSecKey(sec)), ux.Body.Address)
@@ -43,6 +131,7 @@ func makeTransactionForChain(t *testing.T, tx *dbutil.Tx, bc *Blockchain, ux coi
 	require.NotNil(t, knownUx)
 	require.Equal(t, knownUx, &ux)
 
+	txn := coin.Transaction{}
 	txn.PushInput(ux.Hash())
 
 	txn.PushOutput(toAddr, amt, hours)
@@ -69,32 +158,6 @@ func makeTransactionForChain(t *testing.T, tx *dbutil.Tx, bc *Blockchain, ux coi
 	require.NoError(t, err)
 
 	return txn
-}
-
-func MakeBlockchain(t *testing.T, db *dbutil.DB, seckey cipher.SecKey) *Blockchain {
-	pubkey := cipher.PubKeyFromSecKey(seckey)
-	b, err := NewBlockchain(db, pubkey)
-	require.NoError(t, err)
-	gb, err := coin.NewGenesisBlock(GenesisAddress, GenesisCoins, GenesisTime)
-	if err != nil {
-		panic(fmt.Errorf("create genesis block failed: %v", err))
-	}
-
-	sig := cipher.SignHash(gb.HashHeader(), seckey)
-	err = db.Update(func(tx *dbutil.Tx) error {
-		return b.ExecuteBlock(tx, &coin.SignedBlock{
-			Block: *gb,
-			Sig:   sig,
-		})
-	})
-	require.NoError(t, err)
-	return b
-}
-
-func MakeAddress() (cipher.PubKey, cipher.SecKey, cipher.Address) {
-	p, s := cipher.GenerateKeyPair()
-	a := cipher.AddressFromPubKey(p)
-	return p, s, a
 }
 
 func makeLostCoinTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction {
@@ -241,60 +304,6 @@ func makeSpendTxWithHoursBurned(t *testing.T, uxs coin.UxArray, keys []cipher.Se
 	spendTx.SignInputs(keys)
 	spendTx.UpdateHeader()
 	return spendTx
-}
-
-func createGenesisSpendTransaction(t *testing.T, bc *Blockchain, toAddr cipher.Address, coins, hours, fee uint64) coin.Transaction {
-	var txn coin.Transaction
-	err := bc.db.View(func(tx *dbutil.Tx) error {
-		uxOuts, err := bc.Unspent().GetAll(tx)
-		require.NoError(t, err)
-		require.Len(t, uxOuts, 1)
-
-		txn = makeTransactionForChain(t, tx, bc, uxOuts[0], GenesisSecret, toAddr, coins, hours, fee)
-		require.Equal(t, txn.Out[0].Address.String(), toAddr.String())
-
-		if coins == GenesisCoins {
-			// No change output
-			require.Len(t, txn.Out, 1)
-		} else {
-			require.Len(t, txn.Out, 2)
-			require.Equal(t, txn.Out[1].Address.String(), GenesisAddress.String())
-		}
-
-		return nil
-	})
-	require.NoError(t, err)
-	return txn
-}
-
-func executeGenesisSpendTransaction(t *testing.T, db *dbutil.DB, bc *Blockchain, txn coin.Transaction) coin.UxOut {
-	var block *coin.Block
-	err := db.View(func(tx *dbutil.Tx) error {
-		var err error
-		block, err = bc.NewBlock(tx, coin.Transactions{txn}, GenesisTime+TimeIncrement)
-		require.NoError(t, err)
-		return nil
-	})
-	require.NoError(t, err)
-	require.NotNil(t, block)
-
-	sig := cipher.SignHash(block.HashHeader(), GenesisSecret)
-	sb := coin.SignedBlock{
-		Block: *block,
-		Sig:   sig,
-	}
-
-	err = db.Update(func(tx *dbutil.Tx) error {
-		err = bc.ExecuteBlock(tx, &sb)
-		require.NoError(t, err)
-		return nil
-	})
-	require.NoError(t, err)
-
-	uxOut, err := coin.CreateUnspent(block.Head, txn, 0)
-	require.NoError(t, err)
-
-	return uxOut
 }
 
 func requireSoftViolation(t *testing.T, msg string, err error) {
@@ -495,15 +504,15 @@ func testVerifyTransactionAddressLocking(t *testing.T, toAddr string, expectedEr
 	var hours uint64 = 1e6
 	var fee uint64 = 5e8
 
-	txn := createGenesisSpendTransaction(t, bc, addr, coins, hours, fee)
-	uxOut := executeGenesisSpendTransaction(t, db, bc, txn)
+	txn := CreateGenesisSpendTransaction(t, db, bc, addr, coins, hours, fee)
+	uxOut := ExecuteGenesisSpendTransaction(t, db, bc, txn)
 
 	// Create a transaction that spends from the locked address
 	// The secret key for the locked address is obviously unavailable here,
 	// instead, forge an invalid transaction.
 	// Transaction.Verify() is called after TransactionIsLocked(),
 	// so for this test it doesn't matter if transaction signature is wrong
-	_, _, randomAddress := MakeAddress()
+	randomAddress := testutil.MakeAddress()
 	txn = coin.Transaction{
 		In: []cipher.SHA256{uxOut.Hash()},
 		Out: []coin.TransactionOutput{

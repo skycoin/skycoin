@@ -16,57 +16,32 @@ import (
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
-var (
-	GenesisPublic, GenesisSecret = cipher.GenerateKeyPair()
-	GenesisAddress               = cipher.AddressFromPubKey(GenesisPublic)
-)
-
 const (
-	TimeIncrement    uint64 = 3600 * 1000
-	GenesisTime      uint64 = 1000
-	GenesisCoins     uint64 = 1000e6
+	// GenesisTime is the time of the genesis block created in MakeBlockchain
+	GenesisTime uint64 = 1000
+	// GenesisCoins is the amount of coins in the genesis block created in MakeBlockchain
+	GenesisCoins uint64 = 1000e6
+	// GenesisCoinHours is the amount of coin hours in the genesis block created in MakeBlockchain
 	GenesisCoinHours uint64 = 1000 * 1000
+	// TimeIncrement is the default time increment used when creating a block with CreateGenesisSpendTransaction
+	TimeIncrement uint64 = 3600 * 1000
 )
 
-func MakeTransactionForChain(t *testing.T, bc *visor.Blockchain, ux coin.UxOut, sec cipher.SecKey, toAddr cipher.Address, amt, hours, fee uint64) coin.Transaction {
-	chrs, err := ux.CoinHours(bc.Time())
-	require.NoError(t, err)
+var (
+	// GenesisPublic is the public key used in the genesis block created in MakeBlockchain
+	GenesisPublic cipher.PubKey
+	// GenesisSecret is the secret key used in the genesis block created in MakeBlockchain
+	GenesisSecret cipher.SecKey
+	// GenesisAddress is the address used in the genesis block created in MakeBlockchain
+	GenesisAddress cipher.Address
+)
 
-	require.Equal(t, cipher.AddressFromPubKey(cipher.PubKeyFromSecKey(sec)), ux.Body.Address)
-
-	knownUx, exists := bc.Unspent().Get(ux.Hash())
-	require.True(t, exists)
-	require.Equal(t, knownUx, ux)
-
-	tx := coin.Transaction{}
-	tx.PushInput(ux.Hash())
-
-	tx.PushOutput(toAddr, amt, hours)
-
-	// Change output
-	coinsOut := ux.Body.Coins - amt
-	if coinsOut > 0 {
-		tx.PushOutput(GenesisAddress, coinsOut, chrs-hours-fee)
-	}
-
-	tx.SignInputs([]cipher.SecKey{sec})
-
-	require.Equal(t, len(tx.Sigs), 1)
-
-	err = cipher.ChkSig(ux.Body.Address, cipher.AddSHA256(tx.HashInner(), tx.In[0]), tx.Sigs[0])
-	require.NoError(t, err)
-
-	tx.UpdateHeader()
-
-	err = tx.Verify()
-	require.NoError(t, err)
-
-	err = bc.VerifySingleTxnHardConstraints(tx)
-	require.NoError(t, err)
-
-	return tx
+func init() {
+	GenesisPublic, GenesisSecret = cipher.GenerateKeyPair()
+	GenesisAddress = cipher.AddressFromPubKey(GenesisPublic)
 }
 
+// MakeBlockchain creates a new blockchain with a genesis block
 func MakeBlockchain(t *testing.T, db *dbutil.DB, seckey cipher.SecKey) *visor.Blockchain {
 	pubkey := cipher.PubKeyFromSecKey(seckey)
 	b, err := visor.NewBlockchain(db, pubkey)
@@ -86,42 +61,89 @@ func MakeBlockchain(t *testing.T, db *dbutil.DB, seckey cipher.SecKey) *visor.Bl
 	return b
 }
 
-func MakeAddress() (cipher.PubKey, cipher.SecKey, cipher.Address) {
-	p, s := cipher.GenerateKeyPair()
-	a := cipher.AddressFromPubKey(p)
-	return p, s, a
+// CreateGenesisSpendTransaction creates the initial post-genesis transaction that moves genesis coins to another address
+func CreateGenesisSpendTransaction(t *testing.T, db *dbutil.DB, bc *visor.Blockchain, toAddr cipher.Address, coins, hours, fee uint64) coin.Transaction {
+	var txn coin.Transaction
+	err := db.View(func(tx *dbutil.Tx) error {
+		uxOuts, err := bc.Unspent().GetAll(tx)
+		require.NoError(t, err)
+		require.Len(t, uxOuts, 1)
+
+		txn = makeTransactionForChain(t, tx, bc, uxOuts[0], GenesisSecret, toAddr, coins, hours, fee)
+		require.Equal(t, txn.Out[0].Address.String(), toAddr.String())
+
+		if coins == GenesisCoins {
+			// No change output
+			require.Len(t, txn.Out, 1)
+		} else {
+			require.Len(t, txn.Out, 2)
+			require.Equal(t, txn.Out[1].Address.String(), GenesisAddress.String())
+		}
+
+		return nil
+	})
+	require.NoError(t, err)
+	return txn
 }
 
-func createGenesisSpendTransaction(t *testing.T, bc *visor.Blockchain, toAddr cipher.Address, coins, hours, fee uint64) coin.Transaction {
-	uxOuts, err := bc.Unspent().GetAll()
+func makeTransactionForChain(t *testing.T, tx *dbutil.Tx, bc *visor.Blockchain, ux coin.UxOut, sec cipher.SecKey, toAddr cipher.Address, amt, hours, fee uint64) coin.Transaction {
+	tim, err := bc.Time(tx)
 	require.NoError(t, err)
-	require.Len(t, uxOuts, 1)
 
-	txn := MakeTransactionForChain(t, bc, uxOuts[0], GenesisSecret, toAddr, coins, hours, fee)
-	require.Equal(t, txn.Out[0].Address.String(), toAddr.String())
+	chrs, err := ux.CoinHours(tim)
+	require.NoError(t, err)
 
-	if coins == GenesisCoins {
-		// No change output
-		require.Len(t, txn.Out, 1)
-	} else {
-		require.Len(t, txn.Out, 2)
-		require.Equal(t, txn.Out[1].Address.String(), GenesisAddress.String())
+	require.Equal(t, cipher.AddressFromPubKey(cipher.PubKeyFromSecKey(sec)), ux.Body.Address)
+
+	knownUx, err := bc.Unspent().Get(tx, ux.Hash())
+	require.NoError(t, err)
+	require.NotNil(t, knownUx)
+	require.Equal(t, knownUx, &ux)
+
+	txn := coin.Transaction{}
+	txn.PushInput(ux.Hash())
+
+	txn.PushOutput(toAddr, amt, hours)
+
+	// Change output
+	coinsOut := ux.Body.Coins - amt
+	if coinsOut > 0 {
+		txn.PushOutput(GenesisAddress, coinsOut, chrs-hours-fee)
 	}
+
+	txn.SignInputs([]cipher.SecKey{sec})
+
+	require.Equal(t, len(txn.Sigs), 1)
+
+	err = cipher.ChkSig(ux.Body.Address, cipher.AddSHA256(txn.HashInner(), txn.In[0]), txn.Sigs[0])
+	require.NoError(t, err)
+
+	txn.UpdateHeader()
+
+	err = txn.Verify()
+	require.NoError(t, err)
+
+	err = bc.VerifySingleTxnHardConstraints(tx, txn)
+	require.NoError(t, err)
 
 	return txn
 }
 
-func setupSimpleVisor(db *dbutil.DB, bc *visor.Blockchain) *Visor {
+func setupSimpleVisor(t *testing.T, db *dbutil.DB, bc *visor.Blockchain) *Visor {
 	visorCfg := NewVisorConfig()
 	visorCfg.DisableNetworking = true
 	visorCfg.Config.DBPath = db.Path()
+
+	pool, err := visor.NewUnconfirmedTxnPool(db)
+	require.NoError(t, err)
+
 	return &Visor{
 		Config: visorCfg,
 		v: &visor.Visor{
 			Config:      visorCfg.Config,
-			Unconfirmed: visor.NewUnconfirmedTxnPool(db),
+			Unconfirmed: pool,
 			Blockchain:  bc,
-			db:          db,
+			DB:          db,
 		},
 		reqC: make(chan strand.Request, 10),
 	}
@@ -141,12 +163,12 @@ func TestVerifyTransactionInvalidFee(t *testing.T) {
 	var coins = GenesisCoins
 	var hours = GenesisCoinHours * 1e3
 	var f uint64
-	_, _, addr := MakeAddress()
+	addr := testutil.MakeAddress()
 
-	txn := createGenesisSpendTransaction(t, bc, addr, coins, hours, f)
+	txn := CreateGenesisSpendTransaction(t, db, bc, addr, coins, hours, f)
 
 	// Setup a minimal visor
-	v := setupSimpleVisor(db, bc)
+	v := setupSimpleVisor(t, db, bc)
 	errC := make(chan error)
 	go v.processRequests(errC)
 	defer func() {
@@ -173,15 +195,15 @@ func TestVerifyTransactionInvalidSignature(t *testing.T) {
 	var coins = GenesisCoins
 	var hours uint64
 	var fee uint64
-	_, _, addr := MakeAddress()
+	addr := testutil.MakeAddress()
 
-	txn := createGenesisSpendTransaction(t, bc, addr, coins, hours, fee)
+	txn := CreateGenesisSpendTransaction(t, db, bc, addr, coins, hours, fee)
 
 	// Invalidate signatures
 	txn.Sigs = nil
 
 	// Setup a minimal visor
-	v := setupSimpleVisor(db, bc)
+	v := setupSimpleVisor(t, db, bc)
 	errC := make(chan error)
 	go v.processRequests(errC)
 	defer func() {
@@ -205,12 +227,12 @@ func TestInjectValidTransaction(t *testing.T) {
 	var coins = GenesisCoins
 	var hours uint64
 	var fee uint64
-	_, _, addr := MakeAddress()
+	addr := testutil.MakeAddress()
 
-	txn := createGenesisSpendTransaction(t, bc, addr, coins, hours, fee)
+	txn := CreateGenesisSpendTransaction(t, db, bc, addr, coins, hours, fee)
 
 	// Setup a minimal visor
-	v := setupSimpleVisor(db, bc)
+	v := setupSimpleVisor(t, db, bc)
 	errC := make(chan error)
 	go v.processRequests(errC)
 	defer func() {
@@ -218,7 +240,8 @@ func TestInjectValidTransaction(t *testing.T) {
 	}()
 
 	// The unconfirmed pool should be empty
-	txns := v.v.Unconfirmed.RawTxns()
+	txns, err := v.v.GetAllUnconfirmedTxns()
+	require.NoError(t, err)
 	require.Len(t, txns, 0)
 
 	// Call injectTransaction
@@ -227,9 +250,10 @@ func TestInjectValidTransaction(t *testing.T) {
 	require.NoError(t, err)
 
 	// The transaction should appear in the unconfirmed pool
-	txns = v.v.Unconfirmed.RawTxns()
+	txns, err = v.v.GetAllUnconfirmedTxns()
+	require.NoError(t, err)
 	require.Len(t, txns, 1)
-	require.Equal(t, txns[0], txn)
+	require.Equal(t, txns[0].Txn, txn)
 }
 
 func TestInjectTransactionSoftViolationNoFee(t *testing.T) {
@@ -244,12 +268,12 @@ func TestInjectTransactionSoftViolationNoFee(t *testing.T) {
 	var coins = GenesisCoins
 	var hours = GenesisCoinHours * 1e3
 	var f uint64
-	_, _, addr := MakeAddress()
+	addr := testutil.MakeAddress()
 
-	txn := createGenesisSpendTransaction(t, bc, addr, coins, hours, f)
+	txn := CreateGenesisSpendTransaction(t, db, bc, addr, coins, hours, f)
 
 	// Setup a minimal visor
-	v := setupSimpleVisor(db, bc)
+	v := setupSimpleVisor(t, db, bc)
 	errC := make(chan error)
 	go v.processRequests(errC)
 	defer func() {
@@ -257,7 +281,8 @@ func TestInjectTransactionSoftViolationNoFee(t *testing.T) {
 	}()
 
 	// The unconfirmed pool should be empty
-	txns := v.v.Unconfirmed.RawTxns()
+	txns, err := v.v.GetAllUnconfirmedTxns()
+	require.NoError(t, err)
 	require.Len(t, txns, 0)
 
 	// Call injectTransaction
@@ -267,7 +292,8 @@ func TestInjectTransactionSoftViolationNoFee(t *testing.T) {
 	require.Equal(t, visor.NewErrTxnViolatesSoftConstraint(fee.ErrTxnNoFee), *softErr)
 
 	// The transaction should appear in the unconfirmed pool
-	txns = v.v.Unconfirmed.RawTxns()
+	txns, err = v.v.GetAllUnconfirmedTxns()
+	require.NoError(t, err)
 	require.Len(t, txns, 1)
 }
 

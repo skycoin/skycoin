@@ -9,7 +9,6 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/go-bip39"
-	"github.com/skycoin/skycoin/src/daemon"
 
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -188,7 +187,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 		switch err {
 		case nil:
 		case fee.ErrTxnNoFee,
-			daemon.ErrSpendingUnconfirmed,
+			wallet.ErrSpendingUnconfirmed,
 			wallet.ErrInsufficientBalance,
 			wallet.ErrWalletNotEncrypted,
 			wallet.ErrMissingPassword,

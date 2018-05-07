@@ -78,6 +78,8 @@ type Blockchain struct {
 
 // NewBlockchain creates a new blockchain instance
 func NewBlockchain(db *dbutil.DB, walker Walker) (*Blockchain, error) {
+	logger.Debug("NewBlockchain")
+
 	if db == nil {
 		return nil, errors.New("db is nil")
 	}

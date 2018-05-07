@@ -12,7 +12,7 @@ import (
 
 	cipher "github.com/skycoin/skycoin/src/cipher"
 	coin "github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/visor/dbutil"
+	dbutil "github.com/skycoin/skycoin/src/visor/dbutil"
 	historydb "github.com/skycoin/skycoin/src/visor/historydb"
 )
 
@@ -21,7 +21,7 @@ type historyerMock struct {
 	mock.Mock
 }
 
-func NewHistoryerMock() *historyerMock {
+func newHistoryerMock() *historyerMock {
 	return &historyerMock{}
 }
 

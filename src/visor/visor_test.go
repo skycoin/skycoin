@@ -167,7 +167,7 @@ func TestVisorCreateBlock(t *testing.T) {
 		Config:      cfg,
 		Unconfirmed: unconfirmed,
 		Blockchain:  bc,
-		db:          db,
+		DB:          db,
 	}
 
 	// CreateBlock panics if called when not master
@@ -364,7 +364,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 		Config:      cfg,
 		Unconfirmed: unconfirmed,
 		Blockchain:  bc,
-		db:          db,
+		DB:          db,
 	}
 
 	// CreateBlock panics if called when not master
@@ -1738,7 +1738,7 @@ func TestGetTransactions(t *testing.T) {
 			defer shutdown()
 
 			v := &Visor{
-				db:          db,
+				DB:          db,
 				history:     his,
 				Unconfirmed: uncfmTxPool,
 				Blockchain:  bc,
@@ -1801,7 +1801,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 		Config:      cfg,
 		Unconfirmed: unconfirmed,
 		Blockchain:  bc,
-		db:          db,
+		DB:          db,
 	}
 
 	addGenesisBlock(t, v.Blockchain.(*Blockchain))
@@ -1925,7 +1925,7 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 		Config:      cfg,
 		Unconfirmed: unconfirmed,
 		Blockchain:  bc,
-		db:          db,
+		DB:          db,
 	}
 
 	addGenesisBlock(t, v.Blockchain.(*Blockchain))

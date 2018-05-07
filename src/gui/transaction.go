@@ -23,7 +23,12 @@ func getPendingTxs(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		txns := gateway.GetAllUnconfirmedTxns()
+		txns, err := gateway.GetAllUnconfirmedTxns()
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
+		}
+
 		ret := make([]*visor.ReadableUnconfirmedTxn, 0, len(txns))
 		for _, unconfirmedTxn := range txns {
 			readable, err := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
@@ -207,7 +212,12 @@ func resendUnconfirmedTxns(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		rlt := gateway.ResendUnconfirmedTxns()
+		rlt, err := gateway.ResendUnconfirmedTxns()
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
+		}
+
 		wh.SendJSONOr500(logger, w, rlt)
 		return
 	}

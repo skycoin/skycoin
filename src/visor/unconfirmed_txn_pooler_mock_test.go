@@ -421,9 +421,9 @@ func (m *UnconfirmedTxnPoolerMock) RemoveTransactions(p0 *dbutil.Tx, p1 []cipher
 }
 
 // SetTxnsAnnounced mocked method
-func (m *UnconfirmedTxnPoolerMock) SetTxnsAnnounced(p0 *dbutil.Tx, p1 []cipher.SHA256, p2 int64) error {
+func (m *UnconfirmedTxnPoolerMock) SetTxnsAnnounced(p0 *dbutil.Tx, p1 map[cipher.SHA256]int64) error {
 
-	ret := m.Called(p0, p1, p2)
+	ret := m.Called(p0, p1)
 
 	var r0 error
 	switch res := ret.Get(0).(type) {

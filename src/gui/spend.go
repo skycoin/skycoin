@@ -12,7 +12,6 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
@@ -466,7 +465,7 @@ func createTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 				switch err {
 				case fee.ErrTxnNoFee,
 					fee.ErrTxnInsufficientCoinHours,
-					daemon.ErrSpendingUnconfirmed:
+					wallet.ErrSpendingUnconfirmed:
 					wh.Error400(w, err.Error())
 				default:
 					wh.Error500(w, err.Error())

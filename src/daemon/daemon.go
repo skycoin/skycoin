@@ -8,11 +8,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/boltdb/bolt"
-
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 
 	"github.com/skycoin/skycoin/src/util/elapse"
 	"github.com/skycoin/skycoin/src/util/iputil"
@@ -231,7 +230,7 @@ type Daemon struct {
 }
 
 // NewDaemon returns a Daemon with primitives allocated
-func NewDaemon(config Config, db *bolt.DB, defaultConns []string) (*Daemon, error) {
+func NewDaemon(config Config, db *dbutil.DB, defaultConns []string) (*Daemon, error) {
 	config = config.preprocess()
 	vs, err := NewVisor(config.Visor, db)
 	if err != nil {

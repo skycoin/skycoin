@@ -10,7 +10,7 @@ const (
 	// logDurationThreshold is how long to wait before reporting a function call's time
 	logDurationThreshold = time.Millisecond * 100
 	// writeWait is how long to wait to write to a request channel before logging the delay
-	logQueueRequestWaitThreshold = time.Second * 3
+	logQueueRequestWaitThreshold = time.Second * 1
 )
 
 var (
@@ -96,6 +96,7 @@ func Strand(logger *logging.Logger, c chan Request, name string, f func() error,
 	}
 
 	// Log a message if waiting too long to write due to a full queue
+	t := time.Now()
 loop:
 	for {
 		select {
@@ -104,14 +105,19 @@ loop:
 		case c <- req:
 			break loop
 		case <-time.After(logQueueRequestWaitThreshold):
-			logger.Warningf("Waited %s while trying to write %s to the strand request channel", logQueueRequestWaitThreshold, req.Name)
+			logger.Warningf("Waited %s while trying to write %s to the strand request channel", time.Now().Sub(t), req.Name)
 		}
 	}
 
-	select {
-	case <-quit:
-		return quitErr
-	case <-done:
-		return err
+	t = time.Now()
+	for {
+		select {
+		case <-quit:
+			return quitErr
+		case <-done:
+			return err
+		case <-time.After(logQueueRequestWaitThreshold):
+			logger.Warningf("Waited %s while waiting for %s to be done or quit", time.Now().Sub(t), req.Name)
+		}
 	}
 }

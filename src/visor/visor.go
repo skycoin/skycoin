@@ -1558,90 +1558,96 @@ func (vs *Visor) SetTxnsAnnounced(hashes map[cipher.SHA256]int64) error {
 
 // GetBalanceOfAddrs returns balance pairs of given addreses
 func (vs Visor) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair, error) {
-	var bps []wallet.BalancePair
+	var auxs coin.AddressUxOuts
+	var spendUxs coin.AddressUxOuts
+	var recvUxs coin.AddressUxOuts
+	var head *coin.SignedBlock
 
 	if err := vs.DB.View(func(tx *dbutil.Tx) error {
-		auxs, err := vs.Blockchain.Unspent().GetUnspentsOfAddrs(tx, addrs)
+		var err error
+		auxs, err = vs.Blockchain.Unspent().GetUnspentsOfAddrs(tx, addrs)
 		if err != nil {
 			return fmt.Errorf("GetUnspentsOfAddrs failed when checking addresses balance: %v", err)
 		}
 
-		spendUxs, err := vs.unconfirmedSpendsOfAddresses(tx, addrs)
+		spendUxs, err = vs.unconfirmedSpendsOfAddresses(tx, addrs)
 		if err != nil {
 			return fmt.Errorf("get unconfirmed spending failed when checking addresses balance: %v", err)
 		}
 
-		head, err := vs.Blockchain.Head(tx)
+		head, err = vs.Blockchain.Head(tx)
 		if err != nil {
 			return err
 		}
 
-		recvUxs, err := vs.Unconfirmed.RecvOfAddresses(tx, head.Head, addrs)
+		recvUxs, err = vs.Unconfirmed.RecvOfAddresses(tx, head.Head, addrs)
 		if err != nil {
 			return fmt.Errorf("get unconfirmed receiving failed when checking addresses balance: %v", err)
-		}
-
-		headTime := head.Time()
-		for _, addr := range addrs {
-			uxs, ok := auxs[addr]
-			if !ok {
-				bps = append(bps, wallet.BalancePair{})
-				continue
-			}
-
-			outUxs := spendUxs[addr]
-			inUxs := recvUxs[addr]
-			predictedUxs := uxs.Sub(outUxs).Add(inUxs)
-
-			coins, err := uxs.Coins()
-			if err != nil {
-				return fmt.Errorf("uxs.Coins failed: %v", err)
-			}
-
-			coinHours, err := uxs.CoinHours(headTime)
-			if err != nil {
-				switch err {
-				case coin.ErrAddEarnedCoinHoursAdditionOverflow:
-					coinHours = 0
-					err = nil
-				default:
-					return fmt.Errorf("uxs.CoinHours failed: %v", err)
-				}
-			}
-
-			pcoins, err := predictedUxs.Coins()
-			if err != nil {
-				return fmt.Errorf("predictedUxs.Coins failed: %v", err)
-			}
-
-			pcoinHours, err := predictedUxs.CoinHours(headTime)
-			if err != nil {
-				switch err {
-				case coin.ErrAddEarnedCoinHoursAdditionOverflow:
-					coinHours = 0
-					err = nil
-				default:
-					return fmt.Errorf("predictedUxs.CoinHours failed: %v", err)
-				}
-			}
-
-			bp := wallet.BalancePair{
-				Confirmed: wallet.Balance{
-					Coins: coins,
-					Hours: coinHours,
-				},
-				Predicted: wallet.Balance{
-					Coins: pcoins,
-					Hours: pcoinHours,
-				},
-			}
-
-			bps = append(bps, bp)
 		}
 
 		return nil
 	}); err != nil {
 		return nil, err
+	}
+
+	var bps []wallet.BalancePair
+
+	headTime := head.Time()
+	for _, addr := range addrs {
+		uxs, ok := auxs[addr]
+		if !ok {
+			bps = append(bps, wallet.BalancePair{})
+			continue
+		}
+
+		outUxs := spendUxs[addr]
+		inUxs := recvUxs[addr]
+		predictedUxs := uxs.Sub(outUxs).Add(inUxs)
+
+		coins, err := uxs.Coins()
+		if err != nil {
+			return nil, fmt.Errorf("uxs.Coins failed: %v", err)
+		}
+
+		coinHours, err := uxs.CoinHours(headTime)
+		if err != nil {
+			switch err {
+			case coin.ErrAddEarnedCoinHoursAdditionOverflow:
+				coinHours = 0
+				err = nil
+			default:
+				return nil, fmt.Errorf("uxs.CoinHours failed: %v", err)
+			}
+		}
+
+		pcoins, err := predictedUxs.Coins()
+		if err != nil {
+			return nil, fmt.Errorf("predictedUxs.Coins failed: %v", err)
+		}
+
+		pcoinHours, err := predictedUxs.CoinHours(headTime)
+		if err != nil {
+			switch err {
+			case coin.ErrAddEarnedCoinHoursAdditionOverflow:
+				coinHours = 0
+				err = nil
+			default:
+				return nil, fmt.Errorf("predictedUxs.CoinHours failed: %v", err)
+			}
+		}
+
+		bp := wallet.BalancePair{
+			Confirmed: wallet.Balance{
+				Coins: coins,
+				Hours: coinHours,
+			},
+			Predicted: wallet.Balance{
+				Coins: pcoins,
+				Hours: pcoinHours,
+			},
+		}
+
+		bps = append(bps, bp)
 	}
 
 	return bps, nil

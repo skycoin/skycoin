@@ -59,6 +59,8 @@ func NewGateway(c GatewayConfig, d *Daemon) *Gateway {
 // Shutdown closes the Gateway
 func (gw *Gateway) Shutdown() {
 	close(gw.quit)
+	// wait for strand to complete
+	gw.strand("wait-shutdown", func() {})
 }
 
 func (gw *Gateway) strand(name string, f func()) {

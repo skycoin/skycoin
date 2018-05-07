@@ -11,22 +11,18 @@ import (
 
 	"github.com/boltdb/bolt"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
 // loadBlockchain loads blockchain from DB and if any error occurs then delete
 // the db and create an empty blockchain.
-func loadBlockchain(db *dbutil.DB, pubkey cipher.PubKey, arbitrating bool) (*dbutil.DB, *Blockchain, error) {
+func loadBlockchain(db *dbutil.DB, cfg BlockchainConfig) (*dbutil.DB, *Blockchain, error) {
 	logger.Info("Loading blockchain")
 
 	dbReadOnly := db.IsReadOnly()
 
-	bc, err := NewBlockchain(db, BlockchainConfig{
-		Pubkey:      pubkey,
-		Arbitrating: arbitrating,
-	})
+	bc, err := NewBlockchain(db, cfg)
 	if err == nil {
 		return db, bc, nil
 	}
@@ -57,10 +53,7 @@ func loadBlockchain(db *dbutil.DB, pubkey cipher.PubKey, arbitrating bool) (*dbu
 		return nil, nil, err
 	}
 
-	bc, err = NewBlockchain(db, BlockchainConfig{
-		Pubkey:      pubkey,
-		Arbitrating: arbitrating,
-	})
+	bc, err = NewBlockchain(db, cfg)
 	if err != nil {
 		return nil, nil, err
 	}

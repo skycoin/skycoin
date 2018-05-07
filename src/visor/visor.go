@@ -132,6 +132,9 @@ type Config struct {
 	EnableSeedAPI bool
 	// wallet crypto type
 	WalletCryptoType wallet.CryptoType
+
+	// verify the database integrity after loading
+	VerifyDatabase bool
 }
 
 // NewVisorConfig put cap on block size, not on transactions/block
@@ -158,6 +161,8 @@ func NewVisorConfig() Config {
 		GenesisSignature:  cipher.Sig{},
 		GenesisTimestamp:  0,
 		GenesisCoinVolume: 0, //100e12, 100e6 * 10e6
+
+		VerifyDatabase: true,
 	}
 
 	return c
@@ -254,7 +259,11 @@ func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
 		return nil, err
 	}
 
-	db, bc, err := loadBlockchain(db, c.BlockchainPubkey, c.Arbitrating)
+	db, bc, err := loadBlockchain(db, BlockchainConfig{
+		Pubkey:         c.BlockchainPubkey,
+		Arbitrating:    c.Arbitrating,
+		VerifyDatabase: c.VerifyDatabase,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -322,6 +331,7 @@ func (vs *Visor) Run() error {
 func (vs *Visor) Shutdown() {
 	defer logger.Info("DB and BlockchainParser closed")
 
+	logger.Debug("Closing blockchain parser")
 	vs.bcParser.Shutdown()
 
 	logger.Info("Closing visor bolt DB")

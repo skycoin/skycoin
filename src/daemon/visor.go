@@ -116,6 +116,10 @@ func (vs *Visor) processRequests(errC <-chan error) error {
 // Shutdown shuts down the visor
 func (vs *Visor) Shutdown() {
 	close(vs.quit)
+	// wait for strand to complete
+	vs.strand("wait-shutdown", func() error {
+		return nil
+	})
 	vs.v.Shutdown()
 }
 

@@ -91,8 +91,9 @@ type BlockchainConfig struct {
 	// Arbitrating mode: if in arbitrating mode, when master node execute blocks,
 	// the invalid transaction will be skipped and continue the next; otherwise,
 	// node will throw the error and return.
-	Arbitrating bool
-	Pubkey      cipher.PubKey
+	Arbitrating    bool
+	Pubkey         cipher.PubKey
+	VerifyDatabase bool
 }
 
 // Blockchain maintains blockchain and provides apis for accessing the chain.
@@ -123,11 +124,12 @@ func NewBlockchain(db *dbutil.DB, cfg BlockchainConfig) (*Blockchain, error) {
 		store: chainstore,
 	}
 
-	// verify signature
-	if err := db.View(func(tx *dbutil.Tx) error {
-		return bc.verifySigs(tx, SigVerifyTheadNum)
-	}); err != nil {
-		return nil, err
+	if cfg.VerifyDatabase {
+		if err := db.View(func(tx *dbutil.Tx) error {
+			return bc.verifySigs(tx, SigVerifyTheadNum)
+		}); err != nil {
+			return nil, err
+		}
 	}
 
 	return bc, nil

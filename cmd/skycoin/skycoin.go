@@ -138,6 +138,9 @@ type Config struct {
 	// Disable "Reply to ping", "Received pong" log messages
 	DisablePingPong bool
 
+	// Verify the database integrity after loading
+	VerifyDatabase bool
+
 	// Wallets
 	// Defaults to ${DataDirectory}/wallets/
 	WalletDirectory string
@@ -209,6 +212,8 @@ func (c *Config) register() {
 	flag.BoolVar(&c.DisablePingPong, "no-ping-log", c.DisablePingPong, `disable "reply to ping" and "received pong" debug log messages`)
 	flag.BoolVar(&c.LogToFile, "logtofile", c.LogToFile, "log to file")
 	flag.StringVar(&c.GUIDirectory, "gui-dir", c.GUIDirectory, "static content directory for the html gui")
+
+	flag.BoolVar(&c.VerifyDatabase, "verify-db", c.VerifyDatabase, "verify the database integrity after loading")
 
 	// Key Configuration Data
 	flag.BoolVar(&c.RunMaster, "master", c.RunMaster, "run the daemon as blockchain master server")
@@ -284,6 +289,8 @@ var devConfig = Config{
 	LogLevel:        "INFO",
 	LogToFile:       false,
 	DisablePingPong: false,
+
+	VerifyDatabase: true,
 
 	// Wallets
 	WalletDirectory:  "",
@@ -566,6 +573,7 @@ func configureDaemon(c *Config) daemon.Config {
 		Branch:  Branch,
 	}
 	dc.Visor.Config.EnableSeedAPI = c.EnableSeedAPI
+	dc.Visor.Config.VerifyDatabase = c.VerifyDatabase
 
 	dc.Gateway.EnableWalletAPI = c.EnableWalletAPI
 

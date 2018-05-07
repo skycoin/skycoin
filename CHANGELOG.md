@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add CLI `showSeed` command
 - Add `password` argument to the CLI commands of `addPrivateKey`, `createRawTransaction`, `generateAddresses`, `generateWallet`, `send`
 - Support for decoding map values in cipher binary encoder
-
+- `-verify-db` option (default true) to disable verification of the database integrity during startup
 
 ### Fixed
 

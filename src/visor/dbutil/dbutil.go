@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"runtime/debug"
+	"sync"
 
 	"github.com/boltdb/bolt"
 
@@ -40,10 +41,21 @@ type DB struct {
 	UpdateLog   bool
 	UpdateTrace bool
 	*bolt.DB
+
+	// shutdownLock is added to prevent closing the database while a View transaction is in progress
+	// bolt.DB will block for Update transactions but not for View transactions, and if
+	// the database is closed while in a View transaction, it will panic
+	// This will be fixed in coreos's bbolt after this PR is merged:
+	// https://github.com/coreos/bbolt/pull/91
+	// When coreos has this feature, we can switch to coreos's bbolt and remove this lock
+	shutdownLock sync.RWMutex
 }
 
 // View wraps *bolt.DB.View to add logging
-func (db DB) View(f func(*Tx) error) error {
+func (db *DB) View(f func(*Tx) error) error {
+	db.shutdownLock.RLock()
+	defer db.shutdownLock.RUnlock()
+
 	if db.ViewLog {
 		logger.Debug("db.View starting")
 		defer logger.Debug("db.View done")
@@ -58,7 +70,10 @@ func (db DB) View(f func(*Tx) error) error {
 }
 
 // Update wraps *bolt.DB.Update to add logging
-func (db DB) Update(f func(*Tx) error) error {
+func (db *DB) Update(f func(*Tx) error) error {
+	db.shutdownLock.RLock()
+	defer db.shutdownLock.RUnlock()
+
 	if db.UpdateLog {
 		logger.Debug("db.Update starting")
 		defer logger.Debug("db.Update done")
@@ -69,6 +84,14 @@ func (db DB) Update(f func(*Tx) error) error {
 	return db.DB.Update(func(tx *bolt.Tx) error {
 		return f(&Tx{tx})
 	})
+}
+
+// Close closes the underlying *bolt.DB
+func (db *DB) Close() error {
+	db.shutdownLock.Lock()
+	defer db.shutdownLock.Unlock()
+
+	return db.DB.Close()
 }
 
 // WrapDB returns WrapDB

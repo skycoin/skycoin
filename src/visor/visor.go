@@ -1547,6 +1547,10 @@ func (vs *Visor) unconfirmedSpendsOfAddresses(tx *dbutil.Tx, addrs []cipher.Addr
 
 // SetTxnsAnnounced updates announced time of specific tx
 func (vs *Visor) SetTxnsAnnounced(hashes map[cipher.SHA256]int64) error {
+	if len(hashes) == 0 {
+		return nil
+	}
+
 	return vs.DB.Update(func(tx *dbutil.Tx) error {
 		return vs.Unconfirmed.SetTxnsAnnounced(tx, hashes)
 	})

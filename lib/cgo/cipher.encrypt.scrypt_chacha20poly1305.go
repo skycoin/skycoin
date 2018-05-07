@@ -21,6 +21,11 @@ func SKY_encrypt_ScryptChacha20poly1305_Encrypt(_s *C.encrypt__ScryptChacha20pol
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	if _data == nil || _password == nil {
+		//TODO: Set an error code if data or password are nil
+		____error_code = SKY_ERROR
+		return
+	}
 	s := *(*encrypt.ScryptChacha20poly1305)(unsafe.Pointer(_s))
 	data := *(*[]byte)(unsafe.Pointer(&_data))
 	password := *(*[]byte)(unsafe.Pointer(&_password))
@@ -42,6 +47,11 @@ func SKY_encrypt_ScryptChacha20poly1305_Decrypt(_s *C.encrypt__ScryptChacha20pol
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	if _data == nil || _password == nil {
+		//TODO: Set an error code if data or password are nil
+		____error_code = SKY_ERROR
+		return
+	}
 	s := *(*encrypt.ScryptChacha20poly1305)(unsafe.Pointer(_s))
 	data := *(*[]byte)(unsafe.Pointer(&_data))
 	password := *(*[]byte)(unsafe.Pointer(&_password))

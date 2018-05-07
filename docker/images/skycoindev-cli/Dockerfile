@@ -30,15 +30,30 @@ RUN wget http://prdownloads.sourceforge.net/swig/swig-3.0.12.tar.gz \
     && make && make install \
     && cd ../; rm -r swig-3.0.12*
 
-# Installs 
+# Installs go development tools
 RUN go get -u github.com/derekparker/delve/cmd/dlv  && \
     go get -u github.com/FiloSottile/vendorcheck && \
-    git clone https://github.com/fatih/vim-go /usr/share/vim/vim80/pack/dev/start/vim-go && \
+    go get -u github.com/alecthomas/gometalinter && \
+    go get -u github.com/zmb3/gogetdoc && \
+    go get -u golang.org/x/tools/cmd/guru && \
+    go get -u github.com/golang/lint/golint to folder /g && \
+    go get -u github.com/davidrjenni/reftools/cmd/fillstruct && \
+    go get -u github.com/rogpeppe/godef && \
+    go get -u github.com/fatih/motion && \
+    go get -u github.com/kisielk/errcheck && \
+    go get -u github.com/nsf/gocode && \
+    go get -u github.com/jstemmer/gotags && \
+    go get -u github.com/josharian/impl && \
+    go get -u golang.org/x/tools/cmd/goimports && \
+    go get -u github.com/fatih/gomodifytags && \
+    go get -u github.com/dominikh/go-tools/cmd/keyify
+
+# Install vim-go development tools
+RUN git clone https://github.com/fatih/vim-go /usr/share/vim/vim80/pack/dev/start/vim-go && \
     git clone https://github.com/tpope/vim-fugitive /usr/share/vim/vim80/pack/dev/start/vim-fugitive && \
     git clone https://github.com/Shougo/vimshell.vim /usr/share/vim/vim80/pack/dev/start/0vimshell && \
     git clone https://github.com/Shougo/vimproc.vim /usr/share/vim/vim80/pack/dev/start/0vimproc && \
     cd /usr/share/vim/vim80/pack/dev/start/0vimproc && make && \
-    vim +GoInstallBinaries +qall; echo "Done"
 
 WORKDIR $GOPATH/src/github.com/skycoin/skycoin
 VOLUME $GOPATH/src/

@@ -736,7 +736,11 @@ func (bc *Blockchain) verifySigs(tx *dbutil.Tx, workers int) error {
 				return errStopped
 			}
 		}); err != nil && err != errStopped {
-			logger.Errorf("bc.store.ForEachBlock failed: %v", err)
+			switch err.(type) {
+			case blockdb.ErrMissingSignature:
+			default:
+				logger.Errorf("bc.store.ForEachBlock failed: %v", err)
+			}
 			select {
 			case errC <- err:
 			default:

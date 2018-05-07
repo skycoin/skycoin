@@ -308,20 +308,22 @@ func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
 
 // Run starts the visor
 func (vs *Visor) Run() error {
-	if err := vs.DB.Update(func(tx *dbutil.Tx) error {
-		if err := vs.maybeCreateGenesisBlock(tx); err != nil {
+	if !vs.DB.IsReadOnly() {
+		if err := vs.DB.Update(func(tx *dbutil.Tx) error {
+			if err := vs.maybeCreateGenesisBlock(tx); err != nil {
+				return err
+			}
+
+			removed, err := vs.Unconfirmed.RemoveInvalid(tx, vs.Blockchain)
+			if err != nil {
+				return err
+			}
+			logger.Infof("Removed %d invalid txns from pool", len(removed))
+
+			return nil
+		}); err != nil {
 			return err
 		}
-
-		removed, err := vs.Unconfirmed.RemoveInvalid(tx, vs.Blockchain)
-		if err != nil {
-			return err
-		}
-		logger.Infof("Removed %d invalid txns from pool", len(removed))
-
-		return nil
-	}); err != nil {
-		return err
 	}
 
 	return vs.bcParser.Run()

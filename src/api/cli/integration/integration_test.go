@@ -2036,23 +2036,23 @@ func TestStableCheckDB(t *testing.T) {
 	tt := []struct {
 		name   string
 		dbPath string
-		result []byte
-		errMsg []byte
+		result string
+		errMsg string
 	}{
 		{
 			name:   "no signature",
 			dbPath: "../../../visor/testdata/data.db.nosig",
-			errMsg: []byte("checkdb failed: find no signature of block: seq=1000\n"),
+			errMsg: "checkdb failed: Signature not found for block seq=1000 hash=71852c1a8ab5e470bd14e5fce8e1116697151181a188d4262b545542fb3d526c\n",
 		},
 		{
 			name:   "invalid database",
 			dbPath: "../../../visor/testdata/data.db.garbage",
-			errMsg: []byte("open db failed: invalid database\n"),
+			errMsg: "open db failed: invalid database\n",
 		},
 		{
 			name:   "valid database",
 			dbPath: "../../../gui/integration/test-fixtures/blockchain-180.db",
-			result: []byte("check db success\n"),
+			result: "check db success\n",
 		},
 	}
 
@@ -2061,11 +2061,11 @@ func TestStableCheckDB(t *testing.T) {
 			output, err := exec.Command(binaryPath, "checkdb", tc.dbPath).CombinedOutput()
 			if err != nil {
 				fmt.Println(string(output))
-				require.Equal(t, tc.errMsg, output)
+				require.Equal(t, tc.errMsg, string(output))
 				return
 			}
 			require.NoError(t, err)
-			require.Equal(t, tc.result, output)
+			require.Equal(t, tc.result, string(output))
 		})
 	}
 }

@@ -331,6 +331,7 @@ func (dm *Daemon) Run() error {
 	go func() {
 		defer wg.Done()
 		if err := dm.Visor.Run(); err != nil {
+			logger.WithError(err).Error("daemon.Visor.Run failed")
 			errC <- err
 		}
 	}()
@@ -339,6 +340,7 @@ func (dm *Daemon) Run() error {
 	go func() {
 		defer wg.Done()
 		if err := dm.Pex.Run(); err != nil {
+			logger.WithError(err).Error("daemon.Pex.Run failed")
 			errC <- err
 		}
 	}()
@@ -348,10 +350,12 @@ func (dm *Daemon) Run() error {
 		defer wg.Done()
 		if dm.Config.DisableIncomingConnections {
 			if err := dm.Pool.RunOffline(); err != nil {
+				logger.WithError(err).Error("daemon.Pool.RunOffline failed")
 				errC <- err
 			}
 		} else {
 			if err := dm.Pool.Run(); err != nil {
+				logger.WithError(err).Error("daemon.Pool.Run failed")
 				errC <- err
 			}
 		}

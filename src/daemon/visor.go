@@ -94,7 +94,11 @@ func (vs *Visor) Run() error {
 	defer logger.Info("Visor closed")
 	errC := make(chan error, 1)
 	go func() {
-		errC <- vs.v.Run()
+		err := vs.v.Run()
+		if err != nil {
+			logger.WithError(err).Error("visor.Visor.Run failed")
+		}
+		errC <- err
 	}()
 
 	return vs.processRequests(errC)

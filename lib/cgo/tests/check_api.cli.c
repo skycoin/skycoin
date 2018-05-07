@@ -13,7 +13,7 @@
 
 #define SKYCOIN_COIN_ENV_VAR "COIN"
 #define SKYCOIN_COIN_FOO "foocoin"
-#define SKYCOIN_RPC_SAMPLE "111.22.33.44:5555"
+#define SKYCOIN_RPC_SAMPLE "http://111.22.33.44:5555"
 #define SKYCOIN_RPC_ENV_VAR "RPC_ADDR"
 #define SKYCOIN_WALLET_DIR_ENV_VAR "WALLET_DIR"
 #define SKYCOIN_WALLET_NAME_ENV_VAR "WALLET_NAME"
@@ -44,7 +44,7 @@ Test(api_cli, TestLoadConfig) {
 	
 	GoString strEnvRPCSample = {
 		SKYCOIN_RPC_SAMPLE,
-		17
+		24
 	};
 	
 	GoString strWalletDirVar = {

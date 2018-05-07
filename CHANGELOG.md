@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Reduce connection disconnects, improves syncing
 - Fix #1171, update CLI to support wallet encryption
+- Use bolt.Tx correctly for read operations
 
 ### Changed
 

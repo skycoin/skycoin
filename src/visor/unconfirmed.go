@@ -305,7 +305,7 @@ func (utp *UnconfirmedTxnPool) InjectTransaction(tx *bolt.Tx, bc Blockchainer, t
 
 	known, err := utp.txns.hasKey(tx, hash)
 	if err != nil {
-		logger.Debugf("InjectTransaction check txn exists failed: %v", err)
+		logger.Errorf("InjectTransaction check txn exists failed: %v", err)
 		return false, nil, err
 	}
 
@@ -318,7 +318,7 @@ func (utp *UnconfirmedTxnPool) InjectTransaction(tx *bolt.Tx, bc Blockchainer, t
 			utxn.IsValid = isValid
 			return nil
 		}); err != nil {
-			logger.Debugf("InjectTransaction update known txn failed: %v", err)
+			logger.Errorf("InjectTransaction update known txn failed: %v", err)
 			return false, nil, err
 		}
 
@@ -330,19 +330,19 @@ func (utp *UnconfirmedTxnPool) InjectTransaction(tx *bolt.Tx, bc Blockchainer, t
 
 	// add txn to index
 	if err := utp.txns.put(tx, &utx); err != nil {
-		logger.Debugf("InjectTransaction put new unconfirmed txn failed: %v", err)
+		logger.Errorf("InjectTransaction put new unconfirmed txn failed: %v", err)
 		return false, nil, err
 	}
 
 	head, err := bc.Head(tx)
 	if err != nil {
-		logger.Debugf("InjectTransaction bc.Head() failed: %v", err)
+		logger.Errorf("InjectTransaction bc.Head() failed: %v", err)
 		return false, nil, err
 	}
 
 	// update unconfirmed unspent
 	if err := utp.unspent.put(tx, hash, coin.CreateUnspents(head.Head, txn)); err != nil {
-		logger.Debugf("InjectTransaction put new unspent outputs: %v", err)
+		logger.Errorf("InjectTransaction put new unspent outputs: %v", err)
 		return false, nil, err
 	}
 
@@ -537,7 +537,7 @@ func (utp *UnconfirmedTxnPool) GetTxns(tx *bolt.Tx, filter func(UnconfirmedTxn) 
 		}
 		return nil
 	}); err != nil {
-		logger.Debugf("GetTxns error: %v", err)
+		logger.Errorf("GetTxns error: %v", err)
 		return nil, err
 	}
 
@@ -554,7 +554,7 @@ func (utp *UnconfirmedTxnPool) GetTxHashes(tx *bolt.Tx, filter func(UnconfirmedT
 		}
 		return nil
 	}); err != nil {
-		logger.Debugf("GetTxHashes error: %v", err)
+		logger.Errorf("GetTxHashes error: %v", err)
 		return nil, err
 	}
 

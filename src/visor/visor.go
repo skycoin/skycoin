@@ -1033,16 +1033,11 @@ func accumulateAddressInFilter(afs []addrsFilter) []cipher.Address {
 // getTransactionsOfAddrs returns all addresses related transactions.
 // Including both confirmed and unconfirmed transactions.
 func (vs *Visor) getTransactionsOfAddrs(tx *bolt.Tx, addrs []cipher.Address) (map[cipher.Address][]Transaction, error) {
-	logger.Debug("getTransactionsOfAddrs")
 	// Initialize the address transactions map
 	addrTxs := make(map[cipher.Address][]Transaction)
 
-	logger.Debug("getTransactionsOfAddrs before HeadSeq")
-
 	// Get the head block seq, for calculating the tx status
 	headBkSeq, ok, err := vs.Blockchain.HeadSeq(tx)
-
-	logger.Debug("getTransactionsOfAddrs HeadSeq results", headBkSeq, ok, err)
 
 	if err != nil {
 		return nil, err
@@ -1051,16 +1046,12 @@ func (vs *Visor) getTransactionsOfAddrs(tx *bolt.Tx, addrs []cipher.Address) (ma
 		return nil, errors.New("No head block seq")
 	}
 
-	logger.Debug("getTransactionsOfAddrs got HeadSeq")
-
 	for _, a := range addrs {
 		var txns []Transaction
 		addrTxns, err := vs.history.GetAddrTxns(tx, a)
 		if err != nil {
 			return nil, err
 		}
-
-		logger.Debug("getTransactionsOfAddrs history.GetAddrTxns")
 
 		for _, txn := range addrTxns {
 			if headBkSeq < txn.BlockSeq {
@@ -1077,8 +1068,6 @@ func (vs *Visor) getTransactionsOfAddrs(tx *bolt.Tx, addrs []cipher.Address) (ma
 			if err != nil {
 				return nil, err
 			}
-
-			logger.Debug("getTransactionsOfAddrs Blockchain.GetSignedBlockBySeq")
 
 			if bk == nil {
 				return nil, fmt.Errorf("block of seq: %d doesn't exist", txn.BlockSeq)
@@ -1097,15 +1086,11 @@ func (vs *Visor) getTransactionsOfAddrs(tx *bolt.Tx, addrs []cipher.Address) (ma
 			return nil, err
 		}
 
-		logger.Debug("getTransactionsOfAddrs Unconfirmed.GetUnspentsOfAddr")
-
 		for _, ux := range uxs {
 			txn, err := vs.Unconfirmed.Get(tx, ux.Body.SrcTransaction)
 			if err != nil {
 				return nil, err
 			}
-
-			logger.Debug("getTransactionsOfAddrs Unconfirmed.Get")
 
 			if txn == nil {
 				logger.Critical().Error("Unconfirmed unspent missing unconfirmed txn")

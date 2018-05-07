@@ -18,6 +18,19 @@ import (
 */
 import "C"
 
+func SKY_wallet_CreateOptionsHandle(coin string, label string, seed string, encrypt bool, pwd string, cryptoType string, scanN uint64, _opts *C.Options__Handle) uint32 {
+	var walletOptions wallet.Options
+	walletOptions.Coin = (wallet.CoinType)(coin)
+	walletOptions.Label = label
+	walletOptions.Seed = seed
+	walletOptions.Encrypt = encrypt
+	walletOptions.Password = []byte(pwd)
+	walletOptions.CryptoType = (wallet.CryptoType)(cryptoType)
+	walletOptions.ScanN = scanN
+	*_opts = registerOptionsHandle(&walletOptions)
+	return SKY_OK
+}
+
 //export SKY_wallet_NewWallet
 func SKY_wallet_NewWallet(_wltName string, _opts *C.Options__Handle, _arg2 *C.Wallet__Handle) (____error_code uint32) {
 	____error_code = 0

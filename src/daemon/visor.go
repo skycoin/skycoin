@@ -68,6 +68,7 @@ type Visor struct {
 	// all request will go through this channel, to keep writing and reading member variable thread safe.
 	reqC chan strand.Request
 	quit chan struct{}
+	done chan struct{}
 }
 
 // NewVisor creates visor instance
@@ -77,6 +78,7 @@ func NewVisor(c VisorConfig, db *dbutil.DB) (*Visor, error) {
 		blockchainHeights: make(map[string]uint64),
 		reqC:              make(chan strand.Request, c.RequestBufferSize),
 		quit:              make(chan struct{}),
+		done:              make(chan struct{}),
 	}
 
 	v, err := visor.NewVisor(c.Config, db)
@@ -92,23 +94,16 @@ func NewVisor(c VisorConfig, db *dbutil.DB) (*Visor, error) {
 // Run starts the visor
 func (vs *Visor) Run() error {
 	defer logger.Info("Visor closed")
-	errC := make(chan error, 1)
-	go func() {
-		err := vs.v.Run()
-		if err != nil {
-			logger.WithError(err).Error("visor.Visor.Run failed")
-		}
-		errC <- err
-	}()
-
-	return vs.processRequests(errC)
+	defer close(vs.done)
+	vs.processRequests()
+	return nil
 }
 
-func (vs *Visor) processRequests(errC <-chan error) error {
+func (vs *Visor) processRequests() {
 	for {
 		select {
-		case err := <-errC:
-			return err
+		case <-vs.quit:
+			return
 		case req := <-vs.reqC:
 			if err := req.Func(); err != nil {
 				logger.Errorf("Visor request func failed: %v", err)
@@ -124,7 +119,7 @@ func (vs *Visor) Shutdown() {
 	vs.strand("wait-shutdown", func() error {
 		return nil
 	})
-	vs.v.Shutdown()
+	<-vs.done
 }
 
 func (vs *Visor) strand(name string, f func() error) error {

@@ -11,54 +11,62 @@ import (
 
 	"github.com/boltdb/bolt"
 
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
-// loadBlockchain loads blockchain from DB and if any error occurs then delete
+var (
+	// SigVerifyTheadNum number of goroutines to use for signature verification
+	SigVerifyTheadNum = 4
+)
+
+// CheckAndRepairDatabase loads blockchain from DB and if any error occurs then delete
 // the db and create an empty blockchain.
-func loadBlockchain(db *dbutil.DB, cfg BlockchainConfig) (*dbutil.DB, *Blockchain, error) {
+func CheckAndRepairDatabase(db *dbutil.DB, pubkey cipher.PubKey) (*dbutil.DB, error) {
 	logger.Info("Loading blockchain")
 
+	bc, err := NewBlockchain(db, BlockchainConfig{
+		Pubkey: pubkey,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = db.View(func(tx *dbutil.Tx) error {
+		return bc.VerifySignatures(tx, SigVerifyTheadNum)
+	})
+	if err != nil {
+		switch err.(type) {
+		case blockdb.ErrMissingSignature:
+			// Recreate the block database if ErrMissingSignature occurs
+			logger.Critical().Errorf("Block database signature missing, recreating db: %v", err)
+			return handleCorruptedDB(db)
+		default:
+			return nil, err
+		}
+	}
+
+	return db, nil
+}
+
+// handleCorruptedDB recreates the DB, making a backup copy marked as corrupted
+func handleCorruptedDB(db *dbutil.DB) (*dbutil.DB, error) {
 	dbReadOnly := db.IsReadOnly()
-
-	bc, err := NewBlockchain(db, cfg)
-	if err == nil {
-		return db, bc, nil
-	}
-
-	switch err.(type) {
-	case blockdb.ErrMissingSignature:
-	default:
-		return nil, nil, err
-	}
-
-	// Recreate the block database if ErrMissingSignature occurs
 	dbPath := db.Path()
 
-	logger.Critical().Errorf("Block database signature missing, recreating db: %v", err)
 	if err := db.Close(); err != nil {
-		return nil, nil, fmt.Errorf("failed to close db: %v", err)
+		return nil, fmt.Errorf("Failed to close db: %v", err)
 	}
 
 	corruptDBPath, err := moveCorruptDB(dbPath)
 	if err != nil {
-		return nil, nil, fmt.Errorf("Failed to copy corrupted db: %v", err)
+		return nil, fmt.Errorf("Failed to copy corrupted db: %v", err)
 	}
 
 	logger.Critical().Errorf("Moved corrupted db to %s", corruptDBPath)
 
-	db, err = OpenDB(dbPath, dbReadOnly)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	bc, err = NewBlockchain(db, cfg)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return db, bc, nil
+	return OpenDB(dbPath, dbReadOnly)
 }
 
 // OpenDB opens the blockdb

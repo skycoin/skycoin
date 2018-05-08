@@ -18,9 +18,6 @@ const (
 	DebugLevel1 = true
 	// DebugLevel2 enable checks for impossible conditions
 	DebugLevel2 = true
-
-	// SigVerifyTheadNum  signature verifycation goroutine number
-	SigVerifyTheadNum = 4
 )
 
 //Warning: 10e6 is 10 million, 1e6 is 1 million
@@ -57,9 +54,6 @@ type chainStore interface {
 	ForEachSignature(*dbutil.Tx, func(cipher.SHA256, cipher.Sig) error) error
 }
 
-// BlockListener notify the register when new block is appended to the chain
-type BlockListener func(b coin.Block)
-
 // DefaultWalker default blockchain walker
 func DefaultWalker(tx *dbutil.Tx, hps []coin.HashPair) (cipher.SHA256, bool) {
 	if len(hps) == 0 {
@@ -91,48 +85,29 @@ type BlockchainConfig struct {
 	// Arbitrating mode: if in arbitrating mode, when master node execute blocks,
 	// the invalid transaction will be skipped and continue the next; otherwise,
 	// node will throw the error and return.
-	Arbitrating    bool
-	Pubkey         cipher.PubKey
-	VerifyDatabase bool
+	Arbitrating bool
+	Pubkey      cipher.PubKey
 }
 
 // Blockchain maintains blockchain and provides apis for accessing the chain.
 type Blockchain struct {
-	db          *dbutil.DB
-	blkListener []BlockListener
-	cfg         BlockchainConfig
-	store       chainStore
+	db    *dbutil.DB
+	cfg   BlockchainConfig
+	store chainStore
 }
 
-// NewBlockchain use the walker go through the tree and update the head and unspent outputs.
+// NewBlockchain creates a Blockchain
 func NewBlockchain(db *dbutil.DB, cfg BlockchainConfig) (*Blockchain, error) {
-	if !db.IsReadOnly() {
-		if err := CreateBuckets(db); err != nil {
-			logger.WithError(err).Error("CreateBuckets failed")
-			return nil, err
-		}
-	}
-
 	chainstore, err := blockdb.NewBlockchain(db, DefaultWalker)
 	if err != nil {
 		return nil, err
 	}
 
-	bc := &Blockchain{
+	return &Blockchain{
 		cfg:   cfg,
 		db:    db,
 		store: chainstore,
-	}
-
-	if cfg.VerifyDatabase {
-		if err := db.View(func(tx *dbutil.Tx) error {
-			return bc.verifySigs(tx, SigVerifyTheadNum)
-		}); err != nil {
-			return nil, err
-		}
-	}
-
-	return bc, nil
+	}, nil
 }
 
 // GetGenesisBlock returns genesis block
@@ -669,9 +644,9 @@ type sigHash struct {
 	hash cipher.SHA256
 }
 
-// verifySigs checks that BlockSigs state correspond with coin.Blockchain state
+// VerifySignatures checks that BlockSigs state correspond with coin.Blockchain state
 // and that all signatures are valid.
-func (bc *Blockchain) verifySigs(tx *dbutil.Tx, workers int) error {
+func (bc *Blockchain) VerifySignatures(tx *dbutil.Tx, workers int) error {
 	if length, err := bc.Len(tx); err != nil {
 		return err
 	} else if length == 0 {
@@ -791,16 +766,4 @@ func (bc Blockchain) verifyBlockHeader(tx *dbutil.Tx, b coin.Block) error {
 		return errors.New("Computed body hash does not match")
 	}
 	return nil
-}
-
-// BindListener register the listener to blockchain, when new block appended, the listener will be invoked.
-func (bc *Blockchain) BindListener(ls BlockListener) {
-	bc.blkListener = append(bc.blkListener, ls)
-}
-
-// Notify notifies the listener the new block.
-func (bc *Blockchain) Notify(b coin.Block) {
-	for _, l := range bc.blkListener {
-		l(b)
-	}
 }

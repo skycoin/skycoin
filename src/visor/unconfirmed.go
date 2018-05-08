@@ -481,10 +481,10 @@ func (utp *UnconfirmedTxnPool) RecvOfAddresses(tx *dbutil.Tx, bh coin.BlockHeade
 	}
 
 	auxs := make(coin.AddressUxOuts, len(addrs))
-	if err := utp.txns.forEach(tx, func(_ cipher.SHA256, tx UnconfirmedTxn) error {
-		for i, o := range tx.Txn.Out {
+	if err := utp.txns.forEach(tx, func(_ cipher.SHA256, txn UnconfirmedTxn) error {
+		for i, o := range txn.Txn.Out {
 			if _, ok := addrm[o.Address]; ok {
-				uxout, err := coin.CreateUnspent(bh, tx.Txn, i)
+				uxout, err := coin.CreateUnspent(bh, txn.Txn, i)
 				if err != nil {
 					return err
 				}
@@ -495,6 +495,31 @@ func (utp *UnconfirmedTxnPool) RecvOfAddresses(tx *dbutil.Tx, bh coin.BlockHeade
 		return nil
 	}); err != nil {
 		return nil, err
+	}
+
+	return auxs, nil
+}
+
+// txnOutputsForAddrs returns unspent outputs assigned to addresses in addrs, created by a set of transactions
+func txnOutputsForAddrs(bh coin.BlockHeader, addrs []cipher.Address, txns []coin.Transaction) (coin.AddressUxOuts, error) {
+	addrm := make(map[cipher.Address]struct{}, len(addrs))
+	for _, addr := range addrs {
+		addrm[addr] = struct{}{}
+	}
+
+	auxs := make(coin.AddressUxOuts, len(addrs))
+
+	for _, txn := range txns {
+		for i, o := range txn.Out {
+			if _, ok := addrm[o.Address]; ok {
+				uxout, err := coin.CreateUnspent(bh, txn, i)
+				if err != nil {
+					return nil, err
+				}
+
+				auxs[o.Address] = append(auxs[o.Address], uxout)
+			}
+		}
 	}
 
 	return auxs, nil

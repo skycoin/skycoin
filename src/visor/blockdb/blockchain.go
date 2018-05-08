@@ -66,8 +66,8 @@ type UnspentPool interface {
 	GetArray(*dbutil.Tx, []cipher.SHA256) (coin.UxArray, error)
 	GetUxHash(*dbutil.Tx) (cipher.SHA256, error)
 	GetUnspentsOfAddrs(*dbutil.Tx, []cipher.Address) (coin.AddressUxOuts, error)
+	GetUnspentsOfAddrsAndHashes(tx *dbutil.Tx, addrs []cipher.Address, hashes []cipher.SHA256) (coin.AddressUxOuts, coin.UxArray, error)
 	ProcessBlock(*dbutil.Tx, *coin.SignedBlock) error
-	// GetForTransactionInputs(*dbutil.Tx, coin.Transactions) (coin.TransactionUnspents, error)
 }
 
 // ChainMeta blockchain metadata

@@ -34,13 +34,6 @@ func (e ErrUnspentNotExist) Error() string {
 	return fmt.Sprintf("unspent output of %s does not exist", e.UxID)
 }
 
-// UnspentGetter provides unspent pool related querying methods
-type UnspentGetter interface {
-	// GetUnspentsOfAddrs returns all unspent outputs of given addresses
-	GetUnspentsOfAddrs(*dbutil.Tx, []cipher.Address) coin.AddressUxOuts
-	Get(*dbutil.Tx, cipher.SHA256) (coin.UxOut, bool)
-}
-
 type unspentMeta struct{}
 
 func (m unspentMeta) getXorHash(tx *dbutil.Tx) (cipher.SHA256, error) {
@@ -208,8 +201,7 @@ func (up *Unspents) Contains(tx *dbutil.Tx, h cipher.SHA256) (bool, error) {
 	return dbutil.BucketHasKey(tx, UnspentPoolBkt, h[:])
 }
 
-// GetUnspentsOfAddrs returns unspent outputs map of given addresses,
-// the address as return map key, unspent outputs as value.
+// GetUnspentsOfAddrs returns a map of addresses to their unspent outputs
 func (up *Unspents) GetUnspentsOfAddrs(tx *dbutil.Tx, addrs []cipher.Address) (coin.AddressUxOuts, error) {
 	addrm := make(map[cipher.Address]struct{}, len(addrs))
 	for _, a := range addrs {
@@ -235,6 +227,57 @@ func (up *Unspents) GetUnspentsOfAddrs(tx *dbutil.Tx, addrs []cipher.Address) (c
 	}
 
 	return addrUxs, nil
+}
+
+// GetUnspentsOfAddrsAndHashes returns a map of addresses to their unspent outputs,
+// and an array of unspent outputs for a given array of hashes.
+// This is a combination of GetUnspentsOfAddrs and GetArray, optimized to be in a single iteration over the bucket.
+func (up *Unspents) GetUnspentsOfAddrsAndHashes(tx *dbutil.Tx, addrs []cipher.Address, hashes []cipher.SHA256) (coin.AddressUxOuts, coin.UxArray, error) {
+	addrm := make(map[cipher.Address]struct{}, len(addrs))
+	for _, a := range addrs {
+		addrm[a] = struct{}{}
+	}
+
+	hashm := make(map[cipher.SHA256]struct{}, len(hashes))
+	for _, h := range hashes {
+		hashm[h] = struct{}{}
+	}
+
+	addrUxs := make(coin.AddressUxOuts, len(addrs))
+	uxa := make(coin.UxArray, 0, len(hashes))
+
+	if err := dbutil.ForEach(tx, UnspentPoolBkt, func(k, v []byte) error {
+		h, err := cipher.SHA256FromBytes(k)
+		if err != nil {
+			return err
+		}
+
+		var ux coin.UxOut
+		if err := encoder.DeserializeRaw(v, &ux); err != nil {
+			return err
+		}
+
+		if _, ok := hashm[h]; ok {
+			uxa = append(uxa, ux)
+			delete(hashm, h)
+		}
+
+		addr := ux.Body.Address
+		if _, ok := addrm[addr]; ok {
+			addrUxs[addr] = append(addrUxs[addr], ux)
+		}
+
+		return nil
+	}); err != nil {
+		return nil, nil, err
+	}
+
+	// If there are any hashes not found in the pool, fail
+	for h := range hashm {
+		return nil, nil, NewErrUnspentNotExist(h.Hex())
+	}
+
+	return addrUxs, uxa, nil
 }
 
 // GetUxHash returns unspent output checksum for the Block.

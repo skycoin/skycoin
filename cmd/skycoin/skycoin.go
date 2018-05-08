@@ -573,7 +573,6 @@ func configureDaemon(c *Config) daemon.Config {
 		Branch:  Branch,
 	}
 	dc.Visor.Config.EnableSeedAPI = c.EnableSeedAPI
-	dc.Visor.Config.VerifyDatabase = c.VerifyDatabase
 
 	dc.Gateway.EnableWalletAPI = c.EnableWalletAPI
 
@@ -665,6 +664,15 @@ func Run(c *Config) {
 	if err != nil {
 		logger.Errorf("Database failed to open: %v. Is another skycoin instance running?", err)
 		return
+	}
+
+	// Check the database integrity and recreate it if necessary
+	if c.VerifyDatabase {
+		db, err = visor.CheckAndRepairDatabase(db, c.BlockchainPubkey)
+		if err != nil {
+			logger.Errorf("visor.CheckAndRepairDatabase failed: %v", err)
+			return
+		}
 	}
 
 	d, err := daemon.NewDaemon(dconf, db, DefaultConnections)
@@ -761,11 +769,22 @@ func Run(c *Config) {
 	}
 
 	logger.Info("Shutting down...")
+
 	if webInterface != nil {
+		logger.Info("Closing web interface")
 		webInterface.Shutdown()
 	}
+
+	logger.Info("Closing daemon")
 	d.Shutdown()
+
+	logger.Info("Waiting for goroutines to finish")
 	wg.Wait()
+
+	logger.Info("Closing database")
+	if err := db.Close(); err != nil {
+		logger.WithError(err).Error("Failed to close DB")
+	}
 
 	logger.Info("Goodbye")
 

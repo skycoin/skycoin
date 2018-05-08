@@ -43,45 +43,46 @@ func New() *HistoryDB {
 	}
 }
 
-// ResetIfNeed checks if need to reset the parsed block history,
+// NeedsReset checks if need to reset the parsed block history,
 // If we have a new added bucket, we need to reset to parse
 // blockchain again to get the new bucket filled.
-func (hd *HistoryDB) ResetIfNeed(tx *dbutil.Tx) error {
-	if height, err := hd.historyMeta.ParsedHeight(tx); err != nil {
-		return err
-	} else if height == 0 {
-		return nil
+func (hd *HistoryDB) NeedsReset(tx *dbutil.Tx) (bool, error) {
+	if height, ok, err := hd.historyMeta.ParsedHeight(tx); err != nil {
+		return false, err
+	} else if !ok || height == 0 {
+		return true, nil
 	}
 
 	// if any of the following buckets are empty, need to reset
 	addrTxnsEmpty, err := hd.addrTxns.IsEmpty(tx)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	addrUxEmpty, err := hd.addrUx.IsEmpty(tx)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	txnsEmpty, err := hd.txns.IsEmpty(tx)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	outputsEmpty, err := hd.outputs.IsEmpty(tx)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	if addrTxnsEmpty || addrUxEmpty || txnsEmpty || outputsEmpty {
-		return hd.reset(tx)
+		return true, nil
 	}
 
-	return nil
+	return false, nil
 }
 
-func (hd *HistoryDB) reset(tx *dbutil.Tx) error {
+// Erase erases the entire HistoryDB
+func (hd *HistoryDB) Erase(tx *dbutil.Tx) error {
 	logger.Debug("HistoryDB.reset")
 	if err := hd.addrTxns.Reset(tx); err != nil {
 		return err
@@ -102,18 +103,13 @@ func (hd *HistoryDB) reset(tx *dbutil.Tx) error {
 	return hd.txns.Reset(tx)
 }
 
-// GetUxout get UxOut of specific uxID.
-func (hd *HistoryDB) GetUxout(tx *dbutil.Tx, uxID cipher.SHA256) (*UxOut, error) {
+// GetUxOut get UxOut of specific uxID.
+func (hd *HistoryDB) GetUxOut(tx *dbutil.Tx, uxID cipher.SHA256) (*UxOut, error) {
 	return hd.outputs.Get(tx, uxID)
 }
 
 // ParseBlock will index the transaction, outputs,etc.
-func (hd *HistoryDB) ParseBlock(tx *dbutil.Tx, b *coin.Block) error {
-	if b == nil {
-		return errors.New("process nil block")
-	}
-
-	// all updates will rollback if return error is not nil
+func (hd *HistoryDB) ParseBlock(tx *dbutil.Tx, b coin.Block) error {
 	for _, t := range b.Body.Transactions {
 		txn := Transaction{
 			Tx:       t,
@@ -124,32 +120,35 @@ func (hd *HistoryDB) ParseBlock(tx *dbutil.Tx, b *coin.Block) error {
 			return err
 		}
 
-		// handle tx in, genesis transaction's vin is empty, so should be ignored.
-		if b.Seq() > 0 {
-			for _, in := range t.In {
-				o, err := hd.outputs.Get(tx, in)
-				if err != nil {
-					return err
-				}
+		for _, in := range t.In {
+			o, err := hd.outputs.Get(tx, in)
+			if err != nil {
+				return err
+			}
 
-				// update output's spent block seq and txid.
-				o.SpentBlockSeq = b.Seq()
-				o.SpentTxID = t.Hash()
-				if err := hd.outputs.Set(tx, *o); err != nil {
-					return err
-				}
+			if o == nil {
+				return errors.New("HistoryDB.ParseBlock: transaction input not found in outputs bucket")
+			}
 
-				// store the IN address with txid
-				if err := hd.addrTxns.Add(tx, o.Out.Body.Address, t.Hash()); err != nil {
-					return err
-				}
+			// update the output's spent block seq and txid
+			o.SpentBlockSeq = b.Seq()
+			o.SpentTxID = t.Hash()
+			if err := hd.outputs.Set(tx, *o); err != nil {
+				return err
+			}
+
+			// store the IN address with txid
+			if err := hd.addrTxns.Add(tx, o.Out.Body.Address, t.Hash()); err != nil {
+				return err
 			}
 		}
 
 		// handle the tx out
 		uxArray := coin.CreateUnspents(b.Head, t)
 		for _, ux := range uxArray {
-			if err := hd.outputs.Set(tx, UxOut{Out: ux}); err != nil {
+			if err := hd.outputs.Set(tx, UxOut{
+				Out: ux,
+			}); err != nil {
 				return err
 			}
 

@@ -13,16 +13,16 @@ var (
 // historyMeta bucket for storing block history meta info
 type historyMeta struct{}
 
-// Height returns history parsed height, if no block was parsed, return -1.
-func (hm *historyMeta) ParsedHeight(tx *dbutil.Tx) (int64, error) {
+// Height returns history parsed height
+func (hm *historyMeta) ParsedHeight(tx *dbutil.Tx) (uint64, bool, error) {
 	v, err := dbutil.GetBucketValue(tx, HistoryMetaBkt, parsedHeightKey)
 	if err != nil {
-		return 0, err
+		return 0, false, err
 	} else if v == nil {
-		return -1, nil
+		return 0, false, nil
 	}
 
-	return int64(dbutil.Btoi(v)), nil
+	return dbutil.Btoi(v), true, nil
 }
 
 // SetParsedHeight updates history parsed height

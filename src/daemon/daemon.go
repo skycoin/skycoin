@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"reflect"
-	"runtime/debug"
 	"sync"
 	"time"
 
@@ -224,7 +223,9 @@ type Daemon struct {
 	// Cache of announced transactions that are flushed to the database periodically
 	announcedTxns *announcedTxnsCache
 	// quit channel
-	quitC chan struct{}
+	quit chan struct{}
+	// done channel
+	done chan struct{}
 	// log buffer
 	LogBuff bytes.Buffer
 }
@@ -264,7 +265,8 @@ func NewDaemon(config Config, db *dbutil.DB, defaultConns []string) (*Daemon, er
 		pendingConnections:  NewPendingConnections(config.Daemon.PendingMax),
 		messageEvents:       make(chan MessageEvent, config.Pool.EventChannelSize),
 		announcedTxns:       newAnnouncedTxnsCache(),
-		quitC:               make(chan struct{}),
+		quit:                make(chan struct{}),
+		done:                make(chan struct{}),
 	}
 
 	d.Gateway = NewGateway(config.Gateway, d)
@@ -302,29 +304,41 @@ type MessageEvent struct {
 // over the quit channel provided to Init.  The Daemon run loop must be stopped
 // before calling this function.
 func (dm *Daemon) Shutdown() {
+	defer logger.Info("Daemon closed")
+
 	// close daemon run loop first to avoid creating new connection after
 	// the connection pool is shutdown.
-	close(dm.quitC)
+	logger.Info("Stopping the daemon run loop")
+	close(dm.quit)
 
+	logger.Info("Shutting down Pool")
 	dm.Pool.Shutdown()
+
+	logger.Info("Shutting down Gateway")
 	dm.Gateway.Shutdown()
+
+	logger.Info("Shutting down Pex")
 	dm.Pex.Shutdown()
+
+	logger.Info("Shutting down Visor")
 	dm.Visor.Shutdown()
+
+	<-dm.done
 }
 
 // Run main loop for peer/connection management.
 // Send anything to the quit channel to shut it down.
 func (dm *Daemon) Run() error {
-	defer func() {
-		if r := recover(); r != nil {
-			logger.Errorf("recover:%v\n stack:%v", r, string(debug.Stack()))
-		}
+	defer logger.Info("Daemon closed")
+	defer close(dm.done)
 
-		logger.Info("Daemon closed")
-	}()
+	if err := dm.Visor.v.Init(); err != nil {
+		logger.WithError(err).Error("visor.Visor.Init failed")
+		return err
+	}
 
 	errC := make(chan error, 5)
-	wg := sync.WaitGroup{}
+	var wg sync.WaitGroup
 
 	// start visor
 	wg.Add(1)
@@ -408,7 +422,7 @@ func (dm *Daemon) Run() error {
 		for {
 			elapser.CheckForDone()
 			select {
-			case <-dm.quitC:
+			case <-dm.quit:
 				break loop
 
 			case r := <-dm.Pool.Pool.SendResults:
@@ -427,7 +441,7 @@ loop:
 	for {
 		elapser.CheckForDone()
 		select {
-		case <-dm.quitC:
+		case <-dm.quit:
 			break loop
 
 		case <-cullInvalidTicker:

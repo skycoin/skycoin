@@ -124,8 +124,8 @@ func (m *historyerMock) GetTransaction(p0 *dbutil.Tx, p1 cipher.SHA256) (*histor
 
 }
 
-// GetUxout mocked method
-func (m *historyerMock) GetUxout(p0 *dbutil.Tx, p1 cipher.SHA256) (*historydb.UxOut, error) {
+// GetUxOut mocked method
+func (m *historyerMock) GetUxOut(p0 *dbutil.Tx, p1 cipher.SHA256) (*historydb.UxOut, error) {
 
 	ret := m.Called(p0, p1)
 

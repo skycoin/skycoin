@@ -14,7 +14,9 @@ import (
 )
 
 const (
-	genesisPubkey = "0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a"
+	blockchainPubkey = "0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a"
+
+	verifySignaturesWorkers = 4
 )
 
 func checkdbCmd() gcli.Command {
@@ -51,9 +53,9 @@ func checkdb(c *gcli.Context) error {
 	if err != nil {
 		return fmt.Errorf("open db failed: %v", err)
 	}
-	pubkey, err := cipher.PubKeyFromHex(genesisPubkey)
+	pubkey, err := cipher.PubKeyFromHex(blockchainPubkey)
 	if err != nil {
-		return fmt.Errorf("decode genesis pubkey failed: %v", err)
+		return fmt.Errorf("decode blockchain pubkey failed: %v", err)
 	}
 
 	if err := IntegrityCheck(dbutil.WrapDB(db), pubkey); err != nil {
@@ -65,11 +67,15 @@ func checkdb(c *gcli.Context) error {
 }
 
 // IntegrityCheck checks database integrity
-func IntegrityCheck(db *dbutil.DB, genesisPubkey cipher.PubKey) error {
-	_, err := visor.NewBlockchain(db, visor.BlockchainConfig{
-		Pubkey:         genesisPubkey,
-		Arbitrating:    true,
-		VerifyDatabase: true,
+func IntegrityCheck(db *dbutil.DB, pubkey cipher.PubKey) error {
+	bc, err := visor.NewBlockchain(db, visor.BlockchainConfig{
+		Pubkey: pubkey,
 	})
-	return err
+	if err != nil {
+		return err
+	}
+
+	return db.View(func(tx *dbutil.Tx) error {
+		return bc.VerifySignatures(tx, nWorkers)
+	})
 }

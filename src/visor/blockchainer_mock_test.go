@@ -106,7 +106,7 @@ func (m *BlockchainerMock) GetBlockBySeq(p0 uint64) (*coin.SignedBlock, error) {
 }
 
 // GetBlocks mocked method
-func (m *BlockchainerMock) GetBlocks(p0 uint64, p1 uint64) []coin.SignedBlock {
+func (m *BlockchainerMock) GetBlocks(p0 uint64, p1 uint64) ([]coin.SignedBlock, error) {
 
 	ret := m.Called(p0, p1)
 
@@ -119,7 +119,16 @@ func (m *BlockchainerMock) GetBlocks(p0 uint64, p1 uint64) []coin.SignedBlock {
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	return r0
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
 
 }
 
@@ -142,7 +151,7 @@ func (m *BlockchainerMock) GetGenesisBlock() *coin.SignedBlock {
 }
 
 // GetLastBlocks mocked method
-func (m *BlockchainerMock) GetLastBlocks(p0 uint64) []coin.SignedBlock {
+func (m *BlockchainerMock) GetLastBlocks(p0 uint64) ([]coin.SignedBlock, error) {
 
 	ret := m.Called(p0)
 
@@ -155,7 +164,16 @@ func (m *BlockchainerMock) GetLastBlocks(p0 uint64) []coin.SignedBlock {
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	return r0
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
 
 }
 

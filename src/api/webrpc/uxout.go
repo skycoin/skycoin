@@ -16,13 +16,13 @@ type AddrUxoutResult struct {
 func getAddrUxOutsHandler(req Request, gateway Gatewayer) Response {
 	var addrs []string
 	if err := req.DecodeParams(&addrs); err != nil {
-		logger.Critical().Errorf("decode params failed:%v", err)
-		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
+		logger.Critical().Errorf("decode params failed: %v", err)
+		return MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams)
 	}
 
 	if len(addrs) == 0 {
 		logger.Error("empty request params")
-		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
+		return MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams)
 	}
 
 	results := make([]AddrUxoutResult, len(addrs))
@@ -32,13 +32,13 @@ func getAddrUxOutsHandler(req Request, gateway Gatewayer) Response {
 		a, err := cipher.DecodeBase58Address(addr)
 		if err != nil {
 			logger.Error(err)
-			return makeErrorResponse(errCodeInvalidParams, fmt.Sprintf("%v", err))
+			return MakeErrorResponse(ErrCodeInvalidParams, fmt.Sprintf("%v", err))
 		}
 		results[i].Address = addr
 		uxouts, err := gateway.GetAddrUxOuts([]cipher.Address{a})
 		if err != nil {
 			logger.Error(err)
-			return makeErrorResponse(errCodeInternalError, errMsgInternalError)
+			return MakeErrorResponse(ErrCodeInternalError, ErrMsgInternalError)
 		}
 
 		//Convert slice UxOut to slice of UxOutJson

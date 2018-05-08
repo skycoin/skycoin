@@ -9,12 +9,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"syscall"
 
 	"os"
 
 	gcli "github.com/urfave/cli"
+	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/util/file"
@@ -22,20 +26,22 @@ import (
 
 const (
 	// Version is the CLI Version
-	Version           = "0.23.0"
+	Version           = "0.23.1-rc2"
 	walletExt         = ".wlt"
 	defaultCoin       = "skycoin"
 	defaultWalletName = "$COIN_cli" + walletExt
 	defaultWalletDir  = "$HOME/.$COIN/wallets"
-	defaultRPCAddress = "127.0.0.1:6430"
+	defaultRPCAddress = "http://127.0.0.1:6420"
 )
 
 var (
 	envVarsHelp = fmt.Sprintf(`ENVIRONMENT VARIABLES:
-    RPC_ADDR: Address of RPC node. Default "%s"
+    RPC_ADDR: Address of RPC node. Must be in scheme://host format. Default "%s"
     COIN: Name of the coin. Default "%s"
+    USE_CSRF: Set to 1 or true if the remote node has CSRF enabled. Default false (unset)
     WALLET_DIR: Directory where wallets are stored. This value is overriden by any subcommand flag specifying a wallet filename, if that filename includes a path. Default "%s"
-    WALLET_NAME: Name of wallet file (without path). This value is overriden by any subcommand flag specifying a wallet filename. Default "%s"`, defaultRPCAddress, defaultCoin, defaultWalletDir, defaultWalletName)
+    WALLET_NAME: Name of wallet file (without path). This value is overriden by any subcommand flag specifying a wallet filename. Default "%s"`,
+		defaultRPCAddress, defaultCoin, defaultWalletDir, defaultWalletName)
 
 	commandHelpTemplate = fmt.Sprintf(`USAGE:
         {{.HelpName}}{{if .VisibleFlags}} [command options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[arguments...]{{end}}{{if .Category}}
@@ -97,11 +103,12 @@ type App struct {
 
 // Config cli's configuration struct
 type Config struct {
-	WalletDir  string
-	WalletName string
-	DataDir    string
-	Coin       string
-	RPCAddress string
+	WalletDir  string `json:"wallet_directory"`
+	WalletName string `json:"wallet_name"`
+	DataDir    string `json:"data_directory"`
+	Coin       string `json:"coin"`
+	RPCAddress string `json:"rpc_address"`
+	UseCSRF    bool   `json:"use_csrf"`
 }
 
 // LoadConfig loads config from environment, prior to parsing CLI flags
@@ -116,6 +123,10 @@ func LoadConfig() (Config, error) {
 	rpcAddr := os.Getenv("RPC_ADDR")
 	if rpcAddr == "" {
 		rpcAddr = defaultRPCAddress
+	}
+
+	if _, err := url.Parse(rpcAddr); err != nil {
+		return Config{}, errors.New("RPC_ADDR must be in scheme://host format")
 	}
 
 	home := file.UserHome()
@@ -138,12 +149,23 @@ func LoadConfig() (Config, error) {
 
 	dataDir := filepath.Join(home, fmt.Sprintf(".%s", coin))
 
+	var useCSRF bool
+	useCSRFStr := os.Getenv("USE_CSRF")
+	if useCSRFStr != "" {
+		var err error
+		useCSRF, err = strconv.ParseBool(useCSRFStr)
+		if err != nil {
+			return Config{}, errors.New("Invalid USE_CSRF value, must be interpretable as a boolean e.g. 0, 1, true, false")
+		}
+	}
+
 	return Config{
 		WalletDir:  wltDir,
 		WalletName: wltName,
 		DataDir:    dataDir,
 		Coin:       coin,
 		RPCAddress: rpcAddr,
+		UseCSRF:    useCSRF,
 	}, nil
 }
 
@@ -199,7 +221,7 @@ func resolveDBPath(cfg Config, db string) (string, error) {
 }
 
 // NewApp creates an app instance
-func NewApp(cfg Config) *App {
+func NewApp(cfg Config) (*App, error) {
 	gcli.AppHelpTemplate = appHelpTemplate
 	gcli.SubcommandHelpTemplate = commandHelpTemplate
 	gcli.CommandHelpTemplate = commandHelpTemplate
@@ -225,6 +247,7 @@ func NewApp(cfg Config) *App {
 		listAddressesCmd(),
 		listWalletsCmd(),
 		sendCmd(),
+		showConfigCmd(),
 		statusCmd(),
 		transactionCmd(),
 		verifyAddressCmd(),
@@ -233,6 +256,9 @@ func NewApp(cfg Config) *App {
 		walletDirCmd(),
 		walletHisCmd(),
 		walletOutputsCmd(cfg),
+		encryptWalletCmd(cfg),
+		decryptWalletCmd(cfg),
+		showSeedCmd(cfg),
 	}
 
 	app.Name = fmt.Sprintf("%s-cli", cfg.Coin)
@@ -250,14 +276,18 @@ func NewApp(cfg Config) *App {
 		gcli.HelpPrinter(app.Writer, tmp, app)
 	}
 
+	rpcClient, err := webrpc.NewClient(cfg.RPCAddress)
+	if err != nil {
+		return nil, err
+	}
+	rpcClient.UseCSRF = cfg.UseCSRF
+
 	app.Metadata = map[string]interface{}{
 		"config": cfg,
-		"rpc": &webrpc.Client{
-			Addr: cfg.RPCAddress,
-		},
+		"rpc":    rpcClient,
 	}
 
-	return app
+	return app, nil
 }
 
 // Run starts the app
@@ -284,7 +314,7 @@ func onCommandUsageError(command string) gcli.OnUsageErrorFunc {
 }
 
 func errorWithHelp(c *gcli.Context, err error) {
-	fmt.Fprintf(c.App.Writer, "ERROR: %v. See '%s %s --help'\n\n", err, c.App.HelpName, c.Command.Name)
+	fmt.Fprintf(c.App.Writer, "Error: %v. See '%s %s --help'\n\n", err, c.App.HelpName, c.Command.Name)
 }
 
 func formatJSON(obj interface{}) ([]byte, error) {
@@ -304,4 +334,65 @@ func printJSON(obj interface{}) error {
 	fmt.Println(string(d))
 
 	return nil
+}
+
+// readPasswordFromTerminal promotes user to enter password and read it.
+func readPasswordFromTerminal() ([]byte, error) {
+	// Promotes to enter the wallet password
+	fmt.Fprint(os.Stdout, "enter password:")
+	bp, err := terminal.ReadPassword(int(syscall.Stdin))
+	if err != nil {
+		return nil, err
+	}
+	fmt.Fprintln(os.Stdout, "")
+	return bp, nil
+}
+
+// PUBLIC
+
+// WalletLoadError is returned if a wallet could not be loaded
+type WalletLoadError struct {
+	error
+}
+
+// WalletSaveError is returned if a wallet could not be saved
+type WalletSaveError struct {
+	error
+}
+
+// PasswordReader is an interface for getting password
+type PasswordReader interface {
+	Password() ([]byte, error)
+}
+
+// PasswordFromBytes represents an implementation of PasswordReader,
+// which reads password from the bytes itself.
+type PasswordFromBytes []byte
+
+// Password implements the PasswordReader's Password method
+func (p PasswordFromBytes) Password() ([]byte, error) {
+	return []byte(p), nil
+}
+
+// PasswordFromTerm reads password from terminal
+type PasswordFromTerm struct{}
+
+// Password implements the PasswordReader's Password method
+func (p PasswordFromTerm) Password() ([]byte, error) {
+	v, err := readPasswordFromTerminal()
+	if err != nil {
+		return nil, err
+	}
+
+	return v, nil
+}
+
+// NewPasswordReader creats a PasswordReader instance,
+// reads password from the input bytes first, if it's empty, then read from terminal.
+func NewPasswordReader(p []byte) PasswordReader {
+	if len(p) != 0 {
+		return PasswordFromBytes(p)
+	}
+
+	return PasswordFromTerm{}
 }

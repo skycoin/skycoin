@@ -1881,7 +1881,7 @@ func TestServiceEncryptWallet(t *testing.T) {
 				require.Empty(t, encWlt.lastSeed())
 
 				// Check the decrypted seeds
-				decWlt, err := encWlt.unlock(tc.pwd)
+				decWlt, err := encWlt.Unlock(tc.pwd)
 				require.NoError(t, err)
 				require.Equal(t, w.seed(), decWlt.seed())
 				require.Equal(t, w.lastSeed(), decWlt.lastSeed())

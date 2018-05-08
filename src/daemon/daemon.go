@@ -320,9 +320,6 @@ func (dm *Daemon) Shutdown() {
 	logger.Info("Shutting down Pex")
 	dm.Pex.Shutdown()
 
-	logger.Info("Shutting down Visor")
-	dm.Visor.Shutdown()
-
 	<-dm.done
 }
 
@@ -339,16 +336,6 @@ func (dm *Daemon) Run() error {
 
 	errC := make(chan error, 5)
 	var wg sync.WaitGroup
-
-	// start visor
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		if err := dm.Visor.Run(); err != nil {
-			logger.WithError(err).Error("daemon.Visor.Run failed")
-			errC <- err
-		}
-	}()
 
 	wg.Add(1)
 	go func() {
@@ -552,7 +539,7 @@ loop:
 			if dm.Visor.Config.Config.IsMaster {
 				sb, err := dm.Visor.CreateAndPublishBlock(dm.Pool)
 				if err != nil {
-					logger.Errorf("Failed to create block: %v", err)
+					logger.Errorf("Failed to create and publish block: %v", err)
 					continue
 				}
 

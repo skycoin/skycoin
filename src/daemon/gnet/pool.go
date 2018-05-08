@@ -727,6 +727,8 @@ func (pool *ConnectionPool) SendMessage(addr string, msg Message) error {
 				logger.Critical().Infof("Write queue full for address %s", addr)
 				return ErrWriteQueueFull
 			}
+		} else {
+			return fmt.Errorf("Tried to send %T to %s, but we are not connected", msg, addr)
 		}
 		return nil
 	})

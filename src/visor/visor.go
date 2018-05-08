@@ -543,11 +543,63 @@ func (vs *Visor) CreateAndExecuteBlock() (coin.SignedBlock, error) {
 	return sb, err
 }
 
+// ExecuteSignedBlocks adds multiple blocks to the blockchain, or returns error.
+// Blocks must be executed in sequence, and be signed by the master server.
+// Returns the new blocks that were added, and the updated head block sequence after executing blocks.
+func (vs *Visor) ExecuteSignedBlocks(blocks []coin.SignedBlock) ([]coin.SignedBlock, uint64, error) {
+	var headSeq uint64
+	var addedBlocks []coin.SignedBlock
+	if err := vs.DB.Update(func(tx *dbutil.Tx) error {
+		currentHeadSeq, _, err := vs.Blockchain.HeadSeq(tx)
+		if err != nil {
+			return err
+		}
+
+		for _, b := range blocks {
+			if b.Seq() <= currentHeadSeq {
+				continue
+			}
+
+			if err := vs.executeSignedBlock(tx, b); err != nil {
+				logger.Critical().Errorf("Failed to execute block %d: %v", b.Block.Head.BkSeq, err)
+				return err
+			}
+
+			addedBlocks = append(addedBlocks, b)
+		}
+
+		var ok bool
+		headSeq, ok, err = vs.Blockchain.HeadSeq(tx)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return errors.New("No head sequence found after adding blocks")
+		}
+
+		return nil
+	}); err != nil {
+		return nil, 0, err
+	}
+
+	for _, b := range addedBlocks {
+		logger.Critical().Infof("Added new block %d", b.Block.Head.BkSeq)
+	}
+
+	return addedBlocks, headSeq, nil
+}
+
 // ExecuteSignedBlock adds a block to the blockchain, or returns error.
 // Blocks must be executed in sequence, and be signed by the master server
 func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
 	return vs.DB.Update(func(tx *dbutil.Tx) error {
-		return vs.executeSignedBlock(tx, b)
+		if err := vs.executeSignedBlock(tx, b); err != nil {
+			logger.Critical().Errorf("Failed to execute block %d: %v", b.Block.Head.BkSeq, err)
+			return err
+		}
+
+		logger.Critical().Infof("Added new block %d", b.Block.Head.BkSeq)
+		return nil
 	})
 }
 

@@ -6,9 +6,9 @@
     "ng": "ng",
     "start": "ng serve --proxy-config proxy.config.js --delete-output-path false",
     "build": "ng build --prod",
-    "test": "ng test",
+    "test": "ng test --watch=false",
     "lint": "ng lint",
-    "e2e": "ng e2e"
+    "e2e": "ng e2e --proxy-config proxy.config.js --delete-output-path false"
   },
   "private": true,
   "dependencies": {

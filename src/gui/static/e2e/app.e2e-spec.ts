@@ -5,6 +5,7 @@ describe('desktopwallet App', () => {
 
   beforeEach(() => {
     page = new DesktopwalletPage();
+    page.dontWait();
   });
 
   it('should show wallets page', () => {

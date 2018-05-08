@@ -25,13 +25,6 @@ func NewBlockchainerMock() *BlockchainerMock {
 	return &BlockchainerMock{}
 }
 
-// BindListener mocked method
-func (m *BlockchainerMock) BindListener(p0 BlockListener) {
-
-	m.Called(p0)
-
-}
-
 // ExecuteBlock mocked method
 func (m *BlockchainerMock) ExecuteBlock(p0 *dbutil.Tx, p1 *coin.SignedBlock) error {
 
@@ -299,13 +292,6 @@ func (m *BlockchainerMock) NewBlock(p0 *dbutil.Tx, p1 coin.Transactions, p2 uint
 	}
 
 	return r0, r1
-
-}
-
-// Notify mocked method
-func (m *BlockchainerMock) Notify(p0 coin.Block) {
-
-	m.Called(p0)
 
 }
 

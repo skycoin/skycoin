@@ -1,6 +1,7 @@
 package blockdb
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -238,9 +239,17 @@ func (up *Unspents) GetUnspentsOfAddrsAndHashes(tx *dbutil.Tx, addrs []cipher.Ad
 		addrm[a] = struct{}{}
 	}
 
+	if len(addrm) != len(addrs) {
+		return nil, nil, errors.New("addrs contains duplicates")
+	}
+
 	hashm := make(map[cipher.SHA256]struct{}, len(hashes))
 	for _, h := range hashes {
 		hashm[h] = struct{}{}
+	}
+
+	if len(hashm) != len(hashes) {
+		return nil, nil, errors.New("hashes contains duplicates")
 	}
 
 	addrUxs := make(coin.AddressUxOuts, len(addrs))

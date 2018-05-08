@@ -76,6 +76,6 @@ func IntegrityCheck(db *dbutil.DB, pubkey cipher.PubKey) error {
 	}
 
 	return db.View(func(tx *dbutil.Tx) error {
-		return bc.VerifySignatures(tx, nWorkers)
+		return bc.VerifySignatures(tx, verifySignaturesWorkers)
 	})
 }

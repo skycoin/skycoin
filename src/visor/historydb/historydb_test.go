@@ -22,7 +22,10 @@ func prepareDB(t *testing.T) (*dbutil.DB, func()) {
 	err := db.Update(func(tx *dbutil.Tx) error {
 		return CreateBuckets(tx)
 	})
-	require.NoError(t, err)
+	if err != nil {
+		shutdown()
+		t.Fatalf("CreateBuckets failed: %v", err)
+	}
 
 	return db, shutdown
 }
@@ -183,7 +186,7 @@ func TestProcessGenesisBlock(t *testing.T) {
 	hisDB := New()
 
 	err := db.Update(func(tx *dbutil.Tx) error {
-		err := hisDB.ParseBlock(tx, &gb)
+		err := hisDB.ParseBlock(tx, gb)
 		require.NoError(t, err)
 		return nil
 	})
@@ -261,7 +264,7 @@ func TestProcessBlock(t *testing.T) {
 	hisDB := New()
 
 	err := db.Update(func(tx *dbutil.Tx) error {
-		err := hisDB.ParseBlock(tx, &gb)
+		err := hisDB.ParseBlock(tx, gb)
 		require.NoError(t, err)
 		return nil
 	})
@@ -346,7 +349,7 @@ func testEngine(t *testing.T, tds []testData, bc *fakeBlockchain, hdb *HistoryDB
 		}
 
 		err = db.Update(func(tx *dbutil.Tx) error {
-			err := hdb.ParseBlock(tx, b)
+			err := hdb.ParseBlock(tx, *b)
 			require.NoError(t, err)
 			return nil
 		})
@@ -380,7 +383,7 @@ func testEngine(t *testing.T, tds []testData, bc *fakeBlockchain, hdb *HistoryDB
 }
 
 func addBlock(bc *fakeBlockchain, td testData, tm uint64) (*coin.Block, *coin.Transaction, error) {
-	tx := coin.Transaction{}
+	txn := coin.Transaction{}
 	// get unspent output
 	ux, err := getUx(bc, td.Vin.BlockSeq, td.Vin.TxID, td.Vin.Addr)
 	if err != nil {
@@ -390,30 +393,30 @@ func addBlock(bc *fakeBlockchain, td testData, tm uint64) (*coin.Block, *coin.Tr
 		return nil, nil, errors.New("no unspent output")
 	}
 
-	tx.PushInput(ux.Hash())
+	txn.PushInput(ux.Hash())
 	for _, o := range td.Vouts {
 		addr, err := cipher.DecodeBase58Address(o.ToAddr)
 		if err != nil {
 			return nil, nil, err
 		}
-		tx.PushOutput(addr, o.Coins, o.Hours)
+		txn.PushOutput(addr, o.Coins, o.Hours)
 	}
 
 	sigKey := cipher.MustSecKeyFromHex(td.Vin.SigKey)
-	tx.SignInputs([]cipher.SecKey{sigKey})
-	tx.UpdateHeader()
-	if err := bc.VerifyTransaction(tx); err != nil {
+	txn.SignInputs([]cipher.SecKey{sigKey})
+	txn.UpdateHeader()
+	if err := bc.VerifyTransaction(txn); err != nil {
 		return nil, nil, err
 	}
 	preBlock := bc.GetBlock(td.PreBlockHash)
-	b := newBlock(*preBlock, tm, bc.uxhash, coin.Transactions{tx}, feeCalc)
+	b := newBlock(*preBlock, tm, bc.uxhash, coin.Transactions{txn}, feeCalc)
 
 	// uxs, err := bc.ExecuteBlock(&b)
 	_, err = bc.ExecuteBlock(&b)
 	if err != nil {
 		return nil, nil, err
 	}
-	return &b, &tx, nil
+	return &b, &txn, nil
 }
 
 func mustGetBucketValue(t *testing.T, db *dbutil.DB, name []byte, key []byte, value interface{}) {

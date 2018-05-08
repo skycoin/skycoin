@@ -108,7 +108,7 @@ func (hd *HistoryDB) GetUxOut(tx *dbutil.Tx, uxID cipher.SHA256) (*UxOut, error)
 	return hd.outputs.Get(tx, uxID)
 }
 
-// ParseBlock will index the transaction, outputs,etc.
+// ParseBlock builds indexes out of the block data
 func (hd *HistoryDB) ParseBlock(tx *dbutil.Tx, b coin.Block) error {
 	for _, t := range b.Body.Transactions {
 		txn := Transaction{

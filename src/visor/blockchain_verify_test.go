@@ -317,7 +317,7 @@ func requireHardViolation(t *testing.T, msg string, err error) {
 }
 
 func TestVerifyTransactionAllConstraints(t *testing.T) {
-	db, closeDB := testutil.PrepareDB(t)
+	db, closeDB := prepareDB(t)
 	defer closeDB()
 
 	err := CreateBuckets(db)
@@ -331,7 +331,7 @@ func TestVerifyTransactionAllConstraints(t *testing.T) {
 		store: store,
 	}
 
-	gb := addGenesisBlock(t, bc)
+	gb := addGenesisBlockToBlockchain(t, bc)
 
 	toAddr := testutil.MakeAddress()
 	coins := uint64(10e6)
@@ -425,7 +425,7 @@ func TestVerifyTxnFeeCoinHoursAdditionFails(t *testing.T) {
 	// Test that VerifySingleTxnSoftConstraints fails if a uxIn.CoinHours() call fails.
 	// This is a separate test on its own, because it's not possible to reach the line
 	// that is being tested through the blockchain verify API wrappers
-	db, closeDB := testutil.PrepareDB(t)
+	db, closeDB := prepareDB(t)
 	defer closeDB()
 
 	err := CreateBuckets(db)
@@ -439,7 +439,7 @@ func TestVerifyTxnFeeCoinHoursAdditionFails(t *testing.T) {
 		store: store,
 	}
 
-	gb := addGenesisBlock(t, bc)
+	gb := addGenesisBlockToBlockchain(t, bc)
 
 	toAddr := testutil.MakeAddress()
 	coins := uint64(10e6)
@@ -499,7 +499,7 @@ func testVerifyTransactionAddressLocking(t *testing.T, toAddr string, expectedEr
 	addr, err := cipher.DecodeBase58Address(toAddr)
 	require.NoError(t, err)
 
-	db, close := testutil.PrepareDB(t)
+	db, close := prepareDB(t)
 	defer close()
 
 	_, s := cipher.GenerateKeyPair()

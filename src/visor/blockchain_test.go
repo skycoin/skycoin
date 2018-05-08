@@ -30,7 +30,7 @@ func feeCalc(t *coin.Transaction) (uint64, error) {
 	return 0, nil
 }
 
-func addGenesisBlock(t *testing.T, bc *Blockchain) *coin.SignedBlock {
+func addGenesisBlockToBlockchain(t *testing.T, bc *Blockchain) *coin.SignedBlock {
 	// create genesis block
 	gb, err := coin.NewGenesisBlock(genAddress, genCoins, genTime)
 	require.NoError(t, err)
@@ -199,7 +199,7 @@ func TestBlockchainTime(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			db, closeDB := testutil.PrepareDB(t)
+			db, closeDB := prepareDB(t)
 			defer closeDB()
 
 			bc := Blockchain{
@@ -325,7 +325,7 @@ func TestVerifyBlockHeader(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			db, closeDB := testutil.PrepareDB(t)
+			db, closeDB := prepareDB(t)
 			defer closeDB()
 
 			bc := &Blockchain{
@@ -428,7 +428,7 @@ func TestGetBlocks(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			db, closeDB := testutil.PrepareDB(t)
+			db, closeDB := prepareDB(t)
 			defer closeDB()
 
 			bc := Blockchain{
@@ -490,7 +490,7 @@ func TestGetLastBlocks(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			db, closeDB := testutil.PrepareDB(t)
+			db, closeDB := prepareDB(t)
 			defer closeDB()
 
 			bc := Blockchain{
@@ -668,7 +668,7 @@ func TestProcessTransactions(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			// create test db
-			db, closeDB := testutil.PrepareDB(t)
+			db, closeDB := prepareDB(t)
 			defer closeDB()
 
 			err := CreateBuckets(db)
@@ -688,7 +688,7 @@ func TestProcessTransactions(t *testing.T) {
 			}
 
 			// init chain
-			head := addGenesisBlock(t, bc)
+			head := addGenesisBlockToBlockchain(t, bc)
 			tm := head.Time()
 			for i, spend := range tc.initChain {
 				uxs := coin.CreateUnspents(head.Head, head.Body.Transactions[spend.TxIndex])
@@ -738,7 +738,7 @@ func getUxHash(t *testing.T, db *dbutil.DB, bc *Blockchain) cipher.SHA256 {
 }
 
 func TestVerifyUxHash(t *testing.T) {
-	db, closeDB := testutil.PrepareDB(t)
+	db, closeDB := prepareDB(t)
 	defer closeDB()
 
 	err := CreateBuckets(db)
@@ -752,7 +752,7 @@ func TestVerifyUxHash(t *testing.T) {
 		store: store,
 	}
 
-	gb := addGenesisBlock(t, bc)
+	gb := addGenesisBlockToBlockchain(t, bc)
 	uxHash := getUxHash(t, db, bc)
 	txn := coin.Transaction{}
 	b, err := coin.NewBlock(gb.Block, genTime+100, uxHash, coin.Transactions{txn}, feeCalc)
@@ -777,7 +777,7 @@ func TestVerifyUxHash(t *testing.T) {
 }
 
 func TestProcessBlock(t *testing.T) {
-	db, closeDB := testutil.PrepareDB(t)
+	db, closeDB := prepareDB(t)
 	defer closeDB()
 
 	err := CreateBuckets(db)
@@ -835,7 +835,7 @@ func TestProcessBlock(t *testing.T) {
 }
 
 func TestExecuteBlock(t *testing.T) {
-	db, closeDB := testutil.PrepareDB(t)
+	db, closeDB := prepareDB(t)
 	defer closeDB()
 
 	err := CreateBuckets(db)

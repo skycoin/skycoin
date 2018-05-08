@@ -9,12 +9,26 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon/strand"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
+
+// TODO -- most of these tests should be merged into visor/visor_test.go,
+// daemon.Visor is only a thin wrapper around visor.Visor
+
+func prepareDB(t *testing.T) (*dbutil.DB, func()) {
+	db, shutdown := testutil.PrepareDB(t)
+
+	err := visor.CreateBuckets(db)
+	if err != nil {
+		shutdown()
+		t.Fatalf("CreateBuckets failed: %v", err)
+	}
+
+	return db, shutdown
+}
 
 const (
 	// GenesisTime is the time of the genesis block created in MakeBlockchain
@@ -147,14 +161,13 @@ func setupSimpleVisor(t *testing.T, db *dbutil.DB, bc *visor.Blockchain) *Visor 
 			Blockchain:  bc,
 			DB:          db,
 		},
-		reqC: make(chan strand.Request, 10),
 	}
 }
 
 func TestVerifyTransactionInvalidFee(t *testing.T) {
 	// Test that a soft constraint is enforced
 	// Full verification tests are in visor/blockchain_verify_test.go
-	db, close := testutil.PrepareDB(t)
+	db, close := prepareDB(t)
 	defer close()
 
 	// Setup blockchain
@@ -171,11 +184,6 @@ func TestVerifyTransactionInvalidFee(t *testing.T) {
 
 	// Setup a minimal visor
 	v := setupSimpleVisor(t, db, bc)
-	errC := make(chan error)
-	go v.processRequests(errC)
-	defer func() {
-		errC <- errors.New("stop")
-	}()
 
 	_, softErr, err := v.InjectTransaction(txn)
 	require.NoError(t, err)
@@ -186,7 +194,7 @@ func TestVerifyTransactionInvalidFee(t *testing.T) {
 func TestVerifyTransactionInvalidSignature(t *testing.T) {
 	// Test that a hard constraint is enforced
 	// Full verification tests are in visor/blockchain_verify_test.go
-	db, close := testutil.PrepareDB(t)
+	db, close := prepareDB(t)
 	defer close()
 
 	// Setup blockchain
@@ -206,11 +214,6 @@ func TestVerifyTransactionInvalidSignature(t *testing.T) {
 
 	// Setup a minimal visor
 	v := setupSimpleVisor(t, db, bc)
-	errC := make(chan error)
-	go v.processRequests(errC)
-	defer func() {
-		errC <- errors.New("stop")
-	}()
 
 	_, softErr, err := v.InjectTransaction(txn)
 	require.Nil(t, softErr)
@@ -218,7 +221,7 @@ func TestVerifyTransactionInvalidSignature(t *testing.T) {
 }
 
 func TestInjectValidTransaction(t *testing.T) {
-	db, close := testutil.PrepareDB(t)
+	db, close := prepareDB(t)
 	defer close()
 
 	_, s := cipher.GenerateKeyPair()
@@ -235,11 +238,6 @@ func TestInjectValidTransaction(t *testing.T) {
 
 	// Setup a minimal visor
 	v := setupSimpleVisor(t, db, bc)
-	errC := make(chan error)
-	go v.processRequests(errC)
-	defer func() {
-		errC <- errors.New("stop")
-	}()
 
 	// The unconfirmed pool should be empty
 	txns, err := v.v.GetAllUnconfirmedTxns()
@@ -259,7 +257,7 @@ func TestInjectValidTransaction(t *testing.T) {
 }
 
 func TestInjectTransactionSoftViolationNoFee(t *testing.T) {
-	db, close := testutil.PrepareDB(t)
+	db, close := prepareDB(t)
 	defer close()
 
 	// Setup blockchain
@@ -276,11 +274,6 @@ func TestInjectTransactionSoftViolationNoFee(t *testing.T) {
 
 	// Setup a minimal visor
 	v := setupSimpleVisor(t, db, bc)
-	errC := make(chan error)
-	go v.processRequests(errC)
-	defer func() {
-		errC <- errors.New("stop")
-	}()
 
 	// The unconfirmed pool should be empty
 	txns, err := v.v.GetAllUnconfirmedTxns()

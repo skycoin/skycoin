@@ -30,6 +30,18 @@ const (
 	blockchainPubkeyStr = "0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a"
 )
 
+func prepareDB(t *testing.T) (*dbutil.DB, func()) {
+	db, shutdown := testutil.PrepareDB(t)
+
+	err := CreateBuckets(db)
+	if err != nil {
+		shutdown()
+		t.Fatalf("CreateBuckets failed: %v", err)
+	}
+
+	return db, shutdown
+}
+
 func readAll(t *testing.T, f string) []byte {
 	fi, err := os.Open(f)
 	require.NoError(t, err)
@@ -73,6 +85,27 @@ func removeCorruptDBFiles(t *testing.T, badDBFile string) {
 	}
 }
 
+func addGenesisBlockToVisor(t *testing.T, vs *Visor) *coin.SignedBlock {
+	// create genesis block
+	gb, err := coin.NewGenesisBlock(genAddress, genCoins, genTime)
+	require.NoError(t, err)
+	gbSig := cipher.SignHash(gb.HashHeader(), genSecret)
+	vs.Config.GenesisSignature = gbSig
+
+	sb := coin.SignedBlock{
+		Block: *gb,
+		Sig:   gbSig,
+	}
+
+	// add genesis block to blockchain
+	err = vs.DB.Update(func(tx *dbutil.Tx) error {
+		return vs.executeSignedBlock(tx, sb)
+	})
+	require.NoError(t, err)
+
+	return &sb
+}
+
 func TestErrMissingSignatureRecreateDB(t *testing.T) {
 	badDBFile := "./testdata/data.db.nosig" // about 8MB size
 	badDBData := readAll(t, badDBFile)
@@ -102,15 +135,21 @@ func TestErrMissingSignatureRecreateDB(t *testing.T) {
 			assert.NoError(t, err)
 		}()
 
-		_, err = NewBlockchain(db, BlockchainConfig{
+		bc, err := NewBlockchain(db, BlockchainConfig{
 			Pubkey:      pubkey,
 			Arbitrating: false,
 		})
+		require.NoError(t, err)
+
+		err = db.View(func(tx *dbutil.Tx) error {
+			return bc.VerifySignatures(tx, SigVerifyTheadNum)
+		})
+
 		require.Error(t, err)
 		require.IsType(t, blockdb.ErrMissingSignature{}, err)
 	}()
 
-	// Loading this invalid db should cause loadBlockchain() to recreate the db
+	// Loading this invalid db should cause CheckAndRepairDatabase() to recreate the db
 	t.Logf("Loading the corrupted db from %s", badDBFile)
 	badDB, err := OpenDB(badDBFile, false)
 	require.NoError(t, err)
@@ -118,14 +157,13 @@ func TestErrMissingSignatureRecreateDB(t *testing.T) {
 	require.NotEmpty(t, badDB.Path())
 	t.Logf("badDB.Path() == %s", badDB.Path())
 
-	db, bc, err := loadBlockchain(badDB, pubkey, false)
+	db, err := CheckAndRepairDatabase(badDB, pubkey)
 	require.NoError(t, err)
 
 	err = db.Close()
 	require.NoError(t, err)
 
 	require.NotNil(t, db)
-	require.NotNil(t, bc)
 
 	// A corrupted database file should exist
 	corruptFiles = findCorruptDBFiles(t, badDBFile)
@@ -154,14 +192,17 @@ func TestErrMissingSignatureRecreateDB(t *testing.T) {
 func TestVisorCreateBlock(t *testing.T) {
 	when := uint64(time.Now().UTC().Unix())
 
-	db, shutdown := testutil.PrepareDB(t)
+	db, shutdown := prepareDB(t)
 	defer shutdown()
 
-	db, bc, err := loadBlockchain(db, genPublic, false)
-	require.NoError(t, err)
+	bc, err := NewBlockchain(db, BlockchainConfig{
+		Pubkey: genPublic,
+	})
 
 	unconfirmed, err := NewUnconfirmedTxnPool(db)
 	require.NoError(t, err)
+
+	his := historydb.New()
 
 	cfg := NewVisorConfig()
 	cfg.DBPath = db.Path()
@@ -174,6 +215,7 @@ func TestVisorCreateBlock(t *testing.T) {
 		Unconfirmed: unconfirmed,
 		Blockchain:  bc,
 		DB:          db,
+		history:     his,
 	}
 
 	// CreateBlock panics if called when not master
@@ -188,7 +230,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	v.Config.IsMaster = true
 	v.Config.BlockchainSeckey = genSecret
 
-	addGenesisBlock(t, v.Blockchain.(*Blockchain))
+	addGenesisBlockToVisor(t, v)
 	var gb *coin.SignedBlock
 	err = db.View(func(tx *dbutil.Tx) error {
 		var err error
@@ -351,14 +393,18 @@ func TestVisorCreateBlock(t *testing.T) {
 func TestVisorInjectTransaction(t *testing.T) {
 	when := uint64(time.Now().UTC().Unix())
 
-	db, shutdown := testutil.PrepareDB(t)
+	db, shutdown := prepareDB(t)
 	defer shutdown()
 
-	db, bc, err := loadBlockchain(db, genPublic, false)
+	bc, err := NewBlockchain(db, BlockchainConfig{
+		Pubkey: genPublic,
+	})
 	require.NoError(t, err)
 
 	unconfirmed, err := NewUnconfirmedTxnPool(db)
 	require.NoError(t, err)
+
+	his := historydb.New()
 
 	cfg := NewVisorConfig()
 	cfg.DBPath = db.Path()
@@ -371,6 +417,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 		Unconfirmed: unconfirmed,
 		Blockchain:  bc,
 		DB:          db,
+		history:     his,
 	}
 
 	// CreateBlock panics if called when not master
@@ -385,7 +432,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	v.Config.IsMaster = true
 	v.Config.BlockchainSeckey = genSecret
 
-	addGenesisBlock(t, v.Blockchain.(*Blockchain))
+	addGenesisBlockToVisor(t, v)
 
 	var gb *coin.SignedBlock
 	err = db.View(func(tx *dbutil.Tx) error {
@@ -1740,7 +1787,7 @@ func TestGetTransactions(t *testing.T) {
 
 			bc.On("HeadSeq", matchTx).Return(tc.bcHeadSeq, true, nil)
 
-			db, shutdown := testutil.PrepareDB(t)
+			db, shutdown := prepareDB(t)
 			defer shutdown()
 
 			v := &Visor{
@@ -1787,14 +1834,18 @@ func TestGetTransactions(t *testing.T) {
 }
 
 func TestRefreshUnconfirmed(t *testing.T) {
-	db, shutdown := testutil.PrepareDB(t)
+	db, shutdown := prepareDB(t)
 	defer shutdown()
 
-	db, bc, err := loadBlockchain(db, genPublic, false)
+	bc, err := NewBlockchain(db, BlockchainConfig{
+		Pubkey: genPublic,
+	})
 	require.NoError(t, err)
 
 	unconfirmed, err := NewUnconfirmedTxnPool(db)
 	require.NoError(t, err)
+
+	his := historydb.New()
 
 	cfg := NewVisorConfig()
 	cfg.DBPath = db.Path()
@@ -1808,9 +1859,10 @@ func TestRefreshUnconfirmed(t *testing.T) {
 		Unconfirmed: unconfirmed,
 		Blockchain:  bc,
 		DB:          db,
+		history:     his,
 	}
 
-	addGenesisBlock(t, v.Blockchain.(*Blockchain))
+	addGenesisBlockToVisor(t, v)
 	var gb *coin.SignedBlock
 	err = db.View(func(tx *dbutil.Tx) error {
 		var err error
@@ -1911,18 +1963,24 @@ func TestRefreshUnconfirmed(t *testing.T) {
 }
 
 func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
-	db, shutdown := testutil.PrepareDB(t)
+	db, shutdown := prepareDB(t)
 	defer shutdown()
 
-	db, bc, err := loadBlockchain(db, genPublic, true)
+	bc, err := NewBlockchain(db, BlockchainConfig{
+		Pubkey:      genPublic,
+		Arbitrating: true,
+	})
 	require.NoError(t, err)
 
 	unconfirmed, err := NewUnconfirmedTxnPool(db)
 	require.NoError(t, err)
 
+	his := historydb.New()
+
 	cfg := NewVisorConfig()
 	cfg.DBPath = db.Path()
 	cfg.IsMaster = true
+	cfg.Arbitrating = true
 	cfg.BlockchainPubkey = genPublic
 	cfg.GenesisAddress = genAddress
 	cfg.BlockchainSeckey = genSecret
@@ -1932,9 +1990,10 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 		Unconfirmed: unconfirmed,
 		Blockchain:  bc,
 		DB:          db,
+		history:     his,
 	}
 
-	addGenesisBlock(t, v.Blockchain.(*Blockchain))
+	addGenesisBlockToVisor(t, v)
 	var gb *coin.SignedBlock
 	err = db.View(func(tx *dbutil.Tx) error {
 		var err error

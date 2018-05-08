@@ -118,7 +118,6 @@ $ docker run -ti --rm \
     -v skycoin-wallet:/wallet \
     -p 6000:6000 \
     -p 6420:6420 \
-    -p 6430:6430 \
     skycoin/skycoin
 ```
 

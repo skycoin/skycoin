@@ -1,6 +1,6 @@
 'use strict'
 
-const { app, Menu, BrowserWindow, dialog, shell } = require('electron');
+const { app, Menu, BrowserWindow, dialog, shell, session } = require('electron');
 
 var log = require('electron-log');
 
@@ -145,18 +145,20 @@ function createWindow(url) {
     webPreferences: {
       webgl: false,
       webaudio: false,
+      contextIsolation: true,
     },
   });
 
   // patch out eval
   win.eval = global.eval;
+  win.webContents.executeJavaScript('window.eval = 0;');
 
   const ses = win.webContents.session
   ses.clearCache(function () {
     console.log('Cleared the caching of the skycoin wallet.');
   });
 
-  ses.clearStorageData([],function(){
+  ses.clearStorageData([], function() {
     console.log('Cleared the stored cached data');
   });
 
@@ -199,12 +201,12 @@ function createWindow(url) {
     label: 'Show',
     submenu: [
       {
-        label: "Wallets folder", 
-        click: () => shell.showItemInFolder(walletsFolder), 
+        label: 'Wallets folder',
+        click: () => shell.showItemInFolder(walletsFolder),
       },
       {
-        label: "Logs folder", 
-        click: () => shell.showItemInFolder(walletsFolder.replace('wallets', 'logs')), 
+        label: 'Logs folder',
+        click: () => shell.showItemInFolder(walletsFolder.replace('wallets', 'logs')),
       },
       {
         label: 'DevTools',
@@ -219,19 +221,25 @@ function createWindow(url) {
   }];
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+
+  session
+    .fromPartition('')
+    .setPermissionRequestHandler((webContents, permission, callback) => {
+      return callback(false);
+    });
 }
 
 // Enforce single instance
 const alreadyRunning = app.makeSingleInstance((commandLine, workingDirectory) => {
-      // Someone tried to run a second instance, we should focus our window.
-      if (win) {
-        if (win.isMinimized()) {
-          win.restore();
-        }
-        win.focus();
-      } else {
-        createWindow(currentURL || defaultURL);
-      }
+  // Someone tried to run a second instance, we should focus our window.
+  if (win) {
+    if (win.isMinimized()) {
+      win.restore();
+    }
+    win.focus();
+  } else {
+    createWindow(currentURL || defaultURL);
+  }
 });
 
 if (alreadyRunning) {
@@ -278,5 +286,18 @@ app.on('will-quit', () => {
   }
 });
 
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.
+app.on('web-contents-created', (event, contents) => {
+  contents.on('will-attach-webview', (event, webPreferences, params) => {
+    // Strip away preload scripts if unused or verify their location is legitimate
+    delete webPreferences.preload
+    delete webPreferences.preloadURL
+
+    // Disable Node.js integration
+    webPreferences.nodeIntegration = false
+
+    // Verify URL being loaded
+    if (!params.src.startsWith(url)) {
+      event.preventDefault();
+    }
+  });
+});

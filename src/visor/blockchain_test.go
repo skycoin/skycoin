@@ -348,7 +348,7 @@ func TestGetBlocks(t *testing.T) {
 				1,
 				0,
 			},
-			blocks[0:0],
+			nil,
 		},
 		{
 			"start overflow",
@@ -362,7 +362,7 @@ func TestGetBlocks(t *testing.T) {
 				6,
 				7,
 			},
-			blocks[0:0],
+			nil,
 		},
 		{
 			"start == end",
@@ -400,7 +400,8 @@ func TestGetBlocks(t *testing.T) {
 				store: tc.store,
 			}
 
-			bs := bc.GetBlocks(tc.req.st, tc.req.ed)
+			bs, err := bc.GetBlocks(tc.req.st, tc.req.ed)
+			require.NoError(t, err)
 			require.Equal(t, len(tc.expect), len(bs))
 			require.Equal(t, tc.expect, bs)
 		})
@@ -413,7 +414,7 @@ func TestGetLastBlocks(t *testing.T) {
 		name   string
 		store  chainStore
 		n      uint64
-		expcet []coin.SignedBlock
+		expect []coin.SignedBlock
 	}{
 		{
 			"get last block",
@@ -443,7 +444,7 @@ func TestGetLastBlocks(t *testing.T) {
 			"get block from empty chain",
 			&fakeChainStore{},
 			1,
-			blocks[0:0],
+			nil,
 		},
 	}
 
@@ -453,8 +454,9 @@ func TestGetLastBlocks(t *testing.T) {
 				store: tc.store,
 			}
 
-			bs := bc.GetLastBlocks(tc.n)
-			require.Equal(t, tc.expcet, bs)
+			bs, err := bc.GetLastBlocks(tc.n)
+			require.NoError(t, err)
+			require.Equal(t, tc.expect, bs)
 		})
 	}
 }

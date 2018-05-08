@@ -79,7 +79,12 @@ func checkWltBalance(c *gcli.Context) error {
 	}
 
 	balRlt, err := CheckWalletBalance(rpcClient, w)
-	if err != nil {
+	switch err.(type) {
+	case nil:
+	case WalletLoadError:
+		errorWithHelp(c, err)
+		return nil
+	default:
 		return err
 	}
 
@@ -112,7 +117,7 @@ func addrBalance(c *gcli.Context) error {
 func CheckWalletBalance(c *webrpc.Client, walletFile string) (*BalanceResult, error) {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
-		return nil, err
+		return nil, WalletLoadError{err}
 	}
 
 	var addrs []string

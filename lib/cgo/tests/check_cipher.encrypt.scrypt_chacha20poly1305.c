@@ -35,9 +35,9 @@ Test(cipher_encrypt_scrypt_chacha20poly1305, TestScryptChacha20poly1305Encrypt){
 		encrypt__ScryptChacha20poly1305 encrypt = {1 << i, 8, 1, 32};
 		errcode = SKY_encrypt_ScryptChacha20poly1305_Encrypt(
 				&encrypt, text, password, (coin__UxArray*)&result);
+		cr_assert(errcode == SKY_OK, "SKY_encrypt_ScryptChacha20poly1305_Encrypt failed");
 		cr_assert(result.len > SCRYPTCHACHA20METALENGTHSIZE, "SKY_encrypt_ScryptChacha20poly1305_Encrypt failed, result data length too short");
 		((char*)result.data)[result.len] = 0;
-		cr_assert(errcode == SKY_OK, "SKY_encrypt_ScryptChacha20poly1305_Encrypt failed");
 		base64_decode_string((const unsigned char*)result.data, result.len, str, BUFFER_SIZE);
 		metalength = (unsigned int)	str[0];
 		for(int m = 1; m < SCRYPTCHACHA20METALENGTHSIZE; m++){

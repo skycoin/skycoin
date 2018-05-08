@@ -118,6 +118,18 @@ unsigned int base64_decode_string(const unsigned char* in,
 	free(data);
 }
 
+unsigned int base64_decode_binary(const unsigned char* in, 
+		unsigned int in_len, char* out, unsigned int* real_size, unsigned int buffer_size){
+	unsigned int* data;
+	data = malloc(buffer_size);
+	unsigned int decode_len = b64_decode(in, in_len, data);
+	for(int c = 0; c < decode_len && c < buffer_size; c++){
+		out[c] = (char)data[c];
+	}
+	free(data);
+	*real_size = decode_len;
+}
+
 unsigned int b64_encodef(char *InFile, char *OutFile) {
 
 	FILE *pInFile = fopen(InFile,"rb");

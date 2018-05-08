@@ -45,3 +45,6 @@ unsigned int b64_decodef(char *InFile, char *OutFile);
 
 unsigned int base64_decode_string(const unsigned char* in, 
 		unsigned int in_len, char* out, unsigned int buffer_size);
+
+unsigned int base64_decode_binary(const unsigned char* in, 
+		unsigned int in_len, char* out, unsigned int* real_size, unsigned int buffer_size);

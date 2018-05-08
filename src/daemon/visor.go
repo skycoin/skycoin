@@ -424,9 +424,9 @@ func (vs *Visor) HeadBkSeq() (uint64, bool, error) {
 	return vs.v.HeadBkSeq()
 }
 
-// ExecuteSignedBlocks executes signed blocks
-func (vs *Visor) ExecuteSignedBlocks(b []coin.SignedBlock) ([]coin.SignedBlock, uint64, error) {
-	return vs.v.ExecuteSignedBlocks(b)
+// ExecuteSignedBlock executes signed blocks
+func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
+	return vs.v.ExecuteSignedBlock(b)
 }
 
 // GetSignedBlocksSince returns signed blocks in an inclusive range of [seq+1, seq+ct]
@@ -524,19 +524,60 @@ func (gbm *GiveBlocksMessage) Process(d *Daemon) {
 		return
 	}
 
-	if len(gbm.Blocks) == 0 {
-		logger.Debug("Received empty GiveBlocksMessage")
-		return
-	}
+	// These DB queries are not performed in a transaction for performance reasons.
+	// It is not necessary that the blocks be executed together in a single transaction.
 
-	addedBlocks, headBkSeq, err := d.Visor.ExecuteSignedBlocks(gbm.Blocks)
+	processed := 0
+	maxSeq, ok, err := d.Visor.HeadBkSeq()
 	if err != nil {
-		logger.WithError(err).Error("GiveBlocksMessage ExecuteSignedBlocks failed")
+		logger.WithError(err).Error("visor.HeadBkSeq failed")
+		return
+	}
+	if !ok {
+		logger.Error("No HeadBkSeq found, cannot execute blocks")
 		return
 	}
 
-	if len(addedBlocks) == 0 {
+	for _, b := range gbm.Blocks {
+		// To minimize waste when receiving multiple responses from peers
+		// we only break out of the loop if the block itself is invalid.
+		// E.g. if we request 20 blocks since 0 from 2 peers, and one peer
+		// replies with 15 and the other 20, if we did not do this check and
+		// the reply with 15 was received first, we would toss the one with 20
+		// even though we could process it at the time.
+		if b.Seq() <= maxSeq {
+			continue
+		}
+
+		err := d.Visor.ExecuteSignedBlock(b)
+		if err == nil {
+			logger.Critical().Infof("Added new block %d", b.Block.Head.BkSeq)
+			processed++
+		} else {
+			logger.Critical().Errorf("Failed to execute received block %d: %v", b.Block.Head.BkSeq, err)
+			// Blocks must be received in order, so if one fails its assumed
+			// the rest are failing
+			break
+		}
+	}
+	if processed == 0 {
 		return
+	}
+
+	headBkSeq, ok, err := d.Visor.HeadBkSeq()
+	if err != nil {
+		logger.WithError(err).Error("visor.HeadBkSeq failed")
+		return
+	}
+	if !ok {
+		logger.Error("No HeadBkSeq found after executing blocks, will not announce blocks")
+		return
+	}
+
+	if headBkSeq < maxSeq {
+		logger.Critical().Warning("HeadBkSeq decreased after executing blocks")
+	} else if headBkSeq-maxSeq != uint64(processed) {
+		logger.Critical().Warning("HeadBkSeq increased by %d but we processed %s blocks", headBkSeq-maxSeq, processed)
 	}
 
 	// Announce our new blocks to peers

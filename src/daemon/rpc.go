@@ -20,6 +20,7 @@ type Connection struct {
 	Introduced bool   `json:"introduced"`
 	Mirror     uint32 `json:"mirror"`
 	ListenPort uint16 `json:"listen_port"`
+	PeerHeight uint64 `json:"height"`
 }
 
 // Connections an array of connections
@@ -48,8 +49,7 @@ type ResendResult struct {
 // RPC rpc
 type RPC struct{}
 
-// GetConnection gets connection of given address
-func (rpc RPC) GetConnection(d *Daemon, addr string) *Connection {
+func getConnection(rpc RPC, d *Daemon, addr string, heightMap map[string]uint64) *Connection {
 	if d.Pool.Pool == nil {
 		return nil
 	}
@@ -69,6 +69,10 @@ func (rpc RPC) GetConnection(d *Daemon, addr string) *Connection {
 		return nil
 	}
 
+	height, hasRecord := heightMap[addr]
+	if !hasRecord {
+		height = 0
+	}
 	return &Connection{
 		ID:           c.ID,
 		Addr:         addr,
@@ -78,7 +82,24 @@ func (rpc RPC) GetConnection(d *Daemon, addr string) *Connection {
 		Introduced:   !d.needsIntro(addr),
 		Mirror:       mirror,
 		ListenPort:   d.GetListenPort(addr),
+		PeerHeight:   height,
 	}
+}
+
+// GetConnection gets connection of given address
+func (rpc RPC) GetConnection(d *Daemon, addr string) *Connection {
+	heightMap := peerBlockHeightIndex(d)
+	return getConnection(rpc, d, addr, heightMap)
+}
+
+func peerBlockHeightIndex(d *Daemon) (index map[string]uint64) {
+	peerHeights := d.Visor.GetPeerBlockchainHeights()
+	index = make(map[string]uint64, len(peerHeights))
+
+	for i := 0; i < len(peerHeights); i++ {
+		index[peerHeights[i].Address] = peerHeights[i].Height
+	}
+	return
 }
 
 // GetConnections gets all connections
@@ -100,9 +121,10 @@ func (rpc RPC) GetConnections(d *Daemon) *Connections {
 		return nil
 	}
 
+	peerHeights := peerBlockHeightIndex(d)
 	for _, c := range cs {
 		if c.Solicited {
-			conn := rpc.GetConnection(d, c.Addr())
+			conn := getConnection(rpc, d, c.Addr(), peerHeights)
 			if conn != nil {
 				conns = append(conns, conn)
 			}

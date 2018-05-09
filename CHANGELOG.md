@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `/wallet/decrypt` API endpoint, decrypts wallet and returns decrypted wallet without sensitive data
 - `/wallet/seed` API endpoint, returns seed of specific wallet
 - `-enable-seed-api` cli option
+- Add environment variable `DATA_DIR` in CLI's
 - `USE_CSRF` environment variable for CLI, if the remote node has CSRF enabled (CSRF is enabled by default, use `-disable-csrf` to disable)
 - `cli showConfig` command to echo the cli's configuration back to the user
 - Option to generate 12/24 word seed when creating new wallet

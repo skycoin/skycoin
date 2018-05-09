@@ -30,8 +30,9 @@ const (
 	walletExt         = ".wlt"
 	defaultCoin       = "skycoin"
 	defaultWalletName = "$COIN_cli" + walletExt
-	defaultWalletDir  = "$HOME/.$COIN/wallets"
+	defaultWalletDir  = "$DATA_DIR/wallets"
 	defaultRPCAddress = "http://127.0.0.1:6420"
+	defaultDataDir    = "$HOME/.$COIN/"
 )
 
 var (
@@ -40,8 +41,8 @@ var (
     COIN: Name of the coin. Default "%s"
     USE_CSRF: Set to 1 or true if the remote node has CSRF enabled. Default false (unset)
     WALLET_DIR: Directory where wallets are stored. This value is overriden by any subcommand flag specifying a wallet filename, if that filename includes a path. Default "%s"
-    WALLET_NAME: Name of wallet file (without path). This value is overriden by any subcommand flag specifying a wallet filename. Default "%s"`,
-		defaultRPCAddress, defaultCoin, defaultWalletDir, defaultWalletName)
+    WALLET_NAME: Name of wallet file (without path). This value is overriden by any subcommand flag specifying a wallet filename. Default "%s"
+    DATA_DIR: Directory where everything is stored. Default "%s"`, defaultRPCAddress, defaultCoin, defaultWalletDir, defaultWalletName, defaultDataDir)
 
 	commandHelpTemplate = fmt.Sprintf(`USAGE:
         {{.HelpName}}{{if .VisibleFlags}} [command options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[arguments...]{{end}}{{if .Category}}
@@ -131,10 +132,16 @@ func LoadConfig() (Config, error) {
 
 	home := file.UserHome()
 
+	// get data dir dir from env
+	dataDir := os.Getenv("DATA_DIR")
+	if dataDir == "" {
+		dataDir = filepath.Join(home, fmt.Sprintf(".%s", coin))
+	}
+
 	// get wallet dir from env
 	wltDir := os.Getenv("WALLET_DIR")
 	if wltDir == "" {
-		wltDir = fmt.Sprintf("%s/.%s/wallets", home, coin)
+		wltDir = filepath.Join(dataDir, "wallets")
 	}
 
 	// get wallet name from env
@@ -146,9 +153,6 @@ func LoadConfig() (Config, error) {
 	if !strings.HasSuffix(wltName, walletExt) {
 		return Config{}, ErrWalletName
 	}
-
-	dataDir := filepath.Join(home, fmt.Sprintf(".%s", coin))
-
 	var useCSRF bool
 	useCSRFStr := os.Getenv("USE_CSRF")
 	if useCSRFStr != "" {

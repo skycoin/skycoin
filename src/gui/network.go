@@ -39,31 +39,20 @@ func connectionHandler(gateway Gatewayer) http.HandlerFunc {
 			wh.Error404(w, "")
 			return
 		}
-		cnx := Connection{c, 0}
+		cnx := Connection{
+			Connection: c,
+			Height:     0,
+		}
 		bcp := gateway.GetBlockchainProgress()
-		notFound := true
-		i, l := 0, len(bcp.Peers)
-		for notFound && i < l {
-			ph := bcp.Peers[i]
+		for _, ph := range bcp.Peers {
 			if ph.Address == c.Addr {
-				notFound = false
 				cnx.Height = ph.Height
+				break
 			}
-			i++
 		}
 
 		wh.SendJSONOr500(logger, w, cnx)
 	}
-}
-
-func peerHeightIndex(bcp *daemon.BlockchainProgress) (index map[string]uint64) {
-	peerHeights := bcp.Peers
-	index = make(map[string]uint64, len(peerHeights))
-
-	for i := 0; i < len(peerHeights); i++ {
-		index[peerHeights[i].Address] = peerHeights[i].Height
-	}
-	return
 }
 
 func connectionsHandler(gateway Gatewayer) http.HandlerFunc {
@@ -75,13 +64,18 @@ func connectionsHandler(gateway Gatewayer) http.HandlerFunc {
 
 		dcnxs := gateway.GetConnections()
 		bcp := gateway.GetBlockchainProgress()
-		index := peerHeightIndex(bcp)
+
+		peerHeights := bcp.Peers
+		index := make(map[string]uint64, len(peerHeights))
+
+		for i := 0; i < len(peerHeights); i++ {
+			index[peerHeights[i].Address] = peerHeights[i].Height
+		}
+
 		cnxs := Connections{}
 		for _, c := range dcnxs.Connections {
-			cnx := Connection{c, 0}
-			if height, hasRecord := index[c.Addr]; hasRecord {
-				cnx.Height = height
-			}
+			cnx := Connection{Connection: c, Height: 0}
+			cnx.Height, _ = index[c.Addr]
 			cnxs.Connections = append(cnxs.Connections, &cnx)
 		}
 		wh.SendJSONOr500(logger, w, cnxs)

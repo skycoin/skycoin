@@ -76,7 +76,7 @@ Test(api_cli, TestLoadConfig) {
 	errcode = SKY_cli_Config_GetCoin(&configHandle, &strConfigValue);
 	cr_assert(errcode == SKY_OK, "SKY_cli_Config_GetCoin failed");
 	cr_assert(strcmp(strConfigValue.p, strEnvCoinFoo.p) == 0, "SKY_cli_LoadConfig with coin failed");
-	SKY_cli_Setenv(strEnvCoinVar, strEnv); //Restore previous value
+	SKY_cli_Setenv(strEnvCoinVar, *(GoString*)&strEnv); //Restore previous value
 	registerMemCleanup((void *)strConfigValue.p);
 	registerMemCleanup((void *)strEnv.p);
 	SKY_handle_close((Handle)configHandle);
@@ -90,7 +90,7 @@ Test(api_cli, TestLoadConfig) {
 	errcode = SKY_cli_Config_GetRPCAddress(&configHandle, &strConfigValue);
 	cr_assert(errcode == SKY_OK, "SKY_cli_Config_GetRPCAddress failed");
 	cr_assert(strcmp(strConfigValue.p, strEnvRPCSample.p) == 0, "SKY_cli_LoadConfig with RPCAddress failed");
-	SKY_cli_Setenv(strEnvCoinVar, strEnv); //Restore previous value
+	SKY_cli_Setenv(strEnvCoinVar, *(GoString*)&strEnv); //Restore previous value
 	registerMemCleanup((void*)strConfigValue.p);
 	registerMemCleanup((void*)strEnv.p);
 	SKY_handle_close((Handle)configHandle);
@@ -102,9 +102,9 @@ Test(api_cli, TestLoadConfig) {
 	errcode = SKY_cli_Getenv(strWalletNameVar, &strEnv2);
 	cr_assert(errcode == SKY_OK, "SKY_cli_Getenv failed getting WALLET_NAME");
 	
-	errcode = SKY_cli_Setenv(strWalletDirVar, strWalletDirSample);
+	errcode = SKY_cli_Setenv(strWalletDirVar, *(GoString*)&strWalletDirSample);
 	cr_assert(errcode == SKY_OK, "SKY_cli_Setenv failed setting WALLET_DIR");
-	errcode = SKY_cli_Setenv(strWalletNameVar, strWalletNameSample);
+	errcode = SKY_cli_Setenv(strWalletNameVar, *(GoString*)&strWalletNameSample);
 	cr_assert(errcode == SKY_OK, "SKY_cli_Setenv failed setting WALLET_NAME");
 	
 	errcode = SKY_cli_LoadConfig(&configHandle);
@@ -112,8 +112,8 @@ Test(api_cli, TestLoadConfig) {
 	errcode = SKY_cli_Config_FullWalletPath(&configHandle, &strConfigValue);
 	cr_assert(errcode == SKY_OK, "SKY_cli_Config_FullWalletPath failed");
 	cr_assert(strcmp(strConfigValue.p, SKYCOIN_WALLET_FULL_PATH_SAMPLE) == 0, "SKY_cli_LoadConfig with Wallet Dir failed");
-	SKY_cli_Setenv(strWalletDirVar, strEnv); //Restore previous value
-	SKY_cli_Setenv(strWalletNameVar, strEnv2); //Restore previous value
+	SKY_cli_Setenv(strWalletDirVar, *(GoString*)&strEnv); //Restore previous value
+	SKY_cli_Setenv(strWalletNameVar, *(GoString*)&strEnv2); //Restore previous value
 	registerMemCleanup((void*)strConfigValue.p);
 	registerMemCleanup((void*)strEnv.p);
 	registerMemCleanup((void*)strEnv2.p);

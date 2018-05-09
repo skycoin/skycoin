@@ -133,7 +133,7 @@ func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-// Returns the balance of all wallets combined, both confirmed and predicted.  The predicted
+// Returns the balance of one or more addresses, both confirmed and predicted.  The predicted
 // balance is the confirmed balance minus the pending spends.
 // URI: /balance
 // Method: GET
@@ -157,6 +157,11 @@ func getBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 			addrs = append(addrs, a)
+		}
+
+		if len(addrs) == 0 {
+			wh.Error400(w, "addrs is required")
+			return
 		}
 
 		bals, err := gateway.GetBalanceOfAddrs(addrs)

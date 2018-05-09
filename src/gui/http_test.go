@@ -163,6 +163,13 @@ func TestGetBalanceHandler(t *testing.T) {
 			},
 		},
 		{
+			name:     "400 - no addresses",
+			method:   http.MethodGet,
+			status:   http.StatusBadRequest,
+			err:      "400 Bad Request - addrs is required",
+			httpBody: &httpBody{},
+		},
+		{
 			name:   "500 - GetBalanceOfAddrsError",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,

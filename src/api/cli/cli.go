@@ -132,10 +132,16 @@ func LoadConfig() (Config, error) {
 
 	home := file.UserHome()
 
+	// get data dir dir from env
+	dataDir := os.Getenv("DATA_DIR")
+	if dataDir == "" {
+		dataDir = filepath.Join(home, fmt.Sprintf(".%s", coin))
+	}
+
 	// get wallet dir from env
 	wltDir := os.Getenv("WALLET_DIR")
 	if wltDir == "" {
-		wltDir = fmt.Sprintf("%s/.%s/wallets", home, coin)
+		wltDir = fmt.Sprintf("%s/wallets", dataDir)
 	}
 
 	// get wallet name from env
@@ -147,13 +153,6 @@ func LoadConfig() (Config, error) {
 	if !strings.HasSuffix(wltName, walletExt) {
 		return Config{}, ErrWalletName
 	}
-
-	// get data dir dir from env
-	dataDir := os.Getenv("DATA_DIR")
-	if dataDir == "" {
-		dataDir = filepath.Join(home, fmt.Sprintf(".%s", coin))
-	}
-
 	var useCSRF bool
 	useCSRFStr := os.Getenv("USE_CSRF")
 	if useCSRFStr != "" {

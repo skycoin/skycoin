@@ -76,7 +76,9 @@ export class WalletDetailComponent implements OnDestroy {
       });
   }
 
-  copyAddress(address) {
+  copyAddress(address, event) {
+    event.stopPropagation();
+
     const selBox = document.createElement('textarea');
 
     selBox.style.position = 'fixed';
@@ -94,10 +96,9 @@ export class WalletDetailComponent implements OnDestroy {
 
     address.copying = true;
 
-    // wait for a while and then remove the 'copying' class
     setTimeout(function () {
       address.copying = false;
-    }, 500);
+    }, 1000);
   }
 
   showQrCode(event, address: string) {

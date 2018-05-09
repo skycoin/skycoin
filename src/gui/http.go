@@ -82,7 +82,7 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 	if c.EnableJSON20RPC {
 		logger.Info("JSON 2.0 RPC enabled")
 		var err error
-		rpc, err = webrpc.New(gateway)
+		rpc, err = webrpc.New(gateway.(*daemon.Gateway))
 		if err != nil {
 			return nil, err
 		}

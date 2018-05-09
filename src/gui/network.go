@@ -74,8 +74,10 @@ func connectionsHandler(gateway Gatewayer) http.HandlerFunc {
 
 		cnxs := Connections{}
 		for _, c := range dcnxs.Connections {
-			cnx := Connection{Connection: c, Height: 0}
-			cnx.Height, _ = index[c.Addr]
+			cnx := Connection{
+				Connection: c,
+				Height:     index[c.Addr],
+			}
 			cnxs.Connections = append(cnxs.Connections, &cnx)
 		}
 		wh.SendJSONOr500(logger, w, cnxs)

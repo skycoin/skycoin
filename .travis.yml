@@ -35,8 +35,8 @@ install:
   - go get github.com/gz-c/gox
   # Install dependences for building wallet
   - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_PULL_REQUEST" == false ]]; then sudo apt-get install --no-install-recommends -y icnsutils graphicsmagick xz-utils && nvm install 8; fi
-  - mkdir -p $HOME/gopath/src/github.com/skycoin
-  - if ! [[ -d $HOME/gopath/src/github.com/simelo/skycoin ]]; then ln -s $HOME/gopath/src/github.com/simelo/skycoin $HOME/gopath/src/github.com/skycoin/skycoin; fi
+  - 
+  - if ! [[ -d $HOME/gopath/src/github.com/skycoin/skycoin ]]; then mkdir -p $HOME/gopath/src/github.com/skycoin; ln -s $HOME/gopath/src/github.com/simelo/skycoin $HOME/gopath/src/github.com/skycoin/skycoin; fi
   - cd $HOME/gopath/src/github.com/skycoin/skycoin
   - go get -t ./...
   - make install-linters

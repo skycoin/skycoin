@@ -367,3 +367,38 @@ func SKY_wallet_ChooseSpendsMaximizeUxOuts(_uxa []C.wallet__UxBalance, _coins ui
 	}
 	return
 }
+
+//export SKY_wallet_Lock
+func SKY_wallet_Lock(_w *C.Wallet__Handle, pwd string, cryptoType string) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	w, okw := lookupWalletHandle(*_w)
+	if !okw {
+		____error_code = SKY_ERROR
+		return
+	}
+	____return_err := w.Lock([]byte(pwd), wallet.CryptoType(cryptoType))
+	____error_code = libErrorCode(____return_err)
+	return
+}
+
+//export SKY_wallet_Unlock
+func SKY_wallet_Unlock(_w *C.Wallet__Handle, pwd string, _new_wallet *C.Wallet__Handle) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	w, okw := lookupWalletHandle(*_w)
+	if !okw {
+		____error_code = SKY_ERROR
+		return
+	}
+	new_wallet, ____return_err := w.Unlock([]byte(pwd))
+	____error_code = libErrorCode(____return_err)
+	if ____return_err == nil {
+		*_new_wallet = registerWalletHandle(new_wallet)
+	}
+	return
+}

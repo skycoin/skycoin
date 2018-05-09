@@ -31,6 +31,9 @@ cache:
   - $HOME/.npm/_prebuilds
   - src/gui/static/node_modules
 
+addons:
+  chrome: stable
+
 install:
   # Install gox
   - go get github.com/gz-c/gox
@@ -43,6 +46,8 @@ install:
 
 before_script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" && "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/add-key.sh && npm install -g yarn ;fi
+  - export DISPLAY=:99.0
+  - sh -e /etc/init.d/xvfb start
 
 script:
   - make lint

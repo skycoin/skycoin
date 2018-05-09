@@ -25,7 +25,7 @@ RUN cd $GOPATH/src/github.com/skycoin/skycoin && \
            if test -d $GOPATH/bin/linux_arm64 ; then mv $GOPATH/bin/linux_arm64/* $GOPATH/bin/; fi"
 
 # skycoin image
-FROM alpine:3.7
+FROM $IMAGE_FROM
 
 ENV COIN="skycoin"
 ENV RPC_ADDR="http://0.0.0.0:6420" \

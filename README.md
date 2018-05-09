@@ -140,7 +140,7 @@ Access the API: [http://localhost:6420/version](http://localhost:6420/version).
 
 ### Building your own images
 
-[DOCKER BUILD](docker/images/mainnet/README.md).
+[Building your own images](docker/images/mainnet/README.md).
 
 ## API Documentation
 

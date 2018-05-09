@@ -22,17 +22,6 @@ func prepareWltDir(t *testing.T) string {
 	return dir
 }
 
-// func createGenesisSignature(t *testing.T) cipher.Sig {
-// 	_, s := cipher.GenerateKeyPair()
-// 	gb, err := coin.NewGenesisBlock(GenesisAddress, GenesisCoins, GenesisTime)
-// 	if err != nil {
-// 		panic(fmt.Errorf("create genesis block failed: %v", err))
-// 	}
-
-// 	sig := cipher.SignHash(gb.HashHeader(), s)
-// 	return sig
-// }
-
 // Returns an appropriate VisorConfig and a master visor
 func setupVisorConfig(t *testing.T) Config {
 	wltDir := prepareWltDir(t)
@@ -74,7 +63,7 @@ func transferCoins(t *testing.T, v *Visor) {
 	txn := makeSpendTx(t, coin.UxArray{uxs[spend.UxIndex]}, spend.Keys, spend.ToAddr, spend.Coins)
 
 	var b *coin.Block
-	err := v.DB.View(func(tx *dbutil.Tx) error {
+	err := v.DB.View("", func(tx *dbutil.Tx) error {
 		var err error
 		b, err = v.Blockchain.NewBlock(tx, coin.Transactions{txn}, head.Time()+uint64(100))
 		require.NoError(t, err)
@@ -86,7 +75,7 @@ func transferCoins(t *testing.T, v *Visor) {
 		Block: *b,
 		Sig:   cipher.SignHash(b.HashHeader(), genSecret),
 	}
-	v.DB.Update(func(tx *dbutil.Tx) error {
+	v.DB.Update("", func(tx *dbutil.Tx) error {
 		bcc, ok := v.Blockchain.(*Blockchain)
 		require.True(t, ok)
 		return bcc.store.AddBlock(tx, sb)

@@ -68,7 +68,7 @@ func MakeBlockchain(t *testing.T, db *dbutil.DB, seckey cipher.SecKey) *visor.Bl
 	}
 
 	sig := cipher.SignHash(gb.HashHeader(), seckey)
-	db.Update(func(tx *dbutil.Tx) error {
+	db.Update("", func(tx *dbutil.Tx) error {
 		return b.ExecuteBlock(tx, &coin.SignedBlock{
 			Block: *gb,
 			Sig:   sig,
@@ -80,7 +80,7 @@ func MakeBlockchain(t *testing.T, db *dbutil.DB, seckey cipher.SecKey) *visor.Bl
 // CreateGenesisSpendTransaction creates the initial post-genesis transaction that moves genesis coins to another address
 func CreateGenesisSpendTransaction(t *testing.T, db *dbutil.DB, bc *visor.Blockchain, toAddr cipher.Address, coins, hours, fee uint64) coin.Transaction {
 	var txn coin.Transaction
-	err := db.View(func(tx *dbutil.Tx) error {
+	err := db.View("", func(tx *dbutil.Tx) error {
 		uxOuts, err := bc.Unspent().GetAll(tx)
 		require.NoError(t, err)
 		require.Len(t, uxOuts, 1)

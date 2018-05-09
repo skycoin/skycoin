@@ -108,7 +108,7 @@ func TestAddAddressTxns(t *testing.T) {
 
 			addrTxns := &addressTxns{}
 
-			err := db.Update(func(tx *dbutil.Tx) error {
+			err := db.Update("", func(tx *dbutil.Tx) error {
 				for _, pr := range tc.addPairs {
 					err := addrTxns.Add(tx, pr.addr, pr.txHash)
 					require.NoError(t, err)
@@ -118,7 +118,7 @@ func TestAddAddressTxns(t *testing.T) {
 			require.NoError(t, err)
 
 			for _, e := range tc.expect {
-				err := db.View(func(tx *dbutil.Tx) error {
+				err := db.View("", func(tx *dbutil.Tx) error {
 					hashes, err := addrTxns.Get(tx, e.addr)
 					require.NoError(t, err)
 					require.Equal(t, e.txs, hashes)
@@ -229,7 +229,7 @@ func TestGetAddressTxns(t *testing.T) {
 
 			addrTxns := &addressTxns{}
 
-			err := db.Update(func(tx *dbutil.Tx) error {
+			err := db.Update("", func(tx *dbutil.Tx) error {
 				for _, pr := range tc.addPairs {
 					err := addrTxns.Add(tx, pr.addr, pr.txHash)
 					require.NoError(t, err)
@@ -239,7 +239,7 @@ func TestGetAddressTxns(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			err = db.View(func(tx *dbutil.Tx) error {
+			err = db.View("", func(tx *dbutil.Tx) error {
 				for _, e := range tc.expect {
 					hashes, err := addrTxns.Get(tx, e.addr)
 					require.NoError(t, err)

@@ -19,7 +19,7 @@ import (
 func prepareDB(t *testing.T) (*dbutil.DB, func()) {
 	db, shutdown := testutil.PrepareDB(t)
 
-	err := db.Update(func(tx *dbutil.Tx) error {
+	err := db.Update("", func(tx *dbutil.Tx) error {
 		return CreateBuckets(tx)
 	})
 	if err != nil {
@@ -185,7 +185,7 @@ func TestProcessGenesisBlock(t *testing.T) {
 	gb := bc.CreateGenesisBlock(genAddress, genCoins, genTime)
 	hisDB := New()
 
-	err := db.Update(func(tx *dbutil.Tx) error {
+	err := db.Update("", func(tx *dbutil.Tx) error {
 		err := hisDB.ParseBlock(tx, gb)
 		require.NoError(t, err)
 		return nil
@@ -263,7 +263,7 @@ func TestProcessBlock(t *testing.T) {
 	// create
 	hisDB := New()
 
-	err := db.Update(func(tx *dbutil.Tx) error {
+	err := db.Update("", func(tx *dbutil.Tx) error {
 		err := hisDB.ParseBlock(tx, gb)
 		require.NoError(t, err)
 		return nil
@@ -348,7 +348,7 @@ func testEngine(t *testing.T, tds []testData, bc *fakeBlockchain, hdb *HistoryDB
 			tds[i+1].PreBlockHash = b.HashHeader()
 		}
 
-		err = db.Update(func(tx *dbutil.Tx) error {
+		err = db.Update("", func(tx *dbutil.Tx) error {
 			err := hdb.ParseBlock(tx, *b)
 			require.NoError(t, err)
 			return nil
@@ -420,7 +420,7 @@ func addBlock(bc *fakeBlockchain, td testData, tm uint64) (*coin.Block, *coin.Tr
 }
 
 func mustGetBucketValue(t *testing.T, db *dbutil.DB, name []byte, key []byte, value interface{}) {
-	err := db.View(func(tx *dbutil.Tx) error {
+	err := db.View("", func(tx *dbutil.Tx) error {
 		ok, err := dbutil.GetBucketObjectDecoded(tx, name, key, value)
 		require.NoError(t, err)
 		require.True(t, ok)

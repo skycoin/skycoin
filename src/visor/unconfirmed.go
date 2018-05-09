@@ -214,7 +214,7 @@ type UnconfirmedTxnPool struct {
 
 // NewUnconfirmedTxnPool creates an UnconfirmedTxnPool instance
 func NewUnconfirmedTxnPool(db *dbutil.DB) (*UnconfirmedTxnPool, error) {
-	if err := db.View(func(tx *dbutil.Tx) error {
+	if err := db.View("Check unconfirmed txn pool size", func(tx *dbutil.Tx) error {
 		n, err := dbutil.Len(tx, UnconfirmedTxnsBkt)
 		if err != nil {
 			return err

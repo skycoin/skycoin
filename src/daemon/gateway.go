@@ -12,7 +12,6 @@ import (
 
 	"fmt"
 
-	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
@@ -525,15 +524,6 @@ func (gw *Gateway) GetUnconfirmedTxns(addrs []cipher.Address) ([]visor.Unconfirm
 		txns, err = gw.v.GetUnconfirmedTxns(visor.ToAddresses(addrs))
 	})
 	return txns, err
-}
-
-// GetUnspent returns the unspent pool
-func (gw *Gateway) GetUnspent() blockdb.UnspentPool {
-	var unspent blockdb.UnspentPool
-	gw.strand("GetUnspent", func() {
-		unspent = gw.v.Blockchain.Unspent()
-	})
-	return unspent
 }
 
 // Spend spends coins from given wallet and broadcast it,

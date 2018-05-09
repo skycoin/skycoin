@@ -57,7 +57,7 @@ func TestTransactionGet(t *testing.T) {
 			require.NoError(t, err)
 
 			// init the bkt
-			err = db.Update(func(tx *dbutil.Tx) error {
+			err = db.Update("", func(tx *dbutil.Tx) error {
 				for _, txn := range txns[:2] {
 					err := txsBkt.Add(tx, &txn)
 					require.NoError(t, err)
@@ -67,7 +67,7 @@ func TestTransactionGet(t *testing.T) {
 			require.NoError(t, err)
 
 			// get slice
-			err = db.View(func(tx *dbutil.Tx) error {
+			err = db.View("", func(tx *dbutil.Tx) error {
 				ts, err := txsBkt.Get(tx, tc.hash)
 				require.NoError(t, err)
 				require.Equal(t, tc.expect, ts)
@@ -130,7 +130,7 @@ func TestTransactionGetSlice(t *testing.T) {
 			require.NoError(t, err)
 
 			// init the bkt
-			err = db.Update(func(tx *dbutil.Tx) error {
+			err = db.Update("", func(tx *dbutil.Tx) error {
 				for _, txn := range txns[:3] {
 					err := txsBkt.Add(tx, &txn)
 					require.NoError(t, err)
@@ -140,7 +140,7 @@ func TestTransactionGetSlice(t *testing.T) {
 			require.NoError(t, err)
 
 			// get slice
-			err = db.View(func(tx *dbutil.Tx) error {
+			err = db.View("", func(tx *dbutil.Tx) error {
 				ts, err := txsBkt.GetSlice(tx, tc.hashes)
 				require.NoError(t, err)
 				require.Equal(t, tc.expect, ts)

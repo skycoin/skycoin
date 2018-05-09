@@ -33,7 +33,7 @@ func CheckAndRepairDatabase(db *dbutil.DB, pubkey cipher.PubKey) (*dbutil.DB, er
 		return nil, err
 	}
 
-	err = db.View(func(tx *dbutil.Tx) error {
+	err = db.View("VerifySignatures", func(tx *dbutil.Tx) error {
 		return bc.VerifySignatures(tx, SigVerifyTheadNum)
 	})
 	if err != nil {

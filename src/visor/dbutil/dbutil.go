@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"runtime/debug"
 	"sync"
+	"time"
 
 	"github.com/boltdb/bolt"
 
@@ -15,11 +16,13 @@ import (
 )
 
 var (
-	logger        = logging.MustGetLogger("dbutil")
-	txViewLog     = false
-	txViewTrace   = false
-	txUpdateLog   = false
-	txUpdateTrace = false
+	logger                       = logging.MustGetLogger("dbutil")
+	txViewLog                    = false
+	txViewTrace                  = false
+	txUpdateLog                  = false
+	txUpdateTrace                = false
+	txDurationLog                = true
+	txDurationReportingThreshold = time.Millisecond * 100
 )
 
 // Tx wraps a Tx
@@ -36,10 +39,13 @@ func (tx *Tx) String() string {
 
 // DB wraps a bolt.DB to add logging
 type DB struct {
-	ViewLog     bool
-	ViewTrace   bool
-	UpdateLog   bool
-	UpdateTrace bool
+	ViewLog                    bool
+	ViewTrace                  bool
+	UpdateLog                  bool
+	UpdateTrace                bool
+	DurationLog                bool
+	DurationReportingThreshold time.Duration
+
 	*bolt.DB
 
 	// shutdownLock is added to prevent closing the database while a View transaction is in progress
@@ -51,39 +57,73 @@ type DB struct {
 	shutdownLock sync.RWMutex
 }
 
+// WrapDB returns WrapDB
+func WrapDB(db *bolt.DB) *DB {
+	return &DB{
+		ViewLog:                    txViewLog,
+		UpdateLog:                  txUpdateLog,
+		ViewTrace:                  txViewTrace,
+		UpdateTrace:                txUpdateTrace,
+		DurationLog:                txDurationLog,
+		DurationReportingThreshold: txDurationReportingThreshold,
+		DB: db,
+	}
+}
+
 // View wraps *bolt.DB.View to add logging
-func (db *DB) View(f func(*Tx) error) error {
+func (db *DB) View(name string, f func(*Tx) error) error {
 	db.shutdownLock.RLock()
 	defer db.shutdownLock.RUnlock()
 
 	if db.ViewLog {
-		logger.Debug("db.View starting")
-		defer logger.Debug("db.View done")
+		logger.Debug("db.View [%s] starting", name)
+		defer logger.Debug("db.View [%s] done", name)
 	}
 	if db.ViewTrace {
 		debug.PrintStack()
 	}
 
-	return db.DB.View(func(tx *bolt.Tx) error {
+	t0 := time.Now()
+
+	err := db.DB.View(func(tx *bolt.Tx) error {
 		return f(&Tx{tx})
 	})
+
+	t1 := time.Now()
+	delta := t1.Sub(t0)
+	if delta > db.DurationReportingThreshold {
+		logger.Debugf("db.View [%s] elapsed %s", name, delta)
+	}
+
+	return err
 }
 
 // Update wraps *bolt.DB.Update to add logging
-func (db *DB) Update(f func(*Tx) error) error {
+func (db *DB) Update(name string, f func(*Tx) error) error {
 	db.shutdownLock.RLock()
 	defer db.shutdownLock.RUnlock()
 
 	if db.UpdateLog {
-		logger.Debug("db.Update starting")
-		defer logger.Debug("db.Update done")
+		logger.Debug("db.Update [%s] starting", name)
+		defer logger.Debug("db.Update [%s] done", name)
 	}
 	if db.UpdateTrace {
 		debug.PrintStack()
 	}
-	return db.DB.Update(func(tx *bolt.Tx) error {
+
+	t0 := time.Now()
+
+	err := db.DB.Update(func(tx *bolt.Tx) error {
 		return f(&Tx{tx})
 	})
+
+	t1 := time.Now()
+	delta := t1.Sub(t0)
+	if delta > db.DurationReportingThreshold {
+		logger.Debugf("db.Update [%s] elapsed %s", name, delta)
+	}
+
+	return err
 }
 
 // Close closes the underlying *bolt.DB
@@ -92,17 +132,6 @@ func (db *DB) Close() error {
 	defer db.shutdownLock.Unlock()
 
 	return db.DB.Close()
-}
-
-// WrapDB returns WrapDB
-func WrapDB(db *bolt.DB) *DB {
-	return &DB{
-		ViewLog:     txViewLog,
-		UpdateLog:   txUpdateLog,
-		ViewTrace:   txViewTrace,
-		UpdateTrace: txUpdateTrace,
-		DB:          db,
-	}
 }
 
 // ErrCreateBucketFailed is returned if creating a bolt.DB bucket fails

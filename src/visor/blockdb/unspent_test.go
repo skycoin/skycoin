@@ -55,7 +55,7 @@ func TestNewUnspentPool(t *testing.T) {
 
 	up := NewUnspentPool()
 
-	err := db.View(func(tx *dbutil.Tx) error {
+	err := db.View("", func(tx *dbutil.Tx) error {
 		length, err := dbutil.Len(tx, UnspentPoolBkt)
 		require.NoError(t, err)
 		require.Equal(t, uint64(0), length)
@@ -70,7 +70,7 @@ func TestNewUnspentPool(t *testing.T) {
 }
 
 func addUxOut(db *dbutil.DB, up *Unspents, ux coin.UxOut) error {
-	return db.Update(func(tx *dbutil.Tx) error {
+	return db.Update("", func(tx *dbutil.Tx) error {
 		if err := up.pool.set(tx, ux.Hash(), ux); err != nil {
 			return err
 		}
@@ -117,7 +117,7 @@ func TestUnspentPoolGet(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			err := db.View(func(tx *dbutil.Tx) error {
+			err := db.View("", func(tx *dbutil.Tx) error {
 				ux, err := up.Get(tx, tc.hash)
 				require.NoError(t, err)
 				require.Equal(t, tc.ux, ux)
@@ -145,7 +145,7 @@ func TestUnspentPoolLen(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	err := db.View(func(tx *dbutil.Tx) error {
+	err := db.View("", func(tx *dbutil.Tx) error {
 		length, err := up.Len(tx)
 		require.NoError(t, err)
 		require.Equal(t, uint64(5), length)
@@ -169,7 +169,7 @@ func TestUnspentPoolGetUxHash(t *testing.T) {
 	for _, ux := range uxs {
 		err := addUxOut(db, up, ux)
 		require.NoError(t, err)
-		err = db.Update(func(tx *dbutil.Tx) error {
+		err = db.Update("", func(tx *dbutil.Tx) error {
 			uxHash, err := up.GetUxHash(tx)
 			require.NoError(t, err)
 
@@ -232,7 +232,7 @@ func TestUnspentPoolGetArray(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := db.View(func(tx *dbutil.Tx) error {
+			err := db.View("", func(tx *dbutil.Tx) error {
 				uxs, err := up.GetArray(tx, tc.hashes)
 				require.Equal(t, tc.err, err)
 				if err == nil {
@@ -285,7 +285,7 @@ func TestUnspentPoolGetAll(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			err := db.View(func(tx *dbutil.Tx) error {
+			err := db.View("", func(tx *dbutil.Tx) error {
 				unspents, err := up.GetAll(tx)
 				require.NoError(t, err)
 
@@ -322,7 +322,7 @@ func BenchmarkUnspentPoolGetAll(b *testing.B) {
 
 	start := time.Now()
 	for i := 0; i < b.N; i++ {
-		err := db.View(func(tx *dbutil.Tx) error {
+		err := db.View("", func(tx *dbutil.Tx) error {
 			_, err := up.GetAll(tx)
 			return err
 		})
@@ -396,7 +396,7 @@ func TestGetUnspentOfAddrs(t *testing.T) {
 			}
 
 			var unspents coin.AddressUxOuts
-			err := db.View(func(tx *dbutil.Tx) error {
+			err := db.View("", func(tx *dbutil.Tx) error {
 				var err error
 				unspents, err = up.GetUnspentsOfAddrs(tx, tc.addrs)
 				require.NoError(t, err)
@@ -463,7 +463,7 @@ func TestUnspentProcessBlock(t *testing.T) {
 			var block *coin.Block
 			var oldUxHash cipher.SHA256
 
-			err := db.Update(func(tx *dbutil.Tx) error {
+			err := db.Update("", func(tx *dbutil.Tx) error {
 				uxHash, err := up.GetUxHash(tx)
 				require.NoError(t, err)
 
@@ -484,7 +484,7 @@ func TestUnspentProcessBlock(t *testing.T) {
 
 			txOuts := coin.CreateUnspents(block.Head, txn)
 
-			err = db.View(func(tx *dbutil.Tx) error {
+			err = db.View("", func(tx *dbutil.Tx) error {
 				// check that the inputs should already been deleted from unspent pool
 				for _, in := range tc.inputs {
 					v, err := up.Get(tx, in.Hash())

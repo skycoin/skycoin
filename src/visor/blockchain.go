@@ -64,7 +64,7 @@ func DefaultWalker(tx *dbutil.Tx, hps []coin.HashPair) (cipher.SHA256, bool) {
 
 // CreateBuckets creates the buckets used by the blockdb
 func CreateBuckets(db *dbutil.DB) error {
-	return db.Update(func(tx *dbutil.Tx) error {
+	return db.Update("CreateBuckets", func(tx *dbutil.Tx) error {
 		if err := historydb.CreateBuckets(tx); err != nil {
 			return err
 		}

@@ -45,7 +45,7 @@ func testCase(t *testing.T, cases []blockCase) {
 		}
 		blocks[i] = b
 
-		err := db.Update(func(tx *dbutil.Tx) error {
+		err := db.Update("", func(tx *dbutil.Tx) error {
 			switch d.Action {
 			case "add":
 				err := btree.AddBlock(tx, &b)
@@ -187,7 +187,7 @@ func TestGetBlockInDepth(t *testing.T) {
 		},
 	}
 
-	err := db.Update(func(tx *dbutil.Tx) error {
+	err := db.Update("", func(tx *dbutil.Tx) error {
 		err := bc.AddBlock(tx, &blocks[0])
 		require.NoError(t, err)
 
@@ -205,7 +205,7 @@ func TestGetBlockInDepth(t *testing.T) {
 	require.NoError(t, err)
 
 	var block *coin.Block
-	err = db.View(func(tx *dbutil.Tx) error {
+	err = db.View("", func(tx *dbutil.Tx) error {
 		var err error
 		block, err = bc.GetBlockInDepth(tx, 1, func(tx *dbutil.Tx, hps []coin.HashPair) (cipher.SHA256, bool) {
 			for _, hp := range hps {

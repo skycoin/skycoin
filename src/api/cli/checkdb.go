@@ -19,6 +19,17 @@ const (
 	verifySignaturesWorkers = 4
 )
 
+// wrapDB calls dbutil.WrapDB and disables all logging
+func wrapDB(db *bolt.DB) *dbutil.DB {
+	wdb := dbutil.WrapDB(db)
+	wdb.UpdateLog = false
+	wdb.UpdateTrace = false
+	wdb.ViewLog = false
+	wdb.ViewTrace = false
+	wdb.DurationLog = false
+	return wdb
+}
+
 func checkdbCmd() gcli.Command {
 	name := "checkdb"
 	return gcli.Command{
@@ -58,7 +69,7 @@ func checkdb(c *gcli.Context) error {
 		return fmt.Errorf("decode blockchain pubkey failed: %v", err)
 	}
 
-	if err := IntegrityCheck(dbutil.WrapDB(db), pubkey); err != nil {
+	if err := IntegrityCheck(wrapDB(db), pubkey); err != nil {
 		return fmt.Errorf("checkdb failed: %v", err)
 	}
 
@@ -75,7 +86,7 @@ func IntegrityCheck(db *dbutil.DB, pubkey cipher.PubKey) error {
 		return err
 	}
 
-	return db.View(func(tx *dbutil.Tx) error {
+	return db.View("VerifySignatures", func(tx *dbutil.Tx) error {
 		return bc.VerifySignatures(tx, verifySignaturesWorkers)
 	})
 }

@@ -17,7 +17,7 @@ import (
 func prepareDB(t *testing.T) (*dbutil.DB, func()) {
 	db, shutdown := testutil.PrepareDB(t)
 
-	err := db.Update(func(tx *dbutil.Tx) error {
+	err := db.Update("", func(tx *dbutil.Tx) error {
 		return CreateBuckets(tx)
 	})
 	if err != nil {
@@ -371,7 +371,7 @@ func TestBlockchainAddBlockWithTx(t *testing.T) {
 
 			gb := makeGenesisBlock(t)
 
-			err := db.Update(func(tx *dbutil.Tx) error {
+			err := db.Update("", func(tx *dbutil.Tx) error {
 				err := bc.AddBlock(tx, &gb)
 				require.Equal(t, tc.expect.err, err)
 				return nil
@@ -379,7 +379,7 @@ func TestBlockchainAddBlockWithTx(t *testing.T) {
 			require.NoError(t, err)
 
 			// check sig
-			err = db.View(func(tx *dbutil.Tx) error {
+			err = db.View("", func(tx *dbutil.Tx) error {
 				_, ok, err := tc.fakeStorage.sigs.Get(tx, gb.HashHeader())
 				require.NoError(t, err)
 				require.Equal(t, tc.expect.sigSaved, ok)
@@ -436,7 +436,7 @@ func TestBlockchainHead(t *testing.T) {
 	bc, err := NewBlockchain(db, DefaultWalker)
 	require.NoError(t, err)
 
-	err = db.Update(func(tx *dbutil.Tx) error {
+	err = db.Update("", func(tx *dbutil.Tx) error {
 		_, err = bc.Head(tx)
 		require.Equal(t, err, ErrNoHeadBlock)
 
@@ -461,7 +461,7 @@ func TestBlockchainLen(t *testing.T) {
 	bc, err := NewBlockchain(db, DefaultWalker)
 	require.NoError(t, err)
 
-	err = db.View(func(tx *dbutil.Tx) error {
+	err = db.View("", func(tx *dbutil.Tx) error {
 		length, err := bc.Len(tx)
 		require.NoError(t, err)
 		require.Equal(t, uint64(0), length)
@@ -470,14 +470,14 @@ func TestBlockchainLen(t *testing.T) {
 	require.NoError(t, err)
 
 	gb := makeGenesisBlock(t)
-	err = db.Update(func(tx *dbutil.Tx) error {
+	err = db.Update("", func(tx *dbutil.Tx) error {
 		err := bc.AddBlock(tx, &gb)
 		require.NoError(t, err)
 		return nil
 	})
 	require.NoError(t, err)
 
-	err = db.View(func(tx *dbutil.Tx) error {
+	err = db.View("", func(tx *dbutil.Tx) error {
 		length, err := bc.Len(tx)
 		require.NoError(t, err)
 		require.Equal(t, uint64(1), length)
@@ -579,7 +579,7 @@ func TestBlockchainGetBlockByHash(t *testing.T) {
 			bc.tree = tc.tree
 			bc.sigs = tc.sigs
 
-			err = db.View(func(tx *dbutil.Tx) error {
+			err = db.View("", func(tx *dbutil.Tx) error {
 				b, err := bc.GetSignedBlockByHash(tx, tc.hash)
 				require.Equal(t, tc.expect.err, err)
 				require.Equal(t, tc.expect.b, b)

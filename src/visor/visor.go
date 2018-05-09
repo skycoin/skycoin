@@ -267,13 +267,14 @@ func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
 		return nil, err
 	}
 
-	var history *historydb.HistoryDB
-	if err := db.Update(func(tx *dbutil.Tx) error {
-		var err error
-		history, err = loadHistory(tx, bc)
-		return err
-	}); err != nil {
-		return nil, err
+	history := historydb.New()
+
+	if !db.IsReadOnly() {
+		if err := db.Update(func(tx *dbutil.Tx) error {
+			return initHistory(tx, bc, history)
+		}); err != nil {
+			return nil, err
+		}
 	}
 
 	wltServConfig := wallet.Config{
@@ -327,36 +328,34 @@ func (vs *Visor) Init() error {
 	})
 }
 
-func loadHistory(tx *dbutil.Tx, bc *Blockchain) (*historydb.HistoryDB, error) {
-	history := historydb.New()
-
+func initHistory(tx *dbutil.Tx, bc *Blockchain, history *historydb.HistoryDB) error {
 	shouldReset, err := history.NeedsReset(tx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if !shouldReset {
-		return history, nil
+		return nil
 	}
 
 	logger.Info("Resetting historyDB")
 
 	if err := history.Erase(tx); err != nil {
-		return nil, err
+		return err
 	}
 
 	// Reparse the history up to the blockchain head
 	headSeq, _, err := bc.HeadSeq(tx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if err := parseHistoryTo(tx, history, bc, headSeq); err != nil {
 		logger.WithError(err).Error("parseHistoryTo failed")
-		return nil, err
+		return err
 	}
 
-	return history, nil
+	return nil
 }
 
 func parseHistoryTo(tx *dbutil.Tx, history *historydb.HistoryDB, bc *Blockchain, height uint64) error {

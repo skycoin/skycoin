@@ -101,6 +101,18 @@ func TestLoadConfig(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, cfg.DataDir, val)
 	})
+
+	t.Run("set WALLET_DIR by DATA_DIR", func(t *testing.T) {
+		val := "/home/foo/"
+		os.Setenv("DATA_DIR", val)
+		defer os.Unsetenv("DATA_DIR")
+		valWallet := val + "wallets"
+		cfg, err := LoadConfig()
+		require.NoError(t, err)
+		require.Equal(t, cfg.DataDir, val)
+		require.Equal(t, cfg.WalletDir, valWallet)
+	})
+
 	t.Run("don't set USE_CSRF", func(t *testing.T) {
 		os.Unsetenv("USE_CSRF")
 

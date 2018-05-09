@@ -141,7 +141,8 @@ func LoadConfig() (Config, error) {
 	// get wallet dir from env
 	wltDir := os.Getenv("WALLET_DIR")
 	if wltDir == "" {
-		wltDir = fmt.Sprintf("%s/wallets", dataDir)
+		valdataDir := strings.TrimRight(dataDir, "/")
+		wltDir = fmt.Sprintf("%s/wallets", valdataDir)
 	}
 
 	// get wallet name from env

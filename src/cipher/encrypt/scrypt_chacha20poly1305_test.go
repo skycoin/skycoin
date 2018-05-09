@@ -13,7 +13,7 @@ import (
 )
 
 func TestScryptChacha20poly1305Encrypt(t *testing.T) {
-	for i := uint(20); i < 20; i++ {
+	for i := uint(1); i < 20; i++ {
 		name := fmt.Sprintf("N=1<<%v r=%v p=%v keyLen=%v", i, 8, 1, 32)
 		t.Run(name, func(t *testing.T) {
 			crypto := ScryptChacha20poly1305{N: 1 << i, R: 8, P: 1, KeyLen: 32}

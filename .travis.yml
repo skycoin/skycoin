@@ -36,6 +36,7 @@ install:
   # Install dependences for building wallet
   - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_PULL_REQUEST" == false ]]; then sudo apt-get install --no-install-recommends -y icnsutils graphicsmagick xz-utils && nvm install 8; fi
   - go get -t ./...
+  - if [! -a "$GOPATH/src/github.com/skycoin/skycoin"] ; then ln -s `pwd` "$GOPATH/src/github.com/skycoin/skycoin"; fi
   - make install-linters
   - make install-deps-libc
   - make install-deps-ui

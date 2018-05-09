@@ -214,12 +214,13 @@ unsigned int b64_decodef(char *InFile, char *OutFile) {
 
 unsigned int b64_encode_string(const unsigned char* in, unsigned int in_len, unsigned char* out){
 	unsigned int* data = malloc(in_len * sizeof(unsigned int));
+	unsigned int result = 0;
 	if ( data ) {
 		for(int i = 0; i < in_len; i++){
 			data[i] = in[i];
 		}
-		unsigned int result = b64_encode(data, in_len, out);
+		result = b64_encode(data, in_len, out);
 		free(data);
 	}
-	return 0;
+	return result;
 }

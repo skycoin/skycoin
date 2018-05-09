@@ -14,6 +14,7 @@
 #define PASSWORD1 "pwd"
 #define PASSWORD2 "key"
 #define PASSWORD3 "9JMkCPphe73NQvGhmab"
+#define WRONGPASSWORD "wrongpassword"
 #define SHA256XORDATALENGTHSIZE 4
 #define SHA256XORBLOCKSIZE 32
 #define SHA256XORCHECKSUMSIZE 32
@@ -23,7 +24,9 @@
 typedef struct{
 	int 		dataLength;
 	GoSlice* 	pwd;
+	GoSlice* 	decryptPwd;
 	int			success;
+	int 		tampered;
 } TEST_DATA;
 
 /*
@@ -184,7 +187,7 @@ void makeEncryptedData(GoSlice data, GoUint32 dataLength, GoSlice pwd, GoSlice* 
 	errcode = SKY_cipher_SumSHA256(nonceAndDataBytes, checksum);
 	cr_assert(errcode == SKY_OK, "SKY_cipher_SumSHA256 failed. Error calculating final checksum");
 	unsigned char bufferb64[BUFFER_SIZE];
-	unsigned int size = b64_encode_string(bufferb64, fullDestLength, bufferb64);
+	unsigned int size = b64_encode_string(dest_buffer, fullDestLength, encrypted->data);
 	encrypted->len = size;
 }
 
@@ -201,17 +204,17 @@ Test(cipher_encrypt_sha256xor, TestSha256XorEncrypt){
 	GoUint32 errcode;
 	
 	TEST_DATA test_data[] = {
-		{1, &nullPwd, 0},
-		{1, &pwd2, 1},
-		{2, &pwd1, 1},
-		{32, &pwd1, 1},
-		{64, &pwd3, 1},
-		{65, &pwd3, 1},
+		{1, &nullPwd, &nullPwd, 0, 0},
+		{1, &pwd2, &nullPwd, 1, 0},
+		{2, &pwd1, &nullPwd, 1, 0},
+		{32, &pwd1, &nullPwd, 1, 0},
+		{64, &pwd3, &nullPwd, 1, 0},
+		{65, &pwd3, &nullPwd, 1, 0},
 	};
 	
 	encrypt__Sha256Xor encryptSettings = {};
 	
-	for(int i = 0; i < 6; i++){
+	for(int i = 0; i < sizeof(test_data) / sizeof(test_data[0]); i++){
 		randBytes(&data, test_data[i].dataLength);
 		errcode = SKY_encrypt_Sha256Xor_Encrypt(&encryptSettings, data, *(test_data[i].pwd), &encrypted);
 		if( test_data[i].success ){
@@ -300,10 +303,55 @@ Test(cipher_encrypt_sha256xor, TestSha256XorEncrypt){
 Test(cipher_encrypt_sha256xor, TestSha256XorDecrypt){
 	unsigned char buff[BUFFER_SIZE];
 	unsigned char encrypted_buffer[BUFFER_SIZE];
+	unsigned char decrypted_buffer[BUFFER_SIZE];
 	GoSlice data = {buff, 0, BUFFER_SIZE};
 	GoSlice pwd = { PASSWORD1, strlen(PASSWORD1), strlen(PASSWORD1) };
-	randBytes(&data, 32);
+	GoSlice wrong_pwd = { WRONGPASSWORD, strlen(WRONGPASSWORD), strlen(WRONGPASSWORD) };
 	GoSlice encrypted = {encrypted_buffer, 0, BUFFER_SIZE};
-	makeEncryptedData(data, 32, pwd, &encrypted);
+	GoSlice decrypted = {decrypted_buffer, 0, BUFFER_SIZE};
+	GoSlice emptyPwd = {"", 1, 1};
+	GoSlice nullPwd = {NULL, 0, 0};
+	GoUint32 errcode;
+	
+	TEST_DATA test_data[] = {
+		{32, &pwd, &pwd, 0, 1}, 		//Data tampered to verify invalid checksum
+		{32, &pwd, &emptyPwd, 0, 0},	//Empty password
+		{32, &pwd, &nullPwd, 0, 0},		//Null password
+		{32, &pwd, &wrong_pwd, 0, 0},	//Wrong password
+	};
+	encrypt__Sha256Xor encryptSettings = {};
+	for(int i = 0; i < sizeof(test_data) / sizeof(test_data[0]); i++){
+		randBytes(&data, 32);
+		makeEncryptedData(data, test_data[i].dataLength, *test_data[i].pwd, &encrypted);
+		//SKY_encrypt_Sha256Xor_Encrypt(&encryptSettings, data, pwd, &encrypted);
+		cr_assert(encrypted.len > 0, "SKY_encrypt_Sha256Xor_Encrypt failed. Empty encrypted data");
+		if( test_data[i].tampered ){
+			((unsigned char*)(encrypted.data))[ encrypted.len - 1 ]++;
+		}
+		errcode = SKY_encrypt_Sha256Xor_Decrypt(&encryptSettings, 
+			encrypted, *test_data[i].decryptPwd, &decrypted);
+		if( test_data[i].success ){
+			cr_assert(errcode == SKY_OK, "SKY_encrypt_Sha256Xor_Decrypt failed.");
+		} else {
+			cr_assert(errcode != SKY_OK, "SKY_encrypt_Sha256Xor_Decrypt with invalid parameters successful.");
+		}
+	}
+	
+	for(int i = 0; i <= 64; i++){
+		randBytes(&data, i);
+		//makeEncryptedData(data, i, pwd, &encrypted);
+		SKY_encrypt_Sha256Xor_Encrypt(&encryptSettings, data, pwd, &encrypted);
+		cr_assert(encrypted.len > 0, "SKY_encrypt_Sha256Xor_Encrypt failed. Empty encrypted data");
+		errcode = SKY_encrypt_Sha256Xor_Decrypt(&encryptSettings, 
+			encrypted, pwd, &decrypted);
+		cr_assert(errcode == SKY_OK, "SKY_encrypt_Sha256Xor_Decrypt failed.");
+		cr_assert(data.len == decrypted.len, "SKY_encrypt_Sha256Xor_Decrypt failed. Decrypted data length different than original data length");
+		int equal = 1;
+		for(int j = 0; j < data.len; j++){
+			if( ((unsigned char*)data.data)[j] != ((unsigned char*)decrypted.data)[j] )
+				equal = 0;
+		}
+		cr_assert(equal == 1, "SKY_encrypt_Sha256Xor_Decrypt failed. Decrypted data different than original data");
+	}
 }
 

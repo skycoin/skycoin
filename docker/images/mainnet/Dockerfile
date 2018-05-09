@@ -1,6 +1,9 @@
 # skycoin build
 # reference https://github.com/skycoin/skycoin
-FROM golang:1.10 AS build
+ARG IMAGE_FROM=alpine:3.7
+FROM golang:1.10 AS build-go
+ARG ARCH=amd64
+ARG GOARM
 
 ARG SKYCOIN_VERSION
 
@@ -18,10 +21,12 @@ RUN sh -c \
      fi'
 
 RUN cd $GOPATH/src/github.com/skycoin/skycoin && \
-  CGO_ENABLED=0 GOOS=linux go install -a -installsuffix cgo ./...
+    GOARCH=$ARCH GOARM=$GOARM CGO_ENABLED=0 GOOS=linux go install -a -installsuffix cgo ./... && \
+    sh -c "if test -d $GOPATH/bin/linux_arm ; then mv $GOPATH/bin/linux_arm/* $GOPATH/bin/; fi; \
+           if test -d $GOPATH/bin/linux_arm64 ; then mv $GOPATH/bin/linux_arm64/* $GOPATH/bin/; fi"
 
 # skycoin image
-FROM alpine:3.7
+FROM $IMAGE_FROM
 
 ENV COIN="skycoin"
 ENV RPC_ADDR="0.0.0.0:6430" \

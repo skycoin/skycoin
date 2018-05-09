@@ -183,6 +183,9 @@ void makeEncryptedData(GoSlice data, GoUint32 dataLength, GoSlice pwd, GoSlice* 
 	cipher__SHA256* checksum = (cipher__SHA256*)dest_buffer;
 	errcode = SKY_cipher_SumSHA256(nonceAndDataBytes, checksum);
 	cr_assert(errcode == SKY_OK, "SKY_cipher_SumSHA256 failed. Error calculating final checksum");
+	unsigned char bufferb64[BUFFER_SIZE];
+	unsigned int size = b64_encode_string(bufferb64, fullDestLength, bufferb64);
+	encrypted->len = size;
 }
 
 Test(cipher_encrypt_sha256xor, TestSha256XorEncrypt){
@@ -296,10 +299,11 @@ Test(cipher_encrypt_sha256xor, TestSha256XorEncrypt){
 
 Test(cipher_encrypt_sha256xor, TestSha256XorDecrypt){
 	unsigned char buff[BUFFER_SIZE];
+	unsigned char encrypted_buffer[BUFFER_SIZE];
 	GoSlice data = {buff, 0, BUFFER_SIZE};
 	GoSlice pwd = { PASSWORD1, strlen(PASSWORD1), strlen(PASSWORD1) };
 	randBytes(&data, 32);
-	GoSlice encrypted;
+	GoSlice encrypted = {encrypted_buffer, 0, BUFFER_SIZE};
 	makeEncryptedData(data, 32, pwd, &encrypted);
 }
 

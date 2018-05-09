@@ -114,8 +114,12 @@ unsigned int base64_decode_string(const unsigned char* in,
 	for(int c = 0; c < decode_len && c < buffer_size; c++){
 		out[c] = (char)data[c];
 	}
-	out[decode_len] = 0;
+	if(decode_len < buffer_size)
+		out[decode_len] = 0;
+	else 
+		decode_len = 0;
 	free(data);
+	return decode_len;
 }
 
 unsigned int base64_decode_binary(const unsigned char* in, 
@@ -206,4 +210,16 @@ unsigned int b64_decodef(char *InFile, char *OutFile) {
 	fclose(pOutFile);
 
 	return k;
+}
+
+unsigned int b64_encode_string(const unsigned char* in, unsigned int in_len, unsigned char* out){
+	unsigned int* data = malloc(in_len * sizeof(unsigned int));
+	if ( data ) {
+		for(int i = 0; i < in_len; i++){
+			data[i] = in[i];
+		}
+		unsigned int result = b64_encode(data, in_len, out);
+		free(data);
+	}
+	return 0;
 }

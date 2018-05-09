@@ -37,15 +37,19 @@ Test(cipher_encrypt_scrypt_chacha20poly1305, TestScryptChacha20poly1305Encrypt){
 				&encrypt, text, password, (coin__UxArray*)&result);
 		cr_assert(errcode == SKY_OK, "SKY_encrypt_ScryptChacha20poly1305_Encrypt failed");
 		cr_assert(result.len > SCRYPTCHACHA20METALENGTHSIZE, "SKY_encrypt_ScryptChacha20poly1305_Encrypt failed, result data length too short");
+		cr_assert(result.len < BUFFER_SIZE, "SKY_encrypt_ScryptChacha20poly1305_Encrypt failed, result data length greater than buffer");
 		((char*)result.data)[result.len] = 0;
-		base64_decode_string((const unsigned char*)result.data, result.len, str, BUFFER_SIZE);
+		unsigned int decode_len = base64_decode_string((const unsigned char*)result.data, 
+				result.len, str, BUFFER_SIZE);
+		cr_assert(decode_len >= SCRYPTCHACHA20METALENGTHSIZE, "base64_decode_string failed");
+		cr_assert(decode_len < BUFFER_SIZE, "base64_decode_string failed, buffer overflow");
 		metalength = (unsigned int)	str[0];
 		for(int m = 1; m < SCRYPTCHACHA20METALENGTHSIZE; m++){
 			if(str[m] > 0){
 				metalength += (((unsigned int)str[m]) << (m * 8));
 			}
 		}
-		cr_assert(metalength + SCRYPTCHACHA20METALENGTHSIZE < result.len, "SKY_encrypt_ScryptChacha20poly1305_Encrypt failed. Metadata length greater than result lentgh.");
+		cr_assert(metalength + SCRYPTCHACHA20METALENGTHSIZE < decode_len, "SKY_encrypt_ScryptChacha20poly1305_Encrypt failed. Metadata length greater than result lentgh.");
 		char* meta = &str[SCRYPTCHACHA20METALENGTHSIZE];
 		meta[metalength] = 0;
 		

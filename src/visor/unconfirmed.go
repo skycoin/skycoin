@@ -502,6 +502,10 @@ func (utp *UnconfirmedTxnPool) RecvOfAddresses(tx *dbutil.Tx, bh coin.BlockHeade
 
 // txnOutputsForAddrs returns unspent outputs assigned to addresses in addrs, created by a set of transactions
 func txnOutputsForAddrs(bh coin.BlockHeader, addrs []cipher.Address, txns []coin.Transaction) (coin.AddressUxOuts, error) {
+	if len(txns) == 0 || len(addrs) == 0 {
+		return nil, nil
+	}
+
 	addrm := make(map[cipher.Address]struct{}, len(addrs))
 	for _, addr := range addrs {
 		addrm[addr] = struct{}{}

@@ -1,6 +1,7 @@
 package blockdb
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 
@@ -13,8 +14,10 @@ import (
 var (
 	xorhashKey = []byte("xorhash")
 
-	// UnspentPoolBkt holds unspent outputs
+	// UnspentPoolBkt holds unspent outputs, indexed by unspent output hash
 	UnspentPoolBkt = []byte("unspent_pool")
+	// UnspentPoolAddrIndexBkt maps addresses to their unspent outputs
+	UnspentPoolAddrIndexBkt = []byte("unspent_pool_addr_index")
 	// UnspentMetaBkt holds unspent output metadata
 	UnspentMetaBkt = []byte("unspent_meta")
 )
@@ -94,18 +97,154 @@ func (pl *pool) delete(tx *dbutil.Tx, hash cipher.SHA256) error {
 	return dbutil.Delete(tx, UnspentPoolBkt, hash[:])
 }
 
+type poolAddrIndex struct{}
+
+func (p poolAddrIndex) get(tx *dbutil.Tx, addr cipher.Address) ([]cipher.SHA256, error) {
+	var hashes []cipher.SHA256
+
+	if ok, err := dbutil.GetBucketObjectDecoded(tx, UnspentPoolAddrIndexBkt, addr.Bytes(), &hashes); err != nil {
+		return nil, err
+	} else if !ok {
+		return nil, nil
+	}
+
+	return hashes, nil
+}
+
+func (p poolAddrIndex) set(tx *dbutil.Tx, addr cipher.Address, hashes []cipher.SHA256) error {
+	hashesMap := make(map[cipher.SHA256]struct{}, len(hashes))
+	for _, h := range hashes {
+		if _, ok := hashesMap[h]; ok {
+			return errors.New("poolAddrIndex.set: hashes array contains duplicate")
+		}
+
+		hashesMap[h] = struct{}{}
+	}
+
+	encodedHashes := encoder.Serialize(hashes)
+	return dbutil.PutBucketValue(tx, UnspentPoolAddrIndexBkt, addr.Bytes(), encodedHashes)
+}
+
+// adjust adds and removes hashes from an address -> hashes index
+// TODO -- if necessary, this can be optimized further to accept multiple addresses at once,
+// so that all get queries can be performed before the set
+func (p poolAddrIndex) adjust(tx *dbutil.Tx, addr cipher.Address, addHashes, rmHashes []cipher.SHA256) error {
+	existingHashes, err := p.get(tx, addr)
+	if err != nil {
+		return err
+	}
+
+	rmHashesMap := make(map[cipher.SHA256]struct{}, len(rmHashes))
+	for _, h := range rmHashes {
+		rmHashesMap[h] = struct{}{}
+	}
+
+	if len(rmHashesMap) != len(rmHashes) {
+		return errors.New("poolAddrIndex.adjust: rmHashes contains duplicates")
+	}
+
+	newHashesSize := len(existingHashes) - len(rmHashes)
+	if newHashesSize < 0 {
+		return errors.New("poolAddrIndex.adjust: rmHashes is longer than existingHashes")
+	}
+
+	newHashes := make([]cipher.SHA256, 0, newHashesSize)
+	newHashesMap := make(map[cipher.SHA256]struct{}, newHashesSize)
+
+	rmHashesCount := 0
+	for _, h := range existingHashes {
+		if _, ok := rmHashesMap[h]; ok {
+			rmHashesCount++
+		} else {
+			newHashes = append(newHashes, h)
+			newHashesMap[h] = struct{}{}
+		}
+	}
+
+	if rmHashesCount != len(rmHashes) {
+		return fmt.Errorf("poolAddrIndex.adjust: rmHashes contains %d hashes not indexed for address %s", len(rmHashes)-rmHashesCount, addr.String())
+	}
+
+	for _, h := range addHashes {
+		if _, ok := rmHashesMap[h]; ok {
+			return errors.New("poolAddrIndex.adjust: hash appears in both addHashes and rmHashes")
+		}
+
+		if _, ok := newHashesMap[h]; !ok {
+			newHashes = append(newHashes, h)
+			newHashesMap[h] = struct{}{}
+		} else {
+			return fmt.Errorf("poolAddrIndex.adjust: uxout hash %s is already indexed for address %s", h.Hex(), addr.String())
+		}
+	}
+
+	return p.set(tx, addr, newHashes)
+}
+
 // Unspents unspent outputs pool
 type Unspents struct {
-	pool *pool
-	meta *unspentMeta
+	pool          *pool
+	poolAddrIndex *poolAddrIndex
+	meta          *unspentMeta
 }
 
 // NewUnspentPool creates new unspent pool instance
 func NewUnspentPool() *Unspents {
 	return &Unspents{
-		pool: &pool{},
-		meta: &unspentMeta{},
+		pool:          &pool{},
+		poolAddrIndex: &poolAddrIndex{},
+		meta:          &unspentMeta{},
 	}
+}
+
+// MaybeBuildIndexes builds indexes if necessary
+func (up *Unspents) MaybeBuildIndexes(tx *dbutil.Tx) error {
+	// If the addr index is empty, build it
+	length, err := dbutil.Len(tx, UnspentPoolAddrIndexBkt)
+	if err != nil {
+		return err
+	}
+
+	if length == 0 {
+		return up.buildAddrIndex(tx)
+	}
+
+	return nil
+}
+
+func (up *Unspents) buildAddrIndex(tx *dbutil.Tx) error {
+	logger.Info("Building unspent address index")
+
+	addrHashes := make(map[cipher.Address][]cipher.SHA256)
+
+	if err := dbutil.ForEach(tx, UnspentPoolBkt, func(k, v []byte) error {
+		var ux coin.UxOut
+		if err := encoder.DeserializeRaw(v, &ux); err != nil {
+			return err
+		}
+
+		h := ux.Hash()
+
+		if bytes.Compare(k[:], h[:]) != 0 {
+			return errors.New("Unspent pool uxout.Hash() does not match its key")
+		}
+
+		addrHashes[ux.Body.Address] = append(addrHashes[ux.Body.Address], h)
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	for addr, hashes := range addrHashes {
+		if err := up.poolAddrIndex.set(tx, addr, hashes); err != nil {
+			return err
+		}
+	}
+
+	logger.Debugf("Indexed unspents for %d addresses", len(addrHashes))
+
+	return nil
 }
 
 // ProcessBlock adds unspents from a block to the unspent pool
@@ -129,21 +268,29 @@ func (up *Unspents) ProcessBlock(tx *dbutil.Tx, b *coin.SignedBlock) error {
 	}
 
 	// Remove spent outputs
+	rmAddrHashes := make(map[cipher.Address][]cipher.SHA256)
 	for _, ux := range uxs {
 		xorHash = xorHash.Xor(ux.SnapshotHash())
 
-		if err := up.pool.delete(tx, ux.Hash()); err != nil {
+		h := ux.Hash()
+
+		if err := up.pool.delete(tx, h); err != nil {
 			return err
 		}
+
+		rmAddrHashes[ux.Body.Address] = append(rmAddrHashes[ux.Body.Address], h)
 	}
 
 	// Create new outputs
 	txnUxHashes := make([]cipher.SHA256, len(txnUxs))
+	addAddrHashes := make(map[cipher.Address][]cipher.SHA256)
 	for i, ux := range txnUxs {
-		txnUxHashes[i] = ux.Hash()
+		h := ux.Hash()
+		txnUxHashes[i] = h
+		addAddrHashes[ux.Body.Address] = append(addAddrHashes[ux.Body.Address], h)
 	}
 
-	// Check that the uxout does exist in the pool already, otherwise xorHash will be calculated wrong
+	// Check that the uxout exists in the pool already, otherwise xorHash will be calculated wrong
 	for _, h := range txnUxHashes {
 		if hasKey, err := up.Contains(tx, h); err != nil {
 			return err
@@ -152,13 +299,31 @@ func (up *Unspents) ProcessBlock(tx *dbutil.Tx, b *coin.SignedBlock) error {
 		}
 	}
 
-	// Add new outputs
 	for i, ux := range txnUxs {
+		// Add new outputs
 		if err := up.pool.set(tx, txnUxHashes[i], ux); err != nil {
 			return err
 		}
 
+		// Recalculate xorHash
 		xorHash = xorHash.Xor(ux.SnapshotHash())
+	}
+
+	// Update indexes
+	for addr, rmHashes := range rmAddrHashes {
+		addHashes := addAddrHashes[addr]
+
+		if err := up.poolAddrIndex.adjust(tx, addr, addHashes, rmHashes); err != nil {
+			return err
+		}
+
+		delete(addAddrHashes, addr)
+	}
+
+	for addr, addHashes := range addAddrHashes {
+		if err := up.poolAddrIndex.adjust(tx, addr, addHashes, nil); err != nil {
+			return err
+		}
 	}
 
 	return up.meta.setXorHash(tx, xorHash)
@@ -204,89 +369,27 @@ func (up *Unspents) Contains(tx *dbutil.Tx, h cipher.SHA256) (bool, error) {
 
 // GetUnspentsOfAddrs returns a map of addresses to their unspent outputs
 func (up *Unspents) GetUnspentsOfAddrs(tx *dbutil.Tx, addrs []cipher.Address) (coin.AddressUxOuts, error) {
-	addrm := make(map[cipher.Address]struct{}, len(addrs))
-	for _, a := range addrs {
-		addrm[a] = struct{}{}
-	}
-
 	addrUxs := make(coin.AddressUxOuts, len(addrs))
 
-	if err := dbutil.ForEach(tx, UnspentPoolBkt, func(k, v []byte) error {
-		var ux coin.UxOut
-		if err := encoder.DeserializeRaw(v, &ux); err != nil {
-			return err
+	for _, addr := range addrs {
+		hashes, err := up.poolAddrIndex.get(tx, addr)
+		if err != nil {
+			return nil, err
 		}
 
-		addr := ux.Body.Address
-		if _, ok := addrm[addr]; ok {
-			addrUxs[addr] = append(addrUxs[addr], ux)
+		uxa, err := up.GetArray(tx, hashes)
+		if err != nil {
+			switch e := err.(type) {
+			case ErrUnspentNotExist:
+				logger.Critical().Error("Unspent hash %s indexed under address %s does not exist in unspent pool", e.UxID, addr.String())
+			}
+			return nil, err
 		}
 
-		return nil
-	}); err != nil {
-		return nil, err
+		addrUxs[addr] = uxa
 	}
 
 	return addrUxs, nil
-}
-
-// GetUnspentsOfAddrsAndHashes returns a map of addresses to their unspent outputs,
-// and an array of unspent outputs for a given array of hashes.
-// This is a combination of GetUnspentsOfAddrs and GetArray, optimized to be in a single iteration over the bucket.
-func (up *Unspents) GetUnspentsOfAddrsAndHashes(tx *dbutil.Tx, addrs []cipher.Address, hashes []cipher.SHA256) (coin.AddressUxOuts, coin.UxArray, error) {
-	addrm := make(map[cipher.Address]struct{}, len(addrs))
-	for _, a := range addrs {
-		addrm[a] = struct{}{}
-	}
-
-	if len(addrm) != len(addrs) {
-		return nil, nil, errors.New("addrs contains duplicates")
-	}
-
-	hashm := make(map[cipher.SHA256]struct{}, len(hashes))
-	for _, h := range hashes {
-		hashm[h] = struct{}{}
-	}
-
-	if len(hashm) != len(hashes) {
-		return nil, nil, errors.New("hashes contains duplicates")
-	}
-
-	addrUxs := make(coin.AddressUxOuts, len(addrs))
-	uxa := make(coin.UxArray, 0, len(hashes))
-
-	if err := dbutil.ForEach(tx, UnspentPoolBkt, func(k, v []byte) error {
-		h, err := cipher.SHA256FromBytes(k)
-		if err != nil {
-			return err
-		}
-
-		var ux coin.UxOut
-		if err := encoder.DeserializeRaw(v, &ux); err != nil {
-			return err
-		}
-
-		if _, ok := hashm[h]; ok {
-			uxa = append(uxa, ux)
-			delete(hashm, h)
-		}
-
-		addr := ux.Body.Address
-		if _, ok := addrm[addr]; ok {
-			addrUxs[addr] = append(addrUxs[addr], ux)
-		}
-
-		return nil
-	}); err != nil {
-		return nil, nil, err
-	}
-
-	// If there are any hashes not found in the pool, fail
-	for h := range hashm {
-		return nil, nil, NewErrUnspentNotExist(h.Hex())
-	}
-
-	return addrUxs, uxa, nil
 }
 
 // GetUxHash returns unspent output checksum for the Block.

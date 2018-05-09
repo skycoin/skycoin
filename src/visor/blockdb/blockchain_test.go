@@ -169,6 +169,10 @@ func newFakeUnspentPool(failedWhenSaved *bool) *fakeUnspentPool {
 	}
 }
 
+func (fup *fakeUnspentPool) MaybeBuildIndexes(tx *dbutil.Tx) error {
+	return nil
+}
+
 func (fup *fakeUnspentPool) Len(tx *dbutil.Tx) (uint64, error) {
 	return uint64(len(fup.outs)), nil
 }
@@ -220,37 +224,6 @@ func (fup *fakeUnspentPool) GetUnspentsOfAddrs(tx *dbutil.Tx, addrs []cipher.Add
 	}
 
 	return addrOutMap, nil
-}
-
-func (fup *fakeUnspentPool) GetUnspentsOfAddrsAndHashes(tx *dbutil.Tx, addrs []cipher.Address, hashes []cipher.SHA256) (coin.AddressUxOuts, coin.UxArray, error) {
-	addrm := make(map[cipher.Address]struct{}, len(addrs))
-	for _, a := range addrs {
-		addrm[a] = struct{}{}
-	}
-
-	hashm := make(map[cipher.SHA256]struct{}, len(hashes))
-	for _, h := range hashes {
-		hashm[h] = struct{}{}
-	}
-
-	addrOutMap := make(coin.AddressUxOuts)
-	uxa := make(coin.UxArray, 0)
-	for _, out := range fup.outs {
-		addr := out.Body.Address
-		addrOutMap[addr] = append(addrOutMap[addr], out)
-
-		h := out.Hash()
-		if _, ok := hashm[h]; ok {
-			uxa = append(uxa, out)
-			delete(hashm, h)
-		}
-	}
-
-	for h := range hashm {
-		return nil, nil, NewErrUnspentNotExist(h.Hex())
-	}
-
-	return addrOutMap, uxa, nil
 }
 
 func (fup *fakeUnspentPool) ProcessBlock(tx *dbutil.Tx, b *coin.SignedBlock) error {

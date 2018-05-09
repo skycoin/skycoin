@@ -271,6 +271,10 @@ func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
 
 	if !db.IsReadOnly() {
 		if err := db.Update(func(tx *dbutil.Tx) error {
+			if err := bc.Unspent().MaybeBuildIndexes(tx); err != nil {
+				return err
+			}
+
 			return initHistory(tx, bc, history)
 		}); err != nil {
 			return nil, err
@@ -1602,8 +1606,8 @@ func (vs Visor) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair,
 	}
 
 	auxs := make(coin.AddressUxOuts, len(addrs))
-	spendUxs := make(coin.AddressUxOuts, len(addrs))
 	recvUxs := make(coin.AddressUxOuts, len(addrs))
+	var uxa coin.UxArray
 	var head *coin.SignedBlock
 
 	if err := vs.DB.View(func(tx *dbutil.Tx) error {
@@ -1614,16 +1618,12 @@ func (vs Visor) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair,
 		}
 
 		// Get all transactions from the unconfirmed pool
-		// TODO -- filter by address during query?
-		// Can't, because we don't know if the inputs are associated with an address yet,
-		// unless we store this information in this pool
 		txns, err := vs.Unconfirmed.RawTxns(tx)
 		if err != nil {
 			return err
 		}
 
 		// Create predicted unspent outputs from the unconfirmed transactions
-		// TODO -- filter by address during construction?
 		recvUxs, err = txnOutputsForAddrs(head.Head, addrs, txns)
 		if err != nil {
 			return err
@@ -1634,44 +1634,35 @@ func (vs Visor) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair,
 			inputs = append(inputs, txn.In...)
 		}
 
-		var uxa coin.UxArray
-		auxs, uxa, err = vs.Blockchain.Unspent().GetUnspentsOfAddrsAndHashes(tx, addrs, inputs)
+		// Get unspents for the inputs being spent
+		uxa, err = vs.Blockchain.Unspent().GetArray(tx, inputs)
 		if err != nil {
-			return fmt.Errorf("GetUnspentsOfAddrsAndHashes failed when checking addresses balance: %v", err)
+			return fmt.Errorf("GetArray failed when checking addresses balance: %v", err)
 		}
 
-		// Build all unconfirmed transaction inputs that are associated with the addresses
-		spendUxs = make(coin.AddressUxOuts, len(addrs))
-
-		addrm := make(map[cipher.Address]struct{}, len(addrs))
-		for _, addr := range addrs {
-			addrm[addr] = struct{}{}
+		// Get unspents owned by the addresses
+		auxs, err = vs.Blockchain.Unspent().GetUnspentsOfAddrs(tx, addrs)
+		if err != nil {
+			return fmt.Errorf("GetUnspentsOfAddrs failed when checking addresses balance: %v", err)
 		}
-
-		for _, ux := range uxa {
-			if _, ok := addrm[ux.Body.Address]; ok {
-				spendUxs[ux.Body.Address] = append(spendUxs[ux.Body.Address], ux)
-			}
-		}
-
-		// auxs, err = vs.Blockchain.Unspent().GetUnspentsOfAddrs(tx, addrs)
-		// if err != nil {
-		// 	return fmt.Errorf("GetUnspentsOfAddrs failed when checking addresses balance: %v", err)
-		// }
-
-		// spendUxs, err = vs.unconfirmedSpendsOfAddresses(tx, addrs)
-		// if err != nil {
-		// 	return fmt.Errorf("get unconfirmed spending failed when checking addresses balance: %v", err)
-		// }
-
-		// recvUxs, err = vs.Unconfirmed.RecvOfAddresses(tx, head.Head, addrs)
-		// if err != nil {
-		// 	return fmt.Errorf("get unconfirmed receiving failed when checking addresses balance: %v", err)
-		// }
 
 		return nil
 	}); err != nil {
 		return nil, err
+	}
+
+	// Build all unconfirmed transaction inputs that are associated with the addresses
+	spendUxs := make(coin.AddressUxOuts, len(addrs))
+
+	addrm := make(map[cipher.Address]struct{}, len(addrs))
+	for _, addr := range addrs {
+		addrm[addr] = struct{}{}
+	}
+
+	for _, ux := range uxa {
+		if _, ok := addrm[ux.Body.Address]; ok {
+			spendUxs[ux.Body.Address] = append(spendUxs[ux.Body.Address], ux)
+		}
 	}
 
 	var bps []wallet.BalancePair

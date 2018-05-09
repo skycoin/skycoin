@@ -71,7 +71,11 @@ func TestNewUnspentPool(t *testing.T) {
 
 func addUxOut(db *dbutil.DB, up *Unspents, ux coin.UxOut) error {
 	return db.Update(func(tx *dbutil.Tx) error {
-		return up.pool.set(tx, ux.Hash(), ux)
+		if err := up.pool.set(tx, ux.Hash(), ux); err != nil {
+			return err
+		}
+
+		return up.poolAddrIndex.adjust(tx, ux.Body.Address, []cipher.SHA256{ux.Hash()}, nil)
 	})
 }
 
@@ -345,35 +349,35 @@ func TestGetUnspentOfAddrs(t *testing.T) {
 		expect   coin.UxArray
 	}{
 		{
-			"one one addr one unspent",
-			uxs[:],
-			[]cipher.Address{uxs[1].Body.Address},
-			uxs[1:2],
+			name:     "one one addr one unspent",
+			unspents: uxs[:],
+			addrs:    []cipher.Address{uxs[1].Body.Address},
+			expect:   uxs[1:2],
 		},
 		{
-			"one addr two unspents",
-			uxs[:],
-			[]cipher.Address{uxs[0].Body.Address},
-			[]coin.UxOut{
+			name:     "one addr two unspents",
+			unspents: uxs[:],
+			addrs:    []cipher.Address{uxs[0].Body.Address},
+			expect: []coin.UxOut{
 				uxs[0],
 				uxs[4],
 			},
 		},
 		{
-			"two addrs three unspents",
-			uxs[:],
-			[]cipher.Address{uxs[0].Body.Address, uxs[1].Body.Address},
-			[]coin.UxOut{
+			name:     "two addrs three unspents",
+			unspents: uxs[:],
+			addrs:    []cipher.Address{uxs[0].Body.Address, uxs[1].Body.Address},
+			expect: []coin.UxOut{
 				uxs[0],
 				uxs[1],
 				uxs[4],
 			},
 		},
 		{
-			"two addrs two unspents",
-			uxs[:],
-			[]cipher.Address{uxs[2].Body.Address, uxs[1].Body.Address},
-			[]coin.UxOut{
+			name:     "two addrs two unspents",
+			unspents: uxs[:],
+			addrs:    []cipher.Address{uxs[2].Body.Address, uxs[1].Body.Address},
+			expect: []coin.UxOut{
 				uxs[1],
 				uxs[2],
 			},
@@ -430,9 +434,9 @@ func TestUnspentProcessBlock(t *testing.T) {
 		inputs coin.UxArray
 	}{
 		{
-			"ok",
-			uxs,
-			uxs[:1],
+			name:   "ok",
+			init:   uxs,
+			inputs: uxs[:1],
 		},
 	}
 
@@ -469,7 +473,9 @@ func TestUnspentProcessBlock(t *testing.T) {
 				oldUxHash, err = up.GetUxHash(tx)
 				require.NoError(t, err)
 
-				err = up.ProcessBlock(tx, &coin.SignedBlock{Block: *block})
+				err = up.ProcessBlock(tx, &coin.SignedBlock{
+					Block: *block,
+				})
 				require.NoError(t, err)
 
 				return nil

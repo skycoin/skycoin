@@ -6,10 +6,13 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
 var (
+	logger = logging.MustGetLogger("blockdb")
+
 	// ErrNoHeadBlock is returned when calling Blockchain.Head() when no head block exists
 	ErrNoHeadBlock = fmt.Errorf("found no head block")
 )
@@ -38,6 +41,7 @@ func CreateBuckets(tx *dbutil.Tx) error {
 		TreeBkt,
 		BlockchainMetaBkt,
 		UnspentPoolBkt,
+		UnspentPoolAddrIndexBkt,
 		UnspentMetaBkt,
 	})
 }
@@ -59,6 +63,7 @@ type BlockSigs interface {
 
 // UnspentPool unspent outputs pool
 type UnspentPool interface {
+	MaybeBuildIndexes(*dbutil.Tx) error
 	Len(*dbutil.Tx) (uint64, error)
 	Contains(*dbutil.Tx, cipher.SHA256) (bool, error)
 	Get(*dbutil.Tx, cipher.SHA256) (*coin.UxOut, error)
@@ -66,7 +71,6 @@ type UnspentPool interface {
 	GetArray(*dbutil.Tx, []cipher.SHA256) (coin.UxArray, error)
 	GetUxHash(*dbutil.Tx) (cipher.SHA256, error)
 	GetUnspentsOfAddrs(*dbutil.Tx, []cipher.Address) (coin.AddressUxOuts, error)
-	GetUnspentsOfAddrsAndHashes(tx *dbutil.Tx, addrs []cipher.Address, hashes []cipher.SHA256) (coin.AddressUxOuts, coin.UxArray, error)
 	ProcessBlock(*dbutil.Tx, *coin.SignedBlock) error
 }
 

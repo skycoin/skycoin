@@ -9,6 +9,7 @@ http://www.codeproject.com/Tips/813146/Fast-base-functions-for-encode-decode
 */
 
 #include "base64.h"
+#include <stdlib.h>
 
 //Base64 char table - used internally for encoding
 unsigned char b64_chr[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";

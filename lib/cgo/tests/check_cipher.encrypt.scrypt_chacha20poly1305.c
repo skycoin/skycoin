@@ -79,7 +79,7 @@ Test(cipher_encrypt_scrypt_chacha20poly1305, TestScryptChacha20poly1305Decrypt){
 	GoSlice nullPassword = {NULL, 0, 0};
 	
 	char buffer[BUFFER_SIZE];
-	GoSlice result = {buffer, 0, BUFFER_SIZE};
+	coin__UxArray result = {buffer, 0, BUFFER_SIZE};
 	GoUint32 errcode;
 	encrypt__ScryptChacha20poly1305 encrypt = {0, 0, 0, 0};
 	

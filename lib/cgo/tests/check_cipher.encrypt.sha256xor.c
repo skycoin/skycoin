@@ -9,6 +9,7 @@
 #include "skyerrors.h"
 #include "skystring.h"
 #include "skytest.h"
+#include "base64.h"
 
 #define BUFFER_SIZE 1024
 #define PASSWORD1 "pwd"
@@ -28,54 +29,6 @@ typedef struct{
 	int			success;
 	int 		tampered;
 } TEST_DATA;
-
-/*
-// PutUvarint encodes a uint64 into buf and returns the number of bytes written.
-// If the buffer is too small, PutUvarint will panic.
-func PutUvarint(buf []byte, x uint64) int {
-	i := 0
-	for x >= 0x80 {
-		buf[i] = byte(x) | 0x80
-		x >>= 7
-		i++
-	}
-	buf[i] = byte(x)
-	return i + 1
-}
-
-// PutVarint encodes an int64 into buf and returns the number of bytes written.
-// If the buffer is too small, PutVarint will panic.
-func PutVarint(buf []byte, x int64) int {
-	ux := uint64(x) << 1
-	if x < 0 {
-		ux = ^ux
-	}
-	return PutUvarint(buf, ux)
-}
-
-func hashKeyIndexNonce(key []byte, index int64, nonceHash cipher.SHA256) cipher.SHA256 {
-	// convert index to 256bit number
-	indexBytes := make([]byte, 32)
-	binary.PutVarint(indexBytes, index)
-
-	// hash(index, nonceHash)
-	indexNonceHash := cipher.SumSHA256(append(indexBytes, nonceHash[:]...))
-
-	// hash(hash(password), indexNonceHash)
-	var keyHash cipher.SHA256
-	copy(keyHash[:], key[:])
-	return cipher.AddSHA256(keyHash, indexNonceHash)
-}
-{
-		FILE *fp;
-		fp = fopen("test.txt", "w+");
-		for( int i = 0; i < 32; i++){
-			if ( buff[i] > 0 )
-				fprintf(fp, "%d\n", buff[i]);
-		}
-		fclose(fp);
-	}
-*/
 
 int putUvarint(GoSlice* buf , GoUint64 x){
 	int i = 0;
@@ -112,13 +65,13 @@ void hashKeyIndexNonce(GoSlice_ key, GoInt64 index,
 	memcpy(buff + 32, *nonceHash, sizeof(cipher__SHA256));
 	slice.len = length;
 	cipher__SHA256 indexNonceHash;
-	errcode = SKY_cipher_SumSHA256(slice, indexNonceHash);
+	errcode = SKY_cipher_SumSHA256(slice, &indexNonceHash);
 	cr_assert(errcode == SKY_OK, "SKY_cipher_SumSHA256 failed. Error calculating hash");
 	SKY_cipher_AddSHA256(key.data, &indexNonceHash, resultHash);
 	cr_assert(errcode == SKY_OK, "SKY_cipher_AddSHA256 failed. Error adding hashes");
 }
 
-void makeEncryptedData(GoSlice data, GoUint32 dataLength, GoSlice pwd, GoSlice* encrypted){
+void makeEncryptedData(GoSlice data, GoUint32 dataLength, GoSlice pwd, coin__UxArray* encrypted){
 	GoUint32 fullLength = dataLength + SHA256XORDATALENGTHSIZE;
 	GoUint32 n = fullLength / SHA256XORBLOCKSIZE;
 	GoUint32 m = fullLength % SHA256XORBLOCKSIZE;
@@ -151,13 +104,13 @@ void makeEncryptedData(GoSlice data, GoUint32 dataLength, GoSlice pwd, GoSlice* 
 		fullLength - SHA256XORBLOCKSIZE, 
 		fullLength - SHA256XORBLOCKSIZE};
 	//GoSlice _hash = {buffer, 0, SHA256XORBLOCKSIZE};
-	errcode = SKY_cipher_SumSHA256(_data, buffer);
+	errcode = SKY_cipher_SumSHA256(_data, (cipher__SHA256*)buffer);
 	cr_assert(errcode == SKY_OK, "SKY_cipher_SumSHA256 failed. Error calculating hash");
 	char bufferNonce[SHA256XORNONCESIZE];
 	GoSlice sliceNonce = {bufferNonce, 0, SHA256XORNONCESIZE};
 	randBytes(&sliceNonce, SHA256XORNONCESIZE);
 	cipher__SHA256 hashNonce;
-	errcode = SKY_cipher_SumSHA256(sliceNonce, hashNonce);
+	errcode = SKY_cipher_SumSHA256(sliceNonce, &hashNonce);
 	cr_assert(errcode == SKY_OK, "SKY_cipher_SumSHA256 failed. Error calculating hash for nonce");
 	char bufferHash[BUFFER_SIZE];
 	coin__UxArray hashPassword = {bufferHash, 0, BUFFER_SIZE};
@@ -196,7 +149,7 @@ Test(cipher_encrypt_sha256xor, TestSha256XorEncrypt){
 	unsigned char encryptedBuffer[BUFFER_SIZE];
 	unsigned char encryptedText[BUFFER_SIZE];
 	GoSlice data = { buff, 0, BUFFER_SIZE };
-	GoSlice encrypted = { encryptedBuffer, 0, BUFFER_SIZE };
+	coin__UxArray encrypted = { encryptedBuffer, 0, BUFFER_SIZE };
 	GoSlice pwd1 = { PASSWORD1, strlen(PASSWORD1), strlen(PASSWORD1) };
 	GoSlice pwd2 = { PASSWORD2, strlen(PASSWORD2), strlen(PASSWORD2) };
 	GoSlice pwd3 = { PASSWORD3, strlen(PASSWORD3), strlen(PASSWORD3) };
@@ -287,7 +240,7 @@ Test(cipher_encrypt_sha256xor, TestSha256XorEncrypt){
 		}
 		int len_minus_checksum = real_size - SHA256XORCHECKSUMSIZE;
 		GoSlice slice = {&encryptedText[SHA256XORCHECKSUMSIZE], len_minus_checksum, len_minus_checksum};
-		SKY_cipher_SumSHA256(slice, cal_hash);
+		SKY_cipher_SumSHA256(slice, &cal_hash);
 		int equal = 1;
 		for(int j = 0; j < SHA256XORCHECKSUMSIZE; j++){
 			if(enc_hash[j] != cal_hash[j]){
@@ -307,8 +260,8 @@ Test(cipher_encrypt_sha256xor, TestSha256XorDecrypt){
 	GoSlice data = {buff, 0, BUFFER_SIZE};
 	GoSlice pwd = { PASSWORD1, strlen(PASSWORD1), strlen(PASSWORD1) };
 	GoSlice wrong_pwd = { WRONGPASSWORD, strlen(WRONGPASSWORD), strlen(WRONGPASSWORD) };
-	GoSlice encrypted = {encrypted_buffer, 0, BUFFER_SIZE};
-	GoSlice decrypted = {decrypted_buffer, 0, BUFFER_SIZE};
+	coin__UxArray encrypted = {encrypted_buffer, 0, BUFFER_SIZE};
+	coin__UxArray decrypted = {decrypted_buffer, 0, BUFFER_SIZE};
 	GoSlice emptyPwd = {"", 1, 1};
 	GoSlice nullPwd = {NULL, 0, 0};
 	GoUint32 errcode;
@@ -329,7 +282,7 @@ Test(cipher_encrypt_sha256xor, TestSha256XorDecrypt){
 			((unsigned char*)(encrypted.data))[ encrypted.len - 1 ]++;
 		}
 		errcode = SKY_encrypt_Sha256Xor_Decrypt(&encryptSettings, 
-			encrypted, *test_data[i].decryptPwd, &decrypted);
+			*(GoSlice*)&encrypted, *test_data[i].decryptPwd, &decrypted);
 		if( test_data[i].success ){
 			cr_assert(errcode == SKY_OK, "SKY_encrypt_Sha256Xor_Decrypt failed.");
 		} else {
@@ -343,7 +296,7 @@ Test(cipher_encrypt_sha256xor, TestSha256XorDecrypt){
 		SKY_encrypt_Sha256Xor_Encrypt(&encryptSettings, data, pwd, &encrypted);
 		cr_assert(encrypted.len > 0, "SKY_encrypt_Sha256Xor_Encrypt failed. Empty encrypted data");
 		errcode = SKY_encrypt_Sha256Xor_Decrypt(&encryptSettings, 
-			encrypted, pwd, &decrypted);
+			*(GoSlice*)&encrypted, pwd, &decrypted);
 		cr_assert(errcode == SKY_OK, "SKY_encrypt_Sha256Xor_Decrypt failed.");
 		cr_assert(data.len == decrypted.len, "SKY_encrypt_Sha256Xor_Decrypt failed. Decrypted data length different than original data length");
 		int equal = 1;

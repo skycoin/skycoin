@@ -9,6 +9,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/visor"
 
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
@@ -71,7 +72,7 @@ func getTransactionByID(gate Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		resTx := visor.TransactionResult{
+		resTx := daemon.TransactionResult{
 			Transaction: *rbTx,
 			Status:      tx.Status,
 		}
@@ -122,10 +123,10 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		// Converts visor.Transaction to visor.TransactionResult
-		txRlts, err := visor.NewTransactionResults(txns)
+		// Converts visor.Transaction to daemon.TransactionResult
+		txRlts, err := daemon.NewTransactionResults(txns)
 		if err != nil {
-			err = fmt.Errorf("visor.NewTransactionResults failed: %v", err)
+			err = fmt.Errorf("daemon.NewTransactionResults failed: %v", err)
 			wh.Error500(w, err.Error())
 			return
 		}

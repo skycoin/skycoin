@@ -156,6 +156,7 @@ func DeserializeRaw(in []byte, data interface{}) error {
 		v = v.Elem()
 	case reflect.Slice:
 	case reflect.Struct:
+	case reflect.Map:
 	default:
 		return fmt.Errorf("Invalid type %s", reflect.TypeOf(v).String())
 	}
@@ -419,16 +420,22 @@ func datasizeWrite(v reflect.Value) (int, error) {
 		return 4 + size, nil
 
 	case reflect.Map:
-		size := 0
+		// length prefix
+		size := 4
 		for _, key := range v.MapKeys() {
+			s, err := datasizeWrite(key)
+			if err != nil {
+				return 0, err
+			}
+			size += s
 			elem := v.MapIndex(key)
-			s, err := datasizeWrite(elem)
+			s, err = datasizeWrite(elem)
 			if err != nil {
 				return 0, err
 			}
 			size += s
 		}
-		return 4 + size, nil
+		return size, nil
 
 	case reflect.Struct:
 		sum := 0
@@ -638,6 +645,32 @@ func (d *decoder) value(v reflect.Value) error {
 			}
 		}
 
+	case reflect.Map:
+		if len(d.buf) < 4 {
+			return errors.New("Not enough buffer data to deserialize length")
+		}
+		length := int(d.uint32())
+		if length < 0 || length > len(d.buf) {
+			return fmt.Errorf("Invalid length: %d", length)
+		}
+		t := v.Type()
+		key := t.Key()
+		elem := t.Elem()
+		if v.IsNil() {
+			v.Set(reflect.Indirect(reflect.MakeMap(t)))
+		}
+		for i := 0; i < length; i++ {
+			keyv := reflect.Indirect(reflect.New(key))
+			elemv := reflect.Indirect(reflect.New(elem))
+			if err := d.value(keyv); err != nil {
+				return err
+			}
+			if err := d.value(elemv); err != nil {
+				return err
+			}
+			v.SetMapIndex(keyv, elemv)
+		}
+
 	case reflect.Slice:
 		if len(d.buf) < 4 {
 			return errors.New("Not enough buffer data to deserialize length")
@@ -756,6 +789,33 @@ func (d *decoder) dchk(v reflect.Value) int {
 		}
 		return c
 
+	case reflect.Map:
+		if len(d.buf) < 4 {
+			return -1 //error
+		}
+
+		length := int(leUint32(d.buf[0:4]))
+		d.adv(4) //must succeed
+
+		key := v.Type().Key()
+		elem := v.Type().Elem()
+
+		c := 0
+		for i := 0; i < length; i++ {
+			keyv := reflect.Indirect(reflect.New(key))
+			elemv := reflect.Indirect(reflect.New(elem))
+
+			c = d.cmp(c, d.dchk(keyv))
+			c = d.cmp(c, d.dchk(elemv))
+			//c += d.adv(d.dchk(elemv))
+
+			//t := d.dchk(elemv)
+			//d.buf = d.buf[t:]
+			//c += t
+
+			//v.Set(reflect.Append(v, elemv))
+		}
+		return c
 	case reflect.Slice:
 		if len(d.buf) < 4 {
 			return -1 //error
@@ -865,6 +925,7 @@ func (e *encoder) value(v reflect.Value) {
 	case reflect.Map:
 		e.uint32(uint32(v.Len()))
 		for _, key := range v.MapKeys() {
+			e.value(key)
 			e.value(v.MapIndex(key))
 		}
 

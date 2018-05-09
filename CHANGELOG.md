@@ -8,14 +8,31 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - Add environment variable `DATA_DIR` in CLI's
+- `USE_CSRF` environment variable for CLI, if the remote node has CSRF enabled (CSRF is enabled by default, use `-disable-csrf` to disable)
+- `cli showConfig` command to echo the cli's configuration back to the user
+- Option to generate 12/24 word seed when creating new wallet
 - Add `-version` flag to show node version
+- Add CLI `encryptWallet` command
+- Add CLI `decryptWallet` command
+- Add CLI `showSeed` command
+- Add `password` argument to the CLI commands of `addPrivateKey`, `createRawTransaction`, `generateAddresses`, `generateWallet`, `send`
+- Support for decoding map values in cipher binary encoder
+
 
 ### Fixed
 
-- #1390, Add -version flag
+- Reduce connection disconnects, improves syncing
+- Fix #1171, update CLI to support wallet encryption
 
 ### Changed
+
+- JSON 2.0 RPC interface (used by the CLI tool) is now served on the same host interface as the REST API, port `6420`. The additional listener has been removed.
+- CLI's `RPC_ADDR` environment variable must now start with a scheme e.g. `http://127.0.0.1:6420`, previously it did not use a scheme.
+
 ### Removed
+
+- Remove `-rpc-interface-addr`, `-rpc-interface-port` options.  The RPC interface is now on default port `6420` with the REST API.
+- Remove `-rpc-thread-num` option
 
 ## [0.23.0] - 2018-04-22
 

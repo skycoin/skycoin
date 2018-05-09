@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/file"
 )
 
@@ -19,7 +20,11 @@ func Example() {
 		os.Exit(1)
 	}
 
-	app := NewApp(cfg)
+	app, err := NewApp(cfg)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
 	if err := app.Run(os.Args); err != nil {
 		fmt.Println(err)
@@ -39,13 +44,22 @@ func TestLoadConfig(t *testing.T) {
 	})
 
 	t.Run("set RPC_ADDR", func(t *testing.T) {
-		val := "111.22.33.44:5555"
+		val := "http://111.22.33.44:5555"
 		os.Setenv("RPC_ADDR", val)
 		defer os.Unsetenv("RPC_ADDR")
 
 		cfg, err := LoadConfig()
 		require.NoError(t, err)
 		require.Equal(t, cfg.RPCAddress, val)
+	})
+
+	t.Run("set RPC_ADDR invalid", func(t *testing.T) {
+		val := "111.22.33.44:5555"
+		os.Setenv("RPC_ADDR", val)
+		defer os.Unsetenv("RPC_ADDR")
+
+		_, err := LoadConfig()
+		testutil.RequireError(t, err, "RPC_ADDR must be in scheme://host format")
 	})
 
 	t.Run("set WALLET_DIR", func(t *testing.T) {
@@ -86,6 +100,42 @@ func TestLoadConfig(t *testing.T) {
 		cfg, err := LoadConfig()
 		require.NoError(t, err)
 		require.Equal(t, cfg.DataDir, val)
+	})
+	t.Run("don't set USE_CSRF", func(t *testing.T) {
+		os.Unsetenv("USE_CSRF")
+
+		c, err := LoadConfig()
+		require.NoError(t, err)
+		require.False(t, c.UseCSRF)
+	})
+
+	t.Run("set USE_CSRF false", func(t *testing.T) {
+		val := "0"
+		os.Setenv("USE_CSRF", val)
+		defer os.Unsetenv("USE_CSRF")
+
+		c, err := LoadConfig()
+		require.NoError(t, err)
+		require.False(t, c.UseCSRF)
+	})
+
+	t.Run("set USE_CSRF true", func(t *testing.T) {
+		val := "1"
+		os.Setenv("USE_CSRF", val)
+		defer os.Unsetenv("USE_CSRF")
+
+		c, err := LoadConfig()
+		require.NoError(t, err)
+		require.True(t, c.UseCSRF)
+	})
+
+	t.Run("set USE_CSRF invalid", func(t *testing.T) {
+		val := "not_boolean"
+		os.Setenv("USE_CSRF", val)
+		defer os.Unsetenv("USE_CSRF")
+
+		_, err := LoadConfig()
+		testutil.RequireError(t, err, "Invalid USE_CSRF value, must be interpretable as a boolean e.g. 0, 1, true, false")
 	})
 }
 

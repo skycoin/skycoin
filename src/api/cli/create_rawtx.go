@@ -75,6 +75,10 @@ func createRawTxCmd(cfg Config) gcli.Command {
 				Usage: `[send to many] use JSON string to set multiple receive addresses and coins,
 				example: -m '[{"addr":"$addr1", "coins": "10.2"}, {"addr":"$addr2", "coins": "20"}]'`,
 			},
+			gcli.StringFlag{
+				Name:  "p",
+				Usage: "[password] Wallet password",
+			},
 			gcli.BoolFlag{
 				Name:  "json,j",
 				Usage: "Returns the results in JSON format.",
@@ -83,9 +87,14 @@ func createRawTxCmd(cfg Config) gcli.Command {
 		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
 			tx, err := createRawTxCmdHandler(c)
-			if err != nil {
+			switch err.(type) {
+			case nil:
+			case WalletLoadError:
 				errorWithHelp(c, err)
-				return nil
+			case WalletSaveError:
+				return errors.New("save wallet failed")
+			default:
+				return err
 			}
 
 			rawTx := hex.EncodeToString(tx.Serialize())
@@ -102,7 +111,6 @@ func createRawTxCmd(cfg Config) gcli.Command {
 			return nil
 		},
 	}
-	// Commands = append(Commands, cmd)
 }
 
 type walletAddress struct {
@@ -144,7 +152,7 @@ func getChangeAddress(wltAddr walletAddress, chgAddr string) (string, error) {
 			// get the default wallet's coin base address
 			wlt, err := wallet.Load(wltAddr.Wallet)
 			if err != nil {
-				return "", WalletLoadError(err)
+				return "", WalletLoadError{err}
 			}
 
 			if len(wlt.Entries) > 0 {
@@ -241,11 +249,12 @@ func createRawTxCmdHandler(c *gcli.Context) (*coin.Transaction, error) {
 		return nil, err
 	}
 
+	pr := NewPasswordReader([]byte(c.String("p")))
 	if wltAddr.Address == "" {
-		return CreateRawTxFromWallet(rpcClient, wltAddr.Wallet, chgAddr, toAddrs)
+		return CreateRawTxFromWallet(rpcClient, wltAddr.Wallet, chgAddr, toAddrs, pr)
 	}
 
-	return CreateRawTxFromAddress(rpcClient, wltAddr.Address, wltAddr.Wallet, chgAddr, toAddrs)
+	return CreateRawTxFromAddress(rpcClient, wltAddr.Address, wltAddr.Wallet, chgAddr, toAddrs, pr)
 }
 
 func validateSendAmounts(toAddrs []SendAmount) error {
@@ -271,7 +280,7 @@ func validateSendAmounts(toAddrs []SendAmount) error {
 // PUBLIC
 
 // CreateRawTxFromWallet creates a transaction from any address or combination of addresses in a wallet
-func CreateRawTxFromWallet(c *webrpc.Client, walletFile, chgAddr string, toAddrs []SendAmount) (*coin.Transaction, error) {
+func CreateRawTxFromWallet(c *webrpc.Client, walletFile, chgAddr string, toAddrs []SendAmount, pr PasswordReader) (*coin.Transaction, error) {
 	// check change address
 	cAddr, err := cipher.DecodeBase58Address(chgAddr)
 	if err != nil {
@@ -289,6 +298,31 @@ func CreateRawTxFromWallet(c *webrpc.Client, walletFile, chgAddr string, toAddrs
 		return nil, fmt.Errorf("change address %v is not in wallet", chgAddr)
 	}
 
+	switch pr.(type) {
+	case nil:
+		if wlt.IsEncrypted() {
+			return nil, wallet.ErrWalletEncrypted
+		}
+	case PasswordFromBytes:
+		p, err := pr.Password()
+		if err != nil {
+			return nil, err
+		}
+
+		if !wlt.IsEncrypted() && len(p) != 0 {
+			return nil, wallet.ErrWalletNotEncrypted
+		}
+	}
+
+	var password []byte
+	if wlt.IsEncrypted() {
+		var err error
+		password, err = pr.Password()
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// get all address in the wallet
 	totalAddrs := wlt.GetAddresses()
 	addrStrArray := make([]string, len(totalAddrs))
@@ -296,11 +330,11 @@ func CreateRawTxFromWallet(c *webrpc.Client, walletFile, chgAddr string, toAddrs
 		addrStrArray[i] = a.String()
 	}
 
-	return CreateRawTx(c, wlt, addrStrArray, chgAddr, toAddrs)
+	return CreateRawTx(c, wlt, addrStrArray, chgAddr, toAddrs, password)
 }
 
 // CreateRawTxFromAddress creates a transaction from a specific address in a wallet
-func CreateRawTxFromAddress(c *webrpc.Client, addr, walletFile, chgAddr string, toAddrs []SendAmount) (*coin.Transaction, error) {
+func CreateRawTxFromAddress(c *webrpc.Client, addr, walletFile, chgAddr string, toAddrs []SendAmount, pr PasswordReader) (*coin.Transaction, error) {
 	// check if the address is in the default wallet.
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
@@ -328,11 +362,36 @@ func CreateRawTxFromAddress(c *webrpc.Client, addr, walletFile, chgAddr string, 
 		return nil, fmt.Errorf("change address %v is not in wallet", chgAddr)
 	}
 
-	return CreateRawTx(c, wlt, []string{addr}, chgAddr, toAddrs)
+	switch pr.(type) {
+	case nil:
+		if wlt.IsEncrypted() {
+			return nil, wallet.ErrWalletEncrypted
+		}
+	case PasswordFromBytes:
+		p, err := pr.Password()
+		if err != nil {
+			return nil, err
+		}
+
+		if !wlt.IsEncrypted() && len(p) != 0 {
+			return nil, wallet.ErrWalletNotEncrypted
+		}
+	}
+
+	var password []byte
+	if wlt.IsEncrypted() {
+		var err error
+		password, err = pr.Password()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return CreateRawTx(c, wlt, []string{addr}, chgAddr, toAddrs, password)
 }
 
 // CreateRawTx creates a transaction from a set of addresses contained in a loaded *wallet.Wallet
-func CreateRawTx(c *webrpc.Client, wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount) (*coin.Transaction, error) {
+func CreateRawTx(c *webrpc.Client, wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount, password []byte) (*coin.Transaction, error) {
 	if err := validateSendAmounts(toAddrs); err != nil {
 		return nil, err
 	}
@@ -348,7 +407,7 @@ func CreateRawTx(c *webrpc.Client, wlt *wallet.Wallet, inAddrs []string, chgAddr
 		return nil, err
 	}
 
-	txn, err := createRawTx(unspents.Outputs, wlt, inAddrs, chgAddr, toAddrs)
+	txn, err := createRawTx(unspents.Outputs, wlt, inAddrs, chgAddr, toAddrs, password)
 	if err != nil {
 		return nil, err
 	}
@@ -438,7 +497,7 @@ func verifyTransactionConstraints(txn *coin.Transaction, uxIn coin.UxArray, maxS
 	// return coin.VerifyTransactionHoursSpending(head.Time(), uxIn, uxOut)
 }
 
-func createRawTx(uxouts visor.ReadableOutputSet, wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount) (*coin.Transaction, error) {
+func createRawTx(uxouts visor.ReadableOutputSet, wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount, password []byte) (*coin.Transaction, error) {
 	// Calculate total required coins
 	var totalCoins uint64
 	for _, arg := range toAddrs {
@@ -450,19 +509,40 @@ func createRawTx(uxouts visor.ReadableOutputSet, wlt *wallet.Wallet, inAddrs []s
 		return nil, err
 	}
 
-	keys, err := getKeys(wlt, spendOutputs)
-	if err != nil {
-		return nil, err
-	}
-
 	txOuts, err := makeChangeOut(spendOutputs, chgAddr, toAddrs)
 	if err != nil {
 		return nil, err
 	}
 
-	tx := NewTransaction(spendOutputs, keys, txOuts)
+	f := func(w *wallet.Wallet) (*coin.Transaction, error) {
+		keys, err := getKeys(w, spendOutputs)
+		if err != nil {
+			return nil, err
+		}
 
-	return tx, nil
+		return NewTransaction(spendOutputs, keys, txOuts), nil
+	}
+
+	makeTx := func() (*coin.Transaction, error) {
+		return f(wlt)
+	}
+
+	if wlt.IsEncrypted() {
+		makeTx = func() (*coin.Transaction, error) {
+			var tx *coin.Transaction
+			if err := wlt.GuardView(password, func(w *wallet.Wallet) error {
+				var err error
+				tx, err = f(w)
+				return err
+			}); err != nil {
+				return nil, err
+			}
+
+			return tx, nil
+		}
+	}
+
+	return makeTx()
 }
 
 func chooseSpends(uxouts visor.ReadableOutputSet, coins uint64) ([]wallet.UxBalance, error) {

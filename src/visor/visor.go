@@ -190,8 +190,8 @@ type historyer interface {
 // Blockchainer is the interface that provides methods for accessing the blockchain data
 type Blockchainer interface {
 	GetGenesisBlock() *coin.SignedBlock
-	GetBlocks(start, end uint64) []coin.SignedBlock
-	GetLastBlocks(n uint64) []coin.SignedBlock
+	GetBlocks(start, end uint64) ([]coin.SignedBlock, error)
+	GetLastBlocks(n uint64) ([]coin.SignedBlock, error)
 	GetBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, error)
 	GetBlockBySeq(seq uint64) (*coin.SignedBlock, error)
 	Unspent() blockdb.UnspentPool
@@ -213,7 +213,7 @@ type Blockchainer interface {
 // UnconfirmedTxnPooler is the interface that provides methods for
 // accessing the unconfirmed transaction pool
 type UnconfirmedTxnPooler interface {
-	SetAnnounced(hash cipher.SHA256, t time.Time) error
+	SetAnnounced(hash cipher.SHA256, t int64) error
 	InjectTransaction(bc Blockchainer, t coin.Transaction, maxSize int) (bool, *ErrTxnViolatesSoftConstraint, error)
 	RawTxns() coin.Transactions
 	RemoveTransactions(txns []cipher.SHA256) error
@@ -568,10 +568,8 @@ func (vs *Visor) GetBlock(seq uint64) (*coin.SignedBlock, error) {
 	return vs.Blockchain.GetBlockBySeq(seq)
 }
 
-// GetBlocks returns multiple blocks between start and end (not including end). Returns
-// empty slice if unable to fulfill request, it does not return nil.
-// move to blockdb
-func (vs *Visor) GetBlocks(start, end uint64) []coin.SignedBlock {
+// GetBlocks returns multiple blocks between start and end (not including end).
+func (vs *Visor) GetBlocks(start, end uint64) ([]coin.SignedBlock, error) {
 	return vs.Blockchain.GetBlocks(start, end)
 }
 
@@ -1017,7 +1015,7 @@ func (vs *Visor) GetBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
 }
 
 // GetLastBlocks returns last N blocks
-func (vs *Visor) GetLastBlocks(num uint64) []coin.SignedBlock {
+func (vs *Visor) GetLastBlocks(num uint64) ([]coin.SignedBlock, error) {
 	return vs.Blockchain.GetLastBlocks(num)
 }
 
@@ -1118,4 +1116,18 @@ func (vs Visor) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair,
 		bps = append(bps, bp)
 	}
 	return bps, nil
+}
+
+// GetUnconfirmedSpends returns unspent outputs that are spent in unconfirmed transactions
+func (vs *Visor) GetUnconfirmedSpends(addrs []cipher.Address) (coin.AddressUxOuts, error) {
+	return vs.Unconfirmed.SpendsOfAddresses(addrs, vs.Blockchain.Unspent())
+}
+
+// GetUnconfirmedReceiving returns unspents outputs that are created by unconfirmed transactions
+func (vs *Visor) GetUnconfirmedReceiving(addrs []cipher.Address) (coin.AddressUxOuts, error) {
+	head, err := vs.Blockchain.Head()
+	if err != nil {
+		return nil, err
+	}
+	return vs.Unconfirmed.RecvOfAddresses(head.Head, addrs)
 }

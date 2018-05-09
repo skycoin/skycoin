@@ -42,7 +42,7 @@ const (
 	// Number of random transactions of live transaction test.
 	randomLiveTransactionNum = 500
 
-	testFixturesDir = "test-fixtures"
+	testFixturesDir = "testdata"
 
 	stableWalletName        = "integration-test.wlt"
 	stableEncryptWalletName = "integration-test-encrypted.wlt"
@@ -104,8 +104,8 @@ func createEncryptedWallet(t *testing.T) (string, func()) {
 }
 
 // createTempWallet creates a temporary dir, and if encrypt is true, copy
-// the test-fixtures/$stableEncryptedWalletName file to the dir. If it's false, then
-// copy the test-fixtures/$stableWalletName file to the dir
+// the testdata/$stableEncryptedWalletName file to the dir. If it's false, then
+// copy the testdata/$stableWalletName file to the dir
 // returns the temporary wallet path, cleanup callback function, and error if any.
 func createTempWallet(t *testing.T, encrypt bool) (string, func()) {
 	dir, err := ioutil.TempDir("", "wallet-data-dir")
@@ -2051,7 +2051,7 @@ func TestStableCheckDB(t *testing.T) {
 		},
 		{
 			name:   "valid database",
-			dbPath: "../../../gui/integration/test-fixtures/blockchain-180.db",
+			dbPath: "../../../gui/integration/testdata/blockchain-180.db",
 			result: "check db success\n",
 		},
 	}

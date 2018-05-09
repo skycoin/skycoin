@@ -61,7 +61,7 @@ const (
 	testModeDisableWalletApi = "disable-wallet-api"
 	testModeDisableSeedApi   = "disable-seed-api"
 
-	testFixturesDir = "test-fixtures"
+	testFixturesDir = "testdata"
 )
 
 type TestData struct {

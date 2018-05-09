@@ -115,7 +115,7 @@ Test(cipher_hash,TestSHA256Hex){
   GoString s;
 
   SKY_cipher_SHA256_Hex(&h, (GoString_ *)&s);
-  registerMemCleanup(&s.p);
+  registerMemCleanup((void*)&s.p);
 
   cipher__SHA256 h2;
 
@@ -126,7 +126,7 @@ Test(cipher_hash,TestSHA256Hex){
   GoString s2;
 
   SKY_cipher_SHA256_Hex(&h2, (GoString_ *) &s2);
-  registerMemCleanup(&s2.p);
+  registerMemCleanup((void*)&s2.p);
   cr_assert(eq(type(GoString),s,s2));
 }
 
@@ -166,7 +166,7 @@ Test(cipher_hash,TestSHA256KnownValue){
     GoString_ tmp_output;
 
     SKY_cipher_SHA256_Hex(&sha,&tmp_output);
-    registerMemCleanup(&tmp_output.p);
+    registerMemCleanup((void*)&tmp_output.p);
 
     cr_assert(strcmp(tmp_output.p,vals[i].output)== SKY_OK);
   }

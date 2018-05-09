@@ -24,9 +24,9 @@
 Test(api_cli, TestLoadConfig) {
 	Config__Handle configHandle;
 	GoUint32 errcode;
-	GoString strConfigValue;
-	GoString strEnv;
-	GoString strEnv2;
+	GoString_ strConfigValue;
+	GoString_ strEnv;
+	GoString_ strEnv2;
 	GoString strEnvCoinVar = {
 		SKYCOIN_COIN_ENV_VAR,
 		4
@@ -77,8 +77,8 @@ Test(api_cli, TestLoadConfig) {
 	cr_assert(errcode == SKY_OK, "SKY_cli_Config_GetCoin failed");
 	cr_assert(strcmp(strConfigValue.p, strEnvCoinFoo.p) == 0, "SKY_cli_LoadConfig with coin failed");
 	SKY_cli_Setenv(strEnvCoinVar, strEnv); //Restore previous value
-	registerMemCleanup(strConfigValue.p);
-	registerMemCleanup(strEnv.p);
+	registerMemCleanup((void *)strConfigValue.p);
+	registerMemCleanup((void *)strEnv.p);
 	SKY_handle_close((Handle)configHandle);
 	
 	errcode = SKY_cli_Getenv(strEnvRPCVar, &strEnv);
@@ -91,8 +91,8 @@ Test(api_cli, TestLoadConfig) {
 	cr_assert(errcode == SKY_OK, "SKY_cli_Config_GetRPCAddress failed");
 	cr_assert(strcmp(strConfigValue.p, strEnvRPCSample.p) == 0, "SKY_cli_LoadConfig with RPCAddress failed");
 	SKY_cli_Setenv(strEnvCoinVar, strEnv); //Restore previous value
-	registerMemCleanup(strConfigValue.p);
-	registerMemCleanup(strEnv.p);
+	registerMemCleanup((void*)strConfigValue.p);
+	registerMemCleanup((void*)strEnv.p);
 	SKY_handle_close((Handle)configHandle);
 	
 	//Testing Wallet Dir and Wallet Name
@@ -114,8 +114,8 @@ Test(api_cli, TestLoadConfig) {
 	cr_assert(strcmp(strConfigValue.p, SKYCOIN_WALLET_FULL_PATH_SAMPLE) == 0, "SKY_cli_LoadConfig with Wallet Dir failed");
 	SKY_cli_Setenv(strWalletDirVar, strEnv); //Restore previous value
 	SKY_cli_Setenv(strWalletNameVar, strEnv2); //Restore previous value
-	registerMemCleanup(strConfigValue.p);
-	registerMemCleanup(strEnv.p);
-	registerMemCleanup(strEnv2.p);
+	registerMemCleanup((void*)strConfigValue.p);
+	registerMemCleanup((void*)strEnv.p);
+	registerMemCleanup((void*)strEnv2.p);
 	SKY_handle_close((Handle)configHandle);
 }

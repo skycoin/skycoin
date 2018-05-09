@@ -536,10 +536,6 @@ func TestStableBalance(t *testing.T) {
 		addrs  []string
 	}{
 		{
-			name:   "no addresses",
-			golden: "balance-noaddrs.golden",
-		},
-		{
 			name:   "unknown address",
 			addrs:  []string{"prRXwTcDK24hs6AFxj69UuWae3LzhrsPW9"},
 			golden: "balance-noaddrs.golden",

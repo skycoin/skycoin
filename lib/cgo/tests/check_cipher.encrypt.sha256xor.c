@@ -30,54 +30,6 @@ typedef struct{
 	int 		tampered;
 } TEST_DATA;
 
-/*
-// PutUvarint encodes a uint64 into buf and returns the number of bytes written.
-// If the buffer is too small, PutUvarint will panic.
-func PutUvarint(buf []byte, x uint64) int {
-	i := 0
-	for x >= 0x80 {
-		buf[i] = byte(x) | 0x80
-		x >>= 7
-		i++
-	}
-	buf[i] = byte(x)
-	return i + 1
-}
-
-// PutVarint encodes an int64 into buf and returns the number of bytes written.
-// If the buffer is too small, PutVarint will panic.
-func PutVarint(buf []byte, x int64) int {
-	ux := uint64(x) << 1
-	if x < 0 {
-		ux = ^ux
-	}
-	return PutUvarint(buf, ux)
-}
-
-func hashKeyIndexNonce(key []byte, index int64, nonceHash cipher.SHA256) cipher.SHA256 {
-	// convert index to 256bit number
-	indexBytes := make([]byte, 32)
-	binary.PutVarint(indexBytes, index)
-
-	// hash(index, nonceHash)
-	indexNonceHash := cipher.SumSHA256(append(indexBytes, nonceHash[:]...))
-
-	// hash(hash(password), indexNonceHash)
-	var keyHash cipher.SHA256
-	copy(keyHash[:], key[:])
-	return cipher.AddSHA256(keyHash, indexNonceHash)
-}
-{
-		FILE *fp;
-		fp = fopen("test.txt", "w+");
-		for( int i = 0; i < 32; i++){
-			if ( buff[i] > 0 )
-				fprintf(fp, "%d\n", buff[i]);
-		}
-		fclose(fp);
-	}
-*/
-
 int putUvarint(GoSlice* buf , GoUint64 x){
 	int i = 0;
 	while( x >= 0x80 && i < buf->cap) {

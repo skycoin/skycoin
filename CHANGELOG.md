@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Remove `-rpc-interface-addr`, `-rpc-interface-port` options.  The RPC interface is now on default port `6420` with the REST API.
 - Remove `-rpc-thread-num` option
+- Remove `-connect-to` option
 
 ## [0.23.0] - 2018-04-22
 

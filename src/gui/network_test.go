@@ -14,6 +14,29 @@ import (
 )
 
 func TestConnection(t *testing.T) {
+	bp := daemon.BlockchainProgress{35, 39, nil}
+	bp.Peers = append(bp.Peers, struct {
+		Address string `json:"address"`
+		Height  uint64 `json:"height"`
+	}{
+		Address: "127.3.5.1",
+		Height:  39,
+	})
+	bp.Peers = append(bp.Peers, struct {
+		Address string `json:"address"`
+		Height  uint64 `json:"height"`
+	}{
+		Address: "127.0.0.1",
+		Height:  12,
+	})
+	bp.Peers = append(bp.Peers, struct {
+		Address string `json:"address"`
+		Height  uint64 `json:"height"`
+	}{
+		Address: "127.0.5.1",
+		Height:  13,
+	})
+
 	tt := []struct {
 		name                       string
 		method                     string
@@ -71,6 +94,7 @@ func TestConnection(t *testing.T) {
 			endpoint := "/network/connection"
 			gateway := NewGatewayerMock()
 			gateway.On("GetConnection", tc.addr).Return(tc.gatewayGetConnectionResult)
+			gateway.On("GetBlockchainProgress").Return(&bp)
 			v := url.Values{}
 			if tc.addr != "" {
 				v.Add("addr", tc.addr)
@@ -102,6 +126,29 @@ func TestConnection(t *testing.T) {
 }
 
 func TestConnections(t *testing.T) {
+	bp := daemon.BlockchainProgress{35, 39, nil}
+	bp.Peers = append(bp.Peers, struct {
+		Address string `json:"address"`
+		Height  uint64 `json:"height"`
+	}{
+		Address: "127.3.5.1",
+		Height:  39,
+	})
+	bp.Peers = append(bp.Peers, struct {
+		Address string `json:"address"`
+		Height  uint64 `json:"height"`
+	}{
+		Address: "127.0.0.1",
+		Height:  12,
+	})
+	bp.Peers = append(bp.Peers, struct {
+		Address string `json:"address"`
+		Height  uint64 `json:"height"`
+	}{
+		Address: "127.0.5.1",
+		Height:  13,
+	})
+
 	tt := []struct {
 		name                        string
 		method                      string
@@ -156,6 +203,7 @@ func TestConnections(t *testing.T) {
 			endpoint := "/network/connections"
 			gateway := NewGatewayerMock()
 			gateway.On("GetConnections").Return(tc.gatewayGetConnectionsResult)
+			gateway.On("GetBlockchainProgress").Return(&bp)
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 

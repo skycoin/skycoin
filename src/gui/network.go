@@ -49,6 +49,7 @@ func connectionHandler(gateway Gatewayer) http.HandlerFunc {
 				notFound = false
 				cnx.Height = ph.Height
 			}
+			i++
 		}
 
 		wh.SendJSONOr500(logger, w, cnx)

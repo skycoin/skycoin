@@ -21,7 +21,9 @@
     <label for="notes">Notes</label>
     <textarea formControlName="notes" id="notes" row="2"></textarea>
   </div>
-  <app-button #button (action)="send()" class="primary" [disabled]="!form.valid">
-    Verify
-  </app-button>
+  <div class="-buttons">
+    <app-button #button (action)="send()" class="primary" [disabled]="!form.valid">
+      Verify
+    </app-button>
+  </div>
 </div>

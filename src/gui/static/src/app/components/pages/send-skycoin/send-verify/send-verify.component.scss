@@ -6,7 +6,7 @@ h4 {
 }
 
 .-item {
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   display: flex;
   font-size: 13px;
 
@@ -24,18 +24,7 @@ h4 {
 
     .-address {
       padding: 10px 0;
-      margin-bottom: 10px;
-    }
-
-    .-coins, .-hours {
-      font-size: 12px;
-      margin-bottom: 10px;
-
-      span {
-        color: $grey-dark;
-        display: inline-block;
-        width: 50px;
-      }
+      margin-bottom: 5px;
     }
   }
 }
@@ -48,4 +37,68 @@ h4 {
 
 app-button ::ng-deep button {
   margin-bottom: 0;
+}
+
+.-buttons {
+  margin-top: 10px;
+  text-align: center;
+}
+
+.-data {
+  font-size: 12px;
+  margin-bottom: 5px;
+
+  span:first-child {
+    color: $grey-dark;
+    display: inline-block;
+    width: 50px;
+  }
+
+  &.-more span {
+    width: auto !important;
+    margin-top: 10px;
+    color: $gradient-blue-dark;
+    cursor: pointer;
+
+    mat-icon {
+      display: inline;
+      vertical-align: middle;
+      font-size: 13px;
+    }
+  }
+}
+
+.-tx-meta {
+  .-data {
+    margin-bottom: 10px;
+
+    span:first-child {
+      width: 60px;
+    }
+  }
+}
+
+.-tx-price {
+  text-align: center;
+
+  img {
+    width: 30px;
+  }
+
+  h4 {
+    color: $grey-normal;
+    font-size: 16px;
+    font-weight: 700;
+    margin: 10px 0 5px;
+  }
+
+  p {
+    color: $grey-dark;
+    font-size: 12px;
+    margin: 0;
+  }
+}
+
+.-margin-top {
+  margin-top: 30px;
 }

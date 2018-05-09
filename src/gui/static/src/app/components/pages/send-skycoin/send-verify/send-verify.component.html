@@ -1,39 +1,79 @@
 <div class="row">
-  <div class="col-md-6">
-    <h4>Inputs</h4>
-
-    <div class="-item" *ngFor="let input of transaction.inputs; let i = index">
-      <div class="-number">{{ i + 1 }}</div>
-      <div class="-info">
-        <div class="-address">{{ input.address }}</div>
-        <div class="-coins">
-          <span>Coins:</span> {{ input.coins | number:'1.0-6' }}
-        </div>
-        <div class="-hours">
-          <span>Hours:</span> {{ input.calculated_hours | number:'1.0-6' }}
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-6">
-    <h4>Outputs</h4>
-
-    <div class="-item" *ngFor="let output of transaction.outputs; let i = index">
-      <div class="-number">{{ i + 1 }}</div>
-      <div class="-info">
-        <div class="-address">{{ output.address }}</div>
-        <div class="-coins">
-          <span>Coins:</span> {{ output.coins | number:'1.0-6' }}
-        </div>
-        <div class="-hours">
-          <span>Hours:</span> {{ output.hours | number:'1.0-6' }}
-        </div>
-      </div>
-    </div>
-  </div>
   <div class="col-md-12">
-    <app-button #sendButton (action)="send()" class="primary">Send</app-button>
-    <app-button #backButton (action)="back()">Back</app-button>
-    <span class="-fee">Transaction will burn {{ transaction.fee }} coin hours.</span>
+    <h4>Confirm Transaction</h4>
+
+    <div class="row">
+      <div class="col-md-8 -tx-meta">
+        <div class="-data">
+          <span>From:</span> {{ formData.wallet.label }}
+        </div>
+        <div class="-data">
+          <span>To:</span> {{ formData.address }}
+        </div>
+        <div class="-data">
+          <span>Coins:</span> {{ formData.amount | number:'1.0-6' }}
+        </div>
+        <div class="-data">
+          <span>Hours:</span>
+          {{ sentHours }} sent,
+          {{ transaction.fee }} burned,
+        </div>
+        <div class="-data">
+          <span>Tx ID:</span> {{ transaction.txid }}
+        </div>
+        <div class="-data -more" *ngIf="!showInputsOutputs">
+          <span (click)="toggleInputsOutputs($event)">
+            Show more <mat-icon>keyboard_arrow_down</mat-icon>
+          </span>
+        </div>
+      </div>
+      <div class="col-md-4 -tx-price">
+        <div class="-icon">
+          <img src="/assets/img/send-blue.png">
+        </div>
+        <h4>{{ formData.amount | number:'1.0-6' }} SKY</h4>
+        <p *ngIf="price">{{ formData.amount * price | currency:'USD':'symbol':'1.2-2' }}</p>
+      </div>
+    </div>
+  </div>
+  <ng-container *ngIf="showInputsOutputs">
+    <div class="col-md-6 -margin-top">
+      <h4>Inputs</h4>
+
+      <div class="-item" *ngFor="let input of transaction.inputs; let i = index">
+        <div class="-number">{{ i + 1 }}</div>
+        <div class="-info">
+          <div class="-address">{{ input.address }}</div>
+          <div class="-data">
+            <span>Coins:</span> {{ input.coins | number:'1.0-6' }}
+          </div>
+          <div class="-data">
+            <span>Hours:</span> {{ input.calculated_hours | number:'1.0-6' }}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 -margin-top">
+      <h4>Outputs</h4>
+
+      <div class="-item" *ngFor="let output of transaction.outputs; let i = index">
+        <div class="-number">{{ i + 1 }}</div>
+        <div class="-info">
+          <div class="-address">{{ output.address }}</div>
+          <div class="-data">
+            <span>Coins:</span> {{ output.coins | number:'1.0-6' }}
+          </div>
+          <div class="-data">
+            <span>Hours:</span> {{ output.hours | number:'1.0-6' }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+  <div class="col-md-12">
+    <div class="-buttons">
+      <app-button #backButton (action)="back()">Back</app-button>
+      <app-button #sendButton (action)="send()" class="primary">Send</app-button>
+    </div>
   </div>
 </div>

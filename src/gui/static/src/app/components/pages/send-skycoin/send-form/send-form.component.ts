@@ -72,7 +72,7 @@ export class SendFormComponent implements OnInit {
           response,
         });
       }, error => {
-        const errorMessage = parseResponseMessage(error);
+        const errorMessage = parseResponseMessage(error['_body']);
         const config = new MatSnackBarConfig();
         config.duration = 300000;
         this.snackbar.open(errorMessage, null, config);

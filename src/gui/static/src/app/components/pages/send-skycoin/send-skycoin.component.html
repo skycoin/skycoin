@@ -10,6 +10,7 @@
       *ngIf="!showForm"
       [transaction]="formData.response.transaction"
       [encodedTransaction]="formData.response.encoded_transaction"
+      [formData]="formData"
       (onBack)="onBack($event)"
     ></app-send-verify>
   </div>

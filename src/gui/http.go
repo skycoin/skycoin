@@ -60,6 +60,16 @@ type muxConfig struct {
 	enableJSON20RPC bool
 }
 
+// type StatusRespWriter struct {
+// 	http.ResponseWriter // We embed http.ResponseWriter
+// 	status              int
+// }
+
+// func (w *StatusRespWriter) WriteHeader(status int) {
+// 	w.status = status // Store the status for our own use
+// 	w.ResponseWriter.WriteHeader(status)
+// }
+
 func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 	var appLoc string
 	if c.EnableGUI {
@@ -201,17 +211,16 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 		mux.Handle(endpoint, handler)
 	}
 
-	if c.enableGUI {
-		webHandler("/", newIndexHandler(c.appLoc))
+	webHandler("/", newIndexHandler(c.appLoc, gateway))
 
-		fileInfos, _ := ioutil.ReadDir(c.appLoc)
-		for _, fileInfo := range fileInfos {
-			route := fmt.Sprintf("/%s", fileInfo.Name())
-			if fileInfo.IsDir() {
-				route = route + "/"
-			}
-			webHandler(route, http.FileServer(http.Dir(c.appLoc)))
+	// fileInfos would be nil when gui is disabled
+	fileInfos, _ := ioutil.ReadDir(c.appLoc)
+	for _, fileInfo := range fileInfos {
+		route := fmt.Sprintf("/%s", fileInfo.Name())
+		if fileInfo.IsDir() {
+			route = route + "/"
 		}
+		webHandler(route, http.FileServer(http.Dir(c.appLoc)))
 	}
 
 	if c.enableJSON20RPC {
@@ -377,9 +386,14 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 }
 
 // Returns a http.HandlerFunc for index.html, where index.html is in appLoc
-func newIndexHandler(appLoc string) http.HandlerFunc {
+func newIndexHandler(appLoc string, gateway Gatewayer) http.HandlerFunc {
 	// Serves the main page
 	return func(w http.ResponseWriter, r *http.Request) {
+		if !gateway.IsGUIEnabled() {
+			wh.Error404(w, "gui is disabled")
+			return
+		}
+
 		page := filepath.Join(appLoc, indexPage)
 		logger.Debugf("Serving index page: %s", page)
 		if r.URL.Path == "/" {

@@ -25,6 +25,7 @@ type Gatewayer interface {
 	NewAddresses(wltID string, password []byte, n uint64) ([]cipher.Address, error)
 	GetWalletDir() (string, error)
 	IsWalletAPIEnabled() bool
+	IsGUIEnabled() bool
 	EncryptWallet(wltID string, password []byte) (*wallet.Wallet, error)
 	DecryptWallet(wltID string, password []byte) (*wallet.Wallet, error)
 	GetWalletSeed(wltID string, password []byte) (string, error)

@@ -7,7 +7,6 @@ package gui
 
 import (
 	"fmt"
-
 	mock "github.com/stretchr/testify/mock"
 
 	cipher "github.com/skycoin/skycoin/src/cipher"
@@ -864,6 +863,24 @@ func (m *GatewayerMock) InjectBroadcastTransaction(p0 coin.Transaction) error {
 	switch res := ret.Get(0).(type) {
 	case nil:
 	case error:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0
+
+}
+
+// IsGUIEnabled mocked method
+func (m *GatewayerMock) IsGUIEnabled() bool {
+
+	ret := m.Called()
+
+	var r0 bool
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case bool:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))

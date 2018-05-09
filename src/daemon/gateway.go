@@ -22,6 +22,7 @@ import (
 type GatewayConfig struct {
 	BufferSize      int
 	EnableWalletAPI bool
+	EnableGUI       bool
 }
 
 // NewGatewayConfig create and init an GatewayConfig
@@ -29,6 +30,7 @@ func NewGatewayConfig() GatewayConfig {
 	return GatewayConfig{
 		BufferSize:      32,
 		EnableWalletAPI: false,
+		EnableGUI:       false,
 	}
 }
 
@@ -866,6 +868,11 @@ func (gw *Gateway) GetWalletSeed(id string, password []byte) (string, error) {
 // IsWalletAPIEnabled returns if all wallet related apis are disabled
 func (gw *Gateway) IsWalletAPIEnabled() bool {
 	return gw.Config.EnableWalletAPI
+}
+
+// IsGUIEnabled returns if GUI is enabled
+func (gw *Gateway) IsGUIEnabled() bool {
+	return gw.Config.EnableGUI
 }
 
 // GetBuildInfo returns node build info.

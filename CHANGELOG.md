@@ -8,17 +8,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Add `/health` endpoint
-- libskycoin 0.0.1 released with bindings for cipher/address, cipher/hash, cipher/crypto, cli/create_rawtx
-- Logging migration, now powered by [logrus](https://github.com/sirupsen/logrus)
-- Write specification for skycoin URIs (based upon bip21)
-- Implemented `scrypt-chacha20poly1305` for wallet encryption
-- Implemented `sha256xor` for wallet encryption
-- Add new field of `secrets` to wallet, which records all encrypted sensitive data like seed, public/private keys
-- `/wallet/encrypt` API endpoint, encrypts wallet and returns encrypted wallet without sensitive data
-- `/wallet/decrypt` API endpoint, decrypts wallet and returns decrypted wallet without sensitive data
-- `/wallet/seed` API endpoint, returns seed of specific wallet
-- `-enable-seed-api` cli option
 - Add environment variable `DATA_DIR` in CLI's
 - `USE_CSRF` environment variable for CLI, if the remote node has CSRF enabled (CSRF is enabled by default, use `-disable-csrf` to disable)
 - `cli showConfig` command to echo the cli's configuration back to the user
@@ -46,6 +35,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Remove `-rpc-interface-addr`, `-rpc-interface-port` options.  The RPC interface is now on default port `6420` with the REST API.
 - Remove `-rpc-thread-num` option
+- Remove `-connect-to` option
 
 ## [0.23.0] - 2018-04-22
 

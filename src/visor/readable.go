@@ -416,45 +416,14 @@ func NewReadableUnconfirmedTxns(txs []UnconfirmedTxn) ([]ReadableUnconfirmedTxn,
 	return rut, nil
 }
 
-// NewGenesisReadableTransaction creates genesis readable transaction
-func NewGenesisReadableTransaction(t *Transaction) (*ReadableTransaction, error) {
-	txid := cipher.SHA256{}
-	sigs := make([]string, len(t.Txn.Sigs))
-	for i := range t.Txn.Sigs {
-		sigs[i] = t.Txn.Sigs[i].Hex()
-	}
-
-	in := make([]string, len(t.Txn.In))
-	for i := range t.Txn.In {
-		in[i] = t.Txn.In[i].Hex()
-	}
-
-	out := make([]ReadableTransactionOutput, len(t.Txn.Out))
-	for i := range t.Txn.Out {
-		o, err := NewReadableTransactionOutput(&t.Txn.Out[i], txid)
-		if err != nil {
-			return nil, err
-		}
-
-		out[i] = *o
-	}
-
-	return &ReadableTransaction{
-		Length:    t.Txn.Length,
-		Type:      t.Txn.Type,
-		Hash:      t.Txn.TxIDHex(),
-		InnerHash: t.Txn.InnerHash.Hex(),
-		Timestamp: t.Time,
-
-		Sigs: sigs,
-		In:   in,
-		Out:  out,
-	}, nil
-}
-
 // NewReadableTransaction creates readable transaction
 func NewReadableTransaction(t *Transaction) (*ReadableTransaction, error) {
-	txid := t.Txn.Hash()
+	// Genesis transaction use empty SHA256 as txid
+	txid := cipher.SHA256{}
+	if t.Status.BlockSeq != 0 {
+		txid = t.Txn.Hash()
+	}
+
 	sigs := make([]string, len(t.Txn.Sigs))
 	for i := range t.Txn.Sigs {
 		sigs[i] = t.Txn.Sigs[i].Hex()
@@ -521,20 +490,16 @@ type ReadableBlockBody struct {
 func NewReadableBlockBody(b *coin.Block) (*ReadableBlockBody, error) {
 	txns := make([]ReadableTransaction, len(b.Body.Transactions))
 	for i := range b.Body.Transactions {
-		if b.Seq() == uint64(0) {
-			// genesis block
-			tx, err := NewGenesisReadableTransaction(&Transaction{Txn: b.Body.Transactions[i]})
-			if err != nil {
-				return nil, err
-			}
-			txns[i] = *tx
-		} else {
-			tx, err := NewReadableTransaction(&Transaction{Txn: b.Body.Transactions[i]})
-			if err != nil {
-				return nil, err
-			}
-			txns[i] = *tx
+		t := Transaction{
+			Txn:    b.Body.Transactions[i],
+			Status: TransactionStatus{BlockSeq: b.Seq()},
 		}
+
+		tx, err := NewReadableTransaction(&t)
+		if err != nil {
+			return nil, err
+		}
+		txns[i] = *tx
 	}
 	return &ReadableBlockBody{
 		Transactions: txns,

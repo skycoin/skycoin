@@ -11,13 +11,49 @@ import "C"
 
 import (
 	"unsafe"
-
+	"reflect"
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
 /**
  * Functions in github.com/skycoin/skycoin/src/cipher/address.go
  */
+ 
+//export SKY_cipher_AddressFromPubKey
+func SKY_cipher_AddressFromPubKey(_pubKey *C.cipher__PubKey, _arg1 *C.cipher__Address) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	pubKey := *(*cipher.PubKey)(unsafe.Pointer(_pubKey))
+	__arg1 := cipher.AddressFromPubKey(pubKey)
+	*_arg1 = *(*C.cipher__Address)(unsafe.Pointer(&__arg1))
+	return
+}
+
+//export SKY_cipher_AddressFromSecKey
+func SKY_cipher_AddressFromSecKey(_secKey *C.cipher__SecKey, _arg1 *C.cipher__Address) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	secKey := *(*cipher.SecKey)(unsafe.Pointer(_secKey))
+	__arg1 := cipher.AddressFromSecKey(secKey)
+	*_arg1 = *(*C.cipher__Address)(unsafe.Pointer(&__arg1))
+	return
+}
+
+//export SKY_cipher_MustSecKeyFromWalletImportFormat
+func SKY_cipher_MustSecKeyFromWalletImportFormat(_input string, _arg1 *C.cipher__SecKey) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	input := _input
+	__arg1 := cipher.MustSecKeyFromWalletImportFormat(input)
+	copyToBuffer(reflect.ValueOf(__arg1[:]), unsafe.Pointer(_arg1), uint(SizeofSecKey))
+	return
+}
 
 //export SKY_cipher_DecodeBase58Address
 func SKY_cipher_DecodeBase58Address(_addr string, _arg1 *C.cipher__Address) uint32 {
@@ -27,21 +63,6 @@ func SKY_cipher_DecodeBase58Address(_addr string, _arg1 *C.cipher__Address) uint
 		*_arg1 = *(*C.cipher__Address)(unsafe.Pointer(&addr))
 	}
 	return errcode
-}
-
-//export SKY_cipher_AddressFromPubKey
-func SKY_cipher_AddressFromPubKey(_pubKey *C.cipher__PubKey, _arg1 *C.cipher__Address) {
-	pubKey := *(*cipher.PubKey)(unsafe.Pointer(_pubKey))
-	addr := cipher.AddressFromPubKey(pubKey)
-	*_arg1 = *(*C.cipher__Address)(unsafe.Pointer(&addr))
-}
-
-//export SKY_cipher_AddressFromSecKey
-func SKY_cipher_AddressFromSecKey(_secKey *C.cipher__SecKey, _arg1 *C.cipher__Address) {
-	var secKey cipher.SecKey
-	secKey = *(*cipher.SecKey)(unsafe.Pointer(_secKey))
-	addr := cipher.AddressFromSecKey(secKey)
-	*_arg1 = *(*C.cipher__Address)(unsafe.Pointer(&addr))
 }
 
 //export SKY_cipher_BitcoinDecodeBase58Address

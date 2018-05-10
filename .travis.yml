@@ -69,6 +69,7 @@ script:
   - make lint-ui
   - make build-ui-travis
   - make test-ui
+  - make test-ui-e2e
   # Build wallets
   - if [[ "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/build-wallet.sh; fi
 

@@ -10,6 +10,6 @@ describe('desktopwallet App', () => {
 
   it('should show wallets page', () => {
     page.navigateTo();
-    expect(page.getParagraphText()).toEqual('Wallets');
+    expect(page.getParagraphText()).toEqual('Create a Wallet');
   });
 });

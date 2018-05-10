@@ -7,6 +7,6 @@ export class DesktopwalletPage extends Page {
   }
 
   getParagraphText() {
-    return element(by.css('.title')).getText();
+    return element(by.css('.-header')).getText();
   }
 }

@@ -163,7 +163,9 @@ lint-ui:  ## Lint the UI code
 
 test-ui:  ## Run UI tests
 	cd $(GUI_STATIC_DIR) && npm run test
-	cd $(GUI_STATIC_DIR) && npm run e2e
+
+test-ui-e2e:  ## Run UI e2e tests
+	./ci-scripts/ui-e2e.sh
 
 build-ui:  ## Builds the UI
 	cd $(GUI_STATIC_DIR) && npm run build

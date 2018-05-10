@@ -139,7 +139,9 @@ type Config struct {
 	DisablePingPong bool
 
 	// Verify the database integrity after loading
-	VerifyDatabase bool
+	VerifyDB bool
+	// Reset the database if integrity checks fail, and continue running
+	ResetCorruptDB bool
 
 	// Wallets
 	// Defaults to ${DataDirectory}/wallets/
@@ -213,7 +215,8 @@ func (c *Config) register() {
 	flag.BoolVar(&c.LogToFile, "logtofile", c.LogToFile, "log to file")
 	flag.StringVar(&c.GUIDirectory, "gui-dir", c.GUIDirectory, "static content directory for the html gui")
 
-	flag.BoolVar(&c.VerifyDatabase, "verify-db", c.VerifyDatabase, "verify the database integrity after loading")
+	flag.BoolVar(&c.VerifyDB, "verify-db", c.VerifyDB, "check the database for corruption")
+	flag.BoolVar(&c.ResetCorruptDB, "reset-corrupt-db", c.ResetCorruptDB, "reset the database if corrupted, and continue running instead of exiting")
 
 	// Key Configuration Data
 	flag.BoolVar(&c.RunMaster, "master", c.RunMaster, "run the daemon as blockchain master server")
@@ -290,7 +293,8 @@ var devConfig = Config{
 	LogToFile:       false,
 	DisablePingPong: false,
 
-	VerifyDatabase: true,
+	VerifyDB:       true,
+	ResetCorruptDB: false,
 
 	// Wallets
 	WalletDirectory:  "",
@@ -341,6 +345,7 @@ func applyConfigMode() {
 		devConfig.WebInterface = true
 		devConfig.LogToFile = false
 		devConfig.ColorLog = true
+		devConfig.ResetCorruptDB = true
 	default:
 		panic("Invalid ConfigMode")
 	}
@@ -666,11 +671,16 @@ func Run(c *Config) {
 		return
 	}
 
-	// Check the database integrity and recreate it if necessary
-	if c.VerifyDatabase {
-		db, err = visor.CheckAndRepairDatabase(db, c.BlockchainPubkey)
+	if c.VerifyDB {
+		if err := visor.CheckDatabase(db, c.BlockchainPubkey); err != nil {
+			logger.Errorf("visor.CheckDatabase failed: %v", err)
+			return
+		}
+	} else if c.ResetCorruptDB {
+		// Check the database integrity and recreate it if necessary
+		db, err = visor.ResetCorruptDB(db, c.BlockchainPubkey)
 		if err != nil {
-			logger.Errorf("visor.CheckAndRepairDatabase failed: %v", err)
+			logger.Errorf("visor.ResetCorruptDB failed: %v", err)
 			return
 		}
 	}

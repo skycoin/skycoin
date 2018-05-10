@@ -21,37 +21,55 @@ var (
 	SigVerifyTheadNum = 4
 )
 
-// CheckAndRepairDatabase loads blockchain from DB and if any error occurs then delete
-// the db and create an empty blockchain.
-func CheckAndRepairDatabase(db *dbutil.DB, pubkey cipher.PubKey) (*dbutil.DB, error) {
-	logger.Info("Loading blockchain")
+// ErrCorruptDB is returned if the database is corrupted
+// The original corruption error is embedded
+type ErrCorruptDB struct {
+	error
+}
 
+// CheckDatabase checks the database for corruption
+func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey) error {
 	bc, err := NewBlockchain(db, BlockchainConfig{
 		Pubkey: pubkey,
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	err = db.View("VerifySignatures", func(tx *dbutil.Tx) error {
+	err = db.View("CheckDatabase", func(tx *dbutil.Tx) error {
 		return bc.VerifySignatures(tx, SigVerifyTheadNum)
 	})
-	if err != nil {
-		switch err.(type) {
-		case blockdb.ErrMissingSignature:
-			// Recreate the block database if ErrMissingSignature occurs
-			logger.Critical().Errorf("Block database signature missing, recreating db: %v", err)
-			return handleCorruptedDB(db)
-		default:
-			return nil, err
-		}
-	}
 
-	return db, nil
+	switch err.(type) {
+	case nil:
+		return nil
+	case blockdb.ErrMissingSignature:
+		return ErrCorruptDB{err}
+	default:
+		return err
+	}
 }
 
-// handleCorruptedDB recreates the DB, making a backup copy marked as corrupted
-func handleCorruptedDB(db *dbutil.DB) (*dbutil.DB, error) {
+// ResetCorruptDB checks the database for corruption and if corrupted, then it erases the db and starts over.
+// A copy of the corrupted database is saved.
+func ResetCorruptDB(db *dbutil.DB, pubkey cipher.PubKey) (*dbutil.DB, error) {
+	logger.Info("Loading blockchain")
+
+	err := CheckDatabase(db, pubkey)
+
+	switch err.(type) {
+	case nil:
+		return db, nil
+	case ErrCorruptDB:
+		logger.Critical().Errorf("Database is corrupted, recreating db: %v", err)
+		return handleCorruptDB(db)
+	default:
+		return nil, err
+	}
+}
+
+// handleCorruptDB recreates the DB, making a backup copy marked as corrupted
+func handleCorruptDB(db *dbutil.DB) (*dbutil.DB, error) {
 	dbReadOnly := db.IsReadOnly()
 	dbPath := db.Path()
 

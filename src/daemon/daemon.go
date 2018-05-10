@@ -304,7 +304,7 @@ type MessageEvent struct {
 // over the quit channel provided to Init.  The Daemon run loop must be stopped
 // before calling this function.
 func (dm *Daemon) Shutdown() {
-	defer logger.Info("Daemon closed")
+	defer logger.Info("Daemon shutdown complete")
 
 	// close daemon run loop first to avoid creating new connection after
 	// the connection pool is shutdown.

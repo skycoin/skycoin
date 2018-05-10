@@ -15,8 +15,6 @@ import (
 
 const (
 	blockchainPubkey = "0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a"
-
-	verifySignaturesWorkers = 4
 )
 
 // wrapDB calls dbutil.WrapDB and disables all logging
@@ -69,24 +67,10 @@ func checkdb(c *gcli.Context) error {
 		return fmt.Errorf("decode blockchain pubkey failed: %v", err)
 	}
 
-	if err := IntegrityCheck(wrapDB(db), pubkey); err != nil {
+	if err := visor.CheckDatabase(wrapDB(db), pubkey); err != nil {
 		return fmt.Errorf("checkdb failed: %v", err)
 	}
 
 	fmt.Println("check db success")
 	return nil
-}
-
-// IntegrityCheck checks database integrity
-func IntegrityCheck(db *dbutil.DB, pubkey cipher.PubKey) error {
-	bc, err := visor.NewBlockchain(db, visor.BlockchainConfig{
-		Pubkey: pubkey,
-	})
-	if err != nil {
-		return err
-	}
-
-	return db.View("VerifySignatures", func(tx *dbutil.Tx) error {
-		return bc.VerifySignatures(tx, verifySignaturesWorkers)
-	})
 }

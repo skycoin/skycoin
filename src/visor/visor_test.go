@@ -149,7 +149,7 @@ func TestErrMissingSignatureRecreateDB(t *testing.T) {
 		require.IsType(t, blockdb.ErrMissingSignature{}, err)
 	}()
 
-	// Loading this invalid db should cause CheckAndRepairDatabase() to recreate the db
+	// Loading this invalid db should cause ResetCorruptDB() to recreate the db
 	t.Logf("Loading the corrupted db from %s", badDBFile)
 	badDB, err := OpenDB(badDBFile, false)
 	require.NoError(t, err)
@@ -157,7 +157,7 @@ func TestErrMissingSignatureRecreateDB(t *testing.T) {
 	require.NotEmpty(t, badDB.Path())
 	t.Logf("badDB.Path() == %s", badDB.Path())
 
-	db, err := CheckAndRepairDatabase(badDB, pubkey)
+	db, err := ResetCorruptDB(badDB, pubkey)
 	require.NoError(t, err)
 
 	err = db.Close()

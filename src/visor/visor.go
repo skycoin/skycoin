@@ -190,8 +190,8 @@ type historyer interface {
 // Blockchainer is the interface that provides methods for accessing the blockchain data
 type Blockchainer interface {
 	GetGenesisBlock() *coin.SignedBlock
-	GetBlocks(start, end uint64) []coin.SignedBlock
-	GetLastBlocks(n uint64) []coin.SignedBlock
+	GetBlocks(start, end uint64) ([]coin.SignedBlock, error)
+	GetLastBlocks(n uint64) ([]coin.SignedBlock, error)
 	GetBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, error)
 	GetBlockBySeq(seq uint64) (*coin.SignedBlock, error)
 	Unspent() blockdb.UnspentPool
@@ -568,10 +568,8 @@ func (vs *Visor) GetBlock(seq uint64) (*coin.SignedBlock, error) {
 	return vs.Blockchain.GetBlockBySeq(seq)
 }
 
-// GetBlocks returns multiple blocks between start and end (not including end). Returns
-// empty slice if unable to fulfill request, it does not return nil.
-// move to blockdb
-func (vs *Visor) GetBlocks(start, end uint64) []coin.SignedBlock {
+// GetBlocks returns multiple blocks between start and end (not including end).
+func (vs *Visor) GetBlocks(start, end uint64) ([]coin.SignedBlock, error) {
 	return vs.Blockchain.GetBlocks(start, end)
 }
 
@@ -1017,7 +1015,7 @@ func (vs *Visor) GetBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
 }
 
 // GetLastBlocks returns last N blocks
-func (vs *Visor) GetLastBlocks(num uint64) []coin.SignedBlock {
+func (vs *Visor) GetLastBlocks(num uint64) ([]coin.SignedBlock, error) {
 	return vs.Blockchain.GetLastBlocks(num)
 }
 

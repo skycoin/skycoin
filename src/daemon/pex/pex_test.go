@@ -1021,6 +1021,11 @@ func TestPexIncreaseRetryTimes(t *testing.T) {
 			for k, v := range tc.expect {
 				p, ok := pex.peerlist.peers[k]
 				require.True(t, ok)
+				if p.LastSeen != 0 {
+					require.InDelta(t, v.LastSeen, p.LastSeen, 2)
+					p.LastSeen = 0
+					v.LastSeen = 0
+				}
 				require.Equal(t, v, *p)
 			}
 		})

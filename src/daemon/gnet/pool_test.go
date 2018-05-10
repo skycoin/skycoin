@@ -623,6 +623,12 @@ func TestConnectionWriteLoop(t *testing.T) {
 		cc <- p.pool[1]
 	}
 
+	disconnectErr := make(chan DisconnectReason, 1)
+	p.Config.DisconnectCallback = func(addr string, reason DisconnectReason) {
+		fmt.Printf("DisconnectCallback called, address=%s reason=%v\n", addr, reason)
+		disconnectErr <- reason
+	}
+
 	q := make(chan struct{})
 	go func() {
 		defer close(q)
@@ -656,36 +662,26 @@ func TestConnectionWriteLoop(t *testing.T) {
 		t.Fatal("No send results, would block")
 	}
 
+	require.Len(t, p.SendResults, 0)
+
 	require.Equal(t, sr.Message, m)
 	require.Equal(t, sr.Addr, c.Addr())
 	require.Nil(t, sr.Error)
 
-	wait()
-
-	var c2 *Connection
-	p.strand("", func() error {
-		fmt.Println("len(p.pool)", len(p.pool))
-		c2 = p.pool[1]
+	err = p.strand("", func() error {
+		c = p.pool[c.ID]
 		return nil
 	})
+	require.NoError(t, err)
+	require.NotNil(t, c)
 
-	require.NotNil(t, c2)
+	lastSent := c.LastSent
+	require.False(t, lastSent.IsZero())
 
-	require.False(t, c2.LastSent.IsZero())
-	fmt.Println("c2.LastSent", c2.LastSent)
-	c2.LastSent = time.Time{}
-	require.True(t, c2.LastSent.IsZero())
-	fmt.Println("Reset c2.LastSent to zero")
-
-	// Send a failed message to c2
+	// Send a failed message to c
 	sendByteMessage = failingSendByteMessage
 
-	disconnectErr := make(chan DisconnectReason, 1)
-	p.Config.DisconnectCallback = func(addr string, reason DisconnectReason) {
-		fmt.Printf("DisconnectCallback called, address=%s reason=%v\n", addr, reason)
-		disconnectErr <- reason
-	}
-	err = p.SendMessage(c2.Addr(), m)
+	err = p.SendMessage(c.Addr(), m)
 	require.NoError(t, err)
 
 	select {
@@ -694,15 +690,15 @@ func TestConnectionWriteLoop(t *testing.T) {
 		t.Fatal("No send results, would block")
 	}
 	require.Equal(t, sr.Message, m)
-	require.Equal(t, sr.Addr, c2.Addr())
+	require.Equal(t, sr.Addr, c.Addr())
 	require.NotNil(t, sr.Error)
 
 	reason := <-disconnectErr
 	require.NotNil(t, reason)
 	require.Equal(t, errors.New("send byte message failed"), reason)
 
-	fmt.Println("Final c2.LastSent", c2.LastSent)
-	require.True(t, c2.LastSent.IsZero())
+	// c.LastSent should not have changed
+	require.Equal(t, lastSent, c.LastSent)
 
 	p.Shutdown()
 	<-q

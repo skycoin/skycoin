@@ -55,10 +55,16 @@ var MarshalJSONWithoutQuotes = false
 // Zero constant, to make computations faster.
 var Zero = New(0, 1)
 
+// fiveDec used in Cash Rounding
+var fiveDec = New(5, 0)
+
 var zeroInt = big.NewInt(0)
 var oneInt = big.NewInt(1)
+var twoInt = big.NewInt(2)
+var fourInt = big.NewInt(4)
 var fiveInt = big.NewInt(5)
 var tenInt = big.NewInt(10)
+var twentyInt = big.NewInt(20)
 
 // Decimal represents a fixed-point decimal. It is immutable.
 // number = value * 10 ^ exp
@@ -147,6 +153,22 @@ func NewFromString(value string) (Decimal, error) {
 	}, nil
 }
 
+// RequireFromString returns a new Decimal from a string representation
+// or panics if NewFromString would have returned an error.
+//
+// Example:
+//
+//     d := RequireFromString("-123.45")
+//     d2 := RequireFromString(".0001")
+//
+func RequireFromString(value string) Decimal {
+	dec, err := NewFromString(value)
+	if err != nil {
+		panic(err)
+	}
+	return dec
+}
+
 // NewFromFloat converts a float64 to Decimal.
 //
 // Example:
@@ -154,24 +176,12 @@ func NewFromString(value string) (Decimal, error) {
 //     NewFromFloat(123.45678901234567).String() // output: "123.4567890123456"
 //     NewFromFloat(.00000000000000001).String() // output: "0.00000000000000001"
 //
+// NOTE: some float64 numbers can take up about 300 bytes of memory in decimal representation.
+// Consider using NewFromFloatWithExponent if space is more important than precision.
+//
 // NOTE: this will panic on NaN, +/-inf
 func NewFromFloat(value float64) Decimal {
-	floor := math.Floor(value)
-
-	// fast path, where float is an int
-	if floor == value && value <= math.MaxInt64 && value >= math.MinInt64 {
-		return New(int64(value), 0)
-	}
-
-	// slow path: float is a decimal
-	// HACK(vadim): do this the slow hacky way for now because the logic to
-	// convert a base-2 float to base-10 properly is not trivial
-	str := strconv.FormatFloat(value, 'f', -1, 64)
-	dec, err := NewFromString(str)
-	if err != nil {
-		panic(err)
-	}
-	return dec
+	return NewFromFloatWithExponent(value, math.MinInt32)
 }
 
 // NewFromFloatWithExponent converts a float64 to Decimal, with an arbitrary
@@ -182,15 +192,82 @@ func NewFromFloat(value float64) Decimal {
 //     NewFromFloatWithExponent(123.456, -2).String() // output: "123.46"
 //
 func NewFromFloatWithExponent(value float64, exp int32) Decimal {
-	mul := math.Pow(10, -float64(exp))
-	floatValue := value * mul
-	if math.IsNaN(floatValue) || math.IsInf(floatValue, 0) {
-		panic(fmt.Sprintf("Cannot create a Decimal from %v", floatValue))
+	if math.IsNaN(value) || math.IsInf(value, 0) {
+		panic(fmt.Sprintf("Cannot create a Decimal from %v", value))
 	}
-	dValue := big.NewInt(round(floatValue))
+
+	bits := math.Float64bits(value)
+	mant := bits & (1<<52 - 1)
+	exp2 := int32((bits >> 52) & (1<<11 - 1))
+	sign := bits >> 63
+
+	if exp2 == 0 {
+		// specials
+		if mant == 0 {
+			return Decimal{}
+		} else {
+			// subnormal
+			exp2++
+		}
+	} else {
+		// normal
+		mant |= 1 << 52
+	}
+
+	exp2 -= 1023 + 52
+
+	// normalizing base-2 values
+	for mant&1 == 0 {
+		mant = mant >> 1
+		exp2++
+	}
+
+	// maximum number of fractional base-10 digits to represent 2^N exactly cannot be more than -N if N<0
+	if exp < 0 && exp < exp2 {
+		if exp2 < 0 {
+			exp = exp2
+		} else {
+			exp = 0
+		}
+	}
+
+	// representing 10^M * 2^N as 5^M * 2^(M+N)
+	exp2 -= exp
+
+	temp := big.NewInt(1)
+	dMant := big.NewInt(int64(mant))
+
+	// applying 5^M
+	if exp > 0 {
+		temp = temp.SetInt64(int64(exp))
+		temp = temp.Exp(fiveInt, temp, nil)
+	} else if exp < 0 {
+		temp = temp.SetInt64(-int64(exp))
+		temp = temp.Exp(fiveInt, temp, nil)
+		dMant = dMant.Mul(dMant, temp)
+		temp = temp.SetUint64(1)
+	}
+
+	// applying 2^(M+N)
+	if exp2 > 0 {
+		dMant = dMant.Lsh(dMant, uint(exp2))
+	} else if exp2 < 0 {
+		temp = temp.Lsh(temp, uint(-exp2))
+	}
+
+	// rounding and downscaling
+	if exp > 0 || exp2 < 0 {
+		halfDown := new(big.Int).Rsh(temp, 1)
+		dMant = dMant.Add(dMant, halfDown)
+		dMant = dMant.Quo(dMant, temp)
+	}
+
+	if sign == 1 {
+		dMant = dMant.Neg(dMant)
+	}
 
 	return Decimal{
-		value: dValue,
+		value: dMant,
 		exp:   exp,
 	}
 }
@@ -272,6 +349,7 @@ func (d Decimal) Sub(d2 Decimal) Decimal {
 
 // Neg returns -d.
 func (d Decimal) Neg() Decimal {
+	d.ensureInitialized()
 	val := new(big.Int).Neg(d.value)
 	return Decimal{
 		value: val,
@@ -557,6 +635,13 @@ func (d Decimal) StringFixedBank(places int32) string {
 	return rounded.string(false)
 }
 
+// StringFixedCash returns a Swedish/Cash rounded fixed-point string. For
+// more details see the documentation at function RoundCash.
+func (d Decimal) StringFixedCash(interval uint8) string {
+	rounded := d.RoundCash(interval)
+	return rounded.string(false)
+}
+
 // Round rounds the decimal to places decimal places.
 // If places < 0, it will round the integer part to the nearest 10^(-places).
 //
@@ -606,7 +691,8 @@ func (d Decimal) RoundBank(places int32) Decimal {
 	round := d.Round(places)
 	remainder := d.Sub(round).Abs()
 
-	if remainder.value.Cmp(fiveInt) == 0 && round.value.Bit(0) != 0 {
+	half := New(5, -places-1)
+	if remainder.Cmp(half) == 0 && round.value.Bit(0) != 0 {
 		if round.value.Sign() < 0 {
 			round.value.Add(round.value, oneInt)
 		} else {
@@ -617,9 +703,61 @@ func (d Decimal) RoundBank(places int32) Decimal {
 	return round
 }
 
+// RoundCash aka Cash/Penny/öre rounding rounds decimal to a specific
+// interval. The amount payable for a cash transaction is rounded to the nearest
+// multiple of the minimum currency unit available. The following intervals are
+// available: 5, 10, 15, 25, 50 and 100; any other number throws a panic.
+//	    5:   5 cent rounding 3.43 => 3.45
+// 	   10:  10 cent rounding 3.45 => 3.50 (5 gets rounded up)
+// 	   15:  10 cent rounding 3.45 => 3.40 (5 gets rounded down)
+// 	   25:  25 cent rounding 3.41 => 3.50
+// 	   50:  50 cent rounding 3.75 => 4.00
+// 	  100: 100 cent rounding 3.50 => 4.00
+// For more details: https://en.wikipedia.org/wiki/Cash_rounding
+func (d Decimal) RoundCash(interval uint8) Decimal {
+	var iVal *big.Int
+	switch interval {
+	case 5:
+		iVal = twentyInt
+	case 10:
+		iVal = tenInt
+	case 15:
+		if d.exp < 0 {
+			// TODO: optimize and reduce allocations
+			orgExp := d.exp
+			dOne := New(10^-int64(orgExp), orgExp)
+			d2 := d
+			d2.exp = 0
+			if d2.Mod(fiveDec).Equal(Zero) {
+				d2.exp = orgExp
+				d2 = d2.Sub(dOne)
+				d = d2
+			}
+		}
+		iVal = tenInt
+	case 25:
+		iVal = fourInt
+	case 50:
+		iVal = twoInt
+	case 100:
+		iVal = oneInt
+	default:
+		panic(fmt.Sprintf("Decimal does not support this Cash rounding interval `%d`. Supported: 5, 10, 15, 25, 50, 100", interval))
+	}
+	dVal := Decimal{
+		value: iVal,
+	}
+	// TODO: optimize those calculations to reduce the high allocations (~29 allocs).
+	return d.Mul(dVal).Round(0).Div(dVal).Truncate(2)
+}
+
 // Floor returns the nearest integer value less than or equal to d.
 func (d Decimal) Floor() Decimal {
 	d.ensureInitialized()
+
+	if d.exp >= 0 {
+		return d
+	}
 
 	exp := big.NewInt(10)
 
@@ -633,6 +771,10 @@ func (d Decimal) Floor() Decimal {
 // Ceil returns the nearest integer value greater than or equal to d.
 func (d Decimal) Ceil() Decimal {
 	d.ensureInitialized()
+
+	if d.exp >= 0 {
+		return d
+	}
 
 	exp := big.NewInt(10)
 
@@ -901,13 +1043,6 @@ func min(x, y int32) int32 {
 	return x
 }
 
-func round(n float64) int64 {
-	if n < 0 {
-		return int64(n - 0.5)
-	}
-	return int64(n + 0.5)
-}
-
 func unquoteIfQuoted(value interface{}) (string, error) {
 	var bytes []byte
 
@@ -928,8 +1063,8 @@ func unquoteIfQuoted(value interface{}) (string, error) {
 	return string(bytes), nil
 }
 
-// NullDecimal represents a fixed-point decimal. It is immutable.
-// number = value * 10 ^ exp
+// NullDecimal represents a nullable decimal with compatibility for
+// scanning null values from the database.
 type NullDecimal struct {
 	Decimal Decimal
 	Valid   bool
@@ -951,4 +1086,22 @@ func (d NullDecimal) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return d.Decimal.Value()
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (d *NullDecimal) UnmarshalJSON(decimalBytes []byte) error {
+	if string(decimalBytes) == "null" {
+		d.Valid = false
+		return nil
+	}
+	d.Valid = true
+	return d.Decimal.UnmarshalJSON(decimalBytes)
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (d NullDecimal) MarshalJSON() ([]byte, error) {
+	if !d.Valid {
+		return []byte("null"), nil
+	}
+	return d.Decimal.MarshalJSON()
 }

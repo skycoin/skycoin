@@ -22,10 +22,10 @@ const (
 // wrapDB calls dbutil.WrapDB and disables all logging
 func wrapDB(db *bolt.DB) *dbutil.DB {
 	wdb := dbutil.WrapDB(db)
-	wdb.UpdateLog = false
-	wdb.UpdateTrace = false
 	wdb.ViewLog = false
 	wdb.ViewTrace = false
+	wdb.UpdateLog = false
+	wdb.UpdateTrace = false
 	wdb.DurationLog = false
 	return wdb
 }

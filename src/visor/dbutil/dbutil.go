@@ -91,7 +91,7 @@ func (db *DB) View(name string, f func(*Tx) error) error {
 
 	t1 := time.Now()
 	delta := t1.Sub(t0)
-	if delta > db.DurationReportingThreshold {
+	if db.DurationLog && delta > db.DurationReportingThreshold {
 		logger.Debugf("db.View [%s] elapsed %s", name, delta)
 	}
 
@@ -119,7 +119,7 @@ func (db *DB) Update(name string, f func(*Tx) error) error {
 
 	t1 := time.Now()
 	delta := t1.Sub(t0)
-	if delta > db.DurationReportingThreshold {
+	if db.DurationLog && delta > db.DurationReportingThreshold {
 		logger.Debugf("db.Update [%s] elapsed %s", name, delta)
 	}
 

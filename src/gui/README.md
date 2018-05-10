@@ -2160,42 +2160,42 @@ Response:
 
 ```json
 {
-  "count": 8,
+    "count": 8,
     "total_alive": 8,
     "total_offline": 0,
-    "Connections": [
-    {
-      "Connection": "104.237.142.206:6000",
-      "Status": true
-    },
-    {
-      "Connection": "118.178.135.93:6000",
-      "Status": true
-    },
-    {
-      "Connection": "120.77.69.188:6000",
-      "Status": true
-    },
-    {
-      "Connection": "121.41.103.148:6000",
-      "Status": true
-    },
-    {
-      "Connection": "139.162.7.132:6000",
-      "Status": true
-    },
-    {
-      "Connection": "172.104.85.6:6000",
-      "Status": true
-    },
-    {
-      "Connection": "176.58.126.224:6000",
-      "Status": true
-    },
-    {
-      "Connection": "47.88.33.156:6000",
-      "Status": true
-    }
-  ]
+    "connections": [
+        {
+            "connection": "176.58.126.224:6000",
+            "is_alive": true
+        },
+        {
+            "connection": "47.88.33.156:6000",
+            "is_alive": true
+        },
+        {
+            "connection": "104.237.142.206:6000",
+            "is_alive": true
+        },
+        {
+            "connection": "118.178.135.93:6000",
+            "is_alive": true
+        },
+        {
+            "connection": "120.77.69.188:6000",
+            "is_alive": true
+        },
+        {
+            "connection": "121.41.103.148:6000",
+            "is_alive": true
+        },
+        {
+            "connection": "139.162.7.132:6000",
+            "is_alive": true
+        },
+        {
+            "connection": "172.104.85.6:6000",
+            "is_alive": true
+        }
+    ]
 }
 ```

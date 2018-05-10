@@ -42,7 +42,7 @@ func GetSHAFromHex(hex string) cipher.SHA256 {
 	return sha
 }
 
-func ExampleIntroductionMessageWithIterator() {
+func ExampleIntroductionMessage() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
 	var message = NewIntroductionMessage(1234, 5, 7890)
@@ -60,7 +60,7 @@ func ExampleIntroductionMessageWithIterator() {
 	// 0x0012 |
 }
 
-func ExampleGetPeersMessageWithIterator() {
+func ExampleGetPeersMessage() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
 	var message = NewGetPeersMessage()
@@ -75,7 +75,7 @@ func ExampleGetPeersMessageWithIterator() {
 	// 0x0008 |
 }
 
-func ExampleGivePeersMessageWithIterator() {
+func ExampleGivePeersMessage() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
 	var peers = make([]pex.Peer, 3)
@@ -99,7 +99,7 @@ func ExampleGivePeersMessageWithIterator() {
 	// 0x001e |
 }
 
-func ExampleGetBlocksMessageWithIterator() {
+func ExampleGetBlocksMessage() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
 	var message = NewGetBlocksMessage(1234, 5678)
@@ -116,7 +116,7 @@ func ExampleGetBlocksMessageWithIterator() {
 	// 0x0018 |
 }
 
-func ExampleGiveBlocksMessageWithIterator() {
+func ExampleGiveBlocksMessage() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
 	var blocks = make([]coin.SignedBlock, 1)
@@ -178,7 +178,7 @@ func ExampleGiveBlocksMessageWithIterator() {
 	// 0x018e |
 }
 
-func ExampleAnnounceBlocksMessageWithIterator() {
+func ExampleAnnounceBlocksMessage() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
 	var message = NewAnnounceBlocksMessage(123456)
@@ -194,7 +194,7 @@ func ExampleAnnounceBlocksMessageWithIterator() {
 	// 0x0010 |
 }
 
-func ExampleGetTxnsMessageWithIterator() {
+func ExampleGetTxnsMessage() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
 	var shas = make([]cipher.SHA256, 0)
@@ -217,7 +217,7 @@ func ExampleGetTxnsMessageWithIterator() {
 	// 0x004c |
 }
 
-func ExampleGiveTxnsMessageWithIterator() {
+func ExampleGiveTxnsMessage() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
 	var transactions coin.Transactions = make([]coin.Transaction, 0)
@@ -321,7 +321,7 @@ func ExampleGiveTxnsMessageWithIterator() {
 	// 0x0286 |
 }
 
-func ExampleAnnounceTxnsMessageWithIterator() {
+func ExampleAnnounceTxnsMessage() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
 	var message = NewAnnounceTxnsMessage([]cipher.SHA256{hashes[7], hashes[8]})

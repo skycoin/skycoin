@@ -746,8 +746,18 @@ func (gw *Gateway) GetWalletBalance(wltID string) (wallet.BalancePair, error) {
 
 // GetBalanceOfAddrs gets balance of given addresses
 func (gw *Gateway) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair, error) {
-	// strand is not necessary because gw.v.GetBalanceOfAddrs is thread-safe
-	return gw.v.GetBalanceOfAddrs(addrs)
+	var balance []wallet.BalancePair
+	var err error
+
+	gw.strand("GetBalanceOfAddrs", func() {
+		balance, err = gw.v.GetBalanceOfAddrs(addrs)
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return balance, nil
 }
 
 // GetWalletDir returns path for storing wallet files

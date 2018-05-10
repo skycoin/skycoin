@@ -664,7 +664,6 @@ func TestConnectionWriteLoop(t *testing.T) {
 
 	var c2 *Connection
 	p.strand("", func() error {
-		fmt.Println("len(p.pool)", len(p.pool))
 		c2 = p.pool[1]
 		return nil
 	})
@@ -672,10 +671,8 @@ func TestConnectionWriteLoop(t *testing.T) {
 	require.NotNil(t, c2)
 
 	require.False(t, c2.LastSent.IsZero())
-	fmt.Println("c2.LastSent", c2.LastSent)
 	c2.LastSent = time.Time{}
 	require.True(t, c2.LastSent.IsZero())
-	fmt.Println("Reset c2.LastSent to zero")
 
 	// Send a failed message to c2
 	sendByteMessage = failingSendByteMessage

@@ -67,7 +67,6 @@ script:
   - make test-libc
   # TODO: test pyskycoin
   # - make test-libpy
-  - make run &
   - make lint-ui
   - make build-ui-travis
   - make test-ui

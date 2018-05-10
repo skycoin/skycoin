@@ -301,6 +301,7 @@ On-boarding components
   }
 }
 
+
 .-select {
   position: relative;
 
@@ -317,5 +318,23 @@ On-boarding components
     margin: 6px;
     pointer-events: none;
     transform: rotate(90deg);
+  }
+}
+
+.mat-menu-panel {
+  border-radius: 5px !important;
+  background-color: #fefefe;
+
+  .mat-menu-item {
+    font-family: Skycoin;
+    line-height: 50px;
+  }
+
+  &.compact {
+    .mat-menu-item {
+      font-size: 13px;
+      height: 35px;
+      line-height: 35px;
+    }
   }
 }

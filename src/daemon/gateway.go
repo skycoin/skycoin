@@ -939,14 +939,14 @@ type Health struct {
 // ConnectionStatus structs
 type ConnectionStatus struct {
 	Connection string `json:"connection"`
-	IsAlive    bool   `json:"isAlive"`
+	IsAlive    bool   `json:"is_alive"`
 }
 
 // ConnectionsHealth struct
 type ConnectionsHealth struct {
 	Count        int                `json:"count"`
-	TotalAlive   int                `json:"totalAlive"`
-	TotalOffline int                `json:"totalOffline"`
+	TotalAlive   int                `json:"total_alive"`
+	TotalOffline int                `json:"total_offline"`
 	Connections  []ConnectionStatus `json:"connections"`
 }
 

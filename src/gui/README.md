@@ -10,7 +10,6 @@ A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](h
     - [Get current csrf token](#get-current-csrf-token)
 - [General system checks](#general-system-checks)
     - [Health check](#health-check)
-    - [Network check](#network-check)
 - [Simple query APIs](#simple-query-apis)
     - [Get node version info](#get-node-version-info)
     - [Get balance of addresses](#get-balance-of-addresses)
@@ -59,6 +58,7 @@ A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](h
     - [Get a list of all default connections](#get-a-list-of-all-default-connections)
     - [Get a list of all trusted connections](#get-a-list-of-all-trusted-connections)
     - [Get a list of all connections discovered through peer exchange](#get-a-list-of-all-connections-discovered-through-peer-exchange)
+    - [Status report for default connection peers](#network-check)
 
 <!-- /MarkdownTOC -->
 
@@ -94,64 +94,6 @@ Result:
 ```
 
 ## General system checks
-### Network check
-
-```
-URI: /network/connections/default
-
-Method: GET
-```
-
-Example:
-
-```sh
-curl http://127.0.0.1:6420/network/connections/default
-```
-
-Response:
-
-```json
-{
-"count": 8,
-"total_alive": 8,
-"total_offline": 0,
-"Connections": [
-{
-"Connection": "104.237.142.206:6000",
-"Status": true
-},
-{
-"Connection": "118.178.135.93:6000",
-"Status": true
-},
-{
-"Connection": "120.77.69.188:6000",
-"Status": true
-
-},
-{
-"Connection": "121.41.103.148:6000",
-\"Status": true
-},
-{
-"Connection": "139.162.7.132:6000",
-"Status": true
-},
-{
-"Connection": "172.104.85.6:6000",
-"Status": true
-},
-{
-"Connection": "176.58.126.224:6000",
-"Status": true
-},
-{
-"Connection": "47.88.33.156:6000",
-"Status": true
-}
-]
-}
-```
 
 ### Health check
 
@@ -2198,4 +2140,62 @@ Result:
     "35.201.160.163:6000",
     "47.88.33.156:6000"
 ]
+```
+
+### Status report for default connection peers
+
+```
+URI: /network/connections/default
+
+Method: GET
+```
+
+Example:
+
+```sh
+curl http://127.0.0.1:6420/network/connections/default
+```
+
+Response:
+
+```json
+{
+  "count": 8,
+    "total_alive": 8,
+    "total_offline": 0,
+    "Connections": [
+    {
+      "Connection": "104.237.142.206:6000",
+      "Status": true
+    },
+    {
+      "Connection": "118.178.135.93:6000",
+      "Status": true
+    },
+    {
+      "Connection": "120.77.69.188:6000",
+      "Status": true
+    },
+    {
+      "Connection": "121.41.103.148:6000",
+      "Status": true
+    },
+    {
+      "Connection": "139.162.7.132:6000",
+      "Status": true
+    },
+    {
+      "Connection": "172.104.85.6:6000",
+      "Status": true
+    },
+    {
+      "Connection": "176.58.126.224:6000",
+      "Status": true
+    },
+    {
+      "Connection": "47.88.33.156:6000",
+      "Status": true
+    }
+  ]
+}
 ```

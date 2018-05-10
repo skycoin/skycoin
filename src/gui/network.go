@@ -84,7 +84,7 @@ func exchgConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-func defaultStatusHandler(gateway Gatewayer) http.HandlerFunc {
+func networkStatusHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -93,7 +93,7 @@ func defaultStatusHandler(gateway Gatewayer) http.HandlerFunc {
 
 		resp := gateway.GetDefaultStatus()
 
-		wh.SendJSONOr500(logger, w, &resp)
+		wh.SendJSONOr500(logger, w, resp)
 
 	}
 }

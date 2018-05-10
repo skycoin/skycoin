@@ -337,88 +337,82 @@ func TestGetExchgConnection(t *testing.T) {
 
 func TestGetDefaultStatus(t *testing.T) {
 
-	// ConnectionStatus structs
-	type ConnectionStatus struct {
-		Connection string
-		IsAlive    bool
-	}
+	gatewayGetDefaultConnectionsResult := []string{"11.44.66.88:9000", "44.33.22.11:9000"}
 
-	// ConnectionsHealth struct
-	type ConnectionsHealth struct {
-		Count        int
-		TotalAlive   int
-		TotalOffline int
-		Connections  []ConnectionStatus
+	gatewayGetConnectionsResult := &daemon.Connections{
+		Connections: []*daemon.Connection{
+			{
+				ID:           1,
+				Addr:         "11.44.66.88:9000",
+				LastSent:     99999,
+				LastReceived: 1111111,
+				Outgoing:     true,
+				Introduced:   true,
+				Mirror:       9876,
+				ListenPort:   9877,
+			},
+			{
+				ID:           2,
+				Addr:         "44.33.22.11:9000",
+				LastSent:     99999,
+				LastReceived: 1111111,
+				Outgoing:     true,
+				Introduced:   true,
+				Mirror:       9876,
+				ListenPort:   9877,
+			},
+		},
 	}
 
 	tt := []struct {
-		name   string
-		method string
-		status int
-		err    string
+		name                               string
+		method                             string
+		status                             int
+		err                                string
+		gatewayGetDefaultConnectionsResult []string
+		gatewayGetConnectionsResult        *daemon.Connections
 	}{
 		{
 			name:   "405",
 			method: http.MethodPost,
 			status: http.StatusMethodNotAllowed,
 			err:    "405 Method Not Allowed",
+			gatewayGetDefaultConnectionsResult: gatewayGetDefaultConnectionsResult,
+			gatewayGetConnectionsResult:        gatewayGetConnectionsResult,
 		},
 		{
 			name:   "200",
 			method: http.MethodGet,
 			status: http.StatusOK,
 			err:    "",
+			gatewayGetDefaultConnectionsResult: gatewayGetDefaultConnectionsResult,
+			gatewayGetConnectionsResult:        gatewayGetConnectionsResult,
 		},
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 
-			endpoint := "/network/connections/default"
+			endpoint := "/network/status"
 
 			gateway := NewGatewayerMock()
 
-			GetDefaultConnections := []string{"11.44.66.88:9000", "44.33.22.11:9000"}
-
-			gatewayGetConnectionsResult := &daemon.Connections{
-				Connections: []*daemon.Connection{
-					{
-						ID:           1,
-						Addr:         "11.44.66.88:9000",
-						LastSent:     99999,
-						LastReceived: 1111111,
-						Outgoing:     true,
-						Introduced:   true,
-						Mirror:       9876,
-						ListenPort:   9877,
-					},
-					{
-						ID:           2,
-						Addr:         "44.33.22.11:9000",
-						LastSent:     99999,
-						LastReceived: 1111111,
-						Outgoing:     true,
-						Introduced:   true,
-						Mirror:       9876,
-						ListenPort:   9877,
-					},
-				},
-			}
-			resp := ConnectionsHealth{
+			resp := daemon.ConnectionsHealth{
 				Count:        2,
 				TotalAlive:   2,
 				TotalOffline: 0,
-				Connections: []ConnectionStatus{
+				Connections: []daemon.ConnectionStatus{
 					{Connection: "11.44.66.88:9000", IsAlive: true},
 					{Connection: "44.33.22.11:9000", IsAlive: true},
 				},
 			}
-			gateway.On("GetDefaultConnections").Return(GetDefaultConnections).On("GetConnections").Return(gatewayGetConnectionsResult)
+			gateway.On("GetDefaultConnections").Return(tc.gatewayGetDefaultConnectionsResult)
+			gateway.On("GetConnections").Return(tc.gatewayGetConnectionsResult)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, &CSRFStore{})
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -428,7 +422,7 @@ func TestGetDefaultStatus(t *testing.T) {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %d, want `%v`",
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg ConnectionsHealth
+				var msg daemon.ConnectionsHealth
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, resp, msg)

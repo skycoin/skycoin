@@ -67,6 +67,7 @@ import { OnboardingComponent } from './components/pages/onboarding/onboarding.co
 import { DontsavepasswordDirective } from './directives/dontsavepassword.directive';
 import { SendFormComponent } from './components/pages/send-skycoin/send-form/send-form.component';
 import { SendVerifyComponent } from './components/pages/send-skycoin/send-verify/send-verify.component';
+import { TransactionInfoComponent } from './components/pages/send-skycoin/send-verify/transaction-info/transaction-info.component';
 
 
 const ROUTES = [
@@ -166,6 +167,7 @@ const ROUTES = [
     DontsavepasswordDirective,
     SendFormComponent,
     SendVerifyComponent,
+    TransactionInfoComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,

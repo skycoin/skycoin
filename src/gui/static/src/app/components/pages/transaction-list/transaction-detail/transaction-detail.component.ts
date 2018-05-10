@@ -1,6 +1,6 @@
 import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { Transaction } from '../../../../app.datatypes';
+import { NormalTransaction } from '../../../../app.datatypes';
 import { PriceService } from '../../../../services/price.service';
 import { Subscription } from 'rxjs/Subscription';
 
@@ -16,7 +16,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   private priceSubscription: Subscription;
 
   constructor(
-    @Inject(MAT_DIALOG_DATA) public transaction: Transaction,
+    @Inject(MAT_DIALOG_DATA) public transaction: NormalTransaction,
     public dialogRef: MatDialogRef<TransactionDetailComponent>,
     private priceService: PriceService,
   ) {}

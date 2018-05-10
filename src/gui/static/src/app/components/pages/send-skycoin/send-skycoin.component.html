@@ -8,9 +8,7 @@
     ></app-send-form>
     <app-send-verify
       *ngIf="!showForm"
-      [transaction]="formData.response.transaction"
-      [encodedTransaction]="formData.response.encoded_transaction"
-      [formData]="formData"
+      [transaction]="transaction"
       (onBack)="onBack($event)"
     ></app-send-verify>
   </div>

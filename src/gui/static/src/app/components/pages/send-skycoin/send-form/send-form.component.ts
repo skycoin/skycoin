@@ -63,13 +63,13 @@ export class SendFormComponent implements OnInit {
       this.form.value.amount,
       passwordDialog ? passwordDialog.password : null
     )
-      .subscribe(response => {
+      .subscribe(transaction => {
         this.onFormSubmitted.emit({
           wallet: this.form.value.wallet,
           address: this.form.value.address,
           amount: this.form.value.amount,
           notes: this.form.value.notes,
-          response,
+          transaction,
         });
       }, error => {
         const errorMessage = parseResponseMessage(error['_body']);

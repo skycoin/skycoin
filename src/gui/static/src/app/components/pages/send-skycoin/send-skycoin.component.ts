@@ -21,4 +21,14 @@ export class SendSkycoinComponent {
 
     this.showForm = true;
   }
+
+  get transaction() {
+    const transaction = this.formData.transaction;
+
+    transaction.from = this.formData.wallet.label;
+    transaction.to = this.formData.address;
+    transaction.balance = this.formData.amount;
+
+    return transaction;
+  }
 }

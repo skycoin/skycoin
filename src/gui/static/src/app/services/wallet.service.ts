@@ -11,7 +11,7 @@ import 'rxjs/add/operator/first';
 import 'rxjs/add/operator/mergeMap';
 import 'rxjs/add/observable/timer';
 import 'rxjs/add/observable/zip';
-import { Address, Wallet } from '../app.datatypes';
+import { Address, PreviewTransaction, Transaction, Wallet } from '../app.datatypes';
 import { ReplaySubject } from 'rxjs/ReplaySubject';
 import { Subscription } from 'rxjs/Subscription';
 
@@ -138,7 +138,7 @@ export class WalletService {
     return this.apiService.getWalletSeed(wallet, password);
   }
 
-  createTransaction(wallet: Wallet, address: string, amount: string, password: string|null) {
+  createTransaction(wallet: Wallet, address: string, amount: string, password: string|null): Observable<PreviewTransaction> {
     return this.apiService.post(
       'wallet/transaction',
       {
@@ -160,7 +160,13 @@ export class WalletService {
       {
         json: true,
       }
-    );
+    ).map(response => {
+      return {
+        ...response.transaction,
+        hoursBurned: response.transaction.fee,
+        encoded: response.encoded_transaction,
+      };
+    });
   }
 
   injectTransaction(encodedTx: string) {

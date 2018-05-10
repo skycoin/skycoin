@@ -301,6 +301,13 @@ func (pool *ConnectionPool) Shutdown() {
 	// TODO -- could conn.Close() block too?
 	pool.disconnectAll()
 
+	if len(pool.pool) != 0 {
+		logger.Critical().Warning("pool.pool is not empty after calling pool.disconnectAll()")
+	}
+	if len(pool.addresses) != 0 {
+		logger.Critical().Warning("pool.addresses is not empty after calling pool.disconnectAll()")
+	}
+
 	<-pool.done
 }
 
@@ -316,7 +323,7 @@ func (pool *ConnectionPool) NewConnection(conn net.Conn, solicited bool) (*Conne
 	a := conn.RemoteAddr().String()
 	var nc *Connection
 	if err := pool.strand("NewConnection", func() error {
-		if pool.addresses[a] != nil {
+		if _, ok := pool.addresses[a]; ok {
 			return fmt.Errorf("Already connected to %s", a)
 		}
 		pool.connID++
@@ -499,7 +506,18 @@ func (pool *ConnectionPool) sendLoop(conn *Connection, timeout time.Duration, qc
 			if m == nil {
 				continue
 			}
+
 			err := sendMessage(conn.Conn, m, timeout)
+
+			// Update last sent before writing to SendResult,
+			// this allows a write to SendResult to be used as a sync marker,
+			// since no further action in this block will happen after the write.
+			if err == nil {
+				if err := pool.updateLastSent(conn.Addr(), Now()); err != nil {
+					logger.Warningf("updateLastSent(%s) failed", conn.Addr())
+				}
+			}
+
 			sr := newSendResult(conn.Addr(), m, err)
 			select {
 			case <-qc:
@@ -510,10 +528,6 @@ func (pool *ConnectionPool) sendLoop(conn *Connection, timeout time.Duration, qc
 			}
 
 			if err != nil {
-				return err
-			}
-
-			if err := pool.updateLastSent(conn.Addr(), Now()); err != nil {
 				return err
 			}
 		}

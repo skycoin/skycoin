@@ -166,9 +166,6 @@ type Config struct {
 	ProfileCPUFile string
 	// HTTP profiling interface (see http://golang.org/pkg/net/http/pprof/)
 	HTTPProf bool
-	// Will force it to connect to this ip:port, instead of waiting for it
-	// to show up as a peer
-	ConnectTo string
 
 	DBPath      string
 	DBReadOnly  bool
@@ -205,7 +202,6 @@ func (c *Config) register() {
 	flag.StringVar(&c.DataDirectory, "data-dir", c.DataDirectory, "directory to store app data (defaults to ~/.skycoin)")
 	flag.StringVar(&c.DBPath, "db-path", c.DBPath, "path of database file (defaults to ~/.skycoin/data.db)")
 	flag.BoolVar(&c.DBReadOnly, "db-read-only", c.DBReadOnly, "open bolt db read-only")
-	flag.StringVar(&c.ConnectTo, "connect-to", c.ConnectTo, "connect to this ip only")
 	flag.BoolVar(&c.ProfileCPU, "profile-cpu", c.ProfileCPU, "enable cpu profiling")
 	flag.StringVar(&c.ProfileCPUFile, "profile-cpu-file", c.ProfileCPUFile, "where to write the cpu profile file")
 	flag.BoolVar(&c.HTTPProf, "http-prof", c.HTTPProf, "Run the http profiling interface")
@@ -323,9 +319,6 @@ var devConfig = Config{
 	ProfileCPUFile: "skycoin.prof",
 	// HTTP profiling interface (see http://golang.org/pkg/net/http/pprof/)
 	HTTPProf: false,
-	// Will force it to connect to this ip:port, instead of waiting for it
-	// to show up as a peer
-	ConnectTo: "",
 }
 
 func init() {
@@ -696,14 +689,6 @@ func Run(c *Config) {
 		webInterface, err = createGUI(c, d, host)
 		if err != nil {
 			logger.Error(err)
-			return
-		}
-	}
-
-	// Debug only - forces connection on start.  Violates thread safety.
-	if c.ConnectTo != "" {
-		if err := d.Pool.Pool.Connect(c.ConnectTo); err != nil {
-			logger.Errorf("Force connect %s failed, %v", c.ConnectTo, err)
 			return
 		}
 	}

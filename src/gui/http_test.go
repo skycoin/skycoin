@@ -69,7 +69,7 @@ func TestGetOutputsHandler(t *testing.T) {
 			name:   "500 - getUnspentOutputsError",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error",
+			err:    "500 Internal Server Error - get unspent outputs failed: getUnspentOutputsError",
 			getUnspentOutputsResponse: nil,
 			getUnspentOutputsError:    errors.New("getUnspentOutputsError"),
 		},
@@ -106,7 +106,7 @@ func TestGetOutputsHandler(t *testing.T) {
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, &CSRFStore{})
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -166,7 +166,7 @@ func TestGetBalanceHandler(t *testing.T) {
 			name:   "500 - GetBalanceOfAddrsError",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - Get balance failed: GetBalanceOfAddrsError",
+			err:    "500 Internal Server Error - gateway.GetBalanceOfAddrs failed: GetBalanceOfAddrsError",
 			httpBody: &httpBody{
 				addrs: validAddr,
 			},
@@ -257,7 +257,7 @@ func TestGetBalanceHandler(t *testing.T) {
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, &CSRFStore{})
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

@@ -1,0 +1,49 @@
+@import '../../../../../theme/variables';
+
+.-wallet {
+  margin: 40px 20px 0;
+
+  h3 {
+    font-weight: 400;
+  }
+
+  .-address {
+    margin-bottom: 20px;
+
+    h4 {
+      margin: 0;
+
+      & + .-output {
+        margin-top: 15px;
+      }
+    }
+
+    .-output {
+      border-top: 1px solid #eee;
+      padding: 15px 0;
+      font-size: 14px;
+
+      &:last-child {
+        padding-bottom: 0;
+      }
+
+      .-hash {
+        margin-bottom: 10px;
+      }
+
+      .-balance {
+        display: flex;
+        flex-direction: row;
+
+        .-item {
+          min-width: 150px;
+          padding-right: 20px;
+
+          span {
+            color: $grey-dark;
+          }
+        }
+      }
+    }
+  }
+}

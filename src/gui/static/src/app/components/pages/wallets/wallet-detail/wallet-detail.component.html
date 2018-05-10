@@ -2,33 +2,42 @@
   <div class="-record" *ngIf="!wallet.hideEmpty || address.coins">
     <div class="id-column">{{ i + 1 }}</div>
     <div class="address-column" (click)="copyAddress(address)">
-      <img src="../../../../../assets/img/qr-code-black.png">
-      <p class="click-to-copy" [ngClass]="{ copying: address.copying }">
-        {{ address.address }} <span data-label="Copied" class="copy-label">Copy</span>
-      </p>
+      <img src="../../../../../assets/img/qr-code-black.png" (click)="showQrCode($event, address.address)">
+      <p>{{ address.address }}</p>
     </div>
     <div class="hours-column">{{ (address.hours ? address.hours : 0) | number:'1.0-6' }}</div>
     <div class="coins-column">{{ (address.coins ? address.coins : 0) | number:'1.0-6' }}</div>
+    <div class="outputs-column">
+      <mat-icon [matMenuTriggerFor]="optionsMenu">more_vert</mat-icon>
+    </div>
   </div>
+
+  <mat-menu #optionsMenu="matMenu" [overlapTrigger]="false" class="compact">
+    <button mat-menu-item (click)="copyAddress(address, $event)">
+      {{ address.copying ? 'Copied!' : 'Copy address' }}
+    </button>
+    <button mat-menu-item routerLink="/settings/outputs" [queryParams]="{ addr: address.address }">
+      Unspent Outputs
+    </button>
+  </mat-menu>
 </ng-container>
+
 <div class="-actions">
   <div class="-button" (click)="newAddress()">
-    <img src="../../../../../assets/img/plus-grey.png">
-    <span>New Address</span>
+    <span class="-img -new-address">New Address</span>
   </div>
   <div class="-button" (click)="toggleEmpty()">
-    <ng-container *ngIf="!wallet.hideEmpty">
-      <img src="../../../../../assets/img/minus-grey.png">
-      <span>Hide Empty</span>
-    </ng-container>
-    <ng-container *ngIf="wallet.hideEmpty">
-      <img src="../../../../../assets/img/plus-grey.png">
-      <span>Show Empty</span>
-    </ng-container>
+    <span [ngClass]="{ '-img': true, '-show-empty': wallet.hideEmpty, '-hide-empty': !wallet.hideEmpty }">
+      {{ wallet.hideEmpty ? 'Show' : 'Hide' }} Empty
+    </span>
   </div>
   <div class="flex-fill"></div>
+  <div class="-button" (click)="toggleEncryption()">
+    <span [ngClass]="{ '-img': true, '-enable-encryption': !wallet.encrypted, '-disable-encryption': wallet.encrypted }">
+      {{ wallet.encrypted ? 'Decrypt' : 'Encrypt' }} Wallet
+    </span>
+  </div>
   <div class="-button" (click)="editWallet()">
-    <img src="../../../../../assets/img/edit-grey.png">
-    <span>Edit Wallet</span>
+    <span class="-img -edit-wallet">Edit Wallet</span>
   </div>
 </div>

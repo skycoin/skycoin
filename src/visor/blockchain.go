@@ -384,17 +384,16 @@ func (bc Blockchain) verifySingleTxnHardConstraints(tx coin.Transaction, head *c
 }
 
 // GetBlocks return blocks whose seq are in the range of start and end.
-func (bc Blockchain) GetBlocks(start, end uint64) []coin.SignedBlock {
+func (bc Blockchain) GetBlocks(start, end uint64) ([]coin.SignedBlock, error) {
 	if start > end {
-		return []coin.SignedBlock{}
+		return nil, nil
 	}
 
-	blocks := []coin.SignedBlock{}
+	var blocks []coin.SignedBlock
 	for i := start; i <= end; i++ {
 		b, err := bc.store.GetBlockBySeq(i)
 		if err != nil {
-			logger.Error(err)
-			return []coin.SignedBlock{}
+			return nil, err
 		}
 
 		if b == nil {
@@ -403,14 +402,14 @@ func (bc Blockchain) GetBlocks(start, end uint64) []coin.SignedBlock {
 
 		blocks = append(blocks, *b)
 	}
-	return blocks
+
+	return blocks, nil
 }
 
 // GetLastBlocks return the latest N blocks.
-func (bc Blockchain) GetLastBlocks(num uint64) []coin.SignedBlock {
-	var blocks []coin.SignedBlock
+func (bc Blockchain) GetLastBlocks(num uint64) ([]coin.SignedBlock, error) {
 	if num == 0 {
-		return blocks
+		return nil, nil
 	}
 
 	end := bc.HeadSeq()
@@ -498,7 +497,7 @@ func (bc Blockchain) processTransactions(txs coin.Transactions) (coin.Transactio
 					}
 				}
 			}
-			uxHashes[h] = byte(1)
+			uxHashes[h] = struct{}{}
 		}
 	}
 

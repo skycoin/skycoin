@@ -1,15 +1,15 @@
-<app-modal title="Create Wallet" [dialog]="dialogRef">
+<app-modal title="Rename Wallet" [dialog]="dialogRef">
   <div [formGroup]="form">
     <div class="form-field">
       <label for="label">Name</label>
-      <input formControlName="label" id="label">
+      <input formControlName="label" id="label" (keydown.enter)="rename()">
     </div>
   </div>
   <div class="-buttons">
     <app-button (action)="closePopup()">
       Cancel
     </app-button>
-    <app-button (action)="rename()" class="primary" [disabled]="!form.valid">
+    <app-button (action)="rename()" class="primary" [disabled]="!form.valid" #button>
       Rename
     </app-button>
   </div>

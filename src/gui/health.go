@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -36,8 +37,8 @@ func healthCheck(gateway Gatewayer) http.HandlerFunc {
 
 		health, err := gateway.GetHealth()
 		if err != nil {
-			logger.WithError(err).Error("gateway.GetHealth failed")
-			wh.Error500Msg(w, err.Error())
+			err = fmt.Errorf("gateway.GetHealth failed: %v", err)
+			wh.Error500(w, err.Error())
 			return
 		}
 

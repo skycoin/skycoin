@@ -11,8 +11,6 @@ import (
 	"github.com/skycoin/skycoin/src/util"
 )
 
-var registered = false
-
 // MessagesAnnotationsIterator : Implementation of IAnnotationsIterator for type gnet.Message
 type MessagesAnnotationsIterator struct {
 	Message      gnet.Message

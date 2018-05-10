@@ -368,24 +368,30 @@ func SKY_wallet_ChooseSpendsMaximizeUxOuts(_uxa []C.wallet__UxBalance, _coins ui
 	return
 }
 
-//export SKY_wallet_Lock
-func SKY_wallet_Lock(_w *C.Wallet__Handle, pwd string, cryptoType string) (____error_code uint32) {
+//export SKY_wallet_NewWalletScanAhead
+func SKY_wallet_NewWalletScanAhead(_wltName string, _opts *C.Options__Handle, _bg *C.wallet__BalanceGetter, _arg3 *C.Wallet__Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	w, okw := lookupWalletHandle(*_w)
-	if !okw {
+	wltName := _wltName
+	__opts, okopts := lookupOptionsHandle(*_opts)
+	if !okopts {
 		____error_code = SKY_ERROR
 		return
 	}
-	____return_err := w.Lock([]byte(pwd), wallet.CryptoType(cryptoType))
+	opts := *__opts
+	bg := *(*wallet.BalanceGetter)(unsafe.Pointer(_bg))
+	__arg3, ____return_err := wallet.NewWalletScanAhead(wltName, opts, bg)
 	____error_code = libErrorCode(____return_err)
+	if ____return_err == nil {
+		*_arg3 = registerWalletHandle(__arg3)
+	}
 	return
 }
 
-//export SKY_wallet_Unlock
-func SKY_wallet_Unlock(_w *C.Wallet__Handle, pwd string, _new_wallet *C.Wallet__Handle) (____error_code uint32) {
+//export SKY_wallet_Wallet_Lock
+func SKY_wallet_Wallet_Lock(_w *C.Wallet__Handle, _password []byte, _cryptoType string) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -395,10 +401,31 @@ func SKY_wallet_Unlock(_w *C.Wallet__Handle, pwd string, _new_wallet *C.Wallet__
 		____error_code = SKY_ERROR
 		return
 	}
-	new_wallet, ____return_err := w.Unlock([]byte(pwd))
+	password := *(*[]byte)(unsafe.Pointer(&_password))
+	cryptoType := wallet.CryptoType(_cryptoType)
+	____return_err := w.Lock(password, cryptoType)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		*_new_wallet = registerWalletHandle(new_wallet)
+	}
+	return
+}
+
+//export SKY_wallet_Wallet_Unlock
+func SKY_wallet_Wallet_Unlock(_w *C.Wallet__Handle, _password []byte, _arg1 *C.Wallet__Handle) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	w, okw := lookupWalletHandle(*_w)
+	if !okw {
+		____error_code = SKY_ERROR
+		return
+	}
+	password := *(*[]byte)(unsafe.Pointer(&_password))
+	__arg1, ____return_err := w.Unlock(password)
+	____error_code = libErrorCode(____return_err)
+	if ____return_err == nil {
+		*_arg1 = registerWalletHandle(__arg1)
 	}
 	return
 }

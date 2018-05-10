@@ -104,3 +104,16 @@ func SKY_cipher_Merkle(_h0 *C.GoSlice_, _arg1 *C.cipher__SHA256) {
 	h := cipher.Merkle(*h0)
 	copyToBuffer(reflect.ValueOf(h[:]), unsafe.Pointer(_arg1), uint(SizeofSHA256))
 }
+
+//export SKY_cipher_MustSumSHA256
+func SKY_cipher_MustSumSHA256(_b []byte, _n int, _arg2 *C.cipher__SHA256) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	b := *(*[]byte)(unsafe.Pointer(&_b))
+	n := _n
+	__arg2 := cipher.MustSumSHA256(b, n)
+	copyToBuffer(reflect.ValueOf(__arg2[:]), unsafe.Pointer(_arg2), uint(SizeofSHA256))
+	return
+}

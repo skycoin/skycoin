@@ -159,3 +159,18 @@ func SKY_wallet_ReadableWallet_Load(_rw *C.ReadableWallet__Handle, _filename str
 	}
 	return
 }
+
+//export SKY_wallet_ReadableWallet_Erase
+func SKY_wallet_ReadableWallet_Erase(_rw *C.ReadableWallet__Handle) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	rw, okrw := lookupReadableWalletHandle(*_rw)
+	if !okrw {
+		____error_code = SKY_ERROR
+		return
+	}
+	rw.Erase()
+	return
+}

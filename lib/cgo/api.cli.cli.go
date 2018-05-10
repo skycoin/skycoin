@@ -112,7 +112,9 @@ func SKY_cli_NewApp(_cfg *C.Config__Handle, _arg1 *C.App__Handle) (____error_cod
 	cfg := *__cfg
 	__arg1, ____return_err := cli.NewApp(cfg)
 	____error_code = libErrorCode(____return_err)
-	*_arg1 = registerAppHandle(__arg1)
+	if ____return_err == nil {
+		*_arg1 = registerAppHandle(__arg1)
+	}
 	return
 }
 

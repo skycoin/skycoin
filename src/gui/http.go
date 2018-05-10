@@ -60,16 +60,6 @@ type muxConfig struct {
 	enableJSON20RPC bool
 }
 
-// type StatusRespWriter struct {
-// 	http.ResponseWriter // We embed http.ResponseWriter
-// 	status              int
-// }
-
-// func (w *StatusRespWriter) WriteHeader(status int) {
-// 	w.status = status // Store the status for our own use
-// 	w.ResponseWriter.WriteHeader(status)
-// }
-
 func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 	var appLoc string
 	if c.EnableGUI {
@@ -92,6 +82,7 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 	if c.EnableJSON20RPC {
 		logger.Info("JSON 2.0 RPC enabled")
 		var err error
+		// TODO: change webprc to use http.Gatewayer
 		rpc, err = webrpc.New(gateway.(*daemon.Gateway))
 		if err != nil {
 			return nil, err
@@ -211,16 +202,17 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 		mux.Handle(endpoint, handler)
 	}
 
-	webHandler("/", newIndexHandler(c.appLoc, gateway))
+	webHandler("/", newIndexHandler(c.appLoc, c.enableGUI))
 
-	// fileInfos would be nil when gui is disabled
-	fileInfos, _ := ioutil.ReadDir(c.appLoc)
-	for _, fileInfo := range fileInfos {
-		route := fmt.Sprintf("/%s", fileInfo.Name())
-		if fileInfo.IsDir() {
-			route = route + "/"
+	if c.enableGUI {
+		fileInfos, _ := ioutil.ReadDir(c.appLoc)
+		for _, fileInfo := range fileInfos {
+			route := fmt.Sprintf("/%s", fileInfo.Name())
+			if fileInfo.IsDir() {
+				route = route + "/"
+			}
+			webHandler(route, http.FileServer(http.Dir(c.appLoc)))
 		}
-		webHandler(route, http.FileServer(http.Dir(c.appLoc)))
 	}
 
 	if c.enableJSON20RPC {
@@ -386,20 +378,23 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 }
 
 // Returns a http.HandlerFunc for index.html, where index.html is in appLoc
-func newIndexHandler(appLoc string, gateway Gatewayer) http.HandlerFunc {
+func newIndexHandler(appLoc string, enableGUI bool) http.HandlerFunc {
 	// Serves the main page
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !gateway.IsGUIEnabled() {
-			wh.Error404(w, "gui is disabled")
+		if !enableGUI {
+			wh.Error404(w, "")
 			return
 		}
 
-		page := filepath.Join(appLoc, indexPage)
-		logger.Debugf("Serving index page: %s", page)
-		if r.URL.Path == "/" {
-			http.ServeFile(w, r, page)
-		} else {
+		if r.URL.Path != "/" {
 			wh.Error404(w, "")
+			return
+		}
+
+		if r.URL.Path == "/" {
+			page := filepath.Join(appLoc, indexPage)
+			logger.Debugf("Serving index page: %s", page)
+			http.ServeFile(w, r, page)
 		}
 	}
 }

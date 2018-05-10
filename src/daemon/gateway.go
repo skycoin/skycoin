@@ -870,11 +870,6 @@ func (gw *Gateway) IsWalletAPIEnabled() bool {
 	return gw.Config.EnableWalletAPI
 }
 
-// IsGUIEnabled returns if GUI is enabled
-func (gw *Gateway) IsGUIEnabled() bool {
-	return gw.Config.EnableGUI
-}
-
 // GetBuildInfo returns node build info.
 func (gw *Gateway) GetBuildInfo() visor.BuildInfo {
 	var bi visor.BuildInfo

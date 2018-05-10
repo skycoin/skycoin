@@ -2,12 +2,14 @@ package gui
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"math"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
+	"sync"
 	"testing"
 
 	"errors"
@@ -278,6 +280,9 @@ func TestGetBalanceHandler(t *testing.T) {
 	}
 }
 
+// TestEnableGUI tests enable gui option, EnableGUI isn't part of Gateway API,
+// we can't control the output by mocking the Gateway like other tests. Instead,
+// we create a full webserver for each test case.
 func TestEnableGUI(t *testing.T) {
 	tt := []struct {
 		name       string
@@ -288,26 +293,26 @@ func TestEnableGUI(t *testing.T) {
 		expectBody string
 	}{
 		{
-			name:       "enable gui GET /",
+			name:       "disable gui GET /",
 			enableGUI:  false,
 			endpoint:   "/",
 			appLoc:     "",
 			expectCode: http.StatusNotFound,
-			expectBody: "404 Not Found - gui is disabled\n",
+			expectBody: "404 Not Found\n",
 		},
 		{
-			name:       "enable gui GET /invalid-path",
+			name:       "disable gui GET /invalid-path",
 			enableGUI:  false,
 			endpoint:   "/invalid-path",
 			appLoc:     "",
 			expectCode: http.StatusNotFound,
-			expectBody: "404 Not Found - gui is disabled\n",
+			expectBody: "404 Not Found\n",
 		},
 		{
 			name:       "enable gui GET /",
 			enableGUI:  true,
 			endpoint:   "/",
-			appLoc:     "./static/dist",
+			appLoc:     "./static",
 			expectCode: http.StatusOK,
 			expectBody: "",
 		},
@@ -315,7 +320,7 @@ func TestEnableGUI(t *testing.T) {
 			name:       "enable gui GET /invalid-path",
 			enableGUI:  true,
 			endpoint:   "/invalid-path",
-			appLoc:     "./static/dist",
+			appLoc:     "./static",
 			expectCode: http.StatusNotFound,
 			expectBody: "404 Not Found\n",
 		},
@@ -323,53 +328,47 @@ func TestEnableGUI(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			gateway := NewGatewayerMock()
-			gateway.On("IsGUIEnabled").Return(tc.enableGUI)
-
 			req, err := http.NewRequest(http.MethodGet, tc.endpoint, nil)
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: tc.appLoc}, gateway, &CSRFStore{}, nil)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: tc.appLoc}, nil, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
 
-			status := rr.Code
-			require.Equal(t, tc.expectCode, status)
+			c := Config{
+				EnableGUI:   tc.enableGUI,
+				DisableCSRF: true,
+				StaticDir:   tc.appLoc,
+			}
+
+			host := "127.0.0.1:6423"
+			s, err := Create(host, c, nil)
+			require.NoError(t, err)
+
+			wg := sync.WaitGroup{}
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				s.Serve()
+			}()
+
+			defer func() {
+				s.listener.Close()
+				wg.Wait()
+			}()
+
+			url := fmt.Sprintf("http://%s/%s", host, tc.endpoint)
+			rsp, err := http.Get(url)
+			require.NoError(t, err)
+			defer rsp.Body.Close()
+			require.Equal(t, tc.expectCode, rsp.StatusCode)
 
 			body, err := ioutil.ReadAll(rr.Body)
 			require.NoError(t, err)
 
-			if status != http.StatusOK {
+			if rsp.StatusCode != http.StatusOK {
 				require.Equal(t, tc.expectBody, string(body))
 			}
-
-			// c := Config{
-			// 	EnableGUI:   tc.enableGUI,
-			// 	DisableCSRF: true,
-			// 	StaticDir:   "./static",
-			// }
-
-			// host := "127.0.0.1:6423"
-			// s, err := Create(host, c, nil)
-			// require.NoError(t, err)
-
-			// wg := sync.WaitGroup{}
-			// wg.Add(1)
-			// go func() {
-			// 	defer wg.Done()
-			// 	s.Serve()
-			// }()
-
-			// defer func() {
-			// 	s.listener.Close()
-			// 	wg.Wait()
-			// }()
-
-			// url := "http://" + host
-			// rsp, err := http.Get(url)
-			// require.NoError(t, err)
-			// require.Equal(t, tc.expectCode, rsp.StatusCode)
-			// rsp.Body.Close()
 		})
 	}
 }

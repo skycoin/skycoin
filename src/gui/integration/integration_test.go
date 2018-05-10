@@ -3376,7 +3376,7 @@ func TestDisableWalletApi(t *testing.T) {
 			name:      "main index.html 404 not found",
 			method:    http.MethodGet,
 			endpoint:  "/",
-			expectErr: "404 Not Found - gui is disabled\n",
+			expectErr: "404 Not Found\n",
 			code:      http.StatusNotFound,
 		},
 		{
@@ -3531,5 +3531,5 @@ func TestDisableGUIAPI(t *testing.T) {
 
 	c := gui.NewClient(nodeAddress())
 	err := c.Get("/", nil)
-	assertResponseError(t, err, http.StatusNotFound, "404 Not Found - gui is disabled\n")
+	assertResponseError(t, err, http.StatusNotFound, "404 Not Found\n")
 }

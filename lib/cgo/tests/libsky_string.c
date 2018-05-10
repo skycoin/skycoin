@@ -28,3 +28,31 @@ void strnhex(unsigned char* buf, char *str, int n){
 void strhex(unsigned char* buf, char *str){
   strnhex(buf, str, SIZE_ALL);
 }
+
+int hexnstr(const char* hex, unsigned char* str, int n){
+	const char * pin = hex;
+	unsigned char * pout = str;
+	unsigned char c;
+	int odd = 0;
+	int size = 0;
+	for(; *pin && size < n; pin++){
+		if(*pin >= '0' && *pin <= '9'){
+			c = *pin - '0';
+		} else if(*pin >= 'A' && *pin <= 'F'){
+			c = *pin - 'A';
+		} else if(*pin >= 'a' && *pin <= 'f'){
+			c = *pin - 'a';
+		}
+		if(odd){
+			*pout = (*pout << 4) | c;
+			pout++;
+			size++;
+		} else {
+			*pout = c;
+		}
+		odd = !odd;
+	}
+	if( size < n )
+		*pout = 0;
+	return size;
+}

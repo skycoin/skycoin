@@ -18,7 +18,7 @@ type Connection struct {
 // Connections an array of connections
 // Arrays must be wrapped in structs to avoid certain javascript exploits
 type Connections struct {
-	Connections []*Connection `json:"connections"`
+	Connections []Connection `json:"connections"`
 }
 
 func connectionHandler(gateway Gatewayer) http.HandlerFunc {

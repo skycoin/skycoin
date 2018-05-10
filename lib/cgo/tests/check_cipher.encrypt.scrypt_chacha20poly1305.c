@@ -71,9 +71,9 @@ Test(cipher_encrypt_scrypt_chacha20poly1305, TestScryptChacha20poly1305Encrypt){
 	GoSlice result = {buffer, 0, BUFFER_SIZE};
 	GoUint32 errcode;
 	unsigned int metalength;
-	
+	encrypt__ScryptChacha20poly1305 encrypt = {1, 8, 1, 32};
 	for(int i = 1; i <= 20; i++) {
-		encrypt__ScryptChacha20poly1305 encrypt = {1 << i, 8, 1, 32};
+		encrypt.N = 1 << i;
 		errcode = SKY_encrypt_ScryptChacha20poly1305_Encrypt(
 				&encrypt, text, password, (coin__UxArray*)&result);
 		cr_assert(errcode == SKY_OK, "SKY_encrypt_ScryptChacha20poly1305_Encrypt failed");
@@ -91,7 +91,7 @@ Test(cipher_encrypt_scrypt_chacha20poly1305, TestScryptChacha20poly1305Encrypt){
 			}
 		}
 		cr_assert(metalength + SCRYPTCHACHA20METALENGTHSIZE < decode_len, "SKY_encrypt_ScryptChacha20poly1305_Encrypt failed. Metadata length greater than result lentgh.");
-		char* meta = &str[SCRYPTCHACHA20METALENGTHSIZE];
+		char* meta = str + SCRYPTCHACHA20METALENGTHSIZE;
 		meta[metalength] = 0;
 		int n, r, p, keyLen;
 		parseJsonMetaData(meta, &n, &r, &p, &keyLen);

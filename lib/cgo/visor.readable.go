@@ -203,21 +203,6 @@ func SKY_visor_NewReadableUnconfirmedTxns(_txs []C.visor__UnconfirmedTxn, _arg1 
 	return
 }
 
-//export SKY_visor_NewGenesisReadableTransaction
-func SKY_visor_NewGenesisReadableTransaction(_t *C.visor__Transaction, _arg1 *C.visor__ReadableTransaction) (____error_code uint32) {
-	____error_code = 0
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	t := (*visor.Transaction)(unsafe.Pointer(_t))
-	__arg1, ____return_err := visor.NewGenesisReadableTransaction(t)
-	____error_code = libErrorCode(____return_err)
-	if ____return_err == nil {
-		*_arg1 = *(*C.visor__ReadableTransaction)(unsafe.Pointer(__arg1))
-	}
-	return
-}
-
 //export SKY_visor_NewReadableTransaction
 func SKY_visor_NewReadableTransaction(_t *C.visor__Transaction, _arg1 *C.visor__ReadableTransaction) (____error_code uint32) {
 	____error_code = 0

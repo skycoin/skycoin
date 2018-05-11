@@ -19,6 +19,16 @@
 #define BUFFER_SIZE 1024
 #define SCRYPTCHACHA20METALENGTHSIZE 2
 
+char buffer[BUFFER_SIZE];
+GoSlice text = {PLAINTEXT, strlen(PLAINTEXT), strlen(PLAINTEXT)};
+GoSlice password = {PASSWORD, strlen(PASSWORD), strlen(PASSWORD)};
+GoSlice result = {buffer, 0, BUFFER_SIZE};
+GoSlice password2 = {PASSWORD2, strlen(PASSWORD2), strlen(PASSWORD2)};
+GoSlice wrong_password = {WRONG_PASSWORD, strlen(WRONG_PASSWORD), strlen(WRONG_PASSWORD)};
+GoSlice encrypted = {ENCRYPTED, strlen(ENCRYPTED), strlen(ENCRYPTED)};
+GoSlice nullData = {NULL, 0, 0};
+GoSlice nullPassword = {NULL, 0, 0};
+
 void parseJsonMetaData(char* metadata, int* n, int* r, int* p, int* keyLen){
 	*n = *r = *p = *keyLen = 0;
 	int length = strlen(metadata);
@@ -62,13 +72,11 @@ void parseJsonMetaData(char* metadata, int* n, int* r, int* p, int* keyLen){
 }
 
 Test(cipher_encrypt_scrypt_chacha20poly1305, TestScryptChacha20poly1305Encrypt){
-	GoSlice text = {PLAINTEXT, strlen(PLAINTEXT), strlen(PLAINTEXT)};
-	GoSlice password = {PASSWORD, strlen(PASSWORD), strlen(PASSWORD)};
+	
 	char buffer[BUFFER_SIZE];
 	char str[BUFFER_SIZE];
 	char tmp[BUFFER_SIZE];
 	unsigned int data[BUFFER_SIZE];
-	GoSlice result = {buffer, 0, BUFFER_SIZE};
 	GoUint32 errcode;
 	unsigned int metalength;
 	encrypt__ScryptChacha20poly1305 encrypt = {1, 8, 1, 32};
@@ -104,19 +112,11 @@ Test(cipher_encrypt_scrypt_chacha20poly1305, TestScryptChacha20poly1305Encrypt){
 }
 
 Test(cipher_encrypt_scrypt_chacha20poly1305, TestScryptChacha20poly1305Decrypt){
-	GoSlice text = {PLAINTEXT, strlen(PLAINTEXT), strlen(PLAINTEXT)};
-	GoSlice password = {PASSWORD2, strlen(PASSWORD2), strlen(PASSWORD2)};
-	GoSlice wrong_password = {WRONG_PASSWORD, strlen(WRONG_PASSWORD), strlen(WRONG_PASSWORD)};
-	GoSlice encrypted = {ENCRYPTED, strlen(ENCRYPTED), strlen(ENCRYPTED)};
-	GoSlice nullData = {NULL, 0, 0};
-	GoSlice nullPassword = {NULL, 0, 0};
-	
-	char buffer[BUFFER_SIZE];
 	coin__UxArray result = {buffer, 0, BUFFER_SIZE};
 	GoUint32 errcode;
 	encrypt__ScryptChacha20poly1305 encrypt = {0, 0, 0, 0};
 	
-	errcode = SKY_encrypt_ScryptChacha20poly1305_Decrypt(&encrypt, encrypted, password, &result);
+	errcode = SKY_encrypt_ScryptChacha20poly1305_Decrypt(&encrypt, encrypted, password2, &result);
 	cr_assert(errcode == SKY_OK, "SKY_encrypt_ScryptChacha20poly1305_Decrypt failed");
 	cr_assert(result.len < BUFFER_SIZE, "SKY_encrypt_ScryptChacha20poly1305_Decrypt failed. Buffer to small.");
 	((char*)result.data)[result.len] = 0;
@@ -124,7 +124,7 @@ Test(cipher_encrypt_scrypt_chacha20poly1305, TestScryptChacha20poly1305Decrypt){
 	
 	errcode = SKY_encrypt_ScryptChacha20poly1305_Decrypt(&encrypt, encrypted, wrong_password, &result);
 	cr_assert(errcode != SKY_OK, "SKY_encrypt_ScryptChacha20poly1305_Decrypt decrypted with wrong password.");
-	errcode = SKY_encrypt_ScryptChacha20poly1305_Decrypt(&encrypt, nullData, password, &result);
+	errcode = SKY_encrypt_ScryptChacha20poly1305_Decrypt(&encrypt, nullData, password2, &result);
 	cr_assert(errcode != SKY_OK, "SKY_encrypt_ScryptChacha20poly1305_Decrypt decrypted with null encrypted data.");
 	errcode = SKY_encrypt_ScryptChacha20poly1305_Decrypt(&encrypt, encrypted, nullPassword, &result);
 	cr_assert(errcode != SKY_OK, "SKY_encrypt_ScryptChacha20poly1305_Decrypt decrypted with null password.");

@@ -26,9 +26,9 @@ Test(cipher_secp256k1_field, TestFieldInv){
 	GoString InStr = {INHEX, strlen(INHEX)};
 	GoString ExpStr = {EXPHEX, strlen(EXPHEX)};
 	error_code = SKY_secp256k1go_Field_SetHex(&in, InStr);
-	cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Number_SetHex failed");
+	cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Field_SetHex failed");
 	error_code = SKY_secp256k1go_Field_SetHex(&expected, ExpStr);
-	cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Number_SetHex failed");
+	cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Field_SetHex failed");
 	error_code = SKY_secp256k1go_Field_Inv(&in, &out);
 	cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Field_Inv failed");
 	error_code = SKY_secp256k1go_Field_Equals(&out, &expected, &equal);

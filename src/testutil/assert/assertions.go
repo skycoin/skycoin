@@ -190,9 +190,8 @@ func IsPermutation(t assert.TestingT, expected, actual interface{}, msgAndArgs .
 		}
 		if found == -1 {
 			return assert.Fail(t, fmt.Sprintf("\"%s\" does not contain \"%s\"", expected, element), msgAndArgs...)
-		} else {
-			visitedIdxs[found] = struct{}{}
 		}
+		visitedIdxs[found] = struct{}{}
 	}
 
 	return true

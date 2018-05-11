@@ -176,8 +176,8 @@ typedef unsigned char Ripemd160[20];
 
 typedef struct {	
 	//TODO: stdevEclipse Define Signature
-	Number a;
-	Number b;
+	Number R;
+	Number S;
 } Signature;
 
 #include "skytypes.gen.h"

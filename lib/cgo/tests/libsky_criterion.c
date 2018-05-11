@@ -101,3 +101,11 @@ char *cr_user_cipher__SHA256_tostr(cipher__SHA256 *sh1) {
   return out;
 }
 
+int cr_user_secp256k1go__Field_eq(secp256k1go__Field* f1, secp256k1go__Field* f2){
+	for( int i = 0; i < 10; i++){
+		if( f1->n[i] != f2->n[i])
+			return 0;
+	}
+	return 1;
+}
+

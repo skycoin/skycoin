@@ -16,4 +16,7 @@ extern int hexnstr(const char* hex, unsigned char* str, int n);
 extern int cmpGoSlice_GoSlice(GoSlice *slice1, GoSlice_ *slice2);
 
 
+extern void bin2hex(unsigned char* buf, char *str, int n);
+
+
 #endif //LIBSKY_STRING_H

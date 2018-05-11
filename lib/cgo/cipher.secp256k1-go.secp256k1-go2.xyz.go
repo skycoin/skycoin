@@ -86,6 +86,20 @@ func SKY_secp256k1go_XYZ_Equals(_xyz *C.secp256k1go__XYZ, _b *C.secp256k1go__XYZ
 	return
 }
 
+//export SKY_secp256k1go_XYZ_ECmult
+func SKY_secp256k1go_XYZ_ECmult(_xyz *C.secp256k1go__XYZ, _r *C.secp256k1go__XYZ, _na, _ng *C.Number) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	xyz := (*secp256k1go2.XYZ)(unsafe.Pointer(_xyz))
+	r := (*secp256k1go2.XYZ)(unsafe.Pointer(_r))
+	na := (*secp256k1go2.Number)(unsafe.Pointer(_na))
+	ng := (*secp256k1go2.Number)(unsafe.Pointer(_ng))
+	xyz.ECmult(r, na, ng)
+	return
+}
+
 //export SKY_secp256k1go_XYZ_Neg
 func SKY_secp256k1go_XYZ_Neg(_xyz *C.secp256k1go__XYZ, _r *C.secp256k1go__XYZ) (____error_code uint32) {
 	____error_code = 0
@@ -133,5 +147,17 @@ func SKY_secp256k1go_XYZ_Add(_xyz *C.secp256k1go__XYZ, _r, _b *C.secp256k1go__XY
 	r := (*secp256k1go2.XYZ)(unsafe.Pointer(_r))
 	b := (*secp256k1go2.XYZ)(unsafe.Pointer(_b))
 	xyz.Add(r, b)
+	return
+}
+
+//export SKY_secp256k1go_ECmultGen
+func SKY_secp256k1go_ECmultGen(_r *C.secp256k1go__XYZ, _a *C.Number) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	r := (*secp256k1go2.XYZ)(unsafe.Pointer(_r))
+	a := (*secp256k1go2.Number)(unsafe.Pointer(_a))
+	secp256k1go2.ECmultGen(r, a)
 	return
 }

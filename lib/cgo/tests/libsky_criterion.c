@@ -126,3 +126,12 @@ char *cr_user_GoSlice__tostr(GoSlice_ *slice1) {
   cr_asprintf(&out, "(GoSlice_) { .data %s, .len %d, .cap %d }", slice1->data,slice1->len,slice1->cap);
   return out;
 }
+
+int cr_user_secp256k1go__Field_eq(secp256k1go__Field* f1, secp256k1go__Field* f2){
+	for( int i = 0; i < 10; i++){
+		if( f1->n[i] != f2->n[i])
+			return 0;
+	}
+	return 1;
+}
+

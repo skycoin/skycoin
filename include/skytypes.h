@@ -150,7 +150,7 @@ typedef Handle GoStringMap_;
 typedef struct {
   void *t;      ///< Pointer to the information of the concrete Go type
                 ///< bound to this interface reference.
-  void *v;      ///< Pointer to the data corresponding to the value 
+  void *v;      ///< Pointer to the data corresponding to the value
                 ///< bound to this interface type.
 } GoInterface_;
 /**
@@ -164,7 +164,7 @@ typedef struct {
                 ///< size.
 } GoSlice_;
 
-typedef struct {	
+typedef struct {
 	BOOL 		neg;
 	GoSlice_ 	nat;
 } Number;
@@ -174,10 +174,10 @@ typedef struct {
  */
 typedef unsigned char Ripemd160[20];
 
-typedef struct {	
+typedef struct {
 	//TODO: stdevEclipse Define Signature
-	Number a;
-	Number b;
+	Number R;
+	Number S;
 } Signature;
 
 #include "skytypes.gen.h"

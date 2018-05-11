@@ -37,5 +37,6 @@ extern int cr_user_cipher__SHA256_noteq(cipher__SHA256 *sh1, cipher__SHA256 *sh2
 extern int cr_user_cipher__SHA256_eq(cipher__SHA256 *sh1, cipher__SHA256 *sh2);
 extern char *cr_user_cipher__SHA256_tostr(cipher__SHA256 *sh1);
 
+extern int cr_user_secp256k1go__Field_eq(secp256k1go__Field* f1, secp256k1go__Field* f2);
 
 #endif //LIBCRITERION_H

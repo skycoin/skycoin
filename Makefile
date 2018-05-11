@@ -184,10 +184,15 @@ lint-ui:  ## Lint the UI code
 
 test-ui:  ## Run UI tests
 	cd $(GUI_STATIC_DIR) && npm run test
-	cd $(GUI_STATIC_DIR) && npm run e2e
+
+test-ui-e2e:  ## Run UI e2e tests
+	./ci-scripts/ui-e2e.sh
 
 build-ui:  ## Builds the UI
 	cd $(GUI_STATIC_DIR) && npm run build
+
+build-ui-travis:  ## Builds the UI for travis
+	cd $(GUI_STATIC_DIR) && npm run build-travis
 
 release: ## Build electron apps, the builds are located in electron/release folder.
 	cd $(ELECTRON_DIR) && ./build.sh

@@ -3376,7 +3376,7 @@ func TestDisableWalletApi(t *testing.T) {
 			name:      "main index.html 404 not found",
 			method:    http.MethodGet,
 			endpoint:  "/",
-			expectErr: "404 page not found\n",
+			expectErr: "404 Not Found\n",
 			code:      http.StatusNotFound,
 		},
 		{
@@ -3522,4 +3522,14 @@ func TestLiveHealth(t *testing.T) {
 
 	// The TimeSinceLastBlock can be any value, including negative values, due to clock skew
 	// The live node is not necessarily run with the commit and branch ldflags, so don't check them
+}
+
+func TestDisableGUIAPI(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+	err := c.Get("/", nil)
+	assertResponseError(t, err, http.StatusNotFound, "404 Not Found\n")
 }

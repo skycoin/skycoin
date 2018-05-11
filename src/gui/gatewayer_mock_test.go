@@ -7,7 +7,6 @@ package gui
 
 import (
 	"fmt"
-	"sort"
 
 	mock "github.com/stretchr/testify/mock"
 
@@ -1003,47 +1002,17 @@ func (m *GatewayerMock) UpdateWalletLabel(p0 string, p1 string) error {
 // GetDefaultStatus mocked method
 func (m *GatewayerMock) GetDefaultStatus() *daemon.ConnectionsHealth {
 
-	connsDefault := m.GetDefaultConnections()
-	sort.Strings(connsDefault)
-	connsAll := m.GetConnections().Connections
+	ret := m.Called()
 
-	countDefault, totalAlive := len(connsDefault), 0
-	totalOffline := countDefault
-
-	var connections []daemon.ConnectionStatus
-	connsMap := make(map[string]*daemon.ConnectionStatus, countDefault)
-	for _, conn := range connsDefault {
-		status := daemon.ConnectionStatus{
-			Connection: conn,
-			IsAlive:    false,
-		}
-
-		connsMap[conn] = &status
+	var r0 *daemon.ConnectionsHealth
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case *daemon.ConnectionsHealth:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	for _, conn := range connsAll {
-		if status, isDefault := connsMap[conn.Addr]; isDefault {
-			if !status.IsAlive {
-				status.IsAlive = true
-				connsMap[conn.Addr] = status
-				totalAlive++
-				totalOffline--
-			}
-		}
-	}
+	return r0
 
-	for _, conn := range connsMap {
-		status := daemon.ConnectionStatus{
-			Connection: conn.Connection,
-			IsAlive:    conn.IsAlive,
-		}
-		connections = append(connections, status)
-
-	}
-	return &daemon.ConnectionsHealth{
-		Count:        countDefault,
-		TotalAlive:   totalAlive,
-		TotalOffline: totalOffline,
-		Connections:  connections,
-	}
 }

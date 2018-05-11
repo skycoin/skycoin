@@ -338,56 +338,43 @@ func TestGetExchgConnection(t *testing.T) {
 
 func TestGetDefaultStatus(t *testing.T) {
 
-	gatewayGetDefaultConnectionsResult := []string{"11.44.66.88:9000", "44.33.22.11:9000"}
-
-	gatewayGetConnectionsResult := &daemon.Connections{
-		Connections: []*daemon.Connection{
-			{
-				ID:           1,
-				Addr:         "11.44.66.88:9000",
-				LastSent:     99999,
-				LastReceived: 1111111,
-				Outgoing:     true,
-				Introduced:   true,
-				Mirror:       9876,
-				ListenPort:   9877,
-			},
-			{
-				ID:           2,
-				Addr:         "44.33.22.11:9000",
-				LastSent:     99999,
-				LastReceived: 1111111,
-				Outgoing:     true,
-				Introduced:   true,
-				Mirror:       9876,
-				ListenPort:   9877,
-			},
-		},
-	}
-
 	tt := []struct {
-		name                               string
-		method                             string
-		status                             int
-		err                                string
-		gatewayGetDefaultConnectionsResult []string
-		gatewayGetConnectionsResult        *daemon.Connections
+		name                          string
+		method                        string
+		status                        int
+		err                           string
+		gatewayGetDefaultStatusResult daemon.ConnectionsHealth
+		result                        daemon.ConnectionsHealth
 	}{
 		{
 			name:   "405",
 			method: http.MethodPost,
 			status: http.StatusMethodNotAllowed,
 			err:    "405 Method Not Allowed",
-			gatewayGetDefaultConnectionsResult: gatewayGetDefaultConnectionsResult,
-			gatewayGetConnectionsResult:        gatewayGetConnectionsResult,
 		},
 		{
 			name:   "200",
 			method: http.MethodGet,
 			status: http.StatusOK,
 			err:    "",
-			gatewayGetDefaultConnectionsResult: gatewayGetDefaultConnectionsResult,
-			gatewayGetConnectionsResult:        gatewayGetConnectionsResult,
+			gatewayGetDefaultStatusResult: daemon.ConnectionsHealth{
+				Count:        2,
+				TotalAlive:   2,
+				TotalOffline: 0,
+				Connections: []daemon.ConnectionStatus{
+					{Connection: "11.44.66.88:9000", IsAlive: true},
+					{Connection: "44.33.22.11:9000", IsAlive: true},
+				},
+			},
+			result: daemon.ConnectionsHealth{
+				Count:        2,
+				TotalAlive:   2,
+				TotalOffline: 0,
+				Connections: []daemon.ConnectionStatus{
+					{Connection: "11.44.66.88:9000", IsAlive: true},
+					{Connection: "44.33.22.11:9000", IsAlive: true},
+				},
+			},
 		},
 	}
 	for _, tc := range tt {
@@ -397,17 +384,7 @@ func TestGetDefaultStatus(t *testing.T) {
 
 			gateway := NewGatewayerMock()
 
-			resp := daemon.ConnectionsHealth{
-				Count:        2,
-				TotalAlive:   2,
-				TotalOffline: 0,
-				Connections: []daemon.ConnectionStatus{
-					{Connection: "11.44.66.88:9000", IsAlive: true},
-					{Connection: "44.33.22.11:9000", IsAlive: true},
-				},
-			}
-			gateway.On("GetDefaultConnections").Return(tc.gatewayGetDefaultConnectionsResult)
-			gateway.On("GetConnections").Return(tc.gatewayGetConnectionsResult)
+			gateway.On("GetDefaultStatus").Return(&tc.gatewayGetDefaultStatusResult)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
@@ -425,6 +402,7 @@ func TestGetDefaultStatus(t *testing.T) {
 			} else {
 				var msg daemon.ConnectionsHealth
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
+				resp := tc.result
 				require.NoError(t, err)
 				require.Equal(t, resp.Count, msg.Count)
 				require.Equal(t, resp.TotalOffline, msg.TotalOffline)

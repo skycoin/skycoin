@@ -117,7 +117,7 @@ func TestHealthCheckHandler(t *testing.T) {
 				},
 			}
 
-			gateway.On("GetDefaultConnections").Return(GetDefaultConnections).On("GetConnections").Return(gatewayGetConnectionsResult).On("GetDefaultStatus").Return(GetDefaultConnections, gatewayGetConnectionsResult)
+			gateway.On("GetDefaultConnections").Return(GetDefaultConnections).On("GetConnections").Return(gatewayGetConnectionsResult).On("GetDefaultStatus").Return(connectionshealth)
 
 			endpoint := "/health"
 			req, err := http.NewRequest(tc.method, endpoint, nil)

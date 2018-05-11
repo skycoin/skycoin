@@ -646,7 +646,12 @@ type sigHash struct {
 
 // VerifySignatures checks that BlockSigs state correspond with coin.Blockchain state
 // and that all signatures are valid.
-func (bc *Blockchain) VerifySignatures(tx *dbutil.Tx, workers int) error {
+// The quit channel is optional and if closed, this method still stop.
+func (bc *Blockchain) VerifySignatures(tx *dbutil.Tx, workers int, quit chan struct{}) error {
+	if quit == nil {
+		quit = make(chan struct{})
+	}
+
 	if length, err := bc.Len(tx); err != nil {
 		return err
 	} else if length == 0 {
@@ -655,8 +660,7 @@ func (bc *Blockchain) VerifySignatures(tx *dbutil.Tx, workers int) error {
 
 	sigHashes := make(chan sigHash, 100)
 	errC := make(chan error, 100)
-	stop := make(chan struct{})
-	done := make(chan struct{})
+	interrupt := make(chan struct{})
 
 	// Verify block signatures in a worker pool
 	var wg sync.WaitGroup
@@ -664,10 +668,12 @@ func (bc *Blockchain) VerifySignatures(tx *dbutil.Tx, workers int) error {
 	for i := 0; i < workers; i++ {
 		go func() {
 			defer wg.Done()
-		loop:
 			for {
 				select {
-				case sh := <-sigHashes:
+				case sh, ok := <-sigHashes:
+					if !ok {
+						return
+					}
 					if err := cipher.VerifySignature(bc.cfg.Pubkey, sh.sig, sh.hash); err != nil {
 						logger.Errorf("Signature verification failed: %v", err)
 						select {
@@ -675,8 +681,6 @@ func (bc *Blockchain) VerifySignatures(tx *dbutil.Tx, workers int) error {
 						default:
 						}
 					}
-				case <-stop:
-					break loop
 				}
 			}
 		}()
@@ -688,9 +692,9 @@ func (bc *Blockchain) VerifySignatures(tx *dbutil.Tx, workers int) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		defer close(done)
+		defer close(sigHashes)
 
-		errStopped := errors.New("goroutine was stopped")
+		errInterrupted := errors.New("goroutine was stopped")
 
 		if err := bc.store.ForEachBlock(tx, func(block *coin.Block) error {
 			sig, ok, err := bc.store.GetBlockSignature(tx, block)
@@ -701,16 +705,20 @@ func (bc *Blockchain) VerifySignatures(tx *dbutil.Tx, workers int) error {
 				return blockdb.NewErrMissingSignature(block)
 			}
 
-			select {
-			case sigHashes <- sigHash{
+			sh := sigHash{
 				sig:  sig,
 				hash: block.HashHeader(),
-			}:
-				return nil
-			case <-stop:
-				return errStopped
 			}
-		}); err != nil && err != errStopped {
+
+			select {
+			case sigHashes <- sh:
+				return nil
+			case <-quit:
+				return errInterrupted
+			case <-interrupt:
+				return errInterrupted
+			}
+		}); err != nil && err != errInterrupted {
 			switch err.(type) {
 			case blockdb.ErrMissingSignature:
 			default:
@@ -723,24 +731,20 @@ func (bc *Blockchain) VerifySignatures(tx *dbutil.Tx, workers int) error {
 		}
 	}()
 
-	var foundErr error
-loop:
-	for {
-		select {
-		case err := <-errC:
-			if err != nil && foundErr == nil {
-				foundErr = err
-				break loop
-			}
-		case <-done:
-			break loop
+	var err error
+	select {
+	case err = <-errC:
+		if err != nil {
+			break
 		}
+	case <-quit:
+		break
 	}
 
-	close(stop)
+	close(interrupt)
 	wg.Wait()
 
-	return foundErr
+	return err
 }
 
 // VerifyBlockHeader Returns error if the BlockHeader is not valid

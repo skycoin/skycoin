@@ -142,7 +142,7 @@ func TestErrMissingSignatureRecreateDB(t *testing.T) {
 		require.NoError(t, err)
 
 		err = db.View("", func(tx *dbutil.Tx) error {
-			return bc.VerifySignatures(tx, SigVerifyTheadNum)
+			return bc.VerifySignatures(tx, SigVerifyTheadNum, nil)
 		})
 
 		require.Error(t, err)
@@ -157,7 +157,7 @@ func TestErrMissingSignatureRecreateDB(t *testing.T) {
 	require.NotEmpty(t, badDB.Path())
 	t.Logf("badDB.Path() == %s", badDB.Path())
 
-	db, err := ResetCorruptDB(badDB, pubkey)
+	db, err := ResetCorruptDB(badDB, pubkey, nil)
 	require.NoError(t, err)
 
 	err = db.Close()

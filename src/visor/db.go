@@ -28,7 +28,7 @@ type ErrCorruptDB struct {
 }
 
 // CheckDatabase checks the database for corruption
-func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey) error {
+func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) error {
 	bc, err := NewBlockchain(db, BlockchainConfig{
 		Pubkey: pubkey,
 	})
@@ -37,7 +37,7 @@ func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey) error {
 	}
 
 	err = db.View("CheckDatabase", func(tx *dbutil.Tx) error {
-		return bc.VerifySignatures(tx, SigVerifyTheadNum)
+		return bc.VerifySignatures(tx, SigVerifyTheadNum, quit)
 	})
 
 	switch err.(type) {
@@ -52,10 +52,10 @@ func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey) error {
 
 // ResetCorruptDB checks the database for corruption and if corrupted, then it erases the db and starts over.
 // A copy of the corrupted database is saved.
-func ResetCorruptDB(db *dbutil.DB, pubkey cipher.PubKey) (*dbutil.DB, error) {
+func ResetCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) (*dbutil.DB, error) {
 	logger.Info("Loading blockchain")
 
-	err := CheckDatabase(db, pubkey)
+	err := CheckDatabase(db, pubkey, quit)
 
 	switch err.(type) {
 	case nil:

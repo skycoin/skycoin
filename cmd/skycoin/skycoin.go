@@ -24,6 +24,7 @@ import (
 	"github.com/skycoin/skycoin/src/util/file"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -594,6 +595,11 @@ func Run(c *Config) {
 		}
 	}()
 
+	var db *dbutil.DB
+	var d *daemon.Daemon
+	var webInterface *gui.Server
+	errC := make(chan error, 10)
+
 	if c.Version {
 		fmt.Println(Version)
 		return
@@ -658,7 +664,7 @@ func Run(c *Config) {
 	dconf := configureDaemon(c)
 
 	logger.Infof("Opening database %s", dconf.Visor.Config.DBPath)
-	db, err := visor.OpenDB(dconf.Visor.Config.DBPath, c.DBReadOnly)
+	db, err = visor.OpenDB(dconf.Visor.Config.DBPath, c.DBReadOnly)
 	if err != nil {
 		logger.Errorf("Database failed to open: %v. Is another skycoin instance running?", err)
 		return
@@ -666,27 +672,33 @@ func Run(c *Config) {
 
 	if c.VerifyDB {
 		logger.Info("Checking database")
-		if err := visor.CheckDatabase(db, c.BlockchainPubkey); err != nil {
+		if err := visor.CheckDatabase(db, c.BlockchainPubkey, quit); err != nil {
 			logger.Errorf("visor.CheckDatabase failed: %v", err)
 			return
 		}
 	} else if c.ResetCorruptDB {
 		// Check the database integrity and recreate it if necessary
 		logger.Info("Checking database and resetting if corrupted")
-		db, err = visor.ResetCorruptDB(db, c.BlockchainPubkey)
+		db, err = visor.ResetCorruptDB(db, c.BlockchainPubkey, quit)
 		if err != nil {
 			logger.Errorf("visor.ResetCorruptDB failed: %v", err)
 			return
 		}
 	}
 
-	d, err := daemon.NewDaemon(dconf, db, DefaultConnections)
+	// Check if the quit channel was closed during database verification
+	select {
+	case <-quit:
+		goto shutdown
+	default:
+	}
+
+	d, err = daemon.NewDaemon(dconf, db, DefaultConnections)
 	if err != nil {
 		logger.Error(err)
 		return
 	}
 
-	var webInterface *gui.Server
 	if c.WebInterface {
 		webInterface, err = createGUI(c, d, host)
 		if err != nil {
@@ -694,8 +706,6 @@ func Run(c *Config) {
 			return
 		}
 	}
-
-	errC := make(chan error, 10)
 
 	wg.Add(1)
 	go func() {
@@ -765,6 +775,7 @@ func Run(c *Config) {
 		logger.Error(err)
 	}
 
+shutdown:
 	logger.Info("Shutting down...")
 
 	if webInterface != nil {
@@ -772,15 +783,19 @@ func Run(c *Config) {
 		webInterface.Shutdown()
 	}
 
-	logger.Info("Closing daemon")
-	d.Shutdown()
+	if d != nil {
+		logger.Info("Closing daemon")
+		d.Shutdown()
+	}
 
 	logger.Info("Waiting for goroutines to finish")
 	wg.Wait()
 
-	logger.Info("Closing database")
-	if err := db.Close(); err != nil {
-		logger.WithError(err).Error("Failed to close DB")
+	if db != nil {
+		logger.Info("Closing database")
+		if err := db.Close(); err != nil {
+			logger.WithError(err).Error("Failed to close DB")
+		}
 	}
 
 	logger.Info("Goodbye")

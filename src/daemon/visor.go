@@ -61,8 +61,8 @@ type Visor struct {
 	v      *visor.Visor
 
 	// Peer-reported blockchain height.  Use to estimate download progress
-	blockchainHeights    map[string]uint64
-	blockchanHeightsLock sync.Mutex
+	blockchainHeights      map[string]uint64
+	blockchainHeightsMutex sync.Mutex
 }
 
 // NewVisor creates visor instance

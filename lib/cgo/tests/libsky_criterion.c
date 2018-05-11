@@ -102,8 +102,9 @@ char *cr_user_cipher__SHA256_tostr(cipher__SHA256 *sh1) {
 }
 
 int cr_user_GoSlice_eq(GoSlice *slice1, GoSlice *slice2){
-	return (slice1->len == slice2->len) &&
-		(memcmp( slice1->data, slice2->data, slice1->len) == 0);
+
+  return ((slice1->len == slice2->len)) && (memcmp(slice1->data,slice2->data, sizeof(GoSlice))==0);
+
 }
 
 char *cr_user_GoSlice_tostr(GoSlice *slice1) {
@@ -114,8 +115,7 @@ char *cr_user_GoSlice_tostr(GoSlice *slice1) {
 
 int cr_user_GoSlice__eq(GoSlice_ *slice1, GoSlice_ *slice2){
 
-  return (slice1->len == slice2->len) &&
-  (strcmp( (unsigned char *) slice1->data, (unsigned char *) slice2->data) == 0);
+  return ((slice1->len == slice2->len)) && (memcmp(slice1->data,slice2->data, sizeof(GoSlice_))==0 );
 
 }
 
@@ -126,9 +126,9 @@ char *cr_user_GoSlice__tostr(GoSlice_ *slice1) {
 }
 
 int cr_user_secp256k1go__Field_eq(secp256k1go__Field* f1, secp256k1go__Field* f2){
-	for( int i = 0; i < 10; i++){
-		if( f1->n[i] != f2->n[i])
-			return 0;
-	}
-	return 1;
+ for( int i = 0; i < 10; i++){
+  if( f1->n[i] != f2->n[i])
+   return 0;
+}
+return 1;
 }

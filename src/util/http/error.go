@@ -15,7 +15,6 @@ var (
 // HTTPError wraps http.Error
 func HTTPError(w http.ResponseWriter, status int, httpMsg string) {
 	msg := fmt.Sprintf("%d %s", status, httpMsg)
-	logger.Errorf(msg)
 	http.Error(w, msg, status)
 }
 

@@ -5,10 +5,11 @@ describe('desktopwallet App', () => {
 
   beforeEach(() => {
     page = new DesktopwalletPage();
+    page.dontWait();
   });
 
-  it('should display welcome message', () => {
+  it('should show wallets page', () => {
     page.navigateTo();
-    expect(page.getParagraphText()).toEqual('Welcome to app!');
+    expect(page.getParagraphText()).toEqual('Create a Wallet');
   });
 });

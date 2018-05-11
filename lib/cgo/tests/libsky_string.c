@@ -6,27 +6,27 @@
 #define SIZE_ALL -1
 
 void randBytes(GoSlice *bytes, size_t n) {
-  size_t i = 0;
-  unsigned char *ptr = (unsigned char *) bytes->data;
-  for (; i < n; ++i, ++ptr) {
-    *ptr = ALPHANUM[rand() % ALPHANUM_LEN];
-  }
-  bytes->len = (GoInt) n;
+	size_t i = 0;
+	unsigned char *ptr = (unsigned char *) bytes->data;
+	for (; i < n; ++i, ++ptr) {
+		*ptr = ALPHANUM[rand() % ALPHANUM_LEN];
+	}
+	bytes->len = (GoInt) n;
 }
 
 void strnhex(unsigned char* buf, char *str, int n){
-    unsigned char * pin = buf;
-    const char * hex = "0123456789ABCDEF";
-    char * pout = str;
-    for(; *pin && n; --n){
-        *pout++ = hex[(*pin>>4)&0xF];
-        *pout++ = hex[(*pin++)&0xF];
-    }
-    *pout = 0;
+	unsigned char * pin = buf;
+	const char * hex = "0123456789ABCDEF";
+	char * pout = str;
+	for(; *pin && n; --n){
+		*pout++ = hex[(*pin>>4)&0xF];
+		*pout++ = hex[(*pin++)&0xF];
+	}
+	*pout = 0;
 }
 
 void strhex(unsigned char* buf, char *str){
-  strnhex(buf, str, SIZE_ALL);
+	strnhex(buf, str, SIZE_ALL);
 }
 
 int hexnstr(const char* hex, unsigned char* str, int n){
@@ -58,17 +58,16 @@ int hexnstr(const char* hex, unsigned char* str, int n){
 }
 
 int cmpGoSlice_GoSlice(GoSlice *slice1, GoSlice_ *slice2){
-	return (slice1->len == slice2->len) &&
-	(strcmp( (unsigned char *) slice1->data, (unsigned char *) slice2->data) == 0);
+	return ((slice1->len == slice2->len)) && (memcmp(slice1->data,slice2->data, sizeof(GoSlice_))==0 );
 }
 
 void bin2hex(unsigned char* buf, char *str, int n){
-    unsigned char * pin = buf;
-    const char * hex = "0123456789ABCDEF";
-    char * pout = str;
-    for(; n; --n){
-        *pout++ = hex[(*pin>>4)&0xF];
-        *pout++ = hex[(*pin++)&0xF];
-    }
-    *pout = 0;
+	unsigned char * pin = buf;
+	const char * hex = "0123456789ABCDEF";
+	char * pout = str;
+	for(; n; --n){
+		*pout++ = hex[(*pin>>4)&0xF];
+		*pout++ = hex[(*pin++)&0xF];
+	}
+	*pout = 0;
 }

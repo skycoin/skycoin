@@ -7,7 +7,6 @@ import { MatTooltip } from '@angular/material';
   templateUrl: 'button.component.html',
   styleUrls: ['button.component.scss']
 })
-
 export class ButtonComponent {
   @Input() disabled: any;
   @Input() forceEmitEvents = false;

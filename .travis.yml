@@ -35,6 +35,8 @@ install:
   - go get github.com/gz-c/gox
   # Install dependences for building wallet
   - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_PULL_REQUEST" == false ]]; then sudo apt-get install --no-install-recommends -y icnsutils graphicsmagick xz-utils && nvm install 8; fi
+  - mkdir -p "$GOPATH/src/github.com/skycoin" && if [[ ! -d "$GOPATH/src/github.com/skycoin/skycoin" ]] ; then ln -s "$TRAVIS_BUILD_DIR" "$GOPATH/src/github.com/skycoin/skycoin"; fi
+  - cd "$GOPATH/src/github.com/skycoin/skycoin"
   - go get -t ./...
   - make install-linters
   - make install-deps-libc
@@ -49,6 +51,8 @@ script:
   - make test-amd64
   # Stable integration tests
   - make integration-test-stable
+  # Stable integration tests without CSRF
+  - make integration-test-stable-disable-csrf
   # Disable wallet api test
   - make integration-test-disable-wallet-api
   # Disable seed api test

@@ -37,8 +37,8 @@ export class ApiService {
     return this.get('version');
   }
 
-  getWalletNewSeed(): Observable<string> {
-    return this.get('wallet/newSeed')
+  getWalletNewSeed(entropy: number = 128): Observable<string> {
+    return this.get('wallet/newSeed', { entropy })
       .map(response => response.seed);
   }
 
@@ -112,7 +112,11 @@ export class ApiService {
   post(url, params = {}, options: any = {}) {
     return this.getCsrf().first().flatMap(csrf => {
       options.csrf = csrf;
-      return this.http.post(this.getUrl(url), this.getQueryString(params), this.returnRequestOptions(options))
+      return this.http.post(
+        this.getUrl(url),
+        options.json ? JSON.stringify(params) : this.getQueryString(params),
+        this.returnRequestOptions(options)
+      )
         .map((res: any) => res.json())
         .catch((error: any) => Observable.throw(error || 'Server error'));
     });
@@ -121,7 +125,7 @@ export class ApiService {
   returnRequestOptions(additionalOptions) {
     const options = new RequestOptions();
 
-    options.headers = this.getHeaders();
+    options.headers = this.getHeaders(additionalOptions);
 
     if (additionalOptions.csrf) {
       options.headers.append('X-CSRF-Token', additionalOptions.csrf);
@@ -130,9 +134,9 @@ export class ApiService {
     return options;
   }
 
-  private getHeaders() {
+  private getHeaders(options) {
     const headers = new Headers();
-    headers.append('Content-Type', 'application/x-www-form-urlencoded');
+    headers.append('Content-Type', options.json ? 'application/json' : 'application/x-www-form-urlencoded');
     return headers;
   }
 

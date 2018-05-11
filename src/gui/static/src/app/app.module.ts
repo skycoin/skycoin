@@ -8,7 +8,6 @@ import { WalletsComponent } from './components/pages/wallets/wallets.component';
 import { CreateWalletComponent } from './components/pages/wallets/create-wallet/create-wallet.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { SendSkycoinComponent } from './components/pages/send-skycoin/send-skycoin.component';
-import { NgxDatatableModule } from '@swimlane/ngx-datatable';
 import { DateFromNowPipe } from './pipes/date-from-now.pipe';
 import { RouterModule } from '@angular/router';
 import { ExplorerComponent } from './components/pages/explorer/explorer.component';
@@ -196,7 +195,6 @@ const ROUTES = [
     MatToolbarModule,
     MatTooltipModule,
     MatCheckboxModule,
-    NgxDatatableModule,
     NoopAnimationsModule,
     ReactiveFormsModule,
     RouterModule.forRoot(ROUTES, { useHash: true }),

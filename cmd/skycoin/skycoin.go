@@ -15,7 +15,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
@@ -30,7 +29,7 @@ import (
 
 var (
 	// Version of the node. Can be set by -ldflags
-	Version = "0.23.0"
+	Version = "0.23.1-rc2"
 	// Commit ID. Can be set by -ldflags
 	Commit = ""
 	// Branch name. Can be set by -ldflags
@@ -115,9 +114,7 @@ type Config struct {
 	WebInterfaceKey   string
 	WebInterfaceHTTPS bool
 
-	RPCInterface     bool
-	RPCInterfacePort int
-	RPCInterfaceAddr string
+	RPCInterface bool
 
 	// Launch System Default Browser after client startup
 	LaunchBrowser bool
@@ -164,15 +161,12 @@ type Config struct {
 	ProfileCPUFile string
 	// HTTP profiling interface (see http://golang.org/pkg/net/http/pprof/)
 	HTTPProf bool
-	// Will force it to connect to this ip:port, instead of waiting for it
-	// to show up as a peer
-	ConnectTo string
 
-	DBPath       string
-	DBReadOnly   bool
-	Arbitrating  bool
-	RPCThreadNum uint // rpc number
-	LogToFile    bool
+	DBPath      string
+	DBReadOnly  bool
+	Arbitrating bool
+	LogToFile   bool
+	Version     bool // show node version
 }
 
 func (c *Config) register() {
@@ -184,7 +178,7 @@ func (c *Config) register() {
 	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming", c.DisableIncomingConnections, "Don't make incoming connections")
 	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
 	flag.BoolVar(&c.EnableWalletAPI, "enable-wallet-api", c.EnableWalletAPI, "Enable the wallet API")
-	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable csrf check")
+	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable CSRF check")
 	flag.BoolVar(&c.EnableSeedAPI, "enable-seed-api", c.EnableSeedAPI, "enable /wallet/seed api")
 	flag.StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
@@ -197,16 +191,12 @@ func (c *Config) register() {
 	flag.BoolVar(&c.WebInterfaceHTTPS, "web-interface-https", c.WebInterfaceHTTPS, "enable HTTPS for web interface")
 
 	flag.BoolVar(&c.RPCInterface, "rpc-interface", c.RPCInterface, "enable the rpc interface")
-	flag.IntVar(&c.RPCInterfacePort, "rpc-interface-port", c.RPCInterfacePort, "port to serve rpc interface on")
-	flag.StringVar(&c.RPCInterfaceAddr, "rpc-interface-addr", c.RPCInterfaceAddr, "addr to serve rpc interface on")
-	flag.UintVar(&c.RPCThreadNum, "rpc-thread-num", c.RPCThreadNum, "rpc thread number")
 
 	flag.BoolVar(&c.LaunchBrowser, "launch-browser", c.LaunchBrowser, "launch system default webbrowser at client startup")
 	flag.BoolVar(&c.PrintWebInterfaceAddress, "print-web-interface-address", c.PrintWebInterfaceAddress, "print configured web interface address and exit")
 	flag.StringVar(&c.DataDirectory, "data-dir", c.DataDirectory, "directory to store app data (defaults to ~/.skycoin)")
 	flag.StringVar(&c.DBPath, "db-path", c.DBPath, "path of database file (defaults to ~/.skycoin/data.db)")
 	flag.BoolVar(&c.DBReadOnly, "db-read-only", c.DBReadOnly, "open bolt db read-only")
-	flag.StringVar(&c.ConnectTo, "connect-to", c.ConnectTo, "connect to this ip only")
 	flag.BoolVar(&c.ProfileCPU, "profile-cpu", c.ProfileCPU, "enable cpu profiling")
 	flag.StringVar(&c.ProfileCPUFile, "profile-cpu-file", c.ProfileCPUFile, "where to write the cpu profile file")
 	flag.BoolVar(&c.HTTPProf, "http-prof", c.HTTPProf, "Run the http profiling interface")
@@ -233,6 +223,7 @@ func (c *Config) register() {
 	flag.BoolVar(&c.LocalhostOnly, "localhost-only", c.LocalhostOnly, "Run on localhost and only connect to localhost peers")
 	flag.BoolVar(&c.Arbitrating, "arbitrating", c.Arbitrating, "Run node in arbitrating mode")
 	flag.StringVar(&c.WalletCryptoType, "wallet-crypto-type", c.WalletCryptoType, "wallet crypto type. Can be sha256-xor or scrypt-chacha20poly1305")
+	flag.BoolVar(&c.Version, "version", false, "show node version")
 }
 
 var home = file.UserHome()
@@ -277,10 +268,7 @@ var devConfig = Config{
 	WebInterfaceHTTPS:        false,
 	PrintWebInterfaceAddress: false,
 
-	RPCInterface:     true,
-	RPCInterfacePort: 6430,
-	RPCInterfaceAddr: "127.0.0.1",
-	RPCThreadNum:     5,
+	RPCInterface: true,
 
 	LaunchBrowser: false,
 	// Data directory holds app data -- defaults to ~/.skycoin
@@ -320,9 +308,6 @@ var devConfig = Config{
 	ProfileCPUFile: "skycoin.prof",
 	// HTTP profiling interface (see http://golang.org/pkg/net/http/pprof/)
 	HTTPProf: false,
-	// Will force it to connect to this ip:port, instead of waiting for it
-	// to show up as a peer
-	ConnectTo: "",
 }
 
 func init() {
@@ -461,7 +446,7 @@ func catchInterruptPanic() {
 	panic("SIGINT")
 }
 
-func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) (*gui.Server, error) {
+func createGUI(c *Config, d *daemon.Daemon, host string) (*gui.Server, error) {
 	var s *gui.Server
 	var err error
 
@@ -469,6 +454,7 @@ func createGUI(c *Config, d *daemon.Daemon, host string, quit chan struct{}) (*g
 		StaticDir:       c.GUIDirectory,
 		DisableCSRF:     c.DisableCSRF,
 		EnableWalletAPI: c.EnableWalletAPI,
+		EnableJSON20RPC: c.RPCInterface,
 		ReadTimeout:     c.ReadTimeout,
 		WriteTimeout:    c.WriteTimeout,
 		IdleTimeout:     c.IdleTimeout,
@@ -597,6 +583,11 @@ func Run(c *Config) {
 		}
 	}()
 
+	if c.Version {
+		fmt.Println(Version)
+		return
+	}
+
 	logLevel, err := logging.LevelFromString(c.LogLevel)
 	if err != nil {
 		logger.Error("Invalid -log-level:", err)
@@ -668,37 +659,11 @@ func Run(c *Config) {
 		return
 	}
 
-	var rpc *webrpc.WebRPC
-	if c.RPCInterface {
-		rpcAddr := fmt.Sprintf("%v:%v", c.RPCInterfaceAddr, c.RPCInterfacePort)
-		rpc, err = webrpc.New(rpcAddr, webrpc.Config{
-			ReadTimeout:  c.ReadTimeout,
-			WriteTimeout: c.WriteTimeout,
-			IdleTimeout:  c.IdleTimeout,
-			ChanBuffSize: 1000,
-			WorkerNum:    c.RPCThreadNum,
-		}, d.Gateway)
-		if err != nil {
-			logger.Error(err)
-			return
-		}
-		rpc.ChanBuffSize = 1000
-		rpc.WorkerNum = c.RPCThreadNum
-	}
-
 	var webInterface *gui.Server
 	if c.WebInterface {
-		webInterface, err = createGUI(c, d, host, quit)
+		webInterface, err = createGUI(c, d, host)
 		if err != nil {
 			logger.Error(err)
-			return
-		}
-	}
-
-	// Debug only - forces connection on start.  Violates thread safety.
-	if c.ConnectTo != "" {
-		if err := d.Pool.Pool.Connect(c.ConnectTo); err != nil {
-			logger.Errorf("Force connect %s failed, %v", c.ConnectTo, err)
 			return
 		}
 	}
@@ -713,18 +678,6 @@ func Run(c *Config) {
 			errC <- err
 		}
 	}()
-
-	// start the webrpc
-	if c.RPCInterface {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			if err := rpc.Run(); err != nil {
-				logger.Error(err)
-				errC <- err
-			}
-		}()
-	}
 
 	if c.WebInterface {
 		wg.Add(1)
@@ -786,9 +739,6 @@ func Run(c *Config) {
 	}
 
 	logger.Info("Shutting down...")
-	if rpc != nil {
-		rpc.Shutdown()
-	}
 	if webInterface != nil {
 		webInterface.Shutdown()
 	}

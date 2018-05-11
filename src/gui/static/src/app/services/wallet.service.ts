@@ -20,18 +20,14 @@ export class WalletService {
   addresses: Address[];
   wallets: Subject<Wallet[]> = new ReplaySubject<Wallet[]>();
   pendingTxs: Subject<any[]> = new ReplaySubject<any[]>();
-  pendingTxsSubscription: Subscription;
+  dataRefreshSubscription: Subscription;
 
   constructor(
     private apiService: ApiService
   ) {
     this.loadData();
 
-    IntervalObservable
-      .create(30000)
-      .subscribe(() => this.refreshBalances());
-
-    this.startPendingTxsSubscription(10000);
+    this.startDataRefreshSubscription();
   }
 
   addressesAsString(): Observable<string> {
@@ -76,8 +72,8 @@ export class WalletService {
     return this.apiService.get('wallets/folderName').map(response => response.address);
   }
 
-  generateSeed(): Observable<string> {
-    return this.apiService.getWalletNewSeed();
+  generateSeed(entropy: number = 128): Observable<string> {
+    return this.apiService.getWalletNewSeed(entropy);
   }
 
   outputs(): Observable<any> {
@@ -142,8 +138,33 @@ export class WalletService {
     return this.apiService.getWalletSeed(wallet, password);
   }
 
-  sendSkycoin(wallet: Wallet, address: string, amount: number, password: string|null) {
-    return this.apiService.post('wallet/spend', {id: wallet.filename, dst: address, coins: amount, password});
+  createTransaction(wallet: Wallet, address: string, amount: string, password: string|null) {
+    return this.apiService.post(
+      'wallet/transaction',
+      {
+        hours_selection: {
+          type: 'auto',
+          mode: 'share',
+          share_factor: '0.5',
+        },
+        change_address: wallet.addresses[0].address,
+        wallet: {
+          id: wallet.filename,
+          password,
+        },
+        to: [{
+          address,
+          coins: amount,
+        }],
+      },
+      {
+        json: true,
+      }
+    );
+  }
+
+  injectTransaction(encodedTx: string) {
+    return this.apiService.post('injectTransaction', { rawtx: encodedTx }, { json: true });
   }
 
   sum(): Observable<number> {
@@ -193,13 +214,16 @@ export class WalletService {
       }));
   }
 
-  startPendingTxsSubscription(delay = 0) {
-    if (this.pendingTxsSubscription) {
-      this.pendingTxsSubscription.unsubscribe();
+  startDataRefreshSubscription() {
+    if (this.dataRefreshSubscription) {
+      this.dataRefreshSubscription.unsubscribe();
     }
 
-    this.pendingTxsSubscription = Observable.timer(delay, 10000)
-      .subscribe(() => this.refreshPendingTransactions());
+    this.dataRefreshSubscription = Observable.timer(0, 10000)
+      .subscribe(() => {
+        this.refreshBalances();
+        this.refreshPendingTransactions();
+      });
   }
 
   private loadData(): void {

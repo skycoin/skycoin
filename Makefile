@@ -1,6 +1,7 @@
 .DEFAULT_GOAL := help
 .PHONY: run run-help test test-core test-libc test-lint build-libc check cover
-.PHONY: integration-test-stable integration-test-live integration-test-live-wallet
+.PHONY: integration-test-stable integration-test-stable-disable-csrf
+.PHONY: integration-test-live integration-test-live-wallet
 .PHONY: integration-test-disable-wallet-api integration-test-disable-seed-api
 .PHONY: install-linters format release clean-release install-deps-ui build-ui help
 
@@ -31,6 +32,7 @@ BUILD_DIR = build
 BUILDLIB_DIR = $(BUILD_DIR)/libskycoin
 LIB_DIR = lib
 LIB_FILES = $(shell find ./lib/cgo -type f -name "*.go")
+SRC_FILES = $(shell find ./src -type f -name "*.go")
 BIN_DIR = bin
 INCLUDE_DIR = include
 
@@ -84,12 +86,21 @@ configure-build:
 	mkdir -p $(BUILD_DIR)/usr/tmp $(BUILD_DIR)/usr/lib $(BUILD_DIR)/usr/include
 	mkdir -p $(BUILDLIB_DIR) $(BIN_DIR) $(INCLUDE_DIR)
 
-build-libc: configure-build ## Build libskycoin C client library
+build-libc: configure-build $(BUILDLIB_DIR)/libskycoin.so $(BUILDLIB_DIR)/libskycoin.a ## Build libskycoin C client library
+
+$(BUILDLIB_DIR)/libskycoin.so $(BUILDLIB_DIR)/libskycoin.a: $(LIB_FILES) $(SRC_FILES)
 	rm -Rf $(BUILDLIB_DIR)/*
 	go build -buildmode=c-shared  -o $(BUILDLIB_DIR)/libskycoin.so $(LIB_FILES)
 	go build -buildmode=c-archive -o $(BUILDLIB_DIR)/libskycoin.a  $(LIB_FILES)
-	mv $(BUILDLIB_DIR)/libskycoin.h $(INCLUDE_DIR)/
-
+	mv $(BUILDLIB_DIR)/libskycoin.h $(INCLUDE_DIR)/	
+	
+## Build libskycoin C client library and executable C test suites
+## with debug symbols. Use this target to debug the source code
+## with the help of an IDE
+build-libc-dbg: configure-build $(BUILDLIB_DIR)/libskycoin.so $(BUILDLIB_DIR)/libskycoin.a
+	$(CC) -g -o $(BIN_DIR)/test_libskycoin_shared $(LIB_DIR)/cgo/tests/*.c -lskycoin                    $(LDLIBS) $(LDFLAGS)
+	$(CC) -g -o $(BIN_DIR)/test_libskycoin_static $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/libskycoin.a $(LDLIBS) $(LDFLAGS)
+	
 test-libc: build-libc ## Run tests for libskycoin C client library
 	cp $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/
 	$(CC) -o $(BIN_DIR)/test_libskycoin_shared $(BUILDLIB_DIR)/*.c -lskycoin                    $(LDLIBS) $(LDFLAGS)
@@ -105,21 +116,27 @@ lint: ## Run linters. Use make install-linters first.
 		-E varcheck \
 		./...
 	# lib cgo can't use golint because it needs export directives in function docstrings that do not obey golint rules
-	gometalinter --deadline=3m --concurrency=2 --disable-all --tests --vendor --skip=lib/cgo \
+	gometalinter --deadline=3m --concurrency=2 --disable-all --tests --vendor \
 		-E goimports \
 		-E varcheck \
-		./...
+		./lib/cgo/...
 
-check: lint test integration-test-stable integration-test-disable-wallet-api integration-test-disable-seed-api ## Run tests and linters
+check: lint test integration-test-stable integration-test-stable-disable-csrf integration-test-disable-wallet-api integration-test-disable-seed-api ## Run tests and linters
 
 integration-test-stable: ## Run stable integration tests
+	./ci-scripts/integration-test-stable.sh -c
+
+integration-test-stable-disable-csrf: ## Run stable integration tests with CSRF disabled
 	./ci-scripts/integration-test-stable.sh
 
 integration-test-live: ## Run live integration tests
-	./ci-scripts/integration-test-live.sh
+	./ci-scripts/integration-test-live.sh -c
 
 integration-test-live-wallet: ## Run live integration tests with wallet
 	./ci-scripts/integration-test-live.sh -w
+
+integration-test-live-disable-csrf: ## Run live integration tests against a node with CSRF disabled
+	./ci-scripts/integration-test-live.sh
 
 integration-test-disable-wallet-api: ## Run disable wallet api integration tests
 	./ci-scripts/integration-test-disable-wallet-api.sh

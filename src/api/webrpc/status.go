@@ -14,16 +14,16 @@ type StatusResult struct {
 
 func getStatusHandler(req Request, gw Gatewayer) Response {
 	if len(req.Params) > 0 {
-		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
+		return MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams)
 	}
 
 	blocks, err := gw.GetLastBlocks(1)
 	if err != nil {
 		logger.Error(err)
-		return makeErrorResponse(errCodeInternalError, errMsgInternalError)
+		return MakeErrorResponse(ErrCodeInternalError, ErrMsgInternalError)
 	}
 	if len(blocks.Blocks) == 0 {
-		return makeErrorResponse(errCodeInternalError, errMsgInternalError)
+		return MakeErrorResponse(ErrCodeInternalError, ErrMsgInternalError)
 	}
 
 	b := blocks.Blocks[0]

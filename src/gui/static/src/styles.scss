@@ -4,7 +4,6 @@
 /* You can add global styles to this file, and also import other style files */
 //@import '~@angular/material/prebuilt-themes/indigo-pink.css';
 @import 'app/app.theme.scss';
-@import '@swimlane/ngx-datatable/release/themes/material.css';
 
 @font-face {
   font-family: 'Skycoin';
@@ -237,13 +236,6 @@ mat-spinner.in-button svg {
   line-height: 50px !important;
 }
 
-.ngx-datatable.material {
-  box-shadow:
-    0 3px 1px -2px rgba(0,0,0,.2),
-    0 2px 2px 0 rgba(0,0,0,.14),
-    0 1px 5px 0 rgba(0,0,0,.12);
-}
-
 /**
 On-boarding components
  */
@@ -306,5 +298,23 @@ On-boarding components
   background-color: $transparent !important;
   span {
     color: black;
+  }
+}
+
+.mat-menu-panel {
+  border-radius: 5px !important;
+  background-color: #fefefe;
+
+  .mat-menu-item {
+    font-family: Skycoin;
+    line-height: 50px;
+  }
+
+  &.compact {
+    .mat-menu-item {
+      font-size: 13px;
+      height: 35px;
+      line-height: 35px;
+    }
   }
 }

@@ -103,12 +103,12 @@ func Test_getOutputsHandler(t *testing.T) {
 			args{
 				addrs: []string{"fyqX5YuwXMUs4GEUE3LjLyhrqvNztFHQ4C"},
 			},
-			makeErrorResponse(errCodeInvalidParams, "invalid address: fyqX5YuwXMUs4GEUE3LjLyhrqvNztFHQ4C"),
+			MakeErrorResponse(ErrCodeInvalidParams, "invalid address: fyqX5YuwXMUs4GEUE3LjLyhrqvNztFHQ4C"),
 		},
 		{
 			"invalid params: empty addresses",
 			args{},
-			makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams),
+			MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams),
 		},
 		{
 			"single address",

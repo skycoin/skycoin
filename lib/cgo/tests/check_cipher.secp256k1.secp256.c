@@ -17,7 +17,7 @@
 Test(cipher_secp256k1,Test_Secp256_00){
 	unsigned char buff[SigSize];
 	visor__ReadableOutputs nonce = {buff,0,64};
-	SKY_cipher_RandByte(32,&nonce);
+	SKY_secp256k1_RandByte(32,&nonce);
 	if (nonce.len != 32) cr_fatal();
 }
 
@@ -56,7 +56,7 @@ Test(cipher_secp256k1,Test_Secp256_01){
 	if (!errorPubKey) cr_fatal();
 }
 
-Test(cipher_secp256k1, TestPubkeyFromSeckey) {
+Test(cipher_secp256k1, TestPubkeyFromSeckey1) {
 
 	unsigned char bufferPrivkey[BUFFER_SIZE];
 	unsigned char bufferDesiredPubKey[BUFFER_SIZE];
@@ -104,4 +104,105 @@ Test(cipher_secp256k1, Test_UncompressedPubkeyFromSeckey) {
 
 	cr_assert(eq(type(GoSlice_),pubkey,desiredPubKey));
 
+}
+
+// func Test_SignatureVerifyPubkey(t *testing.T) {
+// 	pubkey1, seckey := GenerateKeyPair()
+// 	msg := RandByte(32)
+// 	sig := Sign(msg, seckey)
+// 	if VerifyPubkey(pubkey1) == 0 {
+// 		t.Fail()
+// 	}
+// 	pubkey2 := RecoverPubkey(msg, sig)
+// 	if bytes.Equal(pubkey1, pubkey2) == false {
+// 		t.Fatal("Recovered pubkey does not match")
+// 	}
+// }
+
+Test(cipher_secp256k1,Test_SignatureVerifyPubkey){
+	unsigned char buff[SigSize];
+	cipher__PubKey pubkey1;
+	cipher__SecKey seckey;
+
+	SKY_cipher_GenerateKeyPair(&pubkey1,&seckey);
+	GoSlice_ msg = {buff,0,SigSize};
+	SKY_cipher_RandByte(32,&msg);
+
+	cr_fatal();
+
+}
+//
+//
+
+// func Test_verify_functions(t *testing.T) {
+// 	pubkey, seckey, hash, sig := RandX()
+// 	if VerifySeckey(seckey) == 0 {
+// 		t.Fail()
+// 	}
+// 	if VerifyPubkey(pubkey) == 0 {
+// 		t.Fail()
+// 	}
+// 	if VerifySignature(hash, sig, pubkey) == 0 {
+// 		t.Fail()
+// 	}
+// 	_ = sig
+// }
+
+Test(cipher_secp256k1,Test_verify_functions){
+	cr_fatal();
+}
+
+
+// func Test_SignatureVerifySecKey(t *testing.T) {
+// 	pubkey, seckey := GenerateKeyPair()
+// 	if VerifySeckey(seckey) == 0 {
+// 		t.Fail()
+// 	}
+// 	if VerifyPubkey(pubkey) == 0 {
+// 		t.Fail()
+// 	}
+// }
+
+Test(cipher_secp256k1,Test_SignatureVerifySecKey ){
+	cipher__PubKey pubkey;
+	cipher__SecKey seckey;
+	SKY_cipher_GenerateKeyPair(&pubkey,&seckey);
+	GoInt errorSecKey;
+	char bufferSecKey[101];
+	strnhex((unsigned char *)seckey, bufferSecKey, sizeof(cipher__SecKey));
+	GoSlice slseckey = { bufferSecKey,sizeof(cipher__SecKey),SigSize  };
+	SKY_secp256k1_VerifySeckey(slseckey,&errorSecKey);
+	cr_assert(errorSecKey != SKY_OK);
+	GoInt errorPubKey;
+	GoSlice slpubkey = { &pubkey,sizeof(cipher__PubKey), sizeof(cipher__PubKey) };
+	SKY_secp256k1_VerifyPubkey(slpubkey,&errorPubKey);
+	cr_assert(errorPubKey != SKY_OK);
+}
+
+
+// //test size of messages
+// func Test_Secp256_02s(t *testing.T) {
+// 	pubkey, seckey := GenerateKeyPair()
+// 	msg := RandByte(32)
+// 	sig := Sign(msg, seckey)
+// 	CompactSigTest(sig)
+// 	if sig == nil {
+// 		t.Fatal("Signature nil")
+// 	}
+// 	if len(pubkey) != 33 {
+// 		t.Fail()
+// 	}
+// 	if len(seckey) != 32 {
+// 		t.Fail()
+// 	}
+// 	if len(sig) != 64+1 {
+// 		t.Fail()
+// 	}
+// 	if int(sig[64]) > 4 {
+// 		t.Fail()
+// 	} //should be 0 to 4
+// }
+//
+Test(cipher_secp256k1,Test_Secp256_02s){
+	cr_fatal();
 }

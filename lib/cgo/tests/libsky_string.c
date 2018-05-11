@@ -57,6 +57,11 @@ int hexnstr(const char* hex, unsigned char* str, int n){
 	return size;
 }
 
+int cmpGoSlice_GoSlice(GoSlice *slice1, GoSlice_ *slice2){
+	return (slice1->len == slice2->len) &&
+	(strcmp( (unsigned char *) slice1->data, (unsigned char *) slice2->data) == 0);
+}
+
 void bin2hex(unsigned char* buf, char *str, int n){
     unsigned char * pin = buf;
     const char * hex = "0123456789ABCDEF";
@@ -66,9 +71,4 @@ void bin2hex(unsigned char* buf, char *str, int n){
         *pout++ = hex[(*pin++)&0xF];
     }
     *pout = 0;
-}
-
-int cmpGoSlice_GoSlice(GoSlice *slice1, GoSlice_ *slice2){
-	return (slice1->len == slice2->len) &&
-		(strcmp( (unsigned char *) slice1->data, (unsigned char *) slice2->data) == 0);
 }

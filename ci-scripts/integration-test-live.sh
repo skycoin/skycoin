@@ -57,7 +57,9 @@ set -euxo pipefail
 
 echo "checking if skycoin node is running"
 
-http_proxy="" https_proxy="" wget -O- $HOST 2>&1 >/dev/null
+HEALTH="$HOST/health"
+
+http_proxy="" https_proxy="" wget -O- $HEALTH 2>&1 >/dev/null
 
 if [ ! $? -eq 0 ]; then
     echo "Skycoin node is not running on $HOST"

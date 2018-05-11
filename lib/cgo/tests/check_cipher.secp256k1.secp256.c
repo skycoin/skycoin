@@ -90,50 +90,65 @@ Test(cipher_secp256k1, Test_UncompressedPubkeyFromSeckey) {
 
 }
 
-// func Test_SignatureVerifyPubkey(t *testing.T) {
-// 	pubkey1, seckey := GenerateKeyPair()
-// 	msg := RandByte(32)
-// 	sig := Sign(msg, seckey)
-// 	if VerifyPubkey(pubkey1) == 0 {
-// 		t.Fail()
-// 	}
-// 	pubkey2 := RecoverPubkey(msg, sig)
-// 	if bytes.Equal(pubkey1, pubkey2) == false {
-// 		t.Fatal("Recovered pubkey does not match")
-// 	}
-// }
-
-Test(cipher_secp256k1,Test_SignatureVerifyPubkey){
+Test(cipher_secp256k1, Test_SignatureVerifyPubkey){
 	unsigned char buff[SigSize];
-	cipher__PubKey pubkey1;
+	char sigBuffer[BUFFER_SIZE];
+	cipher__PubKey pubkey;
 	cipher__SecKey seckey;
+	cipher__PubKey recoveredPubkey;
+	GoInt32 error_code;
+	GoSlice secKeySlice = {seckey, sizeof(cipher__SecKey), sizeof(cipher__SecKey)};
+	GoSlice pubKeySlice = {pubkey, sizeof(cipher__PubKey), sizeof(cipher__PubKey)};
 
-	SKY_cipher_GenerateKeyPair(&pubkey1,&seckey);
-	GoSlice_ msg = {buff,0,SigSize};
-	SKY_cipher_RandByte(32,&msg);
-
-	cr_fatal();
-
+	error_code = SKY_secp256k1_GenerateKeyPair((coin__UxArray*)&pubKeySlice, (coin__UxArray*)&secKeySlice);
+	cr_assert(error_code == SKY_OK, "SKY_secp256k1_GenerateKeyPair failed");
+	
+	GoSlice msg = {buff, 0, SigSize};
+	SKY_secp256k1_RandByte(32, (coin__UxArray*)&msg);
+	
+	GoSlice recoveredPubKeySlice = {recoveredPubkey, 0, sizeof(cipher__PubKey)};
+	GoSlice sig = {sigBuffer, 0, BUFFER_SIZE };
+	SKY_secp256k1_Sign(msg, secKeySlice, (GoSlice_*)&sig);
+	GoInt result = 0;
+	error_code = SKY_secp256k1_VerifyPubkey(pubKeySlice, &result);
+	cr_assert(error_code == SKY_OK, "SKY_secp256k1_VerifyPubkey failed");
+	cr_assert(result == 1, "Public key not verified");
+	SKY_secp256k1_RecoverPubkey(msg, sig, (coin__UxArray*)&recoveredPubKeySlice);
+	cr_assert(error_code == SKY_OK, "SKY_secp256k1_RecoverPubkey failed");
+	cr_assert(eq(type(GoSlice), recoveredPubKeySlice, pubKeySlice));
 }
-//
-//
 
-// func Test_verify_functions(t *testing.T) {
-// 	pubkey, seckey, hash, sig := RandX()
-// 	if VerifySeckey(seckey) == 0 {
-// 		t.Fail()
-// 	}
-// 	if VerifyPubkey(pubkey) == 0 {
-// 		t.Fail()
-// 	}
-// 	if VerifySignature(hash, sig, pubkey) == 0 {
-// 		t.Fail()
-// 	}
-// 	_ = sig
-// }
+Test(cipher_secp256k1, Test_verify_functions){
+	unsigned char buff[SigSize];
+	char sigBuffer[BUFFER_SIZE];
+	cipher__PubKey pubkey;
+	cipher__SecKey seckey;
+	cipher__PubKey recoveredPubkey;
+	GoInt32 error_code;
+	GoSlice secKeySlice = {seckey, sizeof(cipher__SecKey), sizeof(cipher__SecKey)};
+	GoSlice pubKeySlice = {pubkey, sizeof(cipher__PubKey), sizeof(cipher__PubKey)};
 
-Test(cipher_secp256k1,Test_verify_functions){
-	cr_fatal();
+	error_code = SKY_secp256k1_GenerateKeyPair((coin__UxArray*)&pubKeySlice, (coin__UxArray*)&secKeySlice);
+	cr_assert(error_code == SKY_OK, "SKY_secp256k1_GenerateKeyPair failed");
+	
+	GoSlice msg = {buff, 0, SigSize};
+	SKY_secp256k1_RandByte(32, (coin__UxArray*)&msg);
+	
+	GoSlice sig = {sigBuffer, 0, BUFFER_SIZE };
+	SKY_secp256k1_Sign(msg, secKeySlice, (GoSlice_*)&sig);
+	GoInt result = 0;
+	
+	error_code = SKY_secp256k1_VerifySeckey(secKeySlice, &result);
+	cr_assert(error_code == SKY_OK, "SKY_secp256k1_VerifySeckey failed");
+	cr_assert(result == 1, "Sec key not verified");
+	
+	error_code = SKY_secp256k1_VerifyPubkey(pubKeySlice, &result);
+	cr_assert(error_code == SKY_OK, "SKY_secp256k1_VerifyPubkey failed");
+	cr_assert(result == 1, "Public key not verified");
+	
+	error_code = SKY_secp256k1_VerifySignature(msg, sig, pubKeySlice, &result);
+	cr_assert(error_code == SKY_OK, "SKY_secp256k1_VerifySignature failed");
+	cr_assert(result == 1, "Signature not verified");
 }
 
 

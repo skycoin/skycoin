@@ -33,14 +33,14 @@ int cr_user_cipher__Address_noteq(cipher__Address *addr1, cipher__Address *addr2
 
 int cr_user_GoString_eq(GoString *string1, GoString *string2){
   return (string1->n == string2->n) &&
-    (strcmp( (char *) string1->p, (char *) string2->p) == 0);
+  (strcmp( (char *) string1->p, (char *) string2->p) == 0);
 }
 
 char *cr_user_GoString_tostr(GoString *string)
 {
   char *out;
   cr_asprintf(&out, "(GoString) { .Data = %s, .Length = %llu }",
-      string->p, (unsigned long long) string->n);
+    string->p, (unsigned long long) string->n);
   return out;
 }
 
@@ -101,3 +101,28 @@ char *cr_user_cipher__SHA256_tostr(cipher__SHA256 *sh1) {
   return out;
 }
 
+int cr_user_GoSlice_eq(GoSlice *slice1, GoSlice *slice2){
+
+  return (slice1->len == slice2->len) &&
+  (strcmp( (unsigned char *) slice1->data, (unsigned char *) slice2->data) == 0);
+
+}
+
+char *cr_user_GoSlice_tostr(GoSlice *slice1) {
+  char *out;
+  cr_asprintf(&out, "(GoSlice) { .data %s, .len %d, .cap %d }", slice1->data,slice1->len,slice1->cap);
+  return out;
+}
+
+int cr_user_GoSlice__eq(GoSlice_ *slice1, GoSlice_ *slice2){
+
+  return (slice1->len == slice2->len) &&
+  (strcmp( (unsigned char *) slice1->data, (unsigned char *) slice2->data) == 0);
+
+}
+
+char *cr_user_GoSlice__tostr(GoSlice_ *slice1) {
+  char *out;
+  cr_asprintf(&out, "(GoSlice_) { .data %s, .len %d, .cap %d }", slice1->data,slice1->len,slice1->cap);
+  return out;
+}

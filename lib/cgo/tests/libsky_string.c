@@ -10,7 +10,7 @@ void randBytes(GoSlice *bytes, size_t n) {
   unsigned char *ptr = (unsigned char *) bytes->data;
   for (; i < n; ++i, ++ptr) {
     *ptr = ALPHANUM[rand() % ALPHANUM_LEN];
-  } 
+  }
   bytes->len = (GoInt) n;
 }
 
@@ -55,4 +55,10 @@ int hexnstr(const char* hex, unsigned char* str, int n){
 	if( size < n )
 		*pout = 0;
 	return size;
+}
+
+int cmpGoSlice_GoSlice(GoSlice *slice1, GoSlice_ *slice2){
+
+return (slice1->len == slice2->len) &&
+  (strcmp( (unsigned char *) slice1->data, (unsigned char *) slice2->data) == 0);
 }

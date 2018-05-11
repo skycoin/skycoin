@@ -1744,8 +1744,22 @@ func (vs *Visor) GetUnspentsOfAddrs(addrs []cipher.Address) (coin.AddressUxOuts,
 }
 
 // VerifySingleTxnAllConstraints verifies an isolated transaction
-func (vs Visor) VerifySingleTxnAllConstraints(txn *coin.Transaction) error {
+func (vs *Visor) VerifySingleTxnAllConstraints(txn *coin.Transaction) error {
 	return vs.DB.View("VerifySingleTxnAllConstraints", func(tx *dbutil.Tx) error {
 		return vs.Blockchain.VerifySingleTxnAllConstraints(tx, *txn, vs.Config.MaxBlockSize)
 	})
+}
+
+// AddressCount returns the total number of addresses with unspents
+func (vs *Visor) AddressCount() (uint64, error) {
+	var count uint64
+	if err := vs.DB.View("AddressCount", func(tx *dbutil.Tx) error {
+		var err error
+		count, err = vs.Blockchain.Unspent().AddressCount(tx)
+		return err
+	}); err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }

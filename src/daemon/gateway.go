@@ -935,17 +935,14 @@ func (gw *Gateway) GetRichlist(includeDistribution bool) (visor.Richlist, error)
 
 // GetAddressCount returns count number of unique address with uxouts > 0.
 func (gw *Gateway) GetAddressCount() (uint64, error) {
-	rbOuts, err := gw.GetUnspentOutputs()
-	if err != nil {
-		return 0, err
-	}
+	var count uint64
+	var err error
 
-	allAccounts, err := rbOuts.AggregateUnspentOutputs()
-	if err != nil {
-		return 0, err
-	}
+	gw.strand("GetAddressCount", func() {
+		count, err = gw.v.AddressCount()
+	})
 
-	return uint64(len(allAccounts)), nil
+	return count, err
 }
 
 // Health is returned by the /health endpoint

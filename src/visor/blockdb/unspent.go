@@ -112,6 +112,10 @@ func (p poolAddrIndex) get(tx *dbutil.Tx, addr cipher.Address) ([]cipher.SHA256,
 }
 
 func (p poolAddrIndex) set(tx *dbutil.Tx, addr cipher.Address, hashes []cipher.SHA256) error {
+	if len(hashes) == 0 {
+		return errors.New("poolAddrIndex.set cannot set to empty hash array")
+	}
+
 	hashesMap := make(map[cipher.SHA256]struct{}, len(hashes))
 	for _, h := range hashes {
 		if _, ok := hashesMap[h]; ok {
@@ -129,6 +133,10 @@ func (p poolAddrIndex) set(tx *dbutil.Tx, addr cipher.Address, hashes []cipher.S
 // TODO -- if necessary, this can be optimized further to accept multiple addresses at once,
 // so that all get queries can be performed before the set
 func (p poolAddrIndex) adjust(tx *dbutil.Tx, addr cipher.Address, addHashes, rmHashes []cipher.SHA256) error {
+	if len(addHashes) == 0 && len(rmHashes) == 0 {
+		return nil
+	}
+
 	existingHashes, err := p.get(tx, addr)
 	if err != nil {
 		return err
@@ -176,6 +184,12 @@ func (p poolAddrIndex) adjust(tx *dbutil.Tx, addr cipher.Address, addHashes, rmH
 		} else {
 			return fmt.Errorf("poolAddrIndex.adjust: uxout hash %s is already indexed for address %s", h.Hex(), addr.String())
 		}
+	}
+
+	// Delete the row if hashes is empty, so that the length of the bucket can
+	// be used to determine the number of addresses with unspents
+	if len(newHashes) == 0 {
+		return dbutil.Delete(tx, UnspentPoolAddrIndexBkt, addr.Bytes())
 	}
 
 	return p.set(tx, addr, newHashes)
@@ -397,4 +411,9 @@ func (up *Unspents) GetUnspentsOfAddrs(tx *dbutil.Tx, addrs []cipher.Address) (c
 // and before its outputs are added to the unspent pool
 func (up *Unspents) GetUxHash(tx *dbutil.Tx) (cipher.SHA256, error) {
 	return up.meta.getXorHash(tx)
+}
+
+// AddressCount returns the total number of addresses with unspents
+func (up *Unspents) AddressCount(tx *dbutil.Tx) (uint64, error) {
+	return dbutil.Len(tx, UnspentPoolAddrIndexBkt)
 }

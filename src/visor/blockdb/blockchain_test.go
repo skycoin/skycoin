@@ -241,6 +241,15 @@ func (fup *fakeUnspentPool) Contains(tx *dbutil.Tx, h cipher.SHA256) (bool, erro
 	return ok, nil
 }
 
+func (fup *fakeUnspentPool) AddressCount(tx *dbutil.Tx) (uint64, error) {
+	addrs := make(map[cipher.Address]struct{})
+	for _, out := range fup.outs {
+		addrs[out.Body.Address] = struct{}{}
+	}
+
+	return uint64(len(addrs)), nil
+}
+
 type fakeChainMeta struct {
 	headSeq   uint64
 	didSetSeq bool

@@ -2168,35 +2168,35 @@ Response:
   "total_offline": 1,
   "connections": [
     {
-      "connection": "104.237.142.206:6000",
+      "address": "104.237.142.206:6000",
       "is_alive": true
     },
     {
-      "connection": "118.178.135.93:6000",
+      "address": "118.178.135.93:6000",
       "is_alive": true
     },
     {
-      "connection": "120.77.69.188:6000",
+      "address": "120.77.69.188:6000",
       "is_alive": true
     },
     {
-      "connection": "121.41.103.148:6000",
+      "address": "121.41.103.148:6000",
       "is_alive": true
     },
     {
-      "connection": "139.162.7.132:6000",
+      "address": "139.162.7.132:6000",
       "is_alive": false
     },
     {
-      "connection": "172.104.85.6:6000",
+      "address": "172.104.85.6:6000",
       "is_alive": true
     },
     {
-      "connection": "176.58.126.224:6000",
+      "address": "176.58.126.224:6000",
       "is_alive": true
     },
     {
-      "connection": "47.88.33.156:6000",
+      "address": "47.88.33.156:6000",
       "is_alive": true
     }
   ]

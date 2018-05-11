@@ -940,7 +940,7 @@ type Health struct {
 
 // ConnectionStatus structs
 type ConnectionStatus struct {
-	Connection string `json:"connection"`
+	Connection string `json:"address"`
 	IsAlive    bool   `json:"is_alive"`
 }
 

@@ -28,6 +28,7 @@ GoSlice encrypted = {ENCRYPTED, strlen(ENCRYPTED), strlen(ENCRYPTED)};
 GoSlice nullData = {NULL, 0, 0};
 GoSlice nullPassword = {NULL, 0, 0};
 coin__UxArray result = {buffer, 0, BUFFER_SIZE};
+char str[BUFFER_SIZE];
 
 void parseJsonMetaData(char* metadata, int* n, int* r, int* p, int* keyLen){
 	*n = *r = *p = *keyLen = 0;
@@ -72,7 +73,6 @@ void parseJsonMetaData(char* metadata, int* n, int* r, int* p, int* keyLen){
 }
 
 Test(cipher_encrypt_scrypt_chacha20poly1305, TestScryptChacha20poly1305Encrypt){
-	char str[BUFFER_SIZE];
 	GoUint32 errcode;
 	unsigned int metalength;
 	encrypt__ScryptChacha20poly1305 encrypt = {1, 8, 1, 32};

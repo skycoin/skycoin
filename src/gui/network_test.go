@@ -8,9 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	require "github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/daemon"
+	_require "github.com/skycoin/skycoin/src/testutil/require"
 )
 
 func TestConnection(t *testing.T) {
@@ -425,7 +426,10 @@ func TestGetDefaultStatus(t *testing.T) {
 				var msg daemon.ConnectionsHealth
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
-				require.Equal(t, resp, msg)
+				require.Equal(t, resp.Count, msg.Count)
+				require.Equal(t, resp.TotalOffline, msg.TotalOffline)
+				require.Equal(t, resp.TotalAlive, msg.TotalAlive)
+				_require.IsPermutation(t, resp.Connections, msg.Connections)
 			}
 		})
 	}

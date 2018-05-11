@@ -14,31 +14,15 @@
 #define TESTS  1
 #define SigSize 65
 
-Test(cipher_secp256k1,Test_Secp256_00){
+Test(cipher_secp256k1, Test_Secp256_00){
 	unsigned char buff[SigSize];
-	visor__ReadableOutputs nonce = {buff,0,64};
-	SKY_secp256k1_RandByte(32,&nonce);
+	coin__UxArray nonce = {buff, 0, 64};
+	SKY_secp256k1_RandByte(32, &nonce);
 	if (nonce.len != 32) cr_fatal();
 }
 
-//test agreement for highest bit test
-// func Test_BitTwiddle(t *testing.T) {
-// 	var b byte
-// 	for i := 0; i < 512; i++ {
-// 		bool1 := ((b >> 7) == 1)
-// 		bool2 := ((b & 0x80) == 0x80)
-// 		if bool1 != bool2 {
-// 			t.Fatal()
-// 		}
-// 		b++
-// 	}
-// }
-//
-Test(cipher_secp256k1,Test_BitTwiddle){
-	cr_fatal();
-}
 
-Test(cipher_secp256k1,Test_Secp256_01){
+Test(cipher_secp256k1, Test_Secp256_01){
 
 	cipher__PubKey pubkey;
 	cipher__SecKey seckey;
@@ -46,8 +30,8 @@ Test(cipher_secp256k1,Test_Secp256_01){
 	GoInt errorSecKey;
 	char bufferSecKey[101];
 	strnhex((unsigned char *)seckey, bufferSecKey, sizeof(cipher__SecKey));
-	GoSlice slseckey = { bufferSecKey,sizeof(cipher__SecKey),SigSize  };
-	SKY_secp256k1_VerifySeckey(slseckey,&errorSecKey);
+	GoSlice slseckey = { bufferSecKey, sizeof(cipher__SecKey), SigSize  };
+	SKY_secp256k1_VerifySeckey(slseckey, &errorSecKey);
 	if (!errorSecKey) cr_fatal();
 
 	GoInt errorPubKey;
@@ -72,12 +56,12 @@ Test(cipher_secp256k1, TestPubkeyFromSeckey1) {
 	GoSlice_ desiredPubKey = { bufferDesiredPubKey,sizeDesiredPubKey,BUFFER_SIZE };
 
 
-	visor__ReadableOutputs pubkey = {bufferPubKey,0,BUFFER_SIZE};
+	coin__UxArray pubkey = {bufferPubKey,0,BUFFER_SIZE};
 
 	GoUint32 errocode = SKY_secp256k1_PubkeyFromSeckey(privkey,&pubkey);
 	if(errocode) cr_fatal();
 
-	cr_assert(eq(type(GoSlice_),pubkey,desiredPubKey));
+	cr_assert(eq(type(GoSlice), *((GoSlice*)&pubkey), *(GoSlice*)&desiredPubKey));
 
 }
 
@@ -94,15 +78,15 @@ Test(cipher_secp256k1, Test_UncompressedPubkeyFromSeckey) {
 	int sizeDesiredPubKey = hexnstr(hexDesiredPubKey, bufferDesiredPubKey, BUFFER_SIZE);
 
 	GoSlice privkey = { bufferPrivkey,sizePrivkey,BUFFER_SIZE };
-	GoSlice_ desiredPubKey = { bufferDesiredPubKey,sizeDesiredPubKey,BUFFER_SIZE };
+	GoSlice desiredPubKey = { bufferDesiredPubKey,sizeDesiredPubKey,BUFFER_SIZE };
 
 
-	visor__ReadableOutputs pubkey = {bufferPubKey,0,BUFFER_SIZE};
+	coin__UxArray pubkey = {bufferPubKey,0,BUFFER_SIZE};
 
-	GoUint32 errocode = SKY_secp256k1_UncompressedPubkeyFromSeckey(privkey,&pubkey);
+	GoUint32 errocode = SKY_secp256k1_UncompressedPubkeyFromSeckey(privkey, &pubkey);
 	if(errocode) cr_fatal();
 
-	cr_assert(eq(type(GoSlice_),pubkey,desiredPubKey));
+	cr_assert(eq(type(GoSlice), *(GoSlice*)&pubkey, desiredPubKey));
 
 }
 

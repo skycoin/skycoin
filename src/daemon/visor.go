@@ -61,8 +61,8 @@ type Visor struct {
 	v      *visor.Visor
 
 	// Peer-reported blockchain height.  Use to estimate download progress
-	blockchainHeights map[string]uint64
-	sync.Mutex
+	blockchainHeights    map[string]uint64
+	blockchanHeightsLock sync.Mutex
 }
 
 // NewVisor creates visor instance
@@ -359,16 +359,16 @@ func (vs *Visor) CreateAndPublishBlock(pool *Pool) (*coin.SignedBlock, error) {
 
 // RemoveConnection updates internal state when a connection disconnects
 func (vs *Visor) RemoveConnection(addr string) {
-	vs.Lock()
-	defer vs.Unlock()
+	vs.blockchainHeightsMutex.Lock()
+	defer vs.blockchainHeightsMutex.Unlock()
 
 	delete(vs.blockchainHeights, addr)
 }
 
 // RecordBlockchainHeight saves a peer-reported blockchain length
 func (vs *Visor) RecordBlockchainHeight(addr string, bkLen uint64) {
-	vs.Lock()
-	defer vs.Unlock()
+	vs.blockchainHeightsMutex.Lock()
+	defer vs.blockchainHeightsMutex.Unlock()
 
 	vs.blockchainHeights[addr] = bkLen
 }
@@ -381,8 +381,8 @@ func (vs *Visor) EstimateBlockchainHeight() (uint64, error) {
 		return 0, err
 	}
 
-	vs.Lock()
-	defer vs.Unlock()
+	vs.blockchainHeightsMutex.Lock()
+	defer vs.blockchainHeightsMutex.Unlock()
 
 	for _, seq := range vs.blockchainHeights {
 		if maxLen < seq {
@@ -401,8 +401,8 @@ type PeerBlockchainHeight struct {
 
 // GetPeerBlockchainHeights returns recorded peers' blockchain heights as an array.
 func (vs *Visor) GetPeerBlockchainHeights() []PeerBlockchainHeight {
-	vs.Lock()
-	defer vs.Unlock()
+	vs.blockchainHeightsMutex.Lock()
+	defer vs.blockchainHeightsMutex.Unlock()
 
 	if len(vs.blockchainHeights) == 0 {
 		return nil

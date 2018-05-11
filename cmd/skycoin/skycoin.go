@@ -665,12 +665,14 @@ func Run(c *Config) {
 	}
 
 	if c.VerifyDB {
+		logger.Info("Checking database")
 		if err := visor.CheckDatabase(db, c.BlockchainPubkey); err != nil {
 			logger.Errorf("visor.CheckDatabase failed: %v", err)
 			return
 		}
 	} else if c.ResetCorruptDB {
 		// Check the database integrity and recreate it if necessary
+		logger.Info("Checking database and resetting if corrupted")
 		db, err = visor.ResetCorruptDB(db, c.BlockchainPubkey)
 		if err != nil {
 			logger.Errorf("visor.ResetCorruptDB failed: %v", err)

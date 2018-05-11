@@ -115,6 +115,8 @@ type fakeSignatureStore struct {
 	saveFailed bool
 	getSigErr  error
 
+	// state tracking: do not configure directly
+	// set to true if saveFailed was true and certain operations were performed
 	failedWhenSaved *bool
 }
 
@@ -159,6 +161,8 @@ type fakeUnspentPool struct {
 	uxHash     cipher.SHA256
 	saveFailed bool
 
+	// state tracking: do not configure directly
+	// set to true if saveFailed was true and certain operations were performed
 	failedWhenSaved *bool
 }
 

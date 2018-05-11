@@ -11,7 +11,7 @@
 #include "skytest.h"
 
 #define BUFFER_SIZE 128
-
+/*
 Test(cipher_secp256k1, TestPubkeyFromSeckey) {
 	unsigned char bufferPrivate[BUFFER_SIZE];
 	unsigned char bufferPublic[BUFFER_SIZE];
@@ -39,4 +39,4 @@ Test(cipher_secp256k1, TestPubkeyFromSeckey) {
 		}
 	}
 	cr_assert(equal == 1, "SKY_secp256k1_PubkeyFromSeckey failed. Calculated pub key is different than expected.");
-}
+}*/

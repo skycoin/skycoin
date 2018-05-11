@@ -23,6 +23,7 @@ import (
 type GatewayConfig struct {
 	BufferSize      int
 	EnableWalletAPI bool
+	EnableGUI       bool
 }
 
 // NewGatewayConfig create and init an GatewayConfig
@@ -30,6 +31,7 @@ func NewGatewayConfig() GatewayConfig {
 	return GatewayConfig{
 		BufferSize:      32,
 		EnableWalletAPI: false,
+		EnableGUI:       false,
 	}
 }
 

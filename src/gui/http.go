@@ -47,6 +47,7 @@ type Config struct {
 	DisableCSRF     bool
 	EnableWalletAPI bool
 	EnableJSON20RPC bool
+	EnableGUI       bool
 	ReadTimeout     time.Duration
 	WriteTimeout    time.Duration
 	IdleTimeout     time.Duration
@@ -55,15 +56,13 @@ type Config struct {
 type muxConfig struct {
 	host            string
 	appLoc          string
-	enableWalletAPI bool
+	enableGUI       bool
 	enableJSON20RPC bool
 }
 
-func create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
+func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 	var appLoc string
-	if c.EnableWalletAPI {
-		logger.Info("Wallet API enabled")
-
+	if c.EnableGUI {
 		var err error
 		appLoc, err = file.DetermineResourcePath(c.StaticDir, resourceDir, devDir)
 		if err != nil {
@@ -83,7 +82,8 @@ func create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
 	if c.EnableJSON20RPC {
 		logger.Info("JSON 2.0 RPC enabled")
 		var err error
-		rpc, err = webrpc.New(daemon.Gateway)
+		// TODO: change webprc to use http.Gatewayer
+		rpc, err = webrpc.New(gateway.(*daemon.Gateway))
 		if err != nil {
 			return nil, err
 		}
@@ -102,11 +102,11 @@ func create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
 	mc := muxConfig{
 		host:            host,
 		appLoc:          appLoc,
-		enableWalletAPI: c.EnableWalletAPI,
+		enableGUI:       c.EnableGUI,
 		enableJSON20RPC: c.EnableJSON20RPC,
 	}
 
-	srvMux := newServerMux(mc, daemon.Gateway, csrfStore, rpc)
+	srvMux := newServerMux(mc, gateway, csrfStore, rpc)
 	srv := &http.Server{
 		Handler:      srvMux,
 		ReadTimeout:  c.ReadTimeout,
@@ -121,8 +121,8 @@ func create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
 }
 
 // Create creates a new Server instance that listens on HTTP
-func Create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
-	s, err := create(host, c, daemon)
+func Create(host string, c Config, gateway Gatewayer) (*Server, error) {
+	s, err := create(host, c, gateway)
 	if err != nil {
 		return nil, err
 	}
@@ -138,8 +138,8 @@ func Create(host string, c Config, daemon *daemon.Daemon) (*Server, error) {
 }
 
 // CreateHTTPS creates a new Server instance that listens on HTTPS
-func CreateHTTPS(host string, c Config, daemon *daemon.Daemon, certFile, keyFile string) (*Server, error) {
-	s, err := create(host, c, daemon)
+func CreateHTTPS(host string, c Config, gateway Gatewayer, certFile, keyFile string) (*Server, error) {
+	s, err := create(host, c, gateway)
 	if err != nil {
 		return nil, err
 	}
@@ -202,9 +202,9 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 		mux.Handle(endpoint, handler)
 	}
 
-	if c.enableWalletAPI {
-		webHandler("/", newIndexHandler(c.appLoc))
+	webHandler("/", newIndexHandler(c.appLoc, c.enableGUI))
 
+	if c.enableGUI {
 		fileInfos, _ := ioutil.ReadDir(c.appLoc)
 		for _, fileInfo := range fileInfos {
 			route := fmt.Sprintf("/%s", fileInfo.Name())
@@ -379,15 +379,23 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 }
 
 // Returns a http.HandlerFunc for index.html, where index.html is in appLoc
-func newIndexHandler(appLoc string) http.HandlerFunc {
+func newIndexHandler(appLoc string, enableGUI bool) http.HandlerFunc {
 	// Serves the main page
 	return func(w http.ResponseWriter, r *http.Request) {
-		page := filepath.Join(appLoc, indexPage)
-		logger.Debugf("Serving index page: %s", page)
-		if r.URL.Path == "/" {
-			http.ServeFile(w, r, page)
-		} else {
+		if !enableGUI {
 			wh.Error404(w, "")
+			return
+		}
+
+		if r.URL.Path != "/" {
+			wh.Error404(w, "")
+			return
+		}
+
+		if r.URL.Path == "/" {
+			page := filepath.Join(appLoc, indexPage)
+			logger.Debugf("Serving index page: %s", page)
+			http.ServeFile(w, r, page)
 		}
 	}
 }

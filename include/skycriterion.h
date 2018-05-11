@@ -29,6 +29,10 @@ extern int cr_user_GoSlice_eq(GoSlice *slice1, GoSlice *slice2);
 extern char *cr_user_GoSlice_tostr(GoSlice *slice1);
 extern int cr_user_GoSlice_noteq(GoSlice *slice1, GoSlice *slice2);
 
+extern int cr_user_GoSlice__eq(GoSlice_ *slice1, GoSlice_ *slice2);
+extern char *cr_user_GoSlice__tostr(GoSlice_ *slice1);
+extern int cr_user_GoSlice__noteq(GoSlice_ *slice1, GoSlice_ *slice2);
+
 extern int cr_user_cipher__SHA256_noteq(cipher__SHA256 *sh1, cipher__SHA256 *sh2);
 extern int cr_user_cipher__SHA256_eq(cipher__SHA256 *sh1, cipher__SHA256 *sh2);
 extern char *cr_user_cipher__SHA256_tostr(cipher__SHA256 *sh1);

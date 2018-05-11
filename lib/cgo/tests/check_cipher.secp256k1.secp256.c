@@ -56,7 +56,7 @@ Test(cipher_secp256k1,Test_Secp256_01){
 	if (!errorPubKey) cr_fatal();
 }
 
-Test(cipher_secp256k1, TestPubkeyFromSeckey1) {
+Test(cipher_secp256k1, TestPubkeyFromSeckey) {
 
 	unsigned char bufferPrivkey[BUFFER_SIZE];
 	unsigned char bufferDesiredPubKey[BUFFER_SIZE];

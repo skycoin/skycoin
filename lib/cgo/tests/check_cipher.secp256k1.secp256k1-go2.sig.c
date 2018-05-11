@@ -86,6 +86,9 @@ Test(cipher_secp256k1_sig, TestSigRecover){
 	cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Signature_Recover failed");
 	cr_assert(result, "SKY_secp256k1go_Signature_Recover failed");
 	
-	cr_assert(cr_user_secp256k1go__Field_eq(&pubKey.X, &expected.X), "SKY_secp256k1go_Signature_Recover Xs different.");
-	cr_assert(cr_user_secp256k1go__Field_eq(&pubKey.Y, &expected.Y), "SKY_secp256k1go_Signature_Recover Xs different.");
+	GoInt8 equal;
+	error_code = SKY_secp256k1go_Field_Equals(&pubKey.X, &expected.X, &equal);
+	cr_assert(error_code == SKY_OK && equal, "SKY_secp256k1go_Signature_Recover Xs different.");
+	SKY_secp256k1go_Field_Equals(&pubKey.Y, &expected.Y, &equal);
+	cr_assert(error_code == SKY_OK && equal, "SKY_secp256k1go_Signature_Recover Ys different.");
 }

@@ -22,12 +22,12 @@
 char buffer[BUFFER_SIZE];
 GoSlice text = {PLAINTEXT, strlen(PLAINTEXT), strlen(PLAINTEXT)};
 GoSlice password = {PASSWORD, strlen(PASSWORD), strlen(PASSWORD)};
-GoSlice result = {buffer, 0, BUFFER_SIZE};
 GoSlice password2 = {PASSWORD2, strlen(PASSWORD2), strlen(PASSWORD2)};
 GoSlice wrong_password = {WRONG_PASSWORD, strlen(WRONG_PASSWORD), strlen(WRONG_PASSWORD)};
 GoSlice encrypted = {ENCRYPTED, strlen(ENCRYPTED), strlen(ENCRYPTED)};
 GoSlice nullData = {NULL, 0, 0};
 GoSlice nullPassword = {NULL, 0, 0};
+coin__UxArray result = {buffer, 0, BUFFER_SIZE};
 
 void parseJsonMetaData(char* metadata, int* n, int* r, int* p, int* keyLen){
 	*n = *r = *p = *keyLen = 0;
@@ -72,18 +72,14 @@ void parseJsonMetaData(char* metadata, int* n, int* r, int* p, int* keyLen){
 }
 
 Test(cipher_encrypt_scrypt_chacha20poly1305, TestScryptChacha20poly1305Encrypt){
-	
-	char buffer[BUFFER_SIZE];
 	char str[BUFFER_SIZE];
-	char tmp[BUFFER_SIZE];
-	unsigned int data[BUFFER_SIZE];
 	GoUint32 errcode;
 	unsigned int metalength;
 	encrypt__ScryptChacha20poly1305 encrypt = {1, 8, 1, 32};
 	for(int i = 1; i <= 20; i++) {
 		encrypt.N = 1 << i;
 		errcode = SKY_encrypt_ScryptChacha20poly1305_Encrypt(
-				&encrypt, text, password, (coin__UxArray*)&result);
+				&encrypt, text, password, &result);
 		cr_assert(errcode == SKY_OK, "SKY_encrypt_ScryptChacha20poly1305_Encrypt failed");
 		cr_assert(result.len > SCRYPTCHACHA20METALENGTHSIZE, "SKY_encrypt_ScryptChacha20poly1305_Encrypt failed, result data length too short");
 		cr_assert(result.len < BUFFER_SIZE, "SKY_encrypt_ScryptChacha20poly1305_Encrypt failed, result data length greater than buffer");
@@ -112,7 +108,7 @@ Test(cipher_encrypt_scrypt_chacha20poly1305, TestScryptChacha20poly1305Encrypt){
 }
 
 Test(cipher_encrypt_scrypt_chacha20poly1305, TestScryptChacha20poly1305Decrypt){
-	coin__UxArray result = {buffer, 0, BUFFER_SIZE};
+	
 	GoUint32 errcode;
 	encrypt__ScryptChacha20poly1305 encrypt = {0, 0, 0, 0};
 	

@@ -18,7 +18,8 @@ Test(cipher_secp256k1, TestPubkeyFromSeckey) {
 	unsigned char bufferResult[BUFFER_SIZE];
 	
 	const char* hexPrivate = "f19c523315891e6e15ae0608a35eec2e00ebd6d1984cf167f46336dabd9b2de4";
-	const char* hexPublic  = "03fe43d0c2c3daab30f9472beb5b767be020b81c7cc940ed7a7e910f0c1d9feef1";
+	const char* hexPublic  = "03FE43D0C2C3DAAB30F9472BEB5B767BE020B81C7CC940ED7A7E910F0C1D9FEEF1";
+	 
 	
 	int sizePrivate = hexnstr(hexPrivate, bufferPrivate, BUFFER_SIZE);
 	int sizePublic = hexnstr(hexPublic, bufferPublic, BUFFER_SIZE);
@@ -28,11 +29,11 @@ Test(cipher_secp256k1, TestPubkeyFromSeckey) {
 	
 	GoUint32 error_code = SKY_secp256k1_PubkeyFromSeckey(privateKey, &result);
 	cr_assert(error_code == SKY_OK, "SKY_secp256k1_PubkeyFromSeckey failed.");
-	
+
 	cr_assert(result.len == publicKey.len, "SKY_secp256k1_PubkeyFromSeckey failed. Calculated pub key doesn\'t have expected length");
 	int equal = 1;
 	for(int i = 0; i < result.len; i++){
-		if( ((unsigned char*)result.data)[i] != ((unsigned char*)publicKey.data)[i] ){
+		if( ((char*)result.data)[i] != ((char*)publicKey.data)[i] ){
 			equal = 0;
 			break;
 		}

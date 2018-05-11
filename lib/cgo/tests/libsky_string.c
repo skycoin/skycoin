@@ -39,9 +39,9 @@ int hexnstr(const char* hex, unsigned char* str, int n){
 		if(*pin >= '0' && *pin <= '9'){
 			c = *pin - '0';
 		} else if(*pin >= 'A' && *pin <= 'F'){
-			c = *pin - 'A';
+			c = 10 + (*pin - 'A');
 		} else if(*pin >= 'a' && *pin <= 'f'){
-			c = *pin - 'a';
+			c = 10 + (*pin - 'a');
 		}
 		if(odd){
 			*pout = (*pout << 4) | c;
@@ -55,4 +55,15 @@ int hexnstr(const char* hex, unsigned char* str, int n){
 	if( size < n )
 		*pout = 0;
 	return size;
+}
+
+void bin2hex(unsigned char* buf, char *str, int n){
+    unsigned char * pin = buf;
+    const char * hex = "0123456789ABCDEF";
+    char * pout = str;
+    for(; n; --n){
+        *pout++ = hex[(*pin>>4)&0xF];
+        *pout++ = hex[(*pin++)&0xF];
+    }
+    *pout = 0;
 }

@@ -2160,7 +2160,7 @@ Response:
 
 ```json
 {
-  "count": 8,
+    "count": 8,
   "total_alive": 7,
   "total_offline": 1,
   "connections": [

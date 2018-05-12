@@ -26,16 +26,16 @@
 #define X2   "15b7e7d00f024bffcd2e47524bb7b7d3a6b251e23a3a43191ed7f0a418d9a578"
 #define Y2 	 "bf29a25e2d1f32c5afb18b41ae60112723278a8af31275965a6ec1d95334e840"
 
-/*
-Crashes if defined inside function
-*/
-Signature sig;
-Number msg;
-secp256k1go__XY pubKey;
-secp256k1go__XY expected;
-GoUint32 error_code;
-
 Test(cipher_secp256k1_sig, TestSigRecover){
+	GoUint32 error_code;
+	secp256k1go__XY pubKey;
+	secp256k1go__XY expected;
+	
+	Signature sig;
+	memset(&sig, 0, sizeof(Signature));
+	Number msg;
+	memset(&msg, 0, sizeof(Number));
+	
 	GoString R = {R1, strlen(R1)};
 	GoString S = {S1, strlen(S1)};
 	GoString MSG = {MSG1, strlen(MSG1)};

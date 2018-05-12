@@ -199,6 +199,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 		handler = wh.ElapsedHandler(logger, handler)
 		handler = CSRFCheck(csrfStore, handler)
 		handler = headerCheck(c.host, handler)
+		handler = wh.GzipHandler(handler)
 		mux.Handle(endpoint, handler)
 	}
 

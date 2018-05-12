@@ -1,7 +1,9 @@
 package httphelper
 
 import (
+	"compress/gzip"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 
@@ -44,5 +46,31 @@ func HostCheck(logger *logging.Logger, host string, handler http.Handler) http.H
 		}
 
 		handler.ServeHTTP(w, r)
+	})
+}
+
+type gzipResponseWriter struct {
+	io.Writer
+	http.ResponseWriter
+}
+
+func (grw gzipResponseWriter) Write(b []byte) (int, error) {
+	return grw.Writer.Write(b)
+}
+
+// GzipHandler compresses response with gzip if request's header of 'Accept-Encoding' contains 'gzip'.
+func GzipHandler(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+			handler.ServeHTTP(w, r)
+			return
+		}
+
+		w.Header().Set("Content-Encoding", "gzip")
+		gz := gzip.NewWriter(w)
+		defer gz.Close()
+
+		gzr := gzipResponseWriter{Writer: gz, ResponseWriter: w}
+		handler.ServeHTTP(gzr, r)
 	})
 }

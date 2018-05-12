@@ -14,15 +14,15 @@
 #define TESTS  1
 #define SigSize 65
 
-Test(cipher_secp256k1, Test_Secp256_00){
+Test(cipher_secp256k1,Test_Secp256_00){
 	unsigned char buff[SigSize];
-	coin__UxArray nonce = {buff, 0, 64};
-	SKY_secp256k1_RandByte(32, &nonce);
+	visor__ReadableOutputs nonce = {buff,0,64};
+	SKY_secp256k1_RandByte(32,&nonce);
 	if (nonce.len != 32) cr_fatal();
 }
 
 
-Test(cipher_secp256k1, Test_Secp256_01){
+Test(cipher_secp256k1,Test_Secp256_01){
 
 	cipher__PubKey pubkey;
 	cipher__SecKey seckey;
@@ -30,8 +30,8 @@ Test(cipher_secp256k1, Test_Secp256_01){
 	GoInt errorSecKey;
 	char bufferSecKey[101];
 	strnhex((unsigned char *)seckey, bufferSecKey, sizeof(cipher__SecKey));
-	GoSlice slseckey = { bufferSecKey, sizeof(cipher__SecKey), SigSize  };
-	SKY_secp256k1_VerifySeckey(slseckey, &errorSecKey);
+	GoSlice slseckey = { bufferSecKey,sizeof(cipher__SecKey),SigSize  };
+	SKY_secp256k1_VerifySeckey(slseckey,&errorSecKey);
 	if (!errorSecKey) cr_fatal();
 
 	GoInt errorPubKey;
@@ -40,7 +40,7 @@ Test(cipher_secp256k1, Test_Secp256_01){
 	if (!errorPubKey) cr_fatal();
 }
 
-Test(cipher_secp256k1, TestPubkeyFromSeckey1) {
+Test(cipher_secp256k1, TestPubkeyFromSeckey) {
 
 	unsigned char bufferPrivkey[BUFFER_SIZE];
 	unsigned char bufferDesiredPubKey[BUFFER_SIZE];
@@ -56,12 +56,12 @@ Test(cipher_secp256k1, TestPubkeyFromSeckey1) {
 	GoSlice_ desiredPubKey = { bufferDesiredPubKey,sizeDesiredPubKey,BUFFER_SIZE };
 
 
-	coin__UxArray pubkey = {bufferPubKey,0,BUFFER_SIZE};
+	visor__ReadableOutputs pubkey = {bufferPubKey,0,BUFFER_SIZE};
 
 	GoUint32 errocode = SKY_secp256k1_PubkeyFromSeckey(privkey,&pubkey);
 	if(errocode) cr_fatal();
 
-	cr_assert(eq(type(GoSlice), *((GoSlice*)&pubkey), *(GoSlice*)&desiredPubKey));
+	cr_assert(eq(type(GoSlice_),pubkey,desiredPubKey));
 
 }
 
@@ -78,15 +78,15 @@ Test(cipher_secp256k1, Test_UncompressedPubkeyFromSeckey) {
 	int sizeDesiredPubKey = hexnstr(hexDesiredPubKey, bufferDesiredPubKey, BUFFER_SIZE);
 
 	GoSlice privkey = { bufferPrivkey,sizePrivkey,BUFFER_SIZE };
-	GoSlice desiredPubKey = { bufferDesiredPubKey,sizeDesiredPubKey,BUFFER_SIZE };
+	GoSlice_ desiredPubKey = { bufferDesiredPubKey,sizeDesiredPubKey,BUFFER_SIZE };
 
 
-	coin__UxArray pubkey = {bufferPubKey,0,BUFFER_SIZE};
+	visor__ReadableOutputs pubkey = {bufferPubKey,0,BUFFER_SIZE};
 
-	GoUint32 errocode = SKY_secp256k1_UncompressedPubkeyFromSeckey(privkey, &pubkey);
+	GoUint32 errocode = SKY_secp256k1_UncompressedPubkeyFromSeckey(privkey,&pubkey);
 	if(errocode) cr_fatal();
 
-	cr_assert(eq(type(GoSlice), *(GoSlice*)&pubkey, desiredPubKey));
+	cr_assert(eq(type(GoSlice_),pubkey,desiredPubKey));
 
 }
 
@@ -152,16 +152,6 @@ Test(cipher_secp256k1, Test_verify_functions){
 }
 
 
-// func Test_SignatureVerifySecKey(t *testing.T) {
-// 	pubkey, seckey := GenerateKeyPair()
-// 	if VerifySeckey(seckey) == 0 {
-// 		t.Fail()
-// 	}
-// 	if VerifyPubkey(pubkey) == 0 {
-// 		t.Fail()
-// 	}
-// }
-
 Test(cipher_secp256k1,Test_SignatureVerifySecKey ){
 	cipher__PubKey pubkey;
 	cipher__SecKey seckey;
@@ -179,29 +169,34 @@ Test(cipher_secp256k1,Test_SignatureVerifySecKey ){
 }
 
 
-// //test size of messages
-// func Test_Secp256_02s(t *testing.T) {
-// 	pubkey, seckey := GenerateKeyPair()
-// 	msg := RandByte(32)
-// 	sig := Sign(msg, seckey)
-// 	CompactSigTest(sig)
-// 	if sig == nil {
-// 		t.Fatal("Signature nil")
-// 	}
-// 	if len(pubkey) != 33 {
-// 		t.Fail()
-// 	}
-// 	if len(seckey) != 32 {
-// 		t.Fail()
-// 	}
-// 	if len(sig) != 64+1 {
-// 		t.Fail()
-// 	}
-// 	if int(sig[64]) > 4 {
-// 		t.Fail()
-// 	} //should be 0 to 4
-// }
-//
 Test(cipher_secp256k1,Test_Secp256_02s){
-	cr_fatal();
+
+	unsigned char buff[BUFFER_SIZE];
+	unsigned char bufferMsg[BUFFER_SIZE];
+	char bufferSig[BUFFER_SIZE];
+	cipher__PubKey pubkey ;
+	cipher__SecKey seckey;
+	visor__ReadableOutputs msg={bufferMsg,0,BUFFER_SIZE};
+
+	GoSlice sig={ bufferSig,0,BUFFER_SIZE };
+	GoSlice slicePubkey = {&pubkey,sizeof(cipher__PubKey),sizeof(cipher__PubKey)};
+	GoSlice sliceSeckey = {&seckey,sizeof(cipher__SecKey),sizeof(cipher__SecKey)};
+	GoSlice slicemsg = {buff, 0, SigSize};
+
+	SKY_cipher_GenerateKeyPair((cipher__PubKey*)&slicePubkey,(cipher__SecKey*)&sliceSeckey);
+	SKY_secp256k1_RandByte(32,(visor__ReadableOutputs*)&slicemsg);
+
+
+	GoUint32 errcode_sign = SKY_secp256k1_Sign(slicemsg,slicePubkey, (coin__UxArray*)&sig);
+
+	printf("errcode_sign %d\n",errcode_sign);
+	cr_assert(errcode_sign == SKY_OK,"Signature nil");
+
+	if (slicePubkey.len != 33){  cr_fatal();}
+	if (sliceSeckey.len != 32){  cr_fatal();}
+
+	printf("len %d\n",sig.len );
+	if (sig.len != (64+1)){  cr_fatal();}
+	if ( ((( unsigned char *)&sig.data[64])-48) > 4){  cr_fatal();}
+
 }

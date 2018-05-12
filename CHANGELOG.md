@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `password` argument to the CLI commands of `addPrivateKey`, `createRawTransaction`, `generateAddresses`, `generateWallet`, `send`
 - Support for decoding map values in cipher binary encoder
 - Add `/network/status` endpoint
-- Add `IsPermutaion` assertion to check for container types with same items but maybe in different order
+- Add `IsPermutation` assertion to check for container types with same items but maybe in different order
 
 ### Fixed
 

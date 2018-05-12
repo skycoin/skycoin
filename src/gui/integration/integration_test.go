@@ -3533,3 +3533,39 @@ func TestDisableGUIAPI(t *testing.T) {
 	err := c.Get("/", nil)
 	assertResponseError(t, err, http.StatusNotFound, "404 Not Found\n")
 }
+
+func checkConnectionsHealth(t *testing.T, r *daemon.ConnectionsHealth) {
+	require.NotEmpty(t, r.Count)
+	require.True(t, r.Count > 0)
+	require.NotEmpty(t, r.TotalOffline)
+	require.True(t, r.Connections != nil)
+}
+
+func TestStableNetworkStatus(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	r, err := c.ConnectionsHealth()
+	require.NoError(t, err)
+
+	checkConnectionsHealth(t, r)
+}
+
+func TestLiveNetworkStatus(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	c := gui.NewClient(nodeAddress())
+
+	r, err := c.ConnectionsHealth()
+	require.NoError(t, err)
+
+	checkConnectionsHealth(t, r)
+
+	require.NotEqual(t, 0, r.TotalAlive)
+
+}

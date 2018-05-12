@@ -829,3 +829,13 @@ func (c *Client) DecryptWallet(id string, password string) (*WalletResponse, err
 
 	return &wlt, nil
 }
+
+// ConnectionsHealth makes a request to /network/status
+func (c *Client) ConnectionsHealth() (*daemon.ConnectionsHealth, error) {
+	var r daemon.ConnectionsHealth
+	if err := c.Get("/network/status", &r); err != nil {
+		return nil, err
+	}
+
+	return &r, nil
+}

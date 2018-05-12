@@ -31,6 +31,7 @@ func PrepareDB(t *testing.T) (*dbutil.DB, func()) {
 
 	return dbutil.WrapDB(db), func() {
 		db.Close()
+		f.Close()
 		os.Remove(f.Name())
 	}
 }

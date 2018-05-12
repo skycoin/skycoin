@@ -4,10 +4,14 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"os"
 	"sort"
 	"testing"
 	"time"
 
+	"github.com/boltdb/bolt"
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -903,4 +907,103 @@ func TestUnspentPoolAddrIndex(t *testing.T) {
 			require.Equal(t, tc.expect, addrHashes)
 		})
 	}
+}
+
+func TestUnspentMaybeBuildIndexes(t *testing.T) {
+	// Open a test database file that lacks UnspentPoolAddrIndexBkt,
+	// copy it to a temp file and open a database around the temp file
+	dbFilename := "./testdata/blockchain-180.no-unspent-addr-index.db"
+	dbFile, err := os.Open(dbFilename)
+	require.NoError(t, err)
+
+	tmpFile, err := ioutil.TempFile("", "testdb")
+	require.NoError(t, err)
+	defer os.Remove(tmpFile.Name())
+	defer tmpFile.Close()
+
+	_, err = io.Copy(tmpFile, dbFile)
+	require.NoError(t, err)
+
+	err = dbFile.Close()
+	require.NoError(t, err)
+
+	err = tmpFile.Sync()
+	require.NoError(t, err)
+
+	boltDB, err := bolt.Open(tmpFile.Name(), 0700, nil)
+	require.NoError(t, err)
+	defer boltDB.Close()
+
+	db := dbutil.WrapDB(boltDB)
+
+	u := NewUnspentPool()
+
+	// Create the indexes
+	err = db.Update("", func(tx *dbutil.Tx) error {
+		if _, err := tx.CreateBucket(UnspentPoolAddrIndexBkt); err != nil {
+			return err
+		}
+
+		return u.MaybeBuildIndexes(tx)
+	})
+	require.NoError(t, err)
+
+	// Check the address->hashes index
+	addrHashes := make(map[cipher.Address][]cipher.SHA256)
+	err = db.View("", func(tx *dbutil.Tx) error {
+		// Perform the unspent lookup the slow way, to confirm it matches the hashed data
+		err := dbutil.ForEach(tx, UnspentPoolBkt, func(k, v []byte) error {
+			hash, err := cipher.SHA256FromBytes(k)
+			require.NoError(t, err)
+
+			var ux coin.UxOut
+			err = encoder.DeserializeRaw(v, &ux)
+			require.NoError(t, err)
+
+			require.Equal(t, hash, ux.Hash())
+
+			addrHashes[ux.Body.Address] = append(addrHashes[ux.Body.Address], hash)
+
+			return nil
+		})
+		require.NoError(t, err)
+
+		length, err := dbutil.Len(tx, UnspentPoolAddrIndexBkt)
+		require.NoError(t, err)
+
+		require.Equal(t, uint64(len(addrHashes)), length)
+
+		err = dbutil.ForEach(tx, UnspentPoolAddrIndexBkt, func(k, v []byte) error {
+			addr, err := cipher.AddressFromBytes(k)
+			require.NoError(t, err)
+
+			var hashes []cipher.SHA256
+			err = encoder.DeserializeRaw(v, &hashes)
+			require.NoError(t, err)
+
+			expectedHashes, ok := addrHashes[addr]
+			require.True(t, ok)
+
+			sort.Slice(expectedHashes, func(i, j int) bool {
+				return bytes.Compare(expectedHashes[i][:], expectedHashes[j][:]) < 1
+			})
+
+			sort.Slice(hashes, func(i, j int) bool {
+				return bytes.Compare(hashes[i][:], hashes[j][:]) < 1
+			})
+
+			require.Equal(t, expectedHashes, hashes)
+
+			delete(addrHashes, addr)
+
+			return nil
+		})
+		require.NoError(t, err)
+
+		require.Empty(t, addrHashes)
+
+		return nil
+	})
+	require.NoError(t, err)
+
 }

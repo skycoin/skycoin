@@ -628,11 +628,11 @@ func TestWalletBalanceHandler(t *testing.T) {
 			body: &httpBody{
 				WalletID: "notFoundId",
 			},
-			status:   http.StatusNotFound,
-			err:      "404 Not Found",
-			walletID: "notFoundId",
+			status:                        http.StatusNotFound,
+			err:                           "404 Not Found",
+			walletID:                      "notFoundId",
 			gatewayGetWalletBalanceResult: BalanceResponse{},
-			gatewayBalanceErr: wallet.ErrWalletNotExist,
+			gatewayBalanceErr:             wallet.ErrWalletNotExist,
 			result: &wallet.BalancePair{
 				Confirmed: wallet.Balance{Coins: 0, Hours: 0},
 				Predicted: wallet.Balance{Coins: 0, Hours: 0},
@@ -644,11 +644,11 @@ func TestWalletBalanceHandler(t *testing.T) {
 			body: &httpBody{
 				WalletID: "someId",
 			},
-			status:   http.StatusInternalServerError,
-			err:      "500 Internal Server Error - gatewayBalanceError",
-			walletID: "someId",
+			status:                        http.StatusInternalServerError,
+			err:                           "500 Internal Server Error - gatewayBalanceError",
+			walletID:                      "someId",
 			gatewayGetWalletBalanceResult: BalanceResponse{},
-			gatewayBalanceErr: errors.New("gatewayBalanceError"),
+			gatewayBalanceErr:             errors.New("gatewayBalanceError"),
 			result: &wallet.BalancePair{
 				Confirmed: wallet.Balance{Coins: 0, Hours: 0},
 				Predicted: wallet.Balance{Coins: 0, Hours: 0},
@@ -683,7 +683,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &GatewayerMock{}
 			gateway.On("GetWalletBalance", tc.walletID).Return(tc.gatewayGetWalletBalanceResult.BalancePair,
-			tc.gatewayGetWalletBalanceResult.Addresses, tc.gatewayBalanceErr)
+				tc.gatewayGetWalletBalanceResult.Addresses, tc.gatewayBalanceErr)
 
 			endpoint := "/wallet/balance"
 

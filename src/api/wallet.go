@@ -56,6 +56,7 @@ type WalletResponse struct {
 	Entries []WalletEntry `json:"entries"`
 }
 
+// BalanceResponse address balance summary struct
 type BalanceResponse struct {
 	wallet.BalancePair
 	Addresses wallet.AddressBalance `json:"addresses"`

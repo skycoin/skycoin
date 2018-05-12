@@ -699,7 +699,6 @@ func (gw *Gateway) DecryptWallet(wltID string, password []byte) (*wallet.Wallet,
 	return w, err
 }
 
-
 // GetWalletBalance returns balance pairs of specific wallet
 func (gw *Gateway) GetWalletBalance(wltID string) (wallet.BalancePair, wallet.AddressBalance, error) {
 	var addressBalances wallet.AddressBalance

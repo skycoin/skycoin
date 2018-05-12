@@ -58,8 +58,6 @@ func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) erro
 // ResetCorruptDB checks the database for corruption and if corrupted, then it erases the db and starts over.
 // A copy of the corrupted database is saved.
 func ResetCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) (*dbutil.DB, error) {
-	logger.Info("Loading blockchain")
-
 	err := CheckDatabase(db, pubkey, quit)
 
 	switch err.(type) {
@@ -87,7 +85,7 @@ func handleCorruptDB(db *dbutil.DB) (*dbutil.DB, error) {
 		return nil, fmt.Errorf("Failed to copy corrupted db: %v", err)
 	}
 
-	logger.Critical().Errorf("Moved corrupted db to %s", corruptDBPath)
+	logger.Critical().Infof("Moved corrupted db to %s", corruptDBPath)
 
 	return OpenDB(dbPath, dbReadOnly)
 }
@@ -113,7 +111,7 @@ func moveCorruptDB(dbPath string) (string, error) {
 	}
 
 	if err := os.Rename(dbPath, newDBPath); err != nil {
-		logger.Infof("os.Rename(%s, %s) failed: %v", dbPath, newDBPath, err)
+		logger.Errorf("os.Rename(%s, %s) failed: %v", dbPath, newDBPath, err)
 		return "", err
 	}
 

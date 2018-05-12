@@ -639,7 +639,7 @@ func Run(c *Config) {
 			if err != visor.ErrVerifyStopped {
 				logger.Errorf("visor.ResetCorruptDB failed: %v", err)
 			}
-			goto shutdown
+			goto earlyShutdown
 		} else {
 			db = newDB
 		}
@@ -649,21 +649,21 @@ func Run(c *Config) {
 			if err != visor.ErrVerifyStopped {
 				logger.Errorf("visor.CheckDatabase failed: %v", err)
 			}
-			goto shutdown
+			goto earlyShutdown
 		}
 	}
 
 	d, err = daemon.NewDaemon(dconf, db, DefaultConnections)
 	if err != nil {
 		logger.Error(err)
-		goto shutdown
+		goto earlyShutdown
 	}
 
 	if c.WebInterface {
 		webInterface, err = createGUI(c, d, host)
 		if err != nil {
 			logger.Error(err)
-			goto shutdown
+			goto earlyShutdown
 		}
 	}
 
@@ -740,7 +740,6 @@ func Run(c *Config) {
 		logger.Error(err)
 	}
 
-shutdown:
 	logger.Info("Shutting down...")
 
 	if webInterface != nil {
@@ -748,14 +747,13 @@ shutdown:
 		webInterface.Shutdown()
 	}
 
-	if d != nil {
-		logger.Info("Closing daemon")
-		d.Shutdown()
-	}
+	logger.Info("Closing daemon")
+	d.Shutdown()
 
 	logger.Info("Waiting for goroutines to finish")
 	wg.Wait()
 
+earlyShutdown:
 	if db != nil {
 		logger.Info("Closing database")
 		if err := db.Close(); err != nil {

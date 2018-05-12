@@ -203,7 +203,6 @@ func NewConnectionPool(c Config, state interface{}) *ConnectionPool {
 		SendResults:  make(chan SendResult, c.SendResultsSize),
 		messageState: state,
 		quit:         make(chan struct{}),
-		quitStrand:   make(chan struct{}),
 		done:         make(chan struct{}),
 		strandDone:   make(chan struct{}),
 		reqC:         make(chan strand.Request),

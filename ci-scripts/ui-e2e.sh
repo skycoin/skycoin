@@ -3,7 +3,7 @@
 
 # Set Script Name variable
 SCRIPT=`basename ${BASH_SOURCE[0]}`
-PORT="46420"
+PORT="46423"
 RPC_PORT="$PORT"
 HOST="http://127.0.0.1:$PORT"
 RPC_ADDR="http://127.0.0.1:$RPC_PORT"

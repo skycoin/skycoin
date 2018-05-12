@@ -55,7 +55,7 @@ RUN git clone https://github.com/fatih/vim-go /usr/share/vim/vim80/pack/dev/star
     git clone https://github.com/Shougo/vimproc.vim /usr/share/vim/vim80/pack/dev/start/0vimproc && \
     cd /usr/share/vim/vim80/pack/dev/start/0vimproc && make && \
 
-WORKDIR $GOPATH/src/github.com/skycoin/skycoin
+WORKDIR $GOPATH/src/github.com/skycoin
 VOLUME $GOPATH/src/
 
 ENV LD_LIBRARY_PATH=/usr/local/lib

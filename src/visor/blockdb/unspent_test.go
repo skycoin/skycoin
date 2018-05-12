@@ -1,13 +1,17 @@
 package blockdb
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
+	"sort"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
@@ -428,15 +432,76 @@ func TestUnspentProcessBlock(t *testing.T) {
 		uxs = append(uxs, ux)
 	}
 
+	type testOutputs struct {
+		addr  cipher.Address
+		coins uint64
+		hours uint64
+	}
+
+	addr := testutil.MakeAddress()
+
 	tt := []struct {
-		name   string
-		init   coin.UxArray
-		inputs coin.UxArray
+		name          string
+		init          coin.UxArray
+		inputs        coin.UxArray
+		outputs       []testOutputs
+		nIndexedAddrs uint64
 	}{
 		{
-			name:   "ok",
+			name:   "spend one create one",
 			init:   uxs,
 			inputs: uxs[:1],
+			outputs: []testOutputs{
+				{
+					addr:  testutil.MakeAddress(),
+					coins: 1e6,
+					hours: uxs[0].Body.Hours / 2,
+				},
+			},
+			nIndexedAddrs: 5,
+		},
+
+		{
+			name:   "spend one create two",
+			init:   uxs,
+			inputs: uxs[:1],
+			outputs: []testOutputs{
+				{
+					addr:  testutil.MakeAddress(),
+					coins: 1e6 / 2,
+					hours: uxs[0].Body.Hours / 4,
+				},
+				{
+					addr:  testutil.MakeAddress(),
+					coins: 1e6 / 2,
+					hours: uxs[0].Body.Hours / 4,
+				},
+			},
+			nIndexedAddrs: 6,
+		},
+
+		{
+			name:   "spend one create three - two to the same new address and one to the spending address ",
+			init:   uxs,
+			inputs: uxs[:1],
+			outputs: []testOutputs{
+				{
+					addr:  addr,
+					coins: 1e6 / 4,
+					hours: uxs[0].Body.Hours / 16,
+				},
+				{
+					addr:  addr,
+					coins: 1e6 / 4,
+					hours: uxs[0].Body.Hours / 8,
+				},
+				{
+					addr:  uxs[0].Body.Address,
+					coins: 1e6 / 4,
+					hours: uxs[0].Body.Hours / 8,
+				},
+			},
+			nIndexedAddrs: 6,
 		},
 	}
 
@@ -457,8 +522,9 @@ func TestUnspentProcessBlock(t *testing.T) {
 				txn.PushInput(in.Hash())
 			}
 
-			a := testutil.MakeAddress()
-			txn.PushOutput(a, 1e6, uxs[0].Body.Hours/2)
+			for _, o := range tc.outputs {
+				txn.PushOutput(o.addr, o.coins, o.hours)
+			}
 
 			var block *coin.Block
 			var oldUxHash cipher.SHA256
@@ -503,14 +569,338 @@ func TestUnspentProcessBlock(t *testing.T) {
 				}
 
 				uxHash := oldUxHash.Xor(txOuts[0].SnapshotHash())
+				for _, o := range txOuts[1:] {
+					uxHash = uxHash.Xor(o.SnapshotHash())
+				}
+
 				newUxHash, err := up.GetUxHash(tx)
 				require.NoError(t, err)
 				require.Equal(t, uxHash.Hex(), newUxHash.Hex())
+
+				// addr index should have 5 rows (5 initial addrs, 1 removed as input, 1 added as output)
+				addrIndexLength, err := dbutil.Len(tx, UnspentPoolAddrIndexBkt)
+				require.NoError(t, err)
+				require.Equal(t, tc.nIndexedAddrs, addrIndexLength)
+
+				// new outputs should be added to addr index cache
+				expectedAddrHashes := make(map[cipher.Address][]cipher.SHA256)
+				for _, o := range txOuts {
+					expectedAddrHashes[o.Body.Address] = append(expectedAddrHashes[o.Body.Address], o.Hash())
+				}
+
+				for addr, hashes := range expectedAddrHashes {
+					addrUxHashes, err := up.poolAddrIndex.get(tx, addr)
+					require.NoError(t, err)
+
+					require.Equal(t, len(hashes), len(addrUxHashes))
+
+					sort.Slice(hashes, func(i, j int) bool {
+						return bytes.Compare(hashes[i][:], hashes[j][:]) < 1
+					})
+
+					sort.Slice(addrUxHashes, func(i, j int) bool {
+						return bytes.Compare(addrUxHashes[i][:], addrUxHashes[j][:]) < 1
+					})
+
+					require.Equal(t, hashes, addrUxHashes)
+				}
+
+				// used up inputs should be removed from addr index cache
+				for _, o := range tc.inputs {
+					// input addresses that appear in outputs should not be removed
+					if _, ok := expectedAddrHashes[o.Body.Address]; ok {
+						continue
+					}
+
+					addrUxHashes, err := up.poolAddrIndex.get(tx, o.Body.Address)
+					require.NoError(t, err)
+					require.Nil(t, addrUxHashes)
+				}
+
+				// none of the rows in the addr index should have empty arrays of hashes
+				err = dbutil.ForEach(tx, UnspentPoolAddrIndexBkt, func(k, v []byte) error {
+					_, err := cipher.AddressFromBytes(k)
+					require.NoError(t, err)
+
+					var uxHashes []cipher.SHA256
+					err = encoder.DeserializeRaw(v, &uxHashes)
+					require.NoError(t, err)
+					require.NotEmpty(t, uxHashes)
+
+					return nil
+				})
+				require.NoError(t, err)
 
 				return nil
 			})
 			require.NoError(t, err)
 		})
 	}
+}
 
+func TestUnspentPoolAddrIndex(t *testing.T) {
+	addrs := make([]cipher.Address, 10)
+	for i := range addrs {
+		addrs[i] = testutil.MakeAddress()
+	}
+
+	hashes := make([]cipher.SHA256, 30)
+	hashesMap := make(map[cipher.SHA256]struct{})
+	for i := range hashes {
+		hashes[i] = testutil.RandSHA256(t)
+		_, ok := hashesMap[hashes[i]]
+		require.False(t, ok)
+		hashesMap[hashes[i]] = struct{}{}
+	}
+
+	type addrHashMap map[cipher.Address][]cipher.SHA256
+
+	copyHashMap := func(hm addrHashMap) addrHashMap {
+		out := make(addrHashMap, len(hm))
+
+		for addr, hashes := range hm {
+			copiedHashes := make([]cipher.SHA256, len(hashes))
+			copy(copiedHashes[:], hashes[:])
+			out[addr] = copiedHashes
+		}
+
+		return out
+	}
+
+	dup := func(h []cipher.SHA256) []cipher.SHA256 {
+		i := make([]cipher.SHA256, len(h))
+		copy(i[:], h[:])
+		return i
+	}
+
+	cases := []struct {
+		name      string
+		init      addrHashMap
+		add       addrHashMap
+		remove    addrHashMap
+		expect    addrHashMap
+		setErr    error
+		adjustErr error
+	}{
+		{
+			name: "no initial, add only",
+			add: addrHashMap{
+				addrs[0]: dup(hashes[0:3]),
+				addrs[1]: dup(hashes[3:6]),
+			},
+			expect: addrHashMap{
+				addrs[0]: dup(hashes[0:3]),
+				addrs[1]: dup(hashes[3:6]),
+			},
+		},
+
+		{
+			name: "initial, add and remove",
+			init: addrHashMap{
+				addrs[0]: dup(hashes[0:3]),   // add one to here
+				addrs[1]: dup(hashes[3:6]),   // remove one from here
+				addrs[2]: dup(hashes[6:9]),   // add and remove one from here
+				addrs[3]: dup(hashes[9:12]),  // remove all from here
+				addrs[4]: dup(hashes[12:15]), // remove all from here and add one
+			},
+			add: addrHashMap{
+				addrs[0]: dup(hashes[16:17]),
+				addrs[2]: dup(hashes[17:18]),
+				addrs[4]: dup(hashes[18:19]),
+			},
+			remove: addrHashMap{
+				addrs[1]: dup(hashes[4:5]),
+				addrs[2]: dup(hashes[6:7]),
+				addrs[3]: dup(hashes[9:12]),
+				addrs[4]: dup(hashes[12:15]),
+			},
+			expect: addrHashMap{
+				addrs[0]: append(dup(hashes[0:3]), dup(hashes[16:17])...),
+				addrs[1]: append(dup(hashes[3:4]), dup(hashes[5:6])...),
+				addrs[2]: append(dup(hashes[7:9]), dup(hashes[17:18])...),
+				addrs[4]: dup(hashes[18:19]),
+			},
+		},
+
+		{
+			name: "set error duplicate",
+			init: addrHashMap{
+				addrs[0]: []cipher.SHA256{hashes[0], hashes[0]},
+			},
+			setErr: errors.New("poolAddrIndex.set: hashes array contains duplicate"),
+		},
+
+		{
+			name: "set error empty array",
+			init: addrHashMap{
+				addrs[0]: []cipher.SHA256{},
+			},
+			setErr: errors.New("poolAddrIndex.set cannot set to empty hash array"),
+		},
+
+		{
+			name: "adjust error removes have duplicates",
+			init: addrHashMap{
+				addrs[0]: dup(hashes[0:1]),
+			},
+			remove: addrHashMap{
+				addrs[0]: []cipher.SHA256{hashes[0], hashes[0]},
+			},
+			adjustErr: errors.New("poolAddrIndex.adjust: rmHashes contains duplicates"),
+		},
+
+		{
+			name: "adjust error removing more than exists",
+			init: addrHashMap{
+				addrs[0]: dup(hashes[0:1]),
+			},
+			remove: addrHashMap{
+				addrs[0]: dup(hashes[0:2]),
+			},
+			adjustErr: errors.New("poolAddrIndex.adjust: rmHashes is longer than existingHashes"),
+		},
+
+		{
+			name: "adjust error removing hash that does not exist",
+			init: addrHashMap{
+				addrs[0]: dup(hashes[0:2]),
+			},
+			remove: addrHashMap{
+				addrs[0]: []cipher.SHA256{hashes[0], hashes[11]},
+			},
+			adjustErr: fmt.Errorf("poolAddrIndex.adjust: rmHashes contains 1 hashes not indexed for address %s", addrs[0].String()),
+		},
+
+		{
+			name: "adjust error hash in both add and remove",
+			init: addrHashMap{
+				addrs[0]: dup(hashes[0:10]),
+			},
+			add: addrHashMap{
+				addrs[0]: dup(hashes[4:5]),
+			},
+			remove: addrHashMap{
+				addrs[0]: dup(hashes[1:5]),
+			},
+			adjustErr: errors.New("poolAddrIndex.adjust: hash appears in both addHashes and rmHashes"),
+		},
+
+		{
+			name: "adjust error adding hash already indexed",
+			init: addrHashMap{
+				addrs[0]: dup(hashes[0:10]),
+			},
+			add: addrHashMap{
+				addrs[0]: dup(hashes[4:5]),
+			},
+			adjustErr: fmt.Errorf("poolAddrIndex.adjust: uxout hash %s is already indexed for address %s", hashes[4].Hex(), addrs[0].String()),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			db, shutdown := prepareDB(t)
+			defer shutdown()
+
+			tc.init = copyHashMap(tc.init)
+			tc.add = copyHashMap(tc.add)
+			tc.remove = copyHashMap(tc.remove)
+			tc.expect = copyHashMap(tc.expect)
+
+			p := &poolAddrIndex{}
+
+			// Initialize the data, test that set() works
+			err := db.Update("", func(tx *dbutil.Tx) error {
+				for addr, hashes := range tc.init {
+					if err := p.set(tx, addr, hashes); err != nil {
+						return err
+					}
+				}
+				return nil
+			})
+
+			if tc.setErr == nil {
+				require.NoError(t, err)
+			} else {
+				require.Equal(t, tc.setErr, err)
+				return
+			}
+
+			// Check the initialized data, test that get() works
+			err = db.View("", func(tx *dbutil.Tx) error {
+				length, err := dbutil.Len(tx, UnspentPoolAddrIndexBkt)
+				require.NoError(t, err)
+				require.Equal(t, uint64(len(tc.init)), length)
+
+				for addr, expectHashes := range tc.init {
+					hashes, err := p.get(tx, addr)
+					require.NoError(t, err)
+					require.Equal(t, expectHashes, hashes)
+				}
+				return nil
+			})
+			require.NoError(t, err)
+
+			// Adjust the data, test that adjust() works
+			err = db.Update("", func(tx *dbutil.Tx) error {
+				for addr, addHashes := range tc.add {
+					rmHashes := tc.remove[addr]
+					delete(tc.remove, addr)
+
+					err := p.adjust(tx, addr, addHashes, rmHashes)
+					if err != nil {
+						return err
+					}
+				}
+
+				for addr, rmHashes := range tc.remove {
+					err := p.adjust(tx, addr, nil, rmHashes)
+					if err != nil {
+						return err
+					}
+				}
+
+				return nil
+			})
+
+			if tc.adjustErr == nil {
+				require.NoError(t, err)
+			} else {
+				require.Equal(t, tc.adjustErr, err)
+				return
+			}
+
+			addrHashes := make(addrHashMap)
+			err = db.View("", func(tx *dbutil.Tx) error {
+				return dbutil.ForEach(tx, UnspentPoolAddrIndexBkt, func(k, v []byte) error {
+					addr, err := cipher.AddressFromBytes(k)
+					require.NoError(t, err)
+
+					var hashes []cipher.SHA256
+					err = encoder.DeserializeRaw(v, &hashes)
+					require.NoError(t, err)
+
+					sort.Slice(hashes, func(i, j int) bool {
+						return bytes.Compare(hashes[i][:], hashes[j][:]) < 1
+					})
+
+					addrHashes[addr] = hashes
+
+					return nil
+				})
+			})
+			require.NoError(t, err)
+
+			for addr, hashes := range tc.expect {
+				sort.Slice(hashes, func(i, j int) bool {
+					return bytes.Compare(hashes[i][:], hashes[j][:]) < 1
+				})
+
+				tc.expect[addr] = hashes
+			}
+
+			require.Equal(t, len(tc.expect), len(addrHashes))
+			require.Equal(t, tc.expect, addrHashes)
+		})
+	}
 }

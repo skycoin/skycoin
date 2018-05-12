@@ -19,18 +19,11 @@
 #define BUFFER_SIZE 1024
 #define SCRYPTCHACHA20METALENGTHSIZE 2
 
-char buffer[BUFFER_SIZE];
-GoSlice text = {PLAINTEXT, strlen(PLAINTEXT), strlen(PLAINTEXT)};
-GoSlice password = {PASSWORD, strlen(PASSWORD), strlen(PASSWORD)};
-GoSlice password2 = {PASSWORD2, strlen(PASSWORD2), strlen(PASSWORD2)};
-GoSlice wrong_password = {WRONG_PASSWORD, strlen(WRONG_PASSWORD), strlen(WRONG_PASSWORD)};
-GoSlice encrypted = {ENCRYPTED, strlen(ENCRYPTED), strlen(ENCRYPTED)};
-GoSlice nullData = {NULL, 0, 0};
-GoSlice nullPassword = {NULL, 0, 0};
-coin__UxArray result = {buffer, 0, BUFFER_SIZE};
-char str[BUFFER_SIZE];
+
 
 void parseJsonMetaData(char* metadata, int* n, int* r, int* p, int* keyLen){
+	char buffer[BUFFER_SIZE];
+	coin__UxArray result;
 	*n = *r = *p = *keyLen = 0;
 	int length = strlen(metadata);
 	int openingQuote = -1;
@@ -73,6 +66,47 @@ void parseJsonMetaData(char* metadata, int* n, int* r, int* p, int* keyLen){
 }
 
 Test(cipher_encrypt_scrypt_chacha20poly1305, TestScryptChacha20poly1305Encrypt){
+	char buffer[BUFFER_SIZE];
+	coin__UxArray result;
+	GoSlice nullData;
+	GoSlice nullPassword;
+	char str[BUFFER_SIZE];
+	GoSlice text;
+	GoSlice password;
+	GoSlice password2;
+	GoSlice wrong_password;
+	GoSlice encrypted;
+	
+	memset(buffer, 0, BUFFER_SIZE);
+	memset(&text, 0, sizeof(GoSlice));
+	memset(&password, 0, sizeof(GoSlice));
+	memset(&password2, 0, sizeof(GoSlice));
+	memset(&wrong_password, 0, sizeof(GoSlice));
+	memset(&encrypted, 0, sizeof(GoSlice));
+	memset(&nullData, 0, sizeof(GoSlice));
+	memset(&nullPassword, 0, sizeof(GoSlice));
+	memset(&result, 0, sizeof(coin__UxArray));
+	memset(str, 0, BUFFER_SIZE);
+	
+	text.data = PLAINTEXT;
+	text.len = strlen(PLAINTEXT);
+	text.cap = text.len;
+	password.data = PASSWORD;
+	password.len = strlen(PASSWORD);
+	password.cap = password.len;
+	password2.data = PASSWORD2;
+	password2.len = strlen(PASSWORD2);
+	password2.cap = password2.len;
+	wrong_password.data = WRONG_PASSWORD;
+	wrong_password.len = strlen(WRONG_PASSWORD);
+	wrong_password.cap = wrong_password.len;
+	encrypted.data = ENCRYPTED;
+	encrypted.len = strlen(ENCRYPTED);
+	encrypted.cap = encrypted.len;
+	result.data = buffer;
+	result.len = 0;
+	result.cap = BUFFER_SIZE;
+	
 	GoUint32 errcode;
 	unsigned int metalength;
 	encrypt__ScryptChacha20poly1305 encrypt = {1, 8, 1, 32};
@@ -108,6 +142,46 @@ Test(cipher_encrypt_scrypt_chacha20poly1305, TestScryptChacha20poly1305Encrypt){
 }
 
 Test(cipher_encrypt_scrypt_chacha20poly1305, TestScryptChacha20poly1305Decrypt){
+	char buffer[BUFFER_SIZE];
+	coin__UxArray result;
+	GoSlice nullData;
+	GoSlice nullPassword;
+	char str[BUFFER_SIZE];
+	GoSlice text;
+	GoSlice password;
+	GoSlice password2;
+	GoSlice wrong_password;
+	GoSlice encrypted;
+	
+	memset(buffer, 0, BUFFER_SIZE);
+	memset(&text, 0, sizeof(GoSlice));
+	memset(&password, 0, sizeof(GoSlice));
+	memset(&password2, 0, sizeof(GoSlice));
+	memset(&wrong_password, 0, sizeof(GoSlice));
+	memset(&encrypted, 0, sizeof(GoSlice));
+	memset(&nullData, 0, sizeof(GoSlice));
+	memset(&nullPassword, 0, sizeof(GoSlice));
+	memset(&result, 0, sizeof(coin__UxArray));
+	memset(str, 0, BUFFER_SIZE);
+	
+	text.data = PLAINTEXT;
+	text.len = strlen(PLAINTEXT);
+	text.cap = text.len;
+	password.data = PASSWORD;
+	password.len = strlen(PASSWORD);
+	password.cap = password.len;
+	password2.data = PASSWORD2;
+	password2.len = strlen(PASSWORD2);
+	password2.cap = password2.len;
+	wrong_password.data = WRONG_PASSWORD;
+	wrong_password.len = strlen(WRONG_PASSWORD);
+	wrong_password.cap = wrong_password.len;
+	encrypted.data = ENCRYPTED;
+	encrypted.len = strlen(ENCRYPTED);
+	encrypted.cap = encrypted.len;
+	result.data = buffer;
+	result.len = 0;
+	result.cap = BUFFER_SIZE;
 	
 	GoUint32 errcode;
 	encrypt__ScryptChacha20poly1305 encrypt = {0, 0, 0, 0};

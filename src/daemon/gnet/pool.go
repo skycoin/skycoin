@@ -157,7 +157,6 @@ func (conn *Connection) String() string {
 func (conn *Connection) Close() error {
 	err := conn.Conn.Close()
 	close(conn.WriteQueue)
-	conn.WriteQueue = nil
 	conn.Buffer = &bytes.Buffer{}
 	return err
 }
@@ -188,8 +187,8 @@ type ConnectionPool struct {
 	reqC chan strand.Request
 	// quit channel
 	quit       chan struct{}
-	quitStrand chan struct{}
 	done       chan struct{}
+	strandDone chan struct{}
 	wg         sync.WaitGroup
 }
 
@@ -206,6 +205,7 @@ func NewConnectionPool(c Config, state interface{}) *ConnectionPool {
 		quit:         make(chan struct{}),
 		quitStrand:   make(chan struct{}),
 		done:         make(chan struct{}),
+		strandDone:   make(chan struct{}),
 		reqC:         make(chan strand.Request),
 	}
 
@@ -253,7 +253,9 @@ loop:
 		pool.wg.Add(1)
 		go func() {
 			defer pool.wg.Done()
-			pool.handleConnection(conn, false)
+			if err := pool.handleConnection(conn, false); err != nil {
+				logger.Errorf("pool.handleConnection error: %v", err)
+			}
 		}()
 	}
 	pool.wg.Wait()
@@ -269,7 +271,7 @@ func (pool *ConnectionPool) RunOffline() error {
 }
 
 func (pool *ConnectionPool) processStrand() {
-	defer close(pool.quitStrand)
+	defer close(pool.strandDone)
 	for {
 		select {
 		case <-pool.quit:
@@ -287,7 +289,7 @@ func (pool *ConnectionPool) Shutdown() {
 	close(pool.quit)
 
 	// Wait for all strand() calls to finish
-	<-pool.quitStrand
+	<-pool.strandDone
 
 	// Close to listener to prevent new connections
 	if pool.listener != nil {
@@ -351,24 +353,39 @@ func (pool *ConnectionPool) ListeningAddress() (net.Addr, error) {
 }
 
 // Creates a Connection and begins its read and write loop
-func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) {
-	defer logger.Debugf("connection %s closed", conn.RemoteAddr())
+func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) error {
+	defer logger.Debugf("Connection %s closed", conn.RemoteAddr())
 	addr := conn.RemoteAddr().String()
-	exist, err := pool.IsConnExist(addr)
-	if err != nil {
-		logger.Error(err)
-		return
-	}
 
-	if exist {
-		logger.Errorf("Connection %s already exists", addr)
-		return
-	}
+	c, err := func() (c *Connection, err error) {
+		defer func() {
+			if err != nil {
+				if closeErr := conn.Close(); closeErr != nil {
+					logger.Errorf("conn.Close() %s error: %v", addr, closeErr)
+				}
+			}
+		}()
 
-	c, err := pool.NewConnection(conn, solicited)
+		exist, err := pool.IsConnExist(addr)
+		if err != nil {
+			return
+		}
+		if exist {
+			err = fmt.Errorf("Connection %s already exists", addr)
+			return
+		}
+
+		c, err = pool.NewConnection(conn, solicited)
+		if err != nil {
+			err = fmt.Errorf("Create connection to %s failed: %v", addr, err)
+			return
+		}
+
+		return c, err
+	}()
+
 	if err != nil {
-		logger.Errorf("Create connection to %s failed: %v", addr, err)
-		return
+		return err
 	}
 
 	if pool.Config.ConnectCallback != nil {
@@ -378,7 +395,7 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) {
 	msgC := make(chan []byte, 32)
 	errC := make(chan error, 3)
 
-	wg := sync.WaitGroup{}
+	var wg sync.WaitGroup
 	wg.Add(1)
 	qc := make(chan struct{})
 	go func() {
@@ -433,6 +450,8 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) {
 	close(qc)
 
 	wg.Wait()
+
+	return err
 }
 
 func (pool *ConnectionPool) readLoop(conn *Connection, msgChan chan []byte, qc chan struct{}) error {
@@ -655,7 +674,9 @@ func (pool *ConnectionPool) Connect(address string) error {
 	pool.wg.Add(1)
 	go func() {
 		defer pool.wg.Done()
-		pool.handleConnection(conn, true)
+		if err := pool.handleConnection(conn, true); err != nil {
+			logger.Errorf("pool.handleConnection error: %v", err)
+		}
 	}()
 	return nil
 }
@@ -663,16 +684,16 @@ func (pool *ConnectionPool) Connect(address string) error {
 // Disconnect removes a connection from the pool by address, and passes a Disconnection to
 // the DisconnectCallback
 func (pool *ConnectionPool) Disconnect(addr string, r DisconnectReason) error {
-	var exist bool
 	if err := pool.strand("Disconnect", func() error {
-		exist = pool.disconnect(addr)
+		exist := pool.disconnect(addr)
+
+		if pool.Config.DisconnectCallback != nil && exist {
+			pool.Config.DisconnectCallback(addr, r)
+		}
+
 		return nil
 	}); err != nil {
 		return err
-	}
-
-	if pool.Config.DisconnectCallback != nil && exist {
-		pool.Config.DisconnectCallback(addr, r)
 	}
 
 	return nil

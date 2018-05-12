@@ -36,7 +36,7 @@ RUN go get -u github.com/derekparker/delve/cmd/dlv  && \
     go get -u github.com/alecthomas/gometalinter && \
     go get -u github.com/zmb3/gogetdoc && \
     go get -u golang.org/x/tools/cmd/guru && \
-    go get -u github.com/golang/lint/golint to folder /g && \
+    go get -u github.com/golang/lint/golint && \
     go get -u github.com/davidrjenni/reftools/cmd/fillstruct && \
     go get -u github.com/rogpeppe/godef && \
     go get -u github.com/fatih/motion && \

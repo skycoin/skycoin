@@ -18,12 +18,16 @@
 #define EY "56915849F52CC8F76F5FD7E4BF60DB4A43BF633E1B1383F85FE89164BFADCBDB"
 #define EZ "9075B4EE4D4788CABB49F7F81C221151FA2F68914D0AA833388FA11FF621A970"
 
-secp256k1go__XYZ a; //sample data
-secp256k1go__XYZ r; //result of double
-secp256k1go__XYZ e; //expected
+
 
 Test(cipher_secp256k1_xyz, TestXYZDouble){	
 	GoInt32 error_code;
+	secp256k1go__XYZ a; //sample data
+	secp256k1go__XYZ r; //result of double
+	secp256k1go__XYZ e; //expected
+	
+	memset(&a, 0, sizeof(secp256k1go__XYZ));
+	memset(&e, 0, sizeof(secp256k1go__XYZ));
 	memset(&r, 0, sizeof(secp256k1go__XYZ));
 	
 	GoString strAx = {AX, strlen(AX)};

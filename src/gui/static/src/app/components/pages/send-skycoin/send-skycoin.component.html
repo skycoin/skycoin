@@ -15,7 +15,7 @@
     </div>
     <div class="form-field">
       <label for="amount">Amount</label>
-      <input formControlName="amount" id="amount">
+      <input formControlName="amount" id="amount" (keydown.enter)="send()">
     </div>
     <div class="form-field">
       <label for="notes">Notes</label>

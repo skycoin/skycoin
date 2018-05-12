@@ -1,0 +1,28 @@
+@import '../../../../../theme/_variables.scss';
+
+mat-card {
+  margin-bottom: 20px;
+
+  .row {
+    margin-bottom: -10px;
+  }
+
+  .-peer {
+    margin-bottom: 10px;
+    display: flex;
+
+    .-port {
+      color: $grey-dark;
+    }
+  }
+}
+
+h3 {
+  font-weight: 400;
+  margin-top: 40px;
+}
+
+mat-card, h3 {
+  margin-left: 20px;
+  margin-right: 20px;
+}

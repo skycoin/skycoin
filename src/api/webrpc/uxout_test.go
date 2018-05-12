@@ -49,7 +49,7 @@ func Test_getAddrUxOutsHandler(t *testing.T) {
 				},
 				gateway: m,
 			},
-			makeErrorResponse(errCodeInternalError, errMsgInternalError),
+			MakeErrorResponse(ErrCodeInternalError, ErrMsgInternalError),
 		},
 		{
 			"invalid address length",
@@ -62,7 +62,7 @@ func Test_getAddrUxOutsHandler(t *testing.T) {
 				},
 				gateway: m,
 			},
-			makeErrorResponse(errCodeInvalidParams, "Invalid address length"),
+			MakeErrorResponse(ErrCodeInvalidParams, "Invalid address length"),
 		},
 		{
 			"invalid address version",
@@ -75,7 +75,7 @@ func Test_getAddrUxOutsHandler(t *testing.T) {
 				},
 				gateway: m,
 			},
-			makeErrorResponse(errCodeInvalidParams, "Invalid address length"),
+			MakeErrorResponse(ErrCodeInvalidParams, "Invalid address length"),
 		},
 		{
 			"invalid params",
@@ -88,7 +88,7 @@ func Test_getAddrUxOutsHandler(t *testing.T) {
 				},
 				gateway: m,
 			},
-			makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams),
+			MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams),
 		},
 		{
 			"decode params error",
@@ -101,7 +101,7 @@ func Test_getAddrUxOutsHandler(t *testing.T) {
 				},
 				gateway: m,
 			},
-			makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams),
+			MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams),
 		},
 	}
 

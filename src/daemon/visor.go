@@ -11,7 +11,6 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/strand"
-	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor"
 )
 
@@ -219,7 +218,7 @@ func (vs *Visor) AnnounceAllTxns(pool *Pool) error {
 	})
 
 	if err != nil {
-		logger.Debugf("Broadcast AnnounceTxnsMessage failed, err:%v", err)
+		logger.Debugf("Broadcast AnnounceTxnsMessage failed, err: %v", err)
 	}
 
 	return err
@@ -296,12 +295,11 @@ func (vs *Visor) RequestBlocksFromAddr(pool *Pool, addr string) error {
 }
 
 // SetTxnsAnnounced sets all txns as announced
-func (vs *Visor) SetTxnsAnnounced(txns []cipher.SHA256) {
+func (vs *Visor) SetTxnsAnnounced(txns map[cipher.SHA256]int64) {
 	vs.strand("SetTxnsAnnounced", func() error {
-		now := utc.Now()
-		for _, h := range txns {
-			if err := vs.v.Unconfirmed.SetAnnounced(h, now); err != nil {
-				logger.Error("Failed to set unconfirmed txn announce time")
+		for h, t := range txns {
+			if err := vs.v.Unconfirmed.SetAnnounced(h, t); err != nil {
+				logger.Error("Failed to set unconfirmed txn announce time: ", err)
 			}
 		}
 
@@ -450,11 +448,7 @@ func (vs *Visor) RecordBlockchainHeight(addr string, bkLen uint64) {
 func (vs *Visor) EstimateBlockchainHeight() uint64 {
 	var maxLen uint64
 	vs.strand("EstimateBlockchainHeight", func() error {
-		ourLen := vs.v.HeadBkSeq()
-		if len(vs.blockchainHeights) < 2 {
-			maxLen = ourLen
-			return nil
-		}
+		maxLen = vs.v.HeadBkSeq()
 
 		for _, seq := range vs.blockchainHeights {
 			if maxLen < seq {
@@ -631,7 +625,7 @@ func (gbm *GiveBlocksMessage) Handle(mc *gnet.MessageContext,
 // Process process message
 func (gbm *GiveBlocksMessage) Process(d *Daemon) {
 	if d.Visor.Config.DisableNetworking {
-		logger.Notice("Visor disabled, ignoring GiveBlocksMessage")
+		logger.Critical().Info("Visor disabled, ignoring GiveBlocksMessage")
 		return
 	}
 
@@ -650,10 +644,10 @@ func (gbm *GiveBlocksMessage) Process(d *Daemon) {
 
 		err := d.Visor.ExecuteSignedBlock(b)
 		if err == nil {
-			logger.Noticef("Added new block %d", b.Block.Head.BkSeq)
+			logger.Critical().Infof("Added new block %d", b.Block.Head.BkSeq)
 			processed++
 		} else {
-			logger.Criticalf("Failed to execute received block %d: %v", b.Block.Head.BkSeq, err)
+			logger.Critical().Errorf("Failed to execute received block %d: %v", b.Block.Head.BkSeq, err)
 			// Blocks must be received in order, so if one fails its assumed
 			// the rest are failing
 			break

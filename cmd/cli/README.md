@@ -1,10 +1,10 @@
-# CLI
+# CLI Documentation
 
 Skycoin command line interface
 
 The CLI command APIs can be used directly from a Go application, see [Skycoin CLI Godoc](https://godoc.org/github.com/skycoin/skycoin/src/api/cli).
 
-<!-- MarkdownTOC depth="3" autolink="true" bracket="round" -->
+<!-- MarkdownTOC autolink="true" bracket="round" -->
 
 - [Install](#install)
     - [Enable command autocomplete](#enable-command-autocomplete)
@@ -12,30 +12,54 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
     - [RPC_ADDR](#rpcaddr)
     - [WALLET_DIR](#walletdir)
     - [WALLET_NAME](#walletname)
+    - [USE_CSRF](#usecsrf)
 - [Usage](#usage)
-    - [Add private key](#add-private-key)
-    - [Check addresss balance](#check-address-balance)
+    - [Add Private Key](#add-private-key)
+        - [Example](#example)
+    - [Check address balance](#check-address-balance)
+        - [Example](#example-1)
     - [Generate new addresses](#generate-new-addresses)
+        - [Examples](#examples)
     - [Check address outputs](#check-address-outputs)
+        - [Example](#example-2)
     - [Check block data](#check-block-data)
+        - [Example](#example-3)
     - [Check database integrity](#check-database-integrity)
-    - [Create a raw transaction](#create-raw-transaction)
-    - [Decode a raw transaction](#decode-raw-transaction)
-    - [Broadcast a raw transaction](#broadcast-raw-transaction)
-    - [Generate a wallet](#generate-wallet)
-    - [Generate addresses for a wallet](#generate-addresses-for-wallet)
+        - [Example](#example-4)
+    - [Create a raw transaction](#create-a-raw-transaction)
+        - [Examples](#examples-1)
+    - [Decode a raw transaction](#decode-a-raw-transaction)
+        - [Example](#example-5)
+    - [Broadcast a raw transaction](#broadcast-a-raw-transaction)
+    - [Generate a wallet](#generate-a-wallet)
+        - [Examples](#examples-2)
+    - [Generate addresses for a wallet](#generate-addresses-for-a-wallet)
     - [Last blocks](#last-blocks)
+        - [Examples](#examples-3)
     - [List wallet addresses](#list-wallet-addresses)
+        - [Examples](#examples-4)
     - [List wallets](#list-wallets)
+        - [Example](#example-6)
     - [Send](#send)
+        - [Examples](#examples-5)
+    - [Show Config](#show-config)
+        - [Example](#example-7)
     - [Status](#status)
+        - [Example](#example-8)
     - [Get transaction](#get-transaction)
+        - [Example](#example-9)
     - [Verify address](#verify-address)
+        - [Example](#example-10)
     - [Check wallet balance](#check-wallet-balance)
+        - [Example](#example-11)
     - [See wallet directory](#see-wallet-directory)
+        - [Examples](#examples-6)
     - [List wallet transaction history](#list-wallet-transaction-history)
+        - [Examples](#examples-7)
     - [List wallet outputs](#list-wallet-outputs)
+        - [Examples](#examples-8)
     - [CLI version](#cli-version)
+        - [Examples](#examples-9)
 - [Note](#note)
 
 <!-- /MarkdownTOC -->
@@ -67,13 +91,15 @@ The CLI uses environment variable to manage the configurations.
 
 ### RPC_ADDR
 
-CLI will connect to skycoin node rpc address:`127.0.0.1:6430` by default,
-you can change the address by setting the `RPC_ADDR` env variable
+CLI will connect to skycoin node rpc address `http://127.0.0.1:6420` by default.
+You can change the address by setting the `RPC_ADDR` environment variable
 with the following command:
 
 ```bash
-$ export RPC_ADDR=127.0.0.1:6430
+$ export RPC_ADDR=http://127.0.0.1:6420
 ```
+
+Note: `RPC_ADDR` must be in `scheme://host` format.
 
 ### WALLET_DIR
 
@@ -93,6 +119,15 @@ The wallet file name must have `.wlt` extension.
 $ export WALLET_NAME=YOUR_WALLET_NAME
 ```
 
+### USE_CSRF
+
+If the remote node to communicate with is not run with `-csrf-disabled`, set this variable.
+CSRF is enabled by default on nodes.
+
+```bash
+$ export USE_CSRF=1
+```
+
 ## Usage
 
 After the installation, you can run `skycoin-cli` to see the usage:
@@ -107,7 +142,7 @@ USAGE:
    skycoin-cli [global options] command [command options] [arguments...]
 
 VERSION:
-   0.22.0
+   0.23.1-rc2
 
 COMMANDS:
      addPrivateKey         Add a private key to specific wallet
@@ -125,6 +160,7 @@ COMMANDS:
      listAddresses         Lists all addresses in a given wallet
      listWallets           Lists all wallets stored in the wallet directory
      send                  Send skycoin from a wallet or an address to a recipient address
+     showConfig            show cli configuration
      status                Check the status of current skycoin node
      transaction           Show detail info of specific transaction
      verifyAddress         Verify a skycoin address
@@ -139,8 +175,9 @@ GLOBAL OPTIONS:
    --help, -h     show help
    --version, -v  print the version
 ENVIRONMENT VARIABLES:
-    RPC_ADDR: Address of RPC node. Default "127.0.0.1:6430"
+    RPC_ADDR: Address of RPC node. Must be in scheme://host format. Default "http://127.0.0.1:6420"
     COIN: Name of the coin. Default "skycoin"
+    USE_CSRF: Set to 1 or true if the remote node has CSRF enabled. Default false (unset)
     WALLET_DIR: Directory where wallets are stored. This value is overriden by any subcommand flag specifying a wallet filename, if that filename includes a path. Default "$HOME/.$COIN/wallets"
     WALLET_NAME: Name of wallet file (without path). This value is overriden by any subcommand flag specifying a wallet filename. Default "$COIN_cli.wlt"
 ```
@@ -1453,6 +1490,28 @@ $ skycoin-cli send -f $WALLET_PATH -a $FROM_ADDRESS --json $RECIPIENT_ADDRESS $A
 ```
 </details>
 
+### Show Config
+Show the CLI tool's local configuration.
+
+#### Example
+```bash
+$ skycoin-cli showConfig
+```
+
+<details>
+ <summary>View Output</summary>
+
+```json
+{
+    "wallet_directory": "/home/user/.skycoin/wallets",
+    "wallet_name": "skycoin_cli.wlt",
+    "data_directory": "/home/user/.skycoin",
+    "coin": "skycoin",
+    "rpc_address": "http://127.0.0.1:6420",
+    "use_csrf": false
+}
+```
+
 ### Status
 #### Example
 ```bash
@@ -1468,7 +1527,7 @@ $ skycoin-cli status
  "num_of_blocks": 21210,
  "hash_of_last_block": "d5797705bfc0ac7956f3eeaa083aec4e89a6b27ada7499c5a53dad2fda84c5f9",
  "time_since_last_block": "18446744073709551591s",
- "webrpc_address": "127.0.0.1:6430"
+ "webrpc_address": "127.0.0.1:6420"
 }
 ```
 </details>
@@ -1877,10 +1936,10 @@ $ skycoin-cli version
  <summary>View Output</summary>
 
 ```
-skycoin:0.22.0
-cli:0.22.0
-rpc:0.22.0
-wallet:0.22.0
+skycoin:0.23.0
+cli:0.23.0
+rpc:0.23.0
+wallet:0.23.0
 ```
 </details>
 
@@ -1894,10 +1953,10 @@ $ skycoin-cli version --json
 
 ```json
 {
- "skycoin": "0.22.0",
- "cli": "0.22.0",
- "rpc": "0.22.0",
- "wallet": "0.22.0"
+ "skycoin": "0.23.0",
+ "cli": "0.23.0",
+ "rpc": "0.23.0",
+ "wallet": "0.23.0"
 }
 ```
 </details>

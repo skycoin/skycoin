@@ -7,14 +7,17 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"math/rand"
 	"testing"
 	"time"
 
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encrypt"
+	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/logging"
@@ -63,7 +66,7 @@ func init() {
 			log.Panic(err)
 		}
 
-		if err := w.lock([]byte("pwd"), CryptoTypeScryptChacha20poly1305); err != nil {
+		if err := w.Lock([]byte("pwd"), CryptoTypeScryptChacha20poly1305); err != nil {
 			log.Panic(err)
 		}
 
@@ -365,7 +368,7 @@ func TestWalletLock(t *testing.T) {
 					require.NoError(t, err)
 				}
 
-				err = w.lock(tc.lockPwd, ct)
+				err = w.Lock(tc.lockPwd, ct)
 				require.Equal(t, tc.err, err)
 				if err != nil {
 					return
@@ -435,7 +438,7 @@ func TestWalletUnlock(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				w := makeWallet(t, tc.opts, 1)
 				// Tests the unlock method
-				wlt, err := w.unlock(tc.unlockPwd)
+				wlt, err := w.Unlock(tc.unlockPwd)
 				require.Equal(t, tc.err, err)
 				if err != nil {
 					return
@@ -491,11 +494,11 @@ func TestLockAndUnLock(t *testing.T) {
 			require.Equal(t, w, cw)
 
 			// lock the cloned wallet
-			err = cw.lock([]byte("pwd"), ct)
+			err = cw.Lock([]byte("pwd"), ct)
 			require.NoError(t, err)
 
 			// unlock the cloned wallet
-			ucw, err := cw.unlock([]byte("pwd"))
+			ucw, err := cw.Unlock([]byte("pwd"))
 			require.NoError(t, err)
 
 			require.Equal(t, w, ucw)
@@ -516,7 +519,7 @@ func makeWallet(t *testing.T, opts Options, addrNum uint64) *Wallet {
 		require.NoError(t, err)
 	}
 	if preOpts.Encrypt {
-		err = w.lock(preOpts.Password, preOpts.CryptoType)
+		err = w.Lock(preOpts.Password, preOpts.CryptoType)
 		require.NoError(t, err)
 	}
 	return w
@@ -865,7 +868,7 @@ func TestWalletGuard(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			require.NoError(t, w.guardUpdate([]byte("pwd"), func(w *Wallet) error {
+			require.NoError(t, w.GuardUpdate([]byte("pwd"), func(w *Wallet) error {
 				require.Equal(t, "seed", w.seed())
 				w.setLabel("label")
 				return nil
@@ -873,7 +876,7 @@ func TestWalletGuard(t *testing.T) {
 			require.Equal(t, "label", w.Label())
 			validate(w)
 
-			w.guardView([]byte("pwd"), func(w *Wallet) error {
+			w.GuardView([]byte("pwd"), func(w *Wallet) error {
 				require.Equal(t, "label", w.Label())
 				w.setLabel("new label")
 				return nil
@@ -1743,7 +1746,7 @@ func makeRandomUxBalances(t *testing.T) []UxBalance {
 	return uxb
 }
 
-func verifyChosenCoins(t *testing.T, uxb []UxBalance, coins uint64, chooseSpends func([]UxBalance, uint64) ([]UxBalance, error), cmpCoins func(i, j UxBalance) bool) {
+func verifyChosenCoins(t *testing.T, uxb []UxBalance, coins uint64, chooseSpends func([]UxBalance, uint64, uint64) ([]UxBalance, error), cmpCoins func(i, j UxBalance) bool) {
 	var haveZero, haveNonzero int
 	for _, ux := range uxb {
 		if ux.Hours == 0 {
@@ -1759,15 +1762,15 @@ func verifyChosenCoins(t *testing.T, uxb []UxBalance, coins uint64, chooseSpends
 		totalHours += ux.Hours
 	}
 
-	chosen, err := chooseSpends(uxb, coins)
+	chosen, err := chooseSpends(uxb, coins, 0)
 
 	if coins == 0 {
-		testutil.RequireError(t, err, "zero spend amount")
+		testutil.RequireError(t, err, ErrZeroSpend.Error())
 		return
 	}
 
 	if len(uxb) == 0 {
-		testutil.RequireError(t, err, "no unspents to spend")
+		testutil.RequireError(t, err, ErrNoUnspents.Error())
 		return
 	}
 
@@ -1892,4 +1895,517 @@ func verifySortedCoinsHighToLow(t *testing.T, uxb []UxBalance) {
 	verifySortedCoins(t, uxb, func(a, b UxBalance) bool {
 		return a.Coins >= b.Coins
 	})
+}
+
+func TestCreateWalletParamsVerify(t *testing.T) {
+	changeAddress := testutil.MakeAddress()
+	toManual := []coin.TransactionOutput{
+		{
+			Address: testutil.MakeAddress(),
+			Coins:   1e6,
+			Hours:   1,
+		},
+		{
+			Address: testutil.MakeAddress(),
+			Coins:   5e6,
+			Hours:   0,
+		},
+	}
+
+	toAuto := []coin.TransactionOutput{
+		{
+			Address: testutil.MakeAddress(),
+			Coins:   1e6,
+		},
+		{
+			Address: testutil.MakeAddress(),
+			Coins:   5e6,
+		},
+	}
+
+	one := decimal.New(1, 0)
+	negativeOne := decimal.New(-1, 0)
+	onePointOne := decimal.New(11, -1)
+	pointOneOne := decimal.New(11, -2)
+
+	cases := []struct {
+		name   string
+		params CreateTransactionParams
+		err    string
+	}{
+		{
+			name: "no change address",
+			err:  "ChangeAddress is required",
+		},
+
+		{
+			name: "no to destinations",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+			},
+			err: "To is required",
+		},
+
+		{
+			name: "missing to coins",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				To: []coin.TransactionOutput{
+					{
+						Address: testutil.MakeAddress(),
+						Hours:   1,
+					},
+				},
+			},
+			err: "To.Coins must not be zero",
+		},
+
+		{
+			name: "missing to address",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				To: []coin.TransactionOutput{
+					{
+						Coins: 5,
+						Hours: 1,
+					},
+				},
+			},
+			err: "To.Address must not be the null address",
+		},
+
+		{
+			name: "missing wallet id",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				To:            toManual,
+			},
+			err: "Wallet.ID is required",
+		},
+
+		{
+			name: "wallet addresses contains empty value",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				To:            toManual,
+				Wallet: CreateTransactionWalletParams{
+					ID:        "foo.wlt",
+					Addresses: []cipher.Address{cipher.Address{}},
+				},
+			},
+			err: "Wallet.Addresses must not contain the null address",
+		},
+
+		{
+			name: "nonzero to hours for auto selection",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				To:            toManual,
+				Wallet: CreateTransactionWalletParams{
+					ID:        "foo.wlt",
+					Addresses: []cipher.Address{},
+				},
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeAuto,
+				},
+			},
+			err: "To.Hours must be zero for auto type hours selection",
+		},
+
+		{
+			name: "mode missing for auto selection",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				To:            toAuto,
+				Wallet: CreateTransactionWalletParams{
+					ID:        "foo.wlt",
+					Addresses: []cipher.Address{},
+				},
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeAuto,
+				},
+			},
+			err: "HoursSelection.Mode is required for auto type hours selection",
+		},
+
+		{
+			name: "mode set for manual selection",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				To:            toManual,
+				Wallet: CreateTransactionWalletParams{
+					ID:        "foo.wlt",
+					Addresses: []cipher.Address{},
+				},
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeManual,
+					Mode: HoursSelectionModeShare,
+				},
+			},
+			err: "HoursSelection.Mode cannot be used for manual type hours selection",
+		},
+
+		{
+			name: "missing hours selection type",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				To:            toAuto,
+				Wallet: CreateTransactionWalletParams{
+					ID:        "foo.wlt",
+					Addresses: []cipher.Address{},
+				},
+				HoursSelection: HoursSelection{
+					Type: "",
+				},
+			},
+			err: "Invalid HoursSelection.Type",
+		},
+
+		{
+			name: "invalid hours selection type",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				To:            toAuto,
+				Wallet: CreateTransactionWalletParams{
+					ID:        "foo.wlt",
+					Addresses: []cipher.Address{},
+				},
+				HoursSelection: HoursSelection{
+					Type: "invalid",
+				},
+			},
+			err: "Invalid HoursSelection.Type",
+		},
+
+		{
+			name: "invalid hours selection mode",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				To:            toAuto,
+				Wallet: CreateTransactionWalletParams{
+					ID:        "foo.wlt",
+					Addresses: []cipher.Address{},
+				},
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeAuto,
+					Mode: "invalid",
+				},
+			},
+			err: "Invalid HoursSelection.Mode",
+		},
+
+		{
+			name: "share factor not set for split even mode",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				To:            toAuto,
+				Wallet: CreateTransactionWalletParams{
+					ID:        "foo.wlt",
+					Addresses: []cipher.Address{},
+				},
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeAuto,
+					Mode: HoursSelectionModeShare,
+				},
+			},
+			err: "HoursSelection.ShareFactor must be set for share mode",
+		},
+
+		{
+			name: "share factor set but not split even mode",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				To:            toManual,
+				Wallet: CreateTransactionWalletParams{
+					ID:        "foo.wlt",
+					Addresses: []cipher.Address{},
+				},
+				HoursSelection: HoursSelection{
+					Type:        HoursSelectionTypeManual,
+					ShareFactor: &one,
+				},
+			},
+			err: "HoursSelection.ShareFactor can only be used for share mode",
+		},
+
+		{
+			name: "share factor less than 0",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				To:            toAuto,
+				Wallet: CreateTransactionWalletParams{
+					ID:        "foo.wlt",
+					Addresses: []cipher.Address{},
+				},
+				HoursSelection: HoursSelection{
+					Type:        HoursSelectionTypeAuto,
+					Mode:        HoursSelectionModeShare,
+					ShareFactor: &negativeOne,
+				},
+			},
+			err: "HoursSelection.ShareFactor must be >= 0 and <= 1",
+		},
+
+		{
+			name: "share factor greater than 1",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				To:            toAuto,
+				Wallet: CreateTransactionWalletParams{
+					ID:        "foo.wlt",
+					Addresses: []cipher.Address{},
+				},
+				HoursSelection: HoursSelection{
+					Type:        HoursSelectionTypeAuto,
+					Mode:        HoursSelectionModeShare,
+					ShareFactor: &onePointOne,
+				},
+			},
+			err: "HoursSelection.ShareFactor must be >= 0 and <= 1",
+		},
+
+		{
+			name: "duplicate output when manual",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				To:            []coin.TransactionOutput{toManual[0], toManual[0]},
+				Wallet: CreateTransactionWalletParams{
+					ID: "foo.wlt",
+				},
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeManual,
+				},
+			},
+			err: "To contains duplicate values",
+		},
+
+		{
+			name: "duplicate output when auto",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				To:            []coin.TransactionOutput{toAuto[0], toAuto[0]},
+				Wallet: CreateTransactionWalletParams{
+					ID: "foo.wlt",
+				},
+				HoursSelection: HoursSelection{
+					Type:        HoursSelectionTypeAuto,
+					Mode:        HoursSelectionModeShare,
+					ShareFactor: &pointOneOne,
+				},
+			},
+			err: "To contains duplicate values",
+		},
+
+		{
+			name: "valid auto split even share factor",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				To:            toAuto,
+				Wallet: CreateTransactionWalletParams{
+					ID:        "foo.wlt",
+					Addresses: []cipher.Address{},
+				},
+				HoursSelection: HoursSelection{
+					Type:        HoursSelectionTypeAuto,
+					Mode:        HoursSelectionModeShare,
+					ShareFactor: &pointOneOne,
+				},
+			},
+		},
+
+		{
+			name: "valid manual",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				To:            toManual,
+				Wallet: CreateTransactionWalletParams{
+					ID:        "foo.wlt",
+					Addresses: []cipher.Address{},
+				},
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeManual,
+				},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.params.Validate()
+			if tc.err != "" {
+				require.Equal(t, NewError(errors.New(tc.err)), err, err.Error())
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestDistributeCoinHoursProportional(t *testing.T) {
+	cases := []struct {
+		name   string
+		coins  []uint64
+		hours  uint64
+		output []uint64
+		err    error
+	}{
+		{
+			name:  "no coins",
+			hours: 1,
+			err:   errors.New("DistributeCoinHoursProportional coins array must not be empty"),
+		},
+		{
+			name:  "coins have 0 in them",
+			coins: []uint64{1, 2, 0, 3},
+			hours: 1,
+			err:   errors.New("DistributeCoinHoursProportional coins array has a zero value"),
+		},
+		{
+			name:  "total coins too large while adding",
+			coins: []uint64{10, math.MaxUint64 - 9},
+			hours: 1,
+			err:   coin.ErrUint64AddOverflow,
+		},
+		{
+			name:  "total coins too large after adding",
+			coins: []uint64{10, math.MaxInt64},
+			hours: 1,
+			err:   coin.ErrUint64OverflowsInt64,
+		},
+		{
+			name:  "single coin too large",
+			coins: []uint64{10, math.MaxInt64 + 1},
+			hours: 1,
+			err:   coin.ErrUint64OverflowsInt64,
+		},
+		{
+			name:  "hours too large",
+			coins: []uint64{10},
+			hours: math.MaxInt64 + 1,
+			err:   coin.ErrUint64OverflowsInt64,
+		},
+
+		{
+			name:   "valid, one input",
+			coins:  []uint64{1},
+			hours:  1,
+			output: []uint64{1},
+		},
+
+		{
+			name:   "zero hours",
+			coins:  []uint64{1},
+			hours:  0,
+			output: []uint64{0},
+		},
+
+		{
+			name:   "valid, multiple inputs, all equal",
+			coins:  []uint64{2, 4, 8, 16},
+			hours:  30,
+			output: []uint64{2, 4, 8, 16},
+		},
+
+		{
+			name:   "valid, multiple inputs, rational division in coins and hours",
+			coins:  []uint64{2, 4, 8, 16},
+			hours:  30,
+			output: []uint64{2, 4, 8, 16},
+		},
+
+		{
+			name:   "valid, multiple inputs, rational division in coins, irrational in hours",
+			coins:  []uint64{2, 4, 8, 16},
+			hours:  31,
+			output: []uint64{3, 4, 8, 16},
+		},
+
+		{
+			name:   "valid, multiple inputs, irrational division in coins, rational in hours",
+			coins:  []uint64{2, 3, 5, 7, 11, 13},
+			hours:  41,
+			output: []uint64{2, 3, 5, 7, 11, 13},
+		},
+
+		{
+			name:   "valid, multiple inputs, irrational division in coins and hours",
+			coins:  []uint64{2, 3, 5, 7, 11, 13},
+			hours:  50,
+			output: []uint64{3, 4, 7, 8, 13, 15},
+		},
+
+		{
+			name:   "valid, multiple inputs that would receive 0 hours but get compensated from remainder as priority",
+			coins:  []uint64{16, 8, 4, 2, 1, 1},
+			hours:  14,
+			output: []uint64{7, 3, 1, 1, 1, 1},
+		},
+
+		{
+			name:   "not enough hours for everyone",
+			coins:  []uint64{1, 1, 1, 1, 1},
+			hours:  1,
+			output: []uint64{1, 0, 0, 0, 0},
+		},
+
+		{
+			name:   "not enough hours for everyone 2",
+			coins:  []uint64{1, 1, 1, 1, 1},
+			hours:  3,
+			output: []uint64{1, 1, 1, 0, 0},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			hours, err := DistributeCoinHoursProportional(tc.coins, tc.hours)
+			if tc.err != nil {
+				require.Equal(t, tc.err, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tc.output, hours)
+			}
+		})
+	}
+
+	// Randomized tests
+	iterations := 10000
+	maxCoinsLen := 300
+	maxMaxCoins := 100000
+	maxHours := 15000000
+	coins := make([]uint64, maxCoinsLen)
+	for i := 0; i < iterations; i++ {
+		coinsLen := rand.Intn(maxCoinsLen) + 1
+
+		maxCoins := rand.Intn(maxMaxCoins) + 1
+
+		var totalCoins uint64
+		for i := 0; i < coinsLen; i++ {
+			coins[i] = uint64(rand.Intn(maxCoins) + 1)
+
+			var err error
+			totalCoins, err = coin.AddUint64(totalCoins, coins[i])
+			require.NoError(t, err)
+		}
+
+		hours := uint64(rand.Intn(maxHours))
+
+		output, err := DistributeCoinHoursProportional(coins[:coinsLen], hours)
+		require.NoError(t, err)
+
+		require.Equal(t, coinsLen, len(output))
+
+		var totalHours uint64
+		for _, h := range output {
+			if hours >= totalCoins {
+				require.NotEqual(t, uint64(0), h)
+			}
+
+			var err error
+			totalHours, err = coin.AddUint64(totalHours, h)
+			require.NoError(t, err)
+		}
+
+		require.Equal(t, hours, totalHours)
+	}
 }

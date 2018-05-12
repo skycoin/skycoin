@@ -44,6 +44,7 @@ type Transaction struct {
 	Txn    coin.Transaction  //`json:"txn"`
 	Status TransactionStatus //`json:"status"`
 	Time   uint64            //`json:"time"`
+	Size   int
 }
 
 // TransactionStatus represents the transaction status
@@ -96,24 +97,6 @@ func NewConfirmedTransactionStatus(height uint64, blockSeq uint64) TransactionSt
 		BlockSeq:    blockSeq,
 	}
 }
-
-/*
-type ReadableTransactionHeader struct {
-	Hash string   `json:"hash"`
-	Sigs []string `json:"sigs"`
-}
-
-func NewReadableTransactionHeader(t *coin.TransactionHeader) ReadableTransactionHeader {
-	sigs := make([]string, len(t.Sigs))
-	for i, _ := range t.Sigs {
-		sigs[i] = t.Sigs[i].Hex()
-	}
-	return ReadableTransactionHeader{
-		Hash: t.Hash.Hex(),
-		Sigs: sigs,
-	}
-}
-*/
 
 // ReadableTransactionOutput readable transaction output
 type ReadableTransactionOutput struct {
@@ -361,12 +344,20 @@ func ReadableOutputsToUxBalances(ros ReadableOutputs) ([]wallet.UxBalance, error
 			return nil, fmt.Errorf("ReadableOutput address is invalid: %v", err)
 		}
 
+		srcTx, err := cipher.SHA256FromHex(ro.SourceTransaction)
+		if err != nil {
+			return nil, fmt.Errorf("ReadableOutput src_tx is invalid: %v", err)
+		}
+
 		b := wallet.UxBalance{
-			Hash:    hash,
-			BkSeq:   ro.BkSeq,
-			Address: addr,
-			Coins:   coins,
-			Hours:   ro.CalculatedHours,
+			Hash:           hash,
+			Time:           ro.Time,
+			BkSeq:          ro.BkSeq,
+			SrcTransaction: srcTx,
+			Address:        addr,
+			Coins:          coins,
+			Hours:          ro.CalculatedHours,
+			InitialHours:   ro.Hours,
 		}
 
 		uxb[i] = b
@@ -425,43 +416,14 @@ func NewReadableUnconfirmedTxns(txs []UnconfirmedTxn) ([]ReadableUnconfirmedTxn,
 	return rut, nil
 }
 
-// NewGenesisReadableTransaction creates genesis readable transaction
-func NewGenesisReadableTransaction(t *Transaction) (*ReadableTransaction, error) {
-	txid := cipher.SHA256{}
-	sigs := make([]string, len(t.Txn.Sigs))
-	for i := range t.Txn.Sigs {
-		sigs[i] = t.Txn.Sigs[i].Hex()
-	}
-
-	in := make([]string, len(t.Txn.In))
-	for i := range t.Txn.In {
-		in[i] = t.Txn.In[i].Hex()
-	}
-	out := make([]ReadableTransactionOutput, len(t.Txn.Out))
-	for i := range t.Txn.Out {
-		o, err := NewReadableTransactionOutput(&t.Txn.Out[i], txid)
-		if err != nil {
-			return &ReadableTransaction{}, err
-		}
-
-		out[i] = *o
-	}
-	return &ReadableTransaction{
-		Length:    t.Txn.Length,
-		Type:      t.Txn.Type,
-		Hash:      t.Txn.Hash().Hex(),
-		InnerHash: t.Txn.InnerHash.Hex(),
-		Timestamp: t.Time,
-
-		Sigs: sigs,
-		In:   in,
-		Out:  out,
-	}, nil
-}
-
 // NewReadableTransaction creates readable transaction
 func NewReadableTransaction(t *Transaction) (*ReadableTransaction, error) {
-	txid := t.Txn.Hash()
+	// Genesis transaction use empty SHA256 as txid
+	txid := cipher.SHA256{}
+	if t.Status.BlockSeq != 0 {
+		txid = t.Txn.Hash()
+	}
+
 	sigs := make([]string, len(t.Txn.Sigs))
 	for i := range t.Txn.Sigs {
 		sigs[i] = t.Txn.Sigs[i].Hex()
@@ -471,6 +433,7 @@ func NewReadableTransaction(t *Transaction) (*ReadableTransaction, error) {
 	for i := range t.Txn.In {
 		in[i] = t.Txn.In[i].Hex()
 	}
+
 	out := make([]ReadableTransactionOutput, len(t.Txn.Out))
 	for i := range t.Txn.Out {
 		o, err := NewReadableTransactionOutput(&t.Txn.Out[i], txid)
@@ -480,10 +443,11 @@ func NewReadableTransaction(t *Transaction) (*ReadableTransaction, error) {
 
 		out[i] = *o
 	}
+
 	return &ReadableTransaction{
 		Length:    t.Txn.Length,
 		Type:      t.Txn.Type,
-		Hash:      t.Txn.Hash().Hex(),
+		Hash:      t.Txn.TxIDHex(),
 		InnerHash: t.Txn.InnerHash.Hex(),
 		Timestamp: t.Time,
 
@@ -526,20 +490,16 @@ type ReadableBlockBody struct {
 func NewReadableBlockBody(b *coin.Block) (*ReadableBlockBody, error) {
 	txns := make([]ReadableTransaction, len(b.Body.Transactions))
 	for i := range b.Body.Transactions {
-		if b.Seq() == uint64(0) {
-			// genesis block
-			tx, err := NewGenesisReadableTransaction(&Transaction{Txn: b.Body.Transactions[i]})
-			if err != nil {
-				return nil, err
-			}
-			txns[i] = *tx
-		} else {
-			tx, err := NewReadableTransaction(&Transaction{Txn: b.Body.Transactions[i]})
-			if err != nil {
-				return nil, err
-			}
-			txns[i] = *tx
+		t := Transaction{
+			Txn:    b.Body.Transactions[i],
+			Status: TransactionStatus{BlockSeq: b.Seq()},
 		}
+
+		tx, err := NewReadableTransaction(&t)
+		if err != nil {
+			return nil, err
+		}
+		txns[i] = *tx
 	}
 	return &ReadableBlockBody{
 		Transactions: txns,
@@ -550,6 +510,7 @@ func NewReadableBlockBody(b *coin.Block) (*ReadableBlockBody, error) {
 type ReadableBlock struct {
 	Head ReadableBlockHeader `json:"header"`
 	Body ReadableBlockBody   `json:"body"`
+	Size int                 `json:"size"`
 }
 
 // NewReadableBlock creates readable block
@@ -561,7 +522,13 @@ func NewReadableBlock(b *coin.Block) (*ReadableBlock, error) {
 	return &ReadableBlock{
 		Head: NewReadableBlockHeader(&b.Head),
 		Body: *body,
+		Size: b.Size(),
 	}, nil
+}
+
+// ReadableBlocks an array of readable blocks.
+type ReadableBlocks struct {
+	Blocks []ReadableBlock `json:"blocks"`
 }
 
 // NewReadableBlocks converts []coin.SignedBlock to readable blocks
@@ -628,6 +595,7 @@ type TransactionJSON struct {
 }
 
 // TransactionToJSON convert transaction to json string
+// TODO -- remove in favor of ReadableTransaction?
 func TransactionToJSON(tx coin.Transaction) (string, error) {
 	var o TransactionJSON
 

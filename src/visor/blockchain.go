@@ -20,6 +20,11 @@ const (
 	DebugLevel2 = true
 )
 
+var (
+	// ErrVerifyStopped is returned when database verification is interrupted
+	ErrVerifyStopped = errors.New("database verification stopped")
+)
+
 //Warning: 10e6 is 10 million, 1e6 is 1 million
 
 // Note: DebugLevel1 adds additional checks for hash collisions that
@@ -51,7 +56,6 @@ type chainStore interface {
 	GetGenesisBlock(*dbutil.Tx) (*coin.SignedBlock, error)
 	GetBlockSignature(*dbutil.Tx, *coin.Block) (cipher.Sig, bool, error)
 	ForEachBlock(*dbutil.Tx, func(*coin.Block) error) error
-	ForEachSignature(*dbutil.Tx, func(cipher.SHA256, cipher.Sig) error) error
 }
 
 // DefaultWalker default blockchain walker
@@ -661,19 +665,21 @@ func (bc *Blockchain) VerifySignatures(tx *dbutil.Tx, workers int, quit chan str
 	sigHashes := make(chan sigHash, 100)
 	errC := make(chan error, 100)
 	interrupt := make(chan struct{})
+	verifyDone := make(chan struct{})
 
 	// Verify block signatures in a worker pool
-	var wg sync.WaitGroup
-	wg.Add(workers)
+	var workerWg sync.WaitGroup
+	workerWg.Add(workers)
 	for i := 0; i < workers; i++ {
 		go func() {
-			defer wg.Done()
+			defer workerWg.Done()
 			for {
 				select {
 				case sh, ok := <-sigHashes:
 					if !ok {
 						return
 					}
+
 					if err := cipher.VerifySignature(bc.cfg.Pubkey, sh.sig, sh.hash); err != nil {
 						logger.Errorf("Signature verification failed: %v", err)
 						select {
@@ -685,6 +691,15 @@ func (bc *Blockchain) VerifySignatures(tx *dbutil.Tx, workers int, quit chan str
 			}
 		}()
 	}
+
+	// Wait for signature verification worker goroutines to finish
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		workerWg.Wait()
+		close(verifyDone)
+	}()
 
 	// Iterate all blocks stored in the "blocks" bucket
 	// * Detect if a corresponding signature is missing from the signatures bucket
@@ -738,6 +753,9 @@ func (bc *Blockchain) VerifySignatures(tx *dbutil.Tx, workers int, quit chan str
 			break
 		}
 	case <-quit:
+		err = ErrVerifyStopped
+		break
+	case <-verifyDone:
 		break
 	}
 

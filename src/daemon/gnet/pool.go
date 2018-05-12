@@ -187,9 +187,10 @@ type ConnectionPool struct {
 	// operations channel
 	reqC chan strand.Request
 	// quit channel
-	quit chan struct{}
-	done chan struct{}
-	wg   sync.WaitGroup
+	quit       chan struct{}
+	quitStrand chan struct{}
+	done       chan struct{}
+	wg         sync.WaitGroup
 }
 
 // NewConnectionPool creates a new ConnectionPool that will listen on
@@ -203,6 +204,7 @@ func NewConnectionPool(c Config, state interface{}) *ConnectionPool {
 		SendResults:  make(chan SendResult, c.SendResultsSize),
 		messageState: state,
 		quit:         make(chan struct{}),
+		quitStrand:   make(chan struct{}),
 		done:         make(chan struct{}),
 		reqC:         make(chan strand.Request),
 	}
@@ -267,6 +269,7 @@ func (pool *ConnectionPool) RunOffline() error {
 }
 
 func (pool *ConnectionPool) processStrand() {
+	defer close(pool.quitStrand)
 	for {
 		select {
 		case <-pool.quit:
@@ -284,9 +287,7 @@ func (pool *ConnectionPool) Shutdown() {
 	close(pool.quit)
 
 	// Wait for all strand() calls to finish
-	pool.strand("waitingToShutdown", func() error {
-		return nil
-	})
+	<-pool.quitStrand
 
 	// Close to listener to prevent new connections
 	if pool.listener != nil {

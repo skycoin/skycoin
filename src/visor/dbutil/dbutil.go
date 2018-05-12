@@ -327,6 +327,11 @@ func IsEmpty(tx *Tx, bktName []byte) (bool, error) {
 	return length == 0, nil
 }
 
+// Exists returns true if the bucket exists
+func Exists(tx *Tx, bktName []byte) bool {
+	return tx.Bucket(bktName) != nil
+}
+
 // Reset resets the bucket
 func Reset(tx *Tx, bktName []byte) error {
 	if err := tx.DeleteBucket(bktName); err != nil {

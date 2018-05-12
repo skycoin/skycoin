@@ -177,6 +177,10 @@ func (s *Server) Serve() error {
 
 // Shutdown closes the HTTP service. This can only be called after Serve or ServeHTTPS has been called.
 func (s *Server) Shutdown() {
+	if s == nil {
+		return
+	}
+
 	logger.Info("Shutting down web interface")
 	defer logger.Info("Web interface shut down")
 	s.listener.Close()

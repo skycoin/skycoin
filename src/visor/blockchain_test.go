@@ -145,10 +145,6 @@ func (fcs *fakeChainStore) ForEachBlock(tx *dbutil.Tx, f func(*coin.Block) error
 	return nil
 }
 
-func (fcs *fakeChainStore) ForEachSignature(tx *dbutil.Tx, f func(cipher.SHA256, cipher.Sig) error) error {
-	return nil
-}
-
 func makeBlock(t *testing.T, preBlock coin.Block, tm uint64) *coin.Block {
 	uxHash := testutil.RandSHA256(t)
 	tx := coin.Transaction{}

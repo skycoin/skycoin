@@ -37,6 +37,11 @@ func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) erro
 	}
 
 	err = db.View("CheckDatabase", func(tx *dbutil.Tx) error {
+		// Don't verify the db if the blocks bucket does not exist
+		if !dbutil.Exists(tx, blockdb.BlocksBkt) {
+			return nil
+		}
+
 		return bc.VerifySignatures(tx, SigVerifyTheadNum, quit)
 	})
 

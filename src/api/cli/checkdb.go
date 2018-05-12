@@ -9,6 +9,7 @@ import (
 	gcli "github.com/urfave/cli"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/util/apputil"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
@@ -67,7 +68,15 @@ func checkdb(c *gcli.Context) error {
 		return fmt.Errorf("decode blockchain pubkey failed: %v", err)
 	}
 
-	if err := visor.CheckDatabase(wrapDB(db), pubkey); err != nil {
+	quit := QuitChanFromContext(c)
+	go func() {
+		apputil.CatchInterrupt(quit)
+	}()
+
+	if err := visor.CheckDatabase(wrapDB(db), pubkey, quit); err != nil {
+		if err == visor.ErrVerifyStopped {
+			return nil
+		}
 		return fmt.Errorf("checkdb failed: %v", err)
 	}
 

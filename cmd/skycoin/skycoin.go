@@ -7,18 +7,17 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
-	"os/signal"
 	"path/filepath"
 	"runtime/debug"
 	"runtime/pprof"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/gui"
+	"github.com/skycoin/skycoin/src/util/apputil"
 	"github.com/skycoin/skycoin/src/util/browser"
 	"github.com/skycoin/skycoin/src/util/cert"
 	"github.com/skycoin/skycoin/src/util/file"
@@ -416,49 +415,6 @@ func panicIfError(err error, msg string, args ...interface{}) {
 	}
 }
 
-func printProgramStatus() {
-	p := pprof.Lookup("goroutine")
-	if err := p.WriteTo(os.Stdout, 2); err != nil {
-		fmt.Println("ERROR:", err)
-		return
-	}
-}
-
-// Catches SIGUSR1 and prints internal program state
-func catchDebug() {
-	sigchan := make(chan os.Signal, 1)
-	//signal.Notify(sigchan, syscall.SIGUSR1)
-	signal.Notify(sigchan, syscall.Signal(0xa)) // SIGUSR1 = Signal(0xa)
-	for {
-		select {
-		case <-sigchan:
-			printProgramStatus()
-		}
-	}
-}
-
-func catchInterrupt(quit chan<- struct{}) {
-	sigchan := make(chan os.Signal, 1)
-	signal.Notify(sigchan, os.Interrupt)
-	<-sigchan
-	signal.Stop(sigchan)
-	close(quit)
-
-	// If ctrl-c is called again, panic so that the program state can be examined.
-	// Ctrl-c would be called again if program shutdown was stuck.
-	go catchInterruptPanic()
-}
-
-// catchInterruptPanic catches os.Interrupt and panics
-func catchInterruptPanic() {
-	sigchan := make(chan os.Signal, 1)
-	signal.Notify(sigchan, os.Interrupt)
-	<-sigchan
-	signal.Stop(sigchan)
-	printProgramStatus()
-	panic("SIGINT")
-}
-
 func createGUI(c *Config, d *daemon.Daemon, host string) (*gui.Server, error) {
 	var s *gui.Server
 	var err error
@@ -647,17 +603,13 @@ func Run(c *Config) {
 	// If the user Ctrl-C's, shutdown properly
 	quit := make(chan struct{})
 
-	wg.Add(1)
 	go func() {
-		defer wg.Done()
-		catchInterrupt(quit)
+		apputil.CatchInterrupt(quit)
 	}()
 
 	// Watch for SIGUSR1
-	wg.Add(1)
 	func() {
-		defer wg.Done()
-		go catchDebug()
+		go apputil.CatchDebug()
 	}()
 
 	// creates blockchain instance
@@ -670,46 +622,45 @@ func Run(c *Config) {
 		return
 	}
 
-	if c.VerifyDB {
-		logger.Info("Checking database")
-		if err := visor.CheckDatabase(db, c.BlockchainPubkey, quit); err != nil {
-			logger.Errorf("visor.CheckDatabase failed: %v", err)
-			return
-		}
-	} else if c.ResetCorruptDB {
+	if c.ResetCorruptDB {
 		// Check the database integrity and recreate it if necessary
 		logger.Info("Checking database and resetting if corrupted")
-		db, err = visor.ResetCorruptDB(db, c.BlockchainPubkey, quit)
-		if err != nil {
-			logger.Errorf("visor.ResetCorruptDB failed: %v", err)
-			return
+		if newDB, err := visor.ResetCorruptDB(db, c.BlockchainPubkey, quit); err != nil {
+			if err != visor.ErrVerifyStopped {
+				logger.Errorf("visor.ResetCorruptDB failed: %v", err)
+			}
+			goto shutdown
+		} else {
+			db = newDB
 		}
-	}
-
-	// Check if the quit channel was closed during database verification
-	select {
-	case <-quit:
-		goto shutdown
-	default:
+	} else if c.VerifyDB {
+		logger.Info("Checking database")
+		if err := visor.CheckDatabase(db, c.BlockchainPubkey, quit); err != nil {
+			if err != visor.ErrVerifyStopped {
+				logger.Errorf("visor.CheckDatabase failed: %v", err)
+			}
+			goto shutdown
+		}
 	}
 
 	d, err = daemon.NewDaemon(dconf, db, DefaultConnections)
 	if err != nil {
 		logger.Error(err)
-		return
+		goto shutdown
 	}
 
 	if c.WebInterface {
 		webInterface, err = createGUI(c, d, host)
 		if err != nil {
 			logger.Error(err)
-			return
+			goto shutdown
 		}
 	}
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+
 		if err := d.Run(); err != nil {
 			logger.Error(err)
 			errC <- err
@@ -717,27 +668,31 @@ func Run(c *Config) {
 	}()
 
 	if c.WebInterface {
+		cancelLaunchBrowser := make(chan struct{})
+
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+
 			if err := webInterface.Serve(); err != nil {
+				close(cancelLaunchBrowser)
 				logger.Error(err)
 				errC <- err
 			}
 		}()
 
 		if c.LaunchBrowser {
-			wg.Add(1)
 			go func() {
-				defer wg.Done()
+				select {
+				case <-cancelLaunchBrowser:
+					logger.Warning("Browser launching cancelled")
 
 				// Wait a moment just to make sure the http interface is up
-				time.Sleep(time.Millisecond * 100)
-
-				logger.Infof("Launching System Browser with %s", fullAddress)
-				if err := browser.Open(fullAddress); err != nil {
-					logger.Error(err)
-					return
+				case <-time.After(time.Millisecond * 100):
+					logger.Infof("Launching System Browser with %s", fullAddress)
+					if err := browser.Open(fullAddress); err != nil {
+						logger.Error(err)
+					}
 				}
 			}()
 		}

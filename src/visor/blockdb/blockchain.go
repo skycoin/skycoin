@@ -252,11 +252,6 @@ func (bc *Blockchain) GetGenesisBlock(tx *dbutil.Tx) (*coin.SignedBlock, error) 
 	return bc.GetSignedBlockBySeq(tx, 0)
 }
 
-// ForEachSignature iterates all signatures and calls f on them
-func (bc *Blockchain) ForEachSignature(tx *dbutil.Tx, f func(cipher.SHA256, cipher.Sig) error) error {
-	return bc.sigs.ForEach(tx, f)
-}
-
 // ForEachBlock iterates all blocks and calls f on them
 func (bc *Blockchain) ForEachBlock(tx *dbutil.Tx, f func(b *coin.Block) error) error {
 	return bc.tree.ForEachBlock(tx, f)

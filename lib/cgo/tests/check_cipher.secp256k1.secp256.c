@@ -151,17 +151,6 @@ Test(cipher_secp256k1, Test_verify_functions){
 	cr_assert(result == 1, "Signature not verified");
 }
 
-
-// func Test_SignatureVerifySecKey(t *testing.T) {
-// 	pubkey, seckey := GenerateKeyPair()
-// 	if VerifySeckey(seckey) == 0 {
-// 		t.Fail()
-// 	}
-// 	if VerifyPubkey(pubkey) == 0 {
-// 		t.Fail()
-// 	}
-// }
-
 Test(cipher_secp256k1,Test_SignatureVerifySecKey ){
 	cipher__PubKey pubkey;
 	cipher__SecKey seckey;
@@ -178,30 +167,3 @@ Test(cipher_secp256k1,Test_SignatureVerifySecKey ){
 	cr_assert(errorPubKey != SKY_OK);
 }
 
-
-// //test size of messages
-// func Test_Secp256_02s(t *testing.T) {
-// 	pubkey, seckey := GenerateKeyPair()
-// 	msg := RandByte(32)
-// 	sig := Sign(msg, seckey)
-// 	CompactSigTest(sig)
-// 	if sig == nil {
-// 		t.Fatal("Signature nil")
-// 	}
-// 	if len(pubkey) != 33 {
-// 		t.Fail()
-// 	}
-// 	if len(seckey) != 32 {
-// 		t.Fail()
-// 	}
-// 	if len(sig) != 64+1 {
-// 		t.Fail()
-// 	}
-// 	if int(sig[64]) > 4 {
-// 		t.Fail()
-// 	} //should be 0 to 4
-// }
-//
-// Test(cipher_secp256k1,Test_Secp256_02s){
-// 	cr_fatal();
-// }

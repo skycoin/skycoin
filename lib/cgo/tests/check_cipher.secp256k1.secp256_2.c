@@ -23,6 +23,165 @@ const char* test_keys[] = {
 	"2f5141f1b75747996c5de77c911dae062d16ae48799052c04ead20ccd5afa113",
 };
 
+//test size of messages
+Test(cipher_secp256k1, Test_Secp256_02s){
+	GoInt32 error_code;
+	char bufferPub1[BUFFER_SIZE];
+	char bufferSec1[BUFFER_SIZE];
+	char bufferSig1[BUFFER_SIZE];
+	unsigned char buff[32];
+	GoSlice pub1 = {bufferPub1, 0, BUFFER_SIZE};
+	GoSlice sec1 = {bufferSec1, 0, BUFFER_SIZE};
+	GoSlice sig  = {bufferSig1, 0, BUFFER_SIZE};
+	GoSlice msg  = {buff, 0, 32};
+	
+	error_code = SKY_secp256k1_GenerateKeyPair(
+		(coin__UxArray*)&pub1, (coin__UxArray*)&sec1);
+	cr_assert(error_code == SKY_OK, "SKY_secp256k1_GenerateKeyPair failed");
+	
+	error_code = SKY_secp256k1_RandByte(32, (coin__UxArray*)&msg);
+	cr_assert(error_code == SKY_OK, "SKY_secp256k1_RandByte failed");
+	error_code == SKY_secp256k1_Sign(msg, sec1, (GoSlice_*)&sig);
+	cr_assert(error_code == SKY_OK, "SKY_secp256k1_Sign failed");
+	cr_assert(pub1.len == 33, "Public key should be 33 bytes long.");
+	cr_assert(sec1.len == 32, "Private key should be 32 bytes long.");
+	cr_assert(sig.len == 65, "Signature should be 65 bytes long.");
+	unsigned char last = ((unsigned char*) sig.data)[64]; 
+	cr_assert( last <= 4 );
+}
+
+//test signing message
+Test(cipher_secp256k1, Test_Secp256_02){
+	GoInt32 error_code;
+	char bufferPub1[BUFFER_SIZE];
+	char bufferPub2[BUFFER_SIZE];
+	char bufferSec1[BUFFER_SIZE];
+	char bufferSig1[BUFFER_SIZE];
+	unsigned char buff[32];
+	GoSlice pub1 = {bufferPub1, 0, BUFFER_SIZE};
+	GoSlice sec1 = {bufferSec1, 0, BUFFER_SIZE};
+	GoSlice pub2 = {bufferPub2, 0, BUFFER_SIZE};
+	GoSlice sig  = {bufferSig1, 0, BUFFER_SIZE};
+	GoSlice msg  = {buff, 0, 32};
+	
+	error_code = SKY_secp256k1_GenerateKeyPair(
+		(coin__UxArray*)&pub1, (coin__UxArray*)&sec1);
+	cr_assert(error_code == SKY_OK, "SKY_secp256k1_GenerateKeyPair failed");
+	
+	error_code = SKY_secp256k1_RandByte(32, (coin__UxArray*)&msg);
+	cr_assert(error_code == SKY_OK, "SKY_secp256k1_RandByte failed");
+	error_code == SKY_secp256k1_Sign(msg, sec1, (GoSlice_*)&sig);
+	cr_assert(error_code == SKY_OK, "SKY_secp256k1_Sign failed");
+	cr_assert(sig.len == 65, "Signature should be 65 bytes long.");
+	
+	error_code = SKY_secp256k1_RecoverPubkey(msg, sig, (coin__UxArray*)&pub2);
+	cr_assert(error_code == SKY_OK, "SKY_secp256k1_RecoverPubkey failed");
+	cr_assert(eq(type(GoSlice), pub1, pub2), "Different public keys.");
+	
+	GoInt result;
+	error_code = SKY_secp256k1_VerifySignature(msg, sig, pub1, &result);
+	cr_assert(error_code == SKY_OK, "SKY_secp256k1_VerifySignature failed");
+	cr_assert(result, "Signature invalid");
+}
+
+//test pubkey recovery
+Test(cipher_secp256k1, Test_Secp256_02a){
+	GoInt32 error_code;
+	char bufferPub1[BUFFER_SIZE];
+	char bufferPub2[BUFFER_SIZE];
+	char bufferSec1[BUFFER_SIZE];
+	char bufferSig1[BUFFER_SIZE];
+	unsigned char buff[32];
+	GoSlice pub1 = {bufferPub1, 0, BUFFER_SIZE};
+	GoSlice sec1 = {bufferSec1, 0, BUFFER_SIZE};
+	GoSlice pub2 = {bufferPub2, 0, BUFFER_SIZE};
+	GoSlice sig  = {bufferSig1, 0, BUFFER_SIZE};
+	GoSlice msg  = {buff, 0, 32};
+	
+	error_code = SKY_secp256k1_GenerateKeyPair(
+		(coin__UxArray*)&pub1, (coin__UxArray*)&sec1);
+	cr_assert(error_code == SKY_OK, "SKY_secp256k1_GenerateKeyPair failed");
+	
+	error_code = SKY_secp256k1_RandByte(32, (coin__UxArray*)&msg);
+	cr_assert(error_code == SKY_OK, "SKY_secp256k1_RandByte failed");
+	error_code == SKY_secp256k1_Sign(msg, sec1, (GoSlice_*)&sig);
+	cr_assert(error_code == SKY_OK, "SKY_secp256k1_Sign failed");
+	cr_assert(sig.len == 65, "Signature should be 65 bytes long.");
+	GoInt result;
+	error_code = SKY_secp256k1_VerifySignature(msg, sig, pub1, &result);
+	cr_assert(error_code == SKY_OK, "SKY_secp256k1_VerifySignature failed");
+	cr_assert(result, "Signature invalid");
+	
+	error_code = SKY_secp256k1_RecoverPubkey(msg, sig, (coin__UxArray*)&pub2);
+	cr_assert(error_code == SKY_OK, "SKY_secp256k1_RecoverPubkey failed");
+	cr_assert(eq(type(GoSlice), pub1, pub2), "Different public keys.");
+}
+
+//test random messages for the same pub/private key
+Test(cipher_secp256k1, Test_Secp256_03){
+	GoInt32 error_code;
+	char bufferPub1[BUFFER_SIZE];
+	char bufferPub2[BUFFER_SIZE];
+	char bufferSec1[BUFFER_SIZE];
+	char bufferSig1[BUFFER_SIZE];
+	unsigned char buff[32];
+	GoSlice pub1 = {bufferPub1, 0, BUFFER_SIZE};
+	GoSlice sec1 = {bufferSec1, 0, BUFFER_SIZE};
+	GoSlice pub2 = {bufferPub2, 0, BUFFER_SIZE};
+	GoSlice sig  = {bufferSig1, 0, BUFFER_SIZE};
+	GoSlice msg  = {buff, 0, 32};
+	
+	for( int i = 0; i < TESTS; i++ ) {
+		error_code = SKY_secp256k1_GenerateKeyPair(
+			(coin__UxArray*)&pub1, (coin__UxArray*)&sec1);
+		cr_assert(error_code == SKY_OK, "SKY_secp256k1_GenerateKeyPair failed");
+		
+		error_code = SKY_secp256k1_RandByte(32, (coin__UxArray*)&msg);
+		cr_assert(error_code == SKY_OK, "SKY_secp256k1_RandByte failed");
+		error_code == SKY_secp256k1_Sign(msg, sec1, (GoSlice_*)&sig);
+		cr_assert(error_code == SKY_OK, "SKY_secp256k1_Sign failed");
+		cr_assert(sig.len == 65, "Signature should be 65 bytes long.");
+		((unsigned char*)sig.data)[64] = ((unsigned char*)sig.data)[64] % 4;
+		
+		error_code = SKY_secp256k1_RecoverPubkey(msg, sig, (coin__UxArray*)&pub2);
+		cr_assert(error_code == SKY_OK, "SKY_secp256k1_RecoverPubkey failed");
+		cr_assert(pub2.len > 0, "Invalid public key");
+	}
+}
+
+//test random messages for different pub/private keys
+Test(cipher_secp256k1, Test_Secp256_04){
+	GoInt32 error_code;
+	char bufferPub1[BUFFER_SIZE];
+	char bufferPub2[BUFFER_SIZE];
+	char bufferSec1[BUFFER_SIZE];
+	char bufferSig1[BUFFER_SIZE];
+	unsigned char buff[32];
+	GoSlice pub1 = {bufferPub1, 0, BUFFER_SIZE};
+	GoSlice sec1 = {bufferSec1, 0, BUFFER_SIZE};
+	GoSlice pub2 = {bufferPub2, 0, BUFFER_SIZE};
+	GoSlice sig  = {bufferSig1, 0, BUFFER_SIZE};
+	GoSlice msg  = {buff, 0, 32};
+	
+	for( int i = 0; i < TESTS; i++ ) {
+		error_code = SKY_secp256k1_GenerateKeyPair(
+			(coin__UxArray*)&pub1, (coin__UxArray*)&sec1);
+		cr_assert(error_code == SKY_OK, "SKY_secp256k1_GenerateKeyPair failed");
+		
+		error_code = SKY_secp256k1_RandByte(32, (coin__UxArray*)&msg);
+		cr_assert(error_code == SKY_OK, "SKY_secp256k1_RandByte failed");
+		error_code == SKY_secp256k1_Sign(msg, sec1, (GoSlice_*)&sig);
+		cr_assert(error_code == SKY_OK, "SKY_secp256k1_Sign failed");
+		cr_assert(sig.len == 65, "Signature should be 65 bytes long.");
+		unsigned char last = ((unsigned char*) sig.data)[64]; 
+		cr_assert( last < 4 );
+		error_code = SKY_secp256k1_RecoverPubkey(msg, sig, (coin__UxArray*)&pub2);
+		cr_assert(error_code == SKY_OK, "SKY_secp256k1_RecoverPubkey failed");
+		cr_assert(pub2.len > 0, "Invalid public key");
+		cr_assert(eq(type(GoSlice), pub1, pub2), "Different public keys.");
+	}
+}
+
 Test(cipher_secp256k1, Test_Secp256_06a_alt0){
 	GoInt32 error_code;
 	char bufferPub1[BUFFER_SIZE];
@@ -47,14 +206,18 @@ Test(cipher_secp256k1, Test_Secp256_06a_alt0){
 	
 	GoInt result;
 	for(int i = 0; i < TESTS; i++){
-		error_code = SKY_secp256k1_RandByte(32, (coin__UxArray*)&msg);
+		error_code = SKY_secp256k1_RandByte(65, (coin__UxArray*)&sig);
 		cr_assert(error_code == SKY_OK, "SKY_secp256k1_RandByte failed");
+		cr_assert(sig.len == 65, "Signature should be 65 bytes long.");
+		((unsigned char*)sig.data)[32] = ((unsigned char*)sig.data)[32] & 0x70;
+		((unsigned char*)sig.data)[64] = ((unsigned char*)sig.data)[64] % 4;
+		
 		error_code = SKY_secp256k1_RecoverPubkey(msg, sig, (coin__UxArray*)&pub2);
 		cr_assert(error_code == SKY_OK, "SKY_secp256k1_RecoverPubkey failed");
 		cr_assert(cr_user_GoSlice_noteq(&pub1, &pub2), "Public keys must be different.");
 		SKY_secp256k1_VerifySignature(msg, sig, pub2, &result);
-		cr_assert(result, "Public key is not valid");
-		SKY_secp256k1_VerifySignature(msg, sig, pub1, &result);
+		cr_assert(pub2.len == 0 || result, "Public key is not valid");
+		error_code = SKY_secp256k1_VerifySignature(msg, sig, pub1, &result);
 		cr_assert(result == 0, "Public key should not be valid");
 	}
 }
@@ -87,8 +250,8 @@ Test(cipher_secp256k1, Test_Secp256_06b){
 		error_code = SKY_secp256k1_RecoverPubkey(msg, sig, (coin__UxArray*)&pub2);
 		cr_assert(error_code == SKY_OK, "SKY_secp256k1_RecoverPubkey failed");
 		cr_assert(cr_user_GoSlice_noteq(&pub1, &pub2), "Public keys must be different.");
-		SKY_secp256k1_VerifySignature(msg, sig, pub2, &result);
-		cr_assert(result, "Public key is not valid");
+		error_code = SKY_secp256k1_VerifySignature(msg, sig, pub2, &result);
+		cr_assert(pub2.len == 0 || result, "Public key is not valid");
 		SKY_secp256k1_VerifySignature(msg, sig, pub1, &result);
 		cr_assert(result == 0, "Public key should not be valid");
 	}

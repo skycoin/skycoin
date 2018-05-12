@@ -45,7 +45,7 @@ func TestWalletSpendHandler(t *testing.T) {
 		password                      string
 		gatewaySpendResult            *coin.Transaction
 		gatewaySpendErr               error
-		gatewayGetWalletBalanceResult wallet.BalancePair
+		gatewayGetWalletBalanceResult BalanceResponse
 		gatewayBalanceErr             error
 		spendResult                   *SpendResult
 		csrfDisabled                  bool
@@ -408,7 +408,8 @@ func TestWalletSpendHandler(t *testing.T) {
 			gateway := &GatewayerMock{}
 			addr, _ := cipher.DecodeBase58Address(tc.dst)
 			gateway.On("Spend", tc.walletID, []byte(tc.password), tc.coins, addr).Return(tc.gatewaySpendResult, tc.gatewaySpendErr)
-			gateway.On("GetWalletBalance", tc.walletID).Return(tc.gatewayGetWalletBalanceResult, tc.gatewayBalanceErr)
+			gateway.On("GetWalletBalance", tc.walletID).Return(tc.gatewayGetWalletBalanceResult.BalancePair,
+				tc.gatewayGetWalletBalanceResult.Addresses, tc.gatewayBalanceErr)
 
 			endpoint := "/wallet/spend"
 
@@ -603,7 +604,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 		status                        int
 		err                           string
 		walletID                      string
-		gatewayGetWalletBalanceResult wallet.BalancePair
+		gatewayGetWalletBalanceResult BalanceResponse
 		gatewayBalanceErr             error
 		result                        *wallet.BalancePair
 	}{
@@ -630,10 +631,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 			status:   http.StatusNotFound,
 			err:      "404 Not Found",
 			walletID: "notFoundId",
-			gatewayGetWalletBalanceResult: wallet.BalancePair{
-				Confirmed: wallet.Balance{Coins: 0, Hours: 0},
-				Predicted: wallet.Balance{Coins: 0, Hours: 0},
-			},
+			gatewayGetWalletBalanceResult: BalanceResponse{},
 			gatewayBalanceErr: wallet.ErrWalletNotExist,
 			result: &wallet.BalancePair{
 				Confirmed: wallet.Balance{Coins: 0, Hours: 0},
@@ -649,10 +647,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 			status:   http.StatusInternalServerError,
 			err:      "500 Internal Server Error - gatewayBalanceError",
 			walletID: "someId",
-			gatewayGetWalletBalanceResult: wallet.BalancePair{
-				Confirmed: wallet.Balance{Coins: 0, Hours: 0},
-				Predicted: wallet.Balance{Coins: 0, Hours: 0},
-			},
+			gatewayGetWalletBalanceResult: BalanceResponse{},
 			gatewayBalanceErr: errors.New("gatewayBalanceError"),
 			result: &wallet.BalancePair{
 				Confirmed: wallet.Balance{Coins: 0, Hours: 0},
@@ -668,7 +663,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 			status:                        http.StatusForbidden,
 			err:                           "403 Forbidden",
 			walletID:                      "foo",
-			gatewayGetWalletBalanceResult: wallet.BalancePair{},
+			gatewayGetWalletBalanceResult: BalanceResponse{},
 			gatewayBalanceErr:             wallet.ErrWalletAPIDisabled,
 		},
 		{
@@ -687,7 +682,8 @@ func TestWalletBalanceHandler(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &GatewayerMock{}
-			gateway.On("GetWalletBalance", tc.walletID).Return(tc.gatewayGetWalletBalanceResult, tc.gatewayBalanceErr)
+			gateway.On("GetWalletBalance", tc.walletID).Return(tc.gatewayGetWalletBalanceResult.BalancePair,
+			tc.gatewayGetWalletBalanceResult.Addresses, tc.gatewayBalanceErr)
 
 			endpoint := "/wallet/balance"
 

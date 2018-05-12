@@ -179,12 +179,34 @@ Result:
 ```json
 {
     "confirmed": {
-        "coins": 70000000,
-        "hours": 28052
+        "coins": 21000000,
+        "hours": 142744
     },
     "predicted": {
-        "coins": 9000000,
-        "hours": 8385
+        "coins": 21000000,
+        "hours": 142744
+    },
+    "addresses": {
+        "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD": {
+            "confirmed": {
+                "coins": 9000000,
+                "hours": 88075
+            },
+            "predicted": {
+                "coins": 9000000,
+                "hours": 88075
+            }
+        },
+        "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq": {
+            "confirmed": {
+                "coins": 12000000,
+                "hours": 54669
+            },
+            "predicted": {
+                "coins": 12000000,
+                "hours": 54669
+            }
+        }
     }
 }
 ```
@@ -541,7 +563,7 @@ Args:
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/wallet/balance?id=2017_05_09_d554.wlt
+curl http://127.0.0.1:6420/wallet/balance?id=2018_03_07_3088.wlt
 ```
 
 Result:
@@ -549,12 +571,64 @@ Result:
 ```json
 {
     "confirmed": {
-        "coins": 0,
-        "hours": 0
+        "coins": 210400000,
+        "hours": 1873147
     },
     "predicted": {
-        "coins": 0,
-        "hours": 0
+        "coins": 210400000,
+        "hours": 1873147
+    },
+    "addresses": {
+        "AXrFisGovRhRHipsbGahs4u2hXX7pDRT5p": {
+            "confirmed": {
+                "coins": 1250000,
+                "hours": 941185
+            },
+            "predicted": {
+                "coins": 1250000,
+                "hours": 941185
+            }
+        },
+        "AtNorKBpCgkSRL7zES7aAQyNjqjqPp2QJU": {
+            "confirmed": {
+                "coins": 1150000,
+                "hours": 61534
+            },
+            "predicted": {
+                "coins": 1150000,
+                "hours": 61534
+            }
+        },
+        "VUv9ehMZWmDvwWV36BQ3eL1ujb4MQ5TGyK": {
+            "confirmed": {
+                "coins": 208000000,
+                "hours": 870428
+            },
+            "predicted": {
+                "coins": 208000000,
+                "hours": 870428
+            }
+        },
+        "j4mbF1fTe8jgXbrRARZSBjDpD1hMGSe1E4": {
+            "confirmed": {
+                "coins": 0,
+                "hours": 0
+            },
+            "predicted": {
+                "coins": 0,
+                "hours": 0
+            }
+        },
+        "uyqBPcRCWucHXs18e9VZyNEeuNsD5tFDhy": {
+            "confirmed": {
+                "coins": 0,
+                "hours": 0
+            },
+            "predicted": {
+                "coins": 0,
+                "hours": 0
+            }
+        }
     }
 }
 ```

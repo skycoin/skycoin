@@ -730,7 +730,7 @@ func (m *GatewayerMock) GetWallet(p0 string) (*wallet.Wallet, error) {
 }
 
 // GetWalletBalance mocked method
-func (m *GatewayerMock) GetWalletBalance(p0 string) (wallet.BalancePair, error) {
+func (m *GatewayerMock) GetWalletBalance(p0 string) (wallet.BalancePair, wallet.AddressBalance, error) {
 
 	ret := m.Called(p0)
 
@@ -743,16 +743,25 @@ func (m *GatewayerMock) GetWalletBalance(p0 string) (wallet.BalancePair, error) 
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	var r1 error
+	var r1 wallet.AddressBalance
 	switch res := ret.Get(1).(type) {
 	case nil:
-	case error:
+	case wallet.AddressBalance:
 		r1 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	return r0, r1
+	var r2 error
+	switch res := ret.Get(2).(type) {
+	case nil:
+	case error:
+		r2 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1, r2
 
 }
 

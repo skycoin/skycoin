@@ -56,6 +56,11 @@ type WalletResponse struct {
 	Entries []WalletEntry `json:"entries"`
 }
 
+type BalanceResponse struct {
+	wallet.BalancePair
+	Addresses wallet.AddressBalance `json:"addresses"`
+}
+
 // NewWalletResponse creates WalletResponse struct from *wallet.Wallet
 func NewWalletResponse(w *wallet.Wallet) (*WalletResponse, error) {
 	var wr WalletResponse
@@ -113,7 +118,7 @@ func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		b, err := gateway.GetWalletBalance(wltID)
+		walletBalance, addressBalances, err := gateway.GetWalletBalance(wltID)
 		if err != nil {
 			logger.Errorf("Get wallet balance failed: %v", err)
 			switch err {
@@ -129,7 +134,10 @@ func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendJSONOr500(logger, w, b)
+		wh.SendJSONOr500(logger, w, BalanceResponse{
+			BalancePair: walletBalance,
+			Addresses:   addressBalances,
+		})
 	}
 }
 
@@ -289,7 +297,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		// Get the new wallet balance
-		b, err := gateway.GetWalletBalance(wltID)
+		walletBalance, _, err := gateway.GetWalletBalance(wltID)
 		if err != nil {
 			err = fmt.Errorf("Get wallet balance failed: %v", err)
 			logger.Error(err)
@@ -297,7 +305,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 			wh.SendJSONOr500(logger, w, ret)
 			return
 		}
-		ret.Balance = &b
+		ret.Balance = &walletBalance
 
 		wh.SendJSONOr500(logger, w, ret)
 	}

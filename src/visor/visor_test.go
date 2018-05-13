@@ -484,7 +484,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	uxs = coin.CreateUnspents(sb.Head, sb.Body.Transactions[0])
 
 	// Check transactions with overflowing output coins fail
-	txn = makeOverflowCoinsSpendTx(t, coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr)
+	txn = makeOverflowCoinsSpendTx(coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr)
 	_, softErr, err = v.InjectTransaction(txn)
 	require.IsType(t, ErrTxnViolatesHardConstraint{}, err)
 	testutil.RequireError(t, err.(ErrTxnViolatesHardConstraint).Err, "Output coins overflow")
@@ -501,7 +501,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	// Check transactions with overflowing output hours fail
 	// It should not be injected; when injecting a txn, the overflowing output hours is treated
 	// as a hard constraint. It is only a soft constraint when the txn is included in a signed block.
-	txn = makeOverflowHoursSpendTx(t, coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr)
+	txn = makeOverflowHoursSpendTx(coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr)
 	_, softErr, err = v.InjectTransaction(txn)
 	require.Nil(t, softErr)
 	require.IsType(t, ErrTxnViolatesHardConstraint{}, err)
@@ -532,7 +532,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func makeOverflowCoinsSpendTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address) coin.Transaction {
+func makeOverflowCoinsSpendTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address) coin.Transaction {
 	spendTx := coin.Transaction{}
 	var totalHours uint64
 	var totalCoins uint64
@@ -553,7 +553,7 @@ func makeOverflowCoinsSpendTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecK
 	return spendTx
 }
 
-func makeOverflowHoursSpendTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address) coin.Transaction {
+func makeOverflowHoursSpendTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address) coin.Transaction {
 	spendTx := coin.Transaction{}
 	var totalHours uint64
 	var totalCoins uint64
@@ -601,7 +601,7 @@ func TestVisorCalculatePrecision(t *testing.T) {
 	})
 }
 
-func makeTestData(t *testing.T, n int) ([]historydb.Transaction, []coin.SignedBlock, []UnconfirmedTxn, uint64) {
+func makeTestData(t *testing.T, n int) ([]historydb.Transaction, []coin.SignedBlock, []UnconfirmedTxn, uint64) { // nolint: unparam
 	var txs []historydb.Transaction
 	var blocks []coin.SignedBlock
 	var uncfmTxs []UnconfirmedTxn

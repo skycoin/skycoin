@@ -104,7 +104,7 @@ func (c *CSRFStore) verifyToken(headerToken string) error {
 // Method: GET
 // Response:
 //  csrf_token: CSRF token to use in POST requests
-func getCSRFToken(gateway Gatewayer, store *CSRFStore) http.HandlerFunc {
+func getCSRFToken(store *CSRFStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)

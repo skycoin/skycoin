@@ -175,8 +175,15 @@ func (ros ReadableOutputs) Balance() (wallet.Balance, error) {
 			return wallet.Balance{}, err
 		}
 
-		bal.Coins += coins
-		bal.Hours += out.CalculatedHours
+		bal.Coins, err = coin.AddUint64(bal.Coins, coins)
+		if err != nil {
+			return wallet.Balance{}, err
+		}
+
+		bal.Hours, err = coin.AddUint64(bal.Hours, out.CalculatedHours)
+		if err != nil {
+			return wallet.Balance{}, err
+		}
 	}
 
 	return bal, nil
@@ -243,7 +250,7 @@ func (os ReadableOutputSet) ExpectedOutputs() ReadableOutputs {
 	return append(os.SpendableOutputs(), os.IncomingOutputs...)
 }
 
-// AggregateUnspentOutputs aggregate unspent output
+// AggregateUnspentOutputs builds a map from address to coins
 func (os ReadableOutputSet) AggregateUnspentOutputs() (map[string]uint64, error) {
 	allAccounts := map[string]uint64{}
 	for _, out := range os.HeadOutputs {
@@ -252,7 +259,10 @@ func (os ReadableOutputSet) AggregateUnspentOutputs() (map[string]uint64, error)
 			return nil, err
 		}
 		if _, ok := allAccounts[out.Address]; ok {
-			allAccounts[out.Address] += amt
+			allAccounts[out.Address], err = coin.AddUint64(allAccounts[out.Address], amt)
+			if err != nil {
+				return nil, err
+			}
 		} else {
 			allAccounts[out.Address] = amt
 		}

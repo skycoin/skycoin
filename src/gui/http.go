@@ -12,6 +12,7 @@ import (
 	"unicode"
 
 	"github.com/NYTimes/gziphandler"
+
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
@@ -225,7 +226,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	}
 
 	// get the current CSRF token
-	mux.Handle("/csrf", headerCheck(c.host, getCSRFToken(gateway, csrfStore)))
+	mux.Handle("/csrf", headerCheck(c.host, getCSRFToken(csrfStore)))
 
 	webHandler("/version", versionHandler(gateway))
 

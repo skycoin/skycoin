@@ -2529,7 +2529,7 @@ func TestDecryptWallet(t *testing.T) {
 // makeEntries derives N wallet address entries from given seed
 // Returns set of wallet.Entry and wallet.ReadableEntry, the readable
 // entries' secrets are removed.
-func makeEntries(seed []byte, n int) ([]wallet.Entry, []WalletEntry) {
+func makeEntries(seed []byte, n int) ([]wallet.Entry, []WalletEntry) { // nolint: unparam
 	seckeys := cipher.GenerateDeterministicKeyPairs(seed, n)
 	var entries []wallet.Entry
 	var responseEntries []WalletEntry

@@ -162,7 +162,7 @@ func makeTransactionForChain(t *testing.T, tx *dbutil.Tx, bc *Blockchain, ux coi
 	return txn
 }
 
-func makeLostCoinTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction {
+func makeLostCoinTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction { // nolint: unparam
 	txn := coin.Transaction{}
 	var totalCoins uint64
 	var totalHours uint64
@@ -184,7 +184,7 @@ func makeLostCoinTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Addres
 	return txn
 }
 
-func makeDuplicateUxOutTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction {
+func makeDuplicateUxOutTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction { // nolint: unparam
 	txn := coin.Transaction{}
 	var totalCoins uint64
 	var totalHours uint64
@@ -211,7 +211,7 @@ func makeDuplicateUxOutTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.
 // The genesis block has only one unspent output, so only one transaction can be made from it.
 // This is useful for when multiple test transactions need to be made from the same block.
 // Coins and hours are distributed equally amongst all new outputs.
-func makeUnspentsTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, nUnspents int, maxDivisor uint64) coin.Transaction {
+func makeUnspentsTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, nUnspents int, maxDivisor uint64) coin.Transaction { // nolint: unparam
 	// Add inputs to the transaction
 	spendTx := coin.Transaction{}
 	var totalHours uint64
@@ -284,7 +284,7 @@ func makeSpendTxWithFee(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, to
 }
 
 // makeSpendTxWithHoursBurned creates a txn specified with the total number of hours to burn
-func makeSpendTxWithHoursBurned(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins, hoursBurned uint64) coin.Transaction {
+func makeSpendTxWithHoursBurned(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins, hoursBurned uint64) coin.Transaction { // nolint: unparam
 	spendTx := coin.Transaction{}
 	var totalHours uint64
 	var totalCoins uint64
@@ -361,6 +361,11 @@ func TestVerifyTransactionAllConstraints(t *testing.T) {
 	txn = makeSpendTxWithHoursBurned(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins, 0)
 	err = verifySingleTxnAllConstraints(txn, DefaultMaxBlockSize)
 	requireSoftViolation(t, "Transaction has zero coinhour fee", err)
+
+	// Invalid transaction fee, part 2
+	txn = makeSpendTxWithHoursBurned(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins, 1)
+	err = verifySingleTxnAllConstraints(txn, DefaultMaxBlockSize)
+	requireSoftViolation(t, "Transaction coinhour fee minimum not met", err)
 
 	// Transaction locking is tested by TestVerifyTransactionIsLocked
 

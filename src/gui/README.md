@@ -2164,39 +2164,39 @@ Response:
 ```json
 {
     "count": 8,
-    "total_alive": 7,
-    "total_offline": 1,
+    "total_alive": 4,
+    "total_offline": 4,
     "connections": [
+        {
+            "address": "47.88.33.156:6000",
+            "is_alive": true
+        },
         {
             "address": "104.237.142.206:6000",
             "is_alive": true
         },
         {
             "address": "118.178.135.93:6000",
-            "is_alive": true
-        },
-        {
-            "address": "120.77.69.188:6000",
-            "is_alive": true
-        },
-        {
-            "address": "121.41.103.148:6000",
-            "is_alive": true
-        },
-        {
-            "address": "139.162.7.132:6000",
             "is_alive": false
         },
         {
-            "address": "172.104.85.6:6000",
+            "address": "120.77.69.188:6000",
+            "is_alive": false
+        },
+        {
+            "address": "121.41.103.148:6000",
+            "is_alive": false
+        },
+        {
+            "address": "139.162.7.132:6000",
             "is_alive": true
+        },
+        {
+            "address": "172.104.85.6:6000",
+            "is_alive": false
         },
         {
             "address": "176.58.126.224:6000",
-            "is_alive": true
-        },
-        {
-            "address": "47.88.33.156:6000",
             "is_alive": true
         }
     ]

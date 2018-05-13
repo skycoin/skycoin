@@ -19,7 +19,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Support for decoding map values in cipher binary encoder
 - `-verify-db` option (default true), will verify the database integrity during startup and exit if a problem is found
 - `-reset-corrupt-db` option (default false) will verify the database integrity during startup and reset the db if a problem is found
->>>>>>> f852421312ccc1181991461ce74d762117fbb855
 
 ### Fixed
 

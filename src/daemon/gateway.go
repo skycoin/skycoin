@@ -990,16 +990,17 @@ func (gw *Gateway) GetDefaultStatus() *ConnectionsHealth {
 	var defaultstatus *ConnectionsHealth
 	gw.strand("GetDefaultStatus", func() {
 
-		connsDefault := gw.drpc.GetDefaultConnections(gw.d)
-		sort.Strings(connsDefault)
+		// connsDefault := gw.drpc.GetDefaultConnections(gw.d)
+		connsTrust := gw.drpc.GetTrustConnections(gw.d)
+		sort.Strings(connsTrust)
 		connsAll := gw.drpc.GetConnections(gw.d).Connections
 
-		countDefault, totalAlive := len(connsDefault), 0
-		totalOffline := countDefault
+		countTrust, totalAlive := len(connsTrust), 0
+		totalOffline := countTrust
 
 		var connections []ConnectionStatus
-		connsMap := make(map[string]*ConnectionStatus, countDefault)
-		for _, conn := range connsDefault {
+		connsMap := make(map[string]*ConnectionStatus, countTrust)
+		for _, conn := range connsTrust {
 			status := ConnectionStatus{
 				Connection: conn,
 				IsAlive:    false,
@@ -1009,7 +1010,7 @@ func (gw *Gateway) GetDefaultStatus() *ConnectionsHealth {
 		}
 
 		for _, conn := range connsAll {
-			if status, isDefault := connsMap[conn.Addr]; isDefault {
+			if status, isTrust := connsMap[conn.Addr]; isTrust {
 				if !status.IsAlive {
 					status.IsAlive = true
 					connsMap[conn.Addr] = status
@@ -1028,7 +1029,7 @@ func (gw *Gateway) GetDefaultStatus() *ConnectionsHealth {
 
 		}
 		defaultstatus = &ConnectionsHealth{
-			Count:        countDefault,
+			Count:        countTrust,
 			TotalAlive:   totalAlive,
 			TotalOffline: totalOffline,
 			Connections:  connections,

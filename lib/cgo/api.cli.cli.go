@@ -4,7 +4,6 @@ import (
 	cli "github.com/skycoin/skycoin/src/api/cli"
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"os"
-	"unsafe"
 )
 
 /*
@@ -119,7 +118,7 @@ func SKY_cli_NewApp(_cfg *C.Config__Handle, _arg1 *C.App__Handle) (____error_cod
 }
 
 //export SKY_cli_App_Run
-func SKY_cli_App_Run(_app *C.App__Handle, _args []string) (____error_code uint32) {
+func SKY_cli_App_Run(_app *C.App__Handle, _args string) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -129,7 +128,7 @@ func SKY_cli_App_Run(_app *C.App__Handle, _args []string) (____error_code uint32
 		____error_code = SKY_ERROR
 		return
 	}
-	args := *(*[]string)(unsafe.Pointer(&_args))
+	args := splitCliArgs(_args)
 	____return_err := app.Run(args)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {

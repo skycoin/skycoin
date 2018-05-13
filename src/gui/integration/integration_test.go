@@ -61,7 +61,7 @@ const (
 	testModeDisableWalletApi = "disable-wallet-api"
 	testModeDisableSeedApi   = "disable-seed-api"
 
-	testFixturesDir = "test-fixtures"
+	testFixturesDir = "testdata"
 )
 
 type TestData struct {
@@ -535,10 +535,6 @@ func TestStableBalance(t *testing.T) {
 		golden string
 		addrs  []string
 	}{
-		{
-			name:   "no addresses",
-			golden: "balance-noaddrs.golden",
-		},
 		{
 			name:   "unknown address",
 			addrs:  []string{"prRXwTcDK24hs6AFxj69UuWae3LzhrsPW9"},

@@ -693,7 +693,6 @@ func TestServiceCreateAndSignTransaction(t *testing.T) {
 		opts             Options
 		pwd              []byte
 		unspents         []coin.UxOut
-		vld              Validator
 		coins            uint64
 		dest             cipher.Address
 		disableWalletAPI bool
@@ -705,11 +704,8 @@ func TestServiceCreateAndSignTransaction(t *testing.T) {
 				Seed: string(seed),
 			},
 			unspents: uxouts[:],
-			vld: &dummyValidator{
-				ok: false,
-			},
-			coins: 2e6,
-			dest:  addrs[0],
+			coins:    2e6,
+			dest:     addrs[0],
 		},
 		{
 			name: "encrypted=true has change=no",
@@ -720,11 +716,8 @@ func TestServiceCreateAndSignTransaction(t *testing.T) {
 			},
 			pwd:      []byte("pwd"),
 			unspents: uxouts[:],
-			vld: &dummyValidator{
-				ok: false,
-			},
-			coins: 2e6,
-			dest:  addrs[0],
+			coins:    2e6,
+			dest:     addrs[0],
 		},
 		{
 			name: "encrypted=false has change=yes",
@@ -732,38 +725,8 @@ func TestServiceCreateAndSignTransaction(t *testing.T) {
 				Seed: string(seed),
 			},
 			unspents: uxouts[:],
-			vld: &dummyValidator{
-				ok: false,
-			},
-			coins: 1e6,
-			dest:  addrs[0],
-		},
-		{
-			name: "encrypted=false has unconfirmed spending transaction",
-			opts: Options{
-				Seed: string(seed),
-			},
-			unspents: uxouts[:],
-			vld: &dummyValidator{
-				ok: true,
-			},
-			coins: 2e6,
-			dest:  addrs[0],
-			err:   ErrSpendingUnconfirmed,
-		},
-		{
-			name: "encrypted=false unconfirmed spend failed",
-			opts: Options{
-				Seed: string(seed),
-			},
-			unspents: uxouts[:],
-			vld: &dummyValidator{
-				ok:  false,
-				err: errors.New("fail intentionally"),
-			},
-			coins: 2e6,
-			dest:  addrs[0],
-			err:   errors.New("checking unconfirmed spending failed: fail intentionally"),
+			coins:    1e6,
+			dest:     addrs[0],
 		},
 		{
 			name: "encrypted=false spend zero",
@@ -771,11 +734,8 @@ func TestServiceCreateAndSignTransaction(t *testing.T) {
 				Seed: string(seed),
 			},
 			unspents: uxouts[:],
-			vld: &dummyValidator{
-				ok: false,
-			},
-			dest: addrs[0],
-			err:  ErrZeroSpend,
+			dest:     addrs[0],
+			err:      ErrZeroSpend,
 		},
 		{
 			name: "encrypted=false spend fractional coins",
@@ -783,11 +743,8 @@ func TestServiceCreateAndSignTransaction(t *testing.T) {
 				Seed: string(seed),
 			},
 			unspents: uxouts[:],
-			vld: &dummyValidator{
-				ok: false,
-			},
-			coins: 1e3,
-			dest:  addrs[0],
+			coins:    1e3,
+			dest:     addrs[0],
 		},
 		{
 			name: "encrypted=false not enough confirmed coins",
@@ -795,12 +752,9 @@ func TestServiceCreateAndSignTransaction(t *testing.T) {
 				Seed: string(seed),
 			},
 			unspents: uxouts[:],
-			vld: &dummyValidator{
-				ok: false,
-			},
-			coins: 100e6,
-			dest:  addrs[0],
-			err:   ErrInsufficientBalance,
+			coins:    100e6,
+			dest:     addrs[0],
+			err:      ErrInsufficientBalance,
 		},
 		{
 			name: "encrypted=false no coin hours in inputs",
@@ -808,12 +762,9 @@ func TestServiceCreateAndSignTransaction(t *testing.T) {
 				Seed: string(seed),
 			},
 			unspents: uxoutsNoHours[:],
-			vld: &dummyValidator{
-				ok: false,
-			},
-			coins: 1e6,
-			dest:  addrsNoHours[0],
-			err:   fee.ErrTxnNoFee,
+			coins:    1e6,
+			dest:     addrsNoHours[0],
+			err:      fee.ErrTxnNoFee,
 		},
 		{
 			name: "disable wallet api=true",
@@ -821,7 +772,6 @@ func TestServiceCreateAndSignTransaction(t *testing.T) {
 				Seed:  string(seed),
 				Label: "label",
 			},
-			vld:              &dummyValidator{},
 			disableWalletAPI: true,
 			err:              ErrWalletAPIDisabled,
 		},
@@ -831,15 +781,16 @@ func TestServiceCreateAndSignTransaction(t *testing.T) {
 		for ct := range cryptoTable {
 			name := fmt.Sprintf("crypto=%v %v", ct, tc.name)
 			t.Run(name, func(t *testing.T) {
-				unspents := &dummyUnspentGetter{
-					addrUnspents: coin.AddressUxOuts{
-						addr: tc.unspents,
-					},
-					unspents: map[cipher.SHA256]coin.UxOut{},
+				addrUxOuts := coin.AddressUxOuts{
+					addr: tc.unspents,
 				}
 
-				for _, ux := range tc.unspents {
-					unspents.unspents[ux.Hash()] = ux
+				unspents := make(map[cipher.SHA256]coin.UxOut)
+
+				for _, uxs := range addrUxOuts {
+					for _, ux := range uxs {
+						unspents[ux.Hash()] = ux
+					}
 				}
 
 				dir := prepareWltDir()
@@ -851,7 +802,7 @@ func TestServiceCreateAndSignTransaction(t *testing.T) {
 				require.NoError(t, err)
 
 				if tc.disableWalletAPI {
-					_, err = s.CreateAndSignTransaction("", tc.pwd, tc.vld, unspents, uint64(headTime), tc.coins, tc.dest)
+					_, err = s.CreateAndSignTransaction("", tc.pwd, addrUxOuts, uint64(headTime), tc.coins, tc.dest)
 					require.Equal(t, tc.err, err)
 					return
 				}
@@ -861,9 +812,10 @@ func TestServiceCreateAndSignTransaction(t *testing.T) {
 				w, err := s.CreateWallet(wltName, tc.opts, nil)
 				require.NoError(t, err)
 
-				tx, err := s.CreateAndSignTransaction(w.Filename(), tc.pwd, tc.vld, unspents, uint64(headTime), tc.coins, tc.dest)
+				tx, err := s.CreateAndSignTransaction(w.Filename(), tc.pwd, addrUxOuts, uint64(headTime), tc.coins, tc.dest)
 
 				if tc.err != nil {
+					require.Error(t, err)
 					require.Equal(t, tc.err, err, err.Error())
 					return
 				}
@@ -872,7 +824,7 @@ func TestServiceCreateAndSignTransaction(t *testing.T) {
 
 				// check the IN of tx
 				for _, inUxid := range tx.In {
-					_, ok := unspents.unspents[inUxid]
+					_, ok := unspents[inUxid]
 					require.True(t, ok)
 				}
 
@@ -1024,24 +976,6 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 				Encrypt: false,
 			},
 			err: ErrWalletNotEncrypted,
-		},
-
-		{
-			name:   "unconfirmed validator failed",
-			params: validParams,
-			vld: &dummyValidator{
-				err: errors.New("validator failed"),
-			},
-			err: errors.New("checking unconfirmed spending failed: validator failed"),
-		},
-
-		{
-			name:   "has unconfirmed transactions",
-			params: validParams,
-			vld: &dummyValidator{
-				ok: true,
-			},
-			err: ErrSpendingUnconfirmed,
 		},
 
 		{
@@ -1550,28 +1484,22 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 			name := fmt.Sprintf("crypto=%v %v", ct, tc.name)
 			fmt.Println(name)
 			t.Run(name, func(t *testing.T) {
-				if tc.vld == nil {
-					tc.vld = &dummyValidator{}
-				}
-
 				if tc.headTime == 0 {
 					tc.headTime = headTime
 				}
 
-				unspents := &dummyUnspentGetter{
-					addrUnspents: coin.AddressUxOuts{
-						addr: tc.unspents,
-					},
-					unspents: map[cipher.SHA256]coin.UxOut{},
+				addrUxOuts := coin.AddressUxOuts{
+					addr: tc.unspents,
 				}
 
 				if tc.addressUnspents != nil {
-					unspents.addrUnspents = tc.addressUnspents
+					addrUxOuts = tc.addressUnspents
 				}
 
-				for _, uxs := range unspents.addrUnspents {
+				unspents := make(map[cipher.SHA256]coin.UxOut)
+				for _, uxs := range addrUxOuts {
 					for _, ux := range uxs {
-						unspents.unspents[ux.Hash()] = ux
+						unspents[ux.Hash()] = ux
 					}
 				}
 
@@ -1601,6 +1529,15 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 					if !w.IsEncrypted() {
 						_, err := s.NewAddresses(w.Filename(), nil, 10)
 						require.NoError(t, err)
+
+						w, err = s.GetWallet(wltName)
+						require.NoError(t, err)
+
+						require.Equal(t, 11, len(w.Entries))
+						require.Equal(t, w.Entries[0].Address, addr)
+						for i, e := range w.Entries[1:] {
+							require.Equal(t, e.Address, extraWalletAddrs[i])
+						}
 					}
 
 					tc.params.Wallet.ID = wltName
@@ -1608,7 +1545,7 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 
 				s.enableWalletAPI = !tc.disableWalletAPI
 
-				txn, inputs, err := s.CreateAndSignTransactionAdvanced(tc.params, tc.vld, unspents, tc.headTime)
+				txn, inputs, err := s.CreateAndSignTransactionAdvanced(tc.params, addrUxOuts, tc.headTime)
 				if tc.err != nil {
 					require.Equal(t, tc.err, err)
 					return
@@ -1630,7 +1567,7 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 				}
 
 				for i, inUxid := range txn.In {
-					_, ok := unspents.unspents[inUxid]
+					_, ok := unspents[inUxid]
 					require.True(t, ok)
 
 					require.Equal(t, inUxid, inputs[i].Hash)
@@ -2435,35 +2372,6 @@ func TestGetWalletSeed(t *testing.T) {
 			})
 		}
 	}
-}
-
-type dummyValidator struct {
-	ok  bool
-	err error
-}
-
-func (dvld dummyValidator) HasUnconfirmedSpendTx(addr []cipher.Address) (bool, error) {
-	return dvld.ok, dvld.err
-}
-
-type dummyUnspentGetter struct {
-	addrUnspents coin.AddressUxOuts
-	unspents     map[cipher.SHA256]coin.UxOut
-}
-
-func (dug dummyUnspentGetter) GetUnspentsOfAddrs(addrs []cipher.Address) coin.AddressUxOuts {
-	out := coin.AddressUxOuts{}
-	for _, a := range addrs {
-		if x, ok := dug.addrUnspents[a]; ok {
-			out[a] = x
-		}
-	}
-	return out
-}
-
-func (dug dummyUnspentGetter) Get(uxid cipher.SHA256) (coin.UxOut, bool) {
-	uxout, ok := dug.unspents[uxid]
-	return uxout, ok
 }
 
 func makeUxOut(t *testing.T, s cipher.SecKey, coins, hours uint64) coin.UxOut {

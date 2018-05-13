@@ -108,6 +108,7 @@ func TestGetPendingTxs(t *testing.T) {
 		status                        int
 		err                           string
 		getAllUnconfirmedTxnsResponse []visor.UnconfirmedTxn
+		getAllUnconfirmedTxnsErr      error
 		httpResponse                  []*visor.ReadableUnconfirmedTxn
 	}{
 		{
@@ -127,6 +128,13 @@ func TestGetPendingTxs(t *testing.T) {
 			},
 		},
 		{
+			name:   "500 - get unconfirmedTxn error",
+			method: http.MethodGet,
+			status: http.StatusInternalServerError,
+			err:    "500 Internal Server Error - GetAllUnconfirmedTxns failed",
+			getAllUnconfirmedTxnsErr: errors.New("GetAllUnconfirmedTxns failed"),
+		},
+		{
 			name:   "200",
 			method: http.MethodGet,
 			status: http.StatusOK,
@@ -139,7 +147,7 @@ func TestGetPendingTxs(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/pendingTxs"
 			gateway := NewGatewayerMock()
-			gateway.On("GetAllUnconfirmedTxns").Return(tc.getAllUnconfirmedTxnsResponse)
+			gateway.On("GetAllUnconfirmedTxns").Return(tc.getAllUnconfirmedTxnsResponse, tc.getAllUnconfirmedTxnsErr)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
@@ -459,6 +467,7 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 		err                           string
 		httpBody                      string
 		resendUnconfirmedTxnsResponse *daemon.ResendResult
+		resendUnconfirmedTxnsErr      error
 		httpResponse                  *daemon.ResendResult
 	}{
 		{
@@ -466,6 +475,13 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 			method: http.MethodPost,
 			status: http.StatusMethodNotAllowed,
 			err:    "405 Method Not Allowed",
+		},
+		{
+			name:   "500 resend failed",
+			method: http.MethodGet,
+			status: http.StatusInternalServerError,
+			err:    "500 Internal Server Error - ResendUnconfirmedTxns failed",
+			resendUnconfirmedTxnsErr: errors.New("ResendUnconfirmedTxns failed"),
 		},
 		{
 			name:   "200",
@@ -480,7 +496,7 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/resendUnconfirmedTxns"
 			gateway := NewGatewayerMock()
-			gateway.On("ResendUnconfirmedTxns").Return(tc.resendUnconfirmedTxnsResponse)
+			gateway.On("ResendUnconfirmedTxns").Return(tc.resendUnconfirmedTxnsResponse, tc.resendUnconfirmedTxnsErr)
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)

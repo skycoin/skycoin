@@ -133,6 +133,64 @@ func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
+// Returns the balance of one or more addresses, both confirmed and predicted.  The predicted
+// balance is the confirmed balance minus the pending spends.
+// URI: /balance
+// Method: GET
+// Args:
+//     addrs: command separated list of addresses [required]
+func getBalanceHandler(gateway Gatewayer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
+		addrsParam := r.FormValue("addrs")
+		addrsStr := splitCommaString(addrsParam)
+
+		addrs := make([]cipher.Address, 0, len(addrsStr))
+		for _, addr := range addrsStr {
+			a, err := cipher.DecodeBase58Address(addr)
+			if err != nil {
+				wh.Error400(w, fmt.Sprintf("address %s is invalid: %v", addr, err))
+				return
+			}
+			addrs = append(addrs, a)
+		}
+
+		if len(addrs) == 0 {
+			wh.Error400(w, "addrs is required")
+			return
+		}
+
+		bals, err := gateway.GetBalanceOfAddrs(addrs)
+		if err != nil {
+			err = fmt.Errorf("gateway.GetBalanceOfAddrs failed: %v", err)
+			wh.Error500(w, err.Error())
+			return
+		}
+
+		var balance wallet.BalancePair
+		for _, bal := range bals {
+			var err error
+			balance.Confirmed, err = balance.Confirmed.Add(bal.Confirmed)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+
+			balance.Predicted, err = balance.Predicted.Add(bal.Predicted)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+		}
+
+		wh.SendJSONOr500(logger, w, balance)
+	}
+}
+
 // Creates and broadcasts a transaction sending money from one of our wallets
 // to destination address.
 // URI: /wallet/spend

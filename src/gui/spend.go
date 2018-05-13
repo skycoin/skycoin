@@ -463,7 +463,9 @@ func createTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 				}
 			default:
 				switch err {
-				case fee.ErrTxnNoFee, fee.ErrTxnInsufficientCoinHours:
+				case fee.ErrTxnNoFee,
+					fee.ErrTxnInsufficientCoinHours,
+					wallet.ErrSpendingUnconfirmed:
 					wh.Error400(w, err.Error())
 				default:
 					wh.Error500(w, err.Error())

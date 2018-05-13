@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
 // set rand seed.
@@ -21,15 +22,16 @@ var _ = func() int64 {
 }()
 
 // PrepareDB creates and opens a temporary test DB and returns it with a cleanup callback
-func PrepareDB(t *testing.T) (*bolt.DB, func()) {
+func PrepareDB(t *testing.T) (*dbutil.DB, func()) {
 	f, err := ioutil.TempFile("", "testdb")
 	require.NoError(t, err)
 
 	db, err := bolt.Open(f.Name(), 0700, nil)
 	require.NoError(t, err)
 
-	return db, func() {
+	return dbutil.WrapDB(db), func() {
 		db.Close()
+		f.Close()
 		os.Remove(f.Name())
 	}
 }

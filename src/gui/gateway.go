@@ -28,25 +28,25 @@ type Gatewayer interface {
 	EncryptWallet(wltID string, password []byte) (*wallet.Wallet, error)
 	DecryptWallet(wltID string, password []byte) (*wallet.Wallet, error)
 	GetWalletSeed(wltID string, password []byte) (string, error)
-	GetBlockByHash(hash cipher.SHA256) (block coin.SignedBlock, ok bool)
-	GetBlockBySeq(seq uint64) (block coin.SignedBlock, ok bool)
+	GetSignedBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, error)
+	GetSignedBlockBySeq(seq uint64) (*coin.SignedBlock, error)
 	GetBlocks(start, end uint64) (*visor.ReadableBlocks, error)
 	GetLastBlocks(num uint64) (*visor.ReadableBlocks, error)
 	GetBuildInfo() visor.BuildInfo
 	GetUnspentOutputs(filters ...daemon.OutputsFilter) (*visor.ReadableOutputSet, error)
 	GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair, error)
 	GetBlockchainMetadata() (*visor.BlockchainMetadata, error)
-	GetBlockchainProgress() *daemon.BlockchainProgress
+	GetBlockchainProgress() (*daemon.BlockchainProgress, error)
 	GetConnection(addr string) *daemon.Connection
 	GetConnections() *daemon.Connections
 	GetDefaultConnections() []string
 	GetTrustConnections() []string
 	GetExchgConnection() []string
-	GetAllUnconfirmedTxns() []visor.UnconfirmedTxn
+	GetAllUnconfirmedTxns() ([]visor.UnconfirmedTxn, error)
 	GetTransaction(txid cipher.SHA256) (*visor.Transaction, error)
 	GetTransactions(flts ...visor.TxFilter) ([]visor.Transaction, error)
 	InjectBroadcastTransaction(txn coin.Transaction) error
-	ResendUnconfirmedTxns() *daemon.ResendResult
+	ResendUnconfirmedTxns() (*daemon.ResendResult, error)
 	GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error)
 	GetAddrUxOuts(addr []cipher.Address) ([]*historydb.UxOut, error)
 	GetAddressTxns(a cipher.Address) (*daemon.TransactionResults, error)

@@ -28,7 +28,14 @@ func blockchainHandler(gateway Gatewayer) http.HandlerFunc {
 
 func blockchainProgressHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		wh.SendJSONOr500(logger, w, gateway.GetBlockchainProgress())
+		progress, err := gateway.GetBlockchainProgress()
+		if err != nil {
+			err = fmt.Errorf("gateway.GetBlockchainProgress failed: %v", err)
+			wh.Error500(w, err.Error())
+			return
+		}
+
+		wh.SendJSONOr500(logger, w, progress)
 	}
 }
 
@@ -36,7 +43,7 @@ func blockchainProgressHandler(gateway Gatewayer) http.HandlerFunc {
 // method: GET
 // url: /block?hash=[:hash]  or /block?seq[:seq]
 // params: hash or seq, should only specify one filter.
-func getBlock(gate Gatewayer) http.HandlerFunc {
+func getBlock(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -45,8 +52,7 @@ func getBlock(gate Gatewayer) http.HandlerFunc {
 
 		hash := r.FormValue("hash")
 		seq := r.FormValue("seq")
-		var b coin.SignedBlock
-		var exist bool
+		var b *coin.SignedBlock
 		switch {
 		case hash == "" && seq == "":
 			wh.Error400(w, "should specify one filter, hash or seq")
@@ -61,7 +67,11 @@ func getBlock(gate Gatewayer) http.HandlerFunc {
 				return
 			}
 
-			b, exist = gate.GetBlockByHash(h)
+			b, err = gateway.GetSignedBlockByHash(h)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
 		case seq != "":
 			uSeq, err := strconv.ParseUint(seq, 10, 64)
 			if err != nil {
@@ -69,10 +79,14 @@ func getBlock(gate Gatewayer) http.HandlerFunc {
 				return
 			}
 
-			b, exist = gate.GetBlockBySeq(uSeq)
+			b, err = gateway.GetSignedBlockBySeq(uSeq)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
 		}
 
-		if !exist {
+		if b == nil {
 			wh.Error404(w, "")
 			return
 		}

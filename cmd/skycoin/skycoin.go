@@ -7,23 +7,23 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
-	"os/signal"
 	"path/filepath"
 	"runtime/debug"
 	"runtime/pprof"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/gui"
+	"github.com/skycoin/skycoin/src/util/apputil"
 	"github.com/skycoin/skycoin/src/util/browser"
 	"github.com/skycoin/skycoin/src/util/cert"
 	"github.com/skycoin/skycoin/src/util/file"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -140,6 +140,11 @@ type Config struct {
 	// Disable "Reply to ping", "Received pong" log messages
 	DisablePingPong bool
 
+	// Verify the database integrity after loading
+	VerifyDB bool
+	// Reset the database if integrity checks fail, and continue running
+	ResetCorruptDB bool
+
 	// Wallets
 	// Defaults to ${DataDirectory}/wallets/
 	WalletDirectory string
@@ -208,6 +213,9 @@ func (c *Config) register() {
 	flag.BoolVar(&c.DisablePingPong, "no-ping-log", c.DisablePingPong, `disable "reply to ping" and "received pong" debug log messages`)
 	flag.BoolVar(&c.LogToFile, "logtofile", c.LogToFile, "log to file")
 	flag.StringVar(&c.GUIDirectory, "gui-dir", c.GUIDirectory, "static content directory for the html gui")
+
+	flag.BoolVar(&c.VerifyDB, "verify-db", c.VerifyDB, "check the database for corruption")
+	flag.BoolVar(&c.ResetCorruptDB, "reset-corrupt-db", c.ResetCorruptDB, "reset the database if corrupted, and continue running instead of exiting")
 
 	// Key Configuration Data
 	flag.BoolVar(&c.RunMaster, "master", c.RunMaster, "run the daemon as blockchain master server")
@@ -286,6 +294,9 @@ var devConfig = Config{
 	LogToFile:       false,
 	DisablePingPong: false,
 
+	VerifyDB:       true,
+	ResetCorruptDB: false,
+
 	// Wallets
 	WalletDirectory:  "",
 	WalletCryptoType: string(wallet.CryptoTypeScryptChacha20poly1305),
@@ -333,6 +344,7 @@ func applyConfigMode() {
 		devConfig.WebInterface = true
 		devConfig.LogToFile = false
 		devConfig.ColorLog = true
+		devConfig.ResetCorruptDB = true
 	default:
 		panic("Invalid ConfigMode")
 	}
@@ -410,49 +422,6 @@ func panicIfError(err error, msg string, args ...interface{}) {
 	if err != nil {
 		log.Panicf(msg+": %v", append(args, err)...)
 	}
-}
-
-func printProgramStatus() {
-	p := pprof.Lookup("goroutine")
-	if err := p.WriteTo(os.Stdout, 2); err != nil {
-		fmt.Println("ERROR:", err)
-		return
-	}
-}
-
-// Catches SIGUSR1 and prints internal program state
-func catchDebug() {
-	sigchan := make(chan os.Signal, 1)
-	//signal.Notify(sigchan, syscall.SIGUSR1)
-	signal.Notify(sigchan, syscall.Signal(0xa)) // SIGUSR1 = Signal(0xa)
-	for {
-		select {
-		case <-sigchan:
-			printProgramStatus()
-		}
-	}
-}
-
-func catchInterrupt(quit chan<- struct{}) {
-	sigchan := make(chan os.Signal, 1)
-	signal.Notify(sigchan, os.Interrupt)
-	<-sigchan
-	signal.Stop(sigchan)
-	close(quit)
-
-	// If ctrl-c is called again, panic so that the program state can be examined.
-	// Ctrl-c would be called again if program shutdown was stuck.
-	go catchInterruptPanic()
-}
-
-// catchInterruptPanic catches os.Interrupt and panics
-func catchInterruptPanic() {
-	sigchan := make(chan os.Signal, 1)
-	signal.Notify(sigchan, os.Interrupt)
-	<-sigchan
-	signal.Stop(sigchan)
-	printProgramStatus()
-	panic("SIGINT")
 }
 
 func createGUI(c *Config, d *daemon.Daemon, host string) (*gui.Server, error) {
@@ -560,7 +529,6 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Visor.Config.GenesisTimestamp = c.GenesisTimestamp
 	dc.Visor.Config.GenesisCoinVolume = GenesisCoinVolume
 	dc.Visor.Config.DBPath = c.DBPath
-	dc.Visor.Config.DBReadOnly = c.DBReadOnly
 	dc.Visor.Config.Arbitrating = c.Arbitrating
 	dc.Visor.Config.EnableWalletAPI = c.EnableWalletAPI
 	dc.Visor.Config.WalletDirectory = c.WalletDirectory
@@ -592,6 +560,11 @@ func Run(c *Config) {
 			logger.Errorf("recover: %v\nstack:%v", r, string(debug.Stack()))
 		}
 	}()
+
+	var db *dbutil.DB
+	var d *daemon.Daemon
+	var webInterface *gui.Server
+	errC := make(chan error, 10)
 
 	if c.Version {
 		fmt.Println(Version)
@@ -637,52 +610,63 @@ func Run(c *Config) {
 
 	var wg sync.WaitGroup
 
-	// If the user Ctrl-C's, shutdown properly
 	quit := make(chan struct{})
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		catchInterrupt(quit)
-	}()
+	// Catch SIGINT (CTRL-C) (closes the quit channel)
+	go apputil.CatchInterrupt(quit)
 
-	// Watch for SIGUSR1
-	wg.Add(1)
-	func() {
-		defer wg.Done()
-		go catchDebug()
-	}()
+	// Catch SIGUSR1 (prints runtime stack to stdout)
+	go apputil.CatchDebug()
 
 	// creates blockchain instance
 	dconf := configureDaemon(c)
 
 	logger.Infof("Opening database %s", dconf.Visor.Config.DBPath)
-	db, err := visor.OpenDB(dconf.Visor.Config.DBPath, dconf.Visor.Config.DBReadOnly)
+	db, err = visor.OpenDB(dconf.Visor.Config.DBPath, c.DBReadOnly)
 	if err != nil {
 		logger.Errorf("Database failed to open: %v. Is another skycoin instance running?", err)
 		return
 	}
 
-	d, err := daemon.NewDaemon(dconf, db, DefaultConnections)
-	if err != nil {
-		logger.Error(err)
-		return
+	if c.ResetCorruptDB {
+		// Check the database integrity and recreate it if necessary
+		logger.Info("Checking database and resetting if corrupted")
+		if newDB, err := visor.ResetCorruptDB(db, c.BlockchainPubkey, quit); err != nil {
+			if err != visor.ErrVerifyStopped {
+				logger.Errorf("visor.ResetCorruptDB failed: %v", err)
+			}
+			goto earlyShutdown
+		} else {
+			db = newDB
+		}
+	} else if c.VerifyDB {
+		logger.Info("Checking database")
+		if err := visor.CheckDatabase(db, c.BlockchainPubkey, quit); err != nil {
+			if err != visor.ErrVerifyStopped {
+				logger.Errorf("visor.CheckDatabase failed: %v", err)
+			}
+			goto earlyShutdown
+		}
 	}
 
-	var webInterface *gui.Server
+	d, err = daemon.NewDaemon(dconf, db, DefaultConnections)
+	if err != nil {
+		logger.Error(err)
+		goto earlyShutdown
+	}
+
 	if c.WebInterface {
 		webInterface, err = createGUI(c, d, host)
 		if err != nil {
 			logger.Error(err)
-			return
+			goto earlyShutdown
 		}
 	}
-
-	errC := make(chan error, 10)
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+
 		if err := d.Run(); err != nil {
 			logger.Error(err)
 			errC <- err
@@ -690,27 +674,31 @@ func Run(c *Config) {
 	}()
 
 	if c.WebInterface {
+		cancelLaunchBrowser := make(chan struct{})
+
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+
 			if err := webInterface.Serve(); err != nil {
+				close(cancelLaunchBrowser)
 				logger.Error(err)
 				errC <- err
 			}
 		}()
 
 		if c.LaunchBrowser {
-			wg.Add(1)
 			go func() {
-				defer wg.Done()
+				select {
+				case <-cancelLaunchBrowser:
+					logger.Warning("Browser launching cancelled")
 
 				// Wait a moment just to make sure the http interface is up
-				time.Sleep(time.Millisecond * 100)
-
-				logger.Infof("Launching System Browser with %s", fullAddress)
-				if err := browser.Open(fullAddress); err != nil {
-					logger.Error(err)
-					return
+				case <-time.After(time.Millisecond * 100):
+					logger.Infof("Launching System Browser with %s", fullAddress)
+					if err := browser.Open(fullAddress); err != nil {
+						logger.Error(err)
+					}
 				}
 			}()
 		}
@@ -749,11 +737,25 @@ func Run(c *Config) {
 	}
 
 	logger.Info("Shutting down...")
+
 	if webInterface != nil {
+		logger.Info("Closing web interface")
 		webInterface.Shutdown()
 	}
+
+	logger.Info("Closing daemon")
 	d.Shutdown()
+
+	logger.Info("Waiting for goroutines to finish")
 	wg.Wait()
+
+earlyShutdown:
+	if db != nil {
+		logger.Info("Closing database")
+		if err := db.Close(); err != nil {
+			logger.WithError(err).Error("Failed to close DB")
+		}
+	}
 
 	logger.Info("Goodbye")
 

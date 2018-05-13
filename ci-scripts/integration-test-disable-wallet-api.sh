@@ -25,7 +25,6 @@ GOLDFLAGS="-X main.Commit=${COMMIT} -X main.Branch=${BRANCH}"
 usage () {
   echo "Usage: $SCRIPT"
   echo "Optional command line arguments"
-  # echo "-t <string>  -- Test to run, gui or cli; empty runs both tests"
   echo "-r <string>  -- Run test with -run flag"
   echo "-u <boolean> -- Update stable testdata"
   echo "-v <boolean> -- Run test with -v flag"

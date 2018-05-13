@@ -27,34 +27,24 @@ type spending struct {
 }
 
 func makeUxBody(t *testing.T) coin.UxBody {
-	body, _ := makeUxBodyWithSecret(t)
-	return body
-}
-
-func makeUxOut(t *testing.T) coin.UxOut {
-	ux, _ := makeUxOutWithSecret(t)
-	return ux
-}
-
-func makeUxBodyWithSecret(t *testing.T) (coin.UxBody, cipher.SecKey) {
-	p, s := cipher.GenerateKeyPair()
+	p, _ := cipher.GenerateKeyPair()
 	return coin.UxBody{
 		SrcTransaction: testutil.RandSHA256(t),
 		Address:        cipher.AddressFromPubKey(p),
 		Coins:          1e6,
 		Hours:          100,
-	}, s
+	}
 }
 
-func makeUxOutWithSecret(t *testing.T) (coin.UxOut, cipher.SecKey) {
-	body, sec := makeUxBodyWithSecret(t)
+func makeUxOut(t *testing.T) coin.UxOut {
+	body := makeUxBody(t)
 	return coin.UxOut{
 		Head: coin.UxHead{
 			Time:  100,
 			BkSeq: 2,
 		},
 		Body: body,
-	}, sec
+	}
 }
 
 func TestNewUnspentPool(t *testing.T) {

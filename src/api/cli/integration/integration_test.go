@@ -95,11 +95,11 @@ func TestMain(m *testing.M) {
 	os.Exit(ret)
 }
 
-func createUnEncryptedWallet(t *testing.T) (string, func()) {
+func createUnencryptedWallet(t *testing.T) (string, func()) {
 	return createTempWallet(t, false)
 }
 
-func createEncryptedWallet(t *testing.T) (string, func()) {
+func createEncryptedWallet(t *testing.T) (string, func()) { // nolint: unparam
 	return createTempWallet(t, true)
 }
 
@@ -765,7 +765,7 @@ func TestStableListWallets(t *testing.T) {
 		return
 	}
 
-	_, clean := createUnEncryptedWallet(t)
+	_, clean := createUnencryptedWallet(t)
 	defer clean()
 
 	output, err := exec.Command(binaryPath, "listWallets").CombinedOutput()
@@ -807,7 +807,7 @@ func TestStableListAddress(t *testing.T) {
 		return
 	}
 
-	_, clean := createUnEncryptedWallet(t)
+	_, clean := createUnencryptedWallet(t)
 	defer clean()
 
 	output, err := exec.Command(binaryPath, "listAddresses").CombinedOutput()
@@ -881,7 +881,7 @@ func TestStableWalletBalance(t *testing.T) {
 		return
 	}
 
-	_, clean := createUnEncryptedWallet(t)
+	_, clean := createUnencryptedWallet(t)
 	defer clean()
 
 	output, err := exec.Command(binaryPath, "walletBalance").CombinedOutput()
@@ -919,7 +919,7 @@ func TestStableWalletOutputs(t *testing.T) {
 		return
 	}
 
-	_, clean := createUnEncryptedWallet(t)
+	_, clean := createUnencryptedWallet(t)
 	defer clean()
 
 	output, err := exec.Command(binaryPath, "walletOutputs").CombinedOutput()
@@ -1415,8 +1415,8 @@ func testKnownBlocks(t *testing.T) {
 	scanBlocks(t, "0", "180")
 }
 
-func scanBlocks(t *testing.T, s, e string) {
-	outputs, err := exec.Command(binaryPath, "blocks", s, e).CombinedOutput()
+func scanBlocks(t *testing.T, start, end string) { // nolint: unparam
+	outputs, err := exec.Command(binaryPath, "blocks", start, end).CombinedOutput()
 	require.NoError(t, err)
 
 	var blocks visor.ReadableBlocks
@@ -1522,7 +1522,7 @@ func TestStableWalletDir(t *testing.T) {
 		return
 	}
 
-	walletPath, clean := createUnEncryptedWallet(t)
+	walletPath, clean := createUnencryptedWallet(t)
 	defer clean()
 
 	dir := filepath.Dir(walletPath)
@@ -1885,7 +1885,7 @@ func isTxConfirmed(t *testing.T, txid string) bool {
 }
 
 // checkCoinhours checks if the address coinhours in transaction are correct
-func checkCoinsAndCoinhours(t *testing.T, tx *webrpc.TxnResult, addr string, coins, coinhours uint64) {
+func checkCoinsAndCoinhours(t *testing.T, tx *webrpc.TxnResult, addr string, coins, coinhours uint64) { // nolint: unparam
 	addrCoinhoursMap := make(map[string][]visor.ReadableTransactionOutput)
 	for _, o := range tx.Transaction.Transaction.Out {
 		addrCoinhoursMap[o.Address] = append(addrCoinhoursMap[o.Address], o)
@@ -1913,7 +1913,7 @@ func checkCoinsAndCoinhours(t *testing.T, tx *webrpc.TxnResult, addr string, coi
 // prepareAndCheckWallet prepares wallet for live testing.
 // Returns *wallet.Wallet, total coin, total hours.
 // Confirms that the wallet meets the minimal requirements of coins and coinhours.
-func prepareAndCheckWallet(t *testing.T, miniCoins, miniCoinHours uint64) (*wallet.Wallet, uint64, uint64) {
+func prepareAndCheckWallet(t *testing.T, miniCoins, miniCoinHours uint64) (*wallet.Wallet, uint64, uint64) { // nolint: unparam
 	walletDir, walletName := getWalletPathFromEnv(t)
 	walletPath := filepath.Join(walletDir, walletName)
 	// Checks if the wallet does exist
@@ -1999,7 +1999,7 @@ func TestStableWalletHistory(t *testing.T) {
 		return
 	}
 
-	_, clean := createUnEncryptedWallet(t)
+	_, clean := createUnencryptedWallet(t)
 	defer clean()
 
 	output, err := exec.Command(binaryPath, "walletHistory").CombinedOutput()
@@ -2203,7 +2203,7 @@ func TestStableGenerateWallet(t *testing.T) {
 			name: "generate wallet with duplicate wallet name",
 			args: []string{},
 			setup: func(t *testing.T) func() {
-				_, clean := createUnEncryptedWallet(t)
+				_, clean := createUnencryptedWallet(t)
 				return clean
 			},
 			errMsg: []byte("integration-test.wlt already exist\n"),
@@ -2422,7 +2422,7 @@ func TestEncryptWallet(t *testing.T) {
 			name: "wallet is not encrypted",
 			args: []string{"-p", "pwd"},
 			setup: func(t *testing.T) func() {
-				_, clean := createUnEncryptedWallet(t)
+				_, clean := createUnencryptedWallet(t)
 				return clean
 			},
 			checkWallet: func(t *testing.T, w *wallet.Wallet) {
@@ -2449,7 +2449,7 @@ func TestEncryptWallet(t *testing.T) {
 			name: "wallet doesn't exist",
 			args: []string{"-p", "pwd"},
 			setup: func(t *testing.T) func() {
-				_, clean := createUnEncryptedWallet(t)
+				_, clean := createUnencryptedWallet(t)
 				os.Setenv("WALLET_NAME", "not-exist.wlt")
 				return clean
 			},
@@ -2524,7 +2524,7 @@ func TestDecryptWallet(t *testing.T) {
 			name: "wallet is not encrypted",
 			args: []string{"-p", "pwd"},
 			setup: func(t *testing.T) func() {
-				_, clean := createUnEncryptedWallet(t)
+				_, clean := createUnencryptedWallet(t)
 				return clean
 			},
 			errMsg: []byte("wallet is not encrypted\n"),
@@ -2595,7 +2595,7 @@ func TestShowSeed(t *testing.T) {
 		{
 			name: "unencrypted wallet",
 			setup: func(t *testing.T) func() {
-				_, clean := createUnEncryptedWallet(t)
+				_, clean := createUnencryptedWallet(t)
 				return clean
 			},
 			expectOutput: []byte("exchange stage green marine palm tobacco decline shadow cereal chapter lamp copy\n"),
@@ -2604,7 +2604,7 @@ func TestShowSeed(t *testing.T) {
 			name: "unencrypted wallet with -j option",
 			args: []string{"-j"},
 			setup: func(t *testing.T) func() {
-				_, clean := createUnEncryptedWallet(t)
+				_, clean := createUnencryptedWallet(t)
 				return clean
 			},
 			expectOutput: []byte("{\n    \"seed\": \"exchange stage green marine palm tobacco decline shadow cereal chapter lamp copy\"\n}\n"),
@@ -2639,7 +2639,7 @@ func TestShowSeed(t *testing.T) {
 		{
 			name: "wallet doesn't exist",
 			setup: func(t *testing.T) func() {
-				_, clean := createUnEncryptedWallet(t)
+				_, clean := createUnencryptedWallet(t)
 				os.Setenv("WALLET_NAME", "not-exist.wlt")
 				return clean
 			},

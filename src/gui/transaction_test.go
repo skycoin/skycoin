@@ -40,11 +40,6 @@ func createUnconfirmedTxn(t *testing.T) visor.UnconfirmedTxn {
 	return ut
 }
 
-func makeTransaction(t *testing.T) coin.Transaction {
-	tx, _ := makeTransactionWithSecret(t)
-	return tx
-}
-
 func makeUxOutWithSecret(t *testing.T) (coin.UxOut, cipher.SecKey) {
 	body, sec := makeUxBodyWithSecret(t)
 	return coin.UxOut{
@@ -61,7 +56,7 @@ func makeAddress() cipher.Address {
 	return cipher.AddressFromPubKey(p)
 }
 
-func makeTransactionWithSecret(t *testing.T) (coin.Transaction, cipher.SecKey) {
+func makeTransaction(t *testing.T) coin.Transaction {
 	tx := coin.Transaction{}
 	ux, s := makeUxOutWithSecret(t)
 
@@ -70,7 +65,7 @@ func makeTransactionWithSecret(t *testing.T) (coin.Transaction, cipher.SecKey) {
 	tx.PushOutput(makeAddress(), 1e6, 50)
 	tx.PushOutput(makeAddress(), 5e6, 50)
 	tx.UpdateHeader()
-	return tx, s
+	return tx
 }
 
 func makeUxBodyWithSecret(t *testing.T) (coin.UxBody, cipher.SecKey) {

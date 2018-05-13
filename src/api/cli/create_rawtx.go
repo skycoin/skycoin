@@ -407,7 +407,7 @@ func CreateRawTx(c *webrpc.Client, wlt *wallet.Wallet, inAddrs []string, chgAddr
 		return nil, err
 	}
 
-	txn, err := createRawTx(unspents.Outputs, wlt, inAddrs, chgAddr, toAddrs, password)
+	txn, err := createRawTx(unspents.Outputs, wlt, chgAddr, toAddrs, password)
 	if err != nil {
 		return nil, err
 	}
@@ -449,7 +449,7 @@ func CreateRawTx(c *webrpc.Client, wlt *wallet.Wallet, inAddrs []string, chgAddr
 
 // TODO -- remove me -- reimplementation of visor.VerifySingleTxnSoftConstraints and HardConstraints
 // minus the parts that require block head data, which is not available from the RPC API (see below)
-func verifyTransactionConstraints(txn *coin.Transaction, uxIn coin.UxArray, maxSize int) error {
+func verifyTransactionConstraints(txn *coin.Transaction, uxIn coin.UxArray, maxSize int) error { // nolint: unparam
 	// SOFT constraints:
 
 	if txn.Size() > maxSize {
@@ -497,11 +497,15 @@ func verifyTransactionConstraints(txn *coin.Transaction, uxIn coin.UxArray, maxS
 	// return coin.VerifyTransactionHoursSpending(head.Time(), uxIn, uxOut)
 }
 
-func createRawTx(uxouts visor.ReadableOutputSet, wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount, password []byte) (*coin.Transaction, error) {
+func createRawTx(uxouts visor.ReadableOutputSet, wlt *wallet.Wallet, chgAddr string, toAddrs []SendAmount, password []byte) (*coin.Transaction, error) {
 	// Calculate total required coins
 	var totalCoins uint64
 	for _, arg := range toAddrs {
-		totalCoins += arg.Coins
+		var err error
+		totalCoins, err = coin.AddUint64(totalCoins, arg.Coins)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	spendOutputs, err := chooseSpends(uxouts, totalCoins)

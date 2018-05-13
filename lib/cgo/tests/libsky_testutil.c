@@ -2,9 +2,13 @@
 #include <stdlib.h>
 #include <time.h>
 #include <stdio.h>
+#include <stdio.h>
 #include <unistd.h>
 
 #include "skytest.h"
+
+//Define function pipe2 to avoid warning implicit declaration of function 'pipe2'
+int pipe2(int pipefd[2], int flags);
 
 int MEMPOOLIDX = 0;
 void *MEMPOOL[1024 * 256];

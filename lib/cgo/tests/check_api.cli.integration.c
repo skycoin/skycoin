@@ -12,6 +12,7 @@
 
 #define BUFFER_SIZE 1024
 
+
 Test(api_cli_integration, TestStableShowConfig) {
 	char output[1024];
 	Config__Handle configHandle;

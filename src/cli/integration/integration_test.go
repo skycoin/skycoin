@@ -22,10 +22,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/api/cli"
+	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/gui"
+	"github.com/skycoin/skycoin/src/cli"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/visor"
@@ -78,7 +78,7 @@ func TestMain(m *testing.M) {
 	binaryPath = abs
 
 	// Build cli binary file.
-	args := []string{"build", "-o", binaryPath, "../../../../cmd/cli/cli.go"}
+	args := []string{"build", "-o", binaryPath, "../../../cmd/cli/cli.go"}
 	if err := exec.Command("go", args...).Run(); err != nil {
 		fmt.Fprintf(os.Stderr, fmt.Sprintf("Make %v binary failed: %v\n", binaryName, err))
 		os.Exit(1)
@@ -2041,17 +2041,17 @@ func TestStableCheckDB(t *testing.T) {
 	}{
 		{
 			name:   "no signature",
-			dbPath: "../../../visor/testdata/data.db.nosig",
+			dbPath: "../../visor/testdata/data.db.nosig",
 			errMsg: "checkdb failed: Signature not found for block seq=1000 hash=71852c1a8ab5e470bd14e5fce8e1116697151181a188d4262b545542fb3d526c\n",
 		},
 		{
 			name:   "invalid database",
-			dbPath: "../../../visor/testdata/data.db.garbage",
+			dbPath: "../../visor/testdata/data.db.garbage",
 			errMsg: "open db failed: invalid database\n",
 		},
 		{
 			name:   "valid database",
-			dbPath: "../../../gui/integration/testdata/blockchain-180.db",
+			dbPath: "../../api/integration/testdata/blockchain-180.db",
 			result: "check db success\n",
 		},
 	}
@@ -2297,7 +2297,7 @@ func TestLiveGUIInjectTransaction(t *testing.T) {
 
 	requireWalletEnv(t)
 
-	c := gui.NewClient(rpcAddress())
+	c := api.NewClient(rpcAddress())
 	// prepares wallet and confirms the wallet has at least 2 coins and 2 coin hours.
 	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 2)
 

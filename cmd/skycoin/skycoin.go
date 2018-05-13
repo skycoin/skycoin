@@ -13,10 +13,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
-	"github.com/skycoin/skycoin/src/gui"
 	"github.com/skycoin/skycoin/src/util/apputil"
 	"github.com/skycoin/skycoin/src/util/browser"
 	"github.com/skycoin/skycoin/src/util/cert"
@@ -86,11 +86,11 @@ type Config struct {
 	DisableNetworking bool
 	// Enable wallet API
 	EnableWalletAPI bool
-	// Enable gui
+	// Enable GUI
 	EnableGUI bool
-	// Disable CSRF check in the wallet api
+	// Disable CSRF check in the wallet API
 	DisableCSRF bool
-	// Enable /wallet/seed api endpoint
+	// Enable /wallet/seed API endpoint
 	EnableSeedAPI bool
 
 	// Only run on localhost and only connect to others on localhost
@@ -126,7 +126,7 @@ type Config struct {
 
 	// Data directory holds app data -- defaults to ~/.skycoin
 	DataDirectory string
-	// GUI directory contains assets for the html gui
+	// GUI directory contains assets for the HTML interface
 	GUIDirectory string
 
 	ReadTimeout  time.Duration
@@ -212,7 +212,7 @@ func (c *Config) register() {
 	flag.BoolVar(&c.ColorLog, "color-log", c.ColorLog, "Add terminal colors to log output")
 	flag.BoolVar(&c.DisablePingPong, "no-ping-log", c.DisablePingPong, `disable "reply to ping" and "received pong" debug log messages`)
 	flag.BoolVar(&c.LogToFile, "logtofile", c.LogToFile, "log to file")
-	flag.StringVar(&c.GUIDirectory, "gui-dir", c.GUIDirectory, "static content directory for the html gui")
+	flag.StringVar(&c.GUIDirectory, "gui-dir", c.GUIDirectory, "static content directory for the HTML interface")
 
 	flag.BoolVar(&c.VerifyDB, "verify-db", c.VerifyDB, "check the database for corruption")
 	flag.BoolVar(&c.ResetCorruptDB, "reset-corrupt-db", c.ResetCorruptDB, "reset the database if corrupted, and continue running instead of exiting")
@@ -254,7 +254,7 @@ var devConfig = Config{
 	EnableGUI: false,
 	// Enable seed API
 	EnableSeedAPI: false,
-	// Disable CSRF check in the wallet api
+	// Disable CSRF check in the wallet API
 	DisableCSRF: false,
 	// Only run on localhost and only connect to others on localhost
 	LocalhostOnly: false,
@@ -407,7 +407,7 @@ func (c *Config) postProcess() {
 		c.Arbitrating = true
 	}
 
-	// Don't open browser to load wallets if wallet apis are disabled.
+	// Don't open browser to load wallets if wallet APIs are disabled.
 	if !c.EnableWalletAPI {
 		c.EnableGUI = false
 		c.LaunchBrowser = false
@@ -424,11 +424,11 @@ func panicIfError(err error, msg string, args ...interface{}) {
 	}
 }
 
-func createGUI(c *Config, d *daemon.Daemon, host string) (*gui.Server, error) {
-	var s *gui.Server
+func createGUI(c *Config, d *daemon.Daemon, host string) (*api.Server, error) {
+	var s *api.Server
 	var err error
 
-	config := gui.Config{
+	config := api.Config{
 		StaticDir:       c.GUIDirectory,
 		DisableCSRF:     c.DisableCSRF,
 		EnableWalletAPI: c.EnableWalletAPI,
@@ -442,13 +442,13 @@ func createGUI(c *Config, d *daemon.Daemon, host string) (*gui.Server, error) {
 	if c.WebInterfaceHTTPS {
 		// Verify cert/key parameters, and if neither exist, create them
 		if err := cert.CreateCertIfNotExists(host, c.WebInterfaceCert, c.WebInterfaceKey, "Skycoind"); err != nil {
-			logger.Errorf("gui.CreateCertIfNotExists failure: %v", err)
+			logger.Errorf("cert.CreateCertIfNotExists failure: %v", err)
 			return nil, err
 		}
 
-		s, err = gui.CreateHTTPS(host, config, d.Gateway, c.WebInterfaceCert, c.WebInterfaceKey)
+		s, err = api.CreateHTTPS(host, config, d.Gateway, c.WebInterfaceCert, c.WebInterfaceKey)
 	} else {
-		s, err = gui.Create(host, config, d.Gateway)
+		s, err = api.Create(host, config, d.Gateway)
 	}
 	if err != nil {
 		logger.Errorf("Failed to start web GUI: %v", err)
@@ -563,7 +563,7 @@ func Run(c *Config) {
 
 	var db *dbutil.DB
 	var d *daemon.Daemon
-	var webInterface *gui.Server
+	var webInterface *api.Server
 	errC := make(chan error, 10)
 
 	if c.Version {

@@ -22,10 +22,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
-	"github.com/skycoin/skycoin/src/gui"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/droplet" //http,json helpers
 	"github.com/skycoin/skycoin/src/util/fee"
@@ -192,9 +192,9 @@ func updateGoldenFile(t *testing.T, filename string, content interface{}) {
 
 func assertResponseError(t *testing.T, err error, errCode int, errMsg string) {
 	require.Error(t, err)
-	require.IsType(t, gui.APIError{}, err)
-	require.Equal(t, errCode, err.(gui.APIError).StatusCode)
-	require.Equal(t, errMsg, err.(gui.APIError).Message)
+	require.IsType(t, api.ClientError{}, err)
+	require.Equal(t, errCode, err.(api.ClientError).StatusCode)
+	require.Equal(t, errMsg, err.(api.ClientError).Message)
 }
 
 func TestStableCoinSupply(t *testing.T) {
@@ -202,12 +202,12 @@ func TestStableCoinSupply(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	cs, err := c.CoinSupply()
 	require.NoError(t, err)
 
-	var expected gui.CoinSupply
+	var expected api.CoinSupply
 	loadGoldenFile(t, "coinsupply.golden", TestData{cs, &expected})
 
 	require.Equal(t, expected, *cs)
@@ -218,7 +218,7 @@ func TestLiveCoinSupply(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	cs, err := c.CoinSupply()
 	require.NoError(t, err)
@@ -237,7 +237,7 @@ func TestVersion(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	v, err := c.Version()
 	require.NoError(t, err)
@@ -250,7 +250,7 @@ func TestStableOutputs(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	cases := []struct {
 		name    string
@@ -328,7 +328,7 @@ func TestLiveOutputs(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	// Request all outputs and check that HeadOutputs is not empty
 	// OutgoingOutputs and IncomingOutputs are variable and could be empty
@@ -363,7 +363,7 @@ func TestLiveBlock(t *testing.T) {
 	// These blocks were affected by the coinhour overflow issue, make sure that they can be queried
 	blockSeqs := []uint64{11685, 11707, 11710, 11709, 11705, 11708, 11711, 11706, 11699}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	for _, seq := range blockSeqs {
 		b, err := c.BlockBySeq(seq)
 		require.NoError(t, err)
@@ -372,7 +372,7 @@ func TestLiveBlock(t *testing.T) {
 }
 
 func testKnownBlocks(t *testing.T) {
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	cases := []struct {
 		name    string
@@ -468,7 +468,7 @@ func TestStableBlockchainMetadata(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	metadata, err := c.BlockchainMetadata()
 	require.NoError(t, err)
@@ -484,7 +484,7 @@ func TestLiveBlockchainMetadata(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	metadata, err := c.BlockchainMetadata()
 	require.NoError(t, err)
@@ -497,7 +497,7 @@ func TestStableBlockchainProgress(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	progress, err := c.BlockchainProgress()
 	require.NoError(t, err)
@@ -513,7 +513,7 @@ func TestLiveBlockchainProgress(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	progress, err := c.BlockchainProgress()
 	require.NoError(t, err)
@@ -528,7 +528,7 @@ func TestStableBalance(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	cases := []struct {
 		name   string
@@ -575,7 +575,7 @@ func TestLiveBalance(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	// Genesis address check, should not have a balance
 	b, err := c.Balance([]string{"2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6"})
@@ -611,7 +611,7 @@ func TestStableUxOut(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	cases := []struct {
 		name   string
@@ -646,7 +646,7 @@ func TestLiveUxOut(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	// A spent uxout should never change
 	ux, err := c.UxOut("fe6762d753d626115c8dd3a053b5fb75d6d419a8d0fb1478c5fffc1fe41c5f20")
@@ -662,7 +662,7 @@ func TestLiveUxOut(t *testing.T) {
 }
 
 func scanUxOuts(t *testing.T) {
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	outputs, err := c.Outputs()
 	require.NoError(t, err)
@@ -696,7 +696,7 @@ func TestStableAddressUxOuts(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	cases := []struct {
 		name    string
@@ -741,7 +741,7 @@ func TestLiveAddressUxOuts(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	cases := []struct {
 		name         string
@@ -790,7 +790,7 @@ func TestStableBlocks(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	progress, err := c.BlockchainProgress()
 	require.NoError(t, err)
@@ -878,7 +878,7 @@ func TestLiveBlocks(t *testing.T) {
 }
 
 func testBlocks(t *testing.T, start, end int) *visor.ReadableBlocks {
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	blocks, err := c.Blocks(start, end)
 	require.NoError(t, err)
@@ -912,7 +912,7 @@ func TestStableLastBlocks(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	blocks, err := c.LastBlocks(1)
 	require.NoError(t, err)
@@ -944,7 +944,7 @@ func TestLiveLastBlocks(t *testing.T) {
 	if !doLive(t) {
 		return
 	}
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	var prevBlock *visor.ReadableBlock
 	blocks, err := c.LastBlocks(10)
 	require.NoError(t, err)
@@ -968,7 +968,7 @@ func TestStableNetworkConnections(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	connections, err := c.NetworkConnections()
 	require.NoError(t, err)
 	require.Empty(t, connections.Connections)
@@ -983,7 +983,7 @@ func TestLiveNetworkConnections(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	connections, err := c.NetworkConnections()
 	require.NoError(t, err)
 	require.NotEmpty(t, connections.Connections)
@@ -1008,7 +1008,7 @@ func TestNetworkDefaultConnections(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	connections, err := c.NetworkDefaultConnections()
 	require.NoError(t, err)
 	require.NotEmpty(t, connections)
@@ -1025,7 +1025,7 @@ func TestNetworkTrustedConnections(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	connections, err := c.NetworkTrustedConnections()
 	require.NoError(t, err)
 	require.NotEmpty(t, connections)
@@ -1042,7 +1042,7 @@ func TestStableNetworkExchangeableConnections(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	connections, err := c.NetworkExchangeableConnections()
 	require.NoError(t, err)
 
@@ -1058,7 +1058,7 @@ func TestLiveNetworkExchangeableConnections(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	_, err := c.NetworkExchangeableConnections()
 	require.NoError(t, err)
 }
@@ -1071,13 +1071,13 @@ func TestLiveTransaction(t *testing.T) {
 	cases := []struct {
 		name       string
 		txId       string
-		err        gui.APIError
+		err        api.ClientError
 		goldenFile string
 	}{
 		{
 			name: "invalid txId",
 			txId: "abcd",
-			err: gui.APIError{
+			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
 				Message:    "400 Bad Request - Invalid hex length\n",
@@ -1086,7 +1086,7 @@ func TestLiveTransaction(t *testing.T) {
 		{
 			name: "empty txId",
 			txId: "",
-			err: gui.APIError{
+			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
 				Message:    "400 Bad Request - txid is empty\n",
@@ -1099,7 +1099,7 @@ func TestLiveTransaction(t *testing.T) {
 		},
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			tx, err := c.Transaction(tc.txId)
@@ -1122,13 +1122,13 @@ func TestStableTransaction(t *testing.T) {
 	cases := []struct {
 		name       string
 		txId       string
-		err        gui.APIError
+		err        api.ClientError
 		goldenFile string
 	}{
 		{
 			name: "invalid txId",
 			txId: "abcd",
-			err: gui.APIError{
+			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
 				Message:    "400 Bad Request - Invalid hex length\n",
@@ -1138,7 +1138,7 @@ func TestStableTransaction(t *testing.T) {
 		{
 			name: "not exist",
 			txId: "701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947",
-			err: gui.APIError{
+			err: api.ClientError{
 				Status:     "404 Not Found",
 				StatusCode: http.StatusNotFound,
 				Message:    "404 Not Found\n",
@@ -1148,7 +1148,7 @@ func TestStableTransaction(t *testing.T) {
 		{
 			name: "empty txId",
 			txId: "",
-			err: gui.APIError{
+			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
 				Message:    "400 Bad Request - txid is empty\n",
@@ -1162,7 +1162,7 @@ func TestStableTransaction(t *testing.T) {
 		},
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			tx, err := c.Transaction(tc.txId)
@@ -1183,7 +1183,7 @@ func TestLiveTransactions(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	addrs := []string{
 		"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt",
 	}
@@ -1200,13 +1200,13 @@ func TestStableTransactions(t *testing.T) {
 	cases := []struct {
 		name       string
 		addrs      []string
-		err        gui.APIError
+		err        api.ClientError
 		goldenFile string
 	}{
 		{
 			name:  "invalid addr length",
 			addrs: []string{"abcd"},
-			err: gui.APIError{
+			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
 				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid address length\n",
@@ -1215,7 +1215,7 @@ func TestStableTransactions(t *testing.T) {
 		{
 			name:  "invalid addr character",
 			addrs: []string{"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947"},
-			err: gui.APIError{
+			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
 				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid base58 character\n",
@@ -1224,7 +1224,7 @@ func TestStableTransactions(t *testing.T) {
 		{
 			name:  "invalid checksum",
 			addrs: []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk"},
-			err: gui.APIError{
+			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
 				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid checksum\n",
@@ -1233,7 +1233,7 @@ func TestStableTransactions(t *testing.T) {
 		{
 			name:  "empty addrs",
 			addrs: []string{},
-			err: gui.APIError{
+			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
 				Message:    "400 Bad Request - txId is empty\n",
@@ -1247,7 +1247,7 @@ func TestStableTransactions(t *testing.T) {
 		},
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			txResult, err := c.Transactions(tc.addrs)
@@ -1267,7 +1267,7 @@ func TestLiveConfirmedTransactions(t *testing.T) {
 	if !doLive(t) {
 		return
 	}
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	ctxsSingle, err := c.ConfirmedTransactions([]string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"})
 	require.NoError(t, err)
@@ -1286,13 +1286,13 @@ func TestStableConfirmedTransactions(t *testing.T) {
 	cases := []struct {
 		name       string
 		addrs      []string
-		err        gui.APIError
+		err        api.ClientError
 		goldenFile string
 	}{
 		{
 			name:  "invalid addr length",
 			addrs: []string{"abcd"},
-			err: gui.APIError{
+			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
 				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid address length\n",
@@ -1301,7 +1301,7 @@ func TestStableConfirmedTransactions(t *testing.T) {
 		{
 			name:  "invalid addr character",
 			addrs: []string{"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947"},
-			err: gui.APIError{
+			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
 				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid base58 character\n",
@@ -1310,7 +1310,7 @@ func TestStableConfirmedTransactions(t *testing.T) {
 		{
 			name:  "invalid checksum",
 			addrs: []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk"},
-			err: gui.APIError{
+			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
 				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid checksum\n",
@@ -1328,7 +1328,7 @@ func TestStableConfirmedTransactions(t *testing.T) {
 		},
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			txResult, err := c.ConfirmedTransactions(tc.addrs)
@@ -1351,13 +1351,13 @@ func TestStableUnconfirmedTransactions(t *testing.T) {
 	cases := []struct {
 		name       string
 		addrs      []string
-		err        gui.APIError
+		err        api.ClientError
 		goldenFile string
 	}{
 		{
 			name:  "invalid addr length",
 			addrs: []string{"abcd"},
-			err: gui.APIError{
+			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
 				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid address length\n",
@@ -1366,7 +1366,7 @@ func TestStableUnconfirmedTransactions(t *testing.T) {
 		{
 			name:  "invalid addr character",
 			addrs: []string{"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947"},
-			err: gui.APIError{
+			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
 				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid base58 character\n",
@@ -1375,7 +1375,7 @@ func TestStableUnconfirmedTransactions(t *testing.T) {
 		{
 			name:  "invalid checksum",
 			addrs: []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk"},
-			err: gui.APIError{
+			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
 				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid checksum\n",
@@ -1388,7 +1388,7 @@ func TestStableUnconfirmedTransactions(t *testing.T) {
 		},
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			txResult, err := c.UnconfirmedTransactions(tc.addrs)
@@ -1408,7 +1408,7 @@ func TestLiveUnconfirmedTransactions(t *testing.T) {
 	if !doLive(t) {
 		return
 	}
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	cTxsSingle, err := c.UnconfirmedTransactions([]string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"})
 	require.NoError(t, err)
@@ -1424,7 +1424,7 @@ func TestStableResendUnconfirmedTransactions(t *testing.T) {
 	if !doStable(t) {
 		return
 	}
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	res, err := c.ResendUnconfirmedTransactions()
 	require.NoError(t, err)
 	require.True(t, len(res.Txids) == 0)
@@ -1434,7 +1434,7 @@ func TestLiveResendUnconfirmedTransactions(t *testing.T) {
 	if !doLive(t) {
 		return
 	}
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	_, err := c.ResendUnconfirmedTransactions()
 	require.NoError(t, err)
 }
@@ -1447,13 +1447,13 @@ func TestStableRawTransaction(t *testing.T) {
 	cases := []struct {
 		name  string
 		txId  string
-		err   gui.APIError
+		err   api.ClientError
 		rawTx string
 	}{
 		{
 			name: "invalid hex length",
 			txId: "abcd",
-			err: gui.APIError{
+			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
 				Message:    "400 Bad Request - Invalid hex length\n",
@@ -1462,7 +1462,7 @@ func TestStableRawTransaction(t *testing.T) {
 		{
 			name: "not found",
 			txId: "701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947",
-			err: gui.APIError{
+			err: api.ClientError{
 				Status:     "404 Not Found",
 				StatusCode: http.StatusNotFound,
 				Message:    "404 Not Found\n",
@@ -1471,7 +1471,7 @@ func TestStableRawTransaction(t *testing.T) {
 		{
 			name: "odd length hex string",
 			txId: "abcdeffedca",
-			err: gui.APIError{
+			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
 				Message:    "400 Bad Request - encoding/hex: odd length hex string\n",
@@ -1484,7 +1484,7 @@ func TestStableRawTransaction(t *testing.T) {
 		},
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			txResult, err := c.RawTransaction(tc.txId)
@@ -1505,13 +1505,13 @@ func TestLiveRawTransaction(t *testing.T) {
 	cases := []struct {
 		name  string
 		txId  string
-		err   gui.APIError
+		err   api.ClientError
 		rawTx string
 	}{
 		{
 			name: "invalid hex length",
 			txId: "abcd",
-			err: gui.APIError{
+			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
 				Message:    "400 Bad Request - Invalid hex length\n",
@@ -1520,7 +1520,7 @@ func TestLiveRawTransaction(t *testing.T) {
 		{
 			name: "odd length hex string",
 			txId: "abcdeffedca",
-			err: gui.APIError{
+			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
 				Message:    "400 Bad Request - encoding/hex: odd length hex string\n",
@@ -1538,7 +1538,7 @@ func TestLiveRawTransaction(t *testing.T) {
 		},
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			txResult, err := c.RawTransaction(tc.txId)
@@ -1581,7 +1581,7 @@ func TestWalletNewSeed(t *testing.T) {
 		},
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			seed, err := c.NewSeed(tc.entropy)
@@ -1637,7 +1637,7 @@ func TestStableAddressTransactions(t *testing.T) {
 		},
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			txns, err := c.AddressTransactions(tc.address)
@@ -1648,7 +1648,7 @@ func TestStableAddressTransactions(t *testing.T) {
 
 			require.NoError(t, err)
 
-			var expected []gui.ReadableTransaction
+			var expected []api.ReadableTransaction
 			loadGoldenFile(t, tc.golden, TestData{txns, &expected})
 			require.Equal(t, expected, txns)
 		})
@@ -1684,7 +1684,7 @@ func TestLiveAddressTransactions(t *testing.T) {
 		},
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	// Get current blockchain height
 	bp, err := c.BlockchainProgress()
 	require.NoError(t, err)
@@ -1698,7 +1698,7 @@ func TestLiveAddressTransactions(t *testing.T) {
 
 			require.NoError(t, err)
 
-			var expected []gui.ReadableTransaction
+			var expected []api.ReadableTransaction
 			loadGoldenFile(t, tc.golden, TestData{txns, &expected})
 
 			// Recaculate the height if it's live test
@@ -1716,52 +1716,52 @@ func TestStableRichlist(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	richlist, err := c.Richlist(nil)
 	require.NoError(t, err)
 
-	var expected gui.Richlist
+	var expected api.Richlist
 	loadGoldenFile(t, "richlist-default.golden", TestData{richlist, &expected})
 	require.Equal(t, expected, *richlist)
 
-	richlist, err = c.Richlist(&gui.RichlistParams{
+	richlist, err = c.Richlist(&api.RichlistParams{
 		N:                   0,
 		IncludeDistribution: false,
 	})
 	require.NoError(t, err)
 
-	expected = gui.Richlist{}
+	expected = api.Richlist{}
 	loadGoldenFile(t, "richlist-all.golden", TestData{richlist, &expected})
 	require.Equal(t, expected, *richlist)
 
-	richlist, err = c.Richlist(&gui.RichlistParams{
+	richlist, err = c.Richlist(&api.RichlistParams{
 		N:                   0,
 		IncludeDistribution: true,
 	})
 	require.NoError(t, err)
 
-	expected = gui.Richlist{}
+	expected = api.Richlist{}
 	loadGoldenFile(t, "richlist-all-include-distribution.golden", TestData{richlist, &expected})
 	require.Equal(t, expected, *richlist)
 
-	richlist, err = c.Richlist(&gui.RichlistParams{
+	richlist, err = c.Richlist(&api.RichlistParams{
 		N:                   8,
 		IncludeDistribution: false,
 	})
 	require.NoError(t, err)
 
-	expected = gui.Richlist{}
+	expected = api.Richlist{}
 	loadGoldenFile(t, "richlist-8.golden", TestData{richlist, &expected})
 	require.Equal(t, expected, *richlist)
 
-	richlist, err = c.Richlist(&gui.RichlistParams{
+	richlist, err = c.Richlist(&api.RichlistParams{
 		N:                   150,
 		IncludeDistribution: true,
 	})
 	require.NoError(t, err)
 
-	expected = gui.Richlist{}
+	expected = api.Richlist{}
 	loadGoldenFile(t, "richlist-150-include-distribution.golden", TestData{richlist, &expected})
 	require.Equal(t, expected, *richlist)
 }
@@ -1771,7 +1771,7 @@ func TestLiveRichlist(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	richlist, err := c.Richlist(nil)
 	require.NoError(t, err)
@@ -1779,7 +1779,7 @@ func TestLiveRichlist(t *testing.T) {
 	require.NotEmpty(t, richlist.Richlist)
 	require.Len(t, richlist.Richlist, 20)
 
-	richlist, err = c.Richlist(&gui.RichlistParams{
+	richlist, err = c.Richlist(&api.RichlistParams{
 		N:                   150,
 		IncludeDistribution: true,
 	})
@@ -1793,7 +1793,7 @@ func TestStableAddressCount(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	count, err := c.AddressCount()
 	require.NoError(t, err)
@@ -1806,7 +1806,7 @@ func TestLiveAddressCount(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	count, err := c.AddressCount()
 	require.NoError(t, err)
@@ -1820,7 +1820,7 @@ func TestStablePendingTransactions(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	txns, err := c.PendingTransactions()
 	require.NoError(t, err)
@@ -1832,7 +1832,7 @@ func TestLivePendingTransactions(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	_, err := c.PendingTransactions()
 	require.NoError(t, err)
@@ -1845,7 +1845,7 @@ func TestLiveWalletSpend(t *testing.T) {
 
 	requireWalletEnv(t)
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	w, totalCoins, _, password := prepareAndCheckWallet(t, c, 2e6, 2)
 
 	tt := []struct {
@@ -1972,7 +1972,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 
 	requireWalletEnv(t)
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	w, totalCoins, totalHours, password := prepareAndCheckWallet(t, c, 2e6, 20)
 
@@ -1987,7 +1987,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 
 	type testCase struct {
 		name        string
-		req         gui.CreateTransactionRequest
+		req         api.CreateTransactionRequest
 		outputs     []coin.TransactionOutput
 		err         string
 		code        int
@@ -1997,16 +1997,16 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 	cases := []testCase{
 		{
 			name: "invalid decimals",
-			req: gui.CreateTransactionRequest{
-				HoursSelection: gui.HoursSelection{
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: gui.CreateTransactionRequestWallet{
+				Wallet: api.CreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 				},
 				ChangeAddress: w.Entries[0].Address.String(),
-				To: []gui.Receiver{
+				To: []api.Receiver{
 					{
 						Address: w.Entries[0].Address.String(),
 						Coins:   "0.0001",
@@ -2020,16 +2020,16 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 
 		{
 			name: "overflowing hours",
-			req: gui.CreateTransactionRequest{
-				HoursSelection: gui.HoursSelection{
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: gui.CreateTransactionRequestWallet{
+				Wallet: api.CreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 				},
 				ChangeAddress: w.Entries[0].Address.String(),
-				To: []gui.Receiver{
+				To: []api.Receiver{
 					{
 						Address: w.Entries[0].Address.String(),
 						Coins:   "0.001",
@@ -2053,16 +2053,16 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 
 		{
 			name: "insufficient coins",
-			req: gui.CreateTransactionRequest{
-				HoursSelection: gui.HoursSelection{
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: gui.CreateTransactionRequestWallet{
+				Wallet: api.CreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 				},
 				ChangeAddress: w.Entries[0].Address.String(),
-				To: []gui.Receiver{
+				To: []api.Receiver{
 					{
 						Address: w.Entries[0].Address.String(),
 						Coins:   fmt.Sprint(totalCoins + 1),
@@ -2076,16 +2076,16 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 
 		{
 			name: "insufficient hours",
-			req: gui.CreateTransactionRequest{
-				HoursSelection: gui.HoursSelection{
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: gui.CreateTransactionRequestWallet{
+				Wallet: api.CreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 				},
 				ChangeAddress: w.Entries[0].Address.String(),
-				To: []gui.Receiver{
+				To: []api.Receiver{
 					{
 						Address: w.Entries[0].Address.String(),
 						Coins:   toDropletString(totalCoins),
@@ -2105,16 +2105,16 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 			// because then this test cannot be performed, since there is no
 			// way to use all outputs and produce change in that case.
 			name: "valid request, manual one output with change",
-			req: gui.CreateTransactionRequest{
-				HoursSelection: gui.HoursSelection{
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: gui.CreateTransactionRequestWallet{
+				Wallet: api.CreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 				},
 				ChangeAddress: w.Entries[0].Address.String(),
-				To: []gui.Receiver{
+				To: []api.Receiver{
 					{
 						Address: w.Entries[1].Address.String(),
 						Coins:   toDropletString(totalCoins - 1e3),
@@ -2138,16 +2138,16 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 
 		{
 			name: "valid request, manual one output no change",
-			req: gui.CreateTransactionRequest{
-				HoursSelection: gui.HoursSelection{
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: gui.CreateTransactionRequestWallet{
+				Wallet: api.CreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 				},
 				ChangeAddress: w.Entries[0].Address.String(),
-				To: []gui.Receiver{
+				To: []api.Receiver{
 					{
 						Address: w.Entries[1].Address.String(),
 						Coins:   toDropletString(totalCoins),
@@ -2166,18 +2166,18 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 
 		{
 			name: "valid request, auto one output no change",
-			req: gui.CreateTransactionRequest{
-				HoursSelection: gui.HoursSelection{
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
 					Type:        wallet.HoursSelectionTypeAuto,
 					Mode:        wallet.HoursSelectionModeShare,
 					ShareFactor: "0.5",
 				},
-				Wallet: gui.CreateTransactionRequestWallet{
+				Wallet: api.CreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 				},
 				ChangeAddress: w.Entries[0].Address.String(),
-				To: []gui.Receiver{
+				To: []api.Receiver{
 					{
 						Address: w.Entries[1].Address.String(),
 						Coins:   toDropletString(totalCoins),
@@ -2195,18 +2195,18 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 
 		{
 			name: "valid request, auto two outputs with change",
-			req: gui.CreateTransactionRequest{
-				HoursSelection: gui.HoursSelection{
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
 					Type:        wallet.HoursSelectionTypeAuto,
 					Mode:        wallet.HoursSelectionModeShare,
 					ShareFactor: "0.5",
 				},
-				Wallet: gui.CreateTransactionRequestWallet{
+				Wallet: api.CreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password,
 				},
 				ChangeAddress: w.Entries[0].Address.String(),
-				To: []gui.Receiver{
+				To: []api.Receiver{
 					{
 						Address: w.Entries[1].Address.String(),
 						Coins:   toDropletString(1e3),
@@ -2238,16 +2238,16 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 	if w.IsEncrypted() {
 		cases = append(cases, testCase{
 			name: "invalid password",
-			req: gui.CreateTransactionRequest{
-				HoursSelection: gui.HoursSelection{
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: gui.CreateTransactionRequestWallet{
+				Wallet: api.CreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password + "foo",
 				},
 				ChangeAddress: w.Entries[0].Address.String(),
-				To: []gui.Receiver{
+				To: []api.Receiver{
 					{
 						Address: w.Entries[0].Address.String(),
 						Coins:   "1000",
@@ -2261,16 +2261,16 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 
 		cases = append(cases, testCase{
 			name: "password not provided",
-			req: gui.CreateTransactionRequest{
-				HoursSelection: gui.HoursSelection{
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: gui.CreateTransactionRequestWallet{
+				Wallet: api.CreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: "",
 				},
 				ChangeAddress: w.Entries[0].Address.String(),
-				To: []gui.Receiver{
+				To: []api.Receiver{
 					{
 						Address: w.Entries[0].Address.String(),
 						Coins:   "1000",
@@ -2285,16 +2285,16 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 	} else {
 		cases = append(cases, testCase{
 			name: "password provided for unencrypted wallet",
-			req: gui.CreateTransactionRequest{
-				HoursSelection: gui.HoursSelection{
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
 				},
-				Wallet: gui.CreateTransactionRequestWallet{
+				Wallet: api.CreateTransactionRequestWallet{
 					ID:       w.Filename(),
 					Password: password + "foo",
 				},
 				ChangeAddress: w.Entries[0].Address.String(),
-				To: []gui.Receiver{
+				To: []api.Receiver{
 					{
 						Address: w.Entries[0].Address.String(),
 						Coins:   "1000",
@@ -2351,7 +2351,7 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 
 	requireWalletEnv(t)
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	w, totalCoins, totalHours, password := prepareAndCheckWallet(t, c, 2e6, 20)
 
@@ -2363,7 +2363,7 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 	remainingHours := fee.RemainingHours(totalHours)
 	require.True(t, remainingHours > 1)
 
-	assertTxnOutputCount := func(t *testing.T, changeAddress string, nOutputs int, result *gui.CreateTransactionResponse) {
+	assertTxnOutputCount := func(t *testing.T, changeAddress string, nOutputs int, result *api.CreateTransactionResponse) {
 		nResultOutputs := len(result.Transaction.Out)
 		require.True(t, nResultOutputs == nOutputs || nResultOutputs == nOutputs+1)
 		hasChange := nResultOutputs == nOutputs+1
@@ -2411,7 +2411,7 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 
 		t.Log("shareFactor", shareFactor)
 
-		to := make([]gui.Receiver, 0, nOutputs)
+		to := make([]api.Receiver, 0, nOutputs)
 		remainingHours := hours
 		remainingCoins := coins
 		for i := 0; i < nOutputs; i++ {
@@ -2419,7 +2419,7 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 				break
 			}
 
-			receiver := gui.Receiver{}
+			receiver := api.Receiver{}
 			receiver.Address = destAddrs[rand.Intn(len(destAddrs))].String()
 
 			if i == nOutputs-1 {
@@ -2451,8 +2451,8 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 		}
 
 		// Remove duplicate outputs
-		dup := make(map[gui.Receiver]struct{}, len(to))
-		newTo := make([]gui.Receiver, 0, len(dup))
+		dup := make(map[api.Receiver]struct{}, len(to))
+		newTo := make([]api.Receiver, 0, len(dup))
 		for _, o := range to {
 			if _, ok := dup[o]; !ok {
 				dup[o] = struct{}{}
@@ -2478,9 +2478,9 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 			t.Logf("to[%d].Hours %s\n", i, o.Hours)
 		}
 
-		autoTo := make([]gui.Receiver, len(to))
+		autoTo := make([]api.Receiver, len(to))
 		for i, o := range to {
-			autoTo[i] = gui.Receiver{
+			autoTo[i] = api.Receiver{
 				Address: o.Address,
 				Coins:   o.Coins,
 				Hours:   "",
@@ -2488,8 +2488,8 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 		}
 
 		// Remove duplicate outputs
-		dup = make(map[gui.Receiver]struct{}, len(autoTo))
-		newAutoTo := make([]gui.Receiver, 0, len(dup))
+		dup = make(map[api.Receiver]struct{}, len(autoTo))
+		newAutoTo := make([]api.Receiver, 0, len(dup))
 		for _, o := range autoTo {
 			if _, ok := dup[o]; !ok {
 				dup[o] = struct{}{}
@@ -2507,14 +2507,14 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 
 		// Auto, random share factor
 
-		result, err := c.CreateTransaction(gui.CreateTransactionRequest{
-			HoursSelection: gui.HoursSelection{
+		result, err := c.CreateTransaction(api.CreateTransactionRequest{
+			HoursSelection: api.HoursSelection{
 				Type:        wallet.HoursSelectionTypeAuto,
 				Mode:        wallet.HoursSelectionModeShare,
 				ShareFactor: shareFactor,
 			},
 			ChangeAddress: changeAddress,
-			Wallet: gui.CreateTransactionRequestWallet{
+			Wallet: api.CreateTransactionRequestWallet{
 				ID:       w.Filename(),
 				Password: password,
 			},
@@ -2529,14 +2529,14 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 
 		// Auto, share factor 0
 
-		result, err = c.CreateTransaction(gui.CreateTransactionRequest{
-			HoursSelection: gui.HoursSelection{
+		result, err = c.CreateTransaction(api.CreateTransactionRequest{
+			HoursSelection: api.HoursSelection{
 				Type:        wallet.HoursSelectionTypeAuto,
 				Mode:        wallet.HoursSelectionModeShare,
 				ShareFactor: "0",
 			},
 			ChangeAddress: changeAddress,
-			Wallet: gui.CreateTransactionRequestWallet{
+			Wallet: api.CreateTransactionRequestWallet{
 				ID:       w.Filename(),
 				Password: password,
 			},
@@ -2556,14 +2556,14 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 
 		// Auto, share factor 1
 
-		result, err = c.CreateTransaction(gui.CreateTransactionRequest{
-			HoursSelection: gui.HoursSelection{
+		result, err = c.CreateTransaction(api.CreateTransactionRequest{
+			HoursSelection: api.HoursSelection{
 				Type:        wallet.HoursSelectionTypeAuto,
 				Mode:        wallet.HoursSelectionModeShare,
 				ShareFactor: "1",
 			},
 			ChangeAddress: changeAddress,
-			Wallet: gui.CreateTransactionRequestWallet{
+			Wallet: api.CreateTransactionRequestWallet{
 				ID:       w.Filename(),
 				Password: password,
 			},
@@ -2583,12 +2583,12 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 
 		// Manual
 
-		result, err = c.CreateTransaction(gui.CreateTransactionRequest{
-			HoursSelection: gui.HoursSelection{
+		result, err = c.CreateTransaction(api.CreateTransactionRequest{
+			HoursSelection: api.HoursSelection{
 				Type: wallet.HoursSelectionTypeManual,
 			},
 			ChangeAddress: changeAddress,
-			Wallet: gui.CreateTransactionRequestWallet{
+			Wallet: api.CreateTransactionRequestWallet{
 				ID:       w.Filename(),
 				Password: password,
 			},
@@ -2604,7 +2604,7 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 	}
 }
 
-func assertEncodeTxnMatchesTxn(t *testing.T, result *gui.CreateTransactionResponse) {
+func assertEncodeTxnMatchesTxn(t *testing.T, result *api.CreateTransactionResponse) {
 	require.NotEmpty(t, result.EncodedTransaction)
 	emptyTxn := &coin.Transaction{}
 	require.NotEqual(t, hex.EncodeToString(emptyTxn.Serialize()), result.EncodedTransaction)
@@ -2617,7 +2617,7 @@ func assertEncodeTxnMatchesTxn(t *testing.T, result *gui.CreateTransactionRespon
 	require.Equal(t, int(txn.Length), len(serializedTxn))
 }
 
-func assertRequestedCoins(t *testing.T, to []gui.Receiver, out []gui.CreatedTransactionOutput) {
+func assertRequestedCoins(t *testing.T, to []api.Receiver, out []api.CreatedTransactionOutput) {
 	var requestedCoins uint64
 	for _, o := range to {
 		c, err := droplet.FromString(o.Coins)
@@ -2635,7 +2635,7 @@ func assertRequestedCoins(t *testing.T, to []gui.Receiver, out []gui.CreatedTran
 	require.Equal(t, requestedCoins, sentCoins)
 }
 
-func assertRequestedHours(t *testing.T, to []gui.Receiver, out []gui.CreatedTransactionOutput) {
+func assertRequestedHours(t *testing.T, to []api.Receiver, out []api.CreatedTransactionOutput) {
 	for i, o := range out[:len(to)] { // exclude change output
 		toHours, err := strconv.ParseUint(to[i].Hours, 10, 64)
 		require.NoError(t, err)
@@ -2646,7 +2646,7 @@ func assertRequestedHours(t *testing.T, to []gui.Receiver, out []gui.CreatedTran
 	}
 }
 
-func assertCreatedTransactionValid(t *testing.T, r gui.CreatedTransaction) {
+func assertCreatedTransactionValid(t *testing.T, r api.CreatedTransaction) {
 	require.NotEmpty(t, r.In)
 	require.NotEmpty(t, r.Out)
 
@@ -2702,7 +2702,7 @@ func TestCreateWallet(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	w, seed, clean := createWallet(t, c, false, "")
 	defer clean()
@@ -2751,7 +2751,7 @@ func TestGetWallet(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	// Create a wallet
 	w, _, clean := createWallet(t, c, false, "")
@@ -2768,10 +2768,10 @@ func TestGetWallets(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	// Creates 2 new wallets
-	var ws []gui.WalletResponse
+	var ws []api.WalletResponse
 	for i := 0; i < 2; i++ {
 		w, _, clean := createWallet(t, c, false, "")
 		defer clean()
@@ -2784,7 +2784,7 @@ func TestGetWallets(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create the wallet map
-	walletMap := make(map[string]gui.WalletResponse)
+	walletMap := make(map[string]api.WalletResponse)
 	for _, w := range wlts {
 		walletMap[w.Meta.Filename] = *w
 	}
@@ -2809,7 +2809,7 @@ func TestWalletNewAddress(t *testing.T) {
 	for i := 1; i <= 30; i++ {
 		name := fmt.Sprintf("generate %v addresses", i)
 		t.Run(name, func(t *testing.T) {
-			c := gui.NewClient(nodeAddress())
+			c := api.NewClient(nodeAddress())
 			var encrypt bool
 			var password string
 			// Test wallet with encryption only when i == 2, so that
@@ -2849,7 +2849,7 @@ func TestStableWalletBalance(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	w, _, clean := createWallet(t, c, false, "")
 	defer clean()
 
@@ -2868,7 +2868,7 @@ func TestLiveWalletBalance(t *testing.T) {
 
 	requireWalletEnv(t)
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	_, walletName, _ := getWalletFromEnv(t, c)
 	bp, err := c.WalletBalance(walletName)
 	require.NoError(t, err)
@@ -2880,7 +2880,7 @@ func TestWalletUpdate(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	w, _, clean := createWallet(t, c, false, "")
 	defer clean()
 
@@ -2898,14 +2898,14 @@ func TestStableWalletTransactions(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	w, _, clean := createWallet(t, c, false, "")
 	defer clean()
 
 	txns, err := c.WalletTransactions(w.Meta.Filename)
 	require.NoError(t, err)
 
-	var expect gui.UnconfirmedTxnsResponse
+	var expect api.UnconfirmedTxnsResponse
 	loadGoldenFile(t, "wallet-transactions.golden", TestData{txns, &expect})
 	require.Equal(t, expect, *txns)
 }
@@ -2917,7 +2917,7 @@ func TestLiveWalletTransactions(t *testing.T) {
 
 	requireWalletEnv(t)
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	w, _, _, _ := prepareAndCheckWallet(t, c, 1e6, 1)
 	txns, err := c.WalletTransactions(w.Filename())
 	require.NoError(t, err)
@@ -2938,7 +2938,7 @@ func TestWalletFolderName(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	folderName, err := c.WalletFolderName()
 	require.NoError(t, err)
 
@@ -2951,7 +2951,7 @@ func TestEncryptWallet(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	// Create a unencrypted wallet
 	w, _, clean := createWallet(t, c, false, "")
@@ -2989,7 +2989,7 @@ func TestDecryptWallet(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	w, seed, clean := createWallet(t, c, true, "pwd")
 	defer clean()
 
@@ -3034,7 +3034,7 @@ func TestGetWalletSeedDisabledAPI(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	// Create an encrypted wallet
 	w, _, clean := createWallet(t, c, true, "pwd")
@@ -3049,7 +3049,7 @@ func TestGetWalletSeedEnabledAPI(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	// Create an encrypted wallet
 	w, seed, clean := createWallet(t, c, true, "pwd")
@@ -3086,7 +3086,7 @@ func TestGetWalletSeedEnabledAPI(t *testing.T) {
 // 1. The minimal coins and coin hours requirements are met.
 // 2. The wallet has at least two address entry.
 // Returns the loaded wallet, total coins, total coin hours and password of the wallet.
-func prepareAndCheckWallet(t *testing.T, c *gui.Client, miniCoins, miniCoinHours uint64) (*wallet.Wallet, uint64, uint64, string) {
+func prepareAndCheckWallet(t *testing.T, c *api.Client, miniCoins, miniCoinHours uint64) (*wallet.Wallet, uint64, uint64, string) {
 	walletDir, walletName, password := getWalletFromEnv(t, c)
 	walletPath := filepath.Join(walletDir, walletName)
 
@@ -3135,7 +3135,7 @@ func prepareAndCheckWallet(t *testing.T, c *gui.Client, miniCoins, miniCoinHours
 
 // getWalletFromEnv loads wallet from envrionment variables.
 // Returns wallet dir, wallet name and wallet password is any.
-func getWalletFromEnv(t *testing.T, c *gui.Client) (string, string, string) {
+func getWalletFromEnv(t *testing.T, c *api.Client) (string, string, string) {
 	walletDir := getWalletDir(t, c)
 
 	walletName := os.Getenv("WALLET_NAME")
@@ -3160,7 +3160,7 @@ func requireWalletEnv(t *testing.T) {
 
 // getWalletBalance gets wallet balance.
 // Returns coins and hours
-func getWalletBalance(t *testing.T, c *gui.Client, walletName string) (uint64, uint64) {
+func getWalletBalance(t *testing.T, c *api.Client, walletName string) (uint64, uint64) {
 	wp, err := c.WalletBalance(walletName)
 	if err != nil {
 		t.Fatalf("Get wallet balance of %v failed: %v", walletName, err)
@@ -3169,7 +3169,7 @@ func getWalletBalance(t *testing.T, c *gui.Client, walletName string) (uint64, u
 	return wp.Confirmed.Coins, wp.Confirmed.Hours
 }
 
-func getTransaction(t *testing.T, c *gui.Client, txid string) *daemon.TransactionResult {
+func getTransaction(t *testing.T, c *api.Client, txid string) *daemon.TransactionResult {
 	tx, err := c.Transaction(txid)
 	if err != nil {
 		t.Fatalf("%v", err)
@@ -3180,7 +3180,7 @@ func getTransaction(t *testing.T, c *gui.Client, txid string) *daemon.Transactio
 
 // getAddressBalance gets balance of given address.
 // Returns coins and coin hours.
-func getAddressBalance(t *testing.T, c *gui.Client, addr string) (uint64, uint64) { // nolint: unparam
+func getAddressBalance(t *testing.T, c *api.Client, addr string) (uint64, uint64) { // nolint: unparam
 	bp, err := c.Balance([]string{addr})
 	if err != nil {
 		t.Fatalf("%v", err)
@@ -3216,10 +3216,10 @@ func checkWalletEntriesAndLastSeed(t *testing.T, w *wallet.Wallet) {
 
 // createWallet creates a wallet with rand seed.
 // Returns the generated wallet, seed and clean up function.
-func createWallet(t *testing.T, c *gui.Client, encrypt bool, password string) (*gui.WalletResponse, string, func()) {
+func createWallet(t *testing.T, c *api.Client, encrypt bool, password string) (*api.WalletResponse, string, func()) {
 	seed := hex.EncodeToString(cipher.RandByte(32))
 	// Use the first 6 letter of the seed as label.
-	var w *gui.WalletResponse
+	var w *api.WalletResponse
 	var err error
 	if encrypt {
 		w, err = c.CreateEncryptedWallet(seed, seed[:6], password, 0)
@@ -3250,7 +3250,7 @@ func createWallet(t *testing.T, c *gui.Client, encrypt bool, password string) (*
 	}
 }
 
-func getWalletDir(t *testing.T, c *gui.Client) string {
+func getWalletDir(t *testing.T, c *api.Client) string {
 	wf, err := c.WalletFolderName()
 	if err != nil {
 		t.Fatalf("%v", err)
@@ -3420,15 +3420,15 @@ func TestDisableWalletApi(t *testing.T) {
 			endpoint:    "/wallet/transaction",
 			contentType: "application/json",
 			json: func() interface{} {
-				return gui.CreateTransactionRequest{
-					HoursSelection: gui.HoursSelection{
+				return api.CreateTransactionRequest{
+					HoursSelection: api.HoursSelection{
 						Type: wallet.HoursSelectionTypeManual,
 					},
-					Wallet: gui.CreateTransactionRequestWallet{
+					Wallet: api.CreateTransactionRequestWallet{
 						ID: "test.wlt",
 					},
 					ChangeAddress: testutil.MakeAddress().String(),
-					To: []gui.Receiver{
+					To: []api.Receiver{
 						{
 							Address: testutil.MakeAddress().String(),
 							Coins:   "0.001",
@@ -3442,7 +3442,7 @@ func TestDisableWalletApi(t *testing.T) {
 		},
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			var err error
@@ -3473,7 +3473,7 @@ func TestDisableWalletApi(t *testing.T) {
 	require.True(t, os.IsNotExist(err))
 }
 
-func checkHealthResponse(t *testing.T, r *gui.HealthResponse) {
+func checkHealthResponse(t *testing.T, r *api.HealthResponse) {
 	require.NotEmpty(t, r.BlockchainMetadata.Unspents)
 	require.NotEmpty(t, r.BlockchainMetadata.Head.BkSeq)
 	require.NotEmpty(t, r.BlockchainMetadata.Head.Time)
@@ -3486,7 +3486,7 @@ func TestStableHealth(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	r, err := c.Health()
 	require.NoError(t, err)
@@ -3507,7 +3507,7 @@ func TestLiveHealth(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 
 	r, err := c.Health()
 	require.NoError(t, err)
@@ -3525,7 +3525,7 @@ func TestDisableGUIAPI(t *testing.T) {
 		return
 	}
 
-	c := gui.NewClient(nodeAddress())
+	c := api.NewClient(nodeAddress())
 	err := c.Get("/", nil)
 	assertResponseError(t, err, http.StatusNotFound, "404 Not Found\n")
 }

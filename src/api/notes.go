@@ -1,4 +1,4 @@
-package gui
+package api
 
 // NotesRPC note rpc
 // type NotesRPC struct {

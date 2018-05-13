@@ -11,22 +11,6 @@ GUI_STATIC_DIR = src/gui/static
 # Electron files directory
 ELECTRON_DIR = electron
 
-# ./src folder does not have code
-# ./src/api folder does not have code
-# ./src/util folder does not have code
-# ./src/ciper/* are libraries manually vendored by cipher that do not need coverage
-# ./src/gui/static* are static assets
-# */testdata* folders do not have code
-# ./src/consensus/example has no buildable code
-PACKAGES = $(shell find ./src -type d -not -path '\./src' \
-    							      -not -path '\./src/api' \
-    							      -not -path '\./src/util' \
-    							      -not -path '\./src/consensus/example' \
-    							      -not -path '\./src/gui/static*' \
-    							      -not -path '\./src/cipher/*' \
-    							      -not -path '*/testdata*' \
-    							      -not -path '*/test-fixtures*')
-
 # Compilation output
 BUILD_DIR = build
 BUILDLIB_DIR = $(BUILD_DIR)/libskycoin

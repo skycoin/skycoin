@@ -180,6 +180,12 @@ func getBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
+		// create map of address to balance
+		addressBalances := make(wallet.AddressBalance, len(addrs))
+		for idx, addr := range addrs {
+			addressBalances[addr.String()] = bals[idx]
+		}
+
 		var balance wallet.BalancePair
 		for _, bal := range bals {
 			var err error
@@ -196,7 +202,10 @@ func getBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 		}
 
-		wh.SendJSONOr500(logger, w, balance)
+		wh.SendJSONOr500(logger, w, BalanceResponse{
+			BalancePair: balance,
+			Addresses:   addressBalances,
+		})
 	}
 }
 

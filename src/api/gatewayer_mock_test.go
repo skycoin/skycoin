@@ -3,7 +3,7 @@
 * THIS FILE MUST NEVER BE EDITED MANUALLY
  */
 
-package gui
+package api
 
 import (
 	"fmt"

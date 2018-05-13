@@ -2,7 +2,7 @@
 
 API default service port is `6420`.
 
-A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](https://godoc.org/github.com/skycoin/skycoin/src/gui#Client).
+A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](https://godoc.org/github.com/skycoin/skycoin/src/api#Client).
 
 <!-- MarkdownTOC autolink="true" bracket="round" -->
 

@@ -1,4 +1,4 @@
-package gui
+package api
 
 // Wallet-related information for the GUI
 import (

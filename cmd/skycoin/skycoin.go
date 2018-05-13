@@ -610,17 +610,13 @@ func Run(c *Config) {
 
 	var wg sync.WaitGroup
 
-	// If the user Ctrl-C's, shutdown properly
 	quit := make(chan struct{})
 
-	go func() {
-		apputil.CatchInterrupt(quit)
-	}()
+	// Catch SIGINT (CTRL-C) (closes the quit channel)
+	go apputil.CatchInterrupt(quit)
 
-	// Watch for SIGUSR1
-	func() {
-		go apputil.CatchDebug()
-	}()
+	// Catch SIGUSR1 (prints runtime stack to stdout)
+	go apputil.CatchDebug()
 
 	// creates blockchain instance
 	dconf := configureDaemon(c)

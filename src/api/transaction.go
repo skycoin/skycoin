@@ -80,6 +80,7 @@ func getTransactionByID(gate Gatewayer) http.HandlerFunc {
 		resTx := daemon.TransactionResult{
 			Transaction: *rbTx,
 			Status:      tx.Status,
+			Time:        tx.Time,
 		}
 		wh.SendJSONOr500(logger, w, &resTx)
 	}

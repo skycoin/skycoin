@@ -3,8 +3,6 @@ package daemon
 import (
 	"sort"
 	"strings"
-
-	"github.com/skycoin/skycoin/src/cipher"
 )
 
 // Connection a connection's state within the daemon
@@ -166,17 +164,6 @@ func (rpc RPC) GetBlockchainProgress(v *Visor) (*BlockchainProgress, error) {
 	}
 
 	return bp, nil
-}
-
-// ResendTransaction rebroadcast transaction
-func (rpc RPC) ResendTransaction(v *Visor, p *Pool, txHash cipher.SHA256) (*ResendResult, error) {
-	if v.v == nil {
-		return nil, nil
-	}
-	if err := v.ResendTransaction(txHash, p); err != nil {
-		return nil, err
-	}
-	return &ResendResult{}, nil
 }
 
 // ResendUnconfirmedTxns rebroadcast unconfirmed transactions

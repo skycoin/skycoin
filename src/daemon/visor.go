@@ -298,24 +298,6 @@ func (vs *Visor) broadcastTransaction(t coin.Transaction, pool *Pool) error {
 	return err
 }
 
-// ResendTransaction resends a known UnconfirmedTxn
-func (vs *Visor) ResendTransaction(h cipher.SHA256, pool *Pool) error {
-	if vs.Config.DisableNetworking {
-		return nil
-	}
-
-	ut, err := vs.v.GetUnconfirmedTxn(h)
-	if err != nil {
-		return err
-	}
-
-	if ut != nil {
-		return vs.broadcastTransaction(ut.Txn, pool)
-	}
-
-	return nil
-}
-
 // ResendUnconfirmedTxns resends all unconfirmed transactions and returns the hashes that were successfully rebroadcast
 func (vs *Visor) ResendUnconfirmedTxns(pool *Pool) ([]cipher.SHA256, error) {
 	if vs.Config.DisableNetworking {

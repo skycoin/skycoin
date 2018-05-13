@@ -131,16 +131,6 @@ func (gw *Gateway) GetBlockchainProgress() (*BlockchainProgress, error) {
 	return bcp, err
 }
 
-// ResendTransaction resent the transaction and return a *ResendResult
-func (gw *Gateway) ResendTransaction(txn cipher.SHA256) (*ResendResult, error) {
-	var result *ResendResult
-	var err error
-	gw.strand("ResendTransaction", func() {
-		result, err = gw.drpc.ResendTransaction(gw.d.Visor, gw.d.Pool, txn)
-	})
-	return result, err
-}
-
 // ResendUnconfirmedTxns resents all unconfirmed transactions
 func (gw *Gateway) ResendUnconfirmedTxns() (*ResendResult, error) {
 	var result *ResendResult

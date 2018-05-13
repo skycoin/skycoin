@@ -1,4 +1,4 @@
-package gui
+package api
 
 // Network-related information for the GUI
 import (

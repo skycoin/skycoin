@@ -168,7 +168,7 @@ $ docker build -f docker/images/mainnet/Dockerfile \
 
 ### REST API
 
-[REST API](src/gui/README.md).
+[REST API](src/api/README.md).
 
 ### JSON-RPC 2.0 API
 
@@ -214,14 +214,18 @@ We have two branches: `master` and `develop`.
 
 ### Modules
 
-* `/src/cipher` - cryptography library
-* `/src/coin` - the blockchain
-* `/src/daemon` - networking and wire protocol
-* `/src/visor` - the top level, client
-* `/src/gui` - the web wallet and json client interface
-* `/src/wallet` - the private key storage library
-* `/src/api/webrpc` - JSON-RPC 2.0 API
-* `/src/api/cli` - CLI library
+* `api` - REST API interface
+* `api/webrpc` - JSON-RPC 2.0 API [deprecated]
+* `cipher` - cryptographic library
+* `cli` - CLI library
+* `coin` - blockchain data structures
+* `daemon` - top-level application manager, combining all components (networking, database, wallets)
+* `daemon/gnet` - networking library
+* `daemon/pex` - peer management
+* `visor` - top-level blockchain database layer
+* `visor/blockdb` - low-level blockchain database layer
+* `visor/historydb` - low-level blockchain database layer for historical blockchain metadata
+* `wallet` - wallet file management
 
 ### Client libraries
 
@@ -407,7 +411,7 @@ Instructions for doing this:
 ### Releases
 
 0. If the `master` branch has commits that are not in `develop` (e.g. due to a hotfix applied to `master`), merge `master` into `develop`
-1. Compile the `src/gui/dist/` to make sure that it is up to date (see [Wallet GUI Development README](src/gui/static/README.md))
+1. Compile the `src/gui/static/dist/` to make sure that it is up to date (see [Wallet GUI Development README](src/gui/static/README.md))
 2. Update all version strings in the repo (grep for them) to the new version
 3. Update `CHANGELOG.md`: move the "unreleased" changes to the version and add the date
 4. Merge these changes to `develop`

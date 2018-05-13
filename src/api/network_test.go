@@ -1,4 +1,4 @@
-package gui
+package api
 
 import (
 	"encoding/json"

@@ -1,4 +1,4 @@
-package gui
+package api
 
 // Blockchain related information for the GUI
 

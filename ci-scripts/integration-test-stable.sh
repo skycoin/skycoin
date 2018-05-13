@@ -70,7 +70,7 @@ echo "starting skycoin node in background with http listener on $HOST"
 ./skycoin-integration -disable-networking=true \
                       -web-interface-port=$PORT \
                       -download-peerlist=false \
-                      -db-path=./src/gui/integration/testdata/blockchain-180.db \
+                      -db-path=./src/api/integration/testdata/blockchain-180.db \
                       -db-read-only=true \
                       -rpc-interface=true \
                       -launch-browser=false \
@@ -92,7 +92,7 @@ set +e
 if [[ -z $TEST || $TEST = "gui" ]]; then
 
 SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST \
-    go test ./src/gui/integration/... $UPDATE -timeout=3m $VERBOSE $RUN_TESTS
+    go test ./src/api/integration/... $UPDATE -timeout=3m $VERBOSE $RUN_TESTS
 
 GUI_FAIL=$?
 
@@ -101,7 +101,7 @@ fi
 if [[ -z $TEST  || $TEST = "cli" ]]; then
 
 SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR USE_CSRF=$USE_CSRF \
-    go test ./src/api/cli/integration/... $UPDATE -timeout=3m $VERBOSE $RUN_TESTS
+    go test ./src/cli/integration/... $UPDATE -timeout=3m $VERBOSE $RUN_TESTS
 
 CLI_FAIL=$?
 

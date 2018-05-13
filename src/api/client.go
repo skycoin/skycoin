@@ -1,4 +1,4 @@
-package gui
+package api
 
 import (
 	"bytes"
@@ -25,14 +25,14 @@ const (
 	tlsHandshakeTimeout = 60 * time.Second
 )
 
-// APIError is used for non-200 API responses
-type APIError struct {
+// ClientError is used for non-200 API responses
+type ClientError struct {
 	Status     string
 	StatusCode int
 	Message    string
 }
 
-func (e APIError) Error() string {
+func (e ClientError) Error() string {
 	return e.Message
 }
 
@@ -79,7 +79,7 @@ func (c *Client) Get(endpoint string, obj interface{}) error {
 			return err
 		}
 
-		return APIError{
+		return ClientError{
 			Status:     resp.Status,
 			StatusCode: resp.StatusCode,
 			Message:    string(body),
@@ -154,7 +154,7 @@ func (c *Client) post(endpoint string, contentType string, body io.Reader, obj i
 			return err
 		}
 
-		return APIError{
+		return ClientError{
 			Status:     resp.Status,
 			StatusCode: resp.StatusCode,
 			Message:    string(body),
@@ -188,7 +188,7 @@ func (c *Client) CSRF() (string, error) {
 			return "", err
 		}
 
-		return "", APIError{
+		return "", ClientError{
 			Status:     resp.Status,
 			StatusCode: resp.StatusCode,
 			Message:    string(body),

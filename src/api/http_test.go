@@ -1,4 +1,4 @@
-package gui
+package api
 
 import (
 	"encoding/json"
@@ -319,7 +319,7 @@ func TestEnableGUI(t *testing.T) {
 			name:       "enable gui GET /",
 			enableGUI:  true,
 			endpoint:   "/",
-			appLoc:     "./static",
+			appLoc:     "../gui/static",
 			expectCode: http.StatusOK,
 			expectBody: "",
 		},
@@ -327,7 +327,7 @@ func TestEnableGUI(t *testing.T) {
 			name:       "enable gui GET /invalid-path",
 			enableGUI:  true,
 			endpoint:   "/invalid-path",
-			appLoc:     "./static",
+			appLoc:     "../gui/static",
 			expectCode: http.StatusNotFound,
 			expectBody: "404 Not Found\n",
 		},

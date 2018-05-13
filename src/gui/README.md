@@ -2148,7 +2148,7 @@ Result:
 ### Status report for default connection peers
 
 ```
-URI: /network/connections/default
+URI: /network/status
 
 Method: GET
 ```
@@ -2156,49 +2156,50 @@ Method: GET
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/network/connections/default
+curl http://127.0.0.1:6420/network/status
 ```
 
 Response:
 
 ```json
 {
-  "count": 8,
-  "total_alive": 7,
-  "total_offline": 1,
-  "connections": [
-    {
-      "address": "104.237.142.206:6000",
-      "is_alive": true
-    },
-    {
-      "address": "118.178.135.93:6000",
-      "is_alive": true
-    },
-    {
-      "address": "120.77.69.188:6000",
-      "is_alive": true
-    },
-    {
-      "address": "121.41.103.148:6000",
-      "is_alive": true
-    },
-    {
-      "address": "139.162.7.132:6000",
-      "is_alive": false
-    },
-    {
-      "address": "172.104.85.6:6000",
-      "is_alive": true
-    },
-    {
-      "address": "176.58.126.224:6000",
-      "is_alive": true
-    },
-    {
-      "address": "47.88.33.156:6000",
-      "is_alive": true
-    }
-  ]
+    "count": 8,
+    "total_alive": 7,
+    "total_offline": 1,
+    "connections": [
+        {
+            "address": "104.237.142.206:6000",
+            "is_alive": true
+        },
+        {
+            "address": "118.178.135.93:6000",
+            "is_alive": true
+        },
+        {
+            "address": "120.77.69.188:6000",
+            "is_alive": true
+        },
+        {
+            "address": "121.41.103.148:6000",
+            "is_alive": true
+        },
+        {
+            "address": "139.162.7.132:6000",
+            "is_alive": false
+        },
+        {
+            "address": "172.104.85.6:6000",
+            "is_alive": true
+        },
+        {
+            "address": "176.58.126.224:6000",
+            "is_alive": true
+        },
+        {
+            "address": "47.88.33.156:6000",
+            "is_alive": true
+        }
+    ]
 }
+
 ```

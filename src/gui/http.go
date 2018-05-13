@@ -11,13 +11,14 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/NYTimes/gziphandler"
+
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/util/file"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/util/logging"
-	"github.com/skycoin/skycoin/src/wallet"
 )
 
 var (
@@ -178,6 +179,10 @@ func (s *Server) Serve() error {
 
 // Shutdown closes the HTTP service. This can only be called after Serve or ServeHTTPS has been called.
 func (s *Server) Shutdown() {
+	if s == nil {
+		return
+	}
+
 	logger.Info("Shutting down web interface")
 	defer logger.Info("Web interface shut down")
 	s.listener.Close()
@@ -199,6 +204,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 		handler = wh.ElapsedHandler(logger, handler)
 		handler = CSRFCheck(csrfStore, handler)
 		handler = headerCheck(c.host, handler)
+		handler = gziphandler.GzipHandler(handler)
 		mux.Handle(endpoint, handler)
 	}
 
@@ -220,7 +226,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	}
 
 	// get the current CSRF token
-	mux.Handle("/csrf", headerCheck(c.host, getCSRFToken(gateway, csrfStore)))
+	mux.Handle("/csrf", headerCheck(c.host, getCSRFToken(csrfStore)))
 
 	webHandler("/version", versionHandler(gateway))
 
@@ -477,53 +483,6 @@ func getOutputsHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		wh.SendJSONOr500(logger, w, outs)
-	}
-}
-
-func getBalanceHandler(gateway Gatewayer) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			wh.Error405(w)
-			return
-		}
-
-		addrsParam := r.FormValue("addrs")
-		addrsStr := splitCommaString(addrsParam)
-
-		addrs := make([]cipher.Address, 0, len(addrsStr))
-		for _, addr := range addrsStr {
-			a, err := cipher.DecodeBase58Address(addr)
-			if err != nil {
-				wh.Error400(w, fmt.Sprintf("address %s is invalid: %v", addr, err))
-				return
-			}
-			addrs = append(addrs, a)
-		}
-
-		bals, err := gateway.GetBalanceOfAddrs(addrs)
-		if err != nil {
-			err = fmt.Errorf("gateway.GetBalanceOfAddrs failed: %v", err)
-			wh.Error500(w, err.Error())
-			return
-		}
-
-		var balance wallet.BalancePair
-		for _, bal := range bals {
-			var err error
-			balance.Confirmed, err = balance.Confirmed.Add(bal.Confirmed)
-			if err != nil {
-				wh.Error500(w, err.Error())
-				return
-			}
-
-			balance.Predicted, err = balance.Predicted.Add(bal.Predicted)
-			if err != nil {
-				wh.Error500(w, err.Error())
-				return
-			}
-		}
-
-		wh.SendJSONOr500(logger, w, balance)
 	}
 }
 

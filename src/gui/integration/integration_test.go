@@ -61,7 +61,7 @@ const (
 	testModeDisableWalletApi = "disable-wallet-api"
 	testModeDisableSeedApi   = "disable-seed-api"
 
-	testFixturesDir = "test-fixtures"
+	testFixturesDir = "testdata"
 )
 
 type TestData struct {
@@ -535,10 +535,6 @@ func TestStableBalance(t *testing.T) {
 		golden string
 		addrs  []string
 	}{
-		{
-			name:   "no addresses",
-			golden: "balance-noaddrs.golden",
-		},
 		{
 			name:   "unknown address",
 			addrs:  []string{"prRXwTcDK24hs6AFxj69UuWae3LzhrsPW9"},
@@ -1869,9 +1865,9 @@ func TestLiveWalletSpend(t *testing.T) {
 				for _, o := range tx.Transaction.Out {
 					c, err := droplet.FromString(o.Coins)
 					require.NoError(t, err)
-					coins += c
+					coins, err = coin.AddUint64(coins, c)
+					require.NoError(t, err)
 				}
-				require.Equal(t, totalCoins, coins)
 
 				// Confirms the address balance are equal to the totalCoins
 				coins, _ = getAddressBalance(t, c, w.Entries[0].Address.String())
@@ -3184,7 +3180,7 @@ func getTransaction(t *testing.T, c *gui.Client, txid string) *daemon.Transactio
 
 // getAddressBalance gets balance of given address.
 // Returns coins and coin hours.
-func getAddressBalance(t *testing.T, c *gui.Client, addr string) (uint64, uint64) {
+func getAddressBalance(t *testing.T, c *gui.Client, addr string) (uint64, uint64) { // nolint: unparam
 	bp, err := c.Balance([]string{addr})
 	if err != nil {
 		t.Fatalf("%v", err)

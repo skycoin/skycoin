@@ -9,12 +9,25 @@ import (
 	gcli "github.com/urfave/cli"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/util/apputil"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
 const (
-	genesisPubkey = "0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a"
+	blockchainPubkey = "0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a"
 )
+
+// wrapDB calls dbutil.WrapDB and disables all logging
+func wrapDB(db *bolt.DB) *dbutil.DB {
+	wdb := dbutil.WrapDB(db)
+	wdb.ViewLog = false
+	wdb.ViewTrace = false
+	wdb.UpdateLog = false
+	wdb.UpdateTrace = false
+	wdb.DurationLog = false
+	return wdb
+}
 
 func checkdbCmd() gcli.Command {
 	name := "checkdb"
@@ -50,21 +63,23 @@ func checkdb(c *gcli.Context) error {
 	if err != nil {
 		return fmt.Errorf("open db failed: %v", err)
 	}
-	pubkey, err := cipher.PubKeyFromHex(genesisPubkey)
+	pubkey, err := cipher.PubKeyFromHex(blockchainPubkey)
 	if err != nil {
-		return fmt.Errorf("decode genesis pubkey failed: %v", err)
+		return fmt.Errorf("decode blockchain pubkey failed: %v", err)
 	}
 
-	if err := IntegrityCheck(db, pubkey); err != nil {
+	quit := QuitChanFromContext(c)
+	go func() {
+		apputil.CatchInterrupt(quit)
+	}()
+
+	if err := visor.CheckDatabase(wrapDB(db), pubkey, quit); err != nil {
+		if err == visor.ErrVerifyStopped {
+			return nil
+		}
 		return fmt.Errorf("checkdb failed: %v", err)
 	}
 
 	fmt.Println("check db success")
 	return nil
-}
-
-// IntegrityCheck checks database integrity
-func IntegrityCheck(db *bolt.DB, genesisPubkey cipher.PubKey) error {
-	_, err := visor.NewBlockchain(db, genesisPubkey, visor.Arbitrating(true))
-	return err
 }

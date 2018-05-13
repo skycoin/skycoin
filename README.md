@@ -48,7 +48,7 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
         - [Stable Integration Tests](#stable-integration-tests)
         - [Live Integration Tests](#live-integration-tests)
         - [Debugging Integration Tests](#debugging-integration-tests)
-        - [Update golden files in integration test-fixtures](#update-golden-files-in-integration-test-fixtures)
+        - [Update golden files in integration testdata](#update-golden-files-in-integration-testdata)
     - [Formatting](#formatting)
     - [Code Linting](#code-linting)
     - [Dependency Management](#dependency-management)
@@ -114,7 +114,7 @@ This is the quickest way to start using Skycoin using Docker.
 $ docker volume create skycoin-data
 $ docker volume create skycoin-wallet
 $ docker run -ti --rm \
-    -v skycoin-data:/data \
+    -v skycoin-data:/data/.skycoin \
     -v skycoin-wallet:/wallet \
     -p 6000:6000 \
     -p 6420:6420 \
@@ -316,7 +316,7 @@ For exampe: if we only want to test `TestStableAddressBalance` and see the resul
 ./ci-scripts/integration-test-stable.sh -v -r TestStableAddressBalance
 ```
 
-#### Update golden files in integration test-fixtures
+#### Update golden files in integration testdata
 
 Golden files are expected data responses from the CLI or HTTP API saved to disk.
 When the tests are run, their output is compared to the golden files.

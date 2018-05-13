@@ -287,8 +287,9 @@ func NewApp(cfg Config) (*App, error) {
 	rpcClient.UseCSRF = cfg.UseCSRF
 
 	app.Metadata = map[string]interface{}{
-		"config": cfg,
-		"rpc":    rpcClient,
+		"config":   cfg,
+		"rpc":      rpcClient,
+		"quitChan": make(chan struct{}),
 	}
 
 	return app, nil
@@ -307,6 +308,11 @@ func RPCClientFromContext(c *gcli.Context) *webrpc.Client {
 // ConfigFromContext returns a Config from a urfave/cli Context
 func ConfigFromContext(c *gcli.Context) Config {
 	return c.App.Metadata["config"].(Config)
+}
+
+// QuitChanFromContext returns a chan struct{} from a urfave/cli Context
+func QuitChanFromContext(c *gcli.Context) chan struct{} {
+	return c.App.Metadata["quitChan"].(chan struct{})
 }
 
 func onCommandUsageError(command string) gcli.OnUsageErrorFunc {

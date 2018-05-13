@@ -55,10 +55,10 @@ func TestGetBlock(t *testing.T) {
 		sha256                      cipher.SHA256
 		seqStr                      string
 		seq                         uint64
-		gatewayGetBlockByHashResult coin.SignedBlock
-		gatewayGetBlockByHashExists bool
-		gatewayGetBlockBySeqResult  coin.SignedBlock
-		gatewayGetBlockBySeqExists  bool
+		gatewayGetBlockByHashResult *coin.SignedBlock
+		gatewayGetBlockByHashErr    error
+		gatewayGetBlockBySeqResult  *coin.SignedBlock
+		gatewayGetBlockBySeqErr     error
 		response                    *visor.ReadableBlock
 	}{
 		{
@@ -116,7 +116,7 @@ func TestGetBlock(t *testing.T) {
 			status: http.StatusOK,
 			hash:   validHashString,
 			sha256: validSHA256,
-			gatewayGetBlockByHashExists: true,
+			gatewayGetBlockByHashResult: &coin.SignedBlock{},
 			response: &visor.ReadableBlock{
 				Head: visor.ReadableBlockHeader{
 					BkSeq:             0x0,
@@ -154,10 +154,9 @@ func TestGetBlock(t *testing.T) {
 			err:    "500 Internal Server Error - Droplet string conversion failed: Value is too large",
 			seqStr: "1",
 			seq:    1,
-			gatewayGetBlockBySeqResult: coin.SignedBlock{
+			gatewayGetBlockBySeqResult: &coin.SignedBlock{
 				Block: *badBlock,
 			},
-			gatewayGetBlockBySeqExists: true,
 		},
 		{
 			name:   "200 - got block by seq",
@@ -165,7 +164,7 @@ func TestGetBlock(t *testing.T) {
 			status: http.StatusOK,
 			seqStr: "1",
 			seq:    1,
-			gatewayGetBlockBySeqExists: true,
+			gatewayGetBlockBySeqResult: &coin.SignedBlock{},
 			response: &visor.ReadableBlock{
 				Head: visor.ReadableBlockHeader{
 					BkSeq:             0x0,
@@ -181,14 +180,33 @@ func TestGetBlock(t *testing.T) {
 				},
 			},
 		},
+
+		{
+			name:   "500 - get block by hash error",
+			method: http.MethodGet,
+			status: http.StatusInternalServerError,
+			err:    "500 Internal Server Error - GetSignedBlockByHash failed",
+			hash:   validHashString,
+			sha256: validSHA256,
+			gatewayGetBlockByHashErr: errors.New("GetSignedBlockByHash failed"),
+		},
+		{
+			name:   "500 - get block by seq error",
+			method: http.MethodGet,
+			status: http.StatusInternalServerError,
+			err:    "500 Internal Server Error - GetSignedBlockBySeq failed",
+			seqStr: "1",
+			seq:    1,
+			gatewayGetBlockBySeqErr: errors.New("GetSignedBlockBySeq failed"),
+		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &GatewayerMock{}
 
-			gateway.On("GetBlockByHash", tc.sha256).Return(tc.gatewayGetBlockByHashResult, tc.gatewayGetBlockByHashExists)
-			gateway.On("GetBlockBySeq", tc.seq).Return(tc.gatewayGetBlockBySeqResult, tc.gatewayGetBlockBySeqExists)
+			gateway.On("GetSignedBlockByHash", tc.sha256).Return(tc.gatewayGetBlockByHashResult, tc.gatewayGetBlockByHashErr)
+			gateway.On("GetSignedBlockBySeq", tc.seq).Return(tc.gatewayGetBlockBySeqResult, tc.gatewayGetBlockBySeqErr)
 
 			endpoint := "/block"
 

@@ -226,7 +226,7 @@ func (m *GatewayerMock) GetAddressTxns(p0 cipher.Address) (*daemon.TransactionRe
 }
 
 // GetAllUnconfirmedTxns mocked method
-func (m *GatewayerMock) GetAllUnconfirmedTxns() []visor.UnconfirmedTxn {
+func (m *GatewayerMock) GetAllUnconfirmedTxns() ([]visor.UnconfirmedTxn, error) {
 
 	ret := m.Called()
 
@@ -239,7 +239,16 @@ func (m *GatewayerMock) GetAllUnconfirmedTxns() []visor.UnconfirmedTxn {
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	return r0
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
 
 }
 
@@ -270,24 +279,24 @@ func (m *GatewayerMock) GetBalanceOfAddrs(p0 []cipher.Address) ([]wallet.Balance
 
 }
 
-// GetBlockByHash mocked method
-func (m *GatewayerMock) GetBlockByHash(p0 cipher.SHA256) (coin.SignedBlock, bool) {
+// GetSignedBlockByHash mocked method
+func (m *GatewayerMock) GetSignedBlockByHash(p0 cipher.SHA256) (*coin.SignedBlock, error) {
 
 	ret := m.Called(p0)
 
-	var r0 coin.SignedBlock
+	var r0 *coin.SignedBlock
 	switch res := ret.Get(0).(type) {
 	case nil:
-	case coin.SignedBlock:
+	case *coin.SignedBlock:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	var r1 bool
+	var r1 error
 	switch res := ret.Get(1).(type) {
 	case nil:
-	case bool:
+	case error:
 		r1 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
@@ -297,24 +306,24 @@ func (m *GatewayerMock) GetBlockByHash(p0 cipher.SHA256) (coin.SignedBlock, bool
 
 }
 
-// GetBlockBySeq mocked method
-func (m *GatewayerMock) GetBlockBySeq(p0 uint64) (coin.SignedBlock, bool) {
+// GetSignedBlockBySeq mocked method
+func (m *GatewayerMock) GetSignedBlockBySeq(p0 uint64) (*coin.SignedBlock, error) {
 
 	ret := m.Called(p0)
 
-	var r0 coin.SignedBlock
+	var r0 *coin.SignedBlock
 	switch res := ret.Get(0).(type) {
 	case nil:
-	case coin.SignedBlock:
+	case *coin.SignedBlock:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	var r1 bool
+	var r1 error
 	switch res := ret.Get(1).(type) {
 	case nil:
-	case bool:
+	case error:
 		r1 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
@@ -352,7 +361,7 @@ func (m *GatewayerMock) GetBlockchainMetadata() (*visor.BlockchainMetadata, erro
 }
 
 // GetBlockchainProgress mocked method
-func (m *GatewayerMock) GetBlockchainProgress() *daemon.BlockchainProgress {
+func (m *GatewayerMock) GetBlockchainProgress() (*daemon.BlockchainProgress, error) {
 
 	ret := m.Called()
 
@@ -365,7 +374,7 @@ func (m *GatewayerMock) GetBlockchainProgress() *daemon.BlockchainProgress {
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	return r0
+	return r0, nil
 
 }
 
@@ -919,7 +928,7 @@ func (m *GatewayerMock) NewAddresses(p0 string, p1 []byte, p2 uint64) ([]cipher.
 }
 
 // ResendUnconfirmedTxns mocked method
-func (m *GatewayerMock) ResendUnconfirmedTxns() *daemon.ResendResult {
+func (m *GatewayerMock) ResendUnconfirmedTxns() (*daemon.ResendResult, error) {
 
 	ret := m.Called()
 
@@ -932,7 +941,16 @@ func (m *GatewayerMock) ResendUnconfirmedTxns() *daemon.ResendResult {
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	return r0
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
 
 }
 

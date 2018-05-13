@@ -114,7 +114,7 @@ This is the quickest way to start using Skycoin using Docker.
 $ docker volume create skycoin-data
 $ docker volume create skycoin-wallet
 $ docker run -ti --rm \
-    -v skycoin-data:/data \
+    -v skycoin-data:/data/.skycoin \
     -v skycoin-wallet:/wallet \
     -p 6000:6000 \
     -p 6420:6420 \

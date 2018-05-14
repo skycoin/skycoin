@@ -116,7 +116,8 @@ src/mesh/TODO
 *.test
 coverage.html
 
-src/gui/integration/wallets/
+src/api/integration/wallets/
+src/api/integration/wallets/
 
 skycoin-cli
 

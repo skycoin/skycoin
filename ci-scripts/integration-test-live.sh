@@ -57,7 +57,9 @@ set -euxo pipefail
 
 echo "checking if skycoin node is running"
 
-http_proxy="" https_proxy="" wget -O- $HOST 2>&1 >/dev/null
+HEALTH="$HOST/health"
+
+http_proxy="" https_proxy="" wget -O- $HEALTH 2>&1 >/dev/null
 
 if [ ! $? -eq 0 ]; then
     echo "Skycoin node is not running on $HOST"
@@ -67,13 +69,13 @@ fi
 if [[ -z $TEST || $TEST = "gui" ]]; then
 
 SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST \
-    go test ./src/gui/integration/... $FAILFAST $UPDATE -timeout=$TIMEOUT $VERBOSE $RUN_TESTS $TEST_LIVE_WALLET
+    go test ./src/api/integration/... $FAILFAST $UPDATE -timeout=$TIMEOUT $VERBOSE $RUN_TESTS $TEST_LIVE_WALLET
 
 fi
 
 if [[ -z $TEST || $TEST = "cli" ]]; then
 
 SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR SKYCOIN_NODE_HOST=$HOST USE_CSRF=$USE_CSRF \
-    go test ./src/api/cli/integration/... $FAILFAST $UPDATE -timeout=$TIMEOUT $VERBOSE $RUN_TESTS $TEST_LIVE_WALLET
+    go test ./src/cli/integration/... $FAILFAST $UPDATE -timeout=$TIMEOUT $VERBOSE $RUN_TESTS $TEST_LIVE_WALLET
 
 fi

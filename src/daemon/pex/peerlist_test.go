@@ -527,9 +527,7 @@ func preparePeerlistFile(t *testing.T) (string, func()) {
 
 func preparePeerlistDir(t *testing.T) (string, func()) {
 	f, err := ioutil.TempDir("", "peerlist")
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 
 	return f, func() {
 		os.Remove(f)

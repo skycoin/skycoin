@@ -11,7 +11,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
-func randBytes(n int) []byte {
+func randBytes(n int) []byte { // nolint: unparam
 	const alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 	var bytes = make([]byte, n)
 	rand.Read(bytes)

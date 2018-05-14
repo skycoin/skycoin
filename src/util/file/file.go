@@ -227,7 +227,6 @@ func ResolveResourceDirectory(path string) string {
 }
 
 // DetermineResourcePath DEPRECATE
-// From src/gui/http.go and src/mesh/gui/http.go
 func DetermineResourcePath(staticDir string, resourceDir string, devDir string) (string, error) {
 	//check "dev" directory first
 	appLoc := filepath.Join(staticDir, devDir)

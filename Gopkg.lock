@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  name = "github.com/NYTimes/gziphandler"
+  packages = ["."]
+  revision = "2600fb119af974220d3916a5916d6e31176aac1b"
+  version = "v1.0.1"
+
+[[projects]]
   name = "github.com/boltdb/bolt"
   packages = ["."]
   revision = "2f1ce7a837dcb8da3ec595b1dac9d0632f0f99e8"
@@ -106,6 +112,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "7462d327d26b2adea0784def557aea318d7c0ccc58acf1d99ac02e227f7c0753"
+  inputs-digest = "454aacd6dc7c6819166ecc75a75483f4bcebc23ab61c4b2b32e694ee67020d52"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -6,9 +6,10 @@
     "ng": "ng",
     "start": "ng serve --proxy-config proxy.config.js --delete-output-path false",
     "build": "ng build --prod",
-    "test": "ng test",
+    "build-travis": "ng build --prod --output-path=$BUILD_UI_TRAVIS_DIR",
+    "test": "ng test --watch=false",
     "lint": "ng lint",
-    "e2e": "ng e2e"
+    "e2e": "ng e2e --proxy-config e2e-proxy.config.js --delete-output-path false"
   },
   "private": true,
   "dependencies": {

@@ -28,9 +28,9 @@ electron-context-menu@^0.9.1:
     electron-dl "^1.2.0"
     electron-is-dev "^0.1.1"
 
-electron-debug@^1.0.1:
-  version "1.4.0"
-  resolved "https://registry.yarnpkg.com/electron-debug/-/electron-debug-1.4.0.tgz#bec7005522220a9d0622153352e1bbff0f37af2e"
+electron-debug@^1.5.0:
+  version "1.5.0"
+  resolved "http://r.cnpmjs.org/electron-debug/download/electron-debug-1.5.0.tgz#d88c02146efb7fc5ae1b21eac56fbe4987eae50c"
   dependencies:
     electron-is-dev "^0.3.0"
     electron-localshortcut "^3.0.0"
@@ -63,10 +63,6 @@ electron-localshortcut@^3.0.0:
     electron-is-accelerator "^0.1.0"
     keyboardevent-from-electron-accelerator "^0.7.0"
     keyboardevents-areequal "^0.2.1"
-
-electron-log@^1.2.2:
-  version "1.3.0"
-  resolved "https://registry.yarnpkg.com/electron-log/-/electron-log-1.3.0.tgz#d05544114b971a16c86739c79d0d236103ad0a16"
 
 ext-list@^2.0.0:
   version "2.2.2"

@@ -205,7 +205,7 @@ func addChecksum(data []byte) []byte {
 	return dataBigInt.Bytes()
 }
 
-func padByteSlice(slice []byte, length int) []byte {
+func padByteSlice(slice []byte, length int) []byte { // nolint: unparam
 	newSlice := make([]byte, length-len(slice))
 	return append(newSlice, slice...)
 }

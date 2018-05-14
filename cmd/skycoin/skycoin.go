@@ -159,7 +159,7 @@ type Config struct {
 	Arbitrating bool
 	LogToFile   bool
 	Version     bool // show node version
-	TestChain    bool
+	TestChain   bool
 }
 
 func (c *Config) register() {
@@ -172,6 +172,8 @@ func (c *Config) register() {
 	flag.BoolVar(&c.DisableOutgoingConnections, "disable-outgoing",
 		c.DisableOutgoingConnections, "Don't make outgoing connections")
 	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming",
+		c.DisableIncomingConnections, "Don't make incoming connections")
+	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
 	flag.BoolVar(&c.EnableWalletAPI, "enable-wallet-api", c.EnableWalletAPI, "Enable the wallet API")
 	flag.BoolVar(&c.EnableGUI, "enable-gui", c.EnableGUI, "Enable GUI")
 	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable CSRF check")
@@ -179,7 +181,6 @@ func (c *Config) register() {
 	flag.StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
 
-	flag.BoolVar(&c.DisableWalletApi, "disable-wallet-api", c.DisableWalletApi, "Disable the wallet API")
 	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable csrf check")
 
 	flag.BoolVar(&c.WebInterface, "web-interface", c.WebInterface, "enable the web interface")
@@ -367,12 +368,10 @@ func (c *Config) postProcess(chaincfg ChainConfig) {
 
 	c.Port = TestChainCfg.Port
 	c.WebInterfacePort = chaincfg.WebInterfacePort
-	c.RPCInterfacePort = chaincfg.RPCInterfacePort
 
 	if c.DataDirectory == "" {
 		c.DataDirectory = chaincfg.DataDirectory
 	}
-	c.LogFmt = chaincfg.LogFmt
 
 	// } else {
 	// if GenesisSignatureStr != "" {
@@ -695,7 +694,7 @@ func Run(c *Config) {
 		}
 	}
 
-	d, err = daemon.NewDaemon(dconf, db, DefaultConnections)
+	d, err = daemon.NewDaemon(dconf, db, c.DefaultConnections)
 	if err != nil {
 		logger.Error(err)
 		goto earlyShutdown
@@ -889,14 +888,12 @@ type ChainConfig struct {
 	Port int
 	// Web interface port http api service port
 	WebInterfacePort int
-	// RPC interface port
-	RPCInterfacePort int
 	// Data directory
 	DataDirectory string
 	// DefaultConnections the default trust node addresses
 	DefaultConnections []string
-	// LogFmt log format
-	LogFmt string
+	// Coin name
+	CoinName string
 }
 
 // MainChainCfg main chain config info
@@ -909,9 +906,9 @@ var MainChainCfg = ChainConfig{
 	GenesisCoinVolume: 100e12,
 	Port:              6000,
 	WebInterfacePort:  6420,
-	RPCInterfacePort:  6430,
 	DataDirectory:     ".skycoin",
-	LogFmt:            "[skycoin.%{module}:%{level}] %{message}",
+	// Log entries with the following template "[skycoin.%{module}:%{level}] %{message}"
+	CoinName: "skycoin",
 	DefaultConnections: []string{
 		"118.178.135.93:6000",
 		"47.88.33.156:6000",
@@ -934,9 +931,9 @@ var TestChainCfg = ChainConfig{
 	GenesisCoinVolume: 100e12,
 	Port:              16000,
 	WebInterfacePort:  16420,
-	RPCInterfacePort:  16430,
 	DataDirectory:     ".skycoin-testnet",
-	LogFmt:            "[skycoin.testnet.%{module}:%{level}] %{message}",
+	// Log entries with the following template "[skycoin.testnet.%{module}:%{level}] %{message}"
+	CoinName: "skycoin.testnet",
 	DefaultConnections: []string{
 		"139.162.33.154:16000",
 	},

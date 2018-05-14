@@ -4,53 +4,17 @@
 
 #include <criterion/criterion.h>
 #include <criterion/new/assert.h>
-#define JSMN_PARENT_LINKS
 
 #include "libskycoin.h"
 #include "skyerrors.h"
 #include "skystring.h"
 #include "skytest.h"
-#include "jsmn.h"
+#include "json.h"
 
 #define BUFFER_SIZE 1024
 #define STRING_SIZE 1024
 #define JSON_FILE_SIZE 4096
 #define JSON_BIG_FILE_SIZE 32768
-
-int loadJsonFile(const char* path, int buffer_size, 
-				jsmn_result* result, int max_tokens){
-	char* buffer = malloc( buffer_size);
-	FILE *fp;
-	fp = fopen(path, "r");
-	cr_assert(fp != NULL);
-	int bytes_read = fread(buffer, 1, buffer_size - 1,fp);
-	buffer[bytes_read] = 0;
-	jsmn_parser parser;
-	jsmn_init(&parser);
-	jsmn_init_results(result, max_tokens);
-	result->token_count = jsmn_parse(&parser, buffer, strlen(buffer), 
-		result->tokens, max_tokens);
-	
-	fclose(fp);
-	/*fp = fopen("test.txt", "w+");
-	char s[1024];
-	for(int i = 0; i < result->token_count; i++){
-		fprintf(fp, "type %d %d %d\r\n", result->tokens[i].type,
-			result->tokens[i].start, result->tokens[i].end
-		);
-		if( result->tokens[i].end - result->tokens[i].start > 0 &&
-			result->tokens[i].end < strlen(buffer)
-		){
-			strncpy(s, buffer + result->tokens[i].start, 
-				result->tokens[i].end - result->tokens[i].start);
-			s[result->tokens[i].end - result->tokens[i].start] = 0;
-			fprintf(fp, "%s, %d\r\n", s, result->tokens[i].parent);
-		}
-	}
-	fclose(fp);*/
-	free( buffer );
-	return result->token_count;
-}
 
 Test(api_cli_integration, TestStableShowConfig) {
 	char output[BUFFER_SIZE];
@@ -77,28 +41,26 @@ Test(api_cli_integration, TestStableShowConfig) {
 	cr_assert(errcode == SKY_OK, "SKY_cli_App_Run failed");
 	
 	//JSON parse output
-	jsmn_parser parser;
-	jsmntok_t tokens[128];
-	jsmn_init(&parser);
-	int tokens_count = jsmn_parse(&parser, output, strlen(output), tokens, sizeof(tokens)/sizeof(tokens[0]));
-	cr_assert(tokens_count > 0, "Failed to json parse");
-	cr_assert(tokens[0].type == JSMN_OBJECT, "Failed to json parse");
-	int result = json_get_string(output, "wallet_directory", tokens, tokens_count,
-		wallet_dir, STRING_SIZE);
-	cr_assert(result == 1, "Failed to get json value");
-	result = json_get_string(output, "data_directory", tokens, tokens_count,
-		data_dir, STRING_SIZE);
-	cr_assert(result == 1, "Failed to get json value");
+	json_char* json;
+    json_value* value;
+	json_value* json_str;
+	int result;
+	json = (json_char*)output;
+	value = json_parse(json, strlen(output));
+	cr_assert(value != NULL, "Failed to json parse");
+	registerJsonFree(value);
+	
+	json_str = json_get_string(value, "wallet_directory", 
+									wallet_dir, STRING_SIZE);
+	cr_assert(json_str != NULL, "Failed to get json value");
+	json_str = json_get_string(value, "data_directory", 
+									data_dir, STRING_SIZE);
+	cr_assert(json_str != NULL, "Failed to get json value");
 	result = string_has_suffix(wallet_dir, ".skycoin/wallets");
 	cr_assert(result == 1, "Wallet dir must end in .skycoin/wallets");
 	result = string_has_suffix(data_dir, ".skycoin");
 	cr_assert(result == 1, "Data dir must end in .skycoin");
 	result = string_has_prefix(wallet_dir, data_dir);
 	cr_assert(result == 1, "Data dir must be prefix of wallet dir");
-	
-	/*const char* path = "src/api/cli/integration/test-fixtures/address-balance.golden";
-	jsmn_result json_result;
-	loadJsonFile(path, JSON_FILE_SIZE, &json_result, 128);
-	cr_assert(json_result.token_count > 0);*/
 	
 }

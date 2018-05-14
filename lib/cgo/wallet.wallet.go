@@ -3,7 +3,6 @@ package main
 import (
 	cipher "github.com/skycoin/skycoin/src/cipher"
 	coin "github.com/skycoin/skycoin/src/coin"
-	blockdb "github.com/skycoin/skycoin/src/visor/blockdb"
 	wallet "github.com/skycoin/skycoin/src/wallet"
 	"reflect"
 	"unsafe"
@@ -32,6 +31,20 @@ func SKY_wallet_CreateOptionsHandle(coin string, label string, seed string, encr
 	return SKY_OK
 }
 
+//export SKY_wallet_NewError
+func SKY_wallet_NewError(_err error) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	err := _err
+	____return_err := wallet.NewError(err)
+	____error_code = libErrorCode(____return_err)
+	if ____return_err == nil {
+	}
+	return
+}
+
 //export SKY_wallet_NewWallet
 func SKY_wallet_NewWallet(_wltName string, _opts *C.Options__Handle, _arg2 *C.Wallet__Handle) (____error_code uint32) {
 	____error_code = 0
@@ -49,6 +62,68 @@ func SKY_wallet_NewWallet(_wltName string, _opts *C.Options__Handle, _arg2 *C.Wa
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
 		*_arg2 = registerWalletHandle(__arg2)
+	}
+	return
+}
+
+//export SKY_wallet_NewWalletScanAhead
+func SKY_wallet_NewWalletScanAhead(_wltName string, _opts *C.Options__Handle, _bg *C.wallet__BalanceGetter, _arg3 *C.Wallet__Handle) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	wltName := _wltName
+	__opts, okopts := lookupOptionsHandle(*_opts)
+	if !okopts {
+		____error_code = SKY_ERROR
+		return
+	}
+	opts := *__opts
+	bg := *(*wallet.BalanceGetter)(unsafe.Pointer(_bg))
+	__arg3, ____return_err := wallet.NewWalletScanAhead(wltName, opts, bg)
+	____error_code = libErrorCode(____return_err)
+	if ____return_err == nil {
+		*_arg3 = registerWalletHandle(__arg3)
+	}
+	return
+}
+
+//export SKY_wallet_Wallet_Lock
+func SKY_wallet_Wallet_Lock(_w *C.Wallet__Handle, _password []byte, _cryptoType string) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	w, okw := lookupWalletHandle(*_w)
+	if !okw {
+		____error_code = SKY_ERROR
+		return
+	}
+	password := *(*[]byte)(unsafe.Pointer(&_password))
+	cryptoType := wallet.CryptoType(_cryptoType)
+	____return_err := w.Lock(password, cryptoType)
+	____error_code = libErrorCode(____return_err)
+	if ____return_err == nil {
+	}
+	return
+}
+
+//export SKY_wallet_Wallet_Unlock
+func SKY_wallet_Wallet_Unlock(_w *C.Wallet__Handle, _password []byte, _arg1 *C.Wallet__Handle) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	w, okw := lookupWalletHandle(*_w)
+	if !okw {
+		____error_code = SKY_ERROR
+		return
+	}
+	password := *(*[]byte)(unsafe.Pointer(&_password))
+	__arg1, ____return_err := w.Unlock(password)
+	____error_code = libErrorCode(____return_err)
+	if ____return_err == nil {
+		*_arg1 = registerWalletHandle(__arg1)
 	}
 	return
 }
@@ -279,7 +354,7 @@ func SKY_wallet_Wallet_AddEntry(_w *C.Wallet__Handle, _entry *C.wallet__Entry) (
 }
 
 //export SKY_wallet_Wallet_CreateAndSignTransaction
-func SKY_wallet_Wallet_CreateAndSignTransaction(_w *C.Wallet__Handle, _vld *C.wallet__Validator, _unspent *C.blockdb__UnspentGetter, _headTime, _coins uint64, _dest *C.cipher__Address, _arg4 *C.coin__Transaction) (____error_code uint32) {
+func SKY_wallet_Wallet_CreateAndSignTransaction(_w *C.Wallet__Handle, _auxs *C.coin__AddressUxOuts, _headTime, _coins uint64, _dest *C.cipher__Address, _arg3 *C.coin__Transaction) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -289,15 +364,14 @@ func SKY_wallet_Wallet_CreateAndSignTransaction(_w *C.Wallet__Handle, _vld *C.wa
 		____error_code = SKY_ERROR
 		return
 	}
-	vld := *(*wallet.Validator)(unsafe.Pointer(_vld))
-	unspent := *(*blockdb.UnspentGetter)(unsafe.Pointer(_unspent))
+	auxs := *(*coin.AddressUxOuts)(unsafe.Pointer(_auxs))
 	headTime := _headTime
 	coins := _coins
 	dest := *(*cipher.Address)(unsafe.Pointer(_dest))
-	__arg4, ____return_err := w.CreateAndSignTransaction(vld, unspent, headTime, coins, dest)
+	__arg3, ____return_err := w.CreateAndSignTransaction(auxs, headTime, coins, dest)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		*_arg4 = *(*C.coin__Transaction)(unsafe.Pointer(__arg4))
+		*_arg3 = *(*C.coin__Transaction)(unsafe.Pointer(__arg3))
 	}
 	return
 }
@@ -318,6 +392,22 @@ func SKY_wallet_DistributeSpendHours(_inputHours, _nAddrs uint64, _haveChange bo
 	return
 }
 
+//export SKY_wallet_DistributeCoinHoursProportional
+func SKY_wallet_DistributeCoinHoursProportional(_coins []uint64, _hours uint64, _arg2 *C.GoSlice_) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	coins := *(*[]uint64)(unsafe.Pointer(&_coins))
+	hours := _hours
+	__arg2, ____return_err := wallet.DistributeCoinHoursProportional(coins, hours)
+	____error_code = libErrorCode(____return_err)
+	if ____return_err == nil {
+		copyToGoSlice(reflect.ValueOf(__arg2), _arg2)
+	}
+	return
+}
+
 //export SKY_wallet_NewUxBalances
 func SKY_wallet_NewUxBalances(_headTime uint64, _uxa *C.coin__UxArray, _arg2 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
@@ -334,8 +424,24 @@ func SKY_wallet_NewUxBalances(_headTime uint64, _uxa *C.coin__UxArray, _arg2 *C.
 	return
 }
 
+//export SKY_wallet_NewUxBalance
+func SKY_wallet_NewUxBalance(_headTime uint64, _ux *C.coin__UxOut, _arg2 *C.wallet__UxBalance) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	headTime := _headTime
+	ux := *(*coin.UxOut)(unsafe.Pointer(_ux))
+	__arg2, ____return_err := wallet.NewUxBalance(headTime, ux)
+	____error_code = libErrorCode(____return_err)
+	if ____return_err == nil {
+		*_arg2 = *(*C.wallet__UxBalance)(unsafe.Pointer(&__arg2))
+	}
+	return
+}
+
 //export SKY_wallet_ChooseSpendsMinimizeUxOuts
-func SKY_wallet_ChooseSpendsMinimizeUxOuts(_uxa []C.wallet__UxBalance, _coins uint64, _hours uint64, _arg2 *C.GoSlice_) (____error_code uint32) {
+func SKY_wallet_ChooseSpendsMinimizeUxOuts(_uxa []C.wallet__UxBalance, _coins, _hours uint64, _arg2 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -352,7 +458,7 @@ func SKY_wallet_ChooseSpendsMinimizeUxOuts(_uxa []C.wallet__UxBalance, _coins ui
 }
 
 //export SKY_wallet_ChooseSpendsMaximizeUxOuts
-func SKY_wallet_ChooseSpendsMaximizeUxOuts(_uxa []C.wallet__UxBalance, _coins uint64, _hours uint64, _arg2 *C.GoSlice_) (____error_code uint32) {
+func SKY_wallet_ChooseSpendsMaximizeUxOuts(_uxa []C.wallet__UxBalance, _coins, _hours uint64, _arg2 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -364,68 +470,6 @@ func SKY_wallet_ChooseSpendsMaximizeUxOuts(_uxa []C.wallet__UxBalance, _coins ui
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
 		copyToGoSlice(reflect.ValueOf(__arg2), _arg2)
-	}
-	return
-}
-
-//export SKY_wallet_NewWalletScanAhead
-func SKY_wallet_NewWalletScanAhead(_wltName string, _opts *C.Options__Handle, _bg *C.wallet__BalanceGetter, _arg3 *C.Wallet__Handle) (____error_code uint32) {
-	____error_code = 0
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	wltName := _wltName
-	__opts, okopts := lookupOptionsHandle(*_opts)
-	if !okopts {
-		____error_code = SKY_ERROR
-		return
-	}
-	opts := *__opts
-	bg := *(*wallet.BalanceGetter)(unsafe.Pointer(_bg))
-	__arg3, ____return_err := wallet.NewWalletScanAhead(wltName, opts, bg)
-	____error_code = libErrorCode(____return_err)
-	if ____return_err == nil {
-		*_arg3 = registerWalletHandle(__arg3)
-	}
-	return
-}
-
-//export SKY_wallet_Wallet_Lock
-func SKY_wallet_Wallet_Lock(_w *C.Wallet__Handle, _password []byte, _cryptoType string) (____error_code uint32) {
-	____error_code = 0
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	w, okw := lookupWalletHandle(*_w)
-	if !okw {
-		____error_code = SKY_ERROR
-		return
-	}
-	password := *(*[]byte)(unsafe.Pointer(&_password))
-	cryptoType := wallet.CryptoType(_cryptoType)
-	____return_err := w.Lock(password, cryptoType)
-	____error_code = libErrorCode(____return_err)
-	if ____return_err == nil {
-	}
-	return
-}
-
-//export SKY_wallet_Wallet_Unlock
-func SKY_wallet_Wallet_Unlock(_w *C.Wallet__Handle, _password []byte, _arg1 *C.Wallet__Handle) (____error_code uint32) {
-	____error_code = 0
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	w, okw := lookupWalletHandle(*_w)
-	if !okw {
-		____error_code = SKY_ERROR
-		return
-	}
-	password := *(*[]byte)(unsafe.Pointer(&_password))
-	__arg1, ____return_err := w.Unlock(password)
-	____error_code = libErrorCode(____return_err)
-	if ____return_err == nil {
-		*_arg1 = registerWalletHandle(__arg1)
 	}
 	return
 }

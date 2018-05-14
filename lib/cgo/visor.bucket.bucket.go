@@ -1,7 +1,7 @@
 package main
 
 import (
-	bucket "github.com/skycoin/skycoin/src/visor/bucket"
+	bucket "github.com/skycoin/skycoin/src/visor/dbutil"
 	"reflect"
 	"unsafe"
 )

@@ -13,7 +13,7 @@ import (
 	//"unsafe"
 	webrpc "github.com/skycoin/skycoin/src/api/webrpc"
 	wallet "github.com/skycoin/skycoin/src/wallet"
-	cli "github.com/skycoin/skycoin/src/api/cli"
+	cli "github.com/skycoin/skycoin/src/cli"
 	gcli "github.com/urfave/cli"
 
 )

@@ -436,20 +436,124 @@ func (gw *Gateway) InjectBroadcastTransaction(txn coin.Transaction) error {
 	return err
 }
 
-// GetAddressTxns returns a *TransactionResults
-func (gw *Gateway) GetAddressTxns(a cipher.Address) (*TransactionResults, error) {
-	var txs []visor.Transaction
-	var err error
+// ReadableTransaction has readable transaction data. It differs from visor.ReadableTransaction
+// in that it includes metadata for transaction inputs
+type ReadableTransaction struct {
+	Status    visor.TransactionStatus `json:"status"`
+	Length    uint32                  `json:"length"`
+	Type      uint8                   `json:"type"`
+	Hash      string                  `json:"txid"`
+	InnerHash string                  `json:"inner_hash"`
+	Timestamp uint64                  `json:"timestamp,omitempty"`
+	Size      int                     `json:"size"`
 
-	gw.strand("GetAddressesTxns", func() {
-		txs, err = gw.v.GetAddressTxns(a)
+	Sigs []string                          `json:"sigs"`
+	In   []visor.ReadableTransactionInput  `json:"inputs"`
+	Out  []visor.ReadableTransactionOutput `json:"outputs"`
+}
+
+// NewReadableTransaction creates ReadableTransaction
+func NewReadableTransaction(t visor.Transaction, inputs []visor.ReadableTransactionInput) (ReadableTransaction, error) {
+	// Genesis transaction use empty SHA256 as txid
+	txID := cipher.SHA256{}
+	if t.Status.BlockSeq != 0 {
+		txID = t.Txn.Hash()
+	}
+
+	sigs := make([]string, len(t.Txn.Sigs))
+	for i, s := range t.Txn.Sigs {
+		sigs[i] = s.Hex()
+	}
+
+	out := make([]visor.ReadableTransactionOutput, len(t.Txn.Out))
+	for i := range t.Txn.Out {
+		o, err := visor.NewReadableTransactionOutput(&t.Txn.Out[i], txID)
+		if err != nil {
+			return ReadableTransaction{}, err
+		}
+
+		out[i] = *o
+	}
+
+	return ReadableTransaction{
+		Status:    t.Status,
+		Length:    t.Txn.Length,
+		Type:      t.Txn.Type,
+		Hash:      t.Txn.Hash().Hex(),
+		InnerHash: t.Txn.InnerHash.Hex(),
+		Timestamp: t.Time,
+		Size:      t.Size,
+
+		Sigs: sigs,
+		In:   inputs,
+		Out:  out,
+	}, nil
+}
+
+// GetTransactionsForAddress returns []ReadableTransaction for a given address.
+// These transactions include confirmed and unconfirmed transactions
+func (gw *Gateway) GetTransactionsForAddress(a cipher.Address) ([]ReadableTransaction, error) {
+	var err error
+	var resTxns []ReadableTransaction
+
+	gw.strand("GetTransactionsForAddress", func() {
+		var txns []visor.Transaction
+		txns, err = gw.v.GetAddressTxns(a)
+		if err != nil {
+			return
+		}
+
+		var head *coin.SignedBlock
+		head, err = gw.v.GetHeadBlock()
+		if err != nil {
+			return
+		}
+
+		resTxns = make([]ReadableTransaction, len(txns))
+
+		for i, txn := range txns {
+			inputs := make([]visor.ReadableTransactionInput, len(txn.Txn.In))
+			for j, inputID := range txn.Txn.In {
+				input, err := gw.v.GetUxOutByID(inputID)
+				if err != nil {
+					return
+				}
+				if input == nil {
+					err = fmt.Errorf("uxout of %v does not exist in history db", inputID.Hex())
+					return
+				}
+
+				// If the txn is confirmed,
+				// use the time of the transaction when it was executed,
+				// else use the head time
+				t := txn.Time
+				if !txn.Status.Confirmed {
+					t = head.Time()
+				}
+
+				readableInput, err := visor.NewReadableTransactionInput(inputID, input.Out.Body.Address, input.Out.Body.Coins, input.Out.Body.Hours, t)
+				if err != nil {
+					return
+				}
+
+				inputs[j] = *readableInput
+			}
+
+			rTxn, err := NewReadableTransaction(txn, inputs)
+			if err != nil {
+				return
+			}
+
+			resTxns[i] = rTxn
+		}
+
 	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	return NewTransactionResults(txs)
+	return resTxns, nil
 }
 
 // GetTransactions returns transactions filtered by zero or more visor.TxFilter

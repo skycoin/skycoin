@@ -1648,7 +1648,7 @@ func TestStableAddressTransactions(t *testing.T) {
 
 			require.NoError(t, err)
 
-			var expected []api.ReadableTransaction
+			var expected []daemon.ReadableTransaction
 			loadGoldenFile(t, tc.golden, TestData{txns, &expected})
 			require.Equal(t, expected, txns)
 		})
@@ -1698,7 +1698,7 @@ func TestLiveAddressTransactions(t *testing.T) {
 
 			require.NoError(t, err)
 
-			var expected []api.ReadableTransaction
+			var expected []daemon.ReadableTransaction
 			loadGoldenFile(t, tc.golden, TestData{txns, &expected})
 
 			// Recaculate the height if it's live test

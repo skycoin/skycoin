@@ -739,12 +739,12 @@ func (c *Client) RawTransaction(txid string) (string, error) {
 }
 
 // AddressTransactions makes a request to /explorer/address
-func (c *Client) AddressTransactions(addr string) ([]ReadableTransaction, error) {
+func (c *Client) AddressTransactions(addr string) ([]daemon.ReadableTransaction, error) {
 	v := url.Values{}
 	v.Add("address", addr)
 	endpoint := "/explorer/address?" + v.Encode()
 
-	var b []ReadableTransaction
+	var b []daemon.ReadableTransaction
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}

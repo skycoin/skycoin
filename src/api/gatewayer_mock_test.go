@@ -198,15 +198,15 @@ func (m *GatewayerMock) GetAddressCount() (uint64, error) {
 
 }
 
-// GetAddressTxns mocked method
-func (m *GatewayerMock) GetAddressTxns(p0 cipher.Address) (*daemon.TransactionResults, error) {
+// GetTransactionsForAddress mocked method
+func (m *GatewayerMock) GetTransactionsForAddress(p0 cipher.Address) ([]daemon.ReadableTransaction, error) {
 
 	ret := m.Called(p0)
 
-	var r0 *daemon.TransactionResults
+	var r0 []daemon.ReadableTransaction
 	switch res := ret.Get(0).(type) {
 	case nil:
-	case *daemon.TransactionResults:
+	case []daemon.ReadableTransaction:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))

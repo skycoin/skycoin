@@ -95,21 +95,23 @@ func NewConfirmedTransactionStatus(height uint64, blockSeq uint64) TransactionSt
 
 // ReadableTransactionOutput readable transaction output
 type ReadableTransactionOutput struct {
-	Hash    string `json:"uxid"`
-	Address string `json:"dst"`
-	Coins   string `json:"coins"`
-	Hours   uint64 `json:"hours"`
+	Hash            string `json:"uxid"`
+	Address         string `json:"dst"`
+	Coins           string `json:"coins"`
+	Hours           uint64 `json:"hours"`
+	CalculatedHours uint64 `json:"calculated_hours"`
 }
 
 // ReadableTransactionInput readable transaction input
 type ReadableTransactionInput struct {
-	Hash    string `json:"uxid"`
-	Address string `json:"owner"`
-	Coins   string `json:"coins"`
-	Hours   uint64 `json:"hours"`
+	Hash            string `json:"uxid"`
+	Address         string `json:"owner"`
+	Coins           string `json:"coins"`
+	Hours           uint64 `json:"hours"`
+	CalculatedHours uint64 `json:"calculated_hours"`
 }
 
-// NewReadableTransactionOutput creates readable transaction outputs
+// NewReadableTransactionOutput creates ReadableTransactionOutput
 func NewReadableTransactionOutput(t *coin.TransactionOutput, txid cipher.SHA256) (*ReadableTransactionOutput, error) {
 	coinStr, err := droplet.ToString(t.Coins)
 	if err != nil {
@@ -118,14 +120,14 @@ func NewReadableTransactionOutput(t *coin.TransactionOutput, txid cipher.SHA256)
 
 	return &ReadableTransactionOutput{
 		Hash:    t.UxID(txid).Hex(),
-		Address: t.Address.String(), // Destination Address
+		Address: t.Address.String(),
 		Coins:   coinStr,
 		Hours:   t.Hours,
 	}, nil
 }
 
-// NewReadableTransactionInput creates readable transaction input
-func NewReadableTransactionInput(uxID, ownerAddress string, coins, hours uint64) (*ReadableTransactionInput, error) {
+// NewReadableTransactionInput creates ReadableTransactionInput
+func NewReadableTransactionInput(uxID cipher.SHA256, address cipher.Address, coins, hours, headTime uint64) (*ReadableTransactionInput, error) {
 	coinVal, err := droplet.ToString(coins)
 	if err != nil {
 		logger.Errorf("Failed to convert coins to string: %v", err)
@@ -133,8 +135,8 @@ func NewReadableTransactionInput(uxID, ownerAddress string, coins, hours uint64)
 	}
 
 	return &ReadableTransactionInput{
-		Hash:    uxID,
-		Address: ownerAddress, //Destination Address
+		Hash:    uxID.Hex(),
+		Address: address.String(),
 		Coins:   coinVal,
 		Hours:   hours,
 	}, nil

@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add CLI `showSeed` command
 - Add `password` argument to the CLI commands of `addPrivateKey`, `createRawTransaction`, `generateAddresses`, `generateWallet`, `send`
 - Support for decoding map values in cipher binary encoder
+- Expose known block height of peer in brand new `height` field added in responses of `/network/connections` API endpoints
 - `-verify-db` option (default true), will verify the database integrity during startup and exit if a problem is found
 - `-reset-corrupt-db` option (default false) will verify the database integrity during startup and reset the db if a problem is found
 

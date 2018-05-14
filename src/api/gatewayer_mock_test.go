@@ -374,7 +374,16 @@ func (m *GatewayerMock) GetBlockchainProgress() (*daemon.BlockchainProgress, err
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	return r0, nil
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
 
 }
 

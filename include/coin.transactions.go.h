@@ -4,7 +4,6 @@ typedef struct{
     GoSlice_  Fees;
     GoSlice_  Hashes;
 } coin__SortableTransactions;
-typedef Handle coin__FeeCalculator;
 typedef struct{
     GoUint32_ Length;
     GoUint8_ Type;

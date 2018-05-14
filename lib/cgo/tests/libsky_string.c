@@ -71,3 +71,22 @@ void bin2hex(unsigned char* buf, char *str, int n){
 	}
 	*pout = 0;
 }
+
+int string_has_suffix(const char* str, const char* suffix){
+	int string_len = strlen(str);
+	int suffix_len = strlen(suffix);
+	if(string_len >= suffix_len){
+		char* p = (char*)str + (string_len - suffix_len);
+		return strcmp(p, suffix) == 0;
+	}
+	return 0;
+}
+
+int string_has_prefix(const char* str, const char* prefix){
+	int string_len = strlen(str);
+	int prefix_len = strlen(prefix);
+	if(string_len >= prefix_len){
+		return strncmp(str, prefix, prefix_len) == 0;
+	}
+	return 0;
+}

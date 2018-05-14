@@ -59,14 +59,14 @@ func SKY_coin_Transaction_PushInput(_txn *C.coin__Transaction, _uxOut *C.cipher_
 }
 
 //export SKY_coin_TransactionOutput_UxID
-func SKY_coin_TransactionOutput_UxID(_txOut *C.coin__TransactionOutput, _TxID *C.cipher__SHA256, _arg1 *C.cipher__SHA256) (____error_code uint32) {
+func SKY_coin_TransactionOutput_UxID(_txOut *C.coin__TransactionOutput, _txID *C.cipher__SHA256, _arg1 *C.cipher__SHA256) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
 	txOut := *(*coin.TransactionOutput)(unsafe.Pointer(_txOut))
-	TxID := *(*cipher.SHA256)(unsafe.Pointer(_TxID))
-	__arg1 := txOut.UxID(TxID)
+	txID := *(*cipher.SHA256)(unsafe.Pointer(_txID))
+	__arg1 := txOut.UxID(txID)
 	*_arg1 = *(*C.cipher__SHA256)(unsafe.Pointer(&__arg1))
 	return
 }
@@ -235,21 +235,7 @@ func SKY_coin_Transaction_OutputHours(_txn *C.coin__Transaction, _arg0 *uint64) 
 	return
 }
 
-//export SKY_coin_Transactions_Fees
-func SKY_coin_Transactions_Fees(_txns *C.coin__Transactions, _calc *C.coin__FeeCalculator, _arg1 *uint64) (____error_code uint32) {
-	____error_code = 0
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	txns := *(*coin.Transactions)(unsafe.Pointer(_txns))
-	calc := *(*coin.FeeCalculator)(unsafe.Pointer(_calc))
-	__arg1, ____return_err := txns.Fees(calc)
-	____error_code = libErrorCode(____return_err)
-	if ____return_err == nil {
-		*_arg1 = __arg1
-	}
-	return
-}
+
 
 //export SKY_coin_Transactions_Hashes
 func SKY_coin_Transactions_Hashes(_txns *C.coin__Transactions, _arg0 *C.GoSlice_) (____error_code uint32) {
@@ -285,32 +271,6 @@ func SKY_coin_Transactions_TruncateBytesTo(_txns *C.coin__Transactions, _size in
 	size := _size
 	__arg1 := txns.TruncateBytesTo(size)
 	*_arg1 = *(*C.coin__Transactions)(unsafe.Pointer(&__arg1))
-	return
-}
-
-//export SKY_coin_SortTransactions
-func SKY_coin_SortTransactions(_txns *C.coin__Transactions, _feeCalc *C.coin__FeeCalculator, _arg2 *C.coin__Transactions) (____error_code uint32) {
-	____error_code = 0
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	txns := *(*coin.Transactions)(unsafe.Pointer(_txns))
-	feeCalc := *(*coin.FeeCalculator)(unsafe.Pointer(_feeCalc))
-	__arg2 := coin.SortTransactions(txns, feeCalc)
-	*_arg2 = *(*C.coin__Transactions)(unsafe.Pointer(&__arg2))
-	return
-}
-
-//export SKY_coin_NewSortableTransactions
-func SKY_coin_NewSortableTransactions(_txns *C.coin__Transactions, _feeCalc *C.coin__FeeCalculator, _arg2 *C.coin__SortableTransactions) (____error_code uint32) {
-	____error_code = 0
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	txns := *(*coin.Transactions)(unsafe.Pointer(_txns))
-	feeCalc := *(*coin.FeeCalculator)(unsafe.Pointer(_feeCalc))
-	__arg2 := coin.NewSortableTransactions(txns, feeCalc)
-	*_arg2 = *(*C.coin__SortableTransactions)(unsafe.Pointer(&__arg2))
 	return
 }
 
@@ -391,22 +351,6 @@ func SKY_coin_VerifyTransactionHoursSpending(_headTime uint64, _uxIn *C.coin__Ux
 	____return_err := coin.VerifyTransactionHoursSpending(headTime, uxIn, uxOut)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-	}
-	return
-}
-
-//export SKY_coin_AddUint64
-func SKY_coin_AddUint64(_a, _b uint64, _arg1 *uint64) (____error_code uint32) {
-	____error_code = 0
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	a := _a
-	b := _b
-	__arg1, ____return_err := coin.AddUint64(a, b)
-	____error_code = libErrorCode(____return_err)
-	if ____return_err == nil {
-		*_arg1 = __arg1
 	}
 	return
 }

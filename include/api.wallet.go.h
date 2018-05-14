@@ -1,0 +1,29 @@
+typedef struct{
+    GoSlice_  Transactions;
+} api__UnconfirmedTxnsResponse;
+typedef struct{
+    GoString_ Address;
+    GoString_ Public;
+} api__WalletEntry;
+typedef struct{
+    GoString_ Coin;
+    GoString_ Filename;
+    GoString_ Label;
+    GoString_ Type;
+    GoString_ Version;
+    GoString_ CryptoType;
+    GoInt64_ Timestamp;
+    BOOL Encrypted;
+} api__WalletMeta;
+typedef struct{
+    api__WalletMeta Meta;
+    GoSlice_  Entries;
+} api__WalletResponse;
+typedef struct{
+    GoString_ Address;
+} api__WalletFolder;
+typedef struct{
+    wallet__BalancePair * Balance;
+    visor__ReadableTransaction * Transaction;
+    GoString_ Error;
+} api__SpendResult;

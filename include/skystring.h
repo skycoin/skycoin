@@ -19,4 +19,8 @@ extern int cmpGoSlice_GoSlice(GoSlice *slice1, GoSlice_ *slice2);
 
 extern void bin2hex(unsigned char* buf, char *str, int n);
 
+extern int string_has_suffix(const char* str, const char* suffix);
+
+extern int string_has_prefix(const char* str, const char* prefix);
+
 #endif //LIBSKY_STRING_H

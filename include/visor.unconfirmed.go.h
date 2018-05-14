@@ -1,5 +1,7 @@
-typedef GoMap_ visor__TxnUnspents;
-typedef Handle visor__UnspentGetFunc;
+typedef struct{
+} visor__unconfirmedTxns;
+typedef struct{
+} visor__txUnspents;
 typedef struct{
     coin__Transaction Txn;
     GoInt64_ Received;

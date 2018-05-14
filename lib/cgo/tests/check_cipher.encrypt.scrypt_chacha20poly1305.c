@@ -22,8 +22,6 @@
 
 
 void parseJsonMetaData(char* metadata, int* n, int* r, int* p, int* keyLen){
-	char buffer[BUFFER_SIZE];
-	coin__UxArray result;
 	*n = *r = *p = *keyLen = 0;
 	int length = strlen(metadata);
 	int openingQuote = -1;

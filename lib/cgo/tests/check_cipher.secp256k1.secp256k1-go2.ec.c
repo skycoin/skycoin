@@ -28,15 +28,26 @@
 #define E2Y "FD52E285D33EC835230EA69F89D9C38673BD5B995716A4063C893AF02F938454"
 #define E2Z "4C6ACE7C8C062A1E046F66FD8E3981DC4E8E844ED856B5415C62047129268C1B"
 
-secp256k1go__XYZ pubkey; //pubkey
-secp256k1go__XYZ pr; 	 //result of ECmult
-secp256k1go__XYZ e; 	 //expected
-Number u1, u2, nonce;
-secp256k1go__Field x, y, z;
+
 
 Test(cipher_secp256k1_xyz, TestXYZECMult){	
+
+	secp256k1go__XYZ pubkey; //pubkey
+	secp256k1go__XYZ pr; 	 //result of ECmult
+	secp256k1go__XYZ e; 	 //expected
+	Number u1, u2, nonce;
+	secp256k1go__Field x, y, z;
+
 	GoInt32 error_code;
+	memset(&pubkey, 0, sizeof(secp256k1go__XYZ));
 	memset(&pr, 0, sizeof(secp256k1go__XYZ));
+	memset(&e, 0, sizeof(secp256k1go__XYZ));
+	memset(&u1, 0, sizeof(Number));
+	memset(&u2, 0, sizeof(Number));
+	memset(&nonce, 0, sizeof(Number));
+	memset(&x, 0, sizeof(secp256k1go__Field));
+	memset(&y, 0, sizeof(secp256k1go__Field));
+	memset(&z, 0, sizeof(secp256k1go__Field));
 	
 	GoString strAx = {AX, strlen(AX)};
 	GoString strAy = {AY, strlen(AY)};
@@ -78,8 +89,22 @@ Test(cipher_secp256k1_xyz, TestXYZECMult){
 }
 
 Test(cipher_secp256k1_xyz, TestXYZECMultGen){	
+	secp256k1go__XYZ pubkey; //pubkey
+	secp256k1go__XYZ pr; 	 //result of ECmult
+	secp256k1go__XYZ e; 	 //expected
+	Number u1, u2, nonce;
+	secp256k1go__Field x, y, z;
+
 	GoInt32 error_code;
+	memset(&pubkey, 0, sizeof(secp256k1go__XYZ));
 	memset(&pr, 0, sizeof(secp256k1go__XYZ));
+	memset(&e, 0, sizeof(secp256k1go__XYZ));
+	memset(&u1, 0, sizeof(Number));
+	memset(&u2, 0, sizeof(Number));
+	memset(&nonce, 0, sizeof(Number));
+	memset(&x, 0, sizeof(secp256k1go__Field));
+	memset(&y, 0, sizeof(secp256k1go__Field));
+	memset(&z, 0, sizeof(secp256k1go__Field));
 	
 	GoString strNonce = {NONCE, strlen(NONCE)};
 	GoString strEx = {E2X, strlen(E2X)};

@@ -10,15 +10,3 @@ typedef struct{
     GoString_ CallContextStyle;
     GoString_ CriticalStyle;
 } logging__ColorScheme;
-typedef struct{
-    Handle InfoLevelColor;
-    Handle WarnLevelColor;
-    Handle ErrorLevelColor;
-    Handle FatalLevelColor;
-    Handle PanicLevelColor;
-    Handle DebugLevelColor;
-    Handle PrefixColor;
-    Handle TimestampColor;
-    Handle CallContextColor;
-    Handle CriticalColor;
-} logging__compiledColorScheme;

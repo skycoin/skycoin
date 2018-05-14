@@ -19,6 +19,7 @@ typedef struct{
     coin__BlockHeader Head;
     coin__BlockBody Body;
 } coin__Block;
+
 typedef struct{
     coin__Block _unnamed;
     cipher__Sig Sig;

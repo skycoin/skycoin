@@ -5,6 +5,7 @@ import (
 	"unsafe"
 	"hash"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/util/http"
 )
 
 /*
@@ -47,6 +48,10 @@ func inplacePubKeySlice(p *C.cipher__PubKeySlice) *cipher.PubKeySlice {
 
 func inplaceAddress(p *C.cipher__Address) *cipher.Address {
 	return (*cipher.Address)(unsafe.Pointer(p))
+}
+
+func inplaceHttpHelperAddress(p *C.httphelper__Address) *httphelper.Address {
+	return (*httphelper.Address)(unsafe.Pointer(p))
 }
 
 /**
@@ -131,3 +136,28 @@ func copyToStringMap( gomap map[string]string, dest *C.GoStringMap_ ){
 	*dest = (C.GoStringMap_)(registerHandle( gomap ))
 }
 
+func splitCliArgs(args string) (result []string){
+	prevSep := -1
+	quoted := false
+	var i int
+	for i = 0; i < len(args); i++ {
+		if args[i] == '"' {
+			quoted = !quoted
+			if !quoted {
+				result = append( result, args[prevSep + 1 : i] )
+			}
+			prevSep = i
+		} else if !quoted && args[i] == ' ' {
+			if prevSep + 1 < i {
+				result = append( result, args[prevSep + 1 : i] )
+			}
+			prevSep = i
+		}
+	}
+	if len(args) > 0 {
+		if prevSep + 1 < i {
+			result = append( result, args[prevSep + 1 : i] )
+		}
+	}
+	return
+}

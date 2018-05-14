@@ -2,7 +2,6 @@ typedef struct{
     GoString_ Address;
     GoUint64_ Height;
 } daemon__PeerBlockchainHeight;
-typedef GoInterface_ daemon__SendingTxnsMessage;
 typedef struct{
     GoUint64_ LastBlock;
     GoUint64_ RequestedBlocks;

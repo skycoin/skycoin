@@ -20,6 +20,11 @@ Test(cipher_secp256k1_field, TestFieldInv){
 	secp256k1go__Field in;
 	secp256k1go__Field out;
 	secp256k1go__Field expected;
+	
+	memset(&in, 0, sizeof(secp256k1go__Field));
+	memset(&out, 0, sizeof(secp256k1go__Field));
+	memset(&expected, 0, sizeof(secp256k1go__Field));
+	
 	GoUint32 error_code;
 	GoInt8 equal = 0;
 	

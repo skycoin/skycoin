@@ -28,12 +28,14 @@
 
 Test(cipher_secp256k1_sig, TestSigRecover){
 	GoUint32 error_code;
+	Signature sig;
+	Number msg;
 	secp256k1go__XY pubKey;
 	secp256k1go__XY expected;
 	
-	Signature sig;
+	memset(&pubKey, 0, sizeof(secp256k1go__XY));
+	memset(&expected, 0, sizeof(secp256k1go__XY));
 	memset(&sig, 0, sizeof(Signature));
-	Number msg;
 	memset(&msg, 0, sizeof(Number));
 	
 	GoString R = {R1, strlen(R1)};

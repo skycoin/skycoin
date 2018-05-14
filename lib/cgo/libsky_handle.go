@@ -12,7 +12,7 @@ import "C"
 import (
 	"unsafe"
 
-	cli "github.com/skycoin/skycoin/src/api/cli"
+	cli "github.com/skycoin/skycoin/src/cli"
 	webrpc "github.com/skycoin/skycoin/src/api/webrpc"
 )
 

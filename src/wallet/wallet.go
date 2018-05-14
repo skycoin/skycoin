@@ -17,7 +17,6 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/visor/blockdb"
 
 	"github.com/shopspring/decimal"
 
@@ -939,24 +938,24 @@ type Validator interface {
 
 // CreateAndSignTransaction Creates a Transaction
 // spending coins and hours from wallet
-func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.UnspentGetter,
-	headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
+func (w *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
 	if w.IsEncrypted() {
 		return nil, ErrWalletEncrypted
 	}
 
-	addrs := w.GetAddresses()
-	ok, err := vld.HasUnconfirmedSpendTx(addrs)
-	if err != nil {
-		return nil, fmt.Errorf("checking unconfirmed spending failed: %v", err)
+	entriesMap := make(map[cipher.Address]Entry)
+	for _, e := range w.Entries {
+		entriesMap[e.Address] = e
 	}
 
-	if ok {
-		return nil, ErrSpendingUnconfirmed
+	// Filter out address unspents that we don't want to use
+	newAuxs := make(coin.AddressUxOuts)
+	for a, uxs := range auxs {
+		if _, ok := entriesMap[a]; ok {
+			newAuxs[a] = uxs
+		}
 	}
-
-	txn := coin.Transaction{}
-	auxs := unspent.GetUnspentsOfAddrs(addrs)
+	auxs = newAuxs
 
 	// Determine which unspents to spend.
 	// Use the MaximizeUxOuts strategy, this will keep the uxout pool smaller
@@ -972,19 +971,16 @@ func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspent
 	}
 
 	// Add these unspents as tx inputs
+	var txn coin.Transaction
 	toSign := make([]cipher.SecKey, len(spends))
 	spending := Balance{Coins: 0, Hours: 0}
 	for i, au := range spends {
-		entry, exists := w.GetEntry(au.Address)
-		if !exists {
-			return nil, NewError(fmt.Errorf("address:%v does not exist in wallet: %v", au.Address, w.Filename()))
+		entry, ok := entriesMap[au.Address]
+		if !ok {
+			return nil, NewError(fmt.Errorf("address %v does not exist in wallet %v", au.Address, w.Filename()))
 		}
 
 		txn.PushInput(au.Hash)
-
-		if w.IsEncrypted() {
-			return nil, ErrWalletEncrypted
-		}
 
 		toSign[i] = entry.Secret
 
@@ -1022,8 +1018,7 @@ func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspent
 
 // CreateAndSignTransactionAdvanced creates and signs a transaction based upon CreateTransactionParams.
 // Set the password as nil if the wallet is not encrypted, otherwise the password must be provided
-func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams, vld Validator,
-	unspent blockdb.UnspentGetter, headTime uint64) (*coin.Transaction, []UxBalance, error) {
+func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []UxBalance, error) {
 	if err := params.Validate(); err != nil {
 		return nil, nil, err
 	}
@@ -1036,11 +1031,9 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 		return nil, nil, ErrWalletEncrypted
 	}
 
-	addrList := make([]cipher.Address, 0)
 	entriesMap := make(map[cipher.Address]Entry)
 	if len(params.Wallet.Addresses) == 0 {
 		for _, e := range w.Entries {
-			addrList = append(addrList, e.Address)
 			entriesMap[e.Address] = e
 		}
 	} else {
@@ -1049,24 +1042,20 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 			if !ok {
 				return nil, nil, ErrUnknownAddress
 			}
-			addrList = append(addrList, e.Address)
 			entriesMap[e.Address] = e
 		}
 	}
 
-	ok, err := vld.HasUnconfirmedSpendTx(addrList)
-	if err != nil {
-		// The error from HasUnconfirmedSpendTx isn't wrapped with wallet.Error because
-		// it is from outside the wallet package and is likely some database or other
-		// unexpected failure
-		return nil, nil, fmt.Errorf("checking unconfirmed spending failed: %v", err)
+	// Filter out address unspents that we don't want to use
+	newAuxs := make(coin.AddressUxOuts)
+	for a, uxs := range auxs {
+		if _, ok := entriesMap[a]; ok {
+			newAuxs[a] = uxs
+		}
 	}
-	if ok {
-		return nil, nil, ErrSpendingUnconfirmed
-	}
+	auxs = newAuxs
 
 	txn := &coin.Transaction{}
-	auxs := unspent.GetUnspentsOfAddrs(addrList)
 
 	// Determine which unspents to spend
 	uxa := auxs.Flatten()
@@ -1124,7 +1113,12 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 			return nil, nil, err
 		}
 
-		toSign[i] = entriesMap[spend.Address].Secret
+		entry, ok := entriesMap[spend.Address]
+		if !ok {
+			return nil, nil, fmt.Errorf("spend address %s not found in entriesMap", spend.Address.String())
+		}
+
+		toSign[i] = entry.Secret
 		txn.PushInput(spend.Hash)
 	}
 
@@ -1246,7 +1240,12 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 					return nil, nil, err
 				}
 
-				toSign = append(toSign, entriesMap[extra.Address].Secret)
+				entry, ok := entriesMap[extra.Address]
+				if !ok {
+					return nil, nil, fmt.Errorf("extra spend address %s not found in entriesMap", extra.Address.String())
+				}
+
+				toSign = append(toSign, entry.Secret)
 				txn.PushInput(extra.Hash)
 			}
 		}
@@ -1254,6 +1253,11 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 
 	if changeCoins > 0 {
 		txn.PushOutput(params.ChangeAddress, changeCoins, changeHours)
+	}
+
+	logger.Debugf("Signing transaction with %d signatures", len(toSign))
+	for i, s := range toSign {
+		logger.Debug(i, s.Hex())
 	}
 
 	txn.SignInputs(toSign)

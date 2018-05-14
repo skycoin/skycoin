@@ -2873,6 +2873,7 @@ func TestLiveWalletBalance(t *testing.T) {
 	bp, err := c.WalletBalance(walletName)
 	require.NoError(t, err)
 	require.NotNil(t, bp)
+	require.NotNil(t, bp.Addresses)
 }
 
 func TestWalletUpdate(t *testing.T) {

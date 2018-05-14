@@ -1,5 +1,5 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { Transaction } from '../../../../../app.datatypes';
+import { PreviewTransaction, Transaction } from '../../../../../app.datatypes';
 import { PriceService } from '../../../../../services/price.service';
 
 @Component({
@@ -19,10 +19,8 @@ export class TransactionInfoComponent implements OnInit {
 
   ngOnInit() {
     if (this.isPreview) {
-      const uniqueOutputAddresses = new Set(this.transaction.outputs.map(o => o.address)).size;
-
       this.transaction.hoursSent = this.transaction.outputs
-        .filter(o => uniqueOutputAddresses > 1 ? this.transaction.inputs.find(i => i.address !== o.address) : true)
+        .filter(o => o.address === (<PreviewTransaction> this.transaction).to)
         .map(o => parseInt(o.hours, 10))
         .reduce((a, b) => a + b, 0);
     }

@@ -1,7 +1,7 @@
 #include "json.h"
 #include <string.h>
 
-json_value* json_get_string(json_value* value, const char* key, char* str, int max_size){
+json_value* json_get_string(json_value* value, const char* key){
 	int length, x;
 	if (value == NULL) {
 			return NULL;
@@ -13,12 +13,6 @@ json_value* json_get_string(json_value* value, const char* key, char* str, int m
 	for (x = 0; x < length; x++) {
 		if( strcmp( value->u.object.values[x].name, key) == 0){
 			if( value->u.object.values[x].value->type == json_string){
-				char* p = value->u.object.values[x].value->u.string.ptr;
-				int string_length = value->u.object.values[x].value->u.string.length;
-				if( string_length >= max_size )
-					string_length = max_size - 1;
-				strncpy( str, p, string_length );
-				str[string_length] = 0;
 				return value->u.object.values[x].value;
 			}
 		}
@@ -36,4 +30,67 @@ int json_set_string(json_value* value, const char* new_string_value){
 		value->u.string.length = length;
 	}
 	return 0;
+}
+
+int compareJsonValues(json_value* value1, json_value* value2);
+
+int compareJsonObjects(json_value* value1, json_value* value2){
+	int length1 = value1->u.object.length;
+	int length2 = value2->u.object.length;
+	if( length1 != length2 )
+		return 0;
+	for (int x = 0; x < length1; x++) {
+		char* name = value1->u.object.values[x].name;
+		int found = 0;
+		for( int y = 0; y < length2; y++){
+			if( strcmp( value2->u.object.values[y].name, name ) == 0){
+				if( !compareJsonValues( value1->u.object.values[x].value, 
+								value2->u.object.values[y].value ) )
+					return 0;
+				found = 1;
+				break;
+			}
+		}
+		if( !found )
+			return 0;
+	}
+	return 1;
+}
+
+int compareJsonArrays(json_value* value1, json_value* value2){
+	int length1 = value1->u.array.length;
+	int length2 = value2->u.array.length;
+	if( length1 != length2 )
+		return 0;
+	for (int x = 0; x < length1; x++) {
+		if( !compareJsonValues(value1->u.array.values[x], value2->u.array.values[x]) )
+			return 0;
+	}
+	return 1;
+}
+
+int compareJsonValues(json_value* value1, json_value* value2){
+	if( value1 == NULL && value2 == NULL)
+		return 1;
+	if( value1 == NULL || value2 == NULL)
+		return 0;
+	if( value1->type != value2->type)
+		return 0;
+	switch (value1->type) {
+		case json_none:
+			return 1;
+		case json_object:
+			return compareJsonObjects(value1, value2);
+		case json_array:
+			return compareJsonArrays(value1, value2);
+		case json_integer:
+			return value1->u.integer == value2->u.integer;
+		case json_double:
+			return abs(value1->u.dbl - value2->u.dbl) < 0.000001;
+		case json_string:
+			return strcmp(value1->u.string.ptr, value2->u.string.ptr) == 0;
+		case json_boolean:
+			return value1->u.boolean == value2->u.boolean;
+	}
+	return 1;
 }

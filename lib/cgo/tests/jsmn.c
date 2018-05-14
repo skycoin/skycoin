@@ -346,3 +346,9 @@ int json_get_string(const char*json, const char* key, jsmntok_t *tokens, int tok
 	}
 	return 0;
 }
+
+int jsmn_init_results(jsmn_result* result, int count){
+	result->tokens = malloc( count * sizeof(jsmntok_t));
+	result->token_count = 0;
+	result->max_count = count;
+}

@@ -57,6 +57,12 @@ unsigned int toknext; /* next token to allocate */
 int toksuper; /* superior token node, e.g parent object or array */
 } jsmn_parser;
 
+typedef struct {
+	jsmntok_t *tokens;
+	int token_count;
+	int max_count;
+} jsmn_result;
+
 /**
 * Create JSON parser over an array of tokens
 */
@@ -68,6 +74,8 @@ void jsmn_init(jsmn_parser *parser);
 */
 int jsmn_parse(jsmn_parser *parser, const char *js, size_t len,
 jsmntok_t *tokens, unsigned int num_tokens);
+
+int jsmn_init_results(jsmn_result* result, int count);
 
 int jsoneq(const char *json, jsmntok_t *tok, const char *s);
 

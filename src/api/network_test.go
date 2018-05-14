@@ -100,7 +100,7 @@ func TestConnection(t *testing.T) {
 			name:   "500 - blockchain progress failed",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - GetBlockchainProgress failed",
+			err:    "500 Internal Server Error - some error",
 			addr:   "addr",
 			gatewayGetBlockchainProgressResult: nil,
 			gatewayGetBlockchainProgressError:  errors.New("some error"),
@@ -238,7 +238,7 @@ func TestConnections(t *testing.T) {
 			name:   "500 - blockchain progress failed",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - GetBlockchainProgress failed",
+			err:    "500 Internal Server Error - some error",
 			gatewayGetBlockchainProgressResult: nil,
 			gatewayGetBlockchainProgressError:  errors.New("some error"),
 			gatewayGetConnectionsResult: &daemon.Connections{

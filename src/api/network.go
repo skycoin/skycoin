@@ -45,7 +45,7 @@ func connectionHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 		bcp, err := gateway.GetBlockchainProgress()
 		if err != nil {
-			wh.Error500(w, "GetBlockchainProgress failed")
+			wh.Error500(w, err.Error())
 			return
 		}
 		for _, ph := range bcp.Peers {
@@ -69,7 +69,7 @@ func connectionsHandler(gateway Gatewayer) http.HandlerFunc {
 		dcnxs := gateway.GetConnections()
 		bcp, err := gateway.GetBlockchainProgress()
 		if err != nil {
-			wh.Error500(w, "GetBlockchainProgress failed")
+			wh.Error500(w, err.Error())
 			return
 		}
 

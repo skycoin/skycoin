@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"log"
@@ -43,31 +44,12 @@ var (
 
 	logger = logging.MustGetLogger("main")
 
-	// GenesisSignatureStr hex string of genesis signature
-	GenesisSignatureStr = "eb10468d10054d15f2b6f8946cd46797779aa20a7617ceb4be884189f219bc9a164e56a5b9f7bec392a804ff3740210348d73db77a37adb542a8e08d429ac92700"
-	// GenesisAddressStr genesis address string
-	GenesisAddressStr = "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6"
 	// BlockchainPubkeyStr pubic key string
-	BlockchainPubkeyStr = "0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a"
+	BlockchainPubkeyStr = ""
 	// BlockchainSeckeyStr empty private key string
 	BlockchainSeckeyStr = ""
 
-	// GenesisTimestamp genesis block create unix time
-	GenesisTimestamp uint64 = 1426562704
-	// GenesisCoinVolume represents the coin capacity
-	GenesisCoinVolume uint64 = 100e12
-
-	// DefaultConnections the default trust node addresses
-	DefaultConnections = []string{
-		"118.178.135.93:6000",
-		"47.88.33.156:6000",
-		"121.41.103.148:6000",
-		"120.77.69.188:6000",
-		"104.237.142.206:6000",
-		"176.58.126.224:6000",
-		"172.104.85.6:6000",
-		"139.162.7.132:6000",
-	}
+	TrustedPeerlistFileName = "connections.txt"
 )
 
 // Config records the node's configuration
@@ -153,12 +135,15 @@ type Config struct {
 
 	RunMaster bool
 
-	GenesisSignature cipher.Sig
-	GenesisTimestamp uint64
-	GenesisAddress   cipher.Address
+	GenesisSignature  cipher.Sig
+	GenesisTimestamp  uint64
+	GenesisCoinVolume uint64
+	GenesisAddress    cipher.Address
 
 	BlockchainPubkey cipher.PubKey
 	BlockchainSeckey cipher.SecKey
+
+	DefaultConnections []string
 
 	/* Developer options */
 
@@ -174,22 +159,28 @@ type Config struct {
 	Arbitrating bool
 	LogToFile   bool
 	Version     bool // show node version
+	TestChain    bool
 }
 
 func (c *Config) register() {
 	flag.BoolVar(&help, "help", false, "Show help")
-	flag.BoolVar(&c.DisablePEX, "disable-pex", c.DisablePEX, "disable PEX peer discovery")
+
+	flag.BoolVar(&c.DisablePEX, "disable-pex", c.DisablePEX,
+		"disable PEX peer discovery")
 	flag.BoolVar(&c.DownloadPeerList, "download-peerlist", c.DownloadPeerList, "download a peers.txt from -peerlist-url")
 	flag.StringVar(&c.PeerListURL, "peerlist-url", c.PeerListURL, "with -download-peerlist=true, download a peers.txt file from this url")
-	flag.BoolVar(&c.DisableOutgoingConnections, "disable-outgoing", c.DisableOutgoingConnections, "Don't make outgoing connections")
-	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming", c.DisableIncomingConnections, "Don't make incoming connections")
-	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
+	flag.BoolVar(&c.DisableOutgoingConnections, "disable-outgoing",
+		c.DisableOutgoingConnections, "Don't make outgoing connections")
+	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming",
 	flag.BoolVar(&c.EnableWalletAPI, "enable-wallet-api", c.EnableWalletAPI, "Enable the wallet API")
 	flag.BoolVar(&c.EnableGUI, "enable-gui", c.EnableGUI, "Enable GUI")
 	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable CSRF check")
 	flag.BoolVar(&c.EnableSeedAPI, "enable-seed-api", c.EnableSeedAPI, "enable /wallet/seed api")
 	flag.StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
+
+	flag.BoolVar(&c.DisableWalletApi, "disable-wallet-api", c.DisableWalletApi, "Disable the wallet API")
+	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable csrf check")
 
 	flag.BoolVar(&c.WebInterface, "web-interface", c.WebInterface, "enable the web interface")
 	flag.IntVar(&c.WebInterfacePort, "web-interface-port", c.WebInterfacePort, "port to serve web interface on")
@@ -219,13 +210,8 @@ func (c *Config) register() {
 
 	// Key Configuration Data
 	flag.BoolVar(&c.RunMaster, "master", c.RunMaster, "run the daemon as blockchain master server")
-
 	flag.StringVar(&BlockchainPubkeyStr, "master-public-key", BlockchainPubkeyStr, "public key of the master chain")
 	flag.StringVar(&BlockchainSeckeyStr, "master-secret-key", BlockchainSeckeyStr, "secret key, set for master")
-
-	flag.StringVar(&GenesisAddressStr, "genesis-address", GenesisAddressStr, "genesis address")
-	flag.StringVar(&GenesisSignatureStr, "genesis-signature", GenesisSignatureStr, "genesis block signature")
-	flag.Uint64Var(&c.GenesisTimestamp, "genesis-timestamp", c.GenesisTimestamp, "genesis block timestamp")
 
 	flag.StringVar(&c.WalletDirectory, "wallet-dir", c.WalletDirectory, "location of the wallet files. Defaults to ~/.skycoin/wallet/")
 	flag.IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", c.MaxOutgoingConnections, "The maximum outgoing connections allowed")
@@ -234,6 +220,7 @@ func (c *Config) register() {
 	flag.BoolVar(&c.LocalhostOnly, "localhost-only", c.LocalhostOnly, "Run on localhost and only connect to localhost peers")
 	flag.BoolVar(&c.Arbitrating, "arbitrating", c.Arbitrating, "Run node in arbitrating mode")
 	flag.StringVar(&c.WalletCryptoType, "wallet-crypto-type", c.WalletCryptoType, "wallet crypto type. Can be sha256-xor or scrypt-chacha20poly1305")
+	flag.BoolVar(&c.TestChain, "testchain", false, "Run node in test chain")
 	flag.BoolVar(&c.Version, "version", false, "show node version")
 }
 
@@ -261,8 +248,6 @@ var devConfig = Config{
 	// Which address to serve on. Leave blank to automatically assign to a
 	// public interface
 	Address: "",
-	//gnet uses this for TCP incoming and outgoing
-	Port: 6000,
 	// MaxOutgoingConnections is the maximum outgoing connections allowed.
 	MaxOutgoingConnections: 16,
 	DownloadPeerList:       false,
@@ -274,7 +259,6 @@ var devConfig = Config{
 	//AddressVersion: "test",
 	// Remote web interface
 	WebInterface:             true,
-	WebInterfacePort:         6420,
 	WebInterfaceAddr:         "127.0.0.1",
 	WebInterfaceCert:         "",
 	WebInterfaceKey:          "",
@@ -284,7 +268,7 @@ var devConfig = Config{
 	RPCInterface: true,
 
 	LaunchBrowser: false,
-	// Data directory holds app data -- defaults to ~/.skycoin
+
 	DataDirectory: filepath.Join(home, ".skycoin"),
 	// Web GUI static resources
 	GUIDirectory: "./src/gui/static/",
@@ -308,13 +292,7 @@ var devConfig = Config{
 	IdleTimeout:  120 * time.Second,
 
 	// Centralized network configuration
-	RunMaster:        false,
-	BlockchainPubkey: cipher.PubKey{},
-	BlockchainSeckey: cipher.SecKey{},
-
-	GenesisAddress:   cipher.Address{},
-	GenesisTimestamp: GenesisTimestamp,
-	GenesisSignature: cipher.Sig{},
+	RunMaster: false,
 
 	/* Developer options */
 
@@ -358,33 +336,67 @@ func (c *Config) Parse() {
 		flag.Usage()
 		os.Exit(0)
 	}
-	c.postProcess()
+	if c.TestChain {
+		c.postProcess(TestChainCfg)
+		return
+	}
+
+	c.postProcess(MainChainCfg)
 }
 
-func (c *Config) postProcess() {
+func (c *Config) postProcess(chaincfg ChainConfig) {
 	var err error
-	if GenesisSignatureStr != "" {
-		c.GenesisSignature, err = cipher.SigFromHex(GenesisSignatureStr)
+	// if c.TestChain {
+	if chaincfg.GenesisSignature != "" {
+		c.GenesisSignature, err = cipher.SigFromHex(chaincfg.GenesisSignature)
 		panicIfError(err, "Invalid Signature")
 	}
-	if GenesisAddressStr != "" {
-		c.GenesisAddress, err = cipher.DecodeBase58Address(GenesisAddressStr)
-		panicIfError(err, "Invalid Address")
-	}
+
+	c.GenesisAddress, err = cipher.DecodeBase58Address(chaincfg.GenesisAddress)
+	panicIfError(err, "Invalid address")
+
 	if BlockchainPubkeyStr != "" {
 		c.BlockchainPubkey, err = cipher.PubKeyFromHex(BlockchainPubkeyStr)
-		panicIfError(err, "Invalid Pubkey")
+	} else {
+		c.BlockchainPubkey, err = cipher.PubKeyFromHex(chaincfg.BlockchainPubkey)
 	}
+	panicIfError(err, "Invalid Pubkey")
+
+	c.GenesisTimestamp = chaincfg.GenesisTimestamp
+	c.GenesisCoinVolume = chaincfg.GenesisCoinVolume
+
+	c.Port = TestChainCfg.Port
+	c.WebInterfacePort = chaincfg.WebInterfacePort
+	c.RPCInterfacePort = chaincfg.RPCInterfacePort
+
+	if c.DataDirectory == "" {
+		c.DataDirectory = chaincfg.DataDirectory
+	}
+	c.LogFmt = chaincfg.LogFmt
+
+	// } else {
+	// if GenesisSignatureStr != "" {
+	// 	c.GenesisSignature, err = cipher.SigFromHex(GenesisSignatureStr)
+	// 	panicIfError(err, "Invalid Signature")
+	// }
+	// if GenesisAddressStr != "" {
+	// 	c.GenesisAddress, err = cipher.DecodeBase58Address(GenesisAddressStr)
+	// 	panicIfError(err, "Invalid Address")
+	// }
+	// if BlockchainPubkeyStr != "" {
+	// 	c.BlockchainPubkey, err = cipher.PubKeyFromHex(BlockchainPubkeyStr)
+	// 	panicIfError(err, "Invalid Pubkey")
+	// }
+	// }
+
 	if BlockchainSeckeyStr != "" {
 		c.BlockchainSeckey, err = cipher.SecKeyFromHex(BlockchainSeckeyStr)
 		panicIfError(err, "Invalid Seckey")
 		BlockchainSeckeyStr = ""
 	}
-	if BlockchainSeckeyStr != "" {
-		c.BlockchainSeckey = cipher.SecKey{}
-	}
 
 	c.DataDirectory, err = file.InitDataDir(c.DataDirectory)
+	logger.Info("Loading node config from %v", c.DataDirectory)
 	panicIfError(err, "Invalid DataDirectory")
 
 	if c.WebInterfaceCert == "" {
@@ -405,6 +417,20 @@ func (c *Config) postProcess() {
 	if c.RunMaster {
 		// Run in arbitrating mode if the node is master
 		c.Arbitrating = true
+	}
+	if c.TestChain {
+		// Never download peers list if running testnet
+		c.DownloadPeerList = false
+		c.PeerListURL = ""
+
+		// Force load default connections from file in data dir
+		c.DefaultConnections = loadDefaultConnections(c.DataDirectory)
+		if len(c.DefaultConnections) == 0 {
+			logger.Info("Unable to load dafault connections from %v", c.DataDirectory)
+			c.DefaultConnections = chaincfg.DefaultConnections
+		}
+	} else {
+		c.DefaultConnections = chaincfg.DefaultConnections
 	}
 
 	// Don't open browser to load wallets if wallet APIs are disabled.
@@ -497,6 +523,26 @@ func initProfiling(httpProf, profileCPU bool, profileCPUFile string) {
 	}
 }
 
+func loadDefaultConnections(dataDirectory string) []string {
+	connections := make([]string, 0)
+	fp := filepath.Join(dataDirectory, TrustedPeerlistFileName)
+	fo, err := os.Open(fp)
+	if err != nil {
+		logger.Warning("Unable to open default connections file from %v\n%v",
+			fp, err)
+		return connections
+	}
+	defer fo.Close()
+
+	input := bufio.NewScanner(fo)
+	for input.Scan() {
+		strAddress := input.Text()
+		// TODO: Validate addresses
+		connections = append(connections, strAddress)
+	}
+	return connections
+}
+
 func configureDaemon(c *Config) daemon.Config {
 	//cipher.SetAddressVersion(c.AddressVersion)
 	dc := daemon.NewConfig()
@@ -527,7 +573,7 @@ func configureDaemon(c *Config) daemon.Config {
 	dc.Visor.Config.GenesisAddress = c.GenesisAddress
 	dc.Visor.Config.GenesisSignature = c.GenesisSignature
 	dc.Visor.Config.GenesisTimestamp = c.GenesisTimestamp
-	dc.Visor.Config.GenesisCoinVolume = GenesisCoinVolume
+	dc.Visor.Config.GenesisCoinVolume = c.GenesisCoinVolume
 	dc.Visor.Config.DBPath = c.DBPath
 	dc.Visor.Config.Arbitrating = c.Arbitrating
 	dc.Visor.Config.EnableWalletAPI = c.EnableWalletAPI
@@ -823,4 +869,75 @@ func createDirIfNotExist(dir string) error {
 	}
 
 	return os.Mkdir(dir, 0777)
+}
+
+// ChainConfig blockchain config info
+type ChainConfig struct {
+	// GenesisSignature genesis signature
+	GenesisSignature string
+	// GenesisAddressStr genesis address
+	GenesisAddress string
+	// BlockchainPubkeyStr blockchain pubkey
+	BlockchainPubkey string
+	// BlockchainSeckey blockchain seckey
+	BlockchainSeckey string
+	// GenesisTimestamp genesis block create unix time
+	GenesisTimestamp uint64
+	// GenesisCoinVolume represents the coin capacity
+	GenesisCoinVolume uint64
+	// Port node port
+	Port int
+	// Web interface port http api service port
+	WebInterfacePort int
+	// RPC interface port
+	RPCInterfacePort int
+	// Data directory
+	DataDirectory string
+	// DefaultConnections the default trust node addresses
+	DefaultConnections []string
+	// LogFmt log format
+	LogFmt string
+}
+
+// MainChainCfg main chain config info
+var MainChainCfg = ChainConfig{
+	GenesisSignature:  "eb10468d10054d15f2b6f8946cd46797779aa20a7617ceb4be884189f219bc9a164e56a5b9f7bec392a804ff3740210348d73db77a37adb542a8e08d429ac92700",
+	GenesisAddress:    "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6",
+	BlockchainPubkey:  "0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a",
+	BlockchainSeckey:  "",
+	GenesisTimestamp:  1426562704,
+	GenesisCoinVolume: 100e12,
+	Port:              6000,
+	WebInterfacePort:  6420,
+	RPCInterfacePort:  6430,
+	DataDirectory:     ".skycoin",
+	LogFmt:            "[skycoin.%{module}:%{level}] %{message}",
+	DefaultConnections: []string{
+		"118.178.135.93:6000",
+		"47.88.33.156:6000",
+		"121.41.103.148:6000",
+		"120.77.69.188:6000",
+		"104.237.142.206:6000",
+		"176.58.126.224:6000",
+		"172.104.85.6:6000",
+		"139.162.7.132:6000",
+	},
+}
+
+// TestChainCfg test chain config info
+var TestChainCfg = ChainConfig{
+	GenesisSignature:  "07f46ce7502147a97f2fb32c7c1e66638af851c1cb532d893f1f360bb4ab1ccf0656f2f358695e8cb752e05080af69c8f44b0d72610bd11e3fb028ecdcfed2ea01",
+	GenesisAddress:    "F5k1VyFHZGJgQADWpmMEW8Se2HNidFm9k3",
+	BlockchainPubkey:  "03b2595c36f542bf4d3cf347327fef1e21cbe0600c281efed5f673eb0c77298e4c",
+	BlockchainSeckey:  "",
+	GenesisTimestamp:  1505801448,
+	GenesisCoinVolume: 100e12,
+	Port:              16000,
+	WebInterfacePort:  16420,
+	RPCInterfacePort:  16430,
+	DataDirectory:     ".skycoin-testnet",
+	LogFmt:            "[skycoin.testnet.%{module}:%{level}] %{message}",
+	DefaultConnections: []string{
+		"139.162.33.154:16000",
+	},
 }

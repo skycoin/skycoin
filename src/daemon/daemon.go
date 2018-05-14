@@ -191,6 +191,7 @@ type Daemon struct {
 	Gateway  *Gateway
 	Visor    *Visor
 
+	// Default connections
 	DefaultConnections []string
 
 	// Separate index of outgoing connections. The pool aggregates all

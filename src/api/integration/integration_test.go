@@ -2704,7 +2704,7 @@ func TestCreateWallet(t *testing.T) {
 
 	c := api.NewClient(nodeAddress())
 
-	w, seed, clean := createWallet(t, c, false, "")
+	w, seed, clean := createWallet(t, c, false, "", "")
 	defer clean()
 	require.False(t, w.Meta.Encrypted)
 
@@ -2728,7 +2728,7 @@ func TestCreateWallet(t *testing.T) {
 	}
 
 	// Creates wallet with encryption
-	encW, _, encWClean := createWallet(t, c, true, "pwd")
+	encW, _, encWClean := createWallet(t, c, true, "pwd", "")
 	defer encWClean()
 	require.True(t, encW.Meta.Encrypted)
 
@@ -2754,7 +2754,7 @@ func TestGetWallet(t *testing.T) {
 	c := api.NewClient(nodeAddress())
 
 	// Create a wallet
-	w, _, clean := createWallet(t, c, false, "")
+	w, _, clean := createWallet(t, c, false, "", "")
 	defer clean()
 
 	// Confirms the wallet can be acquired
@@ -2773,7 +2773,7 @@ func TestGetWallets(t *testing.T) {
 	// Creates 2 new wallets
 	var ws []api.WalletResponse
 	for i := 0; i < 2; i++ {
-		w, _, clean := createWallet(t, c, false, "")
+		w, _, clean := createWallet(t, c, false, "", "")
 		defer clean()
 		// cleaners = append(cleaners, clean)
 		ws = append(ws, *w)
@@ -2819,7 +2819,7 @@ func TestWalletNewAddress(t *testing.T) {
 				password = "pwd"
 			}
 
-			w, seed, clean := createWallet(t, c, encrypt, password)
+			w, seed, clean := createWallet(t, c, encrypt, password, "")
 			defer clean()
 
 			addrs, err := c.NewWalletAddress(w.Meta.Filename, i, password)
@@ -2850,13 +2850,13 @@ func TestStableWalletBalance(t *testing.T) {
 	}
 
 	c := api.NewClient(nodeAddress())
-	w, _, clean := createWallet(t, c, false, "")
+	w, _, clean := createWallet(t, c, false, "", "casino away claim road artist where blossom warrior demise royal still palm")
 	defer clean()
 
 	bp, err := c.WalletBalance(w.Meta.Filename)
 	require.NoError(t, err)
 
-	var expect wallet.BalancePair
+	var expect api.BalanceResponse
 	loadGoldenFile(t, "wallet-balance.golden", TestData{bp, &expect})
 	require.Equal(t, expect, *bp)
 }
@@ -2881,7 +2881,7 @@ func TestWalletUpdate(t *testing.T) {
 	}
 
 	c := api.NewClient(nodeAddress())
-	w, _, clean := createWallet(t, c, false, "")
+	w, _, clean := createWallet(t, c, false, "", "")
 	defer clean()
 
 	err := c.UpdateWallet(w.Meta.Filename, "new wallet")
@@ -2899,7 +2899,7 @@ func TestStableWalletTransactions(t *testing.T) {
 	}
 
 	c := api.NewClient(nodeAddress())
-	w, _, clean := createWallet(t, c, false, "")
+	w, _, clean := createWallet(t, c, false, "", "")
 	defer clean()
 
 	txns, err := c.WalletTransactions(w.Meta.Filename)
@@ -2954,7 +2954,7 @@ func TestEncryptWallet(t *testing.T) {
 	c := api.NewClient(nodeAddress())
 
 	// Create a unencrypted wallet
-	w, _, clean := createWallet(t, c, false, "")
+	w, _, clean := createWallet(t, c, false, "", "")
 	defer clean()
 
 	// Encrypts the wallet
@@ -2990,7 +2990,7 @@ func TestDecryptWallet(t *testing.T) {
 	}
 
 	c := api.NewClient(nodeAddress())
-	w, seed, clean := createWallet(t, c, true, "pwd")
+	w, seed, clean := createWallet(t, c, true, "pwd", "")
 	defer clean()
 
 	// Decrypt wallet with different password, must fail
@@ -3037,7 +3037,7 @@ func TestGetWalletSeedDisabledAPI(t *testing.T) {
 	c := api.NewClient(nodeAddress())
 
 	// Create an encrypted wallet
-	w, _, clean := createWallet(t, c, true, "pwd")
+	w, _, clean := createWallet(t, c, true, "pwd", "")
 	defer clean()
 
 	_, err := c.GetWalletSeed(w.Meta.Filename, "pwd")
@@ -3052,7 +3052,7 @@ func TestGetWalletSeedEnabledAPI(t *testing.T) {
 	c := api.NewClient(nodeAddress())
 
 	// Create an encrypted wallet
-	w, seed, clean := createWallet(t, c, true, "pwd")
+	w, seed, clean := createWallet(t, c, true, "pwd", "")
 	defer clean()
 
 	require.NotEmpty(t, seed)
@@ -3076,7 +3076,7 @@ func TestGetWalletSeedEnabledAPI(t *testing.T) {
 	assertResponseError(t, err, http.StatusBadRequest, "400 Bad Request - missing password\n")
 
 	// Create unencrypted wallet to check against
-	nw, _, nclean := createWallet(t, c, false, "")
+	nw, _, nclean := createWallet(t, c, false, "", "")
 	defer nclean()
 	_, err = c.GetWalletSeed(nw.Meta.Filename, "pwd")
 	assertResponseError(t, err, http.StatusBadRequest, "400 Bad Request - wallet is not encrypted\n")
@@ -3216,8 +3216,10 @@ func checkWalletEntriesAndLastSeed(t *testing.T, w *wallet.Wallet) {
 
 // createWallet creates a wallet with rand seed.
 // Returns the generated wallet, seed and clean up function.
-func createWallet(t *testing.T, c *api.Client, encrypt bool, password string) (*api.WalletResponse, string, func()) {
-	seed := hex.EncodeToString(cipher.RandByte(32))
+func createWallet(t *testing.T, c *api.Client, encrypt bool, password string, seed string) (*api.WalletResponse, string, func()) {
+	if seed == "" {
+		seed = hex.EncodeToString(cipher.RandByte(32))
+	}
 	// Use the first 6 letter of the seed as label.
 	var w *api.WalletResponse
 	var err error

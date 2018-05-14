@@ -457,12 +457,12 @@ func (c *Client) NewWalletAddress(id string, n int, password string) ([]string, 
 }
 
 // WalletBalance makes a request to /wallet/balance
-func (c *Client) WalletBalance(id string) (*wallet.BalancePair, error) {
+func (c *Client) WalletBalance(id string) (*BalanceResponse, error) {
 	v := url.Values{}
 	v.Add("id", id)
 	endpoint := "/wallet/balance?" + v.Encode()
 
-	var b wallet.BalancePair
+	var b BalanceResponse
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}

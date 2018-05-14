@@ -23,12 +23,11 @@
         <div class="-data">
           <span>Coins:</span> {{ transaction.balance | number:'1.0-6' }}
         </div>
-        <div class="-data">
+        <div class="-data" *ngIf="isPreview">
           <span>Hours:</span>
           {{ transaction.hoursSent | number:'1.0-6' }} sent
-          <ng-container *ngIf="isPreview">
-            | {{ transaction.hoursBurned | number:'1.0-6' }} burned
-          </ng-container>
+          |
+          {{ transaction.hoursBurned | number:'1.0-6' }} burned
         </div>
         <div class="-data">
           <span>Tx ID:</span> {{ transaction.txid }}
@@ -40,7 +39,7 @@
         </div>
       </div>
       <div class="col-md-4 -tx-price">
-        <div class="-icon">
+        <div class="-icon" [ngClass]="{ '-incoming': !isPreview && transaction.balance > 0 }">
           <img src="/assets/img/send-blue.png">
         </div>
         <h4>{{ transaction.balance | number:'1.0-6' }} SKY</h4>
@@ -59,8 +58,8 @@
           <div class="-data">
             <span>Coins:</span> {{ input.coins | number:'1.0-6' }}
           </div>
-          <div class="-data">
-            <span>Hours:</span> {{ (isPreview ? input.calculated_hours : input.hours) | number:'1.0-6' }}
+          <div class="-data" *ngIf="isPreview">
+            <span>Hours:</span> {{ input.calculated_hours | number:'1.0-6' }}
           </div>
         </div>
       </div>
@@ -75,7 +74,7 @@
           <div class="-data">
             <span>Coins:</span> {{ output.coins | number:'1.0-6' }}
           </div>
-          <div class="-data">
+          <div class="-data" *ngIf="isPreview">
             <span>Hours:</span> {{ output.hours | number:'1.0-6' }}
           </div>
         </div>

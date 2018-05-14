@@ -18,15 +18,13 @@ export class TransactionInfoComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.transaction.hoursSent = this.transaction.outputs
-      .filter(o => this.transaction.inputs.find(
-        i => i[this.isPreview ? 'address' : 'owner'] !== o[this.isPreview ? 'address' : 'dst'])
-      )
-      .map(o => parseInt(o.hours, 10))
-      .reduce((a, b) => a + b, 0);
+    if (this.isPreview) {
+      const uniqueOutputAddresses = new Set(this.transaction.outputs.map(o => o.address)).size;
 
-    if (this.transaction.hoursSent === 0 && this.transaction.outputs.length === 1) {
-      this.transaction.hoursSent = this.transaction.outputs[0].hours;
+      this.transaction.hoursSent = this.transaction.outputs
+        .filter(o => uniqueOutputAddresses > 1 ? this.transaction.inputs.find(i => i.address !== o.address) : true)
+        .map(o => parseInt(o.hours, 10))
+        .reduce((a, b) => a + b, 0);
     }
   }
 

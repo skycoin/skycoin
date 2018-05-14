@@ -72,8 +72,14 @@ h4 {
 .-tx-price {
   text-align: center;
 
-  img {
-    width: 30px;
+  .-icon {
+    &.-incoming {
+      transform: rotate(180deg);
+    }
+
+    img {
+      width: 30px;
+    }
   }
 
   h4 {

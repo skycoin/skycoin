@@ -13,7 +13,7 @@ import { QrCodeComponent } from '../../layout/qr-code/qr-code.component';
   styleUrls: ['./transaction-list.component.scss']
 })
 export class TransactionListComponent implements OnInit, OnDestroy {
-  transactions: any[];
+  transactions: NormalTransaction[];
 
   private price: number;
   private priceSubscription: Subscription;

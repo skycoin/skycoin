@@ -228,7 +228,7 @@ typedef struct _json_value
             };
          }
 
-         inline operator bool () const
+         inline operator BOOL () const
          {  
             if (type != json_boolean)
                return false;

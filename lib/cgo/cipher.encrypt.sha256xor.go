@@ -21,11 +21,6 @@ func SKY_encrypt_Sha256Xor_Encrypt(_s *C.encrypt__Sha256Xor, _data []byte, _pass
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	if _data == nil || _password == nil {
-		//TODO: Set an error code if data or password are nil
-		____error_code = SKY_ERROR
-		return
-	}
 	s := *(*encrypt.Sha256Xor)(unsafe.Pointer(_s))
 	data := *(*[]byte)(unsafe.Pointer(&_data))
 	password := *(*[]byte)(unsafe.Pointer(&_password))
@@ -33,10 +28,6 @@ func SKY_encrypt_Sha256Xor_Encrypt(_s *C.encrypt__Sha256Xor, _data []byte, _pass
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
 		copyToGoSlice(reflect.ValueOf(__arg2), _arg2)
-		if _arg2.len < 0 {
-			//TODO: Set an error code if overflow
-			____error_code = SKY_ERROR
-		}
 	}
 	return
 }
@@ -47,11 +38,6 @@ func SKY_encrypt_Sha256Xor_Decrypt(_s *C.encrypt__Sha256Xor, _data []byte, _pass
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	if _data == nil || _password == nil {
-		//TODO: Set an error code if data or password are nil
-		____error_code = SKY_ERROR
-		return
-	}
 	s := *(*encrypt.Sha256Xor)(unsafe.Pointer(_s))
 	data := *(*[]byte)(unsafe.Pointer(&_data))
 	password := *(*[]byte)(unsafe.Pointer(&_password))
@@ -59,10 +45,6 @@ func SKY_encrypt_Sha256Xor_Decrypt(_s *C.encrypt__Sha256Xor, _data []byte, _pass
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
 		copyToGoSlice(reflect.ValueOf(__arg2), _arg2)
-		if _arg2.len < 0 {
-			//TODO: Set an error code if overflow
-			____error_code = SKY_ERROR
-		}
 	}
 	return
 }

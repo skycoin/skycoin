@@ -5,6 +5,7 @@ import (
 	"unsafe"
 	"hash"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/util/http"
 )
 
 /*
@@ -47,6 +48,10 @@ func inplacePubKeySlice(p *C.cipher__PubKeySlice) *cipher.PubKeySlice {
 
 func inplaceAddress(p *C.cipher__Address) *cipher.Address {
 	return (*cipher.Address)(unsafe.Pointer(p))
+}
+
+func inplaceHttpHelperAddress(p *C.httphelper__Address) *httphelper.Address {
+	return (*httphelper.Address)(unsafe.Pointer(p))
 }
 
 /**

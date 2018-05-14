@@ -31,25 +31,6 @@ func SKY_coin_SignedBlock_VerifySignature(_b *C.coin__SignedBlock, _pubkey *C.ci
 	return
 }
 
-//export SKY_coin_NewBlock
-func SKY_coin_NewBlock(_prev *C.coin__Block, _currentTime uint64, _uxHash *C.cipher__SHA256, _txns *C.coin__Transactions, _calc *C.coin__FeeCalculator, _arg5 *C.coin__Block) (____error_code uint32) {
-	____error_code = 0
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	prev := *(*coin.Block)(unsafe.Pointer(_prev))
-	currentTime := _currentTime
-	uxHash := *(*cipher.SHA256)(unsafe.Pointer(_uxHash))
-	txns := *(*coin.Transactions)(unsafe.Pointer(_txns))
-	calc := *(*coin.FeeCalculator)(unsafe.Pointer(_calc))
-	__arg5, ____return_err := coin.NewBlock(prev, currentTime, uxHash, txns, calc)
-	____error_code = libErrorCode(____return_err)
-	if ____return_err == nil {
-		*_arg5 = *(*C.coin__Block)(unsafe.Pointer(__arg5))
-	}
-	return
-}
-
 //export SKY_coin_NewGenesisBlock
 func SKY_coin_NewGenesisBlock(_genesisAddr *C.cipher__Address, _genesisCoins, _timestamp uint64, _arg2 *C.coin__Block) (____error_code uint32) {
 	____error_code = 0

@@ -2,9 +2,7 @@ typedef struct{
     GoUint64_ Time;
     GoUint64_ BkSeq;
 } coin__UxHead;
-typedef GoMap_ coin__UxHashSet;
 typedef GoSlice_  coin__UxArray;
-typedef GoMap_ coin__AddressUxOuts;
 
 typedef struct{
     cipher__SHA256 SrcTransaction;

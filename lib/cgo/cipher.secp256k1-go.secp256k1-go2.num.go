@@ -1,8 +1,8 @@
 package main
 
 import (
+	secp256k1go2 "github.com/skycoin/skycoin/src/cipher/secp256k1-go/secp256k1-go2"
 	"unsafe"
-	secp256k1go "github.com/skycoin/skycoin/src/cipher/secp256k1-go/secp256k1-go2"
 )
 
 /*
@@ -20,7 +20,7 @@ func SKY_secp256k1go_Number_Print(_num *C.Number, _label string) (____error_code
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	num := (*secp256k1go.Number)(unsafe.Pointer(_num))
+	num := (*secp256k1go2.Number)(unsafe.Pointer(_num))
 	label := _label
 	num.Print(label)
 	return
@@ -32,7 +32,7 @@ func SKY_secp256k1go_Number_SetHex(_num *C.Number, _s string) (____error_code ui
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	num := (*secp256k1go.Number)(unsafe.Pointer(_num))
+	num := (*secp256k1go2.Number)(unsafe.Pointer(_num))
 	s := _s
 	num.SetHex(s)
 	return
@@ -44,7 +44,7 @@ func SKY_secp256k1go_Number_IsOdd(_num *C.Number, _arg0 *bool) (____error_code u
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	num := (*secp256k1go.Number)(unsafe.Pointer(_num))
+	num := (*secp256k1go2.Number)(unsafe.Pointer(_num))
 	__arg0 := num.IsOdd()
 	*_arg0 = __arg0
 	return

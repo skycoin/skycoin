@@ -9,16 +9,11 @@ typedef struct{
     GoUint32_ IP;
     GoUint16_ Port;
 } daemon__IPAddr;
-typedef GoInterface_ daemon__AsyncMessage;
 typedef struct{
     GoString_ addr;
 } daemon__GetPeersMessage;
 typedef struct{
 } daemon__PongMessage;
-typedef struct{
-    gnet__MessagePrefix Prefix;
-    GoInterface_ Message;
-} daemon__MessageConfig;
 typedef struct{
     GoSlice_  Peers;
     gnet__MessageContext * c;

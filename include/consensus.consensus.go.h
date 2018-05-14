@@ -1,12 +1,4 @@
 typedef struct{
-    GoSlice_  blockPtr_slice;
-    GoMap_ hash_to_blockPtr_map;
-} consensus__BlockchainTail;
-typedef struct{
-    GoMap_ pubkey2sig;
-    GoMap_ sig2none;
-} consensus__HashCandidate;
-typedef struct{
     cipher__Sig Sig;
     cipher__SHA256 Hash;
     GoUint64_ Seqno;

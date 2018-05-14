@@ -53,7 +53,11 @@ typedef struct{
 typedef struct{
     visor__ReadableBlockHeader Head;
     visor__ReadableBlockBody Body;
+    GoInt_ Size;
 } visor__ReadableBlock;
+typedef struct{
+    GoSlice_  Blocks;
+} visor__ReadableBlocks;
 typedef struct{
     GoString_ Hash;
     GoString_ SourceTransaction;
@@ -82,4 +86,5 @@ typedef struct{
     coin__Transaction Txn;
     visor__TransactionStatus Status;
     GoUint64_ Time;
+    GoInt_ Size;
 } visor__Transaction;

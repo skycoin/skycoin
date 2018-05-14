@@ -446,6 +446,7 @@ type ReadableTransaction struct {
 	InnerHash string                  `json:"inner_hash"`
 	Timestamp uint64                  `json:"timestamp,omitempty"`
 	Size      int                     `json:"size"`
+	Fee       uint64                  `json:"fee"`
 
 	Sigs []string                          `json:"sigs"`
 	In   []visor.ReadableTransactionInput  `json:"inputs"`
@@ -475,6 +476,30 @@ func NewReadableTransaction(t visor.Transaction, inputs []visor.ReadableTransact
 		out[i] = *o
 	}
 
+	var hoursIn uint64
+	for _, i := range inputs {
+		if _, err := coin.AddUint64(hoursIn, i.CalculatedHours); err != nil {
+			logger.Critical().Warningf("Ignoring NewReadableTransaction summing txn %s input hours error: %v", txID.Hex(), err)
+		}
+		hoursIn += i.CalculatedHours
+	}
+
+	var hoursOut uint64
+	for _, o := range t.Txn.Out {
+		if _, err := coin.AddUint64(hoursOut, o.Hours); err != nil {
+			logger.Critical().Warningf("Ignoring NewReadableTransaction summing txn %s outputs hours error: %v", txID.Hex(), err)
+		}
+
+		hoursOut += o.Hours
+	}
+
+	if hoursIn < hoursOut {
+		err := fmt.Errorf("NewReadableTransaction input hours is less than output hours, txid=%s", txID.Hex())
+		return ReadableTransaction{}, err
+	}
+
+	fee := hoursIn - hoursOut
+
 	return ReadableTransaction{
 		Status:    t.Status,
 		Length:    t.Txn.Length,
@@ -482,7 +507,8 @@ func NewReadableTransaction(t visor.Transaction, inputs []visor.ReadableTransact
 		Hash:      t.Txn.Hash().Hex(),
 		InnerHash: t.Txn.InnerHash.Hex(),
 		Timestamp: t.Time,
-		Size:      t.Size,
+		Size:      t.Txn.Size(),
+		Fee:       fee,
 
 		Sigs: sigs,
 		In:   inputs,
@@ -492,6 +518,7 @@ func NewReadableTransaction(t visor.Transaction, inputs []visor.ReadableTransact
 
 // GetTransactionsForAddress returns []ReadableTransaction for a given address.
 // These transactions include confirmed and unconfirmed transactions
+// TODO -- move into visor (visor.ReadableTransaction can't be changed to daemon.ReadableTransaction without breaking the API)
 func (gw *Gateway) GetTransactionsForAddress(a cipher.Address) ([]ReadableTransaction, error) {
 	var err error
 	var resTxns []ReadableTransaction
@@ -500,12 +527,14 @@ func (gw *Gateway) GetTransactionsForAddress(a cipher.Address) ([]ReadableTransa
 		var txns []visor.Transaction
 		txns, err = gw.v.GetAddressTxns(a)
 		if err != nil {
+			logger.Errorf("Gateway.GetTransactionsForAddress: gw.v.GetAddressTxns failed: %v", err)
 			return
 		}
 
 		var head *coin.SignedBlock
 		head, err = gw.v.GetHeadBlock()
 		if err != nil {
+			logger.Errorf("Gateway.GetTransactionsForAddress: gw.v.GetHeadBlock failed: %v", err)
 			return
 		}
 
@@ -514,8 +543,10 @@ func (gw *Gateway) GetTransactionsForAddress(a cipher.Address) ([]ReadableTransa
 		for i, txn := range txns {
 			inputs := make([]visor.ReadableTransactionInput, len(txn.Txn.In))
 			for j, inputID := range txn.Txn.In {
-				input, err := gw.v.GetUxOutByID(inputID)
+				var input *historydb.UxOut
+				input, err = gw.v.GetUxOutByID(inputID)
 				if err != nil {
+					logger.Errorf("Gateway.GetTransactionsForAddress: gw.v.GetUxOutByID failed: %v", err)
 					return
 				}
 				if input == nil {
@@ -531,16 +562,20 @@ func (gw *Gateway) GetTransactionsForAddress(a cipher.Address) ([]ReadableTransa
 					t = head.Time()
 				}
 
-				readableInput, err := visor.NewReadableTransactionInput(inputID, input.Out.Body.Address, input.Out.Body.Coins, input.Out.Body.Hours, t)
+				var readableInput *visor.ReadableTransactionInput
+				readableInput, err = visor.NewReadableTransactionInput(input.Out, t)
 				if err != nil {
+					logger.Errorf("Gateway.GetTransactionsForAddress: visor.NewReadableTransactionInput failed: %v", err)
 					return
 				}
 
 				inputs[j] = *readableInput
 			}
 
-			rTxn, err := NewReadableTransaction(txn, inputs)
+			var rTxn ReadableTransaction
+			rTxn, err = NewReadableTransaction(txn, inputs)
 			if err != nil {
+				logger.Errorf("Gateway.GetTransactionsForAddress: NewReadableTransaction failed: %v", err)
 				return
 			}
 

@@ -39,7 +39,6 @@ type Transaction struct {
 	Txn    coin.Transaction  //`json:"txn"`
 	Status TransactionStatus //`json:"status"`
 	Time   uint64            //`json:"time"`
-	Size   int
 }
 
 // TransactionStatus represents the transaction status
@@ -95,11 +94,10 @@ func NewConfirmedTransactionStatus(height uint64, blockSeq uint64) TransactionSt
 
 // ReadableTransactionOutput readable transaction output
 type ReadableTransactionOutput struct {
-	Hash            string `json:"uxid"`
-	Address         string `json:"dst"`
-	Coins           string `json:"coins"`
-	Hours           uint64 `json:"hours"`
-	CalculatedHours uint64 `json:"calculated_hours"`
+	Hash    string `json:"uxid"`
+	Address string `json:"dst"`
+	Coins   string `json:"coins"`
+	Hours   uint64 `json:"hours"`
 }
 
 // ReadableTransactionInput readable transaction input
@@ -127,18 +125,26 @@ func NewReadableTransactionOutput(t *coin.TransactionOutput, txid cipher.SHA256)
 }
 
 // NewReadableTransactionInput creates ReadableTransactionInput
-func NewReadableTransactionInput(uxID cipher.SHA256, address cipher.Address, coins, hours, headTime uint64) (*ReadableTransactionInput, error) {
-	coinVal, err := droplet.ToString(coins)
+func NewReadableTransactionInput(ux coin.UxOut, calculateHoursTime uint64) (*ReadableTransactionInput, error) {
+	coinVal, err := droplet.ToString(ux.Body.Coins)
 	if err != nil {
 		logger.Errorf("Failed to convert coins to string: %v", err)
 		return nil, err
 	}
 
+	// The overflow bug causes this to fail for some transactions, allow it to pass
+	calculatedHours, err := ux.CoinHours(calculateHoursTime)
+	if err != nil {
+		logger.Critical().Warningf("Ignoring NewReadableTransactionInput ux.CoinHours failed: %v", err)
+		calculatedHours = 0
+	}
+
 	return &ReadableTransactionInput{
-		Hash:    uxID.Hex(),
-		Address: address.String(),
-		Coins:   coinVal,
-		Hours:   hours,
+		Hash:            ux.Hash().Hex(),
+		Address:         ux.Body.Address.String(),
+		Coins:           coinVal,
+		Hours:           ux.Body.Hours,
+		CalculatedHours: calculatedHours,
 	}, nil
 }
 

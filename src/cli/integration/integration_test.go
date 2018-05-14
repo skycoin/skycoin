@@ -35,9 +35,8 @@ import (
 const (
 	binaryName = "skycoin-cli"
 
-	testModeStable           = "stable"
-	testModeLive             = "live"
-	testModeDisableWalletApi = "disable-wallet-api"
+	testModeStable = "stable"
+	testModeLive   = "live"
 
 	// Number of random transactions of live transaction test.
 	randomLiveTransactionNum = 500
@@ -211,9 +210,9 @@ func mode(t *testing.T) string {
 	switch mode {
 	case "":
 		mode = testModeStable
-	case testModeLive, testModeStable, testModeDisableWalletApi:
+	case testModeLive, testModeStable:
 	default:
-		t.Fatal("Invalid test mode, must be stable, live or disable-wallet-api")
+		t.Fatal("Invalid test mode, must be stable or live")
 	}
 	return mode
 }

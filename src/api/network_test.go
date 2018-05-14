@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -48,6 +49,7 @@ func TestConnection(t *testing.T) {
 		addr                               string
 		gatewayGetConnectionResult         *daemon.Connection
 		gatewayGetBlockchainProgressResult *daemon.BlockchainProgress
+		gatewayGetBlockchainProgressError  error
 		result                             *daemon.Connection
 	}{
 		{
@@ -72,6 +74,7 @@ func TestConnection(t *testing.T) {
 			err:    "",
 			addr:   "addr",
 			gatewayGetBlockchainProgressResult: &bp,
+			gatewayGetBlockchainProgressError:  nil,
 			gatewayGetConnectionResult: &daemon.Connection{
 				ID:           1,
 				Addr:         "127.0.0.1",
@@ -93,13 +96,35 @@ func TestConnection(t *testing.T) {
 				ListenPort:   9877,
 			},
 		},
+		{
+			name:   "500 - blockchain progress failed",
+			method: http.MethodGet,
+			status: http.StatusInternalServerError,
+			err:    "500 Internal Server Error - GetBlockchainProgress failed",
+			addr:   "addr",
+			gatewayGetBlockchainProgressResult: nil,
+			gatewayGetBlockchainProgressError:  errors.New("some error"),
+			gatewayGetConnectionResult: &daemon.Connection{
+				ID:           1,
+				Addr:         "127.0.0.1",
+				LastSent:     99999,
+				LastReceived: 1111111,
+				Outgoing:     true,
+				Introduced:   true,
+				Mirror:       9876,
+				ListenPort:   9877,
+			},
+		},
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/network/connection"
 			gateway := NewGatewayerMock()
 			gateway.On("GetConnection", tc.addr).Return(tc.gatewayGetConnectionResult)
-			gateway.On("GetBlockchainProgress").Return(tc.gatewayGetBlockchainProgressResult)
+			gateway.On("GetBlockchainProgress").Return(
+				tc.gatewayGetBlockchainProgressResult,
+				tc.gatewayGetBlockchainProgressError,
+			)
 			v := url.Values{}
 			if tc.addr != "" {
 				v.Add("addr", tc.addr)
@@ -164,6 +189,7 @@ func TestConnections(t *testing.T) {
 		err                                string
 		gatewayGetConnectionsResult        *daemon.Connections
 		gatewayGetBlockchainProgressResult *daemon.BlockchainProgress
+		gatewayGetBlockchainProgressError  error
 		result                             *daemon.Connections
 	}{
 		{
@@ -178,6 +204,7 @@ func TestConnections(t *testing.T) {
 			status: http.StatusOK,
 			err:    "",
 			gatewayGetBlockchainProgressResult: &bp,
+			gatewayGetBlockchainProgressError:  nil,
 			gatewayGetConnectionsResult: &daemon.Connections{
 				Connections: []*daemon.Connection{
 					&daemon.Connection{
@@ -207,13 +234,38 @@ func TestConnections(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:   "500 - blockchain progress failed",
+			method: http.MethodGet,
+			status: http.StatusInternalServerError,
+			err:    "500 Internal Server Error - GetBlockchainProgress failed",
+			gatewayGetBlockchainProgressResult: nil,
+			gatewayGetBlockchainProgressError:  errors.New("some error"),
+			gatewayGetConnectionsResult: &daemon.Connections{
+				Connections: []*daemon.Connection{
+					&daemon.Connection{
+						ID:           1,
+						Addr:         "127.0.0.1",
+						LastSent:     99999,
+						LastReceived: 1111111,
+						Outgoing:     true,
+						Introduced:   true,
+						Mirror:       9876,
+						ListenPort:   9877,
+					},
+				},
+			},
+		},
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/network/connections"
 			gateway := NewGatewayerMock()
 			gateway.On("GetConnections").Return(tc.gatewayGetConnectionsResult)
-			gateway.On("GetBlockchainProgress").Return(tc.gatewayGetBlockchainProgressResult)
+			gateway.On("GetBlockchainProgress").Return(
+				tc.gatewayGetBlockchainProgressResult,
+				tc.gatewayGetBlockchainProgressError,
+			)
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 

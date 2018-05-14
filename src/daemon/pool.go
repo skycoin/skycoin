@@ -54,30 +54,27 @@ type Pool struct {
 }
 
 // NewPool creates pool
-func NewPool(c PoolConfig, d *Daemon) *Pool {
-	pool := &Pool{
-		Config: c,
-		Pool:   nil,
+func NewPool(cfg PoolConfig, d *Daemon) *Pool {
+	gnetCfg := gnet.NewConfig()
+	gnetCfg.DialTimeout = cfg.DialTimeout
+	gnetCfg.Port = uint16(cfg.port)
+	gnetCfg.Address = cfg.address
+	gnetCfg.ConnectCallback = d.onGnetConnect
+	gnetCfg.DisconnectCallback = d.onGnetDisconnect
+	gnetCfg.MaxConnections = cfg.MaxConnections
+
+	return &Pool{
+		Config: cfg,
+		Pool:   gnet.NewConnectionPool(gnetCfg, d),
 	}
-
-	cfg := gnet.NewConfig()
-	cfg.DialTimeout = pool.Config.DialTimeout
-	cfg.Port = uint16(pool.Config.port)
-	cfg.Address = pool.Config.address
-	cfg.ConnectCallback = d.onGnetConnect
-	cfg.DisconnectCallback = d.onGnetDisconnect
-	cfg.MaxConnections = pool.Config.MaxConnections
-
-	pool.Pool = gnet.NewConnectionPool(cfg, d)
-
-	return pool
 }
 
 // Shutdown closes all connections and stops listening
 func (pool *Pool) Shutdown() {
-	if pool.Pool != nil {
-		pool.Pool.Shutdown()
+	if pool == nil {
+		return
 	}
+	pool.Pool.Shutdown()
 }
 
 // Run starts listening on the configured Port

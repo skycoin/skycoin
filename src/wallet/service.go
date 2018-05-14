@@ -7,7 +7,6 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/visor/blockdb"
 )
 
 // BalanceGetter interface for getting the balance of given addresses
@@ -306,8 +305,7 @@ func (serv *Service) ReloadWallets() error {
 
 // CreateAndSignTransaction creates and signs a transaction from wallet.
 // Set the password as nil if the wallet is not encrypted, otherwise the password must be provided
-func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, vld Validator, unspent blockdb.UnspentGetter,
-	headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
+func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, auxs coin.AddressUxOuts, headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
 	serv.RLock()
 	defer serv.RUnlock()
 	if !serv.enableWalletAPI {
@@ -322,7 +320,7 @@ func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, vld
 	var tx *coin.Transaction
 	f := func(wlt *Wallet) error {
 		var err error
-		tx, err = wlt.CreateAndSignTransaction(vld, unspent, headTime, coins, dest)
+		tx, err = wlt.CreateAndSignTransaction(auxs, headTime, coins, dest)
 		return err
 	}
 
@@ -340,8 +338,7 @@ func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, vld
 
 // CreateAndSignTransactionAdvanced creates and signs a transaction based upon CreateTransactionParams.
 // Set the password as nil if the wallet is not encrypted, otherwise the password must be provided
-func (serv *Service) CreateAndSignTransactionAdvanced(params CreateTransactionParams, vld Validator,
-	unspent blockdb.UnspentGetter, headTime uint64) (*coin.Transaction, []UxBalance, error) {
+func (serv *Service) CreateAndSignTransactionAdvanced(params CreateTransactionParams, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []UxBalance, error) {
 	serv.RLock()
 	defer serv.RUnlock()
 
@@ -374,11 +371,11 @@ func (serv *Service) CreateAndSignTransactionAdvanced(params CreateTransactionPa
 	if w.IsEncrypted() {
 		err = w.GuardView(params.Wallet.Password, func(wlt *Wallet) error {
 			var err error
-			tx, inputs, err = wlt.CreateAndSignTransactionAdvanced(params, vld, unspent, headTime)
+			tx, inputs, err = wlt.CreateAndSignTransactionAdvanced(params, auxs, headTime)
 			return err
 		})
 	} else {
-		tx, inputs, err = w.CreateAndSignTransactionAdvanced(params, vld, unspent, headTime)
+		tx, inputs, err = w.CreateAndSignTransactionAdvanced(params, auxs, headTime)
 	}
 	if err != nil {
 		return nil, nil, err

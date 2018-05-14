@@ -2,8 +2,6 @@
 
 const { app, Menu, BrowserWindow, dialog, shell, session } = require('electron');
 
-var log = require('electron-log');
-
 const path = require('path');
 
 const childProcess = require('child_process');
@@ -148,6 +146,12 @@ function createWindow(url) {
       webgl: false,
       webaudio: false,
       contextIsolation: true,
+      webviewTag: false,
+      nodeIntegration: false,
+      nodeIntegrationInWorker: false,
+      allowRunningInsecureContent: false,
+      webSecurity: true,
+      plugins: false,
     },
   });
 

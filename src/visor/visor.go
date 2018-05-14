@@ -243,9 +243,9 @@ type Visor struct {
 
 // NewVisor creates a Visor for managing the blockchain database
 func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
-	logger.Debug("Creating new visor")
+	logger.Info("Creating new visor")
 	if c.IsMaster {
-		logger.Debug("Visor is master")
+		logger.Info("Visor is master")
 	}
 
 	if err := c.Verify(); err != nil {
@@ -313,6 +313,8 @@ func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
 
 // Init initializes starts the visor
 func (vs *Visor) Init() error {
+	logger.Info("Visor init")
+
 	if vs.DB.IsReadOnly() {
 		return nil
 	}
@@ -333,6 +335,8 @@ func (vs *Visor) Init() error {
 }
 
 func initHistory(tx *dbutil.Tx, bc *Blockchain, history *historydb.HistoryDB) error {
+	logger.Info("Visor initHistory")
+
 	shouldReset, err := history.NeedsReset(tx)
 	if err != nil {
 		return err
@@ -363,6 +367,8 @@ func initHistory(tx *dbutil.Tx, bc *Blockchain, history *historydb.HistoryDB) er
 }
 
 func parseHistoryTo(tx *dbutil.Tx, history *historydb.HistoryDB, bc *Blockchain, height uint64) error {
+	logger.Info("Visor parseHistoryTo")
+
 	parsedHeight, _, err := history.ParsedHeight(tx)
 	if err != nil {
 		return err
@@ -388,6 +394,7 @@ func parseHistoryTo(tx *dbutil.Tx, history *historydb.HistoryDB, bc *Blockchain,
 
 // maybeCreateGenesisBlock creates a genesis block if necessary
 func (vs *Visor) maybeCreateGenesisBlock(tx *dbutil.Tx) error {
+	logger.Info("Visor maybeCreateGenesisBlock")
 	gb, err := vs.Blockchain.GetGenesisBlock(tx)
 	if err != nil {
 		return err
@@ -396,7 +403,7 @@ func (vs *Visor) maybeCreateGenesisBlock(tx *dbutil.Tx) error {
 		return nil
 	}
 
-	logger.Debug("Create genesis block")
+	logger.Info("Create genesis block")
 	vs.GenesisPreconditions()
 	b, err := coin.NewGenesisBlock(vs.Config.GenesisAddress, vs.Config.GenesisCoinVolume, vs.Config.GenesisTimestamp)
 	if err != nil {

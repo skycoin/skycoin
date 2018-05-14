@@ -43,7 +43,11 @@ func connectionHandler(gateway Gatewayer) http.HandlerFunc {
 			Connection: c,
 			Height:     0,
 		}
-		bcp := gateway.GetBlockchainProgress()
+		bcp, err := gateway.GetBlockchainProgress()
+		if err != nil {
+			wh.Error500(w, "GetBlockchainProgress failed")
+			return
+		}
 		for _, ph := range bcp.Peers {
 			if ph.Address == c.Addr {
 				cnx.Height = ph.Height
@@ -63,7 +67,11 @@ func connectionsHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		dcnxs := gateway.GetConnections()
-		bcp := gateway.GetBlockchainProgress()
+		bcp, err := gateway.GetBlockchainProgress()
+		if err != nil {
+			wh.Error500(w, "GetBlockchainProgress failed")
+			return
+		}
 
 		peerHeights := bcp.Peers
 		index := make(map[string]uint64, len(peerHeights))

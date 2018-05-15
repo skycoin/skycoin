@@ -16,6 +16,7 @@ import (
 	cli "github.com/skycoin/skycoin/src/cli"
 	api "github.com/skycoin/skycoin/src/api"
 	gcli "github.com/urfave/cli"
+	"encoding/json"
 
 )
 
@@ -192,6 +193,19 @@ func lookupCreateTransactionRequestHandle(handle C.CreateTransactionRequest__Han
 		}
 	}
 	return nil, false
+}
+
+//export SKY_JsonEncode_Handle
+func SKY_JsonEncode_Handle(handle C.Handle, json_string *C.GoString_) uint32 {
+	obj, ok := lookupHandle(handle)
+	if ok {
+		jsonBytes, err := json.Marshal(obj)
+		if err == nil {
+			copyString(string(jsonBytes), json_string)
+			return SKY_OK
+		} 
+	}
+	return SKY_ERROR
 }
 
 func closeHandle(handle Handle) {

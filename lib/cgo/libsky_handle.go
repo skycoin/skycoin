@@ -14,6 +14,7 @@ import (
 	webrpc "github.com/skycoin/skycoin/src/api/webrpc"
 	wallet "github.com/skycoin/skycoin/src/wallet"
 	cli "github.com/skycoin/skycoin/src/cli"
+	api "github.com/skycoin/skycoin/src/api"
 	gcli "github.com/urfave/cli"
 
 )
@@ -145,6 +146,20 @@ func lookupContextHandle(handle C.Context__Handle) (*gcli.Context, bool){
 	obj, ok := lookupHandleObj(Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(*gcli.Context); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerClientHandle(obj *api.Client) C.Client__Handle{
+	return (C.Client__Handle)(registerHandle(obj))
+}
+
+func lookupClientHandle(handle C.Client__Handle) (*api.Client, bool){
+	obj, ok := lookupHandleObj(Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*api.Client); isOK {
 			return obj, true
 		}
 	}

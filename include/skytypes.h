@@ -140,6 +140,11 @@ typedef Handle App__Handle;
 typedef Handle Context__Handle;
 
 /**
+ * API Client Handle
+*/
+typedef Handle Client__Handle;
+
+/**
  * Instances of Go `map` type, deal map[string] as handle
  */
 typedef Handle GoStringMap_;

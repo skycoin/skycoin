@@ -164,6 +164,10 @@ $ docker build -f docker/images/mainnet/Dockerfile \
   -t skycoin:v0.23.0 .
 ```
 
+### Development image
+
+[Development image](docker/images/dev-cli/README.md)
+
 ## API Documentation
 
 ### REST API

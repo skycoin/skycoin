@@ -1,6 +1,6 @@
 typedef struct{
     GoString_ WalletDir;
-    wallet__CryptoType CryptoType;
+    GoString_ CryptoType;
     BOOL EnableWalletAPI;
     BOOL EnableSeedAPI;
 } wallet__Config;

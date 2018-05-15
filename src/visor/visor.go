@@ -271,7 +271,12 @@ func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
 
 	if !db.IsReadOnly() {
 		if err := db.Update("build unspent indexes and init history", func(tx *dbutil.Tx) error {
-			if err := bc.Unspent().MaybeBuildIndexes(tx); err != nil {
+			headSeq, _, err := bc.HeadSeq(tx)
+			if err != nil {
+				return err
+			}
+
+			if err := bc.Unspent().MaybeBuildIndexes(tx, headSeq); err != nil {
 				return err
 			}
 

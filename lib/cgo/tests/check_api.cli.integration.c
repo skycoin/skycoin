@@ -63,8 +63,10 @@ Test(api_cli_integration, TestStableShowConfig) {
 	
 	errcode = SKY_cli_LoadConfig( &configHandle );
 	cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
+	registerHandleClose( configHandle );
 	errcode = SKY_cli_NewApp( &configHandle, &appHandle );
 	cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
+	registerHandleClose( appHandle );
 	
 	//Redirect standard output to a pipe
 	redirectStdOut();

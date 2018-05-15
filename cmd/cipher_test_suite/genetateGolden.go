@@ -32,10 +32,10 @@ var (
 	inputDataFilename string
 )
 
-type Job struct {
-	JobID          int
-	Seed           string
-	AddressesCount int
+type job struct {
+	jobID          int
+	seed           string
+	addressesCount int
 }
 
 func init() {
@@ -45,7 +45,7 @@ func init() {
 }
 
 func main() {
-	var job Job
+	var j job
 	genInputData := flag.Bool("i", false, "Generate inputData.golden")
 	genSeedData := flag.Bool("s", false, "Generate seed-$n.golden")
 	flag.Parse()
@@ -54,24 +54,24 @@ func main() {
 	}
 	if *genSeedData {
 		inputData = cipherTestSuite.ReadInputData(inputDataFilename)
-		jobs := make(chan Job, seedsCount)
+		jobs := make(chan job, seedsCount)
 		results := make(chan bool, seedsCount)
 		// generate in parallel to improve speed
 		for i := 0; i < runtime.NumCPU(); i++ {
 			go worker(jobs, results)
 		}
 		// generate seed with 1 byte length
-		job = Job{
-			JobID:          0,
-			Seed:           hex.EncodeToString(cipher.RandByte(1)),
-			AddressesCount: shortSeedAddressesCount,
+		j = job{
+			jobID:          0,
+			seed:           hex.EncodeToString(cipher.RandByte(1)),
+			addressesCount: shortSeedAddressesCount,
 		}
-		jobs <- job
+		jobs <- j
 
 		for generatedCount := 1; generatedCount < seedsCount; generatedCount++ {
-			job := Job{
-				JobID:          generatedCount,
-				AddressesCount: longSeedAddressesCount,
+			j = job{
+				jobID:          generatedCount,
+				addressesCount: longSeedAddressesCount,
 			}
 			// separate seed generation type
 			if generatedCount > int(seedsCount/2) {
@@ -79,11 +79,11 @@ func main() {
 				if err != nil {
 					log.Panicf("failed generate seed bip39.NewDefaultMnemomic(). err: %v", err)
 				}
-				job.Seed = base64.RawStdEncoding.EncodeToString([]byte(seed))
+				j.seed = base64.RawStdEncoding.EncodeToString([]byte(seed))
 			} else {
-				job.Seed = base64.RawStdEncoding.EncodeToString([]byte(cipher.SumSHA256(cipher.RandByte(1024)).Hex()))
+				j.seed = base64.RawStdEncoding.EncodeToString([]byte(cipher.SumSHA256(cipher.RandByte(1024)).Hex()))
 			}
-			jobs <- job
+			jobs <- j
 		}
 		close(jobs)
 		resultsCount := 0
@@ -115,18 +115,18 @@ func generateInputData(filename string) {
 	}
 }
 
-func worker(jobs <-chan Job, results chan<- bool) {
-	for job := range jobs {
+func worker(jobs <-chan job, results chan<- bool) {
+	for j := range jobs {
 		summary := make(map[string]int)
 		data := &cipherTestSuite.SeedSignature{
-			Seed: job.Seed,
+			Seed: j.seed,
 			Keys: make([]*cipherTestSuite.SeedData, 0),
 		}
-		log.Printf("job %v/%v\n", job.JobID, seedsCount-1)
+		log.Printf("job %v/%v\n", j.jobID, seedsCount-1)
 
 		// generate signatures for a part of cases to prevent large .golden files
-		for i := 0; i < job.AddressesCount; i++ {
-			seedData := generateSeedData([]byte(job.Seed), job.AddressesCount <= 10 || i < int(job.AddressesCount/2))
+		for i := 0; i < j.addressesCount; i++ {
+			seedData := generateSeedData([]byte(j.seed), j.addressesCount <= 10 || i < int(j.addressesCount/2))
 			summary[seedData.Public]++
 			summary[seedData.Secret]++
 			summary[seedData.Address]++
@@ -134,11 +134,11 @@ func worker(jobs <-chan Job, results chan<- bool) {
 		}
 		// check that all public/secret/address values are equal
 		for k, v := range summary {
-			if v != job.AddressesCount {
+			if v != j.addressesCount {
 				log.Panicf("generated values are not equal to previous public/secret/address values. key: %v, count: %v", k, v)
 			}
 		}
-		filename := path.Join(testDataDir, fmt.Sprintf("seed-%d.golden", job.JobID))
+		filename := path.Join(testDataDir, fmt.Sprintf("seed-%d.golden", j.jobID))
 		contentJSON, err := json.MarshalIndent(data, "", "\t")
 		if err != nil {
 			log.Panicf("failed encode inputData. err: %v", err)

@@ -49,6 +49,12 @@ export class Wallet {
   opened?: boolean;
 }
 
+export class Connection {
+  id: number;
+  address: number;
+  listen_port: boolean;
+}
+
 /**
  * Response Objects
  */

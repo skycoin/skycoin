@@ -3,37 +3,28 @@ import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatDialogRef, MatSnackBar, MatSnackBarConfig } from '@angular/material';
 import { FormControl, FormGroup } from '@angular/forms';
 import { ButtonComponent } from '../button/button.component';
-import { Observable } from 'rxjs/Observable';
-import { parseResponseMessage } from '../../../utils/index';
+import { parseResponseMessage } from '../../../utils/errors';
+import { Subject } from 'rxjs/Subject';
+import { ISubscription } from 'rxjs/Subscription';
 
 @Component({
   selector: 'app-password-dialog',
   templateUrl: './password-dialog.component.html',
-  styleUrls: ['./password-dialog.component.scss']
+  styleUrls: ['./password-dialog.component.scss'],
 })
 export class PasswordDialogComponent implements OnInit, OnDestroy {
-
   @ViewChild('button') button: ButtonComponent;
   form: FormGroup;
-  passwordSubmit: Observable<any>;
+  passwordSubmit = new Subject<any>();
   disableDismiss = false;
-  private passwordChanged;
+
+  private subscriptions: ISubscription[] = [];
 
   constructor(
-    public dialogRef: MatDialogRef<PasswordDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: any,
+    public dialogRef: MatDialogRef<PasswordDialogComponent>,
     private snackbar: MatSnackBar,
   ) {
-    this.passwordSubmit = Observable.create(observer => {
-      this.passwordChanged = password => {
-        observer.next({
-          password,
-          close: this.close.bind(this),
-          error: this.error.bind(this),
-        });
-      };
-    });
-
     this.data = Object.assign({
       confirm: false,
       description: null,
@@ -47,11 +38,11 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
     this.form.addControl('confirm_password', new FormControl(''));
 
     ['password', 'confirm_password'].forEach(control => {
-      this.form.get(control).valueChanges.subscribe(() => {
+      this.subscriptions.push(this.form.get(control).valueChanges.subscribe(() => {
         if (this.button.state === 2) {
           this.button.resetState();
         }
-      });
+      }));
     });
 
     if (this.data.confirm) {
@@ -68,6 +59,10 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.form.get('password').setValue('');
     this.form.get('confirm_password').setValue('');
+
+    this.passwordSubmit.complete();
+
+    this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 
   proceed() {
@@ -76,8 +71,13 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
     }
 
     this.button.setLoading();
-    this.passwordChanged(this.form.get('password').value);
     this.disableDismiss = true;
+
+    this.passwordSubmit.next({
+      password: this.form.get('password').value,
+      close: this.close.bind(this),
+      error: this.error.bind(this),
+    });
   }
 
   private validateForm() {

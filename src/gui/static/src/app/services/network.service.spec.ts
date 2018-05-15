@@ -5,7 +5,7 @@ import { NetworkService } from './network.service';
 describe('NetworkService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [NetworkService]
+      providers: [NetworkService],
     });
   });
 

@@ -2,18 +2,17 @@ import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Transaction } from '../../../../app.datatypes';
 import { PriceService } from '../../../../services/price.service';
-import { Subscription } from 'rxjs/Subscription';
+import { ISubscription } from 'rxjs/Subscription';
 
 @Component({
   selector: 'app-transaction-detail',
   templateUrl: './transaction-detail.component.html',
-  styleUrls: ['./transaction-detail.component.scss']
+  styleUrls: ['./transaction-detail.component.scss'],
 })
 export class TransactionDetailComponent implements OnInit, OnDestroy {
-
   price: number;
 
-  private priceSubscription: Subscription;
+  private priceSubscription: ISubscription;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public transaction: Transaction,

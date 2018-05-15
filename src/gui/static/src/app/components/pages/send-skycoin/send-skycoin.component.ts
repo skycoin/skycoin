@@ -7,18 +7,21 @@ import 'rxjs/add/operator/filter';
 import { ButtonComponent } from '../../layout/button/button.component';
 import { PasswordDialogComponent } from '../../layout/password-dialog/password-dialog.component';
 import { MatDialog } from '@angular/material';
-import { parseResponseMessage } from '../../../utils/index';
+import { parseResponseMessage } from '../../../utils/errors';
+import { ISubscription } from 'rxjs/Subscription';
 
 @Component({
   selector: 'app-send-skycoin',
   templateUrl: './send-skycoin.component.html',
-  styleUrls: ['./send-skycoin.component.scss']
+  styleUrls: ['./send-skycoin.component.scss'],
 })
 export class SendSkycoinComponent implements OnInit, OnDestroy {
   @ViewChild('button') button: ButtonComponent;
 
   form: FormGroup;
   transactions = [];
+
+  private subscription: ISubscription;
 
   constructor(
     public formBuilder: FormBuilder,
@@ -33,6 +36,7 @@ export class SendSkycoinComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.snackbar.dismiss();
+    this.subscription.unsubscribe();
   }
 
   send() {
@@ -64,7 +68,7 @@ export class SendSkycoinComponent implements OnInit, OnDestroy {
       this.form.value.wallet,
       this.form.value.address,
       this.form.value.amount,
-      passwordDialog ? passwordDialog.password : null
+      passwordDialog ? passwordDialog.password : null,
     )
       .toPromise()
       .then(response => {
@@ -91,7 +95,8 @@ export class SendSkycoinComponent implements OnInit, OnDestroy {
       amount: ['', Validators.required],
       notes: [''],
     });
-    this.form.get('wallet').valueChanges.subscribe(value => {
+
+    this.subscription = this.form.get('wallet').valueChanges.subscribe(value => {
       console.log(value);
       const balance = value && value.coins ? value.coins : 0;
       this.form.get('amount').setValidators([

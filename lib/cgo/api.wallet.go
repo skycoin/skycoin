@@ -1,9 +1,6 @@
 package main
 
-import (
-	api "github.com/skycoin/skycoin/src/api"
-	"unsafe"
-)
+import api "github.com/skycoin/skycoin/src/api"
 
 /*
 
@@ -15,7 +12,7 @@ import (
 import "C"
 
 //export SKY_api_NewWalletResponse
-func SKY_api_NewWalletResponse(_w *C.Wallet__Handle, _arg1 *C.api__WalletResponse) (____error_code uint32) {
+func SKY_api_NewWalletResponse(_w *C.Wallet__Handle, _arg1 *C.WalletResponse__Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -28,7 +25,7 @@ func SKY_api_NewWalletResponse(_w *C.Wallet__Handle, _arg1 *C.api__WalletRespons
 	__arg1, ____return_err := api.NewWalletResponse(w)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		*_arg1 = *(*C.api__WalletResponse)(unsafe.Pointer(__arg1))
+		*_arg1 = registerWalletResponseHandle(__arg1)
 	}
 	return
 }

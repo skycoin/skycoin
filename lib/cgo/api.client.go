@@ -335,7 +335,7 @@ func SKY_api_Client_AddressUxOuts(_c *C.Client__Handle, _addr string, _arg1 *C.G
 }
 
 //export SKY_api_Client_Wallet
-func SKY_api_Client_Wallet(_c *C.Client__Handle, _id string, _arg1 *C.api__WalletResponse) (____error_code uint32) {
+func SKY_api_Client_Wallet(_c *C.Client__Handle, _id string, _arg1 *C.WalletResponse__Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -349,7 +349,7 @@ func SKY_api_Client_Wallet(_c *C.Client__Handle, _id string, _arg1 *C.api__Walle
 	__arg1, ____return_err := c.Wallet(id)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		*_arg1 = *(*C.api__WalletResponse)(unsafe.Pointer(__arg1))
+		*_arg1 = registerWalletResponseHandle(__arg1)
 	}
 	return
 }
@@ -374,7 +374,7 @@ func SKY_api_Client_Wallets(_c *C.Client__Handle, _arg0 *C.GoSlice_) (____error_
 }
 
 //export SKY_api_Client_CreateUnencryptedWallet
-func SKY_api_Client_CreateUnencryptedWallet(_c *C.Client__Handle, _seed, _label string, _scanN int, _arg2 *C.api__WalletResponse) (____error_code uint32) {
+func SKY_api_Client_CreateUnencryptedWallet(_c *C.Client__Handle, _seed, _label string, _scanN int, _arg2 *C.WalletResponse__Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -390,13 +390,13 @@ func SKY_api_Client_CreateUnencryptedWallet(_c *C.Client__Handle, _seed, _label 
 	__arg2, ____return_err := c.CreateUnencryptedWallet(seed, label, scanN)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		*_arg2 = *(*C.api__WalletResponse)(unsafe.Pointer(__arg2))
+		*_arg2 = registerWalletResponseHandle(__arg2)
 	}
 	return
 }
 
 //export SKY_api_Client_CreateEncryptedWallet
-func SKY_api_Client_CreateEncryptedWallet(_c *C.Client__Handle, _seed, _label, _password string, _scanN int, _arg2 *C.api__WalletResponse) (____error_code uint32) {
+func SKY_api_Client_CreateEncryptedWallet(_c *C.Client__Handle, _seed, _label, _password string, _scanN int, _arg2 *C.WalletResponse__Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -413,7 +413,7 @@ func SKY_api_Client_CreateEncryptedWallet(_c *C.Client__Handle, _seed, _label, _
 	__arg2, ____return_err := c.CreateEncryptedWallet(seed, label, password, scanN)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		*_arg2 = *(*C.api__WalletResponse)(unsafe.Pointer(__arg2))
+		*_arg2 = registerWalletResponseHandle(__arg2)
 	}
 	return
 }
@@ -937,7 +937,7 @@ func SKY_api_Client_UnloadWallet(_c *C.Client__Handle, _id string) (____error_co
 
 
 //export SKY_api_Client_EncryptWallet
-func SKY_api_Client_EncryptWallet(_c *C.Client__Handle, _id string, _password string, _arg2 *C.api__WalletResponse) (____error_code uint32) {
+func SKY_api_Client_EncryptWallet(_c *C.Client__Handle, _id string, _password string, _arg2 *C.WalletResponse__Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -952,13 +952,13 @@ func SKY_api_Client_EncryptWallet(_c *C.Client__Handle, _id string, _password st
 	__arg2, ____return_err := c.EncryptWallet(id, password)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		*_arg2 = *(*C.api__WalletResponse)(unsafe.Pointer(__arg2))
+		*_arg2 = registerWalletResponseHandle(__arg2)
 	}
 	return
 }
 
 //export SKY_api_Client_DecryptWallet
-func SKY_api_Client_DecryptWallet(_c *C.Client__Handle, _id string, _password string, _arg2 *C.api__WalletResponse) (____error_code uint32) {
+func SKY_api_Client_DecryptWallet(_c *C.Client__Handle, _id string, _password string, _arg2 *C.WalletResponse__Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -973,7 +973,7 @@ func SKY_api_Client_DecryptWallet(_c *C.Client__Handle, _id string, _password st
 	__arg2, ____return_err := c.DecryptWallet(id, password)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		*_arg2 = *(*C.api__WalletResponse)(unsafe.Pointer(__arg2))
+		*_arg2 = registerWalletResponseHandle(__arg2)
 	}
 	return
 }

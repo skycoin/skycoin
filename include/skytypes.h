@@ -145,6 +145,11 @@ typedef Handle Context__Handle;
 typedef Handle Client__Handle;
 
 /**
+ * Wallet Response Handle
+*/
+typedef Handle WalletResponse__Handle;
+
+/**
  * Instances of Go `map` type, deal map[string] as handle
  */
 typedef Handle GoStringMap_;

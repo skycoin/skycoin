@@ -62,6 +62,9 @@ import { DoubleButtonComponent } from './components/layout/double-button/double-
 import { SeedModalComponent } from './components/pages/settings/backup/seed-modal/seed-modal.component';
 import { OnboardingComponent } from './components/pages/onboarding/onboarding.component';
 import { DontsavepasswordDirective } from './directives/dontsavepassword.directive';
+import { SendFormComponent } from './components/pages/send-skycoin/send-form/send-form.component';
+import { SendVerifyComponent } from './components/pages/send-skycoin/send-verify/send-verify.component';
+import { TransactionInfoComponent } from './components/pages/send-skycoin/send-verify/transaction-info/transaction-info.component';
 
 
 const ROUTES = [
@@ -156,6 +159,9 @@ const ROUTES = [
     SeedModalComponent,
     OnboardingComponent,
     DontsavepasswordDirective,
+    SendFormComponent,
+    SendVerifyComponent,
+    TransactionInfoComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,

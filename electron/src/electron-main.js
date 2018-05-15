@@ -2,8 +2,6 @@
 
 const { app, Menu, BrowserWindow, dialog, shell, session } = require('electron');
 
-var log = require('electron-log');
-
 const path = require('path');
 
 const childProcess = require('child_process');
@@ -77,7 +75,9 @@ function startSkycoin() {
     '-enable-seed-api=true',
     '-enable-wallet-api=true',
     '-rpc-interface=false',
-    "-disable-csrf=false"
+    '-disable-csrf=false',
+    '-reset-corrupt-db=true',
+    '-enable-gui=true'
     // will break
     // broken (automatically generated certs do not work):
     // '-web-interface-https=true',
@@ -146,6 +146,12 @@ function createWindow(url) {
       webgl: false,
       webaudio: false,
       contextIsolation: true,
+      webviewTag: false,
+      nodeIntegration: false,
+      nodeIntegrationInWorker: false,
+      allowRunningInsecureContent: false,
+      webSecurity: true,
+      plugins: false,
     },
   });
 

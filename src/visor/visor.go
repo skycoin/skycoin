@@ -618,6 +618,25 @@ func (vs *Visor) GetUnspentOutputs() ([]coin.UxOut, error) {
 	return ux, nil
 }
 
+// UnconfirmedSpendingUxIDs returns UxIDs of all spending outputs in unconfirmed tx pool
+func (vs *Visor) UnconfirmedSpendingUxIDs() ([]cipher.SHA256, error) {
+	var txns coin.Transactions
+	if err := vs.DB.View("UnconfirmedSpendingUxIDs", func(tx *dbutil.Tx) error {
+		var err error
+		txns, err = vs.Unconfirmed.RawTxns(tx)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	var hashes []cipher.SHA256
+	for _, txn := range txns {
+		hashes = append(hashes, txn.In...)
+	}
+
+	return hashes, nil
+}
+
 // UnconfirmedSpendingOutputs returns all spending outputs in unconfirmed tx pool
 func (vs *Visor) UnconfirmedSpendingOutputs() (coin.UxArray, error) {
 	var uxa coin.UxArray
@@ -1593,6 +1612,21 @@ func (vs *Visor) unconfirmedSpendsOfAddresses(tx *dbutil.Tx, addrs []cipher.Addr
 	}
 
 	return outs, nil
+}
+
+// GetUnspentOutputs returns unspent outputs from the pool, queried by hash.
+// If any do not exist, ErrUnspentNotExist is returned
+func (vs *Visor) GetUnspentOutputs(hashes []cipher.SHA256) (coin.UxArray, error) {
+	var outputs coin.UxArray
+	if err := vs.DB.View("GetUnspentOutputs", func(tx *dbutil.Tx) error {
+		var err error
+		outputs, err = vs.Blockchain.Unspent().GetArray(tx, hashes)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return outputs, nil
 }
 
 // SetTxnsAnnounced updates announced time of specific tx

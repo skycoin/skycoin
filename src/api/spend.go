@@ -249,6 +249,7 @@ type createTransactionRequest struct {
 // createTransactionRequestWallet defines a wallet to spend from and optionally which addresses in the wallet
 type createTransactionRequestWallet struct {
 	ID        string       `json:"id"`
+	Outputs   []wh.SHA256  `json:"outputs,omitempty"`
 	Addresses []wh.Address `json:"addresses,omitempty"`
 	Password  string       `json:"password"`
 }
@@ -353,7 +354,7 @@ func (r createTransactionRequest) Validate() error {
 		}
 	}
 
-	// Check for duplicate outputs, a transaction can't have outputs with
+	// Check for duplicate created outputs, a transaction can't have outputs with
 	// the same (address, coins, hours)
 	// Auto mode would distribute hours to the outputs and could hypothetically
 	// avoid assigning duplicate hours in many cases, but the complexity for doing
@@ -376,6 +377,20 @@ func (r createTransactionRequest) Validate() error {
 		return errors.New("to contains duplicate values")
 	}
 
+	if len(r.Outputs) != 0 && len(r.Address) != 0 {
+		return errors.New("outputs and addresses cannot be combined")
+	}
+
+	// Check for duplicate input outputs
+	inputs := make(map[cipher.SHA256]struct{}, len(r.Outputs))
+	for _, o := range r.Outputs {
+		inputs[o] = struct{}{}
+	}
+
+	if len(inputs) != len(r.Outputs) {
+		return errors.New("outputs contains duplicate values")
+	}
+
 	return nil
 }
 
@@ -386,9 +401,15 @@ func (r createTransactionRequest) ToWalletParams() wallet.CreateTransactionParam
 		addresses[i] = a.Address
 	}
 
+	outputs := make([]cipher.SHA256, len(r.Wallet.Outputs))
+	for i, o := range r.Wallet.Outputs {
+		outputs[i] = o.SHA256
+	}
+
 	walletParams := wallet.CreateTransactionWalletParams{
 		ID:        r.Wallet.ID,
 		Addresses: addresses,
+		Outputs:   outputs,
 		Password:  []byte(r.Wallet.Password),
 	}
 

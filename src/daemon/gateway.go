@@ -578,29 +578,69 @@ func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*co
 		return nil, nil, wallet.ErrWalletAPIDisabled
 	}
 
+	if err := params.Validate(); err != nil {
+		return nil, nil, err
+	}
+
 	var txn *coin.Transaction
 	var inputs []wallet.UxBalance
 	var err error
 
 	gw.strand("CreateTransaction", func() {
-		// Use selected addresses or get all addresses from the wallet
-		addrs := params.Wallet.Addresses
-		if len(addrs) == 0 {
-			addrs, err = gw.v.Wallets.GetAddresses(params.Wallet.ID)
+		var auxs coin.AddressUxOuts
+		if len(params.Wallet.Outputs) != 0 {
+			// Check if any of the outputs are in an unconfirmed spend
+			hashesMap := make(map[cipher.SHA256]struct{}, len(params.Wallet.Outputs))
+			for _, h := range params.Wallet.Outputs {
+				hashesMap[o] = struct{}{}
+			}
+
+			var unconfirmedSpends []cipher.SHA256
+			unconfirmedSpends, err = gw.v.UnconfirmedSpendingUxIDs()
 			if err != nil {
-				logger.WithError(err).Error("Wallet.GetAddresses failed")
 				return
 			}
-		}
 
-		// Get unspent outputs, while checking that there are no unconfirmed outputs
-		var auxs coin.AddressUxOuts
-		auxs, err = gw.getUnspentsForSpending(addrs)
-		if err != nil {
-			if err != wallet.ErrSpendingUnconfirmed {
-				logger.WithError(err).Error("getUnspentsForSpending failed")
+			for _, h := range unconfirmedSpends {
+				if _, ok := hashesMap[h]; ok {
+					err = wallet.ErrSpendingUnconfirmed
+					return
+				}
 			}
-			return
+
+			// Retrieve the unspent outputs from the pool.
+			// An error is returned if any do not exist
+			var outputs coin.UxArray
+			outputs, err = gw.v.GetUnspentOutputs(params.Wallet.Outputs)
+			if err != nil {
+				return
+			}
+
+			// Build coin.AddressUxOuts map.
+			// If an address is not known by the wallet, CreateAndSignTransactionAdvanced will fail
+			auxs := make(coin.AddressUxOuts)
+			for _, o := range outputs {
+				auxs[o.Body.Address] = append(auxs[o.Body.Address], o)
+			}
+		} else {
+			addrs := params.Wallet.Addresses
+			if len(addrs) == 0 {
+				// Use all addresses from the wallet
+				addrs, err = gw.v.Wallets.GetAddresses(params.Wallet.ID)
+				if err != nil {
+					logger.WithError(err).Error("Wallet.GetAddresses failed")
+					return
+				}
+			}
+
+			// Get unspent outputs, while checking that there are no unconfirmed outputs
+			auxs, err = gw.getUnspentsForSpending(addrs)
+			if err != nil {
+				if err != wallet.ErrSpendingUnconfirmed {
+					logger.WithError(err).Error("getUnspentsForSpending failed")
+				}
+				return
+			}
 		}
 
 		var head *coin.SignedBlock

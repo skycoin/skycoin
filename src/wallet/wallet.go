@@ -151,6 +151,7 @@ type HoursSelection struct {
 // CreateTransactionWalletParams defines a wallet to spend from and optionally which addresses in the wallet
 type CreateTransactionWalletParams struct {
 	ID        string
+	Outputs   []cipher.SHA256
 	Addresses []cipher.Address
 	Password  []byte
 }
@@ -246,6 +247,10 @@ func (c CreateTransactionParams) Validate() error {
 		if c.HoursSelection.ShareFactor.LessThan(zero) || c.HoursSelection.ShareFactor.GreaterThan(one) {
 			return NewError(errors.New("HoursSelection.ShareFactor must be >= 0 and <= 1"))
 		}
+	}
+
+	if len(c.Wallet.Outputs) != 0 && len(c.Wallet.Addresses) != 0 {
+		return NewError(errors.New("Wallet.Outputs and Wallet.Addresses cannot be combined"))
 	}
 
 	return nil
@@ -944,18 +949,14 @@ func (w *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime, coi
 	}
 
 	entriesMap := make(map[cipher.Address]Entry)
-	for _, e := range w.Entries {
+	for a := range auxs {
+		e, ok := w.GetEntry(a)
+		// Check that auxs does not contain addresses that are not known to this wallet
+		if !ok {
+			return nil, nil, ErrUnknownAddress
+		}
 		entriesMap[e.Address] = e
 	}
-
-	// Filter out address unspents that we don't want to use
-	newAuxs := make(coin.AddressUxOuts)
-	for a, uxs := range auxs {
-		if _, ok := entriesMap[a]; ok {
-			newAuxs[a] = uxs
-		}
-	}
-	auxs = newAuxs
 
 	// Determine which unspents to spend.
 	// Use the MaximizeUxOuts strategy, this will keep the uxout pool smaller
@@ -1017,7 +1018,8 @@ func (w *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime, coi
 }
 
 // CreateAndSignTransactionAdvanced creates and signs a transaction based upon CreateTransactionParams.
-// Set the password as nil if the wallet is not encrypted, otherwise the password must be provided
+// Set the password as nil if the wallet is not encrypted, otherwise the password must be provided.
+// NOTE: Caller must ensure that auxs correspond to params.Wallet.Addresses and params.Wallet.Outputs option
 func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []UxBalance, error) {
 	if err := params.Validate(); err != nil {
 		return nil, nil, err
@@ -1032,28 +1034,14 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 	}
 
 	entriesMap := make(map[cipher.Address]Entry)
-	if len(params.Wallet.Addresses) == 0 {
-		for _, e := range w.Entries {
-			entriesMap[e.Address] = e
+	for a := range auxs {
+		// Check that auxs does not contain addresses that are not known to this wallet
+		e, ok := w.GetEntry(a)
+		if !ok {
+			return nil, nil, ErrUnknownAddress
 		}
-	} else {
-		for _, a := range params.Wallet.Addresses {
-			e, ok := w.GetEntry(a)
-			if !ok {
-				return nil, nil, ErrUnknownAddress
-			}
-			entriesMap[e.Address] = e
-		}
+		entriesMap[e.Address] = e
 	}
-
-	// Filter out address unspents that we don't want to use
-	newAuxs := make(coin.AddressUxOuts)
-	for a, uxs := range auxs {
-		if _, ok := entriesMap[a]; ok {
-			newAuxs[a] = uxs
-		}
-	}
-	auxs = newAuxs
 
 	txn := &coin.Transaction{}
 

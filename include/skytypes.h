@@ -150,6 +150,11 @@ typedef Handle Client__Handle;
 typedef Handle WalletResponse__Handle;
 
 /**
+ * Create Transaction Request Handle
+*/
+typedef Handle CreateTransactionRequest__Handle;
+
+/**
  * Instances of Go `map` type, deal map[string] as handle
  */
 typedef Handle GoStringMap_;

@@ -280,6 +280,20 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 		}
 
 		if port == intro.Port {
+			if d.Pool.Pool.IsDefaultConnection(mc.Addr) {
+				reached, err := d.Pool.Pool.IsMaxDefaultConnReached()
+				if err != nil {
+					logger.Errorf("Check IsMaxDefaultConnReached failed: %v", err)
+					return err
+				}
+
+				if reached {
+					logger.Debugf("Disconnect %s: maximum default connections reached ", mc.Addr)
+					d.Pool.Pool.Disconnect(mc.Addr, ErrDisconnectMaxDefaultConnectionReached)
+					return ErrDisconnectMaxDefaultConnectionReached
+				}
+			}
+
 			if err := d.Pex.SetHasIncomingPort(mc.Addr, true); err != nil {
 				logger.Errorf("Failed to set peer has incoming port status, %v", err)
 			}

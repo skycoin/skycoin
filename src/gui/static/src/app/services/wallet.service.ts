@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import { ApiService } from './api.service';
 import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
-import { IntervalObservable } from 'rxjs/observable/IntervalObservable';
 import 'rxjs/add/observable/forkJoin';
 import 'rxjs/add/observable/of';
 import 'rxjs/add/operator/do';
@@ -11,7 +10,7 @@ import 'rxjs/add/operator/first';
 import 'rxjs/add/operator/mergeMap';
 import 'rxjs/add/observable/timer';
 import 'rxjs/add/observable/zip';
-import { Address, Wallet } from '../app.datatypes';
+import { Address, NormalTransaction, PreviewTransaction, Wallet } from '../app.datatypes';
 import { ReplaySubject } from 'rxjs/ReplaySubject';
 import { Subscription } from 'rxjs/Subscription';
 
@@ -138,7 +137,7 @@ export class WalletService {
     return this.apiService.getWalletSeed(wallet, password);
   }
 
-  createTransaction(wallet: Wallet, address: string, amount: string, password: string|null) {
+  createTransaction(wallet: Wallet, address: string, amount: string, password: string|null): Observable<PreviewTransaction> {
     return this.apiService.post(
       'wallet/transaction',
       {
@@ -160,7 +159,13 @@ export class WalletService {
       {
         json: true,
       }
-    );
+    ).map(response => {
+      return {
+        ...response.transaction,
+        hoursBurned: response.transaction.fee,
+        encoded: response.encoded_transaction,
+      };
+    });
   }
 
   injectTransaction(encodedTx: string) {
@@ -185,7 +190,7 @@ export class WalletService {
     });
   }
 
-  transactions(): Observable<any[]> {
+  transactions(): Observable<NormalTransaction[]> {
     return this.allAddresses().filter(addresses => !!addresses.length).first().flatMap(addresses => {
       this.addresses = addresses;
       return Observable.forkJoin(addresses.map(address => this.apiService.getExplorerAddress(address)));

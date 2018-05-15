@@ -53,7 +53,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `-enable-seed-api` option to enable `POST /wallet/seed`
 - Add `"size"` to block API response data (affects `GET /block`, `GET /blocks` and `GET /last_blocks`)
 - Write [specification for skycoin URIs](https://github.com/skycoin/skycoin#uri-specification) (based upon bip21)
-- Adds Dockerfile in docker/images/skycoindev to build a docker image suitable for development.
+- Adds Dockerfile in docker/images/dev-cli to build a docker image suitable for development.
 
 ### Fixed
 

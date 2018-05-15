@@ -699,13 +699,14 @@ func (gw *Gateway) DecryptWallet(wltID string, password []byte) (*wallet.Wallet,
 	return w, err
 }
 
-// GetWalletBalance returns balance pair of specific wallet
-func (gw *Gateway) GetWalletBalance(wltID string) (wallet.BalancePair, error) {
+// GetWalletBalance returns balance pairs of specific wallet
+func (gw *Gateway) GetWalletBalance(wltID string) (wallet.BalancePair, wallet.AddressBalance, error) {
+	var addressBalances wallet.AddressBalance
+	var walletBalance wallet.BalancePair
 	if !gw.Config.EnableWalletAPI {
-		return wallet.BalancePair{}, wallet.ErrWalletAPIDisabled
+		return walletBalance, addressBalances, wallet.ErrWalletAPIDisabled
 	}
 
-	var balances []wallet.BalancePair
 	var err error
 	gw.strand("GetWalletBalance", func() {
 		var addrs []cipher.Address
@@ -714,26 +715,43 @@ func (gw *Gateway) GetWalletBalance(wltID string) (wallet.BalancePair, error) {
 			return
 		}
 
-		balances, err = gw.v.GetBalanceOfAddrs(addrs)
+		// get list of address balances
+		addrsBalanceList, err := gw.v.GetBalanceOfAddrs(addrs)
+		if err != nil {
+			return
+		}
+
+		// create map of address to balance
+		addressBalances = make(wallet.AddressBalance, len(addrs))
+		for idx, addr := range addrs {
+			addressBalances[addr.String()] = addrsBalanceList[idx]
+		}
+
+		// compute the sum of all addresses
+		for _, addrBalance := range addressBalances {
+			// compute confirmed balance
+			walletBalance.Confirmed.Coins, err = coin.AddUint64(walletBalance.Confirmed.Coins, addrBalance.Confirmed.Coins)
+			if err != nil {
+				return
+			}
+			walletBalance.Confirmed.Hours, err = coin.AddUint64(walletBalance.Confirmed.Hours, addrBalance.Confirmed.Hours)
+			if err != nil {
+				return
+			}
+
+			// compute predicted balance
+			walletBalance.Predicted.Coins, err = coin.AddUint64(walletBalance.Predicted.Coins, addrBalance.Predicted.Coins)
+			if err != nil {
+				return
+			}
+			walletBalance.Predicted.Hours, err = coin.AddUint64(walletBalance.Predicted.Hours, addrBalance.Predicted.Hours)
+			if err != nil {
+				return
+			}
+		}
 	})
 
-	if err != nil {
-		return wallet.BalancePair{}, err
-	}
-
-	var balance wallet.BalancePair
-	for _, bp := range balances {
-		balance.Confirmed, err = balance.Confirmed.Add(bp.Confirmed)
-		if err != nil {
-			return wallet.BalancePair{}, err
-		}
-		balance.Predicted, err = balance.Predicted.Add(bp.Predicted)
-		if err != nil {
-			return wallet.BalancePair{}, err
-		}
-	}
-
-	return balance, nil
+	return walletBalance, addressBalances, err
 }
 
 // GetBalanceOfAddrs gets balance of given addresses

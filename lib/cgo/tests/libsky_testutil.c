@@ -5,17 +5,23 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include "json.h"
-
+#include "skytypes.h"
 #include "skytest.h"
+
 
 //Define function pipe2 to avoid warning implicit declaration of function 'pipe2'
 int pipe2(int pipefd[2], int flags);
+//Define function SKY_handle_close to avoid including libskycoin.h
+void SKY_handle_close(Handle p0);
 
 int MEMPOOLIDX = 0;
 void *MEMPOOL[1024 * 256];
 
 int JSONPOOLIDX = 0;
 json_value* JSON_POOL[128];
+
+int HANDLEPOOLIDX = 0;
+Handle HANDLE_POOL[128];
 
 int stdout_backup;
 int pipefd[2];
@@ -29,6 +35,10 @@ void registerJsonFree(void *p){
 	JSON_POOL[JSONPOOLIDX++] = p;
 }
 
+void registerHandleClose(Handle handle){
+	HANDLE_POOL[HANDLEPOOLIDX++] = handle;
+}
+
 void cleanupMem() {
   int i;
   void **ptr;
@@ -37,6 +47,9 @@ void cleanupMem() {
   }
   for (i = JSONPOOLIDX, ptr = (void*)JSON_POOL; i; --i) {
     json_value_free(*ptr++);
+  }
+  for (i = 0; i < HANDLEPOOLIDX; i++) {
+	  SKY_handle_close(HANDLE_POOL[i]);
   }
 }
 

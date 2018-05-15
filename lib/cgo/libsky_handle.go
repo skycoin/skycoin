@@ -34,7 +34,7 @@ func registerHandle(obj interface{}) Handle {
 	return Handle(handle)
 }
 
-func lookupHandleObj(handle Handle) (interface{}, bool) {
+func lookupHandle(handle Handle) (interface{}, bool) {
 	obj, ok := handleMap[handle]
 	return obj, ok
 }
@@ -44,7 +44,7 @@ func registerWebRpcClientHandle(obj *webrpc.Client) C.WebRpcClient__Handle{
 }
 
 func lookupWebRpcClientHandle(handle C.WebRpcClient__Handle) (*webrpc.Client, bool){
-	obj, ok := lookupHandleObj(Handle(handle))
+	obj, ok := lookupHandle(Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(*webrpc.Client); isOK {
 			return obj, true
@@ -58,7 +58,7 @@ func registerWalletHandle(obj *wallet.Wallet) C.Wallet__Handle{
 }
 
 func lookupWalletHandle(handle C.Wallet__Handle) (*wallet.Wallet, bool){
-	obj, ok := lookupHandleObj(Handle(handle))
+	obj, ok := lookupHandle(Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(*wallet.Wallet); isOK {
 			return obj, true
@@ -72,7 +72,7 @@ func registerReadableWalletHandle(obj *wallet.ReadableWallet) C.ReadableWallet__
 }
 
 func lookupReadableWalletHandle(handle C.ReadableWallet__Handle) (*wallet.ReadableWallet, bool){
-	obj, ok := lookupHandleObj(Handle(handle))
+	obj, ok := lookupHandle(Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(*wallet.ReadableWallet); isOK {
 			return obj, true
@@ -86,7 +86,7 @@ func registerReadableEntryHandle(obj *wallet.ReadableEntry) C.ReadableEntry__Han
 }
 
 func lookupReadableEntryHandle(handle C.ReadableEntry__Handle) (*wallet.ReadableEntry, bool){
-	obj, ok := lookupHandleObj(Handle(handle))
+	obj, ok := lookupHandle(Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(*wallet.ReadableEntry); isOK {
 			return obj, true
@@ -100,7 +100,7 @@ func registerOptionsHandle(obj *wallet.Options) C.Options__Handle{
 }
 
 func lookupOptionsHandle(handle C.Options__Handle) (*wallet.Options, bool){
-	obj, ok := lookupHandleObj(Handle(handle))
+	obj, ok := lookupHandle(Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(*wallet.Options); isOK {
 			return obj, true
@@ -114,7 +114,7 @@ func registerConfigHandle(obj *cli.Config) C.Config__Handle{
 }
 
 func lookupConfigHandle(handle C.Config__Handle) (*cli.Config, bool){
-	obj, ok := lookupHandleObj(Handle(handle))
+	obj, ok := lookupHandle(Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(*cli.Config); isOK {
 			return obj, true
@@ -128,7 +128,7 @@ func registerAppHandle(obj *cli.App) C.App__Handle{
 }
 
 func lookupAppHandle(handle C.App__Handle) (*cli.App, bool){
-	obj, ok := lookupHandleObj(Handle(handle))
+	obj, ok := lookupHandle(Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(*cli.App); isOK {
 			return obj, true
@@ -143,7 +143,7 @@ func registerContextHandle(obj *gcli.Context) C.Context__Handle{
 }
 
 func lookupContextHandle(handle C.Context__Handle) (*gcli.Context, bool){
-	obj, ok := lookupHandleObj(Handle(handle))
+	obj, ok := lookupHandle(Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(*gcli.Context); isOK {
 			return obj, true
@@ -157,7 +157,7 @@ func registerClientHandle(obj *api.Client) C.Client__Handle{
 }
 
 func lookupClientHandle(handle C.Client__Handle) (*api.Client, bool){
-	obj, ok := lookupHandleObj(Handle(handle))
+	obj, ok := lookupHandle(Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(*api.Client); isOK {
 			return obj, true
@@ -171,7 +171,7 @@ func registerWalletResponseHandle(obj *api.WalletResponse) C.WalletResponse__Han
 }
 
 func lookupWalletResponseHandle(handle C.WalletResponse__Handle) (*api.WalletResponse, bool){
-	obj, ok := lookupHandleObj(Handle(handle))
+	obj, ok := lookupHandle(Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(*api.WalletResponse); isOK {
 			return obj, true

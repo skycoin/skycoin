@@ -29,7 +29,7 @@ func SKY_webrpc_ClientError_Error(_e *C.webrpc__ClientError, _arg0 *C.GoString_)
 }
 
 //export SKY_webrpc_NewClient
-func SKY_webrpc_NewClient(_addr string, _arg1 *C.Client__Handle) (____error_code uint32) {
+func SKY_webrpc_NewClient(_addr string, _arg1 *C.WebRpcClient__Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -44,7 +44,7 @@ func SKY_webrpc_NewClient(_addr string, _arg1 *C.Client__Handle) (____error_code
 }
 
 //export SKY_webrpc_Client_CSRF
-func SKY_webrpc_Client_CSRF(_c *C.Client__Handle, _arg0 *C.GoString_) (____error_code uint32) {
+func SKY_webrpc_Client_CSRF(_c *C.WebRpcClient__Handle, _arg0 *C.GoString_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -63,7 +63,7 @@ func SKY_webrpc_Client_CSRF(_c *C.Client__Handle, _arg0 *C.GoString_) (____error
 }
 
 //export SKY_webrpc_Client_GetUnspentOutputs
-func SKY_webrpc_Client_GetUnspentOutputs(_c *C.Client__Handle, _addrs []string, _arg1 *C.webrpc__OutputsResult) (____error_code uint32) {
+func SKY_webrpc_Client_GetUnspentOutputs(_c *C.WebRpcClient__Handle, _addrs []string, _arg1 *C.webrpc__OutputsResult) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -83,7 +83,7 @@ func SKY_webrpc_Client_GetUnspentOutputs(_c *C.Client__Handle, _addrs []string, 
 }
 
 //export SKY_webrpc_Client_InjectTransactionString
-func SKY_webrpc_Client_InjectTransactionString(_c *C.Client__Handle, _rawtx string, _arg1 *C.GoString_) (____error_code uint32) {
+func SKY_webrpc_Client_InjectTransactionString(_c *C.WebRpcClient__Handle, _rawtx string, _arg1 *C.GoString_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -103,7 +103,7 @@ func SKY_webrpc_Client_InjectTransactionString(_c *C.Client__Handle, _rawtx stri
 }
 
 //export SKY_webrpc_Client_InjectTransaction
-func SKY_webrpc_Client_InjectTransaction(_c *C.Client__Handle, _tx *C.coin__Transaction, _arg1 *C.GoString_) (____error_code uint32) {
+func SKY_webrpc_Client_InjectTransaction(_c *C.WebRpcClient__Handle, _tx *C.coin__Transaction, _arg1 *C.GoString_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -123,7 +123,7 @@ func SKY_webrpc_Client_InjectTransaction(_c *C.Client__Handle, _tx *C.coin__Tran
 }
 
 //export SKY_webrpc_Client_GetStatus
-func SKY_webrpc_Client_GetStatus(_c *C.Client__Handle, _arg0 *C.webrpc__StatusResult) (____error_code uint32) {
+func SKY_webrpc_Client_GetStatus(_c *C.WebRpcClient__Handle, _arg0 *C.webrpc__StatusResult) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -142,7 +142,7 @@ func SKY_webrpc_Client_GetStatus(_c *C.Client__Handle, _arg0 *C.webrpc__StatusRe
 }
 
 //export SKY_webrpc_Client_GetTransactionByID
-func SKY_webrpc_Client_GetTransactionByID(_c *C.Client__Handle, _txid string, _arg1 *C.webrpc__TxnResult) (____error_code uint32) {
+func SKY_webrpc_Client_GetTransactionByID(_c *C.WebRpcClient__Handle, _txid string, _arg1 *C.webrpc__TxnResult) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -162,7 +162,7 @@ func SKY_webrpc_Client_GetTransactionByID(_c *C.Client__Handle, _txid string, _a
 }
 
 //export SKY_webrpc_Client_GetAddressUxOuts
-func SKY_webrpc_Client_GetAddressUxOuts(_c *C.Client__Handle, _addrs []string, _arg1 *C.GoSlice_) (____error_code uint32) {
+func SKY_webrpc_Client_GetAddressUxOuts(_c *C.WebRpcClient__Handle, _addrs []string, _arg1 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -182,7 +182,7 @@ func SKY_webrpc_Client_GetAddressUxOuts(_c *C.Client__Handle, _addrs []string, _
 }
 
 //export SKY_webrpc_Client_GetBlocks
-func SKY_webrpc_Client_GetBlocks(_c *C.Client__Handle, _start, _end uint64, _arg1 *C.visor__ReadableBlocks) (____error_code uint32) {
+func SKY_webrpc_Client_GetBlocks(_c *C.WebRpcClient__Handle, _start, _end uint64, _arg1 *C.visor__ReadableBlocks) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -203,7 +203,7 @@ func SKY_webrpc_Client_GetBlocks(_c *C.Client__Handle, _start, _end uint64, _arg
 }
 
 //export SKY_webrpc_Client_GetBlocksBySeq
-func SKY_webrpc_Client_GetBlocksBySeq(_c *C.Client__Handle, _ss []uint64, _arg1 *C.visor__ReadableBlocks) (____error_code uint32) {
+func SKY_webrpc_Client_GetBlocksBySeq(_c *C.WebRpcClient__Handle, _ss []uint64, _arg1 *C.visor__ReadableBlocks) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -223,7 +223,7 @@ func SKY_webrpc_Client_GetBlocksBySeq(_c *C.Client__Handle, _ss []uint64, _arg1 
 }
 
 //export SKY_webrpc_Client_GetLastBlocks
-func SKY_webrpc_Client_GetLastBlocks(_c *C.Client__Handle, _n uint64, _arg1 *C.visor__ReadableBlocks) (____error_code uint32) {
+func SKY_webrpc_Client_GetLastBlocks(_c *C.WebRpcClient__Handle, _n uint64, _arg1 *C.visor__ReadableBlocks) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())

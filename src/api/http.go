@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	logger = logging.MustGetLogger("gui")
+	logger = logging.MustGetLogger("api")
 )
 
 const (

@@ -24,14 +24,25 @@ export class TellerConfig {
 }
 
 export class Transaction {
-  addresses: string[];
   balance: number;
-  block: number;
-  confirmed: boolean;
   inputs: any[];
   outputs: any[];
-  timestamp: number;
   txid: string;
+  hoursSent?: number;
+  hoursBurned?: number;
+}
+
+export class PreviewTransaction extends Transaction {
+  from: string;
+  to: string;
+  encoded: string;
+}
+
+export class NormalTransaction extends Transaction {
+  addresses: string[];
+  timestamp: number;
+  block: number;
+  confirmed: boolean;
 }
 
 export class Version {

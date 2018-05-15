@@ -13,11 +13,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `cli showConfig` command to echo the cli's configuration back to the user
 - Option to generate 12/24 word seed when creating new wallet
 - Add `-version` flag to show node version
+- Add transaction verification step to "Send" page
+- Add more details about transaction in transaction history
 - Add CLI `encryptWallet` command
 - Add CLI `decryptWallet` command
 - Add CLI `showSeed` command
 - Add `password` argument to the CLI commands of `addPrivateKey`, `createRawTransaction`, `generateAddresses`, `generateWallet`, `send`
 - Support for decoding map values in cipher binary encoder
+- Expose known block height of peer in brand new `height` field added in responses of `/network/connections` API endpoints
 - `-verify-db` option (default true), will verify the database integrity during startup and exit if a problem is found
 - `-reset-corrupt-db` option (default false) will verify the database integrity during startup and reset the db if a problem is found
 
@@ -33,6 +36,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - JSON 2.0 RPC interface (used by the CLI tool) is now served on the same host interface as the REST API, port `6420`. The additional listener has been removed.
 - CLI's `RPC_ADDR` environment variable must now start with a scheme e.g. `http://127.0.0.1:6420`, previously it did not use a scheme.
 - API response will be gzip compressed if client sends request with 'Accept-Encoding' contains 'gzip' in the header.
+- `/wallet/balance/` and `/balance/` now return an address balance list as well.
 
 ### Removed
 

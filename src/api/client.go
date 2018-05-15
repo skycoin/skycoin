@@ -457,12 +457,12 @@ func (c *Client) NewWalletAddress(id string, n int, password string) ([]string, 
 }
 
 // WalletBalance makes a request to /wallet/balance
-func (c *Client) WalletBalance(id string) (*wallet.BalancePair, error) {
+func (c *Client) WalletBalance(id string) (*BalanceResponse, error) {
 	v := url.Values{}
 	v.Add("id", id)
 	endpoint := "/wallet/balance?" + v.Encode()
 
-	var b wallet.BalancePair
+	var b BalanceResponse
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}
@@ -603,8 +603,8 @@ func (c *Client) NetworkConnection(addr string) (*daemon.Connection, error) {
 }
 
 // NetworkConnections makes a request to /network/connections
-func (c *Client) NetworkConnections() (*daemon.Connections, error) {
-	var dc daemon.Connections
+func (c *Client) NetworkConnections() (*Connections, error) {
+	var dc Connections
 	if err := c.Get("/network/connections", &dc); err != nil {
 		return nil, err
 	}

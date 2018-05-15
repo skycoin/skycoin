@@ -5,8 +5,21 @@ import (
 	"net/http"
 	"sort"
 
-	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
+	daemon "github.com/skycoin/skycoin/src/daemon" //http,json helpers
+	wh "github.com/skycoin/skycoin/src/util/http"  //http,json helpers
 )
+
+// Connection wrapper around daemon connection with info about block height added
+type Connection struct {
+	*daemon.Connection
+	Height uint64 `json:"height"`
+}
+
+// Connections an array of connections
+// Arrays must be wrapped in structs to avoid certain javascript exploits
+type Connections struct {
+	Connections []Connection `json:"connections"`
+}
 
 func connectionHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -26,8 +39,23 @@ func connectionHandler(gateway Gatewayer) http.HandlerFunc {
 			wh.Error404(w, "")
 			return
 		}
+		cnx := Connection{
+			Connection: c,
+			Height:     0,
+		}
+		bcp, err := gateway.GetBlockchainProgress()
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
+		}
+		for _, ph := range bcp.Peers {
+			if ph.Address == c.Addr {
+				cnx.Height = ph.Height
+				break
+			}
+		}
 
-		wh.SendJSONOr500(logger, w, c)
+		wh.SendJSONOr500(logger, w, cnx)
 	}
 }
 
@@ -38,7 +66,29 @@ func connectionsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendJSONOr500(logger, w, gateway.GetConnections())
+		dcnxs := gateway.GetConnections()
+		bcp, err := gateway.GetBlockchainProgress()
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
+		}
+
+		peerHeights := bcp.Peers
+		index := make(map[string]uint64, len(peerHeights))
+
+		for i := 0; i < len(peerHeights); i++ {
+			index[peerHeights[i].Address] = peerHeights[i].Height
+		}
+
+		cnxs := Connections{}
+		for _, c := range dcnxs.Connections {
+			cnx := Connection{
+				Connection: c,
+				Height:     index[c.Addr],
+			}
+			cnxs.Connections = append(cnxs.Connections, cnx)
+		}
+		wh.SendJSONOr500(logger, w, cnxs)
 	}
 }
 

@@ -8,7 +8,7 @@ describe('TransactionInfoComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ TransactionInfoComponent ]
+      declarations: [ TransactionInfoComponent ],
     })
     .compileComponents();
   }));

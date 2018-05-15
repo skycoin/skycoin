@@ -6,12 +6,12 @@ import 'rxjs/add/operator/filter';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { MatDialog, MatSnackBar, MatSnackBarConfig } from '@angular/material';
-import { parseResponseMessage } from '../../../../utils/index';
+import { parseResponseMessage } from '../../../../utils/errors';
 
 @Component({
   selector: 'app-send-form',
   templateUrl: './send-form.component.html',
-  styleUrls: ['./send-form.component.scss']
+  styleUrls: ['./send-form.component.scss'],
 })
 export class SendFormComponent implements OnInit {
   @ViewChild('button') button: ButtonComponent;
@@ -61,7 +61,7 @@ export class SendFormComponent implements OnInit {
       this.form.value.wallet,
       this.form.value.address,
       this.form.value.amount,
-      passwordDialog ? passwordDialog.password : null
+      passwordDialog ? passwordDialog.password : null,
     )
       .subscribe(transaction => {
         this.onFormSubmitted.emit({

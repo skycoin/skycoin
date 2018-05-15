@@ -3267,7 +3267,7 @@ func TestDisableWalletApi(t *testing.T) {
 		return
 	}
 
-	tt := []struct {
+	type testCase struct {
 		name        string
 		method      string
 		endpoint    string
@@ -3276,18 +3276,20 @@ func TestDisableWalletApi(t *testing.T) {
 		json        func() interface{}
 		expectErr   string
 		code        int
-	}{
+	}
+
+	tt := []testCase{
 		{
 			name:      "get wallet",
 			method:    http.MethodGet,
-			endpoint:  "/wallet?id=test.wlt",
+			endpoint:  "/api/v1/wallet?id=test.wlt",
 			expectErr: "403 Forbidden\n",
 			code:      http.StatusForbidden,
 		},
 		{
 			name:     "create wallet",
 			method:   http.MethodPost,
-			endpoint: "/wallet/create",
+			endpoint: "/api/v1/wallet/create",
 			body: func() io.Reader {
 				v := url.Values{}
 				v.Add("seed", "seed")
@@ -3301,7 +3303,7 @@ func TestDisableWalletApi(t *testing.T) {
 		{
 			name:     "generate new address",
 			method:   http.MethodPost,
-			endpoint: "/wallet/newAddress",
+			endpoint: "/api/v1/wallet/newAddress",
 			body: func() io.Reader {
 				v := url.Values{}
 				v.Add("id", "test.wlt")
@@ -3313,14 +3315,14 @@ func TestDisableWalletApi(t *testing.T) {
 		{
 			name:      "get wallet balance",
 			method:    http.MethodGet,
-			endpoint:  "/wallet/balance?id=test.wlt",
+			endpoint:  "/api/v1/wallet/balance?id=test.wlt",
 			expectErr: "403 Forbidden\n",
 			code:      http.StatusForbidden,
 		},
 		{
 			name:     "wallet spending",
 			method:   http.MethodPost,
-			endpoint: "/wallet/spend",
+			endpoint: "/api/v1/wallet/spend",
 			body: func() io.Reader {
 				v := url.Values{}
 				v.Add("id", "test.wlt")
@@ -3334,14 +3336,14 @@ func TestDisableWalletApi(t *testing.T) {
 		{
 			name:      "get wallet unconfirmed transactions",
 			method:    http.MethodGet,
-			endpoint:  "/wallet/transactions?id=test.wlt",
+			endpoint:  "/api/v1/wallet/transactions?id=test.wlt",
 			expectErr: "403 Forbidden\n",
 			code:      http.StatusForbidden,
 		},
 		{
 			name:     "update wallet label",
 			method:   http.MethodPost,
-			endpoint: "/wallet/update",
+			endpoint: "/api/v1/wallet/update",
 			body: func() io.Reader {
 				v := url.Values{}
 				v.Add("id", "test.wlt")
@@ -3354,35 +3356,35 @@ func TestDisableWalletApi(t *testing.T) {
 		{
 			name:      "new seed",
 			method:    http.MethodGet,
-			endpoint:  "/wallet/newSeed",
+			endpoint:  "/api/v1/wallet/newSeed",
 			expectErr: "403 Forbidden\n",
 			code:      http.StatusForbidden,
 		},
 		{
 			name:      "get wallets",
 			method:    http.MethodGet,
-			endpoint:  "/wallets",
+			endpoint:  "/api/v1/wallets",
 			expectErr: "403 Forbidden\n",
 			code:      http.StatusForbidden,
 		},
 		{
 			name:      "get wallets folder name",
 			method:    http.MethodGet,
-			endpoint:  "/wallets/folderName",
+			endpoint:  "/api/v1/wallets/folderName",
 			expectErr: "403 Forbidden\n",
 			code:      http.StatusForbidden,
 		},
 		{
 			name:      "main index.html 404 not found",
 			method:    http.MethodGet,
-			endpoint:  "/",
+			endpoint:  "/api/v1/",
 			expectErr: "404 Not Found\n",
 			code:      http.StatusNotFound,
 		},
 		{
 			name:     "encrypt wallet",
 			method:   http.MethodPost,
-			endpoint: "/wallet/encrypt",
+			endpoint: "/api/v1/wallet/encrypt",
 			body: func() io.Reader {
 				v := url.Values{}
 				v.Add("id", "test.wlt")
@@ -3395,7 +3397,7 @@ func TestDisableWalletApi(t *testing.T) {
 		{
 			name:     "decrypt wallet",
 			method:   http.MethodPost,
-			endpoint: "/wallet/decrypt",
+			endpoint: "/api/v1/wallet/decrypt",
 			body: func() io.Reader {
 				v := url.Values{}
 				v.Add("id", "test.wlt")
@@ -3408,7 +3410,7 @@ func TestDisableWalletApi(t *testing.T) {
 		{
 			name:     "get wallet seed",
 			method:   http.MethodPost,
-			endpoint: "/wallet/seed",
+			endpoint: "/api/v1/wallet/seed",
 			body: func() io.Reader {
 				v := url.Values{}
 				v.Add("id", "test.wlt")
@@ -3421,7 +3423,7 @@ func TestDisableWalletApi(t *testing.T) {
 		{
 			name:        "create transaction",
 			method:      http.MethodPost,
-			endpoint:    "/wallet/transaction",
+			endpoint:    "/api/v1/wallet/transaction",
 			contentType: "application/json",
 			json: func() interface{} {
 				return api.CreateTransactionRequest{
@@ -3448,21 +3450,30 @@ func TestDisableWalletApi(t *testing.T) {
 
 	c := api.NewClient(nodeAddress())
 	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			var err error
-			switch tc.method {
-			case http.MethodGet:
-				err = c.Get(tc.endpoint, nil)
-			case http.MethodPost:
-				switch tc.contentType {
-				case "application/json":
-					err = c.PostJSON(tc.endpoint, tc.json(), nil)
-				default:
-					err = c.PostForm(tc.endpoint, tc.body(), nil)
+		f := func(tc testCase) func(t *testing.T) {
+			return func(t *testing.T) {
+				var err error
+				switch tc.method {
+				case http.MethodGet:
+					err = c.Get(tc.endpoint, nil)
+				case http.MethodPost:
+					switch tc.contentType {
+					case "application/json":
+						err = c.PostJSON(tc.endpoint, tc.json(), nil)
+					default:
+						err = c.PostForm(tc.endpoint, tc.body(), nil)
+					}
 				}
+				assertResponseError(t, err, tc.code, tc.expectErr)
 			}
-			assertResponseError(t, err, tc.code, tc.expectErr)
-		})
+		}
+
+		t.Run(tc.name, f(tc))
+
+		if strings.HasPrefix(tc.endpoint, "/api/v1") {
+			tc.endpoint = strings.TrimPrefix(tc.endpoint, "/api/v1")
+			t.Run(tc.name, f(tc))
+		}
 	}
 
 	// Confirms that no new wallet is created

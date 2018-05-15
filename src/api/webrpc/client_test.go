@@ -23,7 +23,7 @@ func TestClientGetUnspentOutputs(t *testing.T) {
 	s := setupWebRPC(t)
 
 	mux := http.NewServeMux()
-	mux.Handle("/webrpc", http.HandlerFunc(s.Handler))
+	mux.Handle("/api/v1/webrpc", http.HandlerFunc(s.Handler))
 
 	headTime := uint64(time.Now().UTC().Unix())
 	uxouts := make([]coin.UxOut, 5)
@@ -66,7 +66,7 @@ func TestClientGetUnspentOutputs(t *testing.T) {
 			body, err := json.Marshal(rpcReq)
 			require.NoError(t, err)
 
-			req, err := http.NewRequest(http.MethodPost, "/webrpc", bytes.NewReader(body))
+			req, err := http.NewRequest(http.MethodPost, "/api/v1/webrpc", bytes.NewReader(body))
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
@@ -115,7 +115,7 @@ func TestClientInjectTransaction(t *testing.T) {
 	s := setupWebRPC(t)
 
 	mux := http.NewServeMux()
-	mux.Handle("/webrpc", http.HandlerFunc(s.Handler))
+	mux.Handle("/api/v1/webrpc", http.HandlerFunc(s.Handler))
 
 	s.Gateway.(*fakeGateway).injectRawTxMap = map[string]bool{
 		rawTxID: true,
@@ -128,7 +128,7 @@ func TestClientInjectTransaction(t *testing.T) {
 	body, err := json.Marshal(rpcReq)
 	require.NoError(t, err)
 
-	req, err := http.NewRequest(http.MethodPost, "/webrpc", bytes.NewReader(body))
+	req, err := http.NewRequest(http.MethodPost, "/api/v1/webrpc", bytes.NewReader(body))
 	require.NoError(t, err)
 
 	rr := httptest.NewRecorder()
@@ -154,7 +154,7 @@ func TestClientGetStatus(t *testing.T) {
 	s := setupWebRPC(t)
 
 	mux := http.NewServeMux()
-	mux.Handle("/webrpc", http.HandlerFunc(s.Handler))
+	mux.Handle("/api/v1/webrpc", http.HandlerFunc(s.Handler))
 
 	rpcReq, err := NewRequest("get_status", nil, "1")
 	require.NoError(t, err)
@@ -162,7 +162,7 @@ func TestClientGetStatus(t *testing.T) {
 	body, err := json.Marshal(rpcReq)
 	require.NoError(t, err)
 
-	req, err := http.NewRequest(http.MethodPost, "/webrpc", bytes.NewReader(body))
+	req, err := http.NewRequest(http.MethodPost, "/api/v1/webrpc", bytes.NewReader(body))
 	require.NoError(t, err)
 
 	rr := httptest.NewRecorder()
@@ -192,7 +192,7 @@ func TestClientGetTransactionByID(t *testing.T) {
 	s := setupWebRPC(t)
 
 	mux := http.NewServeMux()
-	mux.Handle("/webrpc", http.HandlerFunc(s.Handler))
+	mux.Handle("/api/v1/webrpc", http.HandlerFunc(s.Handler))
 
 	cases := []struct {
 		name                string
@@ -231,7 +231,7 @@ func TestClientGetTransactionByID(t *testing.T) {
 			body, err := json.Marshal(rpcReq)
 			require.NoError(t, err)
 
-			req, err := http.NewRequest(http.MethodPost, "/webrpc", bytes.NewReader(body))
+			req, err := http.NewRequest(http.MethodPost, "/api/v1/webrpc", bytes.NewReader(body))
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
@@ -270,7 +270,7 @@ func TestClientGetAddressUxOuts(t *testing.T) {
 	s := setupWebRPC(t)
 
 	mux := http.NewServeMux()
-	mux.Handle("/webrpc", http.HandlerFunc(s.Handler))
+	mux.Handle("/api/v1/webrpc", http.HandlerFunc(s.Handler))
 
 	cases := []struct {
 		name   string
@@ -299,7 +299,7 @@ func TestClientGetAddressUxOuts(t *testing.T) {
 			body, err := json.Marshal(rpcReq)
 			require.NoError(t, err)
 
-			req, err := http.NewRequest(http.MethodPost, "/webrpc", bytes.NewReader(body))
+			req, err := http.NewRequest(http.MethodPost, "/api/v1/webrpc", bytes.NewReader(body))
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
@@ -334,7 +334,7 @@ func TestClientGetBlocks(t *testing.T) {
 	s := setupWebRPC(t)
 
 	mux := http.NewServeMux()
-	mux.Handle("/webrpc", http.HandlerFunc(s.Handler))
+	mux.Handle("/api/v1/webrpc", http.HandlerFunc(s.Handler))
 
 	// blockString borrowed from block_test.go
 	rpcReq, err := NewRequest("get_blocks", []uint64{0, 1}, "1")
@@ -343,7 +343,7 @@ func TestClientGetBlocks(t *testing.T) {
 	body, err := json.Marshal(rpcReq)
 	require.NoError(t, err)
 
-	req, err := http.NewRequest(http.MethodPost, "/webrpc", bytes.NewReader(body))
+	req, err := http.NewRequest(http.MethodPost, "/api/v1/webrpc", bytes.NewReader(body))
 	require.NoError(t, err)
 
 	rr := httptest.NewRecorder()
@@ -372,7 +372,7 @@ func TestClientGetBlocksBySeq(t *testing.T) {
 	gatewayerMock.On("GetBlocksInDepth", []uint64{454}).Return(decodeBlock(blockString), nil)
 
 	mux := http.NewServeMux()
-	mux.Handle("/webrpc", http.HandlerFunc(s.Handler))
+	mux.Handle("/api/v1/webrpc", http.HandlerFunc(s.Handler))
 
 	// blockString and seq borrowed from block_test.go
 	var seq uint64 = 454
@@ -382,7 +382,7 @@ func TestClientGetBlocksBySeq(t *testing.T) {
 	body, err := json.Marshal(rpcReq)
 	require.NoError(t, err)
 
-	req, err := http.NewRequest(http.MethodPost, "/webrpc", bytes.NewReader(body))
+	req, err := http.NewRequest(http.MethodPost, "/api/v1/webrpc", bytes.NewReader(body))
 	require.NoError(t, err)
 
 	rr := httptest.NewRecorder()
@@ -407,7 +407,7 @@ func TestClientGetLastBlocks(t *testing.T) {
 	s := setupWebRPC(t)
 
 	mux := http.NewServeMux()
-	mux.Handle("/webrpc", http.HandlerFunc(s.Handler))
+	mux.Handle("/api/v1/webrpc", http.HandlerFunc(s.Handler))
 
 	var n uint64 = 1
 	rpcReq, err := NewRequest("get_lastblocks", []uint64{n}, "1")
@@ -416,7 +416,7 @@ func TestClientGetLastBlocks(t *testing.T) {
 	body, err := json.Marshal(rpcReq)
 	require.NoError(t, err)
 
-	req, err := http.NewRequest(http.MethodPost, "/webrpc", bytes.NewReader(body))
+	req, err := http.NewRequest(http.MethodPost, "/api/v1/webrpc", bytes.NewReader(body))
 	require.NoError(t, err)
 
 	rr := httptest.NewRecorder()

@@ -60,7 +60,7 @@ func TestWebRPC(t *testing.T) {
 			d, err := json.Marshal(tc.args.req)
 			require.NoError(t, err)
 
-			req, err := http.NewRequest(tc.args.httpMethod, "/webrpc", bytes.NewBuffer(d))
+			req, err := http.NewRequest(tc.args.httpMethod, "/api/v1/webrpc", bytes.NewBuffer(d))
 			require.NoError(t, err)
 
 			csrfStore := &CSRFStore{

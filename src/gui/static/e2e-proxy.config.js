@@ -2,7 +2,7 @@ const PROXY_CONFIG = {
   "/api/*": {
     "target": "http://127.0.0.1:46420",
     "pathRewrite": {
-      "^/api" : ""
+      "^/api" : "/api/v1"
     },
     "secure": false,
     "logLevel": "debug",

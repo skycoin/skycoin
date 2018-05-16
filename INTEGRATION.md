@@ -3,7 +3,7 @@
 A Skycoin node offers multiple interfaces:
 
 * REST API on port 6420
-* JSON-RPC 2.0 API accessible on /webrpc endpoint **[deprecated]**
+* JSON-RPC 2.0 API accessible on `/api/v1/webrpc` endpoint **[deprecated]**
 
 A CLI tool is provided in `cmd/cli/cli.go`. This tool communicates over the JSON-RPC 2.0 API. In the future it will communicate over the REST API.
 
@@ -103,15 +103,15 @@ To check address outputs, use `skycoin-cli addressOutputs`. If you only want the
 
 #### Using the REST API
 
-To scan the blockchain, call `GET /last_blocks?num=` or `GET /blocks?start=&end=`. There will return block data as JSON
+To scan the blockchain, call `GET /api/v1/last_blocks?num=` or `GET /api/v1/blocks?start=&end=`. There will return block data as JSON
 and new unspent outputs sent to an address can be detected.
 
-To check address outputs, call `GET /outputs?addrs=`. If you only want the balance, you can call `GET /balance?addrs=`.
+To check address outputs, call `GET /api/v1/outputs?addrs=`. If you only want the balance, you can call `GET /api/v1/balance?addrs=`.
 
-* [`/last_blocks` docs](src/api/README.md#get-last-n-blocks)
-* [`/blocks` docs](src/api/README.md#get-blocks-in-specific-range)
-* [`/outputs` docs](src/api/README.md#get-unspent-output-set-of-address-or-hash)
-* [`/balance` docs](src/api/README.md#get-balance-of-addresses)
+* [`GET /api/v1/last_blocks` docs](src/api/README.md#get-last-n-blocks)
+* [`GET /api/v1/blocks` docs](src/api/README.md#get-blocks-in-specific-range)
+* [`GET /api/v1/outputs` docs](src/api/README.md#get-unspent-output-set-of-address-or-hash)
+* [`GET /api/v1/balance` docs](src/api/README.md#get-balance-of-addresses)
 
 #### Using skycoin as a library in a Go application
 
@@ -171,6 +171,7 @@ directly, see [Skycoin CLI Godoc](https://godoc.org/github.com/skycoin/skycoin/s
 A REST API client is also available: [Skycoin REST API Client Godoc](https://godoc.org/github.com/skycoin/skycoin/src/api#Client).
 
 #### Coinhours
+
 Transaction fees in skycoin is paid in coinhours and is currently set to `50%`,
 every transaction created burns `50%` of the total coinhours in all the input
 unspents.
@@ -183,7 +184,8 @@ which are then converted to `coinhours`, `1` coinhour = `3600` coinseconds.
 > Note: Coinhours don't have decimals and only show up in whole numbers.
 
 ##### REST API
-When using the `REST API` the coinhours are distributed as follows:
+
+When using the REST API the coinhours are distributed as follows:
 - 50% of the total coinhours in the unspents being used are burned.
 - 25% of the coinhours go to the the change address along with the remaining coins
 - 25% of the coinhours are split equally between the receivers
@@ -195,7 +197,8 @@ The sending address will be left with `5` skycoins and `12` coinhours which
 will then be sent to the change address.
 
 ##### CLI
-When using the `CLI` the amount of coinhours sent to the receiver is capped to
+
+When using the CLI the amount of coinhours sent to the receiver is capped to
 the number of coins they receive with a minimum of `1` coinhour for transactions
 with `<1` skycoin being sent.
 
@@ -245,7 +248,7 @@ Not implemented
 
 #### Using the REST API
 
-* `/network/connections`
+* `GET /api/v1/network/connections`
 
 #### Using skycoin as a library in a Go application
 
@@ -263,9 +266,10 @@ skycoin-cli status
 
 A method similar to `skycoin-cli status` is not implemented, but these endpoints can be used:
 
-* `/version`
-* `/blockchain/metadata`
-* `/blockchain/progress`
+* `GET /api/v1/health`
+* `GET /api/v1/version`
+* `GET /api/v1/blockchain/metadata`
+* `GET /api/v1/blockchain/progress`
 
 #### Using skycoin as a library in a Go application
 

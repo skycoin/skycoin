@@ -23,9 +23,9 @@ type PoolConfig struct {
 	// Buffer size for gnet.ConnectionPool's network Read events
 	EventChannelSize int
 	// Maximum number of connections to maintain
-	MaxConnections                int
-	MaxDefaultOutgoingConnections int
-	DefaultConnections            map[string]struct{}
+	MaxConnections                    int
+	MaxDefaultPeerOutgoingConnections int
+	DefaultPeerConnections            map[string]struct{}
 	// These should be assigned by the controlling daemon
 	address string
 	port    int
@@ -35,18 +35,18 @@ type PoolConfig struct {
 func NewPoolConfig() PoolConfig {
 	//defIdleLimit := time.Minute
 	return PoolConfig{
-		port:                          6677,
-		address:                       "",
-		DialTimeout:                   time.Second * 30,
-		MessageHandlingRate:           time.Millisecond * 50,
-		PingRate:                      5 * time.Second,
-		IdleLimit:                     60 * time.Second,
-		IdleCheckRate:                 1 * time.Second,
-		ClearStaleRate:                1 * time.Second,
-		EventChannelSize:              4096,
-		MaxConnections:                128,
-		MaxDefaultOutgoingConnections: 1,
-		DefaultConnections:            make(map[string]struct{}),
+		port:                              6677,
+		address:                           "",
+		DialTimeout:                       time.Second * 30,
+		MessageHandlingRate:               time.Millisecond * 50,
+		PingRate:                          5 * time.Second,
+		IdleLimit:                         60 * time.Second,
+		IdleCheckRate:                     1 * time.Second,
+		ClearStaleRate:                    1 * time.Second,
+		EventChannelSize:                  4096,
+		MaxConnections:                    128,
+		MaxDefaultPeerOutgoingConnections: 1,
+		DefaultPeerConnections:            make(map[string]struct{}),
 	}
 }
 
@@ -65,8 +65,8 @@ func NewPool(cfg PoolConfig, d *Daemon) *Pool {
 	gnetCfg.ConnectCallback = d.onGnetConnect
 	gnetCfg.DisconnectCallback = d.onGnetDisconnect
 	gnetCfg.MaxConnections = cfg.MaxConnections
-	gnetCfg.MaxDefaultOutgoingConnections = cfg.MaxDefaultOutgoingConnections
-	gnetCfg.DefaultConnections = cfg.DefaultConnections
+	gnetCfg.MaxDefaultPeerOutgoingConnections = cfg.MaxDefaultPeerOutgoingConnections
+	gnetCfg.DefaultPeerConnections = cfg.DefaultPeerConnections
 
 	return &Pool{
 		Config: cfg,

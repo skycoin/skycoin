@@ -279,6 +279,10 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 			return ErrDisconnectOtherError
 		}
 
+		// Checks if the introduction message is from outgoing connection.
+		// It's outgoing connection if port == intro.Port, as the incoming
+		// connection's port is a random port, it's different from the port
+		// in introduction message.
 		if port == intro.Port {
 			if d.Pool.Pool.IsDefaultConnection(mc.Addr) {
 				reached, err := d.Pool.Pool.IsMaxDefaultConnReached()

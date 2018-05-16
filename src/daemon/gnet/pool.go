@@ -69,7 +69,7 @@ type Config struct {
 	// Messages greater than length are rejected and the sender disconnected
 	MaxMessageLength int
 	// Maximum allowed default outgoing connection number
-	MaxDefaultOutgoingConnections int
+	MaxDefaultPeerOutgoingConnections int
 	// Timeout is the timeout for dialing new connections.  Use a
 	// timeout of 0 to ignore timeout.
 	DialTimeout time.Duration
@@ -91,26 +91,26 @@ type Config struct {
 	// Print debug logs
 	DebugPrint bool
 	// Default connections map
-	DefaultConnections map[string]struct{}
+	DefaultPeerConnections map[string]struct{}
 }
 
 // NewConfig returns a Config with defaults set
 func NewConfig() Config {
 	return Config{
-		Address:                       "",
-		Port:                          0,
-		MaxConnections:                128,
-		MaxMessageLength:              256 * 1024,
-		MaxDefaultOutgoingConnections: defaultMaxDefaultConnNum,
-		DialTimeout:                   time.Second * 30,
-		ReadTimeout:                   time.Second * 30,
-		WriteTimeout:                  time.Second * 30,
-		SendResultsSize:               2048,
-		ConnectionWriteQueueSize:      128,
-		DisconnectCallback:            nil,
-		ConnectCallback:               nil,
-		DebugPrint:                    false,
-		DefaultConnections:            make(map[string]struct{}),
+		Address:                           "",
+		Port:                              0,
+		MaxConnections:                    128,
+		MaxMessageLength:                  256 * 1024,
+		MaxDefaultPeerOutgoingConnections: defaultMaxDefaultConnNum,
+		DialTimeout:                       time.Second * 30,
+		ReadTimeout:                       time.Second * 30,
+		WriteTimeout:                      time.Second * 30,
+		SendResultsSize:                   2048,
+		ConnectionWriteQueueSize:          128,
+		DisconnectCallback:                nil,
+		ConnectCallback:                   nil,
+		DebugPrint:                        false,
+		DefaultPeerConnections:            make(map[string]struct{}),
 	}
 }
 
@@ -186,8 +186,8 @@ type ConnectionPool struct {
 	pool map[int]*Connection
 	// All connections, indexed by address
 	addresses map[string]*Connection
-	// connected default connections
-	defaultConnections map[string]struct{}
+	// connected default peer connections
+	defaultPeerConnections map[string]struct{}
 	// User-defined state to be passed into message handlers
 	messageState interface{}
 	// Connection ID counter
@@ -208,16 +208,16 @@ type ConnectionPool struct {
 // will be passed to a Message's Handle().
 func NewConnectionPool(c Config, state interface{}) *ConnectionPool {
 	pool := &ConnectionPool{
-		Config:             c,
-		pool:               make(map[int]*Connection),
-		addresses:          make(map[string]*Connection),
-		defaultConnections: make(map[string]struct{}),
-		SendResults:        make(chan SendResult, c.SendResultsSize),
-		messageState:       state,
-		quit:               make(chan struct{}),
-		done:               make(chan struct{}),
-		strandDone:         make(chan struct{}),
-		reqC:               make(chan strand.Request),
+		Config:                 c,
+		pool:                   make(map[int]*Connection),
+		addresses:              make(map[string]*Connection),
+		defaultPeerConnections: make(map[string]struct{}),
+		SendResults:            make(chan SendResult, c.SendResultsSize),
+		messageState:           state,
+		quit:                   make(chan struct{}),
+		done:                   make(chan struct{}),
+		strandDone:             make(chan struct{}),
+		reqC:                   make(chan strand.Request),
 	}
 
 	return pool
@@ -341,12 +341,12 @@ func (pool *ConnectionPool) NewConnection(conn net.Conn, solicited bool) (*Conne
 			return fmt.Errorf("Already connected to %s", a)
 		}
 
-		if _, ok := pool.Config.DefaultConnections[a]; ok {
-			if len(pool.defaultConnections) >= pool.Config.MaxDefaultOutgoingConnections && solicited {
+		if _, ok := pool.Config.DefaultPeerConnections[a]; ok {
+			if len(pool.defaultPeerConnections) >= pool.Config.MaxDefaultPeerOutgoingConnections && solicited {
 				return ErrMaxDefaultConnectionsReached
 			}
 
-			pool.defaultConnections[a] = struct{}{}
+			pool.defaultPeerConnections[a] = struct{}{}
 		}
 
 		pool.connID++
@@ -641,7 +641,7 @@ func (pool *ConnectionPool) IsConnExist(addr string) (bool, error) {
 
 // IsDefaultConnection returns if the addr is a default connection
 func (pool *ConnectionPool) IsDefaultConnection(addr string) bool {
-	_, ok := pool.Config.DefaultConnections[addr]
+	_, ok := pool.Config.DefaultPeerConnections[addr]
 	return ok
 }
 
@@ -649,7 +649,7 @@ func (pool *ConnectionPool) IsDefaultConnection(addr string) bool {
 func (pool *ConnectionPool) IsMaxDefaultConnReached() (bool, error) {
 	var reached bool
 	if err := pool.strand("IsDefaultMaxConnReached", func() error {
-		reached = len(pool.defaultConnections) > pool.Config.MaxDefaultOutgoingConnections
+		reached = len(pool.defaultPeerConnections) > pool.Config.MaxDefaultPeerOutgoingConnections
 		return nil
 	}); err != nil {
 		return false, err
@@ -707,8 +707,8 @@ func (pool *ConnectionPool) Connect(address string) error {
 	var hitMaxDefaultConnNum bool
 	// Checks if it's one of the default connection
 	if err := pool.strand("Check default connection", func() error {
-		if _, ok := pool.Config.DefaultConnections[address]; ok {
-			hitMaxDefaultConnNum = len(pool.defaultConnections) >= pool.Config.MaxDefaultOutgoingConnections
+		if _, ok := pool.Config.DefaultPeerConnections[address]; ok {
+			hitMaxDefaultConnNum = len(pool.defaultPeerConnections) >= pool.Config.MaxDefaultPeerOutgoingConnections
 		}
 
 		return nil
@@ -763,7 +763,7 @@ func (pool *ConnectionPool) disconnect(addr string) bool {
 
 	delete(pool.pool, conn.ID)
 	delete(pool.addresses, addr)
-	delete(pool.defaultConnections, addr)
+	delete(pool.defaultPeerConnections, addr)
 	if err := conn.Close(); err != nil {
 		logger.Errorf("conn.Close() error address=%s: %v", addr, err)
 	} else {

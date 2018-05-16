@@ -12,8 +12,9 @@ import "C"
 import (
 	"unsafe"
 
-	cli "github.com/skycoin/skycoin/src/cli"
 	webrpc "github.com/skycoin/skycoin/src/api/webrpc"
+	cli "github.com/skycoin/skycoin/src/cli"
+	wallet "github.com/skycoin/skycoin/src/wallet"
 )
 
 type Handle uint64
@@ -29,7 +30,7 @@ func registerHandle(obj interface{}) Handle {
 	return handle
 }
 
-func lookupHandleObj(handle Handle) (interface{}, bool) {
+func lookupHandle(handle Handle) (interface{}, bool) {
 	obj, ok := handleMap[handle]
 	return obj, ok
 }
@@ -39,9 +40,37 @@ func registerWebRpcClientHandle(obj *webrpc.Client) C.WebRpcClient__Handle {
 }
 
 func lookupWebRpcClientHandle(handle C.WebRpcClient__Handle) (*webrpc.Client, bool) {
-	obj, ok := lookupHandleObj(Handle(handle))
+	obj, ok := lookupHandle(Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(*webrpc.Client); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerWalletHandle(obj *wallet.Wallet) C.Wallet__Handle {
+	return (C.Wallet__Handle)(registerHandle(obj))
+}
+
+func lookupWalletHandle(handle C.Wallet__Handle) (*wallet.Wallet, bool) {
+	obj, ok := lookupHandle(Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*wallet.Wallet); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerOptionsHandle(obj *wallet.Options) C.Options__Handle {
+	return (C.Options__Handle)(registerHandle(obj))
+}
+
+func lookupOptionsHandle(handle C.Options__Handle) (*wallet.Options, bool) {
+	obj, ok := lookupHandle(Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*wallet.Options); isOK {
 			return obj, true
 		}
 	}
@@ -53,7 +82,7 @@ func registerConfigHandle(obj *cli.Config) C.Config__Handle {
 }
 
 func lookupConfigHandle(handle C.Config__Handle) (*cli.Config, bool) {
-	obj, ok := lookupHandleObj(Handle(handle))
+	obj, ok := lookupHandle(Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(*cli.Config); isOK {
 			return obj, true
@@ -67,7 +96,7 @@ func registerPasswordReaderHandle(obj cli.PasswordReader) C.PasswordReader__Hand
 }
 
 func lookupPasswordReaderHandle(handle C.PasswordReader__Handle) (cli.PasswordReader, bool) {
-	obj, ok := lookupHandleObj(Handle(handle))
+	obj, ok := lookupHandle(Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(cli.PasswordReader); isOK {
 			return obj, true

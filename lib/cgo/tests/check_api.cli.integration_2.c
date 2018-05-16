@@ -62,8 +62,6 @@ void createTempWalletDir(bool encrypt) {
   GoString WalletPath = {"WALLET_NAME", 11};
   GoString pathname = {walletPath, strlen(walletPath)};
   SKY_cli_Setenv(WalletPath, pathname);
-  fclose(f);
-  fclose(rf);
 };
 
 Test(api_cli_integration, TestGenerateAddresses) {

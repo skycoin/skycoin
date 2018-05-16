@@ -100,10 +100,12 @@ type Config struct {
 	// Which address to serve on. Leave blank to automatically assign to a
 	// public interface
 	Address string
-	//gnet uses this for TCP incoming and outgoing
+	// gnet uses this for TCP incoming and outgoing
 	Port int
-	//max outgoing connections to maintain
+	// Maximum outgoing connections to maintain
 	MaxOutgoingConnections int
+	// Maximum default outgoing connections
+	MaxDefaultPeerOutgoingConnections int
 	// How often to make outgoing connections
 	OutgoingConnectionsRate time.Duration
 	// PeerlistSize represents the maximum number of peers that the pex would maintain
@@ -232,6 +234,7 @@ func (c *Config) register() {
 
 	flag.StringVar(&c.WalletDirectory, "wallet-dir", c.WalletDirectory, "location of the wallet files. Defaults to ~/.skycoin/wallet/")
 	flag.IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", c.MaxOutgoingConnections, "The maximum outgoing connections allowed")
+	flag.IntVar(&c.MaxDefaultPeerOutgoingConnections, "max-default-peer-outgoing-connections", c.MaxDefaultPeerOutgoingConnections, "The maximum default peer outgoing connections allowed")
 	flag.IntVar(&c.PeerlistSize, "peerlist-size", c.PeerlistSize, "The peer list size")
 	flag.DurationVar(&c.OutgoingConnectionsRate, "connection-rate", c.OutgoingConnectionsRate, "How often to make an outgoing connection")
 	flag.BoolVar(&c.LocalhostOnly, "localhost-only", c.LocalhostOnly, "Run on localhost and only connect to localhost peers")
@@ -270,8 +273,10 @@ var devConfig = Config{
 	Port: 6000,
 	// MaxOutgoingConnections is the maximum outgoing connections allowed.
 	MaxOutgoingConnections: 16,
-	DownloadPeerList:       false,
-	PeerListURL:            "https://downloads.skycoin.net/blockchain/peers.txt",
+	// MaxDefaultOutgoingConnections is the maximum default outgoing connections allowed.
+	MaxDefaultPeerOutgoingConnections: 1,
+	DownloadPeerList:                  false,
+	PeerListURL:                       "https://downloads.skycoin.net/blockchain/peers.txt",
 	// How often to make outgoing connections, in seconds
 	OutgoingConnectionsRate: time.Second * 5,
 	PeerlistSize:            65535,
@@ -506,6 +511,13 @@ func initProfiling(httpProf, profileCPU bool, profileCPUFile string) {
 func configureDaemon(c *Config) daemon.Config {
 	//cipher.SetAddressVersion(c.AddressVersion)
 	dc := daemon.NewConfig()
+
+	for _, c := range DefaultConnections {
+		dc.Pool.DefaultPeerConnections[c] = struct{}{}
+	}
+
+	dc.Pool.MaxDefaultPeerOutgoingConnections = c.MaxDefaultPeerOutgoingConnections
+
 	dc.Pex.DataDirectory = c.DataDirectory
 	dc.Pex.Disabled = c.DisablePEX
 	dc.Pex.Max = c.PeerlistSize

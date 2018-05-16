@@ -25,7 +25,7 @@
 // sets the WALLET_DIR environment variable.
 // Returns wallet dir path and callback function to clean up the dir.
 void createTempWalletDir(bool encrypt) {
-	const char *temp = "/tmp/wallet-data-dir";
+	const char *temp = "build/libskycoin/wallet-data-dir";
 	int valueMkdir = mkdir(temp, S_IRWXU);
 
   // Copy the testdata/$stableWalletName to the temporary dir.
@@ -79,6 +79,7 @@ Test(api_cli_integration, TestGenerateAddresses) {
 	};
 
 	struct testStruct tt[lenStruct];
+
 	GoString args = {"boxfort-worker generateAddresses", 32};
 	GoSlice expectOutput = {"7g3M372kxwNwwQEAmrronu4anXTW8aD1XC\n", 36, 36};
 	tt[0].name = "generateAddresses";
@@ -88,6 +89,7 @@ Test(api_cli_integration, TestGenerateAddresses) {
 	tt[0].goldenFile = "generate-addresses.golden";
 
 	for (int i = 0; i < lenStruct; i++) {
+
 		createTempWalletDir(tt[i].encrypted);
 		char output[BUFFER_SIZE];
 		Config__Handle configHandle;

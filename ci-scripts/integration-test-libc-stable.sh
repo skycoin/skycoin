@@ -91,7 +91,10 @@ set +e
 
 
 LD_LIBRARY_PATH="/usr/local/lib:build/usr/lib:build/libskycoin" ./bin/test_int_libskycoin_shared
+FAIL_STATIC_SHARED=$?
+
 LD_LIBRARY_PATH="/usr/local/lib:build/usr/lib:build/libskycoin" ./bin/test_int_libskycoin_static
+FAIL_STATIC=$?
 
 echo "shutting down skycoin node"
 
@@ -101,4 +104,10 @@ wait $SKYCOIN_PID
 
 rm "$BINARY"
 
-# exit $FAIL
+if [ $FAIL_STATIC_SHARED -ne 0 ]; then
+	exit $FAIL_STATIC_SHARED
+elif [ $FAIL_STATIC -ne 0 ]; then
+	exit $FAIL_STATIC
+else
+	exit 0
+fi

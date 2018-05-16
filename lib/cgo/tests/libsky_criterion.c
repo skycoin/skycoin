@@ -102,8 +102,7 @@ char *cr_user_cipher__SHA256_tostr(cipher__SHA256 *sh1) {
 }
 
 int cr_user_GoSlice_eq(GoSlice *slice1, GoSlice *slice2){
-	return ((slice1->len == slice2->len)) && 
-		(memcmp(slice1->data,slice2->data, sizeof(GoSlice))==0);
+	return (memcmp(slice1->data,slice2->data, sizeof(GoSlice))==0);
 }
 
 int cr_user_GoSlice_noteq(GoSlice *slice1, GoSlice *slice2){

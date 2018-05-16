@@ -102,10 +102,10 @@ Test(cipher_secp256k1, Test_SignatureVerifyPubkey){
 
 	error_code = SKY_secp256k1_GenerateKeyPair((coin__UxArray*)&pubKeySlice, (coin__UxArray*)&secKeySlice);
 	cr_assert(error_code == SKY_OK, "SKY_secp256k1_GenerateKeyPair failed");
-	
+
 	GoSlice msg = {buff, 0, SigSize};
 	SKY_secp256k1_RandByte(32, (coin__UxArray*)&msg);
-	
+
 	GoSlice recoveredPubKeySlice = {recoveredPubkey, 0, sizeof(cipher__PubKey)};
 	GoSlice sig = {sigBuffer, 0, BUFFER_SIZE };
 	SKY_secp256k1_Sign(msg, secKeySlice, (GoSlice_*)&sig);
@@ -130,22 +130,22 @@ Test(cipher_secp256k1, Test_verify_functions){
 
 	error_code = SKY_secp256k1_GenerateKeyPair((coin__UxArray*)&pubKeySlice, (coin__UxArray*)&secKeySlice);
 	cr_assert(error_code == SKY_OK, "SKY_secp256k1_GenerateKeyPair failed");
-	
+
 	GoSlice msg = {buff, 0, SigSize};
 	SKY_secp256k1_RandByte(32, (coin__UxArray*)&msg);
-	
+
 	GoSlice sig = {sigBuffer, 0, BUFFER_SIZE };
 	SKY_secp256k1_Sign(msg, secKeySlice, (GoSlice_*)&sig);
 	GoInt result = 0;
-	
+
 	error_code = SKY_secp256k1_VerifySeckey(secKeySlice, &result);
 	cr_assert(error_code == SKY_OK, "SKY_secp256k1_VerifySeckey failed");
 	cr_assert(result == 1, "Sec key not verified");
-	
+
 	error_code = SKY_secp256k1_VerifyPubkey(pubKeySlice, &result);
 	cr_assert(error_code == SKY_OK, "SKY_secp256k1_VerifyPubkey failed");
 	cr_assert(result == 1, "Public key not verified");
-	
+
 	error_code = SKY_secp256k1_VerifySignature(msg, sig, pubKeySlice, &result);
 	cr_assert(error_code == SKY_OK, "SKY_secp256k1_VerifySignature failed");
 	cr_assert(result == 1, "Signature not verified");
@@ -166,4 +166,3 @@ Test(cipher_secp256k1,Test_SignatureVerifySecKey ){
 	SKY_secp256k1_VerifyPubkey(slpubkey,&errorPubKey);
 	cr_assert(errorPubKey != SKY_OK);
 }
-

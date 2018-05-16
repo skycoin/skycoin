@@ -90,8 +90,10 @@ type Config struct {
 	EnableGUI bool
 	// Disable CSRF check in the wallet API
 	DisableCSRF bool
-	// Enable /wallet/seed API endpoint
+	// Enable /api/v1/wallet/seed API endpoint
 	EnableSeedAPI bool
+	// Enable unversioned API endpoints (without the /api/v1 prefix)
+	EnableUnversionedAPI bool
 
 	// Only run on localhost and only connect to others on localhost
 	LocalhostOnly bool
@@ -186,8 +188,9 @@ func (c *Config) register() {
 	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
 	flag.BoolVar(&c.EnableWalletAPI, "enable-wallet-api", c.EnableWalletAPI, "Enable the wallet API")
 	flag.BoolVar(&c.EnableGUI, "enable-gui", c.EnableGUI, "Enable GUI")
+	flag.BoolVar(&c.EnableUnversionedAPI, "enable-unversioned-api", c.EnableUnversionedAPI, "Enable the deprecated unversioned API endpoints without /api/v1 prefix")
 	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable CSRF check")
-	flag.BoolVar(&c.EnableSeedAPI, "enable-seed-api", c.EnableSeedAPI, "enable /wallet/seed api")
+	flag.BoolVar(&c.EnableSeedAPI, "enable-seed-api", c.EnableSeedAPI, "enable /api/v1/wallet/seed api")
 	flag.StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
 
@@ -252,6 +255,8 @@ var devConfig = Config{
 	EnableWalletAPI: false,
 	// Enable GUI
 	EnableGUI: false,
+	// Enable unversioned API
+	EnableUnversionedAPI: false,
 	// Enable seed API
 	EnableSeedAPI: false,
 	// Disable CSRF check in the wallet API
@@ -429,14 +434,15 @@ func createGUI(c *Config, d *daemon.Daemon, host string) (*api.Server, error) {
 	var err error
 
 	config := api.Config{
-		StaticDir:       c.GUIDirectory,
-		DisableCSRF:     c.DisableCSRF,
-		EnableWalletAPI: c.EnableWalletAPI,
-		EnableJSON20RPC: c.RPCInterface,
-		EnableGUI:       c.EnableGUI,
-		ReadTimeout:     c.ReadTimeout,
-		WriteTimeout:    c.WriteTimeout,
-		IdleTimeout:     c.IdleTimeout,
+		StaticDir:            c.GUIDirectory,
+		DisableCSRF:          c.DisableCSRF,
+		EnableWalletAPI:      c.EnableWalletAPI,
+		EnableJSON20RPC:      c.RPCInterface,
+		EnableGUI:            c.EnableGUI,
+		EnableUnversionedAPI: c.EnableUnversionedAPI,
+		ReadTimeout:          c.ReadTimeout,
+		WriteTimeout:         c.WriteTimeout,
+		IdleTimeout:          c.IdleTimeout,
 	}
 
 	if c.WebInterfaceHTTPS {

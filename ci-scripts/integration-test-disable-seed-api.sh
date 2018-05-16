@@ -1,6 +1,6 @@
 #!/bin/bash
 # Runs "disable-seed-api"-mode tests against a skycoin node configured with -enable-seed-api=false
-# and /wallet/seed api endpoint should return 403 forbidden error.
+# and /api/v1/wallet/seed api endpoint should return 403 forbidden error.
 
 #Set Script Name variable
 SCRIPT=`basename ${BASH_SOURCE[0]}`

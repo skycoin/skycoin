@@ -208,7 +208,7 @@ func TestGetBlock(t *testing.T) {
 			gateway.On("GetSignedBlockByHash", tc.sha256).Return(tc.gatewayGetBlockByHashResult, tc.gatewayGetBlockByHashErr)
 			gateway.On("GetSignedBlockBySeq", tc.seq).Return(tc.gatewayGetBlockBySeqResult, tc.gatewayGetBlockBySeqErr)
 
-			endpoint := "/block"
+			endpoint := "/api/v1/block"
 
 			v := url.Values{}
 			if tc.hash != "" {
@@ -334,7 +334,7 @@ func TestGetBlocks(t *testing.T) {
 			gateway := &GatewayerMock{}
 			gateway.On("GetBlocks", tc.start, tc.end).Return(tc.gatewayGetBlocksResult, tc.gatewayGetBlocksError)
 
-			endpoint := "/blocks"
+			endpoint := "/api/v1/blocks"
 
 			v := url.Values{}
 			if tc.body != nil {
@@ -445,7 +445,7 @@ func TestGetLastBlocks(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			endpoint := "/last_blocks"
+			endpoint := "/api/v1/last_blocks"
 			gateway := NewGatewayerMock()
 
 			gateway.On("GetLastBlocks", tc.num).Return(tc.gatewayGetLastBlocksResult, tc.gatewayGetLastBlocksError)

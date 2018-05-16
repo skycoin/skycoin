@@ -12,7 +12,6 @@ extern char *cr_user_cipher__Address_tostr(cipher__Address *addr1);
 extern int cr_user_cipher__Address_noteq(cipher__Address *addr1, cipher__Address *addr2);
 
 extern int cr_user_GoString_eq(GoString *string1, GoString *string2);
-
 extern int cr_user_GoString__eq(GoString_ *string1, GoString_ *string2);
 
 extern char *cr_user_GoString_tostr(GoString *string);
@@ -28,6 +27,7 @@ extern char *cr_user_cipher__Ripemd160_tostr(Ripemd160 *rp1);
 extern int cr_user_GoSlice_eq(GoSlice *slice1, GoSlice *slice2);
 extern char *cr_user_GoSlice_tostr(GoSlice *slice1);
 extern int cr_user_GoSlice_noteq(GoSlice *slice1, GoSlice *slice2);
+
 
 extern int cr_user_GoSlice__eq(GoSlice_ *slice1, GoSlice_ *slice2);
 extern char *cr_user_GoSlice__tostr(GoSlice_ *slice1);

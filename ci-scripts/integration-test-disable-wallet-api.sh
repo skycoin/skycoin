@@ -11,7 +11,6 @@ HOST="http://127.0.0.1:$PORT"
 RPC_ADDR="http://127.0.0.1:$RPC_PORT"
 MODE="disable-wallet-api"
 BINARY="skycoin-integration"
-TEST=""
 UPDATE=""
 # run go test with -v flag
 VERBOSE=""
@@ -26,7 +25,6 @@ GOLDFLAGS="-X main.Commit=${COMMIT} -X main.Branch=${BRANCH}"
 usage () {
   echo "Usage: $SCRIPT"
   echo "Optional command line arguments"
-  echo "-t <string>  -- Test to run, gui or cli; empty runs both tests"
   echo "-r <string>  -- Run test with -run flag"
   echo "-u <boolean> -- Update stable testdata"
   echo "-v <boolean> -- Run test with -v flag"
@@ -39,7 +37,6 @@ while getopts "h?t:r:uvf" args; do
     h|\?)
         usage;
         exit;;
-    t ) TEST=${OPTARG};;
     r ) RUN_TESTS="-run ${OPTARG}";;
     u ) UPDATE="--update";;
     v ) VERBOSE="-v";;
@@ -85,24 +82,10 @@ echo "done sleeping"
 
 set +e
 
-if [[ -z $TEST || $TEST = "gui" ]]; then
-
 SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST WALLET_DIR=$WALLET_DIR \
     go test ./src/api/integration/... $FAILFAST $UPDATE -timeout=30s $VERBOSE $RUN_TESTS
 
-GUI_FAIL=$?
-
-fi
-
-if [[ -z $TEST  || $TEST = "cli" ]]; then
-
-SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR \
-    go test ./src/cli/integration/... $FAILFAST $UPDATE -timeout=30s $VERBOSE $RUN_TESTS
-
-CLI_FAIL=$?
-
-fi
-
+FAIL=$?
 
 echo "shutting down skycoin node"
 
@@ -112,12 +95,4 @@ wait $SKYCOIN_PID
 
 rm "$BINARY"
 
-
-if [[ (-z $TEST || $TEST = "gui") && $GUI_FAIL -ne 0 ]]; then
-  exit $GUI_FAIL
-elif [[ (-z $TEST || $TEST = "cli") && $CLI_FAIL -ne 0 ]]; then
-  exit $CLI_FAIL
-else
-  exit 0
-fi
-# exit $FAIL
+exit $FAIL

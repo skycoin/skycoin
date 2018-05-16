@@ -1987,6 +1987,7 @@ Result:
     "outgoing": false,
     "introduced": true,
     "mirror": 719118746,
+    "height": 181,
     "listen_port": 6000
 }
 ```
@@ -2017,6 +2018,7 @@ Result:
             "outgoing": false,
             "introduced": true,
             "mirror": 1338939619,
+            "height": 180,
             "listen_port": 20002
         },
         {
@@ -2027,6 +2029,7 @@ Result:
             "outgoing": false,
             "introduced": true,
             "mirror": 719118746,
+            "height": 182,
             "listen_port": 6000
         },
         {
@@ -2037,6 +2040,7 @@ Result:
             "outgoing": false,
             "introduced": true,
             "mirror": 1931713869,
+            "height": 180,
             "listen_port": 6000
         }
     ]

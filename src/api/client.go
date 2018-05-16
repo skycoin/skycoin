@@ -603,8 +603,8 @@ func (c *Client) NetworkConnection(addr string) (*daemon.Connection, error) {
 }
 
 // NetworkConnections makes a request to /network/connections
-func (c *Client) NetworkConnections() (*daemon.Connections, error) {
-	var dc daemon.Connections
+func (c *Client) NetworkConnections() (*Connections, error) {
+	var dc Connections
 	if err := c.Get("/network/connections", &dc); err != nil {
 		return nil, err
 	}

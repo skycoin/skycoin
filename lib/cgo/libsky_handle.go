@@ -5,7 +5,8 @@ package main
   #include <string.h>
   #include <stdlib.h>
 
-  #include "../../include/skytypes.h"
+
+  #include "skytypes.h"
 */
 import "C"
 
@@ -17,7 +18,6 @@ import (
 	api "github.com/skycoin/skycoin/src/api"
 	gcli "github.com/urfave/cli"
 	"encoding/json"
-
 )
 
 type Handle uint64

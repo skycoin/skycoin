@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -193,6 +194,27 @@ func updateGoldenFile(t *testing.T, filename string, content interface{}) {
 	contentJSON = append(contentJSON, '\n')
 	err = ioutil.WriteFile(filename, contentJSON, 0644)
 	require.NoError(t, err)
+}
+
+func checkGoldenFile(t *testing.T, goldenFile string, td TestData) {
+	loadGoldenFile(t, goldenFile, td)
+	require.Equal(t, reflect.Indirect(reflect.ValueOf(td.expected)).Interface(), td.actual)
+
+	// Serialized expected to JSON and compare to the goldenFile's contents
+	// This will detect field changes that could be missed otherwise
+	b, err := json.MarshalIndent(td.expected, "", "\t")
+	require.NoError(t, err)
+
+	goldenFile = filepath.Join(testFixturesDir, goldenFile)
+
+	f, err := os.Open(goldenFile)
+	require.NoError(t, err)
+	defer f.Close()
+
+	c, err := ioutil.ReadAll(f)
+	require.NoError(t, err)
+
+	require.Equal(t, string(c), string(b)+"\n", "json struct output differs from golden file, was a field added to the struct?")
 }
 
 func writeJSON(t *testing.T, filename string, obj interface{}) {
@@ -402,7 +424,6 @@ func TestGenerateAddresses(t *testing.T) {
 			// Use loadJSON instead of loadGoldenFile because this golden file
 			// should not use the *update flag
 			goldenFile := filepath.Join(testFixturesDir, tc.goldenFile)
-			fmt.Println("goldenFile:", goldenFile)
 			var expect wallet.ReadableWallet
 			loadJSON(t, goldenFile, &expect)
 			if tc.encrypted {
@@ -501,8 +522,7 @@ func TestDecodeRawTransaction(t *testing.T) {
 			require.NoError(t, err)
 
 			var expect visor.TransactionJSON
-			loadGoldenFile(t, tc.goldenFile, TestData{txn, &expect})
-			require.Equal(t, expect, txn)
+			checkGoldenFile(t, tc.goldenFile, TestData{txn, &expect})
 		})
 	}
 
@@ -779,8 +799,7 @@ func TestStableListWallets(t *testing.T) {
 	var expect struct {
 		Wallets []cli.WalletEntry `json:"wallets"`
 	}
-	loadGoldenFile(t, "list-wallets.golden", TestData{wlts, &expect})
-	require.Equal(t, expect, wlts)
+	checkGoldenFile(t, "list-wallets.golden", TestData{wlts, &expect})
 }
 
 func TestLiveListWallets(t *testing.T) {
@@ -821,8 +840,7 @@ func TestStableListAddress(t *testing.T) {
 	var expect struct {
 		Addresses []string `json:"addresses"`
 	}
-	loadGoldenFile(t, "list-addresses.golden", TestData{wltAddresses, &expect})
-	require.Equal(t, expect, wltAddresses)
+	checkGoldenFile(t, "list-addresses.golden", TestData{wltAddresses, &expect})
 }
 
 func TestLiveListAddresses(t *testing.T) {
@@ -858,8 +876,7 @@ func TestStableAddressBalance(t *testing.T) {
 	require.NoError(t, err)
 
 	var expect cli.BalanceResult
-	loadGoldenFile(t, "address-balance.golden", TestData{addrBalance, &expect})
-	require.Equal(t, expect, addrBalance)
+	checkGoldenFile(t, "address-balance.golden", TestData{addrBalance, &expect})
 }
 
 func TestLiveAddressBalance(t *testing.T) {
@@ -891,8 +908,7 @@ func TestStableWalletBalance(t *testing.T) {
 	require.NoError(t, err)
 
 	var expect cli.BalanceResult
-	loadGoldenFile(t, "wallet-balance.golden", TestData{wltBalance, &expect})
-	require.Equal(t, expect, wltBalance)
+	checkGoldenFile(t, "wallet-balance.golden", TestData{wltBalance, &expect})
 }
 
 func TestLiveWalletBalance(t *testing.T) {
@@ -929,8 +945,7 @@ func TestStableWalletOutputs(t *testing.T) {
 	require.NoError(t, err)
 
 	var expect webrpc.OutputsResult
-	loadGoldenFile(t, "wallet-outputs.golden", TestData{wltOutput, &expect})
-	require.Equal(t, expect, wltOutput)
+	checkGoldenFile(t, "wallet-outputs.golden", TestData{wltOutput, &expect})
 }
 
 func TestLiveWalletOutputs(t *testing.T) {
@@ -997,8 +1012,7 @@ func TestStableAddressOutputs(t *testing.T) {
 			require.NoError(t, err)
 
 			var expect webrpc.OutputsResult
-			loadGoldenFile(t, tc.goldenFile, TestData{addrOutputs, &expect})
-			require.Equal(t, expect, addrOutputs)
+			checkGoldenFile(t, tc.goldenFile, TestData{addrOutputs, &expect})
 		})
 	}
 }
@@ -1045,8 +1059,7 @@ func TestStableShowConfig(t *testing.T) {
 	}
 
 	var expect cli.Config
-	loadGoldenFile(t, goldenFile, TestData{ret, &expect})
-	require.Equal(t, expect, ret)
+	checkGoldenFile(t, goldenFile, TestData{ret, &expect})
 }
 
 func TestLiveShowConfig(t *testing.T) {
@@ -1108,8 +1121,7 @@ func TestStableStatus(t *testing.T) {
 	}
 
 	var expect cli.StatusResult
-	loadGoldenFile(t, goldenFile, TestData{ret, &expect})
-	require.Equal(t, expect, ret)
+	checkGoldenFile(t, goldenFile, TestData{ret, &expect})
 }
 
 func TestLiveStatus(t *testing.T) {
@@ -1188,9 +1200,7 @@ func TestStableTransaction(t *testing.T) {
 			require.NoError(t, err)
 
 			var expect webrpc.TxnResult
-			loadGoldenFile(t, tc.goldenFile, TestData{tx, &expect})
-
-			require.Equal(t, expect, tx)
+			checkGoldenFile(t, tc.goldenFile, TestData{tx, &expect})
 		})
 	}
 
@@ -1355,8 +1365,7 @@ func TestStableBlocks(t *testing.T) {
 	require.NoError(t, err)
 
 	var expect visor.ReadableBlocks
-	loadGoldenFile(t, "blocks180.golden", TestData{blocks, &expect})
-	require.Equal(t, expect, blocks)
+	checkGoldenFile(t, "blocks180.golden", TestData{blocks, &expect})
 }
 
 func TestLiveBlocks(t *testing.T) {
@@ -1406,8 +1415,7 @@ func testKnownBlocks(t *testing.T) {
 			require.NoError(t, err)
 
 			var expect visor.ReadableBlocks
-			loadGoldenFile(t, tc.goldenFile, TestData{blocks, &expect})
-			require.Equal(t, expect, blocks)
+			checkGoldenFile(t, tc.goldenFile, TestData{blocks, &expect})
 		})
 	}
 
@@ -1475,8 +1483,7 @@ func TestStableLastBlocks(t *testing.T) {
 			require.NoError(t, err)
 
 			var expect visor.ReadableBlocks
-			loadGoldenFile(t, tc.goldenFile, TestData{blocks, &expect})
-			require.Equal(t, expect, blocks)
+			checkGoldenFile(t, tc.goldenFile, TestData{blocks, &expect})
 		})
 	}
 }
@@ -2009,8 +2016,7 @@ func TestStableWalletHistory(t *testing.T) {
 	require.NoError(t, err)
 
 	var expect []cli.AddrHistory
-	loadGoldenFile(t, "wallet-history.golden", TestData{history, &expect})
-	require.Equal(t, expect, history)
+	checkGoldenFile(t, "wallet-history.golden", TestData{history, &expect})
 }
 
 func TestLiveWalletHistory(t *testing.T) {

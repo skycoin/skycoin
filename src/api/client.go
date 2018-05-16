@@ -106,18 +106,18 @@ func (c *Client) get(endpoint string) (*http.Response, error) {
 }
 
 // PostForm makes a POST request to an endpoint with body of "application/x-www-form-urlencoded" formated data.
-func (c *Client) PostForm(endpoints string, body io.Reader, obj interface{}) error {
-	return c.post(endpoints, "application/x-www-form-urlencoded", body, obj)
+func (c *Client) PostForm(endpoint string, body io.Reader, obj interface{}) error {
+	return c.post(endpoint, "application/x-www-form-urlencoded", body, obj)
 }
 
 // PostJSON makes a POST request to an endpoint with body of json data.
-func (c *Client) PostJSON(endpoints string, reqObj, respObj interface{}) error {
+func (c *Client) PostJSON(endpoint string, reqObj, respObj interface{}) error {
 	body, err := json.Marshal(reqObj)
 	if err != nil {
 		return err
 	}
 
-	return c.post(endpoints, "application/json", bytes.NewReader(body), respObj)
+	return c.post(endpoint, "application/json", bytes.NewReader(body), respObj)
 }
 
 // Post makes a POST request to an endpoint. Caller must close response body.
@@ -170,7 +170,7 @@ func (c *Client) post(endpoint string, contentType string, body io.Reader, obj i
 
 // CSRF returns a CSRF token. If CSRF is disabled on the node, returns an empty string and nil error.
 func (c *Client) CSRF() (string, error) {
-	resp, err := c.get("/csrf")
+	resp, err := c.get("/api/v1/csrf")
 	if err != nil {
 		return "", err
 	}
@@ -208,29 +208,29 @@ func (c *Client) CSRF() (string, error) {
 	return token, nil
 }
 
-// Version makes a request to /version
+// Version makes a request to GET /api/v1/version
 func (c *Client) Version() (*visor.BuildInfo, error) {
 	var bi visor.BuildInfo
-	if err := c.Get("/version", &bi); err != nil {
+	if err := c.Get("/api/v1/version", &bi); err != nil {
 		return nil, err
 	}
 	return &bi, nil
 }
 
-// Outputs makes a request to /outputs
+// Outputs makes a request to GET /api/v1/outputs
 func (c *Client) Outputs() (*visor.ReadableOutputSet, error) {
 	var o visor.ReadableOutputSet
-	if err := c.Get("/outputs", &o); err != nil {
+	if err := c.Get("/api/v1/outputs", &o); err != nil {
 		return nil, err
 	}
 	return &o, nil
 }
 
-// OutputsForAddresses makes a request to /outputs?addrs=xxx
+// OutputsForAddresses makes a request to GET /api/v1/outputs?addrs=xxx
 func (c *Client) OutputsForAddresses(addrs []string) (*visor.ReadableOutputSet, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
-	endpoint := "/outputs?" + v.Encode()
+	endpoint := "/api/v1/outputs?" + v.Encode()
 
 	var o visor.ReadableOutputSet
 	if err := c.Get(endpoint, &o); err != nil {
@@ -239,11 +239,11 @@ func (c *Client) OutputsForAddresses(addrs []string) (*visor.ReadableOutputSet, 
 	return &o, nil
 }
 
-// OutputsForHashes makes a request to /outputs?hashes=zzz
+// OutputsForHashes makes a request to GET /api/v1/outputs?hashes=zzz
 func (c *Client) OutputsForHashes(hashes []string) (*visor.ReadableOutputSet, error) {
 	v := url.Values{}
 	v.Add("hashes", strings.Join(hashes, ","))
-	endpoint := "/outputs?" + v.Encode()
+	endpoint := "/api/v1/outputs?" + v.Encode()
 
 	var o visor.ReadableOutputSet
 	if err := c.Get(endpoint, &o); err != nil {
@@ -252,20 +252,20 @@ func (c *Client) OutputsForHashes(hashes []string) (*visor.ReadableOutputSet, er
 	return &o, nil
 }
 
-// CoinSupply makes a request to /coinSupply
+// CoinSupply makes a request to GET /api/v1/coinSupply
 func (c *Client) CoinSupply() (*CoinSupply, error) {
 	var cs CoinSupply
-	if err := c.Get("/coinSupply", &cs); err != nil {
+	if err := c.Get("/api/v1/coinSupply", &cs); err != nil {
 		return nil, err
 	}
 	return &cs, nil
 }
 
-// BlockByHash makes a request to /block?hash=xxx
+// BlockByHash makes a request to GET /api/v1/block?hash=xxx
 func (c *Client) BlockByHash(hash string) (*visor.ReadableBlock, error) {
 	v := url.Values{}
 	v.Add("hash", hash)
-	endpoint := "/block?" + v.Encode()
+	endpoint := "/api/v1/block?" + v.Encode()
 
 	var b visor.ReadableBlock
 	if err := c.Get(endpoint, &b); err != nil {
@@ -274,11 +274,11 @@ func (c *Client) BlockByHash(hash string) (*visor.ReadableBlock, error) {
 	return &b, nil
 }
 
-// BlockBySeq makes a request to /block?seq=xxx
+// BlockBySeq makes a request to GET /api/v1/block?seq=xxx
 func (c *Client) BlockBySeq(seq uint64) (*visor.ReadableBlock, error) {
 	v := url.Values{}
 	v.Add("seq", fmt.Sprint(seq))
-	endpoint := "/block?" + v.Encode()
+	endpoint := "/api/v1/block?" + v.Encode()
 
 	var b visor.ReadableBlock
 	if err := c.Get(endpoint, &b); err != nil {
@@ -287,12 +287,12 @@ func (c *Client) BlockBySeq(seq uint64) (*visor.ReadableBlock, error) {
 	return &b, nil
 }
 
-// Blocks makes a request to /blocks
+// Blocks makes a request to GET /api/v1/blocks
 func (c *Client) Blocks(start, end int) (*visor.ReadableBlocks, error) {
 	v := url.Values{}
 	v.Add("start", fmt.Sprint(start))
 	v.Add("end", fmt.Sprint(end))
-	endpoint := "/blocks?" + v.Encode()
+	endpoint := "/api/v1/blocks?" + v.Encode()
 
 	var b visor.ReadableBlocks
 	if err := c.Get(endpoint, &b); err != nil {
@@ -301,11 +301,11 @@ func (c *Client) Blocks(start, end int) (*visor.ReadableBlocks, error) {
 	return &b, nil
 }
 
-// LastBlocks makes a request to /last_blocks
+// LastBlocks makes a request to GET /api/v1/last_blocks
 func (c *Client) LastBlocks(n int) (*visor.ReadableBlocks, error) {
 	v := url.Values{}
 	v.Add("num", fmt.Sprint(n))
-	endpoint := "/last_blocks?" + v.Encode()
+	endpoint := "/api/v1/last_blocks?" + v.Encode()
 
 	var b visor.ReadableBlocks
 	if err := c.Get(endpoint, &b); err != nil {
@@ -314,29 +314,29 @@ func (c *Client) LastBlocks(n int) (*visor.ReadableBlocks, error) {
 	return &b, nil
 }
 
-// BlockchainMetadata makes a request to /blockchain/metadata
+// BlockchainMetadata makes a request to GET /api/v1/blockchain/metadata
 func (c *Client) BlockchainMetadata() (*visor.BlockchainMetadata, error) {
 	var b visor.BlockchainMetadata
-	if err := c.Get("/blockchain/metadata", &b); err != nil {
+	if err := c.Get("/api/v1/blockchain/metadata", &b); err != nil {
 		return nil, err
 	}
 	return &b, nil
 }
 
-// BlockchainProgress makes a request to /blockchain/progress
+// BlockchainProgress makes a request to GET /api/v1/blockchain/progress
 func (c *Client) BlockchainProgress() (*daemon.BlockchainProgress, error) {
 	var b daemon.BlockchainProgress
-	if err := c.Get("/blockchain/progress", &b); err != nil {
+	if err := c.Get("/api/v1/blockchain/progress", &b); err != nil {
 		return nil, err
 	}
 	return &b, nil
 }
 
-// Balance makes a request to /balance?addrs=xxx
+// Balance makes a request to GET /api/v1/balance?addrs=xxx
 func (c *Client) Balance(addrs []string) (*wallet.BalancePair, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
-	endpoint := "/balance?" + v.Encode()
+	endpoint := "/api/v1/balance?" + v.Encode()
 
 	var b wallet.BalancePair
 	if err := c.Get(endpoint, &b); err != nil {
@@ -345,11 +345,11 @@ func (c *Client) Balance(addrs []string) (*wallet.BalancePair, error) {
 	return &b, nil
 }
 
-// UxOut makes a request to /uxout?uxid=xxx
+// UxOut makes a request to GET /api/v1/uxout?uxid=xxx
 func (c *Client) UxOut(uxID string) (*historydb.UxOutJSON, error) {
 	v := url.Values{}
 	v.Add("uxid", uxID)
-	endpoint := "/uxout?" + v.Encode()
+	endpoint := "/api/v1/uxout?" + v.Encode()
 
 	var b historydb.UxOutJSON
 	if err := c.Get(endpoint, &b); err != nil {
@@ -358,11 +358,11 @@ func (c *Client) UxOut(uxID string) (*historydb.UxOutJSON, error) {
 	return &b, nil
 }
 
-// AddressUxOuts makes a request to /address_uxouts
+// AddressUxOuts makes a request to GET /api/v1/address_uxouts
 func (c *Client) AddressUxOuts(addr string) ([]*historydb.UxOutJSON, error) {
 	v := url.Values{}
 	v.Add("address", addr)
-	endpoint := "/address_uxouts?" + v.Encode()
+	endpoint := "/api/v1/address_uxouts?" + v.Encode()
 
 	var b []*historydb.UxOutJSON
 	if err := c.Get(endpoint, &b); err != nil {
@@ -371,11 +371,11 @@ func (c *Client) AddressUxOuts(addr string) ([]*historydb.UxOutJSON, error) {
 	return b, nil
 }
 
-// Wallet makes a request to /wallet
+// Wallet makes a request to GET /api/v1/wallet
 func (c *Client) Wallet(id string) (*WalletResponse, error) {
 	v := url.Values{}
 	v.Add("id", id)
-	endpoint := "/wallet?" + v.Encode()
+	endpoint := "/api/v1/wallet?" + v.Encode()
 
 	var wr WalletResponse
 	if err := c.Get(endpoint, &wr); err != nil {
@@ -385,18 +385,18 @@ func (c *Client) Wallet(id string) (*WalletResponse, error) {
 	return &wr, nil
 }
 
-// Wallets makes a request to /wallets
+// Wallets makes a request to GET /api/v1/wallets
 func (c *Client) Wallets() ([]*WalletResponse, error) {
 	var wrs []*WalletResponse
-	if err := c.Get("/wallets", &wrs); err != nil {
+	if err := c.Get("/api/v1/wallets", &wrs); err != nil {
 		return nil, err
 	}
 
 	return wrs, nil
 }
 
-// CreateUnencryptedWallet makes a request to /wallet/create and create
-// a wallet without no encryption
+// CreateUnencryptedWallet makes a request to POST /api/v1/wallet/create and creates
+// a wallet without encryption.
 // If scanN is <= 0, the scan number defaults to 1
 func (c *Client) CreateUnencryptedWallet(seed, label string, scanN int) (*WalletResponse, error) {
 	v := url.Values{}
@@ -409,13 +409,13 @@ func (c *Client) CreateUnencryptedWallet(seed, label string, scanN int) (*Wallet
 	}
 
 	var w WalletResponse
-	if err := c.PostForm("/wallet/create", strings.NewReader(v.Encode()), &w); err != nil {
+	if err := c.PostForm("/api/v1/wallet/create", strings.NewReader(v.Encode()), &w); err != nil {
 		return nil, err
 	}
 	return &w, nil
 }
 
-// CreateEncryptedWallet makes a request to /wallet/create and try to create
+// CreateEncryptedWallet makes a request to POST /api/v1/wallet/create and try to create
 // a wallet with encryption.
 // If scanN is <= 0, the scan number defaults to 1
 func (c *Client) CreateEncryptedWallet(seed, label, password string, scanN int) (*WalletResponse, error) {
@@ -430,13 +430,13 @@ func (c *Client) CreateEncryptedWallet(seed, label, password string, scanN int) 
 	}
 
 	var w WalletResponse
-	if err := c.PostForm("/wallet/create", strings.NewReader(v.Encode()), &w); err != nil {
+	if err := c.PostForm("/api/v1/wallet/create", strings.NewReader(v.Encode()), &w); err != nil {
 		return nil, err
 	}
 	return &w, nil
 }
 
-// NewWalletAddress makes a request to /wallet/newAddress
+// NewWalletAddress makes a request to POST /api/v1/wallet/newAddress
 // if n is <= 0, defaults to 1
 func (c *Client) NewWalletAddress(id string, n int, password string) ([]string, error) {
 	v := url.Values{}
@@ -450,17 +450,17 @@ func (c *Client) NewWalletAddress(id string, n int, password string) ([]string, 
 	var obj struct {
 		Addresses []string `json:"addresses"`
 	}
-	if err := c.PostForm("/wallet/newAddress", strings.NewReader(v.Encode()), &obj); err != nil {
+	if err := c.PostForm("/api/v1/wallet/newAddress", strings.NewReader(v.Encode()), &obj); err != nil {
 		return nil, err
 	}
 	return obj.Addresses, nil
 }
 
-// WalletBalance makes a request to /wallet/balance
+// WalletBalance makes a request to GET /api/v1/wallet/balance
 func (c *Client) WalletBalance(id string) (*BalanceResponse, error) {
 	v := url.Values{}
 	v.Add("id", id)
-	endpoint := "/wallet/balance?" + v.Encode()
+	endpoint := "/api/v1/wallet/balance?" + v.Encode()
 
 	var b BalanceResponse
 	if err := c.Get(endpoint, &b); err != nil {
@@ -469,7 +469,7 @@ func (c *Client) WalletBalance(id string) (*BalanceResponse, error) {
 	return &b, nil
 }
 
-// Spend makes a request to /wallet/spend
+// Spend makes a request to POST /api/v1/wallet/spend
 func (c *Client) Spend(id, dst string, coins uint64, password string) (*SpendResult, error) {
 	v := url.Values{}
 	v.Add("id", id)
@@ -478,7 +478,7 @@ func (c *Client) Spend(id, dst string, coins uint64, password string) (*SpendRes
 	v.Add("password", password)
 
 	var r SpendResult
-	endpoint := "/wallet/spend"
+	endpoint := "/api/v1/wallet/spend"
 	if err := c.PostForm(endpoint, strings.NewReader(v.Encode()), &r); err != nil {
 		return nil, err
 	}
@@ -516,10 +516,10 @@ type Receiver struct {
 	Hours   string `json:"hours,omitempty"`
 }
 
-// CreateTransaction makes a request to POST /wallet/transaction
+// CreateTransaction makes a request to POST /api/v1/wallet/transaction
 func (c *Client) CreateTransaction(req CreateTransactionRequest) (*CreateTransactionResponse, error) {
 	var r CreateTransactionResponse
-	endpoint := "/wallet/transaction"
+	endpoint := "/api/v1/wallet/transaction"
 	if err := c.PostJSON(endpoint, req, &r); err != nil {
 		return nil, err
 	}
@@ -527,11 +527,11 @@ func (c *Client) CreateTransaction(req CreateTransactionRequest) (*CreateTransac
 	return &r, nil
 }
 
-// WalletTransactions makes a request to /wallet/transactions
+// WalletTransactions makes a request to GET /api/v1/wallet/transactions
 func (c *Client) WalletTransactions(id string) (*UnconfirmedTxnsResponse, error) {
 	v := url.Values{}
 	v.Add("id", id)
-	endpoint := "/wallet/transactions?" + v.Encode()
+	endpoint := "/api/v1/wallet/transactions?" + v.Encode()
 
 	var utx *UnconfirmedTxnsResponse
 	if err := c.Get(endpoint, &utx); err != nil {
@@ -540,30 +540,30 @@ func (c *Client) WalletTransactions(id string) (*UnconfirmedTxnsResponse, error)
 	return utx, nil
 }
 
-// UpdateWallet makes a request to /wallet/update
+// UpdateWallet makes a request to POST /api/v1/wallet/update
 func (c *Client) UpdateWallet(id, label string) error {
 	v := url.Values{}
 	v.Add("id", id)
 	v.Add("label", label)
 
-	return c.PostForm("/wallet/update", strings.NewReader(v.Encode()), nil)
+	return c.PostForm("/api/v1/wallet/update", strings.NewReader(v.Encode()), nil)
 }
 
-// WalletFolderName makes a request to /wallets/folderName
+// WalletFolderName makes a request to GET /api/v1/wallets/folderName
 func (c *Client) WalletFolderName() (*WalletFolder, error) {
 	var w WalletFolder
-	if err := c.Get("/wallets/folderName", &w); err != nil {
+	if err := c.Get("/api/v1/wallets/folderName", &w); err != nil {
 		return nil, err
 	}
 	return &w, nil
 }
 
-// NewSeed makes a request to /wallet/newSeed
+// NewSeed makes a request to GET /api/v1/wallet/newSeed
 // entropy must be 128 or 256
 func (c *Client) NewSeed(entropy int) (string, error) {
 	v := url.Values{}
 	v.Add("entropy", fmt.Sprint(entropy))
-	endpoint := "/wallet/newSeed?" + v.Encode()
+	endpoint := "/api/v1/wallet/newSeed?" + v.Encode()
 
 	var r struct {
 		Seed string `json:"seed"`
@@ -574,7 +574,7 @@ func (c *Client) NewSeed(entropy int) (string, error) {
 	return r.Seed, nil
 }
 
-// GetWalletSeed makes a request to /wallet/seed
+// GetWalletSeed makes a request to POST /api/v1/wallet/seed
 func (c *Client) GetWalletSeed(id string, password string) (string, error) {
 	v := url.Values{}
 	v.Add("id", id)
@@ -583,18 +583,18 @@ func (c *Client) GetWalletSeed(id string, password string) (string, error) {
 	var r struct {
 		Seed string `json:"seed"`
 	}
-	if err := c.PostForm("/wallet/seed", strings.NewReader(v.Encode()), &r); err != nil {
+	if err := c.PostForm("/api/v1/wallet/seed", strings.NewReader(v.Encode()), &r); err != nil {
 		return "", err
 	}
 
 	return r.Seed, nil
 }
 
-// NetworkConnection makes a request to /network/connection
+// NetworkConnection makes a request to GET /api/v1/network/connection
 func (c *Client) NetworkConnection(addr string) (*daemon.Connection, error) {
 	v := url.Values{}
 	v.Add("addr", addr)
-	endpoint := "/network/connection?" + v.Encode()
+	endpoint := "/api/v1/network/connection?" + v.Encode()
 
 	var dc daemon.Connection
 	if err := c.Get(endpoint, &dc); err != nil {
@@ -603,56 +603,56 @@ func (c *Client) NetworkConnection(addr string) (*daemon.Connection, error) {
 	return &dc, nil
 }
 
-// NetworkConnections makes a request to /network/connections
+// NetworkConnections makes a request to GET /api/v1/network/connections
 func (c *Client) NetworkConnections() (*Connections, error) {
 	var dc Connections
-	if err := c.Get("/network/connections", &dc); err != nil {
+	if err := c.Get("/api/v1/network/connections", &dc); err != nil {
 		return nil, err
 	}
 	return &dc, nil
 }
 
-// NetworkDefaultConnections makes a request to /network/defaultConnections
+// NetworkDefaultConnections makes a request to GET /api/v1/network/defaultConnections
 func (c *Client) NetworkDefaultConnections() ([]string, error) {
 	var dc []string
-	if err := c.Get("/network/defaultConnections", &dc); err != nil {
+	if err := c.Get("/api/v1/network/defaultConnections", &dc); err != nil {
 		return nil, err
 	}
 	return dc, nil
 }
 
-// NetworkTrustedConnections makes a request to /network/connections/trust
+// NetworkTrustedConnections makes a request to GET /api/v1/network/connections/trust
 func (c *Client) NetworkTrustedConnections() ([]string, error) {
 	var dc []string
-	if err := c.Get("/network/connections/trust", &dc); err != nil {
+	if err := c.Get("/api/v1/network/connections/trust", &dc); err != nil {
 		return nil, err
 	}
 	return dc, nil
 }
 
-// NetworkExchangeableConnections makes a request to /network/connections/exchange
+// NetworkExchangeableConnections makes a request to GET /api/v1/network/connections/exchange
 func (c *Client) NetworkExchangeableConnections() ([]string, error) {
 	var dc []string
-	if err := c.Get("/network/connections/exchange", &dc); err != nil {
+	if err := c.Get("/api/v1/network/connections/exchange", &dc); err != nil {
 		return nil, err
 	}
 	return dc, nil
 }
 
-// PendingTransactions makes a request to /pendingTxs
+// PendingTransactions makes a request to GET /api/v1/pendingTxs
 func (c *Client) PendingTransactions() ([]*visor.ReadableUnconfirmedTxn, error) {
 	var v []*visor.ReadableUnconfirmedTxn
-	if err := c.Get("/pendingTxs", &v); err != nil {
+	if err := c.Get("/api/v1/pendingTxs", &v); err != nil {
 		return nil, err
 	}
 	return v, nil
 }
 
-// Transaction makes a request to /transaction
+// Transaction makes a request to GET /api/v1/transaction
 func (c *Client) Transaction(txid string) (*daemon.TransactionResult, error) {
 	v := url.Values{}
 	v.Add("txid", txid)
-	endpoint := "/transaction?" + v.Encode()
+	endpoint := "/api/v1/transaction?" + v.Encode()
 
 	var r daemon.TransactionResult
 	if err := c.Get(endpoint, &r); err != nil {
@@ -661,11 +661,11 @@ func (c *Client) Transaction(txid string) (*daemon.TransactionResult, error) {
 	return &r, nil
 }
 
-// Transactions makes a request to /transactions
+// Transactions makes a request to GET /api/v1/transactions
 func (c *Client) Transactions(addrs []string) (*[]daemon.TransactionResult, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
-	endpoint := "/transactions?" + v.Encode()
+	endpoint := "/api/v1/transactions?" + v.Encode()
 
 	var r []daemon.TransactionResult
 	if err := c.Get(endpoint, &r); err != nil {
@@ -674,12 +674,12 @@ func (c *Client) Transactions(addrs []string) (*[]daemon.TransactionResult, erro
 	return &r, nil
 }
 
-// ConfirmedTransactions makes a request to /transactions?confirmed=true
+// ConfirmedTransactions makes a request to GET /api/v1/transactions?confirmed=true
 func (c *Client) ConfirmedTransactions(addrs []string) (*[]daemon.TransactionResult, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	v.Add("confirmed", "true")
-	endpoint := "/transactions?" + v.Encode()
+	endpoint := "/api/v1/transactions?" + v.Encode()
 
 	var r []daemon.TransactionResult
 	if err := c.Get(endpoint, &r); err != nil {
@@ -688,12 +688,12 @@ func (c *Client) ConfirmedTransactions(addrs []string) (*[]daemon.TransactionRes
 	return &r, nil
 }
 
-// UnconfirmedTransactions makes a request to /transactions?confirmed=false
+// UnconfirmedTransactions makes a request to GET /api/v1/transactions?confirmed=false
 func (c *Client) UnconfirmedTransactions(addrs []string) (*[]daemon.TransactionResult, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	v.Add("confirmed", "false")
-	endpoint := "/transactions?" + v.Encode()
+	endpoint := "/api/v1/transactions?" + v.Encode()
 
 	var r []daemon.TransactionResult
 	if err := c.Get(endpoint, &r); err != nil {
@@ -702,7 +702,7 @@ func (c *Client) UnconfirmedTransactions(addrs []string) (*[]daemon.TransactionR
 	return &r, nil
 }
 
-// InjectTransaction makes a request to /injectTransaction
+// InjectTransaction makes a request to POST /api/v1/injectTransaction
 func (c *Client) InjectTransaction(rawTx string) (string, error) {
 	v := struct {
 		Rawtx string `json:"rawtx"`
@@ -711,26 +711,26 @@ func (c *Client) InjectTransaction(rawTx string) (string, error) {
 	}
 
 	var txid string
-	if err := c.PostJSON("/injectTransaction", v, &txid); err != nil {
+	if err := c.PostJSON("/api/v1/injectTransaction", v, &txid); err != nil {
 		return "", err
 	}
 	return txid, nil
 }
 
-// ResendUnconfirmedTransactions makes a request to /resendUnconfirmedTxns
+// ResendUnconfirmedTransactions makes a request to GET /api/v1/resendUnconfirmedTxns
 func (c *Client) ResendUnconfirmedTransactions() (*daemon.ResendResult, error) {
 	var r daemon.ResendResult
-	if err := c.Get("/resendUnconfirmedTxns", &r); err != nil {
+	if err := c.Get("/api/v1/resendUnconfirmedTxns", &r); err != nil {
 		return nil, err
 	}
 	return &r, nil
 }
 
-// RawTransaction makes a request to /rawtx
+// RawTransaction makes a request to GET /api/v1/rawtx
 func (c *Client) RawTransaction(txid string) (string, error) {
 	v := url.Values{}
 	v.Add("txid", txid)
-	endpoint := "/rawtx?" + v.Encode()
+	endpoint := "/api/v1/rawtx?" + v.Encode()
 
 	var rawTx string
 	if err := c.Get(endpoint, &rawTx); err != nil {
@@ -739,13 +739,13 @@ func (c *Client) RawTransaction(txid string) (string, error) {
 	return rawTx, nil
 }
 
-// AddressTransactions makes a request to /explorer/address
-func (c *Client) AddressTransactions(addr string) ([]ReadableTransaction, error) {
+// AddressTransactions makes a request to GET /api/v1/explorer/address
+func (c *Client) AddressTransactions(addr string) ([]daemon.ReadableTransaction, error) {
 	v := url.Values{}
 	v.Add("address", addr)
-	endpoint := "/explorer/address?" + v.Encode()
+	endpoint := "/api/v1/explorer/address?" + v.Encode()
 
-	var b []ReadableTransaction
+	var b []daemon.ReadableTransaction
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}
@@ -758,15 +758,15 @@ type RichlistParams struct {
 	IncludeDistribution bool
 }
 
-// Richlist makes a request to /richlist
+// Richlist makes a request to GET /api/v1/richlist
 func (c *Client) Richlist(params *RichlistParams) (*Richlist, error) {
-	endpoint := "/richlist"
+	endpoint := "/api/v1/richlist"
 
 	if params != nil {
 		v := url.Values{}
 		v.Add("n", fmt.Sprint(params.N))
 		v.Add("include-distribution", fmt.Sprint(params.IncludeDistribution))
-		endpoint = "/richlist?" + v.Encode()
+		endpoint = "/api/v1/richlist?" + v.Encode()
 	}
 
 	var r Richlist
@@ -776,55 +776,55 @@ func (c *Client) Richlist(params *RichlistParams) (*Richlist, error) {
 	return &r, nil
 }
 
-// AddressCount makes a request to /addresscount
+// AddressCount makes a request to GET /api/v1/addresscount
 func (c *Client) AddressCount() (uint64, error) {
 	var r struct {
 		Count uint64 `json:"count"`
 	}
-	if err := c.Get("/addresscount", &r); err != nil {
+	if err := c.Get("/api/v1/addresscount", &r); err != nil {
 		return 0, err
 	}
 	return r.Count, nil
 
 }
 
-// UnloadWallet makes a request to /wallet/unload
+// UnloadWallet makes a request to POST /api/v1/wallet/unload
 func (c *Client) UnloadWallet(id string) error {
 	v := url.Values{}
 	v.Add("id", id)
-	return c.PostForm("/wallet/unload", strings.NewReader(v.Encode()), nil)
+	return c.PostForm("/api/v1/wallet/unload", strings.NewReader(v.Encode()), nil)
 }
 
-// Health makes a request to /health
+// Health makes a request to GET /api/v1/health
 func (c *Client) Health() (*HealthResponse, error) {
 	var r HealthResponse
-	if err := c.Get("/health", &r); err != nil {
+	if err := c.Get("/api/v1/health", &r); err != nil {
 		return nil, err
 	}
 
 	return &r, nil
 }
 
-// EncryptWallet encrypts specific wallet with given password
+// EncryptWallet makes a request to POST /api/v1/wallet/encrypt to encrypt a specific wallet with the given password
 func (c *Client) EncryptWallet(id string, password string) (*WalletResponse, error) {
 	v := url.Values{}
 	v.Add("id", id)
 	v.Add("password", password)
 	var wlt WalletResponse
-	if err := c.PostForm("/wallet/encrypt", strings.NewReader(v.Encode()), &wlt); err != nil {
+	if err := c.PostForm("/api/v1/wallet/encrypt", strings.NewReader(v.Encode()), &wlt); err != nil {
 		return nil, err
 	}
 
 	return &wlt, nil
 }
 
-// DecryptWallet decrypts wallet by making a request to /wallet/decrypt
+// DecryptWallet makes a request to POST /api/v1/wallet/decrypt to decrypt a wallet
 func (c *Client) DecryptWallet(id string, password string) (*WalletResponse, error) {
 	v := url.Values{}
 	v.Add("id", id)
 	v.Add("password", password)
 	var wlt WalletResponse
-	if err := c.PostForm("/wallet/decrypt", strings.NewReader(v.Encode()), &wlt); err != nil {
+	if err := c.PostForm("/api/v1/wallet/decrypt", strings.NewReader(v.Encode()), &wlt); err != nil {
 		return nil, err
 	}
 

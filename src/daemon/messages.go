@@ -279,7 +279,25 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 			return ErrDisconnectOtherError
 		}
 
+		// Checks if the introduction message is from outgoing connection.
+		// It's outgoing connection if port == intro.Port, as the incoming
+		// connection's port is a random port, it's different from the port
+		// in introduction message.
 		if port == intro.Port {
+			if d.Pool.Pool.IsDefaultConnection(mc.Addr) {
+				reached, err := d.Pool.Pool.IsMaxDefaultConnReached()
+				if err != nil {
+					logger.Errorf("Check IsMaxDefaultConnReached failed: %v", err)
+					return err
+				}
+
+				if reached {
+					logger.Debugf("Disconnect %s: maximum default connections reached ", mc.Addr)
+					d.Pool.Pool.Disconnect(mc.Addr, ErrDisconnectMaxDefaultConnectionReached)
+					return ErrDisconnectMaxDefaultConnectionReached
+				}
+			}
+
 			if err := d.Pex.SetHasIncomingPort(mc.Addr, true); err != nil {
 				logger.Errorf("Failed to set peer has incoming port status, %v", err)
 			}

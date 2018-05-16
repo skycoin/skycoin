@@ -855,7 +855,7 @@ func TestCreateTransaction(t *testing.T) {
 				gateway.On("CreateTransaction", body.ToWalletParams()).Return(tc.gatewayCreateTransactionResult, tc.gatewayCreateTransactionInputs, tc.gatewayCreateTransactionErr)
 			}
 
-			endpoint := "/wallet/transaction"
+			endpoint := "/api/v1/wallet/transaction"
 
 			requestJSON, err := json.Marshal(tc.body)
 			require.NoError(t, err)

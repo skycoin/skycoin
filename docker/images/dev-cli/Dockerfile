@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* 
 
 # Installs Criterion
-RUN git clone --recurse-submodules -j8 https://github.com/simelo/Criterion && \
+RUN git clone --recurse-submodules -j8 https://github.com/skycoin/Criterion && \
     cd /go/Criterion && \
     cmake . && \
     make install && \

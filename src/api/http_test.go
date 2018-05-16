@@ -88,7 +88,7 @@ func TestGetOutputsHandler(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := NewGatewayerMock()
-			endpoint := "/outputs"
+			endpoint := "/api/v1/outputs"
 			gateway.On("GetUnspentOutputs", mock.Anything).Return(tc.getUnspentOutputsResponse, tc.getUnspentOutputsError)
 
 			v := url.Values{}
@@ -249,7 +249,7 @@ func TestGetBalanceHandler(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := NewGatewayerMock()
-			endpoint := "/balance"
+			endpoint := "/api/v1/balance"
 			gateway.On("GetBalanceOfAddrs", tc.getBalanceOfAddrsArg).Return(tc.getBalanceOfAddrsResponse, tc.getBalanceOfAddrsError)
 
 			v := url.Values{}

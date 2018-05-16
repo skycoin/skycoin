@@ -250,7 +250,7 @@ func do(httpClient *http.Client, rpcReq *Request, rpcAddress, csrf string) (*Res
 		return nil, err
 	}
 
-	url := rpcAddress + "webrpc"
+	url := rpcAddress + "api/v1/webrpc"
 	body := bytes.NewBuffer(d)
 	req, err := http.NewRequest(http.MethodPost, url, body)
 	if err != nil {

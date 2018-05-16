@@ -28,7 +28,7 @@ FAILFAST=""
 usage () {
   echo "Usage: $SCRIPT"
   echo "Optional command line arguments"
-  echo "-t <string>  -- Test to run, gui or cli; empty runs both tests"
+  echo "-t <string>  -- Test to run, api or cli; empty runs both tests"
   echo "-r <string>  -- Run test with -run flag"
   echo "-u <boolean> -- Update stable testdata"
   echo "-v <boolean> -- Run test with -v flag"
@@ -66,7 +66,7 @@ if [ ! $? -eq 0 ]; then
     exit 1
 fi
 
-if [[ -z $TEST || $TEST = "gui" ]]; then
+if [[ -z $TEST || $TEST = "api" ]]; then
 
 SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST \
     go test ./src/api/integration/... $FAILFAST $UPDATE -timeout=$TIMEOUT $VERBOSE $RUN_TESTS $TEST_LIVE_WALLET

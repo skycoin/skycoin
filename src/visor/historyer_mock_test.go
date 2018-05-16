@@ -61,8 +61,8 @@ func (m *historyerMock) ForEachTxn(p0 *dbutil.Tx, p1 func(cipher.SHA256, *histor
 
 }
 
-// GetAddrTxns mocked method
-func (m *historyerMock) GetAddrTxns(p0 *dbutil.Tx, p1 cipher.Address) ([]historydb.Transaction, error) {
+// GetAddressTxns mocked method
+func (m *historyerMock) GetAddressTxns(p0 *dbutil.Tx, p1 cipher.Address) ([]historydb.Transaction, error) {
 
 	ret := m.Called(p0, p1)
 

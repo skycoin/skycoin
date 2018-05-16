@@ -92,13 +92,27 @@ build-libc-dbg: configure-build $(BUILDLIB_DIR)/libskycoin.so $(BUILDLIB_DIR)/li
 	$(CC) -g -o $(BIN_DIR)/test_libskycoin_shared $(LIB_DIR)/cgo/tests/*.c -lskycoin                    $(LDLIBS) $(LDFLAGS)
 	$(CC) -g -o $(BIN_DIR)/test_libskycoin_static $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/libskycoin.a $(LDLIBS) $(LDFLAGS)
 
-test-libc: build-libc ## Run tests for libskycoin C client library
+$(BIN_DIR)/test_libskycoin_shared: $(LIB_DIR)/cgo/tests/*.c $(LIB_DIR)/cgo/tests/testutils/*.c
 	echo "Compiling with $(CC) $(CC_VERSION) $(STDC_FLAG)"
-	$(CC) -o $(BIN_DIR)/test_libskycoin_shared $(LIB_DIR)/cgo/tests/*.c -lskycoin                    $(LDLIBS) $(LDFLAGS)
-	$(CC) -o $(BIN_DIR)/test_libskycoin_static $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/libskycoin.a $(LDLIBS) $(LDFLAGS)
+	$(CC) -o $(BIN_DIR)/test_libskycoin_shared $(LIB_DIR)/cgo/tests/*.c $(LIB_DIR)/cgo/tests/testutils/*.c -lskycoin                    $(LDLIBS) $(LDFLAGS)
+	
+$(BIN_DIR)/test_libskycoin_static: $(LIB_DIR)/cgo/tests/*.c $(LIB_DIR)/cgo/tests/testutils/*.c
+	echo "Compiling with $(CC) $(CC_VERSION) $(STDC_FLAG)"
+	$(CC) -o $(BIN_DIR)/test_libskycoin_static $(LIB_DIR)/cgo/tests/*.c $(LIB_DIR)/cgo/tests/testutils/*.c $(BUILDLIB_DIR)/libskycoin.a $(LDLIBS) $(LDFLAGS)
+		
+test-libc: build-libc $(BIN_DIR)/test_libskycoin_shared $(BIN_DIR)/test_libskycoin_static ## Run tests for libskycoin C client library
 	$(LDPATHVAR)="$(LDPATH):$(BUILD_DIR)/usr/lib:$(BUILDLIB_DIR)" $(BIN_DIR)/test_libskycoin_shared
 	$(LDPATHVAR)="$(LDPATH):$(BUILD_DIR)/usr/lib"                 $(BIN_DIR)/test_libskycoin_static
 
+$(BIN_DIR)/test_int_libskycoin_shared: $(LIB_DIR)/cgo/tests/integration/*.c $(LIB_DIR)/cgo/tests/testutils/*.c
+	echo "Compiling with $(CC) $(CC_VERSION) $(STDC_FLAG)"
+	$(CC) -o $(BIN_DIR)/test_int_libskycoin_shared $(LIB_DIR)/cgo/tests/integration/*.c $(LIB_DIR)/cgo/tests/testutils/*.c -lskycoin  $(LDLIBS) $(LDFLAGS)
+
+$(BIN_DIR)/test_int_libskycoin_static: $(LIB_DIR)/cgo/tests/integration/*.c $(LIB_DIR)/cgo/tests/testutils/*.c
+	echo "Compiling with $(CC) $(CC_VERSION) $(STDC_FLAG)"
+	$(CC) -o $(BIN_DIR)/test_int_libskycoin_static $(LIB_DIR)/cgo/tests/integration/*.c $(LIB_DIR)/cgo/tests/testutils/*.c $(BUILDLIB_DIR)/libskycoin.a $(LDLIBS) $(LDFLAGS)
+	
+	
 docs-libc:
 	doxygen ./.Doxyfile
 	moxygen -o $(LIBDOC_DIR)/API.md $(LIBDOC_DIR)/xml/
@@ -142,7 +156,10 @@ integration-test-disable-wallet-api: ## Run disable wallet api integration tests
 
 integration-test-disable-seed-api: ## Run enable seed api integration test
 	./ci-scripts/integration-test-disable-seed-api.sh
-
+	
+integration-test-libc: build-libc $(BIN_DIR)/test_int_libskycoin_shared $(BIN_DIR)/test_int_libskycoin_static
+	./ci-scripts/integration-test-libc-stable.sh
+	
 cover: ## Runs tests on ./src/ with HTML code coverage
 	go test -cover -coverprofile=cover.out -coverpkg=github.com/skycoin/skycoin/... ./src/...
 	go tool cover -html=cover.out

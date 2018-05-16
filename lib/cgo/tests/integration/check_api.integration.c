@@ -11,7 +11,7 @@
 #include "skytest.h"
 
 #define NODE_ADDRESS "SKYCOIN_NODE_HOST"
-#define NODE_ADDRESS_DEFAULT "http://127.0.0.1:6420"
+#define NODE_ADDRESS_DEFAULT "http://127.0.0.1:46420"
 #define BUFFER_SIZE 1024
 
 char* getNodeAddress(){

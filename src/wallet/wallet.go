@@ -1094,13 +1094,19 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 		}
 	}
 
-	// Use the MinimizeUxOuts strategy, to use least possible uxouts
-	// this will allow more frequent spending
-	// we don't need to check whether we have sufficient balance beforehand as ChooseSpends already checks that
-
-	spends, err := ChooseSpendsMinimizeUxOuts(uxb, totalOutCoins, requestedHours)
-	if err != nil {
-		return nil, nil, err
+	// If specific outputs were requested, then use all of them.
+	// Otherwise, choose which outputs to spend
+	if len(params.Wallet.UxOuts) != 0 {
+		spends = make([]UxBalance, len(uxb))
+		copy(spends[:], uxb[:])
+	} else {
+		// Use the MinimizeUxOuts strategy, to use least possible uxouts
+		// this will allow more frequent spending
+		// we don't need to check whether we have sufficient balance beforehand as ChooseSpends already checks that
+		spends, err = ChooseSpendsMinimizeUxOuts(uxb, totalOutCoins, requestedHours)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
 	// calculate total coins and hours in spends
@@ -1183,16 +1189,20 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 		return nil, nil, err
 	}
 
-	// Make sure we have enough coinhours
-	// If we don't at this point, then ChooseSpends has a bug, it should have returned this error already
-	if totalOutHours > remainingHours {
-		logger.WithError(fee.ErrTxnInsufficientCoinHours).Error("Insufficient hours after choosing spends or distributing hours, this should not occur")
-		return nil, nil, fee.ErrTxnInsufficientCoinHours
+	// Make sure we have enough coins and coin hours
+	// If we don't, and we called ChooseSpends, then ChooseSpends has a bug, as it should have returned this error already
+	if totalOutCoins > totalInputCoins {
+		if len(params.Wallet.UxOuts) == 0 {
+			logger.WithError(ErrInsufficientBalance).Error("Insufficient coins after choosing spends, this should not occur")
+		}
+		return nil, nil, ErrInsufficientBalance
 	}
 
-	if totalOutCoins > totalInputCoins {
-		logger.WithError(ErrInsufficientBalance).Error("Insufficient coins after choosing spends, this should not occur")
-		return nil, nil, ErrInsufficientBalance
+	if totalOutHours > remainingHours {
+		if len(params.Wallet.UxOuts) == 0 {
+			logger.WithError(fee.ErrTxnInsufficientCoinHours).Error("Insufficient hours after choosing spends or distributing hours, this should not occur")
+		}
+		return nil, nil, fee.ErrTxnInsufficientCoinHours
 	}
 
 	// create change output

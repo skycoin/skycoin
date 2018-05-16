@@ -104,9 +104,7 @@ Test(api_cli_integration, TestGenerateAddresses) {
   tt[1].goldenFile = "generate-addresses-2.golden";
 
   for (int i = 0; i < lenStruct; i++) {
-    printf("Entrando a la iteracion\n");
     createTempWalletDir(tt[i].encrypted);
-    printf("paso el createTempWalletDir\n");
     char output[BUFFER_SIZE];
     Config__Handle configHandle;
     App__Handle appHandle;

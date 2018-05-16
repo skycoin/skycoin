@@ -65,7 +65,7 @@ void createTempWalletDir(bool encrypt) {
   fclose(f);
   fclose(rf);
 };
-
+/*
 Test(api_cli_integration, TestGenerateAddresses) {
 
   int lenStruct = 1;
@@ -160,4 +160,4 @@ Test(api_cli_integration, TestGenerateAddresses) {
 
     cr_assert(compareJsonValues(expect, w) == 1);
   }
-};
+};*/

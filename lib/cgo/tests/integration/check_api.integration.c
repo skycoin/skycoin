@@ -102,3 +102,6 @@ Test(api_integration, TestStableCoinSupply) {
 	int equal = compareJsonValues(value, json_golden);
 	cr_assert(equal, "Output different than expected");
 }
+
+Test(api_integration, TestStableOutputs) {
+}

@@ -13,23 +13,20 @@ import (
 	"path"
 	"runtime"
 
-	"github.com/skycoin/skycoin/cmd/cipher_test_suite/cipherTestSuite"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/go-bip39"
-)
-
-const (
-	hashesCount             = 10
-	hashSize                = 32
-	seedsCount              = 10
-	shortSeedAddressesCount = 10
-	longSeedAddressesCount  = 1000
+	"github.com/skycoin/skycoin/src/cipher/testsuite"
 )
 
 var (
-	testDataDir       string
-	inputData         *cipherTestSuite.InputData
-	inputDataFilename string
+	hashesCount             int
+	hashSize                int
+	seedsCount              int
+	shortSeedAddressesCount int
+	longSeedAddressesCount  int
+	testDataDir             string
+	inputData               *testsuite.InputData
+	inputDataFilename       string
 )
 
 type job struct {
@@ -40,12 +37,17 @@ type job struct {
 
 func init() {
 	testDataDir = path.Join(os.Getenv("GOPATH"),
-		"/src/github.com/skycoin/skycoin/cmd/cipher_test_suite/testdata/")
+		"/src/github.com/skycoin/skycoin/cmd/cipher-testdata/testdata/")
 	inputDataFilename = path.Join(testDataDir, "inputData.golden")
 }
 
 func main() {
 	var j job
+	flag.IntVar(&hashesCount, "hashesCount", 10, "count of hashes for inputData.golden")
+	flag.IntVar(&hashSize, "hashSize", 32, "generating hash size for inputData.golden")
+	flag.IntVar(&seedsCount, "seedsCount", 10, "count of seeds to generate. equals `seed-n.golden` files count")
+	flag.IntVar(&shortSeedAddressesCount, "shortSeedAddressesCount", 10, "count of addresses when seed has 1 byte length")
+	flag.IntVar(&longSeedAddressesCount, "longSeedAddressesCount", 1000, "count of addresses when seed has 1000 byte length")
 	genInputData := flag.Bool("i", false, "Generate inputData.golden")
 	genSeedData := flag.Bool("s", false, "Generate seed-$n.golden")
 	flag.Parse()
@@ -53,7 +55,7 @@ func main() {
 		generateInputData(inputDataFilename)
 	}
 	if *genSeedData {
-		inputData = cipherTestSuite.ReadInputData(inputDataFilename)
+		inputData = testsuite.ReadInputData(inputDataFilename)
 		jobs := make(chan job, seedsCount)
 		results := make(chan bool, seedsCount)
 		// generate in parallel to improve speed
@@ -97,7 +99,7 @@ func main() {
 }
 
 func generateInputData(filename string) {
-	inputData := cipherTestSuite.InputData{
+	inputData := testsuite.InputData{
 		Hashes: make([]string, 0),
 	}
 	inputData.Hashes = append(inputData.Hashes, cipher.SumSHA256(bytes.Repeat([]byte{0}, hashSize)).Hex())
@@ -118,9 +120,9 @@ func generateInputData(filename string) {
 func worker(jobs <-chan job, results chan<- bool) {
 	for j := range jobs {
 		summary := make(map[string]int)
-		data := &cipherTestSuite.SeedSignature{
+		data := &testsuite.SeedSignature{
 			Seed: j.seed,
-			Keys: make([]*cipherTestSuite.SeedData, 0),
+			Keys: make([]*testsuite.SeedData, 0),
 		}
 		log.Printf("job %v/%v\n", j.jobID, seedsCount-1)
 
@@ -151,9 +153,9 @@ func worker(jobs <-chan job, results chan<- bool) {
 	}
 }
 
-func generateSeedData(seed []byte, generateSignatures bool) *cipherTestSuite.SeedData {
-	secretKey, publicKey, addr := cipherTestSuite.GenerateSecPubAddress(seed)
-	data := &cipherTestSuite.SeedData{
+func generateSeedData(seed []byte, generateSignatures bool) *testsuite.SeedData {
+	secretKey, publicKey, addr := testsuite.GenerateSecPubAddress(seed)
+	data := &testsuite.SeedData{
 		Signatures: make([]string, 0),
 		Public:     publicKey.Hex(),
 		Secret:     secretKey.Hex(),

@@ -1,4 +1,4 @@
-package cipherTestSuite
+package testsuite
 
 import (
 	"bufio"

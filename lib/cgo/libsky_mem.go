@@ -52,14 +52,13 @@ func inplaceAddress(p *C.cipher__Address) *cipher.Address {
  * Copy helpers
  */
 
-func copyString(src string, dest *C.GoString_) bool {
+func copyString(src string, dest *C.GoString_) {
 	srcLen := len(src)
 	dest.p = (*C.char)(C.malloc(C.size_t(srcLen + 1)))
 	strAddr := (*C.GoString_)(unsafe.Pointer(&src))
 	C.memcpy(unsafe.Pointer(dest.p), unsafe.Pointer(strAddr.p), C.size_t(srcLen))
 	C.eos(dest.p, C.int(srcLen))
 	dest.n = C.GoInt_(srcLen)
-	return true
 }
 
 // Determine the memory address of a slice buffer and the

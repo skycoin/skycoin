@@ -16,12 +16,10 @@ import (
 
 	"strconv"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
 func makeSuccessCoinSupplyResult(t *testing.T, allUnspents visor.ReadableOutputSet) *CoinSupply {
@@ -95,21 +93,16 @@ func makeSuccessCoinSupplyResult(t *testing.T, allUnspents visor.ReadableOutputS
 func TestGetTransactionsForAddress(t *testing.T) {
 	address := testutil.MakeAddress()
 	successAddress := "111111111111111111111691FSP"
-	invalidHash := "cafcb"
 	validHash := "79216473e8f2c17095c6887cc9edca6c023afedfac2e0c5460e8b6f359684f8b"
 	tt := []struct {
-		name                        string
-		method                      string
-		status                      int
-		err                         string
-		addressParam                string
-		gatewayGetAddressTxnsResult *daemon.TransactionResults
-		gatewayGetAddressTxnsErr    error
-		gatewayGetUxOutByIDArg      cipher.SHA256
-		gatewayGetUxOutByIDResult   *historydb.UxOut
-		gatewayGetUxOutByIDErr      error
-		result                      []ReadableTransaction
-		csrfDisabled                bool
+		name                                string
+		method                              string
+		status                              int
+		err                                 string
+		addressParam                        string
+		gatewayGetTransactionsForAddressErr error
+		result                              []daemon.ReadableTransaction
+		csrfDisabled                        bool
 	}{
 		{
 			name:         "405",
@@ -133,89 +126,19 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			addressParam: "badAddress",
 		},
 		{
-			name:                     "500 - gw GetAddressTxns error",
-			method:                   http.MethodGet,
-			status:                   http.StatusInternalServerError,
-			err:                      "500 Internal Server Error - gateway.GetAddressTxns failed: gatewayGetAddressTxnsErr",
-			addressParam:             address.String(),
-			gatewayGetAddressTxnsErr: errors.New("gatewayGetAddressTxnsErr"),
-		},
-		{
-			name:         "500 - cipher.SHA256FromHex(tx.Transaction.In) error",
-			method:       http.MethodGet,
-			status:       http.StatusInternalServerError,
-			err:          "500 Internal Server Error - encoding/hex: odd length hex string",
-			addressParam: address.String(),
-			gatewayGetAddressTxnsResult: &daemon.TransactionResults{
-				Txns: []daemon.TransactionResult{
-					{
-						Transaction: visor.ReadableTransaction{
-							In: []string{
-								invalidHash,
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name:         "500 - GetUxOutByID error",
-			method:       http.MethodGet,
-			status:       http.StatusInternalServerError,
-			err:          "500 Internal Server Error - gatewayGetUxOutByIDErr",
-			addressParam: address.String(),
-			gatewayGetAddressTxnsResult: &daemon.TransactionResults{
-				Txns: []daemon.TransactionResult{
-					{
-						Transaction: visor.ReadableTransaction{
-							In: []string{
-								validHash,
-							},
-						},
-					},
-				},
-			},
-			gatewayGetUxOutByIDArg: testutil.SHA256FromHex(t, validHash),
-			gatewayGetUxOutByIDErr: errors.New("gatewayGetUxOutByIDErr"),
-		},
-		{
-			name:         "500 - GetUxOutByID nil result",
-			method:       http.MethodGet,
-			status:       http.StatusInternalServerError,
-			err:          "500 Internal Server Error - uxout of 79216473e8f2c17095c6887cc9edca6c023afedfac2e0c5460e8b6f359684f8b does not exist in history db",
-			addressParam: address.String(),
-			gatewayGetAddressTxnsResult: &daemon.TransactionResults{
-				Txns: []daemon.TransactionResult{
-					{
-						Transaction: visor.ReadableTransaction{
-							In: []string{
-								validHash,
-							},
-						},
-					},
-				},
-			},
-			gatewayGetUxOutByIDArg: testutil.SHA256FromHex(t, validHash),
+			name:                                "500 - gw GetTransactionsForAddress error",
+			method:                              http.MethodGet,
+			status:                              http.StatusInternalServerError,
+			err:                                 "500 Internal Server Error - gateway.GetTransactionsForAddress failed: gatewayGetTransactionsForAddressErr",
+			addressParam:                        address.String(),
+			gatewayGetTransactionsForAddressErr: errors.New("gatewayGetTransactionsForAddressErr"),
 		},
 		{
 			name:         "200",
 			method:       http.MethodGet,
 			status:       http.StatusOK,
 			addressParam: address.String(),
-			gatewayGetAddressTxnsResult: &daemon.TransactionResults{
-				Txns: []daemon.TransactionResult{
-					{
-						Transaction: visor.ReadableTransaction{
-							In: []string{
-								validHash,
-							},
-						},
-					},
-				},
-			},
-			gatewayGetUxOutByIDArg:    testutil.SHA256FromHex(t, validHash),
-			gatewayGetUxOutByIDResult: &historydb.UxOut{},
-			result: []ReadableTransaction{
+			result: []daemon.ReadableTransaction{
 				{
 					In: []visor.ReadableTransactionInput{
 						{
@@ -234,8 +157,7 @@ func TestGetTransactionsForAddress(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/explorer/address"
 			gateway := NewGatewayerMock()
-			gateway.On("GetAddressTxns", address).Return(tc.gatewayGetAddressTxnsResult, tc.gatewayGetAddressTxnsErr)
-			gateway.On("GetUxOutByID", tc.gatewayGetUxOutByIDArg).Return(tc.gatewayGetUxOutByIDResult, tc.gatewayGetUxOutByIDErr)
+			gateway.On("GetTransactionsForAddress", address).Return(tc.result, tc.gatewayGetTransactionsForAddressErr)
 
 			v := url.Values{}
 			if tc.addressParam != "" {
@@ -267,7 +189,7 @@ func TestGetTransactionsForAddress(t *testing.T) {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg []ReadableTransaction
+				var msg []daemon.ReadableTransaction
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.result, msg)

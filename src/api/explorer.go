@@ -165,51 +165,14 @@ func getTransactionsForAddress(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		txns, err := gateway.GetAddressTxns(cipherAddr)
+		txns, err := gateway.GetTransactionsForAddress(cipherAddr)
 		if err != nil {
-			err = fmt.Errorf("gateway.GetAddressTxns failed: %v", err)
+			err = fmt.Errorf("gateway.GetTransactionsForAddress failed: %v", err)
 			wh.Error500(w, err.Error())
 			return
 		}
 
-		resTxs := make([]ReadableTransaction, 0, len(txns.Txns))
-
-		for _, tx := range txns.Txns {
-			in := make([]visor.ReadableTransactionInput, len(tx.Transaction.In))
-			for i := range tx.Transaction.In {
-				id, err := cipher.SHA256FromHex(tx.Transaction.In[i])
-				if err != nil {
-					wh.Error500(w, err.Error())
-					return
-				}
-
-				uxout, err := gateway.GetUxOutByID(id)
-				if err != nil {
-					wh.Error500(w, err.Error())
-					return
-				}
-
-				if uxout == nil {
-					err := fmt.Errorf("uxout of %v does not exist in history db", id.Hex())
-					wh.Error500(w, err.Error())
-					return
-				}
-
-				tIn, err := visor.NewReadableTransactionInput(tx.Transaction.In[i], uxout.Out.Body.Address.String(), uxout.Out.Body.Coins, uxout.Out.Body.Hours)
-				if err != nil {
-					wh.Error500(w, err.Error())
-					return
-				}
-
-				in[i] = *tIn
-			}
-
-			rTx := NewReadableTransaction(tx, in)
-
-			resTxs = append(resTxs, rTx)
-		}
-
-		wh.SendJSONOr500(logger, w, &resTxs)
+		wh.SendJSONOr500(logger, w, txns)
 	}
 }
 
@@ -285,35 +248,5 @@ func getAddressCount(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		wh.SendJSONOr500(logger, w, &map[string]uint64{"count": addrCount})
-	}
-}
-
-// ReadableTransaction represents readable address transaction
-type ReadableTransaction struct {
-	Status    visor.TransactionStatus `json:"status"`
-	Length    uint32                  `json:"length"`
-	Type      uint8                   `json:"type"`
-	Hash      string                  `json:"txid"`
-	InnerHash string                  `json:"inner_hash"`
-	Timestamp uint64                  `json:"timestamp,omitempty"`
-
-	Sigs []string                          `json:"sigs"`
-	In   []visor.ReadableTransactionInput  `json:"inputs"`
-	Out  []visor.ReadableTransactionOutput `json:"outputs"`
-}
-
-// NewReadableTransaction creates readable address transaction
-func NewReadableTransaction(t daemon.TransactionResult, inputs []visor.ReadableTransactionInput) ReadableTransaction {
-	return ReadableTransaction{
-		Status:    t.Status,
-		Length:    t.Transaction.Length,
-		Type:      t.Transaction.Type,
-		Hash:      t.Transaction.Hash,
-		InnerHash: t.Transaction.InnerHash,
-		Timestamp: t.Time,
-
-		Sigs: t.Transaction.Sigs,
-		In:   inputs,
-		Out:  t.Transaction.Out,
 	}
 }

@@ -88,7 +88,7 @@ func getTransactionByID(gate Gatewayer) http.HandlerFunc {
 
 // Returns transactions that match the filters.
 // Method: GET
-// URI: /transactions
+// URI: /api/v1/transactions
 // Args:
 //     addrs: Comma seperated addresses [optional, returns all transactions if no address provided]
 //     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]

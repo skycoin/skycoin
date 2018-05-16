@@ -180,7 +180,7 @@ type historyer interface {
 	ParseBlock(tx *dbutil.Tx, b coin.Block) error
 	GetTransaction(tx *dbutil.Tx, hash cipher.SHA256) (*historydb.Transaction, error)
 	GetAddrUxOuts(tx *dbutil.Tx, address cipher.Address) ([]*historydb.UxOut, error)
-	GetAddrTxns(tx *dbutil.Tx, address cipher.Address) ([]historydb.Transaction, error)
+	GetAddressTxns(tx *dbutil.Tx, address cipher.Address) ([]historydb.Transaction, error)
 	NeedsReset(tx *dbutil.Tx) (bool, error)
 	Erase(tx *dbutil.Tx) error
 	ParsedHeight(tx *dbutil.Tx) (uint64, bool, error)
@@ -837,7 +837,7 @@ func (vs *Visor) GetAddressTxns(a cipher.Address) ([]Transaction, error) {
 	var txns []Transaction
 
 	if err := vs.DB.View("GetAddressTxns", func(tx *dbutil.Tx) error {
-		txs, err := vs.history.GetAddrTxns(tx, a)
+		txs, err := vs.history.GetAddressTxns(tx, a)
 		if err != nil {
 			return err
 		}
@@ -1117,7 +1117,7 @@ func (vs *Visor) getTransactionsOfAddrs(tx *dbutil.Tx, addrs []cipher.Address) (
 
 	for _, a := range addrs {
 		var txns []Transaction
-		addrTxns, err := vs.history.GetAddrTxns(tx, a)
+		addrTxns, err := vs.history.GetAddressTxns(tx, a)
 		if err != nil {
 			return nil, err
 		}

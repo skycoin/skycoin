@@ -91,6 +91,7 @@ set +e
 
 
 LD_LIBRARY_PATH="/usr/local/lib:build/usr/lib:build/libskycoin" ./bin/test_int_libskycoin_shared
+LD_LIBRARY_PATH="/usr/local/lib:build/usr/lib:build/libskycoin" ./bin/test_int_libskycoin_static
 
 echo "shutting down skycoin node"
 

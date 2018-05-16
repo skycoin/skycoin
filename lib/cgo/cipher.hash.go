@@ -12,9 +12,10 @@ import (
   #include <string.h>
   #include <stdlib.h>
 
-  #include "../../include/skytypes.h"
+  #include "skytypes.h"
 */
 import "C"
+
 //export SKY_cipher_Ripemd160_Set
 func SKY_cipher_Ripemd160_Set(_rd *C.cipher__Ripemd160, _b []byte) (errcode uint32) {
 	defer func() {
@@ -99,7 +100,7 @@ func SKY_cipher_AddSHA256(_a *C.cipher__SHA256, _b *C.cipher__SHA256, _arg2 *C.c
 }
 
 //export SKY_cipher_Merkle
-func SKY_cipher_Merkle(_h0 *C.GoSlice_, _arg1 *C.cipher__SHA256) {
+func SKY_cipher_Merkle(_h0 *[]C.cipher__SHA256, _arg1 *C.cipher__SHA256) {
 	h0 := (*[]cipher.SHA256)(unsafe.Pointer(_h0))
 	h := cipher.Merkle(*h0)
 	copyToBuffer(reflect.ValueOf(h[:]), unsafe.Pointer(_arg1), uint(SizeofSHA256))

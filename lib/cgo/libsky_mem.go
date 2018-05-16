@@ -11,7 +11,7 @@ import (
 /*
 	#include <string.h>
 
-  #include "../../include/skytypes.h"
+  #include "skytypes.h"
 
 	void eos(char *str, int len) {
 		str[len] = 0;
@@ -36,7 +36,6 @@ const (
 	SizeofEntry             = unsafe.Sizeof(C.wallet__Entry{})
 	SizeofUxBalance         = unsafe.Sizeof(C.wallet__UxBalance{})
 )
-
 
 /**
  * Inplace memory references

@@ -39,7 +39,6 @@ type Transaction struct {
 	Txn    coin.Transaction  //`json:"txn"`
 	Status TransactionStatus //`json:"status"`
 	Time   uint64            //`json:"time"`
-	Size   int
 }
 
 // TransactionStatus represents the transaction status
@@ -103,13 +102,14 @@ type ReadableTransactionOutput struct {
 
 // ReadableTransactionInput readable transaction input
 type ReadableTransactionInput struct {
-	Hash    string `json:"uxid"`
-	Address string `json:"owner"`
-	Coins   string `json:"coins"`
-	Hours   uint64 `json:"hours"`
+	Hash            string `json:"uxid"`
+	Address         string `json:"owner"`
+	Coins           string `json:"coins"`
+	Hours           uint64 `json:"hours"`
+	CalculatedHours uint64 `json:"calculated_hours"`
 }
 
-// NewReadableTransactionOutput creates readable transaction outputs
+// NewReadableTransactionOutput creates ReadableTransactionOutput
 func NewReadableTransactionOutput(t *coin.TransactionOutput, txid cipher.SHA256) (*ReadableTransactionOutput, error) {
 	coinStr, err := droplet.ToString(t.Coins)
 	if err != nil {
@@ -118,25 +118,33 @@ func NewReadableTransactionOutput(t *coin.TransactionOutput, txid cipher.SHA256)
 
 	return &ReadableTransactionOutput{
 		Hash:    t.UxID(txid).Hex(),
-		Address: t.Address.String(), // Destination Address
+		Address: t.Address.String(),
 		Coins:   coinStr,
 		Hours:   t.Hours,
 	}, nil
 }
 
-// NewReadableTransactionInput creates readable transaction input
-func NewReadableTransactionInput(uxID, ownerAddress string, coins, hours uint64) (*ReadableTransactionInput, error) {
-	coinVal, err := droplet.ToString(coins)
+// NewReadableTransactionInput creates ReadableTransactionInput
+func NewReadableTransactionInput(ux coin.UxOut, calculateHoursTime uint64) (*ReadableTransactionInput, error) {
+	coinVal, err := droplet.ToString(ux.Body.Coins)
 	if err != nil {
 		logger.Errorf("Failed to convert coins to string: %v", err)
 		return nil, err
 	}
 
+	// The overflow bug causes this to fail for some transactions, allow it to pass
+	calculatedHours, err := ux.CoinHours(calculateHoursTime)
+	if err != nil {
+		logger.Critical().Warningf("Ignoring NewReadableTransactionInput ux.CoinHours failed: %v", err)
+		calculatedHours = 0
+	}
+
 	return &ReadableTransactionInput{
-		Hash:    uxID,
-		Address: ownerAddress, //Destination Address
-		Coins:   coinVal,
-		Hours:   hours,
+		Hash:            ux.Hash().Hex(),
+		Address:         ux.Body.Address.String(),
+		Coins:           coinVal,
+		Hours:           ux.Body.Hours,
+		CalculatedHours: calculatedHours,
 	}, nil
 }
 

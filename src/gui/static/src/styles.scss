@@ -168,7 +168,7 @@ mat-panel-title {
     line-height: 20px;
     padding: 10px 10px;
     width: 100%;
-    -webkit-appearance:none;
+    appearance: none;
   }
 
   textarea {
@@ -298,6 +298,26 @@ On-boarding components
   background-color: $transparent !important;
   span {
     color: black;
+  }
+}
+
+
+.-select {
+  position: relative;
+
+  &::after {
+    content: '';
+    display: block;
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: url('/assets/img/chevron-right-grey.png') no-repeat;
+    background-size: 32px 32px;
+    width: 32px;
+    height: 32px;
+    margin: 6px;
+    pointer-events: none;
+    transform: rotate(90deg);
   }
 }
 

@@ -24,7 +24,7 @@ type HealthResponse struct {
 }
 
 // Returns node health data.
-// URI: /health
+// URI: /api/v1/health
 // Method: GET
 func healthCheck(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

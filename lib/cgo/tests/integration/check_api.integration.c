@@ -98,4 +98,7 @@ Test(api_integration, TestStableCoinSupply) {
 	json_value* json_golden = loadGoldenFile("coinsupply.golden");
 	cr_assert(json_golden != NULL, "loadGoldenFile failed");
 	registerJsonFree(json_golden);
+	
+	int equal = compareJsonValues(value, json_golden);
+	cr_assert(equal, "Output different than expected");
 }

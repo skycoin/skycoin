@@ -106,7 +106,7 @@ func (a *SHA256) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	tmp, err := SHA256FromHex(s)
+	tmp, err := cipher.SHA256FromHex(s)
 	if err != nil {
 		return fmt.Errorf("invalid SHA256 hash: %v", err)
 	}

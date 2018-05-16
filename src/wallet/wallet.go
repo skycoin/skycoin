@@ -84,7 +84,7 @@ var (
 	// ErrInvalidHoursSelectionType for invalid HoursSelection type values
 	ErrInvalidHoursSelectionType = NewError(errors.New("invalid hours selection type"))
 	// ErrUnknownAddress is returned if an address is not found in a wallet
-	ErrUnknownAddress = NewError(errors.New("Address not found in wallet"))
+	ErrUnknownAddress = NewError(errors.New("address not found in wallet"))
 	// ErrNoUnspents is returned if a wallet has no unspents to spend
 	ErrNoUnspents = NewError(errors.New("no unspents to spend"))
 )
@@ -151,7 +151,7 @@ type HoursSelection struct {
 // CreateTransactionWalletParams defines a wallet to spend from and optionally which addresses in the wallet
 type CreateTransactionWalletParams struct {
 	ID        string
-	Outputs   []cipher.SHA256
+	UxOuts    []cipher.SHA256
 	Addresses []cipher.Address
 	Password  []byte
 }
@@ -202,10 +202,17 @@ func (c CreateTransactionParams) Validate() error {
 		return NewError(errors.New("Wallet.ID is required"))
 	}
 
+	addressMap := make(map[cipher.Address]struct{}, len(c.Wallet.Addresses))
 	for _, a := range c.Wallet.Addresses {
 		if a.Null() {
 			return NewError(errors.New("Wallet.Addresses must not contain the null address"))
 		}
+
+		addressMap[a] = struct{}{}
+	}
+
+	if len(addressMap) != len(c.Wallet.Addresses) {
+		return NewError(errors.New("Wallet.Addresses contains duplicate values"))
 	}
 
 	switch c.HoursSelection.Type {
@@ -249,8 +256,18 @@ func (c CreateTransactionParams) Validate() error {
 		}
 	}
 
-	if len(c.Wallet.Outputs) != 0 && len(c.Wallet.Addresses) != 0 {
-		return NewError(errors.New("Wallet.Outputs and Wallet.Addresses cannot be combined"))
+	if len(c.Wallet.UxOuts) != 0 && len(c.Wallet.Addresses) != 0 {
+		return NewError(errors.New("Wallet.UxOuts and Wallet.Addresses cannot be combined"))
+	}
+
+	// Check for duplicate spending uxouts
+	uxouts := make(map[cipher.SHA256]struct{}, len(c.Wallet.UxOuts))
+	for _, o := range c.Wallet.UxOuts {
+		uxouts[o] = struct{}{}
+	}
+
+	if len(uxouts) != len(c.Wallet.UxOuts) {
+		return NewError(errors.New("Wallet.UxOuts contains duplicate values"))
 	}
 
 	return nil
@@ -953,7 +970,7 @@ func (w *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime, coi
 		e, ok := w.GetEntry(a)
 		// Check that auxs does not contain addresses that are not known to this wallet
 		if !ok {
-			return nil, nil, ErrUnknownAddress
+			return nil, ErrUnknownAddress
 		}
 		entriesMap[e.Address] = e
 	}
@@ -1019,7 +1036,7 @@ func (w *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime, coi
 
 // CreateAndSignTransactionAdvanced creates and signs a transaction based upon CreateTransactionParams.
 // Set the password as nil if the wallet is not encrypted, otherwise the password must be provided.
-// NOTE: Caller must ensure that auxs correspond to params.Wallet.Addresses and params.Wallet.Outputs option
+// NOTE: Caller must ensure that auxs correspond to params.Wallet.Addresses and params.Wallet.UxOuts options
 func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []UxBalance, error) {
 	if err := params.Validate(); err != nil {
 		return nil, nil, err

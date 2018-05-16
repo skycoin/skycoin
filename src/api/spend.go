@@ -249,7 +249,7 @@ type createTransactionRequest struct {
 // createTransactionRequestWallet defines a wallet to spend from and optionally which addresses in the wallet
 type createTransactionRequestWallet struct {
 	ID        string       `json:"id"`
-	Outputs   []wh.SHA256  `json:"outputs,omitempty"`
+	UxOuts    []wh.SHA256  `json:"uxouts,omitempty"`
 	Addresses []wh.Address `json:"addresses,omitempty"`
 	Password  string       `json:"password"`
 }
@@ -330,10 +330,17 @@ func (r createTransactionRequest) Validate() error {
 		return errors.New("missing wallet.id")
 	}
 
+	addressMap := make(map[cipher.Address]struct{}, len(r.Wallet.Addresses))
 	for i, a := range r.Wallet.Addresses {
 		if a.Null() {
 			return fmt.Errorf("wallet.addresses[%d] is empty", i)
 		}
+
+		addressMap[a] = struct{}{}
+	}
+
+	if len(addressMap) != len(r.Wallet.Addresses) {
+		return errors.New("wallet.addresses contains duplicate values")
 	}
 
 	if len(r.To) == 0 {
@@ -377,18 +384,18 @@ func (r createTransactionRequest) Validate() error {
 		return errors.New("to contains duplicate values")
 	}
 
-	if len(r.Outputs) != 0 && len(r.Address) != 0 {
-		return errors.New("outputs and addresses cannot be combined")
+	if len(r.Wallet.UxOuts) != 0 && len(r.Wallet.Addresses) != 0 {
+		return errors.New("wallet.uxouts and wallet.addresses cannot be combined")
 	}
 
-	// Check for duplicate input outputs
-	inputs := make(map[cipher.SHA256]struct{}, len(r.Outputs))
-	for _, o := range r.Outputs {
-		inputs[o] = struct{}{}
+	// Check for duplicate spending uxouts
+	uxouts := make(map[cipher.SHA256]struct{}, len(r.Wallet.UxOuts))
+	for _, o := range r.Wallet.UxOuts {
+		uxouts[o.SHA256] = struct{}{}
 	}
 
-	if len(inputs) != len(r.Outputs) {
-		return errors.New("outputs contains duplicate values")
+	if len(uxouts) != len(r.Wallet.UxOuts) {
+		return errors.New("wallet.uxouts contains duplicate values")
 	}
 
 	return nil
@@ -401,15 +408,15 @@ func (r createTransactionRequest) ToWalletParams() wallet.CreateTransactionParam
 		addresses[i] = a.Address
 	}
 
-	outputs := make([]cipher.SHA256, len(r.Wallet.Outputs))
-	for i, o := range r.Wallet.Outputs {
-		outputs[i] = o.SHA256
+	uxouts := make([]cipher.SHA256, len(r.Wallet.UxOuts))
+	for i, o := range r.Wallet.UxOuts {
+		uxouts[i] = o.SHA256
 	}
 
 	walletParams := wallet.CreateTransactionWalletParams{
 		ID:        r.Wallet.ID,
 		Addresses: addresses,
-		Outputs:   outputs,
+		UxOuts:    uxouts,
 		Password:  []byte(r.Wallet.Password),
 	}
 

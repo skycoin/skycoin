@@ -250,9 +250,9 @@ func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (*visor.ReadableO
 			return
 		}
 
-		unspentOutputs, err = gw.v.GetUnspentOutputs()
+		unspentOutputs, err = gw.v.GetAllUnspentOutputs()
 		if err != nil {
-			err = fmt.Errorf("v.GetUnspentOutputs failed: %v", err)
+			err = fmt.Errorf("v.GetAllUnspentOutputs failed: %v", err)
 			return
 		}
 
@@ -587,12 +587,25 @@ func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*co
 	var err error
 
 	gw.strand("CreateTransaction", func() {
+		// Get all addresses from the wallet for checking params against
+		var allAddrs []cipher.Address
+		allAddrs, err = gw.v.Wallets.GetAddresses(params.Wallet.ID)
+		if err != nil {
+			logger.WithError(err).Error("Wallet.GetAddresses failed")
+			return
+		}
+
+		allAddrsMap := make(map[cipher.Address]struct{}, len(allAddrs))
+		for _, a := range allAddrsMap {
+			allAddrsMap[a] = struct{}{}
+		}
+
 		var auxs coin.AddressUxOuts
-		if len(params.Wallet.Outputs) != 0 {
+		if len(params.Wallet.UxOuts) != 0 {
 			// Check if any of the outputs are in an unconfirmed spend
-			hashesMap := make(map[cipher.SHA256]struct{}, len(params.Wallet.Outputs))
-			for _, h := range params.Wallet.Outputs {
-				hashesMap[o] = struct{}{}
+			hashesMap := make(map[cipher.SHA256]struct{}, len(params.Wallet.UxOuts))
+			for _, h := range params.Wallet.UxOuts {
+				hashesMap[h] = struct{}{}
 			}
 
 			var unconfirmedSpends []cipher.SHA256
@@ -608,28 +621,35 @@ func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*co
 				}
 			}
 
-			// Retrieve the unspent outputs from the pool.
+			// Retrieve the uxouts from the pool.
 			// An error is returned if any do not exist
-			var outputs coin.UxArray
-			outputs, err = gw.v.GetUnspentOutputs(params.Wallet.Outputs)
+			var uxouts coin.UxArray
+			uxouts, err = gw.v.GetUnspentOutputs(params.Wallet.UxOuts)
 			if err != nil {
 				return
 			}
 
-			// Build coin.AddressUxOuts map.
-			// If an address is not known by the wallet, CreateAndSignTransactionAdvanced will fail
+			// Build coin.AddressUxOuts map, and check that the address is in the wallets
 			auxs := make(coin.AddressUxOuts)
-			for _, o := range outputs {
+			for _, o := range uxouts {
+				if _, ok := allAddrsMap[o.Body.Address]; !ok {
+					err = wallet.ErrUnknownAddress
+					return
+				}
 				auxs[o.Body.Address] = append(auxs[o.Body.Address], o)
 			}
+
 		} else {
 			addrs := params.Wallet.Addresses
 			if len(addrs) == 0 {
-				// Use all addresses from the wallet
-				addrs, err = gw.v.Wallets.GetAddresses(params.Wallet.ID)
-				if err != nil {
-					logger.WithError(err).Error("Wallet.GetAddresses failed")
-					return
+				addrs = allAddrs
+			} else {
+				// Check that requested addresses are in the wallet
+				for _, a := range addrs {
+					if _, ok := allAddrsMap[a]; !ok {
+						err = wallet.ErrUnknownAddress
+						return
+					}
 				}
 			}
 

@@ -23,6 +23,7 @@ import (
 func TestCreateTransaction(t *testing.T) {
 	type rawRequestWallet struct {
 		ID        string   `json:"id"`
+		UxOuts    []string `json:"uxouts,omitempty"`
 		Addresses []string `json:"addresses,omitempty"`
 		Password  string   `json:"password"`
 	}
@@ -102,6 +103,8 @@ func TestCreateTransaction(t *testing.T) {
 			ID: "foo.wlt",
 		},
 	}
+
+	walletInput := testutil.RandSHA256(t)
 
 	tt := []struct {
 		name                           string
@@ -618,6 +621,83 @@ func TestCreateTransaction(t *testing.T) {
 			},
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - to contains duplicate values",
+		},
+
+		{
+			name:   "400 - both wallet uxouts and wallet addresses specified",
+			method: http.MethodPost,
+			body: &rawRequest{
+				HoursSelection: rawHoursSelection{
+					Type:        wallet.HoursSelectionTypeAuto,
+					Mode:        wallet.HoursSelectionModeShare,
+					ShareFactor: newStrPtr("0.5"),
+				},
+				ChangeAddress: changeAddress.String(),
+				Wallet: rawRequestWallet{
+					ID:        "foo.wlt",
+					Addresses: []string{destinationAddress.String()},
+					UxOuts:    []string{walletInput.Hex()},
+				},
+				To: []rawReceiver{
+					{
+						Address: destinationAddress.String(),
+						Coins:   "1.2",
+					},
+				},
+			},
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - wallet.uxouts and wallet.addresses cannot be combined",
+		},
+
+		{
+			name:   "400 - duplicate wallet uxouts",
+			method: http.MethodPost,
+			body: &rawRequest{
+				HoursSelection: rawHoursSelection{
+					Type:        wallet.HoursSelectionTypeAuto,
+					Mode:        wallet.HoursSelectionModeShare,
+					ShareFactor: newStrPtr("0.5"),
+				},
+				ChangeAddress: changeAddress.String(),
+				Wallet: rawRequestWallet{
+					ID:        "foo.wlt",
+					Addresses: []string{destinationAddress.String()},
+					UxOuts:    []string{walletInput.Hex(), walletInput.Hex()},
+				},
+				To: []rawReceiver{
+					{
+						Address: destinationAddress.String(),
+						Coins:   "1.2",
+					},
+				},
+			},
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - wallet.uxouts contains duplicate values",
+		},
+
+		{
+			name:   "400 - duplicate wallet addresses",
+			method: http.MethodPost,
+			body: &rawRequest{
+				HoursSelection: rawHoursSelection{
+					Type:        wallet.HoursSelectionTypeAuto,
+					Mode:        wallet.HoursSelectionModeShare,
+					ShareFactor: newStrPtr("0.5"),
+				},
+				ChangeAddress: changeAddress.String(),
+				Wallet: rawRequestWallet{
+					ID:        "foo.wlt",
+					Addresses: []string{destinationAddress.String(), destinationAddress.String()},
+				},
+				To: []rawReceiver{
+					{
+						Address: destinationAddress.String(),
+						Coins:   "1.2",
+					},
+				},
+			},
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - wallet.addresses contains duplicate values",
 		},
 
 		{

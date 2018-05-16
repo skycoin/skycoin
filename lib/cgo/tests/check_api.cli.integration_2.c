@@ -63,7 +63,7 @@ void createTempWalletDir(bool encrypt) {
   GoString pathname = {walletPath, strlen(walletPath)};
   SKY_cli_Setenv(WalletPath, pathname);
 };
-
+/*
 Test(api_cli_integration, TestGenerateAddresses) {
 
   int lenStruct = 1;
@@ -185,4 +185,4 @@ Test(api_cli_integration, TestGenerateAddresses) {
     cr_assert(compareJsonValues(expect, w) == 1, "compareJsonValues  in : %s",
               tt[i].name);
   }
-};
+};*/

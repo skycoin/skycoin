@@ -114,6 +114,7 @@ Test(api_cli_integration, TestStableShowConfig) {
 	}
 	json_value* json_golden = loadGoldenFile(golden_file);
 	cr_assert(json_golden != NULL, "loadGoldenFile failed");
+	registerJsonFree(json_golden);
 	int equal = compareJsonValues(value, json_golden);
 	cr_assert(equal, "Output from command different than expected");
 }

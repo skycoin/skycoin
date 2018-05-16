@@ -70,6 +70,7 @@ script:
   # Disable seed api test
   - make integration-test-disable-seed-api
   # libskycoin tests
+  - CC=gcc-6 make integration-test-libc
   - CC=gcc-6 make test-libc
   # TODO: test pyskycoin
   # - CC=gcc-6 make test-libpy

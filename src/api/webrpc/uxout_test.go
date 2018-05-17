@@ -4,12 +4,10 @@ import (
 	"errors"
 	"testing"
 
-	"encoding/json"
-	"strings"
-
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
@@ -51,7 +49,7 @@ func Test_getAddrUxOutsHandler(t *testing.T) {
 				},
 				gateway: m,
 			},
-			makeErrorResponse(errCodeInternalError, errMsgInternalError),
+			MakeErrorResponse(ErrCodeInternalError, ErrMsgInternalError),
 		},
 		{
 			"invalid address length",
@@ -64,7 +62,7 @@ func Test_getAddrUxOutsHandler(t *testing.T) {
 				},
 				gateway: m,
 			},
-			makeErrorResponse(errCodeInvalidParams, "Invalid address length"),
+			MakeErrorResponse(ErrCodeInvalidParams, "Invalid address length"),
 		},
 		{
 			"invalid address version",
@@ -77,7 +75,7 @@ func Test_getAddrUxOutsHandler(t *testing.T) {
 				},
 				gateway: m,
 			},
-			makeErrorResponse(errCodeInvalidParams, "Invalid address length"),
+			MakeErrorResponse(ErrCodeInvalidParams, "Invalid address length"),
 		},
 		{
 			"invalid params",
@@ -90,7 +88,7 @@ func Test_getAddrUxOutsHandler(t *testing.T) {
 				},
 				gateway: m,
 			},
-			makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams),
+			MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams),
 		},
 		{
 			"decode params error",
@@ -103,7 +101,7 @@ func Test_getAddrUxOutsHandler(t *testing.T) {
 				},
 				gateway: m,
 			},
-			makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams),
+			MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams),
 		},
 	}
 
@@ -115,35 +113,36 @@ func Test_getAddrUxOutsHandler(t *testing.T) {
 	}
 }
 
-func decodeUxJSON(s string) []*historydb.UxOutJSON {
-	v := []*historydb.UxOutJSON{}
-	if err := json.NewDecoder(strings.NewReader(s)).Decode(&v); err != nil {
-		panic(err)
-	}
-	return v
-}
-
 func newUxOutMock() (*GatewayerMock, func(addr string) []*historydb.UxOutJSON) {
 	m := NewGatewayerMock()
-	uxoutJSON := `[
-                {
-                    "uxid": "cc816392cef53a5b75f91bc3fb8155f133907c8ce7f6540507ab30e0456aec3e",
-                    "time": 1482042899,
-                    "src_block_seq": 562,
-                    "src_tx": "ec9e876d4bb33beec203de769b0d3b23de21052de0e4df06b1444bcfec773c46",
-                    "owner_address": "2kmKohJrwURrdcVtDNaWK6hLCNsWWbJhTqT",
-                    "coins": 1000000,
-                    "hours": 0,
-                    "spent_block_seq": 563,
-                    "spent_tx": "31a21a4dd8331ce68756ddbb21f2c66279d5f5526e936f550e49e29b840ac1ff"
-                }
-            ]`
+
+	hash, _ := cipher.SHA256FromHex("31a21a4dd8331ce68756ddbb21f2c66279d5f5526e936f550e49e29b840ac1ff")
+	address, _ := cipher.DecodeBase58Address("2kmKohJrwURrdcVtDNaWK6hLCNsWWbJhTqT")
+	srcTxHash, _ := cipher.SHA256FromHex("ec9e876d4bb33beec203de769b0d3b23de21052de0e4df06b1444bcfec773c46")
+
 	mockData := map[string]struct {
-		ret []*historydb.UxOutJSON
+		ret []*historydb.UxOut
 		err error
 	}{
 		"2kmKohJrwURrdcVtDNaWK6hLCNsWWbJhTqT": {
-			decodeUxJSON(uxoutJSON),
+			[]*historydb.UxOut{
+				{
+					Out: coin.UxOut{
+						Head: coin.UxHead{
+							Time:  1482042899,
+							BkSeq: 562,
+						},
+						Body: coin.UxBody{
+							SrcTransaction: srcTxHash,
+							Address:        address,
+							Coins:          1000000,
+							Hours:          0,
+						},
+					},
+					SpentTxID:     hash,
+					SpentBlockSeq: 563,
+				},
+			},
 			nil,
 		},
 		"fyqX5YuwXMUs4GEUE3LjLyhrqvNztFHQ4B": {
@@ -154,11 +153,19 @@ func newUxOutMock() (*GatewayerMock, func(addr string) []*historydb.UxOutJSON) {
 
 	for addr, d := range mockData {
 		a := cipher.MustDecodeBase58Address(addr)
-		m.On("GetAddrUxOuts", a).Return(d.ret, d.err)
+		m.On("GetAddrUxOuts", []cipher.Address{a}).Return(d.ret, d.err)
 	}
 
 	f := func(addr string) []*historydb.UxOutJSON {
-		return mockData[addr].ret
+		// Convert UxOut to UxOutJson for handler test
+		uxouts := mockData[addr].ret
+		uxs := make([]*historydb.UxOutJSON, len(uxouts))
+
+		for i, ux := range uxouts {
+			uxs[i] = historydb.NewUxOutJSON(ux)
+		}
+
+		return uxs
 	}
 	return m, f
 }

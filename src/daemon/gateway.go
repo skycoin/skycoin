@@ -1,6 +1,8 @@
 package daemon
 
 import (
+	"time"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/strand"
@@ -10,23 +12,22 @@ import (
 
 	"fmt"
 
-	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
-// Exposes a read-only api for use by the gui rpc interface
-
 // GatewayConfig configuration set of gateway.
 type GatewayConfig struct {
-	BufferSize       int
-	DisableWalletAPI bool
+	BufferSize      int
+	EnableWalletAPI bool
+	EnableGUI       bool
 }
 
 // NewGatewayConfig create and init an GatewayConfig
 func NewGatewayConfig() GatewayConfig {
 	return GatewayConfig{
-		BufferSize:       32,
-		DisableWalletAPI: false,
+		BufferSize:      32,
+		EnableWalletAPI: false,
+		EnableGUI:       false,
 	}
 }
 
@@ -34,7 +35,6 @@ func NewGatewayConfig() GatewayConfig {
 type Gateway struct {
 	Config GatewayConfig
 	drpc   RPC
-	vrpc   visor.RPC
 
 	// Backref to Daemon
 	d *Daemon
@@ -50,7 +50,6 @@ func NewGateway(c GatewayConfig, d *Daemon) *Gateway {
 	return &Gateway{
 		Config:   c,
 		drpc:     RPC{},
-		vrpc:     visor.MakeRPC(d.Visor.v),
 		d:        d,
 		v:        d.Visor.v,
 		requests: make(chan strand.Request, c.BufferSize),
@@ -61,6 +60,8 @@ func NewGateway(c GatewayConfig, d *Daemon) *Gateway {
 // Shutdown closes the Gateway
 func (gw *Gateway) Shutdown() {
 	close(gw.quit)
+	// wait for strand to complete
+	gw.strand("wait-shutdown", func() {})
 }
 
 func (gw *Gateway) strand(name string, f func()) {
@@ -121,81 +122,66 @@ func (gw *Gateway) GetExchgConnection() []string {
 /* Blockchain & Transaction status */
 
 // GetBlockchainProgress returns a *BlockchainProgress
-func (gw *Gateway) GetBlockchainProgress() *BlockchainProgress {
+func (gw *Gateway) GetBlockchainProgress() (*BlockchainProgress, error) {
 	var bcp *BlockchainProgress
+	var err error
 	gw.strand("GetBlockchainProgress", func() {
-		bcp = gw.drpc.GetBlockchainProgress(gw.d.Visor)
+		bcp, err = gw.drpc.GetBlockchainProgress(gw.d.Visor)
 	})
-	return bcp
-}
-
-// ResendTransaction resent the transaction and return a *ResendResult
-func (gw *Gateway) ResendTransaction(txn cipher.SHA256) *ResendResult {
-	var result *ResendResult
-	gw.strand("ResendTransaction", func() {
-		result = gw.drpc.ResendTransaction(gw.d.Visor, gw.d.Pool, txn)
-	})
-	return result
+	return bcp, err
 }
 
 // ResendUnconfirmedTxns resents all unconfirmed transactions
-func (gw *Gateway) ResendUnconfirmedTxns() (rlt *ResendResult) {
+func (gw *Gateway) ResendUnconfirmedTxns() (*ResendResult, error) {
+	var result *ResendResult
+	var err error
 	gw.strand("ResendUnconfirmedTxns", func() {
-		rlt = gw.drpc.ResendUnconfirmedTxns(gw.d.Visor, gw.d.Pool)
+		result, err = gw.drpc.ResendUnconfirmedTxns(gw.d.Visor, gw.d.Pool)
 	})
-	return
+	return result, err
 }
 
 // GetBlockchainMetadata returns a *visor.BlockchainMetadata
-func (gw *Gateway) GetBlockchainMetadata() *visor.BlockchainMetadata {
+func (gw *Gateway) GetBlockchainMetadata() (*visor.BlockchainMetadata, error) {
 	var bcm *visor.BlockchainMetadata
+	var err error
 	gw.strand("GetBlockchainMetadata", func() {
-		bcm = gw.vrpc.GetBlockchainMetadata(gw.v)
+		bcm, err = gw.v.GetBlockchainMetadata()
 	})
-	return bcm
+	return bcm, err
 }
 
-// GetBlockByHash returns the block by hash
-func (gw *Gateway) GetBlockByHash(hash cipher.SHA256) (block coin.SignedBlock, ok bool) {
-	gw.strand("GetBlockByHash", func() {
-		b, err := gw.v.GetBlockByHash(hash)
-		if err != nil {
-			logger.Errorf("gateway.GetBlockByHash failed: %v", err)
-			return
-		}
-		if b == nil {
-			return
-		}
-
-		block = *b
-		ok = true
+// GetSignedBlockByHash returns the block by hash
+func (gw *Gateway) GetSignedBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, error) {
+	var b *coin.SignedBlock
+	var err error
+	gw.strand("GetSignedBlockByHash", func() {
+		b, err = gw.v.GetSignedBlockByHash(hash)
 	})
-	return
+	return b, err
 }
 
-// GetBlockBySeq returns blcok by seq
-func (gw *Gateway) GetBlockBySeq(seq uint64) (block coin.SignedBlock, ok bool) {
-	gw.strand("GetBlockBySeq", func() {
-		b, err := gw.v.GetBlockBySeq(seq)
-		if err != nil {
-			logger.Errorf("gateway.GetBlockBySeq failed: %v", err)
-			return
-		}
-		if b == nil {
-			return
-		}
-		block = *b
-		ok = true
+// GetSignedBlockBySeq returns block by seq
+func (gw *Gateway) GetSignedBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
+	var b *coin.SignedBlock
+	var err error
+	gw.strand("GetSignedBlockBySeq", func() {
+		b, err = gw.v.GetSignedBlockBySeq(seq)
 	})
-	return
+	return b, err
 }
 
 // GetBlocks returns a *visor.ReadableBlocks
 func (gw *Gateway) GetBlocks(start, end uint64) (*visor.ReadableBlocks, error) {
 	var blocks []coin.SignedBlock
+	var err error
+
 	gw.strand("GetBlocks", func() {
-		blocks = gw.vrpc.GetBlocks(gw.v, start, end)
+		blocks, err = gw.v.GetBlocks(start, end)
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	return visor.NewReadableBlocks(blocks)
 }
@@ -208,7 +194,7 @@ func (gw *Gateway) GetBlocksInDepth(vs []uint64) (*visor.ReadableBlocks, error) 
 	gw.strand("GetBlocksInDepth", func() {
 		for _, n := range vs {
 			var b *coin.SignedBlock
-			b, err = gw.vrpc.GetBlockBySeq(gw.v, n)
+			b, err = gw.v.GetSignedBlockBySeq(n)
 			if err != nil {
 				err = fmt.Errorf("get block %v failed: %v", n, err)
 				return
@@ -232,9 +218,13 @@ func (gw *Gateway) GetBlocksInDepth(vs []uint64) (*visor.ReadableBlocks, error) 
 // GetLastBlocks get last N blocks
 func (gw *Gateway) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error) {
 	var blocks []coin.SignedBlock
+	var err error
 	gw.strand("GetLastBlocks", func() {
-		blocks = gw.vrpc.GetLastBlocks(gw.v, num)
+		blocks, err = gw.v.GetLastBlocks(num)
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	return visor.NewReadableBlocks(blocks)
 }
@@ -251,26 +241,30 @@ func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (*visor.ReadableO
 	var uncfmSpendingOutputs coin.UxArray
 	// unconfirmed incoming outputs
 	var uncfmIncomingOutputs coin.UxArray
-	var headTime uint64
+	var head *coin.SignedBlock
 	var err error
 	gw.strand("GetUnspentOutputs", func() {
-		headTime = gw.v.Blockchain.Time()
+		head, err = gw.v.GetHeadBlock()
+		if err != nil {
+			err = fmt.Errorf("v.GetHeadBlock failed: %v", err)
+			return
+		}
 
 		unspentOutputs, err = gw.v.GetUnspentOutputs()
 		if err != nil {
-			err = fmt.Errorf("get unspent output readables failed: %v", err)
+			err = fmt.Errorf("v.GetUnspentOutputs failed: %v", err)
 			return
 		}
 
 		uncfmSpendingOutputs, err = gw.v.UnconfirmedSpendingOutputs()
 		if err != nil {
-			err = fmt.Errorf("get unconfirmed spending outputs failed: %v", err)
+			err = fmt.Errorf("v.UnconfirmedSpendingOutputs failed: %v", err)
 			return
 		}
 
 		uncfmIncomingOutputs, err = gw.v.UnconfirmedIncomingOutputs()
 		if err != nil {
-			err = fmt.Errorf("get all incoming outputs failed: %v", err)
+			err = fmt.Errorf("v.UnconfirmedIncomingOutputs failed: %v", err)
 			return
 		}
 	})
@@ -286,17 +280,17 @@ func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (*visor.ReadableO
 	}
 
 	outputSet := visor.ReadableOutputSet{}
-	outputSet.HeadOutputs, err = visor.NewReadableOutputs(headTime, unspentOutputs)
+	outputSet.HeadOutputs, err = visor.NewReadableOutputs(head.Time(), unspentOutputs)
 	if err != nil {
 		return nil, err
 	}
 
-	outputSet.OutgoingOutputs, err = visor.NewReadableOutputs(headTime, uncfmSpendingOutputs)
+	outputSet.OutgoingOutputs, err = visor.NewReadableOutputs(head.Time(), uncfmSpendingOutputs)
 	if err != nil {
 		return nil, err
 	}
 
-	outputSet.IncomingOutputs, err = visor.NewReadableOutputs(headTime, uncfmIncomingOutputs)
+	outputSet.IncomingOutputs, err = visor.NewReadableOutputs(head.Time(), uncfmIncomingOutputs)
 	if err != nil {
 		return nil, err
 	}
@@ -367,19 +361,70 @@ func (gw *Gateway) GetTransaction(txid cipher.SHA256) (tx *visor.Transaction, er
 	return
 }
 
+// TransactionResult represents transaction result
+type TransactionResult struct {
+	Status      visor.TransactionStatus   `json:"status"`
+	Time        uint64                    `json:"time"`
+	Transaction visor.ReadableTransaction `json:"txn"`
+}
+
+// NewTransactionResult converts Transaction to TransactionResult
+func NewTransactionResult(tx *visor.Transaction) (*TransactionResult, error) {
+	if tx == nil {
+		return nil, nil
+	}
+
+	rbTx, err := visor.NewReadableTransaction(tx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &TransactionResult{
+		Transaction: *rbTx,
+		Status:      tx.Status,
+		Time:        tx.Time,
+	}, nil
+}
+
+// TransactionResults array of transaction results
+type TransactionResults struct {
+	Txns []TransactionResult `json:"txns"`
+}
+
+// NewTransactionResults converts []Transaction to []TransactionResults
+func NewTransactionResults(txs []visor.Transaction) (*TransactionResults, error) {
+	txRlts := make([]TransactionResult, 0, len(txs))
+	for _, tx := range txs {
+		rbTx, err := visor.NewReadableTransaction(&tx)
+		if err != nil {
+			return nil, err
+		}
+
+		txRlts = append(txRlts, TransactionResult{
+			Transaction: *rbTx,
+			Status:      tx.Status,
+			Time:        tx.Time,
+		})
+	}
+
+	return &TransactionResults{
+		Txns: txRlts,
+	}, nil
+}
+
 // GetTransactionResult gets transaction result by txid.
-func (gw *Gateway) GetTransactionResult(txid cipher.SHA256) (*visor.TransactionResult, error) {
+func (gw *Gateway) GetTransactionResult(txid cipher.SHA256) (*TransactionResult, error) {
 	var tx *visor.Transaction
 	var err error
 	gw.strand("GetTransactionResult", func() {
-		tx, err = gw.vrpc.GetTransaction(gw.v, txid)
+		tx, err = gw.v.GetTransaction(txid)
 	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	return visor.NewTransactionResult(tx)
+	return NewTransactionResult(tx)
 }
 
 // InjectBroadcastTransaction injects and broadcasts a transaction
@@ -391,20 +436,159 @@ func (gw *Gateway) InjectBroadcastTransaction(txn coin.Transaction) error {
 	return err
 }
 
-// GetAddressTxns returns a *visor.TransactionResults
-func (gw *Gateway) GetAddressTxns(a cipher.Address) (*visor.TransactionResults, error) {
-	var txs []visor.Transaction
-	var err error
+// ReadableTransaction has readable transaction data. It differs from visor.ReadableTransaction
+// in that it includes metadata for transaction inputs
+type ReadableTransaction struct {
+	Status    visor.TransactionStatus `json:"status"`
+	Length    uint32                  `json:"length"`
+	Type      uint8                   `json:"type"`
+	Hash      string                  `json:"txid"`
+	InnerHash string                  `json:"inner_hash"`
+	Timestamp uint64                  `json:"timestamp,omitempty"`
+	Size      int                     `json:"size"`
+	Fee       uint64                  `json:"fee"`
 
-	gw.strand("GetAddressesTxns", func() {
-		txs, err = gw.vrpc.GetAddressTxns(gw.v, a)
+	Sigs []string                          `json:"sigs"`
+	In   []visor.ReadableTransactionInput  `json:"inputs"`
+	Out  []visor.ReadableTransactionOutput `json:"outputs"`
+}
+
+// NewReadableTransaction creates ReadableTransaction
+func NewReadableTransaction(t visor.Transaction, inputs []visor.ReadableTransactionInput) (ReadableTransaction, error) {
+	// Genesis transaction use empty SHA256 as txid
+	txID := cipher.SHA256{}
+	if t.Status.BlockSeq != 0 {
+		txID = t.Txn.Hash()
+	}
+
+	sigs := make([]string, len(t.Txn.Sigs))
+	for i, s := range t.Txn.Sigs {
+		sigs[i] = s.Hex()
+	}
+
+	out := make([]visor.ReadableTransactionOutput, len(t.Txn.Out))
+	for i := range t.Txn.Out {
+		o, err := visor.NewReadableTransactionOutput(&t.Txn.Out[i], txID)
+		if err != nil {
+			return ReadableTransaction{}, err
+		}
+
+		out[i] = *o
+	}
+
+	var hoursIn uint64
+	for _, i := range inputs {
+		if _, err := coin.AddUint64(hoursIn, i.CalculatedHours); err != nil {
+			logger.Critical().Warningf("Ignoring NewReadableTransaction summing txn %s input hours error: %v", txID.Hex(), err)
+		}
+		hoursIn += i.CalculatedHours
+	}
+
+	var hoursOut uint64
+	for _, o := range t.Txn.Out {
+		if _, err := coin.AddUint64(hoursOut, o.Hours); err != nil {
+			logger.Critical().Warningf("Ignoring NewReadableTransaction summing txn %s outputs hours error: %v", txID.Hex(), err)
+		}
+
+		hoursOut += o.Hours
+	}
+
+	if hoursIn < hoursOut {
+		err := fmt.Errorf("NewReadableTransaction input hours is less than output hours, txid=%s", txID.Hex())
+		return ReadableTransaction{}, err
+	}
+
+	fee := hoursIn - hoursOut
+
+	return ReadableTransaction{
+		Status:    t.Status,
+		Length:    t.Txn.Length,
+		Type:      t.Txn.Type,
+		Hash:      t.Txn.Hash().Hex(),
+		InnerHash: t.Txn.InnerHash.Hex(),
+		Timestamp: t.Time,
+		Size:      t.Txn.Size(),
+		Fee:       fee,
+
+		Sigs: sigs,
+		In:   inputs,
+		Out:  out,
+	}, nil
+}
+
+// GetTransactionsForAddress returns []ReadableTransaction for a given address.
+// These transactions include confirmed and unconfirmed transactions
+// TODO -- move into visor (visor.ReadableTransaction can't be changed to daemon.ReadableTransaction without breaking the API)
+func (gw *Gateway) GetTransactionsForAddress(a cipher.Address) ([]ReadableTransaction, error) {
+	var err error
+	var resTxns []ReadableTransaction
+
+	gw.strand("GetTransactionsForAddress", func() {
+		var txns []visor.Transaction
+		txns, err = gw.v.GetAddressTxns(a)
+		if err != nil {
+			logger.Errorf("Gateway.GetTransactionsForAddress: gw.v.GetAddressTxns failed: %v", err)
+			return
+		}
+
+		var head *coin.SignedBlock
+		head, err = gw.v.GetHeadBlock()
+		if err != nil {
+			logger.Errorf("Gateway.GetTransactionsForAddress: gw.v.GetHeadBlock failed: %v", err)
+			return
+		}
+
+		resTxns = make([]ReadableTransaction, len(txns))
+
+		for i, txn := range txns {
+			inputs := make([]visor.ReadableTransactionInput, len(txn.Txn.In))
+			for j, inputID := range txn.Txn.In {
+				var input *historydb.UxOut
+				input, err = gw.v.GetUxOutByID(inputID)
+				if err != nil {
+					logger.Errorf("Gateway.GetTransactionsForAddress: gw.v.GetUxOutByID failed: %v", err)
+					return
+				}
+				if input == nil {
+					err = fmt.Errorf("uxout of %v does not exist in history db", inputID.Hex())
+					return
+				}
+
+				// If the txn is confirmed,
+				// use the time of the transaction when it was executed,
+				// else use the head time
+				t := txn.Time
+				if !txn.Status.Confirmed {
+					t = head.Time()
+				}
+
+				var readableInput *visor.ReadableTransactionInput
+				readableInput, err = visor.NewReadableTransactionInput(input.Out, t)
+				if err != nil {
+					logger.Errorf("Gateway.GetTransactionsForAddress: visor.NewReadableTransactionInput failed: %v", err)
+					return
+				}
+
+				inputs[j] = *readableInput
+			}
+
+			var rTxn ReadableTransaction
+			rTxn, err = NewReadableTransaction(txn, inputs)
+			if err != nil {
+				logger.Errorf("Gateway.GetTransactionsForAddress: NewReadableTransaction failed: %v", err)
+				return
+			}
+
+			resTxns[i] = rTxn
+		}
+
 	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	return visor.NewTransactionResults(txs)
+	return resTxns, nil
 }
 
 // GetTransactions returns transactions filtered by zero or more visor.TxFilter
@@ -428,19 +612,27 @@ func (gw *Gateway) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
 }
 
 // GetAddrUxOuts gets all the address affected UxOuts.
-func (gw *Gateway) GetAddrUxOuts(addr cipher.Address) ([]*historydb.UxOutJSON, error) {
-	var uxouts []*historydb.UxOut
+func (gw *Gateway) GetAddrUxOuts(addresses []cipher.Address) ([]*historydb.UxOut, error) {
+	var uxOuts []*historydb.UxOut
 	var err error
+
 	gw.strand("GetAddrUxOuts", func() {
-		uxouts, err = gw.v.GetAddrUxOuts(addr)
+		for _, addr := range addresses {
+			var result []*historydb.UxOut
+			result, err = gw.v.GetAddrUxOuts(addr)
+			if err != nil {
+				return
+			}
+
+			uxOuts = append(uxOuts, result...)
+		}
 	})
 
-	uxs := make([]*historydb.UxOutJSON, len(uxouts))
-	for i, ux := range uxouts {
-		uxs[i] = historydb.NewUxOutJSON(ux)
+	if err != nil {
+		return nil, err
 	}
 
-	return uxs, err
+	return uxOuts, nil
 }
 
 // GetTimeNow returns the current Unix time
@@ -449,70 +641,63 @@ func (gw *Gateway) GetTimeNow() uint64 {
 }
 
 // GetAllUnconfirmedTxns returns all unconfirmed transactions
-func (gw *Gateway) GetAllUnconfirmedTxns() []visor.UnconfirmedTxn {
+func (gw *Gateway) GetAllUnconfirmedTxns() ([]visor.UnconfirmedTxn, error) {
 	var txns []visor.UnconfirmedTxn
+	var err error
 	gw.strand("GetAllUnconfirmedTxns", func() {
-		txns = gw.v.GetAllUnconfirmedTxns()
+		txns, err = gw.v.GetAllUnconfirmedTxns()
 	})
-	return txns
+	return txns, err
 }
 
 // GetUnconfirmedTxns returns addresses related unconfirmed transactions
-func (gw *Gateway) GetUnconfirmedTxns(addrs []cipher.Address) []visor.UnconfirmedTxn {
+func (gw *Gateway) GetUnconfirmedTxns(addrs []cipher.Address) ([]visor.UnconfirmedTxn, error) {
 	var txns []visor.UnconfirmedTxn
+	var err error
 	gw.strand("GetUnconfirmedTxns", func() {
-		txns = gw.v.GetUnconfirmedTxns(visor.ToAddresses(addrs))
+		txns, err = gw.v.GetUnconfirmedTxns(visor.ToAddresses(addrs))
 	})
-	return txns
-}
-
-// GetUnspent returns the unspent pool
-func (gw *Gateway) GetUnspent() blockdb.UnspentPool {
-	var unspent blockdb.UnspentPool
-	gw.strand("GetUnspent", func() {
-		unspent = gw.v.Blockchain.Unspent()
-	})
-	return unspent
-}
-
-// implements the wallet.Validator interface
-type spendValidator struct {
-	uncfm   visor.UnconfirmedTxnPooler
-	unspent blockdb.UnspentPool
-}
-
-func newSpendValidator(uncfm visor.UnconfirmedTxnPooler, unspent blockdb.UnspentPool) *spendValidator {
-	return &spendValidator{
-		uncfm:   uncfm,
-		unspent: unspent,
-	}
-}
-
-func (sv spendValidator) HasUnconfirmedSpendTx(addr []cipher.Address) (bool, error) {
-	aux, err := sv.uncfm.SpendsOfAddresses(addr, sv.unspent)
-	if err != nil {
-		return false, err
-	}
-
-	return len(aux) > 0, nil
+	return txns, err
 }
 
 // Spend spends coins from given wallet and broadcast it,
 // set password as nil if wallet is not encrypted, otherwise the password must be provied.
 // return transaction or error.
 func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
-	if gw.Config.DisableWalletAPI {
+	if !gw.Config.EnableWalletAPI {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
 	var tx *coin.Transaction
 	var err error
 	gw.strand("Spend", func() {
-		// create spend validator
-		unspent := gw.v.Blockchain.Unspent()
-		sv := newSpendValidator(gw.v.Unconfirmed, unspent)
-		// create and sign transaction
-		tx, err = gw.vrpc.CreateAndSignTransaction(wltID, password, sv, unspent, gw.v.Blockchain.Time(), coins, dest)
+		// Get all addresses from the wallet
+		var addrs []cipher.Address
+		addrs, err = gw.v.Wallets.GetAddresses(wltID)
+		if err != nil {
+			logger.WithError(err).Error("Wallet.GetAddresses failed")
+			return
+		}
+
+		// Get unspent outputs, while checking that there are no unconfirmed outputs
+		var auxs coin.AddressUxOuts
+		auxs, err = gw.getUnspentsForSpending(addrs)
+		if err != nil {
+			if err != wallet.ErrSpendingUnconfirmed {
+				logger.WithError(err).Error("getUnspentsForSpending failed")
+			}
+			return
+		}
+
+		var head *coin.SignedBlock
+		head, err = gw.v.GetHeadBlock()
+		if err != nil {
+			logger.Errorf("GetHeadBlock failed: %v", err)
+			return
+		}
+
+		// Create and sign transaction
+		tx, err = gw.v.Wallets.CreateAndSignTransaction(wltID, password, auxs, head.Time(), coins, dest)
 		if err != nil {
 			logger.Errorf("Create transaction failed: %v", err)
 			return
@@ -529,53 +714,139 @@ func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest ciphe
 	return tx, err
 }
 
+// CreateTransaction creates a transaction based upon parameters in wallet.CreateTransactionParams
+func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*coin.Transaction, []wallet.UxBalance, error) {
+	if !gw.Config.EnableWalletAPI {
+		return nil, nil, wallet.ErrWalletAPIDisabled
+	}
+
+	var txn *coin.Transaction
+	var inputs []wallet.UxBalance
+	var err error
+
+	gw.strand("CreateTransaction", func() {
+		// Use selected addresses or get all addresses from the wallet
+		addrs := params.Wallet.Addresses
+		if len(addrs) == 0 {
+			addrs, err = gw.v.Wallets.GetAddresses(params.Wallet.ID)
+			if err != nil {
+				logger.WithError(err).Error("Wallet.GetAddresses failed")
+				return
+			}
+		}
+
+		// Get unspent outputs, while checking that there are no unconfirmed outputs
+		var auxs coin.AddressUxOuts
+		auxs, err = gw.getUnspentsForSpending(addrs)
+		if err != nil {
+			if err != wallet.ErrSpendingUnconfirmed {
+				logger.WithError(err).Error("getUnspentsForSpending failed")
+			}
+			return
+		}
+
+		var head *coin.SignedBlock
+		head, err = gw.v.GetHeadBlock()
+		if err != nil {
+			logger.WithError(err).Error("GetHeadBlock failed")
+			return
+		}
+
+		// Create and sign transaction
+		txn, inputs, err = gw.v.Wallets.CreateAndSignTransactionAdvanced(params, auxs, head.Time())
+		if err != nil {
+			logger.WithError(err).Error("CreateAndSignTransactionAdvanced failed")
+			return
+		}
+
+		// The wallet can create transactions that would not pass all validation, such as the decimal restriction,
+		// because the wallet is not aware of visor-level constraints.
+		// Check that the transaction is valid before returning it to the caller.
+		err = gw.v.VerifySingleTxnAllConstraints(txn)
+		if err != nil {
+			logger.WithError(err).Error("Created transaction violates transaction constraints")
+			return
+		}
+	})
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return txn, inputs, err
+}
+
+// getUnspentsForSpending returns the unspent outputs for a set of addresses,
+// but returns an error if any of the unspents are in the unconfirmed outputs pool
+func (gw *Gateway) getUnspentsForSpending(addrs []cipher.Address) (coin.AddressUxOuts, error) {
+	auxs, err := gw.v.UnconfirmedSpendsOfAddresses(addrs)
+	if err != nil {
+		err = fmt.Errorf("UnconfirmedSpendsOfAddresses failed: %v", err)
+		return nil, err
+	}
+
+	// Check that this is not trying to spend unconfirmed outputs
+	if len(auxs) > 0 {
+		return nil, wallet.ErrSpendingUnconfirmed
+	}
+
+	auxs, err = gw.v.GetUnspentsOfAddrs(addrs)
+	if err != nil {
+		err = fmt.Errorf("GetUnspentsOfAddrs failed: %v", err)
+		return nil, err
+	}
+
+	return auxs, nil
+}
+
 // CreateWallet creates wallet
 func (gw *Gateway) CreateWallet(wltName string, options wallet.Options) (*wallet.Wallet, error) {
-	if gw.Config.DisableWalletAPI {
+	if !gw.Config.EnableWalletAPI {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
 	var wlt *wallet.Wallet
 	var err error
 	gw.strand("CreateWallet", func() {
-		wlt, err = gw.vrpc.CreateWallet(wltName, options)
-	})
-	return wlt, err
-}
-
-// ScanAheadWalletAddresses loads wallet from given seed and scan ahead N addresses
-// Set password as nil if the wallet is not encrypted, otherwise the password must be provided
-func (gw *Gateway) ScanAheadWalletAddresses(wltName string, password []byte, scanN uint64) (*wallet.Wallet, error) {
-	if gw.Config.DisableWalletAPI {
-		return nil, wallet.ErrWalletAPIDisabled
-	}
-
-	var wlt *wallet.Wallet
-	var err error
-	gw.strand("ScanAheadWalletAddresses", func() {
-		wlt, err = gw.v.ScanAheadWalletAddresses(wltName, password, scanN)
+		wlt, err = gw.v.Wallets.CreateWallet(wltName, options, gw.v)
 	})
 	return wlt, err
 }
 
 // EncryptWallet encrypts the wallet
-func (gw *Gateway) EncryptWallet(wltName string, password []byte) error {
-	if gw.Config.DisableWalletAPI {
-		return wallet.ErrWalletAPIDisabled
+func (gw *Gateway) EncryptWallet(wltName string, password []byte) (*wallet.Wallet, error) {
+	if !gw.Config.EnableWalletAPI {
+		return nil, wallet.ErrWalletAPIDisabled
 	}
 
 	var err error
+	var w *wallet.Wallet
 	gw.strand("EncryptWallet", func() {
-		err = gw.v.Wallets.EncryptWallet(wltName, password)
+		w, err = gw.v.Wallets.EncryptWallet(wltName, password)
 	})
-	return err
+	return w, err
 }
 
-// GetWalletBalance returns balance pair of specific wallet
-func (gw *Gateway) GetWalletBalance(wltID string) (wallet.BalancePair, error) {
-	var balance wallet.BalancePair
-	if gw.Config.DisableWalletAPI {
-		return balance, wallet.ErrWalletAPIDisabled
+// DecryptWallet decrypts wallet
+func (gw *Gateway) DecryptWallet(wltID string, password []byte) (*wallet.Wallet, error) {
+	if !gw.Config.EnableWalletAPI {
+		return nil, wallet.ErrWalletAPIDisabled
+	}
+
+	var err error
+	var w *wallet.Wallet
+	gw.strand("DecryptWallet", func() {
+		w, err = gw.v.Wallets.DecryptWallet(wltID, password)
+	})
+	return w, err
+}
+
+// GetWalletBalance returns balance pairs of specific wallet
+func (gw *Gateway) GetWalletBalance(wltID string) (wallet.BalancePair, wallet.AddressBalance, error) {
+	var addressBalances wallet.AddressBalance
+	var walletBalance wallet.BalancePair
+	if !gw.Config.EnableWalletAPI {
+		return walletBalance, addressBalances, wallet.ErrWalletAPIDisabled
 	}
 
 	var err error
@@ -585,57 +856,65 @@ func (gw *Gateway) GetWalletBalance(wltID string) (wallet.BalancePair, error) {
 		if err != nil {
 			return
 		}
-		auxs := gw.vrpc.GetUnspent(gw.v).GetUnspentsOfAddrs(addrs)
 
-		var spendUxs coin.AddressUxOuts
-		spendUxs, err = gw.vrpc.GetUnconfirmedSpends(gw.v, addrs)
+		// get list of address balances
+		addrsBalanceList, err := gw.v.GetBalanceOfAddrs(addrs)
 		if err != nil {
-			err = fmt.Errorf("get unconfimed spending failed when checking wallet balance: %v", err)
 			return
 		}
 
-		var recvUxs coin.AddressUxOuts
-		recvUxs, err = gw.vrpc.GetUnconfirmedReceiving(gw.v, addrs)
-		if err != nil {
-			err = fmt.Errorf("get unconfirmed receiving failed when when checking wallet balance: %v", err)
-			return
+		// create map of address to balance
+		addressBalances = make(wallet.AddressBalance, len(addrs))
+		for idx, addr := range addrs {
+			addressBalances[addr.String()] = addrsBalanceList[idx]
 		}
 
-		coins1, hours1, err := gw.v.AddressBalance(auxs)
-		if err != nil {
-			err = fmt.Errorf("Computing confirmed address balance failed: %v", err)
-			return
-		}
+		// compute the sum of all addresses
+		for _, addrBalance := range addressBalances {
+			// compute confirmed balance
+			walletBalance.Confirmed.Coins, err = coin.AddUint64(walletBalance.Confirmed.Coins, addrBalance.Confirmed.Coins)
+			if err != nil {
+				return
+			}
+			walletBalance.Confirmed.Hours, err = coin.AddUint64(walletBalance.Confirmed.Hours, addrBalance.Confirmed.Hours)
+			if err != nil {
+				return
+			}
 
-		coins2, hours2, err := gw.v.AddressBalance(auxs.Sub(spendUxs).Add(recvUxs))
-		if err != nil {
-			err = fmt.Errorf("Computing predicted address balance failed: %v", err)
-			return
-		}
-
-		balance = wallet.BalancePair{
-			Confirmed: wallet.Balance{Coins: coins1, Hours: hours1},
-			Predicted: wallet.Balance{Coins: coins2, Hours: hours2},
+			// compute predicted balance
+			walletBalance.Predicted.Coins, err = coin.AddUint64(walletBalance.Predicted.Coins, addrBalance.Predicted.Coins)
+			if err != nil {
+				return
+			}
+			walletBalance.Predicted.Hours, err = coin.AddUint64(walletBalance.Predicted.Hours, addrBalance.Predicted.Hours)
+			if err != nil {
+				return
+			}
 		}
 	})
 
-	return balance, err
+	return walletBalance, addressBalances, err
 }
 
 // GetBalanceOfAddrs gets balance of given addresses
 func (gw *Gateway) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair, error) {
-	var bps []wallet.BalancePair
+	var balance []wallet.BalancePair
 	var err error
+
 	gw.strand("GetBalanceOfAddrs", func() {
-		bps, err = gw.v.GetBalanceOfAddrs(addrs)
+		balance, err = gw.v.GetBalanceOfAddrs(addrs)
 	})
 
-	return bps, err
+	if err != nil {
+		return nil, err
+	}
+
+	return balance, nil
 }
 
 // GetWalletDir returns path for storing wallet files
 func (gw *Gateway) GetWalletDir() (string, error) {
-	if gw.Config.DisableWalletAPI {
+	if !gw.Config.EnableWalletAPI {
 		return "", wallet.ErrWalletAPIDisabled
 	}
 	return gw.v.Config.WalletDirectory, nil
@@ -643,7 +922,7 @@ func (gw *Gateway) GetWalletDir() (string, error) {
 
 // NewAddresses generate addresses in given wallet
 func (gw *Gateway) NewAddresses(wltID string, password []byte, n uint64) ([]cipher.Address, error) {
-	if gw.Config.DisableWalletAPI {
+	if !gw.Config.EnableWalletAPI {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
@@ -657,7 +936,7 @@ func (gw *Gateway) NewAddresses(wltID string, password []byte, n uint64) ([]ciph
 
 // UpdateWalletLabel updates the label of wallet
 func (gw *Gateway) UpdateWalletLabel(wltID, label string) error {
-	if gw.Config.DisableWalletAPI {
+	if !gw.Config.EnableWalletAPI {
 		return wallet.ErrWalletAPIDisabled
 	}
 
@@ -670,34 +949,35 @@ func (gw *Gateway) UpdateWalletLabel(wltID, label string) error {
 
 // GetWallet returns wallet by id
 func (gw *Gateway) GetWallet(wltID string) (*wallet.Wallet, error) {
-	if gw.Config.DisableWalletAPI {
+	if !gw.Config.EnableWalletAPI {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
 	var w *wallet.Wallet
 	var err error
 	gw.strand("GetWallet", func() {
-		w, err = gw.vrpc.GetWallet(wltID)
+		w, err = gw.v.Wallets.GetWallet(wltID)
 	})
 	return w, err
 }
 
 // GetWallets returns wallets
 func (gw *Gateway) GetWallets() (wallet.Wallets, error) {
-	if gw.Config.DisableWalletAPI {
+	if !gw.Config.EnableWalletAPI {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
 	var w wallet.Wallets
+	var err error
 	gw.strand("GetWallets", func() {
-		w = gw.v.Wallets.GetWallets()
+		w, err = gw.v.Wallets.GetWallets()
 	})
-	return w, nil
+	return w, err
 }
 
 // GetWalletUnconfirmedTxns returns all unconfirmed transactions in given wallet
 func (gw *Gateway) GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTxn, error) {
-	if gw.Config.DisableWalletAPI {
+	if !gw.Config.EnableWalletAPI {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
@@ -710,7 +990,7 @@ func (gw *Gateway) GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTx
 			return
 		}
 
-		txns = gw.v.GetUnconfirmedTxns(visor.ToAddresses(addrs))
+		txns, err = gw.v.GetUnconfirmedTxns(visor.ToAddresses(addrs))
 	})
 
 	return txns, err
@@ -718,7 +998,7 @@ func (gw *Gateway) GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTx
 
 // ReloadWallets reloads all wallets
 func (gw *Gateway) ReloadWallets() error {
-	if gw.Config.DisableWalletAPI {
+	if !gw.Config.EnableWalletAPI {
 		return wallet.ErrWalletAPIDisabled
 	}
 
@@ -731,20 +1011,35 @@ func (gw *Gateway) ReloadWallets() error {
 
 // UnloadWallet removes wallet of given id from memory.
 func (gw *Gateway) UnloadWallet(id string) error {
-	if gw.Config.DisableWalletAPI {
+	if !gw.Config.EnableWalletAPI {
 		return wallet.ErrWalletAPIDisabled
 	}
 
 	gw.strand("UnloadWallet", func() {
-		gw.vrpc.UnloadWallet(id)
+		gw.v.Wallets.Remove(id)
 	})
 
 	return nil
 }
 
-// IsWalletAPIDisabled returns if all wallet related apis are disabled
-func (gw *Gateway) IsWalletAPIDisabled() bool {
-	return gw.Config.DisableWalletAPI
+// GetWalletSeed returns seed of wallet of given id,
+// returns wallet.ErrWalletNotEncrypted if the wallet is not encrypted.
+func (gw *Gateway) GetWalletSeed(id string, password []byte) (string, error) {
+	if !gw.Config.EnableWalletAPI {
+		return "", wallet.ErrWalletAPIDisabled
+	}
+
+	var seed string
+	var err error
+	gw.strand("GetWalletSeed", func() {
+		seed, err = gw.v.Wallets.GetWalletSeed(id, password)
+	})
+	return seed, err
+}
+
+// IsWalletAPIEnabled returns if all wallet related apis are disabled
+func (gw *Gateway) IsWalletAPIEnabled() bool {
+	return gw.Config.EnableWalletAPI
 }
 
 // GetBuildInfo returns node build info.
@@ -792,15 +1087,44 @@ func (gw *Gateway) GetRichlist(includeDistribution bool) (visor.Richlist, error)
 
 // GetAddressCount returns count number of unique address with uxouts > 0.
 func (gw *Gateway) GetAddressCount() (uint64, error) {
-	rbOuts, err := gw.GetUnspentOutputs()
-	if err != nil {
-		return 0, err
-	}
+	var count uint64
+	var err error
 
-	allAccounts, err := rbOuts.AggregateUnspentOutputs()
-	if err != nil {
-		return 0, err
-	}
+	gw.strand("GetAddressCount", func() {
+		count, err = gw.v.AddressCount()
+	})
 
-	return uint64(len(allAccounts)), nil
+	return count, err
+}
+
+// Health is returned by the /health endpoint
+type Health struct {
+	BlockchainMetadata *visor.BlockchainMetadata
+	Version            visor.BuildInfo
+	OpenConnections    int
+	Uptime             time.Duration
+}
+
+// GetHealth returns statistics about the running node
+func (gw *Gateway) GetHealth() (*Health, error) {
+	var health *Health
+	var err error
+	gw.strand("GetHealth", func() {
+		var metadata *visor.BlockchainMetadata
+		metadata, err = gw.v.GetBlockchainMetadata()
+		if err != nil {
+			return
+		}
+
+		conns := gw.drpc.GetConnections(gw.d)
+
+		health = &Health{
+			BlockchainMetadata: metadata,
+			Version:            gw.v.Config.BuildInfo,
+			OpenConnections:    len(conns.Connections),
+			Uptime:             time.Since(gw.v.StartedAt),
+		}
+	})
+
+	return health, err
 }

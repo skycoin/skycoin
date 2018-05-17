@@ -379,8 +379,7 @@ func TestAddressUxOutsKeys(t *testing.T) {
 	dupes := make(map[cipher.Address]byte, 3)
 	for _, k := range keys {
 		dupes[k] = byte(1)
-		assert.True(t, k == ux.Body.Address || k == ux2.Body.Address ||
-			k == ux3.Body.Address)
+		assert.True(t, k == ux.Body.Address || k == ux2.Body.Address || k == ux3.Body.Address)
 	}
 	assert.Equal(t, len(keys), len(dupes))
 }
@@ -559,7 +558,7 @@ func (ua UxArray) removeDupes() UxArray {
 		h := ua[i].Hash()
 		if _, ok := m[h]; !ok {
 			deduped = append(deduped, ua[i])
-			m[h] = byte(1)
+			m[h] = struct{}{}
 		}
 	}
 	return deduped

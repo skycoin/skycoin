@@ -1,0 +1,17 @@
+<app-modal class="-title" title="Safeguard your seed!" [dialog]="dialogRef">
+  <div>
+    <span class="-safe-description">
+     We want to make sure that you wrote down your seed and stored it in a safe place. If you forget your seed, you WILL NOT be able to recover your Skycoin wallet!
+    </span>
+    <div class="-check-container">
+      <mat-checkbox class="-safe-check-text -check" [checked]="acceptSafe" (change)="setAccept($event)"
+                   type="checkbox" id="terms">It’s safe, I swear.
+      </mat-checkbox>
+    </div>
+  </div>
+  <div class="-text-center">
+    <app-button class="primary -no-bottom-margin" (action)="closePopup()" [disabled]="!acceptSafe">
+      Continue
+    </app-button>
+  </div>
+</app-modal>

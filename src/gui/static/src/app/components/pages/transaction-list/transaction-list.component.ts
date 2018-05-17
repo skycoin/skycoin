@@ -1,10 +1,11 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { WalletService } from '../../../services/wallet.service';
-import { PriceService } from '../../../price.service';
+import { PriceService } from '../../../services/price.service';
 import { Subscription } from 'rxjs/Subscription';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { TransactionDetailComponent } from './transaction-detail/transaction-detail.component';
-import { Transaction } from '../../../app.datatypes';
+import { NormalTransaction } from '../../../app.datatypes';
+import { QrCodeComponent } from '../../layout/qr-code/qr-code.component';
 
 @Component({
   selector: 'app-transaction-list',
@@ -12,7 +13,7 @@ import { Transaction } from '../../../app.datatypes';
   styleUrls: ['./transaction-list.component.scss']
 })
 export class TransactionListComponent implements OnInit, OnDestroy {
-  transactions: any[];
+  transactions: NormalTransaction[];
 
   private price: number;
   private priceSubscription: Subscription;
@@ -32,10 +33,18 @@ export class TransactionListComponent implements OnInit, OnDestroy {
     this.priceSubscription.unsubscribe();
   }
 
-  showTransaction(transaction: Transaction) {
+  showTransaction(transaction: NormalTransaction) {
     const config = new MatDialogConfig();
-    config.width = '566px';
+    config.width = '800px';
     config.data = transaction;
-    this.dialog.open(TransactionDetailComponent, config).afterClosed().subscribe();
+    this.dialog.open(TransactionDetailComponent, config);
+  }
+
+  showQrCode($event: any, address: string) {
+    $event.stopPropagation();
+
+    const config = new MatDialogConfig();
+    config.data = { address };
+    this.dialog.open(QrCodeComponent, config).afterClosed().subscribe();
   }
 }

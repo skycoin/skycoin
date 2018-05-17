@@ -91,16 +91,16 @@ func TestDecodeBase58Address(t *testing.T) {
 func TestAddressFromBytes(t *testing.T) {
 	p, _ := GenerateKeyPair()
 	a := AddressFromPubKey(p)
-	a2, err := addressFromBytes(a.Bytes())
+	a2, err := AddressFromBytes(a.Bytes())
 	require.NoError(t, err)
 	require.Equal(t, a2, a)
 	// Invalid number of bytes
 	b := a.Bytes()
-	_, err = addressFromBytes(b[:len(b)-2])
+	_, err = AddressFromBytes(b[:len(b)-2])
 	require.Error(t, err)
 	// Invalid checksum
 	b[len(b)-1] += byte(1)
-	_, err = addressFromBytes(b)
+	_, err = AddressFromBytes(b)
 	require.Error(t, err)
 }
 
@@ -108,7 +108,7 @@ func TestAddressFromBytes(t *testing.T) {
 func TestAddressRoundtrip(t *testing.T) {
 	p, _ := GenerateKeyPair()
 	a := AddressFromPubKey(p)
-	a2, err := addressFromBytes(a.Bytes())
+	a2, err := AddressFromBytes(a.Bytes())
 	require.NoError(t, err)
 	require.Equal(t, a, a2)
 	require.Equal(t, a.String(), a2.String())
@@ -239,4 +239,13 @@ func TestAddressBulk(t *testing.T) {
 		require.Equal(t, a2, a)
 
 	}
+}
+
+func TestAddressNull(t *testing.T) {
+	var a Address
+	require.True(t, a.Null())
+
+	p, _ := GenerateKeyPair()
+	a = AddressFromPubKey(p)
+	require.False(t, a.Null())
 }

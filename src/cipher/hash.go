@@ -58,6 +58,11 @@ func (g SHA256) Hex() string {
 	return hex.EncodeToString(g[:])
 }
 
+// Null returns true if the hash is null (0x0000..)
+func (g SHA256) Null() bool {
+	return g == SHA256{}
+}
+
 // Xor xor
 func (g *SHA256) Xor(b SHA256) SHA256 {
 	c := SHA256{}
@@ -98,6 +103,27 @@ func SHA256FromHex(hs string) (SHA256, error) {
 // MustSHA256FromHex same as SHA256FromHex, except will panic when detect error
 func MustSHA256FromHex(hs string) SHA256 {
 	h, err := SHA256FromHex(hs)
+	if err != nil {
+		log.Panic(err)
+	}
+	return h
+}
+
+// SHA256FromBytes converts []byte to SHA256
+func SHA256FromBytes(b []byte) (SHA256, error) {
+	h := SHA256{}
+
+	if len(b) != len(h) {
+		return h, errors.New("Invalid bytes length")
+	}
+
+	h.Set(b)
+	return h, nil
+}
+
+// MustSHA256FromBytes is the same as SHA256FromBytes, except it will panic when it detects an error
+func MustSHA256FromBytes(b []byte) SHA256 {
+	h, err := SHA256FromBytes(b)
 	if err != nil {
 		log.Panic(err)
 	}

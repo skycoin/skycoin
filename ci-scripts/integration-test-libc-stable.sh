@@ -2,7 +2,7 @@
 # Runs "stable"-mode tests against a skycoin node configured with a pinned database
 # "stable" mode tests assume the blockchain data is static, in order to check API responses more precisely
 # $TEST defines which test to run i.e, cli or gui; If empty both are run
-
+ 
 #Set Script Name variable
 SCRIPT=`basename ${BASH_SOURCE[0]}`
 PORT="46420"

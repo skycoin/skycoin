@@ -434,7 +434,7 @@ func testKnownBlocks(t *testing.T) {
 			var err error
 
 			if tc.hash != "" {
-				b, err = c.BlockByHash(tc.hash)
+				b, err = c.(tc.hash)
 			} else {
 				b, err = c.BlockBySeq(tc.seq)
 			}

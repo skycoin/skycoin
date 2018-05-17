@@ -494,7 +494,7 @@ func SKY_api_Client_CreateTransaction(_c *C.Client__Handle, _req *C.Handle, _arg
 		____error_code = SKY_ERROR
 		return
 	}
-	req, okreq := lookupCreateTransactionRequestHandle(*_req)
+	req, okreq := lookupCreateTransactionRequestHandle(C.CreateTransactionRequest__Handle(*_req))
 	if !okreq {
 		____error_code = SKY_ERROR
 		return

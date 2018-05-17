@@ -66,6 +66,7 @@ void createTempWalletDir(bool encrypt) {
 	}
 };
 
+
 Test(api_cli_integration, TestGenerateAddresses) {
 
 	int lenStruct = 1;

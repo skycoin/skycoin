@@ -88,19 +88,19 @@ Test(cipher_encrypt_scrypt_chacha20poly1305, TestScryptChacha20poly1305Encrypt){
 	
 	text.data = PLAINTEXT;
 	text.len = strlen(PLAINTEXT);
-	text.cap = text.len;
+	text.cap = text.len + 1;
 	password.data = PASSWORD;
 	password.len = strlen(PASSWORD);
-	password.cap = password.len;
+	password.cap = password.len + 1;
 	password2.data = PASSWORD2;
 	password2.len = strlen(PASSWORD2);
-	password2.cap = password2.len;
+	password2.cap = password2.len + 1;
 	wrong_password.data = WRONG_PASSWORD;
 	wrong_password.len = strlen(WRONG_PASSWORD);
-	wrong_password.cap = wrong_password.len;
+	wrong_password.cap = wrong_password.len + 1;
 	encrypted.data = ENCRYPTED;
 	encrypted.len = strlen(ENCRYPTED);
-	encrypted.cap = encrypted.len;
+	encrypted.cap = encrypted.len + 1;
 	result.data = buffer;
 	result.len = 0;
 	result.cap = BUFFER_SIZE;

@@ -45,7 +45,7 @@ char *cr_user_GoString_tostr(GoString *string)
 }
 
 int cr_user_GoString__eq(GoString_ *string1, GoString_ *string2){
-  return cr_user_GoString_eq((GoString *) &string1, (GoString *) &string2);
+  return cr_user_GoString_eq((GoString *) string1, (GoString *) string2);
 }
 
 char *cr_user_GoString__tostr(GoString_ *string) {
@@ -112,7 +112,7 @@ int cr_user_GoSlice_noteq(GoSlice *slice1, GoSlice *slice2){
 
 char *cr_user_GoSlice_tostr(GoSlice *slice1) {
   char *out;
-  cr_asprintf(&out, "(GoSlice) { .data %s, .len %d, .cap %d }", slice1->data,slice1->len,slice1->cap);
+  cr_asprintf(&out, "(GoSlice) { .data %s, .len %ld, .cap %ld }", (char*)slice1->data,slice1->len,slice1->cap);
   return out;
 }
 
@@ -124,7 +124,7 @@ int cr_user_GoSlice__eq(GoSlice_ *slice1, GoSlice_ *slice2){
 
 char *cr_user_GoSlice__tostr(GoSlice_ *slice1) {
   char *out;
-  cr_asprintf(&out, "(GoSlice_) { .data %s, .len %d, .cap %d }", slice1->data,slice1->len,slice1->cap);
+  cr_asprintf(&out, "(GoSlice_) { .data %s, .len %ld, .cap %ld }", (char*)slice1->data,slice1->len,slice1->cap);
   return out;
 }
 

@@ -1405,7 +1405,7 @@ func TestWalletChooseSpendsMaximizeUxOuts(t *testing.T) {
 	}
 }
 
-func TestWalletChooseSpendsMinimizeUxOuts(t *testing.T) {
+func TestWalletChooseSpendsMinimizeUxOutsRandom(t *testing.T) {
 	nRand := 10000
 	for i := 0; i < nRand; i++ {
 		coins := uint64((rand.Intn(3)+1)*10 + rand.Intn(3)) // 10,20,30 + 0,1,2

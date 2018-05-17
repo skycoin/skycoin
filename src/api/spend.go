@@ -16,6 +16,7 @@ import (
 	"github.com/skycoin/skycoin/src/util/fee"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -336,7 +337,7 @@ func (r createTransactionRequest) Validate() error {
 			return fmt.Errorf("wallet.addresses[%d] is empty", i)
 		}
 
-		addressMap[a] = struct{}{}
+		addressMap[a.Address] = struct{}{}
 	}
 
 	if len(addressMap) != len(r.Wallet.Addresses) {
@@ -489,6 +490,8 @@ func createTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 				default:
 					wh.Error400(w, err.Error())
 				}
+			case blockdb.ErrUnspentNotExist:
+				wh.Error400(w, err.Error())
 			default:
 				switch err {
 				case fee.ErrTxnNoFee,

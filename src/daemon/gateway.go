@@ -728,6 +728,9 @@ func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*co
 	var inputs []wallet.UxBalance
 	var err error
 
+	logger.Critical().Infof("len(params.Wallet.UxOuts) %d", len(params.Wallet.UxOuts))
+	logger.Critical().Infof("len(params.Wallet.Addresses) %d", len(params.Wallet.Addresses))
+
 	gw.strand("CreateTransaction", func() {
 		// Get all addresses from the wallet for checking params against
 		var allAddrs []cipher.Address
@@ -737,10 +740,14 @@ func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*co
 			return
 		}
 
+		logger.Critical().Infof("len(allAddrs) %d", len(allAddrs))
+
 		allAddrsMap := make(map[cipher.Address]struct{}, len(allAddrs))
-		for _, a := range allAddrsMap {
+		for _, a := range allAddrs {
 			allAddrsMap[a] = struct{}{}
 		}
+
+		logger.Critical().Infof("len(allAddrsMap) %d", len(allAddrsMap))
 
 		var auxs coin.AddressUxOuts
 		if len(params.Wallet.UxOuts) != 0 {
@@ -750,11 +757,15 @@ func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*co
 				hashesMap[h] = struct{}{}
 			}
 
+			logger.Critical().Infof("len(hashesMap) %d", len(hashesMap))
+
 			var unconfirmedSpends []cipher.SHA256
 			unconfirmedSpends, err = gw.v.UnconfirmedSpendingUxIDs()
 			if err != nil {
 				return
 			}
+
+			logger.Critical().Infof("len(unconfirmedSpends) %d", len(unconfirmedSpends))
 
 			for _, h := range unconfirmedSpends {
 				if _, ok := hashesMap[h]; ok {
@@ -771,15 +782,20 @@ func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*co
 				return
 			}
 
+			logger.Critical().Infof("len(params.Wallet.UxOuts) %d", len(params.Wallet.UxOuts))
+			logger.Critical().Infof("len(queried_uxouts) %d", len(uxouts))
+
 			// Build coin.AddressUxOuts map, and check that the address is in the wallets
-			auxs := make(coin.AddressUxOuts)
+			auxs = make(coin.AddressUxOuts)
 			for _, o := range uxouts {
 				if _, ok := allAddrsMap[o.Body.Address]; !ok {
-					err = wallet.ErrUnknownAddress
+					err = wallet.ErrUnknownUxOut
 					return
 				}
 				auxs[o.Body.Address] = append(auxs[o.Body.Address], o)
 			}
+
+			logger.Critical().Infof("len(auxs) %d", len(auxs))
 
 		} else {
 			addrs := params.Wallet.Addresses
@@ -811,6 +827,8 @@ func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*co
 			logger.WithError(err).Error("GetHeadBlock failed")
 			return
 		}
+
+		logger.Critical().Infof("again, len(params.Wallet.UxOuts) %d", len(params.Wallet.UxOuts))
 
 		// Create and sign transaction
 		txn, inputs, err = gw.v.Wallets.CreateAndSignTransactionAdvanced(params, auxs, head.Time())

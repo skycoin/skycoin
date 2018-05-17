@@ -1,6 +1,7 @@
 package api
 
-// Wallet-related information for the GUI
+// APIs for wallet-related information
+
 import (
 	"fmt"
 	"net/http"

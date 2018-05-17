@@ -95,7 +95,8 @@ int compareObjectsByHandle(Handle h1, Handle h2){
 	return equal;
 }
 
-int compareObjectWithGoldenFile(Handle handle, const char* golden_file){
+int compareObjectNodeWithGoldenFile(Handle handle, 
+					const char* golden_file, char* nodePath){
 	GoString_ jsonResult;
 	int result;
 	memset(&jsonResult, 0, sizeof(GoString_));
@@ -109,6 +110,11 @@ int compareObjectWithGoldenFile(Handle handle, const char* golden_file){
 	cr_assert(value != NULL, "json_parse failed");
 	registerJsonFree(value);
 	
+	if( nodePath != NULL ){
+		value = get_json_value( value, nodePath, json_object );
+		cr_assert(value != NULL, "Could\'t find node in json struct");
+	}
+	
 	json_value* golden_value = loadGoldenFile(golden_file);
 	cr_assert(golden_value != NULL, "loadGoldenFile failed");
 	registerJsonFree(golden_value);
@@ -120,6 +126,10 @@ int compareObjectWithGoldenFile(Handle handle, const char* golden_file){
 	freeRegisteredMemCleanup((void*)jsonResult.p);
 	
 	return equal;
+}
+
+int compareObjectWithGoldenFile(Handle handle, const char* golden_file){
+	return compareObjectNodeWithGoldenFile(handle, golden_file, NULL);
 }
 
 Test(api_integration, TestVersion) {
@@ -886,4 +896,192 @@ Test(api_integration, TestStableNetworkExchangeableConnections) {
 	equal = compareObjectWithGoldenFile( connectionsHandle, 
 				"network-exchangeable-connections.golden");
 	cr_assert(equal == 1);
+}
+
+typedef struct {
+	char* 	golden_file;
+	char* 	txId;
+	int 	failure;
+} test_transaction;
+
+Test(api_integration, TestStableTransaction) {
+	int result, equal;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	int tests_count = 4;
+	test_transaction tests[] = {
+		{
+			NULL, "abcd", 1,
+		},
+		{
+			NULL, "701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947", 1,
+		},
+		{
+			NULL, "", 1,
+		},
+		{
+			"genesis-transaction.golden",
+			"d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add",
+			0,
+		},
+	};
+	GoString txId;
+	Handle transactionHandle;
+	for(int i = 0; i < tests_count; i++){
+		txId.p = tests[i].txId;
+		txId.n = strlen(tests[i].txId);
+		result = SKY_api_Client_Transaction(
+							&clientHandle, txId, &transactionHandle);
+		if( tests[i].failure ){
+			cr_assert(result != SKY_OK, "SKY_api_Client_Transaction should have failed");
+			continue;
+		}
+		cr_assert(result == SKY_OK, "SKY_api_Client_Transaction failed");
+		registerHandleClose( transactionHandle );
+		
+		equal = compareObjectNodeWithGoldenFile(
+				transactionHandle, 
+				tests[i].golden_file, 
+				"txn"); //Compare starting from this node
+		cr_assert( equal == 1, 
+			"SKY_api_Client_Transaction returned a value different than expected" );
+		
+	}
+}
+
+typedef struct {
+	char* 	golden_file;
+	char** 	addresses;
+	int 	addresses_count;
+	int 	failure;
+} test_transactions;
+
+Test(api_integration, TestStableTransactions) {
+	int result, equal;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	char* addrs1[] = {
+		"abcd"
+	};
+	char* addrs2[] = {
+		"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947"
+	};
+	char* addrs3[] = {
+		"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk"
+	};
+	char* addrs4[] = {
+	};
+	char* addrs5[] = {
+		"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"
+	};
+	test_transactions tests[] = {
+		{
+			NULL, addrs1, 1, 1
+		},
+		{
+			NULL, addrs2, 1, 1
+		},
+		{
+			NULL, addrs3, 1, 1
+		},
+		{
+			"empty-addrs.golden", addrs4, 0, 0
+		},
+		{
+			"single-addr.golden", addrs5, 1, 0
+		},
+	};
+	Handle transactionsHandle;
+	GoSlice strings;
+	int tests_count = sizeof(tests) / sizeof(test_transactions);
+	for(int i = 0; i < tests_count; i++){
+		memset( &strings, 0, sizeof(GoSlice) );
+		createGoStringSlice( tests[i].addresses, tests[i].addresses_count,
+							&strings);
+		result = SKY_api_Client_Transactions( &clientHandle, 
+						strings, &transactionsHandle);
+		if( tests[i].failure ){
+			cr_assert( result != SKY_OK, "SKY_api_Client_Transactions should have failed." );
+			continue;
+		}
+		cr_assert( result == SKY_OK, "SKY_api_Client_Transactions failed" );
+		registerHandleClose( transactionsHandle );
+		equal = compareObjectWithGoldenFile( transactionsHandle, 
+										tests[i].golden_file );
+		cr_assert( equal == 1, "SKY_api_Client_Transactions returned a value different than expected.");
+	}
+}
+
+Test(api_integration, TestStableConfirmedTransactions) {
+	int result, equal;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	char* addrs1[] = {
+		"abcd"
+	};
+	char* addrs2[] = {
+		"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947"
+	};
+	char* addrs3[] = {
+		"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk"
+	};
+	char* addrs4[] = {
+	};
+	char* addrs5[] = {
+		"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"
+	};
+	test_transactions tests[] = {
+		{
+			NULL, addrs1, 1, 1
+		},
+		{
+			NULL, addrs2, 1, 1
+		},
+		{
+			NULL, addrs3, 1, 1
+		},
+		{
+			"empty-addrs.golden", addrs4, 0, 0
+		},
+		{
+			"single-addr.golden", addrs5, 1, 0
+		},
+	};
+	Handle transactionsHandle;
+	GoSlice strings;
+	int tests_count = sizeof(tests) / sizeof(test_transactions);
+	for(int i = 0; i < tests_count; i++){
+		memset( &strings, 0, sizeof(GoSlice) );
+		createGoStringSlice( tests[i].addresses, tests[i].addresses_count,
+							&strings);
+		result = SKY_api_Client_ConfirmedTransactions( &clientHandle, 
+						strings, &transactionsHandle);
+		if( tests[i].failure ){
+			cr_assert( result != SKY_OK, "SKY_api_Client_ConfirmedTransactions should have failed." );
+			continue;
+		}
+		cr_assert( result == SKY_OK, "SKY_api_Client_ConfirmedTransactions failed" );
+		registerHandleClose( transactionsHandle );
+		equal = compareObjectWithGoldenFile( transactionsHandle, 
+										tests[i].golden_file );
+		cr_assert( equal == 1, "SKY_api_Client_ConfirmedTransactions returned a value different than expected.");
+	}
 }

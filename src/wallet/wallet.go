@@ -1096,6 +1096,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 
 	// If specific outputs were requested, then use all of them.
 	// Otherwise, choose which outputs to spend
+	var spends []UxBalance
 	if len(params.Wallet.UxOuts) != 0 {
 		spends = make([]UxBalance, len(uxb))
 		copy(spends[:], uxb[:])

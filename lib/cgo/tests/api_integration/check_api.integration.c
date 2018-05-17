@@ -546,3 +546,26 @@ Test(api_integration, TestStableBalance) {
 		cr_assert(value->u.integer == balance.Predicted.Hours);
 	}
 }
+
+
+Test(api_integration, TestStableUxOut) {
+	int result;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	char* golden_file = "uxout.golden";
+	char* pUxId = "fe6762d753d626115c8dd3a053b5fb75d6d419a8d0fb1478c5fffc1fe41c5f20";
+	GoString strUxId = {pUxId, strlen(pUxId)};
+	Handle uxOutHandle;
+	result = SKY_api_Client_UxOut( &clientHandle, strUxId, &uxOutHandle );
+	cr_assert(result == SKY_OK, "SKY_api_Client_UxOut failed");
+	registerHandleClose( uxOutHandle );
+	
+	int equal = compareObjectWithGoldenFile(uxOutHandle, golden_file);
+	cr_assert(equal, "SKY_api_Client_UxOut returned unexpected result");
+}

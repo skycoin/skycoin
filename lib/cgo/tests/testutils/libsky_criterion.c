@@ -45,7 +45,7 @@ char *cr_user_GoString_tostr(GoString *string)
 }
 
 int cr_user_GoString__eq(GoString_ *string1, GoString_ *string2){
-  return cr_user_GoString_eq((GoString *) &string1, (GoString *) &string2);
+  return cr_user_GoString_eq((GoString *) string1, (GoString *) string2);
 }
 
 char *cr_user_GoString__tostr(GoString_ *string) {

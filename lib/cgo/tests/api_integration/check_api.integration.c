@@ -20,14 +20,6 @@
 #define JSON_BIG_FILE_SIZE 32768
 #define TEST_DATA_DIR "src/api/integration/testdata/"
 
-typedef struct{
-	char*  	golden_file;
-	int		addresses_count;
-	char**	addresses;
-	int 	hashes_count;
-	char**  hashes;
-	int		failure;
-}test_out_put;
 
 char* getNodeAddress(){
 	if( STABLE ){
@@ -68,6 +60,39 @@ GoString* createGoStringSlice(char** pStrings, int count, GoSlice* slice){
 	slice->len = count;
 	slice->cap = count;
 	return goStrings;
+}
+
+int compareBlocks(Handle block1, Handle block2){
+	GoString_ jsonResult1, jsonResult2;
+	int result;
+	memset(&jsonResult1, 0, sizeof(GoString_));
+	memset(&jsonResult2, 0, sizeof(GoString_));
+	
+	result = SKY_JsonEncode_Handle(block1, &jsonResult1);
+	cr_assert(result == SKY_OK, "Couldn\'t json encode");
+	registerMemCleanup((void*)jsonResult1.p);
+	
+	result = SKY_JsonEncode_Handle(block2, &jsonResult2);
+	cr_assert(result == SKY_OK, "Couldn\'t json encode");
+	registerMemCleanup((void*)jsonResult2.p);
+	
+	json_char* json1 = (json_char*)jsonResult1.p;
+	json_value* value1 = json_parse(json1, strlen(jsonResult1.p));
+	cr_assert(value1 != NULL, "json_parse failed");
+	registerJsonFree(value1);
+	
+	json_char* json2 = (json_char*)jsonResult2.p;
+	json_value* value2 = json_parse(json1, strlen(jsonResult2.p));
+	cr_assert(value2 != NULL, "json_parse failed");
+	registerJsonFree(value2);
+	
+	int equal = compareJsonValues(value1, value2);
+	
+	freeRegisteredMemCleanup((void*)jsonResult1.p);
+	freeRegisteredMemCleanup((void*)jsonResult2.p);
+	freeRegisteredJson(value1);
+	freeRegisteredJson(value2);
+	return equal;
 }
 
 Test(api_integration, TestVersion) {
@@ -126,6 +151,15 @@ Test(api_integration, TestStableCoinSupply) {
 	cr_assert(equal, "Output different than expected");
 }
 
+typedef struct{
+	char*  	golden_file;
+	int		addresses_count;
+	char**	addresses;
+	int 	hashes_count;
+	char**  hashes;
+	int		failure;
+}test_output;
+
 Test(api_integration, TestStableOutputs) {
 	int result;
 	GoString_ jsonResult;
@@ -152,7 +186,7 @@ Test(api_integration, TestStableOutputs) {
 		"fe6762d753d626115c8dd3a053b5fb75d6d419a8d0fb1478c5fffc1fe41c5f20",
 	};
 	int test_cases = 3;
-	test_out_put tests[] = {
+	test_output tests[] = {
 		{
 			"outputs-noargs.golden",
 			0, NULL, 0, NULL, 0
@@ -187,6 +221,11 @@ Test(api_integration, TestStableOutputs) {
 			result = SKY_api_Client_OutputsForHashes(&clientHandle, 
 														strings, &outputHandle);
 		}
+		
+		if( tests[i].failure ){
+			cr_assert(result != SKY_OK, "SKY_api_Client_Outputs should have failed");
+			continue;
+		}
 		cr_assert(result == SKY_OK, "SKY_api_Client_Outputs failed");
 		registerHandleClose( outputHandle );
 		
@@ -205,5 +244,151 @@ Test(api_integration, TestStableOutputs) {
 		
 		int equal = compareJsonValues(jsonOutput, json_golden);
 		cr_assert(equal, "Output different than expected");
+	}
+}
+
+typedef struct{
+	char*  		golden_file;
+	char* 		hash;
+	GoUint64 	seq;
+	int			failure;
+}test_block;
+
+Test(api_integration, TestStableBlock) {
+	int test_count = 5;
+	test_block tests[] = {
+		{
+			NULL, 
+			"80744ec25e6233f40074d35bf0bfdbddfac777869b954a96833cb89f44204444",
+			0, 1
+		},
+		{
+			"block-hash.golden",
+			"70584db7fb8ab88b8dbcfed72ddc42a1aeb8c4882266dbb78439ba3efcd0458d",
+			0, 0,
+		},
+		{
+			"block-hash-genesis.golden",
+			"0551a1e5af999fe8fff529f6f2ab341e1e33db95135eef1b2be44fe6981349f3",
+			0, 0,
+		},
+		{
+			"block-seq-0.golden",
+			NULL,
+			0, 0,
+		},
+		{
+			"block-seq-100.golden",
+			NULL,
+			100, 0,
+		},
+	};
+	
+	int result;
+	GoString_ jsonResult;
+	memset(&jsonResult, 0, sizeof(GoString_));
+	
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	GoString strHash;
+	Handle blockHandle;
+	
+	for(int i = 0; i < test_count; i++){
+		if( tests[i].hash != NULL ){
+			memset( &strHash, 0, sizeof(GoString) );
+			strHash.p = tests[i].hash;
+			strHash.n = strlen( tests[i].hash );
+			result = SKY_api_Client_BlockByHash(&clientHandle, 
+				strHash, &blockHandle);
+		} else {
+			result = SKY_api_Client_BlockBySeq(&clientHandle,
+				tests[i].seq, &blockHandle);
+		}
+		if( tests[i].failure ){
+			cr_assert( result != SKY_OK, "Get Block should have failed" );
+			continue;
+		}
+		cr_assert( result == SKY_OK, "Get Block failed" );
+		registerHandleClose( blockHandle );
+		
+		result = SKY_JsonEncode_Handle(blockHandle, &jsonResult);
+		cr_assert(result == SKY_OK, "Couldn\'t json encode");
+		registerMemCleanup((void*)jsonResult.p);
+		
+		json_char* json = (json_char*)jsonResult.p;
+		json_value* jsonOutput = json_parse(json, strlen(jsonResult.p));
+		cr_assert(jsonOutput != NULL, "json_parse failed");
+		registerJsonFree(jsonOutput);
+		
+		json_value* json_golden = loadGoldenFile(tests[i].golden_file);
+		cr_assert(json_golden != NULL, "loadGoldenFile failed");
+		registerJsonFree(json_golden);
+		
+		int equal = compareJsonValues(jsonOutput, json_golden);
+		cr_assert(equal, "Output different than expected");
+	}
+	
+	Handle progressHandle;
+	printf("Querying every block in the blockchain");
+	result = SKY_api_Client_BlockchainProgress(&clientHandle, &progressHandle);
+	cr_assert(result == SKY_OK, "SKY_api_Client_BlockchainProgress failed");
+	registerHandleClose( progressHandle );
+	GoInt64 progress;
+	result = SKY_Handle_Progress_GetCurrent( progressHandle, &progress );
+	cr_assert(result == SKY_OK, "SKY_Handle_Progress_GetCurrent failed");
+	GoInt64 seq, blockSeq;
+	Handle prevBlockHandle = 0;
+	Handle blockHandle2;
+	blockHandle = 0;
+	GoString_ hash1, hash2, hash;
+	GoString _hash;
+	for(seq = 0; seq < progress; seq++){
+		result = SKY_api_Client_BlockBySeq(&clientHandle,
+				seq, &blockHandle);
+		cr_assert( result == SKY_OK, "SKY_api_Client_BlockBySeq failed" );
+		registerHandleClose( blockHandle );
+		result = SKY_Handle_Block_GetHeadSeq( blockHandle, &blockSeq );
+		cr_assert( result == SKY_OK, "SKY_Handle_Block_GetHeadSeq failed" );
+		cr_assert( seq == blockSeq, "Incorrect block sequence" );
+		if( prevBlockHandle ){
+			memset( &hash1, 0, sizeof(GoString_) );
+			memset( &hash2, 0, sizeof(GoString_) );
+			memset( &hash, 0, sizeof(GoString_) );
+			result = SKY_Handle_Block_GetHeadHash( prevBlockHandle, &hash1 );
+			cr_assert(result == SKY_OK, "SKY_Handle_Block_GetHeadHash failed");
+			registerMemCleanup((void*)hash1.p);
+			result = SKY_Handle_Block_GetPreviousBlockHash( blockHandle, &hash2 );
+			cr_assert(result == SKY_OK, "SKY_Handle_Block_GetPreviousBlockHash failed");
+			registerMemCleanup((void*)hash2.p);
+			cr_assert(eq(type(GoString_), hash1, hash2));
+			freeRegisteredMemCleanup((void*)hash1.p);
+			freeRegisteredMemCleanup((void*)hash1.p);
+			result = SKY_Handle_Block_GetHeadHash( blockHandle, &hash );
+			registerMemCleanup((void*)hash.p);
+			_hash.p = hash.p;
+			_hash.n = hash.n;
+			result = SKY_api_Client_BlockByHash(&clientHandle, 
+				_hash, &blockHandle2);
+			cr_assert(result == SKY_OK, "SKY_api_Client_BlockByHash failed");
+			registerHandleClose( blockHandle2 );
+			
+			int equal = compareBlocks(blockHandle, blockHandle2);
+			cr_assert(equal == 1);
+			freeRegisteredMemCleanup((void*)hash.p);
+			closeRegisteredHandle( blockHandle2 );
+		}
+		if( prevBlockHandle ){
+			closeRegisteredHandle( prevBlockHandle );
+		}
+		prevBlockHandle = blockHandle;
+	}
+	if( blockHandle ){
+		SKY_handle_close( blockHandle );
 	}
 }

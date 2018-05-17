@@ -17,6 +17,8 @@ import (
 	cli "github.com/skycoin/skycoin/src/cli"
 	api "github.com/skycoin/skycoin/src/api"
 	gcli "github.com/urfave/cli"
+	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/visor"
 	"encoding/json"
 )
 
@@ -215,4 +217,52 @@ func closeHandle(handle Handle) {
 //export SKY_handle_close
 func SKY_handle_close(handle C.Handle){
 	closeHandle(Handle(handle))
+}
+
+//export SKY_Handle_Progress_GetCurrent
+func SKY_Handle_Progress_GetCurrent(handle C.Handle, current *uint64) uint32 {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*daemon.BlockchainProgress); isOK {
+			*current = obj.Current
+			return SKY_OK
+		}
+	}
+	return SKY_ERROR
+}
+
+//export SKY_Handle_Block_GetHeadSeq
+func SKY_Handle_Block_GetHeadSeq(handle C.Handle, seq *uint64) uint32 {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*visor.ReadableBlock); isOK {
+			*seq = obj.Head.BkSeq
+			return SKY_OK
+		}
+	}
+	return SKY_ERROR
+}
+
+//export SKY_Handle_Block_GetHeadHash
+func SKY_Handle_Block_GetHeadHash(handle C.Handle, hash *C.GoString_) uint32 {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*visor.ReadableBlock); isOK {
+			copyString(obj.Head.BlockHash, hash)
+			return SKY_OK
+		}
+	}
+	return SKY_ERROR
+}
+
+//export SKY_Handle_Block_GetPreviousBlockHash
+func SKY_Handle_Block_GetPreviousBlockHash(handle C.Handle, hash *C.GoString_) uint32 {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*visor.ReadableBlock); isOK {
+			copyString(obj.Head.PreviousBlockHash, hash)
+			return SKY_OK
+		}
+	}
+	return SKY_ERROR
 }

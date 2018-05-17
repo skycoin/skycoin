@@ -864,3 +864,26 @@ Test(api_integration, TestNetworkTrustedConnections) {
 				"network-trusted-connections.golden");
 	cr_assert(equal == 1);
 }
+
+Test(api_integration, TestStableNetworkExchangeableConnections) {
+	int result, equal;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	Handle connectionsHandle;
+	result = SKY_api_Client_NetworkExchangeableConnections( &clientHandle, &connectionsHandle );
+	cr_assert(result == SKY_OK, "SKY_api_Client_NetworkTrustedConnections failed");
+	registerHandleClose( connectionsHandle );
+	
+	result = SKY_Handle_Strings_Sort(connectionsHandle);
+	cr_assert(result == SKY_OK);
+	
+	equal = compareObjectWithGoldenFile( connectionsHandle, 
+				"network-exchangeable-connections.golden");
+	cr_assert(equal == 1);
+}

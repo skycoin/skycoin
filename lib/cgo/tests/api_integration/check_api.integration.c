@@ -62,17 +62,17 @@ GoString* createGoStringSlice(char** pStrings, int count, GoSlice* slice){
 	return goStrings;
 }
 
-int compareBlocks(Handle block1, Handle block2){
+int compareObjectsByHandle(Handle h1, Handle h2){
 	GoString_ jsonResult1, jsonResult2;
 	int result;
 	memset(&jsonResult1, 0, sizeof(GoString_));
 	memset(&jsonResult2, 0, sizeof(GoString_));
 	
-	result = SKY_JsonEncode_Handle(block1, &jsonResult1);
+	result = SKY_JsonEncode_Handle(h1, &jsonResult1);
 	cr_assert(result == SKY_OK, "Couldn\'t json encode");
 	registerMemCleanup((void*)jsonResult1.p);
 	
-	result = SKY_JsonEncode_Handle(block2, &jsonResult2);
+	result = SKY_JsonEncode_Handle(h2, &jsonResult2);
 	cr_assert(result == SKY_OK, "Couldn\'t json encode");
 	registerMemCleanup((void*)jsonResult2.p);
 	
@@ -92,6 +92,33 @@ int compareBlocks(Handle block1, Handle block2){
 	freeRegisteredMemCleanup((void*)jsonResult2.p);
 	freeRegisteredJson(value1);
 	freeRegisteredJson(value2);
+	return equal;
+}
+
+int compareObjectWithGoldenFile(Handle handle, const char* golden_file){
+	GoString_ jsonResult;
+	int result;
+	memset(&jsonResult, 0, sizeof(GoString_));
+	
+	result = SKY_JsonEncode_Handle(handle, &jsonResult);
+	cr_assert(result == SKY_OK, "Couldn\'t json encode");
+	registerMemCleanup((void*)jsonResult.p);
+	
+	json_char* json = (json_char*)jsonResult.p;
+	json_value* value = json_parse(json, strlen(jsonResult.p));
+	cr_assert(value != NULL, "json_parse failed");
+	registerJsonFree(value);
+	
+	json_value* golden_value = loadGoldenFile(golden_file);
+	cr_assert(golden_value != NULL, "loadGoldenFile failed");
+	registerJsonFree(golden_value);
+	
+	int equal = compareJsonValues(value, golden_value);
+	
+	freeRegisteredJson(value);
+	freeRegisteredJson(golden_value);
+	freeRegisteredMemCleanup((void*)jsonResult.p);
+	
 	return equal;
 }
 
@@ -214,12 +241,12 @@ Test(api_integration, TestStableOutputs) {
 			createGoStringSlice(tests[i].addresses, 
 					tests[i].addresses_count, &strings);
 			result = SKY_api_Client_OutputsForAddresses(&clientHandle, 
-														strings, &outputHandle);
+											strings, &outputHandle);
 		} else if(tests[i].hashes_count > 0){
 			createGoStringSlice(tests[i].hashes, 
 					tests[i].hashes_count, &strings);
 			result = SKY_api_Client_OutputsForHashes(&clientHandle, 
-														strings, &outputHandle);
+											strings, &outputHandle);
 		}
 		
 		if( tests[i].failure ){
@@ -378,7 +405,7 @@ Test(api_integration, TestStableBlock) {
 			cr_assert(result == SKY_OK, "SKY_api_Client_BlockByHash failed");
 			registerHandleClose( blockHandle2 );
 			
-			int equal = compareBlocks(blockHandle, blockHandle2);
+			int equal = compareObjectsByHandle(blockHandle, blockHandle2);
 			cr_assert(equal == 1);
 			freeRegisteredMemCleanup((void*)hash.p);
 			closeRegisteredHandle( blockHandle2 );
@@ -389,6 +416,133 @@ Test(api_integration, TestStableBlock) {
 		prevBlockHandle = blockHandle;
 	}
 	if( blockHandle ){
-		SKY_handle_close( blockHandle );
+		closeRegisteredHandle( blockHandle );
+	}
+}
+
+Test(api_integration, TestStableBlockchainMetadata) {
+	int result;
+	GoString_ jsonResult;
+	memset(&jsonResult, 0, sizeof(GoString_));
+	
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	Handle metadataHandle;
+	result = SKY_api_Client_BlockchainMetadata( &clientHandle, 
+									&metadataHandle );
+	cr_assert(result == SKY_OK, "SKY_api_Client_BlockchainMetadata failed");
+	registerHandleClose( metadataHandle );
+	
+	int equal = compareObjectWithGoldenFile(metadataHandle, 
+									"blockchain-metadata.golden");
+	cr_assert(equal, "SKY_api_Client_BlockchainMetadata returned unexpected result");
+}
+
+Test(api_integration, TestStableBlockchainProgress) {
+	int result;
+	GoString_ jsonResult;
+	memset(&jsonResult, 0, sizeof(GoString_));
+	
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	Handle progressHandle;
+	result = SKY_api_Client_BlockchainProgress( &clientHandle, 
+									&progressHandle );
+	cr_assert(result == SKY_OK, "SKY_api_Client_BlockchainMetadata failed");
+	registerHandleClose( progressHandle );
+	
+	int equal = compareObjectWithGoldenFile(progressHandle, 
+									"blockchain-progress.golden");
+	cr_assert(equal, "SKY_api_Client_BlockchainProgress returned unexpected result");
+}
+
+typedef struct{
+	int 	addresses_count;
+	char** 	addresses;
+	char* 	golden_file;
+} test_balance;
+
+Test(api_integration, TestStableBalance) {
+	char* addr1[] = {
+		"prRXwTcDK24hs6AFxj69UuWae3LzhrsPW9"
+	};
+	char* addr2[] = {
+		"2THDupTBEo7UqB6dsVizkYUvkKq82Qn4gjf"
+	};
+	char* addr3[] = {
+		"2THDupTBEo7UqB6dsVizkYUvkKq82Qn4gjf", 
+		"2THDupTBEo7UqB6dsVizkYUvkKq82Qn4gjf"
+	};
+	char* addr4[] = {
+		"2THDupTBEo7UqB6dsVizkYUvkKq82Qn4gjf", 
+		"qxmeHkwgAMfwXyaQrwv9jq3qt228xMuoT5"
+	};
+	int result;
+	int tests_count = 4;
+	test_balance tests[] = {
+		{
+			1, addr1, "balance-noaddrs.golden"
+		},
+		{
+			1, addr2, "balance-2THDupTBEo7UqB6dsVizkYUvkKq82Qn4gjf.golden"
+		},
+		{
+			2, addr3, "balance-2THDupTBEo7UqB6dsVizkYUvkKq82Qn4gjf.golden"
+		},
+		{
+			2, addr4, "balance-two-addrs.golden"
+		},
+	};
+	
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	int i;
+	GoSlice strings;
+	wallet__BalancePair balance;
+	for(i = 0; i < tests_count; i++){
+		memset( &strings, 0, sizeof(GoSlice) );
+		createGoStringSlice( tests[i].addresses, tests[i].addresses_count,
+							&strings);
+		result = SKY_api_Client_Balance( &clientHandle, 
+										strings, &balance );
+		cr_assert(result == SKY_OK, "SKY_api_Client_BlockchainMetadata failed");
+		json_value* json_golden = loadGoldenFile(tests[i].golden_file);
+		cr_assert(json_golden != NULL, "loadGoldenFile failed");
+		registerJsonFree(json_golden);
+		json_value* value;
+		value = get_json_value(json_golden, 
+							"confirmed/coins", json_integer);
+		cr_assert(value != NULL, "get_json_value confirmed/coins failed");
+		cr_assert(value->u.integer == balance.Confirmed.Coins);
+		value = get_json_value(json_golden, 
+							"confirmed/hours", json_integer);
+		cr_assert(value != NULL, "get_json_value confirmed/hours failed");
+		cr_assert(value->u.integer == balance.Confirmed.Hours);
+		value = get_json_value(json_golden, 
+							"predicted/coins", json_integer);
+		cr_assert(value != NULL, "get_json_value predicted/coins failed");
+		cr_assert(value->u.integer == balance.Predicted.Coins);
+		value = get_json_value(json_golden, 
+							"predicted/hours", json_integer);
+		cr_assert(value != NULL, "get_json_value predicted/hours failed");
+		cr_assert(value->u.integer == balance.Predicted.Hours);
 	}
 }

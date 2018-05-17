@@ -1177,3 +1177,60 @@ Test(api_integration, TestStableResendUnconfirmedTransactions) {
 		length = json_txtIds->u.array.length;
 	cr_assert(length == 0, "SKY_api_Client_ResendUnconfirmedTransactions should have returned an empty or null array of transactions");
 }
+
+typedef struct{
+	char* 	txId;
+	char* 	rawTx;
+	int 	failure;
+} test_raw_transaction;
+
+Test(api_integration, TestStableRawTransaction) {
+	int result, equal;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	test_raw_transaction tests[] = {
+		{	//Invalid hex length
+			"abcd", NULL, 1, 
+		},
+		{   //Not found
+			"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947", 
+			NULL, 1, 
+		},
+		{   //Odd length hex string
+			"abcdeffedca", 
+			NULL, 1, 
+		},
+		{   //OK
+			"d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add", 
+			"0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000f8f9c644772dc5373d85e11094e438df707a42c900407a10f35a000000407a10f35a0000", 
+			0, 
+		},
+	};
+	int tests_count = sizeof(tests) / sizeof(test_raw_transaction);
+	GoString txtId;
+	GoString_ rawTx;
+	GoString_ expected;
+	for(int i = 0; i < tests_count; i++){
+		memset( &rawTx, 0, sizeof(GoString_) );
+		memset( &expected, 0, sizeof(GoString_) );
+		txtId.p = tests[i].txId;
+		txtId.n = strlen( tests[i].txId );
+		result = SKY_api_Client_RawTransaction( &clientHandle, 
+									txtId, &rawTx );
+		if( tests[i].failure ){
+			cr_assert( result != SKY_OK, "SKY_api_Client_RawTransaction should have failed" );
+			continue;
+		}
+		expected.p = tests[i].rawTx;
+		expected.n = strlen( tests[i].rawTx );
+		cr_assert(result == SKY_OK, "SKY_api_Client_RawTransaction failed");
+		registerMemCleanup( (void*)rawTx.p );
+		cr_assert(eq(type(GoString_), rawTx, expected));
+	}
+}

@@ -7,9 +7,42 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Added
+- Add environment variable `DATA_DIR` in CLI's
+- `USE_CSRF` environment variable for CLI, if the remote node has CSRF enabled (CSRF is enabled by default, use `-disable-csrf` to disable)
+- `cli showConfig` command to echo the cli's configuration back to the user
+- Option to generate 12/24 word seed when creating new wallet
+- Add `-version` flag to show node version
+- Add transaction verification step to "Send" page
+- Add more details about transaction in transaction history
+- Add CLI `encryptWallet` command
+- Add CLI `decryptWallet` command
+- Add CLI `showSeed` command
+- Add `password` argument to the CLI commands of `addPrivateKey`, `createRawTransaction`, `generateAddresses`, `generateWallet`, `send`
+- Support for decoding map values in cipher binary encoder
+- Expose known block height of peer in brand new `height` field added in responses of `GET /api/v1/network/connections` API endpoints
+- `-verify-db` option (default true), will verify the database integrity during startup and exit if a problem is found
+- `-reset-corrupt-db` option (default false) will verify the database integrity during startup and reset the db if a problem is found
+- `GET /explorer/address`: add `size` and `fee` to transaction objects and `calculated_hours` to transaction inputs
+
 ### Fixed
+
+- Reduce connection disconnects, improves syncing
+- Fix #1171, update CLI to support wallet encryption
+- Use `bolt.Tx` correctly for read operations
+
 ### Changed
+
+- JSON 2.0 RPC interface (used by the CLI tool) is now served on the same host interface as the REST API, port `6420`. The additional listener has been removed.
+- CLI's `RPC_ADDR` environment variable must now start with a scheme e.g. `http://127.0.0.1:6420`, previously it did not use a scheme.
+- API response will be gzip compressed if client sends request with 'Accept-Encoding' contains 'gzip' in the header.
+- `GET /api/v1/wallet/balance` and `GET /api/v1/balance` now return an address balance list as well.
+- API endpoints are prefixed with `/api/v1/`. API endpoints without the `/api/v1/` prefix are deprecated but can be enabled with `-enable-unversioned-api`. Please migrate to use `/api/v1/` prefix in URLs.
+
 ### Removed
+
+- Remove `-rpc-interface-addr`, `-rpc-interface-port` options.  The RPC interface is now on default port `6420` with the REST API.
+- Remove `-rpc-thread-num` option
+- Remove `-connect-to` option
 
 ## [0.23.0] - 2018-04-22
 

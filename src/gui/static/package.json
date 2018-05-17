@@ -6,9 +6,10 @@
     "ng": "ng",
     "start": "ng serve --proxy-config proxy.config.js --delete-output-path false",
     "build": "ng build --prod",
-    "test": "ng test",
+    "build-travis": "ng build --prod --output-path=$BUILD_UI_TRAVIS_DIR",
+    "test": "ng test --watch=false",
     "lint": "ng lint",
-    "e2e": "ng e2e"
+    "e2e": "ng e2e --proxy-config e2e-proxy.config.js --delete-output-path false"
   },
   "private": true,
   "dependencies": {
@@ -23,7 +24,6 @@
     "@angular/platform-browser": "^5.0.0",
     "@angular/platform-browser-dynamic": "^5.0.0",
     "@angular/router": "^5.0.0",
-    "@swimlane/ngx-datatable": "^11.1.7",
     "bootstrap": "^4.0.0-beta.2",
     "core-js": "^2.4.1",
     "font-awesome": "^4.7.0",

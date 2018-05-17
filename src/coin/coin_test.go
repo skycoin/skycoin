@@ -25,12 +25,6 @@ func _feeCalc(t *Transaction) (uint64, error) {
 	return 0, nil
 }
 
-func _makeFeeCalc(fee uint64) FeeCalculator {
-	return func(t *Transaction) (uint64, error) {
-		return fee, nil
-	}
-}
-
 func TestAddress1(t *testing.T) {
 	a := "02fa939957e9fc52140e180264e621c2576a1bfe781f88792fb315ca3d1786afb8"
 	b, err := hex.DecodeString(a)
@@ -148,7 +142,7 @@ func _gaddrA2(S []cipher.SecKey, O []UxOut) []int {
 	return I
 }
 
-func _gaddrA3(S []cipher.SecKey, O []UxOut) map[cipher.Address]int {
+func _gaddrA3(S []cipher.SecKey) map[cipher.Address]int {
 	A := _gaddrA1(S)
 	M := make(map[cipher.Address]int) //address to int
 	for i, a := range A {

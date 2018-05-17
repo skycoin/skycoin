@@ -15,7 +15,6 @@ var (
 // HTTPError wraps http.Error
 func HTTPError(w http.ResponseWriter, status int, httpMsg string) {
 	msg := fmt.Sprintf("%d %s", status, httpMsg)
-	logger.Errorf(msg)
 	http.Error(w, msg, status)
 }
 
@@ -31,12 +30,12 @@ func errorXXXMsg(w http.ResponseWriter, status int, msg string) {
 	HTTPError(w, status, httpMsg)
 }
 
-// Error400 respond with a 400 error
+// Error400 respond with a 400 error and include a message
 func Error400(w http.ResponseWriter, msg string) {
 	errorXXXMsg(w, http.StatusBadRequest, msg)
 }
 
-// Error401 response with a 401 error
+// Error401 respond with a 401 error
 func Error401(w http.ResponseWriter, auth, msg string) {
 	w.Header().Set("WWW-Authenticate", auth)
 	httpMsg := http.StatusText(http.StatusUnauthorized)
@@ -46,23 +45,13 @@ func Error401(w http.ResponseWriter, auth, msg string) {
 	HTTPError(w, http.StatusUnauthorized, httpMsg)
 }
 
-// Error403 respond with a 403 error
-func Error403(w http.ResponseWriter) {
-	httpError(w, http.StatusForbidden)
-}
-
-// Error403Msg respond with a 403 error and include a message
-func Error403Msg(w http.ResponseWriter, msg string) {
+// Error403 respond with a 403 error and include a message
+func Error403(w http.ResponseWriter, msg string) {
 	errorXXXMsg(w, http.StatusForbidden, msg)
 }
 
-// Error404 respond with a 404 error
-func Error404(w http.ResponseWriter) {
-	httpError(w, http.StatusNotFound)
-}
-
-// Error404Msg respond with a 404 error and include a message
-func Error404Msg(w http.ResponseWriter, msg string) {
+// Error404 respond with a 404 error and include a message
+func Error404(w http.ResponseWriter, msg string) {
 	errorXXXMsg(w, http.StatusNotFound, msg)
 }
 
@@ -81,17 +70,12 @@ func Error501(w http.ResponseWriter) {
 	httpError(w, http.StatusNotImplemented)
 }
 
-// Error500 respond with a 500 error
-func Error500(w http.ResponseWriter) {
-	httpError(w, http.StatusInternalServerError)
-}
-
-// Error500Msg respond with a 500 error and include a message
-func Error500Msg(w http.ResponseWriter, msg string) {
+// Error500 respond with a 500 error and include a message
+func Error500(w http.ResponseWriter, msg string) {
 	errorXXXMsg(w, http.StatusInternalServerError, msg)
 }
 
-// Error503Msg respond with a 503 error and include a message
-func Error503Msg(w http.ResponseWriter, msg string) {
+// Error503 respond with a 503 error and include a message
+func Error503(w http.ResponseWriter, msg string) {
 	errorXXXMsg(w, http.StatusServiceUnavailable, msg)
 }

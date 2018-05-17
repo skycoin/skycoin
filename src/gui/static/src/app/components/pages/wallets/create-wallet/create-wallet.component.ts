@@ -34,6 +34,10 @@ export class CreateWalletComponent implements OnInit {
   }
 
   createWallet() {
+    if (!this.form.valid || this.createButton.isLoading()) {
+      return;
+    }
+
     this.createButton.resetState();
     this.createButton.setLoading();
     this.cancelButton.setDisabled();
@@ -48,8 +52,8 @@ export class CreateWalletComponent implements OnInit {
       });
   }
 
-  generateSeed() {
-    this.walletService.generateSeed().subscribe(seed => this.form.get('seed').setValue(seed));
+  generateSeed(entropy: number) {
+    this.walletService.generateSeed(entropy).subscribe(seed => this.form.get('seed').setValue(seed));
   }
 
   setEncrypt(event) {
@@ -66,7 +70,7 @@ export class CreateWalletComponent implements OnInit {
     this.form.addControl('confirm_password', new FormControl());
 
     if (this.data.create) {
-      this.generateSeed();
+      this.generateSeed(128);
     }
 
     this.scan = 100;

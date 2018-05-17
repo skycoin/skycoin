@@ -4,16 +4,16 @@ package webrpc
 func getBlocksBySeqHandler(req Request, gateway Gatewayer) Response {
 	var seqs []uint64
 	if err := req.DecodeParams(&seqs); err != nil {
-		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
+		return MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams)
 	}
 
 	if len(seqs) == 0 {
-		return makeErrorResponse(errCodeInvalidParams, "empty params")
+		return MakeErrorResponse(ErrCodeInvalidParams, "empty params")
 	}
 	blocks, err := gateway.GetBlocksInDepth(seqs)
 	if err != nil {
 		logger.Error(err)
-		return makeErrorResponse(errCodeInternalError, errMsgInternalError)
+		return MakeErrorResponse(ErrCodeInternalError, ErrMsgInternalError)
 	}
 	return makeSuccessResponse(req.ID, blocks)
 }
@@ -23,17 +23,17 @@ func getLastBlocksHandler(req Request, gateway Gatewayer) Response {
 	// validate the req params
 	var num []uint64
 	if err := req.DecodeParams(&num); err != nil {
-		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
+		return MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams)
 	}
 
 	if len(num) != 1 {
-		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
+		return MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams)
 	}
 
 	blocks, err := gateway.GetLastBlocks(num[0])
 	if err != nil {
 		logger.Error(err)
-		return makeErrorResponse(errCodeInternalError, errMsgInternalError)
+		return MakeErrorResponse(ErrCodeInternalError, ErrMsgInternalError)
 	}
 	return makeSuccessResponse(req.ID, blocks)
 }
@@ -41,16 +41,16 @@ func getLastBlocksHandler(req Request, gateway Gatewayer) Response {
 func getBlocksHandler(req Request, gateway Gatewayer) Response {
 	var params []uint64
 	if err := req.DecodeParams(&params); err != nil {
-		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
+		return MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams)
 	}
 
 	if len(params) != 2 {
-		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
+		return MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams)
 	}
 
 	blocks, err := gateway.GetBlocks(params[0], params[1])
 	if err != nil {
-		return makeErrorResponse(errCodeInternalError, errMsgInternalError)
+		return MakeErrorResponse(ErrCodeInternalError, ErrMsgInternalError)
 	}
 	return makeSuccessResponse(req.ID, blocks)
 }

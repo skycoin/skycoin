@@ -8,7 +8,7 @@
       Hash of last block: <br>
     </div>
     <div class="skycoin-detail-values" *ngIf="block && block.header">
-      {{ block.header.seq }} <br>
+      {{ block.header.seq | number }} <br>
       {{ block.header.timestamp | dateFromNow }} <br>
       {{ block.header.block_hash }}
     </div>

@@ -11,7 +11,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
-func randBytes(n int) []byte {
+func randBytes(n int) []byte { // nolint: unparam
 	const alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 	var bytes = make([]byte, n)
 	rand.Read(bytes)
@@ -551,4 +551,77 @@ func TestByteArray(t *testing.T) {
 		t.Errorf("incorrect serialization length for fixed sized arrays: %d byte fixed sized array serialized to %d bytes \n", len(d), len(buff2))
 	}
 
+}
+
+func TestEncodeDictInt2Int(t *testing.T) {
+	m1 := map[uint8]uint64{0: 0, 1: 1, 2: 2}
+	buff := Serialize(m1)
+	if len(buff) != 4 /* Length */ +(1+8)*len(m1) /* 1b key + 8b value per entry */ {
+		t.Fail()
+	}
+	m2 := make(map[uint8]uint64)
+	if DeserializeRaw(buff, m2) != nil {
+		t.Fail()
+	}
+	if len(m1) != len(m2) {
+		t.Errorf("Expected length %d but got %d", len(m1), len(m2))
+	}
+	for key := range m1 {
+		if m1[key] != m2[key] {
+			t.Errorf("Expected value %d for key %d but got %d", m1[key], key, m2[key])
+		}
+	}
+}
+
+type TestStructWithDict struct {
+	X int32
+	Y int64
+	M map[uint8]TestStruct
+	K []byte
+}
+
+func TestEncodeDictNested(t *testing.T) {
+	s1 := TestStructWithDict{
+		0x01234567,
+		0x0123456789ABCDEF,
+		map[uint8]TestStruct{
+			0x01: TestStruct{
+				0x01234567,
+				0x0123456789ABCDEF,
+				0x01,
+				[]byte{0, 1, 2},
+				true,
+				"ab",
+				cipher.PubKey{
+					0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+					17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
+				},
+			},
+			0x23: TestStruct{
+				0x01234567,
+				0x0123456789ABCDEF,
+				0x01,
+				[]byte{0, 1, 2},
+				true,
+				"cd",
+				cipher.PubKey{
+					0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+					17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
+				},
+			},
+		},
+		[]byte{0, 1, 2, 3, 4},
+	}
+	buff := Serialize(s1)
+	if len(buff) == 0 {
+		t.Fail()
+	}
+
+	s2 := TestStructWithDict{}
+	if DeserializeRaw(buff, &s2) != nil {
+		t.Fail()
+	}
+	if !reflect.DeepEqual(s1, s2) {
+		t.Errorf("Expected %v but got %v", s1, s2)
+	}
 }

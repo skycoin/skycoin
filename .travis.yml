@@ -11,6 +11,11 @@ matrix:
     - os: osx
       # Do not start osx build for PR
       if: type != pull_request
+      osx_image: xcode8
+
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test && sudo apt-get update -qq; fi
+  - eval "CC=gcc-6 && CXX=g++-6"
 
 env:
   global:
@@ -43,6 +48,8 @@ install:
   - cd "$GOPATH/src/github.com/skycoin/skycoin"
   - go get -t ./...
   - make install-linters
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq g++-6 && sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 90; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then brew install gcc6; fi
   - make install-deps-libc
   - make install-deps-ui
 
@@ -63,8 +70,12 @@ script:
   # Disable seed api test
   - make integration-test-disable-seed-api
   # libskycoin tests
-  - make test-libc
+  - CC=gcc-6 make integration-test-libc
+  - CC=gcc-6 make test-libc
   # TODO: test pyskycoin
+  # - CC=gcc-6 make test-libpy
+  # TODO: test ui
+  # - make test-ui
   # - make test-libpy
   - make lint-ui
   - make build-ui-travis

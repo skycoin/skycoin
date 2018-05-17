@@ -416,7 +416,7 @@ Test(cipher_crypto, TestNewSig) {
 
 Test(cipher_crypto, TestMustSigFromHex) {
   unsigned char buff[101];
-  char strBuff[101];
+  char strBuff[257];
   GoSlice b = { buff, 0, 101 };
   GoString str;
   cipher__Sig s, s2;
@@ -439,13 +439,13 @@ Test(cipher_crypto, TestMustSigFromHex) {
   cr_assert(errcode == SKY_OK);
   str.p = strBuff;
   str.n = 0;
-  strnhex(s, (char*)str.p, 32);
+  strnhex(s, (char *) str.p, 32);
   str.n = strlen(str.p);
   errcode = SKY_cipher_SigFromHex(str, &s2);
   cr_assert(errcode == SKY_ERROR);
 
   // Valid
-  strnhex(s, (char*)str.p, 65);
+  strnhex(s, (char *) str.p, 65);
   str.n = strlen(str.p);
   errcode = SKY_cipher_SigFromHex(str, &s2);
   cr_assert(errcode == SKY_OK);

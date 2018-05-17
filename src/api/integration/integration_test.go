@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -190,6 +191,27 @@ func updateGoldenFile(t *testing.T, filename string, content interface{}) {
 	require.NoError(t, err)
 }
 
+func checkGoldenFile(t *testing.T, goldenFile string, td TestData) {
+	loadGoldenFile(t, goldenFile, td)
+	require.Equal(t, reflect.Indirect(reflect.ValueOf(td.expected)).Interface(), td.actual)
+
+	// Serialized expected to JSON and compare to the goldenFile's contents
+	// This will detect field changes that could be missed otherwise
+	b, err := json.MarshalIndent(td.expected, "", "\t")
+	require.NoError(t, err)
+
+	goldenFile = filepath.Join(testFixturesDir, goldenFile)
+
+	f, err := os.Open(goldenFile)
+	require.NoError(t, err)
+	defer f.Close()
+
+	c, err := ioutil.ReadAll(f)
+	require.NoError(t, err)
+
+	require.Equal(t, string(c), string(b)+"\n", "json struct output differs from golden file, was a field added to the struct?")
+}
+
 func assertResponseError(t *testing.T, err error, errCode int, errMsg string) {
 	require.Error(t, err)
 	require.IsType(t, api.ClientError{}, err)
@@ -208,9 +230,7 @@ func TestStableCoinSupply(t *testing.T) {
 	require.NoError(t, err)
 
 	var expected api.CoinSupply
-	loadGoldenFile(t, "coinsupply.golden", TestData{cs, &expected})
-
-	require.Equal(t, expected, *cs)
+	checkGoldenFile(t, "coinsupply.golden", TestData{*cs, &expected})
 }
 
 func TestLiveCoinSupply(t *testing.T) {
@@ -308,7 +328,7 @@ func TestStableOutputs(t *testing.T) {
 			require.NoError(t, err)
 
 			var expected visor.ReadableOutputSet
-			loadGoldenFile(t, tc.golden, TestData{outputs, &expected})
+			checkGoldenFile(t, tc.golden, TestData{*outputs, &expected})
 
 			require.Equal(t, len(expected.HeadOutputs), len(outputs.HeadOutputs))
 			require.Equal(t, len(expected.OutgoingOutputs), len(outputs.OutgoingOutputs))
@@ -317,8 +337,6 @@ func TestStableOutputs(t *testing.T) {
 			for i, o := range expected.HeadOutputs {
 				require.Equal(t, o, outputs.HeadOutputs[i], "mismatch at index %d", i)
 			}
-
-			require.Equal(t, expected, *outputs)
 		})
 	}
 }
@@ -416,7 +434,7 @@ func testKnownBlocks(t *testing.T) {
 			var err error
 
 			if tc.hash != "" {
-				b, err = c.BlockByHash(tc.hash)
+				b, err = c.(tc.hash)
 			} else {
 				b, err = c.BlockBySeq(tc.seq)
 			}
@@ -429,9 +447,7 @@ func testKnownBlocks(t *testing.T) {
 			require.NotNil(t, b)
 
 			var expected visor.ReadableBlock
-			loadGoldenFile(t, tc.golden, TestData{b, &expected})
-
-			require.Equal(t, expected, *b)
+			checkGoldenFile(t, tc.golden, TestData{*b, &expected})
 		})
 	}
 
@@ -474,9 +490,7 @@ func TestStableBlockchainMetadata(t *testing.T) {
 	require.NoError(t, err)
 
 	var expected visor.BlockchainMetadata
-	loadGoldenFile(t, "blockchain-metadata.golden", TestData{metadata, &expected})
-
-	require.Equal(t, expected, *metadata)
+	checkGoldenFile(t, "blockchain-metadata.golden", TestData{*metadata, &expected})
 }
 
 func TestLiveBlockchainMetadata(t *testing.T) {
@@ -503,9 +517,7 @@ func TestStableBlockchainProgress(t *testing.T) {
 	require.NoError(t, err)
 
 	var expected daemon.BlockchainProgress
-	loadGoldenFile(t, "blockchain-progress.golden", TestData{progress, &expected})
-
-	require.Equal(t, expected, *progress)
+	checkGoldenFile(t, "blockchain-progress.golden", TestData{*progress, &expected})
 }
 
 func TestLiveBlockchainProgress(t *testing.T) {
@@ -563,9 +575,7 @@ func TestStableBalance(t *testing.T) {
 			require.NoError(t, err)
 
 			var expected wallet.BalancePair
-			loadGoldenFile(t, tc.golden, TestData{balance, &expected})
-
-			require.Equal(t, expected, *balance)
+			checkGoldenFile(t, tc.golden, TestData{*balance, &expected})
 		})
 	}
 }
@@ -631,9 +641,7 @@ func TestStableUxOut(t *testing.T) {
 			require.NoError(t, err)
 
 			var expected historydb.UxOutJSON
-			loadGoldenFile(t, tc.golden, TestData{ux, &expected})
-
-			require.Equal(t, expected, *ux)
+			checkGoldenFile(t, tc.golden, TestData{*ux, &expected})
 		})
 	}
 
@@ -653,8 +661,7 @@ func TestLiveUxOut(t *testing.T) {
 	require.NoError(t, err)
 
 	var expected historydb.UxOutJSON
-	loadGoldenFile(t, "uxout-spent.golden", TestData{ux, &expected})
-	require.Equal(t, expected, *ux)
+	checkGoldenFile(t, "uxout-spent.golden", TestData{*ux, &expected})
 	require.NotEqual(t, uint64(0), ux.SpentBlockSeq)
 
 	// Scan all uxouts from the result of /outputs
@@ -730,8 +737,7 @@ func TestStableAddressUxOuts(t *testing.T) {
 			}
 			require.NoError(t, err)
 			var expected []*historydb.UxOutJSON
-			loadGoldenFile(t, tc.golden, TestData{ux, &expected})
-			require.Equal(t, expected, ux, tc.name)
+			checkGoldenFile(t, tc.golden, TestData{ux, &expected})
 		})
 	}
 }
@@ -858,9 +864,7 @@ func TestStableBlocks(t *testing.T) {
 				resp := testBlocks(t, tc.start, tc.end)
 
 				var expected visor.ReadableBlocks
-				loadGoldenFile(t, tc.golden, TestData{resp, &expected})
-
-				require.Equal(t, expected, *resp)
+				checkGoldenFile(t, tc.golden, TestData{*resp, &expected})
 			} else {
 				_, err := c.Blocks(tc.start, tc.end)
 				assertResponseError(t, err, tc.errCode, tc.errMsg)
@@ -918,8 +922,7 @@ func TestStableLastBlocks(t *testing.T) {
 	require.NoError(t, err)
 
 	var expected *visor.ReadableBlocks
-	loadGoldenFile(t, "block-last.golden", TestData{blocks, &expected})
-	require.Equal(t, expected, blocks)
+	checkGoldenFile(t, "block-last.golden", TestData{blocks, &expected})
 
 	var prevBlock *visor.ReadableBlock
 	blocks, err = c.LastBlocks(10)
@@ -1016,9 +1019,7 @@ func TestNetworkDefaultConnections(t *testing.T) {
 	sort.Strings(connections)
 
 	var expected []string
-	loadGoldenFile(t, "network-default-connections.golden", TestData{connections, &expected})
-	sort.Strings(expected)
-	require.Equal(t, expected, connections)
+	checkGoldenFile(t, "network-default-connections.golden", TestData{connections, &expected})
 }
 
 func TestNetworkTrustedConnections(t *testing.T) {
@@ -1033,9 +1034,7 @@ func TestNetworkTrustedConnections(t *testing.T) {
 	sort.Strings(connections)
 
 	var expected []string
-	loadGoldenFile(t, "network-trusted-connections.golden", TestData{connections, &expected})
-	sort.Strings(expected)
-	require.Equal(t, expected, connections)
+	checkGoldenFile(t, "network-trusted-connections.golden", TestData{connections, &expected})
 }
 
 func TestStableNetworkExchangeableConnections(t *testing.T) {
@@ -1048,10 +1047,7 @@ func TestStableNetworkExchangeableConnections(t *testing.T) {
 	require.NoError(t, err)
 
 	var expected []string
-	loadGoldenFile(t, "network-exchangeable-connections.golden", TestData{connections, &expected})
-	sort.Strings(connections)
-	sort.Strings(expected)
-	require.Equal(t, expected, connections)
+	checkGoldenFile(t, "network-exchangeable-connections.golden", TestData{connections, &expected})
 }
 
 func TestLiveNetworkExchangeableConnections(t *testing.T) {
@@ -1258,8 +1254,7 @@ func TestStableTransactions(t *testing.T) {
 			}
 
 			var expected *[]daemon.TransactionResult
-			loadGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
-			require.Equal(t, expected, txResult, "case: "+tc.name)
+			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
 		})
 	}
 }
@@ -1339,8 +1334,7 @@ func TestStableConfirmedTransactions(t *testing.T) {
 			}
 
 			var expected *[]daemon.TransactionResult
-			loadGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
-			require.Equal(t, expected, txResult, "case: "+tc.name)
+			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
 		})
 	}
 }
@@ -1399,8 +1393,7 @@ func TestStableUnconfirmedTransactions(t *testing.T) {
 			}
 
 			var expected *[]daemon.TransactionResult
-			loadGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
-			require.Equal(t, expected, txResult, "case: "+tc.name)
+			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
 		})
 	}
 }
@@ -1649,9 +1642,8 @@ func TestStableAddressTransactions(t *testing.T) {
 
 			require.NoError(t, err)
 
-			var expected []api.ReadableTransaction
-			loadGoldenFile(t, tc.golden, TestData{txns, &expected})
-			require.Equal(t, expected, txns)
+			var expected []daemon.ReadableTransaction
+			checkGoldenFile(t, tc.golden, TestData{txns, &expected})
 		})
 	}
 }
@@ -1699,7 +1691,7 @@ func TestLiveAddressTransactions(t *testing.T) {
 
 			require.NoError(t, err)
 
-			var expected []api.ReadableTransaction
+			var expected []daemon.ReadableTransaction
 			loadGoldenFile(t, tc.golden, TestData{txns, &expected})
 
 			// Recaculate the height if it's live test
@@ -1723,8 +1715,7 @@ func TestStableRichlist(t *testing.T) {
 	require.NoError(t, err)
 
 	var expected api.Richlist
-	loadGoldenFile(t, "richlist-default.golden", TestData{richlist, &expected})
-	require.Equal(t, expected, *richlist)
+	checkGoldenFile(t, "richlist-default.golden", TestData{*richlist, &expected})
 
 	richlist, err = c.Richlist(&api.RichlistParams{
 		N:                   0,
@@ -1733,8 +1724,7 @@ func TestStableRichlist(t *testing.T) {
 	require.NoError(t, err)
 
 	expected = api.Richlist{}
-	loadGoldenFile(t, "richlist-all.golden", TestData{richlist, &expected})
-	require.Equal(t, expected, *richlist)
+	checkGoldenFile(t, "richlist-all.golden", TestData{*richlist, &expected})
 
 	richlist, err = c.Richlist(&api.RichlistParams{
 		N:                   0,
@@ -1743,8 +1733,7 @@ func TestStableRichlist(t *testing.T) {
 	require.NoError(t, err)
 
 	expected = api.Richlist{}
-	loadGoldenFile(t, "richlist-all-include-distribution.golden", TestData{richlist, &expected})
-	require.Equal(t, expected, *richlist)
+	checkGoldenFile(t, "richlist-all-include-distribution.golden", TestData{*richlist, &expected})
 
 	richlist, err = c.Richlist(&api.RichlistParams{
 		N:                   8,
@@ -1753,8 +1742,7 @@ func TestStableRichlist(t *testing.T) {
 	require.NoError(t, err)
 
 	expected = api.Richlist{}
-	loadGoldenFile(t, "richlist-8.golden", TestData{richlist, &expected})
-	require.Equal(t, expected, *richlist)
+	checkGoldenFile(t, "richlist-8.golden", TestData{*richlist, &expected})
 
 	richlist, err = c.Richlist(&api.RichlistParams{
 		N:                   150,
@@ -1763,8 +1751,7 @@ func TestStableRichlist(t *testing.T) {
 	require.NoError(t, err)
 
 	expected = api.Richlist{}
-	loadGoldenFile(t, "richlist-150-include-distribution.golden", TestData{richlist, &expected})
-	require.Equal(t, expected, *richlist)
+	checkGoldenFile(t, "richlist-150-include-distribution.golden", TestData{*richlist, &expected})
 }
 
 func TestLiveRichlist(t *testing.T) {
@@ -2858,8 +2845,7 @@ func TestStableWalletBalance(t *testing.T) {
 	require.NoError(t, err)
 
 	var expect api.BalanceResponse
-	loadGoldenFile(t, "wallet-balance.golden", TestData{bp, &expect})
-	require.Equal(t, expect, *bp)
+	checkGoldenFile(t, "wallet-balance.golden", TestData{*bp, &expect})
 }
 
 func TestLiveWalletBalance(t *testing.T) {
@@ -2908,8 +2894,7 @@ func TestStableWalletTransactions(t *testing.T) {
 	require.NoError(t, err)
 
 	var expect api.UnconfirmedTxnsResponse
-	loadGoldenFile(t, "wallet-transactions.golden", TestData{txns, &expect})
-	require.Equal(t, expect, *txns)
+	checkGoldenFile(t, "wallet-transactions.golden", TestData{*txns, &expect})
 }
 
 func TestLiveWalletTransactions(t *testing.T) {
@@ -3267,7 +3252,7 @@ func TestDisableWalletApi(t *testing.T) {
 		return
 	}
 
-	tt := []struct {
+	type testCase struct {
 		name        string
 		method      string
 		endpoint    string
@@ -3276,18 +3261,20 @@ func TestDisableWalletApi(t *testing.T) {
 		json        func() interface{}
 		expectErr   string
 		code        int
-	}{
+	}
+
+	tt := []testCase{
 		{
 			name:      "get wallet",
 			method:    http.MethodGet,
-			endpoint:  "/wallet?id=test.wlt",
+			endpoint:  "/api/v1/wallet?id=test.wlt",
 			expectErr: "403 Forbidden\n",
 			code:      http.StatusForbidden,
 		},
 		{
 			name:     "create wallet",
 			method:   http.MethodPost,
-			endpoint: "/wallet/create",
+			endpoint: "/api/v1/wallet/create",
 			body: func() io.Reader {
 				v := url.Values{}
 				v.Add("seed", "seed")
@@ -3301,7 +3288,7 @@ func TestDisableWalletApi(t *testing.T) {
 		{
 			name:     "generate new address",
 			method:   http.MethodPost,
-			endpoint: "/wallet/newAddress",
+			endpoint: "/api/v1/wallet/newAddress",
 			body: func() io.Reader {
 				v := url.Values{}
 				v.Add("id", "test.wlt")
@@ -3313,14 +3300,14 @@ func TestDisableWalletApi(t *testing.T) {
 		{
 			name:      "get wallet balance",
 			method:    http.MethodGet,
-			endpoint:  "/wallet/balance?id=test.wlt",
+			endpoint:  "/api/v1/wallet/balance?id=test.wlt",
 			expectErr: "403 Forbidden\n",
 			code:      http.StatusForbidden,
 		},
 		{
 			name:     "wallet spending",
 			method:   http.MethodPost,
-			endpoint: "/wallet/spend",
+			endpoint: "/api/v1/wallet/spend",
 			body: func() io.Reader {
 				v := url.Values{}
 				v.Add("id", "test.wlt")
@@ -3334,14 +3321,14 @@ func TestDisableWalletApi(t *testing.T) {
 		{
 			name:      "get wallet unconfirmed transactions",
 			method:    http.MethodGet,
-			endpoint:  "/wallet/transactions?id=test.wlt",
+			endpoint:  "/api/v1/wallet/transactions?id=test.wlt",
 			expectErr: "403 Forbidden\n",
 			code:      http.StatusForbidden,
 		},
 		{
 			name:     "update wallet label",
 			method:   http.MethodPost,
-			endpoint: "/wallet/update",
+			endpoint: "/api/v1/wallet/update",
 			body: func() io.Reader {
 				v := url.Values{}
 				v.Add("id", "test.wlt")
@@ -3354,35 +3341,35 @@ func TestDisableWalletApi(t *testing.T) {
 		{
 			name:      "new seed",
 			method:    http.MethodGet,
-			endpoint:  "/wallet/newSeed",
+			endpoint:  "/api/v1/wallet/newSeed",
 			expectErr: "403 Forbidden\n",
 			code:      http.StatusForbidden,
 		},
 		{
 			name:      "get wallets",
 			method:    http.MethodGet,
-			endpoint:  "/wallets",
+			endpoint:  "/api/v1/wallets",
 			expectErr: "403 Forbidden\n",
 			code:      http.StatusForbidden,
 		},
 		{
 			name:      "get wallets folder name",
 			method:    http.MethodGet,
-			endpoint:  "/wallets/folderName",
+			endpoint:  "/api/v1/wallets/folderName",
 			expectErr: "403 Forbidden\n",
 			code:      http.StatusForbidden,
 		},
 		{
 			name:      "main index.html 404 not found",
 			method:    http.MethodGet,
-			endpoint:  "/",
+			endpoint:  "/api/v1/",
 			expectErr: "404 Not Found\n",
 			code:      http.StatusNotFound,
 		},
 		{
 			name:     "encrypt wallet",
 			method:   http.MethodPost,
-			endpoint: "/wallet/encrypt",
+			endpoint: "/api/v1/wallet/encrypt",
 			body: func() io.Reader {
 				v := url.Values{}
 				v.Add("id", "test.wlt")
@@ -3395,7 +3382,7 @@ func TestDisableWalletApi(t *testing.T) {
 		{
 			name:     "decrypt wallet",
 			method:   http.MethodPost,
-			endpoint: "/wallet/decrypt",
+			endpoint: "/api/v1/wallet/decrypt",
 			body: func() io.Reader {
 				v := url.Values{}
 				v.Add("id", "test.wlt")
@@ -3408,7 +3395,7 @@ func TestDisableWalletApi(t *testing.T) {
 		{
 			name:     "get wallet seed",
 			method:   http.MethodPost,
-			endpoint: "/wallet/seed",
+			endpoint: "/api/v1/wallet/seed",
 			body: func() io.Reader {
 				v := url.Values{}
 				v.Add("id", "test.wlt")
@@ -3421,7 +3408,7 @@ func TestDisableWalletApi(t *testing.T) {
 		{
 			name:        "create transaction",
 			method:      http.MethodPost,
-			endpoint:    "/wallet/transaction",
+			endpoint:    "/api/v1/wallet/transaction",
 			contentType: "application/json",
 			json: func() interface{} {
 				return api.CreateTransactionRequest{
@@ -3448,21 +3435,30 @@ func TestDisableWalletApi(t *testing.T) {
 
 	c := api.NewClient(nodeAddress())
 	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			var err error
-			switch tc.method {
-			case http.MethodGet:
-				err = c.Get(tc.endpoint, nil)
-			case http.MethodPost:
-				switch tc.contentType {
-				case "application/json":
-					err = c.PostJSON(tc.endpoint, tc.json(), nil)
-				default:
-					err = c.PostForm(tc.endpoint, tc.body(), nil)
+		f := func(tc testCase) func(t *testing.T) {
+			return func(t *testing.T) {
+				var err error
+				switch tc.method {
+				case http.MethodGet:
+					err = c.Get(tc.endpoint, nil)
+				case http.MethodPost:
+					switch tc.contentType {
+					case "application/json":
+						err = c.PostJSON(tc.endpoint, tc.json(), nil)
+					default:
+						err = c.PostForm(tc.endpoint, tc.body(), nil)
+					}
 				}
+				assertResponseError(t, err, tc.code, tc.expectErr)
 			}
-			assertResponseError(t, err, tc.code, tc.expectErr)
-		})
+		}
+
+		t.Run(tc.name, f(tc))
+
+		if strings.HasPrefix(tc.endpoint, "/api/v1") {
+			tc.endpoint = strings.TrimPrefix(tc.endpoint, "/api/v1")
+			t.Run(tc.name, f(tc))
+		}
 	}
 
 	// Confirms that no new wallet is created

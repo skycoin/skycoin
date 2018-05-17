@@ -110,7 +110,7 @@ unsigned int b64_decode(const unsigned char* in, unsigned int in_len, unsigned i
 unsigned int base64_decode_string(const unsigned char* in, 
 		unsigned int in_len, char* out, unsigned int buffer_size){
 	unsigned int* data;
-	data = malloc(buffer_size);
+	data = malloc(buffer_size * sizeof(unsigned int));
 	unsigned int decode_len = b64_decode(in, in_len, data);
 	for(int c = 0; c < decode_len && c < buffer_size; c++){
 		out[c] = (char)data[c];

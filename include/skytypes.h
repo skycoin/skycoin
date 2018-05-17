@@ -1,6 +1,6 @@
 
-#ifndef SKYSTRUCTS_H
-#define SKYSTRUCTS_H
+#ifndef SKYTYPES_H
+#define SKYTYPES_H
 
 /**
  * Go 8-bit signed integer values.
@@ -150,6 +150,11 @@ typedef Handle Client__Handle;
 typedef Handle WalletResponse__Handle;
 
 /**
+ * Create Transaction Request Handle
+*/
+typedef Handle CreateTransactionRequest__Handle;
+
+/**
  * Instances of Go `map` type, deal map[string] as handle
  */
 typedef Handle GoStringMap_;
@@ -203,5 +208,30 @@ typedef struct {
 typedef GoUint8_  poly1305__Mac[16];
 typedef GoUint8_  poly1305__Key[32];
 
+/**
+ * Memory handle for internal object retrieving password to read
+ * encrypted wallets.
+ */
+typedef Handle PasswordReader__Handle;
+
+/**
+ * Memory handle to perform Skycoin RPC API calls
+ * encrypted wallets.
+ */
+typedef Handle WebRpcClient__Handle;
+
+/**
+ * Memory handle to access to Skycoin CLI configuration
+ */
+typedef Handle Config__Handle;
+/*
+#include "cipher.hash.go.h"
+#include "cipher.crypto.go.h"
+#include "cipher.address.go.h"
+#include "api.cli.create_rawtx.go.h"
+#include "coin.transactions.go.h"
+#include "wallet.entry.go.h"
+#include "wallet.wallet.go.h"
+*/
 #endif
 

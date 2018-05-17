@@ -108,9 +108,9 @@ export class WalletService {
   refreshBalances() {
     this.wallets.first().subscribe(wallets => {
       Observable.forkJoin(wallets.map(wallet => this.retrieveWalletBalance(wallet).map(response => {
-        wallet.addresses = response;
-        wallet.coins = response.map(address => address.coins >= 0 ? address.coins : 0).reduce((a , b) => a + b, 0);
-        wallet.hours = response.map(address => address.hours >= 0 ? address.hours : 0).reduce((a , b) => a + b, 0);
+        wallet.addresses = response.addresses;
+        wallet.coins = response.coins;
+        wallet.hours = response.hours;
         return wallet;
       })))
         .subscribe(newWallets => this.wallets.next(newWallets));
@@ -235,21 +235,22 @@ export class WalletService {
     this.apiService.getWallets().first().subscribe(wallets => this.wallets.next(wallets));
   }
 
-  private retrieveAddressBalance(address: any|any[]) {
-    const addresses = Array.isArray(address) ? address.map(addr => addr.address).join(',') : address.address;
-    return this.apiService.get('balance', {addrs: addresses});
-  }
-
   private retrieveInputAddress(input: string) {
     return this.apiService.get('uxout', {uxid: input});
   }
 
   private retrieveWalletBalance(wallet: Wallet): Observable<any> {
-    return Observable.forkJoin(wallet.addresses.map(address => this.retrieveAddressBalance(address).map(balance => {
-      address.coins = balance.confirmed.coins / 1000000;
-      address.hours = balance.confirmed.hours;
-      return address;
-    })));
+    return this.apiService.get('wallet/balance', { id: wallet.filename }).map(balance => {
+      return {
+        coins: balance.confirmed.coins / 1000000,
+        hours: balance.confirmed.hours,
+        addresses: Object.keys(balance.addresses).map(address => ({
+          address,
+          coins: balance.addresses[address].confirmed.coins / 1000000,
+          hours: balance.addresses[address].confirmed.hours,
+        })),
+      };
+    });
   }
 
   private updateWallet(wallet: Wallet) {

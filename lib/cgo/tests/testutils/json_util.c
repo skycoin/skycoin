@@ -94,3 +94,31 @@ int compareJsonValues(json_value* value1, json_value* value2){
 	}
 	return 1;
 }
+
+json_value* get_json_value(json_value* node, const char* path,
+							json_type type){
+	int n;
+	const char* p = strchr(path, '/');
+	if( p == NULL )
+		n = strlen(path);
+	else 
+		n = p - path;
+	if( n > 0 ) {
+		if( node->type == json_object){
+			for (int x = 0; x < node->u.object.length; x++) {
+				char* name = node->u.object.values[x].name;
+				if( strncmp( path, name, n ) == 0){
+					if( p == NULL){
+						if( node->u.object.values[x].value->type == type)
+							return node->u.object.values[x].value;
+					}else
+						return get_json_value(
+							node->u.object.values[x].value, 
+							p + 1, type);
+				}
+			}
+		} else {
+			return NULL;
+		}
+	}
+}

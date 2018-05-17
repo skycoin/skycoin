@@ -5,11 +5,14 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include "json.h"
-
+#include "skytypes.h"
 #include "skytest.h"
+
 
 //Define function pipe2 to avoid warning implicit declaration of function 'pipe2'
 int pipe2(int pipefd[2], int flags);
+//Define function SKY_handle_close to avoid including libskycoin.h
+void SKY_handle_close(Handle p0);
 
 int MEMPOOLIDX = 0;
 void *MEMPOOL[1024 * 256];
@@ -17,26 +20,97 @@ void *MEMPOOL[1024 * 256];
 int JSONPOOLIDX = 0;
 json_value* JSON_POOL[128];
 
+int HANDLEPOOLIDX = 0;
+Handle HANDLE_POOL[128];
+
 int stdout_backup;
 int pipefd[2];
 
 void * registerMemCleanup(void *p) {
-  MEMPOOL[MEMPOOLIDX++] = p;
-  return p;
+	int i;
+	for (i = 0; i < MEMPOOLIDX; i++) {
+		if(MEMPOOL[i] == NULL){
+			MEMPOOL[i] = p;
+			return p;
+		}
+	}
+	MEMPOOL[MEMPOOLIDX++] = p;
+	return p;
 }
 
-void registerJsonFree(void *p){
+void freeRegisteredMemCleanup(void *p){
+	int i;
+	for (i = 0; i < MEMPOOLIDX; i++) {
+		if(MEMPOOL[i] == p){
+			free(p);
+			MEMPOOL[i] = NULL;
+			break;
+		}
+	}
+}
+
+int registerJsonFree(void *p){
+	int i;
+	for (i = 0; i < JSONPOOLIDX; i++) {
+		if(JSON_POOL[i] == NULL){
+			JSON_POOL[i] = p;
+			return i;
+		}
+	}
 	JSON_POOL[JSONPOOLIDX++] = p;
+	return JSONPOOLIDX-1;
+}
+
+void freeRegisteredJson(void *p){
+	int i;
+	for (i = 0; i < JSONPOOLIDX; i++) {
+		if(JSON_POOL[i] == p){
+			JSON_POOL[i] = NULL;
+			json_value_free( (json_value*)p );
+			break;
+		}
+	}
+}
+
+int registerHandleClose(Handle handle){
+	int i;
+	for (i = 0; i < HANDLEPOOLIDX; i++) {
+		if(HANDLE_POOL[i] == 0){
+			HANDLE_POOL[i] = handle;
+			return i;
+		}
+	}
+	HANDLE_POOL[HANDLEPOOLIDX++] = handle;
+	return HANDLEPOOLIDX - 1;
+}
+
+void closeRegisteredHandle(Handle handle){
+	int i;
+	for (i = 0; i < HANDLEPOOLIDX; i++) {
+		if(HANDLE_POOL[i] == handle){
+			HANDLE_POOL[i] = 0;
+			SKY_handle_close(handle);
+			break;
+		}
+	}
 }
 
 void cleanupMem() {
   int i;
   void **ptr;
   for (i = MEMPOOLIDX, ptr = MEMPOOL; i; --i) {
-    free(*ptr++);
+	if( *ptr )
+		free(*ptr);
+	ptr++;
   }
   for (i = JSONPOOLIDX, ptr = (void*)JSON_POOL; i; --i) {
-    json_value_free(*ptr++);
+	if( *ptr )
+		json_value_free(*ptr);
+	ptr++;
+  }
+  for (i = 0; i < HANDLEPOOLIDX; i++) {
+	  if( HANDLE_POOL[i] )
+		SKY_handle_close(HANDLE_POOL[i]);
   }
 }
 

@@ -63,8 +63,10 @@ Test(api_cli_integration, TestStableShowConfig) {
 	
 	errcode = SKY_cli_LoadConfig( &configHandle );
 	cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
+	registerHandleClose( configHandle );
 	errcode = SKY_cli_NewApp( &configHandle, &appHandle );
 	cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
+	registerHandleClose( appHandle );
 	
 	//Redirect standard output to a pipe
 	redirectStdOut();
@@ -112,6 +114,7 @@ Test(api_cli_integration, TestStableShowConfig) {
 	}
 	json_value* json_golden = loadGoldenFile(golden_file);
 	cr_assert(json_golden != NULL, "loadGoldenFile failed");
+	registerJsonFree(json_golden);
 	int equal = compareJsonValues(value, json_golden);
 	cr_assert(equal, "Output from command different than expected");
 }

@@ -1085,3 +1085,95 @@ Test(api_integration, TestStableConfirmedTransactions) {
 		cr_assert( equal == 1, "SKY_api_Client_ConfirmedTransactions returned a value different than expected.");
 	}
 }
+
+Test(api_integration, TestStableUnconfirmedTransactions) {
+	int result, equal;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	char* addrs1[] = {
+		"abcd"
+	};
+	char* addrs2[] = {
+		"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947"
+	};
+	char* addrs3[] = {
+		"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk"
+	};
+	char* addrs4[] = {
+	};
+	test_transactions tests[] = {
+		{
+			NULL, addrs1, 1, 1
+		},
+		{
+			NULL, addrs2, 1, 1
+		},
+		{
+			NULL, addrs3, 1, 1
+		},
+		{
+			"empty-addrs-unconfirmed-txs.golden", addrs4, 0, 0
+		},
+	};
+	Handle transactionsHandle;
+	GoSlice strings;
+	int tests_count = sizeof(tests) / sizeof(test_transactions);
+	for(int i = 0; i < tests_count; i++){
+		memset( &strings, 0, sizeof(GoSlice) );
+		createGoStringSlice( tests[i].addresses, tests[i].addresses_count,
+							&strings);
+		result = SKY_api_Client_UnconfirmedTransactions( &clientHandle, 
+						strings, &transactionsHandle);
+		if( tests[i].failure ){
+			cr_assert( result != SKY_OK, "SKY_api_Client_UnconfirmedTransactions should have failed." );
+			continue;
+		}
+		cr_assert( result == SKY_OK, "SKY_api_Client_UnconfirmedTransactions failed" );
+		registerHandleClose( transactionsHandle );
+		equal = compareObjectWithGoldenFile( transactionsHandle, 
+										tests[i].golden_file );
+		cr_assert( equal == 1, "SKY_api_Client_UnconfirmedTransactions returned a value different than expected.");
+	}
+}
+
+Test(api_integration, TestStableResendUnconfirmedTransactions) {
+	int result, equal;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	Handle resendResultHandle;
+	result = SKY_api_Client_ResendUnconfirmedTransactions( 
+					&clientHandle, &resendResultHandle);
+	cr_assert( result == SKY_OK, "SKY_api_Client_ResendUnconfirmedTransactions failed" );
+	registerHandleClose( resendResultHandle );
+	
+	GoString_ jsonResult;
+	memset(&jsonResult, 0, sizeof(GoString_));
+	
+	result = SKY_JsonEncode_Handle(resendResultHandle, &jsonResult);
+	cr_assert(result == SKY_OK, "Couldn\'t json encode");
+	registerMemCleanup((void*)jsonResult.p);
+	
+	json_value* json = json_parse( (json_char*) jsonResult.p, 
+							strlen(jsonResult.p) );
+	cr_assert(json != NULL, "json_parse failed");
+	registerJsonFree( json );
+	json_value* json_txtIds = 
+		get_json_value_not_strict( json, "txids", json_array, 1);
+	cr_assert(json_txtIds != NULL, "Error in JSON result from SKY_api_Client_ResendUnconfirmedTransactions");
+	int length = 0;
+	if ( json_txtIds->type == json_array )//It maybe json_null
+		length = json_txtIds->u.array.length;
+	cr_assert(length == 0, "SKY_api_Client_ResendUnconfirmedTransactions should have returned an empty or null array of transactions");
+}

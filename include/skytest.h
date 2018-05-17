@@ -35,6 +35,9 @@ int compareJsonValues(json_value* value1, json_value* value2);
 
 json_value* get_json_value(json_value* node, const char* path,
 							json_type type);
+							
+json_value* get_json_value_not_strict(json_value* node, const char* path,
+							json_type type, int allow_null);
 														
 extern void toGoString(GoString_ *s, GoString *r);
 

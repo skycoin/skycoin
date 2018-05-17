@@ -20,6 +20,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/visor"
 	"encoding/json"
+	"sort"
 )
 
 type Handle uint64
@@ -287,6 +288,58 @@ func SKY_Handle_Blocks_GetCount(handle C.Handle,
 	if ok {
 		if obj, isOK := (obj).(*visor.ReadableBlocks); isOK {
 			*count = uint64(len(obj.Blocks))
+			return SKY_OK
+		}
+	}
+	return SKY_ERROR
+}
+
+//export SKY_Handle_Connections_GetCount
+func SKY_Handle_Connections_GetCount(handle C.Handle, 
+						count *uint64) uint32 {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*api.Connections); isOK {
+			*count = uint64(len(obj.Connections))
+			return SKY_OK
+		}
+	}
+	return SKY_ERROR
+}
+
+//export SKY_Handle_Strings_GetCount
+func SKY_Handle_Strings_GetCount(handle C.Handle, 
+						count *uint32) uint32 {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).([]string); isOK {
+			*count = uint32(len(obj))
+			return SKY_OK
+		}
+	}
+	return SKY_ERROR
+}
+
+//export SKY_Handle_Strings_Sort
+func SKY_Handle_Strings_Sort(handle C.Handle) uint32 {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).([]string); isOK {
+			sort.Strings(obj)
+			return SKY_OK
+		}
+	}
+	return SKY_ERROR
+}
+
+//export SKY_Handle_Strings_GetAt
+func SKY_Handle_Strings_GetAt(handle C.Handle, 
+						index int,
+						str *C.GoString_ ) uint32 {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).([]string); isOK {
+			copyString(obj[index], str);
 			return SKY_OK
 		}
 	}

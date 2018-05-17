@@ -618,20 +618,19 @@ typedef struct{
 	int 	 failure;	
 }test_blockn;
 
-Handle testBlocks(Client__Handle clientHandle, 
-				GoUint64 start, GoUint64 end){
-	Handle blocksHandle;
-	int result;
-	result = SKY_api_Client_Blocks(&clientHandle, start, end, &blocksHandle);
-	cr_assert(result == SKY_OK, "SKY_api_Client_Blocks failed");
-	registerHandleClose( blocksHandle );
+Handle testBlocksHandle(Client__Handle clientHandle,
+			Handle blocksHandle, GoUint64 start, GoUint64 end,
+			int checkIndexes){
 	GoUint64 count = 0;
+	int result;
 	result = SKY_Handle_Blocks_GetCount( blocksHandle, &count );
 	cr_assert(result == SKY_OK, "SKY_Handle_Blocks_GetCount failed");
-	if( start > end ){
-		cr_assert(count == 0);
-	} else {
-		cr_assert(count == end - start + 1);
+	if( checkIndexes ){
+		if( start > end ){
+			cr_assert(count == 0);
+		} else {
+			cr_assert(count == end - start + 1);
+		}
 	}
 	GoUint64 i;
 	GoString_ hash1, hash2, hash;
@@ -677,9 +676,11 @@ Handle testBlocks(Client__Handle clientHandle,
 		cr_assert( result == SKY_OK, "SKY_api_Client_BlockByHash failed");
 		registerHandleClose( blockHandle2 );
 		
-		result = SKY_Handle_Block_GetHeadSeq( blockHandle2, &seq );
-		cr_assert( result == SKY_OK, "SKY_Handle_Block_GetHeadSeq failed");
-		cr_assert(seq == i + start);
+		if( checkIndexes ){
+			result = SKY_Handle_Block_GetHeadSeq( blockHandle2, &seq );
+			cr_assert( result == SKY_OK, "SKY_Handle_Block_GetHeadSeq failed");
+			cr_assert(seq == i + start);
+		}
 		
 		equal = compareObjectsByHandle( blockHandle, blockHandle2 );
 		cr_assert( equal == 1);
@@ -690,7 +691,16 @@ Handle testBlocks(Client__Handle clientHandle,
 		if( previousBlockHandle > 0 )
 			closeRegisteredHandle( previousBlockHandle );
 	}
-	
+}
+
+Handle testBlocks(Client__Handle clientHandle, 
+				GoUint64 start, GoUint64 end){
+	Handle blocksHandle;
+	int result;
+	result = SKY_api_Client_Blocks(&clientHandle, start, end, &blocksHandle);
+	cr_assert(result == SKY_OK, "SKY_api_Client_Blocks failed");
+	registerHandleClose( blocksHandle );
+	testBlocksHandle( clientHandle, blocksHandle, start, end, 1 );
 	return blocksHandle;
 }
 
@@ -753,4 +763,104 @@ Test(api_integration, TestStableBlocks) {
 			closeRegisteredHandle( blocksHandle );
 		}
 	}
+}
+
+Test(api_integration, TestStableLastBlocks) {
+	int result, equal;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	Handle blocksHandle;
+	result = SKY_api_Client_LastBlocks( &clientHandle, 1, &blocksHandle);
+	cr_assert(result == SKY_OK, "SKY_api_Client_LastBlocks(1) failed");
+	registerHandleClose( blocksHandle );
+	
+	equal = compareObjectWithGoldenFile( blocksHandle, "block-last.golden");
+	cr_assert(equal == 1, "SKY_api_Client_LastBlocks(1) returned result different than expected");
+	closeRegisteredHandle( blocksHandle );	
+	
+	result = SKY_api_Client_LastBlocks( &clientHandle, 10, &blocksHandle);
+	cr_assert(result == SKY_OK, "SKY_api_Client_LastBlocks(10) failed");
+	registerHandleClose( blocksHandle );
+	testBlocksHandle( clientHandle, blocksHandle, 0, 0, 0);
+	
+	closeRegisteredHandle( blocksHandle );	
+}
+
+Test(api_integration, TestStableNetworkConnections) {
+	int result, equal;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	Handle connectionsHandle;
+	result = SKY_api_Client_NetworkConnections( &clientHandle, &connectionsHandle );
+	cr_assert(result == SKY_OK, "SKY_api_Client_NetworkConnections failed");
+	registerHandleClose( connectionsHandle );
+	
+	GoUint64 connectionsCount;
+	result = SKY_Handle_Connections_GetCount( connectionsHandle, &connectionsCount );
+	cr_assert(result == SKY_OK, "SKY_Handle_Connections_GetCount failed");
+	cr_assert( connectionsCount == 0 );
+	
+	char* pAddress = "127.0.0.1:4444";
+	GoString address = { pAddress, strlen(pAddress) };
+	Handle connectionHandle;
+	result = SKY_api_Client_NetworkConnection( &clientHandle, address, &connectionHandle );
+	cr_assert(result != SKY_OK, "SKY_api_Client_NetworkConnection should have failed");
+}
+
+Test(api_integration, TestNetworkDefaultConnections) {
+	int result, equal;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	Handle connectionsHandle;
+	result = SKY_api_Client_NetworkDefaultConnections( &clientHandle, &connectionsHandle );
+	cr_assert(result == SKY_OK, "SKY_api_Client_NetworkDefaultConnections failed");
+	registerHandleClose( connectionsHandle );
+	
+	result = SKY_Handle_Strings_Sort(connectionsHandle);
+	cr_assert(result == SKY_OK);
+	
+	equal = compareObjectWithGoldenFile( connectionsHandle, 
+				"network-default-connections.golden");
+	cr_assert(equal == 1);
+}
+
+Test(api_integration, TestNetworkTrustedConnections) {
+	int result, equal;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	Handle connectionsHandle;
+	result = SKY_api_Client_NetworkTrustedConnections( &clientHandle, &connectionsHandle );
+	cr_assert(result == SKY_OK, "SKY_api_Client_NetworkTrustedConnections failed");
+	registerHandleClose( connectionsHandle );
+	
+	result = SKY_Handle_Strings_Sort(connectionsHandle);
+	cr_assert(result == SKY_OK);
+	
+	equal = compareObjectWithGoldenFile( connectionsHandle, 
+				"network-trusted-connections.golden");
+	cr_assert(equal == 1);
 }

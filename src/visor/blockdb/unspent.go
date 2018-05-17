@@ -213,6 +213,8 @@ func NewUnspentPool() *Unspents {
 
 // MaybeBuildIndexes builds indexes if necessary
 func (up *Unspents) MaybeBuildIndexes(tx *dbutil.Tx) error {
+	logger.Info("Unspents.MaybeBuildIndexes")
+
 	// If the addr index is empty, build it
 	length, err := dbutil.Len(tx, UnspentPoolAddrIndexBkt)
 	if err != nil {
@@ -395,7 +397,7 @@ func (up *Unspents) GetUnspentsOfAddrs(tx *dbutil.Tx, addrs []cipher.Address) (c
 		if err != nil {
 			switch e := err.(type) {
 			case ErrUnspentNotExist:
-				logger.Critical().Error("Unspent hash %s indexed under address %s does not exist in unspent pool", e.UxID, addr.String())
+				logger.Critical().Errorf("Unspent hash %s indexed under address %s does not exist in unspent pool", e.UxID, addr.String())
 			}
 			return nil, err
 		}

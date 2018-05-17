@@ -68,7 +68,6 @@ func (c *CSRFStore) setToken(token CSRFToken) {
 // expired checks if token expiry time is greater than current time
 func (c *CSRFStore) expired() bool {
 	return c.token == nil || time.Now().After(c.token.ExpiresAt)
-
 }
 
 // verifyToken checks that the given token is same as the internal token
@@ -100,7 +99,7 @@ func (c *CSRFStore) verifyToken(headerToken string) error {
 }
 
 // Creates a new CSRF token. Previous CSRF tokens are invalidated by this call.
-// URI: /csrf
+// URI: /api/v1/csrf
 // Method: GET
 // Response:
 //  csrf_token: CSRF token to use in POST requests

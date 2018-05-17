@@ -90,18 +90,22 @@ type Config struct {
 	EnableGUI bool
 	// Disable CSRF check in the wallet API
 	DisableCSRF bool
-	// Enable /wallet/seed API endpoint
+	// Enable /api/v1/wallet/seed API endpoint
 	EnableSeedAPI bool
+	// Enable unversioned API endpoints (without the /api/v1 prefix)
+	EnableUnversionedAPI bool
 
 	// Only run on localhost and only connect to others on localhost
 	LocalhostOnly bool
 	// Which address to serve on. Leave blank to automatically assign to a
 	// public interface
 	Address string
-	//gnet uses this for TCP incoming and outgoing
+	// gnet uses this for TCP incoming and outgoing
 	Port int
-	//max outgoing connections to maintain
+	// Maximum outgoing connections to maintain
 	MaxOutgoingConnections int
+	// Maximum default outgoing connections
+	MaxDefaultPeerOutgoingConnections int
 	// How often to make outgoing connections
 	OutgoingConnectionsRate time.Duration
 	// PeerlistSize represents the maximum number of peers that the pex would maintain
@@ -186,8 +190,9 @@ func (c *Config) register() {
 	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
 	flag.BoolVar(&c.EnableWalletAPI, "enable-wallet-api", c.EnableWalletAPI, "Enable the wallet API")
 	flag.BoolVar(&c.EnableGUI, "enable-gui", c.EnableGUI, "Enable GUI")
+	flag.BoolVar(&c.EnableUnversionedAPI, "enable-unversioned-api", c.EnableUnversionedAPI, "Enable the deprecated unversioned API endpoints without /api/v1 prefix")
 	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable CSRF check")
-	flag.BoolVar(&c.EnableSeedAPI, "enable-seed-api", c.EnableSeedAPI, "enable /wallet/seed api")
+	flag.BoolVar(&c.EnableSeedAPI, "enable-seed-api", c.EnableSeedAPI, "enable /api/v1/wallet/seed api")
 	flag.StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
 
@@ -229,6 +234,7 @@ func (c *Config) register() {
 
 	flag.StringVar(&c.WalletDirectory, "wallet-dir", c.WalletDirectory, "location of the wallet files. Defaults to ~/.skycoin/wallet/")
 	flag.IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", c.MaxOutgoingConnections, "The maximum outgoing connections allowed")
+	flag.IntVar(&c.MaxDefaultPeerOutgoingConnections, "max-default-peer-outgoing-connections", c.MaxDefaultPeerOutgoingConnections, "The maximum default peer outgoing connections allowed")
 	flag.IntVar(&c.PeerlistSize, "peerlist-size", c.PeerlistSize, "The peer list size")
 	flag.DurationVar(&c.OutgoingConnectionsRate, "connection-rate", c.OutgoingConnectionsRate, "How often to make an outgoing connection")
 	flag.BoolVar(&c.LocalhostOnly, "localhost-only", c.LocalhostOnly, "Run on localhost and only connect to localhost peers")
@@ -252,6 +258,8 @@ var devConfig = Config{
 	EnableWalletAPI: false,
 	// Enable GUI
 	EnableGUI: false,
+	// Enable unversioned API
+	EnableUnversionedAPI: false,
 	// Enable seed API
 	EnableSeedAPI: false,
 	// Disable CSRF check in the wallet API
@@ -265,8 +273,10 @@ var devConfig = Config{
 	Port: 6000,
 	// MaxOutgoingConnections is the maximum outgoing connections allowed.
 	MaxOutgoingConnections: 16,
-	DownloadPeerList:       false,
-	PeerListURL:            "https://downloads.skycoin.net/blockchain/peers.txt",
+	// MaxDefaultOutgoingConnections is the maximum default outgoing connections allowed.
+	MaxDefaultPeerOutgoingConnections: 1,
+	DownloadPeerList:                  false,
+	PeerListURL:                       "https://downloads.skycoin.net/blockchain/peers.txt",
 	// How often to make outgoing connections, in seconds
 	OutgoingConnectionsRate: time.Second * 5,
 	PeerlistSize:            65535,
@@ -429,14 +439,15 @@ func createGUI(c *Config, d *daemon.Daemon, host string) (*api.Server, error) {
 	var err error
 
 	config := api.Config{
-		StaticDir:       c.GUIDirectory,
-		DisableCSRF:     c.DisableCSRF,
-		EnableWalletAPI: c.EnableWalletAPI,
-		EnableJSON20RPC: c.RPCInterface,
-		EnableGUI:       c.EnableGUI,
-		ReadTimeout:     c.ReadTimeout,
-		WriteTimeout:    c.WriteTimeout,
-		IdleTimeout:     c.IdleTimeout,
+		StaticDir:            c.GUIDirectory,
+		DisableCSRF:          c.DisableCSRF,
+		EnableWalletAPI:      c.EnableWalletAPI,
+		EnableJSON20RPC:      c.RPCInterface,
+		EnableGUI:            c.EnableGUI,
+		EnableUnversionedAPI: c.EnableUnversionedAPI,
+		ReadTimeout:          c.ReadTimeout,
+		WriteTimeout:         c.WriteTimeout,
+		IdleTimeout:          c.IdleTimeout,
 	}
 
 	if c.WebInterfaceHTTPS {
@@ -500,6 +511,13 @@ func initProfiling(httpProf, profileCPU bool, profileCPUFile string) {
 func configureDaemon(c *Config) daemon.Config {
 	//cipher.SetAddressVersion(c.AddressVersion)
 	dc := daemon.NewConfig()
+
+	for _, c := range DefaultConnections {
+		dc.Pool.DefaultPeerConnections[c] = struct{}{}
+	}
+
+	dc.Pool.MaxDefaultPeerOutgoingConnections = c.MaxDefaultPeerOutgoingConnections
+
 	dc.Pex.DataDirectory = c.DataDirectory
 	dc.Pex.Disabled = c.DisablePEX
 	dc.Pex.Max = c.PeerlistSize

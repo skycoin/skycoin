@@ -569,3 +569,188 @@ Test(api_integration, TestStableUxOut) {
 	int equal = compareObjectWithGoldenFile(uxOutHandle, golden_file);
 	cr_assert(equal, "SKY_api_Client_UxOut returned unexpected result");
 }
+
+typedef struct{
+	char* 	address;
+	char*	golden_file;
+	int 	failure;
+}test_address_ux_out;
+
+Test(api_integration, TestStableAddressUxOuts) {
+	int result;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	int tests_count = 3; 
+	test_address_ux_out tests[] = {
+		{"", NULL, 1},
+		{"prRXwTcDK24hs6AFxj69UuWae3LzhrsPW9", "uxout-noaddr.golden", 0},
+		{"2THDupTBEo7UqB6dsVizkYUvkKq82Qn4gjf", "uxout-addr.golden", 0},
+		
+	};
+	GoString addr;
+	for(int i = 0; i < tests_count; i++){
+		memset(&addr, 0, sizeof(GoString));
+		addr.p = tests[i].address;
+		addr.n = strlen( tests[i].address );
+		Handle outHandle;
+		result = SKY_api_Client_AddressUxOuts( &clientHandle, addr, &outHandle );
+		if( tests[i].failure ){
+			cr_assert(result != SKY_OK, "SKY_api_Client_AddressUxOuts should have failed");
+			continue;
+		} else {
+			cr_assert(result == SKY_OK, "SKY_api_Client_AddressUxOuts failed");
+		}
+		registerHandleClose( outHandle );
+		int equal = compareObjectWithGoldenFile( outHandle, tests[i].golden_file );
+		cr_assert( equal == 1 );
+	}
+}
+
+typedef struct{
+	char* golden_file;
+	GoUint64 start;
+	GoUint64 end;
+	int 	 failure;	
+}test_blockn;
+
+Handle testBlocks(Client__Handle clientHandle, 
+				GoUint64 start, GoUint64 end){
+	Handle blocksHandle;
+	int result;
+	result = SKY_api_Client_Blocks(&clientHandle, start, end, &blocksHandle);
+	cr_assert(result == SKY_OK, "SKY_api_Client_Blocks failed");
+	registerHandleClose( blocksHandle );
+	GoUint64 count = 0;
+	result = SKY_Handle_Blocks_GetCount( blocksHandle, &count );
+	cr_assert(result == SKY_OK, "SKY_Handle_Blocks_GetCount failed");
+	if( start > end ){
+		cr_assert(count == 0);
+	} else {
+		cr_assert(count == end - start + 1);
+	}
+	GoUint64 i;
+	GoString_ hash1, hash2, hash;
+	GoString _hash;
+	GoUint64 seq;
+	int equal;
+	for(i = 0; i < count; i++){
+		Handle blockHandle = 0, previousBlockHandle = 0;
+		Handle blockHandle2;
+		result = SKY_Handle_Blocks_GetAt(blocksHandle, i, &blockHandle);
+		cr_assert( result == SKY_OK, "Error getting block from blocks handle" );
+		registerHandleClose( blockHandle );
+		if( i > 0 ){
+			memset(&hash1, 0, sizeof(GoString_));
+			memset(&hash2, 0, sizeof(GoString_));
+			memset(&hash, 0, sizeof(GoString_));
+			result = SKY_Handle_Blocks_GetAt(blocksHandle, i - 1, 
+								&previousBlockHandle);
+			cr_assert( result == SKY_OK, "Error getting previous block from blocks handle" );
+			registerHandleClose( previousBlockHandle );
+			
+			result = SKY_Handle_Block_GetHeadHash(previousBlockHandle, &hash1);
+			cr_assert( result == SKY_OK, "Error getting previous block hash");
+			registerMemCleanup( (void*)hash1.p );
+			result = SKY_Handle_Block_GetPreviousBlockHash(blockHandle, &hash2);
+			cr_assert( result == SKY_OK, "Error getting previous block hash");
+			registerMemCleanup( (void*)hash2.p );
+			
+			cr_assert(eq(type(GoString_), hash1, hash2));
+			freeRegisteredMemCleanup( (void*)hash1.p );
+			freeRegisteredMemCleanup( (void*)hash2.p );
+			
+		}
+		
+		result = SKY_Handle_Block_GetHeadHash(blockHandle, &hash);
+		cr_assert( result == SKY_OK, "Error getting previous block hash");
+		registerMemCleanup( (void*)hash.p );
+		
+		_hash.p = hash.p;
+		_hash.n = hash.n;
+		result = SKY_api_Client_BlockByHash(&clientHandle, 
+			_hash, &blockHandle2);
+		cr_assert( result == SKY_OK, "SKY_api_Client_BlockByHash failed");
+		registerHandleClose( blockHandle2 );
+		
+		result = SKY_Handle_Block_GetHeadSeq( blockHandle2, &seq );
+		cr_assert( result == SKY_OK, "SKY_Handle_Block_GetHeadSeq failed");
+		cr_assert(seq == i + start);
+		
+		equal = compareObjectsByHandle( blockHandle, blockHandle2 );
+		cr_assert( equal == 1);
+		
+		freeRegisteredMemCleanup( (void*)hash.p );
+		closeRegisteredHandle( blockHandle );
+		closeRegisteredHandle( blockHandle2 );
+		if( previousBlockHandle > 0 )
+			closeRegisteredHandle( previousBlockHandle );
+	}
+	
+	return blocksHandle;
+}
+
+Test(api_integration, TestStableBlocks) {
+	int result;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	Handle progressHandle;
+	result = SKY_api_Client_BlockchainProgress(&clientHandle, &progressHandle);
+	cr_assert(result == SKY_OK, "SKY_api_Client_BlockchainProgress failed");
+	registerHandleClose( progressHandle );
+	GoUint64 lastNBlocks = 10;
+	GoUint64 current;
+	result = SKY_Handle_Progress_GetCurrent( progressHandle, &current );
+	cr_assert(result == SKY_OK, "SKY_Handle_Progress_GetCurrent failed");
+	cr_assert( current > lastNBlocks + 1, "Progress current must be greater than 10" );
+	int tests_count = 7;
+	test_blockn tests[] = {
+		{
+			"blocks-first-10.golden", 1, 10, 0
+		},
+		{
+			"blocks-last-10.golden", current - lastNBlocks, current, 0
+		},
+		{
+			"blocks-first-1.golden", 1, 1, 0
+		},
+		{
+			"blocks-all.golden", 0, current, 0
+		},
+		{
+			"blocks-end-less-than-start.golden", 10, 9, 0
+		},
+		{
+			NULL, -10, 9, 1
+		},
+		{
+			NULL, 10, -9, 1
+		},
+	};
+	Handle blocksHandle;
+	int equal;
+	for(int i = 0; i < tests_count; i++){
+		if( tests[i].failure ){
+			result = SKY_api_Client_Blocks(&clientHandle, 
+					tests[i].start, tests[i].end, &blocksHandle);
+			cr_assert(result != SKY_OK, "SKY_api_Client_Blocks should have failed");
+		} else {
+			blocksHandle = testBlocks(clientHandle, 
+					tests[i].start, tests[i].end);
+			equal = compareObjectWithGoldenFile(blocksHandle, 
+										tests[i].golden_file);
+			cr_assert(equal == 1, "SKY_api_Client_Blocks returned a value different than expected.");
+			closeRegisteredHandle( blocksHandle );
+		}
+	}
+}

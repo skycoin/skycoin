@@ -315,7 +315,7 @@ func SKY_api_Client_UxOut(_c *C.Client__Handle, _uxID string, _arg1 *C.Handle) (
 }
 
 //export SKY_api_Client_AddressUxOuts
-func SKY_api_Client_AddressUxOuts(_c *C.Client__Handle, _addr string, _arg1 *C.GoSlice_) (____error_code uint32) {
+func SKY_api_Client_AddressUxOuts(_c *C.Client__Handle, _addr string, _arg1 *C.Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -329,7 +329,7 @@ func SKY_api_Client_AddressUxOuts(_c *C.Client__Handle, _addr string, _arg1 *C.G
 	__arg1, ____return_err := c.AddressUxOuts(addr)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		copyToGoSlice(reflect.ValueOf(__arg1), _arg1)
+		*_arg1 = registerHandle(__arg1)
 	}
 	return
 }

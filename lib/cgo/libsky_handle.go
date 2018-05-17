@@ -250,8 +250,8 @@ func SKY_Handle_Block_GetHeadHash(handle C.Handle, hash *C.GoString_) uint32 {
 		if obj, isOK := (obj).(*visor.ReadableBlock); isOK {
 			copyString(obj.Head.BlockHash, hash)
 			return SKY_OK
-		}
-	}
+		} 
+	} 
 	return SKY_ERROR
 }
 
@@ -266,3 +266,30 @@ func SKY_Handle_Block_GetPreviousBlockHash(handle C.Handle, hash *C.GoString_) u
 	}
 	return SKY_ERROR
 }
+
+//export SKY_Handle_Blocks_GetAt
+func SKY_Handle_Blocks_GetAt(handle C.Handle, 
+						index uint64, blockHandle *C.Handle) uint32 {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*visor.ReadableBlocks); isOK {
+			*blockHandle = registerHandle(&obj.Blocks[index])
+			return SKY_OK
+		}
+	}
+	return SKY_ERROR
+}
+
+//export SKY_Handle_Blocks_GetCount
+func SKY_Handle_Blocks_GetCount(handle C.Handle, 
+						count *uint64) uint32 {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*visor.ReadableBlocks); isOK {
+			*count = uint64(len(obj.Blocks))
+			return SKY_OK
+		}
+	}
+	return SKY_ERROR
+}
+

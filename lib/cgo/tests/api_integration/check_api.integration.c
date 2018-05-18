@@ -22,7 +22,7 @@
 #define JSON_BIG_FILE_SIZE 32768
 #define TEST_DATA_DIR "src/api/integration/testdata/"
 
-//TestSuite(api_integration, .init = setup, .fini = teardown);
+TestSuite(api_integration, .init = setup, .fini = teardown);
 
 char* getNodeAddress(){
 	if( STABLE ){

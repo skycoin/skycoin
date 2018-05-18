@@ -248,13 +248,9 @@ json_value* loadJsonFile(const char* filename){
 
 void setup(void) {
 	srand ((unsigned int) time (NULL));
-	/*int x, y;
-	y = 0;
-	x = 7 / y;*/
 }
 
 void teardown(void) {
-	printf("\n****************Cleaning up****\n");
 	cleanupMem();
 }
 

@@ -2,174 +2,211 @@ package main
 
 import (
 	"bytes"
-	"encoding/base64"
-	"encoding/hex"
-	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"os"
-	"path"
-	"runtime"
+	"path/filepath"
+	"sync"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/go-bip39"
 	"github.com/skycoin/skycoin/src/cipher/testsuite"
+	"github.com/skycoin/skycoin/src/util/file"
 )
 
-var (
-	hashesCount             int
-	hashSize                int
-	seedsCount              int
-	shortSeedAddressesCount int
-	longSeedAddressesCount  int
-	testDataDir             string
-	inputData               *testsuite.InputData
-	inputDataFilename       string
+const (
+	inputTestDataFilename = "input-hashes.golden"
+	manyAddressesFilename = "many-addresses.golden"
+	seedFilenameFormat    = "seed-%04d.golden"
+	randomSeedLength      = 1024
 )
+
+var help = fmt.Sprintf(`cipher-testdata generates testdata to be used by the cipher test suite in src/cipher/testsuite.
+
+A file named %s will be generated,
+which contains a list of hex-encoded hashes to sign.
+This list of hashes will always include a hash whose bytes are all 0x00,
+and a hash whose bytes are all 0xFF.
+
+Multiple files named seed-{num}.json will be generated.
+Each of these files contains a seed, a number of secret keys,
+public keys and addresses generated from this seed.
+For each secret key, each hash from inputs will be signed,
+and the result saved to the file.
+Half of the seeds will be generated as SHA256(RandByte(1024)) and half will
+be generated as bip39 seeds. Seeds are base64 encoded in the JSON file.
+
+A seed of length 1 is always generated,
+in addition to the requested number of seeds.
+
+A file named %s will be generated,
+which contains a seed and a number of secret keys,
+public keys and addresses generated from this seed.
+The number of secret keys generated is much larger than for the other seeds.
+This file is used to test deterministic key generation more thoroughly.
+This file will not contain any signatures,
+because the filesize would be too large.`, inputTestDataFilename, manyAddressesFilename)
 
 type job struct {
-	jobID          int
-	seed           string
-	addressesCount int
+	jobID        int
+	seed         []byte
+	addressCount int
 }
 
 func init() {
-	testDataDir = path.Join(os.Getenv("GOPATH"),
-		"/src/github.com/skycoin/skycoin/cmd/cipher-testdata/testdata/")
-	inputDataFilename = path.Join(testDataDir, "inputData.golden")
+	flag.Usage = func() {
+		fmt.Fprintf(flag.CommandLine.Output(), "%s\n\nUsage of %s:\n", help, os.Args[0])
+		flag.PrintDefaults()
+	}
 }
 
 func main() {
 	var j job
-	flag.IntVar(&hashesCount, "hashesCount", 10, "count of hashes for inputData.golden")
-	flag.IntVar(&hashSize, "hashSize", 32, "generating hash size for inputData.golden")
-	flag.IntVar(&seedsCount, "seedsCount", 10, "count of seeds to generate. equals `seed-n.golden` files count")
-	flag.IntVar(&shortSeedAddressesCount, "shortSeedAddressesCount", 10, "count of addresses when seed has 1 byte length")
-	flag.IntVar(&longSeedAddressesCount, "longSeedAddressesCount", 1000, "count of addresses when seed has 1000 byte length")
-	genInputData := flag.Bool("i", false, "Generate inputData.golden")
-	genSeedData := flag.Bool("s", false, "Generate seed-$n.golden")
+
+	var seedsCount int
+	flag.IntVar(&seedsCount, "seeds", 10, "number of seeds to generate")
+	inputsCount := flag.Int("hashes", 8, "number of random hashes for input-hashes.golden")
+	addressCount := flag.Int("addresses", 10, "number of addresses to generate per seed")
+	manyAddressesCount := flag.Int("many-addresses", 1000, "number of addresses to generate for the single many-addresses test data")
+	outputDir := flag.String("dir", "./testdata", "output directory")
+
 	flag.Parse()
-	if *genInputData {
-		generateInputData(inputDataFilename)
+
+	fmt.Println("Creating output directory", *outputDir)
+
+	// Create the output directory
+	if err := os.MkdirAll(*outputDir, 0755); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
-	if *genSeedData {
-		inputData = testsuite.ReadInputData(inputDataFilename)
-		jobs := make(chan job, seedsCount)
-		results := make(chan bool, seedsCount)
-		// generate in parallel to improve speed
-		for i := 0; i < runtime.NumCPU(); i++ {
-			go worker(jobs, results)
-		}
-		// generate seed with 1 byte length
+
+	fmt.Println("Generating", manyAddressesFilename)
+
+	// Generate the many-addresses testdata
+	manyAddressesData := generateSeedTestData(job{
+		seed:         []byte(bip39.MustNewDefaultMnemonic()),
+		addressCount: *manyAddressesCount,
+	})
+	fn := filepath.Join(*outputDir, manyAddressesFilename)
+	if err := file.SaveJSON(fn, manyAddressesData.ToJSON(), 0644); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	fmt.Println("Generating", inputTestDataFilename)
+
+	// Create the input hashes used for signing
+	inputs := generateInputTestData(*inputsCount)
+	fn = filepath.Join(*outputDir, inputTestDataFilename)
+	if err := file.SaveJSON(fn, inputs.ToJSON(), 0644); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	fmt.Println("Generating seed data times", seedsCount)
+
+	jobs := make([]job, 0, seedsCount+1)
+
+	// Generate seed with 1 byte length
+	jobs = append(jobs, job{
+		seed:         cipher.RandByte(1),
+		addressCount: *addressCount,
+	})
+
+	// Generate random and mnemonic seeds
+	for i := 0; i < seedsCount; i++ {
 		j = job{
-			jobID:          0,
-			seed:           hex.EncodeToString(cipher.RandByte(1)),
-			addressesCount: shortSeedAddressesCount,
+			addressCount: *addressCount,
 		}
-		jobs <- j
 
-		for generatedCount := 1; generatedCount < seedsCount; generatedCount++ {
-			j = job{
-				jobID:          generatedCount,
-				addressesCount: longSeedAddressesCount,
-			}
-			// separate seed generation type
-			if generatedCount > int(seedsCount/2) {
-				seed, err := bip39.NewDefaultMnemomic()
-				if err != nil {
-					log.Panicf("failed generate seed bip39.NewDefaultMnemomic(). err: %v", err)
-				}
-				j.seed = base64.RawStdEncoding.EncodeToString([]byte(seed))
-			} else {
-				j.seed = base64.RawStdEncoding.EncodeToString([]byte(cipher.SumSHA256(cipher.RandByte(1024)).Hex()))
-			}
-			jobs <- j
+		if i%2 == 0 {
+			j.seed = []byte(bip39.MustNewDefaultMnemonic())
+		} else {
+			hash := cipher.SumSHA256(cipher.RandByte(randomSeedLength))
+			j.seed = hash[:]
 		}
-		close(jobs)
-		resultsCount := 0
-		for range results {
-			resultsCount++
-			if resultsCount >= seedsCount {
-				break
+
+		jobs = append(jobs, j)
+	}
+
+	seedTestData := make(chan *testsuite.SeedTestData, len(jobs))
+	writeDone := make(chan struct{})
+
+	go func() {
+		defer close(writeDone)
+
+		var i int
+		for data := range seedTestData {
+			filename := filepath.Join(*outputDir, fmt.Sprintf(seedFilenameFormat, i))
+			if err := file.SaveJSON(filename, data.ToJSON(), 0644); err != nil {
+				fmt.Println(err)
+				os.Exit(1)
 			}
+			i++
 		}
+	}()
+
+	var wg sync.WaitGroup
+	wg.Add(len(jobs))
+	for i, j := range jobs {
+		j.jobID = i
+		go func() {
+			defer wg.Done()
+			data := generateSeedTestData(j)
+			signSeedTestData(data, inputs.Hashes)
+			seedTestData <- data
+		}()
+	}
+	wg.Wait()
+
+	close(seedTestData)
+
+	<-writeDone
+}
+
+func generateInputTestData(inputsCount int) *testsuite.InputTestData {
+	var hashes []cipher.SHA256
+
+	// Add a hash which is all zeroes
+	hashes = append(hashes, cipher.SumSHA256(bytes.Repeat([]byte{0}, 32)))
+	// Add a hash which is all ones
+	hashes = append(hashes, cipher.SumSHA256(bytes.Repeat([]byte{1}, 32)))
+
+	for i := 0; i < inputsCount; i++ {
+		hashes = append(hashes, cipher.SumSHA256(cipher.RandByte(32)))
+	}
+
+	return &testsuite.InputTestData{
+		Hashes: hashes,
 	}
 }
 
-func generateInputData(filename string) {
-	inputData := testsuite.InputData{
-		Hashes: make([]string, 0),
-	}
-	inputData.Hashes = append(inputData.Hashes, cipher.SumSHA256(bytes.Repeat([]byte{0}, hashSize)).Hex())
-	inputData.Hashes = append(inputData.Hashes, cipher.SumSHA256(bytes.Repeat([]byte{1}, hashSize)).Hex())
-	for i := 0; i < hashesCount-2; i++ {
-		inputData.Hashes = append(inputData.Hashes, cipher.SumSHA256(cipher.RandByte(hashSize)).Hex())
-	}
-	contentJSON, err := json.MarshalIndent(inputData, "", "\t")
-	if err != nil {
-		log.Panicf("failed encode inputData. err: %v", err)
-	}
-	err = ioutil.WriteFile(filename, contentJSON, 0644)
-	if err != nil {
-		log.Panicf("failed to write into file. err: %v", err)
-	}
-}
-
-func worker(jobs <-chan job, results chan<- bool) {
-	for j := range jobs {
-		summary := make(map[string]int)
-		data := &testsuite.SeedSignature{
-			Seed: j.seed,
-			Keys: make([]*testsuite.SeedData, 0),
-		}
-		log.Printf("job %v/%v\n", j.jobID, seedsCount-1)
-
-		// generate signatures for a part of cases to prevent large .golden files
-		for i := 0; i < j.addressesCount; i++ {
-			seedData := generateSeedData([]byte(j.seed), j.addressesCount <= 10 || i < int(j.addressesCount/2))
-			summary[seedData.Public]++
-			summary[seedData.Secret]++
-			summary[seedData.Address]++
-			data.Keys = append(data.Keys, seedData)
-		}
-		// check that all public/secret/address values are equal
-		for k, v := range summary {
-			if v != j.addressesCount {
-				log.Panicf("generated values are not equal to previous public/secret/address values. key: %v, count: %v", k, v)
-			}
-		}
-		filename := path.Join(testDataDir, fmt.Sprintf("seed-%d.golden", j.jobID))
-		contentJSON, err := json.MarshalIndent(data, "", "\t")
-		if err != nil {
-			log.Panicf("failed encode inputData. err: %v", err)
-		}
-		err = ioutil.WriteFile(filename, contentJSON, 0644)
-		if err != nil {
-			log.Panicf("failed to write into file. err: %v", err)
-		}
-		results <- true
-	}
-}
-
-func generateSeedData(seed []byte, generateSignatures bool) *testsuite.SeedData {
-	secretKey, publicKey, addr := testsuite.GenerateSecPubAddress(seed)
-	data := &testsuite.SeedData{
-		Signatures: make([]string, 0),
-		Public:     publicKey.Hex(),
-		Secret:     secretKey.Hex(),
-		Address:    addr.String(),
+func generateSeedTestData(j job) *testsuite.SeedTestData {
+	data := &testsuite.SeedTestData{
+		Seed: j.seed,
+		Keys: make([]testsuite.KeysTestData, j.addressCount),
 	}
 
-	if generateSignatures {
-		for _, hash := range inputData.Hashes {
-			shaHash, err := cipher.SHA256FromHex(hash)
-			if err != nil {
-				log.Panicf("failed decode string. err: %v", err)
-			}
-			data.Signatures = append(data.Signatures, cipher.SignHash(shaHash, secretKey).Hex())
-		}
+	keys := cipher.GenerateDeterministicKeyPairs(j.seed, j.addressCount)
+
+	for i, s := range keys {
+		data.Keys[i].Secret = s
+
+		p := cipher.PubKeyFromSecKey(s)
+		data.Keys[i].Public = p
+
+		addr := cipher.AddressFromPubKey(p)
+		data.Keys[i].Address = addr
 	}
+
 	return data
+}
+
+func signSeedTestData(data *testsuite.SeedTestData, hashes []cipher.SHA256) {
+	for i := range data.Keys {
+		for _, h := range hashes {
+			sig := cipher.SignHash(h, data.Keys[i].Secret)
+			data.Keys[i].Signatures = append(data.Keys[i].Signatures, sig)
+		}
+	}
 }

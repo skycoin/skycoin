@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Added
+
 - Add environment variable `DATA_DIR` in CLI's
 - `USE_CSRF` environment variable for CLI, if the remote node has CSRF enabled (CSRF is enabled by default, use `-disable-csrf` to disable)
 - `cli showConfig` command to echo the cli's configuration back to the user
@@ -23,6 +24,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `-verify-db` option (default true), will verify the database integrity during startup and exit if a problem is found
 - `-reset-corrupt-db` option (default false) will verify the database integrity during startup and reset the db if a problem is found
 - `GET /explorer/address`: add `fee` to transaction objects and `calculated_hours` to transaction inputs
+- Test data generator and test suite for verification of alternative `cipher` implementations
 
 ### Fixed
 

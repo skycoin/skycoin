@@ -876,9 +876,9 @@ To control which addresses to spend from, specify `wallet.addresses`.
 A subset of the unspent outputs associated with these addresses will be chosen for spending,
 based upon an internal selection algorithm.
 
-To control which unspent outputs to spend, specify `wallet.uxouts`.
-All unspent outputs in `wallet.uxouts` will be included in the final transaction;
-the selection algorithm will not choose a subset of them.
+To control which unspent outputs to spend from, specify `wallet.uxouts`.
+A subset of these unspent outputs will be chosen for spending,
+based upon an internal selection algorithm.
 
 `wallet.addresses` and `wallets.uxouts` cannot be combined.
 

@@ -1996,13 +1996,6 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 	require.NotEmpty(t, walletOutputs)
 	require.NotEmpty(t, nonWalletOutputs)
 
-	require.NotEqual(t, 1, len(walletOutputs), `
-     The 'valid request, uxouts provided' test requires excess wallet uxouts
-     to verify that all requested uxouts are used, and a subset is not chosen from them.
-     There is only one uxout in this wallet, so that test will pass without
-     actually testing the requirements.
-     You should create more outputs in the wallet and run this test again.`)
-
 	unknownOutput := testutil.RandSHA256(t)
 
 	toDropletString := func(i uint64) string {
@@ -2192,22 +2185,6 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 				// NOTE: change omitted,
 				// change is too difficult to predict in this case, we are
 				// just checking that not all uxouts get spent in the transaction
-			},
-			additionalRespVerify: func(t *testing.T, r *api.CreateTransactionResponse) {
-				// The "valid request, uxouts specified" test verifies that all
-				// specified uxouts are spent, and are not chosen from.
-				// Here, we detect if we would have to choose all unspents anyway,
-				// in order to satisfy the spend constraints.
-				// This failure does not mean this test is failing, but it means
-				// that the "valid request, uxouts specified" test was useless,
-				// and the operator should create more unspents in their wallet
-				fmt.Printf("Len In %d, len output hashes %d\n", len(r.Transaction.In), len(walletOutputHashes))
-				require.True(t, len(r.Transaction.In) < len(walletOutputHashes), `
-                The 'valid request, uxouts provided' test requires excess wallet uxouts
-                to verify that all requested uxouts are used, and a subset is not chosen from them.
-                All uxouts in this wallet will chosen to be spent anyway, so that test will pass
-                without actually testing the requirements.
-                You should create more outputs in the wallet and run this test again.`)
 			},
 		},
 

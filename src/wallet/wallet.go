@@ -1044,8 +1044,6 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 		return nil, nil, err
 	}
 
-	logger.Critical().Infof("wallet, len(params.Wallet.UxOuts) %d", len(params.Wallet.UxOuts))
-
 	if params.Wallet.ID != w.Filename() {
 		return nil, nil, NewError(errors.New("params.Wallet.ID does not match wallet"))
 	}
@@ -1068,9 +1066,6 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 
 	// Determine which unspents to spend
 	uxa := auxs.Flatten()
-
-	logger.Critical().Infof("len(auxs) %d", len(auxs))
-	logger.Critical().Infof("len(uxa) %d", len(uxa))
 
 	uxb, err := NewUxBalances(headTime, uxa)
 	if err != nil {
@@ -1101,29 +1096,12 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 		}
 	}
 
-	// If specific outputs were requested, then use all of them.
-	// Otherwise, choose which outputs to spend
-	var spends []UxBalance
-	if len(params.Wallet.UxOuts) != 0 {
-		logger.Critical().Infof("wallet again, len(params.Wallet.UxOuts) %d", len(params.Wallet.UxOuts))
-		logger.Critical().Info("Not choosing spends, uxouts specified")
-		spends = make([]UxBalance, len(uxb))
-		copy(spends[:], uxb[:])
-	} else {
-		// Use the MinimizeUxOuts strategy, to use least possible uxouts
-		// this will allow more frequent spending
-		// we don't need to check whether we have sufficient balance beforehand as ChooseSpends already checks that
-		logger.Critical().Info("Choosing spends")
-		spends, err = ChooseSpendsMinimizeUxOuts(uxb, totalOutCoins, requestedHours)
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-
-	logger.Critical().Infof("len(spends) %d, len(uxb) %d", len(spends), len(uxb))
-
-	for _, b := range uxb {
-		logger.Critical().Infof("%+v", b)
+	// Use the MinimizeUxOuts strategy, to use least possible uxouts
+	// this will allow more frequent spending
+	// we don't need to check whether we have sufficient balance beforehand as ChooseSpends already checks that
+	spends, err := ChooseSpendsMinimizeUxOuts(uxb, totalOutCoins, requestedHours)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	// calculate total coins and hours in spends
@@ -1209,16 +1187,12 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 	// Make sure we have enough coins and coin hours
 	// If we don't, and we called ChooseSpends, then ChooseSpends has a bug, as it should have returned this error already
 	if totalOutCoins > totalInputCoins {
-		if len(params.Wallet.UxOuts) == 0 {
-			logger.WithError(ErrInsufficientBalance).Error("Insufficient coins after choosing spends, this should not occur")
-		}
+		logger.WithError(ErrInsufficientBalance).Error("Insufficient coins after choosing spends, this should not occur")
 		return nil, nil, ErrInsufficientBalance
 	}
 
 	if totalOutHours > remainingHours {
-		if len(params.Wallet.UxOuts) == 0 {
-			logger.WithError(fee.ErrTxnInsufficientCoinHours).Error("Insufficient hours after choosing spends or distributing hours, this should not occur")
-		}
+		logger.WithError(fee.ErrTxnInsufficientCoinHours).Error("Insufficient hours after choosing spends or distributing hours, this should not occur")
 		return nil, nil, fee.ErrTxnInsufficientCoinHours
 	}
 

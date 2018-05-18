@@ -14,7 +14,7 @@
 #define INHEX "813925AF112AAB8243F8CCBADE4CC7F63DF387263028DE6E679232A73A7F3C31"
 #define EXPHEX "7F586430EA30F914965770F6098E492699C62EE1DF6CAFFA77681C179FDF3117"
 
-
+TestSuite(cipher_secp256k1_field, .init = setup, .fini = teardown);
 
 Test(cipher_secp256k1_field, TestFieldInv){
 	secp256k1go__Field in;

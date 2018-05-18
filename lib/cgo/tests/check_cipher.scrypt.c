@@ -13,6 +13,8 @@
 
 #define BUFFER_SIZE 1024
 
+TestSuite(cipher_scrypt, .init = setup, .fini = teardown);
+
 typedef struct {
 	char* 		password;
 	char* 		salt;

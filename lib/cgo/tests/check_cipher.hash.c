@@ -19,6 +19,8 @@ void freshSumSHA256(GoSlice bytes, cipher__SHA256 *sha256){
   SKY_cipher_SumSHA256(bytes, sha256);
 }
 
+TestSuite(cipher, .init = setup, .fini = teardown);
+
 Test(cipher,TestHashRipemd160){
   cipher__Ripemd160 tmp;
   cipher__Ripemd160 r;

@@ -17,6 +17,7 @@
 #define JSON_BIG_FILE_SIZE 32768
 #define TEST_DATA_DIR "src/cli/integration/testdata/"
 
+TestSuite(api_cli_integration, .init = setup, .fini = teardown);
 
 int useCSRF(){
 	GoUint32 errcode;

@@ -19,7 +19,7 @@
 #define BUFFER_SIZE 1024
 #define SCRYPTCHACHA20METALENGTHSIZE 2
 
-
+TestSuite(cipher_encrypt_scrypt_chacha20poly1305, .init = setup, .fini = teardown);
 
 void parseJsonMetaData(char* metadata, int* n, int* r, int* p, int* keyLen){
 	*n = *r = *p = *keyLen = 0;

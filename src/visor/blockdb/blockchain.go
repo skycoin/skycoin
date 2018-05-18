@@ -63,7 +63,7 @@ type BlockSigs interface {
 
 // UnspentPool unspent outputs pool
 type UnspentPool interface {
-	MaybeBuildIndexes(*dbutil.Tx) error
+	MaybeBuildIndexes(*dbutil.Tx, uint64) error
 	Len(*dbutil.Tx) (uint64, error)
 	Contains(*dbutil.Tx, cipher.SHA256) (bool, error)
 	Get(*dbutil.Tx, cipher.SHA256) (*coin.UxOut, error)

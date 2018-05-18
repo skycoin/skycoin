@@ -1770,7 +1770,7 @@ func TestGetTransactions(t *testing.T) {
 			his := newHistoryerMock2()
 			uncfmTxPool := NewUnconfirmedTxnPoolerMock2()
 			for addr, txs := range tc.addrTxns {
-				his.On("GetAddrTxns", matchTx, addr).Return(txs.Txs, nil)
+				his.On("GetAddressTxns", matchTx, addr).Return(txs.Txs, nil)
 				his.txs = append(his.txs, txs.Txs...)
 
 				uncfmTxPool.On("GetUnspentsOfAddr", matchTx, addr).Return(makeUncfmUxs(txs.UncfmTxs), nil)

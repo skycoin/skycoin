@@ -173,7 +173,7 @@ func newFakeUnspentPool(failedWhenSaved *bool) *fakeUnspentPool {
 	}
 }
 
-func (fup *fakeUnspentPool) MaybeBuildIndexes(tx *dbutil.Tx) error {
+func (fup *fakeUnspentPool) MaybeBuildIndexes(tx *dbutil.Tx, height uint64) error {
 	return nil
 }
 

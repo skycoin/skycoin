@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	logger = logging.MustGetLogger("gui")
+	logger = logging.MustGetLogger("api")
 )
 
 const (
@@ -44,21 +44,23 @@ type Server struct {
 
 // Config configures Server
 type Config struct {
-	StaticDir       string
-	DisableCSRF     bool
-	EnableWalletAPI bool
-	EnableJSON20RPC bool
-	EnableGUI       bool
-	ReadTimeout     time.Duration
-	WriteTimeout    time.Duration
-	IdleTimeout     time.Duration
+	StaticDir            string
+	DisableCSRF          bool
+	EnableWalletAPI      bool
+	EnableJSON20RPC      bool
+	EnableGUI            bool
+	EnableUnversionedAPI bool
+	ReadTimeout          time.Duration
+	WriteTimeout         time.Duration
+	IdleTimeout          time.Duration
 }
 
 type muxConfig struct {
-	host            string
-	appLoc          string
-	enableGUI       bool
-	enableJSON20RPC bool
+	host                 string
+	appLoc               string
+	enableGUI            bool
+	enableJSON20RPC      bool
+	enableUnversionedAPI bool
 }
 
 func create(host string, c Config, gateway Gatewayer) (*Server, error) {
@@ -101,10 +103,11 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 	}
 
 	mc := muxConfig{
-		host:            host,
-		appLoc:          appLoc,
-		enableGUI:       c.EnableGUI,
-		enableJSON20RPC: c.EnableJSON20RPC,
+		host:                 host,
+		appLoc:               appLoc,
+		enableGUI:            c.EnableGUI,
+		enableJSON20RPC:      c.EnableJSON20RPC,
+		enableUnversionedAPI: c.EnableUnversionedAPI,
 	}
 
 	srvMux := newServerMux(mc, gateway, csrfStore, rpc)
@@ -200,12 +203,18 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	}
 
 	webHandler := func(endpoint string, handler http.Handler) {
-
 		handler = wh.ElapsedHandler(logger, handler)
 		handler = CSRFCheck(csrfStore, handler)
 		handler = headerCheck(c.host, handler)
 		handler = gziphandler.GzipHandler(handler)
 		mux.Handle(endpoint, handler)
+	}
+
+	webHandlerV1 := func(endpoint string, handler http.Handler) {
+		if c.enableUnversionedAPI {
+			webHandler(endpoint, handler)
+		}
+		webHandler("/api/v1"+endpoint, handler)
 	}
 
 	webHandler("/", newIndexHandler(c.appLoc, c.enableGUI))
@@ -222,19 +231,20 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	}
 
 	if c.enableJSON20RPC {
-		webHandler("/webrpc", http.HandlerFunc(rpc.Handler))
+		webHandlerV1("/webrpc", http.HandlerFunc(rpc.Handler))
 	}
 
 	// get the current CSRF token
 	mux.Handle("/csrf", headerCheck(c.host, getCSRFToken(csrfStore)))
+	mux.Handle("/api/v1/csrf", headerCheck(c.host, getCSRFToken(csrfStore)))
 
-	webHandler("/version", versionHandler(gateway))
+	webHandlerV1("/version", versionHandler(gateway))
 
 	// get set of unspent outputs
-	webHandler("/outputs", getOutputsHandler(gateway))
+	webHandlerV1("/outputs", getOutputsHandler(gateway))
 
 	// get balance of addresses
-	webHandler("/balance", getBalanceHandler(gateway))
+	webHandlerV1("/balance", getBalanceHandler(gateway))
 
 	// Wallet interface
 
@@ -242,7 +252,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	// Method: GET
 	// Args:
 	//      id - Wallet ID [required]
-	webHandler("/wallet", walletGet(gateway))
+	webHandlerV1("/wallet", walletGet(gateway))
 
 	// Loads wallet from seed, will scan ahead N address and
 	// load addresses till the last one that have coins.
@@ -251,16 +261,16 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	//     seed: wallet seed [required]
 	//     label: wallet label [required]
 	//     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
-	webHandler("/wallet/create", walletCreate(gateway))
+	webHandlerV1("/wallet/create", walletCreate(gateway))
 
-	webHandler("/wallet/newAddress", walletNewAddresses(gateway))
+	webHandlerV1("/wallet/newAddress", walletNewAddresses(gateway))
 
 	// Returns the confirmed and predicted balance for a specific wallet.
 	// The predicted balance is the confirmed balance minus any pending
 	// spent amount.
 	// GET arguments:
 	//      id: Wallet ID
-	webHandler("/wallet/balance", walletBalanceHandler(gateway))
+	webHandlerV1("/wallet/balance", walletBalanceHandler(gateway))
 
 	// Sends coins&hours to another address.
 	// POST arguments:
@@ -269,116 +279,116 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	//  dst: Destination address
 	//  Returns total amount spent if successful, otherwise error describing
 	//  failure status.
-	webHandler("/wallet/spend", walletSpendHandler(gateway))
+	webHandlerV1("/wallet/spend", walletSpendHandler(gateway))
 
 	// Creates a transaction from a wallet
-	webHandler("/wallet/transaction", createTransactionHandler(gateway))
+	webHandlerV1("/wallet/transaction", createTransactionHandler(gateway))
 
 	// GET Arguments:
 	//      id: Wallet ID
 	// Returns all pending transanction for all addresses by selected Wallet
-	webHandler("/wallet/transactions", walletTransactionsHandler(gateway))
+	webHandlerV1("/wallet/transactions", walletTransactionsHandler(gateway))
 
 	// Update wallet label
 	// POST Arguments:
 	//     id: wallet id
 	//     label: wallet label
-	webHandler("/wallet/update", walletUpdateHandler(gateway))
+	webHandlerV1("/wallet/update", walletUpdateHandler(gateway))
 
 	// Returns all loaded wallets
 	// returns sensitive information
-	webHandler("/wallets", walletsHandler(gateway))
+	webHandlerV1("/wallets", walletsHandler(gateway))
 
 	// Returns wallets directory path
-	webHandler("/wallets/folderName", getWalletFolder(gateway))
+	webHandlerV1("/wallets/folderName", getWalletFolder(gateway))
 
 	// Generate wallet seed
 	// GET Arguments:
 	//     entropy: entropy bitsize.
-	webHandler("/wallet/newSeed", newWalletSeed(gateway))
+	webHandlerV1("/wallet/newSeed", newWalletSeed(gateway))
 
 	// Gets seed of wallet of given id
 	// GET Arguments:
 	//     id: wallet id
 	//     password: wallet password
-	webHandler("/wallet/seed", walletSeedHandler(gateway))
+	webHandlerV1("/wallet/seed", walletSeedHandler(gateway))
 
 	// unload wallet
 	// POST Argument:
 	//         id: wallet id
-	webHandler("/wallet/unload", walletUnloadHandler(gateway))
+	webHandlerV1("/wallet/unload", walletUnloadHandler(gateway))
 
 	// Encrypts wallet
 	// POST arguments:
 	//     id: wallet id
 	//     password: wallet password
 	// Returns an encrypted wallet json without sensitive data
-	webHandler("/wallet/encrypt", walletEncryptHandler(gateway))
+	webHandlerV1("/wallet/encrypt", walletEncryptHandler(gateway))
 
 	// Decrypts wallet
 	// POST arguments:
 	//     id: wallet id
 	//     password: wallet password
-	webHandler("/wallet/decrypt", walletDecryptHandler(gateway))
+	webHandlerV1("/wallet/decrypt", walletDecryptHandler(gateway))
 
 	// Blockchain interface
 
-	webHandler("/blockchain/metadata", blockchainHandler(gateway))
-	webHandler("/blockchain/progress", blockchainProgressHandler(gateway))
+	webHandlerV1("/blockchain/metadata", blockchainHandler(gateway))
+	webHandlerV1("/blockchain/progress", blockchainProgressHandler(gateway))
 
 	// get block by hash or seq
-	webHandler("/block", getBlock(gateway))
+	webHandlerV1("/block", getBlock(gateway))
 	// get blocks in specific range
-	webHandler("/blocks", getBlocks(gateway))
+	webHandlerV1("/blocks", getBlocks(gateway))
 	// get last N blocks
-	webHandler("/last_blocks", getLastBlocks(gateway))
+	webHandlerV1("/last_blocks", getLastBlocks(gateway))
 
 	// Network stats interface
-	webHandler("/network/connection", connectionHandler(gateway))
-	webHandler("/network/connections", connectionsHandler(gateway))
-	webHandler("/network/defaultConnections", defaultConnectionsHandler(gateway))
-	webHandler("/network/connections/trust", trustConnectionsHandler(gateway))
-	webHandler("/network/connections/exchange", exchgConnectionsHandler(gateway))
+	webHandlerV1("/network/connection", connectionHandler(gateway))
+	webHandlerV1("/network/connections", connectionsHandler(gateway))
+	webHandlerV1("/network/defaultConnections", defaultConnectionsHandler(gateway))
+	webHandlerV1("/network/connections/trust", trustConnectionsHandler(gateway))
+	webHandlerV1("/network/connections/exchange", exchgConnectionsHandler(gateway))
 
 	// Transaction handler
 
 	// get set of pending transactions
-	webHandler("/pendingTxs", getPendingTxs(gateway))
+	webHandlerV1("/pendingTxs", getPendingTxs(gateway))
 	// get txn by txid
-	webHandler("/transaction", getTransactionByID(gateway))
+	webHandlerV1("/transaction", getTransactionByID(gateway))
 
 	// Health check handler
-	webHandler("/health", healthCheck(gateway))
+	webHandlerV1("/health", healthCheck(gateway))
 
 	// Returns transactions that match the filters.
 	// Method: GET
 	// Args:
 	//     addrs: Comma seperated addresses [optional, returns all transactions if no address is provided]
 	//     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
-	webHandler("/transactions", getTransactions(gateway))
+	webHandlerV1("/transactions", getTransactions(gateway))
 	// inject a transaction into network
-	webHandler("/injectTransaction", injectTransaction(gateway))
-	webHandler("/resendUnconfirmedTxns", resendUnconfirmedTxns(gateway))
+	webHandlerV1("/injectTransaction", injectTransaction(gateway))
+	webHandlerV1("/resendUnconfirmedTxns", resendUnconfirmedTxns(gateway))
 	// get raw tx by txid.
-	webHandler("/rawtx", getRawTx(gateway))
+	webHandlerV1("/rawtx", getRawTx(gateway))
 
 	// UxOut api handler
 
 	// get uxout by id.
-	webHandler("/uxout", getUxOutByID(gateway))
+	webHandlerV1("/uxout", getUxOutByID(gateway))
 	// get all the address affected uxouts.
-	webHandler("/address_uxouts", getAddrUxOuts(gateway))
+	webHandlerV1("/address_uxouts", getAddrUxOuts(gateway))
 
 	// Explorer handler
 
 	// get set of pending transactions
-	webHandler("/explorer/address", getTransactionsForAddress(gateway))
+	webHandlerV1("/explorer/address", getTransactionsForAddress(gateway))
 
-	webHandler("/coinSupply", getCoinSupply(gateway))
+	webHandlerV1("/coinSupply", getCoinSupply(gateway))
 
-	webHandler("/richlist", getRichlist(gateway))
+	webHandlerV1("/richlist", getRichlist(gateway))
 
-	webHandler("/addresscount", getAddressCount(gateway))
+	webHandlerV1("/addresscount", getAddressCount(gateway))
 
 	return mux
 }
@@ -424,7 +434,7 @@ func splitCommaString(s string) []string {
 }
 
 // getOutputsHandler returns UxOuts filtered by a set of addresses or a set of hashes
-// URI: /outputs
+// URI: /api/v1/outputs
 // Method: GET
 // Args:
 //    addrs: comma-separated list of addresses

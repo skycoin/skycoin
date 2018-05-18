@@ -1,8 +1,8 @@
 package main
 
 import (
-	cli "github.com/skycoin/skycoin/src/cli"
 	"unsafe"
+	cli "github.com/skycoin/skycoin/src/cli"
 )
 
 /*

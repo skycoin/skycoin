@@ -1,8 +1,8 @@
 package main
 
 import (
-	webrpc "github.com/skycoin/skycoin/src/api/webrpc"
 	"unsafe"
+	webrpc "github.com/skycoin/skycoin/src/api/webrpc"
 )
 
 /*

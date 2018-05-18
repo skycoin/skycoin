@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/skycoin/skycoin/src/api/webrpc"
 	"os"
+	"github.com/skycoin/skycoin/src/api/webrpc"
+	
 )
 
 /*

@@ -1,10 +1,9 @@
 package main
 
 import (
-	cipher "github.com/skycoin/skycoin/src/cipher"
-
 	"reflect"
 	"unsafe"
+	cipher "github.com/skycoin/skycoin/src/cipher"
 )
 
 /*

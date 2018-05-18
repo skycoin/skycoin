@@ -1,9 +1,9 @@
 package main
 
 import (
-	api "github.com/skycoin/skycoin/src/api"
 	"reflect"
 	"unsafe"
+	api "github.com/skycoin/skycoin/src/api"
 )
 
 /*

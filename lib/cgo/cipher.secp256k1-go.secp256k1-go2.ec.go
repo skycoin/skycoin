@@ -1,9 +1,9 @@
 package main
 
 import (
-	secp256k1go2 "github.com/skycoin/skycoin/src/cipher/secp256k1-go/secp256k1-go2"
 	"reflect"
 	"unsafe"
+	secp256k1go2 "github.com/skycoin/skycoin/src/cipher/secp256k1-go/secp256k1-go2"
 )
 
 /*

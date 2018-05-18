@@ -264,6 +264,17 @@ void fprintbuff(FILE *f, void *buff, size_t n) {
   fprintf(f, "]");
 }
 
+int parseBoolean(const char* str, int length){
+	int result = 0;
+	if(length == 1){
+		result = str[0] == '1' || str[0] == 't' || str[0] == 'T';
+	} else {
+		result = strncmp(str, "true", length) == 0 || 
+			strncmp(str, "True", length) == 0 ||
+			strncmp(str, "TRUE", length) == 0;
+	}
+	return result;
+}
 
 void toGoString(GoString_ *s, GoString *r){
 GoString * tmp = r;

@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"sort"
 	"path/filepath"
+	"unsafe"
 )
 
 //export SKY_JsonEncode_Handle
@@ -214,3 +215,69 @@ func SKY_api_Handle_GetWalletMeta(handle C.Wallet__Handle,
 	return SKY_ERROR
 }
 
+//export SKY_api_Handle_GetWalletEntriesCount
+func SKY_api_Handle_GetWalletEntriesCount(handle C.Wallet__Handle,
+									count *uint32) uint32 {
+	w, ok := lookupWalletHandle(handle)
+	if ok {
+		*count = uint32(len(w.Entries))
+		return SKY_OK
+	}
+	return SKY_ERROR
+}
+
+//export SKY_api_Handle_Client_GetWalletResponseEntriesCount
+func SKY_api_Handle_Client_GetWalletResponseEntriesCount(
+							handle C.WalletResponse__Handle,
+							count *uint32) uint32 {
+	w, ok := lookupWalletResponseHandle(handle)
+	if ok {
+		*count = uint32(len(w.Entries))
+		return SKY_OK
+	}
+	return SKY_ERROR
+}
+
+//export SKY_api_Handle_WalletGetEntry
+func SKY_api_Handle_WalletGetEntry(handle C.Wallet__Handle,
+									index uint32,
+									address *C.cipher__Address,
+									pubkey *C.cipher__PubKey) uint32 {
+	w, ok := lookupWalletHandle(handle)
+	if ok {
+		if index < uint32(len( w.Entries )) {
+			*address = *(*C.cipher__Address)(unsafe.Pointer(&w.Entries[index].Address))
+			*pubkey = *(*C.cipher__PubKey)(unsafe.Pointer(&w.Entries[index].Public))
+			return SKY_OK
+		}
+	}
+	return SKY_ERROR
+}
+
+//export SKY_api_Handle_WalletResponseGetEntry
+func SKY_api_Handle_WalletResponseGetEntry(handle C.WalletResponse__Handle,
+									index uint32,
+									address *C.GoString_,
+									pubkey *C.GoString_) uint32 {
+	w, ok := lookupWalletResponseHandle(handle)
+	if ok {
+		if index < uint32(len( w.Entries )) {
+			copyString( w.Entries[index].Address, address )
+			copyString( w.Entries[index].Public, pubkey )
+			return SKY_OK
+		}
+	}
+	return SKY_ERROR
+}
+
+//export SKY_api_Handle_WalletResponseIsEncrypted
+func SKY_api_Handle_WalletResponseIsEncrypted(
+							handle C.WalletResponse__Handle,
+							isEncrypted *bool) uint32 {
+	w, ok := lookupWalletResponseHandle(handle)
+	if ok {
+		*isEncrypted = w.Meta.Encrypted
+		return SKY_OK
+	}
+	return SKY_ERROR
+}

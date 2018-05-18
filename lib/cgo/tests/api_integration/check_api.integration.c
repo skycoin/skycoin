@@ -1466,7 +1466,7 @@ void createWallet(Client__Handle clientHandle,
 }
 
 Test(api_integration, TestCreateWallet) {
-	int result;
+	int result, encrypted;
 	char* pNodeAddress = getNodeAddress();
 	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
 	Client__Handle clientHandle;
@@ -1506,12 +1506,123 @@ Test(api_integration, TestCreateWallet) {
 	result = SKY_api_Handle_GetWalletMeta( walletHandle, &map );
 	cr_assert(result == SKY_OK, "SKY_api_Handle_GetWalletMeta failed");
 	registerHandleClose((Handle)map);
+	
 	result = SKY_map_get(&map, strSeedKey, &strSeed);
 	cr_assert(result == SKY_OK, "SKY_map_get failed");
 	registerMemCleanup((void*)strSeed.p);
 	cr_assert(eq(type(GoString_), strCreatedSeed, strSeed));
 	
-	cleanRegisteredWallet( clientHandle, responseHandle );
+	result = SKY_map_get(&map, strEncryptedKey, &strEncrypted);
+	cr_assert(result == SKY_OK, "SKY_map_get failed");
+	registerMemCleanup((void*)strEncrypted.p);
+	encrypted = parseBoolean( strEncrypted.p, strEncrypted.n );
+	cr_assert(encrypted == 0);
+	
+	GoUint32 count1, count2;
+	result = SKY_api_Handle_GetWalletEntriesCount(walletHandle, &count1);
+	cr_assert(result == SKY_OK);
+	result = SKY_api_Handle_Client_GetWalletResponseEntriesCount(
+						responseHandle, &count2);
+	cr_assert(result == SKY_OK);
+	cr_assert( count1 == count2 );
+	cipher__Address address;
+	cipher__PubKey pubkey;
+	GoString_ strAddress1;
+	GoString_ strPubKey1;
+	GoString_ strAddress2;
+	GoString_ strPubKey2;
+	for( GoUint32 i = 0; i < count1; i++){
+		memset( &address, 0, sizeof(cipher__Address) );
+		memset( &pubkey, 0, sizeof(cipher__PubKey) );
+		memset( &strAddress1, 0, sizeof(GoString_) );
+		memset( &strPubKey1, 0, sizeof(GoString_) );
+		memset( &strAddress2, 0, sizeof(GoString_) );
+		memset( &strPubKey2, 0, sizeof(GoString_) );
+		
+		result = SKY_api_Handle_WalletGetEntry(walletHandle,
+				i, &address, &pubkey);
+		cr_assert( result == SKY_OK );
+		SKY_cipher_Address_String(&address, &strAddress1);
+		registerMemCleanup( (void*)strAddress1.p );
+		SKY_cipher_PubKey_Hex( &pubkey, &strPubKey1 );
+		registerMemCleanup( (void*)strPubKey1.p );
+		
+		result = SKY_api_Handle_WalletResponseGetEntry(responseHandle,
+				i, &strAddress2, &strPubKey2);
+		cr_assert( result == SKY_OK );
+		registerMemCleanup( (void*)strAddress2.p );
+		registerMemCleanup( (void*)strPubKey2.p );
+		
+		cr_assert( eq( type(GoString_), strAddress1, strAddress2 ) );
+		cr_assert( eq( type(GoString_), strPubKey1, strPubKey2 ) );
+	}
+	
+	//Same test again but with wallet encrypted
+	seed[0] = 0;
+	createWallet( clientHandle, 1, "pwd", seed, 128, &responseHandle );
+	registerHandleClose( responseHandle );
+	registerWalletClean( clientHandle, responseHandle );
+	GoUint8 isEncrypted;
+	result = SKY_api_Handle_WalletResponseIsEncrypted( responseHandle, &isEncrypted );
+	cr_assert(result == SKY_OK);
+	cr_assert( isEncrypted );
+	
+	memset( &strFullPath, 0, sizeof(GoString_) );
+	result = SKY_api_Handle_Client_GetWalletFullPath( 
+					clientHandle, responseHandle, &strFullPath);
+	cr_assert(result == SKY_OK, "SKY_api_Handle_Client_GetWalletFullPath failed");
+	registerMemCleanup( (void*)strFullPath.p );	
+	
+	strWalletPath.p = strFullPath.p;
+	strWalletPath.n = strFullPath.n;
+	result = SKY_wallet_Load(strWalletPath, &walletHandle);
+	cr_assert(result == SKY_OK, "SKY_wallet_Load failed");
+	registerHandleClose( walletHandle );
+	
+	
+	memset(&strEncrypted, 0, sizeof(GoString_));
+	result = SKY_api_Handle_GetWalletMeta( walletHandle, &map );
+	cr_assert(result == SKY_OK, "SKY_api_Handle_GetWalletMeta failed");
+	registerHandleClose((Handle)map);
+	
+	result = SKY_map_get(&map, strEncryptedKey, &strEncrypted);
+	cr_assert(result == SKY_OK, "SKY_map_get failed");
+	registerMemCleanup((void*)strEncrypted.p);
+	encrypted = parseBoolean( strEncrypted.p, strEncrypted.n );
+	cr_assert(encrypted == 1);
+	
+	result = SKY_api_Handle_GetWalletEntriesCount(walletHandle, &count1);
+	cr_assert(result == SKY_OK);
+	result = SKY_api_Handle_Client_GetWalletResponseEntriesCount(
+						responseHandle, &count2);
+	cr_assert(result == SKY_OK);
+	cr_assert( count1 == count2 );
+	
+	for( GoUint32 i = 0; i < count1; i++){
+		memset( &address, 0, sizeof(cipher__Address) );
+		memset( &pubkey, 0, sizeof(cipher__PubKey) );
+		memset( &strAddress1, 0, sizeof(GoString_) );
+		memset( &strPubKey1, 0, sizeof(GoString_) );
+		memset( &strAddress2, 0, sizeof(GoString_) );
+		memset( &strPubKey2, 0, sizeof(GoString_) );
+		
+		result = SKY_api_Handle_WalletGetEntry(walletHandle,
+				i, &address, &pubkey);
+		cr_assert( result == SKY_OK );
+		SKY_cipher_Address_String(&address, &strAddress1);
+		registerMemCleanup( (void*)strAddress1.p );
+		SKY_cipher_PubKey_Hex( &pubkey, &strPubKey1 );
+		registerMemCleanup( (void*)strPubKey1.p );
+		
+		result = SKY_api_Handle_WalletResponseGetEntry(responseHandle,
+				i, &strAddress2, &strPubKey2);
+		cr_assert( result == SKY_OK );
+		registerMemCleanup( (void*)strAddress2.p );
+		registerMemCleanup( (void*)strPubKey2.p );
+		
+		cr_assert( eq( type(GoString_), strAddress1, strAddress2 ) );
+		cr_assert( eq( type(GoString_), strPubKey1, strPubKey2 ) );
+	}
 }
 
 

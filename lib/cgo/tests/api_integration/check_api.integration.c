@@ -9,6 +9,7 @@
 #include "skyerrors.h"
 #include "skystring.h"
 #include "skytest.h"
+#include "base64.h"
 
 #define NODE_ADDRESS "SKYCOIN_NODE_HOST"
 #define NODE_ADDRESS_DEFAULT "http://127.0.0.1:46420"
@@ -1430,6 +1431,52 @@ Test(api_integration, TestStablePendingTransactions) {
 	registerJsonFree( json );
 	cr_assert(json->type == json_array);
 	cr_assert(json->u.array.length == 0);
+}
+
+void createWallet(Client__Handle clientHandle, 
+		int encrypt, char* password, 
+		char* seed, int max_seed_length,
+		WalletResponse__Handle* responseHandle){
+	char label[10];
+	int result;
+	if(seed[0] == 0){
+		cr_assert(max_seed_length > 64, "Seed buffer is too short");
+		unsigned char buff[64];
+		GoSlice slice = { buff, 0, 64 };
+		randBytes( &slice, 32 );
+		b64_encode_string(buff, 32, seed);
+	}
+	strncpy(label, seed, 6);
+	GoString strSeed = {seed, strlen(seed)};
+	GoString strLabel = {seed, strlen(label)};
+	if( encrypt ){
+		GoString strPassword = {password, strlen(password)};
+		result = SKY_api_Client_CreateEncryptedWallet( 
+			&clientHandle, strSeed, strLabel, strPassword, 0,
+			responseHandle);
+	} else {
+		result = SKY_api_Client_CreateUnencryptedWallet(
+			&clientHandle, strSeed, strLabel, 0,
+			responseHandle);
+	}
+	cr_assert( result == SKY_OK, "Create Wallet failed" );
+}
+
+Test(api_integration, TestCreateWallet) {
+	int result;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	WalletResponse__Handle responseHandle;
+	char seed[128];
+	createWallet( clientHandle, 0, "", seed, 128, &responseHandle );
+	registerHandleClose( responseHandle );
+	registerWalletClean( clientHandle, responseHandle );
 }
 
 

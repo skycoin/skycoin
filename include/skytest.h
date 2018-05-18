@@ -29,6 +29,9 @@ void closeRegisteredHandle(Handle handle);
 
 void freeRegisteredMemCleanup(void *p);
 
+int registerWalletClean(Client__Handle clientHandle,
+						WalletResponse__Handle walletHandle);
+
 json_value* loadJsonFile(const char* filename);
 
 int compareJsonValues(json_value* value1, json_value* value2);

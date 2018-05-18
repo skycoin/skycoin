@@ -1446,7 +1446,7 @@ void createWallet(Client__Handle clientHandle,
 		cr_assert(max_seed_length > 64, "Seed buffer is too short");
 		unsigned char buff[64];
 		GoSlice slice = { buff, 0, 64 };
-		randBytes( &slice, 32 );
+		SKY_cipher_RandByte( 32, (coin__UxArray*)&slice );
 		b64_encode_string(buff, 32, seed);
 	}
 	strncpy(label, seed, 6);
@@ -1625,5 +1625,98 @@ Test(api_integration, TestCreateWallet) {
 	}
 }
 
+Test(api_integration, TestGetWallet) {
+	int result;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	WalletResponse__Handle responseHandle, responseHandle2;
+	char seed[128];
+	seed[0] = 0;
+	createWallet( clientHandle, 0, "", seed, 128, &responseHandle );
+	registerHandleClose( responseHandle );
+	registerWalletClean( clientHandle, responseHandle );
+	
+	GoString_ walletFileName = {NULL, 0};
+	result = SKY_api_Handle_Client_GetWalletFileName(
+				responseHandle, &walletFileName);
+	cr_assert(result == SKY_OK);
+	GoString _walletFileName = { walletFileName.p, walletFileName.n }; 
+	
+	result = SKY_api_Client_Wallet( 
+				&clientHandle, _walletFileName, &responseHandle2 );
+	cr_assert(result == SKY_OK);
+	registerHandleClose( responseHandle2 );
+	int equal = compareObjectsByHandle( responseHandle, responseHandle2 );
+	cr_assert(equal == 1);
+}
+
+#define GET_WALLETS_COUNT 2
+
+Test(api_integration, TestGetWallets) {
+	int result;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	WalletResponse__Handle original_wallets[GET_WALLETS_COUNT];
+	char seed[128];
+	for( int i = 0; i < GET_WALLETS_COUNT; i++){
+		seed[0] = 0;
+		createWallet( clientHandle, 0, "", seed, 128, &original_wallets[i] );
+		registerHandleClose( original_wallets[i] );
+		registerWalletClean( clientHandle, original_wallets[i] );
+	}
+	
+	Wallets__Handle walletsHandle;
+	result = SKY_api_Client_Wallets( &clientHandle, &walletsHandle );
+	cr_assert( result == SKY_OK );
+	registerHandleClose( walletsHandle ) ;
+	
+	GoUint32 count;
+	result = SKY_api_Handle_WalletsResponseGetCount( walletsHandle, &count );
+	cr_assert( result == SKY_OK );
+	cr_assert( count == GET_WALLETS_COUNT);
+	
+	WalletResponse__Handle w;
+	GoString_ name1, name2;
+	for( GoUint32 i = 0; i < count; i++){
+		result = SKY_api_Handle_WalletsResponseGetAt(
+			walletsHandle, i, &w);
+		cr_assert( result == SKY_OK );
+		registerHandleClose( w ) ;
+		memset( &name1, 0, sizeof(GoString_) );
+		result = SKY_api_Handle_Client_GetWalletFileName(w, &name1);
+		cr_assert( result == SKY_OK );
+		registerMemCleanup( (void*)name1.p );
+		int found = 0;
+		for( int j = 0; j < GET_WALLETS_COUNT; j++ ){
+			memset( &name2, 0, sizeof(GoString_) );
+			result = SKY_api_Handle_Client_GetWalletFileName(
+					original_wallets[j], &name2);
+			cr_assert( result == SKY_OK );
+			registerMemCleanup( (void*)name2.p );
+			
+			if( strcmp( name1.p, name2.p ) == 0 ){
+				int equal;
+				equal = compareObjectsByHandle( w, 
+								original_wallets[j]);
+				cr_assert( equal );
+				found = 1;
+				break;
+			}
+		}
+		cr_assert( found == 1);
+	}
+}
 
 

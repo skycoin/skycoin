@@ -160,6 +160,11 @@ typedef Handle CreateTransactionRequest__Handle;
 typedef Handle GoStringMap_;
 
 /**
+ * Wallets Handle, slice of Wallet
+*/
+typedef Handle Wallets__Handle;
+
+/**
  * Instances of Go interface types.
  */
 typedef struct {

@@ -281,3 +281,30 @@ func SKY_api_Handle_WalletResponseIsEncrypted(
 	}
 	return SKY_ERROR
 }
+
+//export SKY_api_Handle_WalletsResponseGetCount
+func SKY_api_Handle_WalletsResponseGetCount(
+							handle C.Wallets__Handle,
+							count *uint32) uint32 {
+	w, ok := lookupWalletsHandle(handle)
+	if ok {
+		*count = uint32(len(w))
+		return SKY_OK
+	}
+	return SKY_ERROR
+}
+
+//export SKY_api_Handle_WalletsResponseGetAt
+func SKY_api_Handle_WalletsResponseGetAt(
+							walletsHandle C.Wallets__Handle,
+							index uint32,
+							walletHandle *C.WalletResponse__Handle) uint32 {
+	w, ok := lookupWalletsHandle(walletsHandle)
+	if ok {
+		if index < uint32(len(w)) {
+			*walletHandle = registerWalletResponseHandle(w[index])
+		}
+		return SKY_OK
+	}
+	return SKY_ERROR
+}

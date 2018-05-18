@@ -165,6 +165,20 @@ func lookupClientHandle(handle C.Client__Handle) (*api.Client, bool){
 	return nil, false
 }
 
+func registerWalletsHandle(obj []*api.WalletResponse) C.Wallets__Handle{
+	return (C.Wallets__Handle)(registerHandle(obj))
+}
+
+func lookupWalletsHandle(handle C.Wallets__Handle) ([]*api.WalletResponse, bool){
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).([]*api.WalletResponse); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
 func registerWalletResponseHandle(obj *api.WalletResponse) C.WalletResponse__Handle{
 	return (C.WalletResponse__Handle)(registerHandle(obj))
 }

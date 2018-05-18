@@ -63,7 +63,7 @@ void parseJsonMetaData(char* metadata, int* n, int* r, int* p, int* keyLen){
 	}
 }
 
-Test(cipher_encrypt_scrypt_chacha20poly1305, TestScryptChacha20poly1305Encrypt){
+/*Test(cipher_encrypt_scrypt_chacha20poly1305, TestScryptChacha20poly1305Encrypt){
 	char buffer[BUFFER_SIZE];
 	coin__UxArray result;
 	GoSlice nullData;
@@ -137,7 +137,7 @@ Test(cipher_encrypt_scrypt_chacha20poly1305, TestScryptChacha20poly1305Encrypt){
 		cr_assert(p == encrypt.P, "SKY_encrypt_ScryptChacha20poly1305_Encrypt failed. Metadata value P incorrect.");
 		cr_assert(keyLen == encrypt.KeyLen, "SKY_encrypt_ScryptChacha20poly1305_Encrypt failed. Metadata value KeyLen incorrect.");
 	}
-}
+}*/
 
 Test(cipher_encrypt_scrypt_chacha20poly1305, TestScryptChacha20poly1305Decrypt){
 	char buffer[BUFFER_SIZE];

@@ -1081,6 +1081,58 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 		},
 
 		{
+			name: "insufficient coins for specified uxouts",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeManual,
+				},
+				Wallet: CreateTransactionWalletParams{
+					UxOuts: []cipher.SHA256{
+						extraUxouts[0][0].Hash(),
+					},
+				},
+				To: []coin.TransactionOutput{
+					{
+						Address: addrs[0],
+						Hours:   1,
+						Coins:   3e6,
+					},
+				},
+			},
+			addressUnspents: coin.AddressUxOuts{
+				extraWalletAddrs[0]: []coin.UxOut{extraUxouts[0][0]},
+			},
+			err: ErrInsufficientBalance,
+		},
+
+		{
+			name: "insufficient hours for specified uxouts",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeManual,
+				},
+				Wallet: CreateTransactionWalletParams{
+					UxOuts: []cipher.SHA256{
+						extraUxouts[0][0].Hash(),
+					},
+				},
+				To: []coin.TransactionOutput{
+					{
+						Address: addrs[0],
+						Hours:   200,
+						Coins:   1e6,
+					},
+				},
+			},
+			addressUnspents: coin.AddressUxOuts{
+				extraWalletAddrs[0]: []coin.UxOut{extraUxouts[0][0]},
+			},
+			err: ErrInsufficientHours,
+		},
+
+		{
 			name: "manual, 1 output, no change",
 			params: CreateTransactionParams{
 				ChangeAddress: changeAddress,

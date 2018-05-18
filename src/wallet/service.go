@@ -303,6 +303,21 @@ func (serv *Service) ReloadWallets() error {
 	return nil
 }
 
+// ViewWallet will unlock a wallet for viewing if necessary, and call f
+func (serv *Service) ViewWallet(w *Wallet, password []byte, f func(w *Wallet) error) error {
+	// NOTE: Does not need to use the mutex, because we are not accessing the wallets storage
+
+	if w.IsEncrypted() {
+		return w.GuardView(password, f)
+	}
+
+	if len(password) != 0 {
+		return ErrWalletNotEncrypted
+	}
+
+	return f(w)
+}
+
 // CreateAndSignTransaction creates and signs a transaction from wallet.
 // Set the password as nil if the wallet is not encrypted, otherwise the password must be provided
 func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, auxs coin.AddressUxOuts, headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {

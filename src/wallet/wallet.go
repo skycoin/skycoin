@@ -607,10 +607,7 @@ func (w *Wallet) GuardView(password []byte, f func(w *Wallet) error) error {
 
 	defer wlt.erase()
 
-	if err := f(wlt); err != nil {
-		return err
-	}
-	return nil
+	return f(wlt)
 }
 
 // Load loads wallet from a given file

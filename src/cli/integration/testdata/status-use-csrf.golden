@@ -1,0 +1,8 @@
+{
+	"running": true,
+	"num_of_blocks": 181,
+	"hash_of_last_block": "63614fdf08b67fcfc99d7b43d115fb9f57eb5c6833acdbdc712ee361f391f292",
+	"time_since_last_block": "",
+	"webrpc_address": "http://127.0.0.1:46420",
+	"use_csrf": true
+}

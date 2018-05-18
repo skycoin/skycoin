@@ -1,53 +1,38 @@
 package historydb
 
 import (
-	"github.com/boltdb/bolt"
-
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"github.com/skycoin/skycoin/src/visor/bucket"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
+// AddressUxBkt maps addresses to unspent outputs
+var AddressUxBkt = []byte("address_in")
+
 // bucket for storing address with UxOut, key as address, value as UxOut.
-type addressUx struct {
-	bkt *bucket.Bucket
-}
-
-// create address affected UxOuts bucket.
-func newAddressUxBkt(db *bolt.DB) (*addressUx, error) {
-	bkt, err := bucket.New([]byte("address_in"), db)
-	if err != nil {
-		return nil, err
-	}
-
-	return &addressUx{bkt}, nil
-}
+type addressUx struct{}
 
 // Get return nil on not found.
-func (au *addressUx) Get(address cipher.Address) ([]cipher.SHA256, error) {
-	uxHashes := []cipher.SHA256{}
-	bin := au.bkt.Get(address.Bytes())
-	if bin == nil {
+func (au *addressUx) Get(tx *dbutil.Tx, address cipher.Address) ([]cipher.SHA256, error) {
+	var uxHashes []cipher.SHA256
+
+	if ok, err := dbutil.GetBucketObjectDecoded(tx, AddressUxBkt, address.Bytes(), &uxHashes); err != nil {
+		return nil, err
+	} else if !ok {
 		return nil, nil
 	}
-	if err := encoder.DeserializeRaw(bin, &uxHashes); err != nil {
-		return nil, err
-	}
+
 	return uxHashes, nil
 }
 
-func (au *addressUx) Add(address cipher.Address, uxHash cipher.SHA256) error {
-	hashes, err := au.Get(address)
+// Add adds a hash to an address's hash list
+func (au *addressUx) Add(tx *dbutil.Tx, address cipher.Address, uxHash cipher.SHA256) error {
+	hashes, err := au.Get(tx, address)
 	if err != nil {
 		return err
 	}
 
-	if hashes == nil {
-		bin := encoder.Serialize([]cipher.SHA256{uxHash})
-		return au.bkt.Put(address.Bytes(), bin)
-	}
-
-	// check dup
+	// check for duplicate hashes
 	for _, u := range hashes {
 		if u == uxHash {
 			return nil
@@ -55,38 +40,15 @@ func (au *addressUx) Add(address cipher.Address, uxHash cipher.SHA256) error {
 	}
 
 	hashes = append(hashes, uxHash)
-	bin := encoder.Serialize(hashes)
-	return au.bkt.Put(address.Bytes(), bin)
+	return dbutil.PutBucketValue(tx, AddressUxBkt, address.Bytes(), encoder.Serialize(hashes))
 }
 
 // IsEmpty checks if the addressUx bucket is empty
-func (au *addressUx) IsEmpty() bool {
-	return au.bkt.IsEmpty()
+func (au *addressUx) IsEmpty(tx *dbutil.Tx) (bool, error) {
+	return dbutil.IsEmpty(tx, AddressUxBkt)
 }
 
 // Reset resets the bucket
-func (au *addressUx) Reset() error {
-	return au.bkt.Reset()
-}
-
-func setAddressUx(bkt *bolt.Bucket, addr cipher.Address, uxHash cipher.SHA256) error {
-	bin := bkt.Get(addr.Bytes())
-	if bin == nil {
-		return bkt.Put(addr.Bytes(), encoder.Serialize([]cipher.SHA256{uxHash}))
-	}
-
-	uxHashes := []cipher.SHA256{}
-	if err := encoder.DeserializeRaw(bin, &uxHashes); err != nil {
-		return err
-	}
-
-	// check dup
-	for _, u := range uxHashes {
-		if u == uxHash {
-			return nil
-		}
-	}
-
-	uxHashes = append(uxHashes, uxHash)
-	return bkt.Put(addr.Bytes(), encoder.Serialize(uxHashes))
+func (au *addressUx) Reset(tx *dbutil.Tx) error {
+	return dbutil.Reset(tx, AddressUxBkt)
 }

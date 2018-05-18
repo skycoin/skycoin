@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import { ApiService } from './api.service';
 import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
-import { IntervalObservable } from 'rxjs/observable/IntervalObservable';
 import 'rxjs/add/observable/forkJoin';
 import 'rxjs/add/observable/of';
 import 'rxjs/add/operator/do';
@@ -11,7 +10,7 @@ import 'rxjs/add/operator/first';
 import 'rxjs/add/operator/mergeMap';
 import 'rxjs/add/observable/timer';
 import 'rxjs/add/observable/zip';
-import { Address, Wallet } from '../app.datatypes';
+import { Address, NormalTransaction, PreviewTransaction, Wallet } from '../app.datatypes';
 import { ReplaySubject } from 'rxjs/ReplaySubject';
 import { Subscription } from 'rxjs/Subscription';
 
@@ -51,7 +50,7 @@ export class WalletService {
   }
 
   create(label, seed, scan, password) {
-    seed = seed.replace(/\r?\n|\r/g, ' ').replace(/ +/g, ' ').trim();
+    seed = seed.replace(/(\n|\r\n)$/, '');
 
     return this.apiService.postWalletCreate(label ? label : 'undefined', seed, scan ? scan : 100, password)
       .do(wallet => {
@@ -109,9 +108,9 @@ export class WalletService {
   refreshBalances() {
     this.wallets.first().subscribe(wallets => {
       Observable.forkJoin(wallets.map(wallet => this.retrieveWalletBalance(wallet).map(response => {
-        wallet.addresses = response;
-        wallet.coins = response.map(address => address.coins >= 0 ? address.coins : 0).reduce((a , b) => a + b, 0);
-        wallet.hours = response.map(address => address.hours >= 0 ? address.hours : 0).reduce((a , b) => a + b, 0);
+        wallet.addresses = response.addresses;
+        wallet.coins = response.coins;
+        wallet.hours = response.hours;
         return wallet;
       })))
         .subscribe(newWallets => this.wallets.next(newWallets));
@@ -138,7 +137,7 @@ export class WalletService {
     return this.apiService.getWalletSeed(wallet, password);
   }
 
-  createTransaction(wallet: Wallet, address: string, amount: string, password: string|null) {
+  createTransaction(wallet: Wallet, address: string, amount: string, password: string|null): Observable<PreviewTransaction> {
     return this.apiService.post(
       'wallet/transaction',
       {
@@ -160,7 +159,13 @@ export class WalletService {
       {
         json: true,
       }
-    );
+    ).map(response => {
+      return {
+        ...response.transaction,
+        hoursBurned: response.transaction.fee,
+        encoded: response.encoded_transaction,
+      };
+    });
   }
 
   injectTransaction(encodedTx: string) {
@@ -185,7 +190,7 @@ export class WalletService {
     });
   }
 
-  transactions(): Observable<any[]> {
+  transactions(): Observable<NormalTransaction[]> {
     return this.allAddresses().filter(addresses => !!addresses.length).first().flatMap(addresses => {
       this.addresses = addresses;
       return Observable.forkJoin(addresses.map(address => this.apiService.getExplorerAddress(address)));
@@ -230,21 +235,22 @@ export class WalletService {
     this.apiService.getWallets().first().subscribe(wallets => this.wallets.next(wallets));
   }
 
-  private retrieveAddressBalance(address: any|any[]) {
-    const addresses = Array.isArray(address) ? address.map(addr => addr.address).join(',') : address.address;
-    return this.apiService.get('balance', {addrs: addresses});
-  }
-
   private retrieveInputAddress(input: string) {
     return this.apiService.get('uxout', {uxid: input});
   }
 
   private retrieveWalletBalance(wallet: Wallet): Observable<any> {
-    return Observable.forkJoin(wallet.addresses.map(address => this.retrieveAddressBalance(address).map(balance => {
-      address.coins = balance.confirmed.coins / 1000000;
-      address.hours = balance.confirmed.hours;
-      return address;
-    })));
+    return this.apiService.get('wallet/balance', { id: wallet.filename }).map(balance => {
+      return {
+        coins: balance.confirmed.coins / 1000000,
+        hours: balance.confirmed.hours,
+        addresses: Object.keys(balance.addresses).map(address => ({
+          address,
+          coins: balance.addresses[address].confirmed.coins / 1000000,
+          hours: balance.addresses[address].confirmed.hours,
+        })),
+      };
+    });
   }
 
   private updateWallet(wallet: Wallet) {

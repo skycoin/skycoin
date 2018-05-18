@@ -506,7 +506,7 @@ func TestLockAndUnLock(t *testing.T) {
 	}
 }
 
-func makeWallet(t *testing.T, opts Options, addrNum uint64) *Wallet {
+func makeWallet(t *testing.T, opts Options, addrNum uint64) *Wallet { // nolint: unparam
 	// Create an unlocked wallet, then generate addresses, lock if the options.Encrypt is true.
 	preOpts := opts
 	opts.Encrypt = false

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Runs "stable"-mode tests against a skycoin node configured with a pinned database
 # "stable" mode tests assume the blockchain data is static, in order to check API responses more precisely
-# $TEST defines which test to run i.e, cli or gui; If empty both are run
+# $TEST defines which test to run i.e, cli or api; If empty both are run
 
 #Set Script Name variable
 SCRIPT=`basename ${BASH_SOURCE[0]}`
@@ -28,7 +28,7 @@ GOLDFLAGS="-X main.Commit=${COMMIT} -X main.Branch=${BRANCH}"
 usage () {
   echo "Usage: $SCRIPT"
   echo "Optional command line arguments"
-  echo "-t <string>  -- Test to run, gui or cli; empty runs both tests"
+  echo "-t <string>  -- Test to run, api or cli; empty runs both tests"
   echo "-r <string>  -- Run test with -run flag"
   echo "-u <boolean> -- Update stable testdata"
   echo "-v <boolean> -- Run test with -v flag"
@@ -70,7 +70,7 @@ echo "starting skycoin node in background with http listener on $HOST"
 ./skycoin-integration -disable-networking=true \
                       -web-interface-port=$PORT \
                       -download-peerlist=false \
-                      -db-path=./src/gui/integration/test-fixtures/blockchain-180.db \
+                      -db-path=./src/api/integration/testdata/blockchain-180.db \
                       -db-read-only=true \
                       -rpc-interface=true \
                       -launch-browser=false \
@@ -89,19 +89,19 @@ echo "done sleeping"
 
 set +e
 
-if [[ -z $TEST || $TEST = "gui" ]]; then
+if [[ -z $TEST || $TEST = "api" ]]; then
 
 SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST \
-    go test ./src/gui/integration/... $UPDATE -timeout=3m $VERBOSE $RUN_TESTS
+    go test ./src/api/integration/... $UPDATE -timeout=3m $VERBOSE $RUN_TESTS
 
-GUI_FAIL=$?
+API_FAIL=$?
 
 fi
 
 if [[ -z $TEST  || $TEST = "cli" ]]; then
 
 SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR USE_CSRF=$USE_CSRF \
-    go test ./src/api/cli/integration/... $UPDATE -timeout=3m $VERBOSE $RUN_TESTS
+    go test ./src/cli/integration/... $UPDATE -timeout=3m $VERBOSE $RUN_TESTS
 
 CLI_FAIL=$?
 
@@ -117,8 +117,8 @@ wait $SKYCOIN_PID
 rm "$BINARY"
 
 
-if [[ (-z $TEST || $TEST = "gui") && $GUI_FAIL -ne 0 ]]; then
-  exit $GUI_FAIL
+if [[ (-z $TEST || $TEST = "api") && $API_FAIL -ne 0 ]]; then
+  exit $API_FAIL
 elif [[ (-z $TEST || $TEST = "cli") && $CLI_FAIL -ne 0 ]]; then
   exit $CLI_FAIL
 else

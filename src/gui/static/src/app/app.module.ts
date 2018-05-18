@@ -68,6 +68,8 @@ import { DontsavepasswordDirective } from './directives/dontsavepassword.directi
 import { SendFormComponent } from './components/pages/send-skycoin/send-form/send-form.component';
 import { SendVerifyComponent } from './components/pages/send-skycoin/send-verify/send-verify.component';
 import { TransactionInfoComponent } from './components/pages/send-skycoin/send-verify/transaction-info/transaction-info.component';
+import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
+import { AppTranslateLoader } from './app.translate-loader';
 
 
 const ROUTES = [
@@ -204,6 +206,12 @@ const ROUTES = [
     NoopAnimationsModule,
     ReactiveFormsModule,
     RouterModule.forRoot(ROUTES, { useHash: true }),
+    TranslateModule.forRoot({
+      loader: {
+        provide: TranslateLoader,
+        useClass: AppTranslateLoader,
+      }
+    }),
   ],
   providers: [
     ApiService,

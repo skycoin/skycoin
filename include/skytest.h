@@ -31,6 +31,10 @@ void freeRegisteredMemCleanup(void *p);
 
 int registerWalletClean(Client__Handle clientHandle,
 						WalletResponse__Handle walletHandle);
+						
+void cleanRegisteredWallet(
+			Client__Handle client, 
+			WalletResponse__Handle wallet);
 
 json_value* loadJsonFile(const char* filename);
 

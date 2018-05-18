@@ -10,6 +10,7 @@
 #include "skystring.h"
 #include "skytest.h"
 #include "base64.h"
+#include <unistd.h>
 
 #define NODE_ADDRESS "SKYCOIN_NODE_HOST"
 #define NODE_ADDRESS_DEFAULT "http://127.0.0.1:46420"
@@ -21,6 +22,7 @@
 #define JSON_BIG_FILE_SIZE 32768
 #define TEST_DATA_DIR "src/api/integration/testdata/"
 
+//TestSuite(api_integration, .init = setup, .fini = teardown);
 
 char* getNodeAddress(){
 	if( STABLE ){
@@ -132,6 +134,7 @@ int compareObjectNodeWithGoldenFile(Handle handle,
 int compareObjectWithGoldenFile(Handle handle, const char* golden_file){
 	return compareObjectNodeWithGoldenFile(handle, golden_file, NULL);
 }
+
 
 Test(api_integration, TestVersion) {
 	GoString_ version;
@@ -1448,7 +1451,7 @@ void createWallet(Client__Handle clientHandle,
 	}
 	strncpy(label, seed, 6);
 	GoString strSeed = {seed, strlen(seed)};
-	GoString strLabel = {seed, strlen(label)};
+	GoString strLabel = {label, strlen(label)};
 	if( encrypt ){
 		GoString strPassword = {password, strlen(password)};
 		result = SKY_api_Client_CreateEncryptedWallet( 
@@ -1474,9 +1477,41 @@ Test(api_integration, TestCreateWallet) {
 	
 	WalletResponse__Handle responseHandle;
 	char seed[128];
+	seed[0] = 0;
 	createWallet( clientHandle, 0, "", seed, 128, &responseHandle );
 	registerHandleClose( responseHandle );
 	registerWalletClean( clientHandle, responseHandle );
+	
+	GoString_ strFullPath;
+	memset( &strFullPath, 0, sizeof(GoString_) );
+	result = SKY_api_Handle_Client_GetWalletFullPath( 
+					clientHandle, responseHandle, &strFullPath);
+	cr_assert(result == SKY_OK, "SKY_api_Handle_Client_GetWalletFullPath failed");
+	registerMemCleanup( (void*)strFullPath.p );	
+	cr_assert( access( strFullPath.p, F_OK ) != -1, "Wallet file doesn\'t exist." );
+	
+	Wallet__Handle walletHandle;
+	GoString strWalletPath = {strFullPath.p, strFullPath.n};
+	result = SKY_wallet_Load(strWalletPath, &walletHandle);
+	cr_assert(result == SKY_OK, "SKY_wallet_Load failed");
+	registerHandleClose( walletHandle );
+	
+	GoStringMap_ map;
+	GoString_ strSeed, strEncrypted;
+	GoString strSeedKey = {"seed", 4};
+	GoString_ strCreatedSeed = {seed, strlen(seed)};
+	GoString strEncryptedKey = {"encrypted", 9};
+	memset(&strSeed, 0, sizeof(GoString_));
+	memset(&strEncrypted, 0, sizeof(GoString_));
+	result = SKY_api_Handle_GetWalletMeta( walletHandle, &map );
+	cr_assert(result == SKY_OK, "SKY_api_Handle_GetWalletMeta failed");
+	registerHandleClose((Handle)map);
+	result = SKY_map_get(&map, strSeedKey, &strSeed);
+	cr_assert(result == SKY_OK, "SKY_map_get failed");
+	registerMemCleanup((void*)strSeed.p);
+	cr_assert(eq(type(GoString_), strCreatedSeed, strSeed));
+	
+	cleanRegisteredWallet( clientHandle, responseHandle );
 }
 
 

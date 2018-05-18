@@ -178,6 +178,7 @@ func SKY_api_Handle_Client_GetWalletFileName(handle C.WalletResponse__Handle,
 	w, ok := lookupWalletResponseHandle(handle)
 	if ok {
 		copyString(w.Meta.Filename, walletFileName)
+		return SKY_OK
 	}
 	return SKY_ERROR
 }
@@ -198,6 +199,17 @@ func SKY_api_Handle_Client_GetWalletFullPath(
 				return SKY_OK
 			}
 		}
+	}
+	return SKY_ERROR
+}
+
+//export SKY_api_Handle_GetWalletMeta
+func SKY_api_Handle_GetWalletMeta(handle C.Wallet__Handle,
+									gomap *C.GoStringMap_) uint32 {
+	w, ok := lookupWalletHandle(handle)
+	if ok {
+		copyToStringMap(w.Meta, gomap)
+		return SKY_OK
 	}
 	return SKY_ERROR
 }

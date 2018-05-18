@@ -1141,8 +1141,6 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 			return nil, nil, err
 		}
 
-		logger.Critical().Infof("spend %d has hours %d, total=%d", i, spend.Hours, totalInputHours)
-
 		entry, ok := entriesMap[spend.Address]
 		if !ok {
 			return nil, nil, fmt.Errorf("spend address %s not found in entriesMap", spend.Address.String())
@@ -1153,7 +1151,6 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 	}
 
 	feeHours := fee.RequiredFee(totalInputHours)
-	logger.Critical().Infof("feeHours=%d, totalInputHours=%d", feeHours, totalInputHours)
 	if feeHours == 0 {
 		return nil, nil, fee.ErrTxnNoFee
 	}

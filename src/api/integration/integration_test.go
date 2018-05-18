@@ -2358,6 +2358,55 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 		},
 
 		{
+			name: "insufficient balance with uxouts",
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: api.CreateTransactionRequestWallet{
+					ID:       w.Filename(),
+					Password: password,
+					UxOuts:   []string{walletOutputs[0].Hash},
+				},
+				ChangeAddress: w.Entries[0].Address.String(),
+				To: []api.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(totalCoins + 1e3),
+						Hours:   "1",
+					},
+				},
+			},
+			err:  "400 Bad Request - balance is not sufficient\n",
+			code: http.StatusBadRequest,
+		},
+
+		{
+			// NOTE: expects wallet to have multiple outputs with non-zero coins
+			name: "insufficient hours with uxouts",
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: api.CreateTransactionRequestWallet{
+					ID:       w.Filename(),
+					Password: password,
+					UxOuts:   []string{walletOutputs[0].Hash},
+				},
+				ChangeAddress: w.Entries[0].Address.String(),
+				To: []api.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(1e3),
+						Hours:   fmt.Sprint(totalHours + 1),
+					},
+				},
+			},
+			err:  "400 Bad Request - Insufficient coinhours for transaction outputs\n",
+			code: http.StatusBadRequest,
+		},
+
+		{
 			name: "valid request, uxouts specified",
 			req: api.CreateTransactionRequest{
 				HoursSelection: api.HoursSelection{

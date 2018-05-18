@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import 'rxjs/add/operator/delay';
@@ -7,19 +7,22 @@ import { ButtonComponent } from '../../../layout/button/button.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { MatDialog, MatSnackBar, MatSnackBarConfig } from '@angular/material';
 import { parseResponseMessage } from '../../../../utils/errors';
+import { ISubscription } from 'rxjs/Subscription';
 
 @Component({
   selector: 'app-send-form',
   templateUrl: './send-form.component.html',
   styleUrls: ['./send-form.component.scss'],
 })
-export class SendFormComponent implements OnInit {
+export class SendFormComponent implements OnInit, OnDestroy {
   @ViewChild('button') button: ButtonComponent;
   @Input() formData: any;
   @Output() onFormSubmitted = new EventEmitter<any>();
 
   form: FormGroup;
   transactions = [];
+
+  private subscription: ISubscription;
 
   constructor(
     public formBuilder: FormBuilder,
@@ -30,6 +33,10 @@ export class SendFormComponent implements OnInit {
 
   ngOnInit() {
     this.initForm();
+  }
+
+  ngOnDestroy() {
+    this.subscription.unsubscribe();
   }
 
   send() {
@@ -88,7 +95,7 @@ export class SendFormComponent implements OnInit {
       notes: [''],
     });
 
-    this.form.get('wallet').valueChanges.subscribe(value => {
+    this.subscription = this.form.get('wallet').valueChanges.subscribe(value => {
       const balance = value && value.coins ? value.coins : 0;
 
       this.form.get('amount').setValidators([

@@ -23,6 +23,14 @@ json_value* JSON_POOL[128];
 int HANDLEPOOLIDX = 0;
 Handle HANDLE_POOL[128];
 
+typedef struct {
+	Client__Handle client;
+	WalletResponse__Handle wallet;
+} wallet_register;
+
+int WALLETPOOLIDX = 0;
+wallet_register WALLET_POOL[64];
+
 int stdout_backup;
 int pipefd[2];
 
@@ -72,6 +80,13 @@ void freeRegisteredJson(void *p){
 	}
 }
 
+int registerWalletClean(Client__Handle clientHandle,
+						WalletResponse__Handle walletHandle){
+	WALLET_POOL[WALLETPOOLIDX].wallet = walletHandle;
+	WALLET_POOL[WALLETPOOLIDX].client = clientHandle;
+	return WALLETPOOLIDX++;
+}
+
 int registerHandleClose(Handle handle){
 	int i;
 	for (i = 0; i < HANDLEPOOLIDX; i++) {
@@ -95,8 +110,46 @@ void closeRegisteredHandle(Handle handle){
 	}
 }
 
+void cleanupWallet(Client__Handle client, WalletResponse__Handle wallet){
+	GoString_ strWalletDir;
+	GoString_ strFileName;
+	memset(&strWalletDir, 0, sizeof(GoString_));
+	memset(&strFileName, 0, sizeof(GoString_));
+	int result;
+	
+	result = SKY_api_Handle_Client_GetWalletDir(client, &strWalletDir);
+	if( result != SKY_OK )
+		return;
+	result = SKY_api_Handle_Client_GetWalletFileName(wallet, &strFileName);
+	if( result != SKY_OK ){
+		free( (void*)strWalletDir.p );
+		return;
+	}
+	char fullPath[128];
+	if( strWalletDir.n + strFileName.n < 126){
+		strcpy( fullPath, strWalletDir.p );
+		if( fullPath[0] == 0 || fullPath[strlen(fullPath) - 1] != '/' )
+			strcat(fullPath, "/");
+		strcat( fullPath, strFileName.p );
+		unlink( fullPath );
+		if( strlen(fullPath) < 123 ){
+			strcat( fullPath, ".bak" );
+			unlink( fullPath );
+		}
+	}
+	GoString str = { strFileName.p, strFileName.n };
+	SKY_api_Client_UnloadWallet( &client, str );
+	free( (void*)strWalletDir.p );
+	free( (void*)strFileName.p );
+}
+
 void cleanupMem() {
   int i;
+  
+  for (i = 0; i < WALLETPOOLIDX; i++) {
+	  cleanupWallet( WALLET_POOL[i].client, WALLET_POOL[i].wallet );
+  }
+  
   void **ptr;
   for (i = MEMPOOLIDX, ptr = MEMPOOL; i; --i) {
 	if( *ptr )
@@ -111,6 +164,9 @@ void cleanupMem() {
   for (i = 0; i < HANDLEPOOLIDX; i++) {
 	  if( HANDLE_POOL[i] )
 		SKY_handle_close(HANDLE_POOL[i]);
+  }
+  for (i = 0; i < WALLETPOOLIDX; i++) {
+	  cleanupWallet( WALLET_POOL[i].client, WALLET_POOL[i].wallet );
   }
 }
 

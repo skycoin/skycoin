@@ -9,6 +9,7 @@
 #include "skyerrors.h"
 #include "skystring.h"
 #include "skytest.h"
+#include "base64.h"
 
 #define NODE_ADDRESS "SKYCOIN_NODE_HOST"
 #define NODE_ADDRESS_DEFAULT "http://127.0.0.1:46420"
@@ -95,7 +96,8 @@ int compareObjectsByHandle(Handle h1, Handle h2){
 	return equal;
 }
 
-int compareObjectWithGoldenFile(Handle handle, const char* golden_file){
+int compareObjectNodeWithGoldenFile(Handle handle, 
+					const char* golden_file, char* nodePath){
 	GoString_ jsonResult;
 	int result;
 	memset(&jsonResult, 0, sizeof(GoString_));
@@ -109,6 +111,11 @@ int compareObjectWithGoldenFile(Handle handle, const char* golden_file){
 	cr_assert(value != NULL, "json_parse failed");
 	registerJsonFree(value);
 	
+	if( nodePath != NULL ){
+		value = get_json_value( value, nodePath, json_object );
+		cr_assert(value != NULL, "Could\'t find node in json struct");
+	}
+	
 	json_value* golden_value = loadGoldenFile(golden_file);
 	cr_assert(golden_value != NULL, "loadGoldenFile failed");
 	registerJsonFree(golden_value);
@@ -120,6 +127,10 @@ int compareObjectWithGoldenFile(Handle handle, const char* golden_file){
 	freeRegisteredMemCleanup((void*)jsonResult.p);
 	
 	return equal;
+}
+
+int compareObjectWithGoldenFile(Handle handle, const char* golden_file){
+	return compareObjectNodeWithGoldenFile(handle, golden_file, NULL);
 }
 
 Test(api_integration, TestVersion) {
@@ -569,3 +580,904 @@ Test(api_integration, TestStableUxOut) {
 	int equal = compareObjectWithGoldenFile(uxOutHandle, golden_file);
 	cr_assert(equal, "SKY_api_Client_UxOut returned unexpected result");
 }
+
+typedef struct{
+	char* 	address;
+	char*	golden_file;
+	int 	failure;
+}test_address_ux_out;
+
+Test(api_integration, TestStableAddressUxOuts) {
+	int result;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	int tests_count = 3; 
+	test_address_ux_out tests[] = {
+		{"", NULL, 1},
+		{"prRXwTcDK24hs6AFxj69UuWae3LzhrsPW9", "uxout-noaddr.golden", 0},
+		{"2THDupTBEo7UqB6dsVizkYUvkKq82Qn4gjf", "uxout-addr.golden", 0},
+		
+	};
+	GoString addr;
+	for(int i = 0; i < tests_count; i++){
+		memset(&addr, 0, sizeof(GoString));
+		addr.p = tests[i].address;
+		addr.n = strlen( tests[i].address );
+		Handle outHandle;
+		result = SKY_api_Client_AddressUxOuts( &clientHandle, addr, &outHandle );
+		if( tests[i].failure ){
+			cr_assert(result != SKY_OK, "SKY_api_Client_AddressUxOuts should have failed");
+			continue;
+		} else {
+			cr_assert(result == SKY_OK, "SKY_api_Client_AddressUxOuts failed");
+		}
+		registerHandleClose( outHandle );
+		int equal = compareObjectWithGoldenFile( outHandle, tests[i].golden_file );
+		cr_assert( equal == 1 );
+	}
+}
+
+typedef struct{
+	char* golden_file;
+	GoUint64 start;
+	GoUint64 end;
+	int 	 failure;	
+}test_blockn;
+
+Handle testBlocksHandle(Client__Handle clientHandle,
+			Handle blocksHandle, GoUint64 start, GoUint64 end,
+			int checkIndexes){
+	GoUint64 count = 0;
+	int result;
+	result = SKY_Handle_Blocks_GetCount( blocksHandle, &count );
+	cr_assert(result == SKY_OK, "SKY_Handle_Blocks_GetCount failed");
+	if( checkIndexes ){
+		if( start > end ){
+			cr_assert(count == 0);
+		} else {
+			cr_assert(count == end - start + 1);
+		}
+	}
+	GoUint64 i;
+	GoString_ hash1, hash2, hash;
+	GoString _hash;
+	GoUint64 seq;
+	int equal;
+	for(i = 0; i < count; i++){
+		Handle blockHandle = 0, previousBlockHandle = 0;
+		Handle blockHandle2;
+		result = SKY_Handle_Blocks_GetAt(blocksHandle, i, &blockHandle);
+		cr_assert( result == SKY_OK, "Error getting block from blocks handle" );
+		registerHandleClose( blockHandle );
+		if( i > 0 ){
+			memset(&hash1, 0, sizeof(GoString_));
+			memset(&hash2, 0, sizeof(GoString_));
+			memset(&hash, 0, sizeof(GoString_));
+			result = SKY_Handle_Blocks_GetAt(blocksHandle, i - 1, 
+								&previousBlockHandle);
+			cr_assert( result == SKY_OK, "Error getting previous block from blocks handle" );
+			registerHandleClose( previousBlockHandle );
+			
+			result = SKY_Handle_Block_GetHeadHash(previousBlockHandle, &hash1);
+			cr_assert( result == SKY_OK, "Error getting previous block hash");
+			registerMemCleanup( (void*)hash1.p );
+			result = SKY_Handle_Block_GetPreviousBlockHash(blockHandle, &hash2);
+			cr_assert( result == SKY_OK, "Error getting previous block hash");
+			registerMemCleanup( (void*)hash2.p );
+			
+			cr_assert(eq(type(GoString_), hash1, hash2));
+			freeRegisteredMemCleanup( (void*)hash1.p );
+			freeRegisteredMemCleanup( (void*)hash2.p );
+			
+		}
+		
+		result = SKY_Handle_Block_GetHeadHash(blockHandle, &hash);
+		cr_assert( result == SKY_OK, "Error getting previous block hash");
+		registerMemCleanup( (void*)hash.p );
+		
+		_hash.p = hash.p;
+		_hash.n = hash.n;
+		result = SKY_api_Client_BlockByHash(&clientHandle, 
+			_hash, &blockHandle2);
+		cr_assert( result == SKY_OK, "SKY_api_Client_BlockByHash failed");
+		registerHandleClose( blockHandle2 );
+		
+		if( checkIndexes ){
+			result = SKY_Handle_Block_GetHeadSeq( blockHandle2, &seq );
+			cr_assert( result == SKY_OK, "SKY_Handle_Block_GetHeadSeq failed");
+			cr_assert(seq == i + start);
+		}
+		
+		equal = compareObjectsByHandle( blockHandle, blockHandle2 );
+		cr_assert( equal == 1);
+		
+		freeRegisteredMemCleanup( (void*)hash.p );
+		closeRegisteredHandle( blockHandle );
+		closeRegisteredHandle( blockHandle2 );
+		if( previousBlockHandle > 0 )
+			closeRegisteredHandle( previousBlockHandle );
+	}
+}
+
+Handle testBlocks(Client__Handle clientHandle, 
+				GoUint64 start, GoUint64 end){
+	Handle blocksHandle;
+	int result;
+	result = SKY_api_Client_Blocks(&clientHandle, start, end, &blocksHandle);
+	cr_assert(result == SKY_OK, "SKY_api_Client_Blocks failed");
+	registerHandleClose( blocksHandle );
+	testBlocksHandle( clientHandle, blocksHandle, start, end, 1 );
+	return blocksHandle;
+}
+
+Test(api_integration, TestStableBlocks) {
+	int result;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	Handle progressHandle;
+	result = SKY_api_Client_BlockchainProgress(&clientHandle, &progressHandle);
+	cr_assert(result == SKY_OK, "SKY_api_Client_BlockchainProgress failed");
+	registerHandleClose( progressHandle );
+	GoUint64 lastNBlocks = 10;
+	GoUint64 current;
+	result = SKY_Handle_Progress_GetCurrent( progressHandle, &current );
+	cr_assert(result == SKY_OK, "SKY_Handle_Progress_GetCurrent failed");
+	cr_assert( current > lastNBlocks + 1, "Progress current must be greater than 10" );
+	int tests_count = 7;
+	test_blockn tests[] = {
+		{
+			"blocks-first-10.golden", 1, 10, 0
+		},
+		{
+			"blocks-last-10.golden", current - lastNBlocks, current, 0
+		},
+		{
+			"blocks-first-1.golden", 1, 1, 0
+		},
+		{
+			"blocks-all.golden", 0, current, 0
+		},
+		{
+			"blocks-end-less-than-start.golden", 10, 9, 0
+		},
+		{
+			NULL, -10, 9, 1
+		},
+		{
+			NULL, 10, -9, 1
+		},
+	};
+	Handle blocksHandle;
+	int equal;
+	for(int i = 0; i < tests_count; i++){
+		if( tests[i].failure ){
+			result = SKY_api_Client_Blocks(&clientHandle, 
+					tests[i].start, tests[i].end, &blocksHandle);
+			cr_assert(result != SKY_OK, "SKY_api_Client_Blocks should have failed");
+		} else {
+			blocksHandle = testBlocks(clientHandle, 
+					tests[i].start, tests[i].end);
+			equal = compareObjectWithGoldenFile(blocksHandle, 
+										tests[i].golden_file);
+			cr_assert(equal == 1, "SKY_api_Client_Blocks returned a value different than expected.");
+			closeRegisteredHandle( blocksHandle );
+		}
+	}
+}
+
+Test(api_integration, TestStableLastBlocks) {
+	int result, equal;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	Handle blocksHandle;
+	result = SKY_api_Client_LastBlocks( &clientHandle, 1, &blocksHandle);
+	cr_assert(result == SKY_OK, "SKY_api_Client_LastBlocks(1) failed");
+	registerHandleClose( blocksHandle );
+	
+	equal = compareObjectWithGoldenFile( blocksHandle, "block-last.golden");
+	cr_assert(equal == 1, "SKY_api_Client_LastBlocks(1) returned result different than expected");
+	closeRegisteredHandle( blocksHandle );	
+	
+	result = SKY_api_Client_LastBlocks( &clientHandle, 10, &blocksHandle);
+	cr_assert(result == SKY_OK, "SKY_api_Client_LastBlocks(10) failed");
+	registerHandleClose( blocksHandle );
+	testBlocksHandle( clientHandle, blocksHandle, 0, 0, 0);
+	
+	closeRegisteredHandle( blocksHandle );	
+}
+
+Test(api_integration, TestStableNetworkConnections) {
+	int result, equal;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	Handle connectionsHandle;
+	result = SKY_api_Client_NetworkConnections( &clientHandle, &connectionsHandle );
+	cr_assert(result == SKY_OK, "SKY_api_Client_NetworkConnections failed");
+	registerHandleClose( connectionsHandle );
+	
+	GoUint64 connectionsCount;
+	result = SKY_Handle_Connections_GetCount( connectionsHandle, &connectionsCount );
+	cr_assert(result == SKY_OK, "SKY_Handle_Connections_GetCount failed");
+	cr_assert( connectionsCount == 0 );
+	
+	char* pAddress = "127.0.0.1:4444";
+	GoString address = { pAddress, strlen(pAddress) };
+	Handle connectionHandle;
+	result = SKY_api_Client_NetworkConnection( &clientHandle, address, &connectionHandle );
+	cr_assert(result != SKY_OK, "SKY_api_Client_NetworkConnection should have failed");
+}
+
+Test(api_integration, TestNetworkDefaultConnections) {
+	int result, equal;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	Handle connectionsHandle;
+	result = SKY_api_Client_NetworkDefaultConnections( &clientHandle, &connectionsHandle );
+	cr_assert(result == SKY_OK, "SKY_api_Client_NetworkDefaultConnections failed");
+	registerHandleClose( connectionsHandle );
+	
+	result = SKY_Handle_Strings_Sort(connectionsHandle);
+	cr_assert(result == SKY_OK);
+	
+	equal = compareObjectWithGoldenFile( connectionsHandle, 
+				"network-default-connections.golden");
+	cr_assert(equal == 1);
+}
+
+Test(api_integration, TestNetworkTrustedConnections) {
+	int result, equal;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	Handle connectionsHandle;
+	result = SKY_api_Client_NetworkTrustedConnections( &clientHandle, &connectionsHandle );
+	cr_assert(result == SKY_OK, "SKY_api_Client_NetworkTrustedConnections failed");
+	registerHandleClose( connectionsHandle );
+	
+	result = SKY_Handle_Strings_Sort(connectionsHandle);
+	cr_assert(result == SKY_OK);
+	
+	equal = compareObjectWithGoldenFile( connectionsHandle, 
+				"network-trusted-connections.golden");
+	cr_assert(equal == 1);
+}
+
+Test(api_integration, TestStableNetworkExchangeableConnections) {
+	int result, equal;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	Handle connectionsHandle;
+	result = SKY_api_Client_NetworkExchangeableConnections( &clientHandle, &connectionsHandle );
+	cr_assert(result == SKY_OK, "SKY_api_Client_NetworkTrustedConnections failed");
+	registerHandleClose( connectionsHandle );
+	
+	result = SKY_Handle_Strings_Sort(connectionsHandle);
+	cr_assert(result == SKY_OK);
+	
+	equal = compareObjectWithGoldenFile( connectionsHandle, 
+				"network-exchangeable-connections.golden");
+	cr_assert(equal == 1);
+}
+
+typedef struct {
+	char* 	golden_file;
+	char* 	txId;
+	int 	failure;
+} test_transaction;
+
+Test(api_integration, TestStableTransaction) {
+	int result, equal;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	int tests_count = 4;
+	test_transaction tests[] = {
+		{
+			NULL, "abcd", 1,
+		},
+		{
+			NULL, "701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947", 1,
+		},
+		{
+			NULL, "", 1,
+		},
+		{
+			"genesis-transaction.golden",
+			"d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add",
+			0,
+		},
+	};
+	GoString txId;
+	Handle transactionHandle;
+	for(int i = 0; i < tests_count; i++){
+		txId.p = tests[i].txId;
+		txId.n = strlen(tests[i].txId);
+		result = SKY_api_Client_Transaction(
+							&clientHandle, txId, &transactionHandle);
+		if( tests[i].failure ){
+			cr_assert(result != SKY_OK, "SKY_api_Client_Transaction should have failed");
+			continue;
+		}
+		cr_assert(result == SKY_OK, "SKY_api_Client_Transaction failed");
+		registerHandleClose( transactionHandle );
+		
+		equal = compareObjectNodeWithGoldenFile(
+				transactionHandle, 
+				tests[i].golden_file, 
+				"txn"); //Compare starting from this node
+		cr_assert( equal == 1, 
+			"SKY_api_Client_Transaction returned a value different than expected" );
+		
+	}
+}
+
+typedef struct {
+	char* 	golden_file;
+	char** 	addresses;
+	int 	addresses_count;
+	int 	failure;
+} test_transactions;
+
+Test(api_integration, TestStableTransactions) {
+	int result, equal;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	char* addrs1[] = {
+		"abcd"
+	};
+	char* addrs2[] = {
+		"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947"
+	};
+	char* addrs3[] = {
+		"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk"
+	};
+	char* addrs4[] = {
+	};
+	char* addrs5[] = {
+		"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"
+	};
+	test_transactions tests[] = {
+		{
+			NULL, addrs1, 1, 1
+		},
+		{
+			NULL, addrs2, 1, 1
+		},
+		{
+			NULL, addrs3, 1, 1
+		},
+		{
+			"empty-addrs.golden", addrs4, 0, 0
+		},
+		{
+			"single-addr.golden", addrs5, 1, 0
+		},
+	};
+	Handle transactionsHandle;
+	GoSlice strings;
+	int tests_count = sizeof(tests) / sizeof(test_transactions);
+	for(int i = 0; i < tests_count; i++){
+		memset( &strings, 0, sizeof(GoSlice) );
+		createGoStringSlice( tests[i].addresses, tests[i].addresses_count,
+							&strings);
+		result = SKY_api_Client_Transactions( &clientHandle, 
+						strings, &transactionsHandle);
+		if( tests[i].failure ){
+			cr_assert( result != SKY_OK, "SKY_api_Client_Transactions should have failed." );
+			continue;
+		}
+		cr_assert( result == SKY_OK, "SKY_api_Client_Transactions failed" );
+		registerHandleClose( transactionsHandle );
+		equal = compareObjectWithGoldenFile( transactionsHandle, 
+										tests[i].golden_file );
+		cr_assert( equal == 1, "SKY_api_Client_Transactions returned a value different than expected.");
+	}
+}
+
+Test(api_integration, TestStableConfirmedTransactions) {
+	int result, equal;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	char* addrs1[] = {
+		"abcd"
+	};
+	char* addrs2[] = {
+		"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947"
+	};
+	char* addrs3[] = {
+		"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk"
+	};
+	char* addrs4[] = {
+	};
+	char* addrs5[] = {
+		"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"
+	};
+	test_transactions tests[] = {
+		{
+			NULL, addrs1, 1, 1
+		},
+		{
+			NULL, addrs2, 1, 1
+		},
+		{
+			NULL, addrs3, 1, 1
+		},
+		{
+			"empty-addrs.golden", addrs4, 0, 0
+		},
+		{
+			"single-addr.golden", addrs5, 1, 0
+		},
+	};
+	Handle transactionsHandle;
+	GoSlice strings;
+	int tests_count = sizeof(tests) / sizeof(test_transactions);
+	for(int i = 0; i < tests_count; i++){
+		memset( &strings, 0, sizeof(GoSlice) );
+		createGoStringSlice( tests[i].addresses, tests[i].addresses_count,
+							&strings);
+		result = SKY_api_Client_ConfirmedTransactions( &clientHandle, 
+						strings, &transactionsHandle);
+		if( tests[i].failure ){
+			cr_assert( result != SKY_OK, "SKY_api_Client_ConfirmedTransactions should have failed." );
+			continue;
+		}
+		cr_assert( result == SKY_OK, "SKY_api_Client_ConfirmedTransactions failed" );
+		registerHandleClose( transactionsHandle );
+		equal = compareObjectWithGoldenFile( transactionsHandle, 
+										tests[i].golden_file );
+		cr_assert( equal == 1, "SKY_api_Client_ConfirmedTransactions returned a value different than expected.");
+	}
+}
+
+Test(api_integration, TestStableUnconfirmedTransactions) {
+	int result, equal;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	char* addrs1[] = {
+		"abcd"
+	};
+	char* addrs2[] = {
+		"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947"
+	};
+	char* addrs3[] = {
+		"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk"
+	};
+	char* addrs4[] = {
+	};
+	test_transactions tests[] = {
+		{
+			NULL, addrs1, 1, 1
+		},
+		{
+			NULL, addrs2, 1, 1
+		},
+		{
+			NULL, addrs3, 1, 1
+		},
+		{
+			"empty-addrs-unconfirmed-txs.golden", addrs4, 0, 0
+		},
+	};
+	Handle transactionsHandle;
+	GoSlice strings;
+	int tests_count = sizeof(tests) / sizeof(test_transactions);
+	for(int i = 0; i < tests_count; i++){
+		memset( &strings, 0, sizeof(GoSlice) );
+		createGoStringSlice( tests[i].addresses, tests[i].addresses_count,
+							&strings);
+		result = SKY_api_Client_UnconfirmedTransactions( &clientHandle, 
+						strings, &transactionsHandle);
+		if( tests[i].failure ){
+			cr_assert( result != SKY_OK, "SKY_api_Client_UnconfirmedTransactions should have failed." );
+			continue;
+		}
+		cr_assert( result == SKY_OK, "SKY_api_Client_UnconfirmedTransactions failed" );
+		registerHandleClose( transactionsHandle );
+		equal = compareObjectWithGoldenFile( transactionsHandle, 
+										tests[i].golden_file );
+		cr_assert( equal == 1, "SKY_api_Client_UnconfirmedTransactions returned a value different than expected.");
+	}
+}
+
+Test(api_integration, TestStableResendUnconfirmedTransactions) {
+	int result, equal;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	Handle resendResultHandle;
+	result = SKY_api_Client_ResendUnconfirmedTransactions( 
+					&clientHandle, &resendResultHandle);
+	cr_assert( result == SKY_OK, "SKY_api_Client_ResendUnconfirmedTransactions failed" );
+	registerHandleClose( resendResultHandle );
+	
+	GoString_ jsonResult;
+	memset(&jsonResult, 0, sizeof(GoString_));
+	
+	result = SKY_JsonEncode_Handle(resendResultHandle, &jsonResult);
+	cr_assert(result == SKY_OK, "Couldn\'t json encode");
+	registerMemCleanup((void*)jsonResult.p);
+	
+	json_value* json = json_parse( (json_char*) jsonResult.p, 
+							strlen(jsonResult.p) );
+	cr_assert(json != NULL, "json_parse failed");
+	registerJsonFree( json );
+	json_value* json_txtIds = 
+		get_json_value_not_strict( json, "txids", json_array, 1);
+	cr_assert(json_txtIds != NULL, "Error in JSON result from SKY_api_Client_ResendUnconfirmedTransactions");
+	int length = 0;
+	if ( json_txtIds->type == json_array )//It maybe json_null
+		length = json_txtIds->u.array.length;
+	cr_assert(length == 0, "SKY_api_Client_ResendUnconfirmedTransactions should have returned an empty or null array of transactions");
+}
+
+typedef struct{
+	char* 	txId;
+	char* 	rawTx;
+	int 	failure;
+} test_raw_transaction;
+
+Test(api_integration, TestStableRawTransaction) {
+	int result, equal;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	test_raw_transaction tests[] = {
+		{	//Invalid hex length
+			"abcd", NULL, 1, 
+		},
+		{   //Not found
+			"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947", 
+			NULL, 1, 
+		},
+		{   //Odd length hex string
+			"abcdeffedca", 
+			NULL, 1, 
+		},
+		{   //OK
+			"d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add", 
+			"0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000f8f9c644772dc5373d85e11094e438df707a42c900407a10f35a000000407a10f35a0000", 
+			0, 
+		},
+	};
+	int tests_count = sizeof(tests) / sizeof(test_raw_transaction);
+	GoString txtId;
+	GoString_ rawTx;
+	GoString_ expected;
+	for(int i = 0; i < tests_count; i++){
+		memset( &rawTx, 0, sizeof(GoString_) );
+		memset( &expected, 0, sizeof(GoString_) );
+		txtId.p = tests[i].txId;
+		txtId.n = strlen( tests[i].txId );
+		result = SKY_api_Client_RawTransaction( &clientHandle, 
+									txtId, &rawTx );
+		if( tests[i].failure ){
+			cr_assert( result != SKY_OK, "SKY_api_Client_RawTransaction should have failed" );
+			continue;
+		}
+		expected.p = tests[i].rawTx;
+		expected.n = strlen( tests[i].rawTx );
+		cr_assert(result == SKY_OK, "SKY_api_Client_RawTransaction failed");
+		registerMemCleanup( (void*)rawTx.p );
+		cr_assert(eq(type(GoString_), rawTx, expected));
+	}
+}
+
+typedef struct {
+	int entropy;
+	int words_count;
+	int failure;
+} test_new_seed;
+
+Test(api_integration, TestWalletNewSeed) {
+	int result, equal;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	test_new_seed tests[] = {
+		{128, 12, 0},
+		{256, 24, 0},
+		{100, 0, 1},
+	};
+	int tests_count = sizeof(tests) / sizeof(test_new_seed);
+	GoString_ seed, seed2;
+	for( int i = 0; i < tests_count; i++ ){
+		memset( &seed, 0, sizeof(GoString_));
+		memset( &seed2, 0, sizeof(GoString_));
+		result = SKY_api_Client_NewSeed( &clientHandle, 
+				tests[i].entropy, &seed);
+		if( tests[i].failure ){
+			cr_assert( result != SKY_OK, "SKY_api_Client_NewSeed should have failed" );
+			continue;
+		}
+		cr_assert(result == SKY_OK, "SKY_api_Client_NewSeed failed");
+		registerMemCleanup( (void*)seed.p );
+		int words = count_words(seed.p, seed.n);
+		cr_assert( words == tests[i].words_count, "SKY_api_Client_NewSeed incorrect words count");		
+		if( seed.n > 0 ){
+			cr_assert(seed.p[0] != ' ' && seed.p[seed.n-1] != ' ', "Seed has extra spaces");
+		}
+		result = SKY_api_Client_NewSeed( &clientHandle, 
+				tests[i].entropy, &seed2);
+		cr_assert(result == SKY_OK, "SKY_api_Client_NewSeed failed");
+		registerMemCleanup( (void*)seed2.p );
+		//Seeds must be different every time
+		cr_assert(not(eq(type(GoString_), seed, seed2)));
+	}
+}
+
+typedef struct {
+	char* 	address;
+	char* 	golden_file;
+	int		failure;
+} test_address_transactions;
+
+Test(api_integration, TestStableAddressTransactions) {
+	int result, equal;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	test_address_transactions tests[] = {
+		{
+			"ALJVNKYL7WGxFBSriiZuwZKWD4b7fbV1od",
+			"address-transactions-ALJVNKYL7WGxFBSriiZuwZKWD4b7fbV1od.golden",
+			0,
+		},
+		{
+			"2b8ourW8fbTkC1yQBSLseVt6srhXvNMHvn9",
+			"address-transactions-2b8ourW8fbTkC1yQBSLseVt6srhXvNMHvn9.golden",
+			0,
+		},
+		{
+			"prRXwTcDK24hs6AFxj", //Invalid address
+			NULL,
+			1,
+		},
+	};
+	int tests_count = sizeof(tests) / sizeof(test_address_transactions);
+	GoString address;
+	Handle transactionsHandle;
+	for( int i = 0; i < tests_count; i++){
+		address.p = tests[i].address;
+		address.n = strlen(tests[i].address);
+		result = SKY_api_Client_AddressTransactions(&clientHandle,
+				address, &transactionsHandle);
+		if( tests[i].failure ){
+			cr_assert( result != SKY_OK, "SKY_api_Client_AddressTransactions should have failed" );
+			continue;
+		}
+		cr_assert(result == SKY_OK, "SKY_api_Client_AddressTransactions failed");
+		registerHandleClose( transactionsHandle );
+		equal = compareObjectWithGoldenFile(transactionsHandle, 
+										tests[i].golden_file);
+		cr_assert(equal == 1, "SKY_api_Client_AddressTransactions returned a value different that expected");
+	}
+}
+
+Test(api_integration, TestStableRichlist) {
+	int result, equal;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	Handle richlistHandle;
+	result = SKY_api_Client_Richlist(&clientHandle, NULL, &richlistHandle);
+	cr_assert(result == SKY_OK, "SKY_api_Client_Richlist failed");
+	registerHandleClose( richlistHandle );
+	equal = compareObjectWithGoldenFile( richlistHandle, "richlist-default.golden" );
+	cr_assert( equal , "Richlist default result error");
+	
+	api__RichlistParams params;
+	params.N = 0;
+	params.IncludeDistribution = 0;
+	result = SKY_api_Client_Richlist(&clientHandle, &params, &richlistHandle);
+	cr_assert(result == SKY_OK, "SKY_api_Client_Richlist failed");
+	registerHandleClose( richlistHandle );
+	equal = compareObjectWithGoldenFile( richlistHandle, "richlist-all.golden" );
+	cr_assert( equal , "Richlist all result error");
+	
+	params.N = 0;
+	params.IncludeDistribution = 1;
+	result = SKY_api_Client_Richlist(&clientHandle, &params, &richlistHandle);
+	cr_assert(result == SKY_OK, "SKY_api_Client_Richlist failed");
+	registerHandleClose( richlistHandle );
+	equal = compareObjectWithGoldenFile( richlistHandle, "richlist-all-include-distribution.golden" );
+	cr_assert( equal , "Richlist all result error");
+	
+	params.N = 8;
+	params.IncludeDistribution = 0;
+	result = SKY_api_Client_Richlist(&clientHandle, &params, &richlistHandle);
+	cr_assert(result == SKY_OK, "SKY_api_Client_Richlist failed");
+	registerHandleClose( richlistHandle );
+	equal = compareObjectWithGoldenFile( richlistHandle, "richlist-8.golden" );
+	cr_assert( equal , "Richlist result error");
+	
+	params.N = 150;
+	params.IncludeDistribution = 1;
+	result = SKY_api_Client_Richlist(&clientHandle, &params, &richlistHandle);
+	cr_assert(result == SKY_OK, "SKY_api_Client_Richlist failed");
+	registerHandleClose( richlistHandle );
+	equal = compareObjectWithGoldenFile( richlistHandle, "richlist-150-include-distribution.golden" );
+	cr_assert( equal , "Richlist result error");
+}
+
+Test(api_integration, TestStableAddressCount) {
+	int result;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	GoUint64 count;
+	result = SKY_api_Client_AddressCount( &clientHandle, &count );
+	cr_assert(result == SKY_OK, "SKY_api_Client_AddressCount failed");
+	cr_assert( count == 155 );
+}
+
+Test(api_integration, TestStablePendingTransactions) {
+	int result;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	Handle txtHandle;
+	result = SKY_api_Client_PendingTransactions( &clientHandle, &txtHandle );
+	cr_assert(result == SKY_OK, "SKY_api_Client_PendingTransactions failed");
+	
+	GoString_ jsonResult;
+	memset(&jsonResult, 0, sizeof(GoString_));
+	
+	result = SKY_JsonEncode_Handle(txtHandle, &jsonResult);
+	cr_assert(result == SKY_OK, "Couldn\'t json encode");
+	registerMemCleanup((void*)jsonResult.p);
+	
+	json_value* json = json_parse( (json_char*) jsonResult.p, 
+							strlen(jsonResult.p) );
+	cr_assert(json != NULL, "json_parse failed");
+	registerJsonFree( json );
+	cr_assert(json->type == json_array);
+	cr_assert(json->u.array.length == 0);
+}
+
+void createWallet(Client__Handle clientHandle, 
+		int encrypt, char* password, 
+		char* seed, int max_seed_length,
+		WalletResponse__Handle* responseHandle){
+	char label[10];
+	int result;
+	if(seed[0] == 0){
+		cr_assert(max_seed_length > 64, "Seed buffer is too short");
+		unsigned char buff[64];
+		GoSlice slice = { buff, 0, 64 };
+		randBytes( &slice, 32 );
+		b64_encode_string(buff, 32, seed);
+	}
+	strncpy(label, seed, 6);
+	GoString strSeed = {seed, strlen(seed)};
+	GoString strLabel = {seed, strlen(label)};
+	if( encrypt ){
+		GoString strPassword = {password, strlen(password)};
+		result = SKY_api_Client_CreateEncryptedWallet( 
+			&clientHandle, strSeed, strLabel, strPassword, 0,
+			responseHandle);
+	} else {
+		result = SKY_api_Client_CreateUnencryptedWallet(
+			&clientHandle, strSeed, strLabel, 0,
+			responseHandle);
+	}
+	cr_assert( result == SKY_OK, "Create Wallet failed" );
+}
+
+Test(api_integration, TestCreateWallet) {
+	int result;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	WalletResponse__Handle responseHandle;
+	char seed[128];
+	createWallet( clientHandle, 0, "", seed, 128, &responseHandle );
+	registerHandleClose( responseHandle );
+	registerWalletClean( clientHandle, responseHandle );
+}
+
+
+

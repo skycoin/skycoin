@@ -90,3 +90,14 @@ int string_has_prefix(const char* str, const char* prefix){
 	}
 	return 0;
 }
+
+extern int count_words(const char* str, int length){
+	int words = 1;
+	char prevChar = 0;
+	for(int i = 0; i < length; i++){
+		char c = str[i];
+		if( c == ' ' && prevChar != ' ' ) words++;
+		prevChar = c;
+	}
+	return words;
+}

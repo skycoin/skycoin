@@ -95,8 +95,9 @@ int compareJsonValues(json_value* value1, json_value* value2){
 	return 1;
 }
 
-json_value* get_json_value(json_value* node, const char* path,
-							json_type type){
+
+json_value* get_json_value_not_strict(json_value* node, const char* path,
+							json_type type, int allow_null){
 	int n;
 	const char* p = strchr(path, '/');
 	if( p == NULL )
@@ -106,19 +107,27 @@ json_value* get_json_value(json_value* node, const char* path,
 	if( n > 0 ) {
 		if( node->type == json_object){
 			for (int x = 0; x < node->u.object.length; x++) {
-				char* name = node->u.object.values[x].name;
+				json_object_entry * entry = &node->u.object.values[x];
+				char* name = entry->name;
+				json_value* value = entry->value;
 				if( strncmp( path, name, n ) == 0){
 					if( p == NULL){
-						if( node->u.object.values[x].value->type == type)
-							return node->u.object.values[x].value;
+						if( value->type == type || 
+								(allow_null && value->type == json_null))
+							return value;
 					}else
-						return get_json_value(
-							node->u.object.values[x].value, 
-							p + 1, type);
+						return get_json_value_not_strict( 
+							value, p + 1, type, allow_null);
 				}
 			}
 		} else {
 			return NULL;
 		}
 	}
+	return NULL;
+}
+
+json_value* get_json_value(json_value* node, const char* path,
+							json_type type){
+	get_json_value_not_strict(node, path, type, 1);
 }

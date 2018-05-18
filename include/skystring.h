@@ -23,4 +23,6 @@ extern int string_has_suffix(const char* str, const char* suffix);
 
 extern int string_has_prefix(const char* str, const char* prefix);
 
+extern int count_words(const char* str, int length);
+
 #endif //LIBSKY_STRING_H

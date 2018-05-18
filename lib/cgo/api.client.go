@@ -315,7 +315,7 @@ func SKY_api_Client_UxOut(_c *C.Client__Handle, _uxID string, _arg1 *C.Handle) (
 }
 
 //export SKY_api_Client_AddressUxOuts
-func SKY_api_Client_AddressUxOuts(_c *C.Client__Handle, _addr string, _arg1 *C.GoSlice_) (____error_code uint32) {
+func SKY_api_Client_AddressUxOuts(_c *C.Client__Handle, _addr string, _arg1 *C.Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -329,7 +329,7 @@ func SKY_api_Client_AddressUxOuts(_c *C.Client__Handle, _addr string, _arg1 *C.G
 	__arg1, ____return_err := c.AddressUxOuts(addr)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		copyToGoSlice(reflect.ValueOf(__arg1), _arg1)
+		*_arg1 = registerHandle(__arg1)
 	}
 	return
 }
@@ -647,7 +647,7 @@ func SKY_api_Client_NetworkConnections(_c *C.Client__Handle, _arg0 *C.Handle) (_
 }
 
 //export SKY_api_Client_NetworkDefaultConnections
-func SKY_api_Client_NetworkDefaultConnections(_c *C.Client__Handle, _arg0 *C.GoSlice_) (____error_code uint32) {
+func SKY_api_Client_NetworkDefaultConnections(_c *C.Client__Handle, _arg0 *C.Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -660,13 +660,13 @@ func SKY_api_Client_NetworkDefaultConnections(_c *C.Client__Handle, _arg0 *C.GoS
 	__arg0, ____return_err := c.NetworkDefaultConnections()
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		copyToGoSlice(reflect.ValueOf(__arg0), _arg0)
+		*_arg0 = registerHandle(__arg0)
 	}
 	return
 }
 
 //export SKY_api_Client_NetworkTrustedConnections
-func SKY_api_Client_NetworkTrustedConnections(_c *C.Client__Handle, _arg0 *C.GoSlice_) (____error_code uint32) {
+func SKY_api_Client_NetworkTrustedConnections(_c *C.Client__Handle, _arg0 *C.Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -679,13 +679,13 @@ func SKY_api_Client_NetworkTrustedConnections(_c *C.Client__Handle, _arg0 *C.GoS
 	__arg0, ____return_err := c.NetworkTrustedConnections()
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		copyToGoSlice(reflect.ValueOf(__arg0), _arg0)
+		*_arg0 = registerHandle(__arg0)
 	}
 	return
 }
 
 //export SKY_api_Client_NetworkExchangeableConnections
-func SKY_api_Client_NetworkExchangeableConnections(_c *C.Client__Handle, _arg0 *C.GoSlice_) (____error_code uint32) {
+func SKY_api_Client_NetworkExchangeableConnections(_c *C.Client__Handle, _arg0 *C.Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -698,13 +698,13 @@ func SKY_api_Client_NetworkExchangeableConnections(_c *C.Client__Handle, _arg0 *
 	__arg0, ____return_err := c.NetworkExchangeableConnections()
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		copyToGoSlice(reflect.ValueOf(__arg0), _arg0)
+		*_arg0 = registerHandle(__arg0)
 	}
 	return
 }
 
 //export SKY_api_Client_PendingTransactions
-func SKY_api_Client_PendingTransactions(_c *C.Client__Handle, _arg0 *C.GoSlice_) (____error_code uint32) {
+func SKY_api_Client_PendingTransactions(_c *C.Client__Handle, _arg0 *C.Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -717,7 +717,7 @@ func SKY_api_Client_PendingTransactions(_c *C.Client__Handle, _arg0 *C.GoSlice_)
 	__arg0, ____return_err := c.PendingTransactions()
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		copyToGoSlice(reflect.ValueOf(__arg0), _arg0)
+		*_arg0 = registerHandle(__arg0)
 	}
 	return
 }
@@ -743,7 +743,7 @@ func SKY_api_Client_Transaction(_c *C.Client__Handle, _txid string, _arg1 *C.Han
 }
 
 //export SKY_api_Client_Transactions
-func SKY_api_Client_Transactions(_c *C.Client__Handle, _addrs []string, _arg1 *C.GoSlice_) (____error_code uint32) {
+func SKY_api_Client_Transactions(_c *C.Client__Handle, _addrs []string, _arg1 *C.Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -757,13 +757,13 @@ func SKY_api_Client_Transactions(_c *C.Client__Handle, _addrs []string, _arg1 *C
 	__arg1, ____return_err := c.Transactions(addrs)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		copyToGoSlice(reflect.ValueOf(__arg1), _arg1)
+		*_arg1 = registerHandle(__arg1)
 	}
 	return
 }
 
 //export SKY_api_Client_ConfirmedTransactions
-func SKY_api_Client_ConfirmedTransactions(_c *C.Client__Handle, _addrs []string, _arg1 *C.GoSlice_) (____error_code uint32) {
+func SKY_api_Client_ConfirmedTransactions(_c *C.Client__Handle, _addrs []string, _arg1 *C.Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -777,13 +777,13 @@ func SKY_api_Client_ConfirmedTransactions(_c *C.Client__Handle, _addrs []string,
 	__arg1, ____return_err := c.ConfirmedTransactions(addrs)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		copyToGoSlice(reflect.ValueOf(__arg1), _arg1)
+		*_arg1 = registerHandle(__arg1)
 	}
 	return
 }
 
 //export SKY_api_Client_UnconfirmedTransactions
-func SKY_api_Client_UnconfirmedTransactions(_c *C.Client__Handle, _addrs []string, _arg1 *C.GoSlice_) (____error_code uint32) {
+func SKY_api_Client_UnconfirmedTransactions(_c *C.Client__Handle, _addrs []string, _arg1 *C.Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -797,7 +797,7 @@ func SKY_api_Client_UnconfirmedTransactions(_c *C.Client__Handle, _addrs []strin
 	__arg1, ____return_err := c.UnconfirmedTransactions(addrs)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		copyToGoSlice(reflect.ValueOf(__arg1), _arg1)
+		*_arg1 = registerHandle(__arg1)
 	}
 	return
 }
@@ -862,7 +862,7 @@ func SKY_api_Client_RawTransaction(_c *C.Client__Handle, _txid string, _arg1 *C.
 }
 
 //export SKY_api_Client_AddressTransactions
-func SKY_api_Client_AddressTransactions(_c *C.Client__Handle, _addr string, _arg1 *C.GoSlice_) (____error_code uint32) {
+func SKY_api_Client_AddressTransactions(_c *C.Client__Handle, _addr string, _arg1 *C.Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -876,7 +876,7 @@ func SKY_api_Client_AddressTransactions(_c *C.Client__Handle, _addr string, _arg
 	__arg1, ____return_err := c.AddressTransactions(addr)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		copyToGoSlice(reflect.ValueOf(__arg1), _arg1)
+		*_arg1 = registerHandle(__arg1)
 	}
 	return
 }

@@ -55,7 +55,9 @@ type job struct {
 
 func init() {
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "%s\n\nUsage of %s:\n", help, os.Args[0])
+		// TODO go1.10 - use flag.CommandLine.Output() (not support in go1.9)
+		// fmt.Fprintf(flag.CommandLine.Output(), "%s\n\nUsage of %s:\n", help, os.Args[0])
+		fmt.Fprintf(os.Stderr, "%s\n\nUsage of %s:\n", help, os.Args[0])
 		flag.PrintDefaults()
 	}
 }
@@ -76,7 +78,7 @@ func main() {
 
 	// Create the output directory
 	if err := os.MkdirAll(*outputDir, 0755); err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
@@ -89,7 +91,7 @@ func main() {
 	})
 	fn := filepath.Join(*outputDir, manyAddressesFilename)
 	if err := file.SaveJSON(fn, manyAddressesData.ToJSON(), 0644); err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
@@ -99,7 +101,7 @@ func main() {
 	inputs := generateInputTestData(*inputsCount)
 	fn = filepath.Join(*outputDir, inputTestDataFilename)
 	if err := file.SaveJSON(fn, inputs.ToJSON(), 0644); err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
@@ -139,7 +141,7 @@ func main() {
 		for data := range seedTestData {
 			filename := filepath.Join(*outputDir, fmt.Sprintf(seedFilenameFormat, i))
 			if err := file.SaveJSON(filename, data.ToJSON(), 0644); err != nil {
-				fmt.Println(err)
+				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}
 			i++

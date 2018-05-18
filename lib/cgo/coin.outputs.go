@@ -1,9 +1,10 @@
 package main
 
 import (
-	coin "github.com/skycoin/skycoin/src/coin"
 	"reflect"
 	"unsafe"
+
+	coin "github.com/skycoin/skycoin/src/coin"
 )
 
 /*

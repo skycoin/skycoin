@@ -12,14 +12,16 @@ import (
 	"sync"
 	"time"
 
+	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
-	"github.com/skycoin/skycoin/src/gui"
+	"github.com/skycoin/skycoin/src/util/apputil"
 	"github.com/skycoin/skycoin/src/util/browser"
 	"github.com/skycoin/skycoin/src/util/cert"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -35,6 +37,11 @@ func (c *Coin) Run() {
 			c.logger.Errorf("recover: %v\nstack:%v", r, string(debug.Stack()))
 		}
 	}()
+
+	var db *dbutil.DB
+	var d *daemon.Daemon
+	var webInterface *api.Server
+	errC := make(chan error, 10)
 
 	if c.config.Node.Version {
 		fmt.Println(c.config.Build.Version)
@@ -58,7 +65,7 @@ func (c *Coin) Run() {
 	var logFile *os.File
 	if c.config.Node.LogToFile {
 		var err error
-		logFile, err = c.initLogFile(c.config.Node.DataDirectory)
+		logFile, err = c.initLogFile()
 		if err != nil {
 			c.logger.Error(err)
 			return
@@ -76,56 +83,67 @@ func (c *Coin) Run() {
 		fmt.Println(fullAddress)
 	}
 
-	c.initProfiling(c.config.Node.HTTPProf, c.config.Node.ProfileCPU, c.config.Node.ProfileCPUFile)
+	c.initProfiling()
 
 	var wg sync.WaitGroup
 
-	// If the user Ctrl-C's, shutdown properly
 	quit := make(chan struct{})
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		catchInterrupt(quit)
-	}()
+	// Catch SIGINT (CTRL-C) (closes the quit channel)
+	go apputil.CatchInterrupt(quit)
 
-	// Watch for SIGUSR1
-	wg.Add(1)
-	func() {
-		defer wg.Done()
-		go catchDebug()
-	}()
+	// Catch SIGUSR1 (prints runtime stack to stdout)
+	go apputil.CatchDebug()
 
 	// creates blockchain instance
 	dconf := c.configureDaemon()
 
 	c.logger.Infof("Opening database %s", dconf.Visor.Config.DBPath)
-	db, err := visor.OpenDB(dconf.Visor.Config.DBPath, dconf.Visor.Config.DBReadOnly)
+	db, err = visor.OpenDB(dconf.Visor.Config.DBPath, c.config.Node.DBReadOnly)
 	if err != nil {
 		c.logger.Errorf("Database failed to open: %v. Is another skycoin instance running?", err)
 		return
 	}
 
-	d, err := daemon.NewDaemon(dconf, db, c.config.Blockchain.DefaultConnections)
-	if err != nil {
-		c.logger.Error(err)
-		return
+	if c.config.Node.ResetCorruptDB {
+		// Check the database integrity and recreate it if necessary
+		c.logger.Info("Checking database and resetting if corrupted")
+		if newDB, err := visor.ResetCorruptDB(db, c.config.Node.BlockchainPubkey, quit); err != nil {
+			if err != visor.ErrVerifyStopped {
+				c.logger.Errorf("visor.ResetCorruptDB failed: %v", err)
+			}
+			goto earlyShutdown
+		} else {
+			db = newDB
+		}
+	} else if c.config.Node.VerifyDB {
+		c.logger.Info("Checking database")
+		if err := visor.CheckDatabase(db, c.config.Node.BlockchainPubkey, quit); err != nil {
+			if err != visor.ErrVerifyStopped {
+				c.logger.Errorf("visor.CheckDatabase failed: %v", err)
+			}
+			goto earlyShutdown
+		}
 	}
 
-	var webInterface *gui.Server
+	d, err = daemon.NewDaemon(dconf, db, c.config.Blockchain.DefaultConnections)
+	if err != nil {
+		c.logger.Error(err)
+		goto earlyShutdown
+	}
+
 	if c.config.Node.WebInterface {
 		webInterface, err = c.createGUI(d, host)
 		if err != nil {
 			c.logger.Error(err)
-			return
+			goto earlyShutdown
 		}
 	}
-
-	errC := make(chan error, 10)
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+
 		if err := d.Run(); err != nil {
 			c.logger.Error(err)
 			errC <- err
@@ -133,27 +151,31 @@ func (c *Coin) Run() {
 	}()
 
 	if c.config.Node.WebInterface {
+		cancelLaunchBrowser := make(chan struct{})
+
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+
 			if err := webInterface.Serve(); err != nil {
+				close(cancelLaunchBrowser)
 				c.logger.Error(err)
 				errC <- err
 			}
 		}()
 
 		if c.config.Node.LaunchBrowser {
-			wg.Add(1)
 			go func() {
-				defer wg.Done()
+				select {
+				case <-cancelLaunchBrowser:
+					c.logger.Warning("Browser launching cancelled")
 
-				// Wait a moment just to make sure the http interface is up
-				time.Sleep(time.Millisecond * 100)
-
-				c.logger.Infof("Launching System Browser with %s", fullAddress)
-				if err := browser.Open(fullAddress); err != nil {
-					c.logger.Error(err)
-					return
+					// Wait a moment just to make sure the http interface is up
+				case <-time.After(time.Millisecond * 100):
+					c.logger.Infof("Launching System Browser with %s", fullAddress)
+					if err := browser.Open(fullAddress); err != nil {
+						c.logger.Error(err)
+					}
 				}
 			}()
 		}
@@ -192,11 +214,25 @@ func (c *Coin) Run() {
 	}
 
 	c.logger.Info("Shutting down...")
+
 	if webInterface != nil {
+		c.logger.Info("Closing web interface")
 		webInterface.Shutdown()
 	}
+
+	c.logger.Info("Closing daemon")
 	d.Shutdown()
+
+	c.logger.Info("Waiting for goroutines to finish")
 	wg.Wait()
+
+earlyShutdown:
+	if db != nil {
+		c.logger.Info("Closing database")
+		if err := db.Close(); err != nil {
+			c.logger.WithError(err).Error("Failed to close DB")
+		}
+	}
 
 	c.logger.Info("Goodbye")
 
@@ -214,8 +250,8 @@ func NewCoin(config Config, logger *logging.Logger) *Coin {
 	}
 }
 
-func (c *Coin) initLogFile(dataDir string) (*os.File, error) {
-	logDir := filepath.Join(dataDir, "logs")
+func (c *Coin) initLogFile() (*os.File, error) {
+	logDir := filepath.Join(c.config.Node.DataDirectory, "logs")
 	if err := createDirIfNotExist(logDir); err != nil {
 		c.logger.Errorf("createDirIfNotExist(%s) failed: %v", logDir, err)
 		return nil, fmt.Errorf("createDirIfNotExist(%s) failed: %v", logDir, err)
@@ -237,16 +273,16 @@ func (c *Coin) initLogFile(dataDir string) (*os.File, error) {
 	return f, nil
 }
 
-func (c *Coin) initProfiling(httpProf, profileCPU bool, profileCPUFile string) {
-	if profileCPU {
-		f, err := os.Create(profileCPUFile)
+func (c *Coin) initProfiling() {
+	if c.config.Node.ProfileCPU {
+		f, err := os.Create(c.config.Node.ProfileCPUFile)
 		if err != nil {
 			log.Fatal(err)
 		}
 		pprof.StartCPUProfile(f)
 		defer pprof.StopCPUProfile()
 	}
-	if httpProf {
+	if c.config.Node.HTTPProf {
 		go func() {
 			log.Println(http.ListenAndServe("localhost:6060", nil))
 		}()
@@ -256,6 +292,13 @@ func (c *Coin) initProfiling(httpProf, profileCPU bool, profileCPUFile string) {
 func (c *Coin) configureDaemon() daemon.Config {
 	//cipher.SetAddressVersion(c.AddressVersion)
 	dc := daemon.NewConfig()
+
+	for _, c := range c.config.Blockchain.DefaultConnections {
+		dc.Pool.DefaultPeerConnections[c] = struct{}{}
+	}
+
+	dc.Pool.MaxDefaultPeerOutgoingConnections = c.config.Node.MaxDefaultPeerOutgoingConnections
+
 	dc.Pex.DataDirectory = c.config.Node.DataDirectory
 	dc.Pex.Disabled = c.config.Node.DisablePEX
 	dc.Pex.Max = c.config.Node.PeerlistSize
@@ -283,9 +326,8 @@ func (c *Coin) configureDaemon() daemon.Config {
 	dc.Visor.Config.GenesisAddress = c.config.Node.GenesisAddress
 	dc.Visor.Config.GenesisSignature = c.config.Node.GenesisSignature
 	dc.Visor.Config.GenesisTimestamp = c.config.Node.GenesisTimestamp
-	dc.Visor.Config.GenesisCoinVolume = c.config.Node.GenesisCoinVolume
+	dc.Visor.Config.GenesisCoinVolume = c.config.Blockchain.GenesisCoinVolume
 	dc.Visor.Config.DBPath = c.config.Node.DBPath
-	dc.Visor.Config.DBReadOnly = c.config.Node.DBReadOnly
 	dc.Visor.Config.Arbitrating = c.config.Node.Arbitrating
 	dc.Visor.Config.EnableWalletAPI = c.config.Node.EnableWalletAPI
 	dc.Visor.Config.WalletDirectory = c.config.Node.WalletDirectory
@@ -309,32 +351,32 @@ func (c *Coin) configureDaemon() daemon.Config {
 	return dc
 }
 
-func (c *Coin) createGUI(d *daemon.Daemon, host string) (*gui.Server, error) {
-	var s *gui.Server
+func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
+	var s *api.Server
 	var err error
 
-	config := gui.Config{
-		StaticDir:       c.config.Node.GUIDirectory,
-		DisableCSRF:     c.config.Node.DisableCSRF,
-		EnableWalletAPI: c.config.Node.EnableWalletAPI,
-		EnableJSON20RPC: c.config.Node.RPCInterface,
-		EnableGUI:       c.config.Node.EnableGUI,
-		ReadTimeout:     c.config.Node.ReadTimeout,
-		WriteTimeout:    c.config.Node.WriteTimeout,
-		IdleTimeout:     c.config.Node.IdleTimeout,
+	config := api.Config{
+		StaticDir:            c.config.Node.GUIDirectory,
+		DisableCSRF:          c.config.Node.DisableCSRF,
+		EnableWalletAPI:      c.config.Node.EnableWalletAPI,
+		EnableJSON20RPC:      c.config.Node.RPCInterface,
+		EnableGUI:            c.config.Node.EnableGUI,
+		EnableUnversionedAPI: c.config.Node.EnableUnversionedAPI,
+		ReadTimeout:          c.config.Node.ReadTimeout,
+		WriteTimeout:         c.config.Node.WriteTimeout,
+		IdleTimeout:          c.config.Node.IdleTimeout,
 	}
 
 	if c.config.Node.WebInterfaceHTTPS {
 		// Verify cert/key parameters, and if neither exist, create them
-		// TODO(therealssj): rename skycoind to?
 		if err := cert.CreateCertIfNotExists(host, c.config.Node.WebInterfaceCert, c.config.Node.WebInterfaceKey, "Skycoind"); err != nil {
-			c.logger.Errorf("gui.CreateCertIfNotExists failure: %v", err)
+			c.logger.Errorf("cert.CreateCertIfNotExists failure: %v", err)
 			return nil, err
 		}
 
-		s, err = gui.CreateHTTPS(host, config, d.Gateway, c.config.Node.WebInterfaceCert, c.config.Node.WebInterfaceKey)
+		s, err = api.CreateHTTPS(host, config, d.Gateway, c.config.Node.WebInterfaceCert, c.config.Node.WebInterfaceKey)
 	} else {
-		s, err = gui.Create(host, config, d.Gateway)
+		s, err = api.Create(host, config, d.Gateway)
 	}
 	if err != nil {
 		c.logger.Errorf("Failed to start web GUI: %v", err)
@@ -399,4 +441,12 @@ func InitTransaction() coin.Transaction {
 
 	log.Printf("signature= %s", tx.Sigs[0].Hex())
 	return tx
+}
+
+func createDirIfNotExist(dir string) error {
+	if _, err := os.Stat(dir); !os.IsNotExist(err) {
+		return nil
+	}
+
+	return os.Mkdir(dir, 0777)
 }

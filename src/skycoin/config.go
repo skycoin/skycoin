@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"log"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util/file"
 )
@@ -48,22 +50,26 @@ type NodeConfig struct {
 	DisableNetworking bool
 	// Enable wallet API
 	EnableWalletAPI bool
-	// Enable gui
+	// Enable GUI
 	EnableGUI bool
-	// Disable CSRF check in the wallet api
+	// Disable CSRF check in the wallet API
 	DisableCSRF bool
-	// Enable /wallet/seed api endpoint
+	// Enable /api/v1/wallet/seed API endpoint
 	EnableSeedAPI bool
+	// Enable unversioned API endpoints (without the /api/v1 prefix)
+	EnableUnversionedAPI bool
 
 	// Only run on localhost and only connect to others on localhost
 	LocalhostOnly bool
 	// Which address to serve on. Leave blank to automatically assign to a
 	// public interface
 	Address string
-	//gnet uses this for TCP incoming and outgoing
+	// gnet uses this for TCP incoming and outgoing
 	Port int
-	//max outgoing connections to maintain
+	// Maximum outgoing connections to maintain
 	MaxOutgoingConnections int
+	// Maximum default outgoing connections
+	MaxDefaultPeerOutgoingConnections int
 	// How often to make outgoing connections
 	OutgoingConnectionsRate time.Duration
 	// PeerlistSize represents the maximum number of peers that the pex would maintain
@@ -88,7 +94,7 @@ type NodeConfig struct {
 
 	// Data directory holds app data -- defaults to ~/.skycoin
 	DataDirectory string
-	// GUI directory contains assets for the html gui
+	// GUI directory contains assets for the HTML interface
 	GUIDirectory string
 
 	ReadTimeout  time.Duration
@@ -102,6 +108,11 @@ type NodeConfig struct {
 	// Disable "Reply to ping", "Received pong" log messages
 	DisablePingPong bool
 
+	// Verify the database integrity after loading
+	VerifyDB bool
+	// Reset the database if integrity checks fail, and continue running
+	ResetCorruptDB bool
+
 	// Wallets
 	// Defaults to ${DataDirectory}/wallets/
 	WalletDirectory string
@@ -110,10 +121,9 @@ type NodeConfig struct {
 
 	RunMaster bool
 
-	GenesisSignature  cipher.Sig
-	GenesisTimestamp  uint64
-	GenesisAddress    cipher.Address
-	GenesisCoinVolume uint64
+	GenesisSignature cipher.Sig
+	GenesisTimestamp uint64
+	GenesisAddress   cipher.Address
 
 	BlockchainPubkey cipher.PubKey
 	BlockchainSeckey cipher.SecKey
@@ -131,7 +141,7 @@ type NodeConfig struct {
 	DBReadOnly  bool
 	Arbitrating bool
 	LogToFile   bool
-	Version     bool
+	Version     bool // show node version
 
 	Help bool
 }
@@ -205,8 +215,9 @@ func (c *Config) register() {
 	flag.BoolVar(&c.Node.DisableNetworking, "disable-networking", c.Node.DisableNetworking, "Disable all network activity")
 	flag.BoolVar(&c.Node.EnableWalletAPI, "enable-wallet-api", c.Node.EnableWalletAPI, "Enable the wallet API")
 	flag.BoolVar(&c.Node.EnableGUI, "enable-gui", c.Node.EnableGUI, "Enable GUI")
+	flag.BoolVar(&c.Node.EnableUnversionedAPI, "enable-unversioned-api", c.Node.EnableUnversionedAPI, "Enable the deprecated unversioned API endpoints without /api/v1 prefix")
 	flag.BoolVar(&c.Node.DisableCSRF, "disable-csrf", c.Node.DisableCSRF, "disable CSRF check")
-	flag.BoolVar(&c.Node.EnableSeedAPI, "enable-seed-api", c.Node.EnableSeedAPI, "enable /wallet/seed api")
+	flag.BoolVar(&c.Node.EnableSeedAPI, "enable-seed-api", c.Node.EnableSeedAPI, "enable /api/v1/wallet/seed api")
 	flag.StringVar(&c.Node.Address, "address", c.Node.Address, "IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Node.Port, "port", c.Node.Port, "Port to run application on")
 
@@ -231,7 +242,10 @@ func (c *Config) register() {
 	flag.BoolVar(&c.Node.ColorLog, "color-log", c.Node.ColorLog, "Add terminal colors to log output")
 	flag.BoolVar(&c.Node.DisablePingPong, "no-ping-log", c.Node.DisablePingPong, `disable "reply to ping" and "received pong" debug log messages`)
 	flag.BoolVar(&c.Node.LogToFile, "logtofile", c.Node.LogToFile, "log to file")
-	flag.StringVar(&c.Node.GUIDirectory, "gui-dir", c.Node.GUIDirectory, "static content directory for the html gui")
+	flag.StringVar(&c.Node.GUIDirectory, "gui-dir", c.Node.GUIDirectory, "static content directory for the HTML interface")
+
+	flag.BoolVar(&c.Node.VerifyDB, "verify-db", c.Node.VerifyDB, "check the database for corruption")
+	flag.BoolVar(&c.Node.ResetCorruptDB, "reset-corrupt-db", c.Node.ResetCorruptDB, "reset the database if corrupted, and continue running instead of exiting")
 
 	// Key Configuration Data
 	flag.BoolVar(&c.Node.RunMaster, "master", c.Node.RunMaster, "run the daemon as blockchain master server")
@@ -245,10 +259,17 @@ func (c *Config) register() {
 
 	flag.StringVar(&c.Node.WalletDirectory, "wallet-dir", c.Node.WalletDirectory, "location of the wallet files. Defaults to ~/.skycoin/wallet/")
 	flag.IntVar(&c.Node.MaxOutgoingConnections, "max-outgoing-connections", c.Node.MaxOutgoingConnections, "The maximum outgoing connections allowed")
+	flag.IntVar(&c.Node.MaxDefaultPeerOutgoingConnections, "max-default-peer-outgoing-connections", c.Node.MaxDefaultPeerOutgoingConnections, "The maximum default peer outgoing connections allowed")
 	flag.IntVar(&c.Node.PeerlistSize, "peerlist-size", c.Node.PeerlistSize, "The peer list size")
 	flag.DurationVar(&c.Node.OutgoingConnectionsRate, "connection-rate", c.Node.OutgoingConnectionsRate, "How often to make an outgoing connection")
 	flag.BoolVar(&c.Node.LocalhostOnly, "localhost-only", c.Node.LocalhostOnly, "Run on localhost and only connect to localhost peers")
 	flag.BoolVar(&c.Node.Arbitrating, "arbitrating", c.Node.Arbitrating, "Run node in arbitrating mode")
 	flag.StringVar(&c.Node.WalletCryptoType, "wallet-crypto-type", c.Node.WalletCryptoType, "wallet crypto type. Can be sha256-xor or scrypt-chacha20poly1305")
 	flag.BoolVar(&c.Node.Version, "version", false, "show node version")
+}
+
+func panicIfError(err error, msg string, args ...interface{}) {
+	if err != nil {
+		log.Panicf(msg+": %v", append(args, err)...)
+	}
 }

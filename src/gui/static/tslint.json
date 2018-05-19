@@ -101,6 +101,13 @@
         "parameter": "nospace",
         "property-declaration": "nospace",
         "variable-declaration": "nospace"
+      },
+      {
+        "call-signature": "onespace",
+        "index-signature": "onespace",
+        "parameter": "onespace",
+        "property-declaration": "onespace",
+        "variable-declaration": "onespace"
       }
     ],
     "typeof-compare": true,
@@ -111,8 +118,11 @@
       "check-branch",
       "check-decl",
       "check-operator",
+      "check-module",
       "check-separator",
-      "check-type"
+      "check-type",
+      "check-typecast",
+      "check-preblock"
     ],
     "directive-selector": [
       true,
@@ -134,6 +144,16 @@
     "use-life-cycle-interface": true,
     "use-pipe-transform-interface": true,
     "component-class-suffix": true,
-    "directive-class-suffix": true
+    "directive-class-suffix": true,
+    "trailing-comma": [
+      true,
+      {
+        "multiline": "always",
+        "esSpecCompliant": true
+      }
+    ],
+    "newline-before-return": true,
+    "space-before-function-paren": [true, "never"],
+    "prefer-method-signature": true
   }
 }

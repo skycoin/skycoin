@@ -5,7 +5,6 @@ import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
 @Injectable()
 export class PriceService {
-
   price: Subject<number> = new BehaviorSubject<number>(null);
 
   constructor(
@@ -15,5 +14,4 @@ export class PriceService {
       .map(response => response.json()[0])
       .subscribe(data => this.price.next(data.price_usd));
   }
-
 }

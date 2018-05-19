@@ -8,7 +8,7 @@ describe('PasswordDialogComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ PasswordDialogComponent ]
+      declarations: [ PasswordDialogComponent ],
     })
     .compileComponents();
   }));

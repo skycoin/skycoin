@@ -8,7 +8,7 @@ describe('BlockchainComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ BlockchainComponent ]
+      declarations: [ BlockchainComponent ],
     })
     .compileComponents();
   }));

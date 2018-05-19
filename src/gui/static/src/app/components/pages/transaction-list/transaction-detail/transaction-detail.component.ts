@@ -5,7 +5,7 @@ import { NormalTransaction } from '../../../../app.datatypes';
 @Component({
   selector: 'app-transaction-detail',
   templateUrl: './transaction-detail.component.html',
-  styleUrls: ['./transaction-detail.component.scss']
+  styleUrls: ['./transaction-detail.component.scss'],
 })
 export class TransactionDetailComponent {
   constructor(

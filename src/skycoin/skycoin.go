@@ -1,0 +1,402 @@
+package skycoin
+
+import (
+	"flag"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"path/filepath"
+	"runtime/debug"
+	"runtime/pprof"
+	"sync"
+	"time"
+
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/gui"
+	"github.com/skycoin/skycoin/src/util/browser"
+	"github.com/skycoin/skycoin/src/util/cert"
+	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/wallet"
+)
+
+type Coin struct {
+	config Config
+	logger *logging.Logger
+}
+
+func (c *Coin) Run() {
+	defer func() {
+		// try catch panic in main thread
+		if r := recover(); r != nil {
+			c.logger.Errorf("recover: %v\nstack:%v", r, string(debug.Stack()))
+		}
+	}()
+
+	if c.config.Node.Version {
+		fmt.Println(c.config.Build.Version)
+		return
+	}
+
+	logLevel, err := logging.LevelFromString(c.config.Node.LogLevel)
+	if err != nil {
+		c.logger.Error("Invalid -log-level:", err)
+		return
+	}
+
+	logging.SetLevel(logLevel)
+
+	if c.config.Node.ColorLog {
+		logging.EnableColors()
+	} else {
+		logging.DisableColors()
+	}
+
+	var logFile *os.File
+	if c.config.Node.LogToFile {
+		var err error
+		logFile, err = c.initLogFile(c.config.Node.DataDirectory)
+		if err != nil {
+			c.logger.Error(err)
+			return
+		}
+	}
+
+	scheme := "http"
+	if c.config.Node.WebInterfaceHTTPS {
+		scheme = "https"
+	}
+	host := fmt.Sprintf("%s:%d", c.config.Node.WebInterfaceAddr, c.config.Node.WebInterfacePort)
+	fullAddress := fmt.Sprintf("%s://%s", scheme, host)
+	c.logger.Critical().Infof("Full address: %s", fullAddress)
+	if c.config.Node.PrintWebInterfaceAddress {
+		fmt.Println(fullAddress)
+	}
+
+	c.initProfiling(c.config.Node.HTTPProf, c.config.Node.ProfileCPU, c.config.Node.ProfileCPUFile)
+
+	var wg sync.WaitGroup
+
+	// If the user Ctrl-C's, shutdown properly
+	quit := make(chan struct{})
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		catchInterrupt(quit)
+	}()
+
+	// Watch for SIGUSR1
+	wg.Add(1)
+	func() {
+		defer wg.Done()
+		go catchDebug()
+	}()
+
+	// creates blockchain instance
+	dconf := c.configureDaemon()
+
+	c.logger.Infof("Opening database %s", dconf.Visor.Config.DBPath)
+	db, err := visor.OpenDB(dconf.Visor.Config.DBPath, dconf.Visor.Config.DBReadOnly)
+	if err != nil {
+		c.logger.Errorf("Database failed to open: %v. Is another skycoin instance running?", err)
+		return
+	}
+
+	d, err := daemon.NewDaemon(dconf, db, c.config.Blockchain.DefaultConnections)
+	if err != nil {
+		c.logger.Error(err)
+		return
+	}
+
+	var webInterface *gui.Server
+	if c.config.Node.WebInterface {
+		webInterface, err = c.createGUI(d, host)
+		if err != nil {
+			c.logger.Error(err)
+			return
+		}
+	}
+
+	errC := make(chan error, 10)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := d.Run(); err != nil {
+			c.logger.Error(err)
+			errC <- err
+		}
+	}()
+
+	if c.config.Node.WebInterface {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := webInterface.Serve(); err != nil {
+				c.logger.Error(err)
+				errC <- err
+			}
+		}()
+
+		if c.config.Node.LaunchBrowser {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+
+				// Wait a moment just to make sure the http interface is up
+				time.Sleep(time.Millisecond * 100)
+
+				c.logger.Infof("Launching System Browser with %s", fullAddress)
+				if err := browser.Open(fullAddress); err != nil {
+					c.logger.Error(err)
+					return
+				}
+			}()
+		}
+	}
+
+	/*
+	   time.Sleep(5)
+	   tx := InitTransaction()
+	   _ = tx
+	   err, _ = d.Visor.Visor.InjectTransaction(tx)
+	   if err != nil {
+	       log.Panic(err)
+	   }
+	*/
+
+	/*
+	   //first transaction
+	   if c.RunMaster == true {
+	       go func() {
+	           for d.Visor.Visor.Blockchain.Head().Seq() < 2 {
+	               time.Sleep(5)
+	               tx := InitTransaction()
+	               err, _ := d.Visor.Visor.InjectTransaction(tx)
+	               if err != nil {
+	                   //log.Panic(err)
+	               }
+	           }
+	       }()
+	   }
+	*/
+
+	select {
+	case <-quit:
+	case err := <-errC:
+		c.logger.Error(err)
+	}
+
+	c.logger.Info("Shutting down...")
+	if webInterface != nil {
+		webInterface.Shutdown()
+	}
+	d.Shutdown()
+	wg.Wait()
+
+	c.logger.Info("Goodbye")
+
+	if logFile != nil {
+		if err := logFile.Close(); err != nil {
+			fmt.Println("Failed to close log file")
+		}
+	}
+}
+
+func NewCoin(config Config, logger *logging.Logger) *Coin {
+	return &Coin{
+		config: config,
+		logger: logger,
+	}
+}
+
+func (c *Coin) initLogFile(dataDir string) (*os.File, error) {
+	logDir := filepath.Join(dataDir, "logs")
+	if err := createDirIfNotExist(logDir); err != nil {
+		c.logger.Errorf("createDirIfNotExist(%s) failed: %v", logDir, err)
+		return nil, fmt.Errorf("createDirIfNotExist(%s) failed: %v", logDir, err)
+	}
+
+	// open log file
+	tf := "2006-01-02-030405"
+	logfile := filepath.Join(logDir, fmt.Sprintf("%s-v%s.log", time.Now().Format(tf), c.config.Build.Version))
+
+	f, err := os.OpenFile(logfile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
+	if err != nil {
+		c.logger.Errorf("os.OpenFile(%s) failed: %v", logfile, err)
+		return nil, err
+	}
+
+	hook := logging.NewWriteHook(f)
+	logging.AddHook(hook)
+
+	return f, nil
+}
+
+func (c *Coin) initProfiling(httpProf, profileCPU bool, profileCPUFile string) {
+	if profileCPU {
+		f, err := os.Create(profileCPUFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
+	if httpProf {
+		go func() {
+			log.Println(http.ListenAndServe("localhost:6060", nil))
+		}()
+	}
+}
+
+func (c *Coin) configureDaemon() daemon.Config {
+	//cipher.SetAddressVersion(c.AddressVersion)
+	dc := daemon.NewConfig()
+	dc.Pex.DataDirectory = c.config.Node.DataDirectory
+	dc.Pex.Disabled = c.config.Node.DisablePEX
+	dc.Pex.Max = c.config.Node.PeerlistSize
+	dc.Pex.DownloadPeerList = c.config.Node.DownloadPeerList
+	dc.Pex.PeerListURL = c.config.Node.PeerListURL
+	dc.Daemon.DisableOutgoingConnections = c.config.Node.DisableOutgoingConnections
+	dc.Daemon.DisableIncomingConnections = c.config.Node.DisableIncomingConnections
+	dc.Daemon.DisableNetworking = c.config.Node.DisableNetworking
+	dc.Daemon.Port = c.config.Node.Port
+	dc.Daemon.Address = c.config.Node.Address
+	dc.Daemon.LocalhostOnly = c.config.Node.LocalhostOnly
+	dc.Daemon.OutgoingMax = c.config.Node.MaxOutgoingConnections
+	dc.Daemon.DataDirectory = c.config.Node.DataDirectory
+	dc.Daemon.LogPings = !c.config.Node.DisablePingPong
+
+	if c.config.Node.OutgoingConnectionsRate == 0 {
+		c.config.Node.OutgoingConnectionsRate = time.Millisecond
+	}
+	dc.Daemon.OutgoingRate = c.config.Node.OutgoingConnectionsRate
+	dc.Visor.Config.IsMaster = c.config.Node.RunMaster
+
+	dc.Visor.Config.BlockchainPubkey = c.config.Node.BlockchainPubkey
+	dc.Visor.Config.BlockchainSeckey = c.config.Node.BlockchainSeckey
+
+	dc.Visor.Config.GenesisAddress = c.config.Node.GenesisAddress
+	dc.Visor.Config.GenesisSignature = c.config.Node.GenesisSignature
+	dc.Visor.Config.GenesisTimestamp = c.config.Node.GenesisTimestamp
+	dc.Visor.Config.GenesisCoinVolume = c.config.Node.GenesisCoinVolume
+	dc.Visor.Config.DBPath = c.config.Node.DBPath
+	dc.Visor.Config.DBReadOnly = c.config.Node.DBReadOnly
+	dc.Visor.Config.Arbitrating = c.config.Node.Arbitrating
+	dc.Visor.Config.EnableWalletAPI = c.config.Node.EnableWalletAPI
+	dc.Visor.Config.WalletDirectory = c.config.Node.WalletDirectory
+	dc.Visor.Config.BuildInfo = visor.BuildInfo{
+		Version: c.config.Build.Version,
+		Commit:  c.config.Build.Commit,
+		Branch:  c.config.Build.Branch,
+	}
+	dc.Visor.Config.EnableSeedAPI = c.config.Node.EnableSeedAPI
+
+	dc.Gateway.EnableWalletAPI = c.config.Node.EnableWalletAPI
+
+	// Initialize wallet default crypto type
+	cryptoType, err := wallet.CryptoTypeFromString(c.config.Node.WalletCryptoType)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	dc.Visor.Config.WalletCryptoType = cryptoType
+
+	return dc
+}
+
+func (c *Coin) createGUI(d *daemon.Daemon, host string) (*gui.Server, error) {
+	var s *gui.Server
+	var err error
+
+	config := gui.Config{
+		StaticDir:       c.config.Node.GUIDirectory,
+		DisableCSRF:     c.config.Node.DisableCSRF,
+		EnableWalletAPI: c.config.Node.EnableWalletAPI,
+		EnableJSON20RPC: c.config.Node.RPCInterface,
+		EnableGUI:       c.config.Node.EnableGUI,
+		ReadTimeout:     c.config.Node.ReadTimeout,
+		WriteTimeout:    c.config.Node.WriteTimeout,
+		IdleTimeout:     c.config.Node.IdleTimeout,
+	}
+
+	if c.config.Node.WebInterfaceHTTPS {
+		// Verify cert/key parameters, and if neither exist, create them
+		// TODO(therealssj): rename skycoind to?
+		if err := cert.CreateCertIfNotExists(host, c.config.Node.WebInterfaceCert, c.config.Node.WebInterfaceKey, "Skycoind"); err != nil {
+			c.logger.Errorf("gui.CreateCertIfNotExists failure: %v", err)
+			return nil, err
+		}
+
+		s, err = gui.CreateHTTPS(host, config, d.Gateway, c.config.Node.WebInterfaceCert, c.config.Node.WebInterfaceKey)
+	} else {
+		s, err = gui.Create(host, config, d.Gateway)
+	}
+	if err != nil {
+		c.logger.Errorf("Failed to start web GUI: %v", err)
+		return nil, err
+	}
+
+	return s, nil
+}
+
+// Parse prepare the config
+func (c *Coin) ParseConfig() {
+	c.config.register()
+	flag.Parse()
+	if c.config.Node.Help {
+		flag.Usage()
+		os.Exit(0)
+	}
+	c.config.postProcess()
+}
+
+// InitTransaction creates the initialize transaction
+func InitTransaction() coin.Transaction {
+	var tx coin.Transaction
+
+	output := cipher.MustSHA256FromHex("043836eb6f29aaeb8b9bfce847e07c159c72b25ae17d291f32125e7f1912e2a0")
+	tx.PushInput(output)
+
+	addrs := visor.GetDistributionAddresses()
+
+	if len(addrs) != 100 {
+		log.Panic("Should have 100 distribution addresses")
+	}
+
+	// 1 million per address, measured in droplets
+	if visor.DistributionAddressInitialBalance != 1e6 {
+		log.Panic("visor.DistributionAddressInitialBalance expected to be 1e6*1e6")
+	}
+
+	for i := range addrs {
+		addr := cipher.MustDecodeBase58Address(addrs[i])
+		tx.PushOutput(addr, visor.DistributionAddressInitialBalance*1e6, 1)
+	}
+	/*
+		seckeys := make([]cipher.SecKey, 1)
+		seckey := ""
+		seckeys[0] = cipher.MustSecKeyFromHex(seckey)
+		tx.SignInputs(seckeys)
+	*/
+
+	txs := make([]cipher.Sig, 1)
+	sig := "ed9bd7a31fe30b9e2d53b35154233dfdf48aaaceb694a07142f84cdf4f5263d21b723f631817ae1c1f735bea13f0ff2a816e24a53ccb92afae685fdfc06724de01"
+	txs[0] = cipher.MustSigFromHex(sig)
+	tx.Sigs = txs
+
+	tx.UpdateHeader()
+
+	err := tx.Verify()
+
+	if err != nil {
+		log.Panic(err)
+	}
+
+	log.Printf("signature= %s", tx.Sigs[0].Hex())
+	return tx
+}

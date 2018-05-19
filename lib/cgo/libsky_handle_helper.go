@@ -184,6 +184,17 @@ func SKY_api_Handle_Client_GetWalletFileName(handle C.WalletResponse__Handle,
 	return SKY_ERROR
 }
 
+//export SKY_api_Handle_Client_GetWalletLabel
+func SKY_api_Handle_Client_GetWalletLabel(handle C.WalletResponse__Handle,
+									walletLabel *C.GoString_) uint32 {
+	w, ok := lookupWalletResponseHandle(handle)
+if ok {
+		copyString(w.Meta.Label, walletLabel)
+		return SKY_OK
+	}
+	return SKY_ERROR
+}
+
 //export SKY_api_Handle_Client_GetWalletFullPath
 func SKY_api_Handle_Client_GetWalletFullPath(
 							clientHandle C.Client__Handle,
@@ -305,6 +316,20 @@ func SKY_api_Handle_WalletsResponseGetAt(
 			*walletHandle = registerWalletResponseHandle(w[index])
 		}
 		return SKY_OK
+	}
+	return SKY_ERROR
+}
+
+//export SKY_api_Handle_GetWalletFolderAddress
+func SKY_api_Handle_GetWalletFolderAddress(
+							folderHandle C.Handle,
+							address *C.GoString_) uint32 {
+	obj, ok := lookupHandle(folderHandle)
+	if ok {
+		if obj, isOK := (obj).(*api.WalletFolder); isOK {
+			copyString( obj.Address, address )
+			return SKY_OK
+		}
 	}
 	return SKY_ERROR
 }

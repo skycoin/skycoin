@@ -1853,3 +1853,99 @@ Test(api_integration, TestStableWalletBalance) {
 	
 }
 
+Test(api_integration, TestWalletUpdate) {
+	int result;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	WalletResponse__Handle w;
+	char seed[128];
+	seed[0] = 0;
+	result = createWallet( clientHandle, 0, "", seed, 128, &w );
+	cr_assert( result == SKY_OK, "Create Wallet failed" );
+	registerHandleClose( w );
+	registerWalletClean( clientHandle, w );
+	
+	GoString_ _name;
+	memset( &_name, 0, sizeof(GoString_) );
+	result = SKY_api_Handle_Client_GetWalletFileName(w, &_name);
+	cr_assert( result == SKY_OK );
+	registerMemCleanup( (void*)_name.p );
+	GoString name = { _name.p, _name.n };
+	GoString newName = { "new wallet", 10 };
+	result = SKY_api_Client_UpdateWallet( &clientHandle, name, newName );
+	cr_assert( result == SKY_OK );
+	WalletResponse__Handle w2;
+	result = SKY_api_Client_Wallet( &clientHandle, name, &w2 );
+	cr_assert( result == SKY_OK );
+	registerHandleClose( w2 );
+	GoString_ strLabel1 = { NULL, 0 };
+	GoString_ strLabel2 = { "new wallet", 10 };
+	result = SKY_api_Handle_Client_GetWalletLabel(w2, &strLabel1);
+	cr_assert( result == SKY_OK );
+	registerMemCleanup( (void*)strLabel1.p );
+	cr_assert( eq( type(GoString_), strLabel1, strLabel2 ) );
+}
+
+Test(api_integration, TestStableWalletTransactions) {
+	int result;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	WalletResponse__Handle w;
+	char seed[128];
+	seed[0] = 0;
+	result = createWallet( clientHandle, 0, "", seed, 128, &w );
+	cr_assert( result == SKY_OK, "Create Wallet failed" );
+	registerHandleClose( w );
+	registerWalletClean( clientHandle, w );
+	
+	GoString_ _name;
+	memset( &_name, 0, sizeof(GoString_) );
+	result = SKY_api_Handle_Client_GetWalletFileName(w, &_name);
+	cr_assert( result == SKY_OK );
+	registerMemCleanup( (void*)_name.p );
+	GoString name = { _name.p, _name.n };
+	
+	Handle transHandle;
+	result = SKY_api_Client_WalletTransactions( &clientHandle, 
+								name, &transHandle );
+	cr_assert( result == SKY_OK );
+	registerHandleClose( transHandle );
+	int equal = compareObjectWithGoldenFile( transHandle, 
+					"wallet-transactions.golden" );
+	cr_assert( equal );
+}
+
+Test(api_integration, TestWalletFolderName) {
+	int result;
+	char* pNodeAddress = getNodeAddress();
+	GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+	Client__Handle clientHandle;
+	
+	result = SKY_api_NewClient(nodeAddress, &clientHandle);
+	cr_assert(result == SKY_OK, "Couldn\'t create client");
+	registerHandleClose( clientHandle );
+	
+	Handle folderHandle;
+	result = SKY_api_Client_WalletFolderName( 
+				&clientHandle, &folderHandle );
+	cr_assert(result == SKY_OK);
+	registerHandleClose( folderHandle );
+	GoString_ strAddress = {NULL, 0};
+	result = SKY_api_Handle_GetWalletFolderAddress( 
+			folderHandle, &strAddress );
+	cr_assert(result == SKY_OK);
+	cr_assert(strAddress.p != NULL);
+	cr_assert(strAddress.n > 0);
+}

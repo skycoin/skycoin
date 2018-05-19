@@ -59,9 +59,9 @@ func convertToMessage(id int, msg []byte, debugPrint bool) (Message, error) {
 	if debugPrint {
 		mlen := len(msg)
 		if used > mlen {
-			logger.Debug("Receive data with extra fields")
+			logger.Warn("Receive data with extra fields")
 		} else if used < mlen {
-			logger.Debug("Receive data with fields removed")
+			logger.Warn("Receive data with fields removed")
 		}
 	}
 

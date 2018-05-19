@@ -415,6 +415,8 @@ func (c *Config) postProcess() {
 	if c.RunMaster {
 		// Run in arbitrating mode if the node is master
 		c.Arbitrating = true
+		// Don't reset corrupt db if the node is master
+		c.ResetCorruptDB = false
 	}
 
 	// Don't open browser to load wallets if wallet APIs are disabled.

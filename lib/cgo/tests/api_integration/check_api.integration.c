@@ -2307,7 +2307,6 @@ Test(api_integration, TestStableHealth) {
 	result = SKY_JsonEncode_Handle( healthHandle, &strJson );
 	cr_assert(result == SKY_OK, "Couldn\'t json encode");
 	registerMemCleanup( (void*) strJson.p );
-	printf( "\n%s\n", strJson.p );
 	json_value* json = json_parse( (json_char*) strJson.p, strlen(strJson.p) );
 	cr_assert(json != NULL, "Couldn\'t json parse");
 	registerJsonFree( json );

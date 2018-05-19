@@ -155,6 +155,11 @@ typedef Handle WalletResponse__Handle;
 typedef Handle CreateTransactionRequest__Handle;
 
 /**
+ * String Slice Handle
+*/
+typedef Handle Strings__Handle;
+
+/**
  * Instances of Go `map` type, deal map[string] as handle
  */
 typedef Handle GoStringMap_;

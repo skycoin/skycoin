@@ -843,7 +843,7 @@ Test(api_integration, TestNetworkDefaultConnections) {
 	cr_assert(result == SKY_OK, "Couldn\'t create client");
 	registerHandleClose( clientHandle );
 	
-	Handle connectionsHandle;
+	Strings__Handle connectionsHandle;
 	result = SKY_api_Client_NetworkDefaultConnections( &clientHandle, &connectionsHandle );
 	cr_assert(result == SKY_OK, "SKY_api_Client_NetworkDefaultConnections failed");
 	registerHandleClose( connectionsHandle );
@@ -866,7 +866,7 @@ Test(api_integration, TestNetworkTrustedConnections) {
 	cr_assert(result == SKY_OK, "Couldn\'t create client");
 	registerHandleClose( clientHandle );
 	
-	Handle connectionsHandle;
+	Strings__Handle connectionsHandle;
 	result = SKY_api_Client_NetworkTrustedConnections( &clientHandle, &connectionsHandle );
 	cr_assert(result == SKY_OK, "SKY_api_Client_NetworkTrustedConnections failed");
 	registerHandleClose( connectionsHandle );
@@ -889,7 +889,7 @@ Test(api_integration, TestStableNetworkExchangeableConnections) {
 	cr_assert(result == SKY_OK, "Couldn\'t create client");
 	registerHandleClose( clientHandle );
 	
-	Handle connectionsHandle;
+	Strings__Handle connectionsHandle;
 	result = SKY_api_Client_NetworkExchangeableConnections( &clientHandle, &connectionsHandle );
 	cr_assert(result == SKY_OK, "SKY_api_Client_NetworkTrustedConnections failed");
 	registerHandleClose( connectionsHandle );
@@ -1719,4 +1719,74 @@ Test(api_integration, TestGetWallets) {
 	}
 }
 
+Test(api_integration, TestWalletNewAddress) {
+	char seed[128];
+	GoString pwd;
+	for(GoInt i = 3; i <= 3; i++){
+		int result;
+		pwd.p = "";
+		pwd.n = 0;
+		char* pNodeAddress = getNodeAddress();
+		GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
+		Client__Handle clientHandle;
+		
+		result = SKY_api_NewClient(nodeAddress, &clientHandle);
+		cr_assert(result == SKY_OK, "Couldn\'t create client");
+		registerHandleClose( clientHandle );
+		
+		int encrypt = 0; //TODO: Verify why the test fails when encrypting
+		
+		WalletResponse__Handle w;
+		seed[0] = 0;
+		createWallet( clientHandle, encrypt, "pwd", 
+				seed, 128, &w );
+		registerHandleClose( w );
+		registerWalletClean( clientHandle, w );
+		
+		GoString_ _walletFileName = {NULL, 0};
+		result = SKY_api_Handle_Client_GetWalletFileName(
+					w, &_walletFileName);
+		cr_assert( result == SKY_OK );
+		registerMemCleanup( (void*)_walletFileName.p );
+		if( encrypt ){
+			pwd.p = "pwd";
+			pwd.n = 3;
+		}
+		Strings__Handle addrsHandle;
+		GoString walletFileName = {_walletFileName.p, _walletFileName.n};
+		result = SKY_api_Client_NewWalletAddress( &clientHandle, 
+				walletFileName, i, pwd, &addrsHandle);
+		cr_assert( result == SKY_OK );
+		registerHandleClose( addrsHandle );
+		
+		GoSlice seedSlice = {seed, strlen(seed)};
+		GoSlice keyPairsSlice = {NULL, 0, 0};
+		result = SKY_cipher_GenerateDeterministicKeyPairs(
+			seedSlice, i + 1, (coin__UxArray*)&keyPairsSlice);
+		cr_assert( result == SKY_OK );
+		registerMemCleanup( keyPairsSlice.data );
+		
+		GoUint32 count;
+		SKY_Handle_Strings_GetCount( addrsHandle, &count );
+		cr_assert( result == SKY_OK );
+		cr_assert( count == keyPairsSlice.len - 1 );
+		GoString_ strAddress;
+		GoString_ strAddress2;
+		cipher__Address cAddress;
+		cipher__SecKey* secKey = (cipher__SecKey*)keyPairsSlice.data;
+		
+		for(GoUint32 a; a < count; a++){
+			memset( &cAddress, 0, sizeof(cipher__Address));
+			memset( &strAddress2, 0, sizeof(GoString_));
+			memset( &strAddress, 0, sizeof(GoString_));
+			secKey++;
+			SKY_cipher_AddressFromSecKey(secKey, &cAddress);
+			SKY_cipher_Address_String( &cAddress, &strAddress2 );
+			registerMemCleanup( (void*)strAddress2.p );
+			result = SKY_Handle_Strings_GetAt( addrsHandle, a, &strAddress );
+			registerMemCleanup( (void*)strAddress.p );
+			cr_assert( eq(type(GoString_), strAddress, strAddress2) );
+		}
+	}
+}
 

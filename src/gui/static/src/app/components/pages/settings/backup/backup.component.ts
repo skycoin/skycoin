@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { Wallet } from '../../../../app.datatypes';
 import { MatDialog, MatDialogConfig } from '@angular/material';
@@ -8,12 +8,13 @@ import { PasswordDialogComponent } from '../../../layout/password-dialog/passwor
 @Component({
   selector: 'app-backup',
   templateUrl: './backup.component.html',
-  styleUrls: ['./backup.component.scss']
+  styleUrls: ['./backup.component.scss'],
 })
-export class BackupComponent implements OnInit {
-
+export class BackupComponent implements OnInit, OnDestroy {
   folder: string;
   wallets: Wallet[] = [];
+
+  private walletSubscription;
 
   constructor(
     public walletService: WalletService,
@@ -22,9 +23,14 @@ export class BackupComponent implements OnInit {
 
   ngOnInit() {
     this.walletService.folder().subscribe(folder => this.folder = folder);
-    this.walletService.all().subscribe(wallets => {
+
+    this.walletSubscription = this.walletService.all().subscribe(wallets => {
       this.wallets = wallets;
     });
+  }
+
+  ngOnDestroy() {
+    this.walletSubscription.unsubscribe();
   }
 
   get onlyEncrypted() {

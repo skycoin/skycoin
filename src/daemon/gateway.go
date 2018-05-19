@@ -445,7 +445,6 @@ type ReadableTransaction struct {
 	Hash      string                  `json:"txid"`
 	InnerHash string                  `json:"inner_hash"`
 	Timestamp uint64                  `json:"timestamp,omitempty"`
-	Size      int                     `json:"size"`
 	Fee       uint64                  `json:"fee"`
 
 	Sigs []string                          `json:"sigs"`
@@ -507,7 +506,6 @@ func NewReadableTransaction(t visor.Transaction, inputs []visor.ReadableTransact
 		Hash:      t.Txn.Hash().Hex(),
 		InnerHash: t.Txn.InnerHash.Hex(),
 		Timestamp: t.Time,
-		Size:      t.Txn.Size(),
 		Fee:       fee,
 
 		Sigs: sigs,

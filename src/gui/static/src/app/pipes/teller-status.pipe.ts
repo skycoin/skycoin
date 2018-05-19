@@ -1,10 +1,9 @@
 import { Pipe, PipeTransform } from '@angular/core';
 
 @Pipe({
-  name: 'tellerStatus'
+  name: 'tellerStatus',
 })
 export class TellerStatusPipe implements PipeTransform {
-
   transform(value: any): any {
     switch (value) {
       case 'done':

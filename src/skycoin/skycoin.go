@@ -25,11 +25,13 @@ import (
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
+// Coin represents a fiber coin instance
 type Coin struct {
 	config Config
 	logger *logging.Logger
 }
 
+// Run starts the node
 func (c *Coin) Run() {
 	defer func() {
 		// try catch panic in main thread
@@ -243,6 +245,7 @@ earlyShutdown:
 	}
 }
 
+// NewCoin returns a new fiber coin instance
 func NewCoin(config Config, logger *logging.Logger) *Coin {
 	return &Coin{
 		config: config,
@@ -386,7 +389,7 @@ func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
 	return s, nil
 }
 
-// Parse prepare the config
+// ParseConfig prepare the config
 func (c *Coin) ParseConfig() {
 	c.config.register()
 	flag.Parse()

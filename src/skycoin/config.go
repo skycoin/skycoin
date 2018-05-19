@@ -12,18 +12,21 @@ import (
 	"github.com/skycoin/skycoin/src/util/file"
 )
 
+// Config records fiber coin configs
 type Config struct {
 	Blockchain BlockchainConfig
 	Node       NodeConfig
 	Build      BuildConfig
 }
 
+// BuildConfig records build info
 type BuildConfig struct {
 	Version string // version number
 	Commit  string // git commit id
 	Branch  string // git branch name
 }
 
+// BlockchainConfig records genesis data
 type BlockchainConfig struct {
 	GenesisSignatureStr string
 	GenesisAddressStr   string

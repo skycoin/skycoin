@@ -1722,10 +1722,9 @@ Test(api_integration, TestGetWallets) {
 Test(api_integration, TestWalletNewAddress) {
 	char seed[128];
 	GoString pwd;
-	for(GoInt i = 3; i <= 3; i++){
+	for(GoInt i = 1; i <= 30; i++){
 		int result;
-		pwd.p = "";
-		pwd.n = 0;
+		memset( &pwd, 0, sizeof(GoString));
 		char* pNodeAddress = getNodeAddress();
 		GoString nodeAddress = {pNodeAddress, strlen(pNodeAddress)};
 		Client__Handle clientHandle;
@@ -1737,7 +1736,7 @@ Test(api_integration, TestWalletNewAddress) {
 		int encrypt = 0; //TODO: Verify why the test fails when encrypting
 		
 		WalletResponse__Handle w;
-		seed[0] = 0;
+		memset(seed, 0, 128);
 		createWallet( clientHandle, encrypt, "pwd", 
 				seed, 128, &w );
 		registerHandleClose( w );
@@ -1775,10 +1774,11 @@ Test(api_integration, TestWalletNewAddress) {
 		cipher__Address cAddress;
 		cipher__SecKey* secKey = (cipher__SecKey*)keyPairsSlice.data;
 		
-		for(GoUint32 a; a < count; a++){
+		
+		for(GoUint32 a = 0; a < count; a++){
+			memset( &strAddress, 0, sizeof(GoString_));
 			memset( &cAddress, 0, sizeof(cipher__Address));
 			memset( &strAddress2, 0, sizeof(GoString_));
-			memset( &strAddress, 0, sizeof(GoString_));
 			secKey++;
 			SKY_cipher_AddressFromSecKey(secKey, &cAddress);
 			SKY_cipher_Address_String( &cAddress, &strAddress2 );

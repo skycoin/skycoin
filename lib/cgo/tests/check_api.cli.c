@@ -21,6 +21,8 @@
 #define SKYCOIN_WALLET_NAME_SAMPLE "bar.wlt"
 #define SKYCOIN_WALLET_FULL_PATH_SAMPLE "/home/foo/bar/bar.wlt"
 
+TestSuite(api_cli, .init = setup, .fini = teardown);
+
 Test(api_cli, TestLoadConfig) {
 	Config__Handle configHandle;
 	GoUint32 errcode;

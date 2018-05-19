@@ -31,6 +31,10 @@ void freeRegisteredMemCleanup(void *p);
 
 int registerWalletClean(Client__Handle clientHandle,
 						WalletResponse__Handle walletHandle);
+						
+void cleanRegisteredWallet(
+			Client__Handle client, 
+			WalletResponse__Handle wallet);
 
 json_value* loadJsonFile(const char* filename);
 
@@ -41,7 +45,12 @@ json_value* get_json_value(json_value* node, const char* path,
 							
 json_value* get_json_value_not_strict(json_value* node, const char* path,
 							json_type type, int allow_null);
-														
+
+int parseBoolean(const char* str, int length);
+							
+void setup(void);
+void teardown(void);
+							
 extern void toGoString(GoString_ *s, GoString *r);
 
 #endif

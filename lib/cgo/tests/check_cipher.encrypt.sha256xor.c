@@ -21,6 +21,7 @@
 #define SHA256XORCHECKSUMSIZE 32
 #define SHA256XORNONCESIZE 32
 
+TestSuite(cipher_encrypt_sha256xor, .init = setup, .fini = teardown);
 
 typedef struct{
 	int 		dataLength;

@@ -82,6 +82,14 @@ void freeRegisteredJson(void *p){
 
 int registerWalletClean(Client__Handle clientHandle,
 						WalletResponse__Handle walletHandle){
+	int i;
+	for (i = 0; i < WALLETPOOLIDX; i++) {
+		if(WALLET_POOL[i].wallet == 0 && WALLET_POOL[i].client == 0){
+			WALLET_POOL[WALLETPOOLIDX].wallet = walletHandle;
+			WALLET_POOL[WALLETPOOLIDX].client = clientHandle;
+			return i;
+		}
+	}
 	WALLET_POOL[WALLETPOOLIDX].wallet = walletHandle;
 	WALLET_POOL[WALLETPOOLIDX].client = clientHandle;
 	return WALLETPOOLIDX++;
@@ -118,8 +126,9 @@ void cleanupWallet(Client__Handle client, WalletResponse__Handle wallet){
 	int result;
 	
 	result = SKY_api_Handle_Client_GetWalletDir(client, &strWalletDir);
-	if( result != SKY_OK )
+	if( result != SKY_OK ){
 		return;
+	}
 	result = SKY_api_Handle_Client_GetWalletFileName(wallet, &strFileName);
 	if( result != SKY_OK ){
 		free( (void*)strWalletDir.p );
@@ -131,24 +140,39 @@ void cleanupWallet(Client__Handle client, WalletResponse__Handle wallet){
 		if( fullPath[0] == 0 || fullPath[strlen(fullPath) - 1] != '/' )
 			strcat(fullPath, "/");
 		strcat( fullPath, strFileName.p );
-		unlink( fullPath );
+		result = unlink( fullPath );
 		if( strlen(fullPath) < 123 ){
 			strcat( fullPath, ".bak" );
-			unlink( fullPath );
+			result = unlink( fullPath );
 		}
-	}
+	} 
 	GoString str = { strFileName.p, strFileName.n };
-	SKY_api_Client_UnloadWallet( &client, str );
+	result = SKY_api_Client_UnloadWallet( &client, str );
 	free( (void*)strWalletDir.p );
 	free( (void*)strFileName.p );
 }
 
+void cleanRegisteredWallet(
+			Client__Handle client, 
+			WalletResponse__Handle wallet){
+	int i;
+	for (i = 0; i < WALLETPOOLIDX; i++) {
+		if(WALLET_POOL[i].wallet == wallet && WALLET_POOL[i].client == client){
+			WALLET_POOL[WALLETPOOLIDX].wallet = 0;
+			WALLET_POOL[WALLETPOOLIDX].client = 0;
+			cleanupWallet( client, wallet );
+			return;
+		}
+	}
+}
+
 void cleanupMem() {
-  int i;
+	int i;
   
-  for (i = 0; i < WALLETPOOLIDX; i++) {
-	  cleanupWallet( WALLET_POOL[i].client, WALLET_POOL[i].wallet );
-  }
+	for (i = 0; i < WALLETPOOLIDX; i++) {
+		if(WALLET_POOL[i].client != 0 && WALLET_POOL[i].wallet != 0)
+			cleanupWallet( WALLET_POOL[i].client, WALLET_POOL[i].wallet );
+	}
   
   void **ptr;
   for (i = MEMPOOLIDX, ptr = MEMPOOL; i; --i) {
@@ -223,11 +247,11 @@ json_value* loadJsonFile(const char* filename){
 
 
 void setup(void) {
-  srand ((unsigned int) time (NULL));
+	srand ((unsigned int) time (NULL));
 }
 
 void teardown(void) {
-  cleanupMem();
+	cleanupMem();
 }
 
 // TODO: Move to libsky_io.c
@@ -240,6 +264,17 @@ void fprintbuff(FILE *f, void *buff, size_t n) {
   fprintf(f, "]");
 }
 
+int parseBoolean(const char* str, int length){
+	int result = 0;
+	if(length == 1){
+		result = str[0] == '1' || str[0] == 't' || str[0] == 'T';
+	} else {
+		result = strncmp(str, "true", length) == 0 || 
+			strncmp(str, "True", length) == 0 ||
+			strncmp(str, "TRUE", length) == 0;
+	}
+	return result;
+}
 
 void toGoString(GoString_ *s, GoString *r){
 GoString * tmp = r;

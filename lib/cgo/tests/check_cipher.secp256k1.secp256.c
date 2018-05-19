@@ -14,6 +14,8 @@
 #define TESTS  1
 #define SigSize 65
 
+TestSuite(cipher_secp256k1, .init = setup, .fini = teardown);
+
 Test(cipher_secp256k1,Test_Secp256_00){
 	unsigned char buff[SigSize];
 	visor__ReadableOutputs nonce = {buff,0,64};

@@ -355,7 +355,7 @@ func SKY_api_Client_Wallet(_c *C.Client__Handle, _id string, _arg1 *C.WalletResp
 }
 
 //export SKY_api_Client_Wallets
-func SKY_api_Client_Wallets(_c *C.Client__Handle, _arg0 *C.GoSlice_) (____error_code uint32) {
+func SKY_api_Client_Wallets(_c *C.Client__Handle, _arg0 *C.Wallets__Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -368,7 +368,7 @@ func SKY_api_Client_Wallets(_c *C.Client__Handle, _arg0 *C.GoSlice_) (____error_
 	__arg0, ____return_err := c.Wallets()
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		copyToGoSlice(reflect.ValueOf(__arg0), _arg0)
+		*_arg0 = registerWalletsHandle( __arg0 )
 	}
 	return
 }

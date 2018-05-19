@@ -293,6 +293,18 @@ func SKY_api_Handle_WalletResponseIsEncrypted(
 	return SKY_ERROR
 }
 
+//export SKY_api_Handle_WalletResponseGetCryptoType
+func SKY_api_Handle_WalletResponseGetCryptoType(
+					handle C.WalletResponse__Handle,
+					cryptoType *C.GoString_) uint32{
+	w, ok := lookupWalletResponseHandle(handle)
+	if ok {
+		copyString( w.Meta.CryptoType, cryptoType )
+		return SKY_OK
+	}
+	return SKY_ERROR
+}
+
 //export SKY_api_Handle_WalletsResponseGetCount
 func SKY_api_Handle_WalletsResponseGetCount(
 							handle C.Wallets__Handle,
@@ -330,6 +342,28 @@ func SKY_api_Handle_GetWalletFolderAddress(
 			copyString( obj.Address, address )
 			return SKY_OK
 		}
+	}
+	return SKY_ERROR
+}
+
+//export SKY_api_Handle_GetWalletSeed
+func SKY_api_Handle_GetWalletSeed(handle C.Wallet__Handle,
+									seed *C.GoString_) uint32 {
+	w, ok := lookupWalletHandle(handle)
+	if ok {
+		copyString( w.Meta["seed"], seed )
+		return SKY_OK
+	}
+	return SKY_ERROR
+}
+
+//export SKY_api_Handle_GetWalletLastSeed
+func SKY_api_Handle_GetWalletLastSeed(handle C.Wallet__Handle,
+									lastSeed *C.GoString_) uint32 {
+	w, ok := lookupWalletHandle(handle)
+	if ok {
+		copyString( w.Meta["lastSeed"], lastSeed )
+		return SKY_OK
 	}
 	return SKY_ERROR
 }

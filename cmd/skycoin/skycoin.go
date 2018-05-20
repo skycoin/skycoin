@@ -4,7 +4,6 @@ import (
 	_ "net/http/pprof"
 	"time"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/skycoin"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -123,14 +122,7 @@ var devConfig = skycoin.NodeConfig{
 	IdleTimeout:  120 * time.Second,
 
 	// Centralized network configuration
-	RunMaster:        false,
-	BlockchainPubkey: cipher.PubKey{},
-	BlockchainSeckey: cipher.SecKey{},
-
-	GenesisAddress:   cipher.Address{},
-	GenesisTimestamp: GenesisTimestamp,
-	GenesisSignature: cipher.Sig{},
-
+	RunMaster: false,
 	/* Developer options */
 
 	// Enable cpu profiling

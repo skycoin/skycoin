@@ -18,7 +18,7 @@ void strnhex(unsigned char* buf, char *str, int n){
 	unsigned char * pin = buf;
 	const char * hex = "0123456789ABCDEF";
 	char * pout = str;
-	for(; *pin && n; --n){
+	for(; n; --n){
 		*pout++ = hex[(*pin>>4)&0xF];
 		*pout++ = hex[(*pin++)&0xF];
 	}
@@ -29,16 +29,13 @@ void strnhexlower(unsigned char* buf, char *str, int n){
 	unsigned char * pin = buf;
 	const char * hex = "0123456789abcdef";
 	char * pout = str;
-	for(; *pin && n; --n){
+	for(; n; --n){
 		*pout++ = hex[(*pin>>4)&0xF];
 		*pout++ = hex[(*pin++)&0xF];
 	}
 	*pout = 0;
 }
 
-void strhex(unsigned char* buf, char *str){
-	strnhex(buf, str, SIZE_ALL);
-}
 
 int hexnstr(const char* hex, unsigned char* str, int n){
 	const char * pin = hex;

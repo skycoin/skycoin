@@ -22,9 +22,9 @@
 #define JSON_BIG_FILE_SIZE 32768
 #define TEST_DATA_DIR "src/api/integration/testdata/"
 
-//#define NORMAL_TESTS
+#define NORMAL_TESTS
 //#define DECRYPTION_TESTS
-#define DECRYPT_WALLET_TEST
+//#define DECRYPT_WALLET_TEST
 
 TestSuite(api_integration, .init = setup, .fini = teardown);
 
@@ -2100,12 +2100,12 @@ Test(api_integration, TestDecryptWallet) {
 	GoString wrongPwd = { "pwd1", 4 };
 	
 	//TODO: Fails if decryption is tried with wrong passwords
-	/*result = SKY_api_Client_DecryptWallet( &clientHandle, name, wrongPwd, &dw);
+	result = SKY_api_Client_DecryptWallet( &clientHandle, name, wrongPwd, &dw);
 	cr_expect( result != SKY_OK, "Can\'t decrypt wallet with wrong password" );
 	
 	result = SKY_api_Client_DecryptWallet( &clientHandle, name, emptyPwd, &dw);
 	cr_expect( result != SKY_OK, "Can\'t decrypt wallet with empty password" );
-	*/
+	
 	result = SKY_api_Client_DecryptWallet( &clientHandle, name, pwd, &dw);
 	cr_assert( result == SKY_OK, "Error decrypting wallet" );
 	registerHandleClose( dw );

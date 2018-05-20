@@ -252,6 +252,19 @@ func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
 		return nil, err
 	}
 
+	// Loads wallet
+	wltServConfig := wallet.Config{
+		WalletDir:       c.WalletDirectory,
+		CryptoType:      c.WalletCryptoType,
+		EnableWalletAPI: c.EnableWalletAPI,
+		EnableSeedAPI:   c.EnableSeedAPI,
+	}
+
+	wltServ, err := wallet.NewService(wltServConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	if !db.IsReadOnly() {
 		if err := CreateBuckets(db); err != nil {
 			logger.WithError(err).Error("CreateBuckets failed")
@@ -284,18 +297,6 @@ func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
 		}); err != nil {
 			return nil, err
 		}
-	}
-
-	wltServConfig := wallet.Config{
-		WalletDir:       c.WalletDirectory,
-		CryptoType:      c.WalletCryptoType,
-		EnableWalletAPI: c.EnableWalletAPI,
-		EnableSeedAPI:   c.EnableSeedAPI,
-	}
-
-	wltServ, err := wallet.NewService(wltServConfig)
-	if err != nil {
-		return nil, err
 	}
 
 	utp, err := NewUnconfirmedTxnPool(db)

@@ -22,6 +22,10 @@
 #define JSON_BIG_FILE_SIZE 32768
 #define TEST_DATA_DIR "src/api/integration/testdata/"
 
+//#define NORMAL_TESTS
+//#define DECRYPTION_TESTS
+#define DECRYPT_WALLET_TEST
+
 TestSuite(api_integration, .init = setup, .fini = teardown);
 
 char* getNodeAddress(){
@@ -163,6 +167,8 @@ int createWallet(Client__Handle clientHandle,
 	}
 	return result;
 }
+
+#ifdef NORMAL_TESTS
 
 Test(api_integration, TestVersion) {
 	GoString_ version;
@@ -1964,7 +1970,11 @@ Test(api_integration, TestWalletFolderName) {
 	cr_assert(strAddress.p != NULL, "Folder Address is null");
 	cr_assert(strAddress.n > 0, "Folder Address is empty");
 }
-/*
+
+#endif
+
+#ifdef DECRYPTION_TESTS
+
 Test(api_integration, TestEncryptWallet) {
 	int result;
 	char* pNodeAddress = getNodeAddress();
@@ -2055,8 +2065,12 @@ Test(api_integration, TestEncryptWallet) {
 	
 	int equal = compareObjectsByHandle( w, dw );
 	cr_assert( equal, "Decrypted wallet should be equal to the original");
-}*/
-/*
+}
+
+#endif
+
+#ifdef DECRYPT_WALLET_TEST
+
 Test(api_integration, TestDecryptWallet) {
 	int result;
 	char* pNodeAddress = getNodeAddress();
@@ -2084,7 +2098,7 @@ Test(api_integration, TestDecryptWallet) {
 	GoString pwd = { "pwd", 3 };
 	GoString emptyPwd = { "", 0 };
 	GoString wrongPwd = { "pwd1", 4 };
-	*/
+	
 	//TODO: Fails if decryption is tried with wrong passwords
 	/*result = SKY_api_Client_DecryptWallet( &clientHandle, name, wrongPwd, &dw);
 	cr_expect( result != SKY_OK, "Can\'t decrypt wallet with wrong password" );
@@ -2092,7 +2106,7 @@ Test(api_integration, TestDecryptWallet) {
 	result = SKY_api_Client_DecryptWallet( &clientHandle, name, emptyPwd, &dw);
 	cr_expect( result != SKY_OK, "Can\'t decrypt wallet with empty password" );
 	*/
-	/*result = SKY_api_Client_DecryptWallet( &clientHandle, name, pwd, &dw);
+	result = SKY_api_Client_DecryptWallet( &clientHandle, name, pwd, &dw);
 	cr_assert( result == SKY_OK, "Error decrypting wallet" );
 	registerHandleClose( dw );
 	
@@ -2189,7 +2203,9 @@ Test(api_integration, TestDecryptWallet) {
 	SKY_cipher_Address_String( &laddress, &strLAddress );
 	registerMemCleanup( (void*)strLAddress.p );
 	cr_assert( eq( type(GoString_), strLAddress, strCAddress ) );
-}*/
+}
+
+#endif
 
 //TODO: How to disable wallet seed API
 /*
@@ -2222,7 +2238,9 @@ Test(api_integration, TestGetWalletSeedDisabledAPI) {
 	result = SKY_api_Client_GetWalletSeed( &clientHandle, name, strPwd, &strSeed );
 	cr_assert( result != SKY_OK );
 }*/
-/*
+
+
+#ifdef DECRYPTION_TESTS
 Test(api_integration, TestGetWalletSeedDisabledAPI) {
 	int result;
 	char* pNodeAddress = getNodeAddress();
@@ -2284,10 +2302,11 @@ Test(api_integration, TestGetWalletSeedDisabledAPI) {
 	memset( &strSeed, 0, sizeof( GoString_ ) ) ;
 	result = SKY_api_Client_GetWalletSeed( &clientHandle, name2, strPwd, &strSeed );
 	cr_assert( result != SKY_OK, "Can\'t get seed on unencrypted wallet failed" );
-}*/
+}
 
+#endif
 
-
+#ifdef NORMAL_TESTS
 Test(api_integration, TestStableHealth) {
 	int result;
 	char* pNodeAddress = getNodeAddress();
@@ -2355,3 +2374,4 @@ Test(api_integration, TestStableHealth) {
 	cr_assert(value != NULL, "Error getting json value version/branch");
 	cr_assert(value->u.string.length > 0, "Health version/branch must be non empty");
 }
+#endif

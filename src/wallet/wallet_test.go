@@ -1364,10 +1364,9 @@ func TestWalletSortSpendsHighToLow(t *testing.T) {
 		uxb := make([]UxBalance, len(orderedUxb))
 		copy(uxb, orderedUxb)
 
-		for i := range uxb {
-			j := rand.Intn(i + 1)
+		rand.Shuffle(len(uxb), func(i, j int) {
 			uxb[i], uxb[j] = uxb[j], uxb[i]
-		}
+		})
 
 		if !uxBalancesEqual(uxb, orderedUxb) {
 			shuffleWorked = true

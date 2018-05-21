@@ -50,8 +50,6 @@ Make sure the skycoin node is running against the pinned blockchain data provide
 
 When running mode 2, API responses may change (such as /coinSupply). The exact responses are not compared,
 but the response is checked to be unmarshallable to a known JSON object.
-TODO: When go1.10 is released, use the new DisallowUnknownFields property of the JSON decoder, to detect when
-an API adds a new field to the response. See: https://tip.golang.org/doc/go1.10#encoding/json
 
 When update flag is set to true all tests pass
 */
@@ -162,7 +160,10 @@ func loadJSON(t *testing.T, filename string, obj interface{}) {
 	require.NoError(t, err, filename)
 	defer f.Close()
 
-	err = json.NewDecoder(f).Decode(obj)
+	d := json.NewDecoder(f)
+	d.DisallowUnknownFields()
+
+	err = d.Decode(obj)
 	require.NoError(t, err, filename)
 }
 
@@ -179,7 +180,10 @@ func loadGoldenFile(t *testing.T, filename string, testData TestData) {
 	require.NoError(t, err)
 	defer f.Close()
 
-	err = json.NewDecoder(f).Decode(testData.expected)
+	d := json.NewDecoder(f)
+	d.DisallowUnknownFields()
+
+	err = d.Decode(testData.expected)
 	require.NoError(t, err, filename)
 }
 
@@ -2730,15 +2734,9 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 		nOutputs = len(to)
 		t.Log("nOutputs", nOutputs)
 
-		for i := range to {
-			j := rand.Intn(i + 1)
+		rand.Shuffle(len(to), func(i, j int) {
 			to[i], to[j] = to[j], to[i]
-		}
-
-		// TODO -- use rand.Shuffle [go1.10 only]
-		// rand.Shuffle(len(to), func(i, j int) {
-		// 	to[i], to[j] = to[j], to[i]
-		// })
+		})
 
 		for i, o := range to {
 			t.Logf("to[%d].Hours %s\n", i, o.Hours)

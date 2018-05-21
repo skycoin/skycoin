@@ -864,10 +864,9 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 	}
 
 	// shuffle the uxouts to test that the uxout sorting during spend selection is working
-	for i := range uxouts {
-		j := rand.Intn(i + 1)
+	rand.Shuffle(len(uxouts), func(i, j int) {
 		uxouts[i], uxouts[j] = uxouts[j], uxouts[i]
-	}
+	})
 
 	// Create extra unspent outputs. These have the same value as uxouts, but are spendable by
 	// keys held in extraWalletAddrs
@@ -894,10 +893,9 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 	}
 
 	// shuffle the uxouts to test that the uxout sorting during spend selection is working
-	for i := range uxoutsNoHours {
-		j := rand.Intn(i + 1)
+	rand.Shuffle(len(uxoutsNoHours), func(i, j int) {
 		uxoutsNoHours[i], uxoutsNoHours[j] = uxoutsNoHours[j], uxoutsNoHours[i]
-	}
+	})
 
 	changeAddress := testutil.MakeAddress()
 

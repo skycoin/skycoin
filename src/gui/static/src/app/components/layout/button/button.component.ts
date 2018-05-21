@@ -1,11 +1,11 @@
 import { Component, EventEmitter, Input, Output, ViewChild } from '@angular/core';
-import { parseResponseMessage } from '../../../utils/index';
+import { parseResponseMessage } from '../../../utils/errors';
 import { MatTooltip } from '@angular/material';
 
 @Component({
   selector: 'app-button',
   templateUrl: 'button.component.html',
-  styleUrls: ['button.component.scss']
+  styleUrls: ['button.component.scss'],
 })
 export class ButtonComponent {
   @Input() disabled: any;

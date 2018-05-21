@@ -44,7 +44,9 @@
           <img src="/assets/img/send-blue.png">
         </div>
         <h4>{{ transaction.balance | number:'1.0-6' }} SKY</h4>
-        <p *ngIf="price">{{ transaction.balance * price | currency:'USD':'symbol':'1.2-2' }}</p>
+        <p *ngIf="price" matTooltip="Calculated at the current rate">
+          {{ transaction.balance * price | currency:'USD':'symbol':'1.2-2' }}<span>*</span>
+        </p>
       </div>
     </div>
   </div>

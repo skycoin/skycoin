@@ -6,13 +6,13 @@ import { ChangeNameComponent } from '../change-name/change-name.component';
 import { QrCodeComponent } from '../../../layout/qr-code/qr-code.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { MatSnackBar, MatSnackBarConfig } from '@angular/material';
-import { parseResponseMessage } from '../../../../utils/index';
+import { parseResponseMessage } from '../../../../utils/errors';
 import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-wallet-detail',
   templateUrl: './wallet-detail.component.html',
-  styleUrls: ['./wallet-detail.component.scss']
+  styleUrls: ['./wallet-detail.component.scss'],
 })
 export class WalletDetailComponent implements OnInit, OnDestroy {
   @Input() wallet: Wallet;
@@ -104,7 +104,7 @@ export class WalletDetailComponent implements OnInit, OnDestroy {
 
     address.copying = true;
 
-    setTimeout(function () {
+    setTimeout(function() {
       address.copying = false;
     }, 1000);
   }
@@ -114,6 +114,6 @@ export class WalletDetailComponent implements OnInit, OnDestroy {
 
     const config = new MatDialogConfig();
     config.data = { address };
-    this.dialog.open(QrCodeComponent, config).afterClosed().subscribe();
+    this.dialog.open(QrCodeComponent, config);
   }
 }

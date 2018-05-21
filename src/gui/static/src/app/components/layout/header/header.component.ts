@@ -14,7 +14,7 @@ import { shouldUpgradeVersion } from '../../../utils/semver';
 @Component({
   selector: 'app-header',
   templateUrl: './header.component.html',
-  styleUrls: ['./header.component.scss']
+  styleUrls: ['./header.component.scss'],
 })
 export class HeaderComponent implements OnInit, OnDestroy {
   @Input() title: string;
@@ -30,8 +30,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   hasPendingTxs: boolean;
   price: number;
 
-  private priceSubscription: Subscription;
-  private walletSubscription: Subscription;
+  private subscription: Subscription;
 
   get loading() {
     return !this.current || !this.highest || this.current !== this.highest;
@@ -55,7 +54,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-    this.blockchainService.progress
+    this.subscription = this.blockchainService.progress
       .filter(response => !!response)
       .subscribe(response => {
         this.querying = false;
@@ -65,24 +64,26 @@ export class HeaderComponent implements OnInit, OnDestroy {
       });
 
     this.setVersion();
-    this.priceSubscription = this.priceService.price.subscribe(price => this.price = price);
-    this.walletSubscription = this.walletService.allAddresses().subscribe(addresses => {
+
+    this.subscription.add(this.priceService.price.subscribe(price => this.price = price));
+
+    this.subscription.add(this.walletService.allAddresses().subscribe(addresses => {
       this.addresses = addresses.reduce((array, item) => {
         if (!array.find(addr => addr.address === item.address)) {
           array.push(item);
         }
+
         return array;
       }, []);
-    });
+    }));
 
-    this.walletService.pendingTransactions().subscribe(txs => {
+    this.subscription.add(this.walletService.pendingTransactions().subscribe(txs => {
       this.hasPendingTxs = txs.length > 0;
-    });
+    }));
   }
 
   ngOnDestroy() {
-    this.priceSubscription.unsubscribe();
-    this.walletSubscription.unsubscribe();
+    this.subscription.unsubscribe();
   }
 
   setVersion() {

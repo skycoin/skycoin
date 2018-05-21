@@ -278,6 +278,7 @@ func NewApp(cfg Config) (*App, error) {
 	app.CommandNotFound = func(ctx *gcli.Context, command string) {
 		tmp := fmt.Sprintf("{{.HelpName}}: '%s' is not a {{.HelpName}} command. See '{{.HelpName}} --help'.\n", command)
 		gcli.HelpPrinter(app.Writer, tmp, app)
+		gcli.OsExiter(1)
 	}
 
 	rpcClient, err := webrpc.NewClient(cfg.RPCAddress)

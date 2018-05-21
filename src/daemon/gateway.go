@@ -609,6 +609,16 @@ func (gw *Gateway) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
 	return uxout, err
 }
 
+// GetUxBalances gets []wallet.UxBalance by hash ids
+func (gw *Gateway) GetUxBalances(ids []cipher.SHA256) ([]wallet.UxBalance, error) {
+	var uxs []wallet.UxBalance
+	var err error
+	gw.strand("GetUxBalances", func() {
+		uxs, err = gw.v.GetUxBalances(ids)
+	})
+	return uxs, err
+}
+
 // GetAddrUxOuts gets all the address affected UxOuts.
 func (gw *Gateway) GetAddrUxOuts(addresses []cipher.Address) ([]*historydb.UxOut, error) {
 	var uxOuts []*historydb.UxOut
@@ -1038,4 +1048,13 @@ func (gw *Gateway) GetHealth() (*Health, error) {
 	})
 
 	return health, err
+}
+
+// VerifySingleTxnAllConstraints verifies an isolated transaction
+func (gw *Gateway) VerifySingleTxnAllConstraints(txn *coin.Transaction) error {
+	var err error
+	gw.strand("VerifySingleTxnAllConstraints", func() {
+		err = gw.v.VerifySingleTxnAllConstraints(txn)
+	})
+	return err
 }

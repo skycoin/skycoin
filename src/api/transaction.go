@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -265,5 +266,69 @@ func getRawTx(gateway Gatewayer) http.HandlerFunc {
 		d := tx.Txn.Serialize()
 		wh.SendJSONOr500(logger, w, hex.EncodeToString(d))
 		return
+	}
+}
+
+func decodeTxHandler(gateway Gatewayer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			wh.Error405(w)
+			return
+		}
+
+		if r.Header.Get("Content-Type") != "application/json" {
+			wh.Error415(w)
+			return
+		}
+
+		var v struct {
+			EncodedTransaction string `json:"encoded_transaction"`
+		}
+
+		var rsp HTTPResponse
+		if err := func() error {
+			if err := json.NewDecoder(r.Body).Decode(&v); err != nil {
+				return err
+			}
+
+			b, err := hex.DecodeString(v.EncodedTransaction)
+			if err != nil {
+				return err
+			}
+
+			tx, err := coin.TransactionDeserialize(b)
+			if err != nil {
+				return err
+			}
+
+			for _, o := range tx.Out {
+				if o.Address.Null() {
+					return errors.New("Transaction.Out contains an output sending to an empty address")
+				}
+			}
+
+			if err := gateway.VerifySingleTxnAllConstraints(&tx); err != nil {
+				return err
+			}
+
+			inputs, err := gateway.GetUxBalances(tx.In)
+			if err != nil {
+				return err
+			}
+
+			txRsp, err := NewCreatedTransaction(&tx, inputs)
+			if err != nil {
+				return err
+			}
+
+			rsp.Data = txRsp
+			return nil
+		}(); err != nil {
+			rsp.Error = err.Error()
+			wh.Error400JSONOr500(w, rsp)
+			return
+		}
+
+		wh.SendJSONOr500(logger, w, rsp)
 	}
 }

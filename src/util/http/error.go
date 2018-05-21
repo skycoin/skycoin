@@ -2,6 +2,7 @@
 package httphelper
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -78,4 +79,16 @@ func Error500(w http.ResponseWriter, msg string) {
 // Error503 respond with a 503 error and include a message
 func Error503(w http.ResponseWriter, msg string) {
 	errorXXXMsg(w, http.StatusServiceUnavailable, msg)
+}
+
+// Error400JSONOr500 response with a 400 error and include a json message
+func Error400JSONOr500(w http.ResponseWriter, m interface{}) {
+	out, err := json.MarshalIndent(m, "", "\t")
+	if err != nil {
+		Error500(w, "json.MarshalIndent failed")
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	errorXXXMsg(w, http.StatusBadRequest, string(out))
 }

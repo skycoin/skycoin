@@ -2,6 +2,7 @@ package api
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -265,6 +266,8 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	// get balance of addresses
 	webHandlerV1("/balance", getBalanceHandler(gateway))
 
+	webHandlerV1("/transaction/decode", decodeTxHandler(gateway))
+
 	// Wallet interface
 
 	// Returns wallet info
@@ -523,4 +526,19 @@ func versionHandler(gateway Gatewayer) http.HandlerFunc {
 
 		wh.SendJSONOr500(logger, w, gateway.GetBuildInfo())
 	}
+}
+
+// HTTPResponse represents the http response struct
+type HTTPResponse struct {
+	Error string      `json:"error"`
+	Data  interface{} `json:"data"`
+}
+
+// JSON converts the struct into json string
+func (hr HTTPResponse) JSON() (string, error) {
+	v, err := json.MarshalIndent(hr, "", "\t")
+	if err != nil {
+		return "", err
+	}
+	return string(v), nil
 }

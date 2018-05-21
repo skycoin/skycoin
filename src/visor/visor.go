@@ -1470,6 +1470,29 @@ func (vs Visor) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
 	return out, nil
 }
 
+// GetUxBalances gets []wallet.Balance by hash ids
+func (vs Visor) GetUxBalances(ids []cipher.SHA256) ([]wallet.UxBalance, error) {
+	var headtime uint64
+	var uxs coin.UxArray
+	if err := vs.DB.View("GetUxBalances", func(tx *dbutil.Tx) error {
+		for _, id := range ids {
+			out, err := vs.history.GetUxOut(tx, id)
+			if err != nil {
+				return err
+			}
+			uxs = append(uxs, out.Out)
+		}
+
+		var err error
+		headtime, err = vs.Blockchain.Time(tx)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return wallet.NewUxBalances(headtime, uxs)
+}
+
 // GetAddrUxOuts gets all the address affected UxOuts.
 func (vs Visor) GetAddrUxOuts(address cipher.Address) ([]*historydb.UxOut, error) {
 	var out []*historydb.UxOut

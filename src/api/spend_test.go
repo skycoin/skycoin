@@ -17,6 +17,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil" //http,json helpers
 	"github.com/skycoin/skycoin/src/util/fee"
+	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -660,9 +661,8 @@ func TestCreateTransaction(t *testing.T) {
 				},
 				ChangeAddress: changeAddress.String(),
 				Wallet: rawRequestWallet{
-					ID:        "foo.wlt",
-					Addresses: []string{destinationAddress.String()},
-					UxOuts:    []string{walletInput.Hex(), walletInput.Hex()},
+					ID:     "foo.wlt",
+					UxOuts: []string{walletInput.Hex(), walletInput.Hex()},
 				},
 				To: []rawReceiver{
 					{
@@ -812,6 +812,15 @@ func TestCreateTransaction(t *testing.T) {
 			status: http.StatusBadRequest,
 			gatewayCreateTransactionErr: fee.ErrTxnInsufficientCoinHours,
 			err: "400 Bad Request - Insufficient coinhours for transaction outputs",
+		},
+
+		{
+			name:   "400 - uxout doesn't exist",
+			method: http.MethodPost,
+			body:   validBody,
+			status: http.StatusBadRequest,
+			gatewayCreateTransactionErr: blockdb.NewErrUnspentNotExist("foo"),
+			err: "400 Bad Request - unspent output of foo does not exist",
 		},
 
 		{

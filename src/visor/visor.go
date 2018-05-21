@@ -1860,85 +1860,20 @@ func (vs *Visor) CreateTransaction(params wallet.CreateTransactionParams) (*coin
 
 	// Get all addresses from the wallet for checking params against
 	allAddrs := w.GetAddresses()
-	allAddrsMap := make(map[cipher.Address]struct{}, len(allAddrs))
-	for _, a := range allAddrs {
-		allAddrsMap[a] = struct{}{}
-	}
 
 	var auxs coin.AddressUxOuts
 	var head *coin.SignedBlock
 
 	if err := vs.DB.View("CreateTransaction", func(tx *dbutil.Tx) error {
+		var err error
 		head, err = vs.Blockchain.Head(tx)
 		if err != nil {
 			logger.WithError(err).Error("Blockchain.Head failed")
 			return err
 		}
 
-		if len(params.Wallet.UxOuts) != 0 {
-			// Check if any of the outputs are in an unconfirmed spend
-			hashesMap := make(map[cipher.SHA256]struct{}, len(params.Wallet.UxOuts))
-			for _, h := range params.Wallet.UxOuts {
-				hashesMap[h] = struct{}{}
-			}
-
-			// Get all unconfirmed spending uxouts
-			unconfirmedTxns, err := vs.Unconfirmed.RawTxns(tx)
-			if err != nil {
-				return err
-			}
-
-			var unconfirmedSpends []cipher.SHA256
-			for _, txn := range unconfirmedTxns {
-				unconfirmedSpends = append(unconfirmedSpends, txn.In...)
-			}
-
-			for _, h := range unconfirmedSpends {
-				if _, ok := hashesMap[h]; ok {
-					return wallet.ErrSpendingUnconfirmed
-				}
-			}
-
-			// Retrieve the uxouts from the pool.
-			// An error is returned if any do not exist
-			uxouts, err := vs.Blockchain.Unspent().GetArray(tx, params.Wallet.UxOuts)
-			if err != nil {
-				return err
-			}
-
-			// Build coin.AddressUxOuts map, and check that the address is in the wallets
-			auxs = make(coin.AddressUxOuts)
-			for _, o := range uxouts {
-				if _, ok := allAddrsMap[o.Body.Address]; !ok {
-					return wallet.ErrUnknownUxOut
-				}
-				auxs[o.Body.Address] = append(auxs[o.Body.Address], o)
-			}
-
-		} else {
-			addrs := params.Wallet.Addresses
-			if len(addrs) == 0 {
-				addrs = allAddrs
-			} else {
-				// Check that requested addresses are in the wallet
-				for _, a := range addrs {
-					if _, ok := allAddrsMap[a]; !ok {
-						return wallet.ErrUnknownAddress
-					}
-				}
-			}
-
-			// Get unspent outputs, while checking that there are no unconfirmed outputs
-			auxs, err = vs.getUnspentsForSpending(tx, addrs)
-			if err != nil {
-				if err != wallet.ErrSpendingUnconfirmed {
-					logger.WithError(err).Error("getUnspentsForSpending failed")
-				}
-				return err
-			}
-		}
-
-		return nil
+		auxs, err = vs.getCreateTransactionAuxs(tx, params, allAddrs)
+		return err
 	}); err != nil {
 		return nil, nil, err
 	}
@@ -1966,6 +1901,77 @@ func (vs *Visor) CreateTransaction(params wallet.CreateTransactionParams) (*coin
 	}
 
 	return txn, inputs, nil
+}
+
+func (vs *Visor) getCreateTransactionAuxs(tx *dbutil.Tx, params wallet.CreateTransactionParams, allAddrs []cipher.Address) (coin.AddressUxOuts, error) {
+	allAddrsMap := make(map[cipher.Address]struct{}, len(allAddrs))
+	for _, a := range allAddrs {
+		allAddrsMap[a] = struct{}{}
+	}
+
+	var auxs coin.AddressUxOuts
+	if len(params.Wallet.UxOuts) != 0 {
+		// Check if any of the outputs are in an unconfirmed spend
+		hashesMap := make(map[cipher.SHA256]struct{}, len(params.Wallet.UxOuts))
+		for _, h := range params.Wallet.UxOuts {
+			hashesMap[h] = struct{}{}
+		}
+
+		// Get all unconfirmed spending uxouts
+		unconfirmedTxns, err := vs.Unconfirmed.RawTxns(tx)
+		if err != nil {
+			return nil, err
+		}
+
+		var unconfirmedSpends []cipher.SHA256
+		for _, txn := range unconfirmedTxns {
+			unconfirmedSpends = append(unconfirmedSpends, txn.In...)
+		}
+
+		for _, h := range unconfirmedSpends {
+			if _, ok := hashesMap[h]; ok {
+				return nil, wallet.ErrSpendingUnconfirmed
+			}
+		}
+
+		// Retrieve the uxouts from the pool.
+		// An error is returned if any do not exist
+		uxouts, err := vs.Blockchain.Unspent().GetArray(tx, params.Wallet.UxOuts)
+		if err != nil {
+			return nil, err
+		}
+
+		// Build coin.AddressUxOuts map, and check that the address is in the wallets
+		auxs = make(coin.AddressUxOuts)
+		for _, o := range uxouts {
+			if _, ok := allAddrsMap[o.Body.Address]; !ok {
+				return nil, wallet.ErrUnknownUxOut
+			}
+			auxs[o.Body.Address] = append(auxs[o.Body.Address], o)
+		}
+
+	} else {
+		addrs := params.Wallet.Addresses
+		if len(addrs) == 0 {
+			addrs = allAddrs
+		} else {
+			// Check that requested addresses are in the wallet
+			for _, a := range addrs {
+				if _, ok := allAddrsMap[a]; !ok {
+					return nil, wallet.ErrUnknownAddress
+				}
+			}
+		}
+
+		// Get unspent outputs, while checking that there are no unconfirmed outputs
+		var err error
+		auxs, err = vs.getUnspentsForSpending(tx, addrs)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return auxs, nil
 }
 
 // getUnspentsForSpending returns the unspent outputs for a set of addresses,

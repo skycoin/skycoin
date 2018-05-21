@@ -380,7 +380,6 @@ func (serv *Service) CreateAndSignTransactionAdvanced(params CreateTransactionPa
 			return nil, nil, ErrWalletNotEncrypted
 		}
 	}
-	logger.Critical().Infof("service, len(params.Wallet.UxOuts) %d", len(params.Wallet.UxOuts))
 
 	var tx *coin.Transaction
 	var inputs []UxBalance

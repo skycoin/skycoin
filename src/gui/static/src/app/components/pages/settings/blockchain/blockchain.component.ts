@@ -4,10 +4,9 @@ import { BlockchainService } from '../../../../services/blockchain.service';
 @Component({
   selector: 'app-blockchain',
   templateUrl: './blockchain.component.html',
-  styleUrls: ['./blockchain.component.scss']
+  styleUrls: ['./blockchain.component.scss'],
 })
 export class BlockchainComponent implements OnInit {
-
   block: any;
 
   constructor(

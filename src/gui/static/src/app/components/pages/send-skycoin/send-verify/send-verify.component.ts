@@ -2,13 +2,13 @@ import { Component, EventEmitter, Input, Output, ViewChild } from '@angular/core
 import { WalletService } from '../../../../services/wallet.service';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { MatSnackBar, MatSnackBarConfig } from '@angular/material';
-import { parseResponseMessage } from '../../../../utils/index';
+import { parseResponseMessage } from '../../../../utils/errors';
 import { PreviewTransaction } from '../../../../app.datatypes';
 
 @Component({
   selector: 'app-send-verify',
   templateUrl: './send-verify.component.html',
-  styleUrls: ['./send-verify.component.scss']
+  styleUrls: ['./send-verify.component.scss'],
 })
 export class SendVerifyComponent {
   @ViewChild('sendButton') sendButton: ButtonComponent;

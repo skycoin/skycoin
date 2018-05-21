@@ -194,7 +194,7 @@ type Blockchainer interface {
 	GetLastBlocks(tx *dbutil.Tx, n uint64) ([]coin.SignedBlock, error)
 	GetSignedBlockByHash(tx *dbutil.Tx, hash cipher.SHA256) (*coin.SignedBlock, error)
 	GetSignedBlockBySeq(tx *dbutil.Tx, seq uint64) (*coin.SignedBlock, error)
-	Unspent() blockdb.UnspentPool
+	Unspent() blockdb.UnspentPooler
 	Len(tx *dbutil.Tx) (uint64, error)
 	Head(tx *dbutil.Tx) (*coin.SignedBlock, error)
 	HeadSeq(tx *dbutil.Tx) (uint64, bool, error)

@@ -15,17 +15,17 @@ import (
 	dbutil "github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
-// UnspentPoolMock mock
-type UnspentPoolMock struct {
+// UnspentPoolerMock mock
+type UnspentPoolerMock struct {
 	mock.Mock
 }
 
-func NewUnspentPoolMock() *UnspentPoolMock {
-	return &UnspentPoolMock{}
+func NewUnspentPoolerMock() *UnspentPoolerMock {
+	return &UnspentPoolerMock{}
 }
 
 // AddressCount mocked method
-func (m *UnspentPoolMock) AddressCount(p0 *dbutil.Tx) (uint64, error) {
+func (m *UnspentPoolerMock) AddressCount(p0 *dbutil.Tx) (uint64, error) {
 
 	ret := m.Called(p0)
 
@@ -52,7 +52,7 @@ func (m *UnspentPoolMock) AddressCount(p0 *dbutil.Tx) (uint64, error) {
 }
 
 // Contains mocked method
-func (m *UnspentPoolMock) Contains(p0 *dbutil.Tx, p1 cipher.SHA256) (bool, error) {
+func (m *UnspentPoolerMock) Contains(p0 *dbutil.Tx, p1 cipher.SHA256) (bool, error) {
 
 	ret := m.Called(p0, p1)
 
@@ -79,7 +79,7 @@ func (m *UnspentPoolMock) Contains(p0 *dbutil.Tx, p1 cipher.SHA256) (bool, error
 }
 
 // Get mocked method
-func (m *UnspentPoolMock) Get(p0 *dbutil.Tx, p1 cipher.SHA256) (*coin.UxOut, error) {
+func (m *UnspentPoolerMock) Get(p0 *dbutil.Tx, p1 cipher.SHA256) (*coin.UxOut, error) {
 
 	ret := m.Called(p0, p1)
 
@@ -106,7 +106,7 @@ func (m *UnspentPoolMock) Get(p0 *dbutil.Tx, p1 cipher.SHA256) (*coin.UxOut, err
 }
 
 // GetAll mocked method
-func (m *UnspentPoolMock) GetAll(p0 *dbutil.Tx) (coin.UxArray, error) {
+func (m *UnspentPoolerMock) GetAll(p0 *dbutil.Tx) (coin.UxArray, error) {
 
 	ret := m.Called(p0)
 
@@ -133,7 +133,7 @@ func (m *UnspentPoolMock) GetAll(p0 *dbutil.Tx) (coin.UxArray, error) {
 }
 
 // GetArray mocked method
-func (m *UnspentPoolMock) GetArray(p0 *dbutil.Tx, p1 []cipher.SHA256) (coin.UxArray, error) {
+func (m *UnspentPoolerMock) GetArray(p0 *dbutil.Tx, p1 []cipher.SHA256) (coin.UxArray, error) {
 
 	ret := m.Called(p0, p1)
 
@@ -160,7 +160,7 @@ func (m *UnspentPoolMock) GetArray(p0 *dbutil.Tx, p1 []cipher.SHA256) (coin.UxAr
 }
 
 // GetUnspentsOfAddrs mocked method
-func (m *UnspentPoolMock) GetUnspentsOfAddrs(p0 *dbutil.Tx, p1 []cipher.Address) (coin.AddressUxOuts, error) {
+func (m *UnspentPoolerMock) GetUnspentsOfAddrs(p0 *dbutil.Tx, p1 []cipher.Address) (coin.AddressUxOuts, error) {
 
 	ret := m.Called(p0, p1)
 
@@ -187,7 +187,7 @@ func (m *UnspentPoolMock) GetUnspentsOfAddrs(p0 *dbutil.Tx, p1 []cipher.Address)
 }
 
 // GetUxHash mocked method
-func (m *UnspentPoolMock) GetUxHash(p0 *dbutil.Tx) (cipher.SHA256, error) {
+func (m *UnspentPoolerMock) GetUxHash(p0 *dbutil.Tx) (cipher.SHA256, error) {
 
 	ret := m.Called(p0)
 
@@ -214,7 +214,7 @@ func (m *UnspentPoolMock) GetUxHash(p0 *dbutil.Tx) (cipher.SHA256, error) {
 }
 
 // Len mocked method
-func (m *UnspentPoolMock) Len(p0 *dbutil.Tx) (uint64, error) {
+func (m *UnspentPoolerMock) Len(p0 *dbutil.Tx) (uint64, error) {
 
 	ret := m.Called(p0)
 
@@ -241,9 +241,9 @@ func (m *UnspentPoolMock) Len(p0 *dbutil.Tx) (uint64, error) {
 }
 
 // MaybeBuildIndexes mocked method
-func (m *UnspentPoolMock) MaybeBuildIndexes(p0 *dbutil.Tx) error {
+func (m *UnspentPoolerMock) MaybeBuildIndexes(p0 *dbutil.Tx, p1 uint64) error {
 
-	ret := m.Called(p0)
+	ret := m.Called(p0, p1)
 
 	var r0 error
 	switch res := ret.Get(0).(type) {
@@ -259,7 +259,7 @@ func (m *UnspentPoolMock) MaybeBuildIndexes(p0 *dbutil.Tx) error {
 }
 
 // ProcessBlock mocked method
-func (m *UnspentPoolMock) ProcessBlock(p0 *dbutil.Tx, p1 *coin.SignedBlock) error {
+func (m *UnspentPoolerMock) ProcessBlock(p0 *dbutil.Tx, p1 *coin.SignedBlock) error {
 
 	ret := m.Called(p0, p1)
 

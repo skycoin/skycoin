@@ -2415,7 +2415,7 @@ func TestGetCreateTransactionAuxs(t *testing.T) {
 
 			unconfirmed := NewUnconfirmedTxnPoolerMock()
 			bc := NewBlockchainerMock()
-			unspent := NewUnspentPoolMock()
+			unspent := NewUnspentPoolerMock()
 			require.Implements(t, (*blockdb.UnspentPooler)(nil), unspent)
 
 			v := &Visor{

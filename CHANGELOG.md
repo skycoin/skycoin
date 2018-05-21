@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Added
+
 - Add environment variable `DATA_DIR` in CLI's
 - `USE_CSRF` environment variable for CLI, if the remote node has CSRF enabled (CSRF is enabled by default, use `-disable-csrf` to disable)
 - `cli showConfig` command to echo the cli's configuration back to the user
@@ -44,6 +45,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Remove `-rpc-interface-addr`, `-rpc-interface-port` options.  The RPC interface is now on default port `6420` with the REST API.
 - Remove `-rpc-thread-num` option
 - Remove `-connect-to` option
+- Remove support for go1.9
 
 ## [0.23.0] - 2018-04-22
 

@@ -790,7 +790,7 @@ Example request body with manual hours selection type, unencrypted wallet and sp
     },
     "wallet": {
         "id": "foo.wlt",
-        "outputs": ["519c069a0593e179f226e87b528f60aea72826ec7f99d51279dd8854889ed7e2", "4e4e41996297511a40e2ef0046bd6b7118a8362c1f4f09a288c5c3ea2f4dfb85"]
+        "unspents": ["519c069a0593e179f226e87b528f60aea72826ec7f99d51279dd8854889ed7e2", "4e4e41996297511a40e2ef0046bd6b7118a8362c1f4f09a288c5c3ea2f4dfb85"]
     },
     "change_address": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
     "to": [{

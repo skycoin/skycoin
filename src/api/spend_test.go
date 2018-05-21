@@ -24,7 +24,7 @@ import (
 func TestCreateTransaction(t *testing.T) {
 	type rawRequestWallet struct {
 		ID        string   `json:"id"`
-		UxOuts    []string `json:"uxouts,omitempty"`
+		UxOuts    []string `json:"unspents,omitempty"`
 		Addresses []string `json:"addresses,omitempty"`
 		Password  string   `json:"password"`
 	}

@@ -497,7 +497,7 @@ type CreateTransactionRequest struct {
 // CreateTransactionRequestWallet defines a wallet to spend from and optionally which addresses in the wallet
 type CreateTransactionRequestWallet struct {
 	ID        string   `json:"id"`
-	UxOuts    []string `json:"uxouts,omitempty"`
+	UxOuts    []string `json:"unspents,omitempty"`
 	Addresses []string `json:"addresses,omitempty"`
 	Password  string   `json:"password"`
 }

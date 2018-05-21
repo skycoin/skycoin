@@ -647,7 +647,7 @@ func TestCreateTransaction(t *testing.T) {
 				},
 			},
 			status: http.StatusBadRequest,
-			err:    "400 Bad Request - wallet.uxouts and wallet.addresses cannot be combined",
+			err:    "400 Bad Request - wallet.unspents and wallet.addresses cannot be combined",
 		},
 
 		{
@@ -672,7 +672,7 @@ func TestCreateTransaction(t *testing.T) {
 				},
 			},
 			status: http.StatusBadRequest,
-			err:    "400 Bad Request - wallet.uxouts contains duplicate values",
+			err:    "400 Bad Request - wallet.unspents contains duplicate values",
 		},
 
 		{

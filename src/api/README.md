@@ -781,7 +781,7 @@ Example request body with auto hours selection type, encrypted wallet, specified
 }
 ```
 
-Example request body with manual hours selection type, unencrypted wallet and spending specific outputs:
+Example request body with manual hours selection type, unencrypted wallet and spending specific unspent outputs:
 
 ```json
 {
@@ -876,13 +876,13 @@ To control which addresses to spend from, specify `wallet.addresses`.
 A subset of the unspent outputs associated with these addresses will be chosen for spending,
 based upon an internal selection algorithm.
 
-To control which unspent outputs to spend from, specify `wallet.uxouts`.
+To control which unspent outputs to spend from, specify `wallet.unspents`.
 A subset of these unspent outputs will be chosen for spending,
 based upon an internal selection algorithm.
 
 `wallet.addresses` and `wallets.uxouts` cannot be combined.
 
-If neither `wallet.addresses` nor `wallet.uxouts` are specified,
+If neither `wallet.addresses` nor `wallet.unspents` are specified,
 then all outputs associated with all addresses in the wallet may be chosen from to spend with.
 
 `change_address` must be set, but it is not required to be an address in the wallet.

@@ -386,7 +386,7 @@ func (r createTransactionRequest) Validate() error {
 	}
 
 	if len(r.Wallet.UxOuts) != 0 && len(r.Wallet.Addresses) != 0 {
-		return errors.New("wallet.uxouts and wallet.addresses cannot be combined")
+		return errors.New("wallet.unspents and wallet.addresses cannot be combined")
 	}
 
 	// Check for duplicate spending uxouts
@@ -396,7 +396,7 @@ func (r createTransactionRequest) Validate() error {
 	}
 
 	if len(uxouts) != len(r.Wallet.UxOuts) {
-		return errors.New("wallet.uxouts contains duplicate values")
+		return errors.New("wallet.unspents contains duplicate values")
 	}
 
 	return nil

@@ -69,7 +69,7 @@ export class WalletDetailComponent implements OnInit, OnDestroy {
     const config = new MatDialogConfig();
     config.data = {
       confirm: !this.wallet.encrypted,
-      title: this.wallet.encrypted ? 'Decrypt Wallet' : 'Encrypt Wallet',
+      title: this.wallet.encrypted ? 'wallet.decrypt' : 'wallet.encrypt',
     };
 
     if (!this.wallet.encrypted) {

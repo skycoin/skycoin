@@ -204,7 +204,7 @@ const ROUTES = [
       loader: {
         provide: TranslateLoader,
         useClass: AppTranslateLoader,
-      }
+      },
     }),
   ],
   providers: [

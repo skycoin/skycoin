@@ -5,7 +5,16 @@
     "coins": "Coins",
     "hours": "Hours",
     "balance": "Balance",
-    "loading": "Loading.."
+    "loading": "Loading..",
+    "new": "New",
+    "load": "Load"
+  },
+
+  "errors": {
+    "fetch-version": "Unable to fetch latest release version from Github",
+    "incorrect-password": "Incorrect password",
+    "api-disabled": "API disabled",
+    "no-wallet": "Wallet does not exist"
   },
 
   "title": {
@@ -19,17 +28,21 @@
     "transactions": "Transactions",
     "pending-txs": "Pending Transactions",
     "backup": "Backup Wallet",
-    "explorer": "Skycoin Explorer"
+    "explorer": "Skycoin Explorer",
+    "seed": "Wallet Seed",
+    "qrcode": "QR Code"
   },
 
   "header": {
     "syncing-blocks": "Syncing blocks",
-    "update": "Wallet update <a href='https://www.skycoin.net/downloads/' target='_blank'>v{{ version }}</a> available.",
-    "pending-txs": "There are some <a routerLink='/settings/pending-transactions'>pending trasactions</a>. Data you see may not be updated.",
+    "update1": "Wallet update",
+    "update2": "available.",
+    "pending-txs1": "There are some",
+    "pending-txs2": "Data you see may not be updated.",
 
     "errors": {
       "no-connections": "No connections active, your client is not connected to any other nodes!",
-      "no-backend": "Cannot reach backend. Please restart the app and/or seek help on our <a href='https://web.telegram.org/#/im?p=@skycoinsupport'>Telegram</a>",
+      "no-backend": "Cannot reach backend. Please restart the app and/or seek help on our",
       "csrf": "Security vulnerability: CSRF is not working, please exit immediately."
     }
   },
@@ -88,6 +101,7 @@
     "new": {
       "create-title": "Create Wallet",
       "load-title": "Load Wallet",
+      "encrypt-title": "Encrypt Wallet",
       "name-label": "Name",
       "seed-label": "Seed",
       "confirm-seed-label": "Confirm seed",
@@ -97,6 +111,8 @@
       "cancel-button": "Cancel",
       "12-words": "12 words",
       "24-words": "24 words",
+      "generate-12-seed": "Generate 12 word seed",
+      "generate-24-seed": "Generate 24 word seed",
       "encrypt": "Encrypt wallet",
       "encrypt-warning": "We suggest that you encrypt each one of your wallets with a password. If you forget your password, you can reset it with your seed. Make sure you have your seed saved somewhere safe before encrypting your wallet."
     },
@@ -139,7 +155,10 @@
     "hours-sent": "sent",
     "hours-burned": "burned",
     "inputs": "Inputs",
-    "outputs": "Outputs"
+    "outputs": "Outputs",
+    "confirmed": "Confirmed",
+    "pending": "Pending",
+    "current-rate": "Calculated at the current rate"
   },
 
   "backup": {
@@ -176,6 +195,15 @@
     "sending": "Sending",
     "sent": "Sent",
     "received": "Received",
+    "receiving": "Receiving",
     "pending": "Pending"
+  },
+
+  "teller": {
+    "done": "Completed",
+    "waiting-confirm": "Waiting for confirmation",
+    "waiting-deposit": "Waiting for Bitcoin deposit",
+    "waiting-send": "Waiting to send Skycoin",
+    "unknown": "Unknown"
   }
 }

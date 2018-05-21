@@ -1,4 +1,4 @@
-<p>{{ 'buy.btc-deposit-address' | translate }}</p>
+<p>{{ 'buy.deposit-address' | translate }}</p>
 <div [formGroup]="form">
   <mat-select formControlName="address" [placeholder]="'buy.select-address' | translate" class="input-field">
     <mat-option *ngFor="let address of walletService.allAddresses() | async" [value]="address.address">

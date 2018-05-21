@@ -18,7 +18,7 @@
             <span>{{ 'tx.date' | translate }}:</span> {{ transaction.timestamp * 1000 | date:'short' }}
           </div>
           <div class="-data">
-            <span>{{ 'tx.status' | translate }}:</span> {{ transaction.confirmed ? 'Complete' : 'Pending' }}
+            <span>{{ 'tx.status' | translate }}:</span> {{ (transaction.confirmed ? 'tx.confirmed' : 'tx.pending') | translate }}
           </div>
         </ng-container>
         <div class="-data">
@@ -43,9 +43,9 @@
         <div class="-icon" [ngClass]="{ '-incoming': !isPreview && transaction.balance > 0 }">
           <img src="/assets/img/send-blue.png">
         </div>
-        <h4>{{ transaction.balance | number:'1.0-6' }} SKY</h4>
-        <p *ngIf="price" matTooltip="Calculated at the current rate">
-          {{ transaction.balance * price | currency:'USD':'symbol':'1.2-2' }}<span>*</span>
+        <h4>{{ transaction.balance | number:'1.0-6' }} {{ 'common.coin-id' | translate }}</h4>
+        <p *ngIf="price" [matTooltip]="!isPreview ? ('tx.current-rate' | translate) : ''">
+          {{ transaction.balance * price | currency:'USD':'symbol':'1.2-2' }}<span *ngIf="!isPreview">*</span>
         </p>
       </div>
     </div>

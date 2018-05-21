@@ -43,7 +43,7 @@
           <h3>{{ 'buy.receive' | translate }}</h3>
           <p>{{ 'buy.receive-desc' | translate }}</p>
           <span class="-status">
-            {{ 'buy.status-button' | translate }} {{ order.status | tellerStatus }}
+            {{ 'buy.status-button' | translate }} {{ order.status | tellerStatus | translate }}
           </span>
           <app-button #button (action)="checkStatus()" class="primary">
             {{ 'buy.check-status-button' | translate }}

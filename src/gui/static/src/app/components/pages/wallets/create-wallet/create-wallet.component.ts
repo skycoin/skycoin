@@ -4,11 +4,12 @@ import { WalletService } from '../../../../services/wallet.service';
 import { MatDialogRef } from '@angular/material/dialog';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { MAT_DIALOG_DATA } from '@angular/material';
+import { ApiService } from '../../../../services/api.service';
 
 @Component({
   selector: 'app-create-wallet',
   templateUrl: './create-wallet.component.html',
-  styleUrls: ['./create-wallet.component.scss']
+  styleUrls: ['./create-wallet.component.scss'],
 })
 export class CreateWalletComponent implements OnInit {
   @ViewChild('createButton') createButton: ButtonComponent;
@@ -23,6 +24,7 @@ export class CreateWalletComponent implements OnInit {
     @Inject(MAT_DIALOG_DATA) public data,
     public dialogRef: MatDialogRef<CreateWalletComponent>,
     private walletService: WalletService,
+    private apiService: ApiService,
   ) {}
 
   ngOnInit() {
@@ -53,7 +55,7 @@ export class CreateWalletComponent implements OnInit {
   }
 
   generateSeed(entropy: number) {
-    this.walletService.generateSeed(entropy).subscribe(seed => this.form.get('seed').setValue(seed));
+    this.apiService.generateSeed(entropy).subscribe(seed => this.form.get('seed').setValue(seed));
   }
 
   setEncrypt(event) {

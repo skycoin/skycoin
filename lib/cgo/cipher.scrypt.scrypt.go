@@ -1,9 +1,9 @@
 package main
 
 import (
-	scrypt "github.com/skycoin/skycoin/src/cipher/scrypt"
 	"reflect"
 	"unsafe"
+	scrypt "github.com/skycoin/skycoin/src/cipher/scrypt"
 )
 
 /*

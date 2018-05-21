@@ -1,8 +1,8 @@
 package main
 
 import (
-	testutil "github.com/skycoin/skycoin/src/testutil"
 	"unsafe"
+	testutil "github.com/skycoin/skycoin/src/testutil"
 )
 
 /*

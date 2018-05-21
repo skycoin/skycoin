@@ -1,9 +1,9 @@
 package main
 
 import (
-	gobip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
 	"reflect"
 	"unsafe"
+	gobip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
 )
 
 /*

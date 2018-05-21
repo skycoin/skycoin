@@ -102,12 +102,14 @@ char *cr_user_cipher__SHA256_tostr(cipher__SHA256 *sh1) {
 }
 
 int cr_user_GoSlice_eq(GoSlice *slice1, GoSlice *slice2){
-	return (memcmp(slice1->data,slice2->data, sizeof(GoSlice))==0);
+	return 
+		(slice1->len == slice2->len) &&
+		(memcmp(slice1->data, slice2->data, slice1->len)==0);
 }
 
 int cr_user_GoSlice_noteq(GoSlice *slice1, GoSlice *slice2){
 	return !(((slice1->len == slice2->len)) && 
-		(memcmp(slice1->data,slice2->data, sizeof(GoSlice))==0));
+		(memcmp(slice1->data,slice2->data, slice1->len)==0));
 }
 
 char *cr_user_GoSlice_tostr(GoSlice *slice1) {
@@ -117,9 +119,7 @@ char *cr_user_GoSlice_tostr(GoSlice *slice1) {
 }
 
 int cr_user_GoSlice__eq(GoSlice_ *slice1, GoSlice_ *slice2){
-
-  return ((slice1->len == slice2->len)) && (memcmp(slice1->data,slice2->data, sizeof(GoSlice_))==0 );
-
+	return ((slice1->len == slice2->len)) && (memcmp(slice1->data,slice2->data, slice1->len)==0 );
 }
 
 char *cr_user_GoSlice__tostr(GoSlice_ *slice1) {

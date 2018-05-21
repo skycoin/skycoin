@@ -1,10 +1,10 @@
 package main
 
 import (
-	webrpc "github.com/skycoin/skycoin/src/api/webrpc"
-	coin "github.com/skycoin/skycoin/src/coin"
 	"reflect"
 	"unsafe"
+	webrpc "github.com/skycoin/skycoin/src/api/webrpc"
+	coin "github.com/skycoin/skycoin/src/coin"
 )
 
 /*

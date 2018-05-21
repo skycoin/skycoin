@@ -1,8 +1,8 @@
 package main
 
 import (
-	encoder "github.com/skycoin/skycoin/src/cipher/encoder"
 	"unsafe"
+	encoder "github.com/skycoin/skycoin/src/cipher/encoder"
 )
 
 /*

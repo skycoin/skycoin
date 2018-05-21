@@ -1,9 +1,9 @@
 package main
 
 import (
-	base58 "github.com/skycoin/skycoin/src/cipher/base58"
 	"reflect"
 	"unsafe"
+	base58 "github.com/skycoin/skycoin/src/cipher/base58"
 )
 
 /*

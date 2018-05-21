@@ -1,9 +1,8 @@
 package main
 
 import (
-	api "github.com/skycoin/skycoin/src/api"
-	"reflect"
 	"unsafe"
+	api "github.com/skycoin/skycoin/src/api"
 )
 
 /*
@@ -419,7 +418,7 @@ func SKY_api_Client_CreateEncryptedWallet(_c *C.Client__Handle, _seed, _label, _
 }
 
 //export SKY_api_Client_NewWalletAddress
-func SKY_api_Client_NewWalletAddress(_c *C.Client__Handle, _id string, _n int, _password string, _arg3 *C.GoSlice_) (____error_code uint32) {
+func SKY_api_Client_NewWalletAddress(_c *C.Client__Handle, _id string, _n int, _password string, _arg3 *C.Strings__Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -435,7 +434,7 @@ func SKY_api_Client_NewWalletAddress(_c *C.Client__Handle, _id string, _n int, _
 	__arg3, ____return_err := c.NewWalletAddress(id, n, password)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		copyToGoSlice(reflect.ValueOf(__arg3), _arg3)
+		*_arg3 = (C.Strings__Handle)(registerHandle( __arg3 ))
 	}
 	return
 }

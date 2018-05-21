@@ -8,7 +8,7 @@ describe('OnboardingSafeguardComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ OnboardingSafeguardComponent ]
+      declarations: [ OnboardingSafeguardComponent ],
     })
     .compileComponents();
   }));

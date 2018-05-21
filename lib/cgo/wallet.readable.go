@@ -1,8 +1,8 @@
 package main
 
 import (
-	wallet "github.com/skycoin/skycoin/src/wallet"
 	"unsafe"
+	wallet "github.com/skycoin/skycoin/src/wallet"
 )
 
 /*

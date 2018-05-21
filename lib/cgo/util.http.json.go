@@ -1,9 +1,9 @@
 package main
 
 import (
-	http "github.com/skycoin/skycoin/src/util/http"
 	"reflect"
 	"unsafe"
+	http "github.com/skycoin/skycoin/src/util/http"
 )
 
 /*

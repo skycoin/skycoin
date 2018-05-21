@@ -5,7 +5,7 @@ import { WalletService } from './wallet.service';
 describe('WalletService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [WalletService]
+      providers: [WalletService],
     });
   });
 

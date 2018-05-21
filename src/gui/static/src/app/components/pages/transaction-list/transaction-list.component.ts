@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { WalletService } from '../../../services/wallet.service';
 import { PriceService } from '../../../services/price.service';
-import { Subscription } from 'rxjs/Subscription';
+import { ISubscription } from 'rxjs/Subscription';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { TransactionDetailComponent } from './transaction-detail/transaction-detail.component';
 import { NormalTransaction } from '../../../app.datatypes';
@@ -10,13 +10,13 @@ import { QrCodeComponent } from '../../layout/qr-code/qr-code.component';
 @Component({
   selector: 'app-transaction-list',
   templateUrl: './transaction-list.component.html',
-  styleUrls: ['./transaction-list.component.scss']
+  styleUrls: ['./transaction-list.component.scss'],
 })
 export class TransactionListComponent implements OnInit, OnDestroy {
   transactions: NormalTransaction[];
 
   private price: number;
-  private priceSubscription: Subscription;
+  private priceSubscription: ISubscription;
 
   constructor(
     private dialog: MatDialog,
@@ -26,7 +26,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.priceSubscription = this.priceService.price.subscribe(price => this.price = price);
-    this.walletService.transactions().subscribe(transactions => this.transactions = transactions);
+    this.walletService.transactions().first().subscribe(transactions => this.transactions = transactions);
   }
 
   ngOnDestroy() {
@@ -40,11 +40,11 @@ export class TransactionListComponent implements OnInit, OnDestroy {
     this.dialog.open(TransactionDetailComponent, config);
   }
 
-  showQrCode($event: any, address: string) {
-    $event.stopPropagation();
+  showQrCode(event: any, address: string) {
+    event.stopPropagation();
 
     const config = new MatDialogConfig();
     config.data = { address };
-    this.dialog.open(QrCodeComponent, config).afterClosed().subscribe();
+    this.dialog.open(QrCodeComponent, config);
   }
 }

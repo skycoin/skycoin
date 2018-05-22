@@ -298,6 +298,7 @@ func verifyTxHandler(gateway Gatewayer) http.HandlerFunc {
 
 		inputs, err := gateway.GetUxBalances(tx.In)
 		if err != nil {
+			wh.Error503(w, err.Error())
 			return
 		}
 
@@ -307,7 +308,13 @@ func verifyTxHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendJSONOr500(logger, w, HTTPResponse{Data: txRsp})
+		rsp := struct {
+			Transaction interface{} `json:"transaction"`
+		}{
+			Transaction: txRsp,
+		}
+
+		wh.SendJSONOr500(logger, w, rsp)
 	}
 }
 

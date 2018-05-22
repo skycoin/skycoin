@@ -28,6 +28,7 @@ import (
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 func createUnconfirmedTxn(t *testing.T) visor.UnconfirmedTxn {
@@ -56,6 +57,11 @@ func makeAddress() cipher.Address {
 	return cipher.AddressFromPubKey(p)
 }
 
+type transactionAndInputs struct {
+	coin.Transaction
+	inputs []wallet.UxBalance
+}
+
 func makeTransaction(t *testing.T) coin.Transaction {
 	tx := coin.Transaction{}
 	ux, s := makeUxOutWithSecret(t)
@@ -66,6 +72,22 @@ func makeTransaction(t *testing.T) coin.Transaction {
 	tx.PushOutput(makeAddress(), 5e6, 50)
 	tx.UpdateHeader()
 	return tx
+}
+
+func createTransactionAndInputs(t *testing.T) transactionAndInputs {
+	tx := coin.Transaction{}
+	ux, s := makeUxOutWithSecret(t)
+
+	tx.PushInput(ux.Hash())
+	tx.SignInputs([]cipher.SecKey{s})
+	tx.PushOutput(makeAddress(), 1e6, 50)
+	tx.PushOutput(makeAddress(), 5e6, 50)
+	tx.UpdateHeader()
+
+	input, err := wallet.NewUxBalance(uint64(utc.UnixNow()), ux)
+	require.NoError(t, err)
+
+	return transactionAndInputs{Transaction: tx, inputs: []wallet.UxBalance{input}}
 }
 
 func makeUxBodyWithSecret(t *testing.T) (coin.UxBody, cipher.SecKey) {
@@ -811,6 +833,179 @@ func TestGetTransactions(t *testing.T) {
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.httpResponse, msg, tc.name)
+			}
+		})
+	}
+}
+
+func TestVerifyTransaction(t *testing.T) {
+	validTransaction := createTransactionAndInputs(t)
+	type httpBody struct {
+		EncodedTransaction string `json:"encoded_transaction"`
+	}
+
+	validCreatedTx, err := NewCreatedTransaction(&validTransaction.Transaction, validTransaction.inputs)
+	require.NoError(t, err)
+	rsp := struct {
+		Transaction interface{} `json:"transaction"`
+	}{
+		Transaction: validCreatedTx,
+	}
+
+	v, err := json.MarshalIndent(rsp, "", "    ")
+	require.NoError(t, err)
+	validTxHTTPResponse := string(v)
+
+	validTxBody := &httpBody{EncodedTransaction: hex.EncodeToString(validTransaction.Serialize())}
+	validTxBodyJSON, err := json.Marshal(validTxBody)
+	require.NoError(t, err)
+
+	b := &httpBody{EncodedTransaction: hex.EncodeToString(testutil.RandBytes(t, 128))}
+	invalidTxBodyJSON, err := json.Marshal(b)
+	require.NoError(t, err)
+
+	invalidTxEmptyAddress := makeTransactionWithEmptyAddressOutput(t)
+	invalidTxEmptyAddressBody := &httpBody{
+		EncodedTransaction: hex.EncodeToString(invalidTxEmptyAddress.Serialize()),
+	}
+	invalidTxEmptyAddressBodyJSON, err := json.Marshal(invalidTxEmptyAddressBody)
+	require.NoError(t, err)
+
+	tt := []struct {
+		name                                    string
+		method                                  string
+		contentType                             string
+		status                                  int
+		err                                     string
+		httpBody                                string
+		gatewayVerifySingleTxnAllConstraintsArg coin.Transaction
+		gatewayVerifySingleTxnAllConstraintsErr error
+		gatewayGetUxBalancesArgs                []cipher.SHA256
+		gatewayGetUxBalancesResult              []wallet.UxBalance
+		gatewayGetUxBalancesErr                 error
+		httpResponse                            string
+		csrfDisabled                            bool
+	}{
+		{
+			name:   "405",
+			method: http.MethodGet,
+			status: http.StatusMethodNotAllowed,
+			err:    "405 Method Not Allowed",
+			gatewayVerifySingleTxnAllConstraintsArg: validTransaction.Transaction,
+		},
+		{
+			name:        "400 - EOF",
+			method:      http.MethodPost,
+			contentType: "application/json",
+			status:      http.StatusBadRequest,
+			err:         "400 Bad Request - EOF",
+		},
+		{
+			name:        "415 - Unsupported Media Type",
+			method:      http.MethodPost,
+			contentType: "",
+			status:      http.StatusUnsupportedMediaType,
+			err:         "415 Unsupported Media Type",
+		},
+		{
+			name:        "422 - Invalid transaction: Deserialization failed",
+			method:      http.MethodPost,
+			contentType: "application/json",
+			status:      http.StatusUnprocessableEntity,
+			err:         "422 Unprocessable Entity - Invalid transaction: Deserialization failed",
+			httpBody:    `{"wrongKey":"wrongValue"}`,
+		},
+		{
+			name:        "422 - encoding/hex: odd length hex string",
+			method:      http.MethodPost,
+			contentType: "application/json",
+			status:      http.StatusUnprocessableEntity,
+			err:         "422 Unprocessable Entity - encoding/hex: odd length hex string",
+			httpBody:    `{"encoded_transaction":"aab"}`,
+		},
+		{
+			name:        "422 - deserialization error",
+			method:      http.MethodPost,
+			contentType: "application/json",
+			status:      http.StatusUnprocessableEntity,
+			err:         "422 Unprocessable Entity - Invalid transaction: Deserialization failed",
+			httpBody:    string(invalidTxBodyJSON),
+		},
+		{
+			name:        "422 - txn sends to empty address",
+			method:      http.MethodPost,
+			contentType: "application/json",
+			status:      http.StatusUnprocessableEntity,
+			err:         "422 Unprocessable Entity - Transaction.Out contains an output sending to an empty address",
+			httpBody:    string(invalidTxEmptyAddressBodyJSON),
+		},
+		{
+			name:        "422 - verifyTransactionError",
+			method:      http.MethodPost,
+			contentType: "application/json",
+			status:      http.StatusUnprocessableEntity,
+			err:         "422 Unprocessable Entity - invalid transaction",
+			httpBody:    string(validTxBodyJSON),
+			gatewayVerifySingleTxnAllConstraintsArg: validTransaction.Transaction,
+			gatewayVerifySingleTxnAllConstraintsErr: errors.New("invalid transaction"),
+		},
+		{
+			name:        "503 - gateway.GetUxBalances failed",
+			method:      http.MethodPost,
+			contentType: "application/json",
+			status:      http.StatusServiceUnavailable,
+			err:         "503 Service Unavailable - get uxbalances failed",
+			httpBody:    string(validTxBodyJSON),
+			gatewayVerifySingleTxnAllConstraintsArg: validTransaction.Transaction,
+			gatewayGetUxBalancesArgs:                validTransaction.In,
+			gatewayGetUxBalancesErr:                 errors.New("get uxbalances failed"),
+		},
+		{
+			name:        "200",
+			method:      http.MethodPost,
+			contentType: "application/json",
+			status:      http.StatusOK,
+			httpBody:    string(validTxBodyJSON),
+			gatewayVerifySingleTxnAllConstraintsArg: validTransaction.Transaction,
+			gatewayGetUxBalancesArgs:                validTransaction.In,
+			gatewayGetUxBalancesResult:              validTransaction.inputs,
+			httpResponse:                            validTxHTTPResponse,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			endpoint := "/api/v1/transaction/verify"
+			gateway := NewGatewayerMock()
+			gateway.On("VerifySingleTxnAllConstraints", &tc.gatewayVerifySingleTxnAllConstraintsArg).Return(tc.gatewayVerifySingleTxnAllConstraintsErr)
+			gateway.On("GetUxBalances", tc.gatewayGetUxBalancesArgs).Return(tc.gatewayGetUxBalancesResult, tc.gatewayGetUxBalancesErr)
+
+			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
+			require.NoError(t, err)
+			req.Header.Set("Content-Type", tc.contentType)
+
+			csrfStore := &CSRFStore{
+				Enabled: !tc.csrfDisabled,
+			}
+			if csrfStore.Enabled {
+				setCSRFParameters(csrfStore, tokenValid, req)
+			} else {
+				setCSRFParameters(csrfStore, tokenInvalid, req)
+			}
+
+			rr := httptest.NewRecorder()
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
+				tc.name, status, tc.status)
+
+			if status != http.StatusOK {
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+			} else {
+				require.Equal(t, tc.httpResponse, rr.Body.String(), tc.name)
 			}
 		})
 	}

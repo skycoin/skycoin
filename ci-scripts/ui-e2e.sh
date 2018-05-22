@@ -3,11 +3,17 @@
 
 # Set Script Name variable
 SCRIPT=`basename ${BASH_SOURCE[0]}`
-PORT="46420"
+
+# Find unused port
+PORT="1024"
+while $(lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null) ; do
+    PORT=$((PORT+1))
+done
+
 RPC_PORT="$PORT"
 HOST="http://127.0.0.1:$PORT"
-RPC_ADDR="http://127.0.0.1:$RPC_PORT"
 BINARY="skycoin-integration"
+E2E_PROXY_CONFIG=$(mktemp -t e2e-proxy.config.XXXXXX.js)
 
 COMMIT=$(git rev-parse HEAD)
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
@@ -51,8 +57,25 @@ echo "done sleeping"
 
 set +e
 
+
+cat >$E2E_PROXY_CONFIG <<EOL
+const PROXY_CONFIG = {
+  "/api/*": {
+    "target": "$HOST",
+    "secure": false,
+    "logLevel": "debug",
+    "bypass": function (req) {
+      req.headers["host"] = '$HOST';
+      req.headers["referer"] = '$HOST';
+      req.headers["origin"] = '$HOST';
+    }
+  }
+};
+module.exports = PROXY_CONFIG;
+EOL
+
 # Run e2e tests
-npm --prefix="./src/gui/static" run e2e
+E2E_PROXY_CONFIG=$E2E_PROXY_CONFIG npm --prefix="./src/gui/static" run e2e-choose-config
 
 RESULT=$?
 
@@ -63,6 +86,7 @@ kill -s SIGINT $SKYCOIN_PID
 wait $SKYCOIN_PID
 
 rm "$BINARY"
+rm "$E2E_PROXY_CONFIG"
 
 if [[ $RESULT -ne 0 ]]; then
   exit $RESULT

@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `GET /api/v1/wallet/balance` and `GET /api/v1/balance` now return an address balance list as well.
 - API endpoints are prefixed with `/api/v1/`. API endpoints without the `/api/v1/` prefix are deprecated but can be enabled with `-enable-unversioned-api`. Please migrate to use `/api/v1/` prefix in URLs.
 - Enable message protocol upgrade
+- Support automatic port allocation of the API interface by specifying port 0
 
 ### Removed
 

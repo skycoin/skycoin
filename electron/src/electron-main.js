@@ -77,7 +77,8 @@ function startSkycoin() {
     '-rpc-interface=false',
     '-disable-csrf=false',
     '-reset-corrupt-db=true',
-    '-enable-gui=true'
+    '-enable-gui=true',
+    '-web-interface-port=0' // random port assignment
     // will break
     // broken (automatically generated certs do not work):
     // '-web-interface-https=true',

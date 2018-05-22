@@ -355,6 +355,7 @@ func applyConfigMode() {
 		devConfig.LogToFile = false
 		devConfig.ColorLog = true
 		devConfig.ResetCorruptDB = true
+		devConfig.WebInterfacePort = 0 // randomize web interface port
 	default:
 		panic("Invalid ConfigMode")
 	}

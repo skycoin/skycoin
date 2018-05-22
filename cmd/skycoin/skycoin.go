@@ -585,6 +585,7 @@ func Run(c *Config) {
 	var db *dbutil.DB
 	var d *daemon.Daemon
 	var webInterface *api.Server
+	var fullAddress string
 	errC := make(chan error, 10)
 
 	if c.Version {
@@ -614,17 +615,6 @@ func Run(c *Config) {
 			logger.Error(err)
 			return
 		}
-	}
-
-	scheme := "http"
-	if c.WebInterfaceHTTPS {
-		scheme = "https"
-	}
-	host := fmt.Sprintf("%s:%d", c.WebInterfaceAddr, c.WebInterfacePort)
-	fullAddress := fmt.Sprintf("%s://%s", scheme, host)
-	logger.Critical().Infof("Full address: %s", fullAddress)
-	if c.PrintWebInterfaceAddress {
-		fmt.Println(fullAddress)
 	}
 
 	initProfiling(c.HTTPProf, c.ProfileCPU, c.ProfileCPUFile)
@@ -677,10 +667,21 @@ func Run(c *Config) {
 	}
 
 	if c.WebInterface {
+		host := fmt.Sprintf("%s:%d", c.WebInterfaceAddr, c.WebInterfacePort)
 		webInterface, err = createGUI(c, d, host)
 		if err != nil {
 			logger.Error(err)
 			goto earlyShutdown
+		}
+
+		scheme := "http"
+		if c.WebInterfaceHTTPS {
+			scheme = "https"
+		}
+		fullAddress = fmt.Sprintf("%s://%s", scheme, webInterface.Addr())
+		logger.Critical().Infof("Full address: %s", fullAddress)
+		if c.PrintWebInterfaceAddress {
+			fmt.Println(fullAddress)
 		}
 	}
 

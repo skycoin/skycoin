@@ -180,6 +180,11 @@ func CreateHTTPS(host string, c Config, gateway Gatewayer, certFile, keyFile str
 	return s, nil
 }
 
+// Addr returns the listening address of the Server
+func (s *Server) Addr() string {
+	return s.listener.Addr().String()
+}
+
 // Serve serves the web interface on the configured host
 func (s *Server) Serve() error {
 	logger.Infof("Starting web interface on %s", s.listener.Addr())

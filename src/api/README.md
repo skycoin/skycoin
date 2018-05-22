@@ -1,6 +1,6 @@
 # REST API Documentation
 
-API default service port is `6420`.
+API default service port is `6420`.  However, if running the desktop or standalone releases from the website, the port is randomized by default.
 
 A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](https://godoc.org/github.com/skycoin/skycoin/src/api#Client).
 

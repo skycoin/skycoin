@@ -1823,13 +1823,6 @@ Test(api_integration, TestStableWalletBalance) {
 	strcpy(seed, "casino away claim road artist where blossom warrior demise royal still palm");
 	result = createWallet( clientHandle, 0, NULL, 
 			seed, 128, &w );
-	//The wallet created on the shared library may still be in cache
-	//even when it was deleted, so try a different seed
-	if( result != SKY_OK ){
-		strcat(seed, " 2");
-		result = createWallet( clientHandle, 0, NULL, 
-			seed, 128, &w );
-	}
 	cr_assert( result == SKY_OK, "Create wallet failed" );
 	registerHandleClose( w );
 	registerWalletClean( clientHandle, w );

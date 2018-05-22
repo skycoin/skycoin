@@ -41,6 +41,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - API endpoints are prefixed with `/api/v1/`. API endpoints without the `/api/v1/` prefix are deprecated but can be enabled with `-enable-unversioned-api`. Please migrate to use `/api/v1/` prefix in URLs.
 - Enable message protocol upgrade
 - Support automatic port allocation of the API interface by specifying port 0
+- The web interface / API port is randomly allocated for the precompiled standalone client and electron client released on the website.
+  If you are using the CLI tool or another API client to communicate with the standalone client, use `-web-interface-port=6420` to continue using port 6420.
+  If the program is run from source (e.g. `go run`, `run.sh`, `make run`) there is no change, the API will still be on port 6420.
 
 ### Removed
 

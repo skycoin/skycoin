@@ -1,6 +1,6 @@
 # skycoin build
 # reference https://github.com/skycoin/skycoin
-ARG IMAGE_FROM=alpine:3.7
+ARG IMAGE_FROM=busybox
 FROM golang:1.10.1-stretch AS build
 ARG ARCH=amd64
 ARG GOARM
@@ -41,7 +41,7 @@ COPY --from=build /go/bin/* /usr/bin/
 COPY --from=build /go/src/github.com/skycoin/skycoin/src/gui/static /usr/local/skycoin/src/gui/static
 
 # copy launcher
-COPY docker_launcher.sh /usr/local/bin
+COPY docker_launcher.sh /usr/local/bin/docker_launcher.sh
 
 # volumes
 VOLUME $WALLET_DIR

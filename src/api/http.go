@@ -266,7 +266,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	// get balance of addresses
 	webHandlerV1("/balance", getBalanceHandler(gateway))
 
-	webHandlerV1("/transaction/decode", decodeTxHandler(gateway))
+	webHandlerV1("/transaction/verify", verifyTxHandler(gateway))
 
 	// Wallet interface
 

@@ -38,11 +38,14 @@
     "update1": "Wallet update",
     "update2": "available.",
     "pending-txs1": "There are some",
-    "pending-txs2": "Data you see may not be updated.",
+    "pending-txs2": "pending transactions.",
+    "pending-txs3": "Data you see may not be updated.",
 
     "errors": {
       "no-connections": "No connections active, your client is not connected to any other nodes!",
-      "no-backend": "Cannot reach backend. Please restart the app and/or seek help on our",
+      "no-backend1": "Cannot reach backend. Please restart the app and/or seek help on our",
+      "no-backend2": "Telegram.",
+      "no-backend3": "",
       "csrf": "Security vulnerability: CSRF is not working, please exit immediately."
     }
   },

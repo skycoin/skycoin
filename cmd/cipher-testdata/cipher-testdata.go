@@ -65,8 +65,7 @@ func init() {
 func main() {
 	var j job
 
-	var seedsCount int
-	flag.IntVar(&seedsCount, "seeds", 10, "number of seeds to generate")
+	seedsCount := flag.Int("seeds", 10, "number of seeds to generate")
 	inputsCount := flag.Int("hashes", 8, "number of random hashes for input-hashes.golden")
 	addressCount := flag.Int("addresses", 10, "number of addresses to generate per seed")
 	manyAddressesCount := flag.Int("many-addresses", 1000, "number of addresses to generate for the single many-addresses test data")
@@ -105,9 +104,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println("Generating seed data times", seedsCount)
+	fmt.Println("Generating seed data times", *seedsCount)
 
-	jobs := make([]job, 0, seedsCount+1)
+	jobs := make([]job, 0, *seedsCount+1)
 
 	// Generate seed with 1 byte length
 	jobs = append(jobs, job{
@@ -116,7 +115,7 @@ func main() {
 	})
 
 	// Generate random and mnemonic seeds
-	for i := 0; i < seedsCount; i++ {
+	for i := 0; i < *seedsCount; i++ {
 		j = job{
 			addressCount: *addressCount,
 		}

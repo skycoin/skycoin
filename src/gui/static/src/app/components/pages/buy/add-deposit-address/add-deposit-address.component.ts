@@ -7,7 +7,7 @@ import { MatDialogRef } from '@angular/material/dialog';
 @Component({
   selector: 'app-add-deposit-address',
   templateUrl: './add-deposit-address.component.html',
-  styleUrls: ['./add-deposit-address.component.css']
+  styleUrls: ['./add-deposit-address.component.css'],
 })
 export class AddDepositAddressComponent implements OnInit {
 

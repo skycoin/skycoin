@@ -13,7 +13,9 @@ export class OnboardingEncryptWalletComponent implements OnInit {
   @Output() onBack = new EventEmitter();
   form: FormGroup;
 
-  constructor(private formBuilder: FormBuilder) { }
+  constructor(
+    private formBuilder: FormBuilder,
+  ) { }
 
   ngOnInit() {
     this.initEncryptForm();

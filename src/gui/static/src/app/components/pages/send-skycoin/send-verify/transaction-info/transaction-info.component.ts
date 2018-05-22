@@ -1,20 +1,23 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { PreviewTransaction, Transaction } from '../../../../../app.datatypes';
 import { PriceService } from '../../../../../services/price.service';
+import { ISubscription } from 'rxjs/Subscription';
 
 @Component({
   selector: 'app-transaction-info',
   templateUrl: './transaction-info.component.html',
-  styleUrls: ['./transaction-info.component.scss']
+  styleUrls: ['./transaction-info.component.scss'],
 })
-export class TransactionInfoComponent implements OnInit {
+export class TransactionInfoComponent implements OnInit, OnDestroy {
   @Input() transaction: Transaction;
   @Input() isPreview: boolean;
   price: number;
   showInputsOutputs = false;
 
+  private subscription: ISubscription;
+
   constructor(private priceService: PriceService) {
-    this.priceService.price.subscribe(price => this.price = price);
+    this.subscription = this.priceService.price.subscribe(price => this.price = price);
   }
 
   ngOnInit() {
@@ -24,6 +27,10 @@ export class TransactionInfoComponent implements OnInit {
         .map(o => parseInt(o.hours, 10))
         .reduce((a, b) => a + b, 0);
     }
+  }
+
+  ngOnDestroy() {
+    this.subscription.unsubscribe();
   }
 
   toggleInputsOutputs(event) {

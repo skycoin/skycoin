@@ -12,7 +12,8 @@ import (
 )
 
 var (
-	xorhashKey = []byte("xorhash")
+	xorhashKey         = []byte("xorhash")
+	addrIndexHeightKey = []byte("addr_index_height")
 
 	// UnspentPoolBkt holds unspent outputs, indexed by unspent output hash
 	UnspentPoolBkt = []byte("unspent_pool")
@@ -48,13 +49,26 @@ func (m unspentMeta) getXorHash(tx *dbutil.Tx) (cipher.SHA256, error) {
 		return cipher.SHA256{}, nil
 	}
 
-	var hash cipher.SHA256
-	copy(hash[:], v[:])
-	return hash, nil
+	return cipher.SHA256FromBytes(v)
 }
 
 func (m *unspentMeta) setXorHash(tx *dbutil.Tx, hash cipher.SHA256) error {
 	return dbutil.PutBucketValue(tx, UnspentMetaBkt, xorhashKey, hash[:])
+}
+
+func (m *unspentMeta) getAddrIndexHeight(tx *dbutil.Tx) (uint64, bool, error) {
+	v, err := dbutil.GetBucketValue(tx, UnspentMetaBkt, addrIndexHeightKey)
+	if err != nil {
+		return 0, false, err
+	} else if v == nil {
+		return 0, false, nil
+	}
+
+	return dbutil.Btoi(v), true, nil
+}
+
+func (m *unspentMeta) setAddrIndexHeight(tx *dbutil.Tx, height uint64) error {
+	return dbutil.PutBucketValue(tx, UnspentMetaBkt, addrIndexHeightKey, dbutil.Itob(height))
 }
 
 type pool struct{}
@@ -212,31 +226,47 @@ func NewUnspentPool() *Unspents {
 }
 
 // MaybeBuildIndexes builds indexes if necessary
-func (up *Unspents) MaybeBuildIndexes(tx *dbutil.Tx) error {
+func (up *Unspents) MaybeBuildIndexes(tx *dbutil.Tx, headSeq uint64) error {
 	logger.Info("Unspents.MaybeBuildIndexes")
 
-	// If the addr index is empty, build it
-	length, err := dbutil.Len(tx, UnspentPoolAddrIndexBkt)
+	// Compare the addrIndexHeight to the head block,
+	// if not equal, rebuild the address index
+	addrIndexHeight, ok, err := up.meta.getAddrIndexHeight(tx)
 	if err != nil {
 		return err
 	}
 
-	if length == 0 {
-		return up.buildAddrIndex(tx)
+	if ok && addrIndexHeight == headSeq {
+		return nil
 	}
 
-	return nil
+	if addrIndexHeight > headSeq {
+		logger.Critical().Warningf("addrIndexHeight > headSeq (%d > %d)", addrIndexHeight, headSeq)
+	}
+
+	logger.Infof("Rebuilding unspent_pool_addr_index (addrHeightIndexExists=%v, addrIndexHeight=%d, headSeq=%d)", ok, addrIndexHeight, headSeq)
+
+	return up.buildAddrIndex(tx)
 }
 
 func (up *Unspents) buildAddrIndex(tx *dbutil.Tx) error {
 	logger.Info("Building unspent address index")
 
+	if err := dbutil.Reset(tx, UnspentPoolAddrIndexBkt); err != nil {
+		return err
+	}
+
 	addrHashes := make(map[cipher.Address][]cipher.SHA256)
 
+	var maxBlockSeq uint64
 	if err := dbutil.ForEach(tx, UnspentPoolBkt, func(k, v []byte) error {
 		var ux coin.UxOut
 		if err := encoder.DeserializeRaw(v, &ux); err != nil {
 			return err
+		}
+
+		if ux.Head.BkSeq > maxBlockSeq {
+			maxBlockSeq = ux.Head.BkSeq
 		}
 
 		h := ux.Hash()
@@ -252,13 +282,22 @@ func (up *Unspents) buildAddrIndex(tx *dbutil.Tx) error {
 		return err
 	}
 
+	if len(addrHashes) == 0 {
+		logger.Infof("No unspents to index")
+		return nil
+	}
+
 	for addr, hashes := range addrHashes {
 		if err := up.poolAddrIndex.set(tx, addr, hashes); err != nil {
 			return err
 		}
 	}
 
-	logger.Debugf("Indexed unspents for %d addresses", len(addrHashes))
+	if err := up.meta.setAddrIndexHeight(tx, maxBlockSeq); err != nil {
+		return err
+	}
+
+	logger.Infof("Indexed unspents for %d addresses", len(addrHashes))
 
 	return nil
 }
@@ -325,6 +364,11 @@ func (up *Unspents) ProcessBlock(tx *dbutil.Tx, b *coin.SignedBlock) error {
 		xorHash = xorHash.Xor(ux.SnapshotHash())
 	}
 
+	// Set xorHash
+	if err := up.meta.setXorHash(tx, xorHash); err != nil {
+		return err
+	}
+
 	// Update indexes
 	for addr, rmHashes := range rmAddrHashes {
 		addHashes := addAddrHashes[addr]
@@ -342,7 +386,26 @@ func (up *Unspents) ProcessBlock(tx *dbutil.Tx, b *coin.SignedBlock) error {
 		}
 	}
 
-	return up.meta.setXorHash(tx, xorHash)
+	// Check that the addrIndexHeight is incremental
+	addrIndexHeight, ok, err := up.meta.getAddrIndexHeight(tx)
+	if err != nil {
+		return err
+	}
+
+	if b.Block.Head.BkSeq == 0 {
+		if ok {
+			err := errors.New("addrIndexHeight is set but no block has been indexed yet")
+			logger.Critical().Error(err.Error())
+			return err
+		}
+	} else if b.Block.Head.BkSeq != addrIndexHeight+1 {
+		err := errors.New("unspent pool processing blocks out of order")
+		logger.Critical().Error(err.Error())
+		return err
+	}
+
+	// Update the addrIndexHeight
+	return up.meta.setAddrIndexHeight(tx, b.Block.Head.BkSeq)
 }
 
 // GetArray returns UxOut for a set of hashes, will return error if any of the hashes do not exist in the pool.

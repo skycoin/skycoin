@@ -338,7 +338,8 @@ func Reset(tx *Tx, bktName []byte) error {
 		return err
 	}
 
-	return CreateBuckets(tx, [][]byte{bktName})
+	_, err := tx.CreateBucket(bktName)
+	return err
 }
 
 // Itob converts uint64 to bytes

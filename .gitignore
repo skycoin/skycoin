@@ -140,3 +140,5 @@ docs/libc/man
 docs/libc/xml
 
 
+# Do not ignore Docker Cloud build
+!hooks/build

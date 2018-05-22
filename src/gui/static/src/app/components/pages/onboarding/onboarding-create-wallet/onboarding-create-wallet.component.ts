@@ -1,10 +1,10 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { WalletService } from '../../../../services/wallet.service';
 import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
 import { OnboardingSafeguardComponent } from './onboarding-safeguard/onboarding-safeguard.component';
 import { MatDialogRef } from '@angular/material';
+import { ApiService } from '../../../../services/api.service';
 
 @Component({
   selector: 'app-onboarding-create-wallet',
@@ -19,7 +19,7 @@ export class OnboardingCreateWalletComponent implements OnInit {
 
   constructor(
     private dialog: MatDialog,
-    private walletService: WalletService,
+    private apiService: ApiService,
     private formBuilder: FormBuilder,
   ) { }
 
@@ -36,7 +36,7 @@ export class OnboardingCreateWalletComponent implements OnInit {
           Validators.required, Validators.minLength(2),
         ])),
         confirm_seed: new FormControl('',
-          Validators.compose(this.showCreateForm ? [Validators.required, Validators.minLength(2)] : [])
+          Validators.compose(this.showCreateForm ? [Validators.required, Validators.minLength(2)] : []),
         ),
       },
       this.showCreateForm ? { validator: this.seedMatchValidator.bind(this) } : {},
@@ -71,7 +71,7 @@ export class OnboardingCreateWalletComponent implements OnInit {
   }
 
   generateSeed(entropy: number) {
-    this.walletService.generateSeed(entropy).subscribe(seed => this.form.get('seed').setValue(seed));
+    this.apiService.generateSeed(entropy).subscribe(seed => this.form.get('seed').setValue(seed));
   }
 
   get showCreateForm() {
@@ -94,6 +94,7 @@ export class OnboardingCreateWalletComponent implements OnInit {
   private showSafe(): MatDialogRef<OnboardingSafeguardComponent> {
     const config = new MatDialogConfig();
     config.width = '450px';
+
     return this.dialog.open(OnboardingSafeguardComponent, config);
   }
 }

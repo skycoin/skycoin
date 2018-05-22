@@ -2,12 +2,10 @@ import { Injectable } from '@angular/core';
 import { ApiService } from './api.service';
 import { Observable } from 'rxjs/Observable';
 import { IntervalObservable } from 'rxjs/observable/IntervalObservable';
-import { ConnectionModel } from '../models/connection.model';
-import { Version } from '../app.datatypes';
+import { Connection, Version } from '../app.datatypes';
 
 @Injectable()
 export class AppService {
-
   error: number;
   version: Version;
 
@@ -22,7 +20,7 @@ export class AppService {
       version => {
         this.version = version;
         this.apiService.getCsrf().subscribe(null, () => this.error = 3);
-      }, () => this.error = 2
+      }, () => this.error = 2,
     );
   }
 
@@ -35,7 +33,7 @@ export class AppService {
       .subscribe(connections => this.setConnectionError(connections));
   }
 
-  private retrieveConnections(): Observable<ConnectionModel[]> {
+  private retrieveConnections(): Observable<Connection[]> {
     return this.apiService.get('network/connections');
   }
 

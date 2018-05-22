@@ -8,7 +8,7 @@ describe('SeedModalComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ SeedModalComponent ]
+      declarations: [ SeedModalComponent ],
     })
     .compileComponents();
   }));

@@ -5,7 +5,7 @@ import { WizardGuardService } from './wizard-guard.service';
 describe('WizardGuardService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [WizardGuardService]
+      providers: [WizardGuardService],
     });
   });
 

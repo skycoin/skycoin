@@ -872,26 +872,24 @@ func TestVerifyTransaction(t *testing.T) {
 	require.NoError(t, err)
 
 	tt := []struct {
-		name                                    string
-		method                                  string
-		contentType                             string
-		status                                  int
-		err                                     string
-		httpBody                                string
-		gatewayVerifySingleTxnAllConstraintsArg coin.Transaction
-		gatewayVerifySingleTxnAllConstraintsErr error
-		gatewayGetUxBalancesArgs                []cipher.SHA256
-		gatewayGetUxBalancesResult              []wallet.UxBalance
-		gatewayGetUxBalancesErr                 error
-		httpResponse                            string
-		csrfDisabled                            bool
+		name                          string
+		method                        string
+		contentType                   string
+		status                        int
+		err                           string
+		httpBody                      string
+		gatewayVerifyTxnVerboseArg    coin.Transaction
+		gatewayVerifyTxnVerboseResult []wallet.UxBalance
+		gatewayVerifyTxnVerboseErr    error
+		httpResponse                  string
+		csrfDisabled                  bool
 	}{
 		{
 			name:   "405",
 			method: http.MethodGet,
 			status: http.StatusMethodNotAllowed,
 			err:    "405 Method Not Allowed",
-			gatewayVerifySingleTxnAllConstraintsArg: validTransaction.Transaction,
+			gatewayVerifyTxnVerboseArg: validTransaction.Transaction,
 		},
 		{
 			name:        "400 - EOF",
@@ -940,36 +938,24 @@ func TestVerifyTransaction(t *testing.T) {
 			httpBody:    string(invalidTxEmptyAddressBodyJSON),
 		},
 		{
-			name:        "422 - verifyTransactionError",
-			method:      http.MethodPost,
-			contentType: "application/json",
-			status:      http.StatusUnprocessableEntity,
-			err:         "422 Unprocessable Entity - invalid transaction",
-			httpBody:    string(validTxBodyJSON),
-			gatewayVerifySingleTxnAllConstraintsArg: validTransaction.Transaction,
-			gatewayVerifySingleTxnAllConstraintsErr: errors.New("invalid transaction"),
+			name:                       "422 - verifyTransactionError",
+			method:                     http.MethodPost,
+			contentType:                "application/json",
+			status:                     http.StatusUnprocessableEntity,
+			err:                        "422 Unprocessable Entity - invalid transaction",
+			httpBody:                   string(validTxBodyJSON),
+			gatewayVerifyTxnVerboseArg: validTransaction.Transaction,
+			gatewayVerifyTxnVerboseErr: errors.New("invalid transaction"),
 		},
 		{
-			name:        "503 - gateway.GetUxBalances failed",
-			method:      http.MethodPost,
-			contentType: "application/json",
-			status:      http.StatusServiceUnavailable,
-			err:         "503 Service Unavailable - get uxbalances failed",
-			httpBody:    string(validTxBodyJSON),
-			gatewayVerifySingleTxnAllConstraintsArg: validTransaction.Transaction,
-			gatewayGetUxBalancesArgs:                validTransaction.In,
-			gatewayGetUxBalancesErr:                 errors.New("get uxbalances failed"),
-		},
-		{
-			name:        "200",
-			method:      http.MethodPost,
-			contentType: "application/json",
-			status:      http.StatusOK,
-			httpBody:    string(validTxBodyJSON),
-			gatewayVerifySingleTxnAllConstraintsArg: validTransaction.Transaction,
-			gatewayGetUxBalancesArgs:                validTransaction.In,
-			gatewayGetUxBalancesResult:              validTransaction.inputs,
-			httpResponse:                            validTxHTTPResponse,
+			name:                          "200",
+			method:                        http.MethodPost,
+			contentType:                   "application/json",
+			status:                        http.StatusOK,
+			httpBody:                      string(validTxBodyJSON),
+			gatewayVerifyTxnVerboseArg:    validTransaction.Transaction,
+			gatewayVerifyTxnVerboseResult: validTransaction.inputs,
+			httpResponse:                  validTxHTTPResponse,
 		},
 	}
 
@@ -977,8 +963,7 @@ func TestVerifyTransaction(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/transaction/verify"
 			gateway := NewGatewayerMock()
-			gateway.On("VerifySingleTxnAllConstraints", &tc.gatewayVerifySingleTxnAllConstraintsArg).Return(tc.gatewayVerifySingleTxnAllConstraintsErr)
-			gateway.On("GetUxBalances", tc.gatewayGetUxBalancesArgs).Return(tc.gatewayGetUxBalancesResult, tc.gatewayGetUxBalancesErr)
+			gateway.On("VerifyTxnVerbose", &tc.gatewayVerifyTxnVerboseArg).Return(tc.gatewayVerifyTxnVerboseResult, tc.gatewayVerifyTxnVerboseErr)
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)

@@ -1470,29 +1470,6 @@ func (vs Visor) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
 	return out, nil
 }
 
-// GetUxBalances gets []wallet.Balance by hash ids
-func (vs Visor) GetUxBalances(ids []cipher.SHA256) ([]wallet.UxBalance, error) {
-	var headtime uint64
-	var uxs coin.UxArray
-	if err := vs.DB.View("GetUxBalances", func(tx *dbutil.Tx) error {
-		for _, id := range ids {
-			out, err := vs.history.GetUxOut(tx, id)
-			if err != nil {
-				return err
-			}
-			uxs = append(uxs, out.Out)
-		}
-
-		var err error
-		headtime, err = vs.Blockchain.Time(tx)
-		return err
-	}); err != nil {
-		return nil, err
-	}
-
-	return wallet.NewUxBalances(headtime, uxs)
-}
-
 // GetAddrUxOuts gets all the address affected UxOuts.
 func (vs Visor) GetAddrUxOuts(address cipher.Address) ([]*historydb.UxOut, error) {
 	var out []*historydb.UxOut
@@ -1799,6 +1776,34 @@ func (vs *Visor) VerifySingleTxnAllConstraints(txn *coin.Transaction) error {
 	return vs.DB.View("VerifySingleTxnAllConstraints", func(tx *dbutil.Tx) error {
 		return vs.Blockchain.VerifySingleTxnAllConstraints(tx, *txn, vs.Config.MaxBlockSize)
 	})
+}
+
+// VerifyTxnVerbose verifies an isolated transaction and []wallet.UxBalance of txn.In
+func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, error) {
+	var uxa coin.UxArray
+	var headtime uint64
+	if err := vs.DB.View("VerifyTxnVerbose", func(tx *dbutil.Tx) error {
+		if err := vs.Blockchain.VerifySingleTxnAllConstraints(tx, *txn, vs.Config.MaxBlockSize); err != nil {
+			return err
+		}
+
+		var uxa coin.UxArray
+		for _, hash := range txn.In {
+			out, err := vs.history.GetUxOut(tx, hash)
+			if err != nil {
+				return err
+			}
+			uxa = append(uxa, out.Out)
+		}
+
+		var err error
+		headtime, err = vs.Blockchain.Time(tx)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return wallet.NewUxBalances(headtime, uxa)
 }
 
 // AddressCount returns the total number of addresses with unspents

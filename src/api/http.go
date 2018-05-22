@@ -2,7 +2,6 @@ package api
 
 import (
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -526,19 +525,4 @@ func versionHandler(gateway Gatewayer) http.HandlerFunc {
 
 		wh.SendJSONOr500(logger, w, gateway.GetBuildInfo())
 	}
-}
-
-// HTTPResponse represents the http response struct
-type HTTPResponse struct {
-	Error string      `json:"error"`
-	Data  interface{} `json:"data"`
-}
-
-// JSON converts the struct into json string
-func (hr HTTPResponse) JSON() (string, error) {
-	v, err := json.MarshalIndent(hr, "", "\t")
-	if err != nil {
-		return "", err
-	}
-	return string(v), nil
 }

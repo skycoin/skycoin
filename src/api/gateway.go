@@ -48,12 +48,11 @@ type Gatewayer interface {
 	InjectBroadcastTransaction(txn coin.Transaction) error
 	ResendUnconfirmedTxns() (*daemon.ResendResult, error)
 	GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error)
-	GetUxBalances(ids []cipher.SHA256) ([]wallet.UxBalance, error)
 	GetAddrUxOuts(addr []cipher.Address) ([]*historydb.UxOut, error)
 	GetTransactionsForAddress(a cipher.Address) ([]daemon.ReadableTransaction, error)
 	GetRichlist(includeDistribution bool) (visor.Richlist, error)
 	GetAddressCount() (uint64, error)
 	GetHealth() (*daemon.Health, error)
 	UnloadWallet(id string) error
-	VerifySingleTxnAllConstraints(txn *coin.Transaction) error
+	VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, error)
 }

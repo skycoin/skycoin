@@ -269,6 +269,11 @@ func getRawTx(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
+// VerifyTxnRequest represents the data struct of the request for /transaction/verify
+type VerifyTxnRequest struct {
+	EncodedTransaction string `json:"encoded_transaction"`
+}
+
 func verifyTxHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -281,24 +286,21 @@ func verifyTxHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		var v struct {
-			EncodedTransaction string `json:"encoded_transaction"`
-		}
-
-		if err := json.NewDecoder(r.Body).Decode(&v); err != nil {
+		var req VerifyTxnRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			wh.Error400(w, err.Error())
 			return
 		}
 
-		tx, err := decodeAndVerifyTx(gateway, v.EncodedTransaction)
+		tx, err := decodeTxn(gateway, req.EncodedTransaction)
 		if err != nil {
 			wh.Error422(w, err.Error())
 			return
 		}
 
-		inputs, err := gateway.GetUxBalances(tx.In)
+		inputs, err := gateway.VerifyTxnVerbose(tx)
 		if err != nil {
-			wh.Error503(w, err.Error())
+			wh.Error422(w, err.Error())
 			return
 		}
 
@@ -318,26 +320,23 @@ func verifyTxHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-func decodeAndVerifyTx(gateway Gatewayer, encodedTx string) (*coin.Transaction, error) {
-	var tx coin.Transaction
+func decodeTxn(gateway Gatewayer, encodedTx string) (*coin.Transaction, error) {
+	var txn coin.Transaction
 	b, err := hex.DecodeString(encodedTx)
 	if err != nil {
 		return nil, err
 	}
 
-	tx, err = coin.TransactionDeserialize(b)
+	txn, err = coin.TransactionDeserialize(b)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, o := range tx.Out {
+	for _, o := range txn.Out {
 		if o.Address.Null() {
 			return nil, errors.New("Transaction.Out contains an output sending to an empty address")
 		}
 	}
 
-	if err := gateway.VerifySingleTxnAllConstraints(&tx); err != nil {
-		return nil, err
-	}
-	return &tx, nil
+	return &txn, nil
 }

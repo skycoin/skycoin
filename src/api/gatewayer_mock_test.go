@@ -684,33 +684,6 @@ func (m *GatewayerMock) GetUnspentOutputs(p0 ...daemon.OutputsFilter) (*visor.Re
 
 }
 
-// GetUxBalances mocked method
-func (m *GatewayerMock) GetUxBalances(p0 []cipher.SHA256) ([]wallet.UxBalance, error) {
-
-	ret := m.Called(p0)
-
-	var r0 []wallet.UxBalance
-	switch res := ret.Get(0).(type) {
-	case nil:
-	case []wallet.UxBalance:
-		r0 = res
-	default:
-		panic(fmt.Sprintf("unexpected type: %v", res))
-	}
-
-	var r1 error
-	switch res := ret.Get(1).(type) {
-	case nil:
-	case error:
-		r1 = res
-	default:
-		panic(fmt.Sprintf("unexpected type: %v", res))
-	}
-
-	return r0, r1
-
-}
-
 // GetUxOutByID mocked method
 func (m *GatewayerMock) GetUxOutByID(p0 cipher.SHA256) (*historydb.UxOut, error) {
 
@@ -1062,20 +1035,29 @@ func (m *GatewayerMock) UpdateWalletLabel(p0 string, p1 string) error {
 
 }
 
-// VerifySingleTxnAllConstraints mocked method
-func (m *GatewayerMock) VerifySingleTxnAllConstraints(p0 *coin.Transaction) error {
+// VerifyTxnVerbose mocked method
+func (m *GatewayerMock) VerifyTxnVerbose(p0 *coin.Transaction) ([]wallet.UxBalance, error) {
 
 	ret := m.Called(p0)
 
-	var r0 error
+	var r0 []wallet.UxBalance
 	switch res := ret.Get(0).(type) {
 	case nil:
-	case error:
+	case []wallet.UxBalance:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	return r0
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
 
 }

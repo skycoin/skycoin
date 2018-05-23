@@ -52,7 +52,7 @@ type chainStore interface {
 	GetBlockByHash(*dbutil.Tx, cipher.SHA256) (*coin.Block, error)
 	GetSignedBlockByHash(*dbutil.Tx, cipher.SHA256) (*coin.SignedBlock, error)
 	GetSignedBlockBySeq(*dbutil.Tx, uint64) (*coin.SignedBlock, error)
-	UnspentPool() blockdb.UnspentPool
+	UnspentPool() blockdb.UnspentPooler
 	GetGenesisBlock(*dbutil.Tx) (*coin.SignedBlock, error)
 	GetBlockSignature(*dbutil.Tx, *coin.Block) (cipher.Sig, bool, error)
 	ForEachBlock(*dbutil.Tx, func(*coin.Block) error) error
@@ -135,7 +135,7 @@ func (bc Blockchain) Head(tx *dbutil.Tx) (*coin.SignedBlock, error) {
 }
 
 // Unspent returns the unspent outputs pool
-func (bc *Blockchain) Unspent() blockdb.UnspentPool {
+func (bc *Blockchain) Unspent() blockdb.UnspentPooler {
 	return bc.store.UnspentPool()
 }
 

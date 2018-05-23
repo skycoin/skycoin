@@ -16,6 +16,7 @@ import (
 	"github.com/skycoin/skycoin/src/util/fee"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -249,6 +250,7 @@ type createTransactionRequest struct {
 // createTransactionRequestWallet defines a wallet to spend from and optionally which addresses in the wallet
 type createTransactionRequestWallet struct {
 	ID        string       `json:"id"`
+	UxOuts    []wh.SHA256  `json:"unspents,omitempty"`
 	Addresses []wh.Address `json:"addresses,omitempty"`
 	Password  string       `json:"password"`
 }
@@ -329,10 +331,17 @@ func (r createTransactionRequest) Validate() error {
 		return errors.New("missing wallet.id")
 	}
 
+	addressMap := make(map[cipher.Address]struct{}, len(r.Wallet.Addresses))
 	for i, a := range r.Wallet.Addresses {
 		if a.Null() {
 			return fmt.Errorf("wallet.addresses[%d] is empty", i)
 		}
+
+		addressMap[a.Address] = struct{}{}
+	}
+
+	if len(addressMap) != len(r.Wallet.Addresses) {
+		return errors.New("wallet.addresses contains duplicate values")
 	}
 
 	if len(r.To) == 0 {
@@ -353,7 +362,7 @@ func (r createTransactionRequest) Validate() error {
 		}
 	}
 
-	// Check for duplicate outputs, a transaction can't have outputs with
+	// Check for duplicate created outputs, a transaction can't have outputs with
 	// the same (address, coins, hours)
 	// Auto mode would distribute hours to the outputs and could hypothetically
 	// avoid assigning duplicate hours in many cases, but the complexity for doing
@@ -376,6 +385,20 @@ func (r createTransactionRequest) Validate() error {
 		return errors.New("to contains duplicate values")
 	}
 
+	if len(r.Wallet.UxOuts) != 0 && len(r.Wallet.Addresses) != 0 {
+		return errors.New("wallet.unspents and wallet.addresses cannot be combined")
+	}
+
+	// Check for duplicate spending uxouts
+	uxouts := make(map[cipher.SHA256]struct{}, len(r.Wallet.UxOuts))
+	for _, o := range r.Wallet.UxOuts {
+		uxouts[o.SHA256] = struct{}{}
+	}
+
+	if len(uxouts) != len(r.Wallet.UxOuts) {
+		return errors.New("wallet.unspents contains duplicate values")
+	}
+
 	return nil
 }
 
@@ -386,9 +409,15 @@ func (r createTransactionRequest) ToWalletParams() wallet.CreateTransactionParam
 		addresses[i] = a.Address
 	}
 
+	uxouts := make([]cipher.SHA256, len(r.Wallet.UxOuts))
+	for i, o := range r.Wallet.UxOuts {
+		uxouts[i] = o.SHA256
+	}
+
 	walletParams := wallet.CreateTransactionWalletParams{
 		ID:        r.Wallet.ID,
 		Addresses: addresses,
+		UxOuts:    uxouts,
 		Password:  []byte(r.Wallet.Password),
 	}
 
@@ -461,6 +490,8 @@ func createTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 				default:
 					wh.Error400(w, err.Error())
 				}
+			case blockdb.ErrUnspentNotExist:
+				wh.Error400(w, err.Error())
 			default:
 				switch err {
 				case fee.ErrTxnNoFee,

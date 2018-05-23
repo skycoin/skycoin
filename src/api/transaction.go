@@ -158,6 +158,14 @@ func parseAddressesFromStr(s string) ([]cipher.Address, error) {
 	return addrs, nil
 }
 
+// URI: /api/v1/injectTransaction
+// Method: POST
+// Content-Type: application/json
+// Body: {"rawtx": "<encoded transaction>"}
+// Response:
+//      400 - bad transaction
+//      503 - network unavailable for broadcasting transaction
+//      200 - ok, returns the transaction hash in hex as string
 func injectTransaction(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {

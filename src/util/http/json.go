@@ -93,6 +93,34 @@ func (a Address) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + a.Address.String() + `"`), nil
 }
 
+// SHA256 is a wrapper around cipher.SHA256 which implements json.Unmarshaler and json.Marshaler.
+// It marshals and unmarshals the address as a string
+type SHA256 struct {
+	cipher.SHA256
+}
+
+// UnmarshalJSON unmarshals a string address to a cipher.SHA256
+func (a *SHA256) UnmarshalJSON(b []byte) error {
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return err
+	}
+
+	tmp, err := cipher.SHA256FromHex(s)
+	if err != nil {
+		return fmt.Errorf("invalid SHA256 hash: %v", err)
+	}
+
+	a.SHA256 = tmp
+
+	return nil
+}
+
+// MarshalJSON marshals a cipher.SHA256 in its string representation
+func (a SHA256) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + a.SHA256.Hex() + `"`), nil
+}
+
 // Coins is a wrapper around uint64 which implements json.Unmarshaler and json.Marshaler.
 // It unmarshals a fixed-point decimal string to droplets and vice versa
 type Coins uint64

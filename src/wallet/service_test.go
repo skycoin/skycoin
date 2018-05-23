@@ -1079,6 +1079,58 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 		},
 
 		{
+			name: "insufficient coins for specified uxouts",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeManual,
+				},
+				Wallet: CreateTransactionWalletParams{
+					UxOuts: []cipher.SHA256{
+						extraUxouts[0][0].Hash(),
+					},
+				},
+				To: []coin.TransactionOutput{
+					{
+						Address: addrs[0],
+						Hours:   1,
+						Coins:   3e6,
+					},
+				},
+			},
+			addressUnspents: coin.AddressUxOuts{
+				extraWalletAddrs[0]: []coin.UxOut{extraUxouts[0][0]},
+			},
+			err: ErrInsufficientBalance,
+		},
+
+		{
+			name: "insufficient hours for specified uxouts",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeManual,
+				},
+				Wallet: CreateTransactionWalletParams{
+					UxOuts: []cipher.SHA256{
+						extraUxouts[0][0].Hash(),
+					},
+				},
+				To: []coin.TransactionOutput{
+					{
+						Address: addrs[0],
+						Hours:   200,
+						Coins:   1e6,
+					},
+				},
+			},
+			addressUnspents: coin.AddressUxOuts{
+				extraWalletAddrs[0]: []coin.UxOut{extraUxouts[0][0]},
+			},
+			err: ErrInsufficientHours,
+		},
+
+		{
 			name: "manual, 1 output, no change",
 			params: CreateTransactionParams{
 				ChangeAddress: changeAddress,
@@ -1098,15 +1150,13 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 		},
 
 		{
-			name: "manual, 1 output, no change, unknown address",
+			name: "manual, 1 output, no change, unknown address in auxs",
 			params: CreateTransactionParams{
 				ChangeAddress: changeAddress,
 				HoursSelection: HoursSelection{
 					Type: HoursSelectionTypeManual,
 				},
-				Wallet: CreateTransactionWalletParams{
-					Addresses: append(extraWalletAddrs, testutil.MakeAddress()),
-				},
+				Wallet: CreateTransactionWalletParams{},
 				To: []coin.TransactionOutput{
 					{
 						Address: addrs[0],
@@ -1114,6 +1164,9 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 						Coins:   2e6,
 					},
 				},
+			},
+			addressUnspents: coin.AddressUxOuts{
+				testutil.MakeAddress(): []coin.UxOut{extraUxouts[0][0]},
 			},
 			err: ErrUnknownAddress,
 		},
@@ -1247,15 +1300,13 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 		},
 
 		{
-			name: "manual, multiple outputs, specific spend addresses",
+			name: "manual, multiple outputs, varied addressUnspents",
 			params: CreateTransactionParams{
 				ChangeAddress: changeAddress,
 				HoursSelection: HoursSelection{
 					Type: HoursSelectionTypeManual,
 				},
-				Wallet: CreateTransactionWalletParams{
-					Addresses: extraWalletAddrs,
-				},
+				Wallet: CreateTransactionWalletParams{},
 				To: []coin.TransactionOutput{
 					{
 						Address: addrs[0],
@@ -1277,10 +1328,65 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 			addressUnspents: coin.AddressUxOuts{
 				extraWalletAddrs[0]: []coin.UxOut{extraUxouts[0][0]},
 				extraWalletAddrs[3]: []coin.UxOut{extraUxouts[3][1], extraUxouts[3][2]},
-				addr:                []coin.UxOut{originalUxouts[3], originalUxouts[4], originalUxouts[5]},
 				extraWalletAddrs[5]: []coin.UxOut{extraUxouts[5][6]},
 			},
 			chosenUnspents: []coin.UxOut{extraUxouts[0][0], extraUxouts[3][1], extraUxouts[3][2], extraUxouts[5][6]},
+			changeOutput: &coin.TransactionOutput{
+				Address: changeAddress,
+				Hours:   34,
+				Coins:   4e6 - 1,
+			},
+		},
+
+		{
+			name: "manual, multiple uxouts, varied addressUnspents, wallet outputs specified",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeManual,
+				},
+				Wallet: CreateTransactionWalletParams{
+					UxOuts: []cipher.SHA256{
+						extraUxouts[0][0].Hash(),
+						extraUxouts[3][1].Hash(),
+						extraUxouts[3][2].Hash(),
+						extraUxouts[5][6].Hash(),
+
+						// this extra output is not necessary to satisfy the spend,
+						// it is included to test that when UxOuts are specified,
+						// only a subset is used
+						extraUxouts[0][8].Hash(),
+					},
+				},
+				To: []coin.TransactionOutput{
+					{
+						Address: addrs[0],
+						Hours:   50,
+						Coins:   1e6,
+					},
+					{
+						Address: addrs[0],
+						Hours:   50,
+						Coins:   1e6 + 1,
+					},
+					{
+						Address: addrs[1],
+						Hours:   70,
+						Coins:   2e6,
+					},
+				},
+			},
+			addressUnspents: coin.AddressUxOuts{
+				extraWalletAddrs[0]: []coin.UxOut{extraUxouts[0][0], extraUxouts[0][8]},
+				extraWalletAddrs[3]: []coin.UxOut{extraUxouts[3][1], extraUxouts[3][2]},
+				extraWalletAddrs[5]: []coin.UxOut{extraUxouts[5][6]},
+			},
+			chosenUnspents: []coin.UxOut{
+				extraUxouts[0][0],
+				extraUxouts[3][1],
+				extraUxouts[3][2],
+				extraUxouts[5][6],
+			},
 			changeOutput: &coin.TransactionOutput{
 				Address: changeAddress,
 				Hours:   34,

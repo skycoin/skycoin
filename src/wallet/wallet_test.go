@@ -1404,7 +1404,7 @@ func TestWalletChooseSpendsMaximizeUxOuts(t *testing.T) {
 	}
 }
 
-func TestWalletChooseSpendsMinimizeUxOuts(t *testing.T) {
+func TestWalletChooseSpendsMinimizeUxOutsRandom(t *testing.T) {
 	nRand := 10000
 	for i := 0; i < nRand; i++ {
 		coins := uint64((rand.Intn(3)+1)*10 + rand.Intn(3)) // 10,20,30 + 0,1,2
@@ -1927,6 +1927,8 @@ func TestCreateWalletParamsVerify(t *testing.T) {
 	onePointOne := decimal.New(11, -1)
 	pointOneOne := decimal.New(11, -2)
 
+	uxoutHash := testutil.RandSHA256(t)
+
 	cases := []struct {
 		name   string
 		params CreateTransactionParams
@@ -2193,6 +2195,55 @@ func TestCreateWalletParamsVerify(t *testing.T) {
 				},
 			},
 			err: "To contains duplicate values",
+		},
+
+		{
+			name: "both uxouts and addresses specified",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				To:            toManual,
+				Wallet: CreateTransactionWalletParams{
+					ID:        "foo.wlt",
+					Addresses: []cipher.Address{changeAddress},
+					UxOuts:    []cipher.SHA256{uxoutHash},
+				},
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeManual,
+				},
+			},
+			err: "Wallet.UxOuts and Wallet.Addresses cannot be combined",
+		},
+
+		{
+			name: "duplicate uxouts",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				To:            toManual,
+				Wallet: CreateTransactionWalletParams{
+					ID:     "foo.wlt",
+					UxOuts: []cipher.SHA256{uxoutHash, uxoutHash},
+				},
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeManual,
+				},
+			},
+			err: "Wallet.UxOuts contains duplicate values",
+		},
+
+		{
+			name: "duplicate addresses",
+			params: CreateTransactionParams{
+				ChangeAddress: changeAddress,
+				To:            toManual,
+				Wallet: CreateTransactionWalletParams{
+					ID:        "foo.wlt",
+					Addresses: []cipher.Address{changeAddress, changeAddress},
+				},
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeManual,
+				},
+			},
+			err: "Wallet.Addresses contains duplicate values",
 		},
 
 		{

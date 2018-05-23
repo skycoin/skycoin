@@ -464,7 +464,7 @@ func createGUI(c *Config, d *daemon.Daemon, host string) (*api.Server, error) {
 		s, err = api.Create(host, config, d.Gateway)
 	}
 	if err != nil {
-		logger.Errorf("Failed to start web GUI: %v", err)
+		logger.Errorf("Failed to start web API and GUI: %v", err)
 		return nil, err
 	}
 

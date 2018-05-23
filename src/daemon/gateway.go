@@ -250,9 +250,9 @@ func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (*visor.ReadableO
 			return
 		}
 
-		unspentOutputs, err = gw.v.GetUnspentOutputs()
+		unspentOutputs, err = gw.v.GetAllUnspentOutputs()
 		if err != nil {
-			err = fmt.Errorf("v.GetUnspentOutputs failed: %v", err)
+			err = fmt.Errorf("v.GetAllUnspentOutputs failed: %v", err)
 			return
 		}
 
@@ -666,50 +666,27 @@ func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest ciphe
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
-	var tx *coin.Transaction
+	var txn *coin.Transaction
 	var err error
 	gw.strand("Spend", func() {
-		// Get all addresses from the wallet
-		var addrs []cipher.Address
-		addrs, err = gw.v.Wallets.GetAddresses(wltID)
+		txn, err = gw.v.CreateTransactionDeprecated(wltID, password, coins, dest)
 		if err != nil {
-			logger.WithError(err).Error("Wallet.GetAddresses failed")
-			return
-		}
-
-		// Get unspent outputs, while checking that there are no unconfirmed outputs
-		var auxs coin.AddressUxOuts
-		auxs, err = gw.getUnspentsForSpending(addrs)
-		if err != nil {
-			if err != wallet.ErrSpendingUnconfirmed {
-				logger.WithError(err).Error("getUnspentsForSpending failed")
-			}
-			return
-		}
-
-		var head *coin.SignedBlock
-		head, err = gw.v.GetHeadBlock()
-		if err != nil {
-			logger.Errorf("GetHeadBlock failed: %v", err)
-			return
-		}
-
-		// Create and sign transaction
-		tx, err = gw.v.Wallets.CreateAndSignTransaction(wltID, password, auxs, head.Time(), coins, dest)
-		if err != nil {
-			logger.Errorf("Create transaction failed: %v", err)
 			return
 		}
 
 		// Inject transaction
-		err = gw.d.Visor.InjectBroadcastTransaction(*tx, gw.d.Pool)
+		err = gw.d.Visor.InjectBroadcastTransaction(*txn, gw.d.Pool)
 		if err != nil {
 			logger.Errorf("Inject transaction failed: %v", err)
 			return
 		}
 	})
 
-	return tx, err
+	if err != nil {
+		return nil, err
+	}
+
+	return txn, nil
 }
 
 // CreateTransaction creates a transaction based upon parameters in wallet.CreateTransactionParams
@@ -723,48 +700,7 @@ func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*co
 	var err error
 
 	gw.strand("CreateTransaction", func() {
-		// Use selected addresses or get all addresses from the wallet
-		addrs := params.Wallet.Addresses
-		if len(addrs) == 0 {
-			addrs, err = gw.v.Wallets.GetAddresses(params.Wallet.ID)
-			if err != nil {
-				logger.WithError(err).Error("Wallet.GetAddresses failed")
-				return
-			}
-		}
-
-		// Get unspent outputs, while checking that there are no unconfirmed outputs
-		var auxs coin.AddressUxOuts
-		auxs, err = gw.getUnspentsForSpending(addrs)
-		if err != nil {
-			if err != wallet.ErrSpendingUnconfirmed {
-				logger.WithError(err).Error("getUnspentsForSpending failed")
-			}
-			return
-		}
-
-		var head *coin.SignedBlock
-		head, err = gw.v.GetHeadBlock()
-		if err != nil {
-			logger.WithError(err).Error("GetHeadBlock failed")
-			return
-		}
-
-		// Create and sign transaction
-		txn, inputs, err = gw.v.Wallets.CreateAndSignTransactionAdvanced(params, auxs, head.Time())
-		if err != nil {
-			logger.WithError(err).Error("CreateAndSignTransactionAdvanced failed")
-			return
-		}
-
-		// The wallet can create transactions that would not pass all validation, such as the decimal restriction,
-		// because the wallet is not aware of visor-level constraints.
-		// Check that the transaction is valid before returning it to the caller.
-		err = gw.v.VerifySingleTxnAllConstraints(txn)
-		if err != nil {
-			logger.WithError(err).Error("Created transaction violates transaction constraints")
-			return
-		}
+		txn, inputs, err = gw.v.CreateTransaction(params)
 	})
 
 	if err != nil {
@@ -772,29 +708,6 @@ func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*co
 	}
 
 	return txn, inputs, err
-}
-
-// getUnspentsForSpending returns the unspent outputs for a set of addresses,
-// but returns an error if any of the unspents are in the unconfirmed outputs pool
-func (gw *Gateway) getUnspentsForSpending(addrs []cipher.Address) (coin.AddressUxOuts, error) {
-	auxs, err := gw.v.UnconfirmedSpendsOfAddresses(addrs)
-	if err != nil {
-		err = fmt.Errorf("UnconfirmedSpendsOfAddresses failed: %v", err)
-		return nil, err
-	}
-
-	// Check that this is not trying to spend unconfirmed outputs
-	if len(auxs) > 0 {
-		return nil, wallet.ErrSpendingUnconfirmed
-	}
-
-	auxs, err = gw.v.GetUnspentsOfAddrs(addrs)
-	if err != nil {
-		err = fmt.Errorf("GetUnspentsOfAddrs failed: %v", err)
-		return nil, err
-	}
-
-	return auxs, nil
 }
 
 // CreateWallet creates wallet

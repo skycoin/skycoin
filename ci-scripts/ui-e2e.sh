@@ -10,7 +10,7 @@ while $(lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null) ; do
     PORT=$((PORT+1))
 done
 
-RPC_PORT="$PORT"
+RPC_ADDR="127.0.0.1:$PORT"
 HOST="http://127.0.0.1:$PORT"
 BINARY="skycoin-integration"
 E2E_PROXY_CONFIG=$(mktemp -t e2e-proxy.config.XXXXXX.js)
@@ -65,7 +65,7 @@ const PROXY_CONFIG = {
     "secure": false,
     "logLevel": "debug",
     "bypass": function (req) {
-      req.headers["host"] = '$HOST';
+      req.headers["host"] = '$RPC_ADDR';
       req.headers["referer"] = '$HOST';
       req.headers["origin"] = '$HOST';
     }

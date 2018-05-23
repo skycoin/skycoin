@@ -50,6 +50,8 @@ int hexnstr(const char* hex, unsigned char* str, int n){
 			c = 10 + (*pin - 'A');
 		} else if(*pin >= 'a' && *pin <= 'f'){
 			c = 10 + (*pin - 'a');
+		} else {  //Invalid hex string
+			return -1;
 		}
 		if(odd){
 			*pout = (*pout << 4) | c;
@@ -60,6 +62,8 @@ int hexnstr(const char* hex, unsigned char* str, int n){
 		}
 		odd = !odd;
 	}
+	if( odd )
+		return -1;
 	if( size < n )
 		*pout = 0;
 	return size;

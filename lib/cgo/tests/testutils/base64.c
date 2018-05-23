@@ -14,7 +14,7 @@ http://www.codeproject.com/Tips/813146/Fast-base-functions-for-encode-decode
 //Base64 char table - used internally for encoding
 unsigned char b64_chr[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-unsigned int b64_int(unsigned int ch) {
+int b64_int(unsigned int ch) {
 	// ASCII to base64_int
 	// 65-90 Upper Case >> 0-25
 	// 97-122 Lower Case >> 26-51
@@ -34,7 +34,7 @@ unsigned int b64_int(unsigned int ch) {
 		return ch - 'A';
 	if ((ch>96) && (ch<123))
 		return (ch - 'a') + 26;
-	return 0;
+	return -1; //Invalid character, invalid base64 string
 }
 
 unsigned int b64e_size(unsigned int in_size) {
@@ -83,11 +83,15 @@ unsigned int b64_encode(const unsigned int* in, unsigned int in_len, unsigned ch
 	return k;
 }
 
-unsigned int b64_decode(const unsigned char* in, unsigned int in_len, unsigned int* out) {
+int b64_decode(const unsigned char* in, unsigned int in_len, unsigned int* out) {
 
 	unsigned int i=0, j=0, k=0, s[4];
+	int n;
 	for (i=0;i<in_len;i++) {
-		s[j++]=b64_int(*(in+i));
+		n = b64_int(*(in+i));
+		if( n < 0 )    //invalid character
+			return -1;
+		s[j++] = (unsigned int)n;
 		if (j==4) {
 			out[k+0] = ((s[0]&255)<<2)+((s[1]&0x30)>>4);
 			if (s[2]!=64) {
@@ -104,35 +108,40 @@ unsigned int b64_decode(const unsigned char* in, unsigned int in_len, unsigned i
 		}
 	}
 
-	return k;
+	return (int)k;
 }
 
-unsigned int base64_decode_string(const unsigned char* in, 
+int base64_decode_string(const unsigned char* in, 
 		unsigned int in_len, char* out, unsigned int buffer_size){
 	unsigned int* data;
 	data = malloc(buffer_size * sizeof(unsigned int));
-	unsigned int decode_len = b64_decode(in, in_len, data);
-	for(int c = 0; c < decode_len && c < buffer_size; c++){
-		out[c] = (char)data[c];
+	int decode_len = b64_decode(in, in_len, data);
+	if( decode_len >= 0 ) {
+		for(int c = 0; c < decode_len && c < buffer_size; c++){
+			out[c] = (char)data[c];
+		}
+		if(decode_len < buffer_size)
+			out[decode_len] = 0;
+		else 
+			decode_len = 0;
 	}
-	if(decode_len < buffer_size)
-		out[decode_len] = 0;
-	else 
-		decode_len = 0;
 	free(data);
 	return decode_len;
 }
 
-unsigned int base64_decode_binary(const unsigned char* in, 
+int base64_decode_binary(const unsigned char* in, 
 		unsigned int in_len, char* out, unsigned int* real_size, unsigned int buffer_size){
 	unsigned int* data;
 	data = malloc(buffer_size);
-	unsigned int decode_len = b64_decode(in, in_len, data);
-	for(int c = 0; c < decode_len && c < buffer_size; c++){
-		out[c] = (char)data[c];
+	int decode_len = b64_decode(in, in_len, data);
+	if( decode_len >= 0 ){
+		for(int c = 0; c < decode_len && c < buffer_size; c++){
+			out[c] = (char)data[c];
+		}
 	}
 	free(data);
-	*real_size = decode_len;
+	*real_size = (unsigned int)decode_len;
+	return decode_len;
 }
 
 unsigned int b64_encodef(char *InFile, char *OutFile) {
@@ -177,7 +186,7 @@ unsigned int b64_encodef(char *InFile, char *OutFile) {
 	return i;
 }
 
-unsigned int b64_decodef(char *InFile, char *OutFile) {
+int b64_decodef(char *InFile, char *OutFile) {
 
 	FILE *pInFile = fopen(InFile,"rb");
 	FILE *pOutFile = fopen(OutFile,"wb");
@@ -185,12 +194,16 @@ unsigned int b64_decodef(char *InFile, char *OutFile) {
 		return 0;
 
 	unsigned int c=0, j=0, k=0, s[4];
+	int n;
 
 	while(c!=EOF) {
 		c=fgetc(pInFile);
 		if (c==EOF)
 			break;
-		s[j++]=b64_int(c);
+		n = b64_int(c);
+		if( n < 0 )
+			return -1;
+		s[j++] = (unsigned int)n;
 		if (j==4) {
 			fputc(((s[0]&255)<<2)+((s[1]&0x30)>>4),pOutFile);
 			if (s[2]!=64) {
@@ -210,7 +223,7 @@ unsigned int b64_decodef(char *InFile, char *OutFile) {
 	fclose(pInFile);
 	fclose(pOutFile);
 
-	return k;
+	return (int)k;
 }
 
 unsigned int b64_encode_string(const unsigned char* in, unsigned int in_len, unsigned char* out){

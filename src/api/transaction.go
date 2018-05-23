@@ -292,7 +292,7 @@ func verifyTxHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		tx, err := decodeTxn(gateway, req.EncodedTransaction)
+		tx, err := decodeTxn(req.EncodedTransaction)
 		if err != nil {
 			wh.Error422(w, err.Error())
 			return
@@ -320,7 +320,7 @@ func verifyTxHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-func decodeTxn(gateway Gatewayer, encodedTx string) (*coin.Transaction, error) {
+func decodeTxn(encodedTx string) (*coin.Transaction, error) {
 	var txn coin.Transaction
 	b, err := hex.DecodeString(encodedTx)
 	if err != nil {

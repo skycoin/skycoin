@@ -42,9 +42,9 @@ func main() {
 			// generate a new seed, as hex string
 			*seed = cipher.SumSHA256(cipher.RandByte(1024)).Hex()
 		} else {
-			mnemonic, err := bip39.NewDefaultMnemomic()
+			mnemonic, err := bip39.NewDefaultMnemonic()
 			if err != nil {
-				fmt.Printf("bip39.NewDefaultMnemomic failed: %v\n", err)
+				fmt.Printf("bip39.NewDefaultMnemonic failed: %v\n", err)
 				os.Exit(1)
 			}
 

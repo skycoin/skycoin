@@ -206,7 +206,7 @@ func makeSeed(s string, r, rd bool) (string, error) {
 	}
 
 	// 001, 000
-	return bip39.NewDefaultMnemomic()
+	return bip39.NewDefaultMnemonic()
 }
 
 // PUBLIC

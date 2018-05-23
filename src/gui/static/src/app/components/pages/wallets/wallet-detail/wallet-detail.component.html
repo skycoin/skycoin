@@ -1,7 +1,7 @@
 <ng-container *ngFor="let address of (wallet ? wallet.addresses : []); let i = index">
   <div class="-record" *ngIf="!wallet.hideEmpty || address.coins">
     <div class="id-column">{{ i + 1 }}</div>
-    <div class="address-column" (click)="copyAddress(address)">
+    <div class="address-column">
       <img src="../../../../../assets/img/qr-code-black.png" (click)="showQrCode($event, address.address)">
       <p>{{ address.address }}</p>
     </div>

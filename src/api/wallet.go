@@ -723,7 +723,7 @@ func newWalletSeed(gateway Gatewayer) http.HandlerFunc {
 
 		mnemonic, err := bip39.NewMnemonic(entropy)
 		if err != nil {
-			err = fmt.Errorf("bip39.NewDefaultMnemomic failed: %v", err)
+			err = fmt.Errorf("bip39.NewDefaultMnemonic failed: %v", err)
 			wh.Error500(w, err.Error())
 			return
 		}

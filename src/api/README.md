@@ -885,7 +885,9 @@ based upon an internal selection algorithm.
 If neither `wallet.addresses` nor `wallet.unspents` are specified,
 then all outputs associated with all addresses in the wallet may be chosen from to spend with.
 
-`change_address` must be set, but it is not required to be an address in the wallet.
+`change_address` is optional.
+If set, it is not required to be an address in the wallet.
+If not set, it will default to one of the addresses associated with the unspent outputs being spent in the transaction.
 
 Example:
 

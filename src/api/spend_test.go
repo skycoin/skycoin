@@ -267,18 +267,6 @@ func TestCreateTransaction(t *testing.T) {
 		},
 
 		{
-			name:   "400 - missing change address",
-			method: http.MethodPost,
-			body: &rawRequest{
-				HoursSelection: rawHoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
-				},
-			},
-			status: http.StatusBadRequest,
-			err:    "400 Bad Request - missing change_address",
-		},
-
-		{
 			name:   "400 - invalid change address",
 			method: http.MethodPost,
 			body: &rawRequest{
@@ -301,7 +289,7 @@ func TestCreateTransaction(t *testing.T) {
 				ChangeAddress: emptyAddress.String(),
 			},
 			status: http.StatusBadRequest,
-			err:    "400 Bad Request - change_address is an empty address",
+			err:    "400 Bad Request - change_address must not be the null address",
 		},
 
 		{

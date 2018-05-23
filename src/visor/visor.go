@@ -624,7 +624,7 @@ func (vs *Visor) GetAllUnspentOutputs() (coin.UxArray, error) {
 	return ux, nil
 }
 
-// GetUnspentOutputs returns unspent outputs from the pool, queried by hash.
+// GetUnspentOutputs returns unspent outputs from the pool, queried by hashes.
 // If any do not exist, ErrUnspentNotExist is returned
 func (vs *Visor) GetUnspentOutputs(hashes []cipher.SHA256) (coin.UxArray, error) {
 	var outputs coin.UxArray
@@ -1832,7 +1832,7 @@ func (vs *Visor) CreateTransactionDeprecated(wltID string, password []byte, coin
 	var txn *coin.Transaction
 	if err := vs.Wallets.ViewWallet(w, password, func(w *wallet.Wallet) error {
 		var err error
-		txn, err = vs.Wallets.CreateAndSignTransaction(wltID, password, auxs, head.Time(), coins, dest)
+		txn, err = w.CreateAndSignTransaction(auxs, head.Time(), coins, dest)
 		return err
 	}); err != nil {
 		logger.WithError(err).Error("CreateAndSignTransaction failed")

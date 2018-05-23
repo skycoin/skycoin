@@ -199,7 +199,7 @@ func checkGoldenFile(t *testing.T, goldenFile string, td TestData) {
 	loadGoldenFile(t, goldenFile, td)
 	require.Equal(t, reflect.Indirect(reflect.ValueOf(td.expected)).Interface(), td.actual)
 
-	// Serialized expected to JSON and compare to the goldenFile's contents
+	// Serialize expected to JSON and compare to the goldenFile's contents
 	// This will detect field changes that could be missed otherwise
 	b, err := json.MarshalIndent(td.expected, "", "\t")
 	require.NoError(t, err)

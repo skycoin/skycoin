@@ -1832,7 +1832,7 @@ func (vs *Visor) CreateTransactionDeprecated(wltID string, password []byte, coin
 	var txn *coin.Transaction
 	if err := vs.Wallets.ViewWallet(w, password, func(w *wallet.Wallet) error {
 		var err error
-		txn, err = w.CreateAndSignTransaction(wltID, password, auxs, head.Time(), coins, dest)
+		txn, err = w.CreateAndSignTransaction(auxs, head.Time(), coins, dest)
 		return err
 	}); err != nil {
 		logger.WithError(err).Error("CreateAndSignTransaction failed")

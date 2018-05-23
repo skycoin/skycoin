@@ -7,17 +7,18 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
-	"github.com/skycoin/skycoin/src/api/cli"
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cli"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
 func run() error {
 	csvFile := flag.String("csv", "", "csv file to load (format: skyaddress,coins). coins are in whole numbers")
 	walletFile := flag.String("wallet", "", "wallet file")
-	rpcAddr := flag.String("rpc-addr", "127.0.0.1:6430", "rpc interface address")
+	rpcAddr := flag.String("rpc-addr", "http://127.0.0.1:6420", "rpc interface address")
 
 	flag.Parse()
 
@@ -55,6 +56,9 @@ func run() error {
 	var errs []error
 	for _, f := range fields {
 		addr := f[0]
+
+		addr = strings.TrimSpace(addr)
+
 		if _, err := cipher.DecodeBase58Address(addr); err != nil {
 			err = fmt.Errorf("Invalid address %s: %v", addr, err)
 			errs = append(errs, err)
@@ -86,11 +90,13 @@ func run() error {
 		return errs[0]
 	}
 
-	c := &webrpc.Client{
-		Addr: *rpcAddr,
+	c, err := webrpc.NewClient(*rpcAddr)
+	if err != nil {
+		return err
 	}
+	c.UseCSRF = true
 
-	tx, err := cli.CreateRawTxFromWallet(c, *walletFile, changeAddr, sends)
+	tx, err := cli.CreateRawTxFromWallet(c, *walletFile, changeAddr, sends, nil)
 	if err != nil {
 		return err
 	}

@@ -531,6 +531,14 @@ func TestVisorInjectTransaction(t *testing.T) {
 		return nil
 	})
 	require.NoError(t, err)
+
+	// Create a transaction with null address output
+	uxs = coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
+	txn = makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
+	txn.Out[0].Address = cipher.Address{}
+	known, err = v.InjectTransactionStrict(txn)
+	require.False(t, known)
+	testutil.RequireError(t, err, "Transaction output is sent to the null address")
 }
 
 func makeOverflowCoinsSpendTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address) coin.Transaction {

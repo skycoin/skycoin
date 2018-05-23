@@ -329,13 +329,6 @@ func TestInjectTransaction(t *testing.T) {
 	invalidTxBodyJSON, err := json.Marshal(b)
 	require.NoError(t, err)
 
-	invalidTxEmptyAddress := makeTransactionWithEmptyAddressOutput(t)
-	invalidTxEmptyAddressBody := &httpBody{
-		Rawtx: hex.EncodeToString(invalidTxEmptyAddress.Serialize()),
-	}
-	invalidTxEmptyAddressBodyJSON, err := json.Marshal(invalidTxEmptyAddressBody)
-	require.NoError(t, err)
-
 	tt := []struct {
 		name                   string
 		method                 string
@@ -380,13 +373,6 @@ func TestInjectTransaction(t *testing.T) {
 			status:   http.StatusBadRequest,
 			err:      "400 Bad Request - Invalid transaction: Deserialization failed",
 			httpBody: string(invalidTxBodyJSON),
-		},
-		{
-			name:     "400 - txn sends to empty address",
-			method:   http.MethodPost,
-			status:   http.StatusBadRequest,
-			err:      "400 Bad Request - Transaction.Out contains an output sending to an empty address",
-			httpBody: string(invalidTxEmptyAddressBodyJSON),
 		},
 		{
 			name:                   "503 - injectTransactionError",

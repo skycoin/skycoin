@@ -274,6 +274,7 @@ type VerifyTxnRequest struct {
 	EncodedTransaction string `json:"encoded_transaction"`
 }
 
+// VerifyTxnResponse the response data struct for /transaction/verify api
 type VerifyTxnResponse struct {
 	Transaction CreatedTransaction `json:"transaction"`
 }

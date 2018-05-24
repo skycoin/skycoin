@@ -739,6 +739,20 @@ func (c *Client) RawTransaction(txid string) (string, error) {
 	return rawTx, nil
 }
 
+// VerifyTransaction verifies the encoded raw transaction
+func (c *Client) VerifyTransaction(encodedTxn string) (*CreatedTransaction, error) {
+	req := VerifyTxnRequest{
+		EncodedTransaction: encodedTxn,
+	}
+
+	var rsp VerifyTxnResponse
+	if err := c.PostJSON("/api/v1/transaction/verify", req, &rsp); err != nil {
+		return nil, err
+	}
+
+	return &rsp.Transaction, nil
+}
+
 // AddressTransactions makes a request to GET /api/v1/explorer/address
 func (c *Client) AddressTransactions(addr string) ([]daemon.ReadableTransaction, error) {
 	v := url.Values{}

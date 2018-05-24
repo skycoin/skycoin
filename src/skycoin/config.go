@@ -23,8 +23,8 @@ var (
 
 // Config records fiber coin configs
 type Config struct {
-	Node         NodeConfig         `mapstructure:"node"`
-	Build        BuildConfig        `mapstructure:"build"`
+	Node  NodeConfig  `mapstructure:"node"`
+	Build BuildConfig `mapstructure:"build"`
 }
 
 // BuildConfig records build info
@@ -33,7 +33,6 @@ type BuildConfig struct {
 	Commit  string `mapstructure:"commit"`  // git commit id
 	Branch  string `mapstructure:"branch"`  // git branch name
 }
-
 
 // NodeConfig records the node's configuration
 type NodeConfig struct {

@@ -1435,7 +1435,7 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 		},
 
 		{
-			name: "auto, multiple outputs, split even, share factor 0.5",
+			name: "auto, multiple outputs, share factor 0.5",
 			params: CreateTransactionParams{
 				ChangeAddress: &changeAddress,
 				HoursSelection: HoursSelection{
@@ -1473,7 +1473,44 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 		},
 
 		{
-			name: "encrypted, auto, multiple outputs, split even, share factor 0.5",
+			name: "auto, multiple outputs, share factor 0.5, switch to 1.0 because no change could be made",
+			params: CreateTransactionParams{
+				ChangeAddress: &changeAddress,
+				HoursSelection: HoursSelection{
+					Type:        HoursSelectionTypeAuto,
+					Mode:        HoursSelectionModeShare,
+					ShareFactor: newShareFactor("0.5"),
+				},
+				To: []coin.TransactionOutput{
+					{
+						Address: addrs[0],
+						Coins:   1e6,
+					},
+					{
+						Address: addrs[0],
+						Coins:   2e6,
+					},
+					{
+						Address: addrs[1],
+						Coins:   2e6,
+					},
+					{
+						Address: addrs[4],
+						Coins:   1e6 - 1e3,
+					},
+					{
+						Address: addrs[4],
+						Coins:   1e3,
+					},
+				},
+			},
+			unspents:        []coin.UxOut{originalUxouts[0], originalUxouts[1], originalUxouts[2]},
+			chosenUnspents:  []coin.UxOut{originalUxouts[0], originalUxouts[1], originalUxouts[2]},
+			toExpectedHours: []uint64{25, 50, 50, 25, 1},
+		},
+
+		{
+			name: "encrypted, auto, multiple outputs, share factor 0.5",
 			opts: Options{
 				Encrypt:  true,
 				Password: []byte("password"),
@@ -1518,7 +1555,7 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 		},
 
 		{
-			name: "auto, multiple outputs, split even, share factor 0",
+			name: "auto, multiple outputs, share factor 0",
 			params: CreateTransactionParams{
 				ChangeAddress: &changeAddress,
 				HoursSelection: HoursSelection{
@@ -1556,7 +1593,7 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 		},
 
 		{
-			name: "auto, multiple outputs, split even, share factor 1",
+			name: "auto, multiple outputs, share factor 1",
 			params: CreateTransactionParams{
 				ChangeAddress: &changeAddress,
 				HoursSelection: HoursSelection{

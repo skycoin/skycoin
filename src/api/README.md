@@ -815,8 +815,12 @@ For the `"share"` mode, `share_factor` must also be set. This must be a decimal 
 In the auto share mode, the remaining hours after the fee are shared between the destination addresses as a whole,
 and the change address. Amongst the destination addresses, the shared hours are distributed proportionally.
 
-Note that if there are remaining coin hours as change, but no coins are available as change from the wallet,
-these remaining coin hours will be burned as an additional fee.
+When using the `auto` `"share"` `mode`, if there are remaining coin hours as change,
+but no coins are available as change from the wallet (which are needed to retain the coin hours as change),
+the `share_factor` will switch to `1.0` so that extra coin hours are distributed to the outputs
+instead of being burned as an additional fee.
+For the `manual` mode, if there are leftover coin hours but no coins to make change with,
+the leftover coin hours will be burned in addition to the required fee.
 
 All objects in `to` must be unique; a single transaction cannot create multiple outputs with the same `address`, `coins` and `hours`.
 

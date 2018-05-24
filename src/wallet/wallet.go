@@ -1254,6 +1254,17 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 		}
 	}
 
+	// With auto share mode, if there are leftover hours and change couldn't be force-added,
+	// recalculate that share ratio at 100%
+	if changeCoins == 0 && changeHours > 0 && params.HoursSelection.Type == HoursSelectionTypeAuto && params.HoursSelection.Mode == HoursSelectionModeShare {
+		oneDecimal := decimal.New(1, 0)
+		if params.HoursSelection.ShareFactor.Equal(oneDecimal) {
+			return nil, nil, errors.New("share factor is 1.0 but changeHours > 0 unexpectedly")
+		}
+		params.HoursSelection.ShareFactor = &oneDecimal
+		return w.CreateAndSignTransactionAdvanced(params, auxs, headTime)
+	}
+
 	if changeCoins > 0 {
 		var changeAddress cipher.Address
 		if params.ChangeAddress != nil {

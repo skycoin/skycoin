@@ -51,6 +51,13 @@ var (
 )
 
 var devConfig = skycoin.NodeConfig{
+	GenesisSignatureStr: GenesisSignatureStr,
+	GenesisAddressStr:   GenesisAddressStr,
+	GenesisCoinVolume:   GenesisCoinVolume,
+	GenesisTimestamp:    GenesisTimestamp,
+	BlockchainPubkeyStr: BlockchainPubkeyStr,
+	BlockchainSeckeyStr: BlockchainSeckeyStr,
+	DefaultConnections:  DefaultConnections,
 	// Disable peer exchange
 	DisablePEX: false,
 	// Don't make any outgoing connections
@@ -99,7 +106,7 @@ var devConfig = skycoin.NodeConfig{
 
 	LaunchBrowser: false,
 	// Data directory holds app data -- defaults to ~/.skycoin
-	DataDirectory: filepath.Join(home, ".skycoin"),
+	DataDirectory: "$HOME/.skycoin",
 	// Web GUI static resources
 	GUIDirectory: "./src/gui/static/",
 	// Logging
@@ -162,15 +169,6 @@ func main() {
 	// create a new fiber coin instance
 	coin := skycoin.NewCoin(
 		skycoin.Config{
-			Blockchain: skycoin.BlockchainConfig{
-				GenesisSignatureStr: GenesisSignatureStr,
-				GenesisAddressStr:   GenesisAddressStr,
-				GenesisCoinVolume:   GenesisCoinVolume,
-				GenesisTimestamp:    GenesisTimestamp,
-				BlockchainPubkeyStr: BlockchainPubkeyStr,
-				BlockchainSeckeyStr: BlockchainSeckeyStr,
-				DefaultConnections:  DefaultConnections,
-			},
 			Node: devConfig,
 			Build: skycoin.BuildConfig{
 				Version: Version,

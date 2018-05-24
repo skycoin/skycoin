@@ -39,7 +39,6 @@ func (c *Coin) Run() {
 			c.logger.Errorf("recover: %v\nstack:%v", r, string(debug.Stack()))
 		}
 	}()
-
 	var db *dbutil.DB
 	var d *daemon.Daemon
 	var webInterface *api.Server
@@ -110,7 +109,7 @@ func (c *Coin) Run() {
 	if c.config.Node.ResetCorruptDB {
 		// Check the database integrity and recreate it if necessary
 		c.logger.Info("Checking database and resetting if corrupted")
-		if newDB, err := visor.ResetCorruptDB(db, c.config.Blockchain.blockchainPubkey, quit); err != nil {
+		if newDB, err := visor.ResetCorruptDB(db, c.config.Node.blockchainPubkey, quit); err != nil {
 			if err != visor.ErrVerifyStopped {
 				c.logger.Errorf("visor.ResetCorruptDB failed: %v", err)
 			}
@@ -120,7 +119,7 @@ func (c *Coin) Run() {
 		}
 	} else if c.config.Node.VerifyDB {
 		c.logger.Info("Checking database")
-		if err := visor.CheckDatabase(db, c.config.Blockchain.blockchainPubkey, quit); err != nil {
+		if err := visor.CheckDatabase(db, c.config.Node.blockchainPubkey, quit); err != nil {
 			if err != visor.ErrVerifyStopped {
 				c.logger.Errorf("visor.CheckDatabase failed: %v", err)
 			}
@@ -128,7 +127,7 @@ func (c *Coin) Run() {
 		}
 	}
 
-	d, err = daemon.NewDaemon(dconf, db, c.config.Blockchain.DefaultConnections)
+	d, err = daemon.NewDaemon(dconf, db, c.config.Node.DefaultConnections)
 	if err != nil {
 		c.logger.Error(err)
 		goto earlyShutdown
@@ -296,7 +295,7 @@ func (c *Coin) configureDaemon() daemon.Config {
 	//cipher.SetAddressVersion(c.AddressVersion)
 	dc := daemon.NewConfig()
 
-	for _, c := range c.config.Blockchain.DefaultConnections {
+	for _, c := range c.config.Node.DefaultConnections {
 		dc.Pool.DefaultPeerConnections[c] = struct{}{}
 	}
 
@@ -323,13 +322,13 @@ func (c *Coin) configureDaemon() daemon.Config {
 	dc.Daemon.OutgoingRate = c.config.Node.OutgoingConnectionsRate
 	dc.Visor.Config.IsMaster = c.config.Node.RunMaster
 
-	dc.Visor.Config.BlockchainPubkey = c.config.Blockchain.blockchainPubkey
-	dc.Visor.Config.BlockchainSeckey = c.config.Blockchain.blockchainSeckey
+	dc.Visor.Config.BlockchainPubkey = c.config.Node.blockchainPubkey
+	dc.Visor.Config.BlockchainSeckey = c.config.Node.blockchainSeckey
 
-	dc.Visor.Config.GenesisAddress = c.config.Blockchain.genesisAddress
-	dc.Visor.Config.GenesisSignature = c.config.Blockchain.genesisSignature
-	dc.Visor.Config.GenesisTimestamp = c.config.Blockchain.genesisTimestamp
-	dc.Visor.Config.GenesisCoinVolume = c.config.Blockchain.GenesisCoinVolume
+	dc.Visor.Config.GenesisAddress = c.config.Node.genesisAddress
+	dc.Visor.Config.GenesisSignature = c.config.Node.genesisSignature
+	dc.Visor.Config.GenesisTimestamp = c.config.Node.genesisTimestamp
+	dc.Visor.Config.GenesisCoinVolume = c.config.Node.GenesisCoinVolume
 	dc.Visor.Config.DBPath = c.config.Node.DBPath
 	dc.Visor.Config.Arbitrating = c.config.Node.Arbitrating
 	dc.Visor.Config.EnableWalletAPI = c.config.Node.EnableWalletAPI

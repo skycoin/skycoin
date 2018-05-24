@@ -23,9 +23,8 @@ var (
 
 // Config records fiber coin configs
 type Config struct {
-	Blockchain BlockchainConfig `mapstructure:"blockchain"`
-	Node       NodeConfig       `mapstructure:"node"`
-	Build      BuildConfig      `mapstructure:"build"`
+	Node         NodeConfig         `mapstructure:"node"`
+	Build        BuildConfig        `mapstructure:"build"`
 }
 
 // BuildConfig records build info
@@ -35,23 +34,6 @@ type BuildConfig struct {
 	Branch  string `mapstructure:"branch"`  // git branch name
 }
 
-// BlockchainConfig records genesis data
-type BlockchainConfig struct {
-	GenesisSignatureStr string   `mapstructure:"genesis_signature_str"`
-	GenesisAddressStr   string   `mapstructure:"genesis_address_str"`
-	BlockchainPubkeyStr string   `mapstructure:"blockchain_pubkey_str"`
-	BlockchainSeckeyStr string   `mapstructure:"blockchain_seckey_str"`
-	GenesisTimestamp    uint64   `mapstructure:"genesis_timestamp"`
-	GenesisCoinVolume   uint64   `mapstructure:"genesis_coin_volume"`
-	DefaultConnections  []string `mapstructure:"default_connections"`
-
-	genesisSignature cipher.Sig
-	genesisTimestamp uint64
-	genesisAddress   cipher.Address
-
-	blockchainPubkey cipher.PubKey
-	blockchainSeckey cipher.SecKey
-}
 
 // NodeConfig records the node's configuration
 type NodeConfig struct {
@@ -154,13 +136,26 @@ type NodeConfig struct {
 	Arbitrating bool   `mapstructure:"arbitrating"`
 	LogToFile   bool   `mapstructure:"log_to_file"`
 	Version     bool   `mapstructure:"version"` // show node version
+
+	GenesisSignatureStr string   `mapstructure:"genesis_signature_str"`
+	GenesisAddressStr   string   `mapstructure:"genesis_address_str"`
+	BlockchainPubkeyStr string   `mapstructure:"blockchain_pubkey_str"`
+	BlockchainSeckeyStr string   `mapstructure:"blockchain_seckey_str"`
+	GenesisTimestamp    uint64   `mapstructure:"genesis_timestamp"`
+	GenesisCoinVolume   uint64   `mapstructure:"genesis_coin_volume"`
+	DefaultConnections  []string `mapstructure:"default_connections"`
+
+	genesisSignature cipher.Sig
+	genesisTimestamp uint64
+	genesisAddress   cipher.Address
+
+	blockchainPubkey cipher.PubKey
+	blockchainSeckey cipher.SecKey
 }
 
 func setDefaults() {
-	// blockchain defaults
-	viper.SetDefault("blockchain.genesis_coin_volume", 100e12)
-
 	// node defaults
+	viper.SetDefault("node.genesis_coin_volume", 100e12)
 	viper.SetDefault("node.disable_pex", false)
 	viper.SetDefault("node.outgoing_connections", false)
 	viper.SetDefault("node.disable_outgoing_connections", false)
@@ -187,7 +182,7 @@ func setDefaults() {
 	viper.SetDefault("node.print_web_interface_address", false)
 	viper.SetDefault("node.rpc_interface", true)
 	viper.SetDefault("node.launch_browser", false)
-	viper.SetDefault("node.data_directory", "~/.skycoin")
+	viper.SetDefault("node.data_directory", "$HOME/.skycoin")
 	viper.SetDefault("node.gui_directory", "./src/gui/static/")
 	viper.SetDefault("node.read_timeout", time.Second*10)
 	viper.SetDefault("node.write_timeout", time.Second*60)
@@ -254,45 +249,54 @@ func NewConfig(configName, appDir string) (Config, error) {
 
 func (c *Config) postProcess() {
 	var err error
-	if c.Blockchain.GenesisSignatureStr != "" {
-		c.Blockchain.genesisSignature, err = cipher.SigFromHex(c.Blockchain.GenesisSignatureStr)
+	if c.Node.GenesisSignatureStr != "" {
+		c.Node.genesisSignature, err = cipher.SigFromHex(c.Node.GenesisSignatureStr)
 		panicIfError(err, "Invalid Signature")
 	}
 
-	if c.Blockchain.GenesisAddressStr != "" {
-		c.Blockchain.genesisAddress, err = cipher.DecodeBase58Address(c.Blockchain.GenesisAddressStr)
+	if c.Node.GenesisAddressStr != "" {
+		c.Node.genesisAddress, err = cipher.DecodeBase58Address(c.Node.GenesisAddressStr)
 		panicIfError(err, "Invalid Address")
 	}
-	if c.Blockchain.BlockchainPubkeyStr != "" {
-		c.Blockchain.blockchainPubkey, err = cipher.PubKeyFromHex(c.Blockchain.BlockchainPubkeyStr)
+	if c.Node.BlockchainPubkeyStr != "" {
+		c.Node.blockchainPubkey, err = cipher.PubKeyFromHex(c.Node.BlockchainPubkeyStr)
 		panicIfError(err, "Invalid Pubkey")
 	}
-	if c.Blockchain.BlockchainSeckeyStr != "" {
-		c.Blockchain.blockchainSeckey, err = cipher.SecKeyFromHex(c.Blockchain.BlockchainSeckeyStr)
+	if c.Node.BlockchainSeckeyStr != "" {
+		c.Node.blockchainSeckey, err = cipher.SecKeyFromHex(c.Node.BlockchainSeckeyStr)
 		panicIfError(err, "Invalid Seckey")
-		c.Blockchain.BlockchainSeckeyStr = ""
+		c.Node.BlockchainSeckeyStr = ""
 	}
-	if c.Blockchain.BlockchainSeckeyStr != "" {
-		c.Blockchain.blockchainSeckey = cipher.SecKey{}
+	if c.Node.BlockchainSeckeyStr != "" {
+		c.Node.blockchainSeckey = cipher.SecKey{}
 	}
 
 	home := file.UserHome()
-	c.Node.DataDirectory, err = file.InitDataDir(strings.Replace(c.Node.DataDirectory, "~", home, 1))
+	c.Node.DataDirectory, err = file.InitDataDir(replaceHome(c.Node.DataDirectory, home))
 	panicIfError(err, "Invalid DataDirectory")
 
 	if c.Node.WebInterfaceCert == "" {
 		c.Node.WebInterfaceCert = filepath.Join(c.Node.DataDirectory, "cert.pem")
+	} else {
+		c.Node.WebInterfaceCert = replaceHome(c.Node.WebInterfaceCert, home)
 	}
+
 	if c.Node.WebInterfaceKey == "" {
 		c.Node.WebInterfaceKey = filepath.Join(c.Node.DataDirectory, "key.pem")
+	} else {
+		c.Node.WebInterfaceKey = replaceHome(c.Node.WebInterfaceKey, home)
 	}
 
 	if c.Node.WalletDirectory == "" {
 		c.Node.WalletDirectory = filepath.Join(c.Node.DataDirectory, "wallets")
+	} else {
+		c.Node.WalletDirectory = replaceHome(c.Node.WalletDirectory, home)
 	}
 
 	if c.Node.DBPath == "" {
 		c.Node.DBPath = filepath.Join(c.Node.DataDirectory, "data.db")
+	} else {
+		c.Node.DBPath = replaceHome(c.Node.DBPath, home)
 	}
 
 	if c.Node.RunMaster {
@@ -356,12 +360,12 @@ func (c *Config) register() {
 	// Key Configuration Data
 	flag.BoolVar(&c.Node.RunMaster, "master", c.Node.RunMaster, "run the daemon as blockchain master server")
 
-	flag.StringVar(&c.Blockchain.BlockchainPubkeyStr, "master-public-key", c.Blockchain.BlockchainPubkeyStr, "public key of the master chain")
-	flag.StringVar(&c.Blockchain.BlockchainSeckeyStr, "master-secret-key", c.Blockchain.BlockchainSeckeyStr, "secret key, set for master")
+	flag.StringVar(&c.Node.BlockchainPubkeyStr, "master-public-key", c.Node.BlockchainPubkeyStr, "public key of the master chain")
+	flag.StringVar(&c.Node.BlockchainSeckeyStr, "master-secret-key", c.Node.BlockchainSeckeyStr, "secret key, set for master")
 
-	flag.StringVar(&c.Blockchain.GenesisAddressStr, "genesis-address", c.Blockchain.GenesisAddressStr, "genesis address")
-	flag.StringVar(&c.Blockchain.GenesisSignatureStr, "genesis-signature", c.Blockchain.GenesisSignatureStr, "genesis block signature")
-	flag.Uint64Var(&c.Blockchain.GenesisTimestamp, "genesis-timestamp", c.Blockchain.GenesisTimestamp, "genesis block timestamp")
+	flag.StringVar(&c.Node.GenesisAddressStr, "genesis-address", c.Node.GenesisAddressStr, "genesis address")
+	flag.StringVar(&c.Node.GenesisSignatureStr, "genesis-signature", c.Node.GenesisSignatureStr, "genesis block signature")
+	flag.Uint64Var(&c.Node.GenesisTimestamp, "genesis-timestamp", c.Node.GenesisTimestamp, "genesis block timestamp")
 
 	flag.StringVar(&c.Node.WalletDirectory, "wallet-dir", c.Node.WalletDirectory, "location of the wallet files. Defaults to ~/.skycoin/wallet/")
 	flag.IntVar(&c.Node.MaxOutgoingConnections, "max-outgoing-connections", c.Node.MaxOutgoingConnections, "The maximum outgoing connections allowed")
@@ -378,4 +382,8 @@ func panicIfError(err error, msg string, args ...interface{}) {
 	if err != nil {
 		log.Panicf(msg+": %v", append(args, err)...)
 	}
+}
+
+func replaceHome(path, home string) string {
+	return strings.Replace(path, "$HOME", home, 1)
 }

@@ -23,8 +23,8 @@
 #define TEST_DATA_DIR "src/api/integration/testdata/"
 
 #define NORMAL_TESTS
-//#define DECRYPTION_TESTS
-//#define DECRYPT_WALLET_TEST
+#define DECRYPTION_TESTS
+#define DECRYPT_WALLET_TEST
 
 TestSuite(api_integration, .init = setup, .fini = teardown);
 
@@ -1700,32 +1700,30 @@ Test(api_integration, TestGetWallets) {
 	GoUint32 count;
 	result = SKY_api_Handle_WalletsResponseGetCount( walletsHandle, &count );
 	cr_assert( result == SKY_OK, "SKY_api_Handle_WalletsResponseGetCount failed" );
-	cr_assert( count == GET_WALLETS_COUNT, 
+	cr_expect( count >= GET_WALLETS_COUNT, 
 		"SKY_api_Handle_WalletsResponseGetCount returned incorrect length");
 	
 	WalletResponse__Handle w;
 	GoString_ name1, name2;
-	for( GoUint32 i = 0; i < count; i++){
-		result = SKY_api_Handle_WalletsResponseGetAt(
-			walletsHandle, i, &w);
-		cr_assert( result == SKY_OK, "SKY_api_Handle_WalletsResponseGetAt failed" );
-		registerHandleClose( w ) ;
+	for( GoUint32 i = 0; i < GET_WALLETS_COUNT; i++){
 		memset( &name1, 0, sizeof(GoString_) );
-		result = SKY_api_Handle_Client_GetWalletFileName(w, &name1);
+		result = SKY_api_Handle_Client_GetWalletFileName(
+				original_wallets[i], &name1);
 		cr_assert( result == SKY_OK, "SKY_api_Handle_Client_GetWalletFileName failed" );
 		registerMemCleanup( (void*)name1.p );
 		int found = 0;
-		for( int j = 0; j < GET_WALLETS_COUNT; j++ ){
+		for( GoUint32 j = 0; j < count; j++ ){
+			result = SKY_api_Handle_WalletsResponseGetAt(
+				walletsHandle, j, &w);
+			cr_assert( result == SKY_OK, "SKY_api_Handle_WalletsResponseGetAt failed" );
+			registerHandleClose( w ) ;
 			memset( &name2, 0, sizeof(GoString_) );
-			result = SKY_api_Handle_Client_GetWalletFileName(
-					original_wallets[j], &name2);
+			result = SKY_api_Handle_Client_GetWalletFileName(w, &name2);
 			cr_assert( result == SKY_OK, "SKY_api_Handle_Client_GetWalletFileName failed" );
 			registerMemCleanup( (void*)name2.p );
-			
 			if( strcmp( name1.p, name2.p ) == 0 ){
 				int equal;
-				equal = compareObjectsByHandle( w, 
-								original_wallets[j]);
+				equal = compareObjectsByHandle( w, original_wallets[i]);
 				cr_assert( equal, "Wallet is not what expected" );
 				found = 1;
 				break;
@@ -1749,7 +1747,7 @@ Test(api_integration, TestWalletNewAddress) {
 		cr_assert(result == SKY_OK, "Couldn\'t create client");
 		registerHandleClose( clientHandle );
 		
-		int encrypt = 0; //TODO: Verify why the test fails when encrypting
+		int encrypt = i == 2;
 		
 		WalletResponse__Handle w;
 		memset(seed, 0, 128);
@@ -1825,13 +1823,6 @@ Test(api_integration, TestStableWalletBalance) {
 	strcpy(seed, "casino away claim road artist where blossom warrior demise royal still palm");
 	result = createWallet( clientHandle, 0, NULL, 
 			seed, 128, &w );
-	//The wallet created on the shared library may still be in cache
-	//even when it was deleted, so try a different seed
-	if( result != SKY_OK ){
-		strcat(seed, " 2");
-		result = createWallet( clientHandle, 0, NULL, 
-			seed, 128, &w );
-	}
 	cr_assert( result == SKY_OK, "Create wallet failed" );
 	registerHandleClose( w );
 	registerWalletClean( clientHandle, w );

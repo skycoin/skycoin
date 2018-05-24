@@ -187,19 +187,19 @@ Test(cipher_encrypt_sha256xor, TestSha256XorEncrypt){
 				n++;
 			}
 			
-			int real_size;
-			base64_decode_binary((const unsigned char*)encrypted.data, 
-				encrypted.len, encryptedText, &real_size, BUFFER_SIZE);
+			int decode_length = base64_decode_string((const unsigned char*)encrypted.data, 
+				encrypted.len, encryptedText, BUFFER_SIZE);
+			cr_assert(decode_length >= 0, "base64_decode_string failed.");
 			int totalEncryptedDataLen = SHA256XORCHECKSUMSIZE + SHA256XORNONCESIZE + 32 + n*SHA256XORBLOCKSIZE; // 32 is the hash data length
 			
-			cr_assert(totalEncryptedDataLen == real_size, "SKY_encrypt_Sha256Xor_Encrypt failed, encrypted data length incorrect.");
+			cr_assert(totalEncryptedDataLen == decode_length, "SKY_encrypt_Sha256Xor_Encrypt failed, encrypted data length incorrect.");
 			cr_assert(SHA256XORCHECKSUMSIZE == sizeof(cipher__SHA256), "Size of SHA256 struct different than size in constant declaration");
 			cipher__SHA256 enc_hash;
 			cipher__SHA256 cal_hash;
 			for(int j = 0; j < SHA256XORCHECKSUMSIZE; j++){
 				enc_hash[j] = (GoUint8_)encryptedText[j];
 			}
-			int len_minus_checksum = real_size - SHA256XORCHECKSUMSIZE;
+			int len_minus_checksum = decode_length - SHA256XORCHECKSUMSIZE;
 			GoSlice slice = {&encryptedText[SHA256XORCHECKSUMSIZE], len_minus_checksum, len_minus_checksum};
 			SKY_cipher_SumSHA256(slice, &cal_hash);
 			int equal = 1;
@@ -227,19 +227,19 @@ Test(cipher_encrypt_sha256xor, TestSha256XorEncrypt){
 			n++;
 		}
 		
-		int real_size;
-		base64_decode_binary((const unsigned char*)encrypted.data, 
-			encrypted.len, encryptedText, &real_size, BUFFER_SIZE);
+		int decode_length = base64_decode_string((const unsigned char*)encrypted.data, 
+			encrypted.len, encryptedText, BUFFER_SIZE);
+		cr_assert( decode_length >= 0, "base64_decode_string failed" );
 		int totalEncryptedDataLen = SHA256XORCHECKSUMSIZE + SHA256XORNONCESIZE + 32 + n*SHA256XORBLOCKSIZE; // 32 is the hash data length
 		
-		cr_assert(totalEncryptedDataLen == real_size, "SKY_encrypt_Sha256Xor_Encrypt failed, encrypted data length incorrect.");
+		cr_assert(totalEncryptedDataLen == decode_length, "SKY_encrypt_Sha256Xor_Encrypt failed, encrypted data length incorrect.");
 		cr_assert(SHA256XORCHECKSUMSIZE == sizeof(cipher__SHA256), "Size of SHA256 struct different than size in constant declaration");
 		cipher__SHA256 enc_hash;
 		cipher__SHA256 cal_hash;
 		for(int j = 0; j < SHA256XORCHECKSUMSIZE; j++){
 			enc_hash[j] = (GoUint8_)encryptedText[j];
 		}
-		int len_minus_checksum = real_size - SHA256XORCHECKSUMSIZE;
+		int len_minus_checksum = decode_length - SHA256XORCHECKSUMSIZE;
 		GoSlice slice = {&encryptedText[SHA256XORCHECKSUMSIZE], len_minus_checksum, len_minus_checksum};
 		SKY_cipher_SumSHA256(slice, &cal_hash);
 		int equal = 1;

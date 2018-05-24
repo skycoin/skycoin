@@ -1,6 +1,6 @@
 # Installing go
 
-Skycoin supports go1.9+.  The preferred version is go1.10.
+Skycoin supports go1.10+.
 
 ## For OSX
 First you need to have `homebrew` installed, if you don't have it yet.
@@ -53,8 +53,8 @@ In China, use `--source=https://github.com/golang/go` to bypass firewall when fe
 gvm install go1.4 --source=https://github.com/golang/go
 gvm use go1.4
 
-gvm install go1.9
-gvm use go1.9 --default
+gvm install go1.10.2
+gvm use go1.10.2 --default
 ```
 
 #### Installation issues
@@ -62,7 +62,7 @@ If you open up new a terminal and the `go` command is not found then add this to
 
 ```sh
 [[ -s "$HOME/.gvm/scripts/gvm" ]] && source "$HOME/.gvm/scripts/gvm"
-gvm use go1.9 >/dev/null
+gvm use go1.10.2 >/dev/null
 ```
 
 ## Install Go manually
@@ -72,7 +72,7 @@ Let's go to home directory and declare `go`'s version that you want to download.
 
 ```sh
 cd ~
-export GOV=1.10 # golang version. Could be any of the following versions 1.9, 1.10
+export GOV=1.10.2 # golang version
 ```
 
 After that, let's download and uncompress golang source.

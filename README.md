@@ -22,11 +22,11 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
 
 ## Table of Contents
 
-<!-- MarkdownTOC depth="5" autolink="true" bracket="round" -->
+<!-- MarkdownTOC levels="1,2,3,4,5" autolink="true" bracket="round" -->
 
 - [Changelog](#changelog)
 - [Installation](#installation)
-    - [Go 1.9+ Installation and Setup](#go-19-installation-and-setup)
+    - [Go 1.10+ Installation and Setup](#go-110-installation-and-setup)
     - [Go get skycoin](#go-get-skycoin)
     - [Run Skycoin from the command line](#run-skycoin-from-the-command-line)
     - [Show Skycoin node options](#show-skycoin-node-options)
@@ -66,11 +66,11 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
 
 ## Installation
 
-Skycoin supports go1.9+.  The preferred version is go1.10.
+Skycoin supports go1.10+.
 
-### Go 1.9+ Installation and Setup
+### Go 1.10+ Installation and Setup
 
-[Golang 1.9+ Installation/Setup](./INSTALLATION.md)
+[Golang 1.10+ Installation/Setup](./INSTALLATION.md)
 
 ### Go get skycoin
 
@@ -140,29 +140,7 @@ Access the API: [http://localhost:6420/version](http://localhost:6420/version).
 
 ### Building your own images
 
-There is a Dockerfile in docker/images/mainnet that you can use to build your
-own image. By default it will build your working copy, but if you pass the
-SKYCOIN_VERSION build argument to the `docker build` command, it will checkout
-to the branch, a tag or a commit you specify on that variable.
-
-Example
-
-```sh
-$ git clone https://github.com/skycoin/skycoin
-$ cd skycoin
-$ SKYCOIN_VERSION=v0.23.0
-$ docker build -f docker/images/mainnet/Dockerfile \
-  --build-arg=SKYCOIN_VERSION=$SKYCOIN_VERSION \
-  -t skycoin:$SKYCOIN_VERSION .
-```
-
-or just
-
-```sh
-$ docker build -f docker/images/mainnet/Dockerfile \
-  --build-arg=SKYCOIN_VERSION=v0.23.0 \
-  -t skycoin:v0.23.0 .
-```
+[Building your own images](docker/images/mainnet/README.md).
 
 ## API Documentation
 

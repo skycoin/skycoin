@@ -1,7 +1,7 @@
 <ng-container *ngFor="let address of (wallet ? wallet.addresses : []); let i = index">
   <div class="-record" *ngIf="!wallet.hideEmpty || address.coins">
     <div class="id-column">{{ i + 1 }}</div>
-    <div class="address-column" (click)="copyAddress(address)">
+    <div class="address-column">
       <img src="../../../../../assets/img/qr-code-black.png" (click)="showQrCode($event, address.address)">
       <p>{{ address.address }}</p>
     </div>
@@ -14,30 +14,30 @@
 
   <mat-menu #optionsMenu="matMenu" [overlapTrigger]="false" class="compact">
     <button mat-menu-item (click)="copyAddress(address, $event)">
-      {{ address.copying ? 'Copied!' : 'Copy address' }}
+      {{ 'wallet.address.' + (address.copying ? 'copied': 'copy') | translate }}
     </button>
     <button mat-menu-item routerLink="/settings/outputs" [queryParams]="{ addr: address.address }">
-      Unspent Outputs
+      {{ 'wallet.address.outputs' | translate }}
     </button>
   </mat-menu>
 </ng-container>
 
 <div class="-actions">
   <div class="-button" (click)="newAddress()">
-    <span class="-img -new-address">New Address</span>
+    <span class="-img -new-address">{{ 'wallet.new-address' | translate }}</span>
   </div>
   <div class="-button" (click)="toggleEmpty()">
     <span [ngClass]="{ '-img': true, '-show-empty': wallet.hideEmpty, '-hide-empty': !wallet.hideEmpty }">
-      {{ wallet.hideEmpty ? 'Show' : 'Hide' }} Empty
+      {{ 'wallet.' + (wallet.hideEmpty ? 'show' : 'hide') + '-empty' | translate }}
     </span>
   </div>
   <div class="flex-fill"></div>
   <div class="-button" (click)="toggleEncryption()">
     <span [ngClass]="{ '-img': true, '-enable-encryption': !wallet.encrypted, '-disable-encryption': wallet.encrypted }">
-      {{ wallet.encrypted ? 'Decrypt' : 'Encrypt' }} Wallet
+      {{ 'wallet.' + (wallet.encrypted ? 'decrypt' : 'encrypt') | translate }}
     </span>
   </div>
   <div class="-button" (click)="editWallet()">
-    <span class="-img -edit-wallet">Edit Wallet</span>
+    <span class="-img -edit-wallet">{{ 'wallet.edit' | translate }}</span>
   </div>
 </div>

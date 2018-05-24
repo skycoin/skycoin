@@ -1,11 +1,11 @@
 <div class="sky-container sky-container-grey">
-  <app-header title="Pending Transactions"></app-header>
+  <app-header [title]="'title.pending-txs' | translate"></app-header>
 
   <mat-card class="-table">
     <div class="row -table-header">
-      <div class="col-md-2">Timestamp</div>
-      <div class="col-md-2">Amount</div>
-      <div class="col-md-8">Transaction ID</div>
+      <div class="col-md-2">{{ 'pending-txs.timestamp' | translate }}</div>
+      <div class="col-md-2">{{ 'pending-txs.amount' | translate }}</div>
+      <div class="col-md-8">{{ 'pending-txs.txid' | translate }}</div>
     </div>
     <ng-container *ngIf="transactions && transactions.length">
       <div class="row -table-row" *ngFor="let tx of transactions">
@@ -15,7 +15,7 @@
       </div>
     </ng-container>
     <div class="row -table-row" *ngIf="transactions && !transactions.length">
-      <div class="col-lg-12">No pending transactions</div>
+      <div class="col-lg-12">{{ 'pending-txs.none' | translate }}</div>
     </div>
   </mat-card>
 </div>

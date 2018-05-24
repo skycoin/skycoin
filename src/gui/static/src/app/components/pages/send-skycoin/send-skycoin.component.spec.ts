@@ -8,7 +8,7 @@ describe('SendSkycoinComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ SendSkycoinComponent ]
+      declarations: [ SendSkycoinComponent ],
     })
     .compileComponents();
   }));

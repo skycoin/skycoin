@@ -12,6 +12,8 @@
 
 #define SKYCOIN_ADDRESS_VALID "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv"
 
+TestSuite(cipher_address, .init = setup, .fini = teardown);
+
 // buffer big enough to hold all kind of data needed by test cases
 unsigned char buff[1024];
 

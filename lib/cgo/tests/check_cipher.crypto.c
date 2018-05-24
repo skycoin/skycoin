@@ -10,6 +10,8 @@
 #include "skystring.h"
 #include "skytest.h"
 
+TestSuite(cipher_crypto, .init = setup, .fini = teardown);
+
 Test(cipher_crypto, TestNewPubKey) {
   unsigned char buff[101];
   GoSlice slice;

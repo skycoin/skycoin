@@ -44,15 +44,21 @@ void cleanupMem() {
   void **ptr;
 
   for (i = MEMPOOLIDX, ptr = MEMPOOL; i; --i) {
-    if( *ptr )
+    if( *ptr ) {
       free(*ptr);
+      *ptr = NULL;
+    }
     ptr++;
   }
+  MEMPOOLIDX = 0;
   for (i = JSONPOOLIDX, ptr = (void*)JSON_POOL; i; --i) {
-    if( *ptr )
+    if( *ptr ) {
       json_value_free(*ptr);
+      *ptr = NULL;
+    }
     ptr++;
   }
+  JSONPOOLIDX = 0;
 }
 
 json_value* loadJsonFile(const char* filename){

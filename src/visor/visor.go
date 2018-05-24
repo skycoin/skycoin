@@ -1787,7 +1787,6 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, er
 			return err
 		}
 
-		var uxa coin.UxArray
 		for _, hash := range txn.In {
 			out, err := vs.history.GetUxOut(tx, hash)
 			if err != nil {

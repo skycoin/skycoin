@@ -1,86 +1,96 @@
-<div class="form-field">
-  <label>Wallet</label>
-  <div class="-select">
-    <select>
-      <option value="">MyWallet - 1 SKY</option>
-    </select>
-  </div>
-</div>
-
-<div class="form-field">
-  <label>Addresses</label>
-  <mat-select multiple>
-    <mat-option value="asd">jahsdkhasdkjhasjkd</mat-option>
-    <mat-option value="asd">qweiuqoweiuqowieuqew</mat-option>
-    <mat-option value="asd">bxzmncbmxzncbzx</mat-option>
-  </mat-select>
-</div>
-
-<div class="form-field">
-  <label>Destinations</label>
-  <div class="row -destination">
-    <div class="col-md-5">
-      <input>
-    </div>
-    <div class="col-md-3">
-      <div class="-input-addon">
-        <input>
-        <span>Coins</span>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="-input-addon">
-        <input>
-        <span>Hours</span>
-      </div>
-    </div>
-    <div class="col-md-1 -icons">
-      <img src="../../../../../assets/img/plus-green.png" alt="plus">
+<div [formGroup]="form">
+  <div class="form-field">
+    <label>Wallet</label>
+    <div class="-select">
+      <select formControlName="wallet">
+        <option *ngFor="let wallet of walletService.all() | async" [disabled]="wallet.balance <= 0" [ngValue]="wallet">
+          {{ wallet.label }} - {{ wallet.coins | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
+        </option>
+      </select>
     </div>
   </div>
-  <div class="row -destination">
-    <div class="col-md-5">
-      <input>
-    </div>
-    <div class="col-md-3">
-      <div class="-input-addon">
-        <input>
-        <span>Coins</span>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="-input-addon">
-        <input>
-        <span>Hours</span>
-      </div>
-    </div>
-    <div class="col-md-1 -icons">
-      <img src="../../../../../assets/img/minus-grey.png" alt="minus">
+
+  <div class="form-field">
+    <label>Addresses</label>
+    <div class="-select">
+      <mat-select multiple formControlName="addresses" [compareWith]="addressCompare">
+        <mat-option *ngFor="let addr of addresses" [value]="addr">
+          {{ addr.address }} - {{ addr.coins | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
+          ({{ addr.hours }} {{ 'common.coin-hours' | translate }})
+        </mat-option>
+      </mat-select>
     </div>
   </div>
-</div>
 
-<mat-checkbox class="-check" checked>Automatic coin hours allocation</mat-checkbox>
+  <div class="form-field">
+    <label>Destinations</label>
 
-<div class="row -hours-options">
-  <div class="col-md-5">
-    <div class="form-field">
-      <label>Mode</label>
-      <div class="-select">
-        <select>
-          <option value="Share">Share</option></select>
+    <div formArrayName="destinations" *ngFor="let dest of destControls; let i = index;" class="-destination">
+      <div [formGroupName]="i" class="row">
+        <div class="col-md-5">
+          <input formControlName="address">
+        </div>
+        <div class="col-md-3">
+          <div class="-input-addon">
+            <input formControlName="coins">
+            <span>Coins</span>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div [ngClass]="{ '-input-addon': true, '-hidden': autoHours }">
+            <input formControlName="hours">
+            <span>Hours</span>
+          </div>
+        </div>
+        <div class="col-md-1 -icons">
+          <img *ngIf="i === 0" (click)="addDestination()" src="../../../../../assets/img/plus-green.png" alt="plus">
+          <img *ngIf="i !== 0" (click)="removeDestination(i)" src="../../../../../assets/img/minus-grey.png" alt="minus">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="-autohours">
+    <div class="row">
+      <div class="col-md-5">
+        <mat-checkbox class="-check" (change)="setAutoHours($event)" [checked]="autoHours">
+          <div class="-space-between">
+            <span>Automatic coin hours allocation</span>
+            <span class="-options" (mousedown)="$event.stopPropagation();" (click)="toggleOptions($event)" *ngIf="autoHours">
+              Options <mat-icon>keyboard_arrow_down</mat-icon>
+            </span>
+          </div>
+        </mat-checkbox>
       </div>
     </div>
 
-    <div class="form-field">
-      <label>Value</label>
-      <mat-slider class="-slider" value="5"></mat-slider>
+    <div [ngClass]="{ 'row -options-wrapper': true, '-hidden': !autoOptions }">
+      <div class="col-md-5">
+        <div class="form-field">
+          <label>Mode</label>
+          <div class="-select">
+            <select formControlName="hoursMode">
+              <option value="share" selected>Share</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label class="-space-between">
+            <span>Value</span>
+            <span>{{ autoShareValue | number:'1.0-2' }}</span>
+          </label>
+          <mat-slider class="-slider" min="0" max="1" step="0.01"
+                      (input)="setShareValue($event)" [value]="autoShareValue"
+          ></mat-slider>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
 <div class="-buttons">
-  <app-button class="primary">
+  <app-button #button (action)="send()" class="primary" [disabled]="!form.valid">
     Verify
   </app-button>
 </div>

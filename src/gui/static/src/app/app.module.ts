@@ -69,6 +69,7 @@ import { TransactionInfoComponent } from './components/pages/send-skycoin/send-v
 import { SendFormAdvancedComponent } from './components/pages/send-skycoin/send-form-advanced/send-form-advanced.component';
 import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
 import { AppTranslateLoader } from './app.translate-loader';
+import { NavBarService } from './services/nav-bar.service';
 
 
 const ROUTES = [
@@ -215,6 +216,7 @@ const ROUTES = [
     ApiService,
     AppService,
     BlockchainService,
+    NavBarService,
     NetworkService,
     PriceService,
     PurchaseService,

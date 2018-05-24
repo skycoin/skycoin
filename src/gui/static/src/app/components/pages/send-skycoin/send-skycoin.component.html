@@ -1,14 +1,16 @@
 <app-header [title]="'title.wallets' | translate"></app-header>
 <div class="container">
   <div class="-paper">
+    <app-send-form
+      *ngIf="showForm && activeForm === activeForms.LeftButton"
+      [formData]="formData"
+      (onFormSubmitted)="onFormSubmitted($event)"
+    ></app-send-form>
     <app-send-form-advanced
-      *ngIf="showForm"
+      *ngIf="showForm && activeForm === activeForms.RightButton"
+      [formData]="formData"
+      (onFormSubmitted)="onFormSubmitted($event)"
     ></app-send-form-advanced>
-    <!--<app-send-form-->
-      <!--*ngIf="showForm"-->
-      <!--[formData]="formData"-->
-      <!--(onFormSubmitted)="onFormSubmitted($event)"-->
-    <!--&gt;</app-send-form>-->
     <app-send-verify
       *ngIf="!showForm"
       [transaction]="transaction"

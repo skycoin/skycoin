@@ -8,7 +8,7 @@ describe('SendFormAdvancedComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ SendFormAdvancedComponent ]
+      declarations: [ SendFormAdvancedComponent ],
     })
     .compileComponents();
   }));

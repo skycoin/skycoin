@@ -3,6 +3,7 @@ package main
 import (
 	"reflect"
 	"unsafe"
+
 	gobip39 "github.com/skycoin/skycoin/src/cipher/go-bip39"
 )
 
@@ -21,7 +22,7 @@ func SKY_bip39_NewDefaultMnemomic(_arg0 *C.GoString_) (____error_code uint32) {
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	__arg0, ____return_err := gobip39.NewDefaultMnemomic()
+	__arg0, ____return_err := gobip39.NewDefaultMnemonic()
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
 		copyString(__arg0, _arg0)

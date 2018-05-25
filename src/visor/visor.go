@@ -1828,6 +1828,7 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bo
 				return err
 			}
 
+			uxa = coin.UxArray{}
 			for _, out := range outs {
 				uxa = append(uxa, out.Out)
 			}

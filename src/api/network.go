@@ -1,6 +1,7 @@
 package api
 
-// Network-related information for the GUI
+// APIs for network-related information
+
 import (
 	"net/http"
 	"sort"

@@ -22,11 +22,11 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
 
 ## Table of Contents
 
-<!-- MarkdownTOC depth="5" autolink="true" bracket="round" -->
+<!-- MarkdownTOC levels="1,2,3,4,5" autolink="true" bracket="round" -->
 
 - [Changelog](#changelog)
 - [Installation](#installation)
-    - [Go 1.9+ Installation and Setup](#go-19-installation-and-setup)
+    - [Go 1.10+ Installation and Setup](#go-110-installation-and-setup)
     - [Go get skycoin](#go-get-skycoin)
     - [Run Skycoin from the command line](#run-skycoin-from-the-command-line)
     - [Show Skycoin node options](#show-skycoin-node-options)
@@ -66,11 +66,11 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
 
 ## Installation
 
-Skycoin supports go1.9+.  The preferred version is go1.10.
+Skycoin supports go1.10+.
 
-### Go 1.9+ Installation and Setup
+### Go 1.10+ Installation and Setup
 
-[Golang 1.9+ Installation/Setup](./INSTALLATION.md)
+[Golang 1.10+ Installation/Setup](./INSTALLATION.md)
 
 ### Go get skycoin
 

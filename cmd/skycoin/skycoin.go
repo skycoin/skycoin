@@ -125,9 +125,6 @@ type Config struct {
 	// Launch System Default Browser after client startup
 	LaunchBrowser bool
 
-	// If true, print the configured client web interface address and exit
-	PrintWebInterfaceAddress bool
-
 	// Data directory holds app data -- defaults to ~/.skycoin
 	DataDirectory string
 	// GUI directory contains assets for the HTML interface
@@ -206,7 +203,6 @@ func (c *Config) register() {
 	flag.BoolVar(&c.RPCInterface, "rpc-interface", c.RPCInterface, "enable the rpc interface")
 
 	flag.BoolVar(&c.LaunchBrowser, "launch-browser", c.LaunchBrowser, "launch system default webbrowser at client startup")
-	flag.BoolVar(&c.PrintWebInterfaceAddress, "print-web-interface-address", c.PrintWebInterfaceAddress, "print configured web interface address and exit")
 	flag.StringVar(&c.DataDirectory, "data-dir", c.DataDirectory, "directory to store app data (defaults to ~/.skycoin)")
 	flag.StringVar(&c.DBPath, "db-path", c.DBPath, "path of database file (defaults to ~/.skycoin/data.db)")
 	flag.BoolVar(&c.DBReadOnly, "db-read-only", c.DBReadOnly, "open bolt db read-only")
@@ -283,13 +279,12 @@ var devConfig = Config{
 	// Wallet Address Version
 	//AddressVersion: "test",
 	// Remote web interface
-	WebInterface:             true,
-	WebInterfacePort:         6420,
-	WebInterfaceAddr:         "127.0.0.1",
-	WebInterfaceCert:         "",
-	WebInterfaceKey:          "",
-	WebInterfaceHTTPS:        false,
-	PrintWebInterfaceAddress: false,
+	WebInterface:      true,
+	WebInterfacePort:  6420,
+	WebInterfaceAddr:  "127.0.0.1",
+	WebInterfaceCert:  "",
+	WebInterfaceKey:   "",
+	WebInterfaceHTTPS: false,
 
 	RPCInterface: true,
 
@@ -355,6 +350,7 @@ func applyConfigMode() {
 		devConfig.LogToFile = false
 		devConfig.ColorLog = true
 		devConfig.ResetCorruptDB = true
+		devConfig.WebInterfacePort = 0 // randomize web interface port
 	default:
 		panic("Invalid ConfigMode")
 	}
@@ -464,7 +460,7 @@ func createGUI(c *Config, d *daemon.Daemon, host string) (*api.Server, error) {
 		s, err = api.Create(host, config, d.Gateway)
 	}
 	if err != nil {
-		logger.Errorf("Failed to start web GUI: %v", err)
+		logger.Errorf("Failed to start web API and GUI: %v", err)
 		return nil, err
 	}
 
@@ -584,6 +580,7 @@ func Run(c *Config) {
 	var db *dbutil.DB
 	var d *daemon.Daemon
 	var webInterface *api.Server
+	var fullAddress string
 	errC := make(chan error, 10)
 
 	if c.Version {
@@ -613,17 +610,6 @@ func Run(c *Config) {
 			logger.Error(err)
 			return
 		}
-	}
-
-	scheme := "http"
-	if c.WebInterfaceHTTPS {
-		scheme = "https"
-	}
-	host := fmt.Sprintf("%s:%d", c.WebInterfaceAddr, c.WebInterfacePort)
-	fullAddress := fmt.Sprintf("%s://%s", scheme, host)
-	logger.Critical().Infof("Full address: %s", fullAddress)
-	if c.PrintWebInterfaceAddress {
-		fmt.Println(fullAddress)
 	}
 
 	initProfiling(c.HTTPProf, c.ProfileCPU, c.ProfileCPUFile)
@@ -676,11 +662,19 @@ func Run(c *Config) {
 	}
 
 	if c.WebInterface {
+		host := fmt.Sprintf("%s:%d", c.WebInterfaceAddr, c.WebInterfacePort)
 		webInterface, err = createGUI(c, d, host)
 		if err != nil {
 			logger.Error(err)
 			goto earlyShutdown
 		}
+
+		scheme := "http"
+		if c.WebInterfaceHTTPS {
+			scheme = "https"
+		}
+		fullAddress = fmt.Sprintf("%s://%s", scheme, webInterface.Addr())
+		logger.Critical().Infof("Full address: %s", fullAddress)
 	}
 
 	wg.Add(1)

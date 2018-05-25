@@ -115,6 +115,10 @@
       font-size: 13px;
       line-height: 15px;
       margin: 0;
+
+      span {
+        color: lighten($grey-dark, 40%);
+      }
     }
   }
 }

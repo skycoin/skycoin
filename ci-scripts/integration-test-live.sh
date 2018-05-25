@@ -57,7 +57,7 @@ set -euxo pipefail
 
 echo "checking if skycoin node is running"
 
-HEALTH="$HOST/health"
+HEALTH="$HOST/api/v1/health"
 
 http_proxy="" https_proxy="" wget -O- $HEALTH 2>&1 >/dev/null
 

@@ -63,6 +63,12 @@ type muxConfig struct {
 	enableUnversionedAPI bool
 }
 
+// HTTPResponse represents the http response struct
+type HTTPResponse struct {
+	Error string `json:"error"`
+	Data  string `json:"data"`
+}
+
 func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 	var appLoc string
 	if c.EnableGUI {

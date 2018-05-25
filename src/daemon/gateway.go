@@ -1040,12 +1040,14 @@ func (gw *Gateway) GetHealth() (*Health, error) {
 	return health, err
 }
 
-// VerifyTxnVerbose verifies an isolated transaction and returns []wallet.UxBalance of transaction inputs
-func (gw *Gateway) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, error) {
+// VerifyTxnVerbose verifies an isolated transaction and returns []wallet.UxBalance of
+// transaction inputs, whether the transaction is confirmed and error if any
+func (gw *Gateway) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bool, error) {
 	var uxs []wallet.UxBalance
+	var isTxnConfirmed bool
 	var err error
 	gw.strand("VerifyTxnVerbose", func() {
-		uxs, err = gw.v.VerifyTxnVerbose(txn)
+		uxs, isTxnConfirmed, err = gw.v.VerifyTxnVerbose(txn)
 	})
-	return uxs, err
+	return uxs, isTxnConfirmed, err
 }

@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -12,6 +11,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/wallet"
 
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
@@ -277,6 +277,7 @@ type VerifyTxnRequest struct {
 // VerifyTxnResponse the response data struct for /transaction/verify api
 type VerifyTxnResponse struct {
 	Transaction CreatedTransaction `json:"transaction"`
+	Confirmed   bool               `json:"confirmed"`
 }
 
 // Decode and verify an encoded transaction
@@ -294,33 +295,53 @@ func verifyTxnHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
+		var rsp HTTPResponse
 		var req VerifyTxnRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			wh.Error400(w, err.Error())
+			rsp.Error = err.Error()
+			wh.Error400JSONOr500(w, rsp)
 			return
 		}
 
 		txn, err := decodeTxn(req.EncodedTransaction)
 		if err != nil {
-			wh.Error422(w, err.Error())
+			rsp.Error = fmt.Sprintf("decode transaction failed: %v", err)
+			wh.Error400JSONOr500(w, rsp)
 			return
 		}
 
-		inputs, err := gateway.VerifyTxnVerbose(txn)
+		inputs, isTxnConfirmed, err := gateway.VerifyTxnVerbose(txn)
 		if err != nil {
-			wh.Error422(w, err.Error())
-			return
+			rsp.Error = err.Error()
+			switch err.(type) {
+			case visor.ErrTxnViolatesSoftConstraint,
+				visor.ErrTxnViolatesHardConstraint:
+			default:
+				wh.Error400JSONOr500(w, rsp)
+				return
+			}
 		}
 
-		txnRsp, err := NewCreatedTransaction(txn, inputs)
-		if err != nil {
-			wh.Error400(w, err.Error())
-			return
+		if len(inputs) > 0 {
+			rspData := VerifyTxnResponse{
+				Transaction: newCreatedTransaction(txn, inputs),
+				Confirmed:   isTxnConfirmed,
+			}
+
+			v, err := json.MarshalIndent(rspData, "", "    ")
+			if err != nil {
+				wh.Error500(w, "json.MarshalIndent failed")
+				return
+			}
+
+			rsp.Data = string(v)
 		}
 
-		rsp := VerifyTxnResponse{Transaction: *txnRsp}
-
-		wh.SendJSONOr500(logger, w, rsp)
+		if rsp.Error != "" {
+			wh.Error422JSONOr500(w, rsp)
+		} else {
+			wh.SendJSONOr500(logger, w, rsp)
+		}
 	}
 }
 
@@ -336,11 +357,58 @@ func decodeTxn(encodedTxn string) (*coin.Transaction, error) {
 		return nil, err
 	}
 
+	return &txn, nil
+}
+
+// newCreatedTransaction creates a *CreatedTransaction instance
+func newCreatedTransaction(txn *coin.Transaction, inputs []wallet.UxBalance) CreatedTransaction {
+	var outputHours uint64
 	for _, o := range txn.Out {
-		if o.Address.Null() {
-			return nil, errors.New("Transaction.Out contains an output sending to an empty address")
-		}
+		outputHours += o.Hours
 	}
 
-	return &txn, nil
+	var inputHours uint64
+	for _, i := range inputs {
+		inputHours += i.Hours
+	}
+
+	fee := inputHours - outputHours
+
+	sigs := make([]string, len(txn.Sigs))
+	for i, s := range txn.Sigs {
+		sigs[i] = s.Hex()
+	}
+
+	txid := txn.Hash()
+	out := make([]CreatedTransactionOutput, len(txn.Out))
+	for i, o := range txn.Out {
+		co, err := NewCreatedTransactionOutput(o, txid)
+		if err != nil {
+			logger.WithError(err).Error("NewCreatedTransactionOutput failed")
+			continue
+		}
+		out[i] = *co
+	}
+
+	in := make([]CreatedTransactionInput, len(inputs))
+	for i, o := range inputs {
+		ci, err := NewCreatedTransactionInput(o)
+		if err != nil {
+			logger.WithError(err).Error("NewCreatedTransactionInput failed")
+			continue
+		}
+		in[i] = *ci
+	}
+
+	return CreatedTransaction{
+		Length:    txn.Length,
+		Type:      txn.Type,
+		TxID:      txid.Hex(),
+		InnerHash: txn.InnerHash.Hex(),
+		Fee:       fmt.Sprint(fee),
+
+		Sigs: sigs,
+		In:   in,
+		Out:  out,
+	}
 }

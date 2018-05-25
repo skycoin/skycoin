@@ -217,7 +217,7 @@ type Daemon struct {
 	// Cache of announced transactions that are flushed to the database periodically
 	announcedTxns *announcedTxnsCache
 	// Cache of reported peer blockchain heights
-	heights *peerBlockchainHeights
+	Heights *peerBlockchainHeights
 
 	// Separate index of outgoing connections. The pool aggregates all
 	// connections.
@@ -276,7 +276,7 @@ func NewDaemon(config Config, db *dbutil.DB, defaultConns []string) (*Daemon, er
 		DefaultConnections: defaultConns,
 
 		announcedTxns: newAnnouncedTxnsCache(),
-		heights:       newPeerBlockchainHeights(),
+		Heights:       newPeerBlockchainHeights(),
 
 		expectingIntroductions: NewExpectIntroductions(),
 		connectionMirrors:      NewConnectionMirrors(),
@@ -883,7 +883,7 @@ func (dm *Daemon) onDisconnect(e DisconnectEvent) {
 
 	dm.outgoingConnections.Remove(e.Addr)
 	dm.expectingIntroductions.Remove(e.Addr)
-	dm.heights.Remove(e.Addr)
+	dm.Heights.Remove(e.Addr)
 	dm.removeIPCount(e.Addr)
 	dm.removeConnectionMirror(e.Addr)
 }

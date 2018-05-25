@@ -428,7 +428,7 @@ func (gbm *GetBlocksMessage) Process(d *Daemon) {
 		return
 	}
 	// Record this as this peer's highest block
-	d.heights.Record(gbm.c.Addr, gbm.LastBlock)
+	d.Heights.Record(gbm.c.Addr, gbm.LastBlock)
 	// Fetch and return signed blocks since LastBlock
 	blocks, err := d.Visor.GetSignedBlocksSince(gbm.LastBlock, gbm.RequestedBlocks)
 	if err != nil {

@@ -161,7 +161,10 @@ That is, create a raw transaction, broadcast it, and wait for it to confirm.
 
 #### Using the REST API
 
-When sending coins via the REST API, a wallet file local to the skycoin node is used.
+Create a transaction with [POST /wallet/transaction](https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#create-transaction),
+then inject it to the network with [POST /injectTransaction](https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#inject-raw-transaction).
+
+When using `POST /wallet/transaction`, a wallet file local to the skycoin node is used.
 The wallet file is specified by wallet ID, and all wallet files are in the
 configured data directory (which is `$HOME/.skycoin/wallets` by default).
 
@@ -187,16 +190,14 @@ which are then converted to `coinhours`, `1` coinhour = `3600` coinseconds.
 
 ##### REST API
 
-When using the REST API the coinhours are distributed as follows:
-- 50% of the total coinhours in the unspents being used are burned.
-- 25% of the coinhours go to the the change address along with the remaining coins
-- 25% of the coinhours are split equally between the receivers
+When using the REST API, the coin hours sent to the destination and change can be controlled.
+The 50% burn fee is still required.
 
-For e.g, If an address has `10` skycoins and `50` coinhours and only `1` unspent.
-If we send `5` skycoins to another address then that address will receive
-`5` skycoins and `12` coinhours, `26` coinhours(burned coinhours are made even) will be burned.
-The sending address will be left with `5` skycoins and `12` coinhours which
-will then be sent to the change address.
+See the [POST /wallet/transaction](https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#create-transaction)
+documentation for more information on how to control the coin hours.
+
+We recommend sending at least 1 coin hour to each destination, otherwise the receiver will have to
+wait for another coin hour to accumulate before they can make another transaction.
 
 ##### CLI
 

@@ -131,27 +131,24 @@ func (rpc RPC) GetAllExchgConnections(d *Daemon) []string {
 }
 
 // GetBlockchainProgress gets the blockchain progress
-func (rpc RPC) GetBlockchainProgress(v *Visor) (*BlockchainProgress, error) {
-	if v.v == nil {
+func (rpc RPC) GetBlockchainProgress(d *Daemon) (*BlockchainProgress, error) {
+	if d.Visor == nil {
 		return nil, nil
 	}
 
-	current, _, err := v.HeadBkSeq()
+	current, _, err := d.Visor.HeadBkSeq()
 	if err != nil {
 		return nil, err
 	}
 
-	highest, err := v.EstimateBlockchainHeight()
-	if err != nil {
-		return nil, err
-	}
+	highest := d.heights.Estimate(current)
 
 	bp := &BlockchainProgress{
 		Current: current,
 		Highest: highest,
 	}
 
-	peerHeights := v.GetPeerBlockchainHeights()
+	peerHeights := d.heights.All()
 
 	for _, ph := range peerHeights {
 		bp.Peers = append(bp.Peers, struct {
@@ -167,11 +164,12 @@ func (rpc RPC) GetBlockchainProgress(v *Visor) (*BlockchainProgress, error) {
 }
 
 // ResendUnconfirmedTxns rebroadcast unconfirmed transactions
-func (rpc RPC) ResendUnconfirmedTxns(v *Visor, p *Pool) (*ResendResult, error) {
-	if v.v == nil {
+func (rpc RPC) ResendUnconfirmedTxns(d *Daemon) (*ResendResult, error) {
+	if d.Visor == nil {
 		return nil, nil
 	}
-	txids, err := v.ResendUnconfirmedTxns(p)
+
+	txids, err := d.ResendUnconfirmedTxns()
 	if err != nil {
 		return nil, err
 	}

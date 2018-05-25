@@ -51,7 +51,7 @@ func NewGateway(c GatewayConfig, d *Daemon) *Gateway {
 		Config:   c,
 		drpc:     RPC{},
 		d:        d,
-		v:        d.Visor.v,
+		v:        d.Visor,
 		requests: make(chan strand.Request, c.BufferSize),
 		quit:     make(chan struct{}),
 	}
@@ -126,7 +126,7 @@ func (gw *Gateway) GetBlockchainProgress() (*BlockchainProgress, error) {
 	var bcp *BlockchainProgress
 	var err error
 	gw.strand("GetBlockchainProgress", func() {
-		bcp, err = gw.drpc.GetBlockchainProgress(gw.d.Visor)
+		bcp, err = gw.drpc.GetBlockchainProgress(gw.d)
 	})
 	return bcp, err
 }
@@ -136,7 +136,7 @@ func (gw *Gateway) ResendUnconfirmedTxns() (*ResendResult, error) {
 	var result *ResendResult
 	var err error
 	gw.strand("ResendUnconfirmedTxns", func() {
-		result, err = gw.drpc.ResendUnconfirmedTxns(gw.d.Visor, gw.d.Pool)
+		result, err = gw.drpc.ResendUnconfirmedTxns(gw.d)
 	})
 	return result, err
 }
@@ -431,7 +431,7 @@ func (gw *Gateway) GetTransactionResult(txid cipher.SHA256) (*TransactionResult,
 func (gw *Gateway) InjectBroadcastTransaction(txn coin.Transaction) error {
 	var err error
 	gw.strand("InjectBroadcastTransaction", func() {
-		err = gw.d.Visor.InjectBroadcastTransaction(txn, gw.d.Pool)
+		err = gw.d.InjectBroadcastTransaction(txn)
 	})
 	return err
 }
@@ -675,7 +675,7 @@ func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest ciphe
 		}
 
 		// Inject transaction
-		err = gw.d.Visor.InjectBroadcastTransaction(*txn, gw.d.Pool)
+		err = gw.d.InjectBroadcastTransaction(*txn)
 		if err != nil {
 			logger.Errorf("Inject transaction failed: %v", err)
 			return

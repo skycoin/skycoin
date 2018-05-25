@@ -90,18 +90,6 @@ type Config struct {
 	//Secret key of blockchain authority (if master)
 	BlockchainSeckey cipher.SecKey
 
-	// How often new blocks are created by the master, in seconds
-	BlockCreationInterval uint64
-	// How often an unconfirmed txn is checked against the blockchain
-	UnconfirmedCheckInterval time.Duration
-	// How long we'll hold onto an unconfirmed txn
-	UnconfirmedMaxAge time.Duration
-	// How often to check the unconfirmed pool for transactions that become valid
-	UnconfirmedRefreshRate time.Duration
-	// How often to remove transactions that become permanently invalid from the unconfirmed pool
-	UnconfirmedRemoveInvalidRate time.Duration
-	// How often to rebroadcast unconfirmed transactions
-	UnconfirmedResendPeriod time.Duration
 	// Maximum size of a block, in bytes.
 	MaxBlockSize int
 
@@ -144,15 +132,7 @@ func NewVisorConfig() Config {
 		BlockchainPubkey: cipher.PubKey{},
 		BlockchainSeckey: cipher.SecKey{},
 
-		BlockCreationInterval: 10,
-		//BlockCreationForceInterval: 120, //create block if no block within this many seconds
-
-		UnconfirmedCheckInterval:     time.Hour * 2,
-		UnconfirmedMaxAge:            time.Hour * 48,
-		UnconfirmedRefreshRate:       time.Minute,
-		UnconfirmedRemoveInvalidRate: time.Minute,
-		UnconfirmedResendPeriod:      time.Minute,
-		MaxBlockSize:                 DefaultMaxBlockSize,
+		MaxBlockSize: DefaultMaxBlockSize,
 
 		GenesisAddress:    cipher.Address{},
 		GenesisSignature:  cipher.Sig{},

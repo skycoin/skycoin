@@ -147,8 +147,7 @@ func NewGetPeersMessage() *GetPeersMessage {
 }
 
 // Handle handles message
-func (gpm *GetPeersMessage) Handle(mc *gnet.MessageContext,
-	daemon interface{}) error {
+func (gpm *GetPeersMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	// self.connID = mc.ConnID
 	gpm.addr = mc.Addr
 	return daemon.(*Daemon).recordMessageEvent(gpm, mc)
@@ -463,8 +462,7 @@ func NewGiveBlocksMessage(blocks []coin.SignedBlock) *GiveBlocksMessage {
 }
 
 // Handle handle message
-func (gbm *GiveBlocksMessage) Handle(mc *gnet.MessageContext,
-	daemon interface{}) error {
+func (gbm *GiveBlocksMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	gbm.c = mc
 	return daemon.(*Daemon).recordMessageEvent(gbm, mc)
 }
@@ -555,8 +553,7 @@ func NewAnnounceBlocksMessage(seq uint64) *AnnounceBlocksMessage {
 }
 
 // Handle handles message
-func (abm *AnnounceBlocksMessage) Handle(mc *gnet.MessageContext,
-	daemon interface{}) error {
+func (abm *AnnounceBlocksMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	abm.c = mc
 	return daemon.(*Daemon).recordMessageEvent(abm, mc)
 }
@@ -613,8 +610,7 @@ func (atm *AnnounceTxnsMessage) GetTxns() []cipher.SHA256 {
 }
 
 // Handle handle message
-func (atm *AnnounceTxnsMessage) Handle(mc *gnet.MessageContext,
-	daemon interface{}) error {
+func (atm *AnnounceTxnsMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	atm.c = mc
 	return daemon.(*Daemon).recordMessageEvent(atm, mc)
 }
@@ -702,8 +698,7 @@ func (gtm *GiveTxnsMessage) GetTxns() []cipher.SHA256 {
 }
 
 // Handle handle message
-func (gtm *GiveTxnsMessage) Handle(mc *gnet.MessageContext,
-	daemon interface{}) error {
+func (gtm *GiveTxnsMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	gtm.c = mc
 	return daemon.(*Daemon).recordMessageEvent(gtm, mc)
 }

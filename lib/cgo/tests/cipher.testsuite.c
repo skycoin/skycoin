@@ -1,7 +1,7 @@
 
 #include "cipher.testsuite.testsuite.go.h"
 
-void deserialize_string(json_value* value, GoString* s) {
+void json_get_gostring(json_value* value, GoString* s) {
   if (value == NULL || value->type != json_string) {
     s->n = 0;
     // FIXME: this satisfies 'all buffers allocated' contract
@@ -45,7 +45,7 @@ InputTestDataJSON* jsonToInputTestData(json_value* json, InputTestDataJSON* inpu
       // String value expected. Skip everything else
       --input_data->Hashes.len;
     } else {
-      deserialize_string(*hashstr_value, s);
+      json_get_gostring(*hashstr_value, s);
       s++;
     }
   }
@@ -121,13 +121,16 @@ KeysTestDataJSON* jsonToKeysTestData(json_value* json, KeysTestDataJSON* input_d
     return NULL;
   }
   json_value* value = json_get_string(json, "address");
-  deserialize_string(value, &input_data->Address);
+  json_get_gostring(value, &input_data->Address);
   value = json_get_string(json, "secret");
-  deserialize_string(value, &input_data->Secret);
+  json_get_gostring(value, &input_data->Secret);
   value = json_get_string(json, "public");
-  deserialize_string(value, &input_data->Public);
+  json_get_gostring(value, &input_data->Public);
 
-  value = json_get_string(json, "signatures");
+  value = get_json_value(json, "signatures", json_array);
+  if (value == NULL) {
+    return input_data;
+  }
   int i = 0,
       length = value->u.array.length;
   json_value** array_value = value->u.array.values;
@@ -139,7 +142,7 @@ KeysTestDataJSON* jsonToKeysTestData(json_value* json, KeysTestDataJSON* input_d
       // String value expected. Skip everything else
       --input_data->Signatures.len;
     } else {
-      deserialize_string(*array_value, s);
+      json_get_gostring(*array_value, s);
       s++;
     }
   }
@@ -234,9 +237,9 @@ SeedTestDataJSON* jsonToSeedTestData(json_value* json, SeedTestDataJSON* input_d
     return NULL;
   }
   json_value* value = json_get_string(json, "seed");
-  deserialize_string(value, &input_data->Seed);
+  json_get_gostring(value, &input_data->Seed);
 
-  value = json_get_string(json, "keys");
+  value = get_json_value(json, "keys", json_array);
   int i = 0,
       length = value->u.array.length;
   json_value** array_value = value->u.array.values;
@@ -370,30 +373,30 @@ void ValidateSeedData(SeedTestData* seedData, InputTestData* inputData) {
   cipher__SecKey *s = (cipher__SecKey*) keys.data;
   for (; i < keys.len; i++, s++, expected++) {
     cr_assert(ne(u8[32], skNull, (*s)),
-        "secret key must not be null");
+        "%d-th secret key must not be null", i);
     cr_assert(eq(u8[32], expected->Secret, (*s)),
-        "generated secret key must match provided secret key");
+        "%d-th generated secret key must match provided secret key", i);
 
     cipher__PubKey p;
     SKY_cipher_PubKeyFromSecKey(s, &p);
     cr_assert(ne(u8[33], pkNull, p),
-        "public key must not be null");
+        "%d-th public key must not be null", i);
     cr_assert(eq(u8[33], expected->Public, p),
-        "derived public key must match provided public key");
+        "%d-th derived public key must match provided public key", i);
 
     cipher__Address addr1;
     SKY_cipher_AddressFromPubKey(&p, &addr1);
     cr_assert(ne(type(cipher__Address), addrNull, addr1),
-        "address from pubkey must not be null");
+        "%d-th address from pubkey must not be null", i);
     cr_assert(eq(type(cipher__Address), expected->Address, addr1),
-        "derived address must match provided address");
+        "%d-th derived address must match provided address", i);
 
     cipher__Address addr2;
     SKY_cipher_AddressFromSecKey(s, &addr2);
     cr_assert(ne(type(cipher__Address), addrNull, addr1),
-        "address from sec key must not be null");
+        "%d-th address from sec key must not be null", i);
     cr_assert(eq(type(cipher__Address), addr1, addr2),
-        "cipher.AddressFromPubKey and cipher.AddressFromSecKey must generate same addresses");
+        "%d-th cipher.AddressFromPubKey and cipher.AddressFromSecKey must generate same addresses", i);
 
     // TODO : Translate once secp256k1 be part of libskycoin
     /*
@@ -410,33 +413,39 @@ void ValidateSeedData(SeedTestData* seedData, InputTestData* inputData) {
 
     // FIXME: without cond : not give a valid preprocessing token
     bool cond = (!(inputData == NULL && expected->Signatures.len != 0));
-    cr_assert(cond, "seed data contains signatures but input data was not provided");
+    cr_assert(cond, "%d seed data contains signatures but input data was not provided", i);
 
     if (inputData != NULL) {
       cr_assert(expected->Signatures.len == inputData->Hashes.len,
-          "Number of signatures in seed data does not match number of hashes in input data");
+          "Number of signatures in %d-th seed data does not match number of hashes in input data", i);
 
       cipher__SHA256* h = (cipher__SHA256*) inputData->Hashes.data;
       cipher__Sig* sig = (cipher__Sig*) expected->Signatures.data;
       int j = 0;
       for (; j < inputData->Hashes.len; j++, h++, sig++) {
-        cr_assert(ne(u8[65], (*sig), sigNull), "provided signature must not be null");
+        cr_assert(ne(u8[65], (*sig), sigNull),
+            "%d-th provided signature for %d-th data set must not be null", j, i);
         GoUint32 err = SKY_cipher_VerifySignature(&p, sig, h);
-        cr_assert(err == SKY_OK, "cipher.VerifySignature failed: %d", err);
+        cr_assert(err == SKY_OK,
+            "cipher.VerifySignature failed: error=%d dataset=%d hashidx=%d", err, i, j);
         err = SKY_cipher_ChkSig(&addr1, h, sig);
-        cr_assert(err == SKY_OK, "cipher.ChkSig failed: %d", err);
+        cr_assert(err == SKY_OK, "cipher.ChkSig failed: error=%d dataset=%d hashidx=%d", err, i, j);
         err = SKY_cipher_VerifySignedHash(sig, h);
-        cr_assert(err == SKY_OK, "cipher.VerifySignedHash failed: %d", err);
+        cr_assert(err == SKY_OK,
+            "cipher.VerifySignedHash failed: error=%d dataset=%d hashidx=%d", err, i, j);
 
         cipher__PubKey p2;
         err = SKY_cipher_PubKeyFromSig(sig, h, &p2);
-        cr_assert(err == SKY_OK, "cipher.PubKeyFromSig failed: %d", err);
+        cr_assert(err == SKY_OK,
+            "cipher.PubKeyFromSig failed: error=%d dataset=%d hashidx=%d", err, i, j);
         cr_assert(eq(u8[32], p, p2),
-          "public key derived from signature must match public key derived from secret", err);
+            "public key derived from %d-th signature in %d-th dataset must match public key derived from secret",
+            j, i);
 
         cipher__Sig sig2;
         SKY_cipher_SignHash(h, s, &sig2);
-        cr_assert(ne(u8[65], sigNull, sig2), "created signature is null");
+        cr_assert(ne(u8[65], sigNull, sig2),
+            "created signature for %d-th hash in %d-th dataset is null", j, i);
 
         // NOTE: signatures are not deterministic, they use a nonce,
         // so we don't compare the generated sig to the provided sig

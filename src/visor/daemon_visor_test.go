@@ -24,31 +24,6 @@ import (
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
-// const (
-// 	// GenesisTime is the time of the genesis block created in MakeBlockchain
-// 	GenesisTime uint64 = 1000
-// 	// GenesisCoins is the amount of coins in the genesis block created in MakeBlockchain
-// 	GenesisCoins uint64 = 1000e6
-// 	// GenesisCoinHours is the amount of coin hours in the genesis block created in MakeBlockchain
-// 	GenesisCoinHours uint64 = 1000 * 1000
-// 	// TimeIncrement is the default time increment used when creating a block with CreateGenesisSpendTransaction
-// 	TimeIncrement uint64 = 3600 * 1000
-// )
-
-// var (
-// 	// GenesisPublic is the public key used in the genesis block created in MakeBlockchain
-// 	GenesisPublic cipher.PubKey
-// 	// GenesisSecret is the secret key used in the genesis block created in MakeBlockchain
-// 	GenesisSecret cipher.SecKey
-// 	// GenesisAddress is the address used in the genesis block created in MakeBlockchain
-// 	GenesisAddress cipher.Address
-// )
-
-// func init() {
-// 	GenesisPublic, GenesisSecret = cipher.GenerateKeyPair()
-// 	GenesisAddress = cipher.AddressFromPubKey(GenesisPublic)
-// }
-
 func setupSimpleVisor(t *testing.T, db *dbutil.DB, bc *Blockchain) *Visor {
 	cfg := NewVisorConfig()
 	cfg.DBPath = db.Path()

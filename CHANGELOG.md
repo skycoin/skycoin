@@ -41,12 +41,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `GET /api/v1/wallet/balance` and `GET /api/v1/balance` now return an address balance list as well.
 - API endpoints are prefixed with `/api/v1/`. API endpoints without the `/api/v1/` prefix are deprecated but can be enabled with `-enable-unversioned-api`. Please migrate to use `/api/v1/` prefix in URLs.
 - Enable message protocol upgrade
+- `change_address` is no longer required in `POST /api/v1/wallet/transaction`. If not provided, `change_address` will default to one of the addresses being spent from.
+- In `POST /api/v1/wallet/transaction`, for `auto` type `share` mode requests, if extra coinhours remain after applying the `share_factor` but change cannot be made due to insufficient coins, the `share_factor` will switch to `1.0`.
+- Support automatic port allocation of the API interface by specifying port 0
+- The web interface / API port is randomly allocated for the precompiled standalone client and electron client released on the website.
+  If you are using the CLI tool or another API client to communicate with the standalone client, use `-web-interface-port=6420` to continue using port 6420.
+  If the program is run from source (e.g. `go run`, `run.sh`, `make run`) there is no change, the API will still be on port 6420.
 
 ### Removed
 
 - Remove `-rpc-interface-addr`, `-rpc-interface-port` options.  The RPC interface is now on default port `6420` with the REST API.
 - Remove `-rpc-thread-num` option
 - Remove `-connect-to` option
+- Remove `-print-web-interface-address` option
 - Remove support for go1.9
 
 ## [0.23.0] - 2018-04-22

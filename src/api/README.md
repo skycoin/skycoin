@@ -1,6 +1,6 @@
 # REST API Documentation
 
-API default service port is `6420`.
+API default service port is `6420`.  However, if running the desktop or standalone releases from the website, the port is randomized by default.
 
 A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](https://godoc.org/github.com/skycoin/skycoin/src/api#Client).
 
@@ -729,7 +729,7 @@ The `encoded_transaction` can be provided to `POST /api/v1/injectTransaction` to
 The request body includes:
 
 * A change address
-* A wallet to spend from with the optional ability to restrict which addresses in the wallet to use
+* A wallet to spend from with the optional ability to restrict which addresses or which unspent outputs in the wallet to use
 * A list of destinations with address and coins specified, as well as optionally specifying hours
 * A configuration for how destination hours are distributed, either manual or automatic
 
@@ -781,6 +781,31 @@ Example request body with auto hours selection type, encrypted wallet, specified
 }
 ```
 
+Example request body with manual hours selection type, unencrypted wallet and spending specific unspent outputs:
+
+```json
+{
+    "hours_selection": {
+        "type": "manual"
+    },
+    "wallet": {
+        "id": "foo.wlt",
+        "unspents": ["519c069a0593e179f226e87b528f60aea72826ec7f99d51279dd8854889ed7e2", "4e4e41996297511a40e2ef0046bd6b7118a8362c1f4f09a288c5c3ea2f4dfb85"]
+    },
+    "change_address": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
+    "to": [{
+        "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+        "coins": "1.032",
+        "hours": 7
+    }, {
+        "address": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
+        "coins": "99.2",
+        "hours": 0
+    }]
+}
+```
+
+
 The `hours_selection` field has two types: `manual` or `auto`.
 
 If `manual`, all destination hours must be specified.
@@ -790,8 +815,12 @@ For the `"share"` mode, `share_factor` must also be set. This must be a decimal 
 In the auto share mode, the remaining hours after the fee are shared between the destination addresses as a whole,
 and the change address. Amongst the destination addresses, the shared hours are distributed proportionally.
 
-Note that if there are remaining coin hours as change, but no coins are available as change from the wallet,
-these remaining coin hours will be burned as an additional fee.
+When using the `auto` `"share"` `mode`, if there are remaining coin hours as change,
+but no coins are available as change from the wallet (which are needed to retain the coin hours as change),
+the `share_factor` will switch to `1.0` so that extra coin hours are distributed to the outputs
+instead of being burned as an additional fee.
+For the `manual` mode, if there are leftover coin hours but no coins to make change with,
+the leftover coin hours will be burned in addition to the required fee.
 
 All objects in `to` must be unique; a single transaction cannot create multiple outputs with the same `address`, `coins` and `hours`.
 
@@ -847,10 +876,22 @@ But this is an invalid value for `to`, if `hours_selection.type` is `"auto"`:
 }]
 ```
 
-If `wallet.addresses` is empty or not provided, then all addresses from the wallet will be considered to use
-for spending. To control which addresses may spend, specify the addresses in this field.
+To control which addresses to spend from, specify `wallet.addresses`.
+A subset of the unspent outputs associated with these addresses will be chosen for spending,
+based upon an internal selection algorithm.
 
-`change_address` must be set, but it is not required to be an address in the wallet.
+To control which unspent outputs to spend from, specify `wallet.unspents`.
+A subset of these unspent outputs will be chosen for spending,
+based upon an internal selection algorithm.
+
+`wallet.addresses` and `wallets.uxouts` cannot be combined.
+
+If neither `wallet.addresses` nor `wallet.unspents` are specified,
+then all outputs associated with all addresses in the wallet may be chosen from to spend with.
+
+`change_address` is optional.
+If set, it is not required to be an address in the wallet.
+If not set, it will default to one of the addresses associated with the unspent outputs being spent in the transaction.
 
 Example:
 

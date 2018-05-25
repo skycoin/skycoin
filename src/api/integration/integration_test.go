@@ -1,4 +1,4 @@
-// package integration_test implements GUI integration tests
+// package integration_test implements API integration tests
 package integration_test
 
 import (
@@ -199,7 +199,7 @@ func checkGoldenFile(t *testing.T, goldenFile string, td TestData) {
 	loadGoldenFile(t, goldenFile, td)
 	require.Equal(t, reflect.Indirect(reflect.ValueOf(td.expected)).Interface(), td.actual)
 
-	// Serialized expected to JSON and compare to the goldenFile's contents
+	// Serialize expected to JSON and compare to the goldenFile's contents
 	// This will detect field changes that could be missed otherwise
 	b, err := json.MarshalIndent(td.expected, "", "\t")
 	require.NoError(t, err)
@@ -1957,7 +1957,7 @@ func TestLiveWalletSpend(t *testing.T) {
 	}
 }
 
-func TestLiveWalletCreateTransaction(t *testing.T) {
+func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 	if !doLive(t) {
 		return
 	}
@@ -1971,19 +1971,54 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 	remainingHours := fee.RemainingHours(totalHours)
 	require.True(t, remainingHours > 1)
 
+	addresses := make([]string, len(w.Entries))
+	addressMap := make(map[string]struct{}, len(w.Entries))
+	for i, e := range w.Entries {
+		addresses[i] = e.Address.String()
+		addressMap[e.Address.String()] = struct{}{}
+	}
+
+	// Get all outputs
+	outputs, err := c.Outputs()
+	require.NoError(t, err)
+
+	// Split outputs into those held by the wallet and those not
+	var walletOutputHashes []string
+	var walletOutputs visor.ReadableOutputs
+	walletAuxs := make(map[string][]string)
+	var nonWalletOutputs visor.ReadableOutputs
+	for _, o := range outputs.HeadOutputs {
+		if _, ok := addressMap[o.Address]; ok {
+			walletOutputs = append(walletOutputs, o)
+			walletOutputHashes = append(walletOutputHashes, o.Hash)
+			walletAuxs[o.Address] = append(walletAuxs[o.Address], o.Hash)
+		} else {
+			nonWalletOutputs = append(nonWalletOutputs, o)
+		}
+	}
+
+	require.NotEmpty(t, walletOutputs)
+	require.NotEmpty(t, nonWalletOutputs)
+
+	unknownOutput := testutil.RandSHA256(t)
+
 	toDropletString := func(i uint64) string {
 		x, err := droplet.ToString(i)
 		require.NoError(t, err)
 		return x
 	}
 
+	defaultChangeAddress := w.Entries[0].Address.String()
+
 	type testCase struct {
-		name        string
-		req         api.CreateTransactionRequest
-		outputs     []coin.TransactionOutput
-		err         string
-		code        int
-		ignoreHours bool
+		name                 string
+		req                  api.CreateTransactionRequest
+		outputs              []coin.TransactionOutput
+		outputsSubset        []coin.TransactionOutput
+		err                  string
+		code                 int
+		ignoreHours          bool
+		additionalRespVerify func(t *testing.T, r *api.CreateTransactionResponse)
 	}
 
 	cases := []testCase{
@@ -1997,7 +2032,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 					ID:       w.Filename(),
 					Password: password,
 				},
-				ChangeAddress: w.Entries[0].Address.String(),
+				ChangeAddress: &defaultChangeAddress,
 				To: []api.Receiver{
 					{
 						Address: w.Entries[0].Address.String(),
@@ -2020,7 +2055,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 					ID:       w.Filename(),
 					Password: password,
 				},
-				ChangeAddress: w.Entries[0].Address.String(),
+				ChangeAddress: &defaultChangeAddress,
 				To: []api.Receiver{
 					{
 						Address: w.Entries[0].Address.String(),
@@ -2053,7 +2088,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 					ID:       w.Filename(),
 					Password: password,
 				},
-				ChangeAddress: w.Entries[0].Address.String(),
+				ChangeAddress: &defaultChangeAddress,
 				To: []api.Receiver{
 					{
 						Address: w.Entries[0].Address.String(),
@@ -2076,7 +2111,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 					ID:       w.Filename(),
 					Password: password,
 				},
-				ChangeAddress: w.Entries[0].Address.String(),
+				ChangeAddress: &defaultChangeAddress,
 				To: []api.Receiver{
 					{
 						Address: w.Entries[0].Address.String(),
@@ -2096,7 +2131,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 			// TODO -- Check that the wallet does not have an output of 0.001,
 			// because then this test cannot be performed, since there is no
 			// way to use all outputs and produce change in that case.
-			name: "valid request, manual one output with change",
+			name: "valid request, manual one output with change, spend all",
 			req: api.CreateTransactionRequest{
 				HoursSelection: api.HoursSelection{
 					Type: wallet.HoursSelectionTypeManual,
@@ -2105,7 +2140,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 					ID:       w.Filename(),
 					Password: password,
 				},
-				ChangeAddress: w.Entries[0].Address.String(),
+				ChangeAddress: &defaultChangeAddress,
 				To: []api.Receiver{
 					{
 						Address: w.Entries[1].Address.String(),
@@ -2129,6 +2164,75 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 		},
 
 		{
+			// NOTE: this test will fail if "totalCoins - 1e3" does not require
+			// all of the outputs to be spent, e.g. if there is an output with
+			// "totalCoins - 1e3" coins in it.
+			// TODO -- Check that the wallet does not have an output of 0.001,
+			// because then this test cannot be performed, since there is no
+			// way to use all outputs and produce change in that case.
+			name: "valid request, manual one output with change, spend all, unspecified change address",
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: api.CreateTransactionRequestWallet{
+					ID:       w.Filename(),
+					Password: password,
+				},
+				To: []api.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(totalCoins - 1e3),
+						Hours:   "1",
+					},
+				},
+			},
+			outputs: []coin.TransactionOutput{
+				{
+					Address: w.Entries[1].Address,
+					Coins:   totalCoins - 1e3,
+					Hours:   1,
+				},
+				{
+					// Address omitted -- will be check later in the test body
+					Coins: 1e3,
+					Hours: remainingHours - 1,
+				},
+			},
+		},
+
+		{
+			name: "valid request, manual one output with change, don't spend all",
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: api.CreateTransactionRequestWallet{
+					ID:       w.Filename(),
+					Password: password,
+				},
+				ChangeAddress: &defaultChangeAddress,
+				To: []api.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(1e3),
+						Hours:   "1",
+					},
+				},
+			},
+			outputsSubset: []coin.TransactionOutput{
+				{
+					Address: w.Entries[1].Address,
+					Coins:   1e3,
+					Hours:   1,
+				},
+				// NOTE: change omitted,
+				// change is too difficult to predict in this case, we are
+				// just checking that not all uxouts get spent in the transaction
+			},
+		},
+
+		{
 			name: "valid request, manual one output no change",
 			req: api.CreateTransactionRequest{
 				HoursSelection: api.HoursSelection{
@@ -2138,7 +2242,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 					ID:       w.Filename(),
 					Password: password,
 				},
-				ChangeAddress: w.Entries[0].Address.String(),
+				ChangeAddress: &defaultChangeAddress,
 				To: []api.Receiver{
 					{
 						Address: w.Entries[1].Address.String(),
@@ -2168,7 +2272,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 					ID:       w.Filename(),
 					Password: password,
 				},
-				ChangeAddress: w.Entries[0].Address.String(),
+				ChangeAddress: &defaultChangeAddress,
 				To: []api.Receiver{
 					{
 						Address: w.Entries[1].Address.String(),
@@ -2197,7 +2301,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 					ID:       w.Filename(),
 					Password: password,
 				},
-				ChangeAddress: w.Entries[0].Address.String(),
+				ChangeAddress: &defaultChangeAddress,
 				To: []api.Receiver{
 					{
 						Address: w.Entries[1].Address.String(),
@@ -2225,6 +2329,208 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 			},
 			ignoreHours: true, // the hours are too unpredictable
 		},
+
+		{
+			name: "uxout does not exist",
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: api.CreateTransactionRequestWallet{
+					ID:       w.Filename(),
+					Password: password,
+					UxOuts:   []string{unknownOutput.Hex()},
+				},
+				ChangeAddress: &defaultChangeAddress,
+				To: []api.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(totalCoins),
+						Hours:   "1",
+					},
+				},
+			},
+			err:  fmt.Sprintf("400 Bad Request - unspent output of %s does not exist\n", unknownOutput.Hex()),
+			code: http.StatusBadRequest,
+		},
+
+		{
+			name: "uxout not held by the wallet",
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: api.CreateTransactionRequestWallet{
+					ID:       w.Filename(),
+					Password: password,
+					UxOuts:   []string{nonWalletOutputs[0].Hash},
+				},
+				ChangeAddress: &defaultChangeAddress,
+				To: []api.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(totalCoins),
+						Hours:   "1",
+					},
+				},
+			},
+			err:  "400 Bad Request - uxout is not owned by any address in the wallet\n",
+			code: http.StatusBadRequest,
+		},
+
+		{
+			name: "insufficient balance with uxouts",
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: api.CreateTransactionRequestWallet{
+					ID:       w.Filename(),
+					Password: password,
+					UxOuts:   []string{walletOutputs[0].Hash},
+				},
+				ChangeAddress: &defaultChangeAddress,
+				To: []api.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(totalCoins + 1e3),
+						Hours:   "1",
+					},
+				},
+			},
+			err:  "400 Bad Request - balance is not sufficient\n",
+			code: http.StatusBadRequest,
+		},
+
+		{
+			// NOTE: expects wallet to have multiple outputs with non-zero coins
+			name: "insufficient hours with uxouts",
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: api.CreateTransactionRequestWallet{
+					ID:       w.Filename(),
+					Password: password,
+					UxOuts:   []string{walletOutputs[0].Hash},
+				},
+				ChangeAddress: &defaultChangeAddress,
+				To: []api.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(1e3),
+						Hours:   fmt.Sprint(totalHours + 1),
+					},
+				},
+			},
+			err:  "400 Bad Request - hours are not sufficient\n",
+			code: http.StatusBadRequest,
+		},
+
+		{
+			name: "valid request, uxouts specified",
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: api.CreateTransactionRequestWallet{
+					ID:       w.Filename(),
+					Password: password,
+					// NOTE: all uxouts are provided, which has the same behavior as
+					// not providing any uxouts or addresses.
+					// Using a subset of uxouts makes the wallet setup very
+					// difficult, especially to make deterministic, in the live test
+					// More complex cases should be covered by unit tests
+					UxOuts: walletOutputHashes,
+				},
+				ChangeAddress: &defaultChangeAddress,
+				To: []api.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(totalCoins - 1e3),
+						Hours:   "1",
+					},
+				},
+			},
+			outputs: []coin.TransactionOutput{
+				{
+					Address: w.Entries[1].Address,
+					Coins:   totalCoins - 1e3,
+					Hours:   1,
+				},
+				{
+					Address: w.Entries[0].Address,
+					Coins:   1e3,
+					Hours:   remainingHours - 1,
+				},
+			},
+			additionalRespVerify: func(t *testing.T, r *api.CreateTransactionResponse) {
+				require.Equal(t, len(walletOutputHashes), len(r.Transaction.In))
+			},
+		},
+
+		{
+			name: "specified addresses not in wallet",
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: api.CreateTransactionRequestWallet{
+					ID:        w.Filename(),
+					Password:  password,
+					Addresses: []string{testutil.MakeAddress().String()},
+				},
+				ChangeAddress: &defaultChangeAddress,
+				To: []api.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(totalCoins),
+						Hours:   "1",
+					},
+				},
+			},
+			err:  "400 Bad Request - address not found in wallet\n",
+			code: http.StatusBadRequest,
+		},
+
+		{
+			name: "valid request, addresses specified",
+			req: api.CreateTransactionRequest{
+				HoursSelection: api.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: api.CreateTransactionRequestWallet{
+					ID:       w.Filename(),
+					Password: password,
+					// NOTE: all addresses are provided, which has the same behavior as
+					// not providing any addresses.
+					// Using a subset of addresses makes the wallet setup very
+					// difficult, especially to make deterministic, in the live test
+					// More complex cases should be covered by unit tests
+					Addresses: addresses,
+				},
+				ChangeAddress: &defaultChangeAddress,
+				To: []api.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(totalCoins - 1e3),
+						Hours:   "1",
+					},
+				},
+			},
+			outputs: []coin.TransactionOutput{
+				{
+					Address: w.Entries[1].Address,
+					Coins:   totalCoins - 1e3,
+					Hours:   1,
+				},
+				{
+					Address: w.Entries[0].Address,
+					Coins:   1e3,
+					Hours:   remainingHours - 1,
+				},
+			},
+		},
 	}
 
 	if w.IsEncrypted() {
@@ -2238,7 +2544,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 					ID:       w.Filename(),
 					Password: password + "foo",
 				},
-				ChangeAddress: w.Entries[0].Address.String(),
+				ChangeAddress: &defaultChangeAddress,
 				To: []api.Receiver{
 					{
 						Address: w.Entries[0].Address.String(),
@@ -2261,7 +2567,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 					ID:       w.Filename(),
 					Password: "",
 				},
-				ChangeAddress: w.Entries[0].Address.String(),
+				ChangeAddress: &defaultChangeAddress,
 				To: []api.Receiver{
 					{
 						Address: w.Entries[0].Address.String(),
@@ -2285,7 +2591,7 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 					ID:       w.Filename(),
 					Password: password + "foo",
 				},
-				ChangeAddress: w.Entries[0].Address.String(),
+				ChangeAddress: &defaultChangeAddress,
 				To: []api.Receiver{
 					{
 						Address: w.Entries[0].Address.String(),
@@ -2301,6 +2607,8 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			require.False(t, len(tc.outputs) != 0 && len(tc.outputsSubset) != 0, "outputs and outputsSubset can't both be set")
+
 			result, err := c.CreateTransaction(tc.req)
 			if tc.err != "" {
 				assertResponseError(t, err, tc.code, tc.err)
@@ -2309,10 +2617,36 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 
 			require.NoError(t, err)
 
-			require.Equal(t, len(tc.outputs), len(result.Transaction.Out))
+			d, err := json.MarshalIndent(result, "", "    ")
+			require.NoError(t, err)
+			fmt.Println(string(d))
+
+			if len(tc.outputsSubset) == 0 {
+				require.Equal(t, len(tc.outputs), len(result.Transaction.Out))
+			}
 
 			for i, o := range tc.outputs {
-				require.Equal(t, o.Address.String(), result.Transaction.Out[i].Address)
+				// The final change output may not have the address specified,
+				// if the ChangeAddress was not specified in the wallet params.
+				// Calculate it automatically based upon the transaction inputs
+				if o.Address.Null() {
+					require.Equal(t, i, len(tc.outputs)-1)
+					require.Nil(t, tc.req.ChangeAddress)
+
+					changeAddr := result.Transaction.Out[i].Address
+					// The changeAddr must be associated with one of the transaction inputs
+					changeAddrFound := false
+					for _, x := range result.Transaction.In {
+						if changeAddr == x.Address {
+							changeAddrFound = true
+							break
+						}
+					}
+
+					require.True(t, changeAddrFound)
+				} else {
+					require.Equal(t, o.Address.String(), result.Transaction.Out[i].Address)
+				}
 
 				coins, err := droplet.FromString(result.Transaction.Out[i].Coins)
 				require.NoError(t, err)
@@ -2331,6 +2665,10 @@ func TestLiveWalletCreateTransaction(t *testing.T) {
 
 			if tc.req.HoursSelection.Type == wallet.HoursSelectionTypeManual {
 				assertRequestedHours(t, tc.req.To, result.Transaction.Out)
+			}
+
+			if tc.additionalRespVerify != nil {
+				tc.additionalRespVerify(t, result)
 			}
 		})
 	}
@@ -2499,7 +2837,7 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 				Mode:        wallet.HoursSelectionModeShare,
 				ShareFactor: shareFactor,
 			},
-			ChangeAddress: changeAddress,
+			ChangeAddress: &changeAddress,
 			Wallet: api.CreateTransactionRequestWallet{
 				ID:       w.Filename(),
 				Password: password,
@@ -2521,7 +2859,7 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 				Mode:        wallet.HoursSelectionModeShare,
 				ShareFactor: "0",
 			},
-			ChangeAddress: changeAddress,
+			ChangeAddress: &changeAddress,
 			Wallet: api.CreateTransactionRequestWallet{
 				ID:       w.Filename(),
 				Password: password,
@@ -2548,7 +2886,7 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 				Mode:        wallet.HoursSelectionModeShare,
 				ShareFactor: "1",
 			},
-			ChangeAddress: changeAddress,
+			ChangeAddress: &changeAddress,
 			Wallet: api.CreateTransactionRequestWallet{
 				ID:       w.Filename(),
 				Password: password,
@@ -2573,7 +2911,7 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 			HoursSelection: api.HoursSelection{
 				Type: wallet.HoursSelectionTypeManual,
 			},
-			ChangeAddress: changeAddress,
+			ChangeAddress: &changeAddress,
 			Wallet: api.CreateTransactionRequestWallet{
 				ID:       w.Filename(),
 				Password: password,
@@ -3250,6 +3588,8 @@ func TestDisableWalletApi(t *testing.T) {
 		return
 	}
 
+	changeAddress := testutil.MakeAddress().String()
+
 	type testCase struct {
 		name        string
 		method      string
@@ -3416,10 +3756,10 @@ func TestDisableWalletApi(t *testing.T) {
 					Wallet: api.CreateTransactionRequestWallet{
 						ID: "test.wlt",
 					},
-					ChangeAddress: testutil.MakeAddress().String(),
+					ChangeAddress: &changeAddress,
 					To: []api.Receiver{
 						{
-							Address: testutil.MakeAddress().String(),
+							Address: changeAddress,
 							Coins:   "0.001",
 							Hours:   "1",
 						},

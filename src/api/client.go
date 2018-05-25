@@ -490,13 +490,14 @@ func (c *Client) Spend(id, dst string, coins uint64, password string) (*SpendRes
 type CreateTransactionRequest struct {
 	HoursSelection HoursSelection                 `json:"hours_selection"`
 	Wallet         CreateTransactionRequestWallet `json:"wallet"`
-	ChangeAddress  string                         `json:"change_address"`
+	ChangeAddress  *string                        `json:"change_address,omitempty"`
 	To             []Receiver                     `json:"to"`
 }
 
 // CreateTransactionRequestWallet defines a wallet to spend from and optionally which addresses in the wallet
 type CreateTransactionRequestWallet struct {
 	ID        string   `json:"id"`
+	UxOuts    []string `json:"unspents,omitempty"`
 	Addresses []string `json:"addresses,omitempty"`
 	Password  string   `json:"password"`
 }

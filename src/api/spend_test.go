@@ -17,12 +17,14 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil" //http,json helpers
 	"github.com/skycoin/skycoin/src/util/fee"
+	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
 func TestCreateTransaction(t *testing.T) {
 	type rawRequestWallet struct {
 		ID        string   `json:"id"`
+		UxOuts    []string `json:"unspents,omitempty"`
 		Addresses []string `json:"addresses,omitempty"`
 		Password  string   `json:"password"`
 	}
@@ -102,6 +104,8 @@ func TestCreateTransaction(t *testing.T) {
 			ID: "foo.wlt",
 		},
 	}
+
+	walletInput := testutil.RandSHA256(t)
 
 	tt := []struct {
 		name                           string
@@ -263,18 +267,6 @@ func TestCreateTransaction(t *testing.T) {
 		},
 
 		{
-			name:   "400 - missing change address",
-			method: http.MethodPost,
-			body: &rawRequest{
-				HoursSelection: rawHoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
-				},
-			},
-			status: http.StatusBadRequest,
-			err:    "400 Bad Request - missing change_address",
-		},
-
-		{
 			name:   "400 - invalid change address",
 			method: http.MethodPost,
 			body: &rawRequest{
@@ -297,7 +289,7 @@ func TestCreateTransaction(t *testing.T) {
 				ChangeAddress: emptyAddress.String(),
 			},
 			status: http.StatusBadRequest,
-			err:    "400 Bad Request - change_address is an empty address",
+			err:    "400 Bad Request - change_address must not be the null address",
 		},
 
 		{
@@ -621,6 +613,82 @@ func TestCreateTransaction(t *testing.T) {
 		},
 
 		{
+			name:   "400 - both wallet uxouts and wallet addresses specified",
+			method: http.MethodPost,
+			body: &rawRequest{
+				HoursSelection: rawHoursSelection{
+					Type:        wallet.HoursSelectionTypeAuto,
+					Mode:        wallet.HoursSelectionModeShare,
+					ShareFactor: newStrPtr("0.5"),
+				},
+				ChangeAddress: changeAddress.String(),
+				Wallet: rawRequestWallet{
+					ID:        "foo.wlt",
+					Addresses: []string{destinationAddress.String()},
+					UxOuts:    []string{walletInput.Hex()},
+				},
+				To: []rawReceiver{
+					{
+						Address: destinationAddress.String(),
+						Coins:   "1.2",
+					},
+				},
+			},
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - wallet.unspents and wallet.addresses cannot be combined",
+		},
+
+		{
+			name:   "400 - duplicate wallet uxouts",
+			method: http.MethodPost,
+			body: &rawRequest{
+				HoursSelection: rawHoursSelection{
+					Type:        wallet.HoursSelectionTypeAuto,
+					Mode:        wallet.HoursSelectionModeShare,
+					ShareFactor: newStrPtr("0.5"),
+				},
+				ChangeAddress: changeAddress.String(),
+				Wallet: rawRequestWallet{
+					ID:     "foo.wlt",
+					UxOuts: []string{walletInput.Hex(), walletInput.Hex()},
+				},
+				To: []rawReceiver{
+					{
+						Address: destinationAddress.String(),
+						Coins:   "1.2",
+					},
+				},
+			},
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - wallet.unspents contains duplicate values",
+		},
+
+		{
+			name:   "400 - duplicate wallet addresses",
+			method: http.MethodPost,
+			body: &rawRequest{
+				HoursSelection: rawHoursSelection{
+					Type:        wallet.HoursSelectionTypeAuto,
+					Mode:        wallet.HoursSelectionModeShare,
+					ShareFactor: newStrPtr("0.5"),
+				},
+				ChangeAddress: changeAddress.String(),
+				Wallet: rawRequestWallet{
+					ID:        "foo.wlt",
+					Addresses: []string{destinationAddress.String(), destinationAddress.String()},
+				},
+				To: []rawReceiver{
+					{
+						Address: destinationAddress.String(),
+						Coins:   "1.2",
+					},
+				},
+			},
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - wallet.addresses contains duplicate values",
+		},
+
+		{
 			name:   "200 - auto type split even",
 			method: http.MethodPost,
 			body: &rawRequest{
@@ -732,6 +800,15 @@ func TestCreateTransaction(t *testing.T) {
 			status: http.StatusBadRequest,
 			gatewayCreateTransactionErr: fee.ErrTxnInsufficientCoinHours,
 			err: "400 Bad Request - Insufficient coinhours for transaction outputs",
+		},
+
+		{
+			name:   "400 - uxout doesn't exist",
+			method: http.MethodPost,
+			body:   validBody,
+			status: http.StatusBadRequest,
+			gatewayCreateTransactionErr: blockdb.NewErrUnspentNotExist("foo"),
+			err: "400 Bad Request - unspent output of foo does not exist",
 		},
 
 		{

@@ -7,7 +7,7 @@ import iputil "github.com/skycoin/skycoin/src/util/iputil"
   #include <string.h>
   #include <stdlib.h>
 
-  #include "../../include/skytypes.h"
+  #include "skytypes.h"
 */
 import "C"
 

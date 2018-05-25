@@ -7,7 +7,7 @@ import browser "github.com/skycoin/skycoin/src/util/browser"
   #include <string.h>
   #include <stdlib.h>
 
-  #include "../../include/skytypes.h"
+  #include "skytypes.h"
 */
 import "C"
 

@@ -14,7 +14,7 @@ import (
   #include <string.h>
   #include <stdlib.h>
 
-  #include "../../include/skytypes.h"
+  #include "skytypes.h"
 */
 import "C"
 

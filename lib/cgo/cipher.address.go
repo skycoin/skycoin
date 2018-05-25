@@ -12,7 +12,7 @@ import (
 #include <stdlib.h>
 #include "skytypes.h"
 
-  #include "../../include/skytypes.h"
+  #include "skytypes.h"
 */
 import "C"
 

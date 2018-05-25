@@ -322,7 +322,7 @@ func verifyTxnHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 		}
 
-		if len(inputs) > 0 {
+		if len(inputs) == len(txn.In) {
 			rspData := VerifyTxnResponse{
 				Transaction: newCreatedTransaction(txn, inputs),
 				Confirmed:   isTxnConfirmed,

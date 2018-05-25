@@ -9,7 +9,9 @@ import (
 	"io/ioutil"
 	"math"
 	"math/rand"
+	"reflect"
 	"testing"
+	"testing/quick"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -1416,6 +1418,160 @@ func TestWalletChooseSpendsMinimizeUxOutsRandom(t *testing.T) {
 	}
 }
 
+func TestWalletChooseSpendsFuzzing(t *testing.T) {
+	f := func(uxb []UxBalance, coins, hours uint64) bool {
+		var haveZero, haveNonzero int
+		for _, ux := range uxb {
+			if ux.Hours == 0 {
+				haveZero++
+			} else {
+				haveNonzero++
+			}
+		}
+
+		var totalCoins, totalHours uint64
+		for _, ux := range uxb {
+			totalCoins += ux.Coins
+			totalHours += ux.Hours
+		}
+		var sortFunc func(uxa []UxBalance)
+		var cmpCoins func(i, j UxBalance) bool
+		if rand.Intn(100)%2 == 0 {
+			sortFunc = sortSpendsCoinsLowToHigh
+			cmpCoins = func(a, b UxBalance) bool {
+				return a.Coins <= b.Coins
+			}
+		} else {
+			sortFunc = sortSpendsCoinsHighToLow
+			cmpCoins = func(a, b UxBalance) bool {
+				return a.Coins >= b.Coins
+			}
+		}
+		chosen, err := ChooseSpends(uxb, coins, hours, sortFunc)
+
+		if coins == 0 {
+			return testutil.EqualError(err, ErrZeroSpend.Error())
+		}
+
+		if len(uxb) == 0 {
+			return testutil.EqualError(err, ErrNoUnspents.Error())
+		}
+		if totalHours == 0 {
+			return testutil.EqualError(err, fee.ErrTxnNoFee.Error())
+		}
+		if coins > totalCoins {
+			return testutil.EqualError(err, ErrInsufficientBalance.Error())
+		}
+		if err != nil {
+			return false
+		}
+
+		if len(chosen) == 0 {
+			return false
+		}
+		// Check that there are no duplicated spends chosen
+		uxMap := make(map[UxBalance]struct{}, len(chosen))
+		for _, ux := range chosen {
+			_, ok := uxMap[ux]
+			if ok {
+				return false
+			}
+			uxMap[ux] = struct{}{}
+		}
+
+		// The first chosen spend should have non-zero coin hours
+		if uint64(0) == chosen[0].Hours {
+			return false
+		}
+
+		// Outputs with zero hours should come before any outputs with non-zero hours,
+		// except for the first output
+		for i := range chosen {
+			if i <= 1 {
+				continue
+			}
+
+			a := chosen[i-1]
+			b := chosen[i]
+
+			if b.Hours == 0 {
+				if uint64(0) != a.Hours {
+					return false
+				}
+			}
+		}
+
+		// The initial UxBalance with hours should have more or equal coins than any other UxBalance with hours
+		// If it has equal coins, it should have less hours
+		for _, ux := range chosen[1:] {
+			if ux.Hours != 0 {
+				if chosen[0].Coins < ux.Coins {
+					return false
+				}
+
+				if chosen[0].Coins == ux.Coins {
+					if chosen[0].Hours > ux.Hours {
+						return false
+					}
+				}
+			}
+		}
+
+		var zeroBalances, nonzeroBalances []UxBalance
+		for _, ux := range chosen[1:] {
+			if ux.Hours == 0 {
+				zeroBalances = append(zeroBalances, ux)
+			} else {
+				nonzeroBalances = append(nonzeroBalances, ux)
+			}
+		}
+
+		// Amongst the UxBalances with zero hours, they should be sorted as specified
+		ok := verifySortedCoinsFuzz(zeroBalances, cmpCoins)
+		if !ok {
+			return false
+		}
+
+		// Amongst the UxBalances with non-zero hours, they should be sorted as specified
+		ok = verifySortedCoinsFuzz(nonzeroBalances, cmpCoins)
+		if !ok {
+			return false
+		}
+
+		// If there are any extra UxBalances with non-zero hours, all of the zeros should have been chosen
+		if len(nonzeroBalances) > 0 {
+			if haveZero != len(zeroBalances) {
+				return false
+			}
+		}
+
+		// Excessive UxBalances to satisfy the amount requested should not be included
+		var haveCoins uint64
+		for i, ux := range chosen {
+			haveCoins += ux.Coins
+			if haveCoins >= coins {
+				if len(chosen)-1 != i {
+					return false
+				}
+			}
+		}
+
+		return true
+	}
+	cfg := &quick.Config{
+		MaxCount: 1000000,
+		Rand:     rand.New(rand.NewSource(time.Now().Unix())),
+		Values: func(args []reflect.Value, rand *rand.Rand) {
+			uxb := makeRandomUxBalances(t)
+			args[0] = reflect.ValueOf(uxb)
+			args[1] = reflect.ValueOf(uint64(rand.Intn(100000)))
+			args[2] = reflect.ValueOf(uint64(0))
+		},
+	}
+	err := quick.Check(f, cfg)
+	require.NoError(t, err)
+}
+
 func TestRemoveBackupFiles(t *testing.T) {
 	type wltInfo struct {
 		wltName string
@@ -1852,6 +2008,46 @@ func verifyChosenCoins(t *testing.T, uxb []UxBalance, coins uint64, chooseSpends
 			require.Equal(t, len(chosen)-1, i)
 		}
 	}
+}
+
+func verifySortedCoinsFuzz(uxb []UxBalance, cmpCoins func(a, b UxBalance) bool) bool {
+	if len(uxb) <= 1 {
+		return true
+	}
+
+	for i := range uxb {
+		if i == 0 {
+			continue
+		}
+
+		a := uxb[i-1]
+		b := uxb[i]
+
+		if !cmpCoins(a, b) {
+			log.Printf("fail on a: %#v, b: %#v", a, b)
+			return false
+		}
+
+		if a.Coins == b.Coins {
+			if a.Hours > b.Hours {
+				return false
+			}
+
+			if a.Hours == b.Hours {
+				if a.BkSeq > b.BkSeq {
+					return false
+				}
+
+				if a.BkSeq == b.BkSeq {
+					cmp := bytes.Compare(a.Hash[:], b.Hash[:])
+					if cmp >= 0 {
+						return false
+					}
+				}
+			}
+		}
+	}
+	return true
 }
 
 func verifySortedCoins(t *testing.T, uxb []UxBalance, cmpCoins func(a, b UxBalance) bool) {

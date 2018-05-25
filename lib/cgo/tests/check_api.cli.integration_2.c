@@ -86,7 +86,6 @@ Test(api_cli_integration, TestGenerateAddresses) {
   unsigned char expectCmd[BUFFER_SIZE];
 
   strcpy(cmd, "boxfort-worker generateAddresses");
-  // strcpy(expectCmd, "7g3M372kxwNwwQEAmrronu4anXTW8aD1XC\n");
   tt[0].name = "generateAddresses";
   tt[0].encrypted = false;
   strcpy(tt[0].args, cmd);
@@ -144,9 +143,6 @@ Test(api_cli_integration, TestGenerateAddresses) {
   // Get redirected standard output
   getStdOut(output, BUFFER_SIZE);
   cr_assert(errcode == SKY_OK, "SKY_cli_App_Run failed");
-
-  // printf("Outputs by %s: %s\n",tt[i].name, output);
-  // printf("expectOutput by %s : %s\n",tt[i].name, tt[i].expectOutput);
 
   GoSlice Outputs = {output, strlen(output), strlen(output)};
   GoSlice expectOutput = {tt[i].expectOutput, strlen(tt[i].expectOutput),
@@ -230,20 +226,20 @@ Test(api_cli_integration, TestVerifyAddress) {
 }
 
 Test(cli_integration, TestDecodeRawTransaction) {
-
-  int lenStruct = 1;
+  int lenStruct = 2;
 
   struct testStruct {
-    unsigned char *name;
+    unsigned char name[BUFFER_SIZE];
     char rawTx[BUFFER_SIZE];
     char errMsg[BUFFER_SIZE];
-    unsigned char *goldenFile;
+    unsigned char goldenFile[BUFFER_SIZE];
     const char args[BUFFER_SIZE];
+    int error;
   };
 
   struct testStruct tt[lenStruct];
 
-  tt[0].name = "success";
+  strcpy(tt[0].name, "success");
   strcpy(tt[0].rawTx,
          "2601000000a1d3345ac47f897f24084b1c6b9bd6e03fc92887050d0748bdab5e639c1"
          "fdcd401000000a2a10f07e0e06cf6ba3e793b3186388a126591ee230b3f387617f1cc"
@@ -254,7 +250,7 @@ Test(cli_integration, TestDecodeRawTransaction) {
          "0a000000001c12000000000000008829025fe45b48f29795893a642bdaa89b2bb40e4"
          "0d2df03000000001c12000000000000008001532c3a705e7e62bb0bb80630ecc21a87"
          "ec09c0fc9b01000000001b12000000000000");
-  tt[0].goldenFile = "decode-raw-transaction.golden";
+  strcpy(tt[0].goldenFile, "decode-raw-transaction.golden");
   strcpy(tt[0].errMsg, "");
   strcpy(tt[0].args,
          "boxfort-worker decodeRawTransaction "
@@ -268,15 +264,18 @@ Test(cli_integration, TestDecodeRawTransaction) {
          "0d2df03000000001c12000000000000008001532c3a705e7e62bb0bb80630ecc21a87"
          "ec09c0fc9b01000000001b12000000000000");
 
-  tt[1].name = "invalid raw transaction";
+  tt[0].error = 0;
+
+  strcpy(tt[1].name, "invalid raw transaction");
   strcpy(tt[1].rawTx, "2601000000a1d");
-  tt[1].goldenFile = "decode-raw-transaction.golden";
+  strcpy(tt[1].goldenFile, "decode-raw-transaction.golden");
   strcpy(tt[1].errMsg, "invalid raw transaction: encoding/hex: odd length hex "
                        "string\nencoding/hex: odd length hex string\n");
   strcpy(tt[1].args, "boxfort-worker decodeRawTransaction 2601000000a1d");
+  tt[1].error = -1;
 
   GoInt32 errcode;
-  char *output[BUFFER_SIZE];
+  char output[JSON_BIG_FILE_SIZE];
   for (int i = 0; i < lenStruct; ++i) {
     // int i = 0;
     Config__Handle configHandle;
@@ -289,24 +288,36 @@ Test(cli_integration, TestDecodeRawTransaction) {
     registerHandleClose(appHandle);
 
     // Redirect standard output to a pipe
-    unsigned char buffArgs[BUFFER_SIZE];
+    unsigned char buffArgs[JSON_BIG_FILE_SIZE];
     GoString Args = {tt[i].args, strlen(tt[i].args)};
     redirectStdOut();
     errcode = SKY_cli_App_Run(&appHandle, Args);
+
     // Get redirected standard output
-    getStdOut(output, BUFFER_SIZE);
-    cr_assert(errcode == 0);
+    getStdOut(output, JSON_BIG_FILE_SIZE);
+    cr_assert(errcode == tt[i].error, "Error  AppRun in %s", tt[i].name);
     // JSON parse output
-    json_char *json;
 
-    json_value *value;
-    json_value *json_str;
-    int result;
-    json = (json_char *)&output;
-    value = json_parse(json, strlen(output));
+    if (tt[i].error == 0) {
+      json_char *json;
+      json_value *value;
+      json_value *json_str;
+      int result;
+      json = (json_char *)output;
+      value = json_parse(json, strlen(output));
+      cr_assert(value != NULL, "Failed to json parse in %s", tt[i].name);
+      registerJsonFree(value);
 
-    printf("%d \n", value);
-    cr_assert(value == 0, "Failed to json parse in %s", tt[i].name);
-    registerJsonFree(value);
+      unsigned char goldenFileURL[BUFFER_SIZE];
+      strcpy(goldenFileURL, TEST_DATA_DIR);
+      strcat(goldenFileURL, tt[i].goldenFile);
+      json_value *expect = loadJsonFile(goldenFileURL);
+      cr_assert(expect != NULL, "Failed to json parse in test :%s", tt[i].name);
+      registerJsonFree(expect);
+
+      cr_assert(compareJsonValues(expect, value) == 1,
+                "compareJsonValues  in : %s", tt[i].name);
+      strcpy(output, "");
+    }
   }
 }

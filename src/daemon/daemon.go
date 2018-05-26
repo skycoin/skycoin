@@ -51,6 +51,8 @@ var (
 	// e.g. net.Conn.Addr() returns an invalid ip:port
 	ErrDisconnectOtherError                  gnet.DisconnectReason = errors.New("Incomprehensible error")
 	ErrDisconnectMaxDefaultConnectionReached                       = errors.New("Maximum number of default connections was reached")
+	// ErrDisconnectMaxOutgoingConnectionsReached is returned when connection pool size is greater than the maximum allowed
+	ErrDisconnectMaxOutgoingConnectionsReached gnet.DisconnectReason = errors.New("Maximum outgoing connections was reached")
 
 	logger = logging.MustGetLogger("daemon")
 )
@@ -716,7 +718,7 @@ func (dm *Daemon) connectToRandomPeer() {
 	}
 
 	// Make a connection to a random (public) peer
-	peers := dm.Pex.RandomPublic(0)
+	peers := dm.Pex.RandomPublic(dm.Config.OutgoingMax)
 	for _, p := range peers {
 		// Check if the peer has public port
 		if p.HasIncomingPort {
@@ -867,6 +869,19 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 	dm.recordIPCount(a)
 
 	if e.Solicited {
+		// Disconnect if the max outgoing connections is reached
+		n, err := dm.Pool.Pool.OutgoingConnectionsNum()
+		if err != nil {
+			logger.WithError(err).Error("get outgoing connections number failed")
+			return
+		}
+
+		if n > dm.Config.OutgoingMax {
+			logger.Warningf("max outgoing connections is reached, disconnecting %v", a)
+			dm.Pool.Pool.Disconnect(a, ErrDisconnectMaxOutgoingConnectionsReached)
+			return
+		}
+
 		dm.outgoingConnections.Add(a)
 	}
 

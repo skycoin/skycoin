@@ -268,7 +268,7 @@ var devConfig = Config{
 	//gnet uses this for TCP incoming and outgoing
 	Port: 6000,
 	// MaxOutgoingConnections is the maximum outgoing connections allowed.
-	MaxOutgoingConnections: 16,
+	MaxOutgoingConnections: 8,
 	// MaxDefaultOutgoingConnections is the maximum default outgoing connections allowed.
 	MaxDefaultPeerOutgoingConnections: 1,
 	DownloadPeerList:                  false,

@@ -182,7 +182,7 @@ func (gw *Gateway) getConnection(addr string) *Connection {
 		Addr:         addr,
 		LastSent:     c.LastSent.Unix(),
 		LastReceived: c.LastReceived.Unix(),
-		Outgoing:     !gw.d.outgoingConnections.Get(addr),
+		Outgoing:     gw.d.outgoingConnections.Get(addr),
 		Introduced:   !gw.d.needsIntro(addr),
 		Mirror:       mirror,
 		ListenPort:   gw.d.GetListenPort(addr),

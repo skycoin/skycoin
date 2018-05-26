@@ -1,6 +1,8 @@
 package daemon
 
 import (
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -34,7 +36,6 @@ func NewGatewayConfig() GatewayConfig {
 // Gateway RPC interface wrapper for daemon state
 type Gateway struct {
 	Config GatewayConfig
-	drpc   RPC
 
 	// Backref to Daemon
 	d *Daemon
@@ -49,9 +50,8 @@ type Gateway struct {
 func NewGateway(c GatewayConfig, d *Daemon) *Gateway {
 	return &Gateway{
 		Config:   c,
-		drpc:     RPC{},
 		d:        d,
-		v:        d.Visor.v,
+		v:        d.Visor,
 		requests: make(chan strand.Request, c.BufferSize),
 		quit:     make(chan struct{}),
 	}
@@ -72,20 +72,78 @@ func (gw *Gateway) strand(name string, f func()) {
 	}, gw.quit, nil)
 }
 
+// Connection a connection's state within the daemon
+type Connection struct {
+	ID           int    `json:"id"`
+	Addr         string `json:"address"`
+	LastSent     int64  `json:"last_sent"`
+	LastReceived int64  `json:"last_received"`
+	// Whether the connection is from us to them (true, outgoing),
+	// or from them to us (false, incoming)
+	Outgoing bool `json:"outgoing"`
+	// Whether the client has identified their version, mirror etc
+	Introduced bool   `json:"introduced"`
+	Mirror     uint32 `json:"mirror"`
+	ListenPort uint16 `json:"listen_port"`
+}
+
+// Connections an array of connections
+// Arrays must be wrapped in structs to avoid certain javascript exploits
+type Connections struct {
+	Connections []*Connection `json:"connections"`
+}
+
 // GetConnections returns a *Connections
 func (gw *Gateway) GetConnections() *Connections {
 	var conns *Connections
 	gw.strand("GetConnections", func() {
-		conns = gw.drpc.GetConnections(gw.d)
+		conns = gw.getConnections()
 	})
 	return conns
+}
+
+func (gw *Gateway) getConnections() *Connections {
+	if gw.d.Pool.Pool == nil {
+		return nil
+	}
+
+	n, err := gw.d.Pool.Pool.Size()
+	if err != nil {
+		logger.Error(err)
+		return nil
+	}
+
+	conns := make([]*Connection, 0, n)
+	cs, err := gw.d.Pool.Pool.GetConnections()
+	if err != nil {
+		logger.Error(err)
+		return nil
+	}
+
+	for _, c := range cs {
+		if c.Solicited {
+			conn := gw.getConnection(c.Addr())
+			if conn != nil {
+				conns = append(conns, conn)
+			}
+		}
+	}
+
+	// Sort connnections by IP address
+	sort.Slice(conns, func(i, j int) bool {
+		return strings.Compare(conns[i].Addr, conns[j].Addr) < 0
+	})
+
+	return &Connections{Connections: conns}
+
 }
 
 // GetDefaultConnections returns default connections
 func (gw *Gateway) GetDefaultConnections() []string {
 	var conns []string
 	gw.strand("GetDefaultConnections", func() {
-		conns = gw.drpc.GetDefaultConnections(gw.d)
+		conns = make([]string, len(gw.d.DefaultConnections))
+		copy(conns[:], gw.d.DefaultConnections[:])
 	})
 	return conns
 }
@@ -94,9 +152,41 @@ func (gw *Gateway) GetDefaultConnections() []string {
 func (gw *Gateway) GetConnection(addr string) *Connection {
 	var conn *Connection
 	gw.strand("GetConnection", func() {
-		conn = gw.drpc.GetConnection(gw.d, addr)
+		conn = gw.getConnection(addr)
 	})
 	return conn
+}
+
+func (gw *Gateway) getConnection(addr string) *Connection {
+	if gw.d.Pool.Pool == nil {
+		return nil
+	}
+
+	c, err := gw.d.Pool.Pool.GetConnection(addr)
+	if err != nil {
+		logger.Error(err)
+		return nil
+	}
+
+	if c == nil {
+		return nil
+	}
+
+	mirror, exist := gw.d.connectionMirrors.Get(addr)
+	if !exist {
+		return nil
+	}
+
+	return &Connection{
+		ID:           c.ID,
+		Addr:         addr,
+		LastSent:     c.LastSent.Unix(),
+		LastReceived: c.LastReceived.Unix(),
+		Outgoing:     !gw.d.outgoingConnections.Get(addr),
+		Introduced:   !gw.d.needsIntro(addr),
+		Mirror:       mirror,
+		ListenPort:   gw.d.GetListenPort(addr),
+	}
 }
 
 // GetTrustConnections returns all trusted connections,
@@ -104,7 +194,7 @@ func (gw *Gateway) GetConnection(addr string) *Connection {
 func (gw *Gateway) GetTrustConnections() []string {
 	var conn []string
 	gw.strand("GetTrustConnections", func() {
-		conn = gw.drpc.GetTrustConnections(gw.d)
+		conn = gw.d.Pex.Trusted().ToAddrs()
 	})
 	return conn
 }
@@ -114,31 +204,69 @@ func (gw *Gateway) GetTrustConnections() []string {
 func (gw *Gateway) GetExchgConnection() []string {
 	var conn []string
 	gw.strand("GetExchgConnection", func() {
-		conn = gw.drpc.GetAllExchgConnections(gw.d)
+		conn = gw.d.Pex.RandomExchangeable(0).ToAddrs()
 	})
 	return conn
 }
 
 /* Blockchain & Transaction status */
 
+// BlockchainProgress current sync blockchain status
+type BlockchainProgress struct {
+	// Our current blockchain length
+	Current uint64 `json:"current"`
+	// Our best guess at true blockchain length
+	Highest uint64                 `json:"highest"`
+	Peers   []PeerBlockchainHeight `json:"peers"`
+}
+
 // GetBlockchainProgress returns a *BlockchainProgress
 func (gw *Gateway) GetBlockchainProgress() (*BlockchainProgress, error) {
 	var bcp *BlockchainProgress
 	var err error
 	gw.strand("GetBlockchainProgress", func() {
-		bcp, err = gw.drpc.GetBlockchainProgress(gw.d.Visor)
+		var headSeq uint64
+		headSeq, _, err = gw.d.Visor.HeadBkSeq()
+		if err != nil {
+			return
+		}
+
+		bcp = &BlockchainProgress{
+			Current: headSeq,
+			Highest: gw.d.Heights.Estimate(headSeq),
+			Peers:   gw.d.Heights.All(),
+		}
 	})
-	return bcp, err
+
+	if err != nil {
+		return nil, err
+	}
+
+	return bcp, nil
+}
+
+// ResendResult rebroadcast tx result
+type ResendResult struct {
+	Txids []string `json:"txids"` // transaction id
 }
 
 // ResendUnconfirmedTxns resents all unconfirmed transactions
 func (gw *Gateway) ResendUnconfirmedTxns() (*ResendResult, error) {
-	var result *ResendResult
+	var hashes []cipher.SHA256
 	var err error
 	gw.strand("ResendUnconfirmedTxns", func() {
-		result, err = gw.drpc.ResendUnconfirmedTxns(gw.d.Visor, gw.d.Pool)
+		hashes, err = gw.d.ResendUnconfirmedTxns()
 	})
-	return result, err
+
+	if err != nil {
+		return nil, err
+	}
+
+	var rlt ResendResult
+	for _, txid := range hashes {
+		rlt.Txids = append(rlt.Txids, txid.Hex())
+	}
+	return &rlt, nil
 }
 
 // GetBlockchainMetadata returns a *visor.BlockchainMetadata
@@ -431,7 +559,7 @@ func (gw *Gateway) GetTransactionResult(txid cipher.SHA256) (*TransactionResult,
 func (gw *Gateway) InjectBroadcastTransaction(txn coin.Transaction) error {
 	var err error
 	gw.strand("InjectBroadcastTransaction", func() {
-		err = gw.d.Visor.InjectBroadcastTransaction(txn, gw.d.Pool)
+		err = gw.d.InjectBroadcastTransaction(txn)
 	})
 	return err
 }
@@ -675,7 +803,7 @@ func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest ciphe
 		}
 
 		// Inject transaction
-		err = gw.d.Visor.InjectBroadcastTransaction(*txn, gw.d.Pool)
+		err = gw.d.InjectBroadcastTransaction(*txn)
 		if err != nil {
 			logger.Errorf("Inject transaction failed: %v", err)
 			return
@@ -1027,7 +1155,7 @@ func (gw *Gateway) GetHealth() (*Health, error) {
 			return
 		}
 
-		conns := gw.drpc.GetConnections(gw.d)
+		conns := gw.getConnections()
 
 		health = &Health{
 			BlockchainMetadata: metadata,

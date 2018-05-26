@@ -3,6 +3,7 @@ package main
 import (
 	"reflect"
 	"unsafe"
+
 	cipher "github.com/skycoin/skycoin/src/cipher"
 	coin "github.com/skycoin/skycoin/src/coin"
 	wallet "github.com/skycoin/skycoin/src/wallet"
@@ -16,7 +17,6 @@ import (
   #include "skytypes.h"
 */
 import "C"
-
 
 //export SKY_wallet_NewError
 func SKY_wallet_NewError(_err error) (____error_code uint32) {
@@ -52,7 +52,6 @@ func SKY_wallet_NewWallet(_wltName string, _opts *C.Options__Handle, _arg2 *C.Wa
 	}
 	return
 }
-
 
 //export SKY_wallet_Wallet_Lock
 func SKY_wallet_Wallet_Lock(_w *C.Wallet__Handle, _password []byte, _cryptoType string) (____error_code uint32) {
@@ -246,7 +245,6 @@ func SKY_wallet_Wallet_GenerateAddresses(_w *C.Wallet__Handle, _num uint64, _arg
 	return
 }
 
-
 //export SKY_wallet_Wallet_GetAddresses
 func SKY_wallet_Wallet_GetAddresses(_w *C.Wallet__Handle, _arg0 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
@@ -299,7 +297,6 @@ func SKY_wallet_Wallet_AddEntry(_w *C.Wallet__Handle, _entry *C.wallet__Entry) (
 	}
 	return
 }
-
 
 //export SKY_wallet_DistributeSpendHours
 func SKY_wallet_DistributeSpendHours(_inputHours, _nAddrs uint64, _haveChange bool, _arg2 *uint64, _arg3 *C.GoSlice_, _arg4 *uint64) (____error_code uint32) {

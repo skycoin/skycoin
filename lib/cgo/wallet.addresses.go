@@ -2,6 +2,7 @@ package main
 
 import (
 	"unsafe"
+
 	cipher "github.com/skycoin/skycoin/src/cipher"
 	wallet "github.com/skycoin/skycoin/src/wallet"
 )

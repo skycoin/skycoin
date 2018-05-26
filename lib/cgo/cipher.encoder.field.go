@@ -2,6 +2,7 @@ package main
 
 import (
 	"unsafe"
+
 	encoder "github.com/skycoin/skycoin/src/cipher/encoder"
 )
 

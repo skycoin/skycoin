@@ -11,13 +11,14 @@ package main
 import "C"
 
 import (
+	"encoding/json"
+	"path/filepath"
+	"sort"
+	"unsafe"
+
 	api "github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/visor"
-	"encoding/json"
-	"sort"
-	"path/filepath"
-	"unsafe"
 )
 
 //export SKY_JsonEncode_Handle
@@ -28,7 +29,7 @@ func SKY_JsonEncode_Handle(handle C.Handle, json_string *C.GoString_) uint32 {
 		if err == nil {
 			copyString(string(jsonBytes), json_string)
 			return SKY_OK
-		} 
+		}
 	}
 	return SKY_ERROR
 }
@@ -64,8 +65,8 @@ func SKY_Handle_Block_GetHeadHash(handle C.Handle, hash *C.GoString_) uint32 {
 		if obj, isOK := (obj).(*visor.ReadableBlock); isOK {
 			copyString(obj.Head.BlockHash, hash)
 			return SKY_OK
-		} 
-	} 
+		}
+	}
 	return SKY_ERROR
 }
 
@@ -82,8 +83,8 @@ func SKY_Handle_Block_GetPreviousBlockHash(handle C.Handle, hash *C.GoString_) u
 }
 
 //export SKY_Handle_Blocks_GetAt
-func SKY_Handle_Blocks_GetAt(handle C.Handle, 
-						index uint64, blockHandle *C.Handle) uint32 {
+func SKY_Handle_Blocks_GetAt(handle C.Handle,
+	index uint64, blockHandle *C.Handle) uint32 {
 	obj, ok := lookupHandle(C.Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(*visor.ReadableBlocks); isOK {
@@ -95,8 +96,8 @@ func SKY_Handle_Blocks_GetAt(handle C.Handle,
 }
 
 //export SKY_Handle_Blocks_GetCount
-func SKY_Handle_Blocks_GetCount(handle C.Handle, 
-						count *uint64) uint32 {
+func SKY_Handle_Blocks_GetCount(handle C.Handle,
+	count *uint64) uint32 {
 	obj, ok := lookupHandle(C.Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(*visor.ReadableBlocks); isOK {
@@ -108,8 +109,8 @@ func SKY_Handle_Blocks_GetCount(handle C.Handle,
 }
 
 //export SKY_Handle_Connections_GetCount
-func SKY_Handle_Connections_GetCount(handle C.Handle, 
-						count *uint64) uint32 {
+func SKY_Handle_Connections_GetCount(handle C.Handle,
+	count *uint64) uint32 {
 	obj, ok := lookupHandle(C.Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(*api.Connections); isOK {
@@ -121,8 +122,8 @@ func SKY_Handle_Connections_GetCount(handle C.Handle,
 }
 
 //export SKY_Handle_Strings_GetCount
-func SKY_Handle_Strings_GetCount(handle C.Strings__Handle, 
-						count *uint32) uint32 {
+func SKY_Handle_Strings_GetCount(handle C.Strings__Handle,
+	count *uint32) uint32 {
 	obj, ok := lookupHandle(C.Handle(handle))
 	if ok {
 		if obj, isOK := (obj).([]string); isOK {
@@ -146,13 +147,13 @@ func SKY_Handle_Strings_Sort(handle C.Strings__Handle) uint32 {
 }
 
 //export SKY_Handle_Strings_GetAt
-func SKY_Handle_Strings_GetAt(handle C.Strings__Handle, 
-						index int,
-						str *C.GoString_ ) uint32 {
+func SKY_Handle_Strings_GetAt(handle C.Strings__Handle,
+	index int,
+	str *C.GoString_) uint32 {
 	obj, ok := lookupHandle(C.Handle(handle))
 	if ok {
 		if obj, isOK := (obj).([]string); isOK {
-			copyString(obj[index], str);
+			copyString(obj[index], str)
 			return SKY_OK
 		}
 	}
@@ -161,12 +162,12 @@ func SKY_Handle_Strings_GetAt(handle C.Strings__Handle,
 
 //export SKY_api_Handle_Client_GetWalletDir
 func SKY_api_Handle_Client_GetWalletDir(handle C.Client__Handle,
-									walletDir *C.GoString_) uint32 {
+	walletDir *C.GoString_) uint32 {
 	client, ok := lookupClientHandle(handle)
 	if ok {
 		wf, err := client.WalletFolderName()
 		if err == nil {
-			copyString( wf.Address, walletDir )
+			copyString(wf.Address, walletDir)
 			return SKY_OK
 		}
 	}
@@ -175,7 +176,7 @@ func SKY_api_Handle_Client_GetWalletDir(handle C.Client__Handle,
 
 //export SKY_api_Handle_Client_GetWalletFileName
 func SKY_api_Handle_Client_GetWalletFileName(handle C.WalletResponse__Handle,
-									walletFileName *C.GoString_) uint32 {
+	walletFileName *C.GoString_) uint32 {
 	w, ok := lookupWalletResponseHandle(handle)
 	if ok {
 		copyString(w.Meta.Filename, walletFileName)
@@ -186,9 +187,9 @@ func SKY_api_Handle_Client_GetWalletFileName(handle C.WalletResponse__Handle,
 
 //export SKY_api_Handle_Client_GetWalletLabel
 func SKY_api_Handle_Client_GetWalletLabel(handle C.WalletResponse__Handle,
-									walletLabel *C.GoString_) uint32 {
+	walletLabel *C.GoString_) uint32 {
 	w, ok := lookupWalletResponseHandle(handle)
-if ok {
+	if ok {
 		copyString(w.Meta.Label, walletLabel)
 		return SKY_OK
 	}
@@ -197,17 +198,17 @@ if ok {
 
 //export SKY_api_Handle_Client_GetWalletFullPath
 func SKY_api_Handle_Client_GetWalletFullPath(
-							clientHandle C.Client__Handle,
-							walletHandle C.WalletResponse__Handle,
-							fullPath *C.GoString_) uint32 {
+	clientHandle C.Client__Handle,
+	walletHandle C.WalletResponse__Handle,
+	fullPath *C.GoString_) uint32 {
 	client, ok := lookupClientHandle(clientHandle)
 	if ok {
 		wf, err := client.WalletFolderName()
 		if err == nil {
 			w, okw := lookupWalletResponseHandle(walletHandle)
 			if okw {
-				walletPath := filepath.Join( wf.Address, w.Meta.Filename)
-				copyString( walletPath, fullPath )
+				walletPath := filepath.Join(wf.Address, w.Meta.Filename)
+				copyString(walletPath, fullPath)
 				return SKY_OK
 			}
 		}
@@ -217,7 +218,7 @@ func SKY_api_Handle_Client_GetWalletFullPath(
 
 //export SKY_api_Handle_GetWalletMeta
 func SKY_api_Handle_GetWalletMeta(handle C.Wallet__Handle,
-									gomap *C.GoStringMap_) uint32 {
+	gomap *C.GoStringMap_) uint32 {
 	w, ok := lookupWalletHandle(handle)
 	if ok {
 		copyToStringMap(w.Meta, gomap)
@@ -228,7 +229,7 @@ func SKY_api_Handle_GetWalletMeta(handle C.Wallet__Handle,
 
 //export SKY_api_Handle_GetWalletEntriesCount
 func SKY_api_Handle_GetWalletEntriesCount(handle C.Wallet__Handle,
-									count *uint32) uint32 {
+	count *uint32) uint32 {
 	w, ok := lookupWalletHandle(handle)
 	if ok {
 		*count = uint32(len(w.Entries))
@@ -239,8 +240,8 @@ func SKY_api_Handle_GetWalletEntriesCount(handle C.Wallet__Handle,
 
 //export SKY_api_Handle_Client_GetWalletResponseEntriesCount
 func SKY_api_Handle_Client_GetWalletResponseEntriesCount(
-							handle C.WalletResponse__Handle,
-							count *uint32) uint32 {
+	handle C.WalletResponse__Handle,
+	count *uint32) uint32 {
 	w, ok := lookupWalletResponseHandle(handle)
 	if ok {
 		*count = uint32(len(w.Entries))
@@ -251,12 +252,12 @@ func SKY_api_Handle_Client_GetWalletResponseEntriesCount(
 
 //export SKY_api_Handle_WalletGetEntry
 func SKY_api_Handle_WalletGetEntry(handle C.Wallet__Handle,
-									index uint32,
-									address *C.cipher__Address,
-									pubkey *C.cipher__PubKey) uint32 {
+	index uint32,
+	address *C.cipher__Address,
+	pubkey *C.cipher__PubKey) uint32 {
 	w, ok := lookupWalletHandle(handle)
 	if ok {
-		if index < uint32(len( w.Entries )) {
+		if index < uint32(len(w.Entries)) {
 			*address = *(*C.cipher__Address)(unsafe.Pointer(&w.Entries[index].Address))
 			*pubkey = *(*C.cipher__PubKey)(unsafe.Pointer(&w.Entries[index].Public))
 			return SKY_OK
@@ -267,14 +268,14 @@ func SKY_api_Handle_WalletGetEntry(handle C.Wallet__Handle,
 
 //export SKY_api_Handle_WalletResponseGetEntry
 func SKY_api_Handle_WalletResponseGetEntry(handle C.WalletResponse__Handle,
-									index uint32,
-									address *C.GoString_,
-									pubkey *C.GoString_) uint32 {
+	index uint32,
+	address *C.GoString_,
+	pubkey *C.GoString_) uint32 {
 	w, ok := lookupWalletResponseHandle(handle)
 	if ok {
-		if index < uint32(len( w.Entries )) {
-			copyString( w.Entries[index].Address, address )
-			copyString( w.Entries[index].Public, pubkey )
+		if index < uint32(len(w.Entries)) {
+			copyString(w.Entries[index].Address, address)
+			copyString(w.Entries[index].Public, pubkey)
 			return SKY_OK
 		}
 	}
@@ -283,8 +284,8 @@ func SKY_api_Handle_WalletResponseGetEntry(handle C.WalletResponse__Handle,
 
 //export SKY_api_Handle_WalletResponseIsEncrypted
 func SKY_api_Handle_WalletResponseIsEncrypted(
-							handle C.WalletResponse__Handle,
-							isEncrypted *bool) uint32 {
+	handle C.WalletResponse__Handle,
+	isEncrypted *bool) uint32 {
 	w, ok := lookupWalletResponseHandle(handle)
 	if ok {
 		*isEncrypted = w.Meta.Encrypted
@@ -295,11 +296,11 @@ func SKY_api_Handle_WalletResponseIsEncrypted(
 
 //export SKY_api_Handle_WalletResponseGetCryptoType
 func SKY_api_Handle_WalletResponseGetCryptoType(
-					handle C.WalletResponse__Handle,
-					cryptoType *C.GoString_) uint32{
+	handle C.WalletResponse__Handle,
+	cryptoType *C.GoString_) uint32 {
 	w, ok := lookupWalletResponseHandle(handle)
 	if ok {
-		copyString( w.Meta.CryptoType, cryptoType )
+		copyString(w.Meta.CryptoType, cryptoType)
 		return SKY_OK
 	}
 	return SKY_ERROR
@@ -307,8 +308,8 @@ func SKY_api_Handle_WalletResponseGetCryptoType(
 
 //export SKY_api_Handle_WalletsResponseGetCount
 func SKY_api_Handle_WalletsResponseGetCount(
-							handle C.Wallets__Handle,
-							count *uint32) uint32 {
+	handle C.Wallets__Handle,
+	count *uint32) uint32 {
 	w, ok := lookupWalletsHandle(handle)
 	if ok {
 		*count = uint32(len(w))
@@ -319,9 +320,9 @@ func SKY_api_Handle_WalletsResponseGetCount(
 
 //export SKY_api_Handle_WalletsResponseGetAt
 func SKY_api_Handle_WalletsResponseGetAt(
-							walletsHandle C.Wallets__Handle,
-							index uint32,
-							walletHandle *C.WalletResponse__Handle) uint32 {
+	walletsHandle C.Wallets__Handle,
+	index uint32,
+	walletHandle *C.WalletResponse__Handle) uint32 {
 	w, ok := lookupWalletsHandle(walletsHandle)
 	if ok {
 		if index < uint32(len(w)) {
@@ -334,12 +335,12 @@ func SKY_api_Handle_WalletsResponseGetAt(
 
 //export SKY_api_Handle_GetWalletFolderAddress
 func SKY_api_Handle_GetWalletFolderAddress(
-							folderHandle C.Handle,
-							address *C.GoString_) uint32 {
+	folderHandle C.Handle,
+	address *C.GoString_) uint32 {
 	obj, ok := lookupHandle(folderHandle)
 	if ok {
 		if obj, isOK := (obj).(*api.WalletFolder); isOK {
-			copyString( obj.Address, address )
+			copyString(obj.Address, address)
 			return SKY_OK
 		}
 	}
@@ -348,10 +349,10 @@ func SKY_api_Handle_GetWalletFolderAddress(
 
 //export SKY_api_Handle_GetWalletSeed
 func SKY_api_Handle_GetWalletSeed(handle C.Wallet__Handle,
-									seed *C.GoString_) uint32 {
+	seed *C.GoString_) uint32 {
 	w, ok := lookupWalletHandle(handle)
 	if ok {
-		copyString( w.Meta["seed"], seed )
+		copyString(w.Meta["seed"], seed)
 		return SKY_OK
 	}
 	return SKY_ERROR
@@ -359,10 +360,10 @@ func SKY_api_Handle_GetWalletSeed(handle C.Wallet__Handle,
 
 //export SKY_api_Handle_GetWalletLastSeed
 func SKY_api_Handle_GetWalletLastSeed(handle C.Wallet__Handle,
-									lastSeed *C.GoString_) uint32 {
+	lastSeed *C.GoString_) uint32 {
 	w, ok := lookupWalletHandle(handle)
 	if ok {
-		copyString( w.Meta["lastSeed"], lastSeed )
+		copyString(w.Meta["lastSeed"], lastSeed)
 		return SKY_OK
 	}
 	return SKY_ERROR

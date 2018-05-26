@@ -2,6 +2,7 @@ package main
 
 import (
 	"unsafe"
+
 	api "github.com/skycoin/skycoin/src/api"
 )
 
@@ -367,7 +368,7 @@ func SKY_api_Client_Wallets(_c *C.Client__Handle, _arg0 *C.Wallets__Handle) (___
 	__arg0, ____return_err := c.Wallets()
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		*_arg0 = registerWalletsHandle( __arg0 )
+		*_arg0 = registerWalletsHandle(__arg0)
 	}
 	return
 }
@@ -434,7 +435,7 @@ func SKY_api_Client_NewWalletAddress(_c *C.Client__Handle, _id string, _n int, _
 	__arg3, ____return_err := c.NewWalletAddress(id, n, password)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		*_arg3 = (C.Strings__Handle)(registerHandle( __arg3 ))
+		*_arg3 = (C.Strings__Handle)(registerHandle(__arg3))
 	}
 	return
 }

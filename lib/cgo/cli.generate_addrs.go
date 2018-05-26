@@ -3,6 +3,7 @@ package main
 import (
 	"reflect"
 	"unsafe"
+
 	cipher "github.com/skycoin/skycoin/src/cipher"
 	cli "github.com/skycoin/skycoin/src/cli"
 )

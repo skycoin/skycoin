@@ -2,8 +2,8 @@ package main
 
 import (
 	"os"
+
 	"github.com/skycoin/skycoin/src/api/webrpc"
-	
 )
 
 /*
@@ -67,7 +67,6 @@ func SKY_cli_Config_GetRPCAddress(_c *C.Config__Handle, _arg0 *C.GoString_) (___
 	copyString(__arg0, _arg0)
 	return
 }
-
 
 //export SKY_cli_RPCClientFromApp
 func SKY_cli_RPCClientFromApp(_app *C.App__Handle, _arg1 *C.WebRpcClient__Handle) (____error_code uint32) {

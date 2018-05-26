@@ -3,6 +3,7 @@ package main
 import (
 	"reflect"
 	"unsafe"
+
 	base58 "github.com/skycoin/skycoin/src/cipher/base58"
 )
 

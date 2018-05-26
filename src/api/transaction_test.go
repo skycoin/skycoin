@@ -57,11 +57,6 @@ func makeAddress() cipher.Address {
 	return cipher.AddressFromPubKey(p)
 }
 
-type transactionAndInputs struct {
-	coin.Transaction
-	inputs []wallet.UxBalance
-}
-
 func makeTransaction(t *testing.T) coin.Transaction {
 	tx := coin.Transaction{}
 	ux, s := makeUxOutWithSecret(t)
@@ -74,20 +69,36 @@ func makeTransaction(t *testing.T) coin.Transaction {
 	return tx
 }
 
-func createTransactionAndInputs(t *testing.T) transactionAndInputs {
-	tx := coin.Transaction{}
+type transactionAndInputs struct {
+	txn    coin.Transaction
+	inputs []wallet.UxBalance
+}
+
+func newVerifyTxnResponseJSON(t *testing.T, txn *coin.Transaction, inputs []wallet.UxBalance, isTxnConfirmed bool) string {
+	ctxn := newCreatedTransaction(txn, inputs)
+	rsp := VerifyTxnResponse{
+		Transaction: ctxn,
+		Confirmed:   isTxnConfirmed,
+	}
+	v, err := json.MarshalIndent(rsp, "", "    ")
+	require.NoError(t, err)
+	return string(v)
+}
+
+func prepareTxnAndInputs(t *testing.T) transactionAndInputs {
+	txn := coin.Transaction{}
 	ux, s := makeUxOutWithSecret(t)
 
-	tx.PushInput(ux.Hash())
-	tx.SignInputs([]cipher.SecKey{s})
-	tx.PushOutput(makeAddress(), 1e6, 50)
-	tx.PushOutput(makeAddress(), 5e6, 50)
-	tx.UpdateHeader()
+	txn.PushInput(ux.Hash())
+	txn.SignInputs([]cipher.SecKey{s})
+	txn.PushOutput(makeAddress(), 1e6, 50)
+	txn.PushOutput(makeAddress(), 5e6, 50)
+	txn.UpdateHeader()
 
 	input, err := wallet.NewUxBalance(uint64(utc.UnixNow()), ux)
 	require.NoError(t, err)
 
-	return transactionAndInputs{Transaction: tx, inputs: []wallet.UxBalance{input}}
+	return transactionAndInputs{txn: txn, inputs: []wallet.UxBalance{input}}
 }
 
 func makeUxBodyWithSecret(t *testing.T) (coin.UxBody, cipher.SecKey) {
@@ -839,24 +850,16 @@ func TestGetTransactions(t *testing.T) {
 }
 
 func TestVerifyTransaction(t *testing.T) {
-	validTransaction := createTransactionAndInputs(t)
+	txnAndInputs := prepareTxnAndInputs(t)
 	type httpBody struct {
 		EncodedTransaction string `json:"encoded_transaction"`
 	}
 
-	validCreatedTx, err := NewCreatedTransaction(&validTransaction.Transaction, validTransaction.inputs)
-	require.NoError(t, err)
-	rsp := struct {
-		Transaction interface{} `json:"transaction"`
-	}{
-		Transaction: validCreatedTx,
-	}
+	// validTxnHTTPResponse := HTTPResponse{
+	// 	Data: newCreatedTransactionJSON(t, &txnAndInputs.Transaction, txnAndInputs.inputs),
+	// }
 
-	v, err := json.MarshalIndent(rsp, "", "    ")
-	require.NoError(t, err)
-	validTxHTTPResponse := string(v)
-
-	validTxBody := &httpBody{EncodedTransaction: hex.EncodeToString(validTransaction.Serialize())}
+	validTxBody := &httpBody{EncodedTransaction: hex.EncodeToString(txnAndInputs.txn.Serialize())}
 	validTxBodyJSON, err := json.Marshal(validTxBody)
 	require.NoError(t, err)
 
@@ -871,6 +874,12 @@ func TestVerifyTransaction(t *testing.T) {
 	invalidTxEmptyAddressBodyJSON, err := json.Marshal(invalidTxEmptyAddressBody)
 	require.NoError(t, err)
 
+	type verifyTxnVerboseResult struct {
+		Uxouts         []wallet.UxBalance
+		IsTxnConfirmed bool
+		Err            error
+	}
+
 	tt := []struct {
 		name                          string
 		method                        string
@@ -879,9 +888,8 @@ func TestVerifyTransaction(t *testing.T) {
 		err                           string
 		httpBody                      string
 		gatewayVerifyTxnVerboseArg    coin.Transaction
-		gatewayVerifyTxnVerboseResult []wallet.UxBalance
-		gatewayVerifyTxnVerboseErr    error
-		httpResponse                  string
+		gatewayVerifyTxnVerboseResult verifyTxnVerboseResult
+		httpResponse                  HTTPResponse
 		csrfDisabled                  bool
 	}{
 		{
@@ -889,14 +897,16 @@ func TestVerifyTransaction(t *testing.T) {
 			method: http.MethodGet,
 			status: http.StatusMethodNotAllowed,
 			err:    "405 Method Not Allowed",
-			gatewayVerifyTxnVerboseArg: validTransaction.Transaction,
+			gatewayVerifyTxnVerboseArg: txnAndInputs.txn,
 		},
 		{
 			name:        "400 - EOF",
 			method:      http.MethodPost,
 			contentType: "application/json",
 			status:      http.StatusBadRequest,
-			err:         "400 Bad Request - EOF",
+			httpResponse: HTTPResponse{
+				Error: "EOF",
+			},
 		},
 		{
 			name:        "415 - Unsupported Media Type",
@@ -906,56 +916,91 @@ func TestVerifyTransaction(t *testing.T) {
 			err:         "415 Unsupported Media Type",
 		},
 		{
-			name:        "422 - Invalid transaction: Deserialization failed",
+			name:        "400 - Invalid transaction: Deserialization failed",
 			method:      http.MethodPost,
 			contentType: "application/json",
-			status:      http.StatusUnprocessableEntity,
-			err:         "422 Unprocessable Entity - Invalid transaction: Deserialization failed",
+			status:      http.StatusBadRequest,
 			httpBody:    `{"wrongKey":"wrongValue"}`,
+			httpResponse: HTTPResponse{
+				Error: "decode transaction failed: Invalid transaction: Deserialization failed",
+			},
 		},
 		{
-			name:        "422 - encoding/hex: odd length hex string",
+			name:        "400 - encoding/hex: odd length hex string",
 			method:      http.MethodPost,
 			contentType: "application/json",
-			status:      http.StatusUnprocessableEntity,
-			err:         "422 Unprocessable Entity - encoding/hex: odd length hex string",
+			status:      http.StatusBadRequest,
 			httpBody:    `{"encoded_transaction":"aab"}`,
+			httpResponse: HTTPResponse{
+				Error: "decode transaction failed: encoding/hex: odd length hex string",
+			},
 		},
 		{
-			name:        "422 - deserialization error",
+			name:        "400 - deserialization error",
 			method:      http.MethodPost,
 			contentType: "application/json",
-			status:      http.StatusUnprocessableEntity,
-			err:         "422 Unprocessable Entity - Invalid transaction: Deserialization failed",
+			status:      http.StatusBadRequest,
 			httpBody:    string(invalidTxBodyJSON),
+			httpResponse: HTTPResponse{
+				Error: "decode transaction failed: Invalid transaction: Deserialization failed",
+			},
 		},
 		{
-			name:        "422 - txn sends to empty address",
-			method:      http.MethodPost,
-			contentType: "application/json",
-			status:      http.StatusUnprocessableEntity,
-			err:         "422 Unprocessable Entity - Transaction.Out contains an output sending to an empty address",
-			httpBody:    string(invalidTxEmptyAddressBodyJSON),
-		},
-		{
-			name:                       "422 - verifyTransactionError",
+			name:                       "422 - txn sends to empty address",
 			method:                     http.MethodPost,
 			contentType:                "application/json",
 			status:                     http.StatusUnprocessableEntity,
-			err:                        "422 Unprocessable Entity - invalid transaction",
-			httpBody:                   string(validTxBodyJSON),
-			gatewayVerifyTxnVerboseArg: validTransaction.Transaction,
-			gatewayVerifyTxnVerboseErr: errors.New("invalid transaction"),
+			httpBody:                   string(invalidTxEmptyAddressBodyJSON),
+			gatewayVerifyTxnVerboseArg: invalidTxEmptyAddress,
+			gatewayVerifyTxnVerboseResult: verifyTxnVerboseResult{
+				Err: visor.NewErrTxnViolatesHardConstraint(errors.New("Transaction.Out contains an output sending to an empty address")),
+			},
+			httpResponse: HTTPResponse{
+				Error: "Transaction violates hard constraint: Transaction.Out contains an output sending to an empty address",
+			},
 		},
 		{
-			name:                          "200",
-			method:                        http.MethodPost,
-			contentType:                   "application/json",
-			status:                        http.StatusOK,
-			httpBody:                      string(validTxBodyJSON),
-			gatewayVerifyTxnVerboseArg:    validTransaction.Transaction,
-			gatewayVerifyTxnVerboseResult: validTransaction.inputs,
-			httpResponse:                  validTxHTTPResponse,
+			name:                       "400 - Neither hard nor soft constraints are violated ",
+			method:                     http.MethodPost,
+			contentType:                "application/json",
+			status:                     http.StatusBadRequest,
+			httpBody:                   string(validTxBodyJSON),
+			gatewayVerifyTxnVerboseArg: txnAndInputs.txn,
+			gatewayVerifyTxnVerboseResult: verifyTxnVerboseResult{
+				Err: errors.New("verify transaction failed"),
+			},
+			httpResponse: HTTPResponse{
+				Error: "verify transaction failed",
+			},
+		},
+		{
+			name:                       "422 - txn is confirmed",
+			method:                     http.MethodPost,
+			contentType:                "application/json",
+			status:                     http.StatusUnprocessableEntity,
+			httpBody:                   string(validTxBodyJSON),
+			gatewayVerifyTxnVerboseArg: txnAndInputs.txn,
+			gatewayVerifyTxnVerboseResult: verifyTxnVerboseResult{
+				Uxouts:         txnAndInputs.inputs,
+				IsTxnConfirmed: true,
+			},
+			httpResponse: HTTPResponse{
+				Data: newVerifyTxnResponseJSON(t, &txnAndInputs.txn, txnAndInputs.inputs, true),
+			},
+		},
+		{
+			name:                       "200",
+			method:                     http.MethodPost,
+			contentType:                "application/json",
+			status:                     http.StatusOK,
+			httpBody:                   string(validTxBodyJSON),
+			gatewayVerifyTxnVerboseArg: txnAndInputs.txn,
+			gatewayVerifyTxnVerboseResult: verifyTxnVerboseResult{
+				Uxouts: txnAndInputs.inputs,
+			},
+			httpResponse: HTTPResponse{
+				Data: newVerifyTxnResponseJSON(t, &txnAndInputs.txn, txnAndInputs.inputs, false),
+			},
 		},
 	}
 
@@ -963,7 +1008,8 @@ func TestVerifyTransaction(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/transaction/verify"
 			gateway := NewGatewayerMock()
-			gateway.On("VerifyTxnVerbose", &tc.gatewayVerifyTxnVerboseArg).Return(tc.gatewayVerifyTxnVerboseResult, tc.gatewayVerifyTxnVerboseErr)
+			gateway.On("VerifyTxnVerbose", &tc.gatewayVerifyTxnVerboseArg).Return(tc.gatewayVerifyTxnVerboseResult.Uxouts,
+				tc.gatewayVerifyTxnVerboseResult.IsTxnConfirmed, tc.gatewayVerifyTxnVerboseResult.Err)
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)
@@ -986,11 +1032,13 @@ func TestVerifyTransaction(t *testing.T) {
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
 				tc.name, status, tc.status)
 
-			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
-			} else {
-				require.Equal(t, tc.httpResponse, rr.Body.String(), tc.name)
+			switch status {
+			case 405, 415:
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), tc.name)
+			default:
+				rsp, err := JSONReadHTTPResponse(rr.Body)
+				require.NoError(t, err)
+				require.Equal(t, tc.httpResponse, *rsp, tc.name)
 			}
 		})
 	}

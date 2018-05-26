@@ -174,8 +174,11 @@ func (c Config) Verify() error {
 	return nil
 }
 
-// historyer is the interface that provides methods for accessing history data that are parsed from blockchain.
-type historyer interface {
+//go:generate go install
+//go:generate goautomock -template=testify Historyer
+
+// Historyer is the interface that provides methods for accessing history data that are parsed from blockchain.
+type Historyer interface {
 	GetUxOuts(tx *dbutil.Tx, uxids []cipher.SHA256) ([]*historydb.UxOut, error)
 	ParseBlock(tx *dbutil.Tx, b coin.Block) error
 	GetTransaction(tx *dbutil.Tx, hash cipher.SHA256) (*historydb.Transaction, error)
@@ -238,7 +241,7 @@ type Visor struct {
 	Wallets     *wallet.Service
 	StartedAt   time.Time
 
-	history historyer
+	history Historyer
 }
 
 // NewVisor creates a Visor for managing the blockchain database

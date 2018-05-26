@@ -1036,7 +1036,7 @@ func (m *GatewayerMock) UpdateWalletLabel(p0 string, p1 string) error {
 }
 
 // VerifyTxnVerbose mocked method
-func (m *GatewayerMock) VerifyTxnVerbose(p0 *coin.Transaction) ([]wallet.UxBalance, error) {
+func (m *GatewayerMock) VerifyTxnVerbose(p0 *coin.Transaction) ([]wallet.UxBalance, bool, error) {
 
 	ret := m.Called(p0)
 
@@ -1049,15 +1049,24 @@ func (m *GatewayerMock) VerifyTxnVerbose(p0 *coin.Transaction) ([]wallet.UxBalan
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	var r1 error
+	var r1 bool
 	switch res := ret.Get(1).(type) {
 	case nil:
-	case error:
+	case bool:
 		r1 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	return r0, r1
+	var r2 error
+	switch res := ret.Get(2).(type) {
+	case nil:
+	case error:
+		r2 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1, r2
 
 }

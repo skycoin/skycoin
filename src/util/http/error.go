@@ -31,7 +31,7 @@ func errorXXXMsg(w http.ResponseWriter, status int, msg string) {
 	HTTPError(w, status, httpMsg)
 }
 
-func errorXXXJSONOr500(w http.ResponseWriter, status int, m interface{}) {
+func errorXXXJSONOr500(log *logging.Logger, w http.ResponseWriter, status int, m interface{}) {
 	out, err := json.MarshalIndent(m, "", "    ")
 	if err != nil {
 		Error500(w, "json.MarshalIndent failed")
@@ -39,7 +39,10 @@ func errorXXXJSONOr500(w http.ResponseWriter, status int, m interface{}) {
 	}
 
 	w.Header().Add("Content-Type", "application/json")
-	errorXXXMsg(w, status, string(out))
+	w.WriteHeader(status)
+	if _, err := w.Write(out); err != nil {
+		log.WithError(err).Error("http write failed")
+	}
 }
 
 // Error400 respond with a 400 error and include a message
@@ -48,8 +51,8 @@ func Error400(w http.ResponseWriter, msg string) {
 }
 
 // Error400JSONOr500 returns a 400 error with an object as JSON, writting a 500 error if it fails
-func Error400JSONOr500(w http.ResponseWriter, m interface{}) {
-	errorXXXJSONOr500(w, http.StatusBadRequest, m)
+func Error400JSONOr500(log *logging.Logger, w http.ResponseWriter, m interface{}) {
+	errorXXXJSONOr500(log, w, http.StatusBadRequest, m)
 }
 
 // Error401 respond with a 401 error
@@ -88,8 +91,8 @@ func Error422(w http.ResponseWriter, msg string) {
 }
 
 // Error422JSONOr500 returns a 422 error with an object as JSON, writting a 500 error if it fails
-func Error422JSONOr500(w http.ResponseWriter, m interface{}) {
-	errorXXXJSONOr500(w, http.StatusUnprocessableEntity, m)
+func Error422JSONOr500(log *logging.Logger, w http.ResponseWriter, m interface{}) {
+	errorXXXJSONOr500(log, w, http.StatusUnprocessableEntity, m)
 }
 
 // Error501 respond with a 501 error

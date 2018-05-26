@@ -299,14 +299,14 @@ func verifyTxnHandler(gateway Gatewayer) http.HandlerFunc {
 		var req VerifyTxnRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			rsp.Error = err.Error()
-			wh.Error400JSONOr500(w, rsp)
+			wh.Error400JSONOr500(logger, w, rsp)
 			return
 		}
 
 		txn, err := decodeTxn(req.EncodedTransaction)
 		if err != nil {
 			rsp.Error = fmt.Sprintf("decode transaction failed: %v", err)
-			wh.Error400JSONOr500(w, rsp)
+			wh.Error400JSONOr500(logger, w, rsp)
 			return
 		}
 
@@ -317,7 +317,7 @@ func verifyTxnHandler(gateway Gatewayer) http.HandlerFunc {
 			case visor.ErrTxnViolatesSoftConstraint,
 				visor.ErrTxnViolatesHardConstraint:
 			default:
-				wh.Error400JSONOr500(w, rsp)
+				wh.Error400JSONOr500(logger, w, rsp)
 				return
 			}
 		}
@@ -337,8 +337,8 @@ func verifyTxnHandler(gateway Gatewayer) http.HandlerFunc {
 			rsp.Data = string(v)
 		}
 
-		if rsp.Error != "" {
-			wh.Error422JSONOr500(w, rsp)
+		if rsp.Error != "" || isTxnConfirmed {
+			wh.Error422JSONOr500(logger, w, rsp)
 		} else {
 			wh.SendJSONOr500(logger, w, rsp)
 		}

@@ -1,6 +1,21 @@
 
 #include "cipher.testsuite.testsuite.go.h"
 
+void empty_gostring(GoString *s) {
+  s->n = 0;
+  s->p = malloc(sizeof(char));
+  *((char*) s->p) = 0;
+}
+
+void empty_keysdataJSON(KeysTestDataJSON* kdj) {
+  empty_gostring(&kdj->Address);
+  empty_gostring(&kdj->Secret);
+  empty_gostring(&kdj->Public);
+  kdj->Signatures.len = 0;
+  kdj->Signatures.cap = 1;
+  kdj->Signatures.data = calloc(1, sizeof(GoString));
+}
+
 void json_get_gostring(json_value* value, GoString* s) {
   if (value == NULL || value->type != json_string) {
     s->n = 0;
@@ -30,8 +45,8 @@ InputTestDataJSON* jsonToInputTestData(json_value* json, InputTestDataJSON* inpu
   if (json->type != json_object) {
     return NULL;
   }
-  json_value* hashes = json_get_string(json, "hashes");
-  if (hashes == NULL || hashes->type != json_array) {
+  json_value* hashes = get_json_value(json, "hashes", json_array);
+  if (hashes == NULL) {
     return NULL;
   }
   int i = 0,
@@ -40,13 +55,12 @@ InputTestDataJSON* jsonToInputTestData(json_value* json, InputTestDataJSON* inpu
   input_data->Hashes.len = input_data->Hashes.cap = length;
   input_data->Hashes.data = calloc(length, sizeof(GoString));
   GoString* s = (GoString *) input_data->Hashes.data;
-  for (; i < length; i++, hashstr_value++) {
+  for (; i < length; i++, hashstr_value++, s++) {
     if ((*hashstr_value)->type != json_string) {
-      // String value expected. Skip everything else
-      --input_data->Hashes.len;
+      // String value expected. Replace with empty string.
+      empty_gostring(s);
     } else {
       json_get_gostring(*hashstr_value, s);
-      s++;
     }
   }
   return input_data;
@@ -137,13 +151,12 @@ KeysTestDataJSON* jsonToKeysTestData(json_value* json, KeysTestDataJSON* input_d
   input_data->Signatures.len = input_data->Signatures.cap = length;
   input_data->Signatures.data = calloc(length, sizeof(GoString));
   GoString* s = (GoString *) input_data->Signatures.data;
-  for (; i < length; i++, array_value++) {
+  for (; i < length; i++, array_value++, s++) {
     if ((*array_value)->type != json_string) {
-      // String value expected. Skip everything else
-      --input_data->Signatures.len;
+      // String value expected. Replace with empty string
+      empty_gostring(s);
     } else {
       json_get_gostring(*array_value, s);
-      s++;
     }
   }
   return input_data;
@@ -246,13 +259,12 @@ SeedTestDataJSON* jsonToSeedTestData(json_value* json, SeedTestDataJSON* input_d
   input_data->Keys.len = input_data->Keys.cap = length;
   input_data->Keys.data = calloc(length, sizeof(KeysTestDataJSON));
   KeysTestDataJSON* kd = (KeysTestDataJSON*) input_data->Keys.data;
-  for (; i < length; i++, array_value++) {
+  for (; i < length; i++, array_value++, kd++) {
     if ((*array_value)->type != json_object) {
-      // String value expected. Skip everything else
-      --input_data->Keys.len;
+      // String value expected. Replace with empty string
+      empty_keysdataJSON(kd);
     } else {
       jsonToKeysTestData(*array_value, kd);
-      kd++;
     }
   }
   return input_data;

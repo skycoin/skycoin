@@ -7,7 +7,7 @@ import file "github.com/skycoin/skycoin/src/util/file"
   #include <string.h>
   #include <stdlib.h>
 
-  #include "../../include/skytypes.h"
+  #include "skytypes.h"
 */
 import "C"
 

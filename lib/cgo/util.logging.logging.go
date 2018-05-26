@@ -7,7 +7,7 @@ import logging "github.com/skycoin/skycoin/src/util/logging"
   #include <string.h>
   #include <stdlib.h>
 
-  #include "../../include/skytypes.h"
+  #include "skytypes.h"
 */
 import "C"
 

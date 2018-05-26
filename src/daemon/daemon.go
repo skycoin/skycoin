@@ -870,9 +870,9 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 
 	if e.Solicited {
 		// Disconnect if the max outgoing connections is reached
-		n, err := dm.Pool.Pool.Size()
+		n, err := dm.Pool.Pool.OutgoingConnectionsNum()
 		if err != nil {
-			logger.WithError(err).Error("get connection pool size failed")
+			logger.WithError(err).Error("get outgoing connections number failed")
 			return
 		}
 

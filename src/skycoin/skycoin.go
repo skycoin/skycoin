@@ -99,8 +99,8 @@ func (c *Coin) Run() {
 	// creates blockchain instance
 	dconf := c.configureDaemon()
 
-	c.logger.Infof("Opening database %s", dconf.Visor.Config.DBPath)
-	db, err = visor.OpenDB(dconf.Visor.Config.DBPath, c.config.Node.DBReadOnly)
+	c.logger.Infof("Opening database %s", dconf.Visor.DBPath)
+	db, err = visor.OpenDB(dconf.Visor.DBPath, c.config.Node.DBReadOnly)
 	if err != nil {
 		c.logger.Errorf("Database failed to open: %v. Is another skycoin instance running?", err)
 		return
@@ -320,25 +320,25 @@ func (c *Coin) configureDaemon() daemon.Config {
 		c.config.Node.OutgoingConnectionsRate = time.Millisecond
 	}
 	dc.Daemon.OutgoingRate = c.config.Node.OutgoingConnectionsRate
-	dc.Visor.Config.IsMaster = c.config.Node.RunMaster
+	dc.Visor.IsMaster = c.config.Node.RunMaster
 
-	dc.Visor.Config.BlockchainPubkey = c.config.Node.blockchainPubkey
-	dc.Visor.Config.BlockchainSeckey = c.config.Node.blockchainSeckey
+	dc.Visor.BlockchainPubkey = c.config.Node.blockchainPubkey
+	dc.Visor.BlockchainSeckey = c.config.Node.blockchainSeckey
 
-	dc.Visor.Config.GenesisAddress = c.config.Node.genesisAddress
-	dc.Visor.Config.GenesisSignature = c.config.Node.genesisSignature
-	dc.Visor.Config.GenesisTimestamp = c.config.Node.genesisTimestamp
-	dc.Visor.Config.GenesisCoinVolume = c.config.Node.GenesisCoinVolume
-	dc.Visor.Config.DBPath = c.config.Node.DBPath
-	dc.Visor.Config.Arbitrating = c.config.Node.Arbitrating
-	dc.Visor.Config.EnableWalletAPI = c.config.Node.EnableWalletAPI
-	dc.Visor.Config.WalletDirectory = c.config.Node.WalletDirectory
-	dc.Visor.Config.BuildInfo = visor.BuildInfo{
+	dc.Visor.GenesisAddress = c.config.Node.genesisAddress
+	dc.Visor.GenesisSignature = c.config.Node.genesisSignature
+	dc.Visor.GenesisTimestamp = c.config.Node.genesisTimestamp
+	dc.Visor.GenesisCoinVolume = c.config.Node.GenesisCoinVolume
+	dc.Visor.DBPath = c.config.Node.DBPath
+	dc.Visor.Arbitrating = c.config.Node.Arbitrating
+	dc.Visor.EnableWalletAPI = c.config.Node.EnableWalletAPI
+	dc.Visor.WalletDirectory = c.config.Node.WalletDirectory
+	dc.Visor.BuildInfo = visor.BuildInfo{
 		Version: c.config.Build.Version,
 		Commit:  c.config.Build.Commit,
 		Branch:  c.config.Build.Branch,
 	}
-	dc.Visor.Config.EnableSeedAPI = c.config.Node.EnableSeedAPI
+	dc.Visor.EnableSeedAPI = c.config.Node.EnableSeedAPI
 
 	dc.Gateway.EnableWalletAPI = c.config.Node.EnableWalletAPI
 
@@ -348,7 +348,7 @@ func (c *Coin) configureDaemon() daemon.Config {
 		log.Panic(err)
 	}
 
-	dc.Visor.Config.WalletCryptoType = cryptoType
+	dc.Visor.WalletCryptoType = cryptoType
 
 	return dc
 }

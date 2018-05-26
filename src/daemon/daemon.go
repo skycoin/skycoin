@@ -49,10 +49,10 @@ var (
 	ErrDisconnectIPLimitReached gnet.DisconnectReason = errors.New("Maximum number of connections for this IP was reached")
 	// ErrDisconnectOtherError this is returned when a seemingly impossible error is encountered
 	// e.g. net.Conn.Addr() returns an invalid ip:port
-	ErrDisconnectOtherError                    gnet.DisconnectReason = errors.New("Incomprehensible error")
-	ErrDisconnectMaxDefaultConnectionReached                         = errors.New("Maximum number of default connections was reached")
+	ErrDisconnectOtherError                  gnet.DisconnectReason = errors.New("Incomprehensible error")
+	ErrDisconnectMaxDefaultConnectionReached                       = errors.New("Maximum number of default connections was reached")
+	// ErrDisconnectMaxOutgoingConnectionsReached is returned when connection pool size is greater than the maximum allowed
 	ErrDisconnectMaxOutgoingConnectionsReached gnet.DisconnectReason = errors.New("Maximum outgoing connections was reached")
-	ErrDisconnectMaxIncomingConnectionsReached gnet.DisconnectReason = errors.New("Maximum incoming connections was reached")
 
 	logger = logging.MustGetLogger("daemon")
 )

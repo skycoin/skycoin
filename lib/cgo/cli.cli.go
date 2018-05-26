@@ -3,6 +3,7 @@ package main
 import (
 	"reflect"
 	"unsafe"
+
 	cli "github.com/skycoin/skycoin/src/cli"
 )
 
@@ -83,7 +84,6 @@ func SKY_cli_NewApp(_cfg *C.Config__Handle, _arg1 *C.App__Handle) (____error_cod
 	return
 }
 
-
 //export SKY_cli_RPCClientFromContext
 func SKY_cli_RPCClientFromContext(_c *C.Context__Handle, _arg1 *C.WebRpcClient__Handle) (____error_code uint32) {
 	____error_code = 0
@@ -116,7 +116,6 @@ func SKY_cli_ConfigFromContext(_c *C.Context__Handle, _arg1 *C.Config__Handle) (
 	return
 }
 
-
 //export SKY_cli_PasswordFromBytes_Password
 func SKY_cli_PasswordFromBytes_Password(_p *C.cli__PasswordFromBytes, _arg0 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
@@ -146,4 +145,3 @@ func SKY_cli_PasswordFromTerm_Password(_p *C.cli__PasswordFromTerm, _arg0 *C.GoS
 	}
 	return
 }
-

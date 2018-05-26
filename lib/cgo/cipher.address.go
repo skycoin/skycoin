@@ -3,6 +3,7 @@ package main
 import (
 	"reflect"
 	"unsafe"
+
 	cipher "github.com/skycoin/skycoin/src/cipher"
 )
 
@@ -64,7 +65,7 @@ func SKY_cipher_AddressFromBytes(_b []byte, _arg1 *C.cipher__Address) (____error
 	}
 	return
 }
-		
+
 //export SKY_cipher_AddressFromPubKey
 func SKY_cipher_AddressFromPubKey(_pubKey *C.cipher__PubKey, _arg1 *C.cipher__Address) {
 	pubKey := (*cipher.PubKey)(unsafe.Pointer(_pubKey))
@@ -90,7 +91,6 @@ func SKY_cipher_BitcoinDecodeBase58Address(_addr string, _arg1 *C.cipher__Addres
 	}
 	return errcode
 }
-
 
 //export SKY_cipher_MustAddressFromBytes
 func SKY_cipher_MustAddressFromBytes(_b []byte, _arg1 *C.cipher__Address) (____error_code uint32) {

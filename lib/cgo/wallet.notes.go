@@ -3,6 +3,7 @@ package main
 import (
 	"reflect"
 	"unsafe"
+
 	wallet "github.com/skycoin/skycoin/src/wallet"
 )
 

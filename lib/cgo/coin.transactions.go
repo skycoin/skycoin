@@ -3,6 +3,7 @@ package main
 import (
 	"reflect"
 	"unsafe"
+
 	cipher "github.com/skycoin/skycoin/src/cipher"
 	coin "github.com/skycoin/skycoin/src/coin"
 )
@@ -234,8 +235,6 @@ func SKY_coin_Transaction_OutputHours(_txn *C.coin__Transaction, _arg0 *uint64) 
 	}
 	return
 }
-
-
 
 //export SKY_coin_Transactions_Hashes
 func SKY_coin_Transactions_Hashes(_txns *C.coin__Transactions, _arg0 *C.GoSlice_) (____error_code uint32) {

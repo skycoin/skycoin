@@ -3,6 +3,7 @@ package main
 import (
 	"reflect"
 	"unsafe"
+
 	cipher "github.com/skycoin/skycoin/src/cipher"
 )
 
@@ -87,7 +88,7 @@ func SKY_cipher_SHA256FromHex(_hs string, _arg1 *C.cipher__SHA256) uint32 {
 func SKY_cipher_DoubleSHA256(_b []byte, _arg1 *C.cipher__SHA256) {
 	h := cipher.DoubleSHA256(_b)
 	copyToBuffer(reflect.ValueOf(h[:]), unsafe.Pointer(_arg1), uint(SizeofSHA256))
-}  
+}
 
 //export SKY_cipher_AddSHA256
 func SKY_cipher_AddSHA256(_a *C.cipher__SHA256, _b *C.cipher__SHA256, _arg2 *C.cipher__SHA256) {

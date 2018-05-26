@@ -2,6 +2,7 @@ package main
 
 import (
 	"unsafe"
+
 	coin "github.com/skycoin/skycoin/src/coin"
 	fee "github.com/skycoin/skycoin/src/util/fee"
 )

@@ -2,6 +2,7 @@ package main
 
 import (
 	"unsafe"
+
 	testutil "github.com/skycoin/skycoin/src/testutil"
 )
 

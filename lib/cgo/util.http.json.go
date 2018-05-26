@@ -3,6 +3,7 @@ package main
 import (
 	"reflect"
 	"unsafe"
+
 	http "github.com/skycoin/skycoin/src/util/http"
 )
 

@@ -11,7 +11,6 @@ import apputil "github.com/skycoin/skycoin/src/util/apputil"
 */
 import "C"
 
-
 //export SKY_apputil_CatchInterruptPanic
 func SKY_apputil_CatchInterruptPanic() (____error_code uint32) {
 	____error_code = 0

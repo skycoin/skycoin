@@ -3,6 +3,7 @@ package main
 import (
 	"reflect"
 	"unsafe"
+
 	coin "github.com/skycoin/skycoin/src/coin"
 )
 
@@ -91,7 +92,6 @@ func SKY_coin_UxArray_HasDupes(_ua *C.coin__UxArray, _arg0 *bool) (____error_cod
 	return
 }
 
-
 //export SKY_coin_UxArray_Sort
 func SKY_coin_UxArray_Sort(_ua *C.coin__UxArray) (____error_code uint32) {
 	____error_code = 0
@@ -172,7 +172,6 @@ func SKY_coin_UxArray_CoinHours(_ua *C.coin__UxArray, _headTime uint64, _arg1 *u
 	}
 	return
 }
-
 
 //export SKY_coin_UxArray_Sub
 func SKY_coin_UxArray_Sub(_ua *C.coin__UxArray, _other *C.coin__UxArray, _arg1 *C.coin__UxArray) (____error_code uint32) {

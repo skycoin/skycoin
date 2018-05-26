@@ -2,6 +2,7 @@ package main
 
 import (
 	"unsafe"
+
 	cli "github.com/skycoin/skycoin/src/cli"
 )
 

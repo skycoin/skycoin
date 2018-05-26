@@ -1,9 +1,10 @@
 package main
 
 import (
+	"hash"
 	"reflect"
 	"unsafe"
-	"hash"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util/http"
 )
@@ -57,14 +58,15 @@ func inplaceHttpHelperAddress(p *C.httphelper__Address) *httphelper.Address {
  * Copy helpers
  */
 
-func copyString(src string, dest *C.GoString_) bool {
+func copyString(src string, dest *C.GoString_) {
 	srcLen := len(src)
 	dest.p = (*C.char)(C.malloc(C.size_t(srcLen + 1)))
 	strAddr := (*C.GoString_)(unsafe.Pointer(&src))
-	C.memcpy(unsafe.Pointer(dest.p), unsafe.Pointer(strAddr.p), C.size_t(srcLen))
-	C.eos(dest.p, C.int(srcLen))
-	dest.n = C.GoInt_(srcLen)
-	return true
+	result := C.memcpy(unsafe.Pointer(dest.p), unsafe.Pointer(strAddr.p), C.size_t(srcLen))
+	if result != nil {
+		C.eos(dest.p, C.int(srcLen))
+		dest.n = C.GoInt_(srcLen)
+	}
 }
 
 // Determine the memory address of a slice buffer and the
@@ -88,7 +90,8 @@ func copyToBuffer(src reflect.Value, dest unsafe.Pointer, n uint) {
 		return
 	}
 	srcAddr, elemSize := getBufferData(src)
-	C.memcpy(dest, srcAddr, C.size_t(n)*elemSize)
+	if C.memcpy(dest, srcAddr, C.size_t(n)*elemSize) != nil {
+	}
 }
 
 // Copy source slice/array/string onto instance of C.GSlice struct
@@ -112,16 +115,18 @@ func copyToGoSlice(src reflect.Value, dest *C.GoSlice_) {
 	if overflow {
 		n = int(dest.cap)
 	}
-	C.memcpy(dest.data, srcAddr, C.size_t(n)*elemSize)
-	// Do not modify slice metadata until memory is actually copied
-	if overflow {
-		dest.len = dest.cap - C.GoInt_(srcLen)
-	} else {
-		dest.len = C.GoInt_(srcLen)
+	result := C.memcpy(dest.data, srcAddr, C.size_t(n)*elemSize)
+	if result != nil {
+		// Do not modify slice metadata until memory is actually copied
+		if overflow {
+			dest.len = dest.cap - C.GoInt_(srcLen)
+		} else {
+			dest.len = C.GoInt_(srcLen)
+		}
 	}
 }
 
-func convertToInterface(a *C.GoInterface_) interface{}{
+func convertToInterface(a *C.GoInterface_) interface{} {
 	//TODO: Implement
 	return nil
 }
@@ -131,11 +136,11 @@ func copyToFunc(f C.Handle) func() hash.Hash {
 	return nil
 }
 
-func copyToStringMap( gomap map[string]string, dest *C.GoStringMap_ ){
-	*dest = (C.GoStringMap_)(registerHandle( gomap ))
+func copyToStringMap(gomap map[string]string, dest *C.GoStringMap_) {
+	*dest = (C.GoStringMap_)(registerHandle(gomap))
 }
 
-func splitCliArgs(args string) (result []string){
+func splitCliArgs(args string) (result []string) {
 	prevSep := -1
 	quoted := false
 	var i int
@@ -143,19 +148,19 @@ func splitCliArgs(args string) (result []string){
 		if args[i] == '"' {
 			quoted = !quoted
 			if !quoted {
-				result = append( result, args[prevSep + 1 : i] )
+				result = append(result, args[prevSep+1:i])
 			}
 			prevSep = i
 		} else if !quoted && args[i] == ' ' {
-			if prevSep + 1 < i {
-				result = append( result, args[prevSep + 1 : i] )
+			if prevSep+1 < i {
+				result = append(result, args[prevSep+1:i])
 			}
 			prevSep = i
 		}
 	}
 	if len(args) > 0 {
-		if prevSep + 1 < i {
-			result = append( result, args[prevSep + 1 : i] )
+		if prevSep+1 < i {
+			result = append(result, args[prevSep+1:i])
 		}
 	}
 	return

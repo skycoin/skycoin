@@ -2,6 +2,7 @@ package main
 
 import (
 	"unsafe"
+
 	webrpc "github.com/skycoin/skycoin/src/api/webrpc"
 )
 

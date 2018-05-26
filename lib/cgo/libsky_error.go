@@ -29,6 +29,6 @@ func catchApiPanic(errcode uint32, err interface{}) uint32 {
 	if err != nil {
 		// TODO: Fix to be like retVal = libErrorCode(err)
 		return SKY_ERROR
-	} 
+	}
 	return SKY_OK
 }

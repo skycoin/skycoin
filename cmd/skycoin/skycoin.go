@@ -268,7 +268,7 @@ var devConfig = Config{
 	//gnet uses this for TCP incoming and outgoing
 	Port: 6000,
 	// MaxOutgoingConnections is the maximum outgoing connections allowed.
-	MaxOutgoingConnections: 16,
+	MaxOutgoingConnections: 8,
 	// MaxDefaultOutgoingConnections is the maximum default outgoing connections allowed.
 	MaxDefaultPeerOutgoingConnections: 1,
 	DownloadPeerList:                  false,
@@ -535,25 +535,25 @@ func configureDaemon(c *Config) daemon.Config {
 		c.OutgoingConnectionsRate = time.Millisecond
 	}
 	dc.Daemon.OutgoingRate = c.OutgoingConnectionsRate
-	dc.Visor.Config.IsMaster = c.RunMaster
+	dc.Visor.IsMaster = c.RunMaster
 
-	dc.Visor.Config.BlockchainPubkey = c.BlockchainPubkey
-	dc.Visor.Config.BlockchainSeckey = c.BlockchainSeckey
+	dc.Visor.BlockchainPubkey = c.BlockchainPubkey
+	dc.Visor.BlockchainSeckey = c.BlockchainSeckey
 
-	dc.Visor.Config.GenesisAddress = c.GenesisAddress
-	dc.Visor.Config.GenesisSignature = c.GenesisSignature
-	dc.Visor.Config.GenesisTimestamp = c.GenesisTimestamp
-	dc.Visor.Config.GenesisCoinVolume = GenesisCoinVolume
-	dc.Visor.Config.DBPath = c.DBPath
-	dc.Visor.Config.Arbitrating = c.Arbitrating
-	dc.Visor.Config.EnableWalletAPI = c.EnableWalletAPI
-	dc.Visor.Config.WalletDirectory = c.WalletDirectory
-	dc.Visor.Config.BuildInfo = visor.BuildInfo{
+	dc.Visor.GenesisAddress = c.GenesisAddress
+	dc.Visor.GenesisSignature = c.GenesisSignature
+	dc.Visor.GenesisTimestamp = c.GenesisTimestamp
+	dc.Visor.GenesisCoinVolume = GenesisCoinVolume
+	dc.Visor.DBPath = c.DBPath
+	dc.Visor.Arbitrating = c.Arbitrating
+	dc.Visor.EnableWalletAPI = c.EnableWalletAPI
+	dc.Visor.WalletDirectory = c.WalletDirectory
+	dc.Visor.BuildInfo = visor.BuildInfo{
 		Version: Version,
 		Commit:  Commit,
 		Branch:  Branch,
 	}
-	dc.Visor.Config.EnableSeedAPI = c.EnableSeedAPI
+	dc.Visor.EnableSeedAPI = c.EnableSeedAPI
 
 	dc.Gateway.EnableWalletAPI = c.EnableWalletAPI
 
@@ -563,7 +563,7 @@ func configureDaemon(c *Config) daemon.Config {
 		log.Panic(err)
 	}
 
-	dc.Visor.Config.WalletCryptoType = cryptoType
+	dc.Visor.WalletCryptoType = cryptoType
 
 	return dc
 }
@@ -627,8 +627,8 @@ func Run(c *Config) {
 	// creates blockchain instance
 	dconf := configureDaemon(c)
 
-	logger.Infof("Opening database %s", dconf.Visor.Config.DBPath)
-	db, err = visor.OpenDB(dconf.Visor.Config.DBPath, c.DBReadOnly)
+	logger.Infof("Opening database %s", dconf.Visor.DBPath)
+	db, err = visor.OpenDB(dconf.Visor.DBPath, c.DBReadOnly)
 	if err != nil {
 		logger.Errorf("Database failed to open: %v. Is another skycoin instance running?", err)
 		return
@@ -735,7 +735,7 @@ func Run(c *Config) {
 	           for d.Visor.Visor.Blockchain.Head().Seq() < 2 {
 	               time.Sleep(5)
 	               tx := InitTransaction()
-	               err, _ := d.Visor.Visor.InjectTransaction(tx)
+	               err, _ := d.Visor.InjectTransaction(tx)
 	               if err != nil {
 	                   //log.Panic(err)
 	               }

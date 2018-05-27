@@ -411,18 +411,18 @@ func (serv *Service) Remove(wltID string) error {
 	if !serv.enableWalletAPI {
 		return ErrWalletAPIDisabled
 	}
-	
+
 	wlt, found := serv.wallets.get(wltID)
 	if found {
-		if len( wlt.Entries ) > 0 {
+		if len(wlt.Entries) > 0 {
 			addr := wlt.Entries[0].Address.String()
 			if _, ok := serv.firstAddrIDMap[addr]; ok {
-				delete( serv.firstAddrIDMap, addr )
+				delete(serv.firstAddrIDMap, addr)
 			}
 		}
-		serv.wallets.remove(wltID)	
+		serv.wallets.remove(wltID)
 	}
-	
+
 	return nil
 }
 

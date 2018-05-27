@@ -235,7 +235,9 @@ func Deserialize(r io.Reader, dsize int, data interface{}) error {
 	return d1.value(v)
 }
 
-// CanDeserialize does a check to see if serialization would be successful
+// CanDeserialize returns true if `in` buffer can be
+// deserialized into `dst`'s type. Returns false in any
+// other case.
 func CanDeserialize(in []byte, dst reflect.Value) bool {
 	d1 := &decoder{buf: make([]byte, len(in))}
 	copy(d1.buf, in)

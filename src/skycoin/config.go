@@ -208,7 +208,7 @@ func setDefaults() {
 	viper.SetDefault("build.branch", "")
 }
 
-// NewBlockchainConfig loads blockchain config parameters from a config file
+// NewConfig loads blockchain config parameters from a config file
 // default file is: fiber.toml in the project root
 // JSON, toml or yaml file can be used (toml preferred).
 func NewConfig(configName, appDir string) (Config, error) {

@@ -281,7 +281,13 @@ func DeserializeRawToValue(in []byte, dst reflect.Value) (int, error) {
 	return inlen - len(d1.buf), err
 }
 
-// DeserializeToValue deserialize to value
+// DeserializeToValue reads `dsize` bytes from `r`,
+// deserializes the resulting buffer into `dst`'s type and
+// returns the value of the buffer. If `data` is not either
+// a Pointer type, a Slice type or a Struct type, error
+// `errors.New("binary.Read: invalid type " + reflect.TypeOf(dst).String())`
+// is returned. If `in` buffer can't be deserialized, an
+// error is returned.
 func DeserializeToValue(r io.Reader, dsize int, dst reflect.Value) error {
 
 	//fmt.Printf("*A1 v is type %s \n", data.Type().String() )		//this is the type of the value

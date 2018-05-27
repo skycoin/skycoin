@@ -314,7 +314,9 @@ func DeserializeToValue(r io.Reader, dsize int, dst reflect.Value) error {
 	return d1.value(v)
 }
 
-// SerializeAtomic serializes int or other atomic
+// SerializeAtomic returns serialization of `data`
+// parameter. If `data` is not an atomic type, error
+// message `log.Panic("type not atomic")` is logged.
 func SerializeAtomic(data interface{}) []byte {
 	var b [8]byte
 	var bs []byte

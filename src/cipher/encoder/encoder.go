@@ -156,7 +156,12 @@ func DeserializeAtomic(in []byte, data interface{}) {
 	}
 }
 
-// DeserializeRaw deserialize raw
+// DeserializeRaw deserializes `in` buffer into return
+// parameter. If `data` is not either a Pointer type,
+// a Slice type or a Struct type, error message
+// `fmt.Errorf("Invalid type %s", reflect.TypeOf(v).String())`
+// is returned. If `in` buffer can't be deserialized,
+// error `errors.New("Deserialization failed")` is returned.
 func DeserializeRaw(in []byte, data interface{}) error {
 	v := reflect.ValueOf(data)
 	switch v.Kind() {

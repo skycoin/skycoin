@@ -247,7 +247,13 @@ func CanDeserialize(in []byte, dst reflect.Value) bool {
 	return true
 }
 
-// DeserializeRawToValue returns number of bytes used and an error if deserialization failed
+// DeserializeRawToValue deserializes `in` buffer into
+// `dst`'s type and returns the number of bytes used and
+// the value of the buffer. If `data` is not either a
+// Pointer type, a Slice type or a Struct type, 0 and error
+// `errors.New("binary.Read: invalid type " + reflect.TypeOf(dst).String())`
+// are returned. If `in` buffer can't be deserialized, 0 and
+// error `errors.New("Deserialization failed")` are returned.
 func DeserializeRawToValue(in []byte, dst reflect.Value) (int, error) {
 	var v reflect.Value
 	switch dst.Kind() {

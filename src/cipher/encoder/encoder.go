@@ -111,7 +111,10 @@ func DecodeInt(in []byte, data interface{}) {
 	}
 }
 
-// DeserializeAtomic fast path for atomic types.
+// DeserializeAtomic deserializes `in` buffer into `data`
+// parameter. If `data` is not an atomic type
+// (i.e., Integer type or Boolean type), error message
+// `log.Panic("type not atomic")` is logged.
 func DeserializeAtomic(in []byte, data interface{}) {
 	n := intDestSize(data)
 	if len(in) < n {

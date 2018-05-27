@@ -389,7 +389,8 @@ func SerializeAtomic(data interface{}) []byte {
 	return bs
 }
 
-// Serialize serialize struct
+// Serialize returns serialized basic type-based `data`
+// parameter. Encoding is reflect-based.
 func Serialize(data interface{}) []byte {
 	// Fast path for basic types.
 	// Fallback to reflect-based encoding.

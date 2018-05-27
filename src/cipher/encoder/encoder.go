@@ -70,7 +70,9 @@ func EncodeInt(b []byte, data interface{}) {
 	}
 }
 
-// DecodeInt decodes int
+// DecodeInt decodes `in` buffer into `data` parameter.
+// If `data` is not an Integer type, error message
+// `log.Panic("PushAtomic, case not handled")` is logged.
 func DecodeInt(in []byte, data interface{}) {
 
 	n := intDestSize(data)

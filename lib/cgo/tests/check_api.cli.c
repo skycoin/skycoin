@@ -73,8 +73,8 @@ Test(api_cli, TestLoadConfig) {
 	cr_assert(errcode == SKY_OK, "SKY_cli_Getenv failed getting COIN");
 	errcode = SKY_cli_Setenv(strEnvCoinVar, strEnvCoinFoo);
 	cr_assert(errcode == SKY_OK, "SKY_cli_Setenv failed setting COIN");
-	configHandle = SKY_cli_LoadConfig();
-	cr_assert(configHandle != 0, "SKY_cli_LoadConfig failed");
+	errcode = SKY_cli_LoadConfig(&configHandle);
+	cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
 	errcode = SKY_cli_Config_GetCoin(&configHandle, &strConfigValue);
 	cr_assert(errcode == SKY_OK, "SKY_cli_Config_GetCoin failed");
 	cr_assert(strcmp(strConfigValue.p, strEnvCoinFoo.p) == 0, "SKY_cli_LoadConfig with coin failed");
@@ -87,8 +87,8 @@ Test(api_cli, TestLoadConfig) {
 	cr_assert(errcode == SKY_OK, "SKY_cli_Getenv failed getting RPC_ADDR");
 	errcode = SKY_cli_Setenv(strEnvRPCVar, strEnvRPCSample);
 	cr_assert(errcode == SKY_OK, "SKY_cli_Setenv failed setting RPC_ADDR");
-	configHandle = SKY_cli_LoadConfig();
-	cr_assert(configHandle != 0, "SKY_cli_LoadConfig failed");
+	errcode = SKY_cli_LoadConfig(&configHandle);
+	cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
 	errcode = SKY_cli_Config_GetRPCAddress(&configHandle, &strConfigValue);
 	cr_assert(errcode == SKY_OK, "SKY_cli_Config_GetRPCAddress failed");
 	cr_assert(strcmp(strConfigValue.p, strEnvRPCSample.p) == 0, "SKY_cli_LoadConfig with RPCAddress failed");
@@ -109,8 +109,8 @@ Test(api_cli, TestLoadConfig) {
 	errcode = SKY_cli_Setenv(strWalletNameVar, *(GoString*)&strWalletNameSample);
 	cr_assert(errcode == SKY_OK, "SKY_cli_Setenv failed setting WALLET_NAME");
 	
-	configHandle = SKY_cli_LoadConfig();
-	cr_assert(configHandle != 0, "SKY_cli_LoadConfig failed");
+	errcode = SKY_cli_LoadConfig(&configHandle);
+	cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
 	errcode = SKY_cli_Config_FullWalletPath(&configHandle, &strConfigValue);
 	cr_assert(errcode == SKY_OK, "SKY_cli_Config_FullWalletPath failed");
 	cr_assert(strcmp(strConfigValue.p, SKYCOIN_WALLET_FULL_PATH_SAMPLE) == 0, "SKY_cli_LoadConfig with Wallet Dir failed");

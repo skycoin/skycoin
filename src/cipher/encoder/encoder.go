@@ -406,8 +406,10 @@ func Serialize(data interface{}) []byte {
 	return buf
 }
 
-// Size returns how many bytes Write would generate to encode the value v, which
-// must be a fixed-size value or a slice of fixed-size values, or a pointer to such data.
+// Size returns how many bytes would it take to encode the
+// value v, which must be a fixed-size value (struct) or a
+// slice of fixed-size values, or a pointer to such data.
+// Reflect-based encoding is used.
 func Size(v interface{}) int {
 	n, err := datasizeWrite(reflect.Indirect(reflect.ValueOf(v)))
 	if err != nil {

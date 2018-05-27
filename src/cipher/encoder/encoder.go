@@ -186,7 +186,12 @@ func DeserializeRaw(in []byte, data interface{}) error {
 	return d1.value(v)
 }
 
-// Deserialize takes reader and number of bytes to read
+// Deserialize reads `dsize` bytes from `r` and deserializes
+// the resulting buffer into return parameter. If `data`
+// is not either a Pointer type, a Slice type or a Struct type,
+// error `errors.New("binary.Read: invalid type " + reflect.TypeOf(d).String())`
+// is returned. If `in` buffer can't be deserialized, error
+// `errors.New("Deserialization failed")` is returned.
 func Deserialize(r io.Reader, dsize int, data interface{}) error {
 	// Fallback to reflect-based decoding.
 	//fmt.Printf("A1 v is type %s \n", reflect.TypeOf(data).String() )

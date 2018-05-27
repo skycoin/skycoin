@@ -32,7 +32,10 @@ Todo:
 
 // TODO: constant length byte arrays must not be prefixed
 
-// EncodeInt encodes int
+// EncodeInt encodes an Integer type contained in `data`
+// into buffer `b`. If `data` is not an Integer type,
+// error message `log.Panic("PushAtomic, case not handled")`
+// is logged.
 func EncodeInt(b []byte, data interface{}) {
 	//var b [8]byte
 	var bs []byte

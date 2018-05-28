@@ -43,7 +43,7 @@ func TestNewConfig(t *testing.T) {
 			LocalhostOnly:              false,
 			Address:                    "",
 			Port:                       6000,
-			MaxOutgoingConnections:            16,
+			MaxOutgoingConnections:            8,
 			MaxDefaultPeerOutgoingConnections: 1,
 			DownloadPeerList:                  false,
 			PeerListURL:                       "https://downloads.skycoin.net/blockchain/peers.txt",

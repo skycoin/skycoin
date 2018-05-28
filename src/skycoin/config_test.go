@@ -81,5 +81,14 @@ func TestNewConfig(t *testing.T) {
 			Commit:  "0aab9bf7730827d6fd11beb0d02096b40cea1872",
 			Branch:  "test-branch",
 		},
+		VisorParameters:VisorParameters{
+			MaxCoinSupply: 1e8,
+			DistributionAddressesTotal: 100,
+			InitialUnlockedCount: 25,
+			UnlockAddressRate: 5,
+			UnlockTimeInterval: 60 * 60 * 24 * 365,
+			MaxDropletPrecision: 3,
+			DefaultMaxBlockSize: 32 * 1024,
+		},
 	}, coinConfig)
 }

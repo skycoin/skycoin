@@ -8,11 +8,11 @@ import (
 
 var (
 	// Version of the node. Can be set by -ldflags
-	Version = "0.23.1-rc2"
+	Version = "{{.Version}}"
 	// Commit ID. Can be set by -ldflags
-	Commit = ""
+	Commit = "{{.Commit}}"
 	// Branch name. Can be set by -ldflags
-	Branch = ""
+	Branch = "{{.Branch}}"
 	// ConfigMode (possible values are "", "STANDALONE_CLIENT").
 	// This is used to change the default configuration.
 	// Can be set by -ldflags
@@ -21,29 +21,24 @@ var (
 	logger = logging.MustGetLogger("main")
 
 	// GenesisSignatureStr hex string of genesis signature
-	GenesisSignatureStr = "eb10468d10054d15f2b6f8946cd46797779aa20a7617ceb4be884189f219bc9a164e56a5b9f7bec392a804ff3740210348d73db77a37adb542a8e08d429ac92700"
+	GenesisSignatureStr = "{{.GenesisSignatureStr}}"
 	// GenesisAddressStr genesis address string
-	GenesisAddressStr = "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6"
+	GenesisAddressStr = "{{.GenesisAddressStr}}"
 	// BlockchainPubkeyStr pubic key string
-	BlockchainPubkeyStr = "0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a"
+	BlockchainPubkeyStr = "{{.BlockchainPubkeyStr}}"
 	// BlockchainSeckeyStr empty private key string
-	BlockchainSeckeyStr = ""
+	BlockchainSeckeyStr = "{{.BlockchainSeckeyStr}}"
 
 	// GenesisTimestamp genesis block create unix time
-	GenesisTimestamp uint64 = 1426562704
+	GenesisTimestamp uint64 = {{.GenesisTimestamp}}
 	// GenesisCoinVolume represents the coin capacity
-	GenesisCoinVolume uint64 = 100000000000000
+	GenesisCoinVolume uint64 = {{.GenesisCoinVolume}}
 
 	// DefaultConnections the default trust node addresses
 	DefaultConnections = []string{
-        "118.178.135.93:6000",
-        "47.88.33.156:6000",
-        "121.41.103.148:6000",
-        "120.77.69.188:6000",
-        "104.237.142.206:6000",
-        "176.58.126.224:6000",
-        "172.104.85.6:6000",
-        "139.162.7.132:6000",
+    {{- range $index, $address := .DefaultConnections}}
+        "{{$address -}}",
+    {{- end}}
 	}
 )
 
@@ -56,85 +51,85 @@ var devConfig = skycoin.NodeConfig{
 	BlockchainSeckeyStr: BlockchainSeckeyStr,
 	DefaultConnections:  DefaultConnections,
 	// Disable peer exchange
-	DisablePEX: false,
+	DisablePEX: {{.DisablePEX}},
 	// Don't make any outgoing connections
-	DisableOutgoingConnections: false,
+	DisableOutgoingConnections: {{.DisableOutgoingConnections}},
 	// Don't allowing incoming connections
-	DisableIncomingConnections: false,
+	DisableIncomingConnections: {{.DisableIncomingConnections}},
 	// Disables networking altogether
-	DisableNetworking: false,
+	DisableNetworking: {{.DisableNetworking}},
 	// Enable wallet API
-	EnableWalletAPI: false,
+	EnableWalletAPI: {{.EnableWalletAPI}},
 	// Enable GUI
-	EnableGUI: false,
+	EnableGUI: {{.EnableGUI}},
 	// Enable unversioned API
-	EnableUnversionedAPI: false,
+	EnableUnversionedAPI: {{.EnableUnversionedAPI}},
 	// Enable seed API
-	EnableSeedAPI: false,
+	EnableSeedAPI: {{.EnableSeedAPI}},
 	// Disable CSRF check in the wallet API
-	DisableCSRF: false,
+	DisableCSRF: {{.DisableCSRF}},
 	// Only run on localhost and only connect to others on localhost
-	LocalhostOnly: false,
+	LocalhostOnly: {{.LocalhostOnly}},
 	// Which address to serve on. Leave blank to automatically assign to a
 	// public interface
-	Address: "",
+	Address: "{{.Address}}",
 	//gnet uses this for TCP incoming and outgoing
-	Port: 6000,
+	Port: {{.Port}},
 	// MaxOutgoingConnections is the maximum outgoing connections allowed.
-	MaxOutgoingConnections: 8,
+	MaxOutgoingConnections: {{.MaxOutgoingConnections}},
 	// MaxDefaultOutgoingConnections is the maximum default outgoing connections allowed.
-	MaxDefaultPeerOutgoingConnections: 1,
-	DownloadPeerList:                  false,
-	PeerListURL:                       "https://downloads.skycoin.net/blockchain/peers.txt",
+	MaxDefaultPeerOutgoingConnections: {{.MaxDefaultPeerOutgoingConnections}},
+	DownloadPeerList:                  {{.DownloadPeerList}},
+	PeerListURL:                       "{{.PeerListURL}}",
 	// How often to make outgoing connections, in seconds
-	OutgoingConnectionsRate: 5000000000, // 5s
-	PeerlistSize:            65535,
+	OutgoingConnectionsRate: {{.OutgoingConnectionsRate | parseDuration}}, // {{.OutgoingConnectionsRate}}
+	PeerlistSize:            {{.PeerlistSize}},
 	// Wallet Address Version
 	//AddressVersion: "test",
 	// Remote web interface
-	WebInterface:      true,
-	WebInterfacePort:  6420,
-	WebInterfaceAddr:  "127.0.0.1",
-	WebInterfaceCert:  "",
-	WebInterfaceKey:   "",
-	WebInterfaceHTTPS: false,
+	WebInterface:      {{.WebInterface}},
+	WebInterfacePort:  {{.WebInterfacePort}},
+	WebInterfaceAddr:  "{{.WebInterfaceAddr}}",
+	WebInterfaceCert:  "{{.WebInterfaceCert}}",
+	WebInterfaceKey:   "{{.WebInterfaceKey}}",
+	WebInterfaceHTTPS: {{.WebInterfaceHTTPS}},
 
-	RPCInterface: true,
+	RPCInterface: {{.RPCInterface}},
 
 	LaunchBrowser: false,
-	// Data directory holds app data -- defaults to $HOME/.skycoin
-	DataDirectory: "$HOME/.skycoin",
+	// Data directory holds app data -- defaults to {{.DataDirectory}}
+	DataDirectory: "{{.DataDirectory}}",
 	// Web GUI static resources
-	GUIDirectory: "./src/gui/static/",
+	GUIDirectory: "{{.GUIDirectory}}",
 	// Logging
-	ColorLog:        true,
-	LogLevel:        "INFO",
-	LogToFile:       false,
-	DisablePingPong: false,
+	ColorLog:        {{.ColorLog}},
+	LogLevel:        "{{.LogLevel}}",
+	LogToFile:       {{.LogToFile}},
+	DisablePingPong: {{.DisablePingPong}},
 
-	VerifyDB:       true,
-	ResetCorruptDB: false,
+	VerifyDB:       {{.VerifyDB}},
+	ResetCorruptDB: {{.ResetCorruptDB}},
 
 	// Wallets
-	WalletDirectory:  "",
-	WalletCryptoType: "scrypt-chacha20poly1305",
+	WalletDirectory:  "{{.WalletDirectory}}",
+	WalletCryptoType: "{{.WalletCryptoType}}",
 
 	// Timeout settings for http.Server
 	// https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
-	ReadTimeout:  10000000000, // 10s
-	WriteTimeout: 60000000000, // 1m0s
-	IdleTimeout:  120000000000, // 2m0s
+	ReadTimeout:  {{.ReadTimeout | parseDuration}}, // {{.ReadTimeout}}
+	WriteTimeout: {{.WriteTimeout | parseDuration}}, // {{.WriteTimeout}}
+	IdleTimeout:  {{.IdleTimeout | parseDuration}}, // {{.IdleTimeout}}
 
 	// Centralized network configuration
-	RunMaster: false,
+	RunMaster: {{.RunMaster}},
 	/* Developer options */
 
 	// Enable cpu profiling
-	ProfileCPU: false,
+	ProfileCPU: {{.ProfileCPU}},
 	// Where the file is written to
-	ProfileCPUFile: "skycoin.prof",
+	ProfileCPUFile: "{{.ProfileCPUFile}}",
 	// HTTP profiling interface (see http://golang.org/pkg/net/http/pprof/)
-	HTTPProf: false,
+	HTTPProf: {{.HTTPProf}},
 }
 
 func init() {

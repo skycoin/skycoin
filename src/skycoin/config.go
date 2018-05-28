@@ -23,15 +23,18 @@ var (
 
 // Config records fiber coin configs
 type Config struct {
-	Node  NodeConfig  `mapstructure:"node"`
-	Build BuildConfig `mapstructure:"build"`
+	Node            NodeConfig      `mapstructure:"node"`
+	Build           BuildConfig     `mapstructure:"build"`
+	VisorParameters VisorParameters `mapstructure:"visor_parameters"`
 }
 
 // BuildConfig records build info
 type BuildConfig struct {
-	Version string `mapstructure:"version"` // version number
-	Commit  string `mapstructure:"commit"`  // git commit id
-	Branch  string `mapstructure:"branch"`  // git branch name
+	// version number
+	// using Version causes a conflict with Version in NodeConfig when templatin hence BuildVersion
+	Version string `mapstructure:"version"`
+	Commit  string `mapstructure:"commit"` // git commit id
+	Branch  string `mapstructure:"branch"` // git branch name
 }
 
 // NodeConfig records the node's configuration
@@ -134,7 +137,7 @@ type NodeConfig struct {
 	DBReadOnly  bool   `mapstructure:"db_read_only"`
 	Arbitrating bool   `mapstructure:"arbitrating"`
 	LogToFile   bool   `mapstructure:"log_to_file"`
-	Version     bool   `mapstructure:"version"` // show node version
+	ShowVersion bool   `mapstructure:"show_version"` // show node version
 
 	GenesisSignatureStr string   `mapstructure:"genesis_signature_str"`
 	GenesisAddressStr   string   `mapstructure:"genesis_address_str"`
@@ -149,6 +152,36 @@ type NodeConfig struct {
 
 	blockchainPubkey cipher.PubKey
 	blockchainSeckey cipher.SecKey
+}
+
+type VisorParameters struct {
+	// MaxCoinSupply is the maximum supply of coins
+	MaxCoinSupply uint64 `mapstructure:"max_coin_supply"`
+
+	// DistributionAddressesTotal is the number of distribution addresses
+	DistributionAddressesTotal uint64 `mapstructure:"distribution_addresses_total"`
+
+	// DistributionAddressInitialBalance is the initial balance of each distribution address
+	DistributionAddressInitialBalance uint64
+
+	// InitialUnlockedCount is the initial number of unlocked addresses
+	InitialUnlockedCount uint64 `mapstructure:"initial_unlocked_count"`
+
+	// UnlockAddressRate is the number of addresses to unlock per unlock time interval
+	UnlockAddressRate uint64 `mapstructure:"unlock_address_rate"`
+
+	// UnlockTimeInterval is the distribution address unlock time interval, measured in seconds
+	// Once the InitialUnlockedCount is exhausted,
+	// UnlockAddressRate addresses will be unlocked per UnlockTimeInterval
+	UnlockTimeInterval uint64 `mapstructure:"unlock_time_interval"`
+
+	// MaxDropletPrecision represents the decimal precision of droplets
+	MaxDropletPrecision uint64 `mapstructure:"max_droplet_precision"`
+
+	//DefaultMaxBlockSize is max block size
+	DefaultMaxBlockSize int `mapstructure:"default_max_block_size"`
+
+	DistributionAddresses []string `mapstructure:"distribution_addresses"`
 }
 
 func setDefaults() {
@@ -206,6 +239,15 @@ func setDefaults() {
 	// build defaults
 	viper.SetDefault("build.commit", "")
 	viper.SetDefault("build.branch", "")
+
+	// visor parameter defaults
+	viper.SetDefault("visor_parameters.max_coin_supply", 1e8)
+	viper.SetDefault("visor_parameters.distribution_addresses_total", 100)
+	viper.SetDefault("visor_parameters.initial_unlocked_count", 25)
+	viper.SetDefault("visor_parameters.unlock_address_rate", 5)
+	viper.SetDefault("visor_parameters.unlock_time_interval", 60*60*24*365)
+	viper.SetDefault("visor_parameters.max_droplet_precision", 3)
+	viper.SetDefault("visor_parameters.default_max_block_size", 32*1024)
 }
 
 // NewConfig loads blockchain config parameters from a config file
@@ -374,7 +416,7 @@ func (c *Config) register() {
 	flag.BoolVar(&c.Node.LocalhostOnly, "localhost-only", c.Node.LocalhostOnly, "Run on localhost and only connect to localhost peers")
 	flag.BoolVar(&c.Node.Arbitrating, "arbitrating", c.Node.Arbitrating, "Run node in arbitrating mode")
 	flag.StringVar(&c.Node.WalletCryptoType, "wallet-crypto-type", c.Node.WalletCryptoType, "wallet crypto type. Can be sha256-xor or scrypt-chacha20poly1305")
-	flag.BoolVar(&c.Node.Version, "version", false, "show node version")
+	flag.BoolVar(&c.Node.ShowVersion, "version", false, "show node version")
 }
 
 func panicIfError(err error, msg string, args ...interface{}) {

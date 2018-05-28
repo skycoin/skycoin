@@ -1,0 +1,23 @@
+package visor
+
+/*
+* CODE GENERATED AUTOMATICALLY WITH FIBER COIN CREATOR
+* AVOID EDITING THIS MANUALLY
+*/
+
+const (
+	MaxCoinSupply uint64 = {{.MaxCoinSupply}}
+	DistributionAddressesTotal uint64 = {{.DistributionAddressesTotal}}
+	DistributionAddressInitialBalance uint64 = MaxCoinSupply / DistributionAddressesTotal
+	InitialUnlockedCount uint64 = {{.InitialUnlockedCount}}
+	UnlockAddressRate uint64 = {{.UnlockAddressRate}}
+	UnlockTimeInterval uint64 = {{.UnlockTimeInterval}}
+	MaxDropletPrecision uint64 = {{.MaxDropletPrecision}}
+	DefaultMaxBlockSize int = {{.DefaultMaxBlockSize}}
+)
+
+var distributionAddresses = [DistributionAddressesTotal]string{
+{{- range $index, $address := .DistributionAddresses}}
+   "{{$address -}}",
+{{- end}}
+}

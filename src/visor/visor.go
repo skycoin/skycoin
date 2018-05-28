@@ -21,14 +21,6 @@ import (
 	"github.com/skycoin/skycoin/src/util/logging"
 )
 
-const (
-	// MaxDropletPrecision represents the decimal precision of droplets
-	MaxDropletPrecision uint64 = 3
-
-	//DefaultMaxBlockSize is max block size
-	DefaultMaxBlockSize int = 32 * 1024
-)
-
 var (
 	logger = logging.MustGetLogger("visor")
 

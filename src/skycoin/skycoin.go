@@ -44,7 +44,7 @@ func (c *Coin) Run() {
 	var webInterface *api.Server
 	errC := make(chan error, 10)
 
-	if c.config.Node.Version {
+	if c.config.Node.ShowVersion {
 		fmt.Println(c.config.Build.Version)
 		return
 	}

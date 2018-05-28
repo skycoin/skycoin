@@ -740,17 +740,31 @@ func (c *Client) RawTransaction(txid string) (string, error) {
 }
 
 // VerifyTransaction verifies the encoded raw transaction
-func (c *Client) VerifyTransaction(encodedTxn string) (*CreatedTransaction, error) {
+func (c *Client) VerifyTransaction(encodedTxn string) (*VerifyTxnResponse, error) {
 	req := VerifyTxnRequest{
 		EncodedTransaction: encodedTxn,
 	}
 
-	var rsp VerifyTxnResponse
+	var rsp HTTPResponse
 	if err := c.PostJSON("/api/v1/transaction/verify", req, &rsp); err != nil {
 		return nil, err
 	}
 
-	return &rsp.Transaction, nil
+	var txnRsp *VerifyTxnResponse
+	if rsp.Data != "" {
+		var v VerifyTxnResponse
+		if err := json.NewDecoder(strings.NewReader(rsp.Data)).Decode(&v); err != nil {
+			return nil, err
+		}
+		*txnRsp = v
+	}
+
+	var err error
+	if rsp.Error != "" {
+		err = errors.New(rsp.Error)
+	}
+
+	return txnRsp, err
 }
 
 // AddressTransactions makes a request to GET /api/v1/explorer/address

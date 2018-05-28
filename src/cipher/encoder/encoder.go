@@ -13,6 +13,15 @@
 // Varints are a method of encoding integers using one or more bytes;
 // numbers with smaller absolute value take a smaller number of bytes.
 // For a specification, see http://code.google.com/apis/protocolbuffers/docs/encoding.html.
+//
+// Fields can be ignored with the struct tag `enc:"-"`
+//
+// Fields can be skipped if empty with the struct tag `enc:",omitempty"`
+// Note the comma, which follows package json's conventions.
+// Only Slice, Map and String types recognize the omitempty tag.
+// When omitempty is set, the no data will be written if the value is empty.
+// If the value is empty and omitempty is not set, then a length prefix with value 0 would be written.
+// omitempty can only be used for the last field in the struct
 package encoder
 
 import (
@@ -22,6 +31,7 @@ import (
 	"log"
 	"math"
 	"reflect"
+	"strings"
 )
 
 /*
@@ -363,7 +373,6 @@ func Serialize(data interface{}) []byte {
 	v := reflect.Indirect(reflect.ValueOf(data))
 	size, err := datasizeWrite(v)
 	if err != nil {
-		//return nil, errors.New("binary.Write: " + err.Error())
 		log.Panic(err)
 	}
 	buf := make([]byte, size)
@@ -382,20 +391,35 @@ func Size(v interface{}) int {
 	return n
 }
 
-// dataSize returns the number of bytes the actual data represented by v occupies in memory.
+// isEmpty returns true if a value is "empty".
+// Only supports Slice, Map and String.
+// All other values are never considered empty.
+func isEmpty(v reflect.Value) bool {
+	t := v.Type()
+	switch t.Kind() {
+	case reflect.String:
+		return v.Len() == 0
+	case reflect.Map:
+		return v.IsNil() || v.Len() == 0
+	case reflect.Slice:
+		return v.IsNil() || v.Len() == 0
+	default:
+		return false
+	}
+}
+
+// datasizeWrite returns the number of bytes the actual data represented by v occupies in memory.
 // For compound structures, it sums the sizes of the elements. Thus, for instance, for a slice
 // it returns the length of the slice times the element size and does not count the memory
 // occupied by the header.
-
-/* Datasize needs to write variable length slice fields */
-/* Datasize for serialization is different than for serialization */
 func datasizeWrite(v reflect.Value) (int, error) {
 	t := v.Type()
 	switch t.Kind() {
 	case reflect.Interface:
-		//fmt.Println(v.Elem())
 		return datasizeWrite(v.Elem())
+
 	case reflect.Array:
+		// Arrays are a fixed size, so the length is not written
 		size := 0
 		for i := 0; i < v.Len(); i++ {
 			elem := v.Index(i)
@@ -439,20 +463,32 @@ func datasizeWrite(v reflect.Value) (int, error) {
 
 	case reflect.Struct:
 		sum := 0
-		for i, n := 0, t.NumField(); i < n; i++ {
-			f := t.Field(i)
-			if f.Tag.Get("enc") != "-" {
-				s, err := datasizeWrite(v.Field(i))
-				if err != nil {
-					return 0, err
+		nFields := t.NumField()
+		for i, n := 0, nFields; i < n; i++ {
+			ff := t.Field(i)
+
+			tag, omitempty := parseTag(ff.Tag.Get("enc"))
+
+			if omitempty && i != nFields-1 {
+				log.Panic("omitempty only supported for the final field in the struct")
+			}
+
+			if tag != "-" {
+				fv := v.Field(i)
+				if !omitempty || !isEmpty(fv) {
+					s, err := datasizeWrite(fv)
+					if err != nil {
+						return 0, err
+					}
+					sum += s
 				}
-				sum += s
 			}
 		}
 		return sum, nil
 
 	case reflect.Bool:
 		return 1, nil
+
 	case reflect.String:
 		return len(v.String()) + 4, nil
 
@@ -464,6 +500,18 @@ func datasizeWrite(v reflect.Value) (int, error) {
 	default:
 		return 0, errors.New("invalid type " + t.String())
 	}
+}
+
+func parseTag(tag string) (string, bool) {
+	tagSplit := strings.Split(tag, ",")
+	name := tagSplit[0]
+
+	omitempty := false
+	if len(tagSplit) > 1 && tagSplit[1] == "omitempty" {
+		omitempty = true
+	}
+
+	return name, omitempty
 }
 
 /*
@@ -628,17 +676,7 @@ func (d *decoder) value(v reflect.Value) error {
 	switch kind {
 
 	case reflect.Array:
-		//if len(d.buf) < 4 {
-		//    return errors.New("Not enough buffer data to deserialize length")
-		//}
-		//length := int(d.uint32())
-		//if length < 0 || length > len(d.buf) {
-		//    return fmt.Errorf("Invalid length: %d", length)
-		//}
-		//if length != v.Len() {
-		//    return errors.New("Incomplete fixed length array received")
-		//}
-
+		// Arrays are a fixed size, so the length is not written
 		for i := 0; i < v.Len(); i++ {
 			if err := d.value(v.Index(i)); err != nil {
 				return err
@@ -695,13 +733,24 @@ func (d *decoder) value(v reflect.Value) error {
 
 	case reflect.Struct:
 		t := v.Type()
-		for i := 0; i < v.NumField(); i++ {
-			fv := v.Field(i)
+		nFields := v.NumField()
+		for i := 0; i < nFields; i++ {
 			ff := t.Field(i)
-			if ff.Tag.Get("enc") != "-" {
+
+			tag, omitempty := parseTag(ff.Tag.Get("enc"))
+
+			if omitempty && i != nFields-1 {
+				log.Panic("omitempty only supported for the final field in the struct")
+			}
+
+			if tag != "-" {
+				fv := v.Field(i)
 				if fv.CanSet() && ff.Name != "_" {
 					if err := d.value(fv); err != nil {
-						return err
+						// omitempty fields at the end of the buffer are ignored
+						if !(omitempty && len(d.buf) == 0) {
+							return err
+						}
 					}
 				} else {
 					//dont decode anything
@@ -753,16 +802,6 @@ func (d *decoder) value(v reflect.Value) error {
 	return nil
 }
 
-func (d *decoder) cmp(n int, m int) int {
-	if n != 0 {
-		return -1
-	}
-	if m != 0 {
-		return -1
-	}
-	return 0
-}
-
 //advance, returns -1 on failure
 //returns 0 on success
 func (d *decoder) adv(n int) int {
@@ -781,13 +820,13 @@ func (d *decoder) dchk(v reflect.Value) int {
 	switch kind {
 
 	case reflect.Array:
-		c := 0
+		// Arrays are a fixed size, so the length is not written
 		for i := 0; i < v.Len(); i++ {
-			//t := d.dchk(v.Index(i))
-			//c += t
-			c = d.cmp(c, d.dchk(v.Index(i)))
+			if d.dchk(v.Index(i)) < 0 {
+				return -1
+			}
 		}
-		return c
+		return 0
 
 	case reflect.Map:
 		if len(d.buf) < 4 {
@@ -795,84 +834,93 @@ func (d *decoder) dchk(v reflect.Value) int {
 		}
 
 		length := int(leUint32(d.buf[0:4]))
-		d.adv(4) //must succeed
+		if d.adv(4) < 0 {
+			return -1
+		}
 
 		key := v.Type().Key()
 		elem := v.Type().Elem()
 
-		c := 0
 		for i := 0; i < length; i++ {
 			keyv := reflect.Indirect(reflect.New(key))
 			elemv := reflect.Indirect(reflect.New(elem))
 
-			c = d.cmp(c, d.dchk(keyv))
-			c = d.cmp(c, d.dchk(elemv))
-			//c += d.adv(d.dchk(elemv))
+			if d.dchk(keyv) < 0 {
+				return -1
+			}
 
-			//t := d.dchk(elemv)
-			//d.buf = d.buf[t:]
-			//c += t
-
-			//v.Set(reflect.Append(v, elemv))
+			if d.dchk(elemv) < 0 {
+				return -1
+			}
 		}
-		return c
+		return 0
 	case reflect.Slice:
 		if len(d.buf) < 4 {
-			return -1 //error
+			return -1
 		}
 
 		length := int(leUint32(d.buf[0:4]))
-		d.adv(4) //must succeed
+		if d.adv(4) < 0 {
+			return -1
+		}
 
 		if length < 0 || length > len(d.buf) {
-			return -1 //error
+			return -1
 		}
 
 		elem := v.Type().Elem()
 		if elem.Kind() == reflect.Uint8 {
-			return d.cmp(0, d.adv(length)) //already advanced 4
+			return d.adv(length)
 		}
 
-		c := 0
 		for i := 0; i < length; i++ {
 			elemv := reflect.Indirect(reflect.New(elem))
 
-			c = d.cmp(c, d.dchk(elemv))
-			//c += d.adv(d.dchk(elemv))
-
-			//t := d.dchk(elemv)
-			//d.buf = d.buf[t:]
-			//c += t
-
-			//v.Set(reflect.Append(v, elemv))
+			if d.dchk(elemv) < 0 {
+				return -1
+			}
 		}
-		return c
+		return 0
 
 	case reflect.Struct:
 		t := v.Type()
-		c := 0
-		for i := 0; i < v.NumField(); i++ {
-			fv := v.Field(i)
+		nFields := v.NumField()
+		for i := 0; i < nFields; i++ {
 			ff := t.Field(i)
-			if ff.Tag.Get("enc") != "-" {
-				if fv.CanSet() && ff.Name != "_" {
-					//c += d.adv(d.dchk(fv))
-					//c += d.dchk(fv)
-					c = d.cmp(c, d.dchk(fv))
+
+			tag, omitempty := parseTag(ff.Tag.Get("enc"))
+
+			if omitempty && i != nFields-1 {
+				log.Panic("omitempty only supported for the final field in the struct")
+			}
+
+			if tag != "-" {
+				fv := v.Field(i)
+				if !omitempty && fv.CanSet() && ff.Name != "_" {
+					if d.dchk(fv) < 0 {
+						return -1
+					}
 				} else {
 					//dont try to decode anything
 					//d.skip(fv) //BUG!?
 				}
 			}
 		}
-		return c
+		return 0
 
 	case reflect.Bool:
 		return d.adv(1)
 	case reflect.String:
+		if len(d.buf) < 4 {
+			return -1
+		}
+
 		length := int(leUint32(d.buf[0:4]))
-		d.adv(4) //must succeed
-		return d.cmp(0, d.adv(length))
+		if d.adv(4) < 0 {
+			return -1
+		}
+
+		return d.adv(length)
 	case reflect.Int8:
 		return d.adv(1)
 	case reflect.Int16:
@@ -910,8 +958,8 @@ func (e *encoder) value(v reflect.Value) {
 	case reflect.Interface:
 		e.value(v.Elem())
 
-	case reflect.Array: //fixed size
-		//e.uint32(uint32(v.Len()))
+	case reflect.Array:
+		// Arrays are a fixed size, so the length is not written
 		for i := 0; i < v.Len(); i++ {
 			e.value(v.Index(i))
 		}
@@ -931,43 +979,27 @@ func (e *encoder) value(v reflect.Value) {
 
 	case reflect.Struct:
 		t := v.Type()
-		for i := 0; i < v.NumField(); i++ {
+		nFields := v.NumField()
+		for i := 0; i < nFields; i++ {
 			// see comment for corresponding code in decoder.value()
-			v := v.Field(i)
-			f := t.Field(i)
-			if f.Tag.Get("enc") != "-" {
-				if v.CanSet() || f.Name != "_" {
-					e.value(v)
+			ff := t.Field(i)
+
+			tag, omitempty := parseTag(ff.Tag.Get("enc"))
+
+			if omitempty && i != nFields-1 {
+				log.Panic("omitempty only supported for the final field in the struct")
+			}
+
+			if tag != "-" {
+				fv := v.Field(i)
+				if !(omitempty && isEmpty(fv)) && (fv.CanSet() || ff.Name != "_") {
+					e.value(fv)
 				} else {
 					//dont write anything
 					//e.skip(v)
 				}
 			}
 		}
-
-	// case reflect.Slice:
-	//     t := v.Type() //type of the value
-
-	//     //handle byte array
-	//     if t.Elem().Kind() == reflect.Uint8 {
-	//         b := v.Bytes()
-	//         n := len(b)
-	//         e.uint32(uint32(n))
-	//         for i := 0; i < n; i++ {
-	//             e.buf[i] = b[i]
-	//         }   //memcpy
-	//         e.buf = e.buf[n:] //advance slice n bytes
-	//     } else { //handle struct array
-	//         s := int(t.Elem().Size())
-	//         if s <= 1 {
-	//             log.Panic()
-	//         }
-	//         n := v.Len()            //const
-	//         e.uint32(uint32(n * s)) //push number of bytes
-	//         for i := 0; i < n; i++ {
-	//             e.value(v.Index(i))
-	//         }
-	//     }
 
 	case reflect.Bool:
 		e.bool(v.Bool())

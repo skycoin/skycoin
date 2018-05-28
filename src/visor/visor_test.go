@@ -538,7 +538,8 @@ func TestVisorInjectTransaction(t *testing.T) {
 	txn.Out[0].Address = cipher.Address{}
 	known, err = v.InjectTransactionStrict(txn)
 	require.False(t, known)
-	testutil.RequireError(t, err, "Transaction output is sent to the null address")
+	require.IsType(t, ErrTxnViolatesUserConstraint{}, err)
+	testutil.RequireError(t, err, "Transaction violates user constraint: Transaction output is sent to the null address")
 }
 
 func makeOverflowCoinsSpendTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address) coin.Transaction {

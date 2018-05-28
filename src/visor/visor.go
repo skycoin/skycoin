@@ -1765,12 +1765,8 @@ func (vs *Visor) GetUnspentsOfAddrs(addrs []cipher.Address) (coin.AddressUxOuts,
 // VerifyTxnVerbose verifies a transaction, it returns transaction's input uxouts, whether the
 // transaction is confirmed, and error if any
 func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bool, error) {
-	// Checks if the txn's output contains empty address
-	for _, o := range txn.Out {
-		if o.Address.Null() {
-			err := errors.New("Transaction.Out contains an output sending to an empty address")
-			return nil, false, NewErrTxnViolatesHardConstraint(err)
-		}
+	if err := VerifySingleTxnUserConstraints(*txn); err != nil {
+		return nil, false, err
 	}
 
 	var uxa coin.UxArray

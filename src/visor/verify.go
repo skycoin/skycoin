@@ -109,6 +109,25 @@ func (e ErrTxnViolatesSoftConstraint) Error() string {
 	return fmt.Sprintf("Transaction violates soft constraint: %v", e.Err)
 }
 
+// ErrTxnViolatesUserConstraint is returned when a transaction violates user constraints
+type ErrTxnViolatesUserConstraint struct {
+	Err error
+}
+
+// NewErrTxnViolatesUserConstraint creates ErrTxnViolatesUserConstraint
+func NewErrTxnViolatesUserConstraint(err error) error {
+	if err == nil {
+		return nil
+	}
+	return ErrTxnViolatesUserConstraint{
+		Err: err,
+	}
+}
+
+func (e ErrTxnViolatesUserConstraint) Error() string {
+	return fmt.Sprintf("Transaction violates user constraint: %v", e.Err)
+}
+
 // VerifySingleTxnSoftConstraints returns an error if any "soft" constraint are violated.
 // "soft" constaints are enforced at the network and block publication level,
 // but are not enforced at the blockchain level.
@@ -277,7 +296,8 @@ func verifyTxnHardConstraints(txn coin.Transaction, head *coin.SignedBlock, uxIn
 func VerifySingleTxnUserConstraints(txn coin.Transaction) error {
 	for _, o := range txn.Out {
 		if o.Address.Null() {
-			return errors.New("Transaction output is sent to the null address")
+			err := errors.New("Transaction output is sent to the null address")
+			return NewErrTxnViolatesUserConstraint(err)
 		}
 	}
 

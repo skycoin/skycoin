@@ -939,10 +939,10 @@ func TestVerifyTransaction(t *testing.T) {
 			httpBody:                   string(invalidTxEmptyAddressBodyJSON),
 			gatewayVerifyTxnVerboseArg: invalidTxEmptyAddress,
 			gatewayVerifyTxnVerboseResult: verifyTxnVerboseResult{
-				Err: visor.NewErrTxnViolatesHardConstraint(errors.New("Transaction.Out contains an output sending to an empty address")),
+				Err: visor.NewErrTxnViolatesUserConstraint(errors.New("Transaction.Out contains an output sending to an empty address")),
 			},
 			httpResponse: HTTPResponse{
-				Error: "Transaction violates hard constraint: Transaction.Out contains an output sending to an empty address",
+				Error: "Transaction violates user constraint: Transaction.Out contains an output sending to an empty address",
 			},
 		},
 		{

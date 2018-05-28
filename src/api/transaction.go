@@ -304,7 +304,8 @@ func verifyTxnHandler(gateway Gatewayer) http.HandlerFunc {
 		if err != nil {
 			switch err.(type) {
 			case visor.ErrTxnViolatesSoftConstraint,
-				visor.ErrTxnViolatesHardConstraint:
+				visor.ErrTxnViolatesHardConstraint,
+				visor.ErrTxnViolatesUserConstraint:
 				rsp.Error = err.Error()
 			default:
 				wh.Error500(w, err.Error())

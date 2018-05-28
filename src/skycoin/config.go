@@ -154,6 +154,7 @@ type NodeConfig struct {
 	blockchainSeckey cipher.SecKey
 }
 
+// VisorParameters are the parameters used to generate parameters.go in visor
 type VisorParameters struct {
 	// MaxCoinSupply is the maximum supply of coins
 	MaxCoinSupply uint64 `mapstructure:"max_coin_supply"`

@@ -10,15 +10,18 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli"
 
+	"time"
+
 	"github.com/skycoin/skycoin/src/skycoin"
 	"github.com/skycoin/skycoin/src/util/logging"
-	"time"
 )
 
 const (
+	// Version is the cli version
 	Version = "0.1"
 )
 
+// CoinTemplateParameters represents parameters used to generate the new coin files.
 type CoinTemplateParameters struct {
 	skycoin.NodeConfig
 	skycoin.BuildConfig
@@ -163,7 +166,6 @@ func createCoinCommand() cli.Command {
 				return err
 			}
 
-
 			t := template.New(coinTemplateFile)
 			t.Funcs(template.FuncMap{
 				"parseDuration": parseDurationParameters,
@@ -199,7 +201,6 @@ func main() {
 		log.Fatal(e)
 	}
 }
-
 
 func parseDurationParameters(arg interface{}) int64 {
 	return int64(arg.(time.Duration).Nanoseconds())

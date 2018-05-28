@@ -72,4 +72,3 @@ func TransactionIsLocked(inUxs coin.UxArray) bool {
 
 	return false
 }
-

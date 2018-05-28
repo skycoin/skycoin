@@ -43,15 +43,16 @@ LDFLAGS = -I$(INCLUDE_DIR) -I$(BUILD_DIR)/usr/include -L $(BUILDLIB_DIR) -L$(BUI
 OSNAME = $(TRAVIS_OS_NAME)
 
 ifeq ($(shell uname -s),Linux)
-  LDLIBS=$(LIBC_LIBS) -lpthread
+	OSNAME = linux
+	LDLIBS=$(LIBC_LIBS) -lpthread
 	LDPATH=$(shell printenv LD_LIBRARY_PATH)
 	LDPATHVAR=LD_LIBRARY_PATH
 ifndef OSNAME
-  OSNAME = linux
+	OSNAME = linux
 endif
 else ifeq ($(shell uname -s),Darwin)
 ifndef OSNAME
-  OSNAME = osx
+	OSNAME = osx
 endif
 	LDLIBS = $(LIBC_LIBS)
 	LDPATH=$(shell printenv DYLD_LIBRARY_PATH)

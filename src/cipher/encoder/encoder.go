@@ -34,8 +34,7 @@ Todo:
 
 // EncodeInt encodes an Integer type contained in `data`
 // into buffer `b`. If `data` is not an Integer type,
-// error message `log.Panic("PushAtomic, case not handled")`
-// is logged.
+// panic message is logged.
 func EncodeInt(b []byte, data interface{}) {
 	//var b [8]byte
 	var bs []byte
@@ -71,8 +70,7 @@ func EncodeInt(b []byte, data interface{}) {
 }
 
 // DecodeInt decodes `in` buffer into `data` parameter.
-// If `data` is not an Integer type, error message
-// `log.Panic("PushAtomic, case not handled")` is logged.
+// If `data` is not an Integer type, panic message is logged.
 func DecodeInt(in []byte, data interface{}) {
 
 	n := intDestSize(data)
@@ -113,8 +111,7 @@ func DecodeInt(in []byte, data interface{}) {
 
 // DeserializeAtomic deserializes `in` buffer into `data`
 // parameter. If `data` is not an atomic type
-// (i.e., Integer type or Boolean type), error message
-// `log.Panic("type not atomic")` is logged.
+// (i.e., Integer type or Boolean type), panic message is logged.
 func DeserializeAtomic(in []byte, data interface{}) {
 	n := intDestSize(data)
 	if len(in) < n {
@@ -158,10 +155,9 @@ func DeserializeAtomic(in []byte, data interface{}) {
 
 // DeserializeRaw deserializes `in` buffer into return
 // parameter. If `data` is not either a Pointer type,
-// a Slice type or a Struct type, error message
-// `fmt.Errorf("Invalid type %s", reflect.TypeOf(v).String())`
+// a Slice type or a Struct type, an error message
 // is returned. If `in` buffer can't be deserialized,
-// error `errors.New("Deserialization failed")` is returned.
+// an error message is returned.
 func DeserializeRaw(in []byte, data interface{}) error {
 	v := reflect.ValueOf(data)
 	switch v.Kind() {
@@ -189,9 +185,8 @@ func DeserializeRaw(in []byte, data interface{}) error {
 // Deserialize reads `dsize` bytes from `r` and deserializes
 // the resulting buffer into return parameter. If `data`
 // is not either a Pointer type, a Slice type or a Struct type,
-// error `errors.New("binary.Read: invalid type " + reflect.TypeOf(d).String())`
-// is returned. If `in` buffer can't be deserialized, error
-// `errors.New("Deserialization failed")` is returned.
+// an error message is returned. If `in` buffer can't be deserialized,
+// an error message is returned.
 func Deserialize(r io.Reader, dsize int, data interface{}) error {
 	// Fallback to reflect-based decoding.
 	//fmt.Printf("A1 v is type %s \n", reflect.TypeOf(data).String() )
@@ -250,10 +245,9 @@ func CanDeserialize(in []byte, dst reflect.Value) bool {
 // DeserializeRawToValue deserializes `in` buffer into
 // `dst`'s type and returns the number of bytes used and
 // the value of the buffer. If `data` is not either a
-// Pointer type, a Slice type or a Struct type, 0 and error
-// `errors.New("binary.Read: invalid type " + reflect.TypeOf(dst).String())`
-// are returned. If `in` buffer can't be deserialized, 0 and
-// error `errors.New("Deserialization failed")` are returned.
+// Pointer type, a Slice type or a Struct type, 0 and an error
+// message are returned. If `in` buffer can't be deserialized, 0 and
+// an error message are returned.
 func DeserializeRawToValue(in []byte, dst reflect.Value) (int, error) {
 	var v reflect.Value
 	switch dst.Kind() {
@@ -284,10 +278,9 @@ func DeserializeRawToValue(in []byte, dst reflect.Value) (int, error) {
 // DeserializeToValue reads `dsize` bytes from `r`,
 // deserializes the resulting buffer into `dst`'s type and
 // returns the value of the buffer. If `data` is not either
-// a Pointer type, a Slice type or a Struct type, error
-// `errors.New("binary.Read: invalid type " + reflect.TypeOf(dst).String())`
-// is returned. If `in` buffer can't be deserialized, an
-// error is returned.
+// a Pointer type, a Slice type or a Struct type, an error
+// message is returned. If `in` buffer can't be deserialized, an
+// error message is returned.
 func DeserializeToValue(r io.Reader, dsize int, dst reflect.Value) error {
 
 	//fmt.Printf("*A1 v is type %s \n", data.Type().String() )		//this is the type of the value
@@ -315,8 +308,7 @@ func DeserializeToValue(r io.Reader, dsize int, dst reflect.Value) error {
 }
 
 // SerializeAtomic returns serialization of `data`
-// parameter. If `data` is not an atomic type, error
-// message `log.Panic("type not atomic")` is logged.
+// parameter. If `data` is not an atomic type, panic message is logged.
 func SerializeAtomic(data interface{}) []byte {
 	var b [8]byte
 	var bs []byte

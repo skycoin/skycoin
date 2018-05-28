@@ -202,7 +202,7 @@ func setDefaults() {
 	viper.SetDefault("node.localhost_only", false)
 	viper.SetDefault("node.address", "")
 	viper.SetDefault("node.port", 6000)
-	viper.SetDefault("node.max_outgoing_connections", 16)
+	viper.SetDefault("node.max_outgoing_connections", 8)
 	viper.SetDefault("node.max_default_peer_outgoing_connections", 1)
 	viper.SetDefault("node.outgoing_connections_rate", time.Second*5)
 	viper.SetDefault("node.peerlist_size", 65535)

@@ -2,9 +2,7 @@ package api
 
 import (
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -69,16 +67,6 @@ type muxConfig struct {
 type HTTPResponse struct {
 	Error string `json:"error"`
 	Data  string `json:"data"`
-}
-
-// JSONReadHTTPResponse json reads out HTTPResponse from a reader
-func JSONReadHTTPResponse(r io.Reader) (*HTTPResponse, error) {
-	var rsp HTTPResponse
-	if err := json.NewDecoder(r).Decode(&rsp); err != nil {
-		return nil, err
-	}
-
-	return &rsp, nil
 }
 
 func create(host string, c Config, gateway Gatewayer) (*Server, error) {

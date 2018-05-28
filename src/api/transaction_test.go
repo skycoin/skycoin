@@ -960,18 +960,16 @@ func TestVerifyTransaction(t *testing.T) {
 			},
 		},
 		{
-			name:                       "400 - Neither hard nor soft constraints are violated ",
+			name:                       "500 - internal server error",
 			method:                     http.MethodPost,
 			contentType:                "application/json",
-			status:                     http.StatusBadRequest,
+			status:                     http.StatusInternalServerError,
 			httpBody:                   string(validTxBodyJSON),
 			gatewayVerifyTxnVerboseArg: txnAndInputs.txn,
 			gatewayVerifyTxnVerboseResult: verifyTxnVerboseResult{
 				Err: errors.New("verify transaction failed"),
 			},
-			httpResponse: HTTPResponse{
-				Error: "verify transaction failed",
-			},
+			err: "500 Internal Server Error - verify transaction failed",
 		},
 		{
 			name:                       "422 - txn is confirmed",
@@ -1033,12 +1031,13 @@ func TestVerifyTransaction(t *testing.T) {
 				tc.name, status, tc.status)
 
 			switch status {
-			case 405, 415:
+			case 405, 415, 500:
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), tc.name)
 			default:
-				rsp, err := JSONReadHTTPResponse(rr.Body)
+				var rsp HTTPResponse
+				err := json.NewDecoder(rr.Body).Decode(&rsp)
 				require.NoError(t, err)
-				require.Equal(t, tc.httpResponse, *rsp, tc.name)
+				require.Equal(t, tc.httpResponse, rsp, tc.name)
 			}
 		})
 	}

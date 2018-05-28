@@ -312,12 +312,12 @@ func verifyTxnHandler(gateway Gatewayer) http.HandlerFunc {
 
 		inputs, isTxnConfirmed, err := gateway.VerifyTxnVerbose(txn)
 		if err != nil {
-			rsp.Error = err.Error()
 			switch err.(type) {
 			case visor.ErrTxnViolatesSoftConstraint,
 				visor.ErrTxnViolatesHardConstraint:
+				rsp.Error = err.Error()
 			default:
-				wh.Error400JSONOr500(logger, w, rsp)
+				wh.Error500(w, err.Error())
 				return
 			}
 		}

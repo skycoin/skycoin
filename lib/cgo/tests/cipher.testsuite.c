@@ -3,8 +3,8 @@
 
 void empty_gostring(GoString *s) {
   s->n = 0;
-  s->p = malloc(sizeof(char));
-  *((char*) s->p) = 0;
+  // FIXME: this satisfies 'all buffers allocated' contract
+  s->p = calloc(1, sizeof(char));
 }
 
 void empty_keysdataJSON(KeysTestDataJSON* kdj) {
@@ -18,12 +18,10 @@ void empty_keysdataJSON(KeysTestDataJSON* kdj) {
 
 void json_get_gostring(json_value* value, GoString* s) {
   if (value == NULL || value->type != json_string) {
-    s->n = 0;
-    // FIXME: this satisfies 'all buffers allocated' contract
-    s->p = (const char *) calloc(1, 1);
+    empty_gostring(s);
   } else {
     s->n = value->u.string.length;
-    s->p = (const char *) calloc(s->n + 1, 1);
+    s->p = (const char *) calloc(s->n + 1, sizeof(char));
     memcpy((void *) s->p, (void *)value->u.string.ptr, s->n);
     // Append NULL char , just in case
     ((char *) s->p)[s->n] = 0;
@@ -42,7 +40,7 @@ json_value* loadGoldenFile(const char* file) {
 
 // Deserialize InputTestData JSON representation
 InputTestDataJSON* jsonToInputTestData(json_value* json, InputTestDataJSON* input_data) {
-  if (json->type != json_object) {
+  if (!json || json->type != json_object) {
     return NULL;
   }
   json_value* hashes = get_json_value(json, "hashes", json_array);
@@ -62,6 +60,7 @@ InputTestDataJSON* jsonToInputTestData(json_value* json, InputTestDataJSON* inpu
     } else {
       json_get_gostring(*hashstr_value, s);
     }
+    fprintf(stderr, "Input data %d-th JSON seed %s\n", i, s->p);
   }
   return input_data;
 }
@@ -250,7 +249,7 @@ SeedTestDataJSON* jsonToSeedTestData(json_value* json, SeedTestDataJSON* input_d
     return NULL;
   }
   json_value* value = json_get_string(json, "seed");
-  json_get_gostring(value, &input_data->Seed);
+  json_get_gostring(value, &(input_data->Seed));
 
   value = get_json_value(json, "keys", json_array);
   int i = 0,
@@ -337,9 +336,14 @@ void SeedTestDataToJson(SeedTestData* input_data, SeedTestDataJSON* json_data) {
 //   see KeysTestDataFromJSON
 GoUint32 SeedTestDataFromJSON(SeedTestDataJSON* json_data, SeedTestData* input_data) {
   unsigned int b64seed_size = b64d_size(json_data->Seed.n) + 1;
+  input_data->Seed.data = malloc(b64seed_size);
   input_data->Seed.cap = b64seed_size;
+  fprintf(stderr, "Seed JSON %d %s", json_data->Seed.n, json_data->Seed.p);
   input_data->Seed.len = b64_decode(json_data->Seed.p, json_data->Seed.n,
       input_data->Seed.data);
+  // Ensure seed string ends with NULL
+  ((char*) input_data->Seed.data)[input_data->Seed.len] = 0;
+  fprintf(stderr, "Seed %d %s", input_data->Seed.len, input_data->Seed.data);
 
   input_data->Keys.len = input_data->Keys.cap = json_data->Keys.len;
   input_data->Keys.data = calloc(input_data->Keys.len, sizeof(KeysTestData));
@@ -364,18 +368,28 @@ void ValidateSeedData(SeedTestData* seedData, InputTestData* inputData) {
   cipher__SecKey seckey;
   GoSlice keys;
 
-  SKY_cipher_GenerateDeterministicKeyPairs(seedData->Seed, seedData->Keys.len, (GoSlice_*) &keys);
-  registerMemCleanup(keys.data);
+  // Force allocation of memory for slice buffer
+  keys.len = keys.cap = 0;
+  keys.data = NULL;
 
-  cr_assert(eq(llong, seedData->Keys.len, keys.len),
-      "cipher.GenerateDeterministicKeyPairs must generate expected number of keys");
+  fprintf(stderr, "Using seed (len=%d) %s\n", seedData->Seed.len, (char *)seedData->Seed.data);
+  SKY_cipher_GenerateDeterministicKeyPairs(seedData->Seed, seedData->Keys.len, (GoSlice_*) &keys);
+
+  fprintf(stderr, "Ok 375\n");
+
+  cr_assert(keys.data != NULL,
+      "SKY_cipher_GenerateDeterministicKeyPairs must allocate memory slice with zero cap");
+  cr_assert(seedData->Keys.len - keys.len == 0,
+      "SKY_cipher_GenerateDeterministicKeyPairs must generate expected number of keys");
+  // Ensure buffer allocated for generated keys is disposed after testing
+  registerMemCleanup(keys.data);
 
   cipher__SecKey  skNull;
   cipher__PubKey  pkNull;
   cipher__Address addrNull;
   cipher__Sig     sigNull;
 
-  memset((void *) &skNull, 0, sizeof(cipher__SecKey));
+  memset((void *)&skNull, 0, sizeof(cipher__SecKey));
   memset((void *)&pkNull, 0, sizeof(cipher__PubKey));
   memset((void *)&addrNull, 0, sizeof(cipher__Address));
   memset((void *)&sigNull, 0, sizeof(cipher__Sig));
@@ -383,7 +397,9 @@ void ValidateSeedData(SeedTestData* seedData, InputTestData* inputData) {
   int i = 0;
   KeysTestData* expected = (KeysTestData*) seedData->Keys.data;
   cipher__SecKey *s = (cipher__SecKey*) keys.data;
+  fprintf(stderr, "Ok 392\n");
   for (; i < keys.len; i++, s++, expected++) {
+    fprintf(stderr, "Data buffer=%p s=%p *s=%p\n", keys.data, (void*) s, (void*)*s);
     cr_assert(ne(u8[32], skNull, (*s)),
         "%d-th secret key must not be null", i);
     cr_assert(eq(u8[32], expected->Secret, (*s)),
@@ -408,7 +424,7 @@ void ValidateSeedData(SeedTestData* seedData, InputTestData* inputData) {
     cr_assert(ne(type(cipher__Address), addrNull, addr1),
         "%d-th address from sec key must not be null", i);
     cr_assert(eq(type(cipher__Address), addr1, addr2),
-        "%d-th cipher.AddressFromPubKey and cipher.AddressFromSecKey must generate same addresses", i);
+        "%d-th SKY_cipher_AddressFromPubKey and SKY_cipher_AddressFromSecKey must generate same addresses", i);
 
     // TODO : Translate once secp256k1 be part of libskycoin
     /*
@@ -439,17 +455,17 @@ void ValidateSeedData(SeedTestData* seedData, InputTestData* inputData) {
             "%d-th provided signature for %d-th data set must not be null", j, i);
         GoUint32 err = SKY_cipher_VerifySignature(&p, sig, h);
         cr_assert(err == SKY_OK,
-            "cipher.VerifySignature failed: error=%d dataset=%d hashidx=%d", err, i, j);
+            "SKY_cipher_VerifySignature failed: error=%d dataset=%d hashidx=%d", err, i, j);
         err = SKY_cipher_ChkSig(&addr1, h, sig);
-        cr_assert(err == SKY_OK, "cipher.ChkSig failed: error=%d dataset=%d hashidx=%d", err, i, j);
+        cr_assert(err == SKY_OK, "SKY_cipher_ChkSig failed: error=%d dataset=%d hashidx=%d", err, i, j);
         err = SKY_cipher_VerifySignedHash(sig, h);
         cr_assert(err == SKY_OK,
-            "cipher.VerifySignedHash failed: error=%d dataset=%d hashidx=%d", err, i, j);
+            "SKY_cipher_VerifySignedHash failed: error=%d dataset=%d hashidx=%d", err, i, j);
 
         cipher__PubKey p2;
         err = SKY_cipher_PubKeyFromSig(sig, h, &p2);
         cr_assert(err == SKY_OK,
-            "cipher.PubKeyFromSig failed: error=%d dataset=%d hashidx=%d", err, i, j);
+            "SKY_cipher_PubKeyFromSig failed: error=%d dataset=%d hashidx=%d", err, i, j);
         cr_assert(eq(u8[32], p, p2),
             "public key derived from %d-th signature in %d-th dataset must match public key derived from secret",
             j, i);

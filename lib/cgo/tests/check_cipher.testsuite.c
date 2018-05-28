@@ -27,9 +27,12 @@ Test(cipher_testsuite, TestManyAddresses) {
 
   json_value* json = loadGoldenFile(MANY_ADDRESSES_FILENAME);
   cr_assert(json != NULL, "Error loading file %s", MANY_ADDRESSES_FILENAME);
+  registerJsonFree(json);
   SeedTestDataJSON* dataset = jsonToSeedTestData(json, &dataJSON);
   cr_assert(dataset != NULL, "Loaded JSON golden dataset must not be NULL");
+  registerSeedTestDataJSONCleanup(&dataJSON);
   err = SeedTestDataFromJSON(&dataJSON, &data);
+  registerSeedTestDataCleanup(&data);
   cr_assert(err == SKY_OK, "Deserializing seed test data from JSON ... %d", err);
   ValidateSeedData(&data, NULL);
 }

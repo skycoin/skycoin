@@ -63,6 +63,12 @@ type muxConfig struct {
 	enableUnversionedAPI bool
 }
 
+// HTTPResponse represents the http response struct
+type HTTPResponse struct {
+	Error string `json:"error"`
+	Data  string `json:"data"`
+}
+
 func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 	var appLoc string
 	if c.EnableGUI {
@@ -265,6 +271,8 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	// get balance of addresses
 	webHandlerV1("/balance", getBalanceHandler(gateway))
 
+	webHandlerV1("/transaction/verify", verifyTxnHandler(gateway))
+
 	// Wallet interface
 
 	// Returns wallet info
@@ -372,7 +380,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	// Transaction handler
 
 	// get set of pending transactions
-	webHandlerV1("/pendingTxs", getPendingTxs(gateway))
+	webHandlerV1("/pendingTxs", getPendingTxns(gateway))
 	// get txn by txid
 	webHandlerV1("/transaction", getTransactionByID(gateway))
 
@@ -389,7 +397,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	webHandlerV1("/injectTransaction", injectTransaction(gateway))
 	webHandlerV1("/resendUnconfirmedTxns", resendUnconfirmedTxns(gateway))
 	// get raw tx by txid.
-	webHandlerV1("/rawtx", getRawTx(gateway))
+	webHandlerV1("/rawtx", getRawTxn(gateway))
 
 	// UxOut api handler
 

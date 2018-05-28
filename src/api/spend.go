@@ -243,7 +243,7 @@ func NewCreatedTransactionInput(out wallet.UxBalance) (*CreatedTransactionInput,
 type createTransactionRequest struct {
 	HoursSelection hoursSelection                 `json:"hours_selection"`
 	Wallet         createTransactionRequestWallet `json:"wallet"`
-	ChangeAddress  *wh.Address                    `json:"change_address"`
+	ChangeAddress  *wh.Address                    `json:"change_address,omitempty"`
 	To             []receiver                     `json:"to"`
 }
 
@@ -321,10 +321,8 @@ func (r createTransactionRequest) Validate() error {
 		}
 	}
 
-	if r.ChangeAddress == nil {
-		return errors.New("missing change_address")
-	} else if r.ChangeAddress.Null() {
-		return errors.New("change_address is an empty address")
+	if r.ChangeAddress != nil && r.ChangeAddress.Null() {
+		return errors.New("change_address must not be the null address")
 	}
 
 	if r.Wallet.ID == "" {
@@ -435,9 +433,9 @@ func (r createTransactionRequest) ToWalletParams() wallet.CreateTransactionParam
 		}
 	}
 
-	var changeAddress cipher.Address
+	var changeAddress *cipher.Address
 	if r.ChangeAddress != nil {
-		changeAddress = r.ChangeAddress.Address
+		changeAddress = &r.ChangeAddress.Address
 	}
 
 	return wallet.CreateTransactionParams{

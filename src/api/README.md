@@ -37,6 +37,7 @@ A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](h
     - [Inject raw transaction](#inject-raw-transaction)
     - [Get transactions that are addresses related](#get-transactions-that-are-addresses-related)
     - [Resend unconfirmed transactions](#resend-unconfirmed-transactions)
+    - [Verify encoded transaction](#verify-encoded-transaction)
 - [Block APIs](#block-apis)
     - [Get blockchain metadata](#get-blockchain-metadata)
     - [Get blockchain progress](#get-blockchain-progress)
@@ -815,8 +816,12 @@ For the `"share"` mode, `share_factor` must also be set. This must be a decimal 
 In the auto share mode, the remaining hours after the fee are shared between the destination addresses as a whole,
 and the change address. Amongst the destination addresses, the shared hours are distributed proportionally.
 
-Note that if there are remaining coin hours as change, but no coins are available as change from the wallet,
-these remaining coin hours will be burned as an additional fee.
+When using the `auto` `"share"` `mode`, if there are remaining coin hours as change,
+but no coins are available as change from the wallet (which are needed to retain the coin hours as change),
+the `share_factor` will switch to `1.0` so that extra coin hours are distributed to the outputs
+instead of being burned as an additional fee.
+For the `manual` mode, if there are leftover coin hours but no coins to make change with,
+the leftover coin hours will be burned in addition to the required fee.
 
 All objects in `to` must be unique; a single transaction cannot create multiple outputs with the same `address`, `coins` and `hours`.
 
@@ -885,7 +890,9 @@ based upon an internal selection algorithm.
 If neither `wallet.addresses` nor `wallet.unspents` are specified,
 then all outputs associated with all addresses in the wallet may be chosen from to spend with.
 
-`change_address` must be set, but it is not required to be an address in the wallet.
+`change_address` is optional.
+If set, it is not required to be an address in the wallet.
+If not set, it will default to one of the addresses associated with the unspent outputs being spent in the transaction.
 
 Example:
 
@@ -1408,6 +1415,65 @@ Result:
         "b45e571988bc07bd0b623c999655fa878fb9bdd24c8cd24fde179bf4b26ae7b7",
         "a6446654829a4a844add9f181949d12f8291fdd2c0fcb22200361e90e814e2d3"
     ]
+}
+```
+
+### Verify encoded transaction
+
+```
+URI: /api/v1/transaction/verify
+Method: POST
+Content-Type: application/json
+Args: JSON body, see examples
+```
+
+Example:
+
+```sh
+curl -X POST -H 'Content-Type: application/json' http://127.0.0.1:6420/api/v1/transaction/verify \
+-d '{"encoded_transaction": "dc000000004fd024d60939fede67065b36adcaaeaf70fc009e3a5bbb8358940ccc8bbb2074010000007635ce932158ec06d94138adc9c9b19113fa4c2279002e6b13dcd0b65e0359f247e8666aa64d7a55378b9cc9983e252f5877a7cb2671c3568ec36579f8df1581000100000019ad5059a7fffc0369fc24b31db7e92e12a4ee2c134fb00d336d7495dec7354d02000000003f0555073e17ea6e45283f0f1115b520d0698d03a086010000000000010000000000000000b90dc595d102c48d3281b47428670210415f585200f22b0000000000ff01000000000000"}'
+```
+
+Result:
+
+```json
+{
+    "transaction": {
+        "length": 220,
+        "type": 0,
+        "txid": "82b5fcb182e3d70c285e59332af6b02bf11d8acc0b1407d7d82b82e9eeed94c0",
+        "inner_hash": "4fd024d60939fede67065b36adcaaeaf70fc009e3a5bbb8358940ccc8bbb2074",
+        "fee": "513",
+        "sigs": [
+            "7635ce932158ec06d94138adc9c9b19113fa4c2279002e6b13dcd0b65e0359f247e8666aa64d7a55378b9cc9983e252f5877a7cb2671c3568ec36579f8df158100"
+        ],
+        "inputs": [
+            {
+                "uxid": "19ad5059a7fffc0369fc24b31db7e92e12a4ee2c134fb00d336d7495dec7354d",
+                "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
+                "coins": "2.980000",
+                "hours": "985",
+                "calculated_hours": "1025",
+                "timestamp": 1527080354,
+                "block": 30074,
+                "txid": "94204347ef52d90b3c5d6c31a3fced56ae3f74fd8f1f5576931aeb60847f0e59"
+            }
+        ],
+        "outputs": [
+            {
+                "uxid": "b0911a5fc4dfe4524cdb82f6db9c705f4849af42fcd487a3c4abb2d17573d234",
+                "address": "SMnCGfpt7zVXm8BkRSFMLeMRA6LUu3Ewne",
+                "coins": "0.100000",
+                "hours": "1"
+            },
+            {
+                "uxid": "a492e6b85a434866be40da7e287bfcf14efce9803ff2fcd9d865c4046e81712a",
+                "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
+                "coins": "2.880000",
+                "hours": "511"
+            }
+        ]
+    }
 }
 ```
 

@@ -16,17 +16,17 @@ import (
 	historydb "github.com/skycoin/skycoin/src/visor/historydb"
 )
 
-// historyerMock mock
-type historyerMock struct {
+// HistoryerMock mock
+type HistoryerMock struct {
 	mock.Mock
 }
 
-func newHistoryerMock() *historyerMock {
-	return &historyerMock{}
+func NewHistoryerMock() *HistoryerMock {
+	return &HistoryerMock{}
 }
 
 // Erase mocked method
-func (m *historyerMock) Erase(p0 *dbutil.Tx) error {
+func (m *HistoryerMock) Erase(p0 *dbutil.Tx) error {
 
 	ret := m.Called(p0)
 
@@ -44,7 +44,7 @@ func (m *historyerMock) Erase(p0 *dbutil.Tx) error {
 }
 
 // ForEachTxn mocked method
-func (m *historyerMock) ForEachTxn(p0 *dbutil.Tx, p1 func(cipher.SHA256, *historydb.Transaction) error) error {
+func (m *HistoryerMock) ForEachTxn(p0 *dbutil.Tx, p1 func(cipher.SHA256, *historydb.Transaction) error) error {
 
 	ret := m.Called(p0, p1)
 
@@ -61,35 +61,8 @@ func (m *historyerMock) ForEachTxn(p0 *dbutil.Tx, p1 func(cipher.SHA256, *histor
 
 }
 
-// GetAddressTxns mocked method
-func (m *historyerMock) GetAddressTxns(p0 *dbutil.Tx, p1 cipher.Address) ([]historydb.Transaction, error) {
-
-	ret := m.Called(p0, p1)
-
-	var r0 []historydb.Transaction
-	switch res := ret.Get(0).(type) {
-	case nil:
-	case []historydb.Transaction:
-		r0 = res
-	default:
-		panic(fmt.Sprintf("unexpected type: %v", res))
-	}
-
-	var r1 error
-	switch res := ret.Get(1).(type) {
-	case nil:
-	case error:
-		r1 = res
-	default:
-		panic(fmt.Sprintf("unexpected type: %v", res))
-	}
-
-	return r0, r1
-
-}
-
 // GetAddrUxOuts mocked method
-func (m *historyerMock) GetAddrUxOuts(p0 *dbutil.Tx, p1 cipher.Address) ([]*historydb.UxOut, error) {
+func (m *HistoryerMock) GetAddrUxOuts(p0 *dbutil.Tx, p1 cipher.Address) ([]*historydb.UxOut, error) {
 
 	ret := m.Called(p0, p1)
 
@@ -115,8 +88,35 @@ func (m *historyerMock) GetAddrUxOuts(p0 *dbutil.Tx, p1 cipher.Address) ([]*hist
 
 }
 
+// GetAddressTxns mocked method
+func (m *HistoryerMock) GetAddressTxns(p0 *dbutil.Tx, p1 cipher.Address) ([]historydb.Transaction, error) {
+
+	ret := m.Called(p0, p1)
+
+	var r0 []historydb.Transaction
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case []historydb.Transaction:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
+
+}
+
 // GetTransaction mocked method
-func (m *historyerMock) GetTransaction(p0 *dbutil.Tx, p1 cipher.SHA256) (*historydb.Transaction, error) {
+func (m *HistoryerMock) GetTransaction(p0 *dbutil.Tx, p1 cipher.SHA256) (*historydb.Transaction, error) {
 
 	ret := m.Called(p0, p1)
 
@@ -142,15 +142,15 @@ func (m *historyerMock) GetTransaction(p0 *dbutil.Tx, p1 cipher.SHA256) (*histor
 
 }
 
-// GetUxOut mocked method
-func (m *historyerMock) GetUxOut(p0 *dbutil.Tx, p1 cipher.SHA256) (*historydb.UxOut, error) {
+// GetUxOuts mocked method
+func (m *HistoryerMock) GetUxOuts(p0 *dbutil.Tx, p1 []cipher.SHA256) ([]*historydb.UxOut, error) {
 
 	ret := m.Called(p0, p1)
 
-	var r0 *historydb.UxOut
+	var r0 []*historydb.UxOut
 	switch res := ret.Get(0).(type) {
 	case nil:
-	case *historydb.UxOut:
+	case []*historydb.UxOut:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
@@ -170,7 +170,7 @@ func (m *historyerMock) GetUxOut(p0 *dbutil.Tx, p1 cipher.SHA256) (*historydb.Ux
 }
 
 // NeedsReset mocked method
-func (m *historyerMock) NeedsReset(p0 *dbutil.Tx) (bool, error) {
+func (m *HistoryerMock) NeedsReset(p0 *dbutil.Tx) (bool, error) {
 
 	ret := m.Called(p0)
 
@@ -197,7 +197,7 @@ func (m *historyerMock) NeedsReset(p0 *dbutil.Tx) (bool, error) {
 }
 
 // ParseBlock mocked method
-func (m *historyerMock) ParseBlock(p0 *dbutil.Tx, p1 coin.Block) error {
+func (m *HistoryerMock) ParseBlock(p0 *dbutil.Tx, p1 coin.Block) error {
 
 	ret := m.Called(p0, p1)
 
@@ -215,7 +215,7 @@ func (m *historyerMock) ParseBlock(p0 *dbutil.Tx, p1 coin.Block) error {
 }
 
 // ParsedHeight mocked method
-func (m *historyerMock) ParsedHeight(p0 *dbutil.Tx) (uint64, bool, error) {
+func (m *HistoryerMock) ParsedHeight(p0 *dbutil.Tx) (uint64, bool, error) {
 
 	ret := m.Called(p0)
 

@@ -138,7 +138,6 @@ export class WalletService {
           mode: 'share',
           share_factor: '0.5',
         },
-        change_address: wallet.addresses[0].address,
         wallet: {
           id: wallet.filename,
           password,

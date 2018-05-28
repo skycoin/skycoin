@@ -1,11 +1,11 @@
 <div class="sky-container sky-container-grey">
-  <app-header title="Blockchain"></app-header>
+  <app-header [title]="'title.blockchain' | translate"></app-header>
 
   <mat-card class="skycoin-details">
     <div class="skycoin-detail-keys">
-      Number of blocks: <br>
-      Time since last block: <br>
-      Hash of last block: <br>
+      {{ 'blockchain.blocks' | translate }} <br>
+      {{ 'blockchain.time' | translate }} <br>
+      {{ 'blockchain.hash' | translate }} <br>
     </div>
     <div class="skycoin-detail-values" *ngIf="block && block.header">
       {{ block.header.seq | number }} <br>

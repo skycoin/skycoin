@@ -2,6 +2,7 @@
 package httphelper
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -30,9 +31,28 @@ func errorXXXMsg(w http.ResponseWriter, status int, msg string) {
 	HTTPError(w, status, httpMsg)
 }
 
+func errorXXXJSONOr500(log *logging.Logger, w http.ResponseWriter, status int, m interface{}) {
+	out, err := json.MarshalIndent(m, "", "    ")
+	if err != nil {
+		Error500(w, "json.MarshalIndent failed")
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if _, err := w.Write(out); err != nil {
+		log.WithError(err).Error("http write failed")
+	}
+}
+
 // Error400 respond with a 400 error and include a message
 func Error400(w http.ResponseWriter, msg string) {
 	errorXXXMsg(w, http.StatusBadRequest, msg)
+}
+
+// Error400JSONOr500 returns a 400 error with an object as JSON, writting a 500 error if it fails
+func Error400JSONOr500(log *logging.Logger, w http.ResponseWriter, m interface{}) {
+	errorXXXJSONOr500(log, w, http.StatusBadRequest, m)
 }
 
 // Error401 respond with a 401 error
@@ -63,6 +83,16 @@ func Error405(w http.ResponseWriter) {
 // Error415 respond with a 415 error
 func Error415(w http.ResponseWriter) {
 	httpError(w, http.StatusUnsupportedMediaType)
+}
+
+// Error422 response with a 422 error and include a message
+func Error422(w http.ResponseWriter, msg string) {
+	errorXXXMsg(w, http.StatusUnprocessableEntity, msg)
+}
+
+// Error422JSONOr500 returns a 422 error with an object as JSON, writting a 500 error if it fails
+func Error422JSONOr500(log *logging.Logger, w http.ResponseWriter, m interface{}) {
+	errorXXXJSONOr500(log, w, http.StatusUnprocessableEntity, m)
 }
 
 // Error501 respond with a 501 error

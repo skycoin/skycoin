@@ -11,12 +11,13 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/wallet"
 
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
 // Returns pending transactions
-func getPendingTxs(gateway Gatewayer) http.HandlerFunc {
+func getPendingTxns(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -61,28 +62,28 @@ func getTransactionByID(gate Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		tx, err := gate.GetTransaction(h)
+		txn, err := gate.GetTransaction(h)
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return
 		}
-		if tx == nil {
+		if txn == nil {
 			wh.Error404(w, "")
 			return
 		}
 
-		rbTx, err := visor.NewReadableTransaction(tx)
+		rbTxn, err := visor.NewReadableTransaction(txn)
 		if err != nil {
 			wh.Error500(w, err.Error())
 			return
 		}
 
-		resTx := daemon.TransactionResult{
-			Transaction: *rbTx,
-			Status:      tx.Status,
-			Time:        tx.Time,
+		resTxn := daemon.TransactionResult{
+			Transaction: *rbTxn,
+			Status:      txn.Status,
+			Time:        txn.Time,
 		}
-		wh.SendJSONOr500(logger, w, &resTx)
+		wh.SendJSONOr500(logger, w, &resTxn)
 	}
 }
 
@@ -130,14 +131,14 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		// Converts visor.Transaction to daemon.TransactionResult
-		txRlts, err := daemon.NewTransactionResults(txns)
+		txnRlts, err := daemon.NewTransactionResults(txns)
 		if err != nil {
 			err = fmt.Errorf("daemon.NewTransactionResults failed: %v", err)
 			wh.Error500(w, err.Error())
 			return
 		}
 
-		wh.SendJSONOr500(logger, w, txRlts.Txns)
+		wh.SendJSONOr500(logger, w, txnRlts.Txns)
 	}
 }
 
@@ -232,7 +233,7 @@ func resendUnconfirmedTxns(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-func getRawTx(gateway Gatewayer) http.HandlerFunc {
+func getRawTxn(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -251,19 +252,163 @@ func getRawTx(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		tx, err := gateway.GetTransaction(h)
+		txn, err := gateway.GetTransaction(h)
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return
 		}
 
-		if tx == nil {
+		if txn == nil {
 			wh.Error404(w, "")
 			return
 		}
 
-		d := tx.Txn.Serialize()
+		d := txn.Txn.Serialize()
 		wh.SendJSONOr500(logger, w, hex.EncodeToString(d))
 		return
+	}
+}
+
+// VerifyTxnRequest represents the data struct of the request for /transaction/verify
+type VerifyTxnRequest struct {
+	EncodedTransaction string `json:"encoded_transaction"`
+}
+
+// VerifyTxnResponse the response data struct for /transaction/verify api
+type VerifyTxnResponse struct {
+	Transaction CreatedTransaction `json:"transaction"`
+	Confirmed   bool               `json:"confirmed"`
+}
+
+// Decode and verify an encoded transaction
+// Method: POST
+// URI: /api/v1/transaction/verify
+func verifyTxnHandler(gateway Gatewayer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			wh.Error405(w)
+			return
+		}
+
+		if r.Header.Get("Content-Type") != "application/json" {
+			wh.Error415(w)
+			return
+		}
+
+		var rsp HTTPResponse
+		var req VerifyTxnRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			rsp.Error = err.Error()
+			wh.Error400JSONOr500(logger, w, rsp)
+			return
+		}
+
+		txn, err := decodeTxn(req.EncodedTransaction)
+		if err != nil {
+			rsp.Error = fmt.Sprintf("decode transaction failed: %v", err)
+			wh.Error400JSONOr500(logger, w, rsp)
+			return
+		}
+
+		inputs, isTxnConfirmed, err := gateway.VerifyTxnVerbose(txn)
+		if err != nil {
+			switch err.(type) {
+			case visor.ErrTxnViolatesSoftConstraint,
+				visor.ErrTxnViolatesHardConstraint:
+				rsp.Error = err.Error()
+			default:
+				wh.Error500(w, err.Error())
+				return
+			}
+		}
+
+		if len(inputs) == len(txn.In) {
+			rspData := VerifyTxnResponse{
+				Transaction: newCreatedTransaction(txn, inputs),
+				Confirmed:   isTxnConfirmed,
+			}
+
+			v, err := json.MarshalIndent(rspData, "", "    ")
+			if err != nil {
+				wh.Error500(w, "json.MarshalIndent failed")
+				return
+			}
+
+			rsp.Data = string(v)
+		}
+
+		if rsp.Error != "" || isTxnConfirmed {
+			wh.Error422JSONOr500(logger, w, rsp)
+		} else {
+			wh.SendJSONOr500(logger, w, rsp)
+		}
+	}
+}
+
+func decodeTxn(encodedTxn string) (*coin.Transaction, error) {
+	var txn coin.Transaction
+	b, err := hex.DecodeString(encodedTxn)
+	if err != nil {
+		return nil, err
+	}
+
+	txn, err = coin.TransactionDeserialize(b)
+	if err != nil {
+		return nil, err
+	}
+
+	return &txn, nil
+}
+
+// newCreatedTransaction creates a *CreatedTransaction instance
+func newCreatedTransaction(txn *coin.Transaction, inputs []wallet.UxBalance) CreatedTransaction {
+	var outputHours uint64
+	for _, o := range txn.Out {
+		outputHours += o.Hours
+	}
+
+	var inputHours uint64
+	for _, i := range inputs {
+		inputHours += i.Hours
+	}
+
+	fee := inputHours - outputHours
+
+	sigs := make([]string, len(txn.Sigs))
+	for i, s := range txn.Sigs {
+		sigs[i] = s.Hex()
+	}
+
+	txid := txn.Hash()
+	out := make([]CreatedTransactionOutput, len(txn.Out))
+	for i, o := range txn.Out {
+		co, err := NewCreatedTransactionOutput(o, txid)
+		if err != nil {
+			logger.WithError(err).Error("NewCreatedTransactionOutput failed")
+			continue
+		}
+		out[i] = *co
+	}
+
+	in := make([]CreatedTransactionInput, len(inputs))
+	for i, o := range inputs {
+		ci, err := NewCreatedTransactionInput(o)
+		if err != nil {
+			logger.WithError(err).Error("NewCreatedTransactionInput failed")
+			continue
+		}
+		in[i] = *ci
+	}
+
+	return CreatedTransaction{
+		Length:    txn.Length,
+		Type:      txn.Type,
+		TxID:      txid.Hex(),
+		InnerHash: txn.InnerHash.Hex(),
+		Fee:       fmt.Sprint(fee),
+
+		Sigs: sigs,
+		In:   in,
+		Out:  out,
 	}
 }

@@ -2452,7 +2452,7 @@ func TestGetCreateTransactionAuxs(t *testing.T) {
 
 // historyerMock2 embeds historyerMock, and rewrite the ForEach method
 type historyerMock2 struct {
-	historyerMock
+	HistoryerMock
 	txs []historydb.Transaction
 }
 

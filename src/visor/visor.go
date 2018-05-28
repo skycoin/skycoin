@@ -154,9 +154,12 @@ func (c Config) Verify() error {
 	return nil
 }
 
-// historyer is the interface that provides methods for accessing history data that are parsed from blockchain.
-type historyer interface {
-	GetUxOut(tx *dbutil.Tx, uxid cipher.SHA256) (*historydb.UxOut, error)
+//go:generate go install
+//go:generate goautomock -template=testify Historyer
+
+// Historyer is the interface that provides methods for accessing history data that are parsed from blockchain.
+type Historyer interface {
+	GetUxOuts(tx *dbutil.Tx, uxids []cipher.SHA256) ([]*historydb.UxOut, error)
 	ParseBlock(tx *dbutil.Tx, b coin.Block) error
 	GetTransaction(tx *dbutil.Tx, hash cipher.SHA256) (*historydb.Transaction, error)
 	GetAddrUxOuts(tx *dbutil.Tx, address cipher.Address) ([]*historydb.UxOut, error)
@@ -218,7 +221,7 @@ type Visor struct {
 	Wallets     *wallet.Service
 	StartedAt   time.Time
 
-	history historyer
+	history Historyer
 }
 
 // NewVisor creates a Visor for managing the blockchain database
@@ -1437,17 +1440,21 @@ func (vs Visor) GetHeadBlockTime() (uint64, error) {
 
 // GetUxOutByID gets UxOut by hash id.
 func (vs Visor) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
-	var out *historydb.UxOut
+	var outs []*historydb.UxOut
 
 	if err := vs.DB.View("GetUxOutByID", func(tx *dbutil.Tx) error {
 		var err error
-		out, err = vs.history.GetUxOut(tx, id)
+		outs, err = vs.history.GetUxOuts(tx, []cipher.SHA256{id})
 		return err
 	}); err != nil {
 		return nil, err
 	}
 
-	return out, nil
+	if len(outs) == 0 {
+		return nil, nil
+	}
+
+	return outs[0], nil
 }
 
 // GetAddrUxOuts gets all the address affected UxOuts.
@@ -1756,6 +1763,78 @@ func (vs *Visor) VerifySingleTxnAllConstraints(txn *coin.Transaction) error {
 	return vs.DB.View("VerifySingleTxnAllConstraints", func(tx *dbutil.Tx) error {
 		return vs.Blockchain.VerifySingleTxnAllConstraints(tx, *txn, vs.Config.MaxBlockSize)
 	})
+}
+
+// VerifyTxnVerbose verifies a transaction, it returns transaction's input uxouts, whether the
+// transaction is confirmed, and error if any
+func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bool, error) {
+	// Checks if the txn's output contains empty address
+	for _, o := range txn.Out {
+		if o.Address.Null() {
+			err := errors.New("Transaction.Out contains an output sending to an empty address")
+			return nil, false, NewErrTxnViolatesHardConstraint(err)
+		}
+	}
+
+	var uxa coin.UxArray
+	var head *coin.SignedBlock
+	var isTxnConfirmed bool
+	if err := vs.DB.View("VerifyTxnVerbose", func(tx *dbutil.Tx) error {
+		var err error
+		head, err = vs.Blockchain.Head(tx)
+		if err != nil {
+			return err
+		}
+
+		uxa, err = vs.Blockchain.Unspent().GetArray(tx, txn.In)
+		switch err.(type) {
+		case nil:
+		case blockdb.ErrUnspentNotExist:
+			uxid := err.(blockdb.ErrUnspentNotExist).UxID
+			// Checks if the transaction is confirmed
+			txnHash := txn.Hash()
+			historyTxn, err := vs.history.GetTransaction(tx, txnHash)
+			if err != nil {
+				return fmt.Errorf("get transaction of %v from historydb failed: %v", txnHash, err)
+			}
+
+			if historyTxn == nil {
+				err = fmt.Errorf("transaction input of %s does not exist in either unspent pool or historydb", uxid)
+				return NewErrTxnViolatesHardConstraint(err)
+			}
+
+			// Transaction is confirmed
+			isTxnConfirmed = true
+			// Gets uxouts of txn.In from historydb
+			outs, err := vs.history.GetUxOuts(tx, txn.In)
+			if err != nil {
+				return err
+			}
+
+			uxa = coin.UxArray{}
+			for _, out := range outs {
+				uxa = append(uxa, out.Out)
+			}
+			return nil
+		default:
+			return err
+		}
+
+		if err := VerifySingleTxnSoftConstraints(*txn, head.Time(), uxa, vs.Config.MaxBlockSize); err != nil {
+			return err
+		}
+
+		return VerifySingleTxnHardConstraints(*txn, head, uxa)
+	}); err != nil {
+		return nil, isTxnConfirmed, err
+	}
+
+	uxs, err := wallet.NewUxBalances(head.Time(), uxa)
+	if err != nil {
+		return nil, isTxnConfirmed, err
+	}
+
+	return uxs, isTxnConfirmed, nil
 }
 
 // AddressCount returns the total number of addresses with unspents

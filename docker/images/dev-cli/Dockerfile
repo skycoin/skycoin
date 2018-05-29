@@ -135,6 +135,7 @@ RUN set -ex ; \
     screen \
     sudo \
     doxygen \
+    texlive-latex-base \
     ; \
     apt-get clean ; \
     rm -rf /var/lib/apt/lists/* ; \

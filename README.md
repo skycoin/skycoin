@@ -144,7 +144,7 @@ Access the API: [http://localhost:6420/version](http://localhost:6420/version).
 
 ### Development image
 
-A [docker image](docker/images/dev-cli/README.md) is provided in order to make
+The [skycoin/skycoindev-cli docker image](docker/images/dev-cli/README.md) is provided in order to make
 easy to start developing Skycoin. It comes with the compiler, linters, debugger
 and the vim editor among other tools.
 

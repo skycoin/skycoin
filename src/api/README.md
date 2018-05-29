@@ -63,7 +63,7 @@ A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](h
 
 ## CSRF
 
-All `POST`, `PUT` and `DELETE` requests require a CSRF token, obtained with a `GET /csrf` call.
+All `POST`, `PUT` and `DELETE` requests require a CSRF token, obtained with a `GET /api/v1/csrf` call.
 The token must be placed in the `X-CSRF-Token` header. A token is only valid
 for 30 seconds and it is expected that the client obtains a new CSRF token
 for each request. Requesting a CSRF token invalidates any previous CSRF token.
@@ -74,14 +74,14 @@ as the response body.
 ### Get current csrf token
 
 ```
-URI: /csrf
+URI: /api/v1/csrf
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/csrf
+curl http://127.0.0.1:6420/api/v1/csrf
 ```
 
 Result:
@@ -97,14 +97,14 @@ Result:
 ### Health check
 
 ```
-URI: /health
+URI: /api/v1/health
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/health
+curl http://127.0.0.1:6420/api/v1/health
 ```
 
 Response:
@@ -140,14 +140,14 @@ Response:
 ### Get node version info
 
 ```
-URI: /version
+URI: /api/v1/version
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/version
+curl http://127.0.0.1:6420/api/v1/version
 ```
 
 Result:
@@ -162,7 +162,7 @@ Result:
 ### Get balance of addresses
 
 ```
-URI: /balance
+URI: /api/v1/balance
 Method: GET
 Args:
     addrs: comma-separated list of addresses. must contain at least one address
@@ -171,7 +171,7 @@ Args:
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/balance\?addrs\=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq
+curl http://127.0.0.1:6420/api/v1/balance\?addrs\=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq
 ```
 
 Result:
@@ -179,12 +179,34 @@ Result:
 ```json
 {
     "confirmed": {
-        "coins": 70000000,
-        "hours": 28052
+        "coins": 21000000,
+        "hours": 142744
     },
     "predicted": {
-        "coins": 9000000,
-        "hours": 8385
+        "coins": 21000000,
+        "hours": 142744
+    },
+    "addresses": {
+        "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD": {
+            "confirmed": {
+                "coins": 9000000,
+                "hours": 88075
+            },
+            "predicted": {
+                "coins": 9000000,
+                "hours": 88075
+            }
+        },
+        "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq": {
+            "confirmed": {
+                "coins": 12000000,
+                "hours": 54669
+            },
+            "predicted": {
+                "coins": 12000000,
+                "hours": 54669
+            }
+        }
     }
 }
 ```
@@ -192,7 +214,7 @@ Result:
 ### Get unspent output set of address or hash
 
 ```
-URI: /outputs
+URI: /api/v1/outputs
 Method: GET
 Args:
     addrs: address list, joined with ","
@@ -204,13 +226,13 @@ Addrs and hashes cannot be combined.
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/outputs?addrs=6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY
+curl http://127.0.0.1:6420/api/v1/outputs?addrs=6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY
 ```
 
 or
 
 ```sh
-curl http://127.0.0.1:6420/outputs?hashes=7669ff7350d2c70a88093431a7b30d3e69dda2319dcb048aa80fa0d19e12ebe0
+curl http://127.0.0.1:6420/api/v1/outputs?hashes=7669ff7350d2c70a88093431a7b30d3e69dda2319dcb048aa80fa0d19e12ebe0
 ```
 
 Result:
@@ -239,7 +261,7 @@ Result:
 ### Get wallet
 
 ```
-URI: /wallet
+URI: /api/v1/wallet
 Method: GET
 Args:
     id: Wallet ID [required]
@@ -248,7 +270,7 @@ Args:
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/wallet?id=2017_11_25_e5fb.wlt
+curl http://127.0.0.1:6420/api/v1/wallet?id=2017_11_25_e5fb.wlt
 ```
 
 Result:
@@ -281,7 +303,7 @@ Result:
 ### Get wallet transactions
 
 ```
-URI: /wallet/transactions
+URI: /api/v1/wallet/transactions
 Method: GET
 Args:
 	id: Wallet ID
@@ -292,7 +314,7 @@ Returns all pending transaction for all addresses by selected Wallet
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/wallet/transactions?id=2017_11_25_e5fb.wlt
+curl http://127.0.0.1:6420/api/v1/wallet/transactions?id=2017_11_25_e5fb.wlt
 ```
 
 Result:
@@ -341,14 +363,14 @@ Result:
 ### Get wallets
 
 ```
-URI: /wallets
+URI: /api/v1/wallets
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/wallets
+curl http://127.0.0.1:6420/api/v1/wallets
 ```
 
 Result:
@@ -383,14 +405,14 @@ Result:
 ### Get wallet folder name
 
 ```
-URI: /wallets/folderName
+URI: /api/v1/wallets/folderName
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/wallets/folderName
+curl http://127.0.0.1:6420/api/v1/wallets/folderName
 ```
 
 Result:
@@ -404,7 +426,7 @@ Result:
 ### Generate wallet seed
 
 ```
-URI: /wallet/newSeed
+URI: /api/v1/wallet/newSeed
 Method: GET
 Args:
     entropy: seed entropy [optional]
@@ -415,7 +437,7 @@ Args:
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/wallet/newSeed
+curl http://127.0.0.1:6420/api/v1/wallet/newSeed
 ```
 
 Result:
@@ -429,7 +451,7 @@ Result:
 ### Create a wallet from seed
 
 ```
-URI: /wallet/create
+URI: /api/v1/wallet/create
 Method: POST
 Args:
     seed: wallet seed [required]
@@ -442,7 +464,7 @@ Args:
 Example:
 
 ```sh
-curl -X POST http://127.0.0.1:6420/wallet/create \
+curl -X POST http://127.0.0.1:6420/api/v1/wallet/create \
  -H 'Content-Type: application/x-www-form-urlencoded' \
  -d 'seed=$seed' \
  -d 'label=$label' \
@@ -476,7 +498,7 @@ Result:
 ### Generate new address in wallet
 
 ```
-URI: /wallet/newAddress
+URI: /api/v1/wallet/newAddress
 Method: POST
 Args:
     id: wallet file name
@@ -487,7 +509,7 @@ Args:
 Example:
 
 ```sh
-curl -X POST http://127.0.0.1:6420/wallet/newAddress \
+curl -X POST http://127.0.0.1:6420/api/v1/wallet/newAddress \
  -H 'Content-Type: x-www-form-urlencoded' \
  -d 'id=2017_05_09_d554.wlt' \
  -d 'num=2' \
@@ -507,7 +529,7 @@ Result:
 ### Updates wallet label
 
 ```
-URI: /wallet/update
+URI: /api/v1/wallet/update
 Method: POST
 Args:
     id: wallet file name
@@ -517,7 +539,7 @@ Args:
 Example:
 
 ```sh
-curl -X POST http://127.0.0.1:6420/wallet/update \
+curl -X POST http://127.0.0.1:6420/api/v1/wallet/update \
  -H 'Content-Type: application/x-www-form-urlencoded' \
  -d 'id=$id' \
  -d 'label=$label'
@@ -532,7 +554,7 @@ Result:
 ### Get wallet balance
 
 ```
-URI: /wallet/balance
+URI: /api/v1/wallet/balance
 Method: GET
 Args:
     id: wallet file name
@@ -541,7 +563,7 @@ Args:
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/wallet/balance?id=2017_05_09_d554.wlt
+curl http://127.0.0.1:6420/api/v1/wallet/balance?id=2018_03_07_3088.wlt
 ```
 
 Result:
@@ -549,12 +571,64 @@ Result:
 ```json
 {
     "confirmed": {
-        "coins": 0,
-        "hours": 0
+        "coins": 210400000,
+        "hours": 1873147
     },
     "predicted": {
-        "coins": 0,
-        "hours": 0
+        "coins": 210400000,
+        "hours": 1873147
+    },
+    "addresses": {
+        "AXrFisGovRhRHipsbGahs4u2hXX7pDRT5p": {
+            "confirmed": {
+                "coins": 1250000,
+                "hours": 941185
+            },
+            "predicted": {
+                "coins": 1250000,
+                "hours": 941185
+            }
+        },
+        "AtNorKBpCgkSRL7zES7aAQyNjqjqPp2QJU": {
+            "confirmed": {
+                "coins": 1150000,
+                "hours": 61534
+            },
+            "predicted": {
+                "coins": 1150000,
+                "hours": 61534
+            }
+        },
+        "VUv9ehMZWmDvwWV36BQ3eL1ujb4MQ5TGyK": {
+            "confirmed": {
+                "coins": 208000000,
+                "hours": 870428
+            },
+            "predicted": {
+                "coins": 208000000,
+                "hours": 870428
+            }
+        },
+        "j4mbF1fTe8jgXbrRARZSBjDpD1hMGSe1E4": {
+            "confirmed": {
+                "coins": 0,
+                "hours": 0
+            },
+            "predicted": {
+                "coins": 0,
+                "hours": 0
+            }
+        },
+        "uyqBPcRCWucHXs18e9VZyNEeuNsD5tFDhy": {
+            "confirmed": {
+                "coins": 0,
+                "hours": 0
+            },
+            "predicted": {
+                "coins": 0,
+                "hours": 0
+            }
+        }
     }
 }
 ```
@@ -562,7 +636,7 @@ Result:
 ### Spend coins from wallet
 
 ```
-URI: /wallet/spend
+URI: /api/v1/wallet/spend
 Method: POST
 Args:
     id: wallet id
@@ -586,7 +660,7 @@ Statuses:
 example, send 1 coin to `2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc` from wallet `2017_05_09_ea42.wlt`:
 
 ```sh
-curl -X POST  http://127.0.0.1:6420/wallet/spend \
+curl -X POST  http://127.0.0.1:6420/api/v1/wallet/spend \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   -d 'id=2017_05_09_ea42.wlt' \
   -d 'dst=2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc' \
@@ -643,14 +717,14 @@ Result:
 ### Create transaction
 
 ```
-URI: /wallet/transaction
+URI: /api/v1/wallet/transaction
 Method: POST
 Content-Type: application/json
 Args: JSON body, see examples
 ```
 
 Creates a transaction, returning the transaction preview and the encoded, serialized transaction.
-The `encoded_transaction` can be provided to `POST /injectTransaction` to broadcast it to the network.
+The `encoded_transaction` can be provided to `POST /api/v1/injectTransaction` to broadcast it to the network.
 
 The request body includes:
 
@@ -781,7 +855,7 @@ for spending. To control which addresses may spend, specify the addresses in thi
 Example:
 
 ```sh
-curl -X POST http://127.0.0.1:6420/wallet/transaction -H 'content-type: application/json' -d '{
+curl -X POST http://127.0.0.1:6420/api/v1/wallet/transaction -H 'content-type: application/json' -d '{
     "hours_selection": {
         "type": "auto",
         "mode": "share",
@@ -854,7 +928,7 @@ Result:
 ### Unload wallet
 
 ```
-URI: /wallet/unload
+URI: /api/v1/wallet/unload
 Method: POST
 Args:
     id: wallet file name
@@ -863,7 +937,7 @@ Args:
 Example:
 
 ```sh
-curl -X POST http://127.0.0.1:6420/wallet/unload \
+curl -X POST http://127.0.0.1:6420/api/v1/wallet/unload \
  -H 'Content-Type: x-www-form-urlencoded' \
  -d 'id=2017_05_09_d554.wlt'
 ```
@@ -871,7 +945,7 @@ curl -X POST http://127.0.0.1:6420/wallet/unload \
 ### Encrypt wallet
 
 ```
-URI: /wallet/encrypt
+URI: /api/v1/wallet/encrypt
 Method: POST
 Args:
     id: wallet id
@@ -881,7 +955,7 @@ Args:
 Example:
 
 ```sh
-curl -X POST http://127.0.0.1:6420/wallet/encrypt \
+curl -X POST http://127.0.0.1:6420/api/v1/wallet/encrypt \
  -H 'Content-Type: application/x-www-form-urlencoded' \
  -d 'id=test.wlt' \
  -d 'password=$password'
@@ -913,7 +987,7 @@ Result:
 ### Decrypt wallet
 
 ```
-URI: /wallet/decrypt
+URI: /api/v1/wallet/decrypt
 Method: POST
 Args:
     id: wallet id
@@ -923,7 +997,7 @@ Args:
 Example:
 
 ```sh
-curl -X POST http://127.0.0.1:6420/wallet/decrypt \
+curl -X POST http://127.0.0.1:6420/api/v1/wallet/decrypt \
  -H 'Content-Type: application/x-www-form-urlencoded' \
  -d 'id=test.wlt' \
  -d 'password=$password'
@@ -957,7 +1031,7 @@ Result:
 This endpoint is supported only when `-enable-seed-api` option is enabled and the wallet is encrypted.
 
 ```
-URI: /wallet/seed
+URI: /api/v1/wallet/seed
 Method: POST
 Args:
     id: wallet id
@@ -967,7 +1041,7 @@ Args:
 Example:
 
 ```sh
-curl -X POST http://127.0.0.1:6420/wallet/seed \
+curl -X POST http://127.0.0.1:6420/api/v1/wallet/seed \
  -H 'Content-type: application/x-www-form-urlencoded' \
  -d 'id=test.wlt' \
  -d 'password=$password'
@@ -986,14 +1060,14 @@ Result:
 ### Get unconfirmed transactions
 
 ```
-URI: /pendingTxs
+URI: /api/v1/pendingTxs
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/pendingTxs
+curl http://127.0.0.1:6420/api/v1/pendingTxs
 ```
 
 Result:
@@ -1040,7 +1114,7 @@ Result:
 ### Get transaction info by id
 
 ```
-URI: /transaction
+URI: /api/v1/transaction
 Method: GET
 Args:
     txid: transaction id
@@ -1049,7 +1123,7 @@ Args:
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/transaction?txid=a6446654829a4a844add9f181949d12f8291fdd2c0fcb22200361e90e814e2d3
+curl http://127.0.0.1:6420/api/v1/transaction?txid=a6446654829a4a844add9f181949d12f8291fdd2c0fcb22200361e90e814e2d3
 ```
 
 Result:
@@ -1090,14 +1164,14 @@ Result:
 ### Get raw transaction by id
 
 ```
-URI: /rawtx
+URI: /api/v1/rawtx
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/rawtx?txid=a6446654829a4a844add9f181949d12f8291fdd2c0fcb22200361e90e814e2d3
+curl http://127.0.0.1:6420/api/v1/rawtx?txid=a6446654829a4a844add9f181949d12f8291fdd2c0fcb22200361e90e814e2d3
 ```
 
 Result:
@@ -1109,7 +1183,7 @@ Result:
 ### Inject raw transaction
 
 ```
-URI: /injectTransaction
+URI: /api/v1/injectTransaction
 Method: POST
 Content-Type: application/json
 Body: {"rawtx": "raw transaction"}
@@ -1125,7 +1199,7 @@ This can happen if the node's network has recently become unavailable but its co
 Example:
 
 ```sh
-curl -X POST http://127.0.0.1:6420/injectTransaction -H 'content-type: application/json' -d '{
+curl -X POST http://127.0.0.1:6420/api/v1/injectTransaction -H 'content-type: application/json' -d '{
     "rawtx":"dc0000000008b507528697b11340f5a3fcccbff031c487bad59d26c2bdaea0cd8a0199a1720100000017f36c9d8bce784df96a2d6848f1b7a8f5c890986846b7c53489eb310090b91143c98fd233830055b5959f60030b3ca08d95f22f6b96ba8c20e548d62b342b5e0001000000ec9cf2f6052bab24ec57847c72cfb377c06958a9e04a077d07b6dd5bf23ec106020000000072116096fe2207d857d18565e848b403807cd825c044840300000000330100000000000000575e472f8c5295e8fa644e9bc5e06ec10351c65f40420f000000000066020000000000000"
 }'
 ```
@@ -1139,7 +1213,7 @@ Result:
 ### Get transactions that are addresses related
 
 ```
-URI: /transactions
+URI: /api/v1/transactions
 Method: GET
 Args:
 	addrs: Comma seperated addresses [optional, returns all transactions if no address is provided]
@@ -1149,18 +1223,18 @@ Args:
 To get address related confirmed transactions:
 
 ```sh
-curl http://127.0.0.1:6420/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY&confirmed=1
+curl http://127.0.0.1:6420/api/v1/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY&confirmed=1
 ```
 
 To get address related unconfirmed transactions:
 ```sh
-curl http://127.0.0.1:6420/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY&confirmed=0
+curl http://127.0.0.1:6420/api/v1/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY&confirmed=0
 ```
 
 To get all addresses related transactions:
 
 ```sh
-curl http://127.0.0.1:6420/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY
+curl http://127.0.0.1:6420/api/v1/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY
 ```
 
 
@@ -1281,14 +1355,14 @@ Result:
 ### Resend unconfirmed transactions
 
 ```
-URI: /resendUnconfirmedTxns
+URI: /api/v1/resendUnconfirmedTxns
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/resendUnconfirmedTxns
+curl http://127.0.0.1:6420/api/v1/resendUnconfirmedTxns
 ```
 
 Result:
@@ -1314,7 +1388,7 @@ Method: GET
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/blockchain/metadata
+curl http://127.0.0.1:6420/api/v1/blockchain/metadata
 ```
 
 Result:
@@ -1338,14 +1412,14 @@ Result:
 ### Get blockchain progress
 
 ```
-URI: /blockchain/progress
+URI: /api/v1/blockchain/progress
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/blockchain/progress
+curl http://127.0.0.1:6420/api/v1/blockchain/progress
 ```
 
 Result:
@@ -1370,7 +1444,7 @@ Result:
 ### Get block by hash or seq
 
 ```
-URI: /block
+URI: /api/v1/block
 Method: GET
 Args:
     hash: get block by hash
@@ -1378,13 +1452,13 @@ Args:
 ```
 
 ```sh
-curl http://127.0.0.1:6420/block?hash=6eafd13ab6823223b714246b32c984b56e0043412950faf17defdbb2cbf3fe30
+curl http://127.0.0.1:6420/api/v1/block?hash=6eafd13ab6823223b714246b32c984b56e0043412950faf17defdbb2cbf3fe30
 ```
 
 or
 
 ```sh
-curl http://127.0.0.1:6420/block?seq=2760
+curl http://127.0.0.1:6420/api/v1/block?seq=2760
 ```
 
 Result:
@@ -1437,7 +1511,7 @@ Result:
 ### Get blocks in specific range
 
 ```
-URI: /blocks
+URI: /api/v1/blocks
 Method: GET
 Args:
     start: start seq
@@ -1447,7 +1521,7 @@ Args:
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/blocks?start=1&end=2
+curl http://127.0.0.1:6420/api/v1/blocks?start=1&end=2
 ```
 
 Result:
@@ -1534,7 +1608,7 @@ Result:
 ### Get last N blocks
 
 ```
-URI: /last_blocks
+URI: /api/v1/last_blocks
 Method: GET
 Args:
     num: number of most recent blocks to return
@@ -1543,7 +1617,7 @@ Args:
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/last_blocks?num=2
+curl http://127.0.0.1:6420/api/v1/last_blocks?num=2
 ```
 
 Result:
@@ -1644,7 +1718,7 @@ Result:
 ### Get address affected transactions
 
 ```
-URI: /explorer/address
+URI: /api/v1/explorer/address
 Method: GET
 Args:
     address
@@ -1653,7 +1727,7 @@ Args:
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/explorer/address?address=2NfNKsaGJEndpSajJ6TsKJfsdDjW2gFsjXg
+curl http://127.0.0.1:6420/api/v1/explorer/address?address=2NfNKsaGJEndpSajJ6TsKJfsdDjW2gFsjXg
 ```
 
 Result:
@@ -1664,7 +1738,7 @@ Result:
         "status": {
             "confirmed": true,
             "unconfirmed": false,
-            "height": 1268,
+            "height": 12639,
             "block_seq": 15493,
             "unknown": false
         },
@@ -1673,6 +1747,8 @@ Result:
         "txid": "6d8e2f8b436a2f38d604b3aa1196ef2176779c5e11e33fbdd09f993fe659c39f",
         "inner_hash": "8da7c64dcedeeb6aa1e0d21fb84a0028dcd68e6801f1a3cc0224fdd50682046f",
         "timestamp": 1518878675,
+        "size": 183,
+        "fee": 126249,
         "sigs": [
             "c60e43980497daad59b4c72a2eac053b1584f960c57a5e6ac8337118dccfcee4045da3f60d9be674867862a13fdd87af90f4b85cbf39913bde13674e0a039b7800"
         ],
@@ -1681,7 +1757,8 @@ Result:
                 "uxid": "349b06e5707f633fd2d8f048b687b40462d875d968b246831434fb5ab5dcac38",
                 "owner": "WzPDgdfL1NzSbX96tscUNXUqtCRLjaBugC",
                 "coins": "125.000000",
-                "hours": 34596
+                "hours": 34596,
+                "calculated_hours": 178174
             }
         ],
         "outputs": [
@@ -1701,7 +1778,7 @@ Result:
 ### Get uxout
 
 ```
-URI: /uxout
+URI: /api/v1/uxout
 Method: GET
 Args:
     uxid
@@ -1710,7 +1787,7 @@ Args:
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/uxout?uxid=8b64d9b058e10472b9457fd2d05a1d89cbbbd78ce1d97b16587d43379271bed1
+curl http://127.0.0.1:6420/api/v1/uxout?uxid=8b64d9b058e10472b9457fd2d05a1d89cbbbd78ce1d97b16587d43379271bed1
 ```
 
 Result:
@@ -1732,7 +1809,7 @@ Result:
 ### Get address affected uxouts
 
 ```
-URI: /address_uxouts
+URI: /api/v1/address_uxouts
 Method: GET
 Args:
     address
@@ -1741,7 +1818,7 @@ Args:
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/address_uxouts?address=6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY
+curl http://127.0.0.1:6420/api/v1/address_uxouts?address=6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY
 ```
 
 Result:
@@ -1767,14 +1844,14 @@ Result:
 ### Coin supply
 
 ```
-URI: /coinSupply
+URI: /api/v1/coinSupply
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/coinSupply
+curl http://127.0.0.1:6420/api/v1/coinSupply
 ```
 
 Result:
@@ -1896,7 +1973,7 @@ Result:
 ### Richlist show top N addresses by uxouts
 
 ```
-URI: /richlist
+URI: /api/v1/richlist
 Method: GET
 Args:
     n: top N addresses, [default 20, returns all if <= 0].
@@ -1906,7 +1983,7 @@ Args:
 Example:
 
 ```sh
-curl "http://127.0.0.1:6420/richlist?n=4&include-distribution=true"
+curl "http://127.0.0.1:6420/api/v1/richlist?n=4&include-distribution=true"
 ```
 
 Result:
@@ -1941,14 +2018,14 @@ Result:
 ### Count unique addresses
 
 ```
-URI: /addresscount
+URI: /api/v1/addresscount
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl "http://127.0.0.1:6420/addresscount"
+curl "http://127.0.0.1:6420/api/v1/addresscount"
 ```
 
 Result:
@@ -1964,7 +2041,7 @@ Result:
 ### Get information for a specific connection
 
 ```
-URI: /network/connection
+URI: /api/v1/network/connection
 Method: GET
 Args:
     addr: ip:port address of a known connection
@@ -1973,7 +2050,7 @@ Args:
 Example:
 
 ```sh
-curl 'http://127.0.0.1:6420/network/connection?addr=176.9.84.75:6000'
+curl 'http://127.0.0.1:6420/api/v1/network/connection?addr=176.9.84.75:6000'
 ```
 
 Result:
@@ -1995,14 +2072,14 @@ Result:
 ### Get a list of all connections
 
 ```
-URI: /network/connections
+URI: /api/v1/network/connections
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl 'http://127.0.0.1:6420/network/connections'
+curl 'http://127.0.0.1:6420/api/v1/network/connections'
 ```
 
 Result:
@@ -2051,14 +2128,14 @@ Result:
 ### Get a list of all default connections
 
 ```
-URI: /network/defaultConnections
+URI: /api/v1/network/defaultConnections
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl 'http://127.0.0.1:6420/network/defaultConnections'
+curl 'http://127.0.0.1:6420/api/v1/network/defaultConnections'
 ```
 
 Result:
@@ -2079,14 +2156,14 @@ Result:
 ### Get a list of all trusted connections
 
 ```
-URI: /network/connections/trust
+URI: /api/v1/network/connections/trust
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl 'http://127.0.0.1:6420/network/connections/trust'
+curl 'http://127.0.0.1:6420/api/v1/network/connections/trust'
 ```
 
 Result:
@@ -2107,14 +2184,14 @@ Result:
 ### Get a list of all connections discovered through peer exchange
 
 ```
-URI: /network/connections/exchange
+URI: /api/v1/network/connections/exchange
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl 'http://127.0.0.1:6420/network/connections/exchange'
+curl 'http://127.0.0.1:6420/api/v1/network/connections/exchange'
 ```
 
 Result:

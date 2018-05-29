@@ -571,6 +571,12 @@ func TestUnspentProcessBlock(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, uxHash.Hex(), newUxHash.Hex())
 
+				// addr index height should equal the number of blocks added
+				addrIndexHeight, ok, err := up.meta.getAddrIndexHeight(tx)
+				require.NoError(t, err)
+				require.True(t, ok)
+				require.Equal(t, uint64(1), addrIndexHeight)
+
 				// addr index should have 5 rows (5 initial addrs, 1 removed as input, 1 added as output)
 				addrIndexLength, err := dbutil.Len(tx, UnspentPoolAddrIndexBkt)
 				require.NoError(t, err)
@@ -802,6 +808,7 @@ func TestUnspentPoolAddrIndex(t *testing.T) {
 			tc.expect = copyHashMap(tc.expect)
 
 			p := &poolAddrIndex{}
+			m := &unspentMeta{}
 
 			// Initialize the data, test that set() works
 			err := db.Update("", func(tx *dbutil.Tx) error {
@@ -810,7 +817,8 @@ func TestUnspentPoolAddrIndex(t *testing.T) {
 						return err
 					}
 				}
-				return nil
+
+				return m.setAddrIndexHeight(tx, uint64(len(tc.init)))
 			})
 
 			if tc.setErr == nil {
@@ -825,6 +833,11 @@ func TestUnspentPoolAddrIndex(t *testing.T) {
 				length, err := dbutil.Len(tx, UnspentPoolAddrIndexBkt)
 				require.NoError(t, err)
 				require.Equal(t, uint64(len(tc.init)), length)
+
+				height, ok, err := m.getAddrIndexHeight(tx)
+				require.NoError(t, err)
+				require.True(t, ok)
+				require.Equal(t, length, height)
 
 				for addr, expectHashes := range tc.init {
 					hashes, err := p.get(tx, addr)
@@ -899,42 +912,77 @@ func TestUnspentPoolAddrIndex(t *testing.T) {
 	}
 }
 
-func TestUnspentMaybeBuildIndexes(t *testing.T) {
-	// Open a test database file that lacks UnspentPoolAddrIndexBkt,
-	// copy it to a temp file and open a database around the temp file
-	dbFilename := "./testdata/blockchain-180.no-unspent-addr-index.db"
-	dbFile, err := os.Open(dbFilename)
-	require.NoError(t, err)
+func TestUnspentMaybeBuildIndexesNoIndexNoHead(t *testing.T) {
+	// Test with a database that has no unspent addr index
+	testUnspentMaybeBuildIndexes(t, 0, nil)
+}
 
-	tmpFile, err := ioutil.TempFile("", "testdb")
-	require.NoError(t, err)
-	defer os.Remove(tmpFile.Name())
-	defer tmpFile.Close()
+func TestUnspentMaybeBuildIndexesNoIndexHaveHead(t *testing.T) {
+	// Test with a database that has no unspent addr index
+	testUnspentMaybeBuildIndexes(t, 10, nil)
+}
 
-	_, err = io.Copy(tmpFile, dbFile)
-	require.NoError(t, err)
+func TestUnspentMaybeBuildIndexesPartialIndex(t *testing.T) {
+	// Test with a database that has an unspent addr index but the height is wrong
+	headHeight := uint64(3)
+	testUnspentMaybeBuildIndexes(t, headHeight+1, func(db *dbutil.DB) {
+		up := NewUnspentPool()
 
-	err = dbFile.Close()
-	require.NoError(t, err)
+		// Index the first few blocks
+		err := db.Update("", func(tx *dbutil.Tx) error {
+			if err := dbutil.CreateBuckets(tx, [][]byte{UnspentPoolAddrIndexBkt}); err != nil {
+				return err
+			}
 
-	err = tmpFile.Sync()
-	require.NoError(t, err)
+			addrHashes := make(map[cipher.Address][]cipher.SHA256)
 
-	boltDB, err := bolt.Open(tmpFile.Name(), 0700, nil)
-	require.NoError(t, err)
-	defer boltDB.Close()
+			if err := dbutil.ForEach(tx, UnspentPoolBkt, func(k, v []byte) error {
+				var ux coin.UxOut
+				if err := encoder.DeserializeRaw(v, &ux); err != nil {
+					return err
+				}
 
-	db := dbutil.WrapDB(boltDB)
+				if ux.Head.BkSeq > headHeight {
+					return nil
+				}
+
+				h := ux.Hash()
+				addrHashes[ux.Body.Address] = append(addrHashes[ux.Body.Address], h)
+
+				return nil
+			}); err != nil {
+				return err
+			}
+
+			for addr, hashes := range addrHashes {
+				if err := up.poolAddrIndex.set(tx, addr, hashes); err != nil {
+					return err
+				}
+			}
+
+			return up.meta.setAddrIndexHeight(tx, headHeight)
+		})
+		require.NoError(t, err)
+	})
+}
+
+func testUnspentMaybeBuildIndexes(t *testing.T, headIndex uint64, setupDB func(*dbutil.DB)) {
+	db, shutdown := setupNoUnspentAddrIndexDB(t)
+	defer shutdown()
+
+	if setupDB != nil {
+		setupDB(db)
+	}
 
 	u := NewUnspentPool()
 
 	// Create the indexes
-	err = db.Update("", func(tx *dbutil.Tx) error {
-		if _, err := tx.CreateBucket(UnspentPoolAddrIndexBkt); err != nil {
+	err := db.Update("", func(tx *dbutil.Tx) error {
+		if _, err := tx.CreateBucketIfNotExists(UnspentPoolAddrIndexBkt); err != nil {
 			return err
 		}
 
-		return u.MaybeBuildIndexes(tx)
+		return u.MaybeBuildIndexes(tx, headIndex)
 	})
 	require.NoError(t, err)
 
@@ -962,6 +1010,11 @@ func TestUnspentMaybeBuildIndexes(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, uint64(len(addrHashes)), length)
+
+		height, ok, err := u.meta.getAddrIndexHeight(tx)
+		require.NoError(t, err)
+		require.True(t, ok)
+		require.Equal(t, uint64(180), height)
 
 		err = dbutil.ForEach(tx, UnspentPoolAddrIndexBkt, func(k, v []byte) error {
 			addr, err := cipher.AddressFromBytes(k)
@@ -995,5 +1048,75 @@ func TestUnspentMaybeBuildIndexes(t *testing.T) {
 		return nil
 	})
 	require.NoError(t, err)
+}
 
+func TestUnspentMaybeBuildIndexesNoRebuild(t *testing.T) {
+	// Set addrIndexHeight to head block height, but don't populate the addr index
+	// Check that the addr index was not populated, so we know that the index did not get rebuilt if the height matches
+	db, shutdown := setupNoUnspentAddrIndexDB(t)
+	defer shutdown()
+
+	u := NewUnspentPool()
+
+	// Create the bucket and artifically set the indexed height, without indexing
+	headSeq := uint64(180)
+	err := db.Update("", func(tx *dbutil.Tx) error {
+		if _, err := tx.CreateBucketIfNotExists(UnspentPoolAddrIndexBkt); err != nil {
+			return err
+		}
+
+		return u.meta.setAddrIndexHeight(tx, headSeq)
+	})
+	require.NoError(t, err)
+
+	// Attempt to build index based upon the headSeq that we set
+	err = db.Update("", func(tx *dbutil.Tx) error {
+		return u.MaybeBuildIndexes(tx, headSeq)
+	})
+	require.NoError(t, err)
+
+	// Check that the addr index is still empty, because the height was the same
+	err = db.View("", func(tx *dbutil.Tx) error {
+		height, ok, err := u.meta.getAddrIndexHeight(tx)
+		require.NoError(t, err)
+		require.True(t, ok)
+		require.Equal(t, headSeq, height)
+
+		length, err := dbutil.Len(tx, UnspentPoolAddrIndexBkt)
+		require.NoError(t, err)
+		require.Equal(t, uint64(0), length)
+		return nil
+	})
+	require.NoError(t, err)
+}
+
+func setupNoUnspentAddrIndexDB(t *testing.T) (*dbutil.DB, func()) {
+	// Open a test database file that lacks UnspentPoolAddrIndexBkt,
+	// copy it to a temp file and open a database around the temp file
+	dbFilename := "./testdata/blockchain-180.no-unspent-addr-index.db"
+	dbFile, err := os.Open(dbFilename)
+	require.NoError(t, err)
+
+	tmpFile, err := ioutil.TempFile("", "testdb")
+	require.NoError(t, err)
+
+	_, err = io.Copy(tmpFile, dbFile)
+	require.NoError(t, err)
+
+	err = dbFile.Close()
+	require.NoError(t, err)
+
+	err = tmpFile.Sync()
+	require.NoError(t, err)
+
+	boltDB, err := bolt.Open(tmpFile.Name(), 0700, nil)
+	require.NoError(t, err)
+
+	db := dbutil.WrapDB(boltDB)
+
+	return db, func() {
+		db.Close()
+		tmpFile.Close()
+		os.Remove(tmpFile.Name())
+	}
 }

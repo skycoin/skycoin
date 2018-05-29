@@ -140,7 +140,7 @@ func TestGetPendingTxs(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			endpoint := "/pendingTxs"
+			endpoint := "/api/v1/pendingTxs"
 			gateway := NewGatewayerMock()
 			gateway.On("GetAllUnconfirmedTxns").Return(tc.getAllUnconfirmedTxnsResponse, tc.getAllUnconfirmedTxnsErr)
 
@@ -273,7 +273,7 @@ func TestGetTransactionByID(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			endpoint := "/transaction"
+			endpoint := "/api/v1/transaction"
 			gateway := NewGatewayerMock()
 			gateway.On("GetTransaction", tc.getTransactionArg).Return(tc.getTransactionReponse, tc.getTransactionError)
 
@@ -418,7 +418,7 @@ func TestInjectTransaction(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			endpoint := "/injectTransaction"
+			endpoint := "/api/v1/injectTransaction"
 			gateway := NewGatewayerMock()
 			gateway.On("InjectBroadcastTransaction", tc.injectTransactionArg).Return(tc.injectTransactionError)
 
@@ -489,7 +489,7 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			endpoint := "/resendUnconfirmedTxns"
+			endpoint := "/api/v1/resendUnconfirmedTxns"
 			gateway := NewGatewayerMock()
 			gateway.On("ResendUnconfirmedTxns").Return(tc.resendUnconfirmedTxnsResponse, tc.resendUnconfirmedTxnsErr)
 
@@ -613,7 +613,7 @@ func TestGetRawTx(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			endpoint := "/rawtx"
+			endpoint := "/api/v1/rawtx"
 			gateway := NewGatewayerMock()
 			gateway.On("GetTransaction", tc.getTransactionArg).Return(tc.getTransactionResponse, tc.getTransactionError)
 			v := url.Values{}
@@ -769,7 +769,7 @@ func TestGetTransactions(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		endpoint := "/transactions"
+		endpoint := "/api/v1/transactions"
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := NewGatewayerMock()
 			gateway.On("GetTransactions", mock.Anything).Return(tc.getTransactionsResponse, tc.getTransactionsError)

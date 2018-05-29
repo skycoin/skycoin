@@ -139,9 +139,21 @@
     "to-label": "Send to",
     "amount-label": "Amount",
     "notes-label": "Notes",
+    "wallet-label": "Wallet",
+    "addresses-label": "Addresses",
+    "change-address-label": "Change address",
+    "destinations-label": "Destinations",
+    "hours-allocation-label": "Automatic coin hours allocation",
+    "options-label": "Options",
+    "mode-label": "Mode",
+    "value-label": "Value",
     "verify-button": "Verify",
     "send-button": "Send",
-    "back-button": "Back"
+    "back-button": "Back",
+
+    "modes": {
+      "share": "Share"
+    }
   },
 
   "tx": {

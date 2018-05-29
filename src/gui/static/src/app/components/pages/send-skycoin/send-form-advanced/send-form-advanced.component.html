@@ -1,17 +1,18 @@
 <div [formGroup]="form">
   <div class="form-field">
-    <label>Wallet</label>
+    <label>{{ 'send.wallet-label' | translate }}</label>
     <div class="-select">
       <select formControlName="wallet">
         <option *ngFor="let wallet of walletService.all() | async" [disabled]="wallet.balance <= 0" [ngValue]="wallet">
           {{ wallet.label }} - {{ wallet.coins | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
+          ({{ wallet.hours }} {{ 'common.coin-hours' | translate }})
         </option>
       </select>
     </div>
   </div>
 
   <div class="form-field">
-    <label>Addresses</label>
+    <label>{{ 'send.addresses-label' | translate }}</label>
     <div class="-select">
       <mat-select multiple formControlName="addresses" [compareWith]="addressCompare">
         <mat-option *ngFor="let addr of addresses" [value]="addr">
@@ -23,12 +24,12 @@
   </div>
 
   <div class="form-field">
-    <label>Change address</label>
+    <label>{{ 'send.change-address-label' | translate }}</label>
     <input formControlName="changeAddress">
   </div>
 
   <div class="form-field">
-    <label>Destinations</label>
+    <label>{{ 'send.destinations-label' | translate }}</label>
 
     <div formArrayName="destinations" *ngFor="let dest of destControls; let i = index;" class="-destination">
       <div [formGroupName]="i" class="row">
@@ -38,13 +39,13 @@
         <div class="col-md-3">
           <div class="-input-addon">
             <input formControlName="coins">
-            <span>Coins</span>
+            <span>{{ 'common.coins' | translate }}</span>
           </div>
         </div>
         <div class="col-md-3">
           <div [ngClass]="{ '-input-addon': true, '-hidden': autoHours }">
             <input formControlName="hours">
-            <span>Hours</span>
+            <span>{{ 'common.hours' | translate }}</span>
           </div>
         </div>
         <div class="col-md-1 -icons">
@@ -60,9 +61,9 @@
       <div class="col-md-5">
         <mat-checkbox class="-check" (change)="setAutoHours($event)" [checked]="autoHours">
           <div class="-space-between">
-            <span>Automatic coin hours allocation</span>
+            <span>{{ 'send.hours-allocation-label' | translate }}</span>
             <span class="-options" (mousedown)="$event.stopPropagation();" (click)="toggleOptions($event)" *ngIf="autoHours">
-              Options <mat-icon>keyboard_arrow_down</mat-icon>
+              {{ 'send.options-label' | translate }} <mat-icon>keyboard_arrow_down</mat-icon>
             </span>
           </div>
         </mat-checkbox>
@@ -72,17 +73,17 @@
     <div [ngClass]="{ 'row -options-wrapper': true, '-hidden': !autoOptions }">
       <div class="col-md-5">
         <div class="form-field">
-          <label>Mode</label>
+          <label>{{ 'send.mode-label' | translate }}</label>
           <div class="-select">
             <select formControlName="hoursMode">
-              <option value="share" selected>Share</option>
+              <option value="share" selected>{{ 'send.modes.share' | translate }}</option>
             </select>
           </div>
         </div>
 
         <div class="form-field">
           <label class="-space-between">
-            <span>Value</span>
+            <span>{{ 'send.value-label' | translate }}</span>
             <span>{{ autoShareValue | number:'1.0-2' }}</span>
           </label>
           <mat-slider class="-slider" min="0" max="1" step="0.01"
@@ -96,6 +97,6 @@
 
 <div class="-buttons">
   <app-button #button (action)="send()" class="primary" [disabled]="!form.valid">
-    Verify
+    {{ 'send.verify-button' | translate }}
   </app-button>
 </div>

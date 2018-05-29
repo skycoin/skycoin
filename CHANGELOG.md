@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `-reset-corrupt-db` option (default false) will verify the database integrity during startup and reset the db if a problem is found
 - `GET /explorer/address`: add `fee` to transaction objects and `calculated_hours` to transaction inputs
 - Test data generator and test suite for verification of alternative `cipher` implementations
+- Add `POST /transaction/verify` API endpoint
+- Add advanced spend UI
 
 ### Fixed
 
@@ -41,10 +43,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - API endpoints are prefixed with `/api/v1/`. API endpoints without the `/api/v1/` prefix are deprecated but can be enabled with `-enable-unversioned-api`. Please migrate to use `/api/v1/` prefix in URLs.
 - Enable message protocol upgrade
 - `change_address` is no longer required in `POST /api/v1/wallet/transaction`. If not provided, `change_address` will default to one of the addresses being spent from.
+- In `POST /api/v1/wallet/transaction`, for `auto` type `share` mode requests, if extra coinhours remain after applying the `share_factor` but change cannot be made due to insufficient coins, the `share_factor` will switch to `1.0`.
 - Support automatic port allocation of the API interface by specifying port 0
 - The web interface / API port is randomly allocated for the precompiled standalone client and electron client released on the website.
   If you are using the CLI tool or another API client to communicate with the standalone client, use `-web-interface-port=6420` to continue using port 6420.
   If the program is run from source (e.g. `go run`, `run.sh`, `make run`) there is no change, the API will still be on port 6420.
+- Change number of outgoing connections to 8 from 16
 
 ### Removed
 

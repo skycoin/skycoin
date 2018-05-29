@@ -3,13 +3,11 @@ import { ApiService } from './api.service';
 import { Observable } from 'rxjs/Observable';
 import { Subject } from 'rxjs/Subject';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
-import { TellerConfig } from '../app.datatypes';
 import { WalletService } from './wallet.service';
 import 'rxjs/add/observable/timer';
 
 @Injectable()
 export class BlockchainService {
-
   private progressSubject: Subject<any> = new BehaviorSubject<any>(null);
   private refreshedBalance = false;
 
@@ -34,16 +32,8 @@ export class BlockchainService {
           }
         },
         error => console.log(error),
-        () => this.completeLoading()
+        () => this.completeLoading(),
       );
-  }
-
-  addressTransactions(id): Observable<any> {
-    return this.apiService.get('explorer/address', { address: id });
-  }
-
-  addressBalance(id): Observable<any> {
-    return this.apiService.get('outputs', { addrs: id });
   }
 
   block(id): Observable<any> {
@@ -52,14 +42,17 @@ export class BlockchainService {
         if (transaction.inputs && !transaction.inputs.length) {
           return Observable.of(transaction);
         }
+
         return Observable.forkJoin(transaction.inputs.map(input => this.retrieveInputAddress(input).map(response => {
           return response.owner_address;
         }))).map(inputs => {
           transaction.inputs = inputs;
+
           return transaction;
         });
       })).map(transactions => {
         block.body.txns = transactions;
+
         return block;
       });
     });

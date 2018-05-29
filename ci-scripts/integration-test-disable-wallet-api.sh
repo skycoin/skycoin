@@ -3,9 +3,15 @@
 # "disable-wallet-api"-mode confirms that no wallet related apis work, that the main index.html page
 # does not load, and that a new wallet file is not created.
 
-#Set Script Name variable
+# Set Script Name variable
 SCRIPT=`basename ${BASH_SOURCE[0]}`
-PORT="46421"
+
+# Find unused port
+PORT="1024"
+while $(lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null) ; do
+    PORT=$((PORT+1))
+done
+
 RPC_PORT="$PORT"
 HOST="http://127.0.0.1:$PORT"
 RPC_ADDR="http://127.0.0.1:$RPC_PORT"

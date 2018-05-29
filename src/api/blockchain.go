@@ -1,6 +1,6 @@
 package api
 
-// Blockchain related information for the GUI
+// APIs for blockchain related information
 
 import (
 	"fmt"

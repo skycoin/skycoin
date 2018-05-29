@@ -256,3 +256,64 @@ func TestHoursUnmarshalJSON(t *testing.T) {
 	err := c.UnmarshalJSON([]byte("invalidjson"))
 	testutil.RequireError(t, err, "invalid character 'i' looking for beginning of value")
 }
+
+func TestSHA256MarshalJSON(t *testing.T) {
+	hash := "97dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11d"
+
+	c := SHA256{cipher.MustSHA256FromHex(hash)}
+
+	data, err := c.MarshalJSON()
+	require.NoError(t, err)
+	require.Equal(t, `"97dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11d"`, string(data))
+}
+
+func TestSHA256UnmarshalJSON(t *testing.T) {
+	cases := []struct {
+		c        string
+		expected cipher.SHA256
+		err      string
+	}{
+		{
+			c:   "",
+			err: "invalid SHA256 hash: Invalid hex length",
+		},
+
+		{
+			c:   "foo",
+			err: "invalid SHA256 hash: encoding/hex: invalid byte: U+006F 'o'",
+		},
+
+		{
+			c:   "97dd0628",
+			err: "invalid SHA256 hash: Invalid hex length",
+		},
+
+		{
+			c:   "97dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11d97",
+			err: "invalid SHA256 hash: Invalid hex length",
+		},
+
+		{
+			c:   "97dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11Q",
+			err: "invalid SHA256 hash: encoding/hex: invalid byte: U+0051 'Q'",
+		},
+
+		{
+			c:        "97dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11d",
+			expected: cipher.MustSHA256FromHex("97dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11d"),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.c, func(t *testing.T) {
+			var c SHA256
+			err := c.UnmarshalJSON([]byte(fmt.Sprintf(`"%s"`, tc.c)))
+			if tc.err != "" {
+				require.Equal(t, errors.New(tc.err), err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tc.expected, c.SHA256)
+			}
+		})
+	}
+}

@@ -490,13 +490,14 @@ func (c *Client) Spend(id, dst string, coins uint64, password string) (*SpendRes
 type CreateTransactionRequest struct {
 	HoursSelection HoursSelection                 `json:"hours_selection"`
 	Wallet         CreateTransactionRequestWallet `json:"wallet"`
-	ChangeAddress  string                         `json:"change_address"`
+	ChangeAddress  *string                        `json:"change_address,omitempty"`
 	To             []Receiver                     `json:"to"`
 }
 
 // CreateTransactionRequestWallet defines a wallet to spend from and optionally which addresses in the wallet
 type CreateTransactionRequestWallet struct {
 	ID        string   `json:"id"`
+	UxOuts    []string `json:"unspents,omitempty"`
 	Addresses []string `json:"addresses,omitempty"`
 	Password  string   `json:"password"`
 }
@@ -736,6 +737,34 @@ func (c *Client) RawTransaction(txid string) (string, error) {
 		return "", err
 	}
 	return rawTx, nil
+}
+
+// VerifyTransaction verifies the encoded raw transaction
+func (c *Client) VerifyTransaction(encodedTxn string) (*VerifyTxnResponse, error) {
+	req := VerifyTxnRequest{
+		EncodedTransaction: encodedTxn,
+	}
+
+	var rsp HTTPResponse
+	if err := c.PostJSON("/api/v1/transaction/verify", req, &rsp); err != nil {
+		return nil, err
+	}
+
+	var txnRsp *VerifyTxnResponse
+	if rsp.Data != "" {
+		var v VerifyTxnResponse
+		if err := json.NewDecoder(strings.NewReader(rsp.Data)).Decode(&v); err != nil {
+			return nil, err
+		}
+		*txnRsp = v
+	}
+
+	var err error
+	if rsp.Error != "" {
+		err = errors.New(rsp.Error)
+	}
+
+	return txnRsp, err
 }
 
 // AddressTransactions makes a request to GET /api/v1/explorer/address

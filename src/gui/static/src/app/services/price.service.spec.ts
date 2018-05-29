@@ -5,7 +5,7 @@ import { PriceService } from './price.service';
 describe('PriceService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [PriceService]
+      providers: [PriceService],
     });
   });
 

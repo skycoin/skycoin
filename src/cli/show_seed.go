@@ -3,8 +3,9 @@ package cli
 import (
 	"fmt"
 
-	"github.com/skycoin/skycoin/src/wallet"
 	gcli "github.com/urfave/cli"
+
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 func showSeedCmd(cfg Config) gcli.Command {

@@ -26,8 +26,10 @@ func main() {
 	hideSecKey := flag.Bool("s", false, "Hide the secret key from the output")
 	isBitcoin := flag.Bool("b", false, "Print address as a bitcoin address")
 	hexSeed := flag.Bool("x", false, "Use hex(sha256sum(rand(1024))) (CSPRNG-generated) as the seed if seed is not provided")
-	onlyAddr := flag.Bool("only-addr", false, "Only show generated address list. Hide seed, secret key and public key")
+	hideSecrets := flag.Bool("hide-secrets", false, "Hide seed and secret key")
 	seed := flag.String("seed", "", "Seed for deterministic key generation. Will use bip39 as the seed if not provided")
+	secKeysList := flag.Bool("sec-keys-list", false, "only print a list of secret keys")
+	addrsList := flag.Bool("addrs-list", false, "only print a list of addresses")
 	flag.Parse()
 
 	var coinType wallet.CoinType
@@ -42,9 +44,9 @@ func main() {
 			// generate a new seed, as hex string
 			*seed = cipher.SumSHA256(cipher.RandByte(1024)).Hex()
 		} else {
-			mnemonic, err := bip39.NewDefaultMnemomic()
+			mnemonic, err := bip39.NewDefaultMnemonic()
 			if err != nil {
-				fmt.Printf("bip39.NewDefaultMnemomic failed: %v\n", err)
+				fmt.Printf("bip39.NewDefaultMnemonic failed: %v\n", err)
 				os.Exit(1)
 			}
 
@@ -59,7 +61,29 @@ func main() {
 		os.Exit(1)
 	}
 
-	if !*onlyAddr {
+	if *hideSecrets && *secKeysList {
+		fmt.Println("-hide-secrets and -sec-keys-list can't be combined")
+		os.Exit(1)
+	}
+
+	if *addrsList && *secKeysList {
+		fmt.Println("-addrs-list and -sec-keys-list can't be combined")
+		os.Exit(1)
+	}
+
+	if *addrsList {
+		for _, e := range w.Entries {
+			fmt.Println(e.Address)
+		}
+	} else if *secKeysList {
+		for _, e := range w.Entries {
+			fmt.Println(e.Secret)
+		}
+	} else {
+		if *hideSecrets {
+			w.Erase()
+		}
+
 		output, err := json.MarshalIndent(w, "", "    ")
 		if err != nil {
 			fmt.Println("Error formating wallet to JSON. Error:", err)
@@ -67,10 +91,5 @@ func main() {
 		}
 
 		fmt.Println(string(output))
-		return
-	}
-
-	for _, e := range w.Entries {
-		fmt.Println(e.Address)
 	}
 }

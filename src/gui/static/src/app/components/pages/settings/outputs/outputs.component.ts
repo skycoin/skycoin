@@ -1,15 +1,17 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { ActivatedRoute } from '@angular/router';
+import { ISubscription } from 'rxjs/Subscription';
 
 @Component({
   selector: 'app-outputs',
   templateUrl: './outputs.component.html',
-  styleUrls: ['./outputs.component.scss']
+  styleUrls: ['./outputs.component.scss'],
 })
-export class OutputsComponent {
-
+export class OutputsComponent implements OnDestroy {
   wallets: any[];
+
+  private outputsSubscription: ISubscription;
 
   constructor(
     public walletService: WalletService,
@@ -18,10 +20,14 @@ export class OutputsComponent {
     route.queryParams.subscribe(params => this.loadData(params));
   }
 
+  ngOnDestroy() {
+    this.outputsSubscription.unsubscribe();
+  }
+
   loadData(params) {
     const addr = params['addr'];
 
-    this.walletService.outputsWithWallets().subscribe(wallets => {
+    this.outputsSubscription = this.walletService.outputsWithWallets().subscribe(wallets => {
       if (addr) {
         wallets = wallets.filter(wallet => {
           return wallet.addresses.find(address => address.address === addr);

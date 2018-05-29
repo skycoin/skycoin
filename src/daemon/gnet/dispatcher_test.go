@@ -70,9 +70,8 @@ func TestConvertToMessageBadDeserialize(t *testing.T) {
 	// Test with too many bytes
 	b := append(DummyPrefix[:], []byte{0, 1, 1, 1}...)
 	m, err := convertToMessage(c.ID, b, testing.Verbose())
-	assert.NotNil(t, err)
-	assert.Equal(t, err.Error(), "Data buffer was not completely decoded")
-	assert.Nil(t, m)
+	assert.Nil(t, err)
+	assert.NotNil(t, m)
 
 	// Test with not enough bytes
 	b = append([]byte{}, BytePrefix[:]...)

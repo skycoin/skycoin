@@ -63,6 +63,12 @@ type muxConfig struct {
 	enableUnversionedAPI bool
 }
 
+// HTTPResponse represents the http response struct
+type HTTPResponse struct {
+	Error string `json:"error"`
+	Data  string `json:"data"`
+}
+
 func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 	var appLoc string
 	if c.EnableGUI {
@@ -126,24 +132,31 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 
 // Create creates a new Server instance that listens on HTTP
 func Create(host string, c Config, gateway Gatewayer) (*Server, error) {
-	s, err := create(host, c, gateway)
-	if err != nil {
-		return nil, err
-	}
-
 	logger.Warning("HTTPS not in use!")
 
-	s.listener, err = net.Listen("tcp", host)
+	listener, err := net.Listen("tcp", host)
 	if err != nil {
 		return nil, err
 	}
+
+	// If the host did not specify a port, allowing the kernel to assign one,
+	// we need to get the assigned address to know the full hostname
+	host = listener.Addr().String()
+
+	s, err := create(host, c, gateway)
+	if err != nil {
+		s.listener.Close()
+		return nil, err
+	}
+
+	s.listener = listener
 
 	return s, nil
 }
 
 // CreateHTTPS creates a new Server instance that listens on HTTPS
 func CreateHTTPS(host string, c Config, gateway Gatewayer, certFile, keyFile string) (*Server, error) {
-	s, err := create(host, c, gateway)
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
 		return nil, err
 	}
@@ -151,19 +164,31 @@ func CreateHTTPS(host string, c Config, gateway Gatewayer, certFile, keyFile str
 	logger.Infof("Using %s for the certificate", certFile)
 	logger.Infof("Using %s for the key", keyFile)
 
-	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
-	if err != nil {
-		return nil, err
-	}
-
-	s.listener, err = tls.Listen("tcp", host, &tls.Config{
+	listener, err := tls.Listen("tcp", host, &tls.Config{
 		Certificates: []tls.Certificate{cert},
 	})
 	if err != nil {
 		return nil, err
 	}
 
+	// If the host did not specify a port, allowing the kernel to assign one,
+	// we need to get the assigned address to know the full hostname
+	host = listener.Addr().String()
+
+	s, err := create(host, c, gateway)
+	if err != nil {
+		s.listener.Close()
+		return nil, err
+	}
+
+	s.listener = listener
+
 	return s, nil
+}
+
+// Addr returns the listening address of the Server
+func (s *Server) Addr() string {
+	return s.listener.Addr().String()
 }
 
 // Serve serves the web interface on the configured host
@@ -245,6 +270,8 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 
 	// get balance of addresses
 	webHandlerV1("/balance", getBalanceHandler(gateway))
+
+	webHandlerV1("/transaction/verify", verifyTxnHandler(gateway))
 
 	// Wallet interface
 
@@ -353,7 +380,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	// Transaction handler
 
 	// get set of pending transactions
-	webHandlerV1("/pendingTxs", getPendingTxs(gateway))
+	webHandlerV1("/pendingTxs", getPendingTxns(gateway))
 	// get txn by txid
 	webHandlerV1("/transaction", getTransactionByID(gateway))
 
@@ -370,7 +397,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	webHandlerV1("/injectTransaction", injectTransaction(gateway))
 	webHandlerV1("/resendUnconfirmedTxns", resendUnconfirmedTxns(gateway))
 	// get raw tx by txid.
-	webHandlerV1("/rawtx", getRawTx(gateway))
+	webHandlerV1("/rawtx", getRawTxn(gateway))
 
 	// UxOut api handler
 

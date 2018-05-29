@@ -1,6 +1,8 @@
 package historydb
 
 import (
+	"fmt"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
@@ -76,6 +78,23 @@ func (ux *UxOuts) Get(tx *dbutil.Tx, uxID cipher.SHA256) (*UxOut, error) {
 	return &out, nil
 }
 
+// GetArray returns UxOuts for a set of uxids, will return error if any of the uxids do not exist
+func (ux *UxOuts) GetArray(tx *dbutil.Tx, uxIDs []cipher.SHA256) ([]*UxOut, error) {
+	var outs []*UxOut
+	for _, uxID := range uxIDs {
+		out, err := ux.Get(tx, uxID)
+		if err != nil {
+			return nil, err
+		} else if out == nil {
+			return nil, NewErrUxOutNotExist(uxID.Hex())
+		}
+
+		outs = append(outs, out)
+	}
+
+	return outs, nil
+}
+
 // IsEmpty checks if the uxout bucekt is empty
 func (ux *UxOuts) IsEmpty(tx *dbutil.Tx) (bool, error) {
 	return dbutil.IsEmpty(tx, UxOutsBkt)
@@ -84,4 +103,18 @@ func (ux *UxOuts) IsEmpty(tx *dbutil.Tx) (bool, error) {
 // Reset resets the bucket
 func (ux *UxOuts) Reset(tx *dbutil.Tx) error {
 	return dbutil.Reset(tx, UxOutsBkt)
+}
+
+// ErrUxOutNotExist is returned if an uxout is not found in historydb
+type ErrUxOutNotExist struct {
+	UxID string
+}
+
+// NewErrUxOutNotExist creates ErrUxOutNotExist from a UxID
+func NewErrUxOutNotExist(uxID string) error {
+	return ErrUxOutNotExist{UxID: uxID}
+}
+
+func (e ErrUxOutNotExist) Error() string {
+	return fmt.Sprintf("uxout of %s does not exist", e.UxID)
 }

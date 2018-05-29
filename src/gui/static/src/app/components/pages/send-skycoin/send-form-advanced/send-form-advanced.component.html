@@ -23,6 +23,11 @@
   </div>
 
   <div class="form-field">
+    <label>Change address</label>
+    <input formControlName="changeAddress">
+  </div>
+
+  <div class="form-field">
     <label>Destinations</label>
 
     <div formArrayName="destinations" *ngFor="let dest of destControls; let i = index;" class="-destination">

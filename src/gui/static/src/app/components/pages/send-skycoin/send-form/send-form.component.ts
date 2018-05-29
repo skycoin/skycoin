@@ -80,6 +80,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
         mode: 'share',
         share_factor: '0.5',
       },
+      null,
       passwordDialog ? passwordDialog.password : null,
     )
       .subscribe(transaction => {

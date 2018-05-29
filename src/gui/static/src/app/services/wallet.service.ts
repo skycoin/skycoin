@@ -129,7 +129,7 @@ export class WalletService {
     return this.apiService.getWalletSeed(wallet, password);
   }
 
-  createTransaction(wallet: Wallet, addresses: string[]|null, destinations: any[], hoursSelection: any, password: string|null): Observable<PreviewTransaction> {
+  createTransaction(wallet: Wallet, addresses: string[]|null, destinations: any[], hoursSelection: any, changeAddress: string|null, password: string|null): Observable<PreviewTransaction> {
     return this.apiService.post(
       'wallet/transaction',
       {
@@ -140,6 +140,7 @@ export class WalletService {
           addresses,
         },
         to: destinations,
+        change_address: changeAddress,
       },
       {
         json: true,

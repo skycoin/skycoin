@@ -40,6 +40,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     this.form = this.formBuilder.group({
       wallet: ['', Validators.required],
       addresses: ['', Validators.required],
+      changeAddress: [''],
       destinations: this.formBuilder.array(
         [this.createDestinationFormGroup()],
         this.validateDestinations.bind(this),
@@ -117,8 +118,10 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
   private fillForm() {
     this.addresses = this.formData.form.wallet.addresses;
-    this.form.get('wallet').setValue(this.formData.form.wallet);
-    this.form.get('addresses').setValue(this.formData.form.addresses);
+
+    ['wallet', 'addresses', 'changeAddress'].forEach(name => {
+      this.form.get(name).setValue(this.formData.form[name]);
+    });
 
     for (let i = 0; i < this.formData.form.destinations.length - 1; i++) {
       this.addDestination();
@@ -222,6 +225,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       this.form.get('addresses').value.map(addr => addr.address),
       this.destinations,
       this.hoursSelection,
+      this.form.get('changeAddress').value ? this.form.get('changeAddress').value : null,
       passwordDialog ? passwordDialog.password : null,
     )
       .subscribe(transaction => {
@@ -229,6 +233,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
           form: {
             wallet: this.form.get('wallet').value,
             addresses: this.form.get('addresses').value,
+            changeAddress: this.form.get('changeAddress').value,
             destinations: this.destinations,
             hoursSelection: this.hoursSelection,
             autoOptions: this.autoOptions,

@@ -135,6 +135,7 @@ RUN set -ex ; \
     screen \
     sudo \
     doxygen \
+    swig \
     texlive-latex-base \
     ; \
     apt-get clean ; \
@@ -148,15 +149,7 @@ RUN set -ex ; \
     cmake . ; \
     make install ; \
     rm -r /go/Criterion ; \
-    \
-    \
-    echo 'Installing SWIG ...' ; \
-    wget http://prdownloads.sourceforge.net/swig/swig-3.0.12.tar.gz ; \
-    tar xzf swig-3.0.12.tar.gz ; \
-    cd swig-3.0.12 ; \
-    sh configure ; \
-    make && make install ; \
-    cd ../; rm -r swig-3.0.12*
+    echo 'Success nstalling Criterion ...' ; \
 
 # Installs go development tools
 RUN go get -u github.com/derekparker/delve/cmd/dlv  && \

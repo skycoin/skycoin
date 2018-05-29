@@ -149,7 +149,7 @@ RUN set -ex ; \
     cmake . ; \
     make install ; \
     rm -r /go/Criterion ; \
-    echo 'Success nstalling Criterion ...' ; \
+    echo 'Success nstalling Criterion ...'
 
 # Installs go development tools
 RUN go get -u github.com/derekparker/delve/cmd/dlv  && \

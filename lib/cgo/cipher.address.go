@@ -113,14 +113,7 @@ func SKY_cipher_MustAddressFromBytes(_b []byte, _arg1 *C.cipher__Address) (____e
 func SKY_cipher_Address_Bytes(_addr *C.cipher__Address, _arg0 *C.GoSlice_) uint32 {
 	addr := (*cipher.Address)(unsafe.Pointer(_addr))
 	bytes := addr.Bytes()
-	bytes_len := len(bytes)
-	if bytes_len > int(_arg0.cap) {
-		// Negative len on cap overflow
-		_arg0.len = _arg0.cap - C.GoInt_(bytes_len)
-	} else {
-		C.memcpy(unsafe.Pointer(_arg0.data), unsafe.Pointer(&bytes[0]), C.size_t(len(bytes)))
-		_arg0.len = C.GoInt_(bytes_len)
-	}
+	copyToGoSlice(reflect.ValueOf(bytes), _arg0)
 	return SKY_OK
 }
 
@@ -140,14 +133,7 @@ func SKY_cipher_Address_Null(_addr *C.cipher__Address, _arg0 *bool) (____error_c
 func SKY_cipher_Address_BitcoinBytes(_addr *C.cipher__Address, _arg0 *C.GoSlice_) uint32 {
 	addr := (*cipher.Address)(unsafe.Pointer(_addr))
 	bytes := addr.BitcoinBytes()
-	bytes_len := len(bytes)
-	if bytes_len > int(_arg0.cap) {
-		// Negative len on cap overflow
-		_arg0.len = _arg0.cap - C.GoInt_(bytes_len)
-	} else {
-		C.memcpy(unsafe.Pointer(_arg0.data), unsafe.Pointer(&bytes[0]), C.size_t(bytes_len))
-		_arg0.len = C.GoInt_(bytes_len)
-	}
+	copyToGoSlice(reflect.ValueOf(bytes), _arg0)
 	return SKY_OK
 }
 

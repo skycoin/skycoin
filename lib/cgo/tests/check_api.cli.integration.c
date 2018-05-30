@@ -62,7 +62,7 @@ Test(api_cli_integration, TestStableShowConfig) {
 	GoString showConfigCommand = {str, strlen(str) };
 	GoUint32 errcode;
 	
-	errcode = SKY_cli_LoadConfig( &configHandle );
+	errcode = SKY_cli_LoadConfig(&configHandle);
 	cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
 	registerHandleClose( configHandle );
 	errcode = SKY_cli_NewApp( &configHandle, &appHandle );

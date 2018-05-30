@@ -1,10 +1,7 @@
 package main
 
 import (
-	"unsafe"
-
 	cli "github.com/skycoin/skycoin/src/cli"
-	wallet "github.com/skycoin/skycoin/src/wallet"
 )
 
 /*
@@ -17,13 +14,18 @@ import (
 import "C"
 
 //export SKY_cli_GenerateWallet
-func SKY_cli_GenerateWallet(_walletFile string, _opts *C.wallet__Options, _numAddrs uint64, _arg3 *C.Wallet__Handle) (____error_code uint32) {
+func SKY_cli_GenerateWallet(_walletFile string, _opts *C.Options__Handle, _numAddrs uint64, _arg3 *C.Wallet__Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
 	walletFile := _walletFile
-	opts := *(*wallet.Options)(unsafe.Pointer(_opts))
+	__opts, okopts := lookupOptionsHandle(*_opts)
+	if !okopts {
+		____error_code = SKY_ERROR
+		return
+	}
+	opts := *__opts
 	numAddrs := _numAddrs
 	__arg3, ____return_err := cli.GenerateWallet(walletFile, opts, numAddrs)
 	____error_code = libErrorCode(____return_err)

@@ -25,9 +25,9 @@ Test(cipher_base64_hex, TestBase64Encode){
 	GoSlice data2 = { output2, 0, BUFFER_SIZE };
 	for(int i = 0; i < 10; i++){
 		randBytes(&data, 256);
-		unsigned int encode_result = b64_encode_string( buff, 256, output );
+		unsigned int encode_result = b64_encode( (const unsigned char*)buff, 256, output );
 		cr_assert(encode_result > 0, "b64_encode_string failed");
-		int decode_result = base64_decode_string(output, encode_result, output2, BUFFER_SIZE);
+		int decode_result = b64_decode(output, encode_result, output2);
 		cr_assert(decode_result > 0, "base64_decode_string failed");
 		data2.len = decode_result;
 		cr_assert( eq(type(GoSlice), data, data2) );
@@ -37,21 +37,21 @@ Test(cipher_base64_hex, TestBase64Encode){
 	int chars_len = strlen(invalid_chars);
 	for(int i = 0; i < 10; i++){
 		randBytes(&data, 256);
-		unsigned int encode_result = b64_encode_string( buff, 256, output );
+		unsigned int encode_result = b64_encode( (const unsigned char*)buff, 256, output );
 		cr_assert(encode_result > 0, "b64_encode_string failed");
 		n = rand() % 256;
 		output[n] = invalid_chars[ i % chars_len ];
-		int decode_result = base64_decode_string(output, encode_result, output2, BUFFER_SIZE);
+		int decode_result = b64_decode(output, encode_result, output2);
 		cr_assert(decode_result < 0);
 	}
 	//Truncating 
 	for(int i = 0; i < 10; i++){
 		randBytes(&data, 256);
-		unsigned int encode_result = b64_encode_string( buff, 256, output );
+		unsigned int encode_result = b64_encode( (const unsigned char*)buff, 256, output );
 		cr_assert(encode_result > 0, "b64_encode_string failed");
 		n = rand() % 256;
 		output[n] = 0;
-		int decode_result = base64_decode_string(output, encode_result, output2, BUFFER_SIZE);
+		int decode_result = b64_decode(output, encode_result, output2);
 		cr_assert(decode_result < 0);
 	}
 }

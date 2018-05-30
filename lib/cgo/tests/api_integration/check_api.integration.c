@@ -150,7 +150,7 @@ int createWallet(Client__Handle clientHandle,
 		unsigned char buff[64];
 		GoSlice slice = { buff, 0, 64 };
 		SKY_cipher_RandByte( 32, (coin__UxArray*)&slice );
-		b64_encode_string(buff, 32, seed);
+		b64_encode(buff, 32, seed);
 	}
 	strncpy(label, seed, 6);
 	GoString strSeed = {seed, strlen(seed)};

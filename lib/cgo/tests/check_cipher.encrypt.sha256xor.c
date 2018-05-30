@@ -122,7 +122,7 @@ void makeEncryptedData(GoSlice data, GoUint32 dataLength, GoSlice pwd, coin__UxA
 	
 	int fullDestLength = fullLength + sizeof(cipher__SHA256) + SHA256XORNONCESIZE;
 	int destBufferStart = sizeof(cipher__SHA256) + SHA256XORNONCESIZE;
-	char* dest_buffer = malloc(fullDestLength);
+	unsigned char* dest_buffer = malloc(fullDestLength);
 	cr_assert(dest_buffer != NULL, "Couldn\'t allocate result buffer");
 	for(int i = 0; i < n; i++){
 		hashKeyIndexNonce(hashPassword, i, &hashNonce, &h);
@@ -141,7 +141,7 @@ void makeEncryptedData(GoSlice data, GoUint32 dataLength, GoSlice pwd, coin__UxA
 	errcode = SKY_cipher_SumSHA256(nonceAndDataBytes, checksum);
 	cr_assert(errcode == SKY_OK, "SKY_cipher_SumSHA256 failed. Error calculating final checksum");
 	unsigned char bufferb64[BUFFER_SIZE];
-	unsigned int size = b64_encode_string(dest_buffer, fullDestLength, encrypted->data);
+	unsigned int size = b64_encode((const unsigned char*)dest_buffer, fullDestLength, encrypted->data);
 	encrypted->len = size;
 }
 
@@ -187,8 +187,8 @@ Test(cipher_encrypt_sha256xor, TestSha256XorEncrypt){
 				n++;
 			}
 			
-			int decode_length = base64_decode_string((const unsigned char*)encrypted.data, 
-				encrypted.len, encryptedText, BUFFER_SIZE);
+			int decode_length = b64_decode((const unsigned char*)encrypted.data, 
+				encrypted.len, encryptedText);
 			cr_assert(decode_length >= 0, "base64_decode_string failed.");
 			int totalEncryptedDataLen = SHA256XORCHECKSUMSIZE + SHA256XORNONCESIZE + 32 + n*SHA256XORBLOCKSIZE; // 32 is the hash data length
 			
@@ -227,9 +227,9 @@ Test(cipher_encrypt_sha256xor, TestSha256XorEncrypt){
 			n++;
 		}
 		
-		int decode_length = base64_decode_string((const unsigned char*)encrypted.data, 
-			encrypted.len, encryptedText, BUFFER_SIZE);
-		cr_assert( decode_length >= 0, "base64_decode_string failed" );
+		int decode_length = b64_decode((const unsigned char*)encrypted.data, 
+			encrypted.len, encryptedText);
+		cr_assert( decode_length >= 0, "base64_decode failed" );
 		int totalEncryptedDataLen = SHA256XORCHECKSUMSIZE + SHA256XORNONCESIZE + 32 + n*SHA256XORBLOCKSIZE; // 32 is the hash data length
 		
 		cr_assert(totalEncryptedDataLen == decode_length, "SKY_encrypt_Sha256Xor_Encrypt failed, encrypted data length incorrect.");

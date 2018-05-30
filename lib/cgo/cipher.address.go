@@ -67,19 +67,21 @@ func SKY_cipher_AddressFromBytes(_b []byte, _arg1 *C.cipher__Address) (____error
 }
 
 //export SKY_cipher_AddressFromPubKey
-func SKY_cipher_AddressFromPubKey(_pubKey *C.cipher__PubKey, _arg1 *C.cipher__Address) {
+func SKY_cipher_AddressFromPubKey(_pubKey *C.cipher__PubKey, _arg1 *C.cipher__Address) uint32 {
 	pubKey := (*cipher.PubKey)(unsafe.Pointer(_pubKey))
 
 	addr := cipher.AddressFromPubKey(*pubKey)
 	*_arg1 = *(*C.cipher__Address)(unsafe.Pointer(&addr))
+	return SKY_OK
 }
 
 //export SKY_cipher_AddressFromSecKey
-func SKY_cipher_AddressFromSecKey(_secKey *C.cipher__SecKey, _arg1 *C.cipher__Address) {
+func SKY_cipher_AddressFromSecKey(_secKey *C.cipher__SecKey, _arg1 *C.cipher__Address) uint32 {
 	var secKey cipher.SecKey
 	secKey = *(*cipher.SecKey)(unsafe.Pointer(_secKey))
 	addr := cipher.AddressFromSecKey(secKey)
 	*_arg1 = *(*C.cipher__Address)(unsafe.Pointer(&addr))
+	return SKY_OK
 }
 
 //export SKY_cipher_BitcoinDecodeBase58Address
@@ -108,7 +110,7 @@ func SKY_cipher_MustAddressFromBytes(_b []byte, _arg1 *C.cipher__Address) (____e
 }
 
 //export SKY_cipher_Address_Bytes
-func SKY_cipher_Address_Bytes(_addr *C.cipher__Address, _arg0 *C.GoSlice_) {
+func SKY_cipher_Address_Bytes(_addr *C.cipher__Address, _arg0 *C.GoSlice_) uint32 {
 	addr := (*cipher.Address)(unsafe.Pointer(_addr))
 	bytes := addr.Bytes()
 	bytes_len := len(bytes)
@@ -119,7 +121,7 @@ func SKY_cipher_Address_Bytes(_addr *C.cipher__Address, _arg0 *C.GoSlice_) {
 		C.memcpy(unsafe.Pointer(_arg0.data), unsafe.Pointer(&bytes[0]), C.size_t(len(bytes)))
 		_arg0.len = C.GoInt_(bytes_len)
 	}
-	return
+	return SKY_OK
 }
 
 //export SKY_cipher_Address_Null
@@ -135,7 +137,7 @@ func SKY_cipher_Address_Null(_addr *C.cipher__Address, _arg0 *bool) (____error_c
 }
 
 //export SKY_cipher_Address_BitcoinBytes
-func SKY_cipher_Address_BitcoinBytes(_addr *C.cipher__Address, _arg0 *C.GoSlice_) {
+func SKY_cipher_Address_BitcoinBytes(_addr *C.cipher__Address, _arg0 *C.GoSlice_) uint32 {
 	addr := (*cipher.Address)(unsafe.Pointer(_addr))
 	bytes := addr.BitcoinBytes()
 	bytes_len := len(bytes)
@@ -146,6 +148,7 @@ func SKY_cipher_Address_BitcoinBytes(_addr *C.cipher__Address, _arg0 *C.GoSlice_
 		C.memcpy(unsafe.Pointer(_arg0.data), unsafe.Pointer(&bytes[0]), C.size_t(bytes_len))
 		_arg0.len = C.GoInt_(bytes_len)
 	}
+	return SKY_OK
 }
 
 //export SKY_cipher_Address_Verify
@@ -157,45 +160,51 @@ func SKY_cipher_Address_Verify(_addr *C.cipher__Address, _key *C.cipher__PubKey)
 }
 
 //export SKY_cipher_Address_String
-func SKY_cipher_Address_String(_addr *C.cipher__Address, _arg1 *C.GoString_) {
+func SKY_cipher_Address_String(_addr *C.cipher__Address, _arg1 *C.GoString_) uint32 {
 	addr := (*cipher.Address)(unsafe.Pointer(_addr))
 	s := addr.String()
 	copyString(s, _arg1)
+	return SKY_OK
 }
 
 //export SKY_cipher_Address_BitcoinString
-func SKY_cipher_Address_BitcoinString(_addr *C.cipher__Address, _arg1 *C.GoString_) {
+func SKY_cipher_Address_BitcoinString(_addr *C.cipher__Address, _arg1 *C.GoString_) uint32 {
 	addr := (*cipher.Address)(unsafe.Pointer(_addr))
 	s := addr.BitcoinString()
 	copyString(s, _arg1)
+	return SKY_OK
 }
 
 //export SKY_cipher_Address_Checksum
-func SKY_cipher_Address_Checksum(_addr *C.cipher__Address, _arg0 *C.cipher__Checksum) {
+func SKY_cipher_Address_Checksum(_addr *C.cipher__Address, _arg0 *C.cipher__Checksum) uint32 {
 	addr := (*cipher.Address)(unsafe.Pointer(_addr))
 	cs := addr.Checksum()
 	C.memcpy(unsafe.Pointer(_arg0), unsafe.Pointer(&cs[0]), C.size_t(len(cs)))
+	return SKY_OK
 }
 
 //export SKY_cipher_Address_BitcoinChecksum
-func SKY_cipher_Address_BitcoinChecksum(_addr *C.cipher__Address, _arg0 *C.cipher__Checksum) {
+func SKY_cipher_Address_BitcoinChecksum(_addr *C.cipher__Address, _arg0 *C.cipher__Checksum) uint32 {
 	addr := (*cipher.Address)(unsafe.Pointer(_addr))
 	cs := addr.BitcoinChecksum()
 	C.memcpy(unsafe.Pointer(_arg0), unsafe.Pointer(&cs[0]), C.size_t(len(cs)))
+	return SKY_OK
 }
 
 //export SKY_cipher_BitcoinAddressFromPubkey
-func SKY_cipher_BitcoinAddressFromPubkey(_pubkey *C.cipher__PubKey, _arg1 *C.GoString_) {
+func SKY_cipher_BitcoinAddressFromPubkey(_pubkey *C.cipher__PubKey, _arg1 *C.GoString_) uint32 {
 	pubkey := (*cipher.PubKey)(unsafe.Pointer(_pubkey))
 	s := cipher.BitcoinAddressFromPubkey(*pubkey)
 	copyString(s, _arg1)
+	return SKY_OK
 }
 
 //export SKY_cipher_BitcoinWalletImportFormatFromSeckey
-func SKY_cipher_BitcoinWalletImportFormatFromSeckey(_seckey *C.cipher__SecKey, _arg1 *C.GoString_) {
+func SKY_cipher_BitcoinWalletImportFormatFromSeckey(_seckey *C.cipher__SecKey, _arg1 *C.GoString_) uint32 {
 	seckey := (*cipher.SecKey)(unsafe.Pointer(_seckey))
 	s := cipher.BitcoinWalletImportFormatFromSeckey(*seckey)
 	copyString(s, _arg1)
+	return SKY_OK
 }
 
 //export SKY_cipher_BitcoinAddressFromBytes

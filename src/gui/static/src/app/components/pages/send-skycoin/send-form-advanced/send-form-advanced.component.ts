@@ -45,7 +45,6 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
         [this.createDestinationFormGroup()],
         this.validateDestinations.bind(this),
       ),
-      hoursMode: ['share', Validators.required],
     });
 
     this.subscriptions = this.form.get('wallet').valueChanges.subscribe(wallet => {
@@ -134,7 +133,6 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     });
 
     if (this.formData.form.hoursSelection.type === 'auto') {
-      this.form.get('hoursMode').setValue(this.formData.form.hoursSelection.mode);
       this.autoShareValue = this.formData.form.hoursSelection.share_factor;
       this.autoHours = true;
     } else {
@@ -173,7 +171,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
           return true;
         }
 
-        if (parseFloat(value) < 0) {
+        if (parseFloat(value) <= 0) {
           return true;
         }
 
@@ -181,6 +179,10 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
           const parts = value.split('.');
 
           if (parts.length === 2 && parts[1].length > 6) {
+            return true;
+          }
+        } else if (name === 'hours') {
+          if (value < 1 || parseInt(value, 10) !== parseFloat(value)) {
             return true;
           }
         }
@@ -195,8 +197,8 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
     const coins = this.form.get('addresses').value.reduce((a, b) => a + b.coins, 0);
     const hours = this.form.get('addresses').value.reduce((a, b) => a + b.hours, 0);
-    const destinationsCoins = this.destControls.reduce((a, b) => a + b.value.coins, 0);
-    const destinationsHours = this.destControls.reduce((a, b) => a + b.value.hours, 0);
+    const destinationsCoins = this.destControls.reduce((a, b) => a + parseFloat(b.value.coins), 0);
+    const destinationsHours = this.destControls.reduce((a, b) => a + parseInt(b.value.hours, 10), 0);
 
     if (destinationsCoins > coins || destinationsHours > hours) {
       return { Invalid: true };
@@ -274,7 +276,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     if (this.autoHours) {
       hoursSelection = <any> {
         type: 'auto',
-        mode: this.form.get('hoursMode').value,
+        mode: 'share',
         share_factor: this.autoShareValue,
       };
     }

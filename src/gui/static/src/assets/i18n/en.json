@@ -145,15 +145,10 @@
     "destinations-label": "Destinations",
     "hours-allocation-label": "Automatic coin hours allocation",
     "options-label": "Options",
-    "mode-label": "Mode",
     "value-label": "Value",
     "verify-button": "Verify",
     "send-button": "Send",
-    "back-button": "Back",
-
-    "modes": {
-      "share": "Share"
-    }
+    "back-button": "Back"
   },
 
   "tx": {

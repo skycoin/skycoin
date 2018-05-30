@@ -1,9 +1,9 @@
 <div [formGroup]="form">
   <div class="form-field">
-    <label>{{ 'send.wallet-label' | translate }}</label>
+    <label for="wallets">{{ 'send.wallet-label' | translate }}</label>
     <div class="-select">
-      <select formControlName="wallet">
-        <option *ngFor="let wallet of walletService.all() | async" [disabled]="wallet.balance <= 0" [ngValue]="wallet">
+      <select formControlName="wallet" id="wallets">
+        <option *ngFor="let wallet of walletService.all() | async" [disabled]="wallet.coins <= 0" [ngValue]="wallet">
           {{ wallet.label }} - {{ wallet.coins | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
           ({{ wallet.hours }} {{ 'common.coin-hours' | translate }})
         </option>
@@ -12,9 +12,9 @@
   </div>
 
   <div class="form-field">
-    <label>{{ 'send.addresses-label' | translate }}</label>
+    <label for="addresses" (click)="selectAddresses.open()">{{ 'send.addresses-label' | translate }}</label>
     <div class="-select">
-      <mat-select multiple formControlName="addresses" [compareWith]="addressCompare">
+      <mat-select #selectAddresses multiple formControlName="addresses" [compareWith]="addressCompare" id="addresses">
         <mat-option *ngFor="let addr of addresses" [value]="addr">
           {{ addr.address }} - {{ addr.coins | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
           ({{ addr.hours }} {{ 'common.coin-hours' | translate }})
@@ -24,17 +24,17 @@
   </div>
 
   <div class="form-field">
-    <label>{{ 'send.change-address-label' | translate }}</label>
-    <input formControlName="changeAddress">
+    <label for="change-address">{{ 'send.change-address-label' | translate }}</label>
+    <input formControlName="changeAddress" id="change-address">
   </div>
 
   <div class="form-field">
-    <label>{{ 'send.destinations-label' | translate }}</label>
+    <label for="destination">{{ 'send.destinations-label' | translate }}</label>
 
     <div formArrayName="destinations" *ngFor="let dest of destControls; let i = index;" class="-destination">
       <div [formGroupName]="i" class="row">
         <div class="col-md-5">
-          <input formControlName="address">
+          <input formControlName="address" [id]="i === 0 ? 'destination' : ''">
         </div>
         <div class="col-md-3">
           <div class="-input-addon">
@@ -73,20 +73,11 @@
     <div [ngClass]="{ 'row -options-wrapper': true, '-hidden': !autoOptions }">
       <div class="col-md-5">
         <div class="form-field">
-          <label>{{ 'send.mode-label' | translate }}</label>
-          <div class="-select">
-            <select formControlName="hoursMode">
-              <option value="share" selected>{{ 'send.modes.share' | translate }}</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-field">
-          <label class="-space-between">
+          <label class="-space-between" for="value">
             <span>{{ 'send.value-label' | translate }}</span>
             <span>{{ autoShareValue | number:'1.0-2' }}</span>
           </label>
-          <mat-slider class="-slider" min="0" max="1" step="0.01"
+          <mat-slider class="-slider" min="0" max="1" step="0.01" id="value"
                       (input)="setShareValue($event)" [value]="autoShareValue"
           ></mat-slider>
         </div>

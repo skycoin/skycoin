@@ -1450,23 +1450,30 @@ func TestWalletChooseSpendsFuzzing(t *testing.T) {
 		chosen, err := ChooseSpends(uxb, coins, hours, sortFunc)
 
 		if coins == 0 {
-			return testutil.EqualError(err, ErrZeroSpend.Error())
+			return equalError(err, ErrZeroSpend.Error())
 		}
 
 		if len(uxb) == 0 {
-			return testutil.EqualError(err, ErrNoUnspents.Error())
+			return equalError(err, ErrNoUnspents.Error())
 		}
 		if totalHours == 0 {
-			return testutil.EqualError(err, fee.ErrTxnNoFee.Error())
+			return equalError(err, fee.ErrTxnNoFee.Error())
 		}
 		if coins > totalCoins {
-			return testutil.EqualError(err, ErrInsufficientBalance.Error())
+			return equalError(err, ErrInsufficientBalance.Error())
+		}
+
+		if hours > fee.RemainingHours(totalHours) {
+			return equalError(err, ErrInsufficientHours.Error())
 		}
 		if err != nil {
+			ChooseSpends(uxb, coins, hours, sortFunc)
+			log.Printf("got unexpected err: %v", err)
 			return false
 		}
 
 		if len(chosen) == 0 {
+			log.Println("got len(chosen) == 0")
 			return false
 		}
 		// Check that there are no duplicated spends chosen
@@ -1474,6 +1481,7 @@ func TestWalletChooseSpendsFuzzing(t *testing.T) {
 		for _, ux := range chosen {
 			_, ok := uxMap[ux]
 			if ok {
+				log.Printf("got duplicated spend: %v", ux)
 				return false
 			}
 			uxMap[ux] = struct{}{}
@@ -1481,6 +1489,7 @@ func TestWalletChooseSpendsFuzzing(t *testing.T) {
 
 		// The first chosen spend should have non-zero coin hours
 		if uint64(0) == chosen[0].Hours {
+			log.Println("got first chosen spend with zero coin hours")
 			return false
 		}
 
@@ -1496,6 +1505,7 @@ func TestWalletChooseSpendsFuzzing(t *testing.T) {
 
 			if b.Hours == 0 {
 				if uint64(0) != a.Hours {
+					log.Println("uint64(0) != a.Hours")
 					return false
 				}
 			}
@@ -1506,11 +1516,13 @@ func TestWalletChooseSpendsFuzzing(t *testing.T) {
 		for _, ux := range chosen[1:] {
 			if ux.Hours != 0 {
 				if chosen[0].Coins < ux.Coins {
+					log.Println("chosen[0].Coins < ux.Coins")
 					return false
 				}
 
 				if chosen[0].Coins == ux.Coins {
 					if chosen[0].Hours > ux.Hours {
+						log.Println("chosen[0].Hours > ux.Hours")
 						return false
 					}
 				}
@@ -1529,28 +1541,34 @@ func TestWalletChooseSpendsFuzzing(t *testing.T) {
 		// Amongst the UxBalances with zero hours, they should be sorted as specified
 		ok := verifySortedCoinsFuzz(zeroBalances, cmpCoins)
 		if !ok {
+			log.Println("verifySortedCoinsFuzz(zeroBalances, cmpCoins) returned false")
 			return false
 		}
 
 		// Amongst the UxBalances with non-zero hours, they should be sorted as specified
 		ok = verifySortedCoinsFuzz(nonzeroBalances, cmpCoins)
 		if !ok {
+			log.Println("verifySortedCoinsFuzz(nonzeroBalances, cmpCoins) returned false")
 			return false
 		}
 
 		// If there are any extra UxBalances with non-zero hours, all of the zeros should have been chosen
 		if len(nonzeroBalances) > 0 {
-			if haveZero != len(zeroBalances) {
+			if haveZero < len(zeroBalances) {
+				log.Println("haveZero < len(zeroBalances)")
 				return false
 			}
 		}
 
 		// Excessive UxBalances to satisfy the amount requested should not be included
 		var haveCoins uint64
+		var haveHours uint64
 		for i, ux := range chosen {
 			haveCoins += ux.Coins
-			if haveCoins >= coins {
+			haveHours += ux.Hours
+			if haveCoins >= coins && fee.RemainingHours(haveHours) >= hours {
 				if len(chosen)-1 != i {
+					log.Println("len(chosen)-1 != i")
 					return false
 				}
 			}
@@ -1565,11 +1583,24 @@ func TestWalletChooseSpendsFuzzing(t *testing.T) {
 			uxb := makeRandomUxBalances(t)
 			args[0] = reflect.ValueOf(uxb)
 			args[1] = reflect.ValueOf(uint64(rand.Intn(100000)))
-			args[2] = reflect.ValueOf(uint64(0))
+			args[2] = reflect.ValueOf(uint64(rand.Intn(100000)))
 		},
 	}
 	err := quick.Check(f, cfg)
 	require.NoError(t, err)
+}
+
+// EqualError checks that an error is not nil and that its message matches
+func equalError(err error, msg string) bool {
+	if err == nil {
+		log.Printf("failed check error. got: nil, need: %v", msg)
+		return false
+	}
+	if msg != err.Error() {
+		log.Printf("failed check error. got: %v, need: %v", err, msg)
+		return false
+	}
+	return true
 }
 
 func TestRemoveBackupFiles(t *testing.T) {

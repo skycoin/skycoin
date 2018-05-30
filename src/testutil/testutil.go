@@ -43,11 +43,6 @@ func RequireError(t *testing.T, err error, msg string) {
 	require.Equal(t, msg, err.Error())
 }
 
-// EqualError checks that an error is not nil and that its message matches
-func EqualError(err error, msg string) bool {
-	return err != nil && msg == err.Error()
-}
-
 // MakeAddress creates a cipher.Address
 func MakeAddress() cipher.Address {
 	p, _ := cipher.GenerateKeyPair()

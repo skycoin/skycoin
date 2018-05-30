@@ -53,6 +53,11 @@ var (
 	ErrDisconnectMaxDefaultConnectionReached                       = errors.New("Maximum number of default connections was reached")
 	// ErrDisconnectMaxOutgoingConnectionsReached is returned when connection pool size is greater than the maximum allowed
 	ErrDisconnectMaxOutgoingConnectionsReached gnet.DisconnectReason = errors.New("Maximum outgoing connections was reached")
+	// ErrDisconnectBlockchainPubkeyNotMatched is returned when the blockchain pubkey in introduction does not match
+	ErrDisconnectBlockchainPubkeyNotMatched gnet.DisconnectReason = errors.New("Blockchain pubkey in Introduction message is not matched ")
+	// ErrDisconnectInvalidExtraData is returned when extra filed can't be parsed as specific data type.
+	// e.g. ExtraData length in IntroductionMessage is not the same as cipher.PubKey
+	ErrDisconnectInvalidExtraData gnet.DisconnectReason = errors.New("Invalid extra data")
 
 	logger = logging.MustGetLogger("daemon")
 )
@@ -126,6 +131,8 @@ type DaemonConfig struct { // nolint: golint
 	Version int32
 	// IP Address to serve on. Leave empty for automatic assignment
 	Address string
+	// BlockchainPubkey blockchain pubkey string
+	BlockchainPubkey cipher.PubKey
 	// TCP/UDP port for connections
 	Port int
 	// Directory where application data is stored
@@ -887,7 +894,8 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 
 	dm.expectingIntroductions.Add(a, utc.Now())
 	logger.Debugf("Sending introduction message to %s, mirror:%d", a, dm.Messages.Mirror)
-	m := NewIntroductionMessage(dm.Messages.Mirror, dm.Config.Version, dm.Pool.Pool.Config.Port)
+	// TODO: replace the last paramenter of nil with dm.Config.BlockchainPubkey in v25
+	m := NewIntroductionMessage(dm.Messages.Mirror, dm.Config.Version, dm.Pool.Pool.Config.Port, nil)
 	if err := dm.Pool.Pool.SendMessage(a, m); err != nil {
 		logger.Errorf("Send IntroductionMessage to %s failed: %v", a, err)
 	}

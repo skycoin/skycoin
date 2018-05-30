@@ -230,18 +230,20 @@ type IntroductionMessage struct {
 	Port uint16
 	// Our client version
 	Version int32
-
-	c *gnet.MessageContext `enc:"-"`
+	c       *gnet.MessageContext `enc:"-"`
 	// We validate the message in Handle() and cache the result for Process()
 	valid bool `enc:"-"` // skip it during encoding
+	// Extra would be parsed as blockchain pubkey if it's not empty
+	Extra []byte `enc:",omitempty"`
 }
 
 // NewIntroductionMessage creates introduction message
-func NewIntroductionMessage(mirror uint32, version int32, port uint16) *IntroductionMessage {
+func NewIntroductionMessage(mirror uint32, version int32, port uint16, extra []byte) *IntroductionMessage {
 	return &IntroductionMessage{
 		Mirror:  mirror,
 		Version: version,
 		Port:    port,
+		Extra:   extra,
 	}
 }
 
@@ -269,6 +271,23 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 		}
 
 		logger.Infof("%s verified for version %d", mc.Addr, intro.Version)
+
+		// Checks the genesis hash if not empty
+		if len(intro.Extra) > 0 {
+			var bcPubKey cipher.PubKey
+			if len(intro.Extra) != len(bcPubKey) {
+				logger.Infof("Extra data length does not match that of the cipher.SHA256")
+				d.Pool.Pool.Disconnect(mc.Addr, ErrDisconnectInvalidExtraData)
+				return ErrDisconnectInvalidExtraData
+			}
+			copy(bcPubKey[:], intro.Extra[:])
+
+			if d.Config.BlockchainPubkey != bcPubKey {
+				logger.Infof("Blockchain pubkey does not match, local: %s, remote: %s", d.Config.BlockchainPubkey.Hex(), bcPubKey.Hex())
+				d.Pool.Pool.Disconnect(mc.Addr, ErrDisconnectBlockchainPubkeyNotMatched)
+				return ErrDisconnectBlockchainPubkeyNotMatched
+			}
+		}
 
 		// only solicited connection can be added to exchange peer list, cause accepted
 		// connection may not have incomming  port.

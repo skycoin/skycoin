@@ -60,7 +60,6 @@ InputTestDataJSON* jsonToInputTestData(json_value* json, InputTestDataJSON* inpu
     } else {
       json_get_gostring(*hashstr_value, s);
     }
-    fprintf(stderr, "Input data %d-th JSON seed %s\n", i, s->p);
   }
   return input_data;
 }
@@ -228,7 +227,7 @@ GoUint32 KeysTestDataFromJSON(KeysTestDataJSON* json_data, KeysTestData* input_d
     return err;
 
   input_data->Signatures.len = input_data->Signatures.cap = json_data->Signatures.len;
-  input_data->Signatures.data = calloc(input_data->Signatures.len, sizeof(GoString));
+  input_data->Signatures.data = calloc(input_data->Signatures.cap, sizeof(GoString));
   cipher__Sig* sig = (cipher__Sig*) input_data->Signatures.data;
 
   GoString* s = (GoString*) json_data->Signatures.data;
@@ -367,15 +366,14 @@ void ValidateSeedData(SeedTestData* seedData, InputTestData* inputData) {
   keys.len = keys.cap = 0;
   keys.data = NULL;
 
-  fprintf(stderr, "Using seed (len=%d) %s\n", seedData->Seed.len, (char *)seedData->Seed.data);
   SKY_cipher_GenerateDeterministicKeyPairs(seedData->Seed, seedData->Keys.len, (GoSlice_*) &keys);
 
   cr_assert(keys.data != NULL,
       "SKY_cipher_GenerateDeterministicKeyPairs must allocate memory slice with zero cap");
-  cr_assert(seedData->Keys.len - keys.len == 0,
-      "SKY_cipher_GenerateDeterministicKeyPairs must generate expected number of keys");
   // Ensure buffer allocated for generated keys is disposed after testing
   registerMemCleanup(keys.data);
+  cr_assert(seedData->Keys.len - keys.len == 0,
+      "SKY_cipher_GenerateDeterministicKeyPairs must generate expected number of keys");
 
   cipher__SecKey  skNull;
   cipher__PubKey  pkNull;
@@ -391,16 +389,15 @@ void ValidateSeedData(SeedTestData* seedData, InputTestData* inputData) {
   KeysTestData* expected = (KeysTestData*) seedData->Keys.data;
   cipher__SecKey *s = (cipher__SecKey*) keys.data;
   for (; i < keys.len; i++, s++, expected++) {
-    fprintf(stderr, "Data buffer=%p s=%p *s=%p\n", keys.data, (void*) s, (void*)*s);
-    cr_assert(ne(u8[32], skNull, (*s)),
-        "%d-th secret key must not be null", i);
+//     cr_assert(ne(u8[32], skNull, (*s)),
+//         "%d-th secret key must not be null", i);
     cr_assert(eq(u8[32], expected->Secret, (*s)),
         "%d-th generated secret key must match provided secret key", i);
 
     cipher__PubKey p;
     SKY_cipher_PubKeyFromSecKey(s, &p);
-    cr_assert(ne(u8[33], pkNull, p),
-        "%d-th public key must not be null", i);
+//    cr_assert(ne(u8[33], pkNull, p),
+//        "%d-th public key must not be null", i);
     cr_assert(eq(u8[33], expected->Public, p),
         "%d-th derived public key must match provided public key", i);
 

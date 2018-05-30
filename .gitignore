@@ -129,8 +129,20 @@ skycoin-cli
 # FIXME: see #1027 - Temporary solution to deal with generated file
 include/libskycoin.h
 
-# Ignore swig libskycoin.h copy
-lib/swig/include/libskycoin.h
+
+# Eclipse temp files
+.cproject
+.metadata/**
+.project
+
+# Generated docs
+docs/libc/latex
+docs/libc/man
+docs/libc/xml
+
+
+*.sublime-workspace
+.angulardoc.json
 
 # Do not ignore Docker Cloud build
 !hooks/build

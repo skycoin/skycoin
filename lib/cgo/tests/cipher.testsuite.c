@@ -321,7 +321,7 @@ void SeedTestDataToJson(SeedTestData* input_data, SeedTestDataJSON* json_data) {
 
   unsigned int b64seed_size = b64e_size(input_data->Seed.len + 1) + 1;
   json_data->Seed.p = malloc(b64seed_size);
-  json_data->Seed.n = b64_encode((const unsigned int*) input_data->Seed.data,
+  json_data->Seed.n = b64_encode((const unsigned char*) input_data->Seed.data,
       input_data->Seed.len, input_data->Seed.data);
 } 
 
@@ -335,18 +335,13 @@ void SeedTestDataToJson(SeedTestData* input_data, SeedTestDataJSON* json_data) {
 // - Memory requirements to allocate individual instances of KeyTestData in Keys
 //   see KeysTestDataFromJSON
 GoUint32 SeedTestDataFromJSON(SeedTestDataJSON* json_data, SeedTestData* input_data) {
-  unsigned int b64seed_size = b64d_size(json_data->Seed.n) + 1;
-  input_data->Seed.data = malloc(b64seed_size);
-  input_data->Seed.cap = b64seed_size;
-  fprintf(stderr, "Seed JSON %d %s", json_data->Seed.n, json_data->Seed.p);
+  input_data->Seed.cap = b64d_size(json_data->Seed.n);
+  input_data->Seed.data = malloc(input_data->Seed.cap);
   input_data->Seed.len = b64_decode(json_data->Seed.p, json_data->Seed.n,
       input_data->Seed.data);
-  // Ensure seed string ends with NULL
-  ((char*) input_data->Seed.data)[input_data->Seed.len] = 0;
-  fprintf(stderr, "Seed %d %s", input_data->Seed.len, input_data->Seed.data);
 
   input_data->Keys.len = input_data->Keys.cap = json_data->Keys.len;
-  input_data->Keys.data = calloc(input_data->Keys.len, sizeof(KeysTestData));
+  input_data->Keys.data = calloc(input_data->Keys.cap, sizeof(KeysTestData));
   KeysTestData* k = (KeysTestData*) input_data->Keys.data;
 
   KeysTestDataJSON* kj = (KeysTestDataJSON*) json_data->Keys.data;
@@ -375,8 +370,6 @@ void ValidateSeedData(SeedTestData* seedData, InputTestData* inputData) {
   fprintf(stderr, "Using seed (len=%d) %s\n", seedData->Seed.len, (char *)seedData->Seed.data);
   SKY_cipher_GenerateDeterministicKeyPairs(seedData->Seed, seedData->Keys.len, (GoSlice_*) &keys);
 
-  fprintf(stderr, "Ok 375\n");
-
   cr_assert(keys.data != NULL,
       "SKY_cipher_GenerateDeterministicKeyPairs must allocate memory slice with zero cap");
   cr_assert(seedData->Keys.len - keys.len == 0,
@@ -397,7 +390,6 @@ void ValidateSeedData(SeedTestData* seedData, InputTestData* inputData) {
   int i = 0;
   KeysTestData* expected = (KeysTestData*) seedData->Keys.data;
   cipher__SecKey *s = (cipher__SecKey*) keys.data;
-  fprintf(stderr, "Ok 392\n");
   for (; i < keys.len; i++, s++, expected++) {
     fprintf(stderr, "Data buffer=%p s=%p *s=%p\n", keys.data, (void*) s, (void*)*s);
     cr_assert(ne(u8[32], skNull, (*s)),

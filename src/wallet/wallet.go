@@ -160,10 +160,11 @@ type CreateTransactionWalletParams struct {
 
 // CreateTransactionParams defines control parameters for transaction construction
 type CreateTransactionParams struct {
-	HoursSelection HoursSelection
-	Wallet         CreateTransactionWalletParams
-	ChangeAddress  *cipher.Address
-	To             []coin.TransactionOutput
+	IgnoreUnconfirmed bool
+	HoursSelection    HoursSelection
+	Wallet            CreateTransactionWalletParams
+	ChangeAddress     *cipher.Address
+	To                []coin.TransactionOutput
 }
 
 // Validate validates CreateTransactionParams

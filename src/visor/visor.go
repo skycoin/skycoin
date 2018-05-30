@@ -1874,7 +1874,7 @@ func (vs *Visor) CreateTransactionDeprecated(wltID string, password []byte, coin
 		}
 
 		// Get unspent outputs, while checking that there are no unconfirmed outputs
-		auxs, err = vs.getUnspentsForSpending(tx, addrs)
+		auxs, err = vs.getUnspentsForSpending(tx, addrs, false)
 		if err != nil {
 			if err != wallet.ErrSpendingUnconfirmed {
 				logger.WithError(err).Error("getUnspentsForSpending failed")
@@ -1993,9 +1993,24 @@ func (vs *Visor) getCreateTransactionAuxs(tx *dbutil.Tx, params wallet.CreateTra
 			unconfirmedSpends = append(unconfirmedSpends, txn.In...)
 		}
 
-		for _, h := range unconfirmedSpends {
-			if _, ok := hashesMap[h]; ok {
-				return nil, wallet.ErrSpendingUnconfirmed
+		if params.IgnoreUnconfirmed {
+			// Filter unconfirmed spends
+			prevLen := len(hashesMap)
+			for _, h := range unconfirmedSpends {
+				delete(hashesMap, h)
+			}
+
+			if prevLen != len(hashesMap) {
+				params.Wallet.UxOuts = make([]cipher.SHA256, 0, len(hashesMap))
+				for h := range hashesMap {
+					params.Wallet.UxOuts = append(params.Wallet.UxOuts, h)
+				}
+			}
+		} else {
+			for _, h := range unconfirmedSpends {
+				if _, ok := hashesMap[h]; ok {
+					return nil, wallet.ErrSpendingUnconfirmed
+				}
 			}
 		}
 
@@ -2030,7 +2045,7 @@ func (vs *Visor) getCreateTransactionAuxs(tx *dbutil.Tx, params wallet.CreateTra
 
 		// Get unspent outputs, while checking that there are no unconfirmed outputs
 		var err error
-		auxs, err = vs.getUnspentsForSpending(tx, addrs)
+		auxs, err = vs.getUnspentsForSpending(tx, addrs, params.IgnoreUnconfirmed)
 		if err != nil {
 			return nil, err
 		}
@@ -2041,22 +2056,29 @@ func (vs *Visor) getCreateTransactionAuxs(tx *dbutil.Tx, params wallet.CreateTra
 
 // getUnspentsForSpending returns the unspent outputs for a set of addresses,
 // but returns an error if any of the unspents are in the unconfirmed outputs pool
-func (vs *Visor) getUnspentsForSpending(tx *dbutil.Tx, addrs []cipher.Address) (coin.AddressUxOuts, error) {
-	auxs, err := vs.unconfirmedSpendsOfAddresses(tx, addrs)
+func (vs *Visor) getUnspentsForSpending(tx *dbutil.Tx, addrs []cipher.Address, ignoredUnconfirmed bool) (coin.AddressUxOuts, error) {
+	unconfirmedAuxs, err := vs.unconfirmedSpendsOfAddresses(tx, addrs)
 	if err != nil {
 		err = fmt.Errorf("UnconfirmedSpendsOfAddresses failed: %v", err)
 		return nil, err
 	}
 
-	// Check that this is not trying to spend unconfirmed outputs
-	if len(auxs) > 0 {
-		return nil, wallet.ErrSpendingUnconfirmed
+	if !ignoredUnconfirmed {
+		// Check that this is not trying to spend unconfirmed outputs
+		if len(unconfirmedAuxs) > 0 {
+			return nil, wallet.ErrSpendingUnconfirmed
+		}
 	}
 
-	auxs, err = vs.Blockchain.Unspent().GetUnspentsOfAddrs(tx, addrs)
+	auxs, err := vs.Blockchain.Unspent().GetUnspentsOfAddrs(tx, addrs)
 	if err != nil {
 		err = fmt.Errorf("GetUnspentsOfAddrs failed: %v", err)
 		return nil, err
+	}
+
+	// Filter unconfirmed
+	if ignoredUnconfirmed && len(unconfirmedAuxs) > 0 {
+		auxs = auxs.Sub(unconfirmedAuxs)
 	}
 
 	return auxs, nil

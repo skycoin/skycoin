@@ -327,7 +327,7 @@ func (c *Coin) configureDaemon() daemon.Config {
 
 	dc.Visor.GenesisAddress = c.config.Node.genesisAddress
 	dc.Visor.GenesisSignature = c.config.Node.genesisSignature
-	dc.Visor.GenesisTimestamp = c.config.Node.genesisTimestamp
+	dc.Visor.GenesisTimestamp = c.config.Node.GenesisTimestamp
 	dc.Visor.GenesisCoinVolume = c.config.Node.GenesisCoinVolume
 	dc.Visor.DBPath = c.config.Node.DBPath
 	dc.Visor.Arbitrating = c.config.Node.Arbitrating

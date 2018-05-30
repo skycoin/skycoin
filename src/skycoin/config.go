@@ -145,7 +145,6 @@ type NodeConfig struct {
 	DefaultConnections  []string `mapstructure:"default_connections"`
 
 	genesisSignature cipher.Sig
-	genesisTimestamp uint64
 	genesisAddress   cipher.Address
 
 	blockchainPubkey cipher.PubKey
@@ -155,6 +154,7 @@ type NodeConfig struct {
 func setDefaults() {
 	// node defaults
 	viper.SetDefault("node.genesis_coin_volume", 100e12)
+	viper.SetDefault("node.genesis_timestamp", 1426562704)
 	viper.SetDefault("node.disable_pex", false)
 	viper.SetDefault("node.outgoing_connections", false)
 	viper.SetDefault("node.disable_outgoing_connections", false)

@@ -380,6 +380,33 @@ Add a single dependency (more specific version), or downgrade an existing depend
 dep ensure github.com/foo/bar@tag
 ```
 
+### Configuration Modes
+There are 4 configuration modes in which you can run a skycoin node:
+- Development Desktop Daemon
+- Server Daemon
+- Electron Desktop Client
+- Standalone Desktop Client
+
+#### Development Desktop Daemon Mode
+This mode is configured via `run.sh`
+```bash
+$ ./run.sh
+```
+
+#### Server Daemon Mode
+The default settings for a skycoin node are chosen for `Server Daemon`, which is typically run from source.
+This mode is usually preferred to be run with security options, though `-disable-csrf` is normal for server daemon mode, it is left enabled by default.
+```bash
+$ go run cmd/skycoin/skycoin.go
+```
+
+#### Electron Desktop Client Mode
+This mode configures itself via electron-main.js
+
+#### Standalone Desktop Client Mode
+This mode is configured by compiling with `STANDALONE_CLIENT` build tag.
+The configuration is handled in `cmd/skycoin/skycoin.go`
+
 ### Wallet GUI Development
 
 The compiled wallet source should be checked in to the repo, so that others do not need to install node to run the software.

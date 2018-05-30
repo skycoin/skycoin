@@ -195,16 +195,6 @@ func injectTransaction(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		// TODO -- move this to a more general verification layer, see https://github.com/skycoin/skycoin/issues/1342
-		// Check that the transaction does not send to an empty address,
-		// if this is happening, assume there is a bug in the code that generated the transaction
-		for _, o := range txn.Out {
-			if o.Address.Null() {
-				wh.Error400(w, "Transaction.Out contains an output sending to an empty address")
-				return
-			}
-		}
-
 		if err := gateway.InjectBroadcastTransaction(txn); err != nil {
 			err = fmt.Errorf("inject tx failed: %v", err)
 			wh.Error503(w, err.Error())
@@ -314,7 +304,8 @@ func verifyTxnHandler(gateway Gatewayer) http.HandlerFunc {
 		if err != nil {
 			switch err.(type) {
 			case visor.ErrTxnViolatesSoftConstraint,
-				visor.ErrTxnViolatesHardConstraint:
+				visor.ErrTxnViolatesHardConstraint,
+				visor.ErrTxnViolatesUserConstraint:
 				rsp.Error = err.Error()
 			default:
 				wh.Error500(w, err.Error())

@@ -12,7 +12,10 @@
   </div>
 
   <div class="form-field">
-    <label for="addresses" (click)="selectAddresses.open()">{{ 'send.addresses-label' | translate }}</label>
+    <label for="addresses" (click)="selectAddresses.open()">
+      {{ 'send.addresses-label' | translate }}
+      <mat-icon [matTooltip]="'send.addresses-help' | translate">help</mat-icon>
+    </label>
     <div class="-select">
       <mat-select #selectAddresses multiple formControlName="addresses" [compareWith]="addressCompare" id="addresses">
         <mat-option *ngFor="let addr of addresses" [value]="addr">
@@ -24,12 +27,18 @@
   </div>
 
   <div class="form-field">
-    <label for="change-address">{{ 'send.change-address-label' | translate }}</label>
+    <label for="change-address">
+      {{ 'send.change-address-label' | translate }}
+      <mat-icon [matTooltip]="'send.change-address-help' | translate">help</mat-icon>
+    </label>
     <input formControlName="changeAddress" id="change-address">
   </div>
 
   <div class="form-field">
-    <label for="destination">{{ 'send.destinations-label' | translate }}</label>
+    <label for="destination">
+      {{ 'send.destinations-label' | translate }}
+      <mat-icon [matTooltip]="'send.destinations-help' | translate">help</mat-icon>
+    </label>
 
     <div formArrayName="destinations" *ngFor="let dest of destControls; let i = index;" class="-destination">
       <div [formGroupName]="i" class="row">
@@ -74,10 +83,13 @@
       <div class="col-md-5">
         <div class="form-field">
           <label class="-space-between" for="value">
-            <span>{{ 'send.value-label' | translate }}</span>
+            <span>
+              {{ 'send.value-label' | translate }}
+              <mat-icon [matTooltip]="'send.value-help' | translate">help</mat-icon>
+            </span>
             <span>{{ autoShareValue | number:'1.0-2' }}</span>
           </label>
-          <mat-slider class="-slider" min="0" max="1" step="0.01" id="value"
+          <mat-slider class="-slider" min="0.01" max="1" step="0.01" id="value"
                       (input)="setShareValue($event)" [value]="autoShareValue"
           ></mat-slider>
         </div>

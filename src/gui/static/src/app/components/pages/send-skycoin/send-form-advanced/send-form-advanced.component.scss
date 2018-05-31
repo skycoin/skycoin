@@ -149,3 +149,11 @@ mat-option ::ng-deep .mat-pseudo-checkbox-checked {
   display: flex;
   justify-content: space-between;
 }
+
+label mat-icon {
+  display: inline;
+  font-size: 14px;
+  color: lighten($grey-dark, 40%);
+  vertical-align: text-bottom;
+  padding-left: 5px;
+}

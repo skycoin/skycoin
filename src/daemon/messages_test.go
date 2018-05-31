@@ -74,8 +74,11 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 	t := v.Type()
 	vF := v.Field(i)
 	f := t.Field(i)
-
-	if f.Tag.Get("enc") != "-"  && ( f.Tag.Get("enc") != "omitempty" || (f.Tag.Get("enc") == "omitempty"   &&  fieldSupportsOmitempty(v.Field(i)) && !fieldIsEmpty(v.Field(i)))) {
+	if f.Tag.Get("enc") == "-" {
+		mai.CurrentField++
+		return mai.Next()
+	}
+	if f.Tag.Get("enc") != "omitempty" || (f.Tag.Get("enc") == "omitempty"   &&  fieldSupportsOmitempty(v.Field(i)) && !fieldIsEmpty(v.Field(i))) {
 		if vF.CanSet() || f.Name != "_" {
 			if v.Field(i).Kind() == reflect.Slice {
 				if mai.CurrentIndex == -1 {
@@ -151,6 +154,7 @@ func ExampleIntroductionMessage() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
 	var message = NewIntroductionMessage(1234, 5, 7890)
+	message.Extra = "aaa"
 	fmt.Println("IntroductionMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)

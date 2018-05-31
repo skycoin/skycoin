@@ -103,9 +103,9 @@ func (hd *HistoryDB) Erase(tx *dbutil.Tx) error {
 	return hd.txns.Reset(tx)
 }
 
-// GetUxOut get UxOut of specific uxID.
-func (hd *HistoryDB) GetUxOut(tx *dbutil.Tx, uxID cipher.SHA256) (*UxOut, error) {
-	return hd.outputs.Get(tx, uxID)
+// GetUxOuts get UxOut of specific uxIDs.
+func (hd *HistoryDB) GetUxOuts(tx *dbutil.Tx, uxIDs []cipher.SHA256) ([]*UxOut, error) {
+	return hd.outputs.GetArray(tx, uxIDs)
 }
 
 // ParseBlock builds indexes out of the block data
@@ -177,16 +177,7 @@ func (hd HistoryDB) GetAddrUxOuts(tx *dbutil.Tx, address cipher.Address) ([]*UxO
 		return nil, err
 	}
 
-	uxOuts := make([]*UxOut, len(hashes))
-	for i, hash := range hashes {
-		ux, err := hd.outputs.Get(tx, hash)
-		if err != nil {
-			return nil, err
-		}
-		uxOuts[i] = ux
-	}
-
-	return uxOuts, nil
+	return hd.outputs.GetArray(tx, hashes)
 }
 
 // GetAddressTxns returns all the address related transactions

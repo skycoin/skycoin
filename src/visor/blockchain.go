@@ -648,10 +648,19 @@ type sigHash struct {
 	hash cipher.SHA256
 }
 
-// VerifySignatures checks that BlockSigs state correspond with coin.Blockchain state
+// VerifySignature checks that BlockSigs state correspond with coin.Blockchain state
 // and that all signatures are valid.
+func (bc *Blockchain) VerifySignature(block *coin.SignedBlock) error {
+	err := cipher.VerifySignature(bc.cfg.Pubkey, block.Sig, block.HashHeader())
+	if err != nil {
+		logger.Errorf("Signature verification failed: %v", err)
+	}
+	return err
+}
+
+// WalkChain walk through the blockchain concurrently
 // The quit channel is optional and if closed, this method still stop.
-func (bc *Blockchain) VerifySignatures(tx *dbutil.Tx, workers int, quit chan struct{}) error {
+func (bc *Blockchain) WalkChain(tx *dbutil.Tx, workers int, f func(*coin.SignedBlock) error, quit chan struct{}) error {
 	if quit == nil {
 		quit = make(chan struct{})
 	}
@@ -662,7 +671,7 @@ func (bc *Blockchain) VerifySignatures(tx *dbutil.Tx, workers int, quit chan str
 		return nil
 	}
 
-	sigHashes := make(chan sigHash, 100)
+	signedBlockC := make(chan *coin.SignedBlock, 100)
 	errC := make(chan error, 100)
 	interrupt := make(chan struct{})
 	verifyDone := make(chan struct{})
@@ -675,13 +684,14 @@ func (bc *Blockchain) VerifySignatures(tx *dbutil.Tx, workers int, quit chan str
 			defer workerWg.Done()
 			for {
 				select {
-				case sh, ok := <-sigHashes:
+				case b, ok := <-signedBlockC:
 					if !ok {
 						return
 					}
 
-					if err := cipher.VerifySignature(bc.cfg.Pubkey, sh.sig, sh.hash); err != nil {
-						logger.Errorf("Signature verification failed: %v", err)
+					if err := f(b); err != nil {
+						// if err := cipher.VerifySignature(bc.cfg.Pubkey, sh.sig, sh.hash); err != nil {
+						// logger.Errorf("Signature verification failed: %v", err)
 						select {
 						case errC <- err:
 						default:
@@ -707,7 +717,7 @@ func (bc *Blockchain) VerifySignatures(tx *dbutil.Tx, workers int, quit chan str
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		defer close(sigHashes)
+		defer close(signedBlockC)
 
 		errInterrupted := errors.New("goroutine was stopped")
 
@@ -720,13 +730,13 @@ func (bc *Blockchain) VerifySignatures(tx *dbutil.Tx, workers int, quit chan str
 				return blockdb.NewErrMissingSignature(block)
 			}
 
-			sh := sigHash{
-				sig:  sig,
-				hash: block.HashHeader(),
+			signedBlock := &coin.SignedBlock{
+				Sig:   sig,
+				Block: *block,
 			}
 
 			select {
-			case sigHashes <- sh:
+			case signedBlockC <- signedBlock:
 				return nil
 			case <-quit:
 				return errInterrupted

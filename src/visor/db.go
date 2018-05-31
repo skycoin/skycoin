@@ -7,13 +7,16 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/boltdb/bolt"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
 var (
@@ -42,13 +45,44 @@ func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) erro
 			return nil
 		}
 
-		return bc.VerifySignatures(tx, SigVerifyTheadNum, quit)
+		if !dbutil.Exists(tx, historydb.TransactionsBkt) {
+			err := fmt.Errorf("verifyHistory: %s bucket does not exist", string(historydb.TransactionsBkt))
+			return ErrCorruptDB{err}
+		}
+
+		if !dbutil.Exists(tx, historydb.UxOutsBkt) {
+			err := fmt.Errorf("verifyHistory: %s bucket does not exist", string(historydb.UxOutsBkt))
+			return ErrCorruptDB{err}
+		}
+
+		if !dbutil.Exists(tx, historydb.AddressTxnsBkt) {
+			err := fmt.Errorf("verifyHistory: %s bucket does not exist", string(historydb.AddressTxnsBkt))
+			return ErrCorruptDB{err}
+		}
+
+		if !dbutil.Exists(tx, historydb.AddressUxBkt) {
+			err := fmt.Errorf("verifyHistory: %s bucket does not exist", string(historydb.AddressUxBkt))
+			return ErrCorruptDB{err}
+		}
+
+		history := historydb.New()
+
+		indexesMap := sync.Map{}
+		verifyFunc := func(b *coin.SignedBlock) error {
+			if err := bc.VerifySignature(b); err != nil {
+				return err
+			}
+
+			return history.Verify(tx, b, &indexesMap)
+		}
+
+		return bc.WalkChain(tx, SigVerifyTheadNum, verifyFunc, quit)
 	})
 
 	switch err.(type) {
 	case nil:
 		return nil
-	case blockdb.ErrMissingSignature:
+	case blockdb.ErrMissingSignature, historydb.ErrHistoryDBCorrupted:
 		return ErrCorruptDB{err}
 	default:
 		return err

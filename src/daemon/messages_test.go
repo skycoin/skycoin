@@ -78,7 +78,7 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 		mai.CurrentField++
 		return mai.Next()
 	}
-	if f.Tag.Get("enc") != "omitempty" || (f.Tag.Get("enc") == "omitempty"   &&  fieldSupportsOmitempty(v.Field(i)) && !fieldIsEmpty(v.Field(i))) {
+	if f.Tag.Get("enc") != "omitempty" || (f.Tag.Get("enc") == "omitempty" && fieldSupportsOmitempty(v.Field(i)) && !fieldIsEmpty(v.Field(i))) {
 		if vF.CanSet() || f.Name != "_" {
 			if v.Field(i).Kind() == reflect.Slice {
 				if mai.CurrentIndex == -1 {

@@ -94,18 +94,48 @@ func TestAddressFromBytes(t *testing.T) {
 	a2, err := AddressFromBytes(a.Bytes())
 	require.NoError(t, err)
 	require.Equal(t, a2, a)
+
 	// Invalid number of bytes
 	b := a.Bytes()
 	_, err = AddressFromBytes(b[:len(b)-2])
-	require.Error(t, err)
+	require.EqualError(t, err, "Invalid address length")
+
 	// Invalid checksum
 	b[len(b)-1] += byte(1)
 	_, err = AddressFromBytes(b)
-	require.Error(t, err)
+	require.EqualError(t, err, "Invalid checksum")
+
+	a.Version = 2
+	b = a.Bytes()
+	_, err = AddressFromBytes(b)
+	require.EqualError(t, err, "Invalid version")
 }
 
-//encode and decode
+func TestBitcoinAddressFromBytes(t *testing.T) {
+	p, _ := GenerateKeyPair()
+	a := AddressFromPubKey(p)
+	a2, err := BitcoinAddressFromBytes(a.BitcoinBytes())
+	require.NoError(t, err)
+	require.Equal(t, a2, a)
+
+	// Invalid number of bytes
+	b := a.BitcoinBytes()
+	_, err = BitcoinAddressFromBytes(b[:len(b)-2])
+	require.EqualError(t, err, "Invalid address length")
+
+	// Invalid checksum
+	b[len(b)-1] += byte(1)
+	_, err = BitcoinAddressFromBytes(b)
+	require.EqualError(t, err, "Invalid checksum")
+
+	a.Version = 2
+	b = a.BitcoinBytes()
+	_, err = BitcoinAddressFromBytes(b)
+	require.EqualError(t, err, "Invalid version")
+}
+
 func TestAddressRoundtrip(t *testing.T) {
+	// Tests encode and decode
 	p, _ := GenerateKeyPair()
 	a := AddressFromPubKey(p)
 	a2, err := AddressFromBytes(a.Bytes())

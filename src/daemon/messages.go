@@ -17,6 +17,11 @@ import (
 	"github.com/skycoin/skycoin/src/util/utc"
 )
 
+var (
+	// Every rejection message prefix must start with "RJC" prefix
+	rejectPrefix = [...]byte{82, 74, 67}
+)
+
 // Message represent a packet to be serialized over the network by
 // the gnet encoder.
 // They must implement the gnet.Message interface
@@ -56,7 +61,7 @@ func getMessageConfigs() []MessageConfig {
 		NewMessageConfig("GETT", GetTxnsMessage{}),
 		NewMessageConfig("GIVT", GiveTxnsMessage{}),
 		NewMessageConfig("ANNT", AnnounceTxnsMessage{}),
-		NewMessageConfig("RJCT", RejectMessage{}),
+		NewMessageConfig("RJCP", RejectWithPeersMessage{}),
 	}
 }
 
@@ -400,48 +405,65 @@ func (pong *PongMessage) Handle(mc *gnet.MessageContext, daemon interface{}) err
 	return nil
 }
 
-// RejectMessage a RejectMessage is sent to inform peers of
-// a protocol failure. Whenever possible the node should
-// send back data useful for peer recovery, especially
-// before disconnecting it
+// Metadata describing message rejection
 //
-// Must never Reject a Reject message (infinite loop)
-type RejectMessage struct {
+// Should be at the beginning of every RJC? message
+type RejectHeader struct {
 	// Prefix of the (previous) message that's been rejected
 	TargetPrefix gnet.MessagePrefix
 	// Error code
 	ErrorCode uint8
 	// Reason message. Included only in very particular cases
 	Reason string
-	// Extra data
-	Data interface{}
+}
+
+// RejectWithPeersMessage a RejectWithPeersMessage is sent to inform peers of
+// a protocol failure. Whenever possible the node should
+// send back data useful for peer recovery, especially
+// before disconnecting it
+//
+// Must never Reject a Reject message (infinite loop)
+type RejectWithPeersMessage struct {
+	// Reject message header
+	RejectHeader
+	// Peers list
+	Peers []IPAddr
+	// Reserved for future use
+	Reserved []byte
 
 	c *gnet.MessageContext `enc:"-"`
 }
 
-func NewRejectMessage(msg interface{}, err error, reason string, data interface{}) *RejectMessage {
-	t := reflect.TypeOf(msg)
+func NewRejectWithPeersMessage(msg gnet.Message, err error, reason string, peers []IPAddr) *RejectWithPeersMessage {
+	t := reflect.Indirect(reflect.ValueOf(msg)).Type()
 	prefix, exists := gnet.MessageIDMap[t]
 	if !exists {
 		logger.Panicf("Rejecting unknown message type %s", t)
 	}
+	if reflect.DeepEqual(prefix[:3], rejectPrefix[:]) {
+		logger.Panicf("Message type %s (prefix = %s) may not be rejected", t, prefix)
+	}
 
-	// TODO: Return RejectMessage instance
-	return &RejectMessage{
-		TargetPrefix: prefix,
-		ErrorCode:    0,
-		Reason:       "",
-		Data:         make([]byte, 0)}
+	return &RejectWithPeersMessage{
+		RejectHeader: RejectHeader{
+			TargetPrefix: prefix,
+			// TODO: Return error code
+			ErrorCode: 0,
+			Reason:    reason,
+		},
+		Peers:    peers,
+		Reserved: nil,
+	}
 }
 
 // Process an event queued by Handle()
-func (msg *RejectMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
+func (msg *RejectWithPeersMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	msg.c = mc
 	return daemon.(*Daemon).recordMessageEvent(msg, mc)
 }
 
 // Process Recover from message rejection state
-func (msg *RejectMessage) Process(d *Daemon) {
+func (msg *RejectWithPeersMessage) Process(d *Daemon) {
 	// TODO: Implement
 }
 

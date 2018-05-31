@@ -376,8 +376,8 @@ func (m *BlockchainerMock) VerifyBlockTxnConstraints(p0 *dbutil.Tx, p1 coin.Tran
 
 }
 
-// VerifySingleTxnAllConstraints mocked method
-func (m *BlockchainerMock) VerifySingleTxnAllConstraints(p0 *dbutil.Tx, p1 coin.Transaction, p2 int) error {
+// VerifySingleTxnSoftHardConstraints mocked method
+func (m *BlockchainerMock) VerifySingleTxnSoftHardConstraints(p0 *dbutil.Tx, p1 coin.Transaction, p2 int) error {
 
 	ret := m.Called(p0, p1, p2)
 

@@ -138,7 +138,6 @@
     "from-label": "Send from",
     "to-label": "Send to",
     "amount-label": "Amount",
-    "notes-label": "Notes",
     "verify-button": "Verify",
     "send-button": "Send",
     "back-button": "Back"

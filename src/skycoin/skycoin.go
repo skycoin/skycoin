@@ -315,7 +315,7 @@ func (c *Coin) configureDaemon() daemon.Config {
 	dc.Daemon.OutgoingMax = c.config.Node.MaxOutgoingConnections
 	dc.Daemon.DataDirectory = c.config.Node.DataDirectory
 	dc.Daemon.LogPings = !c.config.Node.DisablePingPong
-	dc.Daemon.BlockchainPubkey = cipher.MustPubKeyFromHex(c.config.Node.BlockchainPubkeyStr)
+	dc.Daemon.BlockchainPubkey = c.config.Node.blockchainPubkey
 
 	if c.config.Node.OutgoingConnectionsRate == 0 {
 		c.config.Node.OutgoingConnectionsRate = time.Millisecond

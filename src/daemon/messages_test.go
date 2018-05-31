@@ -74,7 +74,8 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 	t := v.Type()
 	vF := v.Field(i)
 	f := t.Field(i)
-	if f.Tag.Get("enc") != "-" {
+
+	if f.Tag.Get("enc") != "-"  && ( f.Tag.Get("enc") != "omitempty" || (f.Tag.Get("enc") == "omitempty"   &&  fieldSupportsOmitempty(v.Field(i)) && !fieldIsEmpty(v.Field(i)))) {
 		if vF.CanSet() || f.Name != "_" {
 			if v.Field(i).Kind() == reflect.Slice {
 				if mai.CurrentIndex == -1 {
@@ -94,9 +95,9 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 			}
 
 			mai.CurrentField++
-			if f.Tag.Get("enc") != "omitempty" || (fieldSupportsOmitempty(v.Field(i)) && !fieldIsEmpty(v.Field(i))) {
+			//if f.Tag.Get("enc") != "omitempty" || (fieldSupportsOmitempty(v.Field(i)) && !fieldIsEmpty(v.Field(i))) {
 			return util.Annotation{Size: len(encoder.Serialize(v.Field(i).Interface())), Name: f.Name}, true
-			}
+			//}
 
 		}
 	}

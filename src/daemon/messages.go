@@ -230,6 +230,9 @@ type IntroductionMessage struct {
 	// Our client version
 	Version int32
 
+	//Test field
+	//Extra string `enc:"omitempty"`
+
 	c *gnet.MessageContext `enc:"-"`
 	// We validate the message in Handle() and cache the result for Process()
 	valid bool `enc:"-"` // skip it during encoding

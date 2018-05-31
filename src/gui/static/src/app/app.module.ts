@@ -10,10 +10,8 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { SendSkycoinComponent } from './components/pages/send-skycoin/send-skycoin.component';
 import { DateFromNowPipe } from './pipes/date-from-now.pipe';
 import { RouterModule } from '@angular/router';
-import { ExplorerComponent } from './components/pages/explorer/explorer.component';
 import { BlockchainService } from './services/blockchain.service';
 import { DateTimePipe } from './pipes/date-time.pipe';
-import { TransactionsAmountPipe } from './pipes/transactions-amount.pipe';
 import { PendingTransactionsComponent } from './components/pages/settings/pending-transactions/pending-transactions.component';
 import { OutputsComponent } from './components/pages/settings/outputs/outputs.component';
 import { BlockchainComponent } from './components/pages/settings/blockchain/blockchain.component';
@@ -29,7 +27,6 @@ import { PurchaseService } from './services/purchase.service';
 import { TellerStatusPipe } from './pipes/teller-status.pipe';
 import { HeaderComponent } from './components/layout/header/header.component';
 import { TopBarComponent } from './components/layout/header/top-bar/top-bar.component';
-import { FooterComponent } from './components/layout/footer/footer.component';
 import { PriceService } from './services/price.service';
 import { TransactionListComponent } from './components/pages/transaction-list/transaction-list.component';
 import { TransactionDetailComponent } from './components/pages/transaction-list/transaction-detail/transaction-detail.component';
@@ -65,13 +62,18 @@ import { DoubleButtonComponent } from './components/layout/double-button/double-
 import { SeedModalComponent } from './components/pages/settings/backup/seed-modal/seed-modal.component';
 import { OnboardingComponent } from './components/pages/onboarding/onboarding.component';
 import { DontsavepasswordDirective } from './directives/dontsavepassword.directive';
+import { SendFormComponent } from './components/pages/send-skycoin/send-form/send-form.component';
+import { SendVerifyComponent } from './components/pages/send-skycoin/send-verify/send-verify.component';
+import { TransactionInfoComponent } from './components/pages/send-skycoin/send-verify/transaction-info/transaction-info.component';
+import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
+import { AppTranslateLoader } from './app.translate-loader';
 
 
 const ROUTES = [
   {
     path: '',
     redirectTo: 'wallets',
-    pathMatch: 'full'
+    pathMatch: 'full',
   },
   {
     path: 'wallets',
@@ -137,8 +139,6 @@ const ROUTES = [
     CreateWalletComponent,
     DateFromNowPipe,
     DateTimePipe,
-    ExplorerComponent,
-    FooterComponent,
     HeaderComponent,
     NetworkComponent,
     OutputsComponent,
@@ -149,7 +149,6 @@ const ROUTES = [
     TopBarComponent,
     TransactionDetailComponent,
     TransactionListComponent,
-    TransactionsAmountPipe,
     WalletsComponent,
     NavBarComponent,
     WalletDetailComponent,
@@ -162,6 +161,9 @@ const ROUTES = [
     SeedModalComponent,
     OnboardingComponent,
     DontsavepasswordDirective,
+    SendFormComponent,
+    SendVerifyComponent,
+    TransactionInfoComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,
@@ -198,6 +200,12 @@ const ROUTES = [
     NoopAnimationsModule,
     ReactiveFormsModule,
     RouterModule.forRoot(ROUTES, { useHash: true }),
+    TranslateModule.forRoot({
+      loader: {
+        provide: TranslateLoader,
+        useClass: AppTranslateLoader,
+      },
+    }),
   ],
   providers: [
     ApiService,
@@ -209,6 +217,6 @@ const ROUTES = [
     WalletService,
     WizardGuardService,
   ],
-  bootstrap: [AppComponent]
+  bootstrap: [AppComponent],
 })
 export class AppModule { }

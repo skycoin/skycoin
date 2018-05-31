@@ -6,20 +6,19 @@ import 'rxjs/add/observable/throw';
 import 'rxjs/add/operator/catch';
 import 'rxjs/add/operator/map';
 import {
-  Address, GetWalletsResponseEntry, GetWalletsResponseWallet, PostWalletNewAddressResponse, Transaction, Version,
-  Wallet
+  Address, GetWalletsResponseEntry, GetWalletsResponseWallet, NormalTransaction,
+  PostWalletNewAddressResponse, Version, Wallet,
 } from '../app.datatypes';
 
 @Injectable()
 export class ApiService {
-
   private url = environment.nodeUrl;
 
   constructor(
     private http: Http,
   ) { }
 
-  getExplorerAddress(address: Address): Observable<Transaction[]> {
+  getExplorerAddress(address: Address): Observable<NormalTransaction[]> {
     return this.get('explorer/address', {address: address.address})
       .map(transactions => transactions.map(transaction => ({
         addresses: [],
@@ -37,9 +36,8 @@ export class ApiService {
     return this.get('version');
   }
 
-  getWalletNewSeed(entropy: number = 128): Observable<string> {
-    return this.get('wallet/newSeed', { entropy })
-      .map(response => response.seed);
+  generateSeed(entropy: number = 128): Observable<string> {
+    return this.get('wallet/newSeed', { entropy }).map(response => response.seed);
   }
 
   getWallets(): Observable<Wallet[]> {
@@ -47,7 +45,7 @@ export class ApiService {
       .map((response: GetWalletsResponseWallet[]) => {
         const wallets: Wallet[] = [];
         response.forEach(wallet => {
-          wallets.push(<Wallet>{
+          wallets.push(<Wallet> {
             label: wallet.meta.label,
             filename: wallet.meta.filename,
             coins: null,
@@ -62,6 +60,7 @@ export class ApiService {
             encrypted: wallet.meta.encrypted,
           });
         });
+
         return wallets;
       });
   }
@@ -112,10 +111,11 @@ export class ApiService {
   post(url, params = {}, options: any = {}) {
     return this.getCsrf().first().flatMap(csrf => {
       options.csrf = csrf;
+
       return this.http.post(
         this.getUrl(url),
         options.json ? JSON.stringify(params) : this.getQueryString(params),
-        this.returnRequestOptions(options)
+        this.returnRequestOptions(options),
       )
         .map((res: any) => res.json())
         .catch((error: any) => Observable.throw(error || 'Server error'));
@@ -137,6 +137,7 @@ export class ApiService {
   private getHeaders(options) {
     const headers = new Headers();
     headers.append('Content-Type', options.json ? 'application/json' : 'application/x-www-form-urlencoded');
+
     return headers;
   }
 
@@ -147,6 +148,7 @@ export class ApiService {
 
     return Object.keys(parameters).reduce((array, key) => {
       array.push(key + '=' + encodeURIComponent(parameters[key]));
+
       return array;
     }, []).join('&');
   }

@@ -3,15 +3,20 @@
 # "disable-wallet-api"-mode confirms that no wallet related apis work, that the main index.html page
 # does not load, and that a new wallet file is not created.
 
-#Set Script Name variable
+# Set Script Name variable
 SCRIPT=`basename ${BASH_SOURCE[0]}`
-PORT="46421"
+
+# Find unused port
+PORT="1024"
+while $(lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null) ; do
+    PORT=$((PORT+1))
+done
+
 RPC_PORT="$PORT"
 HOST="http://127.0.0.1:$PORT"
 RPC_ADDR="http://127.0.0.1:$RPC_PORT"
 MODE="disable-wallet-api"
 BINARY="skycoin-integration"
-TEST=""
 UPDATE=""
 # run go test with -v flag
 VERBOSE=""
@@ -26,7 +31,6 @@ GOLDFLAGS="-X main.Commit=${COMMIT} -X main.Branch=${BRANCH}"
 usage () {
   echo "Usage: $SCRIPT"
   echo "Optional command line arguments"
-  echo "-t <string>  -- Test to run, gui or cli; empty runs both tests"
   echo "-r <string>  -- Run test with -run flag"
   echo "-u <boolean> -- Update stable testdata"
   echo "-v <boolean> -- Run test with -v flag"
@@ -39,7 +43,6 @@ while getopts "h?t:r:uvf" args; do
     h|\?)
         usage;
         exit;;
-    t ) TEST=${OPTARG};;
     r ) RUN_TESTS="-run ${OPTARG}";;
     u ) UPDATE="--update";;
     v ) VERBOSE="-v";;
@@ -68,12 +71,13 @@ echo "starting skycoin node in background with http listener on $HOST"
 ./skycoin-integration -disable-networking=true \
                       -web-interface-port=$PORT \
                       -download-peerlist=false \
-                      -db-path=./src/gui/integration/test-fixtures/blockchain-180.db \
+                      -db-path=./src/api/integration/testdata/blockchain-180.db \
                       -db-read-only=true \
                       -rpc-interface=true \
                       -launch-browser=false \
                       -data-dir="$DATA_DIR" \
                       -wallet-dir="$WALLET_DIR" \
+                      -enable-unversioned-api=true \
                       -enable-wallet-api=false &
 SKYCOIN_PID=$!
 
@@ -85,24 +89,10 @@ echo "done sleeping"
 
 set +e
 
-if [[ -z $TEST || $TEST = "gui" ]]; then
-
 SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST WALLET_DIR=$WALLET_DIR \
-    go test ./src/gui/integration/... $FAILFAST $UPDATE -timeout=30s $VERBOSE $RUN_TESTS
+    go test ./src/api/integration/... $FAILFAST $UPDATE -timeout=30s $VERBOSE $RUN_TESTS
 
-GUI_FAIL=$?
-
-fi
-
-if [[ -z $TEST  || $TEST = "cli" ]]; then
-
-SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR \
-    go test ./src/api/cli/integration/... $FAILFAST $UPDATE -timeout=30s $VERBOSE $RUN_TESTS
-
-CLI_FAIL=$?
-
-fi
-
+FAIL=$?
 
 echo "shutting down skycoin node"
 
@@ -112,12 +102,4 @@ wait $SKYCOIN_PID
 
 rm "$BINARY"
 
-
-if [[ (-z $TEST || $TEST = "gui") && $GUI_FAIL -ne 0 ]]; then
-  exit $GUI_FAIL
-elif [[ (-z $TEST || $TEST = "cli") && $CLI_FAIL -ne 0 ]]; then
-  exit $CLI_FAIL
-else
-  exit 0
-fi
-# exit $FAIL
+exit $FAIL

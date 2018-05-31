@@ -3,7 +3,6 @@ package daemon
 import (
 	"time"
 
-	//"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 )
 
@@ -24,7 +23,9 @@ type PoolConfig struct {
 	// Buffer size for gnet.ConnectionPool's network Read events
 	EventChannelSize int
 	// Maximum number of connections to maintain
-	MaxConnections int
+	MaxConnections                    int
+	MaxDefaultPeerOutgoingConnections int
+	DefaultPeerConnections            map[string]struct{}
 	// These should be assigned by the controlling daemon
 	address string
 	port    int
@@ -34,16 +35,18 @@ type PoolConfig struct {
 func NewPoolConfig() PoolConfig {
 	//defIdleLimit := time.Minute
 	return PoolConfig{
-		port:                6677,
-		address:             "",
-		DialTimeout:         time.Second * 30,
-		MessageHandlingRate: time.Millisecond * 50,
-		PingRate:            5 * time.Second,
-		IdleLimit:           60 * time.Second,
-		IdleCheckRate:       1 * time.Second,
-		ClearStaleRate:      1 * time.Second,
-		EventChannelSize:    4096,
-		MaxConnections:      128,
+		port:                              6677,
+		address:                           "",
+		DialTimeout:                       time.Second * 30,
+		MessageHandlingRate:               time.Millisecond * 50,
+		PingRate:                          5 * time.Second,
+		IdleLimit:                         60 * time.Second,
+		IdleCheckRate:                     1 * time.Second,
+		ClearStaleRate:                    1 * time.Second,
+		EventChannelSize:                  4096,
+		MaxConnections:                    128,
+		MaxDefaultPeerOutgoingConnections: 1,
+		DefaultPeerConnections:            make(map[string]struct{}),
 	}
 }
 
@@ -54,30 +57,29 @@ type Pool struct {
 }
 
 // NewPool creates pool
-func NewPool(c PoolConfig, d *Daemon) *Pool {
-	pool := &Pool{
-		Config: c,
-		Pool:   nil,
+func NewPool(cfg PoolConfig, d *Daemon) *Pool {
+	gnetCfg := gnet.NewConfig()
+	gnetCfg.DialTimeout = cfg.DialTimeout
+	gnetCfg.Port = uint16(cfg.port)
+	gnetCfg.Address = cfg.address
+	gnetCfg.ConnectCallback = d.onGnetConnect
+	gnetCfg.DisconnectCallback = d.onGnetDisconnect
+	gnetCfg.MaxConnections = cfg.MaxConnections
+	gnetCfg.MaxDefaultPeerOutgoingConnections = cfg.MaxDefaultPeerOutgoingConnections
+	gnetCfg.DefaultPeerConnections = cfg.DefaultPeerConnections
+
+	return &Pool{
+		Config: cfg,
+		Pool:   gnet.NewConnectionPool(gnetCfg, d),
 	}
-
-	cfg := gnet.NewConfig()
-	cfg.DialTimeout = pool.Config.DialTimeout
-	cfg.Port = uint16(pool.Config.port)
-	cfg.Address = pool.Config.address
-	cfg.ConnectCallback = d.onGnetConnect
-	cfg.DisconnectCallback = d.onGnetDisconnect
-	cfg.MaxConnections = pool.Config.MaxConnections
-
-	pool.Pool = gnet.NewConnectionPool(cfg, d)
-
-	return pool
 }
 
 // Shutdown closes all connections and stops listening
 func (pool *Pool) Shutdown() {
-	if pool.Pool != nil {
-		pool.Pool.Shutdown()
+	if pool == nil {
+		return
 	}
+	pool.Pool.Shutdown()
 }
 
 // Run starts listening on the configured Port

@@ -42,3 +42,7 @@
 [[constraint]]
   name = "github.com/cenkalti/backoff"
   version = "v1.1.0"
+
+[[constraint]]
+  name = "github.com/NYTimes/gziphandler"
+  version = "1.0.1"

@@ -11,22 +11,6 @@ GUI_STATIC_DIR = src/gui/static
 # Electron files directory
 ELECTRON_DIR = electron
 
-# ./src folder does not have code
-# ./src/api folder does not have code
-# ./src/util folder does not have code
-# ./src/ciper/* are libraries manually vendored by cipher that do not need coverage
-# ./src/gui/static* are static assets
-# */testdata* folders do not have code
-# ./src/consensus/example has no buildable code
-PACKAGES = $(shell find ./src -type d -not -path '\./src' \
-    							      -not -path '\./src/api' \
-    							      -not -path '\./src/util' \
-    							      -not -path '\./src/consensus/example' \
-    							      -not -path '\./src/gui/static*' \
-    							      -not -path '\./src/cipher/*' \
-    							      -not -path '*/testdata*' \
-    							      -not -path '*/test-fixtures*')
-
 # Compilation output
 BUILD_DIR = build
 BUILDLIB_DIR = $(BUILD_DIR)/libskycoin
@@ -92,15 +76,15 @@ $(BUILDLIB_DIR)/libskycoin.so $(BUILDLIB_DIR)/libskycoin.a: $(LIB_FILES) $(SRC_F
 	rm -Rf $(BUILDLIB_DIR)/*
 	go build -buildmode=c-shared  -o $(BUILDLIB_DIR)/libskycoin.so $(LIB_FILES)
 	go build -buildmode=c-archive -o $(BUILDLIB_DIR)/libskycoin.a  $(LIB_FILES)
-	mv $(BUILDLIB_DIR)/libskycoin.h $(INCLUDE_DIR)/	
-	
+	mv $(BUILDLIB_DIR)/libskycoin.h $(INCLUDE_DIR)/
+
 ## Build libskycoin C client library and executable C test suites
 ## with debug symbols. Use this target to debug the source code
 ## with the help of an IDE
 build-libc-dbg: configure-build $(BUILDLIB_DIR)/libskycoin.so $(BUILDLIB_DIR)/libskycoin.a
 	$(CC) -g -o $(BIN_DIR)/test_libskycoin_shared $(LIB_DIR)/cgo/tests/*.c -lskycoin                    $(LDLIBS) $(LDFLAGS)
 	$(CC) -g -o $(BIN_DIR)/test_libskycoin_static $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/libskycoin.a $(LDLIBS) $(LDFLAGS)
-	
+
 test-libc: build-libc ## Run tests for libskycoin C client library
 	cp $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/
 	$(CC) -o $(BIN_DIR)/test_libskycoin_shared $(BUILDLIB_DIR)/*.c -lskycoin                    $(LDLIBS) $(LDFLAGS)
@@ -110,15 +94,17 @@ test-libc: build-libc ## Run tests for libskycoin C client library
 
 lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...
-	gometalinter --deadline=3m --concurrency=2 --disable-all --tests --vendor --skip=lib/cgo \
+	gometalinter --deadline=3m --concurrency=2 --disable-all --tests --vendor --skip=lib/cgo --warn-unmatched-nolint \
 		-E goimports \
 		-E golint \
 		-E varcheck \
+		-E unparam \
 		./...
 	# lib cgo can't use golint because it needs export directives in function docstrings that do not obey golint rules
-	gometalinter --deadline=3m --concurrency=2 --disable-all --tests --vendor \
+	gometalinter --deadline=3m --concurrency=2 --disable-all --tests --vendor --warn-unmatched-nolint \
 		-E goimports \
 		-E varcheck \
+		-E unparam \
 		./lib/cgo/...
 
 check: lint test integration-test-stable integration-test-stable-disable-csrf integration-test-disable-wallet-api integration-test-disable-seed-api ## Run tests and linters

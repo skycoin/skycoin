@@ -5,7 +5,7 @@ import { AppService } from './app.service';
 describe('AppService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [AppService]
+      providers: [AppService],
     });
   });
 

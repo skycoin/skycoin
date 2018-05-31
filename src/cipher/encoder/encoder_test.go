@@ -8,10 +8,12 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
-func randBytes(n int) []byte {
+func randBytes(n int) []byte { // nolint: unparam
 	const alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 	var bytes = make([]byte, n)
 	rand.Read(bytes)
@@ -624,4 +626,269 @@ func TestEncodeDictNested(t *testing.T) {
 	if !reflect.DeepEqual(s1, s2) {
 		t.Errorf("Expected %v but got %v", s1, s2)
 	}
+}
+
+func TestEncodeDictString2Int64(t *testing.T) {
+	v := map[string]int64{
+		"foo": 1,
+		"bar": 2,
+	}
+
+	b := Serialize(v)
+
+	v2 := make(map[string]int64)
+	err := DeserializeRaw(b, &v2)
+	require.NoError(t, err)
+
+	require.Equal(t, v, v2)
+}
+
+func TestOmitEmptyString(t *testing.T) {
+
+	type omitString struct {
+		A string `enc:"a,omitempty"`
+	}
+
+	cases := []struct {
+		name                string
+		input               omitString
+		outputShouldBeEmpty bool
+	}{
+		{
+			name: "string not empty",
+			input: omitString{
+				A: "foo",
+			},
+		},
+
+		{
+			name:                "string empty",
+			input:               omitString{},
+			outputShouldBeEmpty: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			b := Serialize(tc.input)
+
+			if tc.outputShouldBeEmpty {
+				require.Empty(t, b)
+			} else {
+				require.NotEmpty(t, b)
+			}
+
+			var y omitString
+			err := DeserializeRaw(b, &y)
+			require.NoError(t, err)
+
+			require.Equal(t, tc.input, y)
+		})
+	}
+
+}
+
+func TestOmitEmptySlice(t *testing.T) {
+	type omitSlice struct {
+		B []byte `enc:"b,omitempty"`
+	}
+
+	cases := []struct {
+		name                string
+		input               omitSlice
+		expect              *omitSlice
+		outputShouldBeEmpty bool
+	}{
+		{
+			name: "slice not empty",
+			input: omitSlice{
+				B: []byte("foo"),
+			},
+		},
+
+		{
+			name:                "slice nil",
+			input:               omitSlice{},
+			outputShouldBeEmpty: true,
+		},
+
+		{
+			name: "slice empty but not nil",
+			input: omitSlice{
+				B: []byte{},
+			},
+			expect:              &omitSlice{},
+			outputShouldBeEmpty: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			b := Serialize(tc.input)
+
+			if tc.outputShouldBeEmpty {
+				require.Empty(t, b)
+			} else {
+				require.NotEmpty(t, b)
+			}
+
+			var y omitSlice
+			err := DeserializeRaw(b, &y)
+			require.NoError(t, err)
+
+			expect := tc.expect
+			if expect == nil {
+				expect = &tc.input
+			}
+
+			require.Equal(t, *expect, y)
+		})
+	}
+}
+
+func TestOmitEmptyMap(t *testing.T) {
+
+	type omitMap struct {
+		C map[string]int64 `enc:"d,omitempty"`
+	}
+
+	cases := []struct {
+		name                string
+		input               omitMap
+		expect              *omitMap
+		outputShouldBeEmpty bool
+	}{
+		{
+			name: "map not empty",
+			input: omitMap{
+				C: map[string]int64{"foo": 1},
+			},
+		},
+
+		{
+			name:                "map nil",
+			input:               omitMap{},
+			outputShouldBeEmpty: true,
+		},
+
+		{
+			name: "map empty but not nil",
+			input: omitMap{
+				C: map[string]int64{},
+			},
+			expect:              &omitMap{},
+			outputShouldBeEmpty: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			b := Serialize(tc.input)
+
+			if tc.outputShouldBeEmpty {
+				require.Empty(t, b)
+			} else {
+				require.NotEmpty(t, b)
+			}
+
+			var y omitMap
+			err := DeserializeRaw(b, &y)
+			require.NoError(t, err)
+
+			expect := tc.expect
+			if expect == nil {
+				expect = &tc.input
+			}
+
+			require.Equal(t, *expect, y)
+		})
+	}
+}
+
+func TestOmitEmptyMixedFinalByte(t *testing.T) {
+	type omitMixed struct {
+		A string
+		B []byte `enc:",omitempty"`
+	}
+
+	cases := []struct {
+		name   string
+		input  omitMixed
+		expect omitMixed
+	}{
+		{
+			name: "none empty",
+			input: omitMixed{
+				A: "foo",
+				B: []byte("foo"),
+			},
+			expect: omitMixed{
+				A: "foo",
+				B: []byte("foo"),
+			},
+		},
+
+		{
+			name: "byte nil",
+			input: omitMixed{
+				A: "foo",
+			},
+			expect: omitMixed{
+				A: "foo",
+			},
+		},
+
+		{
+			name: "byte empty but not nil",
+			input: omitMixed{
+				A: "foo",
+				B: []byte{},
+			},
+			expect: omitMixed{
+				A: "foo",
+			},
+		},
+
+		{
+			name: "first string empty but not omitted",
+			input: omitMixed{
+				B: []byte("foo"),
+			},
+			expect: omitMixed{
+				B: []byte("foo"),
+			},
+		},
+
+		{
+			name:   "all empty",
+			input:  omitMixed{},
+			expect: omitMixed{},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			b := Serialize(tc.input)
+			require.NotEmpty(t, b)
+
+			var y omitMixed
+			err := DeserializeRaw(b, &y)
+			require.NoError(t, err)
+
+			require.Equal(t, tc.expect, y)
+		})
+	}
+}
+
+func TestOmitEmptyFinalFieldOnly(t *testing.T) {
+	type bad struct {
+		A string
+		B string `enc:",omitempty"`
+		C string
+	}
+
+	require.Panics(t, func() {
+		var b bad
+		Serialize(b)
+	})
 }

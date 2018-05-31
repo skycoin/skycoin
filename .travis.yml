@@ -2,7 +2,6 @@ sudo: required
 dist: trusty
 language: go
 go:
-  - "1.9.x"
   - "1.10.x"
 
 matrix:
@@ -39,8 +38,8 @@ install:
   - go get github.com/gz-c/gox
   # Install dependences for building wallet
   - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_PULL_REQUEST" == false ]]; then sudo apt-get install --no-install-recommends -y icnsutils graphicsmagick xz-utils && nvm install 8; fi
-  - mkdir -p "$GOPATH/src/github.com/skycoin" && if [[ ! -d "$GOPATH/src/github.com/skycoin/skycoin" ]] ; then ln -s "$TRAVIS_BUILD_DIR" "$GOPATH/src/github.com/skycoin/skycoin"; fi
-  - cd "$GOPATH/src/github.com/skycoin/skycoin"
+  - if [[ ! -d $GOPATH/src/github.com/skycoin/skycoin ]]; then mkdir -p $GOPATH/src/github.com/skycoin; ln -s $TRAVIS_BUILD_DIR $GOPATH/src/github.com/skycoin/skycoin; fi
+  - cd $GOPATH/src/github.com/skycoin/skycoin
   - go get -t ./...
   - make install-linters
   - make install-deps-libc
@@ -48,8 +47,7 @@ install:
 
 before_script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" && "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/add-key.sh && npm install -g yarn ;fi
-  - export DISPLAY=:99.0
-  - sh -e /etc/init.d/xvfb start
+  - if [[ "$TRAVIS_OS_NAME" != "osx" ]]; then export DISPLAY=:99.0 && sh -e /etc/init.d/xvfb start; fi
 
 script:
   - make lint

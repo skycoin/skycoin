@@ -19,17 +19,26 @@ var (
 	BigTwo                  = big.NewInt(2)
 )
 
-// DefaultMnemonicEntropyBitSize is the default bit size for NewDefaultMnemomic's entropy
+// DefaultMnemonicEntropyBitSize is the default bit size for NewDefaultMnemonic's entropy
 const DefaultMnemonicEntropyBitSize = 128
 
-// NewDefaultMnemomic returns a generated mnemomic using entropy with bitSize 128
-func NewDefaultMnemomic() (string, error) {
+// NewDefaultMnemonic returns a generated mnemomic using entropy with bitSize 128
+func NewDefaultMnemonic() (string, error) {
 	entropy, err := NewEntropy(DefaultMnemonicEntropyBitSize)
 	if err != nil {
 		return "", err
 	}
 
 	return NewMnemonic(entropy)
+}
+
+// MustNewDefaultMnemonic returns a generated mnemomic using entropy with bitSize 128 and panics if there is an error
+func MustNewDefaultMnemonic() string {
+	seed, err := NewDefaultMnemonic()
+	if err != nil {
+		panic(err)
+	}
+	return seed
 }
 
 // NewEntropy will create random entropy bytes
@@ -205,7 +214,7 @@ func addChecksum(data []byte) []byte {
 	return dataBigInt.Bytes()
 }
 
-func padByteSlice(slice []byte, length int) []byte {
+func padByteSlice(slice []byte, length int) []byte { // nolint: unparam
 	newSlice := make([]byte, length-len(slice))
 	return append(newSlice, slice...)
 }

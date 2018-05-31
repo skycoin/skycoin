@@ -22,11 +22,11 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
 
 ## Table of Contents
 
-<!-- MarkdownTOC depth="5" autolink="true" bracket="round" -->
+<!-- MarkdownTOC levels="1,2,3,4,5" autolink="true" bracket="round" -->
 
 - [Changelog](#changelog)
 - [Installation](#installation)
-    - [Go 1.9+ Installation and Setup](#go-19-installation-and-setup)
+    - [Go 1.10+ Installation and Setup](#go-110-installation-and-setup)
     - [Go get skycoin](#go-get-skycoin)
     - [Run Skycoin from the command line](#run-skycoin-from-the-command-line)
     - [Show Skycoin node options](#show-skycoin-node-options)
@@ -48,7 +48,7 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
         - [Stable Integration Tests](#stable-integration-tests)
         - [Live Integration Tests](#live-integration-tests)
         - [Debugging Integration Tests](#debugging-integration-tests)
-        - [Update golden files in integration test-fixtures](#update-golden-files-in-integration-test-fixtures)
+        - [Update golden files in integration testdata](#update-golden-files-in-integration-testdata)
     - [Formatting](#formatting)
     - [Code Linting](#code-linting)
     - [Dependency Management](#dependency-management)
@@ -66,11 +66,11 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
 
 ## Installation
 
-Skycoin supports go1.9+.  The preferred version is go1.10.
+Skycoin supports go1.10+.
 
-### Go 1.9+ Installation and Setup
+### Go 1.10+ Installation and Setup
 
-[Golang 1.9+ Installation/Setup](./INSTALLATION.md)
+[Golang 1.10+ Installation/Setup](./INSTALLATION.md)
 
 ### Go get skycoin
 
@@ -114,7 +114,7 @@ This is the quickest way to start using Skycoin using Docker.
 $ docker volume create skycoin-data
 $ docker volume create skycoin-wallet
 $ docker run -ti --rm \
-    -v skycoin-data:/data \
+    -v skycoin-data:/data/.skycoin \
     -v skycoin-wallet:/wallet \
     -p 6000:6000 \
     -p 6420:6420 \
@@ -140,35 +140,13 @@ Access the API: [http://localhost:6420/version](http://localhost:6420/version).
 
 ### Building your own images
 
-There is a Dockerfile in docker/images/mainnet that you can use to build your
-own image. By default it will build your working copy, but if you pass the
-SKYCOIN_VERSION build argument to the `docker build` command, it will checkout
-to the branch, a tag or a commit you specify on that variable.
-
-Example
-
-```sh
-$ git clone https://github.com/skycoin/skycoin
-$ cd skycoin
-$ SKYCOIN_VERSION=v0.23.0
-$ docker build -f docker/images/mainnet/Dockerfile \
-  --build-arg=SKYCOIN_VERSION=$SKYCOIN_VERSION \
-  -t skycoin:$SKYCOIN_VERSION .
-```
-
-or just
-
-```sh
-$ docker build -f docker/images/mainnet/Dockerfile \
-  --build-arg=SKYCOIN_VERSION=v0.23.0 \
-  -t skycoin:v0.23.0 .
-```
+[Building your own images](docker/images/mainnet/README.md).
 
 ## API Documentation
 
 ### REST API
 
-[REST API](src/gui/README.md).
+[REST API](src/api/README.md).
 
 ### JSON-RPC 2.0 API
 
@@ -214,14 +192,18 @@ We have two branches: `master` and `develop`.
 
 ### Modules
 
-* `/src/cipher` - cryptography library
-* `/src/coin` - the blockchain
-* `/src/daemon` - networking and wire protocol
-* `/src/visor` - the top level, client
-* `/src/gui` - the web wallet and json client interface
-* `/src/wallet` - the private key storage library
-* `/src/api/webrpc` - JSON-RPC 2.0 API
-* `/src/api/cli` - CLI library
+* `api` - REST API interface
+* `api/webrpc` - JSON-RPC 2.0 API [deprecated]
+* `cipher` - cryptographic library
+* `cli` - CLI library
+* `coin` - blockchain data structures
+* `daemon` - top-level application manager, combining all components (networking, database, wallets)
+* `daemon/gnet` - networking library
+* `daemon/pex` - peer management
+* `visor` - top-level blockchain database layer
+* `visor/blockdb` - low-level blockchain database layer
+* `visor/historydb` - low-level blockchain database layer for historical blockchain metadata
+* `wallet` - wallet file management
 
 ### Client libraries
 
@@ -316,7 +298,7 @@ For exampe: if we only want to test `TestStableAddressBalance` and see the resul
 ./ci-scripts/integration-test-stable.sh -v -r TestStableAddressBalance
 ```
 
-#### Update golden files in integration test-fixtures
+#### Update golden files in integration testdata
 
 Golden files are expected data responses from the CLI or HTTP API saved to disk.
 When the tests are run, their output is compared to the golden files.
@@ -396,6 +378,33 @@ Add a single dependency (more specific version), or downgrade an existing depend
 dep ensure github.com/foo/bar@tag
 ```
 
+### Configuration Modes
+There are 4 configuration modes in which you can run a skycoin node:
+- Development Desktop Daemon
+- Server Daemon
+- Electron Desktop Client
+- Standalone Desktop Client
+
+#### Development Desktop Daemon Mode
+This mode is configured via `run.sh`
+```bash
+$ ./run.sh
+```
+
+#### Server Daemon Mode
+The default settings for a skycoin node are chosen for `Server Daemon`, which is typically run from source.
+This mode is usually preferred to be run with security options, though `-disable-csrf` is normal for server daemon mode, it is left enabled by default.
+```bash
+$ go run cmd/skycoin/skycoin.go
+```
+
+#### Electron Desktop Client Mode
+This mode configures itself via electron-main.js
+
+#### Standalone Desktop Client Mode
+This mode is configured by compiling with `STANDALONE_CLIENT` build tag.
+The configuration is handled in `cmd/skycoin/skycoin.go`
+
 ### Wallet GUI Development
 
 The compiled wallet source should be checked in to the repo, so that others do not need to install node to run the software.
@@ -407,7 +416,7 @@ Instructions for doing this:
 ### Releases
 
 0. If the `master` branch has commits that are not in `develop` (e.g. due to a hotfix applied to `master`), merge `master` into `develop`
-1. Compile the `src/gui/dist/` to make sure that it is up to date (see [Wallet GUI Development README](src/gui/static/README.md))
+1. Compile the `src/gui/static/dist/` to make sure that it is up to date (see [Wallet GUI Development README](src/gui/static/README.md))
 2. Update all version strings in the repo (grep for them) to the new version
 3. Update `CHANGELOG.md`: move the "unreleased" changes to the version and add the date
 4. Merge these changes to `develop`

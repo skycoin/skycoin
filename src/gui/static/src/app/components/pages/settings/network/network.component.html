@@ -1,7 +1,7 @@
 <div class="sky-container sky-container-grey">
-  <app-header title="Networking"></app-header>
+  <app-header [headline]="'title.network' | translate"></app-header>
 
-  <h3>Automatic peers</h3>
+  <h3>{{ 'network.automatic-peers' | translate }}</h3>
 
   <mat-card>
     <div class="row">
@@ -14,7 +14,7 @@
     </div>
   </mat-card>
 
-  <h3>Default peers</h3>
+  <h3>{{ 'network.default-peers' | translate }}</h3>
   <mat-card>
     <div class="row">
       <div class="col-lg-3" *ngFor="let peer of defaultConnections">

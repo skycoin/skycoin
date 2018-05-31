@@ -145,8 +145,10 @@ func NewReadableWallet(w *Wallet) *ReadableWallet {
 // LoadReadableWallet loads a ReadableWallet from disk
 func LoadReadableWallet(filename string) (*ReadableWallet, error) {
 	w := &ReadableWallet{}
-	err := w.Load(filename)
-	return w, err
+	if err := w.Load(filename); err != nil {
+		return nil, fmt.Errorf("load wallet %s failed: %v", filename, err)
+	}
+	return w, nil
 }
 
 // ToWallet convert readable wallet to Wallet

@@ -1398,9 +1398,10 @@ func TestWalletChooseSpendsMaximizeUxOuts(t *testing.T) {
 	nRand := 10000
 	for i := 0; i < nRand; i++ {
 		coins := uint64((rand.Intn(3)+1)*10 + rand.Intn(3)) // 10,20,30 + 0,1,2
+		hours := uint64((rand.Intn(3)+1)*10 + rand.Intn(3)) // 10,20,30 + 0,1,2
 		uxb := makeRandomUxBalances(t)
 
-		verifyChosenCoins(t, uxb, coins, ChooseSpendsMaximizeUxOuts, func(a, b UxBalance) bool {
+		verifyChosenCoins(t, uxb, coins, hours, ChooseSpendsMaximizeUxOuts, func(a, b UxBalance) bool {
 			return a.Coins <= b.Coins
 		})
 	}
@@ -1410,9 +1411,10 @@ func TestWalletChooseSpendsMinimizeUxOutsRandom(t *testing.T) {
 	nRand := 10000
 	for i := 0; i < nRand; i++ {
 		coins := uint64((rand.Intn(3)+1)*10 + rand.Intn(3)) // 10,20,30 + 0,1,2
+		hours := uint64((rand.Intn(3)+1)*10 + rand.Intn(3)) // 10,20,30 + 0,1,2
 		uxb := makeRandomUxBalances(t)
 
-		verifyChosenCoins(t, uxb, coins, ChooseSpendsMinimizeUxOuts, func(a, b UxBalance) bool {
+		verifyChosenCoins(t, uxb, coins, hours, ChooseSpendsMinimizeUxOuts, func(a, b UxBalance) bool {
 			return a.Coins >= b.Coins
 		})
 	}
@@ -1932,7 +1934,7 @@ func makeRandomUxBalances(t *testing.T) []UxBalance {
 	return uxb
 }
 
-func verifyChosenCoins(t *testing.T, uxb []UxBalance, coins uint64, chooseSpends func([]UxBalance, uint64, uint64) ([]UxBalance, error), cmpCoins func(i, j UxBalance) bool) {
+func verifyChosenCoins(t *testing.T, uxb []UxBalance, coins, hours uint64, chooseSpends func([]UxBalance, uint64, uint64) ([]UxBalance, error), cmpCoins func(i, j UxBalance) bool) {
 	var haveZero, haveNonzero int
 	for _, ux := range uxb {
 		if ux.Hours == 0 {
@@ -1948,7 +1950,7 @@ func verifyChosenCoins(t *testing.T, uxb []UxBalance, coins uint64, chooseSpends
 		totalHours += ux.Hours
 	}
 
-	chosen, err := chooseSpends(uxb, coins, 0)
+	chosen, err := chooseSpends(uxb, coins, hours)
 
 	if coins == 0 {
 		testutil.RequireError(t, err, ErrZeroSpend.Error())
@@ -1967,6 +1969,11 @@ func verifyChosenCoins(t *testing.T, uxb []UxBalance, coins uint64, chooseSpends
 
 	if coins > totalCoins {
 		testutil.RequireError(t, err, ErrInsufficientBalance.Error())
+		return
+	}
+
+	if hours > fee.RemainingHours(totalHours) {
+		testutil.RequireError(t, err, ErrInsufficientHours.Error())
 		return
 	}
 

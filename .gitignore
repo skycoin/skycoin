@@ -142,8 +142,6 @@ docs/libc/xml
 
 *.sublime-workspace
 .angulardoc.json
-# Ignore swig libskycoin.h copy
-lib/swig/include/libskycoin.h
 
 # Do not ignore Docker Cloud build
 !hooks/build

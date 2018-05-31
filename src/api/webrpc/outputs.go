@@ -17,11 +17,11 @@ type OutputsResult struct {
 func getOutputsHandler(req Request, gateway Gatewayer) Response {
 	var addrs []string
 	if err := req.DecodeParams(&addrs); err != nil {
-		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
+		return MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams)
 	}
 
 	if len(addrs) == 0 {
-		return makeErrorResponse(errCodeInvalidParams, errMsgInvalidParams)
+		return MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidParams)
 	}
 
 	for i, a := range addrs {
@@ -31,15 +31,15 @@ func getOutputsHandler(req Request, gateway Gatewayer) Response {
 	// validate those addresses
 	for _, a := range addrs {
 		if _, err := cipher.DecodeBase58Address(a); err != nil {
-			return makeErrorResponse(errCodeInvalidParams, fmt.Sprintf("invalid address: %v", a))
+			return MakeErrorResponse(ErrCodeInvalidParams, fmt.Sprintf("invalid address: %v", a))
 		}
 	}
 
 	outs, err := gateway.GetUnspentOutputs(daemon.FbyAddresses(addrs))
 	if err != nil {
-		logger.Error("get unspent outputs failed: %v", err)
-		return makeErrorResponse(errCodeInternalError)
+		logger.Errorf("get unspent outputs failed: %v", err)
+		return MakeErrorResponse(ErrCodeInternalError, fmt.Sprintf("gateway.GetUnspentOutputs failed: %v", err))
 	}
 
-	return makeSuccessResponse(req.ID, OutputsResult{outs})
+	return makeSuccessResponse(req.ID, OutputsResult{*outs})
 }

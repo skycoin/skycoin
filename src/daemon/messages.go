@@ -9,8 +9,11 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
+	"github.com/skycoin/skycoin/src/util/iputil"
 	"github.com/skycoin/skycoin/src/util/utc"
 )
 
@@ -103,7 +106,7 @@ type IPAddr struct {
 // returned
 func NewIPAddr(addr string) (ipaddr IPAddr, err error) {
 	// TODO -- support ipv6
-	ips, port, err := SplitAddr(addr)
+	ips, port, err := iputil.SplitAddr(addr)
 	if err != nil {
 		return
 	}
@@ -146,8 +149,7 @@ func NewGetPeersMessage() *GetPeersMessage {
 }
 
 // Handle handles message
-func (gpm *GetPeersMessage) Handle(mc *gnet.MessageContext,
-	daemon interface{}) error {
+func (gpm *GetPeersMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	// self.connID = mc.ConnID
 	gpm.addr = mc.Addr
 	return daemon.(*Daemon).recordMessageEvent(gpm, mc)
@@ -165,11 +167,9 @@ func (gpm *GetPeersMessage) Process(d *Daemon) {
 		return
 	}
 
-	// logger.Info(fmt.Sprintf("give exchange peers:%+v", peers))
-
 	m := NewGivePeersMessage(peers)
 	if err := d.Pool.Pool.SendMessage(gpm.addr, m); err != nil {
-		logger.Error("Send GivePeersMessage to %s failed: %v", gpm.addr, err)
+		logger.Errorf("Send GivePeersMessage to %s failed: %v", gpm.addr, err)
 	}
 }
 
@@ -185,7 +185,7 @@ func NewGivePeersMessage(peers []pex.Peer) *GivePeersMessage {
 	for _, ps := range peers {
 		ipaddr, err := NewIPAddr(ps.Addr)
 		if err != nil {
-			logger.Warning("GivePeersMessage skipping address %s", ps.Addr)
+			logger.Warningf("GivePeersMessage skipping address %s", ps.Addr)
 			logger.Warning(err.Error())
 			continue
 		}
@@ -217,7 +217,7 @@ func (gpm *GivePeersMessage) Process(d *Daemon) {
 		return
 	}
 	peers := gpm.GetPeers()
-	logger.Debug("Got these peers via PEX: %s", strings.Join(peers, ", "))
+	logger.Debugf("Got these peers via PEX: %s", strings.Join(peers, ", "))
 
 	d.Pex.AddPeers(peers)
 }
@@ -255,7 +255,7 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 	err := func() error {
 		// Disconnect if this is a self connection (we have the same mirror value)
 		if intro.Mirror == d.Messages.Mirror {
-			logger.Info("Remote mirror value %v matches ours", intro.Mirror)
+			logger.Infof("Remote mirror value %v matches ours", intro.Mirror)
 			d.Pool.Pool.Disconnect(mc.Addr, ErrDisconnectSelf)
 			return ErrDisconnectSelf
 
@@ -263,39 +263,57 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 
 		// Disconnect if not running the same version
 		if intro.Version != d.Config.Version {
-			logger.Info("%s has different version %d. Disconnecting.",
+			logger.Infof("%s has different version %d. Disconnecting.",
 				mc.Addr, intro.Version)
 			d.Pool.Pool.Disconnect(mc.Addr, ErrDisconnectInvalidVersion)
 			return ErrDisconnectInvalidVersion
 		}
 
-		logger.Info("%s verified for version %d", mc.Addr, intro.Version)
+		logger.Infof("%s verified for version %d", mc.Addr, intro.Version)
 
 		// only solicited connection can be added to exchange peer list, cause accepted
 		// connection may not have incomming  port.
-		ip, port, err := SplitAddr(mc.Addr)
+		ip, port, err := iputil.SplitAddr(mc.Addr)
 		if err != nil {
 			// This should never happen, but the program should still work if it
 			// does.
-			logger.Error("Invalid Addr() for connection: %s", mc.Addr)
+			logger.Errorf("Invalid Addr() for connection: %s", mc.Addr)
 			d.Pool.Pool.Disconnect(mc.Addr, ErrDisconnectOtherError)
 			return ErrDisconnectOtherError
 		}
 
+		// Checks if the introduction message is from outgoing connection.
+		// It's outgoing connection if port == intro.Port, as the incoming
+		// connection's port is a random port, it's different from the port
+		// in introduction message.
 		if port == intro.Port {
+			if d.Pool.Pool.IsDefaultConnection(mc.Addr) {
+				reached, err := d.Pool.Pool.IsMaxDefaultConnReached()
+				if err != nil {
+					logger.Errorf("Check IsMaxDefaultConnReached failed: %v", err)
+					return err
+				}
+
+				if reached {
+					logger.Debugf("Disconnect %s: maximum default connections reached ", mc.Addr)
+					d.Pool.Pool.Disconnect(mc.Addr, ErrDisconnectMaxDefaultConnectionReached)
+					return ErrDisconnectMaxDefaultConnectionReached
+				}
+			}
+
 			if err := d.Pex.SetHasIncomingPort(mc.Addr, true); err != nil {
-				logger.Error("Failed to set peer has incoming port status, %v", err)
+				logger.Errorf("Failed to set peer has incoming port status, %v", err)
 			}
 		} else {
 			if err := d.Pex.AddPeer(fmt.Sprintf("%s:%d", ip, intro.Port)); err != nil {
-				logger.Error("Failed to add peer: %v", err)
+				logger.Errorf("Failed to add peer: %v", err)
 			}
 		}
 
 		// Disconnect if connected twice to the same peer (judging by ip:mirror)
 		knownPort, exists := d.getMirrorPort(mc.Addr, intro.Mirror)
 		if exists {
-			logger.Info("%s is already connected on port %d", mc.Addr, knownPort)
+			logger.Infof("%s is already connected on port %d", mc.Addr, knownPort)
 			d.Pool.Pool.Disconnect(mc.Addr, ErrDisconnectConnectedTwice)
 			return ErrDisconnectConnectedTwice
 		}
@@ -330,21 +348,21 @@ func (intro *IntroductionMessage) Process(d *Daemon) {
 	if err != nil {
 		// This should never happen, but the program should not allow itself
 		// to be corrupted in case it does
-		logger.Error("Invalid port for connection %s", a)
+		logger.Errorf("Invalid port for connection %s", a)
 		d.Pool.Pool.Disconnect(intro.c.Addr, ErrDisconnectOtherError)
 		return
 	}
 
 	// Request blocks immediately after they're confirmed
-	err = d.Visor.RequestBlocksFromAddr(d.Pool, intro.c.Addr)
+	err = d.RequestBlocksFromAddr(intro.c.Addr)
 	if err == nil {
-		logger.Debug("Successfully requested blocks from %s", intro.c.Addr)
+		logger.Debugf("Successfully requested blocks from %s", intro.c.Addr)
 	} else {
-		logger.Warning("%v", err)
+		logger.Warning(err)
 	}
 
 	// Anounce unconfirmed know txns
-	d.Visor.AnnounceAllTxns(d.Pool)
+	d.AnnounceAllTxns()
 }
 
 // PingMessage Sent to keep a connection alive. A PongMessage is sent in reply.
@@ -361,10 +379,10 @@ func (ping *PingMessage) Handle(mc *gnet.MessageContext, daemon interface{}) err
 // Process Sends a PongMessage to the sender of PingMessage
 func (ping *PingMessage) Process(d *Daemon) {
 	if d.Config.LogPings {
-		logger.Debug("Reply to ping from %s", ping.c.Addr)
+		logger.Debugf("Reply to ping from %s", ping.c.Addr)
 	}
 	if err := d.Pool.Pool.SendMessage(ping.c.Addr, &PongMessage{}); err != nil {
-		logger.Error("Send PongMessage to %s failed: %v", ping.c.Addr, err)
+		logger.Errorf("Send PongMessage to %s failed: %v", ping.c.Addr, err)
 	}
 }
 
@@ -377,7 +395,7 @@ func (pong *PongMessage) Handle(mc *gnet.MessageContext, daemon interface{}) err
 	// There is nothing to do; gnet updates Connection.LastMessage internally
 	// when this is received
 	if daemon.(*Daemon).Config.LogPings {
-		logger.Debug("Received pong from %s", mc.Addr)
+		logger.Debugf("Received pong from %s", mc.Addr)
 	}
 	return nil
 }
@@ -425,4 +443,342 @@ func (msg *RejectMessage) Handle(mc *gnet.MessageContext, daemon interface{}) er
 // Process Recover from message rejection state
 func (msg *RejectMessage) Process(d *Daemon) {
 	// TODO: Implement
+}
+
+// GetBlocksMessage sent to request blocks since LastBlock
+type GetBlocksMessage struct {
+	LastBlock       uint64
+	RequestedBlocks uint64
+	c               *gnet.MessageContext `enc:"-"`
+}
+
+// NewGetBlocksMessage creates GetBlocksMessage
+func NewGetBlocksMessage(lastBlock uint64, requestedBlocks uint64) *GetBlocksMessage {
+	return &GetBlocksMessage{
+		LastBlock:       lastBlock,
+		RequestedBlocks: requestedBlocks, // count of blocks requested
+	}
+}
+
+// Handle handles message
+func (gbm *GetBlocksMessage) Handle(mc *gnet.MessageContext,
+	daemon interface{}) error {
+	gbm.c = mc
+	return daemon.(*Daemon).recordMessageEvent(gbm, mc)
+}
+
+// Process should send number to be requested, with request
+func (gbm *GetBlocksMessage) Process(d *Daemon) {
+	// TODO -- we need the sig to be sent with the block, but only the master
+	// can sign blocks.  Thus the sig needs to be stored with the block.
+	if d.Config.DisableNetworking {
+		return
+	}
+	// Record this as this peer's highest block
+	d.Heights.Record(gbm.c.Addr, gbm.LastBlock)
+	// Fetch and return signed blocks since LastBlock
+	blocks, err := d.Visor.GetSignedBlocksSince(gbm.LastBlock, gbm.RequestedBlocks)
+	if err != nil {
+		logger.Infof("Get signed blocks failed: %v", err)
+		return
+	}
+
+	if len(blocks) == 0 {
+		return
+	}
+
+	logger.Debugf("Got %d blocks since %d", len(blocks), gbm.LastBlock)
+
+	m := NewGiveBlocksMessage(blocks)
+	if err := d.Pool.Pool.SendMessage(gbm.c.Addr, m); err != nil {
+		logger.Errorf("Send GiveBlocksMessage to %s failed: %v", gbm.c.Addr, err)
+	}
+}
+
+// GiveBlocksMessage sent in response to GetBlocksMessage, or unsolicited
+type GiveBlocksMessage struct {
+	Blocks []coin.SignedBlock
+	c      *gnet.MessageContext `enc:"-"`
+}
+
+// NewGiveBlocksMessage creates GiveBlocksMessage
+func NewGiveBlocksMessage(blocks []coin.SignedBlock) *GiveBlocksMessage {
+	return &GiveBlocksMessage{
+		Blocks: blocks,
+	}
+}
+
+// Handle handle message
+func (gbm *GiveBlocksMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
+	gbm.c = mc
+	return daemon.(*Daemon).recordMessageEvent(gbm, mc)
+}
+
+// Process process message
+func (gbm *GiveBlocksMessage) Process(d *Daemon) {
+	if d.Config.DisableNetworking {
+		logger.Critical().Info("Visor disabled, ignoring GiveBlocksMessage")
+		return
+	}
+
+	// These DB queries are not performed in a transaction for performance reasons.
+	// It is not necessary that the blocks be executed together in a single transaction.
+
+	processed := 0
+	maxSeq, ok, err := d.Visor.HeadBkSeq()
+	if err != nil {
+		logger.WithError(err).Error("visor.HeadBkSeq failed")
+		return
+	}
+	if !ok {
+		logger.Error("No HeadBkSeq found, cannot execute blocks")
+		return
+	}
+
+	for _, b := range gbm.Blocks {
+		// To minimize waste when receiving multiple responses from peers
+		// we only break out of the loop if the block itself is invalid.
+		// E.g. if we request 20 blocks since 0 from 2 peers, and one peer
+		// replies with 15 and the other 20, if we did not do this check and
+		// the reply with 15 was received first, we would toss the one with 20
+		// even though we could process it at the time.
+		if b.Seq() <= maxSeq {
+			continue
+		}
+
+		err := d.Visor.ExecuteSignedBlock(b)
+		if err == nil {
+			logger.Critical().Infof("Added new block %d", b.Block.Head.BkSeq)
+			processed++
+		} else {
+			logger.Critical().Errorf("Failed to execute received block %d: %v", b.Block.Head.BkSeq, err)
+			// Blocks must be received in order, so if one fails its assumed
+			// the rest are failing
+			break
+		}
+	}
+	if processed == 0 {
+		return
+	}
+
+	headBkSeq, ok, err := d.Visor.HeadBkSeq()
+	if err != nil {
+		logger.WithError(err).Error("visor.HeadBkSeq failed")
+		return
+	}
+	if !ok {
+		logger.Error("No HeadBkSeq found after executing blocks, will not announce blocks")
+		return
+	}
+
+	if headBkSeq < maxSeq {
+		logger.Critical().Warning("HeadBkSeq decreased after executing blocks")
+	} else if headBkSeq-maxSeq != uint64(processed) {
+		logger.Critical().Warning("HeadBkSeq increased by %d but we processed %s blocks", headBkSeq-maxSeq, processed)
+	}
+
+	// Announce our new blocks to peers
+	m1 := NewAnnounceBlocksMessage(headBkSeq)
+	d.Pool.Pool.BroadcastMessage(m1)
+	//request more blocks.
+	m2 := NewGetBlocksMessage(headBkSeq, d.Config.BlocksResponseCount)
+	d.Pool.Pool.BroadcastMessage(m2)
+}
+
+// AnnounceBlocksMessage tells a peer our highest known BkSeq. The receiving peer can choose
+// to send GetBlocksMessage in response
+type AnnounceBlocksMessage struct {
+	MaxBkSeq uint64
+	c        *gnet.MessageContext `enc:"-"`
+}
+
+// NewAnnounceBlocksMessage creates message
+func NewAnnounceBlocksMessage(seq uint64) *AnnounceBlocksMessage {
+	return &AnnounceBlocksMessage{
+		MaxBkSeq: seq,
+	}
+}
+
+// Handle handles message
+func (abm *AnnounceBlocksMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
+	abm.c = mc
+	return daemon.(*Daemon).recordMessageEvent(abm, mc)
+}
+
+// Process process message
+func (abm *AnnounceBlocksMessage) Process(d *Daemon) {
+	if d.Config.DisableNetworking {
+		return
+	}
+
+	headBkSeq, ok, err := d.Visor.HeadBkSeq()
+	if err != nil {
+		logger.WithError(err).Error("AnnounceBlocksMessage Visor.HeadBkSeq failed")
+		return
+	}
+	if !ok {
+		logger.Error("AnnounceBlocksMessage no head block, cannot process AnnounceBlocksMessage")
+		return
+	}
+
+	if headBkSeq >= abm.MaxBkSeq {
+		return
+	}
+
+	// TODO: Should this be block get request for current sequence?
+	// If client is not caught up, won't attempt to get block
+	m := NewGetBlocksMessage(headBkSeq, d.Config.BlocksResponseCount)
+	if err := d.Pool.Pool.SendMessage(abm.c.Addr, m); err != nil {
+		logger.Errorf("Send GetBlocksMessage to %s failed: %v", abm.c.Addr, err)
+	}
+}
+
+// SendingTxnsMessage send transaction message interface
+type SendingTxnsMessage interface {
+	GetTxns() []cipher.SHA256
+}
+
+// AnnounceTxnsMessage tells a peer that we have these transactions
+type AnnounceTxnsMessage struct {
+	Txns []cipher.SHA256
+	c    *gnet.MessageContext `enc:"-"`
+}
+
+// NewAnnounceTxnsMessage creates announce txns message
+func NewAnnounceTxnsMessage(txns []cipher.SHA256) *AnnounceTxnsMessage {
+	return &AnnounceTxnsMessage{
+		Txns: txns,
+	}
+}
+
+// GetTxns returns txns
+func (atm *AnnounceTxnsMessage) GetTxns() []cipher.SHA256 {
+	return atm.Txns
+}
+
+// Handle handle message
+func (atm *AnnounceTxnsMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
+	atm.c = mc
+	return daemon.(*Daemon).recordMessageEvent(atm, mc)
+}
+
+// Process process message
+func (atm *AnnounceTxnsMessage) Process(d *Daemon) {
+	if d.Config.DisableNetworking {
+		return
+	}
+
+	unknown, err := d.Visor.GetUnconfirmedUnknown(atm.Txns)
+	if err != nil {
+		logger.WithError(err).Error("AnnounceTxnsMessage Visor.GetUnconfirmedUnknown failed")
+		return
+	}
+
+	if len(unknown) == 0 {
+		return
+	}
+
+	m := NewGetTxnsMessage(unknown)
+	if err := d.Pool.Pool.SendMessage(atm.c.Addr, m); err != nil {
+		logger.Errorf("Send GetTxnsMessage to %s failed: %v", atm.c.Addr, err)
+	}
+}
+
+// GetTxnsMessage request transactions of given hash
+type GetTxnsMessage struct {
+	Txns []cipher.SHA256
+	c    *gnet.MessageContext `enc:"-"`
+}
+
+// NewGetTxnsMessage creates GetTxnsMessage
+func NewGetTxnsMessage(txns []cipher.SHA256) *GetTxnsMessage {
+	return &GetTxnsMessage{
+		Txns: txns,
+	}
+}
+
+// Handle handle message
+func (gtm *GetTxnsMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
+	gtm.c = mc
+	return daemon.(*Daemon).recordMessageEvent(gtm, mc)
+}
+
+// Process process message
+func (gtm *GetTxnsMessage) Process(d *Daemon) {
+	if d.Config.DisableNetworking {
+		return
+	}
+
+	// Locate all txns from the unconfirmed pool
+	known, err := d.Visor.GetUnconfirmedKnown(gtm.Txns)
+	if err != nil {
+		logger.WithError(err).Error("GetTxnsMessage Visor.GetUnconfirmedKnown failed")
+		return
+	}
+	if len(known) == 0 {
+		return
+	}
+
+	// Reply to sender with GiveTxnsMessage
+	m := NewGiveTxnsMessage(known)
+	if err := d.Pool.Pool.SendMessage(gtm.c.Addr, m); err != nil {
+		logger.Errorf("Send GiveTxnsMessage to %s failed: %v", gtm.c.Addr, err)
+	}
+}
+
+// GiveTxnsMessage tells the transaction of given hashes
+type GiveTxnsMessage struct {
+	Txns coin.Transactions
+	c    *gnet.MessageContext `enc:"-"`
+}
+
+// NewGiveTxnsMessage creates GiveTxnsMessage
+func NewGiveTxnsMessage(txns coin.Transactions) *GiveTxnsMessage {
+	return &GiveTxnsMessage{
+		Txns: txns,
+	}
+}
+
+// GetTxns returns transactions hashes
+func (gtm *GiveTxnsMessage) GetTxns() []cipher.SHA256 {
+	return gtm.Txns.Hashes()
+}
+
+// Handle handle message
+func (gtm *GiveTxnsMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
+	gtm.c = mc
+	return daemon.(*Daemon).recordMessageEvent(gtm, mc)
+}
+
+// Process process message
+func (gtm *GiveTxnsMessage) Process(d *Daemon) {
+	if d.Config.DisableNetworking {
+		return
+	}
+
+	hashes := make([]cipher.SHA256, 0, len(gtm.Txns))
+	// Update unconfirmed pool with these transactions
+	for _, txn := range gtm.Txns {
+		// Only announce transactions that are new to us, so that peers can't spam relays
+		known, softErr, err := d.Visor.InjectTransaction(txn)
+		if err != nil {
+			logger.Warningf("Failed to record transaction %s: %v", txn.Hash().Hex(), err)
+			continue
+		} else if softErr != nil {
+			logger.Warningf("Transaction soft violation: %v", err)
+			continue
+		} else if known {
+			logger.Warningf("Duplicate Transaction: %s", txn.Hash().Hex())
+			continue
+		}
+
+		hashes = append(hashes, txn.Hash())
+	}
+
+	// Announce these transactions to peers
+	if len(hashes) != 0 {
+		logger.Debugf("Announce %d transactions", len(hashes))
+		m := NewAnnounceTxnsMessage(hashes)
+		d.Pool.Pool.BroadcastMessage(m)
+	}
 }

@@ -26,7 +26,7 @@
     "label-position": true,
     "max-line-length": [
       true,
-      140
+      200
     ],
     "member-access": false,
     "member-ordering": [
@@ -101,6 +101,13 @@
         "parameter": "nospace",
         "property-declaration": "nospace",
         "variable-declaration": "nospace"
+      },
+      {
+        "call-signature": "onespace",
+        "index-signature": "onespace",
+        "parameter": "onespace",
+        "property-declaration": "onespace",
+        "variable-declaration": "onespace"
       }
     ],
     "typeof-compare": true,
@@ -111,8 +118,11 @@
       "check-branch",
       "check-decl",
       "check-operator",
+      "check-module",
       "check-separator",
-      "check-type"
+      "check-type",
+      "check-typecast",
+      "check-preblock"
     ],
     "directive-selector": [
       true,
@@ -135,8 +145,15 @@
     "use-pipe-transform-interface": true,
     "component-class-suffix": true,
     "directive-class-suffix": true,
-    "no-access-missing-member": true,
-    "templates-use-public": true,
-    "invoke-injectable": true
+    "trailing-comma": [
+      true,
+      {
+        "multiline": "always",
+        "esSpecCompliant": true
+      }
+    ],
+    "newline-before-return": true,
+    "space-before-function-paren": [true, "never"],
+    "prefer-method-signature": true
   }
 }

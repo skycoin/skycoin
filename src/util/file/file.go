@@ -21,7 +21,7 @@ var (
 	ErrEmptyDirectoryName = errors.New("data directory must not be empty")
 	// ErrDotDirectoryName is returned by constructing the full path of
 	// data directory if the passed argument is "."
-	ErrDotDirectoryName = errors.New("data directory must not be equivalent to .")
+	ErrDotDirectoryName = errors.New("data directory must not be equal to \".\"")
 
 	logger = logging.MustGetLogger("file")
 )
@@ -46,11 +46,11 @@ func InitDataDir(dir string) (string, error) {
 	}
 
 	if err := os.MkdirAll(dir, os.FileMode(0700)); err != nil {
-		logger.Error("Failed to create directory %s: %v", dir, err)
+		logger.Errorf("Failed to create directory %s: %v", dir, err)
 		return "", err
 	}
 
-	logger.Info("Created data directory %s", dir)
+	logger.Infof("Created data directory %s", dir)
 	return dir, nil
 }
 
@@ -61,20 +61,23 @@ func buildDataDir(dir string) (string, error) {
 		return "", ErrEmptyDirectoryName
 	}
 
-	home := UserHome()
-	if home == "" {
-		logger.Warning("Failed to get home directory, using ./")
-		home = "./"
-	} else {
-		home = filepath.Clean(home)
+	home := filepath.Clean(UserHome())
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	wd = filepath.Clean(wd)
+
+	fullDir, err := filepath.Abs(dir)
+
+	if err != nil {
+		return "", err
 	}
 
-	fullDir := filepath.Join(home, dir)
-	fullDir = filepath.Clean(fullDir)
-
 	// The joined directory must not be equal to $HOME or a parent path of $HOME
-	if strings.HasPrefix(home, fullDir) {
-		logger.Error("join(%[1]s, %[2]s) == %[1]s", home, dir)
+	// The joined directory must not be equal to `pwd` or a parent path of `pwd`
+	if strings.HasPrefix(home, fullDir) || strings.HasPrefix(wd, fullDir) {
+		logger.Errorf("join(%[1]s, %[2]s) == %[1]s", home, dir)
 		return "", ErrDotDirectoryName
 	}
 
@@ -119,8 +122,7 @@ func SaveJSON(filename string, thing interface{}, mode os.FileMode) error {
 	if err != nil {
 		return err
 	}
-	err = SaveBinary(filename, data, mode)
-	return err
+	return SaveBinary(filename, data, mode)
 }
 
 // SaveJSONSafe saves json to disk, but refuses if file already exists
@@ -145,22 +147,22 @@ func SaveJSONSafe(filename string, thing interface{}, mode os.FileMode) error {
 	return err
 }
 
-// SaveBinary persists data into given file in binary
+// SaveBinary persists data into given file in binary,
+// backup the previous file, if there was one
 func SaveBinary(filename string, data []byte, mode os.FileMode) error {
 	// Write the new file to a temporary
 	tmpname := filename + ".tmp"
 	if err := ioutil.WriteFile(tmpname, data, mode); err != nil {
 		return err
 	}
-	// Backup the previous file, if there was one
-	_, err := os.Stat(filename)
-	if !os.IsNotExist(err) {
-		if err := os.Rename(filename, filename+".bak"); err != nil {
-			return err
-		}
+
+	// Write the new file to the target wallet file
+	if err := ioutil.WriteFile(filename, data, mode); err != nil {
+		return err
 	}
-	// Move the temporary to the new file
-	return os.Rename(tmpname, filename)
+
+	// Remove the tmp file
+	return os.Remove(tmpname)
 }
 
 //TODO: require file named after application and then hashcode, in static directory
@@ -225,7 +227,6 @@ func ResolveResourceDirectory(path string) string {
 }
 
 // DetermineResourcePath DEPRECATE
-// From src/gui/http.go and src/mesh/gui/http.go
 func DetermineResourcePath(staticDir string, resourceDir string, devDir string) (string, error) {
 	//check "dev" directory first
 	appLoc := filepath.Join(staticDir, devDir)

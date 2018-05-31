@@ -1,4 +1,4 @@
-<app-header title="Transactions"></app-header>
+<app-header [title]="'title.transactions' | translate"></app-header>
 <div class="container">
   <div class="-paper">
     <ng-container *ngFor="let transaction of transactions">
@@ -7,16 +7,32 @@
           <img src="/assets/img/send-blue.png">
         </div>
         <div class="-address">
-          <h4 *ngIf="transaction.balance < 0 && transaction.confirmed">Sent SKY <span class="-timestamp">{{ transaction.timestamp * 1000 | date:'short' }}</span></h4>
-          <h4 *ngIf="transaction.balance < 0 && !transaction.confirmed">Sending SKY <span class="-pending">Pending</span></h4>
-          <h4 *ngIf="transaction.balance > 0 && transaction.confirmed">Received SKY <span class="-timestamp">{{ transaction.timestamp * 1000 | date:'short' }}</span></h4>
-          <h4 *ngIf="transaction.balance > 0 && !transaction.confirmed">Sent SKY <span class="-pending">Pending</span></h4>
-          <img src="../../../../assets/img/qr-code-black.png">
-          <p>{{ transaction.addresses.join(', ') }}</p>
+          <h4 *ngIf="transaction.balance < 0 && transaction.confirmed">
+            {{ 'history.sent' | translate }} {{ 'common.coin-id' | translate }}
+            <span class="-timestamp">{{ transaction.timestamp * 1000 | date:'short' }}</span>
+          </h4>
+          <h4 *ngIf="transaction.balance < 0 && !transaction.confirmed">
+            {{ 'history.sending' | translate }} {{ 'common.coin-id' | translate }}
+            <span class="-pending">{{ 'history.pending' | translate }}</span>
+          </h4>
+          <h4 *ngIf="transaction.balance > 0 && transaction.confirmed">
+            {{ 'history.received' | translate }} {{ 'common.coin-id' | translate }}
+            <span class="-timestamp">{{ transaction.timestamp * 1000 | date:'short' }}</span>
+          </h4>
+          <h4 *ngIf="transaction.balance > 0 && !transaction.confirmed">
+            {{ 'history.receiving' | translate }} {{ 'common.coin-id' | translate }}
+            <span class="-pending">{{ 'history.pending' | translate }}</span>
+          </h4>
+          <div class="-item" *ngFor="let address of transaction.addresses">
+            <img src="../../../../assets/img/qr-code-black.png" (click)="showQrCode($event, address)">
+            <span>{{ address }}</span>
+          </div>
         </div>
         <div class="-balance">
-          <h4>{{ transaction.balance }} SKY</h4>
-          <p *ngIf="price">{{ transaction.balance * price | currency:'USD':true:'1.2-2' }}</p>
+          <h4>{{ transaction.balance | number:'1.0-6' }} {{ 'common.coin-id' | translate }}</h4>
+          <p *ngIf="price" [matTooltip]="'tx.current-rate' | translate">
+            {{ transaction.balance * price | currency:'USD':'symbol':'1.2-2' }}<span>*</span>
+          </p>
         </div>
       </div>
     </ng-container>

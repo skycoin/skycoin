@@ -4,15 +4,16 @@
 </div>
 <div class="buttons-right">
   <mat-menu #settingsMenu="matMenu" [overlapTrigger]="false">
-    <button mat-menu-item [routerLink]="['/settings/network']"> Networking </button>
-    <button mat-menu-item [routerLink]="['/settings/blockchain']"> Blockchain </button>
-    <button mat-menu-item [routerLink]="['/settings/outputs']"> Outputs </button>
-    <button mat-menu-item [routerLink]="['/settings/pending-transactions']"> Pending Transactions </button>
+    <button mat-menu-item [routerLink]="['/settings/network']">{{ 'title.network' | translate }}</button>
+    <button mat-menu-item [routerLink]="['/settings/blockchain']">{{ 'title.blockchain' | translate }}</button>
+    <button mat-menu-item [routerLink]="['/settings/outputs']">{{ 'title.outputs' | translate }}</button>
+    <button mat-menu-item [routerLink]="['/settings/pending-transactions']">{{ 'title.pending-txs' | translate }}</button>
+    <button mat-menu-item [disabled]="true" *ngIf="appService.version"> v{{ appService.version.version }} </button>
   </mat-menu>
 
   <mat-menu #menuMenu="matMenu" [overlapTrigger]="false">
-    <button mat-menu-item [routerLink]="['/settings/backup']"> Backup wallet </button>
-    <a mat-menu-item href="https://explorer.skycoin.net" class="color-primary"> Skycoin Explorer </a>
+    <button mat-menu-item [routerLink]="['/settings/backup']">{{ 'title.backup' | translate }}</button>
+    <a mat-menu-item href="https://explorer.skycoin.net" class="color-primary">{{ 'title.explorer' | translate }}</a>
   </mat-menu>
 
   <button mat-icon-button [matMenuTriggerFor]="settingsMenu">

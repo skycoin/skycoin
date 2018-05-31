@@ -1,0 +1,9 @@
+{
+	"wallets": [
+		{
+			"name": "integration-test.wlt",
+			"label": "integration-test",
+			"address_num": 1
+		}
+	]
+}

@@ -3,7 +3,6 @@ package pex
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -94,7 +93,7 @@ func TestLoadPeersFromFile(t *testing.T) {
 			true,
 			testPeers[0:0],
 			map[string]*Peer{},
-			io.EOF,
+			nil,
 		},
 	}
 
@@ -187,7 +186,7 @@ func TestPeerlistAddPeer(t *testing.T) {
 		},
 		{
 			"add dup peer",
-			[]Peer{Peer{Addr: testPeers[0]}},
+			[]Peer{{Addr: testPeers[0]}},
 			testPeers[0],
 			true,
 			map[string]*Peer{
@@ -342,36 +341,36 @@ func TestPeerlistClearOld(t *testing.T) {
 		{
 			"no old peers",
 			[]Peer{
-				Peer{Addr: testPeers[0], LastSeen: utc.UnixNow() - 100},
+				{Addr: testPeers[0], LastSeen: utc.UnixNow() - 100},
 			},
 			110 * time.Second,
 			map[string]Peer{
-				testPeers[0]: Peer{Addr: testPeers[0], LastSeen: utc.UnixNow() - 100},
+				testPeers[0]: {Addr: testPeers[0], LastSeen: utc.UnixNow() - 100},
 			},
 		},
 		{
 			"clear one old peer",
 			[]Peer{
-				Peer{Addr: testPeers[0], LastSeen: utc.UnixNow() - 100},
-				Peer{Addr: testPeers[1], LastSeen: utc.UnixNow() - 110},
-				Peer{Addr: testPeers[2], LastSeen: utc.UnixNow() - 120},
+				{Addr: testPeers[0], LastSeen: utc.UnixNow() - 100},
+				{Addr: testPeers[1], LastSeen: utc.UnixNow() - 110},
+				{Addr: testPeers[2], LastSeen: utc.UnixNow() - 120},
 			},
 			111 * time.Second,
 			map[string]Peer{
-				testPeers[0]: Peer{Addr: testPeers[0], LastSeen: utc.UnixNow() - 100},
-				testPeers[1]: Peer{Addr: testPeers[1], LastSeen: utc.UnixNow() - 110},
+				testPeers[0]: {Addr: testPeers[0], LastSeen: utc.UnixNow() - 100},
+				testPeers[1]: {Addr: testPeers[1], LastSeen: utc.UnixNow() - 110},
 			},
 		},
 		{
 			"clear two old peers",
 			[]Peer{
-				Peer{Addr: testPeers[0], LastSeen: utc.UnixNow() - 100},
-				Peer{Addr: testPeers[1], LastSeen: utc.UnixNow() - 110},
-				Peer{Addr: testPeers[2], LastSeen: utc.UnixNow() - 120},
+				{Addr: testPeers[0], LastSeen: utc.UnixNow() - 100},
+				{Addr: testPeers[1], LastSeen: utc.UnixNow() - 110},
+				{Addr: testPeers[2], LastSeen: utc.UnixNow() - 120},
 			},
 			101 * time.Second,
 			map[string]Peer{
-				testPeers[0]: Peer{Addr: testPeers[0], LastSeen: utc.UnixNow() - 100},
+				testPeers[0]: {Addr: testPeers[0], LastSeen: utc.UnixNow() - 100},
 			},
 		},
 	}
@@ -401,22 +400,22 @@ func TestPeerlistSave(t *testing.T) {
 		{
 			"save all",
 			[]Peer{
-				Peer{Addr: testPeers[0]},
-				Peer{Addr: testPeers[1]},
+				{Addr: testPeers[0]},
+				{Addr: testPeers[1]},
 			},
 			map[string]Peer{
-				testPeers[0]: Peer{Addr: testPeers[0]},
-				testPeers[1]: Peer{Addr: testPeers[1]},
+				testPeers[0]: {Addr: testPeers[0]},
+				testPeers[1]: {Addr: testPeers[1]},
 			},
 		},
 		{
 			"save one peer",
 			[]Peer{
-				Peer{Addr: testPeers[0], RetryTimes: MaxPeerRetryTimes + 1},
-				Peer{Addr: testPeers[1]},
+				{Addr: testPeers[0], RetryTimes: MaxPeerRetryTimes + 1},
+				{Addr: testPeers[1]},
 			},
 			map[string]Peer{
-				testPeers[1]: Peer{Addr: testPeers[1]},
+				testPeers[1]: {Addr: testPeers[1]},
 			},
 		},
 	}
@@ -528,9 +527,7 @@ func preparePeerlistFile(t *testing.T) (string, func()) {
 
 func preparePeerlistDir(t *testing.T) (string, func()) {
 	f, err := ioutil.TempDir("", "peerlist")
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 
 	return f, func() {
 		os.Remove(f)

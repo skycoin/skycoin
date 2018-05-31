@@ -7,24 +7,41 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
+	_require "github.com/skycoin/skycoin/src/testutil/require"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/visor/historydb"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 const (
 	blockchainPubkeyStr = "0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a"
 )
+
+func prepareDB(t *testing.T) (*dbutil.DB, func()) {
+	db, shutdown := testutil.PrepareDB(t)
+
+	err := CreateBuckets(db)
+	if err != nil {
+		shutdown()
+		t.Fatalf("CreateBuckets failed: %v", err)
+	}
+
+	return db, shutdown
+}
 
 func readAll(t *testing.T, f string) []byte {
 	fi, err := os.Open(f)
@@ -69,7 +86,28 @@ func removeCorruptDBFiles(t *testing.T, badDBFile string) {
 	}
 }
 
-func TestErrSignatureLostRecreateDB(t *testing.T) {
+func addGenesisBlockToVisor(t *testing.T, vs *Visor) *coin.SignedBlock {
+	// create genesis block
+	gb, err := coin.NewGenesisBlock(genAddress, genCoins, genTime)
+	require.NoError(t, err)
+	gbSig := cipher.SignHash(gb.HashHeader(), genSecret)
+	vs.Config.GenesisSignature = gbSig
+
+	sb := coin.SignedBlock{
+		Block: *gb,
+		Sig:   gbSig,
+	}
+
+	// add genesis block to blockchain
+	err = vs.DB.Update("", func(tx *dbutil.Tx) error {
+		return vs.executeSignedBlock(tx, sb)
+	})
+	require.NoError(t, err)
+
+	return &sb
+}
+
+func TestErrMissingSignatureRecreateDB(t *testing.T) {
 	badDBFile := "./testdata/data.db.nosig" // about 8MB size
 	badDBData := readAll(t, badDBFile)
 
@@ -91,34 +129,42 @@ func TestErrSignatureLostRecreateDB(t *testing.T) {
 	// Make sure that the database file causes ErrMissingSignature error
 	t.Logf("Checking that %s is a corrupted database", badDBFile)
 	func() {
-		db, err := OpenDB(badDBFile)
+		db, err := OpenDB(badDBFile, false)
 		require.NoError(t, err)
 		defer func() {
 			err := db.Close()
 			assert.NoError(t, err)
 		}()
 
-		_, err = NewBlockchain(db, pubkey, Arbitrating(false))
+		bc, err := NewBlockchain(db, BlockchainConfig{
+			Pubkey:      pubkey,
+			Arbitrating: false,
+		})
+		require.NoError(t, err)
+
+		err = db.View("", func(tx *dbutil.Tx) error {
+			return bc.VerifySignatures(tx, SigVerifyTheadNum, nil)
+		})
+
 		require.Error(t, err)
 		require.IsType(t, blockdb.ErrMissingSignature{}, err)
 	}()
 
-	// Loading this invalid db should cause loadBlockchain() to recreate the db
+	// Loading this invalid db should cause ResetCorruptDB() to recreate the db
 	t.Logf("Loading the corrupted db from %s", badDBFile)
-	badDB, err := OpenDB(badDBFile)
+	badDB, err := OpenDB(badDBFile, false)
 	require.NoError(t, err)
 	require.NotNil(t, badDB)
 	require.NotEmpty(t, badDB.Path())
 	t.Logf("badDB.Path() == %s", badDB.Path())
 
-	db, bc, err := loadBlockchain(badDB, pubkey, false)
+	db, err := ResetCorruptDB(badDB, pubkey, nil)
 	require.NoError(t, err)
 
 	err = db.Close()
 	require.NoError(t, err)
 
 	require.NotNil(t, db)
-	require.NotNil(t, bc)
 
 	// A corrupted database file should exist
 	corruptFiles = findCorruptDBFiles(t, badDBFile)
@@ -127,7 +173,7 @@ func TestErrSignatureLostRecreateDB(t *testing.T) {
 	// A new db should be written in place of the old bad db, and not be corrupted
 	t.Logf("Checking that the new db file is valid")
 	func() {
-		db, err := OpenDB(badDBFile)
+		db, err := OpenDB(badDBFile, false)
 		require.NoError(t, err)
 		defer func() {
 			err := db.Close()
@@ -135,7 +181,10 @@ func TestErrSignatureLostRecreateDB(t *testing.T) {
 		}()
 
 		// The new db is not corrupted and loads without error
-		bc, err := NewBlockchain(db, pubkey, Arbitrating(false))
+		bc, err := NewBlockchain(db, BlockchainConfig{
+			Pubkey:      pubkey,
+			Arbitrating: false,
+		})
 		require.NoError(t, err)
 		require.NotNil(t, bc)
 	}()
@@ -144,13 +193,17 @@ func TestErrSignatureLostRecreateDB(t *testing.T) {
 func TestVisorCreateBlock(t *testing.T) {
 	when := uint64(time.Now().UTC().Unix())
 
-	db, shutdown := testutil.PrepareDB(t)
+	db, shutdown := prepareDB(t)
 	defer shutdown()
 
-	db, bc, err := loadBlockchain(db, genPublic, false)
+	bc, err := NewBlockchain(db, BlockchainConfig{
+		Pubkey: genPublic,
+	})
+
+	unconfirmed, err := NewUnconfirmedTxnPool(db)
 	require.NoError(t, err)
 
-	unconfirmed := NewUnconfirmedTxnPool(db)
+	his := historydb.New()
 
 	cfg := NewVisorConfig()
 	cfg.DBPath = db.Path()
@@ -162,39 +215,71 @@ func TestVisorCreateBlock(t *testing.T) {
 		Config:      cfg,
 		Unconfirmed: unconfirmed,
 		Blockchain:  bc,
-		db:          db,
+		DB:          db,
+		history:     his,
 	}
 
 	// CreateBlock panics if called when not master
-	require.PanicsWithValue(t, "Only master chain can create blocks", func() {
-		v.CreateBlock(when)
+	_require.PanicsWithLogMessage(t, "Only master chain can create blocks", func() {
+		err := db.Update("", func(tx *dbutil.Tx) error {
+			_, err := v.createBlock(tx, when)
+			return err
+		})
+		require.NoError(t, err)
 	})
 
 	v.Config.IsMaster = true
 	v.Config.BlockchainSeckey = genSecret
 
-	addGenesisBlock(t, v.Blockchain)
-	gb := v.Blockchain.GetGenesisBlock()
+	addGenesisBlockToVisor(t, v)
+	var gb *coin.SignedBlock
+	err = db.View("", func(tx *dbutil.Tx) error {
+		var err error
+		gb, err = v.Blockchain.GetGenesisBlock(tx)
+		return err
+	})
+	require.NoError(t, err)
 	require.NotNil(t, gb)
 
 	// If no transactions in the unconfirmed pool, return an error
-	_, err = v.CreateBlock(when)
-	testutil.RequireError(t, err, "No transactions")
+	err = db.Update("", func(tx *dbutil.Tx) error {
+		_, err = v.createBlock(tx, when)
+		testutil.RequireError(t, err, "No transactions")
+		return nil
+	})
+	require.NoError(t, err)
 
 	// Create enough unspent outputs to create all of these transactions
 	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
 
 	nUnspents := 100
 	txn := makeUnspentsTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, nUnspents, maxDropletDivisor)
-	known, err := unconfirmed.InjectTxn(bc, txn)
-	require.False(t, known)
+
+	var known bool
+	var softErr *ErrTxnViolatesSoftConstraint
+	err = db.Update("", func(tx *dbutil.Tx) error {
+		var err error
+		known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, v.Config.MaxBlockSize)
+		return err
+	})
 	require.NoError(t, err)
+	require.False(t, known)
+	require.Nil(t, softErr)
 
 	v.Config.MaxBlockSize = txn.Size()
 	sb, err := v.CreateAndExecuteBlock()
 	require.NoError(t, err)
 	require.Equal(t, 1, len(sb.Body.Transactions))
-	require.Equal(t, 0, unconfirmed.Len())
+
+	var length uint64
+	err = db.View("", func(tx *dbutil.Tx) error {
+		var err error
+		length, err = unconfirmed.Len(tx)
+		return err
+	})
+	require.NoError(t, err)
+
+	require.Equal(t, uint64(0), length)
 	v.Config.MaxBlockSize = 1024 * 4
 
 	// Create various transactions and add them to unconfirmed pool
@@ -254,33 +339,48 @@ func TestVisorCreateBlock(t *testing.T) {
 
 	// Inject transactions into the unconfirmed pool
 	for _, txn := range txns {
-		known, err := unconfirmed.InjectTxn(bc, txn)
+		var known bool
+		err = db.Update("", func(tx *dbutil.Tx) error {
+			var err error
+			known, _, err = unconfirmed.InjectTransaction(tx, bc, txn, v.Config.MaxBlockSize)
+			return err
+		})
 		require.False(t, known)
 		require.NoError(t, err)
 	}
 
-	sb, err = v.CreateBlock(when + 1e6)
+	err = db.Update("", func(tx *dbutil.Tx) error {
+		var err error
+		sb, err = v.createBlock(tx, when+100)
+		return err
+	})
 	require.NoError(t, err)
-	require.Equal(t, when+1e6, sb.Block.Head.Time)
+	require.Equal(t, when+100, sb.Block.Head.Time)
 
 	blockTxns := sb.Block.Body.Transactions
 	require.NotEqual(t, len(txns), len(blockTxns), "Txns should be truncated")
 	require.Equal(t, 18, len(blockTxns))
 
-	// Check f ordering
-	inUxs, err := v.Blockchain.Unspent().GetArray(blockTxns[0].In)
-	require.NoError(t, err)
-	prevFee, err := fee.TransactionFee(&blockTxns[0], sb.Head.Time, inUxs)
-	require.NoError(t, err)
+	// Check fee ordering
+	err = db.View("", func(tx *dbutil.Tx) error {
+		inUxs, err := v.Blockchain.Unspent().GetArray(tx, blockTxns[0].In)
+		require.NoError(t, err)
+		prevFee, err := fee.TransactionFee(&blockTxns[0], sb.Head.Time, inUxs)
+		require.NoError(t, err)
 
-	for i := 1; i < len(blockTxns); i++ {
-		inUxs, err := v.Blockchain.Unspent().GetArray(blockTxns[i].In)
-		require.NoError(t, err)
-		f, err := fee.TransactionFee(&blockTxns[i], sb.Head.Time, inUxs)
-		require.NoError(t, err)
-		require.True(t, f <= prevFee)
-		prevFee = f
-	}
+		for i := 1; i < len(blockTxns); i++ {
+			inUxs, err := v.Blockchain.Unspent().GetArray(tx, blockTxns[i].In)
+			require.NoError(t, err)
+			f, err := fee.TransactionFee(&blockTxns[i], sb.Head.Time, inUxs)
+			require.NoError(t, err)
+			require.True(t, f <= prevFee)
+			prevFee = f
+		}
+
+		return nil
+	})
+
+	require.NoError(t, err)
 
 	// Check that decimal rules are enforced
 	for i, txn := range blockTxns {
@@ -294,13 +394,18 @@ func TestVisorCreateBlock(t *testing.T) {
 func TestVisorInjectTransaction(t *testing.T) {
 	when := uint64(time.Now().UTC().Unix())
 
-	db, shutdown := testutil.PrepareDB(t)
+	db, shutdown := prepareDB(t)
 	defer shutdown()
 
-	db, bc, err := loadBlockchain(db, genPublic, false)
+	bc, err := NewBlockchain(db, BlockchainConfig{
+		Pubkey: genPublic,
+	})
 	require.NoError(t, err)
 
-	unconfirmed := NewUnconfirmedTxnPool(db)
+	unconfirmed, err := NewUnconfirmedTxnPool(db)
+	require.NoError(t, err)
+
+	his := historydb.New()
 
 	cfg := NewVisorConfig()
 	cfg.DBPath = db.Path()
@@ -312,23 +417,38 @@ func TestVisorInjectTransaction(t *testing.T) {
 		Config:      cfg,
 		Unconfirmed: unconfirmed,
 		Blockchain:  bc,
-		db:          db,
+		DB:          db,
+		history:     his,
 	}
 
 	// CreateBlock panics if called when not master
-	require.PanicsWithValue(t, "Only master chain can create blocks", func() {
-		v.CreateBlock(when)
+	_require.PanicsWithLogMessage(t, "Only master chain can create blocks", func() {
+		err := db.Update("", func(tx *dbutil.Tx) error {
+			_, err := v.createBlock(tx, when)
+			return err
+		})
+		require.NoError(t, err)
 	})
 
 	v.Config.IsMaster = true
 	v.Config.BlockchainSeckey = genSecret
 
-	addGenesisBlock(t, v.Blockchain)
-	gb := v.Blockchain.GetGenesisBlock()
+	addGenesisBlockToVisor(t, v)
+
+	var gb *coin.SignedBlock
+	err = db.View("", func(tx *dbutil.Tx) error {
+		var err error
+		gb, err = v.Blockchain.GetGenesisBlock(tx)
+		return err
+	})
+	require.NoError(t, err)
 	require.NotNil(t, gb)
 
 	// If no transactions in the unconfirmed pool, return an error
-	_, err = v.CreateBlock(when)
+	err = db.Update("", func(tx *dbutil.Tx) error {
+		_, err := v.createBlock(tx, when)
+		return err
+	})
 	testutil.RequireError(t, err, "No transactions")
 
 	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
@@ -336,10 +456,11 @@ func TestVisorInjectTransaction(t *testing.T) {
 	toAddr := testutil.MakeAddress()
 	var coins uint64 = 10e6
 
-	// Create an transaction with valid decimal places
+	// Create a transaction with valid decimal places
 	txn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
-	known, err := v.InjectTxn(txn)
+	known, softErr, err := v.InjectTransaction(txn)
 	require.False(t, known)
+	require.Nil(t, softErr)
 	require.NoError(t, err)
 
 	// Execute a block to clear this transaction from the pool
@@ -347,17 +468,120 @@ func TestVisorInjectTransaction(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, len(sb.Body.Transactions))
 	require.Equal(t, 2, len(sb.Body.Transactions[0].Out))
-	require.Equal(t, 0, unconfirmed.Len())
-	require.Equal(t, uint64(2), bc.Len())
 
-	// Create a transaction with invalid decimal places
+	err = db.View("", func(tx *dbutil.Tx) error {
+		length, err := unconfirmed.Len(tx)
+		require.NoError(t, err)
+		require.Equal(t, uint64(0), length)
+
+		length, err = bc.Len(tx)
+		require.NoError(t, err)
+		require.Equal(t, uint64(2), length)
+
+		return nil
+	})
+	require.NoError(t, err)
+
 	uxs = coin.CreateUnspents(sb.Head, sb.Body.Transactions[0])
 
+	// Check transactions with overflowing output coins fail
+	txn = makeOverflowCoinsSpendTx(coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr)
+	_, softErr, err = v.InjectTransaction(txn)
+	require.IsType(t, ErrTxnViolatesHardConstraint{}, err)
+	testutil.RequireError(t, err.(ErrTxnViolatesHardConstraint).Err, "Output coins overflow")
+	require.Nil(t, softErr)
+
+	err = db.View("", func(tx *dbutil.Tx) error {
+		length, err := unconfirmed.Len(tx)
+		require.NoError(t, err)
+		require.Equal(t, uint64(0), length)
+		return nil
+	})
+	require.NoError(t, err)
+
+	// Check transactions with overflowing output hours fail
+	// It should not be injected; when injecting a txn, the overflowing output hours is treated
+	// as a hard constraint. It is only a soft constraint when the txn is included in a signed block.
+	txn = makeOverflowHoursSpendTx(coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr)
+	_, softErr, err = v.InjectTransaction(txn)
+	require.Nil(t, softErr)
+	require.IsType(t, ErrTxnViolatesHardConstraint{}, err)
+	testutil.RequireError(t, err.(ErrTxnViolatesHardConstraint).Err, "Transaction output hours overflow")
+
+	err = db.View("", func(tx *dbutil.Tx) error {
+		length, err := unconfirmed.Len(tx)
+		require.NoError(t, err)
+		require.Equal(t, uint64(0), length)
+		return nil
+	})
+	require.NoError(t, err)
+
+	// Create a transaction with invalid decimal places
+	// It's still injected, because this is considered a soft error
 	invalidCoins := coins + (maxDropletDivisor / 10)
 	txn = makeSpendTx(t, uxs, []cipher.SecKey{genSecret, genSecret}, toAddr, invalidCoins)
-	_, err = v.InjectTxn(txn)
-	testutil.RequireError(t, err, ErrInvalidDecimals.Error())
-	require.Equal(t, 0, unconfirmed.Len())
+	_, softErr, err = v.InjectTransaction(txn)
+	require.NoError(t, err)
+	testutil.RequireError(t, softErr.Err, errInvalidDecimals.Error())
+
+	err = db.View("", func(tx *dbutil.Tx) error {
+		length, err := unconfirmed.Len(tx)
+		require.NoError(t, err)
+		require.Equal(t, uint64(1), length)
+		return nil
+	})
+	require.NoError(t, err)
+
+	// Create a transaction with null address output
+	uxs = coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
+	txn = makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
+	txn.Out[0].Address = cipher.Address{}
+	known, err = v.InjectTransactionStrict(txn)
+	require.False(t, known)
+	require.IsType(t, ErrTxnViolatesUserConstraint{}, err)
+	testutil.RequireError(t, err, "Transaction violates user constraint: Transaction output is sent to the null address")
+}
+
+func makeOverflowCoinsSpendTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address) coin.Transaction {
+	spendTx := coin.Transaction{}
+	var totalHours uint64
+	var totalCoins uint64
+	for _, ux := range uxs {
+		spendTx.PushInput(ux.Hash())
+		totalHours += ux.Body.Hours
+		totalCoins += ux.Body.Coins
+	}
+
+	hours := totalHours / 12
+
+	// These two outputs' coins added up will overflow
+	spendTx.PushOutput(toAddr, 18446744073709551000, hours)
+	spendTx.PushOutput(toAddr, totalCoins, hours)
+
+	spendTx.SignInputs(keys)
+	spendTx.UpdateHeader()
+	return spendTx
+}
+
+func makeOverflowHoursSpendTx(uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address) coin.Transaction {
+	spendTx := coin.Transaction{}
+	var totalHours uint64
+	var totalCoins uint64
+	for _, ux := range uxs {
+		spendTx.PushInput(ux.Hash())
+		totalHours += ux.Body.Hours
+		totalCoins += ux.Body.Coins
+	}
+
+	hours := totalHours / 12
+
+	// These two outputs' hours added up will overflow
+	spendTx.PushOutput(toAddr, totalCoins/2, 18446744073709551615)
+	spendTx.PushOutput(toAddr, totalCoins-totalCoins/2, hours)
+
+	spendTx.SignInputs(keys)
+	spendTx.UpdateHeader()
+	return spendTx
 }
 
 func TestVisorCalculatePrecision(t *testing.T) {
@@ -382,13 +606,12 @@ func TestVisorCalculatePrecision(t *testing.T) {
 		})
 	}
 
-	require.PanicsWithValue(t, "precision must be <= droplet.Exponent", func() {
+	_require.PanicsWithLogMessage(t, "precision must be <= droplet.Exponent", func() {
 		calculateDivisor(7)
 	})
 }
 
-func makeTestData(t *testing.T, n int) ([]historydb.Transaction,
-	[]coin.SignedBlock, []UnconfirmedTxn, uint64) {
+func makeTestData(t *testing.T, n int) ([]historydb.Transaction, []coin.SignedBlock, []UnconfirmedTxn, uint64) { // nolint: unparam
 	var txs []historydb.Transaction
 	var blocks []coin.SignedBlock
 	var uncfmTxs []UnconfirmedTxn
@@ -446,7 +669,7 @@ type expectTxResult struct {
 	err      error
 }
 
-func TestGetTransctions(t *testing.T) {
+func TestGetTransactions(t *testing.T) {
 	// Generates test data
 	txs, blocks, uncfmTxs, headSeq := makeTestData(t, 10)
 	// Generates []Transaction
@@ -1550,27 +1773,35 @@ func TestGetTransctions(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			his := NewHistoryerMock2()
+			matchTx := mock.MatchedBy(func(tx *dbutil.Tx) bool {
+				return true
+			})
+
+			his := newHistoryerMock2()
 			uncfmTxPool := NewUnconfirmedTxnPoolerMock2()
 			for addr, txs := range tc.addrTxns {
-				his.On("GetAddrTxns", addr).Return(txs.Txs, nil)
+				his.On("GetAddressTxns", matchTx, addr).Return(txs.Txs, nil)
 				his.txs = append(his.txs, txs.Txs...)
 
-				uncfmTxPool.On("GetUnspentsOfAddr", addr).Return(makeUncfmUxs(txs.UncfmTxs))
+				uncfmTxPool.On("GetUnspentsOfAddr", matchTx, addr).Return(makeUncfmUxs(txs.UncfmTxs), nil)
 				for i, uncfmTx := range txs.UncfmTxs {
-					uncfmTxPool.On("Get", uncfmTx.Hash()).Return(&txs.UncfmTxs[i], true)
+					uncfmTxPool.On("Get", matchTx, uncfmTx.Hash()).Return(&txs.UncfmTxs[i], nil)
 				}
 				uncfmTxPool.txs = append(uncfmTxPool.txs, txs.UncfmTxs...)
 			}
 
 			bc := NewBlockchainerMock()
 			for i, b := range tc.blocks {
-				bc.On("GetBlockBySeq", b.Seq()).Return(&tc.blocks[i], nil)
+				bc.On("GetSignedBlockBySeq", matchTx, b.Seq()).Return(&tc.blocks[i], nil)
 			}
 
-			bc.On("HeadSeq").Return(tc.bcHeadSeq)
+			bc.On("HeadSeq", matchTx).Return(tc.bcHeadSeq, true, nil)
+
+			db, shutdown := prepareDB(t)
+			defer shutdown()
 
 			v := &Visor{
+				DB:          db,
 				history:     his,
 				Unconfirmed: uncfmTxPool,
 				Blockchain:  bc,
@@ -1612,19 +1843,635 @@ func TestGetTransctions(t *testing.T) {
 	}
 }
 
+func TestRefreshUnconfirmed(t *testing.T) {
+	db, shutdown := prepareDB(t)
+	defer shutdown()
+
+	bc, err := NewBlockchain(db, BlockchainConfig{
+		Pubkey: genPublic,
+	})
+	require.NoError(t, err)
+
+	unconfirmed, err := NewUnconfirmedTxnPool(db)
+	require.NoError(t, err)
+
+	his := historydb.New()
+
+	cfg := NewVisorConfig()
+	cfg.DBPath = db.Path()
+	cfg.IsMaster = true
+	cfg.BlockchainSeckey = genSecret
+	cfg.BlockchainPubkey = genPublic
+	cfg.GenesisAddress = genAddress
+
+	v := &Visor{
+		Config:      cfg,
+		Unconfirmed: unconfirmed,
+		Blockchain:  bc,
+		DB:          db,
+		history:     his,
+	}
+
+	addGenesisBlockToVisor(t, v)
+	var gb *coin.SignedBlock
+	err = db.View("", func(tx *dbutil.Tx) error {
+		var err error
+		gb, err = v.Blockchain.GetGenesisBlock(tx)
+		return err
+	})
+	require.NoError(t, err)
+	require.NotNil(t, gb)
+
+	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
+
+	toAddr := testutil.MakeAddress()
+	var coins uint64 = 10e6
+
+	// Create a valid transaction that will remain valid
+	validTxn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
+	known, softErr, err := v.InjectTransaction(validTxn)
+	require.False(t, known)
+	require.Nil(t, softErr)
+	require.NoError(t, err)
+
+	err = db.View("", func(tx *dbutil.Tx) error {
+		length, err := unconfirmed.Len(tx)
+		require.NoError(t, err)
+		require.Equal(t, uint64(1), length)
+		return nil
+	})
+	require.NoError(t, err)
+
+	// Create a transaction with invalid decimal places
+	// It's still injected, because this is considered a soft error
+	// This transaction will stay invalid on refresh
+	invalidCoins := coins + (maxDropletDivisor / 10)
+	alwaysInvalidTxn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, invalidCoins)
+	_, softErr, err = v.InjectTransaction(alwaysInvalidTxn)
+	require.NoError(t, err)
+	testutil.RequireError(t, softErr.Err, errInvalidDecimals.Error())
+
+	err = db.View("", func(tx *dbutil.Tx) error {
+		length, err := unconfirmed.Len(tx)
+		require.NoError(t, err)
+		require.Equal(t, uint64(2), length)
+		return nil
+	})
+	require.NoError(t, err)
+
+	// Create a transaction that exceeds MaxBlockSize
+	// It's still injected, because this is considered a soft error
+	// This transaction will become valid on refresh (by increasing MaxBlockSize)
+	v.Config.MaxBlockSize = 1
+	sometimesInvalidTxn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins)
+	_, softErr, err = v.InjectTransaction(sometimesInvalidTxn)
+	require.NoError(t, err)
+	testutil.RequireError(t, softErr.Err, errTxnExceedsMaxBlockSize.Error())
+
+	err = db.View("", func(tx *dbutil.Tx) error {
+		length, err := unconfirmed.Len(tx)
+		require.NoError(t, err)
+		require.Equal(t, uint64(3), length)
+		return nil
+	})
+	require.NoError(t, err)
+
+	// The first txn remains valid,
+	// the second txn remains invalid,
+	// the third txn becomes valid
+	v.Config.MaxBlockSize = DefaultMaxBlockSize
+	hashes, err := v.RefreshUnconfirmed()
+	require.NoError(t, err)
+	require.Equal(t, []cipher.SHA256{sometimesInvalidTxn.Hash()}, hashes)
+
+	// Reduce the max block size to affirm that the valid transaction becomes invalid
+	// The first txn becomes invalid,
+	// the second txn remains invalid,
+	// the third txn becomes invalid again
+	v.Config.MaxBlockSize = 1
+	hashes, err = v.RefreshUnconfirmed()
+	require.NoError(t, err)
+	require.Nil(t, hashes)
+
+	// Restore the max block size to affirm the expected transaction validity shifts
+	// The first txn was valid, became invalid, and is now valid again
+	// The second txn was always invalid
+	// The third txn was invalid, became valid, became invalid, and is now valid again
+	v.Config.MaxBlockSize = DefaultMaxBlockSize
+	hashes, err = v.RefreshUnconfirmed()
+	require.NoError(t, err)
+
+	// Sort hashes for deterministic comparison
+	expectedHashes := []cipher.SHA256{validTxn.Hash(), sometimesInvalidTxn.Hash()}
+	sort.Slice(expectedHashes, func(i, j int) bool {
+		return bytes.Compare(expectedHashes[i][:], expectedHashes[j][:]) < 0
+	})
+	sort.Slice(hashes, func(i, j int) bool {
+		return bytes.Compare(hashes[i][:], hashes[j][:]) < 0
+	})
+	require.Equal(t, expectedHashes, hashes)
+}
+
+func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
+	db, shutdown := prepareDB(t)
+	defer shutdown()
+
+	bc, err := NewBlockchain(db, BlockchainConfig{
+		Pubkey:      genPublic,
+		Arbitrating: true,
+	})
+	require.NoError(t, err)
+
+	unconfirmed, err := NewUnconfirmedTxnPool(db)
+	require.NoError(t, err)
+
+	his := historydb.New()
+
+	cfg := NewVisorConfig()
+	cfg.DBPath = db.Path()
+	cfg.IsMaster = true
+	cfg.Arbitrating = true
+	cfg.BlockchainPubkey = genPublic
+	cfg.GenesisAddress = genAddress
+	cfg.BlockchainSeckey = genSecret
+
+	v := &Visor{
+		Config:      cfg,
+		Unconfirmed: unconfirmed,
+		Blockchain:  bc,
+		DB:          db,
+		history:     his,
+	}
+
+	addGenesisBlockToVisor(t, v)
+	var gb *coin.SignedBlock
+	err = db.View("", func(tx *dbutil.Tx) error {
+		var err error
+		gb, err = v.Blockchain.GetGenesisBlock(tx)
+		return err
+	})
+	require.NoError(t, err)
+	require.NotNil(t, gb)
+
+	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
+
+	// Create two valid transactions, both spending the same inputs, one with a higher fee
+	// Then, create a block from these transactions.
+	// The one with the higher fee should be included in the block, and the other should be ignored.
+	// A call to RemoveInvalidUnconfirmed will remove the other txn, because it would now be a double spend.
+
+	var coins uint64 = 10e6
+	txn1 := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
+	known, softErr, err := v.InjectTransaction(txn1)
+	require.False(t, known)
+	require.Nil(t, softErr)
+	require.NoError(t, err)
+
+	err = db.View("", func(tx *dbutil.Tx) error {
+		length, err := unconfirmed.Len(tx)
+		require.NoError(t, err)
+		require.Equal(t, uint64(1), length)
+		return nil
+	})
+	require.NoError(t, err)
+
+	var fee uint64 = 1
+	txn2 := makeSpendTxWithFee(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins, fee)
+	known, softErr, err = v.InjectTransaction(txn2)
+	require.False(t, known)
+	require.Nil(t, softErr)
+	require.NoError(t, err)
+
+	err = db.View("", func(tx *dbutil.Tx) error {
+		length, err := unconfirmed.Len(tx)
+		require.NoError(t, err)
+		require.Equal(t, uint64(2), length)
+		return nil
+	})
+	require.NoError(t, err)
+
+	// Execute a block, txn2 should be included because it has a higher fee
+	sb, err := v.CreateAndExecuteBlock()
+	require.NoError(t, err)
+	require.Equal(t, 1, len(sb.Body.Transactions))
+	require.Equal(t, 2, len(sb.Body.Transactions[0].Out))
+	require.Equal(t, txn2.TxIDHex(), sb.Body.Transactions[0].TxIDHex())
+
+	err = db.View("", func(tx *dbutil.Tx) error {
+		length, err := unconfirmed.Len(tx)
+		require.NoError(t, err)
+		require.Equal(t, uint64(1), length)
+
+		length, err = bc.Len(tx)
+		require.NoError(t, err)
+		require.Equal(t, uint64(2), length)
+
+		return nil
+	})
+	require.NoError(t, err)
+
+	// Call RemoveInvalidUnconfirmed, the first txn will be removed because it is now a double-spend txn
+	removed, err := v.RemoveInvalidUnconfirmed()
+	require.NoError(t, err)
+	require.Equal(t, []cipher.SHA256{txn1.Hash()}, removed)
+	err = db.View("", func(tx *dbutil.Tx) error {
+		length, err := unconfirmed.Len(tx)
+		require.NoError(t, err)
+		require.Equal(t, uint64(0), length)
+		return nil
+	})
+	require.NoError(t, err)
+}
+
+func TestGetCreateTransactionAuxs(t *testing.T) {
+	allAddrs := make([]cipher.Address, 10)
+	for i := range allAddrs {
+		allAddrs[i] = testutil.MakeAddress()
+	}
+
+	hashes := make([]cipher.SHA256, 20)
+	for i := range hashes {
+		hashes[i] = testutil.RandSHA256(t)
+	}
+
+	srcTxns := make([]cipher.SHA256, 20)
+	for i := range srcTxns {
+		srcTxns[i] = testutil.RandSHA256(t)
+	}
+
+	cases := []struct {
+		name   string
+		params wallet.CreateTransactionParams
+		addrs  []cipher.Address
+		auxs   coin.AddressUxOuts
+		err    error
+
+		rawTxnsRet     coin.Transactions
+		getArrayInputs []cipher.SHA256
+		getArrayRet    coin.UxArray
+	}{
+		{
+			name:  "all addresses, ok",
+			addrs: allAddrs,
+			rawTxnsRet: coin.Transactions{
+				coin.Transaction{
+					In: hashes[0:2],
+				},
+				coin.Transaction{
+					In: hashes[2:4],
+				},
+			},
+			getArrayInputs: hashes[0:4],
+			getArrayRet: coin.UxArray{
+				coin.UxOut{
+					Body: coin.UxBody{
+						SrcTransaction: srcTxns[4],
+						Address:        testutil.MakeAddress(),
+					},
+				},
+			},
+			auxs: coin.AddressUxOuts{
+				allAddrs[1]: []coin.UxOut{
+					coin.UxOut{
+						Body: coin.UxBody{
+							SrcTransaction: srcTxns[5],
+							Address:        allAddrs[1],
+						},
+					},
+					coin.UxOut{
+						Body: coin.UxBody{
+							SrcTransaction: srcTxns[5],
+							Address:        allAddrs[1],
+						},
+					},
+				},
+				allAddrs[3]: []coin.UxOut{
+					coin.UxOut{
+						Body: coin.UxBody{
+							SrcTransaction: srcTxns[6],
+							Address:        allAddrs[3],
+						},
+					},
+				},
+			},
+		},
+
+		{
+			name:  "all addresses, unconfirmed spends",
+			addrs: allAddrs,
+			err:   wallet.ErrSpendingUnconfirmed,
+			rawTxnsRet: coin.Transactions{
+				coin.Transaction{
+					In: hashes[0:2],
+				},
+				coin.Transaction{
+					In: hashes[2:4],
+				},
+			},
+			getArrayInputs: hashes[0:4],
+			getArrayRet: coin.UxArray{
+				coin.UxOut{
+					Body: coin.UxBody{
+						SrcTransaction: srcTxns[0],
+						Address:        allAddrs[1],
+					},
+				},
+				coin.UxOut{
+					Body: coin.UxBody{
+						SrcTransaction: srcTxns[0],
+						Address:        allAddrs[1],
+					},
+				},
+				coin.UxOut{
+					Body: coin.UxBody{
+						SrcTransaction: srcTxns[4],
+						Address:        allAddrs[3],
+					},
+				},
+				coin.UxOut{
+					Body: coin.UxBody{
+						SrcTransaction: srcTxns[4],
+						Address:        testutil.MakeAddress(),
+					},
+				},
+			},
+		},
+
+		{
+			name: "some addresses, ok",
+			params: wallet.CreateTransactionParams{
+				Wallet: wallet.CreateTransactionWalletParams{
+					Addresses: allAddrs[0:4],
+				},
+			},
+			addrs: allAddrs[0:4],
+			rawTxnsRet: coin.Transactions{
+				coin.Transaction{
+					In: hashes[0:2],
+				},
+				coin.Transaction{
+					In: hashes[2:4],
+				},
+			},
+			getArrayInputs: hashes[0:4],
+			getArrayRet: coin.UxArray{
+				coin.UxOut{
+					Body: coin.UxBody{
+						SrcTransaction: srcTxns[4],
+						Address:        testutil.MakeAddress(),
+					},
+				},
+			},
+			auxs: coin.AddressUxOuts{
+				allAddrs[1]: []coin.UxOut{
+					coin.UxOut{
+						Body: coin.UxBody{
+							SrcTransaction: srcTxns[5],
+							Address:        allAddrs[1],
+						},
+					},
+					coin.UxOut{
+						Body: coin.UxBody{
+							SrcTransaction: srcTxns[5],
+							Address:        allAddrs[1],
+						},
+					},
+				},
+				allAddrs[3]: []coin.UxOut{
+					coin.UxOut{
+						Body: coin.UxBody{
+							SrcTransaction: srcTxns[6],
+							Address:        allAddrs[3],
+						},
+					},
+				},
+			},
+		},
+
+		{
+			name: "some addresses, unconfirmed spends",
+			params: wallet.CreateTransactionParams{
+				Wallet: wallet.CreateTransactionWalletParams{
+					Addresses: allAddrs[0:4],
+				},
+			},
+			addrs: allAddrs[0:4],
+			err:   wallet.ErrSpendingUnconfirmed,
+			rawTxnsRet: coin.Transactions{
+				coin.Transaction{
+					In: hashes[0:2],
+				},
+				coin.Transaction{
+					In: hashes[2:4],
+				},
+			},
+			getArrayInputs: hashes[0:4],
+			getArrayRet: coin.UxArray{
+				coin.UxOut{
+					Body: coin.UxBody{
+						SrcTransaction: srcTxns[0],
+						Address:        allAddrs[1],
+					},
+				},
+				coin.UxOut{
+					Body: coin.UxBody{
+						SrcTransaction: srcTxns[0],
+						Address:        allAddrs[1],
+					},
+				},
+				coin.UxOut{
+					Body: coin.UxBody{
+						SrcTransaction: srcTxns[4],
+						Address:        allAddrs[3],
+					},
+				},
+				coin.UxOut{
+					Body: coin.UxBody{
+						SrcTransaction: srcTxns[4],
+						Address:        testutil.MakeAddress(),
+					},
+				},
+			},
+		},
+
+		{
+			name: "some addresses, unknown address",
+			params: wallet.CreateTransactionParams{
+				Wallet: wallet.CreateTransactionWalletParams{
+					Addresses: []cipher.Address{testutil.MakeAddress()},
+				},
+			},
+			addrs: allAddrs,
+			err:   wallet.ErrUnknownAddress,
+		},
+
+		{
+			name: "uxouts specified, ok",
+			params: wallet.CreateTransactionParams{
+				Wallet: wallet.CreateTransactionWalletParams{
+					UxOuts: hashes[5:10],
+				},
+			},
+			rawTxnsRet: coin.Transactions{
+				coin.Transaction{
+					In: hashes[0:2],
+				},
+				coin.Transaction{
+					In: hashes[2:4],
+				},
+			},
+			getArrayInputs: hashes[5:10],
+			getArrayRet: coin.UxArray{
+				coin.UxOut{
+					Body: coin.UxBody{
+						SrcTransaction: srcTxns[5],
+						Address:        allAddrs[1],
+					},
+				},
+				coin.UxOut{
+					Body: coin.UxBody{
+						SrcTransaction: srcTxns[5],
+						Address:        allAddrs[1],
+					},
+				},
+				coin.UxOut{
+					Body: coin.UxBody{
+						SrcTransaction: srcTxns[6],
+						Address:        allAddrs[3],
+					},
+				},
+			},
+			auxs: coin.AddressUxOuts{
+				allAddrs[1]: []coin.UxOut{
+					coin.UxOut{
+						Body: coin.UxBody{
+							SrcTransaction: srcTxns[5],
+							Address:        allAddrs[1],
+						},
+					},
+					coin.UxOut{
+						Body: coin.UxBody{
+							SrcTransaction: srcTxns[5],
+							Address:        allAddrs[1],
+						},
+					},
+				},
+				allAddrs[3]: []coin.UxOut{
+					coin.UxOut{
+						Body: coin.UxBody{
+							SrcTransaction: srcTxns[6],
+							Address:        allAddrs[3],
+						},
+					},
+				},
+			},
+		},
+
+		{
+			name: "uxouts specified, unconfirmed spend",
+			params: wallet.CreateTransactionParams{
+				Wallet: wallet.CreateTransactionWalletParams{
+					UxOuts: hashes[0:4],
+				},
+			},
+			err: wallet.ErrSpendingUnconfirmed,
+			rawTxnsRet: coin.Transactions{
+				coin.Transaction{
+					In: hashes[6:10],
+				},
+				coin.Transaction{
+					In: hashes[3:6],
+				},
+			},
+		},
+
+		{
+			name: "uxouts specified, unknown uxout",
+			params: wallet.CreateTransactionParams{
+				Wallet: wallet.CreateTransactionWalletParams{
+					UxOuts: hashes[5:10],
+				},
+			},
+			err: wallet.ErrUnknownUxOut,
+			rawTxnsRet: coin.Transactions{
+				coin.Transaction{
+					In: hashes[0:2],
+				},
+				coin.Transaction{
+					In: hashes[2:4],
+				},
+			},
+			getArrayInputs: hashes[5:10],
+			getArrayRet: coin.UxArray{
+				coin.UxOut{
+					Body: coin.UxBody{
+						SrcTransaction: srcTxns[4],
+						Address:        testutil.MakeAddress(),
+					},
+				},
+			},
+		},
+	}
+
+	matchTx := mock.MatchedBy(func(tx *dbutil.Tx) bool {
+		return true
+	})
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			db, shutdown := testutil.PrepareDB(t)
+			defer shutdown()
+
+			unconfirmed := NewUnconfirmedTxnPoolerMock()
+			bc := NewBlockchainerMock()
+			unspent := NewUnspentPoolerMock()
+			require.Implements(t, (*blockdb.UnspentPooler)(nil), unspent)
+
+			v := &Visor{
+				Unconfirmed: unconfirmed,
+				Blockchain:  bc,
+				DB:          db,
+			}
+
+			unconfirmed.On("RawTxns", matchTx).Return(tc.rawTxnsRet, nil)
+			unspent.On("GetArray", matchTx, tc.getArrayInputs).Return(tc.getArrayRet, nil)
+			if tc.auxs != nil {
+				unspent.On("GetUnspentsOfAddrs", matchTx, tc.addrs).Return(tc.auxs, nil)
+			}
+			bc.On("Unspent").Return(unspent)
+
+			var auxs coin.AddressUxOuts
+			err := v.DB.View("", func(tx *dbutil.Tx) error {
+				var err error
+				auxs, err = v.getCreateTransactionAuxs(tx, tc.params, allAddrs)
+				return err
+			})
+
+			if tc.err != nil {
+				require.Equal(t, tc.err, err)
+				return
+			}
+
+			require.NoError(t, err)
+
+			require.Equal(t, tc.auxs, auxs)
+		})
+	}
+}
+
 // historyerMock2 embeds historyerMock, and rewrite the ForEach method
 type historyerMock2 struct {
-	historyerMock
+	HistoryerMock
 	txs []historydb.Transaction
 }
 
-func NewHistoryerMock2() *historyerMock2 {
+func newHistoryerMock2() *historyerMock2 {
 	return &historyerMock2{}
 }
 
-func (h *historyerMock2) ForEach(f func(tx *historydb.Transaction) error) error {
+func (h *historyerMock2) ForEachTxn(tx *dbutil.Tx, f func(cipher.SHA256, *historydb.Transaction) error) error {
 	for i := range h.txs {
-		if err := f(&h.txs[i]); err != nil {
+		if err := f(h.txs[i].Hash(), &h.txs[i]); err != nil {
 			return err
 		}
 	}
@@ -1641,12 +2488,12 @@ func NewUnconfirmedTxnPoolerMock2() *UnconfirmedTxnPoolerMock2 {
 	return &UnconfirmedTxnPoolerMock2{}
 }
 
-func (m *UnconfirmedTxnPoolerMock2) GetTxns(f func(tx UnconfirmedTxn) bool) []UnconfirmedTxn {
+func (m *UnconfirmedTxnPoolerMock2) GetTxns(tx *dbutil.Tx, f func(tx UnconfirmedTxn) bool) ([]UnconfirmedTxn, error) {
 	var txs []UnconfirmedTxn
 	for i := range m.txs {
 		if f(m.txs[i]) {
 			txs = append(txs, m.txs[i])
 		}
 	}
-	return txs
+	return txs, nil
 }

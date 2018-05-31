@@ -1,33 +1,53 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { Wallet } from '../../../../app.datatypes';
+import { MatDialog, MatDialogConfig } from '@angular/material';
+import { SeedModalComponent } from './seed-modal/seed-modal.component';
+import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 
 @Component({
   selector: 'app-backup',
   templateUrl: './backup.component.html',
-  styleUrls: ['./backup.component.css']
+  styleUrls: ['./backup.component.scss'],
 })
-export class BackupComponent implements OnDestroy, OnInit {
-
+export class BackupComponent implements OnInit, OnDestroy {
   folder: string;
+  wallets: Wallet[] = [];
+
+  private walletSubscription;
 
   constructor(
     public walletService: WalletService,
+    private dialog: MatDialog,
   ) {}
 
   ngOnInit() {
     this.walletService.folder().subscribe(folder => this.folder = folder);
+
+    this.walletSubscription = this.walletService.all().subscribe(wallets => {
+      this.wallets = wallets;
+    });
   }
 
   ngOnDestroy() {
-    this.walletService.all().subscribe(wallets => wallets.forEach(wallet => wallet.visible = false));
+    this.walletSubscription.unsubscribe();
   }
 
-  download(wallet: Wallet) {
-    const blob: Blob = new Blob([JSON.stringify({ seed: wallet.seed })], { type: 'application/json'});
-    const link = document.createElement('a');
-    link.href = window.URL.createObjectURL(blob);
-    link['download'] = wallet.filename + '.json';
-    link.click();
+  get onlyEncrypted() {
+    return this.wallets.filter(wallet => wallet.encrypted);
+  }
+
+  showSeed(wallet: Wallet) {
+    this.dialog.open(PasswordDialogComponent).componentInstance.passwordSubmit
+      .subscribe(passwordDialog => {
+        this.walletService.getWalletSeed(wallet, passwordDialog.password).subscribe(seed => {
+          passwordDialog.close();
+          const config = new MatDialogConfig();
+          config.width = '566px';
+          config.data = { seed };
+
+          this.dialog.open(SeedModalComponent, config);
+        }, err => passwordDialog.error(err));
+      });
   }
 }

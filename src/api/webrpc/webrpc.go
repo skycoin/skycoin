@@ -1,41 +1,47 @@
 package webrpc
 
 import (
-	"errors"
-	"fmt"
-	"net"
-	"net/http"
-
+	"bytes"
 	"encoding/json"
+	"fmt"
+	"net/http"
+	"strings"
 
 	wh "github.com/skycoin/skycoin/src/util/http"
-
 	"github.com/skycoin/skycoin/src/util/logging"
-
-	"bytes"
-	"strings"
 )
 
 var (
-	errCodeParseError     = -32700 // Parse error	Invalid JSON was received by the server. An error occurred on the server while parsing the JSON text.
-	errCodeInvalidRequest = -32600 // Invalid Request	The JSON sent is not a valid Request object.
-	errCodeMethodNotFound = -32601 // Method not found	The method does not exist / is not available.
-	errCodeInvalidParams  = -32602 // Invalid params	Invalid method parameter(s).
-	errCodeInternalError  = -32603 // Internal error	Internal JSON-RPC error.
+	// ErrCodeParseError parse JSON error
+	ErrCodeParseError = -32700 // Parse error	Invalid JSON was received by the server. An error occurred on the server while parsing the JSON text.
+	// ErrCodeInvalidRequest invalid JSON object format
+	ErrCodeInvalidRequest = -32600 // Invalid Request	The JSON sent is not a valid Request object.
+	// ErrCodeMethodNotFound unknown method
+	ErrCodeMethodNotFound = -32601 // Method not found	The method does not exist / is not available.
+	// ErrCodeInvalidParams invalid method parameters
+	ErrCodeInvalidParams = -32602 // Invalid params	Invalid method parameter(s).
+	// ErrCodeInternalError internal error
+	ErrCodeInternalError = -32603 // Internal error	Internal JSON-RPC error.
 
-	errMsgParseError     = "Parse error"
-	errMsgMethodNotFound = "Method not found"
-	errMsgInvalidParams  = "Invalid params"
-	errMsgInternalError  = "Internal error"
-	errMsgNotPost        = "only support http POST"
-	errMsgInvalidJsonrpc = "invalid jsonrpc"
+	// ErrMsgParseError parse error message
+	ErrMsgParseError = "Parse error"
+	// ErrMsgMethodNotFound method not found message
+	ErrMsgMethodNotFound = "Method not found"
+	// ErrMsgInvalidParams invalid params message
+	ErrMsgInvalidParams = "Invalid params"
+	// ErrMsgInternalError internal error message
+	ErrMsgInternalError = "Internal error"
+	// ErrMsgNotPost not an HTTP POST request message
+	ErrMsgNotPost = "only support http POST"
+	// ErrMsgInvalidJsonrpc invalid jsonrpc message
+	ErrMsgInvalidJsonrpc = "invalid jsonrpc"
 
 	// -32000 to -32099	Server error	Reserved for implementation-defined server-errors.
 
 	jsonRPC = "2.0"
-)
 
-var logger = logging.MustGetLogger("webrpc")
+	logger = logging.MustGetLogger("webrpc")
+)
 
 // Request rpc request struct
 type Request struct {
@@ -89,6 +95,7 @@ func (r *Request) DecodeParams(v interface{}) error {
 }
 
 func makeSuccessResponse(id string, result interface{}) Response {
+	// TODO -- don't ignore error
 	rlt, _ := json.Marshal(result)
 	return Response{
 		ID:      &id,
@@ -97,8 +104,9 @@ func makeSuccessResponse(id string, result interface{}) Response {
 	}
 }
 
-func makeErrorResponse(code int, msgs ...string) Response {
-	msg := strings.Join(msgs[:], "\n")
+// MakeErrorResponse creates an error Response
+func MakeErrorResponse(code int, msg string, msgs ...string) Response {
+	msg = strings.Join(append([]string{msg}, msgs[:]...), "\n")
 	return Response{
 		Error:   &RPCError{Code: code, Message: msg},
 		Jsonrpc: jsonRPC,
@@ -112,30 +120,16 @@ type HandlerFunc func(req Request, gateway Gatewayer) Response
 
 // WebRPC manage the web rpc state and handles
 type WebRPC struct {
-	Addr         string // service address
-	Gateway      Gatewayer
-	WorkerNum    uint
-	ChanBuffSize uint // size of ops channel
-
-	ops      chan operation // request channel
-	mux      *http.ServeMux
+	Gateway  Gatewayer
 	handlers map[string]HandlerFunc
-	listener net.Listener
-	quit     chan struct{}
 }
 
-func New(addr string, gw Gatewayer) (*WebRPC, error) {
+// New returns a new WebRPC object
+func New(gw Gatewayer) (*WebRPC, error) {
 	rpc := &WebRPC{
-		Addr:         addr,
-		Gateway:      gw,
-		WorkerNum:    5,
-		ChanBuffSize: 1000,
-		quit:         make(chan struct{}),
-		mux:          http.NewServeMux(),
-		handlers:     make(map[string]HandlerFunc),
+		Gateway:  gw,
+		handlers: make(map[string]HandlerFunc),
 	}
-
-	rpc.mux.HandleFunc("/webrpc", rpc.Handler)
 
 	if err := rpc.initHandlers(); err != nil {
 		return nil, err
@@ -175,60 +169,6 @@ func (rpc *WebRPC) initHandlers() error {
 	return nil
 }
 
-// Run starts the webrpc service.
-func (rpc *WebRPC) Run() error {
-	if rpc.WorkerNum < 1 {
-		return errors.New("rpc.WorkerNum must be > 0")
-	}
-
-	if rpc.ChanBuffSize < 1 {
-		return errors.New("rpc.ChanBuffSize must be > 0")
-	}
-
-	logger.Infof("Start webrpc on http://%s", rpc.Addr)
-	defer logger.Info("Webrpc service closed")
-
-	var err error
-	if rpc.listener, err = net.Listen("tcp", rpc.Addr); err != nil {
-		return err
-	}
-
-	rpc.ops = make(chan operation, rpc.ChanBuffSize)
-
-	for i := uint(0); i < rpc.WorkerNum; i++ {
-		go rpc.workerThread(i)
-	}
-
-	errC := make(chan error, 1)
-	go func() {
-		if err := http.Serve(rpc.listener, rpc); err != nil {
-			select {
-			case <-rpc.quit:
-				errC <- nil
-			default:
-				// the webrpc service failed unexpectedly
-				logger.Info("webrpc.Run, http.Serve error:", err)
-				errC <- err
-			}
-		}
-	}()
-
-	return <-errC
-}
-
-// Shutdown close the webrpc service
-func (rpc *WebRPC) Shutdown() error {
-	if rpc.quit != nil {
-		close(rpc.quit)
-	}
-
-	if rpc.listener != nil {
-		return rpc.listener.Close()
-	}
-
-	return nil
-}
-
 // HandleFunc registers handler function
 func (rpc *WebRPC) HandleFunc(method string, h HandlerFunc) error {
 	if _, ok := rpc.handlers[method]; ok {
@@ -239,69 +179,41 @@ func (rpc *WebRPC) HandleFunc(method string, h HandlerFunc) error {
 	return nil
 }
 
-// ServHTTP implements the interface of http.Handler
-func (rpc *WebRPC) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	rpc.mux.ServeHTTP(w, r)
-}
-
 // Handler processes the http request
 func (rpc *WebRPC) Handler(w http.ResponseWriter, r *http.Request) {
-	// only support post.
 	if r.Method != http.MethodPost {
-		res := makeErrorResponse(errCodeInvalidRequest, errMsgNotPost)
-		wh.SendOr404(w, &res)
+		res := MakeErrorResponse(ErrCodeInvalidRequest, ErrMsgNotPost)
+		logger.Error("Only POST is allowed")
+		wh.SendJSONOr500(logger, w, &res)
 		return
 	}
 
-	// deocder request.
 	req := Request{}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		res := makeErrorResponse(errCodeParseError, errMsgParseError)
-		wh.SendOr404(w, &res)
+		res := MakeErrorResponse(ErrCodeParseError, ErrMsgParseError)
+		logger.WithError(err).Error("Invalid request body")
+		wh.SendJSONOr500(logger, w, &res)
 		return
 	}
 
 	if req.Jsonrpc != jsonRPC {
-		res := makeErrorResponse(errCodeInvalidParams, errMsgInvalidJsonrpc)
-		wh.SendOr404(w, &res)
+		res := MakeErrorResponse(ErrCodeInvalidParams, ErrMsgInvalidJsonrpc)
+		logger.Error("Invalid JSON-RPC version")
+		wh.SendJSONOr500(logger, w, &res)
 		return
 	}
 
-	resC := make(chan Response)
-	rpc.ops <- func(rpc *WebRPC) {
-		defer func() {
-			if r := recover(); r != nil {
-				logger.Critical(fmt.Sprintf("%v", r))
-				resC <- makeErrorResponse(errCodeInternalError, errMsgInternalError)
-			}
-		}()
-
-		if handler, ok := rpc.handlers[req.Method]; ok {
-			logger.Info("webrpc handling method: %v", req.Method)
-			resC <- handler(req, rpc.Gateway)
-		} else {
-			resC <- makeErrorResponse(errCodeMethodNotFound, errMsgMethodNotFound)
-		}
+	var res Response
+	if handler, ok := rpc.handlers[req.Method]; ok {
+		logger.Infof("Handling method: %s", req.Method)
+		res = handler(req, rpc.Gateway)
+	} else {
+		res = MakeErrorResponse(ErrCodeMethodNotFound, ErrMsgMethodNotFound)
 	}
 
-	res := <-resC
-	wh.SendOr404(w, &res)
-}
-
-func (rpc *WebRPC) workerThread(seq uint) {
-	for {
-		select {
-		case <-rpc.quit:
-			return
-		case op := <-rpc.ops:
-			func() {
-				defer func() {
-					if r := recover(); r != nil {
-						logger.Error("recover: %v", r)
-					}
-				}()
-				op(rpc)
-			}()
-		}
+	if res.Error != nil {
+		logger.Errorf("%d %s", res.Error.Code, res.Error.Message)
 	}
+
+	wh.SendJSONOr500(logger, w, &res)
 }

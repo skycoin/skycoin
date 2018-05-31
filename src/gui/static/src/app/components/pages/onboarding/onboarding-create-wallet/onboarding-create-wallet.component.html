@@ -1,0 +1,57 @@
+<div class="onboarding-container">
+  <div class="row justify-content-center">
+    <div class="col-sm-4">
+      <div class="-header">
+        <span>{{ 'wallet.new.create-title' | translate }}</span>
+      </div>
+      <div class="-description">
+        <p>{{ 'wizard.wallet-desc' | translate }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="row justify-content-center">
+    <div class="col-sm-4 -toggle-container">
+      <app-double-button
+        [leftButtonText]="'common.new' | translate"
+        [rightButtonText]="'common.load' | translate"
+        [activeButton]="doubleButtonActive"
+        (onStateChange)="changeForm($event)"
+      ></app-double-button>
+    </div>
+  </div>
+  <div class="row justify-content-center">
+    <div class="col-sm-4">
+      <form [formGroup]="form">
+        <div class="form-field">
+          <label for="label">{{ 'wallet.new.name-label' | translate }}</label>
+          <input formControlName="label" id="label">
+        </div>
+        <div class="form-field">
+          <label for="seed">
+            <span>{{ 'wallet.new.seed-label' | translate }}</span>
+            <span class="generators" *ngIf="showCreateForm">
+              <span (click)="generateSeed(128)" [matTooltip]="'wallet.new.generate-12-seed' | translate">
+                {{ 'wallet.new.12-words' | translate }}
+              </span>
+              <span class="divider">|</span>
+              <span (click)="generateSeed(256)" [matTooltip]="'wallet.new.generate-24-seed' | translate">
+                {{ 'wallet.new.24-words' | translate }}
+              </span>
+            </span>
+          </label>
+          <textarea formControlName="seed" class="form-control" id="seed" rows="2"></textarea>
+        </div>
+        <div class="form-field" [style.visibility]="showCreateForm?'visible':'hidden'">
+          <label for="confirm_seed">{{ 'wallet.new.confirm-seed-label' | translate }}</label>
+          <textarea formControlName="confirm_seed" class="form-control" id="confirm_seed" rows="2"></textarea>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="row -buttons-footer">
+    <app-button class="dark -button-min-margin" [disabled]="!form.valid"
+                (action)="showCreateForm?createWallet():loadWallet()">
+      {{ 'wallet.new.create-button' | translate }}
+    </app-button>
+  </div>
+</div>

@@ -1,0 +1,129 @@
+.-background-container {
+  background-color: #fbfbfb;
+  padding-top: 30px;
+  max-width: 100%;
+  min-height: calc(100% - 190px);
+  overflow: hidden;
+  position: relative;
+}
+
+.-background-image {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .-background-image {
+    display: block;
+    left: 50%;
+    width: 80%;
+    position: absolute;
+    top: 0;
+  }
+}
+
+@media (min-width: 992px) {
+  .-background-image {
+    left: 40%;
+    width: 90%;
+    max-width: 850px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .-background-image {
+    left: 40%;
+    width: 80%;
+    max-width: 850px;
+  }
+}
+
+.-paper {
+  background-color: #fbfbfb;
+  border-radius: 10px;
+  box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.01), 1px 1px 2px 2px rgba(0, 0, 0, 0.01);
+  padding: 30px;
+  position: relative;
+  margin-top: 30px;
+  max-width: 540px;
+  z-index: 5;
+
+  .-step {
+    display: flex;
+    margin-bottom: 30px;
+
+    .-number {
+      width: 60px;
+
+      span {
+        border-radius: 50%;
+        color: white;
+        display: inline-block;
+        font-size: 16px;
+        font-weight: 700;
+        height: 40px;
+        line-height: 46px;
+        text-align: center;
+        width: 40px;
+      }
+    }
+
+    .-instructions {
+      flex: 1 1;
+
+      ::ng-deep button {
+        margin-left: 0;
+      }
+
+      h3 {
+        color: #1E2227;
+        font-size: 16px;
+        font-weight: 700;
+        margin: 0;
+        line-height: 46px;
+      }
+
+      p {
+        color: rgba(30, 34, 39, 0.8);
+        font-size: 14px;
+        font-weight: 300;
+        line-height: 20px;
+        margin-top: 0;
+      }
+
+      .-address, .-status {
+        background-color: white;
+        border: 2px solid rgba(0, 0, 0, 0.05);
+        border-radius: 6px;
+        box-sizing: border-box;
+        color: rgba(30, 34, 39, 0.8);
+        display: block;
+        font-size: 14px;
+        line-height: 20px;
+        margin-bottom: 15px;
+        padding: 10px 10px;
+        width: 100%;
+      }
+
+      .-coins {
+        color: #0072FF;
+      }
+
+      .form-field {
+        margin-bottom: 15px;
+      }
+
+      .-subtitle {
+        color: #8C8E90;
+        font-size: 12px;
+        line-height: 18px;
+        font-weight: 300;
+        opacity: 0.8;
+      }
+
+      .-wallet {
+        color: rgba(30, 34, 39, 0.8);
+        font-size: 14px;
+      }
+    }
+  }
+}

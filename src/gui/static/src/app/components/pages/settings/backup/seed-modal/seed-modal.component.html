@@ -1,0 +1,11 @@
+<app-modal [title]="'title.seed' | translate" [dialog]="dialogRef">
+  <div class="form-field">
+    <label for="seed">{{ 'backup.seed' | translate }}</label>
+    <textarea id="seed" readonly>{{ data.seed }}</textarea>
+  </div>
+  <div class="-buttons">
+    <app-button (action)="dialogRef.close()">
+      {{ 'backup.close-button' | translate }}
+    </app-button>
+  </div>
+</app-modal>

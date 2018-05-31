@@ -1,5 +1,6 @@
 <div class="-header">
-  {{ title }} <img src="../../../../../assets/img/close-grey.png" (click)="closePopup()">
+  {{ title }}
+  <img src="../../../../../assets/img/close-grey.png" (click)="closePopup()" *ngIf="!disableDismiss">
 </div>
 <div class="-body">
   <ng-content></ng-content>

@@ -1,26 +1,59 @@
-<p *ngIf="!otcEnabled">Sorry, otc has currently been disabled!</p>
-<mat-card *ngIf="otcEnabled">
-  <mat-card-title>Purchase Skycoin</mat-card-title>
-  <mat-card class="skycoin-details">
-    You can buy Skycoins directly from your wallet using our Skycoin Teller service. The current rate is 0.0002 BTC per
-    SKY. To buy SKY, request a BTC deposit address. Once you have a BTC deposit address, any BTC deposits will
-    automatically be added to your selected address.
-  </mat-card>
-
-  <mat-list>
-    <ng-container *ngFor="let address of (purchaseService.all() | async); let i = index">
-      <mat-divider *ngIf="i"></mat-divider>
-      <h3 mat-subheader>Sky address: {{ address.address }}</h3>
-      <mat-list-item *ngFor="let btc of address.addresses">
-        <h4 mat-line> Bitcoin address: {{ btc.btc }}</h4>
-        <p mat-line> Status: {{ btc.status | tellerStatus }} (updated at: {{ btc.updated | dateTime }}) </p>
-        <button mat-icon-button (click)="searchDepositAddress(address.address)" [disabled]="scanning">
-          <mat-icon>refresh</mat-icon>
-        </button>
-      </mat-list-item>
-    </ng-container>
-  </mat-list>
-</mat-card>
-<div class="button-line" *ngIf="otcEnabled">
-  <a mat-raised-button color="primary" (click)="addDepositAddress()">Add deposit address</a>
+<app-header></app-header>
+<div class="-background-container">
+  <div class="container">
+    <div [formGroup]="form" class="-paper" *ngIf="config">
+      <div class="-step">
+        <div class="-number">
+          <span class="primary-gradient-background">1</span>
+        </div>
+        <div class="-instructions flex-fill">
+          <h3>{{ 'buy.deposit-location' | translate }}</h3>
+          <p>{{ 'buy.deposit-location-desc' | translate }}</p>
+          <div class="form-field">
+            <div class="-select">
+              <select formControlName="wallet" id="wallet" class="-wallet" required>
+                <option disabled selected>{{ 'buy.make-choice' | translate }}</option>
+                <option *ngFor="let wallet of wallets" [value]="wallet.filename">
+                  {{ wallet.label }} - <span class="-coins">{{ wallet.coins }} {{ 'common.coin-id' | translate }}</span>
+                </option>
+              </select>
+            </div>
+          </div>
+          <span class="-subtitle">{{ 'buy.wallets-desc' | translate }}</span>
+        </div>
+      </div>
+      <div class="-step" *ngIf="order">
+        <div class="-number">
+          <span class="primary-gradient-background">2</span>
+        </div>
+        <div class="-instructions flex-fill">
+          <h3>{{ 'buy.send' | translate }}</h3>
+          <p>{{ 'buy.send-desc' | translate:{rate: config.sky_btc_exchange_rate} }}</p>
+          <span class="-address">
+          {{ order.deposit_address }}
+          </span>
+          <span class="-subtitle">{{ 'buy.fraction-warning' | translate }}</span>
+        </div>
+      </div>
+      <div class="-step" *ngIf="order">
+        <div class="-number">
+          <span class="primary-gradient-background">3</span>
+        </div>
+        <div class="-instructions flex-fill">
+          <h3>{{ 'buy.receive' | translate }}</h3>
+          <p>{{ 'buy.receive-desc' | translate }}</p>
+          <span class="-status">
+            {{ 'buy.status-button' | translate }} {{ order.status | tellerStatus | translate }}
+          </span>
+          <app-button #button (action)="checkStatus()" class="primary">
+            {{ 'buy.check-status-button' | translate }}
+          </app-button>
+          <app-button #button (action)="removeOrder()">
+            {{ 'buy.new-order-button' | translate }}
+          </app-button>
+        </div>
+      </div>
+    </div>
+    <img src="../../../../assets/img/otc-background.jpg" class="-background-image">
+  </div>
 </div>

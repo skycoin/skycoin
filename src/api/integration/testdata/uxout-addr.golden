@@ -1,0 +1,13 @@
+[
+	{
+		"uxid": "5e35182bc9372d898df106bb2e7b3dfe33d28e59082f5d19d4a84ac0012d1291",
+		"time": 1427926392,
+		"src_block_seq": 1,
+		"src_tx": "86564b421cd3d4fe6f5f2d7a3e5db9d6fc340892bddd3a150533dff7036d0efe",
+		"owner_address": "2THDupTBEo7UqB6dsVizkYUvkKq82Qn4gjf",
+		"coins": 1000000000000,
+		"hours": 1,
+		"spent_block_seq": 0,
+		"spent_tx": "0000000000000000000000000000000000000000000000000000000000000000"
+	}
+]

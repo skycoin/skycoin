@@ -1,27 +1,24 @@
 <div class="sky-container sky-container-grey">
-  <app-header title="Backup"></app-header>
+  <app-header [title]="'title.backup' | translate"></app-header>
 
   <mat-card>
-    <p>Wallet Directory: {{ folder }}</p>
-
-    <p>BACKUP YOUR SEED. ON PAPER. IN A SAFE PLACE. As long as you have your seed, you can recover your coins.</p>
+    <p>{{ 'backup.wallet-directory' | translate }} {{ folder }}</p>
+    <p>{{ 'backup.seed-warning' | translate }}</p>
+    <p class="text-muted"><small [innerHtml]="'backup.desc' | translate"></small></p>
   </mat-card>
 
-  <ngx-datatable #table
-                 class="material"
-                 [rows]="walletService.all() | async"
-                 columnMode="flex"
-                 [headerHeight]="50"
-                 [footerHeight]="50"
-                 [rowHeight]="50"
-                 [limit]="10"
-                 [scrollbarH]="true">
-    <ngx-datatable-column name="Wallet label" prop="label" [flexGrow]="1"></ngx-datatable-column>
-    <ngx-datatable-column name="File name" prop="filename" [flexGrow]="1"></ngx-datatable-column>
-    <ngx-datatable-column name="Download" [flexGrow]="1">
-      <ng-template let-row="row" ngx-datatable-cell-template>
-        <button mat-raised-button color="primary" (click)="download(row)">Download</button>
-      </ng-template>
-    </ngx-datatable-column>
-  </ngx-datatable>
+  <mat-card class="-table">
+    <div class="row -table-header">
+      <div class="col-md-4">{{ 'backup.wallet' | translate }}</div>
+      <div class="col-md-4">{{ 'backup.filename' | translate }}</div>
+      <div class="col-md-4">{{ 'backup.seed' | translate }}</div>
+    </div>
+    <div class="row -table-row" *ngFor="let wallet of onlyEncrypted">
+      <div class="col-md-4"><span>{{ wallet.label }}</span></div>
+      <div class="col-md-4"><span>{{ wallet.filename }}</span></div>
+      <div class="col-md-4">
+        <button mat-raised-button color="primary" (click)="showSeed(wallet)">{{ 'backup.show-seed' | translate }}</button>
+      </div>
+    </div>
+  </mat-card>
 </div>

@@ -1,42 +1,45 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import * as moment from 'moment';
-import { Router } from '@angular/router';
+import { ISubscription } from 'rxjs/Subscription';
 
 @Component({
   selector: 'app-pending-transactions',
   templateUrl: './pending-transactions.component.html',
-  styleUrls: ['./pending-transactions.component.css']
+  styleUrls: ['./pending-transactions.component.scss'],
 })
-export class PendingTransactionsComponent implements OnInit {
-
+export class PendingTransactionsComponent implements OnInit, OnDestroy {
   transactions: any[];
+
+  private transactionsSubscription: ISubscription;
 
   constructor(
     public walletService: WalletService,
-    private router: Router,
-  ) { }
+  ) {
+    this.walletService.startDataRefreshSubscription();
+  }
 
   ngOnInit() {
-    this.walletService.pendingTransactions().subscribe(transactions => {
+    this.transactionsSubscription = this.walletService.pendingTransactions().subscribe(transactions => {
       this.transactions = this.mapTransactions(transactions);
     });
   }
 
-  onActivate(response) {
-    if (response.row && response.row.txid) {
-      this.router.navigate(['/history', response.row.txid]);
-    }
+  ngOnDestroy() {
+    this.transactionsSubscription.unsubscribe();
   }
 
   private mapTransactions(transactions) {
     return transactions.map(transaction => {
       transaction.transaction.timestamp = moment(transaction.received).unix();
+
       return transaction.transaction;
     })
     .map(transaction => {
-      transaction.amount = transaction.outputs.map(output => output.coins >= 0 ? output.coins : 0)
-        .reduce((a , b) => a + parseInt(b), 0);
+      transaction.amount = transaction.outputs
+        .map(output => output.coins >= 0 ? output.coins : 0)
+        .reduce((a , b) => a + parseFloat(b), 0);
+
       return transaction;
     });
   }

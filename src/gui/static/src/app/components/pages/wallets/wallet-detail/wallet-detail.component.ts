@@ -1,21 +1,40 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { Wallet } from '../../../../app.datatypes';
 import { WalletService } from '../../../../services/wallet.service';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { ChangeNameComponent } from '../change-name/change-name.component';
+import { QrCodeComponent } from '../../../layout/qr-code/qr-code.component';
+import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
+import { MatSnackBar, MatSnackBarConfig } from '@angular/material';
+import { parseResponseMessage } from '../../../../utils/errors';
+import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-wallet-detail',
   templateUrl: './wallet-detail.component.html',
-  styleUrls: ['./wallet-detail.component.scss']
+  styleUrls: ['./wallet-detail.component.scss'],
 })
-export class WalletDetailComponent {
+export class WalletDetailComponent implements OnInit, OnDestroy {
   @Input() wallet: Wallet;
+
+  private encryptionWarning: string;
 
   constructor(
     private dialog: MatDialog,
     private walletService: WalletService,
+    private snackbar: MatSnackBar,
+    private translateService: TranslateService,
   ) { }
+
+  ngOnInit() {
+    this.translateService.get('wallet.new.encrypt-warning').subscribe(msg => {
+      this.encryptionWarning = msg;
+    });
+  }
+
+  ngOnDestroy() {
+    this.snackbar.dismiss();
+  }
 
   editWallet() {
     const config = new MatDialogConfig();
@@ -25,10 +44,76 @@ export class WalletDetailComponent {
   }
 
   newAddress() {
-    this.walletService.addAddress(this.wallet).subscribe();
+    this.snackbar.dismiss();
+
+    if (this.wallet.encrypted) {
+      this.dialog.open(PasswordDialogComponent).componentInstance.passwordSubmit
+        .subscribe(passwordDialog => {
+          this.walletService.addAddress(this.wallet, passwordDialog.password)
+            .subscribe(() => passwordDialog.close(), () => passwordDialog.error());
+        });
+    } else {
+      this.walletService.addAddress(this.wallet).subscribe(null, err => {
+        const config = new MatSnackBarConfig();
+        config.duration = 300000;
+        this.snackbar.open(parseResponseMessage(err['_body']), null, config);
+      });
+    }
   }
 
   toggleEmpty() {
     this.wallet.hideEmpty = !this.wallet.hideEmpty;
+  }
+
+  toggleEncryption() {
+    const config = new MatDialogConfig();
+    config.data = {
+      confirm: !this.wallet.encrypted,
+      title: this.wallet.encrypted ? 'wallet.decrypt' : 'wallet.encrypt',
+    };
+
+    if (!this.wallet.encrypted) {
+      config.data['description'] = this.encryptionWarning;
+    }
+
+    this.dialog.open(PasswordDialogComponent, config).componentInstance.passwordSubmit
+      .subscribe(passwordDialog => {
+        this.walletService.toggleEncryption(this.wallet, passwordDialog.password).subscribe(() => {
+          passwordDialog.close();
+        }, e => passwordDialog.error(e));
+      });
+  }
+
+  copyAddress(address, event) {
+    event.stopPropagation();
+
+    const selBox = document.createElement('textarea');
+
+    selBox.style.position = 'fixed';
+    selBox.style.left = '0';
+    selBox.style.top = '0';
+    selBox.style.opacity = '0';
+    selBox.value = address.address;
+
+    document.body.appendChild(selBox);
+    selBox.focus();
+    selBox.select();
+
+    document.execCommand('copy');
+    document.body.removeChild(selBox);
+
+    address.copying = true;
+
+    setTimeout(function() {
+      address.copying = false;
+    }, 1000);
+  }
+
+  showQrCode(event, address: string) {
+    event.stopPropagation();
+
+    const config = new MatDialogConfig();
+    config.data = { address };
+    this.dialog.open(QrCodeComponent, config);
   }
 }

@@ -46,7 +46,7 @@ COMMIT=`git rev-parse HEAD`
 gox -osarch="$OSARCH" \
     -gcflags="-trimpath=${HOME}" \
     -asmflags="-trimpath=${HOME}" \
-    -ldflags="-X main.Version=${APP_VERSION} -X main.Commit=${COMMIT}" \
+    -ldflags="-X main.Version=${APP_VERSION} -X main.Commit=${COMMIT} -X main.ConfigMode=STANDALONE_CLIENT" \
     -output="${OUTPUT}{{.Dir}}_{{.OS}}_{{.Arch}}" \
     "${CMDDIR}/${CMD}"
 

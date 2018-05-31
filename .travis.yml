@@ -1,7 +1,8 @@
 sudo: required
 dist: trusty
 language: go
-go: 1.9.x
+go:
+  - "1.10.x"
 
 matrix:
   include:
@@ -14,6 +15,10 @@ env:
   global:
     - ELECTRON_CACHE: $HOME/.cache/electron
     - ELECTRON_BUILDER_CACHE: $HOME/.cache/electron-builder
+    - BUILD_DIR: build
+    - BUILDLIB_DIR: $BUILD_DIR/libskycoin
+    - LIB_DIR: lib
+    - BUILD_UI_TRAVIS_DIR: HOME/.skycoin-ui-travis
 
 cache:
   yarn: true
@@ -23,44 +28,55 @@ cache:
   - $HOME/.cache/electron
   - $HOME/.cache/electron-builder
   - $HOME/.npm/_prebuilds
+  - src/gui/static/node_modules
+
+addons:
+  chrome: stable
 
 install:
   # Install gox
   - go get github.com/gz-c/gox
   # Install dependences for building wallet
-  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_PULL_REQUEST" == false ]]; then sudo apt-get install --no-install-recommends -y icnsutils graphicsmagick xz-utils  &&nvm install 8; fi
-  # for test
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_PULL_REQUEST" == false ]]; then sudo apt-get install --no-install-recommends -y icnsutils graphicsmagick xz-utils && nvm install 8; fi
+  - if [[ ! -d $GOPATH/src/github.com/skycoin/skycoin ]]; then mkdir -p $GOPATH/src/github.com/skycoin; ln -s $TRAVIS_BUILD_DIR $GOPATH/src/github.com/skycoin/skycoin; fi
+  - cd $GOPATH/src/github.com/skycoin/skycoin
   - go get -t ./...
-  - go get github.com/golang/lint/golint
-  - go get github.com/FiloSottile/vendorcheck
-  # Install gometalinter and certain linters
-  - go get github.com/alecthomas/gometalinter
-  # - go get github.com/client9/misspell/cmd/misspell
-  # - go get github.com/gordonklaus/ineffassign
-  - go get golang.org/x/tools/cmd/goimports
-  # - go get github.com/tsenart/deadcode
-
-
+  - make install-linters
+  - make install-deps-libc
+  - make install-deps-ui
 
 before_script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" && "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/add-key.sh && npm install -g yarn ;fi
+  - if [[ "$TRAVIS_OS_NAME" != "osx" ]]; then export DISPLAY=:99.0 && sh -e /etc/init.d/xvfb start; fi
 
 script:
-  # - gometalinter --disable-all -E vet -E gofmt -E misspell -E ineffassign -E goimports -E deadcode --tests --vendor ./...
-  - gometalinter --disable-all -E goimports --tests --vendor ./...
-  - vendorcheck ./...
-  - go test ./cmd/...
-  - go test ./src/...
-  # build wallets
+  - make lint
+  - make test-386
+  - make test-amd64
+  # Stable integration tests
+  - make integration-test-stable
+  # Stable integration tests without CSRF
+  - make integration-test-stable-disable-csrf
+  # Disable wallet api test
+  - make integration-test-disable-wallet-api
+  # Disable seed api test
+  - make integration-test-disable-seed-api
+  # libskycoin tests
+  - make test-libc
+  # TODO: test pyskycoin
+  # - make test-libpy
+  - make lint-ui
+  - make build-ui-travis
+  - make test-ui
+  - make test-ui-e2e
+  # Build wallets
   - if [[ "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/build-wallet.sh; fi
 
-# after_script:
-#   - golint -set_exit_status ./src/...
-#   - golint -set_exit_status ./cmd/...
-
 notifications:
-  email: false
-
+  email:
+    - travis@skycoin.net
+  # https://github.com/kvld/travisci-telegram TravisCI Telegram Bot integration
+  webhooks: https://fathomless-fjord-24024.herokuapp.com/notify
 
 deploy:
   provider: s3

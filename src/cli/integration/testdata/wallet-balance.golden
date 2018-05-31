@@ -1,0 +1,31 @@
+{
+	"confirmed": {
+		"coins": "0.000000",
+		"hours": "0"
+	},
+	"spendable": {
+		"coins": "0.000000",
+		"hours": "0"
+	},
+	"expected": {
+		"coins": "0.000000",
+		"hours": "0"
+	},
+	"addresses": [
+		{
+			"confirmed": {
+				"coins": "0.000000",
+				"hours": "0"
+			},
+			"spendable": {
+				"coins": "0.000000",
+				"hours": "0"
+			},
+			"expected": {
+				"coins": "0.000000",
+				"hours": "0"
+			},
+			"address": "2Kg3eRXUhY6hrDZvNGB99DKahtrPDQ1W9vN"
+		}
+	]
+}

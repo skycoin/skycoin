@@ -2,33 +2,68 @@
  * Internal Objects
  */
 
-export class Wallet {
-  label: string;
-  filename: string;
-  seed: string;
-  coins: number;
-  hours: number;
-  addresses: Address[];
-  visible?: boolean;
-  hideEmpty?: boolean;
-  opened?: boolean;
-}
-
 export class Address {
   address: string;
   coins: number;
   hours: number;
+  copying?: boolean; // Optional parameter indicating whether the address is being copied to clipboard
+  outputs?: any;
+}
+
+export class PurchaseOrder {
+  coin_type: string;
+  filename: string;
+  deposit_address: string;
+  recipient_address: string;
+  status?: string;
+}
+
+export class TellerConfig {
+  enabled: boolean;
+  sky_btc_exchange_rate: number;
 }
 
 export class Transaction {
-  addresses: string[];
   balance: number;
-  block: number;
-  confirmed: boolean;
   inputs: any[];
   outputs: any[];
-  timestamp: number;
   txid: string;
+  hoursSent?: number;
+  hoursBurned?: number;
+}
+
+export class PreviewTransaction extends Transaction {
+  from: string;
+  to: string;
+  encoded: string;
+}
+
+export class NormalTransaction extends Transaction {
+  addresses: string[];
+  timestamp: number;
+  block: number;
+  confirmed: boolean;
+}
+
+export class Version {
+  version: string;
+}
+
+export class Wallet {
+  label: string;
+  filename: string;
+  coins: number;
+  hours: number;
+  addresses: Address[];
+  encrypted: boolean;
+  hideEmpty?: boolean;
+  opened?: boolean;
+}
+
+export class Connection {
+  id: number;
+  address: number;
+  listen_port: boolean;
 }
 
 /**
@@ -51,7 +86,7 @@ export class PostWalletNewAddressResponse {
 export class GetWalletsResponseMeta {
   label: string;
   filename: string;
-  seed: string;
+  encrypted: boolean;
 }
 
 export class GetWalletsResponseEntry {

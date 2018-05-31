@@ -23,7 +23,7 @@ var errorByCode = [...]error{
 	gnet.ErrDisconnectInvalidMessageLength,
 	gnet.ErrDisconnectMalformedMessage,
 	gnet.ErrDisconnectUnknownMessage,
-	gnet.ErrDisconnectWriteQueueFull,
+	nil, //	gnet.ErrDisconnectWriteQueueFull,
 	gnet.ErrDisconnectUnexpectedError,
 	gnet.ErrConnectionPoolClosed,
 	pex.ErrPeerlistFull,

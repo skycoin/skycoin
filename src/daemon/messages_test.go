@@ -141,7 +141,7 @@ func GetSHAFromHex(hex string) cipher.SHA256 {
 func ExampleIntroductionMessage() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
-	var message = NewIntroductionMessage(1234, 5, 7890)
+	var message = NewIntroductionMessage(1234, 5, 7890, nil)
 	fmt.Println("IntroductionMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)

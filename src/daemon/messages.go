@@ -237,7 +237,7 @@ type IntroductionMessage struct {
 	valid bool `enc:"-"` // skip it during encoding
 
 	//Test field
-	Extra string `enc:"omitempty"`
+	//Extra string `enc:"omitempty"`
 }
 
 // NewIntroductionMessage creates introduction message

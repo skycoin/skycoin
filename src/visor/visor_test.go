@@ -143,7 +143,7 @@ func TestErrMissingSignatureRecreateDB(t *testing.T) {
 		require.NoError(t, err)
 
 		err = db.View("", func(tx *dbutil.Tx) error {
-			return bc.VerifySignatures(tx, SigVerifyTheadNum, nil)
+			return bc.WalkChain(tx, SigVerifyTheadNum, bc.VerifySignature, nil)
 		})
 
 		require.Error(t, err)

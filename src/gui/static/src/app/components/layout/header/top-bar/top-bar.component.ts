@@ -7,7 +7,7 @@ import { AppService } from '../../../../services/app.service';
   styleUrls: ['./top-bar.component.scss'],
 })
 export class TopBarComponent {
-  @Input() title: string;
+  @Input() headline: string;
 
   constructor(
     public appService: AppService,

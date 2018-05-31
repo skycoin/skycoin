@@ -108,7 +108,6 @@ export class SendFormComponent implements OnInit, OnDestroy {
       wallet: ['', Validators.required],
       address: ['', Validators.required],
       amount: ['', Validators.required],
-      notes: [''],
     });
 
     this.subscription = this.form.get('wallet').valueChanges.subscribe(value => {

@@ -61,7 +61,7 @@ NOTE: Due to a bug which allowed overflowing output coin hours to be included in
       When creating or receiving a single transaction from the network, it is treated as a HARD constraint.
 
 These methods should be called via the Blockchain object when possible,
-using Blockchain.VerifyBlockTxnConstraints, Blockchain.VerifySingleTxnHardConstraints and Blockchain.VerifySingleTxnAllConstraints
+using Blockchain.VerifyBlockTxnConstraints, Blockchain.VerifySingleTxnHardConstraints and Blockchain.VerifySingleTxnSoftHardConstraints
 since data from the blockchain and unspent output set are required to fully validate a transaction.
 
 */
@@ -107,6 +107,25 @@ func NewErrTxnViolatesSoftConstraint(err error) error {
 
 func (e ErrTxnViolatesSoftConstraint) Error() string {
 	return fmt.Sprintf("Transaction violates soft constraint: %v", e.Err)
+}
+
+// ErrTxnViolatesUserConstraint is returned when a transaction violates user constraints
+type ErrTxnViolatesUserConstraint struct {
+	Err error
+}
+
+// NewErrTxnViolatesUserConstraint creates ErrTxnViolatesUserConstraint
+func NewErrTxnViolatesUserConstraint(err error) error {
+	if err == nil {
+		return nil
+	}
+	return ErrTxnViolatesUserConstraint{
+		Err: err,
+	}
+}
+
+func (e ErrTxnViolatesUserConstraint) Error() string {
+	return fmt.Sprintf("Transaction violates user constraint: %v", e.Err)
 }
 
 // VerifySingleTxnSoftConstraints returns an error if any "soft" constraint are violated.
@@ -268,4 +287,19 @@ func verifyTxnHardConstraints(txn coin.Transaction, head *coin.SignedBlock, uxIn
 	// The hours overflow check is handled as an extra step in the SingleTxnHard constraints,
 	// to allow existing blocks which violate the overflow rules to pass.
 	return coin.VerifyTransactionHoursSpending(head.Time(), uxIn, uxOut)
+}
+
+// VerifySingleTxnUserConstraints applies additional verification for a
+// transaction created by the user.
+// This is distinct from transactions created by other users (i.e. received over the network),
+// and from transactions included in blocks.
+func VerifySingleTxnUserConstraints(txn coin.Transaction) error {
+	for _, o := range txn.Out {
+		if o.Address.Null() {
+			err := errors.New("Transaction output is sent to the null address")
+			return NewErrTxnViolatesUserConstraint(err)
+		}
+	}
+
+	return nil
 }

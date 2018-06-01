@@ -63,7 +63,7 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 		return util.Annotation{Size: 4, Name: "Prefix"}, true
 
 	}
-	if mai.CurrentField == mai.MaxField {
+	if mai.CurrentField >= mai.MaxField {
 		return util.Annotation{}, false
 	}
 
@@ -74,6 +74,17 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 	t := v.Type()
 	vF := v.Field(i)
 	f := t.Field(i)
+	for f.PkgPath != "" && i < mai.MaxField {
+		i++
+		mai.CurrentField++
+		mai.CurrentIndex = -1
+		j = -1
+		if i < mai.MaxField {
+			f = t.Field(i)
+		} else {
+			return util.Annotation{}, false
+		}
+	}
 	if f.Tag.Get("enc") != "-" {
 		if vF.CanSet() || f.Name != "_" {
 			if v.Field(i).Kind() == reflect.Slice {
@@ -147,9 +158,11 @@ func GetSHAFromHex(hex string) cipher.SHA256 {
 
 type TestMessage struct {
 	A uint8
+	e int16
 	B string
 	C int32
 	D []byte
+	f rune
 }
 
 func (m *TestMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
@@ -164,9 +177,11 @@ func ExampleStructEmptySlice() {
 	gnet.VerifyMessages()
 	var message TestMessage = TestMessage{
 		0x01,
+		0x2345,
 		"",
-		0x23456789,
+		0x6789ABCD,
 		nil,
+		'a',
 	}
 	var mai = NewMessagesAnnotationsIterator(&message)
 	w := bufio.NewWriter(os.Stdout)
@@ -176,7 +191,7 @@ func ExampleStructEmptySlice() {
 	// 0x0004 | 54 45 53 54 ....................................... Prefix
 	// 0x0008 | 01 ................................................ A
 	// 0x0009 | 00 00 00 00 ....................................... B
-	// 0x000d | 89 67 45 23 ....................................... C
+	// 0x000d | cd ab 89 67 ....................................... C
 	// 0x0011 | 00 00 00 00 ....................................... D length
 	// 0x0015 |
 }

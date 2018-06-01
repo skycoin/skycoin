@@ -145,6 +145,42 @@ func GetSHAFromHex(hex string) cipher.SHA256 {
 	return sha
 }
 
+type TestMessage struct {
+	A uint8
+	B string
+	C int32
+	D []byte
+}
+
+func (m *TestMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
+	// Do nothing
+	return nil
+}
+
+func ExampleStructEmptySlice() {
+	defer gnet.EraseMessages()
+	setupMsgEncoding()
+	gnet.RegisterMessage(gnet.MessagePrefixFromString("TEST"), TestMessage{})
+	gnet.VerifyMessages()
+	var message TestMessage = TestMessage{
+		0x01,
+		"",
+		0x23456789,
+		nil,
+	}
+	var mai = NewMessagesAnnotationsIterator(&message)
+	w := bufio.NewWriter(os.Stdout)
+	util.HexDumpFromIterator(gnet.EncodeMessage(&message), &mai, w)
+	// Output:
+	// 0x0000 | 11 00 00 00 ....................................... Length
+	// 0x0004 | 54 45 53 54 ....................................... Prefix
+	// 0x0008 | 01 ................................................ A
+	// 0x0009 | 00 00 00 00 ....................................... B
+	// 0x000d | 89 67 45 23 ....................................... C
+	// 0x0011 | 00 00 00 00 ....................................... D length
+	// 0x0015 |
+}
+
 func ExampleIntroductionMessage() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()

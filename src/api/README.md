@@ -14,6 +14,7 @@ A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](h
     - [Get node version info](#get-node-version-info)
     - [Get balance of addresses](#get-balance-of-addresses)
     - [Get unspent output set of address or hash](#get-unspent-output-set-of-address-or-hash)
+    - [Verify an address](#verify-an-address)
 - [Wallet APIs](#wallet-apis)
     - [Get wallet](#get-wallet)
     - [Get wallet transactions](#get-wallet-transactions)
@@ -254,6 +255,58 @@ Result:
     ],
     "outgoing_outputs": [],
     "incoming_outputs": []
+}
+```
+
+### Verify an address
+
+```
+URI: /api/v1/address/verify
+Method: POST
+Content-Type: application/json
+Args: {"address": "<address>"}
+```
+
+Example for a valid address:
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v1/address/verify \
+ -H 'Content-Type: application/json' \
+ -d '{"address":"2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2"}'
+```
+
+Result:
+
+```json
+{
+    "data": {
+        "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
+        "version": 0,
+        "valid": true
+    }
+}
+```
+
+Example for a valid address:
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v1/address/verify \
+ -H 'Content-Type: application/json' \
+ -d '{"address":"2aTnQe3ZupkG6k8S81brNC3JycGV2Em71F2"}'
+```
+
+Result:
+
+```json
+{
+    "error": {
+        "message": "Invalid checksum",
+        "code": 422
+    },
+    "data": {
+        "address": "2aTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
+        "valid": false
+    }
 }
 ```
 
@@ -1424,10 +1477,23 @@ Result:
 URI: /api/v1/transaction/verify
 Method: POST
 Content-Type: application/json
-Args: JSON body, see examples
+Args: {"encoded_transaction": "<hex encoded serialized transaction>"}
 ```
 
-Example:
+If the transaction is can be parsed, passes validation and has not been spent, returns `200 OK` with the decoded transaction data,
+and the `"confirmed"` field will be `false`.
+
+If the transaction is structurally valid, passes validation but has been spent, returns `422 Unprocessable Entity` with the decoded transaction data,
+and the `"confirmed"` field will be `true`.  The `"error"` `"message"` will be `"transaction has been spent"`.
+
+If the transaction can be parsed but does not pass validation, returns `422 Unprocessable Entity` with the decoded transaction data.
+The `"error"` object will be included in the response with the reason why.
+If the transaction's inputs cannot be found in the unspent pool nor in the historical archive of unspents,
+the transaction `"inputs"` metadata will be absent and only `"uxid"` will be present.
+
+If the transaction can not be parsed, returns `400 Bad Request` and the `"error"` object will be included in the response with the reason why.
+
+Example of valid transaction that has not been spent:
 
 ```sh
 curl -X POST -H 'Content-Type: application/json' http://127.0.0.1:6420/api/v1/transaction/verify \
@@ -1438,51 +1504,112 @@ Result:
 
 ```json
 {
-    "transaction": {
-        "length": 220,
-        "type": 0,
-        "txid": "82b5fcb182e3d70c285e59332af6b02bf11d8acc0b1407d7d82b82e9eeed94c0",
-        "inner_hash": "4fd024d60939fede67065b36adcaaeaf70fc009e3a5bbb8358940ccc8bbb2074",
-        "fee": "513",
-        "sigs": [
-            "7635ce932158ec06d94138adc9c9b19113fa4c2279002e6b13dcd0b65e0359f247e8666aa64d7a55378b9cc9983e252f5877a7cb2671c3568ec36579f8df158100"
-        ],
-        "inputs": [
-            {
-                "uxid": "19ad5059a7fffc0369fc24b31db7e92e12a4ee2c134fb00d336d7495dec7354d",
-                "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
-                "coins": "2.980000",
-                "hours": "985",
-                "calculated_hours": "1025",
-                "timestamp": 1527080354,
-                "block": 30074,
-                "txid": "94204347ef52d90b3c5d6c31a3fced56ae3f74fd8f1f5576931aeb60847f0e59"
-            }
-        ],
-        "outputs": [
-            {
-                "uxid": "b0911a5fc4dfe4524cdb82f6db9c705f4849af42fcd487a3c4abb2d17573d234",
-                "address": "SMnCGfpt7zVXm8BkRSFMLeMRA6LUu3Ewne",
-                "coins": "0.100000",
-                "hours": "1"
-            },
-            {
-                "uxid": "a492e6b85a434866be40da7e287bfcf14efce9803ff2fcd9d865c4046e81712a",
-                "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
-                "coins": "2.880000",
-                "hours": "511"
-            }
-        ]
+    "data": {
+        "confirmed": false,
+        "transaction": {
+            "length": 220,
+            "type": 0,
+            "txid": "82b5fcb182e3d70c285e59332af6b02bf11d8acc0b1407d7d82b82e9eeed94c0",
+            "inner_hash": "4fd024d60939fede67065b36adcaaeaf70fc009e3a5bbb8358940ccc8bbb2074",
+            "fee": "1042",
+            "sigs": [
+                "7635ce932158ec06d94138adc9c9b19113fa4c2279002e6b13dcd0b65e0359f247e8666aa64d7a55378b9cc9983e252f5877a7cb2671c3568ec36579f8df158100"
+            ],
+            "inputs": [
+                {
+                    "uxid": "19ad5059a7fffc0369fc24b31db7e92e12a4ee2c134fb00d336d7495dec7354d",
+                    "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
+                    "coins": "2.980000",
+                    "hours": "985",
+                    "calculated_hours": "1554",
+                    "timestamp": 1527080354,
+                    "block": 30074,
+                    "txid": "94204347ef52d90b3c5d6c31a3fced56ae3f74fd8f1f5576931aeb60847f0e59"
+                }
+            ],
+            "outputs": [
+                {
+                    "uxid": "b0911a5fc4dfe4524cdb82f6db9c705f4849af42fcd487a3c4abb2d17573d234",
+                    "address": "SMnCGfpt7zVXm8BkRSFMLeMRA6LUu3Ewne",
+                    "coins": "0.100000",
+                    "hours": "1"
+                },
+                {
+                    "uxid": "a492e6b85a434866be40da7e287bfcf14efce9803ff2fcd9d865c4046e81712a",
+                    "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
+                    "coins": "2.880000",
+                    "hours": "511"
+                }
+            ]
+        }
     }
 }
 ```
+
+Example of valid transaction that *has* been spent:
+
+```sh
+curl -X POST -H 'Content-Type: application/json' http://127.0.0.1:6420/api/v1/transaction/verify \
+-d '{"encoded_transaction": "dc000000004fd024d60939fede67065b36adcaaeaf70fc009e3a5bbb8358940ccc8bbb2074010000007635ce932158ec06d94138adc9c9b19113fa4c2279002e6b13dcd0b65e0359f247e8666aa64d7a55378b9cc9983e252f5877a7cb2671c3568ec36579f8df1581000100000019ad5059a7fffc0369fc24b31db7e92e12a4ee2c134fb00d336d7495dec7354d02000000003f0555073e17ea6e45283f0f1115b520d0698d03a086010000000000010000000000000000b90dc595d102c48d3281b47428670210415f585200f22b0000000000ff01000000000000"}'
+```
+
+Result:
+
+```json
+{
+    "error": {
+        "message": "transaction has been spent",
+        "code": 422
+    },
+    "data": {
+        "confirmed": true,
+        "transaction": {
+            "length": 220,
+            "type": 0,
+            "txid": "82b5fcb182e3d70c285e59332af6b02bf11d8acc0b1407d7d82b82e9eeed94c0",
+            "inner_hash": "4fd024d60939fede67065b36adcaaeaf70fc009e3a5bbb8358940ccc8bbb2074",
+            "fee": "1042",
+            "sigs": [
+                "7635ce932158ec06d94138adc9c9b19113fa4c2279002e6b13dcd0b65e0359f247e8666aa64d7a55378b9cc9983e252f5877a7cb2671c3568ec36579f8df158100"
+            ],
+            "inputs": [
+                {
+                    "uxid": "19ad5059a7fffc0369fc24b31db7e92e12a4ee2c134fb00d336d7495dec7354d",
+                    "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
+                    "coins": "2.980000",
+                    "hours": "985",
+                    "calculated_hours": "1554",
+                    "timestamp": 1527080354,
+                    "block": 30074,
+                    "txid": "94204347ef52d90b3c5d6c31a3fced56ae3f74fd8f1f5576931aeb60847f0e59"
+                }
+            ],
+            "outputs": [
+                {
+                    "uxid": "b0911a5fc4dfe4524cdb82f6db9c705f4849af42fcd487a3c4abb2d17573d234",
+                    "address": "SMnCGfpt7zVXm8BkRSFMLeMRA6LUu3Ewne",
+                    "coins": "0.100000",
+                    "hours": "1"
+                },
+                {
+                    "uxid": "a492e6b85a434866be40da7e287bfcf14efce9803ff2fcd9d865c4046e81712a",
+                    "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
+                    "coins": "2.880000",
+                    "hours": "511"
+                }
+            ]
+        }
+    }
+}
+```
+
 
 ## Block APIs
 
 ### Get blockchain metadata
 
 ```
-URI:  /blockchain/metadata
+URI: /api/v1/blockchain/metadata
 Method: GET
 ```
 

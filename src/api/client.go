@@ -36,6 +36,12 @@ func (e ClientError) Error() string {
 	return e.Message
 }
 
+// ReceivedHTTPResponse parsed a HTTPResponse received by the Client, for the V2 API
+type ReceivedHTTPResponse struct {
+	Error *HTTPError      `json:"error,omitempty"`
+	Data  json.RawMessage `json:"data"`
+}
+
 // Client provides an interface to a remote node's HTTP API
 type Client struct {
 	HTTPClient *http.Client
@@ -120,7 +126,7 @@ func (c *Client) PostJSON(endpoint string, reqObj, respObj interface{}) error {
 	return c.post(endpoint, "application/json", bytes.NewReader(body), respObj)
 }
 
-// Post makes a POST request to an endpoint. Caller must close response body.
+// post makes a POST request to an endpoint.
 func (c *Client) post(endpoint string, contentType string, body io.Reader, obj interface{}) error {
 	csrf, err := c.CSRF()
 	if err != nil {
@@ -166,6 +172,83 @@ func (c *Client) post(endpoint string, contentType string, body io.Reader, obj i
 	}
 
 	return json.NewDecoder(resp.Body).Decode(obj)
+}
+
+// PostJSONV2 makes a POST request to an endpoint with body of json data,
+// and parses the standard JSON response.
+func (c *Client) PostJSONV2(endpoint string, reqObj, respObj interface{}) (bool, error) {
+	body, err := json.Marshal(reqObj)
+	if err != nil {
+		return false, err
+	}
+
+	csrf, err := c.CSRF()
+	if err != nil {
+		return false, err
+	}
+
+	endpoint = strings.TrimLeft(endpoint, "/")
+	endpoint = c.Addr + endpoint
+
+	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(body))
+	if err != nil {
+		return false, err
+	}
+
+	if csrf != "" {
+		req.Header.Set(CSRFHeaderName, csrf)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return false, err
+	}
+
+	defer resp.Body.Close()
+
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return false, err
+	}
+
+	var wrapObj ReceivedHTTPResponse
+	if err := json.Unmarshal(respBody, wrapObj); err != nil {
+		// In some cases, the server can send an error response in a non-JSON format,
+		// such as a 404 when the endpoint is not registered, or if a 500 error
+		// occurs in the go HTTP stack, outside of the application's control.
+		// If this happens, treat the entire response body as the error message.
+		if resp.StatusCode != http.StatusOK {
+			return false, ClientError{
+				Status:     resp.Status,
+				StatusCode: resp.StatusCode,
+				Message:    string(body),
+			}
+		}
+
+		return false, err
+	}
+
+	var rspErr error
+	if resp.StatusCode != http.StatusOK {
+		rspErr = ClientError{
+			Status:     resp.Status,
+			StatusCode: resp.StatusCode,
+			Message:    wrapObj.Error.Message,
+		}
+	}
+
+	if wrapObj.Data == nil {
+		return false, rspErr
+	}
+
+	if err := json.Unmarshal(wrapObj.Data, respObj); err != nil {
+		return false, err
+	}
+
+	return true, rspErr
 }
 
 // CSRF returns a CSRF token. If CSRF is disabled on the node, returns an empty string and nil error.
@@ -739,32 +822,38 @@ func (c *Client) RawTransaction(txid string) (string, error) {
 	return rawTx, nil
 }
 
-// VerifyTransaction verifies the encoded raw transaction
+// VerifyTransaction makes a request to POST /api/v1/transaction/verify.
+// The API may respond with an error but include data useful for processing,
+// so both return values may be non-nil.
 func (c *Client) VerifyTransaction(encodedTxn string) (*VerifyTxnResponse, error) {
 	req := VerifyTxnRequest{
 		EncodedTransaction: encodedTxn,
 	}
 
-	var rsp HTTPResponse
-	if err := c.PostJSON("/api/v1/transaction/verify", req, &rsp); err != nil {
-		return nil, err
+	var rsp VerifyTxnResponse
+	ok, err := c.PostJSONV2("/api/v1/transaction/verify", req, &rsp)
+	if ok {
+		return &rsp, err
 	}
 
-	var txnRsp *VerifyTxnResponse
-	if rsp.Data != "" {
-		var v VerifyTxnResponse
-		if err := json.NewDecoder(strings.NewReader(rsp.Data)).Decode(&v); err != nil {
-			return nil, err
-		}
-		*txnRsp = v
+	return nil, err
+}
+
+// VerifyAddress makes a request to POST /api/v1/address/verify
+// The API may respond with an error but include data useful for processing,
+// so both return values may be non-nil.
+func (c *Client) VerifyAddress(addr string) (*VerifyAddressResponse, error) {
+	req := VerifyAddressRequest{
+		Address: addr,
 	}
 
-	var err error
-	if rsp.Error != "" {
-		err = errors.New(rsp.Error)
+	var rsp VerifyAddressResponse
+	ok, err := c.PostJSONV2("/api/v1/address/verify", req, &rsp)
+	if ok {
+		return &rsp, err
 	}
 
-	return txnRsp, err
+	return nil, err
 }
 
 // AddressTransactions makes a request to GET /api/v1/explorer/address

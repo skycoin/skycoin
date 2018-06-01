@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `GET /explorer/address`: add `fee` to transaction objects and `calculated_hours` to transaction inputs
 - Test data generator and test suite for verification of alternative `cipher` implementations
 - Add `POST /transaction/verify` API endpoint
+- Add Dockerfile in docker/images/dev-cli to build a docker image suitable for development.
 
 ### Fixed
 

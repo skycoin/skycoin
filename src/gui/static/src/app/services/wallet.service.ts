@@ -99,9 +99,11 @@ export class WalletService {
   refreshBalances() {
     this.wallets.first().subscribe(wallets => {
       Observable.forkJoin(wallets.map(wallet => this.retrieveWalletBalance(wallet).map(response => {
-        wallet.addresses = response.addresses;
         wallet.coins = response.coins;
         wallet.hours = response.hours;
+        wallet.addresses = wallet.addresses.map(address => {
+          return response.addresses.find(addr => addr.address === address.address);
+        });
 
         return wallet;
       })))

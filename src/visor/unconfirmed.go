@@ -280,8 +280,8 @@ func createUnconfirmedTxn(txn coin.Transaction) UnconfirmedTxn {
 func (utp *UnconfirmedTxnPool) InjectTransaction(tx *dbutil.Tx, bc Blockchainer, txn coin.Transaction, maxSize int) (bool, *ErrTxnViolatesSoftConstraint, error) {
 	var isValid int8 = 1
 	var softErr *ErrTxnViolatesSoftConstraint
-	if err := bc.VerifySingleTxnAllConstraints(tx, txn, maxSize); err != nil {
-		logger.Warningf("bc.VerifySingleTxnAllConstraints failed for txn %s: %v", txn.TxIDHex(), err)
+	if err := bc.VerifySingleTxnSoftHardConstraints(tx, txn, maxSize); err != nil {
+		logger.Warningf("bc.VerifySingleTxnSoftHardConstraints failed for txn %s: %v", txn.TxIDHex(), err)
 		switch err.(type) {
 		case ErrTxnViolatesSoftConstraint:
 			e := err.(ErrTxnViolatesSoftConstraint)
@@ -391,7 +391,7 @@ func (utp *UnconfirmedTxnPool) Refresh(tx *dbutil.Tx, bc Blockchainer, maxBlockS
 	for _, utxn := range utxns {
 		utxn.Checked = now.UnixNano()
 
-		err := bc.VerifySingleTxnAllConstraints(tx, utxn.Txn, maxBlockSize)
+		err := bc.VerifySingleTxnSoftHardConstraints(tx, utxn.Txn, maxBlockSize)
 
 		switch err.(type) {
 		case ErrTxnViolatesSoftConstraint, ErrTxnViolatesHardConstraint:

@@ -17,10 +17,6 @@
     <label for="amount">{{ 'send.amount-label' | translate }}</label>
     <input formControlName="amount" id="amount" (keydown.enter)="send()">
   </div>
-  <div class="form-field">
-    <label for="notes">{{ 'send.notes-label' | translate }}</label>
-    <textarea formControlName="notes" id="notes" row="2"></textarea>
-  </div>
   <div class="-buttons">
     <app-button #button (action)="send()" class="primary" [disabled]="!form.valid">
       {{ 'send.verify-button' | translate }}

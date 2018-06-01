@@ -14,12 +14,12 @@ import (
 import "C"
 
 //export SKY_cli_AddPrivateKey
-func SKY_cli_AddPrivateKey(_wlt *C.Wallet__Handle, _key string) (____error_code uint32) {
+func SKY_cli_AddPrivateKey(_wlt C.Wallet__Handle, _key string) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	wlt, okwlt := lookupWalletHandle(*_wlt)
+	wlt, okwlt := lookupWalletHandle(_wlt)
 	if !okwlt {
 		____error_code = SKY_ERROR
 		return

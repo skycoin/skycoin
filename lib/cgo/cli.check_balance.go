@@ -16,12 +16,12 @@ import (
 import "C"
 
 //export SKY_cli_CheckWalletBalance
-func SKY_cli_CheckWalletBalance(_c *C.WebRpcClient__Handle, _walletFile string, _arg2 *C.cli__BalanceResult) (____error_code uint32) {
+func SKY_cli_CheckWalletBalance(_c C.WebRpcClient__Handle, _walletFile string, _arg2 *C.cli__BalanceResult) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	c, okc := lookupWebRpcClientHandle(*_c)
+	c, okc := lookupWebRpcClientHandle(_c)
 	if !okc {
 		____error_code = SKY_ERROR
 		return
@@ -36,12 +36,12 @@ func SKY_cli_CheckWalletBalance(_c *C.WebRpcClient__Handle, _walletFile string, 
 }
 
 //export SKY_cli_GetBalanceOfAddresses
-func SKY_cli_GetBalanceOfAddresses(_c *C.WebRpcClient__Handle, _addrs []string, _arg2 *C.cli__BalanceResult) (____error_code uint32) {
+func SKY_cli_GetBalanceOfAddresses(_c C.WebRpcClient__Handle, _addrs []string, _arg2 *C.cli__BalanceResult) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	c, okc := lookupWebRpcClientHandle(*_c)
+	c, okc := lookupWebRpcClientHandle(_c)
 	if !okc {
 		____error_code = SKY_ERROR
 		return

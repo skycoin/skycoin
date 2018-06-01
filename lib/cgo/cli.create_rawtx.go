@@ -19,12 +19,12 @@ import (
 import "C"
 
 //export SKY_cli_CreateRawTxFromWallet
-func SKY_cli_CreateRawTxFromWallet(_c *C.WebRpcClient__Handle, _walletFile, _chgAddr string, _toAddrs []C.cli__SendAmount, pwd string, _arg4 *C.coin__Transaction) (____error_code uint32) {
+func SKY_cli_CreateRawTxFromWallet(_c C.WebRpcClient__Handle, _walletFile, _chgAddr string, _toAddrs []C.cli__SendAmount, pwd string, _arg4 *C.coin__Transaction) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	c, okc := lookupWebRpcClientHandle(*_c)
+	c, okc := lookupWebRpcClientHandle(_c)
 	if !okc {
 		____error_code = SKY_ERROR
 		return
@@ -42,12 +42,12 @@ func SKY_cli_CreateRawTxFromWallet(_c *C.WebRpcClient__Handle, _walletFile, _chg
 }
 
 //export SKY_cli_CreateRawTxFromAddress
-func SKY_cli_CreateRawTxFromAddress(_c *C.WebRpcClient__Handle, _addr, _walletFile, _chgAddr string, _toAddrs []C.cli__SendAmount, pwd string, _arg4 *C.coin__Transaction) (____error_code uint32) {
+func SKY_cli_CreateRawTxFromAddress(_c C.WebRpcClient__Handle, _addr, _walletFile, _chgAddr string, _toAddrs []C.cli__SendAmount, pwd string, _arg4 *C.coin__Transaction) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	c, okc := lookupWebRpcClientHandle(*_c)
+	c, okc := lookupWebRpcClientHandle(_c)
 	if !okc {
 		____error_code = SKY_ERROR
 		return
@@ -66,12 +66,12 @@ func SKY_cli_CreateRawTxFromAddress(_c *C.WebRpcClient__Handle, _addr, _walletFi
 }
 
 //export SKY_cli_CreateRawTx
-func SKY_cli_CreateRawTx(_c *C.WebRpcClient__Handle, _wlt *C.Wallet__Handle, _inAddrs []string, _chgAddr string, _toAddrs []C.cli__SendAmount, _password []byte, _arg6 *C.coin__Transaction) (____error_code uint32) {
+func SKY_cli_CreateRawTx(_c C.WebRpcClient__Handle, _wlt *C.Wallet__Handle, _inAddrs []string, _chgAddr string, _toAddrs []C.cli__SendAmount, _password []byte, _arg6 *C.coin__Transaction) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	c, okc := lookupWebRpcClientHandle(*_c)
+	c, okc := lookupWebRpcClientHandle(_c)
 	if !okc {
 		____error_code = SKY_ERROR
 		return

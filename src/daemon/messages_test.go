@@ -7,13 +7,14 @@ import (
 	"reflect"
 	"strconv"
 
+	"strings"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/util"
-	"strings"
 )
 
 func setupMsgEncoding() {
@@ -79,7 +80,7 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 		mai.CurrentField++
 		return mai.Next()
 	}
-	if !strings.Contains(f.Tag.Get("enc"),"omitempty")  {
+	if !strings.Contains(f.Tag.Get("enc"), "omitempty") {
 		if vF.CanSet() || f.Name != "_" {
 			if v.Field(i).Kind() == reflect.Slice {
 				if mai.CurrentIndex == -1 {

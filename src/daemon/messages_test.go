@@ -13,6 +13,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/util"
+	"strings"
 )
 
 func setupMsgEncoding() {
@@ -78,7 +79,7 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 		mai.CurrentField++
 		return mai.Next()
 	}
-	if f.Tag.Get("enc") != "omitempty" || (f.Tag.Get("enc") == "omitempty" && fieldSupportsOmitempty(v.Field(i)) && !fieldIsEmpty(v.Field(i))) {
+	if !strings.Contains(f.Tag.Get("enc"),"omitempty")  {
 		if vF.CanSet() || f.Name != "_" {
 			if v.Field(i).Kind() == reflect.Slice {
 				if mai.CurrentIndex == -1 {

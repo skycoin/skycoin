@@ -42,12 +42,18 @@ var initErrorCodeMap = func() {
 	}
 }
 
-const ErrorCodeNone = 0xFF
+// Unexpected error condition detected
+const ErrorCodeUnknown = 0xFF
 
+// Success error code
+const Success = 0
+
+// Retrieve error object by corresponding error code
 func GetError(code uint8) error {
 	return errorByCode[code]
 }
 
+// Retrieve error code representing corresponding error object
 func GetErrorCode(err error) uint8 {
 	if initErrorCodeMap != nil {
 		initErrorCodeMap()

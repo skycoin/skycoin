@@ -412,7 +412,7 @@ type RejectHeader struct {
 	// Prefix of the (previous) message that's been rejected
 	TargetPrefix gnet.MessagePrefix
 	// Error code
-	ErrorCode uint8
+	ErrorCode uint16
 	// Reason message. Included only in very particular cases
 	Reason string
 }
@@ -434,6 +434,7 @@ type RejectWithPeersMessage struct {
 	c *gnet.MessageContext `enc:"-"`
 }
 
+// Create message sent to reject previously received message
 func NewRejectWithPeersMessage(msg gnet.Message, err error, reason string, peers []IPAddr) *RejectWithPeersMessage {
 	t := reflect.Indirect(reflect.ValueOf(msg)).Type()
 	prefix, exists := gnet.MessageIDMap[t]
@@ -448,7 +449,7 @@ func NewRejectWithPeersMessage(msg gnet.Message, err error, reason string, peers
 		RejectHeader: RejectHeader{
 			TargetPrefix: prefix,
 			// TODO: Return error code
-			ErrorCode: 0,
+			ErrorCode: GetErrorCode(err),
 			Reason:    reason,
 		},
 		Peers:    peers,
@@ -456,7 +457,7 @@ func NewRejectWithPeersMessage(msg gnet.Message, err error, reason string, peers
 	}
 }
 
-// Process an event queued by Handle()
+// Handle an event queued by Handle()
 func (msg *RejectWithPeersMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	msg.c = mc
 	return daemon.(*Daemon).recordMessageEvent(msg, mc)

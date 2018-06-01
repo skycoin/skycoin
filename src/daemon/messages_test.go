@@ -94,10 +94,9 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 				if sliceLen > 0 {
 					// Emit annotation for last item
 					return util.Annotation{Size: len(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())[4:]), Name: f.Name + "[" + strconv.Itoa(j) + "]"}, true
-				} else {
-					// Zero length slice. Start over
-					return mai.Next()
 				}
+				// Zero length slice. Start over
+				return mai.Next()
 			}
 
 			mai.CurrentField++
@@ -469,7 +468,7 @@ func ExampleRejectWithPeersMessage() {
 	// RejectWithPeersMessage:
 	// 0x0000 | 4a 00 00 00 ....................................... Length
 	// 0x0004 | 52 4a 43 50 ....................................... Prefix
-	// 0x0008 | 49 4e 54 52 00 1d 00 00 00 45 78 61 6d 70 6c 65
+	// 0x0008 | 49 4e 54 52 0c 1d 00 00 00 45 78 61 6d 70 6c 65
 	// 0x0018 | 52 65 6a 65 63 74 57 69 74 68 50 65 65 72 73 4d
 	// 0x0028 | 65 73 73 61 67 65 ................................. RejectHeader
 	// 0x002e | 04 00 00 00 ....................................... Peers length

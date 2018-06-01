@@ -1765,14 +1765,10 @@ func (vs *Visor) GetUnspentsOfAddrs(addrs []cipher.Address) (coin.AddressUxOuts,
 // VerifyTxnVerbose verifies a transaction, it returns transaction's input uxouts, whether the
 // transaction is confirmed, and error if any
 func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bool, error) {
-	if err := VerifySingleTxnUserConstraints(*txn); err != nil {
-		return nil, false, err
-	}
-
 	var uxa coin.UxArray
 	var head *coin.SignedBlock
 	var isTxnConfirmed bool
-	if err := vs.DB.View("VerifyTxnVerbose", func(tx *dbutil.Tx) error {
+	err := vs.DB.View("VerifyTxnVerbose", func(tx *dbutil.Tx) error {
 		var err error
 		head, err = vs.Blockchain.Head(tx)
 		if err != nil {
@@ -1813,21 +1809,29 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bo
 			return err
 		}
 
+		if err := VerifySingleTxnUserConstraints(*txn); err != nil {
+			return err
+		}
+
 		if err := VerifySingleTxnSoftConstraints(*txn, head.Time(), uxa, vs.Config.MaxBlockSize); err != nil {
 			return err
 		}
 
 		return VerifySingleTxnHardConstraints(*txn, head, uxa)
-	}); err != nil {
-		return nil, isTxnConfirmed, err
+	})
+
+	// If we were able to query the inputs, return the verbose inputs to the caller
+	// even if the transaction failed validation
+	var uxs []wallet.UxBalance
+	if len(uxa) != 0 {
+		var otherErr error
+		uxs, otherErr = wallet.NewUxBalances(head.Time(), uxa)
+		if otherErr != nil {
+			return nil, isTxnConfirmed, otherErr
+		}
 	}
 
-	uxs, err := wallet.NewUxBalances(head.Time(), uxa)
-	if err != nil {
-		return nil, isTxnConfirmed, err
-	}
-
-	return uxs, isTxnConfirmed, nil
+	return uxs, isTxnConfirmed, err
 }
 
 // AddressCount returns the total number of addresses with unspents

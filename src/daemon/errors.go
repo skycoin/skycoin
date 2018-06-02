@@ -42,18 +42,18 @@ var initErrorCodeMap = func() {
 	}
 }
 
-// Unexpected error condition detected
+// ErrorCodeUnknown is used on unexpected error condition detected
 const ErrorCodeUnknown = 0xFFFF
 
 // Success error code
 const Success = 0
 
-// Retrieve error object by corresponding error code
+// GetError Retrieve error object by corresponding error code
 func GetError(code uint16) error {
 	return errorByCode[code]
 }
 
-// Retrieve error code representing corresponding error object
+// GetErrorCode Retrieve error code representing corresponding error object
 func GetErrorCode(err error) uint16 {
 	if initErrorCodeMap != nil {
 		initErrorCodeMap()

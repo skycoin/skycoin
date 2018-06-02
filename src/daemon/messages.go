@@ -405,7 +405,7 @@ func (pong *PongMessage) Handle(mc *gnet.MessageContext, daemon interface{}) err
 	return nil
 }
 
-// Metadata describing message rejection
+// RejectHeader contains metadata describing message rejection
 //
 // Should be at the beginning of every RJC? message
 type RejectHeader struct {
@@ -434,7 +434,7 @@ type RejectWithPeersMessage struct {
 	c *gnet.MessageContext `enc:"-"`
 }
 
-// Create message sent to reject previously received message
+// NewRejectWithPeersMessage creates message sent to reject previously received message
 func NewRejectWithPeersMessage(msg gnet.Message, err error, reason string, peers []IPAddr) *RejectWithPeersMessage {
 	t := reflect.Indirect(reflect.ValueOf(msg)).Type()
 	prefix, exists := gnet.MessageIDMap[t]

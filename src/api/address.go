@@ -8,21 +8,19 @@ import (
 	//http,json helpers
 )
 
-// VerifyAddressRequest is the request data for POST /api/v1/address/verify
+// VerifyAddressRequest is the request data for POST /api/v2/address/verify
 type VerifyAddressRequest struct {
 	Address string `json:"address"`
 }
 
-// VerifyAddressResponse is returned by POST /api/v1/address/verify
+// VerifyAddressResponse is returned by POST /api/v2/address/verify
 type VerifyAddressResponse struct {
-	Address string `json:"address"`
-	Version *byte  `json:"version,omitempty"`
-	Valid   bool   `json:"valid"`
+	Version byte `json:"version"`
 }
 
 // addressVerify verifies a Skycoin address
 // Method: POST
-// URI: /api/v1/address/verify
+// URI: /api/v2/address/verify
 func addressVerify(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
@@ -52,24 +50,14 @@ func addressVerify(w http.ResponseWriter, r *http.Request) {
 	addr, err := cipher.DecodeBase58Address(req.Address)
 
 	if err != nil {
-		writeHTTPResponse(w, HTTPResponse{
-			Error: &HTTPError{
-				Message: err.Error(),
-				Code:    http.StatusUnprocessableEntity,
-			},
-			Data: VerifyAddressResponse{
-				Address: req.Address,
-				Valid:   false,
-			},
-		})
+		resp := NewHTTPErrorResponse(http.StatusUnprocessableEntity, err.Error())
+		writeHTTPResponse(w, resp)
 		return
 	}
 
 	writeHTTPResponse(w, HTTPResponse{
 		Data: VerifyAddressResponse{
-			Address: req.Address,
-			Version: &addr.Version,
-			Valid:   true,
+			Version: addr.Version,
 		},
 	})
 }

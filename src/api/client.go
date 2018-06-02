@@ -822,7 +822,7 @@ func (c *Client) RawTransaction(txid string) (string, error) {
 	return rawTx, nil
 }
 
-// VerifyTransaction makes a request to POST /api/v1/transaction/verify.
+// VerifyTransaction makes a request to POST /api/v2/transaction/verify.
 // The API may respond with an error but include data useful for processing,
 // so both return values may be non-nil.
 func (c *Client) VerifyTransaction(encodedTxn string) (*VerifyTxnResponse, error) {
@@ -831,7 +831,7 @@ func (c *Client) VerifyTransaction(encodedTxn string) (*VerifyTxnResponse, error
 	}
 
 	var rsp VerifyTxnResponse
-	ok, err := c.PostJSONV2("/api/v1/transaction/verify", req, &rsp)
+	ok, err := c.PostJSONV2("/api/v2/transaction/verify", req, &rsp)
 	if ok {
 		return &rsp, err
 	}
@@ -839,7 +839,7 @@ func (c *Client) VerifyTransaction(encodedTxn string) (*VerifyTxnResponse, error
 	return nil, err
 }
 
-// VerifyAddress makes a request to POST /api/v1/address/verify
+// VerifyAddress makes a request to POST /api/v2/address/verify
 // The API may respond with an error but include data useful for processing,
 // so both return values may be non-nil.
 func (c *Client) VerifyAddress(addr string) (*VerifyAddressResponse, error) {
@@ -848,7 +848,7 @@ func (c *Client) VerifyAddress(addr string) (*VerifyAddressResponse, error) {
 	}
 
 	var rsp VerifyAddressResponse
-	ok, err := c.PostJSONV2("/api/v1/address/verify", req, &rsp)
+	ok, err := c.PostJSONV2("/api/v2/address/verify", req, &rsp)
 	if ok {
 		return &rsp, err
 	}

@@ -262,6 +262,10 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 		webHandler("/api/v1"+endpoint, handler)
 	}
 
+	webHandlerV2 := func(endpoint string, handler http.Handler) {
+		webHandler("/api/v2"+endpoint, handler)
+	}
+
 	webHandler("/", newIndexHandler(c.appLoc, c.enableGUI))
 
 	if c.enableGUI {
@@ -403,7 +407,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	webHandlerV1("/transaction", getTransactionByID(gateway))
 
 	// parse and verify transaction
-	webHandlerV1("/transaction/verify", verifyTxnHandler(gateway))
+	webHandlerV2("/transaction/verify", verifyTxnHandler(gateway))
 
 	// Health check handler
 	webHandlerV1("/health", healthCheck(gateway))
@@ -427,7 +431,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	// get all the address affected uxouts.
 	webHandlerV1("/address_uxouts", getAddrUxOuts(gateway))
 
-	webHandlerV1("/address/verify", http.HandlerFunc(addressVerify))
+	webHandlerV2("/address/verify", http.HandlerFunc(addressVerify))
 
 	// Explorer handler
 

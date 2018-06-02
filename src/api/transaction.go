@@ -260,12 +260,12 @@ func getRawTxn(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-// VerifyTxnRequest represents the data struct of the request for /api/v1/transaction/verify
+// VerifyTxnRequest represents the data struct of the request for /api/v2/transaction/verify
 type VerifyTxnRequest struct {
 	EncodedTransaction string `json:"encoded_transaction"`
 }
 
-// VerifyTxnResponse the response data struct for /api/v1/transaction/verify api
+// VerifyTxnResponse the response data struct for /api/v2/transaction/verify
 type VerifyTxnResponse struct {
 	Confirmed   bool               `json:"confirmed"`
 	Transaction CreatedTransaction `json:"transaction"`
@@ -298,7 +298,7 @@ func writeHTTPResponse(w http.ResponseWriter, resp HTTPResponse) {
 
 // Decode and verify an encoded transaction
 // Method: POST
-// URI: /api/v1/transaction/verify
+// URI: /api/v2/transaction/verify
 func verifyTxnHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {

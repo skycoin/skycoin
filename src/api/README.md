@@ -261,7 +261,7 @@ Result:
 ### Verify an address
 
 ```
-URI: /api/v1/address/verify
+URI: /api/v2/address/verify
 Method: POST
 Content-Type: application/json
 Args: {"address": "<address>"}
@@ -270,7 +270,7 @@ Args: {"address": "<address>"}
 Example for a valid address:
 
 ```sh
-curl -X POST http://127.0.0.1:6420/api/v1/address/verify \
+curl -X POST http://127.0.0.1:6420/api/v2/address/verify \
  -H 'Content-Type: application/json' \
  -d '{"address":"2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2"}'
 ```
@@ -290,7 +290,7 @@ Result:
 Example for a valid address:
 
 ```sh
-curl -X POST http://127.0.0.1:6420/api/v1/address/verify \
+curl -X POST http://127.0.0.1:6420/api/v2/address/verify \
  -H 'Content-Type: application/json' \
  -d '{"address":"2aTnQe3ZupkG6k8S81brNC3JycGV2Em71F2"}'
 ```
@@ -1474,7 +1474,7 @@ Result:
 ### Verify encoded transaction
 
 ```
-URI: /api/v1/transaction/verify
+URI: /api/v2/transaction/verify
 Method: POST
 Content-Type: application/json
 Args: {"encoded_transaction": "<hex encoded serialized transaction>"}
@@ -1496,7 +1496,7 @@ If the transaction can not be parsed, returns `400 Bad Request` and the `"error"
 Example of valid transaction that has not been spent:
 
 ```sh
-curl -X POST -H 'Content-Type: application/json' http://127.0.0.1:6420/api/v1/transaction/verify \
+curl -X POST -H 'Content-Type: application/json' http://127.0.0.1:6420/api/v2/transaction/verify \
 -d '{"encoded_transaction": "dc000000004fd024d60939fede67065b36adcaaeaf70fc009e3a5bbb8358940ccc8bbb2074010000007635ce932158ec06d94138adc9c9b19113fa4c2279002e6b13dcd0b65e0359f247e8666aa64d7a55378b9cc9983e252f5877a7cb2671c3568ec36579f8df1581000100000019ad5059a7fffc0369fc24b31db7e92e12a4ee2c134fb00d336d7495dec7354d02000000003f0555073e17ea6e45283f0f1115b520d0698d03a086010000000000010000000000000000b90dc595d102c48d3281b47428670210415f585200f22b0000000000ff01000000000000"}'
 ```
 
@@ -1549,7 +1549,7 @@ Result:
 Example of valid transaction that *has* been spent:
 
 ```sh
-curl -X POST -H 'Content-Type: application/json' http://127.0.0.1:6420/api/v1/transaction/verify \
+curl -X POST -H 'Content-Type: application/json' http://127.0.0.1:6420/api/v2/transaction/verify \
 -d '{"encoded_transaction": "dc000000004fd024d60939fede67065b36adcaaeaf70fc009e3a5bbb8358940ccc8bbb2074010000007635ce932158ec06d94138adc9c9b19113fa4c2279002e6b13dcd0b65e0359f247e8666aa64d7a55378b9cc9983e252f5877a7cb2671c3568ec36579f8df1581000100000019ad5059a7fffc0369fc24b31db7e92e12a4ee2c134fb00d336d7495dec7354d02000000003f0555073e17ea6e45283f0f1115b520d0698d03a086010000000000010000000000000000b90dc595d102c48d3281b47428670210415f585200f22b0000000000ff01000000000000"}'
 ```
 

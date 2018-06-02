@@ -25,8 +25,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `-reset-corrupt-db` option (default false) will verify the database integrity during startup and reset the db if a problem is found
 - `GET /explorer/address`: add `fee` to transaction objects and `calculated_hours` to transaction inputs
 - Test data generator and test suite for verification of alternative `cipher` implementations
-- Add `POST /transaction/verify` API endpoint
-- Add `POST /address/verify` API endpoint
+- Begin `/api/v2` API endpoints. These endpoints are in beta and subject to change.
+- Add `POST /api/v2/transaction/verify` API endpoint
+- Add `POST /api/v2/address/verify` API endpoint
 
 ### Fixed
 

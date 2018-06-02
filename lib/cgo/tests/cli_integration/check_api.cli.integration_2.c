@@ -21,6 +21,12 @@
 #define SKYCOIN_NODE_HOST "http://127.0.0.1:6420"
 #define stableWalletName "integration-test.wlt"
 #define stableEncryptWalletName "integration-test-encrypted.wlt"
+#define NODE_ADDRESS "SKYCOIN_NODE_HOST"
+#define NODE_ADDRESS_DEFAULT "http://127.0.0.1:46420"
+#define STABLE 1
+#define NORMAL_TESTS
+#define DECRYPTION_TESTS
+#define DECRYPT_WALLET_TEST
 
 // createTempWalletDir creates a temporary wallet dir,
 // sets the WALLET_DIR environment variable.
@@ -89,6 +95,22 @@ int getCountStringInString(const char *source, const char *str) {
   // TODO:Not implement
 }
 
+char *getNodeAddress_Cli() {
+  if (STABLE) {
+    return NODE_ADDRESS_DEFAULT;
+  } else {
+    GoString_ nodeAddress;
+    memset(&nodeAddress, 0, sizeof(GoString_));
+    GoString nodeEnvName = {NODE_ADDRESS, strlen(NODE_ADDRESS)};
+    int result = SKY_cli_Getenv(nodeEnvName, &nodeAddress);
+    cr_assert(result == SKY_OK, "Couldn\'t get node address from enviroment");
+    registerMemCleanup((void *)nodeAddress.p);
+    if (strcmp(nodeAddress.p, "") == 0) {
+      return NODE_ADDRESS_DEFAULT;
+    }
+    return (char *)nodeAddress.p;
+  }
+}
 Test(api_cli_integration, TestGenerateAddresses) {
   int lenStruct = 6;
 
@@ -1080,49 +1102,51 @@ Test(api_cli_integracion, TestStableListAddress) {
   cr_assert(compareJsonValues(addresses_value, addresses_expect) == 1);
 }
 
-// Test(api_cli_integracion, TestStableAddressBalance) {
-//   const char *args;
-//   args = "boxfort-worker addressBalance 2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt";
+Test(api_cli_integracion, TestStableAddressBalance) {
 
-//   GoUint32 errcode;
-//   char output[JSON_BIG_FILE_SIZE];
+  const char *args;
+  args = "boxfort addressBalance 2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt";
 
-//   Config__Handle configHandle;
-//   App__Handle appHandle;
-//   errcode = SKY_cli_LoadConfig(&configHandle);
-//   cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
-//   registerHandleClose(configHandle);
-//   errcode = SKY_cli_NewApp(configHandle, &appHandle);
-//   cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
-//   registerHandleClose(appHandle);
+  GoUint32 errcode;
+  char output[JSON_BIG_FILE_SIZE];
 
-//   // Redirect standard output to a pipe
-//   GoString Args = {args, strlen(args)};
-//   redirectStdOut();
-//   errcode = SKY_cli_App_Run(appHandle, Args);
-//   // Get redirected standard output
-//   getStdOut(output, JSON_BIG_FILE_SIZE);
-//   cr_assert(errcode == 0, "SKY_cli_App_Run failed in return %d", errcode);
-//   printf("El OUTPUT %s\n", output);
-//   // JSON parse output
-//   json_char *json;
-//   json_value *value;
-//   json_value *json_str;
-//   int result;
-//   json = (json_char *)output;
-//   value = json_parse(json, strlen(output));
-//   cr_assert(value != NULL, "Failed to json parse in output \n%s\n", output);
-//   registerJsonFree(value);
+  Config__Handle configHandle;
+  App__Handle appHandle;
+  errcode = SKY_cli_LoadConfig(&configHandle);
+  cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
+  registerHandleClose(configHandle);
+  errcode = SKY_cli_NewApp(configHandle, &appHandle);
+  cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
+  registerHandleClose(appHandle);
+  WebRpcClient__Handle webrpcHandle;
+  SKY_cli_RPCClientFromApp(appHandle, &webrpcHandle);
+  // Redirect standard output to a pipe
+  GoString Args = {args, strlen(args)};
+  redirectStdOut();
+  errcode = SKY_cli_App_Run(webrpcHandle, Args);
+  // Get redirected standard output
+  getStdOut(output, JSON_BIG_FILE_SIZE);
+  cr_assert(errcode == 0, "SKY_cli_App_Run failed in return %d", errcode);
+  printf("El OUTPUT %s\n", output);
+  // JSON parse output
+  json_char *json;
+  json_value *value;
+  json_value *json_str;
+  int result;
+  json = (json_char *)output;
+  value = json_parse(json, strlen(output));
+  cr_assert(value != NULL, "Failed to json parse in output \n%s\n", output);
+  registerJsonFree(value);
 
-//   unsigned char goldenFileURL[BUFFER_SIZE];
-//   strcpy(goldenFileURL, TEST_DATA_DIR);
-//   strcat(goldenFileURL, "address-balance.golden");
-//   json_value *expect = loadJsonFile(goldenFileURL);
-//   cr_assert(expect != NULL, "Failed to json parse in test :%s", goldenFileURL);
-//   registerJsonFree(expect);
+  unsigned char goldenFileURL[BUFFER_SIZE];
+  strcpy(goldenFileURL, TEST_DATA_DIR);
+  strcat(goldenFileURL, "address-balance.golden");
+  json_value *expect = loadJsonFile(goldenFileURL);
+  cr_assert(expect != NULL, "Failed to json parse in test :%s", goldenFileURL);
+  registerJsonFree(expect);
 
-//   cr_assert(compareJsonValues(value, expect) == 1);
-// }
+  cr_assert(compareJsonValues(value, expect) == 1);
+}
 
 // Test(api_cli_integracion, TestStableWalletBalance) {
 //   createTempWalletDir(false);

@@ -16,7 +16,7 @@
 #define BUFFER_SIZE 1024
 #define STRING_SIZE 128
 #define JSON_FILE_SIZE 4096
-#define JSON_BIG_FILE_SIZE 32768
+#define JSON_BIG_FILE_SIZE 102400
 #define TEST_DATA_DIR "src/cli/integration/testdata/"
 #define SKYCOIN_NODE_HOST "http://127.0.0.1:6420"
 #define stableWalletName "integration-test.wlt"
@@ -27,7 +27,44 @@
 #define NORMAL_TESTS
 #define DECRYPTION_TESTS
 #define DECRYPT_WALLET_TEST
+#define LENARRAY(x) (sizeof(x) / sizeof((*x)))
 
+void useClient() {
+  GoString default_webprc = {"RPC_ADDR", 8};
+  GoString default_webprc_value = {NODE_ADDRESS_DEFAULT,
+                                   strlen(NODE_ADDRESS_DEFAULT)};
+  SKY_cli_Setenv(default_webprc, default_webprc_value);
+}
+
+int useCSRF() {
+  GoUint32 errcode;
+
+  GoString strCSRFVar = {"USE_CSRF", 8};
+  char buffercrsf[BUFFER_SIZE];
+  GoString_ crsf = {buffercrsf, 0};
+  errcode = SKY_cli_Getenv(strCSRFVar, &crsf);
+  cr_assert(errcode == SKY_OK, "SKY_cli_Getenv failed");
+  int length = strlen(crsf.p);
+  int result = 0;
+  if (length == 1) {
+    result = crsf.p[0] == '1' || crsf.p[0] == 't' || crsf.p[0] == 'T';
+  } else {
+    result = strcmp(crsf.p, "true") == 0 || strcmp(crsf.p, "True") == 0 ||
+             strcmp(crsf.p, "TRUE") == 0;
+  }
+  free((void *)crsf.p);
+  return result;
+}
+
+json_value *loadGoldenFile_Cli(const char *file) {
+  char path[STRING_SIZE];
+  if (strlen(TEST_DATA_DIR) + strlen(file) < STRING_SIZE) {
+    strcpy(path, TEST_DATA_DIR);
+    strcat(path, file);
+    return loadJsonFile(path);
+  }
+  return NULL;
+}
 // createTempWalletDir creates a temporary wallet dir,
 // sets the WALLET_DIR environment variable.
 // Returns wallet dir path and callback function to clean up the dir.
@@ -91,6 +128,18 @@ int getCountWord(const char *str) {
   return len;
 }
 
+int getCountWordWithSeparator(const char *str, const char *sep) {
+  int len = 0;
+  do {
+    str = strpbrk(str, sep); // find separator
+    if (str)
+      str += strspn(str, sep); // skip separator
+    ++len;                     // increment word count
+  } while (str && *str);
+
+  return len;
+}
+
 int getCountStringInString(const char *source, const char *str) {
   // TODO:Not implement
 }
@@ -111,7 +160,10 @@ char *getNodeAddress_Cli() {
     return (char *)nodeAddress.p;
   }
 }
-Test(api_cli_integration, TestGenerateAddresses) {
+
+TestSuite(cli_integration, .init = setup, .fini = teardown);
+
+Test(cli_integration, TestGenerateAddresses) {
   int lenStruct = 6;
 
   struct testStruct {
@@ -255,7 +307,7 @@ Test(api_cli_integration, TestGenerateAddresses) {
   }
 };
 
-Test(api_cli_integration, TestVerifyAddress) {
+Test(cli_integration, TestVerifyAddress) {
   int lenStruct = 3;
 
   struct testStruct {
@@ -1103,7 +1155,7 @@ Test(api_cli_integracion, TestStableListAddress) {
 }
 
 Test(api_cli_integracion, TestStableAddressBalance) {
-
+  useClient();
   const char *args;
   args = "boxfort addressBalance 2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt";
 
@@ -1118,16 +1170,13 @@ Test(api_cli_integracion, TestStableAddressBalance) {
   errcode = SKY_cli_NewApp(configHandle, &appHandle);
   cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
   registerHandleClose(appHandle);
-  WebRpcClient__Handle webrpcHandle;
-  SKY_cli_RPCClientFromApp(appHandle, &webrpcHandle);
   // Redirect standard output to a pipe
   GoString Args = {args, strlen(args)};
   redirectStdOut();
-  errcode = SKY_cli_App_Run(webrpcHandle, Args);
+  errcode = SKY_cli_App_Run(appHandle, Args);
   // Get redirected standard output
   getStdOut(output, JSON_BIG_FILE_SIZE);
   cr_assert(errcode == 0, "SKY_cli_App_Run failed in return %d", errcode);
-  printf("El OUTPUT %s\n", output);
   // JSON parse output
   json_char *json;
   json_value *value;
@@ -1148,92 +1197,711 @@ Test(api_cli_integracion, TestStableAddressBalance) {
   cr_assert(compareJsonValues(value, expect) == 1);
 }
 
-// Test(api_cli_integracion, TestStableWalletBalance) {
-//   createTempWalletDir(false);
-//   const char *args;
-//   args = "boxfort-worker walletBalance";
+Test(api_cli_integracion, TestStableWalletBalance) {
+  createTempWalletDir(false);
+  useClient();
+  const char *args;
+  args = "boxfort-worker walletBalance";
 
-//   GoUint32 errcode;
-//   char output[JSON_BIG_FILE_SIZE];
+  GoUint32 errcode;
+  char output[JSON_BIG_FILE_SIZE];
 
-//   Config__Handle configHandle;
-//   App__Handle appHandle;
-//   errcode = SKY_cli_LoadConfig(&configHandle);
-//   cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
-//   registerHandleClose(configHandle);
-//   errcode = SKY_cli_NewApp(&configHandle, &appHandle);
-//   cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
-//   registerHandleClose(appHandle);
+  Config__Handle configHandle;
+  App__Handle appHandle;
+  errcode = SKY_cli_LoadConfig(&configHandle);
+  cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
+  registerHandleClose(configHandle);
+  errcode = SKY_cli_NewApp(configHandle, &appHandle);
+  cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
+  registerHandleClose(appHandle);
 
-//   // Redirect standard output to a pipe
-//   GoString Args = {args, strlen(args)};
-//   redirectStdOut();
-//   errcode = SKY_cli_App_Run(&appHandle, Args);
-//   // Get redirected standard output
-//   getStdOut(output, JSON_BIG_FILE_SIZE);
-//   cr_assert(errcode == 0, "SKY_cli_App_Run failed in return %d", errcode);
-//   printf("El OUTPUT %s\n", output);
-//   // JSON parse output
-//   json_char *json;
-//   json_value *value;
-//   json_value *json_str;
-//   int result;
-//   json = (json_char *)output;
-//   value = json_parse(json, strlen(output));
-//   cr_assert(value != NULL, "Failed to json parse in output \n%s\n", output);
-//   registerJsonFree(value);
+  // Redirect standard output to a pipe
+  GoString Args = {args, strlen(args)};
+  redirectStdOut();
+  errcode = SKY_cli_App_Run(appHandle, Args);
+  // Get redirected standard output
+  getStdOut(output, JSON_BIG_FILE_SIZE);
+  cr_assert(errcode == 0, "SKY_cli_App_Run failed in return %d", errcode);
+  // JSON parse output
+  json_char *json;
+  json_value *value;
+  json_value *json_str;
+  int result;
+  json = (json_char *)output;
+  value = json_parse(json, strlen(output));
+  cr_assert(value != NULL, "Failed to json parse in output \n%s\n", output);
+  registerJsonFree(value);
 
-//   unsigned char goldenFileURL[BUFFER_SIZE];
-//   strcpy(goldenFileURL, TEST_DATA_DIR);
-//   strcat(goldenFileURL, "wallet-balance.golden");
-//   json_value *expect = loadJsonFile(goldenFileURL);
-//   cr_assert(expect != NULL, "Failed to json parse in test :%s",
-//   goldenFileURL); registerJsonFree(expect);
+  unsigned char goldenFileURL[BUFFER_SIZE];
+  strcpy(goldenFileURL, TEST_DATA_DIR);
+  strcat(goldenFileURL, "wallet-balance.golden");
+  json_value *expect = loadJsonFile(goldenFileURL);
+  cr_assert(expect != NULL, "Failed to json parse in test :%s", goldenFileURL);
+  registerJsonFree(expect);
 
-//   cr_assert(compareJsonValues(value, expect) == 1);
-// }
+  cr_assert(compareJsonValues(value, expect) == 1);
+}
 
-// Test(api_cli_integracion, TestStableWalletOutputs) {
-//   createTempWalletDir(false);
-//   const char *args;
-//   args = "boxfort-worker walletOutputs";
+Test(api_cli_integracion, TestStableWalletOutputs) {
+  createTempWalletDir(false);
+  useClient();
+  const char *args;
+  args = "boxfort-worker walletOutputs";
 
-//   GoUint32 errcode;
-//   char output[JSON_BIG_FILE_SIZE];
+  GoUint32 errcode;
+  char output[JSON_BIG_FILE_SIZE];
 
-//   Config__Handle configHandle;
-//   App__Handle appHandle;
-//   errcode = SKY_cli_LoadConfig(&configHandle);
-//   cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
-//   registerHandleClose(configHandle);
-//   errcode = SKY_cli_NewApp(configHandle, &appHandle);
-//   cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
-//   registerHandleClose(appHandle);
+  Config__Handle configHandle;
+  App__Handle appHandle;
+  errcode = SKY_cli_LoadConfig(&configHandle);
+  cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
+  registerHandleClose(configHandle);
+  errcode = SKY_cli_NewApp(configHandle, &appHandle);
+  cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
+  registerHandleClose(appHandle);
 
-//   // Redirect standard output to a pipe
-//   GoString Args = {args, strlen(args)};
-//   redirectStdOut();
-//   errcode = SKY_cli_App_Run(appHandle, Args);
-//   // Get redirected standard output
-//   getStdOut(output, JSON_BIG_FILE_SIZE);
-//   cr_assert(errcode == 0, "SKY_cli_App_Run failed in return %d", errcode);
-//   printf("El OUTPUT %s\n", output);
-//   // JSON parse output
-//   json_char *json;
-//   json_value *value;
-//   json_value *json_str;
-//   int result;
-//   json = (json_char *)output;
-//   value = json_parse(json, strlen(output));
-//   cr_assert(value != NULL, "Failed to json parse in output \n%s\n", output);
-//   registerJsonFree(value);
+  // Redirect standard output to a pipe
+  GoString Args = {args, strlen(args)};
+  redirectStdOut();
+  errcode = SKY_cli_App_Run(appHandle, Args);
+  // Get redirected standard output
+  getStdOut(output, JSON_BIG_FILE_SIZE);
+  cr_assert(errcode == 0, "SKY_cli_App_Run failed in return %d", errcode);
+  // JSON parse output
+  json_char *json;
+  json_value *value;
+  json_value *json_str;
+  int result;
+  json = (json_char *)output;
+  value = json_parse(json, strlen(output));
+  cr_assert(value != NULL, "Failed to json parse in output \n%s\n", output);
+  registerJsonFree(value);
 
-//   unsigned char goldenFileURL[BUFFER_SIZE];
-//   strcpy(goldenFileURL, TEST_DATA_DIR);
-//   strcat(goldenFileURL, "wallet-outputs.golden");
-//   json_value *expect = loadJsonFile(goldenFileURL);
-//   cr_assert(expect != NULL, "Failed to json parse in test :%s",
-//   goldenFileURL); registerJsonFree(expect);
+  unsigned char goldenFileURL[BUFFER_SIZE];
+  strcpy(goldenFileURL, TEST_DATA_DIR);
+  strcat(goldenFileURL, "wallet-outputs.golden");
+  json_value *expect = loadJsonFile(goldenFileURL);
+  cr_assert(expect != NULL, "Failed to json parse in test :%s", goldenFileURL);
+  registerJsonFree(expect);
 
-//   cr_assert(compareJsonValues(value, expect) == 1);
-// }
+  cr_assert(compareJsonValues(value, expect) == 1);
+}
+
+Test(cli_integration, TestStableAddressOutputs) {
+
+  typedef struct {
+    char *name;
+    char *args;
+    char *goldenFile;
+    int isUsageErr;
+  } testStruct;
+
+  testStruct tt[] = {
+      {"addressOutputs one address",
+       "boxfort-worker addressOutputs 2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt",
+       "address-outputs.golden", SKY_OK},
+      {"addressOutputs two address",
+       "boxfort-worker addressOutputs 2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt "
+       "ejJjiCwp86ykmFr5iTJ8LxQXJ2wJPTYmkm",
+       "two-addresses-outputs.golden", SKY_OK},
+      {"addressOutputs two address one invalid",
+       "boxfort-worker addressOutputs 2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt "
+       "badaddress",
+       "", SKY_ERROR}};
+
+  useClient();
+  GoUint32 errcode;
+  char output[JSON_BIG_FILE_SIZE];
+  Config__Handle configHandle;
+  App__Handle appHandle;
+
+  errcode = SKY_cli_LoadConfig(&configHandle);
+  cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
+  registerHandleClose(configHandle);
+  errcode = SKY_cli_NewApp(configHandle, &appHandle);
+  cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
+  registerHandleClose(appHandle);
+  for (int i = 0; i < LENARRAY(tt); i++) {
+
+    // Redirect standard output to a pipe
+    GoString Args = {tt[i].args, strlen(tt[i].args)};
+    redirectStdOut();
+    errcode = SKY_cli_App_Run(appHandle, Args);
+    // Get redirected standard output
+    getStdOut(output, JSON_BIG_FILE_SIZE);
+    cr_assert(errcode == tt[i].isUsageErr,
+              "SKY_cli_App_Run failed in return %d", errcode);
+
+    if (tt[i].isUsageErr == SKY_OK) {
+
+      // JSON parse output
+      json_char *json;
+      json_value *value;
+      json_value *json_str;
+      int result;
+      json = (json_char *)output;
+      value = json_parse(json, strlen(output));
+      cr_assert(value != NULL, "Failed to json parse in %s\n", tt[i].name);
+      registerJsonFree(value);
+
+      unsigned char goldenFileURL[BUFFER_SIZE];
+      strcpy(goldenFileURL, TEST_DATA_DIR);
+      strcat(goldenFileURL, tt[i].goldenFile);
+      json_value *expect = loadJsonFile(goldenFileURL);
+      cr_assert(expect != NULL, "Failed to json parse in test :%s",
+                tt[i].goldenFile);
+      registerJsonFree(expect);
+
+      cr_assert(compareJsonValues(value, expect) == 1);
+    }
+  }
+}
+
+Test(cli_integration, TestStableShowConfig) {
+  char output[BUFFER_SIZE];
+
+  Config__Handle configHandle;
+  App__Handle appHandle;
+  const char *str = "boxfort-worker showConfig";
+  GoString showConfigCommand = {str, strlen(str)};
+  GoUint32 errcode;
+
+  errcode = SKY_cli_LoadConfig(&configHandle);
+  cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
+  registerHandleClose(configHandle);
+  errcode = SKY_cli_NewApp(configHandle, &appHandle);
+  cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
+  registerHandleClose(appHandle);
+
+  // Redirect standard output to a pipe
+  redirectStdOut();
+  errcode = SKY_cli_App_Run(appHandle, showConfigCommand);
+  // Get redirected standard output
+  getStdOut(output, BUFFER_SIZE);
+  cr_assert(errcode == SKY_OK, "SKY_cli_App_Run failed");
+
+  // JSON parse output
+  json_char *json;
+  json_value *value;
+  json_value *json_str;
+  int result;
+  json = (json_char *)output;
+  value = json_parse(json, strlen(output));
+  cr_assert(value != NULL, "Failed to json parse");
+  registerJsonFree(value);
+
+  json_value *wallet_dir = json_get_string(value, "wallet_directory");
+  cr_assert(wallet_dir != NULL, "Failed to get json value");
+  json_value *data_dir = json_get_string(value, "data_directory");
+  cr_assert(data_dir != NULL, "Failed to get json value");
+  json_value *wallet_name = json_get_string(value, "wallet_name");
+  cr_assert(wallet_name != NULL, "Failed to get json value");
+  json_value *coin_name = json_get_string(value, "coin");
+  cr_assert(coin_name != NULL, "Failed to get json value");
+  json_value *rpc_address = json_get_string(value, "rpc_address");
+  cr_assert(rpc_address != NULL, "Failed to get json value");
+
+  result = string_has_suffix(wallet_dir->u.string.ptr, ".skycoin/wallets");
+  cr_assert(result == 1, "Wallet dir must end in .skycoin/wallets");
+  result = string_has_suffix(data_dir->u.string.ptr, ".skycoin");
+  cr_assert(result == 1, "Data dir must end in .skycoin");
+  result = string_has_prefix(wallet_dir->u.string.ptr, data_dir->u.string.ptr);
+  cr_assert(result == 1, "Data dir must be prefix of wallet dir");
+
+  json_set_string(wallet_dir, "IGNORED/.skycoin/wallets");
+  json_set_string(data_dir, "IGNORED/.skycoin");
+  // Ignore the rpc address
+  json_set_string(rpc_address, "http://127.0.0.1:46420");
+
+  const char *golden_file = "show-config.golden";
+  if (useCSRF()) {
+    golden_file = "show-config-use-csrf.golden";
+  }
+  json_value *json_golden = loadGoldenFile_Cli(golden_file);
+  cr_assert(json_golden != NULL, "loadGoldenFile_Cli failed");
+  registerJsonFree(json_golden);
+  int equal = compareJsonValues(value, json_golden);
+  cr_assert(equal, "Output from command different than expected");
+}
+
+Test(api_cli_integracion, TestStableStatus) {
+  createTempWalletDir(false);
+  useClient();
+  const char *args;
+  args = "boxfort-worker status";
+
+  GoUint32 errcode;
+  char output[JSON_BIG_FILE_SIZE];
+
+  Config__Handle configHandle;
+  App__Handle appHandle;
+  errcode = SKY_cli_LoadConfig(&configHandle);
+  cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
+  registerHandleClose(configHandle);
+  errcode = SKY_cli_NewApp(configHandle, &appHandle);
+  cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
+  registerHandleClose(appHandle);
+
+  // Redirect standard output to a pipe
+  GoString Args = {args, strlen(args)};
+  redirectStdOut();
+  errcode = SKY_cli_App_Run(appHandle, Args);
+  // Get redirected standard output
+  getStdOut(output, JSON_BIG_FILE_SIZE);
+  cr_assert(errcode == 0, "SKY_cli_App_Run failed in return %d", errcode);
+
+  // JSON parse output
+  json_char *json;
+  json_value *value;
+  json_value *json_str;
+  int result;
+  json = (json_char *)output;
+  value = json_parse(json, strlen(output));
+  cr_assert(value != NULL, "Failed to json parse in output \n%s\n", output);
+  registerJsonFree(value);
+
+  json_value *TimeSinceLastBlock =
+      json_get_string(value, "time_since_last_block");
+  cr_assert(TimeSinceLastBlock != NULL,
+            "Failed to get json value TimeSinceLastBlock");
+
+  json_set_string(TimeSinceLastBlock, "");
+
+  unsigned char goldenFileURL[BUFFER_SIZE];
+  strcpy(goldenFileURL, TEST_DATA_DIR);
+  strcat(goldenFileURL, "status.golden");
+  json_value *expect = loadJsonFile(goldenFileURL);
+  cr_assert(expect != NULL, "Failed to json parse in test :%s", goldenFileURL);
+  registerJsonFree(expect);
+
+  cr_assert(compareJsonValues(value, expect) == 1, "NOt eq json");
+}
+
+Test(cli_integration, TestStableTransaction) {
+
+  typedef struct {
+    char *name;
+    char *args;
+    char *goldenFile;
+    int isUsageErr;
+  } testStruct;
+
+  testStruct tt[] = {
+      {"invalid txid", "boxfort-worker transaction abcd", "", SKY_ERROR},
+      {"not exist",
+       "boxfort-worker transaction "
+       "701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947",
+       "", SKY_ERROR},
+      {"empty txid", "boxfort-worker transaction ", "", SKY_ERROR},
+      {"genesis transaction",
+       "boxfort-worker transaction "
+       "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add ",
+       "genesis-transaction-cli.golden", SKY_OK}};
+
+  useClient();
+  GoUint32 errcode;
+  char output[JSON_BIG_FILE_SIZE];
+  Config__Handle configHandle;
+  App__Handle appHandle;
+
+  errcode = SKY_cli_LoadConfig(&configHandle);
+  cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
+  registerHandleClose(configHandle);
+  errcode = SKY_cli_NewApp(configHandle, &appHandle);
+  cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
+  registerHandleClose(appHandle);
+  for (int i = 0; i < LENARRAY(tt); i++) {
+
+    // Redirect standard output to a pipe
+    GoString Args = {tt[i].args, strlen(tt[i].args)};
+    redirectStdOut();
+    errcode = SKY_cli_App_Run(appHandle, Args);
+    // Get redirected standard output
+    getStdOut(output, JSON_BIG_FILE_SIZE);
+    cr_assert(errcode == tt[i].isUsageErr,
+              "SKY_cli_App_Run failed in return %d", errcode);
+
+    if (tt[i].isUsageErr == SKY_OK) {
+
+      // JSON parse output
+      json_char *json;
+      json_value *value;
+      json_value *json_str;
+      int result;
+      json = (json_char *)output;
+      value = json_parse(json, strlen(output));
+      cr_assert(value != NULL, "Failed to json parse in %s\n", tt[i].name);
+      registerJsonFree(value);
+
+      unsigned char goldenFileURL[BUFFER_SIZE];
+      strcpy(goldenFileURL, TEST_DATA_DIR);
+      strcat(goldenFileURL, tt[i].goldenFile);
+      json_value *expect = loadJsonFile(goldenFileURL);
+      cr_assert(expect != NULL, "Failed to json parse in test :%s",
+                tt[i].goldenFile);
+      registerJsonFree(expect);
+
+      cr_assert(compareJsonValues(value, expect) == 1);
+    }
+  }
+}
+
+Test(api_cli_integracion, TestStableBlocks) {
+  createTempWalletDir(false);
+  useClient();
+  const char *args;
+  args = "boxfort-worker blocks 180 181";
+
+  GoUint32 errcode;
+  char output[JSON_BIG_FILE_SIZE];
+
+  Config__Handle configHandle;
+  App__Handle appHandle;
+  errcode = SKY_cli_LoadConfig(&configHandle);
+  cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
+  registerHandleClose(configHandle);
+  errcode = SKY_cli_NewApp(configHandle, &appHandle);
+  cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
+  registerHandleClose(appHandle);
+
+  // Redirect standard output to a pipe
+  GoString Args = {args, strlen(args)};
+  redirectStdOut();
+  errcode = SKY_cli_App_Run(appHandle, Args);
+  // Get redirected standard output
+  getStdOut(output, JSON_BIG_FILE_SIZE);
+  cr_assert(errcode == 0, "SKY_cli_App_Run failed in return %d", errcode);
+
+  // JSON parse output
+  json_char *json;
+  json_value *value;
+  json_value *json_str;
+  int result;
+  json = (json_char *)output;
+  value = json_parse(json, strlen(output));
+  cr_assert(value != NULL, "Failed to json parse in output \n%s\n", output);
+  registerJsonFree(value);
+
+  unsigned char goldenFileURL[BUFFER_SIZE];
+  strcpy(goldenFileURL, TEST_DATA_DIR);
+  strcat(goldenFileURL, "blocks180.golden");
+  json_value *expect = loadJsonFile(goldenFileURL);
+  cr_assert(expect != NULL, "Failed to json parse in test :%s", goldenFileURL);
+  registerJsonFree(expect);
+
+  cr_assert(compareJsonValues(value, expect) == 1, "NOt eq json");
+}
+
+Test(cli_integration, testKnownBlocks) {
+
+  typedef struct {
+    char *name;
+    char *args;
+    char *goldenFile;
+  } testStruct;
+
+  testStruct tt[] = {
+      {"blocks 0", "boxfort-worker blocks 0", "block0.golden"},
+      {"blocks 0 5", "boxfort-worker blocks 0 5 ", "blocks0-5.golden"}};
+
+  useClient();
+  GoUint32 errcode;
+  char output[JSON_BIG_FILE_SIZE];
+  Config__Handle configHandle;
+  App__Handle appHandle;
+
+  errcode = SKY_cli_LoadConfig(&configHandle);
+  cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
+  registerHandleClose(configHandle);
+  errcode = SKY_cli_NewApp(configHandle, &appHandle);
+  cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
+  registerHandleClose(appHandle);
+
+  for (int i = 0; i < LENARRAY(tt); i++) {
+
+    // Redirect standard output to a pipe
+    GoString Args = {tt[i].args, strlen(tt[i].args)};
+    redirectStdOut();
+    errcode = SKY_cli_App_Run(appHandle, Args);
+    // Get redirected standard output
+    getStdOut(output, JSON_BIG_FILE_SIZE);
+    cr_assert(errcode == SKY_OK, "SKY_cli_App_Run failed in return %d",
+              errcode);
+
+    // JSON parse output
+    json_char *json;
+    json_value *value;
+    json_value *json_str;
+    int result;
+    json = (json_char *)output;
+    value = json_parse(json, strlen(output));
+    cr_assert(value != NULL, "Failed to json parse in %s\n", tt[i].name);
+    registerJsonFree(value);
+
+    unsigned char goldenFileURL[BUFFER_SIZE];
+    strcpy(goldenFileURL, TEST_DATA_DIR);
+    strcat(goldenFileURL, tt[i].goldenFile);
+    json_value *expect = loadJsonFile(goldenFileURL);
+    cr_assert(expect != NULL, "Failed to json parse in test :%s",
+              tt[i].goldenFile);
+    registerJsonFree(expect);
+
+    cr_assert(compareJsonValues(value, expect) == 1);
+
+    strcpy(output, "");
+  }
+}
+
+Test(cli_integration, TestStableLastBlocks) {
+
+  typedef struct {
+    char *name;
+    char *args;
+    char *goldenFile;
+  } testStruct;
+
+  testStruct tt[] = {
+      {"lastBlocks 0", "boxfort-worker lastBlocks 0", "last-blocks0.golden"},
+      {"lastBlocks 1", "boxfort-worker lastBlocks 1", "last-blocks1.golden"},
+      {"lastBlocks 2", "boxfort-worker lastBlocks 2", "last-blocks2.golden"}};
+
+  useClient();
+  GoUint32 errcode;
+  char output[JSON_BIG_FILE_SIZE];
+  Config__Handle configHandle;
+  App__Handle appHandle;
+
+  errcode = SKY_cli_LoadConfig(&configHandle);
+  cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
+  registerHandleClose(configHandle);
+  errcode = SKY_cli_NewApp(configHandle, &appHandle);
+  cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
+  registerHandleClose(appHandle);
+
+  for (int i = 0; i < LENARRAY(tt); i++) {
+
+    // Redirect standard output to a pipe
+    GoString Args = {tt[i].args, strlen(tt[i].args)};
+    redirectStdOut();
+    errcode = SKY_cli_App_Run(appHandle, Args);
+    // Get redirected standard output
+    getStdOut(output, JSON_BIG_FILE_SIZE);
+    cr_assert(errcode == SKY_OK, "SKY_cli_App_Run failed in return %d",
+              errcode);
+
+    // JSON parse output
+    json_char *json;
+    json_value *value;
+    json_value *json_str;
+    int result;
+    json = (json_char *)output;
+    value = json_parse(json, strlen(output));
+    cr_assert(value != NULL, "Failed to json parse in %s\n", tt[i].name);
+    registerJsonFree(value);
+
+    unsigned char goldenFileURL[BUFFER_SIZE];
+    strcpy(goldenFileURL, TEST_DATA_DIR);
+    strcat(goldenFileURL, tt[i].goldenFile);
+    json_value *expect = loadJsonFile(goldenFileURL);
+    cr_assert(expect != NULL, "Failed to json parse in test :%s",
+              tt[i].goldenFile);
+    registerJsonFree(expect);
+
+    cr_assert(compareJsonValues(value, expect) == 1);
+
+    strcpy(output, "");
+  }
+}
+
+Test(api_cli_integracion, TestStableWalletDir) {
+  createTempWalletDir(false);
+  useClient();
+  const char *args;
+  args = "boxfort-worker walletDir";
+
+  GoUint32 errcode;
+  char output[JSON_BIG_FILE_SIZE];
+
+  Config__Handle configHandle;
+  App__Handle appHandle;
+  errcode = SKY_cli_LoadConfig(&configHandle);
+  cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
+  registerHandleClose(configHandle);
+  errcode = SKY_cli_NewApp(configHandle, &appHandle);
+  cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
+  registerHandleClose(appHandle);
+
+  // Redirect standard output to a pipe
+  GoString Args = {args, strlen(args)};
+  redirectStdOut();
+  errcode = SKY_cli_App_Run(appHandle, Args);
+  // Get redirected standard output
+  getStdOut(output, JSON_BIG_FILE_SIZE);
+  cr_assert(errcode == 0, "SKY_cli_App_Run failed in return %d", errcode);
+
+  GoString wallet_dir = {"WALLET_DIR", 10};
+  char bufferdir[BUFFER_SIZE];
+  GoString_ wallet_dir_value = {bufferdir, 0};
+  errcode = SKY_cli_Getenv(wallet_dir, &wallet_dir_value);
+  cr_assert(eq(u8[wallet_dir_value.n], wallet_dir_value.p, output));
+}
+
+Test(api_cli_integracion, TestStableWalletHistory) {
+  createTempWalletDir(false);
+  useClient();
+  const char *args;
+  args = "boxfort-worker walletHistory";
+
+  GoUint32 errcode;
+  char output[JSON_BIG_FILE_SIZE];
+
+  Config__Handle configHandle;
+  App__Handle appHandle;
+  errcode = SKY_cli_LoadConfig(&configHandle);
+  cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
+  registerHandleClose(configHandle);
+  errcode = SKY_cli_NewApp(configHandle, &appHandle);
+  cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
+  registerHandleClose(appHandle);
+
+  // Redirect standard output to a pipe
+  GoString Args = {args, strlen(args)};
+  redirectStdOut();
+  errcode = SKY_cli_App_Run(appHandle, Args);
+  // Get redirected standard output
+  getStdOut(output, JSON_BIG_FILE_SIZE);
+  cr_assert(errcode == 0, "SKY_cli_App_Run failed in return %d", errcode);
+
+  // JSON parse output
+  json_char *json;
+  json_value *value;
+  json_value *json_str;
+  int result;
+  json = (json_char *)output;
+  value = json_parse(json, strlen(output));
+  cr_assert(value != NULL, "Failed to json parse ");
+  registerJsonFree(value);
+
+  unsigned char goldenFileURL[BUFFER_SIZE];
+  strcpy(goldenFileURL, TEST_DATA_DIR);
+  strcat(goldenFileURL, "wallet-history.golden");
+  json_value *expect = loadJsonFile(goldenFileURL);
+  cr_assert(expect != NULL, "Failed to json parse in test ");
+  registerJsonFree(expect);
+
+  cr_assert(compareJsonValues(value, expect) == 1);
+}
+
+Test(cli_integration, TestStableCheckDB) {
+
+  typedef struct {
+    char *name;
+    char *args;
+    char *result;
+    int isUsageErr;
+  } testStruct;
+
+  testStruct tt[] = {
+      {"no signature",
+       "boxfort-worker checkdb src/visor/testdata/data.db.nosig", "",
+       SKY_ERROR},
+      {"invalid database",
+       "boxfort-worker checkdb src/visor/testdata/data.db.garbage", "",
+       SKY_ERROR},
+      {"valid database",
+       "boxfort-worker checkdb src/api/integration/testdata/blockchain-180.db",
+       "check db success\n", SKY_OK},
+  };
+
+  useClient();
+  GoUint32 errcode;
+  char output[JSON_BIG_FILE_SIZE];
+  Config__Handle configHandle;
+  App__Handle appHandle;
+
+  errcode = SKY_cli_LoadConfig(&configHandle);
+  cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
+  registerHandleClose(configHandle);
+  errcode = SKY_cli_NewApp(configHandle, &appHandle);
+  cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
+  registerHandleClose(appHandle);
+  for (int i = 0; i < LENARRAY(tt); i++) {
+
+    // Redirect standard output to a pipe
+    GoString Args = {tt[i].args, strlen(tt[i].args)};
+    redirectStdOut();
+    errcode = SKY_cli_App_Run(appHandle, Args);
+    // Get redirected standard output
+    getStdOut(output, JSON_BIG_FILE_SIZE);
+    cr_assert(errcode == tt[i].isUsageErr,
+              "SKY_cli_App_Run failed in return %d", errcode);
+
+    if (tt[i].isUsageErr == SKY_OK) {
+
+      cr_assert(eq(u8[strlen(tt[i].result)], tt[i].result, output));
+    }
+  }
+}
+
+Test(api_cli_integracion, TestVersion) {
+  createTempWalletDir(false);
+  useClient();
+  const char *args;
+  args = "boxfort-worker version -j";
+
+  GoUint32 errcode;
+  char output[JSON_BIG_FILE_SIZE];
+
+  Config__Handle configHandle;
+  App__Handle appHandle;
+  errcode = SKY_cli_LoadConfig(&configHandle);
+  cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
+  registerHandleClose(configHandle);
+  errcode = SKY_cli_NewApp(configHandle, &appHandle);
+  cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
+  registerHandleClose(appHandle);
+
+  // Redirect standard output to a pipe
+  GoString Args = {args, strlen(args)};
+  redirectStdOut();
+  errcode = SKY_cli_App_Run(appHandle, Args);
+  // Get redirected standard output
+  getStdOut(output, JSON_BIG_FILE_SIZE);
+  cr_assert(errcode == 0, "SKY_cli_App_Run failed in return %d", errcode);
+
+  // JSON parse output
+  json_char *json;
+  json_value *value;
+  json_value *json_str;
+  int result;
+  json = (json_char *)output;
+  value = json_parse(json, strlen(output));
+  cr_assert(value != NULL, "Failed to json parse ");
+  registerJsonFree(value);
+  json_value *ver;
+
+  ver = json_get_string(value, "skycoin");
+  cr_assert(ver != NULL, "Not get string ");
+  cr_assert_str_not_empty(ver->u.string.ptr);
+
+  ver = json_get_string(value, "cli");
+  cr_assert(ver != NULL, "Not get string ");
+  cr_assert_str_not_empty(ver->u.string.ptr);
+
+  ver = json_get_string(value, "rpc");
+  cr_assert(ver != NULL, "Not get string ");
+  cr_assert_str_not_empty(ver->u.string.ptr);
+
+  ver = json_get_string(value, "wallet");
+  cr_assert(ver != NULL, "Not get string ");
+  cr_assert_str_not_empty(ver->u.string.ptr);
+
+  Args.p = "boxfort version";
+  Args.n = 15;
+  redirectStdOut();
+  errcode = SKY_cli_App_Run(appHandle, Args);
+  // Get redirected standard output
+  getStdOut(output, JSON_BIG_FILE_SIZE);
+  int count = getCountWordWithSeparator(output, "\n");
+  cr_assert(count == 4);
+}

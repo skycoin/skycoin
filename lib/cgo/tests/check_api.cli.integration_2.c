@@ -170,14 +170,14 @@ Test(api_cli_integration, TestGenerateAddresses) {
     errcode = SKY_cli_LoadConfig(&configHandle);
     cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
     registerHandleClose(configHandle);
-    errcode = SKY_cli_NewApp(&configHandle, &appHandle);
+    errcode = SKY_cli_NewApp(configHandle, &appHandle);
     cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
     registerHandleClose(appHandle);
 
     // Redirect standard output to a pipe
     redirectStdOut();
     GoString Args = {tt[i].args, strlen(tt[i].args)};
-    errcode = SKY_cli_App_Run(&appHandle, Args);
+    errcode = SKY_cli_App_Run(appHandle, Args);
     // Get redirected standard output
     getStdOut(output, JSON_BIG_FILE_SIZE);
     if (!tt[i].isUsageErr) {
@@ -266,14 +266,14 @@ Test(api_cli_integration, TestGenerateAddresses) {
       errcode = SKY_cli_LoadConfig(&configHandle);
       cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
       registerHandleClose(configHandle);
-      errcode = SKY_cli_NewApp(&configHandle, &appHandle);
+      errcode = SKY_cli_NewApp(configHandle, &appHandle);
       cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
       registerHandleClose(appHandle);
 
     // Redirect standard output to a pipe
       GoString Args = {tt[i].args, strlen(tt[i].args)};
       redirectStdOut();
-      errcode = SKY_cli_App_Run(&appHandle, Args);
+      errcode = SKY_cli_App_Run(appHandle, Args);
     // Get redirected standard output
       getStdOut(output, JSON_BIG_FILE_SIZE);
       cr_assert(errcode == tt[i].error, "SKY_cli_App_Run failed in %s",
@@ -339,7 +339,7 @@ Test(api_cli_integration, TestGenerateAddresses) {
       errcode = SKY_cli_LoadConfig(&configHandle);
       cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
       registerHandleClose(configHandle);
-      errcode = SKY_cli_NewApp(&configHandle, &appHandle);
+      errcode = SKY_cli_NewApp(configHandle, &appHandle);
       cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
       registerHandleClose(appHandle);
 
@@ -347,7 +347,7 @@ Test(api_cli_integration, TestGenerateAddresses) {
       unsigned char buffArgs[JSON_BIG_FILE_SIZE];
       GoString Args = {tt[i].args, strlen(tt[i].args)};
       redirectStdOut();
-      errcode = SKY_cli_App_Run(&appHandle, Args);
+      errcode = SKY_cli_App_Run(appHandle, Args);
 
     // Get redirected standard output
       getStdOut(output, JSON_BIG_FILE_SIZE);
@@ -394,14 +394,14 @@ Test(api_cli_integration, TestGenerateAddresses) {
     errcode = SKY_cli_LoadConfig(&configHandle);
     cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
     registerHandleClose(configHandle);
-    errcode = SKY_cli_NewApp(&configHandle, &appHandle);
+    errcode = SKY_cli_NewApp(configHandle, &appHandle);
     cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
     registerHandleClose(appHandle);
 
   // Redirect standard output to a pipe
     redirectStdOut();
     GoString Args = {args, strlen(args)};
-    errcode = SKY_cli_App_Run(&appHandle, Args);
+    errcode = SKY_cli_App_Run(appHandle, Args);
   // Get redirected standard output
     getStdOut(output, JSON_BIG_FILE_SIZE);
     json_char *json;
@@ -435,14 +435,14 @@ Test(api_cli_integration, TestGenerateAddresses) {
     errcode = SKY_cli_LoadConfig(&configHandle);
     cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
     registerHandleClose(configHandle);
-    errcode = SKY_cli_NewApp(&configHandle, &appHandle);
+    errcode = SKY_cli_NewApp(configHandle, &appHandle);
     cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
     registerHandleClose(appHandle);
 
   // Redirect standard output to a pipe
     redirectStdOut();
     GoString Args1 = {args, strlen(args)};
-    errcode = SKY_cli_App_Run(&appHandle, Args1);
+    errcode = SKY_cli_App_Run(appHandle, Args1);
   // Get redirected standard output
     getStdOut(output, JSON_BIG_FILE_SIZE);
     json = (json_char *)output;
@@ -512,14 +512,14 @@ Test(api_cli_integration, TestGenerateAddresses) {
     errcode = SKY_cli_LoadConfig(&configHandle);
     cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
     registerHandleClose(configHandle);
-    errcode = SKY_cli_NewApp(&configHandle, &appHandle);
+    errcode = SKY_cli_NewApp(configHandle, &appHandle);
     cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
     registerHandleClose(appHandle);
 
   // Redirect standard output to a pipe
     redirectStdOut();
     GoString Args2 = {args, strlen(args)};
-    errcode = SKY_cli_App_Run(&appHandle, Args2);
+    errcode = SKY_cli_App_Run(appHandle, Args2);
   // Get redirected standard output
     getStdOut(output, JSON_BIG_FILE_SIZE);
     json = (json_char *)output;
@@ -587,14 +587,14 @@ Test(api_cli_integration, TestGenerateAddresses) {
     errcode = SKY_cli_LoadConfig(&configHandle);
     cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
     registerHandleClose(configHandle);
-    errcode = SKY_cli_NewApp(&configHandle, &appHandle);
+    errcode = SKY_cli_NewApp(configHandle, &appHandle);
     cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
     registerHandleClose(appHandle);
 
   // Redirect standard output to a pipe
     redirectStdOut();
     GoString Args3 = {args, strlen(args)};
-    errcode = SKY_cli_App_Run(&appHandle, Args3);
+    errcode = SKY_cli_App_Run(appHandle, Args3);
   // Get redirected standard output
     getStdOut(output, JSON_BIG_FILE_SIZE);
     json = (json_char *)output;
@@ -624,14 +624,14 @@ Test(api_cli_integration, TestGenerateAddresses) {
     errcode = SKY_cli_LoadConfig(&configHandle);
     cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
     registerHandleClose(configHandle);
-    errcode = SKY_cli_NewApp(&configHandle, &appHandle);
+    errcode = SKY_cli_NewApp(configHandle, &appHandle);
     cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
     registerHandleClose(appHandle);
 
   // Redirect standard output to a pipe
     redirectStdOut();
     GoString Args4 = {args, strlen(args)};
-    errcode = SKY_cli_App_Run(&appHandle, Args4);
+    errcode = SKY_cli_App_Run(appHandle, Args4);
   // Get redirected standard output
     getStdOut(output, JSON_BIG_FILE_SIZE);
     json = (json_char *)output;
@@ -660,14 +660,14 @@ Test(api_cli_integration, TestGenerateAddresses) {
     errcode = SKY_cli_LoadConfig(&configHandle);
     cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
     registerHandleClose(configHandle);
-    errcode = SKY_cli_NewApp(&configHandle, &appHandle);
+    errcode = SKY_cli_NewApp(configHandle, &appHandle);
     cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
     registerHandleClose(appHandle);
 
   // Redirect standard output to a pipe
     redirectStdOut();
     GoString Args5 = {args, strlen(args)};
-    errcode = SKY_cli_App_Run(&appHandle, Args5);
+    errcode = SKY_cli_App_Run(appHandle, Args5);
   // Get redirected standard output
     getStdOut(output, JSON_BIG_FILE_SIZE);
     json = (json_char *)output;
@@ -736,14 +736,14 @@ Test(api_cli_integration, TestGenerateAddresses) {
     errcode = SKY_cli_LoadConfig(&configHandle);
     cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
     registerHandleClose(configHandle);
-    errcode = SKY_cli_NewApp(&configHandle, &appHandle);
+    errcode = SKY_cli_NewApp(configHandle, &appHandle);
     cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
     registerHandleClose(appHandle);
 
   // Redirect standard output to a pipe
     redirectStdOut();
     GoString Args6 = {args, strlen(args)};
-    errcode = SKY_cli_App_Run(&appHandle, Args6);
+    errcode = SKY_cli_App_Run(appHandle, Args6);
   // Get redirected standard output
     getStdOut(output, JSON_BIG_FILE_SIZE);
     json = (json_char *)output;
@@ -812,14 +812,14 @@ Test(api_cli_integration, TestGenerateAddresses) {
     errcode = SKY_cli_LoadConfig(&configHandle);
     cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
     registerHandleClose(configHandle);
-    errcode = SKY_cli_NewApp(&configHandle, &appHandle);
+    errcode = SKY_cli_NewApp(configHandle, &appHandle);
     cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
     registerHandleClose(appHandle);
 
   // Redirect standard output to a pipe
     redirectStdOut();
     GoString Args7 = {args, strlen(args)};
-    errcode = SKY_cli_App_Run(&appHandle, Args7);
+    errcode = SKY_cli_App_Run(appHandle, Args7);
   // Get redirected standard output
     getStdOut(output, JSON_BIG_FILE_SIZE);
     json = (json_char *)output;
@@ -840,14 +840,14 @@ Test(api_cli_integration, TestGenerateAddresses) {
     errcode = SKY_cli_LoadConfig(&configHandle);
     cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
     registerHandleClose(configHandle);
-    errcode = SKY_cli_NewApp(&configHandle, &appHandle);
+    errcode = SKY_cli_NewApp(configHandle, &appHandle);
     cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
     registerHandleClose(appHandle);
 
   // Redirect standard output to a pipe
     redirectStdOut();
     GoString Args8 = {args, strlen(args)};
-    errcode = SKY_cli_App_Run(&appHandle, Args8);
+    errcode = SKY_cli_App_Run(appHandle, Args8);
   // Get redirected standard output
     getStdOut(output, JSON_BIG_FILE_SIZE);
     json = (json_char *)output;
@@ -868,14 +868,14 @@ Test(api_cli_integration, TestGenerateAddresses) {
     errcode = SKY_cli_LoadConfig(&configHandle);
     cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
     registerHandleClose(configHandle);
-    errcode = SKY_cli_NewApp(&configHandle, &appHandle);
+    errcode = SKY_cli_NewApp(configHandle, &appHandle);
     cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
     registerHandleClose(appHandle);
 
   // Redirect standard output to a pipe
     redirectStdOut();
     GoString Args9 = {args, strlen(args)};
-    errcode = SKY_cli_App_Run(&appHandle, Args9);
+    errcode = SKY_cli_App_Run(appHandle, Args9);
   // Get redirected standard output
     getStdOut(output, JSON_BIG_FILE_SIZE);
     cr_assert(getCountWord(output) == 1);
@@ -886,14 +886,14 @@ Test(api_cli_integration, TestGenerateAddresses) {
     errcode = SKY_cli_LoadConfig(&configHandle);
     cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
     registerHandleClose(configHandle);
-    errcode = SKY_cli_NewApp(&configHandle, &appHandle);
+    errcode = SKY_cli_NewApp(configHandle, &appHandle);
     cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
     registerHandleClose(appHandle);
 
   // Redirect standard output to a pipe
     redirectStdOut();
     GoString Args10 = {args, strlen(args)};
-    errcode = SKY_cli_App_Run(&appHandle, Args10);
+    errcode = SKY_cli_App_Run(appHandle, Args10);
   // Get redirected standard output
     getStdOut(output, JSON_BIG_FILE_SIZE);
     cr_assert(getCountWord(output) == 1);
@@ -905,14 +905,14 @@ Test(api_cli_integration, TestGenerateAddresses) {
     errcode = SKY_cli_LoadConfig(&configHandle);
     cr_assert(errcode == SKY_OK, "SKY_cli_LoadConfig failed");
     registerHandleClose(configHandle);
-    errcode = SKY_cli_NewApp(&configHandle, &appHandle);
+    errcode = SKY_cli_NewApp(configHandle, &appHandle);
     cr_assert(errcode == SKY_OK, "SKY_cli_NewApp failed");
     registerHandleClose(appHandle);
 
   // Redirect standard output to a pipe
     redirectStdOut();
     GoString Args12 = {args, strlen(args)};
-    errcode = SKY_cli_App_Run(&appHandle, Args12);
+    errcode = SKY_cli_App_Run(appHandle, Args12);
   // Get redirected standard output
     getStdOut(output, JSON_BIG_FILE_SIZE);
     json = (json_char *)output;

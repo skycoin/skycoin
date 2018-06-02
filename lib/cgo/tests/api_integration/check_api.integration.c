@@ -158,11 +158,11 @@ int createWallet(Client__Handle clientHandle,
 	if( encrypt ){
 		GoString strPassword = {password, strlen(password)};
 		result = SKY_api_Client_CreateEncryptedWallet( 
-			&clientHandle, strSeed, strLabel, strPassword, 0,
+			clientHandle, strSeed, strLabel, strPassword, 0,
 			responseHandle);
 	} else {
 		result = SKY_api_Client_CreateUnencryptedWallet(
-			&clientHandle, strSeed, strLabel, 0,
+			clientHandle, strSeed, strLabel, 0,
 			responseHandle);
 	}
 	return result;
@@ -182,7 +182,7 @@ Test(api_integration, TestVersion) {
 	int result = SKY_api_NewClient(nodeAddress, &clientHandle);
 	cr_assert(result == SKY_OK, "Couldn\'t create client");
 	registerHandleClose( clientHandle );
-	result = SKY_api_Client_Version( &clientHandle, &versionDataHandle );
+	result = SKY_api_Client_Version( clientHandle, &versionDataHandle );
 	cr_assert(result == SKY_OK, "Couldn\'t get version");
 	registerHandleClose( versionDataHandle );
 	result = SKY_JsonEncode_Handle(versionDataHandle, &version);
@@ -205,7 +205,7 @@ Test(api_integration, TestStableCoinSupply) {
 	cr_assert(result == SKY_OK, "Couldn\'t create client");
 	registerHandleClose( clientHandle );
 	
-	result = SKY_api_Client_CoinSupply( &clientHandle, &coinSupplyHandle );
+	result = SKY_api_Client_CoinSupply( clientHandle, &coinSupplyHandle );
 	cr_assert(result == SKY_OK, "SKY_api_Client_CoinSupply failed");
 	registerHandleClose( coinSupplyHandle );
 	
@@ -284,16 +284,16 @@ Test(api_integration, TestStableOutputs) {
 		memset(&strings, 0, sizeof(GoSlice));
 		cr_assert(tests[i].addresses_count == 0 || tests[i].hashes_count == 0);
 		if(tests[i].addresses_count == 0 && tests[i].hashes_count == 0){
-			result = SKY_api_Client_Outputs(&clientHandle, &outputHandle);
+			result = SKY_api_Client_Outputs(clientHandle, &outputHandle);
 		} else if(tests[i].addresses_count > 0){
 			createGoStringSlice(tests[i].addresses, 
 					tests[i].addresses_count, &strings);
-			result = SKY_api_Client_OutputsForAddresses(&clientHandle, 
+			result = SKY_api_Client_OutputsForAddresses(clientHandle, 
 											strings, &outputHandle);
 		} else if(tests[i].hashes_count > 0){
 			createGoStringSlice(tests[i].hashes, 
 					tests[i].hashes_count, &strings);
-			result = SKY_api_Client_OutputsForHashes(&clientHandle, 
+			result = SKY_api_Client_OutputsForHashes(clientHandle, 
 											strings, &outputHandle);
 		}
 		
@@ -379,10 +379,10 @@ Test(api_integration, TestStableBlock) {
 			memset( &strHash, 0, sizeof(GoString) );
 			strHash.p = tests[i].hash;
 			strHash.n = strlen( tests[i].hash );
-			result = SKY_api_Client_BlockByHash(&clientHandle, 
+			result = SKY_api_Client_BlockByHash(clientHandle, 
 				strHash, &blockHandle);
 		} else {
-			result = SKY_api_Client_BlockBySeq(&clientHandle,
+			result = SKY_api_Client_BlockBySeq(clientHandle,
 				tests[i].seq, &blockHandle);
 		}
 		if( tests[i].failure ){
@@ -411,7 +411,7 @@ Test(api_integration, TestStableBlock) {
 	
 	Handle progressHandle;
 	printf("Querying every block in the blockchain");
-	result = SKY_api_Client_BlockchainProgress(&clientHandle, &progressHandle);
+	result = SKY_api_Client_BlockchainProgress(clientHandle, &progressHandle);
 	cr_assert(result == SKY_OK, "SKY_api_Client_BlockchainProgress failed");
 	registerHandleClose( progressHandle );
 	GoInt64 progress;
@@ -424,7 +424,7 @@ Test(api_integration, TestStableBlock) {
 	GoString_ hash1, hash2, hash;
 	GoString _hash;
 	for(seq = 0; seq < progress; seq++){
-		result = SKY_api_Client_BlockBySeq(&clientHandle,
+		result = SKY_api_Client_BlockBySeq(clientHandle,
 				seq, &blockHandle);
 		cr_assert( result == SKY_OK, "SKY_api_Client_BlockBySeq failed" );
 		registerHandleClose( blockHandle );
@@ -448,7 +448,7 @@ Test(api_integration, TestStableBlock) {
 			registerMemCleanup((void*)hash.p);
 			_hash.p = hash.p;
 			_hash.n = hash.n;
-			result = SKY_api_Client_BlockByHash(&clientHandle, 
+			result = SKY_api_Client_BlockByHash(clientHandle, 
 				_hash, &blockHandle2);
 			cr_assert(result == SKY_OK, "SKY_api_Client_BlockByHash failed");
 			registerHandleClose( blockHandle2 );
@@ -482,7 +482,7 @@ Test(api_integration, TestStableBlockchainMetadata) {
 	registerHandleClose( clientHandle );
 	
 	Handle metadataHandle;
-	result = SKY_api_Client_BlockchainMetadata( &clientHandle, 
+	result = SKY_api_Client_BlockchainMetadata( clientHandle, 
 									&metadataHandle );
 	cr_assert(result == SKY_OK, "SKY_api_Client_BlockchainMetadata failed");
 	registerHandleClose( metadataHandle );
@@ -506,7 +506,7 @@ Test(api_integration, TestStableBlockchainProgress) {
 	registerHandleClose( clientHandle );
 	
 	Handle progressHandle;
-	result = SKY_api_Client_BlockchainProgress( &clientHandle, 
+	result = SKY_api_Client_BlockchainProgress( clientHandle, 
 									&progressHandle );
 	cr_assert(result == SKY_OK, "SKY_api_Client_BlockchainMetadata failed");
 	registerHandleClose( progressHandle );
@@ -569,7 +569,7 @@ Test(api_integration, TestStableBalance) {
 		memset( &strings, 0, sizeof(GoSlice) );
 		createGoStringSlice( tests[i].addresses, tests[i].addresses_count,
 							&strings);
-		result = SKY_api_Client_Balance( &clientHandle, 
+		result = SKY_api_Client_Balance( clientHandle, 
 										strings, &balance );
 		cr_assert(result == SKY_OK, "SKY_api_Client_BlockchainMetadata failed");
 		json_value* json_golden = loadGoldenFile(tests[i].golden_file);
@@ -610,7 +610,7 @@ Test(api_integration, TestStableUxOut) {
 	char* pUxId = "fe6762d753d626115c8dd3a053b5fb75d6d419a8d0fb1478c5fffc1fe41c5f20";
 	GoString strUxId = {pUxId, strlen(pUxId)};
 	Handle uxOutHandle;
-	result = SKY_api_Client_UxOut( &clientHandle, strUxId, &uxOutHandle );
+	result = SKY_api_Client_UxOut( clientHandle, strUxId, &uxOutHandle );
 	cr_assert(result == SKY_OK, "SKY_api_Client_UxOut failed");
 	registerHandleClose( uxOutHandle );
 	
@@ -646,7 +646,7 @@ Test(api_integration, TestStableAddressUxOuts) {
 		addr.p = tests[i].address;
 		addr.n = strlen( tests[i].address );
 		Handle outHandle;
-		result = SKY_api_Client_AddressUxOuts( &clientHandle, addr, &outHandle );
+		result = SKY_api_Client_AddressUxOuts( clientHandle, addr, &outHandle );
 		if( tests[i].failure ){
 			cr_assert(result != SKY_OK, "SKY_api_Client_AddressUxOuts should have failed");
 			continue;
@@ -719,7 +719,7 @@ Handle testBlocksHandle(Client__Handle clientHandle,
 		
 		_hash.p = hash.p;
 		_hash.n = hash.n;
-		result = SKY_api_Client_BlockByHash(&clientHandle, 
+		result = SKY_api_Client_BlockByHash(clientHandle, 
 			_hash, &blockHandle2);
 		cr_assert( result == SKY_OK, "SKY_api_Client_BlockByHash failed");
 		registerHandleClose( blockHandle2 );
@@ -745,7 +745,7 @@ Handle testBlocks(Client__Handle clientHandle,
 				GoUint64 start, GoUint64 end){
 	Handle blocksHandle;
 	int result;
-	result = SKY_api_Client_Blocks(&clientHandle, start, end, &blocksHandle);
+	result = SKY_api_Client_Blocks(clientHandle, start, end, &blocksHandle);
 	cr_assert(result == SKY_OK, "SKY_api_Client_Blocks failed");
 	registerHandleClose( blocksHandle );
 	testBlocksHandle( clientHandle, blocksHandle, start, end, 1 );
@@ -763,7 +763,7 @@ Test(api_integration, TestStableBlocks) {
 	registerHandleClose( clientHandle );
 	
 	Handle progressHandle;
-	result = SKY_api_Client_BlockchainProgress(&clientHandle, &progressHandle);
+	result = SKY_api_Client_BlockchainProgress(clientHandle, &progressHandle);
 	cr_assert(result == SKY_OK, "SKY_api_Client_BlockchainProgress failed");
 	registerHandleClose( progressHandle );
 	GoUint64 lastNBlocks = 10;
@@ -799,7 +799,7 @@ Test(api_integration, TestStableBlocks) {
 	int equal;
 	for(int i = 0; i < tests_count; i++){
 		if( tests[i].failure ){
-			result = SKY_api_Client_Blocks(&clientHandle, 
+			result = SKY_api_Client_Blocks(clientHandle, 
 					tests[i].start, tests[i].end, &blocksHandle);
 			cr_assert(result != SKY_OK, "SKY_api_Client_Blocks should have failed");
 		} else {
@@ -824,7 +824,7 @@ Test(api_integration, TestStableLastBlocks) {
 	registerHandleClose( clientHandle );
 	
 	Handle blocksHandle;
-	result = SKY_api_Client_LastBlocks( &clientHandle, 1, &blocksHandle);
+	result = SKY_api_Client_LastBlocks( clientHandle, 1, &blocksHandle);
 	cr_assert(result == SKY_OK, "SKY_api_Client_LastBlocks(1) failed");
 	registerHandleClose( blocksHandle );
 	
@@ -832,7 +832,7 @@ Test(api_integration, TestStableLastBlocks) {
 	cr_assert(equal == 1, "SKY_api_Client_LastBlocks(1) returned result different than expected");
 	closeRegisteredHandle( blocksHandle );	
 	
-	result = SKY_api_Client_LastBlocks( &clientHandle, 10, &blocksHandle);
+	result = SKY_api_Client_LastBlocks( clientHandle, 10, &blocksHandle);
 	cr_assert(result == SKY_OK, "SKY_api_Client_LastBlocks(10) failed");
 	registerHandleClose( blocksHandle );
 	testBlocksHandle( clientHandle, blocksHandle, 0, 0, 0);
@@ -851,7 +851,7 @@ Test(api_integration, TestStableNetworkConnections) {
 	registerHandleClose( clientHandle );
 	
 	Handle connectionsHandle;
-	result = SKY_api_Client_NetworkConnections( &clientHandle, &connectionsHandle );
+	result = SKY_api_Client_NetworkConnections( clientHandle, &connectionsHandle );
 	cr_assert(result == SKY_OK, "SKY_api_Client_NetworkConnections failed");
 	registerHandleClose( connectionsHandle );
 	
@@ -863,7 +863,7 @@ Test(api_integration, TestStableNetworkConnections) {
 	char* pAddress = "127.0.0.1:4444";
 	GoString address = { pAddress, strlen(pAddress) };
 	Handle connectionHandle;
-	result = SKY_api_Client_NetworkConnection( &clientHandle, address, &connectionHandle );
+	result = SKY_api_Client_NetworkConnection( clientHandle, address, &connectionHandle );
 	cr_assert(result != SKY_OK, "SKY_api_Client_NetworkConnection should have failed");
 }
 
@@ -878,7 +878,7 @@ Test(api_integration, TestNetworkDefaultConnections) {
 	registerHandleClose( clientHandle );
 	
 	Strings__Handle connectionsHandle;
-	result = SKY_api_Client_NetworkDefaultConnections( &clientHandle, &connectionsHandle );
+	result = SKY_api_Client_NetworkDefaultConnections( clientHandle, &connectionsHandle );
 	cr_assert(result == SKY_OK, "SKY_api_Client_NetworkDefaultConnections failed");
 	registerHandleClose( connectionsHandle );
 	
@@ -901,7 +901,7 @@ Test(api_integration, TestNetworkTrustedConnections) {
 	registerHandleClose( clientHandle );
 	
 	Strings__Handle connectionsHandle;
-	result = SKY_api_Client_NetworkTrustedConnections( &clientHandle, &connectionsHandle );
+	result = SKY_api_Client_NetworkTrustedConnections( clientHandle, &connectionsHandle );
 	cr_assert(result == SKY_OK, "SKY_api_Client_NetworkTrustedConnections failed");
 	registerHandleClose( connectionsHandle );
 	
@@ -924,7 +924,7 @@ Test(api_integration, TestStableNetworkExchangeableConnections) {
 	registerHandleClose( clientHandle );
 	
 	Strings__Handle connectionsHandle;
-	result = SKY_api_Client_NetworkExchangeableConnections( &clientHandle, &connectionsHandle );
+	result = SKY_api_Client_NetworkExchangeableConnections( clientHandle, &connectionsHandle );
 	cr_assert(result == SKY_OK, "SKY_api_Client_NetworkTrustedConnections failed");
 	registerHandleClose( connectionsHandle );
 	
@@ -975,7 +975,7 @@ Test(api_integration, TestStableTransaction) {
 		txId.p = tests[i].txId;
 		txId.n = strlen(tests[i].txId);
 		result = SKY_api_Client_Transaction(
-							&clientHandle, txId, &transactionHandle);
+							clientHandle, txId, &transactionHandle);
 		if( tests[i].failure ){
 			cr_assert(result != SKY_OK, "SKY_api_Client_Transaction should have failed");
 			continue;
@@ -1048,7 +1048,7 @@ Test(api_integration, TestStableTransactions) {
 		memset( &strings, 0, sizeof(GoSlice) );
 		createGoStringSlice( tests[i].addresses, tests[i].addresses_count,
 							&strings);
-		result = SKY_api_Client_Transactions( &clientHandle, 
+		result = SKY_api_Client_Transactions( clientHandle, 
 						strings, &transactionsHandle);
 		if( tests[i].failure ){
 			cr_assert( result != SKY_OK, "SKY_api_Client_Transactions should have failed." );
@@ -1110,7 +1110,7 @@ Test(api_integration, TestStableConfirmedTransactions) {
 		memset( &strings, 0, sizeof(GoSlice) );
 		createGoStringSlice( tests[i].addresses, tests[i].addresses_count,
 							&strings);
-		result = SKY_api_Client_ConfirmedTransactions( &clientHandle, 
+		result = SKY_api_Client_ConfirmedTransactions( clientHandle, 
 						strings, &transactionsHandle);
 		if( tests[i].failure ){
 			cr_assert( result != SKY_OK, "SKY_api_Client_ConfirmedTransactions should have failed." );
@@ -1166,7 +1166,7 @@ Test(api_integration, TestStableUnconfirmedTransactions) {
 		memset( &strings, 0, sizeof(GoSlice) );
 		createGoStringSlice( tests[i].addresses, tests[i].addresses_count,
 							&strings);
-		result = SKY_api_Client_UnconfirmedTransactions( &clientHandle, 
+		result = SKY_api_Client_UnconfirmedTransactions( clientHandle, 
 						strings, &transactionsHandle);
 		if( tests[i].failure ){
 			cr_assert( result != SKY_OK, "SKY_api_Client_UnconfirmedTransactions should have failed." );
@@ -1192,7 +1192,7 @@ Test(api_integration, TestStableResendUnconfirmedTransactions) {
 	
 	Handle resendResultHandle;
 	result = SKY_api_Client_ResendUnconfirmedTransactions( 
-					&clientHandle, &resendResultHandle);
+					clientHandle, &resendResultHandle);
 	cr_assert( result == SKY_OK, "SKY_api_Client_ResendUnconfirmedTransactions failed" );
 	registerHandleClose( resendResultHandle );
 	
@@ -1259,7 +1259,7 @@ Test(api_integration, TestStableRawTransaction) {
 		memset( &expected, 0, sizeof(GoString_) );
 		txtId.p = tests[i].txId;
 		txtId.n = strlen( tests[i].txId );
-		result = SKY_api_Client_RawTransaction( &clientHandle, 
+		result = SKY_api_Client_RawTransaction( clientHandle, 
 									txtId, &rawTx );
 		if( tests[i].failure ){
 			cr_assert( result != SKY_OK, "SKY_api_Client_RawTransaction should have failed" );
@@ -1299,7 +1299,7 @@ Test(api_integration, TestWalletNewSeed) {
 	for( int i = 0; i < tests_count; i++ ){
 		memset( &seed, 0, sizeof(GoString_));
 		memset( &seed2, 0, sizeof(GoString_));
-		result = SKY_api_Client_NewSeed( &clientHandle, 
+		result = SKY_api_Client_NewSeed( clientHandle, 
 				tests[i].entropy, &seed);
 		if( tests[i].failure ){
 			cr_assert( result != SKY_OK, "SKY_api_Client_NewSeed should have failed" );
@@ -1312,7 +1312,7 @@ Test(api_integration, TestWalletNewSeed) {
 		if( seed.n > 0 ){
 			cr_assert(seed.p[0] != ' ' && seed.p[seed.n-1] != ' ', "Seed has extra spaces");
 		}
-		result = SKY_api_Client_NewSeed( &clientHandle, 
+		result = SKY_api_Client_NewSeed( clientHandle, 
 				tests[i].entropy, &seed2);
 		cr_assert(result == SKY_OK, "SKY_api_Client_NewSeed failed");
 		registerMemCleanup( (void*)seed2.p );
@@ -1360,7 +1360,7 @@ Test(api_integration, TestStableAddressTransactions) {
 	for( int i = 0; i < tests_count; i++){
 		address.p = tests[i].address;
 		address.n = strlen(tests[i].address);
-		result = SKY_api_Client_AddressTransactions(&clientHandle,
+		result = SKY_api_Client_AddressTransactions(clientHandle,
 				address, &transactionsHandle);
 		if( tests[i].failure ){
 			cr_assert( result != SKY_OK, "SKY_api_Client_AddressTransactions should have failed" );
@@ -1385,7 +1385,7 @@ Test(api_integration, TestStableRichlist) {
 	registerHandleClose( clientHandle );
 	
 	Handle richlistHandle;
-	result = SKY_api_Client_Richlist(&clientHandle, NULL, &richlistHandle);
+	result = SKY_api_Client_Richlist(clientHandle, NULL, &richlistHandle);
 	cr_assert(result == SKY_OK, "SKY_api_Client_Richlist failed");
 	registerHandleClose( richlistHandle );
 	equal = compareObjectWithGoldenFile( richlistHandle, "richlist-default.golden" );
@@ -1394,7 +1394,7 @@ Test(api_integration, TestStableRichlist) {
 	api__RichlistParams params;
 	params.N = 0;
 	params.IncludeDistribution = 0;
-	result = SKY_api_Client_Richlist(&clientHandle, &params, &richlistHandle);
+	result = SKY_api_Client_Richlist(clientHandle, &params, &richlistHandle);
 	cr_assert(result == SKY_OK, "SKY_api_Client_Richlist failed");
 	registerHandleClose( richlistHandle );
 	equal = compareObjectWithGoldenFile( richlistHandle, "richlist-all.golden" );
@@ -1402,7 +1402,7 @@ Test(api_integration, TestStableRichlist) {
 	
 	params.N = 0;
 	params.IncludeDistribution = 1;
-	result = SKY_api_Client_Richlist(&clientHandle, &params, &richlistHandle);
+	result = SKY_api_Client_Richlist(clientHandle, &params, &richlistHandle);
 	cr_assert(result == SKY_OK, "SKY_api_Client_Richlist failed");
 	registerHandleClose( richlistHandle );
 	equal = compareObjectWithGoldenFile( richlistHandle, "richlist-all-include-distribution.golden" );
@@ -1410,7 +1410,7 @@ Test(api_integration, TestStableRichlist) {
 	
 	params.N = 8;
 	params.IncludeDistribution = 0;
-	result = SKY_api_Client_Richlist(&clientHandle, &params, &richlistHandle);
+	result = SKY_api_Client_Richlist(clientHandle, &params, &richlistHandle);
 	cr_assert(result == SKY_OK, "SKY_api_Client_Richlist failed");
 	registerHandleClose( richlistHandle );
 	equal = compareObjectWithGoldenFile( richlistHandle, "richlist-8.golden" );
@@ -1418,7 +1418,7 @@ Test(api_integration, TestStableRichlist) {
 	
 	params.N = 150;
 	params.IncludeDistribution = 1;
-	result = SKY_api_Client_Richlist(&clientHandle, &params, &richlistHandle);
+	result = SKY_api_Client_Richlist(clientHandle, &params, &richlistHandle);
 	cr_assert(result == SKY_OK, "SKY_api_Client_Richlist failed");
 	registerHandleClose( richlistHandle );
 	equal = compareObjectWithGoldenFile( richlistHandle, "richlist-150-include-distribution.golden" );
@@ -1436,7 +1436,7 @@ Test(api_integration, TestStableAddressCount) {
 	registerHandleClose( clientHandle );
 	
 	GoUint64 count;
-	result = SKY_api_Client_AddressCount( &clientHandle, &count );
+	result = SKY_api_Client_AddressCount( clientHandle, &count );
 	cr_assert(result == SKY_OK, "SKY_api_Client_AddressCount failed");
 	cr_assert( count == 155 );
 }
@@ -1452,7 +1452,7 @@ Test(api_integration, TestStablePendingTransactions) {
 	registerHandleClose( clientHandle );
 	
 	Handle txtHandle;
-	result = SKY_api_Client_PendingTransactions( &clientHandle, &txtHandle );
+	result = SKY_api_Client_PendingTransactions( clientHandle, &txtHandle );
 	cr_assert(result == SKY_OK, "SKY_api_Client_PendingTransactions failed");
 	
 	GoString_ jsonResult;
@@ -1663,7 +1663,7 @@ Test(api_integration, TestGetWallet) {
 	GoString _walletFileName = { walletFileName.p, walletFileName.n }; 
 	
 	result = SKY_api_Client_Wallet( 
-				&clientHandle, _walletFileName, &responseHandle2 );
+				clientHandle, _walletFileName, &responseHandle2 );
 	cr_assert(result == SKY_OK, "SKY_api_Client_Wallet failed");
 	registerHandleClose( responseHandle2 );
 	int equal = compareObjectsByHandle( responseHandle, responseHandle2 );
@@ -1693,7 +1693,7 @@ Test(api_integration, TestGetWallets) {
 	}
 	
 	Wallets__Handle walletsHandle;
-	result = SKY_api_Client_Wallets( &clientHandle, &walletsHandle );
+	result = SKY_api_Client_Wallets( clientHandle, &walletsHandle );
 	cr_assert( result == SKY_OK, "SKY_api_Client_Wallets failed" );
 	registerHandleClose( walletsHandle ) ;
 	
@@ -1768,7 +1768,7 @@ Test(api_integration, TestWalletNewAddress) {
 		}
 		Strings__Handle addrsHandle;
 		GoString walletFileName = {_walletFileName.p, _walletFileName.n};
-		result = SKY_api_Client_NewWalletAddress( &clientHandle, 
+		result = SKY_api_Client_NewWalletAddress( clientHandle, 
 				walletFileName, i, pwd, &addrsHandle);
 		cr_assert( result == SKY_OK, "SKY_api_Client_NewWalletAddress failed" );
 		registerHandleClose( addrsHandle );
@@ -1831,7 +1831,7 @@ Test(api_integration, TestStableWalletBalance) {
 	cr_assert(result == SKY_OK, "SKY_api_Handle_Client_GetWalletFileName failed");
 	GoString name = {_name.p, _name.n };
 	wallet__BalancePair balance;
-	result = SKY_api_Client_WalletBalance( &clientHandle, name, &balance);
+	result = SKY_api_Client_WalletBalance( clientHandle, name, &balance);
 	cr_assert(result == SKY_OK, "SKY_api_Client_WalletBalance failed");
 	
 	json_value* json_golden = loadGoldenFile("wallet-balance.golden");
@@ -1888,10 +1888,10 @@ Test(api_integration, TestWalletUpdate) {
 	registerMemCleanup( (void*)_name.p );
 	GoString name = { _name.p, _name.n };
 	GoString newName = { "new wallet", 10 };
-	result = SKY_api_Client_UpdateWallet( &clientHandle, name, newName );
+	result = SKY_api_Client_UpdateWallet( clientHandle, name, newName );
 	cr_assert( result == SKY_OK, "SKY_api_Client_UpdateWallet failed" );
 	WalletResponse__Handle w2;
-	result = SKY_api_Client_Wallet( &clientHandle, name, &w2 );
+	result = SKY_api_Client_Wallet( clientHandle, name, &w2 );
 	cr_assert( result == SKY_OK, "SKY_api_Client_Wallet failed" );
 	registerHandleClose( w2 );
 	GoString_ strLabel1 = { NULL, 0 };
@@ -1929,7 +1929,7 @@ Test(api_integration, TestStableWalletTransactions) {
 	GoString name = { _name.p, _name.n };
 	
 	Handle transHandle;
-	result = SKY_api_Client_WalletTransactions( &clientHandle, 
+	result = SKY_api_Client_WalletTransactions( clientHandle, 
 								name, &transHandle );
 	cr_assert( result == SKY_OK, "SKY_api_Client_WalletTransactions failed" );
 	registerHandleClose( transHandle );
@@ -1950,7 +1950,7 @@ Test(api_integration, TestWalletFolderName) {
 	
 	Handle folderHandle;
 	result = SKY_api_Client_WalletFolderName( 
-				&clientHandle, &folderHandle );
+				clientHandle, &folderHandle );
 	cr_assert(result == SKY_OK, "SKY_api_Client_WalletFolderName failed");
 	registerHandleClose( folderHandle );
 	GoString_ strAddress = {NULL, 0};
@@ -1991,16 +1991,16 @@ Test(api_integration, TestEncryptWallet) {
 	registerMemCleanup( (void*)_name.p );
 	GoString name = { _name.p, _name.n };
 	GoString pwd = { "pwd", 3 };
-	result = SKY_api_Client_EncryptWallet( &clientHandle, name, pwd, &w2);
+	result = SKY_api_Client_EncryptWallet( clientHandle, name, pwd, &w2);
 	cr_assert( result == SKY_OK, "Error encrypting wallet" );
 	registerHandleClose( w2 );
 	
-	result = SKY_api_Client_EncryptWallet( &clientHandle, name, pwd, &w3);
+	result = SKY_api_Client_EncryptWallet( clientHandle, name, pwd, &w3);
 	cr_expect( result != SKY_OK, "Encrypting wallet twice should fail" );
 	
 	Handle folderHandle;
 	result = SKY_api_Client_WalletFolderName( 
-				&clientHandle, &folderHandle );
+				clientHandle, &folderHandle );
 	cr_expect(result == SKY_OK, "SKY_api_Client_WalletFolderName failed");
 	registerHandleClose( folderHandle );
 	GoString_ strAddress = {NULL, 0};
@@ -2050,7 +2050,7 @@ Test(api_integration, TestEncryptWallet) {
 	registerMemCleanup((void*)strSecrets.p);
 	cr_expect( strSecrets.n > 0, "Secrets in encrypted wallet shouldn\'t be empty" );
 	
-	result = SKY_api_Client_DecryptWallet( &clientHandle, name, pwd, &dw);
+	result = SKY_api_Client_DecryptWallet( clientHandle, name, pwd, &dw);
 	cr_assert( result == SKY_OK, "Error decrypting wallet" );
 	registerHandleClose( dw );
 	
@@ -2091,13 +2091,13 @@ Test(api_integration, TestDecryptWallet) {
 	GoString wrongPwd = { "pwd1", 4 };
 	
 	//TODO: Fails if decryption is tried with wrong passwords
-	result = SKY_api_Client_DecryptWallet( &clientHandle, name, wrongPwd, &dw);
+	result = SKY_api_Client_DecryptWallet( clientHandle, name, wrongPwd, &dw);
 	cr_expect( result != SKY_OK, "Can\'t decrypt wallet with wrong password" );
 	
-	result = SKY_api_Client_DecryptWallet( &clientHandle, name, emptyPwd, &dw);
+	result = SKY_api_Client_DecryptWallet( clientHandle, name, emptyPwd, &dw);
 	cr_expect( result != SKY_OK, "Can\'t decrypt wallet with empty password" );
 	
-	result = SKY_api_Client_DecryptWallet( &clientHandle, name, pwd, &dw);
+	result = SKY_api_Client_DecryptWallet( clientHandle, name, pwd, &dw);
 	cr_assert( result == SKY_OK, "Error decrypting wallet" );
 	registerHandleClose( dw );
 	
@@ -2260,22 +2260,22 @@ Test(api_integration, TestGetWalletSeedDisabledAPI) {
 	GoString name = { _name.p, _name.n };
 	GoString strPwd = { "pwd", 3 };
 	GoString_ strSeed = { NULL, 0 };
-	result = SKY_api_Client_GetWalletSeed( &clientHandle, name, strPwd, &strSeed );
+	result = SKY_api_Client_GetWalletSeed( clientHandle, name, strPwd, &strSeed );
 	cr_assert( result == SKY_OK, "SKY_api_Client_GetWalletSeed failed" );
 	
 	GoString_ strPrevSeed = { seed, strlen(seed) };
 	cr_assert( eq(type(GoString_), strSeed, strPrevSeed) );
 	
 	GoString wrongWallet = { "w.wlt", 5 };
-	result = SKY_api_Client_GetWalletSeed( &clientHandle, wrongWallet, strPwd, &strSeed );
+	result = SKY_api_Client_GetWalletSeed( clientHandle, wrongWallet, strPwd, &strSeed );
 	cr_assert( result != SKY_OK, "SKY_api_Client_GetWalletSeed must mail with wrong wallet" );
 	
 	GoString wrongPassword = { "wrong password", 14 };
-	result = SKY_api_Client_GetWalletSeed( &clientHandle, name, wrongPassword, &strSeed );
+	result = SKY_api_Client_GetWalletSeed( clientHandle, name, wrongPassword, &strSeed );
 	cr_assert( result != SKY_OK, "SKY_api_Client_GetWalletSeed must mail with wrong password" );
 	
 	GoString emptyPassword = { "", 0 };
-	result = SKY_api_Client_GetWalletSeed( &clientHandle, name, emptyPassword, &strSeed );
+	result = SKY_api_Client_GetWalletSeed( clientHandle, name, emptyPassword, &strSeed );
 	cr_assert( result != SKY_OK, "SKY_api_Client_GetWalletSeed must mail with empty password" );
 	
 	WalletResponse__Handle w2;
@@ -2291,7 +2291,7 @@ Test(api_integration, TestGetWalletSeedDisabledAPI) {
 	registerMemCleanup( (void*)_name.p );
 	GoString name2 = { _name.p, _name.n };
 	memset( &strSeed, 0, sizeof( GoString_ ) ) ;
-	result = SKY_api_Client_GetWalletSeed( &clientHandle, name2, strPwd, &strSeed );
+	result = SKY_api_Client_GetWalletSeed( clientHandle, name2, strPwd, &strSeed );
 	cr_assert( result != SKY_OK, "Can\'t get seed on unencrypted wallet failed" );
 }
 
@@ -2309,7 +2309,7 @@ Test(api_integration, TestStableHealth) {
 	registerHandleClose( clientHandle );
 	
 	Handle healthHandle;
-	result = SKY_api_Client_Health( &clientHandle, &healthHandle );
+	result = SKY_api_Client_Health( clientHandle, &healthHandle );
 	cr_assert(result == SKY_OK, "SKY_api_Client_Health failed");
 	registerHandleClose( healthHandle );
 	

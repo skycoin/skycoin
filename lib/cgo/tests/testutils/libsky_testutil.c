@@ -148,7 +148,7 @@ void cleanupWallet(Client__Handle client, WalletResponse__Handle wallet){
 		}
 	} 
 	GoString str = { strFileName.p, strFileName.n };
-	result = SKY_api_Client_UnloadWallet( &client, str );
+	result = SKY_api_Client_UnloadWallet( client, str );
 	GoString strFullPath = { fullPath, strlen(fullPath) };
 	free( (void*)strWalletDir.p );
 	free( (void*)strFileName.p );

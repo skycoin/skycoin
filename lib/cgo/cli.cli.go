@@ -31,12 +31,12 @@ func SKY_cli_LoadConfig(_arg0 *C.Config__Handle) (____error_code uint32) {
 }
 
 //export SKY_cli_Config_FullWalletPath
-func SKY_cli_Config_FullWalletPath(_c *C.Config__Handle, _arg0 *C.GoString_) (____error_code uint32) {
+func SKY_cli_Config_FullWalletPath(_c C.Config__Handle, _arg0 *C.GoString_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	__c, okc := lookupConfigHandle(*_c)
+	__c, okc := lookupConfigHandle(_c)
 	if !okc {
 		____error_code = SKY_ERROR
 		return
@@ -48,12 +48,12 @@ func SKY_cli_Config_FullWalletPath(_c *C.Config__Handle, _arg0 *C.GoString_) (__
 }
 
 //export SKY_cli_Config_FullDBPath
-func SKY_cli_Config_FullDBPath(_c *C.Config__Handle, _arg0 *C.GoString_) (____error_code uint32) {
+func SKY_cli_Config_FullDBPath(_c C.Config__Handle, _arg0 *C.GoString_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	__c, okc := lookupConfigHandle(*_c)
+	__c, okc := lookupConfigHandle(_c)
 	if !okc {
 		____error_code = SKY_ERROR
 		return
@@ -65,12 +65,12 @@ func SKY_cli_Config_FullDBPath(_c *C.Config__Handle, _arg0 *C.GoString_) (____er
 }
 
 //export SKY_cli_NewApp
-func SKY_cli_NewApp(_cfg *C.Config__Handle, _arg1 *C.App__Handle) (____error_code uint32) {
+func SKY_cli_NewApp(_cfg C.Config__Handle, _arg1 *C.App__Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	__cfg, okcfg := lookupConfigHandle(*_cfg)
+	__cfg, okcfg := lookupConfigHandle(_cfg)
 	if !okcfg {
 		____error_code = SKY_ERROR
 		return
@@ -85,12 +85,12 @@ func SKY_cli_NewApp(_cfg *C.Config__Handle, _arg1 *C.App__Handle) (____error_cod
 }
 
 //export SKY_cli_RPCClientFromContext
-func SKY_cli_RPCClientFromContext(_c *C.Context__Handle, _arg1 *C.WebRpcClient__Handle) (____error_code uint32) {
+func SKY_cli_RPCClientFromContext(_c C.Context__Handle, _arg1 *C.WebRpcClient__Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	c, okc := lookupContextHandle(*_c)
+	c, okc := lookupContextHandle(_c)
 	if !okc {
 		____error_code = SKY_ERROR
 		return
@@ -101,12 +101,12 @@ func SKY_cli_RPCClientFromContext(_c *C.Context__Handle, _arg1 *C.WebRpcClient__
 }
 
 //export SKY_cli_ConfigFromContext
-func SKY_cli_ConfigFromContext(_c *C.Context__Handle, _arg1 *C.Config__Handle) (____error_code uint32) {
+func SKY_cli_ConfigFromContext(_c C.Context__Handle, _arg1 *C.Config__Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	c, okc := lookupContextHandle(*_c)
+	c, okc := lookupContextHandle(_c)
 	if !okc {
 		____error_code = SKY_ERROR
 		return

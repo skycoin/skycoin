@@ -55,12 +55,12 @@ func SKY_wallet_NewReadableEntryFromPubkey(_pub string, _arg1 *C.ReadableEntry__
 }
 
 //export SKY_wallet_ReadableEntry_Save
-func SKY_wallet_ReadableEntry_Save(_re *C.ReadableEntry__Handle, _filename string) (____error_code uint32) {
+func SKY_wallet_ReadableEntry_Save(_re C.ReadableEntry__Handle, _filename string) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	re, okre := lookupReadableEntryHandle(*_re)
+	re, okre := lookupReadableEntryHandle(_re)
 	if !okre {
 		____error_code = SKY_ERROR
 		return
@@ -89,12 +89,12 @@ func SKY_wallet_LoadReadableWallet(_filename string, _arg1 *C.ReadableWallet__Ha
 }
 
 //export SKY_wallet_ReadableWallet_Save
-func SKY_wallet_ReadableWallet_Save(_rw *C.ReadableWallet__Handle, _filename string) (____error_code uint32) {
+func SKY_wallet_ReadableWallet_Save(_rw C.ReadableWallet__Handle, _filename string) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	rw, okrw := lookupReadableWalletHandle(*_rw)
+	rw, okrw := lookupReadableWalletHandle(_rw)
 	if !okrw {
 		____error_code = SKY_ERROR
 		return
@@ -108,12 +108,12 @@ func SKY_wallet_ReadableWallet_Save(_rw *C.ReadableWallet__Handle, _filename str
 }
 
 //export SKY_wallet_ReadableWallet_Load
-func SKY_wallet_ReadableWallet_Load(_rw *C.ReadableWallet__Handle, _filename string) (____error_code uint32) {
+func SKY_wallet_ReadableWallet_Load(_rw C.ReadableWallet__Handle, _filename string) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	rw, okrw := lookupReadableWalletHandle(*_rw)
+	rw, okrw := lookupReadableWalletHandle(_rw)
 	if !okrw {
 		____error_code = SKY_ERROR
 		return
@@ -127,12 +127,12 @@ func SKY_wallet_ReadableWallet_Load(_rw *C.ReadableWallet__Handle, _filename str
 }
 
 //export SKY_wallet_ReadableWallet_Erase
-func SKY_wallet_ReadableWallet_Erase(_rw *C.ReadableWallet__Handle) (____error_code uint32) {
+func SKY_wallet_ReadableWallet_Erase(_rw C.ReadableWallet__Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	rw, okrw := lookupReadableWalletHandle(*_rw)
+	rw, okrw := lookupReadableWalletHandle(_rw)
 	if !okrw {
 		____error_code = SKY_ERROR
 		return

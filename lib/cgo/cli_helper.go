@@ -16,12 +16,12 @@ import (
 import "C"
 
 //export SKY_cli_App_Run
-func SKY_cli_App_Run(_app *C.App__Handle, _args string) (____error_code uint32) {
+func SKY_cli_App_Run(_app C.App__Handle, _args string) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	app, okapp := lookupAppHandle(*_app)
+	app, okapp := lookupAppHandle(_app)
 	if !okapp {
 		____error_code = SKY_ERROR
 		return
@@ -35,12 +35,12 @@ func SKY_cli_App_Run(_app *C.App__Handle, _args string) (____error_code uint32) 
 }
 
 //export SKY_cli_Config_GetCoin
-func SKY_cli_Config_GetCoin(_c *C.Config__Handle, _arg0 *C.GoString_) (____error_code uint32) {
+func SKY_cli_Config_GetCoin(_c C.Config__Handle, _arg0 *C.GoString_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	__c, okc := lookupConfigHandle(*_c)
+	__c, okc := lookupConfigHandle(_c)
 	if !okc {
 		____error_code = SKY_ERROR
 		return
@@ -52,12 +52,12 @@ func SKY_cli_Config_GetCoin(_c *C.Config__Handle, _arg0 *C.GoString_) (____error
 }
 
 //export SKY_cli_Config_GetRPCAddress
-func SKY_cli_Config_GetRPCAddress(_c *C.Config__Handle, _arg0 *C.GoString_) (____error_code uint32) {
+func SKY_cli_Config_GetRPCAddress(_c C.Config__Handle, _arg0 *C.GoString_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	__c, okc := lookupConfigHandle(*_c)
+	__c, okc := lookupConfigHandle(_c)
 	if !okc {
 		____error_code = SKY_ERROR
 		return
@@ -69,12 +69,12 @@ func SKY_cli_Config_GetRPCAddress(_c *C.Config__Handle, _arg0 *C.GoString_) (___
 }
 
 //export SKY_cli_RPCClientFromApp
-func SKY_cli_RPCClientFromApp(_app *C.App__Handle, _arg1 *C.WebRpcClient__Handle) (____error_code uint32) {
+func SKY_cli_RPCClientFromApp(_app C.App__Handle, _arg1 *C.WebRpcClient__Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	app, okapp := lookupAppHandle(*_app)
+	app, okapp := lookupAppHandle(_app)
 	if !okapp {
 		____error_code = SKY_ERROR
 		return

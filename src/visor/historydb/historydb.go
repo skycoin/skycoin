@@ -341,3 +341,9 @@ func (hd HistoryDB) Verify(tx *dbutil.Tx, b *coin.SignedBlock, indexesMap *sync.
 type ErrHistoryDBCorrupted struct {
 	error
 }
+
+// NewErrHistoryDBCorrupted is for user to be able to create ErrHistoryDBCorrupted instance
+// outside of the package
+func NewErrHistoryDBCorrupted(err error) ErrHistoryDBCorrupted {
+	return ErrHistoryDBCorrupted{err}
+}

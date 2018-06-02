@@ -2,12 +2,14 @@ package visor
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
+	"sync"
 	"testing"
 	"time"
 
@@ -188,6 +190,64 @@ func TestErrMissingSignatureRecreateDB(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, bc)
 	}()
+}
+
+func TestHistorydbVerifier(t *testing.T) {
+	tt := []struct {
+		name      string
+		dbPath    string
+		expectErr error
+	}{
+		{
+			name:   "db is ok",
+			dbPath: "./testdata/data.db.ok",
+		},
+		{
+			name:      "missing transaction",
+			dbPath:    "./testdata/data.db.notxn",
+			expectErr: historydb.NewErrHistoryDBCorrupted(errors.New("HistoryDB.Verify: transaction 98db7eb30e13853d3dd93d5d8b4061596d5d288b6f8b92c4d43c46c6599f67fb does not exist in historydb")),
+		},
+		{
+			name:      "missing uxout",
+			dbPath:    "./testdata/data.db.nouxout",
+			expectErr: historydb.NewErrHistoryDBCorrupted(errors.New("HistoryDB.Verify: transaction input 2f87d77c2a7d00b547db1af50e0ba04bafc5b05711e4939e9ec2640a21127dc0 does not exist in historydb")),
+		},
+		{
+			name:      "missing addr transaction index",
+			dbPath:    "./testdata/data.db.no-addr-txn-index",
+			expectErr: historydb.NewErrHistoryDBCorrupted(errors.New("HistoryDB.Verify: index of address transaction [2fGC7kwAM9yZyEF1QqBqp8uo9RUsF6ENGJF:98db7eb30e13853d3dd93d5d8b4061596d5d288b6f8b92c4d43c46c6599f67fb] does not exist in historydb")),
+		},
+		{
+			name:      "missing addr uxout index",
+			dbPath:    "./testdata/data.db.no-addr-uxout-index",
+			expectErr: historydb.NewErrHistoryDBCorrupted(errors.New("HistoryDB.Verify: index of address uxout [2fGC7kwAM9yZyEF1QqBqp8uo9RUsF6ENGJF:2f87d77c2a7d00b547db1af50e0ba04bafc5b05711e4939e9ec2640a21127dc0] does not exist in historydb")),
+		},
+	}
+
+	pubKeyStr := "0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a"
+	pubkey := cipher.MustPubKeyFromHex(pubKeyStr)
+	history := historydb.New()
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			db, err := OpenDB(tc.dbPath, true)
+			require.NoError(t, err)
+			bc, err := NewBlockchain(db, BlockchainConfig{
+				Pubkey: pubkey,
+			})
+			require.NoError(t, err)
+
+			err = db.View("", func(tx *dbutil.Tx) error {
+				indexesMap := sync.Map{}
+				f := func(b *coin.SignedBlock) error {
+					return history.Verify(tx, b, &indexesMap)
+				}
+				return bc.WalkChain(tx, 2, f, nil)
+			})
+			require.Equal(t, tc.expectErr, err)
+		})
+	}
+
 }
 
 func TestVisorCreateBlock(t *testing.T) {

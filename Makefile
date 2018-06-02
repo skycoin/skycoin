@@ -104,13 +104,13 @@ test-libc: build-libc $(BIN_DIR)/test_libskycoin_shared $(BIN_DIR)/test_libskyco
 	$(LDPATHVAR)="$(LDPATH):$(BUILD_DIR)/usr/lib:$(BUILDLIB_DIR)" $(BIN_DIR)/test_libskycoin_shared
 	$(LDPATHVAR)="$(LDPATH):$(BUILD_DIR)/usr/lib"                 $(BIN_DIR)/test_libskycoin_static
 
-$(BIN_DIR)/test_int_libskycoin_shared: $(LIB_DIR)/cgo/tests/api_integration/*.c $(LIB_DIR)/cgo/tests/testutils/*.c
+$(BIN_DIR)/test_int_libskycoin_shared: $(LIB_DIR)/cgo/tests/api_integration/*.c $(LIB_DIR)/cgo/tests/cli_integration/*.c $(LIB_DIR)/cgo/tests/testutils/*.c
 	echo "Compiling with $(CC) $(CC_VERSION) $(STDC_FLAG)"
-	$(CC) -o $(BIN_DIR)/test_int_libskycoin_shared $(LIB_DIR)/cgo/tests/api_integration/*.c $(LIB_DIR)/cgo/tests/testutils/*.c -lskycoin  $(LDLIBS) $(LDFLAGS)
+	$(CC) -o $(BIN_DIR)/test_int_libskycoin_shared $(LIB_DIR)/cgo/tests/api_integration/*.c $(LIB_DIR)/cgo/tests/cli_integration/*.c $(LIB_DIR)/cgo/tests/testutils/*.c -lskycoin  $(LDLIBS) $(LDFLAGS)
 
-$(BIN_DIR)/test_int_libskycoin_static: $(LIB_DIR)/cgo/tests/api_integration/*.c $(LIB_DIR)/cgo/tests/testutils/*.c
+$(BIN_DIR)/test_int_libskycoin_static: $(LIB_DIR)/cgo/tests/api_integration/*.c $(LIB_DIR)/cgo/tests/cli_integration/*.c $(LIB_DIR)/cgo/tests/testutils/*.c
 	echo "Compiling with $(CC) $(CC_VERSION) $(STDC_FLAG)"
-	$(CC) -o $(BIN_DIR)/test_int_libskycoin_static $(LIB_DIR)/cgo/tests/api_integration/*.c $(LIB_DIR)/cgo/tests/testutils/*.c $(BUILDLIB_DIR)/libskycoin.a $(LDLIBS) $(LDFLAGS)
+	$(CC) -o $(BIN_DIR)/test_int_libskycoin_static $(LIB_DIR)/cgo/tests/api_integration/*.c $(LIB_DIR)/cgo/tests/cli_integration/*.c $(LIB_DIR)/cgo/tests/testutils/*.c $(BUILDLIB_DIR)/libskycoin.a $(LDLIBS) $(LDFLAGS)
 	
 	
 docs-libc:

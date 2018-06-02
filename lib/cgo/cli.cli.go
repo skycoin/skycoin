@@ -5,6 +5,7 @@ import (
 	"unsafe"
 
 	cli "github.com/skycoin/skycoin/src/cli"
+	"github.com/skycoin/skycoin/src/api/webrpc"
 )
 
 /*
@@ -95,8 +96,8 @@ func SKY_cli_RPCClientFromContext(_c C.Context__Handle, _arg1 *C.WebRpcClient__H
 		____error_code = SKY_ERROR
 		return
 	}
-	__arg1 := cli.RPCClientFromContext(c)
-	*_arg1 = registerWebRpcClientHandle(__arg1)
+	webrpcClient := c.App.Metadata["rpc"].(*webrpc.Client)
+	*_arg1 = registerWebRpcClientHandle(webrpcClient)
 	return
 }
 
@@ -111,8 +112,8 @@ func SKY_cli_ConfigFromContext(_c C.Context__Handle, _arg1 *C.Config__Handle) (_
 		____error_code = SKY_ERROR
 		return
 	}
-	__arg1 := cli.ConfigFromContext(c)
-	*_arg1 = registerConfigHandle(&__arg1)
+	config := c.App.Metadata["config"].(cli.Config)
+	*_arg1 = registerConfigHandle(&config)
 	return
 }
 

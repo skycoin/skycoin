@@ -1,12 +1,7 @@
-typedef struct{
-    GoString_ Addr;
-    GoUint64_ Coins;
+/**
+ * Structure used to specify amounts transferred in a transaction.
+ */
+typedef struct {
+	GoString_ Addr; ///< Sender / receipient address.
+	GoInt64_ Coins; ///< Amount transferred (e.g. measured in SKY)
 } cli__SendAmount;
-typedef struct{
-    GoString_ Addr;
-    GoString_ Coins;
-} cli__sendAmountJSON;
-typedef struct{
-    GoString_ Wallet;
-    GoString_ Address;
-} cli__walletAddress;

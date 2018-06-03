@@ -63,6 +63,7 @@ GoUint32 traverseGoldenFiles(const char *path, InputTestData* inputData) {
       ValidateSeedData(&seedData, inputData);
     }
   }
+  return 0;
 }
 
 Test(cipher_testsuite, TestSeedSignatures) {

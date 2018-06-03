@@ -18,13 +18,13 @@ import (
 import "C"
 
 //export SKY_wallet_NewWallet
-func SKY_wallet_NewWallet(_wltName string, _opts *C.Options__Handle, _arg2 *C.Wallet__Handle) (____error_code uint32) {
+func SKY_wallet_NewWallet(_wltName string, _opts C.Options__Handle, _arg2 *C.Wallet__Handle) (____error_code uint32) {
 	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
 	wltName := _wltName
-	__opts, okopts := lookupOptionsHandle(*_opts)
+	__opts, okopts := lookupOptionsHandle(_opts)
 	if !okopts {
 		____error_code = SKY_ERROR
 		return
@@ -94,12 +94,12 @@ func SKY_wallet_Load(_wltFile string, _arg1 *C.Wallet__Handle) (____error_code u
 }
 
 //export SKY_wallet_Wallet_Save
-func SKY_wallet_Wallet_Save(_w *C.Wallet__Handle, _dir string) (____error_code uint32) {
+func SKY_wallet_Wallet_Save(_w C.Wallet__Handle, _dir string) (____error_code uint32) {
 	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	w, okw := lookupWalletHandle(*_w)
+	w, okw := lookupWalletHandle(_w)
 	if !okw {
 		____error_code = SKY_ERROR
 		return
@@ -113,12 +113,12 @@ func SKY_wallet_Wallet_Save(_w *C.Wallet__Handle, _dir string) (____error_code u
 }
 
 //export SKY_wallet_Wallet_Validate
-func SKY_wallet_Wallet_Validate(_w *C.Wallet__Handle) (____error_code uint32) {
+func SKY_wallet_Wallet_Validate(_w C.Wallet__Handle) (____error_code uint32) {
 	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	w, okw := lookupWalletHandle(*_w)
+	w, okw := lookupWalletHandle(_w)
 	if !okw {
 		____error_code = SKY_ERROR
 		return
@@ -131,12 +131,12 @@ func SKY_wallet_Wallet_Validate(_w *C.Wallet__Handle) (____error_code uint32) {
 }
 
 //export SKY_wallet_Wallet_Type
-func SKY_wallet_Wallet_Type(_w *C.Wallet__Handle, _argSKY_OK *C.GoString_) (____error_code uint32) {
+func SKY_wallet_Wallet_Type(_w C.Wallet__Handle, _argSKY_OK *C.GoString_) (____error_code uint32) {
 	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	w, okw := lookupWalletHandle(*_w)
+	w, okw := lookupWalletHandle(_w)
 	if !okw {
 		____error_code = SKY_ERROR
 		return
@@ -147,12 +147,12 @@ func SKY_wallet_Wallet_Type(_w *C.Wallet__Handle, _argSKY_OK *C.GoString_) (____
 }
 
 //export SKY_wallet_Wallet_Version
-func SKY_wallet_Wallet_Version(_w *C.Wallet__Handle, _argSKY_OK *C.GoString_) (____error_code uint32) {
+func SKY_wallet_Wallet_Version(_w C.Wallet__Handle, _argSKY_OK *C.GoString_) (____error_code uint32) {
 	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	w, okw := lookupWalletHandle(*_w)
+	w, okw := lookupWalletHandle(_w)
 	if !okw {
 		____error_code = SKY_ERROR
 		return
@@ -163,12 +163,12 @@ func SKY_wallet_Wallet_Version(_w *C.Wallet__Handle, _argSKY_OK *C.GoString_) (_
 }
 
 //export SKY_wallet_Wallet_Filename
-func SKY_wallet_Wallet_Filename(_w *C.Wallet__Handle, _argSKY_OK *C.GoString_) (____error_code uint32) {
+func SKY_wallet_Wallet_Filename(_w C.Wallet__Handle, _argSKY_OK *C.GoString_) (____error_code uint32) {
 	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	w, okw := lookupWalletHandle(*_w)
+	w, okw := lookupWalletHandle(_w)
 	if !okw {
 		____error_code = SKY_ERROR
 		return
@@ -179,12 +179,12 @@ func SKY_wallet_Wallet_Filename(_w *C.Wallet__Handle, _argSKY_OK *C.GoString_) (
 }
 
 //export SKY_wallet_Wallet_Label
-func SKY_wallet_Wallet_Label(_w *C.Wallet__Handle, _argSKY_OK *C.GoString_) (____error_code uint32) {
+func SKY_wallet_Wallet_Label(_w C.Wallet__Handle, _argSKY_OK *C.GoString_) (____error_code uint32) {
 	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	w, okw := lookupWalletHandle(*_w)
+	w, okw := lookupWalletHandle(_w)
 	if !okw {
 		____error_code = SKY_ERROR
 		return
@@ -195,12 +195,12 @@ func SKY_wallet_Wallet_Label(_w *C.Wallet__Handle, _argSKY_OK *C.GoString_) (___
 }
 
 //export SKY_wallet_Wallet_IsEncrypted
-func SKY_wallet_Wallet_IsEncrypted(_w *C.Wallet__Handle, _argSKY_OK *bool) (____error_code uint32) {
+func SKY_wallet_Wallet_IsEncrypted(_w C.Wallet__Handle, _argSKY_OK *bool) (____error_code uint32) {
 	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	w, okw := lookupWalletHandle(*_w)
+	w, okw := lookupWalletHandle(_w)
 	if !okw {
 		____error_code = SKY_ERROR
 		return
@@ -211,12 +211,12 @@ func SKY_wallet_Wallet_IsEncrypted(_w *C.Wallet__Handle, _argSKY_OK *bool) (____
 }
 
 //export SKY_wallet_Wallet_GenerateAddresses
-func SKY_wallet_Wallet_GenerateAddresses(_w *C.Wallet__Handle, _num uint64, _arg1 *C.GoSlice_) (____error_code uint32) {
+func SKY_wallet_Wallet_GenerateAddresses(_w C.Wallet__Handle, _num uint64, _arg1 *C.GoSlice_) (____error_code uint32) {
 	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	w, okw := lookupWalletHandle(*_w)
+	w, okw := lookupWalletHandle(_w)
 	if !okw {
 		____error_code = SKY_ERROR
 		return
@@ -231,12 +231,12 @@ func SKY_wallet_Wallet_GenerateAddresses(_w *C.Wallet__Handle, _num uint64, _arg
 }
 
 //export SKY_wallet_Wallet_GetAddresses
-func SKY_wallet_Wallet_GetAddresses(_w *C.Wallet__Handle, _argSKY_OK *C.GoSlice_) (____error_code uint32) {
+func SKY_wallet_Wallet_GetAddresses(_w C.Wallet__Handle, _argSKY_OK *C.GoSlice_) (____error_code uint32) {
 	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	w, okw := lookupWalletHandle(*_w)
+	w, okw := lookupWalletHandle(_w)
 	if !okw {
 		____error_code = SKY_ERROR
 		return
@@ -247,12 +247,12 @@ func SKY_wallet_Wallet_GetAddresses(_w *C.Wallet__Handle, _argSKY_OK *C.GoSlice_
 }
 
 //export SKY_wallet_Wallet_GetEntry
-func SKY_wallet_Wallet_GetEntry(_w *C.Wallet__Handle, _a *C.cipher__Address, _arg1 *C.wallet__Entry, _arg2 *bool) (____error_code uint32) {
+func SKY_wallet_Wallet_GetEntry(_w C.Wallet__Handle, _a *C.cipher__Address, _arg1 *C.wallet__Entry, _arg2 *bool) (____error_code uint32) {
 	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	w, okw := lookupWalletHandle(*_w)
+	w, okw := lookupWalletHandle(_w)
 	if !okw {
 		____error_code = SKY_ERROR
 		return
@@ -265,12 +265,12 @@ func SKY_wallet_Wallet_GetEntry(_w *C.Wallet__Handle, _a *C.cipher__Address, _ar
 }
 
 //export SKY_wallet_Wallet_AddEntry
-func SKY_wallet_Wallet_AddEntry(_w *C.Wallet__Handle, _entry *C.wallet__Entry) (____error_code uint32) {
+func SKY_wallet_Wallet_AddEntry(_w C.Wallet__Handle, _entry *C.wallet__Entry) (____error_code uint32) {
 	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	w, okw := lookupWalletHandle(*_w)
+	w, okw := lookupWalletHandle(_w)
 	if !okw {
 		____error_code = SKY_ERROR
 		return

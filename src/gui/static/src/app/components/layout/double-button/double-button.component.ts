@@ -12,6 +12,7 @@ export class DoubleButtonComponent {
   @Input() rightButtonText: any;
   @Input() leftButtonText: any;
   @Input() activeButton: DoubleButtonActive;
+  @Input() className = '';
   @Output() onStateChange = new EventEmitter();
   ButtonState = DoubleButtonActive;
 

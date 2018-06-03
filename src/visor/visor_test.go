@@ -2610,7 +2610,28 @@ func TestGetCreateTransactionAuxs(t *testing.T) {
 			}
 
 			unconfirmed.On("RawTxns", matchTx).Return(tc.rawTxnsRet, nil)
-			unspent.On("GetArray", matchTx, tc.getArrayInputs).Return(tc.getArrayRet, nil)
+			unspent.On("GetArray", matchTx, mock.MatchedBy(func(args []cipher.SHA256) bool {
+				// Compares two []coin.UxOuts for equality, ignoring the order of elements in the slice
+				if len(args) != len(tc.getArrayInputs) {
+					return false
+				}
+
+				inputsMap := make(map[cipher.SHA256]struct{}, len(tc.getArrayInputs))
+				for _, h := range tc.getArrayInputs {
+					_, ok := inputsMap[h]
+					require.False(t, ok)
+					inputsMap[h] = struct{}{}
+				}
+
+				for _, h := range args {
+					_, ok := inputsMap[h]
+					if !ok {
+						return false
+					}
+				}
+
+				return true
+			})).Return(tc.getArrayRet, nil)
 			if tc.getUnspentsOfAddrsRet != nil {
 				unspent.On("GetUnspentsOfAddrs", matchTx, tc.addrs).Return(tc.getUnspentsOfAddrsRet, nil)
 			}

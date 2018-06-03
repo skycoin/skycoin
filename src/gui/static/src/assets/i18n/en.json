@@ -128,7 +128,8 @@
     },
 
     "address": {
-      "copy": "Copy address",
+      "copy": "Copy",
+      "copy-address": "Copy address",
       "copied": "Copied!",
       "outputs": "Unspent Outputs"
     }

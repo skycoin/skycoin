@@ -8,6 +8,7 @@ import { PasswordDialogComponent } from '../../../layout/password-dialog/passwor
 import { MatDialog, MatSnackBar, MatSnackBarConfig } from '@angular/material';
 import { parseResponseMessage } from '../../../../utils/errors';
 import { ISubscription } from 'rxjs/Subscription';
+import { NavBarService } from '../../../../services/nav-bar.service';
 
 @Component({
   selector: 'app-send-form',
@@ -29,14 +30,17 @@ export class SendFormComponent implements OnInit, OnDestroy {
     public walletService: WalletService,
     private dialog: MatDialog,
     private snackbar: MatSnackBar,
+    private navbarService: NavBarService,
   ) {}
 
   ngOnInit() {
+    this.navbarService.showSwitch();
     this.initForm();
   }
 
   ngOnDestroy() {
     this.subscription.unsubscribe();
+    this.navbarService.hideSwitch();
   }
 
   send() {
@@ -66,15 +70,28 @@ export class SendFormComponent implements OnInit, OnDestroy {
 
     this.walletService.createTransaction(
       this.form.value.wallet,
-      this.form.value.address,
-      this.form.value.amount,
+      null,
+      [{
+        address: this.form.value.address,
+        coins: this.form.value.amount,
+      }],
+      {
+        type: 'auto',
+        mode: 'share',
+        share_factor: '0.5',
+      },
+      null,
       passwordDialog ? passwordDialog.password : null,
     )
       .subscribe(transaction => {
         this.onFormSubmitted.emit({
-          wallet: this.form.value.wallet,
-          address: this.form.value.address,
+          form: {
+            wallet: this.form.value.wallet,
+            address: this.form.value.address,
+            amount: this.form.value.amount,
+          },
           amount: this.form.value.amount,
+          to: [this.form.value.address],
           transaction,
         });
       }, error => {
@@ -107,13 +124,13 @@ export class SendFormComponent implements OnInit, OnDestroy {
 
     if (this.formData) {
       Object.keys(this.form.controls).forEach(control => {
-        this.form.get(control).setValue(this.formData[control]);
+        this.form.get(control).setValue(this.formData.form[control]);
       });
     }
   }
 
   private validateAmount(amountControl: FormControl) {
-    if (isNaN(amountControl.value)) {
+    if (isNaN(amountControl.value.replace(' ', '='))) {
       return { Invalid: true };
     }
 

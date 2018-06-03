@@ -4,7 +4,57 @@ API default service port is `6420`.  However, if running the desktop or standalo
 
 A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](https://godoc.org/github.com/skycoin/skycoin/src/api#Client).
 
-<!-- MarkdownTOC autolink="true" bracket="round" -->
+The API has two versions, `/api/v1` and `/api/v2`.
+Previously, there was no `/api/vx` prefix.
+Starting in application version 0.24.0, the existing endpoints from v0.23.0
+are now prefixed with `/api/v1`. To retain the old endpoints, run the application
+with `-enable-unversioned-api`.
+
+## API Version 1
+
+`/api/v1` endpoints have no standard format. Most of them accept formdata in POST requests,
+but a few accept `application/json` instead.  Most of them return JSON but one or two
+return a plaintext string.
+
+All endpoints will set an appropriate HTTP status code, using `200` for success and codes greater than or equal to `400` for error.
+
+`/api/v1` endpoints guarantee backwards compatibility.
+
+## API Version 2
+
+*Note: API Version 2 is under development, and not stable. The guidelines here are subject to change.*
+
+`/api/v2` endpoints have a standard format.
+
+All `/api/v2` `POST` endpoints accept only `application/json` and return `application/json`.
+
+All `/api/v2` `GET` requires accept data in the query string.
+In the future we may have choose to have `GET` requests also accept `POST` with a JSON body,
+to support requests with a large query body, such as when requesting data for a large number
+of addresses or transactions.
+
+`/api/v2` responses are always JSON.  If there is an error, the JSON object will
+look like this:
+
+```json
+{
+    "error": {
+        "code": 400,
+        "message": "bad arguments",
+    }
+}
+```
+
+Response data will be included in a `"data"` field, which will always be a JSON object (not an array).
+
+Some endpoints may return both `"error"` and `"data"`. This will be noted in the documentation for that endpoint.
+
+All responses will set an appropriate HTTP status code indicating an error, and it will be equal to the value of `response["error"]["code"]`.
+
+Since `/api/v2` is still under development, there are no guarantees for backwards compatibility.
+However, any changes to the API will be recorded in the [changelog](../../CHANGELOG.md).
+
+<!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3,4,5" -->
 
 - [CSRF](#csrf)
     - [Get current csrf token](#get-current-csrf-token)

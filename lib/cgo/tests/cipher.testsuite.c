@@ -380,6 +380,9 @@ void ValidateSeedData(SeedTestData* seedData, InputTestData* inputData) {
   cipher__Address addrNull;
   cipher__Sig     sigNull;
 
+  struct cr_mem mem_actual;
+  struct cr_mem mem_expect;
+
   memset((void *)&skNull, 0, sizeof(cipher__SecKey));
   memset((void *)&pkNull, 0, sizeof(cipher__PubKey));
   memset((void *)&addrNull, 0, sizeof(cipher__Address));
@@ -389,15 +392,21 @@ void ValidateSeedData(SeedTestData* seedData, InputTestData* inputData) {
   KeysTestData* expected = (KeysTestData*) seedData->Keys.data;
   cipher__SecKey *s = (cipher__SecKey*) keys.data;
   for (; i < keys.len; i++, s++, expected++) {
-//     cr_assert(ne(u8[32], skNull, (*s)),
-//         "%d-th secret key must not be null", i);
-    cr_assert(eq(u8[32], expected->Secret, (*s)),
+    mem_expect.data = skNull;
+    mem_actual.data = *s;
+    mem_actual.size = mem_expect.size = sizeof(cipher__SecKey);
+    cr_assert(ne(mem, mem_actual, mem_expect),
+        "%d-th secret key must not be null", i);
+    cr_assert(eq(u8[32], (*s), expected->Secret),
         "%d-th generated secret key must match provided secret key", i);
 
     cipher__PubKey p;
     SKY_cipher_PubKeyFromSecKey(s, &p);
-//    cr_assert(ne(u8[33], pkNull, p),
-//        "%d-th public key must not be null", i);
+    mem_expect.data = pkNull;
+    mem_actual.data = p;
+    mem_actual.size = mem_expect.size = sizeof(cipher__PubKey);
+    cr_assert(ne(mem, mem_actual, mem_expect),
+        "%d-th public key must not be null", i);
     cr_assert(eq(u8[33], expected->Public, p),
         "%d-th derived public key must match provided public key", i);
 
@@ -440,8 +449,11 @@ void ValidateSeedData(SeedTestData* seedData, InputTestData* inputData) {
       cipher__Sig* sig = (cipher__Sig*) expected->Signatures.data;
       int j = 0;
       for (; j < inputData->Hashes.len; j++, h++, sig++) {
-//        cr_assert(ne(u8[65], (*sig), sigNull),
-//            "%d-th provided signature for %d-th data set must not be null", j, i);
+        mem_expect.data = sigNull;
+        mem_actual.data = *sig;
+        mem_actual.size = mem_expect.size = sizeof(cipher__Sig);
+        cr_assert(ne(mem, mem_actual, mem_expect),
+            "%d-th provided signature for %d-th data set must not be null", j, i);
         GoUint32 err = SKY_cipher_VerifySignature(&p, sig, h);
         cr_assert(err == SKY_OK,
             "SKY_cipher_VerifySignature failed: error=%d dataset=%d hashidx=%d", err, i, j);
@@ -461,8 +473,11 @@ void ValidateSeedData(SeedTestData* seedData, InputTestData* inputData) {
 
         cipher__Sig sig2;
         SKY_cipher_SignHash(h, s, &sig2);
-//        cr_assert(ne(u8[65], sigNull, sig2),
-//            "created signature for %d-th hash in %d-th dataset is null", j, i);
+        mem_expect.data = sigNull;
+        mem_actual.data = sig2;
+        mem_actual.size = mem_expect.size = sizeof(cipher__Sig);
+        cr_assert(ne(mem, mem_actual, mem_expect),
+            "created signature for %d-th hash in %d-th dataset is null", j, i);
 
         // NOTE: signatures are not deterministic, they use a nonce,
         // so we don't compare the generated sig to the provided sig

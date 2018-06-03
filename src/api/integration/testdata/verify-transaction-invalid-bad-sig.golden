@@ -1,0 +1,39 @@
+{
+	"confirmed": false,
+	"transaction": {
+		"length": 220,
+		"type": 0,
+		"txid": "de977ea93c0090ebe6e0c2dea002ffaf4fc314d08d06534120d96b96cc0042ce",
+		"inner_hash": "c30ba73f9422e909c601777ace12c777db329e06875cc6b29383bac3766acdc7",
+		"fee": "188772",
+		"sigs": [
+			"71f2c01516fe696328e79bcf464eb0db374b63d494f7a307d1e77114f18581d7a81eed5275a9e04a336292dd2fd16977d9bef2a54ea3161d0876603d00c53bc9dd"
+		],
+		"inputs": [
+			{
+				"uxid": "75692aeff988ce0da734c474dbef3a1ce19a5a6823bbcd36acb856c83262261e",
+				"address": "qxmeHkwgAMfwXyaQrwv9jq3qt228xMuoT5",
+				"coins": "22100.000000",
+				"hours": "377543",
+				"calculated_hours": "377543",
+				"timestamp": 1431574528,
+				"block": 180,
+				"txid": "0a610a34a8408effe8f2f70e4a85a3a8f4aca923f43e10a8a6e08cf410d7a35d"
+			}
+		],
+		"outputs": [
+			{
+				"uxid": "4ac148c444b86560bde4005fcf5d9f53ae18226b35a60911ab777dfe00e4cb89",
+				"address": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
+				"coins": "0.001000",
+				"hours": "10"
+			},
+			{
+				"uxid": "a7369917d622df48d8f205e0935144a825df4d8318d82c8bd9492ab3ee11f102",
+				"address": "qxmeHkwgAMfwXyaQrwv9jq3qt228xMuoT5",
+				"coins": "22099.999000",
+				"hours": "188761"
+			}
+		]
+	}
+}

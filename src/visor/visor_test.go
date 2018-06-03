@@ -2460,7 +2460,79 @@ func TestGetCreateTransactionAuxs(t *testing.T) {
 }
 
 func TestVerifyTxnVerbose(t *testing.T) {
+	head := coin.SignedBlock{
+		Block: coin.Block{
+			Head: coin.BlockHeader{
+				Time: time.Now.UTC(),
+			},
+		},
+	}
 
+	cases := []struct {
+		name        string
+		txn         coin.Transaction
+		isConfirmed bool
+		balances    []wallet.UxBalance
+		err         error
+
+		getArrayRet coin.UxArray
+		getArrayErr error
+
+		getHistoryTxnRet *historydb.Transaction
+		getHistoryTxnErr error
+
+		getHistoryUxoutsRet []*historydb.UxOut
+		getHistoryUxoutsErr error
+	}{
+		{},
+	}
+
+	matchTx := mock.MatchedBy(func(tx *dbutil.Tx) bool {
+		return true
+	})
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			db, shutdown := testutil.PrepareDB(t)
+			defer shutdown()
+
+			history := NewHistoryerMock()
+			bc := NewBlockchainerMock()
+			unspent := NewUnspentPoolerMock()
+
+			bc.On("Unspent").Return(unspent)
+			bc.On("Head", matchTx).Return(head, nil)
+
+			unspent.On("GetArray", matchTx, tc.txn.In).Return(tc.getUnspentsRet, tc.getUnspentErr)
+
+			history.On("GetTransaction", matchTx, tc.txn.Hash()).Return(tc.getHistoryTxnRet, tc.getHistoryTxnErr)
+			history.On("GetUxOuts", matchTx, tc.txn.In).Return(tc.getHistoryUxOutsRet, tc.getHistoryUxoutsErr)
+
+			v := &Visor{
+				Blockchain: bc,
+				DB:         db,
+				History:    history,
+			}
+
+			var isConfirmed bool
+			var balances []wallet.UxBalance
+			err := v.DB.View("VerifyTxnVerbose", func(tx *dbutil.Tx) error {
+				var err error
+				balances, isConfirmed, err = v.VerifyTxnVerbose(&tc.txn)
+				return err
+			})
+
+			if tc.err != nil {
+				require.Equal(t, tc.err, err)
+				return
+			}
+
+			require.NoError(t, err)
+
+			require.Equal(t, tc.isConfirmed, isConfirmed)
+			require.Equal(t, tc.balances, balances)
+		})
+	}
 }
 
 // historyerMock2 embeds historyerMock, and rewrite the ForEach method

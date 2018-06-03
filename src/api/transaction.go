@@ -329,10 +329,6 @@ func verifyTxnHandler(gateway Gatewayer) http.HandlerFunc {
 
 		var resp HTTPResponse
 		inputs, isTxnConfirmed, err := gateway.VerifyTxnVerbose(txn)
-
-		fmt.Println(err)
-		fmt.Println(inputs)
-
 		if err != nil {
 			switch err.(type) {
 			case visor.ErrTxnViolatesSoftConstraint,

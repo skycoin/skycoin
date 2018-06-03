@@ -171,7 +171,9 @@ func (c *Client) post(endpoint string, contentType string, body io.Reader, obj i
 		return nil
 	}
 
-	return json.NewDecoder(resp.Body).Decode(obj)
+	decoder := json.NewDecoder(resp.Body)
+	decoder.DisallowUnknownFields()
+	return decoder.Decode(obj)
 }
 
 // PostJSONV2 makes a POST request to an endpoint with body of json data,
@@ -214,8 +216,11 @@ func (c *Client) PostJSONV2(endpoint string, reqObj, respObj interface{}) (bool,
 		return false, err
 	}
 
+	decoder := json.NewDecoder(bytes.NewReader(respBody))
+	decoder.DisallowUnknownFields()
+
 	var wrapObj ReceivedHTTPResponse
-	if err := json.Unmarshal(respBody, wrapObj); err != nil {
+	if err := decoder.Decode(&wrapObj); err != nil {
 		// In some cases, the server can send an error response in a non-JSON format,
 		// such as a 404 when the endpoint is not registered, or if a 500 error
 		// occurs in the go HTTP stack, outside of the application's control.
@@ -244,7 +249,10 @@ func (c *Client) PostJSONV2(endpoint string, reqObj, respObj interface{}) (bool,
 		return false, rspErr
 	}
 
-	if err := json.Unmarshal(wrapObj.Data, respObj); err != nil {
+	decoder = json.NewDecoder(bytes.NewReader(wrapObj.Data))
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(respObj); err != nil {
 		return false, err
 	}
 
@@ -823,8 +831,6 @@ func (c *Client) RawTransaction(txid string) (string, error) {
 }
 
 // VerifyTransaction makes a request to POST /api/v2/transaction/verify.
-// The API may respond with an error but include data useful for processing,
-// so both return values may be non-nil.
 func (c *Client) VerifyTransaction(encodedTxn string) (*VerifyTxnResponse, error) {
 	req := VerifyTxnRequest{
 		EncodedTransaction: encodedTxn,

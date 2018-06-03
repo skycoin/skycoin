@@ -267,6 +267,13 @@ Content-Type: application/json
 Args: {"address": "<address>"}
 ```
 
+Parses and validates a Skycoin address. Returns the address version in the response.
+
+Error responses:
+
+* `400 Bad Request`: The request body is not valid JSON or the address is missing from the request body
+* `422 Unprocessable Entity`: The address is invalid
+
 Example for a valid address:
 
 ```sh
@@ -280,14 +287,12 @@ Result:
 ```json
 {
     "data": {
-        "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
         "version": 0,
-        "valid": true
     }
 }
 ```
 
-Example for a valid address:
+Example for an invalid address:
 
 ```sh
 curl -X POST http://127.0.0.1:6420/api/v2/address/verify \
@@ -302,10 +307,6 @@ Result:
     "error": {
         "message": "Invalid checksum",
         "code": 422
-    },
-    "data": {
-        "address": "2aTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
-        "valid": false
     }
 }
 ```

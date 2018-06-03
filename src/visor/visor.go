@@ -186,7 +186,7 @@ type Blockchainer interface {
 	ExecuteBlock(tx *dbutil.Tx, sb *coin.SignedBlock) error
 	VerifyBlockTxnConstraints(tx *dbutil.Tx, txn coin.Transaction) error
 	VerifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction) error
-	VerifySingleTxnAllConstraints(tx *dbutil.Tx, txn coin.Transaction, maxSize int) error
+	VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, maxSize int) error
 	TransactionFee(tx *dbutil.Tx, hours uint64) coin.FeeCalculator
 }
 
@@ -475,7 +475,7 @@ func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, erro
 	// Filter transactions that violate all constraints
 	var filteredTxns coin.Transactions
 	for _, txn := range txns {
-		if err := vs.Blockchain.VerifySingleTxnAllConstraints(tx, txn, vs.Config.MaxBlockSize); err != nil {
+		if err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.MaxBlockSize); err != nil {
 			switch err.(type) {
 			case ErrTxnViolatesHardConstraint, ErrTxnViolatesSoftConstraint:
 				logger.Warningf("Transaction %s violates constraints: %v", txn.TxIDHex(), err)
@@ -813,10 +813,14 @@ func (vs *Visor) InjectTransaction(txn coin.Transaction) (bool, *ErrTxnViolatesS
 // The bool return value is whether or not the transaction was already in the pool.
 // If the transaction violates hard or soft constraints, it is rejected, and error will not be nil.
 func (vs *Visor) InjectTransactionStrict(txn coin.Transaction) (bool, error) {
+	if err := VerifySingleTxnUserConstraints(txn); err != nil {
+		return false, err
+	}
+
 	var known bool
 
 	if err := vs.DB.Update("InjectTransactionStrict", func(tx *dbutil.Tx) error {
-		err := vs.Blockchain.VerifySingleTxnAllConstraints(tx, txn, vs.Config.MaxBlockSize)
+		err := vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.MaxBlockSize)
 		if err != nil {
 			return err
 		}
@@ -1758,22 +1762,11 @@ func (vs *Visor) GetUnspentsOfAddrs(addrs []cipher.Address) (coin.AddressUxOuts,
 	return uxa, nil
 }
 
-// VerifySingleTxnAllConstraints verifies an isolated transaction
-func (vs *Visor) VerifySingleTxnAllConstraints(txn *coin.Transaction) error {
-	return vs.DB.View("VerifySingleTxnAllConstraints", func(tx *dbutil.Tx) error {
-		return vs.Blockchain.VerifySingleTxnAllConstraints(tx, *txn, vs.Config.MaxBlockSize)
-	})
-}
-
 // VerifyTxnVerbose verifies a transaction, it returns transaction's input uxouts, whether the
 // transaction is confirmed, and error if any
 func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bool, error) {
-	// Checks if the txn's output contains empty address
-	for _, o := range txn.Out {
-		if o.Address.Null() {
-			err := errors.New("Transaction.Out contains an output sending to an empty address")
-			return nil, false, NewErrTxnViolatesHardConstraint(err)
-		}
+	if err := VerifySingleTxnUserConstraints(*txn); err != nil {
+		return nil, false, err
 	}
 
 	var uxa coin.UxArray
@@ -1903,7 +1896,13 @@ func (vs *Visor) CreateTransactionDeprecated(wltID string, password []byte, coin
 	// Check that the transaction is valid before returning it to the caller.
 	// NOTE: this isn't inside the database transaction, but it's safe,
 	// if a racing database write caused this transaction to be invalid, it would be caught here
-	if err := vs.VerifySingleTxnAllConstraints(txn); err != nil {
+	if err := VerifySingleTxnUserConstraints(*txn); err != nil {
+		logger.WithError(err).Error("Created transaction violates transaction constraints")
+		return nil, err
+	}
+	if err := vs.DB.View("VerifySingleTxnSoftHardConstraints", func(tx *dbutil.Tx) error {
+		return vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, vs.Config.MaxBlockSize)
+	}); err != nil {
 		logger.WithError(err).Error("Created transaction violates transaction constraints")
 		return nil, err
 	}
@@ -1960,7 +1959,13 @@ func (vs *Visor) CreateTransaction(params wallet.CreateTransactionParams) (*coin
 	// Check that the transaction is valid before returning it to the caller.
 	// NOTE: this isn't inside the database transaction, but it's safe,
 	// if a racing database write caused this transaction to be invalid, it would be caught here
-	if err := vs.VerifySingleTxnAllConstraints(txn); err != nil {
+	if err := VerifySingleTxnUserConstraints(*txn); err != nil {
+		logger.WithError(err).Error("Created transaction violates transaction constraints")
+		return nil, nil, err
+	}
+	if err := vs.DB.View("VerifySingleTxnSoftHardConstraints", func(tx *dbutil.Tx) error {
+		return vs.Blockchain.VerifySingleTxnSoftHardConstraints(tx, *txn, vs.Config.MaxBlockSize)
+	}); err != nil {
 		logger.WithError(err).Error("Created transaction violates transaction constraints")
 		return nil, nil, err
 	}

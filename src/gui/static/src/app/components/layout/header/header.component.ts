@@ -18,7 +18,7 @@ import { TranslateService } from '@ngx-translate/core';
   styleUrls: ['./header.component.scss'],
 })
 export class HeaderComponent implements OnInit, OnDestroy {
-  @Input() title: string;
+  @Input() headline: string;
 
   addresses = [];
   current: number;

@@ -128,7 +128,8 @@
     },
 
     "address": {
-      "copy": "Copy address",
+      "copy": "Copy",
+      "copy-address": "Copy address",
       "copied": "Copied!",
       "outputs": "Unspent Outputs"
     }
@@ -139,6 +140,17 @@
     "to-label": "Send to",
     "amount-label": "Amount",
     "notes-label": "Notes",
+    "wallet-label": "Wallet",
+    "addresses-label": "Addresses",
+    "addresses-help": "Wallet addresses to send from",
+    "change-address-label": "Change address",
+    "change-address-help": "Address to receive change (in form of coinhours)",
+    "destinations-label": "Destinations",
+    "destinations-help": "Destination addresses, their coins and coinhours",
+    "hours-allocation-label": "Automatic coin hours allocation",
+    "options-label": "Options",
+    "value-label": "Value",
+    "value-help": "The higher the value, the more coinhours will be sent to outputs",
     "verify-button": "Verify",
     "send-button": "Send",
     "back-button": "Back"

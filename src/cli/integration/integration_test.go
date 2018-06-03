@@ -460,13 +460,13 @@ func TestVerifyAddress(t *testing.T) {
 			"invalid skycoin address",
 			"2KG9eRXUhx6hrDZvNGB99DKahtrPDQ1W9vn",
 			errors.New("exit status 1"),
-			"Invalid version",
+			"Invalid checksum",
 		},
 		{
 			"invalid bitcoin address",
 			"1Dcb9gpaZpBKmjqjCsiBsP3sBW1md2kEM2",
 			errors.New("exit status 1"),
-			"Invalid version",
+			"Invalid checksum",
 		},
 	}
 

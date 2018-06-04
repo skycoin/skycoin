@@ -206,6 +206,20 @@ func lookupCreateTransactionRequestHandle(handle C.CreateTransactionRequest__Han
 	return nil, false
 }
 
+func registerPasswordReaderHandle(obj *cli.PasswordReader) C.PasswordReader__Handle {
+	return (C.PasswordReader__Handle)(registerHandle(obj))
+}
+
+func lookupPasswordReaderHandle(handle C.PasswordReader__Handle) (*cli.PasswordReader, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*cli.PasswordReader); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
 func closeHandle(handle Handle) {
 	delete(handleMap, handle)
 }

@@ -117,6 +117,12 @@ func SKY_cli_ConfigFromContext(_c C.Context__Handle, _arg1 *C.Config__Handle) (_
 	return
 }
 
+func SKY_cli_NewPasswordReader(_password []byte, passwordReader *C.PasswordReader__Handle){
+		password := *(*[]byte)(unsafe.Pointer(&_password))
+		pr := cli.NewPasswordReader(password)
+		*passwordReader = registerPasswordReaderHandle(&pr)
+}
+
 //export SKY_cli_PasswordFromBytes_Password
 func SKY_cli_PasswordFromBytes_Password(_p *C.cli__PasswordFromBytes, _arg0 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0

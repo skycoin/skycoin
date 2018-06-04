@@ -18,15 +18,19 @@ import (
 import "C"
 
 //export SKY_cli_GenerateAddressesInFile
-func SKY_cli_GenerateAddressesInFile(_walletFile string, _num uint64, pwd string, _arg3 *C.GoSlice_) (____error_code uint32) {
+func SKY_cli_GenerateAddressesInFile(_walletFile string, _num uint64, pwd C.PasswordReader__Handle, _arg3 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
 	walletFile := _walletFile
 	num := _num
-	pr := cli.NewPasswordReader([]byte(pwd))
-	__arg3, ____return_err := cli.GenerateAddressesInFile(walletFile, num, pr)
+	pr, okc := lookupPasswordReaderHandle(pwd)
+	if !okc {
+		____error_code = SKY_ERROR
+		return
+	}
+	__arg3, ____return_err := cli.GenerateAddressesInFile(walletFile, num, *pr)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
 		copyToGoSlice(reflect.ValueOf(__arg3), _arg3)

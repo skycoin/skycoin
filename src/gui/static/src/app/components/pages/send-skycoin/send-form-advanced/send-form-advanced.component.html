@@ -27,14 +27,6 @@
   </div>
 
   <div class="form-field">
-    <label for="change-address">
-      {{ 'send.change-address-label' | translate }}
-      <mat-icon [matTooltip]="'send.change-address-help' | translate">help</mat-icon>
-    </label>
-    <input formControlName="changeAddress" id="change-address">
-  </div>
-
-  <div class="form-field">
     <label for="destination">
       {{ 'send.destinations-label' | translate }}
       <mat-icon [matTooltip]="'send.destinations-help' | translate">help</mat-icon>
@@ -63,6 +55,14 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <div class="form-field">
+    <label for="change-address">
+      {{ 'send.change-address-label' | translate }}
+      <mat-icon [matTooltip]="'send.change-address-help' | translate">help</mat-icon>
+    </label>
+    <input formControlName="changeAddress" id="change-address">
   </div>
 
   <div class="-autohours">

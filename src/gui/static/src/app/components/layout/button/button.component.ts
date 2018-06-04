@@ -46,6 +46,10 @@ export class ButtonComponent {
     this.disabled = true;
   }
 
+  setEnabled() {
+    this.disabled = false;
+  }
+
   isLoading() {
     return this.state === 0;
   }

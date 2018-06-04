@@ -65,6 +65,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.subscriptions.unsubscribe();
     this.navbarService.hideSwitch();
+    this.snackbar.dismiss();
   }
 
   send() {

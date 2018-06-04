@@ -33,7 +33,7 @@ func SKY_cli_AddPrivateKey(_wlt C.Wallet__Handle, _key string) (____error_code u
 }
 
 //export SKY_cli_AddPrivateKeyToFile
-func SKY_cli_AddPrivateKeyToFile(_walletFile, _key string, pwd  C.PasswordReader__Handle) (____error_code uint32) {
+func SKY_cli_AddPrivateKeyToFile(_walletFile, _key string, pwd C.PasswordReader__Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())

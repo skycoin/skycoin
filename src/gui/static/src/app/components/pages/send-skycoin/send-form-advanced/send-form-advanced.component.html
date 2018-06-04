@@ -5,7 +5,7 @@
       <select formControlName="wallet" id="wallets">
         <option *ngFor="let wallet of walletService.all() | async" [disabled]="wallet.coins <= 0" [ngValue]="wallet">
           {{ wallet.label }} - {{ wallet.coins | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
-          ({{ wallet.hours }} {{ 'common.coin-hours' | translate }})
+          ({{ wallet.hours | number:'1.0-6' }} {{ 'common.coin-hours' | translate }})
         </option>
       </select>
     </div>
@@ -20,7 +20,7 @@
       <mat-select #selectAddresses multiple formControlName="addresses" [compareWith]="addressCompare" id="addresses">
         <mat-option *ngFor="let addr of addresses" [value]="addr">
           {{ addr.address }} - {{ addr.coins | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
-          ({{ addr.hours }} {{ 'common.coin-hours' | translate }})
+          ({{ addr.hours | number:'1.0-6' }} {{ 'common.coin-hours' | translate }})
         </mat-option>
         <mat-select-trigger>
           <span [innerHtml]="selectedAddresses"></span>

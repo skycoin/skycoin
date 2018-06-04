@@ -18,8 +18,11 @@
     <input formControlName="amount" id="amount" (keydown.enter)="send()">
   </div>
   <div class="-buttons">
-    <app-button #button (action)="send()" class="primary" [disabled]="!form.valid">
-      {{ 'send.verify-button' | translate }}
+    <app-button #previewButton (action)="preview()" [disabled]="!form.valid">
+      {{ 'send.preview-button' | translate }}
+    </app-button>
+    <app-button #sendButton (action)="send()" class="primary" [disabled]="!form.valid">
+      {{ 'send.send-button' | translate }}
     </app-button>
   </div>
 </div>

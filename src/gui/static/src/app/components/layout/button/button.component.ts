@@ -57,5 +57,7 @@ export class ButtonComponent {
   resetState() {
     this.state = null;
     this.error = '';
+
+    return this;
   }
 }

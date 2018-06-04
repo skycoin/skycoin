@@ -151,7 +151,7 @@
     "options-label": "Options",
     "value-label": "Coin hours share factor",
     "value-help": "The higher the value, the more coin hours will be sent to outputs",
-    "verify-button": "Verify",
+    "preview-button": "Preview",
     "send-button": "Send",
     "back-button": "Back"
   },

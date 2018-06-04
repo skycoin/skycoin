@@ -131,3 +131,4 @@ json_value* get_json_value(json_value* node, const char* path,
 							json_type type){
 	get_json_value_not_strict(node, path, type, 1);
 }
+

@@ -14,7 +14,7 @@ import (
   #include <string.h>
   #include <stdlib.h>
 
-  #include "skytypes.h"
+  #include "../../include/skytypes.h"
 */
 import "C"
 
@@ -66,7 +66,7 @@ func SKY_cli_CreateRawTxFromAddress(_c C.WebRpcClient__Handle, _addr, _walletFil
 }
 
 //export SKY_cli_CreateRawTx
-func SKY_cli_CreateRawTx(_c C.WebRpcClient__Handle, _wlt *C.Wallet__Handle, _inAddrs []string, _chgAddr string, _toAddrs []C.cli__SendAmount, _password []byte, _arg6 *C.coin__Transaction) (____error_code uint32) {
+func SKY_cli_CreateRawTx(_c C.WebRpcClient__Handle, _wlt C.Wallet__Handle, _inAddrs []string, _chgAddr string, _toAddrs []C.cli__SendAmount, _password []byte, _arg6 *C.coin__Transaction) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -76,7 +76,7 @@ func SKY_cli_CreateRawTx(_c C.WebRpcClient__Handle, _wlt *C.Wallet__Handle, _inA
 		____error_code = SKY_ERROR
 		return
 	}
-	wlt, okwlt := lookupWalletHandle(*_wlt)
+	wlt, okwlt := lookupWalletHandle(_wlt)
 	if !okwlt {
 		____error_code = SKY_ERROR
 		return

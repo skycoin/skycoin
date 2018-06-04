@@ -131,23 +131,18 @@ export class WalletService {
     return this.apiService.getWalletSeed(wallet, password);
   }
 
-  createTransaction(wallet: Wallet, address: string, amount: string, password: string|null): Observable<PreviewTransaction> {
+  createTransaction(wallet: Wallet, addresses: string[]|null, destinations: any[], hoursSelection: any, changeAddress: string|null, password: string|null): Observable<PreviewTransaction> {
     return this.apiService.post(
       'wallet/transaction',
       {
-        hours_selection: {
-          type: 'auto',
-          mode: 'share',
-          share_factor: '0.5',
-        },
+        hours_selection: hoursSelection,
         wallet: {
           id: wallet.filename,
           password,
+          addresses,
         },
-        to: [{
-          address,
-          coins: amount,
-        }],
+        to: destinations,
+        change_address: changeAddress,
       },
       {
         json: true,

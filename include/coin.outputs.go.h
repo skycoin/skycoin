@@ -2,6 +2,7 @@ typedef struct{
     GoUint64_ Time;
     GoUint64_ BkSeq;
 } coin__UxHead;
+
 typedef GoSlice_  coin__UxArray;
 
 typedef struct{

@@ -150,6 +150,12 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     return (this.form.get('destinations') as FormArray).controls;
   }
 
+  get selectedAddresses() {
+    return this.form.get('addresses').value
+      ? this.form.get('addresses').value.map(addr => addr.address).join(' &bull; ')
+      : '';
+  }
+
   private validateDestinations() {
     if (!this.form || !Array.isArray(this.form.get('addresses').value)) {
       return { Required: true };

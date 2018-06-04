@@ -22,6 +22,9 @@
           {{ addr.address }} - {{ addr.coins | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
           ({{ addr.hours }} {{ 'common.coin-hours' | translate }})
         </mat-option>
+        <mat-select-trigger>
+          <span [innerHtml]="selectedAddresses"></span>
+        </mat-select-trigger>
       </mat-select>
     </div>
   </div>

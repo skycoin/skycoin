@@ -8,6 +8,13 @@
 #include "skytypes.h"
 #include "skytest.h"
 
+#define BUFFER_SIZE 1024
+#define stableWalletName "integration-test.wlt"
+#define STRING_SIZE 128
+#define JSON_FILE_SIZE 4096
+#define JSON_BIG_FILE_SIZE 102400
+#define TEST_DATA_DIR "src/cli/integration/testdata/"
+#define stableEncryptWalletName "integration-test-encrypted.wlt"
 
 //Define function pipe2 to avoid warning implicit declaration of function 'pipe2'
 int pipe2(int pipefd[2], int flags);
@@ -124,8 +131,8 @@ void cleanupWallet(Client__Handle client, WalletResponse__Handle wallet){
 	GoString_ strFileName;
 	memset(&strWalletDir, 0, sizeof(GoString_));
 	memset(&strFileName, 0, sizeof(GoString_));
-	
-	
+
+
 	result = SKY_api_Handle_Client_GetWalletDir(client, &strWalletDir);
 	if( result != SKY_OK ){
 		return;
@@ -146,7 +153,7 @@ void cleanupWallet(Client__Handle client, WalletResponse__Handle wallet){
 			strcat( fullPath, ".bak" );
 			result = unlink( fullPath );
 		}
-	} 
+	}
 	GoString str = { strFileName.p, strFileName.n };
 	result = SKY_api_Client_UnloadWallet( client, str );
 	GoString strFullPath = { fullPath, strlen(fullPath) };
@@ -155,9 +162,9 @@ void cleanupWallet(Client__Handle client, WalletResponse__Handle wallet){
 }
 
 void cleanRegisteredWallet(
-			Client__Handle client, 
+			Client__Handle client,
 			WalletResponse__Handle wallet){
-	
+
 	int i;
 	for (i = 0; i < WALLETPOOLIDX; i++) {
 		if(WALLET_POOL[i].wallet == wallet && WALLET_POOL[i].client == client){
@@ -171,13 +178,13 @@ void cleanRegisteredWallet(
 
 void cleanupMem() {
 	int i;
-  
+
 	for (i = 0; i < WALLETPOOLIDX; i++) {
 		if(WALLET_POOL[i].client != 0 && WALLET_POOL[i].wallet != 0){
 			cleanupWallet( WALLET_POOL[i].client, WALLET_POOL[i].wallet );
 		}
 	}
-  
+
   void **ptr;
   for (i = MEMPOOLIDX, ptr = MEMPOOL; i; --i) {
 	if( *ptr )
@@ -219,7 +226,7 @@ json_value* loadJsonFile(const char* filename){
 	char* file_contents;
 	json_char* json;
 	json_value* value;
-	
+
 	if ( stat(filename, &filestatus) != 0) {
 		return NULL;
 	}
@@ -239,7 +246,7 @@ json_value* loadJsonFile(const char* filename){
 		return NULL;
 	}
 	fclose(fp);
-	
+
 	json = (json_char*)file_contents;
 	value = json_parse(json, file_size);
 	free(file_contents);
@@ -270,7 +277,7 @@ int parseBoolean(const char* str, int length){
 	if(length == 1){
 		result = str[0] == '1' || str[0] == 't' || str[0] == 'T';
 	} else {
-		result = strncmp(str, "true", length) == 0 || 
+		result = strncmp(str, "true", length) == 0 ||
 			strncmp(str, "True", length) == 0 ||
 			strncmp(str, "TRUE", length) == 0;
 	}
@@ -279,6 +286,97 @@ int parseBoolean(const char* str, int length){
 
 void toGoString(GoString_ *s, GoString *r){
 GoString * tmp = r;
-  
+
   *tmp = (*(GoString *) s);
+}
+
+int useCSRF() {
+  GoUint32 errcode;
+
+  GoString strCSRFVar = {"USE_CSRF", 8};
+  char buffercrsf[128];
+  GoString_ crsf = {buffercrsf, 0};
+  errcode = SKY_cli_Getenv(strCSRFVar, &crsf);
+  cr_assert(errcode == SKY_OK, "SKY_cli_Getenv failed");
+  int length = strlen(crsf.p);
+  int result = 0;
+  if (length == 1) {
+    result = crsf.p[0] == '1' || crsf.p[0] == 't' || crsf.p[0] == 'T';
+  } else {
+    result = strcmp(crsf.p, "true") == 0 || strcmp(crsf.p, "True") == 0 ||
+             strcmp(crsf.p, "TRUE") == 0;
+  }
+  free((void *)crsf.p);
+  return result;
+}
+
+json_value *loadGoldenFile_Cli(const char *file) {
+  char path[STRING_SIZE];
+  if (strlen(TEST_DATA_DIR) + strlen(file) < STRING_SIZE) {
+    strcpy(path, TEST_DATA_DIR);
+    strcat(path, file);
+    return loadJsonFile(path);
+  }
+  return NULL;
+}
+
+void createTempWalletDir(bool encrypt) {
+  const char *temp = "build/libskycoin/wallet-data-dir";
+
+  int valueMkdir = mkdir(temp, S_IRWXU);
+
+  if (valueMkdir == -1) {
+    int errr = system("rm -r build/libskycoin/wallet-data-dir/*.*");
+  }
+
+  // Copy the testdata/$stableWalletName to the temporary dir.
+  char walletPath[JSON_BIG_FILE_SIZE];
+  if (encrypt) {
+    strcpy(walletPath, stableEncryptWalletName);
+  } else {
+    strcpy(walletPath, stableWalletName);
+  }
+  unsigned char pathnameURL[BUFFER_SIZE];
+  strcpy(pathnameURL, temp);
+  strcat(pathnameURL, "/");
+  strcat(pathnameURL, walletPath);
+
+  FILE *rf;
+  FILE *f;
+  f = fopen(pathnameURL, "wb");
+  unsigned char fullUrl[BUFFER_SIZE];
+  strcpy(fullUrl, TEST_DATA_DIR);
+  strcat(fullUrl, walletPath);
+  rf = fopen(fullUrl, "rb");
+  unsigned char buff[2048];
+  int readBits;
+  // Copy file rf to f
+  if (f && rf) {
+    while ((readBits = fread(buff, 1, 2048, rf)))
+      fwrite(buff, 1, readBits, f);
+
+    fclose(rf);
+    fclose(f);
+
+    GoString WalletDir = {"WALLET_DIR", 10};
+    GoString Dir = {temp, strlen(temp)};
+    SKY_cli_Setenv(WalletDir, Dir);
+    GoString WalletPath = {"WALLET_NAME", 11};
+    GoString pathname = {walletPath, strlen(walletPath)};
+    SKY_cli_Setenv(WalletPath, pathname);
+  }
+  strcpy(walletPath, "");
+};
+
+
+int getCountWord(const char *str) {
+  int len = 0;
+  do {
+    str = strpbrk(str, " "); // find separator
+    if (str)
+      str += strspn(str, " "); // skip separator
+    ++len;                     // increment word count
+  } while (str && *str);
+
+  return len;
 }

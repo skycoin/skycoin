@@ -19,34 +19,10 @@
 
 TestSuite(api_cli_integration, .init = setup, .fini = teardown);
 
-int useCSRF() {
-  GoUint32 errcode;
+int useCSRF();
+json_value *loadGoldenFile_Cli(const char *file);
+void createTempWalletDir(bool encrypt);
 
-  GoString strCSRFVar = {"USE_CSRF", 8};
-  GoString_ crsf;
-  errcode = SKY_cli_Getenv(strCSRFVar, &crsf);
-  cr_assert(errcode == SKY_OK, "SKY_cli_Getenv failed");
-  int length = strlen(crsf.p);
-  int result = 0;
-  if (length == 1) {
-    result = crsf.p[0] == '1' || crsf.p[0] == 't' || crsf.p[0] == 'T';
-  } else {
-    result = strcmp(crsf.p, "true") == 0 || strcmp(crsf.p, "True") == 0 ||
-             strcmp(crsf.p, "TRUE") == 0;
-  }
-  free((void *)crsf.p);
-  return result;
-}
-
-json_value *loadGoldenFile_Cli(const char *file) {
-  char path[STRING_SIZE];
-  if (strlen(TEST_DATA_DIR) + strlen(file) < STRING_SIZE) {
-    strcpy(path, TEST_DATA_DIR);
-    strcat(path, file);
-    return loadJsonFile(path);
-  }
-  return NULL;
-}
 
 Test(api_cli_integration, TestStableShowConfig) {
   char output[BUFFER_SIZE];

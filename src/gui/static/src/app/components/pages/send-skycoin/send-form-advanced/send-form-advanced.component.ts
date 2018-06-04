@@ -48,7 +48,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     });
 
     this.subscriptions = this.form.get('wallet').valueChanges.subscribe(wallet => {
-      this.addresses = wallet.addresses;
+      this.addresses = wallet.addresses.filter(addr => addr.coins > 0);
       this.form.get('addresses').setValue([]);
       this.form.get('destinations').updateValueAndValidity();
     });

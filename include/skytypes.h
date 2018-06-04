@@ -231,6 +231,16 @@ typedef Handle PasswordReader__Handle;
 typedef Handle WebRpcClient__Handle;
 
 /**
+ * Memory handle providing access to wallet data
+ */
+typedef Handle Wallet__Handle;
+
+/**
+ * Memory handle Options Handle
+*/
+typedef Handle Options__Handle;
+
+/**
  * Memory handle to access to Skycoin CLI configuration
  */
 typedef Handle Config__Handle;
@@ -238,7 +248,8 @@ typedef Handle Config__Handle;
 #include "cipher.hash.go.h"
 #include "cipher.crypto.go.h"
 #include "cipher.address.go.h"
-#include "api.cli.create_rawtx.go.h"
+#include "cli.create_rawtx.go.h"
+#include "coin.outputs.go.h"
 #include "coin.transactions.go.h"
 #include "wallet.entry.go.h"
 #include "wallet.wallet.go.h"

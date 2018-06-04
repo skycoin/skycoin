@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher/ripemd160"
 )
@@ -332,4 +333,12 @@ func TestSecKeyHashTest(t *testing.T) {
 	h := SumSHA256(randBytes(t, 256))
 	assert.Nil(t, TestSecKeyHash(s, h))
 	assert.NotNil(t, TestSecKeyHash(SecKey{}, h))
+}
+
+func TestGenerateDeterministicKeyPairsUsesAllBytes(t *testing.T) {
+	// Tests that if a seed >128 bits is used, the generator does not ignore bits >128
+	seed := "property diet little foster provide disagree witness mountain alley weekend kitten general"
+	seckeys := GenerateDeterministicKeyPairs([]byte(seed), 3)
+	seckeys2 := GenerateDeterministicKeyPairs([]byte(seed[:16]), 3)
+	require.NotEqual(t, seckeys, seckeys2)
 }

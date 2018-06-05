@@ -26,7 +26,7 @@ func SKY_cli_CreateRawTxFromWallet(_c C.WebRpcClient__Handle, _walletFile, _chgA
 	}()
 	c, okc := lookupWebRpcClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	walletFile := _walletFile
@@ -49,7 +49,7 @@ func SKY_cli_CreateRawTxFromAddress(_c C.WebRpcClient__Handle, _addr, _walletFil
 	}()
 	c, okc := lookupWebRpcClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	addr := _addr
@@ -73,12 +73,12 @@ func SKY_cli_CreateRawTx(_c C.WebRpcClient__Handle, _wlt C.Wallet__Handle, _inAd
 	}()
 	c, okc := lookupWebRpcClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	wlt, okwlt := lookupWalletHandle(_wlt)
 	if !okwlt {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	inAddrs := *(*[]string)(unsafe.Pointer(&_inAddrs))

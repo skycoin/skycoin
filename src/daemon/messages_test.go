@@ -104,11 +104,9 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 				if sliceLen > 0 {
 					// Emit annotation for last item
 					return util.Annotation{Size: len(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())[4:]), Name: f.Name + "[" + strconv.Itoa(j) + "]"}, true
-				} else {
-					// Zero length slice. Start over
-					return mai.Next()
 				}
-
+				// Zero length slice. Start over
+				return mai.Next()
 			}
 
 			mai.CurrentField++
@@ -175,7 +173,7 @@ func ExampleStructEmptySlice() {
 	setupMsgEncoding()
 	gnet.RegisterMessage(gnet.MessagePrefixFromString("TEST"), TestMessage{})
 	gnet.VerifyMessages()
-	var message TestMessage = TestMessage{
+	var message = TestMessage{
 		0x01,
 		0x2345,
 		"",

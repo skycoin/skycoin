@@ -15,7 +15,7 @@
   </div>
   <div class="form-field">
     <label for="amount">{{ 'send.amount-label' | translate }}</label>
-    <input formControlName="amount" id="amount" (keydown.enter)="send()">
+    <input formControlName="amount" id="amount" (keydown.enter)="preview()">
   </div>
   <div class="-buttons">
     <app-button #previewButton (action)="preview()" [disabled]="!form.valid">

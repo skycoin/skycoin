@@ -23,7 +23,10 @@
           ({{ addr.hours | number:'1.0-6' }} {{ 'common.coin-hours' | translate }})
         </mat-option>
         <mat-select-trigger>
-          <span [innerHtml]="selectedAddresses"></span>
+          <div *ngFor="let address of form.get('addresses').value">
+            {{ address.address }} - {{ address.coins | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
+            ({{ address.hours | number:'1.0-6' }} {{ 'common.coin-hours' | translate }})
+          </div>
         </mat-select-trigger>
       </mat-select>
     </div>
@@ -32,7 +35,7 @@
   <div class="form-field">
     <label for="destination">
       {{ 'send.destinations-label' | translate }}
-      <mat-icon [matTooltip]="'send.destinations-help' | translate">help</mat-icon>
+      <mat-icon [matTooltip]="('send.destinations-help' + (this.autoHours ? '1' : '2')) | translate">help</mat-icon>
     </label>
 
     <div formArrayName="destinations" *ngFor="let dest of destControls; let i = index;" class="-destination">
@@ -65,7 +68,7 @@
       {{ 'send.change-address-label' | translate }}
       <mat-icon [matTooltip]="'send.change-address-help' | translate">help</mat-icon>
     </label>
-    <input formControlName="changeAddress" id="change-address">
+    <input formControlName="changeAddress" id="change-address" (keydown.enter)="preview()">
   </div>
 
   <div class="-autohours">

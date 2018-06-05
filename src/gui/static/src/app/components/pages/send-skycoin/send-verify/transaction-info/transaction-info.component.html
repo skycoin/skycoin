@@ -10,7 +10,7 @@
             <span>{{ 'tx.from' | translate }}:</span> {{ transaction.from }}
           </div>
           <div class="-data">
-            <span>{{ 'tx.to' | translate }}:</span> {{ transaction.to }}
+            <span>{{ 'tx.to' | translate }}:</span> {{ transaction.to.join(', ') }}
           </div>
         </ng-container>
         <ng-container *ngIf="!isPreview">

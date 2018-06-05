@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `USE_CSRF` environment variable for CLI, if the remote node has CSRF enabled (CSRF is enabled by default, use `-disable-csrf` to disable)
 - `cli showConfig` command to echo the cli's configuration back to the user
 - Option to generate 12/24 word seed when creating new wallet
+- libskycoin 0.0.1 released with bindings for cipher/address, cipher/hash, cipher/crypto, cli/create_rawtx
 - Add `-version` flag to show node version
 - Add transaction verification step to "Send" page
 - Add more details about transaction in transaction history
@@ -26,6 +27,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `GET /explorer/address`: add `fee` to transaction objects and `calculated_hours` to transaction inputs
 - Test data generator and test suite for verification of alternative `cipher` implementations
 - Add `POST /transaction/verify` API endpoint
+- Add advanced spend UI
+- Add `ignore_unconfirmed` option to `POST /api/v1/wallet/transaction` to allow transactions to be created or spent even if there are unspent outputs in the unconfirmed pool.
+- Add `uxouts` to `POST /api/v1/wallet/transaction`, to allow specific unspent outputs to be used in a transaction.
+- Add Dockerfile in docker/images/dev-cli to build a docker image suitable for development.
 
 ### Fixed
 

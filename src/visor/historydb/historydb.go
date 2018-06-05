@@ -197,13 +197,42 @@ func (hd HistoryDB) ForEachTxn(tx *dbutil.Tx, f func(cipher.SHA256, *Transaction
 	return hd.txns.ForEach(tx, f)
 }
 
-type addressIndexes struct {
+// IndexesMap is a goroutine safe address indexes map
+type IndexesMap struct {
+	value map[cipher.Address]AddressIndexes
+	lock  sync.RWMutex
+}
+
+// NewIndexesMap creates a IndexesMap instance
+func NewIndexesMap() *IndexesMap {
+	return &IndexesMap{
+		value: make(map[cipher.Address]AddressIndexes),
+	}
+}
+
+// Load returns value of given key
+func (im *IndexesMap) Load(address cipher.Address) (AddressIndexes, bool) {
+	im.lock.RLock()
+	v, ok := im.value[address]
+	im.lock.RUnlock()
+	return v, ok
+}
+
+// Store saves address with indexes
+func (im *IndexesMap) Store(address cipher.Address, indexes AddressIndexes) {
+	im.lock.Lock()
+	im.value[address] = indexes
+	im.lock.Unlock()
+}
+
+// AddressIndexes represents the address indexes struct
+type AddressIndexes struct {
 	TxnHashes map[cipher.SHA256]struct{}
 	UxHashes  map[cipher.SHA256]struct{}
 }
 
 // Verify checks if the historydb is corrupted
-func (hd HistoryDB) Verify(tx *dbutil.Tx, b *coin.SignedBlock, indexesMap *sync.Map) error {
+func (hd HistoryDB) Verify(tx *dbutil.Tx, b *coin.SignedBlock, indexesMap *IndexesMap) error {
 	for _, t := range b.Body.Transactions {
 		txnHash := t.Hash()
 		txn, err := hd.txns.Get(tx, txnHash)
@@ -240,9 +269,8 @@ func (hd HistoryDB) Verify(tx *dbutil.Tx, b *coin.SignedBlock, indexesMap *sync.
 			uxHashesMap := map[cipher.SHA256]struct{}{}
 
 			// Checks if the address indexes already loaded into memory
-			v, ok := indexesMap.Load(addr)
+			indexes, ok := indexesMap.Load(addr)
 			if ok {
-				indexes := v.(addressIndexes)
 				txnHashesMap = indexes.TxnHashes
 				uxHashesMap = indexes.UxHashes
 			} else {
@@ -262,7 +290,7 @@ func (hd HistoryDB) Verify(tx *dbutil.Tx, b *coin.SignedBlock, indexesMap *sync.
 					uxHashesMap[hash] = struct{}{}
 				}
 
-				indexesMap.Store(addr, addressIndexes{
+				indexesMap.Store(addr, AddressIndexes{
 					TxnHashes: txnHashesMap,
 					UxHashes:  uxHashesMap,
 				})
@@ -298,9 +326,8 @@ func (hd HistoryDB) Verify(tx *dbutil.Tx, b *coin.SignedBlock, indexesMap *sync.
 			addr := ux.Body.Address
 			txnHashesMap := map[cipher.SHA256]struct{}{}
 			uxHashesMap := map[cipher.SHA256]struct{}{}
-			v, ok := indexesMap.Load(addr)
+			indexes, ok := indexesMap.Load(addr)
 			if ok {
-				indexes := v.(addressIndexes)
 				txnHashesMap = indexes.TxnHashes
 				uxHashesMap = indexes.UxHashes
 			} else {
@@ -321,7 +348,7 @@ func (hd HistoryDB) Verify(tx *dbutil.Tx, b *coin.SignedBlock, indexesMap *sync.
 					uxHashesMap[hash] = struct{}{}
 				}
 
-				indexesMap.Store(addr, addressIndexes{
+				indexesMap.Store(addr, AddressIndexes{
 					TxnHashes: txnHashesMap,
 					UxHashes:  uxHashesMap,
 				})

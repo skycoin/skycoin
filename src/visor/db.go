@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 
 	"github.com/boltdb/bolt"
@@ -20,8 +19,8 @@ import (
 )
 
 var (
-	// SigVerifyTheadNum number of goroutines to use for signature verification
-	SigVerifyTheadNum = 4
+	// BlockchainVerifyTheadNum number of goroutines to use for signature and historydb verification
+	BlockchainVerifyTheadNum = 4
 )
 
 // ErrCorruptDB is returned if the database is corrupted
@@ -45,38 +44,17 @@ func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) erro
 			return nil
 		}
 
-		if !dbutil.Exists(tx, historydb.TransactionsBkt) {
-			err := fmt.Errorf("verifyHistory: %s bucket does not exist", string(historydb.TransactionsBkt))
-			return ErrCorruptDB{err}
-		}
-
-		if !dbutil.Exists(tx, historydb.UxOutsBkt) {
-			err := fmt.Errorf("verifyHistory: %s bucket does not exist", string(historydb.UxOutsBkt))
-			return ErrCorruptDB{err}
-		}
-
-		if !dbutil.Exists(tx, historydb.AddressTxnsBkt) {
-			err := fmt.Errorf("verifyHistory: %s bucket does not exist", string(historydb.AddressTxnsBkt))
-			return ErrCorruptDB{err}
-		}
-
-		if !dbutil.Exists(tx, historydb.AddressUxBkt) {
-			err := fmt.Errorf("verifyHistory: %s bucket does not exist", string(historydb.AddressUxBkt))
-			return ErrCorruptDB{err}
-		}
-
 		history := historydb.New()
-
-		indexesMap := sync.Map{}
+		indexesMap := historydb.NewIndexesMap()
 		verifyFunc := func(b *coin.SignedBlock) error {
 			if err := bc.VerifySignature(b); err != nil {
 				return err
 			}
-
-			return history.Verify(tx, b, &indexesMap)
+			return history.Verify(tx, b, indexesMap)
 		}
 
-		return bc.WalkChain(tx, SigVerifyTheadNum, verifyFunc, quit)
+		err := bc.WalkChain(tx, BlockchainVerifyTheadNum, verifyFunc, quit)
+		return err
 	})
 
 	switch err.(type) {

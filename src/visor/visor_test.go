@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"sync"
 	"testing"
 	"time"
 
@@ -145,7 +144,7 @@ func TestErrMissingSignatureRecreateDB(t *testing.T) {
 		require.NoError(t, err)
 
 		err = db.View("", func(tx *dbutil.Tx) error {
-			return bc.WalkChain(tx, SigVerifyTheadNum, bc.VerifySignature, nil)
+			return bc.WalkChain(tx, BlockchainVerifyTheadNum, bc.VerifySignature, nil)
 		})
 
 		require.Error(t, err)
@@ -238,9 +237,9 @@ func TestHistorydbVerifier(t *testing.T) {
 			require.NoError(t, err)
 
 			err = db.View("", func(tx *dbutil.Tx) error {
-				indexesMap := sync.Map{}
+				indexesMap := historydb.NewIndexesMap()
 				f := func(b *coin.SignedBlock) error {
-					return history.Verify(tx, b, &indexesMap)
+					return history.Verify(tx, b, indexesMap)
 				}
 				return bc.WalkChain(tx, 2, f, nil)
 			})

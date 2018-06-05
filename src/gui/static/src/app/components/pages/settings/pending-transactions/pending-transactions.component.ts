@@ -2,6 +2,8 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import * as moment from 'moment';
 import { ISubscription } from 'rxjs/Subscription';
+import { NavBarService } from '../../../../services/nav-bar.service';
+import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
 
 @Component({
   selector: 'app-pending-transactions',
@@ -12,21 +14,41 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
   transactions: any[];
 
   private transactionsSubscription: ISubscription;
+  private navbarSubscription: ISubscription;
 
   constructor(
     public walletService: WalletService,
+    private navbarService: NavBarService,
   ) {
-    this.walletService.startDataRefreshSubscription();
+    this.navbarSubscription = this.navbarService.activeComponent.subscribe(value => {
+      this.loadTransactions(value);
+    });
   }
 
   ngOnInit() {
-    this.transactionsSubscription = this.walletService.pendingTransactions().subscribe(transactions => {
-      this.transactions = this.mapTransactions(transactions);
-    });
+    this.navbarService.showSwitch('My', 'All');
   }
 
   ngOnDestroy() {
     this.transactionsSubscription.unsubscribe();
+    this.navbarSubscription.unsubscribe();
+    this.navbarService.hideSwitch();
+  }
+
+  private loadTransactions(value) {
+    const method = value === DoubleButtonActive.LeftButton ? 'pendingTransactions' : 'allPendingTransactions';
+
+    if (this.transactionsSubscription) {
+      this.transactionsSubscription.unsubscribe();
+    }
+
+    if (method === 'pendingTransactions') {
+      this.walletService.startDataRefreshSubscription();
+    }
+
+    this.transactionsSubscription = this.walletService[method]().subscribe(transactions => {
+      this.transactions = this.mapTransactions(transactions);
+    });
   }
 
   private mapTransactions(transactions) {

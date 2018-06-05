@@ -5,13 +5,17 @@ import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 export class NavBarService {
   switchVisible = false;
   activeComponent = new BehaviorSubject(1);
+  leftText: string;
+  rightText: string;
 
   setActiveComponent(value) {
     this.activeComponent.next(value);
   }
 
-  showSwitch() {
+  showSwitch(leftText, rightText) {
     this.switchVisible = true;
+    this.leftText = leftText;
+    this.rightText = rightText;
   }
 
   hideSwitch() {

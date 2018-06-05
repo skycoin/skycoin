@@ -1,6 +1,6 @@
 # REST API Documentation
 
-API default service port is `6420`.
+API default service port is `6420`.  However, if running the desktop or standalone releases from the website, the port is randomized by default.
 
 A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](https://godoc.org/github.com/skycoin/skycoin/src/api#Client).
 
@@ -37,6 +37,7 @@ A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](h
     - [Inject raw transaction](#inject-raw-transaction)
     - [Get transactions that are addresses related](#get-transactions-that-are-addresses-related)
     - [Resend unconfirmed transactions](#resend-unconfirmed-transactions)
+    - [Verify encoded transaction](#verify-encoded-transaction)
 - [Block APIs](#block-apis)
     - [Get blockchain metadata](#get-blockchain-metadata)
     - [Get blockchain progress](#get-blockchain-progress)
@@ -657,7 +658,10 @@ Statuses:
     500: other errors
 ```
 
-example, send 1 coin to `2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc` from wallet `2017_05_09_ea42.wlt`:
+
+**This endpoint is deprecated, use [POST /wallet/transaction](#create-transaction)**
+
+Example, send 1 coin to `2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc` from wallet `2017_05_09_ea42.wlt`:
 
 ```sh
 curl -X POST  http://127.0.0.1:6420/api/v1/wallet/spend \
@@ -728,15 +732,17 @@ The `encoded_transaction` can be provided to `POST /api/v1/injectTransaction` to
 
 The request body includes:
 
-* A change address
-* A wallet to spend from with the optional ability to restrict which addresses in the wallet to use
+* An optional change address
+* A wallet to spend from with the optional ability to restrict which addresses or which unspent outputs in the wallet to use
 * A list of destinations with address and coins specified, as well as optionally specifying hours
 * A configuration for how destination hours are distributed, either manual or automatic
+* Additional options
 
 Example request body with manual hours selection type, unencrypted wallet and all wallet addresses may spend:
 
 ```json
 {
+    "ignore_unconfirmed": false,
     "hours_selection": {
         "type": "manual"
     },
@@ -781,6 +787,31 @@ Example request body with auto hours selection type, encrypted wallet, specified
 }
 ```
 
+Example request body with manual hours selection type, unencrypted wallet and spending specific unspent outputs:
+
+```json
+{
+    "hours_selection": {
+        "type": "manual"
+    },
+    "wallet": {
+        "id": "foo.wlt",
+        "unspents": ["519c069a0593e179f226e87b528f60aea72826ec7f99d51279dd8854889ed7e2", "4e4e41996297511a40e2ef0046bd6b7118a8362c1f4f09a288c5c3ea2f4dfb85"]
+    },
+    "change_address": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
+    "to": [{
+        "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+        "coins": "1.032",
+        "hours": 7
+    }, {
+        "address": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
+        "coins": "99.2",
+        "hours": 0
+    }]
+}
+```
+
+
 The `hours_selection` field has two types: `manual` or `auto`.
 
 If `manual`, all destination hours must be specified.
@@ -790,8 +821,12 @@ For the `"share"` mode, `share_factor` must also be set. This must be a decimal 
 In the auto share mode, the remaining hours after the fee are shared between the destination addresses as a whole,
 and the change address. Amongst the destination addresses, the shared hours are distributed proportionally.
 
-Note that if there are remaining coin hours as change, but no coins are available as change from the wallet,
-these remaining coin hours will be burned as an additional fee.
+When using the `auto` `"share"` `mode`, if there are remaining coin hours as change,
+but no coins are available as change from the wallet (which are needed to retain the coin hours as change),
+the `share_factor` will switch to `1.0` so that extra coin hours are distributed to the outputs
+instead of being burned as an additional fee.
+For the `manual` mode, if there are leftover coin hours but no coins to make change with,
+the leftover coin hours will be burned in addition to the required fee.
 
 All objects in `to` must be unique; a single transaction cannot create multiple outputs with the same `address`, `coins` and `hours`.
 
@@ -847,10 +882,30 @@ But this is an invalid value for `to`, if `hours_selection.type` is `"auto"`:
 }]
 ```
 
-If `wallet.addresses` is empty or not provided, then all addresses from the wallet will be considered to use
-for spending. To control which addresses may spend, specify the addresses in this field.
+To control which addresses to spend from, specify `wallet.addresses`.
+A subset of the unspent outputs associated with these addresses will be chosen for spending,
+based upon an internal selection algorithm.
 
-`change_address` must be set, but it is not required to be an address in the wallet.
+To control which unspent outputs to spend from, specify `wallet.unspents`.
+A subset of these unspent outputs will be chosen for spending,
+based upon an internal selection algorithm.
+
+`wallet.addresses` and `wallets.uxouts` cannot be combined.
+
+If neither `wallet.addresses` nor `wallet.unspents` are specified,
+then all outputs associated with all addresses in the wallet may be chosen from to spend with.
+
+`change_address` is optional.
+If set, it is not required to be an address in the wallet.
+If not set, it will default to one of the addresses associated with the unspent outputs being spent in the transaction.
+
+`ignore_unconfirmed` is optional and defaults to `false`.
+When `false`, the API will return an error if any of the unspent outputs
+associated with the wallet addresses or the wallet outputs appear as spent in
+a transaction in the unconfirmed transaction pool.
+When `true`, the API will ignore unspent outputs that appear as spent in
+a transaction in the unconfirmed transaction pool when building the transaction,
+but not return an error.
 
 Example:
 
@@ -1373,6 +1428,65 @@ Result:
         "b45e571988bc07bd0b623c999655fa878fb9bdd24c8cd24fde179bf4b26ae7b7",
         "a6446654829a4a844add9f181949d12f8291fdd2c0fcb22200361e90e814e2d3"
     ]
+}
+```
+
+### Verify encoded transaction
+
+```
+URI: /api/v1/transaction/verify
+Method: POST
+Content-Type: application/json
+Args: JSON body, see examples
+```
+
+Example:
+
+```sh
+curl -X POST -H 'Content-Type: application/json' http://127.0.0.1:6420/api/v1/transaction/verify \
+-d '{"encoded_transaction": "dc000000004fd024d60939fede67065b36adcaaeaf70fc009e3a5bbb8358940ccc8bbb2074010000007635ce932158ec06d94138adc9c9b19113fa4c2279002e6b13dcd0b65e0359f247e8666aa64d7a55378b9cc9983e252f5877a7cb2671c3568ec36579f8df1581000100000019ad5059a7fffc0369fc24b31db7e92e12a4ee2c134fb00d336d7495dec7354d02000000003f0555073e17ea6e45283f0f1115b520d0698d03a086010000000000010000000000000000b90dc595d102c48d3281b47428670210415f585200f22b0000000000ff01000000000000"}'
+```
+
+Result:
+
+```json
+{
+    "transaction": {
+        "length": 220,
+        "type": 0,
+        "txid": "82b5fcb182e3d70c285e59332af6b02bf11d8acc0b1407d7d82b82e9eeed94c0",
+        "inner_hash": "4fd024d60939fede67065b36adcaaeaf70fc009e3a5bbb8358940ccc8bbb2074",
+        "fee": "513",
+        "sigs": [
+            "7635ce932158ec06d94138adc9c9b19113fa4c2279002e6b13dcd0b65e0359f247e8666aa64d7a55378b9cc9983e252f5877a7cb2671c3568ec36579f8df158100"
+        ],
+        "inputs": [
+            {
+                "uxid": "19ad5059a7fffc0369fc24b31db7e92e12a4ee2c134fb00d336d7495dec7354d",
+                "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
+                "coins": "2.980000",
+                "hours": "985",
+                "calculated_hours": "1025",
+                "timestamp": 1527080354,
+                "block": 30074,
+                "txid": "94204347ef52d90b3c5d6c31a3fced56ae3f74fd8f1f5576931aeb60847f0e59"
+            }
+        ],
+        "outputs": [
+            {
+                "uxid": "b0911a5fc4dfe4524cdb82f6db9c705f4849af42fcd487a3c4abb2d17573d234",
+                "address": "SMnCGfpt7zVXm8BkRSFMLeMRA6LUu3Ewne",
+                "coins": "0.100000",
+                "hours": "1"
+            },
+            {
+                "uxid": "a492e6b85a434866be40da7e287bfcf14efce9803ff2fcd9d865c4046e81712a",
+                "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
+                "coins": "2.880000",
+                "hours": "511"
+            }
+        ]
+    }
 }
 ```
 

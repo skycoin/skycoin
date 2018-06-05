@@ -1,5 +1,5 @@
 <div class="sky-container sky-container-grey">
-  <app-header title="Outputs"></app-header>
+  <app-header [headline]="'title.outputs' | translate"></app-header>
 
   <div class="-wallet" *ngFor="let wallet of wallets">
     <h3>{{ wallet.label }}</h3>
@@ -10,8 +10,12 @@
       <div class="-output" *ngFor="let output of address.outputs">
         <div class="-hash">{{ output.hash }}</div>
         <div class="-balance">
-          <div class="-item"><span>Coins:</span> {{ output.coins | number:'1.0-6' }}</div>
-          <div class="-item"><span>Hours:</span> {{ output.calculated_hours | number:'1.0-6' }}</div>
+          <div class="-item">
+            <span>{{ 'common.coins' | translate }}:</span>
+            {{ output.coins | number:'1.0-6' }}</div>
+          <div class="-item">
+            <span>{{ 'common.hours' | translate }}:</span>
+            {{ output.calculated_hours | number:'1.0-6' }}</div>
         </div>
       </div>
     </mat-card>

@@ -1,4 +1,4 @@
-import { Component, Input, OnDestroy } from '@angular/core';
+import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { Wallet } from '../../../../app.datatypes';
 import { WalletService } from '../../../../services/wallet.service';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
@@ -7,20 +7,30 @@ import { QrCodeComponent } from '../../../layout/qr-code/qr-code.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { MatSnackBar, MatSnackBarConfig } from '@angular/material';
 import { parseResponseMessage } from '../../../../utils/errors';
+import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-wallet-detail',
   templateUrl: './wallet-detail.component.html',
   styleUrls: ['./wallet-detail.component.scss'],
 })
-export class WalletDetailComponent implements OnDestroy {
+export class WalletDetailComponent implements OnInit, OnDestroy {
   @Input() wallet: Wallet;
+
+  private encryptionWarning: string;
 
   constructor(
     private dialog: MatDialog,
     private walletService: WalletService,
     private snackbar: MatSnackBar,
+    private translateService: TranslateService,
   ) { }
+
+  ngOnInit() {
+    this.translateService.get('wallet.new.encrypt-warning').subscribe(msg => {
+      this.encryptionWarning = msg;
+    });
+  }
 
   ngOnDestroy() {
     this.snackbar.dismiss();
@@ -59,13 +69,11 @@ export class WalletDetailComponent implements OnDestroy {
     const config = new MatDialogConfig();
     config.data = {
       confirm: !this.wallet.encrypted,
-      title: this.wallet.encrypted ? 'Decrypt Wallet' : 'Encrypt Wallet',
+      title: this.wallet.encrypted ? 'wallet.decrypt' : 'wallet.encrypt',
     };
 
     if (!this.wallet.encrypted) {
-      config.data['description'] = 'We suggest that you encrypt each one of your wallets with a password. ' +
-        'If you forget your password, you can reset it with your seed. ' +
-        'Make sure you have your seed saved somewhere safe before encrypting your wallet.';
+      config.data['description'] = this.encryptionWarning;
     }
 
     this.dialog.open(PasswordDialogComponent, config).componentInstance.passwordSubmit
@@ -76,8 +84,12 @@ export class WalletDetailComponent implements OnDestroy {
       });
   }
 
-  copyAddress(address, event) {
+  copyAddress(event, address, duration = 500) {
     event.stopPropagation();
+
+    if (address.copying) {
+      return;
+    }
 
     const selBox = document.createElement('textarea');
 
@@ -98,7 +110,7 @@ export class WalletDetailComponent implements OnDestroy {
 
     setTimeout(function() {
       address.copying = false;
-    }, 1000);
+    }, duration);
   }
 
   showQrCode(event, address: string) {

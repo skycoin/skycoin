@@ -52,7 +52,7 @@ type chainStore interface {
 	GetBlockByHash(*dbutil.Tx, cipher.SHA256) (*coin.Block, error)
 	GetSignedBlockByHash(*dbutil.Tx, cipher.SHA256) (*coin.SignedBlock, error)
 	GetSignedBlockBySeq(*dbutil.Tx, uint64) (*coin.SignedBlock, error)
-	UnspentPool() blockdb.UnspentPool
+	UnspentPool() blockdb.UnspentPooler
 	GetGenesisBlock(*dbutil.Tx) (*coin.SignedBlock, error)
 	GetBlockSignature(*dbutil.Tx, *coin.Block) (cipher.Sig, bool, error)
 	ForEachBlock(*dbutil.Tx, func(*coin.Block) error) error
@@ -135,7 +135,7 @@ func (bc Blockchain) Head(tx *dbutil.Tx) (*coin.SignedBlock, error) {
 }
 
 // Unspent returns the unspent outputs pool
-func (bc *Blockchain) Unspent() blockdb.UnspentPool {
+func (bc *Blockchain) Unspent() blockdb.UnspentPooler {
 	return bc.store.UnspentPool()
 }
 
@@ -377,10 +377,10 @@ func (bc Blockchain) VerifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Tran
 	return bc.verifySingleTxnHardConstraints(tx, txn, head, uxIn)
 }
 
-// VerifySingleTxnAllConstraints checks that the transaction does not violate hard or soft constraints,
+// VerifySingleTxnSoftHardConstraints checks that the transaction does not violate hard or soft constraints,
 // for transactions that are not included in a block.
 // Hard constraints are checked before soft constraints.
-func (bc Blockchain) VerifySingleTxnAllConstraints(tx *dbutil.Tx, txn coin.Transaction, maxSize int) error {
+func (bc Blockchain) VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, maxSize int) error {
 	// NOTE: Unspent().GetArray() returns an error if not all txn.In can be found
 	// This prevents double spends
 	uxIn, err := bc.Unspent().GetArray(tx, txn.In)

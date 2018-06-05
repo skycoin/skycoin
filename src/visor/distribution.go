@@ -6,7 +6,7 @@ import (
 
 const (
 	// MaxCoinSupply is the maximum supply of skycoins
-	MaxCoinSupply uint64 = 1e8 // 100,000,000 million
+	MaxCoinSupply uint64 = 1e8 // 100 million
 
 	// DistributionAddressesTotal is the number of distribution addresses
 	DistributionAddressesTotal uint64 = 100

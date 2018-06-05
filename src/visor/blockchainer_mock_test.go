@@ -341,14 +341,14 @@ func (m *BlockchainerMock) TransactionFee(p0 *dbutil.Tx, p1 uint64) coin.FeeCalc
 }
 
 // Unspent mocked method
-func (m *BlockchainerMock) Unspent() blockdb.UnspentPool {
+func (m *BlockchainerMock) Unspent() blockdb.UnspentPooler {
 
 	ret := m.Called()
 
-	var r0 blockdb.UnspentPool
+	var r0 blockdb.UnspentPooler
 	switch res := ret.Get(0).(type) {
 	case nil:
-	case blockdb.UnspentPool:
+	case blockdb.UnspentPooler:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
@@ -376,8 +376,8 @@ func (m *BlockchainerMock) VerifyBlockTxnConstraints(p0 *dbutil.Tx, p1 coin.Tran
 
 }
 
-// VerifySingleTxnAllConstraints mocked method
-func (m *BlockchainerMock) VerifySingleTxnAllConstraints(p0 *dbutil.Tx, p1 coin.Transaction, p2 int) error {
+// VerifySingleTxnSoftHardConstraints mocked method
+func (m *BlockchainerMock) VerifySingleTxnSoftHardConstraints(p0 *dbutil.Tx, p1 coin.Transaction, p2 int) error {
 
 	ret := m.Called(p0, p1, p2)
 

@@ -199,8 +199,11 @@ func updateGoldenFile(t *testing.T, filename string, content interface{}) {
 func checkGoldenFile(t *testing.T, goldenFile string, td TestData) {
 	loadGoldenFile(t, goldenFile, td)
 	require.Equal(t, reflect.Indirect(reflect.ValueOf(td.expected)).Interface(), td.actual)
+	checkGoldenFileObjectChanges(t, goldenFile, td)
+}
 
-	// Serialized expected to JSON and compare to the goldenFile's contents
+func checkGoldenFileObjectChanges(t *testing.T, goldenFile string, td TestData) {
+	// Serialize expected to JSON and compare to the goldenFile's contents
 	// This will detect field changes that could be missed otherwise
 	b, err := json.MarshalIndent(td.expected, "", "\t")
 	require.NoError(t, err)
@@ -457,13 +460,13 @@ func TestVerifyAddress(t *testing.T) {
 			"invalid skycoin address",
 			"2KG9eRXUhx6hrDZvNGB99DKahtrPDQ1W9vn",
 			errors.New("exit status 1"),
-			"Invalid version",
+			"Invalid checksum",
 		},
 		{
 			"invalid bitcoin address",
 			"1Dcb9gpaZpBKmjqjCsiBsP3sBW1md2kEM2",
 			errors.New("exit status 1"),
-			"Invalid version",
+			"Invalid checksum",
 		},
 	}
 
@@ -1059,7 +1062,19 @@ func TestStableShowConfig(t *testing.T) {
 	}
 
 	var expect cli.Config
-	checkGoldenFile(t, goldenFile, TestData{ret, &expect})
+	td := TestData{ret, &expect}
+	loadGoldenFile(t, goldenFile, td)
+
+	// The RPC port is not always the same between runs of the stable integration tests,
+	// so use the RPC_ADDR envvar instead of the golden file value for comparison
+	goldenRPCAddress := expect.RPCAddress
+	expect.RPCAddress = rpcAddress()
+
+	require.Equal(t, expect, ret)
+
+	// Restore goldenfile's value before checking if JSON fields were added or removed
+	expect.RPCAddress = goldenRPCAddress
+	checkGoldenFileObjectChanges(t, goldenFile, TestData{ret, &expect})
 }
 
 func TestLiveShowConfig(t *testing.T) {
@@ -1121,7 +1136,20 @@ func TestStableStatus(t *testing.T) {
 	}
 
 	var expect cli.StatusResult
-	checkGoldenFile(t, goldenFile, TestData{ret, &expect})
+	td := TestData{ret, &expect}
+	loadGoldenFile(t, goldenFile, td)
+
+	// The RPC port is not always the same between runs of the stable integration tests,
+	// so use the RPC_ADDR envvar instead of the golden file value for comparison
+	goldenRPCAddress := expect.RPCAddress
+	expect.RPCAddress = rpcAddress()
+
+	require.Equal(t, expect, ret)
+
+	// Restore goldenfile's value before checking if JSON fields were added or removed
+	expect.RPCAddress = goldenRPCAddress
+	checkGoldenFileObjectChanges(t, goldenFile, TestData{ret, &expect})
+
 }
 
 func TestLiveStatus(t *testing.T) {

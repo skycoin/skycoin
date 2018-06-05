@@ -387,9 +387,10 @@ type ReadableTransaction struct {
 	InnerHash string `json:"inner_hash"`
 	Timestamp uint64 `json:"timestamp,omitempty"`
 
-	Sigs []string                    `json:"sigs"`
-	In   []string                    `json:"inputs"`
-	Out  []ReadableTransactionOutput `json:"outputs"`
+	Sigs 		[]string                    `json:"sigs"`
+	In   		[]string                    `json:"inputs"`
+	InData  []ReadableTransactionInput 	`json:"inputs_data"`
+	Out  		[]ReadableTransactionOutput `json:"outputs"`
 }
 
 // ReadableUnconfirmedTxn represents readable unconfirmed transaction

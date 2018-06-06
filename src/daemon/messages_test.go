@@ -63,7 +63,7 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 		return util.Annotation{Size: 4, Name: "Prefix"}, true
 
 	}
-	if mai.CurrentField == mai.MaxField {
+	if mai.CurrentField >= mai.MaxField {
 		return util.Annotation{}, false
 	}
 
@@ -74,6 +74,17 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 	t := v.Type()
 	vF := v.Field(i)
 	f := t.Field(i)
+	for f.PkgPath != "" && i < mai.MaxField {
+		i++
+		mai.CurrentField++
+		mai.CurrentIndex = -1
+		j = -1
+		if i < mai.MaxField {
+			f = t.Field(i)
+		} else {
+			return util.Annotation{}, false
+		}
+	}
 	if f.Tag.Get("enc") != "-" {
 		if vF.CanSet() || f.Name != "_" {
 			if v.Field(i).Kind() == reflect.Slice {
@@ -81,16 +92,21 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 					mai.CurrentIndex = 0
 					return util.Annotation{Size: 4, Name: f.Name + " length"}, true
 				}
+				sliceLen := v.Field(i).Len()
 				mai.CurrentIndex++
-				if mai.CurrentIndex != v.Field(i).Len() {
-
-					//mai.CurrentField++
-					return util.Annotation{Size: len(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())[4:]), Name: f.Name + "#" + strconv.Itoa(j)}, true
+				if mai.CurrentIndex < sliceLen {
+					// Emit annotation for slice item
+					return util.Annotation{Size: len(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())[4:]), Name: f.Name + "[" + strconv.Itoa(j) + "]"}, true
 				}
+				// No more annotation tokens for current slice field
 				mai.CurrentIndex = -1
 				mai.CurrentField++
-				return util.Annotation{Size: len(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())[4:]), Name: f.Name + "#" + strconv.Itoa(j)}, true
-
+				if sliceLen > 0 {
+					// Emit annotation for last item
+					return util.Annotation{Size: len(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())[4:]), Name: f.Name + "[" + strconv.Itoa(j) + "]"}, true
+				}
+				// Zero length slice. Start over
+				return mai.Next()
 			}
 
 			mai.CurrentField++
@@ -136,6 +152,46 @@ var addresses = []cipher.Address{
 func GetSHAFromHex(hex string) cipher.SHA256 {
 	var sha, _ = cipher.SHA256FromHex(hex)
 	return sha
+}
+
+type TestMessage struct {
+	A uint8
+	e int16
+	B string
+	C int32
+	D []byte
+	f rune
+}
+
+func (m *TestMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
+	// Do nothing
+	return nil
+}
+
+func ExampleStructEmptySlice() {
+	defer gnet.EraseMessages()
+	setupMsgEncoding()
+	gnet.RegisterMessage(gnet.MessagePrefixFromString("TEST"), TestMessage{})
+	gnet.VerifyMessages()
+	var message = TestMessage{
+		0x01,
+		0x2345,
+		"",
+		0x6789ABCD,
+		nil,
+		'a',
+	}
+	var mai = NewMessagesAnnotationsIterator(&message)
+	w := bufio.NewWriter(os.Stdout)
+	util.HexDumpFromIterator(gnet.EncodeMessage(&message), &mai, w)
+	// Output:
+	// 0x0000 | 11 00 00 00 ....................................... Length
+	// 0x0004 | 54 45 53 54 ....................................... Prefix
+	// 0x0008 | 01 ................................................ A
+	// 0x0009 | 00 00 00 00 ....................................... B
+	// 0x000d | cd ab 89 67 ....................................... C
+	// 0x0011 | 00 00 00 00 ....................................... D length
+	// 0x0015 |
 }
 
 func ExampleIntroductionMessage() {
@@ -189,9 +245,9 @@ func ExampleGivePeersMessage() {
 	// 0x0000 | 1a 00 00 00 ....................................... Length
 	// 0x0004 | 47 49 56 50 ....................................... Prefix
 	// 0x0008 | 03 00 00 00 ....................................... Peers length
-	// 0x000c | 5d 87 b2 76 70 17 ................................. Peers#0
-	// 0x0012 | 9c 21 58 2f 70 17 ................................. Peers#1
-	// 0x0018 | 94 67 29 79 70 17 ................................. Peers#2
+	// 0x000c | 5d 87 b2 76 70 17 ................................. Peers[0]
+	// 0x0012 | 9c 21 58 2f 70 17 ................................. Peers[1]
+	// 0x0018 | 94 67 29 79 70 17 ................................. Peers[2]
 	// 0x001e |
 }
 
@@ -257,7 +313,7 @@ func ExampleGiveBlocksMessage() {
 	// 0x009c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x00ac | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x00bc | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x00cc | 00 ................................................ Blocks#0
+	// 0x00cc | 00 ................................................ Blocks[0]
 	// 0x00cd | 02 00 00 00 64 00 00 00 00 00 00 00 00 00 00 00
 	// 0x00dd | 00 00 00 00 0a 00 00 00 00 00 00 00 00 00 00 00
 	// 0x00ed | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
@@ -270,7 +326,7 @@ func ExampleGiveBlocksMessage() {
 	// 0x015d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x016d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x017d | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x018d | 00 ................................................ Blocks#1
+	// 0x018d | 00 ................................................ Blocks[1]
 	// 0x018e |
 }
 
@@ -307,9 +363,9 @@ func ExampleGetTxnsMessage() {
 	// 0x0004 | 47 45 54 54 ....................................... Prefix
 	// 0x0008 | 02 00 00 00 ....................................... Txns length
 	// 0x000c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x001c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns#0
+	// 0x001c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns[0]
 	// 0x002c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x003c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns#1
+	// 0x003c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns[1]
 	// 0x004c |
 }
 
@@ -393,7 +449,7 @@ func ExampleGiveTxnsMessage() {
 	// 0x010c | a9 ee fe 91 f2 0b a0 74 0c 00 00 00 00 00 00 00
 	// 0x011c | 22 00 00 00 00 00 00 00 00 e9 cb 47 35 e3 95 cf
 	// 0x012c | 36 b0 d1 a6 f2 21 bb 23 b3 f7 bf b1 f9 38 00 00
-	// 0x013c | 00 00 00 00 00 4e 00 00 00 00 00 00 00 ............ Txns#0
+	// 0x013c | 00 00 00 00 00 4e 00 00 00 00 00 00 00 ............ Txns[0]
 	// 0x0149 | 88 13 00 00 7b 00 00 00 00 00 00 00 00 00 00 00
 	// 0x0159 | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 	// 0x0169 | 00 00 00 00 00 02 00 00 00 00 00 00 00 00 00 00
@@ -413,7 +469,7 @@ func ExampleGiveTxnsMessage() {
 	// 0x0249 | e9 f4 f0 88 7b 08 4b 43 09 00 00 00 00 00 00 00
 	// 0x0259 | 0c 00 00 00 00 00 00 00 00 83 f1 96 59 16 14 99
 	// 0x0269 | 2f a6 03 13 38 6f 72 88 ac 40 14 c8 bc 22 00 00
-	// 0x0279 | 00 00 00 00 00 38 00 00 00 00 00 00 00 ............ Txns#1
+	// 0x0279 | 00 00 00 00 00 38 00 00 00 00 00 00 00 ............ Txns[1]
 	// 0x0286 |
 }
 
@@ -431,8 +487,8 @@ func ExampleAnnounceTxnsMessage() {
 	// 0x0004 | 41 4e 4e 54 ....................................... Prefix
 	// 0x0008 | 02 00 00 00 ....................................... Txns length
 	// 0x000c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x001c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns#0
+	// 0x001c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns[0]
 	// 0x002c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-	// 0x003c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns#1
+	// 0x003c | 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ... Txns[1]
 	// 0x004c |
 }

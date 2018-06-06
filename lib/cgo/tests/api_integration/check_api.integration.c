@@ -69,7 +69,7 @@ GoString* createGoStringSlice(char** pStrings, int count, GoSlice* slice){
 	return goStrings;
 }
 
-int compareObjectsByHandle(Handle h1, Handle h2){
+int compareObjectsByHandleWithIgnoreList(Handle h1, Handle h2, char* ignoreList){
 	GoString_ jsonResult1, jsonResult2;
 	int result;
 	memset(&jsonResult1, 0, sizeof(GoString_));
@@ -93,13 +93,17 @@ int compareObjectsByHandle(Handle h1, Handle h2){
 	cr_assert(value2 != NULL, "json_parse failed");
 	registerJsonFree(value2);
 
-	int equal = compareJsonValues(value1, value2);
+	int equal = compareJsonValuesWithIgnoreList(value1, value2, ignoreList);
 
 	freeRegisteredMemCleanup((void*)jsonResult1.p);
 	freeRegisteredMemCleanup((void*)jsonResult2.p);
 	freeRegisteredJson(value1);
 	freeRegisteredJson(value2);
 	return equal;
+}
+
+int compareObjectsByHandle(Handle h1, Handle h2){
+	return compareObjectsByHandleWithIgnoreList(h1, h2, NULL);
 }
 
 int compareObjectNodeWithGoldenFile(Handle handle,
@@ -730,7 +734,7 @@ Handle testBlocksHandle(Client__Handle clientHandle,
 			cr_assert(seq == i + start);
 		}
 
-		equal = compareObjectsByHandle( blockHandle, blockHandle2 );
+		equal = compareObjectsByHandleWithIgnoreList( blockHandle, blockHandle2, "inputs_data" );
 		cr_assert( equal == 1);
 
 		freeRegisteredMemCleanup( (void*)hash.p );

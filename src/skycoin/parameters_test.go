@@ -6,7 +6,7 @@ import (
 )
 
 // TODO(therealssj): write better tests
-func TestNewConfig(t *testing.T) {
+func TestNewParameters(t *testing.T) {
     coinConfig, err := NewParameters("test.fiber.toml", "./testdata")
     require.NoError(t, err)
     require.Equal(t, Parameters{

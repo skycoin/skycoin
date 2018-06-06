@@ -36,7 +36,7 @@ var (
 	// GenesisTimestamp genesis block create unix time
 	GenesisTimestamp uint64 = 1426562704
 	// GenesisCoinVolume represents the coin capacity
-	GenesisCoinVolume uint64 = 0
+	GenesisCoinVolume uint64 = 100000000000000
 
 	// DefaultConnections the default trust node addresses
 	DefaultConnections = []string{

@@ -87,7 +87,7 @@ func createCoinCommand() cli.Command {
             cli.StringFlag{
                 Name:  "visor-template-file, vt",
                 Usage: "visor template file",
-                Value: "visor_parameters.template",
+                Value: "visor.template",
             },
             cli.StringFlag{
                 Name:  "config-dir, cd",

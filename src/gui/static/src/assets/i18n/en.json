@@ -194,8 +194,19 @@
   },
 
   "network": {
-    "automatic-peers": "Automatic peers",
-    "default-peers": "Default peers"
+    "peer": "Peer",
+    "source": "Source",
+    "block-height": "Block height",
+    "last-seen": "Last seen",
+    "last-received": "Last received",
+    "last-sent": "Last sent",
+    "in": "Incoming",
+    "out": "Outgoing",
+
+    "sources": {
+      "default": "Default peer",
+      "exchange": "Peer exchange"
+    }
   },
 
   "pending-txs": {

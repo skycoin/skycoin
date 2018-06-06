@@ -39,23 +39,23 @@ func MaxDropletDivisor() uint64 {
 }
 
 func init() {
-    sanityCheck()
+	sanityCheck()
 	// Compute maxDropletDivisor from precision
 	maxDropletDivisor = calculateDivisor(MaxDropletPrecision)
 }
 
 func sanityCheck() {
-    if InitialUnlockedCount > DistributionAddressesTotal {
-        logger.Panic("unlocked addresses > total distribution addresses")
-    }
+	if InitialUnlockedCount > DistributionAddressesTotal {
+		logger.Panic("unlocked addresses > total distribution addresses")
+	}
 
-    if uint64(len(distributionAddresses)) != DistributionAddressesTotal {
-        logger.Panic("available distribution addresses > total allowed distribution addresses")
-    }
+	if uint64(len(distributionAddresses)) != DistributionAddressesTotal {
+		logger.Panic("available distribution addresses > total allowed distribution addresses")
+	}
 
-    if DistributionAddressInitialBalance * DistributionAddressesTotal > MaxCoinSupply {
-        logger.Panic("total balance in distribution addresses > max coin supply")
-    }
+	if DistributionAddressInitialBalance*DistributionAddressesTotal > MaxCoinSupply {
+		logger.Panic("total balance in distribution addresses > max coin supply")
+	}
 }
 
 func calculateDivisor(precision uint64) uint64 {

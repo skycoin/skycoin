@@ -40,14 +40,14 @@ var (
 
 	// DefaultConnections the default trust node addresses
 	DefaultConnections = []string{
-        "118.178.135.93:6000",
-        "47.88.33.156:6000",
-        "121.41.103.148:6000",
-        "120.77.69.188:6000",
-        "104.237.142.206:6000",
-        "176.58.126.224:6000",
-        "172.104.85.6:6000",
-        "139.162.7.132:6000",
+		"118.178.135.93:6000",
+		"47.88.33.156:6000",
+		"121.41.103.148:6000",
+		"120.77.69.188:6000",
+		"104.237.142.206:6000",
+		"176.58.126.224:6000",
+		"172.104.85.6:6000",
+		"139.162.7.132:6000",
 	}
 )
 
@@ -91,8 +91,8 @@ var devConfig = skycoin.NodeConfig{
 	DownloadPeerList:                  true,
 	PeerListURL:                       "https://downloads.skycoin.net/blockchain/peers.txt",
 	// How often to make outgoing connections, in seconds
-	OutgoingConnectionsRate: time.Second*5,
-	PeerlistSize: 65535,
+	OutgoingConnectionsRate: time.Second * 5,
+	PeerlistSize:            65535,
 	// Wallet Address Version
 	//AddressVersion: "test",
 	// Remote web interface
@@ -123,11 +123,11 @@ var devConfig = skycoin.NodeConfig{
 	WalletDirectory:  "",
 	WalletCryptoType: string(wallet.CryptoTypeScryptChacha20poly1305),
 
-    // Timeout settings for http.Server
-    // https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
-    ReadTimeout:  time.Second * 10,
-    WriteTimeout: time.Second * 60,
-    IdleTimeout:  time.Second * 120,
+	// Timeout settings for http.Server
+	// https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
+	ReadTimeout:  time.Second * 10,
+	WriteTimeout: time.Second * 60,
+	IdleTimeout:  time.Second * 120,
 
 	// Centralized network configuration
 	RunMaster: false,
@@ -167,22 +167,22 @@ func applyConfigMode() {
 }
 
 func main() {
-    // create a new fiber coin instance
-    coin := skycoin.NewCoin(
-        skycoin.Config{
-            Node: devConfig,
-            Build: visor.BuildInfo{
-                Version: Version,
-                Commit:  Commit,
-                Branch:  Branch,
-            },
-        },
-        logger,
-    )
+	// create a new fiber coin instance
+	coin := skycoin.NewCoin(
+		skycoin.Config{
+			Node: devConfig,
+			Build: visor.BuildInfo{
+				Version: Version,
+				Commit:  Commit,
+				Branch:  Branch,
+			},
+		},
+		logger,
+	)
 
-    // parse config values
-    coin.ParseConfig()
+	// parse config values
+	coin.ParseConfig()
 
-    // run fiber coin node
-    coin.Run()
+	// run fiber coin node
+	coin.Run()
 }

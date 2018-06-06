@@ -34,7 +34,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    this.navbarService.showSwitch('Simple', 'Advanced');
+    this.navbarService.showSwitch('send.simple', 'send.advanced');
     this.initForm();
   }
 

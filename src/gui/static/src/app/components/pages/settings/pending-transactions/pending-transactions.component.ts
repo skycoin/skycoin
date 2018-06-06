@@ -26,7 +26,7 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.navbarService.showSwitch('My', 'All');
+    this.navbarService.showSwitch('pending-txs.my', 'pending-txs.all');
   }
 
   ngOnDestroy() {

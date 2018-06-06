@@ -153,7 +153,9 @@
     "value-help": "The higher the value, the more coinhours will be sent to outputs",
     "verify-button": "Verify",
     "send-button": "Send",
-    "back-button": "Back"
+    "back-button": "Back",
+    "simple": "Simple",
+    "advanced": "Advanced"
   },
 
   "tx": {
@@ -202,7 +204,9 @@
     "timestamp": "Timestamp",
     "amount": "Amount",
     "txid": "Transaction ID",
-    "none": "No pending transactions"
+    "none": "No pending transactions",
+    "my": "My",
+    "all": "All"
   },
 
   "history": {

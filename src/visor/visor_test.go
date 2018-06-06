@@ -143,9 +143,12 @@ func TestErrMissingSignatureRecreateDB(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		err = db.View("", func(tx *dbutil.Tx) error {
-			return bc.WalkChain(tx, BlockchainVerifyTheadNum, bc.VerifySignature, nil)
-		})
+		// err = db.View("", func(tx *dbutil.Tx) error {
+		f := func(tx *dbutil.Tx, b *coin.SignedBlock) error {
+			return bc.VerifySignature(b)
+		}
+
+		err = bc.WalkChain(BlockchainVerifyTheadNum, f, nil)
 
 		require.Error(t, err)
 		require.IsType(t, blockdb.ErrMissingSignature{}, err)
@@ -236,13 +239,12 @@ func TestHistorydbVerifier(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			err = db.View("", func(tx *dbutil.Tx) error {
-				indexesMap := historydb.NewIndexesMap()
-				f := func(b *coin.SignedBlock) error {
-					return history.Verify(tx, b, indexesMap)
-				}
-				return bc.WalkChain(tx, 2, f, nil)
-			})
+			indexesMap := historydb.NewIndexesMap()
+			f := func(tx *dbutil.Tx, b *coin.SignedBlock) error {
+				return history.Verify(tx, b, indexesMap)
+			}
+
+			err = bc.WalkChain(2, f, nil)
 			require.Equal(t, tc.expectErr, err)
 		})
 	}

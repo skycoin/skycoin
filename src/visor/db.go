@@ -31,32 +31,35 @@ type ErrCorruptDB struct {
 
 // CheckDatabase checks the database for corruption
 func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) error {
-	bc, err := NewBlockchain(db, BlockchainConfig{
-		Pubkey: pubkey,
+	var blocksBktExist bool
+	db.View("CheckDatabase", func(tx *dbutil.Tx) error {
+		blocksBktExist = dbutil.Exists(tx, blockdb.BlocksBkt)
+		return nil
 	})
+
+	// Don't verify the db if the blocks bucket does not exist
+	if !blocksBktExist {
+		return nil
+	}
+
+	bc, err := NewBlockchain(db, BlockchainConfig{Pubkey: pubkey})
 	if err != nil {
 		return err
 	}
 
-	err = db.View("CheckDatabase", func(tx *dbutil.Tx) error {
-		// Don't verify the db if the blocks bucket does not exist
-		if !dbutil.Exists(tx, blockdb.BlocksBkt) {
-			return nil
+	history := historydb.New()
+	indexesMap := historydb.NewIndexesMap()
+	verifyFunc := func(tx *dbutil.Tx, b *coin.SignedBlock) error {
+		// Verify signature
+		if err := bc.VerifySignature(b); err != nil {
+			return err
 		}
 
-		history := historydb.New()
-		indexesMap := historydb.NewIndexesMap()
-		verifyFunc := func(b *coin.SignedBlock) error {
-			if err := bc.VerifySignature(b); err != nil {
-				return err
-			}
-			return history.Verify(tx, b, indexesMap)
-		}
+		// Verify historydb
+		return history.Verify(tx, b, indexesMap)
+	}
 
-		err := bc.WalkChain(tx, BlockchainVerifyTheadNum, verifyFunc, quit)
-		return err
-	})
-
+	err = bc.WalkChain(BlockchainVerifyTheadNum, verifyFunc, quit)
 	switch err.(type) {
 	case nil:
 		return nil

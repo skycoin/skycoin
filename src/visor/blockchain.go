@@ -660,15 +660,9 @@ func (bc *Blockchain) VerifySignature(block *coin.SignedBlock) error {
 
 // WalkChain walk through the blockchain concurrently
 // The quit channel is optional and if closed, this method still stop.
-func (bc *Blockchain) WalkChain(tx *dbutil.Tx, workers int, f func(*coin.SignedBlock) error, quit chan struct{}) error {
+func (bc *Blockchain) WalkChain(workers int, f func(*dbutil.Tx, *coin.SignedBlock) error, quit chan struct{}) error {
 	if quit == nil {
 		quit = make(chan struct{})
-	}
-
-	if length, err := bc.Len(tx); err != nil {
-		return err
-	} else if length == 0 {
-		return nil
 	}
 
 	signedBlockC := make(chan *coin.SignedBlock, 100)
@@ -682,27 +676,29 @@ func (bc *Blockchain) WalkChain(tx *dbutil.Tx, workers int, f func(*coin.SignedB
 	for i := 0; i < workers; i++ {
 		go func() {
 			defer workerWg.Done()
-			for {
-				select {
-				case b, ok := <-signedBlockC:
-					if !ok {
-						return
-					}
+			bc.db.View("WalkChain verify blocks", func(tx *dbutil.Tx) error {
+				for {
+					select {
+					case b, ok := <-signedBlockC:
+						if !ok {
+							return nil
+						}
 
-					if err := f(b); err != nil {
-						// if err := cipher.VerifySignature(bc.cfg.Pubkey, sh.sig, sh.hash); err != nil {
-						// logger.Errorf("Signature verification failed: %v", err)
-						select {
-						case errC <- err:
-						default:
+						if err := f(tx, b); err != nil {
+							// if err := cipher.VerifySignature(bc.cfg.Pubkey, sh.sig, sh.hash); err != nil {
+							// logger.Errorf("Signature verification failed: %v", err)
+							select {
+							case errC <- err:
+							default:
+							}
 						}
 					}
 				}
-			}
+			})
 		}()
 	}
 
-	// Wait for signature verification worker goroutines to finish
+	// Wait for verification worker goroutines to finish
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
@@ -716,44 +712,52 @@ func (bc *Blockchain) WalkChain(tx *dbutil.Tx, workers int, f func(*coin.SignedB
 	// * Verify the signature for the block
 	wg.Add(1)
 	go func() {
-		defer wg.Done()
-		defer close(signedBlockC)
-
-		errInterrupted := errors.New("goroutine was stopped")
-
-		if err := bc.store.ForEachBlock(tx, func(block *coin.Block) error {
-			sig, ok, err := bc.store.GetBlockSignature(tx, block)
-			if err != nil {
+		bc.db.View("WalkChain get blocks", func(tx *dbutil.Tx) error {
+			if length, err := bc.Len(tx); err != nil {
 				return err
-			}
-			if !ok {
-				return blockdb.NewErrMissingSignature(block)
-			}
-
-			signedBlock := &coin.SignedBlock{
-				Sig:   sig,
-				Block: *block,
-			}
-
-			select {
-			case signedBlockC <- signedBlock:
+			} else if length == 0 {
 				return nil
-			case <-quit:
-				return errInterrupted
-			case <-interrupt:
-				return errInterrupted
 			}
-		}); err != nil && err != errInterrupted {
-			switch err.(type) {
-			case blockdb.ErrMissingSignature:
-			default:
-				logger.Errorf("bc.store.ForEachBlock failed: %v", err)
+			defer wg.Done()
+			defer close(signedBlockC)
+
+			errInterrupted := errors.New("goroutine was stopped")
+
+			if err := bc.store.ForEachBlock(tx, func(block *coin.Block) error {
+				sig, ok, err := bc.store.GetBlockSignature(tx, block)
+				if err != nil {
+					return err
+				}
+				if !ok {
+					return blockdb.NewErrMissingSignature(block)
+				}
+
+				signedBlock := &coin.SignedBlock{
+					Sig:   sig,
+					Block: *block,
+				}
+
+				select {
+				case signedBlockC <- signedBlock:
+					return nil
+				case <-quit:
+					return errInterrupted
+				case <-interrupt:
+					return errInterrupted
+				}
+			}); err != nil && err != errInterrupted {
+				switch err.(type) {
+				case blockdb.ErrMissingSignature:
+				default:
+					logger.Errorf("bc.store.ForEachBlock failed: %v", err)
+				}
+				select {
+				case errC <- err:
+				default:
+				}
 			}
-			select {
-			case errC <- err:
-			default:
-			}
-		}
+			return nil
+		})
 	}()
 
 	var err error
@@ -771,7 +775,6 @@ func (bc *Blockchain) WalkChain(tx *dbutil.Tx, workers int, f func(*coin.SignedB
 
 	close(interrupt)
 	wg.Wait()
-
 	return err
 }
 

@@ -190,7 +190,11 @@
   "blockchain": {
     "blocks": "Number of blocks:",
     "time": "Time since last block:",
-    "hash": "Hash of last block:"
+    "hash": "Hash of last block:",
+    "current-supply": "Current supply:",
+    "total-supply": "Total supply:",
+    "current-coinhour-supply": "Current Coinhour supply:",
+    "total-coinhour-supply": "Total Coinhour supply:"
   },
 
   "network": {

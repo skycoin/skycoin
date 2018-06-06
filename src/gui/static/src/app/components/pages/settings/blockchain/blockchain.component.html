@@ -1,16 +1,39 @@
 <div class="sky-container sky-container-grey">
   <app-header [headline]="'title.blockchain' | translate"></app-header>
 
-  <mat-card class="skycoin-details">
-    <div class="skycoin-detail-keys">
-      {{ 'blockchain.blocks' | translate }} <br>
-      {{ 'blockchain.time' | translate }} <br>
-      {{ 'blockchain.hash' | translate }} <br>
+  <div class="container">
+    <div class="-paper -blockchain" *ngIf="block && block.header">
+      <div class="-item">
+        <div class="-key">{{ 'blockchain.blocks' | translate }}</div>
+        <div class="-value">{{ block.header.seq | number }}</div>
+      </div>
+      <div class="-item">
+        <div class="-key">{{ 'blockchain.time' | translate }}</div>
+        <div class="-value">{{ block.header.timestamp | dateFromNow }}</div>
+      </div>
+      <div class="-item">
+        <div class="-key">{{ 'blockchain.hash' | translate }}</div>
+        <div class="-value">{{ block.header.block_hash }}</div>
+      </div>
     </div>
-    <div class="skycoin-detail-values" *ngIf="block && block.header">
-      {{ block.header.seq | number }} <br>
-      {{ block.header.timestamp | dateFromNow }} <br>
-      {{ block.header.block_hash }}
+
+    <div class="-paper -coinsupply" *ngIf="coinSupply">
+      <div class="-item">
+        <div class="-key">{{ 'blockchain.current-supply' | translate }}</div>
+        <div class="-value">{{ coinSupply.current_supply | number }}</div>
+      </div>
+      <div class="-item">
+        <div class="-key">{{ 'blockchain.total-supply' | translate }}</div>
+        <div class="-value">{{ coinSupply.total_supply | number }}</div>
+      </div>
+      <div class="-item">
+        <div class="-key">{{ 'blockchain.current-coinhour-supply' | translate }}</div>
+        <div class="-value">{{ coinSupply.current_coinhour_supply | number }}</div>
+      </div>
+      <div class="-item">
+        <div class="-key">{{ 'blockchain.total-coinhour-supply' | translate }}</div>
+        <div class="-value">{{ coinSupply.total_coinhour_supply | number }}</div>
+      </div>
     </div>
-  </mat-card>
+  </div>
 </div>

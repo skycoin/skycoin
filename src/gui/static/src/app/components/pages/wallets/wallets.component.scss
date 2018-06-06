@@ -45,7 +45,7 @@
   }
 
   .-hours {
-    color: $grey-dark;
+    color: $grey;
     text-align: right;
   }
 
@@ -93,10 +93,10 @@
   text-align: center;
 
   button {
-    background-color: $grey-light;
+    background-color: $grey-lightest;
     border: none;
     box-shadow: none;
-    color: $grey-dark;
+    color: $grey;
     font-size: 13px;
     margin: 0 5px;
     min-width: 140px;

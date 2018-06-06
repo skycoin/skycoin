@@ -38,7 +38,7 @@
   }
 
   .hours-column {
-    color: $grey-dark;
+    color: $grey;
     width: 150px;
     text-align: right;
   }
@@ -124,7 +124,7 @@
       }
 
       &:hover {
-        color: $grey-dark;
+        color: $grey;
 
         &.-new-address::before {
           background-image: url(../../../../../assets/img/plus-green.png);

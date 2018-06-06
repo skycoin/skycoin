@@ -344,7 +344,12 @@ func (gw *Gateway) GetBlocksInDepth(vs []uint64) (*visor.ReadableBlocks, error) 
 		return nil, err
 	}
 
-	return visor.NewReadableBlocks(blocks)
+	var readableBlocks *visor.ReadableBlocks
+	readableBlocks, err = gw.v.NewReadableBlocks(blocks)
+	if err != nil {
+		return nil, err
+	}
+	return readableBlocks, err
 }
 
 // GetLastBlocks get last N blocks
@@ -358,7 +363,12 @@ func (gw *Gateway) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error) {
 		return nil, err
 	}
 
-	return visor.NewReadableBlocks(blocks)
+	var readableBlocks *visor.ReadableBlocks
+	readableBlocks, err = gw.v.NewReadableBlocks(blocks)
+	if err != nil {
+		return nil, err
+	}
+	return readableBlocks, err
 }
 
 // OutputsFilter used as optional arguments in GetUnspentOutputs method

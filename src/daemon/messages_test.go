@@ -533,6 +533,26 @@ func TestIntroductionMessage(t *testing.T) {
 			err: nil,
 		},
 		{
+			name: "INTR message with pubkey and additional data",
+			addr: "121.121.121.121:6000",
+			mockValue: daemonMockValue{
+				mirror:  10000,
+				version: 1,
+				getMirrorPortResult: mirrorPortResult{
+					exist: false,
+				},
+				pubkey: pubkey,
+			},
+			intro: &IntroductionMessage{
+				Mirror:  10001,
+				Port:    6000,
+				Version: 1,
+				valid:   true,
+				Extra:   append(pubkey[:], []byte("additional data")...),
+			},
+			err: nil,
+		},
+		{
 			name: "INTR message with different pubkey",
 			addr: "121.121.121.121:6000",
 			mockValue: daemonMockValue{

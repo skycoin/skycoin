@@ -275,12 +275,12 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 		// Checks the genesis hash if not empty
 		if len(intro.Extra) > 0 {
 			var bcPubKey cipher.PubKey
-			if len(intro.Extra) != len(bcPubKey) {
-				logger.Infof("Extra data length does not match that of the cipher.SHA256")
+			if len(intro.Extra) < len(bcPubKey) {
+				logger.Infof("Extra data length does not meet the minimum requirement")
 				d.Disconnect(mc.Addr, ErrDisconnectInvalidExtraData)
 				return ErrDisconnectInvalidExtraData
 			}
-			copy(bcPubKey[:], intro.Extra[:])
+			copy(bcPubKey[:], intro.Extra[:len(bcPubKey)])
 
 			if d.BlockchainPubkey() != bcPubKey {
 				logger.Infof("Blockchain pubkey does not match, local: %s, remote: %s", d.BlockchainPubkey().Hex(), bcPubKey.Hex())

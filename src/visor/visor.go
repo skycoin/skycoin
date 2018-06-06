@@ -2089,7 +2089,6 @@ func (vs *Visor) getUnspentsForSpending(tx *dbutil.Tx, addrs []cipher.Address, i
 	return auxs, nil
 }
 
-
 // NewReadableBlocks converts []coin.SignedBlock to readable blocks
 // Adds aditional data to Inputs (owner, coins, hours)
 func (vs *Visor) NewReadableBlocks(blocks []coin.SignedBlock) (*ReadableBlocks, error) {
@@ -2110,11 +2109,11 @@ func (vs *Visor) NewReadableBlocks(blocks []coin.SignedBlock) (*ReadableBlocks, 
 			resTxns = append(resTxns, *rdt)
 		}
 		readableBlock := ReadableBlock{
-			Head : blockHead,
-			Body : ReadableBlockBody{
+			Head: blockHead,
+			Body: ReadableBlockBody{
 				Transactions: resTxns,
 			},
-			Size : b.Size(),
+			Size: b.Size(),
 		}
 		rbs = append(rbs, readableBlock)
 	}
@@ -2124,12 +2123,12 @@ func (vs *Visor) NewReadableBlocks(blocks []coin.SignedBlock) (*ReadableBlocks, 
 }
 
 //NewReadableTransaction creates a readable transaction
-func (vs *Visor) NewReadableTransaction(transaction Transaction) (*ReadableTransaction, error){
+func (vs *Visor) NewReadableTransaction(transaction Transaction) (*ReadableTransaction, error) {
 	inputs, uxids, err := vs.NewReadableTransactionInputs(transaction)
 	if err != nil {
 		return nil, err
 	}
-	outputs, err := vs.NewReadableTransactionOutputs( transaction )
+	outputs, err := vs.NewReadableTransactionOutputs(transaction)
 	if err != nil {
 		return nil, err
 	}
@@ -2138,20 +2137,20 @@ func (vs *Visor) NewReadableTransaction(transaction Transaction) (*ReadableTrans
 		sigs[i] = s.Hex()
 	}
 	return &ReadableTransaction{
-		Length:    	transaction.Txn.Length,
-		Type:      	transaction.Txn.Type,
-		Hash:      	transaction.Txn.Hash().Hex(),
-		InnerHash: 	transaction.Txn.InnerHash.Hex(),
-		Timestamp: 	transaction.Time,
-		Sigs: 			sigs,
-		In: 				uxids,
-		InData:   	inputs,
-		Out:  			outputs,
+		Length:    transaction.Txn.Length,
+		Type:      transaction.Txn.Type,
+		Hash:      transaction.Txn.Hash().Hex(),
+		InnerHash: transaction.Txn.InnerHash.Hex(),
+		Timestamp: transaction.Time,
+		Sigs:      sigs,
+		In:        uxids,
+		InData:    inputs,
+		Out:       outputs,
 	}, nil
 }
 
 // NewReadableTransactionInputs creates slice of ReadableTransactionInput
-func (vs *Visor) NewReadableTransactionInputs(transaction Transaction) ([]ReadableTransactionInput, []string, error){
+func (vs *Visor) NewReadableTransactionInputs(transaction Transaction) ([]ReadableTransactionInput, []string, error) {
 	var err error
 	err = nil
 	var head *coin.SignedBlock
@@ -2183,7 +2182,7 @@ func (vs *Visor) NewReadableTransactionInputs(transaction Transaction) ([]Readab
 			logger.Errorf("Visor.NewReadableTransaction: visor.NewReadableTransactionInput failed: %v", err)
 			return nil, nil, err
 		}
-		inputs = append( inputs, *rdInput)
+		inputs = append(inputs, *rdInput)
 		uxids = append(uxids, inputID.Hex())
 	}
 	return inputs, uxids, err
@@ -2214,7 +2213,7 @@ func (vs *Visor) NewReadableTransactionInput(ux coin.UxOut, calculateHoursTime u
 }
 
 // NewReadableTransactionOutputs creates slice of ReadableTransactionOutputs
-func (vs *Visor) NewReadableTransactionOutputs(transaction Transaction) ([]ReadableTransactionOutput, error){
+func (vs *Visor) NewReadableTransactionOutputs(transaction Transaction) ([]ReadableTransactionOutput, error) {
 	outputs := make([]ReadableTransactionOutput, 0, len(transaction.Txn.Out))
 	txID := cipher.SHA256{}
 	if transaction.Status.BlockSeq != 0 {
@@ -2225,7 +2224,7 @@ func (vs *Visor) NewReadableTransactionOutputs(transaction Transaction) ([]Reada
 		if err != nil {
 			return nil, err
 		}
-		outputs = append( outputs, *o )
+		outputs = append(outputs, *o)
 	}
 	return outputs, nil
 }

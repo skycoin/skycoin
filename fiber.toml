@@ -9,70 +9,27 @@ blockchain_seckey_str = ""
 genesis_timestamp = 1426562704
 # genesis_coin_volume = 100e12
 default_connections = [
-	"118.178.135.93:6000",
-	"47.88.33.156:6000",
-	"121.41.103.148:6000",
-	"120.77.69.188:6000",
-	"104.237.142.206:6000",
-	"176.58.126.224:6000",
-	"172.104.85.6:6000",
-	"139.162.7.132:6000",
+    "118.178.135.93:6000",
+    "47.88.33.156:6000",
+    "121.41.103.148:6000",
+    "120.77.69.188:6000",
+    "104.237.142.206:6000",
+    "176.58.126.224:6000",
+    "172.104.85.6:6000",
+    "139.162.7.132:6000",
 ]
-#disable_pex = false
-#download_peer_list = false
 peer_list_url = "https://downloads.skycoin.net/blockchain/peers.txt"
-#disable_outgoing_connections = false
-#disable_incoming_connections = false
-#disable_networking = false
-#enable_wallet_api = false
-#enable_gui = false
-#disable_csrf = false
-#enable_seed_api = false
-#enable_unversioned_api = false
-#localhost_only = false
-#address = ""
 #port = 6000
-#max_outgoing_connections = 8
-#max_default_peer_outgoing_connections = 1
-#outgoing_connections_rate = 5s
-#peerlist_size = 65535
-#web_interface = true
 #web_interface_port = 6420
-#web_interface_addr = "127.0.0.1"
-#web_interface_cert = ""
-#web_interface_key = ""
-#web_interface_https = false
-#print_web_interface_address = false
-#rpc_interface =  true
-#launch_browser = false
-#data_directory = "~/.skycoin"
-#gui_directory = "./src/gui/static/"
-#read_timeout = 10s
-#write_timeout = 60s
-#idle_timeout = 120s
-#color_log = true
-#log_level = "INFO"
-#disable_ping_pong = false
-#verify_db = true
-#reset_corrupt_db = false
-#wallet_directory = ""
-#wallet_crypto_type = "scrypt-chacha20poly1305"
-#run_master = false
-#profile_cpu = false
-#profile_cpu_file = "skycoin.prof"
-#http_prof = false
-#db_path = ""
-#db_read_only = false
-#arbitrating = false
-#log_to_file = false
-#show_version = false
+#data_directory = "$HOME/.skycoin"
+#profile_cpu_file = "skycoin.prof
 
 [build]
 version = "0.23.1-rc2"
+#build = ""
 #commit = ""
-#branch = ""
 
-[visor_parameters]
+[visor]
 #max_coin_supply = 1e8
 #distribution_addresses_total = 100
 #initial_unlocked_count = 25
@@ -92,18 +49,18 @@ distribution_addresses = [
     "m2joQiJRZnj3jN6NsoKNxaxzUTijkdRoSR",
     "8yf8PAQqU2cDj8Yzgz3LgBEyDqjvCh2xR7",
     "sgB3n11ZPUYHToju6TWMpUZTUcKvQnoFMJ",
-   	"2UYPbDBnHUEc67e7qD4eXtQQ6zfU2cyvAvk",
-   	"wybwGC9rhm8ZssBuzpy5goXrAdE31MPdsj",
-   	"JbM25o7kY7hqJZt3WGYu9pHZFCpA9TCR6t",
+    "2UYPbDBnHUEc67e7qD4eXtQQ6zfU2cyvAvk",
+    "wybwGC9rhm8ZssBuzpy5goXrAdE31MPdsj",
+    "JbM25o7kY7hqJZt3WGYu9pHZFCpA9TCR6t",
     "2efrft5Lnwjtk7F1p9d7BnPd72zko2hQWNi",
     "Syzmb3MiMoiNVpqFdQ38hWgffHg86D2J4e",
     "2g3GUmTQooLrNHaRDhKtLU8rWLz36Beow7F",
-   	"D3phtGr9iv6238b3zYXq6VgwrzwvfRzWZQ",
+    "D3phtGr9iv6238b3zYXq6VgwrzwvfRzWZQ",
     "gpqsFSuMCZmsjPc6Rtgy1FmLx424tH86My",
     "2EUF3GPEUmfocnUc1w6YPtqXVCy3UZA4rAq",
     "TtAaxB3qGz5zEAhhiGkBY9VPV7cekhvRYS",
-   	"2fM5gVpi7XaiMPm4i29zddTNkmrKe6TzhVZ",
-   	"ix3NDKgxfYYANKAb5kbmwBYXPrkAsha7uG",
+    "2fM5gVpi7XaiMPm4i29zddTNkmrKe6TzhVZ",
+    "ix3NDKgxfYYANKAb5kbmwBYXPrkAsha7uG",
     "2RkPshpFFrkuaP98GprLtgHFTGvPY5e6wCK",
     "Ak1qCDNudRxZVvcW6YDAdD9jpYNNStAVqm",
     "2eZYSbzBKJ7QCL4kd5LSqV478rJQGb4UNkf",
@@ -116,14 +73,14 @@ distribution_addresses = [
     "orrAssY5V2HuQAbW9K6WktFrGieq2m23pr",
     "4Ebf4PkG9QEnQTm4MVvaZvJV6Y9av3jhgb",
     "7Uf5xJ3GkiEKaLxC2WmJ1t6SeekJeBdJfu",
-   	"oz4ytDKbCqpgjW3LPc52pW2CaK2gxCcWmL",
-   	"2ex5Z7TufQ5Z8xv5mXe53fSQRfUr35SSo7Q",
+    "oz4ytDKbCqpgjW3LPc52pW2CaK2gxCcWmL",
+    "2ex5Z7TufQ5Z8xv5mXe53fSQRfUr35SSo7Q",
     "WV2ap7ZubTxeDdmEZ1Xo7ufGMkekLWikJu",
     "ckCTV4r1pNuz6j2VBRHhaJN9HsCLY7muLV",
     "MXJx96ZJVSjktgeYZpVK8vn1H3xWP8ooq5",
     "wyQVmno9aBJZmQ99nDSLoYWwp7YDJCWsrH",
-   	"2cc9wKxCsFNRkoAQDAoHke3ZoyL1mSV14cj",
-   	"29k9g3F5AYfVaa1joE1PpZjBED6hQXes8Mm",
+    "2cc9wKxCsFNRkoAQDAoHke3ZoyL1mSV14cj",
+    "29k9g3F5AYfVaa1joE1PpZjBED6hQXes8Mm",
     "2XPLzz4ZLf1A9ykyTCjW5gEmVjnWa8CuatH",
     "iH7DqqojTgUn2JxmY9hgFp165Nk7wKfan9",
     "RJzzwUs3c9C8Y7NFYzNfFoqiUKeBhBfPki",
@@ -139,7 +96,7 @@ distribution_addresses = [
     "KghGnWw5fppTrqHSERXZf61yf7GkuQdCnV",
     "2WojewRA3LbpyXTP9ANy8CZqJMgmyNm3MDr",
     "2BsMfywmGV3M2CoDA112Rs7ZBkiMHfy9X11",
-   	"kK1Q4gPyYfVVMzQtAPRzL8qXMqJ67Y7tKs",
+    "kK1Q4gPyYfVVMzQtAPRzL8qXMqJ67Y7tKs",
     "28J4mx8xfUtM92DbQ6i2Jmqw5J7dNivfroN",
     "gQvgyG1djgtftoCVrSZmsRxr7okD4LheKw",
     "3iFGBKapAWWzbiGFSr5ScbhrEPm6Esyvia",
@@ -147,23 +104,23 @@ distribution_addresses = [
     "2MQJjLnWRp9eHh6MpCwpiUeshhtmri12mci",
     "2QjRQUMyL6iodtHP9zKmxCNYZ7k3jxtk49C",
     "USdfKy7B6oFNoauHWMmoCA7ND9rHqYw2Mf",
-   	"cA49et9WtptYHf6wA1F8qqVgH3kS5jJ9vK",
-   	"qaJT9TjcMi46sTKcgwRQU8o5Lw2Ea1gC4N",
-   	"22pyn5RyhqtTQu4obYjuWYRNNw4i54L8xVr",
-   	"22dkmukC6iH4FFLBmHne6modJZZQ3MC9BAT",
-   	"z6CJZfYLvmd41GRVE8HASjRcy5hqbpHZvE",
-   	"GEBWJ2KpRQDBTCCtvnaAJV2cYurgXS8pta",
-   	"oS8fbEm82cprmAeineBeDkaKd7QownDZQh",
-   	"rQpAs1LVQdphyj9ipEAuukAoj9kNpSP8cM",
-   	"6NSJKsPxmqipGAfFFhUKbkopjrvEESTX3j",
-   	"cuC68ycVXmD2EBzYFNYQ6akhKGrh3FGjSf",
-   	"bw4wtYU8toepomrhWP2p8UFYfHBbvEV425",
-   	"HvgNmDz5jD39Gwmi9VfDY1iYMhZUpZ8GKz",
-   	"SbApuZAYquWP3Q6iD51BcMBQjuApYEkRVf",
-   	"2Ugii5yxJgLzC59jV1vF8GK7UBZdvxwobeJ",
-   	"21N2iJ1qnQRiJWcEqNRxXwfNp8QcmiyhtPy",
-   	"9TC4RGs6AtFUsbcVWnSoCdoCpSfM66ALAc",
-   	"oQzn55UWG4iMcY9bTNb27aTnRdfiGHAwbD",
+    "cA49et9WtptYHf6wA1F8qqVgH3kS5jJ9vK",
+    "qaJT9TjcMi46sTKcgwRQU8o5Lw2Ea1gC4N",
+    "22pyn5RyhqtTQu4obYjuWYRNNw4i54L8xVr",
+    "22dkmukC6iH4FFLBmHne6modJZZQ3MC9BAT",
+    "z6CJZfYLvmd41GRVE8HASjRcy5hqbpHZvE",
+    "GEBWJ2KpRQDBTCCtvnaAJV2cYurgXS8pta",
+    "oS8fbEm82cprmAeineBeDkaKd7QownDZQh",
+    "rQpAs1LVQdphyj9ipEAuukAoj9kNpSP8cM",
+    "6NSJKsPxmqipGAfFFhUKbkopjrvEESTX3j",
+    "cuC68ycVXmD2EBzYFNYQ6akhKGrh3FGjSf",
+    "bw4wtYU8toepomrhWP2p8UFYfHBbvEV425",
+    "HvgNmDz5jD39Gwmi9VfDY1iYMhZUpZ8GKz",
+    "SbApuZAYquWP3Q6iD51BcMBQjuApYEkRVf",
+    "2Ugii5yxJgLzC59jV1vF8GK7UBZdvxwobeJ",
+    "21N2iJ1qnQRiJWcEqNRxXwfNp8QcmiyhtPy",
+    "9TC4RGs6AtFUsbcVWnSoCdoCpSfM66ALAc",
+    "oQzn55UWG4iMcY9bTNb27aTnRdfiGHAwbD",
     "2GCdwsRpQhcf8SQcynFrMVDM26Bbj6sgv9M",
     "2NRFe7REtSmaM2qAgZeG45hC8EtVGV2QjeB",
     "25RGnhN7VojHUTvQBJA9nBT5y1qTQGULMzR",

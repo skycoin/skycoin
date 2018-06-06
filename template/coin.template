@@ -2,17 +2,21 @@ package main
 
 import (
 	_ "net/http/pprof"
+	"time"
+
 	"github.com/skycoin/skycoin/src/skycoin"
 	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 var (
 	// Version of the node. Can be set by -ldflags
 	Version = "{{.Version}}"
 	// Commit ID. Can be set by -ldflags
-	Commit = "{{.Commit}}"
+	Commit = ""
 	// Branch name. Can be set by -ldflags
-	Branch = "{{.Branch}}"
+	Branch = ""
 	// ConfigMode (possible values are "", "STANDALONE_CLIENT").
 	// This is used to change the default configuration.
 	// Can be set by -ldflags
@@ -51,85 +55,85 @@ var devConfig = skycoin.NodeConfig{
 	BlockchainSeckeyStr: BlockchainSeckeyStr,
 	DefaultConnections:  DefaultConnections,
 	// Disable peer exchange
-	DisablePEX: {{.DisablePEX}},
+	DisablePEX: false,
 	// Don't make any outgoing connections
-	DisableOutgoingConnections: {{.DisableOutgoingConnections}},
+	DisableOutgoingConnections: false,
 	// Don't allowing incoming connections
-	DisableIncomingConnections: {{.DisableIncomingConnections}},
+	DisableIncomingConnections: false,
 	// Disables networking altogether
-	DisableNetworking: {{.DisableNetworking}},
+	DisableNetworking: false,
 	// Enable wallet API
-	EnableWalletAPI: {{.EnableWalletAPI}},
+	EnableWalletAPI: false,
 	// Enable GUI
-	EnableGUI: {{.EnableGUI}},
+	EnableGUI: false,
 	// Enable unversioned API
-	EnableUnversionedAPI: {{.EnableUnversionedAPI}},
+	EnableUnversionedAPI: false,
 	// Enable seed API
-	EnableSeedAPI: {{.EnableSeedAPI}},
+	EnableSeedAPI: false,
 	// Disable CSRF check in the wallet API
-	DisableCSRF: {{.DisableCSRF}},
+	DisableCSRF: false,
 	// Only run on localhost and only connect to others on localhost
-	LocalhostOnly: {{.LocalhostOnly}},
+	LocalhostOnly: false,
 	// Which address to serve on. Leave blank to automatically assign to a
 	// public interface
-	Address: "{{.Address}}",
+	Address: "",
 	//gnet uses this for TCP incoming and outgoing
 	Port: {{.Port}},
 	// MaxOutgoingConnections is the maximum outgoing connections allowed.
-	MaxOutgoingConnections: {{.MaxOutgoingConnections}},
+	MaxOutgoingConnections: 8,
 	// MaxDefaultOutgoingConnections is the maximum default outgoing connections allowed.
-	MaxDefaultPeerOutgoingConnections: {{.MaxDefaultPeerOutgoingConnections}},
-	DownloadPeerList:                  {{.DownloadPeerList}},
+	MaxDefaultPeerOutgoingConnections: 1,
+	DownloadPeerList:                  true,
 	PeerListURL:                       "{{.PeerListURL}}",
 	// How often to make outgoing connections, in seconds
-	OutgoingConnectionsRate: {{.OutgoingConnectionsRate | parseDuration}}, // {{.OutgoingConnectionsRate}}
-	PeerlistSize:            {{.PeerlistSize}},
+	OutgoingConnectionsRate: time.Second*5,
+	PeerlistSize: 65535,
 	// Wallet Address Version
 	//AddressVersion: "test",
 	// Remote web interface
-	WebInterface:      {{.WebInterface}},
+	WebInterface:      true,
 	WebInterfacePort:  {{.WebInterfacePort}},
-	WebInterfaceAddr:  "{{.WebInterfaceAddr}}",
-	WebInterfaceCert:  "{{.WebInterfaceCert}}",
-	WebInterfaceKey:   "{{.WebInterfaceKey}}",
-	WebInterfaceHTTPS: {{.WebInterfaceHTTPS}},
+	WebInterfaceAddr:  "127.0.0.1",
+	WebInterfaceCert:  "",
+	WebInterfaceKey:   "",
+	WebInterfaceHTTPS: false,
 
-	RPCInterface: {{.RPCInterface}},
+	RPCInterface: true,
 
 	LaunchBrowser: false,
 	// Data directory holds app data -- defaults to {{.DataDirectory}}
 	DataDirectory: "{{.DataDirectory}}",
 	// Web GUI static resources
-	GUIDirectory: "{{.GUIDirectory}}",
+	GUIDirectory: "./src/gui/static/",
 	// Logging
-	ColorLog:        {{.ColorLog}},
-	LogLevel:        "{{.LogLevel}}",
-	LogToFile:       {{.LogToFile}},
-	DisablePingPong: {{.DisablePingPong}},
+	ColorLog:        true,
+	LogLevel:        "INFO",
+	LogToFile:       false,
+	DisablePingPong: false,
 
-	VerifyDB:       {{.VerifyDB}},
-	ResetCorruptDB: {{.ResetCorruptDB}},
+	VerifyDB:       true,
+	ResetCorruptDB: false,
 
 	// Wallets
-	WalletDirectory:  "{{.WalletDirectory}}",
-	WalletCryptoType: "{{.WalletCryptoType}}",
+	WalletDirectory:  "",
+	WalletCryptoType: string(wallet.CryptoTypeScryptChacha20poly1305),
 
-	// Timeout settings for http.Server
-	// https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
-	ReadTimeout:  {{.ReadTimeout | parseDuration}}, // {{.ReadTimeout}}
-	WriteTimeout: {{.WriteTimeout | parseDuration}}, // {{.WriteTimeout}}
-	IdleTimeout:  {{.IdleTimeout | parseDuration}}, // {{.IdleTimeout}}
+    // Timeout settings for http.Server
+    // https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
+    ReadTimeout:  time.Second * 10,
+    WriteTimeout: time.Second * 60,
+    IdleTimeout:  time.Second * 120,
 
 	// Centralized network configuration
-	RunMaster: {{.RunMaster}},
+	RunMaster: false,
 	/* Developer options */
 
 	// Enable cpu profiling
-	ProfileCPU: {{.ProfileCPU}},
+	ProfileCPU: false,
 	// Where the file is written to
 	ProfileCPUFile: "{{.ProfileCPUFile}}",
 	// HTTP profiling interface (see http://golang.org/pkg/net/http/pprof/)
-	HTTPProf: {{.HTTPProf}},
+	HTTPProf: false,
 }
 
 func init() {
@@ -158,22 +162,22 @@ func applyConfigMode() {
 }
 
 func main() {
-	// create a new fiber coin instance
-	coin := skycoin.NewCoin(
-		skycoin.Config{
-			Node: devConfig,
-			Build: skycoin.BuildConfig{
-				Version: Version,
-				Commit:  Commit,
-				Branch:  Branch,
-			},
-		},
-		logger,
-	)
+    // create a new fiber coin instance
+    coin := skycoin.NewCoin(
+        skycoin.Config{
+            Node: devConfig,
+            Build: visor.BuildInfo{
+                Version: Version,
+                Commit:  Commit,
+                Branch:  Branch,
+            },
+        },
+        logger,
+    )
 
-	// parse config values
-	coin.ParseConfig()
+    // parse config values
+    coin.ParseConfig()
 
-	// run fiber coin node
-	coin.Run()
+    // run fiber coin node
+    coin.Run()
 }

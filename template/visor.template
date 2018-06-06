@@ -19,11 +19,11 @@ const (
 	// UnlockTimeInterval is the distribution address unlock time interval, measured in seconds
     // Once the InitialUnlockedCount is exhausted,
     // UnlockAddressRate addresses will be unlocked per UnlockTimeInterval
-	UnlockTimeInterval uint64 = {{.UnlockTimeInterval}}
+	UnlockTimeInterval uint64 = {{.UnlockTimeInterval}} // in seconds
 	// MaxDropletPrecision represents the decimal precision of droplets
 	MaxDropletPrecision uint64 = {{.MaxDropletPrecision}}
 	//DefaultMaxBlockSize is max block size
-	DefaultMaxBlockSize int = {{.DefaultMaxBlockSize}}
+	DefaultMaxBlockSize int = {{.DefaultMaxBlockSize}} // in bytes
 )
 
 var distributionAddresses = [DistributionAddressesTotal]string{

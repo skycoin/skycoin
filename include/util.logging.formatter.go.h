@@ -1,0 +1,12 @@
+typedef struct{
+    GoString_ InfoLevelStyle;
+    GoString_ WarnLevelStyle;
+    GoString_ ErrorLevelStyle;
+    GoString_ FatalLevelStyle;
+    GoString_ PanicLevelStyle;
+    GoString_ DebugLevelStyle;
+    GoString_ PrefixStyle;
+    GoString_ TimestampStyle;
+    GoString_ CallContextStyle;
+    GoString_ CriticalStyle;
+} logging__ColorScheme;

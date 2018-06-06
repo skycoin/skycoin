@@ -1,44 +1,49 @@
 <ng-container *ngFor="let address of (wallet ? wallet.addresses : []); let i = index">
   <div class="-record" *ngIf="!wallet.hideEmpty || address.coins">
     <div class="id-column">{{ i + 1 }}</div>
-    <div class="address-column" (click)="copyAddress(address)">
+    <div class="address-column">
       <img src="../../../../../assets/img/qr-code-black.png" (click)="showQrCode($event, address.address)">
-      <p class="click-to-copy" [ngClass]="{ copying: address.copying }">
-        {{ address.address }} <span data-label="Copied" class="copy-label">Copy</span>
+      <p class="click-to-copy" [ngClass]="{ copying: address.copying }"
+         (click)="copyAddress($event, address)" (mouseleave)="address.copying = false">
+        {{ address.address }}
+        <span [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">
+          {{ 'wallet.address.copy' | translate }}
+        </span>
       </p>
     </div>
     <div class="hours-column">{{ (address.hours ? address.hours : 0) | number:'1.0-6' }}</div>
-    <div class="coins-column">
-      {{ (address.coins ? address.coins : 0) | number:'1.0-6' }}
-      <span class="outputs-label"
-            routerLink="/settings/outputs"
-            [queryParams]="{ addr: address.address }"
-      >Outputs</span>
+    <div class="coins-column">{{ (address.coins ? address.coins : 0) | number:'1.0-6' }}</div>
+    <div class="outputs-column">
+      <mat-icon [matMenuTriggerFor]="optionsMenu">more_vert</mat-icon>
     </div>
   </div>
+
+  <mat-menu #optionsMenu="matMenu" [overlapTrigger]="false" class="compact">
+    <button mat-menu-item (click)="copyAddress($event, address, 1000)">
+      {{ 'wallet.address.' + (address.copying ? 'copied': 'copy-address') | translate }}
+    </button>
+    <button mat-menu-item routerLink="/settings/outputs" [queryParams]="{ addr: address.address }">
+      {{ 'wallet.address.outputs' | translate }}
+    </button>
+  </mat-menu>
 </ng-container>
+
 <div class="-actions">
   <div class="-button" (click)="newAddress()">
-    <img src="../../../../../assets/img/plus-grey.png">
-    <span>New Address</span>
+    <span class="-img -new-address">{{ 'wallet.new-address' | translate }}</span>
   </div>
   <div class="-button" (click)="toggleEmpty()">
-    <ng-container *ngIf="!wallet.hideEmpty">
-      <img src="../../../../../assets/img/minus-grey.png">
-      <span>Hide Empty</span>
-    </ng-container>
-    <ng-container *ngIf="wallet.hideEmpty">
-      <img src="../../../../../assets/img/plus-grey.png">
-      <span>Show Empty</span>
-    </ng-container>
+    <span [ngClass]="{ '-img': true, '-show-empty': wallet.hideEmpty, '-hide-empty': !wallet.hideEmpty }">
+      {{ 'wallet.' + (wallet.hideEmpty ? 'show' : 'hide') + '-empty' | translate }}
+    </span>
   </div>
   <div class="flex-fill"></div>
   <div class="-button" (click)="toggleEncryption()">
-    <img src="../../../../../assets/img/unlock-grey.png">
-    <span>{{ wallet.encrypted ? 'Decrypt' : 'Encrypt' }} Wallet</span>
+    <span [ngClass]="{ '-img': true, '-enable-encryption': !wallet.encrypted, '-disable-encryption': wallet.encrypted }">
+      {{ 'wallet.' + (wallet.encrypted ? 'decrypt' : 'encrypt') | translate }}
+    </span>
   </div>
   <div class="-button" (click)="editWallet()">
-    <img src="../../../../../assets/img/edit-grey.png">
-    <span>Edit Wallet</span>
+    <span class="-img -edit-wallet">{{ 'wallet.edit' | translate }}</span>
   </div>
 </div>

@@ -5,10 +5,9 @@ import { WalletService } from '../../../services/wallet.service';
 @Component({
   selector: 'app-onboarding',
   templateUrl: './onboarding.component.html',
-  styleUrls: ['./onboarding.component.scss']
+  styleUrls: ['./onboarding.component.scss'],
 })
 export class OnboardingComponent {
-
   step = 1;
   label: string;
   seed: string;
@@ -47,5 +46,4 @@ export class OnboardingComponent {
       this.router.navigate(['/wallets']);
     });
   }
-
 }

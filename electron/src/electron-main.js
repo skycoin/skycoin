@@ -1,8 +1,6 @@
 'use strict'
 
-const { app, Menu, BrowserWindow, dialog, shell } = require('electron');
-
-var log = require('electron-log');
+const { app, Menu, BrowserWindow, dialog, shell, session } = require('electron');
 
 const path = require('path');
 
@@ -21,7 +19,6 @@ require('electron-context-menu')({});
 
 global.eval = function() { throw new Error('bad!!'); }
 
-const defaultURL = 'http://127.0.0.1:6420/';
 let currentURL;
 
 // Force everything localhost, in case of a leak
@@ -77,7 +74,10 @@ function startSkycoin() {
     '-enable-seed-api=true',
     '-enable-wallet-api=true',
     '-rpc-interface=false',
-    "-disable-csrf=false"
+    '-disable-csrf=false',
+    '-reset-corrupt-db=true',
+    '-enable-gui=true',
+    '-web-interface-port=0' // random port assignment
     // will break
     // broken (automatically generated certs do not work):
     // '-web-interface-https=true',
@@ -95,13 +95,15 @@ function startSkycoin() {
     if (currentURL) {
       return
     }
+
     const marker = 'Starting web interface on ';
-    var i = data.indexOf(marker);
-    if (i === -1) {
-      return
-    }
-    currentURL = defaultURL;
-    app.emit('skycoin-ready', { url: currentURL });
+
+    data.toString().split("\n").forEach(line => {
+      if (line.indexOf(marker) !== -1) {
+        currentURL = 'http://' + line.split(marker)[1].trim();
+        app.emit('skycoin-ready', { url: currentURL });
+      }
+    });
   });
 
   skycoin.stderr.on('data', (data) => {
@@ -122,10 +124,6 @@ function startSkycoin() {
 }
 
 function createWindow(url) {
-  if (!url) {
-    url = defaultURL;
-  }
-
   // To fix appImage doesn't show icon in dock issue.
   var appPath = app.getPath('exe');
   var iconPath = (() => {
@@ -145,18 +143,26 @@ function createWindow(url) {
     webPreferences: {
       webgl: false,
       webaudio: false,
+      contextIsolation: true,
+      webviewTag: false,
+      nodeIntegration: false,
+      nodeIntegrationInWorker: false,
+      allowRunningInsecureContent: false,
+      webSecurity: true,
+      plugins: false,
     },
   });
 
   // patch out eval
   win.eval = global.eval;
+  win.webContents.executeJavaScript('window.eval = 0;');
 
   const ses = win.webContents.session
   ses.clearCache(function () {
     console.log('Cleared the caching of the skycoin wallet.');
   });
 
-  ses.clearStorageData([],function(){
+  ses.clearStorageData([], function() {
     console.log('Cleared the stored cached data');
   });
 
@@ -199,12 +205,12 @@ function createWindow(url) {
     label: 'Show',
     submenu: [
       {
-        label: "Wallets folder", 
-        click: () => shell.showItemInFolder(walletsFolder), 
+        label: 'Wallets folder',
+        click: () => shell.showItemInFolder(walletsFolder),
       },
       {
-        label: "Logs folder", 
-        click: () => shell.showItemInFolder(walletsFolder.replace('wallets', 'logs')), 
+        label: 'Logs folder',
+        click: () => shell.showItemInFolder(walletsFolder.replace('wallets', 'logs')),
       },
       {
         label: 'DevTools',
@@ -219,19 +225,25 @@ function createWindow(url) {
   }];
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+
+  session
+    .fromPartition('')
+    .setPermissionRequestHandler((webContents, permission, callback) => {
+      return callback(false);
+    });
 }
 
 // Enforce single instance
 const alreadyRunning = app.makeSingleInstance((commandLine, workingDirectory) => {
-      // Someone tried to run a second instance, we should focus our window.
-      if (win) {
-        if (win.isMinimized()) {
-          win.restore();
-        }
-        win.focus();
-      } else {
-        createWindow(currentURL || defaultURL);
-      }
+  // Someone tried to run a second instance, we should focus our window.
+  if (win) {
+    if (win.isMinimized()) {
+      win.restore();
+    }
+    win.focus();
+  } else {
+    createWindow(currentURL);
+  }
 });
 
 if (alreadyRunning) {
@@ -250,7 +262,7 @@ app.on('skycoin-ready', (e) => {
   createWindow(e.url);
 
   axios
-    .get(defaultURL + 'wallets/folderName')
+    .get(e.url + '/api/v1/wallets/folderName')
     .then(response => walletsFolder = response.data.address)
     .catch(() => {});
 });
@@ -268,7 +280,7 @@ app.on('activate', () => {
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   if (win === null) {
-    createWindow();
+    createWindow(currentURL);
   }
 });
 
@@ -278,5 +290,18 @@ app.on('will-quit', () => {
   }
 });
 
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.
+app.on('web-contents-created', (event, contents) => {
+  contents.on('will-attach-webview', (event, webPreferences, params) => {
+    // Strip away preload scripts if unused or verify their location is legitimate
+    delete webPreferences.preload
+    delete webPreferences.preloadURL
+
+    // Disable Node.js integration
+    webPreferences.nodeIntegration = false
+
+    // Verify URL being loaded
+    if (!params.src.startsWith(url)) {
+      event.preventDefault();
+    }
+  });
+});

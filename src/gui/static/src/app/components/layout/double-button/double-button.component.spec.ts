@@ -8,7 +8,7 @@ describe('DoubleButtonComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ DoubleButtonComponent ]
+      declarations: [ DoubleButtonComponent ],
     })
     .compileComponents();
   }));

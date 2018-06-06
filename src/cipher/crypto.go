@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"hash"
 	"log"
 	"time"
@@ -425,15 +426,14 @@ func TestSecKeyHash(seckey SecKey, hash SHA256) error {
 	}
 	//verify recovered pubkey
 	if secp256k1.VerifyPubkey(pubkey[:]) != 1 {
-		return errors.New("impossible error, TestSecKey, Derived Pubkey " +
-			"verification failed")
+		return errors.New("impossible error, TestSecKey, Derived Pubkey verification failed")
 	}
 
 	//check signature production
 	sig := SignHash(hash, seckey)
 	pubkey2, err := PubKeyFromSig(sig, hash)
 	if err != nil {
-		return err
+		return fmt.Errorf("PubKeyFromSig failed: %v", err)
 	}
 	if pubkey != pubkey2 {
 		return errors.New("Recovered pubkey does not match signed hash")
@@ -442,27 +442,29 @@ func TestSecKeyHash(seckey SecKey, hash SHA256) error {
 	//check pubkey recovered from sig
 	recoveredPubkey, err := PubKeyFromSig(sig, hash)
 	if err != nil {
-		return errors.New("impossible error, TestSecKey, pubkey recovery " +
-			"from signature failed")
+		return fmt.Errorf("impossible error, TestSecKey, pubkey recovery from signature failed: %v", err)
 	}
 	if pubkey != recoveredPubkey {
-		return errors.New("impossible error TestSecKey, pubkey does not " +
-			"match recovered pubkey")
+		return errors.New("impossible error TestSecKey, pubkey does not match recovered pubkey")
 	}
 
 	//verify produced signature
 	err = VerifySignature(pubkey, sig, hash)
 	if err != nil {
-		return errors.New("impossible error, TestSecKey, verify signature failed " +
-			"for sig")
+		return fmt.Errorf("impossible error, TestSecKey, verify signature failed for sig: %v", err)
 	}
 
 	//verify ChkSig
 	addr := AddressFromPubKey(pubkey)
 	err = ChkSig(addr, hash, sig)
 	if err != nil {
-		return errors.New("impossible error TestSecKey, ChkSig Failed, " +
-			"should not get this far")
+		return fmt.Errorf("impossible error TestSecKey, ChkSig Failed, should not get this far: %v", err)
+	}
+
+	//verify VerifySignedHash
+	err = VerifySignedHash(sig, hash)
+	if err != nil {
+		return fmt.Errorf("VerifySignedHash failed: %v", err)
 	}
 
 	return nil
@@ -479,8 +481,7 @@ func init() {
 	}
 
 	_, seckey := GenerateKeyPair()
-	if TestSecKey(seckey) != nil {
-		log.Fatal("CRYPTOGRAPHIC INTEGRITY CHECK FAILED: TERMINATING " +
-			"PROGRAM TO PROTECT COINS")
+	if err := TestSecKey(seckey); err != nil {
+		log.Fatalf("CRYPTOGRAPHIC INTEGRITY CHECK FAILED: TERMINATING PROGRAM TO PROTECT COINS: %v", err)
 	}
 }

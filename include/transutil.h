@@ -10,6 +10,8 @@
 #include "skystring.h"
 #include "skytest.h"
 
+int makeKeysAndAddress(cipher__PubKey* ppubkey, cipher__SecKey* pseckey, cipher__Address* paddress);
+
 int makeUxBodyWithSecret(coin__UxBody* puxBody, cipher__SecKey* pseckey);
 
 int makeUxOutWithSecret(coin__UxOut* puxOut, cipher__SecKey* pseckey);

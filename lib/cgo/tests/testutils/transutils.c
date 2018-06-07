@@ -11,6 +11,15 @@
 #include "skytest.h"
 #include "transutil.h"
 
+int makeKeysAndAddress(cipher__PubKey* ppubkey, cipher__SecKey* pseckey, cipher__Address* paddress){
+  int result;
+  result = SKY_cipher_GenerateKeyPair(ppubkey, pseckey);
+  cr_assert(result == SKY_OK, "SKY_cipher_GenerateKeyPair failed");
+  result = SKY_cipher_AddressFromPubKey( ppubkey, paddress );
+  cr_assert(result == SKY_OK, "SKY_cipher_AddressFromPubKey failed");
+  return result;
+}
+
 int makeUxBodyWithSecret(coin__UxBody* puxBody, cipher__SecKey* pseckey){
   cipher__PubKey pubkey;
   cipher__Address address;
@@ -87,9 +96,9 @@ int makeTransactionFromUxOut(coin__UxOut* puxOut, cipher__SecKey* pseckey,
   result = makeAddress(&address2);
   cr_assert(result == SKY_OK, "makeAddress failed");
 
-  result = SKY_coin_Transaction_PushOutput(ptransaction, &address1, 0x1e6, 50);
+  result = SKY_coin_Transaction_PushOutput(ptransaction, &address1, 1000000, 50);
   cr_assert(result == SKY_OK, "SKY_coin_Transaction_PushOutput failed");
-  result = SKY_coin_Transaction_PushOutput(ptransaction, &address2, 0x5e6, 50);
+  result = SKY_coin_Transaction_PushOutput(ptransaction, &address2, 5000000, 50);
   cr_assert(result == SKY_OK, "SKY_coin_Transaction_PushOutput failed");
 
   GoSlice secKeys = { pseckey, 1, 1 };

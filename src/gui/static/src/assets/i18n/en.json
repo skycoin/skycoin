@@ -205,7 +205,7 @@
     "amount": "Amount",
     "txid": "Transaction ID",
     "none": "No pending transactions",
-    "my": "My",
+    "my": "Mine",
     "all": "All"
   },
 

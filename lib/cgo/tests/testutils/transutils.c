@@ -17,6 +17,8 @@ int makeUxBodyWithSecret(coin__UxBody* puxBody, cipher__SecKey* pseckey){
   int result;
 
   memset( puxBody, 0, sizeof(coin__UxBody) );
+  puxBody->Coins = 1000000;
+  puxBody->Hours = 100;
 
   result = SKY_cipher_GenerateKeyPair(&pubkey, pseckey);
   cr_assert(result == SKY_OK, "SKY_cipher_GenerateKeyPair failed");

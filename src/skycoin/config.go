@@ -234,7 +234,7 @@ func NewNodeConfig(mode string, node NodeParameters) *NodeConfig {
 		HTTPProf: false,
 	}
 
-	nodeConfig.ApplyConfigMode(mode)
+	nodeConfig.applyConfigMode(mode)
 
 	return nodeConfig
 }
@@ -370,7 +370,7 @@ func (c *Config) register() {
 	flag.BoolVar(&c.Node.Version, "version", false, "show node version")
 }
 
-func (n *NodeConfig) ApplyConfigMode(configMode string) {
+func (n *NodeConfig) applyConfigMode(configMode string) {
 	switch configMode {
 	case "":
 	case "STANDALONE_CLIENT":

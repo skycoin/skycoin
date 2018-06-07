@@ -167,10 +167,26 @@ func applyConfigMode() {
 }
 
 func main() {
+	// get node config
+	nodeConfig := skycoin.NewNodeConfig(ConfigMode, skycoin.NodeParameters{
+		GenesisSignatureStr: GenesisSignatureStr,
+		GenesisAddressStr:   GenesisAddressStr,
+		GenesisCoinVolume:   GenesisCoinVolume,
+		GenesisTimestamp:    GenesisTimestamp,
+		BlockchainPubkeyStr: BlockchainPubkeyStr,
+		BlockchainSeckeyStr: BlockchainSeckeyStr,
+		DefaultConnections:  DefaultConnections,
+		PeerListURL:         "https://downloads.skycoin.net/blockchain/peers.txt",
+		Port:                6000,
+		WebInterfacePort:    6420,
+		DataDirectory:       "$HOME/.skycoin",
+		ProfileCPUFile:      "skycoin.prof",
+	})
+
 	// create a new fiber coin instance
 	coin := skycoin.NewCoin(
 		skycoin.Config{
-			Node: devConfig,
+			Node: *nodeConfig,
 			Build: visor.BuildInfo{
 				Version: Version,
 				Commit:  Commit,

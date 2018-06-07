@@ -11,6 +11,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util/file"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 var (
@@ -139,6 +140,103 @@ type NodeConfig struct {
 
 	blockchainPubkey cipher.PubKey
 	blockchainSeckey cipher.SecKey
+}
+
+// NewNodeConfig returns a new node config instance
+func NewNodeConfig(mode string, node NodeParameters) *NodeConfig {
+	nodeConfig := &NodeConfig{
+		GenesisSignatureStr: node.GenesisSignatureStr,
+		GenesisAddressStr:   node.GenesisAddressStr,
+		GenesisCoinVolume:   node.GenesisCoinVolume,
+		GenesisTimestamp:    node.GenesisTimestamp,
+		BlockchainPubkeyStr: node.BlockchainPubkeyStr,
+		BlockchainSeckeyStr: node.BlockchainSeckeyStr,
+		DefaultConnections:  node.DefaultConnections,
+		// Disable peer exchange
+		DisablePEX: false,
+		// Don't make any outgoing connections
+		DisableOutgoingConnections: false,
+		// Don't allowing incoming connections
+		DisableIncomingConnections: false,
+		// Disables networking altogether
+		DisableNetworking: false,
+		// Enable wallet API
+		EnableWalletAPI: false,
+		// Enable GUI
+		EnableGUI: false,
+		// Enable unversioned API
+		EnableUnversionedAPI: false,
+		// Enable seed API
+		EnableSeedAPI: false,
+		// Disable CSRF check in the wallet API
+		DisableCSRF: false,
+		// Only run on localhost and only connect to others on localhost
+		LocalhostOnly: false,
+		// Which address to serve on. Leave blank to automatically assign to a
+		// public interface
+		Address: "",
+		//gnet uses this for TCP incoming and outgoing
+		Port: node.Port,
+		// MaxOutgoingConnections is the maximum outgoing connections allowed.
+		MaxOutgoingConnections: 8,
+		// MaxDefaultOutgoingConnections is the maximum default outgoing connections allowed.
+		MaxDefaultPeerOutgoingConnections: 1,
+		DownloadPeerList:                  true,
+		PeerListURL:                       node.PeerListURL,
+		// How often to make outgoing connections, in seconds
+		OutgoingConnectionsRate: time.Second * 5,
+		PeerlistSize:            65535,
+		// Wallet Address Version
+		//AddressVersion: "test",
+		// Remote web interface
+		WebInterface:      true,
+		WebInterfacePort:  node.WebInterfacePort,
+		WebInterfaceAddr:  "127.0.0.1",
+		WebInterfaceCert:  "",
+		WebInterfaceKey:   "",
+		WebInterfaceHTTPS: false,
+
+		RPCInterface: true,
+
+		LaunchBrowser: false,
+		// Data directory holds app data
+		DataDirectory: node.DataDirectory,
+		// Web GUI static resources
+		GUIDirectory: "./src/gui/static/",
+		// Logging
+		ColorLog:        true,
+		LogLevel:        "INFO",
+		LogToFile:       false,
+		DisablePingPong: false,
+
+		VerifyDB:       true,
+		ResetCorruptDB: false,
+
+		// Wallets
+		WalletDirectory:  "",
+		WalletCryptoType: string(wallet.CryptoTypeScryptChacha20poly1305),
+
+		// Timeout settings for http.Server
+		// https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
+		ReadTimeout:  time.Second * 10,
+		WriteTimeout: time.Second * 60,
+		IdleTimeout:  time.Second * 120,
+
+		// Centralized network configuration
+		RunMaster: false,
+		/* Developer options */
+
+		// Enable cpu profiling
+		ProfileCPU: false,
+		// Where the file is written to
+		ProfileCPUFile: node.ProfileCPUFile,
+		// HTTP profiling interface (see http://golang.org/pkg/net/http/pprof/)
+		HTTPProf: false,
+	}
+
+	nodeConfig.ApplyConfigMode(mode)
+
+	return nodeConfig
 }
 
 func (c *Config) postProcess() {
@@ -270,6 +368,27 @@ func (c *Config) register() {
 	flag.BoolVar(&c.Node.Arbitrating, "arbitrating", c.Node.Arbitrating, "Run node in arbitrating mode")
 	flag.StringVar(&c.Node.WalletCryptoType, "wallet-crypto-type", c.Node.WalletCryptoType, "wallet crypto type. Can be sha256-xor or scrypt-chacha20poly1305")
 	flag.BoolVar(&c.Node.Version, "version", false, "show node version")
+}
+
+func (n *NodeConfig) ApplyConfigMode(configMode string) {
+	switch configMode {
+	case "":
+	case "STANDALONE_CLIENT":
+		n.EnableWalletAPI = true
+		n.EnableGUI = true
+		n.EnableSeedAPI = true
+		n.LaunchBrowser = true
+		n.DisableCSRF = false
+		n.DownloadPeerList = true
+		n.RPCInterface = false
+		n.WebInterface = true
+		n.LogToFile = false
+		n.ColorLog = true
+		n.ResetCorruptDB = true
+		n.WebInterfacePort = 0 // randomize web interface port
+	default:
+		panic("Invalid ConfigMode")
+	}
 }
 
 func panicIfError(err error, msg string, args ...interface{}) {

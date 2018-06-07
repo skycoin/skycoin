@@ -31,8 +31,6 @@ func TestNewParameters(t *testing.T) {
 			Port:             6000,
 			PeerListURL:      "https://downloads.skycoin.net/blockchain/peers.txt",
 			WebInterfacePort: 6420,
-			DataDirectory:    "$HOME/.skycoin",
-			ProfileCPUFile:   "skycoin.prof",
 		},
 		Build: BuildParameters{
 			Version: "0.23.1-rc2",

@@ -19,8 +19,6 @@ type NodeParameters struct {
 	PeerListURL         string   `mapstructure:"peer_list_url"`
 	Port                int      `mapstructure:"port"`
 	WebInterfacePort    int      `mapstructure:"web_interface_port"`
-	DataDirectory       string   `mapstructure:"data_directory"`
-	ProfileCPUFile      string   `mapstructure:"profile_cpu_file"`
 	GenesisSignatureStr string   `mapstructure:"genesis_signature_str"`
 	GenesisAddressStr   string   `mapstructure:"genesis_address_str"`
 	BlockchainPubkeyStr string   `mapstructure:"blockchain_pubkey_str"`
@@ -28,6 +26,9 @@ type NodeParameters struct {
 	GenesisTimestamp    uint64   `mapstructure:"genesis_timestamp"`
 	GenesisCoinVolume   uint64   `mapstructure:"genesis_coin_volume"`
 	DefaultConnections  []string `mapstructure:"default_connections"`
+
+	DataDirectory  string
+	ProfileCPUFile string
 }
 
 // VisorParameters are the parameters used to generate parameters.go in visor
@@ -110,8 +111,6 @@ func setDefaults() {
 	viper.SetDefault("node.genesis_coin_volume", 100e12)
 	viper.SetDefault("node.port", 6000)
 	viper.SetDefault("node.web_interface_port", 6420)
-	viper.SetDefault("node.data_directory", "$HOME/.skycoin")
-	viper.SetDefault("node.profile_cpu_file", "skycoin.prof")
 
 	// build defaults
 	viper.SetDefault("build.commit", "")

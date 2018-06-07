@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"text/template"
 
-	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli"
 
 	"github.com/skycoin/skycoin/src/skycoin"
@@ -104,10 +103,6 @@ func createCoinCommand() cli.Command {
 			// -- parse flags -- //
 
 			templateDir := c.String("template-dir")
-			templateDir, err := homedir.Expand(templateDir) // expand ~
-			if err != nil {
-				return err
-			}
 
 			coinTemplateFile := c.String("coin-template-file")
 			visorTemplateFile := c.String("visor-template-file")
@@ -123,11 +118,6 @@ func createCoinCommand() cli.Command {
 
 			configFile := c.String("config-file")
 			configDir := c.String("config-dir")
-
-			configDir, err = homedir.Expand(configDir)
-			if err != nil {
-				return err
-			}
 
 			configFilepath := filepath.Join(configDir, configFile)
 			// check that the config file exists
@@ -187,8 +177,8 @@ func createCoinCommand() cli.Command {
 				PeerListURL:         config.Node.PeerListURL,
 				Port:                config.Node.Port,
 				WebInterfacePort:    config.Node.WebInterfacePort,
-				DataDirectory:       config.Node.DataDirectory,
-				ProfileCPUFile:      config.Node.ProfileCPUFile,
+				DataDirectory:       "$HOME/." + coinName,
+				ProfileCPUFile:      coinName + ".prof",
 				GenesisSignatureStr: config.Node.GenesisSignatureStr,
 				GenesisAddressStr:   config.Node.GenesisAddressStr,
 				BlockchainPubkeyStr: config.Node.BlockchainPubkeyStr,

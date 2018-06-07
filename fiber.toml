@@ -21,8 +21,6 @@ default_connections = [
 peer_list_url = "https://downloads.skycoin.net/blockchain/peers.txt"
 #port = 6000
 #web_interface_port = 6420
-#data_directory = "$HOME/.skycoin"
-#profile_cpu_file = "skycoin.prof
 
 [build]
 version = "0.23.1-rc2"

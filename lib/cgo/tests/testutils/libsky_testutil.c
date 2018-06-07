@@ -290,13 +290,57 @@ GoString * tmp = r;
   *tmp = (*(GoString *) s);
 }
 
-void copySlice(GoSlice_* pdest, GoSlice_* psource, int elem_size){
+int copySlice(GoSlice_* pdest, GoSlice_* psource, int elem_size){
   pdest->len = psource->len;
   pdest->cap = psource->len;
   int size = pdest->len * elem_size;
   pdest->data = malloc(size);
+	if( pdest->data == NULL )
+		return SKY_ERROR;
   registerMemCleanup( pdest->data );
   memcpy(pdest->data, psource->data, size );
+	return SKY_OK;
+}
+
+int cutSlice(GoSlice_* slice, int start, int end, int elem_size, GoSlice_* result){
+	int size = end - start;
+	if( size <= 0)
+		return SKY_ERROR;
+	void* data = malloc(size * elem_size);
+	if( data == NULL )
+		return SKY_ERROR;
+	registerMemCleanup( data );
+	result->data = data;
+	result->len = size;
+	result->cap = size;
+	char* p = slice->data;
+	p += (elem_size * start);
+	memcpy( data, p, elem_size * size );
+	return SKY_OK;
+}
+
+int concatSlices(GoSlice_* slice1, GoSlice_* slice2, int elem_size, GoSlice_* result){
+	int size1 = slice1->len;
+	int size2 = slice2->len;
+	int size = size1 + size2;
+	if (size <= 0)
+		return SKY_ERROR;
+	void* data = malloc(size * elem_size);
+	if( data == NULL )
+		return SKY_ERROR;
+	registerMemCleanup( data );
+	result->data = data;
+	result->len = size;
+	result->cap = size;
+	char* p = data;
+	if(size1 > 0){
+		memcpy( p, slice1->data, size1 * elem_size );
+		p += (elem_size * size1);
+	}
+	if(size2 > 0){
+		memcpy( p, slice2->data, size2 * elem_size );
+	}
+	return SKY_OK;
 }
 
 /*

@@ -20,7 +20,7 @@ char *cr_user_cipher__Address_tostr(cipher__Address *addr1)
 int cr_user_cipher__Address_noteq(cipher__Address *addr1, cipher__Address *addr2){
   if(addr1->Version == addr2->Version)
     return 0;
-  return memcmp((void*)addr1, (void*) addr2, sizeof(cipher__Address)) == 1;
+  return memcmp((void*)addr1, (void*) addr2, sizeof(cipher__Address)) != 0;
 }
 
 int cr_user_GoString_eq(GoString *string1, GoString *string2){
@@ -159,5 +159,19 @@ int cr_user_coin__BlockBody_noteq(coin__BlockBody *b1, coin__BlockBody *b2){
 char *cr_user_coin__BlockBody_tostr(coin__BlockBody *b) {
   char *out;
   cr_asprintf(&out, "(coin__BlockBody) { .data %s, .len %d, .cap %d }", (char*)b->Transactions.data, b->Transactions.len, b->Transactions.cap);
+  return out;
+}
+
+int cr_user_coin__UxOut_eq(coin__UxOut *x1, coin__UxOut *x2){
+	return memcmp(x1, x2, sizeof(coin__UxOut)) == 0;
+}
+
+int cr_user_coin__UxOut_noteq(coin__UxOut *x1, coin__UxOut *x2){
+	return memcmp(x1, x2, sizeof(coin__UxOut)) != 0;
+}
+
+char* cr_user_coin__UxOut_tostr(coin__UxOut *x1){
+  char *out;
+  cr_asprintf(&out, "(coin__UxOut) { %s }", (char*)x1);
   return out;
 }

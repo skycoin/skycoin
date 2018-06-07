@@ -182,7 +182,7 @@ func SKY_coin_UxArray_Sub(_ua *C.coin__UxArray, _other *C.coin__UxArray, _arg1 *
 	ua := *(*coin.UxArray)(unsafe.Pointer(_ua))
 	other := *(*coin.UxArray)(unsafe.Pointer(_other))
 	__arg1 := ua.Sub(other)
-	*_arg1 = *(*C.coin__UxArray)(unsafe.Pointer(&__arg1))
+	copyToGoSlice(reflect.ValueOf(__arg1), _arg1)
 	return
 }
 
@@ -195,6 +195,6 @@ func SKY_coin_UxArray_Add(_ua *C.coin__UxArray, _other *C.coin__UxArray, _arg1 *
 	ua := *(*coin.UxArray)(unsafe.Pointer(_ua))
 	other := *(*coin.UxArray)(unsafe.Pointer(_other))
 	__arg1 := ua.Add(other)
-	*_arg1 = *(*C.coin__UxArray)(unsafe.Pointer(&__arg1))
+	copyToGoSlice(reflect.ValueOf(__arg1), _arg1)
 	return
 }

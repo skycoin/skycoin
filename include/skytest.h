@@ -50,7 +50,11 @@ int compareJsonValuesWithIgnoreList(json_value* value1, json_value* value2, cons
 
 int parseBoolean(const char* str, int length);
 
-void copySlice(GoSlice_* pdest, GoSlice_* psource, int elem_size);
+int copySlice(GoSlice_* pdest, GoSlice_* psource, int elem_size);
+
+int cutSlice(GoSlice_* slice, int start, int end, int elem_size, GoSlice_* result);
+
+int concatSlices(GoSlice_* slice1, GoSlice_* slice2, int elem_size, GoSlice_* result);
 
 void setup(void);
 void teardown(void);

@@ -1,0 +1,9 @@
+<app-transaction-info
+  [transaction]="transaction"
+  [isPreview]="true"
+></app-transaction-info>
+
+<div class="-buttons">
+  <app-button #backButton (action)="back()">{{ 'send.back-button' | translate }}</app-button>
+  <app-button #sendButton (action)="send()" class="primary">{{ 'send.send-button' | translate }}</app-button>
+</div>

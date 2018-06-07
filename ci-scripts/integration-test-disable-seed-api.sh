@@ -2,9 +2,15 @@
 # Runs "disable-seed-api"-mode tests against a skycoin node configured with -enable-seed-api=false
 # and /api/v1/wallet/seed api endpoint should return 403 forbidden error.
 
-#Set Script Name variable
+# Set Script Name variable
 SCRIPT=`basename ${BASH_SOURCE[0]}`
-PORT="46422"
+
+# Find unused port
+PORT="1024"
+while $(lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null) ; do
+    PORT=$((PORT+1))
+done
+
 RPC_PORT="$PORT"
 HOST="http://127.0.0.1:$PORT"
 RPC_ADDR="http://127.0.0.1:$RPC_PORT"

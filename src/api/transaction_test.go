@@ -28,6 +28,7 @@ import (
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 func createUnconfirmedTxn(t *testing.T) visor.UnconfirmedTxn {
@@ -66,6 +67,38 @@ func makeTransaction(t *testing.T) coin.Transaction {
 	tx.PushOutput(makeAddress(), 5e6, 50)
 	tx.UpdateHeader()
 	return tx
+}
+
+type transactionAndInputs struct {
+	txn    coin.Transaction
+	inputs []wallet.UxBalance
+}
+
+func newVerifyTxnResponseJSON(t *testing.T, txn *coin.Transaction, inputs []wallet.UxBalance, isTxnConfirmed bool) string {
+	ctxn := newCreatedTransaction(txn, inputs)
+	rsp := VerifyTxnResponse{
+		Transaction: ctxn,
+		Confirmed:   isTxnConfirmed,
+	}
+	v, err := json.MarshalIndent(rsp, "", "    ")
+	require.NoError(t, err)
+	return string(v)
+}
+
+func prepareTxnAndInputs(t *testing.T) transactionAndInputs {
+	txn := coin.Transaction{}
+	ux, s := makeUxOutWithSecret(t)
+
+	txn.PushInput(ux.Hash())
+	txn.SignInputs([]cipher.SecKey{s})
+	txn.PushOutput(makeAddress(), 1e6, 50)
+	txn.PushOutput(makeAddress(), 5e6, 50)
+	txn.UpdateHeader()
+
+	input, err := wallet.NewUxBalance(uint64(utc.UnixNow()), ux)
+	require.NoError(t, err)
+
+	return transactionAndInputs{txn: txn, inputs: []wallet.UxBalance{input}}
 }
 
 func makeUxBodyWithSecret(t *testing.T) (coin.UxBody, cipher.SecKey) {
@@ -329,13 +362,6 @@ func TestInjectTransaction(t *testing.T) {
 	invalidTxBodyJSON, err := json.Marshal(b)
 	require.NoError(t, err)
 
-	invalidTxEmptyAddress := makeTransactionWithEmptyAddressOutput(t)
-	invalidTxEmptyAddressBody := &httpBody{
-		Rawtx: hex.EncodeToString(invalidTxEmptyAddress.Serialize()),
-	}
-	invalidTxEmptyAddressBodyJSON, err := json.Marshal(invalidTxEmptyAddressBody)
-	require.NoError(t, err)
-
 	tt := []struct {
 		name                   string
 		method                 string
@@ -380,13 +406,6 @@ func TestInjectTransaction(t *testing.T) {
 			status:   http.StatusBadRequest,
 			err:      "400 Bad Request - Invalid transaction: Deserialization failed",
 			httpBody: string(invalidTxBodyJSON),
-		},
-		{
-			name:     "400 - txn sends to empty address",
-			method:   http.MethodPost,
-			status:   http.StatusBadRequest,
-			err:      "400 Bad Request - Transaction.Out contains an output sending to an empty address",
-			httpBody: string(invalidTxEmptyAddressBodyJSON),
 		},
 		{
 			name:                   "503 - injectTransactionError",
@@ -811,6 +830,200 @@ func TestGetTransactions(t *testing.T) {
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.httpResponse, msg, tc.name)
+			}
+		})
+	}
+}
+
+func TestVerifyTransaction(t *testing.T) {
+	txnAndInputs := prepareTxnAndInputs(t)
+	type httpBody struct {
+		EncodedTransaction string `json:"encoded_transaction"`
+	}
+
+	// validTxnHTTPResponse := HTTPResponse{
+	// 	Data: newCreatedTransactionJSON(t, &txnAndInputs.Transaction, txnAndInputs.inputs),
+	// }
+
+	validTxBody := &httpBody{EncodedTransaction: hex.EncodeToString(txnAndInputs.txn.Serialize())}
+	validTxBodyJSON, err := json.Marshal(validTxBody)
+	require.NoError(t, err)
+
+	b := &httpBody{EncodedTransaction: hex.EncodeToString(testutil.RandBytes(t, 128))}
+	invalidTxBodyJSON, err := json.Marshal(b)
+	require.NoError(t, err)
+
+	invalidTxEmptyAddress := makeTransactionWithEmptyAddressOutput(t)
+	invalidTxEmptyAddressBody := &httpBody{
+		EncodedTransaction: hex.EncodeToString(invalidTxEmptyAddress.Serialize()),
+	}
+	invalidTxEmptyAddressBodyJSON, err := json.Marshal(invalidTxEmptyAddressBody)
+	require.NoError(t, err)
+
+	type verifyTxnVerboseResult struct {
+		Uxouts         []wallet.UxBalance
+		IsTxnConfirmed bool
+		Err            error
+	}
+
+	tt := []struct {
+		name                          string
+		method                        string
+		contentType                   string
+		status                        int
+		err                           string
+		httpBody                      string
+		gatewayVerifyTxnVerboseArg    coin.Transaction
+		gatewayVerifyTxnVerboseResult verifyTxnVerboseResult
+		httpResponse                  HTTPResponse
+		csrfDisabled                  bool
+	}{
+		{
+			name:   "405",
+			method: http.MethodGet,
+			status: http.StatusMethodNotAllowed,
+			err:    "405 Method Not Allowed",
+			gatewayVerifyTxnVerboseArg: txnAndInputs.txn,
+		},
+		{
+			name:        "400 - EOF",
+			method:      http.MethodPost,
+			contentType: "application/json",
+			status:      http.StatusBadRequest,
+			httpResponse: HTTPResponse{
+				Error: "EOF",
+			},
+		},
+		{
+			name:        "415 - Unsupported Media Type",
+			method:      http.MethodPost,
+			contentType: "",
+			status:      http.StatusUnsupportedMediaType,
+			err:         "415 Unsupported Media Type",
+		},
+		{
+			name:        "400 - Invalid transaction: Deserialization failed",
+			method:      http.MethodPost,
+			contentType: "application/json",
+			status:      http.StatusBadRequest,
+			httpBody:    `{"wrongKey":"wrongValue"}`,
+			httpResponse: HTTPResponse{
+				Error: "decode transaction failed: Invalid transaction: Deserialization failed",
+			},
+		},
+		{
+			name:        "400 - encoding/hex: odd length hex string",
+			method:      http.MethodPost,
+			contentType: "application/json",
+			status:      http.StatusBadRequest,
+			httpBody:    `{"encoded_transaction":"aab"}`,
+			httpResponse: HTTPResponse{
+				Error: "decode transaction failed: encoding/hex: odd length hex string",
+			},
+		},
+		{
+			name:        "400 - deserialization error",
+			method:      http.MethodPost,
+			contentType: "application/json",
+			status:      http.StatusBadRequest,
+			httpBody:    string(invalidTxBodyJSON),
+			httpResponse: HTTPResponse{
+				Error: "decode transaction failed: Invalid transaction: Deserialization failed",
+			},
+		},
+		{
+			name:                       "422 - txn sends to empty address",
+			method:                     http.MethodPost,
+			contentType:                "application/json",
+			status:                     http.StatusUnprocessableEntity,
+			httpBody:                   string(invalidTxEmptyAddressBodyJSON),
+			gatewayVerifyTxnVerboseArg: invalidTxEmptyAddress,
+			gatewayVerifyTxnVerboseResult: verifyTxnVerboseResult{
+				Err: visor.NewErrTxnViolatesUserConstraint(errors.New("Transaction.Out contains an output sending to an empty address")),
+			},
+			httpResponse: HTTPResponse{
+				Error: "Transaction violates user constraint: Transaction.Out contains an output sending to an empty address",
+			},
+		},
+		{
+			name:                       "500 - internal server error",
+			method:                     http.MethodPost,
+			contentType:                "application/json",
+			status:                     http.StatusInternalServerError,
+			httpBody:                   string(validTxBodyJSON),
+			gatewayVerifyTxnVerboseArg: txnAndInputs.txn,
+			gatewayVerifyTxnVerboseResult: verifyTxnVerboseResult{
+				Err: errors.New("verify transaction failed"),
+			},
+			err: "500 Internal Server Error - verify transaction failed",
+		},
+		{
+			name:                       "422 - txn is confirmed",
+			method:                     http.MethodPost,
+			contentType:                "application/json",
+			status:                     http.StatusUnprocessableEntity,
+			httpBody:                   string(validTxBodyJSON),
+			gatewayVerifyTxnVerboseArg: txnAndInputs.txn,
+			gatewayVerifyTxnVerboseResult: verifyTxnVerboseResult{
+				Uxouts:         txnAndInputs.inputs,
+				IsTxnConfirmed: true,
+			},
+			httpResponse: HTTPResponse{
+				Data: newVerifyTxnResponseJSON(t, &txnAndInputs.txn, txnAndInputs.inputs, true),
+			},
+		},
+		{
+			name:                       "200",
+			method:                     http.MethodPost,
+			contentType:                "application/json",
+			status:                     http.StatusOK,
+			httpBody:                   string(validTxBodyJSON),
+			gatewayVerifyTxnVerboseArg: txnAndInputs.txn,
+			gatewayVerifyTxnVerboseResult: verifyTxnVerboseResult{
+				Uxouts: txnAndInputs.inputs,
+			},
+			httpResponse: HTTPResponse{
+				Data: newVerifyTxnResponseJSON(t, &txnAndInputs.txn, txnAndInputs.inputs, false),
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			endpoint := "/api/v1/transaction/verify"
+			gateway := NewGatewayerMock()
+			gateway.On("VerifyTxnVerbose", &tc.gatewayVerifyTxnVerboseArg).Return(tc.gatewayVerifyTxnVerboseResult.Uxouts,
+				tc.gatewayVerifyTxnVerboseResult.IsTxnConfirmed, tc.gatewayVerifyTxnVerboseResult.Err)
+
+			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
+			require.NoError(t, err)
+			req.Header.Set("Content-Type", tc.contentType)
+
+			csrfStore := &CSRFStore{
+				Enabled: !tc.csrfDisabled,
+			}
+			if csrfStore.Enabled {
+				setCSRFParameters(csrfStore, tokenValid, req)
+			} else {
+				setCSRFParameters(csrfStore, tokenInvalid, req)
+			}
+
+			rr := httptest.NewRecorder()
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
+				tc.name, status, tc.status)
+
+			switch status {
+			case 405, 415, 500:
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), tc.name)
+			default:
+				var rsp HTTPResponse
+				err := json.NewDecoder(rr.Body).Decode(&rsp)
+				require.NoError(t, err)
+				require.Equal(t, tc.httpResponse, rsp, tc.name)
 			}
 		})
 	}

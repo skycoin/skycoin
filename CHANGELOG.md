@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `USE_CSRF` environment variable for CLI, if the remote node has CSRF enabled (CSRF is enabled by default, use `-disable-csrf` to disable)
 - `cli showConfig` command to echo the cli's configuration back to the user
 - Option to generate 12/24 word seed when creating new wallet
+- libskycoin 0.0.1 released with bindings for cipher/address, cipher/hash, cipher/crypto, cli/create_rawtx
 - Add `-version` flag to show node version
 - Add transaction verification step to "Send" page
 - Add more details about transaction in transaction history
@@ -25,6 +26,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `-reset-corrupt-db` option (default false) will verify the database integrity during startup and reset the db if a problem is found
 - `GET /explorer/address`: add `fee` to transaction objects and `calculated_hours` to transaction inputs
 - Test data generator and test suite for verification of alternative `cipher` implementations
+- Add `POST /transaction/verify` API endpoint
+- Add advanced spend UI
+- Add `ignore_unconfirmed` option to `POST /api/v1/wallet/transaction` to allow transactions to be created or spent even if there are unspent outputs in the unconfirmed pool.
+- Add `uxouts` to `POST /api/v1/wallet/transaction`, to allow specific unspent outputs to be used in a transaction.
+- Add Dockerfile in docker/images/dev-cli to build a docker image suitable for development.
 
 ### Fixed
 
@@ -40,12 +46,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `GET /api/v1/wallet/balance` and `GET /api/v1/balance` now return an address balance list as well.
 - API endpoints are prefixed with `/api/v1/`. API endpoints without the `/api/v1/` prefix are deprecated but can be enabled with `-enable-unversioned-api`. Please migrate to use `/api/v1/` prefix in URLs.
 - Enable message protocol upgrade
+- `change_address` is no longer required in `POST /api/v1/wallet/transaction`. If not provided, `change_address` will default to one of the addresses being spent from.
+- In `POST /api/v1/wallet/transaction`, for `auto` type `share` mode requests, if extra coinhours remain after applying the `share_factor` but change cannot be made due to insufficient coins, the `share_factor` will switch to `1.0`.
+- Support automatic port allocation of the API interface by specifying port 0
+- The web interface / API port is randomly allocated for the precompiled standalone client and electron client released on the website.
+  If you are using the CLI tool or another API client to communicate with the standalone client, use `-web-interface-port=6420` to continue using port 6420.
+  If the program is run from source (e.g. `go run`, `run.sh`, `make run`) there is no change, the API will still be on port 6420.
+- Change number of outgoing connections to 8 from 16
 
 ### Removed
 
 - Remove `-rpc-interface-addr`, `-rpc-interface-port` options.  The RPC interface is now on default port `6420` with the REST API.
 - Remove `-rpc-thread-num` option
 - Remove `-connect-to` option
+- Remove `-print-web-interface-address` option
 - Remove support for go1.9
 
 ## [0.23.0] - 2018-04-22

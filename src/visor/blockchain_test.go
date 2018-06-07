@@ -78,7 +78,7 @@ func makeSpendTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr ci
 type fakeChainStore struct {
 	len    uint64
 	blocks []coin.SignedBlock
-	up     blockdb.UnspentPool
+	up     blockdb.UnspentPooler
 }
 
 func (fcs *fakeChainStore) Head(tx *dbutil.Tx) (*coin.SignedBlock, error) {
@@ -130,7 +130,7 @@ func (fcs *fakeChainStore) GetSignedBlockBySeq(tx *dbutil.Tx, seq uint64) (*coin
 	return &fcs.blocks[seq], nil
 }
 
-func (fcs *fakeChainStore) UnspentPool() blockdb.UnspentPool {
+func (fcs *fakeChainStore) UnspentPool() blockdb.UnspentPooler {
 	return nil
 }
 

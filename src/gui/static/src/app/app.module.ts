@@ -51,6 +51,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatSliderModule } from '@angular/material';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { HttpClientModule } from '@angular/common/http';
 import { AppService } from './services/app.service';
@@ -63,8 +64,12 @@ import { SeedModalComponent } from './components/pages/settings/backup/seed-moda
 import { OnboardingComponent } from './components/pages/onboarding/onboarding.component';
 import { DontsavepasswordDirective } from './directives/dontsavepassword.directive';
 import { SendFormComponent } from './components/pages/send-skycoin/send-form/send-form.component';
-import { SendVerifyComponent } from './components/pages/send-skycoin/send-verify/send-verify.component';
-import { TransactionInfoComponent } from './components/pages/send-skycoin/send-verify/transaction-info/transaction-info.component';
+import { SendVerifyComponent } from './components/pages/send-skycoin/send-preview/send-preview.component';
+import { TransactionInfoComponent } from './components/pages/send-skycoin/send-preview/transaction-info/transaction-info.component';
+import { SendFormAdvancedComponent } from './components/pages/send-skycoin/send-form-advanced/send-form-advanced.component';
+import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
+import { AppTranslateLoader } from './app.translate-loader';
+import { NavBarService } from './services/nav-bar.service';
 
 
 const ROUTES = [
@@ -162,6 +167,7 @@ const ROUTES = [
     SendFormComponent,
     SendVerifyComponent,
     TransactionInfoComponent,
+    SendFormAdvancedComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,
@@ -195,14 +201,22 @@ const ROUTES = [
     MatToolbarModule,
     MatTooltipModule,
     MatCheckboxModule,
+    MatSliderModule,
     NoopAnimationsModule,
     ReactiveFormsModule,
     RouterModule.forRoot(ROUTES, { useHash: true }),
+    TranslateModule.forRoot({
+      loader: {
+        provide: TranslateLoader,
+        useClass: AppTranslateLoader,
+      },
+    }),
   ],
   providers: [
     ApiService,
     AppService,
     BlockchainService,
+    NavBarService,
     NetworkService,
     PriceService,
     PurchaseService,

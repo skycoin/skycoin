@@ -136,12 +136,12 @@ func createCoinCommand() cli.Command {
 			}
 
 			coinDir := fmt.Sprintf("./cmd/%s", coinName)
-			if _, err := os.Stat(coinDir); os.IsNotExist(err) {
-				err = os.Mkdir(coinDir, 0755)
-				if err != nil {
-					log.Errorf("failed to create new coin directory %s", coinDir)
-					return err
-				}
+			// create new coin directory
+			// MkdirAll does not error out if the directory already exists
+			err = os.MkdirAll(coinDir, 0755)
+			if err != nil {
+				log.Errorf("failed to create new coin directory %s", coinDir)
+				return err
 			}
 
 			// we have to always create a new file otherwise the templating gives an error

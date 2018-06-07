@@ -1,14 +1,12 @@
 package main
 
 import (
-	_ "net/http/pprof"
-	"time"
-
-	"github.com/skycoin/skycoin/src/skycoin"
-	"github.com/skycoin/skycoin/src/util/logging"
-	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/wallet"
+    _ "net/http/pprof"
+    "github.com/skycoin/skycoin/src/skycoin"
+    "github.com/skycoin/skycoin/src/util/logging"
+    "github.com/skycoin/skycoin/src/visor"
 )
+
 
 var (
 	// Version of the node. Can be set by -ldflags

@@ -290,6 +290,15 @@ GoString * tmp = r;
   *tmp = (*(GoString *) s);
 }
 
+void copySlice(GoSlice_* pdest, GoSlice_* psource, int elem_size){
+  pdest->len = psource->len;
+  pdest->cap = psource->len;
+  int size = pdest->len * elem_size;
+  pdest->data = malloc(size);
+  registerMemCleanup( pdest->data );
+  memcpy(pdest->data, psource->data, size );
+}
+
 /*
 json_value *loadGoldenFile_Cli(const char *file) {
   char path[STRING_SIZE];

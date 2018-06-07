@@ -1,0 +1,40 @@
+typedef struct{
+    GoUint32_ Length;
+    GoUint8_ Type;
+    GoString_ TxID;
+    GoString_ InnerHash;
+    GoString_ Fee;
+    GoSlice_  Sigs;
+    GoSlice_  In;
+    GoSlice_  Out;
+} api__CreatedTransaction;
+typedef struct{
+    GoString_ UxID;
+    GoString_ Address;
+    GoString_ Coins;
+    GoString_ Hours;
+} api__CreatedTransactionOutput;
+typedef struct{
+    GoString_ UxID;
+    GoString_ Address;
+    GoString_ Coins;
+    GoString_ Hours;
+    GoString_ CalculatedHours;
+    GoUint64_ Time;
+    GoUint64_ Block;
+    GoString_ TxID;
+} api__CreatedTransactionInput;
+typedef struct{
+    GoString_ ID;
+    GoSlice_  Addresses;
+    GoString_ Password;
+} api__createTransactionRequestWallet;
+typedef struct{
+    api__CreatedTransaction Transaction;
+    GoString_ EncodedTransaction;
+} api__CreateTransactionResponse;
+typedef struct{
+    httphelper__Address Address;
+    httphelper__Coins Coins;
+    httphelper__Hours * Hours;
+} api__receiver;

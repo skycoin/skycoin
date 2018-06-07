@@ -9,7 +9,7 @@ import { ISubscription } from 'rxjs/Subscription';
   styleUrls: ['./pending-transactions.component.scss'],
 })
 export class PendingTransactionsComponent implements OnInit, OnDestroy {
-  transactions: any[];
+  transactions: any[] = [];
 
   private transactionsSubscription: ISubscription;
 

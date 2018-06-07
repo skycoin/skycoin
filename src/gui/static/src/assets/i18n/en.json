@@ -14,7 +14,8 @@
     "fetch-version": "Unable to fetch latest release version from Github",
     "incorrect-password": "Incorrect password",
     "api-disabled": "API disabled",
-    "no-wallet": "Wallet does not exist"
+    "no-wallet": "Wallet does not exist",
+    "no-outputs": "No unspent outputs"
   },
 
   "title": {

@@ -12,7 +12,7 @@
 
 TestSuite(coin_block, .init = setup, .fini = teardown);
 
-int newBlock(cipher__SHA256* uxHash, coin__Block* newBlock){
+int makeNewBlock(cipher__SHA256* uxHash, coin__Block* newBlock){
   int result;
   cipher__SHA256 bodyhash;
   coin__Block block;
@@ -52,6 +52,7 @@ Test(coin_block, TestNewBlock) {
 
   result = SKY_cipher_RandByte( 128, (coin__UxArray*)&slice );
   cr_assert(result == SKY_OK, "SKY_cipher_RandByte failed");
+  registerMemCleanup( slice.data );
   result = SKY_cipher_SumSHA256( slice, &hash );
   cr_assert(result == SKY_OK, "SKY_cipher_SumSHA256 failed");
 
@@ -79,4 +80,52 @@ Test(coin_block, TestNewBlock) {
   body.Transactions.len = transactions.len;
   body.Transactions.cap = transactions.cap;
   cr_assert( eq(type(coin__BlockBody), newBlock.Body, body) );
+}
+
+Test(coin_block, TestBlockHashHeader){
+  int result;
+  coin__Block block;
+  GoSlice slice;
+  memset(&slice, 0, sizeof(GoSlice));
+  cipher__SHA256 hash;
+
+  result = SKY_cipher_RandByte( 128, (coin__UxArray*)&slice );
+  cr_assert(result == SKY_OK, "SKY_cipher_RandByte failed");
+  registerMemCleanup( slice.data );
+  result = SKY_cipher_SumSHA256( slice, &hash );
+  cr_assert(result == SKY_OK, "SKY_cipher_SumSHA256 failed");
+  result = makeNewBlock( &hash, &block );
+  cr_assert(result == SKY_OK, "makeNewBlock failed");
+
+  cipher__SHA256 hash1, hash2;
+  result = SKY_coin_Block_HashHeader(&block, &hash1);
+  cr_assert(result == SKY_OK, "SKY_coin_Block_HashHeader failed");
+  result = SKY_coin_BlockHeader_Hash(&block.Head, &hash2);
+  cr_assert(result == SKY_OK, "SKY_coin_BlockHeader_Hash failed");
+  cr_assert( eq( u8[sizeof(cipher__SHA256)],hash1, hash2) );
+  memset(&hash2, 0, sizeof(cipher__SHA256));
+  cr_assert( not( eq( u8[sizeof(cipher__SHA256)],hash1, hash2) ) );
+}
+
+Test(coin_block, TestBlockHashBody){
+  int result;
+  coin__Block block;
+  GoSlice slice;
+  memset(&slice, 0, sizeof(GoSlice));
+  cipher__SHA256 hash;
+
+  result = SKY_cipher_RandByte( 128, (coin__UxArray*)&slice );
+  cr_assert(result == SKY_OK, "SKY_cipher_RandByte failed");
+  registerMemCleanup( slice.data );
+  result = SKY_cipher_SumSHA256( slice, &hash );
+  cr_assert(result == SKY_OK, "SKY_cipher_SumSHA256 failed");
+  result = makeNewBlock( &hash, &block );
+  cr_assert(result == SKY_OK, "makeNewBlock failed");
+
+  cipher__SHA256 hash1, hash2;
+  result = SKY_coin_Block_HashBody(&block, &hash1);
+  cr_assert(result == SKY_OK, "SKY_coin_BlockBody_Hash failed");
+  result = SKY_coin_BlockBody_Hash(&block.Body, &hash2);
+  cr_assert(result == SKY_OK, "SKY_coin_BlockBody_Hash failed");
+  cr_assert( eq( u8[sizeof(cipher__SHA256)],hash1, hash2) );
 }

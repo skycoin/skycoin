@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Reduce connection disconnects, improves syncing
 - Fix #1171, update CLI to support wallet encryption
 - Use `bolt.Tx` correctly for read operations
+- Docker images for `arm32v5` and `ar32v7` architectures by using busybox as base in docker/images/mainnet/Dockerfile and docker/images/mainnet/hooks/
 
 ### Changed
 

@@ -8,6 +8,7 @@
 #include "skyerrors.h"
 #include "skystring.h"
 #include "skytest.h"
+#include "skycriterion.h"
 #include "transutil.h"
 
 TestSuite(coin_outputs, .init = setup, .fini = teardown);

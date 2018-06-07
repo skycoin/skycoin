@@ -10,6 +10,7 @@
 #include "skystring.h"
 #include "skytest.h"
 #include "transutil.h"
+#include "skycriterion.h"
 #include "time.h"
 
 TestSuite(coin_block, .init = setup, .fini = teardown);

@@ -1,0 +1,82 @@
+package main
+
+import (
+    _ "net/http/pprof"
+    "github.com/skycoin/skycoin/src/skycoin"
+    "github.com/skycoin/skycoin/src/util/logging"
+    "github.com/skycoin/skycoin/src/visor"
+)
+
+
+var (
+	// Version of the node. Can be set by -ldflags
+	Version = "{{.Version}}"
+	// Commit ID. Can be set by -ldflags
+	Commit = ""
+	// Branch name. Can be set by -ldflags
+	Branch = ""
+	// ConfigMode (possible values are "", "STANDALONE_CLIENT").
+	// This is used to change the default configuration.
+	// Can be set by -ldflags
+	ConfigMode = ""
+
+	logger = logging.MustGetLogger("main")
+
+	// GenesisSignatureStr hex string of genesis signature
+	GenesisSignatureStr = "{{.GenesisSignatureStr}}"
+	// GenesisAddressStr genesis address string
+	GenesisAddressStr = "{{.GenesisAddressStr}}"
+	// BlockchainPubkeyStr pubic key string
+	BlockchainPubkeyStr = "{{.BlockchainPubkeyStr}}"
+	// BlockchainSeckeyStr empty private key string
+	BlockchainSeckeyStr = "{{.BlockchainSeckeyStr}}"
+
+	// GenesisTimestamp genesis block create unix time
+	GenesisTimestamp uint64 = {{.GenesisTimestamp}}
+	// GenesisCoinVolume represents the coin capacity
+	GenesisCoinVolume uint64 = {{.GenesisCoinVolume}}
+
+	// DefaultConnections the default trust node addresses
+	DefaultConnections = []string{
+    {{- range $index, $address := .DefaultConnections}}
+        "{{$address -}}",
+    {{- end}}
+	}
+)
+
+func main() {
+    // get node config
+    nodeConfig := skycoin.NewNodeConfig(ConfigMode, skycoin.NodeParameters{
+        GenesisSignatureStr: GenesisSignatureStr,
+        GenesisAddressStr:   GenesisAddressStr,
+        GenesisCoinVolume:   GenesisCoinVolume,
+        GenesisTimestamp:    GenesisTimestamp,
+        BlockchainPubkeyStr: BlockchainPubkeyStr,
+        BlockchainSeckeyStr: BlockchainSeckeyStr,
+        DefaultConnections:  DefaultConnections,
+        PeerListURL:         "{{.PeerListURL}}",
+        Port:                {{.Port}},
+        WebInterfacePort:    {{.WebInterfacePort}},
+        DataDirectory:       "{{.DataDirectory}}",
+        ProfileCPUFile:      "{{.ProfileCPUFile}}",
+    })
+
+    // create a new fiber coin instance
+    coin := skycoin.NewCoin(
+        skycoin.Config{
+            Node: *nodeConfig,
+            Build: visor.BuildInfo{
+                Version: Version,
+                Commit:  Commit,
+                Branch:  Branch,
+            },
+        },
+        logger,
+    )
+
+    // parse config values
+    coin.ParseConfig()
+
+    // run fiber coin node
+    coin.Run()
+}

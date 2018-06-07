@@ -24,3 +24,4 @@ peer_list_url = "https://downloads.skycoin.net/blockchain/peers.txt"
 version = "0.23.1-rc2"
 commit = "0aab9bf7730827d6fd11beb0d02096b40cea1872"
 branch = "test-branch"
+

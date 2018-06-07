@@ -17,6 +17,26 @@ import (
 */
 import "C"
 
+//export SKY_coin_NewBlock
+func SKY_coin_NewBlock(_b *C.coin__Block, _currentTime uint64, _hash *C.cipher__SHA256, _txns *C.coin__Transactions, _fee uint64, _arg2 *C.coin__Block) (____error_code uint32) {
+	feeCalculator := func(t *coin.Transaction) (uint64, error) {
+		return _fee, nil
+	}
+
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	b := *(*coin.Block)(unsafe.Pointer(_b))
+	hash := *(*cipher.SHA256)(unsafe.Pointer(_hash))
+	txns := *(*coin.Transactions)(unsafe.Pointer(_txns))
+	__arg2, ____return_err := coin.NewBlock(b, _currentTime, hash, txns, feeCalculator)
+	if ____return_err == nil {
+		*_arg2 = *(*C.coin__Block)(unsafe.Pointer(__arg2))
+	}
+	return
+}
+
 //export SKY_coin_SignedBlock_VerifySignature
 func SKY_coin_SignedBlock_VerifySignature(_b *C.coin__SignedBlock, _pubkey *C.cipher__PubKey) (____error_code uint32) {
 	____error_code = 0

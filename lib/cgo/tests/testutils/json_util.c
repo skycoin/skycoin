@@ -32,20 +32,23 @@ int json_set_string(json_value* value, const char* new_string_value){
 	return 0;
 }
 
-int compareJsonValues(json_value* value1, json_value* value2);
+int _compareJsonValues(json_value* value1, json_value* value2, const char* ignore);
 
-int compareJsonObjects(json_value* value1, json_value* value2){
+int compareJsonObjects(json_value* value1, json_value* value2, 
+						const char* ignore){
 	int length1 = value1->u.object.length;
 	int length2 = value2->u.object.length;
-	if( length1 != length2 )
-		return 0;
+	/*if( length1 != length2 )
+		return 0;*/
 	for (int x = 0; x < length1; x++) {
 		char* name = value1->u.object.values[x].name;
+		if( ignore != NULL && strcmp( ignore, name ) == 0)
+			continue;
 		int found = 0;
 		for( int y = 0; y < length2; y++){
 			if( strcmp( value2->u.object.values[y].name, name ) == 0){
-				if( !compareJsonValues( value1->u.object.values[x].value, 
-								value2->u.object.values[y].value ) )
+				if( !_compareJsonValues( value1->u.object.values[x].value,
+								value2->u.object.values[y].value, ignore )  )
 					return 0;
 				found = 1;
 				break;
@@ -57,19 +60,20 @@ int compareJsonObjects(json_value* value1, json_value* value2){
 	return 1;
 }
 
-int compareJsonArrays(json_value* value1, json_value* value2){
+int compareJsonArrays(json_value* value1, json_value* value2, const char* ignore){
 	int length1 = value1->u.array.length;
 	int length2 = value2->u.array.length;
 	if( length1 != length2 )
 		return 0;
 	for (int x = 0; x < length1; x++) {
-		if( !compareJsonValues(value1->u.array.values[x], value2->u.array.values[x]) )
+		if( !_compareJsonValues(value1->u.array.values[x], 
+				value2->u.array.values[x], ignore) )
 			return 0;
 	}
 	return 1;
 }
 
-int compareJsonValues(json_value* value1, json_value* value2){
+int _compareJsonValues(json_value* value1, json_value* value2, const char* ignore){
 	if( value1 == NULL && value2 == NULL)
 		return 1;
 	if( value1 == NULL || value2 == NULL)
@@ -80,9 +84,9 @@ int compareJsonValues(json_value* value1, json_value* value2){
 		case json_none:
 			return 1;
 		case json_object:
-			return compareJsonObjects(value1, value2);
+			return compareJsonObjects(value1, value2, ignore);
 		case json_array:
-			return compareJsonArrays(value1, value2);
+			return compareJsonArrays(value1, value2, ignore);
 		case json_integer:
 			return value1->u.integer == value2->u.integer;
 		case json_double:
@@ -95,6 +99,14 @@ int compareJsonValues(json_value* value1, json_value* value2){
 	return 1;
 }
 
+int compareJsonValues(json_value* value1, json_value* value2){
+	return _compareJsonValues(value2, value1, NULL);
+}
+
+int compareJsonValuesWithIgnoreList(json_value* value1, json_value* value2, const char* ignoreList){
+	return _compareJsonValues(value2, value1, ignoreList);
+}
+
 
 json_value* get_json_value_not_strict(json_value* node, const char* path,
 							json_type type, int allow_null){
@@ -102,7 +114,7 @@ json_value* get_json_value_not_strict(json_value* node, const char* path,
 	const char* p = strchr(path, '/');
 	if( p == NULL )
 		n = strlen(path);
-	else 
+	else
 		n = p - path;
 	if( n > 0 ) {
 		if( node->type == json_object){
@@ -112,11 +124,11 @@ json_value* get_json_value_not_strict(json_value* node, const char* path,
 				json_value* value = entry->value;
 				if( strncmp( path, name, n ) == 0){
 					if( p == NULL){
-						if( value->type == type || 
+						if( value->type == type ||
 								(allow_null && value->type == json_null))
 							return value;
 					}else
-						return get_json_value_not_strict( 
+						return get_json_value_not_strict(
 							value, p + 1, type, allow_null);
 				}
 			}
@@ -131,4 +143,3 @@ json_value* get_json_value(json_value* node, const char* path,
 							json_type type){
 	get_json_value_not_strict(node, path, type, 1);
 }
-

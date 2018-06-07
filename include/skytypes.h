@@ -59,11 +59,13 @@ typedef double GoFloat64_;
 /**
  * Instances of Go `complex` type.
  */
-typedef float _Complex GoComplex64_;
+typedef struct{float real; float imaginary;} GoComplex64_;
 /**
  * Instances of Go `complex` type.
  */
-typedef double _Complex GoComplex128_;
+typedef struct{double real; double imaginary;} GoComplex128_;
+typedef unsigned int BOOL;
+typedef unsigned int error;
 
 /*
   static assertion to make sure the file is being used on architecture
@@ -83,17 +85,97 @@ typedef struct {
  * Instances of Go `map` type.
  */
 typedef void *GoMap_;
+
 /**
  * Instances of Go `chan` channel types.
  */
 typedef void *GoChan_;
+
+/**
+ * Memory handles returned back to the caller and manipulated
+ * internally by API functions. Usually used to avoid type dependencies
+ * with internal implementation types.
+ */
+typedef GoInt64_ Handle;
+
+/**
+ * Webrpc Client Handle
+*/
+typedef Handle WebRpcClient__Handle;
+
+/**
+ * Wallet Handle
+*/
+typedef Handle Wallet__Handle;
+
+/**
+ * ReadableWallet Handle
+*/
+typedef Handle ReadableWallet__Handle;
+
+/**
+ * ReadableEntry Handle
+*/
+typedef Handle ReadableEntry__Handle;
+
+/**
+ * Options Handle
+*/
+typedef Handle Options__Handle;
+
+
+/**
+ * Config Handle
+*/
+typedef Handle Config__Handle;
+
+/**
+ * App Handle
+*/
+typedef Handle App__Handle;
+
+/**
+ * Gcli Context Handle
+*/
+typedef Handle Context__Handle;
+
+/**
+ * API Client Handle
+*/
+typedef Handle Client__Handle;
+
+/**
+ * Wallet Response Handle
+*/
+typedef Handle WalletResponse__Handle;
+
+/**
+ * Create Transaction Request Handle
+*/
+typedef Handle CreateTransactionRequest__Handle;
+
+/**
+ * String Slice Handle
+*/
+typedef Handle Strings__Handle;
+
+/**
+ * Instances of Go `map` type, deal map[string] as handle
+ */
+typedef Handle GoStringMap_;
+
+/**
+ * Wallets Handle, slice of Wallet
+*/
+typedef Handle Wallets__Handle;
+
 /**
  * Instances of Go interface types.
  */
 typedef struct {
   void *t;      ///< Pointer to the information of the concrete Go type
                 ///< bound to this interface reference.
-  void *v;      ///< Pointer to the data corresponding to the value 
+  void *v;      ///< Pointer to the data corresponding to the value
                 ///< bound to this interface type.
 } GoInterface_;
 /**
@@ -107,13 +189,34 @@ typedef struct {
                 ///< size.
 } GoSlice_;
 
+typedef struct {
+	BOOL 		neg;
+	GoSlice_ 	nat;
+} Number;
 
 /**
- * Memory handles returned back to the caller and manipulated
- * internally by API functions. Usually used to avoid type dependencies
- * with internal implementation types.
+ * RIPEMD-160 hash.
  */
-typedef GoInt64_ Handle;
+typedef unsigned char Ripemd160[20];
+
+typedef struct {
+	//TODO: stdevEclipse Define Signature
+	Number R;
+	Number S;
+} Signature;
+
+#include "skytypes.gen.h"
+
+/**
+ * Internal representation of a Skycoin wallet.
+ */
+typedef struct {
+	GoMap_ Meta;        ///< Records items that are not deterministic, like filename, lable, wallet type, secrets, etc.
+	GoSlice_ Entries;   ///< Entries field stores the address entries that are deterministically generated from seed.
+} Wallet;
+
+typedef GoUint8_  poly1305__Mac[16];
+typedef GoUint8_  poly1305__Key[32];
 
 /**
  * Memory handle for internal object retrieving password to read
@@ -141,7 +244,7 @@ typedef Handle Options__Handle;
  * Memory handle to access to Skycoin CLI configuration
  */
 typedef Handle Config__Handle;
-
+/*
 #include "cipher.hash.go.h"
 #include "cipher.crypto.go.h"
 #include "cipher.address.go.h"
@@ -150,6 +253,6 @@ typedef Handle Config__Handle;
 #include "coin.transactions.go.h"
 #include "wallet.entry.go.h"
 #include "wallet.wallet.go.h"
-
+*/
 #endif
 

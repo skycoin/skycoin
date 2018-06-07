@@ -140,5 +140,8 @@ docs/libc/man
 docs/libc/xml
 
 
+*.sublime-workspace
+.angulardoc.json
+
 # Do not ignore Docker Cloud build
 !hooks/build

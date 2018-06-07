@@ -133,14 +133,6 @@ int makeTransactions(GoSlice* transactions, int n){
   return result;
 }
 
-void copySlice(GoSlice_* pdest, GoSlice_* psource, int elem_size){
-  pdest->len = psource->len;
-  pdest->cap = psource->len;
-  int size = pdest->len * elem_size;
-  pdest->data = malloc(size);
-  memcpy(pdest->data, psource->data, size );
-}
-
 void copyTransaction(coin__Transaction* pt1, coin__Transaction* pt2){
   memcpy(pt2, pt1, sizeof(coin__Transaction));
   copySlice(&pt2->Sigs, &pt1->Sigs, sizeof(cipher__Sig));

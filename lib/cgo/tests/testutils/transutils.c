@@ -128,6 +128,9 @@ int makeTransaction(coin__Transaction* ptransaction){
 
 int makeTransactions(GoSlice* transactions, int n){
   void * data = malloc(sizeof(coin__Transaction) * n);
+  if(data == NULL)
+    return SKY_ERROR;
+  registerMemCleanup(data);
   coin__Transaction* ptransaction = (coin__Transaction*)data;
   int i;
   int result = SKY_ERROR; // n == 0  then error

@@ -13,9 +13,272 @@
 
 TestSuite(coin_transactions, .init = setup, .fini = teardown);
 
-Test(coin_outputs, TestTransactionsTruncateBytesTo){
-    //SKY_coin_Transactions_TruncateBytesTo
+Test(coin_transactions, TestTransactionVerifyInput){
+  int result;
+  coin__Transaction tx;
+  makeTransaction( &tx );
+  result = SKY_coin_Transaction_VerifyInput(&tx, NULL);
+  cr_assert( result != SKY_OK );
+  coin__UxArray ux;
+  memset(&ux, 0, sizeof(coin__UxArray));
+  result = SKY_coin_Transaction_VerifyInput(&tx, &ux);
+  cr_assert( result != SKY_OK );
+  memset(&ux, 0, sizeof(coin__UxArray));
+  ux.data = malloc(3 * sizeof(coin__UxOut));
+  cr_assert(ux.data != NULL);
+  registerMemCleanup(ux.data);
+  ux.len = 3;
+  ux.cap = 3;
+  memset(ux.data, 0, 3 * sizeof(coin__UxOut));
+  result = SKY_coin_Transaction_VerifyInput(&tx, &ux);
+  cr_assert( result != SKY_OK );
+
+  coin__UxOut uxOut;
+  cipher__SecKey seckey;
+  cipher__Sig sig;
+  cipher__SHA256 hash;
+
+  result = makeUxOutWithSecret(&uxOut, &seckey);
+  cr_assert( result == SKY_OK );
+  result = makeTransactionFromUxOut(&uxOut, &seckey, &tx);
+  cr_assert( result == SKY_OK );
+  tx.Sigs.data = NULL; tx.Sigs.len = 0; tx.Sigs.cap = 0;
+  ux.data = &uxOut;
+  ux.len = 1; ux.cap = 1;
+  result = SKY_coin_Transaction_VerifyInput(&tx, &ux);
+  cr_assert( result != SKY_OK );
+
+  memset(&sig, 0, sizeof(cipher__Sig));
+  result = makeUxOutWithSecret(&uxOut, &seckey);
+  cr_assert( result == SKY_OK );
+  result = makeTransactionFromUxOut(&uxOut, &seckey, &tx);
+  cr_assert( result == SKY_OK );
+  tx.Sigs.data = &sig; tx.Sigs.len = 1; tx.Sigs.cap = 1;
+  ux.data = &uxOut;
+  ux.len = 1; ux.cap = 1;
+  result = SKY_coin_Transaction_VerifyInput(&tx, &ux);
+  cr_assert( result != SKY_OK );
+
+  //Invalid Tx Inner Hash
+  result = makeUxOutWithSecret(&uxOut, &seckey);
+  cr_assert( result == SKY_OK );
+  result = makeTransactionFromUxOut(&uxOut, &seckey, &tx);
+  cr_assert( result == SKY_OK );
+  memset( tx.InnerHash, 0, sizeof(cipher__SHA256) );
+  ux.data = &uxOut;
+  ux.len = 1; ux.cap = 1;
+  result = SKY_coin_Transaction_VerifyInput(&tx, &ux);
+  cr_assert( result != SKY_OK );
+
+  //Ux hash mismatch
+  result = makeUxOutWithSecret(&uxOut, &seckey);
+  cr_assert( result == SKY_OK );
+  result = makeTransactionFromUxOut(&uxOut, &seckey, &tx);
+  cr_assert( result == SKY_OK );
+  memset( &uxOut, 0, sizeof(coin__UxOut) );
+  ux.data = &uxOut;
+  ux.len = 1; ux.cap = 1;
+  result = SKY_coin_Transaction_VerifyInput(&tx, &ux);
+  cr_assert( result != SKY_OK );
+
+  //Invalid signature
+  result = makeUxOutWithSecret(&uxOut, &seckey);
+  cr_assert( result == SKY_OK );
+  result = makeTransactionFromUxOut(&uxOut, &seckey, &tx);
+  cr_assert( result == SKY_OK );
+  if(tx.Sigs.len > 0){
+    memset(&tx.Sigs.data, 0, sizeof(cipher__Sig));
+  } else {
+    memset(&sig, 0, sizeof(cipher__Sig));
+    tx.Sigs.data = &sig; tx.Sigs.len = 1; tx.Sigs.cap = 1;
+  }
+  ux.data = &uxOut;
+  ux.len = 1; ux.cap = 1;
+  result = SKY_coin_Transaction_VerifyInput(&tx, &ux);
+  cr_assert( result != SKY_OK );
+
+  //Valid
+  result = makeUxOutWithSecret(&uxOut, &seckey);
+  cr_assert( result == SKY_OK );
+  result = makeTransactionFromUxOut(&uxOut, &seckey, &tx);
+  cr_assert( result == SKY_OK );
+  ux.data = &uxOut;
+  ux.len = 1; ux.cap = 1;
+  result = SKY_coin_Transaction_VerifyInput(&tx, &ux);
+  cr_assert( result == SKY_OK );
 }
+
+Test(coin_transactions, TestTransactionHashInner){
+  int result;
+  coin__Transaction tx, tx2;
+  makeTransaction( &tx );
+  cipher__SHA256 hash, nullHash;
+  result = SKY_coin_Transaction_HashInner( &tx, &hash );
+  cr_assert( result == SKY_OK );
+  memset( &nullHash, 0, sizeof(cipher__SHA256) );
+  cr_assert( not ( eq( u8[sizeof(cipher__SHA256)], nullHash, hash) ) );
+
+  // If tx.In is changed, hash should change
+  copyTransaction( &tx, &tx2 );
+  coin__UxOut uxOut;
+  makeUxOut( &uxOut );
+  cipher__SHA256* phash = tx2.In.data;
+  result = SKY_coin_UxOut_Hash( &uxOut, phash );
+  cr_assert( result == SKY_OK );
+  cr_assert( not( eq(  type(coin__Transaction), tx, tx2 ) ) );
+  cipher__SHA256 hash1, hash2;
+  result = SKY_coin_Transaction_HashInner( &tx, &hash1 );
+  cr_assert( result == SKY_OK );
+  result = SKY_coin_Transaction_HashInner( &tx2, &hash2 );
+  cr_assert( result == SKY_OK );
+  cr_assert( not ( eq( u8[sizeof(cipher__SHA256)], hash1, hash2) ) );
+
+  // If tx.Out is changed, hash should change
+  copyTransaction( &tx, &tx2 );
+  cipher__Address* paddr = tx2.Out.data;
+  cipher__Address addr;
+  makeAddress( &addr );
+  memcpy(paddr, &addr, sizeof(cipher__Address));
+  cr_assert( not( eq(  type(coin__Transaction), tx, tx2 ) ) );
+  cr_assert(eq(type(cipher__Address), addr, *paddr));
+  result = SKY_coin_Transaction_HashInner( &tx, &hash1 );
+  cr_assert( result == SKY_OK );
+  result = SKY_coin_Transaction_HashInner( &tx2, &hash2 );
+  cr_assert( result == SKY_OK );
+  cr_assert( not ( eq( u8[sizeof(cipher__SHA256)], hash1, hash2) ) );
+
+  // If tx.Head is changed, hash should not change
+  copyTransaction( &tx, &tx2 );
+  cipher__Sig* newSigs = malloc((tx2.Sigs.len + 1) * sizeof(cipher__Sig));
+  cr_assert( newSigs != NULL );
+  registerMemCleanup( newSigs );
+  memcpy( newSigs, tx2.Sigs.data, tx2.Sigs.len * sizeof(cipher__Sig));
+  tx2.Sigs.data = newSigs;
+  newSigs += tx2.Sigs.len;
+  tx2.Sigs.len++;
+  tx2.Sigs.cap = tx2.Sigs.len;
+  memset( newSigs, 0, sizeof(cipher__Sig) );
+  result = SKY_coin_Transaction_HashInner( &tx, &hash1 );
+  cr_assert( result == SKY_OK );
+  result = SKY_coin_Transaction_HashInner( &tx2, &hash2 );
+  cr_assert( result == SKY_OK );
+  cr_assert( eq( u8[sizeof(cipher__SHA256)], hash1, hash2) );
+}
+
+Test(coin_transactions, TestTransactionSerialization){
+  int result;
+  coin__Transaction tx;
+  makeTransaction( &tx );
+  GoSlice_ data;
+  memset( &data, 0, sizeof(GoSlice_) );
+  result = SKY_coin_Transaction_Serialize( &tx, &data );
+  cr_assert( result == SKY_OK );
+  registerMemCleanup( data.data );
+  coin__Transaction tx2;
+  memset( &tx2, 0, sizeof(coin__Transaction) );
+  GoSlice d = {data.data, data.len, data.cap};
+  result = SKY_coin_TransactionDeserialize(d, &tx2);
+  cr_assert( result == SKY_OK );
+  cr_assert( eq( type(coin__Transaction), tx, tx2) );
+}
+
+Test(coin_transactions, TestTransactionOutputHours){
+  coin__Transaction tx;
+  memset( &tx, 0, sizeof(coin__Transaction) );
+  cipher__Address addr;
+  makeAddress(&addr);
+  int result;
+  result = SKY_coin_Transaction_PushOutput(&tx, &addr, 1000000, 100);
+  cr_assert( result == SKY_OK );
+  makeAddress(&addr);
+  result = SKY_coin_Transaction_PushOutput(&tx, &addr, 1000000, 200);
+  cr_assert( result == SKY_OK );
+  makeAddress(&addr);
+  result = SKY_coin_Transaction_PushOutput(&tx, &addr, 1000000, 500);
+  cr_assert( result == SKY_OK );
+  makeAddress(&addr);
+  result = SKY_coin_Transaction_PushOutput(&tx, &addr, 1000000, 0);
+  cr_assert( result == SKY_OK );
+  GoUint64 hours;
+  result = SKY_coin_Transaction_OutputHours(&tx, &hours);
+  cr_assert( result == SKY_OK );
+  cr_assert( hours == 800 );
+  makeAddress(&addr);
+  result = SKY_coin_Transaction_PushOutput(&tx, &addr, 1000000, 0xFFFFFFFFFFFFFFFF - 700);
+  result = SKY_coin_Transaction_OutputHours(&tx, &hours);
+  cr_assert( result != SKY_OK );
+}
+
+/************************
+* TestTransactionsSize not done for missing encoder.Serialize
+***********************/
+
+Test(coin_transactions, TestTransactionsTruncateBytesTo){
+  int result;
+  GoSlice_ transactions, hashes;
+  memset(&transactions, 0, sizeof(GoSlice_));
+  memset(&hashes, 0, sizeof(GoSlice_));
+  result = makeTransactions((GoSlice*)&transactions, 4);
+  cr_assert( result == SKY_OK );
+
+  result = SKY_coin_Transactions_Hashes(&transactions, &hashes);
+  cr_assert( result == SKY_OK, "SKY_coin_Transactions_Hashes failed" );
+  registerMemCleanup( hashes.data );
+  cr_assert( hashes.len == 4 );
+  coin__Transaction* pt = transactions.data;
+  cipher__SHA256* ph = hashes.data;
+  cipher__SHA256 hash;
+  for(int i = 0; i < 4; i++){
+    result = SKY_coin_Transaction_Hash(pt, &hash);
+    cr_assert( result == SKY_OK, "SKY_coin_Transaction_Hash failed" );
+    cr_assert( eq( u8[sizeof(cipher__SHA256)], *ph, hash) );
+    pt++;
+    ph++;
+  }
+}
+
+/****************************
+* Test crashing randomly.
+* TODO: check why this tests is crashing
+***************************/
+/*Test(coin_transactions, TestTransactionsTruncateBytesTo){
+  int result;
+  GoSlice_ transactions, transactions2;
+  memset(&transactions, 0, sizeof(GoSlice_));
+  memset(&transactions2, 0, sizeof(GoSlice_));
+  result = makeTransactions((GoSlice*)&transactions, 10);
+  cr_assert( result == SKY_OK );
+  int trunc = 0;
+  coin__Transaction* pTx = transactions.data;
+  GoInt size;
+  for(int i = 0; i < transactions.len / 2; i++){
+    result = SKY_coin_Transaction_Size(pTx, &size);
+    trunc += size;
+    cr_assert( result == SKY_OK, "SKY_coin_Transaction_Size failed" );
+    pTx++;
+  }
+  result = SKY_coin_Transactions_TruncateBytesTo(&transactions, trunc, &transactions2);
+  cr_assert( result == SKY_OK, "SKY_coin_Transactions_TruncateBytesTo failed" );
+  registerMemCleanup( transactions2.data );
+
+  cr_assert( transactions2.len == transactions.len / 2 );
+  result = SKY_coin_Transactions_Size( &transactions2, &size );
+  cr_assert( result == SKY_OK, "SKY_coin_Transactions_Size failed" );
+  cr_assert( trunc == size );
+
+  freeRegisteredMemCleanup( transactions2.data );
+  trunc++;
+  memset(&transactions2, 0, sizeof(GoSlice_));
+  result = SKY_coin_Transactions_TruncateBytesTo(&transactions, trunc, &transactions2);
+  cr_assert( result == SKY_OK, "SKY_coin_Transactions_TruncateBytesTo failed" );
+  registerMemCleanup( transactions2.data );
+
+  // Stepping into next boundary has same cutoff, must exceed
+  cr_assert( transactions2.len == transactions.len / 2 );
+  result = SKY_coin_Transactions_Size( &transactions2, &size );
+  cr_assert( result == SKY_OK, "SKY_coin_Transactions_Size failed" );
+  cr_assert( trunc - 1 == size );
+}*/
 
 typedef struct {
   GoUint64 coins;
@@ -56,7 +319,7 @@ int makeTestCaseArrays(test_ux* elems, int size, coin__UxArray* pArray){
   return SKY_OK;
 }
 
-Test(coin_outputs, TestVerifyTransactionCoinsSpending){
+Test(coin_transactions, TestVerifyTransactionCoinsSpending){
   GoUint64 MaxUint64 = 0xFFFFFFFFFFFFFFFF;
   GoUint64 Million = 1000000;
 
@@ -131,7 +394,7 @@ Test(coin_outputs, TestVerifyTransactionCoinsSpending){
   }
 }
 
-Test(coin_outputs, TestVerifyTransactionHoursSpending){
+Test(coin_transactions, TestVerifyTransactionHoursSpending){
   GoUint64 MaxUint64 = 0xFFFFFFFFFFFFFFFF;
   GoUint64 Million = 1000000;
 

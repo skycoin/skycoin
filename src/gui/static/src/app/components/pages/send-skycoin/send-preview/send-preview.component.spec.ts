@@ -1,6 +1,6 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { SendVerifyComponent } from './send-verify.component';
+import { SendVerifyComponent } from './send-preview.component';
 
 describe('SendVerifyComponent', () => {
   let component: SendVerifyComponent;

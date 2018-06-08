@@ -1,10 +1,10 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { MatDialog, MatSnackBar, MatSnackBarConfig } from '@angular/material';
+import { MatDialog, MatSnackBar } from '@angular/material';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { ButtonComponent } from '../../../layout/button/button.component';
-import { parseResponseMessage } from '../../../../utils/errors';
+import { showSnackbarError } from '../../../../utils/errors';
 import { Subscription } from 'rxjs/Subscription';
 import { NavBarService } from '../../../../services/nav-bar.service';
 
@@ -14,7 +14,8 @@ import { NavBarService } from '../../../../services/nav-bar.service';
   styleUrls: ['./send-form-advanced.component.scss'],
 })
 export class SendFormAdvancedComponent implements OnInit, OnDestroy {
-  @ViewChild('button') button: ButtonComponent;
+  @ViewChild('previewButton') previewButton: ButtonComponent;
+  @ViewChild('sendButton') sendButton: ButtonComponent;
   @Input() formData: any;
   @Output() onFormSubmitted = new EventEmitter<any>();
 
@@ -23,6 +24,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   autoHours = true;
   autoOptions = false;
   autoShareValue = '0.5';
+  previewTx: boolean;
 
   private subscriptions: Subscription;
 
@@ -48,7 +50,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     });
 
     this.subscriptions = this.form.get('wallet').valueChanges.subscribe(wallet => {
-      this.addresses = wallet.addresses;
+      this.addresses = wallet.addresses.filter(addr => addr.coins > 0);
       this.form.get('addresses').setValue([]);
       this.form.get('destinations').updateValueAndValidity();
     });
@@ -65,23 +67,35 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.subscriptions.unsubscribe();
     this.navbarService.hideSwitch();
+    this.snackbar.dismiss();
+  }
+
+  preview() {
+    this.previewTx = true;
+    this.unlockAndSend();
   }
 
   send() {
-    if (!this.form.valid || this.button.isLoading()) {
+    this.previewTx = false;
+    this.unlockAndSend();
+  }
+
+  unlockAndSend() {
+    if (!this.form.valid || this.previewButton.isLoading() || this.sendButton.isLoading()) {
       return;
     }
 
     this.snackbar.dismiss();
-    this.button.resetState();
+    this.previewButton.resetState();
+    this.sendButton.resetState();
 
     if (this.form.get('wallet').value.encrypted) {
       this.dialog.open(PasswordDialogComponent).componentInstance.passwordSubmit
         .subscribe(passwordDialog => {
-          this._send(passwordDialog);
+          this.createTransaction(passwordDialog);
         });
     } else {
-      this._send();
+      this.createTransaction();
     }
   }
 
@@ -215,12 +229,18 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     });
   }
 
-  private _send(passwordDialog?: any) {
+  private createTransaction(passwordDialog?: any) {
     if (passwordDialog) {
       passwordDialog.close();
     }
 
-    this.button.setLoading();
+    if (this.previewTx) {
+      this.previewButton.setLoading();
+      this.sendButton.setDisabled();
+    } else {
+      this.sendButton.setLoading();
+      this.previewButton.setDisabled();
+    }
 
     this.walletService.createTransaction(
       this.form.get('wallet').value,
@@ -230,7 +250,12 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       this.form.get('changeAddress').value ? this.form.get('changeAddress').value : null,
       passwordDialog ? passwordDialog.password : null,
     )
-      .subscribe(transaction => {
+      .toPromise()
+      .then(transaction => {
+        if (!this.previewTx) {
+          return this.walletService.injectTransaction(transaction.encoded).toPromise();
+        }
+
         this.onFormSubmitted.emit({
           form: {
             wallet: this.form.get('wallet').value,
@@ -244,13 +269,37 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
           to: this.destinations.map(d => d.address),
           transaction,
         });
-      }, error => {
-        const errorMessage = parseResponseMessage(error['_body']);
-        const config = new MatSnackBarConfig();
-        config.duration = 300000;
-        this.snackbar.open(errorMessage, null, config);
-        this.button.setError(errorMessage);
+      })
+      .then(() => {
+        this.sendButton.setSuccess();
+        this.resetForm();
+
+        setTimeout(() => {
+          this.sendButton.resetState();
+        }, 3000);
+      })
+      .catch(error => {
+        showSnackbarError(this.snackbar, error);
+
+        this.previewButton.resetState().setEnabled();
+        this.sendButton.resetState().setEnabled();
       });
+  }
+
+  private resetForm() {
+    this.form.get('wallet').setValue('', { emitEvent: false });
+    this.form.get('addresses').setValue([]);
+    this.form.get('changeAddress').setValue('');
+
+    while (this.destControls.length > 0) {
+      (this.form.get('destinations') as FormArray).removeAt(0);
+    }
+
+    this.addDestination();
+
+    this.autoHours = true;
+    this.autoOptions = false;
+    this.autoShareValue = '0.5';
   }
 
   private get destinations() {

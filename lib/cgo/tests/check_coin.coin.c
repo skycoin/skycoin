@@ -19,7 +19,7 @@ Test(coin_coin, TestAddress1){
   char address[128];
   int result;
   int length = hexnstr(address_hex, address, 128);
-  cr_assert(result > 0, "Error decoding hex string");
+  cr_assert(length > 0, "Error decoding hex string");
   GoSlice slice = { address, length, 128 };
   cipher__PubKey pubkey;
   result = SKY_cipher_NewPubKey(slice, &pubkey);
@@ -34,7 +34,7 @@ Test(coin_coin, TestAddress2){
   char address[128];
   int result;
   int length = hexnstr(address_hex, address, 128);
-  cr_assert(result > 0, "Error decoding hex string");
+  cr_assert(length > 0, "Error decoding hex string");
   GoSlice slice = { address, length, 128 };
   cipher__PubKey pubkey;
   cipher__SecKey seckey;

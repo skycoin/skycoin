@@ -151,67 +151,88 @@ Test(coin_transaction, TestTransactionVerify)
   cr_assert(errcode == SKY_OK);
 }
 
-Test(coin_transaction, TestTransactionVerifyInput)
-{
-  coin__Transaction tx;
-  GoUint64_ errcode;
-  coin__UxArray uxArray;
+// Test(coin_transaction, TestTransactionVerifyInput)
+// {
+// coin__Transaction tx;
+// GoUint64_ errcode;
+// coin__UxArray uxArray;
 
-  // Invalid uxIn args
-  makeTransaction(&tx);
-  cli__PasswordFromBytes seckey;
-  SKY_coin_UxArray_Coins(&seckey, NULL);
-  errcode = SKY_coin_Transaction_VerifyInput(&tx, &seckey);
-  cr_assert(errcode != SKY_OK, "tx.In != uxIn");
-  SKY_coin_UxArray_Coins(&seckey, 0);
-  errcode = SKY_coin_Transaction_VerifyInput(&tx, &seckey);
-  cr_assert(errcode != SKY_OK, "tx.In != uxIn");
-  SKY_coin_UxArray_Coins(&seckey, 3);
-  errcode = SKY_coin_Transaction_VerifyInput(&tx, &seckey);
-  cr_assert(errcode != SKY_OK, "tx.In != uxIn");
+// // Invalid uxIn args
+// makeTransaction(&tx);
+// cli__PasswordFromBytes seckey;
+// SKY_coin_UxArray_Coins(&seckey, NULL);
+// errcode = SKY_coin_Transaction_VerifyInput(&tx, &seckey);
+// cr_assert(errcode != SKY_OK, "tx.In != uxIn");
+// SKY_coin_UxArray_Coins(&seckey, 0);
+// errcode = SKY_coin_Transaction_VerifyInput(&tx, &seckey);
+// cr_assert(errcode != SKY_OK, "tx.In != uxIn");
+// SKY_coin_UxArray_Coins(&seckey, 3);
+// errcode = SKY_coin_Transaction_VerifyInput(&tx, &seckey);
+// cr_assert(errcode != SKY_OK, "tx.In != uxIn");
 
-  // 	// tx.In != tx.Sigs
-  // ux, s := makeUxOutWithSecret(t)
-  // tx = makeTransactionFromUxOut(ux, s)
-  // tx.Sigs = []cipher.Sig{}
-  // _require.PanicsWithLogMessage(t, "tx.In != tx.Sigs", func() {
-  // 	tx.VerifyInput(UxArray{ux})
-  // })
+// // 	// tx.In != tx.Sigs
+// // ux, s := makeUxOutWithSecret(t)
+// // tx = makeTransactionFromUxOut(ux, s)
+// // tx.Sigs = []cipher.Sig{}
+// // _require.PanicsWithLogMessage(t, "tx.In != tx.Sigs", func() {
+// // 	tx.VerifyInput(UxArray{ux})
+// // })
 
-  // ux, s = makeUxOutWithSecret(t)
-  // tx = makeTransactionFromUxOut(ux, s)
-  // tx.Sigs = append(tx.Sigs, cipher.Sig{})
-  // _require.PanicsWithLogMessage(t, "tx.In != tx.Sigs", func() {
-  // 	tx.VerifyInput(UxArray{ux})
-  // })
+// // ux, s = makeUxOutWithSecret(t)
+// // tx = makeTransactionFromUxOut(ux, s)
+// // tx.Sigs = append(tx.Sigs, cipher.Sig{})
+// // _require.PanicsWithLogMessage(t, "tx.In != tx.Sigs", func() {
+// // 	tx.VerifyInput(UxArray{ux})
+// // })
 
-  // tx.InnerHash != tx.HashInner()
-  coin__UxOut ux;
-  cipher__SecKey s;
-  errcode = makeUxOutWithSecret(&ux, &s);
-  cr_assert(errcode == SKY_OK);
-  errcode = makeTransactionFromUxOut(&ux, &s, &tx);
-  cr_assert(errcode == SKY_OK);
-  memset(&tx.Sigs, 0, sizeof(cipher__Sig));
-  memset(&uxArray, 0, sizeof(coin__UxArray));
-  uxArray.data = &ux;
-  SKY_coin_UxArray_Coins(&uxArray, 1);
-  errcode = SKY_coin_Transaction_VerifyInput(&tx, &uxArray);
-  cr_assert(errcode != SKY_OK, "tx.In != tx.Sigs");
+// // tx.InnerHash != tx.HashInner()
+// coin__UxOut ux;
+// cipher__SecKey s;
+// errcode = makeUxOutWithSecret(&ux, &s);
+// cr_assert(errcode == SKY_OK);
+// errcode = makeTransactionFromUxOut(&ux, &s, &tx);
+// cr_assert(errcode == SKY_OK);
+// memset(&tx.Sigs, 0, sizeof(cipher__Sig));
+// memset(&uxArray, 0, sizeof(coin__UxArray));
+// uxArray.data = &ux;
+// SKY_coin_UxArray_Coins(&uxArray, 1);
+// errcode = SKY_coin_Transaction_VerifyInput(&tx, &uxArray);
+// cr_assert(errcode != SKY_OK, "tx.In != tx.Sigs");
 
-  errcode = makeUxOutWithSecret(&ux, &s);
-  cr_assert(errcode == SKY_OK);
-  errcode = makeTransactionFromUxOut(&ux, &s, &tx);
-  cr_assert(errcode == SKY_OK);
+// errcode = makeUxOutWithSecret(&ux, &s);
+// cr_assert(errcode == SKY_OK);
+// errcode = makeTransactionFromUxOut(&ux, &s, &tx);
+// cr_assert(errcode == SKY_OK);
 
-  coin__UxOut uxo;
-  coin__UxArray uxa;
-  uxa.data = uxo.;
-}
+// // coin__UxOut uxo;
+// // coin__UxArray uxa;
+// // uxa.data = uxo.;
+// }
 
 Test(coin_transaction, TestTransactionPushInput)
 {
   coin__Transaction tx;
   memset(&tx, 0, sizeof(coin__Transaction));
-  coin__UxOut makeUxOut()
+  coin__UxOut ux;
+  memset(&ux, 0, sizeof(coin__UxOut));
+  GoUint64_ errcode = makeUxOut(&ux);
+  GoUint16 value;
+  SKY_coin_Transaction_PushInput(&tx, &ux, &value);
+  cr_assert(value == 0);
+  cr_assert(tx.In.len == 1);
+  errcode = memcmp(((cipher__SHA256*)&tx.In.data), &ux, sizeof(cipher__SHA256));
+  cr_assert(errcode > 0);
+
+  cipher__SHA256* cipher;
+
+  cipher = ((cipher__SHA256*)&tx.In.data);
+  makeRandHash(&cipher);
+  for (int i = 0; i < (1 << 16 - 1); ++i) {
+    cipher++;
+    makeRandHash(&cipher);
+  }
+ errcode = makeUxOut(&ux);
+  errcode =SKY_coin_Transaction_PushInput(&tx, &ux, &value);
+
+  cr_assert(errcode==SKY_OK);
 }

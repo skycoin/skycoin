@@ -39,4 +39,12 @@ extern char *cr_user_cipher__SHA256_tostr(cipher__SHA256 *sh1);
 
 extern int cr_user_secp256k1go__Field_eq(secp256k1go__Field* f1, secp256k1go__Field* f2);
 
+extern int cr_user_coin__BlockBody_eq(coin__BlockBody *b1, coin__BlockBody *b2);
+extern int cr_user_coin__BlockBody_noteq(coin__BlockBody *b1, coin__BlockBody *b2);
+extern char *cr_user_coin__BlockBody_tostr(coin__BlockBody *b);
+
+extern int cr_user_coin__UxOut_eq(coin__UxOut *x1, coin__UxOut *x2);
+extern int cr_user_coin__UxOut_noteq(coin__UxOut *x1, coin__UxOut *x2);
+extern char* cr_user_coin__UxOut_tostr(coin__UxOut *x1);
+
 #endif //LIBCRITERION_H

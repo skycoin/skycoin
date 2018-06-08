@@ -24,5 +24,8 @@
     <app-button #button (action)="send()" class="primary" [disabled]="!form.valid">
       Send
     </app-button>
+    <app-button #button (action)="sendToDevice()" class="primary" [disabled]="!form.valid">
+      Send to device
+    </app-button>
   </div>
 </div>

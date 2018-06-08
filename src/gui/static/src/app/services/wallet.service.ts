@@ -146,6 +146,10 @@ export class WalletService {
     return this.apiService.post('wallet/spend', {id: wallet.filename, dst: address, coins: amount, password});
   }
 
+  sendSkycoinDeviceCheck(wallet: Wallet, address: string, amount: number, password: string|null) {
+    return this.apiService.post('wallet/spendDeviceCheck', {id: wallet.filename, dst: address, coins: amount, password});
+  }
+
   sum(): Observable<number> {
     return this.all().map(wallets => wallets.map(wallet => wallet.coins >= 0 ? wallet.coins : 0).reduce((a , b) => a + b, 0));
   }

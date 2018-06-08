@@ -133,6 +133,16 @@ func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
+func walletSpendDeviceCheckHandler(gateway Gatewayer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			wh.Error405(w)
+			return
+		}
+		wh.Error400(w, `Bravo tu as reussi`)
+	}
+}
+
 // Creates and broadcasts a transaction sending money from one of our wallets
 // to destination address.
 // URI: /wallet/spend

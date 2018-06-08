@@ -49,10 +49,53 @@ export class SendSkycoinComponent implements OnInit, OnDestroy {
     }
   }
 
+  sendToDevice() {
+    this.button.resetState();
+    this.snackbar.dismiss();
+
+    if (this.form.value.wallet.encrypted) {
+      this.dialog.open(PasswordDialogComponent).componentInstance.passwordSubmit
+        .subscribe(passwordDialog => {
+          this._sendToDevice(passwordDialog);
+        });
+    } else {
+      this._sendToDevice();
+    }
+  }
+
   private _send(passwordDialog?: any) {
     this.button.setLoading();
 
     this.walletService.sendSkycoin(
+      this.form.value.wallet,
+      this.form.value.address,
+      Math.round(parseFloat(this.form.value.amount) * 1000000),
+      passwordDialog ? passwordDialog.password : null
+    )
+      .delay(1000)
+      .subscribe(
+        () => {
+          this.resetForm();
+          this.button.setSuccess();
+        },
+        error => {
+          const errorMessage = parseResponseMessage(error['_body']);
+          const config = new MatSnackBarConfig();
+          config.duration = 300000;
+          this.snackbar.open(errorMessage, null, config);
+          this.button.setError(errorMessage);
+        }
+      );
+
+    if (passwordDialog) {
+      passwordDialog.close();
+    }
+  }
+
+  private _sendToDevice(passwordDialog?: any) {
+    this.button.setLoading();
+
+    this.walletService.sendSkycoinDeviceCheck(
       this.form.value.wallet,
       this.form.value.address,
       Math.round(parseFloat(this.form.value.amount) * 1000000),

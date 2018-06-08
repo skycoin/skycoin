@@ -7,6 +7,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
+	"sync"
 	"time"
 
 	"github.com/boltdb/bolt"
@@ -29,7 +31,35 @@ type ErrCorruptDB struct {
 	error
 }
 
-// CheckDatabase checks the database for corruption
+// corrputedBlocks is used for recording corrupted blocks concurrently
+type corruptedBlocks struct {
+	v    map[uint64]struct{}
+	lock sync.Mutex
+}
+
+func newCorruptedBlocks() *corruptedBlocks {
+	return &corruptedBlocks{
+		v: make(map[uint64]struct{}),
+	}
+}
+
+func (cb *corruptedBlocks) Store(seq uint64) {
+	cb.lock.Lock()
+	cb.v[seq] = struct{}{}
+	cb.lock.Unlock()
+}
+
+func (cb *corruptedBlocks) BlockSeqs() []uint64 {
+	cb.lock.Lock()
+	var seqs []uint64
+	for seq := range cb.v {
+		seqs = append(seqs, seq)
+	}
+	cb.lock.Unlock()
+	return seqs
+}
+
+// CheckDatabase checks the database for corruption, rebuild history if corrupted
 func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) error {
 	var blocksBktExist bool
 	db.View("CheckDatabase", func(tx *dbutil.Tx) error {
@@ -49,6 +79,7 @@ func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) erro
 
 	history := historydb.New()
 	indexesMap := historydb.NewIndexesMap()
+	cbs := newCorruptedBlocks()
 	verifyFunc := func(tx *dbutil.Tx, b *coin.SignedBlock) error {
 		// Verify signature
 		if err := bc.VerifySignature(b); err != nil {
@@ -56,18 +87,56 @@ func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) erro
 		}
 
 		// Verify historydb
-		return history.Verify(tx, b, indexesMap)
+		err := history.Verify(tx, b, indexesMap)
+		switch err.(type) {
+		case nil:
+			return nil
+		case historydb.ErrHistoryDBCorrupted:
+			// Records the corrupted block seq
+			cbs.Store(b.Seq())
+			return nil
+		default:
+			return err
+		}
 	}
 
 	err = bc.WalkChain(BlockchainVerifyTheadNum, verifyFunc, quit)
 	switch err.(type) {
 	case nil:
-		return nil
-	case blockdb.ErrMissingSignature, historydb.ErrHistoryDBCorrupted:
+		// Reparses the corrupted blocks of historydb if exist
+		seqs := cbs.BlockSeqs()
+		if len(seqs) == 0 {
+			return nil
+		}
+
+		// Sort the block sequences that are going to be parsed from low to heigh
+		sort.Slice(seqs, func(i, j int) bool {
+			return seqs[i] < seqs[j]
+		})
+
+		return rebuildCorruptDB(db, history, bc, seqs)
+	case blockdb.ErrMissingSignature:
 		return ErrCorruptDB{err}
 	default:
 		return err
 	}
+}
+
+func rebuildCorruptDB(db *dbutil.DB, history *historydb.HistoryDB, bc *Blockchain, blockSeqs []uint64) error {
+	return db.Update("rebuildCorruptDB", func(tx *dbutil.Tx) error {
+		for _, seq := range blockSeqs {
+			logger.Infof("rebuild historydb of block: %d", seq)
+			b, err := bc.GetSignedBlockBySeq(tx, seq)
+			if err != nil {
+				return err
+			}
+
+			if err := history.ParseBlock(tx, b.Block); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 // ResetCorruptDB checks the database for corruption and if corrupted, then it erases the db and starts over.

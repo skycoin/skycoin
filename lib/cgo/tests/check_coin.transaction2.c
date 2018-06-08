@@ -108,6 +108,96 @@ Test(coin_transactions, TestTransactionVerifyInput){
   cr_assert( result == SKY_OK );
 }
 
+Test(coin_transactions, TestTransactionSignInputs){
+  int result;
+  coin__Transaction tx;
+  coin__UxOut ux, ux2;
+  cipher__SecKey seckey, seckey2;
+  cipher__SHA256 hash, hash2;
+  cipher__Address addr, addr2;
+  cipher__PubKey pubkey;
+  GoUint16 r;
+  GoSlice keys;
+
+  //Error if txns already signed
+  memset(&tx, 0, sizeof(coin__Transaction));
+  tx.Sigs.data = malloc(sizeof(cipher__Sig));
+  cr_assert( tx.Sigs.data != NULL );
+  registerMemCleanup( tx.Sigs.data );
+  memset( tx.Sigs.data, 0, sizeof(cipher__Sig) );
+  tx.Sigs.len = 1;
+  tx.Sigs.cap = 1;
+
+  memset( &seckey, 0, sizeof(cipher__SecKey) );
+  keys.data = &seckey; keys.len = 1; keys.cap = 1;
+  result = SKY_coin_Transaction_SignInputs(&tx, keys);
+  cr_assert( result != SKY_OK );
+
+  // Panics if not enough keys
+  memset(&tx, 0, sizeof(coin__Transaction));
+  memset(&seckey, 0, sizeof(cipher__SecKey));
+  memset(&seckey2, 0, sizeof(cipher__SecKey));
+  result = makeUxOutWithSecret( &ux, &seckey );
+  cr_assert( result == SKY_OK );
+  result = SKY_coin_UxOut_Hash(&ux, &hash);
+  cr_assert( result == SKY_OK );
+  result = SKY_coin_Transaction_PushInput(&tx, &hash, &r);
+  cr_assert( result == SKY_OK );
+  result = makeUxOutWithSecret( &ux2, &seckey2 );
+  cr_assert( result == SKY_OK );
+  result = SKY_coin_UxOut_Hash(&ux2, &hash2);
+  cr_assert( result == SKY_OK );
+  result = SKY_coin_Transaction_PushInput(&tx, &hash2, &r);
+  cr_assert( result == SKY_OK );
+  makeAddress(&addr);
+  result = SKY_coin_Transaction_PushOutput(&tx, &addr, 40, 80);
+  cr_assert( result == SKY_OK );
+  cr_assert( tx.Sigs.len == 0 );
+  keys.data = &seckey; keys.len = 1; keys.cap = 1;
+  result = SKY_coin_Transaction_SignInputs(&tx, keys);
+  cr_assert( result != SKY_OK );
+  cr_assert( tx.Sigs.len == 0 );
+
+  // Valid signing
+  result = SKY_coin_Transaction_HashInner( &tx, &hash );
+  cr_assert( result == SKY_OK );
+  keys.data = malloc(2 * sizeof(cipher__SecKey));
+  cr_assert( keys.data != NULL );
+  registerMemCleanup( keys.data );
+  keys.len = keys.cap = 2;
+  memcpy(keys.data, &seckey, sizeof(cipher__SecKey));
+  memcpy(((cipher__SecKey*)keys.data) + 1, &seckey2, sizeof(cipher__SecKey));
+  result = SKY_coin_Transaction_SignInputs(&tx, keys);
+  cr_assert( result == SKY_OK );
+  cr_assert(tx.Sigs.len == 2);
+  result = SKY_coin_Transaction_HashInner( &tx, &hash2 );
+  cr_assert( result == SKY_OK );
+  cr_assert( eq( u8[sizeof(cipher__SHA256)], hash, hash2) );
+
+  result = SKY_cipher_PubKeyFromSecKey(&seckey, &pubkey);
+  cr_assert( result == SKY_OK );
+  result = SKY_cipher_AddressFromPubKey( &pubkey, &addr );
+  cr_assert( result == SKY_OK );
+  result = SKY_cipher_PubKeyFromSecKey(&seckey2, &pubkey);
+  cr_assert( result == SKY_OK );
+  result = SKY_cipher_AddressFromPubKey( &pubkey, &addr2 );
+  cr_assert( result == SKY_OK );
+
+  cipher__SHA256 addHash, addHash2;
+  result = SKY_cipher_AddSHA256(&hash, (cipher__SHA256*)tx.In.data, &addHash);
+  cr_assert( result == SKY_OK );
+  result = SKY_cipher_AddSHA256(&hash, ((cipher__SHA256*)tx.In.data) + 1, &addHash2);
+  cr_assert( result == SKY_OK );
+  result = SKY_cipher_ChkSig(&addr, &addHash, (cipher__Sig*)tx.Sigs.data);
+  cr_assert( result == SKY_OK );
+  result = SKY_cipher_ChkSig(&addr2, &addHash2, ((cipher__Sig*)tx.Sigs.data)+1);
+  cr_assert( result == SKY_OK );
+  result = SKY_cipher_ChkSig(&addr, &hash, ((cipher__Sig*)tx.Sigs.data)+1);
+  cr_assert( result != SKY_OK );
+  result = SKY_cipher_ChkSig(&addr2, &hash, (cipher__Sig*)tx.Sigs.data);
+  cr_assert( result != SKY_OK );
+}
+
 Test(coin_transactions, TestTransactionHashInner){
   int result;
   coin__Transaction tx, tx2;

@@ -1,10 +1,7 @@
 {
   "common": {
     "coin-id": "SKY",
-    "coin-hours": "SKY Hours",
-    "coins": "Coins",
-    "hours": "Hours",
-    "balance": "Balance",
+    "coin-hours": "Coin Hours",
     "loading": "Loading..",
     "new": "New",
     "load": "Load"
@@ -217,7 +214,6 @@
 
   "pending-txs": {
     "timestamp": "Timestamp",
-    "amount": "Amount",
     "txid": "Transaction ID",
     "none": "No pending transactions"
   },

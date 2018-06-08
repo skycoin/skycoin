@@ -5,8 +5,8 @@
     <div class="-table" *ngFor="let wallet of wallets">
       <div class="-headers">
         <div class="-flex-fill">{{ wallet.label }}</div>
-        <div class="-width-150 -text-right">{{ 'common.coins' | translate }}</div>
-        <div class="-width-150 -text-right">{{ 'common.hours' | translate }}</div>
+        <div class="-width-150 -text-right">{{ 'common.coin-id' | translate }}</div>
+        <div class="-width-150 -text-right">{{ 'common.coin-hours' | translate }}</div>
       </div>
       <div class="-body">
         <ng-container *ngFor="let address of wallet.addresses">

@@ -383,7 +383,7 @@ Test(coin_outputs, TestUxArraySorting){
   result = makeUxArray(&uxa, 4);
   cr_assert( result == SKY_OK, "makeUxArray failed" );
   int isSorted = isUxArraySorted(&uxa);
-  if( isSorted ){
+  if( isSorted ){ //If already sorted then break the order
     coin__UxOut temp;
     coin__UxOut* p = uxa.data;
     memcpy(&temp, p, sizeof(coin__UxOut));
@@ -396,4 +396,68 @@ Test(coin_outputs, TestUxArraySorting){
   cr_assert( result == SKY_OK, "SKY_coin_UxArray_Sort failed" );
   isSorted = isUxArraySorted(&uxa);
   cr_assert( isSorted == 1);
+}
+
+Test(coin_outputs, TestUxArrayLen){
+  int result;
+  coin__UxArray uxa;
+  result = makeUxArray(&uxa, 4);
+  cr_assert( result == SKY_OK, "makeUxArray failed" );
+  GoInt len;
+  result = SKY_coin_UxArray_Len(&uxa, &len);
+  cr_assert( result == SKY_OK, "SKY_coin_UxArray_Len failed" );
+  cr_assert( len == uxa.len );
+  cr_assert( len == 4 );
+}
+
+Test(coin_outputs, TestUxArrayLess){
+  int result;
+  coin__UxArray uxa;
+  result = makeUxArray(&uxa, 2);
+  cr_assert( result == SKY_OK, "makeUxArray failed" );
+  cipher__SHA256 hashes[2];
+  coin__UxOut* p = uxa.data;
+  result = SKY_coin_UxOut_Hash(p, &hashes[0]);
+  cr_assert( result == SKY_OK, "SKY_coin_UxOut_Hash failed" );
+  p++;
+  result = SKY_coin_UxOut_Hash(p, &hashes[1]);
+  cr_assert( result == SKY_OK, "SKY_coin_UxOut_Hash failed" );
+  GoUint8 lessResult1, lessResult2;
+  int memcmpResult;
+  result = SKY_coin_UxArray_Less(&uxa, 0, 1, &lessResult1);
+  cr_assert( result == SKY_OK, "SKY_coin_UxArray_Less failed" );
+  result = SKY_coin_UxArray_Less(&uxa, 1, 0, &lessResult2);
+  cr_assert( result == SKY_OK, "SKY_coin_UxArray_Less failed" );
+  memcmpResult = memcmp( &hashes[0], &hashes[1], sizeof(cipher__SHA256) );
+  int r;
+  r = (lessResult1 == 1) == (memcmpResult < 0);
+  cr_assert(r != 0);
+  r = (lessResult2 == 1) == (memcmpResult > 0);
+  cr_assert(r != 0);
+}
+
+Test(coin_outputs, TestUxArraySwap){
+  int result;
+  coin__UxArray uxa;
+  result = makeUxArray(&uxa, 2);
+  cr_assert( result == SKY_OK, "makeUxArray failed" );
+  coin__UxOut uxx, uxy;
+  coin__UxOut* p = uxa.data;
+  memcpy(&uxx, p, sizeof(coin__UxOut));
+  memcpy(&uxy, p + 1, sizeof(coin__UxOut));
+
+  result = SKY_coin_UxArray_Swap(&uxa, 0, 1);
+  cr_assert( result == SKY_OK, "SKY_coin_UxArray_Swap failed" );
+  cr_assert( eq(type(coin__UxOut), uxy, *p) );
+  cr_assert( eq(type(coin__UxOut), uxx, *(p+1)) );
+
+  result = SKY_coin_UxArray_Swap(&uxa, 0, 1);
+  cr_assert( result == SKY_OK, "SKY_coin_UxArray_Swap failed" );
+  cr_assert( eq(type(coin__UxOut), uxy, *(p+1)) );
+  cr_assert( eq(type(coin__UxOut), uxx, *p) );
+
+  result = SKY_coin_UxArray_Swap(&uxa, 1, 0);
+  cr_assert( result == SKY_OK, "SKY_coin_UxArray_Swap failed" );
+  cr_assert( eq(type(coin__UxOut), uxy, *p) );
+  cr_assert( eq(type(coin__UxOut), uxx, *(p+1)) );
 }

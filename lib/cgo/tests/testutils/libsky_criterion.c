@@ -161,3 +161,17 @@ char *cr_user_coin__BlockBody_tostr(coin__BlockBody *b) {
   cr_asprintf(&out, "(coin__BlockBody) { .data %s, .len %d, .cap %d }", (char*)b->Transactions.data, b->Transactions.len, b->Transactions.cap);
   return out;
 }
+
+int cr_user_coin__UxOut_eq(coin__UxOut *x1, coin__UxOut *x2){
+	return memcmp(x1, x2, sizeof(coin__UxOut)) == 0;
+}
+
+int cr_user_coin__UxOut_noteq(coin__UxOut *x1, coin__UxOut *x2){
+	return memcmp(x1, x2, sizeof(coin__UxOut)) != 0;
+}
+
+char* cr_user_coin__UxOut_tostr(coin__UxOut *x1){
+  char *out;
+  cr_asprintf(&out, "(coin__UxOut) { %s }", (char*)x1);
+  return out;
+}

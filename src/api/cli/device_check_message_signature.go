@@ -6,12 +6,12 @@ import (
 	"github.com/golang/protobuf/proto"
 	messages "github.com/skycoin/skycoin/protob"
 	hardwareWallet "github.com/skycoin/skycoin/src/hardware-wallet"
-	"github.com/trezor/trezord-go/wire"
+	"github.com/wire"
 	gcli "github.com/urfave/cli"
 )
 
-func trezorCheckMessageSignatureCmd() gcli.Command {
-	name := "trezorCheckMessageSignature"
+func deviceCheckMessageSignatureCmd() gcli.Command {
+	name := "deviceCheckMessageSignature"
 	return gcli.Command{
 		Name:        name,
 		Usage:       "Check a message signature matches the given address.",

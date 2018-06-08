@@ -6,31 +6,42 @@ import (
 	"github.com/golang/protobuf/proto"
 	messages "github.com/skycoin/skycoin/protob"
 	hardwareWallet "github.com/skycoin/skycoin/src/hardware-wallet"
-	"github.com/trezor/trezord-go/wire"
+	"github.com/wire"
 	gcli "github.com/urfave/cli"
 )
 
-func trezorAddressGenCmd() gcli.Command {
-	name := "trezorAddressGen"
+func deviceAddressGenCmd() gcli.Command {
+	name := "deviceAddressGen"
 	return gcli.Command{
 		Name:        name,
-		Usage:       "Generate skycoin or bitcoin addresses using the trezor",
+		Usage:       "Generate skycoin or bitcoin addresses using the firmware",
 		Description: "",
 		Flags: []gcli.Flag{
-			gcli.StringFlag{
-				Name:  "seed",
-				Usage: "Seed for deterministic key generation. Will use bip39 as the seed if not provided.",
+			gcli.IntFlag{
+				Name:  "addressN",
+				Value: 1,
+				Usage: "Index for deterministic key generation. Assume 1 if not set.",
+			},
+			gcli.BoolFlag{
+				Name:  "bitcoin,b",
+				Usage: "Output the addresses as bitcoin addresses instead of skycoin addresses",
 			},
 		},
 		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) {
-			seed := c.String("seed")
-			fmt.Printf("Trezor! %s\n", seed)
+			var coinType messages.SkycoinAddressType
+			if c.Bool("bitcoin") {
+				coinType = messages.SkycoinAddressType_AddressTypeBitcoin
+			} else {
+				coinType = messages.SkycoinAddressType_AddressTypeSkycoin
+			}
+
+			addressN := c.Int("addressN")
 			dev, _ := hardwareWallet.GetTrezorDevice()
 
 			skycoinAddress := &messages.SkycoinAddress{
-				Seed:        proto.String("seed"),
-				AddressType: messages.SkycoinAddressType_AddressTypeSkycoin.Enum(),
+				AddressN:    proto.Uint32(uint32(addressN)),
+				AddressType: coinType.Enum(),
 			}
 			data, _ := proto.Marshal(skycoinAddress)
 

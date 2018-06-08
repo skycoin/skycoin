@@ -231,8 +231,82 @@ Test(coin_transaction, TestTransactionPushInput)
     cipher++;
     makeRandHash(&cipher);
   }
- errcode = makeUxOut(&ux);
-  errcode =SKY_coin_Transaction_PushInput(&tx, &ux, &value);
+  errcode = makeUxOut(&ux);
+  errcode = SKY_coin_Transaction_PushInput(&tx, &ux, &value);
 
-  cr_assert(errcode==SKY_OK);
+  cr_assert(errcode == SKY_OK);
+}
+
+Test(coin_transaction, TestTransactionPushOutput)
+{
+  coin__Transaction tx;
+  cipher__Address a;
+  GoUint32 errcode = makeAddress(a);
+  cr_assert(errcode == SKY_OK);
+  memset(&tx, 0, sizeof(tx));
+  errcode = SKY_coin_Transaction_PushOutput(&tx, &a, 100, 500);
+  cr_assert(tx.Out.len == 1);
+  coin__TransactionOutput value = { a, 100, 150 };
+  GoSlice_ slice = { &value, 1, 1 };
+  cr_assert(eq(type(GoSlice_), slice, tx.Out));
+
+  memset(&tx, 0, sizeof(coin__Transaction));
+  coin__TransactionOutput* slice_void =
+    ((coin__TransactionOutput*)&tx.Out.data);
+  for (int i = 0; i < 20; i++) {
+    cipher__Address address;
+    errcode = makeAddress(&address);
+    cr_assert(errcode == SKY_OK);
+    GoUint16 coins = ((GoUint16)(i * 100));
+    GoUint16 hours = ((GoUint16)(i * 50));
+    errcode = SKY_coin_Transaction_PushOutput(&tx, &address, coins, hours);
+    cr_assert(tx.Out.len == (i + 1));
+    // slice_void++;
+  }
+}
+
+
+
+Test(coin_transaction, TestTransactionHash)
+{
+  coin__Transaction tx;
+  cleanupMem(&tx);
+  makeTransaction(&tx);
+  cipher__SHA256 sha;
+  cipher__SHA256 shatmp;
+  cipher__SHA256 shainner;
+  memset(&sha, 0, sizeof(cipher__SHA256));
+  memset(&shatmp, 0, sizeof(cipher__SHA256));
+  memset(&shainner, 0, sizeof(cipher__SHA256));
+  SKY_coin_Transaction_Hash(&tx, &shatmp);
+  SKY_coin_Transaction_HashInner(&tx, &shainner);
+
+  cr_assert(not(eq(u8[sizeof(cipher__SHA256)], sha, shatmp)));
+
+  cr_assert(not(eq(u8[sizeof(cipher__SHA256)], sha, shainner)));
+}
+
+Test(coin_transaction, TestTransactionUpdateHeader)
+{
+  coin__Transaction tx;
+  cleanupMem(&tx);
+  makeTransaction(&tx);
+  cipher__SHA256 h;
+  cipher__SHA256 shatmp;
+  cipher__SHA256 sha_clean;
+  cipher__SHA256 shainner;
+  memset(&h, 0, sizeof(cipher__SHA256));
+  memset(&sha_clean, 0, sizeof(cipher__SHA256));
+
+  SKY_coin_Transaction_HashInner(&tx, &shainner);
+  //
+  memcpy(&h, &tx.InnerHash, sizeof(cipher__SHA256));
+  memset(&tx.InnerHash, 0, sizeof(cipher__SHA256));
+
+  SKY_coin_Transaction_UpdateHeader(&tx);
+  SKY_coin_Transaction_HashInner(&tx, &shatmp);
+
+  cr_assert(not(eq(u8[sizeof(cipher__SHA256)], tx.InnerHash, sha_clean)));
+  cr_assert(eq(u8[sizeof(cipher__SHA256)], tx.InnerHash, h));
+  cr_assert(eq(u8[sizeof(cipher__SHA256)], tx.InnerHash, shainner));
 }

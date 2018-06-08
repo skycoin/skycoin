@@ -20,7 +20,7 @@ char *cr_user_cipher__Address_tostr(cipher__Address *addr1)
 int cr_user_cipher__Address_noteq(cipher__Address *addr1, cipher__Address *addr2){
   if(addr1->Version == addr2->Version)
     return 0;
-  return memcmp((void*)addr1, (void*) addr2, sizeof(cipher__Address)) == 1;
+  return memcmp((void*)addr1, (void*) addr2, sizeof(cipher__Address)) != 0;
 }
 
 int cr_user_GoString_eq(GoString *string1, GoString *string2){

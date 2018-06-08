@@ -462,3 +462,8 @@ Test(coin_outputs, TestUxArraySwap){
   cr_assert( eq(type(coin__UxOut), uxy, *p) );
   cr_assert( eq(type(coin__UxOut), uxx, *(p+1)) );
 }
+
+/**********************************************************
+* 6 Tests involvinf AddressUxOuts were not done
+* because the corresponding functions were not exported
+*************************************************************/

@@ -762,7 +762,10 @@ Statuses:
     500: other errors
 ```
 
-example, send 1 coin to `2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc` from wallet `2017_05_09_ea42.wlt`:
+
+**This endpoint is deprecated, use [POST /wallet/transaction](#create-transaction)**
+
+Example, send 1 coin to `2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc` from wallet `2017_05_09_ea42.wlt`:
 
 ```sh
 curl -X POST  http://127.0.0.1:6420/api/v1/wallet/spend \
@@ -833,15 +836,17 @@ The `encoded_transaction` can be provided to `POST /api/v1/injectTransaction` to
 
 The request body includes:
 
-* A change address
+* An optional change address
 * A wallet to spend from with the optional ability to restrict which addresses or which unspent outputs in the wallet to use
 * A list of destinations with address and coins specified, as well as optionally specifying hours
 * A configuration for how destination hours are distributed, either manual or automatic
+* Additional options
 
 Example request body with manual hours selection type, unencrypted wallet and all wallet addresses may spend:
 
 ```json
 {
+    "ignore_unconfirmed": false,
     "hours_selection": {
         "type": "manual"
     },
@@ -997,6 +1002,14 @@ then all outputs associated with all addresses in the wallet may be chosen from 
 `change_address` is optional.
 If set, it is not required to be an address in the wallet.
 If not set, it will default to one of the addresses associated with the unspent outputs being spent in the transaction.
+
+`ignore_unconfirmed` is optional and defaults to `false`.
+When `false`, the API will return an error if any of the unspent outputs
+associated with the wallet addresses or the wallet outputs appear as spent in
+a transaction in the unconfirmed transaction pool.
+When `true`, the API will ignore unspent outputs that appear as spent in
+a transaction in the unconfirmed transaction pool when building the transaction,
+but not return an error.
 
 Example:
 

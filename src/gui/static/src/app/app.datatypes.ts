@@ -34,7 +34,7 @@ export class Transaction {
 
 export class PreviewTransaction extends Transaction {
   from: string;
-  to: string;
+  to: string[];
   encoded: string;
 }
 

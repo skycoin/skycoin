@@ -254,10 +254,11 @@ func NewCreatedTransactionInput(out wallet.UxBalance) (*CreatedTransactionInput,
 
 // createTransactionRequest is sent to /wallet/transaction
 type createTransactionRequest struct {
-	HoursSelection hoursSelection                 `json:"hours_selection"`
-	Wallet         createTransactionRequestWallet `json:"wallet"`
-	ChangeAddress  *wh.Address                    `json:"change_address,omitempty"`
-	To             []receiver                     `json:"to"`
+	IgnoreUnconfirmed bool                           `json:"ignore_unconfirmed"`
+	HoursSelection    hoursSelection                 `json:"hours_selection"`
+	Wallet            createTransactionRequestWallet `json:"wallet"`
+	ChangeAddress     *wh.Address                    `json:"change_address,omitempty"`
+	To                []receiver                     `json:"to"`
 }
 
 // createTransactionRequestWallet defines a wallet to spend from and optionally which addresses in the wallet
@@ -452,6 +453,7 @@ func (r createTransactionRequest) ToWalletParams() wallet.CreateTransactionParam
 	}
 
 	return wallet.CreateTransactionParams{
+		IgnoreUnconfirmed: r.IgnoreUnconfirmed,
 		HoursSelection: wallet.HoursSelection{
 			Type:        r.HoursSelection.Type,
 			Mode:        r.HoursSelection.Mode,

@@ -30,3 +30,7 @@ int makeTransaction(coin__Transaction* ptransaction);
 int makeTransactions(GoSlice* transactions, int n);
 
 void copyTransaction(coin__Transaction* pt1, coin__Transaction* pt2);
+
+void makeRandHash(cipher__SHA256* phash);
+
+int makeUxArray(coin__UxArray* parray, int n);

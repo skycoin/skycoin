@@ -27,6 +27,9 @@ int makeUxBodyWithSecret(coin__UxBody* puxBody, cipher__SecKey* pseckey){
 
   memset( puxBody, 0, sizeof(coin__UxBody) );
 
+  puxBody->Coins = 1000000;
+  puxBody->Hours = 100;
+
   result = SKY_cipher_GenerateKeyPair(&pubkey, pseckey);
   cr_assert(result == SKY_OK, "SKY_cipher_GenerateKeyPair failed");
 
@@ -147,4 +150,32 @@ void copyTransaction(coin__Transaction* pt1, coin__Transaction* pt2){
   copySlice(&pt2->Sigs, &pt1->Sigs, sizeof(cipher__Sig));
   copySlice(&pt2->In, &pt1->In, sizeof(cipher__SHA256));
   copySlice(&pt2->Out, &pt1->Out, sizeof(coin__TransactionOutput));
+}
+
+void makeRandHash(cipher__SHA256* phash){
+  GoSlice slice;
+  memset(&slice, 0, sizeof(GoSlice));
+
+  int result = SKY_cipher_RandByte( 128, (coin__UxArray*)&slice );
+  cr_assert(result == SKY_OK, "SKY_cipher_RandByte failed");
+  registerMemCleanup( slice.data );
+  result = SKY_cipher_SumSHA256( slice, phash );
+  cr_assert(result == SKY_OK, "SKY_cipher_SumSHA256 failed");
+}
+
+int makeUxArray(coin__UxArray* parray, int n){
+  parray->data = malloc( sizeof(coin__UxOut) * n );
+  if(!parray->data)
+    return SKY_ERROR;
+  registerMemCleanup( parray->data );
+  parray->cap = parray->len = n;
+  coin__UxOut* p = (coin__UxOut*)parray->data;
+  int result = SKY_OK;
+  for(int i = 0; i < n; i++){
+    result = makeUxOut(p);
+    if( result != SKY_OK )
+      break;
+    p++;
+  }
+  return result;
 }

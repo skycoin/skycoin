@@ -99,7 +99,8 @@
     "edit": "Edit Wallet",
     "add": "Add Wallet",
     "load": "Load Wallet",
-    "encryption": "Encryption",
+    "encryption-enabled": "Encryption enabled",
+    "encryption-disabled": "Encryption disabled",
     "wallet": "Wallet",
 
     "new": {

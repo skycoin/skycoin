@@ -28,7 +28,10 @@
       height: $row-height;
       background: $white;
       display: flex;
-      border-bottom: 1px solid #eff0f0;
+
+      &:not(:last-child) {
+        border-bottom: 1px solid #eff0f0;
+      }
 
       &:first-child {
         border-top-left-radius: 15px;
@@ -46,8 +49,8 @@
     }
   }
 
-  .-width-50 {
-    width: 50px;
+  .-width-70 {
+    width: 70px;
   }
 
   .-width-150 {

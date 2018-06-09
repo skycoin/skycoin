@@ -84,8 +84,6 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 		} else {
 			return util.Annotation{}, false
 		}
-	}
-	if f.Tag.Get("enc") != "-" {
 		if vF.CanSet() || f.Name != "_" {
 			if v.Field(i).Kind() == reflect.Slice {
 				if mai.CurrentIndex == -1 {
@@ -110,12 +108,20 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 			}
 
 			mai.CurrentField++
+			//if f.Tag.Get("enc") != "omitempty" || (fieldSupportsOmitempty(v.Field(i)) && !fieldIsEmpty(v.Field(i))) {
 			return util.Annotation{Size: len(encoder.Serialize(v.Field(i).Interface())), Name: f.Name}, true
+			//}
 
 		}
 	}
 
 	return util.Annotation{}, false
+}
+func fieldIsEmpty(field reflect.Value) bool {
+	return field.Len() == 0
+}
+func fieldSupportsOmitempty(field reflect.Value) bool {
+	return field.Kind() == reflect.Slice || field.Kind() == reflect.String || field.Kind() == reflect.Map
 }
 
 /**************************************

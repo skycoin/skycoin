@@ -154,7 +154,7 @@ func GetSHAFromHex(hex string) cipher.SHA256 {
 	return sha
 }
 
-type StructEmptySlice struct {
+type EmptySliceStruct struct {
 	A uint8
 	e int16
 	B string
@@ -163,17 +163,17 @@ type StructEmptySlice struct {
 	f rune
 }
 
-func (m *StructEmptySlice) Handle(mc *gnet.MessageContext, daemon interface{}) error {
+func (m *EmptySliceStruct) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	// Do nothing
 	return nil
 }
 
-func ExampleStructEmptySlice() {
+func ExampleEmptySliceStruct() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
-	gnet.RegisterMessage(gnet.MessagePrefixFromString("TEST"), StructEmptySlice{})
+	gnet.RegisterMessage(gnet.MessagePrefixFromString("TEST"), EmptySliceStruct{})
 	gnet.VerifyMessages()
-	var message = StructEmptySlice{
+	var message = EmptySliceStruct{
 		0x01,
 		0x2345,
 		"",
@@ -192,6 +192,40 @@ func ExampleStructEmptySlice() {
 	// 0x000d | cd ab 89 67 ....................................... C
 	// 0x0011 | 00 00 00 00 ....................................... D length
 	// 0x0015 |
+}
+
+type OmitEmptySliceTestStruct struct {
+	A uint8
+	B []byte
+	c rune
+	D []byte `enc:",omitempty"`
+}
+
+func (m *OmitEmptySliceTestStruct) Handle(mc *gnet.MessageContext, daemon interface{}) error {
+	// Do nothing
+	return nil
+}
+
+func ExampleOmitEmptySliceTestStruct() {
+	defer gnet.EraseMessages()
+	setupMsgEncoding()
+	gnet.RegisterMessage(gnet.MessagePrefixFromString("TEST"), OmitEmptySliceTestStruct{})
+	gnet.VerifyMessages()
+	var message = OmitEmptySliceTestStruct{
+		0x01,
+		nil,
+		'a',
+		nil,
+	}
+	var mai = NewMessagesAnnotationsIterator(&message)
+	w := bufio.NewWriter(os.Stdout)
+	util.HexDumpFromIterator(gnet.EncodeMessage(&message), &mai, w)
+	// Output:
+	// 0x0000 | 09 00 00 00 ....................................... Length
+	// 0x0004 | 54 45 53 54 ....................................... Prefix
+	// 0x0008 | 01 ................................................ A
+	// 0x0009 | 00 00 00 00 ....................................... B length
+	// 0x000d |
 }
 
 func ExampleIntroductionMessage() {

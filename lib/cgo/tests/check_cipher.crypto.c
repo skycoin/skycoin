@@ -158,7 +158,9 @@ Test(cipher_crypto, TestPubKeyVerifyDefault2) {
   }
 }
 
-Test(cipher_crypto, TestPubKeyToAddressHash) {
+
+//TODO: Must complete this test
+/*Test(cipher_crypto, TestPubKeyToAddressHash) {
   cipher__PubKey p;
   cipher__SecKey s;
   cipher__Ripemd160 h;
@@ -175,7 +177,7 @@ Test(cipher_crypto, TestPubKeyToAddressHash) {
   // assert.True(t, bytes.Equal(h[:], y))
   //
   //
-}
+}*/
 
 Test(cipher_crypto, TestPubKeyToAddress) {
   cipher__PubKey p;
@@ -732,4 +734,3 @@ Test(cipher_crypto, TestSecKeyHashTest) {
   errcode = SKY_cipher_TestSecKeyHash(&sk, &h);
   cr_assert(errcode == SKY_ERROR);
 }
-

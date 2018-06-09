@@ -154,7 +154,9 @@
     "value-help": "The higher the value, the more coin hours will be sent to outputs",
     "preview-button": "Preview",
     "send-button": "Send",
-    "back-button": "Back"
+    "back-button": "Back",
+    "simple": "Simple",
+    "advanced": "Advanced"
   },
 
   "tx": {
@@ -203,7 +205,9 @@
     "timestamp": "Timestamp",
     "amount": "Amount",
     "txid": "Transaction ID",
-    "none": "No pending transactions"
+    "none": "No pending transactions",
+    "my": "Mine",
+    "all": "All"
   },
 
   "history": {

@@ -328,8 +328,9 @@ Test(coin_transactions, TestTransactionsTruncateBytesTo){
 }
 
 /****************************
-* Test crashing randomly.
-* TODO: check why this tests is crashing
+* This test crashes.
+* Original functio returns a Transaction oject.
+* Wrapper function must be modified to use a handle instead of object.
 ***************************/
 /*Test(coin_transactions, TestTransactionsTruncateBytesTo){
   int result;

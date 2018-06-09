@@ -223,14 +223,15 @@ Test(coin_transactions, TestTransactionHashInner){
   cr_assert( result == SKY_OK );
   cr_assert( not ( eq( u8[sizeof(cipher__SHA256)], hash1, hash2) ) );
 
+  //TODO: Fix Out is slice of TransactionOutput
   // If tx.Out is changed, hash should change
   copyTransaction( &tx, &tx2 );
-  cipher__Address* paddr = tx2.Out.data;
+  coin__TransactionOutput* output = tx2.Out.data;
   cipher__Address addr;
   makeAddress( &addr );
-  memcpy(paddr, &addr, sizeof(cipher__Address));
+  memcpy( &output->Address, &addr, sizeof(cipher__Address) );
   cr_assert( not( eq(  type(coin__Transaction), tx, tx2 ) ) );
-  cr_assert(eq(type(cipher__Address), addr, *paddr));
+  cr_assert(eq(type(cipher__Address), addr, output->Address));
   result = SKY_coin_Transaction_HashInner( &tx, &hash1 );
   cr_assert( result == SKY_OK );
   result = SKY_coin_Transaction_HashInner( &tx2, &hash2 );

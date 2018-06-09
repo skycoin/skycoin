@@ -201,3 +201,24 @@ char* cr_user_coin__Transaction_tostr(coin__Transaction *x1){
   cr_asprintf(&out, "(coin__Transaction) { Length : %d }", x1->Length);
   return out;
 }
+
+int cr_user_coin__TransactionOutput_eq(coin__TransactionOutput *x1, coin__TransactionOutput *x2){
+	if( x1->Coins != x2->Coins ||
+      x1->Hours != x2->Hours ){
+      return 0;
+  }
+
+  if(!cr_user_cipher__Address_eq(&x1->Address, &x2->Address))
+    return 0;
+  return 1;
+}
+
+int cr_user_coin__TransactionOutput_noteq(coin__TransactionOutput *x1, coin__TransactionOutput *x2){
+	return !cr_user_coin__TransactionOutput_eq(x1, x2);
+}
+
+char* cr_user_coin__TransactionOutput_tostr(coin__TransactionOutput *x1){
+  char *out;
+  cr_asprintf(&out, "(coin__TransactionOutput) { Coins : %d, Hours: %d, Address: %s }", x1->Coins, x1->Hours, x1->Address);
+  return out;
+}

@@ -64,8 +64,8 @@ import { SeedModalComponent } from './components/pages/settings/backup/seed-moda
 import { OnboardingComponent } from './components/pages/onboarding/onboarding.component';
 import { DontsavepasswordDirective } from './directives/dontsavepassword.directive';
 import { SendFormComponent } from './components/pages/send-skycoin/send-form/send-form.component';
-import { SendVerifyComponent } from './components/pages/send-skycoin/send-verify/send-verify.component';
-import { TransactionInfoComponent } from './components/pages/send-skycoin/send-verify/transaction-info/transaction-info.component';
+import { SendVerifyComponent } from './components/pages/send-skycoin/send-preview/send-preview.component';
+import { TransactionInfoComponent } from './components/pages/send-skycoin/send-preview/transaction-info/transaction-info.component';
 import { SendFormAdvancedComponent } from './components/pages/send-skycoin/send-form-advanced/send-form-advanced.component';
 import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
 import { AppTranslateLoader } from './app.translate-loader';

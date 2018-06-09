@@ -31,12 +31,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `ignore_unconfirmed` option to `POST /api/v1/wallet/transaction` to allow transactions to be created or spent even if there are unspent outputs in the unconfirmed pool.
 - Add `uxouts` to `POST /api/v1/wallet/transaction`, to allow specific unspent outputs to be used in a transaction.
 - Add Dockerfile in docker/images/dev-cli to build a docker image suitable for development.
+- Coin creator tool, `cmd/newcoin`, to quickly bootstrap a new fiber coin
 
 ### Fixed
 
 - Reduce connection disconnects, improves syncing
 - Fix #1171, update CLI to support wallet encryption
 - Use `bolt.Tx` correctly for read operations
+- Docker images for `arm32v5` and `ar32v7` architectures by using busybox as base in docker/images/mainnet/Dockerfile and docker/images/mainnet/hooks/
 
 ### Changed
 

@@ -11,10 +11,10 @@
       [formData]="formData"
       (onFormSubmitted)="onFormSubmitted($event)"
     ></app-send-form-advanced>
-    <app-send-verify
+    <app-send-preview
       *ngIf="!showForm"
       [transaction]="transaction"
       (onBack)="onBack($event)"
-    ></app-send-verify>
+    ></app-send-preview>
   </div>
 </div>

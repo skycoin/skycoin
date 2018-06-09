@@ -154,7 +154,7 @@ func GetSHAFromHex(hex string) cipher.SHA256 {
 	return sha
 }
 
-type TestMessage struct {
+type StructEmptySlice struct {
 	A uint8
 	e int16
 	B string
@@ -163,7 +163,7 @@ type TestMessage struct {
 	f rune
 }
 
-func (m *TestMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
+func (m *StructEmptySlice) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	// Do nothing
 	return nil
 }
@@ -171,9 +171,9 @@ func (m *TestMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error 
 func ExampleStructEmptySlice() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
-	gnet.RegisterMessage(gnet.MessagePrefixFromString("TEST"), TestMessage{})
+	gnet.RegisterMessage(gnet.MessagePrefixFromString("TEST"), StructEmptySlice{})
 	gnet.VerifyMessages()
-	var message = TestMessage{
+	var message = StructEmptySlice{
 		0x01,
 		0x2345,
 		"",

@@ -26,6 +26,8 @@ int makeUxBodyWithSecret(coin__UxBody* puxBody, cipher__SecKey* pseckey){
   int result;
 
   memset( puxBody, 0, sizeof(coin__UxBody) );
+  puxBody->Coins = 1000000;
+  puxBody->Hours = 100;
 
   puxBody->Coins = 1000000;
   puxBody->Hours = 100;

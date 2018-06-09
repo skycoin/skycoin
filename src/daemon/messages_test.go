@@ -7,8 +7,6 @@ import (
 	"reflect"
 	"strconv"
 
-	"strings"
-
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
@@ -86,7 +84,6 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 		} else {
 			return util.Annotation{}, false
 		}
-	}
 		if vF.CanSet() || f.Name != "_" {
 			if v.Field(i).Kind() == reflect.Slice {
 				if mai.CurrentIndex == -1 {

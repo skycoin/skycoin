@@ -161,7 +161,7 @@ Test(cipher_crypto, TestPubKeyVerifyDefault2) {
 Test(cipher_crypto, TestPubKeyToAddressHash) {
   cipher__PubKey p;
   cipher__SecKey s;
-  cipher__Ripemd160 h;
+  Ripemd160 h;
 
   SKY_cipher_GenerateKeyPair(&p, &s);
   SKY_cipher_PubKey_ToAddressHash(&p, &h);
@@ -181,7 +181,7 @@ Test(cipher_crypto, TestPubKeyToAddress) {
   cipher__PubKey p;
   cipher__SecKey s;
   cipher__Address addr;
-  cipher__Ripemd160 h;
+  Ripemd160 h;
   int errcode;
 
   SKY_cipher_GenerateKeyPair(&p, &s);

@@ -269,7 +269,7 @@ func SKY_coin_Transactions_TruncateBytesTo(_txns *C.coin__Transactions, _size in
 	txns := *(*coin.Transactions)(unsafe.Pointer(_txns))
 	size := _size
 	__arg1 := txns.TruncateBytesTo(size)
-	*_arg1 = *(*C.coin__Transactions)(unsafe.Pointer(&__arg1))
+	copyToGoSlice(reflect.ValueOf(__arg1), _arg1)
 	return
 }
 

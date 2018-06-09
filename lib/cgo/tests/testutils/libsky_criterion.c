@@ -175,3 +175,29 @@ char* cr_user_coin__UxOut_tostr(coin__UxOut *x1){
   cr_asprintf(&out, "(coin__UxOut) { %s }", (char*)x1);
   return out;
 }
+
+int cr_user_coin__Transaction_eq(coin__Transaction *x1, coin__Transaction *x2){
+	if( x1->Length != x2->Length ||
+      x1->Type != x2->Type ){
+      return 0;
+  }
+  if(!cr_user_cipher__SHA256_eq(&x1->InnerHash, &x2->InnerHash))
+    return 0;
+  if(!cr_user_GoSlice__eq(&x1->Sigs, &x2->Sigs) )
+    return 0;
+  if(!cr_user_GoSlice__eq(&x1->In, &x2->In) )
+    return 0;
+  if(!cr_user_GoSlice__eq(&x1->Out, &x2->Out) )
+    return 0;
+  return 1;
+}
+
+int cr_user_coin__Transaction_noteq(coin__Transaction *x1, coin__Transaction *x2){
+	return !cr_user_coin__Transaction_eq(x1, x2);
+}
+
+char* cr_user_coin__Transaction_tostr(coin__Transaction *x1){
+  char *out;
+  cr_asprintf(&out, "(coin__Transaction) { Length : %d }", x1->Length);
+  return out;
+}

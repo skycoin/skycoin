@@ -47,4 +47,8 @@ extern int cr_user_coin__UxOut_eq(coin__UxOut *x1, coin__UxOut *x2);
 extern int cr_user_coin__UxOut_noteq(coin__UxOut *x1, coin__UxOut *x2);
 extern char* cr_user_coin__UxOut_tostr(coin__UxOut *x1);
 
+extern int cr_user_coin__Transaction_eq(coin__Transaction *x1, coin__Transaction *x2);
+extern int cr_user_coin__Transaction_noteq(coin__Transaction *x1, coin__Transaction *x2);
+extern char* cr_user_coin__Transaction_tostr(coin__Transaction *x1);
+
 #endif //LIBCRITERION_H

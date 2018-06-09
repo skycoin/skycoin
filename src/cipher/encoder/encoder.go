@@ -42,7 +42,9 @@ Todo:
 */
 
 var (
-	ErrBufferOverflow   = errors.New("Not enough buffer data to deserialize")
+	// ErrBufferOverflow bytes in input buffer not enough to deserialize expected type
+	ErrBufferOverflow = errors.New("Not enough buffer data to deserialize")
+	// ErrInvalidOmitEmpty field tagged with omitempty and it's not last one in struct
 	ErrInvalidOmitEmpty = errors.New("omitempty only supported for the final field in the struct")
 )
 
@@ -541,6 +543,7 @@ func datasizeWrite(v reflect.Value) (int, error) {
 	}
 }
 
+// ParseTag to extract encoder args from raw string
 func ParseTag(tag string) (string, bool) {
 	tagSplit := strings.Split(tag, ",")
 	name := tagSplit[0]

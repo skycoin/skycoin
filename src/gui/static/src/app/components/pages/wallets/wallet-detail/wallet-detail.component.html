@@ -3,15 +3,15 @@
     <span class="-img -new-address">{{ 'wallet.new-address' | translate }}</span>
   </div>
   <div class="-button" (click)="toggleEmpty()">
-  <span [ngClass]="{ '-img': true, '-show-empty': wallet.hideEmpty, '-hide-empty': !wallet.hideEmpty }">
-    {{ 'wallet.' + (wallet.hideEmpty ? 'show' : 'hide') + '-empty' | translate }}
-  </span>
+    <span [ngClass]="{ '-img': true, '-show-empty': wallet.hideEmpty, '-hide-empty': !wallet.hideEmpty }">
+      {{ 'wallet.' + (wallet.hideEmpty ? 'show' : 'hide') + '-empty' | translate }}
+    </span>
   </div>
   <div class="flex-fill"></div>
   <div class="-button" (click)="toggleEncryption()">
-  <span [ngClass]="{ '-img': true, '-enable-encryption': !wallet.encrypted, '-disable-encryption': wallet.encrypted }">
-    {{ 'wallet.' + (wallet.encrypted ? 'decrypt' : 'encrypt') | translate }}
-  </span>
+    <span [ngClass]="{ '-img': true, '-enable-encryption': !wallet.encrypted, '-disable-encryption': wallet.encrypted }">
+      {{ 'wallet.' + (wallet.encrypted ? 'decrypt' : 'encrypt') | translate }}
+    </span>
   </div>
   <div class="-button" (click)="editWallet()">
     <span class="-img -edit-wallet">{{ 'wallet.edit' | translate }}</span>
@@ -24,7 +24,7 @@
     <div class="-flex-fill -address -grey">
       <img src="../../../../../assets/img/qr-code-black.png" (click)="showQrCode($event, address.address)">
       <span class="click-to-copy" [ngClass]="{ copying: address.copying }"
-         (click)="copyAddress($event, address)" (mouseleave)="address.copying = false">
+            (click)="copyAddress($event, address)" (mouseleave)="address.copying = false">
         {{ address.address }}
         <span [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">
           {{ 'wallet.address.copy' | translate }}

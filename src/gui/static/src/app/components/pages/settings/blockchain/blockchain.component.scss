@@ -21,4 +21,8 @@
     color: $grey;
     margin-bottom: 5px;
   }
+
+  .-value {
+    word-break: break-all;
+  }
 }

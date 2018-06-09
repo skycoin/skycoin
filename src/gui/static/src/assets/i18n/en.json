@@ -191,10 +191,10 @@
     "blocks": "Number of blocks",
     "time": "Time since last block",
     "hash": "Hash of last block",
-    "current-supply": "Current supply",
-    "total-supply": "Total supply",
-    "current-coinhour-supply": "Current Coinhour supply",
-    "total-coinhour-supply": "Total Coinhour supply"
+    "current-supply": "Current SKY supply",
+    "total-supply": "Total SKY supply",
+    "current-coinhour-supply": "Current Coin Hours supply",
+    "total-coinhour-supply": "Total Coin Hours supply"
   },
 
   "network": {

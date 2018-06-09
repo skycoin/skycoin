@@ -100,19 +100,20 @@ type IPAddr struct {
 	Port uint16
 }
 
-// NewIPAddr returns an IPAddr from an ip:port string.  If ipv6 or invalid, error is
-// returned
+// NewIPAddr returns an IPAddr from an ip:port string.
 func NewIPAddr(addr string) (ipaddr IPAddr, err error) {
-	// TODO -- support ipv6
 	ips, port, err := iputil.SplitAddr(addr)
 	if err != nil {
 		return
 	}
+
+	// TODO -- support ipv6
 	ipb := net.ParseIP(ips).To4()
 	if ipb == nil {
 		err = errors.New("Ignoring IPv6 address")
 		return
 	}
+
 	ip := binary.BigEndian.Uint32(ipb)
 	ipaddr.IP = ip
 	ipaddr.Port = uint16(port)

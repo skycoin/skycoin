@@ -12,13 +12,15 @@ import (
 	"github.com/boltdb/bolt"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
 var (
-	// SigVerifyTheadNum number of goroutines to use for signature verification
-	SigVerifyTheadNum = 4
+	// BlockchainVerifyTheadNum number of goroutines to use for signature and historydb verification
+	BlockchainVerifyTheadNum = 4
 )
 
 // ErrCorruptDB is returned if the database is corrupted
@@ -29,26 +31,39 @@ type ErrCorruptDB struct {
 
 // CheckDatabase checks the database for corruption
 func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) error {
-	bc, err := NewBlockchain(db, BlockchainConfig{
-		Pubkey: pubkey,
+	var blocksBktExist bool
+	db.View("CheckDatabase", func(tx *dbutil.Tx) error {
+		blocksBktExist = dbutil.Exists(tx, blockdb.BlocksBkt)
+		return nil
 	})
+
+	// Don't verify the db if the blocks bucket does not exist
+	if !blocksBktExist {
+		return nil
+	}
+
+	bc, err := NewBlockchain(db, BlockchainConfig{Pubkey: pubkey})
 	if err != nil {
 		return err
 	}
 
-	err = db.View("CheckDatabase", func(tx *dbutil.Tx) error {
-		// Don't verify the db if the blocks bucket does not exist
-		if !dbutil.Exists(tx, blockdb.BlocksBkt) {
-			return nil
+	history := historydb.New()
+	indexesMap := historydb.NewIndexesMap()
+	verifyFunc := func(tx *dbutil.Tx, b *coin.SignedBlock) error {
+		// Verify signature
+		if err := bc.VerifySignature(b); err != nil {
+			return err
 		}
 
-		return bc.VerifySignatures(tx, SigVerifyTheadNum, quit)
-	})
+		// Verify historydb
+		return history.Verify(tx, b, indexesMap)
+	}
 
+	err = bc.WalkChain(BlockchainVerifyTheadNum, verifyFunc, quit)
 	switch err.(type) {
 	case nil:
 		return nil
-	case blockdb.ErrMissingSignature:
+	case blockdb.ErrMissingSignature, historydb.ErrHistoryDBCorrupted:
 		return ErrCorruptDB{err}
 	default:
 		return err

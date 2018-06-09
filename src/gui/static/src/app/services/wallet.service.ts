@@ -89,7 +89,7 @@ export class WalletService {
   }
 
   allPendingTransactions(): Observable<any> {
-    return this.apiService.get('pendingTxs');
+    return Observable.timer(0, 10000).flatMap(() => this.apiService.get('pendingTxs'));
   }
 
   pendingTransactions(): Observable<any> {
@@ -99,9 +99,11 @@ export class WalletService {
   refreshBalances() {
     this.wallets.first().subscribe(wallets => {
       Observable.forkJoin(wallets.map(wallet => this.retrieveWalletBalance(wallet).map(response => {
-        wallet.addresses = response.addresses;
         wallet.coins = response.coins;
         wallet.hours = response.hours;
+        wallet.addresses = wallet.addresses.map(address => {
+          return response.addresses.find(addr => addr.address === address.address);
+        });
 
         return wallet;
       })))
@@ -129,23 +131,18 @@ export class WalletService {
     return this.apiService.getWalletSeed(wallet, password);
   }
 
-  createTransaction(wallet: Wallet, address: string, amount: string, password: string|null): Observable<PreviewTransaction> {
+  createTransaction(wallet: Wallet, addresses: string[]|null, destinations: any[], hoursSelection: any, changeAddress: string|null, password: string|null): Observable<PreviewTransaction> {
     return this.apiService.post(
       'wallet/transaction',
       {
-        hours_selection: {
-          type: 'auto',
-          mode: 'share',
-          share_factor: '0.5',
-        },
+        hours_selection: hoursSelection,
         wallet: {
           id: wallet.filename,
           password,
+          addresses,
         },
-        to: [{
-          address,
-          coins: amount,
-        }],
+        to: destinations,
+        change_address: changeAddress,
       },
       {
         json: true,

@@ -3,7 +3,7 @@
     <label for="wallet">{{ 'send.from-label' | translate }}</label>
     <div class="-select">
       <select formControlName="wallet" id="wallet">
-        <option *ngFor="let wallet of walletService.all() | async" [disabled]="wallet.balance <= 0" [ngValue]="wallet">
+        <option *ngFor="let wallet of walletService.all() | async" [disabled]="wallet.coins <= 0" [ngValue]="wallet">
           {{ wallet.label }} - {{ wallet.coins | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
         </option>
       </select>
@@ -15,15 +15,14 @@
   </div>
   <div class="form-field">
     <label for="amount">{{ 'send.amount-label' | translate }}</label>
-    <input formControlName="amount" id="amount" (keydown.enter)="send()">
-  </div>
-  <div class="form-field">
-    <label for="notes">{{ 'send.notes-label' | translate }}</label>
-    <textarea formControlName="notes" id="notes" row="2"></textarea>
+    <input formControlName="amount" id="amount" (keydown.enter)="preview()">
   </div>
   <div class="-buttons">
-    <app-button #button (action)="send()" class="primary" [disabled]="!form.valid">
-      {{ 'send.verify-button' | translate }}
+    <app-button #previewButton (action)="preview()" [disabled]="!form.valid">
+      {{ 'send.preview-button' | translate }}
+    </app-button>
+    <app-button #sendButton (action)="send()" class="primary" [disabled]="!form.valid">
+      {{ 'send.send-button' | translate }}
     </app-button>
   </div>
 </div>

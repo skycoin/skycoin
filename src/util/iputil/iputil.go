@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"strconv"
-	"strings"
 )
 
 // LocalhostIP returns the address for localhost on the machine
@@ -29,19 +28,28 @@ func LocalhostIP() (string, error) {
 }
 
 // IsLocalhost returns true if addr is a localhost address
+// Works for both ipv4 and ipv6 addresses.
 func IsLocalhost(addr string) bool {
 	return net.ParseIP(addr).IsLoopback() || addr == "localhost"
 }
 
-// SplitAddr splits an ip:port string to ip, port
+// SplitAddr splits an ip:port string to ip, port.
+// Works for both ipv4 and ipv6 addresses.
+// If the IP is not specified, returns an error.
 func SplitAddr(addr string) (string, uint16, error) {
-	pts := strings.Split(addr, ":")
-	if len(pts) != 2 {
-		return pts[0], 0, fmt.Errorf("Invalid addr %s", addr)
-	}
-	port64, err := strconv.ParseUint(pts[1], 10, 16)
+	ip, port, err := net.SplitHostPort(addr)
 	if err != nil {
-		return pts[0], 0, fmt.Errorf("Invalid port in %s", addr)
+		return "", 0, err
 	}
-	return pts[0], uint16(port64), nil
+
+	if ip == "" {
+		return "", 0, fmt.Errorf("IP missing from %s", addr)
+	}
+
+	port64, err := strconv.ParseUint(port, 10, 16)
+	if err != nil {
+		return "", 0, fmt.Errorf("Invalid port in %s", addr)
+	}
+
+	return ip, uint16(port64), nil
 }

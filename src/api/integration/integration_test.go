@@ -2261,7 +2261,39 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 		},
 
 		{
-			name: "valid request, auto one output no change",
+			// NOTE: no reliable way to test the ignore unconfirmed behavior,
+			// this test only checks that if IgnoreUnconfirmed is specified,
+			// the API doesn't throw up some parsing error
+			name: "valid request, manual one output no change, ignore unconfirmed",
+			req: api.CreateTransactionRequest{
+				IgnoreUnconfirmed: true,
+				HoursSelection: api.HoursSelection{
+					Type: wallet.HoursSelectionTypeManual,
+				},
+				Wallet: api.CreateTransactionRequestWallet{
+					ID:       w.Filename(),
+					Password: password,
+				},
+				ChangeAddress: &defaultChangeAddress,
+				To: []api.Receiver{
+					{
+						Address: w.Entries[1].Address.String(),
+						Coins:   toDropletString(totalCoins),
+						Hours:   "1",
+					},
+				},
+			},
+			outputs: []coin.TransactionOutput{
+				{
+					Address: w.Entries[1].Address,
+					Coins:   totalCoins,
+					Hours:   1,
+				},
+			},
+		},
+
+		{
+			name: "valid request, auto one output no change, share factor recalculates to 1.0",
 			req: api.CreateTransactionRequest{
 				HoursSelection: api.HoursSelection{
 					Type:        wallet.HoursSelectionTypeAuto,
@@ -2284,7 +2316,7 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 				{
 					Address: w.Entries[1].Address,
 					Coins:   totalCoins,
-					Hours:   remainingHours / 2,
+					Hours:   remainingHours,
 				},
 			},
 		},

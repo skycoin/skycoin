@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
 	"sort"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -89,7 +90,7 @@ var ErrAddEarnedCoinHoursAdditionOverflow = errors.New("UxOut.CoinHours addition
 // CoinHours Calculate coinhour balance of output. t is the current unix utc time.
 func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
 	if t < uo.Head.Time {
-		logger.Warning("Calculating coin hours with t < head time")
+		log.Printf("Calculating coin hours with t < head time")
 		return uo.Body.Hours, nil
 	}
 
@@ -100,7 +101,7 @@ func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
 	wholeCoinSeconds, err := multUint64(seconds, wholeCoins)
 	if err != nil {
 		err := fmt.Errorf("UxOut.CoinHours: Calculating whole coin seconds overflows uint64 seconds=%d coins=%d uxid=%s", seconds, wholeCoins, uo.Hash().Hex())
-		logger.Critical().Error(err)
+		log.Printf("%v", err)
 		return 0, err
 	}
 
@@ -109,7 +110,7 @@ func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
 	dropletSeconds, err := multUint64(seconds, remainderDroplets)
 	if err != nil {
 		err := fmt.Errorf("UxOut.CoinHours: Calculating droplet seconds overflows uint64 seconds=%d droplets=%d uxid=%s", seconds, remainderDroplets, uo.Hash().Hex())
-		logger.Critical().Error(err)
+		log.Printf("%v", err)
 		return 0, err
 	}
 
@@ -119,7 +120,7 @@ func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
 	coinHours := coinSeconds / 3600                        // coin hours
 	totalHours, err := AddUint64(uo.Body.Hours, coinHours) // starting+earned
 	if err != nil {
-		logger.Critical().Errorf("%v uxid=%s", ErrAddEarnedCoinHoursAdditionOverflow, uo.Hash().Hex())
+		log.Printf("%v uxid=%s", ErrAddEarnedCoinHoursAdditionOverflow, uo.Hash().Hex())
 		return 0, ErrAddEarnedCoinHoursAdditionOverflow
 	}
 	return totalHours, nil

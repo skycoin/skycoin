@@ -41,6 +41,10 @@ Todo:
 - validate packet legnth for incoming
 */
 
+var (
+	ErrBufferOverflow = errors.New("Not enough buffer data to deserialize")
+)
+
 // TODO: constant length byte arrays must not be prefixed
 
 // EncodeInt encodes an Integer type contained in `data`
@@ -126,7 +130,7 @@ func DecodeInt(in []byte, data interface{}) {
 func DeserializeAtomic(in []byte, data interface{}) {
 	n := intDestSize(data)
 	if len(in) < n {
-		log.Panic("Not enough data to deserialize")
+		log.Panic(ErrBufferOverflow)
 	}
 	if n != 0 {
 		var b [8]byte
@@ -719,7 +723,7 @@ func (d *decoder) value(v reflect.Value) error {
 
 	case reflect.Map:
 		if len(d.buf) < 4 {
-			return errors.New("Not enough buffer data to deserialize length")
+			return ErrBufferOverflow
 		}
 		length := int(d.uint32())
 		if length < 0 || length > len(d.buf) {
@@ -745,7 +749,7 @@ func (d *decoder) value(v reflect.Value) error {
 
 	case reflect.Slice:
 		if len(d.buf) < 4 {
-			return errors.New("Not enough buffer data to deserialize length")
+			return ErrBufferOverflow
 		}
 		length := int(d.uint32())
 		if length < 0 || length > len(d.buf) {
@@ -799,7 +803,7 @@ func (d *decoder) value(v reflect.Value) error {
 
 	case reflect.String:
 		if len(d.buf) < 4 {
-			return errors.New("Not enough buffer data to deserialize length")
+			return ErrBufferOverflow
 		}
 		length := int(d.uint32())
 		if length < 0 || length > len(d.buf) {

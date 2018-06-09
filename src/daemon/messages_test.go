@@ -56,7 +56,6 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 	if !mai.LengthCalled {
 		mai.LengthCalled = true
 		return util.Annotation{Size: 4, Name: "Length"}, true
-
 	}
 	if !mai.PrefixCalled {
 		mai.PrefixCalled = true
@@ -81,6 +80,19 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 		j = -1
 		if i < mai.MaxField {
 			f = t.Field(i)
+			if f.Type.Kind() == reflect.Slice {
+				if _, omitempty := encoder.ParseTag(f.Tag.Get("enc")); omitempty {
+					if i == mai.MaxField-1 {
+						vF = v.Field(i)
+						if vF.Len() == 0 {
+							// Last field is empty slice. Nothing further tokens
+							return util.Annotation{}, false
+						}
+					} else {
+						panic(encoder.ErrInvalidOmitEmpty)
+					}
+				}
+			}
 		} else {
 			return util.Annotation{}, false
 		}

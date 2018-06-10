@@ -89,7 +89,7 @@ export class WalletService {
   }
 
   allPendingTransactions(): Observable<any> {
-    return this.apiService.get('pendingTxs');
+    return Observable.timer(0, 10000).flatMap(() => this.apiService.get('pendingTxs'));
   }
 
   pendingTransactions(): Observable<any> {

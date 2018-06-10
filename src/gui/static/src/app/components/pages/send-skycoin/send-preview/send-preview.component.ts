@@ -1,16 +1,16 @@
-import { Component, EventEmitter, Input, Output, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, Output, ViewChild } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { ButtonComponent } from '../../../layout/button/button.component';
-import { MatSnackBar, MatSnackBarConfig } from '@angular/material';
-import { parseResponseMessage } from '../../../../utils/errors';
+import { MatSnackBar } from '@angular/material';
+import { showSnackbarError } from '../../../../utils/errors';
 import { PreviewTransaction } from '../../../../app.datatypes';
 
 @Component({
-  selector: 'app-send-verify',
-  templateUrl: './send-verify.component.html',
-  styleUrls: ['./send-verify.component.scss'],
+  selector: 'app-send-preview',
+  templateUrl: './send-preview.component.html',
+  styleUrls: ['./send-preview.component.scss'],
 })
-export class SendVerifyComponent {
+export class SendVerifyComponent implements OnDestroy {
   @ViewChild('sendButton') sendButton: ButtonComponent;
   @ViewChild('backButton') backButton: ButtonComponent;
   @Input() transaction: PreviewTransaction;
@@ -20,6 +20,10 @@ export class SendVerifyComponent {
     private walletService: WalletService,
     private snackbar: MatSnackBar,
   ) {}
+
+  ngOnDestroy() {
+    this.snackbar.dismiss();
+  }
 
   send() {
     if (this.sendButton.isLoading()) {
@@ -41,11 +45,10 @@ export class SendVerifyComponent {
         this.onBack.emit(true);
       }, 3000);
     }, error => {
-      const errorMessage = parseResponseMessage(error['_body']);
-      const config = new MatSnackBarConfig();
-      config.duration = 300000;
-      this.snackbar.open(errorMessage, null, config);
-      this.sendButton.setError(errorMessage);
+      showSnackbarError(this.snackbar, error);
+
+      this.sendButton.setError(error);
+      this.backButton.setEnabled();
     });
   }
 

@@ -11,8 +11,8 @@
         </span>
       </p>
     </div>
-    <div class="hours-column">{{ (address.hours ? address.hours : 0) | number:'1.0-6' }}</div>
     <div class="coins-column">{{ (address.coins ? address.coins : 0) | number:'1.0-6' }}</div>
+    <div class="hours-column">{{ (address.hours ? address.hours : 0) | number:'1.0-6' }}</div>
     <div class="outputs-column">
       <mat-icon [matMenuTriggerFor]="optionsMenu">more_vert</mat-icon>
     </div>

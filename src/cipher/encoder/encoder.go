@@ -14,7 +14,8 @@
 // numbers with smaller absolute value take a smaller number of bytes.
 // For a specification, see http://code.google.com/apis/protocolbuffers/docs/encoding.html.
 //
-// Fields can be ignored with the struct tag `enc:"-"`
+// Fields can be ignored with the struct tag `enc:"-"` .
+// Unexported struct fields are ignored by default .
 //
 // Fields can be skipped if empty with the struct tag `enc:",omitempty"`
 // Note the comma, which follows package json's conventions.
@@ -495,6 +496,10 @@ func datasizeWrite(v reflect.Value) (int, error) {
 		nFields := t.NumField()
 		for i, n := 0, nFields; i < n; i++ {
 			ff := t.Field(i)
+			// Skip unexported fields
+			if ff.PkgPath != "" {
+				continue
+			}
 
 			tag, omitempty := parseTag(ff.Tag.Get("enc"))
 
@@ -765,6 +770,10 @@ func (d *decoder) value(v reflect.Value) error {
 		nFields := v.NumField()
 		for i := 0; i < nFields; i++ {
 			ff := t.Field(i)
+			// Skip unexported fields
+			if ff.PkgPath != "" {
+				continue
+			}
 
 			tag, omitempty := parseTag(ff.Tag.Get("enc"))
 
@@ -916,6 +925,10 @@ func (d *decoder) dchk(v reflect.Value) int {
 		nFields := v.NumField()
 		for i := 0; i < nFields; i++ {
 			ff := t.Field(i)
+			// Skip unexported fields
+			if ff.PkgPath != "" {
+				continue
+			}
 
 			tag, omitempty := parseTag(ff.Tag.Get("enc"))
 
@@ -1012,6 +1025,10 @@ func (e *encoder) value(v reflect.Value) {
 		for i := 0; i < nFields; i++ {
 			// see comment for corresponding code in decoder.value()
 			ff := t.Field(i)
+			// Skip unexported fields
+			if ff.PkgPath != "" {
+				continue
+			}
 
 			tag, omitempty := parseTag(ff.Tag.Get("enc"))
 

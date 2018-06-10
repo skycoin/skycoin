@@ -249,6 +249,10 @@ typedef Handle Config__Handle;
  */
 typedef Handle Transaction__Handle;
 
+/**
+ * Memory handle to access to coin.Transactions
+ */
+typedef Handle Transactions__Handle;
 
 /*
 #include "cipher.hash.go.h"

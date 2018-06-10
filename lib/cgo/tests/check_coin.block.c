@@ -181,9 +181,10 @@ Test(coin_block, TestCreateUnspent){
   int result = makeKeysAndAddress(&pubkey, &seckey, &address);
 
   cipher__SHA256 hash;
-  coin__Transaction tx;
-  memset( &tx, 0, sizeof(coin__Transaction) );
-  result = SKY_coin_Transaction_PushOutput(&tx, &address, 11000000, 255);
+  coin__Transaction* ptx;
+  Transaction__Handle handle;
+  ptx = makeEmptyTransaction(&handle);
+  result = SKY_coin_Transaction_PushOutput(handle, &address, 11000000, 255);
   cr_assert(result == SKY_OK, "SKY_coin_Transaction_PushOutput failed");
   coin__BlockHeader bh;
   memset(&bh, 0,  sizeof(coin__BlockHeader));
@@ -197,7 +198,7 @@ Test(coin_block, TestCreateUnspent){
   int tests_count = sizeof(t) / sizeof(testcase_unspent);
   for( int i = 0; i <  tests_count; i++){
     memset(&ux, 0, sizeof(coin__UxOut));
-    result = SKY_coin_CreateUnspent( &bh, &tx, t[i].index, &ux );
+    result = SKY_coin_CreateUnspent( &bh, ptx, t[i].index, &ux );
     if( t[i].failure ){
       cr_assert( result == SKY_ERROR, "SKY_coin_CreateUnspent should have failed" );
       continue;
@@ -206,11 +207,11 @@ Test(coin_block, TestCreateUnspent){
     }
     cr_assert( bh.Time == ux.Head.Time );
     cr_assert( bh.BkSeq == ux.Head.BkSeq );
-    result = SKY_coin_Transaction_Hash( &tx, &hash );
+    result = SKY_coin_Transaction_Hash( handle, &hash );
     cr_assert( result == SKY_OK, "SKY_coin_Transaction_Hash failed" );
     cr_assert( eq( u8[sizeof(cipher__SHA256)], hash, ux.Body.SrcTransaction) );
-    cr_assert( t[i].index < tx.Out.len);
-    coin__TransactionOutput* poutput = (coin__TransactionOutput*)tx.Out.data;
+    cr_assert( t[i].index < ptx->Out.len);
+    coin__TransactionOutput* poutput = (coin__TransactionOutput*)ptx->Out.data;
     cr_assert( eq( type(cipher__Address), ux.Body.Address, poutput->Address ) );
     cr_assert( ux.Body.Coins == poutput->Coins );
     cr_assert( ux.Body.Hours == poutput->Hours );
@@ -224,9 +225,10 @@ Test(coin_block, TestCreateUnspents){
   int result = makeKeysAndAddress(&pubkey, &seckey, &address);
 
   cipher__SHA256 hash;
-  coin__Transaction tx;
-  memset( &tx, 0, sizeof(coin__Transaction) );
-  result = SKY_coin_Transaction_PushOutput(&tx, &address, 11000000, 255);
+  coin__Transaction* ptx;
+  Transaction__Handle handle;
+  ptx = makeEmptyTransaction(&handle);
+  result = SKY_coin_Transaction_PushOutput(handle, &address, 11000000, 255);
   cr_assert(result == SKY_OK, "SKY_coin_Transaction_PushOutput failed");
   coin__BlockHeader bh;
   memset(&bh, 0,  sizeof(coin__BlockHeader));
@@ -234,17 +236,17 @@ Test(coin_block, TestCreateUnspents){
   bh.BkSeq = 1;
 
   coin__UxArray uxs = {NULL, 0, 0};
-  result = SKY_coin_CreateUnspents(&bh, &tx, &uxs);
+  result = SKY_coin_CreateUnspents(&bh, ptx, &uxs);
   cr_assert( result == SKY_OK, "SKY_coin_CreateUnspents failed" );
   registerMemCleanup( uxs.data );
   cr_assert( uxs.len == 1 );
-  cr_assert( uxs.len == tx.Out.len );
+  cr_assert( uxs.len == ptx->Out.len );
   coin__UxOut* pout = (coin__UxOut*)uxs.data;
-  coin__TransactionOutput* ptxout = (coin__TransactionOutput*)tx.Out.data;
+  coin__TransactionOutput* ptxout = (coin__TransactionOutput*)ptx->Out.data;
   for(int i = 0; i < uxs.len; i++){
     cr_assert( bh.Time == pout->Head.Time );
     cr_assert( bh.BkSeq == pout->Head.BkSeq );
-    result = SKY_coin_Transaction_Hash( &tx, &hash );
+    result = SKY_coin_Transaction_Hash( handle, &hash );
     cr_assert( result == SKY_OK, "SKY_coin_Transaction_Hash failed" );
     cr_assert( eq( u8[sizeof(cipher__SHA256)], hash, pout->Body.SrcTransaction) );
     cr_assert( eq( type(cipher__Address), pout->Body.Address, ptxout->Address ) );

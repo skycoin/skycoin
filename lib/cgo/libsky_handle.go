@@ -19,6 +19,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 )
 
+
 type Handle uint64
 
 var (
@@ -37,6 +38,15 @@ func registerHandle(obj interface{}) C.Handle {
 func lookupHandle(handle C.Handle) (interface{}, bool) {
 	obj, ok := handleMap[Handle(handle)]
 	return obj, ok
+}
+
+func overwriteHandle(handle C.Handle, obj interface{}) bool{
+	_, ok := handleMap[Handle(handle)]
+	if ok {
+		handleMap[Handle(handle)] = obj
+		return true
+	}
+	return false
 }
 
 func registerWebRpcClientHandle(obj *webrpc.Client) C.WebRpcClient__Handle {
@@ -229,6 +239,20 @@ func lookupTransactionHandle(handle C.Transaction__Handle) (*coin.Transaction, b
 	obj, ok := lookupHandle(C.Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(*coin.Transaction); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerTransactionsHandle(obj *coin.Transactions) C.Transactions__Handle {
+	return (C.Transactions__Handle)(registerHandle(obj))
+}
+
+func lookupTransactionsHandle(handle C.Transactions__Handle) (*coin.Transactions, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*coin.Transactions); isOK {
 			return obj, true
 		}
 	}

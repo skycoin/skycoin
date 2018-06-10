@@ -259,6 +259,48 @@ func lookupTransactionsHandle(handle C.Transactions__Handle) (*coin.Transactions
 	return nil, false
 }
 
+func registerBlockHandle(obj *coin.Block) C.Block__Handle {
+	return (C.Block__Handle)(registerHandle(obj))
+}
+
+func lookupBlockHandle(handle C.Block__Handle) (*coin.Block, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*coin.Block); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerSignedBlockHandle(obj *coin.SignedBlock) C.SignedBlock__Handle {
+	return (C.SignedBlock__Handle)(registerHandle(obj))
+}
+
+func lookupSignedBlockHandle(handle C.SignedBlock__Handle) (*coin.SignedBlock, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*coin.SignedBlock); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerBlockBodyHandle(obj *coin.BlockBody) C.BlockBody__Handle {
+	return (C.BlockBody__Handle)(registerHandle(obj))
+}
+
+func lookupBlockBodyHandle(handle C.BlockBody__Handle) (*coin.BlockBody, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*coin.BlockBody); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
 func closeHandle(handle Handle) {
 	delete(handleMap, handle)
 }

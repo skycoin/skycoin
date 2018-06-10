@@ -254,6 +254,21 @@ typedef Handle Transaction__Handle;
  */
 typedef Handle Transactions__Handle;
 
+/**
+ * Memory handle to access to coin.Block
+ */
+typedef Handle Block__Handle;
+
+/**
+ * Memory handle to access to coin.SignedBlock
+ */
+typedef Handle SignedBlock__Handle;
+
+/**
+ * Memory handle to access to coin.BlockBody
+ */
+typedef Handle BlockBody__Handle;
+
 /*
 #include "cipher.hash.go.h"
 #include "cipher.crypto.go.h"

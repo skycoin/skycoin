@@ -395,6 +395,21 @@ func SKY_coin_Create_Transactions(handle *C.Transactions__Handle) (____error_cod
 	return SKY_OK
 }
 
+//export SKY_coin_Get_Transactions_Object
+func SKY_coin_Get_Transactions_Object(handle C.Transactions__Handle, _pptx **C.coin__Transactions) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	ptx, ok := lookupTransactionsHandle(handle)
+	if !ok {
+		____error_code = SKY_ERROR
+	} else {
+		*_pptx = (*C.coin__Transactions)(unsafe.Pointer(ptx))
+	}
+	return
+}
+
 //export SKY_coin_Transactions_Length
 func SKY_coin_Transactions_Length(handle C.Transactions__Handle, _length *int) (____error_code uint32) {
 	____error_code = 0

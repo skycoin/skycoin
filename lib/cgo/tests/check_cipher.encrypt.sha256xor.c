@@ -55,7 +55,7 @@ int putVarint(GoSlice* buf , GoInt64 x){
 	return putUvarint(buf, ux);
 }
 
-void hashKeyIndexNonce(GoSlice_ key, GoInt64 index, 
+void hashKeyIndexNonce(GoSlice_ key, GoInt64 index,
 	cipher__SHA256 *nonceHash, cipher__SHA256 *resultHash){
 	GoUint32 errcode;
 	int length = 32 + sizeof(cipher__SHA256);
@@ -77,7 +77,7 @@ void makeEncryptedData(GoSlice data, GoUint32 dataLength, GoSlice pwd, coin__UxA
 	GoUint32 n = fullLength / SHA256XORBLOCKSIZE;
 	GoUint32 m = fullLength % SHA256XORBLOCKSIZE;
 	GoUint32 errcode;
-	
+
 	if( m > 0 ){
 		fullLength += SHA256XORBLOCKSIZE - m;
 	}
@@ -91,18 +91,15 @@ void makeEncryptedData(GoSlice data, GoUint32 dataLength, GoSlice pwd, coin__UxA
 		buffer[i + SHA256XORBLOCKSIZE] = (dataLength & (0xFF << shift)) >> shift;
 	}
 	//Add the data
-	memcpy(buffer + SHA256XORDATALENGTHSIZE + SHA256XORBLOCKSIZE, 
+	memcpy(buffer + SHA256XORDATALENGTHSIZE + SHA256XORBLOCKSIZE,
 		data.data, dataLength);
-	/*for(int i = 0; i < dataLength; i++){
-		buffer[i + SHA256XORDATALENGTHSIZE + SHA256XORBLOCKSIZE] = ((char*)data.data)[i];
-	}*/
 	//Add padding
 	for(int i = dataLength + SHA256XORDATALENGTHSIZE + SHA256XORBLOCKSIZE; i < fullLength; i++){
 		buffer[i] = 0;
 	}
 	//Buffer with space for the checksum, then data length, then data, and then padding
-	GoSlice _data = {buffer + SHA256XORBLOCKSIZE, 
-		fullLength - SHA256XORBLOCKSIZE, 
+	GoSlice _data = {buffer + SHA256XORBLOCKSIZE,
+		fullLength - SHA256XORBLOCKSIZE,
 		fullLength - SHA256XORBLOCKSIZE};
 	//GoSlice _hash = {buffer, 0, SHA256XORBLOCKSIZE};
 	errcode = SKY_cipher_SumSHA256(_data, (cipher__SHA256*)buffer);
@@ -118,8 +115,8 @@ void makeEncryptedData(GoSlice data, GoUint32 dataLength, GoSlice pwd, coin__UxA
 	errcode = SKY_secp256k1_Secp256k1Hash(pwd, &hashPassword);
 	cr_assert(errcode == SKY_OK, "SKY_secp256k1_Secp256k1Hash failed. Error calculating hash for password");
 	cipher__SHA256 h;
-	
-	
+
+
 	int fullDestLength = fullLength + sizeof(cipher__SHA256) + SHA256XORNONCESIZE;
 	int destBufferStart = sizeof(cipher__SHA256) + SHA256XORNONCESIZE;
 	unsigned char* dest_buffer = malloc(fullDestLength);
@@ -133,8 +130,8 @@ void makeEncryptedData(GoSlice data, GoUint32 dataLength, GoSlice pwd, coin__UxA
 	// Prefix the nonce
 	memcpy(dest_buffer + sizeof(cipher__SHA256), bufferNonce, SHA256XORNONCESIZE);
 	// Calculates the checksum
-	GoSlice nonceAndDataBytes = {dest_buffer + sizeof(cipher__SHA256), 
-								fullLength + SHA256XORNONCESIZE, 
+	GoSlice nonceAndDataBytes = {dest_buffer + sizeof(cipher__SHA256),
+								fullLength + SHA256XORNONCESIZE,
 								fullLength + SHA256XORNONCESIZE
 						};
 	cipher__SHA256* checksum = (cipher__SHA256*)dest_buffer;
@@ -156,7 +153,7 @@ Test(cipher_encrypt_sha256xor, TestSha256XorEncrypt){
 	GoSlice pwd3 = { PASSWORD3, strlen(PASSWORD3), strlen(PASSWORD3) };
 	GoSlice nullPwd = {NULL, 0, 0};
 	GoUint32 errcode;
-	
+
 	TEST_DATA test_data[] = {
 		{1, &nullPwd, &nullPwd, 0, 0},
 		{1, &pwd2, &nullPwd, 1, 0},
@@ -165,9 +162,9 @@ Test(cipher_encrypt_sha256xor, TestSha256XorEncrypt){
 		{64, &pwd3, &nullPwd, 1, 0},
 		{65, &pwd3, &nullPwd, 1, 0},
 	};
-	
+
 	encrypt__Sha256Xor encryptSettings = {};
-	
+
 	for(int i = 0; i < sizeof(test_data) / sizeof(test_data[0]); i++){
 		randBytes(&data, test_data[i].dataLength);
 		errcode = SKY_encrypt_Sha256Xor_Encrypt(&encryptSettings, data, *(test_data[i].pwd), &encrypted);
@@ -180,18 +177,18 @@ Test(cipher_encrypt_sha256xor, TestSha256XorEncrypt){
 			cr_assert(encrypted.cap > 0, "Buffer for encrypted data is too short");
 			cr_assert(encrypted.len < BUFFER_SIZE, "Too large encrypted data");
 			((char*)encrypted.data)[encrypted.len] = 0;
-			
+
 			int n = (SHA256XORDATALENGTHSIZE + test_data[i].dataLength) / SHA256XORBLOCKSIZE;
 			int m = (SHA256XORDATALENGTHSIZE + test_data[i].dataLength) % SHA256XORBLOCKSIZE;
 			if ( m > 0 ) {
 				n++;
 			}
-			
-			int decode_length = b64_decode((const unsigned char*)encrypted.data, 
+
+			int decode_length = b64_decode((const unsigned char*)encrypted.data,
 				encrypted.len, encryptedText);
 			cr_assert(decode_length >= 0, "base64_decode_string failed.");
 			int totalEncryptedDataLen = SHA256XORCHECKSUMSIZE + SHA256XORNONCESIZE + 32 + n*SHA256XORBLOCKSIZE; // 32 is the hash data length
-			
+
 			cr_assert(totalEncryptedDataLen == decode_length, "SKY_encrypt_Sha256Xor_Encrypt failed, encrypted data length incorrect.");
 			cr_assert(SHA256XORCHECKSUMSIZE == sizeof(cipher__SHA256), "Size of SHA256 struct different than size in constant declaration");
 			cipher__SHA256 enc_hash;
@@ -212,7 +209,7 @@ Test(cipher_encrypt_sha256xor, TestSha256XorEncrypt){
 			cr_assert(equal == 1, "SKY_encrypt_Sha256Xor_Encrypt failed, incorrect hash sum.");
 		}
 	}
-	
+
 	for(int i = 33; i <= 64; i++){
 		randBytes(&data, i);
 		errcode = SKY_encrypt_Sha256Xor_Encrypt(&encryptSettings, data, pwd1, &encrypted);
@@ -220,18 +217,18 @@ Test(cipher_encrypt_sha256xor, TestSha256XorEncrypt){
 		cr_assert(encrypted.cap > 0, "Buffer for encrypted data is too short");
 		cr_assert(encrypted.len < BUFFER_SIZE, "Too large encrypted data");
 		((char*)encrypted.data)[encrypted.len] = 0;
-		
+
 		int n = (SHA256XORDATALENGTHSIZE + i) / SHA256XORBLOCKSIZE;
 		int m = (SHA256XORDATALENGTHSIZE + i) % SHA256XORBLOCKSIZE;
 		if ( m > 0 ) {
 			n++;
 		}
-		
-		int decode_length = b64_decode((const unsigned char*)encrypted.data, 
+
+		int decode_length = b64_decode((const unsigned char*)encrypted.data,
 			encrypted.len, encryptedText);
 		cr_assert( decode_length >= 0, "base64_decode failed" );
 		int totalEncryptedDataLen = SHA256XORCHECKSUMSIZE + SHA256XORNONCESIZE + 32 + n*SHA256XORBLOCKSIZE; // 32 is the hash data length
-		
+
 		cr_assert(totalEncryptedDataLen == decode_length, "SKY_encrypt_Sha256Xor_Encrypt failed, encrypted data length incorrect.");
 		cr_assert(SHA256XORCHECKSUMSIZE == sizeof(cipher__SHA256), "Size of SHA256 struct different than size in constant declaration");
 		cipher__SHA256 enc_hash;
@@ -250,7 +247,7 @@ Test(cipher_encrypt_sha256xor, TestSha256XorEncrypt){
 			}
 		}
 		cr_assert(equal == 1, "SKY_encrypt_Sha256Xor_Encrypt failed, incorrect hash sum.");
-		
+
 	}
 }
 
@@ -266,7 +263,7 @@ Test(cipher_encrypt_sha256xor, TestSha256XorDecrypt){
 	GoSlice emptyPwd = {"", 1, 1};
 	GoSlice nullPwd = {NULL, 0, 0};
 	GoUint32 errcode;
-	
+
 	TEST_DATA test_data[] = {
 		{32, &pwd, &pwd, 0, 1}, 		//Data tampered to verify invalid checksum
 		{32, &pwd, &emptyPwd, 0, 0},	//Empty password
@@ -282,7 +279,7 @@ Test(cipher_encrypt_sha256xor, TestSha256XorDecrypt){
 		if( test_data[i].tampered ){
 			((unsigned char*)(encrypted.data))[ encrypted.len - 1 ]++;
 		}
-		errcode = SKY_encrypt_Sha256Xor_Decrypt(&encryptSettings, 
+		errcode = SKY_encrypt_Sha256Xor_Decrypt(&encryptSettings,
 			*(GoSlice*)&encrypted, *test_data[i].decryptPwd, &decrypted);
 		if( test_data[i].success ){
 			cr_assert(errcode == SKY_OK, "SKY_encrypt_Sha256Xor_Decrypt failed.");
@@ -290,13 +287,13 @@ Test(cipher_encrypt_sha256xor, TestSha256XorDecrypt){
 			cr_assert(errcode != SKY_OK, "SKY_encrypt_Sha256Xor_Decrypt with invalid parameters successful.");
 		}
 	}
-	
+
 	for(int i = 0; i <= 64; i++){
 		randBytes(&data, i);
 		//makeEncryptedData(data, i, pwd, &encrypted);
 		SKY_encrypt_Sha256Xor_Encrypt(&encryptSettings, data, pwd, &encrypted);
 		cr_assert(encrypted.len > 0, "SKY_encrypt_Sha256Xor_Encrypt failed. Empty encrypted data");
-		errcode = SKY_encrypt_Sha256Xor_Decrypt(&encryptSettings, 
+		errcode = SKY_encrypt_Sha256Xor_Decrypt(&encryptSettings,
 			*(GoSlice*)&encrypted, pwd, &decrypted);
 		cr_assert(errcode == SKY_OK, "SKY_encrypt_Sha256Xor_Decrypt failed.");
 		cr_assert(data.len == decrypted.len, "SKY_encrypt_Sha256Xor_Decrypt failed. Decrypted data length different than original data length");
@@ -308,4 +305,3 @@ Test(cipher_encrypt_sha256xor, TestSha256XorDecrypt){
 		cr_assert(equal == 1, "SKY_encrypt_Sha256Xor_Decrypt failed. Decrypted data different than original data");
 	}
 }
-

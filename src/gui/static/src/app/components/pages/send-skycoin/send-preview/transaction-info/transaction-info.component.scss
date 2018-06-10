@@ -15,7 +15,7 @@ h4 {
 
   .-number {
     padding: 10px;
-    background: $grey-light;
+    background: $grey-lightest;
     align-self: flex-start;
     border-radius: 10px;
   }
@@ -40,7 +40,7 @@ h4 {
   }
 
   span:first-child {
-    color: $grey-dark;
+    color: $grey;
     display: inline-block;
     width: 60px;
   }
@@ -83,19 +83,19 @@ h4 {
   }
 
   h4 {
-    color: $grey-normal;
+    color: $grey-dark;
     font-size: 16px;
     font-weight: 700;
     margin: 10px 0 5px;
   }
 
   p {
-    color: $grey-dark;
+    color: $grey;
     font-size: 12px;
     margin: 0;
 
     span {
-      color: lighten($grey-dark, 40%);
+      color: lighten($grey, 40%);
     }
   }
 }

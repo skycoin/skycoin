@@ -244,6 +244,12 @@ typedef Handle Options__Handle;
  * Memory handle to access to Skycoin CLI configuration
  */
 typedef Handle Config__Handle;
+/**
+ * Memory handle to access to coin.Transaction
+ */
+typedef Handle Transaction__Handle;
+
+
 /*
 #include "cipher.hash.go.h"
 #include "cipher.crypto.go.h"
@@ -255,4 +261,3 @@ typedef Handle Config__Handle;
 #include "wallet.wallet.go.h"
 */
 #endif
-

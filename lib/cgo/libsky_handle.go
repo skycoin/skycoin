@@ -16,6 +16,7 @@ import (
 	cli "github.com/skycoin/skycoin/src/cli"
 	wallet "github.com/skycoin/skycoin/src/wallet"
 	gcli "github.com/urfave/cli"
+	"github.com/skycoin/skycoin/src/coin"
 )
 
 type Handle uint64
@@ -214,6 +215,20 @@ func lookupPasswordReaderHandle(handle C.PasswordReader__Handle) (*cli.PasswordR
 	obj, ok := lookupHandle(C.Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(*cli.PasswordReader); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerTransactionHandle(obj *coin.Transaction) C.Transaction__Handle {
+	return (C.Transaction__Handle)(registerHandle(obj))
+}
+
+func lookupTransactionHandle(handle C.Transaction__Handle) (*coin.Transaction, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*coin.Transaction); isOK {
 			return obj, true
 		}
 	}

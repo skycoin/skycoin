@@ -17,6 +17,86 @@ import (
 */
 import "C"
 
+//export SKY_coin_Create_Transaction
+func SKY_coin_Create_Transaction(handle *C.Transaction__Handle) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	tx := coin.Transaction{}
+	*handle = registerTransactionHandle(&tx)
+	return
+}
+
+//export SKY_coin_Transaction_Copy
+func SKY_coin_Transaction_Copy(_tx *C.coin__Transaction, handle *C.Transaction__Handle) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	tx := (*coin.Transaction)(unsafe.Pointer(_tx))
+	ntx := coin.Transaction{}
+	ntx.Length = tx.Length
+	ntx.Type = tx.Type
+	ntx.InnerHash = tx.InnerHash
+	ntx.Sigs = make([]cipher.Sig, 0)
+	ntx.Sigs = append( ntx.Sigs, tx.Sigs... )
+	ntx.In = make([]cipher.SHA256, 0)
+	ntx.In = append( ntx.In, tx.In... )
+	ntx.Out = make([]coin.TransactionOutput, 0)
+	ntx.Out = append( ntx.Out, tx.Out... )
+	*handle = registerTransactionHandle(&ntx)
+	return
+}
+
+//export SKY_coin_Get_Transaction_Object
+func SKY_coin_Get_Transaction_Object(handle C.Transaction__Handle, _pptx **C.coin__Transaction) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	ptx, ok := lookupTransactionHandle(handle)
+	if !ok {
+		____error_code = SKY_ERROR
+	} else {
+		*_pptx = (*C.coin__Transaction)(unsafe.Pointer(ptx))
+	}
+	return
+}
+
+//export SKY_coin_Transaction_ResetInputs
+func SKY_coin_Transaction_ResetInputs(_txn *C.coin__Transaction, count int) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	txn := (*coin.Transaction)(unsafe.Pointer(_txn))
+	txn.In = make([]cipher.SHA256, count)
+	return
+}
+
+//export SKY_coin_Transaction_ResetOutputs
+func SKY_coin_Transaction_ResetOutputs(_txn *C.coin__Transaction, count int) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	txn := (*coin.Transaction)(unsafe.Pointer(_txn))
+	txn.Out = make([]coin.TransactionOutput, count)
+	return
+}
+
+//export SKY_coin_Transaction_ResetSignatures
+func SKY_coin_Transaction_ResetSignatures(_txn *C.coin__Transaction, count int) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	txn := (*coin.Transaction)(unsafe.Pointer(_txn))
+	txn.Sigs = make([]cipher.Sig, count)
+	return
+}
+
 //export SKY_coin_Transaction_Verify
 func SKY_coin_Transaction_Verify(_txn *C.coin__Transaction) (____error_code uint32) {
 	____error_code = 0

@@ -80,14 +80,18 @@ int makeAddress(cipher__Address* paddress){
   return result;
 }
 
-int makeTransactionFromUxOut(coin__UxOut* puxOut, cipher__SecKey* pseckey,
-                          coin__Transaction* ptransaction){
+coin__Transaction* makeTransactionFromUxOut(coin__UxOut* puxOut, cipher__SecKey* pseckey ){
   int result;
-
-  memset(ptransaction, 0, sizeof(coin__Transaction));
+  coin__Transaction* ptransaction = NULL;
+  Transaction__Handle handle;
+  result  = SKY_coin_Create_Transaction(&handle);
+  cr_assert(result == SKY_OK, "SKY_coin_Create_Transaction failed");
+  registerHandleClose(handle);
+  result = SKY_coin_Get_Transaction_Object( handle, &ptransaction );
+  cr_assert(result == SKY_OK, "SKY_coin_Get_Transaction_Object failed");
   cipher__SHA256 sha256;
   result = SKY_coin_UxOut_Hash(puxOut, &sha256);
-  cr_assert(result == SKY_OK, "SKY_coin_UxOut_Hash");
+  cr_assert(result == SKY_OK, "SKY_coin_UxOut_Hash failed");
   GoUint16 r;
   result = SKY_coin_Transaction_PushInput(ptransaction, &sha256, &r);
   cr_assert(result == SKY_OK, "SKY_coin_Transaction_PushInput failed");
@@ -108,20 +112,35 @@ int makeTransactionFromUxOut(coin__UxOut* puxOut, cipher__SecKey* pseckey,
   cr_assert(result == SKY_OK, "SKY_coin_Transaction_SignInputs failed");
   result = SKY_coin_Transaction_UpdateHeader( ptransaction );
   cr_assert(result == SKY_OK, "SKY_coin_Transaction_UpdateHeader failed");
-  return result;
+  return ptransaction;
 }
 
-int makeTransaction(coin__Transaction* ptransaction){
+coin__Transaction* makeTransaction(){
   int result;
   coin__UxOut uxOut;
   cipher__SecKey seckey;
 
+  coin__Transaction* ptransaction = NULL;
+
   result = makeUxOutWithSecret( &uxOut, &seckey );
   cr_assert(result == SKY_OK, "makeUxOutWithSecret failed");
-  result = makeTransactionFromUxOut( &uxOut, &seckey, ptransaction );
+  ptransaction = makeTransactionFromUxOut( &uxOut, &seckey );
   cr_assert(result == SKY_OK, "makeTransactionFromUxOut failed");
-  return result;
+  return ptransaction;
 }
+
+coin__Transaction* makeEmptyTransaction(){
+  int result;
+  coin__Transaction* ptransaction = NULL;
+  Transaction__Handle handle;
+  result  = SKY_coin_Create_Transaction(&handle);
+  cr_assert(result == SKY_OK, "SKY_coin_Create_Transaction failed");
+  registerHandleClose(handle);
+  result = SKY_coin_Get_Transaction_Object( handle, &ptransaction );
+  cr_assert(result == SKY_OK, "SKY_coin_Get_Transaction_Object failed");
+  return ptransaction;
+}
+
 
 int makeTransactions(GoSlice* transactions, int n){
   void * data = malloc(sizeof(coin__Transaction) * n);
@@ -130,28 +149,28 @@ int makeTransactions(GoSlice* transactions, int n){
   registerMemCleanup(data);
   coin__Transaction* ptransaction = (coin__Transaction*)data;
   int i;
-  int result = SKY_ERROR; // n == 0  then error
+  int result = SKY_OK;
   for( i = 0; i < n; i++){
-    result = makeTransaction(ptransaction);
-    if(result != SKY_OK){
-      free(data);
-      break;
-    }
+    coin__Transaction* p = makeTransaction();
+    memcpy(ptransaction, p, sizeof(coin__Transaction));
     ptransaction++;
   }
-  if(result == SKY_OK) {
-    transactions->data = data;
-    transactions->len = n;
-    transactions->cap = n;
-  }
+  transactions->data = data;
+  transactions->len = n;
+  transactions->cap = n;
   return result;
 }
 
-void copyTransaction(coin__Transaction* pt1, coin__Transaction* pt2){
-  memcpy(pt2, pt1, sizeof(coin__Transaction));
-  copySlice(&pt2->Sigs, &pt1->Sigs, sizeof(cipher__Sig));
-  copySlice(&pt2->In, &pt1->In, sizeof(cipher__SHA256));
-  copySlice(&pt2->Out, &pt1->Out, sizeof(coin__TransactionOutput));
+coin__Transaction* copyTransaction(coin__Transaction* pt1){
+  Transaction__Handle handle = 0;
+  coin__Transaction* ptransaction = NULL;
+  int result = 0;
+  result = SKY_coin_Transaction_Copy(pt1, &handle);
+  cr_assert(result == SKY_OK);
+  registerHandleClose(handle);
+  result = SKY_coin_Get_Transaction_Object( handle, &ptransaction );
+  cr_assert(result == SKY_OK, "SKY_coin_Get_Transaction_Object failed");
+  return ptransaction;
 }
 
 void makeRandHash(cipher__SHA256* phash){

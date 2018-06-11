@@ -3,11 +3,11 @@ package visor
 import (
 	"crypto/sha1"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
-	"sort"
 	"sync"
 	"time"
 
@@ -79,7 +79,6 @@ func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) erro
 
 	history := historydb.New()
 	indexesMap := historydb.NewIndexesMap()
-	cbs := newCorruptedBlocks()
 	verifyFunc := func(tx *dbutil.Tx, b *coin.SignedBlock) error {
 		// Verify signature
 		if err := bc.VerifySignature(b); err != nil {
@@ -87,52 +86,67 @@ func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) erro
 		}
 
 		// Verify historydb
-		err := history.Verify(tx, b, indexesMap)
-		switch err.(type) {
-		case nil:
-			return nil
-		case historydb.ErrHistoryDBCorrupted:
-			// Records the corrupted block seq
-			cbs.Store(b.Seq())
-			return nil
-		default:
-			return err
-		}
+		return history.Verify(tx, b, indexesMap)
 	}
 
 	err = bc.WalkChain(BlockchainVerifyTheadNum, verifyFunc, quit)
 	switch err.(type) {
 	case nil:
-		// Reparses the corrupted blocks of historydb if exist
-		seqs := cbs.BlockSeqs()
-		if len(seqs) == 0 {
-			return nil
-		}
-
-		// Sort the block sequences that are going to be parsed from low to heigh
-		sort.Slice(seqs, func(i, j int) bool {
-			return seqs[i] < seqs[j]
-		})
-
-		return rebuildCorruptDB(db, history, bc, seqs)
+		return nil
 	case blockdb.ErrMissingSignature:
 		return ErrCorruptDB{err}
+	case historydb.ErrHistoryDBCorrupted:
+		errC := make(chan error, 1)
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := rebuildCorruptDB(db, history, bc, quit)
+			errC <- err
+		}()
+
+		wg.Wait()
+
+		select {
+		case err := <-errC:
+			return err
+		default:
+			return nil
+		}
 	default:
 		return err
 	}
 }
 
-func rebuildCorruptDB(db *dbutil.DB, history *historydb.HistoryDB, bc *Blockchain, blockSeqs []uint64) error {
-	return db.Update("rebuildCorruptDB", func(tx *dbutil.Tx) error {
-		for _, seq := range blockSeqs {
-			logger.Infof("rebuild historydb of block: %d", seq)
-			b, err := bc.GetSignedBlockBySeq(tx, seq)
-			if err != nil {
-				return err
-			}
+func rebuildCorruptDB(db *dbutil.DB, history *historydb.HistoryDB, bc *Blockchain, quit chan struct{}) error {
+	logger.Infof("Historydb is broken, rebuilding...")
+	return db.Update("Rebuild history db", func(tx *dbutil.Tx) error {
+		if err := history.Erase(tx); err != nil {
+			return err
+		}
 
-			if err := history.ParseBlock(tx, b.Block); err != nil {
-				return err
+		headSeq, ok, err := bc.HeadSeq(tx)
+		if err != nil {
+			return err
+		}
+
+		if !ok {
+			return errors.New("head block does not exist")
+		}
+
+		for i := uint64(0); i <= headSeq; i++ {
+			select {
+			case <-quit:
+				return nil
+			default:
+				b, err := bc.GetSignedBlockBySeq(tx, i)
+				if err != nil {
+					return err
+				}
+
+				if err := history.ParseBlock(tx, b.Block); err != nil {
+					return err
+				}
 			}
 		}
 		return nil

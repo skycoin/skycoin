@@ -28,18 +28,15 @@ export class OnboardingCreateWalletComponent implements OnInit {
   }
 
   initForm() {
-    this.form = this.formBuilder.group({
-        label: new FormControl('', Validators.compose([
-          Validators.required, Validators.minLength(2),
-        ])),
-        seed: new FormControl('', Validators.compose([
-          Validators.required, Validators.minLength(2),
-        ])),
-        confirm_seed: new FormControl('',
-          Validators.compose(this.showCreateForm ? [Validators.required, Validators.minLength(2)] : []),
-        ),
+    this.form = this.formBuilder.group(
+      {
+        label: new FormControl('', [Validators.required]),
+        seed: new FormControl('', [Validators.required]),
+        confirm_seed: new FormControl(),
       },
-      this.showCreateForm ? { validator: this.seedMatchValidator.bind(this) } : {},
+      {
+        validator: this.showCreateForm ? this.seedMatchValidator.bind(this) : null,
+      },
     );
 
     if (this.fill) {
@@ -87,8 +84,7 @@ export class OnboardingCreateWalletComponent implements OnInit {
   }
 
   private seedMatchValidator(g: FormGroup) {
-    return g.get('seed').value === g.get('confirm_seed').value
-      ? null : { mismatch: true };
+    return g.get('seed').value === g.get('confirm_seed').value ? null : { NotEqual: true };
   }
 
   private showSafe(): MatDialogRef<OnboardingSafeguardComponent> {

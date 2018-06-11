@@ -1,28 +1,38 @@
 <div class="sky-container sky-container-grey">
   <app-header [headline]="'title.network' | translate"></app-header>
 
-  <h3>{{ 'network.automatic-peers' | translate }}</h3>
-
-  <mat-card>
-    <div class="row">
-      <div class="col-lg-3" *ngFor="let peer of networkService.automatic() | async">
-        <div class="-peer">
-          <span class="-ip">{{ peer.address.split(':')[0] }}</span>
-          <span class="-port">:{{ peer.listen_port }}</span>
+  <div class="container">
+    <div class="-table">
+      <div class="-headers">
+        <div class="-direction"></div>
+        <div class="-width-200 -pl-0">{{ 'network.peer' | translate }}</div>
+        <div class="-flex-fill">{{ 'network.source' | translate }}</div>
+        <div class="-width-150 -text-right">{{ 'network.block-height' | translate }}</div>
+        <div class="-width-200">{{ 'network.last-seen' | translate }}</div>
+      </div>
+      <div class="-body">
+        <div class="-row" *ngFor="let peer of peers">
+          <div class="-direction">
+            <img src="/assets/img/send-blue.png" [ngClass]="{ '-incoming': !peer.outgoing }"
+                 [matTooltip]="(peer.outgoing ? 'network.out' : 'network.in') | translate">
+          </div>
+          <div class="-width-200 -pl-0">
+            {{ peer.address.split(':')[0] }}<span class="-port">:{{ peer.listen_port }}</span>
+          </div>
+          <div class="-flex-fill -source">{{ ('network.sources.' + peer.source) | translate }}</div>
+          <div class="-width-150 -text-right">{{ peer.height }}</div>
+          <div class="-width-200 -last-seen">
+            <div>
+              <mat-icon [matTooltip]="'network.last-sent' | translate">keyboard_arrow_up</mat-icon>
+              {{ peer.last_sent | dateFromNow }}
+            </div>
+            <div>
+              <mat-icon [matTooltip]="'network.last-received' | translate">keyboard_arrow_down</mat-icon>
+              {{ peer.last_received | dateFromNow }}
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  </mat-card>
-
-  <h3>{{ 'network.default-peers' | translate }}</h3>
-  <mat-card>
-    <div class="row">
-      <div class="col-lg-3" *ngFor="let peer of defaultConnections">
-        <div class="-peer">
-          <span class="-ip">{{ peer.address.split(':')[0] }}</span>
-          <span class="-port">:{{ peer.listen_port }}</span>
-        </div>
-      </div>
-    </div>
-  </mat-card>
+  </div>
 </div>

@@ -1,10 +1,7 @@
 {
   "common": {
     "coin-id": "SKY",
-    "coin-hours": "SKY Hours",
-    "coins": "Coins",
-    "hours": "Hours",
-    "balance": "Balance",
+    "coin-hours": "Coin Hours",
     "loading": "Loading..",
     "new": "New",
     "load": "Load"
@@ -14,7 +11,8 @@
     "fetch-version": "Unable to fetch latest release version from Github",
     "incorrect-password": "Incorrect password",
     "api-disabled": "API disabled",
-    "no-wallet": "Wallet does not exist"
+    "no-wallet": "Wallet does not exist",
+    "no-outputs": "No unspent outputs"
   },
 
   "title": {
@@ -98,7 +96,8 @@
     "edit": "Edit Wallet",
     "add": "Add Wallet",
     "load": "Load Wallet",
-    "encryption": "Encryption",
+    "encryption-enabled": "Encryption enabled",
+    "encryption-disabled": "Encryption disabled",
     "wallet": "Wallet",
 
     "new": {
@@ -191,19 +190,33 @@
   },
 
   "blockchain": {
-    "blocks": "Number of blocks:",
-    "time": "Time since last block:",
-    "hash": "Hash of last block:"
+    "blocks": "Number of blocks",
+    "time": "Time since last block",
+    "hash": "Hash of last block",
+    "current-supply": "Current SKY supply",
+    "total-supply": "Total SKY supply",
+    "current-coinhour-supply": "Current Coin Hours supply",
+    "total-coinhour-supply": "Total Coin Hours supply"
   },
 
   "network": {
-    "automatic-peers": "Automatic peers",
-    "default-peers": "Default peers"
+    "peer": "Peer",
+    "source": "Source",
+    "block-height": "Block height",
+    "last-seen": "Last seen",
+    "last-received": "Last received",
+    "last-sent": "Last sent",
+    "in": "Incoming",
+    "out": "Outgoing",
+
+    "sources": {
+      "default": "Default peer",
+      "exchange": "Peer exchange"
+    }
   },
 
   "pending-txs": {
     "timestamp": "Timestamp",
-    "amount": "Amount",
     "txid": "Transaction ID",
     "none": "No pending transactions",
     "my": "Mine",

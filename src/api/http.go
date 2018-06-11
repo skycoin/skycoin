@@ -242,6 +242,13 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 		webHandler("/api/v1"+endpoint, handler)
 	}
 
+	webHandlerV2 := func(endpoint string, handler http.Handler) {
+		if c.enableUnversionedAPI {
+			webHandler(endpoint, handler)
+		}
+		webHandler("/api/v2"+endpoint, handler)
+	}
+
 	webHandler("/", newIndexHandler(c.appLoc, c.enableGUI))
 
 	if c.enableGUI {
@@ -416,6 +423,8 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	webHandlerV1("/richlist", getRichlist(gateway))
 
 	webHandlerV1("/addresscount", getAddressCount(gateway))
+
+	webHandlerV2("/blocks", getBlocksV2(gateway))
 
 	return mux
 }

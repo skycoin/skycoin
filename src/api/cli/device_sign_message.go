@@ -27,7 +27,7 @@ func deviceSignMessageCmd() gcli.Command {
 		Action: func(c *gcli.Context) {
 			addressN := c.Int("addressN")
             message := c.String("message")
-            hardwareWallet.DeviceSignMessageCmd(addressN, message)
+            hardwareWallet.DeviceSignMessage(addressN, message)
 		},
 	}
 }

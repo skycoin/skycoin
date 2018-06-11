@@ -1,12 +1,9 @@
 package cli
 
 import (
-	"fmt"
 
-	"github.com/golang/protobuf/proto"
 	messages "github.com/skycoin/skycoin/protob"
 	hardwareWallet "github.com/skycoin/skycoin/src/hardware-wallet"
-	"github.com/wire"
 	gcli "github.com/urfave/cli"
 )
 
@@ -37,24 +34,7 @@ func deviceAddressGenCmd() gcli.Command {
 			}
 
 			addressN := c.Int("addressN")
-			dev, _ := hardwareWallet.GetTrezorDevice()
-
-			skycoinAddress := &messages.SkycoinAddress{
-				AddressN:    proto.Uint32(uint32(addressN)),
-				AddressType: coinType.Enum(),
-			}
-			data, _ := proto.Marshal(skycoinAddress)
-
-			chunks := hardwareWallet.MakeTrezorMessage(data, messages.MessageType_MessageType_SkycoinAddress)
-
-			for _, element := range chunks {
-				_, _ = dev.Write(element[:])
-			}
-
-			var msg wire.Message
-			msg.ReadFrom(dev)
-
-			fmt.Printf("Success %d! Address is: %s\n", msg.Kind, msg.Data)
+			hardwareWallet.DeviceAddressGen(coinType, addressN)
 		},
 	}
 }

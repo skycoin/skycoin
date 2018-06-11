@@ -1,4 +1,4 @@
-typedef struct{
+/*typedef struct{
     GoString_ CurrentSupply;
     GoString_ TotalSupply;
     GoString_ MaxSupply;
@@ -6,7 +6,7 @@ typedef struct{
     GoString_ TotalCoinHourSupply;
     GoSlice_  UnlockedAddresses;
     GoSlice_  LockedAddresses;
-} api__CoinSupply;
+} api__CoinSupply;*/
 typedef struct{
     visor__Richlist Richlist;
 } api__Richlist;

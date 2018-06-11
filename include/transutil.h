@@ -9,6 +9,7 @@
 #include "skyerrors.h"
 #include "skystring.h"
 #include "skytest.h"
+#include "skytypes.h"
 
 int makeKeysAndAddress(cipher__PubKey* ppubkey, cipher__SecKey* pseckey, cipher__Address* paddress);
 
@@ -22,14 +23,15 @@ int makeUxOut(coin__UxOut* puxOut);
 
 int makeAddress(cipher__Address* paddress);
 
-int makeTransactionFromUxOut(coin__UxOut* puxOut, cipher__SecKey* pseckey,
-                          coin__Transaction* ptransaction);
+coin__Transaction* makeTransactionFromUxOut(coin__UxOut* puxOut, cipher__SecKey* pseckey, Transaction__Handle* handle);
 
-int makeTransaction(coin__Transaction* ptransaction);
+coin__Transaction* makeTransaction(Transaction__Handle* handle);
 
-int makeTransactions(GoSlice* transactions, int n);
+coin__Transaction* makeEmptyTransaction(Transaction__Handle* handle);
 
-void copyTransaction(coin__Transaction* pt1, coin__Transaction* pt2);
+int makeTransactions(int n, Transactions__Handle* handle);
+
+coin__Transaction* copyTransaction(Transaction__Handle handle, Transaction__Handle* handle2);
 
 void makeRandHash(cipher__SHA256* phash);
 

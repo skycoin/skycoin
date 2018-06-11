@@ -14,6 +14,7 @@ import (
 	api "github.com/skycoin/skycoin/src/api"
 	webrpc "github.com/skycoin/skycoin/src/api/webrpc"
 	cli "github.com/skycoin/skycoin/src/cli"
+	"github.com/skycoin/skycoin/src/coin"
 	wallet "github.com/skycoin/skycoin/src/wallet"
 	gcli "github.com/urfave/cli"
 )
@@ -36,6 +37,15 @@ func registerHandle(obj interface{}) C.Handle {
 func lookupHandle(handle C.Handle) (interface{}, bool) {
 	obj, ok := handleMap[Handle(handle)]
 	return obj, ok
+}
+
+func overwriteHandle(handle C.Handle, obj interface{}) bool {
+	_, ok := handleMap[Handle(handle)]
+	if ok {
+		handleMap[Handle(handle)] = obj
+		return true
+	}
+	return false
 }
 
 func registerWebRpcClientHandle(obj *webrpc.Client) C.WebRpcClient__Handle {
@@ -214,6 +224,132 @@ func lookupPasswordReaderHandle(handle C.PasswordReader__Handle) (*cli.PasswordR
 	obj, ok := lookupHandle(C.Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(*cli.PasswordReader); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerTransactionHandle(obj *coin.Transaction) C.Transaction__Handle {
+	return (C.Transaction__Handle)(registerHandle(obj))
+}
+
+func lookupTransactionHandle(handle C.Transaction__Handle) (*coin.Transaction, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*coin.Transaction); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerTransactionsHandle(obj *coin.Transactions) C.Transactions__Handle {
+	return (C.Transactions__Handle)(registerHandle(obj))
+}
+
+func lookupTransactionsHandle(handle C.Transactions__Handle) (*coin.Transactions, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*coin.Transactions); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerBlockHandle(obj *coin.Block) C.Block__Handle {
+	return (C.Block__Handle)(registerHandle(obj))
+}
+
+func lookupBlockHandle(handle C.Block__Handle) (*coin.Block, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*coin.Block); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerSignedBlockHandle(obj *coin.SignedBlock) C.SignedBlock__Handle {
+	return (C.SignedBlock__Handle)(registerHandle(obj))
+}
+
+func lookupSignedBlockHandle(handle C.SignedBlock__Handle) (*coin.SignedBlock, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*coin.SignedBlock); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerBlockBodyHandle(obj *coin.BlockBody) C.BlockBody__Handle {
+	return (C.BlockBody__Handle)(registerHandle(obj))
+}
+
+func lookupBlockBodyHandle(handle C.BlockBody__Handle) (*coin.BlockBody, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*coin.BlockBody); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerCreatedTransactionHandle(obj *api.CreatedTransaction) C.CreatedTransaction__Handle {
+	return (C.CreatedTransaction__Handle)(registerHandle(obj))
+}
+
+func lookupCreatedTransactionHandle(handle C.CreatedTransaction__Handle) (*api.CreatedTransaction, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*api.CreatedTransaction); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerCreatedTransactionOutputHandle(obj *api.CreatedTransactionOutput) C.CreatedTransactionOutput__Handle {
+	return (C.CreatedTransactionOutput__Handle)(registerHandle(obj))
+}
+
+func lookupCreatedTransactionOutputHandle(handle C.CreatedTransactionOutput__Handle) (*api.CreatedTransactionOutput, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*api.CreatedTransactionOutput); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerCreatedTransactionInputHandle(obj *api.CreatedTransactionInput) C.CreatedTransactionInput__Handle {
+	return (C.CreatedTransactionInput__Handle)(registerHandle(obj))
+}
+
+func lookupCreatedTransactionInputHandle(handle C.CreatedTransactionInput__Handle) (*api.CreatedTransactionInput, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*api.CreatedTransactionInput); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerCreateTransactionResponseHandle(obj *api.CreateTransactionResponse) C.CreateTransactionResponse__Handle {
+	return (C.CreateTransactionResponse__Handle)(registerHandle(obj))
+}
+
+func lookupCreateTransactionResponseHandle(handle C.CreateTransactionResponse__Handle) (*api.CreateTransactionResponse, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*api.CreateTransactionResponse); isOK {
 			return obj, true
 		}
 	}

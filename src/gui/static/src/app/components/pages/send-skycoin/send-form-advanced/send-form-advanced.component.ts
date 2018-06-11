@@ -37,7 +37,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-    this.navbarService.showSwitch();
+    this.navbarService.showSwitch('send.simple', 'send.advanced');
 
     this.form = this.formBuilder.group({
       wallet: ['', Validators.required],

@@ -39,7 +39,7 @@ func SKY_webrpc_Client_CSRF(_c C.WebRpcClient__Handle, _arg0 *C.GoString_) (____
 	}()
 	c, okc := lookupWebRpcClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0, ____return_err := c.CSRF()

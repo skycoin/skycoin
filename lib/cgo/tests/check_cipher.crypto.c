@@ -309,7 +309,6 @@ Test(cipher_crypto, TestSecKeyHex) {
   // Copy early to ensure memory is released
   strncpy((char *) h.p, str.p, str.n);
   h.n = str.n;
-  free((void *) str.p);
 
   errcode = SKY_cipher_SecKeyFromHex(h, &sk2);
   cr_assert(errcode == SKY_OK);

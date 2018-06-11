@@ -2811,7 +2811,7 @@ func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
 					changeAddrFound := false
 					for _, x := range result.Transaction.In {
 						require.NotNil(t, x.Address)
-						if changeAddr == *x.Address {
+						if changeAddr == x.Address {
 							changeAddrFound = true
 							break
 						}
@@ -3157,19 +3157,19 @@ func assertCreatedTransactionValid(t *testing.T, r api.CreatedTransaction) {
 	var inputCoins uint64
 	for _, in := range r.In {
 		require.NotNil(t, in.CalculatedHours)
-		calculatedHours, err := strconv.ParseUint(*in.CalculatedHours, 10, 64)
+		calculatedHours, err := strconv.ParseUint(in.CalculatedHours, 10, 64)
 		require.NoError(t, err)
 		inputHours, err = coin.AddUint64(inputHours, calculatedHours)
 		require.NoError(t, err)
 
 		require.NotNil(t, in.Hours)
-		hours, err := strconv.ParseUint(*in.Hours, 10, 64)
+		hours, err := strconv.ParseUint(in.Hours, 10, 64)
 		require.NoError(t, err)
 
 		require.True(t, hours <= calculatedHours)
 
 		require.NotNil(t, in.Coins)
-		coins, err := droplet.FromString(*in.Coins)
+		coins, err := droplet.FromString(in.Coins)
 		require.NoError(t, err)
 		inputCoins, err = coin.AddUint64(inputCoins, coins)
 		require.NoError(t, err)

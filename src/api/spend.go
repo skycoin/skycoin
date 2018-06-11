@@ -214,14 +214,14 @@ func NewCreatedTransactionOutput(out coin.TransactionOutput, txid cipher.SHA256)
 
 // CreatedTransactionInput is a verbose transaction input
 type CreatedTransactionInput struct {
-	UxID            string  `json:"uxid"`
-	Address         *string `json:"address,omitempty"`
-	Coins           *string `json:"coins,omitempty"`
-	Hours           *string `json:"hours,omitempty"`
-	CalculatedHours *string `json:"calculated_hours,omitempty"`
-	Time            *uint64 `json:"timestamp,omitempty"`
-	Block           *uint64 `json:"block,omitempty"`
-	TxID            *string `json:"txid,omitempty"`
+	UxID            string `json:"uxid"`
+	Address         string `json:"address,omitempty"`
+	Coins           string `json:"coins,omitempty"`
+	Hours           string `json:"hours,omitempty"`
+	CalculatedHours string `json:"calculated_hours,omitempty"`
+	Time            uint64 `json:"timestamp,omitempty"`
+	Block           uint64 `json:"block,omitempty"`
+	TxID            string `json:"txid,omitempty"`
 }
 
 // NewCreatedTransactionInput creates CreatedTransactionInput
@@ -242,13 +242,13 @@ func NewCreatedTransactionInput(out wallet.UxBalance) (*CreatedTransactionInput,
 
 	return &CreatedTransactionInput{
 		UxID:            out.Hash.Hex(),
-		Address:         &addr,
-		Coins:           &coins,
-		Hours:           &hours,
-		CalculatedHours: &calculatedHours,
-		Time:            &out.Time,
-		Block:           &out.BkSeq,
-		TxID:            &txID,
+		Address:         addr,
+		Coins:           coins,
+		Hours:           hours,
+		CalculatedHours: calculatedHours,
+		Time:            out.Time,
+		Block:           out.BkSeq,
+		TxID:            txID,
 	}, nil
 }
 

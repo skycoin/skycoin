@@ -1787,6 +1787,22 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bo
 		case nil:
 		case blockdb.ErrUnspentNotExist:
 			uxid := err.(blockdb.ErrUnspentNotExist).UxID
+			// Gets uxouts of txn.In from historydb
+			outs, err := vs.history.GetUxOuts(tx, txn.In)
+			if err != nil {
+				return err
+			}
+
+			if len(outs) == 0 {
+				err = fmt.Errorf("transaction input of %s does not exist in either unspent pool or historydb", uxid)
+				return NewErrTxnViolatesHardConstraint(err)
+			}
+
+			uxa = coin.UxArray{}
+			for _, out := range outs {
+				uxa = append(uxa, out.Out)
+			}
+
 			// Checks if the transaction is confirmed
 			txnHash := txn.Hash()
 			historyTxn, err := vs.history.GetTransaction(tx, txnHash)
@@ -1794,23 +1810,11 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bo
 				return fmt.Errorf("get transaction of %v from historydb failed: %v", txnHash, err)
 			}
 
-			if historyTxn == nil {
-				err = fmt.Errorf("transaction input of %s does not exist in either unspent pool or historydb", uxid)
-				return NewErrTxnViolatesHardConstraint(err)
+			if historyTxn != nil {
+				// Transaction is confirmed
+				isTxnConfirmed = true
 			}
 
-			// Transaction is confirmed
-			isTxnConfirmed = true
-			// Gets uxouts of txn.In from historydb
-			outs, err := vs.history.GetUxOuts(tx, txn.In)
-			if err != nil {
-				return err
-			}
-
-			uxa = coin.UxArray{}
-			for _, out := range outs {
-				uxa = append(uxa, out.Out)
-			}
 			return nil
 		default:
 			return err

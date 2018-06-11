@@ -1544,7 +1544,7 @@ Content-Type: application/json
 Args: {"encoded_transaction": "<hex encoded serialized transaction>"}
 ```
 
-If the transaction is can be parsed, passes validation and has not been spent, returns `200 OK` with the decoded transaction data,
+If the transaction can be parsed, passes validation and has not been spent, returns `200 OK` with the decoded transaction data,
 and the `"confirmed"` field will be `false`.
 
 If the transaction is structurally valid, passes validation but has been spent, returns `422 Unprocessable Entity` with the decoded transaction data,

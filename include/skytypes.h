@@ -255,6 +255,16 @@ typedef Handle Transaction__Handle;
 typedef Handle Transactions__Handle;
 
 /**
+ * Memory handle to access to api.CreatedTransaction
+ */
+typedef Handle CreatedTransaction__Handle;
+
+/**
+ * Memory handle to access to api.CreatedTransactionOutput
+ */
+typedef Handle CreatedTransactionOutput__Handle;
+
+/**
  * Memory handle to access to coin.Block
  */
 typedef Handle Block__Handle;

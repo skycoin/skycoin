@@ -300,6 +300,34 @@ func lookupBlockBodyHandle(handle C.BlockBody__Handle) (*coin.BlockBody, bool) {
 	return nil, false
 }
 
+func registerCreatedTransactionHandle(obj *api.CreatedTransaction) C.CreatedTransaction__Handle {
+	return (C.CreatedTransaction__Handle)(registerHandle(obj))
+}
+
+func lookupCreatedTransactionHandle(handle C.CreatedTransaction__Handle) (*api.CreatedTransaction, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*api.CreatedTransaction); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerCreatedTransactionOutputHandle(obj *api.CreatedTransactionOutput) C.CreatedTransactionOutput__Handle {
+	return (C.CreatedTransactionOutput__Handle)(registerHandle(obj))
+}
+
+func lookupCreatedTransactionOutputHandle(handle C.CreatedTransactionOutput__Handle) (*api.CreatedTransactionOutput, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*api.CreatedTransactionOutput); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
 func closeHandle(handle Handle) {
 	delete(handleMap, handle)
 }

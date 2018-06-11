@@ -5,7 +5,6 @@ import (
 	"unsafe"
 
 	webrpc "github.com/skycoin/skycoin/src/api/webrpc"
-	coin "github.com/skycoin/skycoin/src/coin"
 )
 
 /*
@@ -92,7 +91,7 @@ func SKY_webrpc_Client_InjectTransactionString(_c C.WebRpcClient__Handle, _rawtx
 }
 
 //export SKY_webrpc_Client_InjectTransaction
-func SKY_webrpc_Client_InjectTransaction(_c C.WebRpcClient__Handle, _tx *C.coin__Transaction, _arg1 *C.GoString_) (____error_code uint32) {
+func SKY_webrpc_Client_InjectTransaction(_c C.WebRpcClient__Handle, _tx C.Transaction__Handle, _arg1 *C.GoString_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -102,7 +101,11 @@ func SKY_webrpc_Client_InjectTransaction(_c C.WebRpcClient__Handle, _tx *C.coin_
 		____error_code = SKY_ERROR
 		return
 	}
-	tx := (*coin.Transaction)(unsafe.Pointer(_tx))
+	tx, ok := lookupTransactionHandle(_tx)
+	if !ok {
+		____error_code = SKY_ERROR
+		return
+	}
 	__arg1, ____return_err := c.InjectTransaction(tx)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {

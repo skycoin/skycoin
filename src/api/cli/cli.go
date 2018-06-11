@@ -228,6 +228,7 @@ func NewApp(cfg Config) *App {
 		statusCmd(),
 		transactionCmd(),
 		verifyAddressCmd(),
+		deviceSetMnemonicCmd(),
 		deviceAddressGenCmd(),
 		deviceSignMessageCmd(),
 		deviceCheckMessageSignatureCmd(),

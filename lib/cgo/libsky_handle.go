@@ -328,6 +328,34 @@ func lookupCreatedTransactionOutputHandle(handle C.CreatedTransactionOutput__Han
 	return nil, false
 }
 
+func registerCreatedTransactionInputHandle(obj *api.CreatedTransactionInput) C.CreatedTransactionInput__Handle {
+	return (C.CreatedTransactionInput__Handle)(registerHandle(obj))
+}
+
+func lookupCreatedTransactionInputHandle(handle C.CreatedTransactionInput__Handle) (*api.CreatedTransactionInput, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*api.CreatedTransactionInput); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerCreateTransactionResponseHandle(obj *api.CreateTransactionResponse) C.CreateTransactionResponse__Handle {
+	return (C.CreateTransactionResponse__Handle)(registerHandle(obj))
+}
+
+func lookupCreateTransactionResponseHandle(handle C.CreateTransactionResponse__Handle) (*api.CreateTransactionResponse, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*api.CreateTransactionResponse); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
 func closeHandle(handle Handle) {
 	delete(handleMap, handle)
 }

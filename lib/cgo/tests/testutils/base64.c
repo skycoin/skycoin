@@ -83,7 +83,7 @@ unsigned int b64_encode(const unsigned char * in, unsigned int in_len, unsigned 
 	return k;
 }
 
-unsigned int b64_decode(const unsigned char* in, unsigned int in_len, unsigned char* out) {
+int b64_decode(const unsigned char* in, unsigned int in_len, unsigned char* out) {
 
 	unsigned int i=0, j=0, k=0, s[4];
 	for (i=0;i<in_len;i++) {
@@ -191,16 +191,3 @@ int b64_decodef(char *InFile, char *OutFile) {
 
 	return (int)k;
 }
-/*
-unsigned int b64_encode_string(const unsigned char* in, unsigned int in_len, unsigned char* out){
-	unsigned int* data = malloc(in_len * sizeof(unsigned int));
-	unsigned int result = 0;
-	if ( data ) {
-		for(int i = 0; i < in_len; i++){
-			data[i] = in[i];
-		}
-		result = b64_encode(data, in_len, out);
-		free(data);
-	}
-	return result;
-}*/

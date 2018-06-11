@@ -229,6 +229,7 @@ func NewApp(cfg Config) *App {
 		transactionCmd(),
 		verifyAddressCmd(),
 		deviceAddressGenCmd(),
+		deviceSignMessageCmd(),
 		deviceCheckMessageSignatureCmd(),
 		versionCmd(),
 		walletBalanceCmd(cfg),

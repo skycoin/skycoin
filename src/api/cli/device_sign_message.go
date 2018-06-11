@@ -1,7 +1,7 @@
 package cli
 
 import (
-
+    "fmt"
 	hardwareWallet "github.com/skycoin/skycoin/src/hardware-wallet"
 	gcli "github.com/urfave/cli"
 )
@@ -27,7 +27,8 @@ func deviceSignMessageCmd() gcli.Command {
 		Action: func(c *gcli.Context) {
 			addressN := c.Int("addressN")
             message := c.String("message")
-            hardwareWallet.DeviceSignMessage(addressN, message)
+            kind, data := hardwareWallet.DeviceSignMessage(addressN, message)
+	        fmt.Printf("Success %d! address that issued the signature is: %s\n", kind, data[2:])
 		},
 	}
 }

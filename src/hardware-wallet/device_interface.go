@@ -82,7 +82,7 @@ func DeviceAddressGen(coinType messages.SkycoinAddressType, addressN int) {
 }
 
 // DeviceSignMessage Ask the device to sign a message using the secret key at given index.
-func DeviceSignMessage(addressN int, message string) {
+func DeviceSignMessage(addressN int, message string) (uint16, []byte) {
 	dev, _ := GetTrezorDevice()
 
 	skycoinSignMessage := &messages.SkycoinSignMessage{
@@ -102,5 +102,5 @@ func DeviceSignMessage(addressN int, message string) {
 	var msg wire.Message
 	msg.ReadFrom(dev)
 
-	fmt.Printf("Success %d! address that issued the signature is: %s\n", msg.Kind, msg.Data)
+	return msg.Kind, msg.Data
 }

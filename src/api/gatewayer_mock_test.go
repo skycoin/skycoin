@@ -1070,3 +1070,8 @@ func (m *GatewayerMock) VerifyTxnVerbose(p0 *coin.Transaction) ([]wallet.UxBalan
 	return r0, r1, r2
 
 }
+
+func (m *GatewayerMock) GetBlocksV2(start, end uint64) (*visor.ReadableBlocksV2, error){
+	panic(fmt.Sprintf("GetBlocksV2 is not implemented "))
+	return nil, nil
+}

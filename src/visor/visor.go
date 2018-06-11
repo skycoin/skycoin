@@ -2088,3 +2088,143 @@ func (vs *Visor) getUnspentsForSpending(tx *dbutil.Tx, addrs []cipher.Address, i
 
 	return auxs, nil
 }
+
+// NewReadableBlocksV2 converts []coin.SignedBlock to readable blocks api/V2
+// Adds aditional data to Inputs (owner, coins, hours)
+func (vs *Visor) NewReadableBlocksV2(blocks []coin.SignedBlock) (*ReadableBlocksV2, error) {
+	rbs := make([]ReadableBlockV2, 0, len(blocks))
+	for _, b := range blocks {
+		blockHead := NewReadableBlockHeader(&b.Block.Head)
+		resTxns := make([]ReadableTransactionV2, 0, len(b.Body.Transactions))
+		for _, txt := range b.Body.Transactions {
+			t := Transaction{
+				Txn:    txt,
+				Status: TransactionStatus{BlockSeq: b.Seq()},
+			}
+			rdt, err := vs.NewReadableTransactionV2(t)
+			if err != nil {
+				logger.Errorf("Visor.NewReadableTransactionV2: failed: %v", err)
+				return nil, err
+			}
+			resTxns = append(resTxns, *rdt)
+		}
+		readableBlock := ReadableBlockV2{
+			Head: blockHead,
+			Body: ReadableBlockBodyV2{
+				Transactions: resTxns,
+			},
+			Size: b.Size(),
+		}
+		rbs = append(rbs, readableBlock)
+	}
+	return &ReadableBlocksV2{
+		Blocks: rbs,
+	}, nil
+}
+
+//NewReadableTransactionV2 creates a readable transaction /api/V2
+func (vs *Visor) NewReadableTransactionV2(transaction Transaction) (*ReadableTransactionV2, error) {
+	inputs, uxids, err := vs.NewReadableTransactionInputs(transaction)
+	if err != nil {
+		return nil, err
+	}
+	outputs, err := vs.NewReadableTransactionOutputs(transaction)
+	if err != nil {
+		return nil, err
+	}
+	sigs := make([]string, len(transaction.Txn.Sigs))
+	for i, s := range transaction.Txn.Sigs {
+		sigs[i] = s.Hex()
+	}
+	r := ReadableTransactionV2{}
+	r.Length = transaction.Txn.Length
+	r.Type = transaction.Txn.Type
+	r.Hash = transaction.Txn.Hash().Hex()
+	r.InnerHash = transaction.Txn.InnerHash.Hex()
+	r.Timestamp = transaction.Time
+	r.Sigs =  sigs
+	r.In = uxids
+	r.InData = inputs
+	r.Out = outputs
+	return &r, nil
+}
+
+// NewReadableTransactionInputs creates slice of ReadableTransactionInput /api/V2
+func (vs *Visor) NewReadableTransactionInputs(transaction Transaction) ([]ReadableTransactionInput, []string, error) {
+	var err error
+	err = nil
+	var head *coin.SignedBlock
+	head, err = vs.GetHeadBlock()
+	if err != nil {
+		logger.Errorf("Visor.NewReadableTransactionInputs: Visor.GetHeadBlock failed: %v", err)
+		return nil, nil, err
+	}
+	t := transaction.Time
+	if !transaction.Status.Confirmed {
+		t = head.Time()
+	}
+	inputs := make([]ReadableTransactionInput, 0, len(transaction.Txn.In))
+	uxids := make([]string, 0, len(transaction.Txn.In))
+
+	for _, inputID := range transaction.Txn.In {
+		var input *historydb.UxOut
+		input, err = vs.GetUxOutByID(inputID)
+		if err != nil {
+			logger.Errorf("Visor.NewReadableTransactionInputsV2: Visor.GetUxOutByID failed: %v", err)
+			return nil, nil, err
+		}
+		if input == nil {
+			err = fmt.Errorf("uxout of %v does not exist in history db", inputID.Hex())
+			return nil, nil, err
+		}
+		rdInput, err := vs.NewReadableTransactionInput(input.Out, t)
+		if err != nil {
+			logger.Errorf("Visor.NewReadableTransactionInputsV2: visor.NewReadableTransactionInputV2 failed: %v", err)
+			return nil, nil, err
+		}
+		inputs = append(inputs, *rdInput)
+		uxids = append(uxids, inputID.Hex())
+	}
+	return inputs, uxids, err
+}
+
+// NewReadableTransactionInput creates ReadableTransactionInput /api/V2
+func (vs *Visor) NewReadableTransactionInput(ux coin.UxOut, calculateHoursTime uint64) (*ReadableTransactionInput, error) {
+	coinVal, err := droplet.ToString(ux.Body.Coins)
+	if err != nil {
+		logger.Errorf("Failed to convert coins to string: %v", err)
+		return nil, err
+	}
+
+	// The overflow bug causes this to fail for some transactions, allow it to pass
+	calculatedHours, err := ux.CoinHours(calculateHoursTime)
+	if err != nil {
+		logger.Critical().Warningf("Ignoring NewReadableTransactionInput ux.CoinHours failed: %v", err)
+		calculatedHours = 0
+	}
+
+	return &ReadableTransactionInput{
+		Hash:            ux.Hash().Hex(),
+		Address:         ux.Body.Address.String(),
+		Coins:           coinVal,
+		Hours:           ux.Body.Hours,
+		CalculatedHours: calculatedHours,
+	}, nil
+}
+
+// NewReadableTransactionOutputs creates slice of ReadableTransactionOutputs /api/V2
+func (vs *Visor) NewReadableTransactionOutputs(transaction Transaction) ([]ReadableTransactionOutput, error) {
+	outputs := make([]ReadableTransactionOutput, 0, len(transaction.Txn.Out))
+	txID := cipher.SHA256{}
+	if transaction.Status.BlockSeq != 0 {
+		txID = transaction.Txn.Hash()
+	}
+	for _, t := range transaction.Txn.Out {
+		o, err := NewReadableTransactionOutput(&t, txID)
+		if err != nil {
+			return nil, err
+		}
+		outputs = append(outputs, *o)
+	}
+	return outputs, nil
+}

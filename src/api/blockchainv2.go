@@ -29,7 +29,7 @@ func getBlocksV2(gateway Gatewayer) http.HandlerFunc {
 			wh.Error400(w, fmt.Sprintf("Invalid end value \"%s\"", send))
 			return
 		}
-		rb, err := gateway.GetBlocks(start, end)
+		rb, err := gateway.GetBlocksV2(start, end)
 		if err != nil {
 			wh.Error400(w, fmt.Sprintf("Get blocks failed: %v", err))
 			return

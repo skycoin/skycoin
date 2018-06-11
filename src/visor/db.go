@@ -31,34 +31,6 @@ type ErrCorruptDB struct {
 	error
 }
 
-// corrputedBlocks is used for recording corrupted blocks concurrently
-type corruptedBlocks struct {
-	v    map[uint64]struct{}
-	lock sync.Mutex
-}
-
-func newCorruptedBlocks() *corruptedBlocks {
-	return &corruptedBlocks{
-		v: make(map[uint64]struct{}),
-	}
-}
-
-func (cb *corruptedBlocks) Store(seq uint64) {
-	cb.lock.Lock()
-	cb.v[seq] = struct{}{}
-	cb.lock.Unlock()
-}
-
-func (cb *corruptedBlocks) BlockSeqs() []uint64 {
-	cb.lock.Lock()
-	var seqs []uint64
-	for seq := range cb.v {
-		seqs = append(seqs, seq)
-	}
-	cb.lock.Unlock()
-	return seqs
-}
-
 // CheckDatabase checks the database for corruption, rebuild history if corrupted
 func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) error {
 	var blocksBktExist bool

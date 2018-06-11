@@ -381,7 +381,7 @@ func SKY_coin_GetBlockBody(_b C.Block__Handle, _p *C.BlockBody__Handle) (____err
 }
 
 //export SKY_coin_NewEmptyBlock
-func SKY_coin_NewEmptyBlock(_txns C.Transactions__Handle , handle *C.Block__Handle) (____error_code uint32) {
+func SKY_coin_NewEmptyBlock(_txns C.Transactions__Handle, handle *C.Block__Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())

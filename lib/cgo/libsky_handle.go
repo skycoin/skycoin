@@ -14,11 +14,10 @@ import (
 	api "github.com/skycoin/skycoin/src/api"
 	webrpc "github.com/skycoin/skycoin/src/api/webrpc"
 	cli "github.com/skycoin/skycoin/src/cli"
+	"github.com/skycoin/skycoin/src/coin"
 	wallet "github.com/skycoin/skycoin/src/wallet"
 	gcli "github.com/urfave/cli"
-	"github.com/skycoin/skycoin/src/coin"
 )
-
 
 type Handle uint64
 
@@ -40,7 +39,7 @@ func lookupHandle(handle C.Handle) (interface{}, bool) {
 	return obj, ok
 }
 
-func overwriteHandle(handle C.Handle, obj interface{}) bool{
+func overwriteHandle(handle C.Handle, obj interface{}) bool {
 	_, ok := handleMap[Handle(handle)]
 	if ok {
 		handleMap[Handle(handle)] = obj

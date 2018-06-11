@@ -44,11 +44,11 @@ func SKY_coin_Transaction_Copy(handle C.Transaction__Handle, handle2 *C.Transact
 	ntx.Type = tx.Type
 	ntx.InnerHash = tx.InnerHash
 	ntx.Sigs = make([]cipher.Sig, 0)
-	ntx.Sigs = append( ntx.Sigs, tx.Sigs... )
+	ntx.Sigs = append(ntx.Sigs, tx.Sigs...)
 	ntx.In = make([]cipher.SHA256, 0)
-	ntx.In = append( ntx.In, tx.In... )
+	ntx.In = append(ntx.In, tx.In...)
 	ntx.Out = make([]coin.TransactionOutput, 0)
-	ntx.Out = append( ntx.Out, tx.Out... )
+	ntx.Out = append(ntx.Out, tx.Out...)
 	*handle2 = registerTransactionHandle(&ntx)
 	return
 }
@@ -441,8 +441,8 @@ func SKY_coin_Transactions_Add(tsh C.Transactions__Handle, th C.Transaction__Han
 		____error_code = SKY_ERROR
 		return
 	}
-	*txns = append( *txns, *tx )
-	result := overwriteHandle( tsh, txns )
+	*txns = append(*txns, *tx)
+	result := overwriteHandle(tsh, txns)
 	if !result {
 		____error_code = SKY_ERROR
 	}
@@ -460,7 +460,7 @@ func SKY_coin_Transactions_GetAt(tsh C.Transactions__Handle, n int, th *C.Transa
 		____error_code = SKY_ERROR
 		return
 	}
-	if( n >= len(*txns)){
+	if n >= len(*txns) {
 		____error_code = SKY_ERROR
 		return
 	}
@@ -514,7 +514,7 @@ func SKY_coin_Transactions_TruncateBytesTo(tsh C.Transactions__Handle, _size int
 	}
 	size := _size
 	__arg1 := txns.TruncateBytesTo(size)
-	*_arg1 = registerTransactionsHandle( &__arg1 )
+	*_arg1 = registerTransactionsHandle(&__arg1)
 	return
 }
 

@@ -1,5 +1,6 @@
 #include "json.h"
 #include <string.h>
+#include <math.h>
 
 json_value* json_get_string(json_value* value, const char* key){
 	int length, x;
@@ -77,6 +78,8 @@ int compareJsonValues(json_value* value1, json_value* value2){
 	if( value1->type != value2->type)
 		return 0;
 	switch (value1->type) {
+    case json_null:
+      return value2->type == json_null;
 		case json_none:
 			return 1;
 		case json_object:
@@ -86,7 +89,7 @@ int compareJsonValues(json_value* value1, json_value* value2){
 		case json_integer:
 			return value1->u.integer == value2->u.integer;
 		case json_double:
-			return abs(value1->u.dbl - value2->u.dbl) < 0.000001;
+			return fabs(value1->u.dbl - value2->u.dbl) < 0.000001;
 		case json_string:
 			return strcmp(value1->u.string.ptr, value2->u.string.ptr) == 0;
 		case json_boolean:
@@ -129,6 +132,6 @@ json_value* get_json_value_not_strict(json_value* node, const char* path,
 
 json_value* get_json_value(json_value* node, const char* path,
 							json_type type){
-	get_json_value_not_strict(node, path, type, 1);
+	return get_json_value_not_strict(node, path, type, 1);
 }
 

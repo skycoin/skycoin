@@ -133,7 +133,7 @@ func DecodeInt(in []byte, data interface{}) {
 func DeserializeAtomic(in []byte, data interface{}) {
 	n := intDestSize(data)
 	if len(in) < n {
-		log.Panic(ErrBufferOverflow)
+		log.Panic(ErrBufferUnderflow)
 	}
 	if n != 0 {
 		var b [8]byte
@@ -727,7 +727,7 @@ func (d *decoder) value(v reflect.Value) error {
 
 	case reflect.Map:
 		if len(d.buf) < 4 {
-			return ErrBufferOverflow
+			return ErrBufferUnderflow
 		}
 		length := int(d.uint32())
 		if length < 0 || length > len(d.buf) {
@@ -753,7 +753,7 @@ func (d *decoder) value(v reflect.Value) error {
 
 	case reflect.Slice:
 		if len(d.buf) < 4 {
-			return ErrBufferOverflow
+			return ErrBufferUnderflow
 		}
 		length := int(d.uint32())
 		if length < 0 || length > len(d.buf) {
@@ -807,7 +807,7 @@ func (d *decoder) value(v reflect.Value) error {
 
 	case reflect.String:
 		if len(d.buf) < 4 {
-			return ErrBufferOverflow
+			return ErrBufferUnderflow
 		}
 		length := int(d.uint32())
 		if length < 0 || length > len(d.buf) {

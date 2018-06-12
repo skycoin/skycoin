@@ -51,48 +51,63 @@ func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) erro
 
 	history := historydb.New()
 	indexesMap := historydb.NewIndexesMap()
+
+	var historyVerifyErr error
+	var lock sync.Mutex
 	verifyFunc := func(tx *dbutil.Tx, b *coin.SignedBlock) error {
 		// Verify signature
 		if err := bc.VerifySignature(b); err != nil {
 			return err
 		}
 
-		// Verify historydb
-		return history.Verify(tx, b, indexesMap)
+		// Verify historydb, we don't return the error of history.Verify here,
+		// as we have to check all signature, if we return error early here, the
+		// potential bad signature won't be detected.
+		lock.Lock()
+		if historyVerifyErr == nil {
+			historyVerifyErr = history.Verify(tx, b, indexesMap)
+		}
+		lock.Unlock()
+		return nil
 	}
 
 	err = bc.WalkChain(BlockchainVerifyTheadNum, verifyFunc, quit)
 	switch err.(type) {
 	case nil:
-		return nil
-	case blockdb.ErrMissingSignature:
-		return ErrCorruptDB{err}
-	case historydb.ErrHistoryDBCorrupted:
-		errC := make(chan error, 1)
-		wg := sync.WaitGroup{}
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			err := rebuildCorruptDB(db, history, bc, quit)
-			errC <- err
-		}()
-
-		wg.Wait()
-
-		select {
-		case err := <-errC:
-			return err
-		default:
-			return nil
-		}
+		lock.Lock()
+		err = historyVerifyErr
+		lock.Unlock()
+		return err
 	default:
 		return err
 	}
 }
 
-func rebuildCorruptDB(db *dbutil.DB, history *historydb.HistoryDB, bc *Blockchain, quit chan struct{}) error {
-	logger.Infof("Historydb is broken, rebuilding...")
-	return db.Update("Rebuild history db", func(tx *dbutil.Tx) error {
+// backup the corrypted db first, then rebuild the history DB.
+func rebuildHistoryDB(db *dbutil.DB, history *historydb.HistoryDB, bc *Blockchain, quit chan struct{}) (*dbutil.DB, error) {
+	// backup the corrupted database
+	dbReadOnly := db.IsReadOnly()
+
+	dbPath := db.Path()
+
+	if err := db.Close(); err != nil {
+		return nil, fmt.Errorf("Failed to close db: %v", err)
+	}
+
+	corruptDBPath, err := copyCorruptDB(dbPath)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to copy corrupted db: %v", err)
+	}
+
+	logger.Critical().Infof("Copy corrupted db to %s", corruptDBPath)
+
+	// Open the database again
+	db, err = OpenDB(dbPath, dbReadOnly)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := db.Update("Rebuild history db", func(tx *dbutil.Tx) error {
 		if err := history.Erase(tx); err != nil {
 			return err
 		}
@@ -119,30 +134,72 @@ func rebuildCorruptDB(db *dbutil.DB, history *historydb.HistoryDB, bc *Blockchai
 				if err := history.ParseBlock(tx, b.Block); err != nil {
 					return err
 				}
+
+				if i%1000 == 0 {
+					logger.Critical().Infof("Parse block: %d", i)
+				}
 			}
 		}
 		return nil
-	})
+	}); err != nil {
+		return nil, err
+	}
+	return db, nil
 }
 
-// ResetCorruptDB checks the database for corruption and if corrupted, then it erases the db and starts over.
+// RepairCorruptDB checks the database for corruption and if corrupted and
+// is ErrMissingSignature, then then it erases the db and starts over.
+// If it's ErrHistoryDBCorrupted, then rebuild historydb from scratch.
 // A copy of the corrupted database is saved.
-func ResetCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) (*dbutil.DB, error) {
+func RepairCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) (*dbutil.DB, error) {
 	err := CheckDatabase(db, pubkey, quit)
-
 	switch err.(type) {
 	case nil:
 		return db, nil
-	case ErrCorruptDB:
+	case blockdb.ErrMissingSignature:
 		logger.Critical().Errorf("Database is corrupted, recreating db: %v", err)
-		return handleCorruptDB(db)
+		return resetCorruptDB(db)
+	case historydb.ErrHistoryDBCorrupted:
+		logger.Critical().Errorf("Database is corrupted, rebuilding db: %v", err)
+		return rebuildCorruptDB(db, pubkey, quit)
 	default:
 		return nil, err
 	}
 }
 
-// handleCorruptDB recreates the DB, making a backup copy marked as corrupted
-func handleCorruptDB(db *dbutil.DB) (*dbutil.DB, error) {
+func rebuildCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) (*dbutil.DB, error) {
+	history := historydb.New()
+	bc, err := NewBlockchain(db, BlockchainConfig{Pubkey: pubkey})
+	if err != nil {
+		return nil, err
+	}
+
+	type rebuildResult struct {
+		DB  *dbutil.DB
+		Err error
+	}
+
+	resC := make(chan rebuildResult, 1)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		db, err := rebuildHistoryDB(db, history, bc, quit)
+		resC <- rebuildResult{DB: db, Err: err}
+	}()
+
+	wg.Wait()
+
+	select {
+	case res := <-resC:
+		return res.DB, res.Err
+	default:
+		return db, nil
+	}
+}
+
+// resetCorruptDB recreates the DB, making a backup copy marked as corrupted
+func resetCorruptDB(db *dbutil.DB) (*dbutil.DB, error) {
 	dbReadOnly := db.IsReadOnly()
 	dbPath := db.Path()
 
@@ -182,6 +239,38 @@ func moveCorruptDB(dbPath string) (string, error) {
 
 	if err := os.Rename(dbPath, newDBPath); err != nil {
 		logger.Errorf("os.Rename(%s, %s) failed: %v", dbPath, newDBPath, err)
+		return "", err
+	}
+
+	return newDBPath, nil
+}
+
+// copyCorruptDB copy a file to makeCorruptDBPath(dbPath)
+func copyCorruptDB(dbPath string) (string, error) {
+	newDBPath, err := makeCorruptDBPath(dbPath)
+	if err != nil {
+		return "", err
+	}
+
+	in, err := os.Open(dbPath)
+	if err != nil {
+		return "", err
+	}
+	defer in.Close()
+
+	out, err := os.Create(newDBPath)
+	if err != nil {
+		return "", err
+	}
+	defer out.Close()
+	logger.Critical().Info(out.Name())
+
+	_, err = io.Copy(in, out)
+	if err != nil {
+		return "", err
+	}
+
+	if err := out.Close(); err != nil {
 		return "", err
 	}
 

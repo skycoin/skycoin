@@ -2101,31 +2101,41 @@ func (vs *Visor) getUnspentsForSpending(tx *dbutil.Tx, addrs []cipher.Address, i
 func (vs *Visor) NewReadableBlocksV2(blocks []coin.SignedBlock) (*ReadableBlocksV2, error) {
 	rbs := make([]ReadableBlockV2, 0, len(blocks))
 	for _, b := range blocks {
-		blockHead := NewReadableBlockHeader(&b.Block.Head)
-		resTxns := make([]ReadableTransactionV2, 0, len(b.Body.Transactions))
-		for _, txt := range b.Body.Transactions {
-			t := Transaction{
-				Txn:    txt,
-				Status: TransactionStatus{BlockSeq: b.Seq()},
-			}
-			rdt, err := vs.NewReadableTransactionV2(t)
-			if err != nil {
-				logger.Errorf("Visor.NewReadableTransactionV2: failed: %v", err)
-				return nil, err
-			}
-			resTxns = append(resTxns, *rdt)
+		readableBlock, err := vs.NewReadableBlockV2(b)
+		if err != nil {
+			logger.Errorf("Visor.NewReadableBlockV2: failed: %v", err)
+			return nil, err
 		}
-		readableBlock := ReadableBlockV2{
-			Head: blockHead,
-			Body: ReadableBlockBodyV2{
-				Transactions: resTxns,
-			},
-			Size: b.Size(),
-		}
-		rbs = append(rbs, readableBlock)
+		rbs = append(rbs, *readableBlock)
 	}
 	return &ReadableBlocksV2{
 		Blocks: rbs,
+	}, nil
+}
+
+// NewReadableBlockV2 converts []coin.SignedBlock to readable blocks api/V2
+// Adds aditional data to Inputs (owner, coins, hours)
+func (vs *Visor) NewReadableBlockV2(block coin.SignedBlock) (*ReadableBlockV2, error) {
+	blockHead := NewReadableBlockHeader(&block.Block.Head)
+	resTxns := make([]ReadableTransactionV2, 0, len(block.Body.Transactions))
+	for _, txt := range block.Body.Transactions {
+		t := Transaction{
+			Txn:    txt,
+			Status: TransactionStatus{BlockSeq: block.Seq()},
+		}
+		rdt, err := vs.NewReadableTransactionV2(t)
+		if err != nil {
+			logger.Errorf("Visor.NewReadableTransactionV2: failed: %v", err)
+			return nil, err
+		}
+		resTxns = append(resTxns, *rdt)
+	}
+	return &ReadableBlockV2{
+		Head: blockHead,
+		Body: ReadableBlockBodyV2{
+			Transactions: resTxns,
+		},
+		Size: block.Size(),
 	}, nil
 }
 

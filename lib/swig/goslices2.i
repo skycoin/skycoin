@@ -9,6 +9,8 @@
 		data.len = 0;
 		data.cap = MAX_ARRAY_LENGTH_WRAP;
 		GoUint32 result = SKY_cipher_GenerateDeterministicKeyPairs(seed, n, &data);
+		if( result == 0 )
+			secKeys->count = data.len;
 		return result;
 	}
 }
@@ -23,6 +25,8 @@
 		data.len = 0;
 		data.cap = MAX_ARRAY_LENGTH_WRAP;
 		GoUint32 result = SKY_cipher_GenerateDeterministicKeyPairsSeed(seed, n, newSeed, &data);
+		if( result == 0 )
+			secKeys->count = data.len;
 		return result;
 	}
 }

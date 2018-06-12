@@ -508,7 +508,7 @@ func (sv spendValidator) HasUnconfirmedSpendTx(addr []cipher.Address) (bool, err
 // Spend spends coins from given wallet and broadcast it,
 // set password as nil if wallet is not encrypted, otherwise the password must be provied.
 // return transaction or error.
-func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
+func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest cipher.Address, bUseDevice bool) (*coin.Transaction, error) {
 	if !gw.Config.EnableWalletAPI {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
@@ -520,7 +520,7 @@ func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest ciphe
 		unspent := gw.v.Blockchain.Unspent()
 		sv := newSpendValidator(gw.v.Unconfirmed, unspent)
 		// create and sign transaction
-		tx, err = gw.vrpc.CreateAndSignTransaction(wltID, password, sv, unspent, gw.v.Blockchain.Time(), coins, dest)
+		tx, err = gw.vrpc.CreateAndSignTransaction(wltID, password, sv, unspent, gw.v.Blockchain.Time(), coins, dest, bUseDevice)
 		if err != nil {
 			logger.Errorf("Create transaction failed: %v", err)
 			return

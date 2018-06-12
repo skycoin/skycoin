@@ -307,7 +307,7 @@ func (serv *Service) ReloadWallets() error {
 // CreateAndSignTransaction creates and signs a transaction from wallet.
 // Set the password as nil if the wallet is not encrypted, otherwise the password must be provided
 func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, vld Validator, unspent blockdb.UnspentGetter,
-	headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
+	headTime, coins uint64, dest cipher.Address, bUseDevice bool) (*coin.Transaction, error) {
 	serv.RLock()
 	defer serv.RUnlock()
 	if !serv.enableWalletAPI {
@@ -322,7 +322,7 @@ func (serv *Service) CreateAndSignTransaction(wltID string, password []byte, vld
 	var tx *coin.Transaction
 	f := func(wlt *Wallet) error {
 		var err error
-		tx, err = wlt.CreateAndSignTransaction(vld, unspent, headTime, coins, dest)
+		tx, err = wlt.CreateAndSignTransaction(vld, unspent, headTime, coins, dest, bUseDevice)
 		return err
 	}
 

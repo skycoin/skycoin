@@ -905,6 +905,16 @@ func (w *Wallet) GetEntry(a cipher.Address) (Entry, bool) {
 	return Entry{}, false
 }
 
+// GetEntryIndex returns entry index of given address
+func (w *Wallet) GetEntryIndex(a cipher.Address) (int, bool) {
+	for i, e := range w.Entries {
+		if e.Address == a {
+			return i, true
+		}
+	}
+	return -1, false
+}
+
 // AddEntry adds new entry
 func (w *Wallet) AddEntry(entry Entry) error {
 	// dup check
@@ -941,7 +951,7 @@ type Validator interface {
 // CreateAndSignTransaction Creates a Transaction
 // spending coins and hours from wallet
 func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.UnspentGetter,
-	headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
+	headTime, coins uint64, dest cipher.Address, bUseDevice bool) (*coin.Transaction, error) {
 	if w.IsEncrypted() {
 		return nil, ErrWalletEncrypted
 	}
@@ -974,6 +984,7 @@ func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspent
 
 	// Add these unspents as tx inputs
 	toSign := make([]cipher.SecKey, len(spends))
+	indexToSign := make([]int, len(spends))
 	spending := Balance{Coins: 0, Hours: 0}
 	for i, au := range spends {
 		entry, exists := w.GetEntry(au.Address)
@@ -988,6 +999,11 @@ func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspent
 		}
 
 		toSign[i] = entry.Secret
+		entryIndex, exists := w.GetEntryIndex(au.Address)
+		if !exists {
+			return nil, NewError(fmt.Errorf("address:%v does not exist in wallet: %v", au.Address, w.Filename()))
+		}
+		indexToSign[i] = entryIndex
 
 		spending.Coins += au.Coins
 		spending.Hours += au.Hours
@@ -1015,7 +1031,11 @@ func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspent
 
 	txn.PushOutput(dest, coins, addrHours[0])
 
-	txn.SignInputs(toSign)
+	if (bUseDevice) {
+		txn.DeviceSignInputs(indexToSign)
+	} else {
+		txn.SignInputs(toSign)
+	}
 	txn.UpdateHeader()
 
 	return &txn, nil

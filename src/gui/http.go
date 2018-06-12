@@ -252,7 +252,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.Se
 	//  dst: Destination address
 	//  Returns total amount spent if successful, otherwise error describing
 	//  failure status.
-	webHandler("/wallet/spendDeviceCheck", walletSpendDeviceCheckHandler(gateway))
+	webHandler("/wallet/spendDeviceCheck", walletSpendWithDeviceSignatureHandler(gateway))
 
 	// Creates a transaction from a wallet
 	webHandler("/wallet/transaction", createTransactionHandler(gateway))

@@ -148,8 +148,8 @@ func (rpc *RPC) GetWalletAddresses(wltID string) ([]cipher.Address, error) {
 
 // CreateAndSignTransaction creates and sign transaction from wallet
 func (rpc *RPC) CreateAndSignTransaction(wltID string, password []byte, vld wallet.Validator, unspent blockdb.UnspentGetter,
-	headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
-	return rpc.v.Wallets.CreateAndSignTransaction(wltID, password, vld, unspent, headTime, coins, dest)
+	headTime, coins uint64, dest cipher.Address, bUseDevice bool) (*coin.Transaction, error) {
+	return rpc.v.Wallets.CreateAndSignTransaction(wltID, password, vld, unspent, headTime, coins, dest, bUseDevice)
 }
 
 // CreateAndSignTransactionAdvanced creates and sign transaction from wallet

@@ -5,9 +5,9 @@ package api
 import (
 	"fmt"
 	"net/http"
-  "strconv"
+	"strconv"
 
-  wh "github.com/skycoin/skycoin/src/util/http"
+	wh "github.com/skycoin/skycoin/src/util/http"
 )
 
 func getBlocksV2(gateway Gatewayer) http.HandlerFunc {

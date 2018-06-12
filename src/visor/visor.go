@@ -2149,7 +2149,7 @@ func (vs *Visor) NewReadableTransactionV2(transaction Transaction) (*ReadableTra
 	r.Hash = transaction.Txn.Hash().Hex()
 	r.InnerHash = transaction.Txn.InnerHash.Hex()
 	r.Timestamp = transaction.Time
-	r.Sigs =  sigs
+	r.Sigs = sigs
 	r.In = uxids
 	r.InData = inputs
 	r.Out = outputs

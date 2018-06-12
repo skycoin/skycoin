@@ -1180,7 +1180,7 @@ func (gw *Gateway) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, 
 	return uxs, isTxnConfirmed, err
 }
 
-// GetBlocks returns a *visor.ReadableBlocks
+// GetBlocksV2 returns a *visor.ReadableBlocks
 func (gw *Gateway) GetBlocksV2(start, end uint64) (*visor.ReadableBlocksV2, error) {
 	var blocks []coin.SignedBlock
 	var readableBlocks *visor.ReadableBlocksV2

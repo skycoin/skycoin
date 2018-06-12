@@ -42,8 +42,8 @@ Todo:
 */
 
 var (
-	// ErrBufferOverflow bytes in input buffer not enough to deserialize expected type
-	ErrBufferOverflow = errors.New("Not enough buffer data to deserialize")
+	// ErrBufferUnderflow bytes in input buffer not enough to deserialize expected type
+	ErrBufferUnderflow = errors.New("Not enough buffer data to deserialize")
 	// ErrInvalidOmitEmpty field tagged with omitempty and it's not last one in struct
 	ErrInvalidOmitEmpty = errors.New("omitempty only supported for the final field in the struct")
 )

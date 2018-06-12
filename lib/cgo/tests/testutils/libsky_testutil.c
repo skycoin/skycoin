@@ -16,8 +16,6 @@
 #define TEST_DATA_DIR "src/cli/integration/testdata/"
 #define stableEncryptWalletName "integration-test-encrypted.wlt"
 
-//Define function pipe2 to avoid warning implicit declaration of function 'pipe2'
-int pipe2(int pipefd[2], int flags);
 //Define function SKY_handle_close to avoid including libskycoin.h
 void SKY_handle_close(Handle p0);
 
@@ -200,23 +198,6 @@ void cleanupMem() {
 	  if( HANDLE_POOL[i] )
 		SKY_handle_close(HANDLE_POOL[i]);
   }
-}
-
-void redirectStdOut(){
-	stdout_backup = dup(fileno(stdout));
-	pipe2(pipefd, 0);
-	dup2(pipefd[1], fileno(stdout));
-}
-
-int getStdOut(char* str, unsigned int max_size){
-	fflush(stdout);
-	close(pipefd[1]);
-	dup2(stdout_backup, fileno(stdout));
-	int bytes_read = read(pipefd[0], str, max_size - 1);
-	if( bytes_read > 0 && bytes_read < max_size)
-		str[bytes_read] = 0;
-	close(pipefd[0]);
-	return bytes_read;
 }
 
 json_value* loadJsonFile(const char* filename){

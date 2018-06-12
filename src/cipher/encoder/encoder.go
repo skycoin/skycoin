@@ -41,6 +41,13 @@ Todo:
 - validate packet legnth for incoming
 */
 
+var (
+	// ErrBufferUnderflow bytes in input buffer not enough to deserialize expected type
+	ErrBufferUnderflow = errors.New("Not enough buffer data to deserialize")
+	// ErrInvalidOmitEmpty field tagged with omitempty and it's not last one in struct
+	ErrInvalidOmitEmpty = errors.New("omitempty only supported for the final field in the struct")
+)
+
 // TODO: constant length byte arrays must not be prefixed
 
 // EncodeInt encodes an Integer type contained in `data`
@@ -126,7 +133,7 @@ func DecodeInt(in []byte, data interface{}) {
 func DeserializeAtomic(in []byte, data interface{}) {
 	n := intDestSize(data)
 	if len(in) < n {
-		log.Panic("Not enough data to deserialize")
+		log.Panic(ErrBufferUnderflow)
 	}
 	if n != 0 {
 		var b [8]byte
@@ -501,10 +508,10 @@ func datasizeWrite(v reflect.Value) (int, error) {
 				continue
 			}
 
-			tag, omitempty := parseTag(ff.Tag.Get("enc"))
+			tag, omitempty := ParseTag(ff.Tag.Get("enc"))
 
 			if omitempty && i != nFields-1 {
-				log.Panic("omitempty only supported for the final field in the struct")
+				log.Panic(ErrInvalidOmitEmpty)
 			}
 
 			if tag != "-" {
@@ -536,7 +543,8 @@ func datasizeWrite(v reflect.Value) (int, error) {
 	}
 }
 
-func parseTag(tag string) (string, bool) {
+// ParseTag to extract encoder args from raw string
+func ParseTag(tag string) (string, bool) {
 	tagSplit := strings.Split(tag, ",")
 	name := tagSplit[0]
 
@@ -719,7 +727,7 @@ func (d *decoder) value(v reflect.Value) error {
 
 	case reflect.Map:
 		if len(d.buf) < 4 {
-			return errors.New("Not enough buffer data to deserialize length")
+			return ErrBufferUnderflow
 		}
 		length := int(d.uint32())
 		if length < 0 || length > len(d.buf) {
@@ -745,7 +753,7 @@ func (d *decoder) value(v reflect.Value) error {
 
 	case reflect.Slice:
 		if len(d.buf) < 4 {
-			return errors.New("Not enough buffer data to deserialize length")
+			return ErrBufferUnderflow
 		}
 		length := int(d.uint32())
 		if length < 0 || length > len(d.buf) {
@@ -775,10 +783,10 @@ func (d *decoder) value(v reflect.Value) error {
 				continue
 			}
 
-			tag, omitempty := parseTag(ff.Tag.Get("enc"))
+			tag, omitempty := ParseTag(ff.Tag.Get("enc"))
 
 			if omitempty && i != nFields-1 {
-				log.Panic("omitempty only supported for the final field in the struct")
+				log.Panic(ErrInvalidOmitEmpty)
 			}
 
 			if tag != "-" {
@@ -799,7 +807,7 @@ func (d *decoder) value(v reflect.Value) error {
 
 	case reflect.String:
 		if len(d.buf) < 4 {
-			return errors.New("Not enough buffer data to deserialize length")
+			return ErrBufferUnderflow
 		}
 		length := int(d.uint32())
 		if length < 0 || length > len(d.buf) {
@@ -930,10 +938,10 @@ func (d *decoder) dchk(v reflect.Value) int {
 				continue
 			}
 
-			tag, omitempty := parseTag(ff.Tag.Get("enc"))
+			tag, omitempty := ParseTag(ff.Tag.Get("enc"))
 
 			if omitempty && i != nFields-1 {
-				log.Panic("omitempty only supported for the final field in the struct")
+				log.Panic(ErrInvalidOmitEmpty)
 			}
 
 			if tag != "-" {
@@ -1030,10 +1038,10 @@ func (e *encoder) value(v reflect.Value) {
 				continue
 			}
 
-			tag, omitempty := parseTag(ff.Tag.Get("enc"))
+			tag, omitempty := ParseTag(ff.Tag.Get("enc"))
 
 			if omitempty && i != nFields-1 {
-				log.Panic("omitempty only supported for the final field in the struct")
+				log.Panic(ErrInvalidOmitEmpty)
 			}
 
 			if tag != "-" {

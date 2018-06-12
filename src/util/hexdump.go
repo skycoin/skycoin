@@ -29,7 +29,7 @@ func writeHexdumpMember(offset int, size int, writer io.Writer, buffer []byte, n
 	var hexBuff = make([]string, size)
 	var j = 0
 	if offset+size > len(buffer) {
-		panic(encoder.ErrBufferOverflow)
+		panic(encoder.ErrBufferUnderflow)
 	}
 	for i := offset; i < offset+size; i++ {
 		hexBuff[j] = strconv.FormatInt(int64(buffer[i]), 16)

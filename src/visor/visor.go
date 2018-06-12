@@ -21,14 +21,6 @@ import (
 	"github.com/skycoin/skycoin/src/util/logging"
 )
 
-const (
-	// MaxDropletPrecision represents the decimal precision of droplets
-	MaxDropletPrecision uint64 = 3
-
-	//DefaultMaxBlockSize is max block size
-	DefaultMaxBlockSize int = 32 * 1024
-)
-
 var (
 	logger = logging.MustGetLogger("visor")
 
@@ -47,8 +39,23 @@ func MaxDropletDivisor() uint64 {
 }
 
 func init() {
+	sanityCheck()
 	// Compute maxDropletDivisor from precision
 	maxDropletDivisor = calculateDivisor(MaxDropletPrecision)
+}
+
+func sanityCheck() {
+	if InitialUnlockedCount > DistributionAddressesTotal {
+		logger.Panic("unlocked addresses > total distribution addresses")
+	}
+
+	if uint64(len(distributionAddresses)) != DistributionAddressesTotal {
+		logger.Panic("available distribution addresses > total allowed distribution addresses")
+	}
+
+	if DistributionAddressInitialBalance*DistributionAddressesTotal > MaxCoinSupply {
+		logger.Panic("total balance in distribution addresses > max coin supply")
+	}
 }
 
 func calculateDivisor(precision uint64) uint64 {

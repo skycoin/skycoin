@@ -62,8 +62,9 @@ export class Wallet {
 
 export class Connection {
   id: number;
-  address: number;
-  listen_port: boolean;
+  address: string;
+  listen_port: number;
+  source?: string;
 }
 
 /**

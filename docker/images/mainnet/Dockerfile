@@ -1,6 +1,6 @@
 # skycoin build
 # reference https://github.com/skycoin/skycoin
-ARG IMAGE_FROM=alpine:3.7
+ARG IMAGE_FROM=busybox
 FROM golang:1.10.1-stretch AS build
 ARG ARCH=amd64
 ARG GOARM
@@ -20,7 +20,10 @@ RUN sh -c \
      fi'
 
 RUN cd $GOPATH/src/github.com/skycoin/skycoin && \
-    GOARCH=$ARCH GOARM=$GOARM CGO_ENABLED=0 GOOS=linux go install -a -installsuffix cgo ./... && \
+    COMMIT=$(git rev-parse HEAD) BRANCH=$(git rev-parse -—abbrev-ref HEAD) \
+    GOARCH=$ARCH GOARM=$GOARM CGO_ENABLED=0 GOOS=linux \
+    GOLDFLAGS="-X main.Commit=${COMMIT} -X main.Branch=${BRANCH}" \
+    go install -ldflags "${GOLDFLAGS}" ./cmd/... && \
     sh -c "if test -d $GOPATH/bin/linux_arm ; then mv $GOPATH/bin/linux_arm/* $GOPATH/bin/; fi; \
            if test -d $GOPATH/bin/linux_arm64 ; then mv $GOPATH/bin/linux_arm64/* $GOPATH/bin/; fi"
 
@@ -41,7 +44,7 @@ COPY --from=build /go/bin/* /usr/bin/
 COPY --from=build /go/src/github.com/skycoin/skycoin/src/gui/static /usr/local/skycoin/src/gui/static
 
 # copy launcher
-COPY docker_launcher.sh /usr/local/bin
+COPY docker_launcher.sh /usr/local/bin/docker_launcher.sh
 
 # volumes
 VOLUME $WALLET_DIR

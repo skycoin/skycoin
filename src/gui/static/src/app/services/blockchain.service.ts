@@ -70,6 +70,10 @@ export class BlockchainService {
     return this.apiService.get('blockchain/progress');
   }
 
+  coinSupply() {
+    return this.apiService.get('coinSupply');
+  }
+
   private completeLoading() {
     this.progressSubject.next({ current: 999999999999, highest: 999999999999 });
     this.walletService.refreshBalances();

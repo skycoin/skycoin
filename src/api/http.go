@@ -243,9 +243,9 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	}
 
 	webHandlerV2 := func(endpoint string, handler http.Handler) {
-		if c.enableUnversionedAPI {
+		/*if c.enableUnversionedAPI {
 			webHandler(endpoint, handler)
-		}
+		}*/
 		webHandler("/api/v2"+endpoint, handler)
 	}
 

@@ -1,102 +1,125 @@
-/*
-//Requires typemap, contains GoString_
-typedef struct{
-    GoString_ UxID;
-    GoString_ Address;
-    GoString_ Coins;
-    GoString_ Hours;
-} api__CreatedTransactionOutput;
+/* Find all header files for structures of libskycoin */
+%include "../../include/cipher.hash.go.h"
+%include "../../include/cipher.address.go.h"
+%include "../../include/cipher.base58.base58.go.h"
+%include "../../include/cipher.chacha20poly1305.chacha20poly1305.go.h"
+%include "../../include/cipher.chacha20poly1305.chacha20poly1305_amd64.go.h"
+%include "../../include/cipher.chacha20poly1305.chacha20poly1305_generic.go.h"
+%include "../../include/cipher.chacha20poly1305.chacha20poly1305_noasm.go.h"
+%include "../../include/cipher.chacha20poly1305.internal.chacha20.chacha_generic.go.h"
+%include "../../include/cipher.crypto.go.h"
+%include "../../include/cipher.encoder.encoder.go.h"
+%include "../../include/cipher.encoder.field.go.h"
+%include "../../include/cipher.encrypt.scrypt_chacha20poly1305.go.h"
+%include "../../include/cipher.encrypt.sha256xor.go.h"
+%include "../../include/cipher.go-bip39.bip39.go.h"
+%include "../../include/cipher.go-bip39.wordlist.go.h"
 
-typedef struct{
-    GoString_ UxID;
-    GoString_ Address;
-    GoString_ Coins;
-    GoString_ Hours;
-    GoString_ CalculatedHours;
-    GoUint64_ Time;
-    GoUint64_ Block;
-    GoString_ TxID;
-} api__CreatedTransactionInput;
+%include "../../include/cipher.pbkdf2.pbkdf2.go.h"
+%include "../../include/cipher.poly1305.poly1305.go.h"
+%include "../../include/cipher.poly1305.sum_amd64.go.h"
+%include "../../include/cipher.poly1305.sum_arm.go.h"
+%include "../../include/cipher.poly1305.sum_ref.go.h"
+%include "../../include/cipher.ripemd160.ripemd160block.go.h"
+%include "../../include/cipher.ripemd160.ripmd_160.go.h"
+%include "../../include/cipher.scrypt.scrypt.go.h"
+%include "../../include/cipher.secp256k1-go.secp256k1-go2.ec.go.h"
+%include "../../include/cipher.secp256k1-go.secp256k1-go2.field.go.h"
+%include "../../include/cipher.secp256k1-go.secp256k1-go2.num.go.h"
+%include "../../include/cipher.secp256k1-go.secp256k1-go2.secp256k1.go.h"
+%include "../../include/cipher.secp256k1-go.secp256k1-go2.sig.go.h"
+%include "../../include/cipher.secp256k1-go.secp256k1-go2.xy.go.h"
+%include "../../include/cipher.secp256k1-go.secp256k1-go2.xyz.go.h"
+%include "../../include/cipher.secp256k1-go.secp256k1-go2.z_consts.go.h"
+%include "../../include/cipher.secp256k1-go.secp256k1-go2.z_init.go.h"
+%include "../../include/cipher.secp256k1-go.secp256k1.go.h"
+%include "../../include/cipher.secp256k1-go.secp256_rand.go.h"
+%include "../../include/coin.transactions.go.h"
+%include "../../include/coin.block.go.h"
+%include "../../include/coin.outputs.go.h"
 
-*/
-/*
-typedef struct {
-	BOOL 		neg;
-	GoSlice_ 	nat;
-} Number;
-
-typedef struct {
-	Number R;
-	Number S;
-} Signature;
-*/
-/*
-
-//Contain slices. Should be Handle
-
-typedef struct{
-    visor__ReadableOutputSet Outputs;
-} webrpc__OutputsResult;
-
-
-typedef struct{
-    cli__Balance Confirmed;
-    cli__Balance Spendable;
-    cli__Balance Expected;
-    GoSlice_  Addresses;
-} cli__BalanceResult;
-
-typedef struct{
-    wallet__BalancePair * Balance;
-    visor__ReadableTransaction * Transaction;
-    GoString_ Error;
-} api__SpendResult;
-
-typedef struct{
-    api__CreatedTransaction Transaction;
-    GoString_ EncodedTransaction;
-} api__CreateTransactionResponse;
-
-typedef struct{
-    GoSlice_  Blocks;
-} visor__ReadableBlocks;
-
-typedef GoSlice_  coin__Transactions;
+%include "../../include/consensus.blockstat.go.h"
+%include "../../include/consensus.connection_manager.go.h"
+%include "../../include/consensus.consensus.go.h"
+%include "../../include/consensus.participant.go.h"
+%include "../../include/consensus.public_broadcast_channel.public_broadcast_channel.go.h"
 
 
-typedef struct{
-    GoUint32_ Length;
-    GoUint8_ Type;
-    GoString_ TxID;
-    GoString_ InnerHash;
-    GoString_ Fee;
-    GoSlice_  Sigs;
-    GoSlice_  In;
-    GoSlice_  Out;
-} api__CreatedTransaction;
+%include "../../include/testutil.assert.assertions.go.h"
+%include "../../include/testutil.require.require.go.h"
+%include "../../include/util.browser.browser.go.h"
+%include "../../include/util.cert.cert.go.h"
+%include "../../include/util.droplet.droplet.go.h"
+%include "../../include/util.elapse.elapser.go.h"
+%include "../../include/util.fee.fee.go.h"
+%include "../../include/util.file.file.go.h"
+%include "../../include/util.http.error.go.h"
+%include "../../include/util.http.handler.go.h"
+%include "../../include/util.http.json.go.h"
+%include "../../include/util.http.log.go.h"
+%include "../../include/util.iputil.iputil.go.h"
+%include "../../include/util.logging.formatter.go.h"
+%include "../../include/util.logging.hooks.go.h"
+%include "../../include/util.logging.logger.go.h"
+%include "../../include/util.logging.logging.go.h"
+%include "../../include/util.utc.utc.go.h"
+%include "../../include/visor.blockchain.go.h"
+%include "../../include/visor.visor.go.h"
+%include "../../include/visor.blockdb.blockchain.go.h"
+%include "../../include/visor.blockdb.blocksigs.go.h"
+%include "../../include/visor.blockdb.block_tree.go.h"
+%include "../../include/visor.blockdb.unspent.go.h"
+%include "../../include/visor.db.go.h"
+%include "../../include/visor.distribution.go.h"
+%include "../../include/visor.historydb.address_txn.go.h"
+%include "../../include/visor.historydb.address_uxout.go.h"
+%include "../../include/visor.historydb.historydb.go.h"
+%include "../../include/visor.historydb.history_meta.go.h"
+%include "../../include/visor.historydb.output.go.h"
+%include "../../include/visor.historydb.transaction.go.h"
+%include "../../include/visor.readable.go.h"
+%include "../../include/visor.richlist.go.h"
+%include "../../include/visor.unconfirmed.go.h"
+%include "../../include/visor.verify.go.h"
 
-typedef struct{
-    api__CreatedTransaction Transaction;
-    GoString_ EncodedTransaction;
-} api__CreateTransactionResponse;
 
-typedef struct{
-    coin__Transactions Txns;
-    GoSlice_  Fees;
-    GoSlice_  Hashes;
-} coin__SortableTransactions;
+%include "../../include/daemon.gnet.pool.go.h"
+%include "../../include/daemon.gnet.message.go.h"
+%include "../../include/daemon.messages.go.h"
+%include "../../include/daemon.daemon.go.h"
+%include "../../include/daemon.gateway.go.h"
+%include "../../include/daemon.gnet.dispatcher.go.h"
+%include "../../include/daemon.pex.peerlist.go.h"
+%include "../../include/daemon.pex.pex.go.h"
+%include "../../include/daemon.pool.go.h"
+%include "../../include/daemon.rpc.go.h"
+%include "../../include/daemon.storage.go.h"
+%include "../../include/daemon.strand.strand.go.h"
+%include "../../include/daemon.visor.go.h"
 
-//Should be Handle
-typedef struct{
-    daemon__TransactionResult * Transaction;
-} webrpc__TxnResult;
+%include "../../include/api.webrpc.block.go.h"
+%include "../../include/api.webrpc.client.go.h"
+%include "../../include/api.webrpc.gateway.go.h"
+%include "../../include/api.webrpc.outputs.go.h"
+%include "../../include/api.webrpc.status.go.h"
+%include "../../include/api.webrpc.transaction.go.h"
+%include "../../include/api.webrpc.uxout.go.h"
+%include "../../include/api.webrpc.webrpc.go.h"
+%include "../../include/wallet.addresses.go.h"
+%include "../../include/wallet.balance.go.h"
+%include "../../include/wallet.crypto.go.h"
+%include "../../include/wallet.entry.go.h"
+%include "../../include/wallet.notes.go.h"
+%include "../../include/wallet.readable.go.h"
+%include "../../include/wallet.secrets.go.h"
+%include "../../include/wallet.service.go.h"
+%include "../../include/wallet.wallet.go.h"
+%include "../../include/wallet.wallets.go.h"
 
-typedef struct{
-    GoInt_ N;
-    BOOL IncludeDistribution;
-} api__RichlistParams;
-
-typedef struct{
-} cli__PasswordFromTerm;
-
-*/
+%include "../../include/api.client.go.h"
+%include "../../include/api.explorer.go.h"
+%include "../../include/api.spend.go.h"
+%include "../../include/api.wallet.go.h"
+%include "../../include/cli.check_balance.go.h"
+%include "../../include/cli.cli.go.h"
+%include "../../include/cli.create_rawtx.go.h"

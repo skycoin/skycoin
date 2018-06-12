@@ -32,8 +32,8 @@
 	//[]PubKey
 	GoUint32 wrap_SKY_cipher_PubKeySlice_Len(cipher_PubKeys* pubKeys){
 		GoSlice_ data;
-		data.data = secKeys->data;
-		data.len = secKeys->count;
+		data.data = pubKeys->data;
+		data.len = pubKeys->count;
 		data.cap = MAX_ARRAY_LENGTH_WRAP;
 		GoUint32 result = SKY_cipher_PubKeySlice_Len(&data);
 		return result;
@@ -44,8 +44,8 @@
 %inline {
 	GoUint32 wrap_SKY_cipher_PubKeySlice_Less(cipher_PubKeys* pubKeys, GoInt p1, GoInt p2){
 		GoSlice_ data;
-		data.data = secKeys->data;
-		data.len = secKeys->count;
+		data.data = pubKeys->data;
+		data.len = pubKeys->count;
 		data.cap = MAX_ARRAY_LENGTH_WRAP;
 		GoUint32 result = SKY_cipher_PubKeySlice_Less(&data, p1, p2);
 		return result;
@@ -56,8 +56,8 @@
 %inline {
 	GoUint32 wrap_SKY_cipher_PubKeySlice_Swap(cipher_PubKeys* pubKeys, GoInt p1, GoInt p2){
 		GoSlice_ data;
-		data.data = secKeys->data;
-		data.len = secKeys->count;
+		data.data = pubKeys->data;
+		data.len = pubKeys->count;
 		data.cap = MAX_ARRAY_LENGTH_WRAP;
 		GoUint32 result = SKY_cipher_PubKeySlice_Swap(&data, p1, p2);
 		return result;

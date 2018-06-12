@@ -14,8 +14,9 @@
     background: #f1f1f1;
     padding: 0 10px;
     line-height: 44px;
-    color: $grey-dark;
+    color: $grey;
     font-size: 14px;
+    flex-shrink: 0;
   }
 }
 
@@ -45,7 +46,7 @@ mat-select {
   border-radius: 6px;
 
   ::ng-deep .mat-select-trigger {
-    padding: 10px;
+    padding: 10px 30px 10px 10px;
     display: block;
     font-size: 11px;
     height: 100%;
@@ -80,7 +81,7 @@ mat-option ::ng-deep .mat-pseudo-checkbox-checked {
     .mat-checkbox-label {
       line-height: 20px;
       font-size: 13px;
-      color: $grey-normal;
+      color: $grey-dark;
       flex: 1;
     }
 
@@ -153,7 +154,7 @@ mat-option ::ng-deep .mat-pseudo-checkbox-checked {
 label mat-icon {
   display: inline;
   font-size: 14px;
-  color: lighten($grey-dark, 40%);
+  color: lighten($grey, 40%);
   vertical-align: text-bottom;
   padding-left: 5px;
 }

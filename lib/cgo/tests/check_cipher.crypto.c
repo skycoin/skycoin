@@ -158,10 +158,12 @@ Test(cipher_crypto, TestPubKeyVerifyDefault2) {
   }
 }
 
-Test(cipher_crypto, TestPubKeyToAddressHash) {
+
+//TODO: Must complete this test
+/*Test(cipher_crypto, TestPubKeyToAddressHash) {
   cipher__PubKey p;
   cipher__SecKey s;
-  cipher__Ripemd160 h;
+  Ripemd160 h;
 
   SKY_cipher_GenerateKeyPair(&p, &s);
   SKY_cipher_PubKey_ToAddressHash(&p, &h);
@@ -175,13 +177,13 @@ Test(cipher_crypto, TestPubKeyToAddressHash) {
   // assert.True(t, bytes.Equal(h[:], y))
   //
   //
-}
+}*/
 
 Test(cipher_crypto, TestPubKeyToAddress) {
   cipher__PubKey p;
   cipher__SecKey s;
   cipher__Address addr;
-  cipher__Ripemd160 h;
+  Ripemd160 h;
   int errcode;
 
   SKY_cipher_GenerateKeyPair(&p, &s);
@@ -309,7 +311,6 @@ Test(cipher_crypto, TestSecKeyHex) {
   // Copy early to ensure memory is released
   strncpy((char *) h.p, str.p, str.n);
   h.n = str.n;
-  free((void *) str.p);
 
   errcode = SKY_cipher_SecKeyFromHex(h, &sk2);
   cr_assert(errcode == SKY_OK);
@@ -732,4 +733,3 @@ Test(cipher_crypto, TestSecKeyHashTest) {
   errcode = SKY_cipher_TestSecKeyHash(&sk, &h);
   cr_assert(errcode == SKY_ERROR);
 }
-

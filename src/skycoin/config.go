@@ -8,12 +8,9 @@ import (
 
 	"log"
 
-	"fmt"
-
-	"github.com/spf13/viper"
-
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util/file"
+	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -21,229 +18,225 @@ var (
 	help = false
 )
 
-// Config records fiber coin configs
+// Config records skycoin node and build config
 type Config struct {
-	Node  NodeConfig  `mapstructure:"node"`
-	Build BuildConfig `mapstructure:"build"`
-}
-
-// BuildConfig records build info
-type BuildConfig struct {
-	Version string `mapstructure:"version"` // version number
-	Commit  string `mapstructure:"commit"`  // git commit id
-	Branch  string `mapstructure:"branch"`  // git branch name
+	Node  NodeConfig
+	Build visor.BuildInfo
 }
 
 // NodeConfig records the node's configuration
 type NodeConfig struct {
 	// Disable peer exchange
-	DisablePEX bool `mapstructure:"disable_pex"`
+	DisablePEX bool
 	// Download peer list
-	DownloadPeerList bool `mapstructure:"download_peer_list"`
+	DownloadPeerList bool
 	// Download the peers list from this URL
-	PeerListURL string `mapstructure:"peer_list_url"`
+	PeerListURL string
 	// Don't make any outgoing connections
-	DisableOutgoingConnections bool `mapstructure:"disable_outgoing_connections"`
+	DisableOutgoingConnections bool
 	// Don't allowing incoming connections
-	DisableIncomingConnections bool `mapstructure:"disable_incoming_connections"`
+	DisableIncomingConnections bool
 	// Disables networking altogether
-	DisableNetworking bool `mapstructure:"disable_networking"`
+	DisableNetworking bool
 	// Enable wallet API
-	EnableWalletAPI bool `mapstructure:"enable_wallet_api"`
+	EnableWalletAPI bool
 	// Enable GUI
-	EnableGUI bool `mapstructure:"enable_gui"`
+	EnableGUI bool
 	// Disable CSRF check in the wallet API
-	DisableCSRF bool `mapstructure:"disable_csrf"`
+	DisableCSRF bool
 	// Enable /api/v1/wallet/seed API endpoint
-	EnableSeedAPI bool `mapstructure:"enable_seed_api"`
+	EnableSeedAPI bool
 	// Enable unversioned API endpoints (without the /api/v1 prefix)
-	EnableUnversionedAPI bool `mapstructure:"enable_unversioned_api"`
+	EnableUnversionedAPI bool
 
 	// Only run on localhost and only connect to others on localhost
-	LocalhostOnly bool `mapstructure:"localhost_only"`
+	LocalhostOnly bool
 	// Which address to serve on. Leave blank to automatically assign to a
 	// public interface
-	Address string `mapstructure:"address"`
+	Address string
 	// gnet uses this for TCP incoming and outgoing
-	Port int `mapstructure:"port"`
+	Port int
 	// Maximum outgoing connections to maintain
-	MaxOutgoingConnections int `mapstructure:"max_outgoing_connections"`
+	MaxOutgoingConnections int
 	// Maximum default outgoing connections
-	MaxDefaultPeerOutgoingConnections int `mapstructure:"max_default_peer_outgoing_connections"`
+	MaxDefaultPeerOutgoingConnections int
 	// How often to make outgoing connections
-	OutgoingConnectionsRate time.Duration `mapstructure:"outgoing_connections_rate"`
+	OutgoingConnectionsRate time.Duration
 	// PeerlistSize represents the maximum number of peers that the pex would maintain
-	PeerlistSize int `mapstructure:"peerlist_size"`
+	PeerlistSize int
 	// Wallet Address Version
 	//AddressVersion string
 	// Remote web interface
-	WebInterface      bool   `mapstructure:"web_interface"`
-	WebInterfacePort  int    `mapstructure:"web_interface_port"`
-	WebInterfaceAddr  string `mapstructure:"web_interface_addr"`
-	WebInterfaceCert  string `mapstructure:"web_interface_cert"`
-	WebInterfaceKey   string `mapstructure:"web_interface_key"`
-	WebInterfaceHTTPS bool   `mapstructure:"web_interface_https"`
+	WebInterface      bool
+	WebInterfacePort  int
+	WebInterfaceAddr  string
+	WebInterfaceCert  string
+	WebInterfaceKey   string
+	WebInterfaceHTTPS bool
 
-	RPCInterface bool `mapstructure:"rpc_interface"`
+	RPCInterface bool
 
 	// Launch System Default Browser after client startup
-	LaunchBrowser bool `mapstructure:"launch_browser"`
+	LaunchBrowser bool
 
 	// If true, print the configured client web interface address and exit
-	PrintWebInterfaceAddress bool `mapstructure:"print_web_interface_address"`
+	PrintWebInterfaceAddress bool
 
 	// Data directory holds app data -- defaults to ~/.skycoin
-	DataDirectory string `mapstructure:"data_directory"`
+	DataDirectory string
 	// GUI directory contains assets for the HTML interface
-	GUIDirectory string `mapstructure:"gui_directory"`
+	GUIDirectory string
 
-	ReadTimeout  time.Duration `mapstructure:"read_timeout"`
-	WriteTimeout time.Duration `mapstructure:"write_timeout"`
-	IdleTimeout  time.Duration `mapstructure:"idle_timeout"`
+	ReadTimeout  time.Duration
+	WriteTimeout time.Duration
+	IdleTimeout  time.Duration
 
 	// Logging
-	ColorLog bool `mapstructure:"color_log"`
+	ColorLog bool
 	// This is the value registered with flag, it is converted to LogLevel after parsing
-	LogLevel string `mapstructure:"log_level"`
+	LogLevel string
 	// Disable "Reply to ping", "Received pong" log messages
-	DisablePingPong bool `mapstructure:"disable_ping_pong"`
+	DisablePingPong bool
 
 	// Verify the database integrity after loading
-	VerifyDB bool `mapstructure:"verify_db"`
+	VerifyDB bool
 	// Reset the database if integrity checks fail, and continue running
-	ResetCorruptDB bool `mapstructure:"reset_corrupt_db"`
+	ResetCorruptDB bool
 
 	// Wallets
 	// Defaults to ${DataDirectory}/wallets/
-	WalletDirectory string `mapstructure:"wallet_directory"`
+	WalletDirectory string
 	// Wallet crypto type
-	WalletCryptoType string `mapstructure:"wallet_crypto_type"`
+	WalletCryptoType string
 
-	RunMaster bool `mapstructure:"run_master"`
+	RunMaster bool
 
 	/* Developer options */
 
 	// Enable cpu profiling
-	ProfileCPU bool `mapstructure:"profile_cpu"`
+	ProfileCPU bool
 	// Where the file is written to
-	ProfileCPUFile string `mapstructure:"profile_cpu_file"`
+	ProfileCPUFile string
 	// HTTP profiling interface (see http://golang.org/pkg/net/http/pprof/)
-	HTTPProf bool `mapstructure:"http_prof"`
+	HTTPProf bool
 
-	DBPath      string `mapstructure:"db_path"`
-	DBReadOnly  bool   `mapstructure:"db_read_only"`
-	Arbitrating bool   `mapstructure:"arbitrating"`
-	LogToFile   bool   `mapstructure:"log_to_file"`
-	Version     bool   `mapstructure:"version"` // show node version
+	DBPath      string
+	DBReadOnly  bool
+	Arbitrating bool
+	LogToFile   bool
+	Version     bool // show node version
 
-	GenesisSignatureStr string   `mapstructure:"genesis_signature_str"`
-	GenesisAddressStr   string   `mapstructure:"genesis_address_str"`
-	BlockchainPubkeyStr string   `mapstructure:"blockchain_pubkey_str"`
-	BlockchainSeckeyStr string   `mapstructure:"blockchain_seckey_str"`
-	GenesisTimestamp    uint64   `mapstructure:"genesis_timestamp"`
-	GenesisCoinVolume   uint64   `mapstructure:"genesis_coin_volume"`
-	DefaultConnections  []string `mapstructure:"default_connections"`
+	GenesisSignatureStr string
+	GenesisAddressStr   string
+	BlockchainPubkeyStr string
+	BlockchainSeckeyStr string
+	GenesisTimestamp    uint64
+	GenesisCoinVolume   uint64
+	DefaultConnections  []string
 
 	genesisSignature cipher.Sig
+	genesisTimestamp uint64
 	genesisAddress   cipher.Address
 
 	blockchainPubkey cipher.PubKey
 	blockchainSeckey cipher.SecKey
 }
 
-func setDefaults() {
-	// node defaults
-	viper.SetDefault("node.genesis_coin_volume", 100e12)
-	viper.SetDefault("node.genesis_timestamp", 1426562704)
-	viper.SetDefault("node.disable_pex", false)
-	viper.SetDefault("node.outgoing_connections", false)
-	viper.SetDefault("node.disable_outgoing_connections", false)
-	viper.SetDefault("node.disable_incoming_connections", false)
-	viper.SetDefault("node.disable_networking", false)
-	viper.SetDefault("node.enable_wallet_api", false)
-	viper.SetDefault("node.enable_gui", false)
-	viper.SetDefault("node.disable_csrf", false)
-	viper.SetDefault("node.enable_seed_api", false)
-	viper.SetDefault("node.enable_unversioned_api", false)
-	viper.SetDefault("node.localhost_only", false)
-	viper.SetDefault("node.address", "")
-	viper.SetDefault("node.port", 6000)
-	viper.SetDefault("node.max_outgoing_connections", 16)
-	viper.SetDefault("node.max_default_peer_outgoing_connections", 1)
-	viper.SetDefault("node.outgoing_connections_rate", time.Second*5)
-	viper.SetDefault("node.peerlist_size", 65535)
-	viper.SetDefault("node.web_interface", true)
-	viper.SetDefault("node.web_interface_port", 6420)
-	viper.SetDefault("node.web_interface_addr", "127.0.0.1")
-	viper.SetDefault("node.web_interface_cert", "")
-	viper.SetDefault("node.web_interface_key", "")
-	viper.SetDefault("node.web_interface_https", false)
-	viper.SetDefault("node.print_web_interface_address", false)
-	viper.SetDefault("node.rpc_interface", true)
-	viper.SetDefault("node.launch_browser", false)
-	viper.SetDefault("node.data_directory", "$HOME/.skycoin")
-	viper.SetDefault("node.gui_directory", "./src/gui/static/")
-	viper.SetDefault("node.read_timeout", time.Second*10)
-	viper.SetDefault("node.write_timeout", time.Second*60)
-	viper.SetDefault("node.idle_timeout", time.Second*120)
-	viper.SetDefault("node.color_log", true)
-	viper.SetDefault("node.log_level", "INFO")
-	viper.SetDefault("node.disable_ping_pong", false)
-	viper.SetDefault("node.verify_db", true)
-	viper.SetDefault("node.reset_corrupt_db", false)
-	viper.SetDefault("node.wallet_directory", "")
-	viper.SetDefault("node.wallet_crypto_type", string(wallet.CryptoTypeScryptChacha20poly1305))
-	viper.SetDefault("node.run_master", false)
-	viper.SetDefault("node.profile_cpu", false)
-	viper.SetDefault("node.profile_cpu_file", "skycoin.prof")
-	viper.SetDefault("node.http_prof", false)
-	viper.SetDefault("node.db_path", "")
-	viper.SetDefault("node.db_read_only", false)
-	viper.SetDefault("node.arbitrating", false)
-	viper.SetDefault("node.log_to_file", false)
-	viper.SetDefault("node.version", false)
+// NewNodeConfig returns a new node config instance
+func NewNodeConfig(mode string, node NodeParameters) *NodeConfig {
+	nodeConfig := &NodeConfig{
+		GenesisSignatureStr: node.GenesisSignatureStr,
+		GenesisAddressStr:   node.GenesisAddressStr,
+		GenesisCoinVolume:   node.GenesisCoinVolume,
+		GenesisTimestamp:    node.GenesisTimestamp,
+		BlockchainPubkeyStr: node.BlockchainPubkeyStr,
+		BlockchainSeckeyStr: node.BlockchainSeckeyStr,
+		DefaultConnections:  node.DefaultConnections,
+		// Disable peer exchange
+		DisablePEX: false,
+		// Don't make any outgoing connections
+		DisableOutgoingConnections: false,
+		// Don't allowing incoming connections
+		DisableIncomingConnections: false,
+		// Disables networking altogether
+		DisableNetworking: false,
+		// Enable wallet API
+		EnableWalletAPI: false,
+		// Enable GUI
+		EnableGUI: false,
+		// Enable unversioned API
+		EnableUnversionedAPI: false,
+		// Enable seed API
+		EnableSeedAPI: false,
+		// Disable CSRF check in the wallet API
+		DisableCSRF: false,
+		// Only run on localhost and only connect to others on localhost
+		LocalhostOnly: false,
+		// Which address to serve on. Leave blank to automatically assign to a
+		// public interface
+		Address: "",
+		//gnet uses this for TCP incoming and outgoing
+		Port: node.Port,
+		// MaxOutgoingConnections is the maximum outgoing connections allowed.
+		MaxOutgoingConnections: 8,
+		// MaxDefaultOutgoingConnections is the maximum default outgoing connections allowed.
+		MaxDefaultPeerOutgoingConnections: 1,
+		DownloadPeerList:                  true,
+		PeerListURL:                       node.PeerListURL,
+		// How often to make outgoing connections, in seconds
+		OutgoingConnectionsRate: time.Second * 5,
+		PeerlistSize:            65535,
+		// Wallet Address Version
+		//AddressVersion: "test",
+		// Remote web interface
+		WebInterface:      true,
+		WebInterfacePort:  node.WebInterfacePort,
+		WebInterfaceAddr:  "127.0.0.1",
+		WebInterfaceCert:  "",
+		WebInterfaceKey:   "",
+		WebInterfaceHTTPS: false,
 
-	// build defaults
-	viper.SetDefault("build.commit", "")
-	viper.SetDefault("build.branch", "")
-}
+		RPCInterface: true,
 
-// NewConfig loads blockchain config parameters from a config file
-// default file is: fiber.toml in the project root
-// JSON, toml or yaml file can be used (toml preferred).
-func NewConfig(configName, appDir string) (Config, error) {
-	// set viper parameters
-	// check that file is of supported type
-	confNameSplit := strings.Split(configName, ".")
-	fileType := confNameSplit[len(confNameSplit)-1]
-	switch fileType {
-	case "toml", "json", "yaml", "yml":
-		viper.SetConfigType(confNameSplit[len(confNameSplit)-1])
-	default:
-		return Config{}, fmt.Errorf("invalid blockchain config file type: %s", fileType)
+		LaunchBrowser: false,
+		// Data directory holds app data
+		DataDirectory: node.DataDirectory,
+		// Web GUI static resources
+		GUIDirectory: "./src/gui/static/",
+		// Logging
+		ColorLog:        true,
+		LogLevel:        "INFO",
+		LogToFile:       false,
+		DisablePingPong: false,
+
+		VerifyDB:       true,
+		ResetCorruptDB: false,
+
+		// Wallets
+		WalletDirectory:  "",
+		WalletCryptoType: string(wallet.CryptoTypeScryptChacha20poly1305),
+
+		// Timeout settings for http.Server
+		// https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
+		ReadTimeout:  time.Second * 10,
+		WriteTimeout: time.Second * 60,
+		IdleTimeout:  time.Second * 120,
+
+		// Centralized network configuration
+		RunMaster: false,
+		/* Developer options */
+
+		// Enable cpu profiling
+		ProfileCPU: false,
+		// Where the file is written to
+		ProfileCPUFile: node.ProfileCPUFile,
+		// HTTP profiling interface (see http://golang.org/pkg/net/http/pprof/)
+		HTTPProf: false,
 	}
 
-	configName = configName[:len(configName)-(len(fileType)+1)]
-	viper.SetConfigName(configName)
+	nodeConfig.applyConfigMode(mode)
 
-	viper.AddConfigPath(appDir)
-	viper.AddConfigPath(".")
-
-	// set defaults
-	setDefaults()
-
-	cfg := Config{}
-
-	if err := viper.ReadInConfig(); err != nil {
-		return cfg, err
-	}
-
-	if err := viper.Unmarshal(&cfg); err != nil {
-		return cfg, err
-	}
-
-	// TODO(therealssj): validate the config values
-	return cfg, nil
+	return nodeConfig
 }
 
 func (c *Config) postProcess() {
@@ -375,6 +368,27 @@ func (c *Config) register() {
 	flag.BoolVar(&c.Node.Arbitrating, "arbitrating", c.Node.Arbitrating, "Run node in arbitrating mode")
 	flag.StringVar(&c.Node.WalletCryptoType, "wallet-crypto-type", c.Node.WalletCryptoType, "wallet crypto type. Can be sha256-xor or scrypt-chacha20poly1305")
 	flag.BoolVar(&c.Node.Version, "version", false, "show node version")
+}
+
+func (n *NodeConfig) applyConfigMode(configMode string) {
+	switch configMode {
+	case "":
+	case "STANDALONE_CLIENT":
+		n.EnableWalletAPI = true
+		n.EnableGUI = true
+		n.EnableSeedAPI = true
+		n.LaunchBrowser = true
+		n.DisableCSRF = false
+		n.DownloadPeerList = true
+		n.RPCInterface = false
+		n.WebInterface = true
+		n.LogToFile = false
+		n.ColorLog = true
+		n.ResetCorruptDB = true
+		n.WebInterfacePort = 0 // randomize web interface port
+	default:
+		panic("Invalid ConfigMode")
+	}
 }
 
 func panicIfError(err error, msg string, args ...interface{}) {

@@ -4,6 +4,8 @@ package historydb
 
 import (
 	"errors"
+	"fmt"
+	"sync"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -193,4 +195,182 @@ func (hd HistoryDB) GetAddressTxns(tx *dbutil.Tx, address cipher.Address) ([]Tra
 // ForEachTxn traverses the transactions bucket
 func (hd HistoryDB) ForEachTxn(tx *dbutil.Tx, f func(cipher.SHA256, *Transaction) error) error {
 	return hd.txns.ForEach(tx, f)
+}
+
+// IndexesMap is a goroutine safe address indexes map
+type IndexesMap struct {
+	value map[cipher.Address]AddressIndexes
+	lock  sync.RWMutex
+}
+
+// NewIndexesMap creates a IndexesMap instance
+func NewIndexesMap() *IndexesMap {
+	return &IndexesMap{
+		value: make(map[cipher.Address]AddressIndexes),
+	}
+}
+
+// Load returns value of given key
+func (im *IndexesMap) Load(address cipher.Address) (AddressIndexes, bool) {
+	im.lock.RLock()
+	v, ok := im.value[address]
+	im.lock.RUnlock()
+	return v, ok
+}
+
+// Store saves address with indexes
+func (im *IndexesMap) Store(address cipher.Address, indexes AddressIndexes) {
+	im.lock.Lock()
+	im.value[address] = indexes
+	im.lock.Unlock()
+}
+
+// AddressIndexes represents the address indexes struct
+type AddressIndexes struct {
+	TxnHashes map[cipher.SHA256]struct{}
+	UxHashes  map[cipher.SHA256]struct{}
+}
+
+// Verify checks if the historydb is corrupted
+func (hd HistoryDB) Verify(tx *dbutil.Tx, b *coin.SignedBlock, indexesMap *IndexesMap) error {
+	for _, t := range b.Body.Transactions {
+		txnHash := t.Hash()
+		txn, err := hd.txns.Get(tx, txnHash)
+		if err != nil {
+			return err
+		}
+
+		if txn == nil {
+			err := fmt.Errorf("HistoryDB.Verify: transaction %v does not exist in historydb", txnHash.Hex())
+			return ErrHistoryDBCorrupted{err}
+		}
+
+		for _, in := range t.In {
+			// Checks the existence of transaction input
+			o, err := hd.outputs.Get(tx, in)
+			if err != nil {
+				return err
+			}
+
+			if o == nil {
+				err := fmt.Errorf("HistoryDB.Verify: transaction input %v does not exist in historydb", in.Hex())
+				return ErrHistoryDBCorrupted{err}
+			}
+
+			// Checks the output's spend block seq
+			if o.SpentBlockSeq != b.Seq() {
+				err := fmt.Errorf("HistoryDB.Verify: spend block seq of transaction input %v is wrong, should be: %v, but is %v",
+					in.Hex(), b.Seq(), o.SpentBlockSeq)
+				return ErrHistoryDBCorrupted{err}
+			}
+
+			addr := o.Out.Body.Address
+			txnHashesMap := map[cipher.SHA256]struct{}{}
+			uxHashesMap := map[cipher.SHA256]struct{}{}
+
+			// Checks if the address indexes already loaded into memory
+			indexes, ok := indexesMap.Load(addr)
+			if ok {
+				txnHashesMap = indexes.TxnHashes
+				uxHashesMap = indexes.UxHashes
+			} else {
+				txnHashes, err := hd.addrTxns.Get(tx, addr)
+				if err != nil {
+					return err
+				}
+				for _, hash := range txnHashes {
+					txnHashesMap[hash] = struct{}{}
+				}
+
+				uxHashes, err := hd.addrUx.Get(tx, addr)
+				if err != nil {
+					return err
+				}
+				for _, hash := range uxHashes {
+					uxHashesMap[hash] = struct{}{}
+				}
+
+				indexesMap.Store(addr, AddressIndexes{
+					TxnHashes: txnHashesMap,
+					UxHashes:  uxHashesMap,
+				})
+			}
+
+			if _, ok := txnHashesMap[txnHash]; !ok {
+				err := fmt.Errorf("HistoryDB.Verify: index of address transaction [%s:%s] does not exist in historydb",
+					addr, txnHash.Hex())
+				return ErrHistoryDBCorrupted{err}
+			}
+
+			if _, ok := uxHashesMap[in]; !ok {
+				err := fmt.Errorf("HistoryDB.Verify: index of address uxout [%s:%s] does not exist in historydb",
+					addr, in.Hex())
+				return ErrHistoryDBCorrupted{err}
+			}
+		}
+
+		// Checks the transaction outs
+		uxArray := coin.CreateUnspents(b.Head, t)
+		for _, ux := range uxArray {
+			uxHash := ux.Hash()
+			out, err := hd.outputs.Get(tx, uxHash)
+			if err != nil {
+				return err
+			}
+
+			if out == nil {
+				err := fmt.Errorf("HistoryDB.Verify: transaction output %s does not exist in historydb", uxHash.Hex())
+				return ErrHistoryDBCorrupted{err}
+			}
+
+			addr := ux.Body.Address
+			txnHashesMap := map[cipher.SHA256]struct{}{}
+			uxHashesMap := map[cipher.SHA256]struct{}{}
+			indexes, ok := indexesMap.Load(addr)
+			if ok {
+				txnHashesMap = indexes.TxnHashes
+				uxHashesMap = indexes.UxHashes
+			} else {
+				txnHashes, err := hd.addrTxns.Get(tx, addr)
+				if err != nil {
+					return err
+				}
+				for _, hash := range txnHashes {
+					txnHashesMap[hash] = struct{}{}
+				}
+
+				uxHashes, err := hd.addrUx.Get(tx, addr)
+				if err != nil {
+					return err
+				}
+
+				for _, hash := range uxHashes {
+					uxHashesMap[hash] = struct{}{}
+				}
+
+				indexesMap.Store(addr, AddressIndexes{
+					TxnHashes: txnHashesMap,
+					UxHashes:  uxHashesMap,
+				})
+			}
+
+			if _, ok := txnHashesMap[txnHash]; !ok {
+				err := fmt.Errorf("HistoryDB.Verify: index of address transaction [%s:%s] does not exist in historydb",
+					addr, txnHash.Hex())
+				return ErrHistoryDBCorrupted{err}
+			}
+		}
+	}
+	return nil
+}
+
+// ErrHistoryDBCorrupted is returned when found the historydb is corrupted
+type ErrHistoryDBCorrupted struct {
+	error
+}
+
+// NewErrHistoryDBCorrupted is for user to be able to create ErrHistoryDBCorrupted instance
+// outside of the package
+func NewErrHistoryDBCorrupted(err error) ErrHistoryDBCorrupted {
+	return ErrHistoryDBCorrupted{err}
 }

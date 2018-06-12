@@ -69,6 +69,7 @@ InputTestDataJSON* jsonToInputTestData(json_value* json, InputTestDataJSON* inpu
 // Cleanup is consistent with InputTestDataToJSON
 InputTestData* registerInputTestDataCleanup(InputTestData* input_data) {
   registerMemCleanup(input_data->Hashes.data);
+  return input_data;
 }
 
 // Mark all elements of input data for disposal
@@ -82,6 +83,7 @@ InputTestDataJSON* registerInputTestDataJSONCleanup(InputTestDataJSON* input_dat
     registerMemCleanup((void *) s->p);
   }
   registerMemCleanup(input_data->Hashes.data);
+  return input_data;
 }
 
 // InputTestDataToJSON converts InputTestData to InputTestDataJSON
@@ -165,6 +167,7 @@ KeysTestDataJSON* jsonToKeysTestData(json_value* json, KeysTestDataJSON* input_d
 // Cleanup is consistent with KeysTestDataFromJSON
 KeysTestData* registerKeysTestDataCleanup(KeysTestData* input_data) {
   registerMemCleanup(input_data->Signatures.data);
+  return input_data;
 }
 
 // Mark all elements of input data for disposal
@@ -182,6 +185,7 @@ KeysTestDataJSON* registerKeysTestDataJSONCleanup(KeysTestDataJSON* input_data) 
     registerMemCleanup((void *) s->p);
   }
   registerMemCleanup(input_data->Signatures.data);
+  return input_data;
 }
 
 // KeysTestDataToJSON converts KeysTestData to KeysTestDataJSON
@@ -281,6 +285,7 @@ SeedTestData* registerSeedTestDataCleanup(SeedTestData* input_data) {
     registerKeysTestDataCleanup(kd);
   }
   registerMemCleanup(input_data->Keys.data);
+  return input_data;
 }
 
 // Mark all elements of input data for disposal
@@ -296,6 +301,7 @@ SeedTestDataJSON* registerSeedTestDataJSONCleanup(SeedTestDataJSON* input_data) 
     registerKeysTestDataJSONCleanup((void*) kd);
   }
   registerMemCleanup(input_data->Keys.data);
+  return input_data;
 }
 
 // SeedTestDataToJSON converts SeedTestData to SeedTestDataJSON
@@ -336,8 +342,8 @@ void SeedTestDataToJson(SeedTestData* input_data, SeedTestDataJSON* json_data) {
 GoUint32 SeedTestDataFromJSON(SeedTestDataJSON* json_data, SeedTestData* input_data) {
   input_data->Seed.cap = b64d_size(json_data->Seed.n);
   input_data->Seed.data = malloc(input_data->Seed.cap);
-  input_data->Seed.len = b64_decode(json_data->Seed.p, json_data->Seed.n,
-      input_data->Seed.data);
+  input_data->Seed.len = b64_decode((const unsigned char *)json_data->Seed.p,
+      json_data->Seed.n, input_data->Seed.data);
 
   input_data->Keys.len = input_data->Keys.cap = json_data->Keys.len;
   input_data->Keys.data = calloc(input_data->Keys.cap, sizeof(KeysTestData));
@@ -425,17 +431,17 @@ void ValidateSeedData(SeedTestData* seedData, InputTestData* inputData) {
         "%d-th SKY_cipher_AddressFromPubKey and SKY_cipher_AddressFromSecKey must generate same addresses", i);
 
     // TODO : Translate once secp256k1 be part of libskycoin
-    /*
-    validSec := secp256k1.VerifySeckey(s[:])
-    if validSec != 1 {
-      return errors.New("secp256k1.VerifySeckey failed")
-    }
+  GoInt validSec;
+	char bufferSecKey[101];
+	strnhex((unsigned char *)s, bufferSecKey, sizeof(cipher__SecKey));
+	GoSlice slseckey = { bufferSecKey,sizeof(cipher__SecKey),65  };
+	SKY_secp256k1_VerifySeckey(slseckey,&validSec);
+  cr_assert(validSec ==1 ,"SKY_secp256k1_VerifySeckey failed");
 
-    validPub := secp256k1.VerifyPubkey(p[:])
-    if validPub != 1 {
-      return errors.New("secp256k1.VerifyPubkey failed")
-    }
-    */
+	GoInt validPub;
+	GoSlice slpubkey = { &p,sizeof(cipher__PubKey), sizeof(cipher__PubKey) };
+	SKY_secp256k1_VerifyPubkey(slpubkey,&validPub);
+	cr_assert(validPub ==1 ,"SKY_secp256k1_VerifyPubkey failed");
 
     // FIXME: without cond : 'not give a valid preprocessing token'
     bool cond = (!(inputData == NULL && expected->Signatures.len != 0));

@@ -1,13 +1,9 @@
-/**
- * Skycoin transaction output.
- *
- * Instances are integral part of transactions included in blocks.
- */
-typedef struct {
-	cipher__Address Address;  ///< Receipient address.
-	GoInt64_ Coins;           ///< Amount sent to the receipient address.
-	GoInt64_ Hours;           ///< Amount of Coin Hours sent to the receipient address.
-} coin__TransactionOutput;
+typedef GoSlice_  coin__Transactions;
+typedef struct{
+    coin__Transactions Txns;
+    GoSlice_  Fees;
+    GoSlice_  Hashes;
+} coin__SortableTransactions;
 
 /**
  * Skycoin transaction.
@@ -23,3 +19,14 @@ typedef struct {
 	GoSlice_ In;                  ///< A list of references to unspent transaction outputs. Unlike other cryptocurrencies, such as Bitcoin, Skycoin unspent transaction outputs (UX) and Skycoin transactions (TX) are separated in the blockchain protocol, allowing for lighter transactions, thus reducing the broadcasting costs across the network.
 	GoSlice_ Out;                 ///< Outputs: A list of outputs created by the client, that will be recorded in the blockchain if transactions are confirmed. An output consists of a data structure representing an UTXT, which is composed by a Skycoin address to be sent to, the amount in Skycoin to be sent, and the amount of Coin Hours to be sent, and the SHA256 hash of the previous fields.
 } coin__Transaction;
+
+/**
+ * Skycoin transaction output.
+ *
+ * Instances are integral part of transactions included in blocks.
+ */
+typedef struct{
+    cipher__Address Address;  ///< Receipient address.
+    GoUint64_ Coins;		  ///< Amount sent to the receipient address.
+    GoUint64_ Hours;          ///< Amount of Coin Hours sent to the receipient address.
+} coin__TransactionOutput;

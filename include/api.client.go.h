@@ -1,0 +1,25 @@
+typedef struct{
+    GoString_ ID;
+    GoSlice_  Addresses;
+    GoString_ Password;
+} api__CreateTransactionRequestWallet;
+typedef struct{
+    GoString_ Type;
+    GoString_ Mode;
+    GoString_ ShareFactor;
+} api__HoursSelection;
+typedef struct{
+    GoString_ Address;
+    GoString_ Coins;
+    GoString_ Hours;
+} api__Receiver;
+typedef struct{
+    GoInt_ N;
+    BOOL IncludeDistribution;
+} api__RichlistParams;
+typedef struct{
+    api__HoursSelection HoursSelection;
+    api__CreateTransactionRequestWallet Wallet;
+    GoString_ ChangeAddress;
+    GoSlice_  To;
+} api__CreateTransactionRequest;

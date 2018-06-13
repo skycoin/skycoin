@@ -8,9 +8,10 @@
 
 %include "golang.cgo.i"
 %include "skycoin.mem.i"
-%include "custom.i"
+%include "skycoin.cipher.crypto.i"
 %include "structs_typemaps.i"
 
+%include "swig.h"
 /* Find the modified copy of libskycoin */
 %include "libskycoin.h"
 %include "structs.i"

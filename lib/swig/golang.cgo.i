@@ -35,16 +35,6 @@
 
 %apply GoSlice_* {coin__UxArray*}
 
-typedef struct{
-	char* p;
-	int   n;
-} GoString;
-
-typedef struct{
-	char* p;
-	int   n;
-} GoString_;
-
 
 /*GoString in typemap*/
 %typemap(in) GoString {

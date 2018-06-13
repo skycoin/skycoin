@@ -3,7 +3,7 @@
 %{
 	#define SWIG_FILE_WITH_INIT
 	#include "libskycoin.h"
-	#include "include/extras.h"
+	#include "swig.h"
 %}
 
 %include "golang.cgo.i"

@@ -1,20 +1,28 @@
+%newobject wrap_SKY_cipher_GenerateDeterministicKeyPairs;
+%typemap(newfree) cipher_SecKeys* "recursive_delete_cipher_SecKeys($1);";
 
 %rename(SKY_cipher_GenerateDeterministicKeyPairs) wrap_SKY_cipher_GenerateDeterministicKeyPairs;
 %inline {
-	GoUint32 wrap_SKY_cipher_GenerateDeterministicKeyPairs(GoSlice seed, GoInt n, cipher_SecKeys* secKeys){
+	cipher_SecKeys* wrap_SKY_cipher_GenerateDeterministicKeyPairs(GoSlice seed, GoInt n){
+		cipher_SecKeys* secKeys;
 		if( n > MAX_ARRAY_LENGTH_WRAP )
-			return -1;
+			return NULL;
+		secKeys = malloc(sizeof(cipher_SecKeys));
+		memset(secKeys, 0, sizeof(cipher_SecKeys));
 		GoSlice_ data;
-		data.data = secKeys->data;
+		data.data = NULL;
 		data.len = 0;
-		data.cap = MAX_ARRAY_LENGTH_WRAP;
+		data.cap = 0;
 		GoUint32 result = SKY_cipher_GenerateDeterministicKeyPairs(seed, n, &data);
-		if( result == 0 )
+		if( result == 0 ){
 			secKeys->count = data.len;
-		return result;
+			secKeys->data = data.data;
+		}
+		return secKeys;
 	}
 }
 
+/*
 %rename(SKY_cipher_GenerateDeterministicKeyPairsSeed) wrap_SKY_cipher_GenerateDeterministicKeyPairsSeed;
 %inline {
 	GoUint32 wrap_SKY_cipher_GenerateDeterministicKeyPairsSeed(GoSlice seed, GoInt n, coin__UxArray* newSeed, cipher_SecKeys* secKeys){
@@ -30,6 +38,7 @@
 		return result;
 	}
 }
+*/
 
 %rename(SKY_cipher_PubKeySlice_Len) wrap_SKY_cipher_PubKeySlice_Len;
 %inline {

@@ -26,7 +26,7 @@ typedef struct{
 #define MAX_ARRAY_LENGTH_WRAP 10
 
 typedef struct{
-	cipher_SecKey data[MAX_ARRAY_LENGTH_WRAP];
+	cipher_SecKey* data;
 	int count;
 } cipher_SecKeys;
 
@@ -34,4 +34,5 @@ typedef struct{
 	cipher_PubKey data[MAX_ARRAY_LENGTH_WRAP];
 	int count;
 } cipher_PubKeys;
+
 

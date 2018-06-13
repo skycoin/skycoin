@@ -16,3 +16,13 @@
 			return NULL;
 	}
 }
+
+%inline{
+	void recursive_delete_cipher_SecKeys(cipher_SecKeys* p){
+		if( p != NULL ){
+			if( p->data != NULL ){
+				free( p->data );
+			}
+		}
+	}
+}

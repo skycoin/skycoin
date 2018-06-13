@@ -12,6 +12,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/ripemd160"
 
 	"github.com/skycoin/skycoin/src/cipher/secp256k1-go"
+	"github.com/skycoin/skycoin/src/cipher/base58"
 
 	"github.com/skycoin/skycoin/src/util/logging"
 	hardwareWallet "github.com/skycoin/skycoin/src/hardware-wallet"
@@ -207,7 +208,7 @@ type Sig [64 + 1]byte //64 byte signature with 1 byte for key recovery
 func NewSig(b []byte) Sig {
 	s := Sig{}
 	if len(b) != len(s) {
-		logger.Panic("Invalid secret key length")
+		logger.Panicf("Invalid secret key length: %d.", len(b))
 	}
 	copy(s[:], b[:])
 	return s
@@ -247,7 +248,8 @@ func (s Sig) Hex() string {
 func DeviceSignHash(hash SHA256, index int) (bool, Sig) {
 	kind, data := hardwareWallet.DeviceSignMessage(index, hash.Hex())
 	if (kind == 2) {
-		sig := NewSig(data[2:])
+		base58sig, _ := base58.Base582Hex(string(data[2:]))
+		sig := NewSig(base58sig)
 		if DebugLevel2 || DebugLevel1 { //!!! Guard against coin loss
 			pubkey, err := PubKeyFromSig(sig, hash)
 			if err != nil {

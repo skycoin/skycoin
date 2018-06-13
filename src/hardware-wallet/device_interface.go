@@ -101,6 +101,7 @@ func DeviceSignMessage(addressN int, message string) (uint16, []byte) {
 
 	var msg wire.Message
 	msg.ReadFrom(dev)
+	dev.Close()
 
 	return msg.Kind, msg.Data
 }

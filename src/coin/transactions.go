@@ -211,7 +211,7 @@ func (txn *Transaction) DeviceSignInputs(indexes []int) {
 		logger.Panic("Transaction has been signed")
 	}
 	if len(indexes) != len(txn.In) {
-		logger.Panic("Invalid number of keys")
+		logger.Panicf("Invalid number of keys, should be %d", len(txn.In))
 	}
 	if len(indexes) > math.MaxUint16 {
 		logger.Panic("Too many keys")

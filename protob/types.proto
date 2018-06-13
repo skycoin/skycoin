@@ -12,7 +12,7 @@ option java_package = "com.satoshilabs.trezor.lib.protobuf";
 option java_outer_classname = "TrezorType";
 option go_package = "messages";
 
-import "google/protobuf/descriptor.proto";
+import "descriptor.proto";
 
 /**
  * Options for specifying message direction and type of wire (normal/debug)

@@ -35,7 +35,6 @@
 	}
 }
 
-//Called by hosting script language when garbage collecting p
 %inline{
 	void destroy_cipher_SecKeys(cipher_SecKeys* p){
 		if( p != NULL ){
@@ -74,7 +73,7 @@
 	}
 }
 
-//Called by hosting script language when garbage collecting p
+
 %inline{
 	void destroy_cipher_PubKeys(cipher_PubKeys* p){
 		if( p != NULL ){

@@ -12,5 +12,5 @@
 %include "structs_typemaps.i"
 
 /* Find the modified copy of libskycoin */
-%include "../../../swig/include/libskycoin.h"
+%include "libskycoin.h"
 %include "structs.i"

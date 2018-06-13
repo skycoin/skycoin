@@ -23,8 +23,6 @@ typedef struct{
 	GoUint8 data[4];
 } cipher_Checksum;
 
-#define MAX_ARRAY_LENGTH_WRAP 10
-
 typedef struct{
 	cipher_SecKey* data;
 	int count;

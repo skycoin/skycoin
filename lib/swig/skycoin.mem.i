@@ -1,53 +1,31 @@
-%newobject wrap_SKY_cipher_GenerateDeterministicKeyPairs;
-%newobject wrap_SKY_cipher_GenerateDeterministicKeyPairsSeed;
-%typemap(newfree) cipher_SecKeys* "destroy_cipher_SecKeys($1);";
-%typemap(newfree) cipher_PubKeys* "destroy_cipher_PubKeys($1);";
-
-
-//returning error code is sacrificed in order to return an allocate object that can be garbage collected
 %rename(SKY_cipher_GenerateDeterministicKeyPairs) wrap_SKY_cipher_GenerateDeterministicKeyPairs;
 %inline {
-	cipher_SecKeys* wrap_SKY_cipher_GenerateDeterministicKeyPairs(GoSlice seed, GoInt n){
-		cipher_SecKeys* secKeys;
-		secKeys = malloc(sizeof(cipher_SecKeys));
-		memset(secKeys, 0, sizeof(cipher_SecKeys));
+	GoUint32 wrap_SKY_cipher_GenerateDeterministicKeyPairs(GoSlice seed, GoInt n, cipher_SecKeys* secKeys){
 		GoSlice_ data;
-		data.data = NULL;
-		data.len = 0;
-		data.cap = 0;
+		data.data = secKeys->data;
+		data.len = secKeys->count;
+		data.cap = secKeys->count;
 		GoUint32 result = SKY_cipher_GenerateDeterministicKeyPairs(seed, n, &data);
-		if( result == 0 ){
-			secKeys->count = data.len;
-			secKeys->data = data.data;
-		}
-		return secKeys;
+		return result;
 	}
 }
 
 
 %rename(SKY_cipher_GenerateDeterministicKeyPairsSeed) wrap_SKY_cipher_GenerateDeterministicKeyPairsSeed;
 %inline {
-	cipher_SecKeys* wrap_SKY_cipher_GenerateDeterministicKeyPairsSeed(GoSlice seed, GoInt n, coin__UxArray* newSeed){
-		cipher_SecKeys* secKeys;
-		secKeys = malloc(sizeof(cipher_SecKeys));
-		memset(secKeys, 0, sizeof(cipher_SecKeys));
+	GoUint32 wrap_SKY_cipher_GenerateDeterministicKeyPairsSeed(GoSlice seed, GoInt n, coin__UxArray* newSeed, cipher_SecKeys* secKeys){
 		GoSlice_ data;
-		data.data = NULL;
-		data.len = 0;
-		data.cap = 0;
+		data.data = secKeys->data;
+		data.len = secKeys->count;
+		data.cap = secKeys->count;
 		GoUint32 result = SKY_cipher_GenerateDeterministicKeyPairsSeed(seed, n, newSeed, &data);
-		if( result == 0 ){
-			secKeys->count = data.len;
-			secKeys->data = data.data;
-		}
-		return secKeys;
+		return result;
 	}
 }
 
 
 %rename(SKY_cipher_PubKeySlice_Len) wrap_SKY_cipher_PubKeySlice_Len;
 %inline {
-	//[]PubKey
 	GoUint32 wrap_SKY_cipher_PubKeySlice_Len(cipher_PubKeys* pubKeys){
 		GoSlice_ data;
 		data.data = pubKeys->data;

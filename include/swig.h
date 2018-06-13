@@ -31,8 +31,7 @@ typedef struct{
 } cipher_SecKeys;
 
 typedef struct{
-	cipher_PubKey data[MAX_ARRAY_LENGTH_WRAP];
+	cipher_PubKey* data;
 	int count;
 } cipher_PubKeys;
-
 

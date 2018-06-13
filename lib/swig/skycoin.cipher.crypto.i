@@ -15,10 +15,68 @@
 		else
 			return NULL;
 	}
+	
+	int setAt(int i, cipher_SecKey* seckey){
+		if( i < $self->count){
+			memcpy(&self->data[i], seckey, sizeof(*seckey));
+			return i;
+		} else {
+			return -1;
+		}
+	}
+	
+	void allocate(int n){
+		$self->data = malloc(n * sizeof(*($self->data)));
+		$self->count = n;
+	}
+	
+	void release(){
+		destroy_cipher_SecKeys($self);
+	}
 }
 
+//Called by hosting script language when garbage collecting p
 %inline{
-	void recursive_delete_cipher_SecKeys(cipher_SecKeys* p){
+	void destroy_cipher_SecKeys(cipher_SecKeys* p){
+		if( p != NULL ){
+			if( p->data != NULL ){
+				free( p->data );
+			}
+		}
+	}
+}
+
+%extend cipher_PubKeys {
+	cipher_PubKey* getAt(int i){
+		if( i < $self->count ){
+			return &$self->data[i];
+		}
+		else
+			return NULL;
+	}
+	
+	int setAt(int i, cipher_PubKey* pubkey){
+		if( i < $self->count){
+			memcpy(&self->data[i], pubkey, sizeof(*pubkey));
+			return i;
+		} else {
+			return -1;
+		}
+	}
+	
+	void allocate(int n){
+		$self->data = malloc(n * sizeof(*($self->data)));
+		$self->count = n;
+	}
+	
+	void release(){
+		destroy_cipher_PubKeys($self);
+	}
+}
+
+//Called by hosting script language when garbage collecting p
+%inline{
+	void destroy_cipher_PubKeys(cipher_PubKeys* p){
 		if( p != NULL ){
 			if( p->data != NULL ){
 				free( p->data );

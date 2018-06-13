@@ -1,12 +1,14 @@
 %newobject wrap_SKY_cipher_GenerateDeterministicKeyPairs;
-%typemap(newfree) cipher_SecKeys* "recursive_delete_cipher_SecKeys($1);";
+%newobject wrap_SKY_cipher_GenerateDeterministicKeyPairsSeed;
+%typemap(newfree) cipher_SecKeys* "destroy_cipher_SecKeys($1);";
+%typemap(newfree) cipher_PubKeys* "destroy_cipher_PubKeys($1);";
 
+
+//returning error code is sacrificed in order to return an allocate object that can be garbage collected
 %rename(SKY_cipher_GenerateDeterministicKeyPairs) wrap_SKY_cipher_GenerateDeterministicKeyPairs;
 %inline {
 	cipher_SecKeys* wrap_SKY_cipher_GenerateDeterministicKeyPairs(GoSlice seed, GoInt n){
 		cipher_SecKeys* secKeys;
-		if( n > MAX_ARRAY_LENGTH_WRAP )
-			return NULL;
 		secKeys = malloc(sizeof(cipher_SecKeys));
 		memset(secKeys, 0, sizeof(cipher_SecKeys));
 		GoSlice_ data;
@@ -22,23 +24,26 @@
 	}
 }
 
-/*
+
 %rename(SKY_cipher_GenerateDeterministicKeyPairsSeed) wrap_SKY_cipher_GenerateDeterministicKeyPairsSeed;
 %inline {
-	GoUint32 wrap_SKY_cipher_GenerateDeterministicKeyPairsSeed(GoSlice seed, GoInt n, coin__UxArray* newSeed, cipher_SecKeys* secKeys){
-		if( n > MAX_ARRAY_LENGTH_WRAP )
-			return -1;
+	cipher_SecKeys* wrap_SKY_cipher_GenerateDeterministicKeyPairsSeed(GoSlice seed, GoInt n, coin__UxArray* newSeed){
+		cipher_SecKeys* secKeys;
+		secKeys = malloc(sizeof(cipher_SecKeys));
+		memset(secKeys, 0, sizeof(cipher_SecKeys));
 		GoSlice_ data;
-		data.data = secKeys->data;
+		data.data = NULL;
 		data.len = 0;
-		data.cap = MAX_ARRAY_LENGTH_WRAP;
+		data.cap = 0;
 		GoUint32 result = SKY_cipher_GenerateDeterministicKeyPairsSeed(seed, n, newSeed, &data);
-		if( result == 0 )
+		if( result == 0 ){
 			secKeys->count = data.len;
-		return result;
+			secKeys->data = data.data;
+		}
+		return secKeys;
 	}
 }
-*/
+
 
 %rename(SKY_cipher_PubKeySlice_Len) wrap_SKY_cipher_PubKeySlice_Len;
 %inline {
@@ -47,7 +52,7 @@
 		GoSlice_ data;
 		data.data = pubKeys->data;
 		data.len = pubKeys->count;
-		data.cap = MAX_ARRAY_LENGTH_WRAP;
+		data.cap = pubKeys->count;
 		GoUint32 result = SKY_cipher_PubKeySlice_Len(&data);
 		return result;
 	}
@@ -59,7 +64,7 @@
 		GoSlice_ data;
 		data.data = pubKeys->data;
 		data.len = pubKeys->count;
-		data.cap = MAX_ARRAY_LENGTH_WRAP;
+		data.cap = pubKeys->count;
 		GoUint32 result = SKY_cipher_PubKeySlice_Less(&data, p1, p2);
 		return result;
 	}
@@ -71,7 +76,7 @@
 		GoSlice_ data;
 		data.data = pubKeys->data;
 		data.len = pubKeys->count;
-		data.cap = MAX_ARRAY_LENGTH_WRAP;
+		data.cap = pubKeys->count;
 		GoUint32 result = SKY_cipher_PubKeySlice_Swap(&data, p1, p2);
 		return result;
 	}

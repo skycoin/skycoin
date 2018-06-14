@@ -267,6 +267,53 @@ func TestTransactionSignInputs(t *testing.T) {
 	require.NotNil(t, cipher.ChkSig(a2, h, tx.Sigs[0]))
 }
 
+func TestTransactionDeviceSignInputs(t *testing.T) {
+	seckey := make([]int, 2)
+	seckey[0]  = 2
+	seckey[0]  = 4
+	// Panics if not enough keys
+	tx := &Transaction{}
+	tx2 := &Transaction{}
+	ux, s := makeUxOutWithSecret(t)
+	tx.PushInput(ux.Hash())
+	ux2, s2 := makeUxOutWithSecret(t)
+	tx.PushInput(ux2.Hash())
+	tx.PushOutput(makeAddress(), 40, 80)
+	// Valid signing
+	*tx2 = *tx
+	h := tx.HashInner()
+	require.NotPanics(t, func() { tx2.SignInputs([]cipher.SecKey{s, s2}) })
+	require.NotPanics(t, func() { tx.DeviceSignInputs(seckey) })
+
+	require.Equal(t, len(tx.Sigs), 2)
+	require.Equal(t, tx.HashInner(), h)
+	// require.Equal(t, tx.Sigs, tx2.Sigs) - it won't work if we don't control the key pairs we are using for signature
+}
+
+
+func TestTransactionEmulatorSignInputs(t *testing.T) {
+	seckey := make([]int, 2)
+	seckey[0]  = 2
+	seckey[0]  = 4
+	// Panics if not enough keys
+	tx := &Transaction{}
+	tx2 := &Transaction{}
+	ux, s := makeUxOutWithSecret(t)
+	tx.PushInput(ux.Hash())
+	ux2, s2 := makeUxOutWithSecret(t)
+	tx.PushInput(ux2.Hash())
+	tx.PushOutput(makeAddress(), 40, 80)
+	// Valid signing
+	*tx2 = *tx
+	h := tx.HashInner()
+	require.NotPanics(t, func() { tx2.SignInputs([]cipher.SecKey{s, s2}) })
+	require.NotPanics(t, func() { tx.EmulatorSignInputs(seckey) })
+
+	require.Equal(t, len(tx.Sigs), 2)
+	require.Equal(t, tx.HashInner(), h)
+	// require.Equal(t, tx.Sigs, tx2.Sigs) - it won't work if we don't control the key pairs we are using for signature
+}
+
 func TestTransactionHash(t *testing.T) {
 	tx := makeTransaction(t)
 	require.NotEqual(t, tx.Hash(), cipher.SHA256{})

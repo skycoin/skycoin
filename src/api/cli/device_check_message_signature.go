@@ -1,7 +1,7 @@
 package cli
 
 import (
-	hardwareWallet "github.com/skycoin/skycoin/src/hardware-wallet"
+	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
 	gcli "github.com/urfave/cli"
 )
 
@@ -30,7 +30,7 @@ func deviceCheckMessageSignatureCmd() gcli.Command {
 			message := c.String("message")
 			signature := c.String("signature")
 			address := c.String("address")
-			hardwareWallet.DeviceCheckMessageSignature(message, signature, address)
+			deviceWallet.DeviceCheckMessageSignature(deviceWallet.DeviceTypeUsb, message, signature, address)
 		},
 	}
 }

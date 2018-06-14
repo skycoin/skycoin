@@ -15,7 +15,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/base58"
 
 	"github.com/skycoin/skycoin/src/util/logging"
-	hardwareWallet "github.com/skycoin/skycoin/src/hardware-wallet"
+	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
 )
 
 var (
@@ -246,7 +246,33 @@ func (s Sig) Hex() string {
 
 // DeviceSignHash sign hash
 func DeviceSignHash(hash SHA256, index int) (bool, Sig) {
-	kind, data := hardwareWallet.DeviceSignMessage(index, hash.Hex())
+	kind, data := deviceWallet.DeviceSignMessage(deviceWallet.DeviceTypeUsb, index, hash.Hex())
+	if (kind == 2) {
+		base58sig, _ := base58.Base582Hex(string(data[2:]))
+		sig := NewSig(base58sig)
+		if DebugLevel2 || DebugLevel1 { //!!! Guard against coin loss
+			pubkey, err := PubKeyFromSig(sig, hash)
+			if err != nil {
+				logger.Panic("DeviceSignMessage, error: pubkey from sig recovery failure")
+			}
+			if VerifySignature(pubkey, sig, hash) != nil {
+				logger.Panic("DeviceSignMessage, error: secp256k1.Sign returned non-null " +
+					"invalid non-null signature")
+			}
+			if ChkSig(AddressFromPubKey(pubkey), hash, sig) != nil {
+				logger.Panic("DeviceSignMessage error: ChkSig failed for signature")
+			}
+		}
+		return true, sig
+	}
+	logger.Panic("DeviceSignMessage, error: could not get signature from device")
+	return false, NewSig([]byte(""))
+}
+
+
+// EmulatorSignHash sign hash
+func EmulatorSignHash(hash SHA256, index int) (bool, Sig) {
+	kind, data := deviceWallet.DeviceSignMessage(deviceWallet.DeviceTypeEmulator, index, hash.Hex())
 	if (kind == 2) {
 		base58sig, _ := base58.Base582Hex(string(data[2:]))
 		sig := NewSig(base58sig)

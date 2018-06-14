@@ -1,7 +1,7 @@
 package cli
 
 import (
-	emulatorWallet "github.com/skycoin/skycoin/src/emulator-wallet"
+	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
 	gcli "github.com/urfave/cli"
 )
 
@@ -20,7 +20,7 @@ func emulatorSetMnemonicCmd() gcli.Command {
 		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) {
 			mnemonic := c.String("mnemonic")
-			emulatorWallet.DeviceSetMnemonic(mnemonic)
+			deviceWallet.DeviceSetMnemonic(deviceWallet.DeviceTypeEmulator, mnemonic)
 		},
 	}
 }

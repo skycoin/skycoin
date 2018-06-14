@@ -231,6 +231,34 @@ func (txn *Transaction) DeviceSignInputs(indexes []int) {
 	txn.Sigs = sigs
 }
 
+// EmulatorSignInputs signs all inputs in the transaction
+func (txn *Transaction) EmulatorSignInputs(indexes []int) {
+	txn.InnerHash = txn.HashInner() // update hash
+
+	if len(txn.Sigs) != 0 {
+		logger.Panic("Transaction has been signed")
+	}
+	if len(indexes) != len(txn.In) {
+		logger.Panicf("Invalid number of keys, should be %d", len(txn.In))
+	}
+	if len(indexes) > math.MaxUint16 {
+		logger.Panic("Too many keys")
+	}
+	if len(indexes) == 0 {
+		logger.Panic("No keys")
+	}
+	sigs := make([]cipher.Sig, len(txn.In))
+	innerHash := txn.HashInner()
+	for i, k := range indexes {
+		h := cipher.AddSHA256(innerHash, txn.In[i]) // hash to sign
+		success, sig := cipher.EmulatorSignHash(h, k)
+		if (success) {
+			sigs[i] = sig
+		}
+	}
+	txn.Sigs = sigs
+}
+
 // SignInputs signs all inputs in the transaction
 func (txn *Transaction) SignInputs(keys []cipher.SecKey) {
 	txn.InnerHash = txn.HashInner() // update hash

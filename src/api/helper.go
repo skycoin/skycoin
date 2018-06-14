@@ -1,9 +1,9 @@
 package api
 
-import(
-  "github.com/skycoin/skycoin/src/cipher"
-  "github.com/skycoin/skycoin/src/util/droplet"
-  "github.com/skycoin/skycoin/src/visor"
+import (
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/skycoin/skycoin/src/visor"
 )
 
 // NewReadableBlocksV2 converts visor.ReadableBlocks to  visor.ReadableBlocksV2 api/V2
@@ -44,14 +44,13 @@ func NewReadableBlockV2(gateway Gatewayer, block *visor.ReadableBlock) (*visor.R
 	}, nil
 }
 
-
 //NewReadableTransactionV2 converts visor.ReadableTransaction to visor.ReadableTransactionV2 api/V2
 func NewReadableTransactionV2(gateway Gatewayer, transaction *visor.ReadableTransaction) (*visor.ReadableTransactionV2, error) {
-  inputs, err := NewReadableTransactionInputsV2(gateway, transaction)
+	inputs, err := NewReadableTransactionInputsV2(gateway, transaction)
 	if err != nil {
 		return nil, err
 	}
-  r := visor.ReadableTransactionV2{}
+	r := visor.ReadableTransactionV2{}
 	r.Length = transaction.Length
 	r.Type = transaction.Type
 	r.Hash = transaction.Hash
@@ -60,16 +59,16 @@ func NewReadableTransactionV2(gateway Gatewayer, transaction *visor.ReadableTran
 	r.Sigs = transaction.Sigs
 	r.In = transaction.In
 	r.Out = transaction.Out
-  r.InData = inputs
-  return &r, nil
+	r.InData = inputs
+	return &r, nil
 }
 
-// NewReadableTransactionInputs creates slice of ReadableTransactionInput /api/V2
+// NewReadableTransactionInputsV2 creates slice of ReadableTransactionInput /api/V2
 func NewReadableTransactionInputsV2(gateway Gatewayer, transaction *visor.ReadableTransaction) ([]visor.ReadableTransactionInput, error) {
-  inputs := make([]visor.ReadableTransactionInput, 0, len(transaction.In))
-  for _, inputID := range transaction.In {
-    sha256, err := cipher.SHA256FromHex(inputID)
-    if err != nil {
+	inputs := make([]visor.ReadableTransactionInput, 0, len(transaction.In))
+	for _, inputID := range transaction.In {
+		sha256, err := cipher.SHA256FromHex(inputID)
+		if err != nil {
 			logger.Errorf("api.NewReadableTransactionInputsV2:  cipher.SHA256FromHex failed: %v", err)
 			return nil, err
 		}
@@ -78,19 +77,19 @@ func NewReadableTransactionInputsV2(gateway Gatewayer, transaction *visor.Readab
 			logger.Errorf("api.NewReadableTransactionInputsV2: Gatewayer.GetUxOutByID failed: %v", err)
 			return nil, err
 		}
-    ux := input.Out
-    coinVal, err := droplet.ToString(ux.Body.Coins)
-    if err != nil {
-  		logger.Errorf("Failed to convert coins to string: %v", err)
-  		return nil, err
-  	}
-    r := visor.ReadableTransactionInput{
-  		Hash:            ux.Hash().Hex(),
-  		Address:         ux.Body.Address.String(),
-  		Coins:           coinVal,
-  		Hours:           ux.Body.Hours,
-  	}
-    inputs = append( inputs, r )
-  }
-  return inputs, nil
+		ux := input.Out
+		coinVal, err := droplet.ToString(ux.Body.Coins)
+		if err != nil {
+			logger.Errorf("Failed to convert coins to string: %v", err)
+			return nil, err
+		}
+		r := visor.ReadableTransactionInput{
+			Hash:    ux.Hash().Hex(),
+			Address: ux.Body.Address.String(),
+			Coins:   coinVal,
+			Hours:   ux.Body.Hours,
+		}
+		inputs = append(inputs, r)
+	}
+	return inputs, nil
 }

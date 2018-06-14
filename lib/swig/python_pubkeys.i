@@ -1,4 +1,4 @@
-/*cipher_SecKeys* parameter to return as a list */
+/*cipher_PubKeys* input parameter */
 %typemap(in) (cipher_PubKeys* __in_pubKeys) {
 	int i;
 	$1->count = PyList_Size($input);

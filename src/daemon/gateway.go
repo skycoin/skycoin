@@ -1179,22 +1179,3 @@ func (gw *Gateway) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, 
 	})
 	return uxs, isTxnConfirmed, err
 }
-
-// GetBlocksV2 returns a *visor.ReadableBlocks
-func (gw *Gateway) GetBlocksV2(start, end uint64) (*visor.ReadableBlocksV2, error) {
-	var blocks []coin.SignedBlock
-	var readableBlocks *visor.ReadableBlocksV2
-	var err error
-
-	gw.strand("GetBlocksV2", func() {
-		blocks, err = gw.v.GetBlocks(start, end)
-	})
-	if err != nil {
-		return nil, err
-	}
-	readableBlocks, err = gw.v.NewReadableBlocksV2(blocks)
-	if err != nil {
-		return nil, err
-	}
-	return readableBlocks, err
-}

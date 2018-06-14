@@ -55,6 +55,4 @@ type Gatewayer interface {
 	GetHealth() (*daemon.Health, error)
 	UnloadWallet(id string) error
 	VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bool, error)
-
-	GetBlocksV2(start, end uint64) (*visor.ReadableBlocksV2, error)
 }

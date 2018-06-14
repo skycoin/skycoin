@@ -56,3 +56,16 @@ func (c *ClientV2) Blocks(start, end int) (*visor.ReadableBlocksV2, error) {
 	}
 	return &b, nil
 }
+
+// LastBlocks makes a request to GET /api/v1/last_blocks
+func (c *ClientV2) LastBlocks(n int) (*visor.ReadableBlocksV2, error) {
+	v := url.Values{}
+	v.Add("num", fmt.Sprint(n))
+	endpoint := "/api/v2/last_blocks?" + v.Encode()
+
+	var b visor.ReadableBlocksV2
+	if err := c.Get(endpoint, &b); err != nil {
+		return nil, err
+	}
+	return &b, nil
+}

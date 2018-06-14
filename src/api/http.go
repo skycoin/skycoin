@@ -421,7 +421,12 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 
 	webHandlerV1("/addresscount", getAddressCount(gateway))
 
+	// get block by hash or seq
+	webHandlerV2("/block", getBlockV2(gateway))
+	// get blocks in specific range
 	webHandlerV2("/blocks", getBlocksV2(gateway))
+	// get last N blocks
+	webHandlerV2("/last_blocks", getLastBlocksV2(gateway))
 
 	return mux
 }

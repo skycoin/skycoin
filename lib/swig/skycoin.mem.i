@@ -1,3 +1,7 @@
+#if defined(SWIGPYTHON)
+	%include "python_seckeys.i"
+	%include "python_pubkeys.i"
+#elif
 %rename(SKY_cipher_GenerateDeterministicKeyPairs) wrap_SKY_cipher_GenerateDeterministicKeyPairs;
 %inline {
 	GoUint32 wrap_SKY_cipher_GenerateDeterministicKeyPairs(GoSlice seed, GoInt n, cipher_SecKeys* secKeys){
@@ -10,7 +14,6 @@
 	}
 }
 
-
 %rename(SKY_cipher_GenerateDeterministicKeyPairsSeed) wrap_SKY_cipher_GenerateDeterministicKeyPairsSeed;
 %inline {
 	GoUint32 wrap_SKY_cipher_GenerateDeterministicKeyPairsSeed(GoSlice seed, GoInt n, coin__UxArray* newSeed, cipher_SecKeys* secKeys){
@@ -22,7 +25,6 @@
 		return result;
 	}
 }
-
 
 %rename(SKY_cipher_PubKeySlice_Len) wrap_SKY_cipher_PubKeySlice_Len;
 %inline {
@@ -59,6 +61,11 @@
 		return result;
 	}
 }
+
+#endif
+
+
+
 
 /**
 *

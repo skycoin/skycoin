@@ -2,17 +2,18 @@
 package deviceWallet
 
 import (
-	"github.com/skycoin/skycoin/src/device-wallet/hardware-wallet/usb"
 	"net"
 	"bytes"
 	"encoding/binary"
 	"fmt"
+    "time"
+    "io"
+    "log"
 	"github.com/wire"
+	"github.com/skycoin/skycoin/src/device-wallet/usb"
 
     proto "github.com/proto"
 	messages "github.com/skycoin/skycoin/protob"
-	hardwareWallet "github.com/skycoin/skycoin/src/device-wallet/hardware-wallet"
-	emulatorWallet "github.com/skycoin/skycoin/src/device-wallet/emulator-wallet"
 )
 // DeviceType type of device: emulated or usb
 type DeviceType int32
@@ -23,6 +24,51 @@ const (
     // DeviceTypeUsb use usb
 	DeviceTypeUsb      DeviceType = 2 
 )
+
+func getEmulatorDevice() (net.Conn, error) {
+	return net.Dial("udp", "127.0.0.1:21324")
+}
+
+
+func getUsbDevice() (usb.Device, error) {
+	w, err := usb.InitWebUSB()
+	if err != nil {
+		log.Fatalf("webusb: %s", err)
+	}
+	h, err := usb.InitHIDAPI()
+	if err != nil {
+		log.Fatalf("hidapi: %s", err)
+	}
+	b := usb.Init(w, h)
+
+	var infos []usb.Info
+	infos, _ = b.Enumerate()
+
+	tries := 0
+	dev, err := b.Connect(infos[0].Path)
+	if err != nil {
+		fmt.Printf(err.Error())
+		if tries < 3 {
+			tries++
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
+	return dev, err
+}
+
+func sendToDeviceNoAnswer(dev io.ReadWriteCloser, chunks [][64]byte) {
+    for _, element := range chunks {
+        _, _ = dev.Write(element[:])
+    }
+}
+func sendToDevice(dev io.ReadWriteCloser, chunks [][64]byte) wire.Message {
+    for _, element := range chunks {
+        _, _ = dev.Write(element[:])
+    }
+    var msg wire.Message
+    msg.ReadFrom(dev)
+    return msg
+}
 
 func makeTrezorHeader(data []byte, msgID messages.MessageType) []byte {
 	header := new(bytes.Buffer)
@@ -38,8 +84,10 @@ func makeTrezorMessage(data []byte, msgID messages.MessageType) [][64]byte {
 	binary.Write(message, binary.BigEndian, []byte("##"))
 	binary.Write(message, binary.BigEndian, uint16(msgID))
 	binary.Write(message, binary.BigEndian, uint32(len(data)))
-	binary.Write(message, binary.BigEndian, []byte("\n"))
-	binary.Write(message, binary.BigEndian, data[1:])
+    binary.Write(message, binary.BigEndian, []byte("\n"))
+    if (len(data) > 0) {
+        binary.Write(message, binary.BigEndian, data[1:])
+    }
 
 	messageLen := message.Len()
 	var chunks [][64]byte
@@ -55,33 +103,23 @@ func makeTrezorMessage(data []byte, msgID messages.MessageType) [][64]byte {
 	return chunks
 }
 
-func getDevice(deviceType DeviceType) (net.Conn, usb.Device) {
-        
-    var emulator net.Conn
-    var dev usb.Device
+func getDevice(deviceType DeviceType) (io.ReadWriteCloser) {
+    var dev io.ReadWriteCloser
     switch (deviceType) {
     case DeviceTypeEmulator:
-        emulator, _ = emulatorWallet.GetTrezorDevice()
+        dev, _ = getEmulatorDevice()
         break
     case DeviceTypeUsb:
-        dev, _ = hardwareWallet.GetTrezorDevice()
+        dev, _ = getUsbDevice()
         break
     }
-    return emulator, dev
+    return dev
 }
 
 // DeviceCheckMessageSignature Check a message signature matches the given address.
 func DeviceCheckMessageSignature(deviceType DeviceType, message string, signature string, address string) {
     
-    emulator, dev := getDevice(deviceType)
-    switch (deviceType) {
-    case DeviceTypeEmulator:
-        defer emulator.Close();
-        break
-    case DeviceTypeUsb:
-        defer dev.Close();
-        break
-    }
+    dev := getDevice(deviceType)
     
     // Send CheckMessageSignature
     
@@ -93,32 +131,22 @@ func DeviceCheckMessageSignature(deviceType DeviceType, message string, signatur
 
 	data, _ := proto.Marshal(skycoinCheckMessageSignature)
 	chunks := makeTrezorMessage(data, messages.MessageType_MessageType_SkycoinCheckMessageSignature)
-    var msg wire.Message
-    switch (deviceType) {
-    case DeviceTypeEmulator:
-        msg = emulatorWallet.SendToDevice(emulator, chunks)
-        break
-    case DeviceTypeUsb:
-        msg = hardwareWallet.SendToDevice(dev, chunks)
-        break
-    }
+    msg := sendToDevice(dev, chunks)
+    fmt.Printf("Success %d! address that issued the signature is: %s\n", msg.Kind, msg.Data)
+    dev.Close()
+}
 
-	fmt.Printf("Success %d! address that issued the signature is: %s\n", msg.Kind, msg.Data)
-
+func MessageButtonAck() [][64]byte{
+    buttonAck := &messages.ButtonAck{}
+    data, _ := proto.Marshal(buttonAck)
+    chunks := makeTrezorMessage(data, messages.MessageType_MessageType_ButtonAck)
+    return chunks
 }
 
 // DeviceSetMnemonic Configure the device with a mnemonic.
 func DeviceSetMnemonic(deviceType DeviceType, mnemonic string) {
 
-    emulator, dev := getDevice(deviceType)
-    switch (deviceType) {
-    case DeviceTypeEmulator:
-        defer emulator.Close();
-        break
-    case DeviceTypeUsb:
-        defer dev.Close();
-        break
-    }
+    dev := getDevice(deviceType)
     
     // Send SetMnemonic
     
@@ -129,33 +157,15 @@ func DeviceSetMnemonic(deviceType DeviceType, mnemonic string) {
 	data, _ := proto.Marshal(skycoinSetMnemonic)
 	chunks := makeTrezorMessage(data, messages.MessageType_MessageType_SetMnemonic)
 	
-    var msg wire.Message
-    switch (deviceType) {
-    case DeviceTypeEmulator:
-        msg = emulatorWallet.SendToDevice(emulator, chunks)
-        break
-    case DeviceTypeUsb:
-        msg = hardwareWallet.SendToDevice(dev, chunks)
-        break
-    }
+    msg := sendToDevice(dev, chunks)
 	
-    fmt.Printf("Success %d! address that issued the signature is: %s\n", msg.Kind, msg.Data)
+    fmt.Printf("Success %d! Mnemonic %s\n", msg.Kind, msg.Data)
     
     // Send ButtonAck
-    
-    buttonAck := &messages.ButtonAck{}
-    data, _ = proto.Marshal(buttonAck)
-    chunks = makeTrezorMessage(data, messages.MessageType_MessageType_ButtonAck)
+    chunks = MessageButtonAck()
+    sendToDeviceNoAnswer(dev, chunks)
 
-    switch (deviceType) {
-    case DeviceTypeEmulator:
-        emulatorWallet.SendToDeviceNoAnswer(emulator, chunks)
-        break
-    case DeviceTypeUsb:
-        hardwareWallet.SendToDeviceNoAnswer(dev, chunks)
-        break
-    }
-    
+    time.Sleep(1*time.Second)
     _, err := msg.ReadFrom(dev)
 	if err != nil {
         fmt.Printf(err.Error())
@@ -163,20 +173,13 @@ func DeviceSetMnemonic(deviceType DeviceType, mnemonic string) {
     }
     
     fmt.Printf("MessageButtonAck Answer is: %d / %s\n", msg.Kind, msg.Data)
+    dev.Close()
 }
 
 // DeviceAddressGen Ask the device to generate an address
 func DeviceAddressGen(deviceType DeviceType, coinType messages.SkycoinAddressType, addressN int) {
 
-    emulator, dev := getDevice(deviceType)
-    switch (deviceType) {
-    case DeviceTypeEmulator:
-        defer emulator.Close();
-        break
-    case DeviceTypeUsb:
-        defer dev.Close();
-        break
-    }
+    dev := getDevice(deviceType)
 	skycoinAddress := &messages.SkycoinAddress{
 		AddressN:    proto.Uint32(uint32(addressN)),
 		AddressType: coinType.Enum(),
@@ -185,23 +188,16 @@ func DeviceAddressGen(deviceType DeviceType, coinType messages.SkycoinAddressTyp
 
 	chunks := makeTrezorMessage(data, messages.MessageType_MessageType_SkycoinAddress)
 
-    var msg wire.Message
-    switch (deviceType) {
-    case DeviceTypeEmulator:
-        msg = emulatorWallet.SendToDevice(emulator, chunks)
-        break
-    case DeviceTypeUsb:
-        msg = hardwareWallet.SendToDevice(dev, chunks)
-        break
-    }
+    msg := sendToDevice(dev, chunks)
 
 	fmt.Printf("Success %d! Address is: %s\n", msg.Kind, msg.Data)
+    dev.Close()
 }
 
 // DeviceSignMessage Ask the device to sign a message using the secret key at given index.
 func DeviceSignMessage(deviceType DeviceType, addressN int, message string) (uint16, []byte) {
     
-    emulator, dev := getDevice(deviceType)
+    dev := getDevice(deviceType)
     
 	skycoinSignMessage := &messages.SkycoinSignMessage{
 		AddressN:    proto.Uint32(uint32(addressN)),
@@ -212,24 +208,9 @@ func DeviceSignMessage(deviceType DeviceType, addressN int, message string) (uin
 
 	chunks := makeTrezorMessage(data, messages.MessageType_MessageType_SkycoinSignMessage)
 
-    var msg wire.Message
-    switch (deviceType) {
-    case DeviceTypeEmulator:
-        msg = emulatorWallet.SendToDevice(emulator, chunks)
-        break
-    case DeviceTypeUsb:
-        msg = hardwareWallet.SendToDevice(dev, chunks)
-        break
-    }
+    msg := sendToDevice(dev, chunks)
 
-    switch (deviceType) {
-    case DeviceTypeEmulator:
-        emulator.Close();
-        break
-    case DeviceTypeUsb:
-        dev.Close();
-        break
-    }
+    dev.Close()
 
 	return msg.Kind, msg.Data
 }

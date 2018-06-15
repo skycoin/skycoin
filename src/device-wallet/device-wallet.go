@@ -177,7 +177,7 @@ func DeviceSetMnemonic(deviceType DeviceType, mnemonic string) {
 }
 
 // DeviceAddressGen Ask the device to generate an address
-func DeviceAddressGen(deviceType DeviceType, coinType messages.SkycoinAddressType, addressN int) {
+func DeviceAddressGen(deviceType DeviceType, coinType messages.SkycoinAddressType, addressN int) (uint16, []byte) {
 
     dev := getDevice(deviceType)
 	skycoinAddress := &messages.SkycoinAddress{
@@ -189,9 +189,9 @@ func DeviceAddressGen(deviceType DeviceType, coinType messages.SkycoinAddressTyp
 	chunks := makeTrezorMessage(data, messages.MessageType_MessageType_SkycoinAddress)
 
     msg := sendToDevice(dev, chunks)
-
-	fmt.Printf("Success %d! Address is: %s\n", msg.Kind, msg.Data)
     dev.Close()
+
+	return msg.Kind, msg.Data
 }
 
 // DeviceSignMessage Ask the device to sign a message using the secret key at given index.

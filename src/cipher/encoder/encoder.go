@@ -14,7 +14,8 @@
 // numbers with smaller absolute value take a smaller number of bytes.
 // For a specification, see http://code.google.com/apis/protocolbuffers/docs/encoding.html.
 //
-// Fields can be ignored with the struct tag `enc:"-"`
+// Fields can be ignored with the struct tag `enc:"-"` .
+// Unexported struct fields are ignored by default .
 //
 // Fields can be skipped if empty with the struct tag `enc:",omitempty"`
 // Note the comma, which follows package json's conventions.
@@ -39,6 +40,13 @@ Todo:
 - ensure that invalid input from foreign server cannot crash
 - validate packet legnth for incoming
 */
+
+var (
+	// ErrBufferUnderflow bytes in input buffer not enough to deserialize expected type
+	ErrBufferUnderflow = errors.New("Not enough buffer data to deserialize")
+	// ErrInvalidOmitEmpty field tagged with omitempty and it's not last one in struct
+	ErrInvalidOmitEmpty = errors.New("omitempty only supported for the final field in the struct")
+)
 
 // TODO: constant length byte arrays must not be prefixed
 
@@ -125,7 +133,7 @@ func DecodeInt(in []byte, data interface{}) {
 func DeserializeAtomic(in []byte, data interface{}) {
 	n := intDestSize(data)
 	if len(in) < n {
-		log.Panic("Not enough data to deserialize")
+		log.Panic(ErrBufferUnderflow)
 	}
 	if n != 0 {
 		var b [8]byte
@@ -495,11 +503,15 @@ func datasizeWrite(v reflect.Value) (int, error) {
 		nFields := t.NumField()
 		for i, n := 0, nFields; i < n; i++ {
 			ff := t.Field(i)
+			// Skip unexported fields
+			if ff.PkgPath != "" {
+				continue
+			}
 
-			tag, omitempty := parseTag(ff.Tag.Get("enc"))
+			tag, omitempty := ParseTag(ff.Tag.Get("enc"))
 
 			if omitempty && i != nFields-1 {
-				log.Panic("omitempty only supported for the final field in the struct")
+				log.Panic(ErrInvalidOmitEmpty)
 			}
 
 			if tag != "-" {
@@ -531,7 +543,8 @@ func datasizeWrite(v reflect.Value) (int, error) {
 	}
 }
 
-func parseTag(tag string) (string, bool) {
+// ParseTag to extract encoder args from raw string
+func ParseTag(tag string) (string, bool) {
 	tagSplit := strings.Split(tag, ",")
 	name := tagSplit[0]
 
@@ -714,7 +727,7 @@ func (d *decoder) value(v reflect.Value) error {
 
 	case reflect.Map:
 		if len(d.buf) < 4 {
-			return errors.New("Not enough buffer data to deserialize length")
+			return ErrBufferUnderflow
 		}
 		length := int(d.uint32())
 		if length < 0 || length > len(d.buf) {
@@ -740,7 +753,7 @@ func (d *decoder) value(v reflect.Value) error {
 
 	case reflect.Slice:
 		if len(d.buf) < 4 {
-			return errors.New("Not enough buffer data to deserialize length")
+			return ErrBufferUnderflow
 		}
 		length := int(d.uint32())
 		if length < 0 || length > len(d.buf) {
@@ -765,11 +778,15 @@ func (d *decoder) value(v reflect.Value) error {
 		nFields := v.NumField()
 		for i := 0; i < nFields; i++ {
 			ff := t.Field(i)
+			// Skip unexported fields
+			if ff.PkgPath != "" {
+				continue
+			}
 
-			tag, omitempty := parseTag(ff.Tag.Get("enc"))
+			tag, omitempty := ParseTag(ff.Tag.Get("enc"))
 
 			if omitempty && i != nFields-1 {
-				log.Panic("omitempty only supported for the final field in the struct")
+				log.Panic(ErrInvalidOmitEmpty)
 			}
 
 			if tag != "-" {
@@ -790,7 +807,7 @@ func (d *decoder) value(v reflect.Value) error {
 
 	case reflect.String:
 		if len(d.buf) < 4 {
-			return errors.New("Not enough buffer data to deserialize length")
+			return ErrBufferUnderflow
 		}
 		length := int(d.uint32())
 		if length < 0 || length > len(d.buf) {
@@ -916,11 +933,15 @@ func (d *decoder) dchk(v reflect.Value) int {
 		nFields := v.NumField()
 		for i := 0; i < nFields; i++ {
 			ff := t.Field(i)
+			// Skip unexported fields
+			if ff.PkgPath != "" {
+				continue
+			}
 
-			tag, omitempty := parseTag(ff.Tag.Get("enc"))
+			tag, omitempty := ParseTag(ff.Tag.Get("enc"))
 
 			if omitempty && i != nFields-1 {
-				log.Panic("omitempty only supported for the final field in the struct")
+				log.Panic(ErrInvalidOmitEmpty)
 			}
 
 			if tag != "-" {
@@ -1012,11 +1033,15 @@ func (e *encoder) value(v reflect.Value) {
 		for i := 0; i < nFields; i++ {
 			// see comment for corresponding code in decoder.value()
 			ff := t.Field(i)
+			// Skip unexported fields
+			if ff.PkgPath != "" {
+				continue
+			}
 
-			tag, omitempty := parseTag(ff.Tag.Get("enc"))
+			tag, omitempty := ParseTag(ff.Tag.Get("enc"))
 
 			if omitempty && i != nFields-1 {
-				log.Panic("omitempty only supported for the final field in the struct")
+				log.Panic(ErrInvalidOmitEmpty)
 			}
 
 			if tag != "-" {

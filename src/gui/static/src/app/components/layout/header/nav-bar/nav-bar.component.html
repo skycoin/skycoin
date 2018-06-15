@@ -20,8 +20,8 @@
     <app-double-button
       *ngIf="navbarService.switchVisible"
       class="-switch"
-      rightButtonText="Advanced"
-      leftButtonText="Simple"
+      [leftButtonText]="navbarService.leftText | translate"
+      [rightButtonText]="navbarService.rightText | translate"
       [activeButton]="navbarService.activeComponent | async"
       className="light"
       (onStateChange)="changeActiveComponent($event)"

@@ -21,14 +21,6 @@ import (
 	"github.com/skycoin/skycoin/src/util/logging"
 )
 
-const (
-	// MaxDropletPrecision represents the decimal precision of droplets
-	MaxDropletPrecision uint64 = 3
-
-	//DefaultMaxBlockSize is max block size
-	DefaultMaxBlockSize int = 32 * 1024
-)
-
 var (
 	logger = logging.MustGetLogger("visor")
 
@@ -47,8 +39,23 @@ func MaxDropletDivisor() uint64 {
 }
 
 func init() {
+	sanityCheck()
 	// Compute maxDropletDivisor from precision
 	maxDropletDivisor = calculateDivisor(MaxDropletPrecision)
+}
+
+func sanityCheck() {
+	if InitialUnlockedCount > DistributionAddressesTotal {
+		logger.Panic("unlocked addresses > total distribution addresses")
+	}
+
+	if uint64(len(distributionAddresses)) != DistributionAddressesTotal {
+		logger.Panic("available distribution addresses > total allowed distribution addresses")
+	}
+
+	if DistributionAddressInitialBalance*DistributionAddressesTotal > MaxCoinSupply {
+		logger.Panic("total balance in distribution addresses > max coin supply")
+	}
 }
 
 func calculateDivisor(precision uint64) uint64 {
@@ -1765,14 +1772,10 @@ func (vs *Visor) GetUnspentsOfAddrs(addrs []cipher.Address) (coin.AddressUxOuts,
 // VerifyTxnVerbose verifies a transaction, it returns transaction's input uxouts, whether the
 // transaction is confirmed, and error if any
 func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bool, error) {
-	if err := VerifySingleTxnUserConstraints(*txn); err != nil {
-		return nil, false, err
-	}
-
 	var uxa coin.UxArray
 	var head *coin.SignedBlock
 	var isTxnConfirmed bool
-	if err := vs.DB.View("VerifyTxnVerbose", func(tx *dbutil.Tx) error {
+	err := vs.DB.View("VerifyTxnVerbose", func(tx *dbutil.Tx) error {
 		var err error
 		head, err = vs.Blockchain.Head(tx)
 		if err != nil {
@@ -1784,6 +1787,22 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bo
 		case nil:
 		case blockdb.ErrUnspentNotExist:
 			uxid := err.(blockdb.ErrUnspentNotExist).UxID
+			// Gets uxouts of txn.In from historydb
+			outs, err := vs.history.GetUxOuts(tx, txn.In)
+			if err != nil {
+				return err
+			}
+
+			if len(outs) == 0 {
+				err = fmt.Errorf("transaction input of %s does not exist in either unspent pool or historydb", uxid)
+				return NewErrTxnViolatesHardConstraint(err)
+			}
+
+			uxa = coin.UxArray{}
+			for _, out := range outs {
+				uxa = append(uxa, out.Out)
+			}
+
 			// Checks if the transaction is confirmed
 			txnHash := txn.Hash()
 			historyTxn, err := vs.history.GetTransaction(tx, txnHash)
@@ -1791,25 +1810,17 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bo
 				return fmt.Errorf("get transaction of %v from historydb failed: %v", txnHash, err)
 			}
 
-			if historyTxn == nil {
-				err = fmt.Errorf("transaction input of %s does not exist in either unspent pool or historydb", uxid)
-				return NewErrTxnViolatesHardConstraint(err)
+			if historyTxn != nil {
+				// Transaction is confirmed
+				isTxnConfirmed = true
 			}
 
-			// Transaction is confirmed
-			isTxnConfirmed = true
-			// Gets uxouts of txn.In from historydb
-			outs, err := vs.history.GetUxOuts(tx, txn.In)
-			if err != nil {
-				return err
-			}
-
-			uxa = coin.UxArray{}
-			for _, out := range outs {
-				uxa = append(uxa, out.Out)
-			}
 			return nil
 		default:
+			return err
+		}
+
+		if err := VerifySingleTxnUserConstraints(*txn); err != nil {
 			return err
 		}
 
@@ -1818,16 +1829,20 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bo
 		}
 
 		return VerifySingleTxnHardConstraints(*txn, head, uxa)
-	}); err != nil {
-		return nil, isTxnConfirmed, err
+	})
+
+	// If we were able to query the inputs, return the verbose inputs to the caller
+	// even if the transaction failed validation
+	var uxs []wallet.UxBalance
+	if len(uxa) != 0 {
+		var otherErr error
+		uxs, otherErr = wallet.NewUxBalances(head.Time(), uxa)
+		if otherErr != nil {
+			return nil, isTxnConfirmed, otherErr
+		}
 	}
 
-	uxs, err := wallet.NewUxBalances(head.Time(), uxa)
-	if err != nil {
-		return nil, isTxnConfirmed, err
-	}
-
-	return uxs, isTxnConfirmed, nil
+	return uxs, isTxnConfirmed, err
 }
 
 // AddressCount returns the total number of addresses with unspents

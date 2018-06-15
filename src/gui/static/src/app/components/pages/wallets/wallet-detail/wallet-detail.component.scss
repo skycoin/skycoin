@@ -1,68 +1,49 @@
 @import '../../../../../theme/variables';
 
-.-record {
-  background-color: #fefefe;
-  border-bottom: 1px solid #f7f7f7;
-  display: flex;
-  font-size: $font-size-standard;
-  line-height: $row-height;
-  min-height: $row-height;
-  padding: 0 20px;
+.-row.-detail {
+  background-color: darken($white, 2%);
+}
 
-  .id-column {
-    width: 50px;
-    color: rgba(30, 34, 39, 0.6);
+.-grey {
+  color: $grey;
+}
+
+.-address {
+  padding-left: 0 !important;
+
+  img {
+    width: 17px;
+    vertical-align: middle;
+    margin-right: 10px;
+    cursor: pointer;
   }
 
-  .address-column {
-    color: rgba(30, 34, 39, 0.6);
-    flex: 1 1 auto;
+  > span {
+    display: inline-block;
+    line-height: $row-height;
+  }
 
-    img {
-      display: inline-block;
-      height: 17px;
-      vertical-align: middle;
-      width: 17px;
-    }
-
-    p {
-      display: inline-block;
-      line-height: $row-height;
-      margin: 0;
-      vertical-align: middle;
-
-      &:hover .copy-label {
-        display: inline-block;
-      }
+  .click-to-copy:hover {
+    > span {
+      display: inline;
     }
   }
+}
 
-  .hours-column {
-    color: $grey-dark;
-    width: 150px;
-    text-align: right;
-  }
+.-text-right {
+  text-align: right;
+}
 
-  .coins-column {
-    color: black;
-    width: 150px;
-    text-align: right;
-  }
+.-options {
+  text-align: center;
 
-  .outputs-column {
-    width: 80px;
-    text-align: right;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
+  mat-icon {
+    color: lighten($grey, 30%);
+    cursor: pointer;
+    vertical-align: middle;
 
-    mat-icon {
-      cursor: pointer;
-      color: #d2d3d4;
-
-      &:hover {
-        color: #0072ff;
-      }
+    &:hover {
+      color: $blue;
     }
   }
 }
@@ -72,6 +53,11 @@
   border-bottom: 1px solid #eff0f0;
   display: flex;
   width: 100%;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03) !important;
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+  z-index: 100;
+  position: relative;
 
   .-button {
     padding-right: 20px;
@@ -124,7 +110,7 @@
       }
 
       &:hover {
-        color: $grey-dark;
+        color: $grey;
 
         &.-new-address::before {
           background-image: url(../../../../../assets/img/plus-green.png);

@@ -69,6 +69,7 @@ InputTestDataJSON* jsonToInputTestData(json_value* json, InputTestDataJSON* inpu
 // Cleanup is consistent with InputTestDataToJSON
 InputTestData* registerInputTestDataCleanup(InputTestData* input_data) {
   registerMemCleanup(input_data->Hashes.data);
+  return input_data;
 }
 
 // Mark all elements of input data for disposal
@@ -82,6 +83,7 @@ InputTestDataJSON* registerInputTestDataJSONCleanup(InputTestDataJSON* input_dat
     registerMemCleanup((void *) s->p);
   }
   registerMemCleanup(input_data->Hashes.data);
+  return input_data;
 }
 
 // InputTestDataToJSON converts InputTestData to InputTestDataJSON
@@ -165,6 +167,7 @@ KeysTestDataJSON* jsonToKeysTestData(json_value* json, KeysTestDataJSON* input_d
 // Cleanup is consistent with KeysTestDataFromJSON
 KeysTestData* registerKeysTestDataCleanup(KeysTestData* input_data) {
   registerMemCleanup(input_data->Signatures.data);
+  return input_data;
 }
 
 // Mark all elements of input data for disposal
@@ -182,6 +185,7 @@ KeysTestDataJSON* registerKeysTestDataJSONCleanup(KeysTestDataJSON* input_data) 
     registerMemCleanup((void *) s->p);
   }
   registerMemCleanup(input_data->Signatures.data);
+  return input_data;
 }
 
 // KeysTestDataToJSON converts KeysTestData to KeysTestDataJSON
@@ -281,6 +285,7 @@ SeedTestData* registerSeedTestDataCleanup(SeedTestData* input_data) {
     registerKeysTestDataCleanup(kd);
   }
   registerMemCleanup(input_data->Keys.data);
+  return input_data;
 }
 
 // Mark all elements of input data for disposal
@@ -296,6 +301,7 @@ SeedTestDataJSON* registerSeedTestDataJSONCleanup(SeedTestDataJSON* input_data) 
     registerKeysTestDataJSONCleanup((void*) kd);
   }
   registerMemCleanup(input_data->Keys.data);
+  return input_data;
 }
 
 // SeedTestDataToJSON converts SeedTestData to SeedTestDataJSON
@@ -336,8 +342,8 @@ void SeedTestDataToJson(SeedTestData* input_data, SeedTestDataJSON* json_data) {
 GoUint32 SeedTestDataFromJSON(SeedTestDataJSON* json_data, SeedTestData* input_data) {
   input_data->Seed.cap = b64d_size(json_data->Seed.n);
   input_data->Seed.data = malloc(input_data->Seed.cap);
-  input_data->Seed.len = b64_decode(json_data->Seed.p, json_data->Seed.n,
-      input_data->Seed.data);
+  input_data->Seed.len = b64_decode((const unsigned char *)json_data->Seed.p,
+      json_data->Seed.n, input_data->Seed.data);
 
   input_data->Keys.len = input_data->Keys.cap = json_data->Keys.len;
   input_data->Keys.data = calloc(input_data->Keys.cap, sizeof(KeysTestData));

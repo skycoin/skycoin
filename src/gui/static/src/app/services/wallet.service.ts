@@ -68,15 +68,14 @@ export class WalletService {
 
   outputs(): Observable<any> {
     return this.addressesAsString()
+      .first()
       .filter(addresses => !!addresses)
       .flatMap(addresses => this.apiService.get('outputs', {addrs: addresses}));
   }
 
   outputsWithWallets(): Observable<any> {
     return Observable.zip(this.all(), this.outputs(), (wallets, outputs) => {
-      wallets = JSON.parse(JSON.stringify(wallets));
-
-      return !wallets ? [] : wallets.map(wallet => {
+      return wallets.map(wallet => {
         wallet.addresses = wallet.addresses.map(address => {
           address.outputs = outputs.head_outputs.filter(output => output.address === address.address);
 
@@ -89,7 +88,7 @@ export class WalletService {
   }
 
   allPendingTransactions(): Observable<any> {
-    return this.apiService.get('pendingTxs');
+    return Observable.timer(0, 10000).flatMap(() => this.apiService.get('pendingTxs'));
   }
 
   pendingTransactions(): Observable<any> {

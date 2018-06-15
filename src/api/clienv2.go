@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/skycoin/skycoin/src/visor"
 )
@@ -68,4 +69,67 @@ func (c *ClientV2) LastBlocks(n int) (*visor.ReadableBlocksV2, error) {
 		return nil, err
 	}
 	return &b, nil
+}
+
+// PendingTransactions makes a request to GET /api/v2/pendingTxs
+func (c *ClientV2) PendingTransactions() ([]*visor.ReadableUnconfirmedTxnV2, error) {
+	var v []*visor.ReadableUnconfirmedTxnV2
+	if err := c.Get("/api/v2/pendingTxs", &v); err != nil {
+		return nil, err
+	}
+	return v, nil
+}
+
+// Transaction makes a request to GET /api/v2/transaction
+func (c *ClientV2) Transaction(txid string) (*TransactionResultV2, error) {
+	v := url.Values{}
+	v.Add("txid", txid)
+	endpoint := "/api/v2/transaction?" + v.Encode()
+
+	var r TransactionResultV2
+	if err := c.Get(endpoint, &r); err != nil {
+		return nil, err
+	}
+	return &r, nil
+}
+
+// Transactions makes a request to GET /api/v2/transactions
+func (c *ClientV2) Transactions(addrs []string) (*[]TransactionResultV2, error) {
+	v := url.Values{}
+	v.Add("addrs", strings.Join(addrs, ","))
+	endpoint := "/api/v2/transactions?" + v.Encode()
+
+	var r []TransactionResultV2
+	if err := c.Get(endpoint, &r); err != nil {
+		return nil, err
+	}
+	return &r, nil
+}
+
+// ConfirmedTransactions makes a request to GET /api/v2/transactions?confirmed=true
+func (c *ClientV2) ConfirmedTransactions(addrs []string) (*[]TransactionResultV2, error) {
+	v := url.Values{}
+	v.Add("addrs", strings.Join(addrs, ","))
+	v.Add("confirmed", "true")
+	endpoint := "/api/v2/transactions?" + v.Encode()
+
+	var r []TransactionResultV2
+	if err := c.Get(endpoint, &r); err != nil {
+		return nil, err
+	}
+	return &r, nil
+}
+
+// UnconfirmedTransactions makes a request to GET /api/v1/transactions?confirmed=false
+func (c *ClientV2) UnconfirmedTransactions(addrs []string) (*[]TransactionResultV2, error) {
+	v := url.Values{}
+	v.Add("addrs", strings.Join(addrs, ","))
+	v.Add("confirmed", "false")
+	endpoint := "/api/v2/transactions?" + v.Encode()
+
+	var r []TransactionResultV2
+	if err := c.Get(endpoint, &r); err != nil {
+		return nil, err
+	}
+	return &r, nil
 }

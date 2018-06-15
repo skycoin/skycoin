@@ -93,3 +93,19 @@ func NewReadableTransactionInputsV2(gateway Gatewayer, transaction *visor.Readab
 	}
 	return inputs, nil
 }
+
+//NewReadableUnconfirmedTxnV2 converts visor.ReadableTransaction to visor.ReadableTransactionV2 api/V2
+func NewReadableUnconfirmedTxnV2(gateway Gatewayer, transaction *visor.ReadableUnconfirmedTxn) (*visor.ReadableUnconfirmedTxnV2, error) {
+	txn, err := NewReadableTransactionV2(gateway, &transaction.Txn)
+	if err != nil {
+		logger.Errorf("api.NewReadableUnconfirmedTxnV2:  api.NewReadableTransactionV2 failed: %v", err)
+		return nil, err
+	}
+	t := visor.ReadableUnconfirmedTxnV2{}
+	t.Txn = *txn
+	t.Received = transaction.Received
+	t.Checked = transaction.Checked
+	t.Announced = transaction.Announced
+	t.IsValid = transaction.IsValid
+	return &t, nil
+}

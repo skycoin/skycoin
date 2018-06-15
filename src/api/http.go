@@ -444,12 +444,20 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 
 	webHandlerV1("/addresscount", getAddressCount(gateway))
 
+	//api/v2
+
 	// get block by hash or seq
 	webHandlerV2("/block", getBlockV2(gateway))
 	// get blocks in specific range
 	webHandlerV2("/blocks", getBlocksV2(gateway))
 	// get last N blocks
 	webHandlerV2("/last_blocks", getLastBlocksV2(gateway))
+	// get set of pending transactions
+	webHandlerV2("/pendingTxs", getPendingTxnsV2(gateway))
+	// get txn by txid
+	webHandlerV2("/transaction", getTransactionByIDV2(gateway))
+	// get transactions
+	webHandlerV2("/transactions", getTransactionsV2(gateway))
 
 	return mux
 }

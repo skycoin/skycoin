@@ -36,7 +36,7 @@ ifeq ($(shell uname -s),Linux)
   LDLIBS=$(LIBC_LIBS) -lpthread
   LDPATH=$(shell printenv LD_LIBRARY_PATH)
   LDPATHVAR=LD_LIBRARY_PATH
-  LDFLAGS=$(LIBC_FLAGS) $(STDC_FLAG) 
+  LDFLAGS=$(LIBC_FLAGS) $(STDC_FLAG)
 ifndef OSNAME
   OSNAME = linux
 endif
@@ -142,6 +142,9 @@ integration-test-disable-wallet-api: ## Run disable wallet api integration tests
 
 integration-test-disable-seed-api: ## Run enable seed api integration test
 	./ci-scripts/integration-test-disable-seed-api.sh
+
+integration-test-stable-v2: ## Run stable integration tests
+		./ci-scripts/integration-test-stable-v2.sh -c
 
 cover: ## Runs tests on ./src/ with HTML code coverage
 	go test -cover -coverprofile=cover.out -coverpkg=github.com/skycoin/skycoin/... ./src/...

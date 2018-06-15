@@ -68,6 +68,8 @@ script:
   - make integration-test-disable-wallet-api
   # Disable seed api test
   - make integration-test-disable-seed-api
+  # Test api/v2
+  - make integration-test-stable-v2
   # libskycoin tests
   - CC=gcc-6 make test-libc
   # TODO: test pyskycoin

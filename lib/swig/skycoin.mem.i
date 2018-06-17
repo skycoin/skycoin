@@ -1,7 +1,7 @@
 #if defined(SWIGPYTHON)
 	%include "python_seckeys.i"
 	%include "python_pubkeys.i"
-#elif
+#else
 %rename(SKY_cipher_GenerateDeterministicKeyPairs) wrap_SKY_cipher_GenerateDeterministicKeyPairs;
 %inline {
 	GoUint32 wrap_SKY_cipher_GenerateDeterministicKeyPairs(GoSlice seed, GoInt n, cipher_SecKeys* secKeys){

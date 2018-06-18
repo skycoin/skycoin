@@ -1650,7 +1650,9 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 				}
 
 				s.enableWalletAPI = !tc.disableWalletAPI
-
+				if tc.name == "auto, multiple outputs, split even, share factor 0" {
+					log.Printf("auto, multiple outputs, split even, share factor 0")
+				}
 				txn, inputs, err := s.CreateAndSignTransactionAdvanced(tc.params, addrUxOuts, tc.headTime)
 				if tc.err != nil {
 					require.Equal(t, tc.err, err)
@@ -1747,21 +1749,10 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 }
 
 func TestServiceCreateAndSignTransactionAdvancedFuzzing(t *testing.T) {
-	const toExpectedHoursSize = 16
-	const toExpectedHoursItemSize = 100
-	//var cryptoTypes []CryptoType
-	//for ct := range cryptoTable {
-	//	cryptoTypes = append(cryptoTypes, ct)
-	//}
-	//cts := cryptoTypes
-	//if !tc.opts.Encrypt {
-	//	cts = cts[:1]
-	//}
-
 	f := func(s *Service, params CreateTransactionParams, toExpectedHours []uint64, addrUxOuts coin.AddressUxOuts, headTime uint64,
-		ct CryptoType, originalUxouts []coin.UxOut, changeOutput *coin.TransactionOutput, chosenUnspents []coin.UxOut) bool {
+		changeOutput *coin.TransactionOutput, chosenUnspents []coin.UxOut,
+		exceptedChooseSpendsErr *error) bool {
 
-		//addr := cipher.AddressFromSecKey(secKey)
 		unspents := make(map[cipher.SHA256]coin.UxOut)
 		for _, uxs := range addrUxOuts {
 			for _, ux := range uxs {
@@ -1769,16 +1760,44 @@ func TestServiceCreateAndSignTransactionAdvancedFuzzing(t *testing.T) {
 			}
 		}
 
-		txn, inputs, err := s.CreateAndSignTransactionAdvanced(params, addrUxOuts, headTime)
-		log.Printf("err: %v", err)
-		//if tc.err != nil {
-		//	require.Equal(t, tc.err, err)
-		//	return
-		//}
+		txn, inputs, createTxnErr := s.CreateAndSignTransactionAdvanced(params, addrUxOuts, headTime)
 
-		//require.NoError(t, err)
+		if len(params.To) == 0 {
+			if createTxnErr.Error() == "To is required" {
+				return true
+			}
+			return false
+		}
 
-		err = txn.Verify()
+		for _, to := range params.To {
+			if to.Coins == 0 {
+				if createTxnErr.Error() == "To.Coins must not be zero" {
+					return true
+				}
+				return false
+			}
+
+			if to.Address.Null() {
+				if createTxnErr.Error() == "To.Address must not be the null address" {
+					return true
+				}
+				return false
+			}
+		}
+
+		if *exceptedChooseSpendsErr != nil {
+			if *exceptedChooseSpendsErr == createTxnErr {
+				return true
+			}
+			return false
+		}
+
+		if *exceptedChooseSpendsErr != nil {
+			log.Printf("exceptedChooseSpendsErr: %v", exceptedChooseSpendsErr)
+			return false
+		}
+
+		err := txn.Verify()
 		require.NoError(t, err)
 
 		require.Equal(t, len(inputs), len(txn.In))
@@ -1801,7 +1820,6 @@ func TestServiceCreateAndSignTransactionAdvancedFuzzing(t *testing.T) {
 		// Compare the transaction inputs
 		chosenUnspentHashes := make([]cipher.SHA256, len(chosenUnspents))
 		for i, u := range chosenUnspents {
-			chosenUnspents[i] = u
 			chosenUnspentHashes[i] = u.Hash()
 		}
 		sort.Slice(chosenUnspentHashes, func(i, j int) bool {
@@ -1868,51 +1886,39 @@ func TestServiceCreateAndSignTransactionAdvancedFuzzing(t *testing.T) {
 		return true
 	}
 	cfg := &quick.Config{
-		MaxCount: 1000000,
+		MaxCount: 100000,
 		Rand:     rand.New(rand.NewSource(time.Now().Unix())),
 		Values: func(args []reflect.Value, rand *rand.Rand) {
+			var cryptoTypes []CryptoType
+			for ct := range cryptoTable {
+				cryptoTypes = append(cryptoTypes, ct)
+			}
+
+			cryptoType := cryptoTypes[rand.Int()%len(cryptoTypes)]
 			dir := prepareWltDir()
 			s, err := NewService(Config{
 				WalletDir:       dir,
-				CryptoType:      CryptoTypeSha256Xor,
+				CryptoType:      cryptoType,
 				EnableWalletAPI: true,
 			})
 			require.NoError(t, err)
-			//w, err := s.GetWallets()
-			//require.NoError(t, err)
-			//require.True(t, len(w) > 0)
 
 			seed := []byte("seed")
 			walletPassword := []byte("pwd")
 			headTime := uint64(time.Now().UnixNano())
 			// Create unspent outputs
-			// difference between uxouts and originalUxouts:
-			// uxouts is used for addrUxOuts - addr: w.Entries[0].Address: uxouts
-			// originalUxouts is used only as an argument for f func with collected uxouts
-			// actually, these vars are equal!!!
-			//But from TestServiceCreateAndSignTransactionAdvanced:
-			//unspents:       uxouts,
-			//chosenUnspents: []coin.UxOut{originalUxouts[0], originalUxouts[1], originalUxouts[2]},
-			// uxouts is used for unspent and originalUxouts is used for chosenUnspensr
 			var uxouts []coin.UxOut
-			var originalUxouts []coin.UxOut
 			addrs := []cipher.Address{}
 			// Generate first keys
 			_, secKeys := cipher.GenerateDeterministicKeyPairsSeed(seed, 11)
 			secKey := secKeys[0]
-			for i := 0; i < 1; i++ {
-				uxout := makeUxOut(t, secKey, 100, uint64(100+i))
+			for i := 0; i < rand.Intn(10)+1; i++ {
+				uxout := makeUxOut(t, secKey, uint64(rand.Intn(1000000)), uint64(rand.Intn(1000000)))
 				uxout.Head.Time = headTime
 				uxouts = append(uxouts, uxout)
-				originalUxouts = append(originalUxouts, uxout)
 
 				a := testutil.MakeAddress()
 				addrs = append(addrs, a)
-			}
-			chosenUnspentsCount := rand.Intn(len(originalUxouts))
-			chosenUnspents := make([]coin.UxOut, chosenUnspentsCount)
-			for i := 0; i < chosenUnspentsCount; i++ {
-				chosenUnspents[i] = originalUxouts[i]
 			}
 
 			walletName := newWalletFilename()
@@ -1929,48 +1935,26 @@ func TestServiceCreateAndSignTransactionAdvancedFuzzing(t *testing.T) {
 			w, err := s.loadWallet(walletName, walletOptions, bg)
 			require.NoError(t, err, "failed to loadWallet")
 
-			log.Printf("changeOutput addr: %v", addrs[0])
-			//TODO: make changeOutput as a diff between in and out
-			changeOutput := &coin.TransactionOutput{
-				Address: addrs[0],
-				Hours:   40,
-				Coins:   99,
-			}
-
-			var extraWalletAddrs []cipher.Address
-			for _, s := range secKeys[1:] {
-				extraWalletAddrs = append(extraWalletAddrs, cipher.AddressFromSecKey(s))
-			}
-			// Create extra unspent outputs. These have the same value as uxouts, but are spendable by
-			// keys held in extraWalletAddrs
-			extraUxouts := make([][]coin.UxOut, len(extraWalletAddrs))
-			for extraWalletIdx := range extraWalletAddrs {
-				s := secKeys[extraWalletIdx+1]
-
-				var extraWalletUxouts []coin.UxOut
-				for i := 0; i < 10; i++ {
-					extraWalletUxout := makeUxOut(t, s, 2e6, uint64(100+i))
-					extraWalletUxout.Head.Time = headTime
-					extraWalletUxouts = append(extraWalletUxouts, extraWalletUxout)
-				}
-
-				extraUxouts[extraWalletIdx] = extraWalletUxouts
-			}
-
 			addrUxOuts := coin.AddressUxOuts{
 				w.Entries[0].Address: uxouts,
 			}
 
 			toCount := rand.Intn(10)
 			to := make([]coin.TransactionOutput, toCount)
+			var addrIdx int
 			for i := 0; i < toCount; i++ {
-				addrIdx := rand.Intn(len(addrs) - 1)
+				if len(addrs) > 1 {
+					addrIdx = rand.Intn(int(len(addrs) - 1))
+				} else {
+					addrIdx = 0
+				}
+
 				toItem := coin.TransactionOutput{
 					Address: addrs[addrIdx],
 					Coins:   uint64(rand.Intn(1000000)),
 					Hours:   uint64(rand.Intn(1000000)),
 				}
-				to = append(to, toItem)
+				to[i] = toItem
 			}
 
 			params := CreateTransactionParams{
@@ -1980,27 +1964,73 @@ func TestServiceCreateAndSignTransactionAdvancedFuzzing(t *testing.T) {
 				Wallet: CreateTransactionWalletParams{
 					ID:       walletName,
 					Password: walletPassword,
-					UxOuts: []cipher.SHA256{
-						extraUxouts[0][0].Hash(),
-					},
 				},
 				ChangeAddress: addrs[0],
 				To:            to,
 			}
 
-			// chose from params.To or use random and try to get a error
-			var toExpectedHours []uint64
-			if rand.Intn(10)%2 == 0 {
-				toExpectedHours = make([]uint64, len(params.To))
-				for i, v := range params.To {
-					toExpectedHours[i] = v.Hours
+			// choose from params.To
+			toExpectedHours := make([]uint64, len(params.To))
+			for i, v := range params.To {
+				toExpectedHours[i] = v.Hours
+			}
+
+			uxa := addrUxOuts.Flatten()
+
+			uxb, err := NewUxBalances(headTime, uxa)
+			require.NoError(t, err)
+
+			// calculate total coins and minimum hours to send
+			var totalOutCoins uint64
+			var requestedHours uint64
+			for _, to := range params.To {
+				totalOutCoins, err = coin.AddUint64(totalOutCoins, to.Coins)
+				require.NoError(t, err)
+
+				requestedHours, err = coin.AddUint64(requestedHours, to.Hours)
+				require.NoError(t, err)
+			}
+
+			chosenSpends, err := ChooseSpendsMinimizeUxOuts(uxb, totalOutCoins, requestedHours)
+			chosenUnspents := make([]coin.UxOut, len(chosenSpends))
+			for idx, unspent := range chosenSpends {
+				chosenUnspents[idx] = coin.UxOut{
+					Head: coin.UxHead{
+						Time:  unspent.Time,
+						BkSeq: unspent.BkSeq,
+					},
+					Body: coin.UxBody{
+						SrcTransaction: unspent.SrcTransaction,
+						Address:        unspent.Address,
+						Coins:          unspent.Coins,
+						Hours:          unspent.Hours,
+					},
 				}
-			} else {
-				n := rand.Intn(toExpectedHoursSize-1) + 1
-				toExpectedHours = make([]uint64, n)
-				for i := range toExpectedHours {
-					toExpectedHours[i] = uint64(rand.Intn(toExpectedHoursItemSize))
-				}
+			}
+
+			// calculate total coins and hours in spends
+			var totalInputCoins uint64
+			var totalInputHours uint64
+
+			for _, spend := range chosenSpends {
+				totalInputCoins, err = coin.AddUint64(totalInputCoins, spend.Coins)
+				require.NoError(t, err)
+
+				totalInputHours, err = coin.AddUint64(totalInputHours, spend.Hours)
+				require.NoError(t, err)
+
+			}
+			var remainingHours uint64
+			if totalInputHours > 0 {
+				feeHours := fee.RequiredFee(totalInputHours)
+				require.NotZero(t, feeHours)
+				remainingHours = totalInputHours - feeHours
+			}
+
+			changeOutput := &coin.TransactionOutput{
+				Address: addrs[0],
+				Hours:   remainingHours - requestedHours,
+				Coins:   totalInputCoins - totalOutCoins,
 			}
 
 			args[0] = reflect.ValueOf(s)
@@ -2008,10 +2038,9 @@ func TestServiceCreateAndSignTransactionAdvancedFuzzing(t *testing.T) {
 			args[2] = reflect.ValueOf(toExpectedHours)
 			args[3] = reflect.ValueOf(addrUxOuts)
 			args[4] = reflect.ValueOf(headTime)
-			args[5] = reflect.ValueOf(CryptoTypeSha256Xor)
-			args[6] = reflect.ValueOf(originalUxouts)
-			args[7] = reflect.ValueOf(changeOutput)
-			args[8] = reflect.ValueOf(chosenUnspents)
+			args[5] = reflect.ValueOf(changeOutput)
+			args[6] = reflect.ValueOf(chosenUnspents)
+			args[7] = reflect.ValueOf(&err)
 		},
 	}
 	err := quick.Check(f, cfg)
@@ -2752,7 +2781,7 @@ func TestGetWalletSeed(t *testing.T) {
 	}
 }
 
-func makeUxOut(t *testing.T, s cipher.SecKey, coins, hours uint64) coin.UxOut { // nolint: unparam
+func makeUxOut(t *testing.T, s cipher.SecKey, coins, hours uint64) coin.UxOut {
 	body := makeUxBody(t, s, coins, hours)
 	tm := rand.Int31n(1000)
 	seq := rand.Int31n(100)

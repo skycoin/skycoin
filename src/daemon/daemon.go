@@ -59,6 +59,7 @@ var (
 
 const (
 	daemonRunDurationThreshold = time.Millisecond * 200
+	daemonRunDurationMonitorIP = time.Second * 30
 )
 
 // Config subsystem configurations
@@ -171,6 +172,8 @@ type DaemonConfig struct { // nolint: golint
 	UnconfirmedRefreshRate time.Duration
 	// How often to remove transactions that become permanently invalid from the unconfirmed pool
 	UnconfirmedRemoveInvalidRate time.Duration
+	// Disable Monitor IP
+	DisableMonitorIP bool
 }
 
 // NewDaemonConfig creates daemon config
@@ -199,6 +202,7 @@ func NewDaemonConfig() DaemonConfig {
 		BlockCreationInterval:        10,
 		UnconfirmedRefreshRate:       time.Minute,
 		UnconfirmedRemoveInvalidRate: time.Minute,
+		DisableMonitorIP:             false,
 	}
 }
 
@@ -409,6 +413,7 @@ func (dm *Daemon) Run() error {
 	idleCheckTicker := time.Tick(dm.Pool.Config.IdleCheckRate)
 
 	flushAnnouncedTxnsTicker := time.Tick(dm.Config.FlushAnnouncedTxnsRate)
+	monitorIPTicker := time.Tick(daemonRunDurationMonitorIP)
 
 	// Connect to trusted peers
 	if !dm.Config.DisableOutgoingConnections {
@@ -610,6 +615,17 @@ loop:
 
 		case err = <-errC:
 			break loop
+
+		case <-monitorIPTicker:
+			// Check peers
+			elapser.Register("monitorIP")
+			if !dm.Config.DisableMonitorIP {
+				if err := dm.monitorIP(); err != nil {
+					logger.Errorf("Failed to call monitorIP: %v", err)
+					continue
+				}
+				logger.Info("Monitor IP check")
+			}
 		}
 	}
 
@@ -1238,4 +1254,23 @@ func (dm *Daemon) broadcastBlock(sb coin.SignedBlock) error {
 
 	m := NewGiveBlocksMessage([]coin.SignedBlock{sb})
 	return dm.Pool.Pool.BroadcastMessage(m)
+}
+
+func (dm *Daemon) monitorIP() error {
+	list := dm.Pex.All()
+	countList := len(list)
+	if countList == 0 {
+		return nil
+	}
+	for _, item := range list {
+		conect, err := dm.Pool.Pool.IsConnExist(item.Addr)
+
+		if err != nil {
+			return err
+		}
+		if !item.Trusted || !conect {
+			dm.Pex.RemovePeer(item.Addr)
+		}
+	}
+	return nil
 }

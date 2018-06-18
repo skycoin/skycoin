@@ -594,3 +594,10 @@ func parseRemotePeerList(body string) []string {
 
 	return peers
 }
+
+// All peers list
+func (px *Pex) All() Peers {
+	px.RLock()
+	defer px.RUnlock()
+	return px.peerlist.getPeers()
+}

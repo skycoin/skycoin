@@ -130,6 +130,9 @@ var endpoints = []string{
 	"/api/v1/wallets",
 	"/api/v1/wallets/folderName",
 	"/api/v1/webrpc",
+
+	"/api/v2/transaction/verify",
+	"/api/v2/address/verify",
 }
 
 func TestCSRFWrapper(t *testing.T) {

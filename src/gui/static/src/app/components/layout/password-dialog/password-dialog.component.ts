@@ -1,11 +1,12 @@
 import { Component, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { MatDialogRef, MatSnackBar, MatSnackBarConfig } from '@angular/material';
+import { MatDialogRef, MatSnackBar } from '@angular/material';
 import { FormControl, FormGroup } from '@angular/forms';
 import { ButtonComponent } from '../button/button.component';
-import { parseResponseMessage } from '../../../utils/errors';
+import { parseResponseMessage, showSnackbarError } from '../../../utils/errors';
 import { Subject } from 'rxjs/Subject';
 import { ISubscription } from 'rxjs/Subscription';
+import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-password-dialog',
@@ -19,17 +20,23 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
   disableDismiss = false;
 
   private subscriptions: ISubscription[] = [];
+  private errors: any;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: any,
     public dialogRef: MatDialogRef<PasswordDialogComponent>,
     private snackbar: MatSnackBar,
+    private translateService: TranslateService,
   ) {
     this.data = Object.assign({
       confirm: false,
       description: null,
       title: null,
     }, data || {});
+
+    this.translateService.get(['errors.incorrect-password', 'errors.api-disabled', 'errors.no-wallet']).subscribe(res => {
+      this.errors = res;
+    });
   }
 
   ngOnInit() {
@@ -105,22 +112,20 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
           error = parseResponseMessage(error['_body']);
           break;
         case 401:
-          error = 'Incorrect password';
+          error = this.errors['errors.incorrect-password'];
           break;
         case 403:
-          error = 'API Disabled';
+          error = this.errors['errors.api-disabled'];
           break;
         case 404:
-          error = 'Wallet does not exist';
+          error = this.errors['errors.no-wallet'];
           break;
         default:
-          const config = new MatSnackBarConfig();
-          config.duration = 5000;
-          this.snackbar.open(parseResponseMessage(error['_body']), null, config);
+          showSnackbarError(this.snackbar, error, 5000);
       }
     }
 
-    this.button.setError(error ? error : 'Incorrect password');
+    this.button.setError(error ? error : this.errors['errors.incorrect-password']);
     this.disableDismiss = false;
   }
 }

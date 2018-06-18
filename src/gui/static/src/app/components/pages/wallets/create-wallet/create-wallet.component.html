@@ -1,50 +1,47 @@
-<app-modal [title]="data.create ? 'Create Wallet' : 'Load Wallet'" [dialog]="dialogRef" [disableDismiss]="disableDismiss">
+<app-modal [headline]="'wallet.new.' + (data.create ? 'create' : 'load') + '-title' | translate" [dialog]="dialogRef" [disableDismiss]="disableDismiss">
   <div [formGroup]="form">
     <div class="form-field">
-      <label for="label">Name</label>
+      <label for="label">{{ 'wallet.new.name-label' | translate }}</label>
       <input formControlName="label" id="label">
     </div>
     <div class="form-field">
       <label for="seed">
-        <span>Seed</span>
+        <span>{{ 'wallet.new.seed-label' | translate }}</span>
         <span class="generators" *ngIf="data.create">
-          <span (click)="generateSeed(128)" matTooltip="Generate 12 word seed">12 words</span>
+          <span (click)="generateSeed(128)" [matTooltip]="'wallet.new.generate-12-seed' | translate">
+                {{ 'wallet.new.12-words' | translate }}
+          </span>
           <span class="divider">|</span>
-          <span (click)="generateSeed(256)" matTooltip="Generate 24 word seed">24 words</span>
+          <span (click)="generateSeed(256)" [matTooltip]="'wallet.new.generate-24-seed' | translate">
+            {{ 'wallet.new.24-words' | translate }}
+          </span>
         </span>
       </label>
       <textarea formControlName="seed" id="seed" row="2"></textarea>
-      <p class="-warning">
-        Remember this seed! Keep it in a safe place.
-        If you forget your seed, you will not be able to recover your wallet!
-      </p>
+      <p class="-warning">{{ 'wallet.new.seed-warning' | translate }}</p>
     </div>
     <div class="form-field" [ngClass]="{ '-disabled': !data.create }">
-      <label for="confirm_seed">Confirm seed</label>
+      <label for="confirm_seed">{{ 'wallet.new.confirm-seed-label' | translate }}</label>
       <textarea formControlName="confirm_seed" id="confirm_seed" row="2"></textarea>
     </div>
     <div>
       <mat-checkbox class="-check" (change)="setEncrypt($event)" type="checkbox" id="encrypt" [checked]="true">
-        <img src="../../../../../assets/img/lock-gold.png">Encrypt Wallet
+        <img src="../../../../../assets/img/lock-gold.png"> {{ 'wallet.new.encrypt' | translate }}
       </mat-checkbox>
     </div>
     <div class="row -passwords">
       <div class="col-md-12">
-        <p class="-info">
-          We suggest that you encrypt each one of your wallets with a password.
-          If you forget your password, you can reset it with your seed.
-          Make sure you have your seed saved somewhere safe before encrypting your wallet.
-        </p>
+        <p class="-info">{{ 'wallet.new.encrypt-warning' | translate }}</p>
       </div>
       <div class="col-md-6" [ngClass]="{ '-hidden': !encrypt }">
         <div class="form-field">
-          <label for="password">Password</label>
+          <label for="password">{{ 'password.label' | translate }}</label>
           <input formControlName="password" id="password" type="password" appDontSavePassword>
         </div>
       </div>
       <div class="col-md-6" [ngClass]="{ '-hidden': !encrypt }">
         <div class="form-field">
-          <label for="confirm_password">Confirm password</label>
+          <label for="confirm_password">{{ 'password.confirm-label' | translate }}</label>
           <input formControlName="confirm_password" id="confirm_password" type="password" appDontSavePassword (keydown.enter)="createWallet()">
         </div>
       </div>
@@ -52,10 +49,10 @@
   </div>
   <div class="-buttons">
     <app-button (action)="closePopup()" #cancelButton>
-      Cancel
+      {{ 'wallet.new.cancel-button' | translate }}
     </app-button>
     <app-button (action)="createWallet()" class="primary" [disabled]="!form.valid" #createButton>
-      {{ data.create ? 'Create' : 'Load' }}
+      {{ 'wallet.new.' + (data.create ? 'create' : 'load') + '-button' | translate }}
     </app-button>
   </div>
 </app-modal>

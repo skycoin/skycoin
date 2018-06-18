@@ -804,6 +804,23 @@ func (pool *ConnectionPool) Size() (l int, err error) {
 	return
 }
 
+// OutgoingConnectionsNum returns the number of outgoing connections
+func (pool *ConnectionPool) OutgoingConnectionsNum() (int, error) {
+	var n int
+	if err := pool.strand("OutgoingSize", func() error {
+		for _, p := range pool.pool {
+			if p.Solicited {
+				n++
+			}
+		}
+		return nil
+	}); err != nil {
+		return 0, err
+	}
+
+	return n, nil
+}
+
 // SendMessage sends a Message to a Connection and pushes the result onto the
 // SendResults channel.
 func (pool *ConnectionPool) SendMessage(addr string, msg Message) error {

@@ -142,6 +142,12 @@ Access the API: [http://localhost:6420/version](http://localhost:6420/version).
 
 [Building your own images](docker/images/mainnet/README.md).
 
+### Development image
+
+The [skycoin/skycoindev-cli docker image](docker/images/dev-cli/README.md) is provided in order to make
+easy to start developing Skycoin. It comes with the compiler, linters, debugger
+and the vim editor among other tools.
+
 ## API Documentation
 
 ### REST API
@@ -208,9 +214,11 @@ We have two branches: `master` and `develop`.
 ### Client libraries
 
 Skycoin implements client libraries which export core functionality for usage from
-other programming languages. Read the corresponding README file for further details.
+other programming languages.
 
-* `lib/cgo/` - libskycoin C client library ( [read more](lib/cgo/README.md) )
+* `lib/cgo/` - libskycoin C client library ( [overview](lib/cgo/README.md), [API reference](docs/libc/API.md) )
+
+For further details run `make docs` to generate documetation and read the corresponding README and API references.
 
 ### Running Tests
 
@@ -377,6 +385,33 @@ Add a single dependency (more specific version), or downgrade an existing depend
 ```sh
 dep ensure github.com/foo/bar@tag
 ```
+
+### Configuration Modes
+There are 4 configuration modes in which you can run a skycoin node:
+- Development Desktop Daemon
+- Server Daemon
+- Electron Desktop Client
+- Standalone Desktop Client
+
+#### Development Desktop Daemon Mode
+This mode is configured via `run.sh`
+```bash
+$ ./run.sh
+```
+
+#### Server Daemon Mode
+The default settings for a skycoin node are chosen for `Server Daemon`, which is typically run from source.
+This mode is usually preferred to be run with security options, though `-disable-csrf` is normal for server daemon mode, it is left enabled by default.
+```bash
+$ go run cmd/skycoin/skycoin.go
+```
+
+#### Electron Desktop Client Mode
+This mode configures itself via electron-main.js
+
+#### Standalone Desktop Client Mode
+This mode is configured by compiling with `STANDALONE_CLIENT` build tag.
+The configuration is handled in `cmd/skycoin/skycoin.go`
 
 ### Wallet GUI Development
 

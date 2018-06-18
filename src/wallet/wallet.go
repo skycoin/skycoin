@@ -160,16 +160,17 @@ type CreateTransactionWalletParams struct {
 
 // CreateTransactionParams defines control parameters for transaction construction
 type CreateTransactionParams struct {
-	HoursSelection HoursSelection
-	Wallet         CreateTransactionWalletParams
-	ChangeAddress  cipher.Address
-	To             []coin.TransactionOutput
+	IgnoreUnconfirmed bool
+	HoursSelection    HoursSelection
+	Wallet            CreateTransactionWalletParams
+	ChangeAddress     *cipher.Address
+	To                []coin.TransactionOutput
 }
 
 // Validate validates CreateTransactionParams
 func (c CreateTransactionParams) Validate() error {
-	if c.ChangeAddress.Null() {
-		return NewError(errors.New("ChangeAddress is required"))
+	if c.ChangeAddress != nil && c.ChangeAddress.Null() {
+		return NewError(errors.New("ChangeAddress must not be the null address"))
 	}
 
 	if len(c.To) == 0 {
@@ -1254,8 +1255,47 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 		}
 	}
 
+	// With auto share mode, if there are leftover hours and change couldn't be force-added,
+	// recalculate that share ratio at 100%
+	if changeCoins == 0 && changeHours > 0 && params.HoursSelection.Type == HoursSelectionTypeAuto && params.HoursSelection.Mode == HoursSelectionModeShare {
+		oneDecimal := decimal.New(1, 0)
+		if params.HoursSelection.ShareFactor.Equal(oneDecimal) {
+			return nil, nil, errors.New("share factor is 1.0 but changeHours > 0 unexpectedly")
+		}
+		params.HoursSelection.ShareFactor = &oneDecimal
+		return w.CreateAndSignTransactionAdvanced(params, auxs, headTime)
+	}
+
 	if changeCoins > 0 {
-		txn.PushOutput(params.ChangeAddress, changeCoins, changeHours)
+		var changeAddress cipher.Address
+		if params.ChangeAddress != nil {
+			changeAddress = *params.ChangeAddress
+		} else {
+			// Choose a change address from the unspent outputs
+			// Sort spends by address, comparing bytes, and use the first
+			// This provides deterministic change address selection from a set of unspent outputs
+			if len(spends) == 0 {
+				return nil, nil, errors.New("spends is unexpectedly empty when choosing an automatic change address")
+			}
+
+			addressBytes := make([][]byte, len(spends))
+			for i, s := range spends {
+				addressBytes[i] = s.Address.Bytes()
+			}
+
+			sort.Slice(addressBytes, func(i, j int) bool {
+				return bytes.Compare(addressBytes[i], addressBytes[j]) < 0
+			})
+
+			var err error
+			changeAddress, err = cipher.AddressFromBytes(addressBytes[0])
+			if err != nil {
+				logger.Critical().Errorf("cipher.AddressFromBytes failed for change address converted to bytes: %v", err)
+				return nil, nil, err
+			}
+		}
+
+		txn.PushOutput(changeAddress, changeCoins, changeHours)
 	}
 
 	txn.SignInputs(toSign)

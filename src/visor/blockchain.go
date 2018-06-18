@@ -377,10 +377,10 @@ func (bc Blockchain) VerifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Tran
 	return bc.verifySingleTxnHardConstraints(tx, txn, head, uxIn)
 }
 
-// VerifySingleTxnAllConstraints checks that the transaction does not violate hard or soft constraints,
+// VerifySingleTxnSoftHardConstraints checks that the transaction does not violate hard or soft constraints,
 // for transactions that are not included in a block.
 // Hard constraints are checked before soft constraints.
-func (bc Blockchain) VerifySingleTxnAllConstraints(tx *dbutil.Tx, txn coin.Transaction, maxSize int) error {
+func (bc Blockchain) VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, maxSize int) error {
 	// NOTE: Unspent().GetArray() returns an error if not all txn.In can be found
 	// This prevents double spends
 	uxIn, err := bc.Unspent().GetArray(tx, txn.In)
@@ -648,21 +648,24 @@ type sigHash struct {
 	hash cipher.SHA256
 }
 
-// VerifySignatures checks that BlockSigs state correspond with coin.Blockchain state
+// VerifySignature checks that BlockSigs state correspond with coin.Blockchain state
 // and that all signatures are valid.
+func (bc *Blockchain) VerifySignature(block *coin.SignedBlock) error {
+	err := cipher.VerifySignature(bc.cfg.Pubkey, block.Sig, block.HashHeader())
+	if err != nil {
+		logger.Errorf("Signature verification failed: %v", err)
+	}
+	return err
+}
+
+// WalkChain walk through the blockchain concurrently
 // The quit channel is optional and if closed, this method still stop.
-func (bc *Blockchain) VerifySignatures(tx *dbutil.Tx, workers int, quit chan struct{}) error {
+func (bc *Blockchain) WalkChain(workers int, f func(*dbutil.Tx, *coin.SignedBlock) error, quit chan struct{}) error {
 	if quit == nil {
 		quit = make(chan struct{})
 	}
 
-	if length, err := bc.Len(tx); err != nil {
-		return err
-	} else if length == 0 {
-		return nil
-	}
-
-	sigHashes := make(chan sigHash, 100)
+	signedBlockC := make(chan *coin.SignedBlock, 100)
 	errC := make(chan error, 100)
 	interrupt := make(chan struct{})
 	verifyDone := make(chan struct{})
@@ -673,26 +676,29 @@ func (bc *Blockchain) VerifySignatures(tx *dbutil.Tx, workers int, quit chan str
 	for i := 0; i < workers; i++ {
 		go func() {
 			defer workerWg.Done()
-			for {
-				select {
-				case sh, ok := <-sigHashes:
-					if !ok {
-						return
-					}
+			bc.db.View("WalkChain verify blocks", func(tx *dbutil.Tx) error {
+				for {
+					select {
+					case b, ok := <-signedBlockC:
+						if !ok {
+							return nil
+						}
 
-					if err := cipher.VerifySignature(bc.cfg.Pubkey, sh.sig, sh.hash); err != nil {
-						logger.Errorf("Signature verification failed: %v", err)
-						select {
-						case errC <- err:
-						default:
+						if err := f(tx, b); err != nil {
+							// if err := cipher.VerifySignature(bc.cfg.Pubkey, sh.sig, sh.hash); err != nil {
+							// logger.Errorf("Signature verification failed: %v", err)
+							select {
+							case errC <- err:
+							default:
+							}
 						}
 					}
 				}
-			}
+			})
 		}()
 	}
 
-	// Wait for signature verification worker goroutines to finish
+	// Wait for verification worker goroutines to finish
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
@@ -706,44 +712,52 @@ func (bc *Blockchain) VerifySignatures(tx *dbutil.Tx, workers int, quit chan str
 	// * Verify the signature for the block
 	wg.Add(1)
 	go func() {
-		defer wg.Done()
-		defer close(sigHashes)
-
-		errInterrupted := errors.New("goroutine was stopped")
-
-		if err := bc.store.ForEachBlock(tx, func(block *coin.Block) error {
-			sig, ok, err := bc.store.GetBlockSignature(tx, block)
-			if err != nil {
+		bc.db.View("WalkChain get blocks", func(tx *dbutil.Tx) error {
+			if length, err := bc.Len(tx); err != nil {
 				return err
-			}
-			if !ok {
-				return blockdb.NewErrMissingSignature(block)
-			}
-
-			sh := sigHash{
-				sig:  sig,
-				hash: block.HashHeader(),
-			}
-
-			select {
-			case sigHashes <- sh:
+			} else if length == 0 {
 				return nil
-			case <-quit:
-				return errInterrupted
-			case <-interrupt:
-				return errInterrupted
 			}
-		}); err != nil && err != errInterrupted {
-			switch err.(type) {
-			case blockdb.ErrMissingSignature:
-			default:
-				logger.Errorf("bc.store.ForEachBlock failed: %v", err)
+			defer wg.Done()
+			defer close(signedBlockC)
+
+			errInterrupted := errors.New("goroutine was stopped")
+
+			if err := bc.store.ForEachBlock(tx, func(block *coin.Block) error {
+				sig, ok, err := bc.store.GetBlockSignature(tx, block)
+				if err != nil {
+					return err
+				}
+				if !ok {
+					return blockdb.NewErrMissingSignature(block)
+				}
+
+				signedBlock := &coin.SignedBlock{
+					Sig:   sig,
+					Block: *block,
+				}
+
+				select {
+				case signedBlockC <- signedBlock:
+					return nil
+				case <-quit:
+					return errInterrupted
+				case <-interrupt:
+					return errInterrupted
+				}
+			}); err != nil && err != errInterrupted {
+				switch err.(type) {
+				case blockdb.ErrMissingSignature:
+				default:
+					logger.Errorf("bc.store.ForEachBlock failed: %v", err)
+				}
+				select {
+				case errC <- err:
+				default:
+				}
 			}
-			select {
-			case errC <- err:
-			default:
-			}
-		}
+			return nil
+		})
 	}()
 
 	var err error
@@ -761,7 +775,6 @@ func (bc *Blockchain) VerifySignatures(tx *dbutil.Tx, workers int, quit chan str
 
 	close(interrupt)
 	wg.Wait()
-
 	return err
 }
 

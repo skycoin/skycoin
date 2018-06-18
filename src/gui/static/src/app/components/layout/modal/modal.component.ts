@@ -8,7 +8,7 @@ import { MatDialogRef } from '@angular/material/dialog';
 })
 export class ModalComponent implements OnChanges {
   @Input() dialog: MatDialogRef<any>;
-  @Input() title: string;
+  @Input() headline: string;
   @Input() disableDismiss: boolean;
 
   closePopup() {

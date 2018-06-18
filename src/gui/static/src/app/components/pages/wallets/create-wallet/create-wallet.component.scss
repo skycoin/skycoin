@@ -29,7 +29,7 @@ label[for=seed] {
 
     .divider {
       padding: 0 5px;
-      color: $grey-normal;
+      color: $grey-dark;
     }
   }
 }
@@ -50,7 +50,7 @@ label[for=seed] {
 
   .-info {
     margin: 5px 0 15px;
-    color: $grey-dark;
+    color: $grey;
     font-size: 12px;
     line-height: 1.5;
   }
@@ -89,7 +89,7 @@ label[for=seed] {
     line-height: normal;
     font-size: 14px;
 
-    color: $grey-normal;
+    color: $grey-dark;
 
     img {
       width: 38px;

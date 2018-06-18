@@ -1,16 +1,50 @@
 <div class="sky-container sky-container-grey">
-  <app-header title="Blockchain"></app-header>
+  <app-header [headline]="'title.blockchain' | translate"></app-header>
 
-  <mat-card class="skycoin-details">
-    <div class="skycoin-detail-keys">
-      Number of blocks: <br>
-      Time since last block: <br>
-      Hash of last block: <br>
+  <div class="container">
+    <div class="row -wrapper">
+      <div class="col-md-6">
+        <div class="-paper" *ngIf="block && block.header">
+          <div class="-item">
+            <div class="-key">{{ 'blockchain.blocks' | translate }}</div>
+            <div class="-value">{{ block.header.seq | number }}</div>
+          </div>
+          <div class="-item">
+            <div class="-key">{{ 'blockchain.time' | translate }}</div>
+            <div class="-value">{{ block.header.timestamp | dateFromNow }}</div>
+          </div>
+          <div class="-item">
+            <div class="-key">{{ 'blockchain.hash' | translate }}</div>
+            <div class="-value">{{ block.header.block_hash }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="-paper" *ngIf="coinSupply">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="-item">
+                <div class="-key">{{ 'blockchain.current-supply' | translate }}</div>
+                <div class="-value">{{ coinSupply.current_supply | number }}</div>
+              </div>
+              <div class="-item">
+                <div class="-key">{{ 'blockchain.total-supply' | translate }}</div>
+                <div class="-value">{{ coinSupply.total_supply | number }}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="-item">
+                <div class="-key">{{ 'blockchain.current-coinhour-supply' | translate }}</div>
+                <div class="-value">{{ coinSupply.current_coinhour_supply | number }}</div>
+              </div>
+              <div class="-item">
+                <div class="-key">{{ 'blockchain.total-coinhour-supply' | translate }}</div>
+                <div class="-value">{{ coinSupply.total_coinhour_supply | number }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="skycoin-detail-values" *ngIf="block && block.header">
-      {{ block.header.seq | number }} <br>
-      {{ block.header.timestamp | dateFromNow }} <br>
-      {{ block.header.block_hash }}
-    </div>
-  </mat-card>
+  </div>
 </div>

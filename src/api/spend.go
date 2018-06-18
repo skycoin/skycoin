@@ -60,12 +60,20 @@ func NewCreatedTransaction(txn *coin.Transaction, inputs []wallet.UxBalance) (*C
 
 	var outputHours uint64
 	for _, o := range txn.Out {
-		outputHours += o.Hours
+		var err error
+		outputHours, err = coin.AddUint64(outputHours, o.Hours)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var inputHours uint64
 	for _, i := range inputs {
-		inputHours += i.Hours
+		var err error
+		inputHours, err = coin.AddUint64(inputHours, i.Hours)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if inputHours < outputHours {
@@ -207,13 +215,13 @@ func NewCreatedTransactionOutput(out coin.TransactionOutput, txid cipher.SHA256)
 // CreatedTransactionInput is a verbose transaction input
 type CreatedTransactionInput struct {
 	UxID            string `json:"uxid"`
-	Address         string `json:"address"`
-	Coins           string `json:"coins"`
-	Hours           string `json:"hours"`
-	CalculatedHours string `json:"calculated_hours"`
-	Time            uint64 `json:"timestamp"`
-	Block           uint64 `json:"block"`
-	TxID            string `json:"txid"`
+	Address         string `json:"address,omitempty"`
+	Coins           string `json:"coins,omitempty"`
+	Hours           string `json:"hours,omitempty"`
+	CalculatedHours string `json:"calculated_hours,omitempty"`
+	Time            uint64 `json:"timestamp,omitempty"`
+	Block           uint64 `json:"block,omitempty"`
+	TxID            string `json:"txid,omitempty"`
 }
 
 // NewCreatedTransactionInput creates CreatedTransactionInput
@@ -227,24 +235,30 @@ func NewCreatedTransactionInput(out wallet.UxBalance) (*CreatedTransactionInput,
 		return nil, errors.New("NewCreatedTransactionInput UxOut.SrcTransaction is not initialized")
 	}
 
+	addr := out.Address.String()
+	hours := fmt.Sprint(out.InitialHours)
+	calculatedHours := fmt.Sprint(out.Hours)
+	txID := out.SrcTransaction.Hex()
+
 	return &CreatedTransactionInput{
 		UxID:            out.Hash.Hex(),
-		Address:         out.Address.String(),
+		Address:         addr,
 		Coins:           coins,
-		Hours:           fmt.Sprint(out.InitialHours),
-		CalculatedHours: fmt.Sprint(out.Hours),
+		Hours:           hours,
+		CalculatedHours: calculatedHours,
 		Time:            out.Time,
 		Block:           out.BkSeq,
-		TxID:            out.SrcTransaction.Hex(),
+		TxID:            txID,
 	}, nil
 }
 
 // createTransactionRequest is sent to /wallet/transaction
 type createTransactionRequest struct {
-	HoursSelection hoursSelection                 `json:"hours_selection"`
-	Wallet         createTransactionRequestWallet `json:"wallet"`
-	ChangeAddress  *wh.Address                    `json:"change_address"`
-	To             []receiver                     `json:"to"`
+	IgnoreUnconfirmed bool                           `json:"ignore_unconfirmed"`
+	HoursSelection    hoursSelection                 `json:"hours_selection"`
+	Wallet            createTransactionRequestWallet `json:"wallet"`
+	ChangeAddress     *wh.Address                    `json:"change_address,omitempty"`
+	To                []receiver                     `json:"to"`
 }
 
 // createTransactionRequestWallet defines a wallet to spend from and optionally which addresses in the wallet
@@ -321,10 +335,8 @@ func (r createTransactionRequest) Validate() error {
 		}
 	}
 
-	if r.ChangeAddress == nil {
-		return errors.New("missing change_address")
-	} else if r.ChangeAddress.Null() {
-		return errors.New("change_address is an empty address")
+	if r.ChangeAddress != nil && r.ChangeAddress.Null() {
+		return errors.New("change_address must not be the null address")
 	}
 
 	if r.Wallet.ID == "" {
@@ -435,12 +447,13 @@ func (r createTransactionRequest) ToWalletParams() wallet.CreateTransactionParam
 		}
 	}
 
-	var changeAddress cipher.Address
+	var changeAddress *cipher.Address
 	if r.ChangeAddress != nil {
-		changeAddress = r.ChangeAddress.Address
+		changeAddress = &r.ChangeAddress.Address
 	}
 
 	return wallet.CreateTransactionParams{
+		IgnoreUnconfirmed: r.IgnoreUnconfirmed,
 		HoursSelection: wallet.HoursSelection{
 			Type:        r.HoursSelection.Type,
 			Mode:        r.HoursSelection.Mode,

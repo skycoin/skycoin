@@ -18,8 +18,15 @@ func (logger *Logger) Critical() logrus.FieldLogger {
 }
 
 // MasterLogger wraps logrus.Logger and is able to create new package-aware loggers
+// sharing configuration realm.
 type MasterLogger struct {
 	*logrus.Logger
+	PkgConfig map[string]PkgLogConfig
+}
+
+type PkgLogConfig struct {
+	PkgName string
+	Level   logrus.Level
 }
 
 // NewMasterLogger creates a new package-aware logger with formatting string
@@ -28,7 +35,7 @@ func NewMasterLogger() *MasterLogger {
 
 	return &MasterLogger{
 		Logger: &logrus.Logger{
-			Out: os.Stdout,
+			Out: &OutputRealm{Writer: os.Stdout},
 			Formatter: &TextFormatter{
 				FullTimestamp:      true,
 				AlwaysQuoteStrings: true,
@@ -40,11 +47,27 @@ func NewMasterLogger() *MasterLogger {
 			Hooks: hooks,
 			Level: logrus.DebugLevel,
 		},
+		PkgConfig: make(map[string]PkgLogConfig, 5),
+	}
+}
+
+func copyMasterLogger(logger *MasterLogger) *MasterLogger {
+	return &MasterLogger{
+		Logger: &logrus.Logger{
+			Out:       logger.Out,
+			Formatter: logger.Formatter,
+			Hooks:     logger.Hooks,
+			Level:     logger.Level,
+		},
 	}
 }
 
 // PackageLogger instantiates a package-aware logger
 func (logger *MasterLogger) PackageLogger(moduleName string) *Logger {
+	if pkgcfg, ok := logger.PkgConfig[moduleName]; ok {
+		logger = copyMasterLogger(logger)
+		logger.SetLevel(pkgcfg.Level)
+	}
 	return &Logger{
 		FieldLogger: logger.WithField(logModuleKey, moduleName),
 	}

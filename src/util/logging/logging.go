@@ -2,8 +2,6 @@ package logging
 
 import (
 	"errors"
-	"io"
-	"io/ioutil"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -63,14 +61,4 @@ func DisableColors() {
 // SetLevel sets the logger's minimum log level
 func SetLevel(level logrus.Level) {
 	log.SetLevel(level)
-}
-
-// SetOutputTo sets the logger's output to an io.Writer
-func SetOutputTo(w io.Writer) {
-	log.Out = w
-}
-
-// Disable disables the logger completely
-func Disable() {
-	log.Out = ioutil.Discard
 }

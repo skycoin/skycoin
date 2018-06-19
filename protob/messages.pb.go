@@ -22,12 +22,25 @@ const (
 	MessageType_MessageType_Ping                         MessageType = 1
 	MessageType_MessageType_Success                      MessageType = 2
 	MessageType_MessageType_Failure                      MessageType = 3
+	MessageType_MessageType_ChangePin                    MessageType = 4
 	MessageType_MessageType_WipeDevice                   MessageType = 5
+	MessageType_MessageType_GetEntropy                   MessageType = 9
+	MessageType_MessageType_Entropy                      MessageType = 10
 	MessageType_MessageType_LoadDevice                   MessageType = 13
+	MessageType_MessageType_ResetDevice                  MessageType = 14
 	MessageType_MessageType_Features                     MessageType = 17
+	MessageType_MessageType_PinMatrixRequest             MessageType = 18
+	MessageType_MessageType_PinMatrixAck                 MessageType = 19
 	MessageType_MessageType_Cancel                       MessageType = 20
 	MessageType_MessageType_ButtonRequest                MessageType = 26
 	MessageType_MessageType_ButtonAck                    MessageType = 27
+	MessageType_MessageType_BackupDevice                 MessageType = 34
+	MessageType_MessageType_EntropyRequest               MessageType = 35
+	MessageType_MessageType_EntropyAck                   MessageType = 36
+	MessageType_MessageType_PassphraseRequest            MessageType = 41
+	MessageType_MessageType_PassphraseAck                MessageType = 42
+	MessageType_MessageType_PassphraseStateRequest       MessageType = 77
+	MessageType_MessageType_PassphraseStateAck           MessageType = 78
 	MessageType_MessageType_SetMnemonic                  MessageType = 113
 	MessageType_MessageType_SkycoinAddress               MessageType = 114
 	MessageType_MessageType_SkycoinCheckMessageSignature MessageType = 115
@@ -39,12 +52,25 @@ var MessageType_name = map[int32]string{
 	1:   "MessageType_Ping",
 	2:   "MessageType_Success",
 	3:   "MessageType_Failure",
+	4:   "MessageType_ChangePin",
 	5:   "MessageType_WipeDevice",
+	9:   "MessageType_GetEntropy",
+	10:  "MessageType_Entropy",
 	13:  "MessageType_LoadDevice",
+	14:  "MessageType_ResetDevice",
 	17:  "MessageType_Features",
+	18:  "MessageType_PinMatrixRequest",
+	19:  "MessageType_PinMatrixAck",
 	20:  "MessageType_Cancel",
 	26:  "MessageType_ButtonRequest",
 	27:  "MessageType_ButtonAck",
+	34:  "MessageType_BackupDevice",
+	35:  "MessageType_EntropyRequest",
+	36:  "MessageType_EntropyAck",
+	41:  "MessageType_PassphraseRequest",
+	42:  "MessageType_PassphraseAck",
+	77:  "MessageType_PassphraseStateRequest",
+	78:  "MessageType_PassphraseStateAck",
 	113: "MessageType_SetMnemonic",
 	114: "MessageType_SkycoinAddress",
 	115: "MessageType_SkycoinCheckMessageSignature",
@@ -55,12 +81,25 @@ var MessageType_value = map[string]int32{
 	"MessageType_Ping":                         1,
 	"MessageType_Success":                      2,
 	"MessageType_Failure":                      3,
+	"MessageType_ChangePin":                    4,
 	"MessageType_WipeDevice":                   5,
+	"MessageType_GetEntropy":                   9,
+	"MessageType_Entropy":                      10,
 	"MessageType_LoadDevice":                   13,
+	"MessageType_ResetDevice":                  14,
 	"MessageType_Features":                     17,
+	"MessageType_PinMatrixRequest":             18,
+	"MessageType_PinMatrixAck":                 19,
 	"MessageType_Cancel":                       20,
 	"MessageType_ButtonRequest":                26,
 	"MessageType_ButtonAck":                    27,
+	"MessageType_BackupDevice":                 34,
+	"MessageType_EntropyRequest":               35,
+	"MessageType_EntropyAck":                   36,
+	"MessageType_PassphraseRequest":            41,
+	"MessageType_PassphraseAck":                42,
+	"MessageType_PassphraseStateRequest":       77,
+	"MessageType_PassphraseStateAck":           78,
 	"MessageType_SetMnemonic":                  113,
 	"MessageType_SkycoinAddress":               114,
 	"MessageType_SkycoinCheckMessageSignature": 115,
@@ -148,6 +187,7 @@ type Features struct {
 	FwPatch              *uint32     `protobuf:"varint,24,opt,name=fw_patch" json:"fw_patch,omitempty"`
 	FwVendor             *string     `protobuf:"bytes,25,opt,name=fw_vendor" json:"fw_vendor,omitempty"`
 	FwVendorKeys         []byte      `protobuf:"bytes,26,opt,name=fw_vendor_keys" json:"fw_vendor_keys,omitempty"`
+	UnfinishedBackup     *bool       `protobuf:"varint,27,opt,name=unfinished_backup" json:"unfinished_backup,omitempty"`
 	XXX_unrecognized     []byte      `json:"-"`
 }
 
@@ -337,6 +377,13 @@ func (m *Features) GetFwVendorKeys() []byte {
 	return nil
 }
 
+func (m *Features) GetUnfinishedBackup() bool {
+	if m != nil && m.UnfinishedBackup != nil {
+		return *m.UnfinishedBackup
+	}
+	return false
+}
+
 // *
 // Request: Send a mnemonic to the device
 // @next Success
@@ -354,6 +401,26 @@ func (m *SetMnemonic) GetMnemonic() string {
 		return *m.Mnemonic
 	}
 	return ""
+}
+
+// *
+// Request: Starts workflow for setting/changing/removing the PIN
+// @next ButtonRequest
+// @next PinMatrixRequest
+type ChangePin struct {
+	Remove           *bool  `protobuf:"varint,1,opt,name=remove" json:"remove,omitempty"`
+	XXX_unrecognized []byte `json:"-"`
+}
+
+func (m *ChangePin) Reset()         { *m = ChangePin{} }
+func (m *ChangePin) String() string { return proto.CompactTextString(m) }
+func (*ChangePin) ProtoMessage()    {}
+
+func (m *ChangePin) GetRemove() bool {
+	if m != nil && m.Remove != nil {
+		return *m.Remove
+	}
+	return false
 }
 
 // *
@@ -573,6 +640,45 @@ func (m *ButtonAck) String() string { return proto.CompactTextString(m) }
 func (*ButtonAck) ProtoMessage()    {}
 
 // *
+// Response: Device is asking computer to show PIN matrix and awaits PIN encoded using this matrix scheme
+// @next PinMatrixAck
+// @next Cancel
+type PinMatrixRequest struct {
+	Type             *PinMatrixRequestType `protobuf:"varint,1,opt,name=type,enum=PinMatrixRequestType" json:"type,omitempty"`
+	XXX_unrecognized []byte                `json:"-"`
+}
+
+func (m *PinMatrixRequest) Reset()         { *m = PinMatrixRequest{} }
+func (m *PinMatrixRequest) String() string { return proto.CompactTextString(m) }
+func (*PinMatrixRequest) ProtoMessage()    {}
+
+func (m *PinMatrixRequest) GetType() PinMatrixRequestType {
+	if m != nil && m.Type != nil {
+		return *m.Type
+	}
+	return 0
+}
+
+// *
+// Request: Computer responds with encoded PIN
+// @prev PinMatrixRequest
+type PinMatrixAck struct {
+	Pin              *string `protobuf:"bytes,1,req,name=pin" json:"pin,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
+}
+
+func (m *PinMatrixAck) Reset()         { *m = PinMatrixAck{} }
+func (m *PinMatrixAck) String() string { return proto.CompactTextString(m) }
+func (*PinMatrixAck) ProtoMessage()    {}
+
+func (m *PinMatrixAck) GetPin() string {
+	if m != nil && m.Pin != nil {
+		return *m.Pin
+	}
+	return ""
+}
+
+// *
 // Request: Abort last operation that required user interaction
 // @prev ButtonRequest
 // @prev PinMatrixRequest
@@ -584,6 +690,123 @@ type Cancel struct {
 func (m *Cancel) Reset()         { *m = Cancel{} }
 func (m *Cancel) String() string { return proto.CompactTextString(m) }
 func (*Cancel) ProtoMessage()    {}
+
+// *
+// Response: Device awaits encryption passphrase
+// @next PassphraseAck
+// @next Cancel
+type PassphraseRequest struct {
+	OnDevice         *bool  `protobuf:"varint,1,opt,name=on_device" json:"on_device,omitempty"`
+	XXX_unrecognized []byte `json:"-"`
+}
+
+func (m *PassphraseRequest) Reset()         { *m = PassphraseRequest{} }
+func (m *PassphraseRequest) String() string { return proto.CompactTextString(m) }
+func (*PassphraseRequest) ProtoMessage()    {}
+
+func (m *PassphraseRequest) GetOnDevice() bool {
+	if m != nil && m.OnDevice != nil {
+		return *m.OnDevice
+	}
+	return false
+}
+
+// *
+// Request: Send passphrase back
+// @prev PassphraseRequest
+// @next PassphraseStateRequest
+type PassphraseAck struct {
+	Passphrase       *string `protobuf:"bytes,1,opt,name=passphrase" json:"passphrase,omitempty"`
+	State            []byte  `protobuf:"bytes,2,opt,name=state" json:"state,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
+}
+
+func (m *PassphraseAck) Reset()         { *m = PassphraseAck{} }
+func (m *PassphraseAck) String() string { return proto.CompactTextString(m) }
+func (*PassphraseAck) ProtoMessage()    {}
+
+func (m *PassphraseAck) GetPassphrase() string {
+	if m != nil && m.Passphrase != nil {
+		return *m.Passphrase
+	}
+	return ""
+}
+
+func (m *PassphraseAck) GetState() []byte {
+	if m != nil {
+		return m.State
+	}
+	return nil
+}
+
+// *
+// @prev PassphraseAck
+// @next PassphraseStateAck
+type PassphraseStateRequest struct {
+	State            []byte `protobuf:"bytes,1,opt,name=state" json:"state,omitempty"`
+	XXX_unrecognized []byte `json:"-"`
+}
+
+func (m *PassphraseStateRequest) Reset()         { *m = PassphraseStateRequest{} }
+func (m *PassphraseStateRequest) String() string { return proto.CompactTextString(m) }
+func (*PassphraseStateRequest) ProtoMessage()    {}
+
+func (m *PassphraseStateRequest) GetState() []byte {
+	if m != nil {
+		return m.State
+	}
+	return nil
+}
+
+// *
+// @prev PassphraseStateRequest
+type PassphraseStateAck struct {
+	XXX_unrecognized []byte `json:"-"`
+}
+
+func (m *PassphraseStateAck) Reset()         { *m = PassphraseStateAck{} }
+func (m *PassphraseStateAck) String() string { return proto.CompactTextString(m) }
+func (*PassphraseStateAck) ProtoMessage()    {}
+
+// *
+// Request: Request a sample of random data generated by hardware RNG. May be used for testing.
+// @next ButtonRequest
+// @next Entropy
+// @next Failure
+type GetEntropy struct {
+	Size             *uint32 `protobuf:"varint,1,req,name=size" json:"size,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
+}
+
+func (m *GetEntropy) Reset()         { *m = GetEntropy{} }
+func (m *GetEntropy) String() string { return proto.CompactTextString(m) }
+func (*GetEntropy) ProtoMessage()    {}
+
+func (m *GetEntropy) GetSize() uint32 {
+	if m != nil && m.Size != nil {
+		return *m.Size
+	}
+	return 0
+}
+
+// *
+// Response: Reply with random data generated by internal RNG
+// @prev GetEntropy
+type Entropy struct {
+	Entropy          []byte `protobuf:"bytes,1,req,name=entropy" json:"entropy,omitempty"`
+	XXX_unrecognized []byte `json:"-"`
+}
+
+func (m *Entropy) Reset()         { *m = Entropy{} }
+func (m *Entropy) String() string { return proto.CompactTextString(m) }
+func (*Entropy) ProtoMessage()    {}
+
+func (m *Entropy) GetEntropy() []byte {
+	if m != nil {
+		return m.Entropy
+	}
+	return nil
+}
 
 // *
 // Request: Request device to wipe all sensitive data and settings
@@ -673,6 +896,128 @@ func (m *LoadDevice) GetU2FCounter() uint32 {
 		return *m.U2FCounter
 	}
 	return 0
+}
+
+// *
+// Request: Ask device to do initialization involving user interaction
+// @next EntropyRequest
+// @next Failure
+type ResetDevice struct {
+	DisplayRandom        *bool   `protobuf:"varint,1,opt,name=display_random" json:"display_random,omitempty"`
+	Strength             *uint32 `protobuf:"varint,2,opt,name=strength,def=256" json:"strength,omitempty"`
+	PassphraseProtection *bool   `protobuf:"varint,3,opt,name=passphrase_protection" json:"passphrase_protection,omitempty"`
+	PinProtection        *bool   `protobuf:"varint,4,opt,name=pin_protection" json:"pin_protection,omitempty"`
+	Language             *string `protobuf:"bytes,5,opt,name=language,def=english" json:"language,omitempty"`
+	Label                *string `protobuf:"bytes,6,opt,name=label" json:"label,omitempty"`
+	U2FCounter           *uint32 `protobuf:"varint,7,opt,name=u2f_counter" json:"u2f_counter,omitempty"`
+	SkipBackup           *bool   `protobuf:"varint,8,opt,name=skip_backup" json:"skip_backup,omitempty"`
+	XXX_unrecognized     []byte  `json:"-"`
+}
+
+func (m *ResetDevice) Reset()         { *m = ResetDevice{} }
+func (m *ResetDevice) String() string { return proto.CompactTextString(m) }
+func (*ResetDevice) ProtoMessage()    {}
+
+const Default_ResetDevice_Strength uint32 = 256
+const Default_ResetDevice_Language string = "english"
+
+func (m *ResetDevice) GetDisplayRandom() bool {
+	if m != nil && m.DisplayRandom != nil {
+		return *m.DisplayRandom
+	}
+	return false
+}
+
+func (m *ResetDevice) GetStrength() uint32 {
+	if m != nil && m.Strength != nil {
+		return *m.Strength
+	}
+	return Default_ResetDevice_Strength
+}
+
+func (m *ResetDevice) GetPassphraseProtection() bool {
+	if m != nil && m.PassphraseProtection != nil {
+		return *m.PassphraseProtection
+	}
+	return false
+}
+
+func (m *ResetDevice) GetPinProtection() bool {
+	if m != nil && m.PinProtection != nil {
+		return *m.PinProtection
+	}
+	return false
+}
+
+func (m *ResetDevice) GetLanguage() string {
+	if m != nil && m.Language != nil {
+		return *m.Language
+	}
+	return Default_ResetDevice_Language
+}
+
+func (m *ResetDevice) GetLabel() string {
+	if m != nil && m.Label != nil {
+		return *m.Label
+	}
+	return ""
+}
+
+func (m *ResetDevice) GetU2FCounter() uint32 {
+	if m != nil && m.U2FCounter != nil {
+		return *m.U2FCounter
+	}
+	return 0
+}
+
+func (m *ResetDevice) GetSkipBackup() bool {
+	if m != nil && m.SkipBackup != nil {
+		return *m.SkipBackup
+	}
+	return false
+}
+
+// *
+// Request: Perform backup of the device seed if not backed up using ResetDevice
+// @next ButtonRequest
+type BackupDevice struct {
+	XXX_unrecognized []byte `json:"-"`
+}
+
+func (m *BackupDevice) Reset()         { *m = BackupDevice{} }
+func (m *BackupDevice) String() string { return proto.CompactTextString(m) }
+func (*BackupDevice) ProtoMessage()    {}
+
+// *
+// Response: Ask for additional entropy from host computer
+// @prev ResetDevice
+// @next EntropyAck
+type EntropyRequest struct {
+	XXX_unrecognized []byte `json:"-"`
+}
+
+func (m *EntropyRequest) Reset()         { *m = EntropyRequest{} }
+func (m *EntropyRequest) String() string { return proto.CompactTextString(m) }
+func (*EntropyRequest) ProtoMessage()    {}
+
+// *
+// Request: Provide additional entropy for seed generation function
+// @prev EntropyRequest
+// @next ButtonRequest
+type EntropyAck struct {
+	Entropy          []byte `protobuf:"bytes,1,opt,name=entropy" json:"entropy,omitempty"`
+	XXX_unrecognized []byte `json:"-"`
+}
+
+func (m *EntropyAck) Reset()         { *m = EntropyAck{} }
+func (m *EntropyAck) String() string { return proto.CompactTextString(m) }
+func (*EntropyAck) ProtoMessage()    {}
+
+func (m *EntropyAck) GetEntropy() []byte {
+	if m != nil {
+		return m.Entropy
+	}
+	return nil
 }
 
 func init() {

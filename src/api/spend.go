@@ -60,12 +60,20 @@ func NewCreatedTransaction(txn *coin.Transaction, inputs []wallet.UxBalance) (*C
 
 	var outputHours uint64
 	for _, o := range txn.Out {
-		outputHours += o.Hours
+		var err error
+		outputHours, err = coin.AddUint64(outputHours, o.Hours)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var inputHours uint64
 	for _, i := range inputs {
-		inputHours += i.Hours
+		var err error
+		inputHours, err = coin.AddUint64(inputHours, i.Hours)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if inputHours < outputHours {
@@ -207,13 +215,13 @@ func NewCreatedTransactionOutput(out coin.TransactionOutput, txid cipher.SHA256)
 // CreatedTransactionInput is a verbose transaction input
 type CreatedTransactionInput struct {
 	UxID            string `json:"uxid"`
-	Address         string `json:"address"`
-	Coins           string `json:"coins"`
-	Hours           string `json:"hours"`
-	CalculatedHours string `json:"calculated_hours"`
-	Time            uint64 `json:"timestamp"`
-	Block           uint64 `json:"block"`
-	TxID            string `json:"txid"`
+	Address         string `json:"address,omitempty"`
+	Coins           string `json:"coins,omitempty"`
+	Hours           string `json:"hours,omitempty"`
+	CalculatedHours string `json:"calculated_hours,omitempty"`
+	Time            uint64 `json:"timestamp,omitempty"`
+	Block           uint64 `json:"block,omitempty"`
+	TxID            string `json:"txid,omitempty"`
 }
 
 // NewCreatedTransactionInput creates CreatedTransactionInput
@@ -227,15 +235,20 @@ func NewCreatedTransactionInput(out wallet.UxBalance) (*CreatedTransactionInput,
 		return nil, errors.New("NewCreatedTransactionInput UxOut.SrcTransaction is not initialized")
 	}
 
+	addr := out.Address.String()
+	hours := fmt.Sprint(out.InitialHours)
+	calculatedHours := fmt.Sprint(out.Hours)
+	txID := out.SrcTransaction.Hex()
+
 	return &CreatedTransactionInput{
 		UxID:            out.Hash.Hex(),
-		Address:         out.Address.String(),
+		Address:         addr,
 		Coins:           coins,
-		Hours:           fmt.Sprint(out.InitialHours),
-		CalculatedHours: fmt.Sprint(out.Hours),
+		Hours:           hours,
+		CalculatedHours: calculatedHours,
 		Time:            out.Time,
 		Block:           out.BkSeq,
-		TxID:            out.SrcTransaction.Hex(),
+		TxID:            txID,
 	}, nil
 }
 

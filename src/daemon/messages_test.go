@@ -56,7 +56,6 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 	if !mai.LengthCalled {
 		mai.LengthCalled = true
 		return util.Annotation{Size: 4, Name: "Length"}, true
-
 	}
 	if !mai.PrefixCalled {
 		mai.PrefixCalled = true
@@ -81,6 +80,19 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 		j = -1
 		if i < mai.MaxField {
 			f = t.Field(i)
+			if f.Type.Kind() == reflect.Slice {
+				if _, omitempty := encoder.ParseTag(f.Tag.Get("enc")); omitempty {
+					if i == mai.MaxField-1 {
+						vF = v.Field(i)
+						if vF.Len() == 0 {
+							// Last field is empty slice. Nothing further tokens
+							return util.Annotation{}, false
+						}
+					} else {
+						panic(encoder.ErrInvalidOmitEmpty)
+					}
+				}
+			}
 		} else {
 			return util.Annotation{}, false
 		}
@@ -154,7 +166,7 @@ func GetSHAFromHex(hex string) cipher.SHA256 {
 	return sha
 }
 
-type TestMessage struct {
+type EmptySliceStruct struct {
 	A uint8
 	e int16
 	B string
@@ -163,17 +175,17 @@ type TestMessage struct {
 	f rune
 }
 
-func (m *TestMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
+func (m *EmptySliceStruct) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	// Do nothing
 	return nil
 }
 
-func ExampleStructEmptySlice() {
+func ExampleEmptySliceStruct() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
-	gnet.RegisterMessage(gnet.MessagePrefixFromString("TEST"), TestMessage{})
+	gnet.RegisterMessage(gnet.MessagePrefixFromString("TEST"), EmptySliceStruct{})
 	gnet.VerifyMessages()
-	var message = TestMessage{
+	var message = EmptySliceStruct{
 		0x01,
 		0x2345,
 		"",
@@ -192,6 +204,40 @@ func ExampleStructEmptySlice() {
 	// 0x000d | cd ab 89 67 ....................................... C
 	// 0x0011 | 00 00 00 00 ....................................... D length
 	// 0x0015 |
+}
+
+type OmitEmptySliceTestStruct struct {
+	A uint8
+	B []byte
+	c rune
+	D []byte `enc:",omitempty"`
+}
+
+func (m *OmitEmptySliceTestStruct) Handle(mc *gnet.MessageContext, daemon interface{}) error {
+	// Do nothing
+	return nil
+}
+
+func ExampleOmitEmptySliceTestStruct() {
+	defer gnet.EraseMessages()
+	setupMsgEncoding()
+	gnet.RegisterMessage(gnet.MessagePrefixFromString("TEST"), OmitEmptySliceTestStruct{})
+	gnet.VerifyMessages()
+	var message = OmitEmptySliceTestStruct{
+		0x01,
+		nil,
+		'a',
+		nil,
+	}
+	var mai = NewMessagesAnnotationsIterator(&message)
+	w := bufio.NewWriter(os.Stdout)
+	util.HexDumpFromIterator(gnet.EncodeMessage(&message), &mai, w)
+	// Output:
+	// 0x0000 | 09 00 00 00 ....................................... Length
+	// 0x0004 | 54 45 53 54 ....................................... Prefix
+	// 0x0008 | 01 ................................................ A
+	// 0x0009 | 00 00 00 00 ....................................... B length
+	// 0x000d |
 }
 
 func ExampleIntroductionMessage() {

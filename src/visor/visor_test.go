@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
@@ -2713,6 +2714,295 @@ func TestGetCreateTransactionAuxs(t *testing.T) {
 			require.NoError(t, err)
 
 			require.Equal(t, tc.expectedAuxs, auxs)
+		})
+	}
+}
+
+func makeTxn(t *testing.T, headTime uint64, in, out []coin.UxOut, keys []cipher.SecKey) (coin.Transaction, []wallet.UxBalance) {
+	inputs := make([]cipher.SHA256, len(in))
+	for i, input := range in {
+		inputs[i] = input.Hash()
+	}
+
+	outputs := make([]coin.TransactionOutput, len(out))
+	for i, output := range out {
+		outputs[i] = coin.TransactionOutput{
+			Address: output.Body.Address,
+			Coins:   output.Body.Coins,
+			Hours:   output.Body.Hours,
+		}
+	}
+
+	txn := coin.Transaction{
+		In:  inputs,
+		Out: outputs,
+	}
+
+	txn.SignInputs(keys)
+	txn.UpdateHeader()
+
+	inbalances, err := wallet.NewUxBalances(headTime, in)
+	require.NoError(t, err)
+	return txn, inbalances
+}
+
+func TestVerifyTxnVerbose(t *testing.T) {
+	head := coin.SignedBlock{
+		Block: coin.Block{
+			Head: coin.BlockHeader{
+				Time: uint64(utc.UnixNow()),
+			},
+		},
+	}
+
+	hashes := make([]cipher.SHA256, 20)
+	for i := 0; i < 20; i++ {
+		hashes[i] = testutil.RandSHA256(t)
+	}
+
+	keys := make([]cipher.SecKey, 5)
+	for i := 0; i < 5; i++ {
+		_, keys[i] = cipher.GenerateKeyPair()
+	}
+
+	addrs := make([]cipher.Address, 5)
+	for i := 0; i < 5; i++ {
+		addrs[i] = cipher.AddressFromSecKey(keys[i])
+	}
+
+	srcTxnHashes := make([]cipher.SHA256, 5)
+	inputs := make([]coin.UxOut, 5)
+	historyOutputs := make([]*historydb.UxOut, 5)
+	// intputHashes := make([]cipher.SHA256, 5)
+	for i := 0; i < 5; i++ {
+		srcTxnHashes[i] = testutil.RandSHA256(t)
+		inputs[i] = coin.UxOut{
+			Head: coin.UxHead{
+				Time: head.Time(),
+			},
+			Body: coin.UxBody{
+				SrcTransaction: srcTxnHashes[i],
+				Address:        addrs[i],
+				Coins:          10e6,
+				Hours:          1000,
+			},
+		}
+
+		historyOutputs[i] = &historydb.UxOut{
+			Out: inputs[i],
+		}
+	}
+
+	outputs := make([]coin.UxOut, 5)
+	for i := 0; i < 5; i++ {
+		outputs[i] = coin.UxOut{
+			Head: coin.UxHead{
+				Time: head.Time(),
+			},
+			Body: coin.UxBody{
+				Address: testutil.MakeAddress(),
+				Coins:   10e6,
+				Hours:   400 + uint64(i)*200,
+			},
+		}
+	}
+
+	// add uxout with math.MaxUint64 hours
+	outputs = append(outputs, coin.UxOut{
+		Head: coin.UxHead{
+			Time: head.Time(),
+		},
+		Body: coin.UxBody{
+			Address: testutil.MakeAddress(),
+			Coins:   10e6,
+			Hours:   math.MaxUint64,
+		},
+	})
+
+	// add output which has 11e6 coins
+	outputs = append(outputs, coin.UxOut{
+		Head: coin.UxHead{
+			Time: head.Time(),
+		},
+		Body: coin.UxBody{
+			Address: testutil.MakeAddress(),
+			Coins:   11e6,
+			Hours:   500,
+		},
+	})
+
+	// create a transaction
+	txn, spentUxBalances := makeTxn(t, head.Time(), inputs[:1], outputs[:1], keys[:1])
+
+	// create a transaction which sends coin to null address
+	toNullAddrTxn, toNullAddrSpentUxBalances := makeTxn(t, head.Time(), inputs[:1], outputs[:1], keys[:1])
+	toNullAddrTxn.Out[0].Address = cipher.Address{}
+
+	// create a transaction with insufficient coin hours
+	inSufficientCoinHoursTxn, _ := makeTxn(t, head.Time(), inputs[:1], outputs[4:5], keys[:1])
+
+	// create a transaction with zero fee
+	zeroFeeTxn, _ := makeTxn(t, head.Time(), inputs[:1], outputs[3:4], keys[:1])
+
+	// create a transaction with output coin hours overflow
+	coinHourOverflowTxn, _ := makeTxn(t, head.Time(), inputs[:1], outputs[4:], keys[:1])
+
+	// create a transaction with insufficient fee
+	insufficientFeeTxn, _ := makeTxn(t, head.Time(), inputs[:1], outputs[2:3], keys[:1])
+
+	// create a transaction with insufficient coins
+	insufficientCoinsTxn, _ := makeTxn(t, head.Time(), inputs[:1], outputs[6:], keys[:1])
+
+	// create a transaction with invalid signature
+	badSigTxn, _ := makeTxn(t, head.Time(), inputs[:1], outputs[:1], keys[1:2])
+
+	cases := []struct {
+		name        string
+		txn         coin.Transaction
+		isConfirmed bool
+		balances    []wallet.UxBalance
+		err         error
+
+		maxBlockSize int
+
+		getArrayRet coin.UxArray
+		getArrayErr error
+
+		getHistoryTxnRet *historydb.Transaction
+		getHistoryTxnErr error
+
+		getHistoryUxOutsRet []*historydb.UxOut
+		getHistoryUxOutsErr error
+	}{
+		{
+			name:        "transaction has been spent",
+			txn:         txn,
+			isConfirmed: true,
+			balances:    spentUxBalances[:],
+
+			getArrayErr:         blockdb.ErrUnspentNotExist{UxID: inputs[0].Hash().Hex()},
+			getHistoryTxnRet:    &historydb.Transaction{Tx: txn},
+			getHistoryUxOutsRet: historyOutputs[:1],
+		},
+		{
+			name:        "transaction does not exist in either unspents or historydb",
+			txn:         txn,
+			isConfirmed: false,
+			err:         ErrTxnViolatesHardConstraint{fmt.Errorf("transaction input of %s does not exist in either unspent pool or historydb", inputs[0].Hash().Hex())},
+
+			getArrayErr: blockdb.ErrUnspentNotExist{UxID: inputs[0].Hash().Hex()},
+		},
+		{
+			name:        "transaction violate user constratins, send to null address",
+			txn:         toNullAddrTxn,
+			isConfirmed: false,
+			err:         ErrTxnViolatesUserConstraint{errors.New("Transaction output is sent to the null address")},
+			balances:    toNullAddrSpentUxBalances[:],
+
+			getArrayRet: inputs[:1],
+		},
+		{
+			name:         "transaction violate soft constraints, transaction size bigger than max block size",
+			maxBlockSize: 1,
+			txn:          txn,
+			err:          ErrTxnViolatesSoftConstraint{errors.New("Transaction size bigger than max block size")},
+
+			getArrayRet: inputs[:1],
+		},
+		{
+			name:        "transaction violate soft constraints, Insufficient coinhours for transaction outputs",
+			txn:         inSufficientCoinHoursTxn,
+			err:         ErrTxnViolatesSoftConstraint{fee.ErrTxnInsufficientCoinHours},
+			getArrayRet: inputs[:1],
+		},
+		{
+			name:        "transaction violate soft constraints, zero fee",
+			txn:         zeroFeeTxn,
+			err:         ErrTxnViolatesSoftConstraint{fee.ErrTxnNoFee},
+			getArrayRet: inputs[:1],
+		},
+		{
+			name:        "transaction violate soft constraints, coin hour overflow",
+			txn:         coinHourOverflowTxn,
+			err:         ErrTxnViolatesSoftConstraint{errors.New("Transaction output hours overflow")},
+			getArrayRet: inputs[:1],
+		},
+		{
+			name:        "transaction violate soft constraints, insufficient fee",
+			txn:         insufficientFeeTxn,
+			err:         ErrTxnViolatesSoftConstraint{fee.ErrTxnInsufficientFee},
+			getArrayRet: inputs[:1],
+		},
+		{
+			name:        "transaction violate hard constraints, insufficient coin",
+			txn:         insufficientCoinsTxn,
+			err:         ErrTxnViolatesHardConstraint{errors.New("Insufficient coins")},
+			getArrayRet: inputs[:1],
+		},
+		{
+			name:        "transaction violate hard constraints, bad signature",
+			txn:         badSigTxn,
+			err:         ErrTxnViolatesHardConstraint{errors.New("Signature not valid for output being spent")},
+			getArrayRet: inputs[:1],
+		},
+		{
+			name:        "ok",
+			txn:         txn,
+			balances:    spentUxBalances,
+			getArrayRet: inputs[:1],
+		},
+	}
+
+	matchTx := mock.MatchedBy(func(tx *dbutil.Tx) bool {
+		return true
+	})
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			db, shutdown := testutil.PrepareDB(t)
+			defer shutdown()
+
+			history := NewHistoryerMock()
+			bc := NewBlockchainerMock()
+			unspent := NewUnspentPoolerMock()
+
+			bc.On("Unspent").Return(unspent)
+			bc.On("Head", matchTx).Return(&head, nil)
+
+			unspent.On("GetArray", matchTx, tc.txn.In).Return(tc.getArrayRet, tc.getArrayErr)
+
+			history.On("GetTransaction", matchTx, tc.txn.Hash()).Return(tc.getHistoryTxnRet, tc.getHistoryTxnErr)
+			history.On("GetUxOuts", matchTx, tc.txn.In).Return(tc.getHistoryUxOutsRet, tc.getHistoryUxOutsErr)
+
+			v := &Visor{
+				Blockchain: bc,
+				DB:         db,
+				history:    history,
+				Config: Config{
+					MaxBlockSize: tc.maxBlockSize,
+				},
+			}
+
+			if v.Config.MaxBlockSize == 0 {
+				v.Config.MaxBlockSize = DefaultMaxBlockSize
+			}
+
+			var isConfirmed bool
+			var balances []wallet.UxBalance
+			err := v.DB.View("VerifyTxnVerbose", func(tx *dbutil.Tx) error {
+				var err error
+				balances, isConfirmed, err = v.VerifyTxnVerbose(&tc.txn)
+				return err
+			})
+
+			require.Equal(t, tc.err, err)
+			if tc.err != nil {
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tc.isConfirmed, isConfirmed)
+			require.Equal(t, tc.balances, balances)
 		})
 	}
 }

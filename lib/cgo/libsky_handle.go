@@ -370,6 +370,20 @@ func lookupBalanceResultHandle(handle C.BalanceResult_Handle) (*cli.BalanceResul
 	return nil, false
 }
 
+func registerSpendResultHandle(obj *api.SpendResult) C.SpendResult_Handle {
+	return (C.SpendResult_Handle)(registerHandle(obj))
+}
+
+func lookupSpendResultHandle(handle C.SpendResult_Handle) (*api.SpendResult, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*api.SpendResult); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
 func closeHandle(handle Handle) {
 	delete(handleMap, handle)
 }

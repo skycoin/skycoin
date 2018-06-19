@@ -5,28 +5,6 @@ typedef struct{
     GoUint64_ BlockSeq;
     BOOL Unknown;
 } visor__TransactionStatus;
-typedef struct{
-    GoString_ Hash;
-    GoString_ Address;
-    GoString_ Coins;
-    GoUint64_ Hours;
-} visor__ReadableTransactionOutput;
-typedef struct{
-    GoString_ Hash;
-    GoString_ Address;
-    GoString_ Coins;
-    GoUint64_ Hours;
-} visor__ReadableTransactionInput;
-typedef struct{
-    GoString_ Hash;
-    GoUint64_ Time;
-    GoUint64_ BkSeq;
-    GoString_ SourceTransaction;
-    GoString_ Address;
-    GoString_ Coins;
-    GoUint64_ Hours;
-    GoUint64_ CalculatedHours;
-} visor__ReadableOutput;
 typedef GoSlice_  visor__ReadableOutputs;
 typedef struct{
     GoUint32_ Length;

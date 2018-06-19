@@ -296,6 +296,12 @@ typedef Handle BlockBody__Handle;
 typedef Handle BalanceResult_Handle;
 
 
+/**
+ * Memory handle to access to api.SpendResult
+ */
+
+typedef Handle SpendResult_Handle;
+
 /*
 #include "cipher.hash.go.h"
 #include "cipher.crypto.go.h"

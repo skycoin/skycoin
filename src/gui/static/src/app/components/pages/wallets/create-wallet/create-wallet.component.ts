@@ -17,6 +17,8 @@ export class CreateWalletComponent implements OnInit {
   seed: string;
   scan: Number;
   encrypt = true;
+  useHardwareWallet = false;
+  useEmulatedWallet = false;
   disableDismiss = false;
 
   constructor(
@@ -40,7 +42,7 @@ export class CreateWalletComponent implements OnInit {
     this.disableDismiss = true;
 
     const password = this.encrypt ? this.form.value.password : null;
-    this.walletService.create(this.form.value.label, this.form.value.seed, this.scan, password)
+    this.walletService.create(this.form.value.label, this.form.value.seed, this.scan, password, this.useHardwareWallet, this.useEmulatedWallet)
       .subscribe(() => this.dialogRef.close(), e => {
         this.createButton.setError(e);
         this.cancelButton.disabled = false;
@@ -54,6 +56,16 @@ export class CreateWalletComponent implements OnInit {
 
   setEncrypt(event) {
     this.encrypt = event.checked;
+    this.form.updateValueAndValidity();
+  }
+
+  setHardwareWallet(event) {
+    this.useHardwareWallet = event.checked;
+    this.form.updateValueAndValidity();
+  }
+
+  setEmulatedWallet(event) {
+    this.useEmulatedWallet = event.checked;
     this.form.updateValueAndValidity();
   }
 

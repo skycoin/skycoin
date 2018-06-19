@@ -71,12 +71,18 @@ export class ApiService {
       .map(response => response.seed);
   }
 
-  postWalletCreate(label: string, seed: string, scan: number, password: string): Observable<Wallet> {
+  postWalletCreate(label: string, seed: string, scan: number, password: string, useHardwareWallet: boolean, useEmulatorWallet: boolean): Observable<Wallet> {
     const params = { label, seed, scan };
 
     if (password) {
       params['password'] = password;
       params['encrypt'] = true;
+    }
+    if (useHardwareWallet) {
+      params['useHardwareWallet'] = useHardwareWallet;
+    }
+    if (useEmulatorWallet) {
+      params['useEmulatorWallet'] = useEmulatorWallet;
     }
 
     return this.post('wallet/create', params)
@@ -87,6 +93,8 @@ export class ApiService {
           hours: null,
           addresses: response.entries.map(entry => ({ address: entry.address, coins: null, hours: null })),
           encrypted: response.meta.encrypted,
+          useHardwareWallet: response.meta.useHardwareWallet,
+          useEmulatorWallet: response.meta.useEmulatorWallet,
         }));
   }
 

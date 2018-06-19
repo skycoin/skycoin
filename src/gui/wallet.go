@@ -362,6 +362,48 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
+		var useHardwareWallet bool
+		useHardwareWalletStr := r.FormValue("useHardwareWallet")
+		if useHardwareWalletStr != "" {
+			var err error
+			useHardwareWallet, err = strconv.ParseBool(useHardwareWalletStr)
+			if err != nil {
+				wh.Error400(w, fmt.Sprintf("invalid useHardwareWallet value: %v", err))
+				return
+			}
+		}
+
+		var useEmulatorWallet bool
+		useEmulatorWalletStr := r.FormValue("useEmulatorWallet")
+		if useEmulatorWalletStr != "" {
+			var err error
+			useEmulatorWallet, err = strconv.ParseBool(useEmulatorWalletStr)
+			if err != nil {
+				wh.Error400(w, fmt.Sprintf("invalid useEmulatorWallet value: %v", err))
+				return
+			}
+		}
+
+		if useEmulatorWallet && useHardwareWallet {
+			wh.Error400(w, "Cannot use both Hardware Wallet and Emulator Wallet")
+			return
+		}
+
+		if useEmulatorWallet {
+			wh.Error400(w, "Using Emulator Wallet")
+			return
+		}
+
+		if useHardwareWallet {
+			wh.Error400(w, "Using Hardware Wallet")
+			return
+		}
+
+		if !useHardwareWallet && !useEmulatorWallet {
+			wh.Error400(w, "Not using any external device as wallet")
+			return
+		}
+
 		wlt, err := gateway.CreateWallet("", wallet.Options{
 			Seed:     seed,
 			Label:    label,

@@ -56,9 +56,6 @@ typedef struct{
     GoInt_ Size;
 } visor__ReadableBlock;
 typedef struct{
-    GoSlice_  Blocks;
-} visor__ReadableBlocks;
-typedef struct{
     GoString_ Hash;
     GoString_ SourceTransaction;
     GoString_ Address;

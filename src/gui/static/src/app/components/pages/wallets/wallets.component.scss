@@ -36,6 +36,12 @@
   vertical-align: middle;
 }
 
+.-label {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
 .action-buttons {
   margin-bottom: 74px;
   padding: 40px 0 40px;

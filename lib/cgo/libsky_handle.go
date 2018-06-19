@@ -356,6 +356,20 @@ func lookupCreateTransactionResponseHandle(handle C.CreateTransactionResponse__H
 	return nil, false
 }
 
+func registerBalanceResultHandle(obj *cli.BalanceResult) C.BalanceResult_Handle {
+	return (C.BalanceResult_Handle)(registerHandle(obj))
+}
+
+func lookupBalanceResultHandle(handle C.BalanceResult_Handle) (*cli.BalanceResult, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*cli.BalanceResult); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
 func closeHandle(handle Handle) {
 	delete(handleMap, handle)
 }

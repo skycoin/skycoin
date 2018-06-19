@@ -289,6 +289,13 @@ typedef Handle SignedBlock__Handle;
  */
 typedef Handle BlockBody__Handle;
 
+/**
+ * Memory handle to access to cli.BalanceResult
+ */
+
+typedef Handle BalanceResult_Handle;
+
+
 /*
 #include "cipher.hash.go.h"
 #include "cipher.crypto.go.h"

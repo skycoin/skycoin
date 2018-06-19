@@ -23,6 +23,8 @@ import (
 
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/logging"
+	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
+	messages "github.com/skycoin/skycoin/protob"
 )
 
 // Error wraps wallet related errors
@@ -88,6 +90,10 @@ var (
 	ErrUnknownAddress = NewError(errors.New("Address not found in wallet"))
 	// ErrNoUnspents is returned if a wallet has no unspents to spend
 	ErrNoUnspents = NewError(errors.New("no unspents to spend"))
+	// ErrHardwareWallet is returned if the hardware wallet was missused
+	ErrHardwareWallet = NewError(errors.New("hardware wallet error"))
+	// ErrEmulatorWallet is returned if the hardware wallet was missused
+	ErrEmulatorWallet = NewError(errors.New("emulated wallet error"))
 )
 
 const (
@@ -127,6 +133,8 @@ type Options struct {
 	Label      string     // wallet label.
 	Seed       string     // wallet seed.
 	Encrypt    bool       // whether the wallet need to be encrypted.
+	UseHardwareWallet bool    // whether the wallet is stored on a skycoin hardware wallet
+	UseEmulatorWallet bool    // whether the wallet is stored on a skycoin emulated hardware wallet
 	Password   []byte     // password that would be used for encryption, and would only be used when 'Encrypt' is true.
 	CryptoType CryptoType // wallet encryption type, scrypt-chacha20poly1305 or sha256-xor.
 	ScanN      uint64     // number of addresses that're going to be scanned
@@ -298,17 +306,58 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 		},
 	}
 
-	// Create a default wallet
-	_, err := w.GenerateAddresses(1)
-	if err != nil {
-		return nil, err
+	var addrs []cipher.Address
+	var err error
+	if (opts.UseEmulatorWallet) {
+		// Create a emulated wallet
+		addrs, err = w.GetAddressFromEmulatorWallet(opts.ScanN)
+		if err != nil {
+			return nil, err
+		}
+	} else if (opts.UseHardwareWallet) {
+		// Create a hardware wallet
+		addrs, err = w.GetAddressFromHardwareWallet(opts.ScanN)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// Create a default wallet
+		addrs, err = w.GenerateAddresses(1)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if opts.ScanN > 0 {
 		// Scan for addresses with balances
 		if bg != nil {
-			if err := w.ScanAddresses(opts.ScanN-1, bg); err != nil {
+			bals, err := w.ScanAddresses(addrs, bg)
+			if err != nil {
 				return nil, err
+			}
+
+			if (opts.UseHardwareWallet == false && opts.UseEmulatorWallet == false) {
+				nExistingAddrs := uint64(len(w.Entries))
+				// Check balance from the last one until we find the address that has coins
+				var keepNum uint64
+				for i := len(bals) - 1; i >= 0; i-- {
+					if bals[i].Confirmed.Coins > 0 || bals[i].Predicted.Coins > 0 {
+						keepNum = uint64(i + 1)
+						break
+					}
+				}
+				// Regenerate addresses up to keepNum.
+				// This is necessary to keep the lastSeed updated.
+				if keepNum != uint64(len(bals)) {
+					w.reset()
+					w.GenerateAddresses(nExistingAddrs + keepNum)
+				}
+			} else {
+				for _, add := range addrs {
+					w.Entries = append(w.Entries, Entry{
+						Address: add,
+					})
+				}
 			}
 		}
 	}
@@ -805,6 +854,54 @@ func (w *Wallet) setSecrets(s string) {
 	w.Meta[metaSecrets] = s
 }
 
+
+// GetAddressFromHardwareWallet ask the hardware wallet to generate addresses
+func (w *Wallet) GetAddressFromHardwareWallet(num uint64) ([]cipher.Address, error) {
+	if num == 0 {
+		return nil, nil
+	}
+	deviceWallet.DeviceSetMnemonic(deviceWallet.DeviceTypeUsb, w.seed())
+	addrs := make([]cipher.Address, num)
+	for i := 0; i < len(addrs); i++ {
+		var err error
+		kind, data := deviceWallet.DeviceAddressGen(deviceWallet.DeviceTypeUsb, messages.SkycoinAddressType_AddressTypeSkycoin, i)
+		if (kind != 2) {
+			logger.Panic("GetAddressFromHardwareWallet the device could not generate an address")
+			return addrs, ErrHardwareWallet
+		}
+		addrs[i], err = cipher.DecodeBase58Address(string(data[2:]))
+		if (err != nil) {
+			logger.Panicf("GetAddressFromHardwareWallet got a bad address from hardware wallet: %s", string(data[2:]))
+			return addrs, err
+		}
+	}
+	return addrs, nil
+}
+
+
+// GetAddressFromEmulatorWallet ask the hardware wallet to generate addresses
+func (w *Wallet) GetAddressFromEmulatorWallet(num uint64) ([]cipher.Address, error) {
+	if num == 0 {
+		return nil, nil
+	}
+	deviceWallet.DeviceSetMnemonic(deviceWallet.DeviceTypeEmulator, w.seed())
+	addrs := make([]cipher.Address, num)
+	for i := 0; i < len(addrs); i++ {
+		var err error
+		kind, data := deviceWallet.DeviceAddressGen(deviceWallet.DeviceTypeEmulator, messages.SkycoinAddressType_AddressTypeSkycoin, i)
+		if (kind != 2) {
+			logger.Panic("GetAddressFromEmulatorWallet the device could not generate an address")
+			return addrs, ErrEmulatorWallet
+		}
+		addrs[i], err = cipher.DecodeBase58Address(string(data[2:]))
+		if (err != nil) {
+			logger.Panicf("GetAddressFromEmulatorWallet got a bad address from hardware wallet: %s", string(data[2:]))
+			return addrs, err
+		}
+	}
+	return addrs, nil
+}
+
 // GenerateAddresses generates addresses
 func (w *Wallet) GenerateAddresses(num uint64) ([]cipher.Address, error) {
 	if num == 0 {
@@ -844,46 +941,23 @@ func (w *Wallet) GenerateAddresses(num uint64) ([]cipher.Address, error) {
 }
 
 // ScanAddresses scans ahead N addresses to find one with none-zero coins.
-func (w *Wallet) ScanAddresses(scanN uint64, bg BalanceGetter) error {
+func (w *Wallet) ScanAddresses(addrs []cipher.Address, bg BalanceGetter) ([]BalancePair, error) {
+	var bals []BalancePair
 	if w.IsEncrypted() {
-		return ErrWalletEncrypted
+		return bals, ErrWalletEncrypted
 	}
 
-	if scanN <= 0 {
-		return nil
-	}
-
-	nExistingAddrs := uint64(len(w.Entries))
-
-	// Generate the addresses to scan
-	addrs, err := w.GenerateAddresses(scanN)
-	if err != nil {
-		return err
+	if len(addrs) <= 0 {
+		return bals, nil
 	}
 
 	// Get these addresses' balances
 	bals, err := bg.GetBalanceOfAddrs(addrs)
 	if err != nil {
-		return err
+		return bals, err
 	}
 
-	// Check balance from the last one until we find the address that has coins
-	var keepNum uint64
-	for i := len(bals) - 1; i >= 0; i-- {
-		if bals[i].Confirmed.Coins > 0 || bals[i].Predicted.Coins > 0 {
-			keepNum = uint64(i + 1)
-			break
-		}
-	}
-
-	// Regenerate addresses up to keepNum.
-	// This is necessary to keep the lastSeed updated.
-	if keepNum != uint64(len(bals)) {
-		w.reset()
-		w.GenerateAddresses(nExistingAddrs + keepNum)
-	}
-
-	return nil
+	return bals, nil
 }
 
 // GetAddresses returns all addresses in wallet

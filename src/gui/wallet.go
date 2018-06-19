@@ -48,6 +48,8 @@ type WalletMeta struct {
 	CryptoType string `json:"crypto_type"`
 	Timestamp  int64  `json:"timestamp"`
 	Encrypted  bool   `json:"encrypted"`
+	UseHardwareWallet  bool   `json:"useHardwareWallet"`
+	UseEmulatorWallet  bool   `json:"useEmulatorWallet"`
 }
 
 // WalletResponse wallet response struct for http apis
@@ -74,6 +76,24 @@ func NewWalletResponse(w *wallet.Wallet) (*WalletResponse, error) {
 			return nil, err
 		}
 		wr.Meta.Encrypted = encrypted
+	}
+
+	// Converts "useEmulatorWallet" string to boolean if any
+	if useEmulatorWalletStr, ok := w.Meta["useEmulatorWallet"]; ok {
+		useEmulatorWallet, err := strconv.ParseBool(useEmulatorWalletStr)
+		if err != nil {
+			return nil, err
+		}
+		wr.Meta.UseEmulatorWallet = useEmulatorWallet
+	}
+
+	// Converts "useHardwareWallet" string to boolean if any
+	if useHardwareWalletStr, ok := w.Meta["useHardwareWallet"]; ok {
+		useHardwareWallet, err := strconv.ParseBool(useHardwareWalletStr)
+		if err != nil {
+			return nil, err
+		}
+		wr.Meta.UseHardwareWallet = useHardwareWallet
 	}
 
 	if tmStr, ok := w.Meta["tm"]; ok {
@@ -389,16 +409,6 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if useEmulatorWallet {
-			wh.Error400(w, "Using Emulator Wallet")
-			return
-		}
-
-		if useHardwareWallet {
-			wh.Error400(w, "Using Hardware Wallet")
-			return
-		}
-
 		if !useHardwareWallet && !useEmulatorWallet {
 			wh.Error400(w, "Not using any external device as wallet")
 			return
@@ -408,6 +418,8 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 			Seed:     seed,
 			Label:    label,
 			Encrypt:  encrypt,
+			UseHardwareWallet: useHardwareWallet,
+			UseEmulatorWallet: useEmulatorWallet,
 			Password: []byte(password),
 			ScanN:    scanN,
 		})

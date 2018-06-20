@@ -318,6 +318,11 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 		w.Meta[metaUseEmulatorWallet]  = "true"
 	}
 
+	// for extra safety don't store the seed on wallet file when delagating safety to an external device
+	if (opts.UseHardwareWallet || opts.UseEmulatorWallet) {
+		w.Meta[metaSeed] = ""
+	}
+
 	var addrs []cipher.Address
 	var err error
 	if (opts.UseEmulatorWallet) {
@@ -1086,7 +1091,7 @@ type Validator interface {
 // CreateAndSignTransaction Creates a Transaction
 // spending coins and hours from wallet
 func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.UnspentGetter,
-	headTime, coins uint64, dest cipher.Address, bUseDevice bool) (*coin.Transaction, error) {
+	headTime, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
 	if w.IsEncrypted() {
 		return nil, ErrWalletEncrypted
 	}
@@ -1166,8 +1171,10 @@ func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspent
 
 	txn.PushOutput(dest, coins, addrHours[0])
 
-	if (bUseDevice) {
+	if (w.useHardwareWallet()) {
 		txn.DeviceSignInputs(indexToSign)
+	} else if (w.useEmulatorWallet()) {
+		txn.EmulatorSignInputs(indexToSign)
 	} else {
 		txn.SignInputs(toSign)
 	}

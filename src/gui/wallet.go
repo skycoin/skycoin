@@ -153,53 +153,6 @@ func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-func walletSpendWithDeviceSignatureHandler(gateway Gatewayer) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			wh.Error405(w)
-			return
-		}
-
-		wltID := r.FormValue("id")
-		if wltID == "" {
-			wh.Error400(w, "missing wallet id")
-			return
-		}
-
-		sdst := r.FormValue("dst")
-		if sdst == "" {
-			wh.Error400(w, "missing destination address \"dst\"")
-			return
-		}
-		dst, err := cipher.DecodeBase58Address(sdst)
-		if err != nil {
-			wh.Error400(w, fmt.Sprintf("invalid destination address: %v", err))
-			return
-		}
-
-		scoins := r.FormValue("coins")
-		coins, err := strconv.ParseUint(scoins, 10, 64)
-		if err != nil {
-			wh.Error400(w, `invalid "coins" value`)
-			return
-		}
-
-		wh.Error400(w, `Bravo tu as reussi ici`)
-		//tx, err := 
-		gateway.Spend(wltID, []byte(r.FormValue("password")), coins, dst, true)
-		// txStr, err := visor.TransactionToJSON(*tx)
-		// if err != nil {
-		// 	logger.Error(err)
-		// 	wh.SendJSONOr500(logger, w, SpendResult{
-		// 		Error: err.Error(),
-		// 	})
-		// 	return
-		// }
-
-		// logger.Infof("Spend: \ntx= \n %s \n", txStr)
-	}
-}
-
 // Creates and broadcasts a transaction sending money from one of our wallets
 // to destination address.
 // URI: /wallet/spend
@@ -250,7 +203,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		tx, err := gateway.Spend(wltID, []byte(r.FormValue("password")), coins, dst, false)
+		tx, err := gateway.Spend(wltID, []byte(r.FormValue("password")), coins, dst)
 		switch err {
 		case nil:
 		case fee.ErrTxnNoFee,

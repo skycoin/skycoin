@@ -245,15 +245,6 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore) *http.Se
 	//  failure status.
 	webHandler("/wallet/spend", walletSpendHandler(gateway))
 
-	// Sends coins&hours to another address.
-	// POST arguments:
-	//  id: Wallet ID
-	//  coins: Number of coins to spend
-	//  dst: Destination address
-	//  Returns total amount spent if successful, otherwise error describing
-	//  failure status.
-	webHandler("/wallet/spendDeviceCheck", walletSpendWithDeviceSignatureHandler(gateway))
-
 	// Creates a transaction from a wallet
 	webHandler("/wallet/transaction", createTransactionHandler(gateway))
 

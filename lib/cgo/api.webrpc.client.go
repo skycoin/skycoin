@@ -134,7 +134,7 @@ func SKY_webrpc_Client_GetStatus(_c C.WebRpcClient__Handle, _arg0 *C.webrpc__Sta
 }
 
 //export SKY_webrpc_Client_GetTransactionByID
-func SKY_webrpc_Client_GetTransactionByID(_c C.WebRpcClient__Handle, _txid string, _arg1 *C.webrpc__TxnResult) (____error_code uint32) {
+func SKY_webrpc_Client_GetTransactionByID(_c C.WebRpcClient__Handle, _txid string, _arg1 *C.TransactionResult_Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -148,7 +148,7 @@ func SKY_webrpc_Client_GetTransactionByID(_c C.WebRpcClient__Handle, _txid strin
 	__arg1, ____return_err := c.GetTransactionByID(txid)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		*_arg1 = *(*C.webrpc__TxnResult)(unsafe.Pointer(__arg1))
+		*_arg1 = registerTransactionResultHandle(__arg1)
 	}
 	return
 }

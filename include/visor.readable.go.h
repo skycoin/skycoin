@@ -26,33 +26,6 @@ typedef struct{
     GoString_ BodyHash;
 } visor__ReadableBlockHeader;
 typedef struct{
-    GoSlice_  Transactions;
-} visor__ReadableBlockBody;
-typedef struct{
-    visor__ReadableBlockHeader Head;
-    visor__ReadableBlockBody Body;
-    GoInt_ Size;
-} visor__ReadableBlock;
-typedef struct{
-    GoString_ Hash;
-    GoString_ SourceTransaction;
-    GoString_ Address;
-    GoString_ Coins;
-    GoUint64_ Hours;
-} visor__TransactionOutputJSON;
-typedef struct{
-    GoString_ Hash;
-    GoString_ InnerHash;
-    GoSlice_  Sigs;
-    GoSlice_  In;
-    GoSlice_  Out;
-} visor__TransactionJSON;
-typedef struct{
-    visor__ReadableBlockHeader Head;
-    GoUint64_ Unspents;
-    GoUint64_ Unconfirmed;
-} visor__BlockchainMetadata;
-typedef struct{
     visor__ReadableOutputs HeadOutputs;
     visor__ReadableOutputs OutgoingOutputs;
     visor__ReadableOutputs IncomingOutputs;

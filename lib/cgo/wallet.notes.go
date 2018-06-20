@@ -110,7 +110,8 @@ func SKY_wallet_NewReadableNote(_note *C.wallet__Note, _arg1 *C.wallet__Readable
 	}()
 	note := *(*wallet.Note)(unsafe.Pointer(_note))
 	__arg1 := wallet.NewReadableNote(note)
-	*_arg1 = *(*C.wallet__ReadableNote)(unsafe.Pointer(&__arg1))
+	copyString(__arg1.TransactionID, &_arg1.TransactionID)
+	copyString(__arg1.ActualNote, &_arg1.ActualNote)
 	return
 }
 

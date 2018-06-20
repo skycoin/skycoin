@@ -302,6 +302,12 @@ typedef Handle BalanceResult_Handle;
 
 typedef Handle SpendResult_Handle;
 
+/**
+ * Memory handle to access to webrpc.TxnResult
+ */
+
+typedef Handle TransactionResult_Handle;
+
 /*
 #include "cipher.hash.go.h"
 #include "cipher.crypto.go.h"

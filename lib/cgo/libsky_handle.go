@@ -384,6 +384,20 @@ func lookupSpendResultHandle(handle C.SpendResult_Handle) (*api.SpendResult, boo
 	return nil, false
 }
 
+func registerTransactionResultHandle(obj *webrpc.TxnResult) C.TransactionResult_Handle {
+	return (C.TransactionResult_Handle)(registerHandle(obj))
+}
+
+func lookupTransactionResultHandle(handle C.TransactionResult_Handle) (*webrpc.TxnResult, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*webrpc.TxnResult); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
 func closeHandle(handle Handle) {
 	delete(handleMap, handle)
 }

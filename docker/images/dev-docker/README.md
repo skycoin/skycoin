@@ -38,7 +38,7 @@ in a container and deleted when finished.
 ### Running tests
 
 ```sh
-$ docker run --privileged --rm \
+$ docker run --rm \
     -v src:/go/src skycoin/skycoindev-cli:dind \
     sh -c "cd skycoin; make test"
 ```
@@ -46,7 +46,7 @@ $ docker run --privileged --rm \
 ### Running lint
 
 ```sh
-$ docker run --privileged --rm \
+$ docker run --rm \
     -v src:/go/src skycoin/skycoindev-cli:dind \
     sh -c "cd skycoin; make lint"
 ```
@@ -54,7 +54,7 @@ $ docker run --privileged --rm \
 ### Editing code
 
 ```sh
-$ docker run --privileged --rm \
+$ docker run --rm \
     -v src:/go/src skycoin/skycoindev-cli:dind \
     vim
 ```

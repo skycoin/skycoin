@@ -98,6 +98,7 @@ func (serv *Service) loadWallet(wltName string, options Options, bg BalanceGette
 
 	// Check for duplicate wallets by initial seed
 	if _, ok := serv.firstAddrIDMap[w.Entries[0].Address.String()]; ok {
+		logger.Errorf("A wallet already exist with this seed: %s.", w.Entries[0].Address.String())
 		return nil, ErrSeedUsed
 	}
 

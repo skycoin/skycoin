@@ -318,21 +318,24 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 		w.Meta[metaUseEmulatorWallet]  = "true"
 	}
 
-	// for extra safety don't store the seed on wallet file when delagating safety to an external device
-	if (opts.UseHardwareWallet || opts.UseEmulatorWallet) {
-		w.Meta[metaSeed] = ""
-	}
-
 	var addrs []cipher.Address
 	var err error
 	if (opts.UseEmulatorWallet) {
 		// Create a emulated wallet
+		deviceWallet.DeviceSetMnemonic(deviceWallet.DeviceTypeEmulator, w.seed())
+		// if we are using a hardware wallet storing the seed in a plain text file would be a safety leak
+		// w.setSeed("")
+		// w.setLastSeed("")
 		addrs, err = w.GetAddressFromEmulatorWallet(opts.ScanN)
 		if err != nil {
 			return nil, err
 		}
 	} else if (opts.UseHardwareWallet) {
 		// Create a hardware wallet
+		deviceWallet.DeviceSetMnemonic(deviceWallet.DeviceTypeEmulator, w.seed())
+		// if we are using a hardware wallet storing the seed in a plain text file would be a safety leak
+		// w.setSeed("")
+		// w.setLastSeed("")
 		addrs, err = w.GetAddressFromHardwareWallet(opts.ScanN)
 		if err != nil {
 			return nil, err
@@ -926,7 +929,6 @@ func (w *Wallet) GetAddressFromHardwareWallet(num uint64) ([]cipher.Address, err
 	if num == 0 {
 		return nil, nil
 	}
-	deviceWallet.DeviceSetMnemonic(deviceWallet.DeviceTypeUsb, w.seed())
 	addrs := make([]cipher.Address, num)
 	for i := 0; i < len(addrs); i++ {
 		var err error
@@ -950,7 +952,6 @@ func (w *Wallet) GetAddressFromEmulatorWallet(num uint64) ([]cipher.Address, err
 	if num == 0 {
 		return nil, nil
 	}
-	deviceWallet.DeviceSetMnemonic(deviceWallet.DeviceTypeEmulator, w.seed())
 	addrs := make([]cipher.Address, num)
 	for i := 0; i < len(addrs); i++ {
 		var err error

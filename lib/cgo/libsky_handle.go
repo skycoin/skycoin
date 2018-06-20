@@ -398,6 +398,34 @@ func lookupTransactionResultHandle(handle C.TransactionResult_Handle) (*webrpc.T
 	return nil, false
 }
 
+func registerWalletNotesHandle(obj *wallet.Notes) C.WalletNotes_Handle {
+	return (C.WalletNotes_Handle)(registerHandle(obj))
+}
+
+func lookupWalletNotesHandle(handle C.WalletNotes_Handle) (*wallet.Notes, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*wallet.Notes); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerWalletReadableNotesHandle(obj *wallet.ReadableNotes) C.WalletReadableNotes_Handle {
+	return (C.WalletReadableNotes_Handle)(registerHandle(obj))
+}
+
+func lookupWalletReadableNotesHandle(handle C.WalletReadableNotes_Handle) (*wallet.ReadableNotes, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*wallet.ReadableNotes); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
 func closeHandle(handle Handle) {
 	delete(handleMap, handle)
 }

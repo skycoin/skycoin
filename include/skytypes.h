@@ -308,6 +308,18 @@ typedef Handle SpendResult_Handle;
 
 typedef Handle TransactionResult_Handle;
 
+/**
+ * Memory handle to access to wallet.Notes
+ */
+
+typedef Handle WalletNotes_Handle;
+
+/**
+ * Memory handle to access to wallet.ReadableNotes
+ */
+
+typedef Handle WalletReadableNotes_Handle;
+
 /*
 #include "cipher.hash.go.h"
 #include "cipher.crypto.go.h"

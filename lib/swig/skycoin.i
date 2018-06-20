@@ -6,10 +6,17 @@
 	#include "swig.h"
 %}
 
+
+//Apply typemaps only for Python
+//It can be applied to other languages that fit in
+#if defined(SWIGPYTHON)
 %include "golang.cgo.i"
 %include "skycoin.mem.i"
 %include "skycoin.cipher.crypto.i"
 %include "structs_typemaps.i"
+#else
+%include "skycoin.cipher.crypto.i"
+#endif
 
 %include "swig.h"
 /* Find the modified copy of libskycoin */

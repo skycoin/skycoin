@@ -324,8 +324,8 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 		// Create a emulated wallet
 		deviceWallet.DeviceSetMnemonic(deviceWallet.DeviceTypeEmulator, w.seed())
 		// if we are using a hardware wallet storing the seed in a plain text file would be a safety leak
-		// w.setSeed("")
-		// w.setLastSeed("")
+		w.setSeed("")
+		w.setLastSeed("")
 		addrs, err = w.GetAddressFromEmulatorWallet(opts.ScanN)
 		if err != nil {
 			return nil, err
@@ -334,8 +334,8 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 		// Create a hardware wallet
 		deviceWallet.DeviceSetMnemonic(deviceWallet.DeviceTypeEmulator, w.seed())
 		// if we are using a hardware wallet storing the seed in a plain text file would be a safety leak
-		// w.setSeed("")
-		// w.setLastSeed("")
+		w.setSeed("")
+		w.setLastSeed("")
 		addrs, err = w.GetAddressFromHardwareWallet(opts.ScanN)
 		if err != nil {
 			return nil, err
@@ -446,8 +446,10 @@ func (w *Wallet) lock(password []byte, cryptoType CryptoType) error {
 		wlt.erase()
 	}()
 
-	ss.set(secretSeed, wlt.seed())
-	ss.set(secretLastSeed, wlt.lastSeed())
+	if (w.useEmulatorWallet() == false && w.useHardwareWallet() == false) {
+		ss.set(secretSeed, wlt.seed())
+		ss.set(secretLastSeed, wlt.lastSeed())
+	}
 
 	// Saves address's secret keys in secrets
 	for _, e := range wlt.Entries {

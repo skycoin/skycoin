@@ -69,10 +69,10 @@ type ReadableEntries []ReadableEntry
 
 // ToWalletEntries convert readable entries to entries
 // converts base on the wallet version.
-func (res ReadableEntries) toWalletEntries(isEncrypted bool) ([]Entry, error) {
+func (res ReadableEntries) toWalletEntries(isEncrypted bool, isHardwareWallet bool, isEmulatorWallet bool) ([]Entry, error) {
 	entries := make([]Entry, len(res))
 	for i, re := range res {
-		e, err := newEntryFromReadable(&re)
+		e, err := newEntryFromReadable(&re, isHardwareWallet, isEmulatorWallet)
 		if err != nil {
 			return []Entry{}, err
 		}
@@ -90,10 +90,16 @@ func (res ReadableEntries) toWalletEntries(isEncrypted bool) ([]Entry, error) {
 }
 
 // newEntryFromReadable creates WalletEntry base one ReadableWalletEntry
-func newEntryFromReadable(w *ReadableEntry) (*Entry, error) {
+func newEntryFromReadable(w *ReadableEntry, isHardwareWallet bool, isEmulatorWallet bool) (*Entry, error) {
 	a, err := cipher.DecodeBase58Address(w.Address)
 	if err != nil {
 		return nil, err
+	}
+
+	if (isHardwareWallet || isEmulatorWallet) {
+		return &Entry{
+			Address: a,
+		}, nil
 	}
 
 	p, err := cipher.PubKeyFromHex(w.Public)
@@ -159,7 +165,7 @@ func (rw *ReadableWallet) ToWallet() (*Wallet, error) {
 		return nil, fmt.Errorf("invalid wallet %s: %v", w.Filename(), err)
 	}
 
-	ets, err := rw.Entries.toWalletEntries(w.IsEncrypted())
+	ets, err := rw.Entries.toWalletEntries(w.IsEncrypted(), w.useHardwareWallet(), w.useEmulatorWallet())
 	if err != nil {
 		return nil, err
 	}

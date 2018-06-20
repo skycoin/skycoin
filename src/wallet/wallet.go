@@ -122,6 +122,8 @@ const (
 	metaSeed       = "seed"       // wallet seed
 	metaLastSeed   = "lastSeed"   // seed for generating next address
 	metaSecrets    = "secrets"    // secrets which records the encrypted seeds and secrets of address entries
+	metaUseHardwareWallet = "useHardwareWallet" // whether the wallet is stored in a hardware wallet
+	metaUseEmulatorWallet = "useEmulatorWallet" // whether the wallet is stored in an emulated hardware wallet
 )
 
 // CoinType represents the wallet coin type
@@ -297,6 +299,8 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 			metaLabel:      opts.Label,
 			metaSeed:       opts.Seed,
 			metaLastSeed:   opts.Seed,
+			metaUseHardwareWallet: "false",
+			metaUseEmulatorWallet: "false",
 			metaTm:         fmt.Sprintf("%v", time.Now().Unix()),
 			metaType:       "deterministic",
 			metaCoin:       string(coin),
@@ -304,6 +308,14 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 			metaCryptoType: "",
 			metaSecrets:    "",
 		},
+	}
+
+	if (opts.UseHardwareWallet) {
+		w.Meta[metaUseEmulatorWallet]  = "true"
+	}
+
+	if (opts.UseEmulatorWallet) {
+		w.Meta[metaUseEmulatorWallet]  = "true"
 	}
 
 	var addrs []cipher.Address
@@ -743,6 +755,27 @@ func (w *Wallet) Validate() error {
 		return errors.New("coin field not set")
 	}
 
+	var isHardwareWallet, isEmulatorWallet bool
+	var err error
+	if useHardwareWalletStr, ok := w.Meta[metaUseHardwareWallet]; ok {
+		// validate the encrypted value
+		isHardwareWallet, err = strconv.ParseBool(useHardwareWalletStr)
+		if err != nil {
+			return fmt.Errorf("invalid encrypted value: %v", err)
+		}
+	}
+
+	if useEmulatorWalletStr, ok := w.Meta[metaUseEmulatorWallet]; ok {
+		// validate the encrypted value
+		isEmulatorWallet, err = strconv.ParseBool(useEmulatorWalletStr)
+		if err != nil {
+			return fmt.Errorf("invalid encrypted value: %v", err)
+		}
+	}
+	if (isHardwareWallet && isEmulatorWallet) {
+		return errors.New("Cannot be emulated and hardware wallet at the same time")
+	}
+
 	if encStr, ok := w.Meta[metaEncrypted]; ok {
 		// validate the encrypted value
 		isEncrypted, err := strconv.ParseBool(encStr)
@@ -814,6 +847,34 @@ func (w *Wallet) seed() string {
 
 func (w *Wallet) setSeed(seed string) {
 	w.Meta[metaSeed] = seed
+}
+
+func (w *Wallet) useHardwareWallet() bool {
+	metaUseHardwareWalletStr, ok := w.Meta[metaUseHardwareWallet]
+	if !ok {
+		return false
+	}
+
+	b, err := strconv.ParseBool(metaUseHardwareWalletStr)
+	if err != nil {
+		logger.Warning("parse wallet.meta.useHardwareWallet string failed: %v", err)
+		return false
+	}
+	return b
+}
+
+func (w *Wallet) useEmulatorWallet() bool {
+	metaUseEmulatorWalletStr, ok := w.Meta[metaUseEmulatorWallet]
+	if !ok {
+		return false
+	}
+
+	b, err := strconv.ParseBool(metaUseEmulatorWalletStr)
+	if err != nil {
+		logger.Warning("parse wallet.meta.useEmulatorWallet string failed: %v", err)
+		return false
+	}
+	return b
 }
 
 func (w *Wallet) setEncrypted(encrypt bool) {

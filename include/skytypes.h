@@ -320,6 +320,18 @@ typedef Handle WalletNotes_Handle;
 
 typedef Handle WalletReadableNotes_Handle;
 
+/**
+ * Memory handle to access to webrpc.OutputsResult
+ */
+
+typedef Handle OutputsResult_Handle;
+
+/**
+ * Memory handle to access to webrpc.StatusResult
+ */
+
+typedef Handle StatusResult_Handle;
+
 /*
 #include "cipher.hash.go.h"
 #include "cipher.crypto.go.h"

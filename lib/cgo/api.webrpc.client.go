@@ -51,7 +51,7 @@ func SKY_webrpc_Client_CSRF(_c C.WebRpcClient__Handle, _arg0 *C.GoString_) (____
 }
 
 //export SKY_webrpc_Client_GetUnspentOutputs
-func SKY_webrpc_Client_GetUnspentOutputs(_c C.WebRpcClient__Handle, _addrs []string, _arg1 *C.webrpc__OutputsResult) (____error_code uint32) {
+func SKY_webrpc_Client_GetUnspentOutputs(_c C.WebRpcClient__Handle, _addrs []string, _arg1 *C.OutputsResult_Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -65,7 +65,7 @@ func SKY_webrpc_Client_GetUnspentOutputs(_c C.WebRpcClient__Handle, _addrs []str
 	__arg1, ____return_err := c.GetUnspentOutputs(addrs)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		*_arg1 = *(*C.webrpc__OutputsResult)(unsafe.Pointer(__arg1))
+		*_arg1 = registerOutputsResultHandle(__arg1)
 	}
 	return
 }
@@ -115,7 +115,7 @@ func SKY_webrpc_Client_InjectTransaction(_c C.WebRpcClient__Handle, _tx C.Transa
 }
 
 //export SKY_webrpc_Client_GetStatus
-func SKY_webrpc_Client_GetStatus(_c C.WebRpcClient__Handle, _arg0 *C.webrpc__StatusResult) (____error_code uint32) {
+func SKY_webrpc_Client_GetStatus(_c C.WebRpcClient__Handle, _arg0 *C.StatusResult_Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -128,7 +128,7 @@ func SKY_webrpc_Client_GetStatus(_c C.WebRpcClient__Handle, _arg0 *C.webrpc__Sta
 	__arg0, ____return_err := c.GetStatus()
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		*_arg0 = *(*C.webrpc__StatusResult)(unsafe.Pointer(__arg0))
+		*_arg0 = registerStatusResultHandle(__arg0)
 	}
 	return
 }

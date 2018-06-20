@@ -85,6 +85,8 @@ func NewWalletResponse(w *wallet.Wallet) (*WalletResponse, error) {
 			return nil, err
 		}
 		wr.Meta.UseEmulatorWallet = useEmulatorWallet
+	} else {
+		wr.Meta.UseEmulatorWallet = false
 	}
 
 	// Converts "useHardwareWallet" string to boolean if any
@@ -94,6 +96,8 @@ func NewWalletResponse(w *wallet.Wallet) (*WalletResponse, error) {
 			return nil, err
 		}
 		wr.Meta.UseHardwareWallet = useHardwareWallet
+	} else {
+		wr.Meta.UseEmulatorWallet = false
 	}
 
 	if tmStr, ok := w.Meta["tm"]; ok {

@@ -60,6 +60,8 @@ export class ApiService {
               };
             }),
             encrypted: wallet.meta.encrypted,
+            useEmulatorWallet: wallet.meta.useEmulatorWallet,
+            useHardwareWallet: wallet.meta.useHardwareWallet,
           });
         });
         return wallets;

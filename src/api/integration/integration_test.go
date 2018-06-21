@@ -4047,7 +4047,7 @@ func TestDisableGUIAPI(t *testing.T) {
 
 /*
 * api/v2 tests
-*/
+ */
 
 func testTransactionV2(t *testing.T, txn *visor.ReadableTransactionV2) {
 	for _, in := range txn.In {

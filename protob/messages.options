@@ -18,7 +18,7 @@ ApplySettings.homescreen		max_size:1024
 Ping.message				max_size:256
 
 SetMnemonic.mnemonic							max_size:256
-SkycoinAddress.seed								max_size:256
+ResponseSkycoinAddress.address					max_size:36
 SkycoinCheckMessageSignature.address			max_size:36
 SkycoinCheckMessageSignature.message			max_size:256
 SkycoinCheckMessageSignature.signature			max_size:90

@@ -1,7 +1,7 @@
 package cli
 
 import (
-
+	"fmt"
 	messages "github.com/skycoin/skycoin/protob"
 	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
 	gcli "github.com/urfave/cli"
@@ -34,7 +34,8 @@ func emulatorAddressGenCmd() gcli.Command {
 			}
 
 			addressN := c.Int("addressN")
-			deviceWallet.DeviceAddressGen(deviceWallet.DeviceTypeEmulator, coinType, addressN)
+			_, address := deviceWallet.DeviceAddressGen(deviceWallet.DeviceTypeEmulator, coinType, addressN)
+			fmt.Printf("Address is: %s\n", address)
 		},
 	}
 }

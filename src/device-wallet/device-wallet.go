@@ -177,9 +177,10 @@ func DeviceSetMnemonic(deviceType DeviceType, mnemonic string) {
 }
 
 // DeviceAddressGen Ask the device to generate an address
-func DeviceAddressGen(deviceType DeviceType, coinType messages.SkycoinAddressType, addressN int) (uint16, []byte) {
+func DeviceAddressGen(deviceType DeviceType, coinType messages.SkycoinAddressType, addressN int) (uint16, string) {
 
-    dev := getDevice(deviceType)
+	dev := getDevice(deviceType)
+	defer dev.Close()
 	skycoinAddress := &messages.SkycoinAddress{
 		AddressN:    proto.Uint32(uint32(addressN)),
 		AddressType: coinType.Enum(),
@@ -189,9 +190,15 @@ func DeviceAddressGen(deviceType DeviceType, coinType messages.SkycoinAddressTyp
 	chunks := makeTrezorMessage(data, messages.MessageType_MessageType_SkycoinAddress)
 
     msg := sendToDevice(dev, chunks)
-    dev.Close()
-
-	return msg.Kind, msg.Data
+	if (msg.Kind == uint16(messages.MessageType_MessageType_ResponseSkycoinAddress)) {
+        responseSkycoinAddress := &messages.ResponseSkycoinAddress{}
+        err := proto.Unmarshal(msg.Data, responseSkycoinAddress)
+        if err != nil {
+            return msg.Kind, ""
+        }
+        return msg.Kind, responseSkycoinAddress.GetAddress()
+    } 
+	return msg.Kind, ""
 }
 
 // DeviceSignMessage Ask the device to sign a message using the secret key at given index.

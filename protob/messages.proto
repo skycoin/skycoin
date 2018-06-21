@@ -41,6 +41,7 @@ enum MessageType {
 	MessageType_SkycoinAddress = 114 [(wire_in) = true];
 	MessageType_SkycoinCheckMessageSignature = 115 [(wire_in) = true];
 	MessageType_SkycoinSignMessage = 116 [(wire_in) = true];
+	MessageType_ResponseSkycoinAddress = 117 [(wire_out) = true];
 }
 
 ////////////////////
@@ -117,7 +118,8 @@ message ChangePin {
 
 /**
  * Request: Generate a Skycoin or a Bitcoin address from a seed, device sends back the address in a Success message
- * @next Success
+ * @next Failure
+ * @next ResponseSkycoinAddress
  */
 message SkycoinAddress {
 	required uint32 address_n = 1; // address iterator
@@ -125,6 +127,14 @@ message SkycoinAddress {
 	optional SkycoinAddressType address_type = 2;
 }
 
+
+/**
+ * Response: Return the generated skycoin address
+ * @prev SkycoinAddress
+ */
+ message ResponseSkycoinAddress {
+	required string address = 1; //generated address in base58 format
+}
 
 /**
  * Request: Check a message signature matches the given address.

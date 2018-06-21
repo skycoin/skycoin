@@ -12,24 +12,24 @@ func TestGetAddressUsb(t *testing.T) {
 
 	// need to connect the usb device
 	DeviceSetMnemonic(DeviceTypeUsb, "cloud flower upset remain green metal below cup stem infant art thank")
-	kind, data := DeviceAddressGen(DeviceTypeUsb, messages.SkycoinAddressType_AddressTypeSkycoin, 1)
-	require.Equal(t, kind, uint16(2)) //Success message
-	require.Equal(t, data[2:], []byte("2EU3JbveHdkxW6z5tdhbbB2kRAWvXC2pLzw"))
+	kind, address := DeviceAddressGen(DeviceTypeUsb, messages.SkycoinAddressType_AddressTypeSkycoin, 1)
+	require.Equal(t, kind, uint16(messages.MessageType_MessageType_ResponseSkycoinAddress)) //Success message
+	require.Equal(t, address, "2EU3JbveHdkxW6z5tdhbbB2kRAWvXC2pLzw")
 	
-	kind, data = DeviceAddressGen(DeviceTypeUsb, messages.SkycoinAddressType_AddressTypeSkycoin, 2)
-	require.Equal(t, kind, uint16(2)) //Success message
-	require.Equal(t, data[2:], []byte("zC8GAQGQBfwk7vtTxVoRG7iMperHNuyYPs"))
+	kind, address = DeviceAddressGen(DeviceTypeUsb, messages.SkycoinAddressType_AddressTypeSkycoin, 2)
+	require.Equal(t, kind, uint16(messages.MessageType_MessageType_ResponseSkycoinAddress)) //Success message
+	require.Equal(t, address, "zC8GAQGQBfwk7vtTxVoRG7iMperHNuyYPs")
 }
 
 
 func TestGetAddressEmulator(t *testing.T) {
 
 	DeviceSetMnemonic(DeviceTypeEmulator, "cloud flower upset remain green metal below cup stem infant art thank")
-	kind, data := DeviceAddressGen(DeviceTypeUsb, messages.SkycoinAddressType_AddressTypeSkycoin, 1)
-	require.Equal(t, kind, uint16(2)) //Success message
-	require.Equal(t, data[2:], []byte("2EU3JbveHdkxW6z5tdhbbB2kRAWvXC2pLzw"))
+	kind, address := DeviceAddressGen(DeviceTypeEmulator, messages.SkycoinAddressType_AddressTypeSkycoin, 1)
+	require.Equal(t, kind, uint16(messages.MessageType_MessageType_ResponseSkycoinAddress)) //Success message
+	require.Equal(t, address, "2EU3JbveHdkxW6z5tdhbbB2kRAWvXC2pLzw")
 
-	kind, data = DeviceAddressGen(DeviceTypeUsb, messages.SkycoinAddressType_AddressTypeSkycoin, 2)
-	require.Equal(t, kind, uint16(2)) //Success message
-	require.Equal(t, data[2:], []byte("zC8GAQGQBfwk7vtTxVoRG7iMperHNuyYPs"))
+	kind, address = DeviceAddressGen(DeviceTypeEmulator, messages.SkycoinAddressType_AddressTypeSkycoin, 2)
+	require.Equal(t, kind, uint16(messages.MessageType_MessageType_ResponseSkycoinAddress)) //Success message
+	require.Equal(t, address, "zC8GAQGQBfwk7vtTxVoRG7iMperHNuyYPs")
 }

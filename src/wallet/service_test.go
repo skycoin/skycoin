@@ -1886,7 +1886,7 @@ func TestServiceCreateAndSignTransactionAdvancedFuzzing(t *testing.T) {
 		return true
 	}
 	cfg := &quick.Config{
-		MaxCount: 100000,
+		MaxCount: 10000,
 		Rand:     rand.New(rand.NewSource(time.Now().Unix())),
 		Values: func(args []reflect.Value, rand *rand.Rand) {
 			var cryptoTypes []CryptoType
@@ -1895,6 +1895,7 @@ func TestServiceCreateAndSignTransactionAdvancedFuzzing(t *testing.T) {
 			}
 
 			cryptoType := cryptoTypes[rand.Int()%len(cryptoTypes)]
+			walletName := newWalletFilename()
 			dir := prepareWltDir()
 			s, err := NewService(Config{
 				WalletDir:       dir,
@@ -1903,14 +1904,14 @@ func TestServiceCreateAndSignTransactionAdvancedFuzzing(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			seed := []byte("seed")
+			seed := "seed"
 			walletPassword := []byte("pwd")
 			headTime := uint64(time.Now().UnixNano())
 			// Create unspent outputs
 			var uxouts []coin.UxOut
 			addrs := []cipher.Address{}
 			// Generate first keys
-			_, secKeys := cipher.GenerateDeterministicKeyPairsSeed(seed, 11)
+			_, secKeys := cipher.GenerateDeterministicKeyPairsSeed([]byte(seed), 11)
 			secKey := secKeys[0]
 			for i := 0; i < rand.Intn(10)+1; i++ {
 				uxout := makeUxOut(t, secKey, uint64(rand.Intn(1000000)), uint64(rand.Intn(1000000)))
@@ -1921,9 +1922,8 @@ func TestServiceCreateAndSignTransactionAdvancedFuzzing(t *testing.T) {
 				addrs = append(addrs, a)
 			}
 
-			walletName := newWalletFilename()
 			walletOptions := Options{
-				Seed:     "seed",
+				Seed:     seed,
 				Label:    "wallet",
 				Encrypt:  true,
 				Password: walletPassword,

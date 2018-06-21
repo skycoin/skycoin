@@ -934,14 +934,14 @@ func (w *Wallet) GetAddressFromHardwareWallet(num uint64) ([]cipher.Address, err
 	addrs := make([]cipher.Address, num)
 	for i := 0; i < len(addrs); i++ {
 		var err error
-		kind, data := deviceWallet.DeviceAddressGen(deviceWallet.DeviceTypeUsb, messages.SkycoinAddressType_AddressTypeSkycoin, i)
-		if (kind != 2) {
+		kind, address := deviceWallet.DeviceAddressGen(deviceWallet.DeviceTypeUsb, messages.SkycoinAddressType_AddressTypeSkycoin, i)
+		if (kind != uint16(messages.MessageType_MessageType_ResponseSkycoinAddress)) {
 			logger.Panic("GetAddressFromHardwareWallet the device could not generate an address")
 			return addrs, ErrHardwareWallet
 		}
-		addrs[i], err = cipher.DecodeBase58Address(string(data[2:]))
+		addrs[i], err = cipher.DecodeBase58Address(address)
 		if (err != nil) {
-			logger.Panicf("GetAddressFromHardwareWallet got a bad address from hardware wallet: %s", string(data[2:]))
+			logger.Panicf("GetAddressFromHardwareWallet got a bad address from hardware wallet: %s", address)
 			return addrs, err
 		}
 	}
@@ -957,14 +957,14 @@ func (w *Wallet) GetAddressFromEmulatorWallet(num uint64) ([]cipher.Address, err
 	addrs := make([]cipher.Address, num)
 	for i := 0; i < len(addrs); i++ {
 		var err error
-		kind, data := deviceWallet.DeviceAddressGen(deviceWallet.DeviceTypeEmulator, messages.SkycoinAddressType_AddressTypeSkycoin, i)
-		if (kind != 2) {
+		kind, address := deviceWallet.DeviceAddressGen(deviceWallet.DeviceTypeEmulator, messages.SkycoinAddressType_AddressTypeSkycoin, i)
+		if (kind != uint16(messages.MessageType_MessageType_ResponseSkycoinAddress)) {
 			logger.Panic("GetAddressFromEmulatorWallet the device could not generate an address")
 			return addrs, ErrEmulatorWallet
 		}
-		addrs[i], err = cipher.DecodeBase58Address(string(data[2:]))
+		addrs[i], err = cipher.DecodeBase58Address(address)
 		if (err != nil) {
-			logger.Panicf("GetAddressFromEmulatorWallet got a bad address from hardware wallet: %s", string(data[2:]))
+			logger.Panicf("GetAddressFromEmulatorWallet got a bad address from hardware wallet: %s", address)
 			return addrs, err
 		}
 	}

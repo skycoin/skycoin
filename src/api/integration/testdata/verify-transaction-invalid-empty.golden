@@ -1,0 +1,13 @@
+{
+	"confirmed": false,
+	"transaction": {
+		"length": 0,
+		"type": 0,
+		"txid": "78877fa898f0b4c45c9c33ae941e40617ad7c8657a307db62bc5691f92f4f60e",
+		"inner_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+		"fee": "0",
+		"sigs": [],
+		"inputs": [],
+		"outputs": []
+	}
+}

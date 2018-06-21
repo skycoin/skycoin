@@ -65,8 +65,28 @@ type muxConfig struct {
 
 // HTTPResponse represents the http response struct
 type HTTPResponse struct {
-	Error string `json:"error"`
-	Data  string `json:"data"`
+	Error *HTTPError  `json:"error,omitempty"`
+	Data  interface{} `json:"data,omitempty"`
+}
+
+// HTTPError is included in an HTTPResponse
+type HTTPError struct {
+	Message string `json:"message"`
+	Code    int    `json:"code"`
+}
+
+// NewHTTPErrorResponse returns an HTTPResponse with the Error field populated
+func NewHTTPErrorResponse(code int, msg string) HTTPResponse {
+	if msg == "" {
+		msg = http.StatusText(code)
+	}
+
+	return HTTPResponse{
+		Error: &HTTPError{
+			Code:    code,
+			Message: msg,
+		},
+	}
 }
 
 func create(host string, c Config, gateway Gatewayer) (*Server, error) {
@@ -242,6 +262,10 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 		webHandler("/api/v1"+endpoint, handler)
 	}
 
+	webHandlerV2 := func(endpoint string, handler http.Handler) {
+		webHandler("/api/v2"+endpoint, handler)
+	}
+
 	webHandler("/", newIndexHandler(c.appLoc, c.enableGUI))
 
 	if c.enableGUI {
@@ -270,8 +294,6 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 
 	// get balance of addresses
 	webHandlerV1("/balance", getBalanceHandler(gateway))
-
-	webHandlerV1("/transaction/verify", verifyTxnHandler(gateway))
 
 	// Wallet interface
 
@@ -384,6 +406,9 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	// get txn by txid
 	webHandlerV1("/transaction", getTransactionByID(gateway))
 
+	// parse and verify transaction
+	webHandlerV2("/transaction/verify", verifyTxnHandler(gateway))
+
 	// Health check handler
 	webHandlerV1("/health", healthCheck(gateway))
 
@@ -405,6 +430,8 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	webHandlerV1("/uxout", getUxOutByID(gateway))
 	// get all the address affected uxouts.
 	webHandlerV1("/address_uxouts", getAddrUxOuts(gateway))
+
+	webHandlerV2("/address/verify", http.HandlerFunc(addressVerify))
 
 	// Explorer handler
 

@@ -366,11 +366,6 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if !useHardwareWallet && !useEmulatorWallet {
-			wh.Error400(w, "Not using any external device as wallet")
-			return
-		}
-
 		wlt, err := gateway.CreateWallet("", wallet.Options{
 			Seed:     seed,
 			Label:    label,

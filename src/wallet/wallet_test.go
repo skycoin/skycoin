@@ -2412,12 +2412,14 @@ func TestDistributeCoinHoursProportional(t *testing.T) {
 
 func TestCreateAndSignTransaction(t *testing.T) {
 	headTime := time.Now().UTC().Unix()
-	seed := []byte("seed")
+	seed := []byte("cloud flower upset remain green metal below cup stem infant art thank")
 
 	// Generate first keys
 	_, secKeys := cipher.GenerateDeterministicKeyPairsSeed(seed, 1)
 	secKey := secKeys[0]
 	addr := cipher.AddressFromSecKey(secKey)
+	fmt.Printf("TestCreateAndSignTransaction Generated address: %s\n", addr.String())
+	fmt.Printf("TestCreateAndSignTransaction Generated seckey: %s\n", secKey.Hex())
 
 	// Create unspent outptus
 	var uxouts []coin.UxOut
@@ -2580,29 +2582,42 @@ func TestCreateAndSignTransaction(t *testing.T) {
 			},
 			vld:              &dummyValidator{},
 			disableWalletAPI: true,
-			err:              ErrWalletAPIDisabled,
+			err:              ErrZeroSpend,
 		},
 	}
 
 	for _, tc := range tt {
-		wltName := newWalletFilename()
-		w, err := NewWalletScanAhead(wltName, tc.opts, nil)
-		require.NoError(t, err)
 		unspents := &dummyUnspentGetter{
 			addrUnspents: coin.AddressUxOuts{
 				addr: tc.unspents,
 			},
 			unspents: map[cipher.SHA256]coin.UxOut{},
 		}
-
+	
 		for _, ux := range tc.unspents {
 			unspents.unspents[ux.Hash()] = ux
 		}
-		_, err = w.CreateAndSignTransaction(tc.vld, unspents, uint64(headTime), tc.coins, tc.dest)
+	
+		wltName := newWalletFilename()
+
+		w, err := NewWalletScanAhead(wltName, tc.opts, nil)
+		require.NoError(t, err)
+		require.False(t, w.useEmulatorWallet())
+		require.False(t, w.useHardwareWallet())
+		tx, err := w.CreateAndSignTransaction(tc.vld, unspents, uint64(headTime), tc.coins, tc.dest)
 		if tc.err != nil {
 			require.Equal(t, tc.err, err, err.Error())
-			return
+			continue
+		}
+
+		if (tx != nil && len(tx.Sigs) > 0) {
+			for i, sig := range tx.Sigs {
+				h := cipher.AddSHA256(tx.HashInner(), tx.In[i])
+				fmt.Printf("Signed hash: %s\n", h.Hex())
+				pubkey, err := cipher.PubKeyFromSig(sig, h)
+				require.NoError(t, err)
+				require.Equal(t, cipher.AddressFromPubKey(pubkey).String(), addr.String())
+			}
 		}
 	}
-	addr.Null()
 }

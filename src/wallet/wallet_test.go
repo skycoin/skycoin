@@ -2409,3 +2409,200 @@ func TestDistributeCoinHoursProportional(t *testing.T) {
 		require.Equal(t, hours, totalHours)
 	}
 }
+
+func TestCreateAndSignTransaction(t *testing.T) {
+	headTime := time.Now().UTC().Unix()
+	seed := []byte("seed")
+
+	// Generate first keys
+	_, secKeys := cipher.GenerateDeterministicKeyPairsSeed(seed, 1)
+	secKey := secKeys[0]
+	addr := cipher.AddressFromSecKey(secKey)
+
+	// Create unspent outptus
+	var uxouts []coin.UxOut
+	addrs := []cipher.Address{}
+	for i := 0; i < 10; i++ {
+		uxout := makeUxOut(t, secKey, 2e6, 100)
+		uxouts = append(uxouts, uxout)
+
+		p, _ := cipher.GenerateKeyPair()
+		a := cipher.AddressFromPubKey(p)
+		addrs = append(addrs, a)
+	}
+
+	// Create unspent outputs with no hours
+	var uxoutsNoHours []coin.UxOut
+	addrsNoHours := []cipher.Address{}
+	for i := 0; i < 10; i++ {
+		uxout := makeUxOut(t, secKey, 2e6, 0)
+		uxout.Head.Time = uint64(headTime)
+		uxoutsNoHours = append(uxoutsNoHours, uxout)
+
+		p, _ := cipher.GenerateKeyPair()
+		a := cipher.AddressFromPubKey(p)
+		addrsNoHours = append(addrsNoHours, a)
+	}
+
+	tt := []struct {
+		name             string
+		opts             Options
+		pwd              []byte
+		unspents         []coin.UxOut
+		vld              Validator
+		coins            uint64
+		dest             cipher.Address
+		disableWalletAPI bool
+		err              error
+	}{
+		{
+			name: "encrypted=false has change=no",
+			opts: Options{
+				Seed: string(seed),
+			},
+			unspents: uxouts[:],
+			vld: &dummyValidator{
+				ok: false,
+			},
+			coins: 2e6,
+			dest:  addrs[0],
+		},
+		{
+			name: "encrypted=true has change=no",
+			opts: Options{
+				Seed:     string(seed),
+				Encrypt:  true,
+				Password: []byte("pwd"),
+				CryptoType: CryptoTypeSha256Xor,
+			},
+			pwd:      []byte("pwd"),
+			unspents: uxouts[:],
+			vld: &dummyValidator{
+				ok: false,
+			},
+			coins: 2e6,
+			dest:  addrs[0],
+		},
+		{
+			name: "encrypted=false has change=yes",
+			opts: Options{
+				Seed: string(seed),
+			},
+			unspents: uxouts[:],
+			vld: &dummyValidator{
+				ok: false,
+			},
+			coins: 1e6,
+			dest:  addrs[0],
+		},
+		{
+			name: "encrypted=false has unconfirmed spending transaction",
+			opts: Options{
+				Seed: string(seed),
+			},
+			unspents: uxouts[:],
+			vld: &dummyValidator{
+				ok: true,
+			},
+			coins: 2e6,
+			dest:  addrs[0],
+			err:   ErrSpendingUnconfirmed,
+		},
+		{
+			name: "encrypted=false unconfirmed spend failed",
+			opts: Options{
+				Seed: string(seed),
+			},
+			unspents: uxouts[:],
+			vld: &dummyValidator{
+				ok:  false,
+				err: errors.New("fail intentionally"),
+			},
+			coins: 2e6,
+			dest:  addrs[0],
+			err:   errors.New("checking unconfirmed spending failed: fail intentionally"),
+		},
+		{
+			name: "encrypted=false spend zero",
+			opts: Options{
+				Seed: string(seed),
+			},
+			unspents: uxouts[:],
+			vld: &dummyValidator{
+				ok: false,
+			},
+			dest: addrs[0],
+			err:  ErrZeroSpend,
+		},
+		{
+			name: "encrypted=false spend fractional coins",
+			opts: Options{
+				Seed: string(seed),
+			},
+			unspents: uxouts[:],
+			vld: &dummyValidator{
+				ok: false,
+			},
+			coins: 1e3,
+			dest:  addrs[0],
+		},
+		{
+			name: "encrypted=false not enough confirmed coins",
+			opts: Options{
+				Seed: string(seed),
+			},
+			unspents: uxouts[:],
+			vld: &dummyValidator{
+				ok: false,
+			},
+			coins: 100e6,
+			dest:  addrs[0],
+			err:   ErrInsufficientBalance,
+		},
+		{
+			name: "encrypted=false no coin hours in inputs",
+			opts: Options{
+				Seed: string(seed),
+			},
+			unspents: uxoutsNoHours[:],
+			vld: &dummyValidator{
+				ok: false,
+			},
+			coins: 1e6,
+			dest:  addrsNoHours[0],
+			err:   fee.ErrTxnNoFee,
+		},
+		{
+			name: "disable wallet api=true",
+			opts: Options{
+				Seed:  string(seed),
+				Label: "label",
+			},
+			vld:              &dummyValidator{},
+			disableWalletAPI: true,
+			err:              ErrWalletAPIDisabled,
+		},
+	}
+
+	for _, tc := range tt {
+		wltName := newWalletFilename()
+		w, err := NewWalletScanAhead(wltName, tc.opts, nil)
+		require.NoError(t, err)
+		unspents := &dummyUnspentGetter{
+			addrUnspents: coin.AddressUxOuts{
+				addr: tc.unspents,
+			},
+			unspents: map[cipher.SHA256]coin.UxOut{},
+		}
+
+		for _, ux := range tc.unspents {
+			unspents.unspents[ux.Hash()] = ux
+		}
+		_, err = w.CreateAndSignTransaction(tc.vld, unspents, uint64(headTime), tc.coins, tc.dest)
+		if tc.err != nil {
+			require.Equal(t, tc.err, err, err.Error())
+			return
+		}
+	}
+	addr.Null()
+}

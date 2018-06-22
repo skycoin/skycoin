@@ -34,10 +34,12 @@ func getUsbDevice() (usb.Device, error) {
 	w, err := usb.InitWebUSB()
 	if err != nil {
 		log.Fatalf("webusb: %s", err)
+		return nil, err
 	}
 	h, err := usb.InitHIDAPI()
 	if err != nil {
 		log.Fatalf("hidapi: %s", err)
+		return nil, err
 	}
 	b := usb.Init(w, h)
 
@@ -103,23 +105,25 @@ func makeTrezorMessage(data []byte, msgID messages.MessageType) [][64]byte {
 	return chunks
 }
 
-func getDevice(deviceType DeviceType) (io.ReadWriteCloser) {
-    var dev io.ReadWriteCloser
+func getDevice(deviceType DeviceType) (io.ReadWriteCloser, error) {
+	var dev io.ReadWriteCloser
+	var err error
     switch (deviceType) {
     case DeviceTypeEmulator:
-        dev, _ = getEmulatorDevice()
+        dev, err = getEmulatorDevice()
         break
     case DeviceTypeUsb:
-        dev, _ = getUsbDevice()
+        dev, err = getUsbDevice()
         break
     }
-    return dev
+    return dev, err
 }
 
 // DeviceCheckMessageSignature Check a message signature matches the given address.
 func DeviceCheckMessageSignature(deviceType DeviceType, message string, signature string, address string) {
     
-    dev := getDevice(deviceType)
+	dev, _ := getDevice(deviceType)
+	defer dev.Close()
     
     // Send CheckMessageSignature
     
@@ -133,7 +137,6 @@ func DeviceCheckMessageSignature(deviceType DeviceType, message string, signatur
 	chunks := makeTrezorMessage(data, messages.MessageType_MessageType_SkycoinCheckMessageSignature)
     msg := sendToDevice(dev, chunks)
     fmt.Printf("Success %d! address that issued the signature is: %s\n", msg.Kind, msg.Data)
-    dev.Close()
 }
 
 func MessageButtonAck() [][64]byte{
@@ -146,7 +149,8 @@ func MessageButtonAck() [][64]byte{
 // DeviceSetMnemonic Configure the device with a mnemonic.
 func DeviceSetMnemonic(deviceType DeviceType, mnemonic string) {
 
-    dev := getDevice(deviceType)
+	dev, _ := getDevice(deviceType)
+	defer dev.Close()
     
     // Send SetMnemonic
     
@@ -173,13 +177,12 @@ func DeviceSetMnemonic(deviceType DeviceType, mnemonic string) {
     }
     
     fmt.Printf("MessageButtonAck Answer is: %d / %s\n", msg.Kind, msg.Data)
-    dev.Close()
 }
 
 // DeviceAddressGen Ask the device to generate an address
 func DeviceAddressGen(deviceType DeviceType, coinType messages.SkycoinAddressType, addressN int) (uint16, string) {
 
-	dev := getDevice(deviceType)
+	dev, _ := getDevice(deviceType)
 	defer dev.Close()
 	skycoinAddress := &messages.SkycoinAddress{
 		AddressN:    proto.Uint32(uint32(addressN)),
@@ -198,14 +201,15 @@ func DeviceAddressGen(deviceType DeviceType, coinType messages.SkycoinAddressTyp
         }
         return msg.Kind, responseSkycoinAddress.GetAddress()
     } 
-	return msg.Kind, ""
+	return msg.Kind, string(msg.Data[:])
 }
 
 // DeviceSignMessage Ask the device to sign a message using the secret key at given index.
 func DeviceSignMessage(deviceType DeviceType, addressN int, message string) (uint16, []byte) {
     
-    dev := getDevice(deviceType)
-    
+    dev, _ := getDevice(deviceType)
+	defer dev.Close()
+
 	skycoinSignMessage := &messages.SkycoinSignMessage{
 		AddressN:    proto.Uint32(uint32(addressN)),
 		Message:     proto.String(message),
@@ -217,17 +221,19 @@ func DeviceSignMessage(deviceType DeviceType, addressN int, message string) (uin
 
     msg := sendToDevice(dev, chunks)
 
-    dev.Close()
-
 	return msg.Kind, msg.Data
 }
 
 // DeviceConnected check if a device is connected
 func DeviceConnected(deviceType DeviceType) bool {
-    dev := getDevice(deviceType)
+    dev, err := getDevice(deviceType)
     if dev == nil {
         return false
     }
+	defer dev.Close()
+	if (err != nil) {
+		return false
+	}
     msgRaw := &messages.Ping{}
     data, err := proto.Marshal(msgRaw)
     chunks := makeTrezorMessage(data, messages.MessageType_MessageType_Ping)
@@ -243,4 +249,45 @@ func DeviceConnected(deviceType DeviceType) bool {
         return false
     }
     return msg.Kind == uint16(messages.MessageType_MessageType_Success)
+}
+
+// Initialize send an init request to the device
+func initialize(dev io.ReadWriteCloser) {
+    var chunks [][64]byte
+
+    initialize := &messages.Initialize{}
+    data, _ := proto.Marshal(initialize)
+    chunks = makeTrezorMessage(data, messages.MessageType_MessageType_Initialize)
+	sendToDevice(dev, chunks)
+}
+
+// WipeDevice wipes out device configuration
+func WipeDevice(deviceType DeviceType) {
+	dev, _ := getDevice(deviceType)
+	defer dev.Close()
+    var msg wire.Message
+    var chunks [][64]byte
+    var err error
+    
+    initialize(dev)
+
+    wipeDevice := &messages.WipeDevice{}
+    data, _ := proto.Marshal(wipeDevice)
+    chunks = makeTrezorMessage(data, messages.MessageType_MessageType_WipeDevice)
+    sendToDevice(dev, chunks)
+    fmt.Printf("buttonRequest %d! Answer is: %x\n", msg.Kind, msg.Data)
+
+    // Send ButtonAck
+    chunks = MessageButtonAck()
+    sendToDeviceNoAnswer(dev, chunks)
+
+    _, err = msg.ReadFrom(dev)
+    time.Sleep(1*time.Second)
+	if err != nil {
+        fmt.Printf(err.Error())
+		return
+    }
+    fmt.Printf("MessageButtonAck Answer is: %d / %s\n", msg.Kind, msg.Data)
+
+	initialize(dev)
 }

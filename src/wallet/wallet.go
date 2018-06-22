@@ -320,23 +320,27 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 
 	var addrs []cipher.Address
 	var err error
-	if (opts.UseEmulatorWallet) {
-		// Create a emulated wallet
-		deviceWallet.DeviceSetMnemonic(deviceWallet.DeviceTypeEmulator, w.seed())
-		// if we are using a hardware wallet storing the seed in a plain text file would be a safety leak
-		w.setSeed("")
-		w.setLastSeed("")
-		addrs, err = w.GetAddressFromEmulatorWallet(opts.ScanN)
-		if err != nil {
-			return nil, err
+	if (opts.UseEmulatorWallet || opts.UseHardwareWallet) {
+
+		var deviceType deviceWallet.DeviceType
+		if (opts.UseEmulatorWallet) {
+			deviceType = deviceWallet.DeviceTypeEmulator
+		} else if (opts.UseHardwareWallet) {
+			deviceType = deviceWallet.DeviceTypeUsb
+		} else {
+			logger.Panic("This code should never be reached in newWallet")
+			return nil, ErrHardwareWallet
 		}
-	} else if (opts.UseHardwareWallet) {
-		// Create a hardware wallet
-		deviceWallet.DeviceSetMnemonic(deviceWallet.DeviceTypeUsb, w.seed())
+		if (deviceWallet.DeviceConnected(deviceType) == false) {
+			logger.Error("Could not find connected device in newWallet")
+			return nil, ErrHardwareWallet
+		}
+		// Create a emulated wallet
+		deviceWallet.DeviceSetMnemonic(deviceType, w.seed())
 		// if we are using a hardware wallet storing the seed in a plain text file would be a safety leak
 		w.setSeed("")
 		w.setLastSeed("")
-		addrs, err = w.GetAddressFromHardwareWallet(opts.ScanN)
+		addrs, err = w.GetAddressFromDevice(deviceType, opts.ScanN)
 		if err != nil {
 			return nil, err
 		}
@@ -926,45 +930,22 @@ func (w *Wallet) setSecrets(s string) {
 }
 
 
-// GetAddressFromHardwareWallet ask the hardware wallet to generate addresses
-func (w *Wallet) GetAddressFromHardwareWallet(num uint64) ([]cipher.Address, error) {
+// GetAddressFromDevice ask the hardware wallet to generate addresses
+func (w *Wallet) GetAddressFromDevice(deviceType deviceWallet.DeviceType, num uint64) ([]cipher.Address, error) {
 	if num == 0 {
 		return nil, nil
 	}
 	addrs := make([]cipher.Address, num)
 	for i := 0; i < len(addrs); i++ {
 		var err error
-		kind, address := deviceWallet.DeviceAddressGen(deviceWallet.DeviceTypeUsb, messages.SkycoinAddressType_AddressTypeSkycoin, i)
+		kind, address := deviceWallet.DeviceAddressGen(deviceType, messages.SkycoinAddressType_AddressTypeSkycoin, i)
 		if (kind != uint16(messages.MessageType_MessageType_ResponseSkycoinAddress)) {
-			logger.Panic("GetAddressFromHardwareWallet the device could not generate an address")
+			logger.Panic("GetAddressFromDevice the device could not generate an address")
 			return addrs, ErrHardwareWallet
 		}
 		addrs[i], err = cipher.DecodeBase58Address(address)
 		if (err != nil) {
-			logger.Panicf("GetAddressFromHardwareWallet got a bad address from hardware wallet: %s", address)
-			return addrs, err
-		}
-	}
-	return addrs, nil
-}
-
-
-// GetAddressFromEmulatorWallet ask the hardware wallet to generate addresses
-func (w *Wallet) GetAddressFromEmulatorWallet(num uint64) ([]cipher.Address, error) {
-	if num == 0 {
-		return nil, nil
-	}
-	addrs := make([]cipher.Address, num)
-	for i := 0; i < len(addrs); i++ {
-		var err error
-		kind, address := deviceWallet.DeviceAddressGen(deviceWallet.DeviceTypeEmulator, messages.SkycoinAddressType_AddressTypeSkycoin, i)
-		if (kind != uint16(messages.MessageType_MessageType_ResponseSkycoinAddress)) {
-			logger.Panic("GetAddressFromEmulatorWallet the device could not generate an address")
-			return addrs, ErrEmulatorWallet
-		}
-		addrs[i], err = cipher.DecodeBase58Address(address)
-		if (err != nil) {
-			logger.Panicf("GetAddressFromEmulatorWallet got a bad address from hardware wallet: %s", address)
+			logger.Panicf("GetAddressFromDevice got a bad address from hardware wallet: %s", address)
 			return addrs, err
 		}
 	}

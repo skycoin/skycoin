@@ -1,7 +1,7 @@
 package deviceWallet
 
 import(
-
+	"fmt"
 	"testing"
 
 	messages "github.com/skycoin/skycoin/protob"
@@ -10,9 +10,12 @@ import(
 
 func TestGetAddressUsb(t *testing.T) {
 
+	require.True(t, DeviceConnected(DeviceTypeUsb)) 
+	WipeDevice(DeviceTypeUsb)
 	// need to connect the usb device
 	DeviceSetMnemonic(DeviceTypeUsb, "cloud flower upset remain green metal below cup stem infant art thank")
 	kind, address := DeviceAddressGen(DeviceTypeUsb, messages.SkycoinAddressType_AddressTypeSkycoin, 1)
+	fmt.Println(address)
 	require.Equal(t, kind, uint16(messages.MessageType_MessageType_ResponseSkycoinAddress)) //Success message
 	require.Equal(t, address, "2EU3JbveHdkxW6z5tdhbbB2kRAWvXC2pLzw")
 	
@@ -24,6 +27,8 @@ func TestGetAddressUsb(t *testing.T) {
 
 func TestGetAddressEmulator(t *testing.T) {
 
+	require.True(t, DeviceConnected(DeviceTypeEmulator)) 
+	WipeDevice(DeviceTypeEmulator)
 	DeviceSetMnemonic(DeviceTypeEmulator, "cloud flower upset remain green metal below cup stem infant art thank")
 	kind, address := DeviceAddressGen(DeviceTypeEmulator, messages.SkycoinAddressType_AddressTypeSkycoin, 1)
 	require.Equal(t, kind, uint16(messages.MessageType_MessageType_ResponseSkycoinAddress)) //Success message

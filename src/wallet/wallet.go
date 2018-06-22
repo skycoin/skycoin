@@ -332,7 +332,7 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 		}
 	} else if (opts.UseHardwareWallet) {
 		// Create a hardware wallet
-		deviceWallet.DeviceSetMnemonic(deviceWallet.DeviceTypeEmulator, w.seed())
+		deviceWallet.DeviceSetMnemonic(deviceWallet.DeviceTypeUsb, w.seed())
 		// if we are using a hardware wallet storing the seed in a plain text file would be a safety leak
 		w.setSeed("")
 		w.setLastSeed("")

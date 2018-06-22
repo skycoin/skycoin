@@ -98,7 +98,7 @@ func NewWalletResponse(w *wallet.Wallet) (*WalletResponse, error) {
 		}
 		wr.Meta.UseHardwareWallet = useHardwareWallet
 	} else {
-		wr.Meta.UseEmulatorWallet = false
+		wr.Meta.UseHardwareWallet = false
 	}
 
 	if tmStr, ok := w.Meta["tm"]; ok {

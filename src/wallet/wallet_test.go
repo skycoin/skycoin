@@ -21,6 +21,7 @@ import (
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/logging"
+	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
 )
 
 var (
@@ -2599,11 +2600,11 @@ func TestCreateAndSignTransaction(t *testing.T) {
 		}
 	
 		wltName := newWalletFilename()
-
+		tc.opts.UseEmulatorWallet = deviceWallet.DeviceConnected(deviceWallet.DeviceTypeEmulator)
 		w, err := NewWalletScanAhead(wltName, tc.opts, nil)
-		require.NoError(t, err)
-		require.False(t, w.useEmulatorWallet())
+		require.Equal(t, w.useEmulatorWallet(), deviceWallet.DeviceConnected(deviceWallet.DeviceTypeEmulator))
 		require.False(t, w.useHardwareWallet())
+		require.NoError(t, err)
 		tx, err := w.CreateAndSignTransaction(tc.vld, unspents, uint64(headTime), tc.coins, tc.dest)
 		if tc.err != nil {
 			require.Equal(t, tc.err, err, err.Error())

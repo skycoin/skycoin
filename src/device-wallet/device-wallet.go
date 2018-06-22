@@ -221,3 +221,26 @@ func DeviceSignMessage(deviceType DeviceType, addressN int, message string) (uin
 
 	return msg.Kind, msg.Data
 }
+
+// DeviceConnected check if a device is connected
+func DeviceConnected(deviceType DeviceType) bool {
+    dev := getDevice(deviceType)
+    if dev == nil {
+        return false
+    }
+    msgRaw := &messages.Ping{}
+    data, err := proto.Marshal(msgRaw)
+    chunks := makeTrezorMessage(data, messages.MessageType_MessageType_Ping)
+    for _, element := range chunks {
+        _, err = dev.Write(element[:])
+        if err != nil {
+            return false
+        }
+    }
+    var msg wire.Message
+    _, err = msg.ReadFrom(dev)
+    if err != nil {
+        return false
+    }
+    return msg.Kind == uint16(messages.MessageType_MessageType_Success)
+}

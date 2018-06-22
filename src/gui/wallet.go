@@ -15,6 +15,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/util/fee"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
+	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
 )
 
 // HTTP401AuthHeader WWW-Authenticate value
@@ -363,6 +364,21 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 
 		if useEmulatorWallet && useHardwareWallet {
 			wh.Error400(w, "Cannot use both Hardware Wallet and Emulator Wallet")
+			return
+		}
+
+		if encrypt && (useEmulatorWallet || useHardwareWallet) {
+			wh.Error400(w, "Cannot encrypt a wallet that is stored in an external device")
+			return
+		}
+
+		if (useHardwareWallet && deviceWallet.DeviceConnected(deviceWallet.DeviceTypeUsb) == false) {
+			wh.Error400(w, "Hardware wallet is not connected")
+			return
+		}
+
+		if (useEmulatorWallet && deviceWallet.DeviceConnected(deviceWallet.DeviceTypeEmulator) == false) {
+			wh.Error400(w, "Emulator wallet is not connected")
 			return
 		}
 

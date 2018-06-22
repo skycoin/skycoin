@@ -99,17 +99,6 @@ type peer struct {
 	GetConnection   string `json:"timeGetConnection"`
 }
 
-// NewPeer create one peer by IP
-func NewPeer(addr string) peer {
-
-	return peer{
-		Addr:            addr,
-		Trusted:         false,
-		StartConnection: "nil",
-		GetConnection:   "nil",
-	}
-}
-
 func getPeers() ([]string, map[string]peer) {
 	file, err := os.Open(urlPeers)
 	if err != nil {
@@ -130,7 +119,12 @@ func getPeers() ([]string, map[string]peer) {
 	peers := make(map[string]peer, len(pexList))
 	for _, pex := range pexList {
 		conn, err := net.DialTimeout("tcp", pex, dialTimeout)
-		peers[pex] = NewPeer(pex)
+		peers[pex] = peer{
+			Addr:            pex,
+			Trusted:         false,
+			StartConnection: "nil",
+			GetConnection:   "nil",
+		}
 		if err != nil {
 			logger.WithError(err).Errorf("net.DialTimeout")
 			continue
@@ -200,4 +194,8 @@ func main() {
 		fmt.Println(string(outputFILE))
 	}
 
+}
+
+func mio() error {
+	return nil
 }

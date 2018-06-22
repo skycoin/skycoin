@@ -9,6 +9,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
+	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
 )
 
 var (
@@ -204,7 +205,7 @@ func (txn *Transaction) PushOutput(dst cipher.Address, coins, hours uint64) {
 }
 
 // DeviceSignInputs signs all inputs in the transaction
-func (txn *Transaction) DeviceSignInputs(indexes []int) {
+func (txn *Transaction) DeviceSignInputs(deviceType deviceWallet.DeviceType, indexes []int) {
 	txn.InnerHash = txn.HashInner() // update hash
 
 	if len(txn.Sigs) != 0 {
@@ -223,35 +224,7 @@ func (txn *Transaction) DeviceSignInputs(indexes []int) {
 	innerHash := txn.HashInner()
 	for i, k := range indexes {
 		h := cipher.AddSHA256(innerHash, txn.In[i]) // hash to sign
-		success, sig := cipher.DeviceSignHash(h, k)
-		if (success) {
-			sigs[i] = sig
-		}
-	}
-	txn.Sigs = sigs
-}
-
-// EmulatorSignInputs signs all inputs in the transaction
-func (txn *Transaction) EmulatorSignInputs(indexes []int) {
-	txn.InnerHash = txn.HashInner() // update hash
-
-	if len(txn.Sigs) != 0 {
-		logger.Panic("Transaction has been signed")
-	}
-	if len(indexes) != len(txn.In) {
-		logger.Panicf("Invalid number of keys, should be %d", len(txn.In))
-	}
-	if len(indexes) > math.MaxUint16 {
-		logger.Panic("Too many keys")
-	}
-	if len(indexes) == 0 {
-		logger.Panic("No keys")
-	}
-	sigs := make([]cipher.Sig, len(txn.In))
-	innerHash := txn.HashInner()
-	for i, k := range indexes {
-		h := cipher.AddSHA256(innerHash, txn.In[i]) // hash to sign
-		success, sig := cipher.EmulatorSignHash(h, k)
+		success, sig := cipher.DeviceSignHash(deviceType, h, k)
 		if (success) {
 			sigs[i] = sig
 		}
@@ -280,6 +253,7 @@ func (txn *Transaction) SignInputs(keys []cipher.SecKey) {
 	innerHash := txn.HashInner()
 	for i, k := range keys {
 		h := cipher.AddSHA256(innerHash, txn.In[i]) // hash to sign
+		logger.Infof("Siging hash: %s\nWith secret key: %s\n", h.Hex(), k.Hex())
 		sigs[i] = cipher.SignHash(h, k)
 	}
 	txn.Sigs = sigs

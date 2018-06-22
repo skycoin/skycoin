@@ -1141,6 +1141,7 @@ func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspent
 			return nil, ErrWalletEncrypted
 		}
 
+		logger.Infof("Signing with address %s\n", entry.Address.String())
 		toSign[i] = entry.Secret
 		entryIndex, exists := w.GetEntryIndex(au.Address)
 		if !exists {
@@ -1175,9 +1176,9 @@ func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspent
 	txn.PushOutput(dest, coins, addrHours[0])
 
 	if (w.useHardwareWallet()) {
-		txn.DeviceSignInputs(indexToSign)
+		txn.DeviceSignInputs(deviceWallet.DeviceTypeUsb,  indexToSign)
 	} else if (w.useEmulatorWallet()) {
-		txn.EmulatorSignInputs(indexToSign)
+		txn.DeviceSignInputs(deviceWallet.DeviceTypeEmulator,  indexToSign)
 	} else {
 		txn.SignInputs(toSign)
 	}

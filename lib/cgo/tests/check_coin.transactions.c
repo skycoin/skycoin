@@ -266,3 +266,27 @@ Test(coin_transaction, TestTransactionUpdateHeader)
   cr_assert( result == SKY_OK );
   cr_assert( eq( u8[sizeof(cipher__SHA256)], hashInner, ptx->InnerHash) );
 }
+
+Test(coin_transaction, TestTransactionsSize) {
+  int result;
+  Transactions__Handle txns;
+  result = makeTransactions(10, &txns);
+  cr_assert(result == SKY_OK);
+  GoInt size = 0;
+  for (size_t i = 0; i < 10; i++) {
+    Transaction__Handle handle;
+    result = SKY_coin_Transactions_GetAt(txns, i, &handle);
+    registerHandleClose(handle);
+    cr_assert(result == SKY_OK);
+    cipher__PubKeySlice p1 = {NULL, 0, 0};
+    result = SKY_coin_Transaction_Serialize(handle, &p1);
+    cr_assert(result == SKY_OK, "SKY_coin_Transaction_Serialize failed");
+    GoInt count;
+    size += p1.len;
+    cr_assert(result == SKY_OK, "SKY_coin_Transaction_Size failed");
+  }
+  GoInt sizeTransactions;
+  result = SKY_coin_Transactions_Size(txns, &sizeTransactions);
+  cr_assert(size != 0);
+  cr_assert(sizeTransactions == size);
+}

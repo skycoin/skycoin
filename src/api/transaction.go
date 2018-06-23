@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -259,80 +260,117 @@ func getRawTxn(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-// VerifyTxnRequest represents the data struct of the request for /transaction/verify
+// VerifyTxnRequest represents the data struct of the request for /api/v2/transaction/verify
 type VerifyTxnRequest struct {
 	EncodedTransaction string `json:"encoded_transaction"`
 }
 
-// VerifyTxnResponse the response data struct for /transaction/verify api
+// VerifyTxnResponse the response data struct for /api/v2/transaction/verify
 type VerifyTxnResponse struct {
-	Transaction CreatedTransaction `json:"transaction"`
 	Confirmed   bool               `json:"confirmed"`
+	Transaction CreatedTransaction `json:"transaction"`
+}
+
+func writeHTTPResponse(w http.ResponseWriter, resp HTTPResponse) {
+	out, err := json.MarshalIndent(resp, "", "    ")
+	if err != nil {
+		wh.Error500(w, "json.MarshalIndent failed")
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+
+	if resp.Error == nil {
+		w.WriteHeader(http.StatusOK)
+	} else {
+		if resp.Error.Code < 400 || resp.Error.Code >= 600 {
+			logger.Critical().Errorf("writeHTTPResponse invalid error status code: %d", resp.Error.Code)
+			w.WriteHeader(http.StatusInternalServerError)
+		} else {
+			w.WriteHeader(resp.Error.Code)
+		}
+	}
+
+	if _, err := w.Write(out); err != nil {
+		logger.WithError(err).Error("http Write failed")
+	}
 }
 
 // Decode and verify an encoded transaction
 // Method: POST
-// URI: /api/v1/transaction/verify
+// URI: /api/v2/transaction/verify
 func verifyTxnHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
-			wh.Error405(w)
+			resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
+			writeHTTPResponse(w, resp)
 			return
 		}
 
 		if r.Header.Get("Content-Type") != "application/json" {
-			wh.Error415(w)
+			resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
+			writeHTTPResponse(w, resp)
 			return
 		}
 
-		var rsp HTTPResponse
 		var req VerifyTxnRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			rsp.Error = err.Error()
-			wh.Error400JSONOr500(logger, w, rsp)
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
+			writeHTTPResponse(w, resp)
 			return
 		}
 
 		txn, err := decodeTxn(req.EncodedTransaction)
 		if err != nil {
-			rsp.Error = fmt.Sprintf("decode transaction failed: %v", err)
-			wh.Error400JSONOr500(logger, w, rsp)
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, fmt.Sprintf("decode transaction failed: %v", err))
+			writeHTTPResponse(w, resp)
 			return
 		}
 
+		var resp HTTPResponse
 		inputs, isTxnConfirmed, err := gateway.VerifyTxnVerbose(txn)
 		if err != nil {
 			switch err.(type) {
 			case visor.ErrTxnViolatesSoftConstraint,
 				visor.ErrTxnViolatesHardConstraint,
 				visor.ErrTxnViolatesUserConstraint:
-				rsp.Error = err.Error()
+				resp.Error = &HTTPError{
+					Code:    http.StatusUnprocessableEntity,
+					Message: err.Error(),
+				}
 			default:
-				wh.Error500(w, err.Error())
+				resp := NewHTTPErrorResponse(http.StatusInternalServerError, err.Error())
+				writeHTTPResponse(w, resp)
 				return
 			}
 		}
 
-		if len(inputs) == len(txn.In) {
-			rspData := VerifyTxnResponse{
-				Transaction: newCreatedTransaction(txn, inputs),
-				Confirmed:   isTxnConfirmed,
-			}
-
-			v, err := json.MarshalIndent(rspData, "", "    ")
-			if err != nil {
-				wh.Error500(w, "json.MarshalIndent failed")
-				return
-			}
-
-			rsp.Data = string(v)
+		verifyTxnResp := VerifyTxnResponse{
+			Confirmed: isTxnConfirmed,
 		}
 
-		if rsp.Error != "" || isTxnConfirmed {
-			wh.Error422JSONOr500(logger, w, rsp)
-		} else {
-			wh.SendJSONOr500(logger, w, rsp)
+		if len(inputs) != len(txn.In) {
+			inputs = nil
 		}
+		verboseTxn, err := newCreatedTransactionFuzzy(txn, inputs)
+		if err != nil {
+			resp := NewHTTPErrorResponse(http.StatusInternalServerError, err.Error())
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		verifyTxnResp.Transaction = *verboseTxn
+
+		resp.Data = verifyTxnResp
+
+		if isTxnConfirmed && resp.Error == nil {
+			resp.Error = &HTTPError{
+				Code:    http.StatusUnprocessableEntity,
+				Message: "transaction has been spent",
+			}
+		}
+
+		writeHTTPResponse(w, resp)
 	}
 }
 
@@ -351,19 +389,39 @@ func decodeTxn(encodedTxn string) (*coin.Transaction, error) {
 	return &txn, nil
 }
 
-// newCreatedTransaction creates a *CreatedTransaction instance
-func newCreatedTransaction(txn *coin.Transaction, inputs []wallet.UxBalance) CreatedTransaction {
+// newCreatedTransactionFuzzy creates a CreatedTransaction but accomodates possibly invalid txn input
+func newCreatedTransactionFuzzy(txn *coin.Transaction, inputs []wallet.UxBalance) (*CreatedTransaction, error) {
+	if len(txn.In) != len(inputs) && len(inputs) != 0 {
+		return nil, errors.New("len(txn.In) != len(inputs)")
+	}
+
 	var outputHours uint64
+	var feeInvalid bool
 	for _, o := range txn.Out {
-		outputHours += o.Hours
+		var err error
+		outputHours, err = coin.AddUint64(outputHours, o.Hours)
+		if err != nil {
+			feeInvalid = true
+		}
 	}
 
 	var inputHours uint64
 	for _, i := range inputs {
-		inputHours += i.Hours
+		var err error
+		inputHours, err = coin.AddUint64(inputHours, i.Hours)
+		if err != nil {
+			feeInvalid = true
+		}
 	}
 
-	fee := inputHours - outputHours
+	if inputHours < outputHours {
+		feeInvalid = true
+	}
+
+	var fee uint64
+	if !feeInvalid {
+		fee = inputHours - outputHours
+	}
 
 	sigs := make([]string, len(txn.Sigs))
 	for i, s := range txn.Sigs {
@@ -381,17 +439,25 @@ func newCreatedTransaction(txn *coin.Transaction, inputs []wallet.UxBalance) Cre
 		out[i] = *co
 	}
 
-	in := make([]CreatedTransactionInput, len(inputs))
-	for i, o := range inputs {
-		ci, err := NewCreatedTransactionInput(o)
-		if err != nil {
-			logger.WithError(err).Error("NewCreatedTransactionInput failed")
-			continue
+	in := make([]CreatedTransactionInput, len(txn.In))
+	if len(inputs) == 0 {
+		for i, h := range txn.In {
+			in[i] = CreatedTransactionInput{
+				UxID: h.Hex(),
+			}
 		}
-		in[i] = *ci
+	} else {
+		for i, o := range inputs {
+			ci, err := NewCreatedTransactionInput(o)
+			if err != nil {
+				logger.WithError(err).Error("NewCreatedTransactionInput failed")
+				continue
+			}
+			in[i] = *ci
+		}
 	}
 
-	return CreatedTransaction{
+	return &CreatedTransaction{
 		Length:    txn.Length,
 		Type:      txn.Type,
 		TxID:      txid.Hex(),
@@ -401,5 +467,5 @@ func newCreatedTransaction(txn *coin.Transaction, inputs []wallet.UxBalance) Cre
 		Sigs: sigs,
 		In:   in,
 		Out:  out,
-	}
+	}, nil
 }

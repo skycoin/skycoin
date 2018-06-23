@@ -289,6 +289,49 @@ typedef Handle SignedBlock__Handle;
  */
 typedef Handle BlockBody__Handle;
 
+/**
+ * Memory handle to access to cli.BalanceResult
+ */
+
+typedef Handle BalanceResult_Handle;
+
+
+/**
+ * Memory handle to access to api.SpendResult
+ */
+
+typedef Handle SpendResult_Handle;
+
+/**
+ * Memory handle to access to webrpc.TxnResult
+ */
+
+typedef Handle TransactionResult_Handle;
+
+/**
+ * Memory handle to access to wallet.Notes
+ */
+
+typedef Handle WalletNotes_Handle;
+
+/**
+ * Memory handle to access to wallet.ReadableNotes
+ */
+
+typedef Handle WalletReadableNotes_Handle;
+
+/**
+ * Memory handle to access to webrpc.OutputsResult
+ */
+
+typedef Handle OutputsResult_Handle;
+
+/**
+ * Memory handle to access to webrpc.StatusResult
+ */
+
+typedef Handle StatusResult_Handle;
+
 /*
 #include "cipher.hash.go.h"
 #include "cipher.crypto.go.h"

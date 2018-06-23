@@ -356,6 +356,104 @@ func lookupCreateTransactionResponseHandle(handle C.CreateTransactionResponse__H
 	return nil, false
 }
 
+func registerBalanceResultHandle(obj *cli.BalanceResult) C.BalanceResult_Handle {
+	return (C.BalanceResult_Handle)(registerHandle(obj))
+}
+
+func lookupBalanceResultHandle(handle C.BalanceResult_Handle) (*cli.BalanceResult, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*cli.BalanceResult); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerSpendResultHandle(obj *api.SpendResult) C.SpendResult_Handle {
+	return (C.SpendResult_Handle)(registerHandle(obj))
+}
+
+func lookupSpendResultHandle(handle C.SpendResult_Handle) (*api.SpendResult, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*api.SpendResult); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerTransactionResultHandle(obj *webrpc.TxnResult) C.TransactionResult_Handle {
+	return (C.TransactionResult_Handle)(registerHandle(obj))
+}
+
+func lookupTransactionResultHandle(handle C.TransactionResult_Handle) (*webrpc.TxnResult, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*webrpc.TxnResult); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerWalletNotesHandle(obj *wallet.Notes) C.WalletNotes_Handle {
+	return (C.WalletNotes_Handle)(registerHandle(obj))
+}
+
+func lookupWalletNotesHandle(handle C.WalletNotes_Handle) (*wallet.Notes, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*wallet.Notes); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerWalletReadableNotesHandle(obj *wallet.ReadableNotes) C.WalletReadableNotes_Handle {
+	return (C.WalletReadableNotes_Handle)(registerHandle(obj))
+}
+
+func lookupWalletReadableNotesHandle(handle C.WalletReadableNotes_Handle) (*wallet.ReadableNotes, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*wallet.ReadableNotes); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerOutputsResultHandle(obj *webrpc.OutputsResult) C.OutputsResult_Handle {
+	return (C.OutputsResult_Handle)(registerHandle(obj))
+}
+
+func lookupOutputsResultHandle(handle C.OutputsResult_Handle) (*webrpc.OutputsResult, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*webrpc.OutputsResult); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerStatusResultHandle(obj *webrpc.StatusResult) C.StatusResult_Handle {
+	return (C.StatusResult_Handle)(registerHandle(obj))
+}
+
+func lookupStatusResultHandle(handle C.StatusResult_Handle) (*webrpc.StatusResult, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*webrpc.StatusResult); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
 func closeHandle(handle Handle) {
 	delete(handleMap, handle)
 }

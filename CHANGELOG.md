@@ -26,7 +26,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `-reset-corrupt-db` option (default false) will verify the database integrity during startup and reset the db if a problem is found
 - `GET /explorer/address`: add `fee` to transaction objects and `calculated_hours` to transaction inputs
 - Test data generator and test suite for verification of alternative `cipher` implementations
-- Add `POST /transaction/verify` API endpoint
+- Begin `/api/v2` API endpoints. These endpoints are in beta and subject to change.
+- Add `POST /api/v2/transaction/verify` API endpoint
+- Add `POST /api/v2/address/verify` API endpoint
 - Add advanced spend UI
 - Add `ignore_unconfirmed` option to `POST /api/v1/wallet/transaction` to allow transactions to be created or spent even if there are unspent outputs in the unconfirmed pool.
 - Add `uxouts` to `POST /api/v1/wallet/transaction`, to allow specific unspent outputs to be used in a transaction.
@@ -55,6 +57,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   If you are using the CLI tool or another API client to communicate with the standalone client, use `-web-interface-port=6420` to continue using port 6420.
   If the program is run from source (e.g. `go run`, `run.sh`, `make run`) there is no change, the API will still be on port 6420.
 - Change number of outgoing connections to 8 from 16
+- Update version of SWIG to 3.0.12
 
 ### Removed
 

@@ -407,6 +407,7 @@ int makeTestCaseArrays(test_ux* elems, int size, coin__UxArray* pArray){
   if( data == NULL)
     return SKY_ERROR;
   registerMemCleanup( data );
+  memset(data, 0, size * elems_size);
   pArray->data = data;
   pArray->len = size;
   pArray->cap = size;

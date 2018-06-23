@@ -449,7 +449,7 @@ func SKY_api_Client_WalletBalance(_c C.Client__Handle, _id string, _arg1 *C.wall
 }
 
 //export SKY_api_Client_Spend
-func SKY_api_Client_Spend(_c C.Client__Handle, _id, _dst string, _coins uint64, _password string, _arg3 *C.api__SpendResult) (____error_code uint32) {
+func SKY_api_Client_Spend(_c C.Client__Handle, _id, _dst string, _coins uint64, _password string, _arg3 *C.SpendResult_Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -466,13 +466,13 @@ func SKY_api_Client_Spend(_c C.Client__Handle, _id, _dst string, _coins uint64, 
 	__arg3, ____return_err := c.Spend(id, dst, coins, password)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		*_arg3 = *(*C.api__SpendResult)(unsafe.Pointer(__arg3))
+		*_arg3 = registerSpendResultHandle(__arg3)
 	}
 	return
 }
 
 //export SKY_api_Client_CreateTransaction
-func SKY_api_Client_CreateTransaction(_c C.Client__Handle, _req *C.Handle, _arg1 *C.api__CreateTransactionResponse) (____error_code uint32) {
+func SKY_api_Client_CreateTransaction(_c C.Client__Handle, _req *C.Handle, _arg1 *C.CreateTransactionResponse__Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -490,7 +490,7 @@ func SKY_api_Client_CreateTransaction(_c C.Client__Handle, _req *C.Handle, _arg1
 	__arg1, ____return_err := c.CreateTransaction(*req)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		*_arg1 = *(*C.api__CreateTransactionResponse)(unsafe.Pointer(__arg1))
+		*_arg1 = registerCreateTransactionResponseHandle(__arg1)
 	}
 	return
 }

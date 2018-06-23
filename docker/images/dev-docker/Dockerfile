@@ -3,21 +3,6 @@ FROM skycoin/skycoindev-cli:develop
 
 # Install docker
 
-RUN set -ex; \
-    apt-get update; \
-    apt-get install -y --no-install-recommends \
-    btrfs-progs \
-    e2fsprogs \
-    iptables \
-    xfsprogs \
-    apt-transport-https \
-    ca-certificates \
-    curl \
-    gnupg2 \
-    software-properties-common \
-    pigz ;\
-    apt-get clean
-
 RUN curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -
 RUN apt-key fingerprint 0EBFCD88
 RUN add-apt-repository \
@@ -28,8 +13,18 @@ RUN add-apt-repository \
 RUN set -ex; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
+    btrfs-progs \
+    e2fsprogs \
+    iptables \
+    xfsprogs \
+    apt-transport-https \
+    ca-certificates \
+    gnupg2 \
+    software-properties-common \
+    pigz \
     docker-ce ;\
-    apt-get clean
+    apt-get clean; \
+    rm -rf /var/lib/apt/lists/*
 
 COPY modprobe.sh /usr/local/bin/modprobe
 

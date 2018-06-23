@@ -90,10 +90,10 @@ var (
 	ErrUnknownAddress = NewError(errors.New("Address not found in wallet"))
 	// ErrNoUnspents is returned if a wallet has no unspents to spend
 	ErrNoUnspents = NewError(errors.New("no unspents to spend"))
-	// ErrHardwareWallet is returned if the hardware wallet was missused
-	ErrHardwareWallet = NewError(errors.New("hardware wallet error"))
-	// ErrEmulatorWallet is returned if the hardware wallet was missused
-	ErrEmulatorWallet = NewError(errors.New("emulated wallet error"))
+	// ErrDeviceWallet is returned if the device wallet was missused
+	ErrDeviceWallet = NewError(errors.New("device wallet error"))
+	// ErrWrongDeviceWallet is returned if we try to spend from a wrong device wallet
+	ErrWrongDeviceWallet = NewError(errors.New("the connected device wallet does not correspond to your wallet"))
 )
 
 const (
@@ -329,11 +329,11 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 			deviceType = deviceWallet.DeviceTypeUsb
 		} else {
 			logger.Panic("This code should never be reached in newWallet")
-			return nil, ErrHardwareWallet
+			return nil, ErrDeviceWallet
 		}
 		if (deviceWallet.DeviceConnected(deviceType) == false) {
 			logger.Error("Could not find connected device in newWallet")
-			return nil, ErrHardwareWallet
+			return nil, ErrDeviceWallet
 		}
 		// Create a emulated wallet
 		deviceWallet.DeviceSetMnemonic(deviceType, w.seed())
@@ -941,7 +941,7 @@ func (w *Wallet) GetAddressFromDevice(deviceType deviceWallet.DeviceType, num ui
 		kind, address := deviceWallet.DeviceAddressGen(deviceType, messages.SkycoinAddressType_AddressTypeSkycoin, i)
 		if (kind != uint16(messages.MessageType_MessageType_ResponseSkycoinAddress)) {
 			logger.Panic("GetAddressFromDevice the device could not generate an address")
-			return addrs, ErrHardwareWallet
+			return addrs, ErrDeviceWallet
 		}
 		addrs[i], err = cipher.DecodeBase58Address(address)
 		if (err != nil) {
@@ -1088,6 +1088,21 @@ func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspent
 
 	if ok {
 		return nil, ErrSpendingUnconfirmed
+	}
+
+	// check that the connected wallet is the one that stores the wallet we try to spend from
+	if (w.useHardwareWallet()) {
+		_, address := deviceWallet.DeviceAddressGen(deviceWallet.DeviceTypeUsb, messages.SkycoinAddressType_AddressTypeSkycoin, 1)
+		if (address != addrs[0].String()) {
+			logger.Errorf("It seems that the connected wallet is not the one you mean to spend from")
+			return nil, ErrWrongDeviceWallet
+		}
+	} else if (w.useEmulatorWallet()) {
+		_, address := deviceWallet.DeviceAddressGen(deviceWallet.DeviceTypeEmulator, messages.SkycoinAddressType_AddressTypeSkycoin, 1)
+		if (address != addrs[0].String()) {
+			logger.Errorf("It seems that the connected wallet is not the one you mean to spend from")
+			return nil, ErrWrongDeviceWallet
+		}
 	}
 
 	txn := coin.Transaction{}

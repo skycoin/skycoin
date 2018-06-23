@@ -350,6 +350,9 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 		}
+		if (useHardwareWallet && scanN > 3) {
+			scanN = 3 //limit number of addresses to scan because the hardware wallet is slower than PC
+		}
 
 		var useEmulatorWallet bool
 		useEmulatorWalletStr := r.FormValue("useEmulatorWallet")
@@ -360,6 +363,9 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 				wh.Error400(w, fmt.Sprintf("invalid useEmulatorWallet value: %v", err))
 				return
 			}
+		}
+		if (useEmulatorWallet && scanN > 10) {
+			scanN = 10 //limit number of addresses to scan because the hardware wallet is slower than PC
 		}
 
 		if useEmulatorWallet && useHardwareWallet {

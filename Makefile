@@ -77,18 +77,27 @@ configure-build:
 	mkdir -p $(BUILD_DIR)/usr/tmp $(BUILD_DIR)/usr/lib $(BUILD_DIR)/usr/include
 	mkdir -p $(BUILDLIB_DIR) $(BIN_DIR) $(INCLUDE_DIR)
 
-build-libc: configure-build $(BUILDLIB_DIR)/libskycoin.so $(BUILDLIB_DIR)/libskycoin.a ## Build libskycoin C client library
-
-$(BUILDLIB_DIR)/libskycoin.so $(BUILDLIB_DIR)/libskycoin.a: $(LIB_FILES) $(SRC_FILES)
-	rm -Rf $(BUILDLIB_DIR)/*
+$(BUILDLIB_DIR)/libskycoin.so: $(LIB_FILES) $(SRC_FILES)
+	rm -Rf $(BUILDLIB_DIR)/libskycoin.so
 	go build -buildmode=c-shared  -o $(BUILDLIB_DIR)/libskycoin.so $(LIB_FILES)
+	mv $(BUILDLIB_DIR)/libskycoin.h $(INCLUDE_DIR)/
+
+$(BUILDLIB_DIR)/libskycoin.a: $(LIB_FILES) $(SRC_FILES)
+	rm -Rf $(BUILDLIB_DIR)/libskycoin.a
 	go build -buildmode=c-archive -o $(BUILDLIB_DIR)/libskycoin.a  $(LIB_FILES)
 	mv $(BUILDLIB_DIR)/libskycoin.h $(INCLUDE_DIR)/
+
+build-libc-static: $(BUILDLIB_DIR)/libskycoin.a
+
+build-libc-shared: $(BUILDLIB_DIR)/libskycoin.so
+
+## Build libskycoin C client library
+build-libc: configure-build build-libc-static build-libc-shared
 
 ## Build libskycoin C client library and executable C test suites
 ## with debug symbols. Use this target to debug the source code
 ## with the help of an IDE
-build-libc-dbg: configure-build $(BUILDLIB_DIR)/libskycoin.so $(BUILDLIB_DIR)/libskycoin.a
+build-libc-dbg: configure-build build-libc-static build-libc-shared
 	$(CC) -g -o $(BIN_DIR)/test_libskycoin_shared $(LIB_DIR)/cgo/tests/*.c -lskycoin                    $(LDLIBS) $(LDFLAGS)
 	$(CC) -g -o $(BIN_DIR)/test_libskycoin_static $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/libskycoin.a $(LDLIBS) $(LDFLAGS)
 

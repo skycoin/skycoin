@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add Dockerfile in docker/images/dev-cli to build a docker image suitable for development.
 - Coin creator tool, `cmd/newcoin`, to quickly bootstrap a new fiber coin
 - Install a text-mode interface for git (tig) and a vim plugin for it inside skycoindev-cli image.
+- Install a vim plugin for providing linting ([ALE](https://github.com/w0rp/ale)) at skycoindev-cli image.
 
 ### Fixed
 

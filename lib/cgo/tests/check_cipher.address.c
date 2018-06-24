@@ -407,7 +407,7 @@ Test(cipher_address, TestBitcoinAddressFromBytes) {
   cr_assert(result == SKY_OK, "SKY_cipher_AddressFromPubKey failed");
   a.Version = 2;
   char *buffer[1024];
-  cipher__PubKeySlice b1 = {buffer, 0, 0};
+  cipher__PubKeySlice b1 = {buffer, 0, 1024};
   result = SKY_cipher_Address_BitcoinBytes(&a, &b1);
   cr_assert(result == SKY_OK, "SKY_cipher_Address_BitcoinBytes failed");
   GoSlice b1_convert = {b1.data, b1.len, b1.cap};
@@ -438,7 +438,7 @@ Test(cipher_address, TestMustDecodeBase58Address) {
   cr_assert(result == SKY_ERROR);
 
   char *buff_pks[1024];
-  cipher__PubKeySlice b = {buff_pks, 0, 0};
+  cipher__PubKeySlice b = {buff_pks, 0, 1024};
   result = SKY_cipher_Address_Bytes(&a, &b);
   cr_assert(result == SKY_OK, "SKY_cipher_Address_Bytes failed");
   int b_len = b.len;
@@ -527,7 +527,7 @@ Test(cipher_address,TestAddressRoundtrip){
   result = SKY_cipher_AddressFromPubKey(&p, &a);
   cr_assert(result == SKY_OK, "SKY_cipher_AddressFromPubKey failed");
   char buffer_aBytes[1024];
-  cipher__PubKeySlice aBytes= {buffer_aBytes,0};
+  cipher__PubKeySlice aBytes= {buffer_aBytes,0,1024};
   result = SKY_cipher_Address_Bytes(&a, &aBytes);
   cr_assert(result == SKY_OK, "SKY_cipher_Address_Bytes failed");
   GoSlice aBytesSlice = {aBytes.data, aBytes.len, aBytes.cap};

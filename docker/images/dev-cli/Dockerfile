@@ -45,6 +45,7 @@ RUN set -ex; \
     patch \
     xz-utils \
     zlib1g-dev \
+    build-essential \
     \
 # No need for MySQL client
 #
@@ -136,6 +137,8 @@ RUN set -ex ; \
     screen \
     sudo \
     doxygen \
+    valgrind \
+    bsdmainutils \
     swig \
     texlive-latex-base \
     ; \

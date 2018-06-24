@@ -1,9 +1,0 @@
-typedef struct{
-    GoString_ UxID;
-} blockdb__ErrUnspentNotExist;
-typedef struct{
-} blockdb__unspentMeta;
-typedef struct{
-} blockdb__pool;
-typedef struct{
-} blockdb__poolAddrIndex;

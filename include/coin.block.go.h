@@ -1,8 +1,3 @@
-
-typedef struct{
-    cipher__SHA256 Hash;
-    cipher__SHA256 PreHash;
-} coin__HashPair;
 typedef struct{
     GoUint32_ Version;
     GoUint64_ Time;

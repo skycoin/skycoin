@@ -1,1 +1,0 @@
-typedef GoInt32_ gnet__DisconnectReason;

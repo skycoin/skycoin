@@ -12,6 +12,8 @@
 #include "skycriterion.h"
 #include "transutil.h"
 
+TestSuite(coin_transaction, .init = setup, .fini = teardown);
+
 Test(coin_transaction, TestTransactionVerify) {
   int result;
   coin__Transaction *ptx;

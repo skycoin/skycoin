@@ -733,3 +733,24 @@ Test(cipher_crypto, TestSecKeyHashTest) {
   errcode = SKY_cipher_TestSecKeyHash(&sk, &h);
   cr_assert(errcode == SKY_ERROR);
 }
+
+Test(cipher_crypto, TestGenerateDeterministicKeyPairsUsesAllBytes) {
+  // Tests that if a seed >128 bits is used, the generator does not ignore bits
+  // >128
+  GoString seed = {"property diet little foster provide disagree witness "
+                   "mountain alley weekend kitten general",
+                   90};
+GoSlice seedSlice = {&seed,sizeof(GoString),sizeof(GoString)};
+char buffer_seckeys[1024];
+char buffer_seckeys2[1024];
+cipher__PubKeySlice seckeys={buffer_seckeys,0,0};
+cipher__PubKeySlice seckeys2={buffer_seckeys2,0,0};
+  GoInt result;
+  result = SKY_cipher_GenerateDeterministicKeyPairs(seedSlice,3,&seckeys);
+  cr_assert(result == SKY_OK,"SKY_cipher_GenerateDeterministicKeyPairs failed");
+  seed.n = 16;
+  GoSlice seedSlice2 = {&seed,sizeof(GoString),sizeof(GoString)};
+  result = SKY_cipher_GenerateDeterministicKeyPairs(seedSlice,3,&seckeys2);
+  cr_assert(result==SKY_OK,"SKY_cipher_GenerateDeterministicKeyPairs failed");
+  cr_assert(not(eq(type(GoSlice_),seckeys,seckeys2)));
+}

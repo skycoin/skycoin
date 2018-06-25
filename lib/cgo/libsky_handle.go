@@ -468,6 +468,20 @@ func lookupStatusResultHandle(handle C.StatusResult_Handle) (*webrpc.StatusResul
 	return nil, false
 }
 
+func registerAddressUxOutHandle(obj *coin.AddressUxOuts) C.AddressUxOuts_Handle {
+	return (C.AddressUxOuts_Handle)(registerHandle(obj))
+}
+
+func lookupAddressUxOutHandle(handle C.AddressUxOuts_Handle) (*coin.AddressUxOuts, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*coin.AddressUxOuts); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
 func closeHandle(handle Handle) {
 	delete(handleMap, handle)
 }

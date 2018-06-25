@@ -466,7 +466,335 @@ Test(coin_outputs, TestUxArraySwap){
   cr_assert( eq(type(coin__UxOut), uxx, *(p+1)) );
 }
 
-/**********************************************************
-* 6 Tests involvinf AddressUxOuts were not done
-* because the corresponding functions were not exported
-*************************************************************/
+Test(coin_outputs, TestAddressUxOutsKeys){
+  int result;
+  int test_count = 3;
+  coin__UxOut uxs[test_count];
+  for(int i = 0; i < 3; i++){
+    makeUxOut(&uxs[i]);
+  }
+
+  coin__UxArray uxa = {uxs, test_count, test_count};
+  AddressUxOuts_Handle uxOutsHandle;
+  result = SKY_coin_NewAddressUxOuts(&uxa, &uxOutsHandle);
+  cr_assert( result == SKY_OK, "SKY_coin_NewAddressUxOuts failed" );
+  GoSlice_ keys = {NULL, 0, 0};
+  result = SKY_coin_AddressUxOuts_Keys(uxOutsHandle, &keys);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_Keys failed" );
+  registerMemCleanup(keys.data);
+  cr_assert(keys.len == test_count);
+  cipher__Address* pKey = keys.data;
+  for(int i = 0; i < test_count; i++){
+    //Check if every key matches uxout
+    int found = 0;
+    for(int j = 0; j < test_count; j++){
+      if(memcmp(pKey, &uxs[j].Body.Address, sizeof(cipher__Address)) == 0){
+        found =  1;
+      }
+    }
+    cr_assert(found == 1, "Invalid key received from SKY_coin_AddressUxOuts_Keys");
+    found = 0;
+    if( i < test_count - 1){
+      cipher__Address* pKey2 = pKey;
+      for(int j = i + 1; j < test_count; j++){
+        pKey2++;
+        if(memcmp(pKey, pKey2, sizeof(cipher__Address)) == 0){
+          found =  1;
+        }
+      }
+    }
+    cr_assert(found == 0, "Duplicate keys received from SKY_coin_AddressUxOuts_Keys");
+    pKey++;
+  }
+}
+
+Test(coin_outputs, TestAddressUxOutsSub){
+  int result;
+  coin__UxArray uxa, empty;
+  makeUxArray(&uxa, 4);
+  coin__UxOut* pData = uxa.data;
+  memset(&empty, 0, sizeof(coin__UxArray));
+  AddressUxOuts_Handle h1, h2, h3;
+  result = SKY_coin_NewAddressUxOuts(&empty, &h1);
+  cr_assert( result == SKY_OK, "SKY_coin_NewAddressUxOuts failed" );
+  registerHandleClose(h1);
+  result = SKY_coin_NewAddressUxOuts(&empty, &h2);
+  cr_assert( result == SKY_OK, "SKY_coin_NewAddressUxOuts failed" );
+  registerHandleClose(h2);
+  memcpy(&(pData+1)->Body.Address, &pData->Body.Address, sizeof(cipher__Address));
+
+  coin__UxArray ux2 = {pData, 2, 2};
+  result = SKY_coin_AddressUxOuts_Set(h1, &pData->Body.Address, &ux2);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOut_Set failed" );
+  coin__UxArray ux3 = {pData + 2, 1, 1};
+  result = SKY_coin_AddressUxOuts_Set(h1, &(pData + 2)->Body.Address, &ux3);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOut_Set failed" );
+  coin__UxArray ux4 = {pData + 3, 1, 1};
+  result = SKY_coin_AddressUxOuts_Set(h1, &(pData + 3)->Body.Address, &ux4);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOut_Set failed" );
+
+  coin__UxArray ux5 = {pData, 1, 1};
+  result = SKY_coin_AddressUxOuts_Set(h2, &pData->Body.Address, &ux5);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOut_Set failed" );
+  coin__UxArray ux6 = {pData + 2, 1, 1};
+  result = SKY_coin_AddressUxOuts_Set(h2, &(pData + 2)->Body.Address, &ux6);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOut_Set failed" );
+
+  result = SKY_coin_AddressUxOuts_Sub(h1, h2, &h3);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOut_Sub failed" );
+  registerHandleClose(h3);
+
+  GoInt length;
+  result = SKY_coin_AddressUxOuts_Length(h3, &length);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_Length failed" );
+  // One address should have been removed, because no elements
+  cr_assert(length == 2, "Invalid length %d", length);
+  GoInt8_ hasKey;
+  result = SKY_coin_AddressUxOuts_HasKey(h3, &(pData + 2)->Body.Address, &hasKey);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_HasKey failed" );
+  cr_assert(hasKey == 0);
+
+  memset(&ux3, 0, sizeof(coin__UxArray));
+  result = SKY_coin_AddressUxOuts_Get(h3, &(pData + 3)->Body.Address, &ux3);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_Get failed" );
+  registerMemCleanup(ux3.data);
+  cr_assert(ux3.len == 1);
+  coin__UxOut* pData2 = ux3.data;
+  cr_assert( eq(type(coin__UxOut), *pData2, *(pData + 3)) );
+
+  memset(&ux2, 0, sizeof(coin__UxArray));
+  result = SKY_coin_AddressUxOuts_Get(h3, &pData->Body.Address, &ux2);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_Get failed" );
+  registerMemCleanup(ux2.data);
+  cr_assert(ux2.len == 1);
+  pData2 = ux2.data;
+  cr_assert( eq(type(coin__UxOut), *pData2, *(pData + 1)) );
+
+  // Originals should be unmodified
+  result = SKY_coin_AddressUxOuts_Length(h1, &length);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_Length failed" );
+  cr_assert(length == 3, "Invalid length %d", length);
+  result = SKY_coin_AddressUxOuts_GetOutputLength(h1, &pData->Body.Address, &length);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_Length failed" );
+  cr_assert(length == 2, "Invalid length %d", length);
+  result = SKY_coin_AddressUxOuts_GetOutputLength(h1, &(pData+2)->Body.Address, &length);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_Length failed" );
+  cr_assert(length == 1, "Invalid length %d", length);
+  result = SKY_coin_AddressUxOuts_GetOutputLength(h1, &(pData+3)->Body.Address, &length);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_Length failed" );
+  cr_assert(length == 1, "Invalid length %d", length);
+
+  result = SKY_coin_AddressUxOuts_Length(h2, &length);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_Length failed" );
+  cr_assert(length == 2, "Invalid length %d", length);
+  result = SKY_coin_AddressUxOuts_GetOutputLength(h2, &pData->Body.Address, &length);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_Length failed" );
+  cr_assert(length == 1, "Invalid length %d", length);
+  result = SKY_coin_AddressUxOuts_GetOutputLength(h2, &(pData+2)->Body.Address, &length);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_Length failed" );
+  cr_assert(length == 1, "Invalid length %d", length);
+}
+
+Test(coin_outputs, TestAddressUxOutsAdd){
+  int result;
+  coin__UxArray uxa, empty;
+  makeUxArray(&uxa, 4);
+  coin__UxOut* pData = uxa.data;
+  memset(&empty, 0, sizeof(coin__UxArray));
+  AddressUxOuts_Handle h1, h2, h3;
+  result = SKY_coin_NewAddressUxOuts(&empty, &h1);
+  cr_assert( result == SKY_OK, "SKY_coin_NewAddressUxOuts failed" );
+  registerHandleClose(h1);
+  result = SKY_coin_NewAddressUxOuts(&empty, &h2);
+  cr_assert( result == SKY_OK, "SKY_coin_NewAddressUxOuts failed" );
+  registerHandleClose(h2);
+  memcpy(&(pData+1)->Body.Address, &pData->Body.Address, sizeof(cipher__Address));
+
+  coin__UxArray ux2 = {pData, 1, 1};
+  result = SKY_coin_AddressUxOuts_Set(h1, &pData->Body.Address, &ux2);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOut_Set failed" );
+  coin__UxArray ux3 = {pData + 2, 1, 1};
+  result = SKY_coin_AddressUxOuts_Set(h1, &(pData + 2)->Body.Address, &ux3);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOut_Set failed" );
+  coin__UxArray ux4 = {pData + 3, 1, 1};
+  result = SKY_coin_AddressUxOuts_Set(h1, &(pData + 3)->Body.Address, &ux4);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOut_Set failed" );
+
+  coin__UxArray ux5 = {pData + 1, 1, 1};
+  result = SKY_coin_AddressUxOuts_Set(h2, &pData->Body.Address, &ux5);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOut_Set failed" );
+  coin__UxArray ux6 = {pData + 2, 1, 1};
+  result = SKY_coin_AddressUxOuts_Set(h2, &(pData + 2)->Body.Address, &ux6);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOut_Set failed" );
+
+  result = SKY_coin_AddressUxOuts_Add(h1, h2, &h3);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_Add failed" );
+  registerHandleClose(h3);
+
+  GoInt length;
+  result = SKY_coin_AddressUxOuts_Length(h3, &length);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_Length failed" );
+  // One address should have been removed, because no elements
+  cr_assert(length == 3, "Invalid length %d", length);
+
+  result = SKY_coin_AddressUxOuts_GetOutputLength(h3, &pData->Body.Address, &length);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_Length failed" );
+  cr_assert(length == 2, "Invalid length %d", length);
+
+  memset(&ux2, 0, sizeof(coin__UxArray));
+  result = SKY_coin_AddressUxOuts_Get(h3, &pData->Body.Address, &ux2);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_Get failed" );
+  registerMemCleanup(ux2.data);
+  cr_assert(ux2.len == 2);
+  coin__UxOut* pData2 = ux2.data;
+  cr_assert( eq(type(coin__UxOut), *pData2, *pData) );
+  cr_assert( eq(type(coin__UxOut), *(pData2+1), *(pData+1)) );
+
+  memset(&ux2, 0, sizeof(coin__UxArray));
+  result = SKY_coin_AddressUxOuts_Get(h3, &(pData+2)->Body.Address, &ux2);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_Get failed" );
+  registerMemCleanup(ux2.data);
+  cr_assert(ux2.len == 1);
+  pData2 = ux2.data;
+  cr_assert( eq(type(coin__UxOut), *pData2, *(pData + 2)) );
+
+  memset(&ux2, 0, sizeof(coin__UxArray));
+  result = SKY_coin_AddressUxOuts_Get(h3, &(pData+3)->Body.Address, &ux2);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_Get failed" );
+  registerMemCleanup(ux2.data);
+  cr_assert(ux2.len == 1);
+  pData2 = ux2.data;
+  cr_assert( eq(type(coin__UxOut), *pData2, *(pData + 3)) );
+
+  memset(&ux2, 0, sizeof(coin__UxArray));
+  result = SKY_coin_AddressUxOuts_Get(h3, &(pData+1)->Body.Address, &ux2);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_Get failed" );
+  registerMemCleanup(ux2.data);
+  cr_assert(ux2.len == 2);
+  pData2 = ux2.data;
+  cr_assert( eq(type(coin__UxOut), *pData2, *pData) );
+  cr_assert( eq(type(coin__UxOut), *(pData2+1), *(pData+1)) );
+
+  // Originals should be unmodified
+  result = SKY_coin_AddressUxOuts_Length(h1, &length);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_Length failed" );
+  cr_assert(length == 3, "Invalid length %d", length);
+  result = SKY_coin_AddressUxOuts_GetOutputLength(h1, &pData->Body.Address, &length);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_Length failed" );
+  cr_assert(length == 1, "Invalid length %d", length);
+  result = SKY_coin_AddressUxOuts_GetOutputLength(h1, &(pData+2)->Body.Address, &length);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_Length failed" );
+  cr_assert(length == 1, "Invalid length %d", length);
+  result = SKY_coin_AddressUxOuts_GetOutputLength(h1, &(pData+3)->Body.Address, &length);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_Length failed" );
+  cr_assert(length == 1, "Invalid length %d", length);
+  result = SKY_coin_AddressUxOuts_Length(h2, &length);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_Length failed" );
+  cr_assert(length == 2, "Invalid length %d", length);
+  result = SKY_coin_AddressUxOuts_GetOutputLength(h2, &pData->Body.Address, &length);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_Length failed" );
+  cr_assert(length == 1, "Invalid length %d", length);
+  result = SKY_coin_AddressUxOuts_GetOutputLength(h2, &(pData+2)->Body.Address, &length);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_Length failed" );
+  cr_assert(length == 1, "Invalid length %d", length);
+}
+
+Test(coin_outputs, TestAddressUxOutsFlatten){
+  int result;
+  coin__UxArray uxa, emptyArray;
+  makeUxArray(&uxa, 3);
+  coin__UxOut* pData = uxa.data;
+  memcpy(&(pData+2)->Body.Address, &(pData+1)->Body.Address, sizeof(cipher__Address));
+  memset(&emptyArray, 0, sizeof(coin__UxArray));
+  AddressUxOuts_Handle h;
+  result = SKY_coin_NewAddressUxOuts(&emptyArray, &h);
+  cr_assert( result == SKY_OK, "SKY_coin_NewAddressUxOuts failed" );
+  registerHandleClose(h);
+  cipher__Address emptyAddr;
+  makeAddress(&emptyAddr);
+  coin__UxArray ux1 = {pData, 1, 1};
+  coin__UxArray ux2 = {pData+1, 2, 2};
+  result = SKY_coin_AddressUxOuts_Set(h, &emptyAddr, &emptyArray);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOut_Set failed" );
+  result = SKY_coin_AddressUxOuts_Set(h, &pData->Body.Address, &ux1);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOut_Set failed" );
+  result = SKY_coin_AddressUxOuts_Set(h, &(pData+1)->Body.Address, &ux2);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOut_Set failed" );
+
+  coin__UxArray flatArray;
+  memset(&flatArray, 0, sizeof(coin__UxArray));
+  result = SKY_coin_AddressUxOuts_Flatten(h, &flatArray);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_Flatten failed" );
+  registerMemCleanup( flatArray.data );
+  cr_assert( flatArray.len == 3 );
+  // emptyAddr should not be in the array
+  coin__UxOut* pData2 = flatArray.data;
+  for(int i = 0; i < flatArray.len; pData2++, i++){
+    int cmp = memcmp(&emptyAddr, &pData2->Body.Address, sizeof(cipher__Address));
+    cr_assert(cmp != 0);
+  }
+  pData2 = flatArray.data;
+  int cmp = memcmp(&pData->Body.Address, &pData2->Body.Address, sizeof(cipher__Address));
+  if(cmp == 0){
+    cr_assert( eq( type(coin__UxOut), *pData2, *pData ) );
+    cr_assert( eq( type(coin__UxOut), *(pData2+1), *(pData+1) ) );
+    cr_assert( eq( type(coin__UxOut), *(pData2+2), *(pData+2) ) );
+    cr_assert( eq( type(cipher__Address), pData2->Body.Address, pData->Body.Address ) );
+    cr_assert( eq( type(cipher__Address), (pData2+1)->Body.Address, (pData+1)->Body.Address ) );
+    cr_assert( eq( type(cipher__Address), (pData2+2)->Body.Address, (pData+2)->Body.Address ) );
+  }else{
+    cr_assert( eq( type(coin__UxOut), *pData2, *(pData+1) ) );
+    cr_assert( eq( type(coin__UxOut), *(pData2+1), *(pData+2) ) );
+    cr_assert( eq( type(coin__UxOut), *(pData2+2), *(pData) ) );
+    cr_assert( eq( type(cipher__Address), pData2->Body.Address, (pData+1)->Body.Address ) );
+    cr_assert( eq( type(cipher__Address), (pData2+1)->Body.Address, (pData+2)->Body.Address ) );
+    cr_assert( eq( type(cipher__Address), (pData2+2)->Body.Address, (pData)->Body.Address ) );
+  }
+}
+
+
+Test(coin_outputs, TestNewAddressUxOuts){
+  int result;
+  coin__UxArray uxa, ux2;
+  makeUxArray(&uxa, 6);
+  coin__UxOut* pData = uxa.data;
+  memcpy(&(pData + 1)->Body.Address, &(pData)->Body.Address, sizeof(cipher__Address));
+  memcpy(&(pData + 3)->Body.Address, &(pData+2)->Body.Address, sizeof(cipher__Address));
+  memcpy(&(pData + 4)->Body.Address, &(pData+2)->Body.Address, sizeof(cipher__Address));
+  AddressUxOuts_Handle h;
+  result = SKY_coin_NewAddressUxOuts(&uxa, &h);
+  cr_assert( result == SKY_OK, "SKY_coin_NewAddressUxOuts failed" );
+  registerHandleClose(h);
+
+  GoInt length;
+  result = SKY_coin_AddressUxOuts_Length(h, &length);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_Length failed" );
+  cr_assert(length == 3);
+
+  memset(&ux2, 0, sizeof(coin__UxArray));
+  result = SKY_coin_AddressUxOuts_Get(h, &(pData)->Body.Address, &ux2);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_Get failed" );
+  registerMemCleanup(ux2.data);
+  cr_assert(ux2.len == 2);
+  coin__UxOut* pData2 = ux2.data;
+  cr_assert( eq( type(coin__UxOut), *(pData2), *(pData) ) );
+  cr_assert( eq( type(coin__UxOut), *(pData2+1), *(pData+1) ) );
+
+  memset(&ux2, 0, sizeof(coin__UxArray));
+  result = SKY_coin_AddressUxOuts_Get(h, &(pData+3)->Body.Address, &ux2);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_Get failed" );
+  registerMemCleanup(ux2.data);
+  cr_assert(ux2.len == 3);
+  pData2 = ux2.data;
+  cr_assert( eq( type(coin__UxOut), *(pData2), *(pData+2) ) );
+  cr_assert( eq( type(coin__UxOut), *(pData2+1), *(pData+3) ) );
+  cr_assert( eq( type(coin__UxOut), *(pData2+2), *(pData+4) ) );
+
+  memset(&ux2, 0, sizeof(coin__UxArray));
+  result = SKY_coin_AddressUxOuts_Get(h, &(pData+5)->Body.Address, &ux2);
+  cr_assert( result == SKY_OK, "SKY_coin_AddressUxOuts_Get failed" );
+  registerMemCleanup(ux2.data);
+  cr_assert(ux2.len == 1);
+  pData2 = ux2.data;
+  cr_assert( eq( type(coin__UxOut), *(pData2), *(pData+5) ) );
+}

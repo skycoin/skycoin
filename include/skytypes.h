@@ -338,6 +338,12 @@ typedef Handle OutputsResult_Handle;
 
 typedef Handle StatusResult_Handle;
 
+/**
+ * Memory handle to access to coin.AddressUxOuts
+ */
+
+typedef Handle AddressUxOuts_Handle;
+
 
 typedef GoUint32_ (*FeeCalc)(Transaction__Handle handle, GoUint64_* pFee);
 

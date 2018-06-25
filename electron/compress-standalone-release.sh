@@ -40,7 +40,7 @@ if [ -e "$WIN64_STL" ]; then
     fi
     echo "Zipping $WIN64_STL_ZIP"
     if [[ "$OSTYPE" == "linux"* ]]; then
-        zip -r --quiet "$WIN64_STL_ZIP" --owner=0 --group=0 "$WIN64_STL"
+        zip -r --quiet -X "$WIN64_STL_ZIP"  "$WIN64_STL"
     elif [[ "$OSTYPE" == "darwin"* ]]; then
         zip -r --quiet "$WIN64_STL_ZIP" "$WIN64_STL"
     elif [[ "$OSTYPE" == "msys"* ]]; then
@@ -57,7 +57,7 @@ if [ -e "$WIN32_STL" ]; then
     fi
     echo "Zipping $WIN32_STL_ZIP"
     if [[ "$OSTYPE" == "linux"* ]]; then
-        zip -r --quiet "$WIN32_STL_ZIP" --owner=0 --group=0 "$WIN32_STL"
+        zip -r --quiet -X "$WIN32_STL_ZIP"  "$WIN32_STL"
     elif [[ "$OSTYPE" == "darwin"* ]]; then
         zip -r --quiet "$WIN32_STL_ZIP" "$WIN32_STL"
     elif [[ "$OSTYPE" == "msys"* ]]; then

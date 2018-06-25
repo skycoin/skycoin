@@ -315,7 +315,7 @@ Test(coin_outputs, TestUxArraySub){
   cr_assert( result == SKY_OK, "cutSlice failed" );
   result = concatSlices( &t2, &t3, elems_size, &uxc );
   cr_assert( result == SKY_OK, "concatSlices failed" );
-
+  //TODO: Fix comparision
   memset(&uxd, 0, arraySize);
   result = SKY_coin_UxArray_Sub(&uxc, &uxa, &uxd);
   cr_assert( result == SKY_OK, "SKY_coin_UxArray_Sub failed" );

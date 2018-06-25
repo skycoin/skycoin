@@ -9,6 +9,20 @@ int equalSlices(GoSlice* slice1, GoSlice* slice2, int elem_size){
   return memcmp(slice1->data, slice2->data, slice1->len * elem_size) == 0;
 }
 
+int equalTransactions(coin__Transactions* pTxs1, coin__Transactions* pTxs2){
+  if( pTxs1->len != pTxs2->len )
+    return 0;
+  coin__Transaction* pTx1 = pTxs1->data;
+  coin__Transaction* pTx2 = pTxs2->data;
+  for(int i = 0; i < pTxs1->len; i++){
+    if(!cr_user_coin__Transaction_eq(pTx1, pTx2))
+      return 0;
+    pTx1++;
+    pTx2++;
+  }
+  return 1;
+}
+
 int cr_user_cipher__Address_eq(cipher__Address *addr1, cipher__Address *addr2){
   if(addr1->Version != addr2->Version)
     return 0;
@@ -134,32 +148,26 @@ int cr_user_secp256k1go__Field_eq(secp256k1go__Field* f1, secp256k1go__Field* f2
 return 1;
 }
 
-int cr_user_coin__Transactions_eq(coin__Transactions *slice1, coin__Transactions *slice2){
-	return
-		(slice1->len == slice2->len) &&
-		(memcmp(slice1->data, slice2->data, slice1->len)==0);
+int cr_user_coin__Transactions_eq(coin__Transactions *x1, coin__Transactions *x2){
+	return equalTransactions(x1, x2);
 }
 
-int cr_user_coin__Transactions_noteq(coin__Transactions *slice1, coin__Transactions *slice2){
-	return
-		!((slice1->len == slice2->len) &&
-		(memcmp(slice1->data, slice2->data, slice1->len)==0));
+int cr_user_coin__Transactions_noteq(coin__Transactions *x1, coin__Transactions *x2){
+	return !equalTransactions(x1, x2);
 }
 
-char *cr_user_coin__Transactions_tostr(coin__Transactions *slice1) {
+char *cr_user_coin__Transactions_tostr(coin__Transactions *x1) {
   char *out;
-  cr_asprintf(&out, "(coin__Transactions) { .data %s, .len %d, .cap %d }", (char*)slice1->data, slice1->len, slice1->cap);
+  cr_asprintf(&out, "(coin__Transactions) { .data %s, .len %d, .cap %d }", (char*)x1->data, x1->len, x1->cap);
   return out;
 }
 
 int cr_user_coin__BlockBody_eq(coin__BlockBody *b1, coin__BlockBody *b2){
-	return
-		cr_user_GoSlice__eq((GoSlice_*)&(b1->Transactions), (GoSlice_*)&(b2->Transactions));
+  return equalTransactions(&b1->Transactions, &b2->Transactions);
 }
 
 int cr_user_coin__BlockBody_noteq(coin__BlockBody *b1, coin__BlockBody *b2){
-	return
-		!cr_user_GoSlice__eq((GoSlice_*)&(b1->Transactions), (GoSlice_*)&(b2->Transactions));
+	return !equalTransactions(&b1->Transactions, &b2->Transactions);
 }
 
 char *cr_user_coin__BlockBody_tostr(coin__BlockBody *b) {

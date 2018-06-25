@@ -117,7 +117,8 @@ Test(coin_block, TestNewBlock) {
   cr_assert(result == SKY_OK, "SKY_coin_GetBlockObject failed");
   coin__Transactions* pTransactions = NULL;
   SKY_coin_Get_Transactions_Object(transactions, &pTransactions);
-  cr_assert( eq( type(GoSlice), *((GoSlice*)&pNewBlock->Body.Transactions), *((GoSlice*)pTransactions)) );
+  int equal = cr_user_coin__Transactions_eq(&pNewBlock->Body.Transactions, pTransactions);
+  cr_assert(equal == 1);
   cr_assert( eq(pNewBlock->Head.Fee, fee * (GoUint64)( pTransactions->len )));
   cr_assert( eq(pNewBlock->Head.Time, currentTime));
   cr_assert( eq(pNewBlock->Head.BkSeq, pPrevBlock->Head.BkSeq + 1));

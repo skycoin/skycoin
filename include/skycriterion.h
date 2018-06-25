@@ -51,6 +51,10 @@ extern int cr_user_coin__Transaction_eq(coin__Transaction *x1, coin__Transaction
 extern int cr_user_coin__Transaction_noteq(coin__Transaction *x1, coin__Transaction *x2);
 extern char* cr_user_coin__Transaction_tostr(coin__Transaction *x1);
 
+extern int cr_user_coin__Transactions_eq(coin__Transactions *x1, coin__Transactions *x2);
+extern int cr_user_coin__Transactions_noteq(coin__Transactions *x1, coin__Transactions *x2);
+extern char* cr_user_coin__Transactions_tostr(coin__Transactions *x1);
+
 extern int cr_user_coin__TransactionOutput_eq(coin__TransactionOutput *x1, coin__TransactionOutput *x2);
 extern int cr_user_coin__TransactionOutput_noteq(coin__TransactionOutput *x1, coin__TransactionOutput *x2);
 extern char* cr_user_coin__TransactionOutput_tostr(coin__TransactionOutput *x1);

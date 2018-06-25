@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"reflect"
 	"unsafe"
 
@@ -14,6 +15,7 @@ import (
   #include <stdlib.h>
 
   #include "skytypes.h"
+	#include "feecalc.h"
 */
 import "C"
 
@@ -449,6 +451,37 @@ func SKY_coin_Transactions_Add(tsh C.Transactions__Handle, th C.Transaction__Han
 	return
 }
 
+//export SKY_coin_Transactions_Fees
+func SKY_coin_Transactions_Fees(tsh C.Transactions__Handle, pFeeCalc C.FeeCalc, _result *uint64) (____error_code uint32) {
+	feeCalc := func(pTx *coin.Transaction) (uint64, error) {
+		var fee C.GoUint64_
+		handle := registerTransactionHandle(pTx)
+		result := C.callFeeCalculator(pFeeCalc, handle, &fee)
+		closeHandle(Handle(handle))
+		if result == SKY_OK {
+			return uint64(fee), nil
+		} else {
+			return 0, errors.New("Error calculating fee")
+		}
+	}
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	txns, ok := lookupTransactionsHandle(tsh)
+	if !ok {
+		____error_code = SKY_ERROR
+		return
+	}
+	result, err := txns.Fees(feeCalc)
+	if err != nil {
+		____error_code = SKY_ERROR
+	} else {
+		*_result = result
+	}
+	return
+}
+
 //export SKY_coin_Transactions_GetAt
 func SKY_coin_Transactions_GetAt(tsh C.Transactions__Handle, n int, th *C.Transaction__Handle) (____error_code uint32) {
 	____error_code = 0
@@ -518,36 +551,102 @@ func SKY_coin_Transactions_TruncateBytesTo(tsh C.Transactions__Handle, _size int
 	return
 }
 
-//export SKY_coin_SortableTransactions_Sort
-func SKY_coin_SortableTransactions_Sort(_txns *C.coin__SortableTransactions) (____error_code uint32) {
+//export SKY_coin_SortTransactions
+func SKY_coin_SortTransactions(tsh C.Transactions__Handle, pFeeCalc C.FeeCalc, ptsh *C.Transactions__Handle) (____error_code uint32) {
+	feeCalc := func(pTx *coin.Transaction) (uint64, error) {
+		var fee C.GoUint64_
+		handle := registerTransactionHandle(pTx)
+		result := C.callFeeCalculator(pFeeCalc, handle, &fee)
+		closeHandle(Handle(handle))
+		if result == SKY_OK {
+			return uint64(fee), nil
+		} else {
+			return 0, errors.New("Error calculating fee")
+		}
+	}
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	txns := *(*coin.SortableTransactions)(unsafe.Pointer(_txns))
+	txns, ok := lookupTransactionsHandle(tsh)
+	if !ok {
+		____error_code = SKY_ERROR
+		return
+	}
+	sorted := coin.SortTransactions(*txns, feeCalc)
+	*ptsh = registerTransactionsHandle(&sorted)
+	return
+}
+
+//export SKY_coin_NewSortableTransactions
+func SKY_coin_NewSortableTransactions(tsh C.Transactions__Handle, pFeeCalc C.FeeCalc, ptsh *C.SortableTransactionResult_Handle) (____error_code uint32) {
+	feeCalc := func(pTx *coin.Transaction) (uint64, error) {
+		var fee C.GoUint64_
+		handle := registerTransactionHandle(pTx)
+		result := C.callFeeCalculator(pFeeCalc, handle, &fee)
+		closeHandle(Handle(handle))
+		if result == SKY_OK {
+			return uint64(fee), nil
+		} else {
+			return 0, errors.New("Error calculating fee")
+		}
+	}
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	txns, ok := lookupTransactionsHandle(tsh)
+	if !ok {
+		____error_code = SKY_ERROR
+		return
+	}
+	sorted := coin.NewSortableTransactions(*txns, feeCalc)
+	*ptsh = registerSortableTransactiontHandle(&sorted)
+	return SKY_OK
+}
+
+//export SKY_coin_SortableTransactions_Sort
+func SKY_coin_SortableTransactions_Sort(_txns C.SortableTransactionResult_Handle) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	txns, ok := lookupSortableTransactionHandle(_txns)
+	if !ok {
+		____error_code = SKY_ERROR
+		return
+	}
 	txns.Sort()
 	return
 }
 
 //export SKY_coin_SortableTransactions_Len
-func SKY_coin_SortableTransactions_Len(_txns *C.coin__SortableTransactions, _arg0 *int) (____error_code uint32) {
+func SKY_coin_SortableTransactions_Len(_txns C.SortableTransactionResult_Handle, _arg0 *int) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	txns := *(*coin.SortableTransactions)(unsafe.Pointer(_txns))
+	txns, ok := lookupSortableTransactionHandle(_txns)
+	if !ok {
+		____error_code = SKY_ERROR
+		return
+	}
 	__arg0 := txns.Len()
 	*_arg0 = __arg0
 	return
 }
 
 //export SKY_coin_SortableTransactions_Less
-func SKY_coin_SortableTransactions_Less(_txns *C.coin__SortableTransactions, _i, _j int, _arg1 *bool) (____error_code uint32) {
+func SKY_coin_SortableTransactions_Less(_txns C.SortableTransactionResult_Handle, _i, _j int, _arg1 *bool) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	txns := *(*coin.SortableTransactions)(unsafe.Pointer(_txns))
+	txns, ok := lookupSortableTransactionHandle(_txns)
+	if !ok {
+		____error_code = SKY_ERROR
+		return
+	}
 	i := _i
 	j := _j
 	__arg1 := txns.Less(i, j)
@@ -556,12 +655,16 @@ func SKY_coin_SortableTransactions_Less(_txns *C.coin__SortableTransactions, _i,
 }
 
 //export SKY_coin_SortableTransactions_Swap
-func SKY_coin_SortableTransactions_Swap(_txns *C.coin__SortableTransactions, _i, _j int) (____error_code uint32) {
+func SKY_coin_SortableTransactions_Swap(_txns C.SortableTransactionResult_Handle, _i, _j int) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	txns := *(*coin.SortableTransactions)(unsafe.Pointer(_txns))
+	txns, ok := lookupSortableTransactionHandle(_txns)
+	if !ok {
+		____error_code = SKY_ERROR
+		return
+	}
 	i := _i
 	j := _j
 	txns.Swap(i, j)

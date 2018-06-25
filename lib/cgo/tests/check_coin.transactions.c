@@ -12,6 +12,11 @@
 #include "skycriterion.h"
 #include "transutil.h"
 
+TestSuite(coin_transaction, .init = setup, .fini = teardown);
+
+GoUint64 MaxUint64 = 0xFFFFFFFFFFFFFFFF;
+GoUint64 Million = 1000000;
+
 Test(coin_transaction, TestTransactionVerify) {
   int result;
   coin__Transaction *ptx;
@@ -706,8 +711,6 @@ int makeTestCaseArrays(test_ux *elems, int size, coin__UxArray *pArray) {
 }
 
 Test(coin_transactions, TestVerifyTransactionCoinsSpending) {
-  GoUint64 MaxUint64 = 0xFFFFFFFFFFFFFFFF;
-  GoUint64 Million = 1000000;
 
   // Input coins overflow
   test_ux in1[] = {{MaxUint64 - Million + 1, 10}, {Million, 0}};
@@ -832,8 +835,187 @@ Test(coin_transactions, TestVerifyTransactionHoursSpending) {
   }
 }
 
-/*******************************************************
- *  Tests not done because of wrapper functions were not created:
- *  TestTransactionsFees
- *  TestSortTransactions
- ********************************************************/
+GoUint32_ fix1FeeCalculator(Transaction__Handle handle, GoUint64_ *pFee){
+  *pFee = 1;
+  return SKY_OK;
+}
+
+GoUint32_ badFeeCalculator(Transaction__Handle handle, GoUint64_ *pFee){
+  return SKY_ERROR;
+}
+
+GoUint32_ overflowFeeCalculator(Transaction__Handle handle, GoUint64_ *pFee){
+  *pFee = 0xFFFFFFFFFFFFFFFF;
+  return SKY_OK;
+}
+
+Test(coin_transactions, TestTransactionsFees) {
+  GoUint64 fee;
+  int result;
+  Transactions__Handle transactionsHandle = 0;
+  Transaction__Handle transactionHandle = 0;
+
+  // Nil txns
+  makeTransactions(0, &transactionsHandle);
+  result = SKY_coin_Transactions_Fees(transactionsHandle, fix1FeeCalculator, &fee);
+  cr_assert(result == SKY_OK);
+  cr_assert(fee == 0);
+
+  makeEmptyTransaction(&transactionHandle);
+  result = SKY_coin_Transactions_Add(transactionsHandle, transactionHandle);
+  cr_assert(result == SKY_OK);
+  makeEmptyTransaction(&transactionHandle);
+  result = SKY_coin_Transactions_Add(transactionsHandle, transactionHandle);
+  cr_assert(result == SKY_OK);
+  // 2 transactions, calc() always returns 1
+  result = SKY_coin_Transactions_Fees(transactionsHandle, fix1FeeCalculator, &fee);
+  cr_assert(result == SKY_OK);
+  cr_assert(fee == 2);
+
+  // calc error
+  result = SKY_coin_Transactions_Fees(transactionsHandle, badFeeCalculator, &fee);
+  cr_assert(result != SKY_OK);
+
+  // summing of calculated fees overflows
+  result = SKY_coin_Transactions_Fees(transactionsHandle, overflowFeeCalculator, &fee);
+  cr_assert(result != SKY_OK);
+}
+
+GoUint32_ feeCalculator1(Transaction__Handle handle, GoUint64_ *pFee){
+  coin__Transaction* pTx;
+  int result = SKY_coin_Get_Transaction_Object( handle, &pTx );
+  if(result == SKY_OK){
+    coin__TransactionOutput *pOutput = pTx->Out.data;
+    *pFee = 100 * Million - pOutput->Hours;
+  }
+  return result;
+}
+
+GoUint32_ feeCalculator2(Transaction__Handle handle, GoUint64_ *pFee){
+  *pFee = 100 * Million;
+  return SKY_OK;
+}
+
+void assertTransactionsHandleEqual(Transaction__Handle h1, Transaction__Handle h2,
+          char* testName){
+  coin__Transaction *pTx1;
+  coin__Transaction *pTx2;
+  int result;
+  result = SKY_coin_Get_Transaction_Object( h1, &pTx1 );
+  cr_assert(result == SKY_OK);
+  result = SKY_coin_Get_Transaction_Object( h2, &pTx2 );
+  cr_assert(result == SKY_OK);
+  cr_assert(eq(type(coin__Transaction), *pTx1, *pTx2), "Failed SortTransactions test \"%s\"", testName);
+}
+
+void testTransactionSorting(Transactions__Handle hTrans,
+            int* original_indexes, int original_indexes_count,
+            int* expected_indexes, int expected_indexes_count, FeeCalc feeCalc,
+            char* testName
+          ){
+
+    int result;
+    Transactions__Handle transactionsHandle, sortedTxnsHandle;
+    Transaction__Handle handle;
+    makeTransactions(0, &transactionsHandle);
+    for(int i = 0; i < original_indexes_count; i++){
+      result = SKY_coin_Transactions_GetAt(hTrans, original_indexes[i], &handle);
+      cr_assert(result == SKY_OK);
+      registerHandleClose(handle);
+      result = SKY_coin_Transactions_Add(transactionsHandle, handle);
+      cr_assert(result == SKY_OK);
+    }
+    result = SKY_coin_SortTransactions(transactionsHandle, feeCalc, &sortedTxnsHandle);
+    cr_assert(result == SKY_OK, "SKY_coin_SortTransactions");
+    registerHandleClose(sortedTxnsHandle);
+    Transaction__Handle h1, h2;
+    for(int i = 0; i < expected_indexes_count; i++){
+      int expected_index = expected_indexes[i];
+      result = SKY_coin_Transactions_GetAt(sortedTxnsHandle, i, &h1);
+      cr_assert(result == SKY_OK);
+      registerHandleClose(h1);
+      result = SKY_coin_Transactions_GetAt(hTrans, expected_index, &h2);
+      cr_assert(result == SKY_OK);
+      registerHandleClose(h2);
+      assertTransactionsHandleEqual(h1, h2, testName);
+    }
+}
+
+
+Test(coin_transactions, TestSortTransactions) {
+  int n = 6;
+  int i;
+  int result;
+
+  Transactions__Handle transactionsHandle = 0;
+  Transactions__Handle transactionsHandle2 = 0;
+  Transactions__Handle hashSortedTxnsHandle = 0;
+  Transactions__Handle sortedTxnsHandle = 0;
+  Transaction__Handle transactionHandle = 0;
+  cipher__Address addr;
+  makeTransactions(0, &transactionsHandle);
+  cipher__SHA256 thirdHash;
+  for(i = 0; i < 6; i++){
+    makeEmptyTransaction(&transactionHandle);
+    makeAddress(&addr);
+    result = SKY_coin_Transaction_PushOutput(transactionHandle, &addr, 1000000, i * 1000);
+    cr_assert(result == SKY_OK);
+    result = SKY_coin_Transaction_UpdateHeader(transactionHandle);
+    cr_assert(result == SKY_OK);
+    result = SKY_coin_Transactions_Add(transactionsHandle, transactionHandle);
+    cr_assert(result == SKY_OK);
+    if( i == 2 ){
+      result = SKY_coin_Transaction_Hash(transactionHandle, &thirdHash);
+      cr_assert(result == SKY_OK);
+    }
+  }
+  sortTransactions(transactionsHandle, &hashSortedTxnsHandle);
+
+  int index1[] = {0, 1};
+  int expec1[] = {0, 1};
+  testTransactionSorting(transactionsHandle, index1, 2, expec1, 2, feeCalculator1, "Already sorted");
+  int index2[] = {1, 0};
+  int expec2[] = {0, 1};
+  testTransactionSorting(transactionsHandle, index2, 2, expec2, 2, feeCalculator1, "reverse sorted");
+  testTransactionSorting(hashSortedTxnsHandle, index2, 2, expec2, 2, feeCalculator2, "hash tiebreaker");
+
+  GoUint32_ feeCalculator3(Transaction__Handle handle, GoUint64_ *pFee){
+    cipher__SHA256 hash;
+    int result = SKY_coin_Transaction_Hash(handle, &hash);
+    if(result == SKY_OK && (memcmp(&hash, &thirdHash, sizeof(cipher__SHA256)) == 0)){
+      *pFee = MaxUint64 / 2;
+    } else {
+      coin__Transaction* pTx;
+      result = SKY_coin_Get_Transaction_Object( handle, &pTx );
+      if(result == SKY_OK){
+        coin__TransactionOutput *pOutput = pTx->Out.data;
+        *pFee = 100 * Million - pOutput->Hours;
+      }
+    }
+    return result;
+  }
+  int index3[] = {1, 2, 0};
+  int expec3[] = {2, 0, 1};
+  testTransactionSorting(transactionsHandle, index3, 3, expec3, 3, feeCalculator3, "invalid fee multiplication is capped");
+
+  GoUint32_ feeCalculator4(Transaction__Handle handle, GoUint64_ *pFee){
+    cipher__SHA256 hash;
+    int result = SKY_coin_Transaction_Hash(handle, &hash);
+    if(result == SKY_OK && (memcmp(&hash, &thirdHash, sizeof(cipher__SHA256)) == 0)){
+      *pFee = 0;
+      result = SKY_ERROR;
+    } else {
+      coin__Transaction* pTx;
+      result = SKY_coin_Get_Transaction_Object( handle, &pTx );
+      if(result == SKY_OK){
+        coin__TransactionOutput *pOutput = pTx->Out.data;
+        *pFee = 100 * Million - pOutput->Hours;
+      }
+    }
+    return result;
+  }
+
+  int index4[] = {1, 2, 0};
+  int expec4[] = {0, 1};
+  testTransactionSorting(transactionsHandle, index4, 3, expec4, 2, feeCalculator4, "failed fee calc is filtered");
+}

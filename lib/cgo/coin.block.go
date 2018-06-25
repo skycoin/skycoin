@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"reflect"
 	"unsafe"
 
@@ -14,13 +15,22 @@ import (
   #include <stdlib.h>
 
   #include "skytypes.h"
+	#include "feecalc.h"
 */
 import "C"
 
 //export SKY_coin_NewBlock
-func SKY_coin_NewBlock(_b C.Block__Handle, _currentTime uint64, _hash *C.cipher__SHA256, _txns C.Transactions__Handle, _fee uint64, _arg2 *C.Block__Handle) (____error_code uint32) {
-	feeCalculator := func(t *coin.Transaction) (uint64, error) {
-		return _fee, nil
+func SKY_coin_NewBlock(_b C.Block__Handle, _currentTime uint64, _hash *C.cipher__SHA256, _txns C.Transactions__Handle, pFeeCalc C.FeeCalc, _arg2 *C.Block__Handle) (____error_code uint32) {
+	feeCalc := func(pTx *coin.Transaction) (uint64, error) {
+		var fee C.GoUint64_
+		handle := registerTransactionHandle(pTx)
+		result := C.callFeeCalculator(pFeeCalc, handle, &fee)
+		closeHandle(Handle(handle))
+		if result == SKY_OK {
+			return uint64(fee), nil
+		} else {
+			return 0, errors.New("Error calculating fee")
+		}
 	}
 
 	____error_code = 0
@@ -38,7 +48,7 @@ func SKY_coin_NewBlock(_b C.Block__Handle, _currentTime uint64, _hash *C.cipher_
 		____error_code = SKY_ERROR
 		return
 	}
-	__arg2, ____return_err := coin.NewBlock(*b, _currentTime, hash, *txns, feeCalculator)
+	__arg2, ____return_err := coin.NewBlock(*b, _currentTime, hash, *txns, feeCalc)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
 		*_arg2 = registerBlockHandle(__arg2)

@@ -291,7 +291,7 @@ Test(coin_outputs, TestUxArrayHasDupes){
 
 Test(coin_outputs, TestUxArraySub){
 
-  int result;
+  int result, equal;
   coin__UxArray uxa, uxb, uxc, uxd;
   coin__UxArray t1, t2, t3, t4;
 
@@ -320,7 +320,7 @@ Test(coin_outputs, TestUxArraySub){
   result = SKY_coin_UxArray_Sub(&uxc, &uxa, &uxd);
   cr_assert( result == SKY_OK, "SKY_coin_UxArray_Sub failed" );
   registerMemCleanup( uxd.data );
-  cr_assert( eq( type(GoSlice), *((GoSlice*)&uxd), *((GoSlice*)&uxb)) );
+  cr_assert( eq( type(coin__UxArray), uxd, uxb ) );
 
   memset(&uxd, 0, arraySize);
   result = SKY_coin_UxArray_Sub(&uxc, &uxb, &uxd);
@@ -328,7 +328,8 @@ Test(coin_outputs, TestUxArraySub){
   registerMemCleanup( uxd.data );
   cr_assert( uxd.len == 2, "uxd length must be 2 and it is: %s", uxd.len );
   cutSlice(&uxa, 0, 2, elems_size, &t1);
-  cr_assert( eq( type(GoSlice), *((GoSlice*)&uxd), *((GoSlice*)&t1)) );
+  cr_assert( eq( type(coin__UxArray), uxd, t1 ) );
+  //cr_assert( eq( type(GoSlice), *((GoSlice*)&uxd), *((GoSlice*)&t1)) );
 
   // No intersection
   memset(&t1, 0, arraySize); memset(&t2, 0, arraySize);
@@ -338,8 +339,10 @@ Test(coin_outputs, TestUxArraySub){
   result = SKY_coin_UxArray_Sub(&uxb, &uxa, &t2);
   cr_assert( result == SKY_OK, "SKY_coin_UxArray_Sub failed" );
   registerMemCleanup( t2.data );
-  cr_assert( eq( type(GoSlice), *((GoSlice*)&uxa), *((GoSlice*)&t1)) );
-  cr_assert( eq( type(GoSlice), *((GoSlice*)&uxb), *((GoSlice*)&t2)) );
+  cr_assert( eq( type(coin__UxArray), uxa, t1 ) );
+  cr_assert( eq( type(coin__UxArray), uxb, t2 ) );
+  //cr_assert( eq( type(GoSlice), *((GoSlice*)&uxa), *((GoSlice*)&t1)) );
+  //cr_assert( eq( type(GoSlice), *((GoSlice*)&uxb), *((GoSlice*)&t2)) );
 }
 
 int isUxArraySorted(coin__UxArray* uxa){

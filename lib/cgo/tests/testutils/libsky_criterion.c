@@ -236,3 +236,17 @@ char* cr_user_coin__TransactionOutput_tostr(coin__TransactionOutput *x1){
   cr_asprintf(&out, "(coin__TransactionOutput) { Coins : %d, Hours: %d, Address: %s }", x1->Coins, x1->Hours, x1->Address);
   return out;
 }
+
+int cr_user_coin__UxArray_eq(coin__UxArray *x1, coin__UxArray *x2){
+  return equalSlices((GoSlice*)x1, (GoSlice*)x2, sizeof(coin__UxOut));
+}
+
+int cr_user_coin__UxArray_noteq(coin__UxArray *x1, coin__UxArray *x2){
+  return !equalSlices((GoSlice*)x1, (GoSlice*)x2, sizeof(coin__UxOut));
+}
+
+char* cr_user_coin__UxArray_tostr(coin__UxArray *x1){
+  char *out;
+  cr_asprintf(&out, "(coin__UxArray) { Length : %d }", x1->len);
+  return out;
+}

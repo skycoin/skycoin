@@ -3,6 +3,12 @@
 #include "skycriterion.h"
 #include "skystring.h"
 
+int equalSlices(GoSlice* slice1, GoSlice* slice2, int elem_size){
+  if(slice1->len != slice2->len)
+    return 0;
+  return memcmp(slice1->data, slice2->data, slice1->len * elem_size) == 0;
+}
+
 int cr_user_cipher__Address_eq(cipher__Address *addr1, cipher__Address *addr2){
   if(addr1->Version != addr2->Version)
     return 0;
@@ -183,11 +189,11 @@ int cr_user_coin__Transaction_eq(coin__Transaction *x1, coin__Transaction *x2){
   }
   if(!cr_user_cipher__SHA256_eq(&x1->InnerHash, &x2->InnerHash))
     return 0;
-  if(!cr_user_GoSlice__eq(&x1->Sigs, &x2->Sigs) )
+  if(!equalSlices((GoSlice*)&x1->Sigs, (GoSlice*)&x2->Sigs, sizeof(cipher__Sig)))
     return 0;
-  if(!cr_user_GoSlice__eq(&x1->In, &x2->In) )
+  if(!equalSlices((GoSlice*)&x1->In, (GoSlice*)&x2->In, sizeof(cipher__SHA256)))
     return 0;
-  if(!cr_user_GoSlice__eq(&x1->Out, &x2->Out) )
+  if(!equalSlices((GoSlice*)&x1->Out, (GoSlice*)&x2->Out, sizeof(coin__TransactionOutput)))
     return 0;
   return 1;
 }

@@ -303,10 +303,16 @@ typedef Handle BalanceResult_Handle;
 typedef Handle SpendResult_Handle;
 
 /**
- * Memory handle to access to webrpc.TxnResult
+ * Memory handle to access to coin.Transactions
  */
 
 typedef Handle TransactionResult_Handle;
+
+/**
+ * Memory handle to access to coin.SortableTransactions
+ */
+
+typedef Handle SortableTransactionResult_Handle;
 
 /**
  * Memory handle to access to wallet.Notes
@@ -331,6 +337,9 @@ typedef Handle OutputsResult_Handle;
  */
 
 typedef Handle StatusResult_Handle;
+
+
+typedef GoUint32_ (*FeeCalc)(Transaction__Handle handle, GoUint64_* pFee);
 
 /*
 #include "cipher.hash.go.h"

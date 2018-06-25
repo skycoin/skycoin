@@ -398,6 +398,20 @@ func lookupTransactionResultHandle(handle C.TransactionResult_Handle) (*webrpc.T
 	return nil, false
 }
 
+func registerSortableTransactiontHandle(obj *coin.SortableTransactions) C.SortableTransactionResult_Handle {
+	return (C.SortableTransactionResult_Handle)(registerHandle(obj))
+}
+
+func lookupSortableTransactionHandle(handle C.SortableTransactionResult_Handle) (*coin.SortableTransactions, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*coin.SortableTransactions); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
 func registerWalletNotesHandle(obj *wallet.Notes) C.WalletNotes_Handle {
 	return (C.WalletNotes_Handle)(registerHandle(obj))
 }

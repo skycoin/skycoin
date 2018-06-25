@@ -2,66 +2,70 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/skycoin/skycoin/src/daemon/pex"
+	"github.com/skycoin/skycoin/src/util/iputil"
+
+	"github.com/skycoin/skycoin/src/util/file"
 
 	"github.com/skycoin/skycoin/src/util/logging"
 )
 
 var (
 	logger = logging.MustGetLogger("monitor")
-	// ErrPeerlistFull is returned when the Pex is at a maximum
-	ErrPeerlistFull = errors.New("Peer list full")
-	// ErrInvalidAddress is returned when an address appears malformed
-	ErrInvalidAddress = errors.New("Invalid address")
-	// ErrNoLocalhost is returned if a localhost addresses are not allowed
-	ErrNoLocalhost = errors.New("Localhost address is not allowed")
-	// ErrNotExternalIP is returned if an IP address is not a global unicast address
-	ErrNotExternalIP = errors.New("IP is not a valid external IP")
-	// ErrPortTooLow is returned if a port is less than 1024
-	ErrPortTooLow = errors.New("Port must be >= 1024")
-	// ErrBlacklistedAddress returned when attempting to add a blacklisted peer
-	ErrBlacklistedAddress = errors.New("Blacklisted address")
 
 	whitespaceFilter = regexp.MustCompile(`\s`)
 
 	dialTimeout = 5 * time.Second
-	urlPeers    = os.Getenv("GOPATH") + "/src/github.com/skycoin/skycoin/peers.txt"
+	urlPeers    = getPathGo() + "/src/github.com/skycoin/skycoin/peers.txt"
 )
+
+func getPathGo() string {
+	gopath := os.Getenv("GOPATH")
+	// by default go uses GOPATH=$HOME/go if it is not set
+	if gopath == "" {
+		home := filepath.Clean(file.UserHome())
+		gopath = filepath.Join(home, "go")
+	}
+	return gopath
+}
 
 // validateAddress returns a sanitized address if valid, otherwise an error
 func validateAddress(ipPort string) (string, error) {
 	ipPort = whitespaceFilter.ReplaceAllString(ipPort, "")
 	pts := strings.Split(ipPort, ":")
 	if len(pts) != 2 {
-		return "", ErrInvalidAddress
+		return "", pex.ErrInvalidAddress
 	}
 	ip := net.ParseIP(pts[0])
 	if ip == nil {
-		return "", ErrInvalidAddress
+		return "", pex.ErrInvalidAddress
 	} else if ip.IsLoopback() {
-		if false {
-			return "", ErrNoLocalhost
+		if iputil.IsLocalhost(pts[0]) {
+			return "", pex.ErrNoLocalhost
 		}
 	} else if !ip.IsGlobalUnicast() {
-		return "", ErrNotExternalIP
+		return "", pex.ErrNotExternalIP
 	}
 
 	port, err := strconv.ParseUint(pts[1], 10, 16)
 	if err != nil {
-		return "", ErrInvalidAddress
+		return "", pex.ErrInvalidAddress
 	}
 
 	if port < 1024 {
-		return "", ErrPortTooLow
+		return "", pex.ErrPortTooLow
 	}
 
 	return ipPort, nil
@@ -182,7 +186,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println(string(outputJSON))
+	log.Println(string(outputJSON))
 
 	if *isFile {
 		outputFILE, err := json.MarshalIndent(output, "", "     ")
@@ -191,11 +195,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		fmt.Println(string(outputFILE))
+		log.Println(outputFILE)
 	}
 
-}
-
-func mio() error {
-	return nil
 }

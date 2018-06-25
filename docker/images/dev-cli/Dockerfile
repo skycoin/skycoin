@@ -130,6 +130,7 @@ RUN set -ex ; \
     gdbserver \
     gdb \
     vim \
+    less \
     ctags \
     vim-scripts \
     screen \

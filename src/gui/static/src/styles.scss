@@ -339,3 +339,12 @@ On-boarding components
     }
   }
 }
+
+.qr-code-button {
+  opacity: 0.6;
+  cursor: pointer;
+
+  &:hover {
+    opacity: 1;
+  }
+}

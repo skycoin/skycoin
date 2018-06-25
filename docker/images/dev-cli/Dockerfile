@@ -131,7 +131,6 @@ RUN set -ex ; \
     gdbserver \
     gdb \
     vim \
-    tig \
     ctags \
     vim-scripts \
     screen \
@@ -179,12 +178,7 @@ RUN git clone https://github.com/fatih/vim-go /usr/share/vim/vim80/pack/dev/star
     git clone https://github.com/tpope/vim-fugitive /usr/share/vim/vim80/pack/dev/start/vim-fugitive && \
     git clone https://github.com/Shougo/vimshell.vim /usr/share/vim/vim80/pack/dev/start/0vimshell && \
     git clone https://github.com/Shougo/vimproc.vim /usr/share/vim/vim80/pack/dev/start/0vimproc && \
-    cd /usr/share/vim/vim80/pack/dev/start/0vimproc && make ;\
-    git clone https://github.com/iberianpig/tig-explorer.vim.git /tmp/tig-explorer;\
-    cp /tmp/tig-explorer/autoload/tig_explorer.vim /usr/share/vim/vim80/autoload;\
-    cp /tmp/tig-explorer/plugin/tig_explorer.vim /usr/share/vim/vim80/plugin;\
-    rm -rf /tmp/tig-explorer
-
+    cd /usr/share/vim/vim80/pack/dev/start/0vimproc && make
 
 WORKDIR $GOPATH/src/github.com/skycoin
 VOLUME $GOPATH/src/

@@ -451,18 +451,17 @@ func SKY_coin_Transactions_Add(tsh C.Transactions__Handle, th C.Transaction__Han
 	return
 }
 
-
 //export SKY_coin_Transactions_Fees
 func SKY_coin_Transactions_Fees(tsh C.Transactions__Handle, pFeeCalc C.FeeCalc, _result *uint64) (____error_code uint32) {
-	feeCalc := func(pTx *coin.Transaction)(uint64, error){
+	feeCalc := func(pTx *coin.Transaction) (uint64, error) {
 		var fee C.GoUint64_
 		handle := registerTransactionHandle(pTx)
-		result := C.callFeeCalculator(pFeeCalc, handle, &fee);
+		result := C.callFeeCalculator(pFeeCalc, handle, &fee)
 		closeHandle(Handle(handle))
 		if result == SKY_OK {
 			return uint64(fee), nil
 		} else {
-			return 0,  errors.New("Error calculating fee")
+			return 0, errors.New("Error calculating fee")
 		}
 	}
 	____error_code = 0
@@ -553,8 +552,8 @@ func SKY_coin_Transactions_TruncateBytesTo(tsh C.Transactions__Handle, _size int
 }
 
 //export SKY_coin_SortTransactions
-func SKY_coin_SortTransactions(tsh C.Transactions__Handle, pFeeCalc C.FeeCalc, ptsh *C.Transactions__Handle)  (____error_code uint32) {
-	feeCalc := func(pTx *coin.Transaction)(uint64, error){
+func SKY_coin_SortTransactions(tsh C.Transactions__Handle, pFeeCalc C.FeeCalc, ptsh *C.Transactions__Handle) (____error_code uint32) {
+	feeCalc := func(pTx *coin.Transaction) (uint64, error) {
 		var fee C.GoUint64_
 		handle := registerTransactionHandle(pTx)
 		result := C.callFeeCalculator(pFeeCalc, handle, &fee)
@@ -562,7 +561,7 @@ func SKY_coin_SortTransactions(tsh C.Transactions__Handle, pFeeCalc C.FeeCalc, p
 		if result == SKY_OK {
 			return uint64(fee), nil
 		} else {
-			return 0,  errors.New("Error calculating fee")
+			return 0, errors.New("Error calculating fee")
 		}
 	}
 	____error_code = 0
@@ -580,8 +579,8 @@ func SKY_coin_SortTransactions(tsh C.Transactions__Handle, pFeeCalc C.FeeCalc, p
 }
 
 //export SKY_coin_NewSortableTransactions
-func SKY_coin_NewSortableTransactions(tsh C.Transactions__Handle, pFeeCalc C.FeeCalc, ptsh *C.SortableTransactionResult_Handle)  (____error_code uint32) {
-	feeCalc := func(pTx *coin.Transaction)(uint64, error){
+func SKY_coin_NewSortableTransactions(tsh C.Transactions__Handle, pFeeCalc C.FeeCalc, ptsh *C.SortableTransactionResult_Handle) (____error_code uint32) {
+	feeCalc := func(pTx *coin.Transaction) (uint64, error) {
 		var fee C.GoUint64_
 		handle := registerTransactionHandle(pTx)
 		result := C.callFeeCalculator(pFeeCalc, handle, &fee)
@@ -589,7 +588,7 @@ func SKY_coin_NewSortableTransactions(tsh C.Transactions__Handle, pFeeCalc C.Fee
 		if result == SKY_OK {
 			return uint64(fee), nil
 		} else {
-			return 0,  errors.New("Error calculating fee")
+			return 0, errors.New("Error calculating fee")
 		}
 	}
 	____error_code = 0

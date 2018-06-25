@@ -21,7 +21,7 @@ import "C"
 
 //export SKY_coin_NewBlock
 func SKY_coin_NewBlock(_b C.Block__Handle, _currentTime uint64, _hash *C.cipher__SHA256, _txns C.Transactions__Handle, pFeeCalc C.FeeCalc, _arg2 *C.Block__Handle) (____error_code uint32) {
-	feeCalc := func(pTx *coin.Transaction)(uint64, error){
+	feeCalc := func(pTx *coin.Transaction) (uint64, error) {
 		var fee C.GoUint64_
 		handle := registerTransactionHandle(pTx)
 		result := C.callFeeCalculator(pFeeCalc, handle, &fee)
@@ -29,7 +29,7 @@ func SKY_coin_NewBlock(_b C.Block__Handle, _currentTime uint64, _hash *C.cipher_
 		if result == SKY_OK {
 			return uint64(fee), nil
 		} else {
-			return 0,  errors.New("Error calculating fee")
+			return 0, errors.New("Error calculating fee")
 		}
 	}
 

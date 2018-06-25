@@ -99,3 +99,64 @@ Test(cipher_secp256k1_sig, TestSigRecover){
 	SKY_secp256k1go_Field_Equals(&pubKey.Y, &expected.Y, &equal);
 	cr_assert(error_code == SKY_OK && equal, "SKY_secp256k1go_Signature_Recover Ys different.");
 }
+
+Test(cipher_secp256k1_sig, TestSigVerify) {
+
+  Number msg;
+  Signature sig;
+  secp256k1go__XY key;
+
+  memset(&msg, 0, sizeof(Number));
+  memset(&sig, 0, sizeof(Signature));
+  memset(&key, 0, sizeof(secp256k1go__XY));
+
+  GoString str = {
+      "D474CBF2203C1A55A411EEC4404AF2AFB2FE942C434B23EFE46E9F04DA8433CA", 64};
+  GoUint32 result;
+  result = SKY_secp256k1go_Number_SetHex(&msg, str);
+  cr_assert(result == SKY_OK, "SKY_secp256k1go_Number_SetHex failed");
+
+  str.p = "98F9D784BA6C5C77BB7323D044C0FC9F2B27BAA0A5B0718FE88596CC56681980";
+  result = SKY_secp256k1go_Number_SetHex(&sig.R, str);
+  cr_assert(result == SKY_OK, "SKY_secp256k1go_Number_SetHex failed");
+
+  str.p = "E3599D551029336A745B9FB01566624D870780F363356CEE1425ED67D1294480";
+  result = SKY_secp256k1go_Number_SetHex(&sig.S, str);
+  cr_assert(result == SKY_OK, "SKY_secp256k1go_Number_SetHex failed");
+
+  str.p = "7d709f85a331813f9ae6046c56b3a42737abf4eb918b2e7afee285070e968b93";
+  result = SKY_secp256k1go_Field_SetHex(&key.X, str);
+  cr_assert(result == SKY_OK, "SKY_secp256k1go_Field_SetHex failed");
+
+  str.p = "26150d1a63b342986c373977b00131950cb5fc194643cad6ea36b5157eba4602";
+  result = SKY_secp256k1go_Field_SetHex(&key.Y, str);
+  cr_assert(result == SKY_OK, "SKY_secp256k1go_Field_SetHex failed");
+  GoUint8 valid;
+  result = SKY_secp256k1go_Signature_Verify(&sig, &key, &msg, &valid);
+  cr_assert(result == SKY_OK, "SKY_secp256k1go_Signature_Verify failed");
+  cr_assert(valid, "sig.Verify 1");
+
+  str.p = "2c43a883f4edc2b66c67a7a355b9312a565bb3d33bb854af36a06669e2028377";
+  result = SKY_secp256k1go_Number_SetHex(&msg, str);
+  cr_assert(result == SKY_OK, "SKY_secp256k1go_Number_SetHex failed");
+
+  str.p = "6b2fa9344462c958d4a674c2a42fbedf7d6159a5276eb658887e2e1b3915329b";
+  result = SKY_secp256k1go_Number_SetHex(&sig.R, str);
+  cr_assert(result == SKY_OK, "SKY_secp256k1go_Number_SetHex failed");
+
+  str.p = "eddc6ea7f190c14a0aa74e41519d88d2681314f011d253665f301425caf86b86";
+  result = SKY_secp256k1go_Number_SetHex(&sig.S, str);
+  cr_assert(result == SKY_OK, "SKY_secp256k1go_Number_SetHex failed");
+  char buffer_xy[1024];
+  cipher__PubKeySlice xy = {buffer_xy, 0, 1024};
+  str.p = "02a60d70cfba37177d8239d018185d864b2bdd0caf5e175fd4454cc006fd2d75ac";
+  str.n = 66;
+  result = SKY_base58_String2Hex(str, &xy);
+  cr_assert(result == SKY_OK, "SKY_base58_String2Hex");
+  GoSlice xyConvert = {xy.data, xy.len, xy.cap};
+  result = SKY_secp256k1go_XY_ParsePubkey(&key, xyConvert, &valid);
+  cr_assert(result == SKY_OK && valid, "SKY_secp256k1go_XY_ParsePubkey failed");
+  result = SKY_secp256k1go_Signature_Verify(&sig, &key, &msg, &valid);
+  cr_assert(result == SKY_OK, "SKY_secp256k1go_Signature_Verify failed");
+  cr_assert(valid, "sig.Verify 2");
+}

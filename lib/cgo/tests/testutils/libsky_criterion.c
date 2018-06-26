@@ -250,3 +250,20 @@ char* cr_user_coin__UxArray_tostr(coin__UxArray *x1){
   cr_asprintf(&out, "(coin__UxArray) { Length : %d }", x1->len);
   return out;
 }
+
+int cr_user_Number_eq(Number *n1, Number *n2) {
+  return (equalSlices((GoSlice*)&n1->nat,(GoSlice*)&n2->nat,sizeof(GoInt)) &&
+          ((GoInt)n1->neg == (GoInt)n2->neg));
+}
+
+int cr_user_Number_noteq(Number *n1, Number *n2) {
+  return ( !(equalSlices((GoSlice*)&n1->nat,(GoSlice*)&n2->nat,sizeof(GoInt))) ||
+          ((GoInt)n1->neg != (GoInt)n2->neg));
+}
+
+char *cr_user_Number_tostr(Number *n1) {
+  char *out;
+  cr_asprintf(&out, "(Number) { nat : [.data %s, .len %d , cap %d] , neg %d }",
+              (char *)n1->nat.data, n1->nat.len, n1->nat.cap, (GoInt)n1->neg);
+  return out;
+}

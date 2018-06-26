@@ -63,4 +63,8 @@ extern int cr_user_coin__TransactionOutput_eq(coin__TransactionOutput *x1, coin_
 extern int cr_user_coin__TransactionOutput_noteq(coin__TransactionOutput *x1, coin__TransactionOutput *x2);
 extern char* cr_user_coin__TransactionOutput_tostr(coin__TransactionOutput *x1);
 
+extern int cr_user_Number_eq(Number *n1, Number  *n2);
+extern int cr_user_Number_noteq(Number *n1, Number  *n2);
+extern char* cr_user_Number_tostr(Number *n1);
+
 #endif //LIBCRITERION_H

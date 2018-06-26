@@ -26,6 +26,8 @@
 #define X2   "15b7e7d00f024bffcd2e47524bb7b7d3a6b251e23a3a43191ed7f0a418d9a578"
 #define Y2 	 "bf29a25e2d1f32c5afb18b41ae60112723278a8af31275965a6ec1d95334e840"
 
+#define forceLowS true
+
 TestSuite(cipher_secp256k1_sig, .init = setup, .fini = teardown);
 
 Test(cipher_secp256k1_sig, TestSigRecover){
@@ -159,4 +161,65 @@ Test(cipher_secp256k1_sig, TestSigVerify) {
   result = SKY_secp256k1go_Signature_Verify(&sig, &key, &msg, &valid);
   cr_assert(result == SKY_OK, "SKY_secp256k1go_Signature_Verify failed");
   cr_assert(valid, "sig.Verify 2");
+}
+
+Test(cipher_secp256k1_sig, TestSigSign) {
+
+  Number sec;
+  Number msg;
+  Number non;
+  Signature sig;
+  GoInt recid;
+
+  memset(&sec, 0, sizeof(Number));
+  memset(&msg, 0, sizeof(Number));
+  memset(&non, 0, sizeof(Number));
+
+  memset(&sig, 0, sizeof(Signature));
+
+  GoString str = {
+      "73641C99F7719F57D8F4BEB11A303AFCD190243A51CED8782CA6D3DBE014D146", 64};
+  GoUint32 result;
+  result = SKY_secp256k1go_Number_SetHex(&sec, str);
+  cr_assert(result == SKY_OK, "SKY_secp256k1go_Number_SetHex failed");
+
+  str.p = "D474CBF2203C1A55A411EEC4404AF2AFB2FE942C434B23EFE46E9F04DA8433CA";
+  str.n = 64;
+  result = SKY_secp256k1go_Number_SetHex(&msg, str);
+  cr_assert(result == SKY_OK, "SKY_secp256k1go_Number_SetHex failed");
+
+  str.p = "9E3CD9AB0F32911BFDE39AD155F527192CE5ED1F51447D63C4F154C118DA598E";
+  str.n = 64;
+  result = SKY_secp256k1go_Number_SetHex(&non, str);
+  cr_assert(result == SKY_OK, "SKY_secp256k1go_Number_SetHex failed");
+
+  GoInt res;
+
+  result = SKY_secp256k1go_Signature_Sign(&sig, &sec, &msg, &non, &recid, &res);
+  cr_assert(result == SKY_OK, "SKY_secp256k1go_Signature_Sign failed");
+  cr_assert(res == 1, "res failed %d", res);
+
+  if (forceLowS) {
+    cr_assert(recid == 0, " recid failed %d", recid);
+  } else {
+    cr_assert(recid == 1, " recid failed %d", recid);
+  }
+  str.p = "98f9d784ba6c5c77bb7323d044c0fc9f2b27baa0a5b0718fe88596cc56681980";
+  str.n = 64;
+  result = SKY_secp256k1go_Number_SetHex(&non, str);
+  cr_assert(result == SKY_OK, "SKY_secp256k1go_Number_SetHex failed");
+  cr_assert(eq(type(Number), sig.R, non));
+
+  if (forceLowS) {
+    str.p = "1ca662aaefd6cc958ba4604fea999db133a75bf34c13334dabac7124ff0cfcc1";
+    str.n = 64;
+    result = SKY_secp256k1go_Number_SetHex(&non, str);
+    cr_assert(result == SKY_OK, "SKY_secp256k1go_Number_SetHex failed");
+  } else {
+    str.p = "E3599D551029336A745B9FB01566624D870780F363356CEE1425ED67D1294480";
+    str.n = 64;
+    result = SKY_secp256k1go_Number_SetHex(&non, str);
+    cr_assert(result == SKY_OK, "SKY_secp256k1go_Number_SetHex failed");
+  }
+  cr_assert(eq(type(Number), sig.S, non));
 }

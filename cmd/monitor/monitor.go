@@ -9,24 +9,16 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/skycoin/skycoin/src/daemon/pex"
-	"github.com/skycoin/skycoin/src/util/iputil"
-
 	"github.com/skycoin/skycoin/src/util/file"
 
 	"github.com/skycoin/skycoin/src/util/logging"
 )
 
 var (
-	logger = logging.MustGetLogger("monitor")
-
-	whitespaceFilter = regexp.MustCompile(`\s`)
-
+	logger      = logging.MustGetLogger("monitor")
 	dialTimeout = 5 * time.Second
 	urlPeers    = getPathGo() + "/src/github.com/skycoin/skycoin/peers.txt"
 )
@@ -39,61 +31,6 @@ func getPathGo() string {
 		gopath = filepath.Join(home, "go")
 	}
 	return gopath
-}
-
-// validateAddress returns a sanitized address if valid, otherwise an error
-func validateAddress(ipPort string) (string, error) {
-	ipPort = whitespaceFilter.ReplaceAllString(ipPort, "")
-	pts := strings.Split(ipPort, ":")
-	if len(pts) != 2 {
-		return "", pex.ErrInvalidAddress
-	}
-	ip := net.ParseIP(pts[0])
-	if ip == nil {
-		return "", pex.ErrInvalidAddress
-	} else if ip.IsLoopback() {
-		if iputil.IsLocalhost(pts[0]) {
-			return "", pex.ErrNoLocalhost
-		}
-	} else if !ip.IsGlobalUnicast() {
-		return "", pex.ErrNotExternalIP
-	}
-
-	port, err := strconv.ParseUint(pts[1], 10, 16)
-	if err != nil {
-		return "", pex.ErrInvalidAddress
-	}
-
-	if port < 1024 {
-		return "", pex.ErrPortTooLow
-	}
-
-	return ipPort, nil
-}
-
-// parseRemotePeerList parses a remote peers.txt file
-// The peers list format is newline separated ip:port
-// Any lines that don't parse to an ip:port are skipped
-// Localhost ip:port addresses are ignored
-func parseRemotePeerList(body string) []string {
-	var peers []string
-	for _, addr := range strings.Split(string(body), "\n") {
-		addr = whitespaceFilter.ReplaceAllString(addr, "")
-		if addr == "" {
-			continue
-		}
-
-		// Never allow localhost addresses from the remote peers list
-		a, err := validateAddress(addr)
-		if err != nil {
-			logger.Errorf("Remote peers list has invalid address %s: %v", addr, err)
-			continue
-		}
-
-		peers = append(peers, a)
-	}
-
-	return peers
 }
 
 type peer struct {
@@ -117,7 +54,7 @@ func getPeers() ([]string, map[string]peer) {
 		os.Exit(1)
 	}
 
-	pexList := parseRemotePeerList(string(b))
+	pexList := pex.ParseRemotePeerList(string(b))
 
 	var output []string
 	peers := make(map[string]peer, len(pexList))

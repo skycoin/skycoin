@@ -7,7 +7,8 @@ import (
 // ReadableTransactionV2 represents readable transaction api/V2
 type ReadableTransactionV2 struct {
 	ReadableTransaction
-	InData []ReadableTransactionInput `json:"inputs_data"`
+	In     []string                   `json:"_,omitempty"`
+	InData []ReadableTransactionInput `json:"inputs"`
 }
 
 // ReadableBlockV2 represents readable block api/V2

@@ -57,7 +57,7 @@ func NewReadableTransactionV2(gateway Gatewayer, transaction *visor.ReadableTran
 	r.InnerHash = transaction.InnerHash
 	r.Timestamp = transaction.Timestamp
 	r.Sigs = transaction.Sigs
-	r.In = transaction.In
+	r.In = nil
 	r.Out = transaction.Out
 	r.InData = inputs
 	return &r, nil

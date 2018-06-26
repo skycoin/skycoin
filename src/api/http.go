@@ -428,8 +428,6 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	// get all the address affected uxouts.
 	webHandlerV1("/address_uxouts", getAddrUxOuts(gateway))
 
-
-
 	// Explorer handler
 
 	// get set of pending transactions

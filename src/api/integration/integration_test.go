@@ -4050,14 +4050,9 @@ func TestDisableGUIAPI(t *testing.T) {
  */
 
 func testTransactionV2(t *testing.T, txn *visor.ReadableTransactionV2) {
-	for _, in := range txn.In {
-		found := false
-		for _, input := range txn.InData {
-			if input.Hash == in {
-				found = true
-			}
-		}
-		require.Equal(t, true, found)
+	for _, input := range txn.InData {
+		require.True(t, len(input.Hash) > 0)
+		require.True(t, len(input.Address) > 0)
 	}
 }
 

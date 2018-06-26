@@ -740,11 +740,11 @@ Test(cipher_crypto, TestGenerateDeterministicKeyPairsUsesAllBytes) {
   GoString seed = {"property diet little foster provide disagree witness "
                    "mountain alley weekend kitten general",
                    90};
-GoSlice seedSlice = {&seed,sizeof(GoString),sizeof(GoString)};
+GoSlice seedSlice = {&seed,90,90};
 char buffer_seckeys[1024];
 char buffer_seckeys2[1024];
-cipher__PubKeySlice seckeys={buffer_seckeys,0,0};
-cipher__PubKeySlice seckeys2={buffer_seckeys2,0,0};
+cipher__PubKeySlice seckeys={buffer_seckeys,0,1024};
+cipher__PubKeySlice seckeys2={buffer_seckeys2,0,1024};
   GoInt result;
   result = SKY_cipher_GenerateDeterministicKeyPairs(seedSlice,3,&seckeys);
   cr_assert(result == SKY_OK,"SKY_cipher_GenerateDeterministicKeyPairs failed");

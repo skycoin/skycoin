@@ -4,7 +4,7 @@
 
 
 **Compare**
-<table class="table table-bordered table-striped table-condensed">
+<table class="table table-bordered table-condensed">
    <tr>
       <td>tool</td>
       <td>language</td>
@@ -18,7 +18,7 @@
       <td>RPS</td>
    </tr>
    <tr>
-     <td>[wrk](https://github.com/wg/wrk)</td>
+     <td><a href="https://github.com/wg/wrk">wrk<a/></td>
      <td> C, Lua</td>
      <td>GET</td>
      <td>NO</td>
@@ -30,7 +30,7 @@
      <td>~15000</td>
    </tr>
    <tr>
-      <td>[vegeta](https://github.com/tsenart/vegeta)</td>
+      <td><a href="https://github.com/tsenart/vegeta">vegeta</a></td>
       <td>Go</td>
       <td>ALL</td>
       <td>YES</td>
@@ -42,7 +42,7 @@
       <td> ~7000 - reached files count limitation</td>
    </tr>
    <tr>
-     <td>[hey](https://github.com/rakyll/hey)</td>
+     <td><a href="https://github.com/rakyll/hey">hey</a></td>
      <td>Go</td>
      <td>GET, POST, PUT, DELETE, HEAD, OPTIONS</td>
      <td>NO</td>
@@ -54,7 +54,7 @@
      <td>~11000</td>
    </tr>
    <tr>
-     <td>[bombarider](https://github.com/codesenberg/bombardier)</td>
+     <td><a href="https://github.com/codesenberg/bombardier">bombarider</a></td>
      <td>Go</td>
      <td>ALL</td>
      <td>NO</td>
@@ -66,7 +66,7 @@
      <td>~15000</td>
    </tr>
    <tr>
-      <td>[sniper](https://github.com/btfak/sniper)</td>
+      <td><a href="https://github.com/btfak/sniper">sniper</a></td>
       <td>Go</td>
       <td/>GET, POST</td>
       <td>YES</td>
@@ -78,7 +78,7 @@
       <td>~1600</td>
    </tr>
    <tr>
-     <td>[gobench](https://github.com/cmpxchg16/gobench)</td>
+     <td><a href="https://github.com/cmpxchg16/gobench">gobench</a></td>
      <td>Go</td>
      <td>GET, POST</td>
      <td>NO</td>
@@ -101,7 +101,7 @@ which requires the availability of Erlang VM and (yandex-tank)[https://github.co
 The last one can be used for periodic stress testing of large distributed systems.
 
 Another kind of tools is SAAS for benchmark testing. A good example is [Nginx Amplify](https://www.nginx.com/blog/setting-up-nginx-amplify-in-10-minutes/):
-"NGINX Amplify is a SaaS monitoring tool for NGINX and underlying system components. NGINX Amplify is free to use for up to 5 monitored servers."
+"NGINX Amplify is a SaaS monitoring tool for NGINX and underlying system components. NGINX Amplify is free to use for up to 5 monitored servers.
 The more optimal tool for API benchmark testing is [vegeta](https://github.com/tsenart/vegeta).
 The tool is written on Go and can be embedded in skycoin code.
 I reached a limit on ~7000 RPS and the reason was the limitation in opened files on my Mac.

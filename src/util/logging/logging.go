@@ -62,3 +62,10 @@ func DisableColors() {
 func SetLevel(level logrus.Level) {
 	log.SetLevel(level)
 }
+
+// SetPkgLvels sets the independent log levels for packages
+func SetPackageLevels(config []PkgLogConfig) {
+	log.Debugf("Setting up logging config %v", config)
+	ConfigPkgLogging(log, config)
+	log.Debugf("Logging package levels %v", log.PkgConfig)
+}

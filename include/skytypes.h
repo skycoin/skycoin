@@ -194,11 +194,6 @@ typedef struct {
 	GoSlice_ 	nat;
 } Number;
 
-/**
- * RIPEMD-160 hash.
- */
-typedef unsigned char Ripemd160[20];
-
 typedef struct {
 	//TODO: stdevEclipse Define Signature
 	Number R;

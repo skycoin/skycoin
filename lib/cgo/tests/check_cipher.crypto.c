@@ -183,7 +183,7 @@ Test(cipher_crypto, TestPubKeyToAddress) {
   cipher__PubKey p;
   cipher__SecKey s;
   cipher__Address addr;
-  Ripemd160 h;
+  cipher__Ripemd160 h;
   int errcode;
 
   SKY_cipher_GenerateKeyPair(&p, &s);

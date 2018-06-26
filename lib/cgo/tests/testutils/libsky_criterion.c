@@ -79,15 +79,15 @@ char *cr_user_cipher__SecKey_tostr(cipher__SecKey *seckey1)
 }
 
 
-int cr_user_cipher__Ripemd160_noteq(Ripemd160 *rp1, Ripemd160 *rp2){
-  return memcmp((void *)rp1,(void *)rp2, sizeof(Ripemd160)) != 0;
+int cr_user_cipher__Ripemd160_noteq(cipher__Ripemd160 *rp1, cipher__Ripemd160 *rp2){
+  return memcmp((void *)rp1,(void *)rp2, sizeof(cipher__Ripemd160)) != 0;
 }
 
-int cr_user_cipher__Ripemd160_eq(Ripemd160 *rp1, Ripemd160 *rp2){
-  return memcmp((void *)rp1,(void *)rp2, sizeof(Ripemd160)) == 0;
+int cr_user_cipher__Ripemd160_eq(cipher__Ripemd160 *rp1, cipher__Ripemd160 *rp2){
+  return memcmp((void *)rp1,(void *)rp2, sizeof(cipher__Ripemd160)) == 0;
 }
 
-char *cr_user_cipher__Ripemd160_tostr(Ripemd160 *rp1)
+char *cr_user_cipher__Ripemd160_tostr(cipher__Ripemd160 *rp1)
 {
   char *out;
   char hexdump[101];

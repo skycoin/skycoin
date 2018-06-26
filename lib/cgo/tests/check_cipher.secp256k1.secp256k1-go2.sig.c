@@ -10,7 +10,6 @@
 #include "skyerrors.h"
 #include "skystring.h"
 #include "skytest.h"
-#include "skynumber.h"
 
 #define BUFFER_SIZE 1024
 
@@ -36,12 +35,12 @@ Test(cipher_secp256k1_sig, TestSigRecover){
 	Number msg;
 	secp256k1go__XY pubKey;
 	secp256k1go__XY expected;
-	
+
 	memset(&pubKey, 0, sizeof(secp256k1go__XY));
 	memset(&expected, 0, sizeof(secp256k1go__XY));
 	memset(&sig, 0, sizeof(Signature));
 	memset(&msg, 0, sizeof(Number));
-	
+
 	GoString R = {R1, strlen(R1)};
 	GoString S = {S1, strlen(S1)};
 	GoString MSG = {MSG1, strlen(MSG1)};
@@ -49,7 +48,7 @@ Test(cipher_secp256k1_sig, TestSigRecover){
 	GoString Y = {Y1, strlen(Y1)};
 	GoInt rid = 0;
 	GoInt8 result;
-	
+
 	error_code = SKY_secp256k1go_Number_SetHex(&sig.R, R);
 	cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Number_SetHex for R failed");
 	error_code = SKY_secp256k1go_Number_SetHex(&sig.S, S);
@@ -60,14 +59,14 @@ Test(cipher_secp256k1_sig, TestSigRecover){
 	cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Number_SetHex for X failed");
 	error_code = SKY_secp256k1go_Field_SetHex(&expected.Y, Y);
 	cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Number_SetHex for Y failed");
-	
+
 	error_code = SKY_secp256k1go_Signature_Recover(&sig, &pubKey, &msg, rid, &result);
 	cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Signature_Recover failed");
 	cr_assert(result, "SKY_secp256k1go_Signature_Recover failed");
-	
+
 	cr_assert(cr_user_secp256k1go__Field_eq(&pubKey.X, &expected.X), "SKY_secp256k1go_Signature_Recover Xs different.");
 	cr_assert(cr_user_secp256k1go__Field_eq(&pubKey.Y, &expected.Y), "SKY_secp256k1go_Signature_Recover Xs different.");
-	
+
 	R.p = R2;
 	R.n = strlen(R2);
 	S.p = S2;
@@ -79,7 +78,7 @@ Test(cipher_secp256k1_sig, TestSigRecover){
 	Y.p = Y2;
 	Y.n = strlen(Y2);
 	rid = 1;
-	
+
 	error_code = SKY_secp256k1go_Number_SetHex(&sig.R, R);
 	cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Number_SetHex for R failed");
 	error_code = SKY_secp256k1go_Number_SetHex(&sig.S, S);
@@ -90,11 +89,11 @@ Test(cipher_secp256k1_sig, TestSigRecover){
 	cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Number_SetHex for X failed");
 	error_code = SKY_secp256k1go_Field_SetHex(&expected.Y, Y);
 	cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Number_SetHex for Y failed");
-	
+
 	error_code = SKY_secp256k1go_Signature_Recover(&sig, &pubKey, &msg, rid, &result);
 	cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Signature_Recover failed");
 	cr_assert(result, "SKY_secp256k1go_Signature_Recover failed");
-	
+
 	GoInt8 equal;
 	error_code = SKY_secp256k1go_Field_Equals(&pubKey.X, &expected.X, &equal);
 	cr_assert(error_code == SKY_OK && equal, "SKY_secp256k1go_Signature_Recover Xs different.");

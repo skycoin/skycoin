@@ -401,7 +401,7 @@ Test(cipher_address, TestBitcoinAddressFromBytes) {
 
   // Invalid checksum
   b_convert.len = b_len;
-  ((char *)b_convert.data)[b_convert.len - 1] = '2';
+  (((char *)b_convert.data)[b_convert.len - 1])++;
   cr_assert(SKY_cipher_BitcoinAddressFromBytes(b_convert, &addr2) == SKY_ERROR,
             "Invalid checksum");
 

@@ -42,5 +42,3 @@ unsigned int b64_encodef(char *InFile, char *OutFile);
 // Input : filenames
 // returns size of output
 int b64_decodef(char *InFile, char *OutFile);
-
-//unsigned int b64_encode_string(const unsigned char* in, unsigned int in_len, unsigned char* out);

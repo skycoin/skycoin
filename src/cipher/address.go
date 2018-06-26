@@ -24,6 +24,7 @@ In base 58 format the address is 20+1+4 bytes
 -- the first 4 bytes of the SHA256 of the 21 bytes that come before
 
 */
+
 // Checksum 4 bytes
 type Checksum [4]byte
 

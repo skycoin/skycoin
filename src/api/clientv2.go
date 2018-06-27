@@ -18,6 +18,7 @@ func NewClientV2(addr string) *ClientV2 {
 	return &ClientV2{*NewClient(addr)}
 }
 
+// Get Adds extra data to response
 func (c *ClientV2) Get(endpoint string, obj interface{}) error {
 	return c.Client.Get(endpoint, obj)
 }

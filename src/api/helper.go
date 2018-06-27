@@ -89,10 +89,10 @@ func NewReadableTransactionInputsV2(gateway Gatewayer, transaction *visor.Readab
 			calculatedHours = 0
 		}
 		r := visor.ReadableTransactionInput{
-			Hash:    ux.Hash().Hex(),
-			Address: ux.Body.Address.String(),
-			Coins:   coinVal,
-			Hours:   ux.Body.Hours,
+			Hash:            ux.Hash().Hex(),
+			Address:         ux.Body.Address.String(),
+			Coins:           coinVal,
+			Hours:           ux.Body.Hours,
 			CalculatedHours: calculatedHours,
 		}
 		inputs = append(inputs, r)

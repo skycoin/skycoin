@@ -1,9 +1,22 @@
 import { Component, Inject, OnInit, ViewChild } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { WalletService } from '../../../../services/wallet.service';
-import { MatDialogRef } from '@angular/material/dialog';
+import { MatDialog, MatDialogRef, MatDialogConfig } from '@angular/material/dialog';
 import { ButtonComponent } from '../../../layout/button/button.component';
+import { parseResponseMessage } from '../../../../utils/index';
 import { MAT_DIALOG_DATA } from '@angular/material';
+
+@Component({
+  selector: 'app-create-wallet-error-dialog',
+  templateUrl: './create-wallet-error-dialog.component.html',
+  styleUrls: ['./create-wallet-error-dialog.component.scss']
+})
+export class CreateWalletErrorDialogComponent {
+  constructor(
+    public dialogRef: MatDialogRef<CreateWalletErrorDialogComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: any,
+  ) {}
+}
 
 @Component({
   selector: 'app-create-wallet',
@@ -24,6 +37,7 @@ export class CreateWalletComponent implements OnInit {
   constructor(
     @Inject(MAT_DIALOG_DATA) public data,
     public dialogRef: MatDialogRef<CreateWalletComponent>,
+    private dialog: MatDialog,
     private walletService: WalletService,
   ) {}
 
@@ -33,6 +47,15 @@ export class CreateWalletComponent implements OnInit {
 
   closePopup() {
     this.dialogRef.close();
+  }
+  
+  errorDialog(err) {
+    const config = new MatDialogConfig();
+    config.width = '300px';
+    config.data = {
+        description: (typeof err === 'string' ? err : parseResponseMessage(err['_body']).trim() + '.')
+    };
+    this.dialog.open(CreateWalletErrorDialogComponent, config);
   }
 
   createWallet() {
@@ -47,6 +70,7 @@ export class CreateWalletComponent implements OnInit {
         this.createButton.setError(e);
         this.cancelButton.disabled = false;
         this.disableDismiss = false;
+        this.errorDialog(e);
       });
   }
 

@@ -18,6 +18,10 @@ func NewClientV2(addr string) *ClientV2 {
 	return &ClientV2{*NewClient(addr)}
 }
 
+func (c *ClientV2) Get(endpoint string, obj interface{}) error {
+	return c.Client.Get(endpoint, obj)
+}
+
 // BlockByHash makes a request to GET /api/v2/block?hash=xxx
 func (c *ClientV2) BlockByHash(hash string) (*visor.ReadableBlockV2, error) {
 	v := url.Values{}

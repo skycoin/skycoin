@@ -83,11 +83,17 @@ func NewReadableTransactionInputsV2(gateway Gatewayer, transaction *visor.Readab
 			logger.Errorf("Failed to convert coins to string: %v", err)
 			return nil, err
 		}
+		calculatedHours, err := ux.CoinHours(transaction.Timestamp)
+		if err != nil {
+			logger.Critical().Warningf("Ignoring NewReadableTransactionInputV2 ux.CoinHours failed: %v", err)
+			calculatedHours = 0
+		}
 		r := visor.ReadableTransactionInput{
 			Hash:    ux.Hash().Hex(),
 			Address: ux.Body.Address.String(),
 			Coins:   coinVal,
 			Hours:   ux.Body.Hours,
+			CalculatedHours: calculatedHours,
 		}
 		inputs = append(inputs, r)
 	}

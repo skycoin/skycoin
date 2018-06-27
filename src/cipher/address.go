@@ -2,7 +2,6 @@ package cipher
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"log"
 
@@ -97,7 +96,7 @@ func AddressFromBytes(b []byte) (addr Address, err error) {
 	}()
 
 	if len(b) != 20+1+4 {
-		return Address{}, errors.New("Invalid address length")
+		return Address{}, ErrInvalidLength
 	}
 	a := Address{}
 	copy(a.Key[0:20], b[0:20])
@@ -108,11 +107,11 @@ func AddressFromBytes(b []byte) (addr Address, err error) {
 	copy(checksum[0:4], b[21:25])
 
 	if checksum != chksum {
-		return Address{}, errors.New("Invalid checksum")
+		return Address{}, ErrInvalidChecksum
 	}
 
 	if a.Version != 0 {
-		return Address{}, errors.New("Invalid version")
+		return Address{}, ErrInvalidVersion
 	}
 
 	return a, nil
@@ -157,10 +156,10 @@ func (addr *Address) BitcoinBytes() []byte {
 // Verify checks that the address appears valid for the public key
 func (addr Address) Verify(key PubKey) error {
 	if addr.Version != 0x00 {
-		return errors.New("Address version invalid")
+		return ErrInvalidVersion
 	}
 	if addr.Key != key.ToAddressHash() {
-		return errors.New("Public key invalid for address")
+		return ErrInvalidPubKey
 	}
 	return nil
 }
@@ -229,7 +228,7 @@ func BitcoinWalletImportFormatFromSeckey(seckey SecKey) string {
 // BitcoinAddressFromBytes Returns an address given an Address.Bytes()
 func BitcoinAddressFromBytes(b []byte) (Address, error) {
 	if len(b) != 20+1+4 {
-		return Address{}, errors.New("Invalid address length")
+		return Address{}, ErrInvalidLength
 	}
 	a := Address{}
 	copy(a.Key[0:20], b[1:21])
@@ -240,11 +239,11 @@ func BitcoinAddressFromBytes(b []byte) (Address, error) {
 	copy(checksum[0:4], b[21:25])
 
 	if checksum != chksum {
-		return Address{}, errors.New("Invalid checksum")
+		return Address{}, ErrInvalidChecksum
 	}
 
 	if a.Version != 0 {
-		return Address{}, errors.New("Invalid version")
+		return Address{}, ErrInvalidVersion
 	}
 
 	return a, nil
@@ -260,21 +259,21 @@ func SecKeyFromWalletImportFormat(input string) (SecKey, error) {
 	//1+32+1+4
 	if len(b) != 38 {
 		//log.Printf("len= %v ", len(b))
-		return SecKey{}, errors.New("invalid length")
+		return SecKey{}, ErrInvalidLength
 	}
 	if b[0] != 0x80 {
-		return SecKey{}, errors.New("first byte invalid")
+		return SecKey{}, ErrInvalidFirstByte
 	}
 
 	if b[1+32] != 0x01 {
-		return SecKey{}, errors.New("invalid 33rd byte")
+		return SecKey{}, ErrInvalidLastByte
 	}
 
 	b2 := DoubleSHA256(b[0:34])
 	chksum := b[34:38]
 
 	if !bytes.Equal(chksum, b2[0:4]) {
-		return SecKey{}, errors.New("checksum fail")
+		return SecKey{}, ErrInvalidChecksum
 	}
 
 	seckey := b[1:33]

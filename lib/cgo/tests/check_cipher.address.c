@@ -396,13 +396,13 @@ Test(cipher_address, TestBitcoinAddressFromBytes) {
   b.len = b.len - 2;
   cipher__Address addr2;
   GoSlice b_convert = {b.data, b.len, b.cap};
-  cr_assert(SKY_cipher_BitcoinAddressFromBytes(b_convert, &addr2) == SKY_ERROR,
+  cr_assert(SKY_cipher_BitcoinAddressFromBytes(b_convert, &addr2) == SKY_ErrInvalidLength,
             "Invalid address length");
 
   // Invalid checksum
   b_convert.len = b_len;
   (((char *)b_convert.data)[b_convert.len - 1])++;
-  cr_assert(SKY_cipher_BitcoinAddressFromBytes(b_convert, &addr2) == SKY_ERROR,
+  cr_assert(SKY_cipher_BitcoinAddressFromBytes(b_convert, &addr2) == SKY_ErrInvalidChecksum,
             "Invalid checksum");
 
   result = SKY_cipher_AddressFromPubKey(&p, &a);
@@ -414,7 +414,7 @@ Test(cipher_address, TestBitcoinAddressFromBytes) {
   cr_assert(result == SKY_OK, "SKY_cipher_Address_BitcoinBytes failed");
   GoSlice b1_convert = {b1.data, b1.len, b1.cap};
   result = SKY_cipher_BitcoinAddressFromBytes(b1_convert, &addr2);
-  cr_assert(result == SKY_ERROR, "Invalid version");
+  cr_assert(result == SKY_ErrInvalidVersion, "Invalid version");
 }
 
 Test(cipher_address, TestMustDecodeBase58Address) {

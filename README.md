@@ -95,7 +95,7 @@ cd $GOPATH/src/github.com/skycoin/skycoin
 make run
 ```
 
-### Run Skycoin from the command line
+### Run Skycoin testnet from the command line
 
 The following command runs a Skycoin testnet node.
 All address:port pairs to establish initial trusted connections
@@ -104,7 +104,7 @@ of the particular Skycoin instance.
 Default path for Skycoin data directory will be `~/.skycoin-testnet`
 The IP addresses in the following snippet are just placeholders.
 Replace them with the adresses of the nodes deployed in a
-particular scenario.
+deployment in particular.
 
 ```sh
 echo '192.168.5.29:6000' >  ~/.skycoin-testnet/connections.txt

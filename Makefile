@@ -76,7 +76,7 @@ test-amd64: ## Run tests for Skycoin with GOARCH=amd64
 	GOARCH=amd64 go test ./cmd/... -timeout=5m
 	GOARCH=amd64 go test ./src/... -timeout=5m
 
-configure-build:
+configure-build: ## Configure build environment
 	mkdir -p $(BUILD_DIR)/usr/tmp $(BUILD_DIR)/usr/lib $(BUILD_DIR)/usr/include
 	mkdir -p $(BUILDLIB_DIR) $(BIN_DIR) $(INCLUDE_DIR)
 
@@ -90,17 +90,13 @@ $(BUILDLIB_DIR)/libskycoin.a: $(LIB_FILES) $(SRC_FILES)
 	go build -buildmode=c-archive -o $(BUILDLIB_DIR)/libskycoin.a  $(LIB_FILES)
 	mv $(BUILDLIB_DIR)/libskycoin.h $(INCLUDE_DIR)/
 
-build-libc-static: $(BUILDLIB_DIR)/libskycoin.a
+build-libc-static: $(BUILDLIB_DIR)/libskycoin.a ## Build libskycoin static C client library object
 
-build-libc-shared: $(BUILDLIB_DIR)/libskycoin.so
+build-libc-shared: $(BUILDLIB_DIR)/libskycoin.so ## Build libskycoin shared C client library object
 
-## Build libskycoin C client library
-build-libc: configure-build build-libc-static build-libc-shared
+build-libc: configure-build build-libc-static build-libc-shared ## Build libskycoin C client libraries
 
-## Build libskycoin C client library and executable C test suites
-## with debug symbols. Use this target to debug the source code
-## with the help of an IDE
-build-libc-dbg: configure-build build-libc-static build-libc-shared
+build-libc-dbg: configure-build build-libc-static build-libc-shared ## Build libskycoin C client library and executable C test suites with debug symbols (e.g. to debug in IDE)
 	$(CC) -g -o $(BIN_DIR)/test_libskycoin_shared $(LIB_DIR)/cgo/tests/*.c -lskycoin                    $(LDLIBS) $(LDFLAGS)
 	$(CC) -g -o $(BIN_DIR)/test_libskycoin_static $(LIB_DIR)/cgo/tests/*.c $(BUILDLIB_DIR)/libskycoin.a $(LDLIBS) $(LDFLAGS)
 
@@ -111,11 +107,11 @@ test-libc: build-libc ## Run tests for libskycoin C client library
 	$(LDPATHVAR)="$(LDPATH):$(BUILD_DIR)/usr/lib:$(BUILDLIB_DIR)" $(BIN_DIR)/test_libskycoin_shared
 	$(LDPATHVAR)="$(LDPATH):$(BUILD_DIR)/usr/lib"                 $(BIN_DIR)/test_libskycoin_static
 
-docs-libc:
+docs-libc: ## Generate documentation for libskycoin C API
 	doxygen ./.Doxyfile
 	moxygen -o $(LIBDOC_DIR)/API.md $(LIBDOC_DIR)/xml/
 
-docs: docs-libc
+docs: docs-libc ## Generate project documentation
 
 lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...

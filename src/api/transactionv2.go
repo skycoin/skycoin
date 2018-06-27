@@ -8,8 +8,6 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/visor"
-
-	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
 // TransactionResultV2 represents transaction result api/v2
@@ -28,13 +26,15 @@ type TransactionResultsV2 struct {
 func getPendingTxnsV2(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
-			wh.Error405(w)
+			resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
+			writeHTTPResponse(w, resp)
 			return
 		}
 
 		txns, err := gateway.GetAllUnconfirmedTxns()
 		if err != nil {
-			wh.Error500(w, err.Error())
+			resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("GetAllUnconfirmedTxns failed: %v", err))
+			writeHTTPResponse(w, resp)
 			return
 		}
 
@@ -42,58 +42,67 @@ func getPendingTxnsV2(gateway Gatewayer) http.HandlerFunc {
 		for _, unconfirmedTxn := range txns {
 			readable, err := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
 			if err != nil {
-				wh.Error500(w, err.Error())
+				resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("NewReadableUnconfirmedTxn failed: %v", err))
+				writeHTTPResponse(w, resp)
 				return
 			}
 			readableV2, err := NewReadableUnconfirmedTxnV2(gateway, readable)
 			if err != nil {
-				wh.Error500(w, err.Error())
+				resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("NewReadableUnconfirmedTxnV2 failed: %v", err))
+				writeHTTPResponse(w, resp)
 				return
 			}
 			ret = append(ret, readableV2)
 		}
-
-		wh.SendJSONOr500(logger, w, &ret)
+		var resp HTTPResponse
+		resp.Data = ret
+		writeHTTPResponse(w, resp)
 	}
 }
 
 func getTransactionByIDV2(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
-			wh.Error405(w)
-			return
+			resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
+			writeHTTPResponse(w, resp)
 		}
 		txid := r.FormValue("txid")
 		if txid == "" {
-			wh.Error400(w, "txid is empty")
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, "txid is empty")
+			writeHTTPResponse(w, resp)
 			return
 		}
 
 		h, err := cipher.SHA256FromHex(txid)
 		if err != nil {
-			wh.Error400(w, err.Error())
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, fmt.Sprintf("SHA256FromHex failed : %v", err))
+			writeHTTPResponse(w, resp)
 			return
 		}
 
 		txn, err := gateway.GetTransaction(h)
 		if err != nil {
-			wh.Error400(w, err.Error())
+			resp := NewHTTPErrorResponse(http.StatusNotFound, fmt.Sprintf("GetTransaction failed : %v", err))
+			writeHTTPResponse(w, resp)
 			return
 		}
 		if txn == nil {
-			wh.Error404(w, "")
+			resp := NewHTTPErrorResponse(http.StatusNotFound, fmt.Sprintf("Transaction not found : %v", txid))
+			writeHTTPResponse(w, resp)
 			return
 		}
 
 		rbTxn, err := visor.NewReadableTransaction(txn)
 		if err != nil {
-			wh.Error500(w, err.Error())
+			resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("NewReadableTransaction failed : %v", err))
+			writeHTTPResponse(w, resp)
 			return
 		}
 
 		rbTxnV2, err := NewReadableTransactionV2(gateway, rbTxn)
 		if err != nil {
-			wh.Error500(w, err.Error())
+			resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("NewReadableTransactionV2 failed : %v", err))
+			writeHTTPResponse(w, resp)
 			return
 		}
 
@@ -102,7 +111,9 @@ func getTransactionByIDV2(gateway Gatewayer) http.HandlerFunc {
 			Status:      txn.Status,
 			Time:        txn.Time,
 		}
-		wh.SendJSONOr500(logger, w, &resTxn)
+		var resp HTTPResponse
+		resp.Data = resTxn
+		writeHTTPResponse(w, resp)
 	}
 }
 
@@ -115,14 +126,16 @@ func getTransactionByIDV2(gateway Gatewayer) http.HandlerFunc {
 func getTransactionsV2(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
-			wh.Error405(w)
+			resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
+			writeHTTPResponse(w, resp)
 			return
 		}
 
 		// Gets 'addrs' parameter value
 		addrs, err := parseAddressesFromStr(r.FormValue("addrs"))
 		if err != nil {
-			wh.Error400(w, fmt.Sprintf("parse parameter: 'addrs' failed: %v", err))
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, fmt.Sprintf("parse parameter: 'addrs' failed: %v", err))
+			writeHTTPResponse(w, resp)
 			return
 		}
 
@@ -134,7 +147,8 @@ func getTransactionsV2(gateway Gatewayer) http.HandlerFunc {
 		if confirmedStr != "" {
 			confirmed, err := strconv.ParseBool(confirmedStr)
 			if err != nil {
-				wh.Error400(w, fmt.Sprintf("invalid 'confirmed' value: %v", err))
+				resp := NewHTTPErrorResponse(http.StatusBadRequest, fmt.Sprintf("invalid 'confirmed' value: %v", err))
+				writeHTTPResponse(w, resp)
 				return
 			}
 
@@ -144,16 +158,16 @@ func getTransactionsV2(gateway Gatewayer) http.HandlerFunc {
 		// Gets transactions
 		txns, err := gateway.GetTransactions(flts...)
 		if err != nil {
-			err = fmt.Errorf("gateway.GetTransactions failed: %v", err)
-			wh.Error500(w, err.Error())
+			resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("gateway.GetTransactions failed: %v", err))
+			writeHTTPResponse(w, resp)
 			return
 		}
 
 		// Converts visor.Transaction to daemon.TransactionResult
 		txnRlts, err := daemon.NewTransactionResults(txns)
 		if err != nil {
-			err = fmt.Errorf("daemon.NewTransactionResults failed: %v", err)
-			wh.Error500(w, err.Error())
+			resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("gateway.NewTransactionResults failed: %v", err))
+			writeHTTPResponse(w, resp)
 			return
 		}
 
@@ -162,7 +176,8 @@ func getTransactionsV2(gateway Gatewayer) http.HandlerFunc {
 		for _, txn := range txnRlts.Txns {
 			rbTxnV2, err := NewReadableTransactionV2(gateway, &txn.Transaction)
 			if err != nil {
-				wh.Error500(w, err.Error())
+				resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("NewReadableTransactionV2 failed: %v", err))
+				writeHTTPResponse(w, resp)
 				return
 			}
 			trV2 := TransactionResultV2{
@@ -173,6 +188,8 @@ func getTransactionsV2(gateway Gatewayer) http.HandlerFunc {
 			txnRltsV2 = append(txnRltsV2, trV2)
 		}
 
-		wh.SendJSONOr500(logger, w, txnRltsV2)
+		var resp HTTPResponse
+		resp.Data = txnRltsV2
+		writeHTTPResponse(w, resp)
 	}
 }

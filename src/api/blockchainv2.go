@@ -9,7 +9,6 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/visor" //http,json helpers
 )
 
@@ -19,8 +18,10 @@ import (
 // params: hash or seq, should only specify one filter.
 func getBlockV2(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
 		if r.Method != http.MethodGet {
-			wh.Error405(w)
+			resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
+			writeHTTPResponse(w, resp)
 			return
 		}
 
@@ -29,88 +30,105 @@ func getBlockV2(gateway Gatewayer) http.HandlerFunc {
 		var b *coin.SignedBlock
 		switch {
 		case hash == "" && seq == "":
-			wh.Error400(w, "should specify one filter, hash or seq")
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, "should specify one filter, hash or seq")
+			writeHTTPResponse(w, resp)
 			return
 		case hash != "" && seq != "":
-			wh.Error400(w, "should only specify one filter, hash or seq")
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, "should only specify one filter, hash or seq")
+			writeHTTPResponse(w, resp)
 			return
 		case hash != "":
 			h, err := cipher.SHA256FromHex(hash)
 			if err != nil {
-				wh.Error400(w, err.Error())
+				resp := NewHTTPErrorResponse(http.StatusBadRequest, fmt.Sprintf("Invalid hash value: %v. %v", hash, err))
+				writeHTTPResponse(w, resp)
 				return
 			}
 
 			b, err = gateway.GetSignedBlockByHash(h)
 			if err != nil {
-				wh.Error500(w, err.Error())
+				resp := NewHTTPErrorResponse(http.StatusNotFound, fmt.Sprintf("GetSignedBlockByHash failed: %v, %v", hash, err))
+				writeHTTPResponse(w, resp)
 				return
 			}
 		case seq != "":
 			uSeq, err := strconv.ParseUint(seq, 10, 64)
 			if err != nil {
-				wh.Error400(w, err.Error())
+				resp := NewHTTPErrorResponse(http.StatusBadRequest, fmt.Sprintf("Invalid seq value: %v. %v", seq, err))
+				writeHTTPResponse(w, resp)
 				return
 			}
 
 			b, err = gateway.GetSignedBlockBySeq(uSeq)
 			if err != nil {
-				wh.Error500(w, err.Error())
+				resp := NewHTTPErrorResponse(http.StatusNotFound, fmt.Sprintf("GetSignedBlockBySeq failed: %v", err))
+				writeHTTPResponse(w, resp)
 				return
 			}
 		}
 
 		if b == nil {
-			wh.Error404(w, "")
+			resp := NewHTTPErrorResponse(http.StatusNotFound, "Block not found")
+			writeHTTPResponse(w, resp)
 			return
 		}
 
 		rb, err := visor.NewReadableBlock(&b.Block)
 		if err != nil {
-			wh.Error500(w, err.Error())
+			resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("NewReadableBlock failed: %v", err))
+			writeHTTPResponse(w, resp)
 			return
 		}
 
 		rbv2, err := NewReadableBlockV2(gateway, rb)
 		if err != nil {
-			wh.Error500(w, err.Error())
+			resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("NewReadableBlockV2 failed: %v", err))
+			writeHTTPResponse(w, resp)
 			return
 		}
-
-		wh.SendJSONOr500(logger, w, rbv2)
+		var resp HTTPResponse
+		resp.Data = rbv2
+		writeHTTPResponse(w, resp)
 	}
 }
 
 func getBlocksV2(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
-			wh.Error405(w)
+			resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
+			writeHTTPResponse(w, resp)
 			return
 		}
 		sstart := r.FormValue("start")
 		start, err := strconv.ParseUint(sstart, 10, 64)
 		if err != nil {
-			wh.Error400(w, fmt.Sprintf("Invalid start value \"%s\"", sstart))
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, fmt.Sprintf("Invalid start value \"%s\"", sstart))
+			writeHTTPResponse(w, resp)
 			return
 		}
 
 		send := r.FormValue("end")
 		end, err := strconv.ParseUint(send, 10, 64)
 		if err != nil {
-			wh.Error400(w, fmt.Sprintf("Invalid end value \"%s\"", send))
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, fmt.Sprintf("Invalid end value \"%s\"", send))
+			writeHTTPResponse(w, resp)
 			return
 		}
 		rb, err := gateway.GetBlocks(start, end)
 		if err != nil {
-			wh.Error400(w, fmt.Sprintf("Get blocks failed: %v", err))
+			resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("Get blocks failed: %v", err))
+			writeHTTPResponse(w, resp)
 			return
 		}
 		rbv2, err := NewReadableBlocksV2(gateway, rb)
 		if err != nil {
-			wh.Error400(w, fmt.Sprintf("NewReadableBlocksV2: %v", err))
+			resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("NewReadableBlocksV2 failed : %v", err))
+			writeHTTPResponse(w, resp)
 			return
 		}
-		wh.SendJSONOr500(logger, w, rbv2)
+		var resp HTTPResponse
+		resp.Data = rbv2
+		writeHTTPResponse(w, resp)
 	}
 }
 
@@ -118,34 +136,40 @@ func getBlocksV2(gateway Gatewayer) http.HandlerFunc {
 func getLastBlocksV2(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
-			wh.Error405(w)
+			resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
+			writeHTTPResponse(w, resp)
 			return
 		}
 
 		num := r.FormValue("num")
 		if num == "" {
-			wh.Error400(w, "Param: num is empty")
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, "Param: num is empty")
+			writeHTTPResponse(w, resp)
 			return
 		}
 
 		n, err := strconv.ParseUint(num, 10, 64)
 		if err != nil {
-			wh.Error400(w, err.Error())
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, fmt.Sprintf("Invalid num value \"%s\"", num))
+			writeHTTPResponse(w, resp)
 			return
 		}
 
 		rb, err := gateway.GetLastBlocks(n)
 		if err != nil {
-			wh.Error400(w, fmt.Sprintf("Get last %v blocks failed: %v", n, err))
+			resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("Get last %v blocks failed: %v", n, err))
+			writeHTTPResponse(w, resp)
 			return
 		}
 
 		rbv2, err := NewReadableBlocksV2(gateway, rb)
 		if err != nil {
-			wh.Error400(w, fmt.Sprintf("NewReadableBlocksV2: %v", err))
+			resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("NewReadableBlocksV2 failed: %v", err))
+			writeHTTPResponse(w, resp)
 			return
 		}
-
-		wh.SendJSONOr500(logger, w, rbv2)
+		var resp HTTPResponse
+		resp.Data = rbv2
+		writeHTTPResponse(w, resp)
 	}
 }

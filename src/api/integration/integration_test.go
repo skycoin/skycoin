@@ -4062,7 +4062,7 @@ func testBlockV2(t *testing.T, block *visor.ReadableBlockV2) {
 	}
 }
 
-func testKnownBlocksV2(t *testing.T) {
+func TestKnownBlocksV2(t *testing.T) {
 	if !doStable(t) {
 		return
 	}
@@ -4115,14 +4115,16 @@ func testKnownBlocksV2(t *testing.T) {
 			} else {
 				b, err = c.BlockBySeq(tc.seq)
 			}
-
 			if tc.errCode != 0 && tc.errCode != http.StatusOK {
-				assertResponseError(t, err, tc.errCode, tc.errMsg)
+				require.Error(t, err)
+				require.IsType(t, api.ClientError{}, err)
+				require.Equal(t, tc.errCode, err.(api.ClientError).StatusCode)
 				return
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, b)
+				testBlockV2(t, b)
 			}
-
-			require.NotNil(t, b)
-			testBlockV2(t, b)
 		})
 	}
 }
@@ -4204,7 +4206,7 @@ func TestStableTransactionV2(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			tx, err := c.Transaction(tc.txId)
 			if err != nil {
-				require.Equal(t, tc.err, err)
+				require.Equal(t, tc.err.StatusCode, err.(api.ClientError).StatusCode)
 				return
 			}
 			testTransactionV2(t, &tx.Transaction)
@@ -4272,7 +4274,7 @@ func TestStableTransactionsV2(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			txResult, err := c.Transactions(tc.addrs)
 			if err != nil {
-				require.Equal(t, tc.err, err, "case: "+tc.name)
+				require.Equal(t, tc.err.StatusCode, err.(api.ClientError).StatusCode, "case: "+tc.name)
 				return
 			}
 			for _, txn := range *txResult {
@@ -4336,7 +4338,7 @@ func TestStableConfirmedTransactionsV2(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			txResult, err := c.ConfirmedTransactions(tc.addrs)
 			if err != nil {
-				require.Equal(t, tc.err, err, "case: "+tc.name)
+				require.Equal(t, tc.err.StatusCode, err.(api.ClientError).StatusCode, "case: "+tc.name)
 				return
 			}
 			for _, txn := range *txResult {
@@ -4396,7 +4398,7 @@ func TestStableUnconfirmedTransactionsV2(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			txResult, err := c.UnconfirmedTransactions(tc.addrs)
 			if err != nil {
-				require.Equal(t, tc.err, err, "case: "+tc.name)
+				require.Equal(t, tc.err.StatusCode, err.(api.ClientError).StatusCode, "case: "+tc.name)
 				return
 			}
 

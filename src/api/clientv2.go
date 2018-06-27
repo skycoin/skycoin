@@ -1,7 +1,9 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 
@@ -20,7 +22,25 @@ func NewClientV2(addr string) *ClientV2 {
 
 // Get Adds extra data to response
 func (c *ClientV2) Get(endpoint string, obj interface{}) error {
-	return c.Client.Get(endpoint, obj)
+	var resp ReceivedHTTPResponse
+	var err error
+	err = c.Client.Get(endpoint, &resp)
+	if err != nil {
+		return err
+	} else if resp.Error != nil {
+		err = ClientError{
+			Status:     http.StatusText(resp.Error.Code),
+			StatusCode: resp.Error.Code,
+		}
+	} else if resp.Data == nil {
+		err = ClientError{
+			Status:     http.StatusText(http.StatusInternalServerError),
+			StatusCode: http.StatusInternalServerError,
+		}
+	} else {
+		err = json.Unmarshal(resp.Data, obj)
+	}
+	return err
 }
 
 // BlockByHash makes a request to GET /api/v2/block?hash=xxx

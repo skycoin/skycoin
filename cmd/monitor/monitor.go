@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net"
 	"os"
 	"path/filepath"
@@ -119,20 +118,20 @@ func main() {
 
 	outputJSON, err := json.MarshalIndent(outputPeers, "", "     ")
 	if err != nil {
-		fmt.Println("Error formating wallet to JSON. Error:", err)
+		logger.WithError(err).Errorf("Error formating wallet to JSON.")
 		os.Exit(1)
 	}
 
-	log.Println(string(outputJSON))
+	logger.Printf(string(outputJSON))
 
 	if *isFile {
 		outputFILE, err := json.MarshalIndent(output, "", "     ")
 		if err != nil {
-			fmt.Println("Error formating wallet to JSON. Error:", err)
+			logger.WithError(err).Errorf("Error formating wallet to JSON.")
 			os.Exit(1)
 		}
 
-		log.Println(outputFILE)
+		logger.Printf(string(outputFILE))
 	}
 
 }

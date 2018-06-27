@@ -45,7 +45,9 @@ func getUsbDevice() (usb.Device, error) {
 
 	var infos []usb.Info
 	infos, _ = b.Enumerate()
-
+	if len(infos) <= 0 {
+		return nil, nil
+	}
 	tries := 0
 	dev, err := b.Connect(infos[0].Path)
 	if err != nil {

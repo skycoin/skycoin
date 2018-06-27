@@ -198,33 +198,6 @@ func (m *GatewayerMock) GetAddressCount() (uint64, error) {
 
 }
 
-// GetAddressTxns mocked method
-func (m *GatewayerMock) GetAddressTxns(p0 cipher.Address) (*daemon.TransactionResults, error) {
-
-	ret := m.Called(p0)
-
-	var r0 *daemon.TransactionResults
-	switch res := ret.Get(0).(type) {
-	case nil:
-	case *daemon.TransactionResults:
-		r0 = res
-	default:
-		panic(fmt.Sprintf("unexpected type: %v", res))
-	}
-
-	var r1 error
-	switch res := ret.Get(1).(type) {
-	case nil:
-	case error:
-		r1 = res
-	default:
-		panic(fmt.Sprintf("unexpected type: %v", res))
-	}
-
-	return r0, r1
-
-}
-
 // GetAllUnconfirmedTxns mocked method
 func (m *GatewayerMock) GetAllUnconfirmedTxns() ([]visor.UnconfirmedTxn, error) {
 
@@ -261,60 +234,6 @@ func (m *GatewayerMock) GetBalanceOfAddrs(p0 []cipher.Address) ([]wallet.Balance
 	switch res := ret.Get(0).(type) {
 	case nil:
 	case []wallet.BalancePair:
-		r0 = res
-	default:
-		panic(fmt.Sprintf("unexpected type: %v", res))
-	}
-
-	var r1 error
-	switch res := ret.Get(1).(type) {
-	case nil:
-	case error:
-		r1 = res
-	default:
-		panic(fmt.Sprintf("unexpected type: %v", res))
-	}
-
-	return r0, r1
-
-}
-
-// GetSignedBlockByHash mocked method
-func (m *GatewayerMock) GetSignedBlockByHash(p0 cipher.SHA256) (*coin.SignedBlock, error) {
-
-	ret := m.Called(p0)
-
-	var r0 *coin.SignedBlock
-	switch res := ret.Get(0).(type) {
-	case nil:
-	case *coin.SignedBlock:
-		r0 = res
-	default:
-		panic(fmt.Sprintf("unexpected type: %v", res))
-	}
-
-	var r1 error
-	switch res := ret.Get(1).(type) {
-	case nil:
-	case error:
-		r1 = res
-	default:
-		panic(fmt.Sprintf("unexpected type: %v", res))
-	}
-
-	return r0, r1
-
-}
-
-// GetSignedBlockBySeq mocked method
-func (m *GatewayerMock) GetSignedBlockBySeq(p0 uint64) (*coin.SignedBlock, error) {
-
-	ret := m.Called(p0)
-
-	var r0 *coin.SignedBlock
-	switch res := ret.Get(0).(type) {
-	case nil:
-	case *coin.SignedBlock:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
@@ -374,7 +293,16 @@ func (m *GatewayerMock) GetBlockchainProgress() (*daemon.BlockchainProgress, err
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	return r0, nil
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
 
 }
 
@@ -576,6 +504,60 @@ func (m *GatewayerMock) GetRichlist(p0 bool) (visor.Richlist, error) {
 
 }
 
+// GetSignedBlockByHash mocked method
+func (m *GatewayerMock) GetSignedBlockByHash(p0 cipher.SHA256) (*coin.SignedBlock, error) {
+
+	ret := m.Called(p0)
+
+	var r0 *coin.SignedBlock
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case *coin.SignedBlock:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
+
+}
+
+// GetSignedBlockBySeq mocked method
+func (m *GatewayerMock) GetSignedBlockBySeq(p0 uint64) (*coin.SignedBlock, error) {
+
+	ret := m.Called(p0)
+
+	var r0 *coin.SignedBlock
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case *coin.SignedBlock:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
+
+}
+
 // GetTransaction mocked method
 func (m *GatewayerMock) GetTransaction(p0 cipher.SHA256) (*visor.Transaction, error) {
 
@@ -612,6 +594,33 @@ func (m *GatewayerMock) GetTransactions(p0 ...visor.TxFilter) ([]visor.Transacti
 	switch res := ret.Get(0).(type) {
 	case nil:
 	case []visor.Transaction:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
+
+}
+
+// GetTransactionsForAddress mocked method
+func (m *GatewayerMock) GetTransactionsForAddress(p0 cipher.Address) ([]daemon.ReadableTransaction, error) {
+
+	ret := m.Called(p0)
+
+	var r0 []daemon.ReadableTransaction
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case []daemon.ReadableTransaction:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
@@ -730,7 +739,7 @@ func (m *GatewayerMock) GetWallet(p0 string) (*wallet.Wallet, error) {
 }
 
 // GetWalletBalance mocked method
-func (m *GatewayerMock) GetWalletBalance(p0 string) (wallet.BalancePair, error) {
+func (m *GatewayerMock) GetWalletBalance(p0 string) (wallet.BalancePair, wallet.AddressBalance, error) {
 
 	ret := m.Called(p0)
 
@@ -743,16 +752,25 @@ func (m *GatewayerMock) GetWalletBalance(p0 string) (wallet.BalancePair, error) 
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	var r1 error
+	var r1 wallet.AddressBalance
 	switch res := ret.Get(1).(type) {
 	case nil:
-	case error:
+	case wallet.AddressBalance:
 		r1 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
 	}
 
-	return r0, r1
+	var r2 error
+	switch res := ret.Get(2).(type) {
+	case nil:
+	case error:
+		r2 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1, r2
 
 }
 
@@ -1014,5 +1032,41 @@ func (m *GatewayerMock) UpdateWalletLabel(p0 string, p1 string) error {
 	}
 
 	return r0
+
+}
+
+// VerifyTxnVerbose mocked method
+func (m *GatewayerMock) VerifyTxnVerbose(p0 *coin.Transaction) ([]wallet.UxBalance, bool, error) {
+
+	ret := m.Called(p0)
+
+	var r0 []wallet.UxBalance
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case []wallet.UxBalance:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 bool
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case bool:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r2 error
+	switch res := ret.Get(2).(type) {
+	case nil:
+	case error:
+		r2 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1, r2
 
 }

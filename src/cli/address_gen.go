@@ -60,7 +60,7 @@ func addressGenCmd() gcli.Command {
 					seed = cipher.SumSHA256(cipher.RandByte(1024)).Hex()
 				} else {
 					var err error
-					seed, err = bip39.NewDefaultMnemomic()
+					seed, err = bip39.NewDefaultMnemonic()
 					if err != nil {
 						return err
 					}

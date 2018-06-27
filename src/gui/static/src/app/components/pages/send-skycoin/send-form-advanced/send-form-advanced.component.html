@@ -1,0 +1,114 @@
+<div [formGroup]="form">
+  <div class="form-field">
+    <label for="wallets">{{ 'send.wallet-label' | translate }}</label>
+    <div class="-select">
+      <select formControlName="wallet" id="wallets">
+        <option *ngFor="let wallet of walletService.all() | async" [disabled]="wallet.coins <= 0" [ngValue]="wallet">
+          {{ wallet.label }} - {{ wallet.coins | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
+          ({{ wallet.hours | number:'1.0-6' }} {{ 'common.coin-hours' | translate }})
+        </option>
+      </select>
+    </div>
+  </div>
+
+  <div class="form-field">
+    <label for="addresses" (click)="selectAddresses.open()">
+      {{ 'send.addresses-label' | translate }}
+      <mat-icon [matTooltip]="'send.addresses-help' | translate">help</mat-icon>
+    </label>
+    <div class="-select">
+      <mat-select #selectAddresses multiple formControlName="addresses" [compareWith]="addressCompare" id="addresses">
+        <mat-option *ngFor="let addr of addresses" [value]="addr">
+          {{ addr.address }} - {{ addr.coins | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
+          ({{ addr.hours | number:'1.0-6' }} {{ 'common.coin-hours' | translate }})
+        </mat-option>
+        <mat-select-trigger>
+          <div *ngFor="let address of form.get('addresses').value">
+            {{ address.address }} - {{ address.coins | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
+            ({{ address.hours | number:'1.0-6' }} {{ 'common.coin-hours' | translate }})
+          </div>
+        </mat-select-trigger>
+      </mat-select>
+    </div>
+  </div>
+
+  <div class="form-field">
+    <label for="destination">
+      {{ 'send.destinations-label' | translate }}
+      <mat-icon [matTooltip]="('send.destinations-help' + (this.autoHours ? '1' : '2')) | translate">help</mat-icon>
+    </label>
+
+    <div formArrayName="destinations" *ngFor="let dest of destControls; let i = index;" class="-destination">
+      <div [formGroupName]="i" class="row">
+        <div class="col-md-5">
+          <input formControlName="address" [id]="i === 0 ? 'destination' : ''">
+        </div>
+        <div class="col-md-3">
+          <div class="-input-addon">
+            <input formControlName="coins">
+            <span>{{ 'common.coin-id' | translate }}</span>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div [ngClass]="{ '-input-addon': true, '-hidden': autoHours }">
+            <input formControlName="hours">
+            <span>{{ 'common.coin-hours' | translate }}</span>
+          </div>
+        </div>
+        <div class="col-md-1 -icons">
+          <img *ngIf="i === 0" (click)="addDestination()" src="../../../../../assets/img/plus-green.png" alt="plus">
+          <img *ngIf="i !== 0" (click)="removeDestination(i)" src="../../../../../assets/img/minus-grey.png" alt="minus">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-field">
+    <label for="change-address">
+      {{ 'send.change-address-label' | translate }}
+      <mat-icon [matTooltip]="'send.change-address-help' | translate">help</mat-icon>
+    </label>
+    <input formControlName="changeAddress" id="change-address" (keydown.enter)="preview()">
+  </div>
+
+  <div class="-autohours">
+    <div class="row">
+      <div class="col-md-5">
+        <mat-checkbox class="-check" (change)="setAutoHours($event)" [checked]="autoHours">
+          <div class="-space-between">
+            <span>{{ 'send.hours-allocation-label' | translate }}</span>
+            <span class="-options" (mousedown)="$event.stopPropagation();" (click)="toggleOptions($event)" *ngIf="autoHours">
+              {{ 'send.options-label' | translate }} <mat-icon>keyboard_arrow_down</mat-icon>
+            </span>
+          </div>
+        </mat-checkbox>
+      </div>
+    </div>
+
+    <div [ngClass]="{ 'row -options-wrapper': true, '-hidden': !autoOptions }">
+      <div class="col-md-5">
+        <div class="form-field">
+          <label class="-space-between" for="value">
+            <span>
+              {{ 'send.value-label' | translate }}
+              <mat-icon [matTooltip]="'send.value-help' | translate">help</mat-icon>
+            </span>
+            <span>{{ autoShareValue | number:'1.0-2' }}</span>
+          </label>
+          <mat-slider class="-slider" min="0.1" max="1" step="0.01" id="value"
+                      (input)="setShareValue($event)" [value]="autoShareValue"
+          ></mat-slider>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="-buttons">
+  <app-button #previewButton (action)="preview()" [disabled]="!form.valid">
+    {{ 'send.preview-button' | translate }}
+  </app-button>
+  <app-button #sendButton (action)="send()" class="primary" [disabled]="!form.valid">
+    {{ 'send.send-button' | translate }}
+  </app-button>
+</div>

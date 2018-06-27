@@ -1,21 +1,28 @@
-@import '../../../../../theme/_variables.scss';
+@import '../../../../../theme/variables';
 
-mat-card {
-  margin-left: 20px;
-  margin-right: 20px;
+.-wrapper {
+  margin: 30px;
 }
 
-.skycoin-details {
-  margin-top: 40px;
-  margin-bottom: 20px;
-  line-height: 30px;
+.-paper {
+  background-color: #fbfbfb;
+  border-radius: 15px;
+  box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.01), 1px 1px 2px 2px rgba(0, 0, 0, 0.01);
+  padding: 20px;
+  font-size: $font-size-standard;
 }
 
-.skycoin-detail-keys {
-  display: inline-block;
-  color: $grey-dark;
-}
+.-item {
+  &:not(:last-child) {
+    margin-bottom: 20px;
+  }
 
-.skycoin-detail-values {
-  display: inline-block;
+  .-key {
+    color: $grey;
+    margin-bottom: 5px;
+  }
+
+  .-value {
+    word-break: break-all;
+  }
 }

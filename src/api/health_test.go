@@ -80,7 +80,7 @@ func TestHealthCheckHandler(t *testing.T) {
 				gateway.On("GetHealth").Return(health, nil)
 			}
 
-			endpoint := "/health"
+			endpoint := "/api/v1/health"
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 

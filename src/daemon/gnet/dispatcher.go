@@ -55,8 +55,14 @@ func convertToMessage(id int, msg []byte, debugPrint bool) (Message, error) {
 	if err != nil {
 		return nil, err
 	}
-	if used != len(msg) {
-		return nil, errors.New("Data buffer was not completely decoded")
+
+	if debugPrint {
+		mlen := len(msg)
+		if used > mlen {
+			logger.Warn("Receive data with extra fields")
+		} else if used < mlen {
+			logger.Warn("Receive data with fields removed")
+		}
 	}
 
 	m, succ = (v.Interface()).(Message)

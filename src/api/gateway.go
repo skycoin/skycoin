@@ -16,7 +16,7 @@ import (
 type Gatewayer interface {
 	Spend(wltID string, password []byte, coins uint64, dest cipher.Address) (*coin.Transaction, error)
 	CreateTransaction(w wallet.CreateTransactionParams) (*coin.Transaction, []wallet.UxBalance, error)
-	GetWalletBalance(wltID string) (wallet.BalancePair, error)
+	GetWalletBalance(wltID string) (wallet.BalancePair, wallet.AddressBalance, error)
 	GetWallet(wltID string) (*wallet.Wallet, error)
 	GetWallets() (wallet.Wallets, error)
 	UpdateWalletLabel(wltID, label string) error
@@ -49,9 +49,10 @@ type Gatewayer interface {
 	ResendUnconfirmedTxns() (*daemon.ResendResult, error)
 	GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error)
 	GetAddrUxOuts(addr []cipher.Address) ([]*historydb.UxOut, error)
-	GetAddressTxns(a cipher.Address) (*daemon.TransactionResults, error)
+	GetTransactionsForAddress(a cipher.Address) ([]daemon.ReadableTransaction, error)
 	GetRichlist(includeDistribution bool) (visor.Richlist, error)
 	GetAddressCount() (uint64, error)
 	GetHealth() (*daemon.Health, error)
 	UnloadWallet(id string) error
+	VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bool, error)
 }

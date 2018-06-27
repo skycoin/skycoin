@@ -16,6 +16,7 @@ import (
 	"github.com/skycoin/skycoin/src/util/fee"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -59,12 +60,20 @@ func NewCreatedTransaction(txn *coin.Transaction, inputs []wallet.UxBalance) (*C
 
 	var outputHours uint64
 	for _, o := range txn.Out {
-		outputHours += o.Hours
+		var err error
+		outputHours, err = coin.AddUint64(outputHours, o.Hours)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var inputHours uint64
 	for _, i := range inputs {
-		inputHours += i.Hours
+		var err error
+		inputHours, err = coin.AddUint64(inputHours, i.Hours)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if inputHours < outputHours {
@@ -206,13 +215,13 @@ func NewCreatedTransactionOutput(out coin.TransactionOutput, txid cipher.SHA256)
 // CreatedTransactionInput is a verbose transaction input
 type CreatedTransactionInput struct {
 	UxID            string `json:"uxid"`
-	Address         string `json:"address"`
-	Coins           string `json:"coins"`
-	Hours           string `json:"hours"`
-	CalculatedHours string `json:"calculated_hours"`
-	Time            uint64 `json:"timestamp"`
-	Block           uint64 `json:"block"`
-	TxID            string `json:"txid"`
+	Address         string `json:"address,omitempty"`
+	Coins           string `json:"coins,omitempty"`
+	Hours           string `json:"hours,omitempty"`
+	CalculatedHours string `json:"calculated_hours,omitempty"`
+	Time            uint64 `json:"timestamp,omitempty"`
+	Block           uint64 `json:"block,omitempty"`
+	TxID            string `json:"txid,omitempty"`
 }
 
 // NewCreatedTransactionInput creates CreatedTransactionInput
@@ -226,29 +235,36 @@ func NewCreatedTransactionInput(out wallet.UxBalance) (*CreatedTransactionInput,
 		return nil, errors.New("NewCreatedTransactionInput UxOut.SrcTransaction is not initialized")
 	}
 
+	addr := out.Address.String()
+	hours := fmt.Sprint(out.InitialHours)
+	calculatedHours := fmt.Sprint(out.Hours)
+	txID := out.SrcTransaction.Hex()
+
 	return &CreatedTransactionInput{
 		UxID:            out.Hash.Hex(),
-		Address:         out.Address.String(),
+		Address:         addr,
 		Coins:           coins,
-		Hours:           fmt.Sprint(out.InitialHours),
-		CalculatedHours: fmt.Sprint(out.Hours),
+		Hours:           hours,
+		CalculatedHours: calculatedHours,
 		Time:            out.Time,
 		Block:           out.BkSeq,
-		TxID:            out.SrcTransaction.Hex(),
+		TxID:            txID,
 	}, nil
 }
 
 // createTransactionRequest is sent to /wallet/transaction
 type createTransactionRequest struct {
-	HoursSelection hoursSelection                 `json:"hours_selection"`
-	Wallet         createTransactionRequestWallet `json:"wallet"`
-	ChangeAddress  *wh.Address                    `json:"change_address"`
-	To             []receiver                     `json:"to"`
+	IgnoreUnconfirmed bool                           `json:"ignore_unconfirmed"`
+	HoursSelection    hoursSelection                 `json:"hours_selection"`
+	Wallet            createTransactionRequestWallet `json:"wallet"`
+	ChangeAddress     *wh.Address                    `json:"change_address,omitempty"`
+	To                []receiver                     `json:"to"`
 }
 
 // createTransactionRequestWallet defines a wallet to spend from and optionally which addresses in the wallet
 type createTransactionRequestWallet struct {
 	ID        string       `json:"id"`
+	UxOuts    []wh.SHA256  `json:"unspents,omitempty"`
 	Addresses []wh.Address `json:"addresses,omitempty"`
 	Password  string       `json:"password"`
 }
@@ -319,20 +335,25 @@ func (r createTransactionRequest) Validate() error {
 		}
 	}
 
-	if r.ChangeAddress == nil {
-		return errors.New("missing change_address")
-	} else if r.ChangeAddress.Null() {
-		return errors.New("change_address is an empty address")
+	if r.ChangeAddress != nil && r.ChangeAddress.Null() {
+		return errors.New("change_address must not be the null address")
 	}
 
 	if r.Wallet.ID == "" {
 		return errors.New("missing wallet.id")
 	}
 
+	addressMap := make(map[cipher.Address]struct{}, len(r.Wallet.Addresses))
 	for i, a := range r.Wallet.Addresses {
 		if a.Null() {
 			return fmt.Errorf("wallet.addresses[%d] is empty", i)
 		}
+
+		addressMap[a.Address] = struct{}{}
+	}
+
+	if len(addressMap) != len(r.Wallet.Addresses) {
+		return errors.New("wallet.addresses contains duplicate values")
 	}
 
 	if len(r.To) == 0 {
@@ -353,7 +374,7 @@ func (r createTransactionRequest) Validate() error {
 		}
 	}
 
-	// Check for duplicate outputs, a transaction can't have outputs with
+	// Check for duplicate created outputs, a transaction can't have outputs with
 	// the same (address, coins, hours)
 	// Auto mode would distribute hours to the outputs and could hypothetically
 	// avoid assigning duplicate hours in many cases, but the complexity for doing
@@ -376,6 +397,20 @@ func (r createTransactionRequest) Validate() error {
 		return errors.New("to contains duplicate values")
 	}
 
+	if len(r.Wallet.UxOuts) != 0 && len(r.Wallet.Addresses) != 0 {
+		return errors.New("wallet.unspents and wallet.addresses cannot be combined")
+	}
+
+	// Check for duplicate spending uxouts
+	uxouts := make(map[cipher.SHA256]struct{}, len(r.Wallet.UxOuts))
+	for _, o := range r.Wallet.UxOuts {
+		uxouts[o.SHA256] = struct{}{}
+	}
+
+	if len(uxouts) != len(r.Wallet.UxOuts) {
+		return errors.New("wallet.unspents contains duplicate values")
+	}
+
 	return nil
 }
 
@@ -386,9 +421,15 @@ func (r createTransactionRequest) ToWalletParams() wallet.CreateTransactionParam
 		addresses[i] = a.Address
 	}
 
+	uxouts := make([]cipher.SHA256, len(r.Wallet.UxOuts))
+	for i, o := range r.Wallet.UxOuts {
+		uxouts[i] = o.SHA256
+	}
+
 	walletParams := wallet.CreateTransactionWalletParams{
 		ID:        r.Wallet.ID,
 		Addresses: addresses,
+		UxOuts:    uxouts,
 		Password:  []byte(r.Wallet.Password),
 	}
 
@@ -406,12 +447,13 @@ func (r createTransactionRequest) ToWalletParams() wallet.CreateTransactionParam
 		}
 	}
 
-	var changeAddress cipher.Address
+	var changeAddress *cipher.Address
 	if r.ChangeAddress != nil {
-		changeAddress = r.ChangeAddress.Address
+		changeAddress = &r.ChangeAddress.Address
 	}
 
 	return wallet.CreateTransactionParams{
+		IgnoreUnconfirmed: r.IgnoreUnconfirmed,
 		HoursSelection: wallet.HoursSelection{
 			Type:        r.HoursSelection.Type,
 			Mode:        r.HoursSelection.Mode,
@@ -461,6 +503,8 @@ func createTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 				default:
 					wh.Error400(w, err.Error())
 				}
+			case blockdb.ErrUnspentNotExist:
+				wh.Error400(w, err.Error())
 			default:
 				switch err {
 				case fee.ErrTxnNoFee,

@@ -8,7 +8,7 @@ describe('AddDepositAddressComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ AddDepositAddressComponent ]
+      declarations: [ AddDepositAddressComponent ],
     })
     .compileComponents();
   }));

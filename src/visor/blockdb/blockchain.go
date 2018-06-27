@@ -61,9 +61,9 @@ type BlockSigs interface {
 	ForEach(*dbutil.Tx, func(cipher.SHA256, cipher.Sig) error) error
 }
 
-// UnspentPool unspent outputs pool
-type UnspentPool interface {
-	MaybeBuildIndexes(*dbutil.Tx) error
+// UnspentPooler unspent outputs pool
+type UnspentPooler interface {
+	MaybeBuildIndexes(*dbutil.Tx, uint64) error
 	Len(*dbutil.Tx) (uint64, error)
 	Contains(*dbutil.Tx, cipher.SHA256) (bool, error)
 	Get(*dbutil.Tx, cipher.SHA256) (*coin.UxOut, error)
@@ -85,7 +85,7 @@ type ChainMeta interface {
 type Blockchain struct {
 	db      *dbutil.DB
 	meta    ChainMeta
-	unspent UnspentPool
+	unspent UnspentPooler
 	tree    BlockTree
 	sigs    BlockSigs
 	walker  Walker
@@ -112,7 +112,7 @@ func NewBlockchain(db *dbutil.DB, walker Walker) (*Blockchain, error) {
 }
 
 // UnspentPool returns the unspent pool
-func (bc *Blockchain) UnspentPool() UnspentPool {
+func (bc *Blockchain) UnspentPool() UnspentPooler {
 	return bc.unspent
 }
 

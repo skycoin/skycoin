@@ -1,28 +1,50 @@
-@import '../../../../../theme/_variables.scss';
+@import '../../../../../theme/variables';
 
-mat-card {
-  margin-bottom: 20px;
+.-port, .-last-seen, .-source {
+  color: $grey;
+}
 
-  .row {
-    margin-bottom: -10px;
-  }
+.-direction {
+  width: 72px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 
-  .-peer {
-    margin-bottom: 10px;
-    display: flex;
+  img {
+    width: 32px;
 
-    .-port {
-      color: $grey-dark;
+    &.-incoming {
+      transform: scaleX(-1);
     }
   }
 }
 
-h3 {
-  font-weight: 400;
-  margin-top: 40px;
+.-last-seen {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  line-height: 1;
+  justify-content: center;
+
+  mat-icon {
+    font-size: 12px;
+    display: inline;
+    vertical-align: middle;
+    padding-right: 5px;
+  }
 }
 
-mat-card, h3 {
-  margin-left: 20px;
-  margin-right: 20px;
+.-trusted {
+  display: inline;
+  color: $blue;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.-text-right {
+  text-align: right;
+}
+
+.-pl-0 {
+  padding-left: 0 !important;
 }

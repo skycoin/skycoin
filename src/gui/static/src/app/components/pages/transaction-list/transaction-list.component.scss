@@ -1,4 +1,4 @@
-@import '../../../../theme/_variables.scss';
+@import '../../../../theme/variables';
 
 .-paper {
   background-color: #fbfbfb;
@@ -115,6 +115,10 @@
       font-size: 13px;
       line-height: 15px;
       margin: 0;
+
+      span {
+        color: lighten($grey, 40%);
+      }
     }
   }
 }

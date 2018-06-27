@@ -1,6 +1,7 @@
 package api
 
-// Wallet-related information for the GUI
+// APIs for wallet-related information
+
 import (
 	"fmt"
 	"net/http"
@@ -56,6 +57,12 @@ type WalletResponse struct {
 	Entries []WalletEntry `json:"entries"`
 }
 
+// BalanceResponse address balance summary struct
+type BalanceResponse struct {
+	wallet.BalancePair
+	Addresses wallet.AddressBalance `json:"addresses"`
+}
+
 // NewWalletResponse creates WalletResponse struct from *wallet.Wallet
 func NewWalletResponse(w *wallet.Wallet) (*WalletResponse, error) {
 	var wr WalletResponse
@@ -97,7 +104,7 @@ func NewWalletResponse(w *wallet.Wallet) (*WalletResponse, error) {
 
 // Returns the wallet's balance, both confirmed and predicted.  The predicted
 // balance is the confirmed balance minus the pending spends.
-// URI: /wallet/balance
+// URI: /api/v1/wallet/balance
 // Method: GET
 // Args:
 //     id: wallet id [required]
@@ -113,7 +120,7 @@ func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		b, err := gateway.GetWalletBalance(wltID)
+		walletBalance, addressBalances, err := gateway.GetWalletBalance(wltID)
 		if err != nil {
 			logger.Errorf("Get wallet balance failed: %v", err)
 			switch err {
@@ -129,13 +136,16 @@ func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendJSONOr500(logger, w, b)
+		wh.SendJSONOr500(logger, w, BalanceResponse{
+			BalancePair: walletBalance,
+			Addresses:   addressBalances,
+		})
 	}
 }
 
 // Returns the balance of one or more addresses, both confirmed and predicted.  The predicted
 // balance is the confirmed balance minus the pending spends.
-// URI: /balance
+// URI: /api/v1/balance
 // Method: GET
 // Args:
 //     addrs: command separated list of addresses [required]
@@ -171,6 +181,12 @@ func getBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
+		// create map of address to balance
+		addressBalances := make(wallet.AddressBalance, len(addrs))
+		for idx, addr := range addrs {
+			addressBalances[addr.String()] = bals[idx]
+		}
+
 		var balance wallet.BalancePair
 		for _, bal := range bals {
 			var err error
@@ -187,13 +203,16 @@ func getBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 		}
 
-		wh.SendJSONOr500(logger, w, balance)
+		wh.SendJSONOr500(logger, w, BalanceResponse{
+			BalancePair: balance,
+			Addresses:   addressBalances,
+		})
 	}
 }
 
 // Creates and broadcasts a transaction sending money from one of our wallets
 // to destination address.
-// URI: /wallet/spend
+// URI: /api/v1/wallet/spend
 // Method: POST
 // Args:
 //     id: wallet id
@@ -289,7 +308,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		// Get the new wallet balance
-		b, err := gateway.GetWalletBalance(wltID)
+		walletBalance, _, err := gateway.GetWalletBalance(wltID)
 		if err != nil {
 			err = fmt.Errorf("Get wallet balance failed: %v", err)
 			logger.Error(err)
@@ -297,7 +316,7 @@ func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 			wh.SendJSONOr500(logger, w, ret)
 			return
 		}
-		ret.Balance = &b
+		ret.Balance = &walletBalance
 
 		wh.SendJSONOr500(logger, w, ret)
 	}
@@ -401,7 +420,7 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 }
 
 // Genreates new addresses
-// URI: /wallet/newAddress
+// URI: /api/v1/wallet/newAddress
 // Method: POST
 // Args:
 //     id: wallet id [required]
@@ -464,7 +483,7 @@ func walletNewAddresses(gateway Gatewayer) http.HandlerFunc {
 }
 
 // Update wallet label
-// URI: /wallet/update
+// URI: /api/v1/wallet/update
 // Method: POST
 // Args:
 //     id: wallet id [required]
@@ -508,7 +527,7 @@ func walletUpdateHandler(gateway Gatewayer) http.HandlerFunc {
 }
 
 // Returns a wallet by id
-// URI: /wallet
+// URI: /api/v1/wallet
 // Method: GET
 // Args:
 //     id: wallet id [required]
@@ -545,7 +564,7 @@ func walletGet(gateway Gatewayer) http.HandlerFunc {
 }
 
 // Returns JSON of unconfirmed transactions for user's wallet
-// URI: /wallet/transactions
+// URI: /api/v1/wallet/transactions
 // Method: GET
 // Args:
 //     id: wallet id [required]
@@ -590,7 +609,7 @@ func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 }
 
 // Returns all loaded wallets
-// URI: /wallets
+// URI: /api/v1/wallets
 // Method: GET
 func walletsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -635,7 +654,7 @@ type WalletFolder struct {
 }
 
 // Returns the wallet directory path
-// URI: /wallets/folderName
+// URI: /api/v1/wallets/folderName
 // Method: GET
 func getWalletFolder(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -662,7 +681,7 @@ func getWalletFolder(gateway Gatewayer) http.HandlerFunc {
 }
 
 // Generates wallet seed
-// URI: /wallet/newSeed
+// URI: /api/v1/wallet/newSeed
 // Method: GET
 // Args:
 //     entropy: entropy bitsize [optional, default value of 128 will be used if not set]
@@ -704,7 +723,7 @@ func newWalletSeed(gateway Gatewayer) http.HandlerFunc {
 
 		mnemonic, err := bip39.NewMnemonic(entropy)
 		if err != nil {
-			err = fmt.Errorf("bip39.NewDefaultMnemomic failed: %v", err)
+			err = fmt.Errorf("bip39.NewDefaultMnemonic failed: %v", err)
 			wh.Error500(w, err.Error())
 			return
 		}
@@ -719,7 +738,7 @@ func newWalletSeed(gateway Gatewayer) http.HandlerFunc {
 }
 
 // Returns seed of wallet of given id
-// URI: /wallet/seed
+// URI: /api/v1/wallet/seed
 // Method: POST
 // Args:
 //     id: wallet id
@@ -770,7 +789,7 @@ func walletSeedHandler(gateway Gatewayer) http.HandlerFunc {
 }
 
 // Unloads wallet from the wallet service
-// URI: /wallet/unload
+// URI: /api/v1/wallet/unload
 // Method: POST
 // Args:
 //     id: wallet id
@@ -799,7 +818,7 @@ func walletUnloadHandler(gateway Gatewayer) http.HandlerFunc {
 }
 
 // Encrypts wallet
-// URI: /wallet/encrypt
+// URI: /api/v1/wallet/encrypt
 // Method: POST
 // Args:
 //     id: wallet id
@@ -850,7 +869,7 @@ func walletEncryptHandler(gateway Gatewayer) http.HandlerFunc {
 }
 
 // Decrypts wallet
-// URI: /wallet/decrypt
+// URI: /api/v1/wallet/decrypt
 // Method: POST
 // Args:
 //     id: wallet id

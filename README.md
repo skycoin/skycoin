@@ -22,11 +22,11 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
 
 ## Table of Contents
 
-<!-- MarkdownTOC depth="5" autolink="true" bracket="round" -->
+<!-- MarkdownTOC levels="1,2,3,4,5" autolink="true" bracket="round" -->
 
 - [Changelog](#changelog)
 - [Installation](#installation)
-    - [Go 1.9+ Installation and Setup](#go-19-installation-and-setup)
+    - [Go 1.10+ Installation and Setup](#go-110-installation-and-setup)
     - [Go get skycoin](#go-get-skycoin)
     - [Run Skycoin from the command line](#run-skycoin-from-the-command-line)
     - [Show Skycoin node options](#show-skycoin-node-options)
@@ -66,11 +66,11 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
 
 ## Installation
 
-Skycoin supports go1.9+.  The preferred version is go1.10.
+Skycoin supports go1.10+.
 
-### Go 1.9+ Installation and Setup
+### Go 1.10+ Installation and Setup
 
-[Golang 1.9+ Installation/Setup](./INSTALLATION.md)
+[Golang 1.10+ Installation/Setup](./INSTALLATION.md)
 
 ### Go get skycoin
 
@@ -165,29 +165,13 @@ Access the API: [http://localhost:6420/version](http://localhost:6420/version).
 
 ### Building your own images
 
-There is a Dockerfile in docker/images/mainnet that you can use to build your
-own image. By default it will build your working copy, but if you pass the
-SKYCOIN_VERSION build argument to the `docker build` command, it will checkout
-to the branch, a tag or a commit you specify on that variable.
+[Building your own images](docker/images/mainnet/README.md).
 
-Example
+### Development image
 
-```sh
-$ git clone https://github.com/skycoin/skycoin
-$ cd skycoin
-$ SKYCOIN_VERSION=v0.23.0
-$ docker build -f docker/images/mainnet/Dockerfile \
-  --build-arg=SKYCOIN_VERSION=$SKYCOIN_VERSION \
-  -t skycoin:$SKYCOIN_VERSION .
-```
-
-or just
-
-```sh
-$ docker build -f docker/images/mainnet/Dockerfile \
-  --build-arg=SKYCOIN_VERSION=v0.23.0 \
-  -t skycoin:v0.23.0 .
-```
+The [skycoin/skycoindev-cli docker image](docker/images/dev-cli/README.md) is provided in order to make
+easy to start developing Skycoin. It comes with the compiler, linters, debugger
+and the vim editor among other tools.
 
 ## API Documentation
 
@@ -255,9 +239,11 @@ We have two branches: `master` and `develop`.
 ### Client libraries
 
 Skycoin implements client libraries which export core functionality for usage from
-other programming languages. Read the corresponding README file for further details.
+other programming languages.
 
-* `lib/cgo/` - libskycoin C client library ( [read more](lib/cgo/README.md) )
+* `lib/cgo/` - libskycoin C client library ( [overview](lib/cgo/README.md), [API reference](docs/libc/API.md) )
+
+For further details run `make docs` to generate documetation and read the corresponding README and API references.
 
 ### Running Tests
 
@@ -424,6 +410,33 @@ Add a single dependency (more specific version), or downgrade an existing depend
 ```sh
 dep ensure github.com/foo/bar@tag
 ```
+
+### Configuration Modes
+There are 4 configuration modes in which you can run a skycoin node:
+- Development Desktop Daemon
+- Server Daemon
+- Electron Desktop Client
+- Standalone Desktop Client
+
+#### Development Desktop Daemon Mode
+This mode is configured via `run.sh`
+```bash
+$ ./run.sh
+```
+
+#### Server Daemon Mode
+The default settings for a skycoin node are chosen for `Server Daemon`, which is typically run from source.
+This mode is usually preferred to be run with security options, though `-disable-csrf` is normal for server daemon mode, it is left enabled by default.
+```bash
+$ go run cmd/skycoin/skycoin.go
+```
+
+#### Electron Desktop Client Mode
+This mode configures itself via electron-main.js
+
+#### Standalone Desktop Client Mode
+This mode is configured by compiling with `STANDALONE_CLIENT` build tag.
+The configuration is handled in `cmd/skycoin/skycoin.go`
 
 ### Wallet GUI Development
 

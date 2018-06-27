@@ -1,10 +1,16 @@
 #!/bin/bash
 # Runs "disable-seed-api"-mode tests against a skycoin node configured with -enable-seed-api=false
-# and /wallet/seed api endpoint should return 403 forbidden error.
+# and /api/v1/wallet/seed api endpoint should return 403 forbidden error.
 
-#Set Script Name variable
+# Set Script Name variable
 SCRIPT=`basename ${BASH_SOURCE[0]}`
-PORT="46422"
+
+# Find unused port
+PORT="1024"
+while $(lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null) ; do
+    PORT=$((PORT+1))
+done
+
 RPC_PORT="$PORT"
 HOST="http://127.0.0.1:$PORT"
 RPC_ADDR="http://127.0.0.1:$RPC_PORT"
@@ -18,7 +24,7 @@ VERBOSE=""
 usage () {
   echo "Usage: $SCRIPT"
   echo "Optional command line arguments"
-  echo "-t <string>  -- Test to run, gui or cli; empty runs both tests"
+  echo "-t <string>  -- Test to run, api or cli; empty runs both tests"
   echo "-v <boolean> -- Run test with -v flag"
   exit 1
 }
@@ -73,12 +79,12 @@ echo "done sleeping"
 
 set +e
 
-if [[ -z $TEST || $TEST = "gui" ]]; then
+if [[ -z $TEST || $TEST = "api" ]]; then
 
 SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST WALLET_DIR=$WALLET_DIR \
     go test ./src/api/integration/... -timeout=30s $VERBOSE $RUN_TESTS
 
-GUI_FAIL=$?
+API_FAIL=$?
 
 fi
 
@@ -101,8 +107,8 @@ wait $SKYCOIN_PID
 rm "$BINARY"
 
 
-if [[ (-z $TEST || $TEST = "gui") && $GUI_FAIL -ne 0 ]]; then
-  exit $GUI_FAIL
+if [[ (-z $TEST || $TEST = "api") && $API_FAIL -ne 0 ]]; then
+  exit $API_FAIL
 elif [[ (-z $TEST || $TEST = "cli") && $CLI_FAIL -ne 0 ]]; then
   exit $CLI_FAIL
 else

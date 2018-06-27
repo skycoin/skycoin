@@ -4,10 +4,10 @@ import { AppService } from '../../../../services/app.service';
 @Component({
   selector: 'app-top-bar',
   templateUrl: './top-bar.component.html',
-  styleUrls: ['./top-bar.component.scss']
+  styleUrls: ['./top-bar.component.scss'],
 })
 export class TopBarComponent {
-  @Input() title: string;
+  @Input() headline: string;
 
   constructor(
     public appService: AppService,

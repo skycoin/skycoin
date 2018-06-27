@@ -8,21 +8,23 @@ import { ButtonComponent } from '../../../layout/button/button.component';
 @Component({
   selector: 'app-change-name',
   templateUrl: './change-name.component.html',
-  styleUrls: ['./change-name.component.css']
+  styleUrls: ['./change-name.component.css'],
 })
 export class ChangeNameComponent implements OnInit {
   @ViewChild('button') button: ButtonComponent;
   form: FormGroup;
 
   constructor(
-    @Inject(MAT_DIALOG_DATA) private data: Wallet,
     public dialogRef: MatDialogRef<ChangeNameComponent>,
+    @Inject(MAT_DIALOG_DATA) private data: Wallet,
     private formBuilder: FormBuilder,
     private walletService: WalletService,
   ) {}
 
   ngOnInit() {
-    this.initForm();
+    this.form = this.formBuilder.group({
+      label: [this.data.label, Validators.required],
+    });
   }
 
   closePopup() {
@@ -38,11 +40,5 @@ export class ChangeNameComponent implements OnInit {
 
     this.walletService.renameWallet(this.data, this.form.value.label)
       .subscribe(() => this.dialogRef.close(this.form.value.label));
-  }
-
-  private initForm() {
-    this.form = this.formBuilder.group({
-      label: [this.data.label, Validators.required],
-    });
   }
 }

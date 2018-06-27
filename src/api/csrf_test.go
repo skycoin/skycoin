@@ -89,6 +89,50 @@ var endpoints = []string{
 	"/wallets",
 	"/wallets/folderName",
 	"/webrpc",
+
+	"/api/v1/address_uxouts",
+	"/api/v1/addresscount",
+	"/api/v1/balance",
+	"/api/v1/block",
+	"/api/v1/blockchain/metadata",
+	"/api/v1/blockchain/progress",
+	"/api/v1/blocks",
+	"/api/v1/coinSupply",
+	"/api/v1/explorer/address",
+	"/api/v1/health",
+	"/api/v1/injectTransaction",
+	"/api/v1/last_blocks",
+	"/api/v1/version",
+	"/api/v1/network/connection",
+	"/api/v1/network/connections",
+	"/api/v1/network/connections/exchange",
+	"/api/v1/network/connections/trust",
+	"/api/v1/network/defaultConnections",
+	"/api/v1/outputs",
+	"/api/v1/pendingTxs",
+	"/api/v1/rawtx",
+	"/api/v1/richlist",
+	"/api/v1/resendUnconfirmedTxns",
+	"/api/v1/transaction",
+	"/api/v1/transactions",
+	"/api/v1/uxout",
+	"/api/v1/wallet",
+	"/api/v1/wallet/balance",
+	"/api/v1/wallet/create",
+	"/api/v1/wallet/newAddress",
+	"/api/v1/wallet/newSeed",
+	"/api/v1/wallet/seed",
+	"/api/v1/wallet/spend",
+	"/api/v1/wallet/transaction",
+	"/api/v1/wallet/transactions",
+	"/api/v1/wallet/unload",
+	"/api/v1/wallet/update",
+	"/api/v1/wallets",
+	"/api/v1/wallets/folderName",
+	"/api/v1/webrpc",
+
+	"/api/v2/transaction/verify",
+	"/api/v2/address/verify",
 }
 
 func TestCSRFWrapper(t *testing.T) {
@@ -112,9 +156,10 @@ func TestCSRFWrapper(t *testing.T) {
 
 					rr := httptest.NewRecorder()
 					handler := newServerMux(muxConfig{
-						host:            configuredHost,
-						appLoc:          ".",
-						enableJSON20RPC: true,
+						host:                 configuredHost,
+						appLoc:               ".",
+						enableJSON20RPC:      true,
+						enableUnversionedAPI: true,
 					}, gateway, csrfStore, nil)
 
 					handler.ServeHTTP(rr, req)
@@ -222,7 +267,7 @@ func TestCSRF(t *testing.T) {
 		gateway := &GatewayerMock{}
 		gateway.On("UpdateWalletLabel", "fooid", "foolabel").Return(nil)
 
-		endpoint := "/wallet/update"
+		endpoint := "/api/v1/wallet/update"
 
 		v := url.Values{}
 		v.Add("id", "fooid")
@@ -258,7 +303,7 @@ func TestCSRF(t *testing.T) {
 	handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
 
 	// non-GET request to /csrf is invalid
-	req, err := http.NewRequest(http.MethodPost, "/csrf", nil)
+	req, err := http.NewRequest(http.MethodPost, "/api/v1/csrf", nil)
 	require.NoError(t, err)
 
 	rr = httptest.NewRecorder()
@@ -270,7 +315,7 @@ func TestCSRF(t *testing.T) {
 	// CSRF disabled 404s
 	csrfStore.Enabled = false
 
-	req, err = http.NewRequest(http.MethodGet, "/csrf", nil)
+	req, err = http.NewRequest(http.MethodGet, "/api/v1/csrf", nil)
 	require.NoError(t, err)
 
 	rr = httptest.NewRecorder()
@@ -282,7 +327,7 @@ func TestCSRF(t *testing.T) {
 	csrfStore.Enabled = true
 
 	// Request a CSRF token, use it in a request
-	req, err = http.NewRequest(http.MethodGet, "/csrf", nil)
+	req, err = http.NewRequest(http.MethodGet, "/api/v1/csrf", nil)
 	require.NoError(t, err)
 
 	rr = httptest.NewRecorder()
@@ -297,7 +342,7 @@ func TestCSRF(t *testing.T) {
 	token := msg["csrf_token"]
 	require.NotEmpty(t, token)
 
-	req, err = http.NewRequest(http.MethodPost, "/version", nil)
+	req, err = http.NewRequest(http.MethodPost, "/api/v1/version", nil)
 	require.NoError(t, err)
 
 	rr = httptest.NewRecorder()
@@ -309,7 +354,7 @@ func TestCSRF(t *testing.T) {
 
 	// Make another call to /csrf, this will invalidate the first token
 	// Request a CSRF token, use it in a request
-	req, err = http.NewRequest(http.MethodGet, "/csrf", nil)
+	req, err = http.NewRequest(http.MethodGet, "/api/v1/csrf", nil)
 	require.NoError(t, err)
 
 	rr = httptest.NewRecorder()

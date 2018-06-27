@@ -1,10 +1,60 @@
 # REST API Documentation
 
-API default service port is `6420`.
+API default service port is `6420`.  However, if running the desktop or standalone releases from the website, the port is randomized by default.
 
 A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](https://godoc.org/github.com/skycoin/skycoin/src/api#Client).
 
-<!-- MarkdownTOC autolink="true" bracket="round" -->
+The API has two versions, `/api/v1` and `/api/v2`.
+Previously, there was no `/api/vx` prefix.
+Starting in application version 0.24.0, the existing endpoints from v0.23.0
+are now prefixed with `/api/v1`. To retain the old endpoints, run the application
+with `-enable-unversioned-api`.
+
+## API Version 1
+
+`/api/v1` endpoints have no standard format. Most of them accept formdata in POST requests,
+but a few accept `application/json` instead.  Most of them return JSON but one or two
+return a plaintext string.
+
+All endpoints will set an appropriate HTTP status code, using `200` for success and codes greater than or equal to `400` for error.
+
+`/api/v1` endpoints guarantee backwards compatibility.
+
+## API Version 2
+
+*Note: API Version 2 is under development, and not stable. The guidelines here are subject to change.*
+
+`/api/v2` endpoints have a standard format.
+
+All `/api/v2` `POST` endpoints accept only `application/json` and return `application/json`.
+
+All `/api/v2` `GET` requires accept data in the query string.
+In the future we may have choose to have `GET` requests also accept `POST` with a JSON body,
+to support requests with a large query body, such as when requesting data for a large number
+of addresses or transactions.
+
+`/api/v2` responses are always JSON.  If there is an error, the JSON object will
+look like this:
+
+```json
+{
+    "error": {
+        "code": 400,
+        "message": "bad arguments",
+    }
+}
+```
+
+Response data will be included in a `"data"` field, which will always be a JSON object (not an array).
+
+Some endpoints may return both `"error"` and `"data"`. This will be noted in the documentation for that endpoint.
+
+All responses will set an appropriate HTTP status code indicating an error, and it will be equal to the value of `response["error"]["code"]`.
+
+Since `/api/v2` is still under development, there are no guarantees for backwards compatibility.
+However, any changes to the API will be recorded in the [changelog](../../CHANGELOG.md).
+
+<!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3,4,5" -->
 
 - [CSRF](#csrf)
     - [Get current csrf token](#get-current-csrf-token)
@@ -14,6 +64,7 @@ A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](h
     - [Get node version info](#get-node-version-info)
     - [Get balance of addresses](#get-balance-of-addresses)
     - [Get unspent output set of address or hash](#get-unspent-output-set-of-address-or-hash)
+    - [Verify an address](#verify-an-address)
 - [Wallet APIs](#wallet-apis)
     - [Get wallet](#get-wallet)
     - [Get wallet transactions](#get-wallet-transactions)
@@ -37,6 +88,7 @@ A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](h
     - [Inject raw transaction](#inject-raw-transaction)
     - [Get transactions that are addresses related](#get-transactions-that-are-addresses-related)
     - [Resend unconfirmed transactions](#resend-unconfirmed-transactions)
+    - [Verify encoded transaction](#verify-encoded-transaction)
 - [Block APIs](#block-apis)
     - [Get blockchain metadata](#get-blockchain-metadata)
     - [Get blockchain progress](#get-blockchain-progress)
@@ -63,7 +115,7 @@ A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](h
 
 ## CSRF
 
-All `POST`, `PUT` and `DELETE` requests require a CSRF token, obtained with a `GET /csrf` call.
+All `POST`, `PUT` and `DELETE` requests require a CSRF token, obtained with a `GET /api/v1/csrf` call.
 The token must be placed in the `X-CSRF-Token` header. A token is only valid
 for 30 seconds and it is expected that the client obtains a new CSRF token
 for each request. Requesting a CSRF token invalidates any previous CSRF token.
@@ -74,14 +126,14 @@ as the response body.
 ### Get current csrf token
 
 ```
-URI: /csrf
+URI: /api/v1/csrf
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/csrf
+curl http://127.0.0.1:6420/api/v1/csrf
 ```
 
 Result:
@@ -97,14 +149,14 @@ Result:
 ### Health check
 
 ```
-URI: /health
+URI: /api/v1/health
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/health
+curl http://127.0.0.1:6420/api/v1/health
 ```
 
 Response:
@@ -140,14 +192,14 @@ Response:
 ### Get node version info
 
 ```
-URI: /version
+URI: /api/v1/version
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/version
+curl http://127.0.0.1:6420/api/v1/version
 ```
 
 Result:
@@ -162,7 +214,7 @@ Result:
 ### Get balance of addresses
 
 ```
-URI: /balance
+URI: /api/v1/balance
 Method: GET
 Args:
     addrs: comma-separated list of addresses. must contain at least one address
@@ -171,7 +223,7 @@ Args:
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/balance\?addrs\=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq
+curl http://127.0.0.1:6420/api/v1/balance\?addrs\=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq
 ```
 
 Result:
@@ -179,12 +231,34 @@ Result:
 ```json
 {
     "confirmed": {
-        "coins": 70000000,
-        "hours": 28052
+        "coins": 21000000,
+        "hours": 142744
     },
     "predicted": {
-        "coins": 9000000,
-        "hours": 8385
+        "coins": 21000000,
+        "hours": 142744
+    },
+    "addresses": {
+        "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD": {
+            "confirmed": {
+                "coins": 9000000,
+                "hours": 88075
+            },
+            "predicted": {
+                "coins": 9000000,
+                "hours": 88075
+            }
+        },
+        "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq": {
+            "confirmed": {
+                "coins": 12000000,
+                "hours": 54669
+            },
+            "predicted": {
+                "coins": 12000000,
+                "hours": 54669
+            }
+        }
     }
 }
 ```
@@ -192,7 +266,7 @@ Result:
 ### Get unspent output set of address or hash
 
 ```
-URI: /outputs
+URI: /api/v1/outputs
 Method: GET
 Args:
     addrs: address list, joined with ","
@@ -204,13 +278,13 @@ Addrs and hashes cannot be combined.
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/outputs?addrs=6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY
+curl http://127.0.0.1:6420/api/v1/outputs?addrs=6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY
 ```
 
 or
 
 ```sh
-curl http://127.0.0.1:6420/outputs?hashes=7669ff7350d2c70a88093431a7b30d3e69dda2319dcb048aa80fa0d19e12ebe0
+curl http://127.0.0.1:6420/api/v1/outputs?hashes=7669ff7350d2c70a88093431a7b30d3e69dda2319dcb048aa80fa0d19e12ebe0
 ```
 
 Result:
@@ -234,12 +308,65 @@ Result:
 }
 ```
 
+### Verify an address
+
+```
+URI: /api/v2/address/verify
+Method: POST
+Content-Type: application/json
+Args: {"address": "<address>"}
+```
+
+Parses and validates a Skycoin address. Returns the address version in the response.
+
+Error responses:
+
+* `400 Bad Request`: The request body is not valid JSON or the address is missing from the request body
+* `422 Unprocessable Entity`: The address is invalid
+
+Example for a valid address:
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v2/address/verify \
+ -H 'Content-Type: application/json' \
+ -d '{"address":"2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2"}'
+```
+
+Result:
+
+```json
+{
+    "data": {
+        "version": 0,
+    }
+}
+```
+
+Example for an invalid address:
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v2/address/verify \
+ -H 'Content-Type: application/json' \
+ -d '{"address":"2aTnQe3ZupkG6k8S81brNC3JycGV2Em71F2"}'
+```
+
+Result:
+
+```json
+{
+    "error": {
+        "message": "Invalid checksum",
+        "code": 422
+    }
+}
+```
+
 ## Wallet APIs
 
 ### Get wallet
 
 ```
-URI: /wallet
+URI: /api/v1/wallet
 Method: GET
 Args:
     id: Wallet ID [required]
@@ -248,7 +375,7 @@ Args:
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/wallet?id=2017_11_25_e5fb.wlt
+curl http://127.0.0.1:6420/api/v1/wallet?id=2017_11_25_e5fb.wlt
 ```
 
 Result:
@@ -281,7 +408,7 @@ Result:
 ### Get wallet transactions
 
 ```
-URI: /wallet/transactions
+URI: /api/v1/wallet/transactions
 Method: GET
 Args:
 	id: Wallet ID
@@ -292,7 +419,7 @@ Returns all pending transaction for all addresses by selected Wallet
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/wallet/transactions?id=2017_11_25_e5fb.wlt
+curl http://127.0.0.1:6420/api/v1/wallet/transactions?id=2017_11_25_e5fb.wlt
 ```
 
 Result:
@@ -341,14 +468,14 @@ Result:
 ### Get wallets
 
 ```
-URI: /wallets
+URI: /api/v1/wallets
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/wallets
+curl http://127.0.0.1:6420/api/v1/wallets
 ```
 
 Result:
@@ -383,14 +510,14 @@ Result:
 ### Get wallet folder name
 
 ```
-URI: /wallets/folderName
+URI: /api/v1/wallets/folderName
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/wallets/folderName
+curl http://127.0.0.1:6420/api/v1/wallets/folderName
 ```
 
 Result:
@@ -404,7 +531,7 @@ Result:
 ### Generate wallet seed
 
 ```
-URI: /wallet/newSeed
+URI: /api/v1/wallet/newSeed
 Method: GET
 Args:
     entropy: seed entropy [optional]
@@ -415,7 +542,7 @@ Args:
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/wallet/newSeed
+curl http://127.0.0.1:6420/api/v1/wallet/newSeed
 ```
 
 Result:
@@ -429,7 +556,7 @@ Result:
 ### Create a wallet from seed
 
 ```
-URI: /wallet/create
+URI: /api/v1/wallet/create
 Method: POST
 Args:
     seed: wallet seed [required]
@@ -442,7 +569,7 @@ Args:
 Example:
 
 ```sh
-curl -X POST http://127.0.0.1:6420/wallet/create \
+curl -X POST http://127.0.0.1:6420/api/v1/wallet/create \
  -H 'Content-Type: application/x-www-form-urlencoded' \
  -d 'seed=$seed' \
  -d 'label=$label' \
@@ -476,7 +603,7 @@ Result:
 ### Generate new address in wallet
 
 ```
-URI: /wallet/newAddress
+URI: /api/v1/wallet/newAddress
 Method: POST
 Args:
     id: wallet file name
@@ -487,7 +614,7 @@ Args:
 Example:
 
 ```sh
-curl -X POST http://127.0.0.1:6420/wallet/newAddress \
+curl -X POST http://127.0.0.1:6420/api/v1/wallet/newAddress \
  -H 'Content-Type: x-www-form-urlencoded' \
  -d 'id=2017_05_09_d554.wlt' \
  -d 'num=2' \
@@ -507,7 +634,7 @@ Result:
 ### Updates wallet label
 
 ```
-URI: /wallet/update
+URI: /api/v1/wallet/update
 Method: POST
 Args:
     id: wallet file name
@@ -517,7 +644,7 @@ Args:
 Example:
 
 ```sh
-curl -X POST http://127.0.0.1:6420/wallet/update \
+curl -X POST http://127.0.0.1:6420/api/v1/wallet/update \
  -H 'Content-Type: application/x-www-form-urlencoded' \
  -d 'id=$id' \
  -d 'label=$label'
@@ -532,7 +659,7 @@ Result:
 ### Get wallet balance
 
 ```
-URI: /wallet/balance
+URI: /api/v1/wallet/balance
 Method: GET
 Args:
     id: wallet file name
@@ -541,7 +668,7 @@ Args:
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/wallet/balance?id=2017_05_09_d554.wlt
+curl http://127.0.0.1:6420/api/v1/wallet/balance?id=2018_03_07_3088.wlt
 ```
 
 Result:
@@ -549,12 +676,64 @@ Result:
 ```json
 {
     "confirmed": {
-        "coins": 0,
-        "hours": 0
+        "coins": 210400000,
+        "hours": 1873147
     },
     "predicted": {
-        "coins": 0,
-        "hours": 0
+        "coins": 210400000,
+        "hours": 1873147
+    },
+    "addresses": {
+        "AXrFisGovRhRHipsbGahs4u2hXX7pDRT5p": {
+            "confirmed": {
+                "coins": 1250000,
+                "hours": 941185
+            },
+            "predicted": {
+                "coins": 1250000,
+                "hours": 941185
+            }
+        },
+        "AtNorKBpCgkSRL7zES7aAQyNjqjqPp2QJU": {
+            "confirmed": {
+                "coins": 1150000,
+                "hours": 61534
+            },
+            "predicted": {
+                "coins": 1150000,
+                "hours": 61534
+            }
+        },
+        "VUv9ehMZWmDvwWV36BQ3eL1ujb4MQ5TGyK": {
+            "confirmed": {
+                "coins": 208000000,
+                "hours": 870428
+            },
+            "predicted": {
+                "coins": 208000000,
+                "hours": 870428
+            }
+        },
+        "j4mbF1fTe8jgXbrRARZSBjDpD1hMGSe1E4": {
+            "confirmed": {
+                "coins": 0,
+                "hours": 0
+            },
+            "predicted": {
+                "coins": 0,
+                "hours": 0
+            }
+        },
+        "uyqBPcRCWucHXs18e9VZyNEeuNsD5tFDhy": {
+            "confirmed": {
+                "coins": 0,
+                "hours": 0
+            },
+            "predicted": {
+                "coins": 0,
+                "hours": 0
+            }
+        }
     }
 }
 ```
@@ -562,7 +741,7 @@ Result:
 ### Spend coins from wallet
 
 ```
-URI: /wallet/spend
+URI: /api/v1/wallet/spend
 Method: POST
 Args:
     id: wallet id
@@ -583,10 +762,13 @@ Statuses:
     500: other errors
 ```
 
-example, send 1 coin to `2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc` from wallet `2017_05_09_ea42.wlt`:
+
+**This endpoint is deprecated, use [POST /wallet/transaction](#create-transaction)**
+
+Example, send 1 coin to `2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc` from wallet `2017_05_09_ea42.wlt`:
 
 ```sh
-curl -X POST  http://127.0.0.1:6420/wallet/spend \
+curl -X POST  http://127.0.0.1:6420/api/v1/wallet/spend \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   -d 'id=2017_05_09_ea42.wlt' \
   -d 'dst=2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc' \
@@ -643,26 +825,28 @@ Result:
 ### Create transaction
 
 ```
-URI: /wallet/transaction
+URI: /api/v1/wallet/transaction
 Method: POST
 Content-Type: application/json
 Args: JSON body, see examples
 ```
 
 Creates a transaction, returning the transaction preview and the encoded, serialized transaction.
-The `encoded_transaction` can be provided to `POST /injectTransaction` to broadcast it to the network.
+The `encoded_transaction` can be provided to `POST /api/v1/injectTransaction` to broadcast it to the network.
 
 The request body includes:
 
-* A change address
-* A wallet to spend from with the optional ability to restrict which addresses in the wallet to use
+* An optional change address
+* A wallet to spend from with the optional ability to restrict which addresses or which unspent outputs in the wallet to use
 * A list of destinations with address and coins specified, as well as optionally specifying hours
 * A configuration for how destination hours are distributed, either manual or automatic
+* Additional options
 
 Example request body with manual hours selection type, unencrypted wallet and all wallet addresses may spend:
 
 ```json
 {
+    "ignore_unconfirmed": false,
     "hours_selection": {
         "type": "manual"
     },
@@ -707,6 +891,31 @@ Example request body with auto hours selection type, encrypted wallet, specified
 }
 ```
 
+Example request body with manual hours selection type, unencrypted wallet and spending specific unspent outputs:
+
+```json
+{
+    "hours_selection": {
+        "type": "manual"
+    },
+    "wallet": {
+        "id": "foo.wlt",
+        "unspents": ["519c069a0593e179f226e87b528f60aea72826ec7f99d51279dd8854889ed7e2", "4e4e41996297511a40e2ef0046bd6b7118a8362c1f4f09a288c5c3ea2f4dfb85"]
+    },
+    "change_address": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
+    "to": [{
+        "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+        "coins": "1.032",
+        "hours": 7
+    }, {
+        "address": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
+        "coins": "99.2",
+        "hours": 0
+    }]
+}
+```
+
+
 The `hours_selection` field has two types: `manual` or `auto`.
 
 If `manual`, all destination hours must be specified.
@@ -716,8 +925,12 @@ For the `"share"` mode, `share_factor` must also be set. This must be a decimal 
 In the auto share mode, the remaining hours after the fee are shared between the destination addresses as a whole,
 and the change address. Amongst the destination addresses, the shared hours are distributed proportionally.
 
-Note that if there are remaining coin hours as change, but no coins are available as change from the wallet,
-these remaining coin hours will be burned as an additional fee.
+When using the `auto` `"share"` `mode`, if there are remaining coin hours as change,
+but no coins are available as change from the wallet (which are needed to retain the coin hours as change),
+the `share_factor` will switch to `1.0` so that extra coin hours are distributed to the outputs
+instead of being burned as an additional fee.
+For the `manual` mode, if there are leftover coin hours but no coins to make change with,
+the leftover coin hours will be burned in addition to the required fee.
 
 All objects in `to` must be unique; a single transaction cannot create multiple outputs with the same `address`, `coins` and `hours`.
 
@@ -773,15 +986,35 @@ But this is an invalid value for `to`, if `hours_selection.type` is `"auto"`:
 }]
 ```
 
-If `wallet.addresses` is empty or not provided, then all addresses from the wallet will be considered to use
-for spending. To control which addresses may spend, specify the addresses in this field.
+To control which addresses to spend from, specify `wallet.addresses`.
+A subset of the unspent outputs associated with these addresses will be chosen for spending,
+based upon an internal selection algorithm.
 
-`change_address` must be set, but it is not required to be an address in the wallet.
+To control which unspent outputs to spend from, specify `wallet.unspents`.
+A subset of these unspent outputs will be chosen for spending,
+based upon an internal selection algorithm.
+
+`wallet.addresses` and `wallets.uxouts` cannot be combined.
+
+If neither `wallet.addresses` nor `wallet.unspents` are specified,
+then all outputs associated with all addresses in the wallet may be chosen from to spend with.
+
+`change_address` is optional.
+If set, it is not required to be an address in the wallet.
+If not set, it will default to one of the addresses associated with the unspent outputs being spent in the transaction.
+
+`ignore_unconfirmed` is optional and defaults to `false`.
+When `false`, the API will return an error if any of the unspent outputs
+associated with the wallet addresses or the wallet outputs appear as spent in
+a transaction in the unconfirmed transaction pool.
+When `true`, the API will ignore unspent outputs that appear as spent in
+a transaction in the unconfirmed transaction pool when building the transaction,
+but not return an error.
 
 Example:
 
 ```sh
-curl -X POST http://127.0.0.1:6420/wallet/transaction -H 'content-type: application/json' -d '{
+curl -X POST http://127.0.0.1:6420/api/v1/wallet/transaction -H 'content-type: application/json' -d '{
     "hours_selection": {
         "type": "auto",
         "mode": "share",
@@ -854,7 +1087,7 @@ Result:
 ### Unload wallet
 
 ```
-URI: /wallet/unload
+URI: /api/v1/wallet/unload
 Method: POST
 Args:
     id: wallet file name
@@ -863,7 +1096,7 @@ Args:
 Example:
 
 ```sh
-curl -X POST http://127.0.0.1:6420/wallet/unload \
+curl -X POST http://127.0.0.1:6420/api/v1/wallet/unload \
  -H 'Content-Type: x-www-form-urlencoded' \
  -d 'id=2017_05_09_d554.wlt'
 ```
@@ -871,7 +1104,7 @@ curl -X POST http://127.0.0.1:6420/wallet/unload \
 ### Encrypt wallet
 
 ```
-URI: /wallet/encrypt
+URI: /api/v1/wallet/encrypt
 Method: POST
 Args:
     id: wallet id
@@ -881,7 +1114,7 @@ Args:
 Example:
 
 ```sh
-curl -X POST http://127.0.0.1:6420/wallet/encrypt \
+curl -X POST http://127.0.0.1:6420/api/v1/wallet/encrypt \
  -H 'Content-Type: application/x-www-form-urlencoded' \
  -d 'id=test.wlt' \
  -d 'password=$password'
@@ -913,7 +1146,7 @@ Result:
 ### Decrypt wallet
 
 ```
-URI: /wallet/decrypt
+URI: /api/v1/wallet/decrypt
 Method: POST
 Args:
     id: wallet id
@@ -923,7 +1156,7 @@ Args:
 Example:
 
 ```sh
-curl -X POST http://127.0.0.1:6420/wallet/decrypt \
+curl -X POST http://127.0.0.1:6420/api/v1/wallet/decrypt \
  -H 'Content-Type: application/x-www-form-urlencoded' \
  -d 'id=test.wlt' \
  -d 'password=$password'
@@ -957,7 +1190,7 @@ Result:
 This endpoint is supported only when `-enable-seed-api` option is enabled and the wallet is encrypted.
 
 ```
-URI: /wallet/seed
+URI: /api/v1/wallet/seed
 Method: POST
 Args:
     id: wallet id
@@ -967,7 +1200,7 @@ Args:
 Example:
 
 ```sh
-curl -X POST http://127.0.0.1:6420/wallet/seed \
+curl -X POST http://127.0.0.1:6420/api/v1/wallet/seed \
  -H 'Content-type: application/x-www-form-urlencoded' \
  -d 'id=test.wlt' \
  -d 'password=$password'
@@ -986,14 +1219,14 @@ Result:
 ### Get unconfirmed transactions
 
 ```
-URI: /pendingTxs
+URI: /api/v1/pendingTxs
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/pendingTxs
+curl http://127.0.0.1:6420/api/v1/pendingTxs
 ```
 
 Result:
@@ -1040,7 +1273,7 @@ Result:
 ### Get transaction info by id
 
 ```
-URI: /transaction
+URI: /api/v1/transaction
 Method: GET
 Args:
     txid: transaction id
@@ -1049,7 +1282,7 @@ Args:
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/transaction?txid=a6446654829a4a844add9f181949d12f8291fdd2c0fcb22200361e90e814e2d3
+curl http://127.0.0.1:6420/api/v1/transaction?txid=a6446654829a4a844add9f181949d12f8291fdd2c0fcb22200361e90e814e2d3
 ```
 
 Result:
@@ -1090,14 +1323,14 @@ Result:
 ### Get raw transaction by id
 
 ```
-URI: /rawtx
+URI: /api/v1/rawtx
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/rawtx?txid=a6446654829a4a844add9f181949d12f8291fdd2c0fcb22200361e90e814e2d3
+curl http://127.0.0.1:6420/api/v1/rawtx?txid=a6446654829a4a844add9f181949d12f8291fdd2c0fcb22200361e90e814e2d3
 ```
 
 Result:
@@ -1109,7 +1342,7 @@ Result:
 ### Inject raw transaction
 
 ```
-URI: /injectTransaction
+URI: /api/v1/injectTransaction
 Method: POST
 Content-Type: application/json
 Body: {"rawtx": "raw transaction"}
@@ -1125,7 +1358,7 @@ This can happen if the node's network has recently become unavailable but its co
 Example:
 
 ```sh
-curl -X POST http://127.0.0.1:6420/injectTransaction -H 'content-type: application/json' -d '{
+curl -X POST http://127.0.0.1:6420/api/v1/injectTransaction -H 'content-type: application/json' -d '{
     "rawtx":"dc0000000008b507528697b11340f5a3fcccbff031c487bad59d26c2bdaea0cd8a0199a1720100000017f36c9d8bce784df96a2d6848f1b7a8f5c890986846b7c53489eb310090b91143c98fd233830055b5959f60030b3ca08d95f22f6b96ba8c20e548d62b342b5e0001000000ec9cf2f6052bab24ec57847c72cfb377c06958a9e04a077d07b6dd5bf23ec106020000000072116096fe2207d857d18565e848b403807cd825c044840300000000330100000000000000575e472f8c5295e8fa644e9bc5e06ec10351c65f40420f000000000066020000000000000"
 }'
 ```
@@ -1139,7 +1372,7 @@ Result:
 ### Get transactions that are addresses related
 
 ```
-URI: /transactions
+URI: /api/v1/transactions
 Method: GET
 Args:
 	addrs: Comma seperated addresses [optional, returns all transactions if no address is provided]
@@ -1149,18 +1382,18 @@ Args:
 To get address related confirmed transactions:
 
 ```sh
-curl http://127.0.0.1:6420/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY&confirmed=1
+curl http://127.0.0.1:6420/api/v1/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY&confirmed=1
 ```
 
 To get address related unconfirmed transactions:
 ```sh
-curl http://127.0.0.1:6420/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY&confirmed=0
+curl http://127.0.0.1:6420/api/v1/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY&confirmed=0
 ```
 
 To get all addresses related transactions:
 
 ```sh
-curl http://127.0.0.1:6420/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY
+curl http://127.0.0.1:6420/api/v1/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY
 ```
 
 
@@ -1281,14 +1514,14 @@ Result:
 ### Resend unconfirmed transactions
 
 ```
-URI: /resendUnconfirmedTxns
+URI: /api/v1/resendUnconfirmedTxns
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/resendUnconfirmedTxns
+curl http://127.0.0.1:6420/api/v1/resendUnconfirmedTxns
 ```
 
 Result:
@@ -1302,19 +1535,152 @@ Result:
 }
 ```
 
+### Verify encoded transaction
+
+```
+URI: /api/v2/transaction/verify
+Method: POST
+Content-Type: application/json
+Args: {"encoded_transaction": "<hex encoded serialized transaction>"}
+```
+
+If the transaction can be parsed, passes validation and has not been spent, returns `200 OK` with the decoded transaction data,
+and the `"confirmed"` field will be `false`.
+
+If the transaction is structurally valid, passes validation but has been spent, returns `422 Unprocessable Entity` with the decoded transaction data,
+and the `"confirmed"` field will be `true`.  The `"error"` `"message"` will be `"transaction has been spent"`.
+
+If the transaction can be parsed but does not pass validation, returns `422 Unprocessable Entity` with the decoded transaction data.
+The `"error"` object will be included in the response with the reason why.
+If the transaction's inputs cannot be found in the unspent pool nor in the historical archive of unspents,
+the transaction `"inputs"` metadata will be absent and only `"uxid"` will be present.
+
+If the transaction can not be parsed, returns `400 Bad Request` and the `"error"` object will be included in the response with the reason why.
+
+Example of valid transaction that has not been spent:
+
+```sh
+curl -X POST -H 'Content-Type: application/json' http://127.0.0.1:6420/api/v2/transaction/verify \
+-d '{"encoded_transaction": "dc000000004fd024d60939fede67065b36adcaaeaf70fc009e3a5bbb8358940ccc8bbb2074010000007635ce932158ec06d94138adc9c9b19113fa4c2279002e6b13dcd0b65e0359f247e8666aa64d7a55378b9cc9983e252f5877a7cb2671c3568ec36579f8df1581000100000019ad5059a7fffc0369fc24b31db7e92e12a4ee2c134fb00d336d7495dec7354d02000000003f0555073e17ea6e45283f0f1115b520d0698d03a086010000000000010000000000000000b90dc595d102c48d3281b47428670210415f585200f22b0000000000ff01000000000000"}'
+```
+
+Result:
+
+```json
+{
+    "data": {
+        "confirmed": false,
+        "transaction": {
+            "length": 220,
+            "type": 0,
+            "txid": "82b5fcb182e3d70c285e59332af6b02bf11d8acc0b1407d7d82b82e9eeed94c0",
+            "inner_hash": "4fd024d60939fede67065b36adcaaeaf70fc009e3a5bbb8358940ccc8bbb2074",
+            "fee": "1042",
+            "sigs": [
+                "7635ce932158ec06d94138adc9c9b19113fa4c2279002e6b13dcd0b65e0359f247e8666aa64d7a55378b9cc9983e252f5877a7cb2671c3568ec36579f8df158100"
+            ],
+            "inputs": [
+                {
+                    "uxid": "19ad5059a7fffc0369fc24b31db7e92e12a4ee2c134fb00d336d7495dec7354d",
+                    "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
+                    "coins": "2.980000",
+                    "hours": "985",
+                    "calculated_hours": "1554",
+                    "timestamp": 1527080354,
+                    "block": 30074,
+                    "txid": "94204347ef52d90b3c5d6c31a3fced56ae3f74fd8f1f5576931aeb60847f0e59"
+                }
+            ],
+            "outputs": [
+                {
+                    "uxid": "b0911a5fc4dfe4524cdb82f6db9c705f4849af42fcd487a3c4abb2d17573d234",
+                    "address": "SMnCGfpt7zVXm8BkRSFMLeMRA6LUu3Ewne",
+                    "coins": "0.100000",
+                    "hours": "1"
+                },
+                {
+                    "uxid": "a492e6b85a434866be40da7e287bfcf14efce9803ff2fcd9d865c4046e81712a",
+                    "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
+                    "coins": "2.880000",
+                    "hours": "511"
+                }
+            ]
+        }
+    }
+}
+```
+
+Example of valid transaction that *has* been spent:
+
+```sh
+curl -X POST -H 'Content-Type: application/json' http://127.0.0.1:6420/api/v2/transaction/verify \
+-d '{"encoded_transaction": "dc000000004fd024d60939fede67065b36adcaaeaf70fc009e3a5bbb8358940ccc8bbb2074010000007635ce932158ec06d94138adc9c9b19113fa4c2279002e6b13dcd0b65e0359f247e8666aa64d7a55378b9cc9983e252f5877a7cb2671c3568ec36579f8df1581000100000019ad5059a7fffc0369fc24b31db7e92e12a4ee2c134fb00d336d7495dec7354d02000000003f0555073e17ea6e45283f0f1115b520d0698d03a086010000000000010000000000000000b90dc595d102c48d3281b47428670210415f585200f22b0000000000ff01000000000000"}'
+```
+
+Result:
+
+```json
+{
+    "error": {
+        "message": "transaction has been spent",
+        "code": 422
+    },
+    "data": {
+        "confirmed": true,
+        "transaction": {
+            "length": 220,
+            "type": 0,
+            "txid": "82b5fcb182e3d70c285e59332af6b02bf11d8acc0b1407d7d82b82e9eeed94c0",
+            "inner_hash": "4fd024d60939fede67065b36adcaaeaf70fc009e3a5bbb8358940ccc8bbb2074",
+            "fee": "1042",
+            "sigs": [
+                "7635ce932158ec06d94138adc9c9b19113fa4c2279002e6b13dcd0b65e0359f247e8666aa64d7a55378b9cc9983e252f5877a7cb2671c3568ec36579f8df158100"
+            ],
+            "inputs": [
+                {
+                    "uxid": "19ad5059a7fffc0369fc24b31db7e92e12a4ee2c134fb00d336d7495dec7354d",
+                    "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
+                    "coins": "2.980000",
+                    "hours": "985",
+                    "calculated_hours": "1554",
+                    "timestamp": 1527080354,
+                    "block": 30074,
+                    "txid": "94204347ef52d90b3c5d6c31a3fced56ae3f74fd8f1f5576931aeb60847f0e59"
+                }
+            ],
+            "outputs": [
+                {
+                    "uxid": "b0911a5fc4dfe4524cdb82f6db9c705f4849af42fcd487a3c4abb2d17573d234",
+                    "address": "SMnCGfpt7zVXm8BkRSFMLeMRA6LUu3Ewne",
+                    "coins": "0.100000",
+                    "hours": "1"
+                },
+                {
+                    "uxid": "a492e6b85a434866be40da7e287bfcf14efce9803ff2fcd9d865c4046e81712a",
+                    "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
+                    "coins": "2.880000",
+                    "hours": "511"
+                }
+            ]
+        }
+    }
+}
+```
+
+
 ## Block APIs
 
 ### Get blockchain metadata
 
 ```
-URI:  /blockchain/metadata
+URI: /api/v1/blockchain/metadata
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/blockchain/metadata
+curl http://127.0.0.1:6420/api/v1/blockchain/metadata
 ```
 
 Result:
@@ -1338,14 +1704,14 @@ Result:
 ### Get blockchain progress
 
 ```
-URI: /blockchain/progress
+URI: /api/v1/blockchain/progress
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/blockchain/progress
+curl http://127.0.0.1:6420/api/v1/blockchain/progress
 ```
 
 Result:
@@ -1370,7 +1736,7 @@ Result:
 ### Get block by hash or seq
 
 ```
-URI: /block
+URI: /api/v1/block
 Method: GET
 Args:
     hash: get block by hash
@@ -1378,13 +1744,13 @@ Args:
 ```
 
 ```sh
-curl http://127.0.0.1:6420/block?hash=6eafd13ab6823223b714246b32c984b56e0043412950faf17defdbb2cbf3fe30
+curl http://127.0.0.1:6420/api/v1/block?hash=6eafd13ab6823223b714246b32c984b56e0043412950faf17defdbb2cbf3fe30
 ```
 
 or
 
 ```sh
-curl http://127.0.0.1:6420/block?seq=2760
+curl http://127.0.0.1:6420/api/v1/block?seq=2760
 ```
 
 Result:
@@ -1437,7 +1803,7 @@ Result:
 ### Get blocks in specific range
 
 ```
-URI: /blocks
+URI: /api/v1/blocks
 Method: GET
 Args:
     start: start seq
@@ -1447,7 +1813,7 @@ Args:
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/blocks?start=1&end=2
+curl http://127.0.0.1:6420/api/v1/blocks?start=1&end=2
 ```
 
 Result:
@@ -1534,7 +1900,7 @@ Result:
 ### Get last N blocks
 
 ```
-URI: /last_blocks
+URI: /api/v1/last_blocks
 Method: GET
 Args:
     num: number of most recent blocks to return
@@ -1543,7 +1909,7 @@ Args:
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/last_blocks?num=2
+curl http://127.0.0.1:6420/api/v1/last_blocks?num=2
 ```
 
 Result:
@@ -1644,7 +2010,7 @@ Result:
 ### Get address affected transactions
 
 ```
-URI: /explorer/address
+URI: /api/v1/explorer/address
 Method: GET
 Args:
     address
@@ -1653,7 +2019,7 @@ Args:
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/explorer/address?address=2NfNKsaGJEndpSajJ6TsKJfsdDjW2gFsjXg
+curl http://127.0.0.1:6420/api/v1/explorer/address?address=2NfNKsaGJEndpSajJ6TsKJfsdDjW2gFsjXg
 ```
 
 Result:
@@ -1664,7 +2030,7 @@ Result:
         "status": {
             "confirmed": true,
             "unconfirmed": false,
-            "height": 1268,
+            "height": 12639,
             "block_seq": 15493,
             "unknown": false
         },
@@ -1673,6 +2039,8 @@ Result:
         "txid": "6d8e2f8b436a2f38d604b3aa1196ef2176779c5e11e33fbdd09f993fe659c39f",
         "inner_hash": "8da7c64dcedeeb6aa1e0d21fb84a0028dcd68e6801f1a3cc0224fdd50682046f",
         "timestamp": 1518878675,
+        "size": 183,
+        "fee": 126249,
         "sigs": [
             "c60e43980497daad59b4c72a2eac053b1584f960c57a5e6ac8337118dccfcee4045da3f60d9be674867862a13fdd87af90f4b85cbf39913bde13674e0a039b7800"
         ],
@@ -1681,7 +2049,8 @@ Result:
                 "uxid": "349b06e5707f633fd2d8f048b687b40462d875d968b246831434fb5ab5dcac38",
                 "owner": "WzPDgdfL1NzSbX96tscUNXUqtCRLjaBugC",
                 "coins": "125.000000",
-                "hours": 34596
+                "hours": 34596,
+                "calculated_hours": 178174
             }
         ],
         "outputs": [
@@ -1701,7 +2070,7 @@ Result:
 ### Get uxout
 
 ```
-URI: /uxout
+URI: /api/v1/uxout
 Method: GET
 Args:
     uxid
@@ -1710,7 +2079,7 @@ Args:
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/uxout?uxid=8b64d9b058e10472b9457fd2d05a1d89cbbbd78ce1d97b16587d43379271bed1
+curl http://127.0.0.1:6420/api/v1/uxout?uxid=8b64d9b058e10472b9457fd2d05a1d89cbbbd78ce1d97b16587d43379271bed1
 ```
 
 Result:
@@ -1732,7 +2101,7 @@ Result:
 ### Get address affected uxouts
 
 ```
-URI: /address_uxouts
+URI: /api/v1/address_uxouts
 Method: GET
 Args:
     address
@@ -1741,7 +2110,7 @@ Args:
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/address_uxouts?address=6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY
+curl http://127.0.0.1:6420/api/v1/address_uxouts?address=6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY
 ```
 
 Result:
@@ -1767,14 +2136,14 @@ Result:
 ### Coin supply
 
 ```
-URI: /coinSupply
+URI: /api/v1/coinSupply
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/coinSupply
+curl http://127.0.0.1:6420/api/v1/coinSupply
 ```
 
 Result:
@@ -1896,7 +2265,7 @@ Result:
 ### Richlist show top N addresses by uxouts
 
 ```
-URI: /richlist
+URI: /api/v1/richlist
 Method: GET
 Args:
     n: top N addresses, [default 20, returns all if <= 0].
@@ -1906,7 +2275,7 @@ Args:
 Example:
 
 ```sh
-curl "http://127.0.0.1:6420/richlist?n=4&include-distribution=true"
+curl "http://127.0.0.1:6420/api/v1/richlist?n=4&include-distribution=true"
 ```
 
 Result:
@@ -1941,14 +2310,14 @@ Result:
 ### Count unique addresses
 
 ```
-URI: /addresscount
+URI: /api/v1/addresscount
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl "http://127.0.0.1:6420/addresscount"
+curl "http://127.0.0.1:6420/api/v1/addresscount"
 ```
 
 Result:
@@ -1964,7 +2333,7 @@ Result:
 ### Get information for a specific connection
 
 ```
-URI: /network/connection
+URI: /api/v1/network/connection
 Method: GET
 Args:
     addr: ip:port address of a known connection
@@ -1973,7 +2342,7 @@ Args:
 Example:
 
 ```sh
-curl 'http://127.0.0.1:6420/network/connection?addr=176.9.84.75:6000'
+curl 'http://127.0.0.1:6420/api/v1/network/connection?addr=176.9.84.75:6000'
 ```
 
 Result:
@@ -1987,6 +2356,7 @@ Result:
     "outgoing": false,
     "introduced": true,
     "mirror": 719118746,
+    "height": 181,
     "listen_port": 6000
 }
 ```
@@ -1994,14 +2364,14 @@ Result:
 ### Get a list of all connections
 
 ```
-URI: /network/connections
+URI: /api/v1/network/connections
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl 'http://127.0.0.1:6420/network/connections'
+curl 'http://127.0.0.1:6420/api/v1/network/connections'
 ```
 
 Result:
@@ -2017,6 +2387,7 @@ Result:
             "outgoing": false,
             "introduced": true,
             "mirror": 1338939619,
+            "height": 180,
             "listen_port": 20002
         },
         {
@@ -2027,6 +2398,7 @@ Result:
             "outgoing": false,
             "introduced": true,
             "mirror": 719118746,
+            "height": 182,
             "listen_port": 6000
         },
         {
@@ -2037,6 +2409,7 @@ Result:
             "outgoing": false,
             "introduced": true,
             "mirror": 1931713869,
+            "height": 180,
             "listen_port": 6000
         }
     ]
@@ -2047,14 +2420,14 @@ Result:
 ### Get a list of all default connections
 
 ```
-URI: /network/defaultConnections
+URI: /api/v1/network/defaultConnections
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl 'http://127.0.0.1:6420/network/defaultConnections'
+curl 'http://127.0.0.1:6420/api/v1/network/defaultConnections'
 ```
 
 Result:
@@ -2075,14 +2448,14 @@ Result:
 ### Get a list of all trusted connections
 
 ```
-URI: /network/connections/trust
+URI: /api/v1/network/connections/trust
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl 'http://127.0.0.1:6420/network/connections/trust'
+curl 'http://127.0.0.1:6420/api/v1/network/connections/trust'
 ```
 
 Result:
@@ -2103,14 +2476,14 @@ Result:
 ### Get a list of all connections discovered through peer exchange
 
 ```
-URI: /network/connections/exchange
+URI: /api/v1/network/connections/exchange
 Method: GET
 ```
 
 Example:
 
 ```sh
-curl 'http://127.0.0.1:6420/network/connections/exchange'
+curl 'http://127.0.0.1:6420/api/v1/network/connections/exchange'
 ```
 
 Result:

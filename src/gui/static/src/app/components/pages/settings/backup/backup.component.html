@@ -1,30 +1,30 @@
 <div class="sky-container sky-container-grey">
-  <app-header title="Backup"></app-header>
+  <app-header [headline]="'title.backup' | translate"></app-header>
 
-  <mat-card>
-    <p>Wallet Directory: {{ folder }}</p>
-
-    <p>BACKUP YOUR SEED. ON PAPER. IN A SAFE PLACE. As long as you have your seed, you can recover your coins.</p>
-
-    <p class="text-muted"><small>
-      Use the table below to get seeds from your encrypted wallets. <br>
-      To get seeds from unencrypted wallets, open the folder above,
-      open the .wlt files in a text editor and recover the seeds.
-    </small></p>
-  </mat-card>
-
-  <mat-card class="-table">
-    <div class="row -table-header">
-      <div class="col-md-4">Wallet Label</div>
-      <div class="col-md-4">Filename</div>
-      <div class="col-md-4">Seed</div>
+  <div class="container">
+    <div class="-paper">
+      <p>{{ 'backup.wallet-directory' | translate }} {{ folder }}</p>
+      <p>{{ 'backup.seed-warning' | translate }}</p>
+      <p class="-text-muted">
+        <small [innerHtml]="'backup.desc' | translate"></small>
+      </p>
     </div>
-    <div class="row -table-row" *ngFor="let wallet of onlyEncrypted">
-      <div class="col-md-4"><span>{{ wallet.label }}</span></div>
-      <div class="col-md-4"><span>{{ wallet.filename }}</span></div>
-      <div class="col-md-4">
-        <button mat-raised-button color="primary" (click)="showSeed(wallet)">Show seed</button>
+
+    <div class="-table">
+      <div class="-headers">
+        <div class="-width-250">{{ 'backup.wallet' | translate }}</div>
+        <div class="-width-150">{{ 'backup.filename' | translate }}</div>
+        <div class="-flex-fill"></div>
+      </div>
+      <div class="-body">
+        <div class="-row" *ngFor="let wallet of onlyEncrypted">
+          <div class="-width-250">{{ wallet.label }}</div>
+          <div class="-width-150">{{ wallet.filename }}</div>
+          <div class="-flex-fill -text-right">
+            <span class="-link" (click)="showSeed(wallet)">{{ 'backup.show-seed' | translate }}</span>
+          </div>
+        </div>
       </div>
     </div>
-  </mat-card>
+  </div>
 </div>

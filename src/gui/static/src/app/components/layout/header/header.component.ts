@@ -10,14 +10,15 @@ import { AppService } from '../../../services/app.service';
 import 'rxjs/add/operator/skip';
 import 'rxjs/add/operator/take';
 import { shouldUpgradeVersion } from '../../../utils/semver';
+import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-header',
   templateUrl: './header.component.html',
-  styleUrls: ['./header.component.scss']
+  styleUrls: ['./header.component.scss'],
 })
 export class HeaderComponent implements OnInit, OnDestroy {
-  @Input() title: string;
+  @Input() headline: string;
 
   addresses = [];
   current: number;
@@ -30,8 +31,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
   hasPendingTxs: boolean;
   price: number;
 
-  private priceSubscription: Subscription;
-  private walletSubscription: Subscription;
+  private subscription: Subscription;
+  private fetchVersionError: string;
 
   get loading() {
     return !this.current || !this.highest || this.current !== this.highest;
@@ -52,10 +53,15 @@ export class HeaderComponent implements OnInit, OnDestroy {
     private priceService: PriceService,
     private walletService: WalletService,
     private http: Http,
-  ) { }
+    private translateService: TranslateService,
+  ) {
+    this.translateService.get('errors.fetch-version').subscribe(msg => {
+      this.fetchVersionError = msg;
+    });
+  }
 
   ngOnInit() {
-    this.blockchainService.progress
+    this.subscription = this.blockchainService.progress
       .filter(response => !!response)
       .subscribe(response => {
         this.querying = false;
@@ -65,24 +71,26 @@ export class HeaderComponent implements OnInit, OnDestroy {
       });
 
     this.setVersion();
-    this.priceSubscription = this.priceService.price.subscribe(price => this.price = price);
-    this.walletSubscription = this.walletService.allAddresses().subscribe(addresses => {
+
+    this.subscription.add(this.priceService.price.subscribe(price => this.price = price));
+
+    this.subscription.add(this.walletService.allAddresses().subscribe(addresses => {
       this.addresses = addresses.reduce((array, item) => {
         if (!array.find(addr => addr.address === item.address)) {
           array.push(item);
         }
+
         return array;
       }, []);
-    });
+    }));
 
-    this.walletService.pendingTransactions().subscribe(txs => {
+    this.subscription.add(this.walletService.pendingTransactions().subscribe(txs => {
       this.hasPendingTxs = txs.length > 0;
-    });
+    }));
   }
 
   ngOnDestroy() {
-    this.priceSubscription.unsubscribe();
-    this.walletSubscription.unsubscribe();
+    this.subscription.unsubscribe();
   }
 
   setVersion() {
@@ -99,7 +107,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   private retrieveReleaseVersion() {
     this.http.get('https://api.github.com/repos/skycoin/skycoin/tags')
       .map((res: any) => res.json())
-      .catch((error: any) => Observable.throw(error || 'Unable to fetch latest release version from github.'))
+      .catch((error: any) => Observable.throw(error || this.fetchVersionError))
       .subscribe(response =>  {
         this.releaseVersion = response.find(element => element['name'].indexOf('rc') === -1)['name'].substr(1);
         this.updateAvailable = shouldUpgradeVersion(this.version, this.releaseVersion);

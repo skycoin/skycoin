@@ -1,4 +1,5 @@
-@import 'theme/_variables';
+@import 'theme/variables';
+@import 'theme/tables';
 @import '~bootstrap/scss/bootstrap-grid.scss';
 
 /* You can add global styles to this file, and also import other style files */
@@ -130,11 +131,11 @@ mat-panel-title {
   min-height: 100%;
 
   &.sky-container-grey {
-    background-color: $grey-light;
+    background-color: $grey-lightest;
   }
 }
 
-.flex-fill {
+.flex-fill, .-flex-fill {
   flex: 1 1 auto;
 }
 
@@ -168,7 +169,7 @@ mat-panel-title {
     line-height: 20px;
     padding: 10px 10px;
     width: 100%;
-    -webkit-appearance:none;
+    appearance: none;
   }
 
   textarea {
@@ -301,6 +302,26 @@ On-boarding components
   }
 }
 
+
+.-select {
+  position: relative;
+
+  &::after {
+    content: '';
+    display: block;
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: url('/assets/img/chevron-right-grey.png') no-repeat;
+    background-size: 32px 32px;
+    width: 32px;
+    height: 32px;
+    margin: 6px;
+    pointer-events: none;
+    transform: rotate(90deg);
+  }
+}
+
 .mat-menu-panel {
   border-radius: 5px !important;
   background-color: #fefefe;
@@ -316,5 +337,14 @@ On-boarding components
       height: 35px;
       line-height: 35px;
     }
+  }
+}
+
+.qr-code-button {
+  opacity: 0.6;
+  cursor: pointer;
+
+  &:hover {
+    opacity: 1;
   }
 }

@@ -48,7 +48,7 @@ export class CreateWalletComponent implements OnInit {
   closePopup() {
     this.dialogRef.close();
   }
-  
+
   errorDialog(err) {
     const config = new MatDialogConfig();
     config.width = '300px';

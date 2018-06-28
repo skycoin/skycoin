@@ -14,6 +14,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/testutil"
 	_require "github.com/skycoin/skycoin/src/testutil/require"
+	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
 )
 
 func makeTransactionFromUxOut(t *testing.T, ux UxOut, s cipher.SecKey) Transaction {
@@ -268,6 +269,12 @@ func TestTransactionSignInputs(t *testing.T) {
 }
 
 func TestTransactionDeviceSignInputs(t *testing.T) {
+	if (deviceWallet.DeviceConnected(deviceWallet.DeviceTypeUsb) == false) {
+		logger.Fatal("TestTransactionDeviceSignInputs do not work if usb device is not connected")
+		return
+	}
+	require.True(t, deviceWallet.DeviceConnected(deviceWallet.DeviceTypeUsb)) 
+
 	seckey := make([]int, 2)
 	seckey[0]  = 2
 	seckey[0]  = 4
@@ -283,7 +290,7 @@ func TestTransactionDeviceSignInputs(t *testing.T) {
 	*tx2 = *tx
 	h := tx.HashInner()
 	require.NotPanics(t, func() { tx2.SignInputs([]cipher.SecKey{s, s2}) })
-	require.NotPanics(t, func() { tx.DeviceSignInputs(seckey) })
+	require.NotPanics(t, func() { tx.DeviceSignInputs(deviceWallet.DeviceTypeUsb, seckey) })
 
 	require.Equal(t, len(tx.Sigs), 2)
 	require.Equal(t, tx.HashInner(), h)
@@ -292,6 +299,11 @@ func TestTransactionDeviceSignInputs(t *testing.T) {
 
 
 func TestTransactionEmulatorSignInputs(t *testing.T) {
+	if (deviceWallet.DeviceConnected(deviceWallet.DeviceTypeEmulator) == false) {
+		logger.Fatal("TestTransactionEmulatorSignInputs do not work if Emulator device is not running")
+		return
+	}
+	require.True(t, deviceWallet.DeviceConnected(deviceWallet.DeviceTypeEmulator)) 
 	seckey := make([]int, 2)
 	seckey[0]  = 2
 	seckey[0]  = 4
@@ -307,7 +319,7 @@ func TestTransactionEmulatorSignInputs(t *testing.T) {
 	*tx2 = *tx
 	h := tx.HashInner()
 	require.NotPanics(t, func() { tx2.SignInputs([]cipher.SecKey{s, s2}) })
-	require.NotPanics(t, func() { tx.EmulatorSignInputs(seckey) })
+	require.NotPanics(t, func() { tx.DeviceSignInputs(deviceWallet.DeviceTypeEmulator, seckey) })
 
 	require.Equal(t, len(tx.Sigs), 2)
 	require.Equal(t, tx.HashInner(), h)

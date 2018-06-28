@@ -51,7 +51,7 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then brew update ; echo 'Available versions (gcc)' && brew list --versions gcc ; brew list gcc@6 &>/dev/null || brew install gcc@6 ; fi
   - make install-deps-libc
   - make install-deps-ui
-  - make install-deps-wrk
+  - make install-deps-bench
 
 before_script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" && "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/add-key.sh && npm install -g yarn ;fi

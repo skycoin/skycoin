@@ -110,7 +110,7 @@ func BenchmarkGetWalletDirBombardier(t *testing.B) {
 		return
 	}
 	url := nodeAddress() + "/api/v1/wallets/folderName"
-	cmd := exec.Command("bombardier", "-n", "10000	0", url)
+	cmd := exec.Command("bombardier", "-n", "10000", url)
 	out, err := cmd.CombinedOutput()
 	require.NoError(t, err, fmt.Sprintf("got err. stdout: \n%s", out))
 	log.Printf("%s", out)

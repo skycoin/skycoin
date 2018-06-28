@@ -179,10 +179,10 @@ install-deps-bench: configure-build ## Install locally dependencies for testing 
 	cd $(BUILD_DIR)/usr/tmp/wrk && make && sudo ln -s "$(CURRENT_DIR)/$(BUILD_DIR)/usr/tmp/wrk/wrk" /usr/bin/wrk
 	go get -u github.com/rakyll/hey
 	go get -u github.com/codesenberg/bombardier
-
 	go get github.com/lubia/sniper
 	go install github.com/lubia/sniper
-	cp src/github.com/lubia/sniper/.sniperc ~
+	go get github.com/valyala/fasthttp
+	go get github.com/cmpxchg16/gobench
 
 format: ## Formats the code. Must have goimports installed (use make install-linters).
 	goimports -w -local github.com/skycoin/skycoin ./cmd

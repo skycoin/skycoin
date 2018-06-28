@@ -15,7 +15,7 @@ done
 RPC_PORT="$PORT"
 HOST="http://127.0.0.1:$PORT"
 RPC_ADDR="http://127.0.0.1:$RPC_PORT"
-MODE="stable"
+MODE="live"
 BINARY="skycoin-benchmark"
 TEST=""
 UPDATE=""
@@ -105,15 +105,6 @@ API_FAIL=$?
 
 fi
 
-if [[ -z $TEST  || $TEST = "cli" ]]; then
-
-SKYCOIN_BENCHMARK_TESTS=1 SKYCOIN_BENCHMARK_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR USE_CSRF=$USE_CSRF \
-    go test -bench=. ./src/api/benchmark $UPDATE -timeout=3m $VERBOSE $RUN_TESTS
-
-CLI_FAIL=$?
-
-fi
-
 
 echo "shutting down skycoin node"
 
@@ -126,8 +117,6 @@ rm "$BINARY"
 
 if [[ (-z $TEST || $TEST = "api") && $API_FAIL -ne 0 ]]; then
   exit $API_FAIL
-elif [[ (-z $TEST || $TEST = "cli") && $CLI_FAIL -ne 0 ]]; then
-  exit $CLI_FAIL
 else
   exit 0
 fi

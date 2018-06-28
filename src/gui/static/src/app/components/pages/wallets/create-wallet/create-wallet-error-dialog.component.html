@@ -1,0 +1,3 @@
+<app-modal [title]="data.title ? data.title : 'Error'" [dialog]="dialogRef" [disableDismiss]="false">
+  <p class="create-wallet-error-message" *ngIf="data.description">{{ data.description }}</p>
+</app-modal>

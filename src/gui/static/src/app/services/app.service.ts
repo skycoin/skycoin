@@ -43,10 +43,10 @@ export class AppService {
   }
 
   private setConnectionError(response: any) {
-    if (response.connections.length === 0) {
+    if (response.connections === null || response.connections.length === 0) {
       this.error = 1;
     }
-    if (response.connections.length > 0 && this.error === 1) {
+    if (response.connections !== null && response.connections.length > 0 && this.error === 1) {
       this.error = null;
     }
   }

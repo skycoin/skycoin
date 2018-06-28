@@ -355,13 +355,16 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 	if opts.ScanN > 0 {
 		// Scan for addresses with balances
 		if bg != nil {
-			bals, err := w.ScanAddresses(addrs, bg)
-			if err != nil {
-				return nil, err
-			}
-
 			if (opts.UseHardwareWallet == false && opts.UseEmulatorWallet == false) {
 				nExistingAddrs := uint64(len(w.Entries))
+				addrs, err := w.GenerateAddresses(opts.ScanN-1)
+				if err != nil {
+					return nil, err
+				}
+				bals, err := w.ScanAddresses(addrs, bg)
+				if err != nil {
+					return nil, err
+				}
 				// Check balance from the last one until we find the address that has coins
 				var keepNum uint64
 				for i := len(bals) - 1; i >= 0; i-- {

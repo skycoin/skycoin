@@ -12,7 +12,7 @@ import (
 	"github.com/wire"
 	"github.com/skycoin/skycoin/src/device-wallet/usb"
 
-    proto "github.com/proto"
+    proto "github.com/golang/protobuf/proto"
 	messages "github.com/skycoin/skycoin/protob"
 )
 // DeviceType type of device: emulated or usb

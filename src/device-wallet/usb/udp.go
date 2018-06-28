@@ -14,9 +14,9 @@ var emulatorPing = []byte("PINGPING")
 var emulatorPong = []byte("PONGPONG")
 
 const (
-	emulatorPrefix            = "emulator"
-	emulatorAddress           = "127.0.0.1"
-	emulatorPingTimeout       = 700 * time.Millisecond
+	emulatorPrefix      = "emulator"
+	emulatorAddress     = "127.0.0.1"
+	emulatorPingTimeout = 700 * time.Millisecond
 )
 
 type UDP struct {

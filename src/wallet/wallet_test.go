@@ -18,10 +18,10 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encrypt"
 	"github.com/skycoin/skycoin/src/coin"
+	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/logging"
-	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
 )
 
 var (
@@ -2473,9 +2473,9 @@ func TestCreateAndSignTransaction(t *testing.T) {
 		{
 			name: "encrypted=true has change=no",
 			opts: Options{
-				Seed:     string(seed),
-				Encrypt:  true,
-				Password: []byte("pwd"),
+				Seed:       string(seed),
+				Encrypt:    true,
+				Password:   []byte("pwd"),
 				CryptoType: CryptoTypeSha256Xor,
 			},
 			pwd:      []byte("pwd"),
@@ -2594,11 +2594,11 @@ func TestCreateAndSignTransaction(t *testing.T) {
 			},
 			unspents: map[cipher.SHA256]coin.UxOut{},
 		}
-	
+
 		for _, ux := range tc.unspents {
 			unspents.unspents[ux.Hash()] = ux
 		}
-	
+
 		wltName := newWalletFilename()
 		tc.opts.UseEmulatorWallet = deviceWallet.DeviceConnected(deviceWallet.DeviceTypeEmulator)
 		w, err := NewWalletScanAhead(wltName, tc.opts, nil)
@@ -2611,7 +2611,7 @@ func TestCreateAndSignTransaction(t *testing.T) {
 			continue
 		}
 
-		if (tx != nil && len(tx.Sigs) > 0) {
+		if tx != nil && len(tx.Sigs) > 0 {
 			for i, sig := range tx.Sigs {
 				h := cipher.AddSHA256(tx.HashInner(), tx.In[i])
 				fmt.Printf("Signed hash: %s\n", h.Hex())

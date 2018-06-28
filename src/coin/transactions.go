@@ -225,7 +225,7 @@ func (txn *Transaction) DeviceSignInputs(deviceType deviceWallet.DeviceType, ind
 	for i, k := range indexes {
 		h := cipher.AddSHA256(innerHash, txn.In[i]) // hash to sign
 		success, sig := cipher.DeviceSignHash(deviceType, h, k)
-		if (success) {
+		if success {
 			sigs[i] = sig
 		}
 	}

@@ -21,10 +21,10 @@ import (
 
 	"github.com/shopspring/decimal"
 
+	messages "github.com/skycoin/skycoin/protob"
+	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/logging"
-	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
-	messages "github.com/skycoin/skycoin/protob"
 )
 
 // Error wraps wallet related errors
@@ -111,17 +111,17 @@ const (
 
 // wallet meta fields
 const (
-	metaVersion    = "version"    // wallet version
-	metaFilename   = "filename"   // wallet file name
-	metaLabel      = "label"      // wallet label
-	metaTm         = "tm"         // the timestamp when creating the wallet
-	metaType       = "type"       // wallet type
-	metaCoin       = "coin"       // coin type
-	metaEncrypted  = "encrypted"  // whether the wallet is encrypted
-	metaCryptoType = "cryptoType" // encrytion/decryption type
-	metaSeed       = "seed"       // wallet seed
-	metaLastSeed   = "lastSeed"   // seed for generating next address
-	metaSecrets    = "secrets"    // secrets which records the encrypted seeds and secrets of address entries
+	metaVersion           = "version"           // wallet version
+	metaFilename          = "filename"          // wallet file name
+	metaLabel             = "label"             // wallet label
+	metaTm                = "tm"                // the timestamp when creating the wallet
+	metaType              = "type"              // wallet type
+	metaCoin              = "coin"              // coin type
+	metaEncrypted         = "encrypted"         // whether the wallet is encrypted
+	metaCryptoType        = "cryptoType"        // encrytion/decryption type
+	metaSeed              = "seed"              // wallet seed
+	metaLastSeed          = "lastSeed"          // seed for generating next address
+	metaSecrets           = "secrets"           // secrets which records the encrypted seeds and secrets of address entries
 	metaUseHardwareWallet = "useHardwareWallet" // whether the wallet is stored in a hardware wallet
 	metaUseEmulatorWallet = "useEmulatorWallet" // whether the wallet is stored in an emulated hardware wallet
 )
@@ -131,15 +131,15 @@ type CoinType string
 
 // Options options that could be used when creating a wallet
 type Options struct {
-	Coin       CoinType   // coin type, skycoin, bitcoin, etc.
-	Label      string     // wallet label.
-	Seed       string     // wallet seed.
-	Encrypt    bool       // whether the wallet need to be encrypted.
-	UseHardwareWallet bool    // whether the wallet is stored on a skycoin hardware wallet
-	UseEmulatorWallet bool    // whether the wallet is stored on a skycoin emulated hardware wallet
-	Password   []byte     // password that would be used for encryption, and would only be used when 'Encrypt' is true.
-	CryptoType CryptoType // wallet encryption type, scrypt-chacha20poly1305 or sha256-xor.
-	ScanN      uint64     // number of addresses that're going to be scanned
+	Coin              CoinType   // coin type, skycoin, bitcoin, etc.
+	Label             string     // wallet label.
+	Seed              string     // wallet seed.
+	Encrypt           bool       // whether the wallet need to be encrypted.
+	UseHardwareWallet bool       // whether the wallet is stored on a skycoin hardware wallet
+	UseEmulatorWallet bool       // whether the wallet is stored on a skycoin emulated hardware wallet
+	Password          []byte     // password that would be used for encryption, and would only be used when 'Encrypt' is true.
+	CryptoType        CryptoType // wallet encryption type, scrypt-chacha20poly1305 or sha256-xor.
+	ScanN             uint64     // number of addresses that're going to be scanned
 }
 
 const (
@@ -294,44 +294,44 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 
 	w := &Wallet{
 		Meta: map[string]string{
-			metaFilename:   wltName,
-			metaVersion:    Version,
-			metaLabel:      opts.Label,
-			metaSeed:       opts.Seed,
-			metaLastSeed:   opts.Seed,
+			metaFilename:          wltName,
+			metaVersion:           Version,
+			metaLabel:             opts.Label,
+			metaSeed:              opts.Seed,
+			metaLastSeed:          opts.Seed,
 			metaUseHardwareWallet: "false",
 			metaUseEmulatorWallet: "false",
-			metaTm:         fmt.Sprintf("%v", time.Now().Unix()),
-			metaType:       "deterministic",
-			metaCoin:       string(coin),
-			metaEncrypted:  "false",
-			metaCryptoType: "",
-			metaSecrets:    "",
+			metaTm:                fmt.Sprintf("%v", time.Now().Unix()),
+			metaType:              "deterministic",
+			metaCoin:              string(coin),
+			metaEncrypted:         "false",
+			metaCryptoType:        "",
+			metaSecrets:           "",
 		},
 	}
 
-	if (opts.UseHardwareWallet) {
-		w.Meta[metaUseEmulatorWallet]  = "true"
+	if opts.UseHardwareWallet {
+		w.Meta[metaUseEmulatorWallet] = "true"
 	}
 
-	if (opts.UseEmulatorWallet) {
-		w.Meta[metaUseEmulatorWallet]  = "true"
+	if opts.UseEmulatorWallet {
+		w.Meta[metaUseEmulatorWallet] = "true"
 	}
 
 	var addrs []cipher.Address
 	var err error
-	if (opts.UseEmulatorWallet || opts.UseHardwareWallet) {
+	if opts.UseEmulatorWallet || opts.UseHardwareWallet {
 
 		var deviceType deviceWallet.DeviceType
-		if (opts.UseEmulatorWallet) {
+		if opts.UseEmulatorWallet {
 			deviceType = deviceWallet.DeviceTypeEmulator
-		} else if (opts.UseHardwareWallet) {
+		} else if opts.UseHardwareWallet {
 			deviceType = deviceWallet.DeviceTypeUsb
 		} else {
 			logger.Panic("This code should never be reached in newWallet")
 			return nil, ErrDeviceWallet
 		}
-		if (deviceWallet.DeviceConnected(deviceType) == false) {
+		if deviceWallet.DeviceConnected(deviceType) == false {
 			logger.Error("Could not find connected device in newWallet")
 			return nil, ErrDeviceWallet
 		}
@@ -355,9 +355,9 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 	if opts.ScanN > 0 {
 		// Scan for addresses with balances
 		if bg != nil {
-			if (opts.UseHardwareWallet == false && opts.UseEmulatorWallet == false) {
+			if opts.UseHardwareWallet == false && opts.UseEmulatorWallet == false {
 				nExistingAddrs := uint64(len(w.Entries))
-				addrs, err := w.GenerateAddresses(opts.ScanN-1)
+				addrs, err := w.GenerateAddresses(opts.ScanN - 1)
 				if err != nil {
 					return nil, err
 				}
@@ -453,7 +453,7 @@ func (w *Wallet) lock(password []byte, cryptoType CryptoType) error {
 		wlt.erase()
 	}()
 
-	if (w.useEmulatorWallet() == false && w.useHardwareWallet() == false) {
+	if w.useEmulatorWallet() == false && w.useHardwareWallet() == false {
 		ss.set(secretSeed, wlt.seed())
 		ss.set(secretLastSeed, wlt.lastSeed())
 	}
@@ -789,7 +789,7 @@ func (w *Wallet) Validate() error {
 			return fmt.Errorf("invalid encrypted value: %v", err)
 		}
 	}
-	if (isHardwareWallet && isEmulatorWallet) {
+	if isHardwareWallet && isEmulatorWallet {
 		return errors.New("Cannot be emulated and hardware wallet at the same time")
 	}
 
@@ -932,7 +932,6 @@ func (w *Wallet) setSecrets(s string) {
 	w.Meta[metaSecrets] = s
 }
 
-
 // GetAddressFromDevice ask the hardware wallet to generate addresses
 func (w *Wallet) GetAddressFromDevice(deviceType deviceWallet.DeviceType, num uint64) ([]cipher.Address, error) {
 	if num == 0 {
@@ -942,12 +941,12 @@ func (w *Wallet) GetAddressFromDevice(deviceType deviceWallet.DeviceType, num ui
 	for i := 0; i < len(addrs); i++ {
 		var err error
 		kind, address := deviceWallet.DeviceAddressGen(deviceType, messages.SkycoinAddressType_AddressTypeSkycoin, i)
-		if (kind != uint16(messages.MessageType_MessageType_ResponseSkycoinAddress)) {
+		if kind != uint16(messages.MessageType_MessageType_ResponseSkycoinAddress) {
 			logger.Panic("GetAddressFromDevice the device could not generate an address")
 			return addrs, ErrDeviceWallet
 		}
 		addrs[i], err = cipher.DecodeBase58Address(address)
-		if (err != nil) {
+		if err != nil {
 			logger.Panicf("GetAddressFromDevice got a bad address from hardware wallet: %s", address)
 			return addrs, err
 		}
@@ -1094,15 +1093,15 @@ func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspent
 	}
 
 	// check that the connected wallet is the one that stores the wallet we try to spend from
-	if (w.useHardwareWallet()) {
+	if w.useHardwareWallet() {
 		_, address := deviceWallet.DeviceAddressGen(deviceWallet.DeviceTypeUsb, messages.SkycoinAddressType_AddressTypeSkycoin, 1)
-		if (address != addrs[0].String()) {
+		if address != addrs[0].String() {
 			logger.Errorf("It seems that the connected wallet is not the one you mean to spend from")
 			return nil, ErrWrongDeviceWallet
 		}
-	} else if (w.useEmulatorWallet()) {
+	} else if w.useEmulatorWallet() {
 		_, address := deviceWallet.DeviceAddressGen(deviceWallet.DeviceTypeEmulator, messages.SkycoinAddressType_AddressTypeSkycoin, 1)
-		if (address != addrs[0].String()) {
+		if address != addrs[0].String() {
 			logger.Errorf("It seems that the connected wallet is not the one you mean to spend from")
 			return nil, ErrWrongDeviceWallet
 		}
@@ -1174,10 +1173,10 @@ func (w *Wallet) CreateAndSignTransaction(vld Validator, unspent blockdb.Unspent
 
 	txn.PushOutput(dest, coins, addrHours[0])
 
-	if (w.useHardwareWallet()) {
-		txn.DeviceSignInputs(deviceWallet.DeviceTypeUsb,  indexToSign)
-	} else if (w.useEmulatorWallet()) {
-		txn.DeviceSignInputs(deviceWallet.DeviceTypeEmulator,  indexToSign)
+	if w.useHardwareWallet() {
+		txn.DeviceSignInputs(deviceWallet.DeviceTypeUsb, indexToSign)
+	} else if w.useEmulatorWallet() {
+		txn.DeviceSignInputs(deviceWallet.DeviceTypeEmulator, indexToSign)
 	} else {
 		txn.SignInputs(toSign)
 	}

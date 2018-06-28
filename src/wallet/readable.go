@@ -96,7 +96,7 @@ func newEntryFromReadable(w *ReadableEntry, isHardwareWallet bool, isEmulatorWal
 		return nil, err
 	}
 
-	if (isHardwareWallet || isEmulatorWallet) {
+	if isHardwareWallet || isEmulatorWallet {
 		return &Entry{
 			Address: a,
 		}, nil

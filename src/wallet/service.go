@@ -484,7 +484,7 @@ func (serv *Service) GetWalletSeed(wltID string, password []byte) (string, error
 	}
 
 	var seed string
-	if (w.useEmulatorWallet() == false && w.useHardwareWallet() == false) {
+	if w.useEmulatorWallet() == false && w.useHardwareWallet() == false {
 		if err := w.guardView(password, func(wlt *Wallet) error {
 			seed = wlt.seed()
 			return nil

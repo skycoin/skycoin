@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+
 	messages "github.com/skycoin/skycoin/protob"
 	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
 	gcli "github.com/urfave/cli"

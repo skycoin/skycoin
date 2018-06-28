@@ -11,11 +11,11 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher/ripemd160"
 
-	"github.com/skycoin/skycoin/src/cipher/secp256k1-go"
 	"github.com/skycoin/skycoin/src/cipher/base58"
+	"github.com/skycoin/skycoin/src/cipher/secp256k1-go"
 
-	"github.com/skycoin/skycoin/src/util/logging"
 	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
+	"github.com/skycoin/skycoin/src/util/logging"
 )
 
 var (
@@ -243,11 +243,10 @@ func (s Sig) Hex() string {
 	return hex.EncodeToString(s[:])
 }
 
-
 // DeviceSignHash sign hash
 func DeviceSignHash(deviceType deviceWallet.DeviceType, hash SHA256, index int) (bool, Sig) {
 	kind, data := deviceWallet.DeviceSignMessage(deviceType, index, hash.Hex())
-	if (kind == 2) {
+	if kind == 2 {
 		base58sig, _ := base58.Base582Hex(string(data[2:]))
 		sig := NewSig(base58sig)
 		if DebugLevel2 || DebugLevel1 { //!!! Guard against coin loss

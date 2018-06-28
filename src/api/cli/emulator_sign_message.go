@@ -1,7 +1,8 @@
 package cli
 
 import (
-    "fmt"
+	"fmt"
+
 	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
 	gcli "github.com/urfave/cli"
 )
@@ -26,9 +27,9 @@ func emulatorSignMessageCmd() gcli.Command {
 		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) {
 			addressN := c.Int("addressN")
-            message := c.String("message")
-            kind, data := deviceWallet.DeviceSignMessage(deviceWallet.DeviceTypeEmulator, addressN, message)
-	        fmt.Printf("Success %d! address that issued the signature is: %s\n", kind, data[2:])
+			message := c.String("message")
+			kind, data := deviceWallet.DeviceSignMessage(deviceWallet.DeviceTypeEmulator, addressN, message)
+			fmt.Printf("Success %d! address that issued the signature is: %s\n", kind, data[2:])
 		},
 	}
 }

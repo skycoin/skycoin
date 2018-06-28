@@ -12,9 +12,9 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
+	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
 	"github.com/skycoin/skycoin/src/testutil"
 	_require "github.com/skycoin/skycoin/src/testutil/require"
-	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
 )
 
 func makeTransactionFromUxOut(t *testing.T, ux UxOut, s cipher.SecKey) Transaction {
@@ -269,15 +269,15 @@ func TestTransactionSignInputs(t *testing.T) {
 }
 
 func TestTransactionDeviceSignInputs(t *testing.T) {
-	if (deviceWallet.DeviceConnected(deviceWallet.DeviceTypeUsb) == false) {
+	if deviceWallet.DeviceConnected(deviceWallet.DeviceTypeUsb) == false {
 		logger.Fatal("TestTransactionDeviceSignInputs do not work if usb device is not connected")
 		return
 	}
-	require.True(t, deviceWallet.DeviceConnected(deviceWallet.DeviceTypeUsb)) 
+	require.True(t, deviceWallet.DeviceConnected(deviceWallet.DeviceTypeUsb))
 
 	seckey := make([]int, 2)
-	seckey[0]  = 2
-	seckey[0]  = 4
+	seckey[0] = 2
+	seckey[0] = 4
 	// Panics if not enough keys
 	tx := &Transaction{}
 	tx2 := &Transaction{}
@@ -297,16 +297,15 @@ func TestTransactionDeviceSignInputs(t *testing.T) {
 	// require.Equal(t, tx.Sigs, tx2.Sigs) - it won't work if we don't control the key pairs we are using for signature
 }
 
-
 func TestTransactionEmulatorSignInputs(t *testing.T) {
-	if (deviceWallet.DeviceConnected(deviceWallet.DeviceTypeEmulator) == false) {
+	if deviceWallet.DeviceConnected(deviceWallet.DeviceTypeEmulator) == false {
 		logger.Fatal("TestTransactionEmulatorSignInputs do not work if Emulator device is not running")
 		return
 	}
-	require.True(t, deviceWallet.DeviceConnected(deviceWallet.DeviceTypeEmulator)) 
+	require.True(t, deviceWallet.DeviceConnected(deviceWallet.DeviceTypeEmulator))
 	seckey := make([]int, 2)
-	seckey[0]  = 2
-	seckey[0]  = 4
+	seckey[0] = 2
+	seckey[0] = 4
 	// Panics if not enough keys
 	tx := &Transaction{}
 	tx2 := &Transaction{}

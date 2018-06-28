@@ -13,9 +13,9 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 
+	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
 	"github.com/skycoin/skycoin/src/util/fee"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
-	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
 )
 
 // HTTP401AuthHeader WWW-Authenticate value
@@ -41,16 +41,16 @@ type WalletEntry struct {
 
 // WalletMeta the wallet meta struct
 type WalletMeta struct {
-	Coin       string `json:"coin"`
-	Filename   string `json:"filename"`
-	Label      string `json:"label"`
-	Type       string `json:"type"`
-	Version    string `json:"version"`
-	CryptoType string `json:"crypto_type"`
-	Timestamp  int64  `json:"timestamp"`
-	Encrypted  bool   `json:"encrypted"`
-	UseHardwareWallet  bool   `json:"useHardwareWallet"`
-	UseEmulatorWallet  bool   `json:"useEmulatorWallet"`
+	Coin              string `json:"coin"`
+	Filename          string `json:"filename"`
+	Label             string `json:"label"`
+	Type              string `json:"type"`
+	Version           string `json:"version"`
+	CryptoType        string `json:"crypto_type"`
+	Timestamp         int64  `json:"timestamp"`
+	Encrypted         bool   `json:"encrypted"`
+	UseHardwareWallet bool   `json:"useHardwareWallet"`
+	UseEmulatorWallet bool   `json:"useEmulatorWallet"`
 }
 
 // WalletResponse wallet response struct for http apis
@@ -350,7 +350,7 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 		}
-		if (useHardwareWallet && scanN > 3) {
+		if useHardwareWallet && scanN > 3 {
 			scanN = 3 //limit number of addresses to scan because the hardware wallet is slower than PC
 		}
 
@@ -364,7 +364,7 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 		}
-		if (useEmulatorWallet && scanN > 10) {
+		if useEmulatorWallet && scanN > 10 {
 			scanN = 10 //limit number of addresses to scan because the hardware wallet is slower than PC
 		}
 
@@ -378,24 +378,24 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if (useHardwareWallet && deviceWallet.DeviceConnected(deviceWallet.DeviceTypeUsb) == false) {
+		if useHardwareWallet && deviceWallet.DeviceConnected(deviceWallet.DeviceTypeUsb) == false {
 			wh.Error400(w, "Hardware wallet is not connected")
 			return
 		}
 
-		if (useEmulatorWallet && deviceWallet.DeviceConnected(deviceWallet.DeviceTypeEmulator) == false) {
+		if useEmulatorWallet && deviceWallet.DeviceConnected(deviceWallet.DeviceTypeEmulator) == false {
 			wh.Error400(w, "Emulator wallet is not connected")
 			return
 		}
 
 		wlt, err := gateway.CreateWallet("", wallet.Options{
-			Seed:     seed,
-			Label:    label,
-			Encrypt:  encrypt,
+			Seed:              seed,
+			Label:             label,
+			Encrypt:           encrypt,
 			UseHardwareWallet: useHardwareWallet,
 			UseEmulatorWallet: useEmulatorWallet,
-			Password: []byte(password),
-			ScanN:    scanN,
+			Password:          []byte(password),
+			ScanN:             scanN,
 		})
 		if err != nil {
 			switch err {

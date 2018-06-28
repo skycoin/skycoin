@@ -139,6 +139,7 @@ func DeviceCheckMessageSignature(deviceType DeviceType, message string, signatur
     fmt.Printf("Success %d! address that issued the signature is: %s\n", msg.Kind, msg.Data)
 }
 
+// MessageButtonAck send this message (before user action) when the device expects the user to push a button
 func MessageButtonAck() [][64]byte{
     buttonAck := &messages.ButtonAck{}
     data, _ := proto.Marshal(buttonAck)
@@ -274,8 +275,8 @@ func WipeDevice(deviceType DeviceType) {
     wipeDevice := &messages.WipeDevice{}
     data, _ := proto.Marshal(wipeDevice)
     chunks = makeTrezorMessage(data, messages.MessageType_MessageType_WipeDevice)
-    sendToDevice(dev, chunks)
-    fmt.Printf("buttonRequest %d! Answer is: %x\n", msg.Kind, msg.Data)
+    msg = sendToDevice(dev, chunks)
+    fmt.Printf("Wipe device %d! Answer is: %x\n", msg.Kind, msg.Data)
 
     // Send ButtonAck
     chunks = MessageButtonAck()

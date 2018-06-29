@@ -16,35 +16,42 @@ const (
 )
 
 var (
+	// ErrNotFound device not found
 	ErrNotFound = fmt.Errorf("device not found")
 )
 
+// Info driver information about the usb device
 type Info struct {
 	Path      string
 	VendorID  int
 	ProductID int
 }
 
+// Device interface for object that has methods Read Write and Close
 type Device interface {
 	io.ReadWriteCloser
 }
 
+// Bus interface for object that has Enumerate Connect and Has functions
 type Bus interface {
 	Enumerate() ([]Info, error)
 	Connect(path string) (Device, error)
 	Has(path string) bool
 }
 
+// USB list of Bus
 type USB struct {
 	buses []Bus
 }
 
+// Init Creates USB structure from Bus objects
 func Init(buses ...Bus) *USB {
 	return &USB{
 		buses: buses,
 	}
 }
 
+// Enumerate enumerates the devices connected to the usb
 func (b *USB) Enumerate() ([]Info, error) {
 	var infos []Info
 
@@ -58,6 +65,7 @@ func (b *USB) Enumerate() ([]Info, error) {
 	return infos, nil
 }
 
+// Connect try to connect to a device at the given path
 func (b *USB) Connect(path string) (Device, error) {
 	for _, b := range b.buses {
 		if b.Has(path) {
@@ -67,5 +75,5 @@ func (b *USB) Connect(path string) (Device, error) {
 	return nil, ErrNotFound
 }
 
-var disconnectError = errors.New("Device disconnected during action")
-var closedDeviceError = errors.New("Closed device")
+var errDisconnect = errors.New("Device disconnected during action")
+var errClosedDeviceError = errors.New("Closed device")

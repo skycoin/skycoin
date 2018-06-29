@@ -19,6 +19,7 @@ const (
 	emulatorPingTimeout = 700 * time.Millisecond
 )
 
+// UDP TODO documentation
 type UDP struct {
 	ports []int
 
@@ -50,6 +51,7 @@ func listen(conn net.Conn) (chan []byte, chan []byte) {
 	return ping, data
 }
 
+// InitUDP TODO documentation
 func InitUDP(ports []int) (*UDP, error) {
 	udp := UDP{
 		ports: ports,
@@ -87,6 +89,7 @@ func checkPort(ping chan []byte, w io.Writer) (bool, error) {
 	}
 }
 
+// Enumerate TODO documentation
 func (u *UDP) Enumerate() ([]Info, error) {
 	var infos []Info
 
@@ -108,10 +111,12 @@ func (u *UDP) Enumerate() ([]Info, error) {
 	return infos, nil
 }
 
+// Has TODO documentation
 func (u *UDP) Has(path string) bool {
 	return strings.HasPrefix(path, emulatorPrefix)
 }
 
+// Connect TODO documentation
 func (u *UDP) Connect(path string) (Device, error) {
 	i, err := strconv.Atoi(strings.TrimPrefix(path, emulatorPrefix))
 	if err != nil {
@@ -125,6 +130,7 @@ func (u *UDP) Connect(path string) (Device, error) {
 	}, nil
 }
 
+// UDPDevice TODO documentation
 type UDPDevice struct {
 	ping   chan []byte
 	data   chan []byte
@@ -133,6 +139,7 @@ type UDPDevice struct {
 	closed int32 // atomic
 }
 
+// Close TODO documentation
 func (d *UDPDevice) Close() error {
 	atomic.StoreInt32(&d.closed, 1)
 	return nil
@@ -142,33 +149,34 @@ func (d *UDPDevice) readWrite(buf []byte, read bool) (int, error) {
 	for {
 		closed := (atomic.LoadInt32(&d.closed)) == 1
 		if closed {
-			return 0, closedDeviceError
+			return 0, errClosedDeviceError
 		}
 		check, err := checkPort(d.ping, d.writer)
 		if err != nil {
 			return 0, err
 		}
 		if !check {
-			return 0, disconnectError
+			return 0, errDisconnect
 		}
 		if !read {
 			return d.writer.Write(buf)
-		} else {
-			select {
-			case response := <-d.data:
-				copy(buf, response)
-				return len(response), nil
-			case <-time.After(emulatorPingTimeout):
-				// timeout, continue for cycle
-			}
+		}
+		select {
+		case response := <-d.data:
+			copy(buf, response)
+			return len(response), nil
+		case <-time.After(emulatorPingTimeout):
+			// timeout, continue for cycle
 		}
 	}
 }
 
+// Write TODO documentation
 func (d *UDPDevice) Write(buf []byte) (int, error) {
 	return d.readWrite(buf, false)
 }
 
+// Read TODO documentation
 func (d *UDPDevice) Read(buf []byte) (int, error) {
 	return d.readWrite(buf, true)
 }

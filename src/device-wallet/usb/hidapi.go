@@ -15,13 +15,16 @@ const (
 	hidUsagePage = 0xFF00
 )
 
+// HIDAPI TODO documentation
 type HIDAPI struct {
 }
 
+// InitHIDAPI TODO documentation
 func InitHIDAPI() (*HIDAPI, error) {
 	return &HIDAPI{}, nil
 }
 
+// Enumerate TODO documentation
 func (b *HIDAPI) Enumerate() ([]Info, error) {
 	var infos []Info
 
@@ -37,10 +40,12 @@ func (b *HIDAPI) Enumerate() ([]Info, error) {
 	return infos, nil
 }
 
+// Has TODO documentation
 func (b *HIDAPI) Has(path string) bool {
 	return strings.HasPrefix(path, hidapiPrefix)
 }
 
+// Connect TODO documentation
 func (b *HIDAPI) Connect(path string) (Device, error) {
 	for _, dev := range usbhid.HidEnumerate(0, 0) { // enumerate all devices
 		if b.match(&dev) && b.identify(&dev) == path {
@@ -75,11 +80,13 @@ func (b *HIDAPI) identify(dev *usbhid.HidDeviceInfo) string {
 	return hidapiPrefix + hex.EncodeToString(digest[:])
 }
 
+// HID TODO documentation
 type HID struct {
 	dev     *usbhid.HidDevice
 	prepend bool // on windows, see detectPrepend
 }
 
+// Close TODO documentation
 func (d *HID) Close() error {
 	return d.dev.Close()
 }
@@ -126,15 +133,17 @@ func (d *HID) readWrite(buf []byte, read bool) (int, error) {
 	}
 
 	if err != nil && err.Error() == unknownErrorMessage {
-		return 0, disconnectError
+		return 0, errDisconnect
 	}
 	return w, err
 }
 
+// Write TODO documentation
 func (d *HID) Write(buf []byte) (int, error) {
 	return d.readWrite(buf, false)
 }
 
+// Read TODO documentation
 func (d *HID) Read(buf []byte) (int, error) {
 	return d.readWrite(buf, true)
 }

@@ -19,10 +19,12 @@ const (
 	usbTimeout    = 5000
 )
 
+// WebUSB TODO documentation
 type WebUSB struct {
 	usb usbhid.Context
 }
 
+// InitWebUSB TODO documentation
 func InitWebUSB() (*WebUSB, error) {
 	var usb usbhid.Context
 	err := usbhid.Init(&usb)
@@ -36,10 +38,12 @@ func InitWebUSB() (*WebUSB, error) {
 	}, nil
 }
 
+// Close TODO documentation
 func (b *WebUSB) Close() {
 	usbhid.Exit(b.usb)
 }
 
+// Enumerate TODO documentation
 func (b *WebUSB) Enumerate() ([]Info, error) {
 	list, err := usbhid.Get_Device_List(b.usb)
 	if err != nil {
@@ -74,10 +78,12 @@ func (b *WebUSB) Enumerate() ([]Info, error) {
 	return infos, nil
 }
 
+// Has TODO documentation
 func (b *WebUSB) Has(path string) bool {
 	return strings.HasPrefix(path, webusbPrefix)
 }
 
+// Connect TODO documentation
 func (b *WebUSB) Connect(path string) (Device, error) {
 	list, err := usbhid.Get_Device_List(b.usb)
 	if err != nil {
@@ -165,6 +171,7 @@ func (b *WebUSB) identify(dev usbhid.Device) string {
 	return webusbPrefix + hex.EncodeToString(p)
 }
 
+// WUD TODO documentation
 type WUD struct {
 	dev usbhid.Device_Handle
 
@@ -175,6 +182,7 @@ type WUD struct {
 	// otherwise interrupt_transfer hangs forever
 }
 
+// Close TODO documentation
 func (d *WUD) Close() error {
 	atomic.StoreInt32(&d.closed, 1)
 
@@ -189,7 +197,7 @@ func (d *WUD) readWrite(buf []byte, endpoint uint8) (int, error) {
 	for {
 		closed := (atomic.LoadInt32(&d.closed)) == 1
 		if closed {
-			return 0, closedDeviceError
+			return 0, errClosedDeviceError
 		}
 
 		d.transferMutex.Lock()
@@ -206,7 +214,7 @@ func (d *WUD) readWrite(buf []byte, endpoint uint8) (int, error) {
 		if err != nil {
 			if err.Error() == usbhid.Error_Name(usbhid.ERROR_IO) ||
 				err.Error() == usbhid.Error_Name(usbhid.ERROR_NO_DEVICE) {
-				return 0, disconnectError
+				return 0, errDisconnect
 			}
 
 			if err.Error() != usbhid.Error_Name(usbhid.ERROR_TIMEOUT) {
@@ -218,10 +226,12 @@ func (d *WUD) readWrite(buf []byte, endpoint uint8) (int, error) {
 	}
 }
 
+// Write TODO documentation
 func (d *WUD) Write(buf []byte) (int, error) {
 	return d.readWrite(buf, webEpOut)
 }
 
+// Read TODO documentation
 func (d *WUD) Read(buf []byte) (int, error) {
 	return d.readWrite(buf, webEpIn)
 }

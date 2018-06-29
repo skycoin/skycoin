@@ -1407,6 +1407,7 @@ func TestWalletChooseSpendsMaximizeUxOuts(t *testing.T) {
 	}
 }
 
+// TODO: This case leading to an error is fixed now. Can be removed later.
 func TestWalletChooseSpendsMaximizeUxOutsFailedCase(t *testing.T) {
 	uxb := []UxBalance{
 		{
@@ -2182,14 +2183,15 @@ func verifyChosenCoins(t *testing.T, uxb []UxBalance, coins, hours uint64, choos
 
 	// If there are any extra UxBalances with non-zero hours, all of the zeros should have been chosen
 	if len(nonzeroBalances) > 0 {
-		require.Equal(t, haveZero, len(zeroBalances))
+		require.True(t, haveZero >= len(zeroBalances))
 	}
 
 	// Excessive UxBalances to satisfy the amount requested should not be included
-	var haveCoins uint64
+	var haveCoins, haveHours uint64
 	for i, ux := range chosen {
+		haveHours += ux.Hours
 		haveCoins += ux.Coins
-		if haveCoins >= coins {
+		if haveCoins >= coins && fee.RemainingHours(haveHours) >= hours {
 			require.Equal(t, len(chosen)-1, i)
 		}
 	}

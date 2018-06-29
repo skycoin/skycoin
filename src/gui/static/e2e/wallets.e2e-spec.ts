@@ -1,6 +1,6 @@
 import { WalletsPage } from './wallets.po';
 
-fdescribe('Wallets', () => {
+describe('Wallets', () => {
   const page = new WalletsPage();
 
   it('should display title', () => {
@@ -22,7 +22,7 @@ fdescribe('Wallets', () => {
   });
 
   it('should create wallet', () => {
-    expect<any>(page.createWallet()).toEqual(true);
+    expect<any>(page.fillWalletForm('Test create wallet', 'test create wallet', 'test create wallet')).toEqual(true);
     page.waitForWalletToBeCreated();
   });
 
@@ -32,15 +32,15 @@ fdescribe('Wallets', () => {
   });
 
   it('should validate load wallet, seed', () => {
-    expect<any>(page.fillWalletForm('Test', ' ', null)).toEqual(false);
+    expect<any>(page.fillWalletForm('Test', '', null)).toEqual(false);
   });
 
   it('should validate load wallet, empty label', () => {
-    expect<any>(page.fillWalletForm(' ', 'seed', null)).toEqual(false);
+    expect<any>(page.fillWalletForm('', 'seed', null)).toEqual(false);
   });
 
   it('should load wallet', () => {
-    expect<any>(page.loadWallet()).toEqual(true);
+    expect<any>(page.fillWalletForm('Test load wallet', 'test load wallet', null)).toEqual(true);
     page.waitForWalletToBeCreated();
   });
 
@@ -61,11 +61,11 @@ fdescribe('Wallets', () => {
   });
 
   it('should hide empty address', () => {
-    expect<any>(page.hideEmptyAddress()).toEqual(0);
+    expect<any>(page.getCountOfEmptyAddresses('.-hide-empty')).toEqual(0);
   });
 
   it('should show empty address', () => {
-    expect<any>(page.showEmptyAddress()).toEqual(true);
+    expect<any>(page.getCountOfEmptyAddresses('.-show-empty')).toBeGreaterThan(0);
   });
 
   it('should show change wallet name modal', () => {

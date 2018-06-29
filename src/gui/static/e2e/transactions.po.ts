@@ -1,4 +1,4 @@
-import { browser, by, element } from 'protractor';
+import { browser, by, element, protractor } from 'protractor';
 
 export class TransactionsPage {
   navigateTo() {
@@ -28,8 +28,10 @@ export class TransactionsPage {
   }
 
   hideTransactionModal() {
-    return element(by.css('app-transaction-detail .-header img')).click().then(() => {
+    const el = element(by.css('app-transaction-detail .-header img'));
+
+    return browser.wait(protractor.ExpectedConditions.visibilityOf(el), 5000).then(() => el.click().then(() => {
       return this.getTransactionDetailIsShow();
-    });
+    }));
   }
 }

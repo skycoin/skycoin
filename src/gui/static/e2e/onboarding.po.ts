@@ -87,13 +87,7 @@ export class OnboardingCreatePage {
       confirm.clear();
       confirm.sendKeys('password');
 
-      return button.isEnabled().then(status => {
-        if (status) {
-          button.click();
-        }
-
-        return status;
-      });
+      return button.isEnabled();
     });
   }
 }

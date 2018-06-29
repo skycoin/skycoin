@@ -33,7 +33,9 @@ export class WalletsPage {
     const labelEl = element(by.css('[formcontrolname="label"]'));
     const seedEl = element(by.css('[formcontrolname="seed"]'));
     const btn = element(by.buttonText(confirm ? 'Create' : 'Load'));
+    const encrypt = element(by.css('.mat-checkbox-label'));
 
+    encrypt.click();
     labelEl.clear();
     seedEl.clear();
     labelEl.sendKeys(label);
@@ -42,51 +44,12 @@ export class WalletsPage {
     if (confirm) {
       const confirmEl = element(by.css('[formcontrolname="confirm_seed"]'));
       confirmEl.clear();
-      confirmEl.sendKeys(seed);
+      confirmEl.sendKeys(confirm);
     }
 
-    return btn.isEnabled();
-  }
-
-  createWallet() {
-    const label = element(by.css('[formcontrolname="label"]'));
-    const seed = element(by.css('[formcontrolname="seed"]'));
-    const confirm = element(by.css('[formcontrolname="confirm_seed"]'));
-    const encrypt = element(by.css('.mat-checkbox-label'));
-    const btnCreate = element(by.buttonText('Create'));
-
-    label.clear();
-    label.sendKeys('Test create wallet');
-    seed.clear();
-    seed.sendKeys('test create wallet');
-    confirm.clear();
-    confirm.sendKeys('test create wallet');
-    encrypt.click();
-
-    return btnCreate.isEnabled().then(status => {
+    return btn.isEnabled().then(status => {
       if (status) {
-        btnCreate.click();
-      }
-
-      return status;
-    });
-  }
-
-  loadWallet() {
-    const label = element(by.css('[formcontrolname="label"]'));
-    const seed = element(by.css('[formcontrolname="seed"]'));
-    const encrypt = element(by.css('.mat-checkbox-label'));
-    const btnLoad = element(by.buttonText('Load'));
-
-    label.clear();
-    label.sendKeys('Test load wallet');
-    seed.clear();
-    seed.sendKeys('test load wallet');
-    encrypt.click();
-
-    return btnLoad.isEnabled().then(status => {
-      if (status) {
-        btnLoad.click();
+        btn.click();
       }
 
       return status;
@@ -123,21 +86,13 @@ export class WalletsPage {
     });
   }
 
-  hideEmptyAddress() {
-    return element(by.css('.-hide-empty')).click().then(() => {
+  getCountOfEmptyAddresses(clickSelector: string) {
+    return element(by.css(clickSelector)).click().then(() => {
       return element.all(by.css('.-detail > div:nth-child(3)')).filter((address) => {
         return address.getText().then(value => {
           return value === '0';
         });
       }).count();
-    });
-  }
-
-  showEmptyAddress() {
-    return element.all(by.css('.-show-empty')).first().click().then(() => {
-      return element.all(by.css('.-detail')).count().then(count => {
-        return count > 0;
-      });
     });
   }
 

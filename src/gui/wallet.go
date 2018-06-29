@@ -13,6 +13,7 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 
+	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
 	"github.com/skycoin/skycoin/src/util/fee"
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
@@ -40,14 +41,16 @@ type WalletEntry struct {
 
 // WalletMeta the wallet meta struct
 type WalletMeta struct {
-	Coin       string `json:"coin"`
-	Filename   string `json:"filename"`
-	Label      string `json:"label"`
-	Type       string `json:"type"`
-	Version    string `json:"version"`
-	CryptoType string `json:"crypto_type"`
-	Timestamp  int64  `json:"timestamp"`
-	Encrypted  bool   `json:"encrypted"`
+	Coin              string `json:"coin"`
+	Filename          string `json:"filename"`
+	Label             string `json:"label"`
+	Type              string `json:"type"`
+	Version           string `json:"version"`
+	CryptoType        string `json:"crypto_type"`
+	Timestamp         int64  `json:"timestamp"`
+	Encrypted         bool   `json:"encrypted"`
+	UseHardwareWallet bool   `json:"useHardwareWallet"`
+	UseEmulatorWallet bool   `json:"useEmulatorWallet"`
 }
 
 // WalletResponse wallet response struct for http apis
@@ -74,6 +77,28 @@ func NewWalletResponse(w *wallet.Wallet) (*WalletResponse, error) {
 			return nil, err
 		}
 		wr.Meta.Encrypted = encrypted
+	}
+
+	// Converts "useEmulatorWallet" string to boolean if any
+	if useEmulatorWalletStr, ok := w.Meta["useEmulatorWallet"]; ok {
+		useEmulatorWallet, err := strconv.ParseBool(useEmulatorWalletStr)
+		if err != nil {
+			return nil, err
+		}
+		wr.Meta.UseEmulatorWallet = useEmulatorWallet
+	} else {
+		wr.Meta.UseEmulatorWallet = false
+	}
+
+	// Converts "useHardwareWallet" string to boolean if any
+	if useHardwareWalletStr, ok := w.Meta["useHardwareWallet"]; ok {
+		useHardwareWallet, err := strconv.ParseBool(useHardwareWalletStr)
+		if err != nil {
+			return nil, err
+		}
+		wr.Meta.UseHardwareWallet = useHardwareWallet
+	} else {
+		wr.Meta.UseHardwareWallet = false
 	}
 
 	if tmStr, ok := w.Meta["tm"]; ok {
@@ -315,12 +340,62 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
+		var useHardwareWallet bool
+		useHardwareWalletStr := r.FormValue("useHardwareWallet")
+		if useHardwareWalletStr != "" {
+			var err error
+			useHardwareWallet, err = strconv.ParseBool(useHardwareWalletStr)
+			if err != nil {
+				wh.Error400(w, fmt.Sprintf("invalid useHardwareWallet value: %v", err))
+				return
+			}
+		}
+		if useHardwareWallet && scanN > 3 {
+			scanN = 3 //limit number of addresses to scan because the hardware wallet is slower than PC
+		}
+
+		var useEmulatorWallet bool
+		useEmulatorWalletStr := r.FormValue("useEmulatorWallet")
+		if useEmulatorWalletStr != "" {
+			var err error
+			useEmulatorWallet, err = strconv.ParseBool(useEmulatorWalletStr)
+			if err != nil {
+				wh.Error400(w, fmt.Sprintf("invalid useEmulatorWallet value: %v", err))
+				return
+			}
+		}
+		if useEmulatorWallet && scanN > 10 {
+			scanN = 10 //limit number of addresses to scan because the hardware wallet is slower than PC
+		}
+
+		if useEmulatorWallet && useHardwareWallet {
+			wh.Error400(w, "Cannot use both Hardware Wallet and Emulator Wallet")
+			return
+		}
+
+		if encrypt && (useEmulatorWallet || useHardwareWallet) {
+			wh.Error400(w, "Cannot encrypt a wallet that is stored in an external device")
+			return
+		}
+
+		if useHardwareWallet && deviceWallet.DeviceConnected(deviceWallet.DeviceTypeUsb) == false {
+			wh.Error400(w, "Hardware wallet is not connected")
+			return
+		}
+
+		if useEmulatorWallet && deviceWallet.DeviceConnected(deviceWallet.DeviceTypeEmulator) == false {
+			wh.Error400(w, "Emulator wallet is not connected")
+			return
+		}
+
 		wlt, err := gateway.CreateWallet("", wallet.Options{
-			Seed:     seed,
-			Label:    label,
-			Encrypt:  encrypt,
-			Password: []byte(password),
-			ScanN:    scanN,
+			Seed:              seed,
+			Label:             label,
+			Encrypt:           encrypt,
+			UseHardwareWallet: useHardwareWallet,
+			UseEmulatorWallet: useEmulatorWallet,
+			Password:          []byte(password),
+			ScanN:             scanN,
 		})
 		if err != nil {
 			switch err {

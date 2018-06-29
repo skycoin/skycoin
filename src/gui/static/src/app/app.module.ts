@@ -5,7 +5,7 @@ import { HttpModule } from '@angular/http';
 import { ApiService } from './services/api.service';
 import { WalletService } from './services/wallet.service';
 import { WalletsComponent } from './components/pages/wallets/wallets.component';
-import { CreateWalletComponent } from './components/pages/wallets/create-wallet/create-wallet.component';
+import { CreateWalletComponent, CreateWalletErrorDialogComponent } from './components/pages/wallets/create-wallet/create-wallet.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { SendSkycoinComponent } from './components/pages/send-skycoin/send-skycoin.component';
 import { NgxDatatableModule } from '@swimlane/ngx-datatable';
@@ -136,6 +136,7 @@ const ROUTES = [
     ButtonComponent,
     ChangeNameComponent,
     CreateWalletComponent,
+    CreateWalletErrorDialogComponent,
     DateFromNowPipe,
     DateTimePipe,
     ExplorerComponent,
@@ -167,6 +168,7 @@ const ROUTES = [
   entryComponents: [
     AddDepositAddressComponent,
     CreateWalletComponent,
+    CreateWalletErrorDialogComponent,
     ChangeNameComponent,
     QrCodeComponent,
     SendSkycoinComponent,

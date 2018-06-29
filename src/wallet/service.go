@@ -98,6 +98,7 @@ func (serv *Service) loadWallet(wltName string, options Options, bg BalanceGette
 
 	// Check for duplicate wallets by initial seed
 	if _, ok := serv.firstAddrIDMap[w.Entries[0].Address.String()]; ok {
+		logger.Errorf("A wallet already exist with this seed: %s.", w.Entries[0].Address.String())
 		return nil, ErrSeedUsed
 	}
 
@@ -483,11 +484,13 @@ func (serv *Service) GetWalletSeed(wltID string, password []byte) (string, error
 	}
 
 	var seed string
-	if err := w.guardView(password, func(wlt *Wallet) error {
-		seed = wlt.seed()
-		return nil
-	}); err != nil {
-		return "", err
+	if w.useEmulatorWallet() == false && w.useHardwareWallet() == false {
+		if err := w.guardView(password, func(wlt *Wallet) error {
+			seed = wlt.seed()
+			return nil
+		}); err != nil {
+			return "", err
+		}
 	}
 
 	return seed, nil

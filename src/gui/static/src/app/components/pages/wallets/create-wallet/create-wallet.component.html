@@ -21,6 +21,16 @@
         <img src="../../../../../assets/img/lock-gold.png">Encrypt Wallet
       </mat-checkbox>
     </div>
+    <div>
+      <mat-checkbox class="-check" (change)="setHardwareWallet($event)" type="checkbox" id="useHardwareWallet" [checked]="false">
+        <img src="../../../../../assets/img/lock-gold.png">Use Hardware Wallet
+      </mat-checkbox>
+    </div>
+    <div>
+      <mat-checkbox class="-check" (change)="setEmulatedWallet($event)" type="checkbox" id="useEmulatedWallet" [checked]="false">
+        <img src="../../../../../assets/img/lock-gold.png">Use Emulated Wallet
+      </mat-checkbox>
+    </div>
     <div class="row -passwords">
       <div class="col-md-12">
         <p class="-info">

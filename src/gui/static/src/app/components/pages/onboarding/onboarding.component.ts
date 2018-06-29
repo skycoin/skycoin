@@ -43,7 +43,7 @@ export class OnboardingComponent {
   }
 
   private createWallet() {
-    this.walletService.create(this.label, this.seed, 100, this.password).subscribe(() => {
+    this.walletService.create(this.label, this.seed, 100, this.password, false, false).subscribe(() => {
       this.router.navigate(['/wallets']);
     });
   }

@@ -73,7 +73,7 @@ func SetLevel(level logrus.Level) {
 	log.SetLevel(level)
 }
 
-// SetPkgLvels sets the independent log levels for packages
+// SetPackageLevels sets the independent log levels for packages
 func SetPackageLevels(config []PkgLogConfig) {
 	log.Debugf("Setting up logging config %v", config)
 	ConfigPkgLogging(log, config)

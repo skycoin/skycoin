@@ -7,6 +7,7 @@ import (
 )
 
 const (
+	// PkgLogLevelVar OS env var for package-specific logging levels
 	PkgLogLevelVar = "PKGLOGLEVEL"
 )
 
@@ -16,9 +17,11 @@ func parsePkgLogLevelsFromEnv() ([]PkgLogConfig, error) {
 }
 
 var (
+	// ErrInvalidValue error representing invalid config value
 	ErrInvalidValue = errors.New("Invalid config value")
 )
 
+// ParsePackageLevels parse a sequence of the form 'name1=INFO:name2=DEGUB:...'
 func ParsePackageLevels(configStr string) ([]PkgLogConfig, error) {
 	items := strings.Split(configStr, ":")
 	configMap := make([]PkgLogConfig, len(items))

@@ -24,6 +24,7 @@ type MasterLogger struct {
 	PkgConfig map[string]PkgLogConfig
 }
 
+// PkgLogConfig package-specific logging information
 type PkgLogConfig struct {
 	PkgName string
 	Level   logrus.Level

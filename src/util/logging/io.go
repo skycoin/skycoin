@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 )
 
-// Proxy object controlling
+// OutputRealm Proxy object controlling
 type OutputRealm struct {
 	io.Writer
 }

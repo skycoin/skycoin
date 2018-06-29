@@ -64,10 +64,10 @@ func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) erro
 		// as we have to check all signature, if we return error early here, the
 		// potential bad signature won't be detected.
 		lock.Lock()
+		defer lock.Lock()
 		if historyVerifyErr == nil {
 			historyVerifyErr = history.Verify(tx, b, indexesMap)
 		}
-		lock.Unlock()
 		return nil
 	}
 

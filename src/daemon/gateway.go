@@ -1092,36 +1092,13 @@ func (gw *Gateway) GetBuildInfo() visor.BuildInfo {
 
 // GetRichlist returns rich list as desc order.
 func (gw *Gateway) GetRichlist(includeDistribution bool) (visor.Richlist, error) {
-	rbOuts, err := gw.GetUnspentOutputs()
-	if err != nil {
-		return nil, err
-	}
+	var richlist visor.Richlist
+	var err error
+	gw.strand("GetRichlist", func() {
+		richlist, err = gw.v.Richlist(includeDistribution)
+	})
 
-	allAccounts, err := rbOuts.AggregateUnspentOutputs()
-	if err != nil {
-		return nil, err
-	}
-
-	lockedAddrs := visor.GetLockedDistributionAddresses()
-	addrsMap := make(map[string]struct{}, len(lockedAddrs))
-	for _, a := range lockedAddrs {
-		addrsMap[a] = struct{}{}
-	}
-
-	richlist, err := visor.NewRichlist(allAccounts, addrsMap)
-	if err != nil {
-		return nil, err
-	}
-
-	if !includeDistribution {
-		unlockedAddrs := visor.GetUnlockedDistributionAddresses()
-		for _, a := range unlockedAddrs {
-			addrsMap[a] = struct{}{}
-		}
-		richlist = richlist.FilterAddresses(addrsMap)
-	}
-
-	return richlist, nil
+	return richlist, err
 }
 
 // GetAddressCount returns count number of unique address with uxouts > 0.

@@ -228,6 +228,8 @@ type Visor struct {
 	Wallets     *wallet.Service
 	StartedAt   time.Time
 
+	cachedRichlist map[cipher.SHA256]Richlist
+
 	history Historyer
 }
 
@@ -295,13 +297,14 @@ func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
 	}
 
 	v := &Visor{
-		Config:      c,
-		DB:          db,
-		Blockchain:  bc,
-		Unconfirmed: utp,
-		history:     history,
-		Wallets:     wltServ,
-		StartedAt:   time.Now(),
+		Config:         c,
+		DB:             db,
+		Blockchain:     bc,
+		Unconfirmed:    utp,
+		history:        history,
+		Wallets:        wltServ,
+		StartedAt:      time.Now(),
+		cachedRichlist: map[cipher.SHA256]Richlist{},
 	}
 
 	return v, nil
@@ -1857,6 +1860,82 @@ func (vs *Visor) AddressCount() (uint64, error) {
 	}
 
 	return count, nil
+}
+
+// Richlist returns the richlist
+func (vs *Visor) Richlist(includeDistribution bool) (Richlist, error) {
+	var xorHash cipher.SHA256
+	if err := vs.DB.View("Richlist", func(tx *dbutil.Tx) error {
+		var err error
+		xorHash, err = vs.Blockchain.Unspent().GetUxHash(tx)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+	if richlist, ok := vs.cachedRichlist[xorHash]; ok {
+		return richlist, nil
+	}
+	richlist, err := vs.getRichlist(includeDistribution)
+	if err != nil {
+		return nil, err
+	}
+	// delete invalid key
+	for k := range vs.cachedRichlist {
+		delete(vs.cachedRichlist, k)
+	}
+	vs.cachedRichlist[xorHash] = richlist
+	return richlist, nil
+}
+
+func (vs *Visor) getRichlist(includeDistribution bool) (Richlist, error) {
+	ux, err := vs.GetAllUnspentOutputs()
+	if err != nil {
+		return nil, err
+	}
+	allAccounts, err := aggregateUnspent(ux)
+	if err != nil {
+		return nil, err
+	}
+	lockedAddrs := GetLockedDistributionAddresses()
+	addrsMap := make(map[string]struct{}, len(lockedAddrs))
+	for _, a := range lockedAddrs {
+		addrsMap[a] = struct{}{}
+	}
+
+	richlist, err := NewRichlist(allAccounts, addrsMap)
+	if err != nil {
+		return nil, err
+	}
+
+	if !includeDistribution {
+		unlockedAddrs := GetUnlockedDistributionAddresses()
+		for _, a := range unlockedAddrs {
+			addrsMap[a] = struct{}{}
+		}
+		richlist = richlist.FilterAddresses(addrsMap)
+	}
+
+	return richlist, nil
+}
+
+// AggregateUnspentOutputs builds a map from address to coins
+func aggregateUnspent(ux coin.UxArray) (map[string]uint64, error) {
+	var err error
+	allAccounts := map[string]uint64{}
+	for _, out := range ux {
+		amt := out.Body.Coins
+		address := out.Body.Address.String()
+		if _, ok := allAccounts[address]; ok {
+			allAccounts[address], err = coin.AddUint64(allAccounts[address], amt)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			allAccounts[address] = amt
+		}
+	}
+
+	return allAccounts, nil
 }
 
 // CreateTransactionDeprecated creates a transaction using an entire wallet,

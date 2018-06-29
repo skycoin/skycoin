@@ -97,21 +97,21 @@ func (c *ClientV2) LastBlocks(n int) (*visor.ReadableBlocksV2, error) {
 }
 
 // PendingTransactions makes a request to GET /api/v2/pendingTxs
-func (c *ClientV2) PendingTransactions() ([]*visor.ReadableUnconfirmedTxnV2, error) {
-	var v []*visor.ReadableUnconfirmedTxnV2
+func (c *ClientV2) PendingTransactions() (*visor.ReadableUnconfirmedTxnsV2, error) {
+	var v visor.ReadableUnconfirmedTxnsV2
 	if err := c.Get("/api/v2/pendingTxs", &v); err != nil {
 		return nil, err
 	}
-	return v, nil
+	return &v, nil
 }
 
 // Transaction makes a request to GET /api/v2/transaction
-func (c *ClientV2) Transaction(txid string) (*TransactionResultV2, error) {
+func (c *ClientV2) Transaction(txid string) (*visor.TransactionResultV2, error) {
 	v := url.Values{}
 	v.Add("txid", txid)
 	endpoint := "/api/v2/transaction?" + v.Encode()
 
-	var r TransactionResultV2
+	var r visor.TransactionResultV2
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}
@@ -119,12 +119,12 @@ func (c *ClientV2) Transaction(txid string) (*TransactionResultV2, error) {
 }
 
 // Transactions makes a request to GET /api/v2/transactions
-func (c *ClientV2) Transactions(addrs []string) (*[]TransactionResultV2, error) {
+func (c *ClientV2) Transactions(addrs []string) (*visor.TransactionResultsV2, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	endpoint := "/api/v2/transactions?" + v.Encode()
 
-	var r []TransactionResultV2
+	var r visor.TransactionResultsV2
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}
@@ -132,13 +132,13 @@ func (c *ClientV2) Transactions(addrs []string) (*[]TransactionResultV2, error) 
 }
 
 // ConfirmedTransactions makes a request to GET /api/v2/transactions?confirmed=true
-func (c *ClientV2) ConfirmedTransactions(addrs []string) (*[]TransactionResultV2, error) {
+func (c *ClientV2) ConfirmedTransactions(addrs []string) (*visor.TransactionResultsV2, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	v.Add("confirmed", "true")
 	endpoint := "/api/v2/transactions?" + v.Encode()
 
-	var r []TransactionResultV2
+	var r visor.TransactionResultsV2
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}
@@ -146,13 +146,13 @@ func (c *ClientV2) ConfirmedTransactions(addrs []string) (*[]TransactionResultV2
 }
 
 // UnconfirmedTransactions makes a request to GET /api/v1/transactions?confirmed=false
-func (c *ClientV2) UnconfirmedTransactions(addrs []string) (*[]TransactionResultV2, error) {
+func (c *ClientV2) UnconfirmedTransactions(addrs []string) (*visor.TransactionResultsV2, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	v.Add("confirmed", "false")
 	endpoint := "/api/v2/transactions?" + v.Encode()
 
-	var r []TransactionResultV2
+	var r visor.TransactionResultsV2
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}

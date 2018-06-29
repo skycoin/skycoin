@@ -1179,3 +1179,174 @@ func (gw *Gateway) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, 
 	})
 	return uxs, isTxnConfirmed, err
 }
+
+//api/v2 endpoints
+
+// GetBlocksV2 returns a list of blocks in the specified range
+func (gw *Gateway) GetBlocksV2(start, end uint64) (*visor.ReadableBlocksV2, error) {
+	var blocks []coin.SignedBlock
+	var rdblocks *visor.ReadableBlocks
+	var rdblocksV2 *visor.ReadableBlocksV2
+	var err error
+
+	blocks, err = gw.v.GetBlocks(start, end)
+	if err != nil {
+		return nil, err
+	}
+
+	rdblocks, err = visor.NewReadableBlocks(blocks)
+	if err != nil {
+		return nil, err
+	}
+
+	//NewReadableBlocksV2 makes calls to GetUxOutByID
+	//that is why it is inside strand
+	gw.strand("NewReadableBlocksV2", func() {
+		rdblocksV2, err = gw.v.NewReadableBlocksV2(rdblocks)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return rdblocksV2, nil
+}
+
+// GetBlockByHashV2 a block by a given hash
+func (gw *Gateway) GetBlockByHashV2(hash cipher.SHA256) (*visor.ReadableBlockV2, error) {
+	b, err := gw.GetSignedBlockByHash(hash)
+	if err != nil {
+		return nil, err
+	}
+	if b == nil {
+		return nil, nil
+	}
+	rdblock, err := visor.NewReadableBlock(&b.Block)
+	if err != nil {
+		return nil, err
+	}
+	var rdblockV2 *visor.ReadableBlockV2
+	//NewReadableBlockV2 makes calls to GetUxOutByID
+	//that is why it is inside strand
+	gw.strand("NewReadableBlockV2", func() {
+		rdblockV2, err = gw.v.NewReadableBlockV2(rdblock)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return rdblockV2, nil
+}
+
+// GetBlockBySeqV2 a block by a given sequence
+func (gw *Gateway) GetBlockBySeqV2(seq uint64) (*visor.ReadableBlockV2, error) {
+	b, err := gw.GetSignedBlockBySeq(seq)
+	if err != nil {
+		return nil, err
+	}
+	if b == nil {
+		return nil, nil
+	}
+	rdblock, err := visor.NewReadableBlock(&b.Block)
+	if err != nil {
+		return nil, err
+	}
+	var rdblockV2 *visor.ReadableBlockV2
+	//NewReadableBlockV2 makes calls to GetUxOutByID
+	//that is why it is inside strand
+	gw.strand("NewReadableBlockV2", func() {
+		rdblockV2, err = gw.v.NewReadableBlockV2(rdblock)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return rdblockV2, nil
+}
+
+// GetLastBlocksV2 returns a list of blocks in the specified range
+func (gw *Gateway) GetLastBlocksV2(num uint64) (*visor.ReadableBlocksV2, error) {
+	var blocks []coin.SignedBlock
+	var rdblocks *visor.ReadableBlocks
+	var rdblocksV2 *visor.ReadableBlocksV2
+	var err error
+
+	blocks, err = gw.v.GetLastBlocks(num)
+	if err != nil {
+		return nil, err
+	}
+
+	rdblocks, err = visor.NewReadableBlocks(blocks)
+	if err != nil {
+		return nil, err
+	}
+
+	//NewReadableBlocksV2 makes calls to GetUxOutByID
+	//that is why it is inside strand
+	gw.strand("NewReadableBlocksV2", func() {
+		rdblocksV2, err = gw.v.NewReadableBlocksV2(rdblocks)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return rdblocksV2, nil
+}
+
+// GetPendingTxnsV2 returns slice of unconfirmed transactions api/v2
+func (gw *Gateway) GetPendingTxnsV2() (*visor.ReadableUnconfirmedTxnsV2, error) {
+	txns, err := gw.GetAllUnconfirmedTxns()
+	if err != nil {
+		return nil, err
+	}
+	var result *visor.ReadableUnconfirmedTxnsV2
+	//NewReadableUnconfirmedTxnsV2 makes calls to GetUxOutByID
+	//that is why it is inside strand
+	gw.strand("NewReadableUnconfirmedTxnsV2", func() {
+		result, err = gw.v.NewReadableUnconfirmedTxnsV2(txns)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// GetTransactionV2 Returns transaction data given its hash
+func (gw *Gateway) GetTransactionV2(txid cipher.SHA256) (*visor.TransactionResultV2, error) {
+	txn, err := gw.GetTransaction(txid)
+	if err != nil {
+		return nil, err
+	}
+	if txn == nil {
+		return nil, nil
+	}
+	rbTxn, err := visor.NewReadableTransaction(txn)
+	if err != nil {
+		return nil, err
+	}
+	var rbTxnV2 *visor.ReadableTransactionV2
+	//NewReadableUnconfirmedTxnsV2 makes calls to GetUxOutByID
+	//that is why it is inside strand
+	gw.strand("NewReadableTransactionV2", func() {
+		rbTxnV2, err = gw.v.NewReadableTransactionV2(rbTxn)
+	})
+	if err != nil {
+		return nil, err
+	}
+	resTxn := visor.TransactionResultV2{
+		Transaction: *rbTxnV2,
+		Status:      txn.Status,
+		Time:        txn.Time,
+	}
+	return &resTxn, nil
+}
+
+// GetTransactionsV2 returns a list of transactions given a set of filters
+func (gw *Gateway) GetTransactionsV2(flts ...visor.TxFilter) (*visor.TransactionResultsV2, error) {
+	var txnsResult *visor.TransactionResultsV2
+	txns, err := gw.GetTransactions(flts...)
+	if err != nil {
+		return txnsResult, nil
+	}
+	//NewReadableTransactionsV2 makes calls to GetUxOutByID
+	//that is why it is inside strand
+	gw.strand("NewReadableTransactionResultsV2", func() {
+		txnsResult, err = gw.v.NewReadableTransactionResultsV2(txns)
+	})
+	return txnsResult, err
+}

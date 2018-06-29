@@ -4277,7 +4277,7 @@ func TestStableTransactionsV2(t *testing.T) {
 				require.Equal(t, tc.err.StatusCode, err.(api.ClientError).StatusCode, "case: "+tc.name)
 				return
 			}
-			for _, txn := range *txResult {
+			for _, txn := range (*txResult).Txns {
 				testTransactionV2(t, &txn.Transaction)
 			}
 		})
@@ -4341,7 +4341,7 @@ func TestStableConfirmedTransactionsV2(t *testing.T) {
 				require.Equal(t, tc.err.StatusCode, err.(api.ClientError).StatusCode, "case: "+tc.name)
 				return
 			}
-			for _, txn := range *txResult {
+			for _, txn := range (*txResult).Txns {
 				testTransactionV2(t, &txn.Transaction)
 			}
 
@@ -4402,7 +4402,7 @@ func TestStableUnconfirmedTransactionsV2(t *testing.T) {
 				return
 			}
 
-			for _, txn := range *txResult {
+			for _, txn := range (*txResult).Txns {
 				testTransactionV2(t, &txn.Transaction)
 			}
 		})
@@ -4413,10 +4413,8 @@ func TestStablePendingTransactionsV2(t *testing.T) {
 	if !doStable(t) {
 		return
 	}
-
 	c := api.NewClientV2(nodeAddress())
-
 	txns, err := c.PendingTransactions()
 	require.NoError(t, err)
-	require.Empty(t, txns)
+	require.Empty(t, txns.Txns)
 }

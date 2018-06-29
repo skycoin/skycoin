@@ -36,3 +36,20 @@ type ReadableUnconfirmedTxnV2 struct {
 	Announced time.Time             `json:"announced"`
 	IsValid   bool                  `json:"is_valid"`
 }
+
+// TransactionResultV2 represents transaction result api/v2
+type TransactionResultV2 struct {
+	Status      TransactionStatus     `json:"status"`
+	Time        uint64                `json:"time"`
+	Transaction ReadableTransactionV2 `json:"txn"`
+}
+
+// TransactionResultsV2 array of transaction results api/v2
+type TransactionResultsV2 struct {
+	Txns []TransactionResultV2 `json:"txns"`
+}
+
+// ReadableUnconfirmedTxnsV2 array of readable unconfirmed transactions api/v2
+type ReadableUnconfirmedTxnsV2 struct {
+	Txns []ReadableUnconfirmedTxnV2 `json:"txns"`
+}

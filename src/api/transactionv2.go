@@ -6,21 +6,8 @@ import (
 	"strconv"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/visor"
 )
-
-// TransactionResultV2 represents transaction result api/v2
-type TransactionResultV2 struct {
-	Status      visor.TransactionStatus     `json:"status"`
-	Time        uint64                      `json:"time"`
-	Transaction visor.ReadableTransactionV2 `json:"txn"`
-}
-
-// TransactionResultsV2 array of transaction results api/v2
-type TransactionResultsV2 struct {
-	Txns []TransactionResultV2 `json:"txns"`
-}
 
 // Returns pending transactions api/v2
 func getPendingTxnsV2(gateway Gatewayer) http.HandlerFunc {
@@ -31,31 +18,14 @@ func getPendingTxnsV2(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		txns, err := gateway.GetAllUnconfirmedTxns()
+		txns, err := gateway.GetPendingTxnsV2()
 		if err != nil {
-			resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("GetAllUnconfirmedTxns failed: %v", err))
+			resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("GetPendingTxnsV2 failed: %v", err))
 			writeHTTPResponse(w, resp)
 			return
 		}
-
-		ret := make([]*visor.ReadableUnconfirmedTxnV2, 0, len(txns))
-		for _, unconfirmedTxn := range txns {
-			readable, err := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
-			if err != nil {
-				resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("NewReadableUnconfirmedTxn failed: %v", err))
-				writeHTTPResponse(w, resp)
-				return
-			}
-			readableV2, err := NewReadableUnconfirmedTxnV2(gateway, readable)
-			if err != nil {
-				resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("NewReadableUnconfirmedTxnV2 failed: %v", err))
-				writeHTTPResponse(w, resp)
-				return
-			}
-			ret = append(ret, readableV2)
-		}
 		var resp HTTPResponse
-		resp.Data = ret
+		resp.Data = txns
 		writeHTTPResponse(w, resp)
 	}
 }
@@ -80,9 +50,9 @@ func getTransactionByIDV2(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		txn, err := gateway.GetTransaction(h)
+		txn, err := gateway.GetTransactionV2(h)
 		if err != nil {
-			resp := NewHTTPErrorResponse(http.StatusNotFound, fmt.Sprintf("GetTransaction failed : %v", err))
+			resp := NewHTTPErrorResponse(http.StatusNotFound, fmt.Sprintf("GetTransactionV2 failed : %v", err))
 			writeHTTPResponse(w, resp)
 			return
 		}
@@ -91,28 +61,8 @@ func getTransactionByIDV2(gateway Gatewayer) http.HandlerFunc {
 			writeHTTPResponse(w, resp)
 			return
 		}
-
-		rbTxn, err := visor.NewReadableTransaction(txn)
-		if err != nil {
-			resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("NewReadableTransaction failed : %v", err))
-			writeHTTPResponse(w, resp)
-			return
-		}
-
-		rbTxnV2, err := NewReadableTransactionV2(gateway, rbTxn)
-		if err != nil {
-			resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("NewReadableTransactionV2 failed : %v", err))
-			writeHTTPResponse(w, resp)
-			return
-		}
-
-		resTxn := TransactionResultV2{
-			Transaction: *rbTxnV2,
-			Status:      txn.Status,
-			Time:        txn.Time,
-		}
 		var resp HTTPResponse
-		resp.Data = resTxn
+		resp.Data = txn
 		writeHTTPResponse(w, resp)
 	}
 }
@@ -156,36 +106,11 @@ func getTransactionsV2(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		// Gets transactions
-		txns, err := gateway.GetTransactions(flts...)
+		txnRltsV2, err := gateway.GetTransactionsV2(flts...)
 		if err != nil {
 			resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("gateway.GetTransactions failed: %v", err))
 			writeHTTPResponse(w, resp)
 			return
-		}
-
-		// Converts visor.Transaction to daemon.TransactionResult
-		txnRlts, err := daemon.NewTransactionResults(txns)
-		if err != nil {
-			resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("gateway.NewTransactionResults failed: %v", err))
-			writeHTTPResponse(w, resp)
-			return
-		}
-
-		txnRltsV2 := make([]TransactionResultV2, 0, len(txnRlts.Txns))
-
-		for _, txn := range txnRlts.Txns {
-			rbTxnV2, err := NewReadableTransactionV2(gateway, &txn.Transaction)
-			if err != nil {
-				resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("NewReadableTransactionV2 failed: %v", err))
-				writeHTTPResponse(w, resp)
-				return
-			}
-			trV2 := TransactionResultV2{
-				Transaction: *rbTxnV2,
-				Status:      txn.Status,
-				Time:        txn.Time,
-			}
-			txnRltsV2 = append(txnRltsV2, trV2)
 		}
 
 		var resp HTTPResponse

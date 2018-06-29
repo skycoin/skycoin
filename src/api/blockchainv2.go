@@ -8,7 +8,6 @@ import (
 	"strconv"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor" //http,json helpers
 )
 
@@ -27,7 +26,7 @@ func getBlockV2(gateway Gatewayer) http.HandlerFunc {
 
 		hash := r.FormValue("hash")
 		seq := r.FormValue("seq")
-		var b *coin.SignedBlock
+		var b *visor.ReadableBlockV2
 		switch {
 		case hash == "" && seq == "":
 			resp := NewHTTPErrorResponse(http.StatusBadRequest, "should specify one filter, hash or seq")
@@ -45,7 +44,7 @@ func getBlockV2(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 
-			b, err = gateway.GetSignedBlockByHash(h)
+			b, err = gateway.GetBlockByHashV2(h)
 			if err != nil {
 				resp := NewHTTPErrorResponse(http.StatusNotFound, fmt.Sprintf("GetSignedBlockByHash failed: %v, %v", hash, err))
 				writeHTTPResponse(w, resp)
@@ -59,7 +58,7 @@ func getBlockV2(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 
-			b, err = gateway.GetSignedBlockBySeq(uSeq)
+			b, err = gateway.GetBlockBySeqV2(uSeq)
 			if err != nil {
 				resp := NewHTTPErrorResponse(http.StatusNotFound, fmt.Sprintf("GetSignedBlockBySeq failed: %v", err))
 				writeHTTPResponse(w, resp)
@@ -73,21 +72,8 @@ func getBlockV2(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		rb, err := visor.NewReadableBlock(&b.Block)
-		if err != nil {
-			resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("NewReadableBlock failed: %v", err))
-			writeHTTPResponse(w, resp)
-			return
-		}
-
-		rbv2, err := NewReadableBlockV2(gateway, rb)
-		if err != nil {
-			resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("NewReadableBlockV2 failed: %v", err))
-			writeHTTPResponse(w, resp)
-			return
-		}
 		var resp HTTPResponse
-		resp.Data = rbv2
+		resp.Data = b
 		writeHTTPResponse(w, resp)
 	}
 }
@@ -114,20 +100,14 @@ func getBlocksV2(gateway Gatewayer) http.HandlerFunc {
 			writeHTTPResponse(w, resp)
 			return
 		}
-		rb, err := gateway.GetBlocks(start, end)
+		rbs, err := gateway.GetBlocksV2(start, end)
 		if err != nil {
 			resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("Get blocks failed: %v", err))
 			writeHTTPResponse(w, resp)
 			return
 		}
-		rbv2, err := NewReadableBlocksV2(gateway, rb)
-		if err != nil {
-			resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("NewReadableBlocksV2 failed : %v", err))
-			writeHTTPResponse(w, resp)
-			return
-		}
 		var resp HTTPResponse
-		resp.Data = rbv2
+		resp.Data = rbs
 		writeHTTPResponse(w, resp)
 	}
 }

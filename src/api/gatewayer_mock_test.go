@@ -1070,3 +1070,40 @@ func (m *GatewayerMock) VerifyTxnVerbose(p0 *coin.Transaction) ([]wallet.UxBalan
 	return r0, r1, r2
 
 }
+
+// GetBlocksV2 returns a *visor.ReadableBlocks
+func (m *GatewayerMock) GetBlocksV2(start, end uint64) (*visor.ReadableBlocksV2, error) {
+	rdbs := visor.ReadableBlocksV2{}
+	return &rdbs, nil
+}
+
+// GetBlockByHashV2 a block by a given hash
+func (m *GatewayerMock) GetBlockByHashV2(hash cipher.SHA256) (*visor.ReadableBlockV2, error) {
+	return &visor.ReadableBlockV2{}, nil
+}
+
+// GetBlockBySeqV2 a block by a given sequence
+func (m *GatewayerMock) GetBlockBySeqV2(seq uint64) (*visor.ReadableBlockV2, error) {
+	return &visor.ReadableBlockV2{}, nil
+}
+
+// GetLastBlocksV2 returns a list of blocks in the specified range
+func (m *GatewayerMock) GetLastBlocksV2(num uint64) (*visor.ReadableBlocksV2, error) {
+	rdbs := visor.ReadableBlocksV2{}
+	return &rdbs, nil
+}
+
+// GetPendingTxnsV2 returns slice of unconfirmed transactions api/v2
+func (m *GatewayerMock) GetPendingTxnsV2() (*visor.ReadableUnconfirmedTxnsV2, error) {
+	return &visor.ReadableUnconfirmedTxnsV2{}, nil
+}
+
+// GetTransactionV2 Returns transaction data given its hash
+func (m *GatewayerMock) GetTransactionV2(txid cipher.SHA256) (*visor.TransactionResultV2, error) {
+	return &visor.TransactionResultV2{}, nil
+}
+
+// GetTransactionsV2 returns a list of transactions given a set of filters
+func (m *GatewayerMock) GetTransactionsV2(flts ...visor.TxFilter) (*visor.TransactionResultsV2, error) {
+	return &visor.TransactionResultsV2{}, nil
+}

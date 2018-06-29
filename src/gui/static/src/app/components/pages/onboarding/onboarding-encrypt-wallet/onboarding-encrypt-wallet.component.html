@@ -11,9 +11,19 @@
   </div>
   <div class="row justify-content-center">
     <div class="col-sm-4 -check-container">
-      <mat-checkbox class="-check" (change)="setEncrypt($event)" [checked]="true" type="checkbox" id="encrypt">
+      <mat-checkbox class="-check" (change)="setEncrypt($event)" type="checkbox" id="encrypt" [checked]="true">
         <img src="../../../../../assets/img/lock-gold.png">
         {{ 'wallet.new.encrypt' | translate }}
+      </mat-checkbox>
+    </div>
+    <div class="col-sm-4 -check-container">
+      <mat-checkbox class="-check" (change)="setEncrypt($event)" type="checkbox" id="useHardwareWallet" [checked]="false">
+        <img src="../../../../../assets/img/lock-gold.png">Use Hardware Wallet
+      </mat-checkbox>
+    </div>
+    <div class="col-sm-4 -check-container">
+      <mat-checkbox class="-check" (change)="setEncrypt($event)" type="checkbox" id="useEmulatedWallet" [checked]="false">
+        <img src="../../../../../assets/img/lock-gold.png">Use Emulated Wallet
       </mat-checkbox>
     </div>
   </div>

@@ -36,12 +36,15 @@ func LoadWallets(dir string) (Wallets, error) {
 				continue
 			}
 			fullpath := filepath.Join(dir, name)
+			logger.Infof("Loading wallet %s", fullpath)
 			rw, err := LoadReadableWallet(fullpath)
 			if err != nil {
+				logger.Panicf("Failed to load wallet %s", fullpath)
 				return nil, err
 			}
 			w, err := rw.ToWallet()
 			if err != nil {
+				logger.Panicf("Failed to extract wallet %s", fullpath)
 				return nil, err
 			}
 			logger.Infof("Loaded wallet from %s", fullpath)

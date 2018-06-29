@@ -48,10 +48,10 @@ export class WalletService {
     return this.all().map(wallets => wallets.reduce((array, wallet) => array.concat(wallet.addresses), []));
   }
 
-  create(label, seed, scan, password) {
-    seed = seed.replace(/(\n|\r\n)$/, '');
+  create(label, seed, scan, password, useHardwareWallet, useEmulatorWallet) {
+    seed = seed.replace(/\r?\n|\r/g, ' ').replace(/ +/g, ' ').trim();
 
-    return this.apiService.postWalletCreate(label ? label : 'undefined', seed, scan ? scan : 100, password)
+    return this.apiService.postWalletCreate(label ? label : 'undefined', seed, scan ? scan : 100, password, useHardwareWallet, useEmulatorWallet)
       .do(wallet => {
         console.log(wallet);
         this.wallets.first().subscribe(wallets => {
@@ -157,6 +157,10 @@ export class WalletService {
 
   injectTransaction(encodedTx: string) {
     return this.apiService.post('injectTransaction', { rawtx: encodedTx }, { json: true });
+  }
+
+  sendSkycoinDeviceCheck(wallet: Wallet, address: string, amount: number, password: string|null) {
+    return this.apiService.post('wallet/spendDeviceCheck', {id: wallet.filename, dst: address, coins: amount, password});
   }
 
   transaction(txid: string): Observable<any> {

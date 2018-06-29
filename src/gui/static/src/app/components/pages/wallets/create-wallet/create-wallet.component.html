@@ -29,6 +29,16 @@
         <img src="../../../../../assets/img/lock-gold.png"> {{ 'wallet.new.encrypt' | translate }}
       </mat-checkbox>
     </div>
+    <div>
+      <mat-checkbox class="-check" (change)="setHardwareWallet($event)" type="checkbox" id="useHardwareWallet" [checked]="false">
+        <img src="../../../../../assets/img/lock-gold.png">Use Hardware Wallet
+      </mat-checkbox>
+    </div>
+    <div>
+      <mat-checkbox class="-check" (change)="setEmulatedWallet($event)" type="checkbox" id="useEmulatedWallet" [checked]="false">
+        <img src="../../../../../assets/img/lock-gold.png">Use Emulated Wallet
+      </mat-checkbox>
+    </div>
     <div class="row -passwords">
       <div class="col-md-12">
         <p class="-info">{{ 'wallet.new.encrypt-warning' | translate }}</p>

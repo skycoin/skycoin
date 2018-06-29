@@ -56,6 +56,8 @@ export class Wallet {
   hours: number;
   addresses: Address[];
   encrypted: boolean;
+  useEmulatorWallet: boolean;
+  useHardwareWallet: boolean;
   hideEmpty?: boolean;
   opened?: boolean;
 }
@@ -88,6 +90,8 @@ export class GetWalletsResponseMeta {
   label: string;
   filename: string;
   encrypted: boolean;
+  useEmulatorWallet: boolean;
+  useHardwareWallet: boolean;
 }
 
 export class GetWalletsResponseEntry {

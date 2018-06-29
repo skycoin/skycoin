@@ -23,6 +23,7 @@
             <img src="../../../../assets/img/unlock-grey.png"
                  [matTooltip]="'wallet.encryption-disabled' | translate"
                  *ngIf="!wallet.encrypted">
+            <img src="../../../../assets/img/money-gold.png" *ngIf="wallet.useEmulatorWallet">
           </div>
           <div class="-width-150 -text-right">{{ (wallet.coins ? wallet.coins : 0) | number:'1.0-6' }}</div>
           <div class="-width-150 -text-right -grey">{{ (wallet.hours ? wallet.hours : 0) | number:'1.0-6' }}</div>

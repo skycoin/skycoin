@@ -2427,12 +2427,16 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				})
 				require.NoError(t, err)
 
+				require.False(t, tc.opts.UseEmulatorWallet)
+				require.False(t, tc.opts.UseHardwareWallet)
 				wltName := newWalletFilename()
 				w, err := s.CreateWallet(wltName, tc.opts, tc.balGetter)
 				require.Equal(t, tc.expect.err, err)
 				if err != nil {
 					return
 				}
+				require.False(t, w.useHardwareWallet())
+				require.False(t, w.useEmulatorWallet())
 
 				require.NoError(t, w.Validate())
 				require.Len(t, w.Entries, tc.expect.entryNum)

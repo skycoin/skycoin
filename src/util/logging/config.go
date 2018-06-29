@@ -2,14 +2,24 @@ package logging
 
 import (
 	"errors"
+	"os"
 	"strings"
 )
+
+const (
+	PkgLogLevelVar = "PKGLOGLEVEL"
+)
+
+func parsePkgLogLevelsFromEnv() ([]PkgLogConfig, error) {
+	configStr := os.Getenv(PkgLogLevelVar)
+	return ParsePackageLevels(configStr)
+}
 
 var (
 	ErrInvalidValue = errors.New("Invalid config value")
 )
 
-func ParseModuleLevels(configStr string) ([]PkgLogConfig, error) {
+func ParsePackageLevels(configStr string) ([]PkgLogConfig, error) {
 	items := strings.Split(configStr, ":")
 	configMap := make([]PkgLogConfig, len(items))
 	for index, step := range items {

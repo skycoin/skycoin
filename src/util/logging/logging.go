@@ -38,8 +38,18 @@ func LevelFromString(s string) (logrus.Level, error) {
 	}
 }
 
+var (
+	globalPackageLevels []PkgLogConfig
+)
+
 // MustGetLogger returns a package-aware logger from the master logger
 func MustGetLogger(module string) *Logger {
+	if globalPackageLevels == nil {
+		var err error
+		if globalPackageLevels, err = parsePkgLogLevelsFromEnv(); err == nil {
+			SetPackageLevels(globalPackageLevels)
+		}
+	}
 	return log.PackageLogger(module)
 }
 

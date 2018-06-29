@@ -51,14 +51,8 @@ func (c *Coin) Run() {
 
 	logLevel, err := logging.LevelFromString(c.config.Node.LogLevel)
 	if err != nil {
-		c.logger.Debugf("Parsing package log levels from '%s'", c.config.Node.LogLevel)
-		// Retry parsing module log levels using regex
-		logConfig, _err := logging.ParseModuleLevels(c.config.Node.LogLevel)
-		if _err != nil {
-			c.logger.Error("Invalid -log-level:", err)
-			return
-		}
-		logging.SetPackageLevels(logConfig)
+		c.logger.Error("Invalid -log-level:", err)
+		return
 	}
 
 	logging.SetLevel(logLevel)

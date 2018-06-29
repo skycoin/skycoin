@@ -1,0 +1,82 @@
+<div class="row">
+  <div class="col-md-8 -tx-meta">
+    <h4 *ngIf="isPreview">{{ 'tx.confirm-transaction' | translate }}</h4>
+    <h4 *ngIf="!isPreview">{{ 'tx.transaction' | translate }}</h4>
+
+    <ng-container *ngIf="isPreview">
+      <div class="-data">
+        <span>{{ 'tx.from' | translate }}:</span> {{ transaction.from }}
+      </div>
+      <div class="-data">
+        <span>{{ 'tx.to' | translate }}:</span> {{ transaction.to.join(', ') }}
+      </div>
+    </ng-container>
+    <ng-container *ngIf="!isPreview">
+      <div class="-data">
+        <span>{{ 'tx.date' | translate }}:</span> {{ transaction.timestamp * 1000 | date:'short' }}
+      </div>
+      <div class="-data">
+        <span>{{ 'tx.status' | translate }}:</span> {{ (transaction.confirmed ? 'tx.confirmed' : 'tx.pending') | translate }}
+      </div>
+    </ng-container>
+    <div class="-data" *ngIf="isPreview">
+      <span>{{ 'tx.hours' | translate }}:</span>
+      {{ transaction.hoursSent | number:'1.0-6' }} {{ 'tx.hours-sent' | translate }}
+      |
+      {{ transaction.hoursBurned | number:'1.0-6' }} {{ 'tx.hours-burned' | translate }}
+    </div>
+    <div class="-data">
+      <span>{{ 'tx.id' | translate }}:</span> {{ transaction.txid }}
+    </div>
+  </div>
+  <div class="col-md-4 -tx-price">
+    <div class="-icon" [ngClass]="{ '-incoming': !isPreview && transaction.balance > 0 }">
+      <img src="/assets/img/send-blue.png">
+    </div>
+    <h4>{{ transaction.balance | number:'1.0-6' }} {{ 'common.coin-id' | translate }}</h4>
+    <p *ngIf="price" [matTooltip]="!isPreview ? ('tx.current-rate' | translate) : ''">
+      {{ transaction.balance * price | currency:'USD':'symbol':'1.2-2' }}<span *ngIf="!isPreview">*</span>
+    </p>
+  </div>
+  <div class="col-md-12">
+    <div class="-data -more" *ngIf="!showInputsOutputs">
+      <span (click)="toggleInputsOutputs($event)">
+        {{ 'tx.show-more' | translate }} <mat-icon>keyboard_arrow_down</mat-icon>
+      </span>
+    </div>
+  </div>
+  <ng-container *ngIf="showInputsOutputs">
+    <div class="col-md-6 -margin-top">
+      <h4>{{ 'tx.inputs' | translate }}</h4>
+
+      <div class="-item" *ngFor="let input of transaction.inputs; let i = index">
+        <div class="-number">{{ i + 1 }}</div>
+        <div class="-info">
+          <div class="-address">{{ isPreview ? input.address : input.owner }}</div>
+          <div class="-data">
+            <span>{{ 'tx.coins' | translate }}:</span> {{ input.coins | number:'1.0-6' }}
+          </div>
+          <div class="-data" *ngIf="isPreview">
+            <span>{{ 'tx.hours' | translate }}:</span> {{ input.calculated_hours | number:'1.0-6' }}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 -margin-top">
+      <h4>{{ 'tx.outputs' | translate }}</h4>
+
+      <div class="-item" *ngFor="let output of transaction.outputs; let i = index">
+        <div class="-number">{{ i + 1 }}</div>
+        <div class="-info">
+          <div class="-address">{{ isPreview ? output.address : output.dst }}</div>
+          <div class="-data">
+            <span>{{ 'tx.coins' | translate }}:</span> {{ output.coins | number:'1.0-6' }}
+          </div>
+          <div class="-data" *ngIf="isPreview">
+            <span>{{ 'tx.hours' | translate }}:</span> {{ output.hours | number:'1.0-6' }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</div>

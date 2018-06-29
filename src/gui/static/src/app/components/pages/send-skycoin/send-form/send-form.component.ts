@@ -5,9 +5,10 @@ import 'rxjs/add/operator/delay';
 import 'rxjs/add/operator/filter';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
-import { MatDialog, MatSnackBar, MatSnackBarConfig } from '@angular/material';
-import { parseResponseMessage } from '../../../../utils/errors';
+import { MatDialog, MatSnackBar } from '@angular/material';
+import { showSnackbarError } from '../../../../utils/errors';
 import { ISubscription } from 'rxjs/Subscription';
+import { NavBarService } from '../../../../services/nav-bar.service';
 
 @Component({
   selector: 'app-send-form',
@@ -15,12 +16,14 @@ import { ISubscription } from 'rxjs/Subscription';
   styleUrls: ['./send-form.component.scss'],
 })
 export class SendFormComponent implements OnInit, OnDestroy {
-  @ViewChild('button') button: ButtonComponent;
+  @ViewChild('previewButton') previewButton: ButtonComponent;
+  @ViewChild('sendButton') sendButton: ButtonComponent;
   @Input() formData: any;
   @Output() onFormSubmitted = new EventEmitter<any>();
 
   form: FormGroup;
   transactions = [];
+  previewTx: boolean;
 
   private subscription: ISubscription;
 
@@ -29,60 +32,107 @@ export class SendFormComponent implements OnInit, OnDestroy {
     public walletService: WalletService,
     private dialog: MatDialog,
     private snackbar: MatSnackBar,
+    private navbarService: NavBarService,
   ) {}
 
   ngOnInit() {
+    this.navbarService.showSwitch('send.simple', 'send.advanced');
     this.initForm();
   }
 
   ngOnDestroy() {
     this.subscription.unsubscribe();
+    this.navbarService.hideSwitch();
+    this.snackbar.dismiss();
+  }
+
+  preview() {
+    this.previewTx = true;
+    this.unlockAndSend();
   }
 
   send() {
-    if (!this.form.valid || this.button.isLoading()) {
+    this.previewTx = false;
+    this.unlockAndSend();
+  }
+
+  private unlockAndSend() {
+    if (!this.form.valid || this.previewButton.isLoading() || this.sendButton.isLoading()) {
       return;
     }
 
     this.snackbar.dismiss();
-    this.button.resetState();
+    this.previewButton.resetState();
+    this.sendButton.resetState();
 
     if (this.form.value.wallet.encrypted) {
       this.dialog.open(PasswordDialogComponent).componentInstance.passwordSubmit
         .subscribe(passwordDialog => {
-          this._send(passwordDialog);
+          this.createTransaction(passwordDialog);
         });
     } else {
-      this._send();
+      this.createTransaction();
     }
   }
 
-  private _send(passwordDialog?: any) {
+  private createTransaction(passwordDialog?: any) {
     if (passwordDialog) {
       passwordDialog.close();
     }
 
-    this.button.setLoading();
+    if (this.previewTx) {
+      this.previewButton.setLoading();
+      this.sendButton.setDisabled();
+    } else {
+      this.sendButton.setLoading();
+      this.previewButton.setDisabled();
+    }
 
     this.walletService.createTransaction(
       this.form.value.wallet,
-      this.form.value.address,
-      this.form.value.amount,
+      null,
+      [{
+        address: this.form.value.address,
+        coins: this.form.value.amount,
+      }],
+      {
+        type: 'auto',
+        mode: 'share',
+        share_factor: '0.5',
+      },
+      null,
       passwordDialog ? passwordDialog.password : null,
     )
-      .subscribe(transaction => {
+      .toPromise()
+      .then(transaction => {
+        if (!this.previewTx) {
+          return this.walletService.injectTransaction(transaction.encoded).toPromise();
+        }
+
         this.onFormSubmitted.emit({
-          wallet: this.form.value.wallet,
-          address: this.form.value.address,
+          form: {
+            wallet: this.form.value.wallet,
+            address: this.form.value.address,
+            amount: this.form.value.amount,
+          },
           amount: this.form.value.amount,
+          to: [this.form.value.address],
           transaction,
         });
-      }, error => {
-        const errorMessage = parseResponseMessage(error['_body']);
-        const config = new MatSnackBarConfig();
-        config.duration = 300000;
-        this.snackbar.open(errorMessage, null, config);
-        this.button.setError(errorMessage);
+      })
+      .then(() => {
+        this.sendButton.setSuccess();
+        this.resetForm();
+
+        setTimeout(() => {
+          this.sendButton.resetState();
+        }, 3000);
+      })
+      .catch(error => {
+        showSnackbarError(this.snackbar, error);
+
+        this.previewButton.resetState().setEnabled();
+        this.sendButton.resetState().setEnabled();
       });
   }
 
@@ -107,13 +157,13 @@ export class SendFormComponent implements OnInit, OnDestroy {
 
     if (this.formData) {
       Object.keys(this.form.controls).forEach(control => {
-        this.form.get(control).setValue(this.formData[control]);
+        this.form.get(control).setValue(this.formData.form[control]);
       });
     }
   }
 
   private validateAmount(amountControl: FormControl) {
-    if (isNaN(amountControl.value)) {
+    if (isNaN(amountControl.value.replace(' ', '='))) {
       return { Invalid: true };
     }
 
@@ -128,5 +178,11 @@ export class SendFormComponent implements OnInit, OnDestroy {
     }
 
     return null;
+  }
+
+  private resetForm() {
+    this.form.get('wallet').setValue('');
+    this.form.get('address').setValue('');
+    this.form.get('amount').setValue('');
   }
 }

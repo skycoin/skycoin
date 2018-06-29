@@ -17,5 +17,14 @@
       <img src="../../../../../assets/img/money-gold.png">
       <span class="secondary-color">{{ 'title.buy-coin' | translate }}</span>
     </div>
+    <app-double-button
+      *ngIf="navbarService.switchVisible"
+      class="-switch"
+      [leftButtonText]="navbarService.leftText | translate"
+      [rightButtonText]="navbarService.rightText | translate"
+      [activeButton]="navbarService.activeComponent | async"
+      className="light"
+      (onStateChange)="changeActiveComponent($event)"
+    ></app-double-button>
   </div>
 </div>

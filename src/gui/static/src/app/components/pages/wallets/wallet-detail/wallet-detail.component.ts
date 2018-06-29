@@ -5,8 +5,8 @@ import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { ChangeNameComponent } from '../change-name/change-name.component';
 import { QrCodeComponent } from '../../../layout/qr-code/qr-code.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
-import { MatSnackBar, MatSnackBarConfig } from '@angular/material';
-import { parseResponseMessage } from '../../../../utils/errors';
+import { MatSnackBar } from '@angular/material';
+import { showSnackbarError } from '../../../../utils/errors';
 import { TranslateService } from '@ngx-translate/core';
 
 @Component({
@@ -53,11 +53,7 @@ export class WalletDetailComponent implements OnInit, OnDestroy {
             .subscribe(() => passwordDialog.close(), () => passwordDialog.error());
         });
     } else {
-      this.walletService.addAddress(this.wallet).subscribe(null, err => {
-        const config = new MatSnackBarConfig();
-        config.duration = 300000;
-        this.snackbar.open(parseResponseMessage(err['_body']), null, config);
-      });
+      this.walletService.addAddress(this.wallet).subscribe(null, err => showSnackbarError(this.snackbar, err));
     }
   }
 
@@ -84,8 +80,12 @@ export class WalletDetailComponent implements OnInit, OnDestroy {
       });
   }
 
-  copyAddress(address, event) {
+  copyAddress(event, address, duration = 500) {
     event.stopPropagation();
+
+    if (address.copying) {
+      return;
+    }
 
     const selBox = document.createElement('textarea');
 
@@ -106,7 +106,7 @@ export class WalletDetailComponent implements OnInit, OnDestroy {
 
     setTimeout(function() {
       address.copying = false;
-    }, 1000);
+    }, duration);
   }
 
   showQrCode(event, address: string) {

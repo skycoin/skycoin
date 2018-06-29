@@ -68,15 +68,14 @@ export class WalletService {
 
   outputs(): Observable<any> {
     return this.addressesAsString()
+      .first()
       .filter(addresses => !!addresses)
       .flatMap(addresses => this.apiService.get('outputs', {addrs: addresses}));
   }
 
   outputsWithWallets(): Observable<any> {
     return Observable.zip(this.all(), this.outputs(), (wallets, outputs) => {
-      wallets = JSON.parse(JSON.stringify(wallets));
-
-      return !wallets ? [] : wallets.map(wallet => {
+      return wallets.map(wallet => {
         wallet.addresses = wallet.addresses.map(address => {
           address.outputs = outputs.head_outputs.filter(output => output.address === address.address);
 
@@ -89,7 +88,7 @@ export class WalletService {
   }
 
   allPendingTransactions(): Observable<any> {
-    return this.apiService.get('pendingTxs');
+    return Observable.timer(0, 10000).flatMap(() => this.apiService.get('pendingTxs'));
   }
 
   pendingTransactions(): Observable<any> {
@@ -131,23 +130,18 @@ export class WalletService {
     return this.apiService.getWalletSeed(wallet, password);
   }
 
-  createTransaction(wallet: Wallet, address: string, amount: string, password: string|null): Observable<PreviewTransaction> {
+  createTransaction(wallet: Wallet, addresses: string[]|null, destinations: any[], hoursSelection: any, changeAddress: string|null, password: string|null): Observable<PreviewTransaction> {
     return this.apiService.post(
       'wallet/transaction',
       {
-        hours_selection: {
-          type: 'auto',
-          mode: 'share',
-          share_factor: '0.5',
-        },
+        hours_selection: hoursSelection,
         wallet: {
           id: wallet.filename,
           password,
+          addresses,
         },
-        to: [{
-          address,
-          coins: amount,
-        }],
+        to: destinations,
+        change_address: changeAddress,
       },
       {
         json: true,

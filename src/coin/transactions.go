@@ -4,16 +4,17 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"log"
 	"math"
 	"sort"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
+	"github.com/skycoin/skycoin/src/util/logging"
 )
 
 var (
+	logger = logging.MustGetLogger("coin")
 	// DebugLevel1 checks for extremely unlikely conditions (10e-40)
 	DebugLevel1 = true
 	// DebugLevel2 enable checks for impossible conditions
@@ -148,17 +149,17 @@ func (txn *Transaction) Verify() error {
 func (txn Transaction) VerifyInput(uxIn UxArray) error {
 	if DebugLevel2 {
 		if len(txn.In) != len(uxIn) {
-			log.Panic("tx.In != uxIn")
+			logger.Panic("tx.In != uxIn")
 		}
 		if len(txn.In) != len(txn.Sigs) {
-			log.Panic("tx.In != tx.Sigs")
+			logger.Panic("tx.In != tx.Sigs")
 		}
 		if txn.InnerHash != txn.HashInner() {
-			log.Panic("Invalid Tx Inner Hash")
+			logger.Panic("Invalid Tx Inner Hash")
 		}
 		for i := range txn.In {
 			if txn.In[i] != uxIn[i].Hash() {
-				log.Panic("Ux hash mismatch")
+				logger.Panic("Ux hash mismatch")
 			}
 		}
 	}
@@ -179,7 +180,7 @@ func (txn Transaction) VerifyInput(uxIn UxArray) error {
 // Returns the signature index for later signing
 func (txn *Transaction) PushInput(uxOut cipher.SHA256) uint16 {
 	if len(txn.In) >= math.MaxUint16 {
-		log.Panic("Max transaction inputs reached")
+		logger.Panic("Max transaction inputs reached")
 	}
 	txn.In = append(txn.In, uxOut)
 	return uint16(len(txn.In) - 1)
@@ -238,16 +239,16 @@ func (txn *Transaction) SignInputs(keys []cipher.SecKey) {
 	txn.InnerHash = txn.HashInner() // update hash
 
 	if len(txn.Sigs) != 0 {
-		log.Panic("Transaction has been signed")
+		logger.Panic("Transaction has been signed")
 	}
 	if len(keys) != len(txn.In) {
-		log.Panic("Invalid number of keys")
+		logger.Panic("Invalid number of keys")
 	}
 	if len(keys) > math.MaxUint16 {
-		log.Panic("Too many keys")
+		logger.Panic("Too many keys")
 	}
 	if len(keys) == 0 {
-		log.Panic("No keys")
+		logger.Panic("No keys")
 	}
 
 	sigs := make([]cipher.Sig, len(txn.In))
@@ -315,7 +316,7 @@ func (txn *Transaction) Serialize() []byte {
 func MustTransactionDeserialize(b []byte) Transaction {
 	t, err := TransactionDeserialize(b)
 	if err != nil {
-		log.Panicf("Failed to deserialize transaction: %v", err)
+		logger.Panicf("Failed to deserialize transaction: %v", err)
 	}
 	return t
 }

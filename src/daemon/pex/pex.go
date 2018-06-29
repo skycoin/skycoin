@@ -392,9 +392,10 @@ func (px *Pex) AddPeers(addrs []string) int {
 	addrs = validAddrs
 
 	// Shuffle the addresses before capping them
-	rand.Shuffle(len(addrs), func(i, j int) {
+	for i := len(addrs) - 1; i > 0; i-- {
+		j := rand.Intn(i + 1)
 		addrs[i], addrs[j] = addrs[j], addrs[i]
-	})
+	}
 
 	if px.Config.Max > 0 {
 		rcap := px.Config.Max - px.peerlist.len()

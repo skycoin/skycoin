@@ -1111,6 +1111,7 @@ func (w *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime, coi
 		entriesMap[e.Address] = e
 	}
 
+	addrs := w.GetAddresses()
 	// check that the connected wallet is the one that stores the wallet we try to spend from
 	if w.useHardwareWallet() {
 		_, address := deviceWallet.DeviceAddressGen(deviceWallet.DeviceTypeUsb, messages.SkycoinAddressType_AddressTypeSkycoin, 1)

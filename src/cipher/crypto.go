@@ -20,6 +20,7 @@ import (
 )
 
 var (
+	logger = logging.MustGetLogger("crypto")
 	// DebugLevel1 debug level one
 	DebugLevel1 = true //checks for extremely unlikely conditions (10e-40)
 	// DebugLevel2 debug level two

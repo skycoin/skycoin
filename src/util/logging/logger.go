@@ -65,7 +65,7 @@ func copyMasterLogger(logger *MasterLogger) *MasterLogger {
 // PackageLogger instantiates a package-aware logger
 func (logger *MasterLogger) PackageLogger(moduleName string) *Logger {
 	if pkgcfg, ok := logger.PkgConfig[moduleName]; ok {
-		logger.Debug("Packege logger for '%s' at level %s", moduleName, pkgcfg.Level)
+		logger.Debugf("Package logger for '%s' at level %s", moduleName, pkgcfg.Level)
 		logger = copyMasterLogger(logger)
 		logger.SetLevel(pkgcfg.Level)
 	}

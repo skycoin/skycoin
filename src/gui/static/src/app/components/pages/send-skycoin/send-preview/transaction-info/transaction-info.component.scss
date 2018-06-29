@@ -50,7 +50,7 @@ h4 {
 
     span {
       width: auto !important;
-      margin-top: 20px;
+      margin-top: 30px;
       color: $gradient-blue-dark;
       cursor: pointer;
 
@@ -64,13 +64,16 @@ h4 {
 }
 
 .-tx-meta {
-  .-data {
+  .-data:not(:last-child) {
     margin-bottom: 10px;
   }
 }
 
 .-tx-price {
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
 
   .-icon {
     &.-incoming {

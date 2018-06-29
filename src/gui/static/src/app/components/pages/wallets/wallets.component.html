@@ -15,7 +15,7 @@
     <div class="-table" *ngFor="let wallet of walletService.all() | async">
       <div class="-body">
         <div class="-row -pointer" (click)="toggleWallet(wallet)">
-          <div class="-width-250">{{ wallet.label }}</div>
+          <div class="-width-250 -label" [attr.title]="wallet.label">{{ wallet.label }}</div>
           <div class="-flex-fill -encryption">
             <img src="../../../../assets/img/lock-gold.png"
                  [matTooltip]="'wallet.encryption-enabled' | translate"

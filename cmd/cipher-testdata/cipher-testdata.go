@@ -151,12 +151,12 @@ func main() {
 	wg.Add(len(jobs))
 	for i, j := range jobs {
 		j.jobID = i
-		go func() {
+		go func(jb job) {
 			defer wg.Done()
-			data := generateSeedTestData(j)
+			data := generateSeedTestData(jb)
 			signSeedTestData(data, inputs.Hashes)
 			seedTestData <- data
-		}()
+		}(j)
 	}
 	wg.Wait()
 

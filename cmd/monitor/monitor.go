@@ -23,9 +23,9 @@ var (
 )
 
 func getPathGo() string {
-	gopath := os.Getenv("GOPATH")
+	gopath, ok := os.LookupEnv("GOPATH")
 	// by default go uses GOPATH=$HOME/go if it is not set
-	if gopath == "" {
+	if !ok {
 		home := filepath.Clean(file.UserHome())
 		gopath = filepath.Join(home, "go")
 	}

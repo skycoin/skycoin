@@ -12,8 +12,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/stretchr/testify/mock"
-
 	"strconv"
 
 	"github.com/skycoin/skycoin/src/daemon"
@@ -22,7 +20,7 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 )
 
-func makeSuccessCoinSupplyResult(t *testing.T, allUnspents visor.ReadableOutputSet) *CoinSupply {
+func makeSuccessCoinSupplyResult(t *testing.T, allUnspents visor.ReadableOutputSet) *visor.CoinSupply {
 	unlockedAddrs := visor.GetUnlockedDistributionAddresses()
 	var unlockedSupply uint64
 	// check confirmed unspents only
@@ -78,7 +76,7 @@ func makeSuccessCoinSupplyResult(t *testing.T, allUnspents visor.ReadableOutputS
 		}
 	}
 
-	cs := CoinSupply{
+	cs := visor.CoinSupply{
 		CurrentSupply:         currentSupplyStr,
 		TotalSupply:           totalSupplyStr,
 		MaxSupply:             maxSupplyStr,
@@ -200,7 +198,7 @@ func TestGetTransactionsForAddress(t *testing.T) {
 
 func TestCoinSupply(t *testing.T) {
 	unlockedAddrs := visor.GetUnlockedDistributionAddresses()
-	successGatewayGetUnspentOutputsResult := visor.ReadableOutputSet{
+	successGatewayGetCoinSupplyResult := visor.ReadableOutputSet{
 		HeadOutputs: visor.ReadableOutputs{
 			visor.ReadableOutput{
 				Coins: "0",
@@ -210,18 +208,18 @@ func TestCoinSupply(t *testing.T) {
 			},
 		},
 	}
-	var filterInUnlocked []daemon.OutputsFilter
+	var filterInUnlocked []visor.OutputsFilter
 	filterInUnlocked = append(filterInUnlocked, daemon.FbyAddresses(unlockedAddrs))
 	tt := []struct {
-		name                           string
-		method                         string
-		status                         int
-		err                            string
-		gatewayGetUnspentOutputsArg    []daemon.OutputsFilter
-		gatewayGetUnspentOutputsResult *visor.ReadableOutputSet
-		gatewayGetUnspentOutputsErr    error
-		result                         *CoinSupply
-		csrfDisabled                   bool
+		name                       string
+		method                     string
+		status                     int
+		err                        string
+		gatewayGetCoinSupplyArg    []visor.OutputsFilter
+		gatewayGetCoinSupplyResult *visor.CoinSupply
+		gatewayGetCoinSupplyErr    error
+		result                     *visor.CoinSupply
+		csrfDisabled               bool
 	}{
 		{
 			name:   "405",
@@ -230,56 +228,21 @@ func TestCoinSupply(t *testing.T) {
 			err:    "405 Method Not Allowed",
 		},
 		{
-			name:   "500 - gatewayGetUnspentOutputsErr",
+			name:   "500 - gatewayGetCoinSupplyErr",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - gateway.GetUnspentOutputs failed: gatewayGetUnspentOutputsErr",
-			gatewayGetUnspentOutputsArg: filterInUnlocked,
-			gatewayGetUnspentOutputsErr: errors.New("gatewayGetUnspentOutputsErr"),
-		},
-		{
-			name:   "500 - gatewayGetUnspentOutputsErr",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - gateway.GetUnspentOutputs failed: gatewayGetUnspentOutputsErr",
-			gatewayGetUnspentOutputsArg: filterInUnlocked,
-			gatewayGetUnspentOutputsErr: errors.New("gatewayGetUnspentOutputsErr"),
-		},
-		{
-			name:   "500 - too large HeadOutputs item",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - Invalid unlocked output balance string 9223372036854775807: Droplet string conversion failed: Value is too large",
-			gatewayGetUnspentOutputsArg: filterInUnlocked,
-			gatewayGetUnspentOutputsResult: &visor.ReadableOutputSet{
-				HeadOutputs: visor.ReadableOutputs{
-					visor.ReadableOutput{
-						Coins:   "9223372036854775807",
-						Address: unlockedAddrs[0],
-					},
-					visor.ReadableOutput{
-						Coins: "1",
-					},
-				},
-			},
+			err:    "500 Internal Server Error - gateway.GetCoinSupply failed: gatewayGetCoinSupplyErr",
+			gatewayGetCoinSupplyArg: filterInUnlocked,
+			gatewayGetCoinSupplyErr: errors.New("gatewayGetCoinSupplyErr"),
 		},
 		{
 			name:   "200",
 			method: http.MethodGet,
 			status: http.StatusOK,
 
-			gatewayGetUnspentOutputsArg: filterInUnlocked,
-			gatewayGetUnspentOutputsResult: &visor.ReadableOutputSet{
-				HeadOutputs: visor.ReadableOutputs{
-					visor.ReadableOutput{
-						Coins: "0",
-					},
-					visor.ReadableOutput{
-						Coins: "0",
-					},
-				},
-			},
-			result: makeSuccessCoinSupplyResult(t, successGatewayGetUnspentOutputsResult),
+			gatewayGetCoinSupplyArg:    filterInUnlocked,
+			gatewayGetCoinSupplyResult: makeSuccessCoinSupplyResult(t, successGatewayGetCoinSupplyResult),
+			result: makeSuccessCoinSupplyResult(t, successGatewayGetCoinSupplyResult),
 		},
 	}
 
@@ -287,7 +250,7 @@ func TestCoinSupply(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/coinSupply"
 			gateway := NewGatewayerMock()
-			gateway.On("GetUnspentOutputs", mock.Anything).Return(tc.gatewayGetUnspentOutputsResult, tc.gatewayGetUnspentOutputsErr)
+			gateway.On("GetCoinSupply").Return(tc.gatewayGetCoinSupplyResult, tc.gatewayGetCoinSupplyErr)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
@@ -311,7 +274,7 @@ func TestCoinSupply(t *testing.T) {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg *CoinSupply
+				var msg *visor.CoinSupply
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.result, msg)

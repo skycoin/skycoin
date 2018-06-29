@@ -233,7 +233,7 @@ func TestStableCoinSupply(t *testing.T) {
 	cs, err := c.CoinSupply()
 	require.NoError(t, err)
 
-	var expected api.CoinSupply
+	var expected visor.CoinSupply
 	checkGoldenFile(t, "coinsupply.golden", TestData{*cs, &expected})
 }
 

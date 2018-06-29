@@ -504,6 +504,36 @@ func (m *GatewayerMock) GetRichlist(p0 bool) (visor.Richlist, error) {
 
 }
 
+// GetCoinSupply mocked method
+func (m *GatewayerMock) GetCoinSupply() (*visor.CoinSupply, error) {
+
+	ret := m.Called()
+
+	fmt.Printf("ret   ===== %+v\n", ret)
+
+	var r0 *visor.CoinSupply
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case *visor.CoinSupply:
+		r0 = res
+	default:
+		fmt.Printf("res======= %+v\n", res)
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
+
+}
+
 // GetSignedBlockByHash mocked method
 func (m *GatewayerMock) GetSignedBlockByHash(p0 cipher.SHA256) (*coin.SignedBlock, error) {
 
@@ -658,7 +688,7 @@ func (m *GatewayerMock) GetTrustConnections() []string {
 }
 
 // GetUnspentOutputs mocked method
-func (m *GatewayerMock) GetUnspentOutputs(p0 ...daemon.OutputsFilter) (*visor.ReadableOutputSet, error) {
+func (m *GatewayerMock) GetUnspentOutputs(p0 ...visor.OutputsFilter) (*visor.ReadableOutputSet, error) {
 
 	ret := m.Called(p0)
 

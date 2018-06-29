@@ -12,7 +12,6 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
@@ -58,7 +57,7 @@ func (fg fakeGateway) GetBlocksInDepth(vs []uint64) (*visor.ReadableBlocks, erro
 	return nil, nil
 }
 
-func (fg fakeGateway) GetUnspentOutputs(filters ...daemon.OutputsFilter) (*visor.ReadableOutputSet, error) {
+func (fg fakeGateway) GetUnspentOutputs(filters ...visor.OutputsFilter) (*visor.ReadableOutputSet, error) {
 	outs := []coin.UxOut{}
 	for _, f := range filters {
 		outs = f(fg.uxouts)

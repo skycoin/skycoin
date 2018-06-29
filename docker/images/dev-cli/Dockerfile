@@ -135,7 +135,6 @@ RUN set -ex ; \
     screen \
     sudo \
     doxygen \
-    swig \
     texlive-latex-base \
     ; \
     apt-get clean ; \
@@ -178,6 +177,14 @@ RUN git clone https://github.com/fatih/vim-go /usr/share/vim/vim80/pack/dev/star
     git clone https://github.com/w0rp/ale.git /usr/share/vim/vim80/pack/dev/start/ale && \
     cd /usr/share/vim/vim80/pack/dev/start/0vimproc && make
 
+# Install SWIG-3.0.12
+RUN cd /tmp/; \
+    wget http://prdownloads.sourceforge.net/swig/swig-3.0.12.tar.gz && \
+    tar -zxf swig-3.0.12.tar.gz ; \
+    cd swig-3.0.12 ;\
+    ./configure --prefix=/usr && make && make install && \
+    rm -rf /tmp/swig-*
+    
 WORKDIR $GOPATH/src/github.com/skycoin
 VOLUME $GOPATH/src/
 

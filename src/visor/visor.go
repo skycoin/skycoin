@@ -2120,22 +2120,31 @@ func (vs *Visor) Richlist(includeDistribution bool) (Richlist, error) {
 	}); err != nil {
 		return nil, err
 	}
-	if richlist, ok := vs.cachedRichlist[xorHash]; ok {
-		return richlist, nil
+	richlist, ok := vs.cachedRichlist[xorHash]
+	if !ok {
+		// xorHash changed
+		var err error
+		richlist, err = vs.getRichlist()
+		if err != nil {
+			return nil, err
+		}
+		// delete invalid key
+		for k := range vs.cachedRichlist {
+			delete(vs.cachedRichlist, k)
+		}
+		vs.cachedRichlist[xorHash] = richlist
 	}
-	richlist, err := vs.getRichlist(includeDistribution)
-	if err != nil {
-		return nil, err
+	if !includeDistribution {
+		lockedAddrs := GetLockedDistributionAddresses()
+		unlockedAddrs := GetUnlockedDistributionAddresses()
+		addrsMap := MakeSearchMap(append(lockedAddrs, unlockedAddrs...))
+		richlist = richlist.FilterAddresses(addrsMap)
 	}
-	// delete invalid key
-	for k := range vs.cachedRichlist {
-		delete(vs.cachedRichlist, k)
-	}
-	vs.cachedRichlist[xorHash] = richlist
+
 	return richlist, nil
 }
 
-func (vs *Visor) getRichlist(includeDistribution bool) (Richlist, error) {
+func (vs *Visor) getRichlist() (Richlist, error) {
 	ux, err := vs.GetAllUnspentOutputs()
 	if err != nil {
 		return nil, err
@@ -2150,14 +2159,6 @@ func (vs *Visor) getRichlist(includeDistribution bool) (Richlist, error) {
 	richlist, err := NewRichlist(allAccounts, addrsMap)
 	if err != nil {
 		return nil, err
-	}
-
-	if !includeDistribution {
-		unlockedAddrs := GetUnlockedDistributionAddresses()
-		for _, a := range unlockedAddrs {
-			addrsMap[a] = struct{}{}
-		}
-		richlist = richlist.FilterAddresses(addrsMap)
 	}
 
 	return richlist, nil

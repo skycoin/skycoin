@@ -135,19 +135,13 @@ func getLastBlocksV2(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		rb, err := gateway.GetLastBlocks(n)
+		rbv2, err := gateway.GetLastBlocksV2(n)
 		if err != nil {
 			resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("Get last %v blocks failed: %v", n, err))
 			writeHTTPResponse(w, resp)
 			return
 		}
 
-		rbv2, err := NewReadableBlocksV2(gateway, rb)
-		if err != nil {
-			resp := NewHTTPErrorResponse(http.StatusInternalServerError, fmt.Sprintf("NewReadableBlocksV2 failed: %v", err))
-			writeHTTPResponse(w, resp)
-			return
-		}
 		var resp HTTPResponse
 		resp.Data = rbv2
 		writeHTTPResponse(w, resp)

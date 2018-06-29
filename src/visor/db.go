@@ -85,24 +85,7 @@ func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) erro
 
 // backup the corrypted db first, then rebuild the history DB.
 func rebuildHistoryDB(db *dbutil.DB, history *historydb.HistoryDB, bc *Blockchain, quit chan struct{}) (*dbutil.DB, error) {
-	// backup the corrupted database
-	dbReadOnly := db.IsReadOnly()
-
-	dbPath := db.Path()
-
-	if err := db.Close(); err != nil {
-		return nil, fmt.Errorf("Failed to close db: %v", err)
-	}
-
-	corruptDBPath, err := copyCorruptDB(dbPath)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to copy corrupted db: %v", err)
-	}
-
-	logger.Critical().Infof("Copy corrupted db to %s", corruptDBPath)
-
-	// Open the database again
-	db, err = OpenDB(dbPath, dbReadOnly)
+	db, err := backupDB(db)
 	if err != nil {
 		return nil, err
 	}
@@ -145,6 +128,28 @@ func rebuildHistoryDB(db *dbutil.DB, history *historydb.HistoryDB, bc *Blockchai
 		return nil, err
 	}
 	return db, nil
+}
+
+// backupDB makes a backup copy of the DB
+func backupDB(db *dbutil.DB) (*dbutil.DB, error) {
+	// backup the corrupted database
+	dbReadOnly := db.IsReadOnly()
+
+	dbPath := db.Path()
+
+	if err := db.Close(); err != nil {
+		return nil, fmt.Errorf("Failed to close db: %v", err)
+	}
+
+	corruptDBPath, err := copyCorruptDB(dbPath)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to copy corrupted db: %v", err)
+	}
+
+	logger.Critical().Infof("Copy corrupted db to %s", corruptDBPath)
+
+	// Open the database again
+	return OpenDB(dbPath, dbReadOnly)
 }
 
 // RepairCorruptDB checks the database for corruption and if corrupted and

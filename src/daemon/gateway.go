@@ -51,7 +51,7 @@ func NewGateway(c GatewayConfig, d *Daemon) *Gateway {
 	return &Gateway{
 		Config:   c,
 		d:        d,
-		v:        d.Visor,
+		v:        d.visor,
 		requests: make(chan strand.Request, c.BufferSize),
 		quit:     make(chan struct{}),
 	}
@@ -103,18 +103,18 @@ func (gw *Gateway) GetConnections() *Connections {
 }
 
 func (gw *Gateway) getConnections() *Connections {
-	if gw.d.Pool.Pool == nil {
+	if gw.d.pool.Pool == nil {
 		return nil
 	}
 
-	n, err := gw.d.Pool.Pool.Size()
+	n, err := gw.d.pool.Pool.Size()
 	if err != nil {
 		logger.Error(err)
 		return nil
 	}
 
 	conns := make([]*Connection, 0, n)
-	cs, err := gw.d.Pool.Pool.GetConnections()
+	cs, err := gw.d.pool.Pool.GetConnections()
 	if err != nil {
 		logger.Error(err)
 		return nil
@@ -158,11 +158,11 @@ func (gw *Gateway) GetConnection(addr string) *Connection {
 }
 
 func (gw *Gateway) getConnection(addr string) *Connection {
-	if gw.d.Pool.Pool == nil {
+	if gw.d.pool.Pool == nil {
 		return nil
 	}
 
-	c, err := gw.d.Pool.Pool.GetConnection(addr)
+	c, err := gw.d.pool.Pool.GetConnection(addr)
 	if err != nil {
 		logger.Error(err)
 		return nil
@@ -194,7 +194,7 @@ func (gw *Gateway) getConnection(addr string) *Connection {
 func (gw *Gateway) GetTrustConnections() []string {
 	var conn []string
 	gw.strand("GetTrustConnections", func() {
-		conn = gw.d.Pex.Trusted().ToAddrs()
+		conn = gw.d.pex.Trusted().ToAddrs()
 	})
 	return conn
 }
@@ -204,7 +204,7 @@ func (gw *Gateway) GetTrustConnections() []string {
 func (gw *Gateway) GetExchgConnection() []string {
 	var conn []string
 	gw.strand("GetExchgConnection", func() {
-		conn = gw.d.Pex.RandomExchangeable(0).ToAddrs()
+		conn = gw.d.pex.RandomExchangeable(0).ToAddrs()
 	})
 	return conn
 }
@@ -226,7 +226,7 @@ func (gw *Gateway) GetBlockchainProgress() (*BlockchainProgress, error) {
 	var err error
 	gw.strand("GetBlockchainProgress", func() {
 		var headSeq uint64
-		headSeq, _, err = gw.d.Visor.HeadBkSeq()
+		headSeq, _, err = gw.d.visor.HeadBkSeq()
 		if err != nil {
 			return
 		}

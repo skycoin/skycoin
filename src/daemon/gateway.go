@@ -1217,7 +1217,7 @@ func (gw *Gateway) GetBlockByHashV2(hash cipher.SHA256) (*visor.ReadableBlockV2,
 	//NewReadableBlockV2 makes calls to GetUxOutByID
 	//that is why it is inside strand
 	gw.strand("CreateReadableBlockV2", func() {
-		rdblockV2, err = gw.v.CreateReadableBlockV2(&b.Block)
+		rdblockV2, err = gw.v.CreateReadableBlockV2(&b.Block, 0)
 	})
 	if err != nil {
 		return nil, err
@@ -1238,7 +1238,7 @@ func (gw *Gateway) GetBlockBySeqV2(seq uint64) (*visor.ReadableBlockV2, error) {
 	//CreateReadableBlockV2 makes calls to GetUxOutByID
 	//that is why it is inside strand
 	gw.strand("CreateReadableBlockV2", func() {
-		rdblockV2, err = gw.v.CreateReadableBlockV2(&b.Block)
+		rdblockV2, err = gw.v.CreateReadableBlockV2(&b.Block, 0)
 	})
 	if err != nil {
 		return nil, err

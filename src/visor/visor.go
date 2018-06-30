@@ -2107,9 +2107,13 @@ func (vs *Visor) getUnspentsForSpending(tx *dbutil.Tx, addrs []cipher.Address, i
 // CreateReadableBlocksV2 converts []coin.Block to  visor.ReadableBlocksV2 api/V2
 // Adds aditional data to Inputs (owner, coins, hours)
 func (vs *Visor) CreateReadableBlocksV2(blocks []coin.SignedBlock) (*ReadableBlocksV2, error) {
+	mxSeq, err := vs.getBlockChainHeadSeq()
+	if err != nil {
+		return nil, err
+	}
 	rbs := make([]ReadableBlockV2, 0, len(blocks))
 	for _, b := range blocks {
-		readableBlock, err := vs.CreateReadableBlockV2(&b.Block)
+		readableBlock, err := vs.CreateReadableBlockV2(&b.Block, mxSeq)
 		if err != nil {
 			logger.Errorf("CreateReadableBlockV2: failed: %v", err)
 			return nil, err
@@ -2123,10 +2127,25 @@ func (vs *Visor) CreateReadableBlocksV2(blocks []coin.SignedBlock) (*ReadableBlo
 
 // CreateReadableBlockV2 converts coin.Block to visor.ReadableBlockV2 api/V2
 // Adds aditional data to Inputs (owner, coins, hours)
-func (vs *Visor) CreateReadableBlockV2(block *coin.Block) (*ReadableBlockV2, error) {
+func (vs *Visor) CreateReadableBlockV2(block *coin.Block, headSeq uint64) (*ReadableBlockV2, error) {
+	mxSeq := headSeq
+	if mxSeq == 0 {
+		var err error
+		mxSeq, err = vs.getBlockChainHeadSeq()
+		if err != nil {
+			return nil, err
+		}
+	}
 	resTxns := make([]ReadableTransactionV2, 0, len(block.Body.Transactions))
 	for _, txt := range block.Body.Transactions {
-		rdt, err := vs.CreateReadableTransactionV2(&Transaction{Txn: txt})
+		//TODO: Check if transaction is really Confirmed
+		t := Transaction{
+			Txn:  txt,
+			Time: block.Time(),
+			Status: NewConfirmedTransactionStatus(mxSeq-block.Head.BkSeq+1,
+				block.Head.BkSeq),
+		}
+		rdt, err := vs.CreateReadableTransactionV2(&t)
 		if err != nil {
 			logger.Errorf("Visor.CreateReadableTransactionV2: failed: %v", err)
 			return nil, err
@@ -2159,7 +2178,8 @@ func (vs *Visor) CreateReadableUnconfirmedTxnsV2(txns []UnconfirmedTxn) (*Readab
 // CreateReadableUnconfirmedTxnV2 converts from UnconfirmedTxn to
 // visor.ReadableUnconfirmedTxnV2
 func (vs *Visor) CreateReadableUnconfirmedTxnV2(transaction *UnconfirmedTxn) (*ReadableUnconfirmedTxnV2, error) {
-	txn, err := vs.CreateReadableTransactionV2(&Transaction{Txn: transaction.Txn})
+	txn, err := vs.CreateReadableTransactionV2(&Transaction{
+		Txn: transaction.Txn, Status: NewUnconfirmedTransactionStatus()})
 	if err != nil {
 		logger.Errorf("visor.CreateReadableUnconfirmedTxnV2:  visor.CreateReadableTransactionV2 failed: %v", err)
 		return nil, err
@@ -2237,6 +2257,19 @@ func (vs *Visor) CreateReadableTransactionV2(transaction *Transaction) (*Readabl
 // Adds data such as Address, Coins, Hours, CalculatedHours
 func (vs *Visor) CreateReadableTransactionInputsV2(transaction *Transaction) ([]ReadableTransactionInput, error) {
 	inputs := make([]ReadableTransactionInput, 0, len(transaction.Txn.In))
+
+	t := transaction.Time
+	if !transaction.Status.Confirmed {
+		var head *coin.SignedBlock
+		var err error
+		head, err = vs.GetHeadBlock()
+		if err != nil {
+			logger.Errorf("visor.CreateReadableTransactionInputsV2: visor.GetHeadBlock failed: %v", err)
+			return nil, err
+		}
+		t = head.Time()
+	}
+
 	for _, inputID := range transaction.Txn.In {
 		input, err := vs.GetUxOutByID(inputID)
 		if err != nil {
@@ -2249,7 +2282,7 @@ func (vs *Visor) CreateReadableTransactionInputsV2(transaction *Transaction) ([]
 			logger.Errorf("Failed to convert coins to string: %v", err)
 			return nil, err
 		}
-		calculatedHours, err := ux.CoinHours(transaction.Time)
+		calculatedHours, err := ux.CoinHours(t)
 		if err != nil {
 			logger.Critical().Warningf("Ignoring NewReadableTransactionInputV2 ux.CoinHours failed: %v", err)
 			calculatedHours = 0
@@ -2264,4 +2297,22 @@ func (vs *Visor) CreateReadableTransactionInputsV2(transaction *Transaction) ([]
 		inputs = append(inputs, r)
 	}
 	return inputs, nil
+}
+
+func (vs *Visor) getBlockChainHeadSeq() (uint64, error) {
+	var mxSeq uint64
+	err := vs.DB.View("getBlockChainHeadSeq", func(tx *dbutil.Tx) error {
+		seq, ok, err := vs.Blockchain.HeadSeq(tx)
+		if err != nil {
+			return err
+		} else if !ok {
+			return fmt.Errorf("Block head seq is missing")
+		}
+		mxSeq = seq
+		return nil
+	})
+	if err != nil {
+		return 0, err
+	}
+	return mxSeq, nil
 }

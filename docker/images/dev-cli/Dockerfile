@@ -130,6 +130,7 @@ RUN set -ex ; \
     gdbserver \
     gdb \
     vim \
+    less \
     ctags \
     vim-scripts \
     screen \
@@ -167,14 +168,17 @@ RUN go get -u github.com/derekparker/delve/cmd/dlv  && \
     go get -u github.com/dominikh/go-tools/cmd/keyify && \
     go get -u golang.org/x/tools/cmd/gorename && \
     go get -u github.com/klauspost/asmfmt/cmd/asmfmt && \
-    go get -u github.com/ernesto-jimenez/goautomock
+    go get -u github.com/ernesto-jimenez/goautomock && \
+    curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+
 
 # Install vim-go development tools
 RUN git clone https://github.com/fatih/vim-go /usr/share/vim/vim80/pack/dev/start/vim-go && \
     git clone https://github.com/tpope/vim-fugitive /usr/share/vim/vim80/pack/dev/start/vim-fugitive && \
     git clone https://github.com/Shougo/vimshell.vim /usr/share/vim/vim80/pack/dev/start/0vimshell && \
     git clone https://github.com/Shougo/vimproc.vim /usr/share/vim/vim80/pack/dev/start/0vimproc && \
-    cd /usr/share/vim/vim80/pack/dev/start/0vimproc && make 
+    git clone https://github.com/w0rp/ale.git /usr/share/vim/vim80/pack/dev/start/ale && \
+    cd /usr/share/vim/vim80/pack/dev/start/0vimproc && make
 
 # Install SWIG-3.0.12
 RUN cd /tmp/; \

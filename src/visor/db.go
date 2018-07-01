@@ -64,7 +64,7 @@ func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) erro
 		// as we have to check all signature, if we return error early here, the
 		// potential bad signature won't be detected.
 		lock.Lock()
-		defer lock.Lock()
+		defer lock.Unlock()
 		if historyVerifyErr == nil {
 			historyVerifyErr = history.Verify(tx, b, indexesMap)
 		}
@@ -179,28 +179,7 @@ func rebuildCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) (
 		return nil, err
 	}
 
-	type rebuildResult struct {
-		DB  *dbutil.DB
-		Err error
-	}
-
-	resC := make(chan rebuildResult, 1)
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		db, err := rebuildHistoryDB(db, history, bc, quit)
-		resC <- rebuildResult{DB: db, Err: err}
-	}()
-
-	wg.Wait()
-
-	select {
-	case res := <-resC:
-		return res.DB, res.Err
-	default:
-		return db, nil
-	}
+	return rebuildHistoryDB(db, history, bc, quit)
 }
 
 // resetCorruptDB recreates the DB, making a backup copy marked as corrupted

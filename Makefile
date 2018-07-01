@@ -116,7 +116,7 @@ docs: docs-libc
 
 lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...
-	golangci-lint run --no-config --issues-exit-code=0 --deadline=3m --concurrency=2 --disable-all --tests \
+	golangci-lint run --no-config --issues-exit-code=0 --deadline=3m --concurrency=2 --disable-all --tests --skip-dirs=lib/cgo \
 		-E goimports \
 		-E golint \
 		-E varcheck \

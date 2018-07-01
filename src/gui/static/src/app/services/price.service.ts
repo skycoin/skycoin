@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { Http } from '@angular/http';
 import { Subject } from 'rxjs/Subject';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
@@ -12,11 +12,16 @@ export class PriceService {
 
   constructor(
     private http: Http,
+    private ngZone: NgZone,
   ) {
-    Observable.timer(0, 10 * 60 * 1000).subscribe(() => {
-      this.http.get(`https://api.coinmarketcap.com/v2/ticker/${this.CMC_TICKER_ID}/`)
-        .map(response => response.json())
-        .subscribe(response => this.price.next(response.data.quotes.USD.price));
+    this.ngZone.runOutsideAngular(() => {
+      Observable.timer(0, 10 * 60 * 1000).subscribe(() => {
+        this.http.get(`https://api.coinmarketcap.com/v2/ticker/${this.CMC_TICKER_ID}/`)
+          .map(response => response.json())
+          .subscribe(response => this.ngZone.run(() => {
+            this.price.next(response.data.quotes.USD.price);
+          }));
+      });
     });
   }
 }

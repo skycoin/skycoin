@@ -49,9 +49,10 @@ func New() *HistoryDB {
 // If we have a new added bucket, we need to reset to parse
 // blockchain again to get the new bucket filled.
 func (hd *HistoryDB) NeedsReset(tx *dbutil.Tx) (bool, error) {
-	if height, ok, err := hd.historyMeta.ParsedHeight(tx); err != nil {
+	_, ok, err := hd.historyMeta.ParsedBlockSeq(tx)
+	if err != nil {
 		return false, err
-	} else if !ok || height == 0 {
+	} else if !ok {
 		return true, nil
 	}
 
@@ -164,7 +165,7 @@ func (hd *HistoryDB) ParseBlock(tx *dbutil.Tx, b coin.Block) error {
 		}
 	}
 
-	return hd.SetParsedHeight(tx, b.Seq())
+	return hd.SetParsedBlockSeq(tx, b.Seq())
 }
 
 // GetTransaction get transaction by hash.

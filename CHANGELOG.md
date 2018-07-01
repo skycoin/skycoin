@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add Dockerfile in docker/images/dev-cli to build a docker image suitable for development.
 - Coin creator tool, `cmd/newcoin`, to quickly bootstrap a new fiber coin
 - Add new endpoints /api/v2/block, /api/v2/blocks, /api/v2/lastblocks, /api/v2/pendingTxs, /api/v2/transaction, /api/v2/transactions. These endpoints are similiar to api/v1 endpoint but return more information.
+- Add Dockerfile in docker/images/dev-dind to build a docker in docker image based on skycoindev-cli.
 
 ### Fixed
 
@@ -58,6 +59,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   If you are using the CLI tool or another API client to communicate with the standalone client, use `-web-interface-port=6420` to continue using port 6420.
   If the program is run from source (e.g. `go run`, `run.sh`, `make run`) there is no change, the API will still be on port 6420.
 - Change number of outgoing connections to 8 from 16
+- Update version of SWIG to 3.0.12
 
 ### Removed
 

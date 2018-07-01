@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { ApiService } from './api.service';
 import { Observable } from 'rxjs/Observable';
 import { IntervalObservable } from 'rxjs/observable/IntervalObservable';
@@ -11,6 +11,7 @@ export class AppService {
 
   constructor(
     private apiService: ApiService,
+    private ngZone: NgZone,
   ) {
     this.monitorConnections();
   }
@@ -27,10 +28,14 @@ export class AppService {
   private monitorConnections() {
     this.retrieveConnections().subscribe(connections => this.setConnectionError(connections));
 
-    IntervalObservable
-      .create(1500)
-      .flatMap(() => this.retrieveConnections())
-      .subscribe(connections => this.setConnectionError(connections));
+    this.ngZone.runOutsideAngular(() => {
+      IntervalObservable
+        .create(1500)
+        .flatMap(() => this.retrieveConnections())
+        .subscribe(connections => this.ngZone.run(() => {
+          this.setConnectionError(connections);
+        }));
+    });
   }
 
   private retrieveConnections(): Observable<Connection[]> {
@@ -38,10 +43,10 @@ export class AppService {
   }
 
   private setConnectionError(response: any) {
-    if (response.connections.length === 0) {
+    if (response.connections === null || response.connections.length === 0) {
       this.error = 1;
     }
-    if (response.connections.length > 0 && this.error === 1) {
+    if (response.connections !== null && response.connections.length > 0 && this.error === 1) {
       this.error = null;
     }
   }

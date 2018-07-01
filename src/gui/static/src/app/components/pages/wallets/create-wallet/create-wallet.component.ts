@@ -3,14 +3,14 @@ import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { WalletService } from '../../../../services/wallet.service';
 import { MatDialog, MatDialogRef, MatDialogConfig } from '@angular/material/dialog';
 import { ButtonComponent } from '../../../layout/button/button.component';
-import { parseResponseMessage } from '../../../../utils/index';
+import { parseResponseMessage } from '../../../../utils/errors';
 import { MAT_DIALOG_DATA } from '@angular/material';
 import { ApiService } from '../../../../services/api.service';
 
 @Component({
   selector: 'app-create-wallet-error-dialog',
   templateUrl: './create-wallet-error-dialog.component.html',
-  styleUrls: ['./create-wallet-error-dialog.component.scss']
+  styleUrls: ['./create-wallet-error-dialog.component.scss'],
 })
 export class CreateWalletErrorDialogComponent {
   constructor(
@@ -55,7 +55,7 @@ export class CreateWalletComponent implements OnInit {
     const config = new MatDialogConfig();
     config.width = '300px';
     config.data = {
-        description: (typeof err === 'string' ? err : parseResponseMessage(err['_body']).trim() + '.')
+        description: (typeof err === 'string' ? err : parseResponseMessage(err['_body']).trim() + '.'),
     };
     this.dialog.open(CreateWalletErrorDialogComponent, config);
   }

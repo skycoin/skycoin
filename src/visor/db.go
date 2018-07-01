@@ -2,7 +2,7 @@ package visor
 
 import (
 	"crypto/sha1"
-	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -277,7 +277,7 @@ func makeCorruptDBPath(dbPath string) (string, error) {
 }
 
 // shaFileID return the first 8 bytes of the SHA1 hash of the file,
-// base64-encoded
+// hex-encoded
 func shaFileID(dbPath string) (string, error) {
 	fi, err := os.Open(dbPath)
 	if err != nil {
@@ -291,7 +291,6 @@ func shaFileID(dbPath string) (string, error) {
 	}
 
 	sum := h.Sum(nil)
-	encodedSum := base64.RawStdEncoding.EncodeToString(sum[:8])
-
+	encodedSum := hex.EncodeToString(sum[:8])
 	return encodedSum, nil
 }

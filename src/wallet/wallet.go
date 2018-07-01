@@ -368,6 +368,12 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 		if err != nil {
 			return nil, err
 		}
+
+		for _, addr := range addrs {
+			w.Entries = append(w.Entries, Entry{
+				Address: addr,
+			})
+		}
 	} else {
 		// Create a default wallet
 		addrs, err = w.GenerateAddresses(1)
@@ -1160,9 +1166,9 @@ func (w *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime, coi
 		logger.Infof("Signing with address %s\n", entry.Address.String())
 
 		toSign[i] = entry.Secret
-		entryIndex, exists := w.GetEntryIndex(au.Address)
+		entryIndex, exists := w.GetEntryIndex(entry.Address)
 		if !exists {
-			return nil, NewError(fmt.Errorf("address:%v does not exist in wallet: %v", au.Address, w.Filename()))
+			return nil, NewError(fmt.Errorf("address:%v does not exist in wallet: %v", entry.Address, w.Filename()))
 		}
 		indexToSign[i] = entryIndex
 

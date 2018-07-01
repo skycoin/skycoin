@@ -2474,6 +2474,8 @@ func TestCreateAndSignTransaction(t *testing.T) {
 	_, secKeys := cipher.GenerateDeterministicKeyPairsSeed(seed, 1)
 	secKey := secKeys[0]
 	addr := cipher.AddressFromSecKey(secKey)
+	require.Equal(t, "2EU3JbveHdkxW6z5tdhbbB2kRAWvXC2pLzw", addr.String())
+	require.Equal(t, "023a24d72af821ef654da6d115efa8480c0c6e7986da73aba56afef7b25937f8ff", cipher.PubKeyFromSecKey(secKey).Hex())
 	fmt.Printf("TestCreateAndSignTransaction Generated address: %s\n", addr.String())
 	fmt.Printf("TestCreateAndSignTransaction Generated seckey: %s\n", secKey.Hex())
 
@@ -2507,7 +2509,6 @@ func TestCreateAndSignTransaction(t *testing.T) {
 		opts             Options
 		pwd              []byte
 		unspents         []coin.UxOut
-		vld              Validator
 		coins            uint64
 		dest             cipher.Address
 		disableWalletAPI bool
@@ -2516,14 +2517,12 @@ func TestCreateAndSignTransaction(t *testing.T) {
 		{
 			name: "encrypted=false has change=no",
 			opts: Options{
-				Seed: string(seed),
+				Seed:  string(seed),
+				ScanN: 10,
 			},
 			unspents: uxouts[:],
-			vld: &dummyValidator{
-				ok: false,
-			},
-			coins: 2e6,
-			dest:  addrs[0],
+			coins:    2e6,
+			dest:     addrs[0],
 		},
 		{
 			name: "encrypted=true has change=no",
@@ -2532,126 +2531,103 @@ func TestCreateAndSignTransaction(t *testing.T) {
 				Encrypt:    true,
 				Password:   []byte("pwd"),
 				CryptoType: CryptoTypeSha256Xor,
+				ScanN:      10,
 			},
 			pwd:      []byte("pwd"),
 			unspents: uxouts[:],
-			vld: &dummyValidator{
-				ok: false,
-			},
-			coins: 2e6,
-			dest:  addrs[0],
+			coins:    2e6,
+			dest:     addrs[0],
+			err:      ErrWalletEncrypted,
 		},
 		{
 			name: "encrypted=false has change=yes",
 			opts: Options{
-				Seed: string(seed),
+				Seed:  string(seed),
+				ScanN: 10,
 			},
 			unspents: uxouts[:],
-			vld: &dummyValidator{
-				ok: false,
-			},
-			coins: 1e6,
-			dest:  addrs[0],
+			coins:    1e6,
+			dest:     addrs[0],
 		},
 		{
 			name: "encrypted=false has unconfirmed spending transaction",
 			opts: Options{
-				Seed: string(seed),
+				Seed:  string(seed),
+				ScanN: 10,
 			},
 			unspents: uxouts[:],
-			vld: &dummyValidator{
-				ok: true,
-			},
-			coins: 2e6,
-			dest:  addrs[0],
-			err:   ErrSpendingUnconfirmed,
+			coins:    2e6,
+			dest:     addrs[0],
+			err:      ErrSpendingUnconfirmed,
 		},
 		{
 			name: "encrypted=false unconfirmed spend failed",
 			opts: Options{
-				Seed: string(seed),
+				Seed:  string(seed),
+				ScanN: 10,
 			},
 			unspents: uxouts[:],
-			vld: &dummyValidator{
-				ok:  false,
-				err: errors.New("fail intentionally"),
-			},
-			coins: 2e6,
-			dest:  addrs[0],
-			err:   errors.New("checking unconfirmed spending failed: fail intentionally"),
+			coins:    2e6,
+			dest:     addrs[0],
+			err:      errors.New("checking unconfirmed spending failed: fail intentionally"),
 		},
 		{
 			name: "encrypted=false spend zero",
 			opts: Options{
-				Seed: string(seed),
+				Seed:  string(seed),
+				ScanN: 10,
 			},
 			unspents: uxouts[:],
-			vld: &dummyValidator{
-				ok: false,
-			},
-			dest: addrs[0],
-			err:  ErrZeroSpend,
+			dest:     addrs[0],
+			err:      ErrZeroSpend,
 		},
 		{
 			name: "encrypted=false spend fractional coins",
 			opts: Options{
-				Seed: string(seed),
+				Seed:  string(seed),
+				ScanN: 10,
 			},
 			unspents: uxouts[:],
-			vld: &dummyValidator{
-				ok: false,
-			},
-			coins: 1e3,
-			dest:  addrs[0],
+			coins:    1e3,
+			dest:     addrs[0],
 		},
 		{
 			name: "encrypted=false not enough confirmed coins",
 			opts: Options{
-				Seed: string(seed),
+				Seed:  string(seed),
+				ScanN: 10,
 			},
 			unspents: uxouts[:],
-			vld: &dummyValidator{
-				ok: false,
-			},
-			coins: 100e6,
-			dest:  addrs[0],
-			err:   ErrInsufficientBalance,
+			coins:    100e6,
+			dest:     addrs[0],
+			err:      ErrInsufficientBalance,
 		},
 		{
 			name: "encrypted=false no coin hours in inputs",
 			opts: Options{
-				Seed: string(seed),
+				Seed:  string(seed),
+				ScanN: 10,
 			},
 			unspents: uxoutsNoHours[:],
-			vld: &dummyValidator{
-				ok: false,
-			},
-			coins: 1e6,
-			dest:  addrsNoHours[0],
-			err:   fee.ErrTxnNoFee,
+			coins:    1e6,
+			dest:     addrsNoHours[0],
+			err:      fee.ErrTxnNoFee,
 		},
 		{
 			name: "disable wallet api=true",
 			opts: Options{
 				Seed:  string(seed),
 				Label: "label",
+				ScanN: 10,
 			},
-			vld:              &dummyValidator{},
 			disableWalletAPI: true,
 			err:              ErrZeroSpend,
 		},
 	}
 
 	for _, tc := range tt {
-		unspents := &dummyUnspentGetter{
-			addrUnspents: coin.AddressUxOuts{
-				addr: tc.unspents,
-			},
-			unspents: map[cipher.SHA256]coin.UxOut{},
-		}
-
-		for _, ux := range tc.unspents {
-			unspents.unspents[ux.Hash()] = ux
+		addrUnspents := coin.AddressUxOuts{
+			addr: tc.unspents,
 		}
 
 		wltName := newWalletFilename()
@@ -2660,19 +2636,24 @@ func TestCreateAndSignTransaction(t *testing.T) {
 		require.Equal(t, w.useEmulatorWallet(), deviceWallet.DeviceConnected(deviceWallet.DeviceTypeEmulator))
 		require.False(t, w.useHardwareWallet())
 		require.NoError(t, err)
-		tx, err := w.CreateAndSignTransaction(tc.vld, unspents, uint64(headTime), tc.coins, tc.dest)
-		if tc.err != nil {
-			require.Equal(t, tc.err, err, err.Error())
+		tx, err := w.CreateAndSignTransaction(addrUnspents, uint64(headTime), tc.coins, tc.dest)
+		if tc.err != nil && err != nil {
+			require.Equal(t, tc.err, err)
 			continue
+		}
+		if tc.err == nil {
+			require.Nil(t, err)
 		}
 
 		if tx != nil && len(tx.Sigs) > 0 {
 			for i, sig := range tx.Sigs {
 				h := cipher.AddSHA256(tx.HashInner(), tx.In[i])
-				fmt.Printf("Signed hash: %s\n", h.Hex())
+				logger.Infof("Signed hash: %s\n", h.Hex())
+				logger.Infof("Signature: %s\n", sig.Hex())
 				pubkey, err := cipher.PubKeyFromSig(sig, h)
+				logger.Infof("PubKeyFromSig: %s\n", pubkey.Hex())
 				require.NoError(t, err)
-				require.Equal(t, cipher.AddressFromPubKey(pubkey).String(), addr.String())
+				require.Equal(t, addr.String(), cipher.AddressFromPubKey(pubkey).String())
 			}
 		}
 	}

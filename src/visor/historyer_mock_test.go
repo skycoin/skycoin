@@ -214,8 +214,8 @@ func (m *HistoryerMock) ParseBlock(p0 *dbutil.Tx, p1 coin.Block) error {
 
 }
 
-// ParsedHeight mocked method
-func (m *HistoryerMock) ParsedHeight(p0 *dbutil.Tx) (uint64, bool, error) {
+// ParsedBlockSeq mocked method
+func (m *HistoryerMock) ParsedBlockSeq(p0 *dbutil.Tx) (uint64, bool, error) {
 
 	ret := m.Called(p0)
 

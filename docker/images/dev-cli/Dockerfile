@@ -131,6 +131,7 @@ RUN set -ex ; \
     gdbserver \
     gdb \
     vim \
+    less \
     ctags \
     vim-scripts \
     screen \
@@ -170,7 +171,9 @@ RUN go get -u github.com/derekparker/delve/cmd/dlv  && \
     go get -u github.com/dominikh/go-tools/cmd/keyify && \
     go get -u golang.org/x/tools/cmd/gorename && \
     go get -u github.com/klauspost/asmfmt/cmd/asmfmt && \
-    go get -u github.com/ernesto-jimenez/goautomock
+    go get -u github.com/ernesto-jimenez/goautomock && \
+    curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+
 
 # Install vim-go development tools
 RUN git clone https://github.com/fatih/vim-go /usr/share/vim/vim80/pack/dev/start/vim-go && \

@@ -34,7 +34,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `uxouts` to `POST /api/v1/wallet/transaction`, to allow specific unspent outputs to be used in a transaction.
 - Add Dockerfile in docker/images/dev-cli to build a docker image suitable for development.
 - Coin creator tool, `cmd/newcoin`, to quickly bootstrap a new fiber coin
-- Add Dockerfile in docker/images/dev-dind to build a docker in docker image based on skycoindev-cli
+- Add Dockerfile in docker/images/dev-dind to build a docker in docker image based on skycoindev-cli.
 
 ### Fixed
 

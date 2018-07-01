@@ -173,7 +173,7 @@ type Historyer interface {
 	GetAddressTxns(tx *dbutil.Tx, address cipher.Address) ([]historydb.Transaction, error)
 	NeedsReset(tx *dbutil.Tx) (bool, error)
 	Erase(tx *dbutil.Tx) error
-	ParsedHeight(tx *dbutil.Tx) (uint64, bool, error)
+	ParsedBlockSeq(tx *dbutil.Tx) (uint64, bool, error)
 	ForEachTxn(tx *dbutil.Tx, f func(cipher.SHA256, *historydb.Transaction) error) error
 }
 
@@ -365,19 +365,19 @@ func initHistory(tx *dbutil.Tx, bc *Blockchain, history *historydb.HistoryDB) er
 func parseHistoryTo(tx *dbutil.Tx, history *historydb.HistoryDB, bc *Blockchain, height uint64) error {
 	logger.Info("Visor parseHistoryTo")
 
-	parsedHeight, _, err := history.ParsedHeight(tx)
+	parsedBlockSeq, _, err := history.ParsedBlockSeq(tx)
 	if err != nil {
 		return err
 	}
 
-	for i := uint64(0); i < height-parsedHeight; i++ {
-		b, err := bc.GetSignedBlockBySeq(tx, parsedHeight+i+1)
+	for i := uint64(0); i < height-parsedBlockSeq; i++ {
+		b, err := bc.GetSignedBlockBySeq(tx, parsedBlockSeq+i+1)
 		if err != nil {
 			return err
 		}
 
 		if b == nil {
-			return fmt.Errorf("no block exists in depth: %d", parsedHeight+i+1)
+			return fmt.Errorf("no block exists in depth: %d", parsedBlockSeq+i+1)
 		}
 
 		if err := history.ParseBlock(tx, b.Block); err != nil {

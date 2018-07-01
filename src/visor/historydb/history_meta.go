@@ -13,8 +13,8 @@ var (
 // historyMeta bucket for storing block history meta info
 type historyMeta struct{}
 
-// Height returns history parsed height
-func (hm *historyMeta) ParsedHeight(tx *dbutil.Tx) (uint64, bool, error) {
+// Height returns history parsed block seq
+func (hm *historyMeta) ParsedBlockSeq(tx *dbutil.Tx) (uint64, bool, error) {
 	v, err := dbutil.GetBucketValue(tx, HistoryMetaBkt, parsedHeightKey)
 	if err != nil {
 		return 0, false, err
@@ -25,8 +25,8 @@ func (hm *historyMeta) ParsedHeight(tx *dbutil.Tx) (uint64, bool, error) {
 	return dbutil.Btoi(v), true, nil
 }
 
-// SetParsedHeight updates history parsed height
-func (hm *historyMeta) SetParsedHeight(tx *dbutil.Tx, h uint64) error {
+// SetParsedHeight updates history parsed block seq
+func (hm *historyMeta) SetParsedBlockSeq(tx *dbutil.Tx, h uint64) error {
 	return dbutil.PutBucketValue(tx, HistoryMetaBkt, parsedHeightKey, dbutil.Itob(h))
 }
 

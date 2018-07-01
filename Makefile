@@ -36,7 +36,7 @@ ifeq ($(shell uname -s),Linux)
   LDLIBS=$(LIBC_LIBS) -lpthread
   LDPATH=$(shell printenv LD_LIBRARY_PATH)
   LDPATHVAR=LD_LIBRARY_PATH
-  LDFLAGS=$(LIBC_FLAGS) $(STDC_FLAG) 
+  LDFLAGS=$(LIBC_FLAGS) $(STDC_FLAG)
 ifndef OSNAME
   OSNAME = linux
 endif
@@ -116,14 +116,14 @@ docs: docs-libc
 
 lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...
-	gometalinter --deadline=3m --concurrency=2 --disable-all --tests --vendor --skip=lib/cgo --warn-unmatched-nolint \
+	golangci-lint run --no-config --issues-exit-code=0 --deadline=3m --concurrency=2 --disable-all --tests \
 		-E goimports \
 		-E golint \
 		-E varcheck \
 		-E unparam \
 		./...
 	# lib cgo can't use golint because it needs export directives in function docstrings that do not obey golint rules
-	gometalinter --deadline=3m --concurrency=2 --disable-all --tests --vendor --warn-unmatched-nolint \
+	golangci-lint run --no-config --issues-exit-code=0 --deadline=3m --concurrency=2 --disable-all --tests \
 		-E goimports \
 		-E varcheck \
 		-E unparam \
@@ -158,8 +158,7 @@ cover: ## Runs tests on ./src/ with HTML code coverage
 
 install-linters: ## Install linters
 	go get -u github.com/FiloSottile/vendorcheck
-	go get -u github.com/alecthomas/gometalinter
-	gometalinter --vendored-linters --install
+	go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
 
 install-deps-libc: configure-build ## Install locally dependencies for testing libskycoin
 	git clone --recursive https://github.com/skycoin/Criterion $(BUILD_DIR)/usr/tmp/Criterion

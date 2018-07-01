@@ -161,7 +161,7 @@ func loadJSON(t *testing.T, filename string, obj interface{}) {
 	defer f.Close()
 
 	d := json.NewDecoder(f)
-	// d.DisallowUnknownFields() // do not work if go version is lower than 1.10 
+	// d.DisallowUnknownFields() // do not work if go version is lower than 1.10
 
 	err = d.Decode(obj)
 	require.NoError(t, err, filename)
@@ -181,7 +181,7 @@ func loadGoldenFile(t *testing.T, filename string, testData TestData) {
 	defer f.Close()
 
 	d := json.NewDecoder(f)
-	// d.DisallowUnknownFields() // do not work if go version is lower than 1.10 
+	// d.DisallowUnknownFields() // do not work if go version is lower than 1.10
 
 	err = d.Decode(testData.expected)
 	require.NoError(t, err, filename)

@@ -172,7 +172,7 @@ func (c *Client) post(endpoint string, contentType string, body io.Reader, obj i
 	}
 
 	decoder := json.NewDecoder(resp.Body)
-	// decoder.DisallowUnknownFields() // do not work if go version is lower than 1.10 
+	// decoder.DisallowUnknownFields() // do not work if go version is lower than 1.10
 	return decoder.Decode(obj)
 }
 
@@ -217,7 +217,7 @@ func (c *Client) PostJSONV2(endpoint string, reqObj, respObj interface{}) (bool,
 	}
 
 	decoder := json.NewDecoder(bytes.NewReader(respBody))
-	// decoder.DisallowUnknownFields() // do not work if go version is lower than 1.10 
+	// decoder.DisallowUnknownFields() // do not work if go version is lower than 1.10
 
 	var wrapObj ReceivedHTTPResponse
 	if err := decoder.Decode(&wrapObj); err != nil {
@@ -250,7 +250,7 @@ func (c *Client) PostJSONV2(endpoint string, reqObj, respObj interface{}) (bool,
 	}
 
 	decoder = json.NewDecoder(bytes.NewReader(wrapObj.Data))
-	// decoder.DisallowUnknownFields() // do not work if go version is lower than 1.10 
+	// decoder.DisallowUnknownFields() // do not work if go version is lower than 1.10
 
 	if err := decoder.Decode(respObj); err != nil {
 		return false, err

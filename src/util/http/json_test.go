@@ -279,7 +279,7 @@ func TestSHA256UnmarshalJSON(t *testing.T) {
 		},
 
 		{
-			c:   "foo",
+			c:   "fooo",
 			err: "invalid SHA256 hash: encoding/hex: invalid byte: U+006F 'o'",
 		},
 

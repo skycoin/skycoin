@@ -270,7 +270,7 @@ func TestTransactionSignInputs(t *testing.T) {
 
 func TestTransactionDeviceSignInputs(t *testing.T) {
 	if deviceWallet.DeviceConnected(deviceWallet.DeviceTypeUsb) == false {
-		logger.Fatal("TestTransactionDeviceSignInputs do not work if usb device is not connected")
+		t.Skip("TestTransactionDeviceSignInputs do not work if usb device is not connected")
 		return
 	}
 	require.True(t, deviceWallet.DeviceConnected(deviceWallet.DeviceTypeUsb))
@@ -299,7 +299,7 @@ func TestTransactionDeviceSignInputs(t *testing.T) {
 
 func TestTransactionEmulatorSignInputs(t *testing.T) {
 	if deviceWallet.DeviceConnected(deviceWallet.DeviceTypeEmulator) == false {
-		logger.Fatal("TestTransactionEmulatorSignInputs do not work if Emulator device is not running")
+		t.Skip("TestTransactionEmulatorSignInputs do not work if Emulator device is not running")
 		return
 	}
 	require.True(t, deviceWallet.DeviceConnected(deviceWallet.DeviceTypeEmulator))

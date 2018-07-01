@@ -12,7 +12,7 @@ var logger = logging.MustGetLogger("deviceWallet")
 
 func TestGetAddressUsb(t *testing.T) {
 	if DeviceConnected(DeviceTypeUsb) == false {
-		logger.Fatal("TestGetAddressUsb do not work if Usb device is not connected")
+		t.Skip("TestGetAddressUsb do not work if Usb device is not connected")
 		return
 	}
 
@@ -32,7 +32,7 @@ func TestGetAddressUsb(t *testing.T) {
 
 func TestGetAddressEmulator(t *testing.T) {
 	if DeviceConnected(DeviceTypeEmulator) == false {
-		logger.Fatal("TestGetAddressEmulator do not work if Emulator device is not running")
+		t.Skip("TestGetAddressEmulator do not work if Emulator device is not running")
 		return
 	}
 

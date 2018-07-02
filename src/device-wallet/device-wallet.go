@@ -44,9 +44,9 @@ func getUsbDevice() (usb.Device, error) {
 	b := usb.Init(w, h)
 
 	var infos []usb.Info
-	infos, _ = b.Enumerate()
+	infos, err = b.Enumerate()
 	if len(infos) <= 0 {
-		return nil, nil
+		return nil, err
 	}
 	tries := 0
 	dev, err := b.Connect(infos[0].Path)
@@ -55,6 +55,8 @@ func getUsbDevice() (usb.Device, error) {
 		if tries < 3 {
 			tries++
 			time.Sleep(100 * time.Millisecond)
+		} else {
+			return nil, err
 		}
 	}
 	return dev, err

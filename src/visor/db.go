@@ -2,7 +2,7 @@ package visor
 
 import (
 	"crypto/sha1"
-	"encoding/hex"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -291,6 +291,6 @@ func shaFileID(dbPath string) (string, error) {
 	}
 
 	sum := h.Sum(nil)
-	encodedSum := hex.EncodeToString(sum[:8])
+	encodedSum := base64.RawURLEncoding.EncodeToString(sum[:8])
 	return encodedSum, nil
 }

@@ -20,11 +20,10 @@
   > span {
     display: inline-block;
     line-height: $row-height;
-  }
+    cursor: pointer;
 
-  .click-to-copy:hover {
-    > span {
-      display: inline;
+    &:hover .copy-label {
+      visibility: visible;
     }
   }
 }
@@ -136,47 +135,30 @@
 }
 
 @keyframes floatup {
-  20% {
-    opacity: .999
+  50% {
+    opacity: 1;
   }
 
   100% {
-    transform: translate3d(-50%, -17px, 0)
+    transform: translateY(-20px);
+    opacity: 0;
   }
-}
-
-.click-to-copy {
-  cursor: pointer;
 }
 
 .copy-label {
-  color: #0072ff;
-  display: none;
+  color: $blue;
+  visibility: hidden;
   font-size: 12px;
-  line-height: 100%;
   position: relative;
-  opacity: .999;
-  transition: opacity .2s ease-in-out;
-  top: -1px;
   padding-left: 10px;
-
-  &.hidden{
-    opacity: .001;
-  }
 
   &::after {
     content: attr(data-label);
-    color: #0072ff;
-    display: inline-block;
     position: absolute;
-    top: -2px;
-    left: 50%;
-    opacity: .001;
-    text-align: center;
-    transform: translate3d(-50%,0,0);
-    backface-visibility: hidden;
-    white-space: nowrap;
-    padding-left: 11px;
+    top: 0;
+    left: 4px;
+    opacity: 0;
+    line-height: 1;
   }
 }
 

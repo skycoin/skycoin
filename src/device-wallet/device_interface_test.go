@@ -4,11 +4,8 @@ import (
 	"testing"
 
 	messages "github.com/skycoin/skycoin/protob"
-	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/stretchr/testify/require"
 )
-
-var logger = logging.MustGetLogger("deviceWallet")
 
 func TestGetAddressUsb(t *testing.T) {
 	if DeviceConnected(DeviceTypeUsb) == false {

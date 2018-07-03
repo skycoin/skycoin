@@ -2,7 +2,7 @@
   "common": {
     "coin-id": "SKY",
     "coin-hours": "Coin Hours",
-    "loading": "Loading..",
+    "loading": "Loading...",
     "new": "New",
     "load": "Load"
   },
@@ -191,7 +191,7 @@
 
   "blockchain": {
     "blocks": "Number of blocks",
-    "time": "Time since last block",
+    "time": "Timestamp of last block",
     "hash": "Hash of last block",
     "current-supply": "Current SKY supply",
     "total-supply": "Total SKY supply",
@@ -229,7 +229,8 @@
     "sent": "Sent",
     "received": "Received",
     "receiving": "Receiving",
-    "pending": "Pending"
+    "pending": "Pending",
+    "no-txs": "You have no transaction history"
   },
 
   "teller": {

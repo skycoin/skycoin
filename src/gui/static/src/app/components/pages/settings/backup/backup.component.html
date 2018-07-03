@@ -10,7 +10,7 @@
       </p>
     </div>
 
-    <div class="-table">
+    <div class="-table" *ngIf="onlyEncrypted.length > 0">
       <div class="-headers">
         <div class="-width-250">{{ 'backup.wallet' | translate }}</div>
         <div class="-width-150">{{ 'backup.filename' | translate }}</div>

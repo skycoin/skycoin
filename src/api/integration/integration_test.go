@@ -161,7 +161,7 @@ func loadJSON(t *testing.T, filename string, obj interface{}) {
 	defer f.Close()
 
 	d := json.NewDecoder(f)
-	// d.DisallowUnknownFields() // do not work if go version is lower than 1.10 
+	d.DisallowUnknownFields()
 
 	err = d.Decode(obj)
 	require.NoError(t, err, filename)
@@ -181,7 +181,7 @@ func loadGoldenFile(t *testing.T, filename string, testData TestData) {
 	defer f.Close()
 
 	d := json.NewDecoder(f)
-	// d.DisallowUnknownFields() // do not work if go version is lower than 1.10 
+	d.DisallowUnknownFields()
 
 	err = d.Decode(testData.expected)
 	require.NoError(t, err, filename)
@@ -2968,10 +2968,9 @@ func TestLiveWalletCreateTransactionRandom(t *testing.T) {
 		nOutputs = len(to)
 		t.Log("nOutputs", nOutputs)
 
-		for i := len(to) - 1; i > 0; i-- {
-			j := rand.Intn(i + 1)
+		rand.Shuffle(len(to), func(i, j int) {
 			to[i], to[j] = to[j], to[i]
-		}
+		})
 
 		for i, o := range to {
 			t.Logf("to[%d].Hours %s\n", i, o.Hours)

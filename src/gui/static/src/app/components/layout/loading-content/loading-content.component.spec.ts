@@ -8,7 +8,7 @@ describe('LoadingContentComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ LoadingContentComponent ]
+      declarations: [ LoadingContentComponent ],
     })
     .compileComponents();
   }));

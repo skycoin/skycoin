@@ -114,8 +114,12 @@
           background-image: url(../../../../../assets/img/plus-green.png);
         }
 
-        &.-hide-empty::before, &.-show-empty::before {
-          filter: contrast(20%);
+        &.-hide-empty::before {
+          background-image: url(../../../../../assets/img/minus-red.png);
+        }
+
+        &.-show-empty::before {
+          background-image: url(../../../../../assets/img/plus-green.png);
         }
 
         &.-enable-encryption::before {

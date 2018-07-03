@@ -11,8 +11,10 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"testing"
+	"testing/quick"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -1725,7 +1727,9 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 				}
 
 				s.enableWalletAPI = !tc.disableWalletAPI
-
+				if tc.name == "auto, multiple outputs, split even, share factor 0" {
+					log.Printf("auto, multiple outputs, split even, share factor 0")
+				}
 				txn, inputs, err := s.CreateAndSignTransactionAdvanced(tc.params, addrUxOuts, tc.headTime)
 				if tc.err != nil {
 					require.Equal(t, tc.err, err)
@@ -1819,6 +1823,316 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 			})
 		}
 	}
+}
+
+func TestServiceCreateAndSignTransactionAdvancedFuzzing(t *testing.T) {
+	f := func(s *Service, params CreateTransactionParams, toExpectedHours []uint64, addrUxOuts coin.AddressUxOuts, headTime uint64,
+		changeOutput *coin.TransactionOutput, chosenUnspents []coin.UxOut,
+		exceptedChooseSpendsErr *error) bool {
+
+		unspents := make(map[cipher.SHA256]coin.UxOut)
+		for _, uxs := range addrUxOuts {
+			for _, ux := range uxs {
+				unspents[ux.Hash()] = ux
+			}
+		}
+
+		txn, inputs, createTxnErr := s.CreateAndSignTransactionAdvanced(params, addrUxOuts, headTime)
+
+		if len(params.To) == 0 {
+			if createTxnErr.Error() == "To is required" {
+				return true
+			}
+			return false
+		}
+
+		for _, to := range params.To {
+			if to.Coins == 0 {
+				if createTxnErr.Error() == "To.Coins must not be zero" {
+					return true
+				}
+				return false
+			}
+
+			if to.Address.Null() {
+				if createTxnErr.Error() == "To.Address must not be the null address" {
+					return true
+				}
+				return false
+			}
+		}
+
+		if *exceptedChooseSpendsErr != nil {
+			if *exceptedChooseSpendsErr == createTxnErr {
+				return true
+			}
+			return false
+		}
+
+		if *exceptedChooseSpendsErr != nil {
+			log.Printf("exceptedChooseSpendsErr: %v", exceptedChooseSpendsErr)
+			return false
+		}
+
+		err := txn.Verify()
+		require.NoError(t, err)
+
+		require.Equal(t, len(inputs), len(txn.In))
+
+		// Checks duplicate inputs in array
+		inputsMap := make(map[cipher.SHA256]struct{})
+		for _, i := range inputs {
+			_, ok := inputsMap[i.Hash]
+			require.False(t, ok)
+			inputsMap[i.Hash] = struct{}{}
+		}
+
+		for i, inUxid := range txn.In {
+			_, ok := unspents[inUxid]
+			require.True(t, ok)
+
+			require.Equal(t, inUxid, inputs[i].Hash)
+		}
+
+		// Compare the transaction inputs
+		chosenUnspentHashes := make([]cipher.SHA256, len(chosenUnspents))
+		for i, u := range chosenUnspents {
+			chosenUnspentHashes[i] = u.Hash()
+		}
+		sort.Slice(chosenUnspentHashes, func(i, j int) bool {
+			return bytes.Compare(chosenUnspentHashes[i][:], chosenUnspentHashes[j][:]) < 0
+		})
+		sort.Slice(chosenUnspents, func(i, j int) bool {
+			h1 := chosenUnspents[i].Hash()
+			h2 := chosenUnspents[j].Hash()
+			return bytes.Compare(h1[:], h2[:]) < 0
+		})
+
+		sortedTxnIn := make([]cipher.SHA256, len(txn.In))
+		for i, x := range txn.In {
+			sortedTxnIn[i] = x
+		}
+
+		sort.Slice(sortedTxnIn, func(i, j int) bool {
+			return bytes.Compare(sortedTxnIn[i][:], sortedTxnIn[j][:]) < 0
+		})
+
+		require.Equal(t, chosenUnspentHashes, sortedTxnIn)
+
+		sort.Slice(inputs, func(i, j int) bool {
+			h1 := inputs[i].Hash
+			h2 := inputs[j].Hash
+			return bytes.Compare(h1[:], h2[:]) < 0
+		})
+
+		chosenUnspentsUxBalances := make([]UxBalance, len(chosenUnspents))
+		for i, o := range chosenUnspents {
+			b, err := NewUxBalance(headTime, o)
+			require.NoError(t, err)
+			chosenUnspentsUxBalances[i] = b
+		}
+
+		require.Equal(t, chosenUnspentsUxBalances, inputs)
+
+		// Assign expected hours for comparison
+		var to []coin.TransactionOutput
+		for _, x := range params.To {
+			to = append(to, x)
+		}
+
+		if len(params.To) == len(toExpectedHours) {
+			require.Equal(t, len(toExpectedHours), len(to))
+			if len(toExpectedHours) != 0 {
+				for i, h := range toExpectedHours {
+					to[i].Hours = h
+				}
+			}
+		} else {
+			// Compare transaction outputs
+			require.NotEqual(t, to, txn.Out)
+			return true
+		}
+
+		// Add the change output if specified
+		if changeOutput != nil {
+			to = append(to, *changeOutput)
+		}
+
+		// Compare transaction outputs
+		require.Equal(t, to, txn.Out)
+		return true
+	}
+	cfg := &quick.Config{
+		MaxCount: 1000,
+		Rand:     rand.New(rand.NewSource(time.Now().Unix())),
+		Values: func(args []reflect.Value, rand *rand.Rand) {
+			var cryptoTypes []CryptoType
+			for ct := range cryptoTable {
+				cryptoTypes = append(cryptoTypes, ct)
+			}
+
+			var encryptWallet bool
+			var walletPassword []byte
+			if rand.Intn(2)%2 == 0 {
+				encryptWallet = true
+				walletPassword = []byte("pwd")
+			}
+			cryptoType := cryptoTypes[rand.Int()%len(cryptoTypes)]
+			walletName := newWalletFilename()
+			dir := prepareWltDir()
+			s, err := NewService(Config{
+				WalletDir:       dir,
+				CryptoType:      cryptoType,
+				EnableWalletAPI: true,
+			})
+			require.NoError(t, err)
+
+			seed := "seed"
+
+			headTime := uint64(time.Now().UnixNano())
+			// Create unspent outputs
+			var uxouts []coin.UxOut
+			var addrs []cipher.Address
+			// Generate first keys
+			_, secKeys := cipher.GenerateDeterministicKeyPairsSeed([]byte(seed), 1)
+			secKey := secKeys[0]
+			for i := 0; i < rand.Intn(10)+1; i++ {
+				uxout := makeUxOut(t, secKey, uint64(rand.Intn(1000000)), uint64(rand.Intn(1000000)))
+				uxout.Head.Time = headTime
+				uxouts = append(uxouts, uxout)
+
+				a := testutil.MakeAddress()
+				addrs = append(addrs, a)
+			}
+
+			walletOptions := Options{
+				Seed:     seed,
+				Label:    "wallet",
+				Encrypt:  encryptWallet,
+				Password: walletPassword,
+				ScanN:    uint64(rand.Intn(10)),
+			}
+			bg := mockBalanceGetter{
+				addrs[0]: BalancePair{Confirmed: Balance{Coins: 2e6, Hours: 100}},
+			}
+			w, err := s.loadWallet(walletName, walletOptions, bg)
+			require.NoError(t, err, "failed to loadWallet")
+
+			addrUxOuts := coin.AddressUxOuts{
+				w.Entries[0].Address: uxouts,
+			}
+
+			toCount := rand.Intn(10)
+			to := make([]coin.TransactionOutput, toCount)
+			var addrIdx int
+			for i := 0; i < toCount; i++ {
+				if len(addrs) > 1 {
+					addrIdx = rand.Intn(int(len(addrs) - 1))
+				} else {
+					addrIdx = 0
+				}
+
+				toItem := coin.TransactionOutput{
+					Address: addrs[addrIdx],
+					Coins:   uint64(rand.Intn(1000000)),
+					Hours:   uint64(rand.Intn(1000000)),
+				}
+				to[i] = toItem
+			}
+			var changeAddr cipher.Address
+			if len(addrs) > 1 {
+				changeAddr = addrs[rand.Intn(int(len(addrs)-1))]
+			} else {
+				changeAddr = addrs[0]
+			}
+			params := CreateTransactionParams{
+				HoursSelection: HoursSelection{
+					Type: HoursSelectionTypeManual,
+				},
+				Wallet: CreateTransactionWalletParams{
+					ID:       walletName,
+					Password: walletPassword,
+				},
+				ChangeAddress: changeAddr,
+				To:            to,
+			}
+
+			// choose from params.To
+			toExpectedHours := make([]uint64, len(params.To))
+			for i, v := range params.To {
+				toExpectedHours[i] = v.Hours
+			}
+
+			uxa := addrUxOuts.Flatten()
+
+			uxb, err := NewUxBalances(headTime, uxa)
+			require.NoError(t, err)
+
+			// calculate total coins and minimum hours to send
+			var totalOutCoins uint64
+			var requestedHours uint64
+			for _, to := range params.To {
+				totalOutCoins, err = coin.AddUint64(totalOutCoins, to.Coins)
+				require.NoError(t, err)
+
+				requestedHours, err = coin.AddUint64(requestedHours, to.Hours)
+				require.NoError(t, err)
+			}
+
+			chosenSpends, err := ChooseSpendsMinimizeUxOuts(uxb, totalOutCoins, requestedHours)
+			chosenUnspents := make([]coin.UxOut, len(chosenSpends))
+			for idx, unspent := range chosenSpends {
+				chosenUnspents[idx] = coin.UxOut{
+					Head: coin.UxHead{
+						Time:  unspent.Time,
+						BkSeq: unspent.BkSeq,
+					},
+					Body: coin.UxBody{
+						SrcTransaction: unspent.SrcTransaction,
+						Address:        unspent.Address,
+						Coins:          unspent.Coins,
+						Hours:          unspent.Hours,
+					},
+				}
+			}
+
+			// calculate total coins and hours in spends
+			var totalInputCoins uint64
+			var totalInputHours uint64
+
+			for _, spend := range chosenSpends {
+				totalInputCoins, err = coin.AddUint64(totalInputCoins, spend.Coins)
+				require.NoError(t, err)
+
+				totalInputHours, err = coin.AddUint64(totalInputHours, spend.Hours)
+				require.NoError(t, err)
+
+			}
+			var remainingHours uint64
+			if totalInputHours > 0 {
+				feeHours := fee.RequiredFee(totalInputHours)
+				require.NotZero(t, feeHours)
+				remainingHours = totalInputHours - feeHours
+			}
+
+			changeOutput := &coin.TransactionOutput{
+				Address: changeAddr,
+				Hours:   remainingHours - requestedHours,
+				Coins:   totalInputCoins - totalOutCoins,
+			}
+
+			args[0] = reflect.ValueOf(s)
+			args[1] = reflect.ValueOf(params)
+			args[2] = reflect.ValueOf(toExpectedHours)
+			args[3] = reflect.ValueOf(addrUxOuts)
+			args[4] = reflect.ValueOf(headTime)
+			args[5] = reflect.ValueOf(changeOutput)
+			args[6] = reflect.ValueOf(chosenUnspents)
+			args[7] = reflect.ValueOf(&err)
+		},
+	}
+	err := quick.Check(f, cfg)
+	require.NoError(t, err)
 }
 
 func TestServiceUpdateWalletLabel(t *testing.T) {
@@ -2555,7 +2869,7 @@ func TestGetWalletSeed(t *testing.T) {
 	}
 }
 
-func makeUxOut(t *testing.T, s cipher.SecKey, coins, hours uint64) coin.UxOut { // nolint: unparam
+func makeUxOut(t *testing.T, s cipher.SecKey, coins, hours uint64) coin.UxOut {
 	body := makeUxBody(t, s, coins, hours)
 	tm := rand.Int31n(1000)
 	seq := rand.Int31n(100)

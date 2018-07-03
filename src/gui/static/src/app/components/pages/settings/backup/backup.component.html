@@ -18,7 +18,7 @@
       </div>
       <div class="-body">
         <div class="-row" *ngFor="let wallet of onlyEncrypted">
-          <div class="-width-250">{{ wallet.label }}</div>
+          <div class="-width-250 -label" [attr.title]="wallet.label">{{ wallet.label }}</div>
           <div class="-width-150">{{ wallet.filename }}</div>
           <div class="-flex-fill -text-right">
             <span class="-link" (click)="showSeed(wallet)">{{ 'backup.show-seed' | translate }}</span>

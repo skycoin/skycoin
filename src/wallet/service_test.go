@@ -1886,7 +1886,7 @@ func TestServiceCreateAndSignTransactionAdvancedFuzzing(t *testing.T) {
 		return true
 	}
 	cfg := &quick.Config{
-		MaxCount: 10000,
+		MaxCount: 1000,
 		Rand:     rand.New(rand.NewSource(time.Now().Unix())),
 		Values: func(args []reflect.Value, rand *rand.Rand) {
 			var cryptoTypes []CryptoType
@@ -1894,6 +1894,12 @@ func TestServiceCreateAndSignTransactionAdvancedFuzzing(t *testing.T) {
 				cryptoTypes = append(cryptoTypes, ct)
 			}
 
+			var encryptWallet bool
+			var walletPassword []byte
+			if rand.Intn(2)%2 == 0 {
+				encryptWallet = true
+				walletPassword = []byte("pwd")
+			}
 			cryptoType := cryptoTypes[rand.Int()%len(cryptoTypes)]
 			walletName := newWalletFilename()
 			dir := prepareWltDir()
@@ -1905,13 +1911,13 @@ func TestServiceCreateAndSignTransactionAdvancedFuzzing(t *testing.T) {
 			require.NoError(t, err)
 
 			seed := "seed"
-			walletPassword := []byte("pwd")
+
 			headTime := uint64(time.Now().UnixNano())
 			// Create unspent outputs
 			var uxouts []coin.UxOut
-			addrs := []cipher.Address{}
+			var addrs []cipher.Address
 			// Generate first keys
-			_, secKeys := cipher.GenerateDeterministicKeyPairsSeed([]byte(seed), 11)
+			_, secKeys := cipher.GenerateDeterministicKeyPairsSeed([]byte(seed), 1)
 			secKey := secKeys[0]
 			for i := 0; i < rand.Intn(10)+1; i++ {
 				uxout := makeUxOut(t, secKey, uint64(rand.Intn(1000000)), uint64(rand.Intn(1000000)))
@@ -1925,9 +1931,9 @@ func TestServiceCreateAndSignTransactionAdvancedFuzzing(t *testing.T) {
 			walletOptions := Options{
 				Seed:     seed,
 				Label:    "wallet",
-				Encrypt:  true,
+				Encrypt:  encryptWallet,
 				Password: walletPassword,
-				ScanN:    5,
+				ScanN:    uint64(rand.Intn(10)),
 			}
 			bg := mockBalanceGetter{
 				addrs[0]: BalancePair{Confirmed: Balance{Coins: 2e6, Hours: 100}},
@@ -1956,7 +1962,12 @@ func TestServiceCreateAndSignTransactionAdvancedFuzzing(t *testing.T) {
 				}
 				to[i] = toItem
 			}
-
+			var changeAddr cipher.Address
+			if len(addrs) > 1 {
+				changeAddr = addrs[rand.Intn(int(len(addrs)-1))]
+			} else {
+				changeAddr = addrs[0]
+			}
 			params := CreateTransactionParams{
 				HoursSelection: HoursSelection{
 					Type: HoursSelectionTypeManual,
@@ -1965,7 +1976,7 @@ func TestServiceCreateAndSignTransactionAdvancedFuzzing(t *testing.T) {
 					ID:       walletName,
 					Password: walletPassword,
 				},
-				ChangeAddress: addrs[0],
+				ChangeAddress: changeAddr,
 				To:            to,
 			}
 
@@ -2028,7 +2039,7 @@ func TestServiceCreateAndSignTransactionAdvancedFuzzing(t *testing.T) {
 			}
 
 			changeOutput := &coin.TransactionOutput{
-				Address: addrs[0],
+				Address: changeAddr,
 				Hours:   remainingHours - requestedHours,
 				Coins:   totalInputCoins - totalOutCoins,
 			}

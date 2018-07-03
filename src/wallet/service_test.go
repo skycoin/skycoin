@@ -2053,7 +2053,7 @@ func TestServiceCreateAndSignTransactionAdvancedFuzzing(t *testing.T) {
 					ID:       walletName,
 					Password: walletPassword,
 				},
-				ChangeAddress: changeAddr,
+				ChangeAddress: &changeAddr,
 				To:            to,
 			}
 

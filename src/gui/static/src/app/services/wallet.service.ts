@@ -177,37 +177,50 @@ export class WalletService {
   }
 
   transactions(): Observable<NormalTransaction[]> {
-    return this.allAddresses().filter(addresses => !!addresses.length).first().flatMap(addresses => {
+    return this.allAddresses().first().flatMap(addresses => {
       this.addresses = addresses;
 
       return Observable.forkJoin(addresses.map(address => this.apiService.getExplorerAddress(address)));
-    }).map(transactions => [].concat.apply([], transactions).sort((a, b) =>  b.timestamp - a.timestamp))
-      .map(transactions => transactions.reduce((array, item) => {
-        if (!array.find(trans => trans.txid === item.txid)) {
-          array.push(item);
-        }
-
-        return array;
-      }, []))
-      .map(transactions => transactions.map(transaction => {
-        const outgoing = !!this.addresses.find(address => transaction.inputs[0].owner === address.address);
-
-        transaction.outputs.forEach(output => {
-          if (outgoing && !this.addresses.find(address => output.dst === address.address)) {
-            transaction.addresses.push(output.dst);
-            transaction.balance = transaction.balance - parseFloat(output.coins);
+    }).map(transactions => {
+      return []
+        .concat.apply([], transactions)
+        .reduce((array, item) => {
+          if (!array.find(trans => trans.txid === item.txid)) {
+            array.push(item);
           }
 
-          if (!outgoing && this.addresses.find(address => output.dst === address.address)) {
-            transaction.addresses.push(output.dst);
-            transaction.balance = transaction.balance + parseFloat(output.coins);
-          }
+          return array;
+        }, [])
+        .sort((a, b) =>  b.timestamp - a.timestamp)
+        .map(transaction => {
+          const outgoing = this.addresses.some(address => transaction.inputs[0].owner === address.address);
+
+          const relevantOutputs = transaction.outputs.reduce((array, output) => {
+            const isMyOutput = this.addresses.some(address => address.address === output.dst);
+
+            if ((outgoing && !isMyOutput) || (!outgoing && isMyOutput)) {
+              array.push(output);
+            }
+
+            return array;
+          }, []);
+
+          const calculatedOutputs = (outgoing && relevantOutputs.length === 0)
+          || (!outgoing && relevantOutputs.length === transaction.outputs.length)
+            ? transaction.outputs
+            : relevantOutputs;
+
+          transaction.addresses.push(
+            ...calculatedOutputs
+              .map(output => output.dst)
+              .filter((dst, i, self) => self.indexOf(dst) === i),
+          );
+
+          transaction.balance += calculatedOutputs.reduce((a, b) => a + parseFloat(b.coins), 0) * (outgoing ? -1 : 1);
 
           return transaction;
         });
-
-        return transaction;
-      }));
+    });
   }
 
   startDataRefreshSubscription() {

@@ -58,6 +58,7 @@ before_script:
 
 script:
   - make lint
+  - make build-ui
   - make test-386
   - make test-amd64
   # Stable integration tests

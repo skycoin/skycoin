@@ -142,6 +142,12 @@ Access the API: [http://localhost:6420/version](http://localhost:6420/version).
 
 [Building your own images](docker/images/mainnet/README.md).
 
+### Development image
+
+The [skycoin/skycoindev-cli docker image](docker/images/dev-cli/README.md) is provided in order to make
+easy to start developing Skycoin. It comes with the compiler, linters, debugger
+and the vim editor among other tools.
+
 ## API Documentation
 
 ### REST API
@@ -208,9 +214,11 @@ We have two branches: `master` and `develop`.
 ### Client libraries
 
 Skycoin implements client libraries which export core functionality for usage from
-other programming languages. Read the corresponding README file for further details.
+other programming languages.
 
-* `lib/cgo/` - libskycoin C client library ( [read more](lib/cgo/README.md) )
+* `lib/cgo/` - libskycoin C client library ( [overview](lib/cgo/README.md), [API reference](docs/libc/API.md) )
+
+For further details run `make docs` to generate documetation and read the corresponding README and API references.
 
 ### Running Tests
 

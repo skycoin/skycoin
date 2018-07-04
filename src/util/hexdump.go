@@ -28,6 +28,9 @@ type IAnnotationsIterator interface {
 func writeHexdumpMember(offset int, size int, writer io.Writer, buffer []byte, name string) {
 	var hexBuff = make([]string, size)
 	var j = 0
+	if offset+size > len(buffer) {
+		panic(encoder.ErrBufferUnderflow)
+	}
 	for i := offset; i < offset+size; i++ {
 		hexBuff[j] = strconv.FormatInt(int64(buffer[i]), 16)
 		j++

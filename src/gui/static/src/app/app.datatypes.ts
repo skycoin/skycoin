@@ -34,7 +34,7 @@ export class Transaction {
 
 export class PreviewTransaction extends Transaction {
   from: string;
-  to: string;
+  to: string[];
   encoded: string;
 }
 
@@ -62,8 +62,9 @@ export class Wallet {
 
 export class Connection {
   id: number;
-  address: number;
-  listen_port: boolean;
+  address: string;
+  listen_port: number;
+  source?: string;
 }
 
 /**

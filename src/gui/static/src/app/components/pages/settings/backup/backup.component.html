@@ -1,24 +1,30 @@
 <div class="sky-container sky-container-grey">
-  <app-header [title]="'title.backup' | translate"></app-header>
+  <app-header [headline]="'title.backup' | translate"></app-header>
 
-  <mat-card>
-    <p>{{ 'backup.wallet-directory' | translate }} {{ folder }}</p>
-    <p>{{ 'backup.seed-warning' | translate }}</p>
-    <p class="text-muted"><small [innerHtml]="'backup.desc' | translate"></small></p>
-  </mat-card>
-
-  <mat-card class="-table">
-    <div class="row -table-header">
-      <div class="col-md-4">{{ 'backup.wallet' | translate }}</div>
-      <div class="col-md-4">{{ 'backup.filename' | translate }}</div>
-      <div class="col-md-4">{{ 'backup.seed' | translate }}</div>
+  <div class="container">
+    <div class="-paper">
+      <p>{{ 'backup.wallet-directory' | translate }} {{ folder }}</p>
+      <p>{{ 'backup.seed-warning' | translate }}</p>
+      <p class="-text-muted">
+        <small [innerHtml]="'backup.desc' | translate"></small>
+      </p>
     </div>
-    <div class="row -table-row" *ngFor="let wallet of onlyEncrypted">
-      <div class="col-md-4"><span>{{ wallet.label }}</span></div>
-      <div class="col-md-4"><span>{{ wallet.filename }}</span></div>
-      <div class="col-md-4">
-        <button mat-raised-button color="primary" (click)="showSeed(wallet)">{{ 'backup.show-seed' | translate }}</button>
+
+    <div class="-table">
+      <div class="-headers">
+        <div class="-width-250">{{ 'backup.wallet' | translate }}</div>
+        <div class="-width-150">{{ 'backup.filename' | translate }}</div>
+        <div class="-flex-fill"></div>
+      </div>
+      <div class="-body">
+        <div class="-row" *ngFor="let wallet of onlyEncrypted">
+          <div class="-width-250">{{ wallet.label }}</div>
+          <div class="-width-150">{{ wallet.filename }}</div>
+          <div class="-flex-fill -text-right">
+            <span class="-link" (click)="showSeed(wallet)">{{ 'backup.show-seed' | translate }}</span>
+          </div>
+        </div>
       </div>
     </div>
-  </mat-card>
+  </div>
 </div>

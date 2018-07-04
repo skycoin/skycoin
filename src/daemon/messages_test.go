@@ -6,6 +6,7 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+	"testing"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
@@ -13,6 +14,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/util"
+	"github.com/stretchr/testify/require"
 )
 
 func setupMsgEncoding() {
@@ -56,14 +58,13 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 	if !mai.LengthCalled {
 		mai.LengthCalled = true
 		return util.Annotation{Size: 4, Name: "Length"}, true
-
 	}
 	if !mai.PrefixCalled {
 		mai.PrefixCalled = true
 		return util.Annotation{Size: 4, Name: "Prefix"}, true
 
 	}
-	if mai.CurrentField == mai.MaxField {
+	if mai.CurrentField >= mai.MaxField {
 		return util.Annotation{}, false
 	}
 
@@ -74,6 +75,30 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 	t := v.Type()
 	vF := v.Field(i)
 	f := t.Field(i)
+	for f.PkgPath != "" && i < mai.MaxField {
+		i++
+		mai.CurrentField++
+		mai.CurrentIndex = -1
+		j = -1
+		if i < mai.MaxField {
+			f = t.Field(i)
+			if f.Type.Kind() == reflect.Slice {
+				if _, omitempty := encoder.ParseTag(f.Tag.Get("enc")); omitempty {
+					if i == mai.MaxField-1 {
+						vF = v.Field(i)
+						if vF.Len() == 0 {
+							// Last field is empty slice. Nothing further tokens
+							return util.Annotation{}, false
+						}
+					} else {
+						panic(encoder.ErrInvalidOmitEmpty)
+					}
+				}
+			}
+		} else {
+			return util.Annotation{}, false
+		}
+	}
 	if f.Tag.Get("enc") != "-" {
 		if vF.CanSet() || f.Name != "_" {
 			if v.Field(i).Kind() == reflect.Slice {
@@ -84,7 +109,6 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 				sliceLen := v.Field(i).Len()
 				mai.CurrentIndex++
 				if mai.CurrentIndex < sliceLen {
-
 					// Emit annotation for slice item
 					return util.Annotation{Size: len(encoder.Serialize(v.Field(i).Slice(j, j+1).Interface())[4:]), Name: f.Name + "[" + strconv.Itoa(j) + "]"}, true
 				}
@@ -144,10 +168,84 @@ func GetSHAFromHex(hex string) cipher.SHA256 {
 	return sha
 }
 
+type EmptySliceStruct struct {
+	A uint8
+	e int16
+	B string
+	C int32
+	D []byte
+	f rune
+}
+
+func (m *EmptySliceStruct) Handle(mc *gnet.MessageContext, daemon interface{}) error {
+	// Do nothing
+	return nil
+}
+
+func ExampleEmptySliceStruct() {
+	defer gnet.EraseMessages()
+	setupMsgEncoding()
+	gnet.RegisterMessage(gnet.MessagePrefixFromString("TEST"), EmptySliceStruct{})
+	gnet.VerifyMessages()
+	var message = EmptySliceStruct{
+		0x01,
+		0x2345,
+		"",
+		0x6789ABCD,
+		nil,
+		'a',
+	}
+	var mai = NewMessagesAnnotationsIterator(&message)
+	w := bufio.NewWriter(os.Stdout)
+	util.HexDumpFromIterator(gnet.EncodeMessage(&message), &mai, w)
+	// Output:
+	// 0x0000 | 11 00 00 00 ....................................... Length
+	// 0x0004 | 54 45 53 54 ....................................... Prefix
+	// 0x0008 | 01 ................................................ A
+	// 0x0009 | 00 00 00 00 ....................................... B
+	// 0x000d | cd ab 89 67 ....................................... C
+	// 0x0011 | 00 00 00 00 ....................................... D length
+	// 0x0015 |
+}
+
+type OmitEmptySliceTestStruct struct {
+	A uint8
+	B []byte
+	c rune
+	D []byte `enc:",omitempty"`
+}
+
+func (m *OmitEmptySliceTestStruct) Handle(mc *gnet.MessageContext, daemon interface{}) error {
+	// Do nothing
+	return nil
+}
+
+func ExampleOmitEmptySliceTestStruct() {
+	defer gnet.EraseMessages()
+	setupMsgEncoding()
+	gnet.RegisterMessage(gnet.MessagePrefixFromString("TEST"), OmitEmptySliceTestStruct{})
+	gnet.VerifyMessages()
+	var message = OmitEmptySliceTestStruct{
+		0x01,
+		nil,
+		'a',
+		nil,
+	}
+	var mai = NewMessagesAnnotationsIterator(&message)
+	w := bufio.NewWriter(os.Stdout)
+	util.HexDumpFromIterator(gnet.EncodeMessage(&message), &mai, w)
+	// Output:
+	// 0x0000 | 09 00 00 00 ....................................... Length
+	// 0x0004 | 54 45 53 54 ....................................... Prefix
+	// 0x0008 | 01 ................................................ A
+	// 0x0009 | 00 00 00 00 ....................................... B length
+	// 0x000d |
+}
+
 func ExampleIntroductionMessage() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
-	var message = NewIntroductionMessage(1234, 5, 7890)
+	var message = NewIntroductionMessage(1234, 5, 7890, nil)
 	fmt.Println("IntroductionMessage:")
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
@@ -443,6 +541,295 @@ func ExampleAnnounceTxnsMessage() {
 	// 0x004c |
 }
 
+func TestIntroductionMessage(t *testing.T) {
+	defer gnet.EraseMessages()
+	setupMsgEncoding()
+
+	pubkey, _ := cipher.GenerateKeyPair()
+	pubkey2, _ := cipher.GenerateKeyPair()
+
+	type mirrorPortResult struct {
+		port  uint16
+		exist bool
+	}
+
+	type daemonMockValue struct {
+		version                    uint32
+		mirror                     uint32
+		isDefaultConnection        bool
+		isMaxConnectionsReached    bool
+		isMaxConnectionsReachedErr error
+		setHasIncomingPortErr      error
+		getMirrorPortResult        mirrorPortResult
+		recordMessageEventErr      error
+		pubkey                     cipher.PubKey
+		disconnectReason           gnet.DisconnectReason
+		disconnectErr              error
+		addPeerArg                 string
+		addPeerErr                 error
+	}
+
+	tt := []struct {
+		name      string
+		addr      string
+		mockValue daemonMockValue
+		intro     *IntroductionMessage
+		err       error
+	}{
+		{
+			name: "INTR message without extra bytes",
+			addr: "121.121.121.121:6000",
+			mockValue: daemonMockValue{
+				mirror:  10000,
+				version: 1,
+				getMirrorPortResult: mirrorPortResult{
+					exist: false,
+				},
+			},
+			intro: &IntroductionMessage{
+				Mirror:  10001,
+				Port:    6000,
+				Version: 1,
+				valid:   true,
+			},
+			err: nil,
+		},
+		{
+			name: "INTR message with pubkey",
+			addr: "121.121.121.121:6000",
+			mockValue: daemonMockValue{
+				mirror:  10000,
+				version: 1,
+				getMirrorPortResult: mirrorPortResult{
+					exist: false,
+				},
+				pubkey: pubkey,
+			},
+			intro: &IntroductionMessage{
+				Mirror:  10001,
+				Port:    6000,
+				Version: 1,
+				valid:   true,
+				Extra:   pubkey[:],
+			},
+			err: nil,
+		},
+		{
+			name: "INTR message with pubkey",
+			addr: "121.121.121.121:6000",
+			mockValue: daemonMockValue{
+				mirror:  10000,
+				version: 1,
+				getMirrorPortResult: mirrorPortResult{
+					exist: false,
+				},
+				pubkey: pubkey,
+			},
+			intro: &IntroductionMessage{
+				Mirror:  10001,
+				Port:    6000,
+				Version: 1,
+				valid:   true,
+				Extra:   pubkey[:],
+			},
+			err: nil,
+		},
+		{
+			name: "INTR message with pubkey and additional data",
+			addr: "121.121.121.121:6000",
+			mockValue: daemonMockValue{
+				mirror:  10000,
+				version: 1,
+				getMirrorPortResult: mirrorPortResult{
+					exist: false,
+				},
+				pubkey: pubkey,
+			},
+			intro: &IntroductionMessage{
+				Mirror:  10001,
+				Port:    6000,
+				Version: 1,
+				valid:   true,
+				Extra:   append(pubkey[:], []byte("additional data")...),
+			},
+			err: nil,
+		},
+		{
+			name: "INTR message with different pubkey",
+			addr: "121.121.121.121:6000",
+			mockValue: daemonMockValue{
+				mirror:  10000,
+				version: 1,
+				getMirrorPortResult: mirrorPortResult{
+					exist: false,
+				},
+				pubkey:           pubkey,
+				disconnectReason: ErrDisconnectBlockchainPubkeyNotMatched,
+			},
+			intro: &IntroductionMessage{
+				Mirror:  10001,
+				Port:    6000,
+				Version: 1,
+				valid:   true,
+				Extra:   pubkey2[:],
+			},
+			err: ErrDisconnectBlockchainPubkeyNotMatched,
+		},
+		{
+			name: "INTR message with invalid pubkey",
+			addr: "121.121.121.121:6000",
+			mockValue: daemonMockValue{
+				mirror:  10000,
+				version: 1,
+				getMirrorPortResult: mirrorPortResult{
+					exist: false,
+				},
+				pubkey:           pubkey,
+				disconnectReason: ErrDisconnectInvalidExtraData,
+			},
+			intro: &IntroductionMessage{
+				Mirror:  10001,
+				Port:    6000,
+				Version: 1,
+				valid:   true,
+				Extra:   []byte("invalid extra data"),
+			},
+			err: ErrDisconnectInvalidExtraData,
+		},
+		{
+			name: "Disconnect self connection",
+			mockValue: daemonMockValue{
+				mirror:           10000,
+				disconnectReason: ErrDisconnectSelf,
+			},
+			intro: &IntroductionMessage{
+				Mirror: 10000,
+			},
+			err: ErrDisconnectSelf,
+		},
+		{
+			name: "Invalid version",
+			mockValue: daemonMockValue{
+				mirror:           10000,
+				version:          1,
+				disconnectReason: ErrDisconnectInvalidVersion,
+			},
+			intro: &IntroductionMessage{
+				Mirror:  10001,
+				Version: 0,
+			},
+			err: ErrDisconnectInvalidVersion,
+		},
+		{
+			name: "Invalid address",
+			addr: "121.121.121.121",
+			mockValue: daemonMockValue{
+				mirror:           10000,
+				version:          1,
+				disconnectReason: ErrDisconnectOtherError,
+				pubkey:           pubkey,
+			},
+			intro: &IntroductionMessage{
+				Mirror:  10001,
+				Version: 1,
+				Port:    6000,
+			},
+			err: ErrDisconnectOtherError,
+		},
+		{
+			name: "Max default connections reached",
+			addr: "121.121.121.121:6000",
+			mockValue: daemonMockValue{
+				mirror:                  10000,
+				version:                 1,
+				disconnectReason:        ErrDisconnectMaxDefaultConnectionReached,
+				isDefaultConnection:     true,
+				isMaxConnectionsReached: true,
+				getMirrorPortResult: mirrorPortResult{
+					exist: false,
+				},
+				pubkey: pubkey,
+			},
+			intro: &IntroductionMessage{
+				Mirror:  10001,
+				Version: 1,
+				Port:    6000,
+			},
+			err: ErrDisconnectMaxDefaultConnectionReached,
+		},
+		{
+			name: "incomming connection",
+			addr: "121.121.121.121:12345",
+			mockValue: daemonMockValue{
+				mirror:                  10000,
+				version:                 1,
+				isDefaultConnection:     true,
+				isMaxConnectionsReached: true,
+				getMirrorPortResult: mirrorPortResult{
+					exist: false,
+				},
+				pubkey:     pubkey,
+				addPeerArg: "121.121.121.121:6000",
+				addPeerErr: nil,
+			},
+			intro: &IntroductionMessage{
+				Mirror:  10001,
+				Version: 1,
+				Port:    6000,
+				valid:   true,
+			},
+		},
+		{
+			name: "Connect twice",
+			addr: "121.121.121.121:6000",
+			mockValue: daemonMockValue{
+				mirror:              10000,
+				version:             1,
+				isDefaultConnection: true,
+				getMirrorPortResult: mirrorPortResult{
+					exist: true,
+				},
+				pubkey:           pubkey,
+				addPeerArg:       "121.121.121.121:6000",
+				addPeerErr:       nil,
+				disconnectReason: ErrDisconnectConnectedTwice,
+			},
+			intro: &IntroductionMessage{
+				Mirror:  10001,
+				Version: 1,
+				Port:    6000,
+			},
+			err: ErrDisconnectConnectedTwice,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			mc := &gnet.MessageContext{Addr: tc.addr}
+			tc.intro.c = mc
+
+			d := NewDaemonerMock()
+			d.On("DaemonConfig").Return(DaemonConfig{Version: int32(tc.mockValue.version)})
+			d.On("Mirror").Return(tc.mockValue.mirror)
+			d.On("IsDefaultConnection", tc.addr).Return(tc.mockValue.isDefaultConnection)
+			d.On("SetHasIncomingPort", tc.addr).Return(tc.mockValue.setHasIncomingPortErr)
+			d.On("GetMirrorPort", tc.addr, tc.intro.Mirror).Return(tc.mockValue.getMirrorPortResult.port, tc.mockValue.getMirrorPortResult.exist)
+			d.On("RecordMessageEvent", tc.intro, mc).Return(tc.mockValue.recordMessageEventErr)
+			d.On("ResetRetryTimes", tc.addr)
+			d.On("BlockchainPubkey").Return(tc.mockValue.pubkey)
+			d.On("Disconnect", tc.addr, tc.mockValue.disconnectReason).Return(tc.mockValue.disconnectErr)
+			d.On("IncreaseRetryTimes", tc.addr)
+			d.On("RemoveFromExpectingIntroductions", tc.addr)
+			d.On("IsMaxDefaultConnectionsReached").Return(tc.mockValue.isMaxConnectionsReached, tc.mockValue.isMaxConnectionsReachedErr)
+			d.On("AddPeer", tc.mockValue.addPeerArg).Return(tc.mockValue.addPeerErr)
+
+			err := tc.intro.Handle(mc, d)
+			require.Equal(t, tc.err, err)
+		})
+	}
+
+}
+
 func ExampleRejectWithPeersMessage() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
@@ -457,7 +844,7 @@ func ExampleRejectWithPeersMessage() {
 	addr, _ = NewIPAddr("192.168.1.4:6004")
 	peers = append(peers, addr)
 
-	rejectedMessage := NewIntroductionMessage(0x0123456, 0x789ABCD, 6000)
+	rejectedMessage := NewIntroductionMessage(0x0123456, 0x789ABCD, 6000, []byte{})
 	message := NewRejectWithPeersMessage(rejectedMessage, gnet.ErrDisconnectWriteFailed,
 		"ExampleRejectWithPeersMessage", peers)
 	fmt.Println("RejectWithPeersMessage:")

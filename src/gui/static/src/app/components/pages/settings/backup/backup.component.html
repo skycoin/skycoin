@@ -10,6 +10,12 @@
       </p>
     </div>
 
+    <app-loading-content
+      [isLoading]="false"
+      noDataText="backup.no-wallets"
+      *ngIf="onlyEncrypted.length === 0"
+    ></app-loading-content>
+
     <div class="-table" *ngIf="onlyEncrypted.length > 0">
       <div class="-headers">
         <div class="-width-250">{{ 'backup.wallet' | translate }}</div>

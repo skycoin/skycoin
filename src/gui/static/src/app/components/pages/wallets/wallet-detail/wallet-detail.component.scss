@@ -23,7 +23,7 @@
     cursor: pointer;
 
     &:hover .copy-label {
-      visibility: visible;
+      opacity: 1;
     }
   }
 }
@@ -151,7 +151,7 @@
 
 .copy-label {
   color: $blue;
-  visibility: hidden;
+  opacity: 0;
   font-size: 12px;
   position: relative;
   padding-left: 10px;

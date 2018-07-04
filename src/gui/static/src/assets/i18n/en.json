@@ -186,7 +186,8 @@
     "wallet": "Wallet Label",
     "filename": "Filename",
     "seed": "Seed",
-    "show-seed": "Show seed"
+    "show-seed": "Show seed",
+    "no-wallets": "No encrypted wallets"
   },
 
   "blockchain": {

@@ -109,6 +109,24 @@ type ReadableTransactionInput struct {
 	CalculatedHours uint64 `json:"calculated_hours"`
 }
 
+// CoinSupply records the coin supply info
+type CoinSupply struct {
+	// Coins distributed beyond the project:
+	CurrentSupply string `json:"current_supply"`
+	// TotalSupply is CurrentSupply plus coins held by the distribution addresses that are spendable
+	TotalSupply string `json:"total_supply"`
+	// MaxSupply is the maximum number of coins to be distributed ever
+	MaxSupply string `json:"max_supply"`
+	// CurrentCoinHourSupply is coins hours in non distribution addresses
+	CurrentCoinHourSupply string `json:"current_coinhour_supply"`
+	// TotalCoinHourSupply is coin hours in all addresses including unlocked distribution addresses
+	TotalCoinHourSupply string `json:"total_coinhour_supply"`
+	// Distribution addresses which count towards total supply
+	UnlockedAddresses []string `json:"unlocked_distribution_addresses"`
+	// Distribution addresses which are locked and do not count towards total supply
+	LockedAddresses []string `json:"locked_distribution_addresses"`
+}
+
 // NewReadableTransactionOutput creates ReadableTransactionOutput
 func NewReadableTransactionOutput(t *coin.TransactionOutput, txid cipher.SHA256) (*ReadableTransactionOutput, error) {
 	coinStr, err := droplet.ToString(t.Coins)

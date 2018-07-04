@@ -12,7 +12,6 @@ import (
 
 	cipher "github.com/skycoin/skycoin/src/cipher"
 	coin "github.com/skycoin/skycoin/src/coin"
-	daemon "github.com/skycoin/skycoin/src/daemon"
 	visor "github.com/skycoin/skycoin/src/visor"
 	historydb "github.com/skycoin/skycoin/src/visor/historydb"
 )
@@ -180,7 +179,7 @@ func (m *GatewayerMock) GetTransaction(p0 cipher.SHA256) (*visor.Transaction, er
 }
 
 // GetUnspentOutputs mocked method
-func (m *GatewayerMock) GetUnspentOutputs(p0 ...daemon.OutputsFilter) (*visor.ReadableOutputSet, error) {
+func (m *GatewayerMock) GetUnspentOutputs(p0 ...visor.OutputsFilter) (*visor.ReadableOutputSet, error) {
 
 	ret := m.Called(p0)
 

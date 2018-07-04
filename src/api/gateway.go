@@ -33,7 +33,7 @@ type Gatewayer interface {
 	GetBlocks(start, end uint64) (*visor.ReadableBlocks, error)
 	GetLastBlocks(num uint64) (*visor.ReadableBlocks, error)
 	GetBuildInfo() visor.BuildInfo
-	GetUnspentOutputs(filters ...daemon.OutputsFilter) (*visor.ReadableOutputSet, error)
+	GetUnspentOutputs(filters ...visor.OutputsFilter) (*visor.ReadableOutputSet, error)
 	GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair, error)
 	GetBlockchainMetadata() (*visor.BlockchainMetadata, error)
 	GetBlockchainProgress() (*daemon.BlockchainProgress, error)
@@ -51,6 +51,7 @@ type Gatewayer interface {
 	GetAddrUxOuts(addr []cipher.Address) ([]*historydb.UxOut, error)
 	GetTransactionsForAddress(a cipher.Address) ([]daemon.ReadableTransaction, error)
 	GetRichlist(includeDistribution bool) (visor.Richlist, error)
+	GetCoinSupply() (*visor.CoinSupply, error)
 	GetAddressCount() (uint64, error)
 	GetHealth() (*daemon.Health, error)
 	UnloadWallet(id string) error

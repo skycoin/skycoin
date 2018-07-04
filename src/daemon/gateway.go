@@ -357,77 +357,20 @@ func (gw *Gateway) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error) {
 	return visor.NewReadableBlocks(blocks)
 }
 
-// OutputsFilter used as optional arguments in GetUnspentOutputs method
-type OutputsFilter func(outputs coin.UxArray) coin.UxArray
-
 // GetUnspentOutputs gets unspent outputs and returns the filtered results,
 // Note: all filters will be executed as the pending sequence in 'AND' mode.
-func (gw *Gateway) GetUnspentOutputs(filters ...OutputsFilter) (*visor.ReadableOutputSet, error) {
-	// unspent outputs
-	var unspentOutputs []coin.UxOut
-	// unconfirmed spending outputs
-	var uncfmSpendingOutputs coin.UxArray
-	// unconfirmed incoming outputs
-	var uncfmIncomingOutputs coin.UxArray
-	var head *coin.SignedBlock
+func (gw *Gateway) GetUnspentOutputs(filters ...visor.OutputsFilter) (*visor.ReadableOutputSet, error) {
+	var outputSet *visor.ReadableOutputSet
 	var err error
 	gw.strand("GetUnspentOutputs", func() {
-		head, err = gw.v.GetHeadBlock()
-		if err != nil {
-			err = fmt.Errorf("v.GetHeadBlock failed: %v", err)
-			return
-		}
-
-		unspentOutputs, err = gw.v.GetAllUnspentOutputs()
-		if err != nil {
-			err = fmt.Errorf("v.GetAllUnspentOutputs failed: %v", err)
-			return
-		}
-
-		uncfmSpendingOutputs, err = gw.v.UnconfirmedSpendingOutputs()
-		if err != nil {
-			err = fmt.Errorf("v.UnconfirmedSpendingOutputs failed: %v", err)
-			return
-		}
-
-		uncfmIncomingOutputs, err = gw.v.UnconfirmedIncomingOutputs()
-		if err != nil {
-			err = fmt.Errorf("v.UnconfirmedIncomingOutputs failed: %v", err)
-			return
-		}
+		outputSet, err = gw.v.GetReadableUnspentOutputs(filters)
 	})
 
-	if err != nil {
-		return nil, err
-	}
-
-	for _, flt := range filters {
-		unspentOutputs = flt(unspentOutputs)
-		uncfmSpendingOutputs = flt(uncfmSpendingOutputs)
-		uncfmIncomingOutputs = flt(uncfmIncomingOutputs)
-	}
-
-	outputSet := visor.ReadableOutputSet{}
-	outputSet.HeadOutputs, err = visor.NewReadableOutputs(head.Time(), unspentOutputs)
-	if err != nil {
-		return nil, err
-	}
-
-	outputSet.OutgoingOutputs, err = visor.NewReadableOutputs(head.Time(), uncfmSpendingOutputs)
-	if err != nil {
-		return nil, err
-	}
-
-	outputSet.IncomingOutputs, err = visor.NewReadableOutputs(head.Time(), uncfmIncomingOutputs)
-	if err != nil {
-		return nil, err
-	}
-
-	return &outputSet, nil
+	return outputSet, err
 }
 
 // FbyAddressesNotIncluded filters the unspent outputs that are not owned by the addresses
-func FbyAddressesNotIncluded(addrs []string) OutputsFilter {
+func FbyAddressesNotIncluded(addrs []string) visor.OutputsFilter {
 	return func(outputs coin.UxArray) coin.UxArray {
 		addrMatch := coin.UxArray{}
 		addrMap := MakeSearchMap(addrs)
@@ -442,7 +385,7 @@ func FbyAddressesNotIncluded(addrs []string) OutputsFilter {
 }
 
 // FbyAddresses filters the unspent outputs that owned by the addresses
-func FbyAddresses(addrs []string) OutputsFilter {
+func FbyAddresses(addrs []string) visor.OutputsFilter {
 	return func(outputs coin.UxArray) coin.UxArray {
 		addrMatch := coin.UxArray{}
 		addrMap := MakeSearchMap(addrs)
@@ -457,7 +400,7 @@ func FbyAddresses(addrs []string) OutputsFilter {
 }
 
 // FbyHashes filters the unspent outputs that have hashes matched.
-func FbyHashes(hashes []string) OutputsFilter {
+func FbyHashes(hashes []string) visor.OutputsFilter {
 	return func(outputs coin.UxArray) coin.UxArray {
 		hsMatch := coin.UxArray{}
 		hsMap := MakeSearchMap(hashes)
@@ -473,12 +416,7 @@ func FbyHashes(hashes []string) OutputsFilter {
 
 // MakeSearchMap returns a search indexed map for use in filters
 func MakeSearchMap(addrs []string) map[string]struct{} {
-	addrMap := make(map[string]struct{})
-	for _, addr := range addrs {
-		addrMap[addr] = struct{}{}
-	}
-
-	return addrMap
+	return visor.MakeSearchMap(addrs)
 }
 
 // GetTransaction returns transaction by txid
@@ -1092,36 +1030,24 @@ func (gw *Gateway) GetBuildInfo() visor.BuildInfo {
 
 // GetRichlist returns rich list as desc order.
 func (gw *Gateway) GetRichlist(includeDistribution bool) (visor.Richlist, error) {
-	rbOuts, err := gw.GetUnspentOutputs()
-	if err != nil {
-		return nil, err
-	}
+	var richlist visor.Richlist
+	var err error
+	gw.strand("GetRichlist", func() {
+		richlist, err = gw.v.Richlist(includeDistribution)
+	})
 
-	allAccounts, err := rbOuts.AggregateUnspentOutputs()
-	if err != nil {
-		return nil, err
-	}
+	return richlist, err
+}
 
-	lockedAddrs := visor.GetLockedDistributionAddresses()
-	addrsMap := make(map[string]struct{}, len(lockedAddrs))
-	for _, a := range lockedAddrs {
-		addrsMap[a] = struct{}{}
-	}
+// GetCoinSupply returns coin supply detail.
+func (gw *Gateway) GetCoinSupply() (*visor.CoinSupply, error) {
+	var cs *visor.CoinSupply
+	var err error
+	gw.strand("GetCoinSupply", func() {
+		cs, err = gw.v.CoinSupply()
+	})
 
-	richlist, err := visor.NewRichlist(allAccounts, addrsMap)
-	if err != nil {
-		return nil, err
-	}
-
-	if !includeDistribution {
-		unlockedAddrs := visor.GetUnlockedDistributionAddresses()
-		for _, a := range unlockedAddrs {
-			addrsMap[a] = struct{}{}
-		}
-		richlist = richlist.FilterAddresses(addrsMap)
-	}
-
-	return richlist, nil
+	return cs, err
 }
 
 // GetAddressCount returns count number of unique address with uxouts > 0.

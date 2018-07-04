@@ -344,8 +344,8 @@ func (c *Client) OutputsForHashes(hashes []string) (*visor.ReadableOutputSet, er
 }
 
 // CoinSupply makes a request to GET /api/v1/coinSupply
-func (c *Client) CoinSupply() (*CoinSupply, error) {
-	var cs CoinSupply
+func (c *Client) CoinSupply() (*visor.CoinSupply, error) {
+	var cs visor.CoinSupply
 	if err := c.Get("/api/v1/coinSupply", &cs); err != nil {
 		return nil, err
 	}

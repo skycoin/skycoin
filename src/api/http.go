@@ -19,6 +19,7 @@ import (
 	"github.com/skycoin/skycoin/src/util/file"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/visor"
 )
 
 var (
@@ -514,7 +515,7 @@ func getOutputsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		filters := []daemon.OutputsFilter{}
+		filters := []visor.OutputsFilter{}
 
 		if addrStr != "" {
 			addrs = splitCommaString(addrStr)

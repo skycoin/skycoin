@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 
 	"time"
 
@@ -228,6 +229,9 @@ type Visor struct {
 	Wallets     *wallet.Service
 	StartedAt   time.Time
 
+	cachedRichlist   map[cipher.SHA256]Richlist
+	cachedCoinSupply map[cipher.SHA256]*CoinSupply
+
 	history Historyer
 }
 
@@ -295,13 +299,15 @@ func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
 	}
 
 	v := &Visor{
-		Config:      c,
-		DB:          db,
-		Blockchain:  bc,
-		Unconfirmed: utp,
-		history:     history,
-		Wallets:     wltServ,
-		StartedAt:   time.Now(),
+		Config:           c,
+		DB:               db,
+		Blockchain:       bc,
+		Unconfirmed:      utp,
+		history:          history,
+		Wallets:          wltServ,
+		StartedAt:        time.Now(),
+		cachedRichlist:   map[cipher.SHA256]Richlist{},
+		cachedCoinSupply: make(map[cipher.SHA256]*CoinSupply),
 	}
 
 	return v, nil
@@ -2102,4 +2108,260 @@ func (vs *Visor) getUnspentsForSpending(tx *dbutil.Tx, addrs []cipher.Address, i
 	}
 
 	return auxs, nil
+}
+
+// Richlist returns the richlist
+func (vs *Visor) Richlist(includeDistribution bool) (Richlist, error) {
+	var xorHash cipher.SHA256
+	if err := vs.DB.View("Richlist", func(tx *dbutil.Tx) error {
+		var err error
+		xorHash, err = vs.Blockchain.Unspent().GetUxHash(tx)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+	richlist, ok := vs.cachedRichlist[xorHash]
+	if !ok {
+		// xorHash changed
+		var err error
+		richlist, err = vs.getRichlist()
+		if err != nil {
+			return nil, err
+		}
+		// delete invalid key
+		for k := range vs.cachedRichlist {
+			delete(vs.cachedRichlist, k)
+		}
+		vs.cachedRichlist[xorHash] = richlist
+	}
+	if !includeDistribution {
+		lockedAddrs := GetLockedDistributionAddresses()
+		unlockedAddrs := GetUnlockedDistributionAddresses()
+		addrsMap := MakeSearchMap(append(lockedAddrs, unlockedAddrs...))
+		richlist = richlist.FilterAddresses(addrsMap)
+	}
+
+	return richlist, nil
+}
+
+func (vs *Visor) getRichlist() (Richlist, error) {
+	ux, err := vs.GetAllUnspentOutputs()
+	if err != nil {
+		return nil, err
+	}
+	allAccounts, err := aggregateUnspent(ux)
+	if err != nil {
+		return nil, err
+	}
+	lockedAddrs := GetLockedDistributionAddresses()
+	addrsMap := MakeSearchMap(lockedAddrs)
+
+	richlist, err := NewRichlist(allAccounts, addrsMap)
+	if err != nil {
+		return nil, err
+	}
+
+	return richlist, nil
+}
+
+// aggregateUnspentOutputs builds a map from address to coins
+func aggregateUnspent(ux coin.UxArray) (map[string]uint64, error) {
+	var err error
+	allAccounts := map[string]uint64{}
+	for _, out := range ux {
+		amt := out.Body.Coins
+		address := out.Body.Address.String()
+		if _, ok := allAccounts[address]; ok {
+			allAccounts[address], err = coin.AddUint64(allAccounts[address], amt)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			allAccounts[address] = amt
+		}
+	}
+
+	return allAccounts, nil
+}
+
+// CoinSupply returns coin supply details.
+func (vs *Visor) CoinSupply() (*CoinSupply, error) {
+	var xorHash cipher.SHA256
+	if err := vs.DB.View("CoinSupply", func(tx *dbutil.Tx) error {
+		var err error
+		xorHash, err = vs.Blockchain.Unspent().GetUxHash(tx)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+	if cs, ok := vs.cachedCoinSupply[xorHash]; ok {
+		return cs, nil
+	}
+	cs, err := vs.getCoinSupply()
+	if err != nil {
+		return nil, err
+	}
+	// delete invalid key
+	for k := range vs.cachedCoinSupply {
+		delete(vs.cachedCoinSupply, k)
+	}
+	vs.cachedCoinSupply[xorHash] = cs
+	return cs, nil
+}
+
+func (vs *Visor) getCoinSupply() (*CoinSupply, error) {
+	allUnspents, err := vs.GetReadableUnspentOutputs([]OutputsFilter{})
+	if err != nil {
+		return nil, fmt.Errorf("getAllUnspentOutputs failed: %v", err)
+	}
+
+	unlockedAddrs := GetUnlockedDistributionAddresses()
+	// Search map of unlocked addresses
+	// used to filter unspents
+	unlockedAddrMap := MakeSearchMap(unlockedAddrs)
+
+	var unlockedSupply uint64
+
+	for _, u := range allUnspents.HeadOutputs {
+		// check if address is an unlocked distribution address
+		if _, ok := unlockedAddrMap[u.Address]; ok {
+			coins, err := droplet.FromString(u.Coins)
+			if err != nil {
+				return nil, fmt.Errorf("Invalid unlocked output balance string %s: %v", u.Coins, err)
+			}
+			unlockedSupply += coins
+		}
+	}
+
+	// "total supply" is the number of coins unlocked.
+	// Each distribution address was allocated visor.DistributionAddressInitialBalance coins.
+	totalSupply := uint64(len(unlockedAddrs)) * DistributionAddressInitialBalance
+	totalSupply *= droplet.Multiplier
+
+	// "current supply" is the number of coins distributed from the unlocked pool
+	currentSupply := totalSupply - unlockedSupply
+
+	currentSupplyStr, err := droplet.ToString(currentSupply)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to convert coins to string: %v", err)
+	}
+
+	totalSupplyStr, err := droplet.ToString(totalSupply)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to convert coins to string: %v", err)
+	}
+
+	maxSupplyStr, err := droplet.ToString(MaxCoinSupply * droplet.Multiplier)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to convert coins to string: %v", err)
+	}
+
+	// locked distribution addresses
+	lockedAddrs := GetLockedDistributionAddresses()
+	lockedAddrMap := MakeSearchMap(lockedAddrs)
+
+	// get total coins hours which excludes locked distribution addresses
+	var totalCoinHours uint64
+	for _, out := range allUnspents.HeadOutputs {
+		if _, ok := lockedAddrMap[out.Address]; !ok {
+			totalCoinHours += out.CalculatedHours
+		}
+	}
+
+	// get current coin hours which excludes all distribution addresses
+	var currentCoinHours uint64
+	for _, out := range allUnspents.HeadOutputs {
+		// check if address not in locked distribution addresses
+		if _, ok := lockedAddrMap[out.Address]; !ok {
+			// check if address not in unlocked distribution addresses
+			if _, ok := unlockedAddrMap[out.Address]; !ok {
+				currentCoinHours += out.CalculatedHours
+			}
+		}
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get total coinhours: %v", err)
+	}
+
+	cs := CoinSupply{
+		CurrentSupply:         currentSupplyStr,
+		TotalSupply:           totalSupplyStr,
+		MaxSupply:             maxSupplyStr,
+		CurrentCoinHourSupply: strconv.FormatUint(currentCoinHours, 10),
+		TotalCoinHourSupply:   strconv.FormatUint(totalCoinHours, 10),
+		UnlockedAddresses:     unlockedAddrs,
+		LockedAddresses:       GetLockedDistributionAddresses(),
+	}
+
+	return &cs, nil
+}
+
+// OutputsFilter used as optional arguments in GetReadableUnspentOutputs method
+type OutputsFilter func(outputs coin.UxArray) coin.UxArray
+
+// GetReadableUnspentOutputs gets unspent outputs and returns the filtered results,
+// Note: all filters will be executed as the pending sequence in 'AND' mode.
+func (vs *Visor) GetReadableUnspentOutputs(filters []OutputsFilter) (*ReadableOutputSet, error) {
+	// unspent outputs
+	var unspentOutputs []coin.UxOut
+	// unconfirmed spending outputs
+	var uncfmSpendingOutputs coin.UxArray
+	// unconfirmed incoming outputs
+	var uncfmIncomingOutputs coin.UxArray
+	var head *coin.SignedBlock
+	var err error
+	head, err = vs.GetHeadBlock()
+	if err != nil {
+		return nil, fmt.Errorf("v.GetHeadBlock failed: %v", err)
+	}
+
+	unspentOutputs, err = vs.GetAllUnspentOutputs()
+	if err != nil {
+		return nil, fmt.Errorf("v.GetAllUnspentOutputs failed: %v", err)
+	}
+
+	uncfmSpendingOutputs, err = vs.UnconfirmedSpendingOutputs()
+	if err != nil {
+		return nil, fmt.Errorf("v.UnconfirmedSpendingOutputs failed: %v", err)
+	}
+
+	uncfmIncomingOutputs, err = vs.UnconfirmedIncomingOutputs()
+	if err != nil {
+		return nil, fmt.Errorf("v.UnconfirmedIncomingOutputs failed: %v", err)
+	}
+
+	for _, flt := range filters {
+		unspentOutputs = flt(unspentOutputs)
+		uncfmSpendingOutputs = flt(uncfmSpendingOutputs)
+		uncfmIncomingOutputs = flt(uncfmIncomingOutputs)
+	}
+
+	outputSet := ReadableOutputSet{}
+	outputSet.HeadOutputs, err = NewReadableOutputs(head.Time(), unspentOutputs)
+	if err != nil {
+		return nil, err
+	}
+
+	outputSet.OutgoingOutputs, err = NewReadableOutputs(head.Time(), uncfmSpendingOutputs)
+	if err != nil {
+		return nil, err
+	}
+
+	outputSet.IncomingOutputs, err = NewReadableOutputs(head.Time(), uncfmIncomingOutputs)
+	if err != nil {
+		return nil, err
+	}
+
+	return &outputSet, nil
+}
+
+// MakeSearchMap returns a search indexed map for use in filters
+func MakeSearchMap(addrs []string) map[string]struct{} {
+	addrMap := make(map[string]struct{})
+	for _, addr := range addrs {
+		addrMap[addr] = struct{}{}
+	}
+
+	return addrMap
 }

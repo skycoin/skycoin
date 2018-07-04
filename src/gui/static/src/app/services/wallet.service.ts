@@ -193,7 +193,9 @@ export class WalletService {
         }, [])
         .sort((a, b) =>  b.timestamp - a.timestamp)
         .map(transaction => {
-          const outgoing = this.addresses.some(address => transaction.inputs[0].owner === address.address);
+          const outgoing = this.addresses.some(address => {
+            return transaction.inputs.some(input => input.owner === address.address);
+          });
 
           const relevantOutputs = transaction.outputs.reduce((array, output) => {
             const isMyOutput = this.addresses.some(address => address.address === output.dst);

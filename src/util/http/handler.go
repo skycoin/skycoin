@@ -46,3 +46,11 @@ func HostCheck(logger *logging.Logger, host string, handler http.Handler) http.H
 		handler.ServeHTTP(w, r)
 	})
 }
+
+// EnableCSPHandler enables CSP
+func EnableCSPHandler(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Security-Policy", "script-src 'self' 127.0.0.1")
+		handler.ServeHTTP(w, r)
+	})
+}

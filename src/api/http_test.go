@@ -379,3 +379,73 @@ func TestEnableGUI(t *testing.T) {
 		})
 	}
 }
+
+func TestContentSecurityPolicy(t *testing.T) {
+	tt := []struct {
+		name            string
+		endpoint        string
+		enableCSP       bool
+		appLoc          string
+		expectCSPHeader string
+	}{
+		{
+			name:            "enable CSP GET /",
+			endpoint:        "/",
+			enableCSP:       true,
+			appLoc:          "../gui/static/dist",
+			expectCSPHeader: "script-src 'self' 127.0.0.1",
+		},
+		{
+			name:            "disable CSP GET /",
+			endpoint:        "/",
+			enableCSP:       false,
+			appLoc:          "../gui/static/dist",
+			expectCSPHeader: "",
+		},
+		{
+			name:            "enable CSP GET /csrf",
+			endpoint:        "/csrf",
+			enableCSP:       true,
+			appLoc:          "",
+			expectCSPHeader: "script-src 'self' 127.0.0.1",
+		},
+		{
+			name:            "disable CSP GET /csrf",
+			endpoint:        "/csrf",
+			enableCSP:       false,
+			appLoc:          "",
+			expectCSPHeader: "",
+		},
+		{
+			name:            "enable CSP GET /version",
+			endpoint:        "/version",
+			enableCSP:       true,
+			appLoc:          "",
+			expectCSPHeader: "script-src 'self' 127.0.0.1",
+		},
+		{
+			name:            "disable CSP GET /version",
+			endpoint:        "/version",
+			enableCSP:       false,
+			appLoc:          "",
+			expectCSPHeader: "",
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			req, err := http.NewRequest(http.MethodGet, tc.endpoint, nil)
+			require.NoError(t, err)
+
+			gateway := NewGatewayerMock()
+			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
+
+			rr := httptest.NewRecorder()
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: tc.appLoc, enableGUI: true}, gateway, &CSRFStore{}, nil)
+			handler.ServeHTTP(rr, req)
+
+			csp := rr.Header().Get("Content-Security-Policy")
+			require.Equal(t, tc.expectCSPHeader, csp)
+		})
+	}
+}

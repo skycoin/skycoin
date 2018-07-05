@@ -252,7 +252,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 		handler = CSRFCheck(csrfStore, handler)
 		handler = headerCheck(c.host, handler)
 		handler = gziphandler.GzipHandler(handler)
-		if !gateway.IsCSPDisabled() {
+		if gateway.IsCSPEnabled() {
 			handler = wh.EnableCSPHandler(handler)
 		}
 		mux.Handle(endpoint, handler)
@@ -287,8 +287,12 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	}
 
 	// get the current CSRF token
-	mux.Handle("/csrf", headerCheck(c.host, getCSRFToken(csrfStore)))
-	mux.Handle("/api/v1/csrf", headerCheck(c.host, getCSRFToken(csrfStore)))
+	csrfHandler := headerCheck(c.host, getCSRFToken(csrfStore))
+	if gateway.IsCSPEnabled() {
+		csrfHandler = wh.EnableCSPHandler(csrfHandler)
+	}
+	mux.Handle("/csrf", csrfHandler)
+	mux.Handle("/api/v1/csrf", csrfHandler)
 
 	webHandlerV1("/version", versionHandler(gateway))
 

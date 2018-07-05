@@ -1182,7 +1182,7 @@ func (gw *Gateway) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, 
 	return uxs, isTxnConfirmed, err
 }
 
-// IsCSPDisabled returns if the csp is disabled
-func (gw *Gateway) IsCSPDisabled() bool {
-	return gw.Config.DisabledCSP
+// IsCSPEnabled returns if the csp is enabled
+func (gw *Gateway) IsCSPEnabled() bool {
+	return !gw.Config.DisabledCSP
 }

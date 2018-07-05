@@ -22,6 +22,7 @@ type GatewayConfig struct {
 	BufferSize      int
 	EnableWalletAPI bool
 	EnableGUI       bool
+	DisabledCSP     bool
 }
 
 // NewGatewayConfig create and init an GatewayConfig
@@ -30,6 +31,7 @@ func NewGatewayConfig() GatewayConfig {
 		BufferSize:      32,
 		EnableWalletAPI: false,
 		EnableGUI:       false,
+		DisabledCSP:     false,
 	}
 }
 
@@ -1178,4 +1180,9 @@ func (gw *Gateway) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, 
 		uxs, isTxnConfirmed, err = gw.v.VerifyTxnVerbose(txn)
 	})
 	return uxs, isTxnConfirmed, err
+}
+
+// IsCSPDisabled returns if the csp is disabled
+func (gw *Gateway) IsCSPDisabled() bool {
+	return gw.Config.DisabledCSP
 }

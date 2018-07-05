@@ -45,6 +45,7 @@ RUN set -ex; \
     patch \
     xz-utils \
     zlib1g-dev \
+    build-essential \
     \
 # No need for MySQL client
 #
@@ -130,12 +131,14 @@ RUN set -ex ; \
     gdbserver \
     gdb \
     vim \
-    tig \
+    less \
     ctags \
     vim-scripts \
     screen \
     sudo \
     doxygen \
+    valgrind \
+    bsdmainutils \
     texlive-latex-base \
     ; \
     apt-get clean ; \
@@ -168,13 +171,16 @@ RUN go get -u github.com/derekparker/delve/cmd/dlv  && \
     go get -u github.com/dominikh/go-tools/cmd/keyify && \
     go get -u golang.org/x/tools/cmd/gorename && \
     go get -u github.com/klauspost/asmfmt/cmd/asmfmt && \
-    go get -u github.com/ernesto-jimenez/goautomock
+    go get -u github.com/ernesto-jimenez/goautomock && \
+    curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+
 
 # Install vim-go development tools
 RUN git clone https://github.com/fatih/vim-go /usr/share/vim/vim80/pack/dev/start/vim-go && \
     git clone https://github.com/tpope/vim-fugitive /usr/share/vim/vim80/pack/dev/start/vim-fugitive && \
     git clone https://github.com/Shougo/vimshell.vim /usr/share/vim/vim80/pack/dev/start/0vimshell && \
     git clone https://github.com/Shougo/vimproc.vim /usr/share/vim/vim80/pack/dev/start/0vimproc && \
+    git clone https://github.com/w0rp/ale.git /usr/share/vim/vim80/pack/dev/start/ale && \
     cd /usr/share/vim/vim80/pack/dev/start/0vimproc && make ;\
     git clone https://github.com/iberianpig/tig-explorer.vim.git /tmp/tig-explorer;\
     cp /tmp/tig-explorer/autoload/tig_explorer.vim /usr/share/vim/vim80/autoload;\

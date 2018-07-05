@@ -116,14 +116,14 @@ docs: docs-libc
 
 lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...
-	golangci-lint run --no-config --issues-exit-code=0 --deadline=3m --concurrency=2 --disable-all --tests --skip-dirs=lib/cgo \
+	golangci-lint run --no-config  --deadline=3m --concurrency=2 --disable-all --tests --skip-dirs=lib/cgo \
 		-E goimports \
 		-E golint \
 		-E varcheck \
 		-E unparam \
 		./...
 	# lib cgo can't use golint because it needs export directives in function docstrings that do not obey golint rules
-	golangci-lint run --no-config --issues-exit-code=0 --deadline=3m --concurrency=2 --disable-all --tests \
+	golangci-lint run --no-config  --deadline=3m --concurrency=2 --disable-all --tests \
 		-E goimports \
 		-E varcheck \
 		-E unparam \

@@ -10,7 +10,7 @@
 	size_t size = 0;
 	int res = SWIG_AsCharPtrAndSize( $input, &buffer, &size, 0 );
 	if (!SWIG_IsOK(res)) {
-		%argument_fail(res, "byte buffer", $symname, $argnum);
+		SWIG_exception_fail(SWIG_TypeError, "in method '$symname', expecting byte string");
 	}
 	$1.data = buffer;
 	$1.len = size - 1;
@@ -48,7 +48,7 @@
 	size_t size = 0;
 	int res = SWIG_AsCharPtrAndSize( $input, &buffer, &size, 0 );
 	if (!SWIG_IsOK(res)) {
-		%argument_fail(res, "byte buffer", $symname, $argnum);
+		SWIG_exception_fail(SWIG_TypeError, "in method '$symname', expecting byte string");
 	}
 	$1.p = buffer;
 	$1.n = size - 1;

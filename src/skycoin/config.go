@@ -391,7 +391,7 @@ func (n *NodeConfig) applyConfigMode(configMode string) {
 	}
 }
 
-// nolint
+// nolint: unparam
 func panicIfError(err error, msg string, args ...interface{}) {
 	if err != nil {
 		log.Panicf(msg+": %v", append(args, err)...)

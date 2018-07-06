@@ -3,13 +3,14 @@
 #define SWIG_PYTHON_STRICT_UNICODE_WCHAR
 %}
 
+
 /*GoSlice in typemap*/
 %typemap(in) GoSlice {
 	char* buffer = 0;
 	size_t size = 0;
 	int res = SWIG_AsCharPtrAndSize( $input, &buffer, &size, 0 );
 	if (!SWIG_IsOK(res)) {
-		%argument_fail(res, "(TYPEMAP, SIZE)", $symname, $argnum);
+		%argument_fail(res, "byte buffer", $symname, $argnum);
 	}
 	$1.data = buffer;
 	$1.len = size - 1;
@@ -34,7 +35,7 @@
 
 /*GoSlice_* as function return typemap*/
 %typemap(argout) GoSlice_* {
-	%append_output( SWIG_FromCharPtrAndSize( $1->data, $1->len  ) );
+	%append_output( SWIG_AsCharPtrAndSize( $1->data, $1->len  ) );
 	free( (void*)$1->data );
 }
 
@@ -47,7 +48,7 @@
 	size_t size = 0;
 	int res = SWIG_AsCharPtrAndSize( $input, &buffer, &size, 0 );
 	if (!SWIG_IsOK(res)) {
-		%argument_fail(res, "(TYPEMAP, SIZE)", $symname, $argnum);
+		%argument_fail(res, "byte buffer", $symname, $argnum);
 	}
 	$1.p = buffer;
 	$1.n = size - 1;

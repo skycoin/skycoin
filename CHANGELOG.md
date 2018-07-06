@@ -45,7 +45,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add Dockerfile in docker/images/dev-cli to build a docker image suitable for development.
 - Coin creator tool, `cmd/newcoin`, to quickly bootstrap a new fiber coin
 - Add Dockerfile in `docker/images/dev-dind` to build a docker in docker image based on skycoindev-cli.
-- Add SWIG files for creating libraries in other languages
 
 ### Fixed
 

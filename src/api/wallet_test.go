@@ -17,6 +17,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/util/fee"
+	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -38,6 +39,8 @@ func TestWalletSpendHandler(t *testing.T) {
 		method                        string
 		body                          *httpBody
 		status                        int
+		enableCSP                     bool
+		csp                           string
 		err                           string
 		walletID                      string
 		coins                         uint64
@@ -322,6 +325,35 @@ func TestWalletSpendHandler(t *testing.T) {
 			csrfDisabled: true,
 		},
 		{
+			name:   "200 - OK - CSP enabled",
+			method: http.MethodPost,
+			body: &httpBody{
+				WalletID: "1234",
+				Dst:      "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+				Coins:    "12",
+			},
+			status:             http.StatusOK,
+			enableCSP:          true,
+			csp:                wh.ContentSecurityPolicy,
+			walletID:           "1234",
+			coins:              12,
+			dst:                "2konv5no3DZvSMxf2GPVtAfZinfwqCGhfVQ",
+			gatewaySpendResult: &coin.Transaction{},
+			spendResult: &SpendResult{
+				Balance: &wallet.BalancePair{},
+				Transaction: &visor.ReadableTransaction{
+					Length:    0,
+					Type:      0,
+					Hash:      "78877fa898f0b4c45c9c33ae941e40617ad7c8657a307db62bc5691f92f4f60e",
+					InnerHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					Timestamp: 0,
+					Sigs:      []string{},
+					In:        []string{},
+					Out:       []visor.ReadableTransactionOutput{},
+				},
+			},
+		},
+		{
 			name:   "400 - missing password",
 			method: http.MethodPost,
 			body: &httpBody{
@@ -410,6 +442,7 @@ func TestWalletSpendHandler(t *testing.T) {
 			gateway.On("Spend", tc.walletID, []byte(tc.password), tc.coins, addr).Return(tc.gatewaySpendResult, tc.gatewaySpendErr)
 			gateway.On("GetWalletBalance", tc.walletID).Return(tc.gatewayGetWalletBalanceResult.BalancePair,
 				tc.gatewayGetWalletBalanceResult.Addresses, tc.gatewayBalanceErr)
+			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
 
 			endpoint := "/api/v1/wallet/spend"
 
@@ -447,6 +480,8 @@ func TestWalletSpendHandler(t *testing.T) {
 
 			handler.ServeHTTP(rr, req)
 
+			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
+
 			status := rr.Code
 			require.Equal(t, tc.status, status)
 
@@ -479,6 +514,8 @@ func TestWalletGet(t *testing.T) {
 		url                    string
 		body                   *httpBody
 		status                 int
+		enableCSP              bool
+		csp                    string
 		err                    string
 		walletID               string
 		gatewayGetWalletResult wallet.Wallet
@@ -539,12 +576,29 @@ func TestWalletGet(t *testing.T) {
 			},
 			responseBody: WalletResponse{Entries: resEntries[:]},
 		},
+		{
+			name:   "200 - OK - enable CSP",
+			method: http.MethodGet,
+			body: &httpBody{
+				WalletID: "1234",
+			},
+			status:    http.StatusOK,
+			enableCSP: true,
+			csp:       wh.ContentSecurityPolicy,
+			walletID:  "1234",
+			gatewayGetWalletResult: wallet.Wallet{
+				Meta:    map[string]string{"seed": "seed", "lastSeed": "seed"},
+				Entries: cloneEntries(entries),
+			},
+			responseBody: WalletResponse{Entries: resEntries[:]},
+		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &GatewayerMock{}
 			gateway.On("GetWallet", tc.walletID).Return(&tc.gatewayGetWalletResult, tc.gatewayGetWalletErr)
+			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
 			v := url.Values{}
 
 			endpoint := "/api/v1/wallet"
@@ -571,6 +625,7 @@ func TestWalletGet(t *testing.T) {
 			handler := newServerMux(mxConfig, gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
+			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
@@ -602,6 +657,8 @@ func TestWalletBalanceHandler(t *testing.T) {
 		method                        string
 		body                          *httpBody
 		status                        int
+		enableCSP                     bool
+		csp                           string
 		err                           string
 		walletID                      string
 		gatewayGetWalletBalanceResult BalanceResponse
@@ -677,6 +734,19 @@ func TestWalletBalanceHandler(t *testing.T) {
 			walletID: "foo",
 			result:   &wallet.BalancePair{},
 		},
+		{
+			name:   "200 - OK - enable CSP",
+			method: http.MethodGet,
+			body: &httpBody{
+				WalletID: "foo",
+			},
+			status:    http.StatusOK,
+			enableCSP: true,
+			csp:       wh.ContentSecurityPolicy,
+			err:       "",
+			walletID:  "foo",
+			result:    &wallet.BalancePair{},
+		},
 	}
 
 	for _, tc := range tt {
@@ -684,6 +754,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 			gateway := &GatewayerMock{}
 			gateway.On("GetWalletBalance", tc.walletID).Return(tc.gatewayGetWalletBalanceResult.BalancePair,
 				tc.gatewayGetWalletBalanceResult.Addresses, tc.gatewayBalanceErr)
+			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
 
 			endpoint := "/api/v1/wallet/balance"
 
@@ -709,6 +780,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 			handler := newServerMux(mxConfig, gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
+			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
@@ -741,6 +813,8 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 		url                         string
 		body                        *httpBody
 		status                      int
+		enableCSP                   bool
+		csp                         string
 		err                         string
 		walletID                    string
 		label                       string
@@ -824,12 +898,29 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 			gatewayUpdateWalletLabelErr: nil,
 			responseBody:                "\"success\"",
 		},
+		{
+			name:   "200 OK - enable CSP",
+			method: http.MethodPost,
+			body: &httpBody{
+				WalletID: "foo",
+				Label:    "label",
+			},
+			status:    http.StatusOK,
+			enableCSP: true,
+			csp:       wh.ContentSecurityPolicy,
+			err:       "",
+			walletID:  "foo",
+			label:     "label",
+			gatewayUpdateWalletLabelErr: nil,
+			responseBody:                "\"success\"",
+		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &GatewayerMock{}
 			gateway.On("UpdateWalletLabel", tc.walletID, tc.label).Return(tc.gatewayUpdateWalletLabelErr)
+			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
 
 			endpoint := "/api/v1/wallet/update"
 
@@ -856,6 +947,7 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 			handler := newServerMux(mxConfig, gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
+			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
@@ -882,6 +974,8 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		method                                string
 		body                                  *httpBody
 		status                                int
+		enableCSP                             bool
+		csp                                   string
 		err                                   string
 		walletID                              string
 		gatewayGetWalletUnconfirmedTxnsResult []visor.UnconfirmedTxn
@@ -945,11 +1039,26 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			gatewayGetWalletUnconfirmedTxnsResult: make([]visor.UnconfirmedTxn, 1),
 			responseBody:                          UnconfirmedTxnsResponse{Transactions: []visor.ReadableUnconfirmedTxn{*unconfirmedTxn}},
 		},
+		{
+			name:   "200 - OK - enable CSP",
+			method: http.MethodGet,
+			body: &httpBody{
+				WalletID: "foo",
+			},
+			status:    http.StatusOK,
+			enableCSP: true,
+			csp:       wh.ContentSecurityPolicy,
+			err:       "",
+			walletID:  "foo",
+			gatewayGetWalletUnconfirmedTxnsResult: make([]visor.UnconfirmedTxn, 1),
+			responseBody:                          UnconfirmedTxnsResponse{Transactions: []visor.ReadableUnconfirmedTxn{*unconfirmedTxn}},
+		},
 	}
 
 	for _, tc := range tt {
 		gateway := &GatewayerMock{}
 		gateway.On("GetWalletUnconfirmedTxns", tc.walletID).Return(tc.gatewayGetWalletUnconfirmedTxnsResult, tc.gatewayGetWalletUnconfirmedTxnsErr)
+		gateway.On("IsCSPEnabled").Return(tc.enableCSP)
 
 		endpoint := "/api/v1/wallet/transactions"
 
@@ -974,6 +1083,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		handler := newServerMux(mxConfig, gateway, csrfStore, nil)
 
 		handler.ServeHTTP(rr, req)
+		require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 
 		status := rr.Code
 		require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
@@ -1008,6 +1118,8 @@ func TestWalletCreateHandler(t *testing.T) {
 		method                    string
 		body                      *httpBody
 		status                    int
+		enableCSP                 bool
+		csp                       string
 		err                       string
 		wltName                   string
 		options                   wallet.Options
@@ -1175,6 +1287,42 @@ func TestWalletCreateHandler(t *testing.T) {
 			csrfDisabled: true,
 		},
 		{
+			name:   "200 - OK - CSRF disabled - CSP enabled",
+			method: http.MethodPost,
+			body: &httpBody{
+				Seed:  "foo",
+				Label: "bar",
+				ScanN: "2",
+			},
+			status:    http.StatusOK,
+			enableCSP: true,
+			csp:       wh.ContentSecurityPolicy,
+			err:       "",
+			wltName:   "filename",
+			options: wallet.Options{
+				Label:    "bar",
+				Seed:     "foo",
+				Password: []byte{},
+				ScanN:    2,
+			},
+			gatewayCreateWalletResult: wallet.Wallet{
+				Meta: map[string]string{
+					"filename": "filename",
+				},
+			},
+			scanWalletAddressesResult: wallet.Wallet{
+				Meta: map[string]string{
+					"filename": "filename",
+				},
+			},
+			responseBody: WalletResponse{
+				Meta: WalletMeta{
+					Filename: "filename",
+				},
+			},
+			csrfDisabled: true,
+		},
+		{
 			name:   "200 - OK - Encrypted",
 			method: http.MethodPost,
 			body: &httpBody{
@@ -1239,6 +1387,7 @@ func TestWalletCreateHandler(t *testing.T) {
 			}
 			gateway.On("CreateWallet", "", tc.options).Return(&tc.gatewayCreateWalletResult, tc.gatewayCreateWalletErr)
 			// gateway.On("ScanAheadWalletAddresses", tc.wltName, tc.options.Password, tc.scnN-1).Return(&tc.scanWalletAddressesResult, tc.scanWalletAddressesError)
+			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
 
 			endpoint := "/api/v1/wallet/create"
 
@@ -1280,6 +1429,7 @@ func TestWalletCreateHandler(t *testing.T) {
 			handler := newServerMux(mxConfig, gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
+			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
@@ -1309,6 +1459,8 @@ func TestWalletNewSeed(t *testing.T) {
 		method    string
 		body      *httpBody
 		status    int
+		enableCSP bool
+		csp       string
 		err       string
 		entropy   string
 		resultLen int
@@ -1367,6 +1519,18 @@ func TestWalletNewSeed(t *testing.T) {
 			entropy:   "256",
 			resultLen: 24,
 		},
+		{
+			name:   "200 - OK | 24 word seed - enable CSP",
+			method: http.MethodGet,
+			body: &httpBody{
+				Entropy: "256",
+			},
+			status:    http.StatusOK,
+			enableCSP: true,
+			csp:       wh.ContentSecurityPolicy,
+			entropy:   "256",
+			resultLen: 24,
+		},
 	}
 
 	// Loop over each test case
@@ -1374,6 +1538,7 @@ func TestWalletNewSeed(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &GatewayerMock{}
 			gateway.On("IsWalletAPIEnabled").Return(true)
+			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
 
 			endpoint := "/api/v1/wallet/newSeed"
 
@@ -1401,6 +1566,7 @@ func TestWalletNewSeed(t *testing.T) {
 			handler := newServerMux(mxConfig, gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
+			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` expected `%v`", tc.name, status, tc.status)
@@ -1435,6 +1601,8 @@ func TestGetWalletSeed(t *testing.T) {
 		wltID             string
 		password          string
 		gatewayReturnArgs []interface{}
+		enableCSP         bool
+		csp               string
 		expectStatus      int
 		expectSeed        string
 		expectErr         string
@@ -1464,6 +1632,20 @@ func TestGetWalletSeed(t *testing.T) {
 			expectStatus: http.StatusOK,
 			expectSeed:   "seed",
 			csrfDisabled: true,
+		},
+		{
+			name:     "200 - OK - CSP enabled",
+			method:   http.MethodPost,
+			wltID:    "wallet.wlt",
+			password: "pwd",
+			gatewayReturnArgs: []interface{}{
+				"seed",
+				nil,
+			},
+			enableCSP:    true,
+			csp:          wh.ContentSecurityPolicy,
+			expectStatus: http.StatusOK,
+			expectSeed:   "seed",
 		},
 		{
 			name:              "400 - missing wallet id ",
@@ -1534,6 +1716,7 @@ func TestGetWalletSeed(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := NewGatewayerMock()
 			gateway.On("GetWalletSeed", tc.wltID, []byte(tc.password)).Return(tc.gatewayReturnArgs...)
+			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
 
 			endpoint := "/api/v1/wallet/seed"
 
@@ -1556,6 +1739,7 @@ func TestGetWalletSeed(t *testing.T) {
 			handler := newServerMux(mxConfig, gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
+			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 
 			status := rr.Code
 			require.Equal(t, tc.expectStatus, status)
@@ -1603,6 +1787,8 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 		name                      string
 		method                    string
 		body                      *httpBody
+		enableCSP                 bool
+		csp                       string
 		status                    int
 		err                       string
 		walletID                  string
@@ -1741,12 +1927,29 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 			responseBody:              responseAddresses,
 			csrfDisabled:              true,
 		},
+		{
+			name:   "200 - OK - CSRF disabled - CSP enabled",
+			method: http.MethodPost,
+			body: &httpBody{
+				ID:  "foo",
+				Num: "1",
+			},
+			enableCSP: true,
+			csp:       wh.ContentSecurityPolicy,
+			status:    http.StatusOK,
+			walletID:  "foo",
+			n:         1,
+			gatewayNewAddressesResult: addrs,
+			responseBody:              responseAddresses,
+			csrfDisabled:              true,
+		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &GatewayerMock{}
 			gateway.On("NewAddresses", tc.walletID, []byte(tc.password), tc.n).Return(tc.gatewayNewAddressesResult, tc.gatewayNewAddressesErr)
+			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
 
 			endpoint := "/api/v1/wallet/newAddress"
 
@@ -1777,6 +1980,7 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 			handler := newServerMux(mxConfig, gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
+			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 
 			status := rr.Code
 			require.Equal(t, tc.status, status, "wrong status code: got `%v` want `%v`", status, tc.status)
@@ -1801,6 +2005,8 @@ func TestGetWalletFolderHandler(t *testing.T) {
 	tt := []struct {
 		name                 string
 		method               string
+		enableCSP            bool
+		csp                  string
 		status               int
 		err                  string
 		getWalletDirResponse string
@@ -1823,6 +2029,17 @@ func TestGetWalletFolderHandler(t *testing.T) {
 			},
 		},
 		{
+			name:                 "200 - enable CSP",
+			method:               http.MethodGet,
+			enableCSP:            true,
+			csp:                  wh.ContentSecurityPolicy,
+			status:               http.StatusOK,
+			getWalletDirResponse: "/wallet/folder/address",
+			httpResponse: WalletFolder{
+				Address: "/wallet/folder/address",
+			},
+		},
+		{
 			name:            "403 - wallet API disabled",
 			method:          http.MethodGet,
 			status:          http.StatusForbidden,
@@ -1834,7 +2051,7 @@ func TestGetWalletFolderHandler(t *testing.T) {
 	for _, tc := range tt {
 		gateway := &GatewayerMock{}
 		gateway.On("GetWalletDir").Return(tc.getWalletDirResponse, tc.getWalletDirErr)
-
+		gateway.On("IsCSPEnabled").Return(tc.enableCSP)
 		endpoint := "/api/v1/wallets/folderName"
 
 		req, err := http.NewRequest(tc.method, endpoint, nil)
@@ -1849,6 +2066,7 @@ func TestGetWalletFolderHandler(t *testing.T) {
 		handler := newServerMux(mxConfig, gateway, csrfStore, nil)
 
 		handler.ServeHTTP(rr, req)
+		require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 
 		status := rr.Code
 		require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
@@ -1882,6 +2100,8 @@ func TestGetWallets(t *testing.T) {
 	cases := []struct {
 		name               string
 		method             string
+		enableCSP          bool
+		csp                string
 		status             int
 		err                string
 		getWalletsResponse wallet.Wallets
@@ -1894,7 +2114,6 @@ func TestGetWallets(t *testing.T) {
 			status: http.StatusMethodNotAllowed,
 			err:    "405 Method Not Allowed",
 		},
-
 		{
 			name:          "403 - wallet API disabled",
 			method:        http.MethodGet,
@@ -1902,7 +2121,6 @@ func TestGetWallets(t *testing.T) {
 			err:           "403 Forbidden",
 			getWalletsErr: wallet.ErrWalletAPIDisabled,
 		},
-
 		{
 			name:               "200 no wallets",
 			method:             http.MethodGet,
@@ -1910,7 +2128,6 @@ func TestGetWallets(t *testing.T) {
 			getWalletsResponse: nil,
 			httpResponse:       []*WalletResponse{},
 		},
-
 		{
 			name:               "200 no wallets 2",
 			method:             http.MethodGet,
@@ -1918,11 +2135,150 @@ func TestGetWallets(t *testing.T) {
 			getWalletsResponse: wallet.Wallets{},
 			httpResponse:       []*WalletResponse{},
 		},
-
 		{
 			name:   "200",
 			method: http.MethodGet,
 			status: http.StatusOK,
+			getWalletsResponse: wallet.Wallets{
+				"foofilename": {
+					Meta: map[string]string{
+						"foo":        "bar",
+						"seed":       "fooseed",
+						"lastSeed":   "foolastseed",
+						"coin":       "foocoin",
+						"filename":   "foofilename",
+						"label":      "foolabel",
+						"type":       "footype",
+						"version":    "fooversion",
+						"cryptoType": "foocryptotype",
+						"tm":         "345678",
+						"encrypted":  "true",
+					},
+					Entries: []wallet.Entry{
+						{
+							Address: addrs[0],
+							Public:  pubkeys[0],
+							Secret:  seckeys[0],
+						},
+					},
+				},
+				"foofilename2": {
+					Meta: map[string]string{
+						"foo":        "bar2",
+						"seed":       "fooseed2",
+						"lastSeed":   "foolastseed2",
+						"coin":       "foocoin",
+						"filename":   "foofilename2",
+						"label":      "foolabel2",
+						"type":       "footype",
+						"version":    "fooversion",
+						"cryptoType": "foocryptotype",
+						"tm":         "123456",
+						"encrypted":  "false",
+					},
+					Entries: []wallet.Entry{
+						{
+							Address: addrs[1],
+							Public:  pubkeys[1],
+							Secret:  seckeys[1],
+						},
+					},
+				},
+				"foofilename3": {
+					Meta: map[string]string{
+						"foo":        "bar3",
+						"seed":       "fooseed3",
+						"lastSeed":   "foolastseed3",
+						"coin":       "foocoin",
+						"filename":   "foofilename3",
+						"label":      "foolabel3",
+						"type":       "footype",
+						"version":    "fooversion",
+						"cryptoType": "foocryptotype",
+						"tm":         "234567",
+						"encrypted":  "true",
+					},
+					Entries: []wallet.Entry{
+						{
+							Address: addrs[2],
+							Public:  pubkeys[2],
+							Secret:  seckeys[2],
+						},
+						{
+							Address: addrs[3],
+							Public:  pubkeys[3],
+							Secret:  seckeys[3],
+						},
+					},
+				},
+			},
+			httpResponse: []*WalletResponse{
+				{
+					Meta: WalletMeta{
+						Coin:       "foocoin",
+						Filename:   "foofilename2",
+						Label:      "foolabel2",
+						Type:       "footype",
+						Version:    "fooversion",
+						CryptoType: "foocryptotype",
+						Timestamp:  123456,
+						Encrypted:  false,
+					},
+					Entries: []WalletEntry{
+						{
+							Address: addrs[1].String(),
+							Public:  pubkeys[1].Hex(),
+						},
+					},
+				},
+				{
+					Meta: WalletMeta{
+						Coin:       "foocoin",
+						Filename:   "foofilename3",
+						Label:      "foolabel3",
+						Type:       "footype",
+						Version:    "fooversion",
+						CryptoType: "foocryptotype",
+						Timestamp:  234567,
+						Encrypted:  true,
+					},
+					Entries: []WalletEntry{
+						{
+							Address: addrs[2].String(),
+							Public:  pubkeys[2].Hex(),
+						},
+						{
+							Address: addrs[3].String(),
+							Public:  pubkeys[3].Hex(),
+						},
+					},
+				},
+				{
+					Meta: WalletMeta{
+						Coin:       "foocoin",
+						Filename:   "foofilename",
+						Label:      "foolabel",
+						Type:       "footype",
+						Version:    "fooversion",
+						CryptoType: "foocryptotype",
+						Timestamp:  345678,
+						Encrypted:  true,
+					},
+					Entries: []WalletEntry{
+						{
+							Address: addrs[0].String(),
+							Public:  pubkeys[0].Hex(),
+						},
+					},
+				},
+			},
+		},
+		{
+			name:      "200 - enable CSP",
+			method:    http.MethodGet,
+			enableCSP: true,
+			csp:       wh.ContentSecurityPolicy,
+			status:    http.StatusOK,
 			getWalletsResponse: wallet.Wallets{
 				"foofilename": {
 					Meta: map[string]string{
@@ -2062,6 +2418,7 @@ func TestGetWallets(t *testing.T) {
 	for _, tc := range cases {
 		gateway := &GatewayerMock{}
 		gateway.On("GetWallets").Return(tc.getWalletsResponse, tc.getWalletsErr)
+		gateway.On("IsCSPEnabled").Return(tc.enableCSP)
 
 		endpoint := "/api/v1/wallets"
 
@@ -2077,6 +2434,7 @@ func TestGetWallets(t *testing.T) {
 		handler := newServerMux(mxConfig, gateway, csrfStore, nil)
 
 		handler.ServeHTTP(rr, req)
+		require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 
 		status := rr.Code
 		require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
@@ -2099,6 +2457,8 @@ func TestWalletUnloadHandler(t *testing.T) {
 	tt := []struct {
 		name            string
 		method          string
+		enableCSP       bool
+		csp             string
 		status          int
 		err             string
 		walletID        string
@@ -2139,12 +2499,21 @@ func TestWalletUnloadHandler(t *testing.T) {
 			walletID:     "wallet.wlt",
 			csrfDisabled: true,
 		},
+		{
+			name:      "200 - ok - enable CSP",
+			method:    http.MethodPost,
+			enableCSP: true,
+			csp:       wh.ContentSecurityPolicy,
+			status:    http.StatusOK,
+			walletID:  "wallet.wlt",
+		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &GatewayerMock{}
 			gateway.On("UnloadWallet", tc.walletID).Return(tc.unloadWalletErr)
+			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
 
 			endpoint := "/api/v1/wallet/unload"
 			v := url.Values{}
@@ -2167,6 +2536,7 @@ func TestWalletUnloadHandler(t *testing.T) {
 			handler := newServerMux(mxConfig, gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
+			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 
 			status := rr.Code
 			require.Equal(t, tc.status, status, "wrong status code: got `%v` want `%v`", status, tc.status)
@@ -2191,6 +2561,8 @@ func TestEncryptWallet(t *testing.T) {
 		wltID         string
 		password      string
 		gatewayReturn gatewayReturnPair
+		enableCSP     bool
+		csp           string
 		status        int
 		expectWallet  WalletResponse
 		expectErr     string
@@ -2213,6 +2585,34 @@ func TestEncryptWallet(t *testing.T) {
 				},
 			},
 			status: http.StatusOK,
+			expectWallet: WalletResponse{
+				Meta: WalletMeta{
+					Filename:  "wallet.wlt",
+					Encrypted: true,
+				},
+				Entries: responseEntries,
+			},
+		},
+		{
+			name:     "200 - OK - enable CSP",
+			method:   http.MethodPost,
+			wltID:    "wallet.wlt",
+			password: "pwd",
+			gatewayReturn: gatewayReturnPair{
+				w: &wallet.Wallet{
+					Meta: map[string]string{
+						"filename":  "wallet.wlt",
+						"seed":      "seed",
+						"lastSeed":  "lastSeed",
+						"secrets":   "secrets",
+						"encrypted": "true",
+					},
+					Entries: cloneEntries(entries),
+				},
+			},
+			enableCSP: true,
+			csp:       wh.ContentSecurityPolicy,
+			status:    http.StatusOK,
 			expectWallet: WalletResponse{
 				Meta: WalletMeta{
 					Filename:  "wallet.wlt",
@@ -2297,6 +2697,7 @@ func TestEncryptWallet(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := NewGatewayerMock()
 			gateway.On("EncryptWallet", tc.wltID, []byte(tc.password)).Return(tc.gatewayReturn.w, tc.gatewayReturn.err)
+			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
 
 			endpoint := "/api/v1/wallet/encrypt"
 			v := url.Values{}
@@ -2316,6 +2717,7 @@ func TestEncryptWallet(t *testing.T) {
 			handler := newServerMux(mxConfig, gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
+			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 
 			status := rr.Code
 			require.Equal(t, tc.status, status, "wrong status code: got `%v` want `%v`, body: %v", status, tc.status, rr.Body.String())
@@ -2349,6 +2751,8 @@ func TestDecryptWallet(t *testing.T) {
 		wltID         string
 		password      string
 		gatewayReturn gatewayReturnPair
+		enableCSP     bool
+		csp           string
 		status        int
 		expectWallet  WalletResponse
 		expectErr     string
@@ -2372,6 +2776,34 @@ func TestDecryptWallet(t *testing.T) {
 				},
 			},
 			status: http.StatusOK,
+			expectWallet: WalletResponse{
+				Meta: WalletMeta{
+					Filename:  "wallet",
+					Encrypted: false,
+				},
+				Entries: responseEntries,
+			},
+		},
+		{
+			name:     "200 OK - enable CSP",
+			method:   http.MethodPost,
+			wltID:    "wallet.wlt",
+			password: "pwd",
+			gatewayReturn: gatewayReturnPair{
+				w: &wallet.Wallet{
+					Meta: map[string]string{
+						"filename":  "wallet",
+						"seed":      "seed",
+						"lastSeed":  "lastSeed",
+						"secrets":   "",
+						"encrypted": "false",
+					},
+					Entries: cloneEntries(entries),
+				},
+			},
+			enableCSP: true,
+			csp:       wh.ContentSecurityPolicy,
+			status:    http.StatusOK,
 			expectWallet: WalletResponse{
 				Meta: WalletMeta{
 					Filename:  "wallet",
@@ -2483,6 +2915,7 @@ func TestDecryptWallet(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := NewGatewayerMock()
 			gateway.On("DecryptWallet", tc.wltID, []byte(tc.password)).Return(tc.gatewayReturn.w, tc.gatewayReturn.err)
+			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
 
 			endpoint := "/api/v1/wallet/decrypt"
 			v := url.Values{}
@@ -2502,6 +2935,7 @@ func TestDecryptWallet(t *testing.T) {
 			handler := newServerMux(mxConfig, gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
+			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 
 			status := rr.Code
 			require.Equal(t, tc.status, status, "wrong status code: got `%v` want `%v`", status, tc.status)

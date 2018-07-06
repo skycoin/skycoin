@@ -14,6 +14,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/testutil"
+	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
@@ -31,6 +32,8 @@ func TestGetUxOutByID(t *testing.T) {
 		method                  string
 		url                     string
 		status                  int
+		enableCSP               bool
+		csp                     string
 		err                     string
 		httpBody                *httpBody
 		uxid                    string
@@ -111,6 +114,21 @@ func TestGetUxOutByID(t *testing.T) {
 			getGetUxOutByIDResponse: &historydb.UxOut{},
 			httpResponse:            historydb.NewUxOutJSON(&historydb.UxOut{}),
 		},
+		{
+			name:      "200 - enable CSP",
+			method:    http.MethodGet,
+			status:    http.StatusOK,
+			enableCSP: true,
+			csp:       wh.ContentSecurityPolicy,
+			err:       "404 Not Found",
+			httpBody: &httpBody{
+				uxid: validHash,
+			},
+			uxid:                    validHash,
+			getGetUxOutByIDArg:      testutil.SHA256FromHex(t, validHash),
+			getGetUxOutByIDResponse: &historydb.UxOut{},
+			httpResponse:            historydb.NewUxOutJSON(&historydb.UxOut{}),
+		},
 	}
 
 	for _, tc := range tt {
@@ -118,6 +136,7 @@ func TestGetUxOutByID(t *testing.T) {
 			gateway := NewGatewayerMock()
 			endpoint := "/api/v1/uxout"
 			gateway.On("GetUxOutByID", tc.getGetUxOutByIDArg).Return(tc.getGetUxOutByIDResponse, tc.getGetUxOutByIDError)
+			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -145,6 +164,7 @@ func TestGetUxOutByID(t *testing.T) {
 			rr := httptest.NewRecorder()
 			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
+			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
@@ -175,6 +195,8 @@ func TestGetAddrUxOuts(t *testing.T) {
 		method                string
 		url                   string
 		status                int
+		enableCSP             bool
+		csp                   string
 		err                   string
 		httpBody              *httpBody
 		getAddrUxOutsArg      []cipher.Address
@@ -229,6 +251,19 @@ func TestGetAddrUxOuts(t *testing.T) {
 			getAddrUxOutsResponse: []*historydb.UxOut{},
 			httpResponse:          []*historydb.UxOutJSON{},
 		},
+		{
+			name:      "200 - enable CSP",
+			method:    http.MethodGet,
+			status:    http.StatusOK,
+			enableCSP: true,
+			csp:       wh.ContentSecurityPolicy,
+			httpBody: &httpBody{
+				address: addressForGwResponse.String(),
+			},
+			getAddrUxOutsArg:      []cipher.Address{addressForGwResponse},
+			getAddrUxOutsResponse: []*historydb.UxOut{},
+			httpResponse:          []*historydb.UxOutJSON{},
+		},
 	}
 
 	for _, tc := range tt {
@@ -236,6 +271,7 @@ func TestGetAddrUxOuts(t *testing.T) {
 			endpoint := "/api/v1/address_uxouts"
 			gateway := NewGatewayerMock()
 			gateway.On("GetAddrUxOuts", tc.getAddrUxOutsArg).Return(tc.getAddrUxOutsResponse, tc.getAddrUxOutsError)
+			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -261,6 +297,7 @@ func TestGetAddrUxOuts(t *testing.T) {
 			rr := httptest.NewRecorder()
 			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
+			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",

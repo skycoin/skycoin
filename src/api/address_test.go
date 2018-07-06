@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/stretchr/testify/require"
 )
 
@@ -21,6 +22,8 @@ func TestVerifyAddress(t *testing.T) {
 		name         string
 		method       string
 		status       int
+		enableCSP    bool
+		csp          string
 		contentType  string
 		csrfDisabled bool
 		httpBody     string
@@ -67,7 +70,6 @@ func TestVerifyAddress(t *testing.T) {
 			}),
 			httpResponse: NewHTTPErrorResponse(http.StatusUnprocessableEntity, "Invalid checksum"),
 		},
-
 		{
 			name:   "200",
 			method: http.MethodPost,
@@ -81,7 +83,6 @@ func TestVerifyAddress(t *testing.T) {
 				},
 			},
 		},
-
 		{
 			name:   "200 - csrf disabled",
 			method: http.MethodPost,
@@ -96,12 +97,28 @@ func TestVerifyAddress(t *testing.T) {
 			},
 			csrfDisabled: true,
 		},
+		{
+			name:      "200 enable CSP",
+			method:    http.MethodPost,
+			status:    http.StatusOK,
+			enableCSP: true,
+			csp:       wh.ContentSecurityPolicy,
+			httpBody: toJSON(VerifyAddressRequest{
+				Address: "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
+			}),
+			httpResponse: HTTPResponse{
+				Data: VerifyAddressResponse{
+					Version: 0,
+				},
+			},
+		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v2/address/verify"
 			gateway := NewGatewayerMock()
+			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)
@@ -126,6 +143,8 @@ func TestVerifyAddress(t *testing.T) {
 			cfg := muxConfig{host: configuredHost, appLoc: "."}
 			handler := newServerMux(cfg, gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
+
+			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",

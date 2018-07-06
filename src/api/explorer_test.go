@@ -19,6 +19,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/droplet"
+	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/visor"
 )
 
@@ -98,6 +99,8 @@ func TestGetTransactionsForAddress(t *testing.T) {
 		name                                string
 		method                              string
 		status                              int
+		enableCSP                           bool
+		csp                                 string
 		err                                 string
 		addressParam                        string
 		gatewayGetTransactionsForAddressErr error
@@ -151,6 +154,26 @@ func TestGetTransactionsForAddress(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:         "200 enable CSP",
+			method:       http.MethodGet,
+			status:       http.StatusOK,
+			enableCSP:    true,
+			csp:          wh.ContentSecurityPolicy,
+			addressParam: address.String(),
+			result: []daemon.ReadableTransaction{
+				{
+					In: []visor.ReadableTransactionInput{
+						{
+							Hash:    validHash,
+							Address: successAddress,
+							Coins:   "0.000000",
+							Hours:   0,
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range tt {
@@ -158,6 +181,7 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			endpoint := "/api/v1/explorer/address"
 			gateway := NewGatewayerMock()
 			gateway.On("GetTransactionsForAddress", address).Return(tc.result, tc.gatewayGetTransactionsForAddressErr)
+			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
 
 			v := url.Values{}
 			if tc.addressParam != "" {
@@ -181,6 +205,8 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			}
 			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
+
+			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
@@ -216,6 +242,8 @@ func TestCoinSupply(t *testing.T) {
 		name                           string
 		method                         string
 		status                         int
+		enableCSP                      bool
+		csp                            string
 		err                            string
 		gatewayGetUnspentOutputsArg    []daemon.OutputsFilter
 		gatewayGetUnspentOutputsResult *visor.ReadableOutputSet
@@ -281,6 +309,25 @@ func TestCoinSupply(t *testing.T) {
 			},
 			result: makeSuccessCoinSupplyResult(t, successGatewayGetUnspentOutputsResult),
 		},
+		{
+			name:      "200 enable CSP",
+			method:    http.MethodGet,
+			status:    http.StatusOK,
+			enableCSP: true,
+			csp:       wh.ContentSecurityPolicy,
+			gatewayGetUnspentOutputsArg: filterInUnlocked,
+			gatewayGetUnspentOutputsResult: &visor.ReadableOutputSet{
+				HeadOutputs: visor.ReadableOutputs{
+					visor.ReadableOutput{
+						Coins: "0",
+					},
+					visor.ReadableOutput{
+						Coins: "0",
+					},
+				},
+			},
+			result: makeSuccessCoinSupplyResult(t, successGatewayGetUnspentOutputsResult),
+		},
 	}
 
 	for _, tc := range tt {
@@ -288,6 +335,7 @@ func TestCoinSupply(t *testing.T) {
 			endpoint := "/api/v1/coinSupply"
 			gateway := NewGatewayerMock()
 			gateway.On("GetUnspentOutputs", mock.Anything).Return(tc.gatewayGetUnspentOutputsResult, tc.gatewayGetUnspentOutputsErr)
+			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
@@ -303,6 +351,8 @@ func TestCoinSupply(t *testing.T) {
 			}
 			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
+
+			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
@@ -329,6 +379,8 @@ func TestGetRichlist(t *testing.T) {
 		name                     string
 		method                   string
 		status                   int
+		enableCSP                bool
+		csp                      string
 		err                      string
 		httpParams               *httpParams
 		includeDistribution      bool
@@ -493,6 +545,63 @@ func TestGetRichlist(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:      "200 enable CSP",
+			method:    http.MethodGet,
+			status:    http.StatusOK,
+			enableCSP: true,
+			csp:       wh.ContentSecurityPolicy,
+			httpParams: &httpParams{
+				topn:                "3",
+				includeDistribution: "false",
+			},
+			gatewayGetRichlistResult: visor.Richlist{
+				{
+					Address: "2fGC7kwAM9yZyEF1QqBqp8uo9RUsF6ENGJF",
+					Coins:   "1000000.000000",
+					Locked:  false,
+				},
+				{
+					Address: "27jg25DZX21MXMypVbKJMmgCJ5SPuEunMF1",
+					Coins:   "500000.000000",
+					Locked:  false,
+				},
+				{
+					Address: "2fGi2jhvp6ppHg3DecguZgzqvpJj2Gd4KHW",
+					Coins:   "500000.000000",
+					Locked:  false,
+				},
+				{
+					Address: "2TmvdBWJgxMwGs84R4drS9p5fYkva4dGdfs",
+					Coins:   "244458.000000",
+					Locked:  false,
+				},
+				{
+					Address: "24gvUHXHtSg5drKiFsMw7iMgoN2PbLub53C",
+					Coins:   "195503.000000",
+					Locked:  false,
+				},
+			},
+			result: Richlist{
+				Richlist: visor.Richlist{
+					{
+						Address: "2fGC7kwAM9yZyEF1QqBqp8uo9RUsF6ENGJF",
+						Coins:   "1000000.000000",
+						Locked:  false,
+					},
+					{
+						Address: "27jg25DZX21MXMypVbKJMmgCJ5SPuEunMF1",
+						Coins:   "500000.000000",
+						Locked:  false,
+					},
+					{
+						Address: "2fGi2jhvp6ppHg3DecguZgzqvpJj2Gd4KHW",
+						Coins:   "500000.000000",
+						Locked:  false,
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range tt {
@@ -500,6 +609,7 @@ func TestGetRichlist(t *testing.T) {
 			endpoint := "/api/v1/richlist"
 			gateway := NewGatewayerMock()
 			gateway.On("GetRichlist", tc.includeDistribution).Return(tc.gatewayGetRichlistResult, tc.gatewayGetRichlistErr)
+			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
 
 			v := url.Values{}
 			if tc.httpParams != nil {
@@ -529,6 +639,8 @@ func TestGetRichlist(t *testing.T) {
 			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
+			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
+
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
 
@@ -553,6 +665,8 @@ func TestGetAddressCount(t *testing.T) {
 		name                         string
 		method                       string
 		status                       int
+		enableCSP                    bool
+		csp                          string
 		err                          string
 		gatewayGetAddressCountResult uint64
 		gatewayGetAddressCountErr    error
@@ -581,6 +695,17 @@ func TestGetAddressCount(t *testing.T) {
 				Count: 1,
 			},
 		},
+		{
+			name:      "200 enable CSP",
+			method:    http.MethodGet,
+			status:    http.StatusOK,
+			enableCSP: true,
+			csp:       wh.ContentSecurityPolicy,
+			gatewayGetAddressCountResult: 1,
+			result: Result{
+				Count: 1,
+			},
+		},
 	}
 
 	for _, tc := range tt {
@@ -588,6 +713,7 @@ func TestGetAddressCount(t *testing.T) {
 			endpoint := "/api/v1/addresscount"
 			gateway := NewGatewayerMock()
 			gateway.On("GetAddressCount").Return(tc.gatewayGetAddressCountResult, tc.gatewayGetAddressCountErr)
+			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
@@ -604,6 +730,7 @@ func TestGetAddressCount(t *testing.T) {
 			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
+			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
 

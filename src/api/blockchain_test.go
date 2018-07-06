@@ -18,6 +18,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
+	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/visor"
 )
 
@@ -50,6 +51,8 @@ func TestGetBlock(t *testing.T) {
 		name                        string
 		method                      string
 		status                      int
+		enableCSP                   bool
+		csp                         string
 		err                         string
 		hash                        string
 		sha256                      cipher.SHA256
@@ -111,28 +114,6 @@ func TestGetBlock(t *testing.T) {
 			sha256: validSHA256,
 		},
 		{
-			name:   "200 - got block by hash",
-			method: http.MethodGet,
-			status: http.StatusOK,
-			hash:   validHashString,
-			sha256: validSHA256,
-			gatewayGetBlockByHashResult: &coin.SignedBlock{},
-			response: &visor.ReadableBlock{
-				Head: visor.ReadableBlockHeader{
-					BkSeq:             0x0,
-					BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
-					PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
-					Time:              0x0,
-					Fee:               0x0,
-					Version:           0x0,
-					BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
-				},
-				Body: visor.ReadableBlockBody{
-					Transactions: []visor.ReadableTransaction{},
-				},
-			},
-		},
-		{
 			name:   "400 - seq error: invalid syntax",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
@@ -159,6 +140,24 @@ func TestGetBlock(t *testing.T) {
 			},
 		},
 		{
+			name:   "500 - get block by hash error",
+			method: http.MethodGet,
+			status: http.StatusInternalServerError,
+			err:    "500 Internal Server Error - GetSignedBlockByHash failed",
+			hash:   validHashString,
+			sha256: validSHA256,
+			gatewayGetBlockByHashErr: errors.New("GetSignedBlockByHash failed"),
+		},
+		{
+			name:   "500 - get block by seq error",
+			method: http.MethodGet,
+			status: http.StatusInternalServerError,
+			err:    "500 Internal Server Error - GetSignedBlockBySeq failed",
+			seqStr: "1",
+			seq:    1,
+			gatewayGetBlockBySeqErr: errors.New("GetSignedBlockBySeq failed"),
+		},
+		{
 			name:   "200 - got block by seq",
 			method: http.MethodGet,
 			status: http.StatusOK,
@@ -180,24 +179,51 @@ func TestGetBlock(t *testing.T) {
 				},
 			},
 		},
-
 		{
-			name:   "500 - get block by hash error",
+			name:   "200 - got block by hash",
 			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - GetSignedBlockByHash failed",
+			status: http.StatusOK,
 			hash:   validHashString,
 			sha256: validSHA256,
-			gatewayGetBlockByHashErr: errors.New("GetSignedBlockByHash failed"),
+			gatewayGetBlockByHashResult: &coin.SignedBlock{},
+			response: &visor.ReadableBlock{
+				Head: visor.ReadableBlockHeader{
+					BkSeq:             0x0,
+					BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+					PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					Time:              0x0,
+					Fee:               0x0,
+					Version:           0x0,
+					BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+				},
+				Body: visor.ReadableBlockBody{
+					Transactions: []visor.ReadableTransaction{},
+				},
+			},
 		},
 		{
-			name:   "500 - get block by seq error",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - GetSignedBlockBySeq failed",
-			seqStr: "1",
-			seq:    1,
-			gatewayGetBlockBySeqErr: errors.New("GetSignedBlockBySeq failed"),
+			name:      "200 - got block by hash with CSP enabled",
+			method:    http.MethodGet,
+			status:    http.StatusOK,
+			enableCSP: true,
+			csp:       wh.ContentSecurityPolicy,
+			hash:      validHashString,
+			sha256:    validSHA256,
+			gatewayGetBlockByHashResult: &coin.SignedBlock{},
+			response: &visor.ReadableBlock{
+				Head: visor.ReadableBlockHeader{
+					BkSeq:             0x0,
+					BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+					PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					Time:              0x0,
+					Fee:               0x0,
+					Version:           0x0,
+					BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+				},
+				Body: visor.ReadableBlockBody{
+					Transactions: []visor.ReadableTransaction{},
+				},
+			},
 		},
 	}
 
@@ -207,6 +233,7 @@ func TestGetBlock(t *testing.T) {
 
 			gateway.On("GetSignedBlockByHash", tc.sha256).Return(tc.gatewayGetBlockByHashResult, tc.gatewayGetBlockByHashErr)
 			gateway.On("GetSignedBlockBySeq", tc.seq).Return(tc.gatewayGetBlockBySeqResult, tc.gatewayGetBlockBySeqErr)
+			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
 
 			endpoint := "/api/v1/block"
 
@@ -235,6 +262,8 @@ func TestGetBlock(t *testing.T) {
 
 			handler.ServeHTTP(rr, req)
 
+			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
+
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
 
@@ -261,6 +290,8 @@ func TestGetBlocks(t *testing.T) {
 		name                   string
 		method                 string
 		status                 int
+		enableCSP              bool
+		csp                    string
 		err                    string
 		body                   *httpBody
 		start                  uint64
@@ -327,12 +358,28 @@ func TestGetBlocks(t *testing.T) {
 			gatewayGetBlocksResult: &visor.ReadableBlocks{Blocks: []visor.ReadableBlock{visor.ReadableBlock{}}},
 			response:               &visor.ReadableBlocks{Blocks: []visor.ReadableBlock{visor.ReadableBlock{}}},
 		},
+		{
+			name:      "200 enable CSP",
+			method:    http.MethodGet,
+			status:    http.StatusOK,
+			enableCSP: true,
+			csp:       wh.ContentSecurityPolicy,
+			body: &httpBody{
+				Start: "1",
+				End:   "3",
+			},
+			start: 1,
+			end:   3,
+			gatewayGetBlocksResult: &visor.ReadableBlocks{Blocks: []visor.ReadableBlock{visor.ReadableBlock{}}},
+			response:               &visor.ReadableBlocks{Blocks: []visor.ReadableBlock{visor.ReadableBlock{}}},
+		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &GatewayerMock{}
 			gateway.On("GetBlocks", tc.start, tc.end).Return(tc.gatewayGetBlocksResult, tc.gatewayGetBlocksError)
+			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
 
 			endpoint := "/api/v1/blocks"
 
@@ -362,6 +409,8 @@ func TestGetBlocks(t *testing.T) {
 
 			handler.ServeHTTP(rr, req)
 
+			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
+
 			status := rr.Code
 			require.Equal(t, tc.status, status, "wrong status code: got `%v` want `%v`", status, tc.status)
 
@@ -387,6 +436,8 @@ func TestGetLastBlocks(t *testing.T) {
 		method                     string
 		url                        string
 		status                     int
+		enableCSP                  bool
+		csp                        string
 		err                        string
 		body                       httpBody
 		num                        uint64
@@ -441,6 +492,17 @@ func TestGetLastBlocks(t *testing.T) {
 			},
 			num: 1,
 		},
+		{
+			name:      "200 enable CSP",
+			method:    http.MethodGet,
+			status:    http.StatusOK,
+			enableCSP: true,
+			csp:       wh.ContentSecurityPolicy,
+			body: httpBody{
+				Num: "1",
+			},
+			num: 1,
+		},
 	}
 
 	for _, tc := range tt {
@@ -449,6 +511,7 @@ func TestGetLastBlocks(t *testing.T) {
 			gateway := NewGatewayerMock()
 
 			gateway.On("GetLastBlocks", tc.num).Return(tc.gatewayGetLastBlocksResult, tc.gatewayGetLastBlocksError)
+			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
 
 			v := url.Values{}
 			if tc.body.Num != "" {
@@ -471,6 +534,7 @@ func TestGetLastBlocks(t *testing.T) {
 			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
+			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)

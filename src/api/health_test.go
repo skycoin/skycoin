@@ -20,6 +20,8 @@ func TestHealthCheckHandler(t *testing.T) {
 	cases := []struct {
 		name         string
 		method       string
+		enableCSP    bool
+		csp          string
 		code         int
 		getHealthErr error
 	}{
@@ -74,6 +76,8 @@ func TestHealthCheckHandler(t *testing.T) {
 			}
 
 			gateway := NewGatewayerMock()
+			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
+
 			if tc.getHealthErr != nil {
 				gateway.On("GetHealth").Return(nil, tc.getHealthErr)
 			} else {
@@ -91,7 +95,7 @@ func TestHealthCheckHandler(t *testing.T) {
 			}
 			handler := newServerMux(cfg, gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
-
+			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 			if tc.code != http.StatusOK {
 				require.Equal(t, tc.code, rr.Code)
 				return

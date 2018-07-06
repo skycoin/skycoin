@@ -17,6 +17,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil" //http,json helpers
 	"github.com/skycoin/skycoin/src/util/fee"
+	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -112,6 +113,8 @@ func TestCreateTransaction(t *testing.T) {
 		method                         string
 		body                           *rawRequest
 		status                         int
+		enableCSP                      bool
+		csp                            string
 		err                            string
 		gatewayCreateTransactionResult *coin.Transaction
 		gatewayCreateTransactionInputs []wallet.UxBalance
@@ -837,11 +840,24 @@ func TestCreateTransaction(t *testing.T) {
 			gatewayCreateTransactionErr: wallet.ErrWalletAPIDisabled,
 			err: "403 Forbidden",
 		},
+		{
+			name:      "200 - manual type nonzero hours - csrf disabled - csp enabled",
+			method:    http.MethodPost,
+			body:      validBody,
+			status:    http.StatusOK,
+			enableCSP: true,
+			csp:       wh.ContentSecurityPolicy,
+			gatewayCreateTransactionResult: txn,
+			gatewayCreateTransactionInputs: inputs,
+			createTransactionResponse:      createTxnResponse,
+			csrfDisabled:                   true,
+		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &GatewayerMock{}
+			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
 
 			// If the rawRequestBody can be deserialized to CreateTransactionRequest, use it to mock gateway.CreateTransaction
 			serializedBody, err := json.Marshal(tc.body)
@@ -882,6 +898,7 @@ func TestCreateTransaction(t *testing.T) {
 
 			handler.ServeHTTP(rr, req)
 
+			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
 

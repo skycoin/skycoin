@@ -1,10 +1,16 @@
 <div class="sky-container sky-container-grey">
   <app-header [headline]="'title.outputs' | translate"></app-header>
 
-  <div class="container">
+  <app-loading-content
+    [isLoading]="!wallets"
+    noDataText="errors.no-outputs"
+    *ngIf="!wallets || wallets.length === 0 || wallets[0].addresses[0].outputs.length === 0"
+  ></app-loading-content>
+
+  <div class="container" *ngIf="wallets && wallets.length > 0">
     <div class="-table" *ngFor="let wallet of wallets">
       <div class="-headers">
-        <div class="-flex-fill">{{ wallet.label }}</div>
+        <div class="-flex-fill -label" [attr.title]="wallet.label">{{ wallet.label }}</div>
         <div class="-width-150 -text-right">{{ 'common.coin-id' | translate }}</div>
         <div class="-width-150 -text-right">{{ 'common.coin-hours' | translate }}</div>
       </div>
@@ -20,9 +26,6 @@
             <div class="-flex-fill -hash">{{ output.hash }}</div>
             <div class="-width-150 -text-right">{{ output.coins | number:'1.0-6' }}</div>
             <div class="-width-150 -text-right -grey">{{ output.calculated_hours | number:'1.0-6' }}</div>
-          </div>
-          <div class="-row -small" *ngIf="address.outputs.length === 0">
-            <div class="-flex-fill -hash">{{ 'errors.no-outputs' | translate }}</div>
           </div>
         </ng-container>
       </div>

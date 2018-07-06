@@ -35,7 +35,7 @@
 
 /*GoSlice_* as function return typemap*/
 %typemap(argout) GoSlice_* {
-	%append_output( SWIG_AsCharPtrAndSize( $1->data, $1->len  ) );
+	%append_output( SWIG_FromCharPtrAndSize( $1->data, $1->len  ) );
 	free( (void*)$1->data );
 }
 

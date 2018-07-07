@@ -1,9 +1,9 @@
 %begin %{
-#define SWIG_PYTHON_STRICT_BYTE_CHAR
+//#define SWIG_PYTHON_STRICT_BYTE_CHAR
 #define SWIG_PYTHON_STRICT_UNICODE_WCHAR
 %}
 
-
+/*
 %inline {
 #if defined(SWIGPYTHON)
 int Wrap_SWIG_AsCharPtrAndSize(PyObject *obj, char** cptr, size_t* psize, int *alloc)
@@ -26,6 +26,8 @@ if (PyString_Check(obj)){
 #define Wrap_SWIG_AsCharPtrAndSize SWIG_AsCharPtrAndSize
 #endif
 }
+*/
+#define Wrap_SWIG_AsCharPtrAndSize SWIG_AsCharPtrAndSize
 
 /*GoSlice in typemap*/
 %typemap(in) GoSlice {
@@ -69,10 +71,10 @@ if (PyString_Check(obj)){
 %typemap(in) GoString {
 	char* buffer = 0;
 	size_t size = 0;
-	int res = Wrap_SWIG_AsCharPtrAndSize( $input, &buffer, &size, 0 );
+	int alloc = SWIG_OLDOBJ;
+	int res = Wrap_SWIG_AsCharPtrAndSize( $input, &buffer, &size, &alloc );
 	if (!SWIG_IsOK(res)) {
-		if( res == SWIG_TypeError)
-			SWIG_exception_fail(SWIG_TypeError, "in method '$symname', expecting byte string");
+		SWIG_exception_fail(SWIG_TypeError, "in method '$symname', expecting byte string");
 	}
 	$1.p = buffer;
 	$1.n = size - 1;

@@ -268,7 +268,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 
 	indexHandler := newIndexHandler(c.appLoc, c.enableGUI)
 	if gateway.IsCSPEnabled() {
-		indexHandler = wh.EnableCSPHandler(indexHandler)
+		indexHandler = wh.CSPHandler(indexHandler)
 	}
 	webHandler("/", indexHandler)
 
@@ -277,7 +277,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 
 		fs := http.FileServer(http.Dir(c.appLoc))
 		if gateway.IsCSPEnabled() {
-			fs = wh.EnableCSPHandler(fs)
+			fs = wh.CSPHandler(fs)
 		}
 
 		for _, fileInfo := range fileInfos {

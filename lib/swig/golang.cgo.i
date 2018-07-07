@@ -1,6 +1,5 @@
 %begin %{
 #define SWIG_PYTHON_STRICT_BYTE_CHAR
-#define SWIG_PYTHON_STRICT_UNICODE_WCHAR
 %}
 
 /*GoSlice in typemap*/

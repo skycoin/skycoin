@@ -20,6 +20,8 @@ import (
 var (
 	// Every rejection message prefix must start with "RJC" prefix
 	rejectPrefix = [...]byte{82, 74, 67}
+	// ErrAckRejectWithPeers disconnect since peer sent RJCP message
+	ErrAckRejectWithPeers gnet.DisconnectReason = errors.New("Disconnect after processing peers")
 )
 
 // Message represent a packet to be serialized over the network by
@@ -239,7 +241,7 @@ type IntroductionMessage struct {
 	Version int32
 	c       *gnet.MessageContext `enc:"-"`
 	// We validate the message in Handle() and cache the result for Process()
-	valid bool `enc:"-"` // skip it during encoding
+	validationError error `enc:"-"` // skip it during encoding
 	// Extra would be parsed as blockchain pubkey if it's not empty
 	Extra []byte `enc:",omitempty"`
 }
@@ -345,7 +347,7 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 		return nil
 	}()
 
-	intro.valid = (err == nil)
+	intro.validationError = err
 	intro.c = mc
 
 	if err != nil {
@@ -362,7 +364,29 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 // Process an event queued by Handle()
 func (intro *IntroductionMessage) Process(d Daemoner) {
 	d.RemoveFromExpectingIntroductions(intro.c.Addr)
-	if !intro.valid {
+	if intro.validationError != nil {
+		if intro.validationError == pex.ErrPeerlistFull {
+			// FIXME: Quite similar to NewGivePeersMessage. Merge'em both
+			peers := d.RandomExchangeable(d.PexConfig().ReplyCount)
+			ipAddrs := make([]IPAddr, len(peers))
+			badAddrs := []string{}
+			for _, peer := range peers {
+				ipAddr, err := NewIPAddr(peer.Addr)
+				if err != nil {
+					badAddrs = append(badAddrs, peer.Addr)
+				} else {
+					ipAddrs = append(ipAddrs, ipAddr)
+				}
+			}
+			if len(badAddrs) > 0 {
+				logger.Debugf("IntroductionMessage skipping addresses in RJCP peer list %v", badAddrs)
+			}
+			if len(ipAddrs) == 0 {
+				logger.Debug("We have no peers to send in reply")
+			}
+			rejectMsg := NewRejectWithPeersMessage(intro, pex.ErrPeerlistFull, "", ipAddrs)
+			d.SendMessage(intro.c.Addr, rejectMsg)
+		}
 		return
 	}
 	// Add the remote peer with their chosen listening port
@@ -478,14 +502,29 @@ func NewRejectWithPeersMessage(msg gnet.Message, err error, reason string, peers
 }
 
 // Handle an event queued by Handle()
-func (msg *RejectWithPeersMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
-	msg.c = mc
-	return daemon.(Daemoner).RecordMessageEvent(msg, mc)
+func (rpm *RejectWithPeersMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
+	rpm.c = mc
+	return daemon.(Daemoner).RecordMessageEvent(rpm, mc)
+}
+
+// dataMessageForReject returns the data message equivalent to a reject message
+func dataMessageForReject(msg gnet.Message) gnet.Message {
+	switch msg.(type) {
+	case *RejectWithPeersMessage:
+		rejectMsg, _ := msg.(*RejectWithPeersMessage)
+		return &GivePeersMessage{
+			Peers: rejectMsg.Peers,
+		}
+	default:
+		return nil
+	}
 }
 
 // Process Recover from message rejection state
-func (msg *RejectWithPeersMessage) Process(d Daemoner) {
-	// TODO: Implement
+func (rpm *RejectWithPeersMessage) Process(d Daemoner) {
+	gpm, _ := dataMessageForReject(rpm).(*RejectWithPeersMessage)
+	gpm.Process(d)
+	d.Disconnect(rpm.c.Addr, ErrAckRejectWithPeers)
 }
 
 // GetBlocksMessage sent to request blocks since LastBlock

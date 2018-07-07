@@ -47,6 +47,7 @@
 %typemap(in) GoString {
 	char* buffer = 0;
 	size_t size = 0;
+	SWIG_exception_fail(SWIG_TypeError, "in method '$symname', Forced error");
 	int alloc = SWIG_OLDOBJ;
 	int res = SWIG_AsCharPtrAndSize( $input, &buffer, &size, &alloc );
 	if (!SWIG_IsOK(res)) {

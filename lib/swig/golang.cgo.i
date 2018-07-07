@@ -58,11 +58,14 @@
 	%#if PY_VERSION_HEX>=0x03000000
 	%#if defined(SWIG_PYTHON_STRICT_BYTE_CHAR)
 	  if (PyBytes_Check($input)){
-	  	SWIG_exception_fail(SWIG_TypeError, "in method '$symname', received bytes");
 	  	char *cstr; Py_ssize_t len;
 		int ret = SWIG_OK;
 		PyBytes_AsStringAndSize($input, &cstr, &len);
 		buffer = PyBytes_AsString($input);
+		if( !buffer )
+			SWIG_exception_fail(SWIG_TypeError, "in method '$symname', PyBytes_AsString failed");
+		else
+			SWIG_exception_fail(SWIG_TypeError, "in method '$symname', PyBytes_AsString ok");
 	  }
 	%#else
 	  if (PyUnicode_Check($input)){
@@ -71,11 +74,14 @@
 	%#endif
 	%#else  
 	  if (PyString_Check($input)){
-	  	SWIG_exception_fail(SWIG_TypeError, "in method '$symname', received string");
 	  	char *cstr; Py_ssize_t len;
 		int ret = SWIG_OK;
 	  	PyString_AsStringAndSize($input, &cstr, &len);
 	  	buffer = SWIG_Python_str_AsChar($input);
+	  	if( !buffer )
+			SWIG_exception_fail(SWIG_TypeError, "in method '$symname', SWIG_Python_str_AsChar failed");
+		else
+			SWIG_exception_fail(SWIG_TypeError, "in method '$symname', SWIG_Python_str_AsChar ok");
 	  }
 	%#endif
 	int res = SWIG_AsCharPtrAndSize( $input, &buffer, &size, 0 );

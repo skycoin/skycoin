@@ -1,4 +1,5 @@
 %begin %{
+#define SWIG_PYTHON_STRICT_BYTE_CHAR
 #define SWIG_PYTHON_STRICT_UNICODE_WCHAR
 %}
 
@@ -6,9 +7,10 @@
 %typemap(in) GoSlice {
 	char* buffer = 0;
 	size_t size = 0;
-	int res = SWIG_AsCharPtrAndSize( $input, &buffer, &size, 0 );
+	int alloc = SWIG_OLDOBJ;
+	int res = SWIG_AsCharPtrAndSize( $input, &buffer, &size, &alloc );
 	if (!SWIG_IsOK(res)) {
-		SWIG_exception_fail(SWIG_TypeError, "in method '$symname', expecting byte string");
+		SWIG_exception_fail(SWIG_TypeError, "in method '$symname', expecting string");
 	}
 	$1.data = buffer;
 	$1.len = size - 1;
@@ -19,7 +21,8 @@
 %typecheck(SWIG_TYPECHECK_STRING) GoSlice {
   	char* buffer = 0;
 	size_t size = 0;
-	int res = SWIG_AsCharPtrAndSize( $input, &buffer, &size, 0 );
+	int alloc = SWIG_OLDOBJ;
+	int res = SWIG_AsCharPtrAndSize( $input, &buffer, &size, &alloc );
 	$1 = SWIG_IsOK(res) ? 1 : 0;
 }
 
@@ -47,7 +50,7 @@
 	int alloc = SWIG_OLDOBJ;
 	int res = SWIG_AsCharPtrAndSize( $input, &buffer, &size, &alloc );
 	if (!SWIG_IsOK(res)) {
-		SWIG_exception_fail(SWIG_TypeError, "in method '$symname', expecting byte string");
+		SWIG_exception_fail(SWIG_TypeError, "in method '$symname', expecting string");
 	}
 	$1.p = buffer;
 	$1.n = size - 1;

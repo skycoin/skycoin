@@ -86,7 +86,8 @@
 	  }
 	%#endif
 	*/
-	int res = SWIG_AsCharPtrAndSize( $input, &buffer, &size, 0 );
+	int calloc = SWIG_OLDOBJ;
+	int res = SWIG_AsCharPtrAndSize( $input, &buffer, &size, &calloc );
 	if (!SWIG_IsOK(res)) {
 		if( res == SWIG_TypeError)
 			SWIG_exception_fail(SWIG_TypeError, "in method '$symname', expecting byte string");

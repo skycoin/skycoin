@@ -46,9 +46,44 @@
 %typemap(in) GoString {
 	char* buffer = 0;
 	size_t size = 0;
+	/*if (PyString_Check($input)){
+		SWIG_exception_fail(SWIG_TypeError, "in method '$symname', type is not unicode string");
+	}
+	else if(PyUnicode_Check($input)){
+		SWIG_exception_fail(SWIG_TypeError, "in method '$symname', type is unicode unicode");
+	}
+	else {
+		SWIG_exception_fail(SWIG_TypeError, "in method '$symname', what the hell is this");
+	}*/
+	%#if PY_VERSION_HEX>=0x03000000
+	%#if defined(SWIG_PYTHON_STRICT_BYTE_CHAR)
+	  if (PyBytes_Check($input)){
+	  	SWIG_exception_fail(SWIG_TypeError, "in method '$symname', received bytes");
+	  	char *cstr; Py_ssize_t len;
+		int ret = SWIG_OK;
+		PyBytes_AsStringAndSize($input, &cstr, &len);
+		buffer = PyBytes_AsString($input);
+	  }
+	%#else
+	  if (PyUnicode_Check($input)){
+	  	SWIG_exception_fail(SWIG_TypeError, "in method '$symname', we shouldn't be here");
+	  }
+	%#endif
+	%#else  
+	  if (PyString_Check($input)){
+	  	SWIG_exception_fail(SWIG_TypeError, "in method '$symname', received string");
+	  	char *cstr; Py_ssize_t len;
+		int ret = SWIG_OK;
+	  	PyString_AsStringAndSize($input, &cstr, &len);
+	  	buffer = SWIG_Python_str_AsChar($input);
+	  }
+	%#endif
 	int res = SWIG_AsCharPtrAndSize( $input, &buffer, &size, 0 );
 	if (!SWIG_IsOK(res)) {
-		SWIG_exception_fail(SWIG_TypeError, "in method '$symname', expecting byte string");
+		if( res == SWIG_TypeError)
+			SWIG_exception_fail(SWIG_TypeError, "in method '$symname', expecting byte string");
+		else
+			SWIG_exception_fail(SWIG_TypeError, "in method '$symname', some unknown error");
 	}
 	$1.p = buffer;
 	$1.n = size - 1;

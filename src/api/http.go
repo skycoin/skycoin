@@ -252,9 +252,6 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 		handler = CSRFCheck(csrfStore, handler)
 		handler = headerCheck(c.host, handler)
 		handler = gziphandler.GzipHandler(handler)
-		if gateway.IsCSPEnabled() {
-			handler = wh.EnableCSPHandler(handler)
-		}
 		mux.Handle(endpoint, handler)
 	}
 
@@ -269,16 +266,27 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 		webHandler("/api/v2"+endpoint, handler)
 	}
 
-	webHandler("/", newIndexHandler(c.appLoc, c.enableGUI))
+	indexHandler := newIndexHandler(c.appLoc, c.enableGUI)
+	if gateway.IsCSPEnabled() {
+		indexHandler = wh.EnableCSPHandler(indexHandler)
+	}
+	webHandler("/", indexHandler)
 
 	if c.enableGUI {
 		fileInfos, _ := ioutil.ReadDir(c.appLoc)
+
+		fs := http.FileServer(http.Dir(c.appLoc))
+		if gateway.IsCSPEnabled() {
+			fs = wh.EnableCSPHandler(fs)
+		}
+
 		for _, fileInfo := range fileInfos {
 			route := fmt.Sprintf("/%s", fileInfo.Name())
 			if fileInfo.IsDir() {
 				route = route + "/"
 			}
-			webHandler(route, http.FileServer(http.Dir(c.appLoc)))
+
+			webHandler(route, fs)
 		}
 	}
 
@@ -288,9 +296,6 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 
 	// get the current CSRF token
 	csrfHandler := headerCheck(c.host, getCSRFToken(csrfStore))
-	if gateway.IsCSPEnabled() {
-		csrfHandler = wh.EnableCSPHandler(csrfHandler)
-	}
 	mux.Handle("/csrf", csrfHandler)
 	mux.Handle("/api/v1/csrf", csrfHandler)
 
@@ -455,9 +460,9 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 }
 
 // Returns a http.HandlerFunc for index.html, where index.html is in appLoc
-func newIndexHandler(appLoc string, enableGUI bool) http.HandlerFunc {
+func newIndexHandler(appLoc string, enableGUI bool) http.Handler {
 	// Serves the main page
-	return func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !enableGUI {
 			wh.Error404(w, "")
 			return
@@ -473,7 +478,7 @@ func newIndexHandler(appLoc string, enableGUI bool) http.HandlerFunc {
 			logger.Debugf("Serving index page: %s", page)
 			http.ServeFile(w, r, page)
 		}
-	}
+	})
 }
 
 func splitCommaString(s string) []string {

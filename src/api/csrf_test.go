@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/stretchr/testify/require"
 )
 
@@ -146,7 +145,7 @@ func TestCSRFWrapper(t *testing.T) {
 				name := fmt.Sprintf("%s %s %s", method, endpoint, c)
 				t.Run(name, func(t *testing.T) {
 					gateway := &GatewayerMock{}
-					gateway.On("IsCSPEnabled").Return(true)
+					gateway.On("IsCSPEnabled").Return(false)
 
 					req, err := http.NewRequest(method, endpoint, nil)
 					require.NoError(t, err)
@@ -166,7 +165,6 @@ func TestCSRFWrapper(t *testing.T) {
 
 					handler.ServeHTTP(rr, req)
 
-					require.Equal(t, wh.ContentSecurityPolicy, rr.Header().Get("content-security-policy"))
 					status := rr.Code
 					require.Equal(t, http.StatusForbidden, status, "wrong status code: got `%v` want `%v`", status, http.StatusForbidden)
 					require.Equal(t, "403 Forbidden - invalid CSRF token\n", rr.Body.String())
@@ -178,11 +176,9 @@ func TestCSRFWrapper(t *testing.T) {
 
 func TestOriginRefererCheck(t *testing.T) {
 	cases := []struct {
-		name      string
-		origin    string
-		referer   string
-		enableCSP bool
-		csp       string
+		name    string
+		origin  string
+		referer string
 	}{
 		{
 			name:   "mismatched origin header",
@@ -192,12 +188,6 @@ func TestOriginRefererCheck(t *testing.T) {
 			name:    "mismatched referer header",
 			referer: "http://example.com/",
 		},
-		{
-			name:      "mismatched origin header enable CSP",
-			origin:    "http://example.com/",
-			enableCSP: true,
-			csp:       wh.ContentSecurityPolicy,
-		},
 	}
 
 	for _, endpoint := range endpoints {
@@ -205,7 +195,7 @@ func TestOriginRefererCheck(t *testing.T) {
 			name := fmt.Sprintf("%s %s", tc.name, endpoint)
 			t.Run(name, func(t *testing.T) {
 				gateway := &GatewayerMock{}
-				gateway.On("IsCSPEnabled").Return(tc.enableCSP)
+				gateway.On("IsCSPEnabled").Return(false)
 
 				req, err := http.NewRequest(http.MethodGet, endpoint, nil)
 				require.NoError(t, err)
@@ -231,8 +221,6 @@ func TestOriginRefererCheck(t *testing.T) {
 
 				handler.ServeHTTP(rr, req)
 
-				require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
-
 				status := rr.Code
 				require.Equal(t, http.StatusForbidden, status, "wrong status code: got `%v` want `%v`", status, http.StatusForbidden)
 				require.Equal(t, "403 Forbidden\n", rr.Body.String())
@@ -245,7 +233,7 @@ func TestHostCheck(t *testing.T) {
 	for _, endpoint := range endpoints {
 		t.Run(endpoint, func(t *testing.T) {
 			gateway := &GatewayerMock{}
-			gateway.On("IsCSPEnabled").Return(true)
+			gateway.On("IsCSPEnabled").Return(false)
 
 			req, err := http.NewRequest(http.MethodGet, endpoint, nil)
 			require.NoError(t, err)
@@ -265,7 +253,6 @@ func TestHostCheck(t *testing.T) {
 			}, gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
-			require.Equal(t, wh.ContentSecurityPolicy, rr.Header().Get("content-security-policy"))
 
 			status := rr.Code
 			require.Equal(t, http.StatusForbidden, status, "wrong status code: got `%v` want `%v`", status, http.StatusForbidden)
@@ -282,7 +269,7 @@ func TestCSRF(t *testing.T) {
 	updateWalletLabel := func(csrfToken string) *httptest.ResponseRecorder {
 		gateway := &GatewayerMock{}
 		gateway.On("UpdateWalletLabel", "fooid", "foolabel").Return(nil)
-		gateway.On("IsCSPEnabled").Return(true)
+		gateway.On("IsCSPEnabled").Return(false)
 
 		endpoint := "/api/v1/wallet/update"
 
@@ -306,7 +293,6 @@ func TestCSRF(t *testing.T) {
 		}, gateway, csrfStore, nil)
 
 		handler.ServeHTTP(rr, req)
-		require.Equal(t, wh.ContentSecurityPolicy, rr.Header().Get("content-security-policy"))
 
 		return rr
 	}
@@ -318,7 +304,7 @@ func TestCSRF(t *testing.T) {
 
 	// Make a request to /csrf to get a token
 	gateway := &GatewayerMock{}
-	gateway.On("IsCSPEnabled").Return(true)
+	gateway.On("IsCSPEnabled").Return(false)
 	handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
 
 	// non-GET request to /csrf is invalid
@@ -327,8 +313,6 @@ func TestCSRF(t *testing.T) {
 
 	rr = httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
-
-	require.Equal(t, wh.ContentSecurityPolicy, rr.Header().Get("content-security-policy"))
 
 	require.Equal(t, http.StatusMethodNotAllowed, rr.Code)
 	require.Nil(t, csrfStore.token, "csrfStore.token should not be set yet")

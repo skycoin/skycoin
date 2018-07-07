@@ -26,7 +26,6 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/testutil"
-	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -91,8 +90,6 @@ func TestGetPendingTxs(t *testing.T) {
 		method                        string
 		url                           string
 		status                        int
-		enableCSP                     bool
-		csp                           string
 		err                           string
 		getAllUnconfirmedTxnsResponse []visor.UnconfirmedTxn
 		getAllUnconfirmedTxnsErr      error
@@ -128,15 +125,6 @@ func TestGetPendingTxs(t *testing.T) {
 			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTxn{},
 			httpResponse:                  []*visor.ReadableUnconfirmedTxn{},
 		},
-		{
-			name:      "200 enable CSP",
-			method:    http.MethodGet,
-			status:    http.StatusOK,
-			enableCSP: true,
-			csp:       wh.ContentSecurityPolicy,
-			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTxn{},
-			httpResponse:                  []*visor.ReadableUnconfirmedTxn{},
-		},
 	}
 
 	for _, tc := range tt {
@@ -144,7 +132,7 @@ func TestGetPendingTxs(t *testing.T) {
 			endpoint := "/api/v1/pendingTxs"
 			gateway := NewGatewayerMock()
 			gateway.On("GetAllUnconfirmedTxns").Return(tc.getAllUnconfirmedTxnsResponse, tc.getAllUnconfirmedTxnsErr)
-			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
+			gateway.On("IsCSPEnabled").Return(false)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
@@ -158,7 +146,6 @@ func TestGetPendingTxs(t *testing.T) {
 			rr := httptest.NewRecorder()
 			handler.ServeHTTP(rr, req)
 
-			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
 				tc.name, status, tc.status)
@@ -188,8 +175,6 @@ func TestGetTransactionByID(t *testing.T) {
 		name                  string
 		method                string
 		status                int
-		enableCSP             bool
-		csp                   string
 		err                   string
 		httpBody              *httpBody
 		getTransactionArg     cipher.SHA256
@@ -274,27 +259,6 @@ func TestGetTransactionByID(t *testing.T) {
 				},
 			},
 		},
-		{
-			name:      "200 - enable CSP",
-			method:    http.MethodGet,
-			status:    http.StatusOK,
-			enableCSP: true,
-			csp:       wh.ContentSecurityPolicy,
-			httpBody: &httpBody{
-				txid: validHash,
-			},
-			getTransactionArg:     testutil.SHA256FromHex(t, validHash),
-			getTransactionReponse: &visor.Transaction{},
-			httpResponse: daemon.TransactionResult{
-				Transaction: visor.ReadableTransaction{
-					Sigs:      []string{},
-					In:        []string{},
-					Out:       []visor.ReadableTransactionOutput{},
-					Hash:      "78877fa898f0b4c45c9c33ae941e40617ad7c8657a307db62bc5691f92f4f60e",
-					InnerHash: "0000000000000000000000000000000000000000000000000000000000000000",
-				},
-			},
-		},
 	}
 
 	for _, tc := range tt {
@@ -302,7 +266,7 @@ func TestGetTransactionByID(t *testing.T) {
 			endpoint := "/api/v1/transaction"
 			gateway := NewGatewayerMock()
 			gateway.On("GetTransaction", tc.getTransactionArg).Return(tc.getTransactionReponse, tc.getTransactionError)
-			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
+			gateway.On("IsCSPEnabled").Return(false)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -326,7 +290,6 @@ func TestGetTransactionByID(t *testing.T) {
 			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
-			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
 				tc.name, status, tc.status)
@@ -362,8 +325,6 @@ func TestInjectTransaction(t *testing.T) {
 		name                   string
 		method                 string
 		status                 int
-		enableCSP              bool
-		csp                    string
 		err                    string
 		httpBody               string
 		injectTransactionArg   coin.Transaction
@@ -431,17 +392,6 @@ func TestInjectTransaction(t *testing.T) {
 			httpResponse:         validTransaction.Hash().Hex(),
 			csrfDisabled:         true,
 		},
-		{
-			name:                 "200 - csrf disabled - csp enabled",
-			method:               http.MethodPost,
-			status:               http.StatusOK,
-			enableCSP:            true,
-			csp:                  wh.ContentSecurityPolicy,
-			httpBody:             string(validTxnBodyJSON),
-			injectTransactionArg: validTransaction,
-			httpResponse:         validTransaction.Hash().Hex(),
-			csrfDisabled:         true,
-		},
 	}
 
 	for _, tc := range tt {
@@ -449,7 +399,7 @@ func TestInjectTransaction(t *testing.T) {
 			endpoint := "/api/v1/injectTransaction"
 			gateway := NewGatewayerMock()
 			gateway.On("InjectBroadcastTransaction", tc.injectTransactionArg).Return(tc.injectTransactionError)
-			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
+			gateway.On("IsCSPEnabled").Return(false)
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)
@@ -466,8 +416,6 @@ func TestInjectTransaction(t *testing.T) {
 			rr := httptest.NewRecorder()
 			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
-
-			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
@@ -490,8 +438,6 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 		name                          string
 		method                        string
 		status                        int
-		enableCSP                     bool
-		csp                           string
 		err                           string
 		httpBody                      string
 		resendUnconfirmedTxnsResponse *daemon.ResendResult
@@ -518,15 +464,6 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 			resendUnconfirmedTxnsResponse: &daemon.ResendResult{},
 			httpResponse:                  &daemon.ResendResult{},
 		},
-		{
-			name:      "200 - enable csp",
-			method:    http.MethodGet,
-			status:    http.StatusOK,
-			enableCSP: true,
-			csp:       wh.ContentSecurityPolicy,
-			resendUnconfirmedTxnsResponse: &daemon.ResendResult{},
-			httpResponse:                  &daemon.ResendResult{},
-		},
 	}
 
 	for _, tc := range tt {
@@ -534,7 +471,7 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 			endpoint := "/api/v1/resendUnconfirmedTxns"
 			gateway := NewGatewayerMock()
 			gateway.On("ResendUnconfirmedTxns").Return(tc.resendUnconfirmedTxnsResponse, tc.resendUnconfirmedTxnsErr)
-			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
+			gateway.On("IsCSPEnabled").Return(false)
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)
@@ -547,8 +484,6 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 			rr := httptest.NewRecorder()
 			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
-
-			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
@@ -580,8 +515,6 @@ func TestGetRawTx(t *testing.T) {
 		method                 string
 		url                    string
 		status                 int
-		enableCSP              bool
-		csp                    string
 		err                    string
 		httpBody               *httpBody
 		getTransactionArg      cipher.SHA256
@@ -656,19 +589,6 @@ func TestGetRawTx(t *testing.T) {
 			getTransactionResponse: &visor.Transaction{},
 			httpResponse:           "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
 		},
-		{
-			name:      "200 - enable csp",
-			method:    http.MethodGet,
-			status:    http.StatusOK,
-			enableCSP: true,
-			csp:       wh.ContentSecurityPolicy,
-			httpBody: &httpBody{
-				txid: validHash,
-			},
-			getTransactionArg:      testutil.SHA256FromHex(t, validHash),
-			getTransactionResponse: &visor.Transaction{},
-			httpResponse:           "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-		},
 	}
 
 	for _, tc := range tt {
@@ -676,7 +596,7 @@ func TestGetRawTx(t *testing.T) {
 			endpoint := "/api/v1/rawtx"
 			gateway := NewGatewayerMock()
 			gateway.On("GetTransaction", tc.getTransactionArg).Return(tc.getTransactionResponse, tc.getTransactionError)
-			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
+			gateway.On("IsCSPEnabled").Return(false)
 			v := url.Values{}
 			if tc.httpBody != nil {
 				if tc.httpBody.txid != "" {
@@ -698,8 +618,6 @@ func TestGetRawTx(t *testing.T) {
 			rr := httptest.NewRecorder()
 			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
-
-			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
@@ -738,8 +656,6 @@ func TestGetTransactions(t *testing.T) {
 		name                    string
 		method                  string
 		status                  int
-		enableCSP               bool
-		csp                     string
 		err                     string
 		httpBody                *httpBody
 		getTransactionsArg      []visor.TxFilter
@@ -831,23 +747,6 @@ func TestGetTransactions(t *testing.T) {
 			getTransactionsResponse: []visor.Transaction{},
 			httpResponse:            []visor.Transaction{},
 		},
-		{
-			name:      "200 - enable CSP",
-			method:    http.MethodGet,
-			status:    http.StatusOK,
-			enableCSP: true,
-			csp:       wh.ContentSecurityPolicy,
-			httpBody: &httpBody{
-				addrs:     addrsStr,
-				confirmed: "true",
-			},
-			getTransactionsArg: []visor.TxFilter{
-				visor.AddrsFilter(addrs),
-				visor.ConfirmedTxFilter(true),
-			},
-			getTransactionsResponse: []visor.Transaction{},
-			httpResponse:            []visor.Transaction{},
-		},
 	}
 
 	for _, tc := range tt {
@@ -855,7 +754,7 @@ func TestGetTransactions(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := NewGatewayerMock()
 			gateway.On("GetTransactions", mock.Anything).Return(tc.getTransactionsResponse, tc.getTransactionsError)
-			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
+			gateway.On("IsCSPEnabled").Return(false)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -882,7 +781,6 @@ func TestGetTransactions(t *testing.T) {
 			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
-			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
@@ -978,8 +876,6 @@ func TestVerifyTransaction(t *testing.T) {
 		method                        string
 		contentType                   string
 		status                        int
-		enableCSP                     bool
-		csp                           string
 		err                           string
 		httpBody                      string
 		gatewayVerifyTxnVerboseArg    coin.Transaction
@@ -1096,22 +992,6 @@ func TestVerifyTransaction(t *testing.T) {
 				Data: newVerifyTxnResponseJSON(t, &txnAndInputs.txn, txnAndInputs.inputs, false),
 			},
 		},
-		{
-			name:                       "200 - enable CSP",
-			method:                     http.MethodPost,
-			contentType:                "application/json",
-			status:                     http.StatusOK,
-			enableCSP:                  true,
-			csp:                        wh.ContentSecurityPolicy,
-			httpBody:                   string(validTxnBodyJSON),
-			gatewayVerifyTxnVerboseArg: txnAndInputs.txn,
-			gatewayVerifyTxnVerboseResult: verifyTxnVerboseResult{
-				Uxouts: txnAndInputs.inputs,
-			},
-			httpResponse: HTTPResponse{
-				Data: newVerifyTxnResponseJSON(t, &txnAndInputs.txn, txnAndInputs.inputs, false),
-			},
-		},
 	}
 
 	for _, tc := range tt {
@@ -1120,7 +1000,7 @@ func TestVerifyTransaction(t *testing.T) {
 			gateway := NewGatewayerMock()
 			gateway.On("VerifyTxnVerbose", &tc.gatewayVerifyTxnVerboseArg).Return(tc.gatewayVerifyTxnVerboseResult.Uxouts,
 				tc.gatewayVerifyTxnVerboseResult.IsTxnConfirmed, tc.gatewayVerifyTxnVerboseResult.Err)
-			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
+			gateway.On("IsCSPEnabled").Return(false)
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)
@@ -1138,7 +1018,6 @@ func TestVerifyTransaction(t *testing.T) {
 			rr := httptest.NewRecorder()
 			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
-			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",

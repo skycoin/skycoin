@@ -18,7 +18,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -37,8 +36,6 @@ func TestGetOutputsHandler(t *testing.T) {
 		method                    string
 		url                       string
 		status                    int
-		enableCSP                 bool
-		csp                       string
 		err                       string
 		httpBody                  *httpBody
 		uxid                      string
@@ -86,15 +83,6 @@ func TestGetOutputsHandler(t *testing.T) {
 			getUnspentOutputsResponse: &visor.ReadableOutputSet{},
 			httpResponse:              &visor.ReadableOutputSet{},
 		},
-		{
-			name:      "200 - OK enable CSP",
-			method:    http.MethodGet,
-			status:    http.StatusOK,
-			enableCSP: true,
-			csp:       wh.ContentSecurityPolicy,
-			getUnspentOutputsResponse: &visor.ReadableOutputSet{},
-			httpResponse:              &visor.ReadableOutputSet{},
-		},
 	}
 
 	for _, tc := range tt {
@@ -102,7 +90,7 @@ func TestGetOutputsHandler(t *testing.T) {
 			gateway := NewGatewayerMock()
 			endpoint := "/api/v1/outputs"
 			gateway.On("GetUnspentOutputs", mock.Anything).Return(tc.getUnspentOutputsResponse, tc.getUnspentOutputsError)
-			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
+			gateway.On("IsCSPEnabled").Return(false)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -124,7 +112,6 @@ func TestGetOutputsHandler(t *testing.T) {
 			rr := httptest.NewRecorder()
 			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
-			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
@@ -156,8 +143,6 @@ func TestGetBalanceHandler(t *testing.T) {
 		method                    string
 		url                       string
 		status                    int
-		enableCSP                 bool
-		csp                       string
 		err                       string
 		httpBody                  *httpBody
 		uxid                      string
@@ -260,29 +245,6 @@ func TestGetBalanceHandler(t *testing.T) {
 			},
 			httpResponse: wallet.BalancePair{},
 		},
-		{
-			name:      "200 - OK enable CSP",
-			method:    http.MethodGet,
-			status:    http.StatusOK,
-			enableCSP: true,
-			csp:       wh.ContentSecurityPolicy,
-			err:       "200 - OK",
-			httpBody: &httpBody{
-				addrs: validAddr,
-			},
-			getBalanceOfAddrsArg: []cipher.Address{address},
-			getBalanceOfAddrsResponse: []wallet.BalancePair{
-				{
-					Confirmed: wallet.Balance{Coins: 0, Hours: 0},
-					Predicted: wallet.Balance{Coins: 0, Hours: 0},
-				},
-				{
-					Confirmed: wallet.Balance{Coins: 0, Hours: 0},
-					Predicted: wallet.Balance{Coins: 0, Hours: 0},
-				},
-			},
-			httpResponse: wallet.BalancePair{},
-		},
 	}
 
 	for _, tc := range tt {
@@ -290,7 +252,7 @@ func TestGetBalanceHandler(t *testing.T) {
 			gateway := NewGatewayerMock()
 			endpoint := "/api/v1/balance"
 			gateway.On("GetBalanceOfAddrs", tc.getBalanceOfAddrsArg).Return(tc.getBalanceOfAddrsResponse, tc.getBalanceOfAddrsError)
-			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
+			gateway.On("IsCSPEnabled").Return(false)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -310,7 +272,6 @@ func TestGetBalanceHandler(t *testing.T) {
 			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
 
-			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
 				tc.name, status, tc.status)
@@ -337,8 +298,6 @@ func TestEnableGUI(t *testing.T) {
 		enableGUI  bool
 		endpoint   string
 		appLoc     string
-		enableCSP  bool
-		csp        string
 		expectCode int
 		expectBody string
 	}{
@@ -374,16 +333,6 @@ func TestEnableGUI(t *testing.T) {
 			expectCode: http.StatusNotFound,
 			expectBody: "404 Not Found\n",
 		},
-		{
-			name:       "enable gui GET / enable CSP",
-			enableGUI:  true,
-			endpoint:   "/",
-			appLoc:     "../gui/static",
-			enableCSP:  true,
-			csp:        wh.ContentSecurityPolicy,
-			expectCode: http.StatusOK,
-			expectBody: "",
-		},
 	}
 
 	for _, tc := range tt {
@@ -392,7 +341,7 @@ func TestEnableGUI(t *testing.T) {
 			require.NoError(t, err)
 
 			gateway := NewGatewayerMock()
-			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
+			gateway.On("IsCSPEnabled").Return(false)
 
 			rr := httptest.NewRecorder()
 			handler := newServerMux(muxConfig{host: configuredHost, appLoc: tc.appLoc}, gateway, &CSRFStore{}, nil)
@@ -424,7 +373,6 @@ func TestEnableGUI(t *testing.T) {
 			rsp, err := http.Get(url)
 			require.NoError(t, err)
 
-			require.Equal(t, tc.csp, rsp.Header.Get("content-security-policy"))
 			defer rsp.Body.Close()
 			require.Equal(t, tc.expectCode, rsp.StatusCode)
 
@@ -461,30 +409,18 @@ func TestContentSecurityPolicy(t *testing.T) {
 			expectCSPHeader: "",
 		},
 		{
+			// Confirms that the /csrf api won't be affected by the csp setting
 			name:            "enable CSP GET /csrf",
-			endpoint:        "/csrf",
+			endpoint:        "/api/v1/csrf",
 			enableCSP:       true,
-			appLoc:          "",
-			expectCSPHeader: "script-src 'self' 127.0.0.1",
-		},
-		{
-			name:            "disable CSP GET /csrf",
-			endpoint:        "/csrf",
-			enableCSP:       false,
 			appLoc:          "",
 			expectCSPHeader: "",
 		},
 		{
+			// Confirms that the /version api won't be affected by the csp setting
 			name:            "enable CSP GET /version",
-			endpoint:        "/version",
+			endpoint:        "/api/v1/version",
 			enableCSP:       true,
-			appLoc:          "",
-			expectCSPHeader: "script-src 'self' 127.0.0.1",
-		},
-		{
-			name:            "disable CSP GET /version",
-			endpoint:        "/version",
-			enableCSP:       false,
 			appLoc:          "",
 			expectCSPHeader: "",
 		},
@@ -497,6 +433,7 @@ func TestContentSecurityPolicy(t *testing.T) {
 
 			gateway := NewGatewayerMock()
 			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
+			gateway.On("GetBuildInfo").Return(visor.BuildInfo{})
 
 			rr := httptest.NewRecorder()
 			handler := newServerMux(muxConfig{host: configuredHost, appLoc: tc.appLoc, enableGUI: true}, gateway, &CSRFStore{}, nil)

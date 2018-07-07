@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
-	wh "github.com/skycoin/skycoin/src/util/http"
 )
 
 func TestWebRPC(t *testing.T) {
@@ -20,33 +19,14 @@ func TestWebRPC(t *testing.T) {
 	}
 
 	cases := []struct {
-		name      string
-		enableCSP bool
-		csp       string
-		status    int
-		args      args
-		want      webrpc.Response
+		name   string
+		status int
+		args   args
+		want   webrpc.Response
 	}{
 		{
 			name:   "http GET",
 			status: http.StatusOK,
-			args: args{
-				httpMethod: http.MethodGet,
-				req:        webrpc.Request{},
-			},
-			want: webrpc.Response{
-				Jsonrpc: "2.0",
-				Error: &webrpc.RPCError{
-					Code:    webrpc.ErrCodeInvalidRequest,
-					Message: webrpc.ErrMsgNotPost,
-				},
-			},
-		},
-		{
-			name:      "http GET - enable CSP",
-			enableCSP: true,
-			csp:       wh.ContentSecurityPolicy,
-			status:    http.StatusOK,
 			args: args{
 				httpMethod: http.MethodGet,
 				req:        webrpc.Request{},
@@ -87,7 +67,7 @@ func TestWebRPC(t *testing.T) {
 			}
 
 			gateway := NewGatewayerMock()
-			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
+			gateway.On("IsCSPEnabled").Return(false)
 			handler := newServerMux(muxConfig{
 				host:            configuredHost,
 				appLoc:          ".",
@@ -96,7 +76,6 @@ func TestWebRPC(t *testing.T) {
 
 			rr := httptest.NewRecorder()
 			handler.ServeHTTP(rr, req)
-			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 
 			require.Equal(t, tc.status, rr.Code)
 

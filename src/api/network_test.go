@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/daemon"
-	wh "github.com/skycoin/skycoin/src/util/http"
 )
 
 func TestConnection(t *testing.T) {
@@ -46,8 +45,6 @@ func TestConnection(t *testing.T) {
 		name                               string
 		method                             string
 		status                             int
-		enableCSP                          bool
-		csp                                string
 		err                                string
 		addr                               string
 		gatewayGetConnectionResult         *daemon.Connection
@@ -118,37 +115,6 @@ func TestConnection(t *testing.T) {
 				ListenPort:   9877,
 			},
 		},
-		{
-			name:      "200 enable CSP",
-			method:    http.MethodGet,
-			status:    http.StatusOK,
-			enableCSP: true,
-			csp:       wh.ContentSecurityPolicy,
-			err:       "",
-			addr:      "addr",
-			gatewayGetBlockchainProgressResult: &bp,
-			gatewayGetBlockchainProgressError:  nil,
-			gatewayGetConnectionResult: &daemon.Connection{
-				ID:           1,
-				Addr:         "127.0.0.1",
-				LastSent:     99999,
-				LastReceived: 1111111,
-				Outgoing:     true,
-				Introduced:   true,
-				Mirror:       9876,
-				ListenPort:   9877,
-			},
-			result: &daemon.Connection{
-				ID:           1,
-				Addr:         "127.0.0.1",
-				LastSent:     99999,
-				LastReceived: 1111111,
-				Outgoing:     true,
-				Introduced:   true,
-				Mirror:       9876,
-				ListenPort:   9877,
-			},
-		},
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
@@ -159,7 +125,7 @@ func TestConnection(t *testing.T) {
 				tc.gatewayGetBlockchainProgressResult,
 				tc.gatewayGetBlockchainProgressError,
 			)
-			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
+			gateway.On("IsCSPEnabled").Return(false)
 
 			v := url.Values{}
 			if tc.addr != "" {
@@ -175,7 +141,6 @@ func TestConnection(t *testing.T) {
 			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
 
-			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
 
@@ -223,8 +188,6 @@ func TestConnections(t *testing.T) {
 		name                               string
 		method                             string
 		status                             int
-		enableCSP                          bool
-		csp                                string
 		err                                string
 		gatewayGetConnectionsResult        *daemon.Connections
 		gatewayGetBlockchainProgressResult *daemon.BlockchainProgress
@@ -242,44 +205,6 @@ func TestConnections(t *testing.T) {
 			method: http.MethodGet,
 			status: http.StatusOK,
 			err:    "",
-			gatewayGetBlockchainProgressResult: &bp,
-			gatewayGetBlockchainProgressError:  nil,
-			gatewayGetConnectionsResult: &daemon.Connections{
-				Connections: []*daemon.Connection{
-					&daemon.Connection{
-						ID:           1,
-						Addr:         "127.0.0.1",
-						LastSent:     99999,
-						LastReceived: 1111111,
-						Outgoing:     true,
-						Introduced:   true,
-						Mirror:       9876,
-						ListenPort:   9877,
-					},
-				},
-			},
-			result: &daemon.Connections{
-				Connections: []*daemon.Connection{
-					&daemon.Connection{
-						ID:           1,
-						Addr:         "127.0.0.1",
-						LastSent:     99999,
-						LastReceived: 1111111,
-						Outgoing:     true,
-						Introduced:   true,
-						Mirror:       9876,
-						ListenPort:   9877,
-					},
-				},
-			},
-		},
-		{
-			name:      "200 enable CSP",
-			method:    http.MethodGet,
-			status:    http.StatusOK,
-			enableCSP: true,
-			csp:       wh.ContentSecurityPolicy,
-			err:       "",
 			gatewayGetBlockchainProgressResult: &bp,
 			gatewayGetBlockchainProgressError:  nil,
 			gatewayGetConnectionsResult: &daemon.Connections{
@@ -343,7 +268,7 @@ func TestConnections(t *testing.T) {
 				tc.gatewayGetBlockchainProgressResult,
 				tc.gatewayGetBlockchainProgressError,
 			)
-			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
+			gateway.On("IsCSPEnabled").Return(false)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
@@ -351,7 +276,6 @@ func TestConnections(t *testing.T) {
 			rr := httptest.NewRecorder()
 			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
-			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
@@ -374,8 +298,6 @@ func TestDefaultConnections(t *testing.T) {
 		name                               string
 		method                             string
 		status                             int
-		enableCSP                          bool
-		csp                                string
 		err                                string
 		gatewayGetDefaultConnectionsResult []string
 		result                             []string
@@ -394,23 +316,13 @@ func TestDefaultConnections(t *testing.T) {
 			gatewayGetDefaultConnectionsResult: []string{"44.33.22.11", "11.44.66.88"},
 			result: []string{"11.44.66.88", "44.33.22.11"},
 		},
-		{
-			name:      "200 enable CSP",
-			method:    http.MethodGet,
-			status:    http.StatusOK,
-			enableCSP: true,
-			csp:       wh.ContentSecurityPolicy,
-			err:       "",
-			gatewayGetDefaultConnectionsResult: []string{"44.33.22.11", "11.44.66.88"},
-			result: []string{"11.44.66.88", "44.33.22.11"},
-		},
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/network/defaultConnections"
 			gateway := NewGatewayerMock()
 			gateway.On("GetDefaultConnections").Return(tc.gatewayGetDefaultConnectionsResult)
-			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
+			gateway.On("IsCSPEnabled").Return(false)
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
@@ -418,7 +330,6 @@ func TestDefaultConnections(t *testing.T) {
 			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
 
-			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
 
@@ -440,8 +351,6 @@ func TestGetTrustConnections(t *testing.T) {
 		name                             string
 		method                           string
 		status                           int
-		enableCSP                        bool
-		csp                              string
 		err                              string
 		gatewayGetTrustConnectionsResult []string
 		result                           []string
@@ -460,23 +369,13 @@ func TestGetTrustConnections(t *testing.T) {
 			gatewayGetTrustConnectionsResult: []string{"44.33.22.11", "11.44.66.88"},
 			result: []string{"11.44.66.88", "44.33.22.11"},
 		},
-		{
-			name:      "200 enable CSP",
-			method:    http.MethodGet,
-			status:    http.StatusOK,
-			enableCSP: true,
-			csp:       wh.ContentSecurityPolicy,
-			err:       "",
-			gatewayGetTrustConnectionsResult: []string{"44.33.22.11", "11.44.66.88"},
-			result: []string{"11.44.66.88", "44.33.22.11"},
-		},
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/network/connections/trust"
 			gateway := NewGatewayerMock()
 			gateway.On("GetTrustConnections").Return(tc.gatewayGetTrustConnectionsResult)
-			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
+			gateway.On("IsCSPEnabled").Return(false)
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
@@ -484,7 +383,6 @@ func TestGetTrustConnections(t *testing.T) {
 			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
 
-			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
 
@@ -506,8 +404,6 @@ func TestGetExchgConnection(t *testing.T) {
 		name                            string
 		method                          string
 		status                          int
-		enableCSP                       bool
-		csp                             string
 		err                             string
 		gatewayGetExchgConnectionResult []string
 		result                          []string
@@ -526,30 +422,19 @@ func TestGetExchgConnection(t *testing.T) {
 			gatewayGetExchgConnectionResult: []string{"44.33.22.11", "11.44.66.88"},
 			result: []string{"11.44.66.88", "44.33.22.11"},
 		},
-		{
-			name:      "200 enable CSP",
-			method:    http.MethodGet,
-			status:    http.StatusOK,
-			enableCSP: true,
-			csp:       wh.ContentSecurityPolicy,
-			err:       "",
-			gatewayGetExchgConnectionResult: []string{"44.33.22.11", "11.44.66.88"},
-			result: []string{"11.44.66.88", "44.33.22.11"},
-		},
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/network/connections/exchange"
 			gateway := NewGatewayerMock()
 			gateway.On("GetExchgConnection").Return(tc.gatewayGetExchgConnectionResult)
-			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
+			gateway.On("IsCSPEnabled").Return(false)
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
 			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
-			require.Equal(t, tc.csp, rr.Header().Get("content-security-policy"))
 
 			status := rr.Code
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)

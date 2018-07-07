@@ -55,6 +55,7 @@
 	else {
 		SWIG_exception_fail(SWIG_TypeError, "in method '$symname', what the hell is this");
 	}*/
+	/*
 	%#if PY_VERSION_HEX>=0x03000000
 	%#if defined(SWIG_PYTHON_STRICT_BYTE_CHAR)
 	  if (PyBytes_Check($input)){
@@ -84,6 +85,7 @@
 			SWIG_exception_fail(SWIG_TypeError, "in method '$symname', SWIG_Python_str_AsChar ok");
 	  }
 	%#endif
+	*/
 	int res = SWIG_AsCharPtrAndSize( $input, &buffer, &size, 0 );
 	if (!SWIG_IsOK(res)) {
 		if( res == SWIG_TypeError)

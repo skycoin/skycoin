@@ -46,6 +46,15 @@
 %typemap(in) GoString {
 	char* buffer = 0;
 	size_t size = 0;
+	if (PyString_Check($input)){
+		SWIG_exception_fail(SWIG_TypeError, "in method '$symname', type is not unicode string");
+	}
+	else if(PyUnicode_Check($input)){
+		SWIG_exception_fail(SWIG_TypeError, "in method '$symname', type is unicode unicode");
+	}
+	else {
+		SWIG_exception_fail(SWIG_TypeError, "in method '$symname', what the hell is this");
+	}
 	int res = SWIG_AsCharPtrAndSize( $input, &buffer, &size, 0 );
 	if (!SWIG_IsOK(res)) {
 		SWIG_exception_fail(SWIG_TypeError, "in method '$symname', expecting byte string");

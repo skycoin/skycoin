@@ -1,39 +1,12 @@
 %begin %{
-//#define SWIG_PYTHON_STRICT_BYTE_CHAR
 #define SWIG_PYTHON_STRICT_UNICODE_WCHAR
 %}
-
-/*
-%inline {
-#if defined(SWIGPYTHON)
-int Wrap_SWIG_AsCharPtrAndSize(PyObject *obj, char** cptr, size_t* psize, int *alloc)
-{
-%#if PY_VERSION_HEX>=0x03000000
-if (PyBytes_Check(obj)){
-	return PyBytes_AsStringAndSize(obj, cptr, (Py_ssize_t *)psize);
-}else{
-	return SWIG_TypeError;
-}
-%#else
-if (PyString_Check(obj)){
-	return PyString_AsStringAndSize(obj, cptr, (Py_ssize_t *)psize);
-} else {
-	return SWIG_TypeError;
-}
-%#endif
-}
-#else
-#define Wrap_SWIG_AsCharPtrAndSize SWIG_AsCharPtrAndSize
-#endif
-}
-*/
-#define Wrap_SWIG_AsCharPtrAndSize SWIG_AsCharPtrAndSize
 
 /*GoSlice in typemap*/
 %typemap(in) GoSlice {
 	char* buffer = 0;
 	size_t size = 0;
-	int res = Wrap_SWIG_AsCharPtrAndSize( $input, &buffer, &size, 0 );
+	int res = SWIG_AsCharPtrAndSize( $input, &buffer, &size, 0 );
 	if (!SWIG_IsOK(res)) {
 		SWIG_exception_fail(SWIG_TypeError, "in method '$symname', expecting byte string");
 	}
@@ -46,7 +19,7 @@ if (PyString_Check(obj)){
 %typecheck(SWIG_TYPECHECK_STRING) GoSlice {
   	char* buffer = 0;
 	size_t size = 0;
-	int res = Wrap_SWIG_AsCharPtrAndSize( $input, &buffer, &size, 0 );
+	int res = SWIG_AsCharPtrAndSize( $input, &buffer, &size, 0 );
 	$1 = SWIG_IsOK(res) ? 1 : 0;
 }
 
@@ -72,7 +45,7 @@ if (PyString_Check(obj)){
 	char* buffer = 0;
 	size_t size = 0;
 	int alloc = SWIG_OLDOBJ;
-	int res = Wrap_SWIG_AsCharPtrAndSize( $input, &buffer, &size, &alloc );
+	int res = SWIG_AsCharPtrAndSize( $input, &buffer, &size, &alloc );
 	if (!SWIG_IsOK(res)) {
 		SWIG_exception_fail(SWIG_TypeError, "in method '$symname', expecting byte string");
 	}

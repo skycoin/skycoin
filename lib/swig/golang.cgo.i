@@ -4,6 +4,11 @@
 %}
 
 
+#if defined(SWIGPYTHON)
+#else
+#define Wrap_SWIG_AsCharPtrAndSize SWIG_AsCharPtrAndSize
+#endif
+
 /*GoSlice in typemap*/
 %typemap(in) GoSlice {
 	char* buffer = 0;
@@ -86,7 +91,7 @@
 	  }
 	%#endif
 	*/
-	int calloc = SWIG_OLDOBJ;
+	int calloc = SWIG_NEWOBJ;
 	int res = SWIG_AsCharPtrAndSize( $input, &buffer, &size, &calloc );
 	if (!SWIG_IsOK(res)) {
 		if( res == SWIG_TypeError)

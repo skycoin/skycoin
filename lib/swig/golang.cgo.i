@@ -6,8 +6,7 @@
 %typemap(in) GoSlice {
 	char* buffer = 0;
 	size_t size = 0;
-	int alloc = SWIG_OLDOBJ;
-	int res = SWIG_AsCharPtrAndSize( $input, &buffer, &size, &alloc );
+	int res = SWIG_AsCharPtrAndSize( $input, &buffer, &size, 0 );
 	if (!SWIG_IsOK(res)) {
 		SWIG_exception_fail(SWIG_TypeError, "in method '$symname', expecting string");
 	}
@@ -20,8 +19,7 @@
 %typecheck(SWIG_TYPECHECK_STRING) GoSlice {
   	char* buffer = 0;
 	size_t size = 0;
-	int alloc = SWIG_OLDOBJ;
-	int res = SWIG_AsCharPtrAndSize( $input, &buffer, &size, &alloc );
+	int res = SWIG_AsCharPtrAndSize( $input, &buffer, &size, 0 );
 	$1 = SWIG_IsOK(res) ? 1 : 0;
 }
 
@@ -46,8 +44,7 @@
 %typemap(in) GoString {
 	char* buffer = 0;
 	size_t size = 0;
-	int alloc = SWIG_OLDOBJ;
-	int res = SWIG_AsCharPtrAndSize( $input, &buffer, &size, &alloc );
+	int res = SWIG_AsCharPtrAndSize( $input, &buffer, &size, 0 );
 	if (!SWIG_IsOK(res)) {
 		SWIG_exception_fail(SWIG_TypeError, "in method '$symname', expecting string");
 	}

@@ -295,13 +295,15 @@ type Daemon struct {
 	// done channel
 	done chan struct{}
 	// log buffer
-	LogBuff bytes.Buffer
+	LogBuff    bytes.Buffer
+	dbVerified bool
+	lock       sync.Mutex
 }
 
 // NewDaemon returns a Daemon with primitives allocated
-func NewDaemon(config Config, db *dbutil.DB, defaultConns []string) (*Daemon, error) {
+func NewDaemon(config Config, defaultConns []string) (*Daemon, error) {
 	config = config.preprocess()
-	vs, err := visor.NewVisor(config.Visor, db)
+	vs, err := visor.NewVisor(config.Visor)
 	if err != nil {
 		return nil, err
 	}
@@ -393,13 +395,27 @@ func (dm *Daemon) Shutdown() {
 	<-dm.done
 }
 
+// DBVerified returns if the database is verifed
+func (dm *Daemon) DBVerified() bool {
+	dm.lock.Lock()
+	defer dm.lock.Unlock()
+	return dm.dbVerified
+}
+
+// setDBVerified updates the dbVerified value
+func (dm *Daemon) setDBVerified() {
+	dm.lock.Lock()
+	defer dm.lock.Unlock()
+	dm.dbVerified = true
+}
+
 // Run main loop for peer/connection management.
 // Send anything to the quit channel to shut it down.
-func (dm *Daemon) Run() error {
+func (dm *Daemon) Run(db *dbutil.DB) error {
 	defer logger.Info("Daemon closed")
 	defer close(dm.done)
 
-	if err := dm.visor.Init(); err != nil {
+	if err := dm.visor.Init(db); err != nil {
 		logger.WithError(err).Error("visor.Visor.Init failed")
 		return err
 	}
@@ -491,6 +507,7 @@ func (dm *Daemon) Run() error {
 		}
 	}()
 
+	dm.setDBVerified()
 loop:
 	for {
 		elapser.CheckForDone()

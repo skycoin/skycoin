@@ -232,7 +232,7 @@ type Visor struct {
 }
 
 // NewVisor creates a Visor for managing the blockchain database
-func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
+func NewVisor(c Config) (*Visor, error) {
 	logger.Info("Creating new visor")
 	if c.IsMaster {
 		logger.Info("Visor is master")
@@ -255,25 +255,40 @@ func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
 		return nil, err
 	}
 
-	if !db.IsReadOnly() {
-		if err := CreateBuckets(db); err != nil {
+	v := &Visor{
+		Config:    c,
+		Wallets:   wltServ,
+		StartedAt: time.Now(),
+	}
+
+	return v, nil
+}
+
+// Init initializes starts the visor
+func (vs *Visor) Init(db *dbutil.DB) error {
+	logger.Info("Visor init")
+	vs.DB = db
+	if !vs.DB.IsReadOnly() {
+		if err := CreateBuckets(vs.DB); err != nil {
 			logger.WithError(err).Error("CreateBuckets failed")
-			return nil, err
+			return err
 		}
 	}
 
-	bc, err := NewBlockchain(db, BlockchainConfig{
-		Pubkey:      c.BlockchainPubkey,
-		Arbitrating: c.Arbitrating,
+	bc, err := NewBlockchain(vs.DB, BlockchainConfig{
+		Pubkey:      vs.Config.BlockchainPubkey,
+		Arbitrating: vs.Config.Arbitrating,
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
+
+	vs.Blockchain = bc
 
 	history := historydb.New()
 
-	if !db.IsReadOnly() {
-		if err := db.Update("build unspent indexes and init history", func(tx *dbutil.Tx) error {
+	if !vs.DB.IsReadOnly() {
+		if err := vs.DB.Update("build unspent indexes and init history", func(tx *dbutil.Tx) error {
 			headSeq, _, err := bc.HeadSeq(tx)
 			if err != nil {
 				return err
@@ -285,31 +300,18 @@ func NewVisor(c Config, db *dbutil.DB) (*Visor, error) {
 
 			return initHistory(tx, bc, history)
 		}); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	utp, err := NewUnconfirmedTxnPool(db)
+	vs.history = history
+
+	utp, err := NewUnconfirmedTxnPool(vs.DB)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	v := &Visor{
-		Config:      c,
-		DB:          db,
-		Blockchain:  bc,
-		Unconfirmed: utp,
-		history:     history,
-		Wallets:     wltServ,
-		StartedAt:   time.Now(),
-	}
-
-	return v, nil
-}
-
-// Init initializes starts the visor
-func (vs *Visor) Init() error {
-	logger.Info("Visor init")
+	vs.Unconfirmed = utp
 
 	if vs.DB.IsReadOnly() {
 		return nil

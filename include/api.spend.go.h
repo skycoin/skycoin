@@ -25,11 +25,6 @@ typedef struct{
     GoString_ TxID;
 } api__CreatedTransactionInput;
 typedef struct{
-    GoString_ ID;
-    GoSlice_  Addresses;
-    GoString_ Password;
-} api__createTransactionRequestWallet;
-typedef struct{
     api__CreatedTransaction Transaction;
     GoString_ EncodedTransaction;
 } api__CreateTransactionResponse;

@@ -7,6 +7,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
 )
 
 // BalanceGetter interface for getting the balance of given addresses
@@ -210,10 +211,36 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]
 	}
 
 	var addrs []cipher.Address
-	f := func(wlt *Wallet) error {
-		var err error
-		addrs, err = wlt.GenerateAddresses(num)
-		return err
+	var f func(wlt *Wallet) error
+	if w.useEmulatorWallet() == false && w.useHardwareWallet() == false {
+		f = func(wlt *Wallet) error {
+			var err error
+			addrs, err = wlt.GenerateAddresses(num)
+			return err
+		}
+	} else {
+		f = func(wlt *Wallet) error {
+			var err error
+			var deviceType deviceWallet.DeviceType
+			if wlt.useEmulatorWallet() {
+				deviceType = deviceWallet.DeviceTypeEmulator
+			} else if wlt.useHardwareWallet() {
+				deviceType = deviceWallet.DeviceTypeUsb
+			} else {
+				logger.Panic("NewAddresses: no device type for address generation")
+				return ErrDeviceWallet
+			}
+			addrs, err = wlt.GetAddressFromDevice(deviceType, num)
+			num = num + uint64(len(w.Entries))
+			w.Entries = w.Entries[:0]
+			for i, addr := range addrs {
+				logger.Infof("Device wallet generated address %s at index %d\n", addr.String(), i)
+				w.Entries = append(w.Entries, Entry{
+					Address: addr,
+				})
+			}
+			return err
+		}
 	}
 
 	if w.IsEncrypted() {

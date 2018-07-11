@@ -20,6 +20,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/fee"
 )
@@ -837,7 +838,7 @@ func TestServiceCreateAndSignTransaction(t *testing.T) {
 
 func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 	headTime := uint64(time.Now().UTC().Unix())
-	seed := []byte("seed")
+	seed := []byte("cloud flower upset remain green metal below cup stem infant art thank")
 
 	// Generate first keys
 	_, secKeys := cipher.GenerateDeterministicKeyPairsSeed(seed, 11)
@@ -1700,12 +1701,15 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 					tc.params.Wallet.ID = "foo.wlt"
 				} else {
 					wltName := newWalletFilename()
+					tc.opts.UseEmulatorWallet = deviceWallet.DeviceConnected(deviceWallet.DeviceTypeEmulator)
 					opts := tc.opts
 					if opts.Encrypt && len(opts.Password) == 0 {
 						opts.Password = []byte("password")
 					}
 					w, err := s.CreateWallet(wltName, opts, nil)
 					require.NoError(t, err)
+					require.Equal(t, w.useEmulatorWallet(), deviceWallet.DeviceConnected(deviceWallet.DeviceTypeEmulator))
+					require.False(t, w.useHardwareWallet())
 
 					if !w.IsEncrypted() {
 						_, err := s.NewAddresses(w.Filename(), nil, 10)

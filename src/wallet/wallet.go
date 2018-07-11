@@ -369,7 +369,8 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 			return nil, err
 		}
 
-		for _, addr := range addrs {
+		for i, addr := range addrs {
+			logger.Infof("Device wallet generated address %s at index %d\n", addr.String(), i)
 			w.Entries = append(w.Entries, Entry{
 				Address: addr,
 			})
@@ -538,6 +539,13 @@ func (w *Wallet) Lock(password []byte, cryptoType CryptoType) error {
 func (w *Wallet) Unlock(password []byte) (*Wallet, error) {
 	if !w.IsEncrypted() {
 		return nil, ErrWalletNotEncrypted
+	}
+
+	if w.useEmulatorWallet() || w.useHardwareWallet() {
+		w.setEncrypted(false)
+		w.setSecrets("")
+		w.setCryptoType("")
+		return w, nil
 	}
 
 	if len(password) == 0 {
@@ -960,10 +968,7 @@ func (w *Wallet) setSecrets(s string) {
 
 // GetAddressFromDevice ask the hardware wallet to generate addresses
 func (w *Wallet) GetAddressFromDevice(deviceType deviceWallet.DeviceType, num uint64) ([]cipher.Address, error) {
-	if num == 0 {
-		return nil, nil
-	}
-	addrs := make([]cipher.Address, num)
+	addrs := make([]cipher.Address, num+1)
 	for i := 0; i < len(addrs); i++ {
 		var err error
 		kind, address := deviceWallet.DeviceAddressGen(deviceType, messages.SkycoinAddressType_AddressTypeSkycoin, i)
@@ -1282,6 +1287,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 	var totalInputCoins uint64
 	var totalInputHours uint64
 	toSign := make([]cipher.SecKey, len(spends))
+	indexToSign := make([]int, len(spends))
 	for i, spend := range spends {
 		totalInputCoins, err = coin.AddUint64(totalInputCoins, spend.Coins)
 		if err != nil {
@@ -1299,6 +1305,11 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 		}
 
 		toSign[i] = entry.Secret
+		entryIndex, exists := w.GetEntryIndex(entry.Address)
+		if !exists {
+			return nil, nil, NewError(fmt.Errorf("address:%v does not exist in wallet: %v", entry.Address, w.Filename()))
+		}
+		indexToSign[i] = entryIndex
 		txn.PushInput(spend.Hash)
 	}
 
@@ -1426,6 +1437,11 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 				}
 
 				toSign = append(toSign, entry.Secret)
+				entryIndex, exists := w.GetEntryIndex(entry.Address)
+				if !exists {
+					return nil, nil, NewError(fmt.Errorf("address:%v does not exist in wallet: %v", entry.Address, w.Filename()))
+				}
+				indexToSign = append(indexToSign, entryIndex)
 				txn.PushInput(extra.Hash)
 			}
 		}
@@ -1474,7 +1490,13 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 		txn.PushOutput(changeAddress, changeCoins, changeHours)
 	}
 
-	txn.SignInputs(toSign)
+	if w.useHardwareWallet() {
+		txn.DeviceSignInputs(deviceWallet.DeviceTypeUsb, indexToSign)
+	} else if w.useEmulatorWallet() {
+		txn.DeviceSignInputs(deviceWallet.DeviceTypeEmulator, indexToSign)
+	} else {
+		txn.SignInputs(toSign)
+	}
 	txn.UpdateHeader()
 
 	inputs := make([]UxBalance, len(txn.In))

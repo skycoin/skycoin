@@ -8,11 +8,12 @@
 /*cipher_SecKeys* as function return typemap*/
 %typemap(argout) (cipher_SecKeys* __out_secKeys) {
 	int i;
-	PyObject *list = PyList_New($1->count);
+	PyObject *list = PyList_New(0);
 	for (i = 0; i < $1->count; i++) {
 		cipher_SecKey* key = &($1->data[i]);
-		PyObject *o = SWIG_NewPointerObj(SWIG_as_voidptr(key), SWIGTYPE_p_cipher_SecKey, SWIG_POINTER_NOSHADOW |  0 );
-		PyList_SetItem(list,i,o);
+		PyObject *o = SWIG_NewPointerObj(SWIG_as_voidptr(key), SWIGTYPE_p_cipher_SecKey, SWIG_POINTER_OWN );
+		PyList_Append(list, o);
+		Py_DECREF(o);
 	}
 	if( $1->data != NULL)
 		free( (void*)$1->data );

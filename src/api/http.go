@@ -247,11 +247,17 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 		return handler
 	}
 
+	excludeEndpoints := map[string]struct{}{
+		"/api/v1/health": struct{}{},
+	}
+
 	webHandler := func(endpoint string, handler http.Handler) {
 		handler = wh.ElapsedHandler(logger, handler)
 		handler = CSRFCheck(csrfStore, handler)
 		handler = headerCheck(c.host, handler)
 		handler = gziphandler.GzipHandler(handler)
+		handler = DBInitCheck(endpoint, gateway, excludeEndpoints, handler)
+
 		mux.Handle(endpoint, handler)
 	}
 

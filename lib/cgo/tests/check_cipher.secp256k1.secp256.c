@@ -162,9 +162,9 @@ Test(cipher_secp256k1,Test_SignatureVerifySecKey ){
 	strnhex((unsigned char *)seckey, bufferSecKey, sizeof(cipher__SecKey));
 	GoSlice slseckey = { bufferSecKey,sizeof(cipher__SecKey),SigSize  };
 	SKY_secp256k1_VerifySeckey(slseckey,&errorSecKey);
-	cr_assert(errorSecKey != SKY_OK);
+	cr_assert(errorSecKey ==1);
 	GoInt errorPubKey;
 	GoSlice slpubkey = { &pubkey,sizeof(cipher__PubKey), sizeof(cipher__PubKey) };
 	SKY_secp256k1_VerifyPubkey(slpubkey,&errorPubKey);
-	cr_assert(errorPubKey != SKY_OK);
+	cr_assert(errorPubKey == 1);
 }

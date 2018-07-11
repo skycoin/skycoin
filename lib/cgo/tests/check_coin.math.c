@@ -20,7 +20,7 @@ Test(coin_math, TestAddUint64){
     GoUint64 maxUint64 = 0xFFFFFFFFFFFFFFFF;
     GoUint64 one = 1;
     result = SKY_coin_AddUint64(maxUint64, one, &r);
-    cr_assert( result != SKY_OK );
+    cr_assert( result == SKY_ErrUint64AddOverflow );
 }
 
 typedef struct{
@@ -47,7 +47,7 @@ Test(coin_math, TestUint64ToInt64){
     for(int i = 0; i < tests_count; i++){
         result = SKY_coin_Uint64ToInt64(tests[i].a, &r);
         if( tests[i].failure ){
-          cr_assert(result != SKY_OK, "Failed test # %d", i + 1);
+          cr_assert(result == SKY_ErrUint64OverflowsInt64, "Failed test # %d", i + 1);
         } else {
           cr_assert(result == SKY_OK, "Failed test # %d", i + 1);
           cr_assert( tests[i].b == r );

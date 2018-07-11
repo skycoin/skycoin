@@ -171,7 +171,7 @@ Test(cipher_encrypt_sha256xor, TestEncrypt){
 		if( test_data[i].success ){
 			cr_assert(errcode == SKY_OK, "SKY_encrypt_Sha256Xor_Encrypt failed.");
 		} else {
-			cr_assert(errcode != SKY_OK, "SKY_encrypt_Sha256Xor_Encrypt with null pwd.");
+			cr_assert(errcode == SKY_ERROR, "SKY_encrypt_Sha256Xor_Encrypt with null pwd.");
 		}
 		if( errcode == SKY_OK ){
 			cr_assert(encrypted.cap > 0, "Buffer for encrypted data is too short");
@@ -284,7 +284,7 @@ Test(cipher_encrypt_sha256xor, TestDecrypt){
 		if( test_data[i].success ){
 			cr_assert(errcode == SKY_OK, "SKY_encrypt_Sha256Xor_Decrypt failed.");
 		} else {
-			cr_assert(errcode != SKY_OK, "SKY_encrypt_Sha256Xor_Decrypt with invalid parameters successful.");
+			cr_assert(errcode == SKY_ERROR, "SKY_encrypt_Sha256Xor_Decrypt with invalid parameters successful.");
 		}
 	}
 

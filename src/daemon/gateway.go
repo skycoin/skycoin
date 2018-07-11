@@ -209,6 +209,11 @@ func (gw *Gateway) GetExchgConnection() []string {
 	return conn
 }
 
+// DBVerified returns if the database is verified
+func (gw *Gateway) DBVerified() bool {
+	return gw.d.DBVerified()
+}
+
 /* Blockchain & Transaction status */
 
 // BlockchainProgress current sync blockchain status
@@ -1142,10 +1147,17 @@ type Health struct {
 	Version            visor.BuildInfo
 	OpenConnections    int
 	Uptime             time.Duration
+	Initialized        bool
 }
 
 // GetHealth returns statistics about the running node
 func (gw *Gateway) GetHealth() (*Health, error) {
+	if !gw.DBVerified() {
+		return &Health{
+			Initialized: false,
+		}, nil
+	}
+
 	var health *Health
 	var err error
 	gw.strand("GetHealth", func() {
@@ -1162,6 +1174,7 @@ func (gw *Gateway) GetHealth() (*Health, error) {
 			Version:            gw.v.Config.BuildInfo,
 			OpenConnections:    len(conns.Connections),
 			Uptime:             time.Since(gw.v.StartedAt),
+			Initialized:        true,
 		}
 	})
 

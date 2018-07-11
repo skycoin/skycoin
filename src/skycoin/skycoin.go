@@ -109,7 +109,7 @@ func (c *Coin) Run() {
 	if c.config.Node.ResetCorruptDB {
 		// Check the database integrity and recreate it if necessary
 		c.logger.Info("Checking database and resetting if corrupted")
-		if newDB, err := visor.ResetCorruptDB(db, c.config.Node.blockchainPubkey, quit); err != nil {
+		if newDB, err := visor.RepairCorruptDB(db, c.config.Node.blockchainPubkey, quit); err != nil {
 			if err != visor.ErrVerifyStopped {
 				c.logger.Errorf("visor.ResetCorruptDB failed: %v", err)
 			}

@@ -34,7 +34,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `uxouts` to `POST /api/v1/wallet/transaction`, to allow specific unspent outputs to be used in a transaction.
 - Add Dockerfile in docker/images/dev-cli to build a docker image suitable for development.
 - Coin creator tool, `cmd/newcoin`, to quickly bootstrap a new fiber coin
-- Install a vim plugin for providing linting ([ALE](https://github.com/w0rp/ale)) in skycoindev-cli image.
 - Add Dockerfile in docker/images/dev-dind to build a docker in docker image based on skycoindev-cli.
 
 ### Fixed
@@ -60,6 +59,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   If the program is run from source (e.g. `go run`, `run.sh`, `make run`) there is no change, the API will still be on port 6420.
 - Change number of outgoing connections to 8 from 16
 - Update version of SWIG to 3.0.12
+- Transaction history shows transactions between own addresses
 
 ### Removed
 

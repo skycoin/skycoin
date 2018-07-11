@@ -643,11 +643,6 @@ func (bc Blockchain) TransactionFee(tx *dbutil.Tx, headTime uint64) coin.FeeCalc
 	}
 }
 
-type sigHash struct {
-	sig  cipher.Sig
-	hash cipher.SHA256
-}
-
 // VerifySignature checks that BlockSigs state correspond with coin.Blockchain state
 // and that all signatures are valid.
 func (bc *Blockchain) VerifySignature(block *coin.SignedBlock) error {

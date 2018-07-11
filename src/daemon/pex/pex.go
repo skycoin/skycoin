@@ -360,7 +360,23 @@ func (px *Pex) AddPeer(addr string) error {
 	}
 
 	if px.Config.Max > 0 && px.peerlist.len() >= px.Config.Max {
-		return ErrPeerlistFull
+
+		i := float64(0)
+		var pivot string
+		for index, p := range px.peerlist.peers {
+			t := time.Unix(p.LastSeen, 0)
+			hours := time.Since(t).Hours()
+			if hours >= float64(time.Hour*8) {
+				if hours >= i {
+					i = hours
+					pivot = index
+				}
+			}
+		}
+		if i == 0 {
+			return ErrPeerlistFull
+		}
+		delete(px.peerlist.peers, pivot)
 	}
 
 	px.peerlist.addPeer(cleanAddr)

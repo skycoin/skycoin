@@ -71,9 +71,12 @@ func TestHealthCheckHandler(t *testing.T) {
 				OpenConnections:    3,
 				Version:            buildInfo,
 				Uptime:             time.Second * 4,
+				Initialized:        true,
 			}
 
 			gateway := NewGatewayerMock()
+			gateway.On("DBVerified").Return(true)
+
 			if tc.getHealthErr != nil {
 				gateway.On("GetHealth").Return(nil, tc.getHealthErr)
 			} else {

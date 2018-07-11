@@ -312,12 +312,16 @@ func (vs *Visor) Init(db *dbutil.DB) error {
 	}
 
 	vs.Unconfirmed = utp
+	return nil
+}
 
+// CreateGenesisBlockIfNotExist create genesis block if necessary
+func (vs *Visor) CreateGenesisBlockIfNotExist() error {
 	if vs.DB.IsReadOnly() {
 		return nil
 	}
 
-	return vs.DB.Update("visor init", func(tx *dbutil.Tx) error {
+	return vs.DB.Update("visor CreateGenesisBlockIfNotExist", func(tx *dbutil.Tx) error {
 		if err := vs.maybeCreateGenesisBlock(tx); err != nil {
 			return err
 		}

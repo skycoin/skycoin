@@ -420,6 +420,11 @@ func (dm *Daemon) Run(db *dbutil.DB) error {
 		return err
 	}
 
+	if err := dm.visor.CreateGenesisBlockIfNotExist(); err != nil {
+		logger.WithError(err).Error("visor.CreateGenesisBlockIfNotExist failed")
+		return err
+	}
+
 	errC := make(chan error, 5)
 	var wg sync.WaitGroup
 

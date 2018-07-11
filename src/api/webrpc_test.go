@@ -68,6 +68,8 @@ func TestWebRPC(t *testing.T) {
 			}
 
 			gateway := NewGatewayerMock()
+			gateway.On("DBVerified").Return(true)
+
 			handler := newServerMux(muxConfig{
 				host:            configuredHost,
 				appLoc:          ".",

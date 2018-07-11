@@ -118,6 +118,7 @@ func TestGetUxOutByID(t *testing.T) {
 			gateway := NewGatewayerMock()
 			endpoint := "/api/v1/uxout"
 			gateway.On("GetUxOutByID", tc.getGetUxOutByIDArg).Return(tc.getGetUxOutByIDResponse, tc.getGetUxOutByIDError)
+			gateway.On("DBVerified").Return(true)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -235,6 +236,7 @@ func TestGetAddrUxOuts(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/address_uxouts"
 			gateway := NewGatewayerMock()
+			gateway.On("DBVerified").Return(true)
 			gateway.On("GetAddrUxOuts", tc.getAddrUxOutsArg).Return(tc.getAddrUxOutsResponse, tc.getAddrUxOutsError)
 
 			v := url.Values{}

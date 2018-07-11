@@ -36,7 +36,9 @@ func setupVisorConfig(t *testing.T) Config {
 func setupVisor(t *testing.T) (*Visor, func()) {
 	db, shutdown := prepareDB(t)
 	vc := setupVisorConfig(t)
-	v, err := NewVisor(vc, db)
+	v, err := NewVisor(vc)
+	require.NoError(t, err)
+	err = v.Init(db)
 	require.NoError(t, err)
 	return v, shutdown
 }

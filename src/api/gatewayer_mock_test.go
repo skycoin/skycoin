@@ -90,6 +90,24 @@ func (m *GatewayerMock) CreateWallet(p0 string, p1 wallet.Options) (*wallet.Wall
 
 }
 
+// DBVerified mocked method
+func (m *GatewayerMock) DBVerified() bool {
+
+	ret := m.Called()
+
+	var r0 bool
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case bool:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0
+
+}
+
 // DecryptWallet mocked method
 func (m *GatewayerMock) DecryptWallet(p0 string, p1 []byte) (*wallet.Wallet, error) {
 

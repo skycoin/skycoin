@@ -70,6 +70,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Change number of outgoing connections to 8 from 16
 - Transaction history shows transactions between own addresses
 - Client will only maintain one connection to the default hardcoded peers, instead of all of them
+- Add `initialized` field in `/health` endpoint response, which represents if the database verification is done
 
 ### Removed
 

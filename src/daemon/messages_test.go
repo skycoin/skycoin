@@ -198,7 +198,7 @@ func generateElementHexdumpWithDepth(v reflect.Value, depth int, prefix string) 
 		}
 	}
 
-
+ return annotation
 }
 
 

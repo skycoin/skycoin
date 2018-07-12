@@ -1,2 +1,3 @@
-typedef struct{
-} historydb__addressTxns;
+struct _historydb__addressTxns{
+};
+typedef struct _historydb__addressTxns historydb__addressTxns;

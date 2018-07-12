@@ -13,5 +13,6 @@ typedef struct{
     GoInt32_ _unnamed;
 } cli__WalletSaveError;
 typedef GoSlice_  cli__PasswordFromBytes;
-typedef struct{
-} cli__PasswordFromTerm;
+struct _cli__PasswordFromTerm{
+};
+typedef struct _cli__PasswordFromTerm cli__PasswordFromTerm;

@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"testing"
 
+	"strings"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
@@ -15,7 +17,6 @@ import (
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/util"
 	"github.com/stretchr/testify/require"
-	"strings"
 )
 
 func setupMsgEncoding() {
@@ -139,7 +140,7 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 
 // DeepMessagesAnnotationsGenerator : Implementation of depth-aware IAnnotationsGenerator for type gnet.Message
 type DeepMessagesAnnotationsGenerator struct {
-	Depth int
+	Depth   int
 	Message gnet.Message
 }
 
@@ -153,12 +154,12 @@ func NewDeepMessagesAnnotationsGenerator(message gnet.Message, depth int) DeepMe
 
 // GenerateAnnotations: Generates annotations for a given DeepMessagesAnnotationsGenerator struct
 func (dmag *DeepMessagesAnnotationsGenerator) GenerateAnnotations() []util.Annotation {
-	var annotations = make([]util.Annotation,0)
+	var annotations = make([]util.Annotation, 0)
 	annotations = append(annotations, util.Annotation{Size: 4, Name: "Length"})
 	annotations = append(annotations, util.Annotation{Size: 4, Name: "Prefix"})
 
 	var maxField = reflect.Indirect(reflect.ValueOf(dmag.Message)).NumField()
-	var v= reflect.Indirect(reflect.ValueOf(dmag.Message))
+	var v = reflect.Indirect(reflect.ValueOf(dmag.Message))
 	t := v.Type()
 
 	for i := 0; i < maxField; i++ {
@@ -167,8 +168,8 @@ func (dmag *DeepMessagesAnnotationsGenerator) GenerateAnnotations() []util.Annot
 
 		if f.Tag.Get("enc") != "-" {
 			if vF.CanSet() || f.Name != "_" {
-				if !strings.Contains(f.Tag.Get("enc"),"omitempty") {
-					annotations = append(annotations, generateElementHexdumpWithDepth(v.Field(i).Interface(),dmag.Depth,f.Name)...)
+				if !strings.Contains(f.Tag.Get("enc"), "omitempty") {
+					annotations = append(annotations, generateElementHexdumpWithDepth(v.Field(i).Interface(), dmag.Depth, f.Name)...)
 
 				}
 			}
@@ -179,38 +180,33 @@ func (dmag *DeepMessagesAnnotationsGenerator) GenerateAnnotations() []util.Annot
 }
 
 func generateElementHexdumpWithDepth(obj interface{}, depth int, prefix string) []util.Annotation {
-	var annotation = make([]util.Annotation,0)
+	var annotation = make([]util.Annotation, 0)
 	var v = reflect.Indirect(reflect.ValueOf(obj))
 	if v.Kind() == reflect.Slice {
-		annotation = append(annotation,util.Annotation{Size: 4, Name: prefix + " length"})
+		annotation = append(annotation, util.Annotation{Size: 4, Name: prefix + " length"})
 		if depth == 1 {
-		for i := 0; i < v.Len(); i++ {
-			annotation = append(annotation, util.Annotation{Size: len(encoder.Serialize(v.Slice(i, i+1).Interface())[4:]), Name: prefix + "[" + strconv.Itoa(i) + "]"})
+			for i := 0; i < v.Len(); i++ {
+				annotation = append(annotation, util.Annotation{Size: len(encoder.Serialize(v.Slice(i, i+1).Interface())[4:]), Name: prefix + "[" + strconv.Itoa(i) + "]"})
 			}
 		} else {
 			for i := 0; i < v.Len(); i++ {
-				annotation = append(annotation, generateElementHexdumpWithDepth(v.Index(i).Interface(),depth-1,prefix + "[" + strconv.Itoa(i) + "]")...)
-				}
+				annotation = append(annotation, generateElementHexdumpWithDepth(v.Index(i).Interface(), depth-1, prefix+"["+strconv.Itoa(i)+"]")...)
+			}
 		}
-	}else if v.Kind() == reflect.Struct {
+	} else if v.Kind() == reflect.Struct {
 		if depth == 1 {
-			annotation = append(annotation,util.Annotation{Size: len(encoder.Serialize(v.Interface())), Name: prefix})
+			annotation = append(annotation, util.Annotation{Size: len(encoder.Serialize(v.Interface())), Name: prefix})
 		} else {
 			for i := 0; i < v.NumField(); i++ {
-				annotation = append(annotation, generateElementHexdumpWithDepth(v.Field(i).Interface(),depth-1,prefix+ "."+v.Type().Field(i).Name)...)
+				annotation = append(annotation, generateElementHexdumpWithDepth(v.Field(i).Interface(), depth-1, prefix+"."+v.Type().Field(i).Name)...)
 			}
 		}
 	} else {
-		annotation = append(annotation,util.Annotation{Size: len(encoder.Serialize(v.Interface())), Name: prefix})
+		annotation = append(annotation, util.Annotation{Size: len(encoder.Serialize(v.Interface())), Name: prefix})
 	}
 
-
-
- return annotation
+	return annotation
 }
-
-
-
 
 /**************************************
  *
@@ -626,7 +622,7 @@ func ExampleDeepIntroductionMessageShallow() {
 	setupMsgEncoding()
 	var message = NewIntroductionMessage(1234, 5, 7890, nil)
 	fmt.Println("IntroductionMessage:")
-	var dmag = NewDeepMessagesAnnotationsGenerator(message,1)
+	var dmag = NewDeepMessagesAnnotationsGenerator(message, 1)
 	w := bufio.NewWriter(os.Stdout)
 	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
@@ -644,7 +640,7 @@ func ExampleDeepGetPeersMessageShallow() {
 	setupMsgEncoding()
 	var message = NewGetPeersMessage()
 	fmt.Println("GetPeersMessage:")
-	var dmag = NewDeepMessagesAnnotationsGenerator(message,1)
+	var dmag = NewDeepMessagesAnnotationsGenerator(message, 1)
 	w := bufio.NewWriter(os.Stdout)
 	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
@@ -664,7 +660,7 @@ func ExampleDeepGivePeersMessageShallow() {
 	peers = append(peers, peer0, peer1, peer2)
 	var message = NewGivePeersMessage(peers)
 	fmt.Println("GivePeersMessage:")
-	var dmag = NewDeepMessagesAnnotationsGenerator(message,1)
+	var dmag = NewDeepMessagesAnnotationsGenerator(message, 1)
 	w := bufio.NewWriter(os.Stdout)
 	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
@@ -683,7 +679,7 @@ func ExampleDeepGetBlocksMessageShallow() {
 	setupMsgEncoding()
 	var message = NewGetBlocksMessage(1234, 5678)
 	fmt.Println("GetBlocksMessage:")
-	var dmag = NewDeepMessagesAnnotationsGenerator(message,1)
+	var dmag = NewDeepMessagesAnnotationsGenerator(message, 1)
 	w := bufio.NewWriter(os.Stdout)
 	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
@@ -720,7 +716,7 @@ func ExampleDeepGiveBlocksMessageShallow() {
 	blocks = append(blocks, signedBlock)
 	var message = NewGiveBlocksMessage(blocks)
 	fmt.Println("GiveBlocksMessage:")
-	var dmag = NewDeepMessagesAnnotationsGenerator(message,1)
+	var dmag = NewDeepMessagesAnnotationsGenerator(message, 1)
 	w := bufio.NewWriter(os.Stdout)
 	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
@@ -762,7 +758,7 @@ func ExampleDeepAnnounceBlocksMessageShallow() {
 	setupMsgEncoding()
 	var message = NewAnnounceBlocksMessage(123456)
 	fmt.Println("AnnounceBlocksMessage:")
-	var dmag = NewDeepMessagesAnnotationsGenerator(message,1)
+	var dmag = NewDeepMessagesAnnotationsGenerator(message, 1)
 	w := bufio.NewWriter(os.Stdout)
 	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
@@ -781,7 +777,7 @@ func ExampleDeepGetTxnsMessageShallow() {
 	shas = append(shas, hashes[1], hashes[2])
 	var message = NewGetTxnsMessage(shas)
 	fmt.Println("GetTxnsMessage:")
-	var dmag = NewDeepMessagesAnnotationsGenerator(message,1)
+	var dmag = NewDeepMessagesAnnotationsGenerator(message, 1)
 	w := bufio.NewWriter(os.Stdout)
 	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
@@ -849,7 +845,7 @@ func ExampleDeepGiveTxnsMessageShallow() {
 	transactions = append(transactions, transaction0, transaction1)
 	var message = NewGiveTxnsMessage(transactions)
 	fmt.Println("GiveTxnsMessage:")
-	var dmag = NewDeepMessagesAnnotationsGenerator(message,1)
+	var dmag = NewDeepMessagesAnnotationsGenerator(message, 1)
 	w := bufio.NewWriter(os.Stdout)
 	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
@@ -900,15 +896,12 @@ func ExampleDeepGiveTxnsMessageShallow() {
 	// 0x0286 |
 }
 
-
-
-
 func ExampleDeepIntroductionMessage() {
 	defer gnet.EraseMessages()
 	setupMsgEncoding()
 	var message = NewIntroductionMessage(1234, 5, 7890, nil)
 	fmt.Println("IntroductionMessage:")
-	var dmag = NewDeepMessagesAnnotationsGenerator(message,2)
+	var dmag = NewDeepMessagesAnnotationsGenerator(message, 2)
 	w := bufio.NewWriter(os.Stdout)
 	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
@@ -926,7 +919,7 @@ func ExampleDeepGetPeersMessage() {
 	setupMsgEncoding()
 	var message = NewGetPeersMessage()
 	fmt.Println("GetPeersMessage:")
-	var dmag = NewDeepMessagesAnnotationsGenerator(message,2)
+	var dmag = NewDeepMessagesAnnotationsGenerator(message, 2)
 	w := bufio.NewWriter(os.Stdout)
 	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
@@ -946,7 +939,7 @@ func ExampleDeepGivePeersMessage() {
 	peers = append(peers, peer0, peer1, peer2)
 	var message = NewGivePeersMessage(peers)
 	fmt.Println("GivePeersMessage:")
-	var dmag = NewDeepMessagesAnnotationsGenerator(message,3)
+	var dmag = NewDeepMessagesAnnotationsGenerator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
 	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
@@ -968,7 +961,7 @@ func ExampleDeepGetBlocksMessage() {
 	setupMsgEncoding()
 	var message = NewGetBlocksMessage(1234, 5678)
 	fmt.Println("GetBlocksMessage:")
-	var dmag = NewDeepMessagesAnnotationsGenerator(message,3)
+	var dmag = NewDeepMessagesAnnotationsGenerator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
 	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
@@ -1005,7 +998,7 @@ func ExampleDeepGiveBlocksMessage() {
 	blocks = append(blocks, signedBlock)
 	var message = NewGiveBlocksMessage(blocks)
 	fmt.Println("GiveBlocksMessage:")
-	var dmag = NewDeepMessagesAnnotationsGenerator(message,3)
+	var dmag = NewDeepMessagesAnnotationsGenerator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
 	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
@@ -1047,7 +1040,7 @@ func ExampleDeepAnnounceBlocksMessage() {
 	setupMsgEncoding()
 	var message = NewAnnounceBlocksMessage(123456)
 	fmt.Println("AnnounceBlocksMessage:")
-	var dmag = NewDeepMessagesAnnotationsGenerator(message,3)
+	var dmag = NewDeepMessagesAnnotationsGenerator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
 	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
@@ -1066,7 +1059,7 @@ func ExampleDeepGetTxnsMessage() {
 	shas = append(shas, hashes[1], hashes[2])
 	var message = NewGetTxnsMessage(shas)
 	fmt.Println("GetTxnsMessage:")
-	var dmag = NewDeepMessagesAnnotationsGenerator(message,3)
+	var dmag = NewDeepMessagesAnnotationsGenerator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
 	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:
@@ -1134,7 +1127,7 @@ func ExampleDeepGiveTxnsMessage() {
 	transactions = append(transactions, transaction0, transaction1)
 	var message = NewGiveTxnsMessage(transactions)
 	fmt.Println("GiveTxnsMessage:")
-	var dmag = NewDeepMessagesAnnotationsGenerator(message,3)
+	var dmag = NewDeepMessagesAnnotationsGenerator(message, 3)
 	w := bufio.NewWriter(os.Stdout)
 	util.HexDump(gnet.EncodeMessage(message), dmag.GenerateAnnotations(), w)
 	// Output:

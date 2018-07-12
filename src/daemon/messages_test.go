@@ -137,11 +137,13 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 
 //*****Deep helpers*****
 
+// DeepMessagesAnnotationsGenerator : Implementation of depth-aware IAnnotationsGenerator for type gnet.Message
 type DeepMessagesAnnotationsGenerator struct {
 	Depth int
 	Message gnet.Message
 }
 
+// NewDeepMessagesAnnotationsGenerator: Initializer for DeepMessagesAnnotationsGenerator struct
 func NewDeepMessagesAnnotationsGenerator(message gnet.Message, depth int) DeepMessagesAnnotationsGenerator {
 	var dmag = DeepMessagesAnnotationsGenerator{}
 	dmag.Message = message
@@ -149,6 +151,7 @@ func NewDeepMessagesAnnotationsGenerator(message gnet.Message, depth int) DeepMe
 	return dmag
 }
 
+// GenerateAnnotations: Generates annotations for a given DeepMessagesAnnotationsGenerator struct
 func (dmag *DeepMessagesAnnotationsGenerator) GenerateAnnotations() []util.Annotation {
 	var annotations = make([]util.Annotation,0)
 	annotations = append(annotations, util.Annotation{Size: 4, Name: "Length"})

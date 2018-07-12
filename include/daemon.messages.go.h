@@ -13,6 +13,7 @@ typedef struct{
     GoString_ addr;
 } daemon__GetPeersMessage;
 struct _daemon__PongMessage{
+	char c[0];
 };
 typedef struct _daemon__PongMessage daemon__PongMessage;
 typedef struct{

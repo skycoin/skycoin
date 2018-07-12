@@ -14,5 +14,6 @@ typedef struct{
 } cli__WalletSaveError;
 typedef GoSlice_  cli__PasswordFromBytes;
 struct _cli__PasswordFromTerm{
+	char c[0];
 };
 typedef struct _cli__PasswordFromTerm cli__PasswordFromTerm;

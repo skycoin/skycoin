@@ -10,6 +10,7 @@ typedef struct{
     GoString_ SpentTxID;
 } historydb__UxOutJSON;
 struct _historydb__UxOuts{
+	char c[0];
 };
 typedef struct _historydb__UxOuts historydb__UxOuts;
 typedef struct{

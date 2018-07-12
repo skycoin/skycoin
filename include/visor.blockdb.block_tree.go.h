@@ -1,4 +1,4 @@
 struct _blockdb__blockTree{
-	char c[0];
+	char c[1];
 };
 typedef struct _blockdb__blockTree blockdb__blockTree;

@@ -1,9 +1,9 @@
 struct _visor__unconfirmedTxns{
-	char c[0];
+	char c[1];
 };
 typedef struct  _visor__unconfirmedTxns visor__unconfirmedTxns;
 struct _visor__txUnspents{
-	char c[0];
+	char c[1];
 };
 typedef struct _visor__txUnspents visor__txUnspents;
 typedef struct{

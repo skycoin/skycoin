@@ -1,5 +1,5 @@
 struct _historydb__transactions{
-	char c[0];
+	char c[1];
 };
 typedef struct _historydb__transactions historydb__transactions;
 typedef struct{

@@ -20,6 +20,6 @@ typedef struct{
     GoSlice_  Txids;
 } daemon__ResendResult;
 struct _daemon__RPC{
-	char c[0];
+	char c[1];
 };
 typedef struct _daemon__RPC daemon__RPC;

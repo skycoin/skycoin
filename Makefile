@@ -121,6 +121,7 @@ lint: ## Run linters. Use make install-linters first.
 		-E golint \
 		-E varcheck \
 		-E unparam \
+		-E deadcode \
 		./...
 	# lib cgo can't use golint because it needs export directives in function docstrings that do not obey golint rules
 	gometalinter --deadline=3m --concurrency=2 --disable-all --tests --vendor --warn-unmatched-nolint \

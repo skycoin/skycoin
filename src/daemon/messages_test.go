@@ -29,6 +29,8 @@ func setupMsgEncoding() {
  *
  *************************************/
 
+//*****Shallow helpers*****
+
 // MessagesAnnotationsIterator : Implementation of IAnnotationsIterator for type gnet.Message
 type MessagesAnnotationsIterator struct {
 	Message      gnet.Message
@@ -131,6 +133,76 @@ func (mai *MessagesAnnotationsIterator) Next() (util.Annotation, bool) {
 
 	return util.Annotation{}, false
 }
+
+//*****Deep helpers*****
+
+type DeepMessagesAnnotationsGenerator struct {
+	Depth int
+	Message gnet.Message
+}
+
+func NewDeepMessagesAnnotationsGenerator(message gnet.Message, depth int) DeepMessagesAnnotationsGenerator {
+	var dmag = DeepMessagesAnnotationsGenerator{}
+	dmag.Message = message
+	dmag.Depth = depth
+	return dmag
+}
+
+func (dmag *DeepMessagesAnnotationsGenerator) GenerateAnnotations() []util.Annotation {
+	var annotations = make([]util.Annotation,0)
+	annotations = append(annotations, util.Annotation{Size: 4, Name: "Length"})
+	annotations = append(annotations, util.Annotation{Size: 4, Name: "Prefix"})
+
+	var maxField = reflect.Indirect(reflect.ValueOf(dmag.Message)).NumField()
+	var v= reflect.Indirect(reflect.ValueOf(dmag.Message))
+	t := v.Type()
+
+	for i := 0; i < maxField; i++ {
+		vF := v.Field(i)
+		f := t.Field(i)
+
+		if f.Tag.Get("enc") != "-" {
+			if vF.CanSet() || f.Name != "_" {
+				if _, omitempty := encoder.ParseTag(f.Tag.Get("enc")); omitempty {
+					annotations = append(annotations, generateElementHexdumpWithDepth(v.Field(i),dmag.Depth,"")...)
+
+				}
+			}
+		}
+	}
+
+	return annotations
+}
+
+func generateElementHexdumpWithDepth(v reflect.Value, depth int, prefix string) []util.Annotation {
+	var annotation = make([]util.Annotation,0)
+
+	if v.Kind() == reflect.Slice {
+		annotation = append(annotation,util.Annotation{Size: 4, Name: v.Type().Name() + " length"})
+		if depth == 1 {
+		for i := 0; i < v.Len(); i++ {
+			annotation = append(annotation, util.Annotation{Size: len(encoder.Serialize(v.Slice(i, i+1).Interface())[4:]), Name: v.Type().Name() + "[" + strconv.Itoa(i) + "]"})
+			}
+		} else {
+
+		}
+	}
+
+	if v.Kind() == reflect.Struct {
+		if depth == 1 {
+			annotation = append(annotation,util.Annotation{Size: len(encoder.Serialize(v.Interface())), Name: v.Type().Name()})
+		} else {
+			for i := 0; i < v.NumField(); i++ {
+				annotation = append(annotation, generateElementHexdumpWithDepth(v.Field(i),depth-1,prefix+v.Type().Field(i).Name +".")...)
+			}
+		}
+	}
+
+
+}
+
+
+
 
 /**************************************
  *

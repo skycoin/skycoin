@@ -135,7 +135,6 @@ type NodeConfig struct {
 	DefaultConnections  []string
 
 	genesisSignature cipher.Sig
-	genesisTimestamp uint64
 	genesisAddress   cipher.Address
 
 	blockchainPubkey cipher.PubKey

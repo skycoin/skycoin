@@ -1424,10 +1424,6 @@ func TestWalletNewSeed(t *testing.T) {
 }
 
 func TestGetWalletSeed(t *testing.T) {
-	type gatewayReturnPair struct {
-		seed string
-		err  error
-	}
 
 	tt := []struct {
 		name              string

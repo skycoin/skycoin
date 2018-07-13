@@ -23,8 +23,7 @@
     <div class="-width-70 -grey">{{ i + 1 }}</div>
     <div class="-flex-fill -address -grey">
       <img src="../../../../../assets/img/qr-code-black.png" (click)="showQrCode($event, address.address)" class="qr-code-button">
-      <span class="click-to-copy" [ngClass]="{ copying: address.copying }"
-            (click)="copyAddress($event, address)" (mouseleave)="address.copying = false">
+      <span [ngClass]="{ copying: address.copying }" (click)="copyAddress($event, address)" (mouseleave)="address.copying = false">
         {{ address.address }}
         <span [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">
           {{ 'wallet.address.copy' | translate }}

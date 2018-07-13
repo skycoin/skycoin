@@ -1,11 +1,8 @@
 {
   "common": {
     "coin-id": "SKY",
-    "coin-hours": "SKY Hours",
-    "coins": "Coins",
-    "hours": "Hours",
-    "balance": "Balance",
-    "loading": "Loading..",
+    "coin-hours": "Coin Hours",
+    "loading": "Loading...",
     "new": "New",
     "load": "Load"
   },
@@ -14,7 +11,8 @@
     "fetch-version": "Unable to fetch latest release version from Github",
     "incorrect-password": "Incorrect password",
     "api-disabled": "API disabled",
-    "no-wallet": "Wallet does not exist"
+    "no-wallet": "Wallet does not exist",
+    "no-outputs": "No unspent outputs"
   },
 
   "title": {
@@ -98,7 +96,8 @@
     "edit": "Edit Wallet",
     "add": "Add Wallet",
     "load": "Load Wallet",
-    "encryption": "Encryption",
+    "encryption-enabled": "Encryption enabled",
+    "encryption-disabled": "Encryption disabled",
     "wallet": "Wallet",
 
     "new": {
@@ -143,17 +142,20 @@
     "wallet-label": "Wallet",
     "addresses-label": "Addresses",
     "addresses-help": "Wallet addresses to send from",
-    "change-address-label": "Change address",
-    "change-address-help": "Address to receive change (in form of coinhours)",
+    "change-address-label": "Custom change address",
+    "change-address-help": "Address to receive change. If it's not provided, it will be chosen automatically",
     "destinations-label": "Destinations",
-    "destinations-help": "Destination addresses, their coins and coinhours",
+    "destinations-help1": "Destination addresses and their coins",
+    "destinations-help2": "Destination addresses, their coins and coin hours",
     "hours-allocation-label": "Automatic coin hours allocation",
     "options-label": "Options",
-    "value-label": "Value",
-    "value-help": "The higher the value, the more coinhours will be sent to outputs",
-    "verify-button": "Verify",
+    "value-label": "Coin hours share factor",
+    "value-help": "The higher the value, the more coin hours will be sent to outputs",
+    "preview-button": "Preview",
     "send-button": "Send",
-    "back-button": "Back"
+    "back-button": "Back",
+    "simple": "Simple",
+    "advanced": "Advanced"
   },
 
   "tx": {
@@ -184,25 +186,42 @@
     "wallet": "Wallet Label",
     "filename": "Filename",
     "seed": "Seed",
-    "show-seed": "Show seed"
+    "show-seed": "Show seed",
+    "no-wallets": "No encrypted wallets"
   },
 
   "blockchain": {
-    "blocks": "Number of blocks:",
-    "time": "Time since last block:",
-    "hash": "Hash of last block:"
+    "blocks": "Number of blocks",
+    "time": "Timestamp of last block",
+    "hash": "Hash of last block",
+    "current-supply": "Current SKY supply",
+    "total-supply": "Total SKY supply",
+    "current-coinhour-supply": "Current Coin Hours supply",
+    "total-coinhour-supply": "Total Coin Hours supply"
   },
 
   "network": {
-    "automatic-peers": "Automatic peers",
-    "default-peers": "Default peers"
+    "peer": "Peer",
+    "source": "Source",
+    "block-height": "Block height",
+    "last-seen": "Last seen",
+    "last-received": "Last received",
+    "last-sent": "Last sent",
+    "in": "Incoming",
+    "out": "Outgoing",
+
+    "sources": {
+      "default": "Default peer",
+      "exchange": "Peer exchange"
+    }
   },
 
   "pending-txs": {
     "timestamp": "Timestamp",
-    "amount": "Amount",
     "txid": "Transaction ID",
-    "none": "No pending transactions"
+    "none": "No pending transactions",
+    "my": "Mine",
+    "all": "All"
   },
 
   "history": {
@@ -211,7 +230,8 @@
     "sent": "Sent",
     "received": "Received",
     "receiving": "Receiving",
-    "pending": "Pending"
+    "pending": "Pending",
+    "no-txs": "You have no transaction history"
   },
 
   "teller": {

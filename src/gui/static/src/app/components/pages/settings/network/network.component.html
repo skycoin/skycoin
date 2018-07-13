@@ -1,7 +1,9 @@
 <div class="sky-container sky-container-grey">
   <app-header [headline]="'title.network' | translate"></app-header>
 
-  <div class="container">
+  <app-loading-content *ngIf="!peers"></app-loading-content>
+
+  <div class="container" *ngIf="peers">
     <div class="-table">
       <div class="-headers">
         <div class="-direction"></div>

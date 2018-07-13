@@ -969,16 +969,16 @@ func (w *Wallet) setSecrets(s string) {
 // GetAddressFromDevice ask the hardware wallet to generate addresses
 func (w *Wallet) GetAddressFromDevice(deviceType deviceWallet.DeviceType, num uint64) ([]cipher.Address, error) {
 	addrs := make([]cipher.Address, num+1)
+	var err error
+	kind, addresses := deviceWallet.DeviceAddressGen(deviceType, len(addrs), 0)
+	if kind != uint16(messages.MessageType_MessageType_ResponseSkycoinAddress) {
+		logger.Panic("GetAddressFromDevice the device could not generate an address")
+		return addrs, ErrDeviceWallet
+	}
 	for i := 0; i < len(addrs); i++ {
-		var err error
-		kind, address := deviceWallet.DeviceAddressGen(deviceType, messages.SkycoinAddressType_AddressTypeSkycoin, i)
-		if kind != uint16(messages.MessageType_MessageType_ResponseSkycoinAddress) {
-			logger.Panic("GetAddressFromDevice the device could not generate an address")
-			return addrs, ErrDeviceWallet
-		}
-		addrs[i], err = cipher.DecodeBase58Address(address)
+		addrs[i], err = cipher.DecodeBase58Address(addresses[i])
 		if err != nil {
-			logger.Panicf("GetAddressFromDevice got a bad address from hardware wallet: %s", address)
+			logger.Panicf("GetAddressFromDevice got a bad address from hardware wallet: %s", addresses[i])
 			return addrs, err
 		}
 	}
@@ -1125,14 +1125,14 @@ func (w *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime, coi
 	addrs := w.GetAddresses()
 	// check that the connected wallet is the one that stores the wallet we try to spend from
 	if w.useHardwareWallet() {
-		_, address := deviceWallet.DeviceAddressGen(deviceWallet.DeviceTypeUsb, messages.SkycoinAddressType_AddressTypeSkycoin, 1)
-		if address != addrs[0].String() {
+		_, address := deviceWallet.DeviceAddressGen(deviceWallet.DeviceTypeUsb, 1, 0)
+		if address[0] != addrs[0].String() {
 			logger.Errorf("It seems that the connected wallet is not the one you mean to spend from")
 			return nil, ErrWrongDeviceWallet
 		}
 	} else if w.useEmulatorWallet() {
-		_, address := deviceWallet.DeviceAddressGen(deviceWallet.DeviceTypeEmulator, messages.SkycoinAddressType_AddressTypeSkycoin, 1)
-		if address != addrs[0].String() {
+		_, address := deviceWallet.DeviceAddressGen(deviceWallet.DeviceTypeEmulator, 1, 0)
+		if address[0] != addrs[0].String() {
 			logger.Errorf("It seems that the connected wallet is not the one you mean to spend from")
 			return nil, ErrWrongDeviceWallet
 		}

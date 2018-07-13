@@ -37,6 +37,9 @@ enum MessageType {
 	MessageType_PassphraseAck = 42 [(wire_in) = true, (wire_tiny) = true];
 	MessageType_PassphraseStateRequest = 77 [(wire_out) = true];
 	MessageType_PassphraseStateAck = 78 [(wire_in) = true, (wire_tiny) = true];
+	MessageType_RecoveryDevice = 45 [(wire_in) = true];
+	MessageType_WordRequest = 46 [(wire_out) = true];
+	MessageType_WordAck = 47 [(wire_in) = true];
 	MessageType_SetMnemonic = 113 [(wire_in) = true];
 	MessageType_SkycoinAddress = 114 [(wire_in) = true];
 	MessageType_SkycoinCheckMessageSignature = 115 [(wire_in) = true];
@@ -123,8 +126,7 @@ message ChangePin {
  */
 message SkycoinAddress {
 	required uint32 address_n = 1; // address iterator
-	// required string seed = 1; // seed used to generate address
-	optional SkycoinAddressType address_type = 2;
+	optional uint32 start_index = 2; // index of the first address - if not provided the device will assume 0
 }
 
 
@@ -133,7 +135,7 @@ message SkycoinAddress {
  * @prev SkycoinAddress
  */
  message ResponseSkycoinAddress {
-	required string address = 1; //generated address in base58 format
+	repeated string addresses = 1; // generated addresses in base58 format
 }
 
 /**
@@ -336,5 +338,43 @@ message EntropyRequest {
  */
 message EntropyAck {
 	optional bytes entropy = 1;				// 256 bits (32 bytes) of random data
+}
+
+/**
+ * Request: Start recovery workflow asking user for specific words of mnemonic
+ * Used to recovery device safely even on untrusted computer.
+ * @next WordRequest
+ */
+message RecoveryDevice {
+	optional uint32 word_count = 1;				// number of words in BIP-39 mnemonic
+	optional bool passphrase_protection = 2;		// enable master node encryption using passphrase
+	optional bool pin_protection = 3;			// enable PIN protection
+	optional string language = 4 [default='english'];	// device language
+	optional string label = 5;				// device label
+	optional bool enforce_wordlist = 6;			// enforce BIP-39 wordlist during the process
+	// 7 reserved for unused recovery method
+	optional uint32 type = 8;				// supported recovery type (see RecoveryType)
+	optional bool dry_run = 10;				// perform dry-run recovery workflow (for safe mnemonic validation)
+}
+
+/**
+ * Response: Device is waiting for user to enter word of the mnemonic
+ * Its position is shown only on device's internal display.
+ * @prev RecoveryDevice
+ * @prev WordAck
+ */
+message WordRequest {
+	optional WordRequestType type = 1;
+}
+
+/**
+ * Request: Computer replies with word from the mnemonic
+ * @prev WordRequest
+ * @next WordRequest
+ * @next Success
+ * @next Failure
+ */
+message WordAck {
+	required string word = 1;				// one word of mnemonic on asked position
 }
 

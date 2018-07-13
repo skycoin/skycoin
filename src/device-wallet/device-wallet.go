@@ -186,13 +186,13 @@ func DeviceSetMnemonic(deviceType DeviceType, mnemonic string) {
 }
 
 // DeviceAddressGen Ask the device to generate an address
-func DeviceAddressGen(deviceType DeviceType, coinType messages.SkycoinAddressType, addressN int) (uint16, string) {
+func DeviceAddressGen(deviceType DeviceType, addressN int, startIndex int) (uint16, []string) {
 
 	dev, _ := getDevice(deviceType)
 	defer dev.Close()
 	skycoinAddress := &messages.SkycoinAddress{
-		AddressN:    proto.Uint32(uint32(addressN)),
-		AddressType: coinType.Enum(),
+		AddressN:   proto.Uint32(uint32(addressN)),
+		StartIndex: proto.Uint32(uint32(startIndex)),
 	}
 	data, _ := proto.Marshal(skycoinAddress)
 
@@ -203,11 +203,18 @@ func DeviceAddressGen(deviceType DeviceType, coinType messages.SkycoinAddressTyp
 		responseSkycoinAddress := &messages.ResponseSkycoinAddress{}
 		err := proto.Unmarshal(msg.Data, responseSkycoinAddress)
 		if err != nil {
-			return msg.Kind, ""
+			logger.Errorf("unmarshaling error: %s\n", err.Error())
+			return msg.Kind, make([]string, 0)
 		}
-		return msg.Kind, responseSkycoinAddress.GetAddress()
+		return msg.Kind, responseSkycoinAddress.GetAddresses()
 	}
-	return msg.Kind, string(msg.Data[:])
+	failureMsg := &messages.Failure{}
+	err := proto.Unmarshal(msg.Data, failureMsg)
+	if err != nil {
+		logger.Errorf("unmarshaling error: %s\n", err.Error())
+	}
+	logger.Errorf("Failure %d! Answer is: %s\n", failureMsg.GetCode(), failureMsg.GetMessage())
+	return msg.Kind, make([]string, 0)
 }
 
 // DeviceSignMessage Ask the device to sign a message using the secret key at given index.

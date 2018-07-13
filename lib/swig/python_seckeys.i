@@ -24,6 +24,8 @@
 %rename(SKY_cipher_GenerateDeterministicKeyPairs) wrap_SKY_cipher_GenerateDeterministicKeyPairs;
 %inline {
 	GoUint32 wrap_SKY_cipher_GenerateDeterministicKeyPairs(GoSlice seed, GoInt n, cipher_SecKeys* __out_secKeys){
+		__out_secKeys->data = NULL;
+		__out_secKeys->count = 0;
 		GoSlice_ data;
 		data.data = malloc(sizeof(cipher_SecKey) * n);
 		data.len = n;
@@ -39,6 +41,8 @@
 
 %inline {
 	GoUint32 wrap_SKY_cipher_GenerateDeterministicKeyPairsSeed(GoSlice seed, GoInt n, coin__UxArray* newSeed, cipher_SecKeys* __out_secKeys){
+		__out_secKeys->data = NULL;
+		__out_secKeys->count = 0;
 		GoSlice_ data;
 		data.data = malloc(sizeof(cipher_SecKey) * n);
 		data.len = n;

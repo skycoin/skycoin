@@ -1,4 +1,3 @@
-struct _historydb__addressTxns{
+typedef struct {
 	char c[1];
-};
-typedef struct _historydb__addressTxns historydb__addressTxns;
+} historydb__addressTxns;

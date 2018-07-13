@@ -1,4 +1,3 @@
-struct _blockdb__blockSigs{
+typedef struct {
 	char c[1];
-};
-typedef struct _blockdb__blockSigs blockdb__blockSigs;
+} blockdb__blockSigs;

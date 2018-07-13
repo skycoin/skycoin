@@ -12,10 +12,9 @@ typedef struct{
 typedef struct{
     GoString_ addr;
 } daemon__GetPeersMessage;
-struct _daemon__PongMessage{
+typedef struct {
 	char c[1];
-};
-typedef struct _daemon__PongMessage daemon__PongMessage;
+} daemon__PongMessage;
 typedef struct{
     GoSlice_  Peers;
     gnet__MessageContext * c;

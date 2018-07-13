@@ -1,11 +1,9 @@
-struct _visor__unconfirmedTxns{
+typedef struct  {
 	char c[1];
-};
-typedef struct  _visor__unconfirmedTxns visor__unconfirmedTxns;
-struct _visor__txUnspents{
+} visor__unconfirmedTxns;
+typedef struct {
 	char c[1];
-};
-typedef struct _visor__txUnspents visor__txUnspents;
+} visor__txUnspents;
 typedef struct{
     coin__Transaction Txn;
     GoInt64_ Received;

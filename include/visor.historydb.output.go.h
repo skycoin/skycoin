@@ -9,10 +9,9 @@ typedef struct{
     GoUint64_ SpentBlockSeq;
     GoString_ SpentTxID;
 } historydb__UxOutJSON;
-struct _historydb__UxOuts{
+typedef struct {
 	char c[1];
-};
-typedef struct _historydb__UxOuts historydb__UxOuts;
+} historydb__UxOuts;
 typedef struct{
     coin__UxOut Out;
     cipher__SHA256 SpentTxID;

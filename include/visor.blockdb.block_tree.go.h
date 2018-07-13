@@ -1,4 +1,3 @@
-struct _blockdb__blockTree{
+typedef struct {
 	char c[1];
-};
-typedef struct _blockdb__blockTree blockdb__blockTree;
+} blockdb__blockTree;

@@ -120,6 +120,7 @@ func TestConnection(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/network/connection"
 			gateway := NewGatewayerMock()
+			gateway.On("DBVerified").Return(true)
 			gateway.On("GetConnection", tc.addr).Return(tc.gatewayGetConnectionResult)
 			gateway.On("GetBlockchainProgress").Return(
 				tc.gatewayGetBlockchainProgressResult,
@@ -261,6 +262,7 @@ func TestConnections(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/network/connections"
 			gateway := NewGatewayerMock()
+			gateway.On("DBVerified").Return(true)
 			gateway.On("GetConnections").Return(tc.gatewayGetConnectionsResult)
 			gateway.On("GetBlockchainProgress").Return(
 				tc.gatewayGetBlockchainProgressResult,
@@ -317,6 +319,7 @@ func TestDefaultConnections(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/network/defaultConnections"
 			gateway := NewGatewayerMock()
+			gateway.On("DBVerified").Return(true)
 			gateway.On("GetDefaultConnections").Return(tc.gatewayGetDefaultConnectionsResult)
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
@@ -369,6 +372,7 @@ func TestGetTrustConnections(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/network/connections/trust"
 			gateway := NewGatewayerMock()
+			gateway.On("DBVerified").Return(true)
 			gateway.On("GetTrustConnections").Return(tc.gatewayGetTrustConnectionsResult)
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
@@ -421,6 +425,7 @@ func TestGetExchgConnection(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/network/connections/exchange"
 			gateway := NewGatewayerMock()
+			gateway.On("DBVerified").Return(true)
 			gateway.On("GetExchgConnection").Return(tc.gatewayGetExchgConnectionResult)
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)

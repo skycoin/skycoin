@@ -131,6 +131,7 @@ func TestGetPendingTxs(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/pendingTxs"
 			gateway := NewGatewayerMock()
+			gateway.On("DBVerified").Return(true)
 			gateway.On("GetAllUnconfirmedTxns").Return(tc.getAllUnconfirmedTxnsResponse, tc.getAllUnconfirmedTxnsErr)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
@@ -264,6 +265,7 @@ func TestGetTransactionByID(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/transaction"
 			gateway := NewGatewayerMock()
+			gateway.On("DBVerified").Return(true)
 			gateway.On("GetTransaction", tc.getTransactionArg).Return(tc.getTransactionReponse, tc.getTransactionError)
 
 			v := url.Values{}
@@ -395,6 +397,7 @@ func TestInjectTransaction(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/injectTransaction"
 			gateway := NewGatewayerMock()
+			gateway.On("DBVerified").Return(true)
 			gateway.On("InjectBroadcastTransaction", tc.injectTransactionArg).Return(tc.injectTransactionError)
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
@@ -466,6 +469,7 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/resendUnconfirmedTxns"
 			gateway := NewGatewayerMock()
+			gateway.On("DBVerified").Return(true)
 			gateway.On("ResendUnconfirmedTxns").Return(tc.resendUnconfirmedTxnsResponse, tc.resendUnconfirmedTxnsErr)
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
@@ -590,6 +594,7 @@ func TestGetRawTx(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/rawtx"
 			gateway := NewGatewayerMock()
+			gateway.On("DBVerified").Return(true)
 			gateway.On("GetTransaction", tc.getTransactionArg).Return(tc.getTransactionResponse, tc.getTransactionError)
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -747,6 +752,7 @@ func TestGetTransactions(t *testing.T) {
 		endpoint := "/api/v1/transactions"
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := NewGatewayerMock()
+			gateway.On("DBVerified").Return(true)
 			gateway.On("GetTransactions", mock.Anything).Return(tc.getTransactionsResponse, tc.getTransactionsError)
 
 			v := url.Values{}
@@ -991,6 +997,7 @@ func TestVerifyTransaction(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v2/transaction/verify"
 			gateway := NewGatewayerMock()
+			gateway.On("DBVerified").Return(true)
 			gateway.On("VerifyTxnVerbose", &tc.gatewayVerifyTxnVerboseArg).Return(tc.gatewayVerifyTxnVerboseResult.Uxouts,
 				tc.gatewayVerifyTxnVerboseResult.IsTxnConfirmed, tc.gatewayVerifyTxnVerboseResult.Err)
 

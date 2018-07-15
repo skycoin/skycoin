@@ -175,3 +175,21 @@ func OriginRefererCheck(host string, handler http.Handler) http.Handler {
 		handler.ServeHTTP(w, r)
 	})
 }
+
+// DBInitCheck checks if the database verification is done, return 404 if
+// it's not done yet and host is not in the excludeHosts
+func DBInitCheck(endpoint string, gateway Gatewayer, excludeEndpoints map[string]struct{}, handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if gateway.DBVerified() {
+			handler.ServeHTTP(w, r)
+			return
+		}
+
+		if _, ok := excludeEndpoints[endpoint]; ok {
+			handler.ServeHTTP(w, r)
+			return
+		}
+
+		wh.Error404(w, "")
+	})
+}

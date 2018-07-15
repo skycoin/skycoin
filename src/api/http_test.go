@@ -90,6 +90,7 @@ func TestGetOutputsHandler(t *testing.T) {
 			gateway := NewGatewayerMock()
 			endpoint := "/api/v1/outputs"
 			gateway.On("GetUnspentOutputs", mock.Anything).Return(tc.getUnspentOutputsResponse, tc.getUnspentOutputsError)
+			gateway.On("DBVerified").Return(true)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -251,6 +252,7 @@ func TestGetBalanceHandler(t *testing.T) {
 			gateway := NewGatewayerMock()
 			endpoint := "/api/v1/balance"
 			gateway.On("GetBalanceOfAddrs", tc.getBalanceOfAddrsArg).Return(tc.getBalanceOfAddrsResponse, tc.getBalanceOfAddrsError)
+			gateway.On("DBVerified").Return(true)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -338,8 +340,11 @@ func TestEnableGUI(t *testing.T) {
 			req, err := http.NewRequest(http.MethodGet, tc.endpoint, nil)
 			require.NoError(t, err)
 
+			gateway := NewGatewayerMock()
+			gateway.On("DBVerified").Return(true)
+
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: tc.appLoc}, nil, &CSRFStore{}, nil)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: tc.appLoc}, gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
 
 			c := Config{
@@ -349,7 +354,7 @@ func TestEnableGUI(t *testing.T) {
 			}
 
 			host := "127.0.0.1:6423"
-			s, err := Create(host, c, nil)
+			s, err := Create(host, c, gateway)
 			require.NoError(t, err)
 
 			wg := sync.WaitGroup{}

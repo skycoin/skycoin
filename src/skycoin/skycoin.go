@@ -31,6 +31,13 @@ type Coin struct {
 	logger *logging.Logger
 }
 
+type dbVerifyResult struct {
+	DB  *dbutil.DB
+	Err error
+}
+
+// type
+
 // Run starts the node
 func (c *Coin) Run() {
 	defer func() {
@@ -43,6 +50,7 @@ func (c *Coin) Run() {
 	var d *daemon.Daemon
 	var webInterface *api.Server
 	errC := make(chan error, 10)
+	earlyShutdownC := make(chan struct{})
 
 	if c.config.Node.Version {
 		fmt.Println(c.config.Build.Version)
@@ -106,28 +114,35 @@ func (c *Coin) Run() {
 		return
 	}
 
-	if c.config.Node.ResetCorruptDB {
-		// Check the database integrity and recreate it if necessary
-		c.logger.Info("Checking database and resetting if corrupted")
-		if newDB, err := visor.RepairCorruptDB(db, c.config.Node.blockchainPubkey, quit); err != nil {
-			if err != visor.ErrVerifyStopped {
-				c.logger.Errorf("visor.ResetCorruptDB failed: %v", err)
-			}
-			goto earlyShutdown
-		} else {
-			db = newDB
-		}
-	} else if c.config.Node.VerifyDB {
-		c.logger.Info("Checking database")
-		if err := visor.CheckDatabase(db, c.config.Node.blockchainPubkey, quit); err != nil {
-			if err != visor.ErrVerifyStopped {
-				c.logger.Errorf("visor.CheckDatabase failed: %v", err)
-			}
-			goto earlyShutdown
-		}
-	}
+	dbVerifyDone := make(chan dbVerifyResult, 1)
 
-	d, err = daemon.NewDaemon(dconf, db, c.config.Node.DefaultConnections)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if c.config.Node.ResetCorruptDB {
+			// Check the database integrity and recreate it if necessary
+			c.logger.Info("Checking database and resetting if corrupted")
+			if newDB, err := visor.RepairCorruptDB(db, c.config.Node.blockchainPubkey, quit); err != nil {
+				if err != visor.ErrVerifyStopped {
+					c.logger.Errorf("visor.ResetCorruptDB failed: %v", err)
+				}
+				dbVerifyDone <- dbVerifyResult{Err: err}
+			} else {
+				dbVerifyDone <- dbVerifyResult{DB: newDB}
+			}
+		} else if c.config.Node.VerifyDB {
+			c.logger.Info("Checking database")
+			err := visor.CheckDatabase(db, c.config.Node.blockchainPubkey, quit)
+			if err != nil {
+				if err != visor.ErrVerifyStopped {
+					c.logger.Errorf("visor.CheckDatabase failed: %v", err)
+				}
+			}
+			dbVerifyDone <- dbVerifyResult{Err: err}
+		}
+	}()
+
+	d, err = daemon.NewDaemon(dconf, c.config.Node.DefaultConnections)
 	if err != nil {
 		c.logger.Error(err)
 		goto earlyShutdown
@@ -144,10 +159,25 @@ func (c *Coin) Run() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		select {
+		case <-quit:
+			return
+		case rlt := <-dbVerifyDone:
+			if rlt.Err != nil {
+				close(earlyShutdownC)
+				return
+			}
+			c.logger.Info("Checking database done")
 
-		if err := d.Run(); err != nil {
-			c.logger.Error(err)
-			errC <- err
+			newDB := db
+			if rlt.DB != nil {
+				newDB = rlt.DB
+			}
+
+			if err := d.Run(newDB); err != nil {
+				c.logger.Error(err)
+				close(earlyShutdownC)
+			}
 		}
 	}()
 
@@ -170,7 +200,6 @@ func (c *Coin) Run() {
 				select {
 				case <-cancelLaunchBrowser:
 					c.logger.Warning("Browser launching cancelled")
-
 					// Wait a moment just to make sure the http interface is up
 				case <-time.After(time.Millisecond * 100):
 					c.logger.Infof("Launching System Browser with %s", fullAddress)
@@ -178,6 +207,7 @@ func (c *Coin) Run() {
 						c.logger.Error(err)
 					}
 				}
+
 			}()
 		}
 	}
@@ -210,6 +240,11 @@ func (c *Coin) Run() {
 
 	select {
 	case <-quit:
+		if !d.DBVerified() {
+			goto earlyShutdown
+		}
+	case <-earlyShutdownC:
+		goto earlyShutdown
 	case err := <-errC:
 		c.logger.Error(err)
 	}

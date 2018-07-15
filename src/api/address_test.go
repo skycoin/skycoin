@@ -102,6 +102,7 @@ func TestVerifyAddress(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v2/address/verify"
 			gateway := NewGatewayerMock()
+			gateway.On("DBVerified").Return(true)
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)

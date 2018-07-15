@@ -158,6 +158,7 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			endpoint := "/api/v1/explorer/address"
 			gateway := NewGatewayerMock()
 			gateway.On("GetTransactionsForAddress", address).Return(tc.result, tc.gatewayGetTransactionsForAddressErr)
+			gateway.On("DBVerified").Return(true)
 
 			v := url.Values{}
 			if tc.addressParam != "" {
@@ -287,6 +288,7 @@ func TestCoinSupply(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/coinSupply"
 			gateway := NewGatewayerMock()
+			gateway.On("DBVerified").Return(true)
 			gateway.On("GetUnspentOutputs", mock.Anything).Return(tc.gatewayGetUnspentOutputsResult, tc.gatewayGetUnspentOutputsErr)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
@@ -499,6 +501,7 @@ func TestGetRichlist(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/richlist"
 			gateway := NewGatewayerMock()
+			gateway.On("DBVerified").Return(true)
 			gateway.On("GetRichlist", tc.includeDistribution).Return(tc.gatewayGetRichlistResult, tc.gatewayGetRichlistErr)
 
 			v := url.Values{}
@@ -587,6 +590,7 @@ func TestGetAddressCount(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/addresscount"
 			gateway := NewGatewayerMock()
+			gateway.On("DBVerified").Return(true)
 			gateway.On("GetAddressCount").Return(tc.gatewayGetAddressCountResult, tc.gatewayGetAddressCountErr)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)

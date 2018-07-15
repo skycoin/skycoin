@@ -167,6 +167,7 @@ func (c *Coin) Run() {
 				close(earlyShutdownC)
 				return
 			}
+			c.logger.Info("Checking database done")
 
 			newDB := db
 			if rlt.DB != nil {

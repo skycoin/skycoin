@@ -249,6 +249,20 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 
 	excludeEndpoints := map[string]struct{}{
 		"/api/v1/health": struct{}{},
+		"/":              struct{}{}, // exclude index.html
+	}
+
+	var staticRoutes []string
+	if c.enableGUI {
+		fileInfos, _ := ioutil.ReadDir(c.appLoc)
+		for _, fileInfo := range fileInfos {
+			route := fmt.Sprintf("/%s", fileInfo.Name())
+			if fileInfo.IsDir() {
+				route = route + "/"
+			}
+			staticRoutes = append(staticRoutes, route)
+			excludeEndpoints[route] = struct{}{}
+		}
 	}
 
 	webHandler := func(endpoint string, handler http.Handler) {
@@ -275,13 +289,9 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	webHandler("/", newIndexHandler(c.appLoc, c.enableGUI))
 
 	if c.enableGUI {
-		fileInfos, _ := ioutil.ReadDir(c.appLoc)
-		for _, fileInfo := range fileInfos {
-			route := fmt.Sprintf("/%s", fileInfo.Name())
-			if fileInfo.IsDir() {
-				route = route + "/"
-			}
-			webHandler(route, http.FileServer(http.Dir(c.appLoc)))
+		fs := http.FileServer(http.Dir(c.appLoc))
+		for _, route := range staticRoutes {
+			webHandler(route, fs)
 		}
 	}
 

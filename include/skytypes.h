@@ -2,6 +2,10 @@
 #ifndef SKYTYPES_H
 #define SKYTYPES_H
 
+#ifndef __SIZE_TYPE__
+#define __SIZE_TYPE__ unsigned int
+#endif
+
 /**
  * Go 8-bit signed integer values.
  */

@@ -8,11 +8,12 @@
 /*cipher_SecKeys* as function return typemap*/
 %typemap(argout) (cipher_SecKeys* __out_secKeys) {
 	int i;
-	PyObject *list = PyList_New($1->count);
+	PyObject *list = PyList_New(0);
 	for (i = 0; i < $1->count; i++) {
 		cipher_SecKey* key = &($1->data[i]);
-		PyObject *o = SWIG_NewPointerObj(SWIG_as_voidptr(key), SWIGTYPE_p_cipher_SecKey, SWIG_POINTER_NOSHADOW |  0 );
-		PyList_SetItem(list,i,o);
+		PyObject *o = SWIG_NewPointerObj(SWIG_as_voidptr(key), SWIGTYPE_p_cipher_SecKey, SWIG_POINTER_NOSHADOW );
+		PyList_Append(list, o);
+		//Py_DECREF(o);
 	}
 	if( $1->data != NULL)
 		free( (void*)$1->data );
@@ -23,10 +24,12 @@
 %rename(SKY_cipher_GenerateDeterministicKeyPairs) wrap_SKY_cipher_GenerateDeterministicKeyPairs;
 %inline {
 	GoUint32 wrap_SKY_cipher_GenerateDeterministicKeyPairs(GoSlice seed, GoInt n, cipher_SecKeys* __out_secKeys){
+		__out_secKeys->data = NULL;
+		__out_secKeys->count = 0;
 		GoSlice_ data;
-		data.data = NULL;
-		data.len = 0;
-		data.cap = 0;
+		data.data = malloc(sizeof(cipher_SecKey) * n);
+		data.len = n;
+		data.cap = n;
 		GoUint32 result = SKY_cipher_GenerateDeterministicKeyPairs(seed, n, &data);
 		if( result == 0){
 			__out_secKeys->data = data.data;
@@ -38,10 +41,12 @@
 
 %inline {
 	GoUint32 wrap_SKY_cipher_GenerateDeterministicKeyPairsSeed(GoSlice seed, GoInt n, coin__UxArray* newSeed, cipher_SecKeys* __out_secKeys){
+		__out_secKeys->data = NULL;
+		__out_secKeys->count = 0;
 		GoSlice_ data;
-		data.data = NULL;
-		data.len = 0;
-		data.cap = 0;
+		data.data = malloc(sizeof(cipher_SecKey) * n);
+		data.len = n;
+		data.cap = n;
 		GoUint32 result = SKY_cipher_GenerateDeterministicKeyPairsSeed(seed, n, newSeed, &data);
 		if( result == 0){
 			__out_secKeys->data = data.data;

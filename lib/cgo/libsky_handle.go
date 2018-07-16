@@ -15,9 +15,9 @@ import (
 	webrpc "github.com/skycoin/skycoin/src/api/webrpc"
 	cli "github.com/skycoin/skycoin/src/cli"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/visor"
 	wallet "github.com/skycoin/skycoin/src/wallet"
 	gcli "github.com/urfave/cli"
-	"github.com/skycoin/skycoin/src/visor"
 )
 
 type Handle uint64

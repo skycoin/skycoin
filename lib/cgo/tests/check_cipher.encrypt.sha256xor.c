@@ -163,11 +163,9 @@ Test(cipher_encrypt_sha256xor, TestEncrypt){
 		{65, &pwd3, &nullPwd, 1, 0},
 	};
 
-	encrypt__Sha256Xor encryptSettings = {};
-
 	for(int i = 0; i < sizeof(test_data) / sizeof(test_data[0]); i++){
 		randBytes(&data, test_data[i].dataLength);
-		errcode = SKY_encrypt_Sha256Xor_Encrypt(&encryptSettings, data, *(test_data[i].pwd), &encrypted);
+		errcode = SKY_encrypt_Sha256Xor_Encrypt(data, *(test_data[i].pwd), &encrypted);
 		if( test_data[i].success ){
 			cr_assert(errcode == SKY_OK, "SKY_encrypt_Sha256Xor_Encrypt failed.");
 		} else {
@@ -212,7 +210,7 @@ Test(cipher_encrypt_sha256xor, TestEncrypt){
 
 	for(int i = 33; i <= 64; i++){
 		randBytes(&data, i);
-		errcode = SKY_encrypt_Sha256Xor_Encrypt(&encryptSettings, data, pwd1, &encrypted);
+		errcode = SKY_encrypt_Sha256Xor_Encrypt(data, pwd1, &encrypted);
 		cr_assert(errcode == SKY_OK, "SKY_encrypt_Sha256Xor_Encrypt failed.");
 		cr_assert(encrypted.cap > 0, "Buffer for encrypted data is too short");
 		cr_assert(encrypted.len < BUFFER_SIZE, "Too large encrypted data");
@@ -270,7 +268,6 @@ Test(cipher_encrypt_sha256xor, TestDecrypt){
 		{32, &pwd, &nullPwd, 0, 0},		//Null password
 		{32, &pwd, &wrong_pwd, 0, 0},	//Wrong password
 	};
-	encrypt__Sha256Xor encryptSettings = {};
 	for(int i = 0; i < sizeof(test_data) / sizeof(test_data[0]); i++){
 		randBytes(&data, 32);
 		makeEncryptedData(data, test_data[i].dataLength, *test_data[i].pwd, &encrypted);
@@ -279,8 +276,7 @@ Test(cipher_encrypt_sha256xor, TestDecrypt){
 		if( test_data[i].tampered ){
 			((unsigned char*)(encrypted.data))[ encrypted.len - 1 ]++;
 		}
-		errcode = SKY_encrypt_Sha256Xor_Decrypt(&encryptSettings,
-			*(GoSlice*)&encrypted, *test_data[i].decryptPwd, &decrypted);
+		errcode = SKY_encrypt_Sha256Xor_Decrypt(*(GoSlice*)&encrypted, *test_data[i].decryptPwd, &decrypted);
 		if( test_data[i].success ){
 			cr_assert(errcode == SKY_OK, "SKY_encrypt_Sha256Xor_Decrypt failed.");
 		} else {
@@ -291,10 +287,9 @@ Test(cipher_encrypt_sha256xor, TestDecrypt){
 	for(int i = 0; i <= 64; i++){
 		randBytes(&data, i);
 		//makeEncryptedData(data, i, pwd, &encrypted);
-		SKY_encrypt_Sha256Xor_Encrypt(&encryptSettings, data, pwd, &encrypted);
+		SKY_encrypt_Sha256Xor_Encrypt(data, pwd, &encrypted);
 		cr_assert(encrypted.len > 0, "SKY_encrypt_Sha256Xor_Encrypt failed. Empty encrypted data");
-		errcode = SKY_encrypt_Sha256Xor_Decrypt(&encryptSettings,
-			*(GoSlice*)&encrypted, pwd, &decrypted);
+		errcode = SKY_encrypt_Sha256Xor_Decrypt(*(GoSlice*)&encrypted, pwd, &decrypted);
 		cr_assert(errcode == SKY_OK, "SKY_encrypt_Sha256Xor_Decrypt failed.");
 		cr_assert(data.len == decrypted.len, "SKY_encrypt_Sha256Xor_Decrypt failed. Decrypted data length different than original data length");
 		int equal = 1;

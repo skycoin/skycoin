@@ -17,12 +17,12 @@ import (
 import "C"
 
 //export SKY_encrypt_Sha256Xor_Encrypt
-func SKY_encrypt_Sha256Xor_Encrypt(_s *C.encrypt__Sha256Xor, _data []byte, _password []byte, _arg2 *C.GoSlice_) (____error_code uint32) {
+func SKY_encrypt_Sha256Xor_Encrypt(_data []byte, _password []byte, _arg2 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	s := *(*encrypt.Sha256Xor)(unsafe.Pointer(_s))
+	s := encrypt.Sha256Xor{}
 	data := *(*[]byte)(unsafe.Pointer(&_data))
 	password := *(*[]byte)(unsafe.Pointer(&_password))
 	__arg2, ____return_err := s.Encrypt(data, password)
@@ -34,12 +34,12 @@ func SKY_encrypt_Sha256Xor_Encrypt(_s *C.encrypt__Sha256Xor, _data []byte, _pass
 }
 
 //export SKY_encrypt_Sha256Xor_Decrypt
-func SKY_encrypt_Sha256Xor_Decrypt(_s *C.encrypt__Sha256Xor, _data []byte, _password []byte, _arg2 *C.GoSlice_) (____error_code uint32) {
+func SKY_encrypt_Sha256Xor_Decrypt(_data []byte, _password []byte, _arg2 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	s := *(*encrypt.Sha256Xor)(unsafe.Pointer(_s))
+	s := encrypt.Sha256Xor{}
 	data := *(*[]byte)(unsafe.Pointer(&_data))
 	password := *(*[]byte)(unsafe.Pointer(&_password))
 	__arg2, ____return_err := s.Decrypt(data, password)

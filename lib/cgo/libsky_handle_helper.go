@@ -368,3 +368,16 @@ func SKY_api_Handle_GetWalletLastSeed(handle C.Wallet__Handle,
 	}
 	return SKY_ERROR
 }
+
+//export SKY_api_Handle_GetBuildInfoData
+func SKY_api_Handle_GetBuildInfoData(handle C.BuildInfo_Handle,
+	version *C.GoString_, commit *C.GoString_, branch *C.GoString_) uint32 {
+	bi, ok := lookupBuildInfoHandle(handle)
+	if ok {
+		copyString(bi.Version, version)
+		copyString(bi.Commit, commit)
+		copyString(bi.Branch, branch)
+		return SKY_OK
+	}
+	return SKY_ERROR
+}

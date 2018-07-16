@@ -78,7 +78,7 @@ func SKY_api_CreatedTransaction_ToTransaction(_r C.CreatedTransaction__Handle, _
 }
 
 //export SKY_api_NewCreatedTransactionOutput
-func SKY_api_NewCreatedTransactionOutput(_out *C.coin__TransactionOutput, _txid *C.cipher__SHA256, _arg2 *C.api__CreatedTransactionOutput) (____error_code uint32) {
+func SKY_api_NewCreatedTransactionOutput(_out *C.coin__TransactionOutput, _txid *C.cipher__SHA256, _arg2 *C.CreatedTransactionOutput__Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -88,7 +88,7 @@ func SKY_api_NewCreatedTransactionOutput(_out *C.coin__TransactionOutput, _txid 
 	__arg2, ____return_err := api.NewCreatedTransactionOutput(out, txid)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		*_arg2 = *(*C.api__CreatedTransactionOutput)(unsafe.Pointer(__arg2))
+		*_arg2 = registerCreatedTransactionOutputHandle(__arg2)
 	}
 	return
 }

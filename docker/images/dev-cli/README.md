@@ -59,4 +59,16 @@ $ docker run --rm \
     vim
 ```
 
+## Additional tools and packages installed
+
+### Packages
+
+- dep
+- tig
+- swig
+
+### Vim's plugins
+
+- Ale
+- tig-explorer
 

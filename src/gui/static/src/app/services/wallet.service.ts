@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { ApiService } from './api.service';
 import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
@@ -23,6 +23,7 @@ export class WalletService {
 
   constructor(
     private apiService: ApiService,
+    private ngZone: NgZone,
   ) {
     this.loadData();
     this.startDataRefreshSubscription();
@@ -214,11 +215,13 @@ export class WalletService {
       this.dataRefreshSubscription.unsubscribe();
     }
 
-    this.dataRefreshSubscription = Observable.timer(0, 10000)
-      .subscribe(() => {
-        this.refreshBalances();
-        this.refreshPendingTransactions();
-      });
+    this.ngZone.runOutsideAngular(() => {
+      this.dataRefreshSubscription = Observable.timer(0, 10000)
+        .subscribe(() => this.ngZone.run(() => {
+          this.refreshBalances();
+          this.refreshPendingTransactions();
+        }));
+    });
   }
 
   private loadData(): void {

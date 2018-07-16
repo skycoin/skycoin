@@ -142,7 +142,7 @@ void makeEncryptedData(GoSlice data, GoUint32 dataLength, GoSlice pwd, coin__UxA
 	encrypted->len = size;
 }
 
-Test(cipher_encrypt_sha256xor, TestSha256XorEncrypt){
+Test(cipher_encrypt_sha256xor, TestEncrypt){
 	unsigned char buff[BUFFER_SIZE];
 	unsigned char encryptedBuffer[BUFFER_SIZE];
 	unsigned char encryptedText[BUFFER_SIZE];
@@ -251,7 +251,7 @@ Test(cipher_encrypt_sha256xor, TestSha256XorEncrypt){
 	}
 }
 
-Test(cipher_encrypt_sha256xor, TestSha256XorDecrypt){
+Test(cipher_encrypt_sha256xor, TestDecrypt){
 	unsigned char buff[BUFFER_SIZE];
 	unsigned char encrypted_buffer[BUFFER_SIZE];
 	unsigned char decrypted_buffer[BUFFER_SIZE];

@@ -194,11 +194,6 @@ typedef struct {
 	GoSlice_ 	nat;
 } Number;
 
-/**
- * RIPEMD-160 hash.
- */
-typedef unsigned char Ripemd160[20];
-
 typedef struct {
 	//TODO: stdevEclipse Define Signature
 	Number R;
@@ -289,14 +284,67 @@ typedef Handle SignedBlock__Handle;
  */
 typedef Handle BlockBody__Handle;
 
-/*
-#include "cipher.hash.go.h"
-#include "cipher.crypto.go.h"
-#include "cipher.address.go.h"
-#include "cli.create_rawtx.go.h"
-#include "coin.outputs.go.h"
-#include "coin.transactions.go.h"
-#include "wallet.entry.go.h"
-#include "wallet.wallet.go.h"
-*/
+/**
+ * Memory handle to access to cli.BalanceResult
+ */
+
+typedef Handle BalanceResult_Handle;
+
+
+/**
+ * Memory handle to access to api.SpendResult
+ */
+
+typedef Handle SpendResult_Handle;
+
+/**
+ * Memory handle to access to coin.Transactions
+ */
+
+typedef Handle TransactionResult_Handle;
+
+/**
+ * Memory handle to access to coin.SortableTransactions
+ */
+
+typedef Handle SortableTransactionResult_Handle;
+
+/**
+ * Memory handle to access to wallet.Notes
+ */
+
+typedef Handle WalletNotes_Handle;
+
+/**
+ * Memory handle to access to wallet.ReadableNotes
+ */
+
+typedef Handle WalletReadableNotes_Handle;
+
+/**
+ * Memory handle to access to webrpc.OutputsResult
+ */
+
+typedef Handle OutputsResult_Handle;
+
+/**
+ * Memory handle to access to webrpc.StatusResult
+ */
+
+typedef Handle StatusResult_Handle;
+
+/**
+ * Memory handle to access to coin.AddressUxOuts
+ */
+
+typedef Handle AddressUxOuts_Handle;
+
+/**
+ * Memory handle to access to visor.BuildInfo (BuildInfo)
+ */
+
+typedef Handle BuildInfo_Handle;
+
+typedef GoUint32_ (*FeeCalc)(Transaction__Handle handle, GoUint64_* pFee);
+
 #endif

@@ -9,15 +9,6 @@ typedef struct {
 
 typedef GoInterface_ wallet__Validator;
 
-typedef struct{
-    GoString_ Coin;
-    GoString_ Label;
-    GoString_ Seed;
-    BOOL Encrypt;
-    GoSlice_  Password;
-    GoString_ CryptoType;
-} wallet__Options;
-
 /**
  * Intermediate representation of a UxOut for sorting and spend choosing.
  */

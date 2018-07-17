@@ -70,7 +70,7 @@ This command pulls latest stable image from Docker Hub, and launches a node insi
 ```sh
 $ docker volume create skycoin-data
 $ docker volume create skycoin-wallet
-$ docker run --rm -d -v skycoin-data:/data/.skycoin \
+$ docker run -d -v skycoin-data:/data/.skycoin \
   -v skycoin-wallet:/wallet \
   -p 6000:6000 -p 6420:6420 \
   --name skycoin-node-stable skycoin/skycoin
@@ -88,6 +88,18 @@ Restart it once again by executing
 $ docker start skycoin-node-stable
 ```
 
+To run various nodes, you must create diferent volumes for each node
+
+```sh
+$ docker volume create skycoin-master-data
+$ docker volume create skycoin-master-wallet
+$ docker run -d -v skycoin-master-data:/data/.skycoin \
+  -v skycoin-master-wallet:/wallet \
+  -p 6001:6000 -p 6421:6420 \
+  --name skycoin-master-stable skycoin/skycoin
+```
+Notice that the host's port must be changed since you can not have two services listen on the same port
+
 You can pass parameters in to customize the execution of the skycoin node inside the container. For instance, in order to run the bleeding edge development image and listen for REST API requests at a non-standard port (e.g. `6421`) it is possible to execute the following command.
 
 ```sh
@@ -98,3 +110,10 @@ You can pass parameters in to customize the execution of the skycoin node inside
 ```
 
 Notice that the value of node parameter (e.g. `-web-interface-port`) affects the execution context inside the container. Therefore, in this particular case, the port mapping should be updated accordingly.
+
+To get a list of skycoin's parameters, just run
+
+```sh
+ $ docker run --rm skycoin/skycoin:develop -help
+ ```
+

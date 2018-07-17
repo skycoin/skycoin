@@ -598,7 +598,7 @@ Test(coin_transactions, TestTransactionOutputHours) {
   result = SKY_coin_Transaction_PushOutput(handle, &addr, 1000000,
                                            0xFFFFFFFFFFFFFFFF - 700);
   result = SKY_coin_Transaction_OutputHours(handle, &hours);
-  cr_assert(result != SKY_OK);
+  cr_assert(result == SKY_ERROR);
 }
 
 Test(coin_transactions, TestTransactionsHashes) {

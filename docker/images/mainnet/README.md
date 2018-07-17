@@ -65,7 +65,7 @@ $ docker build -f docker/images/mainnet/Dockerfile \
 
 ### Create a node with Skycoin-0.23.0 version
 
-This command launch a skycoin node on top of Docker and running in background
+This command launch a skycoin node in background on top of Docker
 
 ```sh
 $ docker volume create skycoin0.23.0-data

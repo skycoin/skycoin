@@ -82,3 +82,12 @@ If you want to stop it , just run
 $ docker stop skycoin-node
 ```
 
+You can pass parameters to skycoin process inside the container
+
+```sh
+ $ docker run --rm -d -v skycoin0.23.0-data:/data/.skycoin \
+  -v skycoin0.23.0-wallet:/wallet \
+  -p 6000:6000 -p 6420:6420 \
+  --name skycoin-node skycoin:v0.23.0 -web-interface-addr 192.168.1.1
+```
+

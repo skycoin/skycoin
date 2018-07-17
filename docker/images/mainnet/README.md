@@ -60,3 +60,25 @@ $ docker build -f docker/images/mainnet/Dockerfile \
   --build-arg=IMAGE_FROM="arm32v5/alpine" \
   -t skycoin:latest-arm32v5 .
 ```
+
+## How to use this images
+
+### Create a node with Skycoin-0.23.0 version
+
+This command launch a skycoin node on top of Docker and running in background
+
+```sh
+$ docker volume create skycoin0.23.0-data
+$ docker volume create skycoin0.23.0-wallet
+$ docker run --rm -d -v skycoin0.23.0-data:/data/.skycoin \
+  -v skycoin0.23.0-wallet:/wallet \
+  -p 6000:6000 -p 6420:6420 \
+  --name skycoin-node skycoin:v0.23.0
+```
+
+If you want to stop it , just run
+
+```sh
+$ docker stop skycoin-node
+```
+

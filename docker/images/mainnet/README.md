@@ -88,7 +88,7 @@ Restart it once again by executing
 $ docker start skycoin-node-stable
 ```
 
-You can pass parameters in to customize the execution of the skycoin node inside the container. For instance, in order to run the bleeding edge development image and listen for REST API requests in a non-standard port (e.g. `6421`) it is possible to execute the following command.
+You can pass parameters in to customize the execution of the skycoin node inside the container. For instance, in order to run the bleeding edge development image and listen for REST API requests at a non-standard port (e.g. `6421`) it is possible to execute the following command.
 
 ```sh
  $ docker run --rm -d -v skycoin-data:/data/.skycoin \

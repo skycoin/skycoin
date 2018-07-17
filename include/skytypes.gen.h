@@ -3,7 +3,6 @@
 #include "cipher.crypto.go.h"
 #include "cipher.encoder.field.go.h"
 #include "cipher.encrypt.scrypt_chacha20poly1305.go.h"
-#include "cipher.encrypt.sha256xor.go.h"
 
 #include "cipher.secp256k1-go.secp256k1-go2.field.go.h"
 #include "cipher.secp256k1-go.secp256k1-go2.xy.go.h"

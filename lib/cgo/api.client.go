@@ -60,7 +60,7 @@ func SKY_api_Client_Version(_c C.Client__Handle, _arg0 *C.Handle) (____error_cod
 	__arg0, ____return_err := c.Version()
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {
-		*_arg0 = registerHandle(__arg0)
+		*_arg0 = registerBuildInfoHandle(__arg0)
 	}
 	return
 }

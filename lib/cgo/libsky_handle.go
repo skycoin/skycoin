@@ -15,6 +15,7 @@ import (
 	webrpc "github.com/skycoin/skycoin/src/api/webrpc"
 	cli "github.com/skycoin/skycoin/src/cli"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/visor"
 	wallet "github.com/skycoin/skycoin/src/wallet"
 	gcli "github.com/urfave/cli"
 )
@@ -476,6 +477,20 @@ func lookupAddressUxOutHandle(handle C.AddressUxOuts_Handle) (*coin.AddressUxOut
 	obj, ok := lookupHandle(C.Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(*coin.AddressUxOuts); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerBuildInfoHandle(obj *visor.BuildInfo) C.BuildInfo_Handle {
+	return (C.BuildInfo_Handle)(registerHandle(obj))
+}
+
+func lookupBuildInfoHandle(handle C.BuildInfo_Handle) (*visor.BuildInfo, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*visor.BuildInfo); isOK {
 			return obj, true
 		}
 	}

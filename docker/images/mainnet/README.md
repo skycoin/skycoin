@@ -76,6 +76,13 @@ $ docker run -d -v skycoin-data:/data/.skycoin \
   --name skycoin-node-stable skycoin/skycoin
 ```
 
+When invoking the container this way the options of the skycoin command are set to their respective default values , except the following
+
+| Parameter  | Value |
+| ------------- | ------------- |
+| web-interface-addr | 0.0.0.0  |
+| gui-dir | /usr/local/skycoin/src/gui/static |
+
 In order to stop the container , just run
 
 ```sh
@@ -88,7 +95,9 @@ Restart it once again by executing
 $ docker start skycoin-node-stable
 ```
 
-You can pass parameters in to customize the execution of the skycoin node inside the container. For instance, in order to run the bleeding edge development image and listen for REST API requests at a non-standard port (e.g. `6421`) it is possible to execute the following command.
+### Customizing node server with parameters
+
+The container accepts parameters in order to customize the execution of the skycoin node. For instance, in order to run the bleeding edge development image and listen for REST API requests at a non-standard port (e.g. `6421`) it is possible to execute the following command.
 
 ```sh
  $ docker run --rm -d -v skycoin-data:/data/.skycoin \
@@ -99,20 +108,13 @@ You can pass parameters in to customize the execution of the skycoin node inside
 
 Notice that the value of node parameter (e.g. `-web-interface-port`) affects the execution context inside the container. Therefore, in this particular case, the port mapping should be updated accordingly.
 
-When the skycoin daemon starts, it does with some parameter's values by default ,this paramters and they values are
-
-| Parameter  | Value |
-| ------------- | ------------- |
-| web-interface-addr | 0.0.0.0  |
-| gui-dir | /usr/local/skycoin/src/gui/static |
-
 To get a full list of skycoin's parameters, just run
 
 ```sh
  $ docker run --rm skycoin/skycoin:develop -help
 ```
 
-To run various nodes in the same host, you must create different volumes for each node. For example, in order to run a master node along with the previously launched, you must execute
+To run multiple nodes concurrently in the same host, it is highly recommended to create separate volumes for each node. For example, in order to run a master node along with the one launched above, it is necessary to execute
 
 ```sh
 $ docker volume create skycoin-master-data
@@ -122,4 +124,5 @@ $ docker run -d -v skycoin-master-data:/data/.skycoin \
   -p 6001:6000 -p 6421:6420 \
   --name skycoin-master-stable skycoin/skycoin -master
 ```
-Notice that the host's port must be changed since it can not have two services listen on the same port.
+
+Notice that the host's port must be changed since collisions of two services listening at the same port are not allowed by the low-level operating system socket libraries.

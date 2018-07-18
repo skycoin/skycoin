@@ -9,6 +9,42 @@
 	}
 }
 
+%extend cipher_PubKey {
+	int __eq__(cipher_PubKey* a){
+		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
+	}
+}
+
+%extend cipher_SecKey {
+	int __eq__(cipher_SecKey* a){
+		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
+	}
+}
+
+%extend cipher_Ripemd160 {
+	int __eq__(cipher_Ripemd160* a){
+		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
+	}
+}
+
+%extend cipher_Sig {
+	int __eq__(cipher_Sig* a){
+		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
+	}
+}
+
+%extend cipher_SHA256 {
+	int __eq__(cipher_SHA256* a){
+		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
+	}
+}
+
+%extend cipher_Checksum {
+	int __eq__(cipher_Checksum* a){
+		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
+	}
+}
+
 
 %extend cipher_SecKeys {
 	cipher_SecKey* getAt(int i){
@@ -28,7 +64,7 @@
 		}
 	}
 	
-	int isEqual(cipher_SecKeys* a){
+	int __eq__(cipher_SecKeys* a){
 		return $self->count == a->count && memcmp($self->data, a->data, sizeof(cipher_SecKey) * $self->count) == 0;
 	}
 	
@@ -70,7 +106,7 @@
 		}
 	}
 	
-	int isEqual(cipher_PubKeys* a){
+	int __eq__(cipher_PubKeys* a){
 		return $self->count == a->count && memcmp($self->data, a->data, sizeof(cipher_PubKey) * $self->count) == 0;
 	}
 	

@@ -11,6 +11,11 @@
 #include "skytest.h"
 #include "transutil.h"
 
+GoUint32_ zeroFeeCalculator(Transaction__Handle handle, GoUint64_ *pFee){
+  *pFee = 0;
+  return SKY_OK;
+}
+
 int makeKeysAndAddress(cipher__PubKey* ppubkey, cipher__SecKey* pseckey, cipher__Address* paddress){
   int result;
   result = SKY_cipher_GenerateKeyPair(ppubkey, pseckey);
@@ -149,6 +154,54 @@ int makeTransactions(int n, Transactions__Handle* handle){
     makeTransaction(&thandle);
     registerHandleClose(thandle);
     result = SKY_coin_Transactions_Add(*handle, thandle);
+    cr_assert(result == SKY_OK);
+  }
+  return result;
+}
+
+typedef struct{
+  cipher__SHA256 hash;
+  Transaction__Handle handle;
+} TransactionObjectHandle;
+
+int sortTransactions(Transactions__Handle txns_handle, Transactions__Handle* sorted_txns_handle){
+  int result = SKY_coin_Create_Transactions(sorted_txns_handle);
+  cr_assert(result == SKY_OK);
+  registerHandleClose(*sorted_txns_handle);
+  GoInt n, i, j;
+  result = SKY_coin_Transactions_Length(txns_handle, &n);
+  cr_assert(result == SKY_OK);
+  TransactionObjectHandle* pTrans = malloc( n * sizeof(TransactionObjectHandle));
+  cr_assert(pTrans != NULL);
+  registerMemCleanup(pTrans);
+  memset(pTrans, 0, n * sizeof(TransactionObjectHandle));
+  int* indexes = malloc( n * sizeof(int) );
+  cr_assert(indexes != NULL);
+  registerMemCleanup(indexes);
+  for( i = 0; i < n; i ++){
+    indexes[i] = i;
+    result = SKY_coin_Transactions_GetAt(txns_handle, i, &pTrans[i].handle);
+    cr_assert(result == SKY_OK);
+    registerHandleClose(pTrans[i].handle);
+    result = SKY_coin_Transaction_Hash(pTrans[i].handle, &pTrans[i].hash);
+    cr_assert(result == SKY_OK);
+  }
+
+  //Swap sort.
+  cipher__SHA256 hash1, hash2;
+  for(i = 0; i < n - 1; i++){
+    for(j = i + 1; j < n; j++){
+      int cmp = memcmp(&pTrans[indexes[i]].hash, &pTrans[indexes[j]].hash, sizeof(cipher__SHA256));
+      if(cmp > 0){
+        //Swap
+        int tmp = indexes[i];
+        indexes[i] = indexes[j];
+        indexes[j] = tmp;
+      }
+    }
+  }
+  for( i = 0; i < n; i ++){
+    result = SKY_coin_Transactions_Add(*sorted_txns_handle, pTrans[indexes[i]].handle);
     cr_assert(result == SKY_OK);
   }
   return result;

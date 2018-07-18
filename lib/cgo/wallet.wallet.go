@@ -41,7 +41,7 @@ func SKY_wallet_NewWallet(_wltName string, _opts C.Options__Handle, _arg2 *C.Wal
 	wltName := _wltName
 	__opts, okopts := lookupOptionsHandle(_opts)
 	if !okopts {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	opts := *__opts
@@ -61,7 +61,7 @@ func SKY_wallet_Wallet_Lock(_w C.Wallet__Handle, _password []byte, _cryptoType s
 	}()
 	w, okw := lookupWalletHandle(_w)
 	if !okw {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	password := *(*[]byte)(unsafe.Pointer(&_password))
@@ -81,7 +81,7 @@ func SKY_wallet_Wallet_Unlock(_w C.Wallet__Handle, _password []byte, _arg1 *C.Wa
 	}()
 	w, okw := lookupWalletHandle(_w)
 	if !okw {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	password := *(*[]byte)(unsafe.Pointer(&_password))
@@ -116,7 +116,7 @@ func SKY_wallet_Wallet_Save(_w C.Wallet__Handle, _dir string) (____error_code ui
 	}()
 	w, okw := lookupWalletHandle(_w)
 	if !okw {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	dir := _dir
@@ -135,7 +135,7 @@ func SKY_wallet_Wallet_Validate(_w C.Wallet__Handle) (____error_code uint32) {
 	}()
 	w, okw := lookupWalletHandle(_w)
 	if !okw {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	____return_err := w.Validate()
@@ -153,7 +153,7 @@ func SKY_wallet_Wallet_Type(_w C.Wallet__Handle, _arg0 *C.GoString_) (____error_
 	}()
 	w, okw := lookupWalletHandle(_w)
 	if !okw {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0 := w.Type()
@@ -169,7 +169,7 @@ func SKY_wallet_Wallet_Version(_w C.Wallet__Handle, _arg0 *C.GoString_) (____err
 	}()
 	w, okw := lookupWalletHandle(_w)
 	if !okw {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0 := w.Version()
@@ -185,7 +185,7 @@ func SKY_wallet_Wallet_Filename(_w C.Wallet__Handle, _arg0 *C.GoString_) (____er
 	}()
 	w, okw := lookupWalletHandle(_w)
 	if !okw {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0 := w.Filename()
@@ -201,7 +201,7 @@ func SKY_wallet_Wallet_Label(_w C.Wallet__Handle, _arg0 *C.GoString_) (____error
 	}()
 	w, okw := lookupWalletHandle(_w)
 	if !okw {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0 := w.Label()
@@ -217,7 +217,7 @@ func SKY_wallet_Wallet_IsEncrypted(_w C.Wallet__Handle, _arg0 *bool) (____error_
 	}()
 	w, okw := lookupWalletHandle(_w)
 	if !okw {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0 := w.IsEncrypted()
@@ -233,7 +233,7 @@ func SKY_wallet_Wallet_GenerateAddresses(_w C.Wallet__Handle, _num uint64, _arg1
 	}()
 	w, okw := lookupWalletHandle(_w)
 	if !okw {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	num := _num
@@ -253,7 +253,7 @@ func SKY_wallet_Wallet_GetAddresses(_w C.Wallet__Handle, _arg0 *C.GoSlice_) (___
 	}()
 	w, okw := lookupWalletHandle(_w)
 	if !okw {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0 := w.GetAddresses()
@@ -269,7 +269,7 @@ func SKY_wallet_Wallet_GetEntry(_w C.Wallet__Handle, _a *C.cipher__Address, _arg
 	}()
 	w, okw := lookupWalletHandle(_w)
 	if !okw {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	a := *(*cipher.Address)(unsafe.Pointer(_a))
@@ -287,7 +287,7 @@ func SKY_wallet_Wallet_AddEntry(_w C.Wallet__Handle, _entry *C.wallet__Entry) (_
 	}()
 	w, okw := lookupWalletHandle(_w)
 	if !okw {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	entry := *(*wallet.Entry)(unsafe.Pointer(_entry))

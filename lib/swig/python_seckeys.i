@@ -13,7 +13,7 @@
 		cipher_SecKey* key = &($1->data[i]);
 		PyObject *o = SWIG_NewPointerObj(SWIG_as_voidptr(key), SWIGTYPE_p_cipher_SecKey, SWIG_POINTER_NOSHADOW );
 		PyList_Append(list, o);
-		Py_DECREF(o);
+		//Py_DECREF(o);
 	}
 	if( $1->data != NULL)
 		free( (void*)$1->data );
@@ -24,6 +24,8 @@
 %rename(SKY_cipher_GenerateDeterministicKeyPairs) wrap_SKY_cipher_GenerateDeterministicKeyPairs;
 %inline {
 	GoUint32 wrap_SKY_cipher_GenerateDeterministicKeyPairs(GoSlice seed, GoInt n, cipher_SecKeys* __out_secKeys){
+		__out_secKeys->data = NULL;
+		__out_secKeys->count = 0;
 		GoSlice_ data;
 		data.data = malloc(sizeof(cipher_SecKey) * n);
 		data.len = n;
@@ -39,6 +41,8 @@
 
 %inline {
 	GoUint32 wrap_SKY_cipher_GenerateDeterministicKeyPairsSeed(GoSlice seed, GoInt n, coin__UxArray* newSeed, cipher_SecKeys* __out_secKeys){
+		__out_secKeys->data = NULL;
+		__out_secKeys->count = 0;
 		GoSlice_ data;
 		data.data = malloc(sizeof(cipher_SecKey) * n);
 		data.len = n;

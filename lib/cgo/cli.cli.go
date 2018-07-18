@@ -139,12 +139,12 @@ func SKY_cli_PasswordFromBytes_Password(_p *C.cli__PasswordFromBytes, _arg0 *C.G
 }
 
 //export SKY_cli_PasswordFromTerm_Password
-func SKY_cli_PasswordFromTerm_Password(_p *C.cli__PasswordFromTerm, _arg0 *C.GoSlice_) (____error_code uint32) {
+func SKY_cli_PasswordFromTerm_Password(_arg0 *C.GoSlice_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	p := *(*cli.PasswordFromTerm)(unsafe.Pointer(_p))
+	p := cli.PasswordFromTerm{}
 	__arg0, ____return_err := p.Password()
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {

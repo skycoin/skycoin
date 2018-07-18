@@ -1,4 +1,3 @@
-
 /**
  * Wallet entry.
  */

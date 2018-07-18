@@ -99,7 +99,14 @@ You can pass parameters in to customize the execution of the skycoin node inside
 
 Notice that the value of node parameter (e.g. `-web-interface-port`) affects the execution context inside the container. Therefore, in this particular case, the port mapping should be updated accordingly.
 
-When the skycoin daemon starts, it doest with some parameter's values by default ,for example `web-interface-port` (6420) or `web-interface-addr` (120.0.0.1), to get a full list of skycoin's parameters, just run
+When the skycoin daemon starts, it does with some parameter's values by default ,this paramters and they values are
+
+| Parameter  | Value |
+| ------------- | ------------- |
+| web-interface-addr | 0.0.0.0  |
+| gui-dir | /usr/local/skycoin/src/gui/static |
+
+To get a full list of skycoin's parameters, just run
 
 ```sh
  $ docker run --rm skycoin/skycoin:develop -help

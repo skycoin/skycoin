@@ -12,7 +12,7 @@
 #if defined(SWIGPYTHON)
 %include "golang.cgo.i"
 %include "skycoin.mem.i"
-%include "skycoin.cipher.crypto.i"
+%include "python_skycoin.cipher.crypto.i"
 %include "structs_typemaps.i"
 #else
 %include "skycoin.cipher.crypto.i"

@@ -1,45 +1,11 @@
-%extend cipher__Address {
-	int isEqual(cipher__Address* a){
+
+
+%extend cipher__Address{
+	int __eq__(cipher__Address* a){
 		if( $self->Version == a->Version ){
 			return memcmp($self->Key, a->Key, sizeof(a->Key)) == 0;
 		}
 		return 0;
-	}
-}
-
-%extend cipher_PubKey {
-	int isEqual(cipher_PubKey* a){
-		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
-	}
-}
-
-%extend cipher_SecKey {
-	int isEqual(cipher_SecKey* a){
-		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
-	}
-}
-
-%extend cipher_Ripemd160 {
-	int isEqual(cipher_Ripemd160* a){
-		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
-	}
-}
-
-%extend cipher_Sig {
-	int isEqual(cipher_Sig* a){
-		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
-	}
-}
-
-%extend cipher_SHA256 {
-	int isEqual(cipher_SHA256* a){
-		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
-	}
-}
-
-%extend cipher_Checksum {
-	int isEqual(cipher_Checksum* a){
-		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
 	}
 }
 

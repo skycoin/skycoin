@@ -7,6 +7,43 @@
 	}
 }
 
+%extend cipher_PubKey {
+	int isEqual(cipher_PubKey* a){
+		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
+	}
+}
+
+%extend cipher_SecKey {
+	int isEqual(cipher_SecKey* a){
+		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
+	}
+}
+
+%extend cipher_Ripemd160 {
+	int isEqual(cipher_Ripemd160* a){
+		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
+	}
+}
+
+%extend cipher_Sig {
+	int isEqual(cipher_Sig* a){
+		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
+	}
+}
+
+%extend cipher_SHA256 {
+	int isEqual(cipher_SHA256* a){
+		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
+	}
+}
+
+%extend cipher_Checksum {
+	int isEqual(cipher_Checksum* a){
+		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
+	}
+}
+
+
 %extend cipher_SecKeys {
 	cipher_SecKey* getAt(int i){
 		if( i < $self->count ){
@@ -23,6 +60,10 @@
 		} else {
 			return -1;
 		}
+	}
+	
+	int isEqual(cipher_SecKeys* a){
+		return $self->count == a->count && memcmp($self->data, a->data, sizeof(cipher_SecKey) * $self->count) == 0;
 	}
 	
 	void allocate(int n){
@@ -61,6 +102,10 @@
 		} else {
 			return -1;
 		}
+	}
+	
+	int isEqual(cipher_PubKeys* a){
+		return $self->count == a->count && memcmp($self->data, a->data, sizeof(cipher_PubKey) * $self->count) == 0;
 	}
 	
 	void allocate(int n){

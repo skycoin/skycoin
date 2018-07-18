@@ -63,7 +63,7 @@ $ docker build -f docker/images/mainnet/Dockerfile \
 
 ## How to use this images
 
-### Create a Skycoin node
+### Run a Skycoin node
 
 This command pulls latest stable image from Docker Hub, and launches a node inside a Docker container that runs as a service daemon in the background. It is possible to use the tags listed above to run another version of the node
 

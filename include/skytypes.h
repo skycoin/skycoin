@@ -345,6 +345,12 @@ typedef Handle AddressUxOuts_Handle;
 
 typedef Handle BuildInfo_Handle;
 
+/**
+ * Memory handle for hash (ripemd160.digest)
+ */
+
+typedef Handle Hash_Handle;
+
 typedef GoUint32_ (*FeeCalc)(Transaction__Handle handle, GoUint64_* pFee);
 
 #endif

@@ -8,7 +8,7 @@
 		return 0;
 	}
 	PyObject* toStr(){
-		return PyString_FromStringAndSize((const char*)$self->Key, sizeof($self->Key));
+		return PyBytes_FromStringAndSize((const char*)$self->Key, sizeof($self->Key));
 	}
 }
 
@@ -23,7 +23,7 @@
 		return result;
 	}
 	PyObject* toStr(){
-		return PyString_FromStringAndSize((const char*)$self->data, sizeof($self->data));
+		return PyBytes_FromStringAndSize((const char*)$self->data, sizeof($self->data));
 	}
 }
 
@@ -38,7 +38,7 @@
 		return result;
 	}
 	PyObject* toStr(){
-		return PyString_FromStringAndSize((const char*)$self->data, sizeof($self->data));
+		return PyBytes_FromStringAndSize((const char*)$self->data, sizeof($self->data));
 	}
 }
 
@@ -53,7 +53,7 @@
 		return result;
 	}
 	PyObject* toStr(){
-		return PyString_FromStringAndSize((const char*)$self->data, sizeof($self->data));
+		return PyBytes_FromStringAndSize((const char*)$self->data, sizeof($self->data));
 	}
 }
 
@@ -68,7 +68,7 @@
 		return result;
 	}
 	PyObject* toStr(){
-		return PyString_FromStringAndSize((const char*)$self->data, sizeof($self->data));
+		return PyBytes_FromStringAndSize((const char*)$self->data, sizeof($self->data));
 	}
 }
 
@@ -83,7 +83,7 @@
 		return result;
 	}
 	PyObject* toStr(){
-		return PyString_FromStringAndSize((const char*)$self->data, sizeof($self->data));
+		return PyBytes_FromStringAndSize((const char*)$self->data, sizeof($self->data));
 	}
 }
 
@@ -98,7 +98,7 @@
 		return result;
 	}
 	PyObject* toStr(){
-		return PyString_FromStringAndSize((const char*)$self->data, sizeof($self->data));
+		return PyBytes_FromStringAndSize((const char*)$self->data, sizeof($self->data));
 	}
 }
 

@@ -13,17 +13,17 @@
 	}
 }
 
-/*%typemap(in, numinputs=0) (coin__Transaction**) (coin__Transaction* temp) {
+%typemap(in, numinputs=0) (coin__Transaction**) (coin__Transaction* temp) {
 	temp = NULL;
 	$1 = &temp;
-}*/
+}
 
 
 /*Return a pointer created with SWIG_POINTER_NOSHADOW because
 Python will not own the object
  */
-/*%typemap(argout) (coin__Transaction**) {
-	%append_output( SWIG_NewPointerObj(SWIG_as_voidptr(*$1), SWIGTYPE_p_coin__Transaction, SWIG_POINTER_OWN ) );
-}*/
+%typemap(argout) (coin__Transaction**) {
+	%append_output( SWIG_NewPointerObj(SWIG_as_voidptr(*$1), SWIGTYPE_p_coin__Transaction, 0 ) );
+}
 
 

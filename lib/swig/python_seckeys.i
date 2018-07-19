@@ -15,7 +15,7 @@
 		memcpy(newKey, key, sizeof(cipher_SecKey));
 		PyObject *o = SWIG_NewPointerObj(SWIG_as_voidptr(newKey), SWIGTYPE_p_cipher_SecKey, SWIG_POINTER_OWN );
 		PyList_Append(list, o);
-		//Py_DECREF(o);
+		Py_DECREF(o);
 	}
 	if( $1->data != NULL)
 		free( (void*)$1->data );

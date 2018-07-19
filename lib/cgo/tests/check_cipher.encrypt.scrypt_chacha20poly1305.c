@@ -178,11 +178,11 @@ Test(cipher_encrypt_scrypt_chacha20poly1305, TestScryptChacha20poly1305Decrypt){
 	
 	result.cap = result.len = 0;
 	errcode = SKY_encrypt_ScryptChacha20poly1305_Decrypt(&encrypt, encrypted, wrong_password, (coin__UxArray*)&result);
-	cr_assert(errcode != SKY_OK, "SKY_encrypt_ScryptChacha20poly1305_Decrypt decrypted with wrong password.");
+	cr_assert(errcode == SKY_ERROR, "SKY_encrypt_ScryptChacha20poly1305_Decrypt decrypted with wrong password.");
 	result.cap = result.len = 0;
 	errcode = SKY_encrypt_ScryptChacha20poly1305_Decrypt(&encrypt, nullData, password2, (coin__UxArray*)&result);
-	cr_assert(errcode != SKY_OK, "SKY_encrypt_ScryptChacha20poly1305_Decrypt decrypted with null encrypted data.");
+	cr_assert(errcode == SKY_ERROR, "SKY_encrypt_ScryptChacha20poly1305_Decrypt decrypted with null encrypted data.");
 	result.cap = result.len = 0;
 	errcode = SKY_encrypt_ScryptChacha20poly1305_Decrypt(&encrypt, encrypted, nullPassword, (coin__UxArray*)&result);
-	cr_assert(errcode != SKY_OK, "SKY_encrypt_ScryptChacha20poly1305_Decrypt decrypted with null password.");
+	cr_assert(errcode == SKY_ERROR, "SKY_encrypt_ScryptChacha20poly1305_Decrypt decrypted with null password.");
 }

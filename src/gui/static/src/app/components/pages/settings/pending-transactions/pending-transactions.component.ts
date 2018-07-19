@@ -11,7 +11,7 @@ import { DoubleButtonActive } from '../../../layout/double-button/double-button.
   styleUrls: ['./pending-transactions.component.scss'],
 })
 export class PendingTransactionsComponent implements OnInit, OnDestroy {
-  transactions: any[] = [];
+  transactions = null;
 
   private transactionsSubscription: ISubscription;
   private navbarSubscription: ISubscription;
@@ -37,6 +37,8 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
 
   private loadTransactions(value) {
     const method = value === DoubleButtonActive.LeftButton ? 'pendingTransactions' : 'allPendingTransactions';
+
+    this.transactions = null;
 
     if (this.transactionsSubscription) {
       this.transactionsSubscription.unsubscribe();

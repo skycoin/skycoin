@@ -94,7 +94,7 @@ Test(coin_block, TestNewBlock) {
   cr_assert(result == SKY_OK, "SKY_cipher_SumSHA256 failed");
 
   result = SKY_coin_NewBlock(prevBlock, 133, &hash, 0, zeroFeeCalculator, &newBlock);
-  cr_assert(result != SKY_OK, "SKY_coin_NewBlock has to fail with no transactions");
+  cr_assert(result == SKY_ERROR, "SKY_coin_NewBlock has to fail with no transactions");
   registerHandleClose( newBlock );
 
   transactions = 0;

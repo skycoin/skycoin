@@ -11,6 +11,8 @@ package main
 import "C"
 
 import (
+	"hash"
+
 	api "github.com/skycoin/skycoin/src/api"
 	webrpc "github.com/skycoin/skycoin/src/api/webrpc"
 	cli "github.com/skycoin/skycoin/src/cli"
@@ -491,6 +493,20 @@ func lookupBuildInfoHandle(handle C.BuildInfo_Handle) (*visor.BuildInfo, bool) {
 	obj, ok := lookupHandle(C.Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(*visor.BuildInfo); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerHashHandle(obj *hash.Hash) C.Hash_Handle {
+	return (C.Hash_Handle)(registerHandle(obj))
+}
+
+func lookupHashHandle(handle C.Hash_Handle) (*hash.Hash, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*hash.Hash); isOK {
 			return obj, true
 		}
 	}

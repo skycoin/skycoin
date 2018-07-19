@@ -59,6 +59,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   If the program is run from source (e.g. `go run`, `run.sh`, `make run`) there is no change, the API will still be on port 6420.
 - Change number of outgoing connections to 8 from 16
 - Update version of SWIG to 3.0.12
+- Transaction history shows transactions between own addresses
 
 ### Removed
 

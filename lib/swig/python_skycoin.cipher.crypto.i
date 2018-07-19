@@ -13,11 +13,23 @@
 	int __eq__(cipher_PubKey* a){
 		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
 	}
+	int compareToString(PyObject * str){
+		char* s = SWIG_Python_str_AsChar(str);
+		int result = memcmp(s, $self->data, sizeof($self->data));
+		SWIG_Python_str_DelForPy3(s);
+		return result;
+	}
 }
 
 %extend cipher_SecKey {
 	int __eq__(cipher_SecKey* a){
 		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
+	}
+	int compareToString(PyObject * str){
+		char* s = SWIG_Python_str_AsChar(str);
+		int result = memcmp(s, $self->data, sizeof($self->data));
+		SWIG_Python_str_DelForPy3(s);
+		return result;
 	}
 }
 
@@ -25,11 +37,23 @@
 	int __eq__(cipher_Ripemd160* a){
 		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
 	}
+	int compareToString(PyObject * str){
+		char* s = SWIG_Python_str_AsChar(str);
+		int result = memcmp(s, $self->data, sizeof($self->data));
+		SWIG_Python_str_DelForPy3(s);
+		return result;
+	}
 }
 
 %extend cipher_Sig {
 	int __eq__(cipher_Sig* a){
 		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
+	}
+	int compareToString(PyObject * str){
+		char* s = SWIG_Python_str_AsChar(str);
+		int result = memcmp(s, $self->data, sizeof($self->data));
+		SWIG_Python_str_DelForPy3(s);
+		return result;
 	}
 }
 
@@ -37,11 +61,23 @@
 	int __eq__(cipher_SHA256* a){
 		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
 	}
+	int compareToString(PyObject * str){
+		char* s = SWIG_Python_str_AsChar(str);
+		int result = memcmp(s, $self->data, sizeof($self->data));
+		SWIG_Python_str_DelForPy3(s);
+		return result;
+	}
 }
 
 %extend cipher_Checksum {
 	int __eq__(cipher_Checksum* a){
 		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
+	}
+	int compareToString(PyObject * str){
+		char* s = SWIG_Python_str_AsChar(str);
+		int result = memcmp(s, $self->data, sizeof($self->data));
+		SWIG_Python_str_DelForPy3(s);
+		return result;
 	}
 }
 
@@ -130,3 +166,4 @@
 		}
 	}
 }
+

@@ -11,7 +11,7 @@
 	PyObject *list = PyList_New(0);
 	for (i = 0; i < $1->count; i++) {
 		cipher_SecKey* key = &($1->data[i]);
-		PyObject *o = SWIG_NewPointerObj(SWIG_as_voidptr(key), SWIGTYPE_p_cipher_SecKey, SWIG_POINTER_OWN );
+		PyObject *o = SWIG_NewPointerObj(SWIG_as_voidptr(key), SWIGTYPE_p_cipher_SecKey, SWIG_POINTER_NOSHADOW );
 		PyList_Append(list, o);
 		//Py_DECREF(o);
 	}

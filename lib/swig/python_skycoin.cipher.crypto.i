@@ -7,6 +7,9 @@
 		}
 		return 0;
 	}
+	PyObject* toStr(){
+		return PyString_FromStringAndSize((const char*)$self->Key, sizeof($self->Key));
+	}
 }
 
 %extend cipher_PubKey {
@@ -18,6 +21,9 @@
 		int result = memcmp(s, $self->data, sizeof($self->data));
 		SWIG_Python_str_DelForPy3(s);
 		return result;
+	}
+	PyObject* toStr(){
+		return PyString_FromStringAndSize((const char*)$self->data, sizeof($self->data));
 	}
 }
 
@@ -31,6 +37,9 @@
 		SWIG_Python_str_DelForPy3(s);
 		return result;
 	}
+	PyObject* toStr(){
+		return PyString_FromStringAndSize((const char*)$self->data, sizeof($self->data));
+	}
 }
 
 %extend cipher_Ripemd160 {
@@ -42,6 +51,9 @@
 		int result = memcmp(s, $self->data, sizeof($self->data));
 		SWIG_Python_str_DelForPy3(s);
 		return result;
+	}
+	PyObject* toStr(){
+		return PyString_FromStringAndSize((const char*)$self->data, sizeof($self->data));
 	}
 }
 
@@ -55,6 +67,9 @@
 		SWIG_Python_str_DelForPy3(s);
 		return result;
 	}
+	PyObject* toStr(){
+		return PyString_FromStringAndSize((const char*)$self->data, sizeof($self->data));
+	}
 }
 
 %extend cipher_SHA256 {
@@ -67,6 +82,9 @@
 		SWIG_Python_str_DelForPy3(s);
 		return result;
 	}
+	PyObject* toStr(){
+		return PyString_FromStringAndSize((const char*)$self->data, sizeof($self->data));
+	}
 }
 
 %extend cipher_Checksum {
@@ -78,6 +96,9 @@
 		int result = memcmp(s, $self->data, sizeof($self->data));
 		SWIG_Python_str_DelForPy3(s);
 		return result;
+	}
+	PyObject* toStr(){
+		return PyString_FromStringAndSize((const char*)$self->data, sizeof($self->data));
 	}
 }
 

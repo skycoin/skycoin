@@ -47,7 +47,7 @@ Python will not own the object
 	int i;
 	PyObject *list = PyList_New(0);
 	coin__Transaction* pTrans = (*$1)->data;
-	i = (*$1)->count;
+	i = (*$1)->len;
 	for (; i > 0; i--) {
 		PyObject *o = SWIG_NewPointerObj(SWIG_as_voidptr(pTrans), SWIGTYPE_p_coin__Transaction, 0 );
 		PyList_Append(list, o);

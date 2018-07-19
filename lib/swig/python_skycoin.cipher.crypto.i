@@ -114,7 +114,7 @@
 	
 	int setAt(int i, cipher_SecKey* seckey){
 		if( i < $self->count){
-			memcpy(&self->data[i], seckey, sizeof(*seckey));
+			memcpy(&$self->data[i], seckey, sizeof(*seckey));
 			return i;
 		} else {
 			return -1;

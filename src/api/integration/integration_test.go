@@ -136,6 +136,15 @@ func doEnableSeedApi(t *testing.T) bool {
 	return false
 }
 
+func doDisableGUI(t *testing.T) bool {
+	if enabled() && mode(t) == testModeDisableGUI {
+		return true
+	}
+
+	t.Skip("DisableGUIAPI tests disabled")
+	return false
+}
+
 func doLiveOrStable(t *testing.T) bool {
 	if enabled() {
 		switch mode(t) {
@@ -4038,7 +4047,7 @@ func TestLiveHealth(t *testing.T) {
 }
 
 func TestDisableGUIAPI(t *testing.T) {
-	if !doLiveOrStable(t) {
+	if !doDisableGUI(t) {
 		return
 	}
 

@@ -17,6 +17,7 @@ import (
 )
 
 const (
+	//Name of file containing default peers lit
 	DefaultPeerlistFilename = "trusted.txt"
 )
 

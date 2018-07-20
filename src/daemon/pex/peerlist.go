@@ -102,7 +102,7 @@ func (pl *peerlist) addPeer(addr string) {
 
 func (pl *peerlist) addTrustedPeer(addr string) {
 	if p, ok := pl.peers[addr]; ok && p != nil {
-		p.Trusted = true;
+		p.Trusted = true
 		p.Seen()
 		return
 	}

@@ -252,9 +252,9 @@ func New(cfg Config, defaultConns []string) (*Pex, error) {
 			if err := pex.downloadPeers(); err != nil {
 				logger.Errorf("Failed to download peers list: %v", err)
 			} else {
-					if err := pex.save(); err != nil {
-						logger.Errorf("Failed to save peers list: %v", err)
-					}
+				if err := pex.save(); err != nil {
+					logger.Errorf("Failed to save peers list: %v", err)
+				}
 			}
 		}()
 	}
@@ -419,7 +419,7 @@ func (px *Pex) AddPeers(addrs []string) int {
 	return len(addrs)
 }
 
-// AddPeers add multiple peers at once, then set them as trusted.
+// AddTrustedPeers add multiple peers at once, then set them as trusted.
 // Any errors will be logged, but not returned
 // Returns the number of peers that were added without error.  Note that
 // adding a duplicate peer will not cause an error.

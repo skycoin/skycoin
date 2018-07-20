@@ -1348,7 +1348,7 @@ func TestParseRemotePeerList(t *testing.T) {
 22.44.22.44:99
 `
 
-	peers := parseRemotePeerList(body)
+	peers := ParseRemotePeerList(body)
 	require.Len(t, peers, 3)
 	require.Equal(t, []string{
 		"11.22.33.44:5555",

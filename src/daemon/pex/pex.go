@@ -296,7 +296,7 @@ func (px *Pex) downloadPeers() error {
 		return err
 	}
 
-	peers := parseRemotePeerList(body)
+	peers := ParseRemotePeerList(body)
 	logger.Infof("Downloaded peers list from %s, got %d peers", px.Config.PeerListURL, len(peers))
 
 	n := px.AddPeers(peers)
@@ -570,11 +570,13 @@ func backoffDownloadText(url string) (string, error) {
 	return body, nil
 }
 
-// parseRemotePeerList parses a remote peers.txt file
+// ParseRemotePeerList parses a remote peers.txt file
 // The peers list format is newline separated ip:port
 // Any lines that don't parse to an ip:port are skipped
 // Localhost ip:port addresses are ignored
-func parseRemotePeerList(body string) []string {
+//
+// FIXME : move to iputil
+func ParseRemotePeerList(body string) []string {
 	var peers []string
 	for _, addr := range strings.Split(string(body), "\n") {
 		addr = whitespaceFilter.ReplaceAllString(addr, "")

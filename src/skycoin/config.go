@@ -2,20 +2,27 @@ package skycoin
 
 import (
 	"flag"
+	"io/ioutil"
+	"log"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"log"
-
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/util/file"
+	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
+const (
+	DefaultPeerlistFilename = "trusted.txt"
+)
+
 var (
-	help = false
+	help   = false
+	logger = logging.MustGetLogger("skycoin")
 )
 
 // Config records skycoin node and build config
@@ -30,8 +37,12 @@ type NodeConfig struct {
 	DisablePEX bool
 	// Download peer list
 	DownloadPeerList bool
+	// Initialize node with an empty list of default connections
+	DisableTrustedPeers bool
 	// Download the peers list from this URL
 	PeerListURL string
+	// Load default connection peers list from a file with this name in data dir
+	PeerListFilename string
 	// Don't make any outgoing connections
 	DisableOutgoingConnections bool
 	// Don't allowing incoming connections
@@ -182,7 +193,9 @@ func NewNodeConfig(mode string, node NodeParameters) *NodeConfig {
 		// MaxDefaultOutgoingConnections is the maximum default outgoing connections allowed.
 		MaxDefaultPeerOutgoingConnections: 1,
 		DownloadPeerList:                  true,
+		DisableTrustedPeers:               false,
 		PeerListURL:                       node.PeerListURL,
+		PeerListFilename:                  DefaultPeerlistFilename,
 		// How often to make outgoing connections, in seconds
 		OutgoingConnectionsRate: time.Second * 5,
 		PeerlistSize:            65535,
@@ -250,6 +263,20 @@ func (c *Config) postProcess() {
 		c.Node.genesisAddress, err = cipher.DecodeBase58Address(c.Node.GenesisAddressStr)
 		panicIfError(err, "Invalid Address")
 	}
+	if c.Node.DisableTrustedPeers {
+		c.Node.DefaultConnections = nil
+	} else {
+		if c.Node.PeerListFilename != "" {
+			fp := filepath.Join(c.Node.DataDirectory, c.Node.PeerListFilename)
+			peerlistText, err := ioutil.ReadFile(fp)
+			if err == nil {
+				c.Node.DefaultConnections = pex.ParseRemotePeerList(string(peerlistText))
+			} else {
+				logger.Errorf("Error opening trusted peers file %s : %v", fp, err)
+				c.Node.DefaultConnections = nil
+			}
+		}
+	}
 	if c.Node.BlockchainPubkeyStr != "" {
 		c.Node.blockchainPubkey, err = cipher.PubKeyFromHex(c.Node.BlockchainPubkeyStr)
 		panicIfError(err, "Invalid Pubkey")
@@ -310,8 +337,10 @@ func (c *Config) postProcess() {
 func (c *Config) register() {
 	flag.BoolVar(&help, "help", false, "Show help")
 	flag.BoolVar(&c.Node.DisablePEX, "disable-pex", c.Node.DisablePEX, "disable PEX peer discovery")
+	flag.BoolVar(&c.Node.DisableTrustedPeers, "disable-trusted-peers", c.Node.DisableTrustedPeers, "initialize node with an empty list of default connections")
 	flag.BoolVar(&c.Node.DownloadPeerList, "download-peerlist", c.Node.DownloadPeerList, "download a peers.txt from -peerlist-url")
 	flag.StringVar(&c.Node.PeerListURL, "peerlist-url", c.Node.PeerListURL, "with -download-peerlist=true, download a peers.txt file from this url")
+	flag.StringVar(&c.Node.PeerListFilename, "peerlist-file", c.Node.PeerListFilename, "load a peers.txt file from a file with this name under data-dir path")
 	flag.BoolVar(&c.Node.DisableOutgoingConnections, "disable-outgoing", c.Node.DisableOutgoingConnections, "Don't make outgoing connections")
 	flag.BoolVar(&c.Node.DisableIncomingConnections, "disable-incoming", c.Node.DisableIncomingConnections, "Don't make incoming connections")
 	flag.BoolVar(&c.Node.DisableNetworking, "disable-networking", c.Node.DisableNetworking, "Disable all network activity")

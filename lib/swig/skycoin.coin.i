@@ -1,14 +1,44 @@
+%include "cmp.i"
+
 %extend coin__BlockHeader {
-	int isEqual(coin__BlockHeader* a){
-		if( $self->Version != a->Version || $self->Time != a->Time || 
-			$self->BkSeq != a->BkSeq || $self->Fee != a->Fee)
+	int isEqual(coin__BlockHeader* bh){
+		return equalBlockHeaders($self, bh);
+	}
+}
+
+%extend coin__Transaction {
+	int isEqual(coin__Transaction* t){
+		return equalTransactions($self, t);
+	}
+}
+
+%extend coin__Transactions {
+	int isEqual(coin__Transactions* t){
+		return equalTransactionsArrays($self, t);
+	}
+}
+
+%extend coin__BlockBody {
+	int isEqual(coin__BlockBody* b){
+		return equalTransactionsArrays(&$self->Transactions, &b->Transactions);
+	}
+}
+
+%extend coin__UxOut {
+	int isEqual(coin__UxOut* u){
+		return memcmp(&$self, u, sizeof(coin__UxOut)) == 0;
+	}
+}
+
+%extend coin__TransactionOutput {
+	int isEqual(coin__TransactionOutput* t){
+		if( $self->Coins != t->Coins ||
+			$self->Hours != t->Hours ){
 			return 0;
-		if( memcmp( &$self->PrevHash, a->PrevHash, sizeof(a->PrevHash) ) != 0 )
+	  	}
+
+	  	if(memcmp(&$self->Address, &t->Address, sizeof(cipher__Address)) != 0)
 			return 0;
-		if( memcmp( &$self->BodyHash, a->PrevHash, sizeof(a->BodyHash) ) != 0 )
-			return 0;
-		if( memcmp( &$self->UxHash, a->PrevHash, sizeof(a->UxHash) ) != 0 )
-			return 0;
-		return 1;
+	 	return 1;
 	}
 }

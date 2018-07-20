@@ -221,6 +221,14 @@ func New(cfg Config, defaultConns []string) (*Pex, error) {
 		return nil, err
 	}
 
+	// Set all loaded peers as not trusted, default connections will be
+	// the trusted ones.
+	if len(defaultConns) > 0 {
+		for _, peer := range pex.peerlist.peers {
+			peer.Trusted = false
+		}
+	}
+
 	// Load default hardcoded peers
 	for _, addr := range defaultConns {
 		// Default peers will mark as trusted peers.
@@ -243,6 +251,10 @@ func New(cfg Config, defaultConns []string) (*Pex, error) {
 		go func() {
 			if err := pex.downloadPeers(); err != nil {
 				logger.Errorf("Failed to download peers list: %v", err)
+			} else {
+					if err := pex.save(); err != nil {
+						logger.Errorf("Failed to save peers list: %v", err)
+					}
 			}
 		}()
 	}
@@ -299,7 +311,7 @@ func (px *Pex) downloadPeers() error {
 	peers := ParseRemotePeerList(body)
 	logger.Infof("Downloaded peers list from %s, got %d peers", px.Config.PeerListURL, len(peers))
 
-	n := px.AddPeers(peers)
+	n := px.AddTrustedPeers(peers)
 	logger.Infof("Added %d/%d peers from downloaded peers list", n, len(peers))
 
 	return nil
@@ -404,6 +416,47 @@ func (px *Pex) AddPeers(addrs []string) int {
 	}
 
 	px.peerlist.addPeers(addrs)
+	return len(addrs)
+}
+
+// AddPeers add multiple peers at once, then set them as trusted.
+// Any errors will be logged, but not returned
+// Returns the number of peers that were added without error.  Note that
+// adding a duplicate peer will not cause an error.
+func (px *Pex) AddTrustedPeers(addrs []string) int {
+	px.Lock()
+	defer px.Unlock()
+
+	if px.Config.Max > 0 && px.peerlist.len() >= px.Config.Max {
+		logger.Warning("Add peers failed, peer list is full")
+		return 0
+	}
+
+	// validate the addresses
+	var validAddrs []string
+	for _, addr := range addrs {
+		a, err := validateAddress(addr, px.Config.AllowLocalhost)
+		if err != nil {
+			logger.Infof("Add peers sees an invalid address %s: %v", addr, err)
+			continue
+		}
+		validAddrs = append(validAddrs, a)
+	}
+	addrs = validAddrs
+
+	// Shuffle the addresses before capping them
+	rand.Shuffle(len(addrs), func(i, j int) {
+		addrs[i], addrs[j] = addrs[j], addrs[i]
+	})
+
+	if px.Config.Max > 0 {
+		rcap := px.Config.Max - px.peerlist.len()
+		if len(addrs) > rcap {
+			addrs = addrs[:rcap]
+		}
+	}
+
+	px.peerlist.addTrustedPeers(addrs)
 	return len(addrs)
 }
 

@@ -100,6 +100,25 @@ func (pl *peerlist) addPeer(addr string) {
 	return
 }
 
+func (pl *peerlist) addTrustedPeer(addr string) {
+	if p, ok := pl.peers[addr]; ok && p != nil {
+		p.Trusted = true;
+		p.Seen()
+		return
+	}
+
+	peer := NewPeer(addr)
+	peer.Trusted = true
+	pl.peers[addr] = peer
+	return
+}
+
+func (pl *peerlist) addTrustedPeers(addrs []string) {
+	for _, addr := range addrs {
+		pl.addTrustedPeer(addr)
+	}
+}
+
 func (pl *peerlist) addPeers(addrs []string) {
 	for _, addr := range addrs {
 		pl.addPeer(addr)

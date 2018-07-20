@@ -12,12 +12,6 @@
 	}
 }
 
-%extend coin__Transactions {
-	int __eq__(coin__Transactions* t){
-		return equalTransactionsArrays($self, t);
-	}
-}
-
 %extend coin__BlockBody {
 	int __eq__(coin__BlockBody* b){
 		return equalTransactionsArrays(&$self->Transactions, &b->Transactions);

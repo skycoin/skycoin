@@ -23,7 +23,8 @@
 			return 0;
 		coin__Transaction* pTx1 = pTxs1->data;
 		coin__Transaction* pTx2 = pTxs2->data;
-		for(int i = 0; i < pTxs1->len; i++){
+		int i;
+		for(i = 0; i < pTxs1->len; i++){
 			if(!equalTransactions(pTx1, pTx2))
 				return 0;
 			pTx1++;

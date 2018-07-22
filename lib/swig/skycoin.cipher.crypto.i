@@ -11,11 +11,23 @@
 	int isEqual(cipher_PubKey* a){
 		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
 	}
+	void assignFrom(void* data){
+		memcpy(&$self->data, data, sizeof($self->data));
+	}
+	void assignTo(void* data){
+		memcpy(data, &$self->data, sizeof($self->data));
+	}
 }
 
 %extend cipher_SecKey {
 	int isEqual(cipher_SecKey* a){
 		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
+	}
+	void assignFrom(void* data){
+		memcpy(&$self->data, data, sizeof($self->data));
+	}
+	void assignTo(void* data){
+		memcpy(data, &$self->data, sizeof($self->data));
 	}
 }
 
@@ -23,11 +35,23 @@
 	int isEqual(cipher_Ripemd160* a){
 		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
 	}
+	void assignFrom(void* data){
+		memcpy(&$self->data, data, sizeof($self->data));
+	}
+	void assignTo(void* data){
+		memcpy(data, &$self->data, sizeof($self->data));
+	}
 }
 
 %extend cipher_Sig {
 	int isEqual(cipher_Sig* a){
 		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
+	}
+	void assignFrom(void* data){
+		memcpy(&$self->data, data, sizeof($self->data));
+	}
+	void assignTo(void* data){
+		memcpy(data, &$self->data, sizeof($self->data));
 	}
 }
 
@@ -35,11 +59,23 @@
 	int isEqual(cipher_SHA256* a){
 		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
 	}
+	void assignFrom(void* data){
+		memcpy(&$self->data, data, sizeof($self->data));
+	}
+	void assignTo(void* data){
+		memcpy(data, &$self->data, sizeof($self->data));
+	}
 }
 
 %extend cipher_Checksum {
 	int isEqual(cipher_Checksum* a){
 		return memcmp($self->data, a->data, sizeof(a->data)) == 0;
+	}
+	void assignFrom(void* data){
+		memcpy(&$self->data, data, sizeof($self->data));
+	}
+	void assignTo(void* data){
+		memcpy(data, &$self->data, sizeof($self->data));
 	}
 }
 

@@ -25,6 +25,12 @@
 	PyObject* toStr(){
 		return PyBytes_FromStringAndSize((const char*)$self->data, sizeof($self->data));
 	}
+	void assignFrom(void* data){
+		memcpy(&$self->data, data, sizeof($self->data));
+	}
+	void assignTo(void* data){
+		memcpy(data, &$self->data, sizeof($self->data));
+	}
 }
 
 %extend cipher_SecKey {
@@ -39,6 +45,12 @@
 	}
 	PyObject* toStr(){
 		return PyBytes_FromStringAndSize((const char*)$self->data, sizeof($self->data));
+	}
+	void assignFrom(void* data){
+		memcpy(&$self->data, data, sizeof($self->data));
+	}
+	void assignTo(void* data){
+		memcpy(data, &$self->data, sizeof($self->data));
 	}
 }
 
@@ -55,6 +67,12 @@
 	PyObject* toStr(){
 		return PyBytes_FromStringAndSize((const char*)$self->data, sizeof($self->data));
 	}
+	void assignFrom(void* data){
+		memcpy(&$self->data, data, sizeof($self->data));
+	}
+	void assignTo(void* data){
+		memcpy(data, &$self->data, sizeof($self->data));
+	}
 }
 
 %extend cipher_Sig {
@@ -69,6 +87,12 @@
 	}
 	PyObject* toStr(){
 		return PyBytes_FromStringAndSize((const char*)$self->data, sizeof($self->data));
+	}
+	void assignFrom(void* data){
+		memcpy(&$self->data, data, sizeof($self->data));
+	}
+	void assignTo(void* data){
+		memcpy(data, &$self->data, sizeof($self->data));
 	}
 }
 
@@ -85,6 +109,12 @@
 	PyObject* toStr(){
 		return PyBytes_FromStringAndSize((const char*)$self->data, sizeof($self->data));
 	}
+	void assignFrom(void* data){
+		memcpy(&$self->data, data, sizeof($self->data));
+	}
+	void assignTo(void* data){
+		memcpy(data, &$self->data, sizeof($self->data));
+	}
 }
 
 %extend cipher_Checksum {
@@ -99,6 +129,12 @@
 	}
 	PyObject* toStr(){
 		return PyBytes_FromStringAndSize((const char*)$self->data, sizeof($self->data));
+	}
+	void assignFrom(void* data){
+		memcpy(&$self->data, data, sizeof($self->data));
+	}
+	void assignTo(void* data){
+		memcpy(data, &$self->data, sizeof($self->data));
 	}
 }
 

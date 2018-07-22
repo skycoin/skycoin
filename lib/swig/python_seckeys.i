@@ -11,9 +11,11 @@
 	PyObject *list = PyList_New(0);
 	for (i = 0; i < $1->count; i++) {
 		cipher_SecKey* key = &($1->data[i]);
-		PyObject *o = SWIG_NewPointerObj(SWIG_as_voidptr(key), SWIGTYPE_p_cipher_SecKey, SWIG_POINTER_NOSHADOW );
+		cipher_SecKey* newKey = malloc(sizeof(cipher_SecKey));
+		memcpy(newKey, key, sizeof(cipher_SecKey));
+		PyObject *o = SWIG_NewPointerObj(SWIG_as_voidptr(newKey), SWIGTYPE_p_cipher_SecKey, SWIG_POINTER_OWN );
 		PyList_Append(list, o);
-		//Py_DECREF(o);
+		Py_DECREF(o);
 	}
 	if( $1->data != NULL)
 		free( (void*)$1->data );

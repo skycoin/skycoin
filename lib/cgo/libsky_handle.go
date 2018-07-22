@@ -11,8 +11,11 @@ package main
 import "C"
 
 import (
+	"hash"
+
 	api "github.com/skycoin/skycoin/src/api"
 	webrpc "github.com/skycoin/skycoin/src/api/webrpc"
+	secp256k1go2 "github.com/skycoin/skycoin/src/cipher/secp256k1-go/secp256k1-go2"
 	cli "github.com/skycoin/skycoin/src/cli"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor"
@@ -491,6 +494,48 @@ func lookupBuildInfoHandle(handle C.BuildInfo_Handle) (*visor.BuildInfo, bool) {
 	obj, ok := lookupHandle(C.Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(*visor.BuildInfo); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerHashHandle(obj *hash.Hash) C.Hash_Handle {
+	return (C.Hash_Handle)(registerHandle(obj))
+}
+
+func lookupHashHandle(handle C.Hash_Handle) (*hash.Hash, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*hash.Hash); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerNumberHandle(obj *secp256k1go2.Number) C.Number_Handle {
+	return (C.Number_Handle)(registerHandle(obj))
+}
+
+func lookupNumberHandle(handle C.Number_Handle) (*secp256k1go2.Number, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*secp256k1go2.Number); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerSignatureHandle(obj *secp256k1go2.Signature) C.Signature_Handle {
+	return (C.Signature_Handle)(registerHandle(obj))
+}
+
+func lookupSignatureHandle(handle C.Signature_Handle) (*secp256k1go2.Signature, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*secp256k1go2.Signature); isOK {
 			return obj, true
 		}
 	}

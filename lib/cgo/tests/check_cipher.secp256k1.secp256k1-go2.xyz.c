@@ -61,3 +61,46 @@ Test(cipher_secp256k1_xyz, TestXYZDouble){
 	cr_assert(equal, "SKY_secp256k1go_XYZ_Double failed, result is different than expected.");
 }
 
+
+// TestGejMulLambda not impleme
+
+Test(cipher_secp256k1_xyz, TestGejGetX) {
+  secp256k1go__XYZ a;
+  secp256k1go__Field X;
+  secp256k1go__Field exp;
+  GoUint32 result;
+  memset(&a, 0, sizeof(secp256k1go__XYZ));
+  memset(&X, 0, sizeof(secp256k1go__Field));
+  memset(&a, 0, sizeof(secp256k1go__Field));
+
+  GoString str = {
+      "EB6752420B6BDB40A760AC26ADD7E7BBD080BF1DF6C0B009A0D310E4511BDF49", 64};
+
+  result = SKY_secp256k1go_Field_SetHex(&a.X, str);
+  cr_assert(result == SKY_OK, "SKY_secp256k1go_Field_SetHex failed");
+  str.p = "8E8CEB84E1502FC536FFE67967BC44314270A0B38C79865FFED5A85D138DCA6B";
+  result = SKY_secp256k1go_Field_SetHex(&a.Y, str);
+  cr_assert(result == SKY_OK, "SKY_secp256k1go_Field_SetHex failed");
+
+  str.p = "813925AF112AAB8243F8CCBADE4CC7F63DF387263028DE6E679232A73A7F3C31";
+  result = SKY_secp256k1go_Field_SetHex(&a.Z, str);
+  cr_assert(result == SKY_OK, "SKY_secp256k1go_Field_SetHex failed");
+  str.p = "fe00e013c244062847045ae7eb73b03fca583e9aa5dbd030a8fd1c6dfcf11b10";
+  result = SKY_secp256k1go_Field_SetHex(&exp, str);
+  cr_assert(result == SKY_OK, "SKY_secp256k1go_Field_SetHex failed");
+
+  secp256k1go__Field zi2;
+  secp256k1go__Field r;
+  memset(&zi2, 0, sizeof(secp256k1go__Field));
+  memset(&r, 0, sizeof(secp256k1go__Field));
+  result = SKY_secp256k1go_Field_InvVar(&a.Z, &zi2);
+  cr_assert(result == SKY_OK, "SKY_secp256k1go_Field_InvVar failed");
+  result = SKY_secp256k1go_Field_Sqr(&zi2, &zi2);
+  cr_assert(result == SKY_OK, "SKY_secp256k1go_Field_Sqr failed");
+  result = SKY_secp256k1go_Field_Mul(&a.X, &X, &zi2);
+  cr_assert(result == SKY_OK, "SKY_secp256k1go_Field_Mul failed");
+  GoUint8 valid;
+  result = SKY_secp256k1go_Field_Equals(&X, &exp, &valid);
+  cr_assert(result == SKY_OK, "SKY_secp256k1go_Field_Equals failed");
+  cr_assert(valid, "get.get_x() fail");
+}

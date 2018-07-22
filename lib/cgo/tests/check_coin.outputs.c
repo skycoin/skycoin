@@ -220,7 +220,7 @@ Test(coin_outputs, TestUxArrayCoins){
   p += 2;
   p->Body.Coins = 0xFFFFFFFFFFFFFFFF - 1000000;
   result = SKY_coin_UxArray_Coins( &uxs, &coins );
-  cr_assert( result != SKY_OK, "SKY_coin_UxArray_Coins should fail with overflow" );
+  cr_assert( result == SKY_ERROR, "SKY_coin_UxArray_Coins should fail with overflow" );
 }
 
 Test(coin_outputs, TestUxArrayCoinHours){
@@ -244,10 +244,10 @@ Test(coin_outputs, TestUxArrayCoinHours){
 
   p[2].Body.Hours = 0xFFFFFFFFFFFFFFFF - 100;
   result = SKY_coin_UxArray_CoinHours(&uxs, p->Head.Time, &n);
-  cr_assert( result != SKY_OK, "SKY_coin_UxOut_CoinHours should have fail with overflow" );
+  cr_assert( result == SKY_ERROR, "SKY_coin_UxOut_CoinHours should have fail with overflow" );
 
   result = SKY_coin_UxArray_CoinHours(&uxs, p->Head.Time * (GoUint64)1000000000000, &n);
-  cr_assert( result != SKY_OK, "SKY_coin_UxOut_CoinHours should have fail with overflow" );
+  cr_assert( result == SKY_ErrAddEarnedCoinHoursAdditionOverflow, "SKY_coin_UxOut_CoinHours should have fail with overflow" );
 }
 
 Test(coin_outputs, TestUxArrayHashArray){

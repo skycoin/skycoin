@@ -159,6 +159,6 @@ Test(cipher_scrypt, TestKey){
 		errcode = SKY_scrypt_Key(password, salt, 
 			bad_ones[i].N, bad_ones[i].r, bad_ones[i].p, 
 			bad_ones[i].keyLength, &key);
-		cr_assert(errcode != SKY_OK, "SKY_scrypt_Key didn\'t failed");
+		cr_assert(errcode == SKY_ERROR, "SKY_scrypt_Key didn\'t failed");
 	}
 }

@@ -58,6 +58,10 @@
             {
                 "from": "./skycoin/",
                 "to": "./app/dist/"
+            },
+            {
+                "from": "./src/splash",
+                "to": "./splash"
             }
         ],
         "directories": {

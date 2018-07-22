@@ -218,6 +218,7 @@ func New(cfg Config, defaultConns []string) (*Pex, error) {
 
 	// Load peers from disk
 	if err := pex.load(); err != nil {
+		logger.Errorf("Error loading peers from file: %v", err)
 		return nil, err
 	}
 

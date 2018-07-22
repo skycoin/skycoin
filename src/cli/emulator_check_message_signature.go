@@ -1,8 +1,9 @@
 package cli
 
 import (
-	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
 	gcli "github.com/urfave/cli"
+
+	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
 )
 
 func emulatorCheckMessageSignatureCmd() gcli.Command {

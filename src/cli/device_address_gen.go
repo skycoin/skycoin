@@ -3,8 +3,9 @@ package cli
 import (
 	"fmt"
 
-	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
 	gcli "github.com/urfave/cli"
+
+	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
 )
 
 func deviceAddressGenCmd() gcli.Command {

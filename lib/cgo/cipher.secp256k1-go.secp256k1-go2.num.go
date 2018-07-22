@@ -1,8 +1,7 @@
 package main
 
 import (
-	"unsafe"
-
+	"encoding/hex"
 	secp256k1go2 "github.com/skycoin/skycoin/src/cipher/secp256k1-go/secp256k1-go2"
 )
 
@@ -15,38 +14,79 @@ import (
 */
 import "C"
 
-//export SKY_secp256k1go_Number_Print
-func SKY_secp256k1go_Number_Print(_num *C.Number, _label string) (____error_code uint32) {
+//export SKY_secp256k1go_Number_Create
+func SKY_secp256k1go_Number_Create(handle *C.Number_Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	num := (*secp256k1go2.Number)(unsafe.Pointer(_num))
-	label := _label
-	num.Print(label)
+	var num secp256k1go2.Number
+	*handle = registerNumberHandle(&num)
+	return
+}
+
+//export SKY_secp256k1go_Number_Print
+func SKY_secp256k1go_Number_Print(handle C.Number_Handle, _label string) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	num, ok := lookupNumberHandle(handle)
+	if !ok {
+		____error_code = SKY_ERROR
+		return
+	}
+	num.Print(_label)
 	return
 }
 
 //export SKY_secp256k1go_Number_SetHex
-func SKY_secp256k1go_Number_SetHex(_num *C.Number, _s string) (____error_code uint32) {
+func SKY_secp256k1go_Number_SetHex(handle C.Number_Handle, _s string) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	num := (*secp256k1go2.Number)(unsafe.Pointer(_num))
-	s := _s
-	num.SetHex(s)
+	num, ok := lookupNumberHandle(handle)
+	if !ok {
+		____error_code = SKY_ERROR
+		return
+	}
+	num.SetHex(_s)
 	return
 }
 
 //export SKY_secp256k1go_Number_IsOdd
-func SKY_secp256k1go_Number_IsOdd(_num *C.Number, _arg0 *bool) (____error_code uint32) {
+func SKY_secp256k1go_Number_IsOdd(handle C.Number_Handle, _arg0 *bool) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
-	num := (*secp256k1go2.Number)(unsafe.Pointer(_num))
+	num, ok := lookupNumberHandle(handle)
+	if !ok {
+		____error_code = SKY_ERROR
+		return
+	}
 	__arg0 := num.IsOdd()
 	*_arg0 = __arg0
+	return
+}
+
+//export SKY_secp256k1go_Number_IsEqual
+func SKY_secp256k1go_Number_IsEqual(handle1 C.Number_Handle, handle2 C.Number_Handle, result *bool) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	num1, ok := lookupNumberHandle(handle1)
+	if !ok {
+		____error_code = SKY_ERROR
+		return
+	}
+	num2, ok := lookupNumberHandle(handle2)
+	if !ok {
+		____error_code = SKY_ERROR
+		return
+	}
+	*result = hex.EncodeToString(num1.Bytes()) == hex.EncodeToString(num2.Bytes())
 	return
 }

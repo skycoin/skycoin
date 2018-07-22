@@ -351,6 +351,18 @@ typedef Handle BuildInfo_Handle;
 
 typedef Handle Hash_Handle;
 
+/**
+* Handle for Number type
+*/
+
+typedef Handle Number_Handle;
+
+/**
+* Handle for Signature type
+*/
+
+typedef Handle Signature_Handle;
+
 typedef GoUint32_ (*FeeCalc)(Transaction__Handle handle, GoUint64_* pFee);
 
 #endif

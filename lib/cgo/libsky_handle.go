@@ -20,6 +20,7 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 	wallet "github.com/skycoin/skycoin/src/wallet"
 	gcli "github.com/urfave/cli"
+	secp256k1go2 "github.com/skycoin/skycoin/src/cipher/secp256k1-go/secp256k1-go2"
 )
 
 type Handle uint64
@@ -507,6 +508,34 @@ func lookupHashHandle(handle C.Hash_Handle) (*hash.Hash, bool) {
 	obj, ok := lookupHandle(C.Handle(handle))
 	if ok {
 		if obj, isOK := (obj).(*hash.Hash); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerNumberHandle(obj *secp256k1go2.Number) C.Number_Handle {
+	return (C.Number_Handle)(registerHandle(obj))
+}
+
+func lookupNumberHandle(handle C.Number_Handle) (*secp256k1go2.Number, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*secp256k1go2.Number); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+func registerSignatureHandle(obj *secp256k1go2.Signature) C.Signature_Handle {
+	return (C.Signature_Handle)(registerHandle(obj))
+}
+
+func lookupSignatureHandle(handle C.Signature_Handle) (*secp256k1go2.Signature, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*secp256k1go2.Signature); isOK {
 			return obj, true
 		}
 	}

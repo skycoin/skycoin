@@ -9,6 +9,12 @@ import (
 
 	"github.com/urfave/cli"
 
+	"bufio"
+	"errors"
+	"io"
+	"os/exec"
+	"regexp"
+
 	"github.com/skycoin/skycoin/src/skycoin"
 	"github.com/skycoin/skycoin/src/util/logging"
 )
@@ -46,6 +52,7 @@ func init() {
 	app.Version = Version
 	commands := cli.Commands{
 		createCoinCommand(),
+		distributeCoinsCommand(),
 	}
 
 	app.Commands = commands
@@ -201,6 +208,109 @@ func createCoinCommand() cli.Command {
 			return nil
 		},
 	}
+}
+
+func distributeCoinsCommand() cli.Command {
+	name := "distributecoins"
+	return cli.Command{
+		Name:  name,
+		Usage: "Distribute coins created in genesis to distribution addresses",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "coin",
+				Usage: "name of the coin to create",
+				Value: "skycoin",
+			},
+			cli.StringFlag{
+				Name:  "template-file, tf",
+				Usage: "template file name",
+				Value: "coin.template",
+			},
+			cli.StringFlag{
+				Name:  "template-dir, td",
+				Usage: "template directory path",
+				Value: "template",
+			},
+			cli.StringFlag{
+				Name:  "config-file, cf",
+				Usage: "config file path",
+			},
+			cli.StringFlag{
+				Name:  "config-dir, cd",
+				Usage: "config directory path",
+				Value: "./",
+			},
+			cli.StringFlag{
+				Name:   "seckey, sk",
+				EnvVar: "FIBERCOIN_GENESIS_SECKEY",
+				Usage:  "secret key of genesis address",
+			},
+		},
+		Action: func(c *cli.Context) error {
+			coin := c.String("coin")
+
+			seckey := c.String("seckey")
+			if seckey == "" {
+				return errors.New("missing genesis secret key")
+			}
+
+			cmd := exec.Command("go", "run", fmt.Sprintf("cmd/%[1]s/%[1]s.go", coin), "-master=true", fmt.Sprintf("-master-secret-key=%s", seckey), "-init")
+			var genesisSig string
+			stdoutIn, _ := cmd.StdoutPipe()
+			cmd.Start()
+
+			go func() {
+				genesisSigRegex, err := regexp.Compile(`Genesis block signature=([0-9a-zA-Z]+)`)
+				if err != nil {
+					return
+				}
+				scanner := bufio.NewScanner(stdoutIn)
+				scanner.Split(bufio.ScanLines)
+				for scanner.Scan() {
+					m := scanner.Text()
+					if genesisSigRegex.MatchString(m) {
+						genesisSigSubString := genesisSigRegex.FindStringSubmatch(m)
+						genesisSig = genesisSigSubString[1]
+						cmd.Process.Kill()
+						return
+					}
+				}
+
+			}()
+
+			cmd.Wait()
+
+			log.Infof("genesis sig: %s", genesisSig)
+
+			return nil
+		},
+	}
+}
+
+func copyAndCapture(w io.Writer, r io.Reader) ([]byte, error) {
+	var out []byte
+	buf := make([]byte, 1024, 1024)
+	for {
+		n, err := r.Read(buf[:])
+		if n > 0 {
+			d := buf[:n]
+			out = append(out, d...)
+			_, err := w.Write(d)
+			if err != nil {
+				return out, err
+			}
+		}
+		if err != nil {
+			// Read returns io.EOF at the end of file, which is not an error for us
+			if err == io.EOF {
+				err = nil
+			}
+			return out, err
+		}
+	}
+	// never reached
+	panic(true)
+	return nil, nil
 }
 
 func main() {

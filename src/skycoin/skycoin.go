@@ -12,6 +12,8 @@ import (
 	"sync"
 	"time"
 
+	"encoding/json"
+
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -23,6 +25,11 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/wallet"
+)
+
+var (
+	apiClient       = &http.Client{Timeout: 10 * time.Second}
+	genesisBlockURL = "http://127.0.0.1:6420/api/v1/block?seq=0"
 )
 
 // Coin represents a fiber coin instance
@@ -182,31 +189,32 @@ func (c *Coin) Run() {
 		}
 	}
 
-	/*
-	   time.Sleep(5)
-	   tx := InitTransaction()
-	   _ = tx
-	   err, _ = d.Visor.Visor.InjectTransaction(tx)
-	   if err != nil {
-	       log.Panic(err)
-	   }
-	*/
-
-	/*
-	   //first transaction
-	   if c.RunMaster == true {
-	       go func() {
-	           for d.Visor.Visor.Blockchain.Head().Seq() < 2 {
-	               time.Sleep(5)
-	               tx := InitTransaction()
-	               err, _ := d.Visor.Visor.InjectTransaction(tx)
-	               if err != nil {
-	                   //log.Panic(err)
-	               }
-	           }
-	       }()
-	   }
-	*/
+	// first transaction to distribute the coins to distribution wallets
+	if c.config.Node.Init {
+		if c.config.Node.RunMaster == true {
+			var genesisBlock visor.ReadableBlock
+			go func() {
+				for headSeq, _, err := d.HeadBkSeq(); err == nil && headSeq == 0; {
+					if c.config.Node.blockchainSeckey.Hex() != "" {
+						err = getJSON(genesisBlockURL, &genesisBlock)
+						if err != nil {
+							log.Panic(err)
+						}
+						if len(genesisBlock.Body.Transactions) != 0 {
+							genesisUxID := genesisBlock.Body.Transactions[0].Out[0].Hash
+							tx := InitTransaction(genesisUxID, c.config.Node.blockchainSeckey)
+							_, _, err := d.InjectTransaction(tx)
+							if err != nil {
+								log.Panic(err)
+							}
+							break
+						}
+					}
+				}
+				return
+			}()
+		}
+	}
 
 	select {
 	case <-quit:
@@ -401,10 +409,10 @@ func (c *Coin) ParseConfig() {
 }
 
 // InitTransaction creates the initialize transaction
-func InitTransaction() coin.Transaction {
+func InitTransaction(UxID string, genesisSecKey cipher.SecKey) coin.Transaction {
 	var tx coin.Transaction
 
-	output := cipher.MustSHA256FromHex("043836eb6f29aaeb8b9bfce847e07c159c72b25ae17d291f32125e7f1912e2a0")
+	output := cipher.MustSHA256FromHex(UxID)
 	tx.PushInput(output)
 
 	addrs := visor.GetDistributionAddresses()
@@ -422,17 +430,11 @@ func InitTransaction() coin.Transaction {
 		addr := cipher.MustDecodeBase58Address(addrs[i])
 		tx.PushOutput(addr, visor.DistributionAddressInitialBalance*1e6, 1)
 	}
-	/*
-		seckeys := make([]cipher.SecKey, 1)
-		seckey := ""
-		seckeys[0] = cipher.MustSecKeyFromHex(seckey)
-		tx.SignInputs(seckeys)
-	*/
 
-	txs := make([]cipher.Sig, 1)
-	sig := "ed9bd7a31fe30b9e2d53b35154233dfdf48aaaceb694a07142f84cdf4f5263d21b723f631817ae1c1f735bea13f0ff2a816e24a53ccb92afae685fdfc06724de01"
-	txs[0] = cipher.MustSigFromHex(sig)
-	tx.Sigs = txs
+	seckeys := make([]cipher.SecKey, 1)
+	seckey := genesisSecKey.Hex()
+	seckeys[0] = cipher.MustSecKeyFromHex(seckey)
+	tx.SignInputs(seckeys)
 
 	tx.UpdateHeader()
 
@@ -452,4 +454,14 @@ func createDirIfNotExist(dir string) error {
 	}
 
 	return os.Mkdir(dir, 0777)
+}
+
+func getJSON(url string, target interface{}) error {
+	r, err := apiClient.Get(url)
+	if err != nil {
+		return err
+	}
+	defer r.Body.Close()
+
+	return json.NewDecoder(r.Body).Decode(target)
 }

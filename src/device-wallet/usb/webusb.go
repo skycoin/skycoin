@@ -6,7 +6,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/usbhid"
+	"github.com/skycoin/skycoin/src/device-wallet/usbhid"
 )
 
 const (

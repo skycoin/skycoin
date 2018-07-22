@@ -1,5 +1,8 @@
 package wire
 
+// this file was initially copy pasted from trezor project https://github.com/trezor/trezord-go/blob/master/wire/protobuf.go
+// commit 4527402f7004dfe677225315a0dd4d4b1b74be49
+
 import (
 	"bytes"
 	"encoding/binary"
@@ -8,9 +11,11 @@ import (
 )
 
 var (
+	// ErrMalformedProtobuf malformed protobuf
 	ErrMalformedProtobuf = errors.New("malformed protobuf")
 )
 
+// Validate checks buffer validity
 func Validate(buf []byte) error {
 	const (
 		wireVarint   = 0               // int32, int64, uint32, uint64, sint32, sint64, bool, enum

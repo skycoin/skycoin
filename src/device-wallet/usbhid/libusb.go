@@ -1,19 +1,17 @@
 //-----------------------------------------------------------------------------
-/*
 
-Golang wrapper for libusb-1.0
+// Golang wrapper for libusb-1.0
 
-Copyright (c) 2017 Jason T. Harris
+// Copyright (c) 2017 Jason T. Harris
 
-*/
 //-----------------------------------------------------------------------------
 
-// Package libusb provides go wrappers for libusb-1.0
-package usbhid
+// Package usbhid provides go wrappers for libusb-1.0
 
-/*
 // +build linux,cgo darwin,!ios,cgo windows,cgo
 
+package usbhid
+/*
 #include "./c/libusb/libusb.h"
 
 // When a C struct ends with a zero-sized field, but the struct itself is not zero-sized,

@@ -8,9 +8,10 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/device-wallet/usb"
-	"github.com/wire"
+	"github.com/skycoin/skycoin/src/device-wallet/wire"
 
 	proto "github.com/golang/protobuf/proto"
+
 	messages "github.com/skycoin/skycoin/protob"
 	"github.com/skycoin/skycoin/src/util/logging"
 )

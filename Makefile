@@ -117,6 +117,7 @@ docs: docs-libc
 lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...
 	gometalinter --deadline=3m --concurrency=2 --disable-all --tests --vendor --skip=lib/cgo --warn-unmatched-nolint \
+		--skip=src/device-wallet/usbhid \
 		-E goimports \
 		-E golint \
 		-E varcheck \

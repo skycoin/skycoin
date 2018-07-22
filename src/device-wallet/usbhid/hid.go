@@ -110,7 +110,7 @@ func init() {
 	C.hid_init()
 }
 
-// Enumerate returns a list of all the HID devices attached to the system which
+// HidEnumerate returns a list of all the HID devices attached to the system which
 // match the vendor and product id:
 //  - If the vendor id is set to 0 then any vendor matches.
 //  - If the product id is set to 0 then any product matches.
@@ -167,7 +167,7 @@ func (info HidDeviceInfo) Open() (*HidDevice, error) {
 	}, nil
 }
 
-// Device is a live HID USB connected device handle.
+// HidDevice is a live HID USB connected device handle.
 type HidDevice struct {
 	HidDeviceInfo // Embed the infos for easier access
 

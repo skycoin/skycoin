@@ -3,8 +3,9 @@ package deviceWallet
 import (
 	"testing"
 
-	messages "github.com/skycoin/skycoin/protob"
 	"github.com/stretchr/testify/require"
+
+	messages "github.com/skycoin/skycoin/protob"
 )
 
 func TestGetAddressUsb(t *testing.T) {

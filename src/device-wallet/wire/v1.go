@@ -1,5 +1,8 @@
 package wire
 
+// this file was copypasted from trezor project https://github.com/trezor/trezord-go/blob/master/wire/v1.go
+// commit 4527402f7004dfe677225315a0dd4d4b1b74be49
+
 import (
 	"encoding/binary"
 	"errors"
@@ -12,11 +15,13 @@ const (
 	packetLen = 64
 )
 
+// Message represents a protobuf message
 type Message struct {
 	Kind uint16
 	Data []byte
 }
 
+// WriteTo writes buffer to given target
 func (m *Message) WriteTo(w io.Writer) (int64, error) {
 	var (
 		rep  [packetLen]byte
@@ -61,9 +66,11 @@ func (m *Message) WriteTo(w io.Writer) (int64, error) {
 }
 
 var (
+	// ErrMalformedMessage malformed wire format
 	ErrMalformedMessage = errors.New("malformed wire format")
 )
 
+// ReadFrom reads message from given reader
 func (m *Message) ReadFrom(r io.Reader) (int64, error) {
 	var (
 		rep  [packetLen]byte

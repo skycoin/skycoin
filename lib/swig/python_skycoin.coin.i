@@ -61,4 +61,16 @@ Python will not own the object
 	%append_output( SWIG_NewPointerObj(SWIG_as_voidptr(*$1), SWIGTYPE_p_coin__Block, 0 ) );
 }
 
-
+%extend coin__UxBody {
+	PyObject* GetSrcTransaction(){
+		return SWIG_NewPointerObj(SWIG_as_voidptr(&$self->SrcTransaction), SWIGTYPE_p_cipher_SHA256, 0 );
+	}
+	void SetSrcTransaction(PyObject* o){
+		void *argp = 0;
+		int res = SWIG_ConvertPtr(o, &argp, SWIGTYPE_p_cipher_SHA256, 0 | 0);
+		if (SWIG_IsOK(res)){
+			cipher_SHA256* p = (cipher_SHA256*)argp;
+			memcpy( &$self->SrcTransaction, &p->data, sizeof(cipher__SHA256));
+		}
+	}
+}

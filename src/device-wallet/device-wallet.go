@@ -197,7 +197,11 @@ func DeviceSetMnemonic(deviceType DeviceType, mnemonic string) {
 
 	// Send ButtonAck
 	chunks = MessageButtonAck()
-	sendToDeviceNoAnswer(dev, chunks)
+	err = sendToDeviceNoAnswer(dev, chunks)
+	if err != nil {
+		logger.Infof(err.Error())
+		return
+	}
 
 	time.Sleep(1 * time.Second)
 	_, err = msg.ReadFrom(dev)
@@ -309,7 +313,11 @@ func initialize(dev io.ReadWriteCloser) {
 	initialize := &messages.Initialize{}
 	data, _ := proto.Marshal(initialize)
 	chunks = makeTrezorMessage(data, messages.MessageType_MessageType_Initialize)
-	sendToDevice(dev, chunks)
+	_, err := sendToDevice(dev, chunks)
+	if err != nil {
+		logger.Infof(err.Error())
+		return
+	}
 }
 
 // WipeDevice wipes out device configuration
@@ -337,7 +345,11 @@ func WipeDevice(deviceType DeviceType) {
 
 	// Send ButtonAck
 	chunks = MessageButtonAck()
-	sendToDeviceNoAnswer(dev, chunks)
+	err = sendToDeviceNoAnswer(dev, chunks)
+	if err != nil {
+		logger.Infof(err.Error())
+		return
+	}
 
 	_, err = msg.ReadFrom(dev)
 	time.Sleep(1 * time.Second)

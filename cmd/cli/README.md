@@ -142,6 +142,14 @@ COMMANDS:
      status                Check the status of current skycoin node
      transaction           Show detail info of specific transaction
      verifyAddress         Verify a skycoin address
+     deviceSetMnemonic              Configure the device with a mnemonic.
+     deviceAddressGen               Generate skycoin addresses using the firmware
+     deviceSignMessage              Ask the device to sign a message using the secret key at given index.
+     deviceCheckMessageSignature    Check a message signature matches the given address.
+     emulatorSetMnemonic            Configure an emulated device with a mnemonic.
+     emulatorAddressGen             Generate skycoin addresses using an emulated device.
+     emulatorSignMessage            Ask the emulated device to sign a message using the secret key at given index.
+     emulatorCheckMessageSignature  Check a message signature matches the given address.
      version
      walletBalance         Check the balance of a wallet
      walletDir             Displays wallet folder address

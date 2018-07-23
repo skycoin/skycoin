@@ -85,6 +85,21 @@ func SKY_coin_Transaction_ResetInputs(handle C.Transaction__Handle, count int) (
 	return
 }
 
+//export SKY_coin_Transaction_Get_Inputs_Count
+func SKY_coin_Transaction_Get_Inputs_Count(handle C.Transaction__Handle, length *int) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	txn, ok := lookupTransactionHandle(handle)
+	if !ok {
+		____error_code = SKY_ERROR
+		return
+	}
+	*length = len(txn.In)
+	return
+}
+
 //export SKY_coin_Transaction_Get_Input_At
 func SKY_coin_Transaction_Get_Input_At(handle C.Transaction__Handle, i int, input *C.cipher__SHA256) (____error_code uint32) {
 	____error_code = 0
@@ -104,6 +119,21 @@ func SKY_coin_Transaction_Get_Input_At(handle C.Transaction__Handle, i int, inpu
 	return
 }
 
+//export SKY_coin_Transaction_Get_Outputs_Count
+func SKY_coin_Transaction_Get_Outputs_Count(handle C.Transaction__Handle, length *int) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	txn, ok := lookupTransactionHandle(handle)
+	if !ok {
+		____error_code = SKY_ERROR
+		return
+	}
+	*length = len(txn.Out)
+	return
+}
+
 //export SKY_coin_Transaction_Get_Output_At
 func SKY_coin_Transaction_Get_Output_At(handle C.Transaction__Handle, i int, output *C.coin__TransactionOutput) (____error_code uint32) {
 	____error_code = 0
@@ -120,6 +150,21 @@ func SKY_coin_Transaction_Get_Output_At(handle C.Transaction__Handle, i int, out
 		return
 	}
 	*output = *(*C.coin__TransactionOutput)(unsafe.Pointer(&txn.Out[i]))
+	return
+}
+
+//export SKY_coin_Transaction_Get_Signatures_Count
+func SKY_coin_Transaction_Get_Signatures_Count(handle C.Transaction__Handle, length *int) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	txn, ok := lookupTransactionHandle(handle)
+	if !ok {
+		____error_code = SKY_ERROR
+		return
+	}
+	*length = len(txn.Sigs)
 	return
 }
 

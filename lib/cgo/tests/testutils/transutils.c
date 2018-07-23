@@ -11,7 +11,7 @@
 #include "skytest.h"
 #include "transutil.h"
 
-GoUint32_ zeroFeeCalculator(Transaction__Handle handle, GoUint64_ *pFee){
+GoUint32_ zeroFeeCalculator(Transaction__Handle handle, GoUint64_ *pFee, void* context){
   *pFee = 0;
   return SKY_OK;
 }

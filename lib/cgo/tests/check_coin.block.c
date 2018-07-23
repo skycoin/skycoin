@@ -52,13 +52,14 @@ int makeNewBlock(cipher__SHA256* uxHash, Block__Handle* newBlock){
   cr_assert(result == SKY_OK, "SKY_coin_Get_Block_Body failed");
   result = SKY_coin_BlockBody_Hash(body, &bodyhash);
   cr_assert(result == SKY_OK, "SKY_coin_BlockBody_Hash failed");
-  result = SKY_coin_NewBlock(block, 100 + 200, uxHash, transactions, zeroFeeCalculator, newBlock);
+  FeeCalculator zf = {zeroFeeCalculator, NULL};
+  result = SKY_coin_NewBlock(block, 100 + 200, uxHash, transactions, &zf, newBlock);
   cr_assert(result == SKY_OK, "SKY_coin_NewBlock failed");
   registerHandleClose( *newBlock );
   return result;
 }
 
-GoUint32_ fix121FeeCalculator(Transaction__Handle handle, GoUint64_ *pFee){
+GoUint32_ fix121FeeCalculator(Transaction__Handle handle, GoUint64_ *pFee, void* context){
   *pFee = 121;
   return SKY_OK;
 }
@@ -92,8 +93,8 @@ Test(coin_block, TestNewBlock) {
   registerMemCleanup( slice.data );
   result = SKY_cipher_SumSHA256( slice, &hash );
   cr_assert(result == SKY_OK, "SKY_cipher_SumSHA256 failed");
-
-  result = SKY_coin_NewBlock(prevBlock, 133, &hash, 0, zeroFeeCalculator, &newBlock);
+  FeeCalculator zf = {zeroFeeCalculator, NULL};
+  result = SKY_coin_NewBlock(prevBlock, 133, &hash, 0, &zf, &newBlock);
   cr_assert(result == SKY_ERROR, "SKY_coin_NewBlock has to fail with no transactions");
   registerHandleClose( newBlock );
 
@@ -110,7 +111,8 @@ Test(coin_block, TestNewBlock) {
   GoUint64 fee = 121;
   GoUint64 currentTime = 133;
 
-  result = SKY_coin_NewBlock(prevBlock, currentTime, &hash, transactions, fix121FeeCalculator, &newBlock);
+  FeeCalculator f121 = {fix121FeeCalculator, NULL};
+  result = SKY_coin_NewBlock(prevBlock, currentTime, &hash, transactions, &f121, &newBlock);
   cr_assert(result == SKY_OK, "SKY_coin_NewBlock failed");
   registerHandleClose(newBlock);
   result = SKY_coin_GetBlockObject(newBlock, &pNewBlock);

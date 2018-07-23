@@ -367,6 +367,11 @@ typedef Handle Number_Handle;
 
 typedef Handle Signature_Handle;
 
-typedef GoUint32_ (*FeeCalc)(Transaction__Handle handle, GoUint64_* pFee);
+typedef GoUint32_ (*FeeCalcFunc)(Transaction__Handle handle, GoUint64_* pFee, void* context);
+
+typedef struct {
+  FeeCalcFunc callback;
+  void* context;
+} FeeCalculator ;
 
 #endif

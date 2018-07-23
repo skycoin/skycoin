@@ -4,17 +4,15 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
 	"math"
 	"sort"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
-	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
-	"github.com/skycoin/skycoin/src/util/logging"
 )
 
 var (
-	logger = logging.MustGetLogger("coin")
 	// DebugLevel1 checks for extremely unlikely conditions (10e-40)
 	DebugLevel1 = true
 	// DebugLevel2 enable checks for impossible conditions
@@ -149,17 +147,17 @@ func (txn *Transaction) Verify() error {
 func (txn Transaction) VerifyInput(uxIn UxArray) error {
 	if DebugLevel2 {
 		if len(txn.In) != len(uxIn) {
-			logger.Panic("tx.In != uxIn")
+			log.Panic("tx.In != uxIn")
 		}
 		if len(txn.In) != len(txn.Sigs) {
-			logger.Panic("tx.In != tx.Sigs")
+			log.Panic("tx.In != tx.Sigs")
 		}
 		if txn.InnerHash != txn.HashInner() {
-			logger.Panic("Invalid Tx Inner Hash")
+			log.Panic("Invalid Tx Inner Hash")
 		}
 		for i := range txn.In {
 			if txn.In[i] != uxIn[i].Hash() {
-				logger.Panic("Ux hash mismatch")
+				log.Panic("Ux hash mismatch")
 			}
 		}
 	}
@@ -180,7 +178,7 @@ func (txn Transaction) VerifyInput(uxIn UxArray) error {
 // Returns the signature index for later signing
 func (txn *Transaction) PushInput(uxOut cipher.SHA256) uint16 {
 	if len(txn.In) >= math.MaxUint16 {
-		logger.Panic("Max transaction inputs reached")
+		log.Panic("Max transaction inputs reached")
 	}
 	txn.In = append(txn.In, uxOut)
 	return uint16(len(txn.In) - 1)
@@ -206,32 +204,29 @@ func (txn *Transaction) PushOutput(dst cipher.Address, coins, hours uint64) {
 	txn.Out = append(txn.Out, to)
 }
 
-// DeviceSignInputs signs all inputs in the transaction
-func (txn *Transaction) DeviceSignInputs(deviceType deviceWallet.DeviceType, indexes []int) {
+// HashFromInputs constructs the hash inputs that are going to be signed
+func (txn *Transaction) HashFromInputs(indexes []int) map[int]cipher.SHA256 {
 	txn.InnerHash = txn.HashInner() // update hash
 
 	if len(txn.Sigs) != 0 {
-		logger.Panic("Transaction has been signed")
+		log.Panic("Transaction has been signed")
 	}
 	if len(indexes) != len(txn.In) {
-		logger.Panicf("Invalid number of keys: %d, should be %d", len(indexes), len(txn.In))
+		log.Panicf("Invalid number of keys: %d, should be %d", len(indexes), len(txn.In))
 	}
 	if len(indexes) > math.MaxUint16 {
-		logger.Panic("Too many keys")
+		log.Panic("Too many keys")
 	}
 	if len(indexes) == 0 {
-		logger.Panic("No keys")
+		log.Panic("No keys")
 	}
-	sigs := make([]cipher.Sig, len(txn.In))
+	hashMap := make(map[int]cipher.SHA256)
 	innerHash := txn.HashInner()
 	for i, k := range indexes {
 		h := cipher.AddSHA256(innerHash, txn.In[i]) // hash to sign
-		success, sig := cipher.DeviceSignHash(deviceType, h, k)
-		if success {
-			sigs[i] = sig
-		}
+		hashMap[k] = h
 	}
-	txn.Sigs = sigs
+	return hashMap
 }
 
 // SignInputs signs all inputs in the transaction
@@ -239,23 +234,23 @@ func (txn *Transaction) SignInputs(keys []cipher.SecKey) {
 	txn.InnerHash = txn.HashInner() // update hash
 
 	if len(txn.Sigs) != 0 {
-		logger.Panic("Transaction has been signed")
+		log.Panic("Transaction has been signed")
 	}
 	if len(keys) != len(txn.In) {
-		logger.Panic("Invalid number of keys")
+		log.Panic("Invalid number of keys")
 	}
 	if len(keys) > math.MaxUint16 {
-		logger.Panic("Too many keys")
+		log.Panic("Too many keys")
 	}
 	if len(keys) == 0 {
-		logger.Panic("No keys")
+		log.Panic("No keys")
 	}
 
 	sigs := make([]cipher.Sig, len(txn.In))
 	innerHash := txn.HashInner()
 	for i, k := range keys {
 		h := cipher.AddSHA256(innerHash, txn.In[i]) // hash to sign
-		logger.Infof("Siging hash: %s\nWith secret key: %s\n", h.Hex(), k.Hex())
+		log.Printf("Siging hash: %s\nWith secret key: %s\n", h.Hex(), k.Hex())
 		sigs[i] = cipher.SignHash(h, k)
 	}
 	txn.Sigs = sigs
@@ -316,7 +311,7 @@ func (txn *Transaction) Serialize() []byte {
 func MustTransactionDeserialize(b []byte) Transaction {
 	t, err := TransactionDeserialize(b)
 	if err != nil {
-		logger.Panicf("Failed to deserialize transaction: %v", err)
+		log.Panicf("Failed to deserialize transaction: %v", err)
 	}
 	return t
 }

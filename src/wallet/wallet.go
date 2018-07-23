@@ -16,6 +16,7 @@ import (
 	"encoding/hex"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/base58"
 	"github.com/skycoin/skycoin/src/coin"
 
 	"github.com/shopspring/decimal"
@@ -1204,15 +1205,36 @@ func (w *Wallet) CreateAndSignTransaction(auxs coin.AddressUxOuts, headTime, coi
 	txn.PushOutput(dest, coins, addrHours[0])
 
 	if w.useHardwareWallet() {
-		txn.DeviceSignInputs(deviceWallet.DeviceTypeUsb, indexToSign)
+		deviceSignTransaction(deviceWallet.DeviceTypeUsb, &txn, indexToSign)
 	} else if w.useEmulatorWallet() {
-		txn.DeviceSignInputs(deviceWallet.DeviceTypeEmulator, indexToSign)
+		deviceSignTransaction(deviceWallet.DeviceTypeEmulator, &txn, indexToSign)
 	} else {
 		txn.SignInputs(toSign)
 	}
 	txn.UpdateHeader()
 
 	return &txn, nil
+}
+
+func deviceSignTransaction(deviceType deviceWallet.DeviceType, txn *coin.Transaction, indexes []int) {
+	hashMap := txn.HashFromInputs(indexes)
+	sigs := make([]cipher.Sig, len(txn.In))
+	i := 0
+	for index, hash := range hashMap {
+		kind, data := deviceWallet.DeviceSignMessage(deviceType, index, hash.Hex())
+		if kind == 2 {
+			base58sig, _ := base58.Base582Hex(string(data[2:]))
+			sig := cipher.NewSig(base58sig)
+			success := cipher.VerifyAndCheckSig(sig, hash)
+			if success {
+				sigs[i] = sig
+				i++
+			}
+		} else {
+			logger.Panic("DeviceSignMessage, error: could not get signature from device")
+		}
+	}
+	txn.Sigs = sigs
 }
 
 // CreateAndSignTransactionAdvanced creates and signs a transaction based upon CreateTransactionParams.
@@ -1491,9 +1513,9 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 	}
 
 	if w.useHardwareWallet() {
-		txn.DeviceSignInputs(deviceWallet.DeviceTypeUsb, indexToSign)
+		deviceSignTransaction(deviceWallet.DeviceTypeUsb, txn, indexToSign)
 	} else if w.useEmulatorWallet() {
-		txn.DeviceSignInputs(deviceWallet.DeviceTypeEmulator, indexToSign)
+		deviceSignTransaction(deviceWallet.DeviceTypeEmulator, txn, indexToSign)
 	} else {
 		txn.SignInputs(toSign)
 	}

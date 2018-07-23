@@ -3,6 +3,7 @@ package coin
 import (
 	"bytes"
 	"errors"
+	"log"
 	"math"
 	"sort"
 	"strings"
@@ -11,11 +12,34 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/base58"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
 	"github.com/skycoin/skycoin/src/testutil"
 	_require "github.com/skycoin/skycoin/src/testutil/require"
 )
+
+// copy paster from src/wallet/wallet.go
+func deviceSignTransaction(deviceType deviceWallet.DeviceType, txn *Transaction, indexes []int) {
+	hashMap := txn.HashFromInputs(indexes)
+	sigs := make([]cipher.Sig, len(txn.In))
+	i := 0
+	for index, hash := range hashMap {
+		kind, data := deviceWallet.DeviceSignMessage(deviceType, index, hash.Hex())
+		if kind == 2 {
+			base58sig, _ := base58.Base582Hex(string(data[2:]))
+			sig := cipher.NewSig(base58sig)
+			success := cipher.VerifyAndCheckSig(sig, hash)
+			if success {
+				sigs[i] = sig
+				i++
+			}
+		} else {
+			log.Panic("DeviceSignMessage, error: could not get signature from device")
+		}
+	}
+	txn.Sigs = sigs
+}
 
 func makeTransactionFromUxOut(ux UxOut, s cipher.SecKey) Transaction {
 	tx := Transaction{}
@@ -290,7 +314,7 @@ func TestTransactionDeviceSignInputs(t *testing.T) {
 	*tx2 = *tx
 	h := tx.HashInner()
 	require.NotPanics(t, func() { tx2.SignInputs([]cipher.SecKey{s, s2}) })
-	require.NotPanics(t, func() { tx.DeviceSignInputs(deviceWallet.DeviceTypeUsb, seckey) })
+	require.NotPanics(t, func() { deviceSignTransaction(deviceWallet.DeviceTypeUsb, tx, seckey) })
 
 	require.Equal(t, len(tx.Sigs), 2)
 	require.Equal(t, tx.HashInner(), h)
@@ -318,7 +342,7 @@ func TestTransactionEmulatorSignInputs(t *testing.T) {
 	*tx2 = *tx
 	h := tx.HashInner()
 	require.NotPanics(t, func() { tx2.SignInputs([]cipher.SecKey{s, s2}) })
-	require.NotPanics(t, func() { tx.DeviceSignInputs(deviceWallet.DeviceTypeEmulator, seckey) })
+	require.NotPanics(t, func() { deviceSignTransaction(deviceWallet.DeviceTypeEmulator, tx, seckey) })
 
 	require.Equal(t, len(tx.Sigs), 2)
 	require.Equal(t, tx.HashInner(), h)

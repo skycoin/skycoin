@@ -12,15 +12,10 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher/ripemd160"
 
-	"github.com/skycoin/skycoin/src/cipher/base58"
 	"github.com/skycoin/skycoin/src/cipher/secp256k1-go"
-
-	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
-	"github.com/skycoin/skycoin/src/util/logging"
 )
 
 var (
-	logger = logging.MustGetLogger("crypto")
 	// DebugLevel1 debug level one
 	DebugLevel1 = true //checks for extremely unlikely conditions (10e-40)
 	// DebugLevel2 debug level two
@@ -209,7 +204,7 @@ type Sig [64 + 1]byte //64 byte signature with 1 byte for key recovery
 func NewSig(b []byte) Sig {
 	s := Sig{}
 	if len(b) != len(s) {
-		logger.Panicf("Invalid secret key length: %d.", len(b))
+		log.Panic("Invalid secret key length")
 	}
 	copy(s[:], b[:])
 	return s
@@ -244,48 +239,31 @@ func (s Sig) Hex() string {
 	return hex.EncodeToString(s[:])
 }
 
-// DeviceSignHash sign hash
-func DeviceSignHash(deviceType deviceWallet.DeviceType, hash SHA256, index int) (bool, Sig) {
-	kind, data := deviceWallet.DeviceSignMessage(deviceType, index, hash.Hex())
-	if kind == 2 {
-		base58sig, _ := base58.Base582Hex(string(data[2:]))
-		sig := NewSig(base58sig)
-		if DebugLevel2 || DebugLevel1 { //!!! Guard against coin loss
-			pubkey, err := PubKeyFromSig(sig, hash)
-			if err != nil {
-				logger.Panic("DeviceSignMessage, error: pubkey from sig recovery failure")
-			}
-			if VerifySignature(pubkey, sig, hash) != nil {
-				logger.Panic("DeviceSignMessage, error: secp256k1.Sign returned non-null " +
-					"invalid non-null signature")
-			}
-			if ChkSig(AddressFromPubKey(pubkey), hash, sig) != nil {
-				logger.Panic("DeviceSignMessage error: ChkSig failed for signature")
-			}
+// VerifyAndCheckSig raises a Panic if the given signature does not fit the given hash
+func VerifyAndCheckSig(sig Sig, hash SHA256) bool {
+	if DebugLevel2 || DebugLevel1 { //!!! Guard against coin loss
+		pubkey, err := PubKeyFromSig(sig, hash)
+		if err != nil {
+			log.Panic("SignHash, error: pubkey from sig recovery failure")
+			return false
 		}
-		return true, sig
+		if VerifySignature(pubkey, sig, hash) != nil {
+			log.Panic("SignHash, error: secp256k1.Sign returned non-null " +
+				"invalid non-null signature")
+			return false
+		}
+		if ChkSig(AddressFromPubKey(pubkey), hash, sig) != nil {
+			log.Panic("SignHash error: ChkSig failed for signature")
+			return false
+		}
 	}
-	logger.Panic("DeviceSignMessage, error: could not get signature from device")
-	return false, NewSig([]byte(""))
+	return true
 }
 
 // SignHash sign hash
 func SignHash(hash SHA256, sec SecKey) Sig {
 	sig := NewSig(secp256k1.Sign(hash[:], sec[:]))
-
-	if DebugLevel2 || DebugLevel1 { //!!! Guard against coin loss
-		pubkey, err := PubKeyFromSig(sig, hash)
-		if err != nil {
-			log.Panic("SignHash, error: pubkey from sig recovery failure")
-		}
-		if VerifySignature(pubkey, sig, hash) != nil {
-			log.Panic("SignHash, error: secp256k1.Sign returned non-null " +
-				"invalid non-null signature")
-		}
-		if ChkSig(AddressFromPubKey(pubkey), hash, sig) != nil {
-			log.Panic("SignHash error: ChkSig failed for signature")
-		}
-	}
+	VerifyAndCheckSig(sig, hash)
 	return sig
 }
 

@@ -85,6 +85,79 @@ func SKY_coin_Transaction_ResetInputs(handle C.Transaction__Handle, count int) (
 	return
 }
 
+//export SKY_coin_Transaction_Get_Input_At
+func SKY_coin_Transaction_Get_Input_At(handle C.Transaction__Handle, i int, input *C.cipher__SHA256) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	txn, ok := lookupTransactionHandle(handle)
+	if !ok {
+		____error_code = SKY_ERROR
+		return
+	}
+	if i >= len(txn.In) {
+		____error_code = SKY_ERROR
+		return
+	}
+	*input = *(*C.cipher__SHA256)(unsafe.Pointer(&txn.In[i]))
+	return
+}
+
+//export SKY_coin_Transaction_Get_Output_At
+func SKY_coin_Transaction_Get_Output_At(handle C.Transaction__Handle, i int, output *C.coin__TransactionOutput) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	txn, ok := lookupTransactionHandle(handle)
+	if !ok {
+		____error_code = SKY_ERROR
+		return
+	}
+	if i >= len(txn.Out) {
+		____error_code = SKY_ERROR
+		return
+	}
+	*output = *(*C.coin__TransactionOutput)(unsafe.Pointer(&txn.Out[i]))
+	return
+}
+
+//export SKY_coin_Transaction_Get_Signature_At
+func SKY_coin_Transaction_Get_Signature_At(handle C.Transaction__Handle, i int, sig *C.cipher__Sig) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	txn, ok := lookupTransactionHandle(handle)
+	if !ok {
+		____error_code = SKY_ERROR
+		return
+	}
+	if i >= len(txn.Sigs) {
+		____error_code = SKY_ERROR
+		return
+	}
+	*sig = *(*C.cipher__Sig)(unsafe.Pointer(&txn.Sigs[i]))
+	return
+}
+
+//export SKY_coin_Transaction_Push_Signature
+func SKY_coin_Transaction_Push_Signature(handle C.Transaction__Handle, _sig *C.cipher__Sig) (____error_code uint32) {
+	____error_code = 0
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	txn, ok := lookupTransactionHandle(handle)
+	if !ok {
+		____error_code = SKY_ERROR
+		return
+	}
+	sig := *(*cipher.Sig)(unsafe.Pointer(_sig))
+	txn.Sigs = append(txn.Sigs, sig)
+	return
+}
+
 //export SKY_coin_Transaction_ResetOutputs
 func SKY_coin_Transaction_ResetOutputs(handle C.Transaction__Handle, count int) (____error_code uint32) {
 	____error_code = 0

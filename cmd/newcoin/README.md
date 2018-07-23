@@ -92,3 +92,14 @@ Distribute coins into distribution addresses
 ```bash
 $ newcoin distributecoins --coin testcoin --seckey $FIBERCOIN_GENESIS_SECKEY
 ```
+
+
+## Steps to create a new coin
+1. Update `fiber.toml` with relevant data ( generating new distribution addresses, genesis key etc.)
+2. go run `cmd/newcoin/newcoin.go createcoin --coin <coinname>`
+3. go run `cmd/newcoin/newcoin.go distributecoins --coin <coinname> --seckey $FIBERCOIN_GENESIS_SECKEY`
+4. Take the genesis sig output from `step 3` and put that in `fiber.toml`
+5. `go run cmd/newcoin/newcoin.go createcoin --coin <coinname>`
+
+> NOTE: Remove all default connections in the start from `fiber.toml`. Update it later when the peer nodes are setup
+        and regenerate project files with `go run cmd/newcoin/newcoin.go createcoin --coin <coinname>`.

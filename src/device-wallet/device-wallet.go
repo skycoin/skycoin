@@ -67,7 +67,7 @@ func getUsbDevice() (usb.Device, error) {
 func sendToDeviceNoAnswer(dev io.ReadWriteCloser, chunks [][64]byte) error {
 	for _, element := range chunks {
 		_, err := dev.Write(element[:])
-		if (err != nil) {
+		if err != nil {
 			return err
 		}
 	}
@@ -77,7 +77,7 @@ func sendToDevice(dev io.ReadWriteCloser, chunks [][64]byte) (wire.Message, erro
 	var msg wire.Message
 	for _, element := range chunks {
 		_, err := dev.Write(element[:])
-		if (err != nil) {
+		if err != nil {
 			return msg, err
 		}
 	}
@@ -136,7 +136,7 @@ func getDevice(deviceType DeviceType) (io.ReadWriteCloser, error) {
 func DeviceCheckMessageSignature(deviceType DeviceType, message string, signature string, address string) {
 
 	dev, err := getDevice(deviceType)
-	if (err != nil) {
+	if err != nil {
 		logger.Infof(err.Error())
 		return
 	}
@@ -172,7 +172,7 @@ func MessageButtonAck() [][64]byte {
 func DeviceSetMnemonic(deviceType DeviceType, mnemonic string) {
 
 	dev, err := getDevice(deviceType)
-	if (err != nil) {
+	if err != nil {
 		logger.Infof(err.Error())
 		return
 	}
@@ -217,7 +217,7 @@ func DeviceSetMnemonic(deviceType DeviceType, mnemonic string) {
 func DeviceAddressGen(deviceType DeviceType, addressN int, startIndex int) (uint16, []string) {
 
 	dev, err := getDevice(deviceType)
-	if (err != nil) {
+	if err != nil {
 		logger.Infof(err.Error())
 		return 0, make([]string, 0)
 	}
@@ -256,7 +256,7 @@ func DeviceAddressGen(deviceType DeviceType, addressN int, startIndex int) (uint
 func DeviceSignMessage(deviceType DeviceType, addressN int, message string) (uint16, []byte) {
 
 	dev, err := getDevice(deviceType)
-	if (err != nil) {
+	if err != nil {
 		logger.Infof(err.Error())
 		return 0, make([]byte, 0)
 	}
@@ -323,7 +323,7 @@ func initialize(dev io.ReadWriteCloser) {
 // WipeDevice wipes out device configuration
 func WipeDevice(deviceType DeviceType) {
 	dev, err := getDevice(deviceType)
-	if (err != nil) {
+	if err != nil {
 		logger.Infof(err.Error())
 		return
 	}

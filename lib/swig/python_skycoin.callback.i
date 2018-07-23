@@ -1,8 +1,8 @@
+%{
 
-%typemap(in) FeeCalc {
-  PyObject *callback;
-  GoUint32_ _WrapperFeeCalculator(Transaction__Handle handle, GoUint64_* pFee){
-	PyObject *result = PyObject_CallFunctionObjArgs(callback, PyLong_FromLong(handle), NULL);
+GoUint32_ _WrapperFeeCalculator(Transaction__Handle handle, GoUint64_* pFee, void* context){
+	PyObject* feeCalc = (PyObject*)context;
+	PyObject *result = PyObject_CallFunctionObjArgs(feeCalc, PyLong_FromLong(handle), NULL);
 	const GoUint64_ ret = PyLong_AsLong(result);
   	Py_DECREF(result);
 	if(pFee){
@@ -11,9 +11,12 @@
 	}
 	else
 		return -1;
-  }
+}
+%}
 
+%typemap(in) FeeCalculator* (FeeCalculator temp) {
   if (!PyCallable_Check($input)) SWIG_fail;
-  $1 = _WrapperFeeCalculator;
-  callback = $input;
+  temp.callback = _WrapperFeeCalculator;
+  temp.context = $input;
+  $1 = &temp;
 }

@@ -563,6 +563,8 @@ Args:
     label: wallet label [required]
     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
     encrypt: encrypt wallet [optional, bool value]
+    useHardwareWallet: use the skycoin electronic wallet [optional, bool value]
+    useEmulatorWallet: use an emulated skycoin electronic wallet [optional, bool value]
     password: wallet password[optional, must be provided if encrypt is true]
 ```
 
@@ -574,7 +576,9 @@ curl -X POST http://127.0.0.1:6420/api/v1/wallet/create \
  -d 'seed=$seed' \
  -d 'label=$label' \
  -d 'scan=5' \
- -d 'password=$password'
+ -d 'password=$password' \
+ -d 'useHardwareWallet=$useHardwareWallet' \
+ -d 'useEmulatorWallet=$useEmulatorWallet'
 ```
 
 Result:
@@ -589,7 +593,9 @@ Result:
         "version": "0.2",
         "crypto_type": "",
         "timestamp": 1511640884,
-        "encrypted": false
+        "encrypted": false,
+        "useHardwareWallet": false,
+        "useEmulatorWallet": false
     },
     "entries": [
         {

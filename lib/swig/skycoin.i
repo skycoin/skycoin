@@ -21,6 +21,7 @@
 #if defined(SWIGPYTHON)
 %include "python_skycoin.cipher.crypto.i"
 %include "python_skycoin.coin.i"
+%include "python_skycoin.callback.i"
 #else
 %include "skycoin.cipher.crypto.i"
 %include "skycoin.coin.i"

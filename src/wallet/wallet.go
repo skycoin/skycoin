@@ -973,13 +973,13 @@ func (w *Wallet) GetAddressFromDevice(deviceType deviceWallet.DeviceType, num ui
 	var err error
 	kind, addresses := deviceWallet.DeviceAddressGen(deviceType, len(addrs), 0)
 	if kind != uint16(messages.MessageType_MessageType_ResponseSkycoinAddress) {
-		logger.Panic("GetAddressFromDevice the device could not generate an address")
+		logger.Error("GetAddressFromDevice the device could not generate an address")
 		return addrs, ErrDeviceWallet
 	}
 	for i := 0; i < len(addrs); i++ {
 		addrs[i], err = cipher.DecodeBase58Address(addresses[i])
 		if err != nil {
-			logger.Panicf("GetAddressFromDevice got a bad address from hardware wallet: %s", addresses[i])
+			logger.Errorf("GetAddressFromDevice got a bad address from hardware wallet: %s", addresses[i])
 			return addrs, err
 		}
 	}

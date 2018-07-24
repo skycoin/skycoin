@@ -53,7 +53,7 @@ func getUsbDevice() (usb.Device, error) {
 	tries := 0
 	dev, err := b.Connect(infos[0].Path)
 	if err != nil {
-		logger.Infof(err.Error())
+		logger.Errorf(err.Error())
 		if tries < 3 {
 			tries++
 			time.Sleep(100 * time.Millisecond)
@@ -133,12 +133,12 @@ func getDevice(deviceType DeviceType) (io.ReadWriteCloser, error) {
 }
 
 // DeviceCheckMessageSignature Check a message signature matches the given address.
-func DeviceCheckMessageSignature(deviceType DeviceType, message string, signature string, address string) {
+func DeviceCheckMessageSignature(deviceType DeviceType, message string, signature string, address string) (uint16, []byte) {
 
 	dev, err := getDevice(deviceType)
 	if err != nil {
-		logger.Infof(err.Error())
-		return
+		logger.Errorf(err.Error())
+		return 0, make([]byte, 0)
 	}
 	defer dev.Close()
 
@@ -154,10 +154,11 @@ func DeviceCheckMessageSignature(deviceType DeviceType, message string, signatur
 	chunks := makeTrezorMessage(data, messages.MessageType_MessageType_SkycoinCheckMessageSignature)
 	msg, err := sendToDevice(dev, chunks)
 	if err != nil {
-		logger.Infof(err.Error())
-		return
+		logger.Errorf(err.Error())
+		return msg.Kind, msg.Data
 	}
 	logger.Infof("Success %d! address that issued the signature is: %s\n", msg.Kind, msg.Data)
+	return msg.Kind, msg.Data
 }
 
 // MessageButtonAck send this message (before user action) when the device expects the user to push a button
@@ -173,7 +174,7 @@ func DeviceSetMnemonic(deviceType DeviceType, mnemonic string) {
 
 	dev, err := getDevice(deviceType)
 	if err != nil {
-		logger.Infof(err.Error())
+		logger.Errorf(err.Error())
 		return
 	}
 	defer dev.Close()
@@ -189,7 +190,7 @@ func DeviceSetMnemonic(deviceType DeviceType, mnemonic string) {
 
 	msg, err := sendToDevice(dev, chunks)
 	if err != nil {
-		logger.Infof(err.Error())
+		logger.Errorf(err.Error())
 		return
 	}
 
@@ -199,14 +200,14 @@ func DeviceSetMnemonic(deviceType DeviceType, mnemonic string) {
 	chunks = MessageButtonAck()
 	err = sendToDeviceNoAnswer(dev, chunks)
 	if err != nil {
-		logger.Infof(err.Error())
+		logger.Errorf(err.Error())
 		return
 	}
 
 	time.Sleep(1 * time.Second)
 	_, err = msg.ReadFrom(dev)
 	if err != nil {
-		logger.Infof(err.Error())
+		logger.Errorf(err.Error())
 		return
 	}
 
@@ -218,7 +219,7 @@ func DeviceAddressGen(deviceType DeviceType, addressN int, startIndex int) (uint
 
 	dev, err := getDevice(deviceType)
 	if err != nil {
-		logger.Infof(err.Error())
+		logger.Errorf(err.Error())
 		return 0, make([]string, 0)
 	}
 	defer dev.Close()
@@ -236,7 +237,7 @@ func DeviceAddressGen(deviceType DeviceType, addressN int, startIndex int) (uint
 	}
 	if msg.Kind == uint16(messages.MessageType_MessageType_ResponseSkycoinAddress) {
 		responseSkycoinAddress := &messages.ResponseSkycoinAddress{}
-		err := proto.Unmarshal(msg.Data, responseSkycoinAddress)
+		err = proto.Unmarshal(msg.Data, responseSkycoinAddress)
 		if err != nil {
 			logger.Errorf("unmarshaling error: %s\n", err.Error())
 			return msg.Kind, make([]string, 0)
@@ -257,7 +258,7 @@ func DeviceSignMessage(deviceType DeviceType, addressN int, message string) (uin
 
 	dev, err := getDevice(deviceType)
 	if err != nil {
-		logger.Infof(err.Error())
+		logger.Errorf(err.Error())
 		return 0, make([]byte, 0)
 	}
 	defer dev.Close()
@@ -273,7 +274,7 @@ func DeviceSignMessage(deviceType DeviceType, addressN int, message string) (uin
 
 	msg, err := sendToDevice(dev, chunks)
 	if err != nil {
-		logger.Infof(err.Error())
+		logger.Errorf(err.Error())
 	}
 
 	return msg.Kind, msg.Data
@@ -315,7 +316,7 @@ func initialize(dev io.ReadWriteCloser) {
 	chunks = makeTrezorMessage(data, messages.MessageType_MessageType_Initialize)
 	_, err := sendToDevice(dev, chunks)
 	if err != nil {
-		logger.Infof(err.Error())
+		logger.Errorf(err.Error())
 		return
 	}
 }
@@ -324,7 +325,7 @@ func initialize(dev io.ReadWriteCloser) {
 func WipeDevice(deviceType DeviceType) {
 	dev, err := getDevice(deviceType)
 	if err != nil {
-		logger.Infof(err.Error())
+		logger.Errorf(err.Error())
 		return
 	}
 	defer dev.Close()
@@ -338,7 +339,7 @@ func WipeDevice(deviceType DeviceType) {
 	chunks = makeTrezorMessage(data, messages.MessageType_MessageType_WipeDevice)
 	msg, err = sendToDevice(dev, chunks)
 	if err != nil {
-		logger.Infof(err.Error())
+		logger.Errorf(err.Error())
 		return
 	}
 	logger.Infof("Wipe device %d! Answer is: %x\n", msg.Kind, msg.Data)
@@ -347,14 +348,14 @@ func WipeDevice(deviceType DeviceType) {
 	chunks = MessageButtonAck()
 	err = sendToDeviceNoAnswer(dev, chunks)
 	if err != nil {
-		logger.Infof(err.Error())
+		logger.Errorf(err.Error())
 		return
 	}
 
 	_, err = msg.ReadFrom(dev)
 	time.Sleep(1 * time.Second)
 	if err != nil {
-		logger.Infof(err.Error())
+		logger.Errorf(err.Error())
 		return
 	}
 	logger.Infof("MessageButtonAck Answer is: %d / %s\n", msg.Kind, msg.Data)

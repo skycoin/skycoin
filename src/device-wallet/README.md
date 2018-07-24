@@ -17,3 +17,7 @@ Only once each time the messages change:
 The folders "wire, usbhid, and usb" have been copy pasted from trezor: trezor project https://github.com/trezor/trezord-go/blob/master/ 
 
 master HEAD at the time of the copy paste: 4527402f7004dfe677225315a0dd4d4b1b74be49
+
+## About the firmware
+
+Check [here](https://github.com/skycoin/services/tree/master/hardware-wallet/)

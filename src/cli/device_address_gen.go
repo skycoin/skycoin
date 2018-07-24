@@ -17,8 +17,8 @@ func deviceAddressGenCmd() gcli.Command {
 		Flags: []gcli.Flag{
 			gcli.IntFlag{
 				Name:  "addressN",
-				Value: 0,
-				Usage: "Index for deterministic key generation. Assume 0 if not set.",
+				Value: 1,
+				Usage: "Number of addresses to generate. Assume 1 if not set.",
 			},
 			gcli.IntFlag{
 				Name:  "startIndex",

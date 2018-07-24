@@ -38,6 +38,10 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
     - [List wallet transaction history](#list-wallet-transaction-history)
     - [List wallet outputs](#list-wallet-outputs)
     - [CLI version](#cli-version)
+    - [Ask device to generate addresses](#ask-device-to-generate-addresses)
+    - [Configure device mnemonic](#configure-device-mnemonic)
+    - [Ask device to sign message](#ask-device-to-sign-message)
+    - [Ask device to check signature](#ask-device-to-check-signature)
 - [Note](#note)
 
 <!-- /MarkdownTOC -->
@@ -1944,6 +1948,123 @@ $ skycoin-cli version --json
  "rpc": "0.23.0",
  "wallet": "0.23.0"
 }
+```
+</details>
+
+### Ask device to generate addresses
+
+Generate skycoin addresses using the firmware
+
+```bash
+$skycoin-cli deviceAddressGen [number of addresses] [start index]
+```
+
+```
+OPTIONS:
+        --addressN value            Number of addresses to generate (default: 1)
+        --startIndex value          Start to genereate deterministic addresses from startIndex (default: 0)
+```
+
+#### Examples
+##### Text output
+
+```bash
+$skycoin-cli deviceAddressGen --addressN=2 --startIndex=0
+```
+<details>
+ <summary>View Output</summary>
+
+```
+MessageSkycoinAddress 117! array size is 2
+MessageSkycoinAddress 117! Answer is: 2EU3JbveHdkxW6z5tdhbbB2kRAWvXC2pLzw
+MessageSkycoinAddress 117! Answer is: zC8GAQGQBfwk7vtTxVoRG7iMperHNuyYPs
+```
+</details>
+
+### Configure device mnemonic
+
+Configure the device with a mnemonic.
+
+```bash
+$skycoin-cli deviceSetMnemonic [mnemonic]
+```
+
+```
+OPTIONS:
+        --mnemonic value            Mnemonic that will be stored in the device to generate addresses.
+```
+
+#### Examples
+##### Text output
+
+```bash
+$skycoin-cli deviceSetMnemonic --mnemonic="cloud flower upset remain green metal below cup stem infant art thank"
+```
+<details>
+ <summary>View Output</summary>
+
+```
+MessageButtonAck Answer is: 2 / 
+Ecloud flower upset remain green metal below cup stem infant art thank
+```
+</details>
+
+### Ask device to sign message
+
+Ask the device to sign a message using the secret key at given index.
+
+```bash
+$skycoin-cli deviceSignMessage [address index] [message to sign]
+```
+
+```
+OPTIONS:
+        --addressN value            Index of the address that will issue the signature. (default: 0)
+        --message value             The message that the signature claims to be signing.
+```
+
+#### Examples
+##### Text output
+
+```bash
+$skycoin-cli deviceSignMessage  --addressN=2 --message="Hello World!"
+```
+<details>
+ <summary>View Output</summary>
+
+```
+Success 2! address that issued the signature is: DEK8o3Dnnp8UfTZrZCcCPCA6oRLqDeuKKy85YoTmCjfR2xDcZCz1j6tC4nmaAxHH15wgff88R2xPatT4MRvGHz9nf
+```
+</details>
+
+### Ask device to check signature
+
+Check a message signature matches the given address.
+
+```bash
+$skycoin-cli deviceCheckMessageSignature [address] [signed message] [signature]
+```
+
+```
+OPTIONS:
+        --address value            Address that issued the signature.
+        --message value            The message that the signature claims to be signing.
+        --signature value          Signature of the message.
+```
+
+#### Examples
+##### Text output
+
+```bash
+$skycoin-cli deviceCheckMessageSignature  --address=2EU3JbveHdkxW6z5tdhbbB2kRAWvXC2pLzw --message="Hello World!" --signature=GvKS4S3CA2YTpEPFA47yFdC5CP3y3qB18jwiX1URXqWQTvMjokd3A4upPz4wyeAyKJEtRdRDGUvUgoGASpsTTUeMn
+```
+<details>
+ <summary>View Output</summary>
+
+```
+Success 2! address that issued the signature is: 
+#2EU3JbveHdkxW6z5tdhbbB2kRAWvXC2pLzw
+
 ```
 </details>
 

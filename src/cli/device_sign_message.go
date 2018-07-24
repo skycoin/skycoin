@@ -17,8 +17,8 @@ func deviceSignMessageCmd() gcli.Command {
 		Flags: []gcli.Flag{
 			gcli.IntFlag{
 				Name:  "addressN",
-				Value: 1,
-				Usage: "Index of the address that will issue the signature. Assume 1 if not set.",
+				Value: 0,
+				Usage: "Index of the address that will issue the signature. Assume 0 if not set.",
 			},
 			gcli.StringFlag{
 				Name:  "message",

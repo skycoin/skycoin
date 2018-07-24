@@ -65,6 +65,17 @@
 	free( (void*)$1->p );
 }
 
+/*GoUint64* parameter as reference */
+%typemap(in, numinputs=0) GoUint64* (GoUint64 temp) {
+	temp = 0;
+	$1 = &temp;
+}
+
+/*GoUint64* as function return typemap*/
+%typemap(argout) GoUint64* {
+	%append_output( SWIG_From_long( *$1 ) );
+}
+
 %apply GoString {GoString_}
 %apply GoString* {GoString_*}
 
@@ -76,8 +87,6 @@
 %apply int* OUTPUT {GoInt16*}
 %apply int* OUTPUT {GoUint32*}
 %apply int* OUTPUT {GoInt32*}
-%apply int* OUTPUT {GoUint64*}
-%apply int* OUTPUT {GoInt64*}
 
 typedef GoInt GoInt_;
 typedef GoUint GoUint_;

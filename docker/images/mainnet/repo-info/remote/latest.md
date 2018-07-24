@@ -9,10 +9,10 @@ $ docker pull skycoin/skycoin@sha256:
 	- linux; amd64
 
 - Layers:
-	- sha256:
-    - sha256:
-    - sha256:
-    - sha256:
+	- sha256:ff3a5c916c92643ff77519ffa742d3ec61b7f591b6b7504599d95a4a41134e28
+    - sha256:301b4fdf119c9522dd066626b1675a37a5d6e95eedf382ded38d4aa7238f3bd0
+    - sha256:b8eba0ce32557c1a4fc70597fba0ee7b0bd4359bb55df92cd34aba7f73b7831e
+    - sha256:fe2ed3aff324c5468feaa24cae82589e442817c78a74caefa2cb00df09614bd8
 
 - Expose Ports:
 	- 6000

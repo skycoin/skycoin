@@ -1,6 +1,7 @@
 /*cipher_PubKeys* input parameter */
-%typemap(in) (cipher_PubKeys* __in_pubKeys) {
+%typemap(in) (cipher_PubKeys* __in_pubKeys) (cipher_PubKeys temp) {
 	int i;
+	$1 = &temp;
 	$1->count = PyList_Size($input);
 	$1->data = malloc(sizeof(cipher_PubKey) * $1->count);
 	cipher_PubKey* pdata = $1->data;

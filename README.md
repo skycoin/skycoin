@@ -217,6 +217,7 @@ Skycoin implements client libraries which export core functionality for usage fr
 other programming languages.
 
 * `lib/cgo/` - libskycoin C client library ( [overview](lib/cgo/README.md), [API reference](docs/libc/API.md) )
+* `Swig` - Skycoin contains Swig interface files to generate libraries in different languages. ( Python library [Pyskycoin] (https://github.com/skycoin/pyskycoin))
 
 For further details run `make docs` to generate documetation and read the corresponding README and API references.
 

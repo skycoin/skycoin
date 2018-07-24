@@ -15,9 +15,6 @@
 %typemap(in) (cipher_SecKeys* __in_secKeys) (cipher_SecKeys temp) {
 	int i;
 	$1 = &temp;
-	temp.count = 0;
-	temp.data = NULL;
-	$1 = &temp;
 	$1->count = PyList_Size($input);
 	$1->data = malloc(sizeof(cipher_SecKey) * $1->count);
 	cipher_SecKey* pdata = $1->data;
@@ -28,7 +25,7 @@
 		if (!SWIG_IsOK(res))
 			SWIG_exception_fail(SWIG_TypeError, "expecting type SecKey");
 		cipher_SecKey* p = (cipher_SecKey*)argp;
-		memcpy(p, pdata, sizeof(cipher_SecKey));
+		memcpy(pdata, p, sizeof(cipher_SecKey));
 		pdata++;
 	}
 }

@@ -12,7 +12,7 @@
 		if (!SWIG_IsOK(res))
 			SWIG_exception_fail(SWIG_TypeError, "expecting type PubKey");
 		cipher_PubKey* p = (cipher_PubKey*)argp;
-		memcpy(p, pdata, sizeof(cipher_PubKey));
+		memcpy(pdata, p, sizeof(cipher_PubKey));
 		pdata++;
 	}
 }

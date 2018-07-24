@@ -76,6 +76,17 @@
 	%append_output( SWIG_From_long( *$1 ) );
 }
 
+/*GoInt64* parameter as reference */
+%typemap(in, numinputs=0) GoInt64* (GoInt64 temp) {
+	temp = 0;
+	$1 = &temp;
+}
+
+/*GoInt64* as function return typemap*/
+%typemap(argout) GoInt64* {
+	%append_output( SWIG_From_long( *$1 ) );
+}
+
 %apply GoString {GoString_}
 %apply GoString* {GoString_*}
 

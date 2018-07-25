@@ -243,6 +243,9 @@ func DeviceAddressGen(deviceType DeviceType, addressN int, startIndex int) (uint
 			return msg.Kind, make([]string, 0)
 		}
 		return msg.Kind, responseSkycoinAddress.GetAddresses()
+	} else if msg.Kind == uint16(messages.MessageType_MessageType_PinMatrixRequest) {
+		logger.Infof("This operation requires a PIN code")
+		return msg.Kind, make([]string, 0)
 	}
 	failureMsg := &messages.Failure{}
 	err = proto.Unmarshal(msg.Data, failureMsg)
@@ -361,4 +364,79 @@ func WipeDevice(deviceType DeviceType) {
 	logger.Infof("MessageButtonAck Answer is: %d / %s\n", msg.Kind, msg.Data)
 
 	initialize(dev)
+}
+
+
+// DeviceChangePin changes device's PIN code
+// The message that is sent contains an encoded form of the PIN.
+// The digits of the PIN are displayed in a 3x3 matrix on the Trezor,
+// and the message that is sent back is a string containing the positions
+// of the digits on that matrix. Below is the mapping between positions
+// and characters to be sent:
+// 7 8 9
+// 4 5 6
+// 1 2 3
+// For example, if the numbers are laid out in this way on the Trezor,
+// 3 1 5
+// 7 8 4
+// 9 6 2
+// To set the PIN "12345", the positions are:
+// top, bottom-right, top-left, right, top-right
+// so you must send "83769".
+func DeviceChangePin(deviceType DeviceType) (uint16, []byte) {
+	dev, err := getDevice(deviceType)
+	if err != nil {
+		logger.Errorf(err.Error())
+		return 0, make([]byte, 0)
+	}
+	defer dev.Close()
+
+    changePin := &messages.ChangePin{}
+    data, _ := proto.Marshal(changePin)
+	chunks := makeTrezorMessage(data, messages.MessageType_MessageType_ChangePin)
+	msg, err := sendToDevice(dev, chunks)
+	if err != nil {
+		logger.Errorf(err.Error())
+		return msg.Kind, msg.Data
+	}
+    // Acknowledge that a button has been pressed
+    if msg.Kind == uint16(messages.MessageType_MessageType_ButtonRequest) {
+		chunks = MessageButtonAck()
+		err = sendToDeviceNoAnswer(dev, chunks)
+		if err != nil {
+			logger.Errorf(err.Error())
+			return msg.Kind, msg.Data
+		}
+	
+		_, err = msg.ReadFrom(dev)
+		time.Sleep(1 * time.Second)
+		logger.Infof("MessageButtonAck Answer is: %d / %s\n", msg.Kind, msg.Data)
+	}
+	return msg.Kind, msg.Data
+}
+
+// DevicePinMatrixAck during PIN code setting use this message to send user input to device
+func DevicePinMatrixAck(deviceType DeviceType, p string) (uint16, []byte) {
+	time.Sleep(1 * time.Second)
+	dev, err := getDevice(deviceType)
+	if err != nil {
+		logger.Errorf(err.Error())
+		return 0, make([]byte, 0)
+	}
+	defer dev.Close()
+	var msg wire.Message
+	logger.Infof("Setting pin: %s\n", p)
+    pinAck := &messages.PinMatrixAck{
+        Pin: proto.String(p),
+    }
+    data, _ := proto.Marshal(pinAck)
+
+    chunks := makeTrezorMessage(data, messages.MessageType_MessageType_PinMatrixAck)
+	msg, err = sendToDevice(dev, chunks)
+	if err != nil {
+		logger.Errorf(err.Error())
+		return msg.Kind, msg.Data
+	}
+	logger.Infof("MessagePinMatrixAck Answer is: %d / %s\n", msg.Kind, msg.Data)
+	return msg.Kind, msg.Data
 }

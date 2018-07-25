@@ -5,6 +5,8 @@ import (
 
 	gcli "github.com/urfave/cli"
 
+	proto "github.com/golang/protobuf/proto"
+	messages "github.com/skycoin/skycoin/protob"
 	deviceWallet "github.com/skycoin/skycoin/src/device-wallet"
 )
 
@@ -30,10 +32,30 @@ func deviceAddressGenCmd() gcli.Command {
 		Action: func(c *gcli.Context) {
 			addressN := c.Int("addressN")
 			startIndex := c.Int("startIndex")
-			kind, responseSkycoinAddress := deviceWallet.DeviceAddressGen(deviceWallet.DeviceTypeUsb, addressN, startIndex)
-			fmt.Printf("MessageSkycoinAddress %d! array size is %d\n", kind, len(responseSkycoinAddress))
-			for i := 0; i < len(responseSkycoinAddress); i++ {
-				fmt.Printf("MessageSkycoinAddress %d! Answer is: %s\n", kind, responseSkycoinAddress[i])
+			var data []byte
+			var pinEnc string
+			kind, addresses := deviceWallet.DeviceAddressGen(deviceWallet.DeviceTypeUsb, addressN, startIndex)
+			if kind == uint16(messages.MessageType_MessageType_PinMatrixRequest) {
+				fmt.Printf("PinMatrixRequest response: ")
+				fmt.Scanln(&pinEnc)
+				kind, data = deviceWallet.DevicePinMatrixAck(deviceWallet.DeviceTypeUsb, pinEnc)
+
+				if kind == uint16(messages.MessageType_MessageType_ResponseSkycoinAddress) {
+					responseSkycoinAddress := &messages.ResponseSkycoinAddress{}
+					err := proto.Unmarshal(data, responseSkycoinAddress)
+					if err != nil {
+						fmt.Printf("unmarshaling error: %s\n", err.Error())
+						return
+					}
+					fmt.Print("Successfully got address")
+					fmt.Print(responseSkycoinAddress.GetAddresses())
+				}
+			} else {
+				if kind == uint16(messages.MessageType_MessageType_ResponseSkycoinAddress) {
+					fmt.Println("Got addresses without pin code")
+				}
+				fmt.Print(addresses)
+				fmt.Print("\n")
 			}
 		},
 	}

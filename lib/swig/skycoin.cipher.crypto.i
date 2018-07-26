@@ -150,17 +150,8 @@
 	}
 	
 	void release(){
-		destroy_cipher_PubKeys($self);
+		if($self-data != NULL)
+			free($self->data);
 	}
 }
 
-
-%inline{
-	void destroy_cipher_PubKeys(cipher_PubKeys* p){
-		if( p != NULL ){
-			if( p->data != NULL ){
-				free( p->data );
-			}
-		}
-	}
-}

@@ -33,3 +33,8 @@ typedef struct{
 	int count;
 } cipher_PubKeys;
 
+typedef struct{
+	coin__UxOut* data;
+	int count;
+} coin_UxOutArray;
+

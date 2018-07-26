@@ -1,38 +1,68 @@
+/* Handle not as pointer is input. */
+%typemap(in) Transaction__Handle {
+	SWIG_AsVal_long($input, (long*)&$1);
+}
+
 #if defined(SWIGPYTHON)
 	%include "python_seckeys.i"
 	%include "python_pubkeys.i"
-#else
+	%include "python_uxarray.i"
+#endif
+
+%rename(SKY_coin_Transaction_SignInputs) wrap_SKY_coin_Transaction_SignInputs;
+%inline{
+	GoUint32 wrap_SKY_coin_Transaction_SignInputs(Transaction__Handle handle, cipher_SecKeys* __in_secKeys){
+		GoSlice data;
+		data.data = __in_secKeys->data;
+		data.len = __in_secKeys->count;
+		data.cap = __in_secKeys->count;
+		return SKY_coin_Transaction_SignInputs(handle, data);
+	}
+}
+
+
 %rename(SKY_cipher_GenerateDeterministicKeyPairs) wrap_SKY_cipher_GenerateDeterministicKeyPairs;
 %inline {
-	GoUint32 wrap_SKY_cipher_GenerateDeterministicKeyPairs(GoSlice seed, GoInt n, cipher_SecKeys* secKeys){
+	GoUint32 wrap_SKY_cipher_GenerateDeterministicKeyPairs(GoSlice seed, GoInt n, cipher_SecKeys* __out_secKeys){
+		__out_secKeys->data = NULL;
+		__out_secKeys->count = 0;
 		GoSlice_ data;
-		data.data = secKeys->data;
-		data.len = secKeys->count;
-		data.cap = secKeys->count;
+		data.data = malloc(sizeof(cipher_SecKey) * n);
+		data.len = n;
+		data.cap = n;
 		GoUint32 result = SKY_cipher_GenerateDeterministicKeyPairs(seed, n, &data);
+		if( result == 0){
+			__out_secKeys->data = data.data;
+			__out_secKeys->count = data.len;
+		}
 		return result;
 	}
 }
 
-%rename(SKY_cipher_GenerateDeterministicKeyPairsSeed) wrap_SKY_cipher_GenerateDeterministicKeyPairsSeed;
 %inline {
-	GoUint32 wrap_SKY_cipher_GenerateDeterministicKeyPairsSeed(GoSlice seed, GoInt n, coin__UxArray* newSeed, cipher_SecKeys* secKeys){
+	GoUint32 wrap_SKY_cipher_GenerateDeterministicKeyPairsSeed(GoSlice seed, GoInt n, coin__UxArray* newSeed, cipher_SecKeys* __out_secKeys){
+		__out_secKeys->data = NULL;
+		__out_secKeys->count = 0;
 		GoSlice_ data;
-		data.data = secKeys->data;
-		data.len = secKeys->count;
-		data.cap = secKeys->count;
+		data.data = malloc(sizeof(cipher_SecKey) * n);
+		data.len = n;
+		data.cap = n;
 		GoUint32 result = SKY_cipher_GenerateDeterministicKeyPairsSeed(seed, n, newSeed, &data);
+		if( result == 0){
+			__out_secKeys->data = data.data;
+			__out_secKeys->count = data.len;
+		}
 		return result;
 	}
 }
 
 %rename(SKY_cipher_PubKeySlice_Len) wrap_SKY_cipher_PubKeySlice_Len;
 %inline {
-	GoUint32 wrap_SKY_cipher_PubKeySlice_Len(cipher_PubKeys* pubKeys){
+	GoUint32 wrap_SKY_cipher_PubKeySlice_Len(cipher_PubKeys* __in_pubKeys){
 		GoSlice_ data;
-		data.data = pubKeys->data;
-		data.len = pubKeys->count;
-		data.cap = pubKeys->count;
+		data.data = __in_pubKeys->data;
+		data.len = __in_pubKeys->count;
+		data.cap = __in_pubKeys->count;
 		GoUint32 result = SKY_cipher_PubKeySlice_Len(&data);
 		return result;
 	}
@@ -40,11 +70,11 @@
 
 %rename(SKY_cipher_PubKeySlice_Less) wrap_SKY_cipher_PubKeySlice_Less;
 %inline {
-	GoUint32 wrap_SKY_cipher_PubKeySlice_Less(cipher_PubKeys* pubKeys, GoInt p1, GoInt p2){
+	GoUint32 wrap_SKY_cipher_PubKeySlice_Less(cipher_PubKeys* __in_pubKeys, GoInt p1, GoInt p2){
 		GoSlice_ data;
-		data.data = pubKeys->data;
-		data.len = pubKeys->count;
-		data.cap = pubKeys->count;
+		data.data = __in_pubKeys->data;
+		data.len = __in_pubKeys->count;
+		data.cap = __in_pubKeys->count;
 		GoUint32 result = SKY_cipher_PubKeySlice_Less(&data, p1, p2);
 		return result;
 	}
@@ -52,20 +82,65 @@
 
 %rename(SKY_cipher_PubKeySlice_Swap) wrap_SKY_cipher_PubKeySlice_Swap;
 %inline {
-	GoUint32 wrap_SKY_cipher_PubKeySlice_Swap(cipher_PubKeys* pubKeys, GoInt p1, GoInt p2){
+	GoUint32 wrap_SKY_cipher_PubKeySlice_Swap(cipher_PubKeys* __in_pubKeys, GoInt p1, GoInt p2){
 		GoSlice_ data;
-		data.data = pubKeys->data;
-		data.len = pubKeys->count;
-		data.cap = pubKeys->count;
+		data.data = __in_pubKeys->data;
+		data.len = __in_pubKeys->count;
+		data.cap = __in_pubKeys->count;
 		GoUint32 result = SKY_cipher_PubKeySlice_Swap(&data, p1, p2);
 		return result;
 	}
 }
 
-#endif
+%rename(SKY_coin_VerifyTransactionCoinsSpending) wrap_SKY_coin_VerifyTransactionCoinsSpending;
+%inline {
+	GoUint32 wrap_SKY_coin_VerifyTransactionCoinsSpending(coin_UxOutArray* __uxIn, coin_UxOutArray* __uxOut){
+		GoSlice_ dataIn;
+		dataIn.data = __uxIn->data;
+		dataIn.len = __uxIn->count;
+		dataIn.cap = __uxIn->count;
+		GoSlice_ dataOut;
+		dataOut.data = __uxOut->data;
+		dataOut.len = __uxOut->count;
+		dataOut.cap = __uxOut->count;
+		GoUint32 result = SKY_coin_VerifyTransactionCoinsSpending(&dataIn, &dataOut);
+		return result;
+	};
+}
 
+%rename(SKY_coin_VerifyTransactionHoursSpending) wrap_SKY_coin_VerifyTransactionHoursSpending;
+%inline {
+	GoUint32 wrap_SKY_coin_VerifyTransactionHoursSpending(GoUint64 _headTime , coin_UxOutArray* __uxIn, coin_UxOutArray* __uxOut){
+		GoSlice_ dataIn;
+		dataIn.data = __uxIn->data;
+		dataIn.len = __uxIn->count;
+		dataIn.cap = __uxIn->count;
+		GoSlice_ dataOut;
+		dataOut.data = __uxOut->data;
+		dataOut.len = __uxOut->count;
+		dataOut.cap = __uxOut->count;
+		GoUint32 result = SKY_coin_VerifyTransactionHoursSpending(_headTime, &dataIn, &dataOut);
+		return result;
+	};
+}
 
-
+%rename(SKY_coin_CreateUnspents) wrap_SKY_coin_CreateUnspents;
+%inline {
+	GoUint32 wrap_SKY_coin_CreateUnspents(coin__BlockHeader* bh, Transaction__Handle t, coin_UxOutArray* __return_Ux){
+		__return_Ux->data = NULL;
+		__return_Ux->count = 0;
+		GoSlice_ data;
+		data.data = NULL;
+		data.len = 0;
+		data.cap = 0;
+		GoUint32 result = SKY_coin_CreateUnspents(bh, t, &data);
+		if( result == 0){
+			__return_Ux->data = data.data;
+			__return_Ux->count = data.len;
+		}
+		return result;
+	}
+}
 
 /**
 *

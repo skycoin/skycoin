@@ -24,6 +24,39 @@
 	}
 }
 
+%extend coin_UxOutArray {
+	coin__UxOut* getAt(int i){
+		if( i < $self->count ){
+			return &$self->data[i];
+		}
+		else
+			return NULL;
+	}
+	
+	int setAt(int i, coin__UxOut* uxout){
+		if( i < $self->count){
+			memcpy(&self->data[i], uxout, sizeof(*uxout));
+			return i;
+		} else {
+			return -1;
+		}
+	}
+	
+	int isEqual(coin_UxOutArray* a){
+		return $self->count == a->count && memcmp($self->data, a->data, sizeof(coin__UxOut) * $self->count) == 0;
+	}
+	
+	void allocate(int n){
+		$self->data = malloc(n * sizeof(*($self->data)));
+		$self->count = n;
+	}
+	
+	void release(){
+		if($self-data != NULL)
+			free($self->data);
+	}
+}
+
 %extend coin__TransactionOutput {
 	int isEqual(coin__TransactionOutput* t){
 		if( $self->Coins != t->Coins ||
@@ -36,3 +69,4 @@
 	 	return 1;
 	}
 }
+

@@ -6,11 +6,6 @@
   $1 = PyList_Check($input) ? 1 : 0;
 }
 
-/* Handle not as pointer is input. */
-%typemap(in) Transaction__Handle {
-	SWIG_AsVal_long($input, (long*)&$1);
-}
-
 /*cipher_PubKeys* input parameter */
 %typemap(in) (cipher_SecKeys* __in_secKeys) (cipher_SecKeys temp) {
 	int i;
@@ -58,50 +53,5 @@
 	%append_output( list );
 }
 
-%rename(SKY_coin_Transaction_SignInputs) wrap_SKY_coin_Transaction_SignInputs;
-%inline{
-	GoUint32 wrap_SKY_coin_Transaction_SignInputs(Transaction__Handle handle, cipher_SecKeys* __in_secKeys){
-		GoSlice data;
-		data.data = __in_secKeys->data;
-		data.len = __in_secKeys->count;
-		data.cap = __in_secKeys->count;
-		return SKY_coin_Transaction_SignInputs(handle, data);
-	}
-}
 
-
-%rename(SKY_cipher_GenerateDeterministicKeyPairs) wrap_SKY_cipher_GenerateDeterministicKeyPairs;
-%inline {
-	GoUint32 wrap_SKY_cipher_GenerateDeterministicKeyPairs(GoSlice seed, GoInt n, cipher_SecKeys* __out_secKeys){
-		__out_secKeys->data = NULL;
-		__out_secKeys->count = 0;
-		GoSlice_ data;
-		data.data = malloc(sizeof(cipher_SecKey) * n);
-		data.len = n;
-		data.cap = n;
-		GoUint32 result = SKY_cipher_GenerateDeterministicKeyPairs(seed, n, &data);
-		if( result == 0){
-			__out_secKeys->data = data.data;
-			__out_secKeys->count = data.len;
-		}
-		return result;
-	}
-}
-
-%inline {
-	GoUint32 wrap_SKY_cipher_GenerateDeterministicKeyPairsSeed(GoSlice seed, GoInt n, coin__UxArray* newSeed, cipher_SecKeys* __out_secKeys){
-		__out_secKeys->data = NULL;
-		__out_secKeys->count = 0;
-		GoSlice_ data;
-		data.data = malloc(sizeof(cipher_SecKey) * n);
-		data.len = n;
-		data.cap = n;
-		GoUint32 result = SKY_cipher_GenerateDeterministicKeyPairsSeed(seed, n, newSeed, &data);
-		if( result == 0){
-			__out_secKeys->data = data.data;
-			__out_secKeys->count = data.len;
-		}
-		return result;
-	}
-}
 

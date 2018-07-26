@@ -1,0 +1,10 @@
+<div class="-content">
+  <div *ngIf="isLoading">
+    <mat-spinner [diameter]="40"></mat-spinner>
+    <p>{{ 'common.loading' | translate }}</p>
+  </div>
+  <div *ngIf="!isLoading">
+    <i class="material-icons">announcement</i>
+    <p>{{ noDataText | translate }}</p>
+  </div>
+</div>

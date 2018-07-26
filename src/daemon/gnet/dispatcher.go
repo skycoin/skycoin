@@ -45,7 +45,7 @@ func convertToMessage(id int, msg []byte, debugPrint bool) (Message, error) {
 	}
 
 	if debugPrint {
-		logger.Debugf("Convert, Message type %v", t)
+		logger.Debugf("convertToMessage for connection %d, message type %v", id, t)
 	}
 
 	var m Message
@@ -55,6 +55,7 @@ func convertToMessage(id int, msg []byte, debugPrint bool) (Message, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if used != len(msg) {
 		return nil, errors.New("Data buffer was not completely decoded")
 	}

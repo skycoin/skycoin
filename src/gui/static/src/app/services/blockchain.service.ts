@@ -1,16 +1,15 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { ApiService } from './api.service';
 import { Observable } from 'rxjs/Observable';
-import { IntervalObservable } from 'rxjs/observable/IntervalObservable';
 import { Subject } from 'rxjs/Subject';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
-import { TellerConfig } from '../app.datatypes';
 import { WalletService } from './wallet.service';
+import 'rxjs/add/observable/timer';
 
 @Injectable()
 export class BlockchainService {
-
   private progressSubject: Subject<any> = new BehaviorSubject<any>(null);
+  private refreshedBalance = false;
 
   get progress() {
     return this.progressSubject.asObservable();
@@ -19,24 +18,25 @@ export class BlockchainService {
   constructor(
     private apiService: ApiService,
     private walletService: WalletService,
+    private ngZone: NgZone,
   ) {
-    setTimeout(() => IntervalObservable
-      .create(2000)
-      .flatMap(() => this.getBlockchainProgress())
-      .takeWhile((response: any) => !response.current || response.current !== response.highest)
-      .subscribe(
-        response => this.progressSubject.next(response),
-        error => console.log(error),
-        () => this.completeLoading()
-      ), 3000);
-  }
+    this.ngZone.runOutsideAngular(() => {
+      Observable.timer(0, 2000)
+        .flatMap(() => this.getBlockchainProgress())
+        .takeWhile((response: any) => !response.current || response.current !== response.highest)
+        .subscribe(
+          response => this.ngZone.run(() => {
+            this.progressSubject.next(response);
 
-  addressTransactions(id): Observable<any> {
-    return this.apiService.get('explorer/address', { address: id });
-  }
-
-  addressBalance(id): Observable<any> {
-    return this.apiService.get('outputs', { addrs: id });
+            if (!this.refreshedBalance) {
+              this.walletService.refreshBalances();
+              this.refreshedBalance = true;
+            }
+          }),
+          error => console.log(error),
+          () => this.ngZone.run(() => this.completeLoading()),
+        );
+    });
   }
 
   block(id): Observable<any> {
@@ -45,14 +45,17 @@ export class BlockchainService {
         if (transaction.inputs && !transaction.inputs.length) {
           return Observable.of(transaction);
         }
+
         return Observable.forkJoin(transaction.inputs.map(input => this.retrieveInputAddress(input).map(response => {
           return response.owner_address;
         }))).map(inputs => {
           transaction.inputs = inputs;
+
           return transaction;
         });
       })).map(transactions => {
         block.body.txns = transactions;
+
         return block;
       });
     });
@@ -68,6 +71,10 @@ export class BlockchainService {
 
   getBlockchainProgress() {
     return this.apiService.get('blockchain/progress');
+  }
+
+  coinSupply() {
+    return this.apiService.get('coinSupply');
   }
 
   private completeLoading() {

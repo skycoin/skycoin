@@ -1,20 +1,57 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
+import { ActivatedRoute } from '@angular/router';
+import { ISubscription } from 'rxjs/Subscription';
+import { MatDialog, MatDialogConfig } from '@angular/material';
+import { QrCodeComponent } from '../../../layout/qr-code/qr-code.component';
 
 @Component({
   selector: 'app-outputs',
   templateUrl: './outputs.component.html',
-  styleUrls: ['./outputs.component.css']
+  styleUrls: ['./outputs.component.scss'],
 })
-export class OutputsComponent implements OnInit {
+export class OutputsComponent implements OnDestroy {
+  wallets: any[]|null;
 
-  outputs: any[];
+  private outputsSubscription: ISubscription;
 
   constructor(
     public walletService: WalletService,
-  ) { }
+    private route: ActivatedRoute,
+    private dialog: MatDialog,
+  ) {
+    route.queryParams.subscribe(params => this.loadData(params));
+  }
 
-  ngOnInit() {
-    this.walletService.outputs().subscribe(outputs => this.outputs = outputs.head_outputs);
+  ngOnDestroy() {
+    this.outputsSubscription.unsubscribe();
+  }
+
+  loadData(params) {
+    const addr = params['addr'];
+
+    this.wallets = null;
+    this.outputsSubscription = this.walletService.outputsWithWallets().subscribe(wallets => {
+      this.wallets = wallets
+        .map(wallet => Object.assign({}, wallet))
+        .map(wallet => {
+          wallet.addresses = wallet.addresses.filter(address => {
+            if (address.outputs.length > 0) {
+              return addr ? address.address === addr : true;
+            }
+          });
+
+          return wallet;
+        })
+        .filter(wallet => wallet.addresses.length > 0);
+    });
+  }
+
+  showQrCode(event: any, address: string) {
+    event.stopPropagation();
+
+    const config = new MatDialogConfig();
+    config.data = { address };
+    this.dialog.open(QrCodeComponent, config);
   }
 }

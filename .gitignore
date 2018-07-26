@@ -102,8 +102,16 @@ electron/node_modules
 electron/.gox_output
 electron/.electron_output
 electron/.standalone_output
+# Do not ignore the icons folder
+!electron/build
+!electron/build/icons
 
 .vscode/
+
+#File generation sublime text
+.do.cfg
+.do.state
+skycoin.do
 
 *.swo
 *.swp
@@ -116,10 +124,24 @@ src/mesh/TODO
 *.test
 coverage.html
 
-src/gui/integration/wallets/
+src/api/integration/wallets/
+src/api/integration/wallets/
 
 skycoin-cli
 
 # FIXME: see #1027 - Temporary solution to deal with generated file
 include/libskycoin.h
 
+# Eclipse temp files
+.cproject
+.metadata/**
+.project
+
+# Generated docs
+docs/libc/latex
+docs/libc/man
+docs/libc/xml
+
+
+# Do not ignore Docker Cloud build
+!hooks/build

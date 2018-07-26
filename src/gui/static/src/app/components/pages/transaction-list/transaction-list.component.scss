@@ -1,4 +1,4 @@
-@import '../../../../theme/_variables.scss';
+@import '../../../../theme/variables';
 
 .-paper {
   background-color: #fbfbfb;
@@ -8,13 +8,11 @@
 }
 
 .-transaction {
-  align-items: center;
   background-color: $white;
   border-bottom: 1px solid #eff0f0;
   cursor: pointer;
   display: flex;
-  min-height: 80px;
-  padding: 0 12px;
+  padding: 20px 12px;
 
   &:first-child {
     border-top-left-radius: 15px;
@@ -31,6 +29,8 @@
   }
 
   .-icon {
+    margin-top: 5px;
+
     img {
       width: 32px;
     }
@@ -71,29 +71,36 @@
       }
 
       .-timestamp {
-        color: rgba(30, 34, 39, 0.2);
+        color: $grey;
       }
     }
 
-    img {
-      display: inline-block;
-      height: 17px;
-      vertical-align: middle;
-      width: 17px;
-      margin-right: 4px;
-    }
+    .-item {
+      &:not(:last-child) {
+        margin-bottom: 5px;
+      }
 
-    p {
-      color: rgba(30, 34, 39, 0.5);
-      display: inline-block;
-      font-size: 13px;
-      line-height: 15px;
-      margin: 0;
+      img {
+        display: inline-block;
+        height: 17px;
+        vertical-align: middle;
+        width: 17px;
+        margin-right: 4px;
+      }
+
+      span {
+        color: rgba(30, 34, 39, 0.5);
+        display: inline-block;
+        font-size: 13px;
+        line-height: 15px;
+        margin: 0;
+      }
     }
   }
 
   .-balance {
-    width: 100px;
+    width: 200px;
+    text-align: right;
 
     h4 {
       color: #1e2227;
@@ -109,6 +116,10 @@
       font-size: 13px;
       line-height: 15px;
       margin: 0;
+
+      span {
+        color: lighten($grey, 40%);
+      }
     }
   }
 }

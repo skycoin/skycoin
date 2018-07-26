@@ -4,6 +4,36 @@
   text-align: center;
 }
 
+label[for=seed] {
+  display: flex;
+
+  > span:last-child {
+    flex: 1;
+  }
+
+  .generators {
+    text-align: right;
+
+    span {
+      cursor: pointer;
+      color: $gradient-blue-dark-transparent;
+    }
+
+    mat-icon {
+      width: 13px;
+      height: 10px;
+      font-size: 13px;
+      position: relative;
+      top: 2px;
+    }
+
+    .divider {
+      padding: 0 5px;
+      color: $grey-dark;
+    }
+  }
+}
+
 .-disabled {
   display: none;
 }
@@ -20,7 +50,7 @@
 
   .-info {
     margin: 5px 0 15px;
-    color: $grey-dark;
+    color: $grey;
     font-size: 12px;
     line-height: 1.5;
   }
@@ -59,7 +89,7 @@
     line-height: normal;
     font-size: 14px;
 
-    color: $grey-normal;
+    color: $grey-dark;
 
     img {
       width: 38px;

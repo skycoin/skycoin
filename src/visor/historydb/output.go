@@ -1,13 +1,16 @@
 package historydb
 
 import (
-	"github.com/boltdb/bolt"
+	"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/visor/bucket"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
+
+// UxOutsBkt holds unspent outputs
+var UxOutsBkt = []byte("uxouts")
 
 // UxOut expend coin.UxOut struct
 type UxOut struct {
@@ -54,64 +57,64 @@ func (o UxOut) Hash() cipher.SHA256 {
 }
 
 // UxOuts bucket stores outputs, UxOut hash as key and Output as value.
-type UxOuts struct {
-	bkt *bucket.Bucket
-}
-
-func newOutputsBkt(db *bolt.DB) (*UxOuts, error) {
-	bkt, err := bucket.New([]byte("uxouts"), db)
-	if err != nil {
-		return nil, err
-	}
-	return &UxOuts{bkt}, nil
-}
+type UxOuts struct{}
 
 // Set sets out value
-func (ux *UxOuts) Set(out UxOut) error {
-	key := out.Hash()
-	bin := encoder.Serialize(out)
-	return ux.bkt.Put(key[:], bin)
+func (ux *UxOuts) Set(tx *dbutil.Tx, out UxOut) error {
+	hash := out.Hash()
+	return dbutil.PutBucketValue(tx, UxOutsBkt, hash[:], encoder.Serialize(out))
 }
 
 // Get gets UxOut of given id
-func (ux *UxOuts) Get(uxID cipher.SHA256) (*UxOut, error) {
-	bin := ux.bkt.Get(uxID[:])
-	if bin == nil {
-		return nil, nil
-	}
+func (ux *UxOuts) Get(tx *dbutil.Tx, uxID cipher.SHA256) (*UxOut, error) {
+	var out UxOut
 
-	out := UxOut{}
-	if err := encoder.DeserializeRaw(bin, &out); err != nil {
+	if ok, err := dbutil.GetBucketObjectDecoded(tx, UxOutsBkt, uxID[:], &out); err != nil {
 		return nil, err
+	} else if !ok {
+		return nil, nil
 	}
 
 	return &out, nil
 }
 
+// GetArray returns UxOuts for a set of uxids, will return error if any of the uxids do not exist
+func (ux *UxOuts) GetArray(tx *dbutil.Tx, uxIDs []cipher.SHA256) ([]*UxOut, error) {
+	var outs []*UxOut
+	for _, uxID := range uxIDs {
+		out, err := ux.Get(tx, uxID)
+		if err != nil {
+			return nil, err
+		} else if out == nil {
+			return nil, NewErrUxOutNotExist(uxID.Hex())
+		}
+
+		outs = append(outs, out)
+	}
+
+	return outs, nil
+}
+
 // IsEmpty checks if the uxout bucekt is empty
-func (ux *UxOuts) IsEmpty() bool {
-	return ux.bkt.IsEmpty()
+func (ux *UxOuts) IsEmpty(tx *dbutil.Tx) (bool, error) {
+	return dbutil.IsEmpty(tx, UxOutsBkt)
 }
 
 // Reset resets the bucket
-func (ux *UxOuts) Reset() error {
-	return ux.bkt.Reset()
+func (ux *UxOuts) Reset(tx *dbutil.Tx) error {
+	return dbutil.Reset(tx, UxOutsBkt)
 }
 
-func getOutput(bkt *bolt.Bucket, hash cipher.SHA256) (*UxOut, error) {
-	bin := bkt.Get(hash[:])
-	if bin != nil {
-		var out UxOut
-		if err := encoder.DeserializeRaw(bin, &out); err != nil {
-			return nil, err
-		}
-		return &out, nil
-	}
-
-	return nil, nil
+// ErrUxOutNotExist is returned if an uxout is not found in historydb
+type ErrUxOutNotExist struct {
+	UxID string
 }
 
-func setOutput(bkt *bolt.Bucket, ux UxOut) error {
-	hash := ux.Hash()
-	return bkt.Put(hash[:], encoder.Serialize(ux))
+// NewErrUxOutNotExist creates ErrUxOutNotExist from a UxID
+func NewErrUxOutNotExist(uxID string) error {
+	return ErrUxOutNotExist{UxID: uxID}
+}
+
+func (e ErrUxOutNotExist) Error() string {
+	return fmt.Sprintf("uxout of %s does not exist", e.UxID)
 }

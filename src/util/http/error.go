@@ -2,6 +2,7 @@
 package httphelper
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -15,7 +16,6 @@ var (
 // HTTPError wraps http.Error
 func HTTPError(w http.ResponseWriter, status int, httpMsg string) {
 	msg := fmt.Sprintf("%d %s", status, httpMsg)
-	logger.Errorf(msg)
 	http.Error(w, msg, status)
 }
 
@@ -31,12 +31,31 @@ func errorXXXMsg(w http.ResponseWriter, status int, msg string) {
 	HTTPError(w, status, httpMsg)
 }
 
-// Error400 respond with a 400 error
+func errorXXXJSONOr500(log *logging.Logger, w http.ResponseWriter, status int, m interface{}) {
+	out, err := json.MarshalIndent(m, "", "    ")
+	if err != nil {
+		Error500(w, "json.MarshalIndent failed")
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if _, err := w.Write(out); err != nil {
+		log.WithError(err).Error("http write failed")
+	}
+}
+
+// Error400 respond with a 400 error and include a message
 func Error400(w http.ResponseWriter, msg string) {
 	errorXXXMsg(w, http.StatusBadRequest, msg)
 }
 
-// Error401 response with a 401 error
+// Error400JSONOr500 returns a 400 error with an object as JSON, writting a 500 error if it fails
+func Error400JSONOr500(log *logging.Logger, w http.ResponseWriter, m interface{}) {
+	errorXXXJSONOr500(log, w, http.StatusBadRequest, m)
+}
+
+// Error401 respond with a 401 error
 func Error401(w http.ResponseWriter, auth, msg string) {
 	w.Header().Set("WWW-Authenticate", auth)
 	httpMsg := http.StatusText(http.StatusUnauthorized)
@@ -46,23 +65,13 @@ func Error401(w http.ResponseWriter, auth, msg string) {
 	HTTPError(w, http.StatusUnauthorized, httpMsg)
 }
 
-// Error403 respond with a 403 error
-func Error403(w http.ResponseWriter) {
-	httpError(w, http.StatusForbidden)
-}
-
-// Error403Msg respond with a 403 error and include a message
-func Error403Msg(w http.ResponseWriter, msg string) {
+// Error403 respond with a 403 error and include a message
+func Error403(w http.ResponseWriter, msg string) {
 	errorXXXMsg(w, http.StatusForbidden, msg)
 }
 
-// Error404 respond with a 404 error
-func Error404(w http.ResponseWriter) {
-	httpError(w, http.StatusNotFound)
-}
-
-// Error404Msg respond with a 404 error and include a message
-func Error404Msg(w http.ResponseWriter, msg string) {
+// Error404 respond with a 404 error and include a message
+func Error404(w http.ResponseWriter, msg string) {
 	errorXXXMsg(w, http.StatusNotFound, msg)
 }
 
@@ -76,22 +85,27 @@ func Error415(w http.ResponseWriter) {
 	httpError(w, http.StatusUnsupportedMediaType)
 }
 
+// Error422 response with a 422 error and include a message
+func Error422(w http.ResponseWriter, msg string) {
+	errorXXXMsg(w, http.StatusUnprocessableEntity, msg)
+}
+
+// Error422JSONOr500 returns a 422 error with an object as JSON, writting a 500 error if it fails
+func Error422JSONOr500(log *logging.Logger, w http.ResponseWriter, m interface{}) {
+	errorXXXJSONOr500(log, w, http.StatusUnprocessableEntity, m)
+}
+
 // Error501 respond with a 501 error
 func Error501(w http.ResponseWriter) {
 	httpError(w, http.StatusNotImplemented)
 }
 
-// Error500 respond with a 500 error
-func Error500(w http.ResponseWriter) {
-	httpError(w, http.StatusInternalServerError)
-}
-
-// Error500Msg respond with a 500 error and include a message
-func Error500Msg(w http.ResponseWriter, msg string) {
+// Error500 respond with a 500 error and include a message
+func Error500(w http.ResponseWriter, msg string) {
 	errorXXXMsg(w, http.StatusInternalServerError, msg)
 }
 
-// Error503Msg respond with a 503 error and include a message
-func Error503Msg(w http.ResponseWriter, msg string) {
+// Error503 respond with a 503 error and include a message
+func Error503(w http.ResponseWriter, msg string) {
 	errorXXXMsg(w, http.StatusServiceUnavailable, msg)
 }

@@ -4,11 +4,12 @@ import { WalletService } from '../../../../services/wallet.service';
 import { MatDialogRef } from '@angular/material/dialog';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { MAT_DIALOG_DATA } from '@angular/material';
+import { ApiService } from '../../../../services/api.service';
 
 @Component({
   selector: 'app-create-wallet',
   templateUrl: './create-wallet.component.html',
-  styleUrls: ['./create-wallet.component.scss']
+  styleUrls: ['./create-wallet.component.scss'],
 })
 export class CreateWalletComponent implements OnInit {
   @ViewChild('createButton') createButton: ButtonComponent;
@@ -23,6 +24,7 @@ export class CreateWalletComponent implements OnInit {
     @Inject(MAT_DIALOG_DATA) public data,
     public dialogRef: MatDialogRef<CreateWalletComponent>,
     private walletService: WalletService,
+    private apiService: ApiService,
   ) {}
 
   ngOnInit() {
@@ -34,6 +36,10 @@ export class CreateWalletComponent implements OnInit {
   }
 
   createWallet() {
+    if (!this.form.valid || this.createButton.isLoading()) {
+      return;
+    }
+
     this.createButton.resetState();
     this.createButton.setLoading();
     this.cancelButton.setDisabled();
@@ -48,8 +54,8 @@ export class CreateWalletComponent implements OnInit {
       });
   }
 
-  generateSeed() {
-    this.walletService.generateSeed().subscribe(seed => this.form.get('seed').setValue(seed));
+  generateSeed(entropy: number) {
+    this.apiService.generateSeed(entropy).subscribe(seed => this.form.get('seed').setValue(seed));
   }
 
   setEncrypt(event) {
@@ -66,7 +72,7 @@ export class CreateWalletComponent implements OnInit {
     this.form.addControl('confirm_password', new FormControl());
 
     if (this.data.create) {
-      this.generateSeed();
+      this.generateSeed(128);
     }
 
     this.scan = 100;

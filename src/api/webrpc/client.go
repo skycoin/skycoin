@@ -7,32 +7,93 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor"
 )
 
+const (
+	dialTimeout         = 60 * time.Second
+	httpClientTimeout   = 120 * time.Second
+	tlsHandshakeTimeout = 60 * time.Second
+)
+
 // ErrJSONUnmarshal is returned if JSON unmarshal fails
 var ErrJSONUnmarshal = errors.New("JSON unmarshal failed")
 
+// ClientError is used for non-200 API responses
+type ClientError struct {
+	Status     string
+	StatusCode int
+	Message    string
+}
+
+func (e ClientError) Error() string {
+	return e.Message
+}
+
 // Client is an RPC client
 type Client struct {
-	Addr     string
-	reqIDCtr int
+	Addr       string
+	HTTPClient *http.Client
+	UseCSRF    bool
+	reqIDCtr   int
+}
+
+// NewClient creates a Client
+func NewClient(addr string) (*Client, error) {
+	transport := &http.Transport{
+		Dial: (&net.Dialer{
+			Timeout: dialTimeout,
+		}).Dial,
+		TLSHandshakeTimeout: tlsHandshakeTimeout,
+	}
+	httpClient := &http.Client{
+		Transport: transport,
+		Timeout:   httpClientTimeout,
+	}
+	addr = strings.TrimRight(addr, "/")
+	addr += "/"
+
+	if _, err := url.Parse(addr); err != nil {
+		return nil, err
+	}
+
+	return &Client{
+		Addr:       addr,
+		HTTPClient: httpClient,
+	}, nil
 }
 
 // Do makes an RPC request
 func (c *Client) Do(obj interface{}, method string, params interface{}) error {
 	c.reqIDCtr++
+
+	var csrf string
+	if c.UseCSRF {
+		var err error
+		csrf, err = c.CSRF()
+		if err != nil {
+			return err
+		}
+
+		if csrf == "" {
+			return errors.New("Remote node has CSRF disabled")
+		}
+	}
+
 	req, err := NewRequest(method, params, strconv.Itoa(c.reqIDCtr))
 	if err != nil {
 		return err
 	}
 
-	rsp, err := Do(req, c.Addr)
+	rsp, err := do(c.HTTPClient, req, c.Addr, csrf)
 	if err != nil {
 		return err
 	}
@@ -42,6 +103,49 @@ func (c *Client) Do(obj interface{}, method string, params interface{}) error {
 	}
 
 	return decodeJSON(rsp.Result, obj)
+}
+
+// CSRF returns a CSRF token. If CSRF is disabled on the node, returns an empty string and nil error.
+func (c *Client) CSRF() (string, error) {
+	endpoint := c.Addr + "csrf"
+	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := c.HTTPClient.Do(req)
+
+	if err != nil {
+		return "", err
+	}
+
+	defer resp.Body.Close()
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+	case http.StatusNotFound:
+		// CSRF is disabled on the node
+		return "", nil
+	default:
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return "", err
+		}
+
+		return "", fmt.Errorf("%d %s: %s", resp.StatusCode, resp.Status, string(body))
+	}
+
+	var m map[string]string
+	if err := json.NewDecoder(resp.Body).Decode(&m); err != nil {
+		return "", err
+	}
+
+	token, ok := m["csrf_token"]
+	if !ok {
+		return "", errors.New("csrf_token not found in response")
+	}
+
+	return token, nil
 }
 
 // GetUnspentOutputs returns unspent outputs for a set of addresses
@@ -139,33 +243,47 @@ func (c *Client) GetLastBlocks(n uint64) (*visor.ReadableBlocks, error) {
 	return &blocks, nil
 }
 
-// Do send request to web
-func Do(req *Request, rpcAddress string) (*Response, error) {
-	d, err := json.Marshal(req)
+// do send request to web. rpcAddress should have forward slash appended
+func do(httpClient *http.Client, rpcReq *Request, rpcAddress, csrf string) (*Response, error) {
+	d, err := json.Marshal(rpcReq)
 	if err != nil {
 		return nil, err
 	}
 
-	url := fmt.Sprintf("http://%s/webrpc", rpcAddress)
+	url := rpcAddress + "api/v1/webrpc"
 	body := bytes.NewBuffer(d)
-	rsp, err := http.Post(url, "application/json", body)
+	req, err := http.NewRequest(http.MethodPost, url, body)
 	if err != nil {
 		return nil, err
 	}
-	defer rsp.Body.Close()
 
-	if rsp.StatusCode != http.StatusOK {
-		body, err := ioutil.ReadAll(rsp.Body)
+	req.Header.Set("Content-Type", "application/json")
+
+	if csrf != "" {
+		req.Header.Set("X-CSRF-Token", csrf)
+	}
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			return nil, err
 		}
 
-		msg := fmt.Sprintf("RPC request failed: %s", body)
-		return nil, errors.New(strings.TrimSpace(msg))
+		return nil, ClientError{
+			Status:     resp.Status,
+			StatusCode: resp.StatusCode,
+			Message:    strings.TrimSpace(string(body)),
+		}
 	}
 
 	res := Response{}
-	if err := json.NewDecoder(rsp.Body).Decode(&res); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
 		return nil, err
 	}
 	return &res, nil

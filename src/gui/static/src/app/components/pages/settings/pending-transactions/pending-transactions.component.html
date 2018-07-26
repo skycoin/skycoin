@@ -1,22 +1,26 @@
 <div class="sky-container sky-container-grey">
-  <app-header title="Pending Transaction"></app-header>
+  <app-header [headline]="'title.pending-txs' | translate"></app-header>
 
-  <ngx-datatable #table
-                 class="material"
-                 [rows]="transactions"
-                 columnMode="flex"
-                 [headerHeight]="50"
-                 [footerHeight]="50"
-                 [rowHeight]="50"
-                 [limit]="10"
-                 [scrollbarH]="true"
-                 (activate)="onActivate($event)">
-    <ngx-datatable-column name="Timestamp" prop="timestamp" [flexGrow]="2">
-      <ng-template let-value="value" ngx-datatable-cell-template>
-        <strong>{{ value | dateTime }}</strong>
-      </ng-template>
-    </ngx-datatable-column>
-    <ngx-datatable-column name="Amount" [flexGrow]="1"></ngx-datatable-column>
-    <ngx-datatable-column name="Transaction ID" prop="txid" [flexGrow]="8"></ngx-datatable-column>
-  </ngx-datatable>
+  <app-loading-content
+    [isLoading]="!transactions"
+    noDataText="pending-txs.none"
+    *ngIf="!transactions || transactions.length === 0"
+  ></app-loading-content>
+
+  <div class="container" *ngIf="transactions && transactions.length > 0">
+    <div class="-table">
+      <div class="-headers">
+        <div class="-flex-fill">{{ 'pending-txs.txid' | translate }}</div>
+        <div class="-width-150">{{ 'common.coin-id' | translate }}</div>
+        <div class="-width-150">{{ 'pending-txs.timestamp' | translate }}</div>
+      </div>
+      <div class="-body">
+        <div class="-row" *ngFor="let tx of transactions">
+          <div class="-flex-fill">{{ tx.txid }}</div>
+          <div class="-width-150">{{ tx.amount | number:'1.0-6' }}</div>
+          <div class="-width-150 -timestamp">{{ tx.timestamp | dateTime }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

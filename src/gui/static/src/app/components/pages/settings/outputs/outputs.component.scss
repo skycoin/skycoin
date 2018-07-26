@@ -1,0 +1,34 @@
+@import '../../../../../theme/variables';
+
+.-text-right {
+  text-align: right;
+}
+
+.-grey {
+  color: $grey;
+}
+
+.-row.-small {
+  height: $row-height / 1.5;
+  line-height: $row-height / 1.5;
+}
+
+.-hash {
+  margin-left: 27px;
+}
+
+.-address {
+  color: $grey;
+
+  img {
+    width: 17px;
+    vertical-align: middle;
+    margin-right: 10px;
+  }
+}
+
+.-label {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}

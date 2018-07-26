@@ -13,7 +13,9 @@ export class OnboardingEncryptWalletComponent implements OnInit {
   @Output() onBack = new EventEmitter();
   form: FormGroup;
 
-  constructor(private formBuilder: FormBuilder) { }
+  constructor(
+    private formBuilder: FormBuilder,
+  ) { }
 
   ngOnInit() {
     this.initEncryptForm();
@@ -39,6 +41,10 @@ export class OnboardingEncryptWalletComponent implements OnInit {
   }
 
   emitCreatedPassword() {
+    if ((this.form.enabled && !this.form.valid) || this.button.isLoading()) {
+      return;
+    }
+
     this.button.setLoading();
 
     this.onPasswordCreated.emit(this.form.enabled ? this.form.get('password').value : null);

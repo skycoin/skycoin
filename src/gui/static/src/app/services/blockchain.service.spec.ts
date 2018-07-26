@@ -5,7 +5,7 @@ import { BlockchainService } from './blockchain.service';
 describe('BlockchainService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [BlockchainService]
+      providers: [BlockchainService],
     });
   });
 

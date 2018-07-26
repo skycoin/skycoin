@@ -25,16 +25,11 @@ type BlockchainMetadata struct {
 }
 
 // NewBlockchainMetadata creates blockchain meta data
-func NewBlockchainMetadata(v *Visor) (*BlockchainMetadata, error) {
-	head, err := v.Blockchain.Head()
-	if err != nil {
-		return nil, err
-	}
-
+func NewBlockchainMetadata(head *coin.SignedBlock, unconfirmedLen, unspentsLen uint64) (*BlockchainMetadata, error) {
 	return &BlockchainMetadata{
 		Head:        NewReadableBlockHeader(&head.Head),
-		Unspents:    v.Blockchain.Unspent().Len(),
-		Unconfirmed: uint64(v.Unconfirmed.Len()),
+		Unspents:    unspentsLen,
+		Unconfirmed: unconfirmedLen,
 	}, nil
 }
 
@@ -44,7 +39,6 @@ type Transaction struct {
 	Txn    coin.Transaction  //`json:"txn"`
 	Status TransactionStatus //`json:"status"`
 	Time   uint64            //`json:"time"`
-	Size   int
 }
 
 // TransactionStatus represents the transaction status
@@ -108,13 +102,14 @@ type ReadableTransactionOutput struct {
 
 // ReadableTransactionInput readable transaction input
 type ReadableTransactionInput struct {
-	Hash    string `json:"uxid"`
-	Address string `json:"owner"`
-	Coins   string `json:"coins"`
-	Hours   uint64 `json:"hours"`
+	Hash            string `json:"uxid"`
+	Address         string `json:"owner"`
+	Coins           string `json:"coins"`
+	Hours           uint64 `json:"hours"`
+	CalculatedHours uint64 `json:"calculated_hours"`
 }
 
-// NewReadableTransactionOutput creates readable transaction outputs
+// NewReadableTransactionOutput creates ReadableTransactionOutput
 func NewReadableTransactionOutput(t *coin.TransactionOutput, txid cipher.SHA256) (*ReadableTransactionOutput, error) {
 	coinStr, err := droplet.ToString(t.Coins)
 	if err != nil {
@@ -123,25 +118,33 @@ func NewReadableTransactionOutput(t *coin.TransactionOutput, txid cipher.SHA256)
 
 	return &ReadableTransactionOutput{
 		Hash:    t.UxID(txid).Hex(),
-		Address: t.Address.String(), // Destination Address
+		Address: t.Address.String(),
 		Coins:   coinStr,
 		Hours:   t.Hours,
 	}, nil
 }
 
-// NewReadableTransactionInput creates readable transaction input
-func NewReadableTransactionInput(uxID, ownerAddress string, coins, hours uint64) (*ReadableTransactionInput, error) {
-	coinVal, err := droplet.ToString(coins)
+// NewReadableTransactionInput creates ReadableTransactionInput
+func NewReadableTransactionInput(ux coin.UxOut, calculateHoursTime uint64) (*ReadableTransactionInput, error) {
+	coinVal, err := droplet.ToString(ux.Body.Coins)
 	if err != nil {
 		logger.Errorf("Failed to convert coins to string: %v", err)
 		return nil, err
 	}
 
+	// The overflow bug causes this to fail for some transactions, allow it to pass
+	calculatedHours, err := ux.CoinHours(calculateHoursTime)
+	if err != nil {
+		logger.Critical().Warningf("Ignoring NewReadableTransactionInput ux.CoinHours failed: %v", err)
+		calculatedHours = 0
+	}
+
 	return &ReadableTransactionInput{
-		Hash:    uxID,
-		Address: ownerAddress, //Destination Address
-		Coins:   coinVal,
-		Hours:   hours,
+		Hash:            ux.Hash().Hex(),
+		Address:         ux.Body.Address.String(),
+		Coins:           coinVal,
+		Hours:           ux.Body.Hours,
+		CalculatedHours: calculatedHours,
 	}, nil
 }
 
@@ -180,8 +183,15 @@ func (ros ReadableOutputs) Balance() (wallet.Balance, error) {
 			return wallet.Balance{}, err
 		}
 
-		bal.Coins += coins
-		bal.Hours += out.CalculatedHours
+		bal.Coins, err = coin.AddUint64(bal.Coins, coins)
+		if err != nil {
+			return wallet.Balance{}, err
+		}
+
+		bal.Hours, err = coin.AddUint64(bal.Hours, out.CalculatedHours)
+		if err != nil {
+			return wallet.Balance{}, err
+		}
 	}
 
 	return bal, nil
@@ -248,7 +258,7 @@ func (os ReadableOutputSet) ExpectedOutputs() ReadableOutputs {
 	return append(os.SpendableOutputs(), os.IncomingOutputs...)
 }
 
-// AggregateUnspentOutputs aggregate unspent output
+// AggregateUnspentOutputs builds a map from address to coins
 func (os ReadableOutputSet) AggregateUnspentOutputs() (map[string]uint64, error) {
 	allAccounts := map[string]uint64{}
 	for _, out := range os.HeadOutputs {
@@ -257,7 +267,10 @@ func (os ReadableOutputSet) AggregateUnspentOutputs() (map[string]uint64, error)
 			return nil, err
 		}
 		if _, ok := allAccounts[out.Address]; ok {
-			allAccounts[out.Address] += amt
+			allAccounts[out.Address], err = coin.AddUint64(allAccounts[out.Address], amt)
+			if err != nil {
+				return nil, err
+			}
 		} else {
 			allAccounts[out.Address] = amt
 		}
@@ -416,45 +429,14 @@ func NewReadableUnconfirmedTxns(txs []UnconfirmedTxn) ([]ReadableUnconfirmedTxn,
 	return rut, nil
 }
 
-// NewGenesisReadableTransaction creates genesis readable transaction
-func NewGenesisReadableTransaction(t *Transaction) (*ReadableTransaction, error) {
-	txid := cipher.SHA256{}
-	sigs := make([]string, len(t.Txn.Sigs))
-	for i := range t.Txn.Sigs {
-		sigs[i] = t.Txn.Sigs[i].Hex()
-	}
-
-	in := make([]string, len(t.Txn.In))
-	for i := range t.Txn.In {
-		in[i] = t.Txn.In[i].Hex()
-	}
-
-	out := make([]ReadableTransactionOutput, len(t.Txn.Out))
-	for i := range t.Txn.Out {
-		o, err := NewReadableTransactionOutput(&t.Txn.Out[i], txid)
-		if err != nil {
-			return nil, err
-		}
-
-		out[i] = *o
-	}
-
-	return &ReadableTransaction{
-		Length:    t.Txn.Length,
-		Type:      t.Txn.Type,
-		Hash:      t.Txn.TxIDHex(),
-		InnerHash: t.Txn.InnerHash.Hex(),
-		Timestamp: t.Time,
-
-		Sigs: sigs,
-		In:   in,
-		Out:  out,
-	}, nil
-}
-
 // NewReadableTransaction creates readable transaction
 func NewReadableTransaction(t *Transaction) (*ReadableTransaction, error) {
-	txid := t.Txn.Hash()
+	// Genesis transaction use empty SHA256 as txid
+	txid := cipher.SHA256{}
+	if t.Status.BlockSeq != 0 {
+		txid = t.Txn.Hash()
+	}
+
 	sigs := make([]string, len(t.Txn.Sigs))
 	for i := range t.Txn.Sigs {
 		sigs[i] = t.Txn.Sigs[i].Hex()
@@ -521,20 +503,16 @@ type ReadableBlockBody struct {
 func NewReadableBlockBody(b *coin.Block) (*ReadableBlockBody, error) {
 	txns := make([]ReadableTransaction, len(b.Body.Transactions))
 	for i := range b.Body.Transactions {
-		if b.Seq() == uint64(0) {
-			// genesis block
-			tx, err := NewGenesisReadableTransaction(&Transaction{Txn: b.Body.Transactions[i]})
-			if err != nil {
-				return nil, err
-			}
-			txns[i] = *tx
-		} else {
-			tx, err := NewReadableTransaction(&Transaction{Txn: b.Body.Transactions[i]})
-			if err != nil {
-				return nil, err
-			}
-			txns[i] = *tx
+		t := Transaction{
+			Txn:    b.Body.Transactions[i],
+			Status: TransactionStatus{BlockSeq: b.Seq()},
 		}
+
+		tx, err := NewReadableTransaction(&t)
+		if err != nil {
+			return nil, err
+		}
+		txns[i] = *tx
 	}
 	return &ReadableBlockBody{
 		Transactions: txns,

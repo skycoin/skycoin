@@ -1,0 +1,28 @@
+<div [formGroup]="form">
+  <div class="form-field">
+    <label for="wallet">{{ 'send.from-label' | translate }}</label>
+    <div class="-select">
+      <select formControlName="wallet" id="wallet">
+        <option *ngFor="let wallet of walletService.all() | async" [disabled]="wallet.coins <= 0" [ngValue]="wallet">
+          {{ wallet.label }} - {{ wallet.coins | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
+        </option>
+      </select>
+    </div>
+  </div>
+  <div class="form-field">
+    <label for="address">{{ 'send.to-label' | translate }}</label>
+    <input formControlName="address" id="address">
+  </div>
+  <div class="form-field">
+    <label for="amount">{{ 'send.amount-label' | translate }}</label>
+    <input formControlName="amount" id="amount" (keydown.enter)="preview()">
+  </div>
+  <div class="-buttons">
+    <app-button #previewButton (action)="preview()" [disabled]="!form.valid">
+      {{ 'send.preview-button' | translate }}
+    </app-button>
+    <app-button #sendButton (action)="send()" class="primary" [disabled]="!form.valid">
+      {{ 'send.send-button' | translate }}
+    </app-button>
+  </div>
+</div>

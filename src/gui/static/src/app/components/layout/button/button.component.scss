@@ -1,10 +1,15 @@
-@import '../../../../theme/_variables';
+@import '../../../../theme/variables';
+
+.button-container {
+  display: inline-block;
+}
 
 button {
   border-radius: 25px;
   height: 50px;
-  margin: 20px 10px;
+  margin: 20px 10px 0;
   width: 160px;
+  overflow: hidden;
 }
 
 button.enabled {
@@ -13,10 +18,10 @@ button.enabled {
   color: #1e2227;
 }
 
-
 mat-icon {
   margin-left: 10px;
   opacity: 0.3;
+  line-height: 20px;
 }
 
 mat-spinner {
@@ -24,4 +29,6 @@ mat-spinner {
   height: 24px !important;
   width: 24px !important;
   margin-left: 10px;
+  position: relative;
+  top: -2px;
 }

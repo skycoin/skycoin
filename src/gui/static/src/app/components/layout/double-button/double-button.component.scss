@@ -1,4 +1,4 @@
-@import '../../../../theme/_variables';
+@import '../../../../theme/variables';
 
 .-small-button ::ng-deep button {
   width: unset;
@@ -34,4 +34,18 @@
   border-radius: 100px;
   margin: 0px auto;
   text-align: center;
+}
+
+.light {
+  &.-buttons-container {
+    background: #f7f7f7;
+  }
+
+  .-toggle ::ng-deep button.enabled {
+    background-color: #fff !important;
+
+    span {
+      color: $grey-dark;
+    }
+  }
 }

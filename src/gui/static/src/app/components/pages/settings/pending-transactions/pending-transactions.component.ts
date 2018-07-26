@@ -1,42 +1,69 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import * as moment from 'moment';
-import { Router } from '@angular/router';
+import { ISubscription } from 'rxjs/Subscription';
+import { NavBarService } from '../../../../services/nav-bar.service';
+import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
 
 @Component({
   selector: 'app-pending-transactions',
   templateUrl: './pending-transactions.component.html',
-  styleUrls: ['./pending-transactions.component.css']
+  styleUrls: ['./pending-transactions.component.scss'],
 })
-export class PendingTransactionsComponent implements OnInit {
+export class PendingTransactionsComponent implements OnInit, OnDestroy {
+  transactions = null;
 
-  transactions: any[];
+  private transactionsSubscription: ISubscription;
+  private navbarSubscription: ISubscription;
 
   constructor(
     public walletService: WalletService,
-    private router: Router,
-  ) { }
-
-  ngOnInit() {
-    this.walletService.allPendingTransactions().subscribe(transactions => {
-      this.transactions = this.mapTransactions(transactions);
+    private navbarService: NavBarService,
+  ) {
+    this.navbarSubscription = this.navbarService.activeComponent.subscribe(value => {
+      this.loadTransactions(value);
     });
   }
 
-  onActivate(response) {
-    if (response.row && response.row.txid) {
-      this.router.navigate(['/history', response.row.txid]);
+  ngOnInit() {
+    this.navbarService.showSwitch('pending-txs.my', 'pending-txs.all');
+  }
+
+  ngOnDestroy() {
+    this.transactionsSubscription.unsubscribe();
+    this.navbarSubscription.unsubscribe();
+    this.navbarService.hideSwitch();
+  }
+
+  private loadTransactions(value) {
+    const method = value === DoubleButtonActive.LeftButton ? 'pendingTransactions' : 'allPendingTransactions';
+
+    this.transactions = null;
+
+    if (this.transactionsSubscription) {
+      this.transactionsSubscription.unsubscribe();
     }
+
+    if (method === 'pendingTransactions') {
+      this.walletService.startDataRefreshSubscription();
+    }
+
+    this.transactionsSubscription = this.walletService[method]().subscribe(transactions => {
+      this.transactions = this.mapTransactions(transactions);
+    });
   }
 
   private mapTransactions(transactions) {
     return transactions.map(transaction => {
       transaction.transaction.timestamp = moment(transaction.received).unix();
+
       return transaction.transaction;
     })
     .map(transaction => {
-      transaction.amount = transaction.outputs.map(output => output.coins >= 0 ? output.coins : 0)
-        .reduce((a , b) => a + parseInt(b, 10), 0);
+      transaction.amount = transaction.outputs
+        .map(output => output.coins >= 0 ? output.coins : 0)
+        .reduce((a , b) => a + parseFloat(b), 0);
+
       return transaction;
     });
   }

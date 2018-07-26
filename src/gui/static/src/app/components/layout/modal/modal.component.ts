@@ -4,11 +4,11 @@ import { MatDialogRef } from '@angular/material/dialog';
 @Component({
   selector: 'app-modal',
   templateUrl: './modal.component.html',
-  styleUrls: ['./modal.component.scss']
+  styleUrls: ['./modal.component.scss'],
 })
 export class ModalComponent implements OnChanges {
   @Input() dialog: MatDialogRef<any>;
-  @Input() title: string;
+  @Input() headline: string;
   @Input() disableDismiss: boolean;
 
   closePopup() {
@@ -18,6 +18,8 @@ export class ModalComponent implements OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    this.dialog.disableClose = changes.disableDismiss.currentValue;
+    if (changes.disableDismiss) {
+      this.dialog.disableClose = changes.disableDismiss.currentValue;
+    }
   }
 }

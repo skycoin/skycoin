@@ -7,9 +7,78 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Added
+
 ### Fixed
+
 ### Changed
+
 ### Removed
+
+## [0.24.0] - 2018-07-06
+
+### Added
+
+- Minimum go version is go1.10
+- Add environment variable `DATA_DIR` in CLI's
+- `USE_CSRF` environment variable for CLI, if the remote node has CSRF enabled (CSRF is enabled by default, use `-disable-csrf` to disable)
+- `cli showConfig` command to echo the cli's configuration back to the user
+- Option to generate 12/24 word seed when creating new wallet
+- libskycoin 0.0.1 released with bindings for cipher/address, cipher/hash, cipher/crypto, cli/create_rawtx
+- Add `-version` flag to show node version
+- Add transaction verification step to "Send" page
+- Add more details about transaction in transaction history
+- Add advanced spend UI
+- Add CLI `encryptWallet` command
+- Add CLI `decryptWallet` command
+- Add CLI `showSeed` command
+- Add `password` argument to the CLI commands of `addPrivateKey`, `createRawTransaction`, `generateAddresses`, `generateWallet`, `send`
+- Support for decoding map values in cipher binary encoder
+- Expose known block height of peer in brand new `height` field added in responses of `GET /api/v1/network/connections` API endpoints
+- `-verify-db` option (default true), will verify the database integrity during startup and exit if a problem is found
+- `-reset-corrupt-db` option (default false) will verify the database integrity during startup and reset the db if a problem is found
+- `GET /explorer/address`: add `fee` to transaction objects and `calculated_hours` to transaction inputs
+- Test data generator and test suite for verification of alternative `cipher` implementations
+- Begin `/api/v2` API endpoints. These endpoints are in beta and subject to change.
+- Add `POST /api/v2/transaction/verify` API endpoint
+- Add `POST /api/v2/address/verify` API endpoint
+- Add `ignore_unconfirmed` option to `POST /api/v1/wallet/transaction` to allow transactions to be created or spent even if there are unspent outputs in the unconfirmed pool.
+- Add `uxouts` to `POST /api/v1/wallet/transaction`, to allow specific unspent outputs to be used in a transaction.
+- Add Dockerfile in docker/images/dev-cli to build a docker image suitable for development.
+- Coin creator tool, `cmd/newcoin`, to quickly bootstrap a new fiber coin
+- Add Dockerfile in `docker/images/dev-dind` to build a docker in docker image based on skycoindev-cli.
+
+### Fixed
+
+- Reduce connection disconnects, improves syncing
+- Fix #1171, update CLI to support wallet encryption
+- Use `bolt.Tx` correctly for read operations
+- Docker images for `arm32v5` and `ar32v7` architectures by using busybox as base in docker/images/mainnet/Dockerfile and docker/images/mainnet/hooks/
+
+### Changed
+
+- JSON 2.0 RPC interface (used by the CLI tool) is now served on the same host interface as the REST API, port `6420`. The additional listener has been removed.
+- CLI's `RPC_ADDR` environment variable must now start with a scheme e.g. `http://127.0.0.1:6420`, previously it did not use a scheme.
+- API response will be gzip compressed if client sends request with 'Accept-Encoding' contains 'gzip' in the header.
+- `GET /api/v1/wallet/balance` and `GET /api/v1/balance` now return an address balance list as well.
+- API endpoints are prefixed with `/api/v1/`. API endpoints without the `/api/v1/` prefix are deprecated but can be enabled with `-enable-unversioned-api`. Please migrate to use `/api/v1/` prefix in URLs.
+- Enable message protocol upgrade
+- `change_address` is no longer required in `POST /api/v1/wallet/transaction`. If not provided, `change_address` will default to one of the addresses being spent from.
+- In `POST /api/v1/wallet/transaction`, for `auto` type `share` mode requests, if extra coinhours remain after applying the `share_factor` but change cannot be made due to insufficient coins, the `share_factor` will switch to `1.0`.
+- Support automatic port allocation of the API interface by specifying port 0
+- The web interface / API port is randomly allocated for the precompiled standalone client and electron client released on the website.
+  If you are using the CLI tool or another API client to communicate with the standalone client, use `-web-interface-port=6420` to continue using port 6420.
+  If the program is run from source (e.g. `go run`, `run.sh`, `make run`) there is no change, the API will still be on port 6420.
+- Change number of outgoing connections to 8 from 16
+- Transaction history shows transactions between own addresses
+- Client will only maintain one connection to the default hardcoded peers, instead of all of them
+
+### Removed
+
+- Remove `-rpc-interface-addr`, `-rpc-interface-port` options.  The RPC interface is now on default port `6420` with the REST API.
+- Remove `-rpc-thread-num` option
+- Remove `-connect-to` option
+- Remove `-print-web-interface-address` option
+- Remove support for go1.9
 
 ## [0.23.0] - 2018-04-22
 
@@ -240,6 +309,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - #350 Wallet name always 'undefined' after loading wallet from seed
 
 [Unreleased]: https://github.com/skycoin/skycoin/compare/master...develop
+[0.24.0]: https://github.com/skycoin/skycoin/compare/v0.23.0...v0.24.0
 [0.23.0]: https://github.com/skycoin/skycoin/compare/v0.22.0...v0.23.0
 [0.22.0]: https://github.com/skycoin/skycoin/compare/v0.21.1...v0.22.0
 [0.21.1]: https://github.com/skycoin/skycoin/compare/v0.21.0...v0.21.1

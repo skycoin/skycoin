@@ -1,22 +1,14 @@
 import { Pipe, PipeTransform } from '@angular/core';
 
 @Pipe({
-  name: 'tellerStatus'
+  name: 'tellerStatus',
 })
 export class TellerStatusPipe implements PipeTransform {
+  private statuses = ['done', 'waiting_confirm', 'waiting_deposit', 'waiting_send'];
 
   transform(value: any): any {
-    switch (value) {
-      case 'done':
-        return 'Completed';
-      case 'waiting_confirm':
-        return 'Waiting for confirmation';
-      case 'waiting_deposit':
-        return 'Waiting for Bitcoin deposit';
-      case 'waiting_send':
-        return 'Waiting to send Skycoin';
-      default:
-        return 'Unknown';
-    }
+    return this.statuses.find(status => status === value)
+      ? 'teller.' + value.replace('_', '-')
+      : 'teller.unknown';
   }
 }

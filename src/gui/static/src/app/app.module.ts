@@ -8,13 +8,10 @@ import { WalletsComponent } from './components/pages/wallets/wallets.component';
 import { CreateWalletComponent } from './components/pages/wallets/create-wallet/create-wallet.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { SendSkycoinComponent } from './components/pages/send-skycoin/send-skycoin.component';
-import { NgxDatatableModule } from '@swimlane/ngx-datatable';
 import { DateFromNowPipe } from './pipes/date-from-now.pipe';
 import { RouterModule } from '@angular/router';
-import { ExplorerComponent } from './components/pages/explorer/explorer.component';
 import { BlockchainService } from './services/blockchain.service';
 import { DateTimePipe } from './pipes/date-time.pipe';
-import { TransactionsAmountPipe } from './pipes/transactions-amount.pipe';
 import { PendingTransactionsComponent } from './components/pages/settings/pending-transactions/pending-transactions.component';
 import { OutputsComponent } from './components/pages/settings/outputs/outputs.component';
 import { BlockchainComponent } from './components/pages/settings/blockchain/blockchain.component';
@@ -30,8 +27,7 @@ import { PurchaseService } from './services/purchase.service';
 import { TellerStatusPipe } from './pipes/teller-status.pipe';
 import { HeaderComponent } from './components/layout/header/header.component';
 import { TopBarComponent } from './components/layout/header/top-bar/top-bar.component';
-import { FooterComponent } from './components/layout/footer/footer.component';
-import { PriceService } from './price.service';
+import { PriceService } from './services/price.service';
 import { TransactionListComponent } from './components/pages/transaction-list/transaction-list.component';
 import { TransactionDetailComponent } from './components/pages/transaction-list/transaction-detail/transaction-detail.component';
 import { NavBarComponent } from './components/layout/header/nav-bar/nav-bar.component';
@@ -55,6 +51,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatSliderModule } from '@angular/material';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { HttpClientModule } from '@angular/common/http';
 import { AppService } from './services/app.service';
@@ -66,13 +63,21 @@ import { DoubleButtonComponent } from './components/layout/double-button/double-
 import { SeedModalComponent } from './components/pages/settings/backup/seed-modal/seed-modal.component';
 import { OnboardingComponent } from './components/pages/onboarding/onboarding.component';
 import { DontsavepasswordDirective } from './directives/dontsavepassword.directive';
+import { SendFormComponent } from './components/pages/send-skycoin/send-form/send-form.component';
+import { SendVerifyComponent } from './components/pages/send-skycoin/send-preview/send-preview.component';
+import { TransactionInfoComponent } from './components/pages/send-skycoin/send-preview/transaction-info/transaction-info.component';
+import { SendFormAdvancedComponent } from './components/pages/send-skycoin/send-form-advanced/send-form-advanced.component';
+import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
+import { AppTranslateLoader } from './app.translate-loader';
+import { NavBarService } from './services/nav-bar.service';
+import { LoadingContentComponent } from './components/layout/loading-content/loading-content.component';
 
 
 const ROUTES = [
   {
     path: '',
     redirectTo: 'wallets',
-    pathMatch: 'full'
+    pathMatch: 'full',
   },
   {
     path: 'wallets',
@@ -138,8 +143,6 @@ const ROUTES = [
     CreateWalletComponent,
     DateFromNowPipe,
     DateTimePipe,
-    ExplorerComponent,
-    FooterComponent,
     HeaderComponent,
     NetworkComponent,
     OutputsComponent,
@@ -150,7 +153,6 @@ const ROUTES = [
     TopBarComponent,
     TransactionDetailComponent,
     TransactionListComponent,
-    TransactionsAmountPipe,
     WalletsComponent,
     NavBarComponent,
     WalletDetailComponent,
@@ -163,6 +165,11 @@ const ROUTES = [
     SeedModalComponent,
     OnboardingComponent,
     DontsavepasswordDirective,
+    SendFormComponent,
+    SendVerifyComponent,
+    TransactionInfoComponent,
+    SendFormAdvancedComponent,
+    LoadingContentComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,
@@ -196,21 +203,28 @@ const ROUTES = [
     MatToolbarModule,
     MatTooltipModule,
     MatCheckboxModule,
-    NgxDatatableModule,
+    MatSliderModule,
     NoopAnimationsModule,
     ReactiveFormsModule,
     RouterModule.forRoot(ROUTES, { useHash: true }),
+    TranslateModule.forRoot({
+      loader: {
+        provide: TranslateLoader,
+        useClass: AppTranslateLoader,
+      },
+    }),
   ],
   providers: [
     ApiService,
     AppService,
     BlockchainService,
+    NavBarService,
     NetworkService,
     PriceService,
     PurchaseService,
     WalletService,
     WizardGuardService,
   ],
-  bootstrap: [AppComponent]
+  bootstrap: [AppComponent],
 })
 export class AppModule { }

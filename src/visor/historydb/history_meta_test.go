@@ -3,52 +3,56 @@ package historydb
 import (
 	"testing"
 
-	"github.com/boltdb/bolt"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/visor/bucket"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
-func TestNewHistoryMeta(t *testing.T) {
-	db, td := testutil.PrepareDB(t)
+func TestHistoryMetaGetSetParsedHeight(t *testing.T) {
+	db, td := prepareDB(t)
 	defer td()
 
-	hm, err := newHistoryMeta(db)
-	assert.Nil(t, err)
-	db.View(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket([]byte("history_meta"))
-		assert.NotNil(t, bkt)
-		return nil
+	hm := &historyMeta{}
+
+	err := db.View("", func(tx *dbutil.Tx) error {
+		height, ok, err := hm.ParsedBlockSeq(tx)
+		require.NoError(t, err)
+		require.False(t, ok)
+		require.Equal(t, uint64(0), height)
+		return err
 	})
+	require.NoError(t, err)
 
-	v := hm.v.Get(parsedHeightKey)
-	assert.Nil(t, v)
-}
+	err = db.Update("", func(tx *dbutil.Tx) error {
+		err := hm.SetParsedBlockSeq(tx, 10)
+		require.NoError(t, err)
+		return err
+	})
+	require.NoError(t, err)
 
-func TestHistoryMetaGetParsedHeight(t *testing.T) {
-	db, td := testutil.PrepareDB(t)
-	defer td()
+	err = db.View("", func(tx *dbutil.Tx) error {
+		height, ok, err := hm.ParsedBlockSeq(tx)
+		require.NoError(t, err)
+		require.True(t, ok)
+		require.Equal(t, uint64(10), height)
+		return err
+	})
+	require.NoError(t, err)
 
-	hm, err := newHistoryMeta(db)
-	assert.Nil(t, err)
+	err = db.Update("", func(tx *dbutil.Tx) error {
+		err := hm.SetParsedBlockSeq(tx, 0)
+		require.NoError(t, err)
+		return err
+	})
+	require.NoError(t, err)
 
-	assert.Equal(t, int64(-1), hm.ParsedHeight())
+	err = db.View("", func(tx *dbutil.Tx) error {
+		height, ok, err := hm.ParsedBlockSeq(tx)
+		require.NoError(t, err)
+		require.True(t, ok)
+		require.Equal(t, uint64(0), height)
+		return err
+	})
+	require.NoError(t, err)
 
-	assert.Nil(t, hm.v.Put(parsedHeightKey, bucket.Itob(10)))
-	assert.Equal(t, int64(10), hm.ParsedHeight())
-}
-
-func TestHistoryMetaSetParsedHeight(t *testing.T) {
-	db, td := testutil.PrepareDB(t)
-	defer td()
-
-	hm, err := newHistoryMeta(db)
-	assert.Nil(t, err)
-	assert.Nil(t, hm.SetParsedHeight(0))
-	assert.Equal(t, uint64(0), bucket.Btoi(hm.v.Get(parsedHeightKey)))
-
-	// set 10
-	hm.SetParsedHeight(10)
-	assert.Equal(t, uint64(10), bucket.Btoi(hm.v.Get(parsedHeightKey)))
 }

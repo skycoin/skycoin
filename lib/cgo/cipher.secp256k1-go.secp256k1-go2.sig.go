@@ -35,7 +35,7 @@ func SKY_secp256k1go_Signature_Get_R(handle C.Signature_Handle, r *C.Number_Hand
 	}()
 	sig, ok := lookupSignatureHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	*r = registerNumberHandle(&sig.R)
@@ -50,7 +50,7 @@ func SKY_secp256k1go_Signature_Get_S(handle C.Signature_Handle, s *C.Number_Hand
 	}()
 	sig, ok := lookupSignatureHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	*s = registerNumberHandle(&sig.S)
@@ -65,7 +65,7 @@ func SKY_secp256k1go_Signature_Print(handle C.Signature_Handle, _lab string) (__
 	}()
 	sig, ok := lookupSignatureHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	sig.Print(_lab)
@@ -80,13 +80,13 @@ func SKY_secp256k1go_Signature_Verify(handle C.Signature_Handle, _pubkey *C.secp
 	}()
 	sig, ok := lookupSignatureHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	pubkey := (*secp256k1go2.XY)(unsafe.Pointer(_pubkey))
 	message, okm := lookupNumberHandle(_message)
 	if !okm {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg2 := sig.Verify(pubkey, message)
@@ -102,13 +102,13 @@ func SKY_secp256k1go_Signature_Recover(handle C.Signature_Handle, _pubkey *C.sec
 	}()
 	sig, ok := lookupSignatureHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	pubkey := (*secp256k1go2.XY)(unsafe.Pointer(_pubkey))
 	m, okm := lookupNumberHandle(_message)
 	if !okm {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	recid := _recid
@@ -125,22 +125,22 @@ func SKY_secp256k1go_Signature_Sign(handle C.Signature_Handle, _seckey, _message
 	}()
 	sig, ok := lookupSignatureHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	seckey, oks := lookupNumberHandle(_seckey)
 	if !oks {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	message, okm := lookupNumberHandle(_message)
 	if !okm {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	nonce, okn := lookupNumberHandle(_nonce)
 	if !okn {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	recid := _recid
@@ -157,7 +157,7 @@ func SKY_secp256k1go_Signature_ParseBytes(handle C.Signature_Handle, _v []byte) 
 	}()
 	sig, ok := lookupSignatureHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	v := *(*[]byte)(unsafe.Pointer(&_v))
@@ -173,7 +173,7 @@ func SKY_secp256k1go_Signature_Bytes(handle C.Signature_Handle, _arg0 *C.GoSlice
 	}()
 	sig, ok := lookupSignatureHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0 := sig.Bytes()

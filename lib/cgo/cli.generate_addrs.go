@@ -27,7 +27,7 @@ func SKY_cli_GenerateAddressesInFile(_walletFile string, _num uint64, pwd C.Pass
 	num := _num
 	pr, okc := lookupPasswordReaderHandle(pwd)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg3, ____return_err := cli.GenerateAddressesInFile(walletFile, num, *pr)

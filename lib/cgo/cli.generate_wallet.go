@@ -22,7 +22,7 @@ func SKY_cli_GenerateWallet(_walletFile string, _opts *C.Options__Handle, _numAd
 	walletFile := _walletFile
 	__opts, okopts := lookupOptionsHandle(*_opts)
 	if !okopts {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	opts := *__opts

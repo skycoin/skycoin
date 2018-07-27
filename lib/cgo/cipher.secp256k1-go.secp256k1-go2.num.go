@@ -34,7 +34,7 @@ func SKY_secp256k1go_Number_Print(handle C.Number_Handle, _label string) (____er
 	}()
 	num, ok := lookupNumberHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	num.Print(_label)
@@ -49,7 +49,7 @@ func SKY_secp256k1go_Number_SetHex(handle C.Number_Handle, _s string) (____error
 	}()
 	num, ok := lookupNumberHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	num.SetHex(_s)
@@ -64,7 +64,7 @@ func SKY_secp256k1go_Number_IsOdd(handle C.Number_Handle, _arg0 *bool) (____erro
 	}()
 	num, ok := lookupNumberHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0 := num.IsOdd()
@@ -80,12 +80,12 @@ func SKY_secp256k1go_Number_IsEqual(handle1 C.Number_Handle, handle2 C.Number_Ha
 	}()
 	num1, ok := lookupNumberHandle(handle1)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	num2, ok := lookupNumberHandle(handle2)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	*result = hex.EncodeToString(num1.Bytes()) == hex.EncodeToString(num2.Bytes())

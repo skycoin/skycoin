@@ -97,12 +97,12 @@ func SKY_secp256k1go_XYZ_ECmult(_xyz *C.secp256k1go__XYZ, _r *C.secp256k1go__XYZ
 	r := (*secp256k1go2.XYZ)(unsafe.Pointer(_r))
 	na, ok1 := lookupNumberHandle(_na)
 	if !ok1 {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	ng, ok2 := lookupNumberHandle(_ng)
 	if !ok2 {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	xyz.ECmult(r, na, ng)
@@ -168,7 +168,7 @@ func SKY_secp256k1go_ECmultGen(_r *C.secp256k1go__XYZ, _a C.Number_Handle) (____
 	r := (*secp256k1go2.XYZ)(unsafe.Pointer(_r))
 	a, ok := lookupNumberHandle(_a)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	secp256k1go2.ECmultGen(r, a)

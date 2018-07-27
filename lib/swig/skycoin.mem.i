@@ -153,6 +153,61 @@
 	}
 }
 
+%rename(SKY_coin_UxArray_HasDupes) wrap_SKY_coin_UxArray_HasDupes;
+%inline{
+	GoUint32 wrap_SKY_coin_UxArray_HasDupes(coin_UxOutArray* __uxIn, GoUint8* p1){
+		GoSlice_ data;
+		data.data = __uxIn->data;
+		data.len = __uxIn->count;
+		data.cap = __uxIn->count;
+		return SKY_coin_UxArray_HasDupes(&data, p1);
+	}
+}
+
+%rename(SKY_coin_UxArray_Coins) wrap_SKY_coin_UxArray_Coins;
+%inline{
+	GoUint32 wrap_SKY_coin_UxArray_Coins(coin_UxOutArray* __uxIn, GoUint64* p1){
+		GoSlice_ data;
+		data.data = __uxIn->data;
+		data.len = __uxIn->count;
+		data.cap = __uxIn->count;
+		return SKY_coin_UxArray_Coins(&data, p1);
+	}
+}
+
+%rename(SKY_coin_UxArray_CoinHours) wrap_SKY_coin_UxArray_CoinHours;
+%inline{
+	GoUint32 wrap_SKY_coin_UxArray_CoinHours(coin_UxOutArray* __uxIn, GoUint64 p1, GoUint64* p2){
+		GoSlice_ data;
+		data.data = __uxIn->data;
+		data.len = __uxIn->count;
+		data.cap = __uxIn->count;
+		return SKY_coin_UxArray_CoinHours(&data, p1, p2);
+	}
+}
+
+%rename(SKY_coin_UxArray_Less) wrap_SKY_coin_UxArray_Less;
+%inline{
+	GoUint32 wrap_SKY_coin_UxArray_Less(coin_UxOutArray* __uxIn, GoInt p1, GoInt p2, GoUint8* p3){
+		GoSlice_ data;
+		data.data = __uxIn->data;
+		data.len = __uxIn->count;
+		data.cap = __uxIn->count;
+		return SKY_coin_UxArray_Less(&data, p1, p2, p3);
+	}
+}
+
+%rename(SKY_coin_UxArray_Swap) wrap_SKY_coin_UxArray_Swap;
+%inline{
+	GoUint32 wrap_SKY_coin_UxArray_Swap(coin_UxOutArray* __uxIn, GoInt p1, GoInt p2){
+		GoSlice_ data;
+		data.data = __uxIn->data;
+		data.len = __uxIn->count;
+		data.cap = __uxIn->count;
+		return SKY_coin_UxArray_Swap(&data, p1, p2);
+	}
+}
+
 /**
 *
 * typemaps for Handles

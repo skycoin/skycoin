@@ -208,6 +208,108 @@
 	}
 }
 
+%rename(SKY_coin_UxArray_Sub) wrap_SKY_coin_UxArray_Sub;
+%inline{
+	GoUint32 wrap_SKY_coin_UxArray_Sub(coin_UxOutArray* __uxIn, coin_UxOutArray* __uxIn2, coin_UxOutArray* __return_Ux){
+		GoSlice_ data;
+		data.data = __uxIn->data;
+		data.len = __uxIn->count;
+		data.cap = __uxIn->count;
+		GoSlice_ data2;
+		data2.data = __uxIn2->data;
+		data2.len = __uxIn2->count;
+		data2.cap = __uxIn2->count;
+		GoSlice_ data3;
+		data3.data = NULL;
+		data3.len = 0;
+		data3.cap = 0;
+		GoUint32 result = SKY_coin_UxArray_Sub(&data, &data2, &data3);
+		if( result == 0){
+			__return_Ux->data = data3.data;
+			__return_Ux->count = data3.len;
+		}
+		return result;
+	}
+}
+
+%rename(SKY_coin_UxArray_Add) wrap_SKY_coin_UxArray_Add;
+%inline{
+	GoUint32 wrap_SKY_coin_UxArray_Add(coin_UxOutArray* __uxIn, coin_UxOutArray* __uxIn2, coin_UxOutArray* __return_Ux){
+		GoSlice_ data;
+		data.data = __uxIn->data;
+		data.len = __uxIn->count;
+		data.cap = __uxIn->count;
+		GoSlice_ data2;
+		data2.data = __uxIn2->data;
+		data2.len = __uxIn2->count;
+		data2.cap = __uxIn2->count;
+		GoSlice_ data3;
+		data3.data = NULL;
+		data3.len = 0;
+		data3.cap = 0;
+		GoUint32 result = SKY_coin_UxArray_Add(&data, &data2, &data3);
+		if( result == 0){
+			__return_Ux->data = data3.data;
+			__return_Ux->count = data3.len;
+		}
+		return result;
+	}
+}
+
+%rename(SKY_coin_NewAddressUxOuts) wrap_SKY_coin_NewAddressUxOuts;
+%inline{ 
+	GoUint32 wrap_SKY_coin_NewAddressUxOuts(coin_UxOutArray* __uxIn,  AddressUxOuts_Handle* p1){
+		GoSlice_ data;
+		data.data = __uxIn->data;
+		data.len = __uxIn->count;
+		data.cap = __uxIn->count;
+		return SKY_coin_NewAddressUxOuts(&data, p1);
+	}
+}
+
+%rename(SKY_coin_AddressUxOuts_Flatten) wrap_SKY_coin_AddressUxOuts_Flatten;
+%inline{ 
+	GoUint32 wrap_SKY_coin_AddressUxOuts_Flatten(AddressUxOuts_Handle p0, coin_UxOutArray* __return_Ux){
+		GoSlice_ data;
+		data.data = NULL;
+		data.len = 0;
+		data.cap = 0;
+		GoUint32 result = SKY_coin_AddressUxOuts_Flatten(p0, &data);
+		if( result != 0 ){
+			__return_Ux->data = data.data;
+			__return_Ux->count = data.len;
+		}
+		return result;
+	}
+}
+
+%rename(SKY_coin_AddressUxOuts_Get) wrap_SKY_coin_AddressUxOuts_Get;
+%inline{ 
+	GoUint32 wrap_SKY_coin_AddressUxOuts_Get(AddressUxOuts_Handle p0, cipher__Address* p1, coin_UxOutArray* __return_Ux){
+		GoSlice_ data;
+		data.data = NULL;
+		data.len = 0;
+		data.cap = 0;
+		GoUint32 result = SKY_coin_AddressUxOuts_Get(p0, p1, &data);
+		if( result != 0 ){
+			__return_Ux->data = data.data;
+			__return_Ux->count = data.len;
+		}
+		return result;
+	}
+}
+
+%rename(SKY_coin_AddressUxOuts_Set) wrap_SKY_coin_AddressUxOuts_Set;
+%inline{ 
+	GoUint32 wrap_SKY_coin_AddressUxOuts_Set(AddressUxOuts_Handle p0, cipher__Address* p1, coin_UxOutArray* __uxIn){
+		GoSlice_ data;
+		data.data = __uxIn->data;
+		data.len = __uxIn->count;
+		data.cap = __uxIn->count;
+		return SKY_coin_AddressUxOuts_Set(p0, p1, &data);
+	}
+}
+
 /**
 *
 * typemaps for Handles

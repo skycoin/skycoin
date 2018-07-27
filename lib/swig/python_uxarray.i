@@ -25,7 +25,7 @@
   if ($1->data) free($1->data);
 }
 
-%apply (coin_UxOutArray* __uxIn) {(coin_UxOutArray* __uxOut)}
+%apply (coin_UxOutArray* __uxIn) {(coin_UxOutArray* __uxOut), (coin_UxOutArray* __uxIn2)}
 
 /*coin_UxOutArray* parameter to return as a list */
 %typemap(in, numinputs=0) (coin_UxOutArray*  __return_Ux) (coin_UxOutArray temp) {

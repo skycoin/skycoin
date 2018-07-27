@@ -58,7 +58,7 @@ func SKY_webrpc_Client_GetUnspentOutputs(_c C.WebRpcClient__Handle, _addrs []str
 	}()
 	c, okc := lookupWebRpcClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	addrs := *(*[]string)(unsafe.Pointer(&_addrs))
@@ -78,7 +78,7 @@ func SKY_webrpc_Client_InjectTransactionString(_c C.WebRpcClient__Handle, _rawtx
 	}()
 	c, okc := lookupWebRpcClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	rawtx := _rawtx
@@ -98,12 +98,12 @@ func SKY_webrpc_Client_InjectTransaction(_c C.WebRpcClient__Handle, _tx C.Transa
 	}()
 	c, okc := lookupWebRpcClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	tx, ok := lookupTransactionHandle(_tx)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg1, ____return_err := c.InjectTransaction(tx)
@@ -122,7 +122,7 @@ func SKY_webrpc_Client_GetStatus(_c C.WebRpcClient__Handle, _arg0 *C.StatusResul
 	}()
 	c, okc := lookupWebRpcClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0, ____return_err := c.GetStatus()
@@ -141,7 +141,7 @@ func SKY_webrpc_Client_GetTransactionByID(_c C.WebRpcClient__Handle, _txid strin
 	}()
 	c, okc := lookupWebRpcClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	txid := _txid
@@ -161,7 +161,7 @@ func SKY_webrpc_Client_GetAddressUxOuts(_c C.WebRpcClient__Handle, _addrs []stri
 	}()
 	c, okc := lookupWebRpcClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	addrs := *(*[]string)(unsafe.Pointer(&_addrs))
@@ -181,7 +181,7 @@ func SKY_webrpc_Client_GetBlocks(_c C.WebRpcClient__Handle, _start, _end uint64,
 	}()
 	c, okc := lookupWebRpcClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	start := _start
@@ -202,7 +202,7 @@ func SKY_webrpc_Client_GetBlocksBySeq(_c C.WebRpcClient__Handle, _ss []uint64, _
 	}()
 	c, okc := lookupWebRpcClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	ss := *(*[]uint64)(unsafe.Pointer(&_ss))
@@ -222,7 +222,7 @@ func SKY_webrpc_Client_GetLastBlocks(_c C.WebRpcClient__Handle, _n uint64, _arg1
 	}()
 	c, okc := lookupWebRpcClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	n := _n

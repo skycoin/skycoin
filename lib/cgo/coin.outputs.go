@@ -220,7 +220,7 @@ func SKY_coin_AddressUxOuts_Keys(_address_outs C.AddressUxOuts_Handle, _keys *C.
 	}()
 	address_outs, ok := lookupAddressUxOutHandle(_address_outs)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	keys := (*address_outs).Keys()
@@ -236,7 +236,7 @@ func SKY_coin_AddressUxOuts_Flatten(_address_outs C.AddressUxOuts_Handle, _ua *C
 	}()
 	address_outs, ok := lookupAddressUxOutHandle(_address_outs)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	ux := (*address_outs).Flatten()
@@ -252,12 +252,12 @@ func SKY_coin_AddressUxOuts_Sub(_auo1 C.AddressUxOuts_Handle, _auo2 C.AddressUxO
 	}()
 	auo1, ok := lookupAddressUxOutHandle(_auo1)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	auo2, ok := lookupAddressUxOutHandle(_auo2)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	auo_result := (*auo1).Sub(*auo2)
@@ -273,12 +273,12 @@ func SKY_coin_AddressUxOuts_Add(_auo1 C.AddressUxOuts_Handle, _auo2 C.AddressUxO
 	}()
 	auo1, ok := lookupAddressUxOutHandle(_auo1)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	auo2, ok := lookupAddressUxOutHandle(_auo2)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	auo_result := (*auo1).Add(*auo2)
@@ -296,6 +296,8 @@ func SKY_coin_AddressUxOuts_Get(handle C.AddressUxOuts_Handle, _key *C.cipher__A
 			copyToGoSlice(reflect.ValueOf(uxOuts), _uxOuts)
 			return SKY_OK
 		}
+	} else {
+		return SKY_BAD_HANDLE
 	}
 	return SKY_ERROR
 }
@@ -308,6 +310,8 @@ func SKY_coin_AddressUxOuts_HasKey(handle C.AddressUxOuts_Handle, _key *C.cipher
 		_, found := (*a)[key]
 		*_hasKey = found
 		return SKY_OK
+	} else {
+		return SKY_BAD_HANDLE
 	}
 	return SKY_ERROR
 }
@@ -322,6 +326,8 @@ func SKY_coin_AddressUxOuts_GetOutputLength(handle C.AddressUxOuts_Handle, _key 
 			*_length = len(uxOuts)
 			return SKY_OK
 		}
+	} else {
+		return SKY_BAD_HANDLE
 	}
 	return SKY_ERROR
 }
@@ -333,7 +339,7 @@ func SKY_coin_AddressUxOuts_Length(handle C.AddressUxOuts_Handle, _length *int) 
 		*_length = len(*a)
 		return SKY_OK
 	}
-	return SKY_ERROR
+	return SKY_BAD_HANDLE
 }
 
 //export SKY_coin_AddressUxOuts_Set
@@ -345,5 +351,5 @@ func SKY_coin_AddressUxOuts_Set(handle C.AddressUxOuts_Handle, _key *C.cipher__A
 		(*a)[key] = uxOuts
 		return SKY_OK
 	}
-	return SKY_ERROR
+	return SKY_BAD_HANDLE
 }

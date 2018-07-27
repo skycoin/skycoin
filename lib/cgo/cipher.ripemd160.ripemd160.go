@@ -35,7 +35,7 @@ func SKY_ripemd160_Write(handle C.Hash_Handle, _p []byte, _nn *int) (____error_c
 	}()
 	h, ok := lookupHashHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	p := *(*[]byte)(unsafe.Pointer(&_p))
@@ -56,7 +56,7 @@ func SKY_ripemd160_Sum(handle C.Hash_Handle, _p []byte, _arg1 *C.GoSlice_) (____
 	}()
 	h, ok := lookupHashHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	p := *(*[]byte)(unsafe.Pointer(&_p))

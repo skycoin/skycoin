@@ -38,7 +38,7 @@ func SKY_coin_Transaction_Copy(handle C.Transaction__Handle, handle2 *C.Transact
 	}()
 	tx, ok := lookupTransactionHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	ntx := coin.Transaction{}
@@ -63,7 +63,7 @@ func SKY_coin_Get_Transaction_Object(handle C.Transaction__Handle, _pptx **C.coi
 	}()
 	ptx, ok := lookupTransactionHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 	} else {
 		*_pptx = (*C.coin__Transaction)(unsafe.Pointer(ptx))
 	}
@@ -78,7 +78,7 @@ func SKY_coin_Transaction_ResetInputs(handle C.Transaction__Handle, count int) (
 	}()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	txn.In = make([]cipher.SHA256, count)
@@ -93,7 +93,7 @@ func SKY_coin_Transaction_Get_Inputs_Count(handle C.Transaction__Handle, length 
 	}()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	*length = len(txn.In)
@@ -108,11 +108,11 @@ func SKY_coin_Transaction_Get_Input_At(handle C.Transaction__Handle, i int, inpu
 	}()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	if i >= len(txn.In) {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	*input = *(*C.cipher__SHA256)(unsafe.Pointer(&txn.In[i]))
@@ -127,11 +127,11 @@ func SKY_coin_Transaction_Set_Input_At(handle C.Transaction__Handle, i int, inpu
 	}()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	if i >= len(txn.In) {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	*(*C.cipher__SHA256)(unsafe.Pointer(&txn.In[i])) = *input
@@ -146,7 +146,7 @@ func SKY_coin_Transaction_Get_Outputs_Count(handle C.Transaction__Handle, length
 	}()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	*length = len(txn.Out)
@@ -161,7 +161,7 @@ func SKY_coin_Transaction_Get_Output_At(handle C.Transaction__Handle, i int, out
 	}()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	if i >= len(txn.Out) {
@@ -180,7 +180,7 @@ func SKY_coin_Transaction_Set_Output_At(handle C.Transaction__Handle, i int, out
 	}()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	if i >= len(txn.Out) {
@@ -199,7 +199,7 @@ func SKY_coin_Transaction_Get_Signatures_Count(handle C.Transaction__Handle, len
 	}()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	*length = len(txn.Sigs)
@@ -214,11 +214,11 @@ func SKY_coin_Transaction_Get_Signature_At(handle C.Transaction__Handle, i int, 
 	}()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	if i >= len(txn.Sigs) {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	*sig = *(*C.cipher__Sig)(unsafe.Pointer(&txn.Sigs[i]))
@@ -233,11 +233,11 @@ func SKY_coin_Transaction_Set_Signature_At(handle C.Transaction__Handle, i int, 
 	}()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	if i >= len(txn.Sigs) {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	*(*C.cipher__Sig)(unsafe.Pointer(&txn.Sigs[i])) = *sig
@@ -252,7 +252,7 @@ func SKY_coin_Transaction_Push_Signature(handle C.Transaction__Handle, _sig *C.c
 	}()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	sig := *(*cipher.Sig)(unsafe.Pointer(_sig))
@@ -268,7 +268,7 @@ func SKY_coin_Transaction_ResetOutputs(handle C.Transaction__Handle, count int) 
 	}()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	txn.Out = make([]coin.TransactionOutput, count)
@@ -283,7 +283,7 @@ func SKY_coin_Transaction_ResetSignatures(handle C.Transaction__Handle, count in
 	}()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	txn.Sigs = make([]cipher.Sig, count)
@@ -298,7 +298,7 @@ func SKY_coin_Transaction_Verify(handle C.Transaction__Handle) (____error_code u
 	}()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	____return_err := txn.Verify()
@@ -316,7 +316,7 @@ func SKY_coin_Transaction_VerifyInput(handle C.Transaction__Handle, _uxIn *C.coi
 	}()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	uxIn := *(*coin.UxArray)(unsafe.Pointer(_uxIn))
@@ -335,7 +335,7 @@ func SKY_coin_Transaction_PushInput(handle C.Transaction__Handle, _uxOut *C.ciph
 	}()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	uxOut := *(*cipher.SHA256)(unsafe.Pointer(_uxOut))
@@ -365,7 +365,7 @@ func SKY_coin_Transaction_PushOutput(handle C.Transaction__Handle, _dst *C.ciphe
 	}()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	dst := *(*cipher.Address)(unsafe.Pointer(_dst))
@@ -383,7 +383,7 @@ func SKY_coin_Transaction_SignInputs(handle C.Transaction__Handle, _keys []C.cip
 	}()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	keys := *(*[]cipher.SecKey)(unsafe.Pointer(&_keys))
@@ -399,7 +399,7 @@ func SKY_coin_Transaction_Size(handle C.Transaction__Handle, _arg0 *int) (____er
 	}()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0 := txn.Size()
@@ -415,7 +415,7 @@ func SKY_coin_Transaction_Hash(handle C.Transaction__Handle, _arg0 *C.cipher__SH
 	}()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0 := txn.Hash()
@@ -431,7 +431,7 @@ func SKY_coin_Transaction_SizeHash(handle C.Transaction__Handle, _arg0 *int, _ar
 	}()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0, __arg1 := txn.SizeHash()
@@ -448,7 +448,7 @@ func SKY_coin_Transaction_TxID(handle C.Transaction__Handle, _arg0 *C.GoSlice_) 
 	}()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0 := txn.TxID()
@@ -464,7 +464,7 @@ func SKY_coin_Transaction_TxIDHex(handle C.Transaction__Handle, _arg0 *C.GoStrin
 	}()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0 := txn.TxIDHex()
@@ -480,7 +480,7 @@ func SKY_coin_Transaction_UpdateHeader(handle C.Transaction__Handle) (____error_
 	}()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	txn.UpdateHeader()
@@ -495,7 +495,7 @@ func SKY_coin_Transaction_HashInner(handle C.Transaction__Handle, _arg0 *C.ciphe
 	}()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0 := txn.HashInner()
@@ -511,7 +511,7 @@ func SKY_coin_Transaction_Serialize(handle C.Transaction__Handle, _arg0 *C.GoSli
 	}()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0 := txn.Serialize()
@@ -554,7 +554,7 @@ func SKY_coin_Transaction_OutputHours(handle C.Transaction__Handle, _arg0 *uint6
 	}()
 	txn, ok := lookupTransactionHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0, ____return_err := txn.OutputHours()
@@ -580,7 +580,7 @@ func SKY_coin_Get_Transactions_Object(handle C.Transactions__Handle, _pptx **C.c
 	}()
 	ptx, ok := lookupTransactionsHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 	} else {
 		*_pptx = (*C.coin__Transactions)(unsafe.Pointer(ptx))
 	}
@@ -595,7 +595,7 @@ func SKY_coin_Transactions_Length(handle C.Transactions__Handle, _length *int) (
 	}()
 	txns, ok := lookupTransactionsHandle(handle)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	*_length = len(*txns)
@@ -610,12 +610,12 @@ func SKY_coin_Transactions_Add(tsh C.Transactions__Handle, th C.Transaction__Han
 	}()
 	txns, ok := lookupTransactionsHandle(tsh)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	tx, okt := lookupTransactionHandle(th)
 	if !okt {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	*txns = append(*txns, *tx)
@@ -645,7 +645,7 @@ func SKY_coin_Transactions_Fees(tsh C.Transactions__Handle, pFeeCalc *C.FeeCalcu
 	}()
 	txns, ok := lookupTransactionsHandle(tsh)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	result, err := txns.Fees(feeCalc)
@@ -665,7 +665,7 @@ func SKY_coin_Transactions_GetAt(tsh C.Transactions__Handle, n int, th *C.Transa
 	}()
 	txns, ok := lookupTransactionsHandle(tsh)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	if n >= len(*txns) {
@@ -685,7 +685,7 @@ func SKY_coin_Transactions_Hashes(tsh C.Transactions__Handle, _arg0 *C.GoSlice_)
 	}()
 	txns, ok := lookupTransactionsHandle(tsh)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0 := txns.Hashes()
@@ -701,7 +701,7 @@ func SKY_coin_Transactions_Size(tsh C.Transactions__Handle, _arg0 *int) (____err
 	}()
 	txns, ok := lookupTransactionsHandle(tsh)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0 := txns.Size()
@@ -717,7 +717,7 @@ func SKY_coin_Transactions_TruncateBytesTo(tsh C.Transactions__Handle, _size int
 	}()
 	txns, ok := lookupTransactionsHandle(tsh)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	size := _size
@@ -745,7 +745,7 @@ func SKY_coin_SortTransactions(tsh C.Transactions__Handle, pFeeCalc *C.FeeCalcul
 	}()
 	txns, ok := lookupTransactionsHandle(tsh)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	sorted := coin.SortTransactions(*txns, feeCalc)
@@ -772,7 +772,7 @@ func SKY_coin_NewSortableTransactions(tsh C.Transactions__Handle, pFeeCalc *C.Fe
 	}()
 	txns, ok := lookupTransactionsHandle(tsh)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	sorted := coin.NewSortableTransactions(*txns, feeCalc)
@@ -788,7 +788,7 @@ func SKY_coin_SortableTransactions_Sort(_txns C.SortableTransactionResult_Handle
 	}()
 	txns, ok := lookupSortableTransactionHandle(_txns)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	txns.Sort()
@@ -803,7 +803,7 @@ func SKY_coin_SortableTransactions_Len(_txns C.SortableTransactionResult_Handle,
 	}()
 	txns, ok := lookupSortableTransactionHandle(_txns)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0 := txns.Len()
@@ -819,7 +819,7 @@ func SKY_coin_SortableTransactions_Less(_txns C.SortableTransactionResult_Handle
 	}()
 	txns, ok := lookupSortableTransactionHandle(_txns)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	i := _i
@@ -837,7 +837,7 @@ func SKY_coin_SortableTransactions_Swap(_txns C.SortableTransactionResult_Handle
 	}()
 	txns, ok := lookupSortableTransactionHandle(_txns)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	i := _i

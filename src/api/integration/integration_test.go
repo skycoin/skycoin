@@ -98,6 +98,14 @@ func enabled() bool {
 	return os.Getenv("SKYCOIN_INTEGRATION_TESTS") == "1"
 }
 
+func disableTrustedPeers() bool {
+	return os.Getenv("DISABLE_TRUSTED_PEERS") == "1"
+}
+
+func useCustomTrustedPeers() bool {
+	return os.Getenv("CUSTOM_TRUSTED_PEERS") == "1"
+}
+
 func doStable(t *testing.T) bool {
 	if enabled() && mode(t) == testModeStable {
 		return true
@@ -1160,11 +1168,19 @@ func TestNetworkDefaultConnections(t *testing.T) {
 	c := api.NewClient(nodeAddress())
 	connections, err := c.NetworkDefaultConnections()
 	require.NoError(t, err)
-	require.NotEmpty(t, connections)
-	sort.Strings(connections)
+	if disableTrustedPeers() {
+		require.Empty(t, connections)
+	} else {
+		require.NotEmpty(t, connections)
+		sort.Strings(connections)
 
-	var expected []string
-	checkGoldenFile(t, "network-default-connections.golden", TestData{connections, &expected})
+		var expected []string
+		if useCustomTrustedPeers() {
+			checkGoldenFile(t, "network-custom-default-connections.golden", TestData{connections, &expected})
+		} else {
+			checkGoldenFile(t, "network-default-connections.golden", TestData{connections, &expected})
+		}
+	}
 }
 
 func TestNetworkTrustedConnections(t *testing.T) {
@@ -1175,11 +1191,19 @@ func TestNetworkTrustedConnections(t *testing.T) {
 	c := api.NewClient(nodeAddress())
 	connections, err := c.NetworkTrustedConnections()
 	require.NoError(t, err)
-	require.NotEmpty(t, connections)
-	sort.Strings(connections)
+	if disableTrustedPeers() {
+		require.Empty(t, connections)
+	} else {
+		require.NotEmpty(t, connections)
+		sort.Strings(connections)
 
-	var expected []string
-	checkGoldenFile(t, "network-trusted-connections.golden", TestData{connections, &expected})
+		var expected []string
+		if useCustomTrustedPeers() {
+			checkGoldenFile(t, "network-custom-trusted-connections.golden", TestData{connections, &expected})
+		} else {
+			checkGoldenFile(t, "network-trusted-connections.golden", TestData{connections, &expected})
+		}
+	}
 }
 
 func TestStableNetworkExchangeableConnections(t *testing.T) {

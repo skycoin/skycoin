@@ -171,7 +171,7 @@ function createWindow(url) {
   if (url) {
     win.loadURL(url);
   } else {
-    win.loadURL('file://' + process.resourcesPath + '/splash/index.html');
+    win.loadURL('file://' + __dirname + '/splash/index.html');
   }
 
   // Open the DevTools.

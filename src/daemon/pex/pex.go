@@ -629,7 +629,6 @@ func backoffDownloadText(url string) (string, error) {
 // Any lines that don't parse to an ip:port are skipped
 // Localhost ip:port addresses are ignored
 //
-// FIXME : move to iputil
 func ParseRemotePeerList(body string) []string {
 	var peers []string
 	for _, addr := range strings.Split(string(body), "\n") {

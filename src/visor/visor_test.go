@@ -9,7 +9,6 @@ import (
 	"math"
 	"os"
 	"path/filepath"
-	"reflect"
 	"sort"
 	"testing"
 	"time"
@@ -253,7 +252,7 @@ func TestHistorydbVerifier(t *testing.T) {
 			}
 
 			// Confirms that the error type is matched
-			require.Equal(t, reflect.TypeOf(tc.expectErr), reflect.TypeOf(err))
+			require.IsType(t, tc.expectErr, err)
 			// Confirms the error message is matched
 			require.Regexp(t, tc.expectErr.Error(), err.Error())
 		})

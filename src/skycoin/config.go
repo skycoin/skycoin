@@ -18,7 +18,7 @@ import (
 
 const (
 	//DefaultPeerlistFilename Name of file containing default peers list
-	DefaultPeerlistFilename = ""
+	DefaultPeerlistFilename = "trusted.txt"
 )
 
 var (
@@ -274,7 +274,6 @@ func (c *Config) postProcess() {
 				c.Node.DefaultConnections = pex.ParseRemotePeerList(string(peerlistText))
 			} else {
 				logger.Errorf("Error opening trusted peers file %s : %v", fp, err)
-				c.Node.DefaultConnections = nil
 			}
 		}
 	}

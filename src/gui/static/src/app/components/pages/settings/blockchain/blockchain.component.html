@@ -1,17 +1,19 @@
 <div class="sky-container sky-container-grey">
   <app-header [headline]="'title.blockchain' | translate"></app-header>
 
-  <div class="container">
+  <app-loading-content *ngIf="!(block && block.header && coinSupply)"></app-loading-content>
+
+  <div class="container" *ngIf="block && block.header && coinSupply">
     <div class="row -wrapper">
       <div class="col-md-6">
-        <div class="-paper" *ngIf="block && block.header">
+        <div class="-paper">
           <div class="-item">
             <div class="-key">{{ 'blockchain.blocks' | translate }}</div>
             <div class="-value">{{ block.header.seq | number }}</div>
           </div>
           <div class="-item">
             <div class="-key">{{ 'blockchain.time' | translate }}</div>
-            <div class="-value">{{ block.header.timestamp | dateFromNow }}</div>
+            <div class="-value">{{ block.header.timestamp | dateTime }}</div>
           </div>
           <div class="-item">
             <div class="-key">{{ 'blockchain.hash' | translate }}</div>
@@ -20,7 +22,7 @@
         </div>
       </div>
       <div class="col-md-6">
-        <div class="-paper" *ngIf="coinSupply">
+        <div class="-paper">
           <div class="row">
             <div class="col-md-6">
               <div class="-item">

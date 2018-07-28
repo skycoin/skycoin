@@ -1327,7 +1327,8 @@ func (gw *Gateway) GetTransactionsV2(flts ...visor.TxFilter) (*visor.Transaction
 		txnsResult, err = gw.v.CreateReadableTransactionResultsV2(txns)
 	})
 	return txnsResult, err
-  
+}
+
 // IsCSPEnabled returns if the csp is enabled
 func (gw *Gateway) IsCSPEnabled() bool {
 	return !gw.Config.DisableCSP

@@ -10,7 +10,13 @@
       </p>
     </div>
 
-    <div class="-table">
+    <app-loading-content
+      [isLoading]="false"
+      noDataText="backup.no-wallets"
+      *ngIf="onlyEncrypted.length === 0"
+    ></app-loading-content>
+
+    <div class="-table" *ngIf="onlyEncrypted.length > 0">
       <div class="-headers">
         <div class="-width-250">{{ 'backup.wallet' | translate }}</div>
         <div class="-width-150">{{ 'backup.filename' | translate }}</div>
@@ -18,7 +24,7 @@
       </div>
       <div class="-body">
         <div class="-row" *ngFor="let wallet of onlyEncrypted">
-          <div class="-width-250">{{ wallet.label }}</div>
+          <div class="-width-250 -label" [attr.title]="wallet.label">{{ wallet.label }}</div>
           <div class="-width-150">{{ wallet.filename }}</div>
           <div class="-flex-fill -text-right">
             <span class="-link" (click)="showSeed(wallet)">{{ 'backup.show-seed' | translate }}</span>

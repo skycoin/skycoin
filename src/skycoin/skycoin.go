@@ -109,7 +109,7 @@ func (c *Coin) Run() {
 	if c.config.Node.ResetCorruptDB {
 		// Check the database integrity and recreate it if necessary
 		c.logger.Info("Checking database and resetting if corrupted")
-		if newDB, err := visor.ResetCorruptDB(db, c.config.Node.blockchainPubkey, quit); err != nil {
+		if newDB, err := visor.RepairCorruptDB(db, c.config.Node.blockchainPubkey, quit); err != nil {
 			if err != visor.ErrVerifyStopped {
 				c.logger.Errorf("visor.ResetCorruptDB failed: %v", err)
 			}
@@ -342,6 +342,7 @@ func (c *Coin) configureDaemon() daemon.Config {
 	dc.Visor.EnableSeedAPI = c.config.Node.EnableSeedAPI
 
 	dc.Gateway.EnableWalletAPI = c.config.Node.EnableWalletAPI
+	dc.Gateway.DisableCSP = c.config.Node.DisableCSP
 
 	// Initialize wallet default crypto type
 	cryptoType, err := wallet.CryptoTypeFromString(c.config.Node.WalletCryptoType)

@@ -111,28 +111,6 @@ func TestGetBlock(t *testing.T) {
 			sha256: validSHA256,
 		},
 		{
-			name:   "200 - got block by hash",
-			method: http.MethodGet,
-			status: http.StatusOK,
-			hash:   validHashString,
-			sha256: validSHA256,
-			gatewayGetBlockByHashResult: &coin.SignedBlock{},
-			response: &visor.ReadableBlock{
-				Head: visor.ReadableBlockHeader{
-					BkSeq:             0x0,
-					BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
-					PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
-					Time:              0x0,
-					Fee:               0x0,
-					Version:           0x0,
-					BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
-				},
-				Body: visor.ReadableBlockBody{
-					Transactions: []visor.ReadableTransaction{},
-				},
-			},
-		},
-		{
 			name:   "400 - seq error: invalid syntax",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
@@ -159,6 +137,24 @@ func TestGetBlock(t *testing.T) {
 			},
 		},
 		{
+			name:   "500 - get block by hash error",
+			method: http.MethodGet,
+			status: http.StatusInternalServerError,
+			err:    "500 Internal Server Error - GetSignedBlockByHash failed",
+			hash:   validHashString,
+			sha256: validSHA256,
+			gatewayGetBlockByHashErr: errors.New("GetSignedBlockByHash failed"),
+		},
+		{
+			name:   "500 - get block by seq error",
+			method: http.MethodGet,
+			status: http.StatusInternalServerError,
+			err:    "500 Internal Server Error - GetSignedBlockBySeq failed",
+			seqStr: "1",
+			seq:    1,
+			gatewayGetBlockBySeqErr: errors.New("GetSignedBlockBySeq failed"),
+		},
+		{
 			name:   "200 - got block by seq",
 			method: http.MethodGet,
 			status: http.StatusOK,
@@ -180,24 +176,27 @@ func TestGetBlock(t *testing.T) {
 				},
 			},
 		},
-
 		{
-			name:   "500 - get block by hash error",
+			name:   "200 - got block by hash",
 			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - GetSignedBlockByHash failed",
+			status: http.StatusOK,
 			hash:   validHashString,
 			sha256: validSHA256,
-			gatewayGetBlockByHashErr: errors.New("GetSignedBlockByHash failed"),
-		},
-		{
-			name:   "500 - get block by seq error",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - GetSignedBlockBySeq failed",
-			seqStr: "1",
-			seq:    1,
-			gatewayGetBlockBySeqErr: errors.New("GetSignedBlockBySeq failed"),
+			gatewayGetBlockByHashResult: &coin.SignedBlock{},
+			response: &visor.ReadableBlock{
+				Head: visor.ReadableBlockHeader{
+					BkSeq:             0x0,
+					BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+					PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					Time:              0x0,
+					Fee:               0x0,
+					Version:           0x0,
+					BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+				},
+				Body: visor.ReadableBlockBody{
+					Transactions: []visor.ReadableTransaction{},
+				},
+			},
 		},
 	}
 
@@ -207,6 +206,7 @@ func TestGetBlock(t *testing.T) {
 
 			gateway.On("GetSignedBlockByHash", tc.sha256).Return(tc.gatewayGetBlockByHashResult, tc.gatewayGetBlockByHashErr)
 			gateway.On("GetSignedBlockBySeq", tc.seq).Return(tc.gatewayGetBlockBySeqResult, tc.gatewayGetBlockBySeqErr)
+			gateway.On("IsCSPEnabled").Return(false)
 
 			endpoint := "/api/v1/block"
 
@@ -333,6 +333,7 @@ func TestGetBlocks(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &GatewayerMock{}
 			gateway.On("GetBlocks", tc.start, tc.end).Return(tc.gatewayGetBlocksResult, tc.gatewayGetBlocksError)
+			gateway.On("IsCSPEnabled").Return(false)
 
 			endpoint := "/api/v1/blocks"
 
@@ -449,6 +450,7 @@ func TestGetLastBlocks(t *testing.T) {
 			gateway := NewGatewayerMock()
 
 			gateway.On("GetLastBlocks", tc.num).Return(tc.gatewayGetLastBlocksResult, tc.gatewayGetLastBlocksError)
+			gateway.On("IsCSPEnabled").Return(false)
 
 			v := url.Values{}
 			if tc.body.Num != "" {

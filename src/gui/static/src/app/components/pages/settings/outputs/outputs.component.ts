@@ -11,7 +11,7 @@ import { QrCodeComponent } from '../../../layout/qr-code/qr-code.component';
   styleUrls: ['./outputs.component.scss'],
 })
 export class OutputsComponent implements OnDestroy {
-  wallets: any[];
+  wallets: any[]|null;
 
   private outputsSubscription: ISubscription;
 
@@ -30,12 +30,15 @@ export class OutputsComponent implements OnDestroy {
   loadData(params) {
     const addr = params['addr'];
 
+    this.wallets = null;
     this.outputsSubscription = this.walletService.outputsWithWallets().subscribe(wallets => {
       this.wallets = wallets
         .map(wallet => Object.assign({}, wallet))
         .map(wallet => {
           wallet.addresses = wallet.addresses.filter(address => {
-            return addr ? address.address === addr : address.outputs.length > 0;
+            if (address.outputs.length > 0) {
+              return addr ? address.address === addr : true;
+            }
           });
 
           return wallet;

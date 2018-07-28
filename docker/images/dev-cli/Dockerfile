@@ -45,6 +45,7 @@ RUN set -ex; \
     patch \
     xz-utils \
     zlib1g-dev \
+    build-essential \
     \
 # No need for MySQL client
 #
@@ -136,6 +137,8 @@ RUN set -ex ; \
     screen \
     sudo \
     doxygen \
+    valgrind \
+    bsdmainutils \
     texlive-latex-base \
     ; \
     apt-get clean ; \
@@ -178,7 +181,12 @@ RUN git clone https://github.com/fatih/vim-go /usr/share/vim/vim80/pack/dev/star
     git clone https://github.com/Shougo/vimshell.vim /usr/share/vim/vim80/pack/dev/start/0vimshell && \
     git clone https://github.com/Shougo/vimproc.vim /usr/share/vim/vim80/pack/dev/start/0vimproc && \
     git clone https://github.com/w0rp/ale.git /usr/share/vim/vim80/pack/dev/start/ale && \
-    cd /usr/share/vim/vim80/pack/dev/start/0vimproc && make
+    cd /usr/share/vim/vim80/pack/dev/start/0vimproc && make ;\
+    git clone https://github.com/iberianpig/tig-explorer.vim.git /tmp/tig-explorer;\
+    cp /tmp/tig-explorer/autoload/tig_explorer.vim /usr/share/vim/vim80/autoload;\
+    cp /tmp/tig-explorer/plugin/tig_explorer.vim /usr/share/vim/vim80/plugin;\
+    rm -rf /tmp/tig-explorer
+
 
 # Install SWIG-3.0.12
 RUN cd /tmp/; \

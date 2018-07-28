@@ -55,7 +55,6 @@ type Gatewayer interface {
 	GetHealth() (*daemon.Health, error)
 	UnloadWallet(id string) error
 	VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bool, error)
-
 	//api/v2 endpoints
 	GetBlocksV2(start, end uint64) (*visor.ReadableBlocksV2, error)
 	GetBlockByHashV2(hash cipher.SHA256) (*visor.ReadableBlockV2, error)
@@ -64,4 +63,5 @@ type Gatewayer interface {
 	GetPendingTxnsV2() (*visor.ReadableUnconfirmedTxnsV2, error)
 	GetTransactionV2(txid cipher.SHA256) (*visor.TransactionResultV2, error)
 	GetTransactionsV2(flts ...visor.TxFilter) (*visor.TransactionResultsV2, error)
+	IsCSPEnabled() bool
 }

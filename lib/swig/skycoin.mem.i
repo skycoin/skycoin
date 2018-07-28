@@ -310,6 +310,22 @@
 	}
 }
 
+%rename(SKY_coin_AddressUxOuts_Keys) wrap_SKY_coin_AddressUxOuts_Keys;
+%inline{ 
+	GoUint32 wrap_SKY_coin_AddressUxOuts_Keys(AddressUxOuts_Handle p0, cipher_SHA256s* __out_hashes){
+		GoSlice_ data;
+		data.data = NULL;
+		data.len = 0;
+		data.cap = 0;
+		GoUint32 result = SKY_coin_AddressUxOuts_Keys(p0, &data);
+		if( result != 0){
+			__out_hashes->data = data.data;
+			__out_hashes->count = data.len;
+		}
+		return result;
+	}
+}
+
 /**
 *
 * typemaps for Handles

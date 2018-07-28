@@ -112,6 +112,38 @@
 	}
 }
 
+%extend cipher_SHA256s {
+	cipher_SHA256* getAt(int i){
+		if( i < $self->count ){
+			return &$self->data[i];
+		}
+		else
+			return NULL;
+	}
+	
+	int setAt(int i, cipher_SHA256* hash){
+		if( i < $self->count){
+			memcpy(&self->data[i], hash, sizeof(*hash));
+			return i;
+		} else {
+			return -1;
+		}
+	}
+	
+	int isEqual(cipher_SHA256s* a){
+		return $self->count == a->count && memcmp($self->data, a->data, sizeof(cipher_SHA256) * $self->count) == 0;
+	}
+	
+	void allocate(int n){
+		$self->data = malloc(n * sizeof(*($self->data)));
+		$self->count = n;
+	}
+	
+	void release(){
+		if($self->data != NULL) free($self->data);
+	}
+}
+
 %inline{
 	void destroy_cipher_SecKeys(cipher_SecKeys* p){
 		if( p != NULL ){

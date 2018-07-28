@@ -34,6 +34,11 @@ typedef struct{
 } cipher_PubKeys;
 
 typedef struct{
+	cipher_SHA256* data;
+	int count;
+} cipher_SHA256s;
+
+typedef struct{
 	coin__UxOut* data;
 	int count;
 } coin_UxOutArray;

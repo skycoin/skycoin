@@ -6,7 +6,7 @@
   $1 = PyList_Check($input) ? 1 : 0;
 }
 
-/*cipher_PubKeys* input parameter */
+/*cipher_SecKeys* input parameter */
 %typemap(in) (cipher_SecKeys* __in_secKeys) (cipher_SecKeys temp) {
 	int i;
 	$1 = &temp;

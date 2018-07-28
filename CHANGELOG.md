@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Add blockchain pubkey in introduction message, it would close the connection if the pubkey is not matched, but would accept it if pubkey is not provided.
+
 ### Removed
 
 ## [0.24.0] - 2018-07-06

@@ -241,6 +241,11 @@ func New(cfg Config, defaultConns []string) (*Pex, error) {
 		}
 	}
 
+	// Save peers to disk
+	if err := pex.save(); err != nil {
+		return nil, err
+	}
+
 	// Download peers from remote peers list
 	if pex.Config.DownloadPeerList {
 		go func() {

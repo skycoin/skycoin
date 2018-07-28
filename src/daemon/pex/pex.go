@@ -222,9 +222,8 @@ func New(cfg Config, defaultConns []string) (*Pex, error) {
 		return nil, err
 	}
 
-	// Set all loaded peers as not trusted, default connections will be
-	// the trusted ones.
-	if len(defaultConns) > 0 {
+	// If no default connections then all connections are untrusted.
+	if defaultConns == nil || len(defaultConns) == 0 {
 		for _, peer := range pex.peerlist.peers {
 			peer.Trusted = false
 		}
@@ -331,8 +330,8 @@ func (px *Pex) load() error {
 			logger.Errorf("Invalid peer address: %v", err)
 			continue
 		}
-
 		validPeers = append(validPeers, *p)
+
 		if px.Config.Max > 0 && len(validPeers) >= px.Config.Max {
 			break
 		}

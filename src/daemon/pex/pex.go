@@ -242,20 +242,11 @@ func New(cfg Config, defaultConns []string) (*Pex, error) {
 		}
 	}
 
-	// Save peers to disk
-	if err := pex.save(); err != nil {
-		return nil, err
-	}
-
 	// Download peers from remote peers list
 	if pex.Config.DownloadPeerList {
 		go func() {
 			if err := pex.downloadPeers(); err != nil {
 				logger.Errorf("Failed to download peers list: %v", err)
-			} else {
-				if err := pex.save(); err != nil {
-					logger.Errorf("Failed to save peers list: %v", err)
-				}
 			}
 		}()
 	}
@@ -628,7 +619,6 @@ func backoffDownloadText(url string) (string, error) {
 // The peers list format is newline separated ip:port
 // Any lines that don't parse to an ip:port are skipped
 // Localhost ip:port addresses are ignored
-//
 func ParseRemotePeerList(body string) []string {
 	var peers []string
 	for _, addr := range strings.Split(string(body), "\n") {

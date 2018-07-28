@@ -74,6 +74,8 @@ func TestHealthCheckHandler(t *testing.T) {
 			}
 
 			gateway := NewGatewayerMock()
+			gateway.On("IsCSPEnabled").Return(false)
+
 			if tc.getHealthErr != nil {
 				gateway.On("GetHealth").Return(nil, tc.getHealthErr)
 			} else {
@@ -91,7 +93,6 @@ func TestHealthCheckHandler(t *testing.T) {
 			}
 			handler := newServerMux(cfg, gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
-
 			if tc.code != http.StatusOK {
 				require.Equal(t, tc.code, rr.Code)
 				return

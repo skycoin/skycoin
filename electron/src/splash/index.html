@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    .skycoin-splash {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1003;
+      background: #000000;
+      overflow: hidden;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .splash-spinner {
+      margin-top: 35px;
+      -webkit-animation: splash-spin 3s linear infinite;
+      -moz-animation: splash-spin 3s linear infinite;
+      animation: splash-spin 3s linear infinite;
+    }
+
+    @-moz-keyframes splash-spin { 100% { -moz-transform: rotate(360deg); } }
+    @-webkit-keyframes splash-spin { 100% { -webkit-transform: rotate(360deg); } }
+    @keyframes splash-spin { 100% { -webkit-transform: rotate(360deg); transform:rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="skycoin-splash">
+    <div>
+      <img src="logo-splash.png">
+      <div>
+        <img class="splash-spinner" src="spinner.png">
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -30,8 +30,8 @@ func (tx *Transaction) Hash() cipher.SHA256 {
 }
 
 // New create a transaction db instance.
-func newTransactions(db *dbutil.DB) (*transactions, error) { //nolint: deadcode
-	return &transactions{}, nil
+func newTransactions() *transactions {
+	return &transactions{}
 }
 
 // Add transaction to the db.

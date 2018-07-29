@@ -342,7 +342,7 @@ type outAddr struct {
 	Hours uint64
 }
 
-func makeTx(s cipher.SecKey, ux *UxOut, outs []outAddr, tm uint64, seq uint64) (*Transaction, UxArray, error) {
+func makeTx(s cipher.SecKey, ux *UxOut, outs []outAddr, tm uint64, seq uint64) (*Transaction, UxArray) {
 	if ux == nil {
 		// genesis block tx.
 		tx := Transaction{}
@@ -360,7 +360,7 @@ func makeTx(s cipher.SecKey, ux *UxOut, outs []outAddr, tm uint64, seq uint64) (
 				Hours:          outs[0].Hours,
 			},
 		}
-		return &tx, []UxOut{ux}, nil
+		return &tx, []UxOut{ux}
 	}
 
 	tx := Transaction{}
@@ -386,7 +386,7 @@ func makeTx(s cipher.SecKey, ux *UxOut, outs []outAddr, tm uint64, seq uint64) (
 			},
 		}
 	}
-	return &tx, uxo, nil
+	return &tx, uxo
 }
 
 func TestTransactionsSize(t *testing.T) {

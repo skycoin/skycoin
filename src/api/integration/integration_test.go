@@ -57,8 +57,9 @@ When update flag is set to true all tests pass
 const (
 	testModeStable           = "stable"
 	testModeLive             = "live"
-	testModeDisableWalletApi = "disable-wallet-api"
-	testModeDisableSeedApi   = "disable-seed-api"
+	testModeDisableWalletAPI = "disable-wallet-api"
+	testModeEnableSeedAPI    = "enable-seed-api"
+	testModeDisableGUI       = "disable-gui"
 
 	testFixturesDir = "testdata"
 )
@@ -86,8 +87,9 @@ func mode(t *testing.T) string {
 		mode = testModeStable
 	case testModeLive,
 		testModeStable,
-		testModeDisableWalletApi,
-		testModeDisableSeedApi:
+		testModeDisableWalletAPI,
+		testModeEnableSeedAPI,
+		testModeDisableGUI:
 	default:
 		t.Fatal("Invalid test mode, must be stable, live or disable-wallet-api")
 	}
@@ -116,8 +118,8 @@ func doLive(t *testing.T) bool {
 	return false
 }
 
-func doDisableWalletApi(t *testing.T) bool {
-	if enabled() && mode(t) == testModeDisableWalletApi {
+func doDisableWalletAPI(t *testing.T) bool {
+	if enabled() && mode(t) == testModeDisableWalletAPI {
 		return true
 	}
 
@@ -125,12 +127,21 @@ func doDisableWalletApi(t *testing.T) bool {
 	return false
 }
 
-func doDisableSeedApi(t *testing.T) bool {
-	if enabled() && mode(t) == testModeDisableSeedApi {
+func doEnableSeedAPI(t *testing.T) bool {
+	if enabled() && mode(t) == testModeEnableSeedAPI {
 		return true
 	}
 
 	t.Skip("EnableSeedAPI tests disabled")
+	return false
+}
+
+func doDisableGUI(t *testing.T) bool {
+	if enabled() && mode(t) == testModeDisableGUI {
+		return true
+	}
+
+	t.Skip("DisableGUIAPI tests disabled")
 	return false
 }
 
@@ -1212,13 +1223,13 @@ func TestLiveTransaction(t *testing.T) {
 
 	cases := []struct {
 		name       string
-		txId       string
+		txID       string
 		err        api.ClientError
 		goldenFile string
 	}{
 		{
-			name: "invalid txId",
-			txId: "abcd",
+			name: "invalid txID",
+			txID: "abcd",
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
@@ -1226,17 +1237,17 @@ func TestLiveTransaction(t *testing.T) {
 			},
 		},
 		{
-			name: "empty txId",
-			txId: "",
+			name: "empty txID",
+			txID: "",
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - txid is empty\n",
+				Message:    "400 Bad Request - txID is empty\n",
 			},
 		},
 		{
 			name:       "OK",
-			txId:       "76ecbabc53ea2a3be46983058433dda6a3cf7ea0b86ba14d90b932fa97385de7",
+			txID:       "76ecbabc53ea2a3be46983058433dda6a3cf7ea0b86ba14d90b932fa97385de7",
 			goldenFile: "./transaction.golden",
 		},
 	}
@@ -1244,7 +1255,7 @@ func TestLiveTransaction(t *testing.T) {
 	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			tx, err := c.Transaction(tc.txId)
+			tx, err := c.Transaction(tc.txID)
 			if err != nil {
 				require.Equal(t, tc.err, err)
 				return
@@ -1263,13 +1274,13 @@ func TestStableTransaction(t *testing.T) {
 
 	cases := []struct {
 		name       string
-		txId       string
+		txID       string
 		err        api.ClientError
 		goldenFile string
 	}{
 		{
 			name: "invalid txId",
-			txId: "abcd",
+			txID: "abcd",
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
@@ -1279,7 +1290,7 @@ func TestStableTransaction(t *testing.T) {
 		},
 		{
 			name: "not exist",
-			txId: "701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947",
+			txID: "701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947",
 			err: api.ClientError{
 				Status:     "404 Not Found",
 				StatusCode: http.StatusNotFound,
@@ -1289,7 +1300,7 @@ func TestStableTransaction(t *testing.T) {
 		},
 		{
 			name: "empty txId",
-			txId: "",
+			txID: "",
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
@@ -1299,7 +1310,7 @@ func TestStableTransaction(t *testing.T) {
 		},
 		{
 			name:       "genesis transaction",
-			txId:       "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add",
+			txID:       "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add",
 			goldenFile: "genesis-transaction.golden",
 		},
 	}
@@ -1307,7 +1318,7 @@ func TestStableTransaction(t *testing.T) {
 	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			tx, err := c.Transaction(tc.txId)
+			tx, err := c.Transaction(tc.txID)
 			if err != nil {
 				require.Equal(t, tc.err, err)
 				return
@@ -1585,13 +1596,13 @@ func TestStableRawTransaction(t *testing.T) {
 
 	cases := []struct {
 		name  string
-		txId  string
+		txID  string
 		err   api.ClientError
 		rawTx string
 	}{
 		{
 			name: "invalid hex length",
-			txId: "abcd",
+			txID: "abcd",
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
@@ -1600,7 +1611,7 @@ func TestStableRawTransaction(t *testing.T) {
 		},
 		{
 			name: "not found",
-			txId: "701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947",
+			txID: "701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947",
 			err: api.ClientError{
 				Status:     "404 Not Found",
 				StatusCode: http.StatusNotFound,
@@ -1609,7 +1620,7 @@ func TestStableRawTransaction(t *testing.T) {
 		},
 		{
 			name: "odd length hex string",
-			txId: "abcdeffedca",
+			txID: "abcdeffedca",
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
@@ -1618,7 +1629,7 @@ func TestStableRawTransaction(t *testing.T) {
 		},
 		{
 			name:  "OK",
-			txId:  "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add",
+			txID:  "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add",
 			rawTx: "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000f8f9c644772dc5373d85e11094e438df707a42c900407a10f35a000000407a10f35a0000",
 		},
 	}
@@ -1626,7 +1637,7 @@ func TestStableRawTransaction(t *testing.T) {
 	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			txResult, err := c.RawTransaction(tc.txId)
+			txResult, err := c.RawTransaction(tc.txID)
 			if err != nil {
 				require.Equal(t, tc.err, err, "case: "+tc.name)
 				return
@@ -1643,13 +1654,13 @@ func TestLiveRawTransaction(t *testing.T) {
 
 	cases := []struct {
 		name  string
-		txId  string
+		txID  string
 		err   api.ClientError
 		rawTx string
 	}{
 		{
 			name: "invalid hex length",
-			txId: "abcd",
+			txID: "abcd",
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
@@ -1658,7 +1669,7 @@ func TestLiveRawTransaction(t *testing.T) {
 		},
 		{
 			name: "odd length hex string",
-			txId: "abcdeffedca",
+			txID: "abcdeffedca",
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
@@ -1667,12 +1678,12 @@ func TestLiveRawTransaction(t *testing.T) {
 		},
 		{
 			name:  "OK - genesis tx",
-			txId:  "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add",
+			txID:  "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add",
 			rawTx: "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000f8f9c644772dc5373d85e11094e438df707a42c900407a10f35a000000407a10f35a0000",
 		},
 		{
 			name:  "OK",
-			txId:  "701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947",
+			txID:  "701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947",
 			rawTx: "dc00000000f8293dbfdddcc56a97664655ceee650715d35a0dda32a9f0ce0e2e99d4899124010000003981061c7275ae9cc936e902a5367fdd87ef779bbdb31e1e10d325d17a129abb34f6e597ceeaf67bb051774b41c58276004f6a63cb81de61d4693bc7a5536f320001000000fe6762d753d626115c8dd3a053b5fb75d6d419a8d0fb1478c5fffc1fe41c5f2002000000003be2537f8c0893fddcddc878518f38ea493d949e008988068d0000002739570000000000009037ff169fbec6db95e2537e4ff79396c050aeeb00e40b54020000002739570000000000",
 		},
 	}
@@ -1680,7 +1691,7 @@ func TestLiveRawTransaction(t *testing.T) {
 	c := api.NewClient(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			txResult, err := c.RawTransaction(tc.txId)
+			txResult, err := c.RawTransaction(tc.txID)
 			if err != nil {
 				require.Equal(t, tc.err, err, "case: "+tc.name)
 				return
@@ -3530,7 +3541,7 @@ func TestDecryptWallet(t *testing.T) {
 }
 
 func TestGetWalletSeedDisabledAPI(t *testing.T) {
-	if !doDisableSeedApi(t) {
+	if !doLiveOrStable(t) {
 		return
 	}
 
@@ -3545,7 +3556,7 @@ func TestGetWalletSeedDisabledAPI(t *testing.T) {
 }
 
 func TestGetWalletSeedEnabledAPI(t *testing.T) {
-	if !doLiveOrStable(t) {
+	if !doEnableSeedAPI(t) {
 		return
 	}
 
@@ -3761,7 +3772,7 @@ func getWalletDir(t *testing.T, c *api.Client) string {
 }
 
 func TestDisableWalletApi(t *testing.T) {
-	if !doDisableWalletApi(t) {
+	if !doDisableWalletAPI(t) {
 		return
 	}
 
@@ -4036,7 +4047,7 @@ func TestLiveHealth(t *testing.T) {
 }
 
 func TestDisableGUIAPI(t *testing.T) {
-	if !doLiveOrStable(t) {
+	if !doDisableGUI(t) {
 		return
 	}
 

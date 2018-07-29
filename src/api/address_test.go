@@ -67,7 +67,6 @@ func TestVerifyAddress(t *testing.T) {
 			}),
 			httpResponse: NewHTTPErrorResponse(http.StatusUnprocessableEntity, "Invalid checksum"),
 		},
-
 		{
 			name:   "200",
 			method: http.MethodPost,
@@ -81,7 +80,6 @@ func TestVerifyAddress(t *testing.T) {
 				},
 			},
 		},
-
 		{
 			name:   "200 - csrf disabled",
 			method: http.MethodPost,
@@ -102,6 +100,7 @@ func TestVerifyAddress(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v2/address/verify"
 			gateway := NewGatewayerMock()
+			gateway.On("IsCSPEnabled").Return(false)
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)

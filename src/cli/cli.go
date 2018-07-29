@@ -26,7 +26,7 @@ import (
 
 const (
 	// Version is the CLI Version
-	Version           = "0.23.1-rc2"
+	Version           = "0.24.0"
 	walletExt         = ".wlt"
 	defaultCoin       = "skycoin"
 	defaultWalletName = "$COIN_cli" + walletExt

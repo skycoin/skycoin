@@ -595,7 +595,7 @@ func lePutUint64(b []byte, v uint64) {
 }
 
 type coder struct {
-	buf []byte //nolint : structcheck
+	buf []byte //nolint: structcheck
 }
 
 type decoder coder

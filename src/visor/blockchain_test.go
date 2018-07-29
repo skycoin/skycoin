@@ -76,9 +76,7 @@ func makeSpendTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr ci
 
 /* Helpers */
 type fakeChainStore struct {
-	len    uint64 //nolint: structcheck
 	blocks []coin.SignedBlock
-	up     blockdb.UnspentPooler //nolint: structcheck
 }
 
 func (fcs *fakeChainStore) Head(tx *dbutil.Tx) (*coin.SignedBlock, error) {

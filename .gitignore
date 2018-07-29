@@ -102,6 +102,9 @@ electron/node_modules
 electron/.gox_output
 electron/.electron_output
 electron/.standalone_output
+# Do not ignore the icons folder
+!electron/build
+!electron/build/icons
 
 .vscode/
 

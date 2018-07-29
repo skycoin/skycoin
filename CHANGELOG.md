@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Add Content-Security-Policy header to http responses
+
 ### Fixed
 
 ### Changed

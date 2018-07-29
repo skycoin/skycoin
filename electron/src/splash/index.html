@@ -16,12 +16,29 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      text-align: center;
     }
+
+    .splash-spinner {
+      margin-top: 35px;
+      -webkit-animation: splash-spin 3s linear infinite;
+      -moz-animation: splash-spin 3s linear infinite;
+      animation: splash-spin 3s linear infinite;
+    }
+
+    @-moz-keyframes splash-spin { 100% { -moz-transform: rotate(360deg); } }
+    @-webkit-keyframes splash-spin { 100% { -webkit-transform: rotate(360deg); } }
+    @keyframes splash-spin { 100% { -webkit-transform: rotate(360deg); transform:rotate(360deg); } }
   </style>
 </head>
 <body>
   <div class="skycoin-splash">
-    <img src="logo-splash.png">
+    <div>
+      <img src="logo-splash.png">
+      <div>
+        <img class="splash-spinner" src="spinner.png">
+      </div>
+    </div>
   </div>
 </body>
 </html>

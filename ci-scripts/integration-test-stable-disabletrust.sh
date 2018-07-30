@@ -84,7 +84,6 @@ echo "starting skycoin node in background with http listener on $HOST"
                       -enable-wallet-api=true \
                       -wallet-dir="$WALLET_DIR" \
                       $DISABLE_CSRF \
-                      -enable-seed-api=true \
                       -disable-trusted-peers=true &
 SKYCOIN_PID=$!
 

@@ -125,6 +125,8 @@ func TestConnection(t *testing.T) {
 				tc.gatewayGetBlockchainProgressResult,
 				tc.gatewayGetBlockchainProgressError,
 			)
+			gateway.On("IsCSPEnabled").Return(false)
+
 			v := url.Values{}
 			if tc.addr != "" {
 				v.Add("addr", tc.addr)
@@ -266,6 +268,8 @@ func TestConnections(t *testing.T) {
 				tc.gatewayGetBlockchainProgressResult,
 				tc.gatewayGetBlockchainProgressError,
 			)
+			gateway.On("IsCSPEnabled").Return(false)
+
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
@@ -318,6 +322,7 @@ func TestDefaultConnections(t *testing.T) {
 			endpoint := "/api/v1/network/defaultConnections"
 			gateway := NewGatewayerMock()
 			gateway.On("GetDefaultConnections").Return(tc.gatewayGetDefaultConnectionsResult)
+			gateway.On("IsCSPEnabled").Return(false)
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
@@ -370,6 +375,7 @@ func TestGetTrustConnections(t *testing.T) {
 			endpoint := "/api/v1/network/connections/trust"
 			gateway := NewGatewayerMock()
 			gateway.On("GetTrustConnections").Return(tc.gatewayGetTrustConnectionsResult)
+			gateway.On("IsCSPEnabled").Return(false)
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
@@ -422,6 +428,7 @@ func TestGetExchgConnection(t *testing.T) {
 			endpoint := "/api/v1/network/connections/exchange"
 			gateway := NewGatewayerMock()
 			gateway.On("GetExchgConnection").Return(tc.gatewayGetExchgConnectionResult)
+			gateway.On("IsCSPEnabled").Return(false)
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 

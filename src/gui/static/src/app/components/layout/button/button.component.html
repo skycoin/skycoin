@@ -1,18 +1,21 @@
-<button
-  mat-button
-  type="submit"
-  mat-raised-button
-  color="primary"
-  [disabled]="disabled && !forceEmitEvents"
-  [matTooltip]="error ? error : null"
-  (click)="this.state !== 0 ? onClick() : null"
-  [ngClass]="{ enabled: !disabled }"
+<div class="button-container"
   (mouseenter)="mouseOver = true"
   (mouseleave)="mouseOver = false"
-  #tooltip="matTooltip"
 >
-  <ng-content></ng-content>
-  <mat-icon *ngIf="state === 1">done</mat-icon>
-  <mat-icon *ngIf="state === 2">error</mat-icon>
-  <mat-spinner *ngIf="state === 0" class="in-button"></mat-spinner>
-</button>
+  <button
+    mat-button
+    type="submit"
+    mat-raised-button
+    color="primary"
+    [disabled]="disabled && !forceEmitEvents"
+    [matTooltip]="error ? error : null"
+    (click)="this.state !== 0 ? onClick() : null"
+    [ngClass]="{ enabled: !disabled }"
+    #tooltip="matTooltip"
+  >
+    <ng-content></ng-content>
+    <mat-icon *ngIf="state === 1">done</mat-icon>
+    <mat-icon *ngIf="state === 2">error</mat-icon>
+    <mat-spinner *ngIf="state === 0" class="in-button"></mat-spinner>
+  </button>
+</div>

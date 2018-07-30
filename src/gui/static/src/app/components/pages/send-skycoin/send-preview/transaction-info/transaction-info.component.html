@@ -1,5 +1,5 @@
 <div class="row">
-  <div class="col-md-8 -tx-meta">
+  <div class="col-md-9 -tx-meta">
     <h4 *ngIf="isPreview">{{ 'tx.confirm-transaction' | translate }}</h4>
     <h4 *ngIf="!isPreview">{{ 'tx.transaction' | translate }}</h4>
 
@@ -29,7 +29,7 @@
       <span>{{ 'tx.id' | translate }}:</span> {{ transaction.txid }}
     </div>
   </div>
-  <div class="col-md-4 -tx-price">
+  <div class="col-md-3 -tx-price">
     <div class="-icon" [ngClass]="{ '-incoming': !isPreview && transaction.balance > 0 }">
       <img src="/assets/img/send-blue.png">
     </div>

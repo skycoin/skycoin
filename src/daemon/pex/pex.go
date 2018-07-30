@@ -366,7 +366,7 @@ func (px *Pex) AddPeer(addr string) error {
 		for index, p := range px.peerlist.peers {
 			t := time.Unix(p.LastSeen, 0)
 			hours := time.Since(t).Hours()
-			if hours >= float64(time.Hour*8) {
+			if hours >= float64(8) {
 				if hours >= i {
 					i = hours
 					pivot = index

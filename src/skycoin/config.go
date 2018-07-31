@@ -3,6 +3,7 @@ package skycoin
 import (
 	"flag"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -376,6 +377,9 @@ func (c *Config) register() {
 }
 
 func (n *NodeConfig) applyConfigMode(configMode string) {
+	if runtime.GOOS == "windows" {
+		n.ColorLog = false
+	}
 	switch configMode {
 	case "":
 	case "STANDALONE_CLIENT":
@@ -389,7 +393,6 @@ func (n *NodeConfig) applyConfigMode(configMode string) {
 		n.RPCInterface = false
 		n.WebInterface = true
 		n.LogToFile = false
-		n.ColorLog = true
 		n.ResetCorruptDB = true
 		n.WebInterfacePort = 0 // randomize web interface port
 	default:

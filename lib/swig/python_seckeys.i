@@ -1,7 +1,3 @@
-%typecheck(SWIG_TYPECHECK_INTEGER) Transaction__Handle {
-  $1 = PyInt_Check($input) ? 1 : 0;
-}
-
 %typecheck(SWIG_TYPECHECK_STRING_ARRAY) cipher_SecKeys* {
   $1 = PyList_Check($input) ? 1 : 0;
 }
@@ -52,6 +48,3 @@
 		free( (void*)$1->data );
 	%append_output( list );
 }
-
-
-

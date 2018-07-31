@@ -316,7 +316,7 @@
 		data.len = 0;
 		data.cap = 0;
 		GoUint32 result = SKY_coin_AddressUxOuts_Flatten(p0, &data);
-		if( result != 0 ){
+		if( result == 0 ){
 			__return_Ux->data = data.data;
 			__return_Ux->count = data.len;
 		}
@@ -332,7 +332,7 @@
 		data.len = 0;
 		data.cap = 0;
 		GoUint32 result = SKY_coin_AddressUxOuts_Get(p0, p1, &data);
-		if( result != 0 ){
+		if( result == 0 ){
 			__return_Ux->data = data.data;
 			__return_Ux->count = data.len;
 		}
@@ -359,7 +359,7 @@
 		data.len = 0;
 		data.cap = 0;
 		GoUint32 result = SKY_coin_AddressUxOuts_Keys(p0, &data);
-		if( result != 0){
+		if( result == 0){
 			__out_hashes->data = data.data;
 			__out_hashes->count = data.len;
 		}
@@ -375,7 +375,7 @@
 		data.len = 0;
 		data.cap = 0;
 		GoUint32 result = SKY_coin_Transactions_Hashes(p0, &data);
-		if( result != 0){
+		if( result == 0){
 			__out_hashes->data = data.data;
 			__out_hashes->count = data.len;
 		}

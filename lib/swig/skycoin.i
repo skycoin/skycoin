@@ -6,25 +6,26 @@
 	#include "swig.h"
 %}
 
+//Apply strictly to python
+//Not for other languages
+#if defined(SWIGPYTHON)
+%include "python_skycoin.cipher.crypto.i"
+%include "python_uxarray.i"
+%include "python_sha256s.i"
+%include "python_skycoin.coin.i"
+%include "python_skycoin.callback.i"
+#else
+%include "skycoin.cipher.crypto.i"
+%include "skycoin.coin.i"
+#endif
 
 //Apply typemaps for Python for now
 //It can be applied to other languages that fit in
 //Not languages can't return multiple values
 #if defined(SWIGPYTHON)
 %include "golang.cgo.i"
-%include "skycoin.mem.i"
 %include "structs_typemaps.i"
-#endif
-
-//Apply strictly to python
-//Not for other languages
-#if defined(SWIGPYTHON)
-%include "python_skycoin.cipher.crypto.i"
-%include "python_skycoin.coin.i"
-%include "python_skycoin.callback.i"
-#else
-%include "skycoin.cipher.crypto.i"
-%include "skycoin.coin.i"
+%include "skycoin.mem.i"
 #endif
 
 %include "swig.h"

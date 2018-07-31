@@ -123,12 +123,14 @@ lint: ## Run linters. Use make install-linters first.
 		-E golint \
 		-E varcheck \
 		-E unparam \
+		-E structcheck \
 		./...
 	# lib cgo can't use golint because it needs export directives in function docstrings that do not obey golint rules
 	golangci-lint run --no-config  --deadline=3m --concurrency=2 --disable-all --tests \
 		-E goimports \
 		-E varcheck \
 		-E unparam \
+		-E structcheck \
 		./lib/cgo/...
 
 check: lint test integration-test-stable integration-test-stable-disable-csrf integration-test-disable-wallet-api integration-test-disable-seed-api integration-test-enable-seed-api integration-test-disable-gui ## Run tests and linters

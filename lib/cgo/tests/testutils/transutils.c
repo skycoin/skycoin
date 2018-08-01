@@ -91,8 +91,8 @@ coin__Transaction* makeTransactionFromUxOut(coin__UxOut* puxOut, cipher__SecKey*
   result  = SKY_coin_Create_Transaction(handle);
   cr_assert(result == SKY_OK, "SKY_coin_Create_Transaction failed");
   registerHandleClose(*handle);
-  result = SKY_coin_Get_Transaction_Object( *handle, &ptransaction );
-  cr_assert(result == SKY_OK, "SKY_coin_Get_Transaction_Object failed");
+  result = SKY_coin_GetTransactionObject( *handle, &ptransaction );
+  cr_assert(result == SKY_OK, "SKY_coin_GetTransactionObject failed");
   cipher__SHA256 sha256;
   result = SKY_coin_UxOut_Hash(puxOut, &sha256);
   cr_assert(result == SKY_OK, "SKY_coin_UxOut_Hash failed");
@@ -139,8 +139,8 @@ coin__Transaction* makeEmptyTransaction(Transaction__Handle* handle){
   result  = SKY_coin_Create_Transaction(handle);
   cr_assert(result == SKY_OK, "SKY_coin_Create_Transaction failed");
   registerHandleClose(*handle);
-  result = SKY_coin_Get_Transaction_Object( *handle, &ptransaction );
-  cr_assert(result == SKY_OK, "SKY_coin_Get_Transaction_Object failed");
+  result = SKY_coin_GetTransactionObject( *handle, &ptransaction );
+  cr_assert(result == SKY_OK, "SKY_coin_GetTransactionObject failed");
   return ptransaction;
 }
 
@@ -213,8 +213,8 @@ coin__Transaction* copyTransaction(Transaction__Handle handle, Transaction__Hand
   result = SKY_coin_Transaction_Copy(handle, handle2);
   cr_assert(result == SKY_OK);
   registerHandleClose(*handle2);
-  result = SKY_coin_Get_Transaction_Object( *handle2, &ptransaction );
-  cr_assert(result == SKY_OK, "SKY_coin_Get_Transaction_Object failed");
+  result = SKY_coin_GetTransactionObject( *handle2, &ptransaction );
+  cr_assert(result == SKY_OK, "SKY_coin_GetTransactionObject failed");
   return ptransaction;
 }
 

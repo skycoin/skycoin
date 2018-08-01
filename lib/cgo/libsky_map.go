@@ -9,8 +9,8 @@ package main
 */
 import "C"
 
-//export SKY_map_get
-func SKY_map_get(gomap *C.GoStringMap_, key string, value *C.GoString_) (____error_code uint32) {
+//export SKY_map_Get
+func SKY_map_Get(gomap *C.GoStringMap_, key string, value *C.GoString_) (____error_code uint32) {
 	obj, ok := lookupHandle(C.Handle(*gomap))
 	____error_code = SKY_ERROR
 	if ok {
@@ -25,8 +25,8 @@ func SKY_map_get(gomap *C.GoStringMap_, key string, value *C.GoString_) (____err
 	return
 }
 
-//export SKY_map_has_key
-func SKY_map_has_key(gomap *C.GoStringMap_, key string) (found bool) {
+//export SKY_map_HasKey
+func SKY_map_HasKey(gomap *C.GoStringMap_, key string) (found bool) {
 	obj, ok := lookupHandle(C.Handle(*gomap))
 	found = false
 	if ok {
@@ -37,8 +37,8 @@ func SKY_map_has_key(gomap *C.GoStringMap_, key string) (found bool) {
 	return
 }
 
-//export SKY_map_close
-func SKY_map_close(gomap *C.GoStringMap_) (____error_code uint32) {
+//export SKY_map_Close
+func SKY_map_Close(gomap *C.GoStringMap_) (____error_code uint32) {
 	obj, ok := lookupHandle(C.Handle(*gomap))
 	____error_code = SKY_ERROR
 	if ok {

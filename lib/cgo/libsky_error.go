@@ -10,6 +10,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
+	"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/file"
@@ -22,9 +23,11 @@ import (
 
 const (
 	// SKY_ERROR generic error condition
-	SKY_ERROR = 0xFFFFFFFF
+	SKY_ERROR = 0x7FFFFFFF
 	// SKY_BAD_HANDLE invalid handle argument
-	SKY_BAD_HANDLE = 0xFF000001
+	SKY_BAD_HANDLE = 0x7F000001
+	// SKY_API_LOCKED API locked for security reasons
+	SKY_API_LOCKED = 0x7F000002
 	// SKY_OK error code is used to report success
 	SKY_OK = 0
 )
@@ -53,6 +56,11 @@ const (
 	SKY_PKG_VISOR
 	// Error code prefix for wallet package
 	SKY_PKG_WALLET
+)
+
+const (
+	// SKY_PKG_LIBCGO package prefix for internal API errors
+	SKY_PKG_LIBCGO = 0x7F000000
 )
 
 // Error codes defined in cipher package
@@ -311,12 +319,19 @@ const (
 )
 
 var (
+	// ErrorBadHandle invalid handle value
 	ErrorBadHandle = errors.New("Invalid or unknown handle value")
-	ErrorUnknown   = errors.New("Unexpected error")
+	// ErrorUnknown unexpected error
+	ErrorUnknown = errors.New("Unexpected error")
+	// ErrorLockApi unrecoverable panic detected.
+	// Subsequent API requests should be rejected since API will be locked
+	ErrorLockApi = errors.New("Unrecoverable panic detected. API locked.")
 
 	errorToCodeMap = map[error]uint32{
+		// libcgo
 		ErrorBadHandle: SKY_BAD_HANDLE,
 		ErrorUnknown:   SKY_ERROR,
+		ErrorLockApi:   SKY_API_LOCKED,
 		// cipher
 		cipher.ErrInvalidLength:     SKY_ErrInvalidLength,
 		cipher.ErrInvalidChecksum:   SKY_ErrInvalidChecksum,
@@ -462,7 +477,40 @@ func libErrorCode(err error) uint32 {
 	return SKY_ERROR
 }
 
-// Catch panic signals emitted by internal implementation
+var (
+	// isApiLocked flag set when previous unrecoverable panic is detected
+	// subsequent use of the API leads to SKY_API_LOCKED returned
+	isAPILocked = false
+	// haltOnPanic is enabled by default to halt process on unhandled panic
+	// if disabled then locking is activated instead.
+	// Subsequent use of the API leads to SKY_API_LOCKED error code returned
+	haltOnPanic = true
+)
+
+const (
+	// SKY_OPT_HALTONPANIC controls API behavior on panic
+	// Supported values:
+	// 0        - do not halt on panic, lock API instead
+	// non-zero - exit the process on unrecoverable panic
+	SKY_OPT_HALTONPANIC = 1 + iota
+)
+
+// SKY_libcgo_ConfigApiOptions set values for configurable API settings
+func SKY_libcgo_ConfigApiOption(optionID uint32, optionValue uint64) {
+	if optionID == SKY_OPT_HALTONPANIC {
+		haltOnPanic = optionValue != 0
+	}
+}
+
+// checkAPIReady ensure preconditions are met for API functions to be invoked
+// and lock API otherwise
+func checkAPIReady() {
+	if isAPILocked {
+		panic(ErrorLockApi)
+	}
+}
+
+// catchApiPanic intercept signals emitted by internal implementation
 // of API methods. This function is mainly used in defer statements
 // exceuted immediately before returning from API calls.
 //
@@ -475,9 +523,24 @@ func catchApiPanic(errcode uint32, err interface{}) uint32 {
 		// Return right away
 		return errcode
 	}
+	if isAPILocked || err == ErrorLockApi {
+		isAPILocked = true
+		return SKY_API_LOCKED
+	}
 	if err != nil {
-		// TODO: Fix to be like retVal = libErrorCode(err)
-		return SKY_ERROR
+		if valueErr, isValueError := err.(util.ValueError); isValueError {
+			return libErrorCode(valueErr.ErrorData)
+		}
+		// FIXME: Set process exit code on panic
+		/*
+			var exitCode int
+			if _err, isError := err.(error); isError {
+				exitCode = int(libErrorCode(_err))
+			} else {
+				exitCode = SKY_ERROR
+			}
+		*/
+		panic(err)
 	}
 	return SKY_OK
 }

@@ -553,11 +553,11 @@ func SKY_handle_close(handle C.Handle) {
 
 //export SKY_handle_copy
 func SKY_handle_copy(handle C.Handle, copy *C.Handle) uint32 {
-		obj, ok := lookupHandle(handle)
-		if ok {
-			*copy = registerHandle(obj)
-			return 0
-		} else {
-			return SKY_BAD_HANDLE
-		}
+	obj, ok := lookupHandle(handle)
+	if ok {
+		*copy = registerHandle(obj)
+		return 0
+	} else {
+		return SKY_BAD_HANDLE
+	}
 }

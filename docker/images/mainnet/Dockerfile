@@ -27,6 +27,9 @@ RUN cd $GOPATH/src/github.com/skycoin/skycoin && \
     sh -c "if test -d $GOPATH/bin/linux_arm ; then mv $GOPATH/bin/linux_arm/* $GOPATH/bin/; fi; \
            if test -d $GOPATH/bin/linux_arm64 ; then mv $GOPATH/bin/linux_arm64/* $GOPATH/bin/; fi"
 
+RUN apt-get update && \
+    apt-get install -y ca-certificates
+
 # skycoin image
 FROM $IMAGE_FROM
 
@@ -45,6 +48,9 @@ COPY --from=build /go/src/github.com/skycoin/skycoin/src/gui/static /usr/local/s
 
 # copy launcher
 COPY docker_launcher.sh /usr/local/bin/docker_launcher.sh
+
+#Copy certificates
+COPY --from=build /etc/ssl/certs /etc/ssl/certs
 
 # volumes
 VOLUME $WALLET_DIR

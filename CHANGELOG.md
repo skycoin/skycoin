@@ -14,6 +14,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Removed
 
+## [0.24.1] - 2018-07-30
+
+### Added
+
+- Add Content-Security-Policy header to http responses
+
+### Fixed
+
+- Fix portable browser version opening to blank page
+
+### Changed
+
+### Removed
+
 ## [0.24.0] - 2018-07-06
 
 ### Added
@@ -309,6 +323,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - #350 Wallet name always 'undefined' after loading wallet from seed
 
 [Unreleased]: https://github.com/skycoin/skycoin/compare/master...develop
+[0.24.1]: https://github.com/skycoin/skycoin/compare/v0.24.0...v0.24.1
 [0.24.0]: https://github.com/skycoin/skycoin/compare/v0.23.0...v0.24.0
 [0.23.0]: https://github.com/skycoin/skycoin/compare/v0.22.0...v0.23.0
 [0.22.0]: https://github.com/skycoin/skycoin/compare/v0.21.1...v0.22.0

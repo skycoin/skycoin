@@ -27,8 +27,8 @@ func SKY_secp256k1go_Signature_Create(handle *C.Signature_Handle) (____error_cod
 	return
 }
 
-//export SKY_secp256k1go_Signature_Get_R
-func SKY_secp256k1go_Signature_Get_R(handle C.Signature_Handle, r *C.Number_Handle) (____error_code uint32) {
+//export SKY_secp256k1go_Signature_GetR
+func SKY_secp256k1go_Signature_GetR(handle C.Signature_Handle, r *C.Number_Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -42,8 +42,8 @@ func SKY_secp256k1go_Signature_Get_R(handle C.Signature_Handle, r *C.Number_Hand
 	return
 }
 
-//export SKY_secp256k1go_Signature_Get_S
-func SKY_secp256k1go_Signature_Get_S(handle C.Signature_Handle, s *C.Number_Handle) (____error_code uint32) {
+//export SKY_secp256k1go_Signature_GetS
+func SKY_secp256k1go_Signature_GetS(handle C.Signature_Handle, s *C.Number_Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())

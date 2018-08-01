@@ -567,7 +567,7 @@ Test(coin_transactions, TestTransactionSerialization) {
   GoSlice d = {data.data, data.len, data.cap};
   result = SKY_coin_TransactionDeserialize(d, &handle2);
   cr_assert(result == SKY_OK);
-  result = SKY_coin_Get_Transaction_Object(handle2, &ptx2);
+  result = SKY_coin_GetTransactionObject(handle2, &ptx2);
   cr_assert(result == SKY_OK);
   cr_assert(eq(type(coin__Transaction), *ptx, *ptx2));
 }
@@ -886,7 +886,7 @@ Test(coin_transactions, TestTransactionsFees) {
 
 GoUint32_ feeCalculator1(Transaction__Handle handle, GoUint64_ *pFee, void* context){
   coin__Transaction* pTx;
-  int result = SKY_coin_Get_Transaction_Object( handle, &pTx );
+  int result = SKY_coin_GetTransactionObject( handle, &pTx );
   if(result == SKY_OK){
     coin__TransactionOutput *pOutput = pTx->Out.data;
     *pFee = 100 * Million - pOutput->Hours;
@@ -904,9 +904,9 @@ void assertTransactionsHandleEqual(Transaction__Handle h1, Transaction__Handle h
   coin__Transaction *pTx1;
   coin__Transaction *pTx2;
   int result;
-  result = SKY_coin_Get_Transaction_Object( h1, &pTx1 );
+  result = SKY_coin_GetTransactionObject( h1, &pTx1 );
   cr_assert(result == SKY_OK);
-  result = SKY_coin_Get_Transaction_Object( h2, &pTx2 );
+  result = SKY_coin_GetTransactionObject( h2, &pTx2 );
   cr_assert(result == SKY_OK);
   cr_assert(eq(type(coin__Transaction), *pTx1, *pTx2), "Failed SortTransactions test \"%s\"", testName);
 }
@@ -991,7 +991,7 @@ Test(coin_transactions, TestSortTransactions) {
       *pFee = MaxUint64 / 2;
     } else {
       coin__Transaction* pTx;
-      result = SKY_coin_Get_Transaction_Object( handle, &pTx );
+      result = SKY_coin_GetTransactionObject( handle, &pTx );
       if(result == SKY_OK){
         coin__TransactionOutput *pOutput = pTx->Out.data;
         *pFee = 100 * Million - pOutput->Hours;
@@ -1012,7 +1012,7 @@ Test(coin_transactions, TestSortTransactions) {
       result = SKY_ERROR;
     } else {
       coin__Transaction* pTx;
-      result = SKY_coin_Get_Transaction_Object( handle, &pTx );
+      result = SKY_coin_GetTransactionObject( handle, &pTx );
       if(result == SKY_OK){
         coin__TransactionOutput *pOutput = pTx->Out.data;
         *pFee = 100 * Million - pOutput->Hours;

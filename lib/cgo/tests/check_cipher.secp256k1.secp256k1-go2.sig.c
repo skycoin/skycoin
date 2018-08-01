@@ -53,10 +53,10 @@ Test(cipher_secp256k1_sig, TestSigRecover){
 	cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Signature_Create failed");
 	registerHandleClose(sig);
 	Number_Handle r;
-	error_code = SKY_secp256k1go_Signature_Get_R(sig, &r);
+	error_code = SKY_secp256k1go_Signature_GetR(sig, &r);
 	registerHandleClose(r);
 	Number_Handle s;
-	error_code = SKY_secp256k1go_Signature_Get_S(sig, &s);
+	error_code = SKY_secp256k1go_Signature_GetS(sig, &s);
 	registerHandleClose(s);
 	error_code = SKY_secp256k1go_Number_Create(&msg);
 	cr_assert(error_code == SKY_OK, "SKY_secp256k1go_Number_Create failed");
@@ -129,10 +129,10 @@ Test(cipher_secp256k1_sig, TestSigVerify) {
 	cr_assert(result == SKY_OK, "SKY_secp256k1go_Signature_Create failed");
 	registerHandleClose(sig);
 	Number_Handle r;
-	result = SKY_secp256k1go_Signature_Get_R(sig, &r);
+	result = SKY_secp256k1go_Signature_GetR(sig, &r);
 	registerHandleClose(r);
 	Number_Handle s;
-	result = SKY_secp256k1go_Signature_Get_S(sig, &s);
+	result = SKY_secp256k1go_Signature_GetS(sig, &s);
 	registerHandleClose(s);
 	result = SKY_secp256k1go_Number_Create(&msg);
 	cr_assert(result == SKY_OK, "SKY_secp256k1go_Number_Create failed");
@@ -252,8 +252,8 @@ Test(cipher_secp256k1_sig, TestSigSign) {
   cr_assert(result == SKY_OK, "SKY_secp256k1go_Number_SetHex failed");
 
 	Number_Handle r;
-	result = SKY_secp256k1go_Signature_Get_R(sig, &r);
-	cr_assert(result == SKY_OK, "SKY_secp256k1go_Signature_Get_R failed");
+	result = SKY_secp256k1go_Signature_GetR(sig, &r);
+	cr_assert(result == SKY_OK, "SKY_secp256k1go_Signature_GetR failed");
 	registerHandleClose(r);
 
 	equal = 0;
@@ -273,12 +273,12 @@ Test(cipher_secp256k1_sig, TestSigSign) {
     cr_assert(result == SKY_OK, "SKY_secp256k1go_Number_SetHex failed");
   }
 	Number_Handle s;
-	result = SKY_secp256k1go_Signature_Get_S(sig, &s);
-	cr_assert(result == SKY_OK, "SKY_secp256k1go_Signature_Get_S failed");
+	result = SKY_secp256k1go_Signature_GetS(sig, &s);
+	cr_assert(result == SKY_OK, "SKY_secp256k1go_Signature_GetS failed");
 	registerHandleClose(s);
 
 	equal = 0;
 	result = SKY_secp256k1go_Number_IsEqual(s, non, &equal);
-	cr_assert(result == SKY_OK, "SKY_secp256k1go_Signature_Get_S failed");
+	cr_assert(result == SKY_OK, "SKY_secp256k1go_Signature_GetS failed");
   cr_assert(equal != 0);
 }

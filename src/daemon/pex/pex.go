@@ -415,47 +415,6 @@ func (px *Pex) AddPeers(addrs []string) int {
 	return len(addrs)
 }
 
-// AddTrustedPeers add multiple peers at once, then set them as trusted.
-// Any errors will be logged, but not returned
-// Returns the number of peers that were added without error.  Note that
-// adding a duplicate peer will not cause an error.
-func (px *Pex) AddTrustedPeers(addrs []string) int {
-	px.Lock()
-	defer px.Unlock()
-
-	if px.Config.Max > 0 && px.peerlist.len() >= px.Config.Max {
-		logger.Warning("Add peers failed, peer list is full")
-		return 0
-	}
-
-	// validate the addresses
-	var validAddrs []string
-	for _, addr := range addrs {
-		a, err := validateAddress(addr, px.Config.AllowLocalhost)
-		if err != nil {
-			logger.Infof("Add peers sees an invalid address %s: %v", addr, err)
-			continue
-		}
-		validAddrs = append(validAddrs, a)
-	}
-	addrs = validAddrs
-
-	// Shuffle the addresses before capping them
-	rand.Shuffle(len(addrs), func(i, j int) {
-		addrs[i], addrs[j] = addrs[j], addrs[i]
-	})
-
-	if px.Config.Max > 0 {
-		rcap := px.Config.Max - px.peerlist.len()
-		if len(addrs) > rcap {
-			addrs = addrs[:rcap]
-		}
-	}
-
-	px.peerlist.addPeers(addrs)
-	return len(addrs)
-}
-
 // SetPrivate updates peer's private value
 func (px *Pex) SetPrivate(addr string, private bool) error {
 	px.Lock()

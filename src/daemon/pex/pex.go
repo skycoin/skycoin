@@ -307,7 +307,7 @@ func (px *Pex) downloadPeers() error {
 	peers := ParseRemotePeerList(body)
 	logger.Infof("Downloaded peers list from %s, got %d peers", px.Config.PeerListURL, len(peers))
 
-	n := px.AddTrustedPeers(peers)
+	n := px.AddPeers(peers)
 	logger.Infof("Added %d/%d peers from downloaded peers list", n, len(peers))
 
 	return nil
@@ -452,7 +452,7 @@ func (px *Pex) AddTrustedPeers(addrs []string) int {
 		}
 	}
 
-	px.peerlist.addTrustedPeers(addrs)
+	px.peerlist.addPeers(addrs)
 	return len(addrs)
 }
 

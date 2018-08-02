@@ -197,8 +197,8 @@ build-ui:  ## Builds the UI
 build-ui-travis:  ## Builds the UI for travis
 	cd $(GUI_STATIC_DIR) && npm run build-travis
 
-release: ## Build electron apps, the builds are located in electron/release folder.
-	cd $(ELECTRON_DIR) && ./build.sh
+release: ## Build electron and standalone apps. Use osarch=${osarch} to specify the platform. Example: 'make release osarch=darwin/amd64'. Supported architectures are: darwin/amd64 windows/amd64 windows/386 linux/amd64 linux/arm, the builds are located in electron/release folder.
+	cd $(ELECTRON_DIR) && ./build.sh ${osarch}
 	@echo release files are in the folder of electron/release
 
 clean-release: ## Clean dist files and delete all builds in electron/release

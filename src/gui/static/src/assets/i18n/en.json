@@ -12,10 +12,7 @@
     "incorrect-password": "Incorrect password",
     "api-disabled": "API disabled",
     "no-wallet": "Wallet does not exist",
-    "no-outputs": "No unspent outputs",
-    "init-error-title": "Error #2",
-    "init-error-text1": "Unable to access wallet. Please restart the app and/or seek help on our",
-    "init-error-text2": "Telegram."
+    "no-outputs": "No unspent outputs"
   },
 
   "title": {

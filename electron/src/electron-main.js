@@ -21,6 +21,7 @@ global.eval = function() { throw new Error('bad!!'); }
 
 let currentURL;
 let outputLines = 0;
+let showErrorCalled = false;
 
 // Force everything localhost, in case of a leak
 app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1, EXCLUDE api.coinmarketcap.com, api.github.com');
@@ -106,7 +107,7 @@ function startSkycoin() {
       if (line.indexOf(marker) !== -1) {
         currentURL = 'http://' + line.split(marker)[1].trim();
         app.emit('skycoin-ready', { url: currentURL });
-      } else if (line.indexOf('daemon.Pool.Run failed error') !== -1) {
+      } else if (line.indexOf('daemon.Pool.Run failed') !== -1) {
         showError();
       }
     });
@@ -141,7 +142,8 @@ function startSkycoin() {
 
 function showError() {
   if (win) {
-    win.loadURL('file://' + __dirname + '/error/index.html');
+    showErrorCalled = true;
+    win.loadURL('file://' + process.resourcesPath + '/app/dist/assets/error-alert/index.html');
     console.log('Showing the error message');
   }
 }
@@ -177,7 +179,9 @@ function createWindow(url) {
   });
 
   win.webContents.on('did-fail-load', function() {
-    showError();
+    if (!showErrorCalled) {
+      showError();
+    }
   });
 
   // patch out eval

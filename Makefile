@@ -201,6 +201,15 @@ release: ## Build electron and standalone apps. Use osarch=${osarch} to specify 
 	cd $(ELECTRON_DIR) && ./build.sh ${osarch}
 	@echo release files are in the folder of electron/release
 
+release-bin: ## Build standalone apps. Use osarch=${osarch} to specify the platform. Example: 'make release-bin osarch=darwin/amd64' Supported architectures are the same as 'release' command.
+	cd $(ELECTRON_DIR) && ./build-standalone-release.sh ${osarch}
+	@echo release files are in the folder of electron/release
+
+release-gui: ## Build electron apps. Use osarch=${osarch} to specify the platform. Example: 'make release-gui osarch=darwin/amd64' Supported architectures are the same as 'release' command.
+	cd $(ELECTRON_DIR) && ./build-electron-release.sh ${osarch}
+	@echo release files are in the folder of electron/release
+
+
 clean-release: ## Clean dist files and delete all builds in electron/release
 	rm $(ELECTRON_DIR)/release/*
 

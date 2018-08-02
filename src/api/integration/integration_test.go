@@ -108,9 +108,15 @@ func useCustomTrustedPeers() bool {
 	return os.Getenv("CUSTOM_TRUSTED_PEERS") == "1"
 }
 
+func disableTrustedPeersOrUseCustom() bool {
+	return disableTrustedPeers() || useCustomTrustedPeers()
+}
+
 func doStable(t *testing.T) bool {
 	if enabled() && mode(t) == testModeStable {
-		return true
+		if !disableTrustedPeersOrUseCustom() {
+			return true
+		}
 	}
 
 	t.Skip("Stable tests disabled")
@@ -119,10 +125,23 @@ func doStable(t *testing.T) bool {
 
 func doLive(t *testing.T) bool {
 	if enabled() && mode(t) == testModeLive {
-		return true
+		if !disableTrustedPeersOrUseCustom() {
+			return true
+		}
 	}
 
 	t.Skip("Live tests disabled")
+	return false
+}
+
+func doStableWithDisabledOrCustomPeers(t *testing.T) bool {
+	if enabled() && mode(t) == testModeStable {
+		if disableTrustedPeersOrUseCustom() {
+			return true
+		}
+	}
+
+	t.Skip("Stable tests with disable trusted or custom peers disabled")
 	return false
 }
 
@@ -157,7 +176,9 @@ func doLiveOrStable(t *testing.T) bool {
 	if enabled() {
 		switch mode(t) {
 		case testModeStable, testModeLive:
-			return true
+			if !disableTrustedPeersOrUseCustom(){
+				return true
+			}
 		}
 	}
 
@@ -1172,7 +1193,7 @@ func TestLiveNetworkConnections(t *testing.T) {
 }
 
 func TestNetworkDefaultConnections(t *testing.T) {
-	if !doLiveOrStable(t) {
+	if !doStableWithDisabledOrCustomPeers(t) {
 		return
 	}
 
@@ -1195,7 +1216,7 @@ func TestNetworkDefaultConnections(t *testing.T) {
 }
 
 func TestNetworkTrustedConnections(t *testing.T) {
-	if !doLiveOrStable(t) {
+	if !doStableWithDisabledOrCustomPeers(t) {
 		return
 	}
 

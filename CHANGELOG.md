@@ -8,6 +8,31 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+### Fixed
+
+### Changed
+
+### Removed
+
+## [0.24.1] - 2018-07-30
+
+### Added
+
+- Add Content-Security-Policy header to http responses
+
+### Fixed
+
+- Fix portable browser version opening to blank page
+
+### Changed
+
+### Removed
+
+## [0.24.0] - 2018-07-06
+
+### Added
+
+- Minimum go version is go1.10
 - Add environment variable `DATA_DIR` in CLI's
 - `USE_CSRF` environment variable for CLI, if the remote node has CSRF enabled (CSRF is enabled by default, use `-disable-csrf` to disable)
 - `cli showConfig` command to echo the cli's configuration back to the user
@@ -16,6 +41,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `-version` flag to show node version
 - Add transaction verification step to "Send" page
 - Add more details about transaction in transaction history
+- Add advanced spend UI
 - Add CLI `encryptWallet` command
 - Add CLI `decryptWallet` command
 - Add CLI `showSeed` command
@@ -29,12 +55,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Begin `/api/v2` API endpoints. These endpoints are in beta and subject to change.
 - Add `POST /api/v2/transaction/verify` API endpoint
 - Add `POST /api/v2/address/verify` API endpoint
-- Add advanced spend UI
 - Add `ignore_unconfirmed` option to `POST /api/v1/wallet/transaction` to allow transactions to be created or spent even if there are unspent outputs in the unconfirmed pool.
 - Add `uxouts` to `POST /api/v1/wallet/transaction`, to allow specific unspent outputs to be used in a transaction.
 - Add Dockerfile in docker/images/dev-cli to build a docker image suitable for development.
 - Coin creator tool, `cmd/newcoin`, to quickly bootstrap a new fiber coin
-- Add Dockerfile in docker/images/dev-dind to build a docker in docker image based on skycoindev-cli.
+- Add Dockerfile in `docker/images/dev-dind` to build a docker in docker image based on skycoindev-cli.
 
 ### Fixed
 
@@ -58,8 +83,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   If you are using the CLI tool or another API client to communicate with the standalone client, use `-web-interface-port=6420` to continue using port 6420.
   If the program is run from source (e.g. `go run`, `run.sh`, `make run`) there is no change, the API will still be on port 6420.
 - Change number of outgoing connections to 8 from 16
-- Update version of SWIG to 3.0.12
 - Transaction history shows transactions between own addresses
+- Client will only maintain one connection to the default hardcoded peers, instead of all of them
 
 ### Removed
 
@@ -298,6 +323,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - #350 Wallet name always 'undefined' after loading wallet from seed
 
 [Unreleased]: https://github.com/skycoin/skycoin/compare/master...develop
+[0.24.1]: https://github.com/skycoin/skycoin/compare/v0.24.0...v0.24.1
+[0.24.0]: https://github.com/skycoin/skycoin/compare/v0.23.0...v0.24.0
 [0.23.0]: https://github.com/skycoin/skycoin/compare/v0.22.0...v0.23.0
 [0.22.0]: https://github.com/skycoin/skycoin/compare/v0.21.1...v0.22.0
 [0.21.1]: https://github.com/skycoin/skycoin/compare/v0.21.0...v0.21.1

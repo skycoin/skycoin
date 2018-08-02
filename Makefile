@@ -3,6 +3,8 @@
 .PHONY: integration-test-stable integration-test-stable-disable-csrf
 .PHONY: integration-test-live integration-test-live-wallet
 .PHONY: integration-test-disable-wallet-api integration-test-disable-seed-api
+.PHONY: integration-test-enable-seed-api integration-test-enable-seed-api
+.PHONY: integration-test-disable-gui integration-test-disable-gui
 .PHONY: install-linters format release clean-release install-deps-ui build-ui help
 
 # Static files directory
@@ -37,7 +39,7 @@ ifeq ($(shell uname -s),Linux)
   LDLIBS=$(LIBC_LIBS) -lpthread
   LDPATH=$(shell printenv LD_LIBRARY_PATH)
   LDPATHVAR=LD_LIBRARY_PATH
-  LDFLAGS=$(LIBC_FLAGS) $(STDC_FLAG) 
+  LDFLAGS=$(LIBC_FLAGS) $(STDC_FLAG)
 ifndef OSNAME
   OSNAME = linux
 endif
@@ -119,20 +121,22 @@ docs: docs-libc
 
 lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...
-	gometalinter --deadline=3m --concurrency=2 --disable-all --tests --vendor --skip=lib/cgo --warn-unmatched-nolint \
+	golangci-lint run --no-config  --deadline=3m --concurrency=2 --disable-all --tests --skip-dirs=lib/cgo \
 		-E goimports \
 		-E golint \
 		-E varcheck \
 		-E unparam \
+		-E structcheck \
 		./...
 	# lib cgo can't use golint because it needs export directives in function docstrings that do not obey golint rules
-	gometalinter --deadline=3m --concurrency=2 --disable-all --tests --vendor --warn-unmatched-nolint \
+	golangci-lint run --no-config  --deadline=3m --concurrency=2 --disable-all --tests \
 		-E goimports \
 		-E varcheck \
 		-E unparam \
+		-E structcheck \
 		./lib/cgo/...
 
-check: lint test integration-test-stable integration-test-stable-disable-csrf integration-test-disable-wallet-api integration-test-disable-seed-api ## Run tests and linters
+check: lint test integration-test-stable integration-test-stable-disable-csrf integration-test-disable-wallet-api integration-test-disable-seed-api integration-test-enable-seed-api integration-test-disable-gui ## Run tests and linters
 
 integration-test-stable: ## Run stable integration tests
 	./ci-scripts/integration-test-stable.sh -c
@@ -152,8 +156,11 @@ integration-test-live-disable-csrf: ## Run live integration tests against a node
 integration-test-disable-wallet-api: ## Run disable wallet api integration tests
 	./ci-scripts/integration-test-disable-wallet-api.sh
 
-integration-test-disable-seed-api: ## Run enable seed api integration test
-	./ci-scripts/integration-test-disable-seed-api.sh
+integration-test-enable-seed-api: ## Run enable seed api integration test
+	./ci-scripts/integration-test-enable-seed-api.sh
+
+integration-test-disable-gui:
+	./ci-scripts/integration-test-disable-gui.sh	
 
 cover: ## Runs tests on ./src/ with HTML code coverage
 	go test -cover -coverprofile=cover.out -coverpkg=github.com/skycoin/skycoin/... ./src/...
@@ -161,8 +168,7 @@ cover: ## Runs tests on ./src/ with HTML code coverage
 
 install-linters: ## Install linters
 	go get -u github.com/FiloSottile/vendorcheck
-	go get -u github.com/alecthomas/gometalinter
-	gometalinter --vendored-linters --install
+	go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
 
 install-deps-libc: configure-build ## Install locally dependencies for testing libskycoin
 	git clone --recursive https://github.com/skycoin/Criterion $(BUILD_DIR)/usr/tmp/Criterion

@@ -73,16 +73,12 @@ func (c *Coin) Run() {
 		}
 	}
 
+	var fullAddress string
 	scheme := "http"
 	if c.config.Node.WebInterfaceHTTPS {
 		scheme = "https"
 	}
 	host := fmt.Sprintf("%s:%d", c.config.Node.WebInterfaceAddr, c.config.Node.WebInterfacePort)
-	fullAddress := fmt.Sprintf("%s://%s", scheme, host)
-	c.logger.Critical().Infof("Full address: %s", fullAddress)
-	if c.config.Node.PrintWebInterfaceAddress {
-		fmt.Println(fullAddress)
-	}
 
 	c.initProfiling()
 
@@ -139,6 +135,12 @@ func (c *Coin) Run() {
 			c.logger.Error(err)
 			goto earlyShutdown
 		}
+	}
+
+	fullAddress = fmt.Sprintf("%s://%s", scheme, webInterface.Addr())
+	c.logger.Critical().Infof("Full address: %s", fullAddress)
+	if c.config.Node.PrintWebInterfaceAddress {
+		fmt.Println(fullAddress)
 	}
 
 	wg.Add(1)
@@ -342,6 +344,7 @@ func (c *Coin) configureDaemon() daemon.Config {
 	dc.Visor.EnableSeedAPI = c.config.Node.EnableSeedAPI
 
 	dc.Gateway.EnableWalletAPI = c.config.Node.EnableWalletAPI
+	dc.Gateway.DisableCSP = c.config.Node.DisableCSP
 
 	// Initialize wallet default crypto type
 	cryptoType, err := wallet.CryptoTypeFromString(c.config.Node.WalletCryptoType)

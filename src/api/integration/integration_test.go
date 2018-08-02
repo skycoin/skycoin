@@ -166,18 +166,6 @@ func doLiveWallet(t *testing.T) bool {
 	return false
 }
 
-func loadJSON(t *testing.T, filename string, obj interface{}) {
-	f, err := os.Open(filename)
-	require.NoError(t, err, filename)
-	defer f.Close()
-
-	d := json.NewDecoder(f)
-	d.DisallowUnknownFields()
-
-	err = d.Decode(obj)
-	require.NoError(t, err, filename)
-}
-
 func loadGoldenFile(t *testing.T, filename string, testData TestData) {
 	require.NotEmpty(t, filename, "loadGoldenFile golden filename missing")
 
@@ -3697,32 +3685,6 @@ func getAddressBalance(t *testing.T, c *api.Client, addr string) (uint64, uint64
 		t.Fatalf("%v", err)
 	}
 	return bp.Confirmed.Coins, bp.Confirmed.Hours
-}
-
-func checkNoSensitiveData(t *testing.T, w *wallet.Wallet) {
-	require.Empty(t, w.Meta["seed"])
-	require.Empty(t, w.Meta["lastSeed"])
-	require.Empty(t, w.Meta["secrets"])
-	for _, e := range w.Entries {
-		require.Equal(t, cipher.SecKey{}, e.Secret)
-	}
-}
-
-// checkWalletEntriesAndLastSeed confirms the wallet entries and lastSeed are derivied
-// from the seed.
-func checkWalletEntriesAndLastSeed(t *testing.T, w *wallet.Wallet) {
-	seed, ok := w.Meta["seed"]
-	require.True(t, ok)
-	newSeed, seckeys := cipher.GenerateDeterministicKeyPairsSeed([]byte(seed), len(w.Entries))
-	require.Len(t, seckeys, len(w.Entries))
-	for i, sk := range seckeys {
-		require.Equal(t, w.Entries[i].Secret, sk)
-		pk := cipher.PubKeyFromSecKey(sk)
-		require.Equal(t, w.Entries[i].Public, pk)
-	}
-	lastSeed, ok := w.Meta["lastSeed"]
-	require.True(t, ok)
-	require.Equal(t, lastSeed, hex.EncodeToString(newSeed))
 }
 
 // createWallet creates a wallet with rand seed.

@@ -21,11 +21,6 @@ import (
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
-type spending struct {
-	ToAddr cipher.Address
-	Coins  uint64
-}
-
 func makeUxBody(t *testing.T) coin.UxBody {
 	p, _ := cipher.GenerateKeyPair()
 	return coin.UxBody{

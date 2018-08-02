@@ -123,6 +123,7 @@ lint: ## Run linters. Use make install-linters first.
 		-E golint \
 		-E varcheck \
 		-E unparam \
+		-E deadcode \
 		-E structcheck \
 		./...
 	# lib cgo can't use golint because it needs export directives in function docstrings that do not obey golint rules

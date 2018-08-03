@@ -12,8 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"encoding/json"
-
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -25,11 +23,6 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/wallet"
-)
-
-var (
-	apiClient       = &http.Client{Timeout: 10 * time.Second}
-	genesisBlockURL = "http://127.0.0.1:6420/api/v1/block?seq=0"
 )
 
 // Coin represents a fiber coin instance
@@ -104,7 +97,7 @@ func (c *Coin) Run() {
 	go apputil.CatchDebug()
 
 	// creates blockchain instance
-	dconf := c.configureDaemon()
+	dconf := c.ConfigureDaemon()
 
 	c.logger.Infof("Opening database %s", dconf.Visor.DBPath)
 	db, err = visor.OpenDB(dconf.Visor.DBPath, c.config.Node.DBReadOnly)
@@ -185,33 +178,6 @@ func (c *Coin) Run() {
 						c.logger.Error(err)
 					}
 				}
-			}()
-		}
-	}
-
-	// first transaction to distribute the coins to distribution wallets
-	if c.config.Node.Init {
-		if c.config.Node.RunMaster == true {
-			var genesisBlock visor.ReadableBlock
-			go func() {
-				for headSeq, _, err := d.HeadBkSeq(); err == nil && headSeq == 0; {
-					if c.config.Node.blockchainSeckey.Hex() != "" {
-						err = getJSON(genesisBlockURL, &genesisBlock)
-						if err != nil {
-							log.Panic(err)
-						}
-						if len(genesisBlock.Body.Transactions) != 0 {
-							genesisUxID := genesisBlock.Body.Transactions[0].Out[0].Hash
-							tx := InitTransaction(genesisUxID, c.config.Node.blockchainSeckey)
-							_, _, err := d.InjectTransaction(tx)
-							if err != nil {
-								log.Panic(err)
-							}
-							break
-						}
-					}
-				}
-				return
 			}()
 		}
 	}
@@ -299,7 +265,7 @@ func (c *Coin) initProfiling() {
 	}
 }
 
-func (c *Coin) configureDaemon() daemon.Config {
+func (c *Coin) ConfigureDaemon() daemon.Config {
 	//cipher.SetAddressVersion(c.AddressVersion)
 	dc := daemon.NewConfig()
 
@@ -456,12 +422,3 @@ func createDirIfNotExist(dir string) error {
 	return os.Mkdir(dir, 0777)
 }
 
-func getJSON(url string, target interface{}) error {
-	r, err := apiClient.Get(url)
-	if err != nil {
-		return err
-	}
-	defer r.Body.Close()
-
-	return json.NewDecoder(r.Body).Decode(target)
-}

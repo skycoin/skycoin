@@ -110,7 +110,6 @@ type NodeConfig struct {
 	WalletCryptoType string
 
 	RunMaster bool
-	Init      bool
 
 	/* Developer options */
 
@@ -225,7 +224,6 @@ func NewNodeConfig(mode string, node NodeParameters) *NodeConfig {
 
 		// Centralized network configuration
 		RunMaster: false,
-		Init:      false,
 		/* Developer options */
 
 		// Enable cpu profiling
@@ -353,7 +351,6 @@ func (c *Config) register() {
 
 	// Key Configuration Data
 	flag.BoolVar(&c.Node.RunMaster, "master", c.Node.RunMaster, "run the daemon as blockchain master server")
-	flag.BoolVar(&c.Node.Init, "init", c.Node.Init, "initializes the blockchain and creates the coins")
 
 	flag.StringVar(&c.Node.BlockchainPubkeyStr, "master-public-key", c.Node.BlockchainPubkeyStr, "public key of the master chain")
 	flag.StringVar(&c.Node.BlockchainSeckeyStr, "master-secret-key", c.Node.BlockchainSeckeyStr, "secret key, set for master")

@@ -161,12 +161,10 @@ func RepairCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) (*
 	switch err.(type) {
 	case nil:
 		return db, nil
-	case blockdb.ErrMissingSignature:
+	case blockdb.ErrMissingSignature,
+		historydb.ErrHistoryDBCorrupted:
 		logger.Critical().Errorf("Database is corrupted, recreating db: %v", err)
 		return resetCorruptDB(db)
-	case historydb.ErrHistoryDBCorrupted:
-		logger.Critical().Errorf("Database is corrupted, rebuilding db: %v", err)
-		return rebuildCorruptDB(db, pubkey, quit)
 	default:
 		return nil, err
 	}

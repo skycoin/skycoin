@@ -170,7 +170,7 @@ func RepairCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) (*
 	}
 }
 
-func rebuildCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) (*dbutil.DB, error) {
+func rebuildCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) (*dbutil.DB, error) { //nolint: deadcode
 	history := historydb.New()
 	bc, err := NewBlockchain(db, BlockchainConfig{Pubkey: pubkey})
 	if err != nil {

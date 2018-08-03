@@ -308,6 +308,26 @@
 	}
 }
 
+%rename(SKY_coin_UxArray_Hashes) wrap_SKY_coin_UxArray_Hashes;
+%inline{ 
+	GoUint32 wrap_SKY_coin_UxArray_Hashes(coin_UxOutArray* __uxIn,  cipher_SHA256s* __out_hashes){
+		GoSlice_ data;
+		data.data = __uxIn->data;
+		data.len = __uxIn->count;
+		data.cap = __uxIn->count;
+		GoSlice_ dataOut;
+		dataOut.data = NULL;
+		dataOut.len = 0;
+		dataOut.cap = 0;
+		GoUint32 result = SKY_coin_UxArray_Hashes(&data, &dataOut);
+		if(result == 0){
+			__out_hashes->data = dataOut.data;
+			__out_hashes->count = dataOut.len;
+		}
+		return result;
+	}
+}
+
 %rename(SKY_coin_AddressUxOuts_Flatten) wrap_SKY_coin_AddressUxOuts_Flatten;
 %inline{ 
 	GoUint32 wrap_SKY_coin_AddressUxOuts_Flatten(AddressUxOuts_Handle p0, coin_UxOutArray* __return_Ux){

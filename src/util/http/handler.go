@@ -9,6 +9,10 @@ import (
 	"github.com/skycoin/skycoin/src/util/logging"
 )
 
+// ContentSecurityPolicy represents the value of content-security-policy
+// header in http response
+const ContentSecurityPolicy = "script-src 'self' 127.0.0.1"
+
 // HostCheck checks that the request's Host header is 127.0.0.1:$port or localhost:$port
 // if the HTTP interface host is also a localhost address.
 // This prevents DNS rebinding attacks, where an attacker uses a DNS rebinding service
@@ -43,6 +47,14 @@ func HostCheck(logger *logging.Logger, host string, handler http.Handler) http.H
 			return
 		}
 
+		handler.ServeHTTP(w, r)
+	})
+}
+
+// CSPHandler enables CSP
+func CSPHandler(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Security-Policy", ContentSecurityPolicy)
 		handler.ServeHTTP(w, r)
 	})
 }

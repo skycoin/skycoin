@@ -52,7 +52,7 @@ func LoadWallets(dir string) (Wallets, error) {
 	return wallets, nil
 }
 
-func backupWltFile(src, dst string) error {
+func backupWltFile(src, dst string) error { //nolint: deadcode
 	if _, err := os.Stat(dst); err == nil {
 		return fmt.Errorf("%v file already exist", dst)
 	}

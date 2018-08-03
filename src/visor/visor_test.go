@@ -213,17 +213,17 @@ func TestHistorydbVerifier(t *testing.T) {
 		{
 			name:      "missing uxout",
 			dbPath:    "./testdata/data.db.nouxout",
-			expectErr: historydb.NewErrHistoryDBCorrupted(errors.New("HistoryDB.Verify: transaction input 2f87d77c2a7d00b547db1af50e0ba04bafc5b05711e4939e9ec2640a21127dc0 does not exist in historydb")),
+			expectErr: historydb.NewErrHistoryDBCorrupted(errors.New("HistoryDB.Verify: transaction (input|output) 2f87d77c2a7d00b547db1af50e0ba04bafc5b05711e4939e9ec2640a21127dc0 does not exist in historydb")),
 		},
 		{
 			name:      "missing addr transaction index",
 			dbPath:    "./testdata/data.db.no-addr-txn-index",
-			expectErr: historydb.NewErrHistoryDBCorrupted(errors.New("HistoryDB.Verify: index of address transaction [2fGC7kwAM9yZyEF1QqBqp8uo9RUsF6ENGJF:98db7eb30e13853d3dd93d5d8b4061596d5d288b6f8b92c4d43c46c6599f67fb] does not exist in historydb")),
+			expectErr: historydb.NewErrHistoryDBCorrupted(errors.New(`HistoryDB.Verify: index of address transaction \[2fGC7kwAM9yZyEF1QqBqp8uo9RUsF6ENGJF:98db7eb30e13853d3dd93d5d8b4061596d5d288b6f8b92c4d43c46c6599f67fb\] does not exist in historydb`)),
 		},
 		{
 			name:      "missing addr uxout index",
 			dbPath:    "./testdata/data.db.no-addr-uxout-index",
-			expectErr: historydb.NewErrHistoryDBCorrupted(errors.New("HistoryDB.Verify: index of address uxout [2fGC7kwAM9yZyEF1QqBqp8uo9RUsF6ENGJF:2f87d77c2a7d00b547db1af50e0ba04bafc5b05711e4939e9ec2640a21127dc0] does not exist in historydb")),
+			expectErr: historydb.NewErrHistoryDBCorrupted(errors.New(`HistoryDB.Verify: index of address uxout \[2fGC7kwAM9yZyEF1QqBqp8uo9RUsF6ENGJF:2f87d77c2a7d00b547db1af50e0ba04bafc5b05711e4939e9ec2640a21127dc0\] does not exist in historydb`)),
 		},
 	}
 
@@ -246,7 +246,15 @@ func TestHistorydbVerifier(t *testing.T) {
 			}
 
 			err = bc.WalkChain(2, f, nil)
-			require.Equal(t, tc.expectErr, err)
+			if tc.expectErr == nil {
+				require.Nil(t, err)
+				return
+			}
+
+			// Confirms that the error type is matched
+			require.IsType(t, tc.expectErr, err)
+			// Confirms the error message is matched
+			require.Regexp(t, tc.expectErr.Error(), err.Error())
 		})
 	}
 

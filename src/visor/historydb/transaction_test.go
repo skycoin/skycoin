@@ -53,11 +53,10 @@ func TestTransactionGet(t *testing.T) {
 			db, td := prepareDB(t)
 			defer td()
 
-			txsBkt, err := newTransactions(db)
-			require.NoError(t, err)
+			txsBkt := newTransactions()
 
 			// init the bkt
-			err = db.Update("", func(tx *dbutil.Tx) error {
+			err := db.Update("", func(tx *dbutil.Tx) error {
 				for _, txn := range txns[:2] {
 					err := txsBkt.Add(tx, &txn)
 					require.NoError(t, err)
@@ -126,11 +125,10 @@ func TestTransactionGetSlice(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			db, td := prepareDB(t)
 			defer td()
-			txsBkt, err := newTransactions(db)
-			require.NoError(t, err)
+			txsBkt := newTransactions()
 
 			// init the bkt
-			err = db.Update("", func(tx *dbutil.Tx) error {
+			err := db.Update("", func(tx *dbutil.Tx) error {
 				for _, txn := range txns[:3] {
 					err := txsBkt.Add(tx, &txn)
 					require.NoError(t, err)

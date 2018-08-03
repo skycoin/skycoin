@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Add new endpoints /api/v2/block, /api/v2/blocks, /api/v2/last_blocks, /api/v2/pendingTxs, /api/v2/transaction, /api/v2/transactions. These endpoints are similiar to api/v1 endpoint but return more information.
+
 ### Added
 
 - Add Content-Security-Policy header to http responses
@@ -47,7 +49,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `uxouts` to `POST /api/v1/wallet/transaction`, to allow specific unspent outputs to be used in a transaction.
 - Add Dockerfile in docker/images/dev-cli to build a docker image suitable for development.
 - Coin creator tool, `cmd/newcoin`, to quickly bootstrap a new fiber coin
-- Add new endpoints /api/v2/block, /api/v2/blocks, /api/v2/last_blocks, /api/v2/pendingTxs, /api/v2/transaction, /api/v2/transactions. These endpoints are similiar to api/v1 endpoint but return more information.
 - Install a vim plugin for providing linting ([ALE](https://github.com/w0rp/ale)) in skycoindev-cli image.
 - Add Dockerfile in `docker/images/dev-dind` to build a docker in docker image based on skycoindev-cli.
 

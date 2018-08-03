@@ -265,6 +265,7 @@ func (c *Coin) initProfiling() {
 	}
 }
 
+// ConfigureDaemon sets the daemon config values
 func (c *Coin) ConfigureDaemon() daemon.Config {
 	//cipher.SetAddressVersion(c.AddressVersion)
 	dc := daemon.NewConfig()
@@ -421,4 +422,3 @@ func createDirIfNotExist(dir string) error {
 
 	return os.Mkdir(dir, 0777)
 }
-

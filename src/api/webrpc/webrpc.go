@@ -113,8 +113,6 @@ func MakeErrorResponse(code int, msg string, msgs ...string) Response {
 	}
 }
 
-type operation func(rpc *WebRPC)
-
 // HandlerFunc represents the function type for processing the request
 type HandlerFunc func(req Request, gateway Gatewayer) Response
 

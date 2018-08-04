@@ -3,7 +3,7 @@
 #define SKY_ERRORS_H
 
 #define SKY_OK            0
-#define SKY_ERROR         0xFFFFFFFF
+#define SKY_ERROR         0x7FFFFFFF
 
 #define SKY_PKG_API       0x01000000
 #define SKY_PKG_CIPHER    0x02000001

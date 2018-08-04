@@ -52,7 +52,7 @@
 	}
 	
 	void release(){
-		if($self-data != NULL)
+		if($self->data != NULL)
 			free($self->data);
 	}
 }

@@ -23,23 +23,23 @@ Test(cipher_crypto, TestNewPubKey) {
   randBytes(&slice, 31);
   slice.len = 31;
   unsigned int errcode = SKY_cipher_NewPubKey(slice, &pk);
-  cr_assert(errcode == SKY_ERROR, "31 random bytes");
+  cr_assert(errcode == SKY_ErrInvalidLengthPubKey, "31 random bytes");
 
   randBytes(&slice, 32);
   errcode = SKY_cipher_NewPubKey(slice, &pk);
-  cr_assert(errcode == SKY_ERROR, "32 random bytes");
+  cr_assert(errcode == SKY_ErrInvalidLengthPubKey, "32 random bytes");
 
   randBytes(&slice, 34);
   errcode = SKY_cipher_NewPubKey(slice, &pk);
-  cr_assert(errcode == SKY_ERROR, "34 random bytes");
+  cr_assert(errcode == SKY_ErrInvalidLengthPubKey, "34 random bytes");
 
   slice.len = 0;
   errcode = SKY_cipher_NewPubKey(slice, &pk);
-  cr_assert(errcode == SKY_ERROR, "0 random bytes");
+  cr_assert(errcode == SKY_ErrInvalidLengthPubKey, "0 random bytes");
 
   randBytes(&slice, 100);
   errcode = SKY_cipher_NewPubKey(slice, &pk);
-  cr_assert(errcode == SKY_ERROR, "100 random bytes");
+  cr_assert(errcode == SKY_ErrInvalidLengthPubKey, "100 random bytes");
 
   randBytes(&slice, 33);
   errcode = SKY_cipher_NewPubKey(slice, &pk);
@@ -59,7 +59,7 @@ Test(cipher_crypto, TestPubKeyFromHex) {
   // Invalid hex
   s.n = 0;
   errcode = SKY_cipher_PubKeyFromHex(s, &p1);
-  cr_assert(errcode == SKY_ERROR, "TestPubKeyFromHex: Invalid hex. Empty string");
+  cr_assert(errcode == SKY_ErrInvalidLengthPubKey, "TestPubKeyFromHex: Invalid hex. Empty string");
 
   s.p = "cascs";
   s.n = strlen(s.p);
@@ -74,7 +74,7 @@ Test(cipher_crypto, TestPubKeyFromHex) {
   s.p = sbuff;
   s.n = strlen(s.p);
   errcode = SKY_cipher_PubKeyFromHex(s, &p1);
-  cr_assert(errcode == SKY_ERROR, "TestPubKeyFromHex: Invalid hex length");
+  cr_assert(errcode == SKY_ErrInvalidLengthPubKey, "TestPubKeyFromHex: Invalid hex length");
 
   // Valid
   strnhex(p, sbuff, sizeof(p));
@@ -223,23 +223,23 @@ Test(cipher_crypto, TestMustNewSecKey) {
 
   randBytes(&b, 31);
   errcode = SKY_cipher_NewSecKey(b, &sk);
-  cr_assert(errcode == SKY_ERROR);
+  cr_assert(errcode == SKY_ErrInvalidLengthSecKey);
 
   randBytes(&b, 33);
   errcode = SKY_cipher_NewSecKey(b, &sk);
-  cr_assert(errcode == SKY_ERROR);
+  cr_assert(errcode == SKY_ErrInvalidLengthSecKey);
 
   randBytes(&b, 34);
   errcode = SKY_cipher_NewSecKey(b, &sk);
-  cr_assert(errcode == SKY_ERROR);
+  cr_assert(errcode == SKY_ErrInvalidLengthSecKey);
 
   randBytes(&b, 0);
   errcode = SKY_cipher_NewSecKey(b, &sk);
-  cr_assert(errcode == SKY_ERROR);
+  cr_assert(errcode == SKY_ErrInvalidLengthSecKey);
 
   randBytes(&b, 100);
   errcode = SKY_cipher_NewSecKey(b, &sk);
-  cr_assert(errcode == SKY_ERROR);
+  cr_assert(errcode == SKY_ErrInvalidLengthSecKey);
 
   randBytes(&b, 32);
   errcode = SKY_cipher_NewSecKey(b, &sk);
@@ -391,23 +391,23 @@ Test(cipher_crypto, TestNewSig) {
 
   randBytes(&b, 64);
   errcode = SKY_cipher_NewSig(b, &s);
-  cr_assert(errcode == SKY_ERROR);
+  cr_assert(errcode == SKY_ErrInvalidLengthSig);
 
   randBytes(&b, 66);
   errcode = SKY_cipher_NewSig(b, &s);
-  cr_assert(errcode == SKY_ERROR);
+  cr_assert(errcode == SKY_ErrInvalidLengthSig);
 
   randBytes(&b, 67);
   errcode = SKY_cipher_NewSig(b, &s);
-  cr_assert(errcode == SKY_ERROR);
+  cr_assert(errcode == SKY_ErrInvalidLengthSig);
 
   randBytes(&b, 0);
   errcode = SKY_cipher_NewSig(b, &s);
-  cr_assert(errcode == SKY_ERROR);
+  cr_assert(errcode == SKY_ErrInvalidLengthSig);
 
   randBytes(&b, 100);
   errcode = SKY_cipher_NewSig(b, &s);
-  cr_assert(errcode == SKY_ERROR);
+  cr_assert(errcode == SKY_ErrInvalidLengthSig);
 
   randBytes(&b, 65);
   errcode = SKY_cipher_NewSig(b, &s);
@@ -594,15 +594,15 @@ Test(cipher_crypto, TestPubKeyFromSecKey) {
 
   memset(&sk, 0, sizeof(sk));
   errcode = SKY_cipher_PubKeyFromSecKey(&sk, &pk);
-  cr_assert(errcode == SKY_ERROR);
+  cr_assert(errcode == SKY_ErrPubKeyFromNullSecKey);
 
   randBytes(&b, 99);
   errcode = SKY_cipher_NewSecKey(b, &sk);
-  cr_assert(errcode == SKY_ERROR);
+  cr_assert(errcode == SKY_ErrInvalidLengthSecKey);
 
   randBytes(&b, 31);
   errcode = SKY_cipher_NewSecKey(b, &sk);
-  cr_assert(errcode == SKY_ERROR);
+  cr_assert(errcode == SKY_ErrInvalidLengthSecKey);
 }
 
 Test(cipher_crypto, TestPubKeyFromSig) {

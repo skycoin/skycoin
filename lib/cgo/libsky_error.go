@@ -35,7 +35,7 @@ const (
 // Package prefixes for error codes
 const (
 	// Error code prefix for api package
-	SKY_PKG_API = 1 + iota
+	SKY_PKG_API = (1 + iota) << 24
 	// Error code prefix for cipher package and subpackages
 	SKY_PKG_CIPHER
 	// Error code prefix for cli package
@@ -66,7 +66,7 @@ const (
 // Error codes defined in cipher package
 const (
 	// SKY_ErrInvalidLength Unexpected size of address bytes buffer
-	SKY_ErrInvalidLength = SKY_PKG_CIPHER<<24 + iota
+	SKY_ErrInvalidLength = SKY_PKG_CIPHER + iota
 	// SKY_ErrInvalidChecksum Computed checksum did not match expected value
 	SKY_ErrInvalidChecksum
 	// SKY_ErrInvalidVersion Unsupported address version value
@@ -105,7 +105,7 @@ const (
 const (
 	// SKY_ErrTemporaryInsufficientBalance is returned if a wallet does not have
 	// enough balance for a spend, but will have enough after unconfirmed transactions confirm
-	SKY_ErrTemporaryInsufficientBalance = SKY_PKG_CLI<<24 + iota
+	SKY_ErrTemporaryInsufficientBalance = SKY_PKG_CLI + iota
 	// SKY_ErrAddress is returned if an address is invalid
 	SKY_ErrAddress
 	// ErrWalletName is returned if the wallet file name is invalid
@@ -125,7 +125,7 @@ const (
 	// hours to additional earned coin hours, the value would overflow a uint64.
 	// Callers may choose to ignore this errors and use 0 as the coinhours value instead.
 	// This affects one existing spent output, spent in block 13277.
-	SKY_ErrAddEarnedCoinHoursAdditionOverflow = SKY_PKG_COIN<<24 + iota
+	SKY_ErrAddEarnedCoinHoursAdditionOverflow = SKY_PKG_COIN + iota
 	// ErrUint64MultOverflow is returned when multiplying uint64 values would overflow uint64
 	SKY_ErrUint64MultOverflow
 	// ErrUint64AddOverflow is returned when adding uint64 values would overflow uint64
@@ -141,7 +141,7 @@ const (
 // Error codes defined in daemon package
 const (
 	// SKY_ErrPeerlistFull is returned when the Pex is at a maximum
-	SKY_ErrPeerlistFull = SKY_PKG_DAEMON<<24 + iota
+	SKY_ErrPeerlistFull = SKY_PKG_DAEMON + iota
 	// SKY_ErrInvalidAddress is returned when an address appears malformed
 	SKY_ErrInvalidAddress
 	// SKY_ErrNoLocalhost is returned if a localhost addresses are not allowed
@@ -205,7 +205,7 @@ const (
 // Error codes defined in util package
 const (
 	// ErrTxnNoFee is returned if a transaction has no coinhour fee
-	SKY_ErrTxnNoFee = SKY_PKG_UTIL<<24 + iota
+	SKY_ErrTxnNoFee = SKY_PKG_UTIL + iota
 	// ErrTxnInsufficientFee is returned if a transaction's coinhour burn fee is not enough
 	SKY_ErrTxnInsufficientFee
 	// ErrTxnInsufficientCoinHours is returned if a transaction has more coinhours in its outputs than its inputs
@@ -225,7 +225,7 @@ const (
 // Error codes defined in visor package
 const (
 	// SKY_ErrHistoryDBCorrupted Internal format error in HistoryDB database
-	SKY_ErrHistoryDBCorrupted = SKY_PKG_VISOR<<24 + iota
+	SKY_ErrHistoryDBCorrupted = SKY_PKG_VISOR + iota
 	// SKY_ErrUxOutNotExist is returned if an uxout is not found in historydb
 	SKY_ErrUxOutNotExist
 	// ErrNoHeadBlock is returned when calling Blockchain.Head() when no head block exists
@@ -251,7 +251,7 @@ const (
 // Error codes defined in wallet package
 const (
 	// SKY_ErrInsufficientBalance is returned if a wallet does not have enough balance for a spend
-	SKY_ErrInsufficientBalance = SKY_PKG_WALLET<<24 + iota
+	SKY_ErrInsufficientBalance = SKY_PKG_WALLET + iota
 	// SKY_ErrInsufficientHours is returned if a wallet does not have enough hours for a spend with requested hours
 	SKY_ErrInsufficientHours
 	// SKY_ErrZeroSpend is returned if a transaction is trying to spend 0 coins

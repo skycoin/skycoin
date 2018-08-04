@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 
 ### Changed
+- Implement `distributecoins` in coin creator tool.
 
 ### Removed
 

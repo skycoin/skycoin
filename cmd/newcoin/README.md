@@ -29,8 +29,9 @@ VERSION:
    0.1
 
 COMMANDS:
-     createcoin  Create a new coin from a template file
-     help, h     Shows a list of commands or help for one command
+     createcoin       Create a new coin from a template file
+     distributecoins  Distribute coins created in genesis to distribution addresses
+     help, h          Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
    --help, -h     show help
@@ -38,6 +39,8 @@ GLOBAL OPTIONS:
 ```
 
 ### Create New Coin
+This creates a new coin runnable file from `fiber.toml` config file.
+The file is created at `cmd/<coinname>/<coinname>.go`.
 
 ```bash
 $ newcoin createcoin [command options]
@@ -57,10 +60,46 @@ OPTIONS:
 Create a test coin.
 
 ```bash
-$ newcoin --coin testcoin
+$ newcoin createcoin --coin testcoin
 ```
 
 This will create a new directory, `testcoin`, in `cmd` folder and
 a `testcoin.go` file inside that folder.
 
 This file can be used to run a "testcoin" node.
+
+### Distribute Coins
+To create a new coin the coins needs to be generated in the genesis address
+and then distributed to distribution addresses.
+
+```bash
+$ newcoin distributecoins [command options]
+```
+
+```
+OPTIONS:
+   --coin value                       name of the coin to create (default: "skycoin")
+   --template-file value, --tf value  template file name (default: "coin.template")
+   --template-dir value, --td value   template directory path (default: "template")
+   --config-file value, --cf value    config file path
+   --config-dir value, --cd value     config directory path (default: "./")
+   --seckey value, --sk value         secret key of genesis address
+```
+
+#### Example
+Distribute coins into distribution addresses
+
+```bash
+$ newcoin distributecoins --coin testcoin --seckey $FIBERCOIN_GENESIS_SECKEY
+```
+
+
+## Steps to create a new coin
+1. Update `fiber.toml` with relevant data ( generating new distribution addresses, genesis key etc.)
+2. go run `cmd/newcoin/newcoin.go createcoin --coin <coinname>`
+3. go run `cmd/newcoin/newcoin.go distributecoins --coin <coinname> --seckey $FIBERCOIN_GENESIS_SECKEY`
+4. Take the genesis sig output from `step 3` and put that in `fiber.toml`
+5. `go run cmd/newcoin/newcoin.go createcoin --coin <coinname>`
+
+> NOTE: Remove all default connections in the start from `fiber.toml`. Update it later when the peer nodes are setup
+        and regenerate project files with `go run cmd/newcoin/newcoin.go createcoin --coin <coinname>`.

@@ -9,8 +9,20 @@ import (
 
 	"github.com/urfave/cli"
 
+	"bufio"
+	"errors"
+	"os/exec"
+	"regexp"
+
+	"encoding/json"
+	"net/http"
+	"time"
+
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/skycoin"
 	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/visor"
 )
 
 const (
@@ -36,8 +48,10 @@ type CoinTemplateParameters struct {
 }
 
 var (
-	app = cli.NewApp()
-	log = logging.MustGetLogger("newcoin")
+	app             = cli.NewApp()
+	log             = logging.MustGetLogger("newcoin")
+	apiClient       = &http.Client{Timeout: 10 * time.Second}
+	genesisBlockURL = "http://127.0.0.1:6420/api/v1/block?seq=0"
 )
 
 func init() {
@@ -46,6 +60,7 @@ func init() {
 	app.Version = Version
 	commands := cli.Commands{
 		createCoinCommand(),
+		distributeCoinsCommand(),
 	}
 
 	app.Commands = commands
@@ -191,7 +206,6 @@ func createCoinCommand() cli.Command {
 				log.Errorf("failed to parse coin template variables")
 				return err
 			}
-
 			err = t.ExecuteTemplate(visorParamsFile, visorTemplateFile, config.Visor)
 			if err != nil {
 				log.Errorf("failed to parse visor params template variables")
@@ -203,8 +217,175 @@ func createCoinCommand() cli.Command {
 	}
 }
 
+func distributeCoinsCommand() cli.Command {
+	name := "distributecoins"
+	return cli.Command{
+		Name:  name,
+		Usage: "Distribute coins created in genesis to distribution addresses",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "coin",
+				Usage: "name of the coin to create",
+				Value: "skycoin",
+			},
+			cli.StringFlag{
+				Name:  "template-file, tf",
+				Usage: "template file name",
+				Value: "coin.template",
+			},
+			cli.StringFlag{
+				Name:  "template-dir, td",
+				Usage: "template directory path",
+				Value: "template",
+			},
+			cli.StringFlag{
+				Name:  "config-file, cf",
+				Usage: "config file path",
+			},
+			cli.StringFlag{
+				Name:  "config-dir, cd",
+				Usage: "config directory path",
+				Value: "./",
+			},
+			cli.StringFlag{
+				Name:   "seckey, sk",
+				EnvVar: "FIBERCOIN_GENESIS_SECKEY",
+				Usage:  "secret key of genesis address",
+			},
+		},
+		Action: func(c *cli.Context) error {
+			var err error
+			coin := c.String("coin")
+
+			seckey := c.String("seckey")
+			if seckey == "" {
+				return errors.New("missing genesis secret key")
+			}
+
+			genesisSecKey, err := cipher.SecKeyFromHex(seckey)
+			if err != nil {
+				return err
+			}
+
+			cmd := exec.Command("go", "run", fmt.Sprintf("cmd/%[1]s/%[1]s.go", coin), "-master=true", fmt.Sprintf("-master-secret-key=%s", seckey),
+				"-disable-incoming")
+			var genesisSig string
+			var genesisBlock visor.ReadableBlock
+
+			stdoutIn, _ := cmd.StdoutPipe()
+			cmd.Start()
+
+			// fetch gensisSig and gensisBlock
+			go func() {
+				defer cmd.Process.Kill()
+				genesisSigRegex, err := regexp.Compile(`Genesis block signature=([0-9a-zA-Z]+)`)
+				if err != nil {
+					log.Error(err)
+					return
+				}
+				scanner := bufio.NewScanner(stdoutIn)
+				scanner.Split(bufio.ScanLines)
+				for scanner.Scan() {
+					m := scanner.Text()
+					if genesisSigRegex.MatchString(m) {
+						genesisSigSubString := genesisSigRegex.FindStringSubmatch(m)
+						genesisSig = genesisSigSubString[1]
+
+						// get genesis block
+						err = getJSON(genesisBlockURL, &genesisBlock)
+						if err != nil {
+							log.Error(err)
+						}
+						return
+					}
+				}
+			}()
+
+			cmd.Wait()
+			// check that we were able to get genesisSig and genesisUxID
+			if genesisSig != "" && len(genesisBlock.Body.Transactions) != 0 {
+				log.Infof("genesis sig: %s", genesisSig)
+
+				// -- create new skycoin daemon to inject distribution transaction -- //
+				var d *daemon.Daemon
+				// get fiber params
+				params, err := skycoin.NewParameters("fiber.toml", "../../")
+				if err != nil {
+					return err
+				}
+
+				// get node config
+				params.Node.DataDirectory = fmt.Sprintf("$HOME/.%s", coin)
+				nodeConfig := skycoin.NewNodeConfig("", params.Node)
+
+				// create a new fiber coin instance
+				newcoin := skycoin.NewCoin(
+					skycoin.Config{
+						Node: *nodeConfig,
+						Build: visor.BuildInfo{
+							Version: params.Build.Version,
+							Commit:  params.Build.Commit,
+							Branch:  params.Build.Branch,
+						},
+					},
+					log,
+				)
+
+				// parse config values
+				newcoin.ParseConfig()
+
+				dconf := newcoin.ConfigureDaemon()
+
+				log.Infof("opening visor db: %s", dconf.Visor.DBPath)
+				db, err := visor.OpenDB(dconf.Visor.DBPath, false)
+				if err != nil {
+					return err
+				}
+				defer db.Close()
+
+				d, err = daemon.NewDaemon(dconf, db, nodeConfig.DefaultConnections)
+				if err != nil {
+					return err
+				}
+				go func() {
+					if err := d.Run(); err != nil {
+						log.Error(err)
+					}
+				}()
+				defer d.Shutdown()
+
+				headSeq, _, err := d.HeadBkSeq()
+				if err != nil {
+					return err
+				} else if headSeq == 0 {
+					log.Infof("Distributing coins to distribution wallet")
+					if len(genesisBlock.Body.Transactions) != 0 {
+						genesisUxID := genesisBlock.Body.Transactions[0].Out[0].Hash
+						tx := skycoin.InitTransaction(genesisUxID, genesisSecKey)
+						_, _, err := d.InjectTransaction(tx)
+						if err != nil {
+							log.Error(err)
+						}
+					}
+				}
+			}
+			return err
+		},
+	}
+}
+
 func main() {
 	if e := app.Run(os.Args); e != nil {
 		log.Fatal(e)
 	}
+}
+
+func getJSON(url string, target interface{}) error {
+	r, err := apiClient.Get(url)
+	if err != nil {
+		return err
+	}
+	defer r.Body.Close()
+
+	return json.NewDecoder(r.Body).Decode(target)
 }

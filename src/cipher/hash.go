@@ -20,14 +20,21 @@ var (
 	ripemd160HashChan chan hash.Hash
 )
 
+var (
+	// ErrInvalidLengthRipemd160 Invalid ripemd160 length
+	ErrInvalidLengthRipemd160 = errors.New("Invalid ripemd160 length")
+	// ErrInvalidLengthSHA256    Invalid sha256 length
+	ErrInvalidLengthSHA256 = errors.New("Invalid sha256 length")
+)
+
 // Ripemd160 ripemd160
 type Ripemd160 [20]byte
 
 // Set sets value
 func (rd *Ripemd160) Set(b []byte) {
 	if len(b) != 20 {
-		err := skyerrors.NewValueErrorFromString(
-			"Invalid ripemd160 length", "b", b,
+		err := skyerrors.NewValueError(
+			ErrInvalidLengthRipemd160, "b", b,
 		)
 		log.Print(err)
 		panic(err)
@@ -54,8 +61,8 @@ type SHA256 [32]byte
 // Set sets value
 func (g *SHA256) Set(b []byte) {
 	if len(b) != 32 {
-		err := skyerrors.NewValueErrorFromString(
-			"Invalid sha256 length", "b", b,
+		err := skyerrors.NewValueError(
+			ErrInvalidLengthSHA256, "b", b,
 		)
 		log.Print(err)
 		panic(err)

@@ -81,6 +81,24 @@ const (
 	SKY_ErrBufferUnderflow
 	// SKY_ErrInvalidOmitEmpty field tagged with omitempty and it's not last one in struct
 	SKY_ErrInvalidOmitEmpty
+	// SKY_ErrInvalidLengthPubKey  Invalid public key length
+	SKY_ErrInvalidLengthPubKey
+	// SKY_ErrPubKeyFromNullSecKey PubKeyFromSecKey, attempt to load null seckey, unsafe
+	SKY_ErrPubKeyFromNullSecKey
+	// SKY_ErrPubKeyFromBadSecKey  PubKeyFromSecKey, pubkey recovery failed. Function
+	SKY_ErrPubKeyFromBadSecKey
+	// SKY_ErrInvalidLengthSecKey Invalid secret key length
+	SKY_ErrInvalidLengthSecKey
+	// SKY_ErrECHDInvalidPubKey   ECDH invalid pubkey input
+	SKY_ErrECHDInvalidPubKey
+	// SKY_ErrECHDInvalidSecKey   ECDH invalid seckey input
+	SKY_ErrECHDInvalidSecKey
+	// SKY_ErrInvalidLengthSig    Invalid signature length
+	SKY_ErrInvalidLengthSig
+	// SKY_ErrInvalidLengthRipemd160 Invalid ripemd160 length
+	SKY_ErrInvalidLengthRipemd160
+	// SKY_ErrInvalidLengthSHA256 Invalid sha256 length
+	SKY_ErrInvalidLengthSHA256
 )
 
 // Error codes defined in cli package
@@ -333,14 +351,23 @@ var (
 		ErrorUnknown:   SKY_ERROR,
 		ErrorLockApi:   SKY_API_LOCKED,
 		// cipher
-		cipher.ErrInvalidLength:     SKY_ErrInvalidLength,
-		cipher.ErrInvalidChecksum:   SKY_ErrInvalidChecksum,
-		cipher.ErrInvalidVersion:    SKY_ErrInvalidVersion,
-		cipher.ErrInvalidPubKey:     SKY_ErrInvalidPubKey,
-		cipher.ErrInvalidFirstByte:  SKY_ErrInvalidFirstByte,
-		cipher.ErrInvalidLastByte:   SKY_ErrInvalidLastByte,
-		encoder.ErrBufferUnderflow:  SKY_ErrBufferUnderflow,
-		encoder.ErrInvalidOmitEmpty: SKY_ErrInvalidOmitEmpty,
+		cipher.ErrInvalidLength:          SKY_ErrInvalidLength,
+		cipher.ErrInvalidChecksum:        SKY_ErrInvalidChecksum,
+		cipher.ErrInvalidVersion:         SKY_ErrInvalidVersion,
+		cipher.ErrInvalidPubKey:          SKY_ErrInvalidPubKey,
+		cipher.ErrInvalidFirstByte:       SKY_ErrInvalidFirstByte,
+		cipher.ErrInvalidLastByte:        SKY_ErrInvalidLastByte,
+		encoder.ErrBufferUnderflow:       SKY_ErrBufferUnderflow,
+		encoder.ErrInvalidOmitEmpty:      SKY_ErrInvalidOmitEmpty,
+		cipher.ErrInvalidLengthPubKey:    SKY_ErrInvalidLengthPubKey,
+		cipher.ErrPubKeyFromNullSecKey:   SKY_ErrPubKeyFromNullSecKey,
+		cipher.ErrPubKeyFromBadSecKey:    SKY_ErrPubKeyFromBadSecKey,
+		cipher.ErrInvalidLengthSecKey:    SKY_ErrInvalidLengthSecKey,
+		cipher.ErrECHDInvalidPubKey:      SKY_ErrECHDInvalidPubKey,
+		cipher.ErrECHDInvalidSecKey:      SKY_ErrECHDInvalidSecKey,
+		cipher.ErrInvalidLengthSig:       SKY_ErrInvalidLengthSig,
+		cipher.ErrInvalidLengthRipemd160: SKY_ErrInvalidLengthRipemd160,
+		cipher.ErrInvalidLengthSHA256:    SKY_ErrInvalidLengthSHA256,
 		// cli
 		cli.ErrTemporaryInsufficientBalance: SKY_ErrTemporaryInsufficientBalance,
 		cli.ErrAddress:                      SKY_ErrAddress,

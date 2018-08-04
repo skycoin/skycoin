@@ -20,6 +20,22 @@ var (
 	DebugLevel1 = true //checks for extremely unlikely conditions (10e-40)
 	// DebugLevel2 debug level two
 	DebugLevel2 = true //enable checks for impossible conditions
+
+	// ErrInvalidLengthPubKey  Invalid public key length
+	ErrInvalidLengthPubKey = errors.New("Invalid public key length")
+	// ErrPubKeyFromNullSecKey PubKeyFromSecKey, attempt to load null seckey, unsafe
+	ErrPubKeyFromNullSecKey = errors.New("PubKeyFromSecKey, attempt to load null seckey, unsafe")
+	// ErrPubKeyFromBadSecKey  PubKeyFromSecKey, pubkey recovery failed. Function
+	ErrPubKeyFromBadSecKey = errors.New("PubKeyFromSecKey, pubkey recovery failed. Function " +
+		"assumes seckey is valid. Check seckey")
+	// ErrInvalidLengthSecKey Invalid secret key length
+	ErrInvalidLengthSecKey = errors.New("Invalid secret key length")
+	// ErrECHDInvalidPubKey   ECDH invalid pubkey input
+	ErrECHDInvalidPubKey = errors.New("ECDH invalid pubkey input")
+	// ErrECHDInvalidSecKey   ECDH invalid seckey input
+	ErrECHDInvalidSecKey = errors.New("ECDH invalid seckey input")
+	// ErrInvalidLengthSig    Invalid signature length
+	ErrInvalidLengthSig = errors.New("Invalid signature length")
 )
 
 // PubKey public key
@@ -52,9 +68,7 @@ func RandByte(n int) []byte {
 func NewPubKey(b []byte) PubKey {
 	p := PubKey{}
 	if len(b) != len(p) {
-		err := skyerrors.NewValueErrorFromString(
-			"Invalid public key length", "b", b,
-		)
+		err := skyerrors.NewValueError(ErrInvalidLengthPubKey, "b", b)
 		log.Print(err)
 		panic(err)
 	}
@@ -83,19 +97,16 @@ func PubKeyFromHex(s string) (PubKey, error) {
 // PubKeyFromSecKey recovers the public key for a secret key
 func PubKeyFromSecKey(seckey SecKey) PubKey {
 	if seckey == (SecKey{}) {
-		err := skyerrors.NewValueErrorFromString(
-			"PubKeyFromSecKey, attempt to load null seckey, unsafe",
-			"seckey", seckey,
+		err := skyerrors.NewValueError(
+			ErrPubKeyFromNullSecKey, "seckey", seckey,
 		)
 		log.Print(err)
 		panic(err)
 	}
 	b := secp256k1.PubkeyFromSeckey(seckey[:])
 	if b == nil {
-		err := skyerrors.NewValueErrorFromString(
-			"PubKeyFromSecKey, pubkey recovery failed. Function "+
-				"assumes seckey is valid. Check seckey",
-			"seckey", seckey,
+		err := skyerrors.NewValueError(
+			ErrPubKeyFromBadSecKey, "seckey", seckey,
 		)
 		log.Print(err)
 		panic(err)
@@ -139,8 +150,8 @@ type SecKey [32]byte
 func NewSecKey(b []byte) SecKey {
 	p := SecKey{}
 	if len(b) != len(p) {
-		err := skyerrors.NewValueErrorFromString(
-			"Invalid secret key length", "b", b,
+		err := skyerrors.NewValueError(
+			ErrInvalidLengthSecKey, "b", b,
 		)
 		log.Print(err)
 		panic(err)
@@ -202,16 +213,16 @@ func (sk SecKey) Hex() string {
 func ECDH(pub PubKey, sec SecKey) []byte {
 
 	if err := pub.Verify(); err != nil {
-		err := skyerrors.NewValueErrorFromString(
-			"ECDH invalid pubkey input", "pub", pub,
+		err := skyerrors.NewValueError(
+			ErrECHDInvalidPubKey, "pub", pub,
 		)
 		log.Print(err)
 		panic(err)
 	}
 
 	if err := sec.Verify(); err != nil {
-		err := skyerrors.NewValueErrorFromString(
-			"ECDH invalid seckey input", "sec", sec,
+		err := skyerrors.NewValueError(
+			ErrECHDInvalidSecKey, "sec", sec,
 		)
 		log.Print(err)
 		panic(err)
@@ -230,8 +241,8 @@ type Sig [64 + 1]byte //64 byte signature with 1 byte for key recovery
 func NewSig(b []byte) Sig {
 	s := Sig{}
 	if len(b) != len(s) {
-		err := skyerrors.NewValueErrorFromString(
-			"Invalid signature length", "b", b,
+		err := skyerrors.NewValueError(
+			ErrInvalidLengthSig, "b", b,
 		)
 		log.Print(err)
 		panic(err)
@@ -247,8 +258,8 @@ func MustSigFromHex(s string) Sig {
 		log.Panic(err)
 	}
 	if len(b) != 65 {
-		err := skyerrors.NewValueErrorFromString(
-			"Signature Length is Invalid", "s", s,
+		err := skyerrors.NewValueError(
+			ErrInvalidLengthSig, "s", s,
 		)
 		log.Print(err)
 		panic(err)

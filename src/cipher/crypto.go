@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher/ripemd160"
-
 	"github.com/skycoin/skycoin/src/cipher/secp256k1-go"
+	skyerrors "github.com/skycoin/skycoin/src/util/errors"
 )
 
 var (
@@ -52,7 +52,11 @@ func RandByte(n int) []byte {
 func NewPubKey(b []byte) PubKey {
 	p := PubKey{}
 	if len(b) != len(p) {
-		log.Panic("Invalid public key length")
+		err := skyerrors.NewValueErrorFromString(
+			"Invalid public key length", "b", b,
+		)
+		log.Print(err)
+		panic(err)
 	}
 	copy(p[:], b[:])
 	return p
@@ -79,12 +83,22 @@ func PubKeyFromHex(s string) (PubKey, error) {
 // PubKeyFromSecKey recovers the public key for a secret key
 func PubKeyFromSecKey(seckey SecKey) PubKey {
 	if seckey == (SecKey{}) {
-		log.Panic("PubKeyFromSecKey, attempt to load null seckey, unsafe")
+		err := skyerrors.NewValueErrorFromString(
+			"PubKeyFromSecKey, attempt to load null seckey, unsafe",
+			"seckey", seckey,
+		)
+		log.Print(err)
+		panic(err)
 	}
 	b := secp256k1.PubkeyFromSeckey(seckey[:])
 	if b == nil {
-		log.Panic("PubKeyFromSecKey, pubkey recovery failed. Function " +
-			"assumes seckey is valid. Check seckey")
+		err := skyerrors.NewValueErrorFromString(
+			"PubKeyFromSecKey, pubkey recovery failed. Function "+
+				"assumes seckey is valid. Check seckey",
+			"seckey", seckey,
+		)
+		log.Print(err)
+		panic(err)
 	}
 	return NewPubKey(b)
 }
@@ -125,7 +139,11 @@ type SecKey [32]byte
 func NewSecKey(b []byte) SecKey {
 	p := SecKey{}
 	if len(b) != len(p) {
-		log.Panic("Invalid secret key length")
+		err := skyerrors.NewValueErrorFromString(
+			"Invalid secret key length", "b", b,
+		)
+		log.Print(err)
+		panic(err)
 	}
 	copy(p[:], b[:])
 	return p
@@ -184,11 +202,19 @@ func (sk SecKey) Hex() string {
 func ECDH(pub PubKey, sec SecKey) []byte {
 
 	if err := pub.Verify(); err != nil {
-		log.Panic("ECDH invalid pubkey input")
+		err := skyerrors.NewValueErrorFromString(
+			"ECDH invalid pubkey input", "pub", pub,
+		)
+		log.Print(err)
+		panic(err)
 	}
 
 	if err := sec.Verify(); err != nil {
-		log.Panic("ECDH invalid seckey input")
+		err := skyerrors.NewValueErrorFromString(
+			"ECDH invalid seckey input", "sec", sec,
+		)
+		log.Print(err)
+		panic(err)
 	}
 
 	buff := secp256k1.ECDH(pub[:], sec[:])
@@ -204,7 +230,11 @@ type Sig [64 + 1]byte //64 byte signature with 1 byte for key recovery
 func NewSig(b []byte) Sig {
 	s := Sig{}
 	if len(b) != len(s) {
-		log.Panic("Invalid secret key length")
+		err := skyerrors.NewValueErrorFromString(
+			"Invalid signature length", "b", b,
+		)
+		log.Print(err)
+		panic(err)
 	}
 	copy(s[:], b[:])
 	return s
@@ -217,7 +247,11 @@ func MustSigFromHex(s string) Sig {
 		log.Panic(err)
 	}
 	if len(b) != 65 {
-		log.Panic("Signature Length is Invalid")
+		err := skyerrors.NewValueErrorFromString(
+			"Signature Length is Invalid", "s", s,
+		)
+		log.Print(err)
+		panic(err)
 	}
 	return NewSig(b)
 }

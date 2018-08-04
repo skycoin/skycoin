@@ -10,8 +10,8 @@ import (
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
-	"github.com/skycoin/skycoin/src/util"
 	"github.com/skycoin/skycoin/src/util/droplet"
+	skyerrors "github.com/skycoin/skycoin/src/util/errors"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/file"
 	"github.com/skycoin/skycoin/src/visor"
@@ -528,19 +528,29 @@ func catchApiPanic(errcode uint32, err interface{}) uint32 {
 		return SKY_API_LOCKED
 	}
 	if err != nil {
-		if valueErr, isValueError := err.(util.ValueError); isValueError {
+		if valueErr, isValueError := err.(skyerrors.ValueError); isValueError {
 			return libErrorCode(valueErr.ErrorData)
-		}
-		// FIXME: Set process exit code on panic
-		/*
-			var exitCode int
-			if _err, isError := err.(error); isError {
-				exitCode = int(libErrorCode(_err))
+		} else {
+			// Setting flag every time (i.e. even when haltOnPanic is active
+			// protects against hypothetical situations in which panic()
+			// does not abort the current process.
+			isAPILocked = true
+			if haltOnPanic {
+				// FIXME: Set process exit code on panic
+				/*
+					var exitCode int
+					if _err, isError := err.(error); isError {
+						exitCode = int(libErrorCode(_err))
+					} else {
+						exitCode = SKY_ERROR
+					}
+				*/
+				panic(err)
 			} else {
-				exitCode = SKY_ERROR
+				// Let the caller know specific error that locked the API
+				return libErrorCode(valueErr.ErrorData)
 			}
-		*/
-		panic(err)
+		}
 	}
 	return SKY_OK
 }

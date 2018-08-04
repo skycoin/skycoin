@@ -17,15 +17,29 @@ import (
 import "C"
 
 //export SKY_cipher_PubKeySlice_Len
-func SKY_cipher_PubKeySlice_Len(_slice *C.cipher__PubKeySlice) int {
+func SKY_cipher_PubKeySlice_Len(_slice *C.cipher__PubKeySlice, _arg0 *int) (____error_code uint32) {
+	____error_code = SKY_OK
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	checkAPIReady()
+
 	slice := inplacePubKeySlice(_slice)
-	return slice.Len()
+	*_arg0 = slice.Len()
+	return
 }
 
 //export SKY_cipher_PubKeySlice_Less
-func SKY_cipher_PubKeySlice_Less(_slice *C.cipher__PubKeySlice, _i, _j int) bool {
+func SKY_cipher_PubKeySlice_Less(_slice *C.cipher__PubKeySlice, _i, _j int, _arg0 *bool) (____error_code uint32) {
+	____error_code = SKY_OK
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	checkAPIReady()
+
 	slice := inplacePubKeySlice(_slice)
-	return slice.Less(_i, _j)
+	*_arg0 = slice.Less(_i, _j)
+	return
 }
 
 //export SKY_cipher_PubKeySlice_Swap

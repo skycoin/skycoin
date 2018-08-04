@@ -90,33 +90,68 @@ func SKY_coin_UxArray_Hashes(_ua *C.coin__UxArray, _arg0 *C.GoSlice_) (____error
 }
 
 //export SKY_coin_UxArray_HasDupes
-func SKY_coin_UxArray_HasDupes(_ua *C.coin__UxArray) bool {
+func SKY_coin_UxArray_HasDupes(_ua *C.coin__UxArray, _arg0 *bool) (____error_code uint32) {
+	____error_code = SKY_OK
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	checkAPIReady()
+
 	ua := *(*coin.UxArray)(unsafe.Pointer(_ua))
-	return ua.HasDupes()
+	*_arg0 = ua.HasDupes()
+	return
 }
 
 //export SKY_coin_UxArray_Sort
-func SKY_coin_UxArray_Sort(_ua *C.coin__UxArray) {
+func SKY_coin_UxArray_Sort(_ua *C.coin__UxArray) (____error_code uint32) {
+	____error_code = SKY_OK
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	checkAPIReady()
+
 	ua := *(*coin.UxArray)(unsafe.Pointer(_ua))
 	ua.Sort()
+	return
 }
 
 //export SKY_coin_UxArray_Len
-func SKY_coin_UxArray_Len(_ua *C.coin__UxArray) int {
+func SKY_coin_UxArray_Len(_ua *C.coin__UxArray, _arg0 *int) (____error_code uint32) {
+	____error_code = SKY_OK
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	checkAPIReady()
+
 	ua := *(*coin.UxArray)(unsafe.Pointer(_ua))
-	return ua.Len()
+	*_arg0 = ua.Len()
+	return
 }
 
 //export SKY_coin_UxArray_Less
-func SKY_coin_UxArray_Less(_ua *C.coin__UxArray, _i, _j int) bool {
+func SKY_coin_UxArray_Less(_ua *C.coin__UxArray, _i, _j int, _arg0 *bool) (____error_code uint32) {
+	____error_code = SKY_OK
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	checkAPIReady()
+
 	ua := *(*coin.UxArray)(unsafe.Pointer(_ua))
-	return ua.Less(_i, _j)
+	*_arg0 = ua.Less(_i, _j)
+	return
 }
 
 //export SKY_coin_UxArray_Swap
-func SKY_coin_UxArray_Swap(_ua *C.coin__UxArray, _i, _j int) {
+func SKY_coin_UxArray_Swap(_ua *C.coin__UxArray, _i, _j int) (____error_code uint32) {
+	____error_code = SKY_OK
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	checkAPIReady()
+
 	ua := *(*coin.UxArray)(unsafe.Pointer(_ua))
 	ua.Swap(_i, _j)
+	return
 }
 
 //export SKY_coin_UxArray_Coins
@@ -155,17 +190,31 @@ func SKY_coin_UxArray_CoinHours(_ua *C.coin__UxArray, _headTime uint64, _arg1 *u
 }
 
 //export SKY_coin_UxArray_Sub
-func SKY_coin_UxArray_Sub(_ua *C.coin__UxArray, _other *C.coin__UxArray, _arg1 *C.coin__UxArray) {
+func SKY_coin_UxArray_Sub(_ua *C.coin__UxArray, _other *C.coin__UxArray, _arg1 *C.coin__UxArray) (____error_code uint32) {
+	____error_code = SKY_OK
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	checkAPIReady()
+
 	ua := *(*coin.UxArray)(unsafe.Pointer(_ua))
 	other := *(*coin.UxArray)(unsafe.Pointer(_other))
 	__arg1 := ua.Sub(other)
 	*_arg1 = *(*C.coin__UxArray)(unsafe.Pointer(&__arg1))
+	return
 }
 
 //export SKY_coin_UxArray_Add
-func SKY_coin_UxArray_Add(_ua *C.coin__UxArray, _other *C.coin__UxArray, _arg1 *C.coin__UxArray) {
+func SKY_coin_UxArray_Add(_ua *C.coin__UxArray, _other *C.coin__UxArray, _arg1 *C.coin__UxArray) (____error_code uint32) {
+	____error_code = SKY_OK
+	defer func() {
+		____error_code = catchApiPanic(____error_code, recover())
+	}()
+	checkAPIReady()
+
 	ua := *(*coin.UxArray)(unsafe.Pointer(_ua))
 	other := *(*coin.UxArray)(unsafe.Pointer(_other))
 	__arg1 := ua.Add(other)
 	*_arg1 = *(*C.coin__UxArray)(unsafe.Pointer(&__arg1))
+	return
 }

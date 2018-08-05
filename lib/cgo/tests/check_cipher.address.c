@@ -36,7 +36,6 @@ Test(cipher_address, TestDecodeBase58Address) {
   strAddr.p = tempStr;
   strAddr.n = strlen(tempStr);
   errorcode = SKY_cipher_DecodeBase58Address(strAddr, &addr);
-  fprintf(stderr, "Error %x\n", errorcode);
   cr_assert(
       errorcode == SKY_ErrInvalidBase58Char,
       "preceding whitespace is invalid"
@@ -48,7 +47,6 @@ Test(cipher_address, TestDecodeBase58Address) {
   strAddr.p = tempStr;
   strAddr.n = strlen(tempStr);
   errorcode = SKY_cipher_DecodeBase58Address(strAddr, &addr);
-  fprintf(stderr, "Error %x\n", errorcode);
   cr_assert(
       errorcode == SKY_ErrInvalidBase58Char,
       "leading zeroes prefix are invalid"
@@ -60,7 +58,6 @@ Test(cipher_address, TestDecodeBase58Address) {
   strAddr.p = tempStr;
   strAddr.n = strlen(tempStr);
   errorcode = SKY_cipher_DecodeBase58Address(strAddr, &addr);
-  fprintf(stderr, "Error %x\n", errorcode);
   cr_assert(
       errorcode == SKY_ErrInvalidBase58Char,
       "trailing whitespace is invalid"
@@ -72,7 +69,6 @@ Test(cipher_address, TestDecodeBase58Address) {
   strAddr.p = tempStr;
   strAddr.n = strlen(tempStr);
   errorcode = SKY_cipher_DecodeBase58Address(strAddr, &addr);
-  fprintf(stderr, "Error %x\n", errorcode);
   cr_assert(
       errorcode == SKY_ErrInvalidBase58Char,
       "trailing zeroes suffix are invalid"

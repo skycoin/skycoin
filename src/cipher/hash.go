@@ -25,6 +25,10 @@ var (
 	ErrInvalidLengthRipemd160 = errors.New("Invalid ripemd160 length")
 	// ErrInvalidLengthSHA256    Invalid sha256 length
 	ErrInvalidLengthSHA256 = errors.New("Invalid sha256 length")
+	// ErrInvalidHexLength       Invalid hex length
+	ErrInvalidHexLength = errors.New("Invalid hex length")
+	// ErrInvalidBytesLength     Invalid bytes length
+	ErrInvalidBytesLength = errors.New("Invalid bytes length")
 )
 
 // Ripemd160 ripemd160
@@ -111,7 +115,7 @@ func SHA256FromHex(hs string) (SHA256, error) {
 		return h, err
 	}
 	if len(b) != len(h) {
-		return h, errors.New("Invalid hex length")
+		return h, ErrInvalidHexLength
 	}
 	h.Set(b)
 	return h, nil
@@ -131,7 +135,7 @@ func SHA256FromBytes(b []byte) (SHA256, error) {
 	h := SHA256{}
 
 	if len(b) != len(h) {
-		return h, errors.New("Invalid bytes length")
+		return h, ErrInvalidBytesLength
 	}
 
 	h.Set(b)

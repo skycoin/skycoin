@@ -106,6 +106,10 @@ const (
 	SKY_ErrInvalidBase58String
 	// SKY_ErrInvalidBase58Length Invalid base58 length
 	SKY_ErrInvalidBase58Length
+	// SKY_ErrInvalidHexLength       Invalid hex length
+	SKY_ErrInvalidHexLength
+	// SKY_ErrInvalidBytesLength     Invalid bytes length
+	SKY_ErrInvalidBytesLength
 )
 
 // Error codes defined in cli package
@@ -378,6 +382,8 @@ var (
 		base58.ErrInvalidBase58Char:      SKY_ErrInvalidBase58Char,
 		base58.ErrInvalidBase58String:    SKY_ErrInvalidBase58String,
 		base58.ErrInvalidBase58Length:    SKY_ErrInvalidBase58Length,
+		cipher.ErrInvalidHexLength:       SKY_ErrInvalidHexLength,
+		cipher.ErrInvalidBytesLength:     SKY_ErrInvalidBytesLength,
 		// cli
 		cli.ErrTemporaryInsufficientBalance: SKY_ErrTemporaryInsufficientBalance,
 		cli.ErrAddress:                      SKY_ErrAddress,

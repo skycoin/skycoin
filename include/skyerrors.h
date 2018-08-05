@@ -37,6 +37,8 @@
 #define SKY_ErrInvalidBase58Char      0x02000011
 #define SKY_ErrInvalidBase58String    0x02000012
 #define SKY_ErrInvalidBase58Length    0x02000013
+#define SKY_ErrInvalidHexLength       0x02000014
+#define SKY_ErrInvalidBytesLength     0x02000015
 
 #define SKY_ErrTemporaryInsufficientBalance   0x03000000
 #define SKY_ErrAddress                        0x03000001

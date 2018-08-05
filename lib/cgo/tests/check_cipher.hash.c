@@ -211,7 +211,7 @@ Test(cipher_hash,TestSHA256FromHex){
   strnhex(h,sbuff,sizeof(h) >> 1);
   GoString s1 = { sbuff, strlen(sbuff) };
   error = SKY_cipher_SHA256FromHex(s1,&h);
-  cr_assert(error == SKY_ERROR);
+  cr_assert(error == SKY_ErrInvalidHexLength);
 
   // Valid hex hash
   // char sbuff1[300];

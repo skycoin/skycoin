@@ -20,7 +20,19 @@
 
 %extend coin__UxOut {
 	int __eq__(coin__UxOut* u){
-		return memcmp(&$self, u, sizeof(coin__UxOut)) == 0;
+		if($self->Head.Time != u->Head.Time)
+			return 0;
+		if($self->Head.BkSeq != u->Head.BkSeq)
+			return 0;
+		if($self->Body.Coins != u->Body.Coins)
+			return 0;
+		if($self->Body.Hours != u->Body.Hours)
+			return 0;
+		if(memcmp(&$self->Body.Address, &u->Body.Address, sizeof(cipher__Address)) != 0)
+			return 0;
+		if(memcmp(&$self->Body.SrcTransaction, &u->Body.SrcTransaction, sizeof(cipher__SHA256)) != 0)
+			return 0;
+		return 1;
 	}
 }
 

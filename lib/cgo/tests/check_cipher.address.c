@@ -98,11 +98,11 @@ Test(cipher_address, TestAddressFromBytes){
   int bytes_len = bytes.len;
 
   bytes.len = bytes.len - 2;
-  cr_assert(SKY_cipher_BitcoinAddressFromBytes(bytes, &addr2) == SKY_ErrInvalidLength, "no SKY address due to short bytes length");
+  cr_assert(SKY_cipher_BitcoinAddressFromBytes(bytes, &addr2) == SKY_ErrAddressInvalidLength, "no SKY address due to short bytes length");
 
   bytes.len = bytes_len;
   ((char *) bytes.data)[bytes.len - 1] = '2';
-  cr_assert(SKY_cipher_BitcoinAddressFromBytes(bytes, &addr2) == SKY_ErrInvalidChecksum, "no SKY address due to corrupted bytes");
+  cr_assert(SKY_cipher_BitcoinAddressFromBytes(bytes, &addr2) == SKY_ErrAddressInvalidChecksum, "no SKY address due to corrupted bytes");
 }
 
 Test(cipher_address, TestAddressVerify){
@@ -121,11 +121,11 @@ Test(cipher_address, TestAddressVerify){
 
   SKY_cipher_GenerateKeyPair(&pubkey,&seckey2);
   //   // Invalid pubkey
-  cr_assert( SKY_cipher_Address_Verify(&addr,&pubkey) == SKY_ErrInvalidPubKey," Invalid pubkey");
+  cr_assert( SKY_cipher_Address_Verify(&addr,&pubkey) == SKY_ErrAddressInvalidPubKey," Invalid pubkey");
 
   // Bad version
   addr.Version = 0x01;
-  cr_assert( SKY_cipher_Address_Verify(&addr,&pubkey) == SKY_ErrInvalidVersion,"  Bad version");
+  cr_assert( SKY_cipher_Address_Verify(&addr,&pubkey) == SKY_ErrAddressInvalidVersion,"  Bad version");
 }
 
 Test(cipher_address,TestAddressString){

@@ -36,6 +36,36 @@ var (
 	ErrECHDInvalidSecKey = errors.New("ECDH invalid seckey input")
 	// ErrInvalidLengthSig    Invalid signature length
 	ErrInvalidLengthSig = errors.New("Invalid signature length")
+	// ErrInvalidPubKey       Invalid public key
+	ErrInvalidPubKey = errors.New("Invalid public key")
+	// ErrInvalidSecKey       Invalid public key
+	ErrInvalidSecKey = errors.New("Invalid secret key")
+	// ErrInvalidSigForPubKey Invalig sig: PubKey recovery failed
+	ErrInvalidSigForPubKey = errors.New("Invalig sig: PubKey recovery failed")
+	// ErrInvalidSecKeyHex    Invalid SecKey: not valid hex
+	ErrInvalidSecKeyHex = errors.New("Invalid SecKey: not valid hex")
+	// ErrInvalidAddressForSig Invalid sig: address does not match output address
+	ErrInvalidAddressForSig = errors.New("Invalid sig: address does not match output address")
+	// ErrInvalidHashForSig   Signature invalid for hash
+	ErrInvalidHashForSig = errors.New("Signature invalid for hash")
+	// ErrPubKeyRecoverMismatch Recovered pubkey does not match pubkey
+	ErrPubKeyRecoverMismatch = errors.New("Recovered pubkey does not match pubkey")
+	// ErrInvalidSigInvalidPubKey VerifySignature, secp256k1.VerifyPubkey failed
+	ErrInvalidSigInvalidPubKey = errors.New("VerifySignature, secp256k1.VerifyPubkey failed")
+	// ErrInvalidSigValidity  VerifySignature, VerifySignatureValidity failed
+	ErrInvalidSigValidity = errors.New("VerifySignature, VerifySignatureValidity failed")
+	// ErrInvalidSigForMessage Invalid signature for this message
+	ErrInvalidSigForMessage = errors.New("Invalid signature for this message")
+	// ErrInvalidSecKyVerification Seckey secp256k1 verification failed
+	ErrInvalidSecKyVerification = errors.New("Seckey verification failed")
+	// ErrNullPubKeyFromSecKey Impossible error, TestSecKey, nil pubkey recovered
+	ErrNullPubKeyFromSecKey = errors.New("impossible error, TestSecKey, nil pubkey recovered")
+	// ErrInvalidDerivedPubKeyFromSecKey impossible error, TestSecKey, Derived Pubkey verification failed
+	ErrInvalidDerivedPubKeyFromSecKey = errors.New("impossible error, TestSecKey, Derived Pubkey verification failed")
+	// ErrInvalidPubKeyFromHash Recovered pubkey does not match signed hash
+	ErrInvalidPubKeyFromHash = errors.New("Recovered pubkey does not match signed hash")
+	// ErrPubKeyFromSecKeyMissmatch impossible error TestSecKey, pubkey does not match recovered pubkey
+	ErrPubKeyFromSecKeyMissmatch = errors.New("impossible error TestSecKey, pubkey does not match recovered pubkey")
 )
 
 // PubKey public key
@@ -89,7 +119,7 @@ func MustPubKeyFromHex(s string) PubKey {
 func PubKeyFromHex(s string) (PubKey, error) {
 	b, err := hex.DecodeString(s)
 	if err != nil {
-		return PubKey{}, errors.New("Invalid public key")
+		return PubKey{}, ErrInvalidPubKey
 	}
 	return NewPubKey(b), nil
 }
@@ -118,7 +148,7 @@ func PubKeyFromSecKey(seckey SecKey) PubKey {
 func PubKeyFromSig(sig Sig, hash SHA256) (PubKey, error) {
 	rawPubKey := secp256k1.RecoverPubkey(hash[:], sig[:])
 	if rawPubKey == nil {
-		return PubKey{}, errors.New("Invalig sig: PubKey recovery failed")
+		return PubKey{}, ErrInvalidSigForPubKey
 	}
 	return NewPubKey(rawPubKey), nil
 }
@@ -126,7 +156,7 @@ func PubKeyFromSig(sig Sig, hash SHA256) (PubKey, error) {
 // Verify attempts to determine if pubkey is valid. Returns nil on success
 func (pk PubKey) Verify() error {
 	if secp256k1.VerifyPubkey(pk[:]) != 1 {
-		return errors.New("Invalid public key")
+		return ErrInvalidPubKey
 	}
 	return nil
 }
@@ -173,10 +203,10 @@ func MustSecKeyFromHex(s string) SecKey {
 func SecKeyFromHex(s string) (SecKey, error) {
 	b, err := hex.DecodeString(s)
 	if err != nil {
-		return SecKey{}, errors.New("Invalid SecKey: not valid hex")
+		return SecKey{}, ErrInvalidSecKeyHex
 	}
 	if len(b) != 32 {
-		return SecKey{}, errors.New("Invalid SecKey: invalid length")
+		return SecKey{}, ErrInvalidLengthSecKey
 	}
 	return NewSecKey(b), nil
 }
@@ -185,7 +215,7 @@ func SecKeyFromHex(s string) (SecKey, error) {
 // If DebugLevel2, will do additional sanity checking
 func (sk SecKey) Verify() error {
 	if secp256k1.VerifySeckey(sk[:]) != 1 {
-		return errors.New("Invalid SecKey")
+		return ErrInvalidSecKey
 	}
 	if DebugLevel2 {
 		err := TestSecKey(sk)
@@ -274,7 +304,7 @@ func SigFromHex(s string) (Sig, error) {
 		return Sig{}, err
 	}
 	if len(b) != 65 {
-		return Sig{}, errors.New("Signature Length is Invalid")
+		return Sig{}, ErrInvalidLengthSig
 	}
 	return NewSig(b), nil
 }
@@ -313,13 +343,13 @@ func SignHash(hash SHA256, sec SecKey) Sig {
 func ChkSig(address Address, hash SHA256, sig Sig) error {
 	rawPubKey := secp256k1.RecoverPubkey(hash[:], sig[:])
 	if rawPubKey == nil {
-		return errors.New("Invalig sig: PubKey recovery failed")
+		return ErrInvalidSigForPubKey
 	}
 	if address != AddressFromPubKey(NewPubKey(rawPubKey)) {
-		return errors.New("Invalid sig: address does not match output address")
+		return ErrInvalidAddressForSig
 	}
 	if secp256k1.VerifySignature(hash[:], sig[:], rawPubKey[:]) != 1 {
-		return errors.New("Invalid sig: invalid for hash")
+		return ErrInvalidHashForSig
 	}
 	return nil
 }
@@ -330,12 +360,12 @@ func ChkSig(address Address, hash SHA256, sig Sig) error {
 func VerifySignedHash(sig Sig, hash SHA256) error {
 	rawPubKey := secp256k1.RecoverPubkey(hash[:], sig[:])
 	if rawPubKey == nil {
-		return errors.New("Failed to recover public key")
+		return ErrInvalidSigForPubKey
 	}
 	if secp256k1.VerifySignature(hash[:], sig[:], rawPubKey) != 1 {
 		// If this occurs, secp256k1 is bugged
 		log.Printf("Recovered public key is not valid for signed hash")
-		return errors.New("Signature invalid for hash")
+		return ErrInvalidHashForSig
 	}
 	return nil
 }
@@ -344,10 +374,10 @@ func VerifySignedHash(sig Sig, hash SHA256) error {
 func VerifySignature(pubkey PubKey, sig Sig, hash SHA256) error {
 	pubkeyRec, err := PubKeyFromSig(sig, hash) //recovered pubkey
 	if err != nil {
-		return errors.New("Invalid sig: PubKey recovery failed")
+		return ErrInvalidSigForPubKey
 	}
 	if pubkeyRec != pubkey {
-		return errors.New("Recovered pubkey does not match pubkey")
+		return ErrPubKeyRecoverMismatch
 	}
 	if secp256k1.VerifyPubkey(pubkey[:]) != 1 {
 		if DebugLevel2 {
@@ -355,13 +385,13 @@ func VerifySignature(pubkey PubKey, sig Sig, hash SHA256) error {
 				log.Panic("VerifySignature warning, ")
 			}
 		}
-		return errors.New("VerifySignature, secp256k1.VerifyPubkey failed")
+		return ErrInvalidSigInvalidPubKey
 	}
 	if secp256k1.VerifySignatureValidity(sig[:]) != 1 {
-		return errors.New("VerifySignature, VerifySignatureValidity failed")
+		return ErrInvalidSigValidity
 	}
 	if secp256k1.VerifySignature(hash[:], sig[:], pubkey[:]) != 1 {
-		return errors.New("Invalid signature for this message")
+		return ErrInvalidSigForMessage
 	}
 	return nil
 }
@@ -458,17 +488,17 @@ func TestSecKey(seckey SecKey) error {
 func TestSecKeyHash(seckey SecKey, hash SHA256) error {
 	//check seckey with verify
 	if secp256k1.VerifySeckey(seckey[:]) != 1 {
-		return errors.New("Seckey verification failed")
+		return ErrInvalidSecKyVerification
 	}
 
 	//check pubkey recovery
 	pubkey := PubKeyFromSecKey(seckey)
 	if pubkey == (PubKey{}) {
-		return errors.New("impossible error, TestSecKey, nil pubkey recovered")
+		return ErrNullPubKeyFromSecKey
 	}
 	//verify recovered pubkey
 	if secp256k1.VerifyPubkey(pubkey[:]) != 1 {
-		return errors.New("impossible error, TestSecKey, Derived Pubkey verification failed")
+		return ErrInvalidDerivedPubKeyFromSecKey
 	}
 
 	//check signature production
@@ -478,7 +508,7 @@ func TestSecKeyHash(seckey SecKey, hash SHA256) error {
 		return fmt.Errorf("PubKeyFromSig failed: %v", err)
 	}
 	if pubkey != pubkey2 {
-		return errors.New("Recovered pubkey does not match signed hash")
+		return ErrInvalidPubKeyFromHash
 	}
 
 	//check pubkey recovered from sig
@@ -487,7 +517,7 @@ func TestSecKeyHash(seckey SecKey, hash SHA256) error {
 		return fmt.Errorf("impossible error, TestSecKey, pubkey recovery from signature failed: %v", err)
 	}
 	if pubkey != recoveredPubkey {
-		return errors.New("impossible error TestSecKey, pubkey does not match recovered pubkey")
+		return ErrPubKeyFromSecKeyMissmatch
 	}
 
 	//verify produced signature

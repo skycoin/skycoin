@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/base58"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/cli"
 	"github.com/skycoin/skycoin/src/coin"
@@ -99,6 +100,12 @@ const (
 	SKY_ErrInvalidLengthRipemd160
 	// SKY_ErrInvalidLengthSHA256 Invalid sha256 length
 	SKY_ErrInvalidLengthSHA256
+	// SKY_ErrInvalidBase58Char   Invalid base58 character
+	SKY_ErrInvalidBase58Char
+	// SKY_ErrInvalidBase58String Invalid base58 string
+	SKY_ErrInvalidBase58String
+	// SKY_ErrInvalidBase58Length Invalid base58 length
+	SKY_ErrInvalidBase58Length
 )
 
 // Error codes defined in cli package
@@ -368,6 +375,9 @@ var (
 		cipher.ErrInvalidLengthSig:       SKY_ErrInvalidLengthSig,
 		cipher.ErrInvalidLengthRipemd160: SKY_ErrInvalidLengthRipemd160,
 		cipher.ErrInvalidLengthSHA256:    SKY_ErrInvalidLengthSHA256,
+		base58.ErrInvalidBase58Char:      SKY_ErrInvalidBase58Char,
+		base58.ErrInvalidBase58String:    SKY_ErrInvalidBase58String,
+		base58.ErrInvalidBase58Length:    SKY_ErrInvalidBase58Length,
 		// cli
 		cli.ErrTemporaryInsufficientBalance: SKY_ErrTemporaryInsufficientBalance,
 		cli.ErrAddress:                      SKY_ErrAddress,

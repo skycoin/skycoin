@@ -28,34 +28,55 @@ Test(cipher_address, TestDecodeBase58Address) {
   cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == SKY_OK, "accept valid address");
 
   char tempStr[50];
+  int errorcode;
 
   // preceding whitespace is invalid
   strcpy(tempStr, " ");
   strcat(tempStr, SKYCOIN_ADDRESS_VALID);
   strAddr.p = tempStr;
   strAddr.n = strlen(tempStr);
-  cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == SKY_ERROR, "preceding whitespace is invalid");
+  errorcode = SKY_cipher_DecodeBase58Address(strAddr, &addr);
+  fprintf(stderr, "Error %x\n", errorcode);
+  cr_assert(
+      errorcode == SKY_ErrInvalidBase58Char,
+      "preceding whitespace is invalid"
+  );
 
   // preceding zeroes are invalid
   strcpy(tempStr, "000");
   strcat(tempStr, SKYCOIN_ADDRESS_VALID);
   strAddr.p = tempStr;
   strAddr.n = strlen(tempStr);
-  cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == SKY_ERROR, "leading zeroes prefix are invalid");
+  errorcode = SKY_cipher_DecodeBase58Address(strAddr, &addr);
+  fprintf(stderr, "Error %x\n", errorcode);
+  cr_assert(
+      errorcode == SKY_ErrInvalidBase58Char,
+      "leading zeroes prefix are invalid"
+  );
 
   // trailing whitespace is invalid
   strcpy(tempStr, SKYCOIN_ADDRESS_VALID);
   strcat(tempStr, " ");
   strAddr.p = tempStr;
   strAddr.n = strlen(tempStr);
-  cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == SKY_ERROR, " trailing whitespace is invalid");
+  errorcode = SKY_cipher_DecodeBase58Address(strAddr, &addr);
+  fprintf(stderr, "Error %x\n", errorcode);
+  cr_assert(
+      errorcode == SKY_ErrInvalidBase58Char,
+      "trailing whitespace is invalid"
+  );
 
   // trailing zeroes are invalid
   strcpy(tempStr, SKYCOIN_ADDRESS_VALID);
   strcat(tempStr, "000");
   strAddr.p = tempStr;
   strAddr.n = strlen(tempStr);
-  cr_assert( SKY_cipher_DecodeBase58Address(strAddr, &addr) == SKY_ERROR, " trailing zeroes suffix are invalid");
+  errorcode = SKY_cipher_DecodeBase58Address(strAddr, &addr);
+  fprintf(stderr, "Error %x\n", errorcode);
+  cr_assert(
+      errorcode == SKY_ErrInvalidBase58Char,
+      "trailing zeroes suffix are invalid"
+  );
 
 }
 

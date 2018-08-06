@@ -45,7 +45,7 @@ func getTransactionByIDV2(gateway Gatewayer) http.HandlerFunc {
 
 		h, err := cipher.SHA256FromHex(txid)
 		if err != nil {
-			resp := NewHTTPErrorResponse(http.StatusBadRequest, fmt.Sprintf("SHA256FromHex failed : %v", err))
+			resp := NewHTTPErrorResponse(http.StatusBadRequest, fmt.Sprintf("SHA256FromHex failed: %v", err))
 			writeHTTPResponse(w, resp)
 			return
 		}

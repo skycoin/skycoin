@@ -27,7 +27,8 @@ func (c *ClientV2) Get(endpoint string, obj interface{}) error {
 	err = c.Client.Get(endpoint, &resp)
 	if err != nil {
 		return err
-	} else if resp.Error != nil {
+	}
+	if resp.Error != nil {
 		err = ClientError{
 			Status:     http.StatusText(resp.Error.Code),
 			StatusCode: resp.Error.Code,
@@ -37,8 +38,12 @@ func (c *ClientV2) Get(endpoint string, obj interface{}) error {
 			Status:     http.StatusText(http.StatusInternalServerError),
 			StatusCode: http.StatusInternalServerError,
 		}
-	} else {
-		err = json.Unmarshal(resp.Data, obj)
+	}
+	if resp.Data != nil {
+		jsonErr = json.Unmarshal(resp.Data, obj)
+		if err == nil {
+			err = jsonErr
+		}
 	}
 	return err
 }

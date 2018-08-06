@@ -4096,22 +4096,22 @@ func TestKnownBlocksV2(t *testing.T) {
 		},
 		{
 			name:   "valid hash",
-			golden: "block-hash.golden",
+			golden: "block-hash-v2.golden",
 			hash:   "70584db7fb8ab88b8dbcfed72ddc42a1aeb8c4882266dbb78439ba3efcd0458d",
 		},
 		{
 			name:   "genesis hash",
-			golden: "block-hash-genesis.golden",
+			golden: "block-hash-genesis-v2.golden",
 			hash:   "0551a1e5af999fe8fff529f6f2ab341e1e33db95135eef1b2be44fe6981349f3",
 		},
 		{
 			name:   "genesis seq",
-			golden: "block-seq-0.golden",
+			golden: "block-seq-0-v2.golden",
 			seq:    0,
 		},
 		{
 			name:   "seq 100",
-			golden: "block-seq-100.golden",
+			golden: "block-seq-100-v2.golden",
 			seq:    100,
 		},
 	}
@@ -4133,7 +4133,9 @@ func TestKnownBlocksV2(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, b)
-				testBlockV2(t, b)
+				var expected *visor.ReadableBlockV2
+				loadGoldenFile(t, tc.golden, TestData{b, &expected})
+				require.Equal(t, expected, b)
 			}
 		})
 	}

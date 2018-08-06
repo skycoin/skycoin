@@ -40,7 +40,7 @@ func (c *ClientV2) Get(endpoint string, obj interface{}) error {
 		}
 	}
 	if resp.Data != nil {
-		jsonErr = json.Unmarshal(resp.Data, obj)
+		jsonErr := json.Unmarshal(resp.Data, obj)
 		if err == nil {
 			err = jsonErr
 		}

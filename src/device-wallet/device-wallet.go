@@ -130,7 +130,7 @@ func getDevice(deviceType DeviceType) (io.ReadWriteCloser, error) {
 		dev, err = getUsbDevice()
 		break
 	}
-	if (dev == nil && err == nil) {
+	if dev == nil && err == nil {
 		err = errors.New("No device connected")
 	}
 	return dev, err
@@ -370,7 +370,6 @@ func WipeDevice(deviceType DeviceType) {
 	initialize(dev)
 }
 
-
 // DeviceChangePin changes device's PIN code
 // The message that is sent contains an encoded form of the PIN.
 // The digits of the PIN are displayed in a 3x3 matrix on the Trezor,
@@ -395,23 +394,23 @@ func DeviceChangePin(deviceType DeviceType) (uint16, []byte) {
 	}
 	defer dev.Close()
 
-    changePin := &messages.ChangePin{}
-    data, _ := proto.Marshal(changePin)
+	changePin := &messages.ChangePin{}
+	data, _ := proto.Marshal(changePin)
 	chunks := makeTrezorMessage(data, messages.MessageType_MessageType_ChangePin)
 	msg, err := sendToDevice(dev, chunks)
 	if err != nil {
 		logger.Errorf(err.Error())
 		return msg.Kind, msg.Data
 	}
-    // Acknowledge that a button has been pressed
-    if msg.Kind == uint16(messages.MessageType_MessageType_ButtonRequest) {
+	// Acknowledge that a button has been pressed
+	if msg.Kind == uint16(messages.MessageType_MessageType_ButtonRequest) {
 		chunks = MessageButtonAck()
 		err = sendToDeviceNoAnswer(dev, chunks)
 		if err != nil {
 			logger.Errorf(err.Error())
 			return msg.Kind, msg.Data
 		}
-	
+
 		_, err = msg.ReadFrom(dev)
 		time.Sleep(1 * time.Second)
 		logger.Infof("MessageButtonAck Answer is: %d / %s\n", msg.Kind, msg.Data)
@@ -430,12 +429,12 @@ func DevicePinMatrixAck(deviceType DeviceType, p string) (uint16, []byte) {
 	defer dev.Close()
 	var msg wire.Message
 	logger.Infof("Setting pin: %s\n", p)
-    pinAck := &messages.PinMatrixAck{
-        Pin: proto.String(p),
-    }
-    data, _ := proto.Marshal(pinAck)
+	pinAck := &messages.PinMatrixAck{
+		Pin: proto.String(p),
+	}
+	data, _ := proto.Marshal(pinAck)
 
-    chunks := makeTrezorMessage(data, messages.MessageType_MessageType_PinMatrixAck)
+	chunks := makeTrezorMessage(data, messages.MessageType_MessageType_PinMatrixAck)
 	msg, err = sendToDevice(dev, chunks)
 	if err != nil {
 		logger.Errorf(err.Error())

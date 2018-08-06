@@ -4130,7 +4130,6 @@ func TestKnownBlocksV2(t *testing.T) {
 				require.Error(t, err)
 				require.IsType(t, api.ClientError{}, err)
 				require.Equal(t, tc.errCode, err.(api.ClientError).StatusCode)
-				return
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, b)
@@ -4171,13 +4170,13 @@ func TestStableTransactionV2(t *testing.T) {
 
 	cases := []struct {
 		name       string
-		txId       string
+		txID       string
 		err        api.ClientError
 		goldenFile string
 	}{
 		{
 			name: "invalid txId",
-			txId: "abcd",
+			txID: "abcd",
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
@@ -4187,7 +4186,7 @@ func TestStableTransactionV2(t *testing.T) {
 		},
 		{
 			name: "not exist",
-			txId: "701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947",
+			txID: "701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947",
 			err: api.ClientError{
 				Status:     "404 Not Found",
 				StatusCode: http.StatusNotFound,
@@ -4197,7 +4196,7 @@ func TestStableTransactionV2(t *testing.T) {
 		},
 		{
 			name: "empty txId",
-			txId: "",
+			txID: "",
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
@@ -4207,7 +4206,7 @@ func TestStableTransactionV2(t *testing.T) {
 		},
 		{
 			name:       "genesis transaction",
-			txId:       "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add",
+			txID:       "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add",
 			goldenFile: "genesis-transaction.golden",
 		},
 	}
@@ -4215,7 +4214,7 @@ func TestStableTransactionV2(t *testing.T) {
 	c := api.NewClientV2(nodeAddress())
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			tx, err := c.Transaction(tc.txId)
+			tx, err := c.Transaction(tc.txID)
 			if err != nil {
 				require.Equal(t, tc.err.StatusCode, err.(api.ClientError).StatusCode)
 				return

@@ -7,6 +7,7 @@ package api
 
 import (
 	"fmt"
+
 	mock "github.com/stretchr/testify/mock"
 
 	cipher "github.com/skycoin/skycoin/src/cipher"

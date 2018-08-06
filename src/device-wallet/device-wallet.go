@@ -1,4 +1,4 @@
-package deviceWallet
+package devicewallet
 
 import (
 	"bytes"
@@ -84,15 +84,6 @@ func sendToDevice(dev io.ReadWriteCloser, chunks [][64]byte) (wire.Message, erro
 	}
 	_, err := msg.ReadFrom(dev)
 	return msg, err
-}
-
-func makeTrezorHeader(data []byte, msgID messages.MessageType) []byte {
-	header := new(bytes.Buffer)
-	binary.Write(header, binary.BigEndian, []byte("?##"))
-	binary.Write(header, binary.BigEndian, uint16(msgID))
-	binary.Write(header, binary.BigEndian, uint32(len(data)))
-	binary.Write(header, binary.BigEndian, []byte("\n"))
-	return header.Bytes()
 }
 
 func makeTrezorMessage(data []byte, msgID messages.MessageType) [][64]byte {

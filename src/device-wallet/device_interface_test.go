@@ -1,4 +1,4 @@
-package deviceWallet
+package devicewallet
 
 import (
 	"testing"

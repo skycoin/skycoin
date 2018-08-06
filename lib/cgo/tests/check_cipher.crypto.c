@@ -559,7 +559,7 @@ Test(cipher_crypto, TestChkSig) {
   cr_assert(errorcode == SKY_ErrInvalidAddressForSig);
 }
 
-Test(cipher_crypto, TestSignHash, .signal=SIGABRT) {
+Test(cipher_crypto, TestSignHash, /* .signal=SIGABRT */ .exit_code=2) {
   cipher__PubKey pk;
   cipher__SecKey sk;
   cipher__Address addr;

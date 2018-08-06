@@ -204,7 +204,7 @@ func resetCorruptDB(db *dbutil.DB) (*dbutil.DB, error) {
 // OpenDB opens the blockdb
 func OpenDB(dbFile string, readOnly bool) (*dbutil.DB, error) {
 	db, err := bolt.Open(dbFile, 0600, &bolt.Options{
-		Timeout:  500 * time.Millisecond,
+		Timeout:  5000 * time.Millisecond,
 		ReadOnly: readOnly,
 	})
 	if err != nil {

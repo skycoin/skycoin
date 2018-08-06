@@ -2,10 +2,26 @@ package cipher
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"log"
 
 	"github.com/skycoin/skycoin/src/cipher/base58"
+)
+
+var (
+	// ErrAddressInvalidLength Unexpected size of address bytes buffer
+	ErrAddressInvalidLength = errors.New("Invalid address length")
+	// ErrAddressInvalidChecksum Computed checksum did not match expected value
+	ErrAddressInvalidChecksum = errors.New("Invalid checksum")
+	// ErrAddressInvalidVersion Unsupported address version value
+	ErrAddressInvalidVersion = errors.New("Invalid version")
+	// ErrAddressInvalidPubKey Public key invalid for address
+	ErrAddressInvalidPubKey = errors.New("Public key invalid for address")
+	// ErrAddressInvalidFirstByte Invalid first byte in wallet import format string
+	ErrAddressInvalidFirstByte = errors.New("first byte invalid")
+	// ErrAddressInvalidLastByte 33rd byte in wallet import format string is invalid
+	ErrAddressInvalidLastByte = errors.New("invalid 33rd byte")
 )
 
 /*
@@ -96,7 +112,7 @@ func AddressFromBytes(b []byte) (addr Address, err error) {
 	}()
 
 	if len(b) != 20+1+4 {
-		return Address{}, ErrInvalidLength
+		return Address{}, ErrAddressInvalidLength
 	}
 	a := Address{}
 	copy(a.Key[0:20], b[0:20])
@@ -107,11 +123,11 @@ func AddressFromBytes(b []byte) (addr Address, err error) {
 	copy(checksum[0:4], b[21:25])
 
 	if checksum != chksum {
-		return Address{}, ErrInvalidChecksum
+		return Address{}, ErrAddressInvalidChecksum
 	}
 
 	if a.Version != 0 {
-		return Address{}, ErrInvalidVersion
+		return Address{}, ErrAddressInvalidVersion
 	}
 
 	return a, nil
@@ -156,10 +172,10 @@ func (addr *Address) BitcoinBytes() []byte {
 // Verify checks that the address appears valid for the public key
 func (addr Address) Verify(key PubKey) error {
 	if addr.Version != 0x00 {
-		return ErrInvalidVersion
+		return ErrAddressInvalidVersion
 	}
 	if addr.Key != key.ToAddressHash() {
-		return ErrInvalidPubKey
+		return ErrAddressInvalidPubKey
 	}
 	return nil
 }
@@ -228,7 +244,7 @@ func BitcoinWalletImportFormatFromSeckey(seckey SecKey) string {
 // BitcoinAddressFromBytes Returns an address given an Address.Bytes()
 func BitcoinAddressFromBytes(b []byte) (Address, error) {
 	if len(b) != 20+1+4 {
-		return Address{}, ErrInvalidLength
+		return Address{}, ErrAddressInvalidLength
 	}
 	a := Address{}
 	copy(a.Key[0:20], b[1:21])
@@ -239,11 +255,11 @@ func BitcoinAddressFromBytes(b []byte) (Address, error) {
 	copy(checksum[0:4], b[21:25])
 
 	if checksum != chksum {
-		return Address{}, ErrInvalidChecksum
+		return Address{}, ErrAddressInvalidChecksum
 	}
 
 	if a.Version != 0 {
-		return Address{}, ErrInvalidVersion
+		return Address{}, ErrAddressInvalidVersion
 	}
 
 	return a, nil
@@ -259,21 +275,21 @@ func SecKeyFromWalletImportFormat(input string) (SecKey, error) {
 	//1+32+1+4
 	if len(b) != 38 {
 		//log.Printf("len= %v ", len(b))
-		return SecKey{}, ErrInvalidLength
+		return SecKey{}, ErrAddressInvalidLength
 	}
 	if b[0] != 0x80 {
-		return SecKey{}, ErrInvalidFirstByte
+		return SecKey{}, ErrAddressInvalidFirstByte
 	}
 
 	if b[1+32] != 0x01 {
-		return SecKey{}, ErrInvalidLastByte
+		return SecKey{}, ErrAddressInvalidLastByte
 	}
 
 	b2 := DoubleSHA256(b[0:34])
 	chksum := b[34:38]
 
 	if !bytes.Equal(chksum, b2[0:4]) {
-		return SecKey{}, ErrInvalidChecksum
+		return SecKey{}, ErrAddressInvalidChecksum
 	}
 
 	seckey := b[1:33]

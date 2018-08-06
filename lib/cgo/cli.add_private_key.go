@@ -21,7 +21,7 @@ func SKY_cli_AddPrivateKey(_wlt C.Wallet__Handle, _key string) (____error_code u
 	}()
 	wlt, okwlt := lookupWalletHandle(_wlt)
 	if !okwlt {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	key := _key
@@ -42,7 +42,7 @@ func SKY_cli_AddPrivateKeyToFile(_walletFile, _key string, pwd C.PasswordReader_
 	key := _key
 	pr, okc := lookupPasswordReaderHandle(pwd)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	____return_err := cli.AddPrivateKeyToFile(walletFile, key, *pr)

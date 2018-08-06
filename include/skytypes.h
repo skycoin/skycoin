@@ -2,6 +2,10 @@
 #ifndef SKYTYPES_H
 #define SKYTYPES_H
 
+#ifndef __SIZE_TYPE__
+#define __SIZE_TYPE__ unsigned int
+#endif
+
 /**
  * Go 8-bit signed integer values.
  */
@@ -351,6 +355,23 @@ typedef Handle BuildInfo_Handle;
 
 typedef Handle Hash_Handle;
 
-typedef GoUint32_ (*FeeCalc)(Transaction__Handle handle, GoUint64_* pFee);
+/**
+* Handle for Number type
+*/
+
+typedef Handle Number_Handle;
+
+/**
+* Handle for Signature type
+*/
+
+typedef Handle Signature_Handle;
+
+typedef GoUint32_ (*FeeCalcFunc)(Transaction__Handle handle, GoUint64_* pFee, void* context);
+
+typedef struct {
+  FeeCalcFunc callback;
+  void* context;
+} FeeCalculator ;
 
 #endif

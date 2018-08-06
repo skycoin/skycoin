@@ -19,7 +19,7 @@ func SKY_api_NewWalletResponse(_w C.Wallet__Handle, _arg1 *C.WalletResponse__Han
 	}()
 	w, okw := lookupWalletHandle(_w)
 	if !okw {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg1, ____return_err := api.NewWalletResponse(w)

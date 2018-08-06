@@ -64,7 +64,7 @@ func SKY_wallet_ReadableNotes_Load(_rns C.WalletReadableNotes_Handle, _filename 
 	}()
 	rns, ok := lookupWalletReadableNotesHandle(_rns)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	filename := _filename
@@ -83,7 +83,7 @@ func SKY_wallet_ReadableNotes_ToNotes(_rns C.WalletReadableNotes_Handle, _arg0 *
 	}()
 	rns, ok := lookupWalletReadableNotesHandle(_rns)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0, ____return_err := rns.ToNotes()
@@ -103,7 +103,7 @@ func SKY_wallet_ReadableNotes_Save(_rns C.WalletReadableNotes_Handle, _filename 
 	}()
 	rns, ok := lookupWalletReadableNotesHandle(_rns)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	filename := _filename
@@ -135,7 +135,7 @@ func SKY_wallet_NewReadableNotesFromNotes(_w C.WalletNotes_Handle, _arg1 *C.Wall
 	}()
 	w, ok := lookupWalletNotesHandle(_w)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg1 := wallet.NewReadableNotesFromNotes(*w)
@@ -151,7 +151,7 @@ func SKY_wallet_Notes_Save(_notes C.WalletNotes_Handle, _dir string, _fileName s
 	}()
 	notes, ok := lookupWalletNotesHandle(_notes)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	dir := _dir
@@ -171,7 +171,7 @@ func SKY_wallet_Notes_SaveNote(_notes C.WalletNotes_Handle, _dir string, _note *
 	}()
 	notes, ok := lookupWalletNotesHandle(_notes)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	dir := _dir
@@ -191,7 +191,7 @@ func SKY_wallet_Notes_ToReadable(_notes C.WalletNotes_Handle, _arg0 *C.WalletRea
 	}()
 	notes, ok := lookupWalletNotesHandle(_notes)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0 := notes.ToReadable()

@@ -23,7 +23,7 @@ func SKY_cli_CheckWalletBalance(_c C.WebRpcClient__Handle, _walletFile string, _
 	}()
 	c, okc := lookupWebRpcClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	walletFile := _walletFile
@@ -43,7 +43,7 @@ func SKY_cli_GetBalanceOfAddresses(_c C.WebRpcClient__Handle, _addrs []string, _
 	}()
 	c, okc := lookupWebRpcClientHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	addrs := *(*[]string)(unsafe.Pointer(&_addrs))

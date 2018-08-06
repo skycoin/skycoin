@@ -54,19 +54,19 @@ Test(cipher_hash,TestRipemd160Set){
   randBytes(&slice,21);
 
   error = SKY_cipher_Ripemd160_Set(&h,slice);
-  cr_assert( error == SKY_ERROR);
+  cr_assert( error == SKY_ErrInvalidLengthRipemd160);
 
   randBytes(&slice,100);
   error = SKY_cipher_Ripemd160_Set(&h,slice);
-  cr_assert(error == SKY_ERROR);
+  cr_assert(error == SKY_ErrInvalidLengthRipemd160);
 
   randBytes(&slice,19);
   error = SKY_cipher_Ripemd160_Set(&h,slice);
-  cr_assert(error == SKY_ERROR);
+  cr_assert(error == SKY_ErrInvalidLengthRipemd160);
 
   randBytes(&slice,0);
   error = SKY_cipher_Ripemd160_Set(&h,slice);
-  cr_assert(error == SKY_ERROR);
+  cr_assert(error == SKY_ErrInvalidLengthRipemd160);
 
   randBytes(&slice,20);
   error = SKY_cipher_Ripemd160_Set(&h,slice);
@@ -83,19 +83,19 @@ Test(cipher_hash,TestSHA256Set){
 
   randBytes(&slice,33);
   error=SKY_cipher_SHA256_Set(&h,slice);
-  cr_assert(error == SKY_ERROR);
+  cr_assert(error == SKY_ErrInvalidLengthSHA256);
 
   randBytes(&slice,100);
   error=SKY_cipher_SHA256_Set(&h,slice);
-  cr_assert(error == SKY_ERROR);
+  cr_assert(error == SKY_ErrInvalidLengthSHA256);
 
   randBytes(&slice,31);
   error=SKY_cipher_SHA256_Set(&h,slice);
-  cr_assert(error == SKY_ERROR);
+  cr_assert(error == SKY_ErrInvalidLengthSHA256);
 
   randBytes(&slice,0);
   error=SKY_cipher_SHA256_Set(&h,slice);
-  cr_assert(error == SKY_ERROR);
+  cr_assert(error == SKY_ErrInvalidLengthSHA256);
 
   randBytes(&slice,32);
   error=SKY_cipher_SHA256_Set(&h,slice);
@@ -211,7 +211,7 @@ Test(cipher_hash,TestSHA256FromHex){
   strnhex(h,sbuff,sizeof(h) >> 1);
   GoString s1 = { sbuff, strlen(sbuff) };
   error = SKY_cipher_SHA256FromHex(s1,&h);
-  cr_assert(error == SKY_ERROR);
+  cr_assert(error == SKY_ErrInvalidHexLength);
 
   // Valid hex hash
   // char sbuff1[300];

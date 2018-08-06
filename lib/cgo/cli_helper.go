@@ -23,7 +23,7 @@ func SKY_cli_App_Run(_app C.App__Handle, _args string) (____error_code uint32) {
 	}()
 	app, okapp := lookupAppHandle(_app)
 	if !okapp {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	args := splitCliArgs(_args)
@@ -42,7 +42,7 @@ func SKY_cli_Config_GetCoin(_c C.Config__Handle, _arg0 *C.GoString_) (____error_
 	}()
 	__c, okc := lookupConfigHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	c := *__c
@@ -59,7 +59,7 @@ func SKY_cli_Config_GetRPCAddress(_c C.Config__Handle, _arg0 *C.GoString_) (____
 	}()
 	__c, okc := lookupConfigHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	c := *__c
@@ -76,7 +76,7 @@ func SKY_cli_RPCClientFromApp(_app C.App__Handle, _arg1 *C.WebRpcClient__Handle)
 	}()
 	app, okapp := lookupAppHandle(_app)
 	if !okapp {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg1 := app.App.Metadata["rpc"].(*webrpc.Client)

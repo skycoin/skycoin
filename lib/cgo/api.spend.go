@@ -26,7 +26,7 @@ func SKY_api_NewCreateTransactionResponse(_txn C.Transaction__Handle, _inputs []
 	}()
 	txn, ok := lookupTransactionHandle(_txn)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	inputs := *(*[]wallet.UxBalance)(unsafe.Pointer(&_inputs))
@@ -46,7 +46,7 @@ func SKY_api_NewCreatedTransaction(_txn C.Transaction__Handle, _inputs []C.walle
 	}()
 	txn, ok := lookupTransactionHandle(_txn)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	inputs := *(*[]wallet.UxBalance)(unsafe.Pointer(&_inputs))
@@ -66,7 +66,7 @@ func SKY_api_CreatedTransaction_ToTransaction(_r C.CreatedTransaction__Handle, _
 	}()
 	r, ok := lookupCreatedTransactionHandle(_r)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	__arg0, ____return_err := r.ToTransaction()

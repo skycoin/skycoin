@@ -39,7 +39,7 @@ func SKY_cli_Config_FullWalletPath(_c C.Config__Handle, _arg0 *C.GoString_) (___
 	}()
 	__c, okc := lookupConfigHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	c := *__c
@@ -56,7 +56,7 @@ func SKY_cli_Config_FullDBPath(_c C.Config__Handle, _arg0 *C.GoString_) (____err
 	}()
 	__c, okc := lookupConfigHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	c := *__c
@@ -73,7 +73,7 @@ func SKY_cli_NewApp(_cfg C.Config__Handle, _arg1 *C.App__Handle) (____error_code
 	}()
 	__cfg, okcfg := lookupConfigHandle(_cfg)
 	if !okcfg {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	cfg := *__cfg
@@ -93,7 +93,7 @@ func SKY_cli_RPCClientFromContext(_c C.Context__Handle, _arg1 *C.WebRpcClient__H
 	}()
 	c, okc := lookupContextHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	webrpcClient := c.App.Metadata["rpc"].(*webrpc.Client)
@@ -109,7 +109,7 @@ func SKY_cli_ConfigFromContext(_c C.Context__Handle, _arg1 *C.Config__Handle) (_
 	}()
 	c, okc := lookupContextHandle(_c)
 	if !okc {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	config := c.App.Metadata["config"].(cli.Config)

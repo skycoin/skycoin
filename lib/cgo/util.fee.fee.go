@@ -24,7 +24,7 @@ func SKY_fee_VerifyTransactionFee(_t C.Transaction__Handle, _fee uint64) (____er
 	}()
 	t, ok := lookupTransactionHandle(_t)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	____return_err := fee.VerifyTransactionFee(t, _fee)
@@ -80,7 +80,7 @@ func SKY_fee_TransactionFee(_tx C.Transaction__Handle, _headTime uint64, _inUxs 
 	}()
 	tx, ok := lookupTransactionHandle(_tx)
 	if !ok {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	headTime := _headTime

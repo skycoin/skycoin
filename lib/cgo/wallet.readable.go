@@ -62,7 +62,7 @@ func SKY_wallet_ReadableEntry_Save(_re C.ReadableEntry__Handle, _filename string
 	}()
 	re, okre := lookupReadableEntryHandle(_re)
 	if !okre {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	filename := _filename
@@ -96,7 +96,7 @@ func SKY_wallet_ReadableWallet_Save(_rw C.ReadableWallet__Handle, _filename stri
 	}()
 	rw, okrw := lookupReadableWalletHandle(_rw)
 	if !okrw {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	filename := _filename
@@ -115,7 +115,7 @@ func SKY_wallet_ReadableWallet_Load(_rw C.ReadableWallet__Handle, _filename stri
 	}()
 	rw, okrw := lookupReadableWalletHandle(_rw)
 	if !okrw {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	filename := _filename
@@ -134,7 +134,7 @@ func SKY_wallet_ReadableWallet_Erase(_rw C.ReadableWallet__Handle) (____error_co
 	}()
 	rw, okrw := lookupReadableWalletHandle(_rw)
 	if !okrw {
-		____error_code = SKY_ERROR
+		____error_code = SKY_BAD_HANDLE
 		return
 	}
 	rw.Erase()

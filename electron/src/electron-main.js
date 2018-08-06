@@ -120,7 +120,7 @@ function startSkycoin() {
       return
     }
     
-    if (line.indexOf('daemon.Pool.Run failed error') !== -1) {
+    if (data.toString().indexOf('daemon.Pool.Run failed') !== -1) {
       showError();
     }
   });

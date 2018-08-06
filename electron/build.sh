@@ -3,11 +3,9 @@ set -e -o pipefail
 
 # Builds both the electron and standalone releases
 
-. build-conf.sh "$1"
+GOX_OSARCH="$@"
 
-if [ -n "$1" ]; then
-    GOX_OSARCH="$1"
-fi
+. build-conf.sh "$GOX_OSARCH"
 
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 

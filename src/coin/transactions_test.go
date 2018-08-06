@@ -418,59 +418,6 @@ func TestTransactionOutputHours(t *testing.T) {
 	testutil.RequireError(t, err, "Transaction output hours overflow")
 }
 
-type outAddr struct {
-	Addr  cipher.Address
-	Coins uint64
-	Hours uint64
-}
-
-func makeTx(s cipher.SecKey, ux *UxOut, outs []outAddr, tm uint64, seq uint64) (*Transaction, UxArray, error) {
-	if ux == nil {
-		// genesis block tx.
-		tx := Transaction{}
-		tx.PushOutput(outs[0].Addr, outs[0].Coins, outs[0].Hours)
-		_, s = cipher.GenerateKeyPair()
-		ux := UxOut{
-			Head: UxHead{
-				Time:  100,
-				BkSeq: 0,
-			},
-			Body: UxBody{
-				SrcTransaction: tx.InnerHash,
-				Address:        outs[0].Addr,
-				Coins:          outs[0].Coins,
-				Hours:          outs[0].Hours,
-			},
-		}
-		return &tx, []UxOut{ux}, nil
-	}
-
-	tx := Transaction{}
-	tx.PushInput(ux.Hash())
-	tx.SignInputs([]cipher.SecKey{s})
-	for _, o := range outs {
-		tx.PushOutput(o.Addr, o.Coins, o.Hours)
-	}
-	tx.UpdateHeader()
-
-	uxo := make(UxArray, len(tx.Out))
-	for i := range tx.Out {
-		uxo[i] = UxOut{
-			Head: UxHead{
-				Time:  tm,
-				BkSeq: seq,
-			},
-			Body: UxBody{
-				SrcTransaction: tx.Hash(),
-				Address:        tx.Out[i].Address,
-				Coins:          tx.Out[i].Coins,
-				Hours:          tx.Out[i].Hours,
-			},
-		}
-	}
-	return &tx, uxo, nil
-}
-
 func TestTransactionsSize(t *testing.T) {
 	txns := makeTransactions(t, 10)
 	size := 0

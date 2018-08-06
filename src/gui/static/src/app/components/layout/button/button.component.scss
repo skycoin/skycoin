@@ -1,5 +1,9 @@
 @import '../../../../theme/variables';
 
+.button-container {
+  display: inline-block;
+}
+
 button {
   border-radius: 25px;
   height: 50px;
@@ -17,6 +21,7 @@ button.enabled {
 mat-icon {
   margin-left: 10px;
   opacity: 0.3;
+  line-height: 20px;
 }
 
 mat-spinner {
@@ -24,4 +29,6 @@ mat-spinner {
   height: 24px !important;
   width: 24px !important;
   margin-left: 10px;
+  position: relative;
+  top: -2px;
 }

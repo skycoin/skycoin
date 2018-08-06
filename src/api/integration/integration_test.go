@@ -4207,7 +4207,7 @@ func TestStableTransactionV2(t *testing.T) {
 		{
 			name:       "genesis transaction",
 			txID:       "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add",
-			goldenFile: "genesis-transaction.golden",
+			goldenFile: "genesis-transaction-v2.golden",
 		},
 	}
 
@@ -4219,7 +4219,10 @@ func TestStableTransactionV2(t *testing.T) {
 				require.Equal(t, tc.err.StatusCode, err.(api.ClientError).StatusCode)
 				return
 			}
-			testTransactionV2(t, &tx.Transaction)
+			var expected *visor.ReadableTransactionV2
+			loadGoldenFile(t, tc.goldenFile, TestData{tx, &expected})
+			require.Equal(t, expected, &tx.Transaction)
+			//testTransactionV2(t, &tx.Transaction)
 		})
 	}
 }

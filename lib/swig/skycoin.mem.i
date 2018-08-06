@@ -25,7 +25,7 @@
 	GoStringMap, PasswordReader__Handle_,
 	Transaction__Handle, Transactions__Handle, CreatedTransaction__Handle,
 	CreatedTransactionOutput__Handle, CreatedTransactionInput__Handle, CreateTransactionResponse__Handle,
-	Block__Handle, SignedBlock__Handle, BlockBody__Handle, BuildInfo_Handle, Number_Handle, Signature_Handle
+	Block__Handle, SignedBlock__Handle, BlockBody__Handle, BuildInfo_Handle, Number_Handle, Signature_Handle, AddressUxOuts_Handle
 	}
 
 %apply Handle* { Wallet__Handle*, Options__Handle*, ReadableEntry__Handle*, ReadableWallet__Handle*, WebRpcClient__Handle*,
@@ -33,7 +33,7 @@
 	App__Handle*, Context__Handle*, GoStringMap_*, PasswordReader__Handle*,
 	Transaction__Handle*, Transactions__Handle*, CreatedTransaction__Handle*,
 	CreatedTransactionOutput__Handle*, CreatedTransactionInput__Handle*, CreateTransactionResponse__Handle*,
-	Block__Handle*, SignedBlock__Handle*, BlockBody__Handle*, BuildInfo_Handle*, Number_Handle*, Signature_Handle*
+	Block__Handle*, SignedBlock__Handle*, BlockBody__Handle*, BuildInfo_Handle*, Number_Handle*, Signature_Handle*, AddressUxOuts_Handle*
 	}
 
 %typecheck(SWIG_TYPECHECK_INTEGER) Transaction__Handle {
@@ -80,6 +80,7 @@
 	}
 }
 
+%rename(SKY_cipher_GenerateDeterministicKeyPairsSeed) wrap_SKY_cipher_GenerateDeterministicKeyPairsSeed;
 %inline {
 	GoUint32 wrap_SKY_cipher_GenerateDeterministicKeyPairsSeed(GoSlice seed, GoInt n, coin__UxArray* newSeed, cipher_SecKeys* __out_secKeys){
 		__out_secKeys->data = NULL;
@@ -398,6 +399,23 @@
 		if( result == 0){
 			__out_hashes->data = data.data;
 			__out_hashes->count = data.len;
+		}
+		return result;
+	}
+}
+
+%rename(SKY_coin_UxArray_Sort) wrap_SKY_coin_UxArray_Sort;
+%inline{
+	GoUint32 wrap_SKY_coin_UxArray_Sort(coin_UxOutArray* __uxIn, coin_UxOutArray* __return_Ux){
+		GoSlice_ data;
+		data.data = __uxIn->data;
+		data.len = __uxIn->count;
+		data.cap = __uxIn->count;
+		GoUint32 result = SKY_coin_UxArray_Sort(&data);
+		if( result == 0){
+			__return_Ux->data = malloc(data.len * sizeof(coin__UxOut));
+			__return_Ux->count = data.len;
+			memcpy(__return_Ux->data, data.data, data.len * sizeof(coin__UxOut));
 		}
 		return result;
 	}

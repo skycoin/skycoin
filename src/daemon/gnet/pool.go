@@ -649,7 +649,9 @@ func (pool *ConnectionPool) IsDefaultConnection(addr string) bool {
 func (pool *ConnectionPool) IsMaxDefaultConnReached() (bool, error) {
 	var reached bool
 	if err := pool.strand("IsDefaultMaxConnReached", func() error {
-		reached = len(pool.defaultPeerConnections) > pool.Config.MaxDefaultPeerOutgoingConnections
+		l := len(pool.defaultPeerConnections)
+		logger.Debugf("%d/%d default connections in use", l, pool.Config.MaxDefaultPeerOutgoingConnections)
+		reached = l > pool.Config.MaxDefaultPeerOutgoingConnections
 		return nil
 	}); err != nil {
 		return false, err

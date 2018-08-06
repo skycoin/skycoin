@@ -19,19 +19,10 @@ ELN_OUTPUT="${ELN_OUTPUT_BASE}/${ELN_VERSION}"
 
 
 if [ -n "$1" ]; then
-    GOX_OSARCH="$1"
+    GOX_OSARCH="$@"
 else
     GOX_OSARCH="linux/amd64 linux/arm windows/amd64 windows/386 darwin/amd64"
 fi
-
-# GOX_OSARCH="linux/amd64 darwin/amd64"
-# GOX_OSARCH="linux/amd64 linux/arm windows/amd64 windows/386 darwin/amd64"
-# GOX_OSARCH="linux/amd64"
-# GOX_OSARCH="darwin/amd64"
-# GOX_OSARCH="windows/amd64"
-# GOX_OSARCH="windows/386"
-# GOX_OSARCH="linux/arm"
-
 
 GOX_OUTPUT=".gox_output"
 

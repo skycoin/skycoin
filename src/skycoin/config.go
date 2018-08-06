@@ -3,6 +3,7 @@ package skycoin
 import (
 	"flag"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -48,6 +49,8 @@ type NodeConfig struct {
 	EnableSeedAPI bool
 	// Enable unversioned API endpoints (without the /api/v1 prefix)
 	EnableUnversionedAPI bool
+	// Disable CSP disable content-security-policy in http response
+	DisableCSP bool
 
 	// Only run on localhost and only connect to others on localhost
 	LocalhostOnly bool
@@ -135,7 +138,6 @@ type NodeConfig struct {
 	DefaultConnections  []string
 
 	genesisSignature cipher.Sig
-	genesisTimestamp uint64
 	genesisAddress   cipher.Address
 
 	blockchainPubkey cipher.PubKey
@@ -170,6 +172,8 @@ func NewNodeConfig(mode string, node NodeParameters) *NodeConfig {
 		EnableSeedAPI: false,
 		// Disable CSRF check in the wallet API
 		DisableCSRF: false,
+		// DisableCSP disable content-security-policy in http reponse
+		DisableCSP: false,
 		// Only run on localhost and only connect to others on localhost
 		LocalhostOnly: false,
 		// Which address to serve on. Leave blank to automatically assign to a
@@ -320,6 +324,7 @@ func (c *Config) register() {
 	flag.BoolVar(&c.Node.EnableUnversionedAPI, "enable-unversioned-api", c.Node.EnableUnversionedAPI, "Enable the deprecated unversioned API endpoints without /api/v1 prefix")
 	flag.BoolVar(&c.Node.DisableCSRF, "disable-csrf", c.Node.DisableCSRF, "disable CSRF check")
 	flag.BoolVar(&c.Node.EnableSeedAPI, "enable-seed-api", c.Node.EnableSeedAPI, "enable /api/v1/wallet/seed api")
+	flag.BoolVar(&c.Node.DisableCSP, "disable-csp", c.Node.DisableCSP, "disable content-security-policy in http response")
 	flag.StringVar(&c.Node.Address, "address", c.Node.Address, "IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Node.Port, "port", c.Node.Port, "Port to run application on")
 
@@ -371,6 +376,9 @@ func (c *Config) register() {
 }
 
 func (n *NodeConfig) applyConfigMode(configMode string) {
+	if runtime.GOOS == "windows" {
+		n.ColorLog = false
+	}
 	switch configMode {
 	case "":
 	case "STANDALONE_CLIENT":
@@ -379,11 +387,11 @@ func (n *NodeConfig) applyConfigMode(configMode string) {
 		n.EnableSeedAPI = true
 		n.LaunchBrowser = true
 		n.DisableCSRF = false
+		n.DisableCSP = false
 		n.DownloadPeerList = true
 		n.RPCInterface = false
 		n.WebInterface = true
 		n.LogToFile = false
-		n.ColorLog = true
 		n.ResetCorruptDB = true
 		n.WebInterfacePort = 0 // randomize web interface port
 	default:
@@ -391,7 +399,7 @@ func (n *NodeConfig) applyConfigMode(configMode string) {
 	}
 }
 
-func panicIfError(err error, msg string, args ...interface{}) {
+func panicIfError(err error, msg string, args ...interface{}) { // nolint: unparam
 	if err != nil {
 		log.Panicf(msg+": %v", append(args, err)...)
 	}

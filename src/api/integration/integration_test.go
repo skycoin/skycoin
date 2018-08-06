@@ -4060,19 +4060,6 @@ func TestDisableGUIAPI(t *testing.T) {
 * api/v2 tests
  */
 
-func testTransactionV2(t *testing.T, txn *visor.ReadableTransactionV2) {
-	for _, input := range txn.InData {
-		require.True(t, len(input.Hash) > 0)
-		require.True(t, len(input.Address) > 0)
-	}
-}
-
-func testBlockV2(t *testing.T, block *visor.ReadableBlockV2) {
-	for _, trans := range block.Body.Transactions {
-		testTransactionV2(t, &trans)
-	}
-}
-
 func TestKnownBlocksV2(t *testing.T) {
 	if !doStable(t) {
 		return

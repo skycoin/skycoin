@@ -4148,9 +4148,9 @@ func TestBlocksV2(t *testing.T) {
 	c := api.NewClientV2(nodeAddress())
 	blocks, err := c.Blocks(0, 1)
 	require.NoError(t, err)
-	for _, block := range blocks.Blocks {
-		testBlockV2(t, &block)
-	}
+	var expected *visor.ReadableBlocksV2
+	loadGoldenFile(t, "blocks-0-1-v2.golden", TestData{blocks, &expected})
+	require.Equal(t, expected, blocks)
 }
 
 func TestLastBlocksV2(t *testing.T) {
@@ -4160,9 +4160,9 @@ func TestLastBlocksV2(t *testing.T) {
 	c := api.NewClientV2(nodeAddress())
 	blocks, err := c.LastBlocks(10)
 	require.NoError(t, err)
-	for _, block := range blocks.Blocks {
-		testBlockV2(t, &block)
-	}
+	var expected *visor.ReadableBlocksV2
+	loadGoldenFile(t, "lastblocks-v2.golden", TestData{blocks, &expected})
+	require.Equal(t, expected, blocks)
 }
 
 func TestStableTransactionV2(t *testing.T) {
@@ -4224,7 +4224,6 @@ func TestStableTransactionV2(t *testing.T) {
 			var expected *visor.ReadableTransactionV2
 			loadGoldenFile(t, tc.goldenFile, TestData{tx, &expected})
 			require.Equal(t, expected, &tx.Transaction)
-			//testTransactionV2(t, &tx.Transaction)
 		})
 	}
 }
@@ -4275,12 +4274,12 @@ func TestStableTransactionsV2(t *testing.T) {
 				StatusCode: http.StatusBadRequest,
 				Message:    "400 Bad Request - txId is empty\n",
 			},
-			goldenFile: "./empty-addrs.golden",
+			goldenFile: "./empty-addrs-v2.golden",
 		},
 		{
 			name:       "single addr",
 			addrs:      []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"},
-			goldenFile: "./single-addr.golden",
+			goldenFile: "./single-addr-v2.golden",
 		},
 	}
 
@@ -4292,9 +4291,9 @@ func TestStableTransactionsV2(t *testing.T) {
 				require.Equal(t, tc.err.StatusCode, err.(api.ClientError).StatusCode, "case: "+tc.name)
 				return
 			}
-			for _, txn := range (*txResult).Txns {
-				testTransactionV2(t, &txn.Transaction)
-			}
+			var expected *visor.TransactionResultsV2
+			loadGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
+			require.Equal(t, expected, txResult)
 		})
 	}
 }
@@ -4339,12 +4338,12 @@ func TestStableConfirmedTransactionsV2(t *testing.T) {
 		{
 			name:       "empty addrs",
 			addrs:      []string{},
-			goldenFile: "./empty-addrs.golden",
+			goldenFile: "./empty-addrs-confirmed-v2.golden",
 		},
 		{
 			name:       "single addr",
 			addrs:      []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"},
-			goldenFile: "./single-addr.golden",
+			goldenFile: "./single-addr-confirmed-v2.golden",
 		},
 	}
 
@@ -4356,10 +4355,9 @@ func TestStableConfirmedTransactionsV2(t *testing.T) {
 				require.Equal(t, tc.err.StatusCode, err.(api.ClientError).StatusCode, "case: "+tc.name)
 				return
 			}
-			for _, txn := range (*txResult).Txns {
-				testTransactionV2(t, &txn.Transaction)
-			}
-
+			var expected *visor.TransactionResultsV2
+			loadGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
+			require.Equal(t, expected, txResult)
 		})
 	}
 }
@@ -4404,7 +4402,7 @@ func TestStableUnconfirmedTransactionsV2(t *testing.T) {
 		{
 			name:       "empty addrs",
 			addrs:      []string{},
-			goldenFile: "./empty-addrs-unconfirmed-txs.golden",
+			goldenFile: "./empty-addrs-unconfirmed-txs-v2.golden",
 		},
 	}
 
@@ -4417,9 +4415,9 @@ func TestStableUnconfirmedTransactionsV2(t *testing.T) {
 				return
 			}
 
-			for _, txn := range (*txResult).Txns {
-				testTransactionV2(t, &txn.Transaction)
-			}
+			var expected *visor.TransactionResultsV2
+			loadGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
+			require.Equal(t, expected, txResult)
 		})
 	}
 }

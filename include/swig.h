@@ -43,3 +43,8 @@ typedef struct{
 	int count;
 } coin_UxOutArray;
 
+typedef struct{
+	cipher__Address* data;
+	int count;
+} cipher_Addresses;
+

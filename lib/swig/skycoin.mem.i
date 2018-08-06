@@ -36,6 +36,8 @@
 	Block__Handle*, SignedBlock__Handle*, BlockBody__Handle*, BuildInfo_Handle*, Number_Handle*, Signature_Handle*, AddressUxOuts_Handle*
 	}
 
+#if defined(SWIGPYTHON)
+
 %typecheck(SWIG_TYPECHECK_INTEGER) Transaction__Handle {
   $1 = PyInt_Check($input) ? 1 : 0;
 }
@@ -44,10 +46,14 @@
   $1 = PyInt_Check($input) ? 1 : 0;
 }
 
-#if defined(SWIGPYTHON)
-	%include "python_seckeys.i"
-	%include "python_pubkeys.i"
-	%include "python_uxarray.i"
+%typecheck(SWIG_TYPECHECK_INTEGER) AddressUxOuts_Handle {
+  $1 = PyInt_Check($input) ? 1 : 0;
+}
+
+%include "python_seckeys.i"
+%include "python_pubkeys.i"
+%include "python_uxarray.i"
+%include "python_addresses.i"
 #endif
 
 %rename(SKY_coin_Transaction_SignInputs) wrap_SKY_coin_Transaction_SignInputs;
@@ -374,15 +380,15 @@
 
 %rename(SKY_coin_AddressUxOuts_Keys) wrap_SKY_coin_AddressUxOuts_Keys;
 %inline{ 
-	GoUint32 wrap_SKY_coin_AddressUxOuts_Keys(AddressUxOuts_Handle p0, cipher_SHA256s* __out_hashes){
+	GoUint32 wrap_SKY_coin_AddressUxOuts_Keys(AddressUxOuts_Handle p0, cipher_Addresses* __out_addresses){
 		GoSlice_ data;
 		data.data = NULL;
 		data.len = 0;
 		data.cap = 0;
 		GoUint32 result = SKY_coin_AddressUxOuts_Keys(p0, &data);
 		if( result == 0){
-			__out_hashes->data = data.data;
-			__out_hashes->count = data.len;
+			__out_addresses->data = data.data;
+			__out_addresses->count = data.len;
 		}
 		return result;
 	}

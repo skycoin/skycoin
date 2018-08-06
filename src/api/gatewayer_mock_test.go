@@ -7,7 +7,6 @@ package api
 
 import (
 	"fmt"
-
 	mock "github.com/stretchr/testify/mock"
 
 	cipher "github.com/skycoin/skycoin/src/cipher"
@@ -252,6 +251,60 @@ func (m *GatewayerMock) GetBalanceOfAddrs(p0 []cipher.Address) ([]wallet.Balance
 
 }
 
+// GetBlockByHashV2 mocked method
+func (m *GatewayerMock) GetBlockByHashV2(p0 cipher.SHA256) (*visor.ReadableBlockV2, error) {
+
+	ret := m.Called(p0)
+
+	var r0 *visor.ReadableBlockV2
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case *visor.ReadableBlockV2:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
+
+}
+
+// GetBlockBySeqV2 mocked method
+func (m *GatewayerMock) GetBlockBySeqV2(p0 uint64) (*visor.ReadableBlockV2, error) {
+
+	ret := m.Called(p0)
+
+	var r0 *visor.ReadableBlockV2
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case *visor.ReadableBlockV2:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
+
+}
+
 // GetBlockchainMetadata mocked method
 func (m *GatewayerMock) GetBlockchainMetadata() (*visor.BlockchainMetadata, error) {
 
@@ -315,6 +368,33 @@ func (m *GatewayerMock) GetBlocks(p0 uint64, p1 uint64) (*visor.ReadableBlocks, 
 	switch res := ret.Get(0).(type) {
 	case nil:
 	case *visor.ReadableBlocks:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
+
+}
+
+// GetBlocksV2 mocked method
+func (m *GatewayerMock) GetBlocksV2(p0 uint64, p1 uint64) (*visor.ReadableBlocksV2, error) {
+
+	ret := m.Called(p0, p1)
+
+	var r0 *visor.ReadableBlocksV2
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case *visor.ReadableBlocksV2:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
@@ -477,6 +557,60 @@ func (m *GatewayerMock) GetLastBlocks(p0 uint64) (*visor.ReadableBlocks, error) 
 
 }
 
+// GetLastBlocksV2 mocked method
+func (m *GatewayerMock) GetLastBlocksV2(p0 uint64) (*visor.ReadableBlocksV2, error) {
+
+	ret := m.Called(p0)
+
+	var r0 *visor.ReadableBlocksV2
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case *visor.ReadableBlocksV2:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
+
+}
+
+// GetPendingTxnsV2 mocked method
+func (m *GatewayerMock) GetPendingTxnsV2() (*visor.ReadableUnconfirmedTxnsV2, error) {
+
+	ret := m.Called()
+
+	var r0 *visor.ReadableUnconfirmedTxnsV2
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case *visor.ReadableUnconfirmedTxnsV2:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
+
+}
+
 // GetRichlist mocked method
 func (m *GatewayerMock) GetRichlist(p0 bool) (visor.Richlist, error) {
 
@@ -585,6 +719,33 @@ func (m *GatewayerMock) GetTransaction(p0 cipher.SHA256) (*visor.Transaction, er
 
 }
 
+// GetTransactionV2 mocked method
+func (m *GatewayerMock) GetTransactionV2(p0 cipher.SHA256) (*visor.TransactionResultV2, error) {
+
+	ret := m.Called(p0)
+
+	var r0 *visor.TransactionResultV2
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case *visor.TransactionResultV2:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
+
+}
+
 // GetTransactions mocked method
 func (m *GatewayerMock) GetTransactions(p0 ...visor.TxFilter) ([]visor.Transaction, error) {
 
@@ -621,6 +782,33 @@ func (m *GatewayerMock) GetTransactionsForAddress(p0 cipher.Address) ([]daemon.R
 	switch res := ret.Get(0).(type) {
 	case nil:
 	case []daemon.ReadableTransaction:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	var r1 error
+	switch res := ret.Get(1).(type) {
+	case nil:
+	case error:
+		r1 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0, r1
+
+}
+
+// GetTransactionsV2 mocked method
+func (m *GatewayerMock) GetTransactionsV2(p0 ...visor.TxFilter) (*visor.TransactionResultsV2, error) {
+
+	ret := m.Called(p0)
+
+	var r0 *visor.TransactionResultsV2
+	switch res := ret.Get(0).(type) {
+	case nil:
+	case *visor.TransactionResultsV2:
 		r0 = res
 	default:
 		panic(fmt.Sprintf("unexpected type: %v", res))
@@ -1087,41 +1275,4 @@ func (m *GatewayerMock) VerifyTxnVerbose(p0 *coin.Transaction) ([]wallet.UxBalan
 
 	return r0, r1, r2
 
-}
-
-// GetBlocksV2 returns a *visor.ReadableBlocks
-func (m *GatewayerMock) GetBlocksV2(start, end uint64) (*visor.ReadableBlocksV2, error) {
-	rdbs := visor.ReadableBlocksV2{}
-	return &rdbs, nil
-}
-
-// GetBlockByHashV2 a block by a given hash
-func (m *GatewayerMock) GetBlockByHashV2(hash cipher.SHA256) (*visor.ReadableBlockV2, error) {
-	return &visor.ReadableBlockV2{}, nil
-}
-
-// GetBlockBySeqV2 a block by a given sequence
-func (m *GatewayerMock) GetBlockBySeqV2(seq uint64) (*visor.ReadableBlockV2, error) {
-	return &visor.ReadableBlockV2{}, nil
-}
-
-// GetLastBlocksV2 returns a list of blocks in the specified range
-func (m *GatewayerMock) GetLastBlocksV2(num uint64) (*visor.ReadableBlocksV2, error) {
-	rdbs := visor.ReadableBlocksV2{}
-	return &rdbs, nil
-}
-
-// GetPendingTxnsV2 returns slice of unconfirmed transactions api/v2
-func (m *GatewayerMock) GetPendingTxnsV2() (*visor.ReadableUnconfirmedTxnsV2, error) {
-	return &visor.ReadableUnconfirmedTxnsV2{}, nil
-}
-
-// GetTransactionV2 Returns transaction data given its hash
-func (m *GatewayerMock) GetTransactionV2(txid cipher.SHA256) (*visor.TransactionResultV2, error) {
-	return &visor.TransactionResultV2{}, nil
-}
-
-// GetTransactionsV2 returns a list of transactions given a set of filters
-func (m *GatewayerMock) GetTransactionsV2(flts ...visor.TxFilter) (*visor.TransactionResultsV2, error) {
-	return &visor.TransactionResultsV2{}, nil
 }

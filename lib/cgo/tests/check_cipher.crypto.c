@@ -64,8 +64,7 @@ Test(cipher_crypto, TestPubKeyFromHex) {
   s.p = "cascs";
   s.n = strlen(s.p);
   errorcode = SKY_cipher_PubKeyFromHex(s, &p1);
-  fprintf(stderr, "Error %x\n", errorcode);
-  cr_assert(errorcode == SKY_ERROR, "TestPubKeyFromHex: Invalid hex. Bad chars");
+  cr_assert(errorcode == SKY_ErrInvalidPubKey, "TestPubKeyFromHex: Invalid hex. Bad chars");
 
   // Invalid hex length
   randBytes(&slice, 33);
@@ -121,8 +120,7 @@ Test(cipher_crypto, TestPubKeyVerify) {
     errorcode = SKY_cipher_NewPubKey(slice, &p);
     cr_assert(errorcode == SKY_OK);
     errorcode = SKY_cipher_PubKey_Verify(&p);
-    fprintf(stderr, "Error %x\n", errorcode);
-    cr_assert(errorcode == SKY_ERROR);
+    cr_assert(errorcode == SKY_ErrInvalidPubKey);
   }
 }
 
@@ -136,8 +134,7 @@ Test(cipher_crypto, TestPubKeyVerifyNil) {
   unsigned int errorcode;
 
   errorcode = SKY_cipher_PubKey_Verify(&p);
-  fprintf(stderr, "Error %x\n", errorcode);
-  cr_assert(errorcode == SKY_ERROR);
+  cr_assert(errorcode == SKY_ErrInvalidPubKey);
 }
 
 Test(cipher_crypto, TestPubKeyVerifyDefault1) {
@@ -263,14 +260,12 @@ Test(cipher_crypto, TestMustSecKeyFromHex) {
   s.p = "";
   s.n = strlen(s.p);
   errorcode = SKY_cipher_SecKeyFromHex(s, &sk);
-  fprintf(stderr, "Error %x\n", errorcode);
-  cr_assert(errorcode == SKY_ERROR);
+  cr_assert(errorcode == SKY_ErrInvalidLengthSecKey);
 
   s.p = "cascs";
   s.n = strlen(s.p);
   errorcode = SKY_cipher_SecKeyFromHex(s, &sk);
-  fprintf(stderr, "Error %x\n", errorcode);
-  cr_assert(errorcode == SKY_ERROR);
+  cr_assert(errorcode == SKY_ErrInvalidSecKeyHex);
 
   // Invalid hex length
   b.data = buff;
@@ -282,8 +277,7 @@ Test(cipher_crypto, TestMustSecKeyFromHex) {
   s.p = strBuff;
   s.n = strlen(strBuff);
   errorcode = SKY_cipher_SecKeyFromHex(s, &sk1);
-  fprintf(stderr, "Error %x\n", errorcode);
-  cr_assert(errorcode == SKY_ERROR);
+  cr_assert(errorcode == SKY_ErrInvalidLengthSecKey);
 
   // Valid
   strnhex(sk, strBuff, 32);
@@ -329,8 +323,7 @@ Test(cipher_crypto, TestSecKeyVerify) {
   // Empty secret key should not be valid
   memset(sk, 0, 32);
   errorcode = SKY_cipher_SecKey_Verify(&sk);
-  fprintf(stderr, "Error %x\n", errorcode);
-  cr_assert(errorcode == SKY_ERROR);
+  cr_assert(errorcode == SKY_ErrInvalidSecKey);
 
   // Generated sec key should be valid
   SKY_cipher_GenerateKeyPair(&pk, &sk);
@@ -434,13 +427,11 @@ Test(cipher_crypto, TestMustSigFromHex) {
   str.p = "";
   str.n = strlen(str.p);
   errorcode = SKY_cipher_SigFromHex(str, &s2);
-  fprintf(stderr, "Error %x\n", errorcode);
-  cr_assert(errorcode == SKY_ERROR);
+  cr_assert(errorcode == SKY_ErrInvalidLengthSig);
 
   str.p = "cascs";
   str.n = strlen(str.p);
   errorcode = SKY_cipher_SigFromHex(str, &s2);
-  fprintf(stderr, "Error %x\n", errorcode);
   cr_assert(errorcode == SKY_ERROR);
 
   // Invalid hex length
@@ -452,8 +443,7 @@ Test(cipher_crypto, TestMustSigFromHex) {
   strnhex(s, (char *) str.p, 32);
   str.n = strlen(str.p);
   errorcode = SKY_cipher_SigFromHex(str, &s2);
-  fprintf(stderr, "Error %x\n", errorcode);
-  cr_assert(errorcode == SKY_ERROR);
+  cr_assert(errorcode == SKY_ErrInvalidLengthSig);
 
   // Valid
   strnhex(s, (char *) str.p, 65);
@@ -517,8 +507,7 @@ Test(cipher_crypto, TestChkSig) {
   // Empty sig should be invalid
   memset(&sig, 0, sizeof(sig));
   errorcode = SKY_cipher_ChkSig(&addr, &h, &sig);
-  fprintf(stderr, "Error %x\n", errorcode);
-  cr_assert(errorcode == SKY_ERROR);
+  cr_assert(errorcode == SKY_ErrInvalidSigForPubKey);
 
   // Random sigs should not pass
   int i;
@@ -526,8 +515,7 @@ Test(cipher_crypto, TestChkSig) {
     randBytes(&b, 65);
     SKY_cipher_NewSig(b, &sig);
     errorcode = SKY_cipher_ChkSig(&addr, &h, &sig);
-    fprintf(stderr, "Error %x\n", errorcode);
-    cr_assert(errorcode == SKY_ERROR);
+    cr_assert(errorcode != SKY_OK); // One of many error codes
   }
 
   // Sig for one hash does not work for another hash
@@ -537,11 +525,9 @@ Test(cipher_crypto, TestChkSig) {
   errorcode = SKY_cipher_ChkSig(&addr, &h2, &sig2);
   cr_assert(errorcode == SKY_OK);
   errorcode = SKY_cipher_ChkSig(&addr, &h, &sig2);
-  fprintf(stderr, "Error %x\n", errorcode);
-  cr_assert(errorcode == SKY_ERROR);
+  cr_assert(errorcode == SKY_ErrInvalidAddressForSig);
   errorcode = SKY_cipher_ChkSig(&addr, &h2, &sig);
-  fprintf(stderr, "Error %x\n", errorcode);
-  cr_assert(errorcode == SKY_ERROR);
+  cr_assert(errorcode != SKY_OK); // One of many error codes
 
   // Different secret keys should not create same sig
   SKY_cipher_GenerateKeyPair(&pk2, &sk2);
@@ -567,11 +553,9 @@ Test(cipher_crypto, TestChkSig) {
 
   // Bad address should be invalid
   errorcode = SKY_cipher_ChkSig(&addr, &h, &sig2);
-  fprintf(stderr, "Error %x\n", errorcode);
-  cr_assert(errorcode == SKY_ERROR);
+  cr_assert(errorcode == SKY_ErrInvalidAddressForSig);
   errorcode = SKY_cipher_ChkSig(&addr2, &h, &sig);
-  fprintf(stderr, "Error %x\n", errorcode);
-  cr_assert(errorcode == SKY_ERROR);
+  cr_assert(errorcode == SKY_ErrInvalidAddressForSig);
 }
 
 Test(cipher_crypto, TestSignHash) {
@@ -642,8 +626,7 @@ Test(cipher_crypto, TestPubKeyFromSig) {
 
   memset(&sig, 0, sizeof(sig));
   errorcode = SKY_cipher_PubKeyFromSig(&sig, &h, &pk2);
-  fprintf(stderr, "Error %x\n", errorcode);
-  cr_assert(errorcode == SKY_ERROR);
+  cr_assert(errorcode == SKY_ErrInvalidSigForPubKey);
 }
 
 Test(cipher_crypto, TestVerifySignature) {
@@ -666,22 +649,18 @@ Test(cipher_crypto, TestVerifySignature) {
 
   memset(&sig2, 0, sizeof(sig2));
   errorcode = SKY_cipher_VerifySignature(&pk, &sig2, &h);
-  fprintf(stderr, "Error %x\n", errorcode);
-  cr_assert(errorcode == SKY_ERROR);
+  cr_assert(errorcode == SKY_ErrInvalidSigForPubKey);
 
   errorcode = SKY_cipher_VerifySignature(&pk, &sig, &h2);
-  fprintf(stderr, "Error %x\n", errorcode);
-  cr_assert(errorcode == SKY_ERROR);
+  cr_assert(errorcode == SKY_ErrPubKeyRecoverMismatch);
 
   SKY_cipher_GenerateKeyPair(&pk2, &sk2);
   errorcode = SKY_cipher_VerifySignature(&pk2, &sig, &h);
-  fprintf(stderr, "Error %x\n", errorcode);
-  cr_assert(errorcode == SKY_ERROR);
+  cr_assert(errorcode == SKY_ErrPubKeyRecoverMismatch);
 
   memset(&pk2, 0, sizeof(pk2));
   errorcode = SKY_cipher_VerifySignature(&pk2, &sig, &h);
-  fprintf(stderr, "Error %x\n", errorcode);
-  cr_assert(errorcode == SKY_ERROR);
+  cr_assert(errorcode == SKY_ErrPubKeyRecoverMismatch);
 }
 
 Test(cipher_crypto, TestGenerateKeyPair) {
@@ -730,8 +709,7 @@ Test(cipher_crypto, TestSecKeTest) {
 
   memset(&sk, 0, sizeof(sk));
   errorcode = SKY_cipher_TestSecKey(&sk);
-  fprintf(stderr, "Error %x\n", errorcode);
-  cr_assert(errorcode == SKY_ERROR);
+  cr_assert(errorcode == SKY_ErrInvalidSecKyVerification);
 }
 
 Test(cipher_crypto, TestSecKeyHashTest) {
@@ -751,7 +729,6 @@ Test(cipher_crypto, TestSecKeyHashTest) {
 
   memset(&sk, 0, sizeof(sk));
   errorcode = SKY_cipher_TestSecKeyHash(&sk, &h);
-  fprintf(stderr, "Error %x\n", errorcode);
-  cr_assert(errorcode == SKY_ERROR);
+  cr_assert(errorcode == SKY_ErrInvalidSecKyVerification);
 }
 

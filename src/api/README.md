@@ -2526,7 +2526,7 @@ Result:
 ```
 ## Api v2 endpoints
 
-Endpoints for api/v2 are similar to api/v2 endpoint2 but more information is returned in inputs. Response includes owner, coin, hours and calculated hours.
+Endpoints for api/v2 are similar to api/v1 endpoint2 but more information is returned in inputs. Response includes owner, coin, hours and calculated hours.
 Also json response is inside a json object name "data" and if there was an error it is returned inside an error object.
 Example returning error:
 

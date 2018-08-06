@@ -1,4 +1,5 @@
 
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -558,7 +559,7 @@ Test(cipher_crypto, TestChkSig) {
   cr_assert(errorcode == SKY_ErrInvalidAddressForSig);
 }
 
-Test(cipher_crypto, TestSignHash) {
+Test(cipher_crypto, TestSignHash, .signal=SIGABRT) {
   cipher__PubKey pk;
   cipher__SecKey sk;
   cipher__Address addr;

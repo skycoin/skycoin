@@ -115,9 +115,6 @@
 	void assignTo(void* data){
 		memcpy(data, &$self->data, sizeof($self->data));
 	}
-	void corrupt(){
-		$self->data[31] += 1;
-	}
 }
 
 %extend cipher_Checksum {

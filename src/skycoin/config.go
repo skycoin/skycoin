@@ -3,6 +3,7 @@ package skycoin
 import (
 	"flag"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -137,7 +138,6 @@ type NodeConfig struct {
 	DefaultConnections  []string
 
 	genesisSignature cipher.Sig
-	genesisTimestamp uint64
 	genesisAddress   cipher.Address
 
 	blockchainPubkey cipher.PubKey
@@ -376,6 +376,9 @@ func (c *Config) register() {
 }
 
 func (n *NodeConfig) applyConfigMode(configMode string) {
+	if runtime.GOOS == "windows" {
+		n.ColorLog = false
+	}
 	switch configMode {
 	case "":
 	case "STANDALONE_CLIENT":
@@ -389,7 +392,6 @@ func (n *NodeConfig) applyConfigMode(configMode string) {
 		n.RPCInterface = false
 		n.WebInterface = true
 		n.LogToFile = false
-		n.ColorLog = true
 		n.ResetCorruptDB = true
 		n.WebInterfacePort = 0 // randomize web interface port
 	default:
@@ -397,7 +399,7 @@ func (n *NodeConfig) applyConfigMode(configMode string) {
 	}
 }
 
-func panicIfError(err error, msg string, args ...interface{}) {
+func panicIfError(err error, msg string, args ...interface{}) { // nolint: unparam
 	if err != nil {
 		log.Panicf(msg+": %v", append(args, err)...)
 	}

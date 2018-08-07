@@ -118,17 +118,20 @@ docs: docs-libc
 
 lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...
-	gometalinter --deadline=3m --concurrency=2 --disable-all --tests --vendor --skip=lib/cgo --warn-unmatched-nolint \
+	golangci-lint run --no-config  --deadline=3m --concurrency=2 --disable-all --tests --skip-dirs=lib/cgo \
 		-E goimports \
 		-E golint \
 		-E varcheck \
 		-E unparam \
+		-E deadcode \
+		-E structcheck \
 		./...
 	# lib cgo can't use golint because it needs export directives in function docstrings that do not obey golint rules
-	gometalinter --deadline=3m --concurrency=2 --disable-all --tests --vendor --warn-unmatched-nolint \
+	golangci-lint run --no-config  --deadline=3m --concurrency=2 --disable-all --tests \
 		-E goimports \
 		-E varcheck \
 		-E unparam \
+		-E structcheck \
 		./lib/cgo/...
 
 check: lint test integration-test-stable integration-test-stable-disable-csrf integration-test-disable-wallet-api integration-test-disable-seed-api integration-test-enable-seed-api integration-test-disable-gui ## Run tests and linters
@@ -163,8 +166,7 @@ cover: ## Runs tests on ./src/ with HTML code coverage
 
 install-linters: ## Install linters
 	go get -u github.com/FiloSottile/vendorcheck
-	go get -u github.com/alecthomas/gometalinter
-	gometalinter --vendored-linters --install
+	go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
 
 install-deps-libc: configure-build ## Install locally dependencies for testing libskycoin
 	git clone --recursive https://github.com/skycoin/Criterion $(BUILD_DIR)/usr/tmp/Criterion
@@ -196,9 +198,18 @@ build-ui:  ## Builds the UI
 build-ui-travis:  ## Builds the UI for travis
 	cd $(GUI_STATIC_DIR) && npm run build-travis
 
-release: ## Build electron apps, the builds are located in electron/release folder.
-	cd $(ELECTRON_DIR) && ./build.sh
+release: ## Build electron and standalone apps. Use osarch=${osarch} to specify the platform. Example: 'make release osarch=darwin/amd64', multiple platform can be supported in this way: 'make release osarch="darwin/amd64 windows/amd64"'. Supported architectures are: darwin/amd64 windows/amd64 windows/386 linux/amd64 linux/arm, the builds are located in electron/release folder.
+	cd $(ELECTRON_DIR) && ./build.sh ${osarch}
 	@echo release files are in the folder of electron/release
+
+release-bin: ## Build standalone apps. Use osarch=${osarch} to specify the platform. Example: 'make release-bin osarch=darwin/amd64' Supported architectures are the same as 'release' command.
+	cd $(ELECTRON_DIR) && ./build-standalone-release.sh ${osarch}
+	@echo release files are in the folder of electron/release
+
+release-gui: ## Build electron apps. Use osarch=${osarch} to specify the platform. Example: 'make release-gui osarch=darwin/amd64' Supported architectures are the same as 'release' command.
+	cd $(ELECTRON_DIR) && ./build-electron-release.sh ${osarch}
+	@echo release files are in the folder of electron/release
+
 
 clean-release: ## Clean dist files and delete all builds in electron/release
 	rm $(ELECTRON_DIR)/release/*

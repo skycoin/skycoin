@@ -171,10 +171,6 @@ func TestSendMessage(t *testing.T) {
 
 /* Helpers */
 
-func noopSendByteMessage(conn net.Conn, m []byte, tm time.Duration) error {
-	return nil
-}
-
 func failingSendByteMessage(conn net.Conn, m []byte, tm time.Duration) error {
 	return errors.New("send byte message failed")
 }

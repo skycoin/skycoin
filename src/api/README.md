@@ -6,7 +6,7 @@ A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](h
 
 The API has two versions, `/api/v1` and `/api/v2`.
 Previously, there was no `/api/vx` prefix.
-Starting in application version 0.24.0, the existing endpoints from v0.23.0
+Starting in application version v0.24.0, the existing endpoints from v0.23.0
 are now prefixed with `/api/v1`. To retain the old endpoints, run the application
 with `-enable-unversioned-api`.
 

@@ -4121,8 +4121,7 @@ func TestKnownBlocksV2(t *testing.T) {
 				require.NoError(t, err)
 				require.NotNil(t, b)
 				var expected *visor.ReadableBlockV2
-				loadGoldenFile(t, tc.golden, TestData{b, &expected})
-				require.Equal(t, expected, b)
+				checkGoldenFile(t, tc.golden, TestData{b, &expected})
 			}
 		})
 	}
@@ -4136,8 +4135,7 @@ func TestBlocksV2(t *testing.T) {
 	blocks, err := c.Blocks(0, 1)
 	require.NoError(t, err)
 	var expected *visor.ReadableBlocksV2
-	loadGoldenFile(t, "blocks-0-1-v2.golden", TestData{blocks, &expected})
-	require.Equal(t, expected, blocks)
+	checkGoldenFile(t, "blocks-0-1-v2.golden", TestData{blocks, &expected})
 }
 
 func TestLastBlocksV2(t *testing.T) {
@@ -4148,8 +4146,7 @@ func TestLastBlocksV2(t *testing.T) {
 	blocks, err := c.LastBlocks(10)
 	require.NoError(t, err)
 	var expected *visor.ReadableBlocksV2
-	loadGoldenFile(t, "lastblocks-v2.golden", TestData{blocks, &expected})
-	require.Equal(t, expected, blocks)
+	checkGoldenFile(t, "lastblocks-v2.golden", TestData{blocks, &expected})
 }
 
 func TestStableTransactionV2(t *testing.T) {
@@ -4208,9 +4205,11 @@ func TestStableTransactionV2(t *testing.T) {
 				require.Equal(t, tc.err.StatusCode, err.(api.ClientError).StatusCode)
 				return
 			}
-			var expected *visor.ReadableTransactionV2
+			/*var expected *visor.ReadableTransactionV2
 			loadGoldenFile(t, tc.goldenFile, TestData{tx, &expected})
-			require.Equal(t, expected, &tx.Transaction)
+			require.Equal(t, expected, &tx.Transaction)*/
+			var expected *visor.TransactionResultV2
+			checkGoldenFile(t, tc.goldenFile, TestData{tx, &expected})
 		})
 	}
 }
@@ -4279,8 +4278,7 @@ func TestStableTransactionsV2(t *testing.T) {
 				return
 			}
 			var expected *visor.TransactionResultsV2
-			loadGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
-			require.Equal(t, expected, txResult)
+			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
 		})
 	}
 }
@@ -4343,8 +4341,7 @@ func TestStableConfirmedTransactionsV2(t *testing.T) {
 				return
 			}
 			var expected *visor.TransactionResultsV2
-			loadGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
-			require.Equal(t, expected, txResult)
+			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
 		})
 	}
 }
@@ -4403,8 +4400,7 @@ func TestStableUnconfirmedTransactionsV2(t *testing.T) {
 			}
 
 			var expected *visor.TransactionResultsV2
-			loadGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
-			require.Equal(t, expected, txResult)
+			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
 		})
 	}
 }

@@ -11,6 +11,10 @@
 #include "skystring.h"
 #include "skytest.h"
 
+#if __APPLE__
+  #include "TargetConditionals.h"
+#endif
+
 TestSuite(cipher_crypto, .init = setup, .fini = teardown);
 
 Test(cipher_crypto, TestNewPubKey) {
@@ -561,7 +565,15 @@ Test(cipher_crypto, TestChkSig) {
   cr_assert(errorcode == SKY_ErrInvalidAddressForSig);
 }
 
-Test(cipher_crypto, TestSignHash, .signal=SIGABRT) {
+Test(cipher_crypto, TestSignHash, 
+  #if __linux__ 
+    .signal=SIGABRT 
+  #elif __APPLE__
+    #if TARGET_OS_MAC
+    .exit_code=2
+    #endif
+  #endif
+  ) {
   cipher__PubKey pk;
   cipher__SecKey sk;
   cipher__Address addr;

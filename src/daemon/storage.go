@@ -14,7 +14,6 @@ type store struct {
 }
 
 type storeFunc func(*store) error
-type matchFunc func(k interface{}, v interface{}) bool
 
 func (s *store) setValue(k interface{}, v interface{}) {
 	s.lk.Lock()

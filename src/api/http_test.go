@@ -90,6 +90,7 @@ func TestGetOutputsHandler(t *testing.T) {
 			gateway := NewGatewayerMock()
 			endpoint := "/api/v1/outputs"
 			gateway.On("GetUnspentOutputs", mock.Anything).Return(tc.getUnspentOutputsResponse, tc.getUnspentOutputsError)
+			gateway.On("IsCSPEnabled").Return(false)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -251,6 +252,7 @@ func TestGetBalanceHandler(t *testing.T) {
 			gateway := NewGatewayerMock()
 			endpoint := "/api/v1/balance"
 			gateway.On("GetBalanceOfAddrs", tc.getBalanceOfAddrsArg).Return(tc.getBalanceOfAddrsResponse, tc.getBalanceOfAddrsError)
+			gateway.On("IsCSPEnabled").Return(false)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -338,8 +340,11 @@ func TestEnableGUI(t *testing.T) {
 			req, err := http.NewRequest(http.MethodGet, tc.endpoint, nil)
 			require.NoError(t, err)
 
+			gateway := NewGatewayerMock()
+			gateway.On("IsCSPEnabled").Return(false)
+
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: tc.appLoc}, nil, &CSRFStore{}, nil)
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: tc.appLoc}, gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
 
 			c := Config{
@@ -349,7 +354,7 @@ func TestEnableGUI(t *testing.T) {
 			}
 
 			host := "127.0.0.1:6423"
-			s, err := Create(host, c, nil)
+			s, err := Create(host, c, gateway)
 			require.NoError(t, err)
 
 			wg := sync.WaitGroup{}
@@ -367,6 +372,7 @@ func TestEnableGUI(t *testing.T) {
 			url := fmt.Sprintf("http://%s/%s", host, tc.endpoint)
 			rsp, err := http.Get(url)
 			require.NoError(t, err)
+
 			defer rsp.Body.Close()
 			require.Equal(t, tc.expectCode, rsp.StatusCode)
 
@@ -376,6 +382,65 @@ func TestEnableGUI(t *testing.T) {
 			if rsp.StatusCode != http.StatusOK {
 				require.Equal(t, tc.expectBody, string(body))
 			}
+		})
+	}
+}
+
+func TestContentSecurityPolicy(t *testing.T) {
+	tt := []struct {
+		name            string
+		endpoint        string
+		enableCSP       bool
+		appLoc          string
+		expectCSPHeader string
+	}{
+		{
+			name:            "enable CSP GET /",
+			endpoint:        "/",
+			enableCSP:       true,
+			appLoc:          "../gui/static/dist",
+			expectCSPHeader: "script-src 'self' 127.0.0.1",
+		},
+		{
+			name:            "disable CSP GET /",
+			endpoint:        "/",
+			enableCSP:       false,
+			appLoc:          "../gui/static/dist",
+			expectCSPHeader: "",
+		},
+		{
+			// Confirms that the /csrf api won't be affected by the csp setting
+			name:            "enable CSP GET /csrf",
+			endpoint:        "/api/v1/csrf",
+			enableCSP:       true,
+			appLoc:          "",
+			expectCSPHeader: "",
+		},
+		{
+			// Confirms that the /version api won't be affected by the csp setting
+			name:            "enable CSP GET /version",
+			endpoint:        "/api/v1/version",
+			enableCSP:       true,
+			appLoc:          "",
+			expectCSPHeader: "",
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			req, err := http.NewRequest(http.MethodGet, tc.endpoint, nil)
+			require.NoError(t, err)
+
+			gateway := NewGatewayerMock()
+			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
+			gateway.On("GetBuildInfo").Return(visor.BuildInfo{})
+
+			rr := httptest.NewRecorder()
+			handler := newServerMux(muxConfig{host: configuredHost, appLoc: tc.appLoc, enableGUI: true}, gateway, &CSRFStore{}, nil)
+			handler.ServeHTTP(rr, req)
+
+			csp := rr.Header().Get("Content-Security-Policy")
+			require.Equal(t, tc.expectCSPHeader, csp)
 		})
 	}
 }

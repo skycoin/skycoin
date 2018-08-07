@@ -23,7 +23,7 @@ peer_list_url = "https://downloads.skycoin.net/blockchain/peers.txt"
 #web_interface_port = 6420
 
 [build]
-version = "0.23.1-rc2"
+version = "0.24.1"
 #build = ""
 #commit = ""
 

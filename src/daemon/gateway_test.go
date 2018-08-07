@@ -65,9 +65,6 @@ func TestFbyHashes(t *testing.T) {
 		}
 	}
 
-	type args struct {
-		hashes []string
-	}
 	tests := []struct {
 		name    string
 		hashes  []string

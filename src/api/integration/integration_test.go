@@ -4205,9 +4205,6 @@ func TestStableTransactionV2(t *testing.T) {
 				require.Equal(t, tc.err.StatusCode, err.(api.ClientError).StatusCode)
 				return
 			}
-			/*var expected *visor.ReadableTransactionV2
-			loadGoldenFile(t, tc.goldenFile, TestData{tx, &expected})
-			require.Equal(t, expected, &tx.Transaction)*/
 			var expected *visor.TransactionResultV2
 			checkGoldenFile(t, tc.goldenFile, TestData{tx, &expected})
 		})

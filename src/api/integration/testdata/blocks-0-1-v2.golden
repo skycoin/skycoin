@@ -19,6 +19,7 @@
 						"inner_hash": "0000000000000000000000000000000000000000000000000000000000000000",
 						"timestamp": 1426562704,
 						"sigs": [],
+						"inputs": [],
 						"outputs": [
 							{
 								"uxid": "043836eb6f29aaeb8b9bfce847e07c159c72b25ae17d291f32125e7f1912e2a0",
@@ -26,8 +27,7 @@
 								"coins": "100000000.000000",
 								"hours": 100000000000000
 							}
-						],
-						"inputs": []
+						]
 					}
 				]
 			},
@@ -53,6 +53,15 @@
 						"timestamp": 1427926392,
 						"sigs": [
 							"be602113fe288f750001ab65f254ceedd8b05b1becc456a0a52a0bea10b8280e38d950933992ad3265e1f81d197036fa634b316f08b3b319ffce081aa43f3bb600"
+						],
+						"inputs": [
+							{
+								"uxid": "043836eb6f29aaeb8b9bfce847e07c159c72b25ae17d291f32125e7f1912e2a0",
+								"owner": "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6",
+								"coins": "100000000.000000",
+								"hours": 100000000000000,
+								"calculated_hours": 100037880222222
+							}
 						],
 						"outputs": [
 							{
@@ -654,15 +663,6 @@
 								"dst": "ejJjiCwp86ykmFr5iTJ8LxQXJ2wJPTYmkm",
 								"coins": "1000000.000000",
 								"hours": 1
-							}
-						],
-						"inputs": [
-							{
-								"uxid": "043836eb6f29aaeb8b9bfce847e07c159c72b25ae17d291f32125e7f1912e2a0",
-								"owner": "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6",
-								"coins": "100000000.000000",
-								"hours": 100000000000000,
-								"calculated_hours": 100037880222222
 							}
 						]
 					}

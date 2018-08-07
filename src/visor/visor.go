@@ -2248,7 +2248,8 @@ func (vs *Visor) CreateReadableTransactionV2(transaction *Transaction) (*Readabl
 	r.Timestamp = transaction.Time
 	r.Sigs = sigs
 	r.In = nil
-	r.Out = out
+	r.Out = nil
+	r.OutData = out
 	r.InData = inputs
 	return &r, nil
 }

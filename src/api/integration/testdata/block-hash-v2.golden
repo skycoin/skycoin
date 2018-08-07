@@ -19,6 +19,15 @@
 				"sigs": [
 					"dbbb5acf0130c39a6b2fd760dda1df5aaefd94d8a0904e6faf959feade87d17a5c754459b635e0048e1019dadb9815a54d8bca4cf234f6876b19b5a0df5e494a00"
 				],
+				"inputs": [
+					{
+						"uxid": "ec2c2238793d71240502de3e7c46ec1d5bf938c76541185f1c3fdf0d99a90795",
+						"owner": "NGLS4CYvBdV9HXJDpeY8jrdQDqLeBvfAwc",
+						"coins": "5.000000",
+						"hours": 0,
+						"calculated_hours": 1
+					}
+				],
 				"outputs": [
 					{
 						"uxid": "9c7d3674d7a6b28a559a052e6d354ec13d2e0396739973c9f0dce08f8c7d157c",
@@ -31,15 +40,6 @@
 						"dst": "2M2VC93aQv5asdcNKt7pzJdkxeL6xLw9JPp",
 						"coins": "1.000000",
 						"hours": 0
-					}
-				],
-				"inputs": [
-					{
-						"uxid": "ec2c2238793d71240502de3e7c46ec1d5bf938c76541185f1c3fdf0d99a90795",
-						"owner": "NGLS4CYvBdV9HXJDpeY8jrdQDqLeBvfAwc",
-						"coins": "5.000000",
-						"hours": 0,
-						"calculated_hours": 1
 					}
 				]
 			}

@@ -122,7 +122,7 @@ func PubKeyFromHex(s string) (PubKey, error) {
 		return PubKey{}, ErrInvalidPubKey
 	}
 	if len(b) != len(PubKey{}) {
-		return PubKey{}, errors.New("Invalid public key length")
+		return PubKey{}, ErrInvalidLengthPubKey
 	}
 	return NewPubKey(b), nil
 }

@@ -21,7 +21,9 @@ func (err ValueError) Error() string {
 // NewValueError instantiate value error from concrete error
 func NewValueError(err error, paramName string, paramValue interface{}) ValueError {
 	return ValueError{
-		err, paramName, paramValue,
+		ErrorData:  err,
+		ParamName:  paramName,
+		ParamValue: paramValue,
 	}
 }
 

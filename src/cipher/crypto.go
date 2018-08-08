@@ -121,23 +121,22 @@ func PubKeyFromHex(s string) (PubKey, error) {
 	if err != nil {
 		return PubKey{}, ErrInvalidPubKey
 	}
+	if len(b) != len(PubKey{}) {
+		return PubKey{}, ErrInvalidLengthPubKey
+	}
 	return NewPubKey(b), nil
 }
 
 // PubKeyFromSecKey recovers the public key for a secret key
 func PubKeyFromSecKey(seckey SecKey) PubKey {
 	if seckey == (SecKey{}) {
-		err := skyerrors.NewValueError(
-			ErrPubKeyFromNullSecKey, "seckey", seckey,
-		)
+		err := skyerrors.NewValueError(ErrPubKeyFromNullSecKey, "seckey", seckey)
 		log.Print(err)
 		panic(err)
 	}
 	b := secp256k1.PubkeyFromSeckey(seckey[:])
 	if b == nil {
-		err := skyerrors.NewValueError(
-			ErrPubKeyFromBadSecKey, "seckey", seckey,
-		)
+		err := skyerrors.NewValueError(ErrPubKeyFromBadSecKey, "seckey", seckey)
 		log.Print(err)
 		panic(err)
 	}
@@ -180,9 +179,7 @@ type SecKey [32]byte
 func NewSecKey(b []byte) SecKey {
 	p := SecKey{}
 	if len(b) != len(p) {
-		err := skyerrors.NewValueError(
-			ErrInvalidLengthSecKey, "b", b,
-		)
+		err := skyerrors.NewValueError(ErrInvalidLengthSecKey, "b", b)
 		log.Print(err)
 		panic(err)
 	}
@@ -243,17 +240,13 @@ func (sk SecKey) Hex() string {
 func ECDH(pub PubKey, sec SecKey) []byte {
 
 	if err := pub.Verify(); err != nil {
-		err := skyerrors.NewValueError(
-			ErrECHDInvalidPubKey, "pub", pub,
-		)
+		err := skyerrors.NewValueError(ErrECHDInvalidPubKey, "pub", pub)
 		log.Print(err)
 		panic(err)
 	}
 
 	if err := sec.Verify(); err != nil {
-		err := skyerrors.NewValueError(
-			ErrECHDInvalidSecKey, "sec", sec,
-		)
+		err := skyerrors.NewValueError(ErrECHDInvalidSecKey, "sec", sec)
 		log.Print(err)
 		panic(err)
 	}
@@ -271,9 +264,7 @@ type Sig [64 + 1]byte //64 byte signature with 1 byte for key recovery
 func NewSig(b []byte) Sig {
 	s := Sig{}
 	if len(b) != len(s) {
-		err := skyerrors.NewValueError(
-			ErrInvalidLengthSig, "b", b,
-		)
+		err := skyerrors.NewValueError(ErrInvalidLengthSig, "b", b)
 		log.Print(err)
 		panic(err)
 	}
@@ -288,9 +279,7 @@ func MustSigFromHex(s string) Sig {
 		log.Panic(err)
 	}
 	if len(b) != 65 {
-		err := skyerrors.NewValueError(
-			ErrInvalidLengthSig, "s", s,
-		)
+		err := skyerrors.NewValueError(ErrInvalidLengthSig, "s", s)
 		log.Print(err)
 		panic(err)
 	}

@@ -9,11 +9,8 @@
 #include "skyerrors.h"
 #include "skystring.h"
 #include "skytest.h"
-#if __APPLE__
-#include "TargetConditionals.h"
-#endif
 
-TestSuite(cipher_hash, .init = setup, .fini = teardown, .signal = SIGABRT, .exit_code = 2);
+TestSuite(cipher_hash, .init = setup, .fini = teardown);
 
 void freshSumRipemd160(GoSlice bytes, cipher__Ripemd160 *rp160)
 {
@@ -154,13 +151,16 @@ Test(cipher_hash, TestSHA256KnownValue)
   tmpstruct vals[3];
 
   vals[0].input = "skycoin";
-  vals[0].output = "5a42c0643bdb465d90bf673b99c14f5fa02db71513249d904573d2b8b63d353d";
+  vals[0].output =
+      "5a42c0643bdb465d90bf673b99c14f5fa02db71513249d904573d2b8b63d353d";
 
   vals[1].input = "hello world";
-  vals[1].output = "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9";
+  vals[1].output =
+      "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9";
 
   vals[2].input = "hello world asd awd awd awdapodawpokawpod ";
-  vals[2].output = "99d71f95cafe05ea2dddebc35b6083bd5af0e44850c9dc5139b4476c99950be4";
+  vals[2].output =
+      "99d71f95cafe05ea2dddebc35b6083bd5af0e44850c9dc5139b4476c99950be4";
 
   for (int i = 0; i < 3; ++i)
   {
@@ -187,8 +187,7 @@ Test(cipher_hash, TestSHA256KnownValue)
 Test(cipher_hash, TestSumSHA256)
 {
 
-  unsigned char bbuff[257],
-      cbuff[257];
+  unsigned char bbuff[257], cbuff[257];
   GoSlice b = {bbuff, 0, 257};
   cipher__SHA256 h1;
   randBytes(&b, 256);
@@ -277,8 +276,7 @@ Test(cipher_hash, TestAddSHA256)
 Test(cipher_hash, TestXorSHA256)
 {
 
-  unsigned char bbuff[129],
-      cbuff[129];
+  unsigned char bbuff[129], cbuff[129];
   GoSlice b = {bbuff, 0, 129};
   GoSlice c = {cbuff, 0, 129};
   cipher__SHA256 h, i;
@@ -305,8 +303,7 @@ Test(cipher_hash, TestMerkle)
 {
   unsigned char buff[129];
   cipher__SHA256 hashlist[5];
-  GoSlice b = {buff, 0, 129},
-          hashes = {hashlist, 0, 5};
+  GoSlice b = {buff, 0, 129}, hashes = {hashlist, 0, 5};
   cipher__SHA256 h, zero, out, out1, out2, out3, out4;
   int i;
 
@@ -358,7 +355,7 @@ Test(cipher_hash, TestMerkle)
   cr_assert(eq(u8[32], out, h));
 }
 
-Test(cipher_hash, TestMustSumSHA256, .signal = SIGABRT)
+Test(cipher_hash, TestMustSumSHA256, .signal = ((__linux__) ? SIGABRT : 2))
 {
   char buffer_b[1024];
   GoSlice b = {buffer_b, 0, 1024};

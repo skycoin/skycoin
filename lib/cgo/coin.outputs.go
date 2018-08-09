@@ -327,7 +327,6 @@ func SKY_coin_AddressUxOuts_Get(handle C.AddressUxOuts_Handle, _key *C.cipher__A
 	} else {
 		____error_code = SKY_BAD_HANDLE
 	}
-	____error_code = SKY_ERROR
 	return
 }
 
@@ -347,7 +346,6 @@ func SKY_coin_AddressUxOuts_HasKey(handle C.AddressUxOuts_Handle, _key *C.cipher
 	} else {
 		____error_code = SKY_BAD_HANDLE
 	}
-	____error_code = SKY_ERROR
 	return
 }
 
@@ -369,7 +367,6 @@ func SKY_coin_AddressUxOuts_GetOutputLength(handle C.AddressUxOuts_Handle, _key 
 	} else {
 		____error_code = SKY_BAD_HANDLE
 	}
-	____error_code = SKY_ERROR
 	return
 }
 
@@ -384,8 +381,9 @@ func SKY_coin_AddressUxOuts_Length(handle C.AddressUxOuts_Handle, _length *int) 
 	if ok {
 		*_length = len(*a)
 		____error_code = SKY_OK
+	} else {
+		____error_code = SKY_BAD_HANDLE
 	}
-	____error_code = SKY_BAD_HANDLE
 	return
 }
 
@@ -402,7 +400,8 @@ func SKY_coin_AddressUxOuts_Set(handle C.AddressUxOuts_Handle, _key *C.cipher__A
 		uxOuts := *(*coin.UxArray)(unsafe.Pointer(_uxOuts))
 		(*a)[key] = uxOuts
 		____error_code = SKY_OK
+	} else {
+		____error_code = SKY_BAD_HANDLE
 	}
-	____error_code = SKY_BAD_HANDLE
 	return
 }

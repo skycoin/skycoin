@@ -268,7 +268,6 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 			logger.Infof("Remote mirror value %v matches ours", intro.Mirror)
 			d.Disconnect(mc.Addr, ErrDisconnectSelf)
 			return ErrDisconnectSelf
-
 		}
 
 		// Disconnect if not running the same version
@@ -314,19 +313,6 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 		// connection's port is a random port, it's different from the port
 		// in introduction message.
 		if port == intro.Port {
-			if d.IsDefaultConnection(mc.Addr) {
-				reached, err := d.IsMaxDefaultConnectionsReached()
-				if err != nil {
-					logger.Errorf("Check IsMaxDefaultConnReached failed: %v", err)
-					return err
-				}
-
-				if reached {
-					d.Disconnect(mc.Addr, ErrDisconnectMaxDefaultConnectionReached)
-					return ErrDisconnectMaxDefaultConnectionReached
-				}
-			}
-
 			if err := d.SetHasIncomingPort(mc.Addr); err != nil {
 				logger.Errorf("Failed to set peer has incoming port status, %v", err)
 			}

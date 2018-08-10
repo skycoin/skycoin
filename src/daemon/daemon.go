@@ -50,7 +50,7 @@ var (
 	// ErrDisconnectOtherError this is returned when a seemingly impossible error is encountered
 	// e.g. net.Conn.Addr() returns an invalid ip:port
 	ErrDisconnectOtherError                  gnet.DisconnectReason = errors.New("Incomprehensible error")
-	ErrDisconnectMaxDefaultConnectionReached                       = errors.New("Maximum number of default connections was reached")
+	ErrDisconnectMaxDefaultConnectionReached                       = errors.New("Maximum default connections was reached")
 	// ErrDisconnectMaxOutgoingConnectionsReached is returned when connection pool size is greater than the maximum allowed
 	ErrDisconnectMaxOutgoingConnectionsReached gnet.DisconnectReason = errors.New("Maximum outgoing connections was reached")
 	// ErrDisconnectBlockchainPubkeyNotMatched is returned when the blockchain pubkey in introduction does not match
@@ -1331,7 +1331,7 @@ func (dm *Daemon) IsDefaultConnection(addr string) bool {
 
 // IsMaxDefaultConnectionsReached returns whether the max default connection number was reached.
 func (dm *Daemon) IsMaxDefaultConnectionsReached() (bool, error) {
-	return dm.pool.Pool.IsMaxDefaultConnReached()
+	return dm.pool.Pool.IsMaxDefaultConnectionsReached()
 }
 
 // Implements pexer interface

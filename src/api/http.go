@@ -266,16 +266,27 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 		webHandler("/api/v2"+endpoint, handler)
 	}
 
-	webHandler("/", newIndexHandler(c.appLoc, c.enableGUI))
+	indexHandler := newIndexHandler(c.appLoc, c.enableGUI)
+	if gateway.IsCSPEnabled() {
+		indexHandler = wh.CSPHandler(indexHandler)
+	}
+	webHandler("/", indexHandler)
 
 	if c.enableGUI {
 		fileInfos, _ := ioutil.ReadDir(c.appLoc)
+
+		fs := http.FileServer(http.Dir(c.appLoc))
+		if gateway.IsCSPEnabled() {
+			fs = wh.CSPHandler(fs)
+		}
+
 		for _, fileInfo := range fileInfos {
 			route := fmt.Sprintf("/%s", fileInfo.Name())
 			if fileInfo.IsDir() {
 				route = route + "/"
 			}
-			webHandler(route, http.FileServer(http.Dir(c.appLoc)))
+
+			webHandler(route, fs)
 		}
 	}
 
@@ -284,8 +295,9 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	}
 
 	// get the current CSRF token
-	mux.Handle("/csrf", headerCheck(c.host, getCSRFToken(csrfStore)))
-	mux.Handle("/api/v1/csrf", headerCheck(c.host, getCSRFToken(csrfStore)))
+	csrfHandler := headerCheck(c.host, getCSRFToken(csrfStore))
+	mux.Handle("/csrf", csrfHandler)
+	mux.Handle("/api/v1/csrf", csrfHandler)
 
 	webHandlerV1("/version", versionHandler(gateway))
 
@@ -448,9 +460,9 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 }
 
 // Returns a http.HandlerFunc for index.html, where index.html is in appLoc
-func newIndexHandler(appLoc string, enableGUI bool) http.HandlerFunc {
+func newIndexHandler(appLoc string, enableGUI bool) http.Handler {
 	// Serves the main page
-	return func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !enableGUI {
 			wh.Error404(w, "")
 			return
@@ -466,7 +478,7 @@ func newIndexHandler(appLoc string, enableGUI bool) http.HandlerFunc {
 			logger.Debugf("Serving index page: %s", page)
 			http.ServeFile(w, r, page)
 		}
-	}
+	})
 }
 
 func splitCommaString(s string) []string {

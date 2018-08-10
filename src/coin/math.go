@@ -32,7 +32,7 @@ func AddUint64(a, b uint64) (uint64, error) {
 	return c, nil
 }
 
-func addUint32(a, b uint32) (uint32, error) {
+func addUint32(a, b uint32) (uint32, error) { //nolint: deadcode
 	c := a + b
 	if c < a || c < b {
 		return 0, ErrUint32AddOverflow

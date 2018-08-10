@@ -5,6 +5,13 @@ FROM skycoin/skycoindev-cli:develop
 
 RUN curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -
 RUN apt-key fingerprint 0EBFCD88
+RUN set -ex; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+    lsb-release \
+    software-properties-common \
+    apt-transport-https
+
 RUN add-apt-repository \
    "deb [arch=amd64] https://download.docker.com/linux/debian \
    $(lsb_release -cs) \
@@ -17,7 +24,6 @@ RUN set -ex; \
     e2fsprogs \
     iptables \
     xfsprogs \
-    apt-transport-https \
     ca-certificates \
     gnupg2 \
     software-properties-common \

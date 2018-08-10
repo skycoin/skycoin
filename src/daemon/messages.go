@@ -322,7 +322,6 @@ func (intro *IntroductionMessage) Handle(mc *gnet.MessageContext, daemon interfa
 				}
 
 				if reached {
-					logger.Debugf("Disconnect %s: maximum default connections reached ", mc.Addr)
 					d.Disconnect(mc.Addr, ErrDisconnectMaxDefaultConnectionReached)
 					return ErrDisconnectMaxDefaultConnectionReached
 				}

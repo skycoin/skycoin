@@ -12,9 +12,7 @@ set -e -o pipefail
 # By default builds all architectures.
 # A single arch can be built by specifying it using gox's arch names
 
-if [ -n "$1" ]; then
-    GOX_OSARCH="$1"
-fi
+GOX_OSARCH="$@"
 
 . build-conf.sh "$GOX_OSARCH"
 
@@ -33,23 +31,23 @@ if [ -e "$ELN_OUTPUT" ]; then
 fi
 
 if [ ! -z "$WIN64_ELN" ] && [ ! -z "$WIN32_ELN" ]; then
-    yarn run dist-win
+    npm run dist-win
 elif [ ! -z "$WIN64_ELN" ]; then
-    yarn run dist-win64
+    npm run dist-win64
 elif [ ! -z "$WIN32_ELN" ]; then
-    yarn run dist-win32
+    npm run dist-win32
 fi
 
 if [ ! -z "$LNX64_ELN" ]; then
-    yarn run dist-linux
+    npm run dist-linux
 fi
 
 if [ ! -z "$OSX64_ELN" ]; then
     if [[ "$OSTYPE" == "darwin"* ]]; then
         echo "run dist-mac"
-        yarn run dist-mac
+        npm run dist-mac
     elif [[ "$OSTYPE" == "linux"* ]]; then
-        yarn run pack-mac
+        npm run pack-mac
     else
         echo "Can not run build script in $OSTYPE"
     fi
@@ -80,7 +78,13 @@ fi
 
 EXE="${PDT_NAME} Setup ${APP_VERSION}.exe"
 if [ -e "$EXE" ]; then
-    mv "$EXE" "${PKG_NAME}-${APP_VERSION}-gui-win-setup.exe"
+    if [ ! -z $WIN32_ELN ] && [ ! -z $WIN64_ELN ]; then
+        mv "$EXE" "${PKG_NAME}-${APP_VERSION}-gui-win-setup.exe"
+    elif [ ! -z $WIN32_ELN ]; then
+        mv "$EXE" "${WIN32_ELN}.exe"
+    elif [ ! -z $WIN64_ELN ]; then
+        mv "$EXE" "${WIN64_ELN}.exe"
+    fi
 fi
 
 # rename dmg file name

@@ -33,28 +33,28 @@ var errorByCode = [...]error{
 	pex.ErrPortTooLow,
 	pex.ErrBlacklistedAddress}
 
-var errorCodeByError map[error]uint16
+var errorCodeByError map[error]uint32
 
 var initErrorCodeMap = func() {
-	errorCodeByError = make(map[error]uint16)
+	errorCodeByError = make(map[error]uint32)
 	for i, err := range errorByCode {
-		errorCodeByError[err] = uint16(i)
+		errorCodeByError[err] = uint32(i)
 	}
 }
 
 // ErrorCodeUnknown is used on unexpected error condition detected
-const ErrorCodeUnknown = 0xFFFF
+const ErrorCodeUnknown = 0xFFFFFFFF
 
 // Success error code
 const Success = 0
 
 // GetError Retrieve error object by corresponding error code
-func GetError(code uint16) error {
+func GetError(code uint32) error {
 	return errorByCode[code]
 }
 
 // GetErrorCode Retrieve error code representing corresponding error object
-func GetErrorCode(err error) uint16 {
+func GetErrorCode(err error) uint32 {
 	if initErrorCodeMap != nil {
 		initErrorCodeMap()
 		initErrorCodeMap = nil

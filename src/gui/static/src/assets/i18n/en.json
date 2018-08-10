@@ -12,7 +12,8 @@
     "incorrect-password": "Incorrect password",
     "api-disabled": "API disabled",
     "no-wallet": "Wallet does not exist",
-    "no-outputs": "No unspent outputs"
+    "no-outputs": "No unspent outputs",
+    "window-size": "The window is too narrow for the content"
   },
 
   "title": {
@@ -204,6 +205,7 @@
     "peer": "Peer",
     "source": "Source",
     "block-height": "Block height",
+    "block-height-short": "Block",
     "last-seen": "Last seen",
     "last-received": "Last received",
     "last-sent": "Last sent",

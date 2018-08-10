@@ -738,27 +738,6 @@ func TestIntroductionMessage(t *testing.T) {
 			err: ErrDisconnectOtherError,
 		},
 		{
-			name: "Max default connections reached",
-			addr: "121.121.121.121:6000",
-			mockValue: daemonMockValue{
-				mirror:                  10000,
-				version:                 1,
-				disconnectReason:        ErrDisconnectMaxDefaultConnectionReached,
-				isDefaultConnection:     true,
-				isMaxConnectionsReached: true,
-				getMirrorPortResult: mirrorPortResult{
-					exist: false,
-				},
-				pubkey: pubkey,
-			},
-			intro: &IntroductionMessage{
-				Mirror:  10001,
-				Version: 1,
-				Port:    6000,
-			},
-			err: ErrDisconnectMaxDefaultConnectionReached,
-		},
-		{
 			name: "incomming connection",
 			addr: "121.121.121.121:12345",
 			mockValue: daemonMockValue{

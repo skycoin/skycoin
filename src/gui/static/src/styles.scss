@@ -252,6 +252,12 @@ On-boarding components
   background: -moz-linear-gradient(bottom right, $gradient-blue-dark, $gradient-blue-light); /* For Firefox 3.6 to 15 */
   background: linear-gradient(to bottom right, $gradient-blue-dark, $gradient-blue-light); /* Standard syntax */
 
+  .row-container {
+    max-width: 450px;
+    width: 80%;
+    margin: 0px auto;
+  }
+
   label {
     color: white;
   }

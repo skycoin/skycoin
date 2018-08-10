@@ -1,6 +1,6 @@
 <div class="onboarding-container">
   <div class="row justify-content-center">
-    <div class="col-sm-4">
+    <div class="row-container">
       <div class="-header">
         <span>{{ 'wallet.new.create-title' | translate }}</span>
       </div>
@@ -10,7 +10,7 @@
     </div>
   </div>
   <div class="row justify-content-center">
-    <div class="col-sm-4 -toggle-container">
+    <div class="row-container -toggle-container">
       <app-double-button
         [leftButtonText]="'common.new' | translate"
         [rightButtonText]="'common.load' | translate"
@@ -20,7 +20,7 @@
     </div>
   </div>
   <div class="row justify-content-center">
-    <div class="col-sm-4">
+    <div class="row-container">
       <form [formGroup]="form">
         <div class="form-field">
           <label for="label">{{ 'wallet.new.name-label' | translate }}</label>

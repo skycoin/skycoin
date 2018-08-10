@@ -1,6 +1,6 @@
 <div class="onboarding-container">
   <div class="row justify-content-center">
-    <div class="col-sm-4">
+    <div class="row-container">
       <div class="-header">
         <span>{{ 'wallet.new.encrypt-title' | translate }}</span>
       </div>
@@ -10,7 +10,7 @@
     </div>
   </div>
   <div class="row justify-content-center">
-    <div class="col-sm-4 -check-container">
+    <div class="row-container -check-container">
       <mat-checkbox class="-check" (change)="setEncrypt($event)" [checked]="true" type="checkbox" id="encrypt">
         <img src="../../../../../assets/img/lock-gold.png">
         {{ 'wallet.new.encrypt' | translate }}
@@ -18,7 +18,7 @@
     </div>
   </div>
   <div class="row justify-content-center">
-    <div class="col-sm-4">
+    <div class="row-container">
       <form [formGroup]="form">
         <div class="form-field">
           <label for="password">{{ 'password.label' | translate }}</label>

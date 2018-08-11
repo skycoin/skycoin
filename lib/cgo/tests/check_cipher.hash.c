@@ -4,7 +4,6 @@
 
 #include <criterion/criterion.h>
 #include <criterion/new/assert.h>
-
 #include "libskycoin.h"
 #include "skyerrors.h"
 #include "skystring.h"
@@ -14,13 +13,11 @@ TestSuite(cipher_hash, .init = setup, .fini = teardown);
 
 void freshSumRipemd160(GoSlice bytes, cipher__Ripemd160 *rp160)
 {
-
   SKY_cipher_HashRipemd160(bytes, rp160);
 }
 
 void freshSumSHA256(GoSlice bytes, cipher__SHA256 *sha256)
 {
-
   SKY_cipher_SumSHA256(bytes, sha256);
 }
 
@@ -355,7 +352,15 @@ Test(cipher_hash, TestMerkle)
   cr_assert(eq(u8[32], out, h));
 }
 
-Test(cipher_hash, TestMustSumSHA256, .signal = ((__linux__) ? SIGABRT : 2))
+Test(cipher_hash, TestMustSumSHA256, 
+  #if __linux__ 
+    .signal=SIGABRT 
+  #elif __APPLE__
+    #if TARGET_OS_MAC
+    .exit_code=2
+    #endif
+  #endif
+ )
 {
   char buffer_b[1024];
   GoSlice b = {buffer_b, 0, 1024};

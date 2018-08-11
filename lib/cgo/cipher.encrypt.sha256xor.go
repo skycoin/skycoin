@@ -18,7 +18,7 @@ import "C"
 
 //export SKY_encrypt_Sha256Xor_Encrypt
 func SKY_encrypt_Sha256Xor_Encrypt(_data []byte, _password []byte, _arg2 *C.GoSlice_) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
@@ -35,7 +35,7 @@ func SKY_encrypt_Sha256Xor_Encrypt(_data []byte, _password []byte, _arg2 *C.GoSl
 
 //export SKY_encrypt_Sha256Xor_Decrypt
 func SKY_encrypt_Sha256Xor_Decrypt(_data []byte, _password []byte, _arg2 *C.GoSlice_) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()

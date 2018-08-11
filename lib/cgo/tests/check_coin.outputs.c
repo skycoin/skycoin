@@ -329,7 +329,6 @@ Test(coin_outputs, TestUxArraySub){
   cr_assert( uxd.len == 2, "uxd length must be 2 and it is: %s", uxd.len );
   cutSlice(&uxa, 0, 2, elems_size, &t1);
   cr_assert( eq( type(coin__UxArray), uxd, t1 ) );
-  //cr_assert( eq( type(GoSlice), *((GoSlice*)&uxd), *((GoSlice*)&t1)) );
 
   // No intersection
   memset(&t1, 0, arraySize); memset(&t2, 0, arraySize);
@@ -341,8 +340,6 @@ Test(coin_outputs, TestUxArraySub){
   registerMemCleanup( t2.data );
   cr_assert( eq( type(coin__UxArray), uxa, t1 ) );
   cr_assert( eq( type(coin__UxArray), uxb, t2 ) );
-  //cr_assert( eq( type(GoSlice), *((GoSlice*)&uxa), *((GoSlice*)&t1)) );
-  //cr_assert( eq( type(GoSlice), *((GoSlice*)&uxb), *((GoSlice*)&t2)) );
 }
 
 int isUxArraySorted(coin__UxArray* uxa){

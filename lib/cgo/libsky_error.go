@@ -6,6 +6,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/base58"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
+	"github.com/skycoin/skycoin/src/cipher/encrypt"
 	"github.com/skycoin/skycoin/src/cli"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
@@ -375,6 +376,26 @@ const (
 	SKY_ErrDuplicateUxOuts
 	// SKY_ErrUnknownWalletID params.Wallet.ID does not match wallet
 	SKY_ErrUnknownWalletID
+	// SKY_ErrSHA256orMissingPassword missing password
+	SKY_ErrSHA256orMissingPassword
+	// SKY_ErrSHA256LenghtDataOverflowMaxUint32 data length overflowed, it must <= math.MaxUint32(4294967295)
+	SKY_ErrLenghtDataOverflowMaxUint32
+	// SKY_ErrInvalidChecksumLength invalid checksum length
+	SKY_ErrInvalidChecksumLength
+	// SKY_ErrInvalidDataChecksumNotMatched invalid data, checksum is not matched
+	SKY_ErrInvalidDataChecksumNotMatched
+	// SKY_ErrInvalidNonceLength invalid nonce length
+	SKY_ErrInvalidNonceLength
+	// SKY_ErrInvalidBlockSizeMultiple32Bytes invalid block size, must be multiple of 32 bytes
+	SKY_ErrInvalidBlockSizeMultiple32Bytes
+	// SKY_ErrReadDataHashFailedLength read data hash failed: read length != 32
+	SKY_ErrReadDataHashFailedLength
+	// SKY_ErrSHA256orInvalidPassword invalid password SHA256or
+	SKY_ErrSHA256orInvalidPassword
+	// SKY_ErrReadDataLengthFailed read data length failed
+	SKY_ErrReadDataLengthFailed
+	// SKY_ErrInvalidDataLength invalid data length
+	SKY_ErrInvalidDataLength
 )
 
 var (
@@ -458,7 +479,6 @@ var (
 		gnet.ErrConnectionPoolClosed:                      SKY_ErrConnectionPoolClosed,
 		gnet.ErrWriteQueueFull:                            SKY_ErrWriteQueueFull,
 		gnet.ErrNoReachableConnections:                    SKY_ErrNoReachableConnections,
-		gnet.ErrMaxDefaultConnectionsReached:              SKY_ErrMaxDefaultConnectionsReached,
 		daemon.ErrDisconnectInvalidVersion:                SKY_ErrDisconnectInvalidVersion,
 		daemon.ErrDisconnectIntroductionTimeout:           SKY_ErrDisconnectIntroductionTimeout,
 		daemon.ErrDisconnectVersionSendFailed:             SKY_ErrDisconnectVersionSendFailed,
@@ -526,6 +546,17 @@ var (
 		wallet.ErrWalletConstraint:          SKY_ErrWalletConstraint,
 		wallet.ErrDuplicateUxOuts:           SKY_ErrDuplicateUxOuts,
 		wallet.ErrUnknownWalletID:           SKY_ErrUnknownWalletID,
+		// Encrypt
+		encrypt.ErrSHA256orMissingPassword:         SKY_ErrSHA256orMissingPassword,
+		encrypt.ErrLenghtDataOverflowMaxUint32:     SKY_ErrLenghtDataOverflowMaxUint32,
+		encrypt.ErrInvalidChecksumLength:           SKY_ErrInvalidChecksumLength,
+		encrypt.ErrInvalidDataChecksumNotMatched:   SKY_ErrInvalidDataChecksumNotMatched,
+		encrypt.ErrInvalidNonceLength:              SKY_ErrInvalidNonceLength,
+		encrypt.ErrInvalidBlockSizeMultiple32Bytes: SKY_ErrInvalidBlockSizeMultiple32Bytes,
+		encrypt.ErrReadDataHashFailedLength:        SKY_ErrReadDataHashFailedLength,
+		encrypt.ErrSHA256orInvalidPassword:         SKY_ErrSHA256orInvalidPassword,
+		encrypt.ErrReadDataLengthFailed:            SKY_ErrReadDataLengthFailed,
+		encrypt.ErrInvalidDataLength:               SKY_ErrInvalidDataLength,
 	}
 )
 

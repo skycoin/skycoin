@@ -1,7 +1,7 @@
 
 #include <stdio.h>
 #include <string.h>
-
+#include <signal.h>
 #include <criterion/criterion.h>
 #include <criterion/new/assert.h>
 
@@ -17,7 +17,8 @@ TestSuite(coin_transaction, .init = setup, .fini = teardown);
 GoUint64 MaxUint64 = 0xFFFFFFFFFFFFFFFF;
 GoUint64 Million = 1000000;
 
-Test(coin_transaction, TestTransactionVerify) {
+Test(coin_transaction, TestTransactionVerify)
+{
   int result;
   coin__Transaction *ptx;
   Transaction__Handle handle;
@@ -25,7 +26,7 @@ Test(coin_transaction, TestTransactionVerify) {
   ptx = makeTransaction(&handle);
   memset(ptx->InnerHash, 0, sizeof(cipher__SHA256));
   result = SKY_coin_Transaction_Verify(handle);
-    cr_assert(result == SKY_ERROR);
+  cr_assert(result == SKY_ERROR);
 
   // No inputs
   ptx = makeTransaction(&handle);
@@ -113,7 +114,7 @@ Test(coin_transaction, TestTransactionVerify) {
   ptx = makeTransaction(&handle);
   memset(ptx->Sigs.data, 0, sizeof(cipher__Sig));
   result = SKY_coin_Transaction_Verify(handle);
-  cr_assert(result == SKY_ERROR);
+  cr_assert(result == SKY_ErrInvalidSigForPubKey);
 
   // Output coins are 0
   ptx = makeTransaction(&handle);
@@ -167,7 +168,8 @@ Test(coin_transaction, TestTransactionVerify) {
   cr_assert(result == SKY_OK);
 }
 
-Test(coin_transaction, TestTransactionPushInput) {
+Test(coin_transaction, TestTransactionPushInput, .signal = SIGABRT)
+{
   int result;
   Transaction__Handle handle;
   coin__Transaction *ptx;
@@ -202,7 +204,8 @@ Test(coin_transaction, TestTransactionPushInput) {
   cr_assert(result == SKY_ERROR);
 }
 
-Test(coin_transaction, TestTransactionPushOutput) {
+Test(coin_transaction, TestTransactionPushOutput)
+{
   int result;
   Transaction__Handle handle;
   coin__Transaction *ptx;
@@ -219,7 +222,8 @@ Test(coin_transaction, TestTransactionPushOutput) {
   output.Coins = 100;
   output.Hours = 150;
   cr_assert(eq(type(coin__TransactionOutput), output, *pOutput));
-  for (int i = 1; i < 20; i++) {
+  for (int i = 1; i < 20; i++)
+  {
     makeAddress(&addr);
     result = SKY_coin_Transaction_PushOutput(handle, &addr, i * 100, i * 50);
     cr_assert(result == SKY_OK);
@@ -233,7 +237,8 @@ Test(coin_transaction, TestTransactionPushOutput) {
   }
 }
 
-Test(coin_transaction, TestTransactionHash) {
+Test(coin_transaction, TestTransactionHash)
+{
   int result;
   Transaction__Handle handle;
   coin__Transaction *ptx;
@@ -249,7 +254,8 @@ Test(coin_transaction, TestTransactionHash) {
   cr_assert(not(eq(u8[sizeof(cipher__SHA256)], hash2, hash1)));
 }
 
-Test(coin_transaction, TestTransactionUpdateHeader) {
+Test(coin_transaction, TestTransactionUpdateHeader)
+{
   int result;
   Transaction__Handle handle;
   coin__Transaction *ptx;
@@ -266,13 +272,15 @@ Test(coin_transaction, TestTransactionUpdateHeader) {
   cr_assert(eq(u8[sizeof(cipher__SHA256)], hashInner, ptx->InnerHash));
 }
 
-Test(coin_transaction, TestTransactionsSize) {
+Test(coin_transaction, TestTransactionsSize)
+{
   int result;
   Transactions__Handle txns;
   result = makeTransactions(10, &txns);
   cr_assert(result == SKY_OK);
   GoInt size = 0;
-  for (size_t i = 0; i < 10; i++) {
+  for (size_t i = 0; i < 10; i++)
+  {
     Transaction__Handle handle;
     result = SKY_coin_Transactions_GetAt(txns, i, &handle);
     registerHandleClose(handle);
@@ -290,7 +298,8 @@ Test(coin_transaction, TestTransactionsSize) {
   cr_assert(sizeTransactions == size);
 }
 
-Test(coin_transactions, TestTransactionVerifyInput) {
+Test(coin_transactions, TestTransactionVerifyInput, .signal = SIGABRT)
+{
   int result;
   Transaction__Handle handle;
   coin__Transaction *ptx;
@@ -392,7 +401,8 @@ Test(coin_transactions, TestTransactionVerifyInput) {
   cr_assert(result == SKY_OK);
 }
 
-Test(coin_transactions, TestTransactionSignInputs) {
+Test(coin_transactions, TestTransactionSignInputs, .signal = SIGABRT)
+{
   int result;
   coin__Transaction *ptx;
   Transaction__Handle handle;
@@ -486,7 +496,8 @@ Test(coin_transactions, TestTransactionSignInputs) {
   cr_assert(result == SKY_ERROR);
 }
 
-Test(coin_transactions, TestTransactionHashInner) {
+Test(coin_transactions, TestTransactionHashInner)
+{
   int result;
   Transaction__Handle handle1 = 0, handle2 = 0;
   coin__Transaction *ptx = NULL;
@@ -552,7 +563,8 @@ Test(coin_transactions, TestTransactionHashInner) {
   cr_assert(eq(u8[sizeof(cipher__SHA256)], hash1, hash2));
 }
 
-Test(coin_transactions, TestTransactionSerialization) {
+Test(coin_transactions, TestTransactionSerialization)
+{
   int result;
   coin__Transaction *ptx;
   Transaction__Handle handle;
@@ -572,7 +584,8 @@ Test(coin_transactions, TestTransactionSerialization) {
   cr_assert(eq(type(coin__Transaction), *ptx, *ptx2));
 }
 
-Test(coin_transactions, TestTransactionOutputHours) {
+Test(coin_transactions, TestTransactionOutputHours)
+{
   coin__Transaction *ptx;
   Transaction__Handle handle;
   ptx = makeEmptyTransaction(&handle);
@@ -601,7 +614,8 @@ Test(coin_transactions, TestTransactionOutputHours) {
   cr_assert(result == SKY_ERROR);
 }
 
-Test(coin_transactions, TestTransactionsHashes) {
+Test(coin_transactions, TestTransactionsHashes)
+{
   int result;
   GoSlice_ hashes = {NULL, 0, 0};
   Transactions__Handle hTxns;
@@ -614,7 +628,8 @@ Test(coin_transactions, TestTransactionsHashes) {
   cr_assert(hashes.len == 4);
   cipher__SHA256 *ph = hashes.data;
   cipher__SHA256 hash;
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < 4; i++)
+  {
     Transaction__Handle handle;
     result = SKY_coin_Transactions_GetAt(hTxns, i, &handle);
     cr_assert(result == SKY_OK);
@@ -625,7 +640,8 @@ Test(coin_transactions, TestTransactionsHashes) {
   }
 }
 
-Test(coin_transactions, TestTransactionsTruncateBytesTo) {
+Test(coin_transactions, TestTransactionsTruncateBytesTo)
+{
   int result;
   Transactions__Handle h1, h2;
   result = makeTransactions(10, &h1);
@@ -635,7 +651,8 @@ Test(coin_transactions, TestTransactionsTruncateBytesTo) {
   cr_assert(result == SKY_OK);
   int trunc = 0;
   GoInt size;
-  for (int i = 0; i < length / 2; i++) {
+  for (int i = 0; i < length / 2; i++)
+  {
     Transaction__Handle handle;
     result = SKY_coin_Transactions_GetAt(h1, i, &handle);
     registerHandleClose(handle);
@@ -670,12 +687,14 @@ Test(coin_transactions, TestTransactionsTruncateBytesTo) {
   cr_assert(trunc - 1 == size);
 }
 
-typedef struct {
+typedef struct
+{
   GoUint64 coins;
   GoUint64 hours;
 } test_ux;
 
-typedef struct {
+typedef struct
+{
   test_ux *inUxs;
   test_ux *outUxs;
   int sizeIn;
@@ -684,8 +703,10 @@ typedef struct {
   int failure;
 } test_case;
 
-int makeTestCaseArrays(test_ux *elems, int size, coin__UxArray *pArray) {
-  if (size <= 0) {
+int makeTestCaseArrays(test_ux *elems, int size, coin__UxArray *pArray)
+{
+  if (size <= 0)
+  {
     pArray->len = 0;
     pArray->cap = 0;
     pArray->data = NULL;
@@ -702,7 +723,8 @@ int makeTestCaseArrays(test_ux *elems, int size, coin__UxArray *pArray) {
   pArray->len = size;
   pArray->cap = size;
   coin__UxOut *p = data;
-  for (int i = 0; i < size; i++) {
+  for (int i = 0; i < size; i++)
+  {
     p->Body.Coins = elems[i].coins;
     p->Body.Hours = elems[i].hours;
     p++;
@@ -710,7 +732,8 @@ int makeTestCaseArrays(test_ux *elems, int size, coin__UxArray *pArray) {
   return SKY_OK;
 }
 
-Test(coin_transactions, TestVerifyTransactionCoinsSpending) {
+Test(coin_transactions, TestVerifyTransactionCoinsSpending)
+{
 
   // Input coins overflow
   test_ux in1[] = {{MaxUint64 - Million + 1, 10}, {Million, 0}};
@@ -736,8 +759,8 @@ Test(coin_transactions, TestVerifyTransactionCoinsSpending) {
       {in2, out2, 1, 2, 0, 1}, // Output coins overflow
       {in3, out3, 2, 2, 0, 1}, // Destroyed coins
       {in4, out4, 1, 1, Million,
-       1}, // Invalid (coin hours overflow when adding earned hours, which is
-           // treated as 0, and now enough coin hours)
+       1},                    // Invalid (coin hours overflow when adding earned hours, which is
+                              // treated as 0, and now enough coin hours)
       {in5, out5, 2, 3, 0, 0} // Valid
   };
 
@@ -745,7 +768,8 @@ Test(coin_transactions, TestVerifyTransactionCoinsSpending) {
   coin__UxArray outArray;
   int result;
   int count = sizeof(tests) / sizeof(tests[0]);
-  for (int i = 0; i < count; i++) {
+  for (int i = 0; i < count; i++)
+  {
     result = makeTestCaseArrays(tests[i].inUxs, tests[i].sizeIn, &inArray);
     cr_assert(result == SKY_OK);
     result = makeTestCaseArrays(tests[i].outUxs, tests[i].sizeOut, &outArray);
@@ -760,7 +784,8 @@ Test(coin_transactions, TestVerifyTransactionCoinsSpending) {
   }
 }
 
-Test(coin_transactions, TestVerifyTransactionHoursSpending) {
+Test(coin_transactions, TestVerifyTransactionHoursSpending)
+{
   GoUint64 MaxUint64 = 0xFFFFFFFFFFFFFFFF;
   GoUint64 Million = 1000000;
 
@@ -811,15 +836,16 @@ Test(coin_transactions, TestVerifyTransactionHoursSpending) {
        0}, // Valid (coin hours overflow when adding earned hours, which is
            // treated as 0, but not sending any hours)
       {in6, out6, 2, 2, 1492707255,
-       0}, // Valid (base inputs have insufficient coin hours, but have
-           // sufficient after adjusting coinhours by headTime)
+       0},                     // Valid (base inputs have insufficient coin hours, but have
+                               // sufficient after adjusting coinhours by headTime)
       {in7, out7, 2, 3, 0, 0}, // Valid
   };
   coin__UxArray inArray;
   coin__UxArray outArray;
   int result;
   int count = sizeof(tests) / sizeof(tests[0]);
-  for (int i = 0; i < count; i++) {
+  for (int i = 0; i < count; i++)
+  {
     result = makeTestCaseArrays(tests[i].inUxs, tests[i].sizeIn, &inArray);
     cr_assert(result == SKY_OK);
     result = makeTestCaseArrays(tests[i].outUxs, tests[i].sizeOut, &outArray);
@@ -835,21 +861,25 @@ Test(coin_transactions, TestVerifyTransactionHoursSpending) {
   }
 }
 
-GoUint32_ fix1FeeCalculator(Transaction__Handle handle, GoUint64_ *pFee, void* context){
+GoUint32_ fix1FeeCalculator(Transaction__Handle handle, GoUint64_ *pFee, void *context)
+{
   *pFee = 1;
   return SKY_OK;
 }
 
-GoUint32_ badFeeCalculator(Transaction__Handle handle, GoUint64_ *pFee, void* context){
+GoUint32_ badFeeCalculator(Transaction__Handle handle, GoUint64_ *pFee, void *context)
+{
   return SKY_ERROR;
 }
 
-GoUint32_ overflowFeeCalculator(Transaction__Handle handle, GoUint64_ *pFee, void* context){
+GoUint32_ overflowFeeCalculator(Transaction__Handle handle, GoUint64_ *pFee, void *context)
+{
   *pFee = 0xFFFFFFFFFFFFFFFF;
   return SKY_OK;
 }
 
-Test(coin_transactions, TestTransactionsFees) {
+Test(coin_transactions, TestTransactionsFees)
+{
   GoUint64 fee;
   int result;
   Transactions__Handle transactionsHandle = 0;
@@ -884,68 +914,74 @@ Test(coin_transactions, TestTransactionsFees) {
   cr_assert(result == SKY_ERROR);
 }
 
-GoUint32_ feeCalculator1(Transaction__Handle handle, GoUint64_ *pFee, void* context){
-  coin__Transaction* pTx;
-  int result = SKY_coin_GetTransactionObject( handle, &pTx );
-  if(result == SKY_OK){
+GoUint32_ feeCalculator1(Transaction__Handle handle, GoUint64_ *pFee, void *context)
+{
+  coin__Transaction *pTx;
+  int result = SKY_coin_GetTransactionObject(handle, &pTx);
+  if (result == SKY_OK)
+  {
     coin__TransactionOutput *pOutput = pTx->Out.data;
     *pFee = 100 * Million - pOutput->Hours;
   }
   return result;
 }
 
-GoUint32_ feeCalculator2(Transaction__Handle handle, GoUint64_ *pFee, void* context){
+GoUint32_ feeCalculator2(Transaction__Handle handle, GoUint64_ *pFee, void *context)
+{
   *pFee = 100 * Million;
   return SKY_OK;
 }
 
 void assertTransactionsHandleEqual(Transaction__Handle h1, Transaction__Handle h2,
-          char* testName){
+                                   char *testName)
+{
   coin__Transaction *pTx1;
   coin__Transaction *pTx2;
   int result;
-  result = SKY_coin_GetTransactionObject( h1, &pTx1 );
+  result = SKY_coin_GetTransactionObject(h1, &pTx1);
   cr_assert(result == SKY_OK);
-  result = SKY_coin_GetTransactionObject( h2, &pTx2 );
+  result = SKY_coin_GetTransactionObject(h2, &pTx2);
   cr_assert(result == SKY_OK);
   cr_assert(eq(type(coin__Transaction), *pTx1, *pTx2), "Failed SortTransactions test \"%s\"", testName);
 }
 
 void testTransactionSorting(Transactions__Handle hTrans,
-            int* original_indexes, int original_indexes_count,
-            int* expected_indexes, int expected_indexes_count, FeeCalculator *feeCalc,
-            char* testName
-          ){
+                            int *original_indexes, int original_indexes_count,
+                            int *expected_indexes, int expected_indexes_count, FeeCalculator *feeCalc,
+                            char *testName)
+{
 
-    int result;
-    Transactions__Handle transactionsHandle, sortedTxnsHandle;
-    Transaction__Handle handle;
-    makeTransactions(0, &transactionsHandle);
-    for(int i = 0; i < original_indexes_count; i++){
-      result = SKY_coin_Transactions_GetAt(hTrans, original_indexes[i], &handle);
-      cr_assert(result == SKY_OK);
-      registerHandleClose(handle);
-      result = SKY_coin_Transactions_Add(transactionsHandle, handle);
-      cr_assert(result == SKY_OK);
-    }
-    result = SKY_coin_SortTransactions(transactionsHandle, feeCalc, &sortedTxnsHandle);
-    cr_assert(result == SKY_OK, "SKY_coin_SortTransactions");
-    registerHandleClose(sortedTxnsHandle);
-    Transaction__Handle h1, h2;
-    for(int i = 0; i < expected_indexes_count; i++){
-      int expected_index = expected_indexes[i];
-      result = SKY_coin_Transactions_GetAt(sortedTxnsHandle, i, &h1);
-      cr_assert(result == SKY_OK);
-      registerHandleClose(h1);
-      result = SKY_coin_Transactions_GetAt(hTrans, expected_index, &h2);
-      cr_assert(result == SKY_OK);
-      registerHandleClose(h2);
-      assertTransactionsHandleEqual(h1, h2, testName);
-    }
+  int result;
+  Transactions__Handle transactionsHandle, sortedTxnsHandle;
+  Transaction__Handle handle;
+  makeTransactions(0, &transactionsHandle);
+  for (int i = 0; i < original_indexes_count; i++)
+  {
+    result = SKY_coin_Transactions_GetAt(hTrans, original_indexes[i], &handle);
+    cr_assert(result == SKY_OK);
+    registerHandleClose(handle);
+    result = SKY_coin_Transactions_Add(transactionsHandle, handle);
+    cr_assert(result == SKY_OK);
+  }
+  result = SKY_coin_SortTransactions(transactionsHandle, feeCalc, &sortedTxnsHandle);
+  cr_assert(result == SKY_OK, "SKY_coin_SortTransactions");
+  registerHandleClose(sortedTxnsHandle);
+  Transaction__Handle h1, h2;
+  for (int i = 0; i < expected_indexes_count; i++)
+  {
+    int expected_index = expected_indexes[i];
+    result = SKY_coin_Transactions_GetAt(sortedTxnsHandle, i, &h1);
+    cr_assert(result == SKY_OK);
+    registerHandleClose(h1);
+    result = SKY_coin_Transactions_GetAt(hTrans, expected_index, &h2);
+    cr_assert(result == SKY_OK);
+    registerHandleClose(h2);
+    assertTransactionsHandleEqual(h1, h2, testName);
+  }
 }
 
-
-Test(coin_transactions, TestSortTransactions) {
+Test(coin_transactions, TestSortTransactions)
+{
   int n = 6;
   int i;
   int result;
@@ -958,7 +994,8 @@ Test(coin_transactions, TestSortTransactions) {
   cipher__Address addr;
   makeTransactions(0, &transactionsHandle);
   cipher__SHA256 thirdHash;
-  for(i = 0; i < 6; i++){
+  for (i = 0; i < 6; i++)
+  {
     makeEmptyTransaction(&transactionHandle);
     makeAddress(&addr);
     result = SKY_coin_Transaction_PushOutput(transactionHandle, &addr, 1000000, i * 1000);
@@ -967,7 +1004,8 @@ Test(coin_transactions, TestSortTransactions) {
     cr_assert(result == SKY_OK);
     result = SKY_coin_Transactions_Add(transactionsHandle, transactionHandle);
     cr_assert(result == SKY_OK);
-    if( i == 2 ){
+    if (i == 2)
+    {
       result = SKY_coin_Transaction_Hash(transactionHandle, &thirdHash);
       cr_assert(result == SKY_OK);
     }
@@ -984,15 +1022,20 @@ Test(coin_transactions, TestSortTransactions) {
   FeeCalculator fc2 = {feeCalculator2, NULL};
   testTransactionSorting(hashSortedTxnsHandle, index2, 2, expec2, 2, &fc2, "hash tiebreaker");
 
-  GoUint32_ feeCalculator3(Transaction__Handle handle, GoUint64_ *pFee, void* context){
+  GoUint32_ feeCalculator3(Transaction__Handle handle, GoUint64_ * pFee, void *context)
+  {
     cipher__SHA256 hash;
     int result = SKY_coin_Transaction_Hash(handle, &hash);
-    if(result == SKY_OK && (memcmp(&hash, &thirdHash, sizeof(cipher__SHA256)) == 0)){
+    if (result == SKY_OK && (memcmp(&hash, &thirdHash, sizeof(cipher__SHA256)) == 0))
+    {
       *pFee = MaxUint64 / 2;
-    } else {
-      coin__Transaction* pTx;
-      result = SKY_coin_GetTransactionObject( handle, &pTx );
-      if(result == SKY_OK){
+    }
+    else
+    {
+      coin__Transaction *pTx;
+      result = SKY_coin_GetTransactionObject(handle, &pTx);
+      if (result == SKY_OK)
+      {
         coin__TransactionOutput *pOutput = pTx->Out.data;
         *pFee = 100 * Million - pOutput->Hours;
       }
@@ -1004,16 +1047,21 @@ Test(coin_transactions, TestSortTransactions) {
   FeeCalculator f3 = {feeCalculator3, NULL};
   testTransactionSorting(transactionsHandle, index3, 3, expec3, 3, &f3, "invalid fee multiplication is capped");
 
-  GoUint32_ feeCalculator4(Transaction__Handle handle, GoUint64_ *pFee, void* context){
+  GoUint32_ feeCalculator4(Transaction__Handle handle, GoUint64_ * pFee, void *context)
+  {
     cipher__SHA256 hash;
     int result = SKY_coin_Transaction_Hash(handle, &hash);
-    if(result == SKY_OK && (memcmp(&hash, &thirdHash, sizeof(cipher__SHA256)) == 0)){
+    if (result == SKY_OK && (memcmp(&hash, &thirdHash, sizeof(cipher__SHA256)) == 0))
+    {
       *pFee = 0;
       result = SKY_ERROR;
-    } else {
-      coin__Transaction* pTx;
-      result = SKY_coin_GetTransactionObject( handle, &pTx );
-      if(result == SKY_OK){
+    }
+    else
+    {
+      coin__Transaction *pTx;
+      result = SKY_coin_GetTransactionObject(handle, &pTx);
+      if (result == SKY_OK)
+      {
         coin__TransactionOutput *pOutput = pTx->Out.data;
         *pFee = 100 * Million - pOutput->Hours;
       }

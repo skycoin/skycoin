@@ -8,9 +8,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- RJCT network message
+
 ### Fixed
 
 ### Changed
+
+- Reply to `INTR` message with `GIVP` + `RJCT` on peer overflow
 
 ### Removed
 

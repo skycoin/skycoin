@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
-- Reply to `INTR` message with `GIVP` + `RJCT` on peer overflow
+- Reply to `INTR` message with `GIVP` + `RJCT` on pex pool overflow
 
 ### Removed
 

@@ -168,7 +168,7 @@ Test(coin_transaction, TestTransactionVerify)
   cr_assert(result == SKY_OK);
 }
 
-Test(coin_transaction, TestTransactionPushInput, .signal = SIGABRT)
+Test(coin_transaction, TestTransactionPushInput, SKY_ABORT)
 {
   int result;
   Transaction__Handle handle;
@@ -298,7 +298,7 @@ Test(coin_transaction, TestTransactionsSize)
   cr_assert(sizeTransactions == size);
 }
 
-Test(coin_transactions, TestTransactionVerifyInput, .signal = SIGABRT)
+Test(coin_transactions, TestTransactionVerifyInput, SKY_ABORT)
 {
   int result;
   Transaction__Handle handle;
@@ -401,7 +401,7 @@ Test(coin_transactions, TestTransactionVerifyInput, .signal = SIGABRT)
   cr_assert(result == SKY_OK);
 }
 
-Test(coin_transactions, TestTransactionSignInputs, .signal = SIGABRT)
+Test(coin_transactions, TestTransactionSignInputs, SKY_ABORT)
 {
   int result;
   coin__Transaction *ptx;

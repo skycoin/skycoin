@@ -9,6 +9,10 @@
 #include "skystring.h"
 #include "skytest.h"
 
+#if __APPLE__
+  #include "TargetConditionals.h"
+#endif
+
 TestSuite(cipher_hash, .init = setup, .fini = teardown);
 
 void freshSumRipemd160(GoSlice bytes, cipher__Ripemd160 *rp160)

@@ -277,12 +277,11 @@ char *cr_user_coin__TransactionOutput_tostr(coin__TransactionOutput *x1)
 int cr_user_coin__UxArray_eq(coin__UxArray *slice1, coin__UxArray *slice2)
 {
    return (memcmp(slice1->data, slice2->data, slice1->len) == 0) && ((slice1->len == slice2->len));
-  // return true;
 }
 
-int cr_user_coin__UxArray_noteq(coin__UxArray *x1, coin__UxArray *x2)
+int cr_user_coin__UxArray_noteq(coin__UxArray *slice1, coin__UxArray *slice2)
 {
-  return false;
+  return (memcmp(slice1->data, slice2->data, slice1->len) != 0) && ((slice1->len != slice2->len));
 }
 
 char *cr_user_coin__UxArray_tostr(coin__UxArray *x1)

@@ -33,6 +33,7 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
     - [Run Skycoin with options](#run-skycoin-with-options)
     - [Docker image](#docker-image)
     - [Building your own images](#building-your-own-images)
+    - [Development image](#development-image)
 - [API Documentation](#api-documentation)
     - [REST API](#rest-api)
     - [JSON-RPC 2.0 API](#json-rpc-20-api)
@@ -52,11 +53,17 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
     - [Formatting](#formatting)
     - [Code Linting](#code-linting)
     - [Dependency Management](#dependency-management)
+    - [Configuration Modes](#configuration-modes)
+        - [Development Desktop Daemon Mode](#development-desktop-daemon-mode)
+        - [Server Daemon Mode](#server-daemon-mode)
+        - [Electron Desktop Client Mode](#electron-desktop-client-mode)
+        - [Standalone Desktop Client Mode](#standalone-desktop-client-mode)
     - [Wallet GUI Development](#wallet-gui-development)
     - [Releases](#releases)
         - [Pre-release testing](#pre-release-testing)
         - [Creating release builds](#creating-release-builds)
         - [Release signing](#release-signing)
+- [Responsible Disclosure](#responsible-disclosure)
 
 <!-- /MarkdownTOC -->
 
@@ -488,3 +495,39 @@ Releases and their signatures can be found on the [releases page](https://github
 
 Instructions for generating a PGP key, publishing it, signing the tags and binaries:
 https://gist.github.com/gz-c/de3f9c43343b2f1a27c640fe529b067c
+
+## Responsible Disclosure
+
+Security flaws in skycoin source or infrastructure can be sent to security@skycoin.net.
+Bounties are available for accepted critical bug reports.
+
+PGP Key for signing:
+
+```
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mDMEWaj46RYJKwYBBAHaRw8BAQdApB44Kgde4Kiax3M9Ta+QbzKQQPoUHYP51fhN
+1XTSbRi0I0daLUMgU0tZQ09JTiA8dG9rZW5AcHJvdG9ubWFpbC5jb20+iJYEExYK
+AD4CGwMFCwkIBwIGFQgJCgsCBBYCAwECHgECF4AWIQQQpyK3by/+e9I4AiJYAWMb
+0nx4dAUCWq/TNwUJCmzbzgAKCRBYAWMb0nx4dKzqAP4tKJIk1vV2bO60nYdEuFB8
+FAgb5ITlkj9PyoXcunETVAEAhigo4miyE/nmE9JT3Q/ZAB40YXS6w3hWSl3YOF1P
+VQq4OARZqPjpEgorBgEEAZdVAQUBAQdAa8NkEMxo0dr2x9PlNjTZ6/gGwhaf5OEG
+t2sLnPtYxlcDAQgHiH4EGBYKACYCGwwWIQQQpyK3by/+e9I4AiJYAWMb0nx4dAUC
+Wq/TTQUJCmzb5AAKCRBYAWMb0nx4dFPAAQD7otGsKbV70UopH+Xdq0CDTzWRbaGw
+FAoZLIZRcFv8zwD/Z3i9NjKJ8+LS5oc8rn8yNx8xRS+8iXKQq55bDmz7Igw=
+=5fwW
+-----END PGP PUBLIC KEY BLOCK-----
+```
+
+Key ID: [0x5801631BD27C7874](https://pgp.mit.edu/pks/lookup?search=0x5801631BD27C7874&op=index)
+
+The fingerprint for this key is:
+
+```
+pub   ed25519 2017-09-01 [SC] [expires: 2023-03-18]
+      10A7 22B7 6F2F FE7B D238  0222 5801 631B D27C 7874
+uid                      GZ-C SKYCOIN <token@protonmail.com>
+sub   cv25519 2017-09-01 [E] [expires: 2023-03-18]
+```
+
+Keybase.io account: https://keybase.io/gzc

@@ -212,11 +212,23 @@ function createWindow(url) {
     submenu: [
       {
         label: 'Wallets folder',
-        click: () => shell.showItemInFolder(walletsFolder),
+        click: () => {
+          if (walletsFolder) {
+            shell.showItemInFolder(walletsFolder)
+          } else {
+            shell.showItemInFolder(path.join(app.getPath("home"), '.skycoin', 'wallets'));
+          }
+        },
       },
       {
         label: 'Logs folder',
-        click: () => shell.showItemInFolder(walletsFolder.replace('wallets', 'logs')),
+        click: () => {
+          if (walletsFolder) {
+            shell.showItemInFolder(walletsFolder.replace('wallets', 'logs'))
+          } else {
+            shell.showItemInFolder(path.join(app.getPath("home"), '.skycoin', 'logs'));
+          }
+        },
       },
       {
         label: 'DevTools',

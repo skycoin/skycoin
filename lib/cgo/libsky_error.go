@@ -7,6 +7,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/base58"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/cipher/encrypt"
+	"github.com/skycoin/skycoin/src/cipher/secp256k1-go"
 	"github.com/skycoin/skycoin/src/cli"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
@@ -396,6 +397,12 @@ const (
 	SKY_ErrReadDataLengthFailed
 	// SKY_ErrInvalidDataLength invalid data length
 	SKY_ErrInvalidDataLength
+	// SKY_ErrVerifySignatureInvalidInputsNils VerifySignature, ERROR: invalid input, nils
+	SKY_ErrVerifySignatureInvalidInputsNils
+	// SKY_ErrVerifySignatureInvalidSigLength
+	SKY_ErrVerifySignatureInvalidSigLength
+	// SKY_ErrVerifySignatureInvalidPubkeysLength
+	SKY_ErrVerifySignatureInvalidPubkeysLength
 )
 
 var (
@@ -546,7 +553,7 @@ var (
 		wallet.ErrWalletConstraint:          SKY_ErrWalletConstraint,
 		wallet.ErrDuplicateUxOuts:           SKY_ErrDuplicateUxOuts,
 		wallet.ErrUnknownWalletID:           SKY_ErrUnknownWalletID,
-		// Encrypt
+
 		encrypt.ErrSHA256orMissingPassword:         SKY_ErrSHA256orMissingPassword,
 		encrypt.ErrLenghtDataOverflowMaxUint32:     SKY_ErrLenghtDataOverflowMaxUint32,
 		encrypt.ErrInvalidChecksumLength:           SKY_ErrInvalidChecksumLength,
@@ -557,6 +564,10 @@ var (
 		encrypt.ErrSHA256orInvalidPassword:         SKY_ErrSHA256orInvalidPassword,
 		encrypt.ErrReadDataLengthFailed:            SKY_ErrReadDataLengthFailed,
 		encrypt.ErrInvalidDataLength:               SKY_ErrInvalidDataLength,
+
+		secp256k1.ErrVerifySignatureInvalidInputsNils:    SKY_ErrVerifySignatureInvalidInputsNils,
+		secp256k1.ErrVerifySignatureInvalidSigLength:     SKY_ErrVerifySignatureInvalidSigLength,
+		secp256k1.ErrVerifySignatureInvalidPubkeysLength: SKY_ErrVerifySignatureInvalidPubkeysLength,
 	}
 )
 

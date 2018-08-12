@@ -18,7 +18,7 @@ import "C"
 
 //export SKY_ripemd160_New
 func SKY_ripemd160_New(handle *C.Hash_Handle) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()

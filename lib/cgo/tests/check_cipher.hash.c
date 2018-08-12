@@ -1,7 +1,5 @@
 #include <stdio.h>
 #include <string.h>
-#include <signal.h>
-
 #include <criterion/criterion.h>
 #include <criterion/new/assert.h>
 #include "libskycoin.h"
@@ -9,9 +7,8 @@
 #include "skystring.h"
 #include "skytest.h"
 
-#if __APPLE__
-  #include "TargetConditionals.h"
-#endif
+
+
 
 TestSuite(cipher_hash, .init = setup, .fini = teardown);
 
@@ -356,16 +353,24 @@ Test(cipher_hash, TestMerkle)
   cr_assert(eq(u8[32], out, h));
 }
 
-Test(cipher_hash, TestMustSumSHA256, 
-  #if __linux__ 
-    .signal=SIGABRT 
-  #elif __APPLE__
-    #if TARGET_OS_MAC
-    .exit_code=2
-    #endif
-  #endif
- )
+
+Test(cipher_hash, TestSHA256Null)
 {
+  cipher__SHA256 x;
+  memset(&x, 0, sizeof(cipher__SHA256));
+  GoUint32 result;
+  GoUint8 isNull;
+  cr_assert(SKY_cipher_SHA256_Null(&x, &isNull) == SKY_OK);
+  cr_assert(isNull);
+  char buff[130];
+  GoSlice b = {buff, 0, 129};
+  randBytes(&b, 128);
+  cr_assert(SKY_cipher_SumSHA256(b, &x) == SKY_OK);
+  cr_assert(SKY_cipher_SHA256_Null(&x, &isNull) == SKY_OK);
+  cr_assert(not(isNull));
+}
+
+Test(cipher_hash, TestMustSumSHA256, SKY_ABORT ){
   char buffer_b[1024];
   GoSlice b = {buffer_b, 0, 1024};
   randBytes(&b, 128);
@@ -383,20 +388,4 @@ Test(cipher_hash, TestMustSumSHA256,
   memset(&sha, 0, sizeof(cipher__SHA256));
   freshSumSHA256(b, &sha);
   cr_assert(eq(u8[32], h, sha));
-}
-
-Test(cipher_hash, TestSHA256Null)
-{
-  cipher__SHA256 x;
-  memset(&x, 0, sizeof(cipher__SHA256));
-  GoUint32 result;
-  GoUint8 isNull;
-  cr_assert(SKY_cipher_SHA256_Null(&x, &isNull) == SKY_OK);
-  cr_assert(isNull);
-  char buff[130];
-  GoSlice b = {buff, 0, 129};
-  randBytes(&b, 128);
-  cr_assert(SKY_cipher_SumSHA256(b, &x) == SKY_OK);
-  cr_assert(SKY_cipher_SHA256_Null(&x, &isNull) == SKY_OK);
-  cr_assert(not(isNull));
 }

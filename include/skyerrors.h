@@ -1,3 +1,16 @@
+#include <signal.h>
+
+#if __APPLE__
+#include "TargetConditionals.h"
+#endif
+
+#if __linux__
+#define SKY_ABORT .signal = SIGABRT
+#elif __APPLE__
+#if TARGET_OS_MAC
+#define SKY_ABORT .exit_code = 2
+#endif
+#endif
 
 #ifndef SKY_ERRORS_H
 #define SKY_ERRORS_H
@@ -165,4 +178,5 @@
 #define SKY_ErrUnknownWalletID 0x0B000029
 #define SKY_ErrSHA256orMissingPassword 0x0B00002A
 #define SKY_ErrSHA256LenghtDataOverflowMaxUint32 0x0B00002B
+#define SKY_ErrVerifySignatureInvalidPubkeysLength 0X0b000036
 #endif

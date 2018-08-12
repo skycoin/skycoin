@@ -1,7 +1,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <signal.h>
 #include <criterion/criterion.h>
 #include <criterion/new/assert.h>
 
@@ -431,8 +430,7 @@ Test(cipher_address, TestBitcoinAddressFromBytes) {
   cr_assert(result == SKY_ErrAddressInvalidVersion, "Invalid version");
 }
 
-Test(cipher_address, TestMustDecodeBase58Address, .signal = ((__linux__) ? SIGABRT : 2)) {
-
+Test(cipher_address, TestMustDecodeBase58Address, SKY_ABORT) {
   cipher__PubKey p;
   cipher__SecKey s;
   GoInt result;

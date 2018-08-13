@@ -441,6 +441,8 @@ var (
 		coin.ErrUint64OverflowsInt64:               SKY_ErrUint64OverflowsInt64,
 		coin.ErrInt64UnderflowsUint64:              SKY_ErrInt64UnderflowsUint64,
 		// daemon
+		// Removed in 34ad39ddb350
+		// gnet.ErrMaxDefaultConnectionsReached:           SKY_ErrMaxDefaultConnectionsReached,
 		pex.ErrPeerlistFull:                               SKY_ErrPeerlistFull,
 		pex.ErrInvalidAddress:                             SKY_ErrInvalidAddress,
 		pex.ErrNoLocalhost:                                SKY_ErrNoLocalhost,
@@ -457,7 +459,6 @@ var (
 		gnet.ErrConnectionPoolClosed:                      SKY_ErrConnectionPoolClosed,
 		gnet.ErrWriteQueueFull:                            SKY_ErrWriteQueueFull,
 		gnet.ErrNoReachableConnections:                    SKY_ErrNoReachableConnections,
-		gnet.ErrMaxDefaultConnectionsReached:              SKY_ErrMaxDefaultConnectionsReached,
 		daemon.ErrDisconnectInvalidVersion:                SKY_ErrDisconnectInvalidVersion,
 		daemon.ErrDisconnectIntroductionTimeout:           SKY_ErrDisconnectIntroductionTimeout,
 		daemon.ErrDisconnectVersionSendFailed:             SKY_ErrDisconnectVersionSendFailed,

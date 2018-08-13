@@ -397,7 +397,13 @@ func SKY_coin_AddressUxOuts_Set(handle C.AddressUxOuts_Handle, _key *C.cipher__A
 	a, ok := lookupAddressUxOutHandle(handle)
 	if ok {
 		key := *(*cipher.Address)(unsafe.Pointer(_key))
-		uxOuts := *(*coin.UxArray)(unsafe.Pointer(_uxOuts))
+		//Copy the slice because it is going to be kept
+		//We can't hold memory allocated outside Go
+		tempUxOuts := *(*coin.UxArray)(unsafe.Pointer(_uxOuts))
+		uxOuts := make(coin.UxArray, 0, len(tempUxOuts))
+		for _, ux := range tempUxOuts {
+			uxOuts = append(uxOuts, ux)
+		}
 		(*a)[key] = uxOuts
 		____error_code = SKY_OK
 	} else {

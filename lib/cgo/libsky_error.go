@@ -12,7 +12,6 @@ import (
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/util/droplet"
-	skyerrors "github.com/skycoin/skycoin/src/util/errors"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/file"
 	"github.com/skycoin/skycoin/src/visor"
@@ -616,7 +615,7 @@ func catchApiPanic(errcode uint32, err interface{}) uint32 {
 		return SKY_API_LOCKED
 	}
 	if err != nil {
-		if valueErr, isValueError := err.(skyerrors.ValueError); isValueError {
+		if valueErr, isValueError := err.(cipher.ValueError); isValueError {
 			return libErrorCode(valueErr.ErrorData)
 		} else {
 			// Setting flag every time (i.e. even when haltOnPanic is active

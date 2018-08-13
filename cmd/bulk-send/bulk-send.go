@@ -6,12 +6,13 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cli"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -65,21 +66,16 @@ func run() error {
 			continue
 		}
 
-		amt, err := strconv.ParseInt(f[1], 10, 64)
+		coins, err := droplet.FromString(f[1])
 		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-
-		if amt <= 0 {
-			err := fmt.Errorf("Invalid amount %s", f[1])
+			err = fmt.Errorf("Invalid amount %s: %v", f[1], err)
 			errs = append(errs, err)
 			continue
 		}
 
 		sends = append(sends, cli.SendAmount{
 			Addr:  addr,
-			Coins: uint64(amt * 1e6),
+			Coins: coins,
 		})
 	}
 
@@ -96,14 +92,42 @@ func run() error {
 	}
 	c.UseCSRF = true
 
-	tx, err := cli.CreateRawTxFromWallet(c, *walletFile, changeAddr, sends, nil)
+	txn, err := cli.CreateRawTxFromWallet(c, *walletFile, changeAddr, sends, nil)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("%+v\n", tx)
+	fmt.Printf("%+v\n", txn)
 
-	// txid, err := c.InjectTransaction(tx)
+	var totalCoins, totalHours uint64
+	fmt.Println("Txn.Out:")
+	for _, x := range txn.Out {
+		coins, err := droplet.ToString(x.Coins)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("%s Coins:%s Hours:%d\n", x.Address, coins, x.Hours)
+
+		totalHours, err = coin.AddUint64(totalHours, x.Hours)
+		if err != nil {
+			panic(err)
+		}
+
+		totalCoins, err = coin.AddUint64(totalCoins, x.Coins)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	fmt.Println("Total outputs:", len(txn.Out))
+	totalCoinsStr, err := droplet.ToString(totalCoins)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Total coins:", totalCoinsStr)
+	fmt.Println("Total hours:", totalHours)
+
+	// txid, err := c.InjectTransaction(txn)
 	// if err != nil {
 	// 	return err
 	// }

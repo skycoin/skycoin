@@ -2,13 +2,14 @@ package main
 
 import (
 	"encoding/csv"
+	"encoding/hex"
 	"errors"
 	"flag"
 	"fmt"
 	"os"
 	"strings"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
+	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cli"
 	"github.com/skycoin/skycoin/src/coin"
@@ -17,9 +18,10 @@ import (
 )
 
 func run() error {
-	csvFile := flag.String("csv", "", "csv file to load (format: skyaddress,coins). coins are in whole numbers")
+	csvFile := flag.String("csv", "", "csv file to load (format: skyaddress,coins). coins should be whole numbers or decimal strings, e.g. 10 or 10.123000")
 	walletFile := flag.String("wallet", "", "wallet file")
 	rpcAddr := flag.String("rpc-addr", "http://127.0.0.1:6420", "rpc interface address")
+	doSend := flag.Bool("send", false, "send the transaction (by default, creates and prints the txn, but does not send it)")
 
 	flag.Parse()
 
@@ -86,11 +88,7 @@ func run() error {
 		return errs[0]
 	}
 
-	c, err := webrpc.NewClient(*rpcAddr)
-	if err != nil {
-		return err
-	}
-	c.UseCSRF = true
+	c := api.NewClient(*rpcAddr)
 
 	txn, err := cli.CreateRawTxFromWallet(c, *walletFile, changeAddr, sends, nil)
 	if err != nil {
@@ -127,12 +125,17 @@ func run() error {
 	fmt.Println("Total coins:", totalCoinsStr)
 	fmt.Println("Total hours:", totalHours)
 
-	// txid, err := c.InjectTransaction(txn)
-	// if err != nil {
-	// 	return err
-	// }
+	txnStr := hex.EncodeToString(txn.Serialize())
+	fmt.Println("rawtx:", txnStr)
 
-	// fmt.Println("txid:", txid)
+	if *doSend {
+		txid, err := c.InjectTransaction(txnStr)
+		if err != nil {
+			return err
+		}
+
+		fmt.Println("txid:", txid)
+	}
 
 	return nil
 }

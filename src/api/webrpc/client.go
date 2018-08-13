@@ -148,15 +148,15 @@ func (c *Client) CSRF() (string, error) {
 	return token, nil
 }
 
-// GetUnspentOutputs returns unspent outputs for a set of addresses
+// OutputsForAddresses returns unspent outputs for a set of addresses
 // TODO -- what is the difference between this and GetAddressUxOuts?
-func (c *Client) GetUnspentOutputs(addrs []string) (*OutputsResult, error) {
+func (c *Client) OutputsForAddresses(addrs []string) (*visor.ReadableOutputSet, error) {
 	outputs := OutputsResult{}
 	if err := c.Do(&outputs, "get_outputs", addrs); err != nil {
 		return nil, err
 	}
 
-	return &outputs, nil
+	return &outputs.Outputs, nil
 }
 
 // InjectTransactionString injects a hex-encoded transaction string to the network

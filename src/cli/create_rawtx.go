@@ -10,7 +10,6 @@ import (
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor"
@@ -280,7 +279,7 @@ func validateSendAmounts(toAddrs []SendAmount) error {
 // PUBLIC
 
 // CreateRawTxFromWallet creates a transaction from any address or combination of addresses in a wallet
-func CreateRawTxFromWallet(c *webrpc.Client, walletFile, chgAddr string, toAddrs []SendAmount, pr PasswordReader) (*coin.Transaction, error) {
+func CreateRawTxFromWallet(c GetOutputser, walletFile, chgAddr string, toAddrs []SendAmount, pr PasswordReader) (*coin.Transaction, error) {
 	// check change address
 	cAddr, err := cipher.DecodeBase58Address(chgAddr)
 	if err != nil {
@@ -334,7 +333,7 @@ func CreateRawTxFromWallet(c *webrpc.Client, walletFile, chgAddr string, toAddrs
 }
 
 // CreateRawTxFromAddress creates a transaction from a specific address in a wallet
-func CreateRawTxFromAddress(c *webrpc.Client, addr, walletFile, chgAddr string, toAddrs []SendAmount, pr PasswordReader) (*coin.Transaction, error) {
+func CreateRawTxFromAddress(c GetOutputser, addr, walletFile, chgAddr string, toAddrs []SendAmount, pr PasswordReader) (*coin.Transaction, error) {
 	// check if the address is in the default wallet.
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
@@ -390,24 +389,29 @@ func CreateRawTxFromAddress(c *webrpc.Client, addr, walletFile, chgAddr string, 
 	return CreateRawTx(c, wlt, []string{addr}, chgAddr, toAddrs, password)
 }
 
+// GetOutputser implements unspent output querying
+type GetOutputser interface {
+	OutputsForAddresses([]string) (*visor.ReadableOutputSet, error)
+}
+
 // CreateRawTx creates a transaction from a set of addresses contained in a loaded *wallet.Wallet
-func CreateRawTx(c *webrpc.Client, wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount, password []byte) (*coin.Transaction, error) {
+func CreateRawTx(c GetOutputser, wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount, password []byte) (*coin.Transaction, error) {
 	if err := validateSendAmounts(toAddrs); err != nil {
 		return nil, err
 	}
 
 	// Get unspent outputs of those addresses
-	unspents, err := c.GetUnspentOutputs(inAddrs)
+	outputs, err := c.OutputsForAddresses(inAddrs)
 	if err != nil {
 		return nil, err
 	}
 
-	inUxs, err := unspents.Outputs.SpendableOutputs().ToUxArray()
+	inUxs, err := outputs.SpendableOutputs().ToUxArray()
 	if err != nil {
 		return nil, err
 	}
 
-	txn, err := createRawTx(unspents.Outputs, wlt, chgAddr, toAddrs, password)
+	txn, err := createRawTx(outputs, wlt, chgAddr, toAddrs, password)
 	if err != nil {
 		return nil, err
 	}
@@ -497,7 +501,7 @@ func verifyTransactionConstraints(txn *coin.Transaction, uxIn coin.UxArray, maxS
 	// return coin.VerifyTransactionHoursSpending(head.Time(), uxIn, uxOut)
 }
 
-func createRawTx(uxouts visor.ReadableOutputSet, wlt *wallet.Wallet, chgAddr string, toAddrs []SendAmount, password []byte) (*coin.Transaction, error) {
+func createRawTx(uxouts *visor.ReadableOutputSet, wlt *wallet.Wallet, chgAddr string, toAddrs []SendAmount, password []byte) (*coin.Transaction, error) {
 	// Calculate total required coins
 	var totalCoins uint64
 	for _, arg := range toAddrs {
@@ -549,7 +553,7 @@ func createRawTx(uxouts visor.ReadableOutputSet, wlt *wallet.Wallet, chgAddr str
 	return makeTx()
 }
 
-func chooseSpends(uxouts visor.ReadableOutputSet, coins uint64) ([]wallet.UxBalance, error) {
+func chooseSpends(uxouts *visor.ReadableOutputSet, coins uint64) ([]wallet.UxBalance, error) {
 	// Convert spendable unspent outputs to []wallet.UxBalance
 	spendableOutputs, err := visor.ReadableOutputsToUxBalances(uxouts.SpendableOutputs())
 	if err != nil {

@@ -7,6 +7,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -60,7 +61,9 @@ func getWalletOutputsCmd(c *gcli.Context) error {
 		return err
 	}
 
-	return printJSON(outputs)
+	return printJSON(webrpc.OutputsResult{
+		Outputs: *outputs,
+	})
 }
 
 func getAddressOutputsCmd(c *gcli.Context) error {
@@ -75,18 +78,20 @@ func getAddressOutputsCmd(c *gcli.Context) error {
 		}
 	}
 
-	outputs, err := rpcClient.GetUnspentOutputs(addrs)
+	outputs, err := rpcClient.OutputsForAddresses(addrs)
 	if err != nil {
 		return err
 	}
 
-	return printJSON(outputs)
+	return printJSON(webrpc.OutputsResult{
+		Outputs: *outputs,
+	})
 }
 
 // PUBLIC
 
 // GetWalletOutputsFromFile returns unspent outputs associated with all addresses in a wallet file
-func GetWalletOutputsFromFile(c *webrpc.Client, walletFile string) (*webrpc.OutputsResult, error) {
+func GetWalletOutputsFromFile(c *webrpc.Client, walletFile string) (*visor.ReadableOutputSet, error) {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
 		return nil, err
@@ -96,12 +101,12 @@ func GetWalletOutputsFromFile(c *webrpc.Client, walletFile string) (*webrpc.Outp
 }
 
 // GetWalletOutputs returns unspent outputs associated with all addresses in a wallet.Wallet
-func GetWalletOutputs(c *webrpc.Client, wlt *wallet.Wallet) (*webrpc.OutputsResult, error) {
+func GetWalletOutputs(c *webrpc.Client, wlt *wallet.Wallet) (*visor.ReadableOutputSet, error) {
 	cipherAddrs := wlt.GetAddresses()
 	addrs := make([]string, len(cipherAddrs))
 	for i := range cipherAddrs {
 		addrs[i] = cipherAddrs[i].String()
 	}
 
-	return c.GetUnspentOutputs(addrs)
+	return c.OutputsForAddresses(addrs)
 }

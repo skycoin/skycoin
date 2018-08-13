@@ -9,6 +9,7 @@ import (
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -131,7 +132,7 @@ func CheckWalletBalance(c *webrpc.Client, walletFile string) (*BalanceResult, er
 
 // GetBalanceOfAddresses returns the total and individual balances of a set of addresses
 func GetBalanceOfAddresses(c *webrpc.Client, addrs []string) (*BalanceResult, error) {
-	outs, err := c.GetUnspentOutputs(addrs)
+	outs, err := c.OutputsForAddresses(addrs)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +140,7 @@ func GetBalanceOfAddresses(c *webrpc.Client, addrs []string) (*BalanceResult, er
 	return getBalanceOfAddresses(outs, addrs)
 }
 
-func getBalanceOfAddresses(outs *webrpc.OutputsResult, addrs []string) (*BalanceResult, error) {
+func getBalanceOfAddresses(outs *visor.ReadableOutputSet, addrs []string) (*BalanceResult, error) {
 	addrsMap := make(map[string]struct{}, len(addrs))
 	for _, a := range addrs {
 		addrsMap[a] = struct{}{}
@@ -150,7 +151,7 @@ func getBalanceOfAddresses(outs *webrpc.OutputsResult, addrs []string) (*Balance
 	}, len(addrs))
 
 	// Count confirmed balances
-	for _, o := range outs.Outputs.HeadOutputs {
+	for _, o := range outs.HeadOutputs {
 		if _, ok := addrsMap[o.Address]; !ok {
 			return nil, fmt.Errorf("Found address %s in GetUnspentOutputs result, but this address wasn't requested", o.Address)
 		}
@@ -168,7 +169,7 @@ func getBalanceOfAddresses(outs *webrpc.OutputsResult, addrs []string) (*Balance
 	}
 
 	// Count spendable balances
-	for _, o := range outs.Outputs.SpendableOutputs() {
+	for _, o := range outs.SpendableOutputs() {
 		if _, ok := addrsMap[o.Address]; !ok {
 			return nil, fmt.Errorf("Found address %s in GetUnspentOutputs result, but this address wasn't requested", o.Address)
 		}
@@ -186,7 +187,7 @@ func getBalanceOfAddresses(outs *webrpc.OutputsResult, addrs []string) (*Balance
 	}
 
 	// Count predicted balances
-	for _, o := range outs.Outputs.ExpectedOutputs() {
+	for _, o := range outs.ExpectedOutputs() {
 		if _, ok := addrsMap[o.Address]; !ok {
 			return nil, fmt.Errorf("Found address %s in GetUnspentOutputs result, but this address wasn't requested", o.Address)
 		}

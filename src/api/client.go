@@ -794,7 +794,8 @@ func (c *Client) UnconfirmedTransactions(addrs []string) (*[]daemon.TransactionR
 	return &r, nil
 }
 
-// InjectTransaction makes a request to POST /api/v1/injectTransaction
+// InjectTransaction makes a request to POST /api/v1/injectTransaction.
+// rawTx is a hex-encoded, serialized transaction
 func (c *Client) InjectTransaction(rawTx string) (string, error) {
 	v := struct {
 		Rawtx string `json:"rawtx"`

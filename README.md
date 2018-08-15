@@ -8,9 +8,28 @@
 
 Skycoin is a next-generation cryptocurrency.
 
-Skycoin improves on Bitcoin in too many ways to be addressed here.
+Skycoin was written from scratch and designed over four years to realize the
+ideal of Bitcoin and represents the apex of cryptocurrency design.
+Skycoin is not designed to add features to Bitcoin,
+but rather improves Bitcoin by increasing simplicity,
+security and stripping out everything non-essential.
 
-Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
+Some people have hyped the Skycoin Project as leading into "Bitcoin 3.0".
+The coin itself is not "Bitcoin 3.0",
+but is rather "Bitcoin 1.0". Bitcoin is a prototype crypto-coin.
+Skycoin was designed to be what Bitcoin would look like if it were built from
+scratch, to remedy the rough edges in the Bitcoin design.
+
+- no duplicate coin-base outputs
+- enforced checks for hash collisions
+- simple deterministic wallets
+- no transaction malleability
+- no signature malleability
+- removal of the scripting language
+- CoinJoin and normal transactions are indistinguishable
+- elimination of edge-cases that prevent independent node implementations
+- <=10 second transaction times
+- elimination of the need for mining to achieve blockchain consensus
 
 ## Links
 
@@ -19,6 +38,7 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
 * [Skycoin Docs](https://www.skycoin.net/docs)
 * [Skycoin Blockchain Explorer](https://explorer.skycoin.net)
 * [Skycoin Development Telegram Channel](https://t.me/skycoindev)
+* [Skycoin Github Wiki](https://github.com/skycoin/skycoin/wiki)
 
 ## Table of Contents
 
@@ -52,7 +72,9 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
         - [Update golden files in integration testdata](#update-golden-files-in-integration-testdata)
     - [Formatting](#formatting)
     - [Code Linting](#code-linting)
-    - [Dependency Management](#dependency-management)
+    - [Dependencies](#dependencies)
+        - [Rules](#rules)
+        - [Management](#management)
     - [Configuration Modes](#configuration-modes)
         - [Development Desktop Daemon Mode](#development-desktop-daemon-mode)
         - [Server Daemon Mode](#server-daemon-mode)
@@ -354,7 +376,18 @@ Run linters:
 make lint
 ```
 
-### Dependency Management
+### Dependencies
+
+#### Rules
+
+Dependencies must not require `cgo`.  This means dependencies cannot be wrappers around C libraries.
+Requiring `cgo` breaks cross compilation and interferes with repeatable (deterministic) builds.
+
+Critical cryptographic dependencies used by code in package `cipher` are archived inside the `cipher` folder,
+rather than in the `vendor` folder.  This prevents a user of the `cipher` package from accidentally using a
+different version of the `cipher` dependencies than were developed, which could have catastrophic but hidden problems.
+
+#### Management
 
 Dependencies are managed with [dep](https://github.com/golang/dep).
 

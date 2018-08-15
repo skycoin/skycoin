@@ -28,6 +28,7 @@ func run() error {
 	secfile := flag.String("secfile", "", "command for file to write the secret keys")
 	addrOut := flag.String("addrfile", "addresses", "command for changing addresses output file")
 	outputInfo := flag.String("infofile", "", "create file with date of generation, seed, coin, number of keys generated")
+	fiber := flag.Bool("fiber-addresses", false, "generate addresses in format of fiber.toml")
 	flag.Parse()
 
 	var coinType wallet.CoinType
@@ -86,8 +87,13 @@ func run() error {
 		if err != nil {
 			return err
 		}
+
 		for _, e := range w.Entries {
-			fmt.Fprintln(f, e.Address)
+			if *fiber {
+				fmt.Fprintln(f, fmt.Sprintf("\"%s\",", e.Address))
+			} else {
+				fmt.Fprintln(f, e.Address)
+			}
 		}
 
 		err = f.Close()

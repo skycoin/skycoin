@@ -20,6 +20,7 @@ import (
 	gcli "github.com/urfave/cli"
 	"golang.org/x/crypto/ssh/terminal"
 
+	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/util/file"
 )
@@ -245,6 +246,8 @@ func NewApp(cfg Config) (*App, error) {
 		checkdbCmd(),
 		createRawTxCmd(cfg),
 		decodeRawTxCmd(),
+		decryptWalletCmd(cfg),
+		encryptWalletCmd(cfg),
 		generateAddrsCmd(cfg),
 		generateWalletCmd(cfg),
 		lastBlocksCmd(),
@@ -252,6 +255,7 @@ func NewApp(cfg Config) (*App, error) {
 		listWalletsCmd(),
 		sendCmd(),
 		showConfigCmd(),
+		showSeedCmd(cfg),
 		statusCmd(),
 		transactionCmd(),
 		verifyAddressCmd(),
@@ -260,9 +264,6 @@ func NewApp(cfg Config) (*App, error) {
 		walletDirCmd(),
 		walletHisCmd(),
 		walletOutputsCmd(cfg),
-		encryptWalletCmd(cfg),
-		decryptWalletCmd(cfg),
-		showSeedCmd(cfg),
 	}
 
 	app.Name = fmt.Sprintf("%s-cli", cfg.Coin)
@@ -287,9 +288,12 @@ func NewApp(cfg Config) (*App, error) {
 	}
 	rpcClient.UseCSRF = cfg.UseCSRF
 
+	apiClient := api.NewClient(cfg.RPCAddress)
+
 	app.Metadata = map[string]interface{}{
 		"config":   cfg,
 		"rpc":      rpcClient,
+		"api":      apiClient,
 		"quitChan": make(chan struct{}),
 	}
 
@@ -304,6 +308,11 @@ func (app *App) Run(args []string) error {
 // RPCClientFromContext returns a webrpc.Client from a urfave/cli Context
 func RPCClientFromContext(c *gcli.Context) *webrpc.Client {
 	return c.App.Metadata["rpc"].(*webrpc.Client)
+}
+
+// APIClientFromContext returns an api.Client from a urface/cli Context
+func APIClientFromContext(c *gcli.Context) *api.Client {
+	return c.App.Metadata["api"].(*api.Client)
 }
 
 // ConfigFromContext returns a Config from a urfave/cli Context

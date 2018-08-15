@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
@@ -795,8 +797,15 @@ func (c *Client) UnconfirmedTransactions(addrs []string) (*[]daemon.TransactionR
 }
 
 // InjectTransaction makes a request to POST /api/v1/injectTransaction.
+func (c *Client) InjectTransaction(txn *coin.Transaction) (string, error) {
+	d := txn.Serialize()
+	rawTx := hex.EncodeToString(d)
+	return c.InjectEncodedTransaction(rawTx)
+}
+
+// InjectEncodedTransaction makes a request to POST /api/v1/injectTransaction.
 // rawTx is a hex-encoded, serialized transaction
-func (c *Client) InjectTransaction(rawTx string) (string, error) {
+func (c *Client) InjectEncodedTransaction(rawTx string) (string, error) {
 	v := struct {
 		Rawtx string `json:"rawtx"`
 	}{

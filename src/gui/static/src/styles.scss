@@ -348,3 +348,13 @@ On-boarding components
     opacity: 1;
   }
 }
+
+.mat-dialog-content {
+  max-height: 90vh !important;
+}
+
+@media (max-height: 600px) {
+  .mat-dialog-content {
+    max-height: 80vh !important;
+  }
+}

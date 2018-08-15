@@ -395,3 +395,15 @@ int getCountWord(const char *str) {
 
   return len;
 }*/
+
+int copyUxArraytoSlice(coin__UxArray* pdest, GoSlice* psource){
+  pdest->len = psource->len;
+  pdest->cap = psource->len;
+  int size = pdest->len * sizeof(coin__UxArray);
+  pdest->data = malloc(size);
+	if( pdest->data == NULL )
+		return SKY_ERROR;
+  registerMemCleanup( pdest->data );
+  memcpy(pdest->data, psource->data, size );
+	return SKY_OK;
+}

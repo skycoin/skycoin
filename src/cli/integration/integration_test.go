@@ -220,16 +220,6 @@ func checkGoldenFileObjectChanges(t *testing.T, goldenFile string, td TestData) 
 	require.Equal(t, string(c), string(b)+"\n", "json struct output differs from golden file, was a field added to the struct?")
 }
 
-func writeJSON(t *testing.T, filename string, obj interface{}) {
-	f, err := os.Create(filename)
-	require.NoError(t, err)
-	defer f.Close()
-
-	enc := json.NewEncoder(f)
-	enc.SetIndent("", "\t")
-	require.NoError(t, enc.Encode(obj))
-}
-
 func mode(t *testing.T) string {
 	mode := os.Getenv("SKYCOIN_INTEGRATION_TEST_MODE")
 	switch mode {

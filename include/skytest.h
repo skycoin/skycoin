@@ -56,5 +56,6 @@ void setup(void);
 void teardown(void);
 
 extern void toGoString(GoString_ *s, GoString *r);
+extern int copyUxArraytoSlice(coin__UxArray* pdest, GoSlice* psource);
 
 #endif

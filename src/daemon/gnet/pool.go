@@ -52,8 +52,6 @@ var (
 	ErrWriteQueueFull = errors.New("Write queue full")
 	// ErrNoReachableConnections when broadcasting a message, no connections were available to send a message to
 	ErrNoReachableConnections = errors.New("All pool connections are unreachable at this time")
-	// ErrMaxDefaultConnectionsReached returns when maximum number of default connections is reached
-	ErrMaxDefaultConnectionsReached = errors.New("maximum number of default outgoing connections was reached")
 	// Logger
 	logger = logging.MustGetLogger("gnet")
 )
@@ -331,8 +329,9 @@ func (pool *ConnectionPool) strand(name string, f func() error) error {
 	return strand.Strand(logger, pool.reqC, name, f, pool.quit, ErrConnectionPoolClosed)
 }
 
-// NewConnection creates a new Connection around a net.Conn.  Trying to make a connection
+// NewConnection creates a new Connection around a net.Conn. Trying to make a connection
 // to an address that is already connected will failed.
+// Returns nil, nil when max default connection limit hit
 func (pool *ConnectionPool) NewConnection(conn net.Conn, solicited bool) (*Connection, error) {
 	a := conn.RemoteAddr().String()
 	var nc *Connection
@@ -342,11 +341,13 @@ func (pool *ConnectionPool) NewConnection(conn net.Conn, solicited bool) (*Conne
 		}
 
 		if _, ok := pool.Config.DefaultPeerConnections[a]; ok {
-			if len(pool.defaultPeerConnections) >= pool.Config.MaxDefaultPeerOutgoingConnections && solicited {
-				return ErrMaxDefaultConnectionsReached
+			if pool.isMaxDefaultConnectionsReached() && solicited {
+				return nil
 			}
 
 			pool.defaultPeerConnections[a] = struct{}{}
+			l := len(pool.defaultPeerConnections)
+			logger.Debugf("%d/%d default connections in use", l, pool.Config.MaxDefaultPeerOutgoingConnections)
 		}
 
 		pool.connID++
@@ -395,17 +396,16 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) erro
 			return
 		}
 
-		c, err = pool.NewConnection(conn, solicited)
-		if err != nil {
-			err = fmt.Errorf("Create connection to %s failed: %v", addr, err)
-			return
-		}
-
-		return c, err
+		return pool.NewConnection(conn, solicited)
 	}()
 
 	if err != nil {
 		return err
+	}
+
+	// c is nil if max default connection limit is reached
+	if c == nil {
+		return nil
 	}
 
 	if pool.Config.ConnectCallback != nil {
@@ -645,19 +645,34 @@ func (pool *ConnectionPool) IsDefaultConnection(addr string) bool {
 	return ok
 }
 
-// IsMaxDefaultConnReached returns whether the max default connection number was reached.
-func (pool *ConnectionPool) IsMaxDefaultConnReached() (bool, error) {
+// IsMaxDefaultConnectionsReached returns whether the max default connection number was reached.
+func (pool *ConnectionPool) IsMaxDefaultConnectionsReached() (bool, error) {
 	var reached bool
-	if err := pool.strand("IsDefaultMaxConnReached", func() error {
-		l := len(pool.defaultPeerConnections)
-		logger.Debugf("%d/%d default connections in use", l, pool.Config.MaxDefaultPeerOutgoingConnections)
-		reached = l > pool.Config.MaxDefaultPeerOutgoingConnections
+	if err := pool.strand("IsMaxDefaultConnectionsReached", func() error {
+		reached = pool.isMaxDefaultConnectionsReached()
 		return nil
 	}); err != nil {
 		return false, err
 	}
 
 	return reached, nil
+}
+
+func (pool *ConnectionPool) isMaxDefaultConnectionsReached() bool {
+	return len(pool.defaultPeerConnections) >= pool.Config.MaxDefaultPeerOutgoingConnections
+}
+
+// DefaultConnectionsInUse returns the default connection in use
+func (pool *ConnectionPool) DefaultConnectionsInUse() (int, error) {
+	var use int
+	if err := pool.strand("GetDefaultConnectionsInUse", func() error {
+		use = len(pool.defaultPeerConnections)
+		return nil
+	}); err != nil {
+		return 0, err
+	}
+
+	return use, nil
 }
 
 func (pool *ConnectionPool) updateLastSent(addr string, t time.Time) error {
@@ -710,16 +725,14 @@ func (pool *ConnectionPool) Connect(address string) error {
 	// Checks if it's one of the default connection
 	if err := pool.strand("Check default connection", func() error {
 		if _, ok := pool.Config.DefaultPeerConnections[address]; ok {
-			hitMaxDefaultConnNum = len(pool.defaultPeerConnections) >= pool.Config.MaxDefaultPeerOutgoingConnections
+			hitMaxDefaultConnNum = pool.isMaxDefaultConnectionsReached()
 		}
-
 		return nil
 	}); err != nil {
 		return err
 	}
 
 	if hitMaxDefaultConnNum {
-		logger.Critical().Infof("ConnectionPool.Connect: %v", ErrMaxDefaultConnectionsReached)
 		return nil
 	}
 
@@ -744,6 +757,12 @@ func (pool *ConnectionPool) Connect(address string) error {
 func (pool *ConnectionPool) Disconnect(addr string, r DisconnectReason) error {
 	if err := pool.strand("Disconnect", func() error {
 		exist := pool.disconnect(addr)
+
+		// checks if the address is default node address
+		if _, ok := pool.Config.DefaultPeerConnections[addr]; ok {
+			l := len(pool.defaultPeerConnections)
+			logger.Debugf("%d/%d default connections in use", l, pool.Config.MaxDefaultPeerOutgoingConnections)
+		}
 
 		if pool.Config.DisconnectCallback != nil && exist {
 			pool.Config.DisconnectCallback(addr, r)

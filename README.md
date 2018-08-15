@@ -8,9 +8,28 @@
 
 Skycoin is a next-generation cryptocurrency.
 
-Skycoin improves on Bitcoin in too many ways to be addressed here.
+Skycoin was written from scratch and designed over four years to realize the
+ideal of Bitcoin and represents the apex of cryptocurrency design.
+Skycoin is not designed to add features to Bitcoin,
+but rather improves Bitcoin by increasing simplicity,
+security and stripping out everything non-essential.
 
-Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
+Some people have hyped the Skycoin Project as leading into "Bitcoin 3.0".
+The coin itself is not "Bitcoin 3.0",
+but is rather "Bitcoin 1.0". Bitcoin is a prototype crypto-coin.
+Skycoin was designed to be what Bitcoin would look like if it were built from
+scratch, to remedy the rough edges in the Bitcoin design.
+
+- no duplicate coin-base outputs
+- enforced checks for hash collisions
+- simple deterministic wallets
+- no transaction malleability
+- no signature malleability
+- removal of the scripting language
+- CoinJoin and normal transactions are indistinguishable
+- elimination of edge-cases that prevent independent node implementations
+- <=10 second transaction times
+- elimination of the need for mining to achieve blockchain consensus
 
 ## Links
 
@@ -19,6 +38,7 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
 * [Skycoin Docs](https://www.skycoin.net/docs)
 * [Skycoin Blockchain Explorer](https://explorer.skycoin.net)
 * [Skycoin Development Telegram Channel](https://t.me/skycoindev)
+* [Skycoin Github Wiki](https://github.com/skycoin/skycoin/wiki)
 
 ## Table of Contents
 
@@ -33,6 +53,7 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
     - [Run Skycoin with options](#run-skycoin-with-options)
     - [Docker image](#docker-image)
     - [Building your own images](#building-your-own-images)
+    - [Development image](#development-image)
 - [API Documentation](#api-documentation)
     - [REST API](#rest-api)
     - [JSON-RPC 2.0 API](#json-rpc-20-api)
@@ -51,12 +72,20 @@ Skycoin is a small part of OP Redecentralize and OP Darknet Plan.
         - [Update golden files in integration testdata](#update-golden-files-in-integration-testdata)
     - [Formatting](#formatting)
     - [Code Linting](#code-linting)
-    - [Dependency Management](#dependency-management)
+    - [Dependencies](#dependencies)
+        - [Rules](#rules)
+        - [Management](#management)
+    - [Configuration Modes](#configuration-modes)
+        - [Development Desktop Daemon Mode](#development-desktop-daemon-mode)
+        - [Server Daemon Mode](#server-daemon-mode)
+        - [Electron Desktop Client Mode](#electron-desktop-client-mode)
+        - [Standalone Desktop Client Mode](#standalone-desktop-client-mode)
     - [Wallet GUI Development](#wallet-gui-development)
     - [Releases](#releases)
         - [Pre-release testing](#pre-release-testing)
         - [Creating release builds](#creating-release-builds)
         - [Release signing](#release-signing)
+- [Responsible Disclosure](#responsible-disclosure)
 
 <!-- /MarkdownTOC -->
 
@@ -348,7 +377,18 @@ Run linters:
 make lint
 ```
 
-### Dependency Management
+### Dependencies
+
+#### Rules
+
+Dependencies must not require `cgo`.  This means dependencies cannot be wrappers around C libraries.
+Requiring `cgo` breaks cross compilation and interferes with repeatable (deterministic) builds.
+
+Critical cryptographic dependencies used by code in package `cipher` are archived inside the `cipher` folder,
+rather than in the `vendor` folder.  This prevents a user of the `cipher` package from accidentally using a
+different version of the `cipher` dependencies than were developed, which could have catastrophic but hidden problems.
+
+#### Management
 
 Dependencies are managed with [dep](https://github.com/golang/dep).
 
@@ -489,3 +529,39 @@ Releases and their signatures can be found on the [releases page](https://github
 
 Instructions for generating a PGP key, publishing it, signing the tags and binaries:
 https://gist.github.com/gz-c/de3f9c43343b2f1a27c640fe529b067c
+
+## Responsible Disclosure
+
+Security flaws in skycoin source or infrastructure can be sent to security@skycoin.net.
+Bounties are available for accepted critical bug reports.
+
+PGP Key for signing:
+
+```
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mDMEWaj46RYJKwYBBAHaRw8BAQdApB44Kgde4Kiax3M9Ta+QbzKQQPoUHYP51fhN
+1XTSbRi0I0daLUMgU0tZQ09JTiA8dG9rZW5AcHJvdG9ubWFpbC5jb20+iJYEExYK
+AD4CGwMFCwkIBwIGFQgJCgsCBBYCAwECHgECF4AWIQQQpyK3by/+e9I4AiJYAWMb
+0nx4dAUCWq/TNwUJCmzbzgAKCRBYAWMb0nx4dKzqAP4tKJIk1vV2bO60nYdEuFB8
+FAgb5ITlkj9PyoXcunETVAEAhigo4miyE/nmE9JT3Q/ZAB40YXS6w3hWSl3YOF1P
+VQq4OARZqPjpEgorBgEEAZdVAQUBAQdAa8NkEMxo0dr2x9PlNjTZ6/gGwhaf5OEG
+t2sLnPtYxlcDAQgHiH4EGBYKACYCGwwWIQQQpyK3by/+e9I4AiJYAWMb0nx4dAUC
+Wq/TTQUJCmzb5AAKCRBYAWMb0nx4dFPAAQD7otGsKbV70UopH+Xdq0CDTzWRbaGw
+FAoZLIZRcFv8zwD/Z3i9NjKJ8+LS5oc8rn8yNx8xRS+8iXKQq55bDmz7Igw=
+=5fwW
+-----END PGP PUBLIC KEY BLOCK-----
+```
+
+Key ID: [0x5801631BD27C7874](https://pgp.mit.edu/pks/lookup?search=0x5801631BD27C7874&op=index)
+
+The fingerprint for this key is:
+
+```
+pub   ed25519 2017-09-01 [SC] [expires: 2023-03-18]
+      10A7 22B7 6F2F FE7B D238  0222 5801 631B D27C 7874
+uid                      GZ-C SKYCOIN <token@protonmail.com>
+sub   cv25519 2017-09-01 [E] [expires: 2023-03-18]
+```
+
+Keybase.io account: https://keybase.io/gzc

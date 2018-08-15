@@ -111,7 +111,7 @@ func TestTransactionVerify(t *testing.T) {
 	// Invalid signature, empty
 	tx = makeTransaction(t)
 	tx.Sigs[0] = cipher.Sig{}
-	testutil.RequireError(t, tx.Verify(), "Failed to recover public key")
+	testutil.RequireError(t, tx.Verify(), "Invalig sig: PubKey recovery failed")
 	// We can't check here for other invalid signatures:
 	//      - Signatures signed by someone else, spending coins they don't own
 	//      - Signature is for wrong hash
@@ -334,59 +334,6 @@ func TestTransactionOutputHours(t *testing.T) {
 	tx.PushOutput(makeAddress(), 1e6, math.MaxUint64-700)
 	_, err = tx.OutputHours()
 	testutil.RequireError(t, err, "Transaction output hours overflow")
-}
-
-type outAddr struct {
-	Addr  cipher.Address
-	Coins uint64
-	Hours uint64
-}
-
-func makeTx(s cipher.SecKey, ux *UxOut, outs []outAddr, tm uint64, seq uint64) (*Transaction, UxArray) {
-	if ux == nil {
-		// genesis block tx.
-		tx := Transaction{}
-		tx.PushOutput(outs[0].Addr, outs[0].Coins, outs[0].Hours)
-		_, s = cipher.GenerateKeyPair()
-		ux := UxOut{
-			Head: UxHead{
-				Time:  100,
-				BkSeq: 0,
-			},
-			Body: UxBody{
-				SrcTransaction: tx.InnerHash,
-				Address:        outs[0].Addr,
-				Coins:          outs[0].Coins,
-				Hours:          outs[0].Hours,
-			},
-		}
-		return &tx, []UxOut{ux}
-	}
-
-	tx := Transaction{}
-	tx.PushInput(ux.Hash())
-	tx.SignInputs([]cipher.SecKey{s})
-	for _, o := range outs {
-		tx.PushOutput(o.Addr, o.Coins, o.Hours)
-	}
-	tx.UpdateHeader()
-
-	uxo := make(UxArray, len(tx.Out))
-	for i := range tx.Out {
-		uxo[i] = UxOut{
-			Head: UxHead{
-				Time:  tm,
-				BkSeq: seq,
-			},
-			Body: UxBody{
-				SrcTransaction: tx.Hash(),
-				Address:        tx.Out[i].Address,
-				Coins:          tx.Out[i].Coins,
-				Hours:          tx.Out[i].Hours,
-			},
-		}
-	}
-	return &tx, uxo
 }
 
 func TestTransactionsSize(t *testing.T) {

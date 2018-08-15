@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fix portable browser version opening to blank page
 
 ### Changed
+- Increase visor db timeout to 5000 `ms`
+- Change `InitTransaction` to accept parameters for distributing genesis coin to distribution wallets
 
 ### Removed
 

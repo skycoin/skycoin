@@ -106,24 +106,24 @@
 
 %rename(SKY_cipher_PubKeySlice_Len) wrap_SKY_cipher_PubKeySlice_Len;
 %inline {
-	GoUint32 wrap_SKY_cipher_PubKeySlice_Len(cipher_PubKeys* __in_pubKeys){
+	GoUint32 wrap_SKY_cipher_PubKeySlice_Len(cipher_PubKeys* __in_pubKeys, GoInt* __out_Len){
 		GoSlice_ data;
 		data.data = __in_pubKeys->data;
 		data.len = __in_pubKeys->count;
 		data.cap = __in_pubKeys->count;
-		GoUint32 result = SKY_cipher_PubKeySlice_Len(&data);
+		GoUint32 result = SKY_cipher_PubKeySlice_Len(&data,__out_Len);
 		return result;
 	}
 }
 
 %rename(SKY_cipher_PubKeySlice_Less) wrap_SKY_cipher_PubKeySlice_Less;
 %inline {
-	GoUint32 wrap_SKY_cipher_PubKeySlice_Less(cipher_PubKeys* __in_pubKeys, GoInt p1, GoInt p2){
+	GoUint32 wrap_SKY_cipher_PubKeySlice_Less(cipher_PubKeys* __in_pubKeys, GoInt p1, GoInt p2, GoUint8* __out_Less){
 		GoSlice_ data;
 		data.data = __in_pubKeys->data;
 		data.len = __in_pubKeys->count;
 		data.cap = __in_pubKeys->count;
-		GoUint32 result = SKY_cipher_PubKeySlice_Less(&data, p1, p2);
+		GoUint32 result = SKY_cipher_PubKeySlice_Less(&data, p1, p2,__out_Less);
 		return result;
 	}
 }

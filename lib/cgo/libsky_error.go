@@ -4,13 +4,17 @@ import (
 	"errors"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/base58"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
+	"github.com/skycoin/skycoin/src/cipher/encrypt"
+	"github.com/skycoin/skycoin/src/cipher/secp256k1-go"
 	"github.com/skycoin/skycoin/src/cli"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/util/droplet"
+	skyerrors "github.com/skycoin/skycoin/src/util/errors"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/file"
 	"github.com/skycoin/skycoin/src/visor"
@@ -22,9 +26,11 @@ import (
 
 const (
 	// SKY_ERROR generic error condition
-	SKY_ERROR = 0xFFFFFFFF
+	SKY_ERROR = 0x7FFFFFFF
 	// SKY_BAD_HANDLE invalid handle argument
-	SKY_BAD_HANDLE = 0xFF000001
+	SKY_BAD_HANDLE = 0x7F000001
+	// SKY_API_LOCKED API locked for security reasons
+	SKY_API_LOCKED = 0x7F000002
 	// SKY_OK error code is used to report success
 	SKY_OK = 0
 )
@@ -32,7 +38,7 @@ const (
 // Package prefixes for error codes
 const (
 	// Error code prefix for api package
-	SKY_PKG_API = 1 + iota
+	SKY_PKG_API = (1 + iota) << 24
 	// Error code prefix for cipher package and subpackages
 	SKY_PKG_CIPHER
 	// Error code prefix for cli package
@@ -55,31 +61,94 @@ const (
 	SKY_PKG_WALLET
 )
 
+const (
+	// SKY_PKG_LIBCGO package prefix for internal API errors
+	SKY_PKG_LIBCGO = 0x7F000000
+)
+
 // Error codes defined in cipher package
 const (
-	// SKY_ErrInvalidLength Unexpected size of address bytes buffer
-	SKY_ErrInvalidLength = SKY_PKG_CIPHER<<24 + iota
-	// SKY_ErrInvalidChecksum Computed checksum did not match expected value
-	SKY_ErrInvalidChecksum
-	// SKY_ErrInvalidVersion Unsupported address version value
-	SKY_ErrInvalidVersion
-	// SKY_ErrInvalidPubKey Public key invalid for address
-	SKY_ErrInvalidPubKey
-	// SKY_ErrInvalidFirstByte Invalid first byte in wallet import format string
-	SKY_ErrInvalidFirstByte
-	// SKY_ErrInvalidLastByte 33rd byte in wallet import format string is invalid
-	SKY_ErrInvalidLastByte
+	// SKY_ErrAddressInvalidLength Unexpected size of address bytes buffer
+	SKY_ErrAddressInvalidLength = SKY_PKG_CIPHER + iota
+	// SKY_ErrAddressInvalidChecksum Computed checksum did not match expected value
+	SKY_ErrAddressInvalidChecksum
+	// SKY_ErrAddressInvalidVersion Unsupported address version value
+	SKY_ErrAddressInvalidVersion
+	// SKY_ErrAddressInvalidPubKey Public key invalid for address
+	SKY_ErrAddressInvalidPubKey
+	// SKY_ErrAddressInvalidFirstByte Invalid first byte in wallet import format string
+	SKY_ErrAddressInvalidFirstByte
+	// SKY_ErrAddressInvalidLastByte 33rd byte in wallet import format string is invalid
+	SKY_ErrAddressInvalidLastByte
 	// SKY_ErrBufferUnderflow bytes in input buffer not enough to deserialize expected type
 	SKY_ErrBufferUnderflow
 	// SKY_ErrInvalidOmitEmpty field tagged with omitempty and it's not last one in struct
 	SKY_ErrInvalidOmitEmpty
+	// SKY_ErrInvalidLengthPubKey  Invalid public key length
+	SKY_ErrInvalidLengthPubKey
+	// SKY_ErrPubKeyFromNullSecKey PubKeyFromSecKey, attempt to load null seckey, unsafe
+	SKY_ErrPubKeyFromNullSecKey
+	// SKY_ErrPubKeyFromBadSecKey  PubKeyFromSecKey, pubkey recovery failed. Function
+	SKY_ErrPubKeyFromBadSecKey
+	// SKY_ErrInvalidLengthSecKey Invalid secret key length
+	SKY_ErrInvalidLengthSecKey
+	// SKY_ErrECHDInvalidPubKey   ECDH invalid pubkey input
+	SKY_ErrECHDInvalidPubKey
+	// SKY_ErrECHDInvalidSecKey   ECDH invalid seckey input
+	SKY_ErrECHDInvalidSecKey
+	// SKY_ErrInvalidLengthSig    Invalid signature length
+	SKY_ErrInvalidLengthSig
+	// SKY_ErrInvalidLengthRipemd160 Invalid ripemd160 length
+	SKY_ErrInvalidLengthRipemd160
+	// SKY_ErrInvalidLengthSHA256 Invalid sha256 length
+	SKY_ErrInvalidLengthSHA256
+	// SKY_ErrInvalidBase58Char   Invalid base58 character
+	SKY_ErrInvalidBase58Char
+	// SKY_ErrInvalidBase58String Invalid base58 string
+	SKY_ErrInvalidBase58String
+	// SKY_ErrInvalidBase58Length Invalid base58 length
+	SKY_ErrInvalidBase58Length
+	// SKY_ErrInvalidHexLength       Invalid hex length
+	SKY_ErrInvalidHexLength
+	// SKY_ErrInvalidBytesLength     Invalid bytes length
+	SKY_ErrInvalidBytesLength
+	// SKY_ErrInvalidPubKey       Invalid public key
+	SKY_ErrInvalidPubKey
+	// SKY_ErrInvalidSecKey       Invalid public key
+	SKY_ErrInvalidSecKey
+	// SKY_ErrInvalidSigForPubKey Invalig sig: PubKey recovery failed
+	SKY_ErrInvalidSigForPubKey
+	// SKY_ErrInvalidSecKeyHex    Invalid SecKey: not valid hex
+	SKY_ErrInvalidSecKeyHex
+	// SKY_ErrInvalidAddressForSig Invalid sig: address does not match output address
+	SKY_ErrInvalidAddressForSig
+	// SKY_ErrInvalidHashForSig   Signature invalid for hash
+	SKY_ErrInvalidHashForSig
+	// SKY_ErrPubKeyRecoverMismatch Recovered pubkey does not match pubkey
+	SKY_ErrPubKeyRecoverMismatch
+	// SKY_ErrInvalidSigInvalidPubKey VerifySignature, secp256k1.VerifyPubkey failed
+	SKY_ErrInvalidSigInvalidPubKey
+	// SKY_ErrInvalidSigValidity  VerifySignature, VerifySignatureValidity failed
+	SKY_ErrInvalidSigValidity
+	// SKY_ErrInvalidSigForMessage Invalid signature for this message
+	SKY_ErrInvalidSigForMessage
+	// SKY_ErrInvalidSecKyVerification Seckey secp256k1 verification failed
+	SKY_ErrInvalidSecKyVerification
+	// SKY_ErrNullPubKeyFromSecKey Impossible error, TestSecKey, nil pubkey recovered
+	SKY_ErrNullPubKeyFromSecKey
+	// SKY_ErrInvalidDerivedPubKeyFromSecKey impossible error, TestSecKey, Derived Pubkey verification failed
+	SKY_ErrInvalidDerivedPubKeyFromSecKey
+	// SKY_ErrInvalidPubKeyFromHash Recovered pubkey does not match signed hash
+	SKY_ErrInvalidPubKeyFromHash
+	// SKY_ErrPubKeyFromSecKeyMissmatch impossible error TestSecKey, pubkey does not match recovered pubkey
+	SKY_ErrPubKeyFromSecKeyMissmatch
 )
 
 // Error codes defined in cli package
 const (
 	// SKY_ErrTemporaryInsufficientBalance is returned if a wallet does not have
 	// enough balance for a spend, but will have enough after unconfirmed transactions confirm
-	SKY_ErrTemporaryInsufficientBalance = SKY_PKG_CLI<<24 + iota
+	SKY_ErrTemporaryInsufficientBalance = SKY_PKG_CLI + iota
 	// SKY_ErrAddress is returned if an address is invalid
 	SKY_ErrAddress
 	// ErrWalletName is returned if the wallet file name is invalid
@@ -99,7 +168,7 @@ const (
 	// hours to additional earned coin hours, the value would overflow a uint64.
 	// Callers may choose to ignore this errors and use 0 as the coinhours value instead.
 	// This affects one existing spent output, spent in block 13277.
-	SKY_ErrAddEarnedCoinHoursAdditionOverflow = SKY_PKG_COIN<<24 + iota
+	SKY_ErrAddEarnedCoinHoursAdditionOverflow = SKY_PKG_COIN + iota
 	// ErrUint64MultOverflow is returned when multiplying uint64 values would overflow uint64
 	SKY_ErrUint64MultOverflow
 	// ErrUint64AddOverflow is returned when adding uint64 values would overflow uint64
@@ -115,7 +184,7 @@ const (
 // Error codes defined in daemon package
 const (
 	// SKY_ErrPeerlistFull is returned when the Pex is at a maximum
-	SKY_ErrPeerlistFull = SKY_PKG_DAEMON<<24 + iota
+	SKY_ErrPeerlistFull = SKY_PKG_DAEMON + iota
 	// SKY_ErrInvalidAddress is returned when an address appears malformed
 	SKY_ErrInvalidAddress
 	// SKY_ErrNoLocalhost is returned if a localhost addresses are not allowed
@@ -179,7 +248,7 @@ const (
 // Error codes defined in util package
 const (
 	// ErrTxnNoFee is returned if a transaction has no coinhour fee
-	SKY_ErrTxnNoFee = SKY_PKG_UTIL<<24 + iota
+	SKY_ErrTxnNoFee = SKY_PKG_UTIL + iota
 	// ErrTxnInsufficientFee is returned if a transaction's coinhour burn fee is not enough
 	SKY_ErrTxnInsufficientFee
 	// ErrTxnInsufficientCoinHours is returned if a transaction has more coinhours in its outputs than its inputs
@@ -199,7 +268,7 @@ const (
 // Error codes defined in visor package
 const (
 	// SKY_ErrHistoryDBCorrupted Internal format error in HistoryDB database
-	SKY_ErrHistoryDBCorrupted = SKY_PKG_VISOR<<24 + iota
+	SKY_ErrHistoryDBCorrupted = SKY_PKG_VISOR + iota
 	// SKY_ErrUxOutNotExist is returned if an uxout is not found in historydb
 	SKY_ErrUxOutNotExist
 	// ErrNoHeadBlock is returned when calling Blockchain.Head() when no head block exists
@@ -225,7 +294,7 @@ const (
 // Error codes defined in wallet package
 const (
 	// SKY_ErrInsufficientBalance is returned if a wallet does not have enough balance for a spend
-	SKY_ErrInsufficientBalance = SKY_PKG_WALLET<<24 + iota
+	SKY_ErrInsufficientBalance = SKY_PKG_WALLET + iota
 	// SKY_ErrInsufficientHours is returned if a wallet does not have enough hours for a spend with requested hours
 	SKY_ErrInsufficientHours
 	// SKY_ErrZeroSpend is returned if a transaction is trying to spend 0 coins
@@ -308,24 +377,86 @@ const (
 	SKY_ErrDuplicateUxOuts
 	// SKY_ErrUnknownWalletID params.Wallet.ID does not match wallet
 	SKY_ErrUnknownWalletID
+	// SKY_ErrSHA256orMissingPassword missing password
+	SKY_ErrSHA256orMissingPassword
+	// SKY_ErrSHA256LenghtDataOverflowMaxUint32 data length overflowed, it must <= math.MaxUint32(4294967295)
+	SKY_ErrLenghtDataOverflowMaxUint32
+	// SKY_ErrInvalidChecksumLength invalid checksum length
+	SKY_ErrInvalidChecksumLength
+	// SKY_ErrInvalidDataChecksumNotMatched invalid data, checksum is not matched
+	SKY_ErrInvalidDataChecksumNotMatched
+	// SKY_ErrInvalidNonceLength invalid nonce length
+	SKY_ErrInvalidNonceLength
+	// SKY_ErrInvalidBlockSizeMultiple32Bytes invalid block size, must be multiple of 32 bytes
+	SKY_ErrInvalidBlockSizeMultiple32Bytes
+	// SKY_ErrReadDataHashFailedLength read data hash failed: read length != 32
+	SKY_ErrReadDataHashFailedLength
+	// SKY_ErrSHA256orInvalidPassword invalid password SHA256or
+	SKY_ErrSHA256orInvalidPassword
+	// SKY_ErrReadDataLengthFailed read data length failed
+	SKY_ErrReadDataLengthFailed
+	// SKY_ErrInvalidDataLength invalid data length
+	SKY_ErrInvalidDataLength
+	// SKY_ErrVerifySignatureInvalidInputsNils VerifySignature, ERROR: invalid input, nils
+	SKY_ErrVerifySignatureInvalidInputsNils
+	// SKY_ErrVerifySignatureInvalidSigLength
+	SKY_ErrVerifySignatureInvalidSigLength
+	// SKY_ErrVerifySignatureInvalidPubkeysLength
+	SKY_ErrVerifySignatureInvalidPubkeysLength
 )
 
 var (
+	// ErrorBadHandle invalid handle value
 	ErrorBadHandle = errors.New("Invalid or unknown handle value")
-	ErrorUnknown   = errors.New("Unexpected error")
+	// ErrorUnknown unexpected error
+	ErrorUnknown = errors.New("Unexpected error")
+	// ErrorLockApi unrecoverable panic detected.
+	// Subsequent API requests should be rejected since API will be locked
+	ErrorLockApi = errors.New("Unrecoverable panic detected. API locked.")
 
 	errorToCodeMap = map[error]uint32{
+		// libcgo
 		ErrorBadHandle: SKY_BAD_HANDLE,
 		ErrorUnknown:   SKY_ERROR,
+		ErrorLockApi:   SKY_API_LOCKED,
 		// cipher
-		cipher.ErrInvalidLength:     SKY_ErrInvalidLength,
-		cipher.ErrInvalidChecksum:   SKY_ErrInvalidChecksum,
-		cipher.ErrInvalidVersion:    SKY_ErrInvalidVersion,
-		cipher.ErrInvalidPubKey:     SKY_ErrInvalidPubKey,
-		cipher.ErrInvalidFirstByte:  SKY_ErrInvalidFirstByte,
-		cipher.ErrInvalidLastByte:   SKY_ErrInvalidLastByte,
-		encoder.ErrBufferUnderflow:  SKY_ErrBufferUnderflow,
-		encoder.ErrInvalidOmitEmpty: SKY_ErrInvalidOmitEmpty,
+		cipher.ErrAddressInvalidLength:           SKY_ErrAddressInvalidLength,
+		cipher.ErrAddressInvalidChecksum:         SKY_ErrAddressInvalidChecksum,
+		cipher.ErrAddressInvalidVersion:          SKY_ErrAddressInvalidVersion,
+		cipher.ErrAddressInvalidPubKey:           SKY_ErrAddressInvalidPubKey,
+		cipher.ErrAddressInvalidFirstByte:        SKY_ErrAddressInvalidFirstByte,
+		cipher.ErrAddressInvalidLastByte:         SKY_ErrAddressInvalidLastByte,
+		encoder.ErrBufferUnderflow:               SKY_ErrBufferUnderflow,
+		encoder.ErrInvalidOmitEmpty:              SKY_ErrInvalidOmitEmpty,
+		cipher.ErrInvalidLengthPubKey:            SKY_ErrInvalidLengthPubKey,
+		cipher.ErrPubKeyFromNullSecKey:           SKY_ErrPubKeyFromNullSecKey,
+		cipher.ErrPubKeyFromBadSecKey:            SKY_ErrPubKeyFromBadSecKey,
+		cipher.ErrInvalidLengthSecKey:            SKY_ErrInvalidLengthSecKey,
+		cipher.ErrECHDInvalidPubKey:              SKY_ErrECHDInvalidPubKey,
+		cipher.ErrECHDInvalidSecKey:              SKY_ErrECHDInvalidSecKey,
+		cipher.ErrInvalidLengthSig:               SKY_ErrInvalidLengthSig,
+		cipher.ErrInvalidLengthRipemd160:         SKY_ErrInvalidLengthRipemd160,
+		cipher.ErrInvalidLengthSHA256:            SKY_ErrInvalidLengthSHA256,
+		base58.ErrInvalidBase58Char:              SKY_ErrInvalidBase58Char,
+		base58.ErrInvalidBase58String:            SKY_ErrInvalidBase58String,
+		base58.ErrInvalidBase58Length:            SKY_ErrInvalidBase58Length,
+		cipher.ErrInvalidHexLength:               SKY_ErrInvalidHexLength,
+		cipher.ErrInvalidBytesLength:             SKY_ErrInvalidBytesLength,
+		cipher.ErrInvalidPubKey:                  SKY_ErrInvalidPubKey,
+		cipher.ErrInvalidSecKey:                  SKY_ErrInvalidSecKey,
+		cipher.ErrInvalidSigForPubKey:            SKY_ErrInvalidSigForPubKey,
+		cipher.ErrInvalidSecKeyHex:               SKY_ErrInvalidSecKeyHex,
+		cipher.ErrInvalidAddressForSig:           SKY_ErrInvalidAddressForSig,
+		cipher.ErrInvalidHashForSig:              SKY_ErrInvalidHashForSig,
+		cipher.ErrPubKeyRecoverMismatch:          SKY_ErrPubKeyRecoverMismatch,
+		cipher.ErrInvalidSigInvalidPubKey:        SKY_ErrInvalidSigInvalidPubKey,
+		cipher.ErrInvalidSigValidity:             SKY_ErrInvalidSigValidity,
+		cipher.ErrInvalidSigForMessage:           SKY_ErrInvalidSigForMessage,
+		cipher.ErrInvalidSecKyVerification:       SKY_ErrInvalidSecKyVerification,
+		cipher.ErrNullPubKeyFromSecKey:           SKY_ErrNullPubKeyFromSecKey,
+		cipher.ErrInvalidDerivedPubKeyFromSecKey: SKY_ErrInvalidDerivedPubKeyFromSecKey,
+		cipher.ErrInvalidPubKeyFromHash:          SKY_ErrInvalidPubKeyFromHash,
+		cipher.ErrPubKeyFromSecKeyMissmatch:      SKY_ErrPubKeyFromSecKeyMissmatch,
 		// cli
 		cli.ErrTemporaryInsufficientBalance: SKY_ErrTemporaryInsufficientBalance,
 		cli.ErrAddress:                      SKY_ErrAddress,
@@ -355,7 +486,6 @@ var (
 		gnet.ErrConnectionPoolClosed:                      SKY_ErrConnectionPoolClosed,
 		gnet.ErrWriteQueueFull:                            SKY_ErrWriteQueueFull,
 		gnet.ErrNoReachableConnections:                    SKY_ErrNoReachableConnections,
-		gnet.ErrMaxDefaultConnectionsReached:              SKY_ErrMaxDefaultConnectionsReached,
 		daemon.ErrDisconnectInvalidVersion:                SKY_ErrDisconnectInvalidVersion,
 		daemon.ErrDisconnectIntroductionTimeout:           SKY_ErrDisconnectIntroductionTimeout,
 		daemon.ErrDisconnectVersionSendFailed:             SKY_ErrDisconnectVersionSendFailed,
@@ -423,6 +553,21 @@ var (
 		wallet.ErrWalletConstraint:          SKY_ErrWalletConstraint,
 		wallet.ErrDuplicateUxOuts:           SKY_ErrDuplicateUxOuts,
 		wallet.ErrUnknownWalletID:           SKY_ErrUnknownWalletID,
+
+		encrypt.ErrSHA256orMissingPassword:         SKY_ErrSHA256orMissingPassword,
+		encrypt.ErrLenghtDataOverflowMaxUint32:     SKY_ErrLenghtDataOverflowMaxUint32,
+		encrypt.ErrInvalidChecksumLength:           SKY_ErrInvalidChecksumLength,
+		encrypt.ErrInvalidDataChecksumNotMatched:   SKY_ErrInvalidDataChecksumNotMatched,
+		encrypt.ErrInvalidNonceLength:              SKY_ErrInvalidNonceLength,
+		encrypt.ErrInvalidBlockSizeMultiple32Bytes: SKY_ErrInvalidBlockSizeMultiple32Bytes,
+		encrypt.ErrReadDataHashFailedLength:        SKY_ErrReadDataHashFailedLength,
+		encrypt.ErrSHA256orInvalidPassword:         SKY_ErrSHA256orInvalidPassword,
+		encrypt.ErrReadDataLengthFailed:            SKY_ErrReadDataLengthFailed,
+		encrypt.ErrInvalidDataLength:               SKY_ErrInvalidDataLength,
+
+		secp256k1.ErrVerifySignatureInvalidInputsNils:    SKY_ErrVerifySignatureInvalidInputsNils,
+		secp256k1.ErrVerifySignatureInvalidSigLength:     SKY_ErrVerifySignatureInvalidSigLength,
+		secp256k1.ErrVerifySignatureInvalidPubkeysLength: SKY_ErrVerifySignatureInvalidPubkeysLength,
 	}
 )
 
@@ -462,7 +607,40 @@ func libErrorCode(err error) uint32 {
 	return SKY_ERROR
 }
 
-// Catch panic signals emitted by internal implementation
+var (
+	// isApiLocked flag set when previous unrecoverable panic is detected
+	// subsequent use of the API leads to SKY_API_LOCKED returned
+	isAPILocked = false
+	// haltOnPanic is enabled by default to halt process on unhandled panic
+	// if disabled then locking is activated instead.
+	// Subsequent use of the API leads to SKY_API_LOCKED error code returned
+	haltOnPanic = true
+)
+
+const (
+	// SKY_OPT_HALTONPANIC controls API behavior on panic
+	// Supported values:
+	// 0        - do not halt on panic, lock API instead
+	// non-zero - exit the process on unrecoverable panic
+	SKY_OPT_HALTONPANIC = 1 + iota
+)
+
+// SKY_libcgo_ConfigApiOptions set values for configurable API settings
+func SKY_libcgo_ConfigApiOption(optionID uint32, optionValue uint64) {
+	if optionID == SKY_OPT_HALTONPANIC {
+		haltOnPanic = optionValue != 0
+	}
+}
+
+// checkAPIReady ensure preconditions are met for API functions to be invoked
+// and lock API otherwise
+func checkAPIReady() {
+	if isAPILocked {
+		panic(ErrorLockApi)
+	}
+}
+
+// catchApiPanic intercept signals emitted by internal implementation
 // of API methods. This function is mainly used in defer statements
 // exceuted immediately before returning from API calls.
 //
@@ -475,9 +653,34 @@ func catchApiPanic(errcode uint32, err interface{}) uint32 {
 		// Return right away
 		return errcode
 	}
+	if isAPILocked || err == ErrorLockApi {
+		isAPILocked = true
+		return SKY_API_LOCKED
+	}
 	if err != nil {
-		// TODO: Fix to be like retVal = libErrorCode(err)
-		return SKY_ERROR
+		if valueErr, isValueError := err.(skyerrors.ValueError); isValueError {
+			return libErrorCode(valueErr.ErrorData)
+		} else {
+			// Setting flag every time (i.e. even when haltOnPanic is active
+			// protects against hypothetical situations in which panic()
+			// does not abort the current process.
+			isAPILocked = true
+			if haltOnPanic {
+				// FIXME: Set process exit code on panic
+				/*
+					var exitCode int
+					if _err, isError := err.(error); isError {
+						exitCode = int(libErrorCode(_err))
+					} else {
+						exitCode = SKY_ERROR
+					}
+				*/
+				panic(err)
+			} else {
+				// Let the caller know specific error that locked the API
+				return libErrorCode(valueErr.ErrorData)
+			}
+		}
 	}
 	return SKY_OK
 }

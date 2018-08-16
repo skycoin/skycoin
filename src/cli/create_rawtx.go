@@ -84,7 +84,7 @@ func createRawTxCmd(cfg Config) gcli.Command {
 				Name:  "json,j",
 				Usage: "Returns the results in JSON format.",
 			},
-			gcli.BoolFlag{
+			gcli.StringFlag{
 				Name:  "csv",
 				Usage: "[filepath] CSV file containing addresses and amounts to send",
 			},
@@ -181,7 +181,6 @@ func getChangeAddress(wltAddr walletAddress, chgAddr string) (string, error) {
 
 func getToAddresses(c *gcli.Context) ([]SendAmount, error) {
 	csv := c.String("csv")
-
 	m := c.String("m")
 
 	if csv != "" && m != "" {
@@ -297,7 +296,7 @@ func parseSendAmountsFromJSON(m string) ([]SendAmount, error) {
 
 func getAmount(c *gcli.Context) (uint64, error) {
 	if c.NArg() < 2 {
-		return 0, errors.New("invalid argument")
+		return 0, errors.New("not enough args")
 	}
 
 	amount := c.Args().Get(1)

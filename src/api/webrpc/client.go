@@ -159,8 +159,8 @@ func (c *Client) OutputsForAddresses(addrs []string) (*visor.ReadableOutputSet, 
 	return &outputs.Outputs, nil
 }
 
-// InjectTransactionString injects a hex-encoded transaction string to the network
-func (c *Client) InjectTransactionString(rawtx string) (string, error) {
+// InjectEncodedTransaction injects a hex-encoded transaction string to the network
+func (c *Client) InjectEncodedTransaction(rawtx string) (string, error) {
 	params := []string{rawtx}
 	rlt := TxIDJson{}
 
@@ -175,7 +175,7 @@ func (c *Client) InjectTransactionString(rawtx string) (string, error) {
 func (c *Client) InjectTransaction(tx *coin.Transaction) (string, error) {
 	d := tx.Serialize()
 	rawTx := hex.EncodeToString(d)
-	return c.InjectTransactionString(rawTx)
+	return c.InjectEncodedTransaction(rawTx)
 }
 
 // GetStatus returns status info for a skycoin node

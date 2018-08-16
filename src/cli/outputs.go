@@ -43,7 +43,7 @@ func addressOutputsCmd() gcli.Command {
 
 func getWalletOutputsCmd(c *gcli.Context) error {
 	cfg := ConfigFromContext(c)
-	rpcClient := RPCClientFromContext(c)
+	client := APIClientFromContext(c)
 
 	w := ""
 	if c.NArg() > 0 {
@@ -56,7 +56,7 @@ func getWalletOutputsCmd(c *gcli.Context) error {
 		return err
 	}
 
-	outputs, err := GetWalletOutputsFromFile(rpcClient, w)
+	outputs, err := GetWalletOutputsFromFile(client, w)
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func getWalletOutputsCmd(c *gcli.Context) error {
 }
 
 func getAddressOutputsCmd(c *gcli.Context) error {
-	rpcClient := RPCClientFromContext(c)
+	client := APIClientFromContext(c)
 
 	addrs := make([]string, c.NArg())
 	var err error
@@ -78,7 +78,7 @@ func getAddressOutputsCmd(c *gcli.Context) error {
 		}
 	}
 
-	outputs, err := rpcClient.OutputsForAddresses(addrs)
+	outputs, err := client.OutputsForAddresses(addrs)
 	if err != nil {
 		return err
 	}
@@ -91,7 +91,7 @@ func getAddressOutputsCmd(c *gcli.Context) error {
 // PUBLIC
 
 // GetWalletOutputsFromFile returns unspent outputs associated with all addresses in a wallet file
-func GetWalletOutputsFromFile(c *webrpc.Client, walletFile string) (*visor.ReadableOutputSet, error) {
+func GetWalletOutputsFromFile(c GetOutputser, walletFile string) (*visor.ReadableOutputSet, error) {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
 		return nil, err
@@ -101,7 +101,7 @@ func GetWalletOutputsFromFile(c *webrpc.Client, walletFile string) (*visor.Reada
 }
 
 // GetWalletOutputs returns unspent outputs associated with all addresses in a wallet.Wallet
-func GetWalletOutputs(c *webrpc.Client, wlt *wallet.Wallet) (*visor.ReadableOutputSet, error) {
+func GetWalletOutputs(c GetOutputser, wlt *wallet.Wallet) (*visor.ReadableOutputSet, error) {
 	cipherAddrs := wlt.GetAddresses()
 	addrs := make([]string, len(cipherAddrs))
 	for i := range cipherAddrs {

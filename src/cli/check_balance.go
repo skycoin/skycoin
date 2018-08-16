@@ -6,7 +6,6 @@ import (
 
 	gcli "github.com/urfave/cli"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/visor"
@@ -66,7 +65,7 @@ func addressBalanceCmd() gcli.Command {
 
 func checkWltBalance(c *gcli.Context) error {
 	cfg := ConfigFromContext(c)
-	rpcClient := RPCClientFromContext(c)
+	client := APIClientFromContext(c)
 
 	var w string
 	if c.NArg() > 0 {
@@ -79,7 +78,7 @@ func checkWltBalance(c *gcli.Context) error {
 		return err
 	}
 
-	balRlt, err := CheckWalletBalance(rpcClient, w)
+	balRlt, err := CheckWalletBalance(client, w)
 	switch err.(type) {
 	case nil:
 	case WalletLoadError:
@@ -93,7 +92,7 @@ func checkWltBalance(c *gcli.Context) error {
 }
 
 func addrBalance(c *gcli.Context) error {
-	rpcClient := RPCClientFromContext(c)
+	client := APIClientFromContext(c)
 
 	addrs := make([]string, c.NArg())
 	var err error
@@ -104,7 +103,7 @@ func addrBalance(c *gcli.Context) error {
 		}
 	}
 
-	balRlt, err := GetBalanceOfAddresses(rpcClient, addrs)
+	balRlt, err := GetBalanceOfAddresses(client, addrs)
 	if err != nil {
 		return err
 	}
@@ -115,7 +114,7 @@ func addrBalance(c *gcli.Context) error {
 // PUBLIC
 
 // CheckWalletBalance returns the total and individual balances of addresses in a wallet file
-func CheckWalletBalance(c *webrpc.Client, walletFile string) (*BalanceResult, error) {
+func CheckWalletBalance(c GetOutputser, walletFile string) (*BalanceResult, error) {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
 		return nil, WalletLoadError{err}
@@ -131,7 +130,7 @@ func CheckWalletBalance(c *webrpc.Client, walletFile string) (*BalanceResult, er
 }
 
 // GetBalanceOfAddresses returns the total and individual balances of a set of addresses
-func GetBalanceOfAddresses(c *webrpc.Client, addrs []string) (*BalanceResult, error) {
+func GetBalanceOfAddresses(c GetOutputser, addrs []string) (*BalanceResult, error) {
 	outs, err := c.OutputsForAddresses(addrs)
 	if err != nil {
 		return nil, err

@@ -1182,7 +1182,7 @@ func TestStableTransaction(t *testing.T) {
 			name:       "not exist",
 			args:       []string{"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947"},
 			err:        errors.New("exit status 1"),
-			errMsg:     "transaction doesn't exist [code: -32600]\n",
+			errMsg:     "404 Not Found\n",
 			goldenFile: "",
 		},
 		{

@@ -422,7 +422,7 @@ func TestGenerateAddresses(t *testing.T) {
 			var expect wallet.ReadableWallet
 			loadJSON(t, goldenFile, &expect)
 			if tc.encrypted {
-				// wips secrets as it's not stable
+				// wipe secrets as it's not stable
 				expect.Meta["secrets"] = ""
 				w.Meta["secrets"] = ""
 			}

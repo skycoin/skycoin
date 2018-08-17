@@ -1234,6 +1234,14 @@ func TestLiveTransaction(t *testing.T) {
 				require.Equal(t, tc.err, err)
 				return
 			}
+
+			// tx.Status.Height is how many blocks are above this transaction,
+			// make sure it is past some checkpoint height
+			require.True(t, tx.Status.Height >= 50836)
+
+			// daemon.TransactionResult.Status.Height is not stable
+			tx.Status.Height = 0
+
 			var expected daemon.TransactionResult
 			loadGoldenFile(t, tc.goldenFile, TestData{tx, &expected})
 			require.Equal(t, &expected, tx)

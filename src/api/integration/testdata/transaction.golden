@@ -2,7 +2,7 @@
 	"status": {
 		"confirmed": true,
 		"unconfirmed": false,
-		"height": 50834,
+		"height": 0,
 		"block_seq": 517,
 		"unknown": false
 	},

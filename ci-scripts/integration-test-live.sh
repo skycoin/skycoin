@@ -21,8 +21,6 @@ VERBOSE=""
 RUN_TESTS=""
 # run wallet tests
 TEST_LIVE_WALLET=""
-# run tests with csrf enabled
-USE_CSRF=""
 FAILFAST=""
 
 usage () {

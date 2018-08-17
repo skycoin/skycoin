@@ -158,7 +158,7 @@ integration-test-enable-seed-api: ## Run enable seed api integration test
 	./ci-scripts/integration-test-enable-seed-api.sh
 
 integration-test-disable-gui:
-	./ci-scripts/integration-test-disable-gui.sh	
+	./ci-scripts/integration-test-disable-gui.sh
 
 cover: ## Runs tests on ./src/ with HTML code coverage
 	go test -cover -coverprofile=cover.out -coverpkg=github.com/skycoin/skycoin/... ./src/...

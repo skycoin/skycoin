@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"net/url"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"syscall"
 
@@ -21,7 +20,6 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/skycoin/skycoin/src/api"
-	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/util/file"
 )
 
@@ -40,7 +38,6 @@ var (
 	envVarsHelp = fmt.Sprintf(`ENVIRONMENT VARIABLES:
     RPC_ADDR: Address of RPC node. Must be in scheme://host format. Default "%s"
     COIN: Name of the coin. Default "%s"
-    USE_CSRF: Set to 1 or true if the remote node has CSRF enabled. Default false (unset)
     WALLET_DIR: Directory where wallets are stored. This value is overriden by any subcommand flag specifying a wallet filename, if that filename includes a path. Default "%s"
     WALLET_NAME: Name of wallet file (without path). This value is overriden by any subcommand flag specifying a wallet filename. Default "%s"
     DATA_DIR: Directory where everything is stored. Default "%s"`, defaultRPCAddress, defaultCoin, defaultWalletDir, defaultWalletName, defaultDataDir)
@@ -110,7 +107,6 @@ type Config struct {
 	DataDir    string `json:"data_directory"`
 	Coin       string `json:"coin"`
 	RPCAddress string `json:"rpc_address"`
-	UseCSRF    bool   `json:"use_csrf"`
 }
 
 // LoadConfig loads config from environment, prior to parsing CLI flags
@@ -154,15 +150,6 @@ func LoadConfig() (Config, error) {
 	if !strings.HasSuffix(wltName, walletExt) {
 		return Config{}, ErrWalletName
 	}
-	var useCSRF bool
-	useCSRFStr := os.Getenv("USE_CSRF")
-	if useCSRFStr != "" {
-		var err error
-		useCSRF, err = strconv.ParseBool(useCSRFStr)
-		if err != nil {
-			return Config{}, errors.New("Invalid USE_CSRF value, must be interpretable as a boolean e.g. 0, 1, true, false")
-		}
-	}
 
 	return Config{
 		WalletDir:  wltDir,
@@ -170,7 +157,6 @@ func LoadConfig() (Config, error) {
 		DataDir:    dataDir,
 		Coin:       coin,
 		RPCAddress: rpcAddr,
-		UseCSRF:    useCSRF,
 	}, nil
 }
 
@@ -282,17 +268,10 @@ func NewApp(cfg Config) (*App, error) {
 		gcli.OsExiter(1)
 	}
 
-	rpcClient, err := webrpc.NewClient(cfg.RPCAddress)
-	if err != nil {
-		return nil, err
-	}
-	rpcClient.UseCSRF = cfg.UseCSRF
-
 	apiClient := api.NewClient(cfg.RPCAddress)
 
 	app.Metadata = map[string]interface{}{
 		"config":   cfg,
-		"rpc":      rpcClient,
 		"api":      apiClient,
 		"quitChan": make(chan struct{}),
 	}
@@ -303,11 +282,6 @@ func NewApp(cfg Config) (*App, error) {
 // Run starts the app
 func (app *App) Run(args []string) error {
 	return app.App.Run(args)
-}
-
-// RPCClientFromContext returns a webrpc.Client from a urfave/cli Context
-func RPCClientFromContext(c *gcli.Context) *webrpc.Client {
-	return c.App.Metadata["rpc"].(*webrpc.Client)
 }
 
 // APIClientFromContext returns an api.Client from a urface/cli Context

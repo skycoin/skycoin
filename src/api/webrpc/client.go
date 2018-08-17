@@ -148,8 +148,7 @@ func (c *Client) CSRF() (string, error) {
 	return token, nil
 }
 
-// OutputsForAddresses returns unspent outputs for a set of addresses
-// TODO -- what is the difference between this and GetAddressUxOuts?
+// OutputsForAddresses returns current unspent outputs for a set of addresses
 func (c *Client) OutputsForAddresses(addrs []string) (*visor.ReadableOutputSet, error) {
 	outputs := OutputsResult{}
 	if err := c.Do(&outputs, "get_outputs", addrs); err != nil {
@@ -198,8 +197,7 @@ func (c *Client) GetTransactionByID(txid string) (*TxnResult, error) {
 	return &txn, nil
 }
 
-// GetAddressUxOuts returns unspent outputs for a set of addresses
-// TODO -- what is the difference between this and GetUnspentOutputs?
+// GetAddressUxOuts returns historical unspent outputs for a set of addresses
 func (c *Client) GetAddressUxOuts(addrs []string) ([]AddrUxoutResult, error) {
 	uxouts := []AddrUxoutResult{}
 	if err := c.Do(&uxouts, "get_address_uxouts", addrs); err != nil {

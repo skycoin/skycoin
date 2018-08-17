@@ -439,15 +439,16 @@ Instructions for doing this:
 1. Compile the `src/gui/static/dist/` to make sure that it is up to date (see [Wallet GUI Development README](src/gui/static/README.md))
 2. Update all version strings in the repo (grep for them) to the new version
 3. Update `CHANGELOG.md`: move the "unreleased" changes to the version and add the date
-4. Merge these changes to `develop`
-5. Follow the steps in [pre-release testing](#pre-release-testing)
-6. Make a PR merging `develop` into `master`
-7. Review the PR and merge it
-8. Tag the master branch with the version number. Version tags start with `v`, e.g. `v0.20.0`.
+4. Update files in `docker/images/mainnet/repo-info/remote/`, adding a new file for the new version and adjusting any configuration text that may have changed
+5. Merge these changes to `develop`
+6. Follow the steps in [pre-release testing](#pre-release-testing)
+7. Make a PR merging `develop` into `master`
+8. Review the PR and merge it
+9. Tag the master branch with the version number. Version tags start with `v`, e.g. `v0.20.0`.
     Sign the tag. If you have your GPG key in github, creating a release on the Github website will automatically tag the release.
     It can be tagged from the command line with `git tag -as v0.20.0 $COMMIT_ID`, but Github will not recognize it as a "release".
-9. Make sure that the client runs properly from the `master` branch
-10. Release builds are created and uploaded by travis. To do it manually, checkout the `master` branch and follow the [create release builds](electron/README.md) instructions.
+10. Make sure that the client runs properly from the `master` branch
+11. Release builds are created and uploaded by travis. To do it manually, checkout the `master` branch and follow the [create release builds](electron/README.md) instructions.
 
 If there are problems discovered after merging to master, start over, and increment the 3rd version number.
 For example, `v0.20.0` becomes `v0.20.1`, for minor fixes.

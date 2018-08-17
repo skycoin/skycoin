@@ -370,7 +370,7 @@ func (c *Client) BlockBySeq(seq uint64) (*visor.ReadableBlock, error) {
 }
 
 // Blocks makes a request to GET /api/v1/blocks
-func (c *Client) Blocks(start, end int) (*visor.ReadableBlocks, error) {
+func (c *Client) Blocks(start, end uint64) (*visor.ReadableBlocks, error) {
 	v := url.Values{}
 	v.Add("start", fmt.Sprint(start))
 	v.Add("end", fmt.Sprint(end))
@@ -384,7 +384,7 @@ func (c *Client) Blocks(start, end int) (*visor.ReadableBlocks, error) {
 }
 
 // LastBlocks makes a request to GET /api/v1/last_blocks
-func (c *Client) LastBlocks(n int) (*visor.ReadableBlocks, error) {
+func (c *Client) LastBlocks(n uint64) (*visor.ReadableBlocks, error) {
 	v := url.Values{}
 	v.Add("num", fmt.Sprint(n))
 	endpoint := "/api/v1/last_blocks?" + v.Encode()

@@ -99,7 +99,7 @@ However, any changes to the API will be recorded in the [changelog](../../CHANGE
     - [Get address affected transactions](#get-address-affected-transactions)
 - [Uxout APIs](#uxout-apis)
     - [Get uxout](#get-uxout)
-    - [Get address affected uxouts](#get-address-affected-uxouts)
+    - [Get historical unspent outputs for an address](#get-historical-unspent-outputs-for-an-address)
 - [Coin supply related information](#coin-supply-related-information)
     - [Coin supply](#coin-supply)
     - [Richlist show top N addresses by uxouts](#richlist-show-top-n-addresses-by-uxouts)
@@ -2100,7 +2100,7 @@ Result:
 }
 ```
 
-### Get address affected uxouts
+### Get historical unspent outputs for an address
 
 ```
 URI: /api/v1/address_uxouts

@@ -193,13 +193,15 @@ Test(util_droplet, TestFromString)
                       err, i, len);
             cr_assert(err == tc.e, "Not equal %X != %X in iteration %d", err, tc.e,
                       i);
-            // cr_assert(0 == n, "result %d != 0 in iteration %d", n, i);
         }
     }
 }
 
 Test(util_droplet, TestToString)
 {
+    char buffer[BUFFER_SIZE];
+    char bufferNull[BUFFER_SIZE];
+    GoString s = {buffer, 0};
     tmpstruct cases[] = {
         {.s = {"0.000000", 8}, .n = 0, .e = SKY_OK},
         {.s = {"0.000001", 8}, .n = 1, .e = SKY_OK},
@@ -208,16 +210,15 @@ Test(util_droplet, TestToString)
         {.s = {"0.000999", 8}, .n = 999, .e = SKY_OK},
         {.s = {"999.000000", 10}, .n = 999000000, .e = SKY_OK},
         {.s = {"123.000456", 10}, .n = 123000456, .e = SKY_OK},
-        {.s = {"", 0}, .n = 9223372036854775808, .e = SKY_ErrTooLarge},
+        {.s = {bufferNull, 0}, .n = 9223372036854775808, .e = SKY_ErrTooLarge},
     };
     int len = (sizeof(cases) / sizeof(tmpstruct));
 
-    GoString nullStr = {"", 0};
+    GoString nullStr = {bufferNull, 0};
     for (int i = 0; i < len; i++)
     {
         tmpstruct tc = cases[i];
-        char buffer[BUFFER_SIZE];
-        GoString s = {buffer, 0};
+
         int err = SKY_droplet_ToString(tc.n, &s);
 
         if (tc.e == SKY_OK)
@@ -228,7 +229,6 @@ Test(util_droplet, TestToString)
         else
         {
             cr_assert(err == tc.e);
-            // cr_assert(eq(type(GoString), nullStr, s), " Failed iteration %d", i);
         }
     }
 }

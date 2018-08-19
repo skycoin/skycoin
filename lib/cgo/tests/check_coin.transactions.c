@@ -14,7 +14,6 @@
 
 TestSuite(coin_transaction, .init = setup, .fini = teardown);
 
-GoUint64 MaxUint64 = 0xFFFFFFFFFFFFFFFF;
 GoUint64 Million = 1000000;
 
 Test(coin_transaction, TestTransactionVerify)
@@ -61,7 +60,6 @@ Test(coin_transaction, TestTransactionVerify)
   result = SKY_coin_Transaction_Verify(handle);
   cr_assert(result == SKY_ERROR);
 
-  int MaxUint16 = 0xFFFF;
   // Too many sigs & inputs
   ptx = makeTransaction(&handle);
   result = SKY_coin_Transaction_ResetSignatures(handle, MaxUint16);
@@ -125,7 +123,6 @@ Test(coin_transaction, TestTransactionVerify)
   result = SKY_coin_Transaction_Verify(handle);
   cr_assert(result == SKY_ERROR);
 
-  GoUint64 MaxUint64 = 0xFFFFFFFFFFFFFFFF;
   // Output coin overflow
   ptx = makeTransaction(&handle);
   pOutput = ptx->Out.data;
@@ -187,7 +184,6 @@ Test(coin_transaction, TestTransactionPushInput, SKY_ABORT)
   cipher__SHA256 *pIn = ptx->In.data;
   cr_assert(eq(u8[sizeof(cipher__SHA256)], hash, *pIn));
 
-  GoUint16 MaxUint16 = 0xFFFF;
   int len = ptx->In.len;
   void *data = malloc(len * sizeof(cipher__SHA256));
   cr_assert(data != NULL);
@@ -786,7 +782,6 @@ Test(coin_transactions, TestVerifyTransactionCoinsSpending)
 
 Test(coin_transactions, TestVerifyTransactionHoursSpending)
 {
-  GoUint64 MaxUint64 = 0xFFFFFFFFFFFFFFFF;
   GoUint64 Million = 1000000;
 
   // Input hours overflow

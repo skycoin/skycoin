@@ -22,6 +22,7 @@ func SKY_fee_VerifyTransactionFee(_t C.Transaction__Handle, _fee uint64) (____er
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	t, ok := lookupTransactionHandle(_t)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -40,6 +41,7 @@ func SKY_fee_VerifyTransactionFeeForHours(_hours, _fee uint64) (____error_code u
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	hours := _hours
 	____return_err := fee.VerifyTransactionFeeForHours(hours, _fee)
 	____error_code = libErrorCode(____return_err)
@@ -54,6 +56,7 @@ func SKY_fee_RequiredFee(_hours uint64, _arg1 *uint64) (____error_code uint32) {
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	hours := _hours
 	__arg1 := fee.RequiredFee(hours)
 	*_arg1 = __arg1
@@ -66,6 +69,7 @@ func SKY_fee_RemainingHours(_hours uint64, _arg1 *uint64) (____error_code uint32
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	hours := _hours
 	__arg1 := fee.RemainingHours(hours)
 	*_arg1 = __arg1
@@ -78,6 +82,7 @@ func SKY_fee_TransactionFee(_tx C.Transaction__Handle, _headTime uint64, _inUxs 
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	tx, ok := lookupTransactionHandle(_tx)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE

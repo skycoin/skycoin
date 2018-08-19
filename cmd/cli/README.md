@@ -631,6 +631,7 @@ OPTIONS:
         -m value    [send to many] use JSON string to set multiple receive addresses and coins,
                           example: -m '[{"addr":"$addr1", "coins": "10.2"}, {"addr":"$addr2", "coins": "20"}]'
         --json, -j  Returns the results in JSON format.
+        --csv value  [filepath] CSV file containing addresses and amounts to send
 ```
 
 #### Examples
@@ -658,6 +659,16 @@ dc00000000c7425e5a49fce496d78ea9b04fc47e4126b91f675b00c16b3a7515c1555c2520010000
 $ skycoin-cli createRawTransaction -f $WALLET_PATH -a $FROM_ADDRESS -m '[{"addr":"$ADDR1", "coins": "$AMT1"}, {"addr":"$ADDR2", "coins": "$AMT2"}]'
 ```
 
+##### Sending to addresses in a CSV file
+```bash
+$ cat <<EOF > $CSV_FILE
+2Niqzo12tZ9ioZq5vwPHMVR4g7UVpp9TCmP,123.1
+2UDzBKnxZf4d9pdrBJAqbtoeH641RFLYKxd,456.045
+yExu4fryscnahAEMKa7XV4Wc1mY188KvGw,0.3
+EOF
+$ skycoin-cli createRawTransaction -f $WALLET_PATH -a $FROM_ADDRESS -csv $CSV_FILE
+```
+
 <details>
  <summary>View Output</summary>
 
@@ -666,7 +677,7 @@ $ skycoin-cli createRawTransaction -f $WALLET_PATH -a $FROM_ADDRESS -m '[{"addr"
 ```
 </details>
 
-> NOTE: When sending to multiple addresses all the receiving addresses need to be different
+> NOTE: When sending to multiple addresses each combination of address and coins need to be unique
         Otherwise you get, `ERROR: Duplicate output in transaction`
 
 
@@ -1415,6 +1426,7 @@ OPTIONS:
         -m value    [send to many] use JSON string to set multiple recive addresses and coins,
                           example: -m '[{"addr":"$addr1", "coins": "10.2"}, {"addr":"$addr2", "coins": "20"}]'
         --json, -j  Returns the results in JSON format.
+        --csv value  [filepath] CSV file containing addresses and amounts to send
 ```
 
 #### Examples
@@ -1445,6 +1457,16 @@ $ skycoin-cli send -f $WALLET_PATH -a $FROM_ADDRESS -c $CHANGE_ADDRESS $RECIPIEN
 $ skycoin-cli send -f $WALLET_PATH -a $FROM_ADDRESS -m '[{"addr":"$ADDR1", "coins": "$AMT1"}, {"addr":"$ADDR2", "coins": "$AMT2"}]'
 ```
 
+##### Sending to addresses in a CSV file
+```bash
+$ cat <<EOF > $CSV_FILE
+2Niqzo12tZ9ioZq5vwPHMVR4g7UVpp9TCmP,123.1
+2UDzBKnxZf4d9pdrBJAqbtoeH641RFLYKxd,456.045
+yExu4fryscnahAEMKa7XV4Wc1mY188KvGw,0.3
+EOF
+$ skycoin-cli send -f $WALLET_PATH -a $FROM_ADDRESS -csv $CSV_FILE
+```
+
 <details>
  <summary>View Output</summary>
 
@@ -1452,6 +1474,9 @@ $ skycoin-cli send -f $WALLET_PATH -a $FROM_ADDRESS -m '[{"addr":"$ADDR1", "coin
 txid:$TRANSACTION_ID
 ```
 </details>
+
+> NOTE: When sending to multiple addresses each combination of address and coins need to be unique
+        Otherwise you get, `ERROR: Duplicate output in transaction`
 
 ##### Generate a JSON output
 ```bash
@@ -1931,10 +1956,10 @@ $ skycoin-cli version --json
 
 ```json
 {
- "skycoin": "0.23.0",
- "cli": "0.23.0",
- "rpc": "0.23.0",
- "wallet": "0.23.0"
+    "skycoin": "0.23.0",
+    "cli": "0.23.0",
+    "rpc": "0.23.0",
+    "wallet": "0.23.0"
 }
 ```
 </details>

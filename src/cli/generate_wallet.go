@@ -98,7 +98,7 @@ func generateWalletHandler(c *gcli.Context) error {
 	wltName := c.String("f")
 
 	// check if the wallet name has wlt extension.
-	if !strings.HasSuffix(wltName, ".wlt") {
+	if !strings.HasSuffix(wltName, walletExt) {
 		return ErrWalletName
 	}
 

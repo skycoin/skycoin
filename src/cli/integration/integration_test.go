@@ -3,6 +3,7 @@ package integration_test
 
 import (
 	"bytes"
+	"encoding/csv"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -1181,7 +1182,7 @@ func TestStableTransaction(t *testing.T) {
 			name:       "not exist",
 			args:       []string{"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947"},
 			err:        errors.New("exit status 1"),
-			errMsg:     "transaction doesn't exist [code: -32600]\n",
+			errMsg:     "404 Not Found\n",
 			goldenFile: "",
 		},
 		{
@@ -1774,6 +1775,15 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 		return
 	}
 
+	var tmpCSVFile string
+
+	defer func() {
+		if tmpCSVFile != "" {
+			err := os.Remove(tmpCSVFile)
+			require.NoError(t, err)
+		}
+	}()
+
 	tt := []struct {
 		name    string
 		args    func() []string
@@ -1828,6 +1838,40 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 				require.True(t, coins >= 1e6)
 			},
 		},
+		{
+			// Send 0.5 coin to the second address.
+			// Send 0.5 coin to the third address.
+			// After sending, the first address should have at least 1 coin left.
+			name: "send to multiple address with -csv option",
+			args: func() []string {
+				fields := [][]string{
+					{w.Entries[1].Address.String(), "0.5"},
+					{w.Entries[2].Address.String(), "0.5"},
+				}
+
+				f, err := ioutil.TempFile("", "createrawtxn")
+				require.NoError(t, err)
+				defer f.Close()
+
+				w := csv.NewWriter(f)
+
+				err = w.WriteAll(fields)
+				require.NoError(t, err)
+
+				w.Flush()
+				err = w.Error()
+				require.NoError(t, err)
+
+				tmpCSVFile = f.Name()
+
+				return []string{"createRawTransaction", "-csv", tmpCSVFile}
+			},
+			checkTx: func(t *testing.T, txid string) {
+				// Confirms the first address has at least 1 coin left.
+				coins, _ := getAddressBalance(t, w.Entries[0].Address.String())
+				require.True(t, coins >= 1e6)
+			},
+		},
 	}
 
 	for _, tc := range tt {
@@ -1847,7 +1891,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 
 			// Broadcast transaction
 			output, err = exec.Command(binaryPath, "broadcastTransaction", string(output)).CombinedOutput()
-			require.NoError(t, err)
+			require.NoError(t, err, string(output))
 
 			txid := string(bytes.TrimRight(output, "\n"))
 			fmt.Println("txid:", txid)
@@ -1873,14 +1917,14 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 	}
 
 	// Send with too small decimal value
-	errMsg := []byte("Error: invalid amount, too many decimal places. See 'skycoin-cli createRawTransaction --help'")
+	errMsg := []byte("invalid amount, too many decimal places")
 	for i := uint64(1); i < uint64(20); i++ {
 		v, err := droplet.ToString(i)
 		require.NoError(t, err)
 		name := fmt.Sprintf("send %v", v)
 		t.Run(name, func(t *testing.T) {
 			output, err := exec.Command(binaryPath, "createRawTransaction", w.Entries[0].Address.String(), v).CombinedOutput()
-			require.NoError(t, err)
+			require.Error(t, err)
 			output = bytes.Trim(output, "\n")
 			require.Equal(t, errMsg, output)
 		})
@@ -1891,8 +1935,9 @@ func getTransaction(t *testing.T, txid string) *webrpc.TxnResult {
 	output, err := exec.Command(binaryPath, "transaction", txid).CombinedOutput()
 	if err != nil {
 		fmt.Println(string(output))
-		return &webrpc.TxnResult{}
+		return nil
 	}
+
 	require.NoError(t, err)
 
 	var tx webrpc.TxnResult
@@ -1905,6 +1950,8 @@ func getTransaction(t *testing.T, txid string) *webrpc.TxnResult {
 func isTxConfirmed(t *testing.T, txid string) bool {
 	tx := getTransaction(t, txid)
 	require.NotNil(t, tx)
+	require.NotNil(t, tx.Transaction)
+	require.NotNil(t, tx.Transaction.Status)
 	return tx.Transaction.Status.Confirmed
 }
 
@@ -1994,7 +2041,7 @@ func prepareAndCheckWallet(t *testing.T, miniCoins, miniCoinHours uint64) (*wall
 
 func getAddressBalance(t *testing.T, addr string) (uint64, uint64) {
 	output, err := exec.Command(binaryPath, "addressBalance", addr).CombinedOutput()
-	require.NoError(t, err)
+	require.NoError(t, err, string(output))
 
 	var addrBalance cli.BalanceResult
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&addrBalance)
@@ -2009,7 +2056,7 @@ func getAddressBalance(t *testing.T, addr string) (uint64, uint64) {
 
 func getWalletOutputs(t *testing.T, walletPath string) visor.ReadableOutputs {
 	output, err := exec.Command(binaryPath, "walletOutputs", walletPath).CombinedOutput()
-	require.NoError(t, err)
+	require.NoError(t, err, string(output))
 
 	var wltOutput webrpc.OutputsResult
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wltOutput)
@@ -2393,6 +2440,7 @@ func TestLiveGUIInjectTransaction(t *testing.T) {
 				t.Fatalf("err: %v, output: %v", err, string(output))
 				return
 			}
+
 			require.NoError(t, err)
 			output = bytes.TrimRight(output, "\n")
 			if bytes.Contains(output, []byte("Error:")) {
@@ -2401,11 +2449,11 @@ func TestLiveGUIInjectTransaction(t *testing.T) {
 			}
 
 			// Broadcast raw transaction with gui /injectTransaction
-			txid, err := c.InjectTransaction(string(output))
+			txid, err := c.InjectEncodedTransaction(string(output))
 			require.NoError(t, err)
 
 			txid = strings.TrimRight(txid, "\n")
-			fmt.Println("txid:", txid)
+			t.Logf("txid: %s", txid)
 			_, err = cipher.SHA256FromHex(txid)
 			require.NoError(t, err)
 

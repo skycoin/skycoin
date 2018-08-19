@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
@@ -30,6 +32,15 @@ type ClientError struct {
 	Status     string
 	StatusCode int
 	Message    string
+}
+
+// NewClientError creates a ClientError
+func NewClientError(status string, statusCode int, message string) ClientError {
+	return ClientError{
+		Status:     status,
+		StatusCode: statusCode,
+		Message:    strings.TrimRight(message, "\n"),
+	}
 }
 
 func (e ClientError) Error() string {
@@ -85,11 +96,7 @@ func (c *Client) Get(endpoint string, obj interface{}) error {
 			return err
 		}
 
-		return ClientError{
-			Status:     resp.Status,
-			StatusCode: resp.StatusCode,
-			Message:    string(body),
-		}
+		return NewClientError(resp.Status, resp.StatusCode, string(body))
 	}
 
 	if obj == nil {
@@ -160,11 +167,7 @@ func (c *Client) post(endpoint string, contentType string, body io.Reader, obj i
 			return err
 		}
 
-		return ClientError{
-			Status:     resp.Status,
-			StatusCode: resp.StatusCode,
-			Message:    string(body),
-		}
+		return NewClientError(resp.Status, resp.StatusCode, string(body))
 	}
 
 	if obj == nil {
@@ -226,11 +229,7 @@ func (c *Client) PostJSONV2(endpoint string, reqObj, respObj interface{}) (bool,
 		// occurs in the go HTTP stack, outside of the application's control.
 		// If this happens, treat the entire response body as the error message.
 		if resp.StatusCode != http.StatusOK {
-			return false, ClientError{
-				Status:     resp.Status,
-				StatusCode: resp.StatusCode,
-				Message:    string(body),
-			}
+			return false, NewClientError(resp.Status, resp.StatusCode, string(body))
 		}
 
 		return false, err
@@ -238,11 +237,7 @@ func (c *Client) PostJSONV2(endpoint string, reqObj, respObj interface{}) (bool,
 
 	var rspErr error
 	if resp.StatusCode != http.StatusOK {
-		rspErr = ClientError{
-			Status:     resp.Status,
-			StatusCode: resp.StatusCode,
-			Message:    wrapObj.Error.Message,
-		}
+		rspErr = NewClientError(resp.Status, resp.StatusCode, wrapObj.Error.Message)
 	}
 
 	if wrapObj.Data == nil {
@@ -279,11 +274,7 @@ func (c *Client) CSRF() (string, error) {
 			return "", err
 		}
 
-		return "", ClientError{
-			Status:     resp.Status,
-			StatusCode: resp.StatusCode,
-			Message:    string(body),
-		}
+		return "", NewClientError(resp.Status, resp.StatusCode, string(body))
 	}
 
 	var m map[string]string
@@ -794,8 +785,16 @@ func (c *Client) UnconfirmedTransactions(addrs []string) (*[]daemon.TransactionR
 	return &r, nil
 }
 
-// InjectTransaction makes a request to POST /api/v1/injectTransaction
-func (c *Client) InjectTransaction(rawTx string) (string, error) {
+// InjectTransaction makes a request to POST /api/v1/injectTransaction.
+func (c *Client) InjectTransaction(txn *coin.Transaction) (string, error) {
+	d := txn.Serialize()
+	rawTx := hex.EncodeToString(d)
+	return c.InjectEncodedTransaction(rawTx)
+}
+
+// InjectEncodedTransaction makes a request to POST /api/v1/injectTransaction.
+// rawTx is a hex-encoded, serialized transaction
+func (c *Client) InjectEncodedTransaction(rawTx string) (string, error) {
 	v := struct {
 		Rawtx string `json:"rawtx"`
 	}{

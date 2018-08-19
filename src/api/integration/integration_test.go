@@ -945,14 +945,14 @@ func TestStableBlocks(t *testing.T) {
 	progress, err := c.BlockchainProgress()
 	require.NoError(t, err)
 
-	lastNBlocks := 10
-	require.True(t, int(progress.Current) > lastNBlocks+1)
+	var lastNBlocks uint64 = 10
+	require.True(t, progress.Current > lastNBlocks+1)
 
 	cases := []struct {
 		name    string
 		golden  string
-		start   int
-		end     int
+		start   uint64
+		end     uint64
 		errCode int
 		errMsg  string
 	}{
@@ -965,8 +965,8 @@ func TestStableBlocks(t *testing.T) {
 		{
 			name:   "last 10",
 			golden: "blocks-last-10.golden",
-			start:  int(progress.Current) - lastNBlocks,
-			end:    int(progress.Current),
+			start:  progress.Current - lastNBlocks,
+			end:    progress.Current,
 		},
 		{
 			name:   "first block",
@@ -978,27 +978,13 @@ func TestStableBlocks(t *testing.T) {
 			name:   "all blocks",
 			golden: "blocks-all.golden",
 			start:  0,
-			end:    int(progress.Current),
+			end:    progress.Current,
 		},
 		{
 			name:   "start > end",
 			golden: "blocks-end-less-than-start.golden",
 			start:  10,
 			end:    9,
-		},
-		{
-			name:    "start negative",
-			start:   -10,
-			end:     9,
-			errCode: http.StatusBadRequest,
-			errMsg:  "400 Bad Request - Invalid start value \"-10\"",
-		},
-		{
-			name:    "end negative",
-			start:   10,
-			end:     -9,
-			errCode: http.StatusBadRequest,
-			errMsg:  "400 Bad Request - Invalid end value \"-9\"",
 		},
 	}
 
@@ -1025,7 +1011,7 @@ func TestLiveBlocks(t *testing.T) {
 	testBlocks(t, 1, 10)
 }
 
-func testBlocks(t *testing.T, start, end int) *visor.ReadableBlocks {
+func testBlocks(t *testing.T, start, end uint64) *visor.ReadableBlocks {
 	c := api.NewClient(nodeAddress())
 
 	blocks, err := c.Blocks(start, end)
@@ -1034,7 +1020,7 @@ func testBlocks(t *testing.T, start, end int) *visor.ReadableBlocks {
 	if start > end {
 		require.Empty(t, blocks.Blocks)
 	} else {
-		require.Len(t, blocks.Blocks, end-start+1)
+		require.Len(t, blocks.Blocks, int(end-start+1))
 	}
 
 	var prevBlock *visor.ReadableBlock
@@ -1044,7 +1030,7 @@ func testBlocks(t *testing.T, start, end int) *visor.ReadableBlocks {
 		}
 
 		bHash, err := c.BlockByHash(b.Head.BlockHash)
-		require.Equal(t, uint64(idx+start), b.Head.BkSeq)
+		require.Equal(t, uint64(idx)+start, b.Head.BkSeq)
 		require.NoError(t, err)
 		require.NotNil(t, bHash)
 		require.Equal(t, b, *bHash)
@@ -1230,7 +1216,7 @@ func TestLiveTransaction(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - txID is empty",
+				Message:    "400 Bad Request - txid is empty",
 			},
 		},
 		{
@@ -1248,9 +1234,17 @@ func TestLiveTransaction(t *testing.T) {
 				require.Equal(t, tc.err, err)
 				return
 			}
-			var expected *visor.ReadableTransaction
+
+			// tx.Status.Height is how many blocks are above this transaction,
+			// make sure it is past some checkpoint height
+			require.True(t, tx.Status.Height >= 50836)
+
+			// daemon.TransactionResult.Status.Height is not stable
+			tx.Status.Height = 0
+
+			var expected daemon.TransactionResult
 			loadGoldenFile(t, tc.goldenFile, TestData{tx, &expected})
-			require.Equal(t, expected, &tx.Transaction)
+			require.Equal(t, &expected, tx)
 		})
 	}
 }
@@ -1312,9 +1306,9 @@ func TestStableTransaction(t *testing.T) {
 				return
 			}
 
-			var expected *visor.ReadableTransaction
+			var expected daemon.TransactionResult
 			loadGoldenFile(t, tc.goldenFile, TestData{tx, &expected})
-			require.Equal(t, expected, &tx.Transaction)
+			require.Equal(t, &expected, tx)
 		})
 	}
 }

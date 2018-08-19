@@ -30,6 +30,7 @@ import (
 	"github.com/skycoin/skycoin/src/cli"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/droplet"
+	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -421,7 +422,7 @@ func TestGenerateAddresses(t *testing.T) {
 			var expect wallet.ReadableWallet
 			loadJSON(t, goldenFile, &expect)
 			if tc.encrypted {
-				// wips secrets as it's not stable
+				// wipe secrets as it's not stable
 				expect.Meta["secrets"] = ""
 				w.Meta["secrets"] = ""
 			}
@@ -1048,9 +1049,6 @@ func TestStableShowConfig(t *testing.T) {
 	ret.DataDir = "IGNORED/.skycoin"
 
 	goldenFile := "show-config.golden"
-	if useCSRF(t) {
-		goldenFile = "show-config-use-csrf.golden"
-	}
 
 	var expect cli.Config
 	td := TestData{ret, &expect}
@@ -1102,8 +1100,6 @@ func TestLiveShowConfig(t *testing.T) {
 	require.Equal(t, coin, ret.Coin)
 
 	require.Equal(t, rpcAddress(), ret.RPCAddress)
-
-	require.Equal(t, useCSRF(t), ret.UseCSRF)
 }
 
 func TestStableStatus(t *testing.T) {
@@ -1119,12 +1115,13 @@ func TestStableStatus(t *testing.T) {
 	require.NoError(t, err)
 
 	// TimeSinceLastBlock is not stable
-	ret.TimeSinceLastBlock = ""
+	ret.Status.BlockchainMetadata.TimeSinceLastBlock = wh.FromDuration(time.Duration(0))
+	// Version is not stable
+	ret.Status.Version = visor.BuildInfo{}
+	// Uptime is not stable
+	ret.Status.Uptime = wh.FromDuration(time.Duration(0))
 
 	goldenFile := "status.golden"
-	if useCSRF(t) {
-		goldenFile = "status-use-csrf.golden"
-	}
 
 	var expect cli.StatusResult
 	td := TestData{ret, &expect}
@@ -1132,15 +1129,14 @@ func TestStableStatus(t *testing.T) {
 
 	// The RPC port is not always the same between runs of the stable integration tests,
 	// so use the RPC_ADDR envvar instead of the golden file value for comparison
-	goldenRPCAddress := expect.RPCAddress
-	expect.RPCAddress = rpcAddress()
+	goldenRPCAddress := expect.Config.RPCAddress
+	expect.Config.RPCAddress = rpcAddress()
 
 	require.Equal(t, expect, ret)
 
 	// Restore goldenfile's value before checking if JSON fields were added or removed
-	expect.RPCAddress = goldenRPCAddress
+	expect.Config.RPCAddress = goldenRPCAddress
 	checkGoldenFileObjectChanges(t, goldenFile, TestData{ret, &expect})
-
 }
 
 func TestLiveStatus(t *testing.T) {
@@ -1154,9 +1150,7 @@ func TestLiveStatus(t *testing.T) {
 	var ret cli.StatusResult
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&ret)
 	require.NoError(t, err)
-	require.True(t, ret.Running)
-	require.Equal(t, rpcAddress(), ret.RPCAddress)
-	require.Equal(t, useCSRF(t), ret.UseCSRF)
+	require.Equal(t, rpcAddress(), ret.Config.RPCAddress)
 }
 
 func TestStableTransaction(t *testing.T) {

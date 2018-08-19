@@ -12,7 +12,6 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
     - [RPC_ADDR](#rpc_addr)
     - [WALLET_DIR](#wallet_dir)
     - [WALLET_NAME](#wallet_name)
-    - [USE_CSRF](#use_csrf)
 - [Usage](#usage)
     - [Add Private Key](#add-private-key)
     - [Check address balance](#check-address-balance)
@@ -97,15 +96,6 @@ The wallet file name must have `.wlt` extension.
 $ export WALLET_NAME=YOUR_WALLET_NAME
 ```
 
-### USE_CSRF
-
-If the remote node to communicate with is not run with `-csrf-disabled`, set this variable.
-CSRF is enabled by default on nodes.
-
-```bash
-$ export USE_CSRF=1
-```
-
 ## Usage
 
 After the installation, you can run `skycoin-cli` to see the usage:
@@ -155,7 +145,6 @@ GLOBAL OPTIONS:
 ENVIRONMENT VARIABLES:
     RPC_ADDR: Address of RPC node. Must be in scheme://host format. Default "http://127.0.0.1:6420"
     COIN: Name of the coin. Default "skycoin"
-    USE_CSRF: Set to 1 or true if the remote node has CSRF enabled. Default false (unset)
     WALLET_DIR: Directory where wallets are stored. This value is overriden by any subcommand flag specifying a wallet filename, if that filename includes a path. Default "$HOME/.$COIN/wallets"
     WALLET_NAME: Name of wallet file (without path). This value is overriden by any subcommand flag specifying a wallet filename. Default "$COIN_cli.wlt"
 ```
@@ -1510,8 +1499,7 @@ $ skycoin-cli showConfig
     "wallet_name": "skycoin_cli.wlt",
     "data_directory": "/home/user/.skycoin",
     "coin": "skycoin",
-    "rpc_address": "http://127.0.0.1:6420",
-    "use_csrf": false
+    "rpc_address": "http://127.0.0.1:6420"
 }
 ```
 
@@ -1526,11 +1514,32 @@ $ skycoin-cli status
 
 ```json
 {
- "running": true,
- "num_of_blocks": 21210,
- "hash_of_last_block": "d5797705bfc0ac7956f3eeaa083aec4e89a6b27ada7499c5a53dad2fda84c5f9",
- "time_since_last_block": "18446744073709551591s",
- "webrpc_address": "127.0.0.1:6420"
+    "status": {
+        "blockchain": {
+            "head": {
+                "seq": 51173,
+                "block_hash": "62c69f0dce4b05df7ca6b44eb0cf90d71bb09fa416ecaeb3d57b3c1bd210be85",
+                "previous_block_hash": "f300b933c13a6d7c9896bd26deba38b8fe95773fa42e4fd9c7a0ab86e226ca80",
+                "timestamp": 1534430855,
+                "fee": 7450,
+                "version": 0,
+                "tx_body_hash": "7081ec7f8c549c75500d4b74ae3a02db4bd7f6a294510e7b25cf8a3ff0a19798"
+            },
+            "unspents": 31940,
+            "unconfirmed": 1,
+            "time_since_last_block": "8m40s"
+        },
+        "version": {
+            "version": "0.24.1",
+            "commit": "620405485d3276c16c0379bc3b88b588e34c45e1",
+            "branch": "bulk-send"
+        },
+        "open_connections": 8,
+        "uptime": "4h1m23.697072461s"
+    },
+    "cli_config": {
+        "webrpc_address": "http://127.0.0.1:6420"
+    }
 }
 ```
 </details>

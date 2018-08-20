@@ -8,6 +8,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/strand"
+	"github.com/skycoin/skycoin/src/util/flagutils"
 	"github.com/skycoin/skycoin/src/util/utc"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -19,19 +20,19 @@ import (
 
 // GatewayConfig configuration set of gateway.
 type GatewayConfig struct {
-	BufferSize      int
-	EnableWalletAPI bool
-	EnableGUI       bool
-	DisableCSP      bool
+	BufferSize     int
+	EnabledAPISets flagutils.StringSet
+	EnableGUI      bool
+	DisableCSP     bool
 }
 
 // NewGatewayConfig create and init an GatewayConfig
 func NewGatewayConfig() GatewayConfig {
 	return GatewayConfig{
-		BufferSize:      32,
-		EnableWalletAPI: false,
-		EnableGUI:       false,
-		DisableCSP:      false,
+		BufferSize:     32,
+		EnabledAPISets: flagutils.NewStringSet(),
+		EnableGUI:      false,
+		DisableCSP:     false,
 	}
 }
 
@@ -792,7 +793,7 @@ func (gw *Gateway) GetUnconfirmedTxns(addrs []cipher.Address) ([]visor.Unconfirm
 // set password as nil if wallet is not encrypted, otherwise the password must be provied.
 // return transaction or error.
 func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest cipher.Address) (*coin.Transaction, error) {
-	if !gw.Config.EnableWalletAPI {
+	if !gw.Config.EnabledAPISets.Contains("WALLET") {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
@@ -821,7 +822,7 @@ func (gw *Gateway) Spend(wltID string, password []byte, coins uint64, dest ciphe
 
 // CreateTransaction creates a transaction based upon parameters in wallet.CreateTransactionParams
 func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*coin.Transaction, []wallet.UxBalance, error) {
-	if !gw.Config.EnableWalletAPI {
+	if !gw.Config.EnabledAPISets.Contains("WALLET") {
 		return nil, nil, wallet.ErrWalletAPIDisabled
 	}
 
@@ -842,7 +843,7 @@ func (gw *Gateway) CreateTransaction(params wallet.CreateTransactionParams) (*co
 
 // CreateWallet creates wallet
 func (gw *Gateway) CreateWallet(wltName string, options wallet.Options) (*wallet.Wallet, error) {
-	if !gw.Config.EnableWalletAPI {
+	if !gw.Config.EnabledAPISets.Contains("WALLET") {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
@@ -856,7 +857,7 @@ func (gw *Gateway) CreateWallet(wltName string, options wallet.Options) (*wallet
 
 // EncryptWallet encrypts the wallet
 func (gw *Gateway) EncryptWallet(wltName string, password []byte) (*wallet.Wallet, error) {
-	if !gw.Config.EnableWalletAPI {
+	if !gw.Config.EnabledAPISets.Contains("WALLET") {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
@@ -870,7 +871,7 @@ func (gw *Gateway) EncryptWallet(wltName string, password []byte) (*wallet.Walle
 
 // DecryptWallet decrypts wallet
 func (gw *Gateway) DecryptWallet(wltID string, password []byte) (*wallet.Wallet, error) {
-	if !gw.Config.EnableWalletAPI {
+	if !gw.Config.EnabledAPISets.Contains("WALLET") {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
@@ -886,7 +887,7 @@ func (gw *Gateway) DecryptWallet(wltID string, password []byte) (*wallet.Wallet,
 func (gw *Gateway) GetWalletBalance(wltID string) (wallet.BalancePair, wallet.AddressBalance, error) {
 	var addressBalances wallet.AddressBalance
 	var walletBalance wallet.BalancePair
-	if !gw.Config.EnableWalletAPI {
+	if !gw.Config.EnabledAPISets.Contains("WALLET") {
 		return walletBalance, addressBalances, wallet.ErrWalletAPIDisabled
 	}
 
@@ -955,7 +956,7 @@ func (gw *Gateway) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePa
 
 // GetWalletDir returns path for storing wallet files
 func (gw *Gateway) GetWalletDir() (string, error) {
-	if !gw.Config.EnableWalletAPI {
+	if !gw.Config.EnabledAPISets.Contains("WALLET") {
 		return "", wallet.ErrWalletAPIDisabled
 	}
 	return gw.v.Config.WalletDirectory, nil
@@ -963,7 +964,7 @@ func (gw *Gateway) GetWalletDir() (string, error) {
 
 // NewAddresses generate addresses in given wallet
 func (gw *Gateway) NewAddresses(wltID string, password []byte, n uint64) ([]cipher.Address, error) {
-	if !gw.Config.EnableWalletAPI {
+	if !gw.Config.EnabledAPISets.Contains("WALLET") {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
@@ -977,7 +978,7 @@ func (gw *Gateway) NewAddresses(wltID string, password []byte, n uint64) ([]ciph
 
 // UpdateWalletLabel updates the label of wallet
 func (gw *Gateway) UpdateWalletLabel(wltID, label string) error {
-	if !gw.Config.EnableWalletAPI {
+	if !gw.Config.EnabledAPISets.Contains("WALLET") {
 		return wallet.ErrWalletAPIDisabled
 	}
 
@@ -990,7 +991,7 @@ func (gw *Gateway) UpdateWalletLabel(wltID, label string) error {
 
 // GetWallet returns wallet by id
 func (gw *Gateway) GetWallet(wltID string) (*wallet.Wallet, error) {
-	if !gw.Config.EnableWalletAPI {
+	if !gw.Config.EnabledAPISets.Contains("WALLET") {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
@@ -1004,7 +1005,7 @@ func (gw *Gateway) GetWallet(wltID string) (*wallet.Wallet, error) {
 
 // GetWallets returns wallets
 func (gw *Gateway) GetWallets() (wallet.Wallets, error) {
-	if !gw.Config.EnableWalletAPI {
+	if !gw.Config.EnabledAPISets.Contains("WALLET") {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
@@ -1018,7 +1019,7 @@ func (gw *Gateway) GetWallets() (wallet.Wallets, error) {
 
 // GetWalletUnconfirmedTxns returns all unconfirmed transactions in given wallet
 func (gw *Gateway) GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTxn, error) {
-	if !gw.Config.EnableWalletAPI {
+	if !gw.Config.EnabledAPISets.Contains("WALLET") {
 		return nil, wallet.ErrWalletAPIDisabled
 	}
 
@@ -1039,7 +1040,7 @@ func (gw *Gateway) GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTx
 
 // ReloadWallets reloads all wallets
 func (gw *Gateway) ReloadWallets() error {
-	if !gw.Config.EnableWalletAPI {
+	if !gw.Config.EnabledAPISets.Contains("WALLET") {
 		return wallet.ErrWalletAPIDisabled
 	}
 
@@ -1052,7 +1053,7 @@ func (gw *Gateway) ReloadWallets() error {
 
 // UnloadWallet removes wallet of given id from memory.
 func (gw *Gateway) UnloadWallet(id string) error {
-	if !gw.Config.EnableWalletAPI {
+	if !gw.Config.EnabledAPISets.Contains("WALLET") {
 		return wallet.ErrWalletAPIDisabled
 	}
 
@@ -1066,7 +1067,7 @@ func (gw *Gateway) UnloadWallet(id string) error {
 // GetWalletSeed returns seed of wallet of given id,
 // returns wallet.ErrWalletNotEncrypted if the wallet is not encrypted.
 func (gw *Gateway) GetWalletSeed(id string, password []byte) (string, error) {
-	if !gw.Config.EnableWalletAPI {
+	if !gw.Config.EnabledAPISets.Contains("WALLET") {
 		return "", wallet.ErrWalletAPIDisabled
 	}
 
@@ -1079,8 +1080,15 @@ func (gw *Gateway) GetWalletSeed(id string, password []byte) (string, error) {
 }
 
 // IsWalletAPIEnabled returns if all wallet related apis are disabled
+//
+// Equivalent to isAPISetEnabled("WALLET")
 func (gw *Gateway) IsWalletAPIEnabled() bool {
-	return gw.Config.EnableWalletAPI
+	return gw.IsAPISetEnabled("WALLET")
+}
+
+// IsAPISetEnabled returns if any of the API set names is enabled
+func (gw *Gateway) IsAPISetEnabled(mainAPIName string, otherAPINames ...string) bool {
+	return gw.Config.EnabledAPISets.ContainsAny(mainAPIName, otherAPINames...)
 }
 
 // GetBuildInfo returns node build info.

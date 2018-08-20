@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Group API methods un API sets
+- Command line node parameters to enable individual API sets
+
 ### Fixed
 
 ### Changed

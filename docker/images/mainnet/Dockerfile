@@ -37,7 +37,6 @@ ENV COIN="skycoin"
 ENV RPC_ADDR="http://0.0.0.0:6420" \
     DATA_DIR="/data/.$COIN" \
     WALLET_DIR="/wallet" \
-    USE_CSRF="1" \
     WALLET_NAME="$COIN_cli.wlt"
 
 # copy all the binaries

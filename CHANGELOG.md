@@ -13,12 +13,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Implemented SWIG interfaces `./src/util/droplet` and `./src/util/fee`
 - Add `-csv` option to `cli send` and `cli createRawTransaction`, which will send coins to multiple addresses defined in a csv file
 
-
 ### Fixed
 
 ### Changed
 
+- CLI tool uses the REST API instead of the deprecated webrpc API to communicate with the node
+- `cli status` return value is now the response from `GET /api/v1/health`, which changes some fields
+
 ### Removed
+
+- Remove `USE_CSRF` envvar from the CLI tool. It uses the REST API client now, which will automatically detect CSRF as needed, so no additional configuration is necessary.  Operators may still wish to disable CSRF on their remote node to reduce request overhead.
 
 ## [0.24.1] - 2018-07-30
 

@@ -20,8 +20,8 @@ func broadcastTxCmd() gcli.Command {
 				return nil
 			}
 
-			rpcClient := RPCClientFromContext(c)
-			txid, err := rpcClient.InjectTransactionString(rawtx)
+			client := APIClientFromContext(c)
+			txid, err := client.InjectEncodedTransaction(rawtx)
 			if err != nil {
 				return err
 			}
@@ -30,5 +30,4 @@ func broadcastTxCmd() gcli.Command {
 			return nil
 		},
 	}
-	// Commands = append(Commands, cmd)
 }

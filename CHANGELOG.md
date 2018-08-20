@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Fix exit status of CLI tool when wallet file cannot be loaded
+
 ### Changed
 
 - CLI tool uses the REST API instead of the deprecated webrpc API to communicate with the node

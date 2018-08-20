@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Add `util/droplet` and `util/fee` API's as part of `libskycoin`
+- Implement tests for libc `./src/util/droplet` and `./src/util/fee`
+- Implemented SWIG interfaces `./src/util/droplet` and `./src/util/fee`
+
+
 ### Fixed
 
 ### Changed

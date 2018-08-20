@@ -184,7 +184,7 @@ func SKY_api_Client_BlockBySeq(_c C.Client__Handle, _seq uint64, _arg1 *C.Handle
 }
 
 //export SKY_api_Client_Blocks
-func SKY_api_Client_Blocks(_c C.Client__Handle, _start, _end int, _arg1 *C.Handle) (____error_code uint32) {
+func SKY_api_Client_Blocks(_c C.Client__Handle, _start, _end uint64, _arg1 *C.Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -205,7 +205,7 @@ func SKY_api_Client_Blocks(_c C.Client__Handle, _start, _end int, _arg1 *C.Handl
 }
 
 //export SKY_api_Client_LastBlocks
-func SKY_api_Client_LastBlocks(_c C.Client__Handle, _n int, _arg1 *C.Handle) (____error_code uint32) {
+func SKY_api_Client_LastBlocks(_c C.Client__Handle, _n uint64, _arg1 *C.Handle) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -791,7 +791,7 @@ func SKY_api_Client_UnconfirmedTransactions(_c C.Client__Handle, _addrs []string
 }
 
 //export SKY_api_Client_InjectTransaction
-func SKY_api_Client_InjectTransaction(_c C.Client__Handle, _rawTx string, _arg1 *C.GoString_) (____error_code uint32) {
+func SKY_api_Client_InjectTransaction(_c C.Client__Handle, _rawTx C.Transaction__Handle, _arg1 *C.GoString_) (____error_code uint32) {
 	____error_code = 0
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
@@ -801,7 +801,10 @@ func SKY_api_Client_InjectTransaction(_c C.Client__Handle, _rawTx string, _arg1 
 		____error_code = SKY_BAD_HANDLE
 		return
 	}
-	rawTx := _rawTx
+	rawTx, okt := lookupTransactionHandle(_rawTx)
+	if !okt {
+		____error_code = SKY_BAD_HANDLE
+	}
 	__arg1, ____return_err := c.InjectTransaction(rawTx)
 	____error_code = libErrorCode(____return_err)
 	if ____return_err == nil {

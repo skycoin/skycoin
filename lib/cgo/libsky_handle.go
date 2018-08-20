@@ -561,3 +561,17 @@ func SKY_handle_copy(handle C.Handle, copy *C.Handle) uint32 {
 		return SKY_BAD_HANDLE
 	}
 }
+
+func registerReadableOutputSetHandle(obj *visor.ReadableOutputSet) C.ReadableOutputSet__Handle {
+	return (C.ReadableOutputSet__Handle)(registerHandle(obj))
+}
+
+func lookupReadableOutputSetHandle(handle C.ReadableOutputSet__Handle) (*visor.ReadableOutputSet, bool) {
+	obj, ok := lookupHandle(C.Handle(handle))
+	if ok {
+		if obj, isOK := (obj).(*visor.ReadableOutputSet); isOK {
+			return obj, true
+		}
+	}
+	return nil, false
+}

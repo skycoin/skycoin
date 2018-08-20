@@ -176,7 +176,7 @@ func doLiveOrStable(t *testing.T) bool {
 	if enabled() {
 		switch mode(t) {
 		case testModeStable, testModeLive:
-			if !disableTrustedPeersOrUseCustom(){
+			if !disableTrustedPeersOrUseCustom() {
 				return true
 			}
 		}

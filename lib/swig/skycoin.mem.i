@@ -427,3 +427,14 @@
 	}
 }
 
+%rename(SKY_fee_TransactionFee) wrap_SKY_fee_TransactionFee;
+%inline{
+	GoUint32 wrap_SKY_fee_TransactionFee(Transaction__Handle __txn, GoUint64 __p1, coin_UxOutArray*  __uxIn, GoUint64  *__return_fee ){
+		GoSlice_ data;
+		data.data = __uxIn->data;
+		data.len = __uxIn->count;
+		data.cap = __uxIn->count;
+		return SKY_fee_TransactionFee(__txn,__p1, &data,__return_fee);
+	}
+}
+

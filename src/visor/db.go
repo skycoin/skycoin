@@ -161,18 +161,16 @@ func RepairCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) (*
 	switch err.(type) {
 	case nil:
 		return db, nil
-	case blockdb.ErrMissingSignature:
+	case blockdb.ErrMissingSignature,
+		historydb.ErrHistoryDBCorrupted:
 		logger.Critical().Errorf("Database is corrupted, recreating db: %v", err)
 		return resetCorruptDB(db)
-	case historydb.ErrHistoryDBCorrupted:
-		logger.Critical().Errorf("Database is corrupted, rebuilding db: %v", err)
-		return rebuildCorruptDB(db, pubkey, quit)
 	default:
 		return nil, err
 	}
 }
 
-func rebuildCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) (*dbutil.DB, error) {
+func rebuildCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) (*dbutil.DB, error) { //nolint: deadcode
 	history := historydb.New()
 	bc, err := NewBlockchain(db, BlockchainConfig{Pubkey: pubkey})
 	if err != nil {
@@ -204,7 +202,7 @@ func resetCorruptDB(db *dbutil.DB) (*dbutil.DB, error) {
 // OpenDB opens the blockdb
 func OpenDB(dbFile string, readOnly bool) (*dbutil.DB, error) {
 	db, err := bolt.Open(dbFile, 0600, &bolt.Options{
-		Timeout:  500 * time.Millisecond,
+		Timeout:  5000 * time.Millisecond,
 		ReadOnly: readOnly,
 	})
 	if err != nil {

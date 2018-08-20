@@ -73,6 +73,9 @@ func PubKeyFromHex(s string) (PubKey, error) {
 	if err != nil {
 		return PubKey{}, errors.New("Invalid public key")
 	}
+	if len(b) != len(PubKey{}) {
+		return PubKey{}, errors.New("Invalid public key length")
+	}
 	return NewPubKey(b), nil
 }
 

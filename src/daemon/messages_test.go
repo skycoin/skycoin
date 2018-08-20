@@ -8,13 +8,14 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/util"
-	"github.com/stretchr/testify/require"
 )
 
 func setupMsgEncoding() {
@@ -735,27 +736,6 @@ func TestIntroductionMessage(t *testing.T) {
 				Port:    6000,
 			},
 			err: ErrDisconnectOtherError,
-		},
-		{
-			name: "Max default connections reached",
-			addr: "121.121.121.121:6000",
-			mockValue: daemonMockValue{
-				mirror:                  10000,
-				version:                 1,
-				disconnectReason:        ErrDisconnectMaxDefaultConnectionReached,
-				isDefaultConnection:     true,
-				isMaxConnectionsReached: true,
-				getMirrorPortResult: mirrorPortResult{
-					exist: false,
-				},
-				pubkey: pubkey,
-			},
-			intro: &IntroductionMessage{
-				Mirror:  10001,
-				Version: 1,
-				Port:    6000,
-			},
-			err: ErrDisconnectMaxDefaultConnectionReached,
 		},
 		{
 			name: "incomming connection",

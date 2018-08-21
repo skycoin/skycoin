@@ -20,7 +20,6 @@ require('electron-context-menu')({});
 global.eval = function() { throw new Error('bad!!'); }
 
 let currentURL;
-let outputLines = 0;
 let showErrorCalled = false;
 
 // Force everything localhost, in case of a leak
@@ -96,33 +95,22 @@ function startSkycoin() {
 
   skycoin.stdout.on('data', (data) => {
     console.log(data.toString());
-    if (currentURL && outputLines > 100) {
+    if (currentURL) {
       return
     }
 
     const marker = 'Starting web interface on ';
 
     data.toString().split('\n').forEach(line => {
-      outputLines += 1;
       if (line.indexOf(marker) !== -1) {
         currentURL = 'http://' + line.split(marker)[1].trim();
         app.emit('skycoin-ready', { url: currentURL });
-      } else if (line.indexOf('daemon.Pool.Run failed') !== -1) {
-        showError();
       }
     });
   });
 
   skycoin.stderr.on('data', (data) => {
     console.log(data.toString());
-
-    if (outputLines > 100) {
-      return
-    }
-    
-    if (data.toString().indexOf('daemon.Pool.Run failed') !== -1) {
-      showError();
-    }
   });
 
   skycoin.on('close', (code) => {

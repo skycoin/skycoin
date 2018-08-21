@@ -493,7 +493,7 @@ func TestDecodeRawTransaction(t *testing.T) {
 		{
 			name:   "invalid raw transaction",
 			rawTx:  "2601000000a1d",
-			errMsg: []byte("invalid raw transaction: encoding/hex: odd length hex string\nencoding/hex: odd length hex string\n"),
+			errMsg: []byte("invalid raw transaction: encoding/hex: odd length hex string\n"),
 		},
 	}
 
@@ -507,10 +507,6 @@ func TestDecodeRawTransaction(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			if bytes.Contains(output, []byte("Error: ")) {
-				require.Equal(t, tc.errMsg, string(output))
-				return
-			}
 
 			var txn visor.TransactionJSON
 			err = json.NewDecoder(bytes.NewReader(output)).Decode(&txn)
@@ -2519,7 +2515,7 @@ func TestEncryptWallet(t *testing.T) {
 				return clean
 			},
 			errWithHelp: true,
-			errMsg:      []byte("not-exist.wlt doesn't exist."),
+			errMsg:      []byte("not-exist.wlt doesn't exist"),
 		},
 	}
 
@@ -2533,12 +2529,11 @@ func TestEncryptWallet(t *testing.T) {
 				output, err := exec.Command(binaryPath, args...).CombinedOutput()
 				if err != nil {
 					require.EqualError(t, err, "exit status 1")
-					require.Equal(t, tc.errMsg, output)
-					return
-				}
-
-				if tc.errWithHelp {
-					require.True(t, bytes.Contains(output, tc.errMsg), string(output))
+					if tc.errWithHelp {
+						require.True(t, bytes.Contains(output, tc.errMsg), string(output))
+					} else {
+						require.Equal(t, tc.errMsg, output)
+					}
 					return
 				}
 
@@ -2612,7 +2607,7 @@ func TestDecryptWallet(t *testing.T) {
 				return clean
 			},
 			errWithHelp: true,
-			errMsg:      []byte("not-exist.wlt doesn't exist."),
+			errMsg:      []byte("not-exist.wlt doesn't exist"),
 		},
 	}
 
@@ -2624,12 +2619,11 @@ func TestDecryptWallet(t *testing.T) {
 			output, err := exec.Command(binaryPath, args...).CombinedOutput()
 			if err != nil {
 				require.EqualError(t, err, "exit status 1")
-				require.Equal(t, tc.errMsg, output)
-				return
-			}
-
-			if tc.errWithHelp {
-				require.True(t, bytes.Contains(output, tc.errMsg), string(output))
+				if tc.errWithHelp {
+					require.True(t, bytes.Contains(output, tc.errMsg), string(output))
+				} else {
+					require.Equal(t, tc.errMsg, output)
+				}
 				return
 			}
 
@@ -2698,8 +2692,8 @@ func TestShowSeed(t *testing.T) {
 				_, clean := createEncryptedWallet(t)
 				return clean
 			},
-			args:         []string{"-p", "wrong password"},
-			expectOutput: []byte("invalid password"),
+			args:   []string{"-p", "wrong password"},
+			errMsg: []byte("invalid password\n"),
 		},
 		{
 			name: "wallet doesn't exist",
@@ -2708,8 +2702,8 @@ func TestShowSeed(t *testing.T) {
 				os.Setenv("WALLET_NAME", "not-exist.wlt")
 				return clean
 			},
-			errWithHelp:  true,
-			expectOutput: []byte("not-exist.wlt doesn't exist."),
+			errWithHelp: true,
+			errMsg:      []byte("not-exist.wlt doesn't exist"),
 		},
 	}
 
@@ -2721,13 +2715,14 @@ func TestShowSeed(t *testing.T) {
 			output, err := exec.Command(binaryPath, args...).CombinedOutput()
 			if err != nil {
 				require.EqualError(t, err, "exit status 1")
+				if tc.errWithHelp {
+					require.True(t, bytes.Contains(output, tc.errMsg), string(output))
+				} else {
+					require.Equal(t, tc.errMsg, output)
+				}
 				return
 			}
 
-			if tc.errWithHelp {
-				require.True(t, bytes.Contains(output, tc.errMsg), string(output))
-				return
-			}
 			require.Equal(t, tc.expectOutput, output)
 		})
 	}

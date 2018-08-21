@@ -242,5 +242,11 @@
     "waiting-deposit": "Waiting for Bitcoin deposit",
     "waiting-send": "Waiting to send Skycoin",
     "unknown": "Unknown"
+  },
+
+  "service": {
+    "api" : {
+      "server-error": "Server error"
+    }
   }
 }

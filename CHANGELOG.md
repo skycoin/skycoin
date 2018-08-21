@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - CLI tool uses the REST API instead of the deprecated webrpc API to communicate with the node
 - `cli status` return value is now the response from `GET /api/v1/health`, which changes some fields
+- `go run cmd/skycoin/skycoin.go` will have exit status 1 on failure and exit status 2 on panic
 
 ### Removed
 

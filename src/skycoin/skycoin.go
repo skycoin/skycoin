@@ -142,6 +142,12 @@ func (c *Coin) Run() error {
 		fmt.Println(fullAddress)
 	}
 
+	if err := d.Init(); err != nil {
+		c.logger.Error(err)
+		retErr = err
+		goto earlyShutdown
+	}
+
 	wg.Add(1)
 	go func() {
 		defer wg.Done()

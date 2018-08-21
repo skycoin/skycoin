@@ -393,16 +393,20 @@ func (dm *Daemon) Shutdown() {
 	<-dm.done
 }
 
-// Run main loop for peer/connection management.
-// Send anything to the quit channel to shut it down.
-func (dm *Daemon) Run() error {
-	defer logger.Info("Daemon closed")
-	defer close(dm.done)
-
+// Init prepares daemon before Run()
+func (dm *Daemon) Init() error {
 	if err := dm.visor.Init(); err != nil {
 		logger.WithError(err).Error("visor.Visor.Init failed")
 		return err
 	}
+
+	return nil
+}
+
+// Run main loop for peer/connection management
+func (dm *Daemon) Run() error {
+	defer logger.Info("Daemon closed")
+	defer close(dm.done)
 
 	errC := make(chan error, 5)
 	var wg sync.WaitGroup
@@ -461,7 +465,7 @@ func (dm *Daemon) Run() error {
 		}()
 	}
 
-	var err error
+	var setupErr error
 	elapser := elapse.NewElapser(daemonRunDurationThreshold, logger)
 
 	// Process SendResults in a separate goroutine, otherwise SendResults
@@ -650,14 +654,19 @@ loop:
 			elapser.Register("blocksAnnounceTicker")
 			dm.AnnounceBlocks()
 
-		case err = <-errC:
+		case setupErr = <-errC:
+			logger.WithError(setupErr).Error("read from errc")
 			break loop
 		}
 	}
 
+	if setupErr != nil {
+		return setupErr
+	}
+
 	wg.Wait()
 
-	return err
+	return nil
 }
 
 // GetListenPort returns the ListenPort for a given address.
@@ -741,7 +750,7 @@ func (dm *Daemon) makePrivateConnections() {
 }
 
 func (dm *Daemon) connectToTrustPeer() {
-	if dm.Config.DisableIncomingConnections {
+	if dm.Config.DisableOutgoingConnections {
 		return
 	}
 

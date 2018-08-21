@@ -1,6 +1,7 @@
 @import 'theme/variables';
 @import 'theme/tables';
 @import '~bootstrap/scss/bootstrap-grid.scss';
+@import '~bootstrap/scss/utilities/_display.scss';
 
 /* You can add global styles to this file, and also import other style files */
 //@import '~@angular/material/prebuilt-themes/indigo-pink.css';
@@ -250,6 +251,12 @@ On-boarding components
   background: -o-linear-gradient(bottom right, $gradient-blue-dark, $gradient-blue-light); /* For Opera 11.1 to 12.0 */
   background: -moz-linear-gradient(bottom right, $gradient-blue-dark, $gradient-blue-light); /* For Firefox 3.6 to 15 */
   background: linear-gradient(to bottom right, $gradient-blue-dark, $gradient-blue-light); /* Standard syntax */
+
+  .row-container {
+    max-width: 450px;
+    width: 80%;
+    margin: 0px auto;
+  }
 
   label {
     color: white;

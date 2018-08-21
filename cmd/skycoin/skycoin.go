@@ -1,12 +1,12 @@
 package main
 
 import (
-    _ "net/http/pprof"
-    "os"
+	_ "net/http/pprof"
+	"os"
 
-    "github.com/skycoin/skycoin/src/skycoin"
-    "github.com/skycoin/skycoin/src/util/logging"
-    "github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/skycoin"
+	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/visor"
 )
 
 
@@ -40,52 +40,52 @@ var (
 
 	// DefaultConnections the default trust node addresses
 	DefaultConnections = []string{
-        "118.178.135.93:6000",
-        "47.88.33.156:6000",
-        "121.41.103.148:6000",
-        "120.77.69.188:6000",
-        "104.237.142.206:6000",
-        "176.58.126.224:6000",
-        "172.104.85.6:6000",
-        "139.162.7.132:6000",
+		"118.178.135.93:6000",
+		"47.88.33.156:6000",
+		"121.41.103.148:6000",
+		"120.77.69.188:6000",
+		"104.237.142.206:6000",
+		"176.58.126.224:6000",
+		"172.104.85.6:6000",
+		"139.162.7.132:6000",
 	}
 )
 
 func main() {
-    // get node config
-    nodeConfig := skycoin.NewNodeConfig(ConfigMode, skycoin.NodeParameters{
-        GenesisSignatureStr: GenesisSignatureStr,
-        GenesisAddressStr:   GenesisAddressStr,
-        GenesisCoinVolume:   GenesisCoinVolume,
-        GenesisTimestamp:    GenesisTimestamp,
-        BlockchainPubkeyStr: BlockchainPubkeyStr,
-        BlockchainSeckeyStr: BlockchainSeckeyStr,
-        DefaultConnections:  DefaultConnections,
-        PeerListURL:         "https://downloads.skycoin.net/blockchain/peers.txt",
-        Port:                6000,
-        WebInterfacePort:    6420,
-        DataDirectory:       "$HOME/.skycoin",
-        ProfileCPUFile:      "skycoin.prof",
-    })
+	// get node config
+	nodeConfig := skycoin.NewNodeConfig(ConfigMode, skycoin.NodeParameters{
+		GenesisSignatureStr: GenesisSignatureStr,
+		GenesisAddressStr:   GenesisAddressStr,
+		GenesisCoinVolume:   GenesisCoinVolume,
+		GenesisTimestamp:    GenesisTimestamp,
+		BlockchainPubkeyStr: BlockchainPubkeyStr,
+		BlockchainSeckeyStr: BlockchainSeckeyStr,
+		DefaultConnections:  DefaultConnections,
+		PeerListURL:         "https://downloads.skycoin.net/blockchain/peers.txt",
+		Port:                6000,
+		WebInterfacePort:    6420,
+		DataDirectory:       "$HOME/.skycoin",
+		ProfileCPUFile:      "skycoin.prof",
+	})
 
-    // create a new fiber coin instance
-    coin := skycoin.NewCoin(
-        skycoin.Config{
-            Node: *nodeConfig,
-            Build: visor.BuildInfo{
-                Version: Version,
-                Commit:  Commit,
-                Branch:  Branch,
-            },
-        },
-        logger,
-    )
+	// create a new fiber coin instance
+	coin := skycoin.NewCoin(
+		skycoin.Config{
+			Node: *nodeConfig,
+			Build: visor.BuildInfo{
+				Version: Version,
+				Commit:  Commit,
+				Branch:  Branch,
+			},
+		},
+		logger,
+	)
 
-    // parse config values
-    coin.ParseConfig()
+	// parse config values
+	coin.ParseConfig()
 
-    // run fiber coin node
-    if err := coin.Run(); err != nil {
-        os.Exit(1)
-    }
+	// run fiber coin node
+	if err := coin.Run(); err != nil {
+		os.Exit(1)
+	}
 }

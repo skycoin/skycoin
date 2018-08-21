@@ -1,12 +1,12 @@
 package main
 
 import (
-    _ "net/http/pprof"
-    "os"
+	_ "net/http/pprof"
+	"os"
 
-    "github.com/skycoin/skycoin/src/skycoin"
-    "github.com/skycoin/skycoin/src/util/logging"
-    "github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/skycoin"
+	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/visor"
 )
 
 
@@ -40,47 +40,47 @@ var (
 
 	// DefaultConnections the default trust node addresses
 	DefaultConnections = []string{
-    {{- range $index, $address := .DefaultConnections}}
-        "{{$address -}}",
-    {{- end}}
+	{{- range $index, $address := .DefaultConnections}}
+		"{{$address -}}",
+	{{- end}}
 	}
 )
 
 func main() {
-    // get node config
-    nodeConfig := skycoin.NewNodeConfig(ConfigMode, skycoin.NodeParameters{
-        GenesisSignatureStr: GenesisSignatureStr,
-        GenesisAddressStr:   GenesisAddressStr,
-        GenesisCoinVolume:   GenesisCoinVolume,
-        GenesisTimestamp:    GenesisTimestamp,
-        BlockchainPubkeyStr: BlockchainPubkeyStr,
-        BlockchainSeckeyStr: BlockchainSeckeyStr,
-        DefaultConnections:  DefaultConnections,
-        PeerListURL:         "{{.PeerListURL}}",
-        Port:                {{.Port}},
-        WebInterfacePort:    {{.WebInterfacePort}},
-        DataDirectory:       "{{.DataDirectory}}",
-        ProfileCPUFile:      "{{.ProfileCPUFile}}",
-    })
+	// get node config
+	nodeConfig := skycoin.NewNodeConfig(ConfigMode, skycoin.NodeParameters{
+		GenesisSignatureStr: GenesisSignatureStr,
+		GenesisAddressStr:   GenesisAddressStr,
+		GenesisCoinVolume:   GenesisCoinVolume,
+		GenesisTimestamp:    GenesisTimestamp,
+		BlockchainPubkeyStr: BlockchainPubkeyStr,
+		BlockchainSeckeyStr: BlockchainSeckeyStr,
+		DefaultConnections:  DefaultConnections,
+		PeerListURL:         "{{.PeerListURL}}",
+		Port:                {{.Port}},
+		WebInterfacePort:    {{.WebInterfacePort}},
+		DataDirectory:       "{{.DataDirectory}}",
+		ProfileCPUFile:      "{{.ProfileCPUFile}}",
+	})
 
-    // create a new fiber coin instance
-    coin := skycoin.NewCoin(
-        skycoin.Config{
-            Node: *nodeConfig,
-            Build: visor.BuildInfo{
-                Version: Version,
-                Commit:  Commit,
-                Branch:  Branch,
-            },
-        },
-        logger,
-    )
+	// create a new fiber coin instance
+	coin := skycoin.NewCoin(
+		skycoin.Config{
+			Node: *nodeConfig,
+			Build: visor.BuildInfo{
+				Version: Version,
+				Commit:  Commit,
+				Branch:  Branch,
+			},
+		},
+		logger,
+	)
 
-    // parse config values
-    coin.ParseConfig()
+	// parse config values
+	coin.ParseConfig()
 
-    // run fiber coin node
-    if err := coin.Run(); err != nil {
-        os.Exit(1)
-    }
+	// run fiber coin node
+	if err := coin.Run(); err != nil {
+		os.Exit(1)
+	}
 }

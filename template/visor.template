@@ -28,6 +28,6 @@ const (
 
 var distributionAddresses = [DistributionAddressesTotal]string{
 {{- range $index, $address := .DistributionAddresses}}
-   "{{$address -}}",
+	"{{$address -}}",
 {{- end}}
 }

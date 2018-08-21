@@ -139,6 +139,13 @@ check: lint test integration-test-stable integration-test-stable-disable-csrf in
 integration-test-stable: ## Run stable integration tests
 	./ci-scripts/integration-test-stable.sh -c
 
+integration-test-stable-disabletrust: ## Run stable integration tests disabling trusted peers
+	./ci-scripts/integration-test-stable-disabletrust.sh -c
+
+integration-test-stable-customtrust: ## Run stable integration tests with custom trusted peers
+	./ci-scripts/integration-test-stable-customtrust.sh -c
+
+
 integration-test-stable-disable-csrf: ## Run stable integration tests with CSRF disabled
 	./ci-scripts/integration-test-stable.sh
 

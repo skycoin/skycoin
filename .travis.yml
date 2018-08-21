@@ -63,6 +63,8 @@ script:
   - make test-amd64
   # Stable integration tests
   - make integration-test-stable
+  - make integration-test-stable-disabletrust
+  - make integration-test-stable-customtrust
   # Stable integration tests without CSRF
   - make integration-test-stable-disable-csrf
   # Disable wallet api test

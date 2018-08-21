@@ -100,9 +100,23 @@ func enabled() bool {
 	return os.Getenv("SKYCOIN_INTEGRATION_TESTS") == "1"
 }
 
+func disableTrustedPeers() bool {
+	return os.Getenv("DISABLE_TRUSTED_PEERS") == "1"
+}
+
+func useCustomTrustedPeers() bool {
+	return os.Getenv("CUSTOM_TRUSTED_PEERS") == "1"
+}
+
+func disableTrustedPeersOrUseCustom() bool {
+	return disableTrustedPeers() || useCustomTrustedPeers()
+}
+
 func doStable(t *testing.T) bool {
 	if enabled() && mode(t) == testModeStable {
-		return true
+		if !disableTrustedPeersOrUseCustom() {
+			return true
+		}
 	}
 
 	t.Skip("Stable tests disabled")
@@ -111,10 +125,23 @@ func doStable(t *testing.T) bool {
 
 func doLive(t *testing.T) bool {
 	if enabled() && mode(t) == testModeLive {
-		return true
+		if !disableTrustedPeersOrUseCustom() {
+			return true
+		}
 	}
 
 	t.Skip("Live tests disabled")
+	return false
+}
+
+func doStableWithDisabledOrCustomPeers(t *testing.T) bool {
+	if enabled() && mode(t) == testModeStable {
+		if disableTrustedPeersOrUseCustom() {
+			return true
+		}
+	}
+
+	t.Skip("Stable tests with disable trusted or custom peers disabled")
 	return false
 }
 
@@ -149,7 +176,9 @@ func doLiveOrStable(t *testing.T) bool {
 	if enabled() {
 		switch mode(t) {
 		case testModeStable, testModeLive:
-			return true
+			if !disableTrustedPeersOrUseCustom() {
+				return true
+			}
 		}
 	}
 
@@ -1138,33 +1167,49 @@ func TestLiveNetworkConnections(t *testing.T) {
 }
 
 func TestNetworkDefaultConnections(t *testing.T) {
-	if !doLiveOrStable(t) {
+	if !doStableWithDisabledOrCustomPeers(t) {
 		return
 	}
 
 	c := api.NewClient(nodeAddress())
 	connections, err := c.NetworkDefaultConnections()
 	require.NoError(t, err)
-	require.NotEmpty(t, connections)
-	sort.Strings(connections)
+	if disableTrustedPeers() {
+		require.Empty(t, connections)
+	} else {
+		require.NotEmpty(t, connections)
+		sort.Strings(connections)
 
-	var expected []string
-	checkGoldenFile(t, "network-default-connections.golden", TestData{connections, &expected})
+		var expected []string
+		if useCustomTrustedPeers() {
+			checkGoldenFile(t, "network-custom-default-connections.golden", TestData{connections, &expected})
+		} else {
+			checkGoldenFile(t, "network-default-connections.golden", TestData{connections, &expected})
+		}
+	}
 }
 
 func TestNetworkTrustedConnections(t *testing.T) {
-	if !doLiveOrStable(t) {
+	if !doStableWithDisabledOrCustomPeers(t) {
 		return
 	}
 
 	c := api.NewClient(nodeAddress())
 	connections, err := c.NetworkTrustedConnections()
 	require.NoError(t, err)
-	require.NotEmpty(t, connections)
-	sort.Strings(connections)
+	if disableTrustedPeers() {
+		require.Empty(t, connections)
+	} else {
+		require.NotEmpty(t, connections)
+		sort.Strings(connections)
 
-	var expected []string
-	checkGoldenFile(t, "network-trusted-connections.golden", TestData{connections, &expected})
+		var expected []string
+		if useCustomTrustedPeers() {
+			checkGoldenFile(t, "network-custom-trusted-connections.golden", TestData{connections, &expected})
+		} else {
+			checkGoldenFile(t, "network-trusted-connections.golden", TestData{connections, &expected})
+		}
+	}
 }
 
 func TestStableNetworkExchangeableConnections(t *testing.T) {

@@ -218,7 +218,15 @@ func New(cfg Config, defaultConns []string) (*Pex, error) {
 
 	// Load peers from disk
 	if err := pex.load(); err != nil {
+		logger.Errorf("Error loading peers from file: %v", err)
 		return nil, err
+	}
+
+	// If no default connections then all connections are untrusted.
+	if defaultConns == nil || len(defaultConns) == 0 {
+		for _, peer := range pex.peerlist.peers {
+			peer.Trusted = false
+		}
 	}
 
 	// Load default hardcoded peers
@@ -296,7 +304,7 @@ func (px *Pex) downloadPeers() error {
 		return err
 	}
 
-	peers := parseRemotePeerList(body)
+	peers := ParseRemotePeerList(body)
 	logger.Infof("Downloaded peers list from %s, got %d peers", px.Config.PeerListURL, len(peers))
 
 	n := px.AddPeers(peers)
@@ -327,8 +335,8 @@ func (px *Pex) load() error {
 			logger.Errorf("Invalid peer address: %v", err)
 			continue
 		}
-
 		validPeers = append(validPeers, *p)
+
 		if px.Config.Max > 0 && len(validPeers) >= px.Config.Max {
 			break
 		}
@@ -570,11 +578,11 @@ func backoffDownloadText(url string) (string, error) {
 	return body, nil
 }
 
-// parseRemotePeerList parses a remote peers.txt file
+// ParseRemotePeerList parses a remote peers.txt file
 // The peers list format is newline separated ip:port
 // Any lines that don't parse to an ip:port are skipped
 // Localhost ip:port addresses are ignored
-func parseRemotePeerList(body string) []string {
+func ParseRemotePeerList(body string) []string {
 	var peers []string
 	for _, addr := range strings.Split(string(body), "\n") {
 		addr = whitespaceFilter.ReplaceAllString(addr, "")

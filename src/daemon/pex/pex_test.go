@@ -157,43 +157,6 @@ func TestValidateAddress(t *testing.T) {
 			}
 		})
 	}
-
-	// // empty string
-	// require.False(t, validateAddress("", false))
-	// // doubled ip:port
-	// require.False(t, validateAddress("112.32.32.14:100112.32.32.14:101", false))
-	// // requires port
-	// require.False(t, validateAddress("112.32.32.14", false))
-	// // not ip
-	// require.False(t, validateAddress("112", false))
-	// require.False(t, validateAddress("112.32", false))
-	// require.False(t, validateAddress("112.32.32", false))
-	// // bad part
-	// require.False(t, validateAddress("112.32.32.14000", false))
-	// // large port
-	// require.False(t, validateAddress("112.32.32.14:66666", false))
-	// // unspecified
-	// require.False(t, validateAddress("0.0.0.0:8888", false))
-	// // no ip
-	// require.False(t, validateAddress(":8888", false))
-	// // multicast
-	// require.False(t, validateAddress("224.1.1.1:8888", false))
-	// // invalid ports
-	// require.False(t, validateAddress("112.32.32.14:0", false))
-	// require.False(t, validateAddress("112.32.32.14:1", false))
-	// require.False(t, validateAddress("112.32.32.14:10", false))
-	// require.False(t, validateAddress("112.32.32.14:100", false))
-	// require.False(t, validateAddress("112.32.32.14:1000", false))
-	// require.False(t, validateAddress("112.32.32.14:1023", false))
-	// require.False(t, validateAddress("112.32.32.14:65536", false))
-	// // valid ones
-	// require.True(t, validateAddress("112.32.32.14:1024", false))
-	// require.True(t, validateAddress("112.32.32.14:10000", false))
-	// require.True(t, validateAddress("112.32.32.14:65535", false))
-	// // localhost is allowed
-	// require.True(t, validateAddress("127.0.0.1:8888", true))
-	// // localhost is not allowed
-	// require.False(t, validateAddress("127.0.0.1:8888", false))
 }
 
 func TestNewPex(t *testing.T) {
@@ -201,15 +164,15 @@ func TestNewPex(t *testing.T) {
 	require.NoError(t, err)
 	defer os.Remove(dir)
 
-	// defer removeFile()
 	config := NewConfig()
 	config.DataDirectory = dir
+	config.DefaultConnections = testPeers[:]
 
-	_, err = New(config, testPeers[:])
+	_, err = New(config)
 	require.NoError(t, err)
 
 	// check if peers are saved to disk
-	peers, err := loadPeersFromFile(filepath.Join(dir, PeerDatabaseFilename))
+	peers, err := loadCachedPeersFile(filepath.Join(dir, PeerDatabaseFilename))
 	require.NoError(t, err)
 
 	for _, p := range testPeers {
@@ -217,6 +180,73 @@ func TestNewPex(t *testing.T) {
 		require.True(t, ok)
 		require.True(t, v.Trusted)
 	}
+}
+
+func TestNewPexDisableTrustedPeers(t *testing.T) {
+	dir, err := ioutil.TempDir("", "peerlist")
+	require.NoError(t, err)
+	defer os.Remove(dir)
+
+	config := NewConfig()
+	config.DataDirectory = dir
+	config.DefaultConnections = testPeers[:]
+	config.DisableTrustedPeers = true
+
+	_, err = New(config)
+	require.NoError(t, err)
+
+	// check if peers are saved to disk
+	peers, err := loadCachedPeersFile(filepath.Join(dir, PeerDatabaseFilename))
+	require.NoError(t, err)
+
+	for _, p := range testPeers {
+		v, ok := peers[p]
+		require.True(t, ok)
+		require.False(t, v.Trusted)
+	}
+}
+
+func TestNewPexLoadCustomPeers(t *testing.T) {
+	dir, err := ioutil.TempDir("", "peerlist")
+	require.NoError(t, err)
+	defer os.Remove(dir)
+
+	fn, err := os.Create(filepath.Join(dir, "custom-peers.txt"))
+	require.NoError(t, err)
+	defer fn.Close()
+
+	_, err = fn.Write([]byte(`123.45.67.89:2020
+34.34.21.21:12222
+`))
+	require.NoError(t, err)
+
+	err = fn.Close()
+	require.NoError(t, err)
+
+	config := NewConfig()
+	config.DataDirectory = dir
+	config.DefaultConnections = nil
+	config.CustomPeersFile = fn.Name()
+
+	_, err = New(config)
+	require.NoError(t, err)
+
+	// check if peers are saved to disk
+	peers, err := loadCachedPeersFile(filepath.Join(dir, PeerDatabaseFilename))
+	require.NoError(t, err)
+
+	expectedPeers := []string{
+		"123.45.67.89:2020",
+		"34.34.21.21:12222",
+	}
+
+	for _, p := range expectedPeers {
+		v, ok := peers[p]
+		require.True(t, ok)
+		require.False(t, v.Trusted)
+	}
+
+	require.Len(t, peers, len(expectedPeers))
 }
 
 func TestPexLoadPeers(t *testing.T) {
@@ -297,7 +327,7 @@ func TestPexLoadPeers(t *testing.T) {
 				Config:   cfg,
 			}
 
-			err = px.load()
+			err = px.loadCache()
 			require.NoError(t, err)
 
 			require.Len(t, px.peerlist.peers, tc.expectN)
@@ -364,9 +394,10 @@ func TestPexAddPeer(t *testing.T) {
 			cfg := NewConfig()
 			cfg.Max = tc.max
 			cfg.DataDirectory = dir
+			cfg.DefaultConnections = tc.peers
 
 			// create px instance and load peers
-			px, err := New(cfg, tc.peers)
+			px, err := New(cfg)
 			require.NoError(t, err)
 
 			err = px.AddPeer(tc.peer)
@@ -435,9 +466,10 @@ func TestPexAddPeers(t *testing.T) {
 			cfg := NewConfig()
 			cfg.Max = tc.max
 			cfg.DataDirectory = dir
+			cfg.DefaultConnections = tc.peers
 
 			// create px instance and load peers
-			px, err := New(cfg, tc.peers)
+			px, err := New(cfg)
 			require.NoError(t, err)
 
 			n := px.AddPeers(tc.addPeers)
@@ -1355,4 +1387,86 @@ func TestParseRemotePeerList(t *testing.T) {
 		"66.55.44.33:2020",
 		"54.54.32.32:7899",
 	}, peers)
+}
+
+func TestParseLocalPeerList(t *testing.T) {
+	cases := []struct {
+		name           string
+		body           string
+		peers          []string
+		allowLocalhost bool
+		err            error
+	}{
+		{
+			name: "valid, no localhost",
+			body: `11.22.33.44:5555
+66.55.44.33:2020
+# comment
+
+  54.54.32.32:7899
+`,
+			peers: []string{
+				"11.22.33.44:5555",
+				"66.55.44.33:2020",
+				"54.54.32.32:7899",
+			},
+			allowLocalhost: false,
+		},
+
+		{
+			name: "valid, localhost",
+			body: `11.22.33.44:5555
+66.55.44.33:2020
+# comment
+
+127.0.0.1:8080
+  54.54.32.32:7899
+`,
+			peers: []string{
+				"11.22.33.44:5555",
+				"66.55.44.33:2020",
+				"127.0.0.1:8080",
+				"54.54.32.32:7899",
+			},
+			allowLocalhost: true,
+		},
+
+		{
+			name: "invalid, contains localhost but no localhost allowed",
+			body: `11.22.33.44:5555
+66.55.44.33:2020
+# comment
+
+127.0.0.1:8080
+  54.54.32.32:7899
+`,
+			err:            fmt.Errorf("Peers list has invalid address 127.0.0.1:8080: %v", ErrNoLocalhost),
+			allowLocalhost: false,
+		},
+
+		{
+			name: "invalid, bad address",
+			body: `11.22.33.44:5555
+66.55.44.33:2020
+# comment
+
+  54.54.32.32:99
+`,
+			err:            fmt.Errorf("Peers list has invalid address 54.54.32.32:99: %v", ErrPortTooLow),
+			allowLocalhost: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			peers, err := parseLocalPeerList(tc.body, tc.allowLocalhost)
+			if tc.err != nil {
+				require.Equal(t, tc.err, err)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tc.peers, peers)
+		})
+	}
 }

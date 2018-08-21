@@ -178,6 +178,8 @@ type DaemonConfig struct { // nolint: golint
 	UnconfirmedRefreshRate time.Duration
 	// How often to remove transactions that become permanently invalid from the unconfirmed pool
 	UnconfirmedRemoveInvalidRate time.Duration
+	// Default "trusted" peers
+	DefaultConnections []string
 }
 
 // NewDaemonConfig creates daemon config
@@ -256,8 +258,6 @@ type Daemon struct {
 	Gateway  *Gateway
 	visor    *visor.Visor
 
-	DefaultConnections []string
-
 	// Cache of announced transactions that are flushed to the database periodically
 	announcedTxns *announcedTxnsCache
 	// Cache of reported peer blockchain heights
@@ -299,14 +299,14 @@ type Daemon struct {
 }
 
 // NewDaemon returns a Daemon with primitives allocated
-func NewDaemon(config Config, db *dbutil.DB, defaultConns []string) (*Daemon, error) {
+func NewDaemon(config Config, db *dbutil.DB) (*Daemon, error) {
 	config = config.preprocess()
 	vs, err := visor.NewVisor(config.Visor, db)
 	if err != nil {
 		return nil, err
 	}
 
-	pex, err := pex.New(config.Pex, defaultConns)
+	pex, err := pex.New(config.Pex)
 	if err != nil {
 		return nil, err
 	}
@@ -316,8 +316,6 @@ func NewDaemon(config Config, db *dbutil.DB, defaultConns []string) (*Daemon, er
 		Messages: NewMessages(config.Messages),
 		pex:      pex,
 		visor:    vs,
-
-		DefaultConnections: defaultConns,
 
 		announcedTxns: newAnnouncedTxnsCache(),
 		Heights:       newPeerBlockchainHeights(),

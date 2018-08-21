@@ -3,11 +3,13 @@ package pex
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"math"
 	"math/rand"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -176,6 +178,12 @@ type Config struct {
 	DownloadPeerList bool
 	// Download peers list from this URL
 	PeerListURL string
+	// Set all peers as untrusted (even if loaded from DefaultConnections)
+	DisableTrustedPeers bool
+	// Load peers from this file on disk. NOTE: this is different from the peers file cache in the data directory
+	CustomPeersFile string
+	// Default "trusted" connections
+	DefaultConnections []string
 }
 
 // NewConfig creates default pex config.
@@ -194,6 +202,8 @@ func NewConfig() Config {
 		NetworkDisabled:     false,
 		DownloadPeerList:    false,
 		PeerListURL:         DefaultPeerListURL,
+		DisableTrustedPeers: false,
+		CustomPeersFile:     "",
 	}
 }
 
@@ -208,7 +218,7 @@ type Pex struct {
 }
 
 // New creates pex
-func New(cfg Config, defaultConns []string) (*Pex, error) {
+func New(cfg Config) (*Pex, error) {
 	pex := &Pex{
 		Config:   cfg,
 		peerlist: newPeerlist(),
@@ -217,19 +227,34 @@ func New(cfg Config, defaultConns []string) (*Pex, error) {
 	}
 
 	// Load peers from disk
-	if err := pex.load(); err != nil {
+	if err := pex.loadCache(); err != nil {
+		logger.Critical().WithError(err).Error("pex.loadCache failed")
 		return nil, err
 	}
 
 	// Load default hardcoded peers
-	for _, addr := range defaultConns {
+	for _, addr := range cfg.DefaultConnections {
 		// Default peers will mark as trusted peers.
 		if err := pex.AddPeer(addr); err != nil {
-			logger.Critical().Errorf("add peer failed:%v", err)
-			continue
+			logger.Critical().WithError(err).Error("Add default peer failed")
+			return nil, err
 		}
 		if err := pex.SetTrusted(addr); err != nil {
-			logger.Critical().Errorf("pex.SetTrust failed: %v", err)
+			logger.Critical().WithError(err).Error("pex.SetTrusted for default peer failed")
+			return nil, err
+		}
+	}
+
+	if cfg.DisableTrustedPeers {
+		// Unset trusted status from any existing peers
+		pex.setAllUntrusted()
+	}
+
+	// Add custom peers
+	if cfg.CustomPeersFile != "" {
+		if err := pex.loadCustom(cfg.CustomPeersFile); err != nil {
+			logger.Critical().WithError(err).Errorf("Failed to load custom peers from %s", cfg.CustomPeersFile)
+			return nil, err
 		}
 	}
 
@@ -305,12 +330,13 @@ func (px *Pex) downloadPeers() error {
 	return nil
 }
 
-func (px *Pex) load() error {
+func (px *Pex) loadCache() error {
 	px.Lock()
 	defer px.Unlock()
 
 	fp := filepath.Join(px.Config.DataDirectory, PeerDatabaseFilename)
-	peers, err := loadPeersFromFile(fp)
+	peers, err := loadCachedPeersFile(fp)
+
 	if err != nil {
 		return err
 	}
@@ -338,6 +364,33 @@ func (px *Pex) load() error {
 	return nil
 }
 
+func (px *Pex) loadCustom(fn string) error {
+	px.Lock()
+	defer px.Unlock()
+
+	f, err := os.Open(fn)
+	if err != nil {
+		return err
+	}
+
+	defer f.Close()
+
+	data, err := ioutil.ReadAll(f)
+	if err != nil {
+		return err
+	}
+
+	peers, err := parseLocalPeerList(string(data), px.Config.AllowLocalhost)
+	if err != nil {
+		return err
+	}
+
+	logger.Infof("Loaded %d peers from %s", len(peers), fn)
+
+	px.peerlist.addPeers(peers)
+	return nil
+}
+
 // SavePeers persists the peerlist
 func (px *Pex) save() error {
 	px.Lock()
@@ -348,7 +401,7 @@ func (px *Pex) save() error {
 }
 
 // AddPeer adds a peer to the peer list, given an address. If the peer list is
-// full, PeerlistFullError is returned */
+// full, PeerlistFullError is returned
 func (px *Pex) AddPeer(addr string) error {
 	px.Lock()
 	defer px.Unlock()
@@ -359,16 +412,19 @@ func (px *Pex) AddPeer(addr string) error {
 		return ErrInvalidAddress
 	}
 
-	if px.Config.Max > 0 && px.peerlist.len() >= px.Config.Max {
-		return ErrPeerlistFull
+	if !px.peerlist.hasPeer(cleanAddr) {
+		if px.Config.Max > 0 && px.peerlist.len() >= px.Config.Max {
+			return ErrPeerlistFull
+		}
+
+		px.peerlist.addPeer(cleanAddr)
 	}
 
-	px.peerlist.addPeer(cleanAddr)
 	return nil
 }
 
 // AddPeers add multiple peers at once. Any errors will be logged, but not returned
-// Returns the number of peers that were added without error.  Note that
+// Returns the number of peers that were added without error. Note that
 // adding a duplicate peer will not cause an error.
 func (px *Pex) AddPeers(addrs []string) int {
 	px.Lock()
@@ -433,6 +489,14 @@ func (px *Pex) SetTrusted(addr string) error {
 	}
 
 	return px.peerlist.setTrusted(cleanAddr, true)
+}
+
+// setAllUntrusted unsets the trusted field on all peers
+func (px *Pex) setAllUntrusted() {
+	px.Lock()
+	defer px.Unlock()
+
+	px.peerlist.setAllUntrusted()
 }
 
 // SetHasIncomingPort sets if the peer has public port
@@ -571,9 +635,11 @@ func backoffDownloadText(url string) (string, error) {
 }
 
 // parseRemotePeerList parses a remote peers.txt file
-// The peers list format is newline separated ip:port
-// Any lines that don't parse to an ip:port are skipped
+// The peers list format is newline separated list of ip:port strings
+// Any lines that don't parse to an ip:port are skipped, otherwise they return an error
 // Localhost ip:port addresses are ignored
+// NOTE: this does not parse the cached peers.txt file in the data directory, which is a JSON file
+// and is loaded by loadCachedPeersFile
 func parseRemotePeerList(body string) []string {
 	var peers []string
 	for _, addr := range strings.Split(string(body), "\n") {
@@ -585,7 +651,8 @@ func parseRemotePeerList(body string) []string {
 		// Never allow localhost addresses from the remote peers list
 		a, err := validateAddress(addr, false)
 		if err != nil {
-			logger.Errorf("Remote peers list has invalid address %s: %v", addr, err)
+			err = fmt.Errorf("Peers list has invalid address %s: %v", addr, err)
+			logger.WithError(err).Error()
 			continue
 		}
 
@@ -593,4 +660,37 @@ func parseRemotePeerList(body string) []string {
 	}
 
 	return peers
+}
+
+// parseRemotePeerList parses a remote peers.txt file
+// The peers list format is newline separated list of ip:port strings
+// Empty lines and lines that begin with # are treated as comment lines
+// Otherwise, the line is parsed as an ip:port
+// If the line fails to parse, an error is returned
+// Localhost addresses are allowed if allowLocalhost is true
+// NOTE: this does not parse the cached peers.txt file in the data directory, which is a JSON file
+// and is loaded by loadCachedPeersFile
+func parseLocalPeerList(body string, allowLocalhost bool) ([]string, error) {
+	var peers []string
+	for _, addr := range strings.Split(string(body), "\n") {
+		addr = whitespaceFilter.ReplaceAllString(addr, "")
+		if addr == "" {
+			continue
+		}
+
+		if strings.HasPrefix(addr, "#") {
+			continue
+		}
+
+		a, err := validateAddress(addr, allowLocalhost)
+		if err != nil {
+			err = fmt.Errorf("Peers list has invalid address %s: %v", addr, err)
+			logger.WithError(err).Error()
+			return nil, err
+		}
+
+		peers = append(peers, a)
+	}
+
+	return peers, nil
 }

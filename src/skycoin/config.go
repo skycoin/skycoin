@@ -112,6 +112,11 @@ type NodeConfig struct {
 	// Wallet crypto type
 	WalletCryptoType string
 
+	// Disable the hardcoded default peers
+	DisableDefaultPeers bool
+	// Load custom peers from disk
+	CustomPeersFile string
+
 	RunMaster bool
 
 	/* Developer options */
@@ -309,6 +314,10 @@ func (c *Config) postProcess() {
 	if c.Node.EnableGUI {
 		c.Node.GUIDirectory = file.ResolveResourceDirectory(c.Node.GUIDirectory)
 	}
+
+	if c.Node.DisableDefaultPeers {
+		c.Node.DefaultConnections = nil
+	}
 }
 
 func (c *Config) register() {
@@ -353,6 +362,9 @@ func (c *Config) register() {
 
 	flag.BoolVar(&c.Node.VerifyDB, "verify-db", c.Node.VerifyDB, "check the database for corruption")
 	flag.BoolVar(&c.Node.ResetCorruptDB, "reset-corrupt-db", c.Node.ResetCorruptDB, "reset the database if corrupted, and continue running instead of exiting")
+
+	flag.BoolVar(&c.Node.DisableDefaultPeers, "disable-default-peers", c.Node.DisableDefaultPeers, "disable the hardcoded default peers")
+	flag.StringVar(&c.Node.CustomPeersFile, "custom-peers-file", c.Node.CustomPeersFile, "load custom peers from a newline separate list of ip:port in a file. Note that this is different from the peers.txt file in the data directory")
 
 	// Key Configuration Data
 	flag.BoolVar(&c.Node.RunMaster, "master", c.Node.RunMaster, "run the daemon as blockchain master server")

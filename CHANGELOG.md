@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - Add `-csv` option to `cli send` and `cli createRawTransaction`, which will send coins to multiple addresses defined in a csv file
+- Add `-disable-default-peers` option to disable the default hardcoded peers and mark all cached peers as untrusted
+- Add `-custom-peers-file` to load peers from disk. This peers file is a newline separate list of `ip:port` strings
 
 ### Fixed
 
@@ -16,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - CLI tool uses the REST API instead of the deprecated webrpc API to communicate with the node
 - `cli status` return value is now the response from `GET /api/v1/health`, which changes some fields
+- `/api/network/` endpoints will return an empty array for array values instead of `null`
 
 ### Removed
 

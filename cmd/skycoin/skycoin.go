@@ -1,5 +1,10 @@
 package main
 
+/*
+CODE GENERATED AUTOMATICALLY WITH FIBER COIN CREATOR
+AVOID EDITING THIS MANUALLY
+*/
+
 import (
 	_ "net/http/pprof"
 	"os"
@@ -8,7 +13,6 @@ import (
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/visor"
 )
-
 
 var (
 	// Version of the node. Can be set by -ldflags

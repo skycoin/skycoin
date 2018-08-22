@@ -126,6 +126,7 @@ func TestConnection(t *testing.T) {
 				tc.gatewayGetBlockchainProgressError,
 			)
 			gateway.On("IsCSPEnabled").Return(false)
+			gateway.On("IsAPISetEnabled", "PEX", []string{"STATUS", "DEFAULT"}).Return(true)
 
 			v := url.Values{}
 			if tc.addr != "" {
@@ -269,6 +270,7 @@ func TestConnections(t *testing.T) {
 				tc.gatewayGetBlockchainProgressError,
 			)
 			gateway.On("IsCSPEnabled").Return(false)
+			gateway.On("IsAPISetEnabled", "PEX", []string{"STATUS", "DEFAULT"}).Return(true)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
@@ -323,6 +325,8 @@ func TestDefaultConnections(t *testing.T) {
 			gateway := NewGatewayerMock()
 			gateway.On("GetDefaultConnections").Return(tc.gatewayGetDefaultConnectionsResult)
 			gateway.On("IsCSPEnabled").Return(false)
+			gateway.On("IsAPISetEnabled", "PEX", []string{"STATUS", "DEFAULT"}).Return(true)
+
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
@@ -376,6 +380,8 @@ func TestGetTrustConnections(t *testing.T) {
 			gateway := NewGatewayerMock()
 			gateway.On("GetTrustConnections").Return(tc.gatewayGetTrustConnectionsResult)
 			gateway.On("IsCSPEnabled").Return(false)
+			gateway.On("IsAPISetEnabled", "PEX", []string{"STATUS", "DEFAULT"}).Return(true)
+
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
@@ -429,6 +435,8 @@ func TestGetExchgConnection(t *testing.T) {
 			gateway := NewGatewayerMock()
 			gateway.On("GetExchgConnection").Return(tc.gatewayGetExchgConnectionResult)
 			gateway.On("IsCSPEnabled").Return(false)
+			gateway.On("IsAPISetEnabled", "PEX", []string{"STATUS", "DEFAULT"}).Return(true)
+
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 

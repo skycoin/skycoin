@@ -270,6 +270,7 @@ func TestCSRF(t *testing.T) {
 		gateway := &GatewayerMock{}
 		gateway.On("UpdateWalletLabel", "fooid", "foolabel").Return(nil)
 		gateway.On("IsCSPEnabled").Return(false)
+		gateway.On("IsAPISetEnabled", "WALLET", []string(nil)).Return(true)
 
 		endpoint := "/api/v1/wallet/update"
 

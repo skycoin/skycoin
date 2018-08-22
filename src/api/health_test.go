@@ -75,6 +75,8 @@ func TestHealthCheckHandler(t *testing.T) {
 
 			gateway := NewGatewayerMock()
 			gateway.On("IsCSPEnabled").Return(false)
+			gateway.On("IsAPISetEnabled", "STATUS", []string{"BLOCKCHAIN", "PEX", "TX", "DEFAULT"}).Return(true)
+			gateway.On("IsAPISetEnabled", "UX", []string{"BLOCKCHAIN", "DEFAULT"}).Return(true)
 
 			if tc.getHealthErr != nil {
 				gateway.On("GetHealth").Return(nil, tc.getHealthErr)

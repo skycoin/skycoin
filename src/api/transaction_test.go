@@ -133,6 +133,7 @@ func TestGetPendingTxs(t *testing.T) {
 			gateway := NewGatewayerMock()
 			gateway.On("GetAllUnconfirmedTxns").Return(tc.getAllUnconfirmedTxnsResponse, tc.getAllUnconfirmedTxnsErr)
 			gateway.On("IsCSPEnabled").Return(false)
+			gateway.On("IsAPISetEnabled", "TX", []string{"DEFAULT"}).Return(true)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
@@ -267,6 +268,7 @@ func TestGetTransactionByID(t *testing.T) {
 			gateway := NewGatewayerMock()
 			gateway.On("GetTransaction", tc.getTransactionArg).Return(tc.getTransactionReponse, tc.getTransactionError)
 			gateway.On("IsCSPEnabled").Return(false)
+			gateway.On("IsAPISetEnabled", "TX", []string{"DEFAULT"}).Return(true)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -400,6 +402,7 @@ func TestInjectTransaction(t *testing.T) {
 			gateway := NewGatewayerMock()
 			gateway.On("InjectBroadcastTransaction", tc.injectTransactionArg).Return(tc.injectTransactionError)
 			gateway.On("IsCSPEnabled").Return(false)
+			gateway.On("IsAPISetEnabled", "TX", []string{"DEFAULT"}).Return(true)
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)
@@ -472,6 +475,7 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 			gateway := NewGatewayerMock()
 			gateway.On("ResendUnconfirmedTxns").Return(tc.resendUnconfirmedTxnsResponse, tc.resendUnconfirmedTxnsErr)
 			gateway.On("IsCSPEnabled").Return(false)
+			gateway.On("IsAPISetEnabled", "TX", []string{"DEFAULT"}).Return(true)
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)
@@ -597,6 +601,8 @@ func TestGetRawTx(t *testing.T) {
 			gateway := NewGatewayerMock()
 			gateway.On("GetTransaction", tc.getTransactionArg).Return(tc.getTransactionResponse, tc.getTransactionError)
 			gateway.On("IsCSPEnabled").Return(false)
+			gateway.On("IsAPISetEnabled", "TX", []string{"DEFAULT"}).Return(true)
+
 			v := url.Values{}
 			if tc.httpBody != nil {
 				if tc.httpBody.txid != "" {
@@ -755,6 +761,7 @@ func TestGetTransactions(t *testing.T) {
 			gateway := NewGatewayerMock()
 			gateway.On("GetTransactions", mock.Anything).Return(tc.getTransactionsResponse, tc.getTransactionsError)
 			gateway.On("IsCSPEnabled").Return(false)
+			gateway.On("IsAPISetEnabled", "BLOCKCHAIN", []string{"TX", "DEFAULT"}).Return(true)
 
 			v := url.Values{}
 			if tc.httpBody != nil {

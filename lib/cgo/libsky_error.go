@@ -12,7 +12,6 @@ import (
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/daemon/pex"
 	"github.com/skycoin/skycoin/src/util/droplet"
-	skyerrors "github.com/skycoin/skycoin/src/util/errors"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/file"
 	"github.com/skycoin/skycoin/src/visor"
@@ -442,6 +441,8 @@ var (
 		coin.ErrUint64OverflowsInt64:               SKY_ErrUint64OverflowsInt64,
 		coin.ErrInt64UnderflowsUint64:              SKY_ErrInt64UnderflowsUint64,
 		// daemon
+		// Removed in 34ad39ddb350
+		// gnet.ErrMaxDefaultConnectionsReached:           SKY_ErrMaxDefaultConnectionsReached,
 		pex.ErrPeerlistFull:                               SKY_ErrPeerlistFull,
 		pex.ErrInvalidAddress:                             SKY_ErrInvalidAddress,
 		pex.ErrNoLocalhost:                                SKY_ErrNoLocalhost,
@@ -458,7 +459,6 @@ var (
 		gnet.ErrConnectionPoolClosed:                      SKY_ErrConnectionPoolClosed,
 		gnet.ErrWriteQueueFull:                            SKY_ErrWriteQueueFull,
 		gnet.ErrNoReachableConnections:                    SKY_ErrNoReachableConnections,
-		gnet.ErrMaxDefaultConnectionsReached:              SKY_ErrMaxDefaultConnectionsReached,
 		daemon.ErrDisconnectInvalidVersion:                SKY_ErrDisconnectInvalidVersion,
 		daemon.ErrDisconnectIntroductionTimeout:           SKY_ErrDisconnectIntroductionTimeout,
 		daemon.ErrDisconnectVersionSendFailed:             SKY_ErrDisconnectVersionSendFailed,
@@ -616,7 +616,7 @@ func catchApiPanic(errcode uint32, err interface{}) uint32 {
 		return SKY_API_LOCKED
 	}
 	if err != nil {
-		if valueErr, isValueError := err.(skyerrors.ValueError); isValueError {
+		if valueErr, isValueError := err.(cipher.ValueError); isValueError {
 			return libErrorCode(valueErr.ErrorData)
 		} else {
 			// Setting flag every time (i.e. even when haltOnPanic is active

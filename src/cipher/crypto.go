@@ -12,7 +12,6 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher/ripemd160"
 	"github.com/skycoin/skycoin/src/cipher/secp256k1-go"
-	skyerrors "github.com/skycoin/skycoin/src/util/errors"
 )
 
 var (
@@ -98,7 +97,7 @@ func RandByte(n int) []byte {
 func NewPubKey(b []byte) PubKey {
 	p := PubKey{}
 	if len(b) != len(p) {
-		err := skyerrors.NewValueError(ErrInvalidLengthPubKey, "b", b)
+		err := NewValueError(ErrInvalidLengthPubKey, "b", b)
 		log.Print(err)
 		panic(err)
 	}
@@ -121,23 +120,22 @@ func PubKeyFromHex(s string) (PubKey, error) {
 	if err != nil {
 		return PubKey{}, ErrInvalidPubKey
 	}
+	if len(b) != len(PubKey{}) {
+		return PubKey{}, ErrInvalidLengthPubKey
+	}
 	return NewPubKey(b), nil
 }
 
 // PubKeyFromSecKey recovers the public key for a secret key
 func PubKeyFromSecKey(seckey SecKey) PubKey {
 	if seckey == (SecKey{}) {
-		err := skyerrors.NewValueError(
-			ErrPubKeyFromNullSecKey, "seckey", seckey,
-		)
+		err := NewValueError(ErrPubKeyFromNullSecKey, "seckey", seckey)
 		log.Print(err)
 		panic(err)
 	}
 	b := secp256k1.PubkeyFromSeckey(seckey[:])
 	if b == nil {
-		err := skyerrors.NewValueError(
-			ErrPubKeyFromBadSecKey, "seckey", seckey,
-		)
+		err := NewValueError(ErrPubKeyFromBadSecKey, "seckey", seckey)
 		log.Print(err)
 		panic(err)
 	}
@@ -180,9 +178,7 @@ type SecKey [32]byte
 func NewSecKey(b []byte) SecKey {
 	p := SecKey{}
 	if len(b) != len(p) {
-		err := skyerrors.NewValueError(
-			ErrInvalidLengthSecKey, "b", b,
-		)
+		err := NewValueError(ErrInvalidLengthSecKey, "b", b)
 		log.Print(err)
 		panic(err)
 	}
@@ -243,17 +239,13 @@ func (sk SecKey) Hex() string {
 func ECDH(pub PubKey, sec SecKey) []byte {
 
 	if err := pub.Verify(); err != nil {
-		err := skyerrors.NewValueError(
-			ErrECHDInvalidPubKey, "pub", pub,
-		)
+		err := NewValueError(ErrECHDInvalidPubKey, "pub", pub)
 		log.Print(err)
 		panic(err)
 	}
 
 	if err := sec.Verify(); err != nil {
-		err := skyerrors.NewValueError(
-			ErrECHDInvalidSecKey, "sec", sec,
-		)
+		err := NewValueError(ErrECHDInvalidSecKey, "sec", sec)
 		log.Print(err)
 		panic(err)
 	}
@@ -271,9 +263,7 @@ type Sig [64 + 1]byte //64 byte signature with 1 byte for key recovery
 func NewSig(b []byte) Sig {
 	s := Sig{}
 	if len(b) != len(s) {
-		err := skyerrors.NewValueError(
-			ErrInvalidLengthSig, "b", b,
-		)
+		err := NewValueError(ErrInvalidLengthSig, "b", b)
 		log.Print(err)
 		panic(err)
 	}
@@ -288,9 +278,7 @@ func MustSigFromHex(s string) Sig {
 		log.Panic(err)
 	}
 	if len(b) != 65 {
-		err := skyerrors.NewValueError(
-			ErrInvalidLengthSig, "s", s,
-		)
+		err := NewValueError(ErrInvalidLengthSig, "s", s)
 		log.Print(err)
 		panic(err)
 	}

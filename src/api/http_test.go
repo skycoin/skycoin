@@ -91,6 +91,7 @@ func TestGetOutputsHandler(t *testing.T) {
 			endpoint := "/api/v1/outputs"
 			gateway.On("GetUnspentOutputs", mock.Anything).Return(tc.getUnspentOutputsResponse, tc.getUnspentOutputsError)
 			gateway.On("IsCSPEnabled").Return(false)
+			gateway.On("IsAPISetEnabled", "UX", []string{"BLOCKCHAIN", "DEFAULT"}).Return(true)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -253,6 +254,7 @@ func TestGetBalanceHandler(t *testing.T) {
 			endpoint := "/api/v1/balance"
 			gateway.On("GetBalanceOfAddrs", tc.getBalanceOfAddrsArg).Return(tc.getBalanceOfAddrsResponse, tc.getBalanceOfAddrsError)
 			gateway.On("IsCSPEnabled").Return(false)
+			gateway.On("IsAPISetEnabled", "BLOCKCHAIN", []string{"DEFAULT"}).Return(true)
 
 			v := url.Values{}
 			if tc.httpBody != nil {

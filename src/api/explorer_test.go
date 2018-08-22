@@ -159,6 +159,7 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			gateway := NewGatewayerMock()
 			gateway.On("GetTransactionsForAddress", address).Return(tc.result, tc.gatewayGetTransactionsForAddressErr)
 			gateway.On("IsCSPEnabled").Return(false)
+			gateway.On("IsAPISetEnabled", "EXPLORER", []string{"BLOCKCHAIN", "DEFAULT"}).Return(true)
 
 			v := url.Values{}
 			if tc.addressParam != "" {
@@ -290,6 +291,8 @@ func TestCoinSupply(t *testing.T) {
 			gateway := NewGatewayerMock()
 			gateway.On("GetUnspentOutputs", mock.Anything).Return(tc.gatewayGetUnspentOutputsResult, tc.gatewayGetUnspentOutputsErr)
 			gateway.On("IsCSPEnabled").Return(false)
+			gateway.On("IsAPISetEnabled", "BLOCKCHAIN", []string{"EXPLORER", "DEFAULT"}).Return(true)
+			gateway.On("IsAPISetEnabled", "BLOCKCHAIN", []string{"STATUS", "EXPLORER", "DEFAULT"}).Return(true)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
@@ -503,6 +506,7 @@ func TestGetRichlist(t *testing.T) {
 			gateway := NewGatewayerMock()
 			gateway.On("GetRichlist", tc.includeDistribution).Return(tc.gatewayGetRichlistResult, tc.gatewayGetRichlistErr)
 			gateway.On("IsCSPEnabled").Return(false)
+			gateway.On("IsAPISetEnabled", "BLOCKCHAIN", []string{"STATUS", "EXPLORER", "DEFAULT"}).Return(true)
 
 			v := url.Values{}
 			if tc.httpParams != nil {
@@ -592,6 +596,7 @@ func TestGetAddressCount(t *testing.T) {
 			gateway := NewGatewayerMock()
 			gateway.On("GetAddressCount").Return(tc.gatewayGetAddressCountResult, tc.gatewayGetAddressCountErr)
 			gateway.On("IsCSPEnabled").Return(false)
+			gateway.On("IsAPISetEnabled", "BLOCKCHAIN", []string{"STATUS", "EXPLORER", "DEFAULT"}).Return(true)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)

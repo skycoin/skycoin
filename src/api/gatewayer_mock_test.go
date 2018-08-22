@@ -1088,3 +1088,20 @@ func (m *GatewayerMock) VerifyTxnVerbose(p0 *coin.Transaction) ([]wallet.UxBalan
 	return r0, r1, r2
 
 }
+
+// IsAPISetEnabled mocked method
+func (m *GatewayerMock) IsAPISetEnabled(p0 string, p1 ...string) bool {
+
+	ret := m.Called(p0, p1)
+
+	var r0 bool
+	switch res := ret.Get(0).(type) {
+	case bool:
+		r0 = res
+	default:
+		panic(fmt.Sprintf("unexpected type: %v", res))
+	}
+
+	return r0
+
+}

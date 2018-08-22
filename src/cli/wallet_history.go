@@ -10,8 +10,10 @@ import (
 
 	gcli "github.com/urfave/cli"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
+	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/visor/historydb"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -60,7 +62,7 @@ func walletHisCmd() gcli.Command {
 
 func walletHistoryAction(c *gcli.Context) error {
 	cfg := ConfigFromContext(c)
-	rpcClient := RPCClientFromContext(c)
+	client := APIClientFromContext(c)
 
 	if c.NArg() > 0 {
 		fmt.Printf("Error: invalid argument\n\n")
@@ -73,7 +75,7 @@ func walletHistoryAction(c *gcli.Context) error {
 		return err
 	}
 
-	// get all addresses in the wallet.
+	// Get all addresses in the wallet
 	addrs, err := getAddresses(w)
 	if err != nil {
 		return err
@@ -83,37 +85,36 @@ func walletHistoryAction(c *gcli.Context) error {
 		return errors.New("Wallet is empty")
 	}
 
-	// get all the addresses affected uxouts
-	uxouts, err := rpcClient.GetAddressUxOuts(addrs)
-	if err != nil {
-		return err
-	}
-
-	// transmute the uxout to addrHistory, and sort the items by time in ascend order.
+	// Get all the addresses' historical uxouts
 	totalAddrHis := []AddrHistory{}
-	for _, ux := range uxouts {
-		addrHis, err := makeAddrHisArray(rpcClient, ux)
+	for _, addr := range addrs {
+		uxouts, err := client.AddressUxOuts(addr)
+		if err != nil {
+			return err
+		}
+
+		addrHis, err := makeAddrHisArray(client, addr, uxouts)
 		if err != nil {
 			return err
 		}
 		totalAddrHis = append(totalAddrHis, addrHis...)
 	}
 
+	// Sort the uxouts by time ascending
 	sort.Sort(byTime(totalAddrHis))
 
-	// print the addr history
 	return printJSON(totalAddrHis)
 }
 
-func makeAddrHisArray(c *webrpc.Client, ux webrpc.AddrUxoutResult) ([]AddrHistory, error) {
-	if len(ux.UxOuts) == 0 {
+func makeAddrHisArray(c *api.Client, addr string, uxOuts []*historydb.UxOutJSON) ([]AddrHistory, error) {
+	if len(uxOuts) == 0 {
 		return nil, nil
 	}
 
 	var addrHis, spentHis, realHis []AddrHistory
 	var spentBlkSeqMap = map[uint64]bool{}
 
-	for _, u := range ux.UxOuts {
+	for _, u := range uxOuts {
 		amount, err := droplet.ToString(u.Coins)
 		if err != nil {
 			return nil, err
@@ -122,7 +123,7 @@ func makeAddrHisArray(c *webrpc.Client, ux webrpc.AddrUxoutResult) ([]AddrHistor
 		addrHis = append(addrHis, AddrHistory{
 			BlockSeq:  u.SrcBkSeq,
 			Txid:      u.SrcTx,
-			Address:   ux.Address,
+			Address:   addr,
 			Amount:    amount,
 			Timestamp: time.Unix(int64(u.Time), 0).UTC(),
 			Status:    1,
@@ -134,7 +135,7 @@ func makeAddrHisArray(c *webrpc.Client, ux webrpc.AddrUxoutResult) ([]AddrHistor
 			spentBlkSeqMap[u.SpentBlockSeq] = true
 			spentHis = append(spentHis, AddrHistory{
 				BlockSeq: u.SpentBlockSeq,
-				Address:  ux.Address,
+				Address:  addr,
 				Txid:     u.SpentTxID,
 				Amount:   "-" + amount,
 				Status:   1,
@@ -213,7 +214,7 @@ func makeAddrHisArray(c *webrpc.Client, ux webrpc.AddrUxoutResult) ([]AddrHistor
 		realHis = append(realHis, AddrHistory{
 			BlockSeq:  his.BlockSeq,
 			Txid:      txid,
-			Address:   ux.Address,
+			Address:   addr,
 			Amount:    amount,
 			Timestamp: his.Timestamp,
 			Status:    1,
@@ -223,19 +224,24 @@ func makeAddrHisArray(c *webrpc.Client, ux webrpc.AddrUxoutResult) ([]AddrHistor
 	return realHis, nil
 }
 
-func createBlkTimeFinder(c *webrpc.Client, ss []uint64) (func(uint64) int64, error) {
+func createBlkTimeFinder(c *api.Client, ss []uint64) (func(uint64) int64, error) {
 	// get spent blocks
-	blks, err := c.GetBlocksBySeq(ss)
-	if err != nil {
-		return nil, err
+	blocks := make([]*visor.ReadableBlock, 0, len(ss))
+	for _, s := range ss {
+		block, err := c.BlockBySeq(s)
+		if err != nil {
+			return nil, err
+		}
+
+		blocks = append(blocks, block)
 	}
 
-	if len(blks.Blocks) == 0 {
+	if len(blocks) == 0 {
 		return nil, fmt.Errorf("found no block")
 	}
 
 	return func(seq uint64) int64 {
-		for _, b := range blks.Blocks {
+		for _, b := range blocks {
 			if seq == b.Head.BkSeq {
 				return int64(b.Head.Time)
 			}

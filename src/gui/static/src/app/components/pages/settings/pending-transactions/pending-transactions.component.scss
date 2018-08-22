@@ -3,3 +3,7 @@
 .-timestamp {
   color: $grey;
 }
+
+.-txid {
+  word-break: break-all;
+}

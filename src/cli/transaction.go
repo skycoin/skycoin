@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor"
@@ -31,14 +32,16 @@ func transactionCmd() gcli.Command {
 				return errors.New("invalid txid")
 			}
 
-			rpcClient := RPCClientFromContext(c)
+			client := APIClientFromContext(c)
 
-			tx, err := rpcClient.GetTransactionByID(txid)
+			tx, err := client.Transaction(txid)
 			if err != nil {
 				return err
 			}
 
-			return printJSON(tx)
+			return printJSON(webrpc.TxnResult{
+				Transaction: tx,
+			})
 		},
 	}
 }

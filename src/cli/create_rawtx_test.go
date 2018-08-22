@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -511,7 +512,7 @@ func TestChooseSpends(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			spends, err := chooseSpends(tc.ros, coins)
+			spends, err := chooseSpends(&tc.ros, coins)
 
 			if tc.err != nil {
 				testutil.RequireError(t, err, tc.err.Error())
@@ -526,6 +527,74 @@ func TestChooseSpends(t *testing.T) {
 
 				require.True(t, coins <= totalCoins)
 			}
+		})
+	}
+}
+
+func TestParseSendAmountsFromCSV(t *testing.T) {
+	cases := []struct {
+		name   string
+		fields [][]string
+		amts   []SendAmount
+		err    error
+	}{
+		{
+			name: "valid simple case",
+			fields: [][]string{
+				{"2Niqzo12tZ9ioZq5vwPHMVR4g7UVpp9TCmP", "123"},
+				{"2UDzBKnxZf4d9pdrBJAqbtoeH641RFLYKxd", "123.456"},
+				{"8LbGZ9Z9r7ELNKyrQmAbhLhLvrmLJjfotm", "123.456789"},
+				{"7KU683yzoPE9rVuuFRQMZVhGwBBtwqTKT2", "0"},
+			},
+			amts: []SendAmount{
+				{
+					Addr:  "2Niqzo12tZ9ioZq5vwPHMVR4g7UVpp9TCmP",
+					Coins: 123e6,
+				},
+				{
+					Addr:  "2UDzBKnxZf4d9pdrBJAqbtoeH641RFLYKxd",
+					Coins: 123456e3,
+				},
+				{
+					Addr:  "8LbGZ9Z9r7ELNKyrQmAbhLhLvrmLJjfotm",
+					Coins: 123456789,
+				},
+				{
+					Addr:  "7KU683yzoPE9rVuuFRQMZVhGwBBtwqTKT2",
+					Coins: 0,
+				},
+			},
+		},
+
+		{
+			name: "invalid coins value",
+			fields: [][]string{
+				{"7KU683yzoPE9rVuuFRQMZVhGwBBtwqTKT2", "0.1234567"},
+			},
+			err: errors.New("[row 0] Invalid amount 0.1234567: Droplet string conversion failed: Too many decimal places"),
+		},
+
+		{
+			name: "invalid address value",
+			fields: [][]string{
+				{"xxx", "0.123"},
+			},
+			err: errors.New("[row 0] Invalid address xxx: Invalid address length"),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			amts, err := parseSendAmountsFromCSV(tc.fields)
+
+			if tc.err != nil {
+				require.Equal(t, tc.err, err)
+				require.Nil(t, amts)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tc.amts, amts)
 		})
 	}
 }

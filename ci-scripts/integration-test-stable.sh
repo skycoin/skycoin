@@ -23,8 +23,6 @@ UPDATE=""
 VERBOSE=""
 # run go test with -run flag
 RUN_TESTS=""
-# run tests with csrf enabled
-USE_CSRF=""
 DISABLE_CSRF="-disable-csrf"
 
 COMMIT=$(git rev-parse HEAD)
@@ -51,7 +49,7 @@ while getopts "h?t:r:uvc" args; do
     r ) RUN_TESTS="-run ${OPTARG}";;
     u ) UPDATE="--update";;
     v ) VERBOSE="-v";;
-    c ) USE_CSRF="1"; DISABLE_CSRF="";
+    c ) DISABLE_CSRF="";
   esac
 done
 
@@ -105,7 +103,7 @@ fi
 
 if [[ -z $TEST  || $TEST = "cli" ]]; then
 
-SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR USE_CSRF=$USE_CSRF \
+SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR \
     go test ./src/cli/integration/... $UPDATE -timeout=3m $VERBOSE $RUN_TESTS
 
 CLI_FAIL=$?

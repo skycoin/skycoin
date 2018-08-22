@@ -18,8 +18,8 @@ import (
 )
 
 var (
-	// Every rejection message prefix must start with "RJC" prefix
-	rejectPrefix = [...]byte{82, 74, 67}
+	// Every rejection message prefix must start with "RJCT" prefix
+	rejectPrefix = [...]byte{82, 74, 67, 84}
 	// ErrAckReject disconnect since peer sent RJCT message
 	ErrAckReject gnet.DisconnectReason = errors.New("Disconnect: Message rejected by peer")
 )
@@ -444,7 +444,7 @@ func NewRejectMessage(msg gnet.Message, err error, reason string) *RejectMessage
 	if !exists {
 		logger.Panicf("Rejecting unknown message type %s", t)
 	}
-	if reflect.DeepEqual(prefix[:3], rejectPrefix[:]) {
+	if reflect.DeepEqual(prefix[:], rejectPrefix[:]) {
 		logger.Panicf("Message type %s (prefix = %s) may not be rejected", t, prefix)
 	}
 

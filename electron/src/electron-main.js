@@ -20,6 +20,7 @@ require('electron-context-menu')({});
 global.eval = function() { throw new Error('bad!!'); }
 
 let currentURL;
+let showErrorCalled = false;
 
 // Force everything localhost, in case of a leak
 app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1, EXCLUDE api.coinmarketcap.com, api.github.com');
@@ -88,19 +89,19 @@ function startSkycoin() {
 
   skycoin.on('error', (e) => {
     dialog.showErrorBox('Failed to start skycoin', e.toString());
+    showError();
     app.quit();
   });
 
   skycoin.stdout.on('data', (data) => {
     console.log(data.toString());
-    // Scan for the web URL string
     if (currentURL) {
       return
     }
 
     const marker = 'Starting web interface on ';
 
-    data.toString().split("\n").forEach(line => {
+    data.toString().split('\n').forEach(line => {
       if (line.indexOf(marker) !== -1) {
         currentURL = 'http://' + line.split(marker)[1].trim();
         app.emit('skycoin-ready', { url: currentURL });
@@ -115,14 +116,24 @@ function startSkycoin() {
   skycoin.on('close', (code) => {
     // log.info('Skycoin closed');
     console.log('Skycoin closed');
+    showError();
     reset();
   });
 
   skycoin.on('exit', (code) => {
     // log.info('Skycoin exited');
     console.log('Skycoin exited');
+    showError();
     reset();
   });
+}
+
+function showError() {
+  if (win) {
+    showErrorCalled = true;
+    win.loadURL('file://' + process.resourcesPath + '/app/dist/assets/error-alert/index.html');
+    console.log('Showing the error message');
+  }
 }
 
 function createWindow(url) {
@@ -153,6 +164,12 @@ function createWindow(url) {
       webSecurity: true,
       plugins: false,
     },
+  });
+
+  win.webContents.on('did-fail-load', function() {
+    if (!showErrorCalled) {
+      showError();
+    }
   });
 
   // patch out eval
@@ -212,11 +229,23 @@ function createWindow(url) {
     submenu: [
       {
         label: 'Wallets folder',
-        click: () => shell.showItemInFolder(walletsFolder),
+        click: () => {
+          if (walletsFolder) {
+            shell.showItemInFolder(walletsFolder)
+          } else {
+            shell.showItemInFolder(path.join(app.getPath("home"), '.skycoin', 'wallets'));
+          }
+        },
       },
       {
         label: 'Logs folder',
-        click: () => shell.showItemInFolder(walletsFolder.replace('wallets', 'logs')),
+        click: () => {
+          if (walletsFolder) {
+            shell.showItemInFolder(walletsFolder.replace('wallets', 'logs'))
+          } else {
+            shell.showItemInFolder(path.join(app.getPath("home"), '.skycoin', 'logs'));
+          }
+        },
       },
       {
         label: 'DevTools',

@@ -99,7 +99,7 @@ However, any changes to the API will be recorded in the [changelog](../../CHANGE
     - [Get address affected transactions](#get-address-affected-transactions)
 - [Uxout APIs](#uxout-apis)
     - [Get uxout](#get-uxout)
-    - [Get address affected uxouts](#get-address-affected-uxouts)
+    - [Get historical unspent outputs for an address](#get-historical-unspent-outputs-for-an-address)
 - [Coin supply related information](#coin-supply-related-information)
     - [Coin supply](#coin-supply)
     - [Richlist show top N addresses by uxouts](#richlist-show-top-n-addresses-by-uxouts)
@@ -1345,10 +1345,12 @@ Result:
 URI: /api/v1/injectTransaction
 Method: POST
 Content-Type: application/json
-Body: {"rawtx": "raw transaction"}
+Body: {"rawtx": "hex-encoded serialized transaction string"}
 ```
 
-Broadcasts an encoded transaction to the network.
+Broadcasts a hex-encoded, serialized transaction to the network.
+Transactions are serialized with the `encoder` package.
+See [`coin.Transaction.Serialize`](https://godoc.org/github.com/skycoin/skycoin/src/coin#Transaction.Serialize).
 
 If there are no available connections, the API responds with a 503 Service Unavailable error.
 
@@ -2098,7 +2100,7 @@ Result:
 }
 ```
 
-### Get address affected uxouts
+### Get historical unspent outputs for an address
 
 ```
 URI: /api/v1/address_uxouts

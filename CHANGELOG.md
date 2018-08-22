@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
-- Reply to `INTR` message with `GIVP` + `RJCT` on peer overflow
+- Reply to `INTR` message with `GIVP` + `RJCT` on pex pool overflow
 
 - CLI tool uses the REST API instead of the deprecated webrpc API to communicate with the node
 - `cli status` return value is now the response from `GET /api/v1/health`, which changes some fields

@@ -12,6 +12,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/util/flagutils"
 )
 
 func TestFbyAddresses(t *testing.T) {
@@ -107,9 +108,14 @@ func TestGateway_GetWalletDir(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			// Assume all API sets enabled by default
+			enabledAPISets := flagutils.NewStringSet("DEFAULT")
+			if tc.enableWalletAPI {
+				enabledAPISets.Set("WALLET")
+			}
 			gw := &Gateway{
 				Config: GatewayConfig{
-					EnableWalletAPI: tc.enableWalletAPI,
+					EnabledAPISets: enabledAPISets,
 				},
 			}
 			res, err := gw.GetWalletDir()
@@ -140,9 +146,14 @@ func TestGateway_NewAddresses(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			// Assume all API sets enabled by default
+			enabledAPISets := flagutils.NewStringSet("DEFAULT")
+			if tc.enableWalletAPI {
+				enabledAPISets.Set("WALLET")
+			}
 			gw := &Gateway{
 				Config: GatewayConfig{
-					EnableWalletAPI: tc.enableWalletAPI,
+					EnabledAPISets: enabledAPISets,
 				},
 			}
 			res, err := gw.NewAddresses(tc.walletID, nil, tc.n)
@@ -172,9 +183,14 @@ func TestGateway_UpdateWalletLabel(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			// Assume all API sets enabled by default
+			enabledAPISets := flagutils.NewStringSet("DEFAULT")
+			if tc.enableWalletAPI {
+				enabledAPISets.Set("WALLET")
+			}
 			gw := &Gateway{
 				Config: GatewayConfig{
-					EnableWalletAPI: tc.enableWalletAPI,
+					EnabledAPISets: enabledAPISets,
 				},
 			}
 			err := gw.UpdateWalletLabel(tc.walletID, tc.label)
@@ -203,9 +219,14 @@ func TestGateway_GetWallet(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			// Assume all API sets enabled by default
+			enabledAPISets := flagutils.NewStringSet("DEFAULT")
+			if tc.enableWalletAPI {
+				enabledAPISets.Set("WALLET")
+			}
 			gw := &Gateway{
 				Config: GatewayConfig{
-					EnableWalletAPI: tc.enableWalletAPI,
+					EnabledAPISets: enabledAPISets,
 				},
 			}
 			res, err := gw.GetWallet(tc.walletID)
@@ -235,9 +256,14 @@ func TestGateway_GetWallets(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			// Assume all API sets enabled by default
+			enabledAPISets := flagutils.NewStringSet("DEFAULT")
+			if tc.enableWalletAPI {
+				enabledAPISets.Set("WALLET")
+			}
 			gw := &Gateway{
 				Config: GatewayConfig{
-					EnableWalletAPI: tc.enableWalletAPI,
+					EnabledAPISets: enabledAPISets,
 				},
 			}
 			w, err := gw.GetWallets()
@@ -267,9 +293,14 @@ func TestGateway_GetWalletUnconfirmedTxns(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			// Assume all API sets enabled by default
+			enabledAPISets := flagutils.NewStringSet("DEFAULT")
+			if tc.enableWalletAPI {
+				enabledAPISets.Set("WALLET")
+			}
 			gw := &Gateway{
 				Config: GatewayConfig{
-					EnableWalletAPI: tc.enableWalletAPI,
+					EnabledAPISets: enabledAPISets,
 				},
 			}
 			res, err := gw.GetWalletUnconfirmedTxns(tc.walletID)
@@ -297,9 +328,14 @@ func TestGateway_ReloadWallets(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			// Assume all API sets enabled by default
+			enabledAPISets := flagutils.NewStringSet("DEFAULT")
+			if tc.enableWalletAPI {
+				enabledAPISets.Set("WALLET")
+			}
 			gw := &Gateway{
 				Config: GatewayConfig{
-					EnableWalletAPI: tc.enableWalletAPI,
+					EnabledAPISets: enabledAPISets,
 				},
 			}
 			err := gw.ReloadWallets()
@@ -330,9 +366,14 @@ func TestGateway_Spend(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			// Assume all API sets enabled by default
+			enabledAPISets := flagutils.NewStringSet("DEFAULT")
+			if tc.enableWalletAPI {
+				enabledAPISets.Set("WALLET")
+			}
 			gw := &Gateway{
 				Config: GatewayConfig{
-					EnableWalletAPI: tc.enableWalletAPI,
+					EnabledAPISets: enabledAPISets,
 				},
 			}
 			res, err := gw.Spend(tc.walletID, nil, tc.coins, tc.dest)
@@ -363,9 +404,14 @@ func TestGateway_CreateWallet(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			// Assume all API sets enabled by default
+			enabledAPISets := flagutils.NewStringSet("DEFAULT")
+			if tc.enableWalletAPI {
+				enabledAPISets.Set("WALLET")
+			}
 			gw := &Gateway{
 				Config: GatewayConfig{
-					EnableWalletAPI: tc.enableWalletAPI,
+					EnabledAPISets: enabledAPISets,
 				},
 			}
 			res, err := gw.CreateWallet(tc.wltName, tc.options)
@@ -396,9 +442,14 @@ func TestGateway_GetWalletBalance(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			// Assume all API sets enabled by default
+			enabledAPISets := flagutils.NewStringSet("DEFAULT")
+			if tc.enableWalletAPI {
+				enabledAPISets.Set("WALLET")
+			}
 			gw := &Gateway{
 				Config: GatewayConfig{
-					EnableWalletAPI: tc.enableWalletAPI,
+					EnabledAPISets: enabledAPISets,
 				},
 			}
 			res, _, err := gw.GetWalletBalance(tc.walletID)
@@ -430,9 +481,14 @@ func TestGateway_CreateTransaction(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			// Assume all API sets enabled by default
+			enabledAPISets := flagutils.NewStringSet("DEFAULT")
+			if tc.enableWalletAPI {
+				enabledAPISets.Set("WALLET")
+			}
 			gw := &Gateway{
 				Config: GatewayConfig{
-					EnableWalletAPI: tc.enableWalletAPI,
+					EnabledAPISets: enabledAPISets,
 				},
 			}
 

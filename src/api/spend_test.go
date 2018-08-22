@@ -843,7 +843,7 @@ func TestCreateTransaction(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &GatewayerMock{}
 			gateway.On("IsCSPEnabled").Return(false)
-			gateway.On("IsAPISetEnabled", "WALLET", []string{nil}).Return(true)
+			gateway.On("IsAPISetEnabled", "WALLET", []string(nil)}).Return(true)
 
 			// If the rawRequestBody can be deserialized to CreateTransactionRequest, use it to mock gateway.CreateTransaction
 			serializedBody, err := json.Marshal(tc.body)

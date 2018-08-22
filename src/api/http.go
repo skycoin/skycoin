@@ -441,11 +441,11 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	webHandlerV1("/last_blocks", forAPISet(getLastBlocks(gateway), APIBlockchain, APIDefault))
 
 	// Network stats interface
-	webHandlerV1("/network/connection", forAPISet(connectionHandler(gateway), APIPex, ApiStatus, APIDefault))
-	webHandlerV1("/network/connections", forAPISet(connectionsHandler(gateway), APIPex, ApiStatus, APIDefault))
-	webHandlerV1("/network/defaultConnections", forAPISet(defaultConnectionsHandler(gateway), APIPex, ApiStatus, APIDefault))
-	webHandlerV1("/network/connections/trust", forAPISet(trustConnectionsHandler(gateway), APIPex, ApiStatus, APIDefault))
-	webHandlerV1("/network/connections/exchange", forAPISet(exchgConnectionsHandler(gateway), APIPex, ApiStatus, APIDefault))
+	webHandlerV1("/network/connection", forAPISet(connectionHandler(gateway), APIPex, APIStatus, APIDefault))
+	webHandlerV1("/network/connections", forAPISet(connectionsHandler(gateway), APIPex, APIStatus, APIDefault))
+	webHandlerV1("/network/defaultConnections", forAPISet(defaultConnectionsHandler(gateway), APIPex, APIStatus, APIDefault))
+	webHandlerV1("/network/connections/trust", forAPISet(trustConnectionsHandler(gateway), APIPex, APIStatus, APIDefault))
+	webHandlerV1("/network/connections/exchange", forAPISet(exchgConnectionsHandler(gateway), APIPex, APIStatus, APIDefault))
 
 	// Transaction handler
 
@@ -465,7 +465,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	// Args:
 	//     addrs: Comma seperated addresses [optional, returns all transactions if no address is provided]
 	//     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
-	webHandlerV1("/transactions", forAPISet(getTransactions(gateway), ApiBlockchain, APITxn, APIDefault))
+	webHandlerV1("/transactions", forAPISet(getTransactions(gateway), APIBlockchain, APITxn, APIDefault))
 	// inject a transaction into network
 	webHandlerV1("/injectTransaction", forAPISet(injectTransaction(gateway), APITxn, APIDefault))
 	webHandlerV1("/resendUnconfirmedTxns", forAPISet(resendUnconfirmedTxns(gateway), APITxn, APIDefault))

@@ -16,7 +16,7 @@
       </div>
       <div class="-body">
         <div class="-row" *ngFor="let tx of transactions">
-          <div class="-flex-fill">{{ tx.txid }}</div>
+          <div class="-flex-fill -txid">{{ tx.txid }}</div>
           <div class="-width-150">{{ tx.amount | number:'1.0-6' }}</div>
           <div class="-width-150 -timestamp">{{ tx.timestamp | dateTime }}</div>
         </div>

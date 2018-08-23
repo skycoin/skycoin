@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 
 - Fix hanging process caused when the p2p listener port is already in use
+- Fix exit status of CLI tool when wallet file cannot be loaded
 
 ### Changed
 

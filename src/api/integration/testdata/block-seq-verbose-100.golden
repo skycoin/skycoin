@@ -15,7 +15,7 @@
 				"type": 0,
 				"txid": "9f20b52befed2cbaaa4a066de7119b7fdbff09a83d8e2a82628671f51f3f6551",
 				"inner_hash": "c2e60dbb6ad5095985d21391cbeb679fd0787c4a20471340d63f8de437d915df",
-				"fee": 15307594,
+				"fee": 613839,
 				"sigs": [
 					"2fefd2da9d3b4af87c4157f87da0b1bf82e3d6c9f6427572bd768cf85900d15d36971ffa17eb3b486f7692584102a7a58d9fb3ef57fa24d9a4ab02eba811ef4f00"
 				],
@@ -25,7 +25,7 @@
 						"owner": "qxmeHkwgAMfwXyaQrwv9jq3qt228xMuoT5",
 						"coins": "23000.000000",
 						"hours": 294,
-						"calculated_hours": 15395267
+						"calculated_hours": 701512
 					}
 				],
 				"outputs": [

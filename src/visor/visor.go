@@ -1348,13 +1348,8 @@ func (vs *Visor) GetBlockByHashVerbose(hash cipher.SHA256) (*ReadableBlockVerbos
 			return nil
 		}
 
-		headTime, err := vs.Blockchain.Time(tx)
-		if err != nil {
-			return err
-		}
-
 		for _, txn := range b.Block.Body.Transactions {
-			i, err := vs.getReadableVerboseInputs(tx, headTime, txn.In)
+			i, err := vs.getReadableVerboseInputs(tx, b.Head.Time, txn.In)
 			if err != nil {
 				return err
 			}
@@ -1401,13 +1396,8 @@ func (vs *Visor) GetBlockBySeqVerbose(seq uint64) (*ReadableBlockVerbose, error)
 			return err
 		}
 
-		headTime, err := vs.Blockchain.Time(tx)
-		if err != nil {
-			return err
-		}
-
 		for _, txn := range b.Block.Body.Transactions {
-			i, err := vs.getReadableVerboseInputs(tx, headTime, txn.In)
+			i, err := vs.getReadableVerboseInputs(tx, b.Head.Time, txn.In)
 			if err != nil {
 				return err
 			}

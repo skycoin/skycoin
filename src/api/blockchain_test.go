@@ -40,26 +40,31 @@ func makeBadBlock(t *testing.T) *coin.Block {
 }
 
 func TestGetBlock(t *testing.T) {
-
 	badBlock := makeBadBlock(t)
 	validHashString := testutil.RandSHA256(t).Hex()
 	validSHA256, err := cipher.SHA256FromHex(validHashString)
 	require.NoError(t, err)
 
 	tt := []struct {
-		name                        string
-		method                      string
-		status                      int
-		err                         string
-		hash                        string
-		sha256                      cipher.SHA256
-		seqStr                      string
-		seq                         uint64
-		gatewayGetBlockByHashResult *coin.SignedBlock
-		gatewayGetBlockByHashErr    error
-		gatewayGetBlockBySeqResult  *coin.SignedBlock
-		gatewayGetBlockBySeqErr     error
-		response                    *visor.ReadableBlock
+		name                               string
+		method                             string
+		status                             int
+		err                                string
+		hash                               string
+		sha256                             cipher.SHA256
+		seqStr                             string
+		seq                                uint64
+		verbose                            bool
+		verboseStr                         string
+		gatewayGetBlockByHashResult        *coin.SignedBlock
+		gatewayGetBlockByHashErr           error
+		gatewayGetBlockBySeqResult         *coin.SignedBlock
+		gatewayGetBlockBySeqErr            error
+		gatewayGetBlockByHashVerboseResult *visor.ReadableBlockVerbose
+		gatewayGetBlockByHashVerboseErr    error
+		gatewayGetBlockBySeqVerboseResult  *visor.ReadableBlockVerbose
+		gatewayGetBlockBySeqVerboseErr     error
+		response                           interface{}
 	}{
 		{
 			name:   "405",
@@ -155,7 +160,7 @@ func TestGetBlock(t *testing.T) {
 			gatewayGetBlockBySeqErr: errors.New("GetSignedBlockBySeq failed"),
 		},
 		{
-			name:   "200 - got block by seq",
+			name:   "200 - get block by seq",
 			method: http.MethodGet,
 			status: http.StatusOK,
 			seqStr: "1",
@@ -177,7 +182,7 @@ func TestGetBlock(t *testing.T) {
 			},
 		},
 		{
-			name:   "200 - got block by hash",
+			name:   "200 - get block by hash",
 			method: http.MethodGet,
 			status: http.StatusOK,
 			hash:   validHashString,
@@ -198,6 +203,121 @@ func TestGetBlock(t *testing.T) {
 				},
 			},
 		},
+
+		{
+			name:       "200 - get block by hash verbose",
+			method:     http.MethodGet,
+			status:     http.StatusOK,
+			hash:       validHashString,
+			sha256:     validSHA256,
+			verbose:    true,
+			verboseStr: "1",
+			gatewayGetBlockByHashVerboseResult: func() *visor.ReadableBlockVerbose {
+				b, err := visor.NewReadableBlockVerbose(&coin.Block{}, nil)
+				require.NoError(t, err)
+				return b
+			}(),
+			response: &visor.ReadableBlockVerbose{
+				Head: visor.ReadableBlockHeader{
+					BkSeq:             0x0,
+					BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+					PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					Time:              0x0,
+					Fee:               0x0,
+					Version:           0x0,
+					BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+				},
+				Body: visor.ReadableBlockBodyVerbose{
+					Transactions: []visor.ReadableBlockTransactionVerbose{},
+				},
+			},
+		},
+
+		{
+			name:       "200 - get block by seq verbose",
+			method:     http.MethodGet,
+			status:     http.StatusOK,
+			seq:        1,
+			seqStr:     "1",
+			verbose:    true,
+			verboseStr: "1",
+			gatewayGetBlockBySeqVerboseResult: func() *visor.ReadableBlockVerbose {
+				b, err := visor.NewReadableBlockVerbose(&coin.Block{}, nil)
+				require.NoError(t, err)
+				return b
+			}(),
+			response: &visor.ReadableBlockVerbose{
+				Head: visor.ReadableBlockHeader{
+					BkSeq:             0x0,
+					BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+					PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					Time:              0x0,
+					Fee:               0x0,
+					Version:           0x0,
+					BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+				},
+				Body: visor.ReadableBlockBodyVerbose{
+					Transactions: []visor.ReadableBlockTransactionVerbose{},
+				},
+			},
+		},
+
+		{
+			name:                            "500 - get block by hash verbose error",
+			method:                          http.MethodGet,
+			status:                          http.StatusInternalServerError,
+			hash:                            validHashString,
+			sha256:                          validSHA256,
+			verbose:                         true,
+			verboseStr:                      "1",
+			gatewayGetBlockByHashVerboseErr: errors.New("GetBlockByHashVerbose failed"),
+			err: "500 Internal Server Error - GetBlockByHashVerbose failed",
+		},
+
+		{
+			name:                           "500 - get block by seq verbose error",
+			method:                         http.MethodGet,
+			status:                         http.StatusInternalServerError,
+			seq:                            1,
+			seqStr:                         "1",
+			verbose:                        true,
+			verboseStr:                     "1",
+			gatewayGetBlockBySeqVerboseErr: errors.New("GetBlockBySeqVerbose failed"),
+			err: "500 Internal Server Error - GetBlockBySeqVerbose failed",
+		},
+
+		{
+			name:       "404 - get block by hash verbose not found",
+			method:     http.MethodGet,
+			status:     http.StatusNotFound,
+			hash:       validHashString,
+			sha256:     validSHA256,
+			verbose:    true,
+			verboseStr: "1",
+			err:        "404 Not Found",
+		},
+
+		{
+			name:       "404 - get block by seq verbose not found",
+			method:     http.MethodGet,
+			status:     http.StatusNotFound,
+			seq:        1,
+			seqStr:     "1",
+			verbose:    true,
+			verboseStr: "1",
+			err:        "404 Not Found",
+		},
+
+		{
+			name:       "400 - invalid verbose flag",
+			method:     http.MethodGet,
+			status:     http.StatusBadRequest,
+			seq:        1,
+			seqStr:     "1",
+			verbose:    true,
+			verboseStr: "asdasdasd",
+			err:        "400 Bad Request - Invalid value for verbose",
+		},
 	}
 
 	for _, tc := range tt {
@@ -206,6 +326,8 @@ func TestGetBlock(t *testing.T) {
 
 			gateway.On("GetSignedBlockByHash", tc.sha256).Return(tc.gatewayGetBlockByHashResult, tc.gatewayGetBlockByHashErr)
 			gateway.On("GetSignedBlockBySeq", tc.seq).Return(tc.gatewayGetBlockBySeqResult, tc.gatewayGetBlockBySeqErr)
+			gateway.On("GetBlockByHashVerbose", tc.sha256).Return(tc.gatewayGetBlockByHashVerboseResult, tc.gatewayGetBlockByHashVerboseErr)
+			gateway.On("GetBlockBySeqVerbose", tc.seq).Return(tc.gatewayGetBlockBySeqVerboseResult, tc.gatewayGetBlockBySeqVerboseErr)
 
 			endpoint := "/api/v1/block"
 
@@ -215,6 +337,9 @@ func TestGetBlock(t *testing.T) {
 			}
 			if tc.seqStr != "" {
 				v.Add("seq", tc.seqStr)
+			}
+			if tc.verboseStr != "" {
+				v.Add("verbose", tc.verboseStr)
 			}
 			if len(v) > 0 {
 				endpoint += "?" + v.Encode()
@@ -241,10 +366,17 @@ func TestGetBlock(t *testing.T) {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg *visor.ReadableBlock
-				err := json.Unmarshal(rr.Body.Bytes(), &msg)
-				require.NoError(t, err)
-				require.Equal(t, tc.response, msg)
+				if tc.verbose {
+					var msg *visor.ReadableBlockVerbose
+					err := json.Unmarshal(rr.Body.Bytes(), &msg)
+					require.NoError(t, err)
+					require.Equal(t, tc.response.(*visor.ReadableBlockVerbose), msg)
+				} else {
+					var msg *visor.ReadableBlock
+					err := json.Unmarshal(rr.Body.Bytes(), &msg)
+					require.NoError(t, err)
+					require.Equal(t, tc.response.(*visor.ReadableBlock), msg)
+				}
 			}
 		})
 	}

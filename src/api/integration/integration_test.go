@@ -100,6 +100,17 @@ func enabled() bool {
 	return os.Getenv("SKYCOIN_INTEGRATION_TESTS") == "1"
 }
 
+func useCSRF(t *testing.T) bool {
+	x := os.Getenv("USE_CSRF")
+	if x == "" {
+		return false
+	}
+
+	useCSRF, err := strconv.ParseBool(x)
+	require.NoError(t, err)
+	return useCSRF
+}
+
 func doStable(t *testing.T) bool {
 	if enabled() && mode(t) == testModeStable {
 		return true
@@ -3983,8 +3994,7 @@ func TestStableHealth(t *testing.T) {
 	require.NotEmpty(t, r.Version.Commit)
 	require.NotEmpty(t, r.Version.Branch)
 
-	// CSRF can be on or off depending on the test mode
-	// require.False(t, r.CSRFEnabled)
+	require.Equal(t, useCSRF(t), r.CSRFEnabled)
 	require.True(t, r.CSPEnabled)
 	require.True(t, r.WalletAPIEnabled)
 	require.False(t, r.UnversionedAPIEnabled)

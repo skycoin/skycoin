@@ -57,59 +57,59 @@ However, any changes to the API will be recorded in the [changelog](../../CHANGE
 <!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3,4,5" -->
 
 - [CSRF](#csrf)
-    - [Get current csrf token](#get-current-csrf-token)
+	- [Get current csrf token](#get-current-csrf-token)
 - [General system checks](#general-system-checks)
-    - [Health check](#health-check)
+	- [Health check](#health-check)
+	- [Version info](#version-info)
 - [Simple query APIs](#simple-query-apis)
-    - [Get node version info](#get-node-version-info)
-    - [Get balance of addresses](#get-balance-of-addresses)
-    - [Get unspent output set of address or hash](#get-unspent-output-set-of-address-or-hash)
-    - [Verify an address](#verify-an-address)
+	- [Get balance of addresses](#get-balance-of-addresses)
+	- [Get unspent output set of address or hash](#get-unspent-output-set-of-address-or-hash)
+	- [Verify an address](#verify-an-address)
 - [Wallet APIs](#wallet-apis)
-    - [Get wallet](#get-wallet)
-    - [Get wallet transactions](#get-wallet-transactions)
-    - [Get wallets](#get-wallets)
-    - [Get wallet folder name](#get-wallet-folder-name)
-    - [Generate wallet seed](#generate-wallet-seed)
-    - [Create a wallet from seed](#create-a-wallet-from-seed)
-    - [Generate new address in wallet](#generate-new-address-in-wallet)
-    - [Updates wallet label](#updates-wallet-label)
-    - [Get wallet balance](#get-wallet-balance)
-    - [Spend coins from wallet](#spend-coins-from-wallet)
-    - [Create transaction](#create-transaction)
-    - [Unload wallet](#unload-wallet)
-    - [Encrypt wallet](#encrypt-wallet)
-    - [Decrypt wallet](#decrypt-wallet)
-    - [Get wallet seed](#get-wallet-seed)
+	- [Get wallet](#get-wallet)
+	- [Get wallet transactions](#get-wallet-transactions)
+	- [Get wallets](#get-wallets)
+	- [Get wallet folder name](#get-wallet-folder-name)
+	- [Generate wallet seed](#generate-wallet-seed)
+	- [Create a wallet from seed](#create-a-wallet-from-seed)
+	- [Generate new address in wallet](#generate-new-address-in-wallet)
+	- [Updates wallet label](#updates-wallet-label)
+	- [Get wallet balance](#get-wallet-balance)
+	- [Spend coins from wallet](#spend-coins-from-wallet)
+	- [Create transaction](#create-transaction)
+	- [Unload wallet](#unload-wallet)
+	- [Encrypt wallet](#encrypt-wallet)
+	- [Decrypt wallet](#decrypt-wallet)
+	- [Get wallet seed](#get-wallet-seed)
 - [Transaction APIs](#transaction-apis)
-    - [Get unconfirmed transactions](#get-unconfirmed-transactions)
-    - [Get transaction info by id](#get-transaction-info-by-id)
-    - [Get raw transaction by id](#get-raw-transaction-by-id)
-    - [Inject raw transaction](#inject-raw-transaction)
-    - [Get transactions that are addresses related](#get-transactions-that-are-addresses-related)
-    - [Resend unconfirmed transactions](#resend-unconfirmed-transactions)
-    - [Verify encoded transaction](#verify-encoded-transaction)
+	- [Get unconfirmed transactions](#get-unconfirmed-transactions)
+	- [Get transaction info by id](#get-transaction-info-by-id)
+	- [Get raw transaction by id](#get-raw-transaction-by-id)
+	- [Inject raw transaction](#inject-raw-transaction)
+	- [Get transactions that are addresses related](#get-transactions-that-are-addresses-related)
+	- [Resend unconfirmed transactions](#resend-unconfirmed-transactions)
+	- [Verify encoded transaction](#verify-encoded-transaction)
 - [Block APIs](#block-apis)
-    - [Get blockchain metadata](#get-blockchain-metadata)
-    - [Get blockchain progress](#get-blockchain-progress)
-    - [Get block by hash or seq](#get-block-by-hash-or-seq)
-    - [Get blocks in specific range](#get-blocks-in-specific-range)
-    - [Get last N blocks](#get-last-n-blocks)
+	- [Get blockchain metadata](#get-blockchain-metadata)
+	- [Get blockchain progress](#get-blockchain-progress)
+	- [Get block by hash or seq](#get-block-by-hash-or-seq)
+	- [Get blocks in specific range](#get-blocks-in-specific-range)
+	- [Get last N blocks](#get-last-n-blocks)
 - [Explorer APIs](#explorer-apis)
-    - [Get address affected transactions](#get-address-affected-transactions)
+	- [Get address affected transactions](#get-address-affected-transactions)
 - [Uxout APIs](#uxout-apis)
-    - [Get uxout](#get-uxout)
-    - [Get historical unspent outputs for an address](#get-historical-unspent-outputs-for-an-address)
+	- [Get uxout](#get-uxout)
+	- [Get historical unspent outputs for an address](#get-historical-unspent-outputs-for-an-address)
 - [Coin supply related information](#coin-supply-related-information)
-    - [Coin supply](#coin-supply)
-    - [Richlist show top N addresses by uxouts](#richlist-show-top-n-addresses-by-uxouts)
-    - [Count unique addresses](#count-unique-addresses)
+	- [Coin supply](#coin-supply)
+	- [Richlist show top N addresses by uxouts](#richlist-show-top-n-addresses-by-uxouts)
+	- [Count unique addresses](#count-unique-addresses)
 - [Network status](#network-status)
-    - [Get information for a specific connection](#get-information-for-a-specific-connection)
-    - [Get a list of all connections](#get-a-list-of-all-connections)
-    - [Get a list of all default connections](#get-a-list-of-all-default-connections)
-    - [Get a list of all trusted connections](#get-a-list-of-all-trusted-connections)
-    - [Get a list of all connections discovered through peer exchange](#get-a-list-of-all-connections-discovered-through-peer-exchange)
+	- [Get information for a specific connection](#get-information-for-a-specific-connection)
+	- [Get a list of all connections](#get-a-list-of-all-connections)
+	- [Get a list of all default connections](#get-a-list-of-all-default-connections)
+	- [Get a list of all trusted connections](#get-a-list-of-all-trusted-connections)
+	- [Get a list of all connections discovered through peer exchange](#get-a-list-of-all-connections-discovered-through-peer-exchange)
 
 <!-- /MarkdownTOC -->
 
@@ -165,31 +165,35 @@ Response:
 {
     "blockchain": {
         "head": {
-            "seq": 21175,
-            "block_hash": "8a3e0aac619551ae009cfb28c2b36bb1300925f74da770d1512072314f6a4c80",
-            "previous_block_hash": "001eb7911b6a6ab7c75feb88726dd2bc8b87133aebc82201c4404537eb74f7ac",
-            "timestamp": 1523168686,
-            "fee": 2,
+            "seq": 53522,
+            "block_hash": "95fa50f505c02589faf598bfc8ac44b9e3c7f25690a0a16725b63836459c1b5f",
+            "previous_block_hash": "d3af6cc4e65ac650d73835681075a95ba59743721506b6fc1d891e7b7d8f7900",
+            "timestamp": 1535002265,
+            "fee": 7064,
             "version": 0,
-            "tx_body_hash": "36be8d70d1e9f70b340ea7ecf0b247c27086bad10568044c1196fe150f6cea1b"
+            "tx_body_hash": "1ed5bee9c6cfe96a971232e8fee0d2b90d1e0c14867dd8505d0897476ec47e31"
         },
-        "unspents": 14750,
-        "unconfirmed": 0,
-        "time_since_last_block": "12m6s"
+        "unspents": 34159,
+        "unconfirmed": 1,
+        "time_since_last_block": "6m47s"
     },
     "version": {
-        "version": "0.23.0",
-        "commit": "f61b4319c2f146a5ad86f7cbda26a1ba6a09998d",
+        "version": "0.24.1",
+        "commit": "991b8c0cfe7ca4aed41d6c4bc960b61e9612c516",
         "branch": "develop"
     },
-    "open_connections": 30,
-    "uptime": "13.686460853s"
+    "open_connections": 5,
+    "uptime": "11.158716091s",
+    "csrf_enabled": true,
+    "csp_enabled": true,
+    "wallet_api_enabled": true,
+    "gui_enabled": true,
+    "unversioned_api_enabled": false,
+    "json_rpc_enabled": false
 }
 ```
 
-## Simple query APIs
-
-### Get node version info
+### Version info
 
 ```
 URI: /api/v1/version
@@ -207,9 +211,13 @@ Result:
 ```json
 {
     "version": "0.20.0",
-    "commit": "cc733e9922d85c359f5f183d3a3a6e42c73ccb16"
+    "commit": "cc733e9922d85c359f5f183d3a3a6e42c73ccb16",
+    "branch": "develop"
 }
 ```
+
+
+## Simple query APIs
 
 ### Get balance of addresses
 

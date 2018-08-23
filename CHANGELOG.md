@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `-csv` option to `cli send` and `cli createRawTransaction`, which will send coins to multiple addresses defined in a csv file
 - Add `-disable-default-peers` option to disable the default hardcoded peers and mark all cached peers as untrusted
 - Add `-custom-peers-file` to load peers from disk. This peers file is a newline separate list of `ip:port` strings
+- Add `csrf_enabled`, `csp_enabled`, `wallet_api_enabled`, `unversioned_api_enabled`, `gui_enabled` and `json_rpc_enabled` configuration settings to the `/api/v1/health` endpoint response
 
 ### Fixed
 

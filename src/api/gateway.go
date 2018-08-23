@@ -55,5 +55,4 @@ type Gatewayer interface {
 	GetHealth() (*daemon.Health, error)
 	UnloadWallet(id string) error
 	VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bool, error)
-	IsCSPEnabled() bool
 }

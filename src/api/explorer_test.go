@@ -158,7 +158,6 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			endpoint := "/api/v1/explorer/address"
 			gateway := NewGatewayerMock()
 			gateway.On("GetTransactionsForAddress", address).Return(tc.result, tc.gatewayGetTransactionsForAddressErr)
-			gateway.On("IsCSPEnabled").Return(false)
 
 			v := url.Values{}
 			if tc.addressParam != "" {
@@ -180,7 +179,7 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			} else {
 				setCSRFParameters(csrfStore, tokenInvalid, req)
 			}
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -289,7 +288,6 @@ func TestCoinSupply(t *testing.T) {
 			endpoint := "/api/v1/coinSupply"
 			gateway := NewGatewayerMock()
 			gateway.On("GetUnspentOutputs", mock.Anything).Return(tc.gatewayGetUnspentOutputsResult, tc.gatewayGetUnspentOutputsErr)
-			gateway.On("IsCSPEnabled").Return(false)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
@@ -303,7 +301,7 @@ func TestCoinSupply(t *testing.T) {
 			} else {
 				setCSRFParameters(csrfStore, tokenInvalid, req)
 			}
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -502,7 +500,6 @@ func TestGetRichlist(t *testing.T) {
 			endpoint := "/api/v1/richlist"
 			gateway := NewGatewayerMock()
 			gateway.On("GetRichlist", tc.includeDistribution).Return(tc.gatewayGetRichlistResult, tc.gatewayGetRichlistErr)
-			gateway.On("IsCSPEnabled").Return(false)
 
 			v := url.Values{}
 			if tc.httpParams != nil {
@@ -529,7 +526,7 @@ func TestGetRichlist(t *testing.T) {
 			} else {
 				setCSRFParameters(csrfStore, tokenInvalid, req)
 			}
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -591,7 +588,6 @@ func TestGetAddressCount(t *testing.T) {
 			endpoint := "/api/v1/addresscount"
 			gateway := NewGatewayerMock()
 			gateway.On("GetAddressCount").Return(tc.gatewayGetAddressCountResult, tc.gatewayGetAddressCountErr)
-			gateway.On("IsCSPEnabled").Return(false)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
@@ -605,7 +601,7 @@ func TestGetAddressCount(t *testing.T) {
 			} else {
 				setCSRFParameters(csrfStore, tokenInvalid, req)
 			}
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

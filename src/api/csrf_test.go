@@ -145,7 +145,6 @@ func TestCSRFWrapper(t *testing.T) {
 				name := fmt.Sprintf("%s %s %s", method, endpoint, c)
 				t.Run(name, func(t *testing.T) {
 					gateway := &GatewayerMock{}
-					gateway.On("IsCSPEnabled").Return(false)
 
 					req, err := http.NewRequest(method, endpoint, nil)
 					require.NoError(t, err)
@@ -161,6 +160,7 @@ func TestCSRFWrapper(t *testing.T) {
 						appLoc:               ".",
 						enableJSON20RPC:      true,
 						enableUnversionedAPI: true,
+						disableCSP:           true,
 					}, gateway, csrfStore, nil)
 
 					handler.ServeHTTP(rr, req)
@@ -195,7 +195,6 @@ func TestOriginRefererCheck(t *testing.T) {
 			name := fmt.Sprintf("%s %s", tc.name, endpoint)
 			t.Run(name, func(t *testing.T) {
 				gateway := &GatewayerMock{}
-				gateway.On("IsCSPEnabled").Return(false)
 
 				req, err := http.NewRequest(http.MethodGet, endpoint, nil)
 				require.NoError(t, err)
@@ -217,6 +216,7 @@ func TestOriginRefererCheck(t *testing.T) {
 					host:            configuredHost,
 					appLoc:          ".",
 					enableJSON20RPC: true,
+					disableCSP:      true,
 				}, gateway, csrfStore, nil)
 
 				handler.ServeHTTP(rr, req)
@@ -233,7 +233,6 @@ func TestHostCheck(t *testing.T) {
 	for _, endpoint := range endpoints {
 		t.Run(endpoint, func(t *testing.T) {
 			gateway := &GatewayerMock{}
-			gateway.On("IsCSPEnabled").Return(false)
 
 			req, err := http.NewRequest(http.MethodGet, endpoint, nil)
 			require.NoError(t, err)
@@ -250,6 +249,7 @@ func TestHostCheck(t *testing.T) {
 				host:            configuredHost,
 				appLoc:          ".",
 				enableJSON20RPC: true,
+				disableCSP:      true,
 			}, gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
@@ -269,7 +269,6 @@ func TestCSRF(t *testing.T) {
 	updateWalletLabel := func(csrfToken string) *httptest.ResponseRecorder {
 		gateway := &GatewayerMock{}
 		gateway.On("UpdateWalletLabel", "fooid", "foolabel").Return(nil)
-		gateway.On("IsCSPEnabled").Return(false)
 
 		endpoint := "/api/v1/wallet/update"
 
@@ -290,6 +289,7 @@ func TestCSRF(t *testing.T) {
 			host:            configuredHost,
 			appLoc:          ".",
 			enableJSON20RPC: true,
+			disableCSP:      true,
 		}, gateway, csrfStore, nil)
 
 		handler.ServeHTTP(rr, req)
@@ -304,8 +304,7 @@ func TestCSRF(t *testing.T) {
 
 	// Make a request to /csrf to get a token
 	gateway := &GatewayerMock{}
-	gateway.On("IsCSPEnabled").Return(false)
-	handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+	handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 
 	// non-GET request to /csrf is invalid
 	req, err := http.NewRequest(http.MethodPost, "/api/v1/csrf", nil)

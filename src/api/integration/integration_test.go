@@ -3982,6 +3982,14 @@ func TestStableHealth(t *testing.T) {
 	// The stable node is always run with the commit and branch ldflags, so they should appear
 	require.NotEmpty(t, r.Version.Commit)
 	require.NotEmpty(t, r.Version.Branch)
+
+	// CSRF can be on or off depending on the test mode
+	// require.False(t, r.CSRFEnabled)
+	require.True(t, r.CSPEnabled)
+	require.True(t, r.WalletAPIEnabled)
+	require.False(t, r.UnversionedAPIEnabled)
+	require.False(t, r.GUIEnabled)
+	require.True(t, r.JSON20RPCEnabled)
 }
 
 func TestLiveHealth(t *testing.T) {

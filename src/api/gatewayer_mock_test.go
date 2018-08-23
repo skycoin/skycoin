@@ -900,24 +900,6 @@ func (m *GatewayerMock) InjectBroadcastTransaction(p0 coin.Transaction) error {
 
 }
 
-// IsCSPEnabled mocked method
-func (m *GatewayerMock) IsCSPEnabled() bool {
-
-	ret := m.Called()
-
-	var r0 bool
-	switch res := ret.Get(0).(type) {
-	case nil:
-	case bool:
-		r0 = res
-	default:
-		panic(fmt.Sprintf("unexpected type: %v", res))
-	}
-
-	return r0
-
-}
-
 // IsWalletAPIEnabled mocked method
 func (m *GatewayerMock) IsWalletAPIEnabled() bool {
 

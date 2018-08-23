@@ -7,36 +7,36 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
 <!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3" -->
 
 - [Install](#install)
-    - [Enable command autocomplete](#enable-command-autocomplete)
+	- [Enable command autocomplete](#enable-command-autocomplete)
 - [Environment Setting](#environment-setting)
-    - [RPC_ADDR](#rpc_addr)
-    - [WALLET_DIR](#wallet_dir)
-    - [WALLET_NAME](#wallet_name)
+	- [RPC_ADDR](#rpc_addr)
+	- [WALLET_DIR](#wallet_dir)
+	- [WALLET_NAME](#wallet_name)
 - [Usage](#usage)
-    - [Add Private Key](#add-private-key)
-    - [Check address balance](#check-address-balance)
-    - [Generate new addresses](#generate-new-addresses)
-    - [Check address outputs](#check-address-outputs)
-    - [Check block data](#check-block-data)
-    - [Check database integrity](#check-database-integrity)
-    - [Create a raw transaction](#create-a-raw-transaction)
-    - [Decode a raw transaction](#decode-a-raw-transaction)
-    - [Broadcast a raw transaction](#broadcast-a-raw-transaction)
-    - [Generate a wallet](#generate-a-wallet)
-    - [Generate addresses for a wallet](#generate-addresses-for-a-wallet)
-    - [Last blocks](#last-blocks)
-    - [List wallet addresses](#list-wallet-addresses)
-    - [List wallets](#list-wallets)
-    - [Send](#send)
-    - [Show Config](#show-config)
-    - [Status](#status)
-    - [Get transaction](#get-transaction)
-    - [Verify address](#verify-address)
-    - [Check wallet balance](#check-wallet-balance)
-    - [See wallet directory](#see-wallet-directory)
-    - [List wallet transaction history](#list-wallet-transaction-history)
-    - [List wallet outputs](#list-wallet-outputs)
-    - [CLI version](#cli-version)
+	- [Add Private Key](#add-private-key)
+	- [Check address balance](#check-address-balance)
+	- [Generate new addresses](#generate-new-addresses)
+	- [Check address outputs](#check-address-outputs)
+	- [Check block data](#check-block-data)
+	- [Check database integrity](#check-database-integrity)
+	- [Create a raw transaction](#create-a-raw-transaction)
+	- [Decode a raw transaction](#decode-a-raw-transaction)
+	- [Broadcast a raw transaction](#broadcast-a-raw-transaction)
+	- [Generate a wallet](#generate-a-wallet)
+	- [Generate addresses for a wallet](#generate-addresses-for-a-wallet)
+	- [Last blocks](#last-blocks)
+	- [List wallet addresses](#list-wallet-addresses)
+	- [List wallets](#list-wallets)
+	- [Send](#send)
+	- [Show Config](#show-config)
+	- [Status](#status)
+	- [Get transaction](#get-transaction)
+	- [Verify address](#verify-address)
+	- [Check wallet balance](#check-wallet-balance)
+	- [See wallet directory](#see-wallet-directory)
+	- [List wallet transaction history](#list-wallet-transaction-history)
+	- [List wallet outputs](#list-wallet-outputs)
+	- [CLI version](#cli-version)
 - [Note](#note)
 
 <!-- /MarkdownTOC -->
@@ -1532,10 +1532,16 @@ $ skycoin-cli status
         "version": {
             "version": "0.24.1",
             "commit": "620405485d3276c16c0379bc3b88b588e34c45e1",
-            "branch": "bulk-send"
+            "branch": "develop"
         },
         "open_connections": 8,
-        "uptime": "4h1m23.697072461s"
+        "uptime": "4h1m23.697072461s",
+        "csrf_enabled": true,
+        "csp_enabled": true,
+        "wallet_api_enabled": true,
+        "gui_enabled": true,
+        "unversioned_api_enabled": false,
+        "json_rpc_enabled": false
     },
     "cli_config": {
         "webrpc_address": "http://127.0.0.1:6420"

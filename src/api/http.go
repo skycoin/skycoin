@@ -14,7 +14,6 @@ import (
 	"github.com/NYTimes/gziphandler"
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/util/file"
 	wh "github.com/skycoin/skycoin/src/util/http"
@@ -46,7 +45,7 @@ type Server struct {
 type Config struct {
 	StaticDir            string
 	DisableCSRF          bool
-	EnableWalletAPI      bool
+	DisableCSP           bool
 	EnableJSON20RPC      bool
 	EnableGUI            bool
 	EnableUnversionedAPI bool
@@ -61,6 +60,7 @@ type muxConfig struct {
 	enableGUI            bool
 	enableJSON20RPC      bool
 	enableUnversionedAPI bool
+	disableCSP           bool
 }
 
 // HTTPResponse represents the http response struct
@@ -134,6 +134,7 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 		enableGUI:            c.EnableGUI,
 		enableJSON20RPC:      c.EnableJSON20RPC,
 		enableUnversionedAPI: c.EnableUnversionedAPI,
+		disableCSP:           c.DisableCSP,
 	}
 
 	srvMux := newServerMux(mc, gateway, csrfStore, rpc)
@@ -267,7 +268,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	}
 
 	indexHandler := newIndexHandler(c.appLoc, c.enableGUI)
-	if gateway.IsCSPEnabled() {
+	if !c.disableCSP {
 		indexHandler = wh.CSPHandler(indexHandler)
 	}
 	webHandler("/", indexHandler)
@@ -276,7 +277,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 		fileInfos, _ := ioutil.ReadDir(c.appLoc)
 
 		fs := http.FileServer(http.Dir(c.appLoc))
-		if gateway.IsCSPEnabled() {
+		if !c.disableCSP {
 			fs = wh.CSPHandler(fs)
 		}
 
@@ -422,7 +423,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	webHandlerV2("/transaction/verify", verifyTxnHandler(gateway))
 
 	// Health check handler
-	webHandlerV1("/health", healthCheck(gateway))
+	webHandlerV1("/health", healthHandler(c, csrfStore, gateway))
 
 	// Returns transactions that match the filters.
 	// Method: GET
@@ -459,7 +460,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	return mux
 }
 
-// Returns a http.HandlerFunc for index.html, where index.html is in appLoc
+// newIndexHandler returns a http.HandlerFunc for index.html, where index.html is in appLoc
 func newIndexHandler(appLoc string, enableGUI bool) http.Handler {
 	// Serves the main page
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -481,6 +482,8 @@ func newIndexHandler(appLoc string, enableGUI bool) http.Handler {
 	})
 }
 
+// splitCommaString splits a string separated by commas or whitespace into tokens
+// and returns an array of unique tokens split from that string
 func splitCommaString(s string) []string {
 	words := strings.FieldsFunc(s, func(r rune) bool {
 		return r == ',' || unicode.IsSpace(r)
@@ -497,77 +500,4 @@ func splitCommaString(s string) []string {
 	}
 
 	return dedupWords
-}
-
-// getOutputsHandler returns UxOuts filtered by a set of addresses or a set of hashes
-// URI: /api/v1/outputs
-// Method: GET
-// Args:
-//    addrs: comma-separated list of addresses
-//    hashes: comma-separated list of uxout hashes
-// If neither addrs nor hashes are specificed, return all unspent outputs.
-// If only one filter is specified, then return outputs match the filter.
-// Both filters cannot be specified.
-func getOutputsHandler(gateway Gatewayer) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			wh.Error405(w)
-			return
-		}
-
-		var addrs []string
-		var hashes []string
-
-		addrStr := r.FormValue("addrs")
-		hashStr := r.FormValue("hashes")
-
-		if addrStr != "" && hashStr != "" {
-			wh.Error400(w, "addrs and hashes cannot be specified together")
-			return
-		}
-
-		filters := []daemon.OutputsFilter{}
-
-		if addrStr != "" {
-			addrs = splitCommaString(addrStr)
-
-			for _, a := range addrs {
-				if _, err := cipher.DecodeBase58Address(a); err != nil {
-					wh.Error400(w, "addrs contains invalid address")
-					return
-				}
-			}
-
-			if len(addrs) > 0 {
-				filters = append(filters, daemon.FbyAddresses(addrs))
-			}
-		}
-
-		if hashStr != "" {
-			hashes = splitCommaString(hashStr)
-			if len(hashes) > 0 {
-				filters = append(filters, daemon.FbyHashes(hashes))
-			}
-		}
-
-		outs, err := gateway.GetUnspentOutputs(filters...)
-		if err != nil {
-			err = fmt.Errorf("get unspent outputs failed: %v", err)
-			wh.Error500(w, err.Error())
-			return
-		}
-
-		wh.SendJSONOr500(logger, w, outs)
-	}
-}
-
-func versionHandler(gateway Gatewayer) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			wh.Error405(w)
-			return
-		}
-
-		wh.SendJSONOr500(logger, w, gateway.GetBuildInfo())
-	}
 }

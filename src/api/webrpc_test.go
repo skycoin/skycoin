@@ -67,7 +67,6 @@ func TestWebRPC(t *testing.T) {
 			}
 
 			gateway := NewGatewayerMock()
-			gateway.On("IsCSPEnabled").Return(false)
 			handler := newServerMux(muxConfig{
 				host:            configuredHost,
 				appLoc:          ".",

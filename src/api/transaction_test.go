@@ -132,7 +132,6 @@ func TestGetPendingTxs(t *testing.T) {
 			endpoint := "/api/v1/pendingTxs"
 			gateway := NewGatewayerMock()
 			gateway.On("GetAllUnconfirmedTxns").Return(tc.getAllUnconfirmedTxnsResponse, tc.getAllUnconfirmedTxnsErr)
-			gateway.On("IsCSPEnabled").Return(false)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
@@ -142,7 +141,7 @@ func TestGetPendingTxs(t *testing.T) {
 			}
 			setCSRFParameters(csrfStore, tokenValid, req)
 
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 			rr := httptest.NewRecorder()
 			handler.ServeHTTP(rr, req)
 
@@ -266,7 +265,6 @@ func TestGetTransactionByID(t *testing.T) {
 			endpoint := "/api/v1/transaction"
 			gateway := NewGatewayerMock()
 			gateway.On("GetTransaction", tc.getTransactionArg).Return(tc.getTransactionReponse, tc.getTransactionError)
-			gateway.On("IsCSPEnabled").Return(false)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -287,7 +285,7 @@ func TestGetTransactionByID(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -399,7 +397,6 @@ func TestInjectTransaction(t *testing.T) {
 			endpoint := "/api/v1/injectTransaction"
 			gateway := NewGatewayerMock()
 			gateway.On("InjectBroadcastTransaction", tc.injectTransactionArg).Return(tc.injectTransactionError)
-			gateway.On("IsCSPEnabled").Return(false)
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)
@@ -414,7 +411,7 @@ func TestInjectTransaction(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -471,7 +468,6 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 			endpoint := "/api/v1/resendUnconfirmedTxns"
 			gateway := NewGatewayerMock()
 			gateway.On("ResendUnconfirmedTxns").Return(tc.resendUnconfirmedTxnsResponse, tc.resendUnconfirmedTxnsErr)
-			gateway.On("IsCSPEnabled").Return(false)
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)
@@ -482,7 +478,7 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -596,7 +592,6 @@ func TestGetRawTx(t *testing.T) {
 			endpoint := "/api/v1/rawtx"
 			gateway := NewGatewayerMock()
 			gateway.On("GetTransaction", tc.getTransactionArg).Return(tc.getTransactionResponse, tc.getTransactionError)
-			gateway.On("IsCSPEnabled").Return(false)
 			v := url.Values{}
 			if tc.httpBody != nil {
 				if tc.httpBody.txid != "" {
@@ -616,7 +611,7 @@ func TestGetRawTx(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -754,7 +749,6 @@ func TestGetTransactions(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := NewGatewayerMock()
 			gateway.On("GetTransactions", mock.Anything).Return(tc.getTransactionsResponse, tc.getTransactionsError)
-			gateway.On("IsCSPEnabled").Return(false)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -778,7 +772,7 @@ func TestGetTransactions(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
 
@@ -1000,7 +994,6 @@ func TestVerifyTransaction(t *testing.T) {
 			gateway := NewGatewayerMock()
 			gateway.On("VerifyTxnVerbose", &tc.gatewayVerifyTxnVerboseArg).Return(tc.gatewayVerifyTxnVerboseResult.Uxouts,
 				tc.gatewayVerifyTxnVerboseResult.IsTxnConfirmed, tc.gatewayVerifyTxnVerboseResult.Err)
-			gateway.On("IsCSPEnabled").Return(false)
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)
@@ -1016,7 +1009,7 @@ func TestVerifyTransaction(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

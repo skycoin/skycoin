@@ -100,7 +100,6 @@ func TestVerifyAddress(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v2/address/verify"
 			gateway := NewGatewayerMock()
-			gateway.On("IsCSPEnabled").Return(false)
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)
@@ -122,8 +121,7 @@ func TestVerifyAddress(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			cfg := muxConfig{host: configuredHost, appLoc: "."}
-			handler := newServerMux(cfg, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

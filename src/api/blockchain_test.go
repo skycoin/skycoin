@@ -206,7 +206,6 @@ func TestGetBlock(t *testing.T) {
 
 			gateway.On("GetSignedBlockByHash", tc.sha256).Return(tc.gatewayGetBlockByHashResult, tc.gatewayGetBlockByHashErr)
 			gateway.On("GetSignedBlockBySeq", tc.seq).Return(tc.gatewayGetBlockBySeqResult, tc.gatewayGetBlockBySeqErr)
-			gateway.On("IsCSPEnabled").Return(false)
 
 			endpoint := "/api/v1/block"
 
@@ -231,7 +230,7 @@ func TestGetBlock(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
 
@@ -333,7 +332,6 @@ func TestGetBlocks(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &GatewayerMock{}
 			gateway.On("GetBlocks", tc.start, tc.end).Return(tc.gatewayGetBlocksResult, tc.gatewayGetBlocksError)
-			gateway.On("IsCSPEnabled").Return(false)
 
 			endpoint := "/api/v1/blocks"
 
@@ -359,7 +357,7 @@ func TestGetBlocks(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
 
@@ -450,7 +448,6 @@ func TestGetLastBlocks(t *testing.T) {
 			gateway := NewGatewayerMock()
 
 			gateway.On("GetLastBlocks", tc.num).Return(tc.gatewayGetLastBlocksResult, tc.gatewayGetLastBlocksError)
-			gateway.On("IsCSPEnabled").Return(false)
 
 			v := url.Values{}
 			if tc.body.Num != "" {
@@ -470,7 +467,7 @@ func TestGetLastBlocks(t *testing.T) {
 
 			rr := httptest.NewRecorder()
 
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
 

@@ -515,9 +515,9 @@ func peersEqualWithSeenAllowedDiff(t *testing.T, expected Peer, actual Peer) {
 	require.Equal(t, expected, actual)
 }
 
-// preparePeerlistFile makes peers.txt in temporary dir,
+// preparePeerlistFile makes peers.json in temporary dir,
 func preparePeerlistFile(t *testing.T) (string, func()) {
-	f, err := ioutil.TempFile("", "peers.txt")
+	f, err := ioutil.TempFile("", PeerCacheFilename)
 	require.NoError(t, err)
 
 	return f.Name(), func() {

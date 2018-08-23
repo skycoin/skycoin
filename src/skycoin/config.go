@@ -364,7 +364,7 @@ func (c *Config) register() {
 	flag.BoolVar(&c.Node.ResetCorruptDB, "reset-corrupt-db", c.Node.ResetCorruptDB, "reset the database if corrupted, and continue running instead of exiting")
 
 	flag.BoolVar(&c.Node.DisableDefaultPeers, "disable-default-peers", c.Node.DisableDefaultPeers, "disable the hardcoded default peers")
-	flag.StringVar(&c.Node.CustomPeersFile, "custom-peers-file", c.Node.CustomPeersFile, "load custom peers from a newline separate list of ip:port in a file. Note that this is different from the peers.txt file in the data directory")
+	flag.StringVar(&c.Node.CustomPeersFile, "custom-peers-file", c.Node.CustomPeersFile, "load custom peers from a newline separate list of ip:port in a file. Note that this is different from the peers.json file in the data directory")
 
 	// Key Configuration Data
 	flag.BoolVar(&c.Node.RunMaster, "master", c.Node.RunMaster, "run the daemon as blockchain master server")

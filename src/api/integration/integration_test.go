@@ -1899,6 +1899,11 @@ func TestStableAddressTransactions(t *testing.T) {
 
 	cases := []addressTransactionsTestCase{
 		{
+			name:    "genesis address",
+			address: "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6",
+			golden:  "address-transactions-2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6.golden",
+		},
+		{
 			name:    "address with transactions",
 			address: "ALJVNKYL7WGxFBSriiZuwZKWD4b7fbV1od",
 			golden:  "address-transactions-ALJVNKYL7WGxFBSriiZuwZKWD4b7fbV1od.golden",

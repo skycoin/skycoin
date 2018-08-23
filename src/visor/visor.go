@@ -2169,6 +2169,24 @@ func (vs *Visor) GetVerboseTransactionsForAddress(a cipher.Address) ([]ReadableT
 		resTxns = make([]ReadableTransactionVerbose, len(txns))
 
 		for i, txn := range txns {
+
+			// If the txn is confirmed, use the time of the block previous
+			// to the block in which the transaction was executed,
+			// else use the head time for unconfirmed blocks.
+			t := head.Time()
+			if txn.Status.Confirmed && txn.Status.BlockSeq > 0 {
+				prevBlock, err := vs.Blockchain.GetSignedBlockBySeq(tx, txn.Status.BlockSeq-1)
+				if err != nil {
+					return err
+				}
+
+				if prevBlock == nil {
+					return fmt.Errorf("GetVerboseTransactionsForAddress prevBlock seq=%d missing", txn.Status.BlockSeq-1)
+				}
+
+				t = prevBlock.Block.Head.Time
+			}
+
 			inputs := make([]ReadableTransactionInput, len(txn.Txn.In))
 			for j, inputID := range txn.Txn.In {
 				uxOuts, err := vs.history.GetUxOuts(tx, []cipher.SHA256{inputID})
@@ -2182,14 +2200,6 @@ func (vs *Visor) GetVerboseTransactionsForAddress(a cipher.Address) ([]ReadableT
 					return err
 				}
 				input := uxOuts[0]
-
-				// If the txn is confirmed,
-				// use the time of the transaction when it was executed,
-				// else use the head time
-				t := txn.Time
-				if !txn.Status.Confirmed {
-					t = head.Time()
-				}
 
 				readableInput, err := NewReadableTransactionInput(input.Out, t)
 				if err != nil {

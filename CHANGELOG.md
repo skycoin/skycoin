@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `cli status` return value is now the response from `GET /api/v1/health`, which changes some fields
 - `/api/network/` endpoints will return an empty array for array values instead of `null`
 - `go run cmd/skycoin/skycoin.go` will have exit status 1 on failure and exit status 2 on panic
+- The deprecated JSON 2.0 RPC interface is disabled by default for all run modes, since it is no longer needed for the CLI tool
 
 ### Removed
 

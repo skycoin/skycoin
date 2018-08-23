@@ -437,7 +437,7 @@ func (bc Blockchain) GetBlocks(tx *dbutil.Tx, start, end uint64) ([]coin.SignedB
 	for i := start; i <= end; i++ {
 		b, err := bc.store.GetSignedBlockBySeq(tx, i)
 		if err != nil {
-			logger.WithError(err).Error("bc.store.GetBlockBySeq failed")
+			logger.WithError(err).Error("bc.store.GetSignedBlockBySeq failed")
 			return nil, err
 		}
 

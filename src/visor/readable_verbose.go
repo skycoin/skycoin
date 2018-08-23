@@ -23,7 +23,7 @@ type ReadableBlockVerbose struct {
 // NewReadableBlockBodyVerbose creates a verbose readable block body
 func NewReadableBlockBodyVerbose(b *coin.Block, inputs [][]ReadableTransactionInput) (*ReadableBlockBodyVerbose, error) {
 	if len(inputs) != len(b.Body.Transactions) {
-		return nil, errors.New("NewReadableBlockBodyVerbose: len(inputs) != len(b.Body.Transactions)")
+		return nil, fmt.Errorf("NewReadableBlockBodyVerbose: len(inputs) != len(b.Body.Transactions) (seq=%d)", b.Head.BkSeq)
 	}
 
 	txns := make([]ReadableBlockTransactionVerbose, len(b.Body.Transactions))
@@ -130,6 +130,10 @@ func NewReadableBlockTransactionVerbose(txn coin.Transaction, inputs []ReadableT
 		}
 
 		fee = hoursIn - hoursOut
+	}
+
+	if inputs == nil {
+		inputs = make([]ReadableTransactionInput, 0)
 	}
 
 	return ReadableBlockTransactionVerbose{

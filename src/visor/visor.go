@@ -1334,12 +1334,28 @@ func (vs *Visor) GetSignedBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, er
 
 // GetBlockByHashVerbose returns a ReadableBlockVerbose for a given block hash
 func (vs *Visor) GetBlockByHashVerbose(hash cipher.SHA256) (*ReadableBlockVerbose, error) {
+	var b *ReadableBlockVerbose
+
+	if err := vs.DB.View("GetBlockByHashVerbose", func(tx *dbutil.Tx) error {
+		var err error
+		b, err = vs.getBlockVerbose(tx, func(tx *dbutil.Tx) (*coin.SignedBlock, error) {
+			return vs.Blockchain.GetSignedBlockByHash(tx, hash)
+		})
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}
+
+func (vs *Visor) getBlockVerbose(tx *dbutil.Tx, getBlock func(*dbutil.Tx) (*coin.SignedBlock, error)) (*ReadableBlockVerbose, error) {
 	var b *coin.SignedBlock
 	var inputs [][]ReadableTransactionInput
 
 	if err := vs.DB.View("GetBlockByHashVerbose", func(tx *dbutil.Tx) error {
 		var err error
-		b, err = vs.Blockchain.GetSignedBlockByHash(tx, hash)
+		b, err = getBlock(tx)
 		if err != nil {
 			return err
 		}
@@ -1348,8 +1364,35 @@ func (vs *Visor) GetBlockByHashVerbose(hash cipher.SHA256) (*ReadableBlockVerbos
 			return nil
 		}
 
+		// The genesis block has no inputs to query or to calculate fees from
+		if b.Head.BkSeq == 0 {
+			if len(b.Block.Body.Transactions) != 1 {
+				logger.Panicf("Genesis block should have only 1 transaction (has %d)", len(b.Block.Body.Transactions))
+			}
+
+			if len(b.Block.Body.Transactions[0].In) != 0 {
+				logger.Panic("Genesis block transaction should not have inputs")
+			}
+
+			inputs = make([][]ReadableTransactionInput, 1)
+
+			return nil
+		}
+
+		// When a transaction was added to a block, its coinhour fee was
+		// calculated based upon the time of the head block.
+		// So we need to look at the previous block
+		prevBlock, err := vs.Blockchain.GetSignedBlockBySeq(tx, b.Head.BkSeq-1)
+		if err != nil {
+			return err
+		}
+
+		if prevBlock == nil {
+			return fmt.Errorf("getBlockVerbose: prevBlock seq %d not found", b.Head.BkSeq-1)
+		}
+
 		for _, txn := range b.Block.Body.Transactions {
-			i, err := vs.getReadableVerboseInputs(tx, b.Head.Time, txn.In)
+			i, err := vs.getReadableVerboseInputs(tx, prevBlock.Block.Head.Time, txn.In)
 			if err != nil {
 				return err
 			}
@@ -1384,33 +1427,21 @@ func (vs *Visor) GetSignedBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
 	return b, nil
 }
 
-// GetBlockBySeqVerbose returns a ReadableBlockVerbose for a given block sequence number
+// GetBlockBySeqVerbose returns a ReadableBlockVerbose for a given block hash
 func (vs *Visor) GetBlockBySeqVerbose(seq uint64) (*ReadableBlockVerbose, error) {
-	var b *coin.SignedBlock
-	var inputs [][]ReadableTransactionInput
+	var b *ReadableBlockVerbose
 
 	if err := vs.DB.View("GetBlockBySeqVerbose", func(tx *dbutil.Tx) error {
 		var err error
-		b, err = vs.Blockchain.GetSignedBlockBySeq(tx, seq)
-		if err != nil {
-			return err
-		}
-
-		for _, txn := range b.Block.Body.Transactions {
-			i, err := vs.getReadableVerboseInputs(tx, b.Head.Time, txn.In)
-			if err != nil {
-				return err
-			}
-
-			inputs = append(inputs, i)
-		}
-
-		return nil
+		b, err = vs.getBlockVerbose(tx, func(tx *dbutil.Tx) (*coin.SignedBlock, error) {
+			return vs.Blockchain.GetSignedBlockBySeq(tx, seq)
+		})
+		return err
 	}); err != nil {
 		return nil, err
 	}
 
-	return NewReadableBlockVerbose(&b.Block, inputs)
+	return b, nil
 }
 
 // GetLastBlocks returns last N blocks
@@ -2187,7 +2218,10 @@ func (vs *Visor) GetVerboseTransactionsForAddress(a cipher.Address) ([]ReadableT
 }
 
 // getReadableVerboseInputs returns ReadableTransactionInputs for a given set of spent transaction inputs
-func (vs *Visor) getReadableVerboseInputs(tx *dbutil.Tx, headTime uint64, inputs []cipher.SHA256) ([]ReadableTransactionInput, error) {
+func (vs *Visor) getReadableVerboseInputs(tx *dbutil.Tx, feeCalcTime uint64, inputs []cipher.SHA256) ([]ReadableTransactionInput, error) {
+	if len(inputs) == 0 {
+		logger.Panic("getReadableVerboseInputs inputs is empty, only the genesis block transaction has no inputs, which shouldn't call this method")
+	}
 	uxOuts, err := vs.history.GetUxOuts(tx, inputs)
 	if err != nil {
 		logger.Error("getVerboseInputData GetUxOuts failed: %v", err)
@@ -2196,7 +2230,7 @@ func (vs *Visor) getReadableVerboseInputs(tx *dbutil.Tx, headTime uint64, inputs
 
 	ret := make([]ReadableTransactionInput, len(inputs))
 	for i, o := range uxOuts {
-		r, err := NewReadableTransactionInput(o.Out, headTime)
+		r, err := NewReadableTransactionInput(o.Out, feeCalcTime)
 		if err != nil {
 			logger.Error("getVerboseInputData NewReadableTransactionInput failed: %v", err)
 			return nil, err

@@ -590,6 +590,12 @@ func testKnownBlocks(t *testing.T) {
 			golden: "block-seq-100.golden",
 			seq:    100,
 		},
+		{
+			name:    "unknown seq",
+			seq:     99999999999999,
+			errCode: http.StatusNotFound,
+			errMsg:  "404 Not Found",
+		},
 	}
 
 	for _, tc := range cases {

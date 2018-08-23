@@ -15,7 +15,7 @@
 				"type": 0,
 				"txid": "4a87de6869c974099e3f5522404fbc7b23f90a8f8dec958bf725317454036cdc",
 				"inner_hash": "53ecc82b426d4b806eb1c743e892edbc7eb7051c88f3fa8afc74a6a5b80cc57a",
-				"fee": 1,
+				"fee": 0,
 				"sigs": [
 					"dbbb5acf0130c39a6b2fd760dda1df5aaefd94d8a0904e6faf959feade87d17a5c754459b635e0048e1019dadb9815a54d8bca4cf234f6876b19b5a0df5e494a00"
 				],
@@ -25,7 +25,7 @@
 						"owner": "NGLS4CYvBdV9HXJDpeY8jrdQDqLeBvfAwc",
 						"coins": "5.000000",
 						"hours": 0,
-						"calculated_hours": 1
+						"calculated_hours": 0
 					}
 				],
 				"outputs": [

@@ -7,11 +7,11 @@
 			"block_seq": 1,
 			"unknown": false
 		},
+		"timestamp": 1427926392,
 		"length": 3846,
 		"type": 0,
 		"txid": "86564b421cd3d4fe6f5f2d7a3e5db9d6fc340892bddd3a150533dff7036d0efe",
 		"inner_hash": "0f7019627886818d2501af189bbac18e21b8e959891c5b2726f89e29355aa10a",
-		"timestamp": 1427926392,
 		"fee": 100037880222122,
 		"sigs": [
 			"be602113fe288f750001ab65f254ceedd8b05b1becc456a0a52a0bea10b8280e38d950933992ad3265e1f81d197036fa634b316f08b3b319ffce081aa43f3bb600"

@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/andreyvit/diff"
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/api"
@@ -223,7 +224,10 @@ func checkGoldenFile(t *testing.T, goldenFile string, td TestData) {
 	c, err := ioutil.ReadAll(f)
 	require.NoError(t, err)
 
-	require.Equal(t, string(c), string(b)+"\n", "json struct output differs from golden file, was a field added to the struct?")
+	sc := string(c)
+	sb := string(b) + "\n"
+
+	require.Equal(t, sc, sb, "JSON struct output differs from golden file, was a field added to the struct?\nDiff:\n"+diff.LineDiff(sc, sb))
 }
 
 func assertResponseError(t *testing.T, err error, errCode int, errMsg string) {

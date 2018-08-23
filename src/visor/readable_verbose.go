@@ -70,13 +70,6 @@ type ReadableBlockTransactionVerbose struct {
 	Out  []ReadableTransactionOutput `json:"outputs"`
 }
 
-// ReadableTransactionVerbose has readable transaction data. It adds TransactionStatus to a ReadableBlockTransactionVerbose
-type ReadableTransactionVerbose struct {
-	ReadableBlockTransactionVerbose
-	Status    TransactionStatus `json:"status"`
-	Timestamp uint64            `json:"timestamp,omitempty"`
-}
-
 // NewReadableBlockTransactionVerbose creates ReadableBlockTransactionVerbose
 func NewReadableBlockTransactionVerbose(txn coin.Transaction, inputs []ReadableTransactionInput, bkSeq uint64) (ReadableBlockTransactionVerbose, error) {
 	if len(inputs) != len(txn.In) {
@@ -140,6 +133,13 @@ func NewReadableBlockTransactionVerbose(txn coin.Transaction, inputs []ReadableT
 		In:   inputs,
 		Out:  out,
 	}, nil
+}
+
+// ReadableTransactionVerbose has readable transaction data. It adds TransactionStatus to a ReadableBlockTransactionVerbose
+type ReadableTransactionVerbose struct {
+	Status    TransactionStatus `json:"status"`
+	Timestamp uint64            `json:"timestamp,omitempty"`
+	ReadableBlockTransactionVerbose
 }
 
 // NewReadableTransactionVerbose creates ReadableTransactionVerbose

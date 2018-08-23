@@ -307,8 +307,8 @@ func onCommandUsageError(command string) gcli.OnUsageErrorFunc {
 	}
 }
 
-func errorWithHelp(c *gcli.Context, err error) {
-	fmt.Fprintf(c.App.Writer, "Error: %v. See '%s %s --help'\n\n", err, c.App.HelpName, c.Command.Name)
+func printHelp(c *gcli.Context) {
+	fmt.Fprintf(c.App.Writer, "See '%s %s --help'\n", c.App.HelpName, c.Command.Name)
 }
 
 func formatJSON(obj interface{}) ([]byte, error) {
@@ -349,9 +349,17 @@ type WalletLoadError struct {
 	error
 }
 
+func (e WalletLoadError) Error() string {
+	return fmt.Sprintf("Load wallet failed: %v", e.error)
+}
+
 // WalletSaveError is returned if a wallet could not be saved
 type WalletSaveError struct {
 	error
+}
+
+func (e WalletSaveError) Error() string {
+	return fmt.Sprintf("Save wallet failed: %v", e.error)
 }
 
 // PasswordReader is an interface for getting password

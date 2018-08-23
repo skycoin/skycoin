@@ -58,13 +58,13 @@ func sendCmd() gcli.Command {
 		Action: func(c *gcli.Context) error {
 			apiClient := APIClientFromContext(c)
 
-			rawtx, err := createRawTxCmdHandler(c)
+			rawTxn, err := createRawTxnCmdHandler(c)
 			if err != nil {
-				errorWithHelp(c, err)
-				return nil
+				printHelp(c)
+				return err
 			}
 
-			txid, err := apiClient.InjectTransaction(rawtx)
+			txid, err := apiClient.InjectTransaction(rawTxn)
 			if err != nil {
 				return err
 			}

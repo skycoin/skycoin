@@ -558,7 +558,7 @@ func TestLoadWallet(t *testing.T) {
 			"not_exist_file.wlt",
 			expect{
 				meta: map[string]string{},
-				err:  fmt.Errorf("load wallet file failed, wallet not_exist_file.wlt doesn't exist"),
+				err:  fmt.Errorf("wallet not_exist_file.wlt doesn't exist"),
 			},
 		},
 		{

@@ -614,7 +614,7 @@ func (w *Wallet) GuardView(password []byte, f func(w *Wallet) error) error {
 // Load loads wallet from a given file
 func Load(wltFile string) (*Wallet, error) {
 	if _, err := os.Stat(wltFile); os.IsNotExist(err) {
-		return nil, fmt.Errorf("load wallet file failed, wallet %s doesn't exist", wltFile)
+		return nil, fmt.Errorf("wallet %s doesn't exist", wltFile)
 	}
 
 	r := &ReadableWallet{}

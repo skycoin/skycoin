@@ -285,11 +285,10 @@ The `-v` option, show verbose logs.
 #### Live Integration Tests
 
 The live integration tests run against a live runnning skycoin node, so before running the test, we
-need to start a skycoin node. Since the `cli` integration test requires the rpc interface enabled,
-we should start node with `rpc-interface`:
+need to start a skycoin node:
 
 ```sh
-./run.sh -launch-browser=false -rpc-interface
+./run.sh -launch-browser=false
 ```
 
 After the skycoin node is up, run the following command to start the live tests:

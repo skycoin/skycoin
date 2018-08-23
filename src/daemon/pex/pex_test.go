@@ -172,7 +172,7 @@ func TestNewPex(t *testing.T) {
 	require.NoError(t, err)
 
 	// check if peers are saved to disk
-	peers, err := loadCachedPeersFile(filepath.Join(dir, PeerDatabaseFilename))
+	peers, err := loadCachedPeersFile(filepath.Join(dir, PeerCacheFilename))
 	require.NoError(t, err)
 
 	for _, p := range testPeers {
@@ -196,7 +196,7 @@ func TestNewPexDisableTrustedPeers(t *testing.T) {
 	require.NoError(t, err)
 
 	// check if peers are saved to disk
-	peers, err := loadCachedPeersFile(filepath.Join(dir, PeerDatabaseFilename))
+	peers, err := loadCachedPeersFile(filepath.Join(dir, PeerCacheFilename))
 	require.NoError(t, err)
 
 	for _, p := range testPeers {
@@ -232,7 +232,7 @@ func TestNewPexLoadCustomPeers(t *testing.T) {
 	require.NoError(t, err)
 
 	// check if peers are saved to disk
-	peers, err := loadCachedPeersFile(filepath.Join(dir, PeerDatabaseFilename))
+	peers, err := loadCachedPeersFile(filepath.Join(dir, PeerCacheFilename))
 	require.NoError(t, err)
 
 	expectedPeers := []string{
@@ -251,53 +251,82 @@ func TestNewPexLoadCustomPeers(t *testing.T) {
 
 func TestPexLoadPeers(t *testing.T) {
 	tt := []struct {
-		name     string
-		peers    []Peer
-		max      int
-		expectN  int
-		expectIN []Peer
+		name        string
+		filename    string
+		peers       []Peer
+		max         int
+		expectN     int
+		expectPeers []Peer
 	}{
 		{
-			"load all",
-			[]Peer{
+			name:     "load all",
+			filename: PeerCacheFilename,
+			peers: []Peer{
 				Peer{Addr: testPeers[0]},
 				Peer{Addr: testPeers[1]},
 			},
-			2,
-			2,
-			[]Peer{
+			max:     2,
+			expectN: 2,
+			expectPeers: []Peer{
 				Peer{Addr: testPeers[0]},
 				Peer{Addr: testPeers[1]},
 			},
 		},
 		{
-			"reach max",
-			[]Peer{
+			name:     "reach max",
+			filename: PeerCacheFilename,
+			peers: []Peer{
 				Peer{Addr: testPeers[0]},
 				Peer{Addr: testPeers[1]},
 				Peer{Addr: testPeers[2]},
 			},
-			2,
-			2,
-			[]Peer{
+			max:     2,
+			expectN: 2,
+			expectPeers: []Peer{
 				Peer{Addr: testPeers[0]},
 				Peer{Addr: testPeers[1]},
 				Peer{Addr: testPeers[2]},
 			},
 		},
 		{
-			"including invalid addr",
-			[]Peer{
+			name:     "including invalid addr",
+			filename: PeerCacheFilename,
+			peers: []Peer{
 				Peer{Addr: wrongPortPeer},
 				Peer{Addr: testPeers[1]},
 				Peer{Addr: testPeers[2]},
 			},
-			2,
-			2,
-			[]Peer{
+			max:     2,
+			expectN: 2,
+			expectPeers: []Peer{
 				Peer{Addr: testPeers[1]},
 				Peer{Addr: testPeers[2]},
 			},
+		},
+		{
+			name:     "load all, fallback on oldPeerCacheFilename",
+			filename: oldPeerCacheFilename,
+			peers: []Peer{
+				Peer{Addr: testPeers[0]},
+				Peer{Addr: testPeers[1]},
+			},
+			max:     2,
+			expectN: 2,
+			expectPeers: []Peer{
+				Peer{Addr: testPeers[0]},
+				Peer{Addr: testPeers[1]},
+			},
+		},
+		{
+			name:     "no peers file",
+			filename: "foo.json",
+			peers: []Peer{
+				Peer{Addr: testPeers[0]},
+				Peer{Addr: testPeers[1]},
+			},
+			max:         2,
+			expectN:     0,
+			expectPeers: nil,
 		},
 	}
 
@@ -308,7 +337,8 @@ func TestPexLoadPeers(t *testing.T) {
 			defer os.Remove(dir)
 
 			// write peers to file
-			fn := filepath.Join(dir, PeerDatabaseFilename)
+			fn := filepath.Join(dir, tc.filename)
+			defer os.Remove(fn)
 
 			peersMap := make(map[string]Peer)
 			for _, p := range tc.peers {
@@ -333,7 +363,7 @@ func TestPexLoadPeers(t *testing.T) {
 			require.Len(t, px.peerlist.peers, tc.expectN)
 
 			psm := make(map[string]Peer)
-			for _, p := range tc.expectIN {
+			for _, p := range tc.expectPeers {
 				psm[p.Addr] = p
 			}
 
@@ -551,11 +581,11 @@ func TestPexTrustedPublic(t *testing.T) {
 
 func TestPexRandomExchangeable(t *testing.T) {
 	tt := []struct {
-		name     string
-		peers    []Peer
-		n        int
-		expectN  int
-		expectIN []Peer
+		name        string
+		peers       []Peer
+		n           int
+		expectN     int
+		expectPeers []Peer
 	}{
 		{
 			"n=0 exchangeable=0",
@@ -659,9 +689,9 @@ func TestPexRandomExchangeable(t *testing.T) {
 			peers := pex.RandomExchangeable(tc.n)
 			require.Len(t, peers, tc.expectN)
 
-			// map expectIN peers
+			// map expectPeers peers
 			psm := make(map[string]Peer)
-			for _, p := range tc.expectIN {
+			for _, p := range tc.expectPeers {
 				psm[p.Addr] = p
 			}
 
@@ -713,11 +743,11 @@ func TestPeerRandomPublic(t *testing.T) {
 
 func TestPexRandomPublic(t *testing.T) {
 	tt := []struct {
-		name     string
-		peers    []Peer
-		n        int
-		expectN  int
-		expectIN []Peer
+		name        string
+		peers       []Peer
+		n           int
+		expectN     int
+		expectPeers []Peer
 	}{
 		{
 			"n=0 public=0",
@@ -824,11 +854,11 @@ func TestPexRandomPublic(t *testing.T) {
 
 			// map the peers
 			psm := make(map[string]Peer)
-			for _, p := range tc.expectIN {
+			for _, p := range tc.expectPeers {
 				psm[p.Addr] = p
 			}
 
-			// check if the returned peers are in the expectIN
+			// check if the returned peers are in the expectPeers
 			for _, p := range peers {
 				v, ok := psm[p.Addr]
 				require.True(t, ok)

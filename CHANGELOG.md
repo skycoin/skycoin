@@ -191,6 +191,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `total_coinhour_supply` and `current_coinhour_supply` to `/coinSupply` endpoint
 - #800, Add entropy parameter to `/wallet/newSeed` endpoint. Entropy can be 128 (default) or 256, corresponding to 12- and 24-word seeds respectively
 - #866, Include coins and hours in `/explorer/address` inputs
+- Rename cached `peers.txt` file to `peers.json`
 
 ### Removed
 

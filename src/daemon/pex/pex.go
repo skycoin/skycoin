@@ -33,8 +33,10 @@ import (
 const (
 	// DefaultPeerListURL is the default URL to download remote peers list from, if enabled
 	DefaultPeerListURL = "https://downloads.skycoin.net/blockchain/peers.txt"
-	// PeerDatabaseFilename filename for disk-cached peers
-	PeerDatabaseFilename = "peers.txt"
+	// PeerCacheFilename filename for disk-cached peers
+	PeerCacheFilename = "peers.json"
+	// oldPeerCacheFilename previous filename for disk-cached peers. The cache loader will fall back onto this filename if it can't load peers.json
+	oldPeerCacheFilename = "peers.txt"
 	// MaxPeerRetryTimes is the maximum number of times to retry a peer
 	MaxPeerRetryTimes = 10
 )
@@ -334,16 +336,27 @@ func (px *Pex) loadCache() error {
 	px.Lock()
 	defer px.Unlock()
 
-	fp := filepath.Join(px.Config.DataDirectory, PeerDatabaseFilename)
+	fp := filepath.Join(px.Config.DataDirectory, PeerCacheFilename)
 	peers, err := loadCachedPeersFile(fp)
 
 	if err != nil {
 		return err
 	}
 
-	// file does not exist
+	// If the PeerCacheFilename peers.json file does not exist, try to load the old peers.txt file
 	if peers == nil {
-		return nil
+		logger.Infof("Peer cache %s not found, falling back on %s", PeerCacheFilename, oldPeerCacheFilename)
+
+		fp := filepath.Join(px.Config.DataDirectory, oldPeerCacheFilename)
+		peers, err = loadCachedPeersFile(fp)
+		if err != nil {
+			return err
+		}
+
+		if peers == nil {
+			logger.Infof("Fallback peer cache %s not found", oldPeerCacheFilename)
+			return nil
+		}
 	}
 
 	// remove invalid peers and limit the max number of peers to pex.Config.Max
@@ -396,7 +409,7 @@ func (px *Pex) save() error {
 	px.Lock()
 	defer px.Unlock()
 
-	fn := filepath.Join(px.Config.DataDirectory, PeerDatabaseFilename)
+	fn := filepath.Join(px.Config.DataDirectory, PeerCacheFilename)
 	return px.peerlist.save(fn)
 }
 
@@ -638,7 +651,7 @@ func backoffDownloadText(url string) (string, error) {
 // The peers list format is newline separated list of ip:port strings
 // Any lines that don't parse to an ip:port are skipped, otherwise they return an error
 // Localhost ip:port addresses are ignored
-// NOTE: this does not parse the cached peers.txt file in the data directory, which is a JSON file
+// NOTE: this does not parse the cached peers.json file in the data directory, which is a JSON file
 // and is loaded by loadCachedPeersFile
 func parseRemotePeerList(body string) []string {
 	var peers []string
@@ -662,13 +675,13 @@ func parseRemotePeerList(body string) []string {
 	return peers
 }
 
-// parseRemotePeerList parses a remote peers.txt file
+// parseLocalPeerList parses a local peers.txt file
 // The peers list format is newline separated list of ip:port strings
 // Empty lines and lines that begin with # are treated as comment lines
 // Otherwise, the line is parsed as an ip:port
 // If the line fails to parse, an error is returned
 // Localhost addresses are allowed if allowLocalhost is true
-// NOTE: this does not parse the cached peers.txt file in the data directory, which is a JSON file
+// NOTE: this does not parse the cached peers.json file in the data directory, which is a JSON file
 // and is loaded by loadCachedPeersFile
 func parseLocalPeerList(body string, allowLocalhost bool) ([]string, error) {
 	var peers []string

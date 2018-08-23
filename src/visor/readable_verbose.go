@@ -1,6 +1,7 @@
 package visor
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -9,7 +10,7 @@ import (
 
 // ReadableBlockBodyVerbose represents a verbose readable block body
 type ReadableBlockBodyVerbose struct {
-	Transactions []ReadableTransactionVerbose `json:"txns"`
+	Transactions []ReadableBlockTransactionVerbose `json:"txns"`
 }
 
 // ReadableBlockVerbose represents a readable block with verbose data
@@ -19,40 +20,86 @@ type ReadableBlockVerbose struct {
 	Size int                      `json:"size'`
 }
 
-// ReadableTransactionVerbose has readable transaction data. It differs from ReadableTransaction
-// in that it includes metadata for transaction inputs
-type ReadableTransactionVerbose struct {
-	Status    TransactionStatus `json:"status"`
-	Length    uint32            `json:"length"`
-	Type      uint8             `json:"type"`
-	Hash      string            `json:"txid"`
-	InnerHash string            `json:"inner_hash"`
-	Timestamp uint64            `json:"timestamp,omitempty"`
-	Fee       uint64            `json:"fee"`
+// NewReadableBlockBodyVerbose creates a verbose readable block body
+func NewReadableBlockBodyVerbose(b *coin.Block, inputs [][]ReadableTransactionInput) (*ReadableBlockBodyVerbose, error) {
+	if len(inputs) != len(b.Body.Transactions) {
+		return nil, errors.New("NewReadableBlockBodyVerbose: len(inputs) != len(b.Body.Transactions)")
+	}
+
+	txns := make([]ReadableBlockTransactionVerbose, len(b.Body.Transactions))
+	for i := range b.Body.Transactions {
+		t := b.Body.Transactions[i]
+
+		tx, err := NewReadableBlockTransactionVerbose(t, inputs[i], b.Head.BkSeq)
+		if err != nil {
+			return nil, err
+		}
+		txns[i] = tx
+	}
+
+	return &ReadableBlockBodyVerbose{
+		Transactions: txns,
+	}, nil
+}
+
+// NewReadableBlockVerbose creates a verbose readable block
+func NewReadableBlockVerbose(b *coin.Block, inputs [][]ReadableTransactionInput) (*ReadableBlockVerbose, error) {
+	body, err := NewReadableBlockBodyVerbose(b, inputs)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ReadableBlockVerbose{
+		Head: NewReadableBlockHeader(&b.Head),
+		Body: *body,
+		Size: b.Size(),
+	}, nil
+}
+
+// ReadableBlockTransactionVerbose has readable transaction data for transactions inside a block. It differs from ReadableTransaction
+// in that it includes metadata for transaction inputs and the calculated coinhour fee spent by the block
+type ReadableBlockTransactionVerbose struct {
+	Length    uint32 `json:"length"`
+	Type      uint8  `json:"type"`
+	Hash      string `json:"txid"`
+	InnerHash string `json:"inner_hash"`
+	Fee       uint64 `json:"fee"`
 
 	Sigs []string                    `json:"sigs"`
 	In   []ReadableTransactionInput  `json:"inputs"`
 	Out  []ReadableTransactionOutput `json:"outputs"`
 }
 
-// NewReadableTransactionVerbose creates ReadableTransactionVerbose
-func NewReadableTransactionVerbose(t Transaction, inputs []ReadableTransactionInput) (ReadableTransactionVerbose, error) {
-	// Genesis transaction use empty SHA256 as txid
-	txID := cipher.SHA256{}
-	if t.Status.BlockSeq != 0 {
-		txID = t.Txn.Hash()
+// ReadableTransactionVerbose has readable transaction data. It adds TransactionStatus to a ReadableBlockTransactionVerbose
+type ReadableTransactionVerbose struct {
+	ReadableBlockTransactionVerbose
+	Status    TransactionStatus `json:"status"`
+	Timestamp uint64            `json:"timestamp,omitempty"`
+}
+
+// NewReadableBlockTransactionVerbose creates ReadableBlockTransactionVerbose
+func NewReadableBlockTransactionVerbose(txn coin.Transaction, inputs []ReadableTransactionInput, bkSeq uint64) (ReadableBlockTransactionVerbose, error) {
+	if len(inputs) != len(txn.In) {
+		return ReadableBlockTransactionVerbose{}, errors.New("NewReadableTransactionVerbose: len(inputs) != len(txn.In)")
 	}
 
-	sigs := make([]string, len(t.Txn.Sigs))
-	for i, s := range t.Txn.Sigs {
+	// Genesis transaction uses empty SHA256 as txid
+	// FIXME: If/when the blockchain is regenerated, use a real hash as the txID for the genesis block. The bkSeq argument can be removed then.
+	txID := cipher.SHA256{}
+	if bkSeq != 0 {
+		txID = txn.Hash()
+	}
+
+	sigs := make([]string, len(txn.Sigs))
+	for i, s := range txn.Sigs {
 		sigs[i] = s.Hex()
 	}
 
-	out := make([]ReadableTransactionOutput, len(t.Txn.Out))
-	for i := range t.Txn.Out {
-		o, err := NewReadableTransactionOutput(&t.Txn.Out[i], txID)
+	out := make([]ReadableTransactionOutput, len(txn.Out))
+	for i := range txn.Out {
+		o, err := NewReadableTransactionOutput(&txn.Out[i], txID)
 		if err != nil {
-			return ReadableTransactionVerbose{}, err
+			return ReadableBlockTransactionVerbose{}, err
 		}
 
 		out[i] = *o
@@ -67,7 +114,7 @@ func NewReadableTransactionVerbose(t Transaction, inputs []ReadableTransactionIn
 	}
 
 	var hoursOut uint64
-	for _, o := range t.Txn.Out {
+	for _, o := range txn.Out {
 		if _, err := coin.AddUint64(hoursOut, o.Hours); err != nil {
 			logger.Critical().Warningf("Ignoring NewReadableTransactionVerbose summing txn %s outputs hours error: %v", txID.Hex(), err)
 		}
@@ -77,22 +124,34 @@ func NewReadableTransactionVerbose(t Transaction, inputs []ReadableTransactionIn
 
 	if hoursIn < hoursOut {
 		err := fmt.Errorf("NewReadableTransactionVerbose input hours is less than output hours, txid=%s", txID.Hex())
-		return ReadableTransactionVerbose{}, err
+		return ReadableBlockTransactionVerbose{}, err
 	}
 
 	fee := hoursIn - hoursOut
 
-	return ReadableTransactionVerbose{
-		Status:    t.Status,
-		Length:    t.Txn.Length,
-		Type:      t.Txn.Type,
-		Hash:      t.Txn.Hash().Hex(),
-		InnerHash: t.Txn.InnerHash.Hex(),
-		Timestamp: t.Time,
+	return ReadableBlockTransactionVerbose{
+		Length:    txn.Length,
+		Type:      txn.Type,
+		Hash:      txn.Hash().Hex(),
+		InnerHash: txn.InnerHash.Hex(),
 		Fee:       fee,
 
 		Sigs: sigs,
 		In:   inputs,
 		Out:  out,
+	}, nil
+}
+
+// NewReadableTransactionVerbose creates ReadableTransactionVerbose
+func NewReadableTransactionVerbose(txn Transaction, inputs []ReadableTransactionInput) (ReadableTransactionVerbose, error) {
+	rb, err := NewReadableBlockTransactionVerbose(txn.Txn, inputs, txn.Status.BlockSeq)
+	if err != nil {
+		return ReadableTransactionVerbose{}, nil
+	}
+
+	return ReadableTransactionVerbose{
+		Status:                          txn.Status,
+		Timestamp:                       txn.Time,
+		ReadableBlockTransactionVerbose: rb,
 	}, nil
 }

@@ -36,9 +36,9 @@ func NewBlockchainMetadata(head *coin.SignedBlock, unconfirmedLen, unspentsLen u
 // Transaction wraps around coin.Transaction, tagged with its status.  This allows us
 // to include unconfirmed txns
 type Transaction struct {
-	Txn    coin.Transaction  //`json:"txn"`
-	Status TransactionStatus //`json:"status"`
-	Time   uint64            //`json:"time"`
+	Txn    coin.Transaction
+	Status TransactionStatus
+	Time   uint64
 }
 
 // TransactionStatus represents the transaction status
@@ -403,7 +403,9 @@ type ReadableUnconfirmedTxn struct {
 
 // NewReadableUnconfirmedTxn creates a readable unconfirmed transaction
 func NewReadableUnconfirmedTxn(unconfirmed *UnconfirmedTxn) (*ReadableUnconfirmedTxn, error) {
-	tx, err := NewReadableTransaction(&Transaction{Txn: unconfirmed.Txn})
+	tx, err := NewReadableTransaction(&Transaction{
+		Txn: unconfirmed.Txn,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -504,8 +506,10 @@ func NewReadableBlockBody(b *coin.Block) (*ReadableBlockBody, error) {
 	txns := make([]ReadableTransaction, len(b.Body.Transactions))
 	for i := range b.Body.Transactions {
 		t := Transaction{
-			Txn:    b.Body.Transactions[i],
-			Status: TransactionStatus{BlockSeq: b.Seq()},
+			Txn: b.Body.Transactions[i],
+			Status: TransactionStatus{
+				BlockSeq: b.Seq(),
+			},
 		}
 
 		tx, err := NewReadableTransaction(&t)
@@ -514,6 +518,7 @@ func NewReadableBlockBody(b *coin.Block) (*ReadableBlockBody, error) {
 		}
 		txns[i] = *tx
 	}
+
 	return &ReadableBlockBody{
 		Transactions: txns,
 	}, nil

@@ -401,7 +401,7 @@ func TestWalletSpendHandler(t *testing.T) {
 				tc.gatewaySpendResult = &coin.Transaction{}
 			}
 
-			gateway := &GatewayerMock{}
+			gateway := &MockGatewayer{}
 			addr, _ := cipher.DecodeBase58Address(tc.dst)
 			gateway.On("Spend", tc.walletID, []byte(tc.password), tc.coins, addr).Return(tc.gatewaySpendResult, tc.gatewaySpendErr)
 			gateway.On("GetWalletBalance", tc.walletID).Return(tc.gatewayGetWalletBalanceResult.BalancePair,
@@ -539,7 +539,7 @@ func TestWalletGet(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			gateway := &GatewayerMock{}
+			gateway := &MockGatewayer{}
 			gateway.On("GetWallet", tc.walletID).Return(&tc.gatewayGetWalletResult, tc.gatewayGetWalletErr)
 			v := url.Values{}
 
@@ -677,7 +677,7 @@ func TestWalletBalanceHandler(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			gateway := &GatewayerMock{}
+			gateway := &MockGatewayer{}
 			gateway.On("GetWalletBalance", tc.walletID).Return(tc.gatewayGetWalletBalanceResult.BalancePair,
 				tc.gatewayGetWalletBalanceResult.Addresses, tc.gatewayBalanceErr)
 
@@ -824,7 +824,7 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			gateway := &GatewayerMock{}
+			gateway := &MockGatewayer{}
 			gateway.On("UpdateWalletLabel", tc.walletID, tc.label).Return(tc.gatewayUpdateWalletLabelErr)
 
 			endpoint := "/api/v1/wallet/update"
@@ -944,7 +944,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		gateway := &GatewayerMock{}
+		gateway := &MockGatewayer{}
 		gateway.On("GetWalletUnconfirmedTxns", tc.walletID).Return(tc.gatewayGetWalletUnconfirmedTxnsResult, tc.gatewayGetWalletUnconfirmedTxnsErr)
 
 		endpoint := "/api/v1/wallet/transactions"
@@ -1229,7 +1229,7 @@ func TestWalletCreateHandler(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			gateway := &GatewayerMock{}
+			gateway := &MockGatewayer{}
 			if tc.options.ScanN == 0 {
 				tc.options.ScanN = 1
 			}
@@ -1368,7 +1368,7 @@ func TestWalletNewSeed(t *testing.T) {
 	// Loop over each test case
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			gateway := &GatewayerMock{}
+			gateway := &MockGatewayer{}
 			gateway.On("IsWalletAPIEnabled").Return(true)
 
 			endpoint := "/api/v1/wallet/newSeed"
@@ -1458,13 +1458,16 @@ func TestGetWalletSeed(t *testing.T) {
 			csrfDisabled: true,
 		},
 		{
-			name:              "400 - missing wallet id ",
-			method:            http.MethodPost,
-			wltID:             "",
-			password:          "pwd",
-			gatewayReturnArgs: []interface{}{},
-			expectStatus:      http.StatusBadRequest,
-			expectErr:         "400 Bad Request - missing wallet id",
+			name:     "400 - missing wallet id ",
+			method:   http.MethodPost,
+			wltID:    "",
+			password: "pwd",
+			gatewayReturnArgs: []interface{}{
+				"seed",
+				nil,
+			},
+			expectStatus: http.StatusBadRequest,
+			expectErr:    "400 Bad Request - missing wallet id",
 		},
 		{
 			name:     "400 - missing password",
@@ -1472,7 +1475,7 @@ func TestGetWalletSeed(t *testing.T) {
 			wltID:    "wallet.wlt",
 			password: "",
 			gatewayReturnArgs: []interface{}{
-				nil,
+				"",
 				wallet.ErrMissingPassword,
 			},
 			expectStatus: http.StatusBadRequest,
@@ -1484,7 +1487,7 @@ func TestGetWalletSeed(t *testing.T) {
 			wltID:    "wallet.wlt",
 			password: "pwd",
 			gatewayReturnArgs: []interface{}{
-				nil,
+				"",
 				wallet.ErrInvalidPassword,
 			},
 			expectStatus: http.StatusUnauthorized,
@@ -1496,7 +1499,7 @@ func TestGetWalletSeed(t *testing.T) {
 			wltID:    "wallet.wlt",
 			password: "pwd",
 			gatewayReturnArgs: []interface{}{
-				nil,
+				"",
 				wallet.ErrWalletNotEncrypted,
 			},
 			expectStatus: http.StatusBadRequest,
@@ -1508,7 +1511,7 @@ func TestGetWalletSeed(t *testing.T) {
 			wltID:    "wallet.wlt",
 			password: "pwd",
 			gatewayReturnArgs: []interface{}{
-				nil,
+				"",
 				wallet.ErrWalletNotExist,
 			},
 			expectStatus: http.StatusNotFound,
@@ -1524,7 +1527,7 @@ func TestGetWalletSeed(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			gateway.On("GetWalletSeed", tc.wltID, []byte(tc.password)).Return(tc.gatewayReturnArgs...)
 
 			endpoint := "/api/v1/wallet/seed"
@@ -1737,7 +1740,7 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			gateway := &GatewayerMock{}
+			gateway := &MockGatewayer{}
 			gateway.On("NewAddresses", tc.walletID, []byte(tc.password), tc.n).Return(tc.gatewayNewAddressesResult, tc.gatewayNewAddressesErr)
 
 			endpoint := "/api/v1/wallet/newAddress"
@@ -1824,7 +1827,7 @@ func TestGetWalletFolderHandler(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		gateway := &GatewayerMock{}
+		gateway := &MockGatewayer{}
 		gateway.On("GetWalletDir").Return(tc.getWalletDirResponse, tc.getWalletDirErr)
 		endpoint := "/api/v1/wallets/folderName"
 
@@ -2047,7 +2050,7 @@ func TestGetWallets(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		gateway := &GatewayerMock{}
+		gateway := &MockGatewayer{}
 		gateway.On("GetWallets").Return(tc.getWalletsResponse, tc.getWalletsErr)
 
 		endpoint := "/api/v1/wallets"
@@ -2130,7 +2133,7 @@ func TestWalletUnloadHandler(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			gateway := &GatewayerMock{}
+			gateway := &MockGatewayer{}
 			gateway.On("UnloadWallet", tc.walletID).Return(tc.unloadWalletErr)
 
 			endpoint := "/api/v1/wallet/unload"
@@ -2282,7 +2285,7 @@ func TestEncryptWallet(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			gateway.On("EncryptWallet", tc.wltID, []byte(tc.password)).Return(tc.gatewayReturn.w, tc.gatewayReturn.err)
 
 			endpoint := "/api/v1/wallet/encrypt"
@@ -2468,7 +2471,7 @@ func TestDecryptWallet(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			gateway.On("DecryptWallet", tc.wltID, []byte(tc.password)).Return(tc.gatewayReturn.w, tc.gatewayReturn.err)
 
 			endpoint := "/api/v1/wallet/decrypt"

@@ -10,7 +10,7 @@ import (
 )
 
 //go:generate go install
-//go:generate goautomock -template=testify Gatewayer
+//go:generate mockery -name Gatewayer -case underscore -inpkg -testonly
 
 // Gatewayer interface for Gateway methods
 type Gatewayer interface {
@@ -29,7 +29,9 @@ type Gatewayer interface {
 	DecryptWallet(wltID string, password []byte) (*wallet.Wallet, error)
 	GetWalletSeed(wltID string, password []byte) (string, error)
 	GetSignedBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, error)
+	GetBlockByHashVerbose(hash cipher.SHA256) (*visor.ReadableBlockVerbose, error)
 	GetSignedBlockBySeq(seq uint64) (*coin.SignedBlock, error)
+	GetBlockBySeqVerbose(seq uint64) (*visor.ReadableBlockVerbose, error)
 	GetBlocks(start, end uint64) (*visor.ReadableBlocks, error)
 	GetLastBlocks(num uint64) (*visor.ReadableBlocks, error)
 	GetBuildInfo() visor.BuildInfo
@@ -49,7 +51,7 @@ type Gatewayer interface {
 	ResendUnconfirmedTxns() (*daemon.ResendResult, error)
 	GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error)
 	GetAddrUxOuts(addr []cipher.Address) ([]*historydb.UxOut, error)
-	GetVerboseTransactionsForAddress(a cipher.Address) ([]daemon.ReadableTransaction, error)
+	GetVerboseTransactionsForAddress(a cipher.Address) ([]visor.ReadableTransactionVerbose, error)
 	GetRichlist(includeDistribution bool) (visor.Richlist, error)
 	GetAddressCount() (uint64, error)
 	GetHealth() (*daemon.Health, error)

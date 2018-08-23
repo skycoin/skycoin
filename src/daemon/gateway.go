@@ -287,12 +287,32 @@ func (gw *Gateway) GetSignedBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, 
 	return b, err
 }
 
+// GetBlockByHashVerbose returns the block by hash
+func (gw *Gateway) GetBlockByHashVerbose(hash cipher.SHA256) (*visor.ReadableBlockVerbose, error) {
+	var b *visor.ReadableBlockVerbose
+	var err error
+	gw.strand("GetBlockByHashVerbose", func() {
+		b, err = gw.v.GetBlockByHashVerbose(hash)
+	})
+	return b, err
+}
+
 // GetSignedBlockBySeq returns block by seq
 func (gw *Gateway) GetSignedBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
 	var b *coin.SignedBlock
 	var err error
 	gw.strand("GetSignedBlockBySeq", func() {
 		b, err = gw.v.GetSignedBlockBySeq(seq)
+	})
+	return b, err
+}
+
+// GetBlockBySeqVerbose returns the block by hash
+func (gw *Gateway) GetBlockBySeqVerbose(seq uint64) (*visor.ReadableBlockVerbose, error) {
+	var b *visor.ReadableBlockVerbose
+	var err error
+	gw.strand("GetBlockBySeqVerbose", func() {
+		b, err = gw.v.GetBlockBySeqVerbose(seq)
 	})
 	return b, err
 }
@@ -521,16 +541,11 @@ type TransactionResults struct {
 func NewTransactionResults(txs []visor.Transaction) (*TransactionResults, error) {
 	txRlts := make([]TransactionResult, 0, len(txs))
 	for _, tx := range txs {
-		rbTx, err := visor.NewReadableTransaction(&tx)
+		rTx, err := NewTransactionResult(&tx)
 		if err != nil {
 			return nil, err
 		}
-
-		txRlts = append(txRlts, TransactionResult{
-			Transaction: *rbTx,
-			Status:      tx.Status,
-			Time:        tx.Time,
-		})
+		txRlts = append(txRlts, *rTx)
 	}
 
 	return &TransactionResults{

@@ -115,7 +115,7 @@ func TestGetUxOutByID(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			endpoint := "/api/v1/uxout"
 			gateway.On("GetUxOutByID", tc.getGetUxOutByIDArg).Return(tc.getGetUxOutByIDResponse, tc.getGetUxOutByIDError)
 
@@ -234,7 +234,7 @@ func TestGetAddrUxOuts(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/address_uxouts"
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			gateway.On("GetAddrUxOuts", tc.getAddrUxOutsArg).Return(tc.getAddrUxOutsResponse, tc.getAddrUxOutsError)
 
 			v := url.Values{}

@@ -97,7 +97,7 @@ func TestGetOutputsHandler(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			endpoint := "/api/v1/outputs"
 			gateway.On("GetUnspentOutputs", mock.Anything).Return(tc.getUnspentOutputsResponse, tc.getUnspentOutputsError)
 
@@ -258,7 +258,7 @@ func TestGetBalanceHandler(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			endpoint := "/api/v1/balance"
 			gateway.On("GetBalanceOfAddrs", tc.getBalanceOfAddrsArg).Return(tc.getBalanceOfAddrsResponse, tc.getBalanceOfAddrsError)
 
@@ -348,7 +348,7 @@ func TestEnableGUI(t *testing.T) {
 			req, err := http.NewRequest(http.MethodGet, tc.endpoint, nil)
 			require.NoError(t, err)
 
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 
 			rr := httptest.NewRecorder()
 			handler := newServerMux(muxConfig{
@@ -442,7 +442,7 @@ func TestContentSecurityPolicy(t *testing.T) {
 			req, err := http.NewRequest(http.MethodGet, tc.endpoint, nil)
 			require.NoError(t, err)
 
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			gateway.On("GetBuildInfo").Return(visor.BuildInfo{})
 
 			rr := httptest.NewRecorder()

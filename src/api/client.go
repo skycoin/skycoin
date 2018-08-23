@@ -863,12 +863,12 @@ func (c *Client) VerifyAddress(addr string) (*VerifyAddressResponse, error) {
 }
 
 // AddressTransactions makes a request to GET /api/v1/explorer/address
-func (c *Client) AddressTransactions(addr string) ([]daemon.ReadableTransaction, error) {
+func (c *Client) AddressTransactions(addr string) ([]visor.ReadableTransactionVerbose, error) {
 	v := url.Values{}
 	v.Add("address", addr)
 	endpoint := "/api/v1/explorer/address?" + v.Encode()
 
-	var b []daemon.ReadableTransaction
+	var b []visor.ReadableTransactionVerbose
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}

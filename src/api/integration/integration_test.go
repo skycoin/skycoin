@@ -1791,7 +1791,7 @@ func TestStableAddressTransactions(t *testing.T) {
 
 			require.NoError(t, err)
 
-			var expected []daemon.ReadableTransaction
+			var expected []visor.ReadableTransactionVerbose
 			checkGoldenFile(t, tc.golden, TestData{txns, &expected})
 		})
 	}
@@ -1840,7 +1840,7 @@ func TestLiveAddressTransactions(t *testing.T) {
 
 			require.NoError(t, err)
 
-			var expected []daemon.ReadableTransaction
+			var expected []visor.ReadableTransactionVerbose
 			loadGoldenFile(t, tc.golden, TestData{txns, &expected})
 
 			// Recaculate the height if it's live test

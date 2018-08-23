@@ -162,7 +162,9 @@ func (c Config) Verify() error {
 }
 
 //go:generate go install
-//go:generate goautomock -template=testify Historyer
+//go:generate mockery -name Historyer -case underscore -inpkg -testonly
+//go:generate mockery -name Blockchainer -case underscore -inpkg -testonly
+//go:generate mockery -name UnconfirmedTxnPooler -case underscore -inpkg -testonly
 
 // Historyer is the interface that provides methods for accessing history data that are parsed from blockchain.
 type Historyer interface {
@@ -1330,6 +1332,40 @@ func (vs *Visor) GetSignedBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, er
 	return sb, nil
 }
 
+// GetBlockByHashVerbose returns a ReadableBlockVerbose for a given block hash
+func (vs *Visor) GetBlockByHashVerbose(hash cipher.SHA256) (*ReadableBlockVerbose, error) {
+	var b *coin.SignedBlock
+	var inputs [][]ReadableTransactionInput
+
+	if err := vs.DB.View("GetBlockByHashVerbose", func(tx *dbutil.Tx) error {
+		var err error
+		b, err = vs.Blockchain.GetSignedBlockByHash(tx, hash)
+		if err != nil {
+			return err
+		}
+
+		headTime, err := vs.Blockchain.Time(tx)
+		if err != nil {
+			return err
+		}
+
+		for _, txn := range b.Block.Body.Transactions {
+			i, err := vs.getReadableVerboseInputs(tx, headTime, txn.In)
+			if err != nil {
+				return err
+			}
+
+			inputs = append(inputs, i)
+		}
+
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return NewReadableBlockVerbose(&b.Block, inputs)
+}
+
 // GetSignedBlockBySeq get block of specific seq, return nil on not found.
 func (vs *Visor) GetSignedBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
 	var b *coin.SignedBlock
@@ -1343,6 +1379,40 @@ func (vs *Visor) GetSignedBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
 	}
 
 	return b, nil
+}
+
+// GetBlockBySeqVerbose returns a ReadableBlockVerbose for a given block sequence number
+func (vs *Visor) GetBlockBySeqVerbose(seq uint64) (*ReadableBlockVerbose, error) {
+	var b *coin.SignedBlock
+	var inputs [][]ReadableTransactionInput
+
+	if err := vs.DB.View("GetBlockBySeqVerbose", func(tx *dbutil.Tx) error {
+		var err error
+		b, err = vs.Blockchain.GetSignedBlockBySeq(tx, seq)
+		if err != nil {
+			return err
+		}
+
+		headTime, err := vs.Blockchain.Time(tx)
+		if err != nil {
+			return err
+		}
+
+		for _, txn := range b.Block.Body.Transactions {
+			i, err := vs.getReadableVerboseInputs(tx, headTime, txn.In)
+			if err != nil {
+				return err
+			}
+
+			inputs = append(inputs, i)
+		}
+
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return NewReadableBlockVerbose(&b.Block, inputs)
 }
 
 // GetLastBlocks returns last N blocks
@@ -2116,4 +2186,25 @@ func (vs *Visor) GetVerboseTransactionsForAddress(a cipher.Address) ([]ReadableT
 	}
 
 	return resTxns, nil
+}
+
+// getReadableVerboseInputs returns ReadableTransactionInputs for a given set of spent transaction inputs
+func (vs *Visor) getReadableVerboseInputs(tx *dbutil.Tx, headTime uint64, inputs []cipher.SHA256) ([]ReadableTransactionInput, error) {
+	uxOuts, err := vs.history.GetUxOuts(tx, inputs)
+	if err != nil {
+		logger.Error("getVerboseInputData GetUxOuts failed: %v", err)
+		return nil, err
+	}
+
+	ret := make([]ReadableTransactionInput, len(inputs))
+	for i, o := range uxOuts {
+		r, err := NewReadableTransactionInput(o.Out, headTime)
+		if err != nil {
+			logger.Error("getVerboseInputData NewReadableTransactionInput failed: %v", err)
+			return nil, err
+		}
+		ret[i] = *r
+	}
+
+	return ret, nil
 }

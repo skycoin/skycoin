@@ -262,7 +262,7 @@ loop:
 				break loop
 			default:
 				// without the default case the select will block.
-				logger.Error(err)
+				logger.Error(err.Error())
 				continue
 			}
 		}

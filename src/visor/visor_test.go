@@ -1860,7 +1860,7 @@ func TestGetTransactions(t *testing.T) {
 				uncfmTxPool.txs = append(uncfmTxPool.txs, txs.UncfmTxs...)
 			}
 
-			bc := NewBlockchainerMock()
+			bc := &MockBlockchainer{}
 			for i, b := range tc.blocks {
 				bc.On("GetSignedBlockBySeq", matchTx, b.Seq()).Return(&tc.blocks[i], nil)
 			}
@@ -2668,9 +2668,9 @@ func TestGetCreateTransactionAuxs(t *testing.T) {
 			db, shutdown := testutil.PrepareDB(t)
 			defer shutdown()
 
-			unconfirmed := NewUnconfirmedTxnPoolerMock()
-			bc := NewBlockchainerMock()
-			unspent := NewUnspentPoolerMock()
+			unconfirmed := &MockUnconfirmedTxnPooler{}
+			bc := &MockBlockchainer{}
+			unspent := &MockUnspentPooler{}
 			require.Implements(t, (*blockdb.UnspentPooler)(nil), unspent)
 
 			v := &Visor{
@@ -2970,9 +2970,9 @@ func TestVerifyTxnVerbose(t *testing.T) {
 			db, shutdown := testutil.PrepareDB(t)
 			defer shutdown()
 
-			history := NewHistoryerMock()
-			bc := NewBlockchainerMock()
-			unspent := NewUnspentPoolerMock()
+			history := &MockHistoryer{}
+			bc := &MockBlockchainer{}
+			unspent := &MockUnspentPooler{}
 
 			bc.On("Unspent").Return(unspent)
 			bc.On("Head", matchTx).Return(&head, nil)
@@ -3017,7 +3017,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 
 // historyerMock2 embeds historyerMock, and rewrite the ForEach method
 type historyerMock2 struct {
-	HistoryerMock
+	MockHistoryer
 	txs []historydb.Transaction
 }
 
@@ -3036,7 +3036,7 @@ func (h *historyerMock2) ForEachTxn(tx *dbutil.Tx, f func(cipher.SHA256, *histor
 
 // UnconfirmedTxnPoolerMock2 embeds UnconfirmedTxnPoolerMock, and rewrite the GetTxns method
 type UnconfirmedTxnPoolerMock2 struct {
-	UnconfirmedTxnPoolerMock
+	MockUnconfirmedTxnPooler
 	txs []UnconfirmedTxn
 }
 

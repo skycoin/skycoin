@@ -45,6 +45,14 @@ func blockchainProgressHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
+func parseVerboseFlag(v string) (bool, error) {
+	if v == "" {
+		return false, nil
+	}
+
+	return strconv.ParseBool(v)
+}
+
 // blockHandler returns a block by hash or seq
 // Method: GET
 // URI: /api/v1/block
@@ -61,7 +69,13 @@ func blockHandler(gateway Gatewayer) http.HandlerFunc {
 
 		hash := r.FormValue("hash")
 		seq := r.FormValue("seq")
-		var b *coin.SignedBlock
+
+		verbose, err := parseVerboseFlag(r.FormValue("verbose"))
+		if err != nil {
+			wh.Error400(w, "Invalid value for verbose")
+			return
+		}
+
 		switch {
 		case hash == "" && seq == "":
 			wh.Error400(w, "should specify one filter, hash or seq")
@@ -69,30 +83,63 @@ func blockHandler(gateway Gatewayer) http.HandlerFunc {
 		case hash != "" && seq != "":
 			wh.Error400(w, "should only specify one filter, hash or seq")
 			return
-		case hash != "":
-			h, err := cipher.SHA256FromHex(hash)
+		}
+
+		var h cipher.SHA256
+		if hash != "" {
+			var err error
+			h, err = cipher.SHA256FromHex(hash)
 			if err != nil {
 				wh.Error400(w, err.Error())
 				return
 			}
+		}
 
-			b, err = gateway.GetSignedBlockByHash(h)
-			if err != nil {
-				wh.Error500(w, err.Error())
-				return
-			}
-		case seq != "":
-			uSeq, err := strconv.ParseUint(seq, 10, 64)
+		var uSeq uint64
+		if seq != "" {
+			var err error
+			uSeq, err = strconv.ParseUint(seq, 10, 64)
 			if err != nil {
 				wh.Error400(w, fmt.Sprintf("Invalid seq value %q", seq))
 				return
 			}
+		}
 
-			b, err = gateway.GetSignedBlockBySeq(uSeq)
+		if verbose {
+			var b *visor.ReadableBlockVerbose
+
+			switch {
+			case hash != "":
+				b, err = gateway.GetBlockByHashVerbose(h)
+			case seq != "":
+				b, err = gateway.GetBlockBySeqVerbose(uSeq)
+			}
+
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
 			}
+
+			if b == nil {
+				wh.Error404(w, "")
+				return
+			}
+
+			wh.SendJSONOr500(logger, w, b)
+			return
+		}
+
+		var b *coin.SignedBlock
+		switch {
+		case hash != "":
+			b, err = gateway.GetSignedBlockByHash(h)
+		case seq != "":
+			b, err = gateway.GetSignedBlockBySeq(uSeq)
+		}
+
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
 		}
 
 		if b == nil {
@@ -107,6 +154,7 @@ func blockHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		wh.SendJSONOr500(logger, w, rb)
+		return
 	}
 }
 

@@ -114,8 +114,8 @@ func TestGetBlock(t *testing.T) {
 			name:   "400 - seq error: invalid syntax",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
-			err:    "400 Bad Request - strconv.ParseUint: parsing \"seq\": invalid syntax",
-			seqStr: "seq",
+			err:    "400 Bad Request - Invalid seq value \"badseq\"",
+			seqStr: "badseq",
 		},
 		{
 			name:   "404 - block by seq does not exist",
@@ -202,7 +202,7 @@ func TestGetBlock(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			gateway := &GatewayerMock{}
+			gateway := &MockGatewayer{}
 
 			gateway.On("GetSignedBlockByHash", tc.sha256).Return(tc.gatewayGetBlockByHashResult, tc.gatewayGetBlockByHashErr)
 			gateway.On("GetSignedBlockBySeq", tc.seq).Return(tc.gatewayGetBlockBySeqResult, tc.gatewayGetBlockBySeqErr)
@@ -330,7 +330,7 @@ func TestGetBlocks(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			gateway := &GatewayerMock{}
+			gateway := &MockGatewayer{}
 			gateway.On("GetBlocks", tc.start, tc.end).Return(tc.gatewayGetBlocksResult, tc.gatewayGetBlocksError)
 
 			endpoint := "/api/v1/blocks"
@@ -407,14 +407,14 @@ func TestGetLastBlocks(t *testing.T) {
 			name:   "400 - empty num value",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
-			err:    "400 Bad Request - Param: num is empty",
+			err:    "400 Bad Request - Invalid num value \"\"",
 			num:    1,
 		},
 		{
 			name:   "400 - bad num value",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
-			err:    "400 Bad Request - strconv.ParseUint: parsing \"badNumValue\": invalid syntax",
+			err:    "400 Bad Request - Invalid num value \"badNumValue\"",
 			body: httpBody{
 				Num: "badNumValue",
 			},
@@ -445,7 +445,7 @@ func TestGetLastBlocks(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/last_blocks"
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 
 			gateway.On("GetLastBlocks", tc.num).Return(tc.gatewayGetLastBlocksResult, tc.gatewayGetLastBlocksError)
 

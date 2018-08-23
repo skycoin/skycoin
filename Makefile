@@ -6,6 +6,7 @@
 .PHONY: integration-test-enable-seed-api integration-test-enable-seed-api
 .PHONY: integration-test-disable-gui integration-test-disable-gui
 .PHONY: install-linters format release clean-release install-deps-ui build-ui help
+.PHONY: newcoin generate-mocks
 
 COIN ?= skycoin
 
@@ -217,6 +218,12 @@ clean-release: ## Clean dist files and delete all builds in electron/release
 
 newcoin: ## Rebuild cmd/$COIN/$COIN.go file from the template. Call like "make newcoin COIN=foo".
 	go run cmd/newcoin/newcoin.go createcoin --coin $(COIN)
+
+generate-mocks: ## Regenerate test interface mocks
+	go generate ./src/...
+	# mockery can't generate the UnspentPooler mock in package visor, patch it
+	mv ./src/visor/blockdb/mock_unspent_pooler_test.go ./src/visor/mock_unspent_pooler_test.go
+	sed -i "" -e 's/package blockdb/package visor/g' ./src/visor/mock_unspent_pooler_test.go
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

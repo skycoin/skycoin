@@ -45,7 +45,7 @@ func getPendingTxns(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-func getTransactionByID(gate Gatewayer) http.HandlerFunc {
+func getTransactionByID(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -63,7 +63,7 @@ func getTransactionByID(gate Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		txn, err := gate.GetTransaction(h)
+		txn, err := gateway.GetTransaction(h)
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return
@@ -73,17 +73,12 @@ func getTransactionByID(gate Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		rbTxn, err := visor.NewReadableTransaction(txn)
+		resTxn, err := daemon.NewTransactionResult(txn)
 		if err != nil {
 			wh.Error500(w, err.Error())
 			return
 		}
 
-		resTxn := daemon.TransactionResult{
-			Transaction: *rbTxn,
-			Status:      txn.Status,
-			Time:        txn.Time,
-		}
 		wh.SendJSONOr500(logger, w, &resTxn)
 	}
 }

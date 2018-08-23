@@ -130,7 +130,7 @@ func TestGetPendingTxs(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/pendingTxs"
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			gateway.On("GetAllUnconfirmedTxns").Return(tc.getAllUnconfirmedTxnsResponse, tc.getAllUnconfirmedTxnsErr)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
@@ -263,7 +263,7 @@ func TestGetTransactionByID(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/transaction"
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			gateway.On("GetTransaction", tc.getTransactionArg).Return(tc.getTransactionReponse, tc.getTransactionError)
 
 			v := url.Values{}
@@ -289,8 +289,6 @@ func TestGetTransactionByID(t *testing.T) {
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
-				tc.name, status, tc.status)
 
 			if status != http.StatusOK {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
@@ -301,6 +299,9 @@ func TestGetTransactionByID(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, tc.httpResponse, msg, tc.name)
 			}
+
+			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
+				tc.name, status, tc.status)
 		})
 	}
 }
@@ -395,7 +396,7 @@ func TestInjectTransaction(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/injectTransaction"
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			gateway.On("InjectBroadcastTransaction", tc.injectTransactionArg).Return(tc.injectTransactionError)
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
@@ -466,7 +467,7 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/resendUnconfirmedTxns"
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			gateway.On("ResendUnconfirmedTxns").Return(tc.resendUnconfirmedTxnsResponse, tc.resendUnconfirmedTxnsErr)
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
@@ -590,7 +591,7 @@ func TestGetRawTx(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/rawtx"
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			gateway.On("GetTransaction", tc.getTransactionArg).Return(tc.getTransactionResponse, tc.getTransactionError)
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -747,8 +748,13 @@ func TestGetTransactions(t *testing.T) {
 	for _, tc := range tt {
 		endpoint := "/api/v1/transactions"
 		t.Run(tc.name, func(t *testing.T) {
-			gateway := NewGatewayerMock()
-			gateway.On("GetTransactions", mock.Anything).Return(tc.getTransactionsResponse, tc.getTransactionsError)
+			gateway := &MockGatewayer{}
+
+			mocks := make([]interface{}, len(tc.getTransactionsArg))
+			for i := range tc.getTransactionsArg {
+				mocks[i] = mock.Anything
+			}
+			gateway.On("GetTransactions", mocks...).Return(tc.getTransactionsResponse, tc.getTransactionsError)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -991,7 +997,7 @@ func TestVerifyTransaction(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v2/transaction/verify"
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			gateway.On("VerifyTxnVerbose", &tc.gatewayVerifyTxnVerboseArg).Return(tc.gatewayVerifyTxnVerboseResult.Uxouts,
 				tc.gatewayVerifyTxnVerboseResult.IsTxnConfirmed, tc.gatewayVerifyTxnVerboseResult.Err)
 

@@ -2103,3 +2103,217 @@ func (vs *Visor) getUnspentsForSpending(tx *dbutil.Tx, addrs []cipher.Address, i
 
 	return auxs, nil
 }
+
+// CreateReadableBlocksV2 converts []coin.Block to  visor.ReadableBlocksV2 api/V2
+// Adds aditional data to Inputs (owner, coins, hours)
+func (vs *Visor) CreateReadableBlocksV2(blocks []coin.SignedBlock) (*ReadableBlocksV2, error) {
+	mxSeq, err := vs.getBlockChainHeadSeq()
+	if err != nil {
+		return nil, err
+	}
+	rbs := make([]ReadableBlockV2, 0, len(blocks))
+	for _, b := range blocks {
+		readableBlock, err := vs.CreateReadableBlockV2(&b.Block, mxSeq)
+		if err != nil {
+			logger.Errorf("CreateReadableBlockV2: failed: %v", err)
+			return nil, err
+		}
+		rbs = append(rbs, *readableBlock)
+	}
+	return &ReadableBlocksV2{
+		Blocks: rbs,
+	}, nil
+}
+
+// CreateReadableBlockV2 converts coin.Block to visor.ReadableBlockV2 api/V2
+// Adds aditional data to Inputs (owner, coins, hours)
+func (vs *Visor) CreateReadableBlockV2(block *coin.Block, headSeq uint64) (*ReadableBlockV2, error) {
+	mxSeq := headSeq
+	if mxSeq == 0 {
+		var err error
+		mxSeq, err = vs.getBlockChainHeadSeq()
+		if err != nil {
+			return nil, err
+		}
+	}
+	resTxns := make([]ReadableTransactionV2, 0, len(block.Body.Transactions))
+	for _, txt := range block.Body.Transactions {
+		//TODO: Check if transaction is really Confirmed
+		t := Transaction{
+			Txn:  txt,
+			Time: block.Time(),
+			Status: NewConfirmedTransactionStatus(mxSeq-block.Head.BkSeq+1,
+				block.Head.BkSeq),
+		}
+		rdt, err := vs.CreateReadableTransactionV2(&t)
+		if err != nil {
+			logger.Errorf("Visor.CreateReadableTransactionV2: failed: %v", err)
+			return nil, err
+		}
+		resTxns = append(resTxns, *rdt)
+	}
+	return &ReadableBlockV2{
+		Head: NewReadableBlockHeader(&block.Head),
+		Body: ReadableBlockBodyV2{
+			Transactions: resTxns,
+		},
+		Size: block.Size(),
+	}, nil
+}
+
+// CreateReadableUnconfirmedTxnsV2 converts a slice of visor.UnconfirmedTxn to
+// a slice of visor.ReadableUnconfirmedTxnV2
+func (vs *Visor) CreateReadableUnconfirmedTxnsV2(txns []UnconfirmedTxn) (*ReadableUnconfirmedTxnsV2, error) {
+	ret := make([]ReadableUnconfirmedTxnV2, 0, len(txns))
+	for _, unconfirmedTxn := range txns {
+		readableV2, err := vs.CreateReadableUnconfirmedTxnV2(&unconfirmedTxn)
+		if err != nil {
+			return nil, err
+		}
+		ret = append(ret, *readableV2)
+	}
+	return &ReadableUnconfirmedTxnsV2{Txns: ret}, nil
+}
+
+// CreateReadableUnconfirmedTxnV2 converts from UnconfirmedTxn to
+// visor.ReadableUnconfirmedTxnV2
+func (vs *Visor) CreateReadableUnconfirmedTxnV2(transaction *UnconfirmedTxn) (*ReadableUnconfirmedTxnV2, error) {
+	txn, err := vs.CreateReadableTransactionV2(&Transaction{
+		Txn: transaction.Txn, Status: NewUnconfirmedTransactionStatus()})
+	if err != nil {
+		logger.Errorf("visor.CreateReadableUnconfirmedTxnV2:  visor.CreateReadableTransactionV2 failed: %v", err)
+		return nil, err
+	}
+	t := ReadableUnconfirmedTxnV2{}
+	t.Txn = *txn
+	t.Received = nanoToTime(transaction.Received)
+	t.Checked = nanoToTime(transaction.Checked)
+	t.Announced = nanoToTime(transaction.Announced)
+	t.IsValid = transaction.IsValid == 1
+	return &t, nil
+}
+
+//CreateReadableTransactionResultsV2 converts slice of Transaction to TransactionResultsV2 type
+func (vs *Visor) CreateReadableTransactionResultsV2(txns []Transaction) (*TransactionResultsV2, error) {
+	result := make([]TransactionResultV2, 0, len(txns))
+	for _, tx := range txns {
+		rdTxV2, err := vs.CreateReadableTransactionV2(&tx)
+		if err != nil {
+			return nil, err
+		}
+		r := TransactionResultV2{
+			Status:      tx.Status,
+			Time:        tx.Time,
+			Transaction: *rdTxV2,
+		}
+		result = append(result, r)
+	}
+	return &TransactionResultsV2{
+		Txns: result,
+	}, nil
+}
+
+//CreateReadableTransactionV2 converts Transaction to visor.ReadableTransactionV2 api/V2
+func (vs *Visor) CreateReadableTransactionV2(transaction *Transaction) (*ReadableTransactionV2, error) {
+	// Genesis transaction use empty SHA256 as txid
+	txid := cipher.SHA256{}
+	if transaction.Status.BlockSeq != 0 {
+		txid = transaction.Txn.Hash()
+	}
+
+	inputs, err := vs.CreateReadableTransactionInputsV2(transaction)
+	if err != nil {
+		return nil, err
+	}
+
+	sigs := make([]string, len(transaction.Txn.Sigs))
+	for i := range transaction.Txn.Sigs {
+		sigs[i] = transaction.Txn.Sigs[i].Hex()
+	}
+
+	out := make([]ReadableTransactionOutput, len(transaction.Txn.Out))
+	for i := range transaction.Txn.Out {
+		o, err := NewReadableTransactionOutput(&transaction.Txn.Out[i], txid)
+		if err != nil {
+			return nil, err
+		}
+		out[i] = *o
+	}
+
+	r := ReadableTransactionV2{}
+	r.Length = transaction.Txn.Length
+	r.Type = transaction.Txn.Type
+	r.Hash = transaction.Txn.TxIDHex()
+	r.InnerHash = transaction.Txn.InnerHash.Hex()
+	r.Timestamp = transaction.Time
+	r.Sigs = sigs
+	r.In = nil
+	r.Out = nil
+	r.OutData = out
+	r.InData = inputs
+	return &r, nil
+}
+
+// CreateReadableTransactionInputsV2 creates a slice of ReadableTransactionInput /api/V2
+// Adds data such as Address, Coins, Hours, CalculatedHours
+func (vs *Visor) CreateReadableTransactionInputsV2(transaction *Transaction) ([]ReadableTransactionInput, error) {
+	inputs := make([]ReadableTransactionInput, 0, len(transaction.Txn.In))
+
+	t := transaction.Time
+	if !transaction.Status.Confirmed {
+		var head *coin.SignedBlock
+		var err error
+		head, err = vs.GetHeadBlock()
+		if err != nil {
+			logger.Errorf("visor.CreateReadableTransactionInputsV2: visor.GetHeadBlock failed: %v", err)
+			return nil, err
+		}
+		t = head.Time()
+	}
+
+	for _, inputID := range transaction.Txn.In {
+		input, err := vs.GetUxOutByID(inputID)
+		if err != nil {
+			logger.Errorf("api.NewReadableTransactionInputsV2: Gatewayer.GetUxOutByID failed: %v", err)
+			return nil, err
+		}
+		ux := input.Out
+		coinVal, err := droplet.ToString(ux.Body.Coins)
+		if err != nil {
+			logger.Errorf("Failed to convert coins to string: %v", err)
+			return nil, err
+		}
+		calculatedHours, err := ux.CoinHours(t)
+		if err != nil {
+			logger.Critical().Warningf("Ignoring NewReadableTransactionInputV2 ux.CoinHours failed: %v", err)
+			calculatedHours = 0
+		}
+		r := ReadableTransactionInput{
+			Hash:            ux.Hash().Hex(),
+			Address:         ux.Body.Address.String(),
+			Coins:           coinVal,
+			Hours:           ux.Body.Hours,
+			CalculatedHours: calculatedHours,
+		}
+		inputs = append(inputs, r)
+	}
+	return inputs, nil
+}
+
+func (vs *Visor) getBlockChainHeadSeq() (uint64, error) {
+	var mxSeq uint64
+	err := vs.DB.View("getBlockChainHeadSeq", func(tx *dbutil.Tx) error {
+		seq, ok, err := vs.Blockchain.HeadSeq(tx)
+		if err != nil {
+			return err
+		} else if !ok {
+			return fmt.Errorf("Block head seq is missing")
+		}
+		mxSeq = seq
+		return nil
+	})
+	if err != nil {
+		return 0, err
+	}
+	return mxSeq, nil
+}

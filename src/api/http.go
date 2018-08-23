@@ -418,9 +418,6 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	// get txn by txid
 	webHandlerV1("/transaction", getTransactionByID(gateway))
 
-	// parse and verify transaction
-	webHandlerV2("/transaction/verify", verifyTxnHandler(gateway))
-
 	// Health check handler
 	webHandlerV1("/health", healthCheck(gateway))
 
@@ -443,8 +440,6 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	// get all the address affected uxouts.
 	webHandlerV1("/address_uxouts", getAddrUxOuts(gateway))
 
-	webHandlerV2("/address/verify", http.HandlerFunc(addressVerify))
-
 	// Explorer handler
 
 	// get set of pending transactions
@@ -455,6 +450,27 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	webHandlerV1("/richlist", getRichlist(gateway))
 
 	webHandlerV1("/addresscount", getAddressCount(gateway))
+
+	//api/v2
+
+	// parse and verify transaction
+	webHandlerV2("/transaction/verify", verifyTxnHandler(gateway))
+
+	// verify address
+	webHandlerV2("/address/verify", http.HandlerFunc(addressVerify))
+
+	// get block by hash or seq
+	webHandlerV2("/block", getBlockV2(gateway))
+	// get blocks in specific range
+	webHandlerV2("/blocks", getBlocksV2(gateway))
+	// get last N blocks
+	webHandlerV2("/last_blocks", getLastBlocksV2(gateway))
+	// get set of pending transactions
+	webHandlerV2("/pendingTxs", getPendingTxnsV2(gateway))
+	// get txn by txid
+	webHandlerV2("/transaction", getTransactionByIDV2(gateway))
+	// get transactions
+	webHandlerV2("/transactions", getTransactionsV2(gateway))
 
 	return mux
 }

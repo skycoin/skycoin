@@ -60,6 +60,7 @@ scratch, to remedy the rough edges in the Bitcoin design.
     - [Skycoin command line interface](#skycoin-command-line-interface)
 - [Integrating Skycoin with your application](#integrating-skycoin-with-your-application)
 - [Contributing a node to the network](#contributing-a-node-to-the-network)
+- [Creating a new coin](#creating-a-new-coin)
 - [URI Specification](#uri-specification)
 - [Development](#development)
     - [Modules](#modules)
@@ -205,6 +206,10 @@ and used to seed client with peers.
 
 *Note*: Do not add Skywire nodes to `peers.txt`.
 Only add Skycoin nodes with high uptime and a static IP address (such as a Skycoin node hosted on a VPS).
+
+## Creating a new coin
+
+See the [newcoin tool README](./cmd/newcoin/README.md)
 
 ## URI Specification
 

@@ -88,8 +88,8 @@ func (m *HistoryerMock) GetAddrUxOuts(p0 *dbutil.Tx, p1 cipher.Address) ([]*hist
 
 }
 
-// GetAddressTxns mocked method
-func (m *HistoryerMock) GetAddressTxns(p0 *dbutil.Tx, p1 cipher.Address) ([]historydb.Transaction, error) {
+// GetTransactionsForAddress mocked method
+func (m *HistoryerMock) GetTransactionsForAddress(p0 *dbutil.Tx, p1 cipher.Address) ([]historydb.Transaction, error) {
 
 	ret := m.Called(p0, p1)
 

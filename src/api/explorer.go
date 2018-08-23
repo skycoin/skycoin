@@ -165,9 +165,9 @@ func getTransactionsForAddress(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		txns, err := gateway.GetTransactionsForAddress(cipherAddr)
+		txns, err := gateway.GetVerboseTransactionsForAddress(cipherAddr)
 		if err != nil {
-			err = fmt.Errorf("gateway.GetTransactionsForAddress failed: %v", err)
+			err = fmt.Errorf("gateway.GetVerboseTransactionsForAddress failed: %v", err)
 			wh.Error500(w, err.Error())
 			return
 		}

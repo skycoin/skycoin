@@ -49,7 +49,7 @@ type Gatewayer interface {
 	ResendUnconfirmedTxns() (*daemon.ResendResult, error)
 	GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error)
 	GetAddrUxOuts(addr []cipher.Address) ([]*historydb.UxOut, error)
-	GetTransactionsForAddress(a cipher.Address) ([]daemon.ReadableTransaction, error)
+	GetVerboseTransactionsForAddress(a cipher.Address) ([]daemon.ReadableTransaction, error)
 	GetRichlist(includeDistribution bool) (visor.Richlist, error)
 	GetAddressCount() (uint64, error)
 	GetHealth() (*daemon.Health, error)

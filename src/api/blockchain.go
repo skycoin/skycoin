@@ -13,6 +13,9 @@ import (
 	"github.com/skycoin/skycoin/src/visor" //http,json helpers
 )
 
+// blockchainProgressHandler returns the blockchain metadata
+// Method: GET
+// URI: /api/v1/blockchain/metadata
 func blockchainHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		metadata, err := gateway.GetBlockchainMetadata()
@@ -26,6 +29,9 @@ func blockchainHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
+// blockchainProgressHandler returns the blockchain sync progress
+// Method: GET
+// URI: /api/v1/blockchain/progress
 func blockchainProgressHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		progress, err := gateway.GetBlockchainProgress()
@@ -39,11 +45,14 @@ func blockchainProgressHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-// get block by hash or seq
-// method: GET
-// url: /block?hash=[:hash]  or /block?seq[:seq]
-// params: hash or seq, should only specify one filter.
-func getBlock(gateway Gatewayer) http.HandlerFunc {
+// blockHandler returns a block by hash or seq
+// Method: GET
+// URI: /api/v1/block
+// Args:
+// 	hash [transaction hash string]
+//  seq [int]
+// 	Note: only one of hash or seq is allowed
+func blockHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -75,7 +84,7 @@ func getBlock(gateway Gatewayer) http.HandlerFunc {
 		case seq != "":
 			uSeq, err := strconv.ParseUint(seq, 10, 64)
 			if err != nil {
-				wh.Error400(w, err.Error())
+				wh.Error400(w, fmt.Sprintf("Invalid seq value %q", seq))
 				return
 			}
 
@@ -101,36 +110,50 @@ func getBlock(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-func getBlocks(gateway Gatewayer) http.HandlerFunc {
+// blocksHandler returns blocks between a start and end point.
+// The block sequences include both the start and end point.
+// Method: GET
+// URI: /api/v1/blocks
+// Args:
+//	start [int]
+//	end [int]
+func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}
+
 		sstart := r.FormValue("start")
 		start, err := strconv.ParseUint(sstart, 10, 64)
 		if err != nil {
-			wh.Error400(w, fmt.Sprintf("Invalid start value \"%s\"", sstart))
+			wh.Error400(w, fmt.Sprintf("Invalid start value %q", sstart))
 			return
 		}
 
 		send := r.FormValue("end")
 		end, err := strconv.ParseUint(send, 10, 64)
 		if err != nil {
-			wh.Error400(w, fmt.Sprintf("Invalid end value \"%s\"", send))
+			wh.Error400(w, fmt.Sprintf("Invalid end value %q", send))
 			return
 		}
+
 		rb, err := gateway.GetBlocks(start, end)
 		if err != nil {
 			wh.Error400(w, fmt.Sprintf("Get blocks failed: %v", err))
 			return
 		}
+
 		wh.SendJSONOr500(logger, w, rb)
 	}
 }
 
-// get last N blocks
-func getLastBlocks(gateway Gatewayer) http.HandlerFunc {
+// lastBlocksHandler returns the most recent N blocks on the blockchain
+// Method: GET
+// URI: /api/v1/last_blocks
+// Args:
+//	num [int]
+func lastBlocksHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -138,20 +161,15 @@ func getLastBlocks(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		num := r.FormValue("num")
-		if num == "" {
-			wh.Error400(w, "Param: num is empty")
-			return
-		}
-
 		n, err := strconv.ParseUint(num, 10, 64)
 		if err != nil {
-			wh.Error400(w, err.Error())
+			wh.Error400(w, fmt.Sprintf("Invalid num value %q", num))
 			return
 		}
 
 		rb, err := gateway.GetLastBlocks(n)
 		if err != nil {
-			wh.Error400(w, fmt.Sprintf("Get last %v blocks failed: %v", n, err))
+			wh.Error400(w, fmt.Sprintf("Get last %d blocks failed: %v", n, err))
 			return
 		}
 

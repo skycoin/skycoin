@@ -126,10 +126,10 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			addressParam: "badAddress",
 		},
 		{
-			name:                                "500 - gw GetTransactionsForAddress error",
+			name:                                "500 - gw GetVerboseTransactionsForAddress error",
 			method:                              http.MethodGet,
 			status:                              http.StatusInternalServerError,
-			err:                                 "500 Internal Server Error - gateway.GetTransactionsForAddress failed: gatewayGetTransactionsForAddressErr",
+			err:                                 "500 Internal Server Error - gateway.GetVerboseTransactionsForAddress failed: gatewayGetTransactionsForAddressErr",
 			addressParam:                        address.String(),
 			gatewayGetTransactionsForAddressErr: errors.New("gatewayGetTransactionsForAddressErr"),
 		},
@@ -157,7 +157,7 @@ func TestGetTransactionsForAddress(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/explorer/address"
 			gateway := NewGatewayerMock()
-			gateway.On("GetTransactionsForAddress", address).Return(tc.result, tc.gatewayGetTransactionsForAddressErr)
+			gateway.On("GetVerboseTransactionsForAddress", address).Return(tc.result, tc.gatewayGetTransactionsForAddressErr)
 
 			v := url.Values{}
 			if tc.addressParam != "" {

@@ -399,11 +399,11 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	webHandlerV1("/blockchain/progress", blockchainProgressHandler(gateway))
 
 	// get block by hash or seq
-	webHandlerV1("/block", getBlock(gateway))
+	webHandlerV1("/block", blockHandler(gateway))
 	// get blocks in specific range
-	webHandlerV1("/blocks", getBlocks(gateway))
+	webHandlerV1("/blocks", blocksHandler(gateway))
 	// get last N blocks
-	webHandlerV1("/last_blocks", getLastBlocks(gateway))
+	webHandlerV1("/last_blocks", lastBlocksHandler(gateway))
 
 	// Network stats interface
 	webHandlerV1("/network/connection", connectionHandler(gateway))

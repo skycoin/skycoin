@@ -144,8 +144,8 @@ func (gw *Gateway) getConnections() *Connections {
 func (gw *Gateway) GetDefaultConnections() []string {
 	var conns []string
 	gw.strand("GetDefaultConnections", func() {
-		conns = make([]string, len(gw.d.DefaultConnections))
-		copy(conns[:], gw.d.DefaultConnections[:])
+		conns = make([]string, len(gw.d.Config.DefaultConnections))
+		copy(conns[:], gw.d.Config.DefaultConnections[:])
 	})
 	return conns
 }

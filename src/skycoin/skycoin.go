@@ -120,7 +120,7 @@ func (c *Coin) Run() error {
 		}
 	}
 
-	d, err = daemon.NewDaemon(dconf, db, c.config.Node.DefaultConnections)
+	d, err = daemon.NewDaemon(dconf, db)
 	if err != nil {
 		c.logger.Error(err)
 		retErr = err
@@ -279,10 +279,7 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	//cipher.SetAddressVersion(c.AddressVersion)
 	dc := daemon.NewConfig()
 
-	for _, c := range c.config.Node.DefaultConnections {
-		dc.Pool.DefaultPeerConnections[c] = struct{}{}
-	}
-
+	dc.Pool.DefaultConnections = c.config.Node.DefaultConnections
 	dc.Pool.MaxDefaultPeerOutgoingConnections = c.config.Node.MaxDefaultPeerOutgoingConnections
 
 	dc.Pex.DataDirectory = c.config.Node.DataDirectory
@@ -290,6 +287,11 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Pex.Max = c.config.Node.PeerlistSize
 	dc.Pex.DownloadPeerList = c.config.Node.DownloadPeerList
 	dc.Pex.PeerListURL = c.config.Node.PeerListURL
+	dc.Pex.DisableTrustedPeers = c.config.Node.DisableDefaultPeers
+	dc.Pex.CustomPeersFile = c.config.Node.CustomPeersFile
+	dc.Pex.DefaultConnections = c.config.Node.DefaultConnections
+
+	dc.Daemon.DefaultConnections = c.config.Node.DefaultConnections
 	dc.Daemon.DisableOutgoingConnections = c.config.Node.DisableOutgoingConnections
 	dc.Daemon.DisableIncomingConnections = c.config.Node.DisableIncomingConnections
 	dc.Daemon.DisableNetworking = c.config.Node.DisableNetworking

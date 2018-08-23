@@ -12,11 +12,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `-disable-default-peers` option to disable the default hardcoded peers and mark all cached peers as untrusted
 - Add `-custom-peers-file` to load peers from disk. This peers file is a newline separate list of `ip:port` strings
 - Add `csrf_enabled`, `csp_enabled`, `wallet_api_enabled`, `unversioned_api_enabled`, `gui_enabled` and `json_rpc_enabled` configuration settings to the `/api/v1/health` endpoint response
+- Add `verbose` flags to `/api/v1/block` to return verbose block data, which includes the address, coins, hours and calculcated_hours of the block's transaction's inputs
 
 ### Fixed
 
 - Fix hanging process caused when the p2p listener port is already in use
 - Fix exit status of CLI tool when wallet file cannot be loaded
+- Fix `calculated_hours` and `fee` in `/explorer/address` responses
 
 ### Changed
 

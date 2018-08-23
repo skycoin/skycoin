@@ -232,6 +232,14 @@ func (pool *ConnectionPool) Run() error {
 	defer close(pool.done)
 	defer logger.Info("Connection pool closed")
 
+	// The strand processing goroutine must be started before any error can be
+	// returned from Run(), otherwise the Shutdown() call will block if an error occurred
+	pool.wg.Add(1)
+	go func() {
+		defer pool.wg.Done()
+		pool.processStrand()
+	}()
+
 	// start the connection accept loop
 	addr := fmt.Sprintf("%s:%v", pool.Config.Address, pool.Config.Port)
 	logger.Infof("Listening for connections on %s...", addr)
@@ -242,12 +250,6 @@ func (pool *ConnectionPool) Run() error {
 	}
 
 	pool.listener = ln
-
-	pool.wg.Add(1)
-	go func() {
-		defer pool.wg.Done()
-		pool.processStrand()
-	}()
 
 loop:
 	for {
@@ -301,10 +303,15 @@ func (pool *ConnectionPool) processStrand() {
 
 // Shutdown gracefully shutdown the connection pool
 func (pool *ConnectionPool) Shutdown() {
+	logger.Info("ConnectionPool.Shutdown called")
 	close(pool.quit)
+	logger.Info("ConnectionPool.Shutdown closed pool.quit")
 
 	// Wait for all strand() calls to finish
+	logger.Info("ConnectionPool.Shutdown waiting for strandDone")
 	<-pool.strandDone
+
+	logger.Info("ConnectionPool.Shutdown closing the listener")
 
 	// Close to listener to prevent new connections
 	if pool.listener != nil {
@@ -312,6 +319,8 @@ func (pool *ConnectionPool) Shutdown() {
 	}
 
 	pool.listener = nil
+
+	logger.Info("ConnectionPool.Shutdown disconnecting all connections")
 
 	// In readData, reader.Read() sometimes blocks instead of returning an error when the
 	// listener is closed.
@@ -325,6 +334,8 @@ func (pool *ConnectionPool) Shutdown() {
 	if len(pool.addresses) != 0 {
 		logger.Critical().Warning("pool.addresses is not empty after calling pool.disconnectAll()")
 	}
+
+	logger.Info("ConnectionPool.Shutdown waiting for done")
 
 	<-pool.done
 }

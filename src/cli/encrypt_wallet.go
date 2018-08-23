@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
 	"path/filepath"
 
@@ -19,8 +18,8 @@ func encryptWalletCmd(cfg Config) gcli.Command {
 		Description: fmt.Sprintf(`
 		The default wallet (%s) will be
 		used if no wallet was specified.
-		
-		Use caution when using the "-p" command. If you have command history enabled 
+
+		Use caution when using the "-p" command. If you have command history enabled
 		your wallet encryption password can be recovered from the history log. If you
 		do not include the "-p" option you will be prompted to enter your password
 		after you enter your command.`, cfg.FullWalletPath()),
@@ -46,8 +45,8 @@ func encryptWalletCmd(cfg Config) gcli.Command {
 
 			cryptoType, err := wallet.CryptoTypeFromString(c.String("x"))
 			if err != nil {
-				errorWithHelp(c, err)
-				return nil
+				printHelp(c)
+				return err
 			}
 
 			pr := NewPasswordReader([]byte(c.String("p")))
@@ -56,10 +55,8 @@ func encryptWalletCmd(cfg Config) gcli.Command {
 			switch err.(type) {
 			case nil:
 			case WalletLoadError:
-				errorWithHelp(c, err)
-				return nil
-			case WalletSaveError:
-				return errors.New("save wallet failed")
+				printHelp(c)
+				return err
 			default:
 				return err
 			}

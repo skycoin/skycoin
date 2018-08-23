@@ -7,6 +7,8 @@
 .PHONY: integration-test-disable-gui integration-test-disable-gui
 .PHONY: install-linters format release clean-release install-deps-ui build-ui help
 
+COIN ?= skycoin
+
 # Static files directory
 GUI_STATIC_DIR = src/gui/static
 
@@ -210,9 +212,11 @@ release-gui: ## Build electron apps. Use osarch=${osarch} to specify the platfor
 	cd $(ELECTRON_DIR) && ./build-electron-release.sh ${osarch}
 	@echo release files are in the folder of electron/release
 
-
 clean-release: ## Clean dist files and delete all builds in electron/release
 	rm $(ELECTRON_DIR)/release/*
+
+newcoin: ## Rebuild cmd/$COIN/$COIN.go file from the template. Call like "make newcoin COIN=foo".
+	go run cmd/newcoin/newcoin.go createcoin --coin $(COIN)
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

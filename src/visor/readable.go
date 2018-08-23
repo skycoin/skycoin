@@ -608,7 +608,7 @@ type TransactionJSON struct {
 }
 
 // TransactionToJSON convert transaction to json string
-// TODO -- remove in favor of ReadableTransaction?
+// TODO -- move to some kind of coin utils? This is not specifically visor related
 func TransactionToJSON(tx coin.Transaction) (string, error) {
 	var o TransactionJSON
 
@@ -623,7 +623,7 @@ func TransactionToJSON(tx coin.Transaction) (string, error) {
 		o.Sigs[i] = sig.Hex()
 	}
 	for i, x := range tx.In {
-		o.In[i] = x.Hex() // hash to hex
+		o.In[i] = x.Hex()
 	}
 	for i, y := range tx.Out {
 		out, err := NewTxOutputJSON(y, tx.InnerHash)

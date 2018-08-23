@@ -73,7 +73,6 @@ echo "starting skycoin node in background with http listener on $HOST"
                       -download-peerlist=false \
                       -db-path=./src/api/integration/testdata/blockchain-180.db \
                       -db-read-only=true \
-                      -rpc-interface=true \
                       -launch-browser=false \
                       -data-dir="$DATA_DIR" \
                       -wallet-dir="$WALLET_DIR" \

@@ -14,11 +14,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Fix hanging process caused when the p2p listener port is already in use
+- Fix exit status of CLI tool when wallet file cannot be loaded
+
 ### Changed
 
 - CLI tool uses the REST API instead of the deprecated webrpc API to communicate with the node
 - `cli status` return value is now the response from `GET /api/v1/health`, which changes some fields
 - `/api/network/` endpoints will return an empty array for array values instead of `null`
+- `go run cmd/skycoin/skycoin.go` will have exit status 1 on failure and exit status 2 on panic
 
 ### Removed
 

@@ -1344,6 +1344,10 @@ func (vs *Visor) GetBlockByHashVerbose(hash cipher.SHA256) (*ReadableBlockVerbos
 			return err
 		}
 
+		if b == nil {
+			return nil
+		}
+
 		headTime, err := vs.Blockchain.Time(tx)
 		if err != nil {
 			return err
@@ -1361,6 +1365,10 @@ func (vs *Visor) GetBlockByHashVerbose(hash cipher.SHA256) (*ReadableBlockVerbos
 		return nil
 	}); err != nil {
 		return nil, err
+	}
+
+	if b == nil {
+		return nil, nil
 	}
 
 	return NewReadableBlockVerbose(&b.Block, inputs)

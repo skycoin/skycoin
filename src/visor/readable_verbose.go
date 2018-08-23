@@ -17,7 +17,7 @@ type ReadableBlockBodyVerbose struct {
 type ReadableBlockVerbose struct {
 	Head ReadableBlockHeader      `json:"header"`
 	Body ReadableBlockBodyVerbose `json:"body"`
-	Size int                      `json:"size'`
+	Size int                      `json:"size"`
 }
 
 // NewReadableBlockBodyVerbose creates a verbose readable block body
@@ -115,12 +115,22 @@ func NewReadableBlockTransactionVerbose(txn coin.Transaction, inputs []ReadableT
 		hoursOut += o.Hours
 	}
 
-	if hoursIn < hoursOut {
-		err := fmt.Errorf("NewReadableTransactionVerbose input hours is less than output hours, txid=%s", txID.Hex())
-		return ReadableBlockTransactionVerbose{}, err
-	}
+	fee := uint64(0)
+	if bkSeq == 0 {
+		if hoursIn != 0 {
+			err := errors.New("NewReadableTransactionVerbose genesis block should have 0 input hours")
+			return ReadableBlockTransactionVerbose{}, err
+		}
 
-	fee := hoursIn - hoursOut
+		fee = 0
+	} else {
+		if hoursIn < hoursOut {
+			err := fmt.Errorf("NewReadableTransactionVerbose input hours is less than output hours, txid=%s", txID.Hex())
+			return ReadableBlockTransactionVerbose{}, err
+		}
+
+		fee = hoursIn - hoursOut
+	}
 
 	return ReadableBlockTransactionVerbose{
 		Length:    txn.Length,

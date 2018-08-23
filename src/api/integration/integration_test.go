@@ -581,6 +581,11 @@ func testKnownBlocks(t *testing.T) {
 			seq:    0,
 		},
 		{
+			name:   "seq 1",
+			golden: "block-seq-1.golden",
+			seq:    1,
+		},
+		{
 			name:   "seq 100",
 			golden: "block-seq-100.golden",
 			seq:    100,
@@ -629,6 +634,127 @@ func testKnownBlocks(t *testing.T) {
 			}
 
 			bHash, err := c.BlockByHash(b.Head.BlockHash)
+			require.NoError(t, err)
+			require.NotNil(t, bHash)
+			require.Equal(t, b, bHash)
+
+			prevBlock = b
+		})
+	}
+}
+
+func TestStableBlockVerbose(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	testKnownBlocksVerbose(t)
+}
+
+func TestLiveBlockVerbose(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	testKnownBlocksVerbose(t)
+
+	// These blocks were affected by the coinhour overflow issue, make sure that they can be queried
+	blockSeqs := []uint64{11685, 11707, 11710, 11709, 11705, 11708, 11711, 11706, 11699}
+
+	c := api.NewClient(nodeAddress())
+	for _, seq := range blockSeqs {
+		b, err := c.BlockBySeqVerbose(seq)
+		require.NoError(t, err)
+		require.Equal(t, seq, b.Head.BkSeq)
+	}
+}
+
+func testKnownBlocksVerbose(t *testing.T) {
+	c := api.NewClient(nodeAddress())
+
+	cases := []struct {
+		name    string
+		golden  string
+		hash    string
+		seq     uint64
+		errCode int
+		errMsg  string
+	}{
+		{
+			name:    "unknown hash",
+			hash:    "80744ec25e6233f40074d35bf0bfdbddfac777869b954a96833cb89f44204444",
+			errCode: http.StatusNotFound,
+			errMsg:  "404 Not Found",
+		},
+		{
+			name:   "valid hash",
+			golden: "block-hash-verbose.golden",
+			hash:   "70584db7fb8ab88b8dbcfed72ddc42a1aeb8c4882266dbb78439ba3efcd0458d",
+		},
+		{
+			name:   "genesis hash",
+			golden: "block-hash-verbose-genesis.golden",
+			hash:   "0551a1e5af999fe8fff529f6f2ab341e1e33db95135eef1b2be44fe6981349f3",
+		},
+		{
+			name:   "genesis seq",
+			golden: "block-seq-verbose-0.golden",
+			seq:    0,
+		},
+		{
+			name:   "seq 1",
+			golden: "block-seq-verbose-1.golden",
+			seq:    1,
+		},
+		{
+			name:   "seq 100",
+			golden: "block-seq-verbose-100.golden",
+			seq:    100,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var b *visor.ReadableBlockVerbose
+			var err error
+
+			if tc.hash != "" {
+				b, err = c.BlockByHashVerbose(tc.hash)
+			} else {
+				b, err = c.BlockBySeqVerbose(tc.seq)
+			}
+
+			if tc.errCode != 0 && tc.errCode != http.StatusOK {
+				assertResponseError(t, err, tc.errCode, tc.errMsg)
+				return
+			}
+
+			require.NotNil(t, b)
+
+			var expected visor.ReadableBlockVerbose
+			checkGoldenFile(t, tc.golden, TestData{*b, &expected})
+		})
+	}
+
+	t.Logf("Querying every block in the blockchain")
+
+	// Scan every block by seq
+	progress, err := c.BlockchainProgress()
+	require.NoError(t, err)
+
+	var prevBlock *visor.ReadableBlockVerbose
+	for i := uint64(0); i < progress.Current; i++ {
+		t.Run(fmt.Sprintf("block-seq-verbose-%d", i), func(t *testing.T) {
+			b, err := c.BlockBySeqVerbose(i)
+			require.NoError(t, err)
+			require.NotNil(t, b)
+			require.Equal(t, i, b.Head.BkSeq)
+
+			if prevBlock != nil {
+				require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
+			}
+
+			bHash, err := c.BlockByHashVerbose(b.Head.BlockHash)
 			require.NoError(t, err)
 			require.NotNil(t, bHash)
 			require.Equal(t, b, bHash)

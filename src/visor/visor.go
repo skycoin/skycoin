@@ -1332,6 +1332,21 @@ func (vs *Visor) GetSignedBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, er
 	return sb, nil
 }
 
+// GetSignedBlockBySeq get block of specific seq, return nil on not found.
+func (vs *Visor) GetSignedBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
+	var b *coin.SignedBlock
+
+	if err := vs.DB.View("GetSignedBlockBySeq", func(tx *dbutil.Tx) error {
+		var err error
+		b, err = vs.Blockchain.GetSignedBlockBySeq(tx, seq)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}
+
 // GetBlockByHashVerbose returns a ReadableBlockVerbose for a given block hash
 func (vs *Visor) GetBlockByHashVerbose(hash cipher.SHA256) (*ReadableBlockVerbose, error) {
 	var b *ReadableBlockVerbose
@@ -1341,84 +1356,6 @@ func (vs *Visor) GetBlockByHashVerbose(hash cipher.SHA256) (*ReadableBlockVerbos
 		b, err = vs.getBlockVerbose(tx, func(tx *dbutil.Tx) (*coin.SignedBlock, error) {
 			return vs.Blockchain.GetSignedBlockByHash(tx, hash)
 		})
-		return err
-	}); err != nil {
-		return nil, err
-	}
-
-	return b, nil
-}
-
-func (vs *Visor) getBlockVerbose(tx *dbutil.Tx, getBlock func(*dbutil.Tx) (*coin.SignedBlock, error)) (*ReadableBlockVerbose, error) {
-	var b *coin.SignedBlock
-	var inputs [][]ReadableTransactionInput
-
-	if err := vs.DB.View("GetBlockByHashVerbose", func(tx *dbutil.Tx) error {
-		var err error
-		b, err = getBlock(tx)
-		if err != nil {
-			return err
-		}
-
-		if b == nil {
-			return nil
-		}
-
-		// The genesis block has no inputs to query or to calculate fees from
-		if b.Head.BkSeq == 0 {
-			if len(b.Block.Body.Transactions) != 1 {
-				logger.Panicf("Genesis block should have only 1 transaction (has %d)", len(b.Block.Body.Transactions))
-			}
-
-			if len(b.Block.Body.Transactions[0].In) != 0 {
-				logger.Panic("Genesis block transaction should not have inputs")
-			}
-
-			inputs = make([][]ReadableTransactionInput, 1)
-
-			return nil
-		}
-
-		// When a transaction was added to a block, its coinhour fee was
-		// calculated based upon the time of the head block.
-		// So we need to look at the previous block
-		prevBlock, err := vs.Blockchain.GetSignedBlockBySeq(tx, b.Head.BkSeq-1)
-		if err != nil {
-			return err
-		}
-
-		if prevBlock == nil {
-			return fmt.Errorf("getBlockVerbose: prevBlock seq %d not found", b.Head.BkSeq-1)
-		}
-
-		for _, txn := range b.Block.Body.Transactions {
-			i, err := vs.getReadableVerboseInputs(tx, prevBlock.Block.Head.Time, txn.In)
-			if err != nil {
-				return err
-			}
-
-			inputs = append(inputs, i)
-		}
-
-		return nil
-	}); err != nil {
-		return nil, err
-	}
-
-	if b == nil {
-		return nil, nil
-	}
-
-	return NewReadableBlockVerbose(&b.Block, inputs)
-}
-
-// GetSignedBlockBySeq get block of specific seq, return nil on not found.
-func (vs *Visor) GetSignedBlockBySeq(seq uint64) (*coin.SignedBlock, error) {
-	var b *coin.SignedBlock
-
-	if err := vs.DB.View("GetSignedBlockBySeq", func(tx *dbutil.Tx) error {
-		var err error
-		b, err = vs.Blockchain.GetSignedBlockBySeq(tx, seq)
 		return err
 	}); err != nil {
 		return nil, err
@@ -1442,6 +1379,55 @@ func (vs *Visor) GetBlockBySeqVerbose(seq uint64) (*ReadableBlockVerbose, error)
 	}
 
 	return b, nil
+}
+
+func (vs *Visor) getBlockVerbose(tx *dbutil.Tx, getBlock func(*dbutil.Tx) (*coin.SignedBlock, error)) (*ReadableBlockVerbose, error) {
+	b, err := getBlock(tx)
+	if err != nil {
+		return nil, err
+	}
+
+	if b == nil {
+		return nil, nil
+	}
+
+	// The genesis block has no inputs to query or to calculate fees from
+	if b.Head.BkSeq == 0 {
+		if len(b.Block.Body.Transactions) != 1 {
+			logger.Panicf("Genesis block should have only 1 transaction (has %d)", len(b.Block.Body.Transactions))
+		}
+
+		if len(b.Block.Body.Transactions[0].In) != 0 {
+			logger.Panic("Genesis block transaction should not have inputs")
+		}
+
+		inputs := make([][]ReadableTransactionInput, 1)
+		return NewReadableBlockVerbose(&b.Block, inputs)
+	}
+
+	// When a transaction was added to a block, its coinhour fee was
+	// calculated based upon the time of the head block.
+	// So we need to look at the previous block
+	prevBlock, err := vs.Blockchain.GetSignedBlockBySeq(tx, b.Head.BkSeq-1)
+	if err != nil {
+		return nil, err
+	}
+
+	if prevBlock == nil {
+		return nil, fmt.Errorf("getBlockVerbose: prevBlock seq %d not found", b.Head.BkSeq-1)
+	}
+
+	var inputs [][]ReadableTransactionInput
+	for _, txn := range b.Block.Body.Transactions {
+		i, err := vs.getReadableVerboseInputs(tx, prevBlock.Block.Head.Time, txn.In)
+		if err != nil {
+			return nil, err
+		}
+
+		inputs = append(inputs, i)
+	}
+
+	return NewReadableBlockVerbose(&b.Block, inputs)
 }
 
 // GetLastBlocks returns last N blocks

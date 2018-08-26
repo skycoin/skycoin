@@ -172,6 +172,12 @@ func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
+		verbose, err := parseVerboseFlag(r.FormValue("verbose"))
+		if err != nil {
+			wh.Error400(w, "Invalid value for verbose")
+			return
+		}
+
 		sstart := r.FormValue("start")
 		start, err := strconv.ParseUint(sstart, 10, 64)
 		if err != nil {
@@ -186,13 +192,23 @@ func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		rb, err := gateway.GetBlocks(start, end)
-		if err != nil {
-			wh.Error400(w, fmt.Sprintf("Get blocks failed: %v", err))
-			return
-		}
+		if verbose {
+			rb, err := gateway.GetBlocksVerbose(start, end)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
 
-		wh.SendJSONOr500(logger, w, rb)
+			wh.SendJSONOr500(logger, w, rb)
+		} else {
+			rb, err := gateway.GetBlocks(start, end)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+
+			wh.SendJSONOr500(logger, w, rb)
+		}
 	}
 }
 

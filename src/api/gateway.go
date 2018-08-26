@@ -33,6 +33,7 @@ type Gatewayer interface {
 	GetSignedBlockBySeq(seq uint64) (*coin.SignedBlock, error)
 	GetBlockBySeqVerbose(seq uint64) (*visor.ReadableBlockVerbose, error)
 	GetBlocks(start, end uint64) (*visor.ReadableBlocks, error)
+	GetBlocksVerbose(start, end uint64) (*visor.ReadableBlocksVerbose, error)
 	GetLastBlocks(num uint64) (*visor.ReadableBlocks, error)
 	GetBuildInfo() visor.BuildInfo
 	GetUnspentOutputs(filters ...daemon.OutputsFilter) (*visor.ReadableOutputSet, error)

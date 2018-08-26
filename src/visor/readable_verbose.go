@@ -169,3 +169,15 @@ func NewReadableTransactionVerbose(txn Transaction, inputs []ReadableTransaction
 		ReadableBlockTransactionVerbose: rb,
 	}, nil
 }
+
+// ReadableBlocksVerbose an array of verbose readable blocks.
+type ReadableBlocksVerbose struct {
+	Blocks []ReadableBlockVerbose `json:"blocks"`
+}
+
+// NewReadableBlocksVerbose creates ReadableBlocksVerbose from []ReadableBlockVerbose
+func NewReadableBlocksVerbose(blocks []ReadableBlockVerbose) *ReadableBlocksVerbose {
+	return &ReadableBlocksVerbose{
+		Blocks: blocks,
+	}
+}

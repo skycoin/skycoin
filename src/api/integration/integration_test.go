@@ -1188,6 +1188,118 @@ func testBlocks(t *testing.T, start, end uint64) *visor.ReadableBlocks {
 	return blocks
 }
 
+func TestStableBlocksVerbose(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	c := api.NewClient(nodeAddress())
+
+	progress, err := c.BlockchainProgress()
+	require.NoError(t, err)
+
+	var lastNBlocks uint64 = 10
+	require.True(t, progress.Current > lastNBlocks+1)
+
+	cases := []struct {
+		name    string
+		golden  string
+		start   uint64
+		end     uint64
+		errCode int
+		errMsg  string
+	}{
+		{
+			name:   "genesis",
+			golden: "blocks-verbose-genesis.golden",
+			start:  0,
+			end:    0,
+		},
+		{
+			name:   "first 10",
+			golden: "blocks-verbose-first-10.golden",
+			start:  1,
+			end:    10,
+		},
+		{
+			name:   "last 10",
+			golden: "blocks-verbose-last-10.golden",
+			start:  progress.Current - lastNBlocks,
+			end:    progress.Current,
+		},
+		{
+			name:   "first block",
+			golden: "blocks-verbose-first-1.golden",
+			start:  1,
+			end:    1,
+		},
+		{
+			name:   "all blocks",
+			golden: "blocks-verbose-all.golden",
+			start:  0,
+			end:    progress.Current,
+		},
+		{
+			name:   "start > end",
+			golden: "blocks-verbose-end-less-than-start.golden",
+			start:  10,
+			end:    9,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.errMsg == "" {
+				resp := testBlocksVerbose(t, tc.start, tc.end)
+
+				var expected visor.ReadableBlocksVerbose
+				checkGoldenFile(t, tc.golden, TestData{*resp, &expected})
+			} else {
+				_, err := c.BlocksVerbose(tc.start, tc.end)
+				assertResponseError(t, err, tc.errCode, tc.errMsg)
+			}
+		})
+	}
+}
+
+func TestLiveBlocksVerbose(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	testBlocksVerbose(t, 1, 10)
+}
+
+func testBlocksVerbose(t *testing.T, start, end uint64) *visor.ReadableBlocksVerbose {
+	c := api.NewClient(nodeAddress())
+
+	blocks, err := c.BlocksVerbose(start, end)
+	require.NoError(t, err)
+
+	if start > end {
+		require.Empty(t, blocks.Blocks)
+	} else {
+		require.Len(t, blocks.Blocks, int(end-start+1))
+	}
+
+	var prevBlock *visor.ReadableBlockVerbose
+	for idx, b := range blocks.Blocks {
+		if prevBlock != nil {
+			require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
+		}
+
+		bHash, err := c.BlockByHashVerbose(b.Head.BlockHash)
+		require.Equal(t, uint64(idx)+start, b.Head.BkSeq)
+		require.NoError(t, err)
+		require.NotNil(t, bHash)
+		require.Equal(t, b, *bHash)
+
+		prevBlock = &blocks.Blocks[idx]
+	}
+
+	return blocks
+}
+
 func TestStableLastBlocks(t *testing.T) {
 	if !doStable(t) {
 		return

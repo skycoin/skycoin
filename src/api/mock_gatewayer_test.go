@@ -321,6 +321,29 @@ func (_m *MockGatewayer) GetBlocks(start uint64, end uint64) (*visor.ReadableBlo
 	return r0, r1
 }
 
+// GetBlocksVerbose provides a mock function with given fields: start, end
+func (_m *MockGatewayer) GetBlocksVerbose(start uint64, end uint64) (*visor.ReadableBlocksVerbose, error) {
+	ret := _m.Called(start, end)
+
+	var r0 *visor.ReadableBlocksVerbose
+	if rf, ok := ret.Get(0).(func(uint64, uint64) *visor.ReadableBlocksVerbose); ok {
+		r0 = rf(start, end)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*visor.ReadableBlocksVerbose)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(uint64, uint64) error); ok {
+		r1 = rf(start, end)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetBuildInfo provides a mock function with given fields:
 func (_m *MockGatewayer) GetBuildInfo() visor.BuildInfo {
 	ret := _m.Called()

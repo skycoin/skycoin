@@ -332,6 +332,21 @@ func (gw *Gateway) GetBlocks(start, end uint64) (*visor.ReadableBlocks, error) {
 	return visor.NewReadableBlocks(blocks)
 }
 
+// GetBlocksVerbose returns a *visor.ReadableBlocksVerbose
+func (gw *Gateway) GetBlocksVerbose(start, end uint64) (*visor.ReadableBlocksVerbose, error) {
+	var blocks []visor.ReadableBlockVerbose
+	var err error
+
+	gw.strand("GetBlocksVerbose", func() {
+		blocks, err = gw.v.GetBlocksVerbose(start, end)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return visor.NewReadableBlocksVerbose(blocks), nil
+}
+
 // GetBlocksInDepth returns blocks in different depth
 func (gw *Gateway) GetBlocksInDepth(vs []uint64) (*visor.ReadableBlocks, error) {
 	blocks := []coin.SignedBlock{}

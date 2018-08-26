@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `-disable-default-peers` option to disable the default hardcoded peers and mark all cached peers as untrusted
 - Add `-custom-peers-file` to load peers from disk. This peers file is a newline separate list of `ip:port` strings
 - Add `csrf_enabled`, `csp_enabled`, `wallet_api_enabled`, `unversioned_api_enabled`, `gui_enabled` and `json_rpc_enabled` configuration settings to the `/api/v1/health` endpoint response
-- Add `verbose` flags to `/api/v1/block`, `/api/v1/blocks`, `/api/v1/last_blocks` to return verbose block data, which includes the address, coins, hours and calculcated_hours of the block's transaction's inputs
+- Add `verbose` flags to `/api/v1/block`, `/api/v1/blocks`, `/api/v1/last_blocks`, `/api/v1/pendingTxs` to return verbose block data, which includes the address, coins, hours and calculcated_hours of the block's transaction's inputs
 
 ### Fixed
 

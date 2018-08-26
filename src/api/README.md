@@ -1229,6 +1229,8 @@ Result:
 ```
 URI: /api/v1/pendingTxs
 Method: GET
+Args:
+	verbose [bool]
 ```
 
 Example:
@@ -1276,6 +1278,17 @@ Result:
         "is_valid": true
     }
 ]
+```
+
+Example (verbose):
+
+```sh
+curl http://127.0.0.1:6420/api/v1/pendingTxs?verbose=1
+```
+
+Result:
+
+```json
 ```
 
 ### Get transaction info by id

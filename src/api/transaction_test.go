@@ -86,14 +86,18 @@ func TestGetPendingTxs(t *testing.T) {
 	})
 
 	tt := []struct {
-		name                          string
-		method                        string
-		url                           string
-		status                        int
-		err                           string
-		getAllUnconfirmedTxnsResponse []visor.UnconfirmedTxn
-		getAllUnconfirmedTxnsErr      error
-		httpResponse                  []*visor.ReadableUnconfirmedTxn
+		name                                 string
+		method                               string
+		url                                  string
+		status                               int
+		err                                  string
+		verbose                              bool
+		verboseStr                           string
+		getAllUnconfirmedTxnsResponse        []visor.UnconfirmedTxn
+		getAllUnconfirmedTxnsErr             error
+		getAllUnconfirmedTxnsVerboseResponse []visor.ReadableUnconfirmedTxnVerbose
+		getAllUnconfirmedTxnsVerboseErr      error
+		httpResponse                         interface{}
 	}{
 		{
 			name:   "405",
@@ -101,6 +105,13 @@ func TestGetPendingTxs(t *testing.T) {
 			status: http.StatusMethodNotAllowed,
 			err:    "405 Method Not Allowed",
 			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTxn{},
+		},
+		{
+			name:       "400 - bad verbose",
+			method:     http.MethodGet,
+			status:     http.StatusBadRequest,
+			err:        "400 Bad Request - Invalid value for verbose",
+			verboseStr: "foo",
 		},
 		{
 			name:   "500 - bad unconfirmedTxn",
@@ -119,11 +130,29 @@ func TestGetPendingTxs(t *testing.T) {
 			getAllUnconfirmedTxnsErr: errors.New("GetAllUnconfirmedTxns failed"),
 		},
 		{
+			name:       "500 - get unconfirmedTxnVerbose error",
+			method:     http.MethodGet,
+			status:     http.StatusInternalServerError,
+			verboseStr: "1",
+			verbose:    true,
+			err:        "500 Internal Server Error - GetAllUnconfirmedTxnsVerbose failed",
+			getAllUnconfirmedTxnsVerboseErr: errors.New("GetAllUnconfirmedTxnsVerbose failed"),
+		},
+		{
 			name:   "200",
 			method: http.MethodGet,
 			status: http.StatusOK,
 			getAllUnconfirmedTxnsResponse: []visor.UnconfirmedTxn{},
-			httpResponse:                  []*visor.ReadableUnconfirmedTxn{},
+			httpResponse:                  []visor.ReadableUnconfirmedTxn{},
+		},
+		{
+			name:       "200 verbose",
+			method:     http.MethodGet,
+			status:     http.StatusOK,
+			verboseStr: "1",
+			verbose:    true,
+			getAllUnconfirmedTxnsVerboseResponse: []visor.ReadableUnconfirmedTxnVerbose{},
+			httpResponse:                         []visor.ReadableUnconfirmedTxnVerbose{},
 		},
 	}
 
@@ -132,6 +161,15 @@ func TestGetPendingTxs(t *testing.T) {
 			endpoint := "/api/v1/pendingTxs"
 			gateway := &MockGatewayer{}
 			gateway.On("GetAllUnconfirmedTxns").Return(tc.getAllUnconfirmedTxnsResponse, tc.getAllUnconfirmedTxnsErr)
+			gateway.On("GetAllUnconfirmedTxnsVerbose").Return(tc.getAllUnconfirmedTxnsVerboseResponse, tc.getAllUnconfirmedTxnsVerboseErr)
+
+			v := url.Values{}
+			if tc.verboseStr != "" {
+				v.Add("verbose", tc.verboseStr)
+			}
+			if len(v) > 0 {
+				endpoint += "?" + v.Encode()
+			}
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
@@ -153,10 +191,17 @@ func TestGetPendingTxs(t *testing.T) {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg []*visor.ReadableUnconfirmedTxn
-				err = json.Unmarshal(rr.Body.Bytes(), &msg)
-				require.NoError(t, err)
-				require.Equal(t, tc.httpResponse, msg, tc.name)
+				if tc.verbose {
+					var msg []visor.ReadableUnconfirmedTxnVerbose
+					err = json.Unmarshal(rr.Body.Bytes(), &msg)
+					require.NoError(t, err)
+					require.Equal(t, tc.httpResponse, msg, tc.name)
+				} else {
+					var msg []visor.ReadableUnconfirmedTxn
+					err = json.Unmarshal(rr.Body.Bytes(), &msg)
+					require.NoError(t, err)
+					require.Equal(t, tc.httpResponse, msg, tc.name)
+				}
 			}
 		})
 	}

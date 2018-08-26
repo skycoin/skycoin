@@ -3,6 +3,7 @@ package visor
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -54,6 +55,18 @@ func NewReadableBlockVerbose(b *coin.Block, inputs [][]ReadableTransactionInput)
 		Body: *body,
 		Size: b.Size(),
 	}, nil
+}
+
+// ReadableBlocksVerbose an array of verbose readable blocks.
+type ReadableBlocksVerbose struct {
+	Blocks []ReadableBlockVerbose `json:"blocks"`
+}
+
+// NewReadableBlocksVerbose creates ReadableBlocksVerbose from []ReadableBlockVerbose
+func NewReadableBlocksVerbose(blocks []ReadableBlockVerbose) *ReadableBlocksVerbose {
+	return &ReadableBlocksVerbose{
+		Blocks: blocks,
+	}
 }
 
 // ReadableBlockTransactionVerbose has readable transaction data for transactions inside a block. It differs from ReadableTransaction
@@ -170,14 +183,29 @@ func NewReadableTransactionVerbose(txn Transaction, inputs []ReadableTransaction
 	}, nil
 }
 
-// ReadableBlocksVerbose an array of verbose readable blocks.
-type ReadableBlocksVerbose struct {
-	Blocks []ReadableBlockVerbose `json:"blocks"`
+// ReadableUnconfirmedTxnVerbose represents a verbose readable unconfirmed transaction
+type ReadableUnconfirmedTxnVerbose struct {
+	Txn       ReadableTransactionVerbose `json:"transaction"`
+	Received  time.Time                  `json:"received"`
+	Checked   time.Time                  `json:"checked"`
+	Announced time.Time                  `json:"announced"`
+	IsValid   bool                       `json:"is_valid"`
 }
 
-// NewReadableBlocksVerbose creates ReadableBlocksVerbose from []ReadableBlockVerbose
-func NewReadableBlocksVerbose(blocks []ReadableBlockVerbose) *ReadableBlocksVerbose {
-	return &ReadableBlocksVerbose{
-		Blocks: blocks,
+// NewReadableUnconfirmedTxnVerbose creates a verbose readable unconfirmed transaction
+func NewReadableUnconfirmedTxnVerbose(unconfirmed *UnconfirmedTxn, inputs []ReadableTransactionInput) (*ReadableUnconfirmedTxnVerbose, error) {
+	txn, err := NewReadableTransactionVerbose(Transaction{
+		Txn: unconfirmed.Txn,
+	}, inputs)
+	if err != nil {
+		return nil, err
 	}
+
+	return &ReadableUnconfirmedTxnVerbose{
+		Txn:       txn,
+		Received:  nanoToTime(unconfirmed.Received),
+		Checked:   nanoToTime(unconfirmed.Checked),
+		Announced: nanoToTime(unconfirmed.Announced),
+		IsValid:   unconfirmed.IsValid == 1,
+	}, nil
 }

@@ -1393,6 +1393,65 @@ func (vs *Visor) GetAllUnconfirmedTxns() ([]UnconfirmedTxn, error) {
 	return txns, nil
 }
 
+// GetAllUnconfirmedTxnsVerbose returns all unconfirmed transactions with verbose transaction input data
+func (vs *Visor) GetAllUnconfirmedTxnsVerbose() ([]ReadableUnconfirmedTxnVerbose, error) {
+	var txns []UnconfirmedTxn
+	var inputs [][]ReadableTransactionInput
+
+	if err := vs.DB.View("GetAllUnconfirmedTxnsVerbose", func(tx *dbutil.Tx) error {
+		var err error
+		txns, err = vs.Unconfirmed.GetTxns(tx, All)
+		if err != nil {
+			return err
+		}
+
+		if len(txns) == 0 {
+			return nil
+		}
+
+		// Use the current head time to calculate estimated coin hours of unconfirmed transactions
+		headTime, err := vs.Blockchain.Time(tx)
+		if err != nil {
+			return err
+		}
+
+		inputs := make([][]ReadableTransactionInput, len(txns))
+		for i, txn := range txns {
+			if len(txn.Txn.In) == 0 {
+				logger.WithField("txid", txn.Hash().Hex()).Warning("Unconfirmed transaction has no inputs")
+				continue
+			}
+
+			txnInputs, err := vs.getReadableVerboseInputs(tx, headTime, txn.Txn.In)
+			if err != nil {
+				return err
+			}
+
+			inputs[i] = txnInputs
+		}
+
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	if len(txns) == 0 {
+		return nil, nil
+	}
+
+	rTxns := make([]ReadableUnconfirmedTxnVerbose, len(txns))
+	for i, txn := range txns {
+		rTxn, err := NewReadableUnconfirmedTxnVerbose(&txn, inputs[i])
+		if err != nil {
+			return nil, err
+		}
+
+		rTxns[i] = *rTxn
+	}
+
+	return rTxns, nil
+}
+
 // GetAllValidUnconfirmedTxHashes returns all valid unconfirmed transaction hashes
 func (vs *Visor) GetAllValidUnconfirmedTxHashes() ([]cipher.SHA256, error) {
 	var hashes []cipher.SHA256
@@ -1533,6 +1592,30 @@ func (vs *Visor) getBlockInputs(tx *dbutil.Tx, b *coin.SignedBlock) ([][]Readabl
 	}
 
 	return inputs, nil
+}
+
+// getReadableVerboseInputs returns ReadableTransactionInputs for a given set of spent transaction inputs
+func (vs *Visor) getReadableVerboseInputs(tx *dbutil.Tx, feeCalcTime uint64, inputs []cipher.SHA256) ([]ReadableTransactionInput, error) {
+	if len(inputs) == 0 {
+		logger.Panic("getReadableVerboseInputs inputs is empty, only the genesis block transaction has no inputs, which shouldn't call this method")
+	}
+	uxOuts, err := vs.history.GetUxOuts(tx, inputs)
+	if err != nil {
+		logger.Error("getReadableVerboseInputs GetUxOuts failed: %v", err)
+		return nil, err
+	}
+
+	ret := make([]ReadableTransactionInput, len(inputs))
+	for i, o := range uxOuts {
+		r, err := NewReadableTransactionInput(o.Out, feeCalcTime)
+		if err != nil {
+			logger.Error("getReadableVerboseInputs NewReadableTransactionInput failed: %v", err)
+			return nil, err
+		}
+		ret[i] = *r
+	}
+
+	return ret, nil
 }
 
 // GetHeadBlock gets head block.
@@ -2301,28 +2384,4 @@ func (vs *Visor) GetVerboseTransactionsForAddress(a cipher.Address) ([]ReadableT
 	}
 
 	return resTxns, nil
-}
-
-// getReadableVerboseInputs returns ReadableTransactionInputs for a given set of spent transaction inputs
-func (vs *Visor) getReadableVerboseInputs(tx *dbutil.Tx, feeCalcTime uint64, inputs []cipher.SHA256) ([]ReadableTransactionInput, error) {
-	if len(inputs) == 0 {
-		logger.Panic("getReadableVerboseInputs inputs is empty, only the genesis block transaction has no inputs, which shouldn't call this method")
-	}
-	uxOuts, err := vs.history.GetUxOuts(tx, inputs)
-	if err != nil {
-		logger.Error("getVerboseInputData GetUxOuts failed: %v", err)
-		return nil, err
-	}
-
-	ret := make([]ReadableTransactionInput, len(inputs))
-	for i, o := range uxOuts {
-		r, err := NewReadableTransactionInput(o.Out, feeCalcTime)
-		if err != nil {
-			logger.Error("getVerboseInputData NewReadableTransactionInput failed: %v", err)
-			return nil, err
-		}
-		ret[i] = *r
-	}
-
-	return ret, nil
 }

@@ -1639,7 +1639,7 @@ func TestLiveTransactions(t *testing.T) {
 	}
 	txns, err := c.Transactions(addrs)
 	require.NoError(t, err)
-	require.True(t, len(*txns) > 0)
+	require.True(t, len(txns) > 0)
 }
 
 func TestStableTransactions(t *testing.T) {
@@ -1720,12 +1720,12 @@ func TestLiveConfirmedTransactions(t *testing.T) {
 
 	ctxsSingle, err := c.ConfirmedTransactions([]string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"})
 	require.NoError(t, err)
-	require.True(t, len(*ctxsSingle) > 0)
+	require.True(t, len(ctxsSingle) > 0)
 
 	ctxsAll, err := c.ConfirmedTransactions([]string{})
 	require.NoError(t, err)
-	require.True(t, len(*ctxsAll) > 0)
-	require.True(t, len(*ctxsAll) > len(*ctxsSingle))
+	require.True(t, len(ctxsAll) > 0)
+	require.True(t, len(ctxsAll) > len(ctxsSingle))
 }
 
 func TestStableConfirmedTransactions(t *testing.T) {
@@ -1859,12 +1859,12 @@ func TestLiveUnconfirmedTransactions(t *testing.T) {
 
 	cTxsSingle, err := c.UnconfirmedTransactions([]string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"})
 	require.NoError(t, err)
-	require.True(t, len(*cTxsSingle) >= 0)
+	require.True(t, len(cTxsSingle) >= 0)
 
 	cTxsAll, err := c.UnconfirmedTransactions([]string{})
 	require.NoError(t, err)
-	require.True(t, len(*cTxsAll) >= 0)
-	require.True(t, len(*cTxsAll) >= len(*cTxsSingle))
+	require.True(t, len(cTxsAll) >= 0)
+	require.True(t, len(cTxsAll) >= len(cTxsSingle))
 }
 
 func TestStableResendUnconfirmedTransactions(t *testing.T) {
@@ -2281,6 +2281,29 @@ func TestLivePendingTransactions(t *testing.T) {
 	c := api.NewClient(nodeAddress())
 
 	_, err := c.PendingTransactions()
+	require.NoError(t, err)
+}
+
+func TestStablePendingTransactionsVerbose(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	c := api.NewClient(nodeAddress())
+
+	txns, err := c.PendingTransactionsVerbose()
+	require.NoError(t, err)
+	require.Empty(t, txns)
+}
+
+func TestLivePendingTransactionsVerbose(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	c := api.NewClient(nodeAddress())
+
+	_, err := c.PendingTransactionsVerbose()
 	require.NoError(t, err)
 }
 
@@ -3600,7 +3623,7 @@ func TestGetWallets(t *testing.T) {
 	// Create the wallet map
 	walletMap := make(map[string]api.WalletResponse)
 	for _, w := range wlts {
-		walletMap[w.Meta.Filename] = *w
+		walletMap[w.Meta.Filename] = w
 	}
 
 	// Confirms the returned wallets contains the wallet we created.

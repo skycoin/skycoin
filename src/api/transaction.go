@@ -17,40 +17,64 @@ import (
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
-// Returns pending transactions
-func getPendingTxns(gateway Gatewayer) http.HandlerFunc {
+// pendingTxnsHandler returns pending transactions
+// Method: GET
+// URI: /api/v1/pendingTxs
+func pendingTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}
 
-		txns, err := gateway.GetAllUnconfirmedTxns()
+		verbose, err := parseVerboseFlag(r.FormValue("verbose"))
 		if err != nil {
-			wh.Error500(w, err.Error())
+			wh.Error400(w, "Invalid value for verbose")
 			return
 		}
 
-		ret := make([]*visor.ReadableUnconfirmedTxn, 0, len(txns))
-		for _, unconfirmedTxn := range txns {
-			readable, err := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
+		if verbose {
+			txns, err := gateway.GetAllUnconfirmedTxnsVerbose()
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
 			}
-			ret = append(ret, readable)
-		}
 
-		wh.SendJSONOr500(logger, w, &ret)
+			wh.SendJSONOr500(logger, w, txns)
+		} else {
+			txns, err := gateway.GetAllUnconfirmedTxns()
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+
+			ret := make([]*visor.ReadableUnconfirmedTxn, len(txns))
+			for i, unconfirmedTxn := range txns {
+				readable, err := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
+				if err != nil {
+					wh.Error500(w, err.Error())
+					return
+				}
+				ret[i] = readable
+			}
+
+			wh.SendJSONOr500(logger, w, ret)
+		}
 	}
 }
 
-func getTransactionByID(gateway Gatewayer) http.HandlerFunc {
+// transactionHandler returns a transaction identified by its txid hash
+// Method: GET
+// URI: /api/v1/transaction
+// Args:
+//	txid: transaction hash
+func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}
+
 		txid := r.FormValue("txid")
 		if txid == "" {
 			wh.Error400(w, "txid is empty")

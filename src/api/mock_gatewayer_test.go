@@ -183,6 +183,29 @@ func (_m *MockGatewayer) GetAllUnconfirmedTxns() ([]visor.UnconfirmedTxn, error)
 	return r0, r1
 }
 
+// GetAllUnconfirmedTxnsVerbose provides a mock function with given fields:
+func (_m *MockGatewayer) GetAllUnconfirmedTxnsVerbose() ([]visor.ReadableUnconfirmedTxnVerbose, error) {
+	ret := _m.Called()
+
+	var r0 []visor.ReadableUnconfirmedTxnVerbose
+	if rf, ok := ret.Get(0).(func() []visor.ReadableUnconfirmedTxnVerbose); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]visor.ReadableUnconfirmedTxnVerbose)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetBalanceOfAddrs provides a mock function with given fields: addrs
 func (_m *MockGatewayer) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair, error) {
 	ret := _m.Called(addrs)

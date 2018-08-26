@@ -684,6 +684,16 @@ func (gw *Gateway) GetAllUnconfirmedTxns() ([]visor.UnconfirmedTxn, error) {
 	return txns, err
 }
 
+// GetAllUnconfirmedTxnsVerbose returns all unconfirmed transactions with verbose transaction inputs
+func (gw *Gateway) GetAllUnconfirmedTxnsVerbose() ([]visor.ReadableUnconfirmedTxnVerbose, error) {
+	var txns []visor.ReadableUnconfirmedTxnVerbose
+	var err error
+	gw.strand("GetAllUnconfirmedTxnsVerbose", func() {
+		txns, err = gw.v.GetAllUnconfirmedTxnsVerbose()
+	})
+	return txns, err
+}
+
 // GetUnconfirmedTxns returns addresses related unconfirmed transactions
 func (gw *Gateway) GetUnconfirmedTxns(addrs []cipher.Address) ([]visor.UnconfirmedTxn, error) {
 	var txns []visor.UnconfirmedTxn

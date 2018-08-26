@@ -498,12 +498,12 @@ func (c *Client) UxOut(uxID string) (*historydb.UxOutJSON, error) {
 }
 
 // AddressUxOuts makes a request to GET /api/v1/address_uxouts
-func (c *Client) AddressUxOuts(addr string) ([]*historydb.UxOutJSON, error) {
+func (c *Client) AddressUxOuts(addr string) ([]historydb.UxOutJSON, error) {
 	v := url.Values{}
 	v.Add("address", addr)
 	endpoint := "/api/v1/address_uxouts?" + v.Encode()
 
-	var b []*historydb.UxOutJSON
+	var b []historydb.UxOutJSON
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}
@@ -525,8 +525,8 @@ func (c *Client) Wallet(id string) (*WalletResponse, error) {
 }
 
 // Wallets makes a request to GET /api/v1/wallets
-func (c *Client) Wallets() ([]*WalletResponse, error) {
-	var wrs []*WalletResponse
+func (c *Client) Wallets() ([]WalletResponse, error) {
+	var wrs []WalletResponse
 	if err := c.Get("/api/v1/wallets", &wrs); err != nil {
 		return nil, err
 	}
@@ -780,9 +780,18 @@ func (c *Client) NetworkExchangeableConnections() ([]string, error) {
 }
 
 // PendingTransactions makes a request to GET /api/v1/pendingTxs
-func (c *Client) PendingTransactions() ([]*visor.ReadableUnconfirmedTxn, error) {
-	var v []*visor.ReadableUnconfirmedTxn
+func (c *Client) PendingTransactions() ([]visor.ReadableUnconfirmedTxn, error) {
+	var v []visor.ReadableUnconfirmedTxn
 	if err := c.Get("/api/v1/pendingTxs", &v); err != nil {
+		return nil, err
+	}
+	return v, nil
+}
+
+// PendingTransactionsVerbose makes a request to GET /api/v1/pendingTxs?verbose=1
+func (c *Client) PendingTransactionsVerbose() ([]visor.ReadableUnconfirmedTxnVerbose, error) {
+	var v []visor.ReadableUnconfirmedTxnVerbose
+	if err := c.Get("/api/v1/pendingTxs?verbose=1", &v); err != nil {
 		return nil, err
 	}
 	return v, nil
@@ -802,7 +811,7 @@ func (c *Client) Transaction(txid string) (*daemon.TransactionResult, error) {
 }
 
 // Transactions makes a request to GET /api/v1/transactions
-func (c *Client) Transactions(addrs []string) (*[]daemon.TransactionResult, error) {
+func (c *Client) Transactions(addrs []string) ([]daemon.TransactionResult, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	endpoint := "/api/v1/transactions?" + v.Encode()
@@ -811,11 +820,11 @@ func (c *Client) Transactions(addrs []string) (*[]daemon.TransactionResult, erro
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}
-	return &r, nil
+	return r, nil
 }
 
 // ConfirmedTransactions makes a request to GET /api/v1/transactions?confirmed=true
-func (c *Client) ConfirmedTransactions(addrs []string) (*[]daemon.TransactionResult, error) {
+func (c *Client) ConfirmedTransactions(addrs []string) ([]daemon.TransactionResult, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	v.Add("confirmed", "true")
@@ -825,11 +834,11 @@ func (c *Client) ConfirmedTransactions(addrs []string) (*[]daemon.TransactionRes
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}
-	return &r, nil
+	return r, nil
 }
 
 // UnconfirmedTransactions makes a request to GET /api/v1/transactions?confirmed=false
-func (c *Client) UnconfirmedTransactions(addrs []string) (*[]daemon.TransactionResult, error) {
+func (c *Client) UnconfirmedTransactions(addrs []string) ([]daemon.TransactionResult, error) {
 	v := url.Values{}
 	v.Add("addrs", strings.Join(addrs, ","))
 	v.Add("confirmed", "false")
@@ -839,7 +848,7 @@ func (c *Client) UnconfirmedTransactions(addrs []string) (*[]daemon.TransactionR
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}
-	return &r, nil
+	return r, nil
 }
 
 // InjectTransaction makes a request to POST /api/v1/injectTransaction.

@@ -415,9 +415,9 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	// Transaction handler
 
 	// get set of pending transactions
-	webHandlerV1("/pendingTxs", getPendingTxns(gateway))
+	webHandlerV1("/pendingTxs", pendingTxnsHandler(gateway))
 	// get txn by txid
-	webHandlerV1("/transaction", getTransactionByID(gateway))
+	webHandlerV1("/transaction", transactionHandler(gateway))
 
 	// parse and verify transaction
 	webHandlerV2("/transaction/verify", verifyTxnHandler(gateway))

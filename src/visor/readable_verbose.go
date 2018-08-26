@@ -164,8 +164,8 @@ func NewReadableBlockTransactionVerbose(txn coin.Transaction, inputs []ReadableT
 
 // ReadableTransactionVerbose has readable transaction data. It adds TransactionStatus to a ReadableBlockTransactionVerbose
 type ReadableTransactionVerbose struct {
-	Status    TransactionStatus `json:"status"`
-	Timestamp uint64            `json:"timestamp,omitempty"`
+	Status    *TransactionStatus `json:"status,omitempty"`
+	Timestamp uint64             `json:"timestamp,omitempty"`
 	ReadableBlockTransactionVerbose
 }
 
@@ -177,7 +177,7 @@ func NewReadableTransactionVerbose(txn Transaction, inputs []ReadableTransaction
 	}
 
 	return ReadableTransactionVerbose{
-		Status:                          txn.Status,
+		Status:                          &txn.Status,
 		Timestamp:                       txn.Time,
 		ReadableBlockTransactionVerbose: rb,
 	}, nil

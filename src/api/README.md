@@ -1468,6 +1468,7 @@ Method: GET
 Args:
 	addrs: Comma seperated addresses [optional, returns all transactions if no address is provided]
     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
+    verbose: [bool] include verbose transaction input data
 ```
 
 To get address related confirmed transactions:
@@ -1486,7 +1487,6 @@ To get all addresses related transactions:
 ```sh
 curl http://127.0.0.1:6420/api/v1/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY
 ```
-
 
 Result:
 
@@ -1597,6 +1597,17 @@ Result:
         }
     }
 ]
+```
+
+Example (verbose):
+
+```sh
+curl http://127.0.0.1:6420/api/v1/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY&verbose=1
+```
+
+Result:
+
+```json
 ```
 
 ### Resend unconfirmed transactions

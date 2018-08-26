@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"math"
@@ -19,8 +20,6 @@ import (
 
 	"bytes"
 	"encoding/hex"
-
-	"github.com/stretchr/testify/mock"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -726,25 +725,26 @@ func TestGetTransactions(t *testing.T) {
 		require.NoError(t, err)
 		addrs = append(addrs, addr)
 	}
-	invalidTxn := makeTransaction(t)
-	invalidTxn.Out = append(invalidTxn.Out, coin.TransactionOutput{
-		Coins: math.MaxInt64 + 1,
-	})
+
 	type httpBody struct {
 		addrs     string
 		confirmed string
+		verbose   string
 	}
 
 	tt := []struct {
-		name                    string
-		method                  string
-		status                  int
-		err                     string
-		httpBody                *httpBody
-		getTransactionsArg      []visor.TxFilter
-		getTransactionsResponse []visor.Transaction
-		getTransactionsError    error
-		httpResponse            []visor.Transaction
+		name                           string
+		method                         string
+		status                         int
+		err                            string
+		httpBody                       *httpBody
+		verbose                        bool
+		getTransactionsArg             []visor.TxFilter
+		getTransactionsResponse        *daemon.TransactionResults
+		getTransactionsError           error
+		getTransactionsVerboseResponse *daemon.TransactionResultsVerbose
+		getTransactionsVerboseError    error
+		httpResponse                   interface{}
 	}{
 		{
 			name:   "405",
@@ -752,6 +752,7 @@ func TestGetTransactions(t *testing.T) {
 			status: http.StatusMethodNotAllowed,
 			err:    "405 Method Not Allowed",
 		},
+
 		{
 			name:   "400 - invalid `addrs` param",
 			method: http.MethodGet,
@@ -761,9 +762,10 @@ func TestGetTransactions(t *testing.T) {
 				addrs: invalidAddrsStr,
 			},
 			getTransactionsArg: []visor.TxFilter{
-				visor.AddrsFilter(addrs),
+				visor.NewAddrsFilter(addrs),
 			},
 		},
+
 		{
 			name:   "400 - invalid `confirmed` param",
 			method: http.MethodGet,
@@ -774,47 +776,58 @@ func TestGetTransactions(t *testing.T) {
 				confirmed: "invalidConfirmed",
 			},
 			getTransactionsArg: []visor.TxFilter{
-				visor.AddrsFilter(addrs),
+				visor.NewAddrsFilter(addrs),
 			},
 		},
+
+		{
+			name:   "400 - invalid verbose",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - Invalid value for verbose",
+			httpBody: &httpBody{
+				addrs:   addrsStr,
+				verbose: "foo",
+			},
+			getTransactionsArg: []visor.TxFilter{
+				visor.NewAddrsFilter(addrs),
+			},
+		},
+
 		{
 			name:   "500 - getTransactionsError",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - gateway.GetTransactions failed: getTransactionsError",
+			err:    "500 Internal Server Error - getTransactionsError",
 			httpBody: &httpBody{
 				addrs:     addrsStr,
 				confirmed: "true",
 			},
 			getTransactionsArg: []visor.TxFilter{
-				visor.AddrsFilter(addrs),
-				visor.ConfirmedTxFilter(true),
+				visor.NewAddrsFilter(addrs),
+				visor.NewConfirmedTxFilter(true),
 			},
 			getTransactionsError: errors.New("getTransactionsError"),
 		},
+
 		{
-			name:   "500 - daemon.NewTransactionResults error",
+			name:   "500 - getTransactionsVerboseError",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - daemon.NewTransactionResults failed: Droplet string conversion failed: Value is too large",
+			err:    "500 Internal Server Error - getTransactionsVerboseError",
 			httpBody: &httpBody{
 				addrs:     addrsStr,
 				confirmed: "true",
+				verbose:   "1",
 			},
+			verbose: true,
 			getTransactionsArg: []visor.TxFilter{
-				visor.AddrsFilter(addrs),
-				visor.ConfirmedTxFilter(true),
+				visor.NewAddrsFilter(addrs),
+				visor.NewConfirmedTxFilter(true),
 			},
-			getTransactionsResponse: []visor.Transaction{
-				{
-					Txn: invalidTxn,
-					Status: visor.TransactionStatus{
-						Confirmed: true,
-						Height:    103,
-					},
-				},
-			},
+			getTransactionsVerboseError: errors.New("getTransactionsVerboseError"),
 		},
+
 		{
 			name:   "200",
 			method: http.MethodGet,
@@ -824,11 +837,29 @@ func TestGetTransactions(t *testing.T) {
 				confirmed: "true",
 			},
 			getTransactionsArg: []visor.TxFilter{
-				visor.AddrsFilter(addrs),
-				visor.ConfirmedTxFilter(true),
+				visor.NewAddrsFilter(addrs),
+				visor.NewConfirmedTxFilter(true),
 			},
-			getTransactionsResponse: []visor.Transaction{},
-			httpResponse:            []visor.Transaction{},
+			getTransactionsResponse: &daemon.TransactionResults{},
+			httpResponse:            []daemon.TransactionResult{},
+		},
+
+		{
+			name:   "200 verbose",
+			method: http.MethodGet,
+			status: http.StatusOK,
+			httpBody: &httpBody{
+				addrs:     addrsStr,
+				confirmed: "true",
+				verbose:   "1",
+			},
+			verbose: true,
+			getTransactionsArg: []visor.TxFilter{
+				visor.NewAddrsFilter(addrs),
+				visor.NewConfirmedTxFilter(true),
+			},
+			getTransactionsVerboseResponse: &daemon.TransactionResultsVerbose{},
+			httpResponse:                   []daemon.TransactionResultVerbose{},
 		},
 	}
 
@@ -837,11 +868,59 @@ func TestGetTransactions(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &MockGatewayer{}
 
-			mocks := make([]interface{}, len(tc.getTransactionsArg))
-			for i := range tc.getTransactionsArg {
-				mocks[i] = mock.Anything
-			}
-			gateway.On("GetTransactions", mocks...).Return(tc.getTransactionsResponse, tc.getTransactionsError)
+			// Custom argument matching function for matching TxFilter args
+			matchFunc := mock.MatchedBy(func(flts []visor.TxFilter) bool {
+				if len(flts) != len(tc.getTransactionsArg) {
+					return false
+				}
+
+				for i, f := range flts {
+					switch f.(type) {
+					case visor.AddrsFilter:
+						flt, ok := tc.getTransactionsArg[i].(visor.AddrsFilter)
+						if !ok {
+							return false
+						}
+
+						if len(flt.Addrs) != len(f.(visor.AddrsFilter).Addrs) {
+							return false
+						}
+
+						for j, a := range flt.Addrs {
+							ab := a.Bytes()
+							bb := f.(visor.AddrsFilter).Addrs[j].Bytes()
+							if bytes.Compare(ab[:], bb[:]) != 0 {
+								return false
+							}
+						}
+
+					case visor.BaseFilter:
+						// This part assumes that the filter is a ConfirmedTxFilter
+						flt, ok := tc.getTransactionsArg[i].(visor.BaseFilter)
+						if !ok {
+							return false
+						}
+
+						dummyTxn := &visor.Transaction{
+							Status: visor.TransactionStatus{
+								Confirmed: true,
+							},
+						}
+
+						if flt.F(dummyTxn) != f.(visor.BaseFilter).F(dummyTxn) {
+							return false
+						}
+
+					default:
+						return false
+					}
+				}
+
+				return true
+			})
+
+			gateway.On("GetTransactionResults", matchFunc).Return(tc.getTransactionsResponse, tc.getTransactionsError)
+			gateway.On("GetTransactionResultsVerbose", matchFunc).Return(tc.getTransactionsVerboseResponse, tc.getTransactionsVerboseError)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -850,6 +929,9 @@ func TestGetTransactions(t *testing.T) {
 				}
 				if tc.httpBody.confirmed != "" {
 					v.Add("confirmed", tc.httpBody.confirmed)
+				}
+				if tc.httpBody.verbose != "" {
+					v.Add("verbose", tc.httpBody.verbose)
 				}
 			}
 			if len(v) > 0 {
@@ -876,10 +958,17 @@ func TestGetTransactions(t *testing.T) {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %d, want `%v`",
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg []visor.Transaction
-				err = json.Unmarshal(rr.Body.Bytes(), &msg)
-				require.NoError(t, err)
-				require.Equal(t, tc.httpResponse, msg, tc.name)
+				if tc.verbose {
+					var msg []daemon.TransactionResultVerbose
+					err = json.Unmarshal(rr.Body.Bytes(), &msg)
+					require.NoError(t, err)
+					require.Equal(t, tc.httpResponse, msg, tc.name)
+				} else {
+					var msg []daemon.TransactionResult
+					err = json.Unmarshal(rr.Body.Bytes(), &msg)
+					require.NoError(t, err)
+					require.Equal(t, tc.httpResponse, msg, tc.name)
+				}
 			}
 		})
 	}

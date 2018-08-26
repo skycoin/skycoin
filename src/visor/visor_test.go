@@ -788,7 +788,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
+				NewAddrsFilter(addrs[:1]),
 			},
 			expectTxResult{
 				txs:      nil,
@@ -807,7 +807,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
+				NewAddrsFilter(addrs[:1]),
 			},
 			expectTxResult{
 				txs:      nil,
@@ -826,7 +826,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
+				NewAddrsFilter(addrs[:1]),
 			},
 			expectTxResult{
 				txs:      nil,
@@ -845,7 +845,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
+				NewAddrsFilter(addrs[:1]),
 			},
 			expectTxResult{
 				txs:      ltxs[:1],
@@ -864,7 +864,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
+				NewAddrsFilter(addrs[:1]),
 			},
 			expectTxResult{
 				txs:      ltxs[:1],
@@ -883,7 +883,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
+				NewAddrsFilter(addrs[:1]),
 			},
 			expectTxResult{
 				txs:      ltxs[:2],
@@ -902,7 +902,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
+				NewAddrsFilter(addrs[:1]),
 			},
 			expectTxResult{
 				txs:      ltxs[:2],
@@ -921,7 +921,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
+				NewAddrsFilter(addrs[:1]),
 			},
 			expectTxResult{
 				txs:      ltxs[:2],
@@ -944,7 +944,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
+				NewAddrsFilter(addrs[:2]),
 			},
 			expectTxResult{
 				txs:      nil,
@@ -967,7 +967,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
+				NewAddrsFilter(addrs[:2]),
 			},
 			expectTxResult{
 				txs:      nil,
@@ -990,7 +990,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
+				NewAddrsFilter(addrs[:2]),
 			},
 			expectTxResult{
 				txs:      nil,
@@ -1013,7 +1013,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
+				NewAddrsFilter(addrs[:2]),
 			},
 			expectTxResult{
 				txs:      ltxs[:1],
@@ -1036,7 +1036,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
+				NewAddrsFilter(addrs[:2]),
 			},
 			expectTxResult{
 				txs:      ltxs[:1],
@@ -1059,7 +1059,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
+				NewAddrsFilter(addrs[:2]),
 			},
 			expectTxResult{
 				txs:      ltxs[:1],
@@ -1082,7 +1082,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
+				NewAddrsFilter(addrs[:2]),
 			},
 			expectTxResult{
 				txs:      ltxs[:2],
@@ -1105,7 +1105,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
+				NewAddrsFilter(addrs[:2]),
 			},
 			expectTxResult{
 				txs:      ltxs[:2],
@@ -1128,7 +1128,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
+				NewAddrsFilter(addrs[:2]),
 			},
 			expectTxResult{
 				txs:      ltxs[:2],
@@ -1151,7 +1151,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
+				NewAddrsFilter(addrs[:2]),
 			},
 			expectTxResult{
 				txs:      ltxs[:2],
@@ -1174,7 +1174,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
+				NewAddrsFilter(addrs[:2]),
 			},
 			expectTxResult{
 				txs:      ltxs[:3],
@@ -1197,7 +1197,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
+				NewAddrsFilter(addrs[:2]),
 			},
 			expectTxResult{
 				txs:      ltxs[:3],
@@ -1220,7 +1220,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
+				NewAddrsFilter(addrs[:2]),
 			},
 			expectTxResult{
 				txs:      ltxs[:3],
@@ -1243,7 +1243,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
+				NewAddrsFilter(addrs[:2]),
 			},
 			expectTxResult{
 				txs:      ltxs[:3],
@@ -1262,7 +1262,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				ConfirmedTxFilter(false),
+				NewConfirmedTxFilter(false),
 			},
 			expectTxResult{
 				txs:      nil,
@@ -1281,7 +1281,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				ConfirmedTxFilter(false),
+				NewConfirmedTxFilter(false),
 			},
 			expectTxResult{
 				txs:      nil,
@@ -1300,7 +1300,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				ConfirmedTxFilter(false),
+				NewConfirmedTxFilter(false),
 			},
 			expectTxResult{
 				txs:      nil,
@@ -1319,7 +1319,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				ConfirmedTxFilter(false),
+				NewConfirmedTxFilter(false),
 			},
 			expectTxResult{
 				txs:      nil,
@@ -1338,7 +1338,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				ConfirmedTxFilter(false),
+				NewConfirmedTxFilter(false),
 			},
 			expectTxResult{
 				txs:      nil,
@@ -1357,7 +1357,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				ConfirmedTxFilter(true),
+				NewConfirmedTxFilter(true),
 			},
 			expectTxResult{
 				txs:      nil,
@@ -1376,7 +1376,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				ConfirmedTxFilter(true),
+				NewConfirmedTxFilter(true),
 			},
 			expectTxResult{
 				txs:      ltxs[:1],
@@ -1395,7 +1395,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				ConfirmedTxFilter(true),
+				NewConfirmedTxFilter(true),
 			},
 			expectTxResult{
 				txs:      ltxs[:1],
@@ -1414,7 +1414,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				ConfirmedTxFilter(true),
+				NewConfirmedTxFilter(true),
 			},
 			expectTxResult{
 				txs:      ltxs[:2],
@@ -1430,8 +1430,8 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
-				ConfirmedTxFilter(false),
+				NewAddrsFilter(addrs[:1]),
+				NewConfirmedTxFilter(false),
 			},
 			expectTxResult{
 				txs:      nil,
@@ -1450,8 +1450,8 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
-				ConfirmedTxFilter(false),
+				NewAddrsFilter(addrs[:1]),
+				NewConfirmedTxFilter(false),
 			},
 			expectTxResult{
 				txs:      nil,
@@ -1470,8 +1470,8 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
-				ConfirmedTxFilter(false),
+				NewAddrsFilter(addrs[:1]),
+				NewConfirmedTxFilter(false),
 			},
 			expectTxResult{
 				txs:      nil,
@@ -1490,8 +1490,8 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
-				ConfirmedTxFilter(false),
+				NewAddrsFilter(addrs[:1]),
+				NewConfirmedTxFilter(false),
 			},
 			expectTxResult{
 				txs:      nil,
@@ -1514,8 +1514,8 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
-				ConfirmedTxFilter(false),
+				NewAddrsFilter(addrs[:2]),
+				NewConfirmedTxFilter(false),
 			},
 			expectTxResult{
 				txs:      nil,
@@ -1538,8 +1538,8 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
-				ConfirmedTxFilter(false),
+				NewAddrsFilter(addrs[:2]),
+				NewConfirmedTxFilter(false),
 			},
 			expectTxResult{
 				txs:      nil,
@@ -1562,8 +1562,8 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
-				ConfirmedTxFilter(false),
+				NewAddrsFilter(addrs[:2]),
+				NewConfirmedTxFilter(false),
 			},
 			expectTxResult{
 				txs:      nil,
@@ -1586,8 +1586,8 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
-				ConfirmedTxFilter(false),
+				NewAddrsFilter(addrs[:2]),
+				NewConfirmedTxFilter(false),
 			},
 			expectTxResult{
 				txs:      nil,
@@ -1610,8 +1610,8 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
-				ConfirmedTxFilter(false),
+				NewAddrsFilter(addrs[:2]),
+				NewConfirmedTxFilter(false),
 			},
 			expectTxResult{
 				txs:      nil,
@@ -1634,8 +1634,8 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
-				ConfirmedTxFilter(false),
+				NewAddrsFilter(addrs[:1]),
+				NewConfirmedTxFilter(false),
 			},
 			expectTxResult{
 				txs:      nil,
@@ -1658,8 +1658,8 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[1:2]),
-				ConfirmedTxFilter(false),
+				NewAddrsFilter(addrs[1:2]),
+				NewConfirmedTxFilter(false),
 			},
 			expectTxResult{
 				txs:      nil,
@@ -1678,8 +1678,8 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
-				ConfirmedTxFilter(true),
+				NewAddrsFilter(addrs[:1]),
+				NewConfirmedTxFilter(true),
 			},
 			expectTxResult{
 				txs:      nil,
@@ -1698,8 +1698,8 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
-				ConfirmedTxFilter(true),
+				NewAddrsFilter(addrs[:1]),
+				NewConfirmedTxFilter(true),
 			},
 			expectTxResult{
 				txs:      ltxs[:1],
@@ -1718,8 +1718,8 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
-				ConfirmedTxFilter(true),
+				NewAddrsFilter(addrs[:1]),
+				NewConfirmedTxFilter(true),
 			},
 			expectTxResult{
 				txs:      ltxs[:1],
@@ -1738,8 +1738,8 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
-				ConfirmedTxFilter(true),
+				NewAddrsFilter(addrs[:1]),
+				NewConfirmedTxFilter(true),
 			},
 			expectTxResult{
 				txs:      ltxs[:2],
@@ -1758,8 +1758,8 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
-				ConfirmedTxFilter(true),
+				NewAddrsFilter(addrs[:1]),
+				NewConfirmedTxFilter(true),
 			},
 			expectTxResult{
 				txs:      ltxs[:2],
@@ -1782,8 +1782,8 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:1]),
-				ConfirmedTxFilter(true),
+				NewAddrsFilter(addrs[:1]),
+				NewConfirmedTxFilter(true),
 			},
 			expectTxResult{
 				txs:      ltxs[:2],
@@ -1806,8 +1806,8 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[1:2]),
-				ConfirmedTxFilter(true),
+				NewAddrsFilter(addrs[1:2]),
+				NewConfirmedTxFilter(true),
 			},
 			expectTxResult{
 				txs:      ltxs[2:3],
@@ -1830,8 +1830,8 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
-				AddrsFilter(addrs[:2]),
-				ConfirmedTxFilter(true),
+				NewAddrsFilter(addrs[:2]),
+				NewConfirmedTxFilter(true),
 			},
 			expectTxResult{
 				txs:      ltxs[:3],

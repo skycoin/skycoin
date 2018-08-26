@@ -865,6 +865,50 @@ func (c *Client) UnconfirmedTransactions(addrs []string) ([]daemon.TransactionRe
 	return r, nil
 }
 
+// TransactionsVerbose makes a request to GET /api/v1/transactions?verbose=1
+func (c *Client) TransactionsVerbose(addrs []string) ([]daemon.TransactionResultVerbose, error) {
+	v := url.Values{}
+	v.Add("addrs", strings.Join(addrs, ","))
+	v.Add("verbose", "1")
+	endpoint := "/api/v1/transactions?" + v.Encode()
+
+	var r []daemon.TransactionResultVerbose
+	if err := c.Get(endpoint, &r); err != nil {
+		return nil, err
+	}
+	return r, nil
+}
+
+// ConfirmedTransactionsVerbose makes a request to GET /api/v1/transactions?confirmed=true&verbose=1
+func (c *Client) ConfirmedTransactionsVerbose(addrs []string) ([]daemon.TransactionResultVerbose, error) {
+	v := url.Values{}
+	v.Add("addrs", strings.Join(addrs, ","))
+	v.Add("confirmed", "true")
+	v.Add("verbose", "1")
+	endpoint := "/api/v1/transactions?" + v.Encode()
+
+	var r []daemon.TransactionResultVerbose
+	if err := c.Get(endpoint, &r); err != nil {
+		return nil, err
+	}
+	return r, nil
+}
+
+// UnconfirmedTransactionsVerbose makes a request to GET /api/v1/transactions?confirmed=false&verbose=1
+func (c *Client) UnconfirmedTransactionsVerbose(addrs []string) ([]daemon.TransactionResultVerbose, error) {
+	v := url.Values{}
+	v.Add("addrs", strings.Join(addrs, ","))
+	v.Add("confirmed", "false")
+	v.Add("verbose", "1")
+	endpoint := "/api/v1/transactions?" + v.Encode()
+
+	var r []daemon.TransactionResultVerbose
+	if err := c.Get(endpoint, &r); err != nil {
+		return nil, err
+	}
+	return r, nil
+}
+
 // InjectTransaction makes a request to POST /api/v1/injectTransaction.
 func (c *Client) InjectTransaction(txn *coin.Transaction) (string, error) {
 	d := txn.Serialize()

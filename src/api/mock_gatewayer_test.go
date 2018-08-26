@@ -652,28 +652,45 @@ func (_m *MockGatewayer) GetTransactionResultVerbose(txid cipher.SHA256) (*daemo
 	return r0, r1
 }
 
-// GetTransactions provides a mock function with given fields: flts
-func (_m *MockGatewayer) GetTransactions(flts ...visor.TxFilter) ([]visor.Transaction, error) {
-	_va := make([]interface{}, len(flts))
-	for _i := range flts {
-		_va[_i] = flts[_i]
-	}
-	var _ca []interface{}
-	_ca = append(_ca, _va...)
-	ret := _m.Called(_ca...)
+// GetTransactionResults provides a mock function with given fields: flts
+func (_m *MockGatewayer) GetTransactionResults(flts []visor.TxFilter) (*daemon.TransactionResults, error) {
+	ret := _m.Called(flts)
 
-	var r0 []visor.Transaction
-	if rf, ok := ret.Get(0).(func(...visor.TxFilter) []visor.Transaction); ok {
-		r0 = rf(flts...)
+	var r0 *daemon.TransactionResults
+	if rf, ok := ret.Get(0).(func([]visor.TxFilter) *daemon.TransactionResults); ok {
+		r0 = rf(flts)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]visor.Transaction)
+			r0 = ret.Get(0).(*daemon.TransactionResults)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(...visor.TxFilter) error); ok {
-		r1 = rf(flts...)
+	if rf, ok := ret.Get(1).(func([]visor.TxFilter) error); ok {
+		r1 = rf(flts)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetTransactionResultsVerbose provides a mock function with given fields: flts
+func (_m *MockGatewayer) GetTransactionResultsVerbose(flts []visor.TxFilter) (*daemon.TransactionResultsVerbose, error) {
+	ret := _m.Called(flts)
+
+	var r0 *daemon.TransactionResultsVerbose
+	if rf, ok := ret.Get(0).(func([]visor.TxFilter) *daemon.TransactionResultsVerbose); ok {
+		r0 = rf(flts)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*daemon.TransactionResultsVerbose)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func([]visor.TxFilter) error); ok {
+		r1 = rf(flts)
 	} else {
 		r1 = ret.Error(1)
 	}

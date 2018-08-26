@@ -364,11 +364,11 @@ func ReadableOutputsToUxBalances(ros ReadableOutputs) ([]wallet.UxBalance, error
 
 // ReadableTransaction represents a readable transaction
 type ReadableTransaction struct {
+	Timestamp uint64 `json:"timestamp,omitempty"`
 	Length    uint32 `json:"length"`
 	Type      uint8  `json:"type"`
 	Hash      string `json:"txid"`
 	InnerHash string `json:"inner_hash"`
-	Timestamp uint64 `json:"timestamp,omitempty"`
 
 	Sigs []string                    `json:"sigs"`
 	In   []string                    `json:"inputs"`

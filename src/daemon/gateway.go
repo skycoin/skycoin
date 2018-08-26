@@ -611,10 +611,38 @@ func NewTransactionResultVerbose(txn *visor.Transaction, inputs []visor.Readable
 		return nil, err
 	}
 
+	// Force the Status field to be hidden on the inner transaction, to maintain API compatibility
+	rbTxn.Status = nil
+
 	return &TransactionResultVerbose{
 		Transaction: rbTxn,
 		Status:      txn.Status,
 		Time:        txn.Time,
+	}, nil
+}
+
+// TransactionResultsVerbose array of transaction results
+type TransactionResultsVerbose struct {
+	Txns []TransactionResultVerbose `json:"txns"`
+}
+
+// NewTransactionResultsVerbose converts []Transaction to []TransactionResultsVerbose
+func NewTransactionResultsVerbose(txns []visor.Transaction, inputs [][]visor.ReadableTransactionInput) (*TransactionResultsVerbose, error) {
+	if len(txns) != len(inputs) {
+		return nil, errors.New("NewTransactionResultsVerbose: len(txns) != len(inputs)")
+	}
+
+	txnRlts := make([]TransactionResultVerbose, len(txns))
+	for i, txn := range txns {
+		rTxn, err := NewTransactionResultVerbose(&txn, inputs[i])
+		if err != nil {
+			return nil, err
+		}
+		txnRlts[i] = *rTxn
+	}
+
+	return &TransactionResultsVerbose{
+		Txns: txnRlts,
 	}, nil
 }
 
@@ -686,13 +714,42 @@ func (gw *Gateway) GetVerboseTransactionsForAddress(a cipher.Address) ([]visor.R
 }
 
 // GetTransactions returns transactions filtered by zero or more visor.TxFilter
-func (gw *Gateway) GetTransactions(flts ...visor.TxFilter) ([]visor.Transaction, error) {
+func (gw *Gateway) GetTransactions(flts []visor.TxFilter) ([]visor.Transaction, error) {
 	var txns []visor.Transaction
 	var err error
 	gw.strand("GetTransactions", func() {
-		txns, err = gw.v.GetTransactions(flts...)
+		txns, err = gw.v.GetTransactions(flts)
 	})
 	return txns, err
+}
+
+// GetTransactionResults returns transactions filtered by zero or more visor.TxFilter
+func (gw *Gateway) GetTransactionResults(flts []visor.TxFilter) (*TransactionResults, error) {
+	var txns []visor.Transaction
+	var err error
+	gw.strand("GetTransactionResults", func() {
+		txns, err = gw.v.GetTransactions(flts)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return NewTransactionResults(txns)
+}
+
+// GetTransactionResultsVerbose returns transactions filtered by zero or more visor.TxFilter
+func (gw *Gateway) GetTransactionResultsVerbose(flts []visor.TxFilter) (*TransactionResultsVerbose, error) {
+	var txns []visor.Transaction
+	var inputs [][]visor.ReadableTransactionInput
+	var err error
+	gw.strand("GetTransactionResultsVerbose", func() {
+		txns, inputs, err = gw.v.GetTransactionsWithInputs(flts)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return NewTransactionResultsVerbose(txns, inputs)
 }
 
 // GetUxOutByID gets UxOut by hash id.

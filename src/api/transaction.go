@@ -134,10 +134,17 @@ func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 // Args:
 //     addrs: Comma seperated addresses [optional, returns all transactions if no address provided]
 //     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
+//	   verbose: [bool] include verbose transaction input data
 func getTransactions(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
+			return
+		}
+
+		verbose, err := parseVerboseFlag(r.FormValue("verbose"))
+		if err != nil {
+			wh.Error400(w, "Invalid value for verbose")
 			return
 		}
 
@@ -149,7 +156,7 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		// Initialize transaction filters
-		flts := []visor.TxFilter{visor.AddrsFilter(addrs)}
+		flts := []visor.TxFilter{visor.NewAddrsFilter(addrs)}
 
 		// Gets the 'confirmed' parameter value
 		confirmedStr := r.FormValue("confirmed")
@@ -160,26 +167,37 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 
-			flts = append(flts, visor.ConfirmedTxFilter(confirmed))
+			flts = append(flts, visor.NewConfirmedTxFilter(confirmed))
 		}
 
-		// Gets transactions
-		txns, err := gateway.GetTransactions(flts...)
-		if err != nil {
-			err = fmt.Errorf("gateway.GetTransactions failed: %v", err)
-			wh.Error500(w, err.Error())
-			return
-		}
+		if verbose {
+			txnRlts, err := gateway.GetTransactionResultsVerbose(flts)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
 
-		// Converts visor.Transaction to daemon.TransactionResult
-		txnRlts, err := daemon.NewTransactionResults(txns)
-		if err != nil {
-			err = fmt.Errorf("daemon.NewTransactionResults failed: %v", err)
-			wh.Error500(w, err.Error())
-			return
-		}
+			txns := []daemon.TransactionResultVerbose{}
+			if txnRlts != nil && txnRlts.Txns != nil {
+				txns = txnRlts.Txns
+			}
 
-		wh.SendJSONOr500(logger, w, txnRlts.Txns)
+			wh.SendJSONOr500(logger, w, txns)
+		} else {
+			// Gets transactions
+			txnRlts, err := gateway.GetTransactionResults(flts)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+
+			txns := []daemon.TransactionResult{}
+			if txnRlts != nil && txnRlts.Txns != nil {
+				txns = txnRlts.Txns
+			}
+
+			wh.SendJSONOr500(logger, w, txns)
+		}
 	}
 }
 

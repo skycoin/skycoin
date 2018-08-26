@@ -1821,12 +1821,22 @@ func TestStableTransactions(t *testing.T) {
 				StatusCode: http.StatusBadRequest,
 				Message:    "400 Bad Request - txId is empty",
 			},
-			goldenFile: "empty-addrs.golden",
+			goldenFile: "empty-addrs-transactions.golden",
 		},
 		{
 			name:       "single addr",
 			addrs:      []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"},
-			goldenFile: "single-addr.golden",
+			goldenFile: "single-addr-transactions.golden",
+		},
+		{
+			name:       "genesis",
+			addrs:      []string{"2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6"},
+			goldenFile: "genesis-addr-transactions.golden",
+		},
+		{
+			name:       "multiple addrs",
+			addrs:      []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt", "2JJ8pgq8EDAnrzf9xxBJapE2qkYLefW4uF8"},
+			goldenFile: "multiple-addr-transactions.golden",
 		},
 	}
 
@@ -1901,12 +1911,22 @@ func TestStableConfirmedTransactions(t *testing.T) {
 		{
 			name:       "empty addrs",
 			addrs:      []string{},
-			goldenFile: "empty-addrs.golden",
+			goldenFile: "empty-addrs-transactions.golden",
 		},
 		{
 			name:       "single addr",
 			addrs:      []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"},
-			goldenFile: "single-addr.golden",
+			goldenFile: "single-addr-transactions.golden",
+		},
+		{
+			name:       "genesis",
+			addrs:      []string{"2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6"},
+			goldenFile: "genesis-addr-transactions.golden",
+		},
+		{
+			name:       "multiple addrs",
+			addrs:      []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt", "2JJ8pgq8EDAnrzf9xxBJapE2qkYLefW4uF8"},
+			goldenFile: "multiple-addr-transactions.golden",
 		},
 	}
 
@@ -1995,6 +2015,260 @@ func TestLiveUnconfirmedTransactions(t *testing.T) {
 	require.True(t, len(cTxsSingle) >= 0)
 
 	cTxsAll, err := c.UnconfirmedTransactions([]string{})
+	require.NoError(t, err)
+	require.True(t, len(cTxsAll) >= 0)
+	require.True(t, len(cTxsAll) >= len(cTxsSingle))
+}
+
+func TestLiveTransactionsVerbose(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	c := api.NewClient(nodeAddress())
+	addrs := []string{
+		"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt",
+	}
+	txns, err := c.TransactionsVerbose(addrs)
+	require.NoError(t, err)
+	require.True(t, len(txns) > 0)
+}
+
+func TestStableTransactionsVerbose(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	cases := []struct {
+		name       string
+		addrs      []string
+		err        api.ClientError
+		goldenFile string
+	}{
+		{
+			name:  "invalid addr length",
+			addrs: []string{"abcd"},
+			err: api.ClientError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid address length",
+			},
+		},
+		{
+			name:  "invalid addr character",
+			addrs: []string{"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947"},
+			err: api.ClientError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid base58 character",
+			},
+		},
+		{
+			name:  "invalid checksum",
+			addrs: []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk"},
+			err: api.ClientError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid checksum",
+			},
+		},
+		{
+			name:       "empty addrs",
+			addrs:      []string{},
+			goldenFile: "empty-addrs-transactions-verbose.golden",
+		},
+		{
+			name:       "single addr",
+			addrs:      []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"},
+			goldenFile: "single-addr-transactions-verbose.golden",
+		},
+		{
+			name:       "genesis",
+			addrs:      []string{"2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6"},
+			goldenFile: "genesis-addr-transactions-verbose.golden",
+		},
+		{
+			name:       "multiple addrs",
+			addrs:      []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt", "2JJ8pgq8EDAnrzf9xxBJapE2qkYLefW4uF8"},
+			goldenFile: "multiple-addr-transactions-verbose.golden",
+		},
+	}
+
+	c := api.NewClient(nodeAddress())
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			txResult, err := c.TransactionsVerbose(tc.addrs)
+			if err != nil {
+				require.Equal(t, tc.err, err, "case: "+tc.name)
+				return
+			}
+
+			var expected []daemon.TransactionResultVerbose
+			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
+		})
+	}
+}
+
+func TestLiveConfirmedTransactionsVerbose(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+	c := api.NewClient(nodeAddress())
+
+	ctxsSingle, err := c.ConfirmedTransactionsVerbose([]string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"})
+	require.NoError(t, err)
+	require.True(t, len(ctxsSingle) > 0)
+
+	ctxsAll, err := c.ConfirmedTransactionsVerbose([]string{})
+	require.NoError(t, err)
+	require.True(t, len(ctxsAll) > 0)
+	require.True(t, len(ctxsAll) > len(ctxsSingle))
+}
+
+func TestStableConfirmedTransactionsVerbose(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+	cases := []struct {
+		name       string
+		addrs      []string
+		err        api.ClientError
+		goldenFile string
+	}{
+		{
+			name:  "invalid addr length",
+			addrs: []string{"abcd"},
+			err: api.ClientError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid address length",
+			},
+		},
+		{
+			name:  "invalid addr character",
+			addrs: []string{"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947"},
+			err: api.ClientError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid base58 character",
+			},
+		},
+		{
+			name:  "invalid checksum",
+			addrs: []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk"},
+			err: api.ClientError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid checksum",
+			},
+		},
+		{
+			name:       "empty addrs",
+			addrs:      []string{},
+			goldenFile: "empty-addrs-transactions-verbose.golden",
+		},
+		{
+			name:       "single addr",
+			addrs:      []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"},
+			goldenFile: "single-addr-transactions-verbose.golden",
+		},
+		{
+			name:       "genesis",
+			addrs:      []string{"2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6"},
+			goldenFile: "genesis-addr-transactions-verbose.golden",
+		},
+		{
+			name:       "multiple addrs",
+			addrs:      []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt", "2JJ8pgq8EDAnrzf9xxBJapE2qkYLefW4uF8"},
+			goldenFile: "multiple-addr-transactions-verbose.golden",
+		},
+	}
+
+	c := api.NewClient(nodeAddress())
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			txResult, err := c.ConfirmedTransactionsVerbose(tc.addrs)
+			if err != nil {
+				require.Equal(t, tc.err, err, "case: "+tc.name)
+				return
+			}
+
+			var expected []daemon.TransactionResultVerbose
+			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
+		})
+	}
+}
+
+func TestStableUnconfirmedTransactionVerbose(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+	cases := []struct {
+		name       string
+		addrs      []string
+		err        api.ClientError
+		goldenFile string
+	}{
+		{
+			name:  "invalid addr length",
+			addrs: []string{"abcd"},
+			err: api.ClientError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid address length",
+			},
+		},
+		{
+			name:  "invalid addr character",
+			addrs: []string{"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947"},
+			err: api.ClientError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid base58 character",
+			},
+		},
+		{
+			name:  "invalid checksum",
+			addrs: []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk"},
+			err: api.ClientError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid checksum",
+			},
+		},
+		{
+			name:       "empty addrs",
+			addrs:      []string{},
+			goldenFile: "./empty-addrs-unconfirmed-txs.golden",
+		},
+	}
+
+	c := api.NewClient(nodeAddress())
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			txResult, err := c.UnconfirmedTransactionsVerbose(tc.addrs)
+			if err != nil {
+				require.Equal(t, tc.err, err, "case: "+tc.name)
+				return
+			}
+
+			var expected []daemon.TransactionResultVerbose
+			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
+		})
+	}
+}
+
+func TestLiveUnconfirmedTransactionsVerbose(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+	c := api.NewClient(nodeAddress())
+
+	cTxsSingle, err := c.UnconfirmedTransactionsVerbose([]string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"})
+	require.NoError(t, err)
+	require.True(t, len(cTxsSingle) >= 0)
+
+	cTxsAll, err := c.UnconfirmedTransactionsVerbose([]string{})
 	require.NoError(t, err)
 	require.True(t, len(cTxsAll) >= 0)
 	require.True(t, len(cTxsAll) >= len(cTxsSingle))

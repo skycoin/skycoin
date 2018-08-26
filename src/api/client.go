@@ -439,6 +439,20 @@ func (c *Client) LastBlocks(n uint64) (*visor.ReadableBlocks, error) {
 	return &b, nil
 }
 
+// LastBlocksVerbose makes a request to GET /api/v1/last_blocks?verbose=1
+func (c *Client) LastBlocksVerbose(n uint64) (*visor.ReadableBlocksVerbose, error) {
+	v := url.Values{}
+	v.Add("num", fmt.Sprint(n))
+	v.Add("verbose", "1")
+	endpoint := "/api/v1/last_blocks?" + v.Encode()
+
+	var b visor.ReadableBlocksVerbose
+	if err := c.Get(endpoint, &b); err != nil {
+		return nil, err
+	}
+	return &b, nil
+}
+
 // BlockchainMetadata makes a request to GET /api/v1/blockchain/metadata
 func (c *Client) BlockchainMetadata() (*visor.BlockchainMetadata, error) {
 	var b visor.BlockchainMetadata

@@ -1329,7 +1329,6 @@ func TestStableLastBlocks(t *testing.T) {
 
 		prevBlock = &blocks.Blocks[idx]
 	}
-
 }
 
 func TestLiveLastBlocks(t *testing.T) {
@@ -1347,6 +1346,63 @@ func TestLiveLastBlocks(t *testing.T) {
 		}
 
 		bHash, err := c.BlockByHash(b.Head.BlockHash)
+		require.NoError(t, err)
+		require.NotNil(t, bHash)
+		require.Equal(t, b, *bHash)
+
+		prevBlock = &blocks.Blocks[idx]
+	}
+}
+
+func TestStableLastBlocksVerbose(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	c := api.NewClient(nodeAddress())
+
+	blocks, err := c.LastBlocksVerbose(1)
+	require.NoError(t, err)
+
+	var expected *visor.ReadableBlocksVerbose
+	checkGoldenFile(t, "block-last-verbose.golden", TestData{blocks, &expected})
+
+	blocks, err = c.LastBlocksVerbose(10)
+	require.NoError(t, err)
+	require.Equal(t, 10, len(blocks.Blocks))
+
+	var prevBlock *visor.ReadableBlockVerbose
+	for idx, b := range blocks.Blocks {
+		if prevBlock != nil {
+			require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
+		}
+
+		bHash, err := c.BlockByHashVerbose(b.Head.BlockHash)
+		require.NoError(t, err)
+		require.NotNil(t, bHash)
+		require.Equal(t, b, *bHash)
+
+		prevBlock = &blocks.Blocks[idx]
+	}
+}
+
+func TestLiveLastBlocksVerbose(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+	c := api.NewClient(nodeAddress())
+
+	blocks, err := c.LastBlocksVerbose(10)
+	require.NoError(t, err)
+	require.Equal(t, 10, len(blocks.Blocks))
+
+	var prevBlock *visor.ReadableBlockVerbose
+	for idx, b := range blocks.Blocks {
+		if prevBlock != nil {
+			require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
+		}
+
+		bHash, err := c.BlockByHashVerbose(b.Head.BlockHash)
 		require.NoError(t, err)
 		require.NotNil(t, bHash)
 		require.Equal(t, b, *bHash)

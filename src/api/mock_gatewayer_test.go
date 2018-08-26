@@ -468,6 +468,29 @@ func (_m *MockGatewayer) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error
 	return r0, r1
 }
 
+// GetLastBlocksVerbose provides a mock function with given fields: num
+func (_m *MockGatewayer) GetLastBlocksVerbose(num uint64) (*visor.ReadableBlocksVerbose, error) {
+	ret := _m.Called(num)
+
+	var r0 *visor.ReadableBlocksVerbose
+	if rf, ok := ret.Get(0).(func(uint64) *visor.ReadableBlocksVerbose); ok {
+		r0 = rf(num)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*visor.ReadableBlocksVerbose)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(uint64) error); ok {
+		r1 = rf(num)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetRichlist provides a mock function with given fields: includeDistribution
 func (_m *MockGatewayer) GetRichlist(includeDistribution bool) (visor.Richlist, error) {
 	ret := _m.Called(includeDistribution)

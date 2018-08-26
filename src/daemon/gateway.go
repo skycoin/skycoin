@@ -380,6 +380,7 @@ func (gw *Gateway) GetBlocksInDepth(vs []uint64) (*visor.ReadableBlocks, error) 
 func (gw *Gateway) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error) {
 	var blocks []coin.SignedBlock
 	var err error
+
 	gw.strand("GetLastBlocks", func() {
 		blocks, err = gw.v.GetLastBlocks(num)
 	})
@@ -388,6 +389,21 @@ func (gw *Gateway) GetLastBlocks(num uint64) (*visor.ReadableBlocks, error) {
 	}
 
 	return visor.NewReadableBlocks(blocks)
+}
+
+// GetLastBlocksVerbose get last N blocks with verbose transaction input data
+func (gw *Gateway) GetLastBlocksVerbose(num uint64) (*visor.ReadableBlocksVerbose, error) {
+	var blocks []visor.ReadableBlockVerbose
+	var err error
+
+	gw.strand("GetLastBlocksVerbose", func() {
+		blocks, err = gw.v.GetLastBlocksVerbose(num)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return visor.NewReadableBlocksVerbose(blocks), nil
 }
 
 // OutputsFilter used as optional arguments in GetUnspentOutputs method

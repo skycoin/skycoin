@@ -4,8 +4,7 @@
 			"confirmed": true,
 			"unconfirmed": false,
 			"height": 181,
-			"block_seq": 0,
-			"unknown": false
+			"block_seq": 0
 		},
 		"timestamp": 1426562704,
 		"length": 0,
@@ -29,8 +28,7 @@
 			"confirmed": true,
 			"unconfirmed": false,
 			"height": 180,
-			"block_seq": 1,
-			"unknown": false
+			"block_seq": 1
 		},
 		"timestamp": 1427926392,
 		"length": 3846,
@@ -658,8 +656,7 @@
 			"confirmed": true,
 			"unconfirmed": false,
 			"height": 164,
-			"block_seq": 17,
-			"unknown": false
+			"block_seq": 17
 		},
 		"timestamp": 1428989855,
 		"length": 220,
@@ -699,8 +696,7 @@
 			"confirmed": true,
 			"unconfirmed": false,
 			"height": 163,
-			"block_seq": 18,
-			"unknown": false
+			"block_seq": 18
 		},
 		"timestamp": 1428989925,
 		"length": 183,
@@ -734,8 +730,7 @@
 			"confirmed": true,
 			"unconfirmed": false,
 			"height": 150,
-			"block_seq": 31,
-			"unknown": false
+			"block_seq": 31
 		},
 		"timestamp": 1429021184,
 		"length": 220,
@@ -775,8 +770,7 @@
 			"confirmed": true,
 			"unconfirmed": false,
 			"height": 149,
-			"block_seq": 32,
-			"unknown": false
+			"block_seq": 32
 		},
 		"timestamp": 1429021214,
 		"length": 183,
@@ -810,8 +804,7 @@
 			"confirmed": true,
 			"unconfirmed": false,
 			"height": 148,
-			"block_seq": 33,
-			"unknown": false
+			"block_seq": 33
 		},
 		"timestamp": 1429021674,
 		"length": 280,
@@ -853,8 +846,7 @@
 			"confirmed": true,
 			"unconfirmed": false,
 			"height": 147,
-			"block_seq": 34,
-			"unknown": false
+			"block_seq": 34
 		},
 		"timestamp": 1429021994,
 		"length": 220,
@@ -894,8 +886,7 @@
 			"confirmed": true,
 			"unconfirmed": false,
 			"height": 146,
-			"block_seq": 35,
-			"unknown": false
+			"block_seq": 35
 		},
 		"timestamp": 1429022034,
 		"length": 183,
@@ -929,8 +920,7 @@
 			"confirmed": true,
 			"unconfirmed": false,
 			"height": 145,
-			"block_seq": 36,
-			"unknown": false
+			"block_seq": 36
 		},
 		"timestamp": 1429022064,
 		"length": 280,
@@ -972,8 +962,7 @@
 			"confirmed": true,
 			"unconfirmed": false,
 			"height": 144,
-			"block_seq": 37,
-			"unknown": false
+			"block_seq": 37
 		},
 		"timestamp": 1429022094,
 		"length": 183,
@@ -1007,8 +996,7 @@
 			"confirmed": true,
 			"unconfirmed": false,
 			"height": 135,
-			"block_seq": 46,
-			"unknown": false
+			"block_seq": 46
 		},
 		"timestamp": 1429077374,
 		"length": 220,
@@ -1048,8 +1036,7 @@
 			"confirmed": true,
 			"unconfirmed": false,
 			"height": 134,
-			"block_seq": 47,
-			"unknown": false
+			"block_seq": 47
 		},
 		"timestamp": 1429077384,
 		"length": 220,
@@ -1089,8 +1076,7 @@
 			"confirmed": true,
 			"unconfirmed": false,
 			"height": 133,
-			"block_seq": 48,
-			"unknown": false
+			"block_seq": 48
 		},
 		"timestamp": 1429077394,
 		"length": 220,
@@ -1130,8 +1116,7 @@
 			"confirmed": true,
 			"unconfirmed": false,
 			"height": 132,
-			"block_seq": 49,
-			"unknown": false
+			"block_seq": 49
 		},
 		"timestamp": 1429077404,
 		"length": 220,
@@ -1171,8 +1156,7 @@
 			"confirmed": true,
 			"unconfirmed": false,
 			"height": 82,
-			"block_seq": 99,
-			"unknown": false
+			"block_seq": 99
 		},
 		"timestamp": 1429274616,
 		"length": 571,
@@ -1238,8 +1222,7 @@
 			"confirmed": true,
 			"unconfirmed": false,
 			"height": 58,
-			"block_seq": 123,
-			"unknown": false
+			"block_seq": 123
 		},
 		"timestamp": 1429451746,
 		"length": 220,

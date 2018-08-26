@@ -25,7 +25,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - CLI tool uses the REST API instead of the deprecated webrpc API to communicate with the node
 - `cli status` return value is now the response from `GET /api/v1/health`, which changes some fields
-- `/api/network/` endpoints will return an empty array for array values instead of `null`
+- `/api/v1/network/` endpoints will return an empty array for array values instead of `null`
+- `/api/v1/blocks` will return an empty array for `"blocks"` instead of `null`
+- `/api/v1/blockchain/progress` will return an empty array for `"peers"` instead of `null`
 - `go run cmd/skycoin/skycoin.go` will have exit status 1 on failure and exit status 2 on panic
 - The deprecated JSON 2.0 RPC interface is disabled by default for all run modes, since it is no longer needed for the CLI tool
 - Remove `"unknown"` from the `"status"` field in responses from `/api/v1/explorer/address`, `/api/v1/transaction`, `/api/v1/transactions`

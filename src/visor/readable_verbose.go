@@ -64,6 +64,9 @@ type ReadableBlocksVerbose struct {
 
 // NewReadableBlocksVerbose creates ReadableBlocksVerbose from []ReadableBlockVerbose
 func NewReadableBlocksVerbose(blocks []ReadableBlockVerbose) *ReadableBlocksVerbose {
+	if blocks == nil {
+		blocks = []ReadableBlockVerbose{}
+	}
 	return &ReadableBlocksVerbose{
 		Blocks: blocks,
 	}

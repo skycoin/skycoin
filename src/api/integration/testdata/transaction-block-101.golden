@@ -7,11 +7,11 @@
 	},
 	"time": 1429274666,
 	"txn": {
+		"timestamp": 1429274666,
 		"length": 183,
 		"type": 0,
 		"txid": "e8fe5290afba3933389fd5860dca2cbcc81821028be9c65d0bb7cf4e8d2c4c18",
 		"inner_hash": "45da31b68748eafdb08ef8bf1ebd1c07c0f14fcb0d66759d6cf4642adc956d06",
-		"timestamp": 1429274666,
 		"sigs": [
 			"09bce2c888ceceeb19999005cceb1efdee254cacb60edee118b51ffd740ff6503a8f9cbd60a16c7581bfd64f7529b649d0ecc8adbe913686da97fe8c6543189001"
 		],

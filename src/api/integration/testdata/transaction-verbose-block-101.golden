@@ -7,12 +7,6 @@
 	},
 	"time": 1429274666,
 	"txn": {
-		"status": {
-			"confirmed": true,
-			"unconfirmed": false,
-			"height": 80,
-			"block_seq": 101
-		},
 		"timestamp": 1429274666,
 		"length": 183,
 		"type": 0,

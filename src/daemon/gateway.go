@@ -573,6 +573,20 @@ type TransactionResults struct {
 	Txns []TransactionResult `json:"txns"`
 }
 
+// Sort sorts transactions chronologically, using txid for tiebreaking
+func (r TransactionResults) Sort() {
+	sort.Slice(r.Txns, func(i, j int) bool {
+		a := r.Txns[i]
+		b := r.Txns[j]
+
+		if a.Time == b.Time {
+			return strings.Compare(a.Transaction.Hash, b.Transaction.Hash) < 0
+		}
+
+		return a.Time < b.Time
+	})
+}
+
 // NewTransactionResults converts []Transaction to []TransactionResults
 func NewTransactionResults(txns []visor.Transaction) (*TransactionResults, error) {
 	txnRlts := make([]TransactionResult, 0, len(txns))
@@ -624,6 +638,20 @@ func NewTransactionResultVerbose(txn *visor.Transaction, inputs []visor.Readable
 // TransactionResultsVerbose array of transaction results
 type TransactionResultsVerbose struct {
 	Txns []TransactionResultVerbose `json:"txns"`
+}
+
+// Sort sorts transactions chronologically, using txid for tiebreaking
+func (r TransactionResultsVerbose) Sort() {
+	sort.Slice(r.Txns, func(i, j int) bool {
+		a := r.Txns[i]
+		b := r.Txns[j]
+
+		if a.Time == b.Time {
+			return strings.Compare(a.Transaction.Hash, b.Transaction.Hash) < 0
+		}
+
+		return a.Time < b.Time
+	})
 }
 
 // NewTransactionResultsVerbose converts []Transaction to []TransactionResultsVerbose

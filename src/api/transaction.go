@@ -179,6 +179,7 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 
 			txns := []daemon.TransactionResultVerbose{}
 			if txnRlts != nil && txnRlts.Txns != nil {
+				txnRlts.Sort()
 				txns = txnRlts.Txns
 			}
 
@@ -193,6 +194,7 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 
 			txns := []daemon.TransactionResult{}
 			if txnRlts != nil && txnRlts.Txns != nil {
+				txnRlts.Sort()
 				txns = txnRlts.Txns
 			}
 

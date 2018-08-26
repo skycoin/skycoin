@@ -49,6 +49,8 @@ type Gatewayer interface {
 	GetAllUnconfirmedTxns() ([]visor.UnconfirmedTxn, error)
 	GetAllUnconfirmedTxnsVerbose() ([]visor.ReadableUnconfirmedTxnVerbose, error)
 	GetTransaction(txid cipher.SHA256) (*visor.Transaction, error)
+	GetTransactionResult(txid cipher.SHA256) (*daemon.TransactionResult, error)
+	GetTransactionResultVerbose(txid cipher.SHA256) (*daemon.TransactionResultVerbose, error)
 	GetTransactions(flts ...visor.TxFilter) ([]visor.Transaction, error)
 	InjectBroadcastTransaction(txn coin.Transaction) error
 	ResendUnconfirmedTxns() (*daemon.ResendResult, error)

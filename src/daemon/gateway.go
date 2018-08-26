@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"errors"
 	"sort"
 	"strings"
 	"time"
@@ -531,11 +532,15 @@ func MakeSearchMap(addrs []string) map[string]struct{} {
 }
 
 // GetTransaction returns transaction by txid
-func (gw *Gateway) GetTransaction(txid cipher.SHA256) (tx *visor.Transaction, err error) {
+func (gw *Gateway) GetTransaction(txid cipher.SHA256) (*visor.Transaction, error) {
+	var txn *visor.Transaction
+	var err error
+
 	gw.strand("GetTransaction", func() {
-		tx, err = gw.v.GetTransaction(txid)
+		txn, err = gw.v.GetTransaction(txid)
 	})
-	return
+
+	return txn, err
 }
 
 // TransactionResult represents transaction result
@@ -545,21 +550,21 @@ type TransactionResult struct {
 	Transaction visor.ReadableTransaction `json:"txn"`
 }
 
-// NewTransactionResult converts Transaction to TransactionResult
-func NewTransactionResult(tx *visor.Transaction) (*TransactionResult, error) {
-	if tx == nil {
+// NewTransactionResult converts visor.Transaction to TransactionResult
+func NewTransactionResult(txn *visor.Transaction) (*TransactionResult, error) {
+	if txn == nil {
 		return nil, nil
 	}
 
-	rbTx, err := visor.NewReadableTransaction(tx)
+	rbTxn, err := visor.NewReadableTransaction(txn)
 	if err != nil {
 		return nil, err
 	}
 
 	return &TransactionResult{
-		Transaction: *rbTx,
-		Status:      tx.Status,
-		Time:        tx.Time,
+		Transaction: *rbTxn,
+		Status:      txn.Status,
+		Time:        txn.Time,
 	}, nil
 }
 
@@ -569,34 +574,89 @@ type TransactionResults struct {
 }
 
 // NewTransactionResults converts []Transaction to []TransactionResults
-func NewTransactionResults(txs []visor.Transaction) (*TransactionResults, error) {
-	txRlts := make([]TransactionResult, 0, len(txs))
-	for _, tx := range txs {
-		rTx, err := NewTransactionResult(&tx)
+func NewTransactionResults(txns []visor.Transaction) (*TransactionResults, error) {
+	txnRlts := make([]TransactionResult, 0, len(txns))
+	for _, txn := range txns {
+		rTxn, err := NewTransactionResult(&txn)
 		if err != nil {
 			return nil, err
 		}
-		txRlts = append(txRlts, *rTx)
+		txnRlts = append(txnRlts, *rTxn)
 	}
 
 	return &TransactionResults{
-		Txns: txRlts,
+		Txns: txnRlts,
+	}, nil
+}
+
+// TransactionResultVerbose represents verbose transaction result
+type TransactionResultVerbose struct {
+	Status      visor.TransactionStatus          `json:"status"`
+	Time        uint64                           `json:"time"`
+	Transaction visor.ReadableTransactionVerbose `json:"txn"`
+}
+
+// NewTransactionResultVerbose converts visor.Transaction to TransactionResultVerbose
+func NewTransactionResultVerbose(txn *visor.Transaction, inputs []visor.ReadableTransactionInput) (*TransactionResultVerbose, error) {
+	if txn == nil {
+		return nil, nil
+	}
+
+	if len(txn.Txn.In) != len(inputs) {
+		return nil, errors.New("NewTransactionResultVerbose: len(txn.In) != len(inputs)")
+	}
+
+	rbTxn, err := visor.NewReadableTransactionVerbose(*txn, inputs)
+	if err != nil {
+		return nil, err
+	}
+
+	return &TransactionResultVerbose{
+		Transaction: rbTxn,
+		Status:      txn.Status,
+		Time:        txn.Time,
 	}, nil
 }
 
 // GetTransactionResult gets transaction result by txid.
 func (gw *Gateway) GetTransactionResult(txid cipher.SHA256) (*TransactionResult, error) {
-	var tx *visor.Transaction
+	var txn *visor.Transaction
 	var err error
+
 	gw.strand("GetTransactionResult", func() {
-		tx, err = gw.v.GetTransaction(txid)
+		txn, err = gw.v.GetTransaction(txid)
 	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	return NewTransactionResult(tx)
+	if txn == nil {
+		return nil, nil
+	}
+
+	return NewTransactionResult(txn)
+}
+
+// GetTransactionResultVerbose gets verbose transaction result by txid.
+func (gw *Gateway) GetTransactionResultVerbose(txid cipher.SHA256) (*TransactionResultVerbose, error) {
+	var txn *visor.Transaction
+	var inputs []visor.ReadableTransactionInput
+	var err error
+
+	gw.strand("GetTransactionResultVerbose", func() {
+		txn, inputs, err = gw.v.GetTransactionWithInputs(txid)
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if txn == nil {
+		return nil, nil
+	}
+
+	return NewTransactionResultVerbose(txn, inputs)
 }
 
 // InjectBroadcastTransaction injects and broadcasts a transaction

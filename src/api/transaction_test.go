@@ -212,26 +212,30 @@ func TestGetTransactionByID(t *testing.T) {
 	invalidHash := "cabrca"
 	validHash := "79216473e8f2c17095c6887cc9edca6c023afedfac2e0c5460e8b6f359684f8b"
 	type httpBody struct {
-		txid string
+		txid    string
+		verbose string
 	}
 
 	tt := []struct {
-		name                  string
-		method                string
-		status                int
-		err                   string
-		httpBody              *httpBody
-		getTransactionArg     cipher.SHA256
-		getTransactionReponse *visor.Transaction
-		getTransactionError   error
-		httpResponse          daemon.TransactionResult
+		name                         string
+		method                       string
+		status                       int
+		err                          string
+		httpBody                     *httpBody
+		verbose                      bool
+		txid                         cipher.SHA256
+		getTransactionReponse        *daemon.TransactionResult
+		getTransactionError          error
+		getTransactionVerboseReponse *daemon.TransactionResultVerbose
+		getTransactionVerboseError   error
+		httpResponse                 interface{}
 	}{
 		{
-			name:              "405",
-			method:            http.MethodPost,
-			status:            http.StatusMethodNotAllowed,
-			err:               "405 Method Not Allowed",
-			getTransactionArg: testutil.RandSHA256(t),
+			name:   "405",
+			method: http.MethodPost,
+			status: http.StatusMethodNotAllowed,
+			err:    "405 Method Not Allowed",
+			txid:   testutil.RandSHA256(t),
 		},
 		{
 			name:   "400 - empty txid",
@@ -241,7 +245,7 @@ func TestGetTransactionByID(t *testing.T) {
 			httpBody: &httpBody{
 				txid: "",
 			},
-			getTransactionArg: testutil.RandSHA256(t),
+			txid: testutil.RandSHA256(t),
 		},
 		{
 			name:   "400 - invalid hash: odd length hex string",
@@ -251,7 +255,7 @@ func TestGetTransactionByID(t *testing.T) {
 			httpBody: &httpBody{
 				txid: oddHash,
 			},
-			getTransactionArg: testutil.RandSHA256(t),
+			txid: testutil.RandSHA256(t),
 		},
 		{
 			name:   "400 - invalid hash: invalid byte: U+0072 'r'",
@@ -261,17 +265,27 @@ func TestGetTransactionByID(t *testing.T) {
 			httpBody: &httpBody{
 				txid: invalidHash,
 			},
-			getTransactionArg: testutil.RandSHA256(t),
+			txid: testutil.RandSHA256(t),
 		},
 		{
-			name:   "400 - getTransactionError",
+			name:   "400 - invalid verbose",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
-			err:    "400 Bad Request - getTransactionError",
+			err:    "400 Bad Request - Invalid value for verbose",
+			httpBody: &httpBody{
+				txid:    validHash,
+				verbose: "foo",
+			},
+		},
+		{
+			name:   "500 - getTransactionError",
+			method: http.MethodGet,
+			status: http.StatusInternalServerError,
+			err:    "500 Internal Server Error - getTransactionError",
 			httpBody: &httpBody{
 				txid: validHash,
 			},
-			getTransactionArg:   testutil.SHA256FromHex(t, validHash),
+			txid:                testutil.SHA256FromHex(t, validHash),
 			getTransactionError: errors.New("getTransactionError"),
 		},
 		{
@@ -282,7 +296,19 @@ func TestGetTransactionByID(t *testing.T) {
 			httpBody: &httpBody{
 				txid: validHash,
 			},
-			getTransactionArg: testutil.SHA256FromHex(t, validHash),
+			txid: testutil.SHA256FromHex(t, validHash),
+		},
+		{
+			name:   "404 verbose",
+			method: http.MethodGet,
+			status: http.StatusNotFound,
+			err:    "404 Not Found",
+			httpBody: &httpBody{
+				txid:    validHash,
+				verbose: "1",
+			},
+			verbose: true,
+			txid:    testutil.SHA256FromHex(t, validHash),
 		},
 		{
 			name:   "200",
@@ -291,17 +317,22 @@ func TestGetTransactionByID(t *testing.T) {
 			httpBody: &httpBody{
 				txid: validHash,
 			},
-			getTransactionArg:     testutil.SHA256FromHex(t, validHash),
-			getTransactionReponse: &visor.Transaction{},
-			httpResponse: daemon.TransactionResult{
-				Transaction: visor.ReadableTransaction{
-					Sigs:      []string{},
-					In:        []string{},
-					Out:       []visor.ReadableTransactionOutput{},
-					Hash:      "78877fa898f0b4c45c9c33ae941e40617ad7c8657a307db62bc5691f92f4f60e",
-					InnerHash: "0000000000000000000000000000000000000000000000000000000000000000",
-				},
+			txid: testutil.SHA256FromHex(t, validHash),
+			getTransactionReponse: &daemon.TransactionResult{},
+			httpResponse:          &daemon.TransactionResult{},
+		},
+		{
+			name:   "200 verbose",
+			method: http.MethodGet,
+			status: http.StatusOK,
+			httpBody: &httpBody{
+				txid:    validHash,
+				verbose: "1",
 			},
+			verbose: true,
+			txid:    testutil.SHA256FromHex(t, validHash),
+			getTransactionVerboseReponse: &daemon.TransactionResultVerbose{},
+			httpResponse:                 &daemon.TransactionResultVerbose{},
 		},
 	}
 
@@ -309,12 +340,16 @@ func TestGetTransactionByID(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/transaction"
 			gateway := &MockGatewayer{}
-			gateway.On("GetTransaction", tc.getTransactionArg).Return(tc.getTransactionReponse, tc.getTransactionError)
+			gateway.On("GetTransactionResult", tc.txid).Return(tc.getTransactionReponse, tc.getTransactionError)
+			gateway.On("GetTransactionResultVerbose", tc.txid).Return(tc.getTransactionVerboseReponse, tc.getTransactionVerboseError)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
 				if tc.httpBody.txid != "" {
 					v.Add("txid", tc.httpBody.txid)
+				}
+				if tc.httpBody.verbose != "" {
+					v.Add("verbose", tc.httpBody.verbose)
 				}
 			}
 			if len(v) > 0 {
@@ -339,10 +374,17 @@ func TestGetTransactionByID(t *testing.T) {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg daemon.TransactionResult
-				err = json.Unmarshal(rr.Body.Bytes(), &msg)
-				require.NoError(t, err)
-				require.Equal(t, tc.httpResponse, msg, tc.name)
+				if tc.verbose {
+					var msg daemon.TransactionResultVerbose
+					err = json.Unmarshal(rr.Body.Bytes(), &msg)
+					require.NoError(t, err)
+					require.Equal(t, tc.httpResponse, &msg, tc.name)
+				} else {
+					var msg daemon.TransactionResult
+					err = json.Unmarshal(rr.Body.Bytes(), &msg)
+					require.NoError(t, err)
+					require.Equal(t, tc.httpResponse, &msg, tc.name)
+				}
 			}
 
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",

@@ -20,6 +20,8 @@ import (
 // pendingTxnsHandler returns pending transactions
 // Method: GET
 // URI: /api/v1/pendingTxs
+// Args:
+//	verbose: [bool] include verbose transaction input data
 func pendingTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -38,6 +40,10 @@ func pendingTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
+			}
+
+			if len(txns) == 0 {
+				txns = []visor.ReadableUnconfirmedTxnVerbose{}
 			}
 
 			wh.SendJSONOr500(logger, w, txns)
@@ -68,6 +74,7 @@ func pendingTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 // URI: /api/v1/transaction
 // Args:
 //	txid: transaction hash
+//	verbose: [bool] include verbose transaction input data
 func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -81,29 +88,43 @@ func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
+		verbose, err := parseVerboseFlag(r.FormValue("verbose"))
+		if err != nil {
+			wh.Error400(w, "Invalid value for verbose")
+			return
+		}
+
 		h, err := cipher.SHA256FromHex(txid)
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return
 		}
 
-		txn, err := gateway.GetTransaction(h)
-		if err != nil {
-			wh.Error400(w, err.Error())
-			return
-		}
-		if txn == nil {
-			wh.Error404(w, "")
-			return
-		}
+		if verbose {
+			txn, err := gateway.GetTransactionResultVerbose(h)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+			if txn == nil {
+				wh.Error404(w, "")
+				return
+			}
 
-		resTxn, err := daemon.NewTransactionResult(txn)
-		if err != nil {
-			wh.Error500(w, err.Error())
-			return
-		}
+			wh.SendJSONOr500(logger, w, &txn)
+		} else {
+			txn, err := gateway.GetTransactionResult(h)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+			if txn == nil {
+				wh.Error404(w, "")
+				return
+			}
 
-		wh.SendJSONOr500(logger, w, &resTxn)
+			wh.SendJSONOr500(logger, w, &txn)
+		}
 	}
 }
 

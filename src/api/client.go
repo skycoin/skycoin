@@ -810,6 +810,20 @@ func (c *Client) Transaction(txid string) (*daemon.TransactionResult, error) {
 	return &r, nil
 }
 
+// TransactionVerbose makes a request to GET /api/v1/transaction?verbose=1
+func (c *Client) TransactionVerbose(txid string) (*daemon.TransactionResultVerbose, error) {
+	v := url.Values{}
+	v.Add("txid", txid)
+	v.Add("verbose", "1")
+	endpoint := "/api/v1/transaction?" + v.Encode()
+
+	var r daemon.TransactionResultVerbose
+	if err := c.Get(endpoint, &r); err != nil {
+		return nil, err
+	}
+	return &r, nil
+}
+
 // Transactions makes a request to GET /api/v1/transactions
 func (c *Client) Transactions(addrs []string) ([]daemon.TransactionResult, error) {
 	v := url.Values{}

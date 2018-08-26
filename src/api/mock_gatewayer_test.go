@@ -606,6 +606,52 @@ func (_m *MockGatewayer) GetTransaction(txid cipher.SHA256) (*visor.Transaction,
 	return r0, r1
 }
 
+// GetTransactionResult provides a mock function with given fields: txid
+func (_m *MockGatewayer) GetTransactionResult(txid cipher.SHA256) (*daemon.TransactionResult, error) {
+	ret := _m.Called(txid)
+
+	var r0 *daemon.TransactionResult
+	if rf, ok := ret.Get(0).(func(cipher.SHA256) *daemon.TransactionResult); ok {
+		r0 = rf(txid)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*daemon.TransactionResult)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(cipher.SHA256) error); ok {
+		r1 = rf(txid)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetTransactionResultVerbose provides a mock function with given fields: txid
+func (_m *MockGatewayer) GetTransactionResultVerbose(txid cipher.SHA256) (*daemon.TransactionResultVerbose, error) {
+	ret := _m.Called(txid)
+
+	var r0 *daemon.TransactionResultVerbose
+	if rf, ok := ret.Get(0).(func(cipher.SHA256) *daemon.TransactionResultVerbose); ok {
+		r0 = rf(txid)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*daemon.TransactionResultVerbose)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(cipher.SHA256) error); ok {
+		r1 = rf(txid)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetTransactions provides a mock function with given fields: flts
 func (_m *MockGatewayer) GetTransactions(flts ...visor.TxFilter) ([]visor.Transaction, error) {
 	_va := make([]interface{}, len(flts))

@@ -31,7 +31,7 @@ func NewReadableBlockBodyVerbose(b *coin.Block, inputs [][]ReadableTransactionIn
 	for i := range b.Body.Transactions {
 		t := b.Body.Transactions[i]
 
-		tx, err := NewReadableBlockTransactionVerbose(t, inputs[i], b.Head.BkSeq)
+		tx, err := NewReadableBlockTransactionVerbose(t, inputs[i], b.Head.BkSeq == 0)
 		if err != nil {
 			return nil, err
 		}
@@ -84,7 +84,7 @@ type ReadableBlockTransactionVerbose struct {
 }
 
 // NewReadableBlockTransactionVerbose creates ReadableBlockTransactionVerbose
-func NewReadableBlockTransactionVerbose(txn coin.Transaction, inputs []ReadableTransactionInput, bkSeq uint64) (ReadableBlockTransactionVerbose, error) {
+func NewReadableBlockTransactionVerbose(txn coin.Transaction, inputs []ReadableTransactionInput, isGenesis bool) (ReadableBlockTransactionVerbose, error) {
 	if len(inputs) != len(txn.In) {
 		return ReadableBlockTransactionVerbose{}, errors.New("NewReadableTransactionVerbose: len(inputs) != len(txn.In)")
 	}
@@ -92,7 +92,7 @@ func NewReadableBlockTransactionVerbose(txn coin.Transaction, inputs []ReadableT
 	// Genesis transaction uses empty SHA256 as txid
 	// FIXME: If/when the blockchain is regenerated, use a real hash as the txID for the genesis block. The bkSeq argument can be removed then.
 	txID := cipher.SHA256{}
-	if bkSeq != 0 {
+	if !isGenesis {
 		txID = txn.Hash()
 	}
 
@@ -129,7 +129,7 @@ func NewReadableBlockTransactionVerbose(txn coin.Transaction, inputs []ReadableT
 	}
 
 	fee := uint64(0)
-	if bkSeq == 0 {
+	if isGenesis {
 		if hoursIn != 0 {
 			err := errors.New("NewReadableTransactionVerbose genesis block should have 0 input hours")
 			return ReadableBlockTransactionVerbose{}, err
@@ -171,7 +171,7 @@ type ReadableTransactionVerbose struct {
 
 // NewReadableTransactionVerbose creates ReadableTransactionVerbose
 func NewReadableTransactionVerbose(txn Transaction, inputs []ReadableTransactionInput) (ReadableTransactionVerbose, error) {
-	rb, err := NewReadableBlockTransactionVerbose(txn.Txn, inputs, txn.Status.BlockSeq)
+	rb, err := NewReadableBlockTransactionVerbose(txn.Txn, inputs, txn.Status.BlockSeq == 0)
 	if err != nil {
 		return ReadableTransactionVerbose{}, nil
 	}
@@ -185,18 +185,17 @@ func NewReadableTransactionVerbose(txn Transaction, inputs []ReadableTransaction
 
 // ReadableUnconfirmedTxnVerbose represents a verbose readable unconfirmed transaction
 type ReadableUnconfirmedTxnVerbose struct {
-	Txn       ReadableTransactionVerbose `json:"transaction"`
-	Received  time.Time                  `json:"received"`
-	Checked   time.Time                  `json:"checked"`
-	Announced time.Time                  `json:"announced"`
-	IsValid   bool                       `json:"is_valid"`
+	Txn       ReadableBlockTransactionVerbose `json:"transaction"`
+	Received  time.Time                       `json:"received"`
+	Checked   time.Time                       `json:"checked"`
+	Announced time.Time                       `json:"announced"`
+	IsValid   bool                            `json:"is_valid"`
 }
 
 // NewReadableUnconfirmedTxnVerbose creates a verbose readable unconfirmed transaction
 func NewReadableUnconfirmedTxnVerbose(unconfirmed *UnconfirmedTxn, inputs []ReadableTransactionInput) (*ReadableUnconfirmedTxnVerbose, error) {
-	txn, err := NewReadableTransactionVerbose(Transaction{
-		Txn: unconfirmed.Txn,
-	}, inputs)
+	isGenesis := false // The genesis transaction is never unconfirmed
+	txn, err := NewReadableBlockTransactionVerbose(unconfirmed.Txn, inputs, isGenesis)
 	if err != nil {
 		return nil, err
 	}

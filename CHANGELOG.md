@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `/api/network/` endpoints will return an empty array for array values instead of `null`
 - `go run cmd/skycoin/skycoin.go` will have exit status 1 on failure and exit status 2 on panic
 - The deprecated JSON 2.0 RPC interface is disabled by default for all run modes, since it is no longer needed for the CLI tool
+- Remove `"unknown"` from the `"status"` field in responses from `/api/v1/explorer/address`, `/api/v1/transaction`, `/api/v1/transactions`
 
 ### Removed
 

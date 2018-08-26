@@ -84,32 +84,6 @@ However, any changes to the API will be recorded in the [changelog](../../CHANGE
 - [Transaction APIs](#transaction-apis)
 	- [Get unconfirmed transactions](#get-unconfirmed-transactions)
 	- [Get transaction info by id](#get-transaction-info-by-id)
-	- [Get raw transaction by id](#get-raw-transaction-by-id)
-	- [Inject raw transaction](#inject-raw-transaction)
-	- [Get transactions that are addresses related](#get-transactions-that-are-addresses-related)
-	- [Resend unconfirmed transactions](#resend-unconfirmed-transactions)
-	- [Verify encoded transaction](#verify-encoded-transaction)
-- [Block APIs](#block-apis)
-	- [Get blockchain metadata](#get-blockchain-metadata)
-	- [Get blockchain progress](#get-blockchain-progress)
-	- [Get block by hash or seq](#get-block-by-hash-or-seq)
-	- [Get blocks in specific range](#get-blocks-in-specific-range)
-	- [Get last N blocks](#get-last-n-blocks)
-- [Explorer APIs](#explorer-apis)
-	- [Get address affected transactions](#get-address-affected-transactions)
-- [Uxout APIs](#uxout-apis)
-	- [Get uxout](#get-uxout)
-	- [Get historical unspent outputs for an address](#get-historical-unspent-outputs-for-an-address)
-- [Coin supply related information](#coin-supply-related-information)
-	- [Coin supply](#coin-supply)
-	- [Richlist show top N addresses by uxouts](#richlist-show-top-n-addresses-by-uxouts)
-	- [Count unique addresses](#count-unique-addresses)
-- [Network status](#network-status)
-	- [Get information for a specific connection](#get-information-for-a-specific-connection)
-	- [Get a list of all connections](#get-a-list-of-all-connections)
-	- [Get a list of all default connections](#get-a-list-of-all-default-connections)
-	- [Get a list of all trusted connections](#get-a-list-of-all-trusted-connections)
-	- [Get a list of all connections discovered through peer exchange](#get-a-list-of-all-connections-discovered-through-peer-exchange)
 
 <!-- /MarkdownTOC -->
 
@@ -1230,7 +1204,7 @@ Result:
 URI: /api/v1/pendingTxs
 Method: GET
 Args:
-	verbose [bool]
+	verbose [bool] include verbose transaction input data
 ```
 
 Example:
@@ -1289,6 +1263,47 @@ curl http://127.0.0.1:6420/api/v1/pendingTxs?verbose=1
 Result:
 
 ```json
+[
+    {
+        "transaction": {
+            "length": 220,
+            "type": 0,
+            "txid": "d455564dcf1fb666c3846cf579ff33e21c203e2923938c6563fe7fcb8573ba44",
+            "inner_hash": "4e73155db8ed04a3bd2b953218efcc9122ebfbf4c55f08f50d1563e48eacf71d",
+            "fee": 12855964,
+            "sigs": [
+                "17330c256a50e2117ddccf51f1980fc14380f0f9476432196ade3043668759847b97e1b209961458745684d9239541f79d9ca9255582864d30a540017ab84f2b01"
+            ],
+            "inputs": [
+                {
+                    "uxid": "27e7bc48ceca4d47e806a87100a8a98592b7618702e1cd479bf4c190462a6d09",
+                    "owner": "23MjQipM9YsPKkYiuaBmf6m7fD54wrzHxpd",
+                    "coins": "7815.000000",
+                    "hours": 279089,
+                    "calculated_hours": 13101146
+                }
+            ],
+            "outputs": [
+                {
+                    "uxid": "4b4ebf62acbaece798d0dfc92fcea85768a2874dad8a9b8eb5454288deae468c",
+                    "dst": "23MjQipM9YsPKkYiuaBmf6m7fD54wrzHxpd",
+                    "coins": "586.000000",
+                    "hours": 122591
+                },
+                {
+                    "uxid": "781cfb134d5fdad48f3c937dfcfc66b169a305adc8abdfe92a0ec94c564913f2",
+                    "dst": "2ehrG4VKLRuvBNWYz3U7tS75QWvzyWR89Dg",
+                    "coins": "7229.000000",
+                    "hours": 122591
+                }
+            ]
+        },
+        "received": "2018-06-20T14:14:52.415702671+08:00",
+        "checked": "2018-08-26T19:47:45.328131142+08:00",
+        "announced": "2018-08-26T19:51:47.356083569+08:00",
+        "is_valid": true
+    }
+]
 ```
 
 ### Get transaction info by id
@@ -1298,6 +1313,7 @@ URI: /api/v1/transaction
 Method: GET
 Args:
     txid: transaction id
+    verbose: [bool] include verbose transaction input data
 ```
 
 Example:
@@ -1314,8 +1330,7 @@ Result:
         "confirmed": true,
         "unconfirmed": false,
         "height": 1,
-        "block_seq": 1178,
-        "unknown": false
+        "block_seq": 1178
     },
     "txn": {
         "length": 183,
@@ -1340,6 +1355,59 @@ Result:
     }
 }
 ```
+
+Example (verbose):
+
+```sh
+curl http://127.0.0.1:6420/api/v1/transaction?txid=a6446654829a4a844add9f181949d12f8291fdd2c0fcb22200361e90e814e2d3&verbose=1
+```
+
+Result:
+
+```json
+{
+    "status": {
+        "confirmed": true,
+        "unconfirmed": false,
+        "height": 53107,
+        "block_seq": 1178
+    },
+    "time": 1494275231,
+    "txn": {
+        "status": {
+            "confirmed": true,
+            "unconfirmed": false,
+            "height": 53107,
+            "block_seq": 1178
+        },
+        "timestamp": 1494275231,
+        "length": 183,
+        "type": 0,
+        "txid": "a6446654829a4a844add9f181949d12f8291fdd2c0fcb22200361e90e814e2d3",
+        "inner_hash": "075f255d42ddd2fb228fe488b8b468526810db7a144aeed1fd091e3fd404626e",
+        "fee": 6523,
+        "sigs": [
+            "9b6fae9a70a42464dda089c943fafbf7bae8b8402e6bf4e4077553206eebc2ed4f7630bb1bd92505131cca5bf8bd82a44477ef53058e1995411bdbf1f5dfad1f00"
+        ],
+        "inputs": [
+            {
+                "uxid": "5287f390628909dd8c25fad0feb37859c0c1ddcf90da0c040c837c89fefd9191",
+                "owner": "2K6NuLBBapWndAssUtkxKfCtyjDQDHrEhhT",
+                "coins": "8.000000",
+                "hours": 7454,
+                "calculated_hours": 7454
+            }
+        ],
+        "outputs": [
+            {
+                "uxid": "70fa9dfb887f9ef55beb4e960f60e4703c56f98201acecf2cad729f5d7e84690",
+                "dst": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
+                "coins": "8.000000",
+                "hours": 931
+            }
+        ]
+    }
+}```
 
 ### Get raw transaction by id
 
@@ -1429,8 +1497,7 @@ Result:
             "confirmed": true,
             "unconfirmed": false,
             "height": 10492,
-            "block_seq": 1177,
-            "unknown": false
+            "block_seq": 1177
         },
         "time": 1494275011,
         "txn": {
@@ -1468,8 +1535,7 @@ Result:
             "confirmed": true,
             "unconfirmed": false,
             "height": 10491,
-            "block_seq": 1178,
-            "unknown": false
+            "block_seq": 1178
         },
         "time": 1494275231,
         "txn": {
@@ -1499,8 +1565,7 @@ Result:
             "confirmed": true,
             "unconfirmed": false,
             "height": 8730,
-            "block_seq": 2939,
-            "unknown": false
+            "block_seq": 2939
         },
         "time": 1505205561,
         "txn": {
@@ -2329,8 +2394,7 @@ Result:
             "confirmed": true,
             "unconfirmed": false,
             "height": 38076,
-            "block_seq": 15493,
-            "unknown": false
+            "block_seq": 15493
         },
         "timestamp": 1518878675,
         "length": 183,

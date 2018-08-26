@@ -4,8 +4,7 @@
 			"confirmed": true,
 			"unconfirmed": false,
 			"height": 128,
-			"block_seq": 53,
-			"unknown": false
+			"block_seq": 53
 		},
 		"time": 1429077514,
 		"txn": {
@@ -41,8 +40,7 @@
 			"confirmed": true,
 			"unconfirmed": false,
 			"height": 108,
-			"block_seq": 73,
-			"unknown": false
+			"block_seq": 73
 		},
 		"time": 1429091164,
 		"txn": {
@@ -78,8 +76,7 @@
 			"confirmed": true,
 			"unconfirmed": false,
 			"height": 68,
-			"block_seq": 113,
-			"unknown": false
+			"block_seq": 113
 		},
 		"time": 1429348172,
 		"txn": {
@@ -115,8 +112,7 @@
 			"confirmed": true,
 			"unconfirmed": false,
 			"height": 63,
-			"block_seq": 118,
-			"unknown": false
+			"block_seq": 118
 		},
 		"time": 1429364072,
 		"txn": {
@@ -154,8 +150,7 @@
 			"confirmed": true,
 			"unconfirmed": false,
 			"height": 61,
-			"block_seq": 120,
-			"unknown": false
+			"block_seq": 120
 		},
 		"time": 1429364452,
 		"txn": {
@@ -185,8 +180,7 @@
 			"confirmed": true,
 			"unconfirmed": false,
 			"height": 60,
-			"block_seq": 121,
-			"unknown": false
+			"block_seq": 121
 		},
 		"time": 1429382678,
 		"txn": {

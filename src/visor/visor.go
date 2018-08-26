@@ -951,67 +951,117 @@ func (vs *Visor) GetTransactionsForAddress(a cipher.Address) ([]Transaction, err
 }
 
 // GetTransaction returns a Transaction by hash.
-func (vs *Visor) GetTransaction(txHash cipher.SHA256) (*Transaction, error) {
+func (vs *Visor) GetTransaction(txnHash cipher.SHA256) (*Transaction, error) {
 	var txn *Transaction
 
 	if err := vs.DB.View("GetTransaction", func(tx *dbutil.Tx) error {
-		// Look in the unconfirmed pool
-		utxn, err := vs.Unconfirmed.Get(tx, txHash)
-		if err != nil {
-			return err
-		}
-
-		if utxn != nil {
-			txn = &Transaction{
-				Txn:    utxn.Txn,
-				Status: NewUnconfirmedTransactionStatus(),
-				Time:   uint64(nanoToTime(utxn.Received).Unix()),
-			}
-			return nil
-		}
-
-		htxn, err := vs.history.GetTransaction(tx, txHash)
-		if err != nil {
-			return err
-		}
-
-		if htxn == nil {
-			return nil
-		}
-
-		headSeq, ok, err := vs.Blockchain.HeadSeq(tx)
-		if err != nil {
-			return err
-		} else if !ok {
-			return errors.New("Blockchain is empty but history has transactions")
-		}
-
-		b, err := vs.Blockchain.GetSignedBlockBySeq(tx, htxn.BlockSeq)
-		if err != nil {
-			return err
-		}
-
-		if b == nil {
-			return fmt.Errorf("found no block in seq %v", htxn.BlockSeq)
-		}
-
-		if headSeq < htxn.BlockSeq {
-			return fmt.Errorf("Blockchain head seq %d is earlier than history txn seq %d", headSeq, htxn.BlockSeq)
-		}
-
-		confirms := headSeq - htxn.BlockSeq + 1
-		txn = &Transaction{
-			Txn:    htxn.Tx,
-			Status: NewConfirmedTransactionStatus(confirms, htxn.BlockSeq),
-			Time:   b.Time(),
-		}
-
-		return nil
+		var err error
+		txn, err = vs.getTransaction(tx, txnHash)
+		return err
 	}); err != nil {
 		return nil, err
 	}
 
 	return txn, nil
+}
+
+// GetTransactionWithInputs returns a Transaction by hash, along with the unspent outputs of its inputs
+func (vs *Visor) GetTransactionWithInputs(txnHash cipher.SHA256) (*Transaction, []ReadableTransactionInput, error) {
+	var txn *Transaction
+	var inputs []ReadableTransactionInput
+
+	if err := vs.DB.View("GetTransactionWithInputs", func(tx *dbutil.Tx) error {
+		var err error
+		txn, err = vs.getTransaction(tx, txnHash)
+		if err != nil {
+			return err
+		}
+
+		if txn == nil {
+			return nil
+		}
+
+		// The genesis block has no inputs to calculate, otherwise calculate the inputs
+		if txn.Status.BlockSeq == 0 {
+			return nil
+		}
+
+		feeCalcTime := uint64(0)
+		if txn.Status.Confirmed {
+			// Use the previous block head to calculate the coin hours
+			prevBlock, err := vs.Blockchain.GetSignedBlockBySeq(tx, txn.Status.BlockSeq-1)
+			if err != nil {
+				return err
+			}
+
+			feeCalcTime = prevBlock.Block.Head.Time
+		} else {
+			// Use the current block head to calculate the coin hours
+			feeCalcTime, err = vs.Blockchain.Time(tx)
+			if err != nil {
+				return err
+			}
+		}
+
+		inputs, err = vs.getReadableVerboseInputs(tx, feeCalcTime, txn.Txn.In)
+		return err
+	}); err != nil {
+		return nil, nil, err
+	}
+
+	return txn, inputs, nil
+}
+
+func (vs *Visor) getTransaction(tx *dbutil.Tx, txnHash cipher.SHA256) (*Transaction, error) {
+	// Look in the unconfirmed pool
+	utxn, err := vs.Unconfirmed.Get(tx, txnHash)
+	if err != nil {
+		return nil, err
+	}
+
+	if utxn != nil {
+		return &Transaction{
+			Txn:    utxn.Txn,
+			Status: NewUnconfirmedTransactionStatus(),
+			Time:   uint64(nanoToTime(utxn.Received).Unix()),
+		}, nil
+	}
+
+	htxn, err := vs.history.GetTransaction(tx, txnHash)
+	if err != nil {
+		return nil, err
+	}
+
+	if htxn == nil {
+		return nil, nil
+	}
+
+	headSeq, ok, err := vs.Blockchain.HeadSeq(tx)
+	if err != nil {
+		return nil, err
+	} else if !ok {
+		return nil, errors.New("Blockchain is empty but history has transactions")
+	}
+
+	b, err := vs.Blockchain.GetSignedBlockBySeq(tx, htxn.BlockSeq)
+	if err != nil {
+		return nil, err
+	}
+
+	if b == nil {
+		return nil, fmt.Errorf("found no block in seq %v", htxn.BlockSeq)
+	}
+
+	if headSeq < htxn.BlockSeq {
+		return nil, fmt.Errorf("Blockchain head seq %d is earlier than history txn seq %d", headSeq, htxn.BlockSeq)
+	}
+
+	confirms := headSeq - htxn.BlockSeq + 1
+	return &Transaction{
+		Txn:    htxn.Tx,
+		Status: NewConfirmedTransactionStatus(confirms, htxn.BlockSeq),
+		Time:   b.Time(),
+	}, nil
 }
 
 // TxFilter transaction filter type
@@ -1415,7 +1465,7 @@ func (vs *Visor) GetAllUnconfirmedTxnsVerbose() ([]ReadableUnconfirmedTxnVerbose
 			return err
 		}
 
-		inputs := make([][]ReadableTransactionInput, len(txns))
+		inputs = make([][]ReadableTransactionInput, len(txns))
 		for i, txn := range txns {
 			if len(txn.Txn.In) == 0 {
 				logger.WithField("txid", txn.Hash().Hex()).Warning("Unconfirmed transaction has no inputs")

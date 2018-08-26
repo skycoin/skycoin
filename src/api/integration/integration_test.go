@@ -1027,7 +1027,7 @@ func TestStableAddressUxOuts(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			var expected []*historydb.UxOutJSON
+			var expected []historydb.UxOutJSON
 			checkGoldenFile(t, tc.golden, TestData{ux, &expected})
 		})
 	}
@@ -1610,6 +1610,11 @@ func TestStableTransaction(t *testing.T) {
 			txID:       "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add",
 			goldenFile: "genesis-transaction.golden",
 		},
+		{
+			name:       "transaction in block 101",
+			txID:       "e8fe5290afba3933389fd5860dca2cbcc81821028be9c65d0bb7cf4e8d2c4c18",
+			goldenFile: "transaction-block-101.golden",
+		},
 	}
 
 	c := api.NewClient(nodeAddress())
@@ -1622,6 +1627,134 @@ func TestStableTransaction(t *testing.T) {
 			}
 
 			var expected daemon.TransactionResult
+			loadGoldenFile(t, tc.goldenFile, TestData{tx, &expected})
+			require.Equal(t, &expected, tx)
+		})
+	}
+}
+
+func TestLiveTransactionVerbose(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	cases := []struct {
+		name       string
+		txID       string
+		err        api.ClientError
+		goldenFile string
+	}{
+		{
+			name: "invalid txID",
+			txID: "abcd",
+			err: api.ClientError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - Invalid hex length",
+			},
+		},
+		{
+			name: "empty txID",
+			txID: "",
+			err: api.ClientError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - txid is empty",
+			},
+		},
+		{
+			name:       "OK",
+			txID:       "76ecbabc53ea2a3be46983058433dda6a3cf7ea0b86ba14d90b932fa97385de7",
+			goldenFile: "transaction-verbose.golden",
+		},
+	}
+
+	c := api.NewClient(nodeAddress())
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			tx, err := c.TransactionVerbose(tc.txID)
+			if err != nil {
+				require.Equal(t, tc.err, err)
+				return
+			}
+
+			// tx.Status.Height is how many blocks are above this transaction,
+			// make sure it is past some checkpoint height
+			require.True(t, tx.Status.Height >= 50836)
+
+			// daemon.TransactionResult.Status.Height is not stable
+			tx.Status.Height = 0
+
+			var expected daemon.TransactionResultVerbose
+			loadGoldenFile(t, tc.goldenFile, TestData{tx, &expected})
+			require.Equal(t, &expected, tx)
+		})
+	}
+}
+
+func TestStableTransactionVerbose(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	cases := []struct {
+		name       string
+		txID       string
+		err        api.ClientError
+		goldenFile string
+	}{
+		{
+			name: "invalid txId",
+			txID: "abcd",
+			err: api.ClientError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - Invalid hex length",
+			},
+			goldenFile: "",
+		},
+		{
+			name: "not exist",
+			txID: "701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947",
+			err: api.ClientError{
+				Status:     "404 Not Found",
+				StatusCode: http.StatusNotFound,
+				Message:    "404 Not Found",
+			},
+			goldenFile: "",
+		},
+		{
+			name: "empty txId",
+			txID: "",
+			err: api.ClientError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - txid is empty",
+			},
+			goldenFile: "",
+		},
+		{
+			name:       "genesis transaction",
+			txID:       "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add",
+			goldenFile: "genesis-transaction-verbose.golden",
+		},
+		{
+			name:       "transaction in block 101",
+			txID:       "e8fe5290afba3933389fd5860dca2cbcc81821028be9c65d0bb7cf4e8d2c4c18",
+			goldenFile: "transaction-verbose-block-101.golden",
+		},
+	}
+
+	c := api.NewClient(nodeAddress())
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			tx, err := c.TransactionVerbose(tc.txID)
+			if err != nil {
+				require.Equal(t, tc.err, err)
+				return
+			}
+
+			var expected daemon.TransactionResultVerbose
 			loadGoldenFile(t, tc.goldenFile, TestData{tx, &expected})
 			require.Equal(t, &expected, tx)
 		})
@@ -1688,12 +1821,12 @@ func TestStableTransactions(t *testing.T) {
 				StatusCode: http.StatusBadRequest,
 				Message:    "400 Bad Request - txId is empty",
 			},
-			goldenFile: "./empty-addrs.golden",
+			goldenFile: "empty-addrs.golden",
 		},
 		{
 			name:       "single addr",
 			addrs:      []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"},
-			goldenFile: "./single-addr.golden",
+			goldenFile: "single-addr.golden",
 		},
 	}
 
@@ -1706,7 +1839,7 @@ func TestStableTransactions(t *testing.T) {
 				return
 			}
 
-			var expected *[]daemon.TransactionResult
+			var expected []daemon.TransactionResult
 			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
 		})
 	}
@@ -1768,12 +1901,12 @@ func TestStableConfirmedTransactions(t *testing.T) {
 		{
 			name:       "empty addrs",
 			addrs:      []string{},
-			goldenFile: "./empty-addrs.golden",
+			goldenFile: "empty-addrs.golden",
 		},
 		{
 			name:       "single addr",
 			addrs:      []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"},
-			goldenFile: "./single-addr.golden",
+			goldenFile: "single-addr.golden",
 		},
 	}
 
@@ -1786,7 +1919,7 @@ func TestStableConfirmedTransactions(t *testing.T) {
 				return
 			}
 
-			var expected *[]daemon.TransactionResult
+			var expected []daemon.TransactionResult
 			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
 		})
 	}
@@ -1845,7 +1978,7 @@ func TestStableUnconfirmedTransactions(t *testing.T) {
 				return
 			}
 
-			var expected *[]daemon.TransactionResult
+			var expected []daemon.TransactionResult
 			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
 		})
 	}

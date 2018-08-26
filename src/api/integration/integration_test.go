@@ -1773,6 +1773,18 @@ func TestLiveTransactions(t *testing.T) {
 	txns, err := c.Transactions(addrs)
 	require.NoError(t, err)
 	require.True(t, len(txns) > 0)
+	assertNoTransactionsDupes(t, txns)
+
+	// Two addresses with a mutual transaction between the two, to test deduplication
+	addrs = []string{
+		"7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
+		"2K6NuLBBapWndAssUtkxKfCtyjDQDHrEhhT",
+	}
+	txns, err = c.Transactions(addrs)
+	require.NoError(t, err)
+	// There were 4 transactions amonst these two addresses at the time this was written
+	require.True(t, len(txns) >= 4)
+	assertNoTransactionsDupes(t, txns)
 }
 
 func TestStableTransactions(t *testing.T) {
@@ -1849,6 +1861,8 @@ func TestStableTransactions(t *testing.T) {
 				return
 			}
 
+			assertNoTransactionsDupes(t, txResult)
+
 			var expected []daemon.TransactionResult
 			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
 		})
@@ -1861,14 +1875,16 @@ func TestLiveConfirmedTransactions(t *testing.T) {
 	}
 	c := api.NewClient(nodeAddress())
 
-	ctxsSingle, err := c.ConfirmedTransactions([]string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"})
+	cTxsSingle, err := c.ConfirmedTransactions([]string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"})
 	require.NoError(t, err)
-	require.True(t, len(ctxsSingle) > 0)
+	require.True(t, len(cTxsSingle) > 0)
+	assertNoTransactionsDupes(t, cTxsSingle)
 
-	ctxsAll, err := c.ConfirmedTransactions([]string{})
+	cTxsAll, err := c.ConfirmedTransactions([]string{})
 	require.NoError(t, err)
-	require.True(t, len(ctxsAll) > 0)
-	require.True(t, len(ctxsAll) > len(ctxsSingle))
+	require.True(t, len(cTxsAll) > 0)
+	require.True(t, len(cTxsAll) > len(cTxsSingle))
+	assertNoTransactionsDupes(t, cTxsAll)
 }
 
 func TestStableConfirmedTransactions(t *testing.T) {
@@ -1939,6 +1955,8 @@ func TestStableConfirmedTransactions(t *testing.T) {
 				return
 			}
 
+			assertNoTransactionsDupes(t, txResult)
+
 			var expected []daemon.TransactionResult
 			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
 		})
@@ -1985,7 +2003,7 @@ func TestStableUnconfirmedTransactions(t *testing.T) {
 		{
 			name:       "empty addrs",
 			addrs:      []string{},
-			goldenFile: "./empty-addrs-unconfirmed-txs.golden",
+			goldenFile: "empty-addrs-unconfirmed-txs.golden",
 		},
 	}
 
@@ -1997,6 +2015,8 @@ func TestStableUnconfirmedTransactions(t *testing.T) {
 				require.Equal(t, tc.err, err, "case: "+tc.name)
 				return
 			}
+
+			assertNoTransactionsDupes(t, txResult)
 
 			var expected []daemon.TransactionResult
 			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
@@ -2013,11 +2033,23 @@ func TestLiveUnconfirmedTransactions(t *testing.T) {
 	cTxsSingle, err := c.UnconfirmedTransactions([]string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"})
 	require.NoError(t, err)
 	require.True(t, len(cTxsSingle) >= 0)
+	assertNoTransactionsDupes(t, cTxsSingle)
 
 	cTxsAll, err := c.UnconfirmedTransactions([]string{})
 	require.NoError(t, err)
 	require.True(t, len(cTxsAll) >= 0)
 	require.True(t, len(cTxsAll) >= len(cTxsSingle))
+	assertNoTransactionsDupes(t, cTxsAll)
+}
+
+func assertNoTransactionsDupes(t *testing.T, r []daemon.TransactionResult) {
+	txids := make(map[string]struct{})
+
+	for _, x := range r {
+		_, ok := txids[x.Transaction.Hash]
+		require.False(t, ok)
+		txids[x.Transaction.Hash] = struct{}{}
+	}
 }
 
 func TestLiveTransactionsVerbose(t *testing.T) {
@@ -2032,6 +2064,7 @@ func TestLiveTransactionsVerbose(t *testing.T) {
 	txns, err := c.TransactionsVerbose(addrs)
 	require.NoError(t, err)
 	require.True(t, len(txns) > 0)
+	assertNoTransactionsDupesVerbose(t, txns)
 }
 
 func TestStableTransactionsVerbose(t *testing.T) {
@@ -2103,6 +2136,8 @@ func TestStableTransactionsVerbose(t *testing.T) {
 				return
 			}
 
+			assertNoTransactionsDupesVerbose(t, txResult)
+
 			var expected []daemon.TransactionResultVerbose
 			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
 		})
@@ -2115,14 +2150,16 @@ func TestLiveConfirmedTransactionsVerbose(t *testing.T) {
 	}
 	c := api.NewClient(nodeAddress())
 
-	ctxsSingle, err := c.ConfirmedTransactionsVerbose([]string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"})
+	cTxsSingle, err := c.ConfirmedTransactionsVerbose([]string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"})
 	require.NoError(t, err)
-	require.True(t, len(ctxsSingle) > 0)
+	require.True(t, len(cTxsSingle) > 0)
+	assertNoTransactionsDupesVerbose(t, cTxsSingle)
 
-	ctxsAll, err := c.ConfirmedTransactionsVerbose([]string{})
+	cTxsAll, err := c.ConfirmedTransactionsVerbose([]string{})
 	require.NoError(t, err)
-	require.True(t, len(ctxsAll) > 0)
-	require.True(t, len(ctxsAll) > len(ctxsSingle))
+	require.True(t, len(cTxsAll) > 0)
+	require.True(t, len(cTxsAll) > len(cTxsSingle))
+	assertNoTransactionsDupesVerbose(t, cTxsAll)
 }
 
 func TestStableConfirmedTransactionsVerbose(t *testing.T) {
@@ -2193,6 +2230,8 @@ func TestStableConfirmedTransactionsVerbose(t *testing.T) {
 				return
 			}
 
+			assertNoTransactionsDupesVerbose(t, txResult)
+
 			var expected []daemon.TransactionResultVerbose
 			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
 		})
@@ -2252,9 +2291,21 @@ func TestStableUnconfirmedTransactionVerbose(t *testing.T) {
 				return
 			}
 
+			assertNoTransactionsDupesVerbose(t, txResult)
+
 			var expected []daemon.TransactionResultVerbose
 			checkGoldenFile(t, tc.goldenFile, TestData{txResult, &expected})
 		})
+	}
+}
+
+func assertNoTransactionsDupesVerbose(t *testing.T, r []daemon.TransactionResultVerbose) {
+	txids := make(map[string]struct{})
+
+	for _, x := range r {
+		_, ok := txids[x.Transaction.Hash]
+		require.False(t, ok)
+		txids[x.Transaction.Hash] = struct{}{}
 	}
 }
 

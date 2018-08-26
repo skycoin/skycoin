@@ -106,7 +106,7 @@ func walletHistoryAction(c *gcli.Context) error {
 	return printJSON(totalAddrHis)
 }
 
-func makeAddrHisArray(c *api.Client, addr string, uxOuts []*historydb.UxOutJSON) ([]AddrHistory, error) {
+func makeAddrHisArray(c *api.Client, addr string, uxOuts []historydb.UxOutJSON) ([]AddrHistory, error) {
 	if len(uxOuts) == 0 {
 		return nil, nil
 	}

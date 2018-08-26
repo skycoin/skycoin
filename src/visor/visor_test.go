@@ -1877,7 +1877,7 @@ func TestGetTransactions(t *testing.T) {
 				Blockchain:  bc,
 			}
 
-			retTxs, err := v.GetTransactions(tc.filters...)
+			retTxs, err := v.GetTransactions(tc.filters)
 			require.Equal(t, tc.expect.err, err)
 			if err != nil {
 				return

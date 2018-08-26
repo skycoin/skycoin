@@ -208,3 +208,22 @@ func NewReadableUnconfirmedTxnVerbose(unconfirmed *UnconfirmedTxn, inputs []Read
 		IsValid:   unconfirmed.IsValid == 1,
 	}, nil
 }
+
+// NewReadableUnconfirmedTxnsVerbose creates []ReadableUnconfirmedTxn from []UnconfirmedTxn and their readable transaction inputs
+func NewReadableUnconfirmedTxnsVerbose(txns []UnconfirmedTxn, inputs [][]ReadableTransactionInput) ([]ReadableUnconfirmedTxnVerbose, error) {
+	if len(inputs) != len(txns) {
+		return nil, fmt.Errorf("NewReadableUnconfirmedTxnsVerbose: len(inputs) != len(txns)")
+	}
+
+	rTxns := make([]ReadableUnconfirmedTxnVerbose, len(txns))
+	for i, txn := range txns {
+		rTxn, err := NewReadableUnconfirmedTxnVerbose(&txn, inputs[i])
+		if err != nil {
+			return nil, err
+		}
+
+		rTxns[i] = *rTxn
+	}
+
+	return rTxns, nil
+}

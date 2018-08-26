@@ -907,6 +907,29 @@ func (_m *MockGatewayer) GetWalletUnconfirmedTxns(wltID string) ([]visor.Unconfi
 	return r0, r1
 }
 
+// GetWalletUnconfirmedTxnsVerbose provides a mock function with given fields: wltID
+func (_m *MockGatewayer) GetWalletUnconfirmedTxnsVerbose(wltID string) ([]visor.ReadableUnconfirmedTxnVerbose, error) {
+	ret := _m.Called(wltID)
+
+	var r0 []visor.ReadableUnconfirmedTxnVerbose
+	if rf, ok := ret.Get(0).(func(string) []visor.ReadableUnconfirmedTxnVerbose); ok {
+		r0 = rf(wltID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]visor.ReadableUnconfirmedTxnVerbose)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(wltID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetWallets provides a mock function with given fields:
 func (_m *MockGatewayer) GetWallets() (wallet.Wallets, error) {
 	ret := _m.Called()

@@ -4188,7 +4188,7 @@ func TestWalletUpdate(t *testing.T) {
 	require.Equal(t, w1.Meta.Label, "new wallet")
 }
 
-func TestStableWalletTransactions(t *testing.T) {
+func TestStableWalletUnconfirmedTransactions(t *testing.T) {
 	if !doStable(t) {
 		return
 	}
@@ -4197,14 +4197,14 @@ func TestStableWalletTransactions(t *testing.T) {
 	w, _, clean := createWallet(t, c, false, "", "")
 	defer clean()
 
-	txns, err := c.WalletTransactions(w.Meta.Filename)
+	txns, err := c.WalletUnconfirmedTransactions(w.Meta.Filename)
 	require.NoError(t, err)
 
 	var expect api.UnconfirmedTxnsResponse
 	checkGoldenFile(t, "wallet-transactions.golden", TestData{*txns, &expect})
 }
 
-func TestLiveWalletTransactions(t *testing.T) {
+func TestLiveWalletUnconfirmedTransactions(t *testing.T) {
 	if !doLive(t) {
 		return
 	}
@@ -4213,7 +4213,46 @@ func TestLiveWalletTransactions(t *testing.T) {
 
 	c := api.NewClient(nodeAddress())
 	w, _, _, _ := prepareAndCheckWallet(t, c, 1e6, 1)
-	txns, err := c.WalletTransactions(w.Filename())
+	txns, err := c.WalletUnconfirmedTransactions(w.Filename())
+	require.NoError(t, err)
+
+	bp, err := c.WalletBalance(w.Filename())
+	require.NoError(t, err)
+	// There's pending transactions if predicted coins are not the same as confirmed coins
+	if bp.Predicted.Coins != bp.Confirmed.Coins {
+		require.NotEmpty(t, txns.Transactions)
+		return
+	}
+
+	require.Empty(t, txns.Transactions)
+}
+
+func TestStableWalletUnconfirmedTransactionsVerbose(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	c := api.NewClient(nodeAddress())
+	w, _, clean := createWallet(t, c, false, "", "")
+	defer clean()
+
+	txns, err := c.WalletUnconfirmedTransactionsVerbose(w.Meta.Filename)
+	require.NoError(t, err)
+
+	var expect api.UnconfirmedTxnsVerboseResponse
+	checkGoldenFile(t, "wallet-transactions-verbose.golden", TestData{*txns, &expect})
+}
+
+func TestLiveWalletUnconfirmedTransactionsVerbose(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	requireWalletEnv(t)
+
+	c := api.NewClient(nodeAddress())
+	w, _, _, _ := prepareAndCheckWallet(t, c, 1e6, 1)
+	txns, err := c.WalletUnconfirmedTransactionsVerbose(w.Filename())
 	require.NoError(t, err)
 
 	bp, err := c.WalletBalance(w.Filename())

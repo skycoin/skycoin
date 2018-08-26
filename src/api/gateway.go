@@ -21,6 +21,7 @@ type Gatewayer interface {
 	GetWallets() (wallet.Wallets, error)
 	UpdateWalletLabel(wltID, label string) error
 	GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTxn, error)
+	GetWalletUnconfirmedTxnsVerbose(wltID string) ([]visor.ReadableUnconfirmedTxnVerbose, error)
 	CreateWallet(wltName string, options wallet.Options) (*wallet.Wallet, error)
 	NewAddresses(wltID string, password []byte, n uint64) ([]cipher.Address, error)
 	GetWalletDir() (string, error)

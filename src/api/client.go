@@ -667,13 +667,27 @@ func (c *Client) CreateTransaction(req CreateTransactionRequest) (*CreateTransac
 	return &r, nil
 }
 
-// WalletTransactions makes a request to GET /api/v1/wallet/transactions
-func (c *Client) WalletTransactions(id string) (*UnconfirmedTxnsResponse, error) {
+// WalletUnconfirmedTransactions makes a request to GET /api/v1/wallet/transactions
+func (c *Client) WalletUnconfirmedTransactions(id string) (*UnconfirmedTxnsResponse, error) {
 	v := url.Values{}
 	v.Add("id", id)
 	endpoint := "/api/v1/wallet/transactions?" + v.Encode()
 
 	var utx *UnconfirmedTxnsResponse
+	if err := c.Get(endpoint, &utx); err != nil {
+		return nil, err
+	}
+	return utx, nil
+}
+
+// WalletUnconfirmedTransactionsVerbose makes a request to GET /api/v1/wallet/transactions&verbose=1
+func (c *Client) WalletUnconfirmedTransactionsVerbose(id string) (*UnconfirmedTxnsVerboseResponse, error) {
+	v := url.Values{}
+	v.Add("id", id)
+	v.Add("verbose", "1")
+	endpoint := "/api/v1/wallet/transactions?" + v.Encode()
+
+	var utx *UnconfirmedTxnsVerboseResponse
 	if err := c.Get(endpoint, &utx); err != nil {
 		return nil, err
 	}

@@ -67,7 +67,7 @@ However, any changes to the API will be recorded in the [changelog](../../CHANGE
 	- [Verify an address](#verify-an-address)
 - [Wallet APIs](#wallet-apis)
 	- [Get wallet](#get-wallet)
-	- [Get wallet transactions](#get-wallet-transactions)
+	- [Get unconfirmed transactions of a wallet](#get-unconfirmed-transactions-of-a-wallet)
 	- [Get wallets](#get-wallets)
 	- [Get wallet folder name](#get-wallet-folder-name)
 	- [Generate wallet seed](#generate-wallet-seed)
@@ -387,16 +387,17 @@ Result:
 }
 ```
 
-### Get wallet transactions
+### Get unconfirmed transactions of a wallet
 
 ```
 URI: /api/v1/wallet/transactions
 Method: GET
 Args:
 	id: Wallet ID
+	verbose: [bool] include verbose transaction input data
 ```
 
-Returns all pending transaction for all addresses by selected Wallet
+Returns all unconfirmed transactions for all addresses in a given wallet
 
 Example:
 
@@ -422,6 +423,67 @@ Result:
                 "inputs": [
                     "782a8662efb0e933cab7d3ae9429ab53c4208cf44d8cdc07c2fbd7204b6b5cad",
                     "2f6b61a44086588c4eaa56a5dd9f1e0be2528861a6731608fcec38891b95db91"
+                ],
+                "outputs": [
+                    {
+                        "uxid": "bd302ef776efa8548183b89f21e90649f21b90fe2d2e90ecc1b880f2d995f226",
+                        "dst": "2UXZTg4ZHF6715b6tRhtaqceuQQ3G79GiZg",
+                        "coins": "998.000000",
+                        "hours": 247538
+                    },
+                    {
+                        "uxid": "31058b6bfb30bfd441aec00929e75782bce47c8a75787ba519dbb268f89d2c4b",
+                        "dst": "2awsJ2CR5H6QXCF2hwDjcvcAH9SgyfxCxgz",
+                        "coins": "1.000000",
+                        "hours": 247538
+                    }
+                ]
+            },
+            "received": "2018-03-16T18:03:57.139109904+05:30",
+            "checked": "2018-03-16T18:03:57.139109904+05:30",
+            "announced": "0001-01-01T00:00:00Z",
+            "is_valid": true
+        }
+    ]
+}
+```
+
+Example (verbose):
+
+```sh
+curl http://127.0.0.1:6420/api/v1/wallet/transactions?id=2017_11_25_e5fb.wlt&verbose=1
+```
+
+Result:
+
+```json
+{
+    "transactions": [
+        {
+            "transaction": {
+                "length": 317,
+                "type": 0,
+                "txid": "76ecbabc53ea2a3be46983058433dda6a3cf7ea0b86ba14d90b932fa97385de7",
+                "inner_hash": "5d55837bb0cbda9c9323ff9aafd7c3d31d0d38638346172fbe2d9078ebaa892a",
+                "sigs": [
+                    "464b7724302178c1cfeacadaaf3556a3b7e5259adf51919476c3acc695747ed244b5ce2187ce7bedb6ad65c71f7f7ff3fa6805e64fe5da3aaa00ad563c7424f600",
+                    "1155537b0391d4a6ee5eac07dee5798e953dca3a7c30643403dd2d326582c7d35080a16dc22644782ce1087bfc3bd06c2bf68e9a98e3989d90831646a9be2c9101"
+                ],
+                "inputs": [
+                    {
+                    	"uxid": "782a8662efb0e933cab7d3ae9429ab53c4208cf44d8cdc07c2fbd7204b6b5cad",
+                    	"owner": "8C5icxR9zdkYTZZTVV3cCX7QoK4EkLuK4p",
+                    	"coins": "997.000000",
+                    	"hours": 880000,
+                    	"calculated_hours": 990000
+                    },
+                    {
+                    	"uxid": "2f6b61a44086588c4eaa56a5dd9f1e0be2528861a6731608fcec38891b95db91",
+                    	"owner": "23A1EWMZopUFLCwtXMe2CU9xTCbi5Gth643",
+                    	"coins": "2.000000",
+                    	"hours": 10,
+                    	"calculated_hours": 152
+                    }
                 ],
                 "outputs": [
                     {

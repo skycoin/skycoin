@@ -1440,8 +1440,34 @@ func (vs *Visor) GetUnconfirmedTxns(filter func(UnconfirmedTxn) bool) ([]Unconfi
 	return txns, nil
 }
 
-// ToAddresses represents a filter that check if tx has output to the given addresses
-func ToAddresses(addresses []cipher.Address) func(UnconfirmedTxn) bool {
+// GetUnconfirmedTxnsVerbose gets all confirmed transactions of specific addresses
+func (vs *Visor) GetUnconfirmedTxnsVerbose(filter func(UnconfirmedTxn) bool) ([]ReadableUnconfirmedTxnVerbose, error) {
+	var txns []UnconfirmedTxn
+	var inputs [][]ReadableTransactionInput
+
+	if err := vs.DB.View("GetUnconfirmedTxnsVerbose", func(tx *dbutil.Tx) error {
+		var err error
+		txns, err = vs.Unconfirmed.GetTxns(tx, filter)
+		if err != nil {
+			return err
+		}
+
+		inputs, err = vs.getReadableVerboseInputsForUnconfirmedTxns(tx, txns)
+
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	if len(txns) == 0 {
+		return nil, nil
+	}
+
+	return NewReadableUnconfirmedTxnsVerbose(txns, inputs)
+}
+
+// SendsToAddresses represents a filter that check if tx has output to the given addresses
+func SendsToAddresses(addresses []cipher.Address) func(UnconfirmedTxn) bool {
 	return func(tx UnconfirmedTxn) (isRelated bool) {
 		for _, out := range tx.Txn.Out {
 			for _, address := range addresses {
@@ -1482,32 +1508,9 @@ func (vs *Visor) GetAllUnconfirmedTxnsVerbose() ([]ReadableUnconfirmedTxnVerbose
 			return err
 		}
 
-		if len(txns) == 0 {
-			return nil
-		}
+		inputs, err = vs.getReadableVerboseInputsForUnconfirmedTxns(tx, txns)
 
-		// Use the current head time to calculate estimated coin hours of unconfirmed transactions
-		headTime, err := vs.Blockchain.Time(tx)
-		if err != nil {
-			return err
-		}
-
-		inputs = make([][]ReadableTransactionInput, len(txns))
-		for i, txn := range txns {
-			if len(txn.Txn.In) == 0 {
-				logger.WithField("txid", txn.Hash().Hex()).Warning("Unconfirmed transaction has no inputs")
-				continue
-			}
-
-			txnInputs, err := vs.getReadableVerboseInputs(tx, headTime, txn.Txn.In)
-			if err != nil {
-				return err
-			}
-
-			inputs[i] = txnInputs
-		}
-
-		return nil
+		return err
 	}); err != nil {
 		return nil, err
 	}
@@ -1516,17 +1519,37 @@ func (vs *Visor) GetAllUnconfirmedTxnsVerbose() ([]ReadableUnconfirmedTxnVerbose
 		return nil, nil
 	}
 
-	rTxns := make([]ReadableUnconfirmedTxnVerbose, len(txns))
+	return NewReadableUnconfirmedTxnsVerbose(txns, inputs)
+}
+
+// getReadableVerboseInputsForUnconfirmedTxns returns ReadableTransactionInputs for a set of UnconfirmedTxns
+func (vs *Visor) getReadableVerboseInputsForUnconfirmedTxns(tx *dbutil.Tx, txns []UnconfirmedTxn) ([][]ReadableTransactionInput, error) {
+	if len(txns) == 0 {
+		return nil, nil
+	}
+
+	// Use the current head time to calculate estimated coin hours of unconfirmed transactions
+	headTime, err := vs.Blockchain.Time(tx)
+	if err != nil {
+		return nil, err
+	}
+
+	inputs := make([][]ReadableTransactionInput, len(txns))
 	for i, txn := range txns {
-		rTxn, err := NewReadableUnconfirmedTxnVerbose(&txn, inputs[i])
+		if len(txn.Txn.In) == 0 {
+			logger.WithField("txid", txn.Hash().Hex()).Warning("Unconfirmed transaction has no inputs")
+			continue
+		}
+
+		txnInputs, err := vs.getReadableVerboseInputs(tx, headTime, txn.Txn.In)
 		if err != nil {
 			return nil, err
 		}
 
-		rTxns[i] = *rTxn
+		inputs[i] = txnInputs
 	}
 
-	return rTxns, nil
+	return inputs, nil
 }
 
 // getFeeCalcTimeForTransaction returns the time against which a transaction's fee should be calculated.

@@ -844,7 +844,7 @@ func (gw *Gateway) GetUnconfirmedTxns(addrs []cipher.Address) ([]visor.Unconfirm
 	var txns []visor.UnconfirmedTxn
 	var err error
 	gw.strand("GetUnconfirmedTxns", func() {
-		txns, err = gw.v.GetUnconfirmedTxns(visor.ToAddresses(addrs))
+		txns, err = gw.v.GetUnconfirmedTxns(visor.SendsToAddresses(addrs))
 	})
 	return txns, err
 }
@@ -1092,7 +1092,28 @@ func (gw *Gateway) GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTx
 			return
 		}
 
-		txns, err = gw.v.GetUnconfirmedTxns(visor.ToAddresses(addrs))
+		txns, err = gw.v.GetUnconfirmedTxns(visor.SendsToAddresses(addrs))
+	})
+
+	return txns, err
+}
+
+// GetWalletUnconfirmedTxnsVerbose returns all unconfirmed transactions in given wallet
+func (gw *Gateway) GetWalletUnconfirmedTxnsVerbose(wltID string) ([]visor.ReadableUnconfirmedTxnVerbose, error) {
+	if !gw.Config.EnableWalletAPI {
+		return nil, wallet.ErrWalletAPIDisabled
+	}
+
+	var txns []visor.ReadableUnconfirmedTxnVerbose
+	var err error
+	gw.strand("GetWalletUnconfirmedTxnsVerbose", func() {
+		var addrs []cipher.Address
+		addrs, err = gw.v.Wallets.GetAddresses(wltID)
+		if err != nil {
+			return
+		}
+
+		txns, err = gw.v.GetUnconfirmedTxnsVerbose(visor.SendsToAddresses(addrs))
 	})
 
 	return txns, err

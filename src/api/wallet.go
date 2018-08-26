@@ -33,6 +33,11 @@ type UnconfirmedTxnsResponse struct {
 	Transactions []visor.ReadableUnconfirmedTxn `json:"transactions"`
 }
 
+// UnconfirmedTxnsVerboseResponse contains verbose unconfirmed transaction data
+type UnconfirmedTxnsVerboseResponse struct {
+	Transactions []visor.ReadableUnconfirmedTxnVerbose `json:"transactions"`
+}
+
 // WalletEntry the wallet entry struct
 type WalletEntry struct {
 	Address string `json:"address"`
@@ -563,15 +568,22 @@ func walletGet(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-// Returns JSON of unconfirmed transactions for user's wallet
+// walletTransactionsHandler returns all unconfirmed transactions for all addresses in a given wallet
 // URI: /api/v1/wallet/transactions
 // Method: GET
 // Args:
-//     id: wallet id [required]
+//	id: wallet id [required]
+//	verbose: [bool] include verbose transaction input data
 func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
+			return
+		}
+
+		verbose, err := parseVerboseFlag(r.FormValue("verbose"))
+		if err != nil {
+			wh.Error400(w, "Invalid value for verbose")
 			return
 		}
 
@@ -581,10 +593,9 @@ func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		txns, err := gateway.GetWalletUnconfirmedTxns(wltID)
-		if err != nil {
-			logger.Errorf("get wallet unconfirmed transactions failed: %v", err)
+		handleWalletError := func(err error) {
 			switch err {
+			case nil:
 			case wallet.ErrWalletNotExist:
 				wh.Error404(w, "")
 			case wallet.ErrWalletAPIDisabled:
@@ -592,19 +603,41 @@ func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 			default:
 				wh.Error500(w, err.Error())
 			}
-			return
 		}
 
-		unconfirmedTxns, err := visor.NewReadableUnconfirmedTxns(txns)
-		if err != nil {
-			wh.Error500(w, err.Error())
-			return
-		}
+		if verbose {
+			txns, err := gateway.GetWalletUnconfirmedTxnsVerbose(wltID)
+			if err != nil {
+				logger.Errorf("get wallet unconfirmed transactions verbose failed: %v", err)
+				handleWalletError(err)
+				return
+			}
 
-		unconfirmedTxnResp := UnconfirmedTxnsResponse{
-			Transactions: unconfirmedTxns,
+			if txns == nil {
+				txns = []visor.ReadableUnconfirmedTxnVerbose{}
+			}
+
+			wh.SendJSONOr500(logger, w, UnconfirmedTxnsVerboseResponse{
+				Transactions: txns,
+			})
+		} else {
+			txns, err := gateway.GetWalletUnconfirmedTxns(wltID)
+			if err != nil {
+				logger.Errorf("get wallet unconfirmed transactions failed: %v", err)
+				handleWalletError(err)
+				return
+			}
+
+			unconfirmedTxns, err := visor.NewReadableUnconfirmedTxns(txns)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+
+			wh.SendJSONOr500(logger, w, UnconfirmedTxnsResponse{
+				Transactions: unconfirmedTxns,
+			})
 		}
-		wh.SendJSONOr500(logger, w, unconfirmedTxnResp)
 	}
 }
 

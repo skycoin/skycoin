@@ -495,7 +495,8 @@ func NewReadableBlockBody(b *coin.Block) (*ReadableBlockBody, error) {
 		t := Transaction{
 			Txn: b.Body.Transactions[i],
 			Status: TransactionStatus{
-				BlockSeq: b.Seq(),
+				BlockSeq:  b.Seq(),
+				Confirmed: true,
 			},
 		}
 

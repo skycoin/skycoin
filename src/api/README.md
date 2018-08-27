@@ -84,6 +84,32 @@ However, any changes to the API will be recorded in the [changelog](../../CHANGE
 - [Transaction APIs](#transaction-apis)
 	- [Get unconfirmed transactions](#get-unconfirmed-transactions)
 	- [Get transaction info by id](#get-transaction-info-by-id)
+	- [Get raw transaction by id](#get-raw-transaction-by-id)
+	- [Inject raw transaction](#inject-raw-transaction)
+	- [Get transactions that are addresses related](#get-transactions-that-are-addresses-related)
+	- [Resend unconfirmed transactions](#resend-unconfirmed-transactions)
+	- [Verify encoded transaction](#verify-encoded-transaction)
+- [Block APIs](#block-apis)
+	- [Get blockchain metadata](#get-blockchain-metadata)
+	- [Get blockchain progress](#get-blockchain-progress)
+	- [Get block by hash or seq](#get-block-by-hash-or-seq)
+	- [Get blocks in specific range](#get-blocks-in-specific-range)
+	- [Get last N blocks](#get-last-n-blocks)
+- [Explorer APIs](#explorer-apis)
+	- [Get address affected transactions](#get-address-affected-transactions)
+- [Uxout APIs](#uxout-apis)
+	- [Get uxout](#get-uxout)
+	- [Get historical unspent outputs for an address](#get-historical-unspent-outputs-for-an-address)
+- [Coin supply related information](#coin-supply-related-information)
+	- [Coin supply](#coin-supply)
+	- [Richlist show top N addresses by uxouts](#richlist-show-top-n-addresses-by-uxouts)
+	- [Count unique addresses](#count-unique-addresses)
+- [Network status](#network-status)
+	- [Get information for a specific connection](#get-information-for-a-specific-connection)
+	- [Get a list of all connections](#get-a-list-of-all-connections)
+	- [Get a list of all default connections](#get-a-list-of-all-default-connections)
+	- [Get a list of all trusted connections](#get-a-list-of-all-trusted-connections)
+	- [Get a list of all connections discovered through peer exchange](#get-a-list-of-all-connections-discovered-through-peer-exchange)
 
 <!-- /MarkdownTOC -->
 
@@ -1376,6 +1402,7 @@ Method: GET
 Args:
     txid: transaction id
     verbose: [bool] include verbose transaction input data
+    encoded: [bool] return the transaction as hex-encoded serialized bytes
 ```
 
 Example:
@@ -1469,7 +1496,29 @@ Result:
             }
         ]
     }
-}```
+}
+```
+
+Example (encoded):
+
+```sh
+curl http://127.0.0.1:6420/api/v1/transaction?txid=a6446654829a4a844add9f181949d12f8291fdd2c0fcb22200361e90e814e2d3&encoded=1
+```
+
+Result:
+
+```json
+{
+    "status": {
+        "confirmed": true,
+        "unconfirmed": false,
+        "height": 53267,
+        "block_seq": 1178
+    },
+    "time": 1494275231,
+    "encoded_transaction": "b700000000075f255d42ddd2fb228fe488b8b468526810db7a144aeed1fd091e3fd404626e010000009b6fae9a70a42464dda089c943fafbf7bae8b8402e6bf4e4077553206eebc2ed4f7630bb1bd92505131cca5bf8bd82a44477ef53058e1995411bdbf1f5dfad1f00010000005287f390628909dd8c25fad0feb37859c0c1ddcf90da0c040c837c89fefd9191010000000010722f061aa262381dce35193d43eceb112373c300127a0000000000a303000000000000"
+}
+```
 
 ### Get raw transaction by id
 

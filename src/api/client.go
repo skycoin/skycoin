@@ -625,7 +625,7 @@ func (c *Client) Spend(id, dst string, coins uint64, password string) (*SpendRes
 	return &r, nil
 }
 
-// CreateTransactionRequest is sent to /wallet/transaction
+// CreateTransactionRequest is sent to /api/v1/wallet/transaction
 type CreateTransactionRequest struct {
 	IgnoreUnconfirmed bool                           `json:"ignore_unconfirmed"`
 	HoursSelection    HoursSelection                 `json:"hours_selection"`
@@ -832,6 +832,20 @@ func (c *Client) TransactionVerbose(txid string) (*daemon.TransactionResultVerbo
 	endpoint := "/api/v1/transaction?" + v.Encode()
 
 	var r daemon.TransactionResultVerbose
+	if err := c.Get(endpoint, &r); err != nil {
+		return nil, err
+	}
+	return &r, nil
+}
+
+// TransactionEncoded makes a request to GET /api/v1/transaction?encoded=1
+func (c *Client) TransactionEncoded(txid string) (*TransactionEncodedResponse, error) {
+	v := url.Values{}
+	v.Add("txid", txid)
+	v.Add("encoded", "1")
+	endpoint := "/api/v1/transaction?" + v.Encode()
+
+	var r TransactionEncodedResponse
 	if err := c.Get(endpoint, &r); err != nil {
 		return nil, err
 	}

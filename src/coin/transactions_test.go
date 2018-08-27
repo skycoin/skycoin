@@ -2,6 +2,7 @@ package coin
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"math"
 	"sort"
@@ -317,6 +318,21 @@ func TestTransactionSerialization(t *testing.T) {
 	tx2, err := TransactionDeserialize(b)
 	require.NoError(t, err)
 	require.Equal(t, tx, tx2)
+
+	// Check reserializing deserialized txn
+	b2 := tx2.Serialize()
+	tx3, err := TransactionDeserialize(b2)
+	require.NoError(t, err)
+	require.Equal(t, tx2, tx3)
+
+	// Check hex encode/decode followed by deserialize
+	s := hex.EncodeToString(b)
+	sb, err := hex.DecodeString(s)
+	require.NoError(t, err)
+	tx4, err := TransactionDeserialize(sb)
+	require.NoError(t, err)
+	require.Equal(t, tx2, tx4)
+
 	// Invalid deserialization
 	require.Panics(t, func() { MustTransactionDeserialize([]byte{0x04}) })
 }

@@ -1270,7 +1270,8 @@ func TestStableBlocksVerbose(t *testing.T) {
 				var expected visor.ReadableBlocksVerbose
 				checkGoldenFile(t, tc.golden, TestData{*resp, &expected})
 			} else {
-				_, err := c.BlocksVerbose(tc.start, tc.end)
+				blocks, err := c.BlocksVerbose(tc.start, tc.end)
+				require.Nil(t, blocks)
 				assertResponseError(t, err, tc.errCode, tc.errMsg)
 			}
 		})
@@ -1299,6 +1300,8 @@ func testBlocksVerbose(t *testing.T, start, end uint64) *visor.ReadableBlocksVer
 
 	var prevBlock *visor.ReadableBlockVerbose
 	for idx, b := range blocks.Blocks {
+		assertVerboseBlockFee(t, &b)
+
 		if prevBlock != nil {
 			require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
 		}
@@ -1388,6 +1391,8 @@ func TestStableLastBlocksVerbose(t *testing.T) {
 
 	var prevBlock *visor.ReadableBlockVerbose
 	for idx, b := range blocks.Blocks {
+		assertVerboseBlockFee(t, &b)
+
 		if prevBlock != nil {
 			require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
 		}
@@ -1413,6 +1418,8 @@ func TestLiveLastBlocksVerbose(t *testing.T) {
 
 	var prevBlock *visor.ReadableBlockVerbose
 	for idx, b := range blocks.Blocks {
+		assertVerboseBlockFee(t, &b)
+
 		if prevBlock != nil {
 			require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
 		}

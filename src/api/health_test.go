@@ -97,7 +97,7 @@ func TestHealthCheckHandler(t *testing.T) {
 				Uptime:             time.Second * 4,
 			}
 
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			gateway.On("IsWalletAPIEnabled").Return(tc.walletAPIEnabled)
 
 			if tc.getHealthErr != nil {

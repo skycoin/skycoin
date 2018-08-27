@@ -788,7 +788,7 @@ func TestIntroductionMessage(t *testing.T) {
 			mc := &gnet.MessageContext{Addr: tc.addr}
 			tc.intro.c = mc
 
-			d := NewDaemonerMock()
+			d := &MockDaemoner{}
 			d.On("DaemonConfig").Return(DaemonConfig{Version: int32(tc.mockValue.version)})
 			d.On("Mirror").Return(tc.mockValue.mirror)
 			d.On("IsDefaultConnection", tc.addr).Return(tc.mockValue.isDefaultConnection)

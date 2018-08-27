@@ -36,9 +36,9 @@ func NewBlockchainMetadata(head *coin.SignedBlock, unconfirmedLen, unspentsLen u
 // Transaction wraps around coin.Transaction, tagged with its status.  This allows us
 // to include unconfirmed txns
 type Transaction struct {
-	Txn    coin.Transaction  //`json:"txn"`
-	Status TransactionStatus //`json:"status"`
-	Time   uint64            //`json:"time"`
+	Txn    coin.Transaction
+	Status TransactionStatus
+	Time   uint64
 }
 
 // TransactionStatus represents the transaction status
@@ -109,7 +109,7 @@ type ReadableTransactionInput struct {
 	CalculatedHours uint64 `json:"calculated_hours"`
 }
 
-// NewReadableTransactionOutput creates ReadableTransactionOutput
+// NewReadableTransactionOutput creates a ReadableTransactionOutput
 func NewReadableTransactionOutput(t *coin.TransactionOutput, txid cipher.SHA256) (*ReadableTransactionOutput, error) {
 	coinStr, err := droplet.ToString(t.Coins)
 	if err != nil {
@@ -124,7 +124,7 @@ func NewReadableTransactionOutput(t *coin.TransactionOutput, txid cipher.SHA256)
 	}, nil
 }
 
-// NewReadableTransactionInput creates ReadableTransactionInput
+// NewReadableTransactionInput creates a ReadableTransactionInput
 func NewReadableTransactionInput(ux coin.UxOut, calculateHoursTime uint64) (*ReadableTransactionInput, error) {
 	coinVal, err := droplet.ToString(ux.Body.Coins)
 	if err != nil {
@@ -148,7 +148,7 @@ func NewReadableTransactionInput(ux coin.UxOut, calculateHoursTime uint64) (*Rea
 	}, nil
 }
 
-// ReadableOutput represents readable output
+// ReadableOutput represents a readable output
 type ReadableOutput struct {
 	Hash              string `json:"hash"`
 	Time              uint64 `json:"time"`
@@ -279,7 +279,7 @@ func (os ReadableOutputSet) AggregateUnspentOutputs() (map[string]uint64, error)
 	return allAccounts, nil
 }
 
-// NewReadableOutput creates readable output
+// NewReadableOutput creates a readable output
 func NewReadableOutput(headTime uint64, t coin.UxOut) (ReadableOutput, error) {
 	coinStr, err := droplet.ToString(t.Body.Coins)
 	if err != nil {
@@ -311,7 +311,7 @@ func NewReadableOutput(headTime uint64, t coin.UxOut) (ReadableOutput, error) {
 	}, nil
 }
 
-// NewReadableOutputs converts unspent outputs to readable output
+// NewReadableOutputs converts unspent outputs to a readable output
 func NewReadableOutputs(headTime uint64, uxs coin.UxArray) (ReadableOutputs, error) {
 	rxReadables := make(ReadableOutputs, len(uxs))
 	for i, ux := range uxs {
@@ -379,7 +379,7 @@ func ReadableOutputsToUxBalances(ros ReadableOutputs) ([]wallet.UxBalance, error
 	return uxb, nil
 }
 
-// ReadableTransaction represents readable transaction
+// ReadableTransaction represents a readable transaction
 type ReadableTransaction struct {
 	Length    uint32 `json:"length"`
 	Type      uint8  `json:"type"`
@@ -392,7 +392,7 @@ type ReadableTransaction struct {
 	Out  []ReadableTransactionOutput `json:"outputs"`
 }
 
-// ReadableUnconfirmedTxn represents readable unconfirmed transaction
+// ReadableUnconfirmedTxn represents a readable unconfirmed transaction
 type ReadableUnconfirmedTxn struct {
 	Txn       ReadableTransaction `json:"transaction"`
 	Received  time.Time           `json:"received"`
@@ -401,9 +401,11 @@ type ReadableUnconfirmedTxn struct {
 	IsValid   bool                `json:"is_valid"`
 }
 
-// NewReadableUnconfirmedTxn creates readable unconfirmed transaction
+// NewReadableUnconfirmedTxn creates a readable unconfirmed transaction
 func NewReadableUnconfirmedTxn(unconfirmed *UnconfirmedTxn) (*ReadableUnconfirmedTxn, error) {
-	tx, err := NewReadableTransaction(&Transaction{Txn: unconfirmed.Txn})
+	tx, err := NewReadableTransaction(&Transaction{
+		Txn: unconfirmed.Txn,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -429,7 +431,7 @@ func NewReadableUnconfirmedTxns(txs []UnconfirmedTxn) ([]ReadableUnconfirmedTxn,
 	return rut, nil
 }
 
-// NewReadableTransaction creates readable transaction
+// NewReadableTransaction creates a readable transaction
 func NewReadableTransaction(t *Transaction) (*ReadableTransaction, error) {
 	// Genesis transaction use empty SHA256 as txid
 	txid := cipher.SHA256{}
@@ -481,7 +483,7 @@ type ReadableBlockHeader struct {
 	BodyHash          string `json:"tx_body_hash"`
 }
 
-// NewReadableBlockHeader creates readable block header
+// NewReadableBlockHeader creates a readable block header
 func NewReadableBlockHeader(b *coin.BlockHeader) ReadableBlockHeader {
 	return ReadableBlockHeader{
 		BkSeq:             b.BkSeq,
@@ -494,18 +496,20 @@ func NewReadableBlockHeader(b *coin.BlockHeader) ReadableBlockHeader {
 	}
 }
 
-// ReadableBlockBody represents readable block body
+// ReadableBlockBody represents a readable block body
 type ReadableBlockBody struct {
 	Transactions []ReadableTransaction `json:"txns"`
 }
 
-// NewReadableBlockBody creates readable block body
+// NewReadableBlockBody creates a readable block body
 func NewReadableBlockBody(b *coin.Block) (*ReadableBlockBody, error) {
 	txns := make([]ReadableTransaction, len(b.Body.Transactions))
 	for i := range b.Body.Transactions {
 		t := Transaction{
-			Txn:    b.Body.Transactions[i],
-			Status: TransactionStatus{BlockSeq: b.Seq()},
+			Txn: b.Body.Transactions[i],
+			Status: TransactionStatus{
+				BlockSeq: b.Seq(),
+			},
 		}
 
 		tx, err := NewReadableTransaction(&t)
@@ -514,19 +518,20 @@ func NewReadableBlockBody(b *coin.Block) (*ReadableBlockBody, error) {
 		}
 		txns[i] = *tx
 	}
+
 	return &ReadableBlockBody{
 		Transactions: txns,
 	}, nil
 }
 
-// ReadableBlock represents readable block
+// ReadableBlock represents a readable block
 type ReadableBlock struct {
 	Head ReadableBlockHeader `json:"header"`
 	Body ReadableBlockBody   `json:"body"`
 	Size int                 `json:"size"`
 }
 
-// NewReadableBlock creates readable block
+// NewReadableBlock creates a readable block
 func NewReadableBlock(b *coin.Block) (*ReadableBlock, error) {
 	body, err := NewReadableBlockBody(b)
 	if err != nil {

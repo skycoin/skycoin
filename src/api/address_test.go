@@ -99,7 +99,7 @@ func TestVerifyAddress(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v2/address/verify"
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)

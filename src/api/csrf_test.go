@@ -144,7 +144,7 @@ func TestCSRFWrapper(t *testing.T) {
 			for _, c := range cases {
 				name := fmt.Sprintf("%s %s %s", method, endpoint, c)
 				t.Run(name, func(t *testing.T) {
-					gateway := &GatewayerMock{}
+					gateway := &MockGatewayer{}
 
 					req, err := http.NewRequest(method, endpoint, nil)
 					require.NoError(t, err)
@@ -194,7 +194,7 @@ func TestOriginRefererCheck(t *testing.T) {
 		for _, tc := range cases {
 			name := fmt.Sprintf("%s %s", tc.name, endpoint)
 			t.Run(name, func(t *testing.T) {
-				gateway := &GatewayerMock{}
+				gateway := &MockGatewayer{}
 
 				req, err := http.NewRequest(http.MethodGet, endpoint, nil)
 				require.NoError(t, err)
@@ -232,7 +232,7 @@ func TestOriginRefererCheck(t *testing.T) {
 func TestHostCheck(t *testing.T) {
 	for _, endpoint := range endpoints {
 		t.Run(endpoint, func(t *testing.T) {
-			gateway := &GatewayerMock{}
+			gateway := &MockGatewayer{}
 
 			req, err := http.NewRequest(http.MethodGet, endpoint, nil)
 			require.NoError(t, err)
@@ -267,7 +267,7 @@ func TestCSRF(t *testing.T) {
 	}
 
 	updateWalletLabel := func(csrfToken string) *httptest.ResponseRecorder {
-		gateway := &GatewayerMock{}
+		gateway := &MockGatewayer{}
 		gateway.On("UpdateWalletLabel", "fooid", "foolabel").Return(nil)
 
 		endpoint := "/api/v1/wallet/update"
@@ -303,7 +303,7 @@ func TestCSRF(t *testing.T) {
 	require.Equal(t, "403 Forbidden - invalid CSRF token\n", rr.Body.String())
 
 	// Make a request to /csrf to get a token
-	gateway := &GatewayerMock{}
+	gateway := &MockGatewayer{}
 	handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 
 	// non-GET request to /csrf is invalid

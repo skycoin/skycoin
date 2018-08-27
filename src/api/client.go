@@ -356,6 +356,20 @@ func (c *Client) BlockByHash(hash string) (*visor.ReadableBlock, error) {
 	return &b, nil
 }
 
+// BlockByHashVerbose makes a request to GET /api/v1/block?hash=xxx&verbose=1
+func (c *Client) BlockByHashVerbose(hash string) (*visor.ReadableBlockVerbose, error) {
+	v := url.Values{}
+	v.Add("hash", hash)
+	v.Add("verbose", "1")
+	endpoint := "/api/v1/block?" + v.Encode()
+
+	var b visor.ReadableBlockVerbose
+	if err := c.Get(endpoint, &b); err != nil {
+		return nil, err
+	}
+	return &b, nil
+}
+
 // BlockBySeq makes a request to GET /api/v1/block?seq=xxx
 func (c *Client) BlockBySeq(seq uint64) (*visor.ReadableBlock, error) {
 	v := url.Values{}
@@ -363,6 +377,20 @@ func (c *Client) BlockBySeq(seq uint64) (*visor.ReadableBlock, error) {
 	endpoint := "/api/v1/block?" + v.Encode()
 
 	var b visor.ReadableBlock
+	if err := c.Get(endpoint, &b); err != nil {
+		return nil, err
+	}
+	return &b, nil
+}
+
+// BlockBySeqVerbose makes a request to GET /api/v1/block?seq=xxx&verbose=1
+func (c *Client) BlockBySeqVerbose(seq uint64) (*visor.ReadableBlockVerbose, error) {
+	v := url.Values{}
+	v.Add("seq", fmt.Sprint(seq))
+	v.Add("verbose", "1")
+	endpoint := "/api/v1/block?" + v.Encode()
+
+	var b visor.ReadableBlockVerbose
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}
@@ -863,12 +891,12 @@ func (c *Client) VerifyAddress(addr string) (*VerifyAddressResponse, error) {
 }
 
 // AddressTransactions makes a request to GET /api/v1/explorer/address
-func (c *Client) AddressTransactions(addr string) ([]daemon.ReadableTransaction, error) {
+func (c *Client) AddressTransactions(addr string) ([]visor.ReadableTransactionVerbose, error) {
 	v := url.Values{}
 	v.Add("address", addr)
 	endpoint := "/api/v1/explorer/address?" + v.Encode()
 
-	var b []daemon.ReadableTransaction
+	var b []visor.ReadableTransactionVerbose
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}

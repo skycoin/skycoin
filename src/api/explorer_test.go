@@ -101,7 +101,7 @@ func TestGetTransactionsForAddress(t *testing.T) {
 		err                                 string
 		addressParam                        string
 		gatewayGetTransactionsForAddressErr error
-		result                              []daemon.ReadableTransaction
+		result                              []visor.ReadableTransactionVerbose
 		csrfDisabled                        bool
 	}{
 		{
@@ -126,10 +126,10 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			addressParam: "badAddress",
 		},
 		{
-			name:                                "500 - gw GetTransactionsForAddress error",
+			name:                                "500 - gw GetVerboseTransactionsForAddress error",
 			method:                              http.MethodGet,
 			status:                              http.StatusInternalServerError,
-			err:                                 "500 Internal Server Error - gateway.GetTransactionsForAddress failed: gatewayGetTransactionsForAddressErr",
+			err:                                 "500 Internal Server Error - gateway.GetVerboseTransactionsForAddress failed: gatewayGetTransactionsForAddressErr",
 			addressParam:                        address.String(),
 			gatewayGetTransactionsForAddressErr: errors.New("gatewayGetTransactionsForAddressErr"),
 		},
@@ -138,14 +138,16 @@ func TestGetTransactionsForAddress(t *testing.T) {
 			method:       http.MethodGet,
 			status:       http.StatusOK,
 			addressParam: address.String(),
-			result: []daemon.ReadableTransaction{
+			result: []visor.ReadableTransactionVerbose{
 				{
-					In: []visor.ReadableTransactionInput{
-						{
-							Hash:    validHash,
-							Address: successAddress,
-							Coins:   "0.000000",
-							Hours:   0,
+					ReadableBlockTransactionVerbose: visor.ReadableBlockTransactionVerbose{
+						In: []visor.ReadableTransactionInput{
+							{
+								Hash:    validHash,
+								Address: successAddress,
+								Coins:   "0.000000",
+								Hours:   0,
+							},
 						},
 					},
 				},
@@ -156,8 +158,8 @@ func TestGetTransactionsForAddress(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/explorer/address"
-			gateway := NewGatewayerMock()
-			gateway.On("GetTransactionsForAddress", address).Return(tc.result, tc.gatewayGetTransactionsForAddressErr)
+			gateway := &MockGatewayer{}
+			gateway.On("GetVerboseTransactionsForAddress", address).Return(tc.result, tc.gatewayGetTransactionsForAddressErr)
 
 			v := url.Values{}
 			if tc.addressParam != "" {
@@ -189,7 +191,7 @@ func TestGetTransactionsForAddress(t *testing.T) {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg []daemon.ReadableTransaction
+				var msg []visor.ReadableTransactionVerbose
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.result, msg)
@@ -286,7 +288,7 @@ func TestCoinSupply(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/coinSupply"
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			gateway.On("GetUnspentOutputs", mock.Anything).Return(tc.gatewayGetUnspentOutputsResult, tc.gatewayGetUnspentOutputsErr)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
@@ -498,7 +500,7 @@ func TestGetRichlist(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/richlist"
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			gateway.On("GetRichlist", tc.includeDistribution).Return(tc.gatewayGetRichlistResult, tc.gatewayGetRichlistErr)
 
 			v := url.Values{}
@@ -586,7 +588,7 @@ func TestGetAddressCount(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/addresscount"
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			gateway.On("GetAddressCount").Return(tc.gatewayGetAddressCountResult, tc.gatewayGetAddressCountErr)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)

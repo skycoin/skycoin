@@ -1731,14 +1731,14 @@ Result:
     "current": 2760,
     "highest": 2760,
     "peers": [
-    {
-        "address": "35.157.164.126:6000",
-        "height": 2760
-    },
-    {
-        "address": "63.142.253.76:6000",
-        "height": 2760
-    },
+	    {
+	        "address": "35.157.164.126:6000",
+	        "height": 2760
+	    },
+	    {
+	        "address": "63.142.253.76:6000",
+	        "height": 2760
+	    },
     ]
 }
 ```
@@ -1751,6 +1751,7 @@ Method: GET
 Args:
     hash: get block by hash
     seq: get block by sequence number
+    verbose: [bool] return verbose transaction input data
 ```
 
 ```sh
@@ -1809,6 +1810,69 @@ Result:
     "size": 220
 }
 ```
+
+```sh
+curl http://127.0.0.1:6420/api/v1/block?hash=6eafd13ab6823223b714246b32c984b56e0043412950faf17defdbb2cbf3fe30&verbose=1
+```
+
+or
+
+```sh
+curl http://127.0.0.1:6420/api/v1/block?seq=2760&verbose=1
+```
+
+```json
+{
+    "header": {
+        "seq": 2760,
+        "block_hash": "6eafd13ab6823223b714246b32c984b56e0043412950faf17defdbb2cbf3fe30",
+        "previous_block_hash": "eaccd527ef263573c29000dbfb3c782ee175153c63f42abb671588b7071e877f",
+        "timestamp": 1504220821,
+        "fee": 196130,
+        "version": 0,
+        "tx_body_hash": "825ae95b81ae0ce037cdf9f1cda138bac3f3ed41c51b09e0befb71848e0f3bfd"
+    },
+    "body": {
+        "txns": [
+            {
+                "length": 220,
+                "type": 0,
+                "txid": "825ae95b81ae0ce037cdf9f1cda138bac3f3ed41c51b09e0befb71848e0f3bfd",
+                "inner_hash": "312e5dd55e06be5f9a0ee43a00d447f2fea47a7f1fb9669ecb477d2768ab04fd",
+                "fee": 196130,
+                "sigs": [
+                    "f0d0eb337e3440af6e8f0c105037ec205f36c83770d26a9e3a0fb4b7ec1a2be64764f4e31cbaf6629933c971613d10d58e6acb592704a7d511f19836441f09fb00"
+                ],
+                "inputs": [
+                    {
+                        "uxid": "e7594379c9a6bb111205cbfa6fac908cac1d136e207960eb0429f15fde09ac8c",
+                        "owner": "kbbzyrUKNVJsJDGFLAjVT5neVcx5SQjFx5",
+                        "coins": "1000.000000",
+                        "hours": 283123,
+                        "calculated_hours": 302300
+                    }
+                ],
+                "outputs": [
+                    {
+                        "uxid": "840d0ee483c1dc085e6518e1928c68979af61188b809fc74da9fca982e6a61ba",
+                        "dst": "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv",
+                        "coins": "998.000000",
+                        "hours": 35390
+                    },
+                    {
+                        "uxid": "38177c437ff42f29dc8d682e2f7c278f2203b6b02f42b1a88f9eb6c2392a7f70",
+                        "dst": "2YHKP9yH7baLvkum3U6HCBiJjnAUCLS5Z9U",
+                        "coins": "2.000000",
+                        "hours": 70780
+                    }
+                ]
+            }
+        ]
+    },
+    "size": 220
+}
+```
+
 
 ### Get blocks in specific range
 
@@ -2040,16 +2104,15 @@ Result:
         "status": {
             "confirmed": true,
             "unconfirmed": false,
-            "height": 12639,
+            "height": 38076,
             "block_seq": 15493,
             "unknown": false
         },
+        "timestamp": 1518878675,
         "length": 183,
         "type": 0,
         "txid": "6d8e2f8b436a2f38d604b3aa1196ef2176779c5e11e33fbdd09f993fe659c39f",
         "inner_hash": "8da7c64dcedeeb6aa1e0d21fb84a0028dcd68e6801f1a3cc0224fdd50682046f",
-        "timestamp": 1518878675,
-        "size": 183,
         "fee": 126249,
         "sigs": [
             "c60e43980497daad59b4c72a2eac053b1584f960c57a5e6ac8337118dccfcee4045da3f60d9be674867862a13fdd87af90f4b85cbf39913bde13674e0a039b7800"

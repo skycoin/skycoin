@@ -212,7 +212,7 @@ func NewDaemonConfig() DaemonConfig {
 }
 
 //go:generate go install
-//go:generate goautomock -template=testify Daemoner
+//go:generate mockery -name Daemoner -case underscore -inpkg -testonly
 
 // Daemoner Daemon interface
 type Daemoner interface {

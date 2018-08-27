@@ -66,7 +66,7 @@ func TestWebRPC(t *testing.T) {
 				Enabled: false,
 			}
 
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			handler := newServerMux(muxConfig{
 				host:            configuredHost,
 				appLoc:          ".",

@@ -328,7 +328,6 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Visor.EnableSeedAPI = c.config.Node.EnableSeedAPI
 
 	dc.Gateway.EnableWalletAPI = c.config.Node.EnableWalletAPI
-	dc.Gateway.DisableCSP = c.config.Node.DisableCSP
 
 	// Initialize wallet default crypto type
 	cryptoType, err := wallet.CryptoTypeFromString(c.config.Node.WalletCryptoType)
@@ -348,7 +347,7 @@ func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
 	config := api.Config{
 		StaticDir:            c.config.Node.GUIDirectory,
 		DisableCSRF:          c.config.Node.DisableCSRF,
-		EnableWalletAPI:      c.config.Node.EnableWalletAPI,
+		DisableCSP:           c.config.Node.DisableCSP,
 		EnableJSON20RPC:      c.config.Node.RPCInterface,
 		EnableGUI:            c.config.Node.EnableGUI,
 		EnableUnversionedAPI: c.config.Node.EnableUnversionedAPI,

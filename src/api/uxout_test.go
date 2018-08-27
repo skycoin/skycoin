@@ -118,7 +118,6 @@ func TestGetUxOutByID(t *testing.T) {
 			gateway := NewGatewayerMock()
 			endpoint := "/api/v1/uxout"
 			gateway.On("GetUxOutByID", tc.getGetUxOutByIDArg).Return(tc.getGetUxOutByIDResponse, tc.getGetUxOutByIDError)
-			gateway.On("IsCSPEnabled").Return(false)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -144,7 +143,7 @@ func TestGetUxOutByID(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -237,7 +236,6 @@ func TestGetAddrUxOuts(t *testing.T) {
 			endpoint := "/api/v1/address_uxouts"
 			gateway := NewGatewayerMock()
 			gateway.On("GetAddrUxOuts", tc.getAddrUxOutsArg).Return(tc.getAddrUxOutsResponse, tc.getAddrUxOutsError)
-			gateway.On("IsCSPEnabled").Return(false)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -261,7 +259,7 @@ func TestGetAddrUxOuts(t *testing.T) {
 				setCSRFParameters(csrfStore, tokenInvalid, req)
 			}
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

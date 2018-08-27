@@ -77,6 +77,7 @@ type NodeConfig struct {
 	WebInterfaceKey   string
 	WebInterfaceHTTPS bool
 
+	// Enable the deprecated JSON 2.0 RPC interface
 	RPCInterface bool
 
 	// Launch System Default Browser after client startup
@@ -205,7 +206,7 @@ func NewNodeConfig(mode string, node NodeParameters) *NodeConfig {
 		WebInterfaceKey:   "",
 		WebInterfaceHTTPS: false,
 
-		RPCInterface: true,
+		RPCInterface: false,
 
 		LaunchBrowser: false,
 		// Data directory holds app data
@@ -344,7 +345,7 @@ func (c *Config) register() {
 	flag.StringVar(&c.Node.WebInterfaceKey, "web-interface-key", c.Node.WebInterfaceKey, "key.pem file for web interface HTTPS. If not provided, will use key.pem in -data-directory")
 	flag.BoolVar(&c.Node.WebInterfaceHTTPS, "web-interface-https", c.Node.WebInterfaceHTTPS, "enable HTTPS for web interface")
 
-	flag.BoolVar(&c.Node.RPCInterface, "rpc-interface", c.Node.RPCInterface, "enable the rpc interface")
+	flag.BoolVar(&c.Node.RPCInterface, "rpc-interface", c.Node.RPCInterface, "enable the deprecated JSON 2.0 RPC interface")
 
 	flag.BoolVar(&c.Node.LaunchBrowser, "launch-browser", c.Node.LaunchBrowser, "launch system default webbrowser at client startup")
 	flag.BoolVar(&c.Node.PrintWebInterfaceAddress, "print-web-interface-address", c.Node.PrintWebInterfaceAddress, "print configured web interface address and exit")

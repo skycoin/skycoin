@@ -22,6 +22,16 @@ import (
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
+const configuredHost = "127.0.0.1:6420"
+
+func defaultMuxConfig() muxConfig {
+	return muxConfig{
+		host:       configuredHost,
+		appLoc:     ".",
+		disableCSP: true,
+	}
+}
+
 func TestGetOutputsHandler(t *testing.T) {
 	validAddr := "2eZYSbzBKJ7QCL4kd5LSqV478rJQGb4UNkf"
 	invalidAddr := "invalidAddr"
@@ -90,7 +100,6 @@ func TestGetOutputsHandler(t *testing.T) {
 			gateway := NewGatewayerMock()
 			endpoint := "/api/v1/outputs"
 			gateway.On("GetUnspentOutputs", mock.Anything).Return(tc.getUnspentOutputsResponse, tc.getUnspentOutputsError)
-			gateway.On("IsCSPEnabled").Return(false)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -110,7 +119,7 @@ func TestGetOutputsHandler(t *testing.T) {
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, &CSRFStore{}, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -252,7 +261,6 @@ func TestGetBalanceHandler(t *testing.T) {
 			gateway := NewGatewayerMock()
 			endpoint := "/api/v1/balance"
 			gateway.On("GetBalanceOfAddrs", tc.getBalanceOfAddrsArg).Return(tc.getBalanceOfAddrsResponse, tc.getBalanceOfAddrsError)
-			gateway.On("IsCSPEnabled").Return(false)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -269,7 +277,7 @@ func TestGetBalanceHandler(t *testing.T) {
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, &CSRFStore{}, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -341,10 +349,13 @@ func TestEnableGUI(t *testing.T) {
 			require.NoError(t, err)
 
 			gateway := NewGatewayerMock()
-			gateway.On("IsCSPEnabled").Return(false)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: tc.appLoc}, gateway, &CSRFStore{}, nil)
+			handler := newServerMux(muxConfig{
+				host:       configuredHost,
+				appLoc:     tc.appLoc,
+				disableCSP: true,
+			}, gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
 
 			c := Config{
@@ -432,11 +443,15 @@ func TestContentSecurityPolicy(t *testing.T) {
 			require.NoError(t, err)
 
 			gateway := NewGatewayerMock()
-			gateway.On("IsCSPEnabled").Return(tc.enableCSP)
 			gateway.On("GetBuildInfo").Return(visor.BuildInfo{})
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: tc.appLoc, enableGUI: true}, gateway, &CSRFStore{}, nil)
+			handler := newServerMux(muxConfig{
+				host:       configuredHost,
+				appLoc:     tc.appLoc,
+				enableGUI:  true,
+				disableCSP: !tc.enableCSP,
+			}, gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
 
 			csp := rr.Header().Get("Content-Security-Policy")

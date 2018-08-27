@@ -1118,6 +1118,9 @@ func TestStableStatus(t *testing.T) {
 	ret.Status.Uptime = wh.FromDuration(time.Duration(0))
 
 	goldenFile := "status.golden"
+	if useCSRF(t) {
+		goldenFile = "status-csrf-enabled.golden"
+	}
 
 	var expect cli.StatusResult
 	td := TestData{ret, &expect}

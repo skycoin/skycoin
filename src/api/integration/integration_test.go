@@ -100,6 +100,17 @@ func enabled() bool {
 	return os.Getenv("SKYCOIN_INTEGRATION_TESTS") == "1"
 }
 
+func useCSRF(t *testing.T) bool {
+	x := os.Getenv("USE_CSRF")
+	if x == "" {
+		return false
+	}
+
+	useCSRF, err := strconv.ParseBool(x)
+	require.NoError(t, err)
+	return useCSRF
+}
+
 func doStable(t *testing.T) bool {
 	if enabled() && mode(t) == testModeStable {
 		return true
@@ -3982,6 +3993,13 @@ func TestStableHealth(t *testing.T) {
 	// The stable node is always run with the commit and branch ldflags, so they should appear
 	require.NotEmpty(t, r.Version.Commit)
 	require.NotEmpty(t, r.Version.Branch)
+
+	require.Equal(t, useCSRF(t), r.CSRFEnabled)
+	require.True(t, r.CSPEnabled)
+	require.True(t, r.WalletAPIEnabled)
+	require.False(t, r.UnversionedAPIEnabled)
+	require.False(t, r.GUIEnabled)
+	require.False(t, r.JSON20RPCEnabled)
 }
 
 func TestLiveHealth(t *testing.T) {

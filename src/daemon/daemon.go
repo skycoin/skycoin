@@ -651,13 +651,13 @@ loop:
 		case <-blocksRequestTicker:
 			elapser.Register("blocksRequestTicker")
 			if err := dm.RequestBlocks(); err != nil {
-				logger.WithField(err).Warning("RequestBlocks failed")
+				logger.WithError(err).Warning("RequestBlocks failed")
 			}
 
 		case <-blocksAnnounceTicker:
 			elapser.Register("blocksAnnounceTicker")
 			if err := dm.AnnounceBlocks(); err != nil {
-				logger.WithField(err).Warning("AnnounceBlocks failed")
+				logger.WithError(err).Warning("AnnounceBlocks failed")
 			}
 
 		case setupErr = <-errC:

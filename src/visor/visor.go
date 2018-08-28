@@ -1529,7 +1529,7 @@ func (vs *Visor) getReadableVerboseInputsForUnconfirmedTxns(tx *dbutil.Tx, txns 
 	inputs := make([][]ReadableTransactionInput, len(txns))
 	for i, txn := range txns {
 		if len(txn.Txn.In) == 0 {
-			logger.WithField("txid", txn.Hash().Hex()).Warning("Unconfirmed transaction has no inputs")
+			logger.Critical().WithField("txid", txn.Hash().Hex()).Warning("Unconfirmed transaction has no inputs")
 			continue
 		}
 
@@ -1559,6 +1559,12 @@ func (vs *Visor) getFeeCalcTimeForTransaction(tx *dbutil.Tx, txn Transaction) (*
 		// Use the previous block head to calculate the coin hours
 		prevBlock, err := vs.Blockchain.GetSignedBlockBySeq(tx, txn.Status.BlockSeq-1)
 		if err != nil {
+			return nil, err
+		}
+
+		if prevBlock == nil {
+			err := fmt.Errorf("getFeeCalcTimeForTransaction: prevBlock seq=%d not found", txn.Status.BlockSeq-1)
+			logger.Critical().WithError(err).Error("getFeeCalcTimeForTransaction")
 			return nil, err
 		}
 
@@ -1701,7 +1707,9 @@ func (vs *Visor) getBlockInputs(tx *dbutil.Tx, b *coin.SignedBlock) ([][]Readabl
 	}
 
 	if prevBlock == nil {
-		return nil, fmt.Errorf("getBlockInputs: prevBlock seq %d not found", b.Head.BkSeq-1)
+		err := fmt.Errorf("getBlockInputs: prevBlock seq %d not found", b.Head.BkSeq-1)
+		logger.Critical().WithError(err).Error()
+		return nil, err
 	}
 
 	var inputs [][]ReadableTransactionInput
@@ -1720,11 +1728,14 @@ func (vs *Visor) getBlockInputs(tx *dbutil.Tx, b *coin.SignedBlock) ([][]Readabl
 // getReadableVerboseInputs returns ReadableTransactionInputs for a given set of spent transaction inputs
 func (vs *Visor) getReadableVerboseInputs(tx *dbutil.Tx, feeCalcTime uint64, inputs []cipher.SHA256) ([]ReadableTransactionInput, error) {
 	if len(inputs) == 0 {
-		logger.Panic("getReadableVerboseInputs inputs is empty, only the genesis block transaction has no inputs, which shouldn't call this method")
+		err := errors.New("getReadableVerboseInputs: inputs is empty only the genesis block transaction has no inputs, which shouldn't call this method")
+		logger.WithError(err).Error()
+		return nil, err
 	}
+
 	uxOuts, err := vs.history.GetUxOuts(tx, inputs)
 	if err != nil {
-		logger.Error("getReadableVerboseInputs GetUxOuts failed: %v", err)
+		logger.WithError(err).Error("getReadableVerboseInputs GetUxOuts failed")
 		return nil, err
 	}
 
@@ -1732,7 +1743,7 @@ func (vs *Visor) getReadableVerboseInputs(tx *dbutil.Tx, feeCalcTime uint64, inp
 	for i, o := range uxOuts {
 		r, err := NewReadableTransactionInput(o.Out, feeCalcTime)
 		if err != nil {
-			logger.Error("getReadableVerboseInputs NewReadableTransactionInput failed: %v", err)
+			logger.WithError(err).Error("getReadableVerboseInputs NewReadableTransactionInput failed")
 			return nil, err
 		}
 		ret[i] = *r

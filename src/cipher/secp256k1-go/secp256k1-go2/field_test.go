@@ -18,7 +18,7 @@ func TestFeInv(t *testing.T) {
 func BenchmarkFieldSqrt(b *testing.B) {
 	var dat [32]byte
 	var f, tmp Field
-	err := rand.Read(dat[:])
+	_, err := rand.Read(dat[:])
 	if err != nil {
 		b.Error(err)
 	}
@@ -31,7 +31,7 @@ func BenchmarkFieldSqrt(b *testing.B) {
 func BenchmarkFieldInv(b *testing.B) {
 	var dat [32]byte
 	var f, tmp Field
-	err := rand.Read(dat[:])
+	_, err := rand.Read(dat[:])
 	if err != nil {
 		b.Error(err)
 	}

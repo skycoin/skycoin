@@ -15,7 +15,7 @@ import (
 
 func freshSumRipemd160(t *testing.T, b []byte) Ripemd160 {
 	sh := ripemd160.New()
-	err := sh.Write(b)
+	_, err := sh.Write(b)
 	require.NoError(t, err)
 	h := Ripemd160{}
 	h.Set(sh.Sum(nil))
@@ -24,7 +24,7 @@ func freshSumRipemd160(t *testing.T, b []byte) Ripemd160 {
 
 func freshSumSHA256(t *testing.T, b []byte) SHA256 {
 	sh := sha256.New()
-	err := sh.Write(b)
+	_, err := sh.Write(b)
 	require.NoError(t, err)
 	h := SHA256{}
 	h.Set(sh.Sum(nil))
@@ -47,7 +47,7 @@ func TestHashRipemd160(t *testing.T) {
 	b := randBytes(t, 256)
 	r2 := HashRipemd160(b)
 	assert.NotEqual(t, r2, Ripemd160{})
-	assert.Equal(t, r2, freshSumRipemd160(b))
+	assert.Equal(t, r2, freshSumRipemd160(t, b))
 }
 
 func TestRipemd160Set(t *testing.T) {

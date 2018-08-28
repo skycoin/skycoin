@@ -76,19 +76,19 @@ func TestRandom(t *testing.T) {
 		pl := mr.Intn(16384)
 		ad := make([]byte, al)
 		plaintext := make([]byte, pl)
-		err := cr.Read(key[:])
+		_, err := cr.Read(key[:])
 		if err != nil {
 			t.Error(err)
 		}
-		err = cr.Read(nonce[:])
+		_, err = cr.Read(nonce[:])
 		if err != nil {
 			t.Error(err)
 		}
-		err = cr.Read(ad)
+		_, err = cr.Read(ad)
 		if err != nil {
 			t.Error(err)
 		}
-		err = cr.Read(plaintext)
+		_, err = cr.Read(plaintext)
 		if err != nil {
 			t.Error(err)
 		}

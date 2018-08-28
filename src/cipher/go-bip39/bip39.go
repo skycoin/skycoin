@@ -197,7 +197,7 @@ func MnemonicToByteArray(mnemonic string) ([]byte, error) {
 func addChecksum(data []byte) ([]byte, error) {
 	// Get first byte of sha256
 	hasher := sha256.New()
-	if err := hasher.Write(data); err != nil {
+	if _, err := hasher.Write(data); err != nil {
 		return nil, err
 	}
 	hash := hasher.Sum(nil)

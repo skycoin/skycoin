@@ -199,7 +199,9 @@ func ExampleEmptySliceStruct() {
 	var mai = NewMessagesAnnotationsIterator(&message)
 	w := bufio.NewWriter(os.Stdout)
 	err := util.HexDumpFromIterator(gnet.EncodeMessage(&message), &mai, w)
-	require.NoError(t, err)
+	if err != nil {
+		fmt.Println(err)
+	}
 	// Output:
 	// 0x0000 | 11 00 00 00 ....................................... Length
 	// 0x0004 | 54 45 53 54 ....................................... Prefix
@@ -236,7 +238,9 @@ func ExampleOmitEmptySliceTestStruct() {
 	var mai = NewMessagesAnnotationsIterator(&message)
 	w := bufio.NewWriter(os.Stdout)
 	err := util.HexDumpFromIterator(gnet.EncodeMessage(&message), &mai, w)
-	require.NoError(t, err)
+	if err != nil {
+		fmt.Println(err)
+	}
 	// Output:
 	// 0x0000 | 09 00 00 00 ....................................... Length
 	// 0x0004 | 54 45 53 54 ....................................... Prefix
@@ -253,7 +257,9 @@ func ExampleIntroductionMessage() {
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
 	err := util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
-	require.NoError(t, err)
+	if err != nil {
+		fmt.Println(err)
+	}
 	// Output:
 	// IntroductionMessage:
 	// 0x0000 | 0e 00 00 00 ....................................... Length
@@ -272,7 +278,9 @@ func ExampleGetPeersMessage() {
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
 	err := util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
-	require.NoError(t, err)
+	if err != nil {
+		fmt.Println(err)
+	}
 	// Output:
 	// GetPeersMessage:
 	// 0x0000 | 04 00 00 00 ....................................... Length
@@ -293,7 +301,9 @@ func ExampleGivePeersMessage() {
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
 	err := util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
-	require.NoError(t, err)
+	if err != nil {
+		fmt.Println(err)
+	}
 	// Output:
 	// GivePeersMessage:
 	// 0x0000 | 1a 00 00 00 ....................................... Length
@@ -313,7 +323,9 @@ func ExampleGetBlocksMessage() {
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
 	err := util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
-	require.NoError(t, err)
+	if err != nil {
+		fmt.Println(err)
+	}
 	// Output:
 	// GetBlocksMessage:
 	// 0x0000 | 14 00 00 00 ....................................... Length
@@ -351,7 +363,9 @@ func ExampleGiveBlocksMessage() {
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
 	err := util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
-	require.NoError(t, err)
+	if err != nil {
+		fmt.Println(err)
+	}
 	// Output:
 	// GiveBlocksMessage:
 	// 0x0000 | 8a 01 00 00 ....................................... Length
@@ -394,7 +408,9 @@ func ExampleAnnounceBlocksMessage() {
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
 	err := util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
-	require.NoError(t, err)
+	if err != nil {
+		fmt.Println(err)
+	}
 	// Output:
 	// AnnounceBlocksMessage:
 	// 0x0000 | 0c 00 00 00 ....................................... Length
@@ -414,7 +430,9 @@ func ExampleGetTxnsMessage() {
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
 	err := util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
-	require.NoError(t, err)
+	if err != nil {
+		fmt.Println(err)
+	}
 	// Output:
 	// GetTxnsMessage:
 	// 0x0000 | 48 00 00 00 ....................................... Length
@@ -483,7 +501,9 @@ func ExampleGiveTxnsMessage() {
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
 	err := util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
-	require.NoError(t, err)
+	if err != nil {
+		fmt.Println(err)
+	}
 	// Output:
 	// GiveTxnsMessage:
 	// 0x0000 | 82 02 00 00 ....................................... Length
@@ -540,7 +560,9 @@ func ExampleAnnounceTxnsMessage() {
 	var mai = NewMessagesAnnotationsIterator(message)
 	w := bufio.NewWriter(os.Stdout)
 	err := util.HexDumpFromIterator(gnet.EncodeMessage(message), &mai, w)
-	require.NoError(t, err)
+	if err != nil {
+		fmt.Println(err)
+	}
 	// Output:
 	// AnnounceTxnsMessage:
 	// 0x0000 | 48 00 00 00 ....................................... Length

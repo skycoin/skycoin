@@ -43,7 +43,7 @@ func TestSeedSignatures(t *testing.T) {
 	require.NoError(t, err)
 
 	seedFiles, err := traverseFiles(testdataDir, seedFileRegex)
-	require.NoError(t, er)
+	require.NoError(t, err)
 
 	for _, fn := range seedFiles {
 		t.Run(fn, func(t *testing.T) {

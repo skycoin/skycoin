@@ -373,7 +373,9 @@ func TestEnableGUI(t *testing.T) {
 			go func() {
 				defer wg.Done()
 				err := s.Serve()
-				require.NoError(t, err)
+				if err != nil && err.Error() != fmt.Sprintf("accept tcp %s: use of closed network connection", host) {
+					require.NoError(t, err)
+				}
 			}()
 
 			defer func() {

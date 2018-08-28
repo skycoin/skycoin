@@ -133,7 +133,7 @@ func createTempWallet(t *testing.T, encrypt bool) (string, func()) {
 
 	defer rf.Close()
 
-	_, err := io.Copy(f, rf)
+	_, err = io.Copy(f, rf)
 	require.NoError(t, err)
 
 	originalWalletDirEnv := os.Getenv("WALLET_DIR")

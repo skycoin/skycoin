@@ -85,7 +85,7 @@ func TestPubKeyToAddressHash(t *testing.T) {
 	x := sha256.Sum256(p[:])
 	x = sha256.Sum256(x[:])
 	rh := ripemd160.New()
-	err := rh.Write(x[:])
+	_, err := rh.Write(x[:])
 	require.NoError(t, err)
 	y := rh.Sum(nil)
 	require.True(t, bytes.Equal(h[:], y))

@@ -108,7 +108,9 @@ func printFinalHex(i int, writer io.Writer) error {
 
 	f := bufio.NewWriter(writer)
 	defer f.Flush()
-	return f.Write(serialized[4:])
+
+	_, err := f.Write(serialized[4:])
+	return err
 }
 
 // HexDump : Returns hexdump of buffer according to annotations, via writer

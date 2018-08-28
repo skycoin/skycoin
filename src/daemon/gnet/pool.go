@@ -971,7 +971,7 @@ func (pool *ConnectionPool) ClearStaleConnections(idleLimit time.Duration, reaso
 
 	for _, a := range idleConns {
 		if err := pool.Disconnect(a, reason); err != nil {
-			log.WithError(err).WithField("addr", a).Warning("Error in disconnecting from stale connection")
+			logger.WithError(err).WithField("addr", a).Warning("Error in disconnecting from stale connection")
 		}
 	}
 	return nil

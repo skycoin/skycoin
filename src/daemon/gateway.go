@@ -65,10 +65,12 @@ func (gw *Gateway) Shutdown() {
 
 func (gw *Gateway) strand(name string, f func()) {
 	name = fmt.Sprintf("daemon.Gateway.%s", name)
-	strand.Strand(logger, gw.requests, name, func() error {
+	if err := strand.Strand(logger, gw.requests, name, func() error {
 		f()
 		return nil
-	}, gw.quit, nil)
+	}, gw.quit, nil); err != nil {
+		logger.WithError(err).Error("Gateway.strand.Strand failed")
+	}
 }
 
 // Connection a connection's state within the daemon
@@ -1138,11 +1140,13 @@ func (gw *Gateway) UnloadWallet(id string) error {
 		return wallet.ErrWalletAPIDisabled
 	}
 
+	var err error
+
 	gw.strand("UnloadWallet", func() {
-		gw.v.Wallets.Remove(id)
+		err = gw.v.Wallets.Remove(id)
 	})
 
-	return nil
+	return err
 }
 
 // GetWalletSeed returns seed of wallet of given id,

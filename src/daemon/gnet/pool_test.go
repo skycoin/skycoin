@@ -257,8 +257,7 @@ func TestHandleConnection(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		err := p.handleConnection(conn, true)
-		require.NoError(t, err)
+		p.handleConnection(conn, true) // nolint: errcheck
 	}()
 
 	c = <-cc

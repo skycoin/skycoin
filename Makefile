@@ -5,8 +5,8 @@
 .PHONY: integration-test-disable-wallet-api integration-test-disable-seed-api
 .PHONY: integration-test-enable-seed-api integration-test-enable-seed-api
 .PHONY: integration-test-disable-gui integration-test-disable-gui
-.PHONY: install-linters format release clean-release install-deps-ui build-ui help
-.PHONY: newcoin generate-mocks
+.PHONY: install-linters format release clean-release
+.PHONY: install-deps-ui build-ui help newcoin generate-mocks
 
 COIN ?= skycoin
 
@@ -121,20 +121,23 @@ docs: docs-libc
 
 lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...
-	golangci-lint run --no-config  --deadline=3m --concurrency=2 --disable-all --tests --skip-dirs=lib/cgo \
-		-E goimports \
+	golangci-lint run --no-config --deadline=3m --disable-all --tests --skip-dirs=lib/cgo \
 		-E golint \
+		-E goimports \
 		-E varcheck \
 		-E unparam \
 		-E deadcode \
 		-E structcheck \
+		-E errcheck \
 		./...
-	# lib cgo can't use golint because it needs export directives in function docstrings that do not obey golint rules
-	golangci-lint run --no-config  --deadline=3m --concurrency=2 --disable-all --tests \
+	# lib/cgo can't use golint because it needs export directives in function docstrings that do not obey golint rules
+	# deadcode also doesn't make sense for lib/cgo
+	golangci-lint run --no-config --deadline=3m --disable-all --tests \
 		-E goimports \
 		-E varcheck \
 		-E unparam \
 		-E structcheck \
+		-E errcheck \
 		./lib/cgo/...
 
 check: lint test integration-test-stable integration-test-stable-disable-csrf integration-test-disable-wallet-api integration-test-disable-seed-api integration-test-enable-seed-api integration-test-disable-gui ## Run tests and linters
@@ -169,6 +172,8 @@ cover: ## Runs tests on ./src/ with HTML code coverage
 
 install-linters: ## Install linters
 	go get -u github.com/FiloSottile/vendorcheck
+	# For some reason this install method is not recommended, see https://github.com/golangci/golangci-lint#install
+	# However, they suggest `curl ... | bash` which we should not do
 	go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
 
 install-deps-libc: configure-build ## Install locally dependencies for testing libskycoin

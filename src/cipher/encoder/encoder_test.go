@@ -13,26 +13,16 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
-func randBytes(n int) []byte { // nolint: unparam
+func randBytes(t *testing.T, n int) []byte { // nolint: unparam
 	const alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 	var bytes = make([]byte, n)
-	rand.Read(bytes)
+	_, err := rand.Read(bytes)
+	require.NoError(t, err)
 	for i, b := range bytes {
 		bytes[i] = alphanum[b%byte(len(alphanum))]
 	}
 	return bytes
 }
-
-/*
-* the file name has to end with _test.go to be picked up as a set of tests by go test
-* the package name has to be the same as in the source file that has to be tested
-* you have to import the package testing
-* all test functions should start with Test to be run as a test
-* the tests will be executed in the same order that they are appear in the source
-* the test function TestXxx functions take a pointer to the type testing.T. You use it to record the test status and also for logging.
-* the signature of the test function should always be func TestXxx ( *testing.T). You can have any combination of alphanumeric characters and the hyphen for the Xxx part, the only constraint that it should not begin with a small alphabet, [a-z].
-* a call to any of the following functions of testing.T within the test code Error, Errorf, FailNow, Fatal, FatalIf will indicate to go test that the test has failed.
- */
 
 //Size of= 13
 type TestStruct struct {
@@ -68,86 +58,77 @@ type TestStructWithoutIgnore struct {
 
 //func (*B) Fatal
 
-func Test_Encode_1(T *testing.T) { //test function starts with "Test" and takes a pointer to type testing.T
-	var t TestStruct
-	t.X = 345535
-	t.Y = 23432435443
-	t.Z = 255
-	t.K = []byte("TEST6")
-	t.W = true
-	t.T = "hello"
-	t.U = cipher.PubKey{1, 2, 3, 0, 5, 4, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+func Test_Encode_1(t *testing.T) {
+	var ts TestStruct
+	ts.X = 345535
+	ts.Y = 23432435443
+	ts.Z = 255
+	ts.K = []byte("TEST6")
+	ts.W = true
+	ts.T = "hello"
+	ts.U = cipher.PubKey{1, 2, 3, 0, 5, 4, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
-	b := Serialize(t)
-
-	var buf bytes.Buffer
-	buf.Write(b)
-
-	var t2 TestStruct
-	err := Deserialize(&buf, len(b), &t2)
-	if err != nil {
-		T.Fatal(err)
-	}
-
-	b2 := Serialize(t2)
-
-	if bytes.Compare(b, b2) != 0 {
-		T.Fatal()
-	}
-}
-
-func Test_Encode_2a(T *testing.T) { //test function starts with "Test" and takes a pointer to type testing.T
-	var t TestStruct2
-	t.X = 345535
-	t.Y = 23432435443
-	t.Z = 255
-	t.W = false
-	_tt := []byte("ASDSADFSDFASDFSD")
-	for i := 0; i < 8; i++ {
-		t.K[i] = _tt[i]
-	}
-
-	b := Serialize(t)
+	b := Serialize(ts)
 
 	var buf bytes.Buffer
 	buf.Write(b)
 
-	var t2 TestStruct2
-	err := Deserialize(&buf, len(b), &t2)
-	if err != nil {
-		T.Fatal(err)
-	}
+	var ts2 TestStruct
+	err := Deserialize(&buf, len(b), &ts2)
+	require.NoError(t, err)
 
-	b2 := Serialize(t2)
+	b2 := Serialize(ts2)
 
-	if bytes.Compare(b, b2) != 0 {
-		T.Fatal()
-	}
+	c := bytes.Compare(b, b2)
+	require.Equal(t, c, 0)
 }
 
-func Test_Encode_2b(T *testing.T) { //test function starts with "Test" and takes a pointer to type testing.T
-	var t TestStruct2
-	t.X = 345535
-	t.Y = 23432435443
-	t.Z = 255
+func Test_Encode_2a(t *testing.T) {
+	var ts TestStruct2
+	ts.X = 345535
+	ts.Y = 23432435443
+	ts.Z = 255
+	ts.W = false
 	_tt := []byte("ASDSADFSDFASDFSD")
 	for i := 0; i < 8; i++ {
-		t.K[i] = _tt[i]
+		ts.K[i] = _tt[i]
 	}
 
-	b := Serialize(t)
+	b := Serialize(ts)
 
-	var t2 TestStruct2
-	err := DeserializeRaw(b, &t2)
-	if err != nil {
-		T.Fatal(err)
+	var buf bytes.Buffer
+	buf.Write(b)
+
+	var ts2 TestStruct2
+	err := Deserialize(&buf, len(b), &ts2)
+	require.NoError(t, err)
+
+	b2 := Serialize(ts2)
+
+	c := bytes.Compare(b, b2)
+	require.Equal(t, c, 0)
+}
+
+func Test_Encode_2b(t *testing.T) {
+	var ts TestStruct2
+	ts.X = 345535
+	ts.Y = 23432435443
+	ts.Z = 255
+	_tt := []byte("ASDSADFSDFASDFSD")
+	for i := 0; i < 8; i++ {
+		ts.K[i] = _tt[i]
 	}
 
-	b2 := Serialize(t2)
+	b := Serialize(ts)
 
-	if bytes.Compare(b, b2) != 0 {
-		T.Fatal()
-	}
+	var ts2 TestStruct2
+	err := DeserializeRaw(b, &ts2)
+	require.NoError(t, err)
+
+	b2 := Serialize(ts2)
+
+	c := bytes.Compare(b, b2)
+	require.Equal(t, c, 0)
 }
 
 type TestStruct3 struct {
@@ -155,10 +136,10 @@ type TestStruct3 struct {
 	K []byte
 }
 
-func Test_Encode_3a(T *testing.T) { //test function starts with "Test" and takes a pointer to type testing.T
+func Test_Encode_3a(t *testing.T) {
 	var t1 TestStruct3
 	t1.X = 345535
-	t1.K = randBytes(32)
+	t1.K = randBytes(t, 32)
 
 	b := Serialize(t1)
 
@@ -167,43 +148,33 @@ func Test_Encode_3a(T *testing.T) { //test function starts with "Test" and takes
 
 	var t2 TestStruct3
 	err := Deserialize(&buf, len(b), &t2)
-	if err != nil {
-		T.Fatal(err)
-	}
+	require.NoError(t, err)
 
-	if t1.X != t2.X || len(t1.K) != len(t2.K) || bytes.Compare(t1.K, t2.K) != 0 {
-		T.Fatal()
-	}
+	require.False(t, t1.X != t2.X || len(t1.K) != len(t2.K) || bytes.Compare(t1.K, t2.K) != 0)
 
 	b2 := Serialize(t2)
 
-	if bytes.Compare(b, b2) != 0 {
-		T.Fatal()
-	}
+	c := bytes.Compare(b, b2)
+	require.Equal(t, c, 0)
 }
 
-func Test_Encode_3b(T *testing.T) { //test function starts with "Test" and takes a pointer to type testing.T
+func Test_Encode_3b(t *testing.T) {
 	var t1 TestStruct3
 	t1.X = 345535
-	t1.K = randBytes(32)
+	t1.K = randBytes(t, 32)
 
 	b := Serialize(t1)
 
 	var t2 TestStruct3
 	err := DeserializeRaw(b, &t2)
-	if err != nil {
-		T.Fatal(err)
-	}
+	require.NoError(t, err)
 
-	if t1.X != t2.X || len(t1.K) != len(t2.K) || bytes.Compare(t1.K, t2.K) != 0 {
-		T.Fatal()
-	}
+	require.False(t, t1.X != t2.X || len(t1.K) != len(t2.K) || bytes.Compare(t1.K, t2.K) != 0)
 
 	b2 := Serialize(t2)
 
-	if bytes.Compare(b, b2) != 0 {
-		T.Fatal()
-	}
+	c := bytes.Compare(b, b2)
+	require.Equal(t, c, 0)
 }
 
 type TestStruct4 struct {
@@ -216,7 +187,7 @@ type TestStruct5 struct {
 	A []TestStruct4
 }
 
-func Test_Encode_4(T *testing.T) {
+func Test_Encode_4(t *testing.T) {
 	var t1 TestStruct5
 	t1.X = 345535
 
@@ -227,29 +198,20 @@ func Test_Encode_4(T *testing.T) {
 
 	var t2 TestStruct5
 	err := DeserializeRaw(b, &t2)
-	if err != nil {
-		T.Fatal(err)
-	}
+	require.NoError(t, err)
 
-	if t1.X != t2.X {
-		T.Fatal("TestStruct5.X not equal")
-	}
+	require.False(t, t1.X != t2.X, "TestStruct5.X not equal")
 
-	if len(t1.A) != len(t2.A) {
-		T.Fatal("Slice lengths not equal")
-	}
+	require.False(t, len(t1.A) != len(t2.A), "Slice lengths not equal")
 
 	for i, ts := range t1.A {
-		if ts != t2.A[i] {
-			T.Fatal("Slice values not equal")
-		}
+		require.False(t, ts != t2.A[i], "Slice values not equal")
 	}
 
 	b2 := Serialize(t2)
 
-	if bytes.Compare(b, b2) != 0 {
-		T.Fatal()
-	}
+	c := bytes.Compare(b, b2)
+	require.Equal(t, c, 0)
 }
 
 // type TestStruct2 struct {
@@ -259,7 +221,7 @@ func Test_Encode_4(T *testing.T) {
 //     K   [8]byte
 // }
 
-func Test_Encode_5(T *testing.T) {
+func Test_Encode_5(t *testing.T) {
 
 	var ts TestStruct2
 	ts.X = 345535
@@ -268,67 +230,60 @@ func Test_Encode_5(T *testing.T) {
 
 	b1 := Serialize(ts)
 
-	var t = reflect.TypeOf(ts)
-	var v = reflect.New(t) //pointer to type t
+	var tts = reflect.TypeOf(ts)
+	var v = reflect.New(tts) //pointer to type tts
 
 	//New returns a Value representing a pointer to a new zero value for the specified type.
-	//That is, the returned Value's Type is PtrTo(t).
+	//That is, the returned Value's Type is PtrTo(tts).
 
 	_, err := DeserializeRawToValue(b1, v)
-	if err != nil {
-		T.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	v = reflect.Indirect(v)
 	if v.FieldByName("X").Int() != int64(ts.X) {
-		T.Fatalf("X not equal")
+		t.Fatalf("X not equal")
 	}
 	if v.FieldByName("Y").Int() != ts.Y {
-		T.Fatalf("Y not equal")
+		t.Fatalf("Y not equal")
 	}
 	if v.FieldByName("Z").Uint() != uint64(ts.Z) {
-		T.Fatalf("Z not equal")
+		t.Fatalf("Z not equal")
 	}
 }
 
-func Test_Encode_IgnoreTagSerialize(T *testing.T) {
-	var t TestStructIgnore
-	t.X = 345535
-	t.Y = 23432435443
-	t.Z = 255
-	t.K = []byte("TEST6")
+func Test_Encode_IgnoreTagSerialize(t *testing.T) {
+	var ts TestStructIgnore
+	ts.X = 345535
+	ts.Y = 23432435443
+	ts.Z = 255
+	ts.K = []byte("TEST6")
 
-	b := Serialize(t)
+	b := Serialize(ts)
 	var buf bytes.Buffer
 	buf.Write(b)
 
-	var t2 TestStructIgnore
-	t.X = 0
-	t.Y = 0
-	t.Z = 0
-	t.K = []byte("")
-	err := Deserialize(&buf, len(b), &t2)
-	if err != nil {
-		T.Fatal(err)
-	}
+	var ts2 TestStructIgnore
+	ts.X = 0
+	ts.Y = 0
+	ts.Z = 0
+	ts.K = []byte("")
+	err := Deserialize(&buf, len(b), &ts2)
+	require.NoError(t, err)
 
-	if t2.Z != 0 {
-		T.Fatalf("Z should not deserialize. It is %d", t2.Z)
+	if ts2.Z != 0 {
+		t.Fatalf("Z should not deserialize. It is %d", ts2.Z)
 	}
 
 	buf.Reset()
 	buf.Write(b)
 
-	var t3 TestStructWithoutIgnore
-	err = Deserialize(&buf, len(b), &t3)
-	if err != nil {
-		T.Fatal(err)
-	}
+	var ts3 TestStructWithoutIgnore
+	err = Deserialize(&buf, len(b), &ts3)
+	require.NoError(t, err)
 
-	b2 := Serialize(t2)
-	if bytes.Compare(b, b2) != 0 {
-		T.Fatal()
-	}
+	b2 := Serialize(ts2)
+	c := bytes.Compare(b, b2)
+	require.Equal(t, c, 0)
 }
 
 type Contained struct {
@@ -363,18 +318,14 @@ func TestEncodeNestedSlice(t *testing.T) {
 	}
 	c := Container{elems}
 	n, err := datasizeWrite(reflect.ValueOf(c))
-	if err != nil {
-		t.Fatalf("datasizeWrite failed: %v", err)
-	}
-	if n != size+4 {
-		t.Fatal("Wrong data size")
-	}
+	require.NoError(t, err)
+	require.False(t, n != size+4, "Wrong data size")
+
 	b := Serialize(c)
 	d := Container{}
 	err = DeserializeRaw(b, &d)
-	if err != nil {
-		t.Fatalf("DeserializeRaw failed: %v", err)
-	}
+	require.NoError(t, err)
+
 	for i, e := range d.Elements {
 		if c.Elements[i].X != e.X || c.Elements[i].Y != e.Y {
 			t.Fatalf("Deserialized x, y to invalid value. "+
@@ -408,20 +359,14 @@ func TestDecodeNotEnoughLength(t *testing.T) {
 	b := make([]byte, 2)
 	var d Array
 	err := DeserializeRaw(b, &d)
-	if err == nil {
-		t.Fatal("Expected error")
-	} else if err.Error() != "Deserialization failed" {
-		t.Fatalf("Expected different error, but got %s", err.Error())
-	}
+	require.Error(t, err)
+	require.Equal(t, err.Error(), "Deserialization failed")
 
 	// Test with slice
 	thing := make([]int, 3)
 	err = DeserializeRaw(b, thing)
-	if err == nil {
-		t.Fatal("Expected error")
-	} else if err.Error() != "Deserialization failed" {
-		t.Fatal("Expected different error")
-	}
+	require.Error(t, err)
+	require.Equal(t, err.Error(), "Deserialization failed")
 }
 
 func TestFlattenMultidimensionalBytes(t *testing.T) {
@@ -440,7 +385,7 @@ func TestFlattenMultidimensionalBytes(t *testing.T) {
 
 }
 
-func TestMultiArrays(T *testing.T) {
+func TestMultiArrays(t *testing.T) {
 	var data [16][16]byte
 	for i := 0; i < 16; i++ {
 		for j := 0; j < 16; j++ {
@@ -453,25 +398,23 @@ func TestMultiArrays(T *testing.T) {
 	var data2 [16][16]byte
 
 	err := DeserializeRaw(b, &data2)
-	if err != nil {
-		T.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	for i := 0; i < 16; i++ {
 		for j := 0; j < 16; j++ {
 			if data[i][j] != data2[i][j] {
-				T.Fatalf("failed round trip test")
+				t.Fatalf("failed round trip test")
 			}
 		}
 	}
 
 	b2 := Serialize(data2)
 	if !bytes.Equal(b, b2) {
-		T.Fatalf("Failed round trip test")
+		t.Fatalf("Failed round trip test")
 	}
 
 	if len(b) != 256 {
-		T.Fatalf("decoded to wrong byte length")
+		t.Fatalf("decoded to wrong byte length")
 	}
 
 }
@@ -584,48 +527,44 @@ type TestStructWithDict struct {
 
 func TestEncodeDictNested(t *testing.T) {
 	s1 := TestStructWithDict{
-		0x01234567,
-		0x0123456789ABCDEF,
-		map[uint8]TestStruct{
+		X: 0x01234567,
+		Y: 0x0123456789ABCDEF,
+		M: map[uint8]TestStruct{
 			0x01: TestStruct{
-				0x01234567,
-				0x0123456789ABCDEF,
-				0x01,
-				[]byte{0, 1, 2},
-				true,
-				"ab",
-				cipher.PubKey{
+				X: 0x01234567,
+				Y: 0x0123456789ABCDEF,
+				Z: 0x01,
+				K: []byte{0, 1, 2},
+				W: true,
+				T: "ab",
+				U: cipher.PubKey{
 					0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 					17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
 				},
 			},
 			0x23: TestStruct{
-				0x01234567,
-				0x0123456789ABCDEF,
-				0x01,
-				[]byte{0, 1, 2},
-				true,
-				"cd",
-				cipher.PubKey{
+				X: 0x01234567,
+				Y: 0x0123456789ABCDEF,
+				Z: 0x01,
+				K: []byte{0, 1, 2},
+				W: true,
+				T: "cd",
+				U: cipher.PubKey{
 					0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 					17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
 				},
 			},
 		},
-		[]byte{0, 1, 2, 3, 4},
+		K: []byte{0, 1, 2, 3, 4},
 	}
 	buff := Serialize(s1)
-	if len(buff) == 0 {
-		t.Fail()
-	}
+	require.NotEmpty(t, buff)
 
 	s2 := TestStructWithDict{}
-	if DeserializeRaw(buff, &s2) != nil {
-		t.Fail()
-	}
-	if !reflect.DeepEqual(s1, s2) {
-		t.Errorf("Expected %v but got %v", s1, s2)
-	}
+	err := DeserializeRaw(buff, &s2)
+	require.NoError(t, err)
+
+	require.True(t, reflect.DeepEqual(s1, s2), "Expected %v but got %v", s1, s2)
 }
 
 func TestEncodeDictString2Int64(t *testing.T) {

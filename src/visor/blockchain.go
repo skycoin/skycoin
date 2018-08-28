@@ -671,7 +671,7 @@ func (bc *Blockchain) WalkChain(workers int, f func(*dbutil.Tx, *coin.SignedBloc
 	for i := 0; i < workers; i++ {
 		go func() {
 			defer workerWg.Done()
-			bc.db.View("WalkChain verify blocks", func(tx *dbutil.Tx) error {
+			if err := bc.db.View("WalkChain verify blocks", func(tx *dbutil.Tx) error {
 				for {
 					select {
 					case b, ok := <-signedBlockC:
@@ -689,7 +689,9 @@ func (bc *Blockchain) WalkChain(workers int, f func(*dbutil.Tx, *coin.SignedBloc
 						}
 					}
 				}
-			})
+			}); err != nil {
+				logger.WithError(err).Error("WalkChain verify blocks db transaction failed")
+			}
 		}()
 	}
 
@@ -707,7 +709,7 @@ func (bc *Blockchain) WalkChain(workers int, f func(*dbutil.Tx, *coin.SignedBloc
 	// * Verify the signature for the block
 	wg.Add(1)
 	go func() {
-		bc.db.View("WalkChain get blocks", func(tx *dbutil.Tx) error {
+		if err := bc.db.View("WalkChain get blocks", func(tx *dbutil.Tx) error {
 			if length, err := bc.Len(tx); err != nil {
 				return err
 			} else if length == 0 {
@@ -752,7 +754,9 @@ func (bc *Blockchain) WalkChain(workers int, f func(*dbutil.Tx, *coin.SignedBloc
 				}
 			}
 			return nil
-		})
+		}); err != nil {
+			logger.WithError(err).Error("WalkChain get blocks db transaction failed")
+		}
 	}()
 
 	var err error

@@ -34,10 +34,12 @@ type ErrCorruptDB struct {
 // CheckDatabase checks the database for corruption, rebuild history if corrupted
 func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) error {
 	var blocksBktExist bool
-	db.View("CheckDatabase", func(tx *dbutil.Tx) error {
+	if err := db.View("CheckDatabase", func(tx *dbutil.Tx) error {
 		blocksBktExist = dbutil.Exists(tx, blockdb.BlocksBkt)
 		return nil
-	})
+	}); err != nil {
+		return err
+	}
 
 	// Don't verify the db if the blocks bucket does not exist
 	if !blocksBktExist {

@@ -152,13 +152,13 @@ func TestTransactionVerifyInput(t *testing.T) {
 	// Invalid uxIn args
 	tx := makeTransaction(t)
 	_require.PanicsWithLogMessage(t, "tx.In != uxIn", func() {
-		tx.VerifyInput(nil)
+		_ = tx.VerifyInput(nil) // nolint: errcheck
 	})
 	_require.PanicsWithLogMessage(t, "tx.In != uxIn", func() {
-		tx.VerifyInput(UxArray{})
+		_ = tx.VerifyInput(UxArray{}) // nolint: errcheck
 	})
 	_require.PanicsWithLogMessage(t, "tx.In != uxIn", func() {
-		tx.VerifyInput(make(UxArray, 3))
+		_ = tx.VerifyInput(make(UxArray, 3)) // nolint: errcheck
 	})
 
 	// tx.In != tx.Sigs
@@ -166,14 +166,14 @@ func TestTransactionVerifyInput(t *testing.T) {
 	tx = makeTransactionFromUxOut(ux, s)
 	tx.Sigs = []cipher.Sig{}
 	_require.PanicsWithLogMessage(t, "tx.In != tx.Sigs", func() {
-		tx.VerifyInput(UxArray{ux})
+		_ = tx.VerifyInput(UxArray{ux}) // nolint: errcheck
 	})
 
 	ux, s = makeUxOutWithSecret(t)
 	tx = makeTransactionFromUxOut(ux, s)
 	tx.Sigs = append(tx.Sigs, cipher.Sig{})
 	_require.PanicsWithLogMessage(t, "tx.In != tx.Sigs", func() {
-		tx.VerifyInput(UxArray{ux})
+		_ = tx.VerifyInput(UxArray{ux}) // nolint: errcheck
 	})
 
 	// tx.InnerHash != tx.HashInner()
@@ -181,14 +181,14 @@ func TestTransactionVerifyInput(t *testing.T) {
 	tx = makeTransactionFromUxOut(ux, s)
 	tx.InnerHash = cipher.SHA256{}
 	_require.PanicsWithLogMessage(t, "Invalid Tx Inner Hash", func() {
-		tx.VerifyInput(UxArray{ux})
+		_ = tx.VerifyInput(UxArray{ux}) // nolint: errcheck
 	})
 
 	// tx.In does not match uxIn hashes
 	ux, s = makeUxOutWithSecret(t)
 	tx = makeTransactionFromUxOut(ux, s)
 	_require.PanicsWithLogMessage(t, "Ux hash mismatch", func() {
-		tx.VerifyInput(UxArray{UxOut{}})
+		_ = tx.VerifyInput(UxArray{UxOut{}}) // nolint: errcheck
 	})
 
 	// Invalid signature

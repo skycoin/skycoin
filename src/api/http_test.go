@@ -79,17 +79,17 @@ func TestGetOutputsHandler(t *testing.T) {
 			},
 		},
 		{
-			name:   "500 - getUnspentOutputsError",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - get unspent outputs failed: getUnspentOutputsError",
+			name:                      "500 - getUnspentOutputsError",
+			method:                    http.MethodGet,
+			status:                    http.StatusInternalServerError,
+			err:                       "500 Internal Server Error - get unspent outputs failed: getUnspentOutputsError",
 			getUnspentOutputsResponse: nil,
 			getUnspentOutputsError:    errors.New("getUnspentOutputsError"),
 		},
 		{
-			name:   "200 - OK",
-			method: http.MethodGet,
-			status: http.StatusOK,
+			name:                      "200 - OK",
+			method:                    http.MethodGet,
+			status:                    http.StatusOK,
 			getUnspentOutputsResponse: &visor.ReadableOutputSet{},
 			httpResponse:              &visor.ReadableOutputSet{},
 		},
@@ -372,7 +372,10 @@ func TestEnableGUI(t *testing.T) {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				s.Serve()
+				err := s.Serve()
+				if err != nil && err.Error() != fmt.Sprintf("accept tcp %s: use of closed network connection", host) {
+					require.NoError(t, err)
+				}
 			}()
 
 			defer func() {

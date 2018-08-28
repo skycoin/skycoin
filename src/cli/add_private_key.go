@@ -41,8 +41,7 @@ func addPrivateKeyCmd(cfg Config) gcli.Command {
 			// get private key
 			skStr := c.Args().First()
 			if skStr == "" {
-				gcli.ShowSubcommandHelp(c)
-				return nil
+				return gcli.ShowSubcommandHelp(c)
 			}
 			// get wallet file path
 			w, err := resolveWalletPath(cfg, c.String("f"))

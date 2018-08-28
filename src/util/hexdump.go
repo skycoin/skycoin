@@ -25,7 +25,7 @@ type IAnnotationsIterator interface {
 	Next() (Annotation, bool)
 }
 
-func writeHexdumpMember(offset int, size int, writer io.Writer, buffer []byte, name string) {
+func writeHexdumpMember(offset int, size int, writer io.Writer, buffer []byte, name string) error {
 	var hexBuff = make([]string, size)
 	var j = 0
 	if offset+size > len(buffer) {
@@ -46,8 +46,8 @@ func writeHexdumpMember(offset int, size int, writer io.Writer, buffer []byte, n
 
 	f := bufio.NewWriter(writer)
 	defer f.Flush()
-	f.Write(serialized[4:])
-
+	_, err := f.Write(serialized[4:])
+	return err
 }
 
 func getSliceContentsString(sl []string, offset int) string {
@@ -95,7 +95,7 @@ func getSliceContentsString(sl []string, offset int) string {
 	return res
 }
 
-func printFinalHex(i int, writer io.Writer) {
+func printFinalHex(i int, writer io.Writer) error {
 	var finalHex = strconv.FormatInt(int64(i), 16)
 	var l = len(finalHex)
 	for i := 0; i < 4-l; i++ {
@@ -108,23 +108,27 @@ func printFinalHex(i int, writer io.Writer) {
 
 	f := bufio.NewWriter(writer)
 	defer f.Flush()
-	f.Write(serialized[4:])
+
+	_, err := f.Write(serialized[4:])
+	return err
 }
 
 // HexDump : Returns hexdump of buffer according to annotations, via writer
-func HexDump(buffer []byte, annotations []Annotation, writer io.Writer) {
+func HexDump(buffer []byte, annotations []Annotation, writer io.Writer) error {
 	var currentOffset = 0
 
 	for _, element := range annotations {
-		writeHexdumpMember(currentOffset, element.Size, writer, buffer, element.Name)
+		if err := writeHexdumpMember(currentOffset, element.Size, writer, buffer, element.Name); err != nil {
+			return err
+		}
 		currentOffset += element.Size
 	}
 
-	printFinalHex(currentOffset, writer)
+	return printFinalHex(currentOffset, writer)
 }
 
 // HexDumpFromIterator : Returns hexdump of buffer according to annotationsIterator, via writer
-func HexDumpFromIterator(buffer []byte, annotationsIterator IAnnotationsIterator, writer io.Writer) {
+func HexDumpFromIterator(buffer []byte, annotationsIterator IAnnotationsIterator, writer io.Writer) error {
 	var currentOffset = 0
 
 	var current, valid = annotationsIterator.Next()
@@ -133,10 +137,12 @@ func HexDumpFromIterator(buffer []byte, annotationsIterator IAnnotationsIterator
 		if !valid {
 			break
 		}
-		writeHexdumpMember(currentOffset, current.Size, writer, buffer, current.Name)
+		if err := writeHexdumpMember(currentOffset, current.Size, writer, buffer, current.Name); err != nil {
+			return err
+		}
 		currentOffset += current.Size
 		current, valid = annotationsIterator.Next()
 	}
 
-	printFinalHex(currentOffset, writer)
+	return printFinalHex(currentOffset, writer)
 }

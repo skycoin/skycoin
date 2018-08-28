@@ -604,7 +604,9 @@ loop:
 		case req := <-dm.Gateway.requests:
 			// Process any pending RPC requests
 			elapser.Register("dm.Gateway.requests")
-			req.Func()
+			if err := req.Func(); err != nil {
+				logger.WithError(err).Error()
+			}
 
 		case <-blockCreationTicker.C:
 			// Create blocks, if master chain
@@ -630,7 +632,9 @@ loop:
 				continue
 			}
 			// Announce these transactions
-			dm.AnnounceTxns(validTxns)
+			if err := dm.AnnounceTxns(validTxns); err != nil {
+				logger.WithError(err).Warning("AnnounceTxns failed")
+			}
 
 		case <-unconfirmedRemoveInvalidTicker:
 			elapser.Register("unconfirmedRemoveInvalidTicker")
@@ -646,11 +650,15 @@ loop:
 
 		case <-blocksRequestTicker:
 			elapser.Register("blocksRequestTicker")
-			dm.RequestBlocks()
+			if err := dm.RequestBlocks(); err != nil {
+				logger.WithError(err).Warning("RequestBlocks failed")
+			}
 
 		case <-blocksAnnounceTicker:
 			elapser.Register("blocksAnnounceTicker")
-			dm.AnnounceBlocks()
+			if err := dm.AnnounceBlocks(); err != nil {
+				logger.WithError(err).Warning("AnnounceBlocks failed")
+			}
 
 		case setupErr = <-errC:
 			logger.WithError(setupErr).Error("read from errc")
@@ -723,7 +731,7 @@ func (dm *Daemon) connectToPeer(p pex.Peer) error {
 	}
 
 	logger.Debugf("Trying to connect to %s", p.Addr)
-	dm.pendingConnections.Add(p.Addr, p)
+	dm.pendingConnections.Add(p)
 	go func() {
 		if err := dm.pool.Pool.Connect(p.Addr); err != nil {
 			dm.connectionErrors <- ConnectionError{p.Addr, err}
@@ -756,7 +764,9 @@ func (dm *Daemon) connectToTrustPeer() {
 	// Make connections to all trusted peers
 	peers := dm.pex.TrustedPublic()
 	for _, p := range peers {
-		dm.connectToPeer(p)
+		if err := dm.connectToPeer(p); err != nil {
+			logger.WithError(err).WithField("addr", p.Addr).Warning("connect to trusted peer failed")
+		}
 	}
 }
 
@@ -773,12 +783,16 @@ func (dm *Daemon) connectToRandomPeer() {
 		if p.HasIncomingPort {
 			// Try to connect the peer if it's ip:mirror does not exist
 			if _, exist := dm.GetMirrorPort(p.Addr, dm.Messages.Mirror); !exist {
-				dm.connectToPeer(p)
+				if err := dm.connectToPeer(p); err != nil {
+					logger.WithError(err).WithField("addr", p.Addr).Warning("connectToPeer failed")
+				}
 				continue
 			}
 		} else {
 			// Try to connect to the peer if we don't know whether the peer have public port
-			dm.connectToPeer(p)
+			if err := dm.connectToPeer(p); err != nil {
+				logger.WithError(err).WithField("addr", p.Addr).Warning("connectToPeer failed")
+			}
 		}
 	}
 
@@ -880,7 +894,9 @@ func (dm *Daemon) processMessageEvent(e MessageEvent) {
 	if dm.needsIntro(e.Context.Addr) {
 		_, isIntro := e.Message.(*IntroductionMessage)
 		if !isIntro {
-			dm.pool.Pool.Disconnect(e.Context.Addr, ErrDisconnectNoIntroduction)
+			if err := dm.pool.Pool.Disconnect(e.Context.Addr, ErrDisconnectNoIntroduction); err != nil {
+				logger.WithError(err).WithField("addr", e.Context.Addr).Error("Disconnect")
+			}
 		}
 	}
 	e.Message.Process(dm)
@@ -911,7 +927,9 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 
 	if dm.ipCountMaxed(a) {
 		logger.Infof("Max connections for %s reached, disconnecting", a)
-		dm.pool.Pool.Disconnect(a, ErrDisconnectIPLimitReached)
+		if err := dm.pool.Pool.Disconnect(a, ErrDisconnectIPLimitReached); err != nil {
+			logger.WithError(err).WithField("addr", a).Error("Disconnect")
+		}
 		return
 	}
 
@@ -927,7 +945,9 @@ func (dm *Daemon) onConnect(e ConnectEvent) {
 
 		if n > dm.Config.OutgoingMax {
 			logger.Warningf("max outgoing connections is reached, disconnecting %v", a)
-			dm.pool.Pool.Disconnect(a, ErrDisconnectMaxOutgoingConnectionsReached)
+			if err := dm.pool.Pool.Disconnect(a, ErrDisconnectMaxOutgoingConnectionsReached); err != nil {
+				logger.WithError(err).WithField("addr", a).Error("Disconnect")
+			}
 			return
 		}
 

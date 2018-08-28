@@ -4712,7 +4712,8 @@ func createWallet(t *testing.T, c *api.Client, encrypt bool, password string, se
 		require.NoError(t, err)
 
 		// Removes the wallet from memory
-		c.UnloadWallet(w.Meta.Filename)
+		err = c.UnloadWallet(w.Meta.Filename)
+		require.NoError(t, err)
 	}
 }
 

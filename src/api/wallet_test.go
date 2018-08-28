@@ -774,10 +774,10 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 				WalletID: "foo",
 				Label:    "label",
 			},
-			status:   http.StatusNotFound,
-			err:      "404 Not Found",
-			walletID: "foo",
-			label:    "label",
+			status:                      http.StatusNotFound,
+			err:                         "404 Not Found",
+			walletID:                    "foo",
+			label:                       "label",
 			gatewayUpdateWalletLabelErr: wallet.ErrWalletNotExist,
 		},
 		{
@@ -787,10 +787,10 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 				WalletID: "foo",
 				Label:    "label",
 			},
-			status:   http.StatusInternalServerError,
-			err:      "500 Internal Server Error - gateway.UpdateWalletLabel error",
-			walletID: "foo",
-			label:    "label",
+			status:                      http.StatusInternalServerError,
+			err:                         "500 Internal Server Error - gateway.UpdateWalletLabel error",
+			walletID:                    "foo",
+			label:                       "label",
 			gatewayUpdateWalletLabelErr: errors.New("gateway.UpdateWalletLabel error"),
 		},
 		{
@@ -800,10 +800,10 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 				WalletID: "foo",
 				Label:    "label",
 			},
-			status:   http.StatusForbidden,
-			err:      "403 Forbidden",
-			walletID: "foo",
-			label:    "label",
+			status:                      http.StatusForbidden,
+			err:                         "403 Forbidden",
+			walletID:                    "foo",
+			label:                       "label",
 			gatewayUpdateWalletLabelErr: wallet.ErrWalletAPIDisabled,
 		},
 		{
@@ -813,10 +813,10 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 				WalletID: "foo",
 				Label:    "label",
 			},
-			status:   http.StatusOK,
-			err:      "",
-			walletID: "foo",
-			label:    "label",
+			status:                      http.StatusOK,
+			err:                         "",
+			walletID:                    "foo",
+			label:                       "label",
 			gatewayUpdateWalletLabelErr: nil,
 			responseBody:                "\"success\"",
 		},
@@ -923,9 +923,9 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			body: &httpBody{
 				walletID: "foo",
 			},
-			status:   http.StatusInternalServerError,
-			err:      "500 Internal Server Error - gateway.GetWalletUnconfirmedTxns error",
-			walletID: "foo",
+			status:                             http.StatusInternalServerError,
+			err:                                "500 Internal Server Error - gateway.GetWalletUnconfirmedTxns error",
+			walletID:                           "foo",
 			gatewayGetWalletUnconfirmedTxnsErr: errors.New("gateway.GetWalletUnconfirmedTxns error"),
 		},
 
@@ -949,9 +949,9 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			body: &httpBody{
 				walletID: "foo",
 			},
-			status:   http.StatusNotFound,
-			err:      "404 Not Found",
-			walletID: "foo",
+			status:                             http.StatusNotFound,
+			err:                                "404 Not Found",
+			walletID:                           "foo",
 			gatewayGetWalletUnconfirmedTxnsErr: wallet.ErrWalletNotExist,
 		},
 
@@ -975,9 +975,9 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			body: &httpBody{
 				walletID: "foo",
 			},
-			status:   http.StatusForbidden,
-			err:      "403 Forbidden",
-			walletID: "foo",
+			status:                             http.StatusForbidden,
+			err:                                "403 Forbidden",
+			walletID:                           "foo",
 			gatewayGetWalletUnconfirmedTxnsErr: wallet.ErrWalletAPIDisabled,
 		},
 
@@ -1001,8 +1001,8 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			body: &httpBody{
 				walletID: "foo",
 			},
-			status:   http.StatusOK,
-			walletID: "foo",
+			status:                                http.StatusOK,
+			walletID:                              "foo",
 			gatewayGetWalletUnconfirmedTxnsResult: make([]visor.UnconfirmedTxn, 1),
 			responseBody: UnconfirmedTxnsResponse{
 				Transactions: []visor.ReadableUnconfirmedTxn{
@@ -1736,10 +1736,10 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 				ID:  "foo",
 				Num: "1",
 			},
-			status:   http.StatusBadRequest,
-			err:      "400 Bad Request - gateway.NewAddresses error",
-			walletID: "foo",
-			n:        1,
+			status:                 http.StatusBadRequest,
+			err:                    "400 Bad Request - gateway.NewAddresses error",
+			walletID:               "foo",
+			n:                      1,
 			gatewayNewAddressesErr: errors.New("gateway.NewAddresses error"),
 		},
 		{
@@ -1749,10 +1749,10 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 				ID:  "foo",
 				Num: "1",
 			},
-			status:   http.StatusForbidden,
-			err:      "403 Forbidden",
-			walletID: "foo",
-			n:        1,
+			status:                 http.StatusForbidden,
+			err:                    "403 Forbidden",
+			walletID:               "foo",
+			n:                      1,
 			gatewayNewAddressesErr: wallet.ErrWalletAPIDisabled,
 		},
 		{
@@ -1762,10 +1762,10 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 				ID:  "foo",
 				Num: "1",
 			},
-			status:   http.StatusBadRequest,
-			err:      "400 Bad Request - missing password",
-			walletID: "foo",
-			n:        1,
+			status:                 http.StatusBadRequest,
+			err:                    "400 Bad Request - missing password",
+			walletID:               "foo",
+			n:                      1,
 			gatewayNewAddressesErr: wallet.ErrMissingPassword,
 		},
 		{
@@ -1775,10 +1775,10 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 				ID:  "foo",
 				Num: "1",
 			},
-			status:   http.StatusUnauthorized,
-			err:      "401 Unauthorized - invalid password",
-			walletID: "foo",
-			n:        1,
+			status:                 http.StatusUnauthorized,
+			err:                    "401 Unauthorized - invalid password",
+			walletID:               "foo",
+			n:                      1,
 			gatewayNewAddressesErr: wallet.ErrInvalidPassword,
 		},
 		{
@@ -1788,9 +1788,9 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 				ID:  "foo",
 				Num: "1",
 			},
-			status:   http.StatusOK,
-			walletID: "foo",
-			n:        1,
+			status:                    http.StatusOK,
+			walletID:                  "foo",
+			n:                         1,
 			gatewayNewAddressesResult: addrs,
 			responseBody:              responseAddresses,
 		},
@@ -1802,9 +1802,9 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 				Num:      "1",
 				Password: "pwd",
 			},
-			status:   http.StatusOK,
-			walletID: "foo",
-			n:        1,
+			status:                    http.StatusOK,
+			walletID:                  "foo",
+			n:                         1,
 			gatewayNewAddressesResult: addrs,
 			responseBody:              responseAddresses,
 		},
@@ -1815,9 +1815,9 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 				ID:  "foo",
 				Num: "0",
 			},
-			status:   http.StatusOK,
-			walletID: "foo",
-			n:        0,
+			status:                    http.StatusOK,
+			walletID:                  "foo",
+			n:                         0,
 			gatewayNewAddressesResult: emptyAddrs,
 			responseBody:              responseEmptyAddresses,
 		},
@@ -1828,9 +1828,9 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 				ID:  "foo",
 				Num: "1",
 			},
-			status:   http.StatusOK,
-			walletID: "foo",
-			n:        1,
+			status:                    http.StatusOK,
+			walletID:                  "foo",
+			n:                         1,
 			gatewayNewAddressesResult: addrs,
 			responseBody:              responseAddresses,
 			csrfDisabled:              true,
@@ -1952,7 +1952,7 @@ func TestGetWalletFolderHandler(t *testing.T) {
 				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 		} else {
 			var msg WalletFolder
-			json.Unmarshal(rr.Body.Bytes(), &msg)
+			err := json.Unmarshal(rr.Body.Bytes(), &msg)
 			require.NoError(t, err)
 			require.Equal(t, tc.httpResponse, msg, tc.name)
 		}
@@ -2176,7 +2176,7 @@ func TestGetWallets(t *testing.T) {
 				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 		} else {
 			var msg []*WalletResponse
-			json.Unmarshal(rr.Body.Bytes(), &msg)
+			err := json.Unmarshal(rr.Body.Bytes(), &msg)
 			require.NoError(t, err)
 			require.NotNil(t, msg)
 			require.Equal(t, tc.httpResponse, msg, tc.name)

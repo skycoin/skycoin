@@ -849,11 +849,7 @@ func (vs *Visor) GetLastBlocksVerbose(num uint64) ([]ReadableBlockVerbose, error
 }
 
 func (vs *Visor) getBlocksVerbose(tx *dbutil.Tx, getBlocks func(*dbutil.Tx) ([]coin.SignedBlock, error)) ([]ReadableBlockVerbose, error) {
-	var blocks []coin.SignedBlock
-	var inputs [][][]ReadableTransactionInput
-
-	var err error
-	blocks, err = getBlocks(tx)
+	blocks, err := getBlocks(tx)
 	if err != nil {
 		return nil, err
 	}
@@ -862,17 +858,13 @@ func (vs *Visor) getBlocksVerbose(tx *dbutil.Tx, getBlocks func(*dbutil.Tx) ([]c
 		return nil, nil
 	}
 
-	inputs = make([][][]ReadableTransactionInput, len(blocks))
+	inputs := make([][][]ReadableTransactionInput, len(blocks))
 	for i, b := range blocks {
 		blockInputs, err := vs.getBlockInputs(tx, &b)
 		if err != nil {
 			return nil, err
 		}
 		inputs[i] = blockInputs
-	}
-
-	if len(blocks) == 0 {
-		return nil, nil
 	}
 
 	rbs := make([]ReadableBlockVerbose, len(blocks))

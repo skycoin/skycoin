@@ -672,6 +672,7 @@ func TestLiveBlockVerbose(t *testing.T) {
 		b, err := c.BlockBySeqVerbose(seq)
 		require.NoError(t, err)
 		require.Equal(t, seq, b.Head.BkSeq)
+		assertVerboseBlockFee(t, b)
 	}
 }
 
@@ -736,6 +737,7 @@ func testKnownBlocksVerbose(t *testing.T) {
 			}
 
 			require.NotNil(t, b)
+			assertVerboseBlockFee(t, b)
 
 			var expected visor.ReadableBlockVerbose
 			checkGoldenFile(t, tc.golden, TestData{*b, &expected})
@@ -755,6 +757,7 @@ func testKnownBlocksVerbose(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, b)
 			require.Equal(t, i, b.Head.BkSeq)
+			assertVerboseBlockFee(t, b)
 
 			if prevBlock != nil {
 				require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
@@ -768,6 +771,18 @@ func testKnownBlocksVerbose(t *testing.T) {
 			prevBlock = b
 		})
 	}
+}
+
+// assertVerboseBlockFee checks that the block's fee matches the calculated fee of the block's transactions
+func assertVerboseBlockFee(t *testing.T, b *visor.ReadableBlockVerbose) {
+	fee := uint64(0)
+	for _, txn := range b.Body.Transactions {
+		var err error
+		fee, err = coin.AddUint64(fee, txn.Fee)
+		require.NoError(t, err)
+	}
+
+	require.Equal(t, b.Head.Fee, fee)
 }
 
 func TestStableBlockchainMetadata(t *testing.T) {
@@ -1255,7 +1270,8 @@ func TestStableBlocksVerbose(t *testing.T) {
 				var expected visor.ReadableBlocksVerbose
 				checkGoldenFile(t, tc.golden, TestData{*resp, &expected})
 			} else {
-				_, err := c.BlocksVerbose(tc.start, tc.end)
+				blocks, err := c.BlocksVerbose(tc.start, tc.end)
+				require.Nil(t, blocks)
 				assertResponseError(t, err, tc.errCode, tc.errMsg)
 			}
 		})
@@ -1284,6 +1300,8 @@ func testBlocksVerbose(t *testing.T, start, end uint64) *visor.ReadableBlocksVer
 
 	var prevBlock *visor.ReadableBlockVerbose
 	for idx, b := range blocks.Blocks {
+		assertVerboseBlockFee(t, &b)
+
 		if prevBlock != nil {
 			require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
 		}
@@ -1373,6 +1391,8 @@ func TestStableLastBlocksVerbose(t *testing.T) {
 
 	var prevBlock *visor.ReadableBlockVerbose
 	for idx, b := range blocks.Blocks {
+		assertVerboseBlockFee(t, &b)
+
 		if prevBlock != nil {
 			require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
 		}
@@ -1398,6 +1418,8 @@ func TestLiveLastBlocksVerbose(t *testing.T) {
 
 	var prevBlock *visor.ReadableBlockVerbose
 	for idx, b := range blocks.Blocks {
+		assertVerboseBlockFee(t, &b)
+
 		if prevBlock != nil {
 			require.Equal(t, prevBlock.Head.BlockHash, b.Head.PreviousBlockHash)
 		}

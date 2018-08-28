@@ -23,7 +23,9 @@ var (
 func SumSHA256(b []byte) []byte {
 	sha256Hash := <-sha256HashChan
 	sha256Hash.Reset()
-	sha256Hash.Write(b)
+	if err := sha256Hash.Write(b); err != nil {
+		panic(err)
+	}
 	sum := sha256Hash.Sum(nil)
 	sha256HashChan <- sha256Hash
 	return sum[:]

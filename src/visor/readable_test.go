@@ -75,11 +75,12 @@ func transferCoins(t *testing.T, v *Visor) {
 		Block: *b,
 		Sig:   cipher.SignHash(b.HashHeader(), genSecret),
 	}
-	v.DB.Update("", func(tx *dbutil.Tx) error {
+	err = v.DB.Update("", func(tx *dbutil.Tx) error {
 		bcc, ok := v.Blockchain.(*Blockchain)
 		require.True(t, ok)
 		return bcc.store.AddBlock(tx, sb)
 	})
+	require.NoError(t, err)
 	head = sb
 
 }

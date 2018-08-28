@@ -1952,7 +1952,7 @@ func TestGetWalletFolderHandler(t *testing.T) {
 				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 		} else {
 			var msg WalletFolder
-			json.Unmarshal(rr.Body.Bytes(), &msg)
+			err := json.Unmarshal(rr.Body.Bytes(), &msg)
 			require.NoError(t, err)
 			require.Equal(t, tc.httpResponse, msg, tc.name)
 		}
@@ -2176,7 +2176,7 @@ func TestGetWallets(t *testing.T) {
 				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 		} else {
 			var msg []*WalletResponse
-			json.Unmarshal(rr.Body.Bytes(), &msg)
+			err := json.Unmarshal(rr.Body.Bytes(), &msg)
 			require.NoError(t, err)
 			require.NotNil(t, msg)
 			require.Equal(t, tc.httpResponse, msg, tc.name)

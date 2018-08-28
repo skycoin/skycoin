@@ -13,10 +13,11 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
-func randBytes(n int) []byte { // nolint: unparam
+func randBytes(t *testing.T, n int) []byte { // nolint: unparam
 	const alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 	var bytes = make([]byte, n)
-	rand.Read(bytes)
+	err := rand.Read(bytes)
+	require.NoError(t, err)
 	for i, b := range bytes {
 		bytes[i] = alphanum[b%byte(len(alphanum))]
 	}
@@ -41,7 +42,7 @@ type TestStruct struct {
 	Z uint8
 	K []byte
 	W bool
-	T string
+	t string
 	U cipher.PubKey
 }
 
@@ -68,14 +69,14 @@ type TestStructWithoutIgnore struct {
 
 //func (*B) Fatal
 
-func Test_Encode_1(T *testing.T) { //test function starts with "Test" and takes a pointer to type testing.T
+func Test_Encode_1(t *testing.T) { //test function starts with "Test" and takes a pointer to type testing.T
 	var t TestStruct
 	t.X = 345535
 	t.Y = 23432435443
 	t.Z = 255
 	t.K = []byte("TEST6")
 	t.W = true
-	t.T = "hello"
+	t.t = "hello"
 	t.U = cipher.PubKey{1, 2, 3, 0, 5, 4, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
 	b := Serialize(t)
@@ -86,17 +87,17 @@ func Test_Encode_1(T *testing.T) { //test function starts with "Test" and takes 
 	var t2 TestStruct
 	err := Deserialize(&buf, len(b), &t2)
 	if err != nil {
-		T.Fatal(err)
+		t.Fatal(err)
 	}
 
 	b2 := Serialize(t2)
 
 	if bytes.Compare(b, b2) != 0 {
-		T.Fatal()
+		t.Fatal()
 	}
 }
 
-func Test_Encode_2a(T *testing.T) { //test function starts with "Test" and takes a pointer to type testing.T
+func Test_Encode_2a(t *testing.T) { //test function starts with "Test" and takes a pointer to type testing.T
 	var t TestStruct2
 	t.X = 345535
 	t.Y = 23432435443
@@ -115,17 +116,17 @@ func Test_Encode_2a(T *testing.T) { //test function starts with "Test" and takes
 	var t2 TestStruct2
 	err := Deserialize(&buf, len(b), &t2)
 	if err != nil {
-		T.Fatal(err)
+		t.Fatal(err)
 	}
 
 	b2 := Serialize(t2)
 
 	if bytes.Compare(b, b2) != 0 {
-		T.Fatal()
+		t.Fatal()
 	}
 }
 
-func Test_Encode_2b(T *testing.T) { //test function starts with "Test" and takes a pointer to type testing.T
+func Test_Encode_2b(t *testing.T) { //test function starts with "Test" and takes a pointer to type testing.T
 	var t TestStruct2
 	t.X = 345535
 	t.Y = 23432435443
@@ -140,13 +141,13 @@ func Test_Encode_2b(T *testing.T) { //test function starts with "Test" and takes
 	var t2 TestStruct2
 	err := DeserializeRaw(b, &t2)
 	if err != nil {
-		T.Fatal(err)
+		t.Fatal(err)
 	}
 
 	b2 := Serialize(t2)
 
 	if bytes.Compare(b, b2) != 0 {
-		T.Fatal()
+		t.Fatal()
 	}
 }
 
@@ -155,10 +156,10 @@ type TestStruct3 struct {
 	K []byte
 }
 
-func Test_Encode_3a(T *testing.T) { //test function starts with "Test" and takes a pointer to type testing.T
+func Test_Encode_3a(t *testing.T) { //test function starts with "Test" and takes a pointer to type testing.T
 	var t1 TestStruct3
 	t1.X = 345535
-	t1.K = randBytes(32)
+	t1.K = randBytes(t, 32)
 
 	b := Serialize(t1)
 
@@ -168,21 +169,21 @@ func Test_Encode_3a(T *testing.T) { //test function starts with "Test" and takes
 	var t2 TestStruct3
 	err := Deserialize(&buf, len(b), &t2)
 	if err != nil {
-		T.Fatal(err)
+		t.Fatal(err)
 	}
 
 	if t1.X != t2.X || len(t1.K) != len(t2.K) || bytes.Compare(t1.K, t2.K) != 0 {
-		T.Fatal()
+		t.Fatal()
 	}
 
 	b2 := Serialize(t2)
 
 	if bytes.Compare(b, b2) != 0 {
-		T.Fatal()
+		t.Fatal()
 	}
 }
 
-func Test_Encode_3b(T *testing.T) { //test function starts with "Test" and takes a pointer to type testing.T
+func Test_Encode_3b(t *testing.T) { //test function starts with "Test" and takes a pointer to type testing.T
 	var t1 TestStruct3
 	t1.X = 345535
 	t1.K = randBytes(32)
@@ -192,17 +193,17 @@ func Test_Encode_3b(T *testing.T) { //test function starts with "Test" and takes
 	var t2 TestStruct3
 	err := DeserializeRaw(b, &t2)
 	if err != nil {
-		T.Fatal(err)
+		t.Fatal(err)
 	}
 
 	if t1.X != t2.X || len(t1.K) != len(t2.K) || bytes.Compare(t1.K, t2.K) != 0 {
-		T.Fatal()
+		t.Fatal()
 	}
 
 	b2 := Serialize(t2)
 
 	if bytes.Compare(b, b2) != 0 {
-		T.Fatal()
+		t.Fatal()
 	}
 }
 
@@ -216,7 +217,7 @@ type TestStruct5 struct {
 	A []TestStruct4
 }
 
-func Test_Encode_4(T *testing.T) {
+func Test_Encode_4(t *testing.T) {
 	var t1 TestStruct5
 	t1.X = 345535
 
@@ -228,27 +229,27 @@ func Test_Encode_4(T *testing.T) {
 	var t2 TestStruct5
 	err := DeserializeRaw(b, &t2)
 	if err != nil {
-		T.Fatal(err)
+		t.Fatal(err)
 	}
 
 	if t1.X != t2.X {
-		T.Fatal("TestStruct5.X not equal")
+		t.Fatal("TestStruct5.X not equal")
 	}
 
 	if len(t1.A) != len(t2.A) {
-		T.Fatal("Slice lengths not equal")
+		t.Fatal("Slice lengths not equal")
 	}
 
 	for i, ts := range t1.A {
 		if ts != t2.A[i] {
-			T.Fatal("Slice values not equal")
+			t.Fatal("Slice values not equal")
 		}
 	}
 
 	b2 := Serialize(t2)
 
 	if bytes.Compare(b, b2) != 0 {
-		T.Fatal()
+		t.Fatal()
 	}
 }
 
@@ -259,7 +260,7 @@ func Test_Encode_4(T *testing.T) {
 //     K   [8]byte
 // }
 
-func Test_Encode_5(T *testing.T) {
+func Test_Encode_5(t *testing.T) {
 
 	var ts TestStruct2
 	ts.X = 345535
@@ -276,22 +277,22 @@ func Test_Encode_5(T *testing.T) {
 
 	_, err := DeserializeRawToValue(b1, v)
 	if err != nil {
-		T.Fatal(err)
+		t.Fatal(err)
 	}
 
 	v = reflect.Indirect(v)
 	if v.FieldByName("X").Int() != int64(ts.X) {
-		T.Fatalf("X not equal")
+		t.Fatalf("X not equal")
 	}
 	if v.FieldByName("Y").Int() != ts.Y {
-		T.Fatalf("Y not equal")
+		t.Fatalf("Y not equal")
 	}
 	if v.FieldByName("Z").Uint() != uint64(ts.Z) {
-		T.Fatalf("Z not equal")
+		t.Fatalf("Z not equal")
 	}
 }
 
-func Test_Encode_IgnoreTagSerialize(T *testing.T) {
+func Test_Encode_IgnoreTagSerialize(t *testing.T) {
 	var t TestStructIgnore
 	t.X = 345535
 	t.Y = 23432435443
@@ -309,11 +310,11 @@ func Test_Encode_IgnoreTagSerialize(T *testing.T) {
 	t.K = []byte("")
 	err := Deserialize(&buf, len(b), &t2)
 	if err != nil {
-		T.Fatal(err)
+		t.Fatal(err)
 	}
 
 	if t2.Z != 0 {
-		T.Fatalf("Z should not deserialize. It is %d", t2.Z)
+		t.Fatalf("Z should not deserialize. It is %d", t2.Z)
 	}
 
 	buf.Reset()
@@ -322,12 +323,12 @@ func Test_Encode_IgnoreTagSerialize(T *testing.T) {
 	var t3 TestStructWithoutIgnore
 	err = Deserialize(&buf, len(b), &t3)
 	if err != nil {
-		T.Fatal(err)
+		t.Fatal(err)
 	}
 
 	b2 := Serialize(t2)
 	if bytes.Compare(b, b2) != 0 {
-		T.Fatal()
+		t.Fatal()
 	}
 }
 
@@ -440,7 +441,7 @@ func TestFlattenMultidimensionalBytes(t *testing.T) {
 
 }
 
-func TestMultiArrays(T *testing.T) {
+func TestMultiArrays(t *testing.T) {
 	var data [16][16]byte
 	for i := 0; i < 16; i++ {
 		for j := 0; j < 16; j++ {
@@ -454,24 +455,24 @@ func TestMultiArrays(T *testing.T) {
 
 	err := DeserializeRaw(b, &data2)
 	if err != nil {
-		T.Fatal(err)
+		t.Fatal(err)
 	}
 
 	for i := 0; i < 16; i++ {
 		for j := 0; j < 16; j++ {
 			if data[i][j] != data2[i][j] {
-				T.Fatalf("failed round trip test")
+				t.Fatalf("failed round trip test")
 			}
 		}
 	}
 
 	b2 := Serialize(data2)
 	if !bytes.Equal(b, b2) {
-		T.Fatalf("Failed round trip test")
+		t.Fatalf("Failed round trip test")
 	}
 
 	if len(b) != 256 {
-		T.Fatalf("decoded to wrong byte length")
+		t.Fatalf("decoded to wrong byte length")
 	}
 
 }

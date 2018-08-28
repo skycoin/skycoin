@@ -52,8 +52,7 @@ func init() {
 	app.EnableBashCompletion = true
 	app.OnUsageError = func(context *cli.Context, err error, isSubcommand bool) error {
 		fmt.Fprintf(context.App.Writer, "error: %v\n\n", err)
-		cli.ShowAppHelp(context)
-		return nil
+		return cli.ShowAppHelp(context)
 	}
 	app.CommandNotFound = func(context *cli.Context, command string) {
 		tmp := fmt.Sprintf("{{.HelpName}}: '%s' is not a {{.HelpName}} "+

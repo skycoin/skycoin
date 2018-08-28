@@ -95,7 +95,7 @@ func getSliceContentsString(sl []string, offset int) string {
 	return res
 }
 
-func printFinalHex(i int, writer io.Writer) {
+func printFinalHex(i int, writer io.Writer) error {
 	var finalHex = strconv.FormatInt(int64(i), 16)
 	var l = len(finalHex)
 	for i := 0; i < 4-l; i++ {
@@ -108,11 +108,11 @@ func printFinalHex(i int, writer io.Writer) {
 
 	f := bufio.NewWriter(writer)
 	defer f.Flush()
-	f.Write(serialized[4:])
+	return f.Write(serialized[4:])
 }
 
 // HexDump : Returns hexdump of buffer according to annotations, via writer
-func HexDump(buffer []byte, annotations []Annotation, writer io.Writer) {
+func HexDump(buffer []byte, annotations []Annotation, writer io.Writer) error {
 	var currentOffset = 0
 
 	for _, element := range annotations {
@@ -120,11 +120,11 @@ func HexDump(buffer []byte, annotations []Annotation, writer io.Writer) {
 		currentOffset += element.Size
 	}
 
-	printFinalHex(currentOffset, writer)
+	return printFinalHex(currentOffset, writer)
 }
 
 // HexDumpFromIterator : Returns hexdump of buffer according to annotationsIterator, via writer
-func HexDumpFromIterator(buffer []byte, annotationsIterator IAnnotationsIterator, writer io.Writer) {
+func HexDumpFromIterator(buffer []byte, annotationsIterator IAnnotationsIterator, writer io.Writer) error {
 	var currentOffset = 0
 
 	var current, valid = annotationsIterator.Next()
@@ -138,5 +138,5 @@ func HexDumpFromIterator(buffer []byte, annotationsIterator IAnnotationsIterator
 		current, valid = annotationsIterator.Next()
 	}
 
-	printFinalHex(currentOffset, writer)
+	return printFinalHex(currentOffset, writer)
 }

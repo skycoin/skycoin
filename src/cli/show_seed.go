@@ -58,8 +58,7 @@ func showSeedCmd(cfg Config) gcli.Command {
 					Seed: seed,
 				}
 
-				printJSON(v)
-				return nil
+				return printJSON(v)
 			}
 
 			fmt.Println(seed)

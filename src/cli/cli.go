@@ -259,8 +259,7 @@ func NewApp(cfg Config) (*App, error) {
 	app.EnableBashCompletion = true
 	app.OnUsageError = func(context *gcli.Context, err error, isSubcommand bool) error {
 		fmt.Fprintf(context.App.Writer, "Error: %v\n\n", err)
-		gcli.ShowAppHelp(context)
-		return nil
+		return gcli.ShowAppHelp(context)
 	}
 	app.CommandNotFound = func(ctx *gcli.Context, command string) {
 		tmp := fmt.Sprintf("{{.HelpName}}: '%s' is not a {{.HelpName}} command. See '{{.HelpName}} --help'.\n", command)
@@ -302,8 +301,7 @@ func QuitChanFromContext(c *gcli.Context) chan struct{} {
 func onCommandUsageError(command string) gcli.OnUsageErrorFunc {
 	return func(c *gcli.Context, err error, isSubcommand bool) error {
 		fmt.Fprintf(c.App.Writer, "Error: %v\n\n", err)
-		gcli.ShowCommandHelp(c, command)
-		return nil
+		return gcli.ShowCommandHelp(c, command)
 	}
 }
 

@@ -900,7 +900,9 @@ func (w *Wallet) ScanAddresses(scanN uint64, bg BalanceGetter) error {
 	// This is necessary to keep the lastSeed updated.
 	if keepNum != uint64(len(bals)) {
 		w.reset()
-		w.GenerateAddresses(nExistingAddrs + keepNum)
+		if _, err := w.GenerateAddresses(nExistingAddrs + keepNum); err != nil {
+			return err
+		}
 	}
 
 	return nil

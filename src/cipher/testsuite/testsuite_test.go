@@ -42,7 +42,8 @@ func TestSeedSignatures(t *testing.T) {
 	inputData, err := InputTestDataFromJSON(&inputDataJSON)
 	require.NoError(t, err)
 
-	seedFiles := traverseFiles(testdataDir, seedFileRegex)
+	seedFiles, err := traverseFiles(testdataDir, seedFileRegex)
+	require.NoError(t, er)
 
 	for _, fn := range seedFiles {
 		t.Run(fn, func(t *testing.T) {
@@ -61,9 +62,9 @@ func TestSeedSignatures(t *testing.T) {
 	}
 }
 
-func traverseFiles(dir string, filenameTemplate string) []string { // nolint: unparam
+func traverseFiles(dir string, filenameTemplate string) ([]string, error) { // nolint: unparam
 	files := make([]string, 0)
-	filepath.Walk(dir, func(path string, f os.FileInfo, _ error) error {
+	if err := filepath.Walk(dir, func(path string, f os.FileInfo, _ error) error {
 		if !f.IsDir() {
 			r, err := regexp.MatchString(filenameTemplate, f.Name())
 			if err == nil && r {
@@ -71,6 +72,9 @@ func traverseFiles(dir string, filenameTemplate string) []string { // nolint: un
 			}
 		}
 		return nil
-	})
-	return files
+	}); err != nil {
+		return nil, err
+	}
+
+	return files, nil
 }

@@ -66,8 +66,7 @@ func walletHistoryAction(c *gcli.Context) error {
 
 	if c.NArg() > 0 {
 		fmt.Printf("Error: invalid argument\n\n")
-		gcli.ShowSubcommandHelp(c)
-		return nil
+		return gcli.ShowSubcommandHelp(c)
 	}
 
 	w, err := resolveWalletPath(cfg, c.String("f"))

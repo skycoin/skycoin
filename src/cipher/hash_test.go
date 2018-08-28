@@ -13,17 +13,19 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/ripemd160"
 )
 
-func freshSumRipemd160(b []byte) Ripemd160 {
+func freshSumRipemd160(t *testing.T, b []byte) Ripemd160 {
 	sh := ripemd160.New()
-	sh.Write(b)
+	err := sh.Write(b)
+	require.NoError(t, err)
 	h := Ripemd160{}
 	h.Set(sh.Sum(nil))
 	return h
 }
 
-func freshSumSHA256(b []byte) SHA256 {
+func freshSumSHA256(t *testing.T, b []byte) SHA256 {
 	sh := sha256.New()
-	sh.Write(b)
+	err := sh.Write(b)
+	require.NoError(t, err)
 	h := SHA256{}
 	h.Set(sh.Sum(nil))
 	return h
@@ -135,7 +137,7 @@ func TestSumSHA256(t *testing.T) {
 	c := randBytes(t, 256)
 	h2 := SumSHA256(c)
 	assert.NotEqual(t, h2, SHA256{})
-	assert.Equal(t, h2, freshSumSHA256(c))
+	assert.Equal(t, h2, freshSumSHA256(t, c))
 }
 
 func TestSHA256FromHex(t *testing.T) {
@@ -176,14 +178,14 @@ func TestMustSumSHA256(t *testing.T) {
 	assert.NotPanics(t, func() { MustSumSHA256(b, 128) })
 	h := MustSumSHA256(b, 128)
 	assert.NotEqual(t, h, SHA256{})
-	assert.Equal(t, h, freshSumSHA256(b))
+	assert.Equal(t, h, freshSumSHA256(t, b))
 }
 
 func TestDoubleSHA256(t *testing.T) {
 	b := randBytes(t, 128)
 	h := DoubleSHA256(b)
 	assert.NotEqual(t, h, SHA256{})
-	assert.NotEqual(t, h, freshSumSHA256(b))
+	assert.NotEqual(t, h, freshSumSHA256(t, b))
 }
 
 func TestAddSHA256(t *testing.T) {

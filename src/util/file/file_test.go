@@ -193,8 +193,9 @@ func TestSaveBinary(t *testing.T) {
 	fn := "test.bin"
 	defer cleanup(fn)
 	b := make([]byte, 128)
-	rand.Read(b)
-	err := SaveBinary(fn, b, 0644)
+	err := rand.Read(b)
+	require.NoError(t, err)
+	err = SaveBinary(fn, b, 0644)
 	require.NoError(t, err)
 	requireFileNotExists(t, fn+".tmp")
 	requireFileNotExists(t, fn+".bak")
@@ -203,7 +204,8 @@ func TestSaveBinary(t *testing.T) {
 	requireFileMode(t, fn, 0644)
 
 	b2 := make([]byte, 128)
-	rand.Read(b2)
+	err = rand.Read(b2)
+	require.NoError(t, err)
 	require.False(t, bytes.Equal(b, b2))
 
 	err = SaveBinary(fn, b2, 0644)

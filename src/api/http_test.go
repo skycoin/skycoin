@@ -372,7 +372,8 @@ func TestEnableGUI(t *testing.T) {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				s.Serve()
+				err := s.Serve()
+				require.NoError(t, err)
 			}()
 
 			defer func() {

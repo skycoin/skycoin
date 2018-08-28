@@ -68,7 +68,10 @@ func NewMnemonic(entropy []byte) (string, error) {
 	}
 
 	// Add checksum to entropy
-	entropy = addChecksum(entropy)
+	entropy, err = addChecksum(entropy)
+	if err != nil {
+		return "", err
+	}
 
 	// Break entropy up into sentenceLength chunks of 11 bits
 	// For each word AND mask the rightmost 11 bits and find the word at that index
@@ -148,7 +151,11 @@ func MnemonicToByteArray(mnemonic string) ([]byte, error) {
 		hex = tmp
 	}
 
-	validationHex := addChecksum(entropyHex)
+	validationHex, err := addChecksum(entropyHex)
+	if err != nil {
+		return nil, err
+	}
+
 	if len(validationHex) != byteSize {
 		tmp2 := make([]byte, byteSize)
 		diff2 := byteSize - len(validationHex)
@@ -187,10 +194,12 @@ func MnemonicToByteArray(mnemonic string) ([]byte, error) {
 
 // Appends to data the first (len(data) / 32)bits of the result of sha256(data)
 // Currently only supports data up to 32 bytes
-func addChecksum(data []byte) []byte {
+func addChecksum(data []byte) ([]byte, error) {
 	// Get first byte of sha256
 	hasher := sha256.New()
-	hasher.Write(data)
+	if err := hasher.Write(data); err != nil {
+		return nil, err
+	}
 	hash := hasher.Sum(nil)
 	firstChecksumByte := hash[0]
 
@@ -211,7 +220,7 @@ func addChecksum(data []byte) []byte {
 		}
 	}
 
-	return dataBigInt.Bytes()
+	return dataBigInt.Bytes(), nil
 }
 
 func padByteSlice(slice []byte, length int) []byte { // nolint: unparam

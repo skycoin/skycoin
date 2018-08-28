@@ -61,8 +61,7 @@ func encryptWalletCmd(cfg Config) gcli.Command {
 				return err
 			}
 
-			printJSON(wallet.NewReadableWallet(wlt))
-			return nil
+			return printJSON(wallet.NewReadableWallet(wlt))
 		},
 	}
 }

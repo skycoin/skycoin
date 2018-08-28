@@ -104,7 +104,8 @@ func (fg fakeGateway) GetTimeNow() uint64 {
 
 func Test_rpcHandler_HandlerFunc(t *testing.T) {
 	rpc := setupWebRPC(t)
-	rpc.HandleFunc("get_status", getStatusHandler)
 	err := rpc.HandleFunc("get_status", getStatusHandler)
+	require.NoError(t, err)
+	err = rpc.HandleFunc("get_status", getStatusHandler)
 	require.Error(t, err)
 }

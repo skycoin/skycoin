@@ -604,7 +604,9 @@ loop:
 		case req := <-dm.Gateway.requests:
 			// Process any pending RPC requests
 			elapser.Register("dm.Gateway.requests")
-			req.Func()
+			if err := req.Func(); err != nil {
+				logger.WithError(err).Error()
+			}
 
 		case <-blockCreationTicker.C:
 			// Create blocks, if master chain

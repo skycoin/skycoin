@@ -3,6 +3,7 @@ dist: trusty
 language: go
 go:
   - "1.10.x"
+  - "1.11.x"
 
 matrix:
   include:
@@ -45,7 +46,7 @@ install:
   - if [[ ! -d $GOPATH/src/github.com/skycoin/skycoin ]]; then mkdir -p $GOPATH/src/github.com/skycoin; ln -s $TRAVIS_BUILD_DIR $GOPATH/src/github.com/skycoin/skycoin; fi
   - cd $GOPATH/src/github.com/skycoin/skycoin
   - go get -t ./...
-  - make install-linters
+  - make install-linters-travis
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq g++-6 && sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 90; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]];   then brew update ; echo 'Available versions (gcc)' && brew list --versions gcc ; brew list gcc@6 &>/dev/null || brew install gcc@6 ; fi
   - make install-deps-libc

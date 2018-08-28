@@ -25,7 +25,7 @@ type IAnnotationsIterator interface {
 	Next() (Annotation, bool)
 }
 
-func writeHexdumpMember(offset int, size int, writer io.Writer, buffer []byte, name string) {
+func writeHexdumpMember(offset int, size int, writer io.Writer, buffer []byte, name string) error {
 	var hexBuff = make([]string, size)
 	var j = 0
 	if offset+size > len(buffer) {
@@ -46,8 +46,7 @@ func writeHexdumpMember(offset int, size int, writer io.Writer, buffer []byte, n
 
 	f := bufio.NewWriter(writer)
 	defer f.Flush()
-	f.Write(serialized[4:])
-
+	return f.Write(serialized[4:])
 }
 
 func getSliceContentsString(sl []string, offset int) string {
@@ -118,7 +117,9 @@ func HexDump(buffer []byte, annotations []Annotation, writer io.Writer) error {
 	var currentOffset = 0
 
 	for _, element := range annotations {
-		writeHexdumpMember(currentOffset, element.Size, writer, buffer, element.Name)
+		if err := writeHexdumpMember(currentOffset, element.Size, writer, buffer, element.Name); err != nil {
+			return err
+		}
 		currentOffset += element.Size
 	}
 

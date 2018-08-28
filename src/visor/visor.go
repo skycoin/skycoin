@@ -781,8 +781,8 @@ func (vs *Visor) GetBlock(seq uint64) (*coin.SignedBlock, error) {
 	return b, nil
 }
 
-// GetBlocks returns multiple blocks between start and end (not including end). Returns
-// empty slice if unable to fulfill request, it does not return nil.
+// GetBlocks returns multiple blocks between start and end, including both start and end.
+// Returns the empty slice if unable to fulfill request.
 func (vs *Visor) GetBlocks(start, end uint64) ([]coin.SignedBlock, error) {
 	var blocks []coin.SignedBlock
 
@@ -795,6 +795,89 @@ func (vs *Visor) GetBlocks(start, end uint64) ([]coin.SignedBlock, error) {
 	}
 
 	return blocks, nil
+}
+
+// GetBlocksVerbose returns multiple blocks between start and end, including both start and end.
+// Also returns the verbose transaction input data for transactions in these blocks.
+// Returns the empty slice if unable to fulfill request.
+func (vs *Visor) GetBlocksVerbose(start, end uint64) ([]ReadableBlockVerbose, error) {
+	var blocks []ReadableBlockVerbose
+
+	if err := vs.DB.View("GetBlocksVerbose", func(tx *dbutil.Tx) error {
+		var err error
+		blocks, err = vs.getBlocksVerbose(tx, func(tx *dbutil.Tx) ([]coin.SignedBlock, error) {
+			return vs.Blockchain.GetBlocks(tx, start, end)
+		})
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return blocks, nil
+}
+
+// GetLastBlocks returns last N blocks
+func (vs *Visor) GetLastBlocks(num uint64) ([]coin.SignedBlock, error) {
+	var blocks []coin.SignedBlock
+
+	if err := vs.DB.View("GetLastBlocks", func(tx *dbutil.Tx) error {
+		var err error
+		blocks, err = vs.Blockchain.GetLastBlocks(tx, num)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return blocks, nil
+}
+
+// GetLastBlocksVerbose returns last N blocks with verbose transaction input data
+func (vs *Visor) GetLastBlocksVerbose(num uint64) ([]ReadableBlockVerbose, error) {
+	var blocks []ReadableBlockVerbose
+
+	if err := vs.DB.View("GetLastBlocksVerbose", func(tx *dbutil.Tx) error {
+		var err error
+		blocks, err = vs.getBlocksVerbose(tx, func(tx *dbutil.Tx) ([]coin.SignedBlock, error) {
+			return vs.Blockchain.GetLastBlocks(tx, num)
+		})
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return blocks, nil
+}
+
+func (vs *Visor) getBlocksVerbose(tx *dbutil.Tx, getBlocks func(*dbutil.Tx) ([]coin.SignedBlock, error)) ([]ReadableBlockVerbose, error) {
+	blocks, err := getBlocks(tx)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(blocks) == 0 {
+		return nil, nil
+	}
+
+	inputs := make([][][]ReadableTransactionInput, len(blocks))
+	for i, b := range blocks {
+		blockInputs, err := vs.getBlockInputs(tx, &b)
+		if err != nil {
+			return nil, err
+		}
+		inputs[i] = blockInputs
+	}
+
+	rbs := make([]ReadableBlockVerbose, len(blocks))
+	for i, b := range blocks {
+		rb, err := NewReadableBlockVerbose(&b.Block, inputs[i])
+		if err != nil {
+			return nil, err
+		}
+
+		rbs[i] = *rb
+	}
+
+	return rbs, nil
 }
 
 // InjectTransaction records a coin.Transaction to the UnconfirmedTxnPool if the txn is not
@@ -1391,8 +1474,21 @@ func (vs *Visor) getBlockVerbose(tx *dbutil.Tx, getBlock func(*dbutil.Tx) (*coin
 		return nil, nil
 	}
 
+	inputs, err := vs.getBlockInputs(tx, b)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewReadableBlockVerbose(&b.Block, inputs)
+}
+
+func (vs *Visor) getBlockInputs(tx *dbutil.Tx, b *coin.SignedBlock) ([][]ReadableTransactionInput, error) {
+	if b == nil {
+		return nil, nil
+	}
+
 	// The genesis block has no inputs to query or to calculate fees from
-	if b.Head.BkSeq == 0 {
+	if b.Block.Head.BkSeq == 0 {
 		if len(b.Block.Body.Transactions) != 1 {
 			logger.Panicf("Genesis block should have only 1 transaction (has %d)", len(b.Block.Body.Transactions))
 		}
@@ -1402,7 +1498,8 @@ func (vs *Visor) getBlockVerbose(tx *dbutil.Tx, getBlock func(*dbutil.Tx) (*coin
 		}
 
 		inputs := make([][]ReadableTransactionInput, 1)
-		return NewReadableBlockVerbose(&b.Block, inputs)
+
+		return inputs, nil
 	}
 
 	// When a transaction was added to a block, its coinhour fee was
@@ -1414,7 +1511,7 @@ func (vs *Visor) getBlockVerbose(tx *dbutil.Tx, getBlock func(*dbutil.Tx) (*coin
 	}
 
 	if prevBlock == nil {
-		return nil, fmt.Errorf("getBlockVerbose: prevBlock seq %d not found", b.Head.BkSeq-1)
+		return nil, fmt.Errorf("getBlockInputs: prevBlock seq %d not found", b.Head.BkSeq-1)
 	}
 
 	var inputs [][]ReadableTransactionInput
@@ -1427,22 +1524,7 @@ func (vs *Visor) getBlockVerbose(tx *dbutil.Tx, getBlock func(*dbutil.Tx) (*coin
 		inputs = append(inputs, i)
 	}
 
-	return NewReadableBlockVerbose(&b.Block, inputs)
-}
-
-// GetLastBlocks returns last N blocks
-func (vs *Visor) GetLastBlocks(num uint64) ([]coin.SignedBlock, error) {
-	var blocks []coin.SignedBlock
-
-	if err := vs.DB.View("GetLastBlocks", func(tx *dbutil.Tx) error {
-		var err error
-		blocks, err = vs.Blockchain.GetLastBlocks(tx, num)
-		return err
-	}); err != nil {
-		return nil, err
-	}
-
-	return blocks, nil
+	return inputs, nil
 }
 
 // GetHeadBlock gets head block.

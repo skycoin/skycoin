@@ -549,7 +549,7 @@ type ReadableBlocks struct {
 	Blocks []ReadableBlock `json:"blocks"`
 }
 
-// NewReadableBlocks converts []coin.SignedBlock to readable blocks
+// NewReadableBlocks converts []coin.SignedBlock to ReadableBlocks
 func NewReadableBlocks(blocks []coin.SignedBlock) (*ReadableBlocks, error) {
 	rbs := make([]ReadableBlock, 0, len(blocks))
 	for _, b := range blocks {

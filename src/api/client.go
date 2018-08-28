@@ -411,6 +411,21 @@ func (c *Client) Blocks(start, end uint64) (*visor.ReadableBlocks, error) {
 	return &b, nil
 }
 
+// BlocksVerbose makes a request to GET /api/v1/blocks?verbose=1
+func (c *Client) BlocksVerbose(start, end uint64) (*visor.ReadableBlocksVerbose, error) {
+	v := url.Values{}
+	v.Add("start", fmt.Sprint(start))
+	v.Add("end", fmt.Sprint(end))
+	v.Add("verbose", "1")
+	endpoint := "/api/v1/blocks?" + v.Encode()
+
+	var b visor.ReadableBlocksVerbose
+	if err := c.Get(endpoint, &b); err != nil {
+		return nil, err
+	}
+	return &b, nil
+}
+
 // LastBlocks makes a request to GET /api/v1/last_blocks
 func (c *Client) LastBlocks(n uint64) (*visor.ReadableBlocks, error) {
 	v := url.Values{}
@@ -418,6 +433,20 @@ func (c *Client) LastBlocks(n uint64) (*visor.ReadableBlocks, error) {
 	endpoint := "/api/v1/last_blocks?" + v.Encode()
 
 	var b visor.ReadableBlocks
+	if err := c.Get(endpoint, &b); err != nil {
+		return nil, err
+	}
+	return &b, nil
+}
+
+// LastBlocksVerbose makes a request to GET /api/v1/last_blocks?verbose=1
+func (c *Client) LastBlocksVerbose(n uint64) (*visor.ReadableBlocksVerbose, error) {
+	v := url.Values{}
+	v.Add("num", fmt.Sprint(n))
+	v.Add("verbose", "1")
+	endpoint := "/api/v1/last_blocks?" + v.Encode()
+
+	var b visor.ReadableBlocksVerbose
 	if err := c.Get(endpoint, &b); err != nil {
 		return nil, err
 	}

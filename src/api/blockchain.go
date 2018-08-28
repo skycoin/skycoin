@@ -165,10 +165,17 @@ func blockHandler(gateway Gatewayer) http.HandlerFunc {
 // Args:
 //	start [int]
 //	end [int]
+//  verbose [bool]
 func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
+			return
+		}
+
+		verbose, err := parseVerboseFlag(r.FormValue("verbose"))
+		if err != nil {
+			wh.Error400(w, "Invalid value for verbose")
 			return
 		}
 
@@ -186,13 +193,23 @@ func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		rb, err := gateway.GetBlocks(start, end)
-		if err != nil {
-			wh.Error400(w, fmt.Sprintf("Get blocks failed: %v", err))
-			return
-		}
+		if verbose {
+			rb, err := gateway.GetBlocksVerbose(start, end)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
 
-		wh.SendJSONOr500(logger, w, rb)
+			wh.SendJSONOr500(logger, w, rb)
+		} else {
+			rb, err := gateway.GetBlocks(start, end)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+
+			wh.SendJSONOr500(logger, w, rb)
+		}
 	}
 }
 
@@ -201,10 +218,17 @@ func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 // URI: /api/v1/last_blocks
 // Args:
 //	num [int]
+//  verbose [bool]
 func lastBlocksHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
+			return
+		}
+
+		verbose, err := parseVerboseFlag(r.FormValue("verbose"))
+		if err != nil {
+			wh.Error400(w, "Invalid value for verbose")
 			return
 		}
 
@@ -215,12 +239,20 @@ func lastBlocksHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		rb, err := gateway.GetLastBlocks(n)
-		if err != nil {
-			wh.Error400(w, fmt.Sprintf("Get last %d blocks failed: %v", n, err))
-			return
+		if verbose {
+			rb, err := gateway.GetLastBlocksVerbose(n)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+			wh.SendJSONOr500(logger, w, rb)
+		} else {
+			rb, err := gateway.GetLastBlocks(n)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+			wh.SendJSONOr500(logger, w, rb)
 		}
-
-		wh.SendJSONOr500(logger, w, rb)
 	}
 }

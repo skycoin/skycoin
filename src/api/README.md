@@ -84,6 +84,32 @@ However, any changes to the API will be recorded in the [changelog](../../CHANGE
 - [Transaction APIs](#transaction-apis)
 	- [Get unconfirmed transactions](#get-unconfirmed-transactions)
 	- [Get transaction info by id](#get-transaction-info-by-id)
+	- [Get raw transaction by id](#get-raw-transaction-by-id)
+	- [Inject raw transaction](#inject-raw-transaction)
+	- [Get transactions that are addresses related](#get-transactions-that-are-addresses-related)
+	- [Resend unconfirmed transactions](#resend-unconfirmed-transactions)
+	- [Verify encoded transaction](#verify-encoded-transaction)
+- [Block APIs](#block-apis)
+	- [Get blockchain metadata](#get-blockchain-metadata)
+	- [Get blockchain progress](#get-blockchain-progress)
+	- [Get block by hash or seq](#get-block-by-hash-or-seq)
+	- [Get blocks in specific range](#get-blocks-in-specific-range)
+	- [Get last N blocks](#get-last-n-blocks)
+- [Explorer APIs](#explorer-apis)
+	- [Get address affected transactions](#get-address-affected-transactions)
+- [Uxout APIs](#uxout-apis)
+	- [Get uxout](#get-uxout)
+	- [Get historical unspent outputs for an address](#get-historical-unspent-outputs-for-an-address)
+- [Coin supply related information](#coin-supply-related-information)
+	- [Coin supply](#coin-supply)
+	- [Richlist show top N addresses by uxouts](#richlist-show-top-n-addresses-by-uxouts)
+	- [Count unique addresses](#count-unique-addresses)
+- [Network status](#network-status)
+	- [Get information for a specific connection](#get-information-for-a-specific-connection)
+	- [Get a list of all connections](#get-a-list-of-all-connections)
+	- [Get a list of all default connections](#get-a-list-of-all-default-connections)
+	- [Get a list of all trusted connections](#get-a-list-of-all-trusted-connections)
+	- [Get a list of all connections discovered through peer exchange](#get-a-list-of-all-connections-discovered-through-peer-exchange)
 
 <!-- /MarkdownTOC -->
 
@@ -1469,7 +1495,8 @@ Result:
             }
         ]
     }
-}```
+}
+```
 
 ### Get raw transaction by id
 

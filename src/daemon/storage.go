@@ -51,7 +51,7 @@ func (s *ExpectIntroductions) CullInvalidConns(f CullMatchFunc) ([]string, error
 
 		if ok {
 			addrs = append(addrs, addr)
-			delete(s.value, k)
+			delete(s.value, addr)
 		}
 	}
 
@@ -62,7 +62,7 @@ func (s *ExpectIntroductions) CullInvalidConns(f CullMatchFunc) ([]string, error
 func (s *ExpectIntroductions) Get(addr string) (time.Time, bool) {
 	s.Lock()
 	defer s.Unlock()
-	t, ok := s.value[adr]
+	t, ok := s.value[addr]
 	return t, ok
 }
 
@@ -157,10 +157,10 @@ func NewPendingConnections(maxConn int) *PendingConnections {
 }
 
 // Add adds pending connection
-func (s *PendingConnections) Add(addr string, peer pex.Peer) {
+func (s *PendingConnections) Add(peer pex.Peer) {
 	s.Lock()
 	defer s.Unlock()
-	s.value[addr] = peer
+	s.value[peer.Addr] = peer
 }
 
 // Get returns pending connections
@@ -204,7 +204,7 @@ func (s *MirrorConnections) Add(mirror uint32, ip string, port uint16) {
 	defer s.Unlock()
 
 	if m, ok := s.value[mirror]; ok {
-		m.(map[string]uint16)[ip] = port
+		m[ip] = port
 		return
 	}
 
@@ -236,7 +236,6 @@ func (s *MirrorConnections) Remove(mirror uint32, ip string) {
 	if ok {
 		delete(m, ip)
 	}
-	return nil
 }
 
 // IPCount records connection number from the same base ip

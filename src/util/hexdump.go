@@ -46,7 +46,8 @@ func writeHexdumpMember(offset int, size int, writer io.Writer, buffer []byte, n
 
 	f := bufio.NewWriter(writer)
 	defer f.Flush()
-	return f.Write(serialized[4:])
+	_, err := f.Write(serialized[4:])
+	return err
 }
 
 func getSliceContentsString(sl []string, offset int) string {
@@ -136,7 +137,9 @@ func HexDumpFromIterator(buffer []byte, annotationsIterator IAnnotationsIterator
 		if !valid {
 			break
 		}
-		writeHexdumpMember(currentOffset, current.Size, writer, buffer, current.Name)
+		if err := writeHexdumpMember(currentOffset, current.Size, writer, buffer, current.Name); err != nil {
+			return err
+		}
 		currentOffset += current.Size
 		current, valid = annotationsIterator.Next()
 	}

@@ -2106,11 +2106,11 @@ func (vs *Visor) GetUnspentsOfAddrs(addrs []cipher.Address) (coin.AddressUxOuts,
 // transaction is confirmed, and error if any
 func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bool, error) {
 	var uxa coin.UxArray
-	var head *coin.SignedBlock
 	var isTxnConfirmed bool
+	var feeCalcTime uint64
+
 	err := vs.DB.View("VerifyTxnVerbose", func(tx *dbutil.Tx) error {
-		var err error
-		head, err = vs.Blockchain.Head(tx)
+		head, err := vs.Blockchain.Head(tx)
 		if err != nil {
 			return err
 		}
@@ -2118,6 +2118,9 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bo
 		uxa, err = vs.Blockchain.Unspent().GetArray(tx, txn.In)
 		switch err.(type) {
 		case nil:
+			// For unconfirmed transactions, use the blockchain head time to calculate hours
+			feeCalcTime = head.Time()
+
 		case blockdb.ErrUnspentNotExist:
 			uxid := err.(blockdb.ErrUnspentNotExist).UxID
 			// Gets uxouts of txn.In from historydb
@@ -2148,6 +2151,23 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bo
 				isTxnConfirmed = true
 			}
 
+			// For confirmed transactions, use the previous block time to calculate hours and fees,
+			// except for the genesis block which has no previous block and has no inputs nor fees.
+			feeCalcTime = 0
+			if historyTxn.BlockSeq > 0 {
+				if isTxnConfirmed {
+					prevBlock, err := vs.Blockchain.GetSignedBlockBySeq(tx, historyTxn.BlockSeq-1)
+					if err != nil {
+						return err
+					}
+					if prevBlock == nil {
+						return fmt.Errorf("VerifyTxnVerbose: previous block seq=%d not found", historyTxn.BlockSeq-1)
+					}
+
+					feeCalcTime = prevBlock.Block.Head.Time
+				}
+			}
+
 			return nil
 		default:
 			return err
@@ -2157,7 +2177,7 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bo
 			return err
 		}
 
-		if err := VerifySingleTxnSoftConstraints(*txn, head.Time(), uxa, vs.Config.MaxBlockSize); err != nil {
+		if err := VerifySingleTxnSoftConstraints(*txn, feeCalcTime, uxa, vs.Config.MaxBlockSize); err != nil {
 			return err
 		}
 
@@ -2167,9 +2187,9 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bo
 	// If we were able to query the inputs, return the verbose inputs to the caller
 	// even if the transaction failed validation
 	var uxs []wallet.UxBalance
-	if len(uxa) != 0 {
+	if len(uxa) != 0 && feeCalcTime != 0 {
 		var otherErr error
-		uxs, otherErr = wallet.NewUxBalances(head.Time(), uxa)
+		uxs, otherErr = wallet.NewUxBalances(feeCalcTime, uxa)
 		if otherErr != nil {
 			return nil, isTxnConfirmed, otherErr
 		}

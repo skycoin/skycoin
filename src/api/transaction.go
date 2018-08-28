@@ -29,7 +29,7 @@ func pendingTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		verbose, err := parseVerboseFlag(r.FormValue("verbose"))
+		verbose, err := parseBoolFlag(r.FormValue("verbose"))
 		if err != nil {
 			wh.Error400(w, "Invalid value for verbose")
 			return
@@ -69,12 +69,20 @@ func pendingTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
+// TransactionEncodedResponse represents the data struct of the response to /api/v1/transaction?encoded=1
+type TransactionEncodedResponse struct {
+	Status             visor.TransactionStatus `json:"status"`
+	Time               uint64                  `json:"time"`
+	EncodedTransaction string                  `json:"encoded_transaction"`
+}
+
 // transactionHandler returns a transaction identified by its txid hash
 // Method: GET
 // URI: /api/v1/transaction
 // Args:
 //	txid: transaction hash
 //	verbose: [bool] include verbose transaction input data
+//  encoded: [bool] return as a raw encoded transaction
 func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -88,9 +96,20 @@ func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		verbose, err := parseVerboseFlag(r.FormValue("verbose"))
+		verbose, err := parseBoolFlag(r.FormValue("verbose"))
 		if err != nil {
 			wh.Error400(w, "Invalid value for verbose")
+			return
+		}
+
+		encoded, err := parseBoolFlag(r.FormValue("encoded"))
+		if err != nil {
+			wh.Error400(w, "Invalid value for encoded")
+			return
+		}
+
+		if verbose && encoded {
+			wh.Error400(w, "verbose and encoded cannot be combined")
 			return
 		}
 
@@ -112,6 +131,24 @@ func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 
 			wh.SendJSONOr500(logger, w, &txn)
+		} else if encoded {
+			txn, err := gateway.GetTransaction(h)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+			if txn == nil {
+				wh.Error404(w, "")
+				return
+			}
+
+			txnStr := hex.EncodeToString(txn.Txn.Serialize())
+
+			wh.SendJSONOr500(logger, w, TransactionEncodedResponse{
+				EncodedTransaction: txnStr,
+				Status:             txn.Status,
+				Time:               txn.Time,
+			})
 		} else {
 			txn, err := gateway.GetTransactionResult(h)
 			if err != nil {
@@ -142,7 +179,7 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		verbose, err := parseVerboseFlag(r.FormValue("verbose"))
+		verbose, err := parseBoolFlag(r.FormValue("verbose"))
 		if err != nil {
 			wh.Error400(w, "Invalid value for verbose")
 			return

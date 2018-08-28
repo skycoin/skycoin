@@ -416,9 +416,13 @@ func NewReadableUnconfirmedTxns(txs []UnconfirmedTxn) ([]ReadableUnconfirmedTxn,
 
 // NewReadableTransaction creates a readable transaction
 func NewReadableTransaction(t *Transaction) (*ReadableTransaction, error) {
-	// Genesis transaction use empty SHA256 as txid
+	if t.Status.BlockSeq != 0 && t.Status.Confirmed && len(t.Txn.In) == 0 {
+		return nil, errors.New("NewReadableTransaction: Confirmed transaction Status.BlockSeq != 0 but Txn.In is empty")
+	}
+
+	// Genesis transaction uses empty SHA256 as txid [FIXME: requires hard fork]
 	txid := cipher.SHA256{}
-	if t.Status.BlockSeq != 0 {
+	if t.Status.BlockSeq != 0 || !t.Status.Confirmed {
 		txid = t.Txn.Hash()
 	}
 
@@ -491,7 +495,8 @@ func NewReadableBlockBody(b *coin.Block) (*ReadableBlockBody, error) {
 		t := Transaction{
 			Txn: b.Body.Transactions[i],
 			Status: TransactionStatus{
-				BlockSeq: b.Seq(),
+				BlockSeq:  b.Seq(),
+				Confirmed: true,
 			},
 		}
 

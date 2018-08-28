@@ -45,7 +45,7 @@ func blockchainProgressHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-func parseVerboseFlag(v string) (bool, error) {
+func parseBoolFlag(v string) (bool, error) {
 	if v == "" {
 		return false, nil
 	}
@@ -70,7 +70,7 @@ func blockHandler(gateway Gatewayer) http.HandlerFunc {
 		hash := r.FormValue("hash")
 		seq := r.FormValue("seq")
 
-		verbose, err := parseVerboseFlag(r.FormValue("verbose"))
+		verbose, err := parseBoolFlag(r.FormValue("verbose"))
 		if err != nil {
 			wh.Error400(w, "Invalid value for verbose")
 			return
@@ -173,7 +173,7 @@ func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		verbose, err := parseVerboseFlag(r.FormValue("verbose"))
+		verbose, err := parseBoolFlag(r.FormValue("verbose"))
 		if err != nil {
 			wh.Error400(w, "Invalid value for verbose")
 			return
@@ -226,7 +226,7 @@ func lastBlocksHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		verbose, err := parseVerboseFlag(r.FormValue("verbose"))
+		verbose, err := parseBoolFlag(r.FormValue("verbose"))
 		if err != nil {
 			wh.Error400(w, "Invalid value for verbose")
 			return

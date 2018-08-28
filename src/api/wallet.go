@@ -581,7 +581,7 @@ func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		verbose, err := parseVerboseFlag(r.FormValue("verbose"))
+		verbose, err := parseBoolFlag(r.FormValue("verbose"))
 		if err != nil {
 			wh.Error400(w, "Invalid value for verbose")
 			return

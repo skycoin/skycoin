@@ -1783,6 +1783,141 @@ func TestStableTransactionVerbose(t *testing.T) {
 	}
 }
 
+func TestLiveTransactionEncoded(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	cases := []transactionEncodedTestCase{
+		{
+			name: "invalid txID",
+			txID: "abcd",
+			err: api.ClientError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - Invalid hex length",
+			},
+		},
+		{
+			name: "empty txID",
+			txID: "",
+			err: api.ClientError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - txid is empty",
+			},
+		},
+		{
+			name:       "OK",
+			txID:       "76ecbabc53ea2a3be46983058433dda6a3cf7ea0b86ba14d90b932fa97385de7",
+			goldenFile: "transaction-encoded.golden",
+		},
+	}
+
+	c := api.NewClient(nodeAddress())
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			testTransactionEncoded(t, c, tc)
+		})
+	}
+}
+
+func TestStableTransactionEncoded(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	cases := []transactionEncodedTestCase{
+		{
+			name: "invalid txId",
+			txID: "abcd",
+			err: api.ClientError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - Invalid hex length",
+			},
+			goldenFile: "",
+		},
+		{
+			name: "not exist",
+			txID: "701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947",
+			err: api.ClientError{
+				Status:     "404 Not Found",
+				StatusCode: http.StatusNotFound,
+				Message:    "404 Not Found",
+			},
+			goldenFile: "",
+		},
+		{
+			name: "empty txId",
+			txID: "",
+			err: api.ClientError{
+				Status:     "400 Bad Request",
+				StatusCode: http.StatusBadRequest,
+				Message:    "400 Bad Request - txid is empty",
+			},
+			goldenFile: "",
+		},
+		{
+			name:       "genesis transaction",
+			txID:       "d556c1c7abf1e86138316b8c17183665512dc67633c04cf236a8b7f332cb4add",
+			goldenFile: "genesis-transaction-encoded.golden",
+		},
+		{
+			name:       "transaction in block 101",
+			txID:       "e8fe5290afba3933389fd5860dca2cbcc81821028be9c65d0bb7cf4e8d2c4c18",
+			goldenFile: "transaction-encoded-block-101.golden",
+		},
+		{
+			name:       "transaction in block 105",
+			txID:       "41ec724bd40c852096379d1ae57d3f27606877fa95ac9c082fbf63900e6c5cb5",
+			goldenFile: "transaction-encoded-block-105.golden",
+		},
+	}
+
+	c := api.NewClient(nodeAddress())
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			testTransactionEncoded(t, c, tc)
+		})
+	}
+}
+
+type transactionEncodedTestCase struct {
+	name       string
+	txID       string
+	err        api.ClientError
+	goldenFile string
+}
+
+func testTransactionEncoded(t *testing.T, c *api.Client, tc transactionEncodedTestCase) {
+	encodedTxn, err := c.TransactionEncoded(tc.txID)
+	if err != nil {
+		require.Equal(t, tc.err, err)
+		return
+	}
+
+	encodedTxnBytes, err := hex.DecodeString(encodedTxn.EncodedTransaction)
+	require.NoError(t, err)
+	decodedTxn, err := coin.TransactionDeserialize(encodedTxnBytes)
+	require.NoError(t, err)
+	txnResult, err := daemon.NewTransactionResult(&visor.Transaction{
+		Txn:    decodedTxn,
+		Status: encodedTxn.Status,
+		Time:   encodedTxn.Time,
+	})
+	require.NoError(t, err)
+
+	txn, err := c.Transaction(tc.txID)
+	require.NoError(t, err)
+
+	require.Equal(t, txn, txnResult)
+
+	var expected api.TransactionEncodedResponse
+	loadGoldenFile(t, tc.goldenFile, TestData{encodedTxn, &expected})
+	require.Equal(t, &expected, encodedTxn)
+}
+
 func TestLiveTransactions(t *testing.T) {
 	if !doLive(t) {
 		return

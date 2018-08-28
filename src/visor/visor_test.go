@@ -2881,6 +2881,9 @@ func TestVerifyTxnVerbose(t *testing.T) {
 
 		getHistoryUxOutsRet []*historydb.UxOut
 		getHistoryUxOutsErr error
+
+		getSignedBlocksBySeqRet *coin.SignedBlock
+		getSignedBlocksBySeqErr error
 	}{
 		{
 			name:        "transaction has been spent",
@@ -2888,9 +2891,50 @@ func TestVerifyTxnVerbose(t *testing.T) {
 			isConfirmed: true,
 			balances:    spentUxBalances[:],
 
-			getArrayErr:         blockdb.ErrUnspentNotExist{UxID: inputs[0].Hash().Hex()},
-			getHistoryTxnRet:    &historydb.Transaction{Tx: txn},
+			getArrayErr: blockdb.ErrUnspentNotExist{UxID: inputs[0].Hash().Hex()},
+			getHistoryTxnRet: &historydb.Transaction{
+				Tx:       txn,
+				BlockSeq: 10,
+			},
 			getHistoryUxOutsRet: historyOutputs[:1],
+			getSignedBlocksBySeqRet: &coin.SignedBlock{
+				Block: coin.Block{
+					Head: coin.BlockHeader{
+						Time: 10000000,
+					},
+				},
+			},
+		},
+		{
+			name:        "transaction has been spent, get previous block error",
+			txn:         txn,
+			isConfirmed: true,
+			balances:    spentUxBalances[:],
+			err:         errors.New("GetSignedBlockBySeq failed"),
+
+			getArrayErr: blockdb.ErrUnspentNotExist{UxID: inputs[0].Hash().Hex()},
+			getHistoryTxnRet: &historydb.Transaction{
+				Tx:       txn,
+				BlockSeq: 10,
+			},
+			getHistoryUxOutsRet:     historyOutputs[:1],
+			getSignedBlocksBySeqErr: errors.New("GetSignedBlockBySeq failed"),
+		},
+		{
+			name:        "transaction has been spent, previous block not found",
+			txn:         txn,
+			isConfirmed: true,
+			balances:    spentUxBalances[:],
+			err:         fmt.Errorf("VerifyTxnVerbose: previous block seq=%d not found", 9),
+
+			getArrayErr: blockdb.ErrUnspentNotExist{UxID: inputs[0].Hash().Hex()},
+			getHistoryTxnRet: &historydb.Transaction{
+				Tx:       txn,
+				BlockSeq: 10,
+			},
+			getHistoryUxOutsRet:     historyOutputs[:1],
+			getSignedBlocksBySeqRet: nil,
+			getSignedBlocksBySeqErr: nil,
 		},
 		{
 			name:        "transaction does not exist in either unspents or historydb",
@@ -2976,6 +3020,9 @@ func TestVerifyTxnVerbose(t *testing.T) {
 
 			bc.On("Unspent").Return(unspent)
 			bc.On("Head", matchTx).Return(&head, nil)
+			if tc.getHistoryTxnRet != nil {
+				bc.On("GetSignedBlockBySeq", matchTx, tc.getHistoryTxnRet.BlockSeq-1).Return(tc.getSignedBlocksBySeqRet, tc.getSignedBlocksBySeqErr)
+			}
 
 			unspent.On("GetArray", matchTx, tc.txn.In).Return(tc.getArrayRet, tc.getArrayErr)
 

@@ -13,12 +13,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `-custom-peers-file` to load peers from disk. This peers file is a newline separate list of `ip:port` strings
 - Add `csrf_enabled`, `csp_enabled`, `wallet_api_enabled`, `unversioned_api_enabled`, `gui_enabled` and `json_rpc_enabled` configuration settings to the `/api/v1/health` endpoint response
 - Add `verbose` flag to `/api/v1/block`, `/api/v1/blocks`, `/api/v1/last_blocks`, `/api/v1/pendingTxs`, `/api/v1/transaction`, `/api/v1/transactions`, `/api/v1/wallet/transactions` to return verbose block data, which includes the address, coins, hours and calculcated_hours of the block's transaction's inputs
+- Add `encoded` flag to `/api/v1/transaction` to return an encoded transaction
 
 ### Fixed
 
 - Fix hanging process caused when the p2p listener port is already in use
 - Fix exit status of CLI tool when wallet file cannot be loaded
-- Fix `calculated_hours` and `fee` in `/explorer/address` responses
+- Fix `calculated_hours` and `fee` in `/api/v1/explorer/address` responses
+- Fix `calculated_hours` and `fee` in `/api/v2/transaction/verify` responses for confirmed transactions
 - `/api/v1/blocks` and `/api/v1/last_blocks` return `500` instead of `400` on database errors
 
 ### Changed

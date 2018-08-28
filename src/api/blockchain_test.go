@@ -30,12 +30,21 @@ func makeBadBlock(t *testing.T) *coin.Block {
 	preBlock, err := coin.NewGenesisBlock(genAddress, genCoins, genTime)
 	require.NoError(t, err)
 	uxHash := testutil.RandSHA256(t)
-	tx := coin.Transaction{}
+	tx := coin.Transaction{
+		In: []cipher.SHA256{
+			testutil.RandSHA256(t),
+		},
+	}
 	tx.PushOutput(genAddress, math.MaxInt64+1, 255)
 	b, err := coin.NewBlock(*preBlock, now, uxHash, coin.Transactions{tx}, func(t *coin.Transaction) (uint64, error) {
 		return 0, nil
 	})
 	require.NoError(t, err)
+	require.NotEqual(t, b.Head.BkSeq, uint64(0))
+	require.NotEmpty(t, b.Body.Transactions)
+	for i, txn := range b.Body.Transactions {
+		require.NotEmpty(t, txn.In, "txn %d/%d", i+1, len(b.Body.Transactions))
+	}
 	return b
 }
 
@@ -363,8 +372,7 @@ func TestGetBlock(t *testing.T) {
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()))
 			} else {
 				if tc.verbose {
 					var msg *visor.ReadableBlockVerbose

@@ -495,6 +495,7 @@ Result:
                     "464b7724302178c1cfeacadaaf3556a3b7e5259adf51919476c3acc695747ed244b5ce2187ce7bedb6ad65c71f7f7ff3fa6805e64fe5da3aaa00ad563c7424f600",
                     "1155537b0391d4a6ee5eac07dee5798e953dca3a7c30643403dd2d326582c7d35080a16dc22644782ce1087bfc3bd06c2bf68e9a98e3989d90831646a9be2c9101"
                 ],
+                "fee": 495076,
                 "inputs": [
                     {
                     	"uxid": "782a8662efb0e933cab7d3ae9429ab53c4208cf44d8cdc07c2fbd7204b6b5cad",

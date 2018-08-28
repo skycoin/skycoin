@@ -51,30 +51,14 @@ type TransactionStatus struct {
 	Height uint64 `json:"height"`
 	// Execute block seq
 	BlockSeq uint64 `json:"block_seq"`
-	// We can't find anything about this txn.  Be aware that the txn may be
-	// in someone else's unconfirmed pool, and if valid, it may become a
-	// confirmed txn in the future
-	Unknown bool `json:"unknown"`
 }
 
 // NewUnconfirmedTransactionStatus creates unconfirmed transaction status
 func NewUnconfirmedTransactionStatus() TransactionStatus {
 	return TransactionStatus{
 		Unconfirmed: true,
-		Unknown:     false,
 		Confirmed:   false,
 		Height:      0,
-	}
-}
-
-// NewUnknownTransactionStatus creates unknow transaction status
-func NewUnknownTransactionStatus() TransactionStatus {
-	return TransactionStatus{
-		Unconfirmed: false,
-		Unknown:     true,
-		Confirmed:   false,
-		Height:      0,
-		BlockSeq:    0,
 	}
 }
 
@@ -85,7 +69,6 @@ func NewConfirmedTransactionStatus(height uint64, blockSeq uint64) TransactionSt
 	}
 	return TransactionStatus{
 		Unconfirmed: false,
-		Unknown:     false,
 		Confirmed:   true,
 		Height:      height,
 		BlockSeq:    blockSeq,
@@ -381,11 +364,11 @@ func ReadableOutputsToUxBalances(ros ReadableOutputs) ([]wallet.UxBalance, error
 
 // ReadableTransaction represents a readable transaction
 type ReadableTransaction struct {
+	Timestamp uint64 `json:"timestamp,omitempty"`
 	Length    uint32 `json:"length"`
 	Type      uint8  `json:"type"`
 	Hash      string `json:"txid"`
 	InnerHash string `json:"inner_hash"`
-	Timestamp uint64 `json:"timestamp,omitempty"`
 
 	Sigs []string                    `json:"sigs"`
 	In   []string                    `json:"inputs"`

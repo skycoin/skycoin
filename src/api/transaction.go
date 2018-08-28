@@ -17,43 +17,80 @@ import (
 	wh "github.com/skycoin/skycoin/src/util/http" //http,json helpers
 )
 
-// Returns pending transactions
-func getPendingTxns(gateway Gatewayer) http.HandlerFunc {
+// pendingTxnsHandler returns pending transactions
+// Method: GET
+// URI: /api/v1/pendingTxs
+// Args:
+//	verbose: [bool] include verbose transaction input data
+func pendingTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}
 
-		txns, err := gateway.GetAllUnconfirmedTxns()
+		verbose, err := parseVerboseFlag(r.FormValue("verbose"))
 		if err != nil {
-			wh.Error500(w, err.Error())
+			wh.Error400(w, "Invalid value for verbose")
 			return
 		}
 
-		ret := make([]*visor.ReadableUnconfirmedTxn, 0, len(txns))
-		for _, unconfirmedTxn := range txns {
-			readable, err := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
+		if verbose {
+			txns, err := gateway.GetAllUnconfirmedTxnsVerbose()
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
 			}
-			ret = append(ret, readable)
-		}
 
-		wh.SendJSONOr500(logger, w, &ret)
+			if len(txns) == 0 {
+				txns = []visor.ReadableUnconfirmedTxnVerbose{}
+			}
+
+			wh.SendJSONOr500(logger, w, txns)
+		} else {
+			txns, err := gateway.GetAllUnconfirmedTxns()
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+
+			ret := make([]*visor.ReadableUnconfirmedTxn, len(txns))
+			for i, unconfirmedTxn := range txns {
+				readable, err := visor.NewReadableUnconfirmedTxn(&unconfirmedTxn)
+				if err != nil {
+					wh.Error500(w, err.Error())
+					return
+				}
+				ret[i] = readable
+			}
+
+			wh.SendJSONOr500(logger, w, ret)
+		}
 	}
 }
 
-func getTransactionByID(gateway Gatewayer) http.HandlerFunc {
+// transactionHandler returns a transaction identified by its txid hash
+// Method: GET
+// URI: /api/v1/transaction
+// Args:
+//	txid: transaction hash
+//	verbose: [bool] include verbose transaction input data
+func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
 			return
 		}
+
 		txid := r.FormValue("txid")
 		if txid == "" {
 			wh.Error400(w, "txid is empty")
+			return
+		}
+
+		verbose, err := parseVerboseFlag(r.FormValue("verbose"))
+		if err != nil {
+			wh.Error400(w, "Invalid value for verbose")
 			return
 		}
 
@@ -63,23 +100,31 @@ func getTransactionByID(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		txn, err := gateway.GetTransaction(h)
-		if err != nil {
-			wh.Error400(w, err.Error())
-			return
-		}
-		if txn == nil {
-			wh.Error404(w, "")
-			return
-		}
+		if verbose {
+			txn, err := gateway.GetTransactionResultVerbose(h)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+			if txn == nil {
+				wh.Error404(w, "")
+				return
+			}
 
-		resTxn, err := daemon.NewTransactionResult(txn)
-		if err != nil {
-			wh.Error500(w, err.Error())
-			return
-		}
+			wh.SendJSONOr500(logger, w, &txn)
+		} else {
+			txn, err := gateway.GetTransactionResult(h)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+			if txn == nil {
+				wh.Error404(w, "")
+				return
+			}
 
-		wh.SendJSONOr500(logger, w, &resTxn)
+			wh.SendJSONOr500(logger, w, &txn)
+		}
 	}
 }
 
@@ -89,10 +134,17 @@ func getTransactionByID(gateway Gatewayer) http.HandlerFunc {
 // Args:
 //     addrs: Comma seperated addresses [optional, returns all transactions if no address provided]
 //     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
+//	   verbose: [bool] include verbose transaction input data
 func getTransactions(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
+			return
+		}
+
+		verbose, err := parseVerboseFlag(r.FormValue("verbose"))
+		if err != nil {
+			wh.Error400(w, "Invalid value for verbose")
 			return
 		}
 
@@ -104,7 +156,7 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		// Initialize transaction filters
-		flts := []visor.TxFilter{visor.AddrsFilter(addrs)}
+		flts := []visor.TxFilter{visor.NewAddrsFilter(addrs)}
 
 		// Gets the 'confirmed' parameter value
 		confirmedStr := r.FormValue("confirmed")
@@ -115,26 +167,39 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 
-			flts = append(flts, visor.ConfirmedTxFilter(confirmed))
+			flts = append(flts, visor.NewConfirmedTxFilter(confirmed))
 		}
 
-		// Gets transactions
-		txns, err := gateway.GetTransactions(flts...)
-		if err != nil {
-			err = fmt.Errorf("gateway.GetTransactions failed: %v", err)
-			wh.Error500(w, err.Error())
-			return
-		}
+		if verbose {
+			txnRlts, err := gateway.GetTransactionResultsVerbose(flts)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
 
-		// Converts visor.Transaction to daemon.TransactionResult
-		txnRlts, err := daemon.NewTransactionResults(txns)
-		if err != nil {
-			err = fmt.Errorf("daemon.NewTransactionResults failed: %v", err)
-			wh.Error500(w, err.Error())
-			return
-		}
+			txns := []daemon.TransactionResultVerbose{}
+			if txnRlts != nil && txnRlts.Txns != nil {
+				txnRlts.Sort()
+				txns = txnRlts.Txns
+			}
 
-		wh.SendJSONOr500(logger, w, txnRlts.Txns)
+			wh.SendJSONOr500(logger, w, txns)
+		} else {
+			// Gets transactions
+			txnRlts, err := gateway.GetTransactionResults(flts)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+
+			txns := []daemon.TransactionResult{}
+			if txnRlts != nil && txnRlts.Txns != nil {
+				txnRlts.Sort()
+				txns = txnRlts.Txns
+			}
+
+			wh.SendJSONOr500(logger, w, txns)
+		}
 	}
 }
 

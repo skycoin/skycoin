@@ -3,6 +3,7 @@ package visor
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -30,7 +31,7 @@ func NewReadableBlockBodyVerbose(b *coin.Block, inputs [][]ReadableTransactionIn
 	for i := range b.Body.Transactions {
 		t := b.Body.Transactions[i]
 
-		tx, err := NewReadableBlockTransactionVerbose(t, inputs[i], b.Head.BkSeq)
+		tx, err := NewReadableBlockTransactionVerbose(t, inputs[i], b.Head.BkSeq == 0)
 		if err != nil {
 			return nil, err
 		}
@@ -56,6 +57,21 @@ func NewReadableBlockVerbose(b *coin.Block, inputs [][]ReadableTransactionInput)
 	}, nil
 }
 
+// ReadableBlocksVerbose an array of verbose readable blocks.
+type ReadableBlocksVerbose struct {
+	Blocks []ReadableBlockVerbose `json:"blocks"`
+}
+
+// NewReadableBlocksVerbose creates ReadableBlocksVerbose from []ReadableBlockVerbose
+func NewReadableBlocksVerbose(blocks []ReadableBlockVerbose) *ReadableBlocksVerbose {
+	if blocks == nil {
+		blocks = []ReadableBlockVerbose{}
+	}
+	return &ReadableBlocksVerbose{
+		Blocks: blocks,
+	}
+}
+
 // ReadableBlockTransactionVerbose has readable transaction data for transactions inside a block. It differs from ReadableTransaction
 // in that it includes metadata for transaction inputs and the calculated coinhour fee spent by the block
 type ReadableBlockTransactionVerbose struct {
@@ -71,7 +87,7 @@ type ReadableBlockTransactionVerbose struct {
 }
 
 // NewReadableBlockTransactionVerbose creates ReadableBlockTransactionVerbose
-func NewReadableBlockTransactionVerbose(txn coin.Transaction, inputs []ReadableTransactionInput, bkSeq uint64) (ReadableBlockTransactionVerbose, error) {
+func NewReadableBlockTransactionVerbose(txn coin.Transaction, inputs []ReadableTransactionInput, isGenesis bool) (ReadableBlockTransactionVerbose, error) {
 	if len(inputs) != len(txn.In) {
 		return ReadableBlockTransactionVerbose{}, errors.New("NewReadableTransactionVerbose: len(inputs) != len(txn.In)")
 	}
@@ -79,7 +95,7 @@ func NewReadableBlockTransactionVerbose(txn coin.Transaction, inputs []ReadableT
 	// Genesis transaction uses empty SHA256 as txid
 	// FIXME: If/when the blockchain is regenerated, use a real hash as the txID for the genesis block. The bkSeq argument can be removed then.
 	txID := cipher.SHA256{}
-	if bkSeq != 0 {
+	if !isGenesis {
 		txID = txn.Hash()
 	}
 
@@ -116,7 +132,7 @@ func NewReadableBlockTransactionVerbose(txn coin.Transaction, inputs []ReadableT
 	}
 
 	fee := uint64(0)
-	if bkSeq == 0 {
+	if isGenesis {
 		if hoursIn != 0 {
 			err := errors.New("NewReadableTransactionVerbose genesis block should have 0 input hours")
 			return ReadableBlockTransactionVerbose{}, err
@@ -151,33 +167,66 @@ func NewReadableBlockTransactionVerbose(txn coin.Transaction, inputs []ReadableT
 
 // ReadableTransactionVerbose has readable transaction data. It adds TransactionStatus to a ReadableBlockTransactionVerbose
 type ReadableTransactionVerbose struct {
-	Status    TransactionStatus `json:"status"`
-	Timestamp uint64            `json:"timestamp,omitempty"`
+	Status    *TransactionStatus `json:"status,omitempty"`
+	Timestamp uint64             `json:"timestamp,omitempty"`
 	ReadableBlockTransactionVerbose
 }
 
 // NewReadableTransactionVerbose creates ReadableTransactionVerbose
 func NewReadableTransactionVerbose(txn Transaction, inputs []ReadableTransactionInput) (ReadableTransactionVerbose, error) {
-	rb, err := NewReadableBlockTransactionVerbose(txn.Txn, inputs, txn.Status.BlockSeq)
+	rb, err := NewReadableBlockTransactionVerbose(txn.Txn, inputs, txn.Status.BlockSeq == 0)
 	if err != nil {
 		return ReadableTransactionVerbose{}, nil
 	}
 
 	return ReadableTransactionVerbose{
-		Status:                          txn.Status,
+		Status:                          &txn.Status,
 		Timestamp:                       txn.Time,
 		ReadableBlockTransactionVerbose: rb,
 	}, nil
 }
 
-// ReadableBlocksVerbose an array of verbose readable blocks.
-type ReadableBlocksVerbose struct {
-	Blocks []ReadableBlockVerbose `json:"blocks"`
+// ReadableUnconfirmedTxnVerbose represents a verbose readable unconfirmed transaction
+type ReadableUnconfirmedTxnVerbose struct {
+	Txn       ReadableBlockTransactionVerbose `json:"transaction"`
+	Received  time.Time                       `json:"received"`
+	Checked   time.Time                       `json:"checked"`
+	Announced time.Time                       `json:"announced"`
+	IsValid   bool                            `json:"is_valid"`
 }
 
-// NewReadableBlocksVerbose creates ReadableBlocksVerbose from []ReadableBlockVerbose
-func NewReadableBlocksVerbose(blocks []ReadableBlockVerbose) *ReadableBlocksVerbose {
-	return &ReadableBlocksVerbose{
-		Blocks: blocks,
+// NewReadableUnconfirmedTxnVerbose creates a verbose readable unconfirmed transaction
+func NewReadableUnconfirmedTxnVerbose(unconfirmed *UnconfirmedTxn, inputs []ReadableTransactionInput) (*ReadableUnconfirmedTxnVerbose, error) {
+	isGenesis := false // The genesis transaction is never unconfirmed
+	txn, err := NewReadableBlockTransactionVerbose(unconfirmed.Txn, inputs, isGenesis)
+	if err != nil {
+		return nil, err
 	}
+
+	return &ReadableUnconfirmedTxnVerbose{
+		Txn:       txn,
+		Received:  nanoToTime(unconfirmed.Received),
+		Checked:   nanoToTime(unconfirmed.Checked),
+		Announced: nanoToTime(unconfirmed.Announced),
+		IsValid:   unconfirmed.IsValid == 1,
+	}, nil
+}
+
+// NewReadableUnconfirmedTxnsVerbose creates []ReadableUnconfirmedTxn from []UnconfirmedTxn and their readable transaction inputs
+func NewReadableUnconfirmedTxnsVerbose(txns []UnconfirmedTxn, inputs [][]ReadableTransactionInput) ([]ReadableUnconfirmedTxnVerbose, error) {
+	if len(inputs) != len(txns) {
+		return nil, fmt.Errorf("NewReadableUnconfirmedTxnsVerbose: len(inputs) != len(txns)")
+	}
+
+	rTxns := make([]ReadableUnconfirmedTxnVerbose, len(txns))
+	for i, txn := range txns {
+		rTxn, err := NewReadableUnconfirmedTxnVerbose(&txn, inputs[i])
+		if err != nil {
+			return nil, err
+		}
+
+		rTxns[i] = *rTxn
+	}
+
+	return rTxns, nil
 }

@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"errors"
 	"sort"
 	"strings"
 	"time"
@@ -531,11 +532,15 @@ func MakeSearchMap(addrs []string) map[string]struct{} {
 }
 
 // GetTransaction returns transaction by txid
-func (gw *Gateway) GetTransaction(txid cipher.SHA256) (tx *visor.Transaction, err error) {
+func (gw *Gateway) GetTransaction(txid cipher.SHA256) (*visor.Transaction, error) {
+	var txn *visor.Transaction
+	var err error
+
 	gw.strand("GetTransaction", func() {
-		tx, err = gw.v.GetTransaction(txid)
+		txn, err = gw.v.GetTransaction(txid)
 	})
-	return
+
+	return txn, err
 }
 
 // TransactionResult represents transaction result
@@ -545,21 +550,21 @@ type TransactionResult struct {
 	Transaction visor.ReadableTransaction `json:"txn"`
 }
 
-// NewTransactionResult converts Transaction to TransactionResult
-func NewTransactionResult(tx *visor.Transaction) (*TransactionResult, error) {
-	if tx == nil {
+// NewTransactionResult converts visor.Transaction to TransactionResult
+func NewTransactionResult(txn *visor.Transaction) (*TransactionResult, error) {
+	if txn == nil {
 		return nil, nil
 	}
 
-	rbTx, err := visor.NewReadableTransaction(tx)
+	rbTxn, err := visor.NewReadableTransaction(txn)
 	if err != nil {
 		return nil, err
 	}
 
 	return &TransactionResult{
-		Transaction: *rbTx,
-		Status:      tx.Status,
-		Time:        tx.Time,
+		Transaction: *rbTxn,
+		Status:      txn.Status,
+		Time:        txn.Time,
 	}, nil
 }
 
@@ -568,35 +573,146 @@ type TransactionResults struct {
 	Txns []TransactionResult `json:"txns"`
 }
 
+// Sort sorts transactions chronologically, using txid for tiebreaking
+func (r TransactionResults) Sort() {
+	sort.Slice(r.Txns, func(i, j int) bool {
+		a := r.Txns[i]
+		b := r.Txns[j]
+
+		if a.Time == b.Time {
+			return strings.Compare(a.Transaction.Hash, b.Transaction.Hash) < 0
+		}
+
+		return a.Time < b.Time
+	})
+}
+
 // NewTransactionResults converts []Transaction to []TransactionResults
-func NewTransactionResults(txs []visor.Transaction) (*TransactionResults, error) {
-	txRlts := make([]TransactionResult, 0, len(txs))
-	for _, tx := range txs {
-		rTx, err := NewTransactionResult(&tx)
+func NewTransactionResults(txns []visor.Transaction) (*TransactionResults, error) {
+	txnRlts := make([]TransactionResult, 0, len(txns))
+	for _, txn := range txns {
+		rTxn, err := NewTransactionResult(&txn)
 		if err != nil {
 			return nil, err
 		}
-		txRlts = append(txRlts, *rTx)
+		txnRlts = append(txnRlts, *rTxn)
 	}
 
 	return &TransactionResults{
-		Txns: txRlts,
+		Txns: txnRlts,
+	}, nil
+}
+
+// TransactionResultVerbose represents verbose transaction result
+type TransactionResultVerbose struct {
+	Status      visor.TransactionStatus          `json:"status"`
+	Time        uint64                           `json:"time"`
+	Transaction visor.ReadableTransactionVerbose `json:"txn"`
+}
+
+// NewTransactionResultVerbose converts visor.Transaction to TransactionResultVerbose
+func NewTransactionResultVerbose(txn *visor.Transaction, inputs []visor.ReadableTransactionInput) (*TransactionResultVerbose, error) {
+	if txn == nil {
+		return nil, nil
+	}
+
+	if len(txn.Txn.In) != len(inputs) {
+		return nil, errors.New("NewTransactionResultVerbose: len(txn.In) != len(inputs)")
+	}
+
+	rbTxn, err := visor.NewReadableTransactionVerbose(*txn, inputs)
+	if err != nil {
+		return nil, err
+	}
+
+	// Force the Status field to be hidden on the inner transaction, to maintain API compatibility
+	rbTxn.Status = nil
+
+	return &TransactionResultVerbose{
+		Transaction: rbTxn,
+		Status:      txn.Status,
+		Time:        txn.Time,
+	}, nil
+}
+
+// TransactionResultsVerbose array of transaction results
+type TransactionResultsVerbose struct {
+	Txns []TransactionResultVerbose `json:"txns"`
+}
+
+// Sort sorts transactions chronologically, using txid for tiebreaking
+func (r TransactionResultsVerbose) Sort() {
+	sort.Slice(r.Txns, func(i, j int) bool {
+		a := r.Txns[i]
+		b := r.Txns[j]
+
+		if a.Time == b.Time {
+			return strings.Compare(a.Transaction.Hash, b.Transaction.Hash) < 0
+		}
+
+		return a.Time < b.Time
+	})
+}
+
+// NewTransactionResultsVerbose converts []Transaction to []TransactionResultsVerbose
+func NewTransactionResultsVerbose(txns []visor.Transaction, inputs [][]visor.ReadableTransactionInput) (*TransactionResultsVerbose, error) {
+	if len(txns) != len(inputs) {
+		return nil, errors.New("NewTransactionResultsVerbose: len(txns) != len(inputs)")
+	}
+
+	txnRlts := make([]TransactionResultVerbose, len(txns))
+	for i, txn := range txns {
+		rTxn, err := NewTransactionResultVerbose(&txn, inputs[i])
+		if err != nil {
+			return nil, err
+		}
+		txnRlts[i] = *rTxn
+	}
+
+	return &TransactionResultsVerbose{
+		Txns: txnRlts,
 	}, nil
 }
 
 // GetTransactionResult gets transaction result by txid.
 func (gw *Gateway) GetTransactionResult(txid cipher.SHA256) (*TransactionResult, error) {
-	var tx *visor.Transaction
+	var txn *visor.Transaction
 	var err error
+
 	gw.strand("GetTransactionResult", func() {
-		tx, err = gw.v.GetTransaction(txid)
+		txn, err = gw.v.GetTransaction(txid)
 	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	return NewTransactionResult(tx)
+	if txn == nil {
+		return nil, nil
+	}
+
+	return NewTransactionResult(txn)
+}
+
+// GetTransactionResultVerbose gets verbose transaction result by txid.
+func (gw *Gateway) GetTransactionResultVerbose(txid cipher.SHA256) (*TransactionResultVerbose, error) {
+	var txn *visor.Transaction
+	var inputs []visor.ReadableTransactionInput
+	var err error
+
+	gw.strand("GetTransactionResultVerbose", func() {
+		txn, inputs, err = gw.v.GetTransactionWithInputs(txid)
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if txn == nil {
+		return nil, nil
+	}
+
+	return NewTransactionResultVerbose(txn, inputs)
 }
 
 // InjectBroadcastTransaction injects and broadcasts a transaction
@@ -626,13 +742,42 @@ func (gw *Gateway) GetVerboseTransactionsForAddress(a cipher.Address) ([]visor.R
 }
 
 // GetTransactions returns transactions filtered by zero or more visor.TxFilter
-func (gw *Gateway) GetTransactions(flts ...visor.TxFilter) ([]visor.Transaction, error) {
+func (gw *Gateway) GetTransactions(flts []visor.TxFilter) ([]visor.Transaction, error) {
 	var txns []visor.Transaction
 	var err error
 	gw.strand("GetTransactions", func() {
-		txns, err = gw.v.GetTransactions(flts...)
+		txns, err = gw.v.GetTransactions(flts)
 	})
 	return txns, err
+}
+
+// GetTransactionResults returns transactions filtered by zero or more visor.TxFilter
+func (gw *Gateway) GetTransactionResults(flts []visor.TxFilter) (*TransactionResults, error) {
+	var txns []visor.Transaction
+	var err error
+	gw.strand("GetTransactionResults", func() {
+		txns, err = gw.v.GetTransactions(flts)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return NewTransactionResults(txns)
+}
+
+// GetTransactionResultsVerbose returns transactions filtered by zero or more visor.TxFilter
+func (gw *Gateway) GetTransactionResultsVerbose(flts []visor.TxFilter) (*TransactionResultsVerbose, error) {
+	var txns []visor.Transaction
+	var inputs [][]visor.ReadableTransactionInput
+	var err error
+	gw.strand("GetTransactionResultsVerbose", func() {
+		txns, inputs, err = gw.v.GetTransactionsWithInputs(flts)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return NewTransactionResultsVerbose(txns, inputs)
 }
 
 // GetUxOutByID gets UxOut by hash id.
@@ -684,12 +829,22 @@ func (gw *Gateway) GetAllUnconfirmedTxns() ([]visor.UnconfirmedTxn, error) {
 	return txns, err
 }
 
+// GetAllUnconfirmedTxnsVerbose returns all unconfirmed transactions with verbose transaction inputs
+func (gw *Gateway) GetAllUnconfirmedTxnsVerbose() ([]visor.ReadableUnconfirmedTxnVerbose, error) {
+	var txns []visor.ReadableUnconfirmedTxnVerbose
+	var err error
+	gw.strand("GetAllUnconfirmedTxnsVerbose", func() {
+		txns, err = gw.v.GetAllUnconfirmedTxnsVerbose()
+	})
+	return txns, err
+}
+
 // GetUnconfirmedTxns returns addresses related unconfirmed transactions
 func (gw *Gateway) GetUnconfirmedTxns(addrs []cipher.Address) ([]visor.UnconfirmedTxn, error) {
 	var txns []visor.UnconfirmedTxn
 	var err error
 	gw.strand("GetUnconfirmedTxns", func() {
-		txns, err = gw.v.GetUnconfirmedTxns(visor.ToAddresses(addrs))
+		txns, err = gw.v.GetUnconfirmedTxns(visor.SendsToAddresses(addrs))
 	})
 	return txns, err
 }
@@ -937,7 +1092,28 @@ func (gw *Gateway) GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTx
 			return
 		}
 
-		txns, err = gw.v.GetUnconfirmedTxns(visor.ToAddresses(addrs))
+		txns, err = gw.v.GetUnconfirmedTxns(visor.SendsToAddresses(addrs))
+	})
+
+	return txns, err
+}
+
+// GetWalletUnconfirmedTxnsVerbose returns all unconfirmed transactions in given wallet
+func (gw *Gateway) GetWalletUnconfirmedTxnsVerbose(wltID string) ([]visor.ReadableUnconfirmedTxnVerbose, error) {
+	if !gw.Config.EnableWalletAPI {
+		return nil, wallet.ErrWalletAPIDisabled
+	}
+
+	var txns []visor.ReadableUnconfirmedTxnVerbose
+	var err error
+	gw.strand("GetWalletUnconfirmedTxnsVerbose", func() {
+		var addrs []cipher.Address
+		addrs, err = gw.v.Wallets.GetAddresses(wltID)
+		if err != nil {
+			return
+		}
+
+		txns, err = gw.v.GetUnconfirmedTxnsVerbose(visor.SendsToAddresses(addrs))
 	})
 
 	return txns, err

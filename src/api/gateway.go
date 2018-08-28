@@ -21,6 +21,7 @@ type Gatewayer interface {
 	GetWallets() (wallet.Wallets, error)
 	UpdateWalletLabel(wltID, label string) error
 	GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTxn, error)
+	GetWalletUnconfirmedTxnsVerbose(wltID string) ([]visor.ReadableUnconfirmedTxnVerbose, error)
 	CreateWallet(wltName string, options wallet.Options) (*wallet.Wallet, error)
 	NewAddresses(wltID string, password []byte, n uint64) ([]cipher.Address, error)
 	GetWalletDir() (string, error)
@@ -47,8 +48,12 @@ type Gatewayer interface {
 	GetTrustConnections() []string
 	GetExchgConnection() []string
 	GetAllUnconfirmedTxns() ([]visor.UnconfirmedTxn, error)
+	GetAllUnconfirmedTxnsVerbose() ([]visor.ReadableUnconfirmedTxnVerbose, error)
 	GetTransaction(txid cipher.SHA256) (*visor.Transaction, error)
-	GetTransactions(flts ...visor.TxFilter) ([]visor.Transaction, error)
+	GetTransactionResult(txid cipher.SHA256) (*daemon.TransactionResult, error)
+	GetTransactionResultVerbose(txid cipher.SHA256) (*daemon.TransactionResultVerbose, error)
+	GetTransactionResults(flts []visor.TxFilter) (*daemon.TransactionResults, error)
+	GetTransactionResultsVerbose(flts []visor.TxFilter) (*daemon.TransactionResultsVerbose, error)
 	InjectBroadcastTransaction(txn coin.Transaction) error
 	ResendUnconfirmedTxns() (*daemon.ResendResult, error)
 	GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error)

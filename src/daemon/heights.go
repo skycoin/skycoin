@@ -65,7 +65,7 @@ func (p *peerBlockchainHeights) All() []PeerBlockchainHeight {
 	defer p.Unlock()
 
 	if len(p.heights) == 0 {
-		return nil
+		return []PeerBlockchainHeight{}
 	}
 
 	peerHeights := make([]PeerBlockchainHeight, 0, len(p.heights))

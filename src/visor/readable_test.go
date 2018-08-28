@@ -113,21 +113,12 @@ func TestNewBlockchainMetadata(t *testing.T) {
 func TestNewTransactionStatus(t *testing.T) {
 	ts := NewUnconfirmedTransactionStatus()
 	require.True(t, ts.Unconfirmed)
-	require.False(t, ts.Unknown)
-	require.False(t, ts.Confirmed)
-	require.Equal(t, ts.Height, uint64(0))
-	assertJSONSerializability(t, &ts)
-
-	ts = NewUnknownTransactionStatus()
-	require.False(t, ts.Unconfirmed)
-	require.True(t, ts.Unknown)
 	require.False(t, ts.Confirmed)
 	require.Equal(t, ts.Height, uint64(0))
 	assertJSONSerializability(t, &ts)
 
 	ts = NewConfirmedTransactionStatus(uint64(7), uint64(7))
 	require.False(t, ts.Unconfirmed)
-	require.False(t, ts.Unknown)
 	require.True(t, ts.Confirmed)
 	require.Equal(t, ts.Height, uint64(7))
 	assertJSONSerializability(t, &ts)

@@ -869,20 +869,29 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 
 func TestWalletTransactionsHandler(t *testing.T) {
 	type httpBody struct {
-		WalletID string
+		walletID string
+		verbose  string
 	}
 
-	unconfirmedTxn, _ := visor.NewReadableUnconfirmedTxn(&visor.UnconfirmedTxn{})
+	unconfirmedTxn, err := visor.NewReadableUnconfirmedTxn(&visor.UnconfirmedTxn{})
+	require.NoError(t, err)
+
+	unconfirmedTxnVerbose, err := visor.NewReadableUnconfirmedTxnVerbose(&visor.UnconfirmedTxn{}, nil)
+	require.NoError(t, err)
+
 	tt := []struct {
-		name                                  string
-		method                                string
-		body                                  *httpBody
-		status                                int
-		err                                   string
-		walletID                              string
-		gatewayGetWalletUnconfirmedTxnsResult []visor.UnconfirmedTxn
-		gatewayGetWalletUnconfirmedTxnsErr    error
-		responseBody                          UnconfirmedTxnsResponse
+		name                                         string
+		method                                       string
+		body                                         *httpBody
+		status                                       int
+		err                                          string
+		walletID                                     string
+		verbose                                      bool
+		gatewayGetWalletUnconfirmedTxnsResult        []visor.UnconfirmedTxn
+		gatewayGetWalletUnconfirmedTxnsErr           error
+		gatewayGetWalletUnconfirmedTxnsVerboseResult []visor.ReadableUnconfirmedTxnVerbose
+		gatewayGetWalletUnconfirmedTxnsVerboseErr    error
+		responseBody                                 interface{}
 	}{
 		{
 			name:   "405",
@@ -890,69 +899,148 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			status: http.StatusMethodNotAllowed,
 			err:    "405 Method Not Allowed",
 		},
+
 		{
 			name:   "400 - missing wallet id",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - missing wallet id",
 		},
+
+		{
+			name:   "400 - invalid verbose",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			body: &httpBody{
+				verbose: "foo",
+			},
+			err: "400 Bad Request - Invalid value for verbose",
+		},
+
 		{
 			name:   "500 - gateway.GetWalletUnconfirmedTxns error",
 			method: http.MethodGet,
 			body: &httpBody{
-				WalletID: "foo",
+				walletID: "foo",
 			},
 			status:   http.StatusInternalServerError,
 			err:      "500 Internal Server Error - gateway.GetWalletUnconfirmedTxns error",
 			walletID: "foo",
 			gatewayGetWalletUnconfirmedTxnsErr: errors.New("gateway.GetWalletUnconfirmedTxns error"),
 		},
+
+		{
+			name:   "500 - gateway.GetWalletUnconfirmedTxnsVerbose error",
+			method: http.MethodGet,
+			body: &httpBody{
+				walletID: "foo",
+				verbose:  "1",
+			},
+			verbose:  true,
+			status:   http.StatusInternalServerError,
+			err:      "500 Internal Server Error - gateway.GetWalletUnconfirmedTxnsVerbose error",
+			walletID: "foo",
+			gatewayGetWalletUnconfirmedTxnsVerboseErr: errors.New("gateway.GetWalletUnconfirmedTxnsVerbose error"),
+		},
+
 		{
 			name:   "404 - wallet doesn't exist",
 			method: http.MethodGet,
 			body: &httpBody{
-				WalletID: "foo",
+				walletID: "foo",
 			},
 			status:   http.StatusNotFound,
 			err:      "404 Not Found",
 			walletID: "foo",
 			gatewayGetWalletUnconfirmedTxnsErr: wallet.ErrWalletNotExist,
 		},
+
+		{
+			name:   "404 - wallet doesn't exist verbose",
+			method: http.MethodGet,
+			body: &httpBody{
+				walletID: "foo",
+				verbose:  "1",
+			},
+			verbose:  true,
+			status:   http.StatusNotFound,
+			err:      "404 Not Found",
+			walletID: "foo",
+			gatewayGetWalletUnconfirmedTxnsVerboseErr: wallet.ErrWalletNotExist,
+		},
+
 		{
 			name:   "403 - Forbidden - wallet API disabled",
 			method: http.MethodGet,
 			body: &httpBody{
-				WalletID: "foo",
+				walletID: "foo",
 			},
 			status:   http.StatusForbidden,
 			err:      "403 Forbidden",
 			walletID: "foo",
 			gatewayGetWalletUnconfirmedTxnsErr: wallet.ErrWalletAPIDisabled,
 		},
+
+		{
+			name:   "403 - Forbidden - wallet API disabled verbose",
+			method: http.MethodGet,
+			body: &httpBody{
+				walletID: "foo",
+				verbose:  "1",
+			},
+			verbose:  true,
+			status:   http.StatusForbidden,
+			err:      "403 Forbidden",
+			walletID: "foo",
+			gatewayGetWalletUnconfirmedTxnsVerboseErr: wallet.ErrWalletAPIDisabled,
+		},
+
 		{
 			name:   "200 - OK",
 			method: http.MethodGet,
 			body: &httpBody{
-				WalletID: "foo",
+				walletID: "foo",
 			},
 			status:   http.StatusOK,
-			err:      "",
 			walletID: "foo",
 			gatewayGetWalletUnconfirmedTxnsResult: make([]visor.UnconfirmedTxn, 1),
-			responseBody:                          UnconfirmedTxnsResponse{Transactions: []visor.ReadableUnconfirmedTxn{*unconfirmedTxn}},
+			responseBody: UnconfirmedTxnsResponse{
+				Transactions: []visor.ReadableUnconfirmedTxn{
+					*unconfirmedTxn,
+				},
+			},
+		},
+
+		{
+			name:   "200 - OK verbose",
+			method: http.MethodGet,
+			body: &httpBody{
+				walletID: "foo",
+				verbose:  "1",
+			},
+			verbose:  true,
+			status:   http.StatusOK,
+			walletID: "foo",
+			gatewayGetWalletUnconfirmedTxnsVerboseResult: make([]visor.ReadableUnconfirmedTxnVerbose, 1),
+			responseBody: UnconfirmedTxnsVerboseResponse{
+				Transactions: []visor.ReadableUnconfirmedTxnVerbose{
+					*unconfirmedTxnVerbose,
+				},
+			},
 		},
 	}
 
 	for _, tc := range tt {
 		gateway := &MockGatewayer{}
 		gateway.On("GetWalletUnconfirmedTxns", tc.walletID).Return(tc.gatewayGetWalletUnconfirmedTxnsResult, tc.gatewayGetWalletUnconfirmedTxnsErr)
+		gateway.On("GetWalletUnconfirmedTxnsVerbose", tc.walletID).Return(tc.gatewayGetWalletUnconfirmedTxnsVerboseResult, tc.gatewayGetWalletUnconfirmedTxnsVerboseErr)
 
 		endpoint := "/api/v1/wallet/transactions"
 
 		v := url.Values{}
 		if tc.body != nil {
-			if tc.body.WalletID != "" {
-				v.Add("id", tc.body.WalletID)
+			if tc.body.walletID != "" {
+				v.Add("id", tc.body.walletID)
 			}
 		}
 		if len(v) > 0 {
@@ -978,6 +1066,17 @@ func TestWalletTransactionsHandler(t *testing.T) {
 		if status != http.StatusOK {
 			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 				tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+			return
+		}
+
+		if tc.verbose {
+			var msg UnconfirmedTxnsVerboseResponse
+			err = json.Unmarshal(rr.Body.Bytes(), &msg)
+			require.NoError(t, err)
+			// require.Equal on whole response might result in flaky tests as there is a time field attached to unconfirmed txn response
+			require.IsType(t, msg, tc.responseBody)
+			require.Len(t, msg.Transactions, 1)
+			require.Equal(t, msg.Transactions[0].Txn, tc.responseBody.(UnconfirmedTxnsVerboseResponse).Transactions[0].Txn)
 		} else {
 			var msg UnconfirmedTxnsResponse
 			err = json.Unmarshal(rr.Body.Bytes(), &msg)
@@ -985,7 +1084,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			// require.Equal on whole response might result in flaky tests as there is a time field attached to unconfirmed txn response
 			require.IsType(t, msg, tc.responseBody)
 			require.Len(t, msg.Transactions, 1)
-			require.Equal(t, msg.Transactions[0].Txn, tc.responseBody.Transactions[0].Txn)
+			require.Equal(t, msg.Transactions[0].Txn, tc.responseBody.(UnconfirmedTxnsResponse).Transactions[0].Txn)
 		}
 	}
 }

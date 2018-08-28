@@ -183,6 +183,29 @@ func (_m *MockGatewayer) GetAllUnconfirmedTxns() ([]visor.UnconfirmedTxn, error)
 	return r0, r1
 }
 
+// GetAllUnconfirmedTxnsVerbose provides a mock function with given fields:
+func (_m *MockGatewayer) GetAllUnconfirmedTxnsVerbose() ([]visor.ReadableUnconfirmedTxnVerbose, error) {
+	ret := _m.Called()
+
+	var r0 []visor.ReadableUnconfirmedTxnVerbose
+	if rf, ok := ret.Get(0).(func() []visor.ReadableUnconfirmedTxnVerbose); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]visor.ReadableUnconfirmedTxnVerbose)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetBalanceOfAddrs provides a mock function with given fields: addrs
 func (_m *MockGatewayer) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair, error) {
 	ret := _m.Called(addrs)
@@ -583,28 +606,91 @@ func (_m *MockGatewayer) GetTransaction(txid cipher.SHA256) (*visor.Transaction,
 	return r0, r1
 }
 
-// GetTransactions provides a mock function with given fields: flts
-func (_m *MockGatewayer) GetTransactions(flts ...visor.TxFilter) ([]visor.Transaction, error) {
-	_va := make([]interface{}, len(flts))
-	for _i := range flts {
-		_va[_i] = flts[_i]
-	}
-	var _ca []interface{}
-	_ca = append(_ca, _va...)
-	ret := _m.Called(_ca...)
+// GetTransactionResult provides a mock function with given fields: txid
+func (_m *MockGatewayer) GetTransactionResult(txid cipher.SHA256) (*daemon.TransactionResult, error) {
+	ret := _m.Called(txid)
 
-	var r0 []visor.Transaction
-	if rf, ok := ret.Get(0).(func(...visor.TxFilter) []visor.Transaction); ok {
-		r0 = rf(flts...)
+	var r0 *daemon.TransactionResult
+	if rf, ok := ret.Get(0).(func(cipher.SHA256) *daemon.TransactionResult); ok {
+		r0 = rf(txid)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]visor.Transaction)
+			r0 = ret.Get(0).(*daemon.TransactionResult)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(...visor.TxFilter) error); ok {
-		r1 = rf(flts...)
+	if rf, ok := ret.Get(1).(func(cipher.SHA256) error); ok {
+		r1 = rf(txid)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetTransactionResultVerbose provides a mock function with given fields: txid
+func (_m *MockGatewayer) GetTransactionResultVerbose(txid cipher.SHA256) (*daemon.TransactionResultVerbose, error) {
+	ret := _m.Called(txid)
+
+	var r0 *daemon.TransactionResultVerbose
+	if rf, ok := ret.Get(0).(func(cipher.SHA256) *daemon.TransactionResultVerbose); ok {
+		r0 = rf(txid)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*daemon.TransactionResultVerbose)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(cipher.SHA256) error); ok {
+		r1 = rf(txid)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetTransactionResults provides a mock function with given fields: flts
+func (_m *MockGatewayer) GetTransactionResults(flts []visor.TxFilter) (*daemon.TransactionResults, error) {
+	ret := _m.Called(flts)
+
+	var r0 *daemon.TransactionResults
+	if rf, ok := ret.Get(0).(func([]visor.TxFilter) *daemon.TransactionResults); ok {
+		r0 = rf(flts)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*daemon.TransactionResults)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func([]visor.TxFilter) error); ok {
+		r1 = rf(flts)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetTransactionResultsVerbose provides a mock function with given fields: flts
+func (_m *MockGatewayer) GetTransactionResultsVerbose(flts []visor.TxFilter) (*daemon.TransactionResultsVerbose, error) {
+	ret := _m.Called(flts)
+
+	var r0 *daemon.TransactionResultsVerbose
+	if rf, ok := ret.Get(0).(func([]visor.TxFilter) *daemon.TransactionResultsVerbose); ok {
+		r0 = rf(flts)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*daemon.TransactionResultsVerbose)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func([]visor.TxFilter) error); ok {
+		r1 = rf(flts)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -808,6 +894,29 @@ func (_m *MockGatewayer) GetWalletUnconfirmedTxns(wltID string) ([]visor.Unconfi
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]visor.UnconfirmedTxn)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(wltID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetWalletUnconfirmedTxnsVerbose provides a mock function with given fields: wltID
+func (_m *MockGatewayer) GetWalletUnconfirmedTxnsVerbose(wltID string) ([]visor.ReadableUnconfirmedTxnVerbose, error) {
+	ret := _m.Called(wltID)
+
+	var r0 []visor.ReadableUnconfirmedTxnVerbose
+	if rf, ok := ret.Get(0).(func(string) []visor.ReadableUnconfirmedTxnVerbose); ok {
+		r0 = rf(wltID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]visor.ReadableUnconfirmedTxnVerbose)
 		}
 	}
 

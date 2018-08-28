@@ -4,8 +4,7 @@
 			"confirmed": true,
 			"unconfirmed": false,
 			"height": 180,
-			"block_seq": 1,
-			"unknown": false
+			"block_seq": 1
 		},
 		"timestamp": 1427926392,
 		"length": 3846,

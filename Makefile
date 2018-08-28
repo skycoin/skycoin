@@ -5,7 +5,7 @@
 .PHONY: integration-test-disable-wallet-api integration-test-disable-seed-api
 .PHONY: integration-test-enable-seed-api integration-test-enable-seed-api
 .PHONY: integration-test-disable-gui integration-test-disable-gui
-.PHONY: install-linters install-linters-travis format release clean-release
+.PHONY: install-linters format release clean-release
 .PHONY: install-deps-ui build-ui help newcoin generate-mocks
 
 COIN ?= skycoin
@@ -175,11 +175,6 @@ install-linters: ## Install linters
 	# For some reason this install method is not recommended, see https://github.com/golangci/golangci-lint#install
 	# However, they suggest `curl ... | bash` which we should not do
 	go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
-
-install-linters-travis:
-	go get -u github.com/FiloSottile/vendorcheck
-	# Follow the recommended install procedure from https://github.com/golangci/golangci-lint#install
-	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | bash -s -- -b $GOPATH/bin v1.10.1
 
 install-deps-libc: configure-build ## Install locally dependencies for testing libskycoin
 	git clone --recursive https://github.com/skycoin/Criterion $(BUILD_DIR)/usr/tmp/Criterion

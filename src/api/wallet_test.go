@@ -2635,8 +2635,6 @@ func makeEntries(seed []byte, n int) ([]wallet.Entry, []WalletEntry) { // nolint
 
 func cloneEntries(es []wallet.Entry) []wallet.Entry {
 	var entries []wallet.Entry
-	for _, e := range es {
-		entries = append(entries, e)
-	}
+	entries = append(entries, es...)
 	return entries
 }

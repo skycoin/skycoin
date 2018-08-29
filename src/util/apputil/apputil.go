@@ -38,11 +38,8 @@ func CatchDebug() {
 	sigchan := make(chan os.Signal, 1)
 	//signal.Notify(sigchan, syscall.SIGUSR1)
 	signal.Notify(sigchan, syscall.Signal(0xa)) // SIGUSR1 = Signal(0xa)
-	for {
-		select {
-		case <-sigchan:
-			PrintProgramStatus()
-		}
+	for range sigchan {
+		PrintProgramStatus()
 	}
 }
 

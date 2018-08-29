@@ -536,9 +536,7 @@ func (w *Wallet) copyFrom(src *Wallet) {
 	}
 
 	// Copies the address entries
-	for _, e := range src.Entries {
-		w.Entries = append(w.Entries, e)
-	}
+	w.Entries = append(w.Entries, src.Entries...)
 }
 
 // erase wipes secret fields in wallet
@@ -947,9 +945,7 @@ func (w *Wallet) clone() *Wallet {
 		wlt.Meta[k] = v
 	}
 
-	for _, e := range w.Entries {
-		wlt.Entries = append(wlt.Entries, e)
-	}
+	wlt.Entries = append(wlt.Entries, w.Entries...)
 
 	return &wlt
 }
@@ -1136,9 +1132,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 
 	switch params.HoursSelection.Type {
 	case HoursSelectionTypeManual:
-		for _, out := range params.To {
-			txn.Out = append(txn.Out, out)
-		}
+		txn.Out = append(txn.Out, params.To...)
 
 	case HoursSelectionTypeAuto:
 		var addrHours []uint64

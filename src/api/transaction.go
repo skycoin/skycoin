@@ -317,7 +317,6 @@ func resendUnconfirmedTxns(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		wh.SendJSONOr500(logger, w, rlt)
-		return
 	}
 }
 
@@ -353,7 +352,6 @@ func getRawTxn(gateway Gatewayer) http.HandlerFunc {
 
 		d := txn.Txn.Serialize()
 		wh.SendJSONOr500(logger, w, hex.EncodeToString(d))
-		return
 	}
 }
 

@@ -978,7 +978,7 @@ func TestGetTransactions(t *testing.T) {
 						for j, a := range flt.Addrs {
 							ab := a.Bytes()
 							bb := f.(visor.AddrsFilter).Addrs[j].Bytes()
-							if bytes.Compare(ab[:], bb[:]) != 0 {
+							if !bytes.Equal(ab[:], bb[:]) {
 								return false
 							}
 						}

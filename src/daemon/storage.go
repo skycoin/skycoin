@@ -278,7 +278,6 @@ func (s *IPCount) Decrease(ip string) {
 		c--
 		s.value[ip] = c
 	}
-	return
 }
 
 // Get return ip count

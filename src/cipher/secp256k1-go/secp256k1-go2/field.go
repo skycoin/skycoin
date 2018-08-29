@@ -404,8 +404,7 @@ func (fd *Field) Sqrt(r *Field) {
 // InvVar ...
 func (fd *Field) InvVar(r *Field) {
 	var b [32]byte
-	var c Field
-	c = *fd
+	c := *fd
 	c.Normalize()
 	c.GetB32(b[:])
 	var n Number

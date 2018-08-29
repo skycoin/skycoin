@@ -838,10 +838,7 @@ func TestSortTransactions(t *testing.T) {
 		txns = append(txns, txn)
 	}
 
-	var hashSortedTxns Transactions
-	for _, txn := range txns {
-		hashSortedTxns = append(hashSortedTxns, txn)
-	}
+	hashSortedTxns := append(Transactions{}, txns...)
 
 	sort.Slice(hashSortedTxns, func(i, j int) bool {
 		ihash := hashSortedTxns[i].Hash()

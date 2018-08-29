@@ -72,7 +72,7 @@ func (ep *EntropyPool) Mix256(in []byte) (out []byte) {
 //Mix take in N bytes, salts, return N
 func (ep *EntropyPool) Mix(in []byte) []byte {
 	length := len(in) - len(in)%32 + 32
-	buff := make([]byte, length, length)
+	buff := make([]byte, length)
 	for i := 0; i < len(in); i++ {
 		buff[i] = in[i]
 	}

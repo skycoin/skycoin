@@ -209,7 +209,6 @@ func TestTransactionFee(t *testing.T) {
 	}
 
 	cases := []struct {
-		name     string
 		out      []uint64
 		in       []uxInput
 		headTime uint64

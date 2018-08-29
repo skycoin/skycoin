@@ -943,16 +943,13 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 	cases := []struct {
 		name             string
 		err              error
-		txn              *coin.Transaction
 		params           CreateTransactionParams
 		opts             Options
-		vld              Validator
 		unspents         []coin.UxOut
 		addressUnspents  coin.AddressUxOuts
 		chosenUnspents   []coin.UxOut
 		headTime         uint64
 		disableWalletAPI bool
-		pwd              []byte
 		walletNotExist   bool
 		changeOutput     *coin.TransactionOutput
 		toExpectedHours  []uint64

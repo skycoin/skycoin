@@ -655,7 +655,7 @@ func backoffDownloadText(url string) (string, error) {
 // and is loaded by loadCachedPeersFile
 func parseRemotePeerList(body string) []string {
 	var peers []string
-	for _, addr := range strings.Split(string(body), "\n") {
+	for _, addr := range strings.Split(body, "\n") {
 		addr = whitespaceFilter.ReplaceAllString(addr, "")
 		if addr == "" {
 			continue
@@ -685,7 +685,7 @@ func parseRemotePeerList(body string) []string {
 // and is loaded by loadCachedPeersFile
 func parseLocalPeerList(body string, allowLocalhost bool) ([]string, error) {
 	var peers []string
-	for _, addr := range strings.Split(string(body), "\n") {
+	for _, addr := range strings.Split(body, "\n") {
 		addr = whitespaceFilter.ReplaceAllString(addr, "")
 		if addr == "" {
 			continue

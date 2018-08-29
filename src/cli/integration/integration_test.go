@@ -1330,7 +1330,7 @@ func getTxids(t *testing.T, blockNum uint64) []string {
 
 	// Collects all transactions' id
 	var txids []string
-	for i := 0; i < int(n); i++ {
+	for i := 0; i < n; i++ {
 		txids = append(txids, getTxidsInBlocks(t, i*p+1, (i+1)*p)...)
 	}
 

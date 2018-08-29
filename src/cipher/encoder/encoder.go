@@ -63,7 +63,7 @@ func EncodeInt(b []byte, data interface{}) {
 		b[0] = byte(v)
 	case uint8:
 		// bs = b[:1]
-		b[0] = byte(v)
+		b[0] = v
 	case int16:
 		bs = b[:2]
 		lePutUint16(bs, uint16(v))
@@ -354,7 +354,7 @@ func SerializeAtomic(data interface{}) []byte {
 		b[0] = *v
 	case uint8:
 		bs = b[:1]
-		b[0] = byte(v)
+		b[0] = v
 	case *int16:
 		bs = b[:2]
 		lePutUint16(bs, uint16(*v))

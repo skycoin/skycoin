@@ -44,7 +44,7 @@ func TestNewConnectionPool(t *testing.T) {
 
 	p := NewConnectionPool(cfg, nil)
 	require.Equal(t, p.Config, cfg)
-	require.Equal(t, p.Config.Port, uint16(cfg.Port))
+	require.Equal(t, p.Config.Port, cfg.Port)
 	require.Equal(t, p.Config.Address, cfg.Address)
 	require.NotNil(t, p.pool)
 	require.Equal(t, len(p.pool), 0)

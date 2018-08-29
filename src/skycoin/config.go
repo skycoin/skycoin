@@ -178,7 +178,7 @@ func NewNodeConfig(mode string, node NodeParameters) *NodeConfig {
 		EnableSeedAPI: false,
 		// Disable CSRF check in the wallet API
 		DisableCSRF: false,
-		// DisableCSP disable content-security-policy in http reponse
+		// DisableCSP disable content-security-policy in http response
 		DisableCSP: false,
 		// Only run on localhost and only connect to others on localhost
 		LocalhostOnly: false,

@@ -1053,7 +1053,7 @@ func TestUnspentMaybeBuildIndexesNoRebuild(t *testing.T) {
 
 	u := NewUnspentPool()
 
-	// Create the bucket and artifically set the indexed height, without indexing
+	// Create the bucket and artificially set the indexed height, without indexing
 	headSeq := uint64(180)
 	err := db.Update("", func(tx *dbutil.Tx) error {
 		if _, err := tx.CreateBucketIfNotExists(UnspentPoolAddrIndexBkt); err != nil {

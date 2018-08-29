@@ -169,7 +169,7 @@ func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 // Method: GET
 // URI: /api/v1/transactions
 // Args:
-//     addrs: Comma seperated addresses [optional, returns all transactions if no address provided]
+//     addrs: Comma separated addresses [optional, returns all transactions if no address provided]
 //     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
 //	   verbose: [bool] include verbose transaction input data
 func getTransactions(gateway Gatewayer) http.HandlerFunc {
@@ -240,7 +240,7 @@ func getTransactions(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-// parseAddressesFromStr parses comma seperated addresses string into []cipher.Address
+// parseAddressesFromStr parses comma separated addresses string into []cipher.Address
 func parseAddressesFromStr(s string) ([]cipher.Address, error) {
 	addrsStr := splitCommaString(s)
 
@@ -484,7 +484,7 @@ func decodeTxn(encodedTxn string) (*coin.Transaction, error) {
 	return &txn, nil
 }
 
-// newCreatedTransactionFuzzy creates a CreatedTransaction but accomodates possibly invalid txn input
+// newCreatedTransactionFuzzy creates a CreatedTransaction but accommodates possibly invalid txn input
 func newCreatedTransactionFuzzy(txn *coin.Transaction, inputs []wallet.UxBalance) (*CreatedTransaction, error) {
 	if len(txn.In) != len(inputs) && len(inputs) != 0 {
 		return nil, errors.New("len(txn.In) != len(inputs)")

@@ -225,7 +225,7 @@ func getBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 // Response:
 //     balance: new balance of the wallet
 //     txn: spent transaction
-//     error: an error that may have occured after broadcast the transaction to the network
+//     error: an error that may have occurred after broadcast the transaction to the network
 //         if this field is not empty, the spend succeeded, but the response data could not be prepared
 func walletSpendHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

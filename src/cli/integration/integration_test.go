@@ -1563,7 +1563,7 @@ func TestLiveWalletDir(t *testing.T) {
 }
 
 // TestLiveSend sends coin from specific wallet file, user should manually specify the
-// wallet file by setting the enviroment variables: WALLET_DIR and WALLET_NAME. The WALLET_DIR
+// wallet file by setting the environment variables: WALLET_DIR and WALLET_NAME. The WALLET_DIR
 // points to the directory of the wallet, and WALLET_NAME represents the wallet file name.
 //
 // Note:
@@ -1714,7 +1714,7 @@ func TestLiveSend(t *testing.T) {
 			_, err = cipher.SHA256FromHex(txid)
 			require.NoError(t, err)
 
-			// Wait untill transaction is confirmed.
+			// Wait until transaction is confirmed.
 			tk := time.NewTicker(time.Second)
 		loop:
 			for {
@@ -1890,7 +1890,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 			_, err = cipher.SHA256FromHex(txid)
 			require.NoError(t, err)
 
-			// Wait untill transaction is confirmed.
+			// Wait until transaction is confirmed.
 			tk := time.NewTicker(time.Second)
 		loop:
 			for {
@@ -2351,7 +2351,7 @@ func checkWalletEntriesAndLastSeed(t *testing.T, w *wallet.Wallet) {
 }
 
 // TestLiveGUIInjectTransaction does almost the same procedure as TestCreateAndBroadcastRawTransaction.
-// The only difference is we broadcast the raw transaction throught the gui /injectTransaction api.
+// The only difference is we broadcast the raw transaction through the gui /injectTransaction api.
 func TestLiveGUIInjectTransaction(t *testing.T) {
 	if !doLive(t) {
 		return
@@ -2449,7 +2449,7 @@ func TestLiveGUIInjectTransaction(t *testing.T) {
 			_, err = cipher.SHA256FromHex(txid)
 			require.NoError(t, err)
 
-			// Wait untill transaction is confirmed.
+			// Wait until transaction is confirmed.
 			tk := time.NewTicker(time.Second)
 		loop:
 			for {

@@ -4621,7 +4621,7 @@ func prepareAndCheckWallet(t *testing.T, c *api.Client, miniCoins, miniCoinHours
 	return w, coins, hours, password
 }
 
-// getWalletFromEnv loads wallet from envrionment variables.
+// getWalletFromEnv loads wallet from environment variables.
 // Returns wallet dir, wallet name and wallet password is any.
 func getWalletFromEnv(t *testing.T, c *api.Client) (string, string, string) {
 	walletDir := getWalletDir(t, c)

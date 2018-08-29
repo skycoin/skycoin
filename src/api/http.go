@@ -428,7 +428,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	// Returns transactions that match the filters.
 	// Method: GET
 	// Args:
-	//     addrs: Comma seperated addresses [optional, returns all transactions if no address is provided]
+	//     addrs: Comma separated addresses [optional, returns all transactions if no address is provided]
 	//     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
 	webHandlerV1("/transactions", getTransactions(gateway))
 	// inject a transaction into network

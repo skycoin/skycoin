@@ -141,6 +141,8 @@ lint: ## Run linters. Use make install-linters first.
 		-E errcheck \
 		-E gosimple \
 		./lib/cgo/...
+	# The govet version in golangci-lint is out of date and has spurious warnings, run it separately
+	go vet -all ./...
 
 check: lint test integration-test-stable integration-test-stable-disable-csrf integration-test-disable-wallet-api integration-test-disable-seed-api integration-test-enable-seed-api integration-test-disable-gui ## Run tests and linters
 

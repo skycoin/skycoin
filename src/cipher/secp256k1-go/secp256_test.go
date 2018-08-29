@@ -2,10 +2,11 @@ package secp256k1
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/hex"
 	"fmt"
 	"log"
-	"math/rand"
+	"math/big"
 	"testing"
 )
 
@@ -631,7 +632,11 @@ func Test_Abnormal_Keys3(t *testing.T) {
 		seckey1, _ := hex.DecodeString(_testSeckey[i])
 		pubkey1 := PubkeyFromSeckey(seckey1)
 
-		seckey2, _ := hex.DecodeString(_testSeckey[rand.Int()%len(_testSeckey)])
+		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(_testSeckey))))
+		if err != nil {
+			t.Error(err)
+		}
+		seckey2, _ := hex.DecodeString(_testSeckey[n.Int64()])
 		pubkey2 := PubkeyFromSeckey(seckey2)
 
 		if pubkey1 == nil {

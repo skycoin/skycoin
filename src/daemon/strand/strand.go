@@ -87,8 +87,8 @@ func Strand(logger *logging.Logger, c chan Request, name string, f func() error,
 			elapsed := time.Since(t)
 			if elapsed > logDurationThreshold {
 				logger.Warningf("%s took %s", name, elapsed)
-			} else {
-				//logger.Debugf("%s took %s", name, elapsed)
+			} else if Debug {
+				logger.Debugf("%s took %s", name, elapsed)
 			}
 
 			return err

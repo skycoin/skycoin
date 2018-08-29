@@ -59,10 +59,10 @@ func EncodeInt(b []byte, data interface{}) {
 	switch v := data.(type) {
 
 	case int8:
-		bs = b[:1]
+		// bs = b[:1]
 		b[0] = byte(v)
 	case uint8:
-		bs = b[:1]
+		// bs = b[:1]
 		b[0] = byte(v)
 	case int16:
 		bs = b[:2]
@@ -792,9 +792,6 @@ func (d *decoder) value(v reflect.Value) error {
 							return err
 						}
 					}
-				} else {
-					//dont decode anything
-					//d.skip(fv) //BUG!?
 				}
 			}
 		}
@@ -944,9 +941,6 @@ func (d *decoder) dchk(v reflect.Value) int {
 					if d.dchk(fv) < 0 {
 						return -1
 					}
-				} else {
-					//dont try to decode anything
-					//d.skip(fv) //BUG!?
 				}
 			}
 		}
@@ -1042,9 +1036,6 @@ func (e *encoder) value(v reflect.Value) {
 				fv := v.Field(i)
 				if !(omitempty && isEmpty(fv)) && (fv.CanSet() || ff.Name != "_") {
 					e.value(fv)
-				} else {
-					//dont write anything
-					//e.skip(v)
 				}
 			}
 		}

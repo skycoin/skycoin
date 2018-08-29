@@ -801,6 +801,7 @@ func TestProcessConnectionBuffers(t *testing.T) {
 		require.Nil(t, p.pool[3])
 		return nil
 	})
+	require.NoError(t, err)
 
 	p.Shutdown()
 	<-q

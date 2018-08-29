@@ -581,6 +581,7 @@ func TestServiceGetWallets(t *testing.T) {
 				wallets = append(wallets, w1)
 
 				ws, err := s.GetWallets()
+				require.NoError(t, err)
 				for _, w := range wallets {
 					ww, ok := ws[w.Filename()]
 					require.True(t, ok)

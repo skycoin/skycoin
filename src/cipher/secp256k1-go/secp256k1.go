@@ -258,9 +258,9 @@ func Sign(msg []byte, seckey []byte) []byte {
 	if len(sigBytes) != 64 {
 		log.Fatalf("Invalid signature byte count: %d", len(sigBytes))
 	}
-	sig[64] = byte(int(recid))
+	sig[64] = byte(int(recid)) // nolint: unconvert
 
-	if int(recid) > 4 {
+	if int(recid) > 4 { // nolint: unconvert
 		log.Panic()
 	}
 
@@ -300,7 +300,7 @@ func SignDeterministic(msg []byte, seckey []byte, nonceSeed []byte) []byte {
 		log.Fatalf("Invalid signature byte count: %d", len(sigBytes))
 	}
 
-	if int(recid) > 4 {
+	if int(recid) > 4 { // nolint: unconvert
 		log.Panic()
 	}
 

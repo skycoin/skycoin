@@ -116,7 +116,7 @@ func NewIPAddr(addr string) (ipaddr IPAddr, err error) {
 
 	ip := binary.BigEndian.Uint32(ipb)
 	ipaddr.IP = ip
-	ipaddr.Port = uint16(port)
+	ipaddr.Port = port
 	return
 }
 

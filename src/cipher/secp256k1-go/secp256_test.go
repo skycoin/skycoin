@@ -2,10 +2,10 @@ package secp256k1
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/hex"
 	"fmt"
 	"log"
-	"math/rand"
 	"testing"
 )
 

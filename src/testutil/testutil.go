@@ -1,8 +1,8 @@
 package testutil
 
 import (
+	"crypto/rand"
 	"io/ioutil"
-	"math/rand"
 	"os"
 	"testing"
 	"time"

@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/boltdb/bolt"
 	"github.com/stretchr/testify/require"
@@ -13,13 +12,6 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
-
-// set rand seed.
-var _ = func() int64 {
-	t := time.Now().Unix()
-	rand.Seed(t)
-	return t
-}()
 
 // PrepareDB creates and opens a temporary test DB and returns it with a cleanup callback
 func PrepareDB(t *testing.T) (*dbutil.DB, func()) {

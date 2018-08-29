@@ -326,11 +326,9 @@ func (hd HistoryDB) Verify(tx *dbutil.Tx, b *coin.SignedBlock, indexesMap *Index
 
 			addr := ux.Body.Address
 			txnHashesMap := map[cipher.SHA256]struct{}{}
-			uxHashesMap := map[cipher.SHA256]struct{}{}
 			indexes, ok := indexesMap.Load(addr)
 			if ok {
 				txnHashesMap = indexes.TxnHashes
-				uxHashesMap = indexes.UxHashes
 			} else {
 				txnHashes, err := hd.addrTxns.Get(tx, addr)
 				if err != nil {
@@ -345,6 +343,7 @@ func (hd HistoryDB) Verify(tx *dbutil.Tx, b *coin.SignedBlock, indexesMap *Index
 					return err
 				}
 
+				uxHashesMap := make(map[cipher.SHA256]struct{}, len(uxHashes))
 				for _, hash := range uxHashes {
 					uxHashesMap[hash] = struct{}{}
 				}

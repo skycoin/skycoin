@@ -131,7 +131,7 @@ func NewReadableBlockTransactionVerbose(txn coin.Transaction, inputs []ReadableT
 		hoursOut += o.Hours
 	}
 
-	fee := uint64(0)
+	var fee uint64
 	if isGenesis {
 		if hoursIn != 0 {
 			err := errors.New("NewReadableTransactionVerbose genesis block should have 0 input hours")

@@ -403,14 +403,21 @@ func walletCreate(gateway Gatewayer) http.HandlerFunc {
 			ScanN:    scanN,
 		})
 		if err != nil {
-			switch err {
-			case wallet.ErrWalletAPIDisabled:
-				wh.Error403(w, "")
-				return
+			switch err.(type) {
+			case wallet.Error:
+				switch err {
+				case wallet.ErrWalletAPIDisabled:
+					wh.Error403(w, "")
+					return
+				default:
+					wh.Error400(w, err.Error())
+					return
+				}
 			default:
-				wh.Error400(w, err.Error())
+				wh.Error500(w, err.Error())
 				return
 			}
+
 		}
 
 		rlt, err := NewWalletResponse(wlt)

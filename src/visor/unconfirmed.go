@@ -143,7 +143,7 @@ func (txus *txUnspents) put(tx *dbutil.Tx, hash cipher.SHA256, uxs coin.UxArray)
 	return dbutil.PutBucketValue(tx, UnconfirmedUnspentsBkt, []byte(hash.Hex()), encoder.Serialize(uxs))
 }
 
-func (txus *txUnspents) get(tx *dbutil.Tx, hash cipher.SHA256) (coin.UxArray, error) {
+func (txus *txUnspents) get(tx *dbutil.Tx, hash cipher.SHA256) (coin.UxArray, error) { // nolint: unused,megacheck
 	var uxs coin.UxArray
 
 	if ok, err := dbutil.GetBucketObjectDecoded(tx, UnconfirmedUnspentsBkt, []byte(hash.Hex()), &uxs); err != nil {
@@ -155,7 +155,7 @@ func (txus *txUnspents) get(tx *dbutil.Tx, hash cipher.SHA256) (coin.UxArray, er
 	return uxs, nil
 }
 
-func (txus *txUnspents) length(tx *dbutil.Tx) (uint64, error) {
+func (txus *txUnspents) length(tx *dbutil.Tx) (uint64, error) { // nolint: unused,megacheck
 	return dbutil.Len(tx, UnconfirmedUnspentsBkt)
 }
 
@@ -186,7 +186,7 @@ func (txus *txUnspents) getByAddr(tx *dbutil.Tx, a cipher.Address) (coin.UxArray
 	return uxo, nil
 }
 
-func (txus *txUnspents) forEach(tx *dbutil.Tx, f func(cipher.SHA256, coin.UxArray) error) error {
+func (txus *txUnspents) forEach(tx *dbutil.Tx, f func(cipher.SHA256, coin.UxArray) error) error { // nolint: unused,megacheck
 	return dbutil.ForEach(tx, UnconfirmedUnspentsBkt, func(k, v []byte) error {
 		hash, err := cipher.SHA256FromHex(string(k))
 		if err != nil {

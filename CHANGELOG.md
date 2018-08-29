@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fix `calculated_hours` and `fee` in `/api/v1/explorer/address` responses
 - Fix `calculated_hours` and `fee` in `/api/v2/transaction/verify` responses for confirmed transactions
 - `/api/v1/blocks` and `/api/v1/last_blocks` return `500` instead of `400` on database errors
+- `POST /api/v1/wallet` returns `500` instead of `400` for internal errors
 
 ### Changed
 

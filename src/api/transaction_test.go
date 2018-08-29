@@ -87,7 +87,6 @@ func TestGetPendingTxs(t *testing.T) {
 	tt := []struct {
 		name                                 string
 		method                               string
-		url                                  string
 		status                               int
 		err                                  string
 		verbose                              bool
@@ -685,7 +684,6 @@ func TestGetRawTx(t *testing.T) {
 	tt := []struct {
 		name                   string
 		method                 string
-		url                    string
 		status                 int
 		err                    string
 		httpBody               *httpBody
@@ -1141,7 +1139,6 @@ func TestVerifyTransaction(t *testing.T) {
 		method                        string
 		contentType                   string
 		status                        int
-		err                           string
 		httpBody                      string
 		gatewayVerifyTxnVerboseArg    coin.Transaction
 		gatewayVerifyTxnVerboseResult verifyTxnVerboseResult
@@ -1284,8 +1281,7 @@ func TestVerifyTransaction(t *testing.T) {
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
-				tc.name, status, tc.status)
+			require.Equal(t, tc.status, status, "handler returned wrong status code: got `%v` want `%v`", status, tc.status)
 
 			var rsp ReceivedHTTPResponse
 			err = json.NewDecoder(rr.Body).Decode(&rsp)

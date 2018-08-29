@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"errors"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -20,6 +21,162 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
+
+func TestGetBalanceHandler(t *testing.T) {
+	type httpBody struct {
+		addrs string
+	}
+	invalidAddr := "invalidAddr"
+	validAddr := "2eZYSbzBKJ7QCL4kd5LSqV478rJQGb4UNkf"
+	address, err := cipher.DecodeBase58Address(validAddr)
+	require.NoError(t, err)
+	tt := []struct {
+		name                      string
+		method                    string
+		status                    int
+		err                       string
+		httpBody                  *httpBody
+		getBalanceOfAddrsArg      []cipher.Address
+		getBalanceOfAddrsResponse []wallet.BalancePair
+		getBalanceOfAddrsError    error
+		httpResponse              wallet.BalancePair
+	}{
+		{
+			name:   "405",
+			method: http.MethodPost,
+			status: http.StatusMethodNotAllowed,
+			err:    "405 Method Not Allowed",
+		},
+		{
+			name:   "400 - invalid address",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - address invalidAddr is invalid: Invalid base58 character",
+			httpBody: &httpBody{
+				addrs: invalidAddr,
+			},
+		},
+		{
+			name:     "400 - no addresses",
+			method:   http.MethodGet,
+			status:   http.StatusBadRequest,
+			err:      "400 Bad Request - addrs is required",
+			httpBody: &httpBody{},
+		},
+		{
+			name:   "500 - GetBalanceOfAddrsError",
+			method: http.MethodGet,
+			status: http.StatusInternalServerError,
+			err:    "500 Internal Server Error - gateway.GetBalanceOfAddrs failed: GetBalanceOfAddrsError",
+			httpBody: &httpBody{
+				addrs: validAddr,
+			},
+			getBalanceOfAddrsArg:   []cipher.Address{address},
+			getBalanceOfAddrsError: errors.New("GetBalanceOfAddrsError"),
+		},
+		{
+			name:   "500 - balance Confirmed coins uint64 addition overflow",
+			method: http.MethodGet,
+			status: http.StatusInternalServerError,
+			err:    "500 Internal Server Error - uint64 addition overflow",
+			httpBody: &httpBody{
+				addrs: validAddr,
+			},
+			getBalanceOfAddrsArg: []cipher.Address{address},
+			getBalanceOfAddrsResponse: []wallet.BalancePair{
+				{
+					Confirmed: wallet.Balance{Coins: math.MaxInt64 + 1, Hours: 0},
+					Predicted: wallet.Balance{Coins: 0, Hours: 0},
+				},
+				{
+					Confirmed: wallet.Balance{Coins: math.MaxInt64 + 1, Hours: 0},
+					Predicted: wallet.Balance{Coins: 0, Hours: 0},
+				},
+			},
+		},
+		{
+			name:   "500 - balance Predicted coins uint64 addition overflow",
+			method: http.MethodGet,
+			status: http.StatusInternalServerError,
+			err:    "500 Internal Server Error - uint64 addition overflow",
+			httpBody: &httpBody{
+				addrs: validAddr,
+			},
+			getBalanceOfAddrsArg: []cipher.Address{address},
+			getBalanceOfAddrsResponse: []wallet.BalancePair{
+				{
+					Confirmed: wallet.Balance{Coins: 0, Hours: 0},
+					Predicted: wallet.Balance{Coins: math.MaxInt64 + 1, Hours: 0},
+				},
+				{
+					Confirmed: wallet.Balance{Coins: 0, Hours: 0},
+					Predicted: wallet.Balance{Coins: math.MaxInt64 + 1, Hours: 0},
+				},
+			},
+		},
+		{
+			name:   "200 - OK",
+			method: http.MethodGet,
+			status: http.StatusOK,
+			err:    "200 - OK",
+			httpBody: &httpBody{
+				addrs: validAddr,
+			},
+			getBalanceOfAddrsArg: []cipher.Address{address},
+			getBalanceOfAddrsResponse: []wallet.BalancePair{
+				{
+					Confirmed: wallet.Balance{Coins: 0, Hours: 0},
+					Predicted: wallet.Balance{Coins: 0, Hours: 0},
+				},
+				{
+					Confirmed: wallet.Balance{Coins: 0, Hours: 0},
+					Predicted: wallet.Balance{Coins: 0, Hours: 0},
+				},
+			},
+			httpResponse: wallet.BalancePair{},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := &MockGatewayer{}
+			endpoint := "/api/v1/balance"
+			gateway.On("GetBalanceOfAddrs", tc.getBalanceOfAddrsArg).Return(tc.getBalanceOfAddrsResponse, tc.getBalanceOfAddrsError)
+
+			v := url.Values{}
+			if tc.httpBody != nil {
+				if tc.httpBody.addrs != "" {
+					v.Add("addrs", tc.httpBody.addrs)
+				}
+			}
+
+			if len(v) > 0 {
+				endpoint += "?" + v.Encode()
+			}
+
+			req, err := http.NewRequest(tc.method, endpoint, nil)
+			require.NoError(t, err)
+
+			rr := httptest.NewRecorder()
+			handler := newServerMux(defaultMuxConfig(), gateway, &CSRFStore{}, nil)
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
+				tc.name, status, tc.status)
+
+			if status != http.StatusOK {
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
+					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+			} else {
+				var msg wallet.BalancePair
+				err = json.Unmarshal(rr.Body.Bytes(), &msg)
+				require.NoError(t, err)
+				require.Equal(t, tc.httpResponse, msg, tc.name)
+			}
+		})
+	}
+}
 
 func TestWalletSpendHandler(t *testing.T) {
 	type httpBody struct {
@@ -472,7 +629,6 @@ func TestWalletGet(t *testing.T) {
 	tt := []struct {
 		name                   string
 		method                 string
-		url                    string
 		body                   *httpBody
 		status                 int
 		err                    string
@@ -734,7 +890,6 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 	tt := []struct {
 		name                        string
 		method                      string
-		url                         string
 		body                        *httpBody
 		status                      int
 		err                         string
@@ -1108,8 +1263,6 @@ func TestWalletCreateHandler(t *testing.T) {
 		options                   wallet.Options
 		gatewayCreateWalletResult wallet.Wallet
 		gatewayCreateWalletErr    error
-		scanWalletAddressesResult wallet.Wallet
-		scanWalletAddressesError  error
 		responseBody              WalletResponse
 		csrfDisabled              bool
 	}{
@@ -1163,7 +1316,7 @@ func TestWalletCreateHandler(t *testing.T) {
 			wltName: "foo",
 		},
 		{
-			name:   "400 - gateway.CreateWallet error",
+			name:   "400 - seed in use",
 			method: http.MethodPost,
 			body: &httpBody{
 				Seed:  "foo",
@@ -1171,7 +1324,24 @@ func TestWalletCreateHandler(t *testing.T) {
 				ScanN: "1",
 			},
 			status: http.StatusBadRequest,
-			err:    "400 Bad Request - gateway.CreateWallet error",
+			err:    "400 Bad Request - a wallet already exists with this seed",
+			options: wallet.Options{
+				Label:    "bar",
+				Seed:     "foo",
+				Password: []byte{},
+			},
+			gatewayCreateWalletErr: wallet.ErrSeedUsed,
+		},
+		{
+			name:   "500 - gateway.CreateWallet error",
+			method: http.MethodPost,
+			body: &httpBody{
+				Seed:  "foo",
+				Label: "bar",
+				ScanN: "1",
+			},
+			status: http.StatusInternalServerError,
+			err:    "500 Internal Server Error - gateway.CreateWallet error",
 			options: wallet.Options{
 				Label:    "bar",
 				Seed:     "foo",
@@ -1221,12 +1391,6 @@ func TestWalletCreateHandler(t *testing.T) {
 				},
 				Entries: cloneEntries(entries),
 			},
-			scanWalletAddressesResult: wallet.Wallet{
-				Meta: map[string]string{
-					"filename": "filename",
-				},
-				Entries: cloneEntries(entries),
-			},
 			responseBody: WalletResponse{
 				Meta: WalletMeta{
 					Filename: "filename",
@@ -1253,11 +1417,6 @@ func TestWalletCreateHandler(t *testing.T) {
 				ScanN:    2,
 			},
 			gatewayCreateWalletResult: wallet.Wallet{
-				Meta: map[string]string{
-					"filename": "filename",
-				},
-			},
-			scanWalletAddressesResult: wallet.Wallet{
 				Meta: map[string]string{
 					"filename": "filename",
 				},
@@ -1297,14 +1456,6 @@ func TestWalletCreateHandler(t *testing.T) {
 					"secrets":   "secrets",
 				},
 			},
-			scanWalletAddressesResult: wallet.Wallet{
-				Meta: map[string]string{
-					"filename":  "filename",
-					"label":     "bar",
-					"encrypted": "true",
-					"secrets":   "secrets",
-				},
-			},
 			responseBody: WalletResponse{
 				Meta: WalletMeta{
 					Filename:  "filename",
@@ -1333,7 +1484,6 @@ func TestWalletCreateHandler(t *testing.T) {
 				tc.options.ScanN = 1
 			}
 			gateway.On("CreateWallet", "", tc.options).Return(&tc.gatewayCreateWalletResult, tc.gatewayCreateWalletErr)
-			// gateway.On("ScanAheadWalletAddresses", tc.wltName, tc.options.Password, tc.scnN-1).Return(&tc.scanWalletAddressesResult, tc.scanWalletAddressesError)
 
 			endpoint := "/api/v1/wallet/create"
 
@@ -1377,20 +1527,18 @@ func TestWalletCreateHandler(t *testing.T) {
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
-			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`",
-				tc.name, status, tc.status)
+			require.Equal(t, tc.status, status, "handler returned wrong status code: got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()),
-					"case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
-			} else {
-				var msg WalletResponse
-				err = json.Unmarshal(rr.Body.Bytes(), &msg)
-				require.NoError(t, err)
-				require.Equal(t, tc.responseBody, msg, tc.name)
+				body := strings.TrimSpace(rr.Body.String())
+				require.Equal(t, tc.err, body, "wrong error message: got `%v`| %s, want `%v`", body, status, tc.err)
+				return
 			}
 
+			var msg WalletResponse
+			err = json.Unmarshal(rr.Body.Bytes(), &msg)
+			require.NoError(t, err)
+			require.Equal(t, tc.responseBody, msg, tc.name)
 		})
 	}
 }

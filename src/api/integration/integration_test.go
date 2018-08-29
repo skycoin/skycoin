@@ -2935,7 +2935,6 @@ func TestLiveWalletSpend(t *testing.T) {
 		name    string
 		to      string
 		coins   uint64
-		errMsg  []byte
 		checkTx func(t *testing.T, tx *daemon.TransactionResult)
 	}{
 		{

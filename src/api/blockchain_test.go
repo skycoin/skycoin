@@ -590,7 +590,6 @@ func TestGetLastBlocks(t *testing.T) {
 	tt := []struct {
 		name                              string
 		method                            string
-		url                               string
 		status                            int
 		err                               string
 		body                              httpBody

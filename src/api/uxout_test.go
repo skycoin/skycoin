@@ -29,7 +29,6 @@ func TestGetUxOutByID(t *testing.T) {
 	tt := []struct {
 		name                    string
 		method                  string
-		url                     string
 		status                  int
 		err                     string
 		httpBody                *httpBody
@@ -173,7 +172,6 @@ func TestGetAddrUxOuts(t *testing.T) {
 	tt := []struct {
 		name                  string
 		method                string
-		url                   string
 		status                int
 		err                   string
 		httpBody              *httpBody

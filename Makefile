@@ -131,6 +131,7 @@ lint: ## Run linters. Use make install-linters first.
 		-E errcheck \
 		-E gosimple \
 		-E staticcheck \
+		-E unused \
 		./...
 	# lib/cgo can't use golint because it needs export directives in function docstrings that do not obey golint rules
 	# deadcode also doesn't make sense for lib/cgo
@@ -142,6 +143,7 @@ lint: ## Run linters. Use make install-linters first.
 		-E errcheck \
 		-E gosimple \
 		-E staticcheck \
+		-E unused \
 		./lib/cgo/...
 	# The govet version in golangci-lint is out of date and has spurious warnings, run it separately
 	go vet -all ./...

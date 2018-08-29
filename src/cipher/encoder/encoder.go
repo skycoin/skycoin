@@ -613,14 +613,14 @@ func (e *encoder) bool(x bool) {
 	e.buf = e.buf[1:]
 }
 
-func (d decoder) string() string {
+func (d decoder) string() string { // nolint: unused,megacheck
 	l := int(d.uint32()) //pop length
 	t := d.buf[:l]
 	d.buf = d.buf[l:]
 	return string(t)
 }
 
-func (e encoder) string(xs string) {
+func (e encoder) string(xs string) { // nolint: unused,megacheck
 	x := []byte(xs)
 	l := len(x)
 	for i := 0; i < l; i++ {
@@ -675,14 +675,14 @@ func (e *encoder) uint64(x uint64) {
 }
 
 //v.SetBytes(d.bytes())
-func (d decoder) bytes() []byte {
+func (d decoder) bytes() []byte { // nolint: unused,megacheck
 	l := int(d.uint32()) //pop length
 	t := d.buf[:l]
 	d.buf = d.buf[l:]
 	return t
 }
 
-func (e encoder) bytes(x []byte) {
+func (e encoder) bytes(x []byte) { // nolint: unused,megacheck
 	l := len(x)
 	for i := 0; i < l; i++ {
 		e.buf[i] = x[i]
@@ -1089,7 +1089,7 @@ func (e *encoder) value(v reflect.Value) {
 
 }
 
-func (d *decoder) skip(v reflect.Value) {
+func (d *decoder) skip(v reflect.Value) { // nolint: unused,megacheck
 	n, _ := datasizeWrite(v)
 	d.buf = d.buf[n:]
 }
@@ -1105,7 +1105,7 @@ func (d *decoder) skipn(v reflect.Value) int {
     return n
 }
 */
-func (e *encoder) skip(v reflect.Value) {
+func (e *encoder) skip(v reflect.Value) { // nolint: unused,megacheck
 	n, _ := datasizeWrite(v)
 	for i := range e.buf[0:n] {
 		e.buf[i] = 0

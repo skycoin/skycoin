@@ -223,7 +223,6 @@ func TestGateway_GetWallets(t *testing.T) {
 		name            string
 		enableWalletAPI bool
 		wallets         wallet.Wallets
-		getWalletError  error
 		err             error
 	}{
 		{

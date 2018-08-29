@@ -11,7 +11,7 @@ import (
 
 const TESTS = 10000 // how many tests
 
-// nolint: unused
+// nolint: unused,megacheck
 const SigSize = 65 // 64+1
 
 func Test_Secp256_00(t *testing.T) {

@@ -10,7 +10,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util/file"
 )
 
@@ -52,7 +51,7 @@ func LoadWallets(dir string) (Wallets, error) {
 	return wallets, nil
 }
 
-func backupWltFile(src, dst string) error {
+func backupWltFile(src, dst string) error { // nolint: deadcode,unused,megacheck
 	if _, err := os.Stat(dst); err == nil {
 		return fmt.Errorf("%v file already exist", dst)
 	}
@@ -100,14 +99,6 @@ func (wlts Wallets) get(id string) (*Wallet, bool) {
 // set sets a wallet into the map
 func (wlts Wallets) set(w *Wallet) {
 	wlts[w.Filename()] = w.clone()
-}
-
-// NewAddresses creates num addresses in given wallet
-func (wlts *Wallets) newAddresses(id string, num uint64) ([]cipher.Address, error) {
-	if w, ok := (*wlts)[id]; ok {
-		return w.GenerateAddresses(num)
-	}
-	return nil, fmt.Errorf("wallet: %v does not exist", id)
 }
 
 // ToReadable converts Wallets to *ReadableWallet array

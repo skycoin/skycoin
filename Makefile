@@ -3,7 +3,12 @@
 .PHONY: integration-test-stable integration-test-stable-disable-csrf
 .PHONY: integration-test-live integration-test-live-wallet
 .PHONY: integration-test-disable-wallet-api integration-test-disable-seed-api
-.PHONY: install-linters format release clean-release install-deps-ui build-ui help
+.PHONY: integration-test-enable-seed-api integration-test-enable-seed-api
+.PHONY: integration-test-disable-gui integration-test-disable-gui
+.PHONY: install-linters format release clean-release
+.PHONY: install-deps-ui build-ui help newcoin generate-mocks
+
+COIN ?= skycoin
 
 # Static files directory
 GUI_STATIC_DIR = src/gui/static
@@ -36,7 +41,7 @@ ifeq ($(shell uname -s),Linux)
   LDLIBS=$(LIBC_LIBS) -lpthread
   LDPATH=$(shell printenv LD_LIBRARY_PATH)
   LDPATHVAR=LD_LIBRARY_PATH
-  LDFLAGS=$(LIBC_FLAGS) $(STDC_FLAG) 
+  LDFLAGS=$(LIBC_FLAGS) $(STDC_FLAG)
 ifndef OSNAME
   OSNAME = linux
 endif
@@ -116,20 +121,44 @@ docs: docs-libc
 
 lint: ## Run linters. Use make install-linters first.
 	vendorcheck ./...
-	gometalinter --deadline=3m --concurrency=2 --disable-all --tests --vendor --skip=lib/cgo --warn-unmatched-nolint \
-		-E goimports \
+	golangci-lint run --no-config --deadline=3m --disable-all --tests --skip-dirs=lib/cgo \
 		-E golint \
-		-E varcheck \
-		-E unparam \
-		./...
-	# lib cgo can't use golint because it needs export directives in function docstrings that do not obey golint rules
-	gometalinter --deadline=3m --concurrency=2 --disable-all --tests --vendor --warn-unmatched-nolint \
 		-E goimports \
 		-E varcheck \
 		-E unparam \
+		-E deadcode \
+		-E structcheck \
+		-E errcheck \
+		-E gosimple \
+		-E staticcheck \
+		-E unused \
+		-E ineffassign \
+		-E typecheck \
+		-E gas \
+		-E megacheck \
+		-E misspell \
+		./...
+	# lib/cgo can't use golint because it needs export directives in function docstrings that do not obey golint rules
+	# deadcode also doesn't make sense for lib/cgo
+	golangci-lint run --no-config --deadline=3m --disable-all --tests \
+		-E goimports \
+		-E varcheck \
+		-E unparam \
+		-E structcheck \
+		-E errcheck \
+		-E gosimple \
+		-E staticcheck \
+		-E unused \
+		-E ineffassign \
+		-E typecheck \
+		-E gas \
+		-E megacheck \
+		-E misspell \
 		./lib/cgo/...
+	# The govet version in golangci-lint is out of date and has spurious warnings, run it separately
+	go vet -all ./...
 
-check: lint test integration-test-stable integration-test-stable-disable-csrf integration-test-disable-wallet-api integration-test-disable-seed-api ## Run tests and linters
+check: lint test integration-test-stable integration-test-stable-disable-csrf integration-test-disable-wallet-api integration-test-disable-seed-api integration-test-enable-seed-api integration-test-disable-gui ## Run tests and linters
 
 integration-test-stable: ## Run stable integration tests
 	./ci-scripts/integration-test-stable.sh -c
@@ -149,8 +178,11 @@ integration-test-live-disable-csrf: ## Run live integration tests against a node
 integration-test-disable-wallet-api: ## Run disable wallet api integration tests
 	./ci-scripts/integration-test-disable-wallet-api.sh
 
-integration-test-disable-seed-api: ## Run enable seed api integration test
-	./ci-scripts/integration-test-disable-seed-api.sh
+integration-test-enable-seed-api: ## Run enable seed api integration test
+	./ci-scripts/integration-test-enable-seed-api.sh
+
+integration-test-disable-gui:
+	./ci-scripts/integration-test-disable-gui.sh
 
 cover: ## Runs tests on ./src/ with HTML code coverage
 	go test -cover -coverprofile=cover.out -coverpkg=github.com/skycoin/skycoin/... ./src/...
@@ -158,8 +190,9 @@ cover: ## Runs tests on ./src/ with HTML code coverage
 
 install-linters: ## Install linters
 	go get -u github.com/FiloSottile/vendorcheck
-	go get -u github.com/alecthomas/gometalinter
-	gometalinter --vendored-linters --install
+	# For some reason this install method is not recommended, see https://github.com/golangci/golangci-lint#install
+	# However, they suggest `curl ... | bash` which we should not do
+	go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
 
 install-deps-libc: configure-build ## Install locally dependencies for testing libskycoin
 	git clone --recursive https://github.com/skycoin/Criterion $(BUILD_DIR)/usr/tmp/Criterion
@@ -191,12 +224,29 @@ build-ui:  ## Builds the UI
 build-ui-travis:  ## Builds the UI for travis
 	cd $(GUI_STATIC_DIR) && npm run build-travis
 
-release: ## Build electron apps, the builds are located in electron/release folder.
-	cd $(ELECTRON_DIR) && ./build.sh
+release: ## Build electron and standalone apps. Use osarch=${osarch} to specify the platform. Example: 'make release osarch=darwin/amd64', multiple platform can be supported in this way: 'make release osarch="darwin/amd64 windows/amd64"'. Supported architectures are: darwin/amd64 windows/amd64 windows/386 linux/amd64 linux/arm, the builds are located in electron/release folder.
+	cd $(ELECTRON_DIR) && ./build.sh ${osarch}
+	@echo release files are in the folder of electron/release
+
+release-bin: ## Build standalone apps. Use osarch=${osarch} to specify the platform. Example: 'make release-bin osarch=darwin/amd64' Supported architectures are the same as 'release' command.
+	cd $(ELECTRON_DIR) && ./build-standalone-release.sh ${osarch}
+	@echo release files are in the folder of electron/release
+
+release-gui: ## Build electron apps. Use osarch=${osarch} to specify the platform. Example: 'make release-gui osarch=darwin/amd64' Supported architectures are the same as 'release' command.
+	cd $(ELECTRON_DIR) && ./build-electron-release.sh ${osarch}
 	@echo release files are in the folder of electron/release
 
 clean-release: ## Clean dist files and delete all builds in electron/release
 	rm $(ELECTRON_DIR)/release/*
+
+newcoin: ## Rebuild cmd/$COIN/$COIN.go file from the template. Call like "make newcoin COIN=foo".
+	go run cmd/newcoin/newcoin.go createcoin --coin $(COIN)
+
+generate-mocks: ## Regenerate test interface mocks
+	go generate ./src/...
+	# mockery can't generate the UnspentPooler mock in package visor, patch it
+	mv ./src/visor/blockdb/mock_unspent_pooler_test.go ./src/visor/mock_unspent_pooler_test.go
+	sed -i "" -e 's/package blockdb/package visor/g' ./src/visor/mock_unspent_pooler_test.go
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

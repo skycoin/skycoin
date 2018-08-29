@@ -1,7 +1,13 @@
 package main
 
+/*
+CODE GENERATED AUTOMATICALLY WITH FIBER COIN CREATOR
+AVOID EDITING THIS MANUALLY
+*/
+
 import (
 	_ "net/http/pprof"
+	"os"
 
 	"github.com/skycoin/skycoin/src/skycoin"
 	"github.com/skycoin/skycoin/src/util/logging"
@@ -10,7 +16,7 @@ import (
 
 var (
 	// Version of the node. Can be set by -ldflags
-	Version = "0.23.1-rc2"
+	Version = "0.24.1"
 	// Commit ID. Can be set by -ldflags
 	Commit = ""
 	// Branch name. Can be set by -ldflags
@@ -83,5 +89,7 @@ func main() {
 	coin.ParseConfig()
 
 	// run fiber coin node
-	coin.Run()
+	if err := coin.Run(); err != nil {
+		os.Exit(1)
+	}
 }

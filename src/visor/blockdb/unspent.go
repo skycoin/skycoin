@@ -271,7 +271,7 @@ func (up *Unspents) buildAddrIndex(tx *dbutil.Tx) error {
 
 		h := ux.Hash()
 
-		if bytes.Compare(k[:], h[:]) != 0 {
+		if !bytes.Equal(k[:], h[:]) {
 			return errors.New("Unspent pool uxout.Hash() does not match its key")
 		}
 

@@ -4,9 +4,7 @@ set -e -o pipefail
 # Compresses packaged standalone release after
 # ./package-standalone-release.sh is done
 
-if [ -n "$2" ]; then
-    GOX_OSARCH="$1"
-fi
+GOX_OSARCH="$@"
 
 . build-conf.sh "$GOX_OSARCH"
 

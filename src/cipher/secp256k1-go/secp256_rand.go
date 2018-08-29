@@ -23,7 +23,9 @@ var (
 func SumSHA256(b []byte) []byte {
 	sha256Hash := <-sha256HashChan
 	sha256Hash.Reset()
-	sha256Hash.Write(b)
+	if _, err := sha256Hash.Write(b); err != nil {
+		panic(err)
+	}
 	sum := sha256Hash.Sum(nil)
 	sha256HashChan <- sha256Hash
 	return sum[:]
@@ -70,7 +72,7 @@ func (ep *EntropyPool) Mix256(in []byte) (out []byte) {
 //Mix take in N bytes, salts, return N
 func (ep *EntropyPool) Mix(in []byte) []byte {
 	length := len(in) - len(in)%32 + 32
-	buff := make([]byte, length, length)
+	buff := make([]byte, length)
 	for i := 0; i < len(in); i++ {
 		buff[i] = in[i]
 	}

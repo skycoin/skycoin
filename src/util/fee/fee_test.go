@@ -99,6 +99,7 @@ func TestVerifyTransactionFee(t *testing.T) {
 	err = VerifyTransactionFee(txn, hours)
 	require.NoError(t, err)
 	hours, err = txn.OutputHours()
+	require.NoError(t, err)
 	err = VerifyTransactionFee(txn, hours*10)
 	require.NoError(t, err)
 
@@ -208,7 +209,6 @@ func TestTransactionFee(t *testing.T) {
 	}
 
 	cases := []struct {
-		name     string
 		out      []uint64
 		in       []uxInput
 		headTime uint64

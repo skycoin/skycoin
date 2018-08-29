@@ -39,7 +39,6 @@ func TestWebRPC(t *testing.T) {
 				},
 			},
 		},
-
 		{
 			name:   "invalid jsonrpc",
 			status: http.StatusOK,
@@ -67,7 +66,7 @@ func TestWebRPC(t *testing.T) {
 				Enabled: false,
 			}
 
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			handler := newServerMux(muxConfig{
 				host:            configuredHost,
 				appLoc:          ".",

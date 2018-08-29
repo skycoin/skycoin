@@ -39,6 +39,9 @@ func getCoinSupply(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
+// coinSupply returns coin distribution supply stats
+// Method: GET
+// URI: /api/v1/coinSupply
 func coinSupply(gateway Gatewayer, w http.ResponseWriter, r *http.Request) *CoinSupply {
 	if r.Method != http.MethodGet {
 		wh.Error405(w)
@@ -144,8 +147,11 @@ func coinSupply(gateway Gatewayer, w http.ResponseWriter, r *http.Request) *Coin
 	return &cs
 }
 
-// method: GET
-// url: /explorer/address?address=${address}
+// getTransactionsForAddress returns all transactions (confirmed and unconfirmed) for an address
+// Method: GET
+// URI: /explorer/address
+// Args:
+//	address [string]
 func getTransactionsForAddress(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -165,11 +171,15 @@ func getTransactionsForAddress(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		txns, err := gateway.GetTransactionsForAddress(cipherAddr)
+		txns, err := gateway.GetVerboseTransactionsForAddress(cipherAddr)
 		if err != nil {
-			err = fmt.Errorf("gateway.GetTransactionsForAddress failed: %v", err)
+			err = fmt.Errorf("gateway.GetVerboseTransactionsForAddress failed: %v", err)
 			wh.Error500(w, err.Error())
 			return
+		}
+
+		if txns == nil {
+			txns = []visor.ReadableTransactionVerbose{}
 		}
 
 		wh.SendJSONOr500(logger, w, txns)
@@ -181,8 +191,12 @@ type Richlist struct {
 	Richlist visor.Richlist `json:"richlist"`
 }
 
-// method: GET
-// url: /richlist?n=${number}&include-distribution=${bool}
+// getRichlist returns the top skycoin holders
+// Method: GET
+// URI: /richlist?n=${number}&include-distribution=${bool}
+// Args:
+//	n [int, number of results to include]
+//  include-distribution [bool, include the distribution addresses in the richlist]
 func getRichlist(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -232,8 +246,9 @@ func getRichlist(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-// method: GET
-// url: /addresscount
+// getAddressCount returns the total number of unique address that have coins
+// Method: GET
+// URI: /addresscount
 func getAddressCount(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {

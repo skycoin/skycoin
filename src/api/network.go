@@ -81,7 +81,9 @@ func connectionsHandler(gateway Gatewayer) http.HandlerFunc {
 			index[peerHeights[i].Address] = peerHeights[i].Height
 		}
 
-		cnxs := Connections{}
+		cnxs := Connections{
+			Connections: make([]Connection, 0),
+		}
 		for _, c := range dcnxs.Connections {
 			cnx := Connection{
 				Connection: c,

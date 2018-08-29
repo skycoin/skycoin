@@ -1,0 +1,25 @@
+@import '../../../../theme/variables';
+
+.-content {
+  text-align: center;
+  margin: 50px 0;
+  color: $grey;
+  font-size: 13px;
+
+  p {
+    margin-top: 15px;
+  }
+
+  i {
+    color: $grey-light;
+    font-size: 40px;
+  }
+
+  mat-spinner {
+    display: inline-block;
+
+    ::ng-deep circle {
+      stroke: $grey-light;
+    }
+  }
+}

@@ -60,7 +60,7 @@ var lastBlockStr = `
 func Test_getStatusHandler(t *testing.T) {
 	b := decodeBlock(lastBlockStr)
 	now := time.Now().Unix()
-	m := NewGatewayerMock()
+	m := &MockGatewayer{}
 	m.On("GetLastBlocks", uint64(1)).Return(b, nil)
 	m.On("GetTimeNow").Return(uint64(now))
 

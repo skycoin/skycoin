@@ -39,8 +39,8 @@ func main() {
 	OneByteRawMap := make(map[byte]int)
 	TwoByteRawMap := make(map[string]int)
 
-	if *addrsStats == false && *pkeysStats == false && *hashesStats == false {
-		fmt.Println("you need to choose object for analize(use one of flags: addrs, pkeys, hashes)")
+	if !*addrsStats && !*pkeysStats && !*hashesStats {
+		fmt.Println("you need to choose object for analyze(use one of flags: addrs, pkeys, hashes)")
 		return
 	}
 

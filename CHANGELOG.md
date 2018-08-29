@@ -8,6 +8,58 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Add `-csv` option to `cli send` and `cli createRawTransaction`, which will send coins to multiple addresses defined in a csv file
+- Add `-disable-default-peers` option to disable the default hardcoded peers and mark all cached peers as untrusted
+- Add `-custom-peers-file` to load peers from disk. This peers file is a newline separate list of `ip:port` strings
+- Add `csrf_enabled`, `csp_enabled`, `wallet_api_enabled`, `unversioned_api_enabled`, `gui_enabled` and `json_rpc_enabled` configuration settings to the `/api/v1/health` endpoint response
+- Add `verbose` flag to `/api/v1/block`, `/api/v1/blocks`, `/api/v1/last_blocks`, `/api/v1/pendingTxs`, `/api/v1/transaction`, `/api/v1/transactions`, `/api/v1/wallet/transactions` to return verbose block data, which includes the address, coins, hours and calculcated_hours of the block's transaction's inputs
+- Add `encoded` flag to `/api/v1/transaction` to return an encoded transaction
+
+### Fixed
+
+- Fix hanging process caused when the p2p listener port is already in use
+- Fix exit status of CLI tool when wallet file cannot be loaded
+- Fix `calculated_hours` and `fee` in `/api/v1/explorer/address` responses
+- Fix `calculated_hours` and `fee` in `/api/v2/transaction/verify` responses for confirmed transactions
+- `/api/v1/blocks` and `/api/v1/last_blocks` return `500` instead of `400` on database errors
+- `POST /api/v1/wallet` returns `500` instead of `400` for internal errors
+
+### Changed
+
+- CLI tool uses the REST API instead of the deprecated webrpc API to communicate with the node
+- `cli status` return value is now the response from `GET /api/v1/health`, which changes some fields
+- `/api/v1/network/` endpoints will return an empty array for array values instead of `null`
+- `/api/v1/blocks` will return an empty array for `"blocks"` instead of `null`
+- `/api/v1/blockchain/progress` will return an empty array for `"peers"` instead of `null`
+- `go run cmd/skycoin/skycoin.go` will have exit status 1 on failure and exit status 2 on panic
+- The deprecated JSON 2.0 RPC interface is disabled by default for all run modes, since it is no longer needed for the CLI tool
+- Remove `"unknown"` from the `"status"` field in responses from `/api/v1/explorer/address`, `/api/v1/transaction`, `/api/v1/transactions`
+
+### Removed
+
+- Remove `USE_CSRF` envvar from the CLI tool. It uses the REST API client now, which will automatically detect CSRF as needed, so no additional configuration is necessary.  Operators may still wish to disable CSRF on their remote node to reduce request overhead.
+
+## [0.24.1] - 2018-07-30
+
+### Added
+
+- Add Content-Security-Policy header to http responses
+
+### Fixed
+
+- Fix portable browser version opening to blank page
+
+### Changed
+- Increase visor db timeout to 5000 `ms`
+- Change `InitTransaction` to accept parameters for distributing genesis coin to distribution wallets
+
+### Removed
+
+## [0.24.0] - 2018-07-06
+
+### Added
+
+- Minimum go version is go1.10
 - Add environment variable `DATA_DIR` in CLI's
 - `USE_CSRF` environment variable for CLI, if the remote node has CSRF enabled (CSRF is enabled by default, use `-disable-csrf` to disable)
 - `cli showConfig` command to echo the cli's configuration back to the user
@@ -16,6 +68,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `-version` flag to show node version
 - Add transaction verification step to "Send" page
 - Add more details about transaction in transaction history
+- Add advanced spend UI
 - Add CLI `encryptWallet` command
 - Add CLI `decryptWallet` command
 - Add CLI `showSeed` command
@@ -29,13 +82,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Begin `/api/v2` API endpoints. These endpoints are in beta and subject to change.
 - Add `POST /api/v2/transaction/verify` API endpoint
 - Add `POST /api/v2/address/verify` API endpoint
-- Add advanced spend UI
 - Add `ignore_unconfirmed` option to `POST /api/v1/wallet/transaction` to allow transactions to be created or spent even if there are unspent outputs in the unconfirmed pool.
 - Add `uxouts` to `POST /api/v1/wallet/transaction`, to allow specific unspent outputs to be used in a transaction.
 - Add Dockerfile in docker/images/dev-cli to build a docker image suitable for development.
 - Coin creator tool, `cmd/newcoin`, to quickly bootstrap a new fiber coin
-- Install a vim plugin for providing linting ([ALE](https://github.com/w0rp/ale)) in skycoindev-cli image.
-- Add Dockerfile in docker/images/dev-dind to build a docker in docker image based on skycoindev-cli.
+- Add Dockerfile in `docker/images/dev-dind` to build a docker in docker image based on skycoindev-cli.
 
 ### Fixed
 
@@ -59,7 +110,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   If you are using the CLI tool or another API client to communicate with the standalone client, use `-web-interface-port=6420` to continue using port 6420.
   If the program is run from source (e.g. `go run`, `run.sh`, `make run`) there is no change, the API will still be on port 6420.
 - Change number of outgoing connections to 8 from 16
-- Update version of SWIG to 3.0.12
+- Transaction history shows transactions between own addresses
+- Client will only maintain one connection to the default hardcoded peers, instead of all of them
 
 ### Removed
 
@@ -150,6 +202,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `total_coinhour_supply` and `current_coinhour_supply` to `/coinSupply` endpoint
 - #800, Add entropy parameter to `/wallet/newSeed` endpoint. Entropy can be 128 (default) or 256, corresponding to 12- and 24-word seeds respectively
 - #866, Include coins and hours in `/explorer/address` inputs
+- Rename cached `peers.txt` file to `peers.json`
 
 ### Removed
 
@@ -298,6 +351,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - #350 Wallet name always 'undefined' after loading wallet from seed
 
 [Unreleased]: https://github.com/skycoin/skycoin/compare/master...develop
+[0.24.1]: https://github.com/skycoin/skycoin/compare/v0.24.0...v0.24.1
+[0.24.0]: https://github.com/skycoin/skycoin/compare/v0.23.0...v0.24.0
 [0.23.0]: https://github.com/skycoin/skycoin/compare/v0.22.0...v0.23.0
 [0.22.0]: https://github.com/skycoin/skycoin/compare/v0.21.1...v0.22.0
 [0.21.1]: https://github.com/skycoin/skycoin/compare/v0.21.0...v0.21.1

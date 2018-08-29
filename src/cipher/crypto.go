@@ -73,6 +73,9 @@ func PubKeyFromHex(s string) (PubKey, error) {
 	if err != nil {
 		return PubKey{}, errors.New("Invalid public key")
 	}
+	if len(b) != len(PubKey{}) {
+		return PubKey{}, errors.New("Invalid public key length")
+	}
 	return NewPubKey(b), nil
 }
 
@@ -187,6 +190,8 @@ func ECDH(pub PubKey, sec SecKey) []byte {
 		log.Panic("ECDH invalid pubkey input")
 	}
 
+	// WARNING: This calls TestSecKey if DebugLevel2 is set to true.
+	// TestSecKey is extremely slow and will kill performance if ECDH is called frequently
 	if err := sec.Verify(); err != nil {
 		log.Panic("ECDH invalid seckey input")
 	}

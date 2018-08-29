@@ -65,9 +65,6 @@ func TestFbyHashes(t *testing.T) {
 		}
 	}
 
-	type args struct {
-		hashes []string
-	}
 	tests := []struct {
 		name    string
 		hashes  []string
@@ -90,7 +87,7 @@ func TestFbyHashes(t *testing.T) {
 	}
 	for _, tt := range tests {
 		outs := FbyHashes(tt.hashes)(tt.outputs)
-		require.Equal(t, outs, coin.UxArray(tt.want))
+		require.Equal(t, outs, tt.want)
 	}
 }
 
@@ -226,7 +223,6 @@ func TestGateway_GetWallets(t *testing.T) {
 		name            string
 		enableWalletAPI bool
 		wallets         wallet.Wallets
-		getWalletError  error
 		err             error
 	}{
 		{

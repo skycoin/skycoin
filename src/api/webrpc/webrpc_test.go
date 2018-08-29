@@ -13,6 +13,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
@@ -27,8 +28,6 @@ type fakeGateway struct {
 	transactions         map[string]string
 	injectRawTxMap       map[string]bool // key: transaction hash, value indicates whether the injectTransaction should return error.
 	injectedTransactions map[string]string
-	addrRecvUxOuts       []*historydb.UxOut
-	addrSpentUxOUts      []*historydb.UxOut
 	uxouts               []coin.UxOut
 }
 
@@ -106,7 +105,6 @@ func (fg fakeGateway) GetTimeNow() uint64 {
 
 func Test_rpcHandler_HandlerFunc(t *testing.T) {
 	rpc := setupWebRPC(t)
-	rpc.HandleFunc("get_status", getStatusHandler)
 	err := rpc.HandleFunc("get_status", getStatusHandler)
-	require.Error(t, err)
+	testutil.RequireError(t, err, "get_status method already exist")
 }

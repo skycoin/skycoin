@@ -18,26 +18,50 @@ import (
 func TestHealthCheckHandler(t *testing.T) {
 
 	cases := []struct {
-		name         string
-		method       string
-		code         int
-		getHealthErr error
+		name             string
+		method           string
+		code             int
+		getHealthErr     error
+		cfg              muxConfig
+		csrfEnabled      bool
+		walletAPIEnabled bool
 	}{
 		{
 			name:   "valid response",
 			method: http.MethodGet,
 			code:   http.StatusOK,
+			cfg:    defaultMuxConfig(),
 		},
+
 		{
 			name:   "403 method not allowed",
 			method: http.MethodPost,
 			code:   http.StatusMethodNotAllowed,
+			cfg:    defaultMuxConfig(),
 		},
+
 		{
 			name:         "gateway.GetHealth error",
 			method:       http.MethodGet,
 			code:         http.StatusInternalServerError,
 			getHealthErr: errors.New("GetHealth failed"),
+			cfg:          defaultMuxConfig(),
+		},
+
+		{
+			name:   "valid response, opposite config",
+			method: http.MethodGet,
+			code:   http.StatusOK,
+			cfg: muxConfig{
+				host:                 configuredHost,
+				appLoc:               ".",
+				disableCSP:           false,
+				enableGUI:            true,
+				enableUnversionedAPI: true,
+				enableJSON20RPC:      true,
+			},
+			csrfEnabled:      true,
+			walletAPIEnabled: true,
 		},
 	}
 
@@ -73,7 +97,9 @@ func TestHealthCheckHandler(t *testing.T) {
 				Uptime:             time.Second * 4,
 			}
 
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
+			gateway.On("IsWalletAPIEnabled").Return(tc.walletAPIEnabled)
+
 			if tc.getHealthErr != nil {
 				gateway.On("GetHealth").Return(nil, tc.getHealthErr)
 			} else {
@@ -84,14 +110,13 @@ func TestHealthCheckHandler(t *testing.T) {
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
-			rr := httptest.NewRecorder()
-			cfg := muxConfig{
-				host:   configuredHost,
-				appLoc: ".",
+			csrfStore := &CSRFStore{
+				Enabled: tc.csrfEnabled,
 			}
-			handler := newServerMux(cfg, gateway, &CSRFStore{}, nil)
-			handler.ServeHTTP(rr, req)
 
+			rr := httptest.NewRecorder()
+			handler := newServerMux(tc.cfg, gateway, csrfStore, nil)
+			handler.ServeHTTP(rr, req)
 			if tc.code != http.StatusOK {
 				require.Equal(t, tc.code, rr.Code)
 				return
@@ -114,6 +139,13 @@ func TestHealthCheckHandler(t *testing.T) {
 			require.Equal(t, unspents, r.BlockchainMetadata.Unspents)
 			require.True(t, r.BlockchainMetadata.TimeSinceLastBlock.Duration > time.Duration(0))
 			require.Equal(t, metadata.Head, r.BlockchainMetadata.Head)
+
+			require.Equal(t, tc.csrfEnabled, r.CSRFEnabled)
+			require.Equal(t, !tc.cfg.disableCSP, r.CSPEnabled)
+			require.Equal(t, tc.cfg.enableUnversionedAPI, r.UnversionedAPIEnabled)
+			require.Equal(t, tc.cfg.enableGUI, r.GUIEnabled)
+			require.Equal(t, tc.cfg.enableJSON20RPC, r.JSON20RPCEnabled)
+			require.Equal(t, tc.walletAPIEnabled, r.WalletAPIEnabled)
 		})
 	}
 }

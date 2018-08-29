@@ -215,10 +215,10 @@ func (sig *Signature) Bytes() []byte {
 		ret := res.Bytes()
 		var sig2 Signature
 		sig2.ParseBytes(ret)
-		if bytes.Equal(sig.R.Bytes(), sig2.R.Bytes()) == false {
+		if !bytes.Equal(sig.R.Bytes(), sig2.R.Bytes()) {
 			log.Panic("serialization failed 1")
 		}
-		if bytes.Equal(sig.S.Bytes(), sig2.S.Bytes()) == false {
+		if !bytes.Equal(sig.S.Bytes(), sig2.S.Bytes()) {
 			log.Panic("serialization failed 2")
 		}
 	}

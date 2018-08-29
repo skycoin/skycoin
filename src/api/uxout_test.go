@@ -29,7 +29,6 @@ func TestGetUxOutByID(t *testing.T) {
 	tt := []struct {
 		name                    string
 		method                  string
-		url                     string
 		status                  int
 		err                     string
 		httpBody                *httpBody
@@ -115,7 +114,7 @@ func TestGetUxOutByID(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			endpoint := "/api/v1/uxout"
 			gateway.On("GetUxOutByID", tc.getGetUxOutByIDArg).Return(tc.getGetUxOutByIDResponse, tc.getGetUxOutByIDError)
 
@@ -143,7 +142,7 @@ func TestGetUxOutByID(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -173,7 +172,6 @@ func TestGetAddrUxOuts(t *testing.T) {
 	tt := []struct {
 		name                  string
 		method                string
-		url                   string
 		status                int
 		err                   string
 		httpBody              *httpBody
@@ -234,7 +232,7 @@ func TestGetAddrUxOuts(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/address_uxouts"
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			gateway.On("GetAddrUxOuts", tc.getAddrUxOutsArg).Return(tc.getAddrUxOutsResponse, tc.getAddrUxOutsError)
 
 			v := url.Values{}
@@ -259,7 +257,7 @@ func TestGetAddrUxOuts(t *testing.T) {
 				setCSRFParameters(csrfStore, tokenInvalid, req)
 			}
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

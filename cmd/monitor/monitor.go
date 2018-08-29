@@ -70,7 +70,10 @@ func getPeers() ([]string, map[string]peer) {
 			continue
 		}
 		defer conn.Close()
-		conn.Write([]byte("GET / HTTP/1.0\r\n\r\n"))
+		_, err = conn.Write([]byte("GET / HTTP/1.0\r\n\r\n"))
+		if err != nil {
+			continue
+		}
 
 		start := time.Now()
 		oneByte := make([]byte, 1)

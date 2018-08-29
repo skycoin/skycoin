@@ -1,5 +1,5 @@
 # Creates an image for skycoin development
-FROM golang:1.10.2-stretch
+FROM golang:1.11-stretch
 
 # Installs nodejs and npm. Needed for moxygen.
 

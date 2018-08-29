@@ -1,7 +1,7 @@
 # skycoin build
 # reference https://github.com/skycoin/skycoin
 ARG IMAGE_FROM=busybox
-FROM golang:1.10.1-stretch AS build
+FROM golang:1.11-stretch AS build
 ARG ARCH=amd64
 ARG GOARM
 ARG SKYCOIN_VERSION

@@ -393,7 +393,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	i++
 	// Spending 9.000001 SKY
 	txns = append(txns, makeSpendTxWithFee(t, coin.UxArray{uxs[i]}, []cipher.SecKey{genSecret}, toAddr, coins+1, f*70))
-	i++
+	// i++
 
 	// Confirm that at least one transaction has an invalid decimal output
 	foundInvalidCoins := false

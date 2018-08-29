@@ -277,7 +277,6 @@ func NewReadableOutput(headTime uint64, t coin.UxOut) (ReadableOutput, error) {
 	case nil:
 	case coin.ErrAddEarnedCoinHoursAdditionOverflow:
 		calculatedHours = 0
-		err = nil
 	default:
 		return ReadableOutput{}, err
 	}

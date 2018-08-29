@@ -2048,7 +2048,6 @@ func (vs Visor) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair,
 			switch err {
 			case coin.ErrAddEarnedCoinHoursAdditionOverflow:
 				coinHours = 0
-				err = nil
 			default:
 				return nil, fmt.Errorf("uxs.CoinHours failed: %v", err)
 			}
@@ -2064,7 +2063,6 @@ func (vs Visor) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair,
 			switch err {
 			case coin.ErrAddEarnedCoinHoursAdditionOverflow:
 				coinHours = 0
-				err = nil
 			default:
 				return nil, fmt.Errorf("predictedUxs.CoinHours failed: %v", err)
 			}

@@ -49,14 +49,18 @@ func TestDecodeBase58Address(t *testing.T) {
 	a := AddressFromPubKey(p)
 	require.NoError(t, a.Verify(p))
 
-	a2, err := DecodeBase58Address("")
+	_, err := DecodeBase58Address("")
 	require.Error(t, err)
-	a2, err = DecodeBase58Address("cascs")
+
+	_, err = DecodeBase58Address("cascs")
 	require.Error(t, err)
+
 	b := a.Bytes()
 	h := string(base58.Hex2Base58(b[:len(b)/2]))
-	a2, err = DecodeBase58Address(h)
+	a2, err := DecodeBase58Address(h)
 	require.Error(t, err)
+	require.Equal(t, a, a2)
+
 	h = string(base58.Hex2Base58(b))
 	a2, err = DecodeBase58Address(h)
 	require.NoError(t, err)

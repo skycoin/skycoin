@@ -151,6 +151,7 @@ func TestReadableTransactionOutput(t *testing.T) {
 	to := b.Body.Transactions[0].Out[0]
 
 	rto, err := NewReadableTransactionOutput(&to, testutil.RandSHA256(t))
+	require.NoError(t, err)
 	assertReadableTransactionOutput(t, *rto, to)
 }
 
@@ -197,6 +198,7 @@ func TestReadableTransaction(t *testing.T) {
 	rtx, err := NewReadableTransaction(&Transaction{
 		Txn: tx,
 	})
+	require.NoError(t, err)
 	assertReadableTransaction(t, *rtx, tx)
 }
 
@@ -248,5 +250,6 @@ func TestNewReadableBlock(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, sb.Head.BkSeq, uint64(1))
 	rb, err := NewReadableBlock(&sb.Block)
+	require.NoError(t, err)
 	assertReadableBlock(t, *rb, sb.Block)
 }

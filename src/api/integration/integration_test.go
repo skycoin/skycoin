@@ -1470,7 +1470,6 @@ func TestLiveNetworkConnections(t *testing.T) {
 		require.Equal(t, cc.Outgoing, connection.Outgoing)
 		require.True(t, cc.LastReceived <= connection.LastReceived)
 		require.True(t, cc.LastSent <= connection.LastSent)
-		require.True(t, cc.Height >= 0)
 	}
 }
 
@@ -4090,7 +4089,7 @@ func assertRequestedHours(t *testing.T, to []api.Receiver, out []api.CreatedTran
 		require.NoError(t, err)
 
 		outHours, err := strconv.ParseUint(o.Hours, 10, 64)
-
+		require.NoError(t, err)
 		require.Equal(t, toHours, outHours)
 	}
 }
@@ -4707,6 +4706,7 @@ func createWallet(t *testing.T, c *api.Client, encrypt bool, password string, se
 		if _, err := os.Stat(bakWalletPath); !os.IsNotExist(err) {
 			// Return directly if no .bak file does exist
 			err = os.Remove(bakWalletPath)
+			require.NoError(t, err)
 		}
 
 		require.NoError(t, err)

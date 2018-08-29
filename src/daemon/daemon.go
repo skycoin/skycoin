@@ -440,19 +440,30 @@ func (dm *Daemon) Run() error {
 		blockCreationTicker.Stop()
 	}
 
-	unconfirmedRefreshTicker := time.Tick(dm.Config.UnconfirmedRefreshRate)
-	unconfirmedRemoveInvalidTicker := time.Tick(dm.Config.UnconfirmedRemoveInvalidRate)
-	blocksRequestTicker := time.Tick(dm.Config.BlocksRequestRate)
-	blocksAnnounceTicker := time.Tick(dm.Config.BlocksAnnounceRate)
+	unconfirmedRefreshTicker := time.NewTicker(dm.Config.UnconfirmedRefreshRate)
+	defer unconfirmedRefreshTicker.Stop()
+	unconfirmedRemoveInvalidTicker := time.NewTicker(dm.Config.UnconfirmedRemoveInvalidRate)
+	defer unconfirmedRemoveInvalidTicker.Stop()
+	blocksRequestTicker := time.NewTicker(dm.Config.BlocksRequestRate)
+	defer blocksRequestTicker.Stop()
+	blocksAnnounceTicker := time.NewTicker(dm.Config.BlocksAnnounceRate)
+	defer blocksAnnounceTicker.Stop()
 
-	privateConnectionsTicker := time.Tick(dm.Config.PrivateRate)
-	cullInvalidTicker := time.Tick(dm.Config.CullInvalidRate)
-	outgoingConnectionsTicker := time.Tick(dm.Config.OutgoingRate)
-	requestPeersTicker := time.Tick(dm.pex.Config.RequestRate)
-	clearStaleConnectionsTicker := time.Tick(dm.pool.Config.ClearStaleRate)
-	idleCheckTicker := time.Tick(dm.pool.Config.IdleCheckRate)
+	privateConnectionsTicker := time.NewTicker(dm.Config.PrivateRate)
+	defer privateConnectionsTicker.Stop()
+	cullInvalidTicker := time.NewTicker(dm.Config.CullInvalidRate)
+	defer cullInvalidTicker.Stop()
+	outgoingConnectionsTicker := time.NewTicker(dm.Config.OutgoingRate)
+	defer outgoingConnectionsTicker.Stop()
+	requestPeersTicker := time.NewTicker(dm.pex.Config.RequestRate)
+	defer requestPeersTicker.Stop()
+	clearStaleConnectionsTicker := time.NewTicker(dm.pool.Config.ClearStaleRate)
+	defer clearStaleConnectionsTicker.Stop()
+	idleCheckTicker := time.NewTicker(dm.pool.Config.IdleCheckRate)
+	defer idleCheckTicker.Stop()
 
-	flushAnnouncedTxnsTicker := time.Tick(dm.Config.FlushAnnouncedTxnsRate)
+	flushAnnouncedTxnsTicker := time.NewTicker(dm.Config.FlushAnnouncedTxnsRate)
+	defer flushAnnouncedTxnsTicker.Stop()
 
 	// Connect to trusted peers
 	if !dm.Config.DisableOutgoingConnections {
@@ -500,14 +511,14 @@ loop:
 		case <-dm.quit:
 			break loop
 
-		case <-cullInvalidTicker:
+		case <-cullInvalidTicker.C:
 			// Remove connections that failed to complete the handshake
 			elapser.Register("cullInvalidTicker")
 			if !dm.Config.DisableNetworking {
 				dm.cullInvalidConnections()
 			}
 
-		case <-requestPeersTicker:
+		case <-requestPeersTicker.C:
 			// Request peers via PEX
 			elapser.Register("requestPeersTicker")
 			if dm.pex.Config.Disabled {
@@ -523,21 +534,21 @@ loop:
 				logger.Error(err)
 			}
 
-		case <-clearStaleConnectionsTicker:
+		case <-clearStaleConnectionsTicker.C:
 			// Remove connections that haven't said anything in a while
 			elapser.Register("clearStaleConnectionsTicker")
 			if !dm.Config.DisableNetworking {
 				dm.pool.clearStaleConnections()
 			}
 
-		case <-idleCheckTicker:
+		case <-idleCheckTicker.C:
 			// Sends pings as needed
 			elapser.Register("idleCheckTicker")
 			if !dm.Config.DisableNetworking {
 				dm.pool.sendPings()
 			}
 
-		case <-outgoingConnectionsTicker:
+		case <-outgoingConnectionsTicker.C:
 			// Fill up our outgoing connections
 			elapser.Register("outgoingConnectionsTicker")
 			trustPeerNum := len(dm.pex.Trusted())
@@ -547,7 +558,7 @@ loop:
 				dm.connectToRandomPeer()
 			}
 
-		case <-privateConnectionsTicker:
+		case <-privateConnectionsTicker.C:
 			// Always try to stay connected to our private peers
 			// TODO (also, connect to all of them on start)
 			elapser.Register("privateConnectionsTicker")
@@ -583,7 +594,7 @@ loop:
 			}
 			dm.handleConnectionError(r)
 
-		case <-flushAnnouncedTxnsTicker:
+		case <-flushAnnouncedTxnsTicker.C:
 			elapser.Register("flushAnnouncedTxnsTicker")
 			txns := dm.announcedTxns.flush()
 
@@ -623,7 +634,7 @@ loop:
 				logger.Critical().Infof("Created and published a new block, version=%d seq=%d time=%d", head.Version, head.BkSeq, head.Time)
 			}
 
-		case <-unconfirmedRefreshTicker:
+		case <-unconfirmedRefreshTicker.C:
 			elapser.Register("unconfirmedRefreshTicker")
 			// Get the transactions that turn to valid
 			validTxns, err := dm.visor.RefreshUnconfirmed()
@@ -636,7 +647,7 @@ loop:
 				logger.WithError(err).Warning("AnnounceTxns failed")
 			}
 
-		case <-unconfirmedRemoveInvalidTicker:
+		case <-unconfirmedRemoveInvalidTicker.C:
 			elapser.Register("unconfirmedRemoveInvalidTicker")
 			// Remove transactions that become invalid (violating hard constraints)
 			removedTxns, err := dm.visor.RemoveInvalidUnconfirmed()
@@ -648,13 +659,13 @@ loop:
 				logger.Infof("Remove %d txns from pool that began violating hard constraints", len(removedTxns))
 			}
 
-		case <-blocksRequestTicker:
+		case <-blocksRequestTicker.C:
 			elapser.Register("blocksRequestTicker")
 			if err := dm.RequestBlocks(); err != nil {
 				logger.WithError(err).Warning("RequestBlocks failed")
 			}
 
-		case <-blocksAnnounceTicker:
+		case <-blocksAnnounceTicker.C:
 			elapser.Register("blocksAnnounceTicker")
 			if err := dm.AnnounceBlocks(); err != nil {
 				logger.WithError(err).Warning("AnnounceBlocks failed")

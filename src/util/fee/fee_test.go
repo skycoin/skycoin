@@ -99,6 +99,7 @@ func TestVerifyTransactionFee(t *testing.T) {
 	err = VerifyTransactionFee(txn, hours)
 	require.NoError(t, err)
 	hours, err = txn.OutputHours()
+	require.NoError(t, err)
 	err = VerifyTransactionFee(txn, hours*10)
 	require.NoError(t, err)
 

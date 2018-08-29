@@ -55,7 +55,7 @@ func (txs *transactions) Get(tx *dbutil.Tx, hash cipher.SHA256) (*Transaction, e
 
 // GetSlice returns transactions slice of given hashes
 func (txs *transactions) GetSlice(tx *dbutil.Tx, hashes []cipher.SHA256) ([]Transaction, error) {
-	var txns []Transaction
+	txns := make([]Transaction, 0, len(hashes))
 	for _, h := range hashes {
 		var txn Transaction
 
@@ -63,6 +63,7 @@ func (txs *transactions) GetSlice(tx *dbutil.Tx, hashes []cipher.SHA256) ([]Tran
 			return nil, err
 		} else if !ok {
 			continue
+			// return nil, errors.New("Transaction not found")
 		}
 
 		txns = append(txns, txn)

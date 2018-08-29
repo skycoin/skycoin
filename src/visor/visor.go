@@ -2459,7 +2459,7 @@ func (vs *Visor) getUnspentsForSpending(tx *dbutil.Tx, addrs []cipher.Address, i
 func (vs *Visor) GetVerboseTransactionsForAddress(a cipher.Address) ([]ReadableTransactionVerbose, error) {
 	var resTxns []ReadableTransactionVerbose
 
-	if err := vs.DB.View("GetTransactionsForAddress", func(tx *dbutil.Tx) error {
+	if err := vs.DB.View("GetVerboseTransactionsForAddress", func(tx *dbutil.Tx) error {
 		addrTxns, err := vs.getTransactionsForAddresses(tx, []cipher.Address{a})
 		if err != nil {
 			logger.Errorf("GetVerboseTransactionsForAddress: gw.v.GetTransactionsForAddress failed: %v", err)
@@ -2480,7 +2480,6 @@ func (vs *Visor) GetVerboseTransactionsForAddress(a cipher.Address) ([]ReadableT
 		resTxns = make([]ReadableTransactionVerbose, len(txns))
 
 		for i, txn := range txns {
-
 			// If the txn is confirmed, use the time of the block previous
 			// to the block in which the transaction was executed,
 			// else use the head time for unconfirmed blocks.

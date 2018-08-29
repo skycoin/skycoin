@@ -185,6 +185,8 @@ func (hd HistoryDB) GetAddrUxOuts(tx *dbutil.Tx, address cipher.Address) ([]*UxO
 
 // GetTransactionsForAddress returns all the address related transactions
 func (hd HistoryDB) GetTransactionsForAddress(tx *dbutil.Tx, address cipher.Address) ([]Transaction, error) {
+
+	logger.Critical().Println("historydb.GetTransactionsForAddress")
 	hashes, err := hd.addrTxns.Get(tx, address)
 	if err != nil {
 		return nil, err

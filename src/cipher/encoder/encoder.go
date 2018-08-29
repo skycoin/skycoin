@@ -255,10 +255,7 @@ func Deserialize(r io.Reader, dsize int, data interface{}) error {
 func CanDeserialize(in []byte, dst reflect.Value) bool {
 	d1 := &decoder{buf: make([]byte, len(in))}
 	copy(d1.buf, in)
-	if d1.dchk(dst) != 0 {
-		return false
-	}
-	return true
+	return d1.dchk(dst) == 0
 }
 
 // DeserializeRawToValue deserializes `in` buffer into
@@ -604,10 +601,7 @@ type encoder coder
 func (d *decoder) bool() bool {
 	x := d.buf[0]
 	d.buf = d.buf[1:] //advance slice
-	if x == 0 {
-		return false
-	}
-	return true
+	return x != 0
 }
 
 func (e *encoder) bool(x bool) {

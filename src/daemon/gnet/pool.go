@@ -456,19 +456,13 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) erro
 		elapser := elapse.NewElapser(receiveMessageDurationThreshold, logger)
 		defer elapser.CheckForDone()
 
-		for {
-			select {
-			case msg, ok := <-msgC:
-				if !ok {
-					return
-				}
-				elapser.Register(fmt.Sprintf("pool.receiveMessage address=%s", addr))
-				if err := pool.receiveMessage(c, msg); err != nil {
-					errC <- err
-					return
-				}
-				elapser.CheckForDone()
+		for msg := range msgC {
+			elapser.Register(fmt.Sprintf("pool.receiveMessage address=%s", addr))
+			if err := pool.receiveMessage(c, msg); err != nil {
+				errC <- err
+				return
 			}
+			elapser.CheckForDone()
 		}
 	}()
 

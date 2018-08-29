@@ -131,10 +131,8 @@ func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 			switch err {
 			case wallet.ErrWalletNotExist:
 				wh.Error404(w, "")
-				break
 			case wallet.ErrWalletAPIDisabled:
 				wh.Error403(w, "")
-				break
 			default:
 				wh.Error500(w, err.Error())
 			}
@@ -483,7 +481,6 @@ func walletNewAddresses(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		wh.SendJSONOr500(logger, w, rlt)
-		return
 	}
 }
 

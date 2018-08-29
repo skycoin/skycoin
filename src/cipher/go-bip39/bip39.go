@@ -112,7 +112,7 @@ func NewMnemonic(entropy []byte) (string, error) {
 // This is not really important because BIP39 doesnt really define a conversion
 // from string to bytes.
 func MnemonicToByteArray(mnemonic string) ([]byte, error) {
-	if IsMnemonicValid(mnemonic) == false {
+	if !IsMnemonicValid(mnemonic) {
 		return nil, fmt.Errorf("Invalid mnemonic")
 	}
 	mnemonicSlice := strings.Split(mnemonic, " ")
@@ -128,7 +128,7 @@ func MnemonicToByteArray(mnemonic string) ([]byte, error) {
 	modulo := big.NewInt(2048)
 	for _, v := range mnemonicSlice {
 		index, found := ReverseWordMap[v]
-		if found == false {
+		if !found {
 			return nil, fmt.Errorf("Word `%v` not found in reverse map", v)
 		}
 		add := big.NewInt(int64(index))

@@ -101,7 +101,7 @@ func Test_SignatureVerifyPubkey(t *testing.T) {
 		t.Fail()
 	}
 	pubkey2 := RecoverPubkey(msg, sig)
-	if bytes.Equal(pubkey1, pubkey2) == false {
+	if !bytes.Equal(pubkey1, pubkey2) {
 		t.Fatal("Recovered pubkey does not match")
 	}
 }
@@ -166,7 +166,7 @@ func Test_Secp256_02(t *testing.T) {
 	if pubkey2 == nil {
 		t.Fatal("Recovered pubkey invalid")
 	}
-	if bytes.Equal(pubkey1, pubkey2) == false {
+	if !bytes.Equal(pubkey1, pubkey2) {
 		t.Fatal("Recovered pubkey does not match")
 	}
 
@@ -199,7 +199,7 @@ func Test_Secp256_02a(t *testing.T) {
 			t.Fatal()
 		}
 	}
-	if bytes.Equal(pubkey1, pubkey2) == false {
+	if !bytes.Equal(pubkey1, pubkey2) {
 		t.Fatal()
 	}
 }
@@ -235,7 +235,7 @@ func Test_Secp256_04(t *testing.T) {
 		if pubkey2 == nil {
 			t.Fail()
 		}
-		if bytes.Equal(pubkey1, pubkey2) == false {
+		if !bytes.Equal(pubkey1, pubkey2) {
 			t.Fail()
 		}
 	}
@@ -268,7 +268,7 @@ func Test_Secp256_06a_alt0(t *testing.T) {
 		sig = randSig()
 		pubkey2 := RecoverPubkey(msg, sig)
 
-		if bytes.Equal(pubkey1, pubkey2) == true {
+		if bytes.Equal(pubkey1, pubkey2) {
 			t.Fail()
 		}
 
@@ -293,7 +293,7 @@ func Test_Secp256_06b(t *testing.T) {
 	for i := 0; i < TESTS; i++ {
 		msg = RandByte(32)
 		pubkey2 := RecoverPubkey(msg, sig)
-		if bytes.Equal(pubkey1, pubkey2) == true {
+		if bytes.Equal(pubkey1, pubkey2) {
 			t.Fail()
 		}
 
@@ -320,10 +320,10 @@ func Test_Deterministic_Keypairs_00(t *testing.T) {
 		_, pub1, sec1 := DeterministicKeyPairIterator(seed)
 		pub2, sec2 := GenerateDeterministicKeyPair(seed)
 
-		if bytes.Equal(pub1, pub2) == false {
+		if !bytes.Equal(pub1, pub2) {
 			t.Fail()
 		}
-		if bytes.Equal(sec1, sec2) == false {
+		if !bytes.Equal(sec1, sec2) {
 			t.Fail()
 		}
 	}
@@ -335,10 +335,10 @@ func Test_Deterministic_Keypairs_01(t *testing.T) {
 		_, pub1, sec1 := DeterministicKeyPairIterator(seed)
 		pub2, sec2 := GenerateDeterministicKeyPair(seed)
 
-		if bytes.Equal(pub1, pub2) == false {
+		if !bytes.Equal(pub1, pub2) {
 			t.Fail()
 		}
-		if bytes.Equal(sec1, sec2) == false {
+		if !bytes.Equal(sec1, sec2) {
 			t.Fail()
 		}
 	}
@@ -350,10 +350,10 @@ func Test_Deterministic_Keypairs_02(t *testing.T) {
 		_, pub1, sec1 := DeterministicKeyPairIterator(seed)
 		pub2, sec2 := GenerateDeterministicKeyPair(seed)
 
-		if bytes.Equal(pub1, pub2) == false {
+		if !bytes.Equal(pub1, pub2) {
 			t.Fail()
 		}
-		if bytes.Equal(sec1, sec2) == false {
+		if !bytes.Equal(sec1, sec2) {
 			t.Fail()
 		}
 	}
@@ -394,7 +394,7 @@ func Test_Deterministic_Keypairs_03(t *testing.T) {
 		sec1 := Decode(testArray[2*i+1])
 
 		_, sec2 := GenerateDeterministicKeyPair(seed)
-		if bytes.Equal(sec1, sec2) == false {
+		if !bytes.Equal(sec1, sec2) {
 			t.Fail()
 		}
 	}
@@ -425,7 +425,7 @@ func Test_DeterministicWallets1(t *testing.T) {
 		seed := Decode(testArray[2*i+0])                    //input
 		seckey1 := Decode(testArray[2*i+1])                 //target
 		_, _, seckey2 := DeterministicKeyPairIterator(seed) //output
-		if bytes.Equal(seckey1, seckey2) == false {
+		if !bytes.Equal(seckey1, seckey2) {
 			t.Fail()
 		}
 	}
@@ -456,7 +456,7 @@ func Test_Secp256k1_Hash(t *testing.T) {
 		hash1 := Decode(testArray[2*i+0]) //input
 		hash2 := Decode(testArray[2*i+1]) //target
 		hash3 := Secp256k1Hash(hash1)     //output
-		if bytes.Equal(hash2, hash3) == false {
+		if !bytes.Equal(hash2, hash3) {
 			t.Fail()
 		}
 	}
@@ -470,7 +470,7 @@ func Test_Secp256k1_Equal(t *testing.T) {
 		hash1 := Secp256k1Hash(seed)
 		hash2, _, _ := DeterministicKeyPairIterator(seed)
 
-		if bytes.Equal(hash1, hash2) == false {
+		if !bytes.Equal(hash1, hash2) {
 			t.Fail()
 		}
 	}
@@ -489,11 +489,11 @@ func Test_DeterministicWalletGeneration(t *testing.T) {
 		seed, pubkey, seckey = DeterministicKeyPairIterator(seed)
 	}
 
-	if bytes.Equal(seckey, Decode(secOut)) == false {
+	if !bytes.Equal(seckey, Decode(secOut)) {
 		t.Fail()
 	}
 
-	if bytes.Equal(pubkey, Decode(pubOut)) == false {
+	if !bytes.Equal(pubkey, Decode(pubOut)) {
 		t.Fail()
 	}
 }
@@ -514,7 +514,7 @@ func Test_ECDH(t *testing.T) {
 		t.Fail()
 	}
 
-	if bytes.Equal(puba, pubb) == false {
+	if !bytes.Equal(puba, pubb) {
 		t.Fail()
 	}
 
@@ -538,7 +538,7 @@ func Test_ECDH2(t *testing.T) {
 			t.Fail()
 		}
 
-		if bytes.Equal(puba, pubb) == false {
+		if !bytes.Equal(puba, pubb) {
 			t.Fail()
 		}
 	}
@@ -653,7 +653,7 @@ func Test_Abnormal_Keys3(t *testing.T) {
 			t.Fail()
 		}
 
-		if bytes.Equal(puba, pubb) == false {
+		if !bytes.Equal(puba, pubb) {
 			t.Errorf("recovered do not match")
 		}
 	}

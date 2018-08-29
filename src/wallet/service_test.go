@@ -1771,9 +1771,7 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 				})
 
 				sortedTxnIn := make([]cipher.SHA256, len(txn.In))
-				for i, x := range txn.In {
-					sortedTxnIn[i] = x
-				}
+				copy(sortedTxnIn[:], txn.In[:])
 
 				sort.Slice(sortedTxnIn, func(i, j int) bool {
 					return bytes.Compare(sortedTxnIn[i][:], sortedTxnIn[j][:]) < 0
@@ -1798,9 +1796,7 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 
 				// Assign expected hours for comparison
 				var to []coin.TransactionOutput
-				for _, x := range tc.params.To {
-					to = append(to, x)
-				}
+				to = append(to, tc.params.To...)
 
 				if len(tc.toExpectedHours) != 0 {
 					require.Equal(t, len(tc.toExpectedHours), len(to))

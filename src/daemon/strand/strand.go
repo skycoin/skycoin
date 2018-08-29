@@ -84,7 +84,7 @@ func Strand(logger *logging.Logger, c chan Request, name string, f func() error,
 			}
 
 			// Notify us if the function call took too long
-			elapsed := time.Now().Sub(t)
+			elapsed := time.Since(t)
 			if elapsed > logDurationThreshold {
 				logger.Warningf("%s took %s", name, elapsed)
 			} else {
@@ -105,7 +105,7 @@ loop:
 		case c <- req:
 			break loop
 		case <-time.After(logQueueRequestWaitThreshold):
-			logger.Warningf("Waited %s while trying to write %s to the strand request channel", time.Now().Sub(t), req.Name)
+			logger.Warningf("Waited %s while trying to write %s to the strand request channel", time.Since(t), req.Name)
 		}
 	}
 
@@ -117,7 +117,7 @@ loop:
 		case <-done:
 			return err
 		case <-time.After(logQueueRequestWaitThreshold):
-			logger.Warningf("Waited %s while waiting for %s to be done or quit", time.Now().Sub(t), req.Name)
+			logger.Warningf("Waited %s while waiting for %s to be done or quit", time.Since(t), req.Name)
 		}
 	}
 }

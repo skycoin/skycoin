@@ -1299,23 +1299,16 @@ func checkTransactions(t *testing.T, txids []string) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for {
-				select {
-				case txid, ok := <-txC:
-					if !ok {
-						return
-					}
-
-					t.Run(fmt.Sprintf("%v", txid), func(t *testing.T) {
-						o, err := exec.Command(binaryPath, "transaction", txid).CombinedOutput()
-						require.NoError(t, err)
-						var txRlt webrpc.TxnResult
-						err = json.NewDecoder(bytes.NewReader(o)).Decode(&txRlt)
-						require.NoError(t, err)
-						require.Equal(t, txid, txRlt.Transaction.Transaction.Hash)
-						require.True(t, txRlt.Transaction.Status.Confirmed)
-					})
-				}
+			for txid := range txC {
+				t.Run(fmt.Sprintf("%v", txid), func(t *testing.T) {
+					o, err := exec.Command(binaryPath, "transaction", txid).CombinedOutput()
+					require.NoError(t, err)
+					var txRlt webrpc.TxnResult
+					err = json.NewDecoder(bytes.NewReader(o)).Decode(&txRlt)
+					require.NoError(t, err)
+					require.Equal(t, txid, txRlt.Transaction.Transaction.Hash)
+					require.True(t, txRlt.Transaction.Status.Confirmed)
+				})
 			}
 		}()
 	}

@@ -101,7 +101,6 @@ func (pl *peerlist) addPeer(addr string) {
 
 	peer := NewPeer(addr)
 	pl.peers[addr] = peer
-	return
 }
 
 func (pl *peerlist) addPeers(addrs []string) {

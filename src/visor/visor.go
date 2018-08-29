@@ -1163,7 +1163,7 @@ func (vs *Visor) getTransactions(tx *dbutil.Tx, flts []TxFilter) ([]Transaction,
 
 	// Converts address transactions map into []Transaction,
 	// and remove duplicate txns
-	txnMap := make(map[cipher.SHA256]struct{}, 0)
+	txnMap := make(map[cipher.SHA256]struct{})
 	var txns []Transaction
 	for _, txs := range addrTxns {
 		for _, tx := range txs {
@@ -1198,7 +1198,7 @@ func (vs *Visor) getTransactions(tx *dbutil.Tx, flts []TxFilter) ([]Transaction,
 
 func accumulateAddressInFilter(afs []AddrsFilter) []cipher.Address {
 	// Accumulate all addresses in address filters
-	addrMap := make(map[cipher.Address]struct{}, 0)
+	addrMap := make(map[cipher.Address]struct{})
 	var addrs []cipher.Address
 	for _, af := range afs {
 		for _, a := range af.Addrs {

@@ -200,7 +200,7 @@ func (bc Blockchain) NewBlock(tx *dbutil.Tx, txns coin.Transactions, currentTime
 	}
 
 	// make sure block is valid
-	if DebugLevel2 == true {
+	if DebugLevel2 {
 		if err := bc.verifyBlockHeader(tx, *b); err != nil {
 			return nil, err
 		}
@@ -672,23 +672,17 @@ func (bc *Blockchain) WalkChain(workers int, f func(*dbutil.Tx, *coin.SignedBloc
 		go func() {
 			defer workerWg.Done()
 			if err := bc.db.View("WalkChain verify blocks", func(tx *dbutil.Tx) error {
-				for {
-					select {
-					case b, ok := <-signedBlockC:
-						if !ok {
-							return nil
-						}
-
-						if err := f(tx, b); err != nil {
-							// if err := cipher.VerifySignature(bc.cfg.Pubkey, sh.sig, sh.hash); err != nil {
-							// logger.Errorf("Signature verification failed: %v", err)
-							select {
-							case errC <- err:
-							default:
-							}
+				for b := range signedBlockC {
+					if err := f(tx, b); err != nil {
+						// if err := cipher.VerifySignature(bc.cfg.Pubkey, sh.sig, sh.hash); err != nil {
+						// logger.Errorf("Signature verification failed: %v", err)
+						select {
+						case errC <- err:
+						default:
 						}
 					}
 				}
+				return nil
 			}); err != nil {
 				logger.WithError(err).Error("WalkChain verify blocks db transaction failed")
 			}

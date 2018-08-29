@@ -56,7 +56,7 @@ func (xy *XY) ParsePubkey(pub []byte) bool {
 	}
 	//THIS FAILS
 	//reenable later
-	//if elem.IsValid() == false {
+	//if !elem.IsValid() {
 	//	return false
 	//}
 

@@ -154,7 +154,6 @@ func blockHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		wh.SendJSONOr500(logger, w, rb)
-		return
 	}
 }
 

@@ -150,7 +150,7 @@ func Test_Encode_3a(t *testing.T) {
 	err := Deserialize(&buf, len(b), &t2)
 	require.NoError(t, err)
 
-	require.False(t, t1.X != t2.X || len(t1.K) != len(t2.K) || bytes.Compare(t1.K, t2.K) != 0)
+	require.False(t, t1.X != t2.X || len(t1.K) != len(t2.K) || !bytes.Equal(t1.K, t2.K))
 
 	b2 := Serialize(t2)
 
@@ -169,7 +169,7 @@ func Test_Encode_3b(t *testing.T) {
 	err := DeserializeRaw(b, &t2)
 	require.NoError(t, err)
 
-	require.False(t, t1.X != t2.X || len(t1.K) != len(t2.K) || bytes.Compare(t1.K, t2.K) != 0)
+	require.False(t, t1.X != t2.X || len(t1.K) != len(t2.K) || !bytes.Equal(t1.K, t2.K))
 
 	b2 := Serialize(t2)
 

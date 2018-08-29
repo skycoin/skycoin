@@ -129,6 +129,7 @@ lint: ## Run linters. Use make install-linters first.
 		-E deadcode \
 		-E structcheck \
 		-E errcheck \
+		-E gosimple \
 		./...
 	# lib/cgo can't use golint because it needs export directives in function docstrings that do not obey golint rules
 	# deadcode also doesn't make sense for lib/cgo
@@ -138,6 +139,7 @@ lint: ## Run linters. Use make install-linters first.
 		-E unparam \
 		-E structcheck \
 		-E errcheck \
+		-E gosimple \
 		./lib/cgo/...
 
 check: lint test integration-test-stable integration-test-stable-disable-csrf integration-test-disable-wallet-api integration-test-disable-seed-api integration-test-enable-seed-api integration-test-disable-gui ## Run tests and linters

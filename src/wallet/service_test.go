@@ -581,6 +581,7 @@ func TestServiceGetWallets(t *testing.T) {
 				wallets = append(wallets, w1)
 
 				ws, err := s.GetWallets()
+				require.NoError(t, err)
 				for _, w := range wallets {
 					ww, ok := ws[w.Filename()]
 					require.True(t, ok)
@@ -942,16 +943,13 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 	cases := []struct {
 		name             string
 		err              error
-		txn              *coin.Transaction
 		params           CreateTransactionParams
 		opts             Options
-		vld              Validator
 		unspents         []coin.UxOut
 		addressUnspents  coin.AddressUxOuts
 		chosenUnspents   []coin.UxOut
 		headTime         uint64
 		disableWalletAPI bool
-		pwd              []byte
 		walletNotExist   bool
 		changeOutput     *coin.TransactionOutput
 		toExpectedHours  []uint64
@@ -1771,9 +1769,7 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 				})
 
 				sortedTxnIn := make([]cipher.SHA256, len(txn.In))
-				for i, x := range txn.In {
-					sortedTxnIn[i] = x
-				}
+				copy(sortedTxnIn[:], txn.In[:])
 
 				sort.Slice(sortedTxnIn, func(i, j int) bool {
 					return bytes.Compare(sortedTxnIn[i][:], sortedTxnIn[j][:]) < 0
@@ -1798,9 +1794,7 @@ func TestServiceCreateAndSignTransactionAdvanced(t *testing.T) {
 
 				// Assign expected hours for comparison
 				var to []coin.TransactionOutput
-				for _, x := range tc.params.To {
-					to = append(to, x)
-				}
+				to = append(to, tc.params.To...)
 
 				if len(tc.toExpectedHours) != 0 {
 					require.Equal(t, len(tc.toExpectedHours), len(to))

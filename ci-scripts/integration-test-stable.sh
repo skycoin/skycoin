@@ -23,9 +23,8 @@ UPDATE=""
 VERBOSE=""
 # run go test with -run flag
 RUN_TESTS=""
-# run tests with csrf enabled
-USE_CSRF=""
 DISABLE_CSRF="-disable-csrf"
+USE_CSRF=""
 
 COMMIT=$(git rev-parse HEAD)
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
@@ -51,7 +50,7 @@ while getopts "h?t:r:uvc" args; do
     r ) RUN_TESTS="-run ${OPTARG}";;
     u ) UPDATE="--update";;
     v ) VERBOSE="-v";;
-    c ) USE_CSRF="1"; DISABLE_CSRF="";
+    c ) DISABLE_CSRF=""; USE_CSRF="1";
   esac
 done
 
@@ -78,7 +77,6 @@ echo "starting skycoin node in background with http listener on $HOST"
                       -download-peerlist=false \
                       -db-path=./src/api/integration/testdata/blockchain-180.db \
                       -db-read-only=true \
-                      -rpc-interface=true \
                       -launch-browser=false \
                       -data-dir="$DATA_DIR" \
                       -enable-wallet-api=true \
@@ -96,7 +94,7 @@ set +e
 
 if [[ -z $TEST || $TEST = "api" ]]; then
 
-SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST \
+SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST USE_CSRF=$USE_CSRF \
     go test ./src/api/integration/... $UPDATE -timeout=3m $VERBOSE $RUN_TESTS
 
 API_FAIL=$?

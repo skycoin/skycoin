@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"runtime/debug"
 	"runtime/pprof"
 	"sync"
 	"time"
@@ -32,27 +31,23 @@ type Coin struct {
 }
 
 // Run starts the node
-func (c *Coin) Run() {
-	defer func() {
-		// try catch panic in main thread
-		if r := recover(); r != nil {
-			c.logger.Errorf("recover: %v\nstack:%v", r, string(debug.Stack()))
-		}
-	}()
+func (c *Coin) Run() error {
 	var db *dbutil.DB
 	var d *daemon.Daemon
 	var webInterface *api.Server
+	var retErr error
 	errC := make(chan error, 10)
 
 	if c.config.Node.Version {
 		fmt.Println(c.config.Build.Version)
-		return
+		return nil
 	}
 
 	logLevel, err := logging.LevelFromString(c.config.Node.LogLevel)
 	if err != nil {
-		c.logger.Error("Invalid -log-level:", err)
-		return
+		err = fmt.Errorf("Invalid -log-level: %v", err)
+		c.logger.Error(err)
+		return err
 	}
 
 	logging.SetLevel(logLevel)
@@ -69,7 +64,7 @@ func (c *Coin) Run() {
 		logFile, err = c.initLogFile()
 		if err != nil {
 			c.logger.Error(err)
-			return
+			return err
 		}
 	}
 
@@ -99,7 +94,7 @@ func (c *Coin) Run() {
 	db, err = visor.OpenDB(dconf.Visor.DBPath, c.config.Node.DBReadOnly)
 	if err != nil {
 		c.logger.Errorf("Database failed to open: %v. Is another skycoin instance running?", err)
-		return
+		return err
 	}
 
 	if c.config.Node.ResetCorruptDB {
@@ -108,6 +103,7 @@ func (c *Coin) Run() {
 		if newDB, err := visor.RepairCorruptDB(db, c.config.Node.blockchainPubkey, quit); err != nil {
 			if err != visor.ErrVerifyStopped {
 				c.logger.Errorf("visor.ResetCorruptDB failed: %v", err)
+				retErr = err
 			}
 			goto earlyShutdown
 		} else {
@@ -118,14 +114,16 @@ func (c *Coin) Run() {
 		if err := visor.CheckDatabase(db, c.config.Node.blockchainPubkey, quit); err != nil {
 			if err != visor.ErrVerifyStopped {
 				c.logger.Errorf("visor.CheckDatabase failed: %v", err)
+				retErr = err
 			}
 			goto earlyShutdown
 		}
 	}
 
-	d, err = daemon.NewDaemon(dconf, db, c.config.Node.DefaultConnections)
+	d, err = daemon.NewDaemon(dconf, db)
 	if err != nil {
 		c.logger.Error(err)
+		retErr = err
 		goto earlyShutdown
 	}
 
@@ -133,6 +131,7 @@ func (c *Coin) Run() {
 		webInterface, err = c.createGUI(d, host)
 		if err != nil {
 			c.logger.Error(err)
+			retErr = err
 			goto earlyShutdown
 		}
 	}
@@ -141,6 +140,12 @@ func (c *Coin) Run() {
 	c.logger.Critical().Infof("Full address: %s", fullAddress)
 	if c.config.Node.PrintWebInterfaceAddress {
 		fmt.Println(fullAddress)
+	}
+
+	if err := d.Init(); err != nil {
+		c.logger.Error(err)
+		retErr = err
+		goto earlyShutdown
 	}
 
 	wg.Add(1)
@@ -186,8 +191,8 @@ func (c *Coin) Run() {
 
 	select {
 	case <-quit:
-	case err := <-errC:
-		c.logger.Error(err)
+	case retErr = <-errC:
+		c.logger.Error(retErr)
 	}
 
 	c.logger.Info("Shutting down...")
@@ -218,6 +223,8 @@ earlyShutdown:
 			fmt.Println("Failed to close log file")
 		}
 	}
+
+	return retErr
 }
 
 // NewCoin returns a new fiber coin instance
@@ -257,7 +264,9 @@ func (c *Coin) initProfiling() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		pprof.StartCPUProfile(f)
+		if err := pprof.StartCPUProfile(f); err != nil {
+			log.Fatal(err)
+		}
 		defer pprof.StopCPUProfile()
 	}
 	if c.config.Node.HTTPProf {
@@ -272,10 +281,7 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	//cipher.SetAddressVersion(c.AddressVersion)
 	dc := daemon.NewConfig()
 
-	for _, c := range c.config.Node.DefaultConnections {
-		dc.Pool.DefaultPeerConnections[c] = struct{}{}
-	}
-
+	dc.Pool.DefaultConnections = c.config.Node.DefaultConnections
 	dc.Pool.MaxDefaultPeerOutgoingConnections = c.config.Node.MaxDefaultPeerOutgoingConnections
 
 	dc.Pex.DataDirectory = c.config.Node.DataDirectory
@@ -283,6 +289,11 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Pex.Max = c.config.Node.PeerlistSize
 	dc.Pex.DownloadPeerList = c.config.Node.DownloadPeerList
 	dc.Pex.PeerListURL = c.config.Node.PeerListURL
+	dc.Pex.DisableTrustedPeers = c.config.Node.DisableDefaultPeers
+	dc.Pex.CustomPeersFile = c.config.Node.CustomPeersFile
+	dc.Pex.DefaultConnections = c.config.Node.DefaultConnections
+
+	dc.Daemon.DefaultConnections = c.config.Node.DefaultConnections
 	dc.Daemon.DisableOutgoingConnections = c.config.Node.DisableOutgoingConnections
 	dc.Daemon.DisableIncomingConnections = c.config.Node.DisableIncomingConnections
 	dc.Daemon.DisableNetworking = c.config.Node.DisableNetworking
@@ -319,7 +330,6 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Visor.EnableSeedAPI = c.config.Node.EnableSeedAPI
 
 	dc.Gateway.EnableWalletAPI = c.config.Node.EnableWalletAPI
-	dc.Gateway.DisableCSP = c.config.Node.DisableCSP
 
 	// Initialize wallet default crypto type
 	cryptoType, err := wallet.CryptoTypeFromString(c.config.Node.WalletCryptoType)
@@ -339,7 +349,7 @@ func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
 	config := api.Config{
 		StaticDir:            c.config.Node.GUIDirectory,
 		DisableCSRF:          c.config.Node.DisableCSRF,
-		EnableWalletAPI:      c.config.Node.EnableWalletAPI,
+		DisableCSP:           c.config.Node.DisableCSP,
 		EnableJSON20RPC:      c.config.Node.RPCInterface,
 		EnableGUI:            c.config.Node.EnableGUI,
 		EnableUnversionedAPI: c.config.Node.EnableUnversionedAPI,

@@ -24,17 +24,14 @@ func (num *Number) Print(label string) {
 func (num *Number) modMul(a, b, m *Number) {
 	num.Mul(&a.Int, &b.Int)
 	num.Mod(&num.Int, &m.Int)
-	return
 }
 
 func (num *Number) modInv(a, b *Number) {
 	num.ModInverse(&a.Int, &b.Int)
-	return
 }
 
 func (num *Number) mod(a *Number) {
 	num.Mod(&num.Int, &a.Int)
-	return
 }
 
 // SetHex sets number from string

@@ -60,6 +60,7 @@ scratch, to remedy the rough edges in the Bitcoin design.
     - [Skycoin command line interface](#skycoin-command-line-interface)
 - [Integrating Skycoin with your application](#integrating-skycoin-with-your-application)
 - [Contributing a node to the network](#contributing-a-node-to-the-network)
+- [Creating a new coin](#creating-a-new-coin)
 - [URI Specification](#uri-specification)
 - [Development](#development)
     - [Modules](#modules)
@@ -206,6 +207,10 @@ and used to seed client with peers.
 *Note*: Do not add Skywire nodes to `peers.txt`.
 Only add Skycoin nodes with high uptime and a static IP address (such as a Skycoin node hosted on a VPS).
 
+## Creating a new coin
+
+See the [newcoin tool README](./cmd/newcoin/README.md)
+
 ## URI Specification
 
 Skycoin URIs obey the same rules as specified in Bitcoin's [BIP21](https://github.com/bitcoin/bips/blob/master/bip-0021.mediawiki).
@@ -286,11 +291,10 @@ The `-v` option, show verbose logs.
 #### Live Integration Tests
 
 The live integration tests run against a live runnning skycoin node, so before running the test, we
-need to start a skycoin node. Since the `cli` integration test requires the rpc interface enabled,
-we should start node with `rpc-interface`:
+need to start a skycoin node:
 
 ```sh
-./run.sh -launch-browser=false -rpc-interface
+./run.sh -launch-browser=false
 ```
 
 After the skycoin node is up, run the following command to start the live tests:
@@ -473,15 +477,16 @@ Instructions for doing this:
 1. Compile the `src/gui/static/dist/` to make sure that it is up to date (see [Wallet GUI Development README](src/gui/static/README.md))
 2. Update all version strings in the repo (grep for them) to the new version
 3. Update `CHANGELOG.md`: move the "unreleased" changes to the version and add the date
-4. Merge these changes to `develop`
-5. Follow the steps in [pre-release testing](#pre-release-testing)
-6. Make a PR merging `develop` into `master`
-7. Review the PR and merge it
-8. Tag the master branch with the version number. Version tags start with `v`, e.g. `v0.20.0`.
+4. Update files in `docker/images/mainnet/repo-info/remote/`, adding a new file for the new version and adjusting any configuration text that may have changed
+5. Merge these changes to `develop`
+6. Follow the steps in [pre-release testing](#pre-release-testing)
+7. Make a PR merging `develop` into `master`
+8. Review the PR and merge it
+9. Tag the master branch with the version number. Version tags start with `v`, e.g. `v0.20.0`.
     Sign the tag. If you have your GPG key in github, creating a release on the Github website will automatically tag the release.
     It can be tagged from the command line with `git tag -as v0.20.0 $COMMIT_ID`, but Github will not recognize it as a "release".
-9. Make sure that the client runs properly from the `master` branch
-10. Release builds are created and uploaded by travis. To do it manually, checkout the `master` branch and follow the [create release builds](electron/README.md) instructions.
+10. Make sure that the client runs properly from the `master` branch
+11. Release builds are created and uploaded by travis. To do it manually, checkout the `master` branch and follow the [create release builds](electron/README.md) instructions.
 
 If there are problems discovered after merging to master, start over, and increment the 3rd version number.
 For example, `v0.20.0` becomes `v0.20.1`, for minor fixes.

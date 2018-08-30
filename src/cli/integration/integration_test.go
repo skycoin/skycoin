@@ -3,6 +3,7 @@ package integration_test
 
 import (
 	"bytes"
+	"encoding/csv"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -21,6 +22,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/andreyvit/diff"
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/api"
@@ -29,6 +31,7 @@ import (
 	"github.com/skycoin/skycoin/src/cli"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/droplet"
+	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -129,7 +132,9 @@ func createTempWallet(t *testing.T, encrypt bool) (string, func()) {
 	require.NoError(t, err)
 
 	defer rf.Close()
-	io.Copy(f, rf)
+
+	_, err = io.Copy(f, rf)
+	require.NoError(t, err)
 
 	originalWalletDirEnv := os.Getenv("WALLET_DIR")
 	originalWalletNameEnv := os.Getenv("WALLET_NAME")
@@ -217,7 +222,10 @@ func checkGoldenFileObjectChanges(t *testing.T, goldenFile string, td TestData) 
 	c, err := ioutil.ReadAll(f)
 	require.NoError(t, err)
 
-	require.Equal(t, string(c), string(b)+"\n", "json struct output differs from golden file, was a field added to the struct?")
+	sc := string(c)
+	sb := string(b) + "\n"
+
+	require.Equal(t, sc, sb, "JSON struct output differs from golden file, was a field added to the struct?\nDiff:\n"+diff.LineDiff(sc, sb))
 }
 
 func mode(t *testing.T) string {
@@ -420,7 +428,7 @@ func TestGenerateAddresses(t *testing.T) {
 			var expect wallet.ReadableWallet
 			loadJSON(t, goldenFile, &expect)
 			if tc.encrypted {
-				// wips secrets as it's not stable
+				// wipe secrets as it's not stable
 				expect.Meta["secrets"] = ""
 				w.Meta["secrets"] = ""
 			}
@@ -491,7 +499,7 @@ func TestDecodeRawTransaction(t *testing.T) {
 		{
 			name:   "invalid raw transaction",
 			rawTx:  "2601000000a1d",
-			errMsg: []byte("invalid raw transaction: encoding/hex: odd length hex string\nencoding/hex: odd length hex string\n"),
+			errMsg: []byte("invalid raw transaction: encoding/hex: odd length hex string\n"),
 		},
 	}
 
@@ -505,10 +513,6 @@ func TestDecodeRawTransaction(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			if bytes.Contains(output, []byte("Error: ")) {
-				require.Equal(t, tc.errMsg, string(output))
-				return
-			}
 
 			var txn visor.TransactionJSON
 			err = json.NewDecoder(bytes.NewReader(output)).Decode(&txn)
@@ -1047,9 +1051,6 @@ func TestStableShowConfig(t *testing.T) {
 	ret.DataDir = "IGNORED/.skycoin"
 
 	goldenFile := "show-config.golden"
-	if useCSRF(t) {
-		goldenFile = "show-config-use-csrf.golden"
-	}
 
 	var expect cli.Config
 	td := TestData{ret, &expect}
@@ -1101,8 +1102,6 @@ func TestLiveShowConfig(t *testing.T) {
 	require.Equal(t, coin, ret.Coin)
 
 	require.Equal(t, rpcAddress(), ret.RPCAddress)
-
-	require.Equal(t, useCSRF(t), ret.UseCSRF)
 }
 
 func TestStableStatus(t *testing.T) {
@@ -1118,11 +1117,15 @@ func TestStableStatus(t *testing.T) {
 	require.NoError(t, err)
 
 	// TimeSinceLastBlock is not stable
-	ret.TimeSinceLastBlock = ""
+	ret.Status.BlockchainMetadata.TimeSinceLastBlock = wh.FromDuration(time.Duration(0))
+	// Version is not stable
+	ret.Status.Version = visor.BuildInfo{}
+	// Uptime is not stable
+	ret.Status.Uptime = wh.FromDuration(time.Duration(0))
 
 	goldenFile := "status.golden"
 	if useCSRF(t) {
-		goldenFile = "status-use-csrf.golden"
+		goldenFile = "status-csrf-enabled.golden"
 	}
 
 	var expect cli.StatusResult
@@ -1131,15 +1134,14 @@ func TestStableStatus(t *testing.T) {
 
 	// The RPC port is not always the same between runs of the stable integration tests,
 	// so use the RPC_ADDR envvar instead of the golden file value for comparison
-	goldenRPCAddress := expect.RPCAddress
-	expect.RPCAddress = rpcAddress()
+	goldenRPCAddress := expect.Config.RPCAddress
+	expect.Config.RPCAddress = rpcAddress()
 
 	require.Equal(t, expect, ret)
 
 	// Restore goldenfile's value before checking if JSON fields were added or removed
-	expect.RPCAddress = goldenRPCAddress
+	expect.Config.RPCAddress = goldenRPCAddress
 	checkGoldenFileObjectChanges(t, goldenFile, TestData{ret, &expect})
-
 }
 
 func TestLiveStatus(t *testing.T) {
@@ -1153,9 +1155,7 @@ func TestLiveStatus(t *testing.T) {
 	var ret cli.StatusResult
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&ret)
 	require.NoError(t, err)
-	require.True(t, ret.Running)
-	require.Equal(t, rpcAddress(), ret.RPCAddress)
-	require.Equal(t, useCSRF(t), ret.UseCSRF)
+	require.Equal(t, rpcAddress(), ret.Config.RPCAddress)
 }
 
 func TestStableTransaction(t *testing.T) {
@@ -1181,7 +1181,7 @@ func TestStableTransaction(t *testing.T) {
 			name:       "not exist",
 			args:       []string{"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947"},
 			err:        errors.New("exit status 1"),
-			errMsg:     "transaction doesn't exist [code: -32600]\n",
+			errMsg:     "404 Not Found\n",
 			goldenFile: "",
 		},
 		{
@@ -1299,23 +1299,16 @@ func checkTransactions(t *testing.T, txids []string) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for {
-				select {
-				case txid, ok := <-txC:
-					if !ok {
-						return
-					}
-
-					t.Run(fmt.Sprintf("%v", txid), func(t *testing.T) {
-						o, err := exec.Command(binaryPath, "transaction", txid).CombinedOutput()
-						require.NoError(t, err)
-						var txRlt webrpc.TxnResult
-						err = json.NewDecoder(bytes.NewReader(o)).Decode(&txRlt)
-						require.NoError(t, err)
-						require.Equal(t, txid, txRlt.Transaction.Transaction.Hash)
-						require.True(t, txRlt.Transaction.Status.Confirmed)
-					})
-				}
+			for txid := range txC {
+				t.Run(fmt.Sprintf("%v", txid), func(t *testing.T) {
+					o, err := exec.Command(binaryPath, "transaction", txid).CombinedOutput()
+					require.NoError(t, err)
+					var txRlt webrpc.TxnResult
+					err = json.NewDecoder(bytes.NewReader(o)).Decode(&txRlt)
+					require.NoError(t, err)
+					require.Equal(t, txid, txRlt.Transaction.Transaction.Hash)
+					require.True(t, txRlt.Transaction.Status.Confirmed)
+				})
 			}
 		}()
 	}
@@ -1337,7 +1330,7 @@ func getTxids(t *testing.T, blockNum uint64) []string {
 
 	// Collects all transactions' id
 	var txids []string
-	for i := 0; i < int(n); i++ {
+	for i := 0; i < n; i++ {
 		txids = append(txids, getTxidsInBlocks(t, i*p+1, (i+1)*p)...)
 	}
 
@@ -1570,7 +1563,7 @@ func TestLiveWalletDir(t *testing.T) {
 }
 
 // TestLiveSend sends coin from specific wallet file, user should manually specify the
-// wallet file by setting the enviroment variables: WALLET_DIR and WALLET_NAME. The WALLET_DIR
+// wallet file by setting the environment variables: WALLET_DIR and WALLET_NAME. The WALLET_DIR
 // points to the directory of the wallet, and WALLET_NAME represents the wallet file name.
 //
 // Note:
@@ -1693,7 +1686,7 @@ func TestLiveSend(t *testing.T) {
 				return []string{"send", "-a", w.Entries[2].Address.String(),
 					w.Entries[1].Address.String(), "1"}
 			},
-			errMsg:  []byte("Error: Transaction has zero coinhour fee. See 'skycoin-cli send --help'"),
+			errMsg:  []byte("See 'skycoin-cli send --help'\nTransaction has zero coinhour fee."),
 			checkTx: func(t *testing.T, txid string) {},
 		},
 	}
@@ -1721,7 +1714,7 @@ func TestLiveSend(t *testing.T) {
 			_, err = cipher.SHA256FromHex(txid)
 			require.NoError(t, err)
 
-			// Wait untill transaction is confirmed.
+			// Wait until transaction is confirmed.
 			tk := time.NewTicker(time.Second)
 		loop:
 			for {
@@ -1741,7 +1734,7 @@ func TestLiveSend(t *testing.T) {
 
 	// Send with too small decimal value
 	// CLI send is a litte bit slow, almost 300ms each. so we only test 20 invalid decimal coin.
-	errMsg := []byte("Error: invalid amount, too many decimal places. See 'skycoin-cli send --help'")
+	errMsg := []byte("See 'skycoin-cli send --help'\ninvalid amount, too many decimal places.")
 	for i := uint64(1); i < uint64(20); i++ {
 		v, err := droplet.ToString(i)
 		require.NoError(t, err)
@@ -1773,6 +1766,15 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 		t.Skip("CLI wallet integration tests do not support encrypted wallets yet")
 		return
 	}
+
+	var tmpCSVFile string
+
+	defer func() {
+		if tmpCSVFile != "" {
+			err := os.Remove(tmpCSVFile)
+			require.NoError(t, err)
+		}
+	}()
 
 	tt := []struct {
 		name    string
@@ -1828,6 +1830,40 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 				require.True(t, coins >= 1e6)
 			},
 		},
+		{
+			// Send 0.5 coin to the second address.
+			// Send 0.5 coin to the third address.
+			// After sending, the first address should have at least 1 coin left.
+			name: "send to multiple address with -csv option",
+			args: func() []string {
+				fields := [][]string{
+					{w.Entries[1].Address.String(), "0.5"},
+					{w.Entries[2].Address.String(), "0.5"},
+				}
+
+				f, err := ioutil.TempFile("", "createrawtxn")
+				require.NoError(t, err)
+				defer f.Close()
+
+				w := csv.NewWriter(f)
+
+				err = w.WriteAll(fields)
+				require.NoError(t, err)
+
+				w.Flush()
+				err = w.Error()
+				require.NoError(t, err)
+
+				tmpCSVFile = f.Name()
+
+				return []string{"createRawTransaction", "-csv", tmpCSVFile}
+			},
+			checkTx: func(t *testing.T, txid string) {
+				// Confirms the first address has at least 1 coin left.
+				coins, _ := getAddressBalance(t, w.Entries[0].Address.String())
+				require.True(t, coins >= 1e6)
+			},
+		},
 	}
 
 	for _, tc := range tt {
@@ -1847,14 +1883,14 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 
 			// Broadcast transaction
 			output, err = exec.Command(binaryPath, "broadcastTransaction", string(output)).CombinedOutput()
-			require.NoError(t, err)
+			require.NoError(t, err, string(output))
 
 			txid := string(bytes.TrimRight(output, "\n"))
 			fmt.Println("txid:", txid)
 			_, err = cipher.SHA256FromHex(txid)
 			require.NoError(t, err)
 
-			// Wait untill transaction is confirmed.
+			// Wait until transaction is confirmed.
 			tk := time.NewTicker(time.Second)
 		loop:
 			for {
@@ -1873,14 +1909,14 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 	}
 
 	// Send with too small decimal value
-	errMsg := []byte("Error: invalid amount, too many decimal places. See 'skycoin-cli createRawTransaction --help'")
+	errMsg := []byte("invalid amount, too many decimal places")
 	for i := uint64(1); i < uint64(20); i++ {
 		v, err := droplet.ToString(i)
 		require.NoError(t, err)
 		name := fmt.Sprintf("send %v", v)
 		t.Run(name, func(t *testing.T) {
 			output, err := exec.Command(binaryPath, "createRawTransaction", w.Entries[0].Address.String(), v).CombinedOutput()
-			require.NoError(t, err)
+			require.Error(t, err)
 			output = bytes.Trim(output, "\n")
 			require.Equal(t, errMsg, output)
 		})
@@ -1891,8 +1927,9 @@ func getTransaction(t *testing.T, txid string) *webrpc.TxnResult {
 	output, err := exec.Command(binaryPath, "transaction", txid).CombinedOutput()
 	if err != nil {
 		fmt.Println(string(output))
-		return &webrpc.TxnResult{}
+		return nil
 	}
+
 	require.NoError(t, err)
 
 	var tx webrpc.TxnResult
@@ -1905,6 +1942,8 @@ func getTransaction(t *testing.T, txid string) *webrpc.TxnResult {
 func isTxConfirmed(t *testing.T, txid string) bool {
 	tx := getTransaction(t, txid)
 	require.NotNil(t, tx)
+	require.NotNil(t, tx.Transaction)
+	require.NotNil(t, tx.Transaction.Status)
 	return tx.Transaction.Status.Confirmed
 }
 
@@ -1994,7 +2033,7 @@ func prepareAndCheckWallet(t *testing.T, miniCoins, miniCoinHours uint64) (*wall
 
 func getAddressBalance(t *testing.T, addr string) (uint64, uint64) {
 	output, err := exec.Command(binaryPath, "addressBalance", addr).CombinedOutput()
-	require.NoError(t, err)
+	require.NoError(t, err, string(output))
 
 	var addrBalance cli.BalanceResult
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&addrBalance)
@@ -2009,7 +2048,7 @@ func getAddressBalance(t *testing.T, addr string) (uint64, uint64) {
 
 func getWalletOutputs(t *testing.T, walletPath string) visor.ReadableOutputs {
 	output, err := exec.Command(binaryPath, "walletOutputs", walletPath).CombinedOutput()
-	require.NoError(t, err)
+	require.NoError(t, err, string(output))
 
 	var wltOutput webrpc.OutputsResult
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wltOutput)
@@ -2312,7 +2351,7 @@ func checkWalletEntriesAndLastSeed(t *testing.T, w *wallet.Wallet) {
 }
 
 // TestLiveGUIInjectTransaction does almost the same procedure as TestCreateAndBroadcastRawTransaction.
-// The only difference is we broadcast the raw transaction throught the gui /injectTransaction api.
+// The only difference is we broadcast the raw transaction through the gui /injectTransaction api.
 func TestLiveGUIInjectTransaction(t *testing.T) {
 	if !doLive(t) {
 		return
@@ -2393,6 +2432,7 @@ func TestLiveGUIInjectTransaction(t *testing.T) {
 				t.Fatalf("err: %v, output: %v", err, string(output))
 				return
 			}
+
 			require.NoError(t, err)
 			output = bytes.TrimRight(output, "\n")
 			if bytes.Contains(output, []byte("Error:")) {
@@ -2401,15 +2441,15 @@ func TestLiveGUIInjectTransaction(t *testing.T) {
 			}
 
 			// Broadcast raw transaction with gui /injectTransaction
-			txid, err := c.InjectTransaction(string(output))
+			txid, err := c.InjectEncodedTransaction(string(output))
 			require.NoError(t, err)
 
 			txid = strings.TrimRight(txid, "\n")
-			fmt.Println("txid:", txid)
+			t.Logf("txid: %s", txid)
 			_, err = cipher.SHA256FromHex(txid)
 			require.NoError(t, err)
 
-			// Wait untill transaction is confirmed.
+			// Wait until transaction is confirmed.
 			tk := time.NewTicker(time.Second)
 		loop:
 			for {
@@ -2477,7 +2517,7 @@ func TestEncryptWallet(t *testing.T) {
 				return clean
 			},
 			errWithHelp: true,
-			errMsg:      []byte("not-exist.wlt doesn't exist."),
+			errMsg:      []byte("not-exist.wlt doesn't exist"),
 		},
 	}
 
@@ -2491,12 +2531,11 @@ func TestEncryptWallet(t *testing.T) {
 				output, err := exec.Command(binaryPath, args...).CombinedOutput()
 				if err != nil {
 					require.EqualError(t, err, "exit status 1")
-					require.Equal(t, tc.errMsg, output)
-					return
-				}
-
-				if tc.errWithHelp {
-					require.True(t, bytes.Contains(output, tc.errMsg), string(output))
+					if tc.errWithHelp {
+						require.True(t, bytes.Contains(output, tc.errMsg), string(output))
+					} else {
+						require.Equal(t, tc.errMsg, output)
+					}
 					return
 				}
 
@@ -2570,7 +2609,7 @@ func TestDecryptWallet(t *testing.T) {
 				return clean
 			},
 			errWithHelp: true,
-			errMsg:      []byte("not-exist.wlt doesn't exist."),
+			errMsg:      []byte("not-exist.wlt doesn't exist"),
 		},
 	}
 
@@ -2582,12 +2621,11 @@ func TestDecryptWallet(t *testing.T) {
 			output, err := exec.Command(binaryPath, args...).CombinedOutput()
 			if err != nil {
 				require.EqualError(t, err, "exit status 1")
-				require.Equal(t, tc.errMsg, output)
-				return
-			}
-
-			if tc.errWithHelp {
-				require.True(t, bytes.Contains(output, tc.errMsg), string(output))
+				if tc.errWithHelp {
+					require.True(t, bytes.Contains(output, tc.errMsg), string(output))
+				} else {
+					require.Equal(t, tc.errMsg, output)
+				}
 				return
 			}
 
@@ -2656,8 +2694,8 @@ func TestShowSeed(t *testing.T) {
 				_, clean := createEncryptedWallet(t)
 				return clean
 			},
-			args:         []string{"-p", "wrong password"},
-			expectOutput: []byte("invalid password"),
+			args:   []string{"-p", "wrong password"},
+			errMsg: []byte("invalid password\n"),
 		},
 		{
 			name: "wallet doesn't exist",
@@ -2666,8 +2704,8 @@ func TestShowSeed(t *testing.T) {
 				os.Setenv("WALLET_NAME", "not-exist.wlt")
 				return clean
 			},
-			errWithHelp:  true,
-			expectOutput: []byte("not-exist.wlt doesn't exist."),
+			errWithHelp: true,
+			errMsg:      []byte("not-exist.wlt doesn't exist"),
 		},
 	}
 
@@ -2679,13 +2717,14 @@ func TestShowSeed(t *testing.T) {
 			output, err := exec.Command(binaryPath, args...).CombinedOutput()
 			if err != nil {
 				require.EqualError(t, err, "exit status 1")
+				if tc.errWithHelp {
+					require.True(t, bytes.Contains(output, tc.errMsg), string(output))
+				} else {
+					require.Equal(t, tc.errMsg, output)
+				}
 				return
 			}
 
-			if tc.errWithHelp {
-				require.True(t, bytes.Contains(output, tc.errMsg), string(output))
-				return
-			}
 			require.Equal(t, tc.expectOutput, output)
 		})
 	}

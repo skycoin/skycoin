@@ -10,7 +10,7 @@ import (
 )
 
 //go:generate go install
-//go:generate goautomock -template=testify Gatewayer
+//go:generate mockery -name Gatewayer -case underscore -inpkg -testonly
 
 // Gatewayer interface for Gateway methods
 type Gatewayer interface {
@@ -21,6 +21,7 @@ type Gatewayer interface {
 	GetWallets() (wallet.Wallets, error)
 	UpdateWalletLabel(wltID, label string) error
 	GetWalletUnconfirmedTxns(wltID string) ([]visor.UnconfirmedTxn, error)
+	GetWalletUnconfirmedTxnsVerbose(wltID string) ([]visor.ReadableUnconfirmedTxnVerbose, error)
 	CreateWallet(wltName string, options wallet.Options) (*wallet.Wallet, error)
 	NewAddresses(wltID string, password []byte, n uint64) ([]cipher.Address, error)
 	GetWalletDir() (string, error)
@@ -29,9 +30,13 @@ type Gatewayer interface {
 	DecryptWallet(wltID string, password []byte) (*wallet.Wallet, error)
 	GetWalletSeed(wltID string, password []byte) (string, error)
 	GetSignedBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, error)
+	GetBlockByHashVerbose(hash cipher.SHA256) (*visor.ReadableBlockVerbose, error)
 	GetSignedBlockBySeq(seq uint64) (*coin.SignedBlock, error)
+	GetBlockBySeqVerbose(seq uint64) (*visor.ReadableBlockVerbose, error)
 	GetBlocks(start, end uint64) (*visor.ReadableBlocks, error)
+	GetBlocksVerbose(start, end uint64) (*visor.ReadableBlocksVerbose, error)
 	GetLastBlocks(num uint64) (*visor.ReadableBlocks, error)
+	GetLastBlocksVerbose(num uint64) (*visor.ReadableBlocksVerbose, error)
 	GetBuildInfo() visor.BuildInfo
 	GetUnspentOutputs(filters ...daemon.OutputsFilter) (*visor.ReadableOutputSet, error)
 	GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair, error)
@@ -43,17 +48,20 @@ type Gatewayer interface {
 	GetTrustConnections() []string
 	GetExchgConnection() []string
 	GetAllUnconfirmedTxns() ([]visor.UnconfirmedTxn, error)
+	GetAllUnconfirmedTxnsVerbose() ([]visor.ReadableUnconfirmedTxnVerbose, error)
 	GetTransaction(txid cipher.SHA256) (*visor.Transaction, error)
-	GetTransactions(flts ...visor.TxFilter) ([]visor.Transaction, error)
+	GetTransactionResult(txid cipher.SHA256) (*daemon.TransactionResult, error)
+	GetTransactionResultVerbose(txid cipher.SHA256) (*daemon.TransactionResultVerbose, error)
+	GetTransactionResults(flts []visor.TxFilter) (*daemon.TransactionResults, error)
+	GetTransactionResultsVerbose(flts []visor.TxFilter) (*daemon.TransactionResultsVerbose, error)
 	InjectBroadcastTransaction(txn coin.Transaction) error
 	ResendUnconfirmedTxns() (*daemon.ResendResult, error)
 	GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error)
 	GetAddrUxOuts(addr []cipher.Address) ([]*historydb.UxOut, error)
-	GetTransactionsForAddress(a cipher.Address) ([]daemon.ReadableTransaction, error)
+	GetVerboseTransactionsForAddress(a cipher.Address) ([]visor.ReadableTransactionVerbose, error)
 	GetRichlist(includeDistribution bool) (visor.Richlist, error)
 	GetAddressCount() (uint64, error)
 	GetHealth() (*daemon.Health, error)
 	UnloadWallet(id string) error
 	VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bool, error)
-	IsCSPEnabled() bool
 }

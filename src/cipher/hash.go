@@ -50,7 +50,9 @@ func (rd *Ripemd160) Set(b []byte) {
 func HashRipemd160(data []byte) Ripemd160 {
 	ripemd160Hash := <-ripemd160HashChan
 	ripemd160Hash.Reset()
-	ripemd160Hash.Write(data)
+	if _, err := ripemd160Hash.Write(data); err != nil {
+		panic(err)
+	}
 	sum := ripemd160Hash.Sum(nil)
 	ripemd160HashChan <- ripemd160Hash
 
@@ -97,7 +99,9 @@ func (g *SHA256) Xor(b SHA256) SHA256 {
 func SumSHA256(b []byte) SHA256 {
 	sha256Hash := <-sha256HashChan
 	sha256Hash.Reset()
-	sha256Hash.Write(b)
+	if _, err := sha256Hash.Write(b); err != nil {
+		panic(err)
+	}
 	sum := sha256Hash.Sum(nil)
 	sha256HashChan <- sha256Hash
 

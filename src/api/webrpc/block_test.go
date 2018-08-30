@@ -258,7 +258,7 @@ func Test_getBlocksHandler(t *testing.T) {
 }
 
 func Test_getBlocksBySeqHandler(t *testing.T) {
-	m := NewGatewayerMock()
+	m := &MockGatewayer{}
 	m.On("GetBlocksInDepth", []uint64{454}).Return(decodeBlock(blockString), nil)
 	m.On("GetBlocksInDepth", []uint64{1000}).Return(decodeBlock(emptyBlockString), nil)
 

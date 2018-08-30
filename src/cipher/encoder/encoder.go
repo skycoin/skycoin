@@ -59,11 +59,11 @@ func EncodeInt(b []byte, data interface{}) {
 	switch v := data.(type) {
 
 	case int8:
-		bs = b[:1]
+		// bs = b[:1]
 		b[0] = byte(v)
 	case uint8:
-		bs = b[:1]
-		b[0] = byte(v)
+		// bs = b[:1]
+		b[0] = v
 	case int16:
 		bs = b[:2]
 		lePutUint16(bs, uint16(v))
@@ -255,10 +255,7 @@ func Deserialize(r io.Reader, dsize int, data interface{}) error {
 func CanDeserialize(in []byte, dst reflect.Value) bool {
 	d1 := &decoder{buf: make([]byte, len(in))}
 	copy(d1.buf, in)
-	if d1.dchk(dst) != 0 {
-		return false
-	}
-	return true
+	return d1.dchk(dst) == 0
 }
 
 // DeserializeRawToValue deserializes `in` buffer into
@@ -357,7 +354,7 @@ func SerializeAtomic(data interface{}) []byte {
 		b[0] = *v
 	case uint8:
 		bs = b[:1]
-		b[0] = byte(v)
+		b[0] = v
 	case *int16:
 		bs = b[:2]
 		lePutUint16(bs, uint16(*v))
@@ -604,10 +601,7 @@ type encoder coder
 func (d *decoder) bool() bool {
 	x := d.buf[0]
 	d.buf = d.buf[1:] //advance slice
-	if x == 0 {
-		return false
-	}
-	return true
+	return x != 0
 }
 
 func (e *encoder) bool(x bool) {
@@ -619,14 +613,14 @@ func (e *encoder) bool(x bool) {
 	e.buf = e.buf[1:]
 }
 
-func (d decoder) string() string {
+func (d decoder) string() string { // nolint: unused,megacheck
 	l := int(d.uint32()) //pop length
 	t := d.buf[:l]
 	d.buf = d.buf[l:]
 	return string(t)
 }
 
-func (e encoder) string(xs string) {
+func (e encoder) string(xs string) { // nolint: unused,megacheck
 	x := []byte(xs)
 	l := len(x)
 	for i := 0; i < l; i++ {
@@ -681,14 +675,14 @@ func (e *encoder) uint64(x uint64) {
 }
 
 //v.SetBytes(d.bytes())
-func (d decoder) bytes() []byte {
+func (d decoder) bytes() []byte { // nolint: unused,megacheck
 	l := int(d.uint32()) //pop length
 	t := d.buf[:l]
 	d.buf = d.buf[l:]
 	return t
 }
 
-func (e encoder) bytes(x []byte) {
+func (e encoder) bytes(x []byte) { // nolint: unused,megacheck
 	l := len(x)
 	for i := 0; i < l; i++ {
 		e.buf[i] = x[i]
@@ -798,9 +792,6 @@ func (d *decoder) value(v reflect.Value) error {
 							return err
 						}
 					}
-				} else {
-					//dont decode anything
-					//d.skip(fv) //BUG!?
 				}
 			}
 		}
@@ -950,9 +941,6 @@ func (d *decoder) dchk(v reflect.Value) int {
 					if d.dchk(fv) < 0 {
 						return -1
 					}
-				} else {
-					//dont try to decode anything
-					//d.skip(fv) //BUG!?
 				}
 			}
 		}
@@ -1048,9 +1036,6 @@ func (e *encoder) value(v reflect.Value) {
 				fv := v.Field(i)
 				if !(omitempty && isEmpty(fv)) && (fv.CanSet() || ff.Name != "_") {
 					e.value(fv)
-				} else {
-					//dont write anything
-					//e.skip(v)
 				}
 			}
 		}
@@ -1104,7 +1089,7 @@ func (e *encoder) value(v reflect.Value) {
 
 }
 
-func (d *decoder) skip(v reflect.Value) {
+func (d *decoder) skip(v reflect.Value) { // nolint: unused,megacheck
 	n, _ := datasizeWrite(v)
 	d.buf = d.buf[n:]
 }
@@ -1120,7 +1105,7 @@ func (d *decoder) skipn(v reflect.Value) int {
     return n
 }
 */
-func (e *encoder) skip(v reflect.Value) {
+func (e *encoder) skip(v reflect.Value) { // nolint: unused,megacheck
 	n, _ := datasizeWrite(v)
 	for i := range e.buf[0:n] {
 		e.buf[i] = 0

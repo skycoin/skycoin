@@ -113,8 +113,8 @@ func Test_getAddrUxOutsHandler(t *testing.T) {
 	}
 }
 
-func newUxOutMock() (*GatewayerMock, func(addr string) []*historydb.UxOutJSON) {
-	m := NewGatewayerMock()
+func newUxOutMock() (*MockGatewayer, func(addr string) []*historydb.UxOutJSON) {
+	m := &MockGatewayer{}
 
 	hash, _ := cipher.SHA256FromHex("31a21a4dd8331ce68756ddbb21f2c66279d5f5526e936f550e49e29b840ac1ff")
 	address, _ := cipher.DecodeBase58Address("2kmKohJrwURrdcVtDNaWK6hLCNsWWbJhTqT")

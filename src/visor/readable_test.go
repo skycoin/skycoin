@@ -75,11 +75,12 @@ func transferCoins(t *testing.T, v *Visor) {
 		Block: *b,
 		Sig:   cipher.SignHash(b.HashHeader(), genSecret),
 	}
-	v.DB.Update("", func(tx *dbutil.Tx) error {
+	err = v.DB.Update("", func(tx *dbutil.Tx) error {
 		bcc, ok := v.Blockchain.(*Blockchain)
 		require.True(t, ok)
 		return bcc.store.AddBlock(tx, sb)
 	})
+	require.NoError(t, err)
 	head = sb
 
 }
@@ -113,21 +114,12 @@ func TestNewBlockchainMetadata(t *testing.T) {
 func TestNewTransactionStatus(t *testing.T) {
 	ts := NewUnconfirmedTransactionStatus()
 	require.True(t, ts.Unconfirmed)
-	require.False(t, ts.Unknown)
-	require.False(t, ts.Confirmed)
-	require.Equal(t, ts.Height, uint64(0))
-	assertJSONSerializability(t, &ts)
-
-	ts = NewUnknownTransactionStatus()
-	require.False(t, ts.Unconfirmed)
-	require.True(t, ts.Unknown)
 	require.False(t, ts.Confirmed)
 	require.Equal(t, ts.Height, uint64(0))
 	assertJSONSerializability(t, &ts)
 
 	ts = NewConfirmedTransactionStatus(uint64(7), uint64(7))
 	require.False(t, ts.Unconfirmed)
-	require.False(t, ts.Unknown)
 	require.True(t, ts.Confirmed)
 	require.Equal(t, ts.Height, uint64(7))
 	assertJSONSerializability(t, &ts)
@@ -159,6 +151,7 @@ func TestReadableTransactionOutput(t *testing.T) {
 	to := b.Body.Transactions[0].Out[0]
 
 	rto, err := NewReadableTransactionOutput(&to, testutil.RandSHA256(t))
+	require.NoError(t, err)
 	assertReadableTransactionOutput(t, *rto, to)
 }
 
@@ -205,6 +198,7 @@ func TestReadableTransaction(t *testing.T) {
 	rtx, err := NewReadableTransaction(&Transaction{
 		Txn: tx,
 	})
+	require.NoError(t, err)
 	assertReadableTransaction(t, *rtx, tx)
 }
 
@@ -256,5 +250,6 @@ func TestNewReadableBlock(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, sb.Head.BkSeq, uint64(1))
 	rb, err := NewReadableBlock(&sb.Block)
+	require.NoError(t, err)
 	assertReadableBlock(t, *rb, sb.Block)
 }

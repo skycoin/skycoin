@@ -245,6 +245,8 @@ func ECDH(pub PubKey, sec SecKey) []byte {
 		panic(err)
 	}
 
+	// WARNING: This calls TestSecKey if DebugLevel2 is set to true.
+	// TestSecKey is extremely slow and will kill performance if ECDH is called frequently
 	if err := sec.Verify(); err != nil {
 		err := skyerrors.NewValueError(ErrECHDInvalidSecKey, "sec", sec)
 		log.Print(err)

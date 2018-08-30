@@ -33,36 +33,13 @@ func SKY_cipher_DecodeBase58Address(_addr string, _arg1 *C.cipher__Address) (___
 	return
 }
 
-//export SKY_cipher_MustDecodeBase58Address
-func SKY_cipher_MustDecodeBase58Address(_addr string, _arg1 *C.cipher__Address) (____error_code uint32) {
-	____error_code = 0
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	addr := _addr
-	__arg1 := cipher.MustDecodeBase58Address(addr)
-	*_arg1 = *(*C.cipher__Address)(unsafe.Pointer(&__arg1))
-	return
-}
-
-//export SKY_cipher_BitcoinMustDecodeBase58Address
-func SKY_cipher_BitcoinMustDecodeBase58Address(_addr string, _arg1 *C.cipher__Address) (____error_code uint32) {
-	____error_code = 0
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	addr := _addr
-	__arg1 := cipher.BitcoinMustDecodeBase58Address(addr)
-	*_arg1 = *(*C.cipher__Address)(unsafe.Pointer(&__arg1))
-	return
-}
-
 //export SKY_cipher_AddressFromBytes
 func SKY_cipher_AddressFromBytes(_b []byte, _arg1 *C.cipher__Address) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	b := *(*[]byte)(unsafe.Pointer(&_b))
 	__arg1, ____return_err := cipher.AddressFromBytes(b)
 	____error_code = libErrorCode(____return_err)
@@ -114,23 +91,6 @@ func SKY_cipher_BitcoinDecodeBase58Address(_addr string, _arg1 *C.cipher__Addres
 	____error_code = libErrorCode(err)
 	if err == nil {
 		*_arg1 = *(*C.cipher__Address)(unsafe.Pointer(&addr))
-	}
-	return
-}
-
-//export SKY_cipher_MustAddressFromBytes
-func SKY_cipher_MustAddressFromBytes(_b []byte, _arg1 *C.cipher__Address) (____error_code uint32) {
-	____error_code = SKY_OK
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	checkAPIReady()
-
-	b := *(*[]byte)(unsafe.Pointer(&_b))
-	__arg1, ____return_err := cipher.MustAddressFromBytes(b)
-	____error_code = libErrorCode(____return_err)
-	if ____return_err == nil {
-		*_arg1 = *(*C.cipher__Address)(unsafe.Pointer(&__arg1))
 	}
 	return
 }
@@ -307,17 +267,5 @@ func SKY_cipher_SecKeyFromWalletImportFormat(_input string, _arg1 *C.cipher__Sec
 		*_arg1 = *(*C.cipher__SecKey)(unsafe.Pointer(&seckey))
 	}
 	____error_code = errcode
-	return
-}
-
-//export SKY_cipher_MustSecKeyFromWalletImportFormat
-func SKY_cipher_MustSecKeyFromWalletImportFormat(_input string, _arg1 *C.cipher__SecKey) (____error_code uint32) {
-	____error_code = 0
-	defer func() {
-		____error_code = catchApiPanic(____error_code, recover())
-	}()
-	input := _input
-	__arg1 := cipher.MustSecKeyFromWalletImportFormat(input)
-	copyToBuffer(reflect.ValueOf(__arg1[:]), unsafe.Pointer(_arg1), uint(SizeofSecKey))
 	return
 }

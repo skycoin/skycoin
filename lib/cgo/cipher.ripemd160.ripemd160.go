@@ -22,6 +22,7 @@ func SKY_ripemd160_New(handle *C.Hash_Handle) (____error_code uint32) {
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	hash := ripemd160.New()
 	*handle = registerHashHandle(&hash)
 	return
@@ -29,10 +30,11 @@ func SKY_ripemd160_New(handle *C.Hash_Handle) (____error_code uint32) {
 
 //export SKY_ripemd160_Write
 func SKY_ripemd160_Write(handle C.Hash_Handle, _p []byte, _nn *int) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	h, ok := lookupHashHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE
@@ -50,10 +52,11 @@ func SKY_ripemd160_Write(handle C.Hash_Handle, _p []byte, _nn *int) (____error_c
 
 //export SKY_ripemd160_Sum
 func SKY_ripemd160_Sum(handle C.Hash_Handle, _p []byte, _arg1 *C.GoSlice_) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	h, ok := lookupHashHandle(handle)
 	if !ok {
 		____error_code = SKY_BAD_HANDLE

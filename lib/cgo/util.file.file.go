@@ -13,10 +13,11 @@ import "C"
 
 //export SKY_file_InitDataDir
 func SKY_file_InitDataDir(_dir string, _arg1 *C.GoString_) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	dir := _dir
 	__arg1, ____return_err := file.InitDataDir(dir)
 	____error_code = libErrorCode(____return_err)
@@ -28,10 +29,11 @@ func SKY_file_InitDataDir(_dir string, _arg1 *C.GoString_) (____error_code uint3
 
 //export SKY_file_UserHome
 func SKY_file_UserHome(_arg0 *C.GoString_) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	__arg0 := file.UserHome()
 	copyString(__arg0, _arg0)
 	return
@@ -39,10 +41,11 @@ func SKY_file_UserHome(_arg0 *C.GoString_) (____error_code uint32) {
 
 //export SKY_file_ResolveResourceDirectory
 func SKY_file_ResolveResourceDirectory(_path string, _arg1 *C.GoString_) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	path := _path
 	__arg1 := file.ResolveResourceDirectory(path)
 	copyString(__arg1, _arg1)
@@ -51,10 +54,11 @@ func SKY_file_ResolveResourceDirectory(_path string, _arg1 *C.GoString_) (____er
 
 //export SKY_file_DetermineResourcePath
 func SKY_file_DetermineResourcePath(_staticDir string, _resourceDir string, _devDir string, _arg3 *C.GoString_) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	staticDir := _staticDir
 	resourceDir := _resourceDir
 	devDir := _devDir

@@ -18,10 +18,11 @@ import "C"
 
 //export SKY_scrypt_Key
 func SKY_scrypt_Key(_password, _salt []byte, _N, _r, _p, _keyLen int, _arg2 *C.GoSlice_) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	password := *(*[]byte)(unsafe.Pointer(&_password))
 	salt := *(*[]byte)(unsafe.Pointer(&_salt))
 	N := _N

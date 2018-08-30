@@ -84,6 +84,7 @@ func SKY_cli_CreateRawTx(_c C.WebRpcClient__Handle, _wlt C.Wallet__Handle, _inAd
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	c, okc := lookupWebRpcClientHandle(_c)
 	if !okc {
 		____error_code = SKY_BAD_HANDLE

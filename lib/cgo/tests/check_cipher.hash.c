@@ -369,23 +369,3 @@ Test(cipher_hash, TestSHA256Null)
   cr_assert(SKY_cipher_SHA256_Null(&x, &isNull) == SKY_OK);
   cr_assert(not(isNull));
 }
-
-Test(cipher_hash, TestMustSumSHA256, SKY_ABORT ){
-  char buffer_b[1024];
-  GoSlice b = {buffer_b, 0, 1024};
-  randBytes(&b, 128);
-  GoUint32 result;
-  cipher__SHA256 h;
-  memset(&h, 0, sizeof(cipher__SHA256));
-  result = SKY_cipher_MustSumSHA256(b, 127, &h);
-  cr_assert(result == SKY_ERROR);
-  result = SKY_cipher_MustSumSHA256(b, 129, &h);
-  cr_assert(result == SKY_ERROR);
-  result = SKY_cipher_MustSumSHA256(b, 128, &h);
-  cr_assert(result == SKY_OK);
-  cipher__SHA256 sha;
-  cr_assert(not(eq(u8[32], h, sha)));
-  memset(&sha, 0, sizeof(cipher__SHA256));
-  freshSumSHA256(b, &sha);
-  cr_assert(eq(u8[32], h, sha));
-}

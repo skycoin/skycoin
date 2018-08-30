@@ -1,7 +1,6 @@
 package main
 
 import (
-	"hash"
 	"reflect"
 	"unsafe"
 
@@ -33,7 +32,6 @@ const (
 	SizeofSHA256            = unsafe.Sizeof(C.cipher__SHA256{})
 	SizeofTransactionOutput = unsafe.Sizeof(C.coin__TransactionOutput{})
 	SizeofTransaction       = unsafe.Sizeof(C.coin__Transaction{})
-	SizeofWallet            = unsafe.Sizeof(C.wallet__Wallet{})
 	SizeofEntry             = unsafe.Sizeof(C.wallet__Entry{})
 	SizeofUxBalance         = unsafe.Sizeof(C.wallet__UxBalance{})
 )
@@ -124,16 +122,6 @@ func copyToGoSlice(src reflect.Value, dest *C.GoSlice_) {
 			dest.len = C.GoInt_(srcLen)
 		}
 	}
-}
-
-func convertToInterface(a *C.GoInterface_) interface{} {
-	//TODO: Implement
-	return nil
-}
-
-func copyToFunc(f C.Handle) func() hash.Hash {
-	//TODO: Implement
-	return nil
 }
 
 func copyToStringMap(gomap map[string]string, dest *C.GoStringMap_) {

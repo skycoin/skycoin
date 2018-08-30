@@ -174,9 +174,9 @@ type ReadableTransactionVerbose struct {
 
 // NewReadableTransactionVerbose creates ReadableTransactionVerbose
 func NewReadableTransactionVerbose(txn Transaction, inputs []ReadableTransactionInput) (ReadableTransactionVerbose, error) {
-	rb, err := NewReadableBlockTransactionVerbose(txn.Txn, inputs, txn.Status.BlockSeq == 0)
+	rb, err := NewReadableBlockTransactionVerbose(txn.Txn, inputs, txn.Status.BlockSeq == 0 && txn.Status.Confirmed)
 	if err != nil {
-		return ReadableTransactionVerbose{}, nil
+		return ReadableTransactionVerbose{}, err
 	}
 
 	return ReadableTransactionVerbose{

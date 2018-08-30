@@ -927,7 +927,7 @@ func (vs *Visor) InjectTransactionStrict(txn coin.Transaction) (bool, error) {
 }
 
 // GetTransactionsForAddress returns the Transactions whose unspents give coins to a cipher.Address.
-// This includes unconfirmed txns' predicted unspents.
+// This includes both confirmed and unconfirmed transactions.
 func (vs *Visor) GetTransactionsForAddress(a cipher.Address) ([]Transaction, error) {
 	var txns map[cipher.Address][]Transaction
 
@@ -1079,8 +1079,6 @@ func NewConfirmedTxFilter(isConfirmed bool) TxFilter {
 }
 
 // GetTransactions returns transactions that can pass the filters.
-// If any 'AddrsFilter' exist, call vs.getTransactionsForAddresses, cause
-// there's an address index of transactions in db which, having address as key and transaction hashes as value.
 // If no filters is provided, returns all transactions.
 func (vs *Visor) GetTransactions(flts []TxFilter) ([]Transaction, error) {
 	var txns []Transaction
@@ -1215,10 +1213,7 @@ func accumulateAddressInFilter(afs []AddrsFilter) []cipher.Address {
 // getTransactionsForAddresses returns all addresses related transactions.
 // Including both confirmed and unconfirmed transactions.
 func (vs *Visor) getTransactionsForAddresses(tx *dbutil.Tx, addrs []cipher.Address) (map[cipher.Address][]Transaction, error) {
-	// Initialize the address transactions map
-	addrTxs := make(map[cipher.Address][]Transaction, len(addrs))
-
-	// Get the head block seq, for calculating the tx status
+	// Get the head block seq, for calculating the txn status
 	headBkSeq, ok, err := vs.Blockchain.HeadSeq(tx)
 
 	if err != nil {
@@ -1228,16 +1223,17 @@ func (vs *Visor) getTransactionsForAddresses(tx *dbutil.Tx, addrs []cipher.Addre
 		return nil, errors.New("No head block seq")
 	}
 
+	ret := make(map[cipher.Address][]Transaction, len(addrs))
 	for _, a := range addrs {
-		var txns []Transaction
 		addrTxns, err := vs.history.GetTransactionsForAddress(tx, a)
 		if err != nil {
 			return nil, err
 		}
 
-		for _, txn := range addrTxns {
+		txns := make([]Transaction, len(addrTxns), len(addrTxns)+4)
+		for i, txn := range addrTxns {
 			if headBkSeq < txn.BlockSeq {
-				err := errors.New("Transaction block sequence is less than the head block sequence")
+				err := errors.New("Transaction block sequence is greater than the head block sequence")
 				logger.Critical().WithError(err).WithFields(logrus.Fields{
 					"headBkSeq":  headBkSeq,
 					"txBlockSeq": txn.BlockSeq,
@@ -1252,14 +1248,14 @@ func (vs *Visor) getTransactionsForAddresses(tx *dbutil.Tx, addrs []cipher.Addre
 			}
 
 			if bk == nil {
-				return nil, fmt.Errorf("block of seq: %d doesn't exist", txn.BlockSeq)
+				return nil, fmt.Errorf("block seq=%d doesn't exist", txn.BlockSeq)
 			}
 
-			txns = append(txns, Transaction{
+			txns[i] = Transaction{
 				Txn:    txn.Tx,
 				Status: NewConfirmedTransactionStatus(h, txn.BlockSeq),
 				Time:   bk.Time(),
-			})
+			}
 		}
 
 		// Look in the unconfirmed pool
@@ -1286,10 +1282,10 @@ func (vs *Visor) getTransactionsForAddresses(tx *dbutil.Tx, addrs []cipher.Addre
 			})
 		}
 
-		addrTxs[a] = txns
+		ret[a] = txns
 	}
 
-	return addrTxs, nil
+	return ret, nil
 }
 
 // traverseTxns traverses transactions in historydb and unconfirmed tx pool in db,
@@ -2459,7 +2455,7 @@ func (vs *Visor) getUnspentsForSpending(tx *dbutil.Tx, addrs []cipher.Address, i
 func (vs *Visor) GetVerboseTransactionsForAddress(a cipher.Address) ([]ReadableTransactionVerbose, error) {
 	var resTxns []ReadableTransactionVerbose
 
-	if err := vs.DB.View("GetTransactionsForAddress", func(tx *dbutil.Tx) error {
+	if err := vs.DB.View("GetVerboseTransactionsForAddress", func(tx *dbutil.Tx) error {
 		addrTxns, err := vs.getTransactionsForAddresses(tx, []cipher.Address{a})
 		if err != nil {
 			logger.Errorf("GetVerboseTransactionsForAddress: gw.v.GetTransactionsForAddress failed: %v", err)
@@ -2480,7 +2476,6 @@ func (vs *Visor) GetVerboseTransactionsForAddress(a cipher.Address) ([]ReadableT
 		resTxns = make([]ReadableTransactionVerbose, len(txns))
 
 		for i, txn := range txns {
-
 			// If the txn is confirmed, use the time of the block previous
 			// to the block in which the transaction was executed,
 			// else use the head time for unconfirmed blocks.

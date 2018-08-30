@@ -119,6 +119,7 @@ func TestGetUxOutByID(t *testing.T) {
 			endpoint := "/api/v1/uxout"
 			gateway.On("GetUxOutByID", tc.getGetUxOutByIDArg).Return(tc.getGetUxOutByIDResponse, tc.getGetUxOutByIDError)
 			gateway.On("IsCSPEnabled").Return(false)
+			gateway.On("IsAPISetEnabled", "UX", []string{"BLOCKCHAIN", "DEFAULT"}).Return(true)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -238,6 +239,7 @@ func TestGetAddrUxOuts(t *testing.T) {
 			gateway := NewGatewayerMock()
 			gateway.On("GetAddrUxOuts", tc.getAddrUxOutsArg).Return(tc.getAddrUxOutsResponse, tc.getAddrUxOutsError)
 			gateway.On("IsCSPEnabled").Return(false)
+			gateway.On("IsAPISetEnabled", "UX", []string{"BLOCKCHAIN", "DEFAULT"}).Return(true)
 
 			v := url.Values{}
 			if tc.httpBody != nil {

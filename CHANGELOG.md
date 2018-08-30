@@ -14,8 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `csrf_enabled`, `csp_enabled`, `wallet_api_enabled`, `unversioned_api_enabled`, `gui_enabled` and `json_rpc_enabled` configuration settings to the `/api/v1/health` endpoint response
 - Add `verbose` flag to `/api/v1/block`, `/api/v1/blocks`, `/api/v1/last_blocks`, `/api/v1/pendingTxs`, `/api/v1/transaction`, `/api/v1/transactions`, `/api/v1/wallet/transactions` to return verbose block data, which includes the address, coins, hours and calculcated_hours of the block's transaction's inputs
 - Add `encoded` flag to `/api/v1/transaction` to return an encoded transaction
-
-- Group API methods un API sets
+- Group API methods in API sets
 - Command line node parameters to enable individual API sets
 
 ### Fixed

@@ -14,8 +14,6 @@ import (
 )
 
 const configuredHost = "127.0.0.1:6420"
-			gateway.On("IsAPISetEnabled", "UX", []string{"BLOCKCHAIN", "DEFAULT"}).Return(true)
-			gateway.On("IsAPISetEnabled", "BLOCKCHAIN", []string{"DEFAULT"}).Return(true)
 
 func defaultMuxConfig() muxConfig {
 	return muxConfig{

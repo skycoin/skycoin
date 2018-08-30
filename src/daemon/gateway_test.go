@@ -12,7 +12,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/util/flagutils"
+	"github.com/skycoin/skycoin/src/util/collections"
 )
 
 func TestFbyAddresses(t *testing.T) {
@@ -109,7 +109,7 @@ func TestGateway_GetWalletDir(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Assume all API sets enabled by default
-			enabledAPISets := flagutils.NewStringSet("DEFAULT")
+			enabledAPISets := collections.NewStringSet("DEFAULT")
 			if tc.enableWalletAPI {
 				enabledAPISets.Set("WALLET")
 			}
@@ -147,7 +147,7 @@ func TestGateway_NewAddresses(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Assume all API sets enabled by default
-			enabledAPISets := flagutils.NewStringSet("DEFAULT")
+			enabledAPISets := collections.NewStringSet("DEFAULT")
 			if tc.enableWalletAPI {
 				enabledAPISets.Set("WALLET")
 			}
@@ -184,7 +184,7 @@ func TestGateway_UpdateWalletLabel(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Assume all API sets enabled by default
-			enabledAPISets := flagutils.NewStringSet("DEFAULT")
+			enabledAPISets := collections.NewStringSet("DEFAULT")
 			if tc.enableWalletAPI {
 				enabledAPISets.Set("WALLET")
 			}
@@ -220,7 +220,7 @@ func TestGateway_GetWallet(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Assume all API sets enabled by default
-			enabledAPISets := flagutils.NewStringSet("DEFAULT")
+			enabledAPISets := collections.NewStringSet("DEFAULT")
 			if tc.enableWalletAPI {
 				enabledAPISets.Set("WALLET")
 			}
@@ -256,7 +256,7 @@ func TestGateway_GetWallets(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Assume all API sets enabled by default
-			enabledAPISets := flagutils.NewStringSet("DEFAULT")
+			enabledAPISets := collections.NewStringSet("DEFAULT")
 			if tc.enableWalletAPI {
 				enabledAPISets.Set("WALLET")
 			}
@@ -293,7 +293,7 @@ func TestGateway_GetWalletUnconfirmedTxns(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Assume all API sets enabled by default
-			enabledAPISets := flagutils.NewStringSet("DEFAULT")
+			enabledAPISets := collections.NewStringSet("DEFAULT")
 			if tc.enableWalletAPI {
 				enabledAPISets.Set("WALLET")
 			}
@@ -328,7 +328,7 @@ func TestGateway_ReloadWallets(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Assume all API sets enabled by default
-			enabledAPISets := flagutils.NewStringSet("DEFAULT")
+			enabledAPISets := collections.NewStringSet("DEFAULT")
 			if tc.enableWalletAPI {
 				enabledAPISets.Set("WALLET")
 			}
@@ -366,7 +366,7 @@ func TestGateway_Spend(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Assume all API sets enabled by default
-			enabledAPISets := flagutils.NewStringSet("DEFAULT")
+			enabledAPISets := collections.NewStringSet("DEFAULT")
 			if tc.enableWalletAPI {
 				enabledAPISets.Set("WALLET")
 			}
@@ -404,7 +404,7 @@ func TestGateway_CreateWallet(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Assume all API sets enabled by default
-			enabledAPISets := flagutils.NewStringSet("DEFAULT")
+			enabledAPISets := collections.NewStringSet("DEFAULT")
 			if tc.enableWalletAPI {
 				enabledAPISets.Set("WALLET")
 			}
@@ -442,7 +442,7 @@ func TestGateway_GetWalletBalance(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Assume all API sets enabled by default
-			enabledAPISets := flagutils.NewStringSet("DEFAULT")
+			enabledAPISets := collections.NewStringSet("DEFAULT")
 			if tc.enableWalletAPI {
 				enabledAPISets.Set("WALLET")
 			}
@@ -481,7 +481,7 @@ func TestGateway_CreateTransaction(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Assume all API sets enabled by default
-			enabledAPISets := flagutils.NewStringSet("DEFAULT")
+			enabledAPISets := collections.NewStringSet("DEFAULT")
 			if tc.enableWalletAPI {
 				enabledAPISets.Set("WALLET")
 			}

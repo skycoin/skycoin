@@ -17,8 +17,8 @@ import (
 
 	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/util/collections"
 	"github.com/skycoin/skycoin/src/util/file"
-	"github.com/skycoin/skycoin/src/util/flagutils"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/util/logging"
 )
@@ -74,7 +74,7 @@ type Config struct {
 	ReadTimeout          time.Duration
 	WriteTimeout         time.Duration
 	IdleTimeout          time.Duration
-	EnabledAPISets       flagutils.StringSet
+	EnabledAPISets       collections.StringSet
 }
 
 type muxConfig struct {
@@ -275,7 +275,6 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 		return func(w http.ResponseWriter, r *http.Request) {
 			if !gateway.IsAPISetEnabled(mainAPIName, otherAPINames...) {
 				funcName := runtime.FuncForPC(reflect.ValueOf(hf).Pointer()).Name()
-				// FIXME: Debugf ?
 				logger.Infof("Handler %s not executed because API set %v not enabled", funcName, otherAPINames)
 				wh.Error403(w, "")
 			} else {
@@ -459,7 +458,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	webHandlerV2("/transaction/verify", verifyTxnHandler(gateway))
 
 	// Health check handler
-	webHandlerV1("/health", forAPISet(healthHandler(gateway), APIStatus, APIBlockchain, APIPex, APITxn, APIDefault))
+	webHandlerV1("/health", forAPISet(healthHandler(c, csrfStore, gateway), APIStatus, APIBlockchain, APIPex, APITxn, APIDefault))
 
 	// Returns transactions that match the filters.
 	// Method: GET

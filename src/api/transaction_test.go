@@ -602,6 +602,7 @@ func TestGetRawTx(t *testing.T) {
 			gateway.On("GetTransaction", tc.getTransactionArg).Return(tc.getTransactionResponse, tc.getTransactionError)
 			gateway.On("IsCSPEnabled").Return(false)
 			gateway.On("IsAPISetEnabled", "TX", []string{"DEFAULT"}).Return(true)
+
 			v := url.Values{}
 			if tc.httpBody != nil {
 				if tc.httpBody.txid != "" {

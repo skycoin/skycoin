@@ -5,7 +5,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/visor"
 )
@@ -255,10 +254,7 @@ func TestGetBalanceOfAddresses(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			outs := &webrpc.OutputsResult{
-				Outputs: tc.outs,
-			}
-			result, err := getBalanceOfAddresses(outs, tc.addrs)
+			result, err := getBalanceOfAddresses(&tc.outs, tc.addrs)
 			require.Equal(t, tc.err, err)
 			require.Equal(t, tc.result, result)
 		})

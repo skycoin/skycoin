@@ -1,49 +1,89 @@
 @import '../../../../../theme/variables';
 
-.-row.-detail {
-  background-color: darken($white, 2%);
-}
+.-record {
+  display: flex;
+  font-size: $font-size-standard;
+  padding: 21px 20px 16px 20px;
+  align-items: center;
 
-.-grey {
-  color: $grey;
-}
-
-.-address {
-  padding-left: 0 !important;
-
-  img {
-    width: 17px;
-    vertical-align: middle;
-    margin-right: 10px;
+  &:not(:last-of-type) {
+    border-bottom: 1px solid rgba(30, 34, 39, 0.05);
   }
 
-  > span {
+  .id-column {
+    width: 50px;
+    color: $grey;
+    flex-shrink: 0;
+  }
+
+  .address-column {
+    color: $grey;
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+
+    img {
+      display: inline-block;
+      height: 17px;
+      vertical-align: middle;
+      width: 17px;
+      margin-right: 10px;
+      flex-shrink: 0;
+    }
+
+    p {
+      display: inline-block;
+      margin: 0;
+      vertical-align: middle;
+      word-break: break-all;
+
+      &:hover .copy-label {
+        opacity: .999;
+      }
+    }
+  }
+
+  .hours-column {
+    color: $grey;
+    width: 130px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .coins-column {
+    color: $grey-dark;
+    width: 130px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .options-column {
+    width: 80px;
+    text-align: right;
+    display: flex;
+    justify-content: flex-end;
+    flex-shrink: 0;
+
+    mat-icon {
+      cursor: pointer;
+      color: lighten($grey, 30%);
+
+      &:hover {
+        color: $blue;
+      }
+    }
+  }
+
+  > img {
     display: inline-block;
-    line-height: $row-height;
-    cursor: pointer;
-
-    &:hover .copy-label {
-      opacity: 1;
-    }
+    margin-left: 0;
+    height: $row-detail-size;
+    width: $row-detail-size;
   }
 }
 
-.-text-right {
-  text-align: right;
-}
-
-.-options {
-  text-align: center;
-
-  mat-icon {
-    color: lighten($grey, 30%);
-    cursor: pointer;
-    vertical-align: middle;
-
-    &:hover {
-      color: $blue;
-    }
-  }
+.click-to-copy {
+  cursor: pointer;
 }
 
 .-actions {
@@ -56,9 +96,11 @@
   border-top-right-radius: 0 !important;
   z-index: 100;
   position: relative;
+  padding: 0px !important;
 
   .-button {
     padding-right: 20px;
+    padding-left: 0px;
 
     &:first-child {
       padding-left: 5px;
@@ -159,6 +201,7 @@
   &::after {
     content: attr(data-label);
     position: absolute;
+    white-space: nowrap;
     top: 0;
     left: 4px;
     opacity: 0;

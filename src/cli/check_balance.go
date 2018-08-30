@@ -6,9 +6,9 @@ import (
 
 	gcli "github.com/urfave/cli"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -65,7 +65,7 @@ func addressBalanceCmd() gcli.Command {
 
 func checkWltBalance(c *gcli.Context) error {
 	cfg := ConfigFromContext(c)
-	rpcClient := RPCClientFromContext(c)
+	client := APIClientFromContext(c)
 
 	var w string
 	if c.NArg() > 0 {
@@ -78,7 +78,7 @@ func checkWltBalance(c *gcli.Context) error {
 		return err
 	}
 
-	balRlt, err := CheckWalletBalance(rpcClient, w)
+	balRlt, err := CheckWalletBalance(client, w)
 	switch err.(type) {
 	case nil:
 	case WalletLoadError:
@@ -92,7 +92,7 @@ func checkWltBalance(c *gcli.Context) error {
 }
 
 func addrBalance(c *gcli.Context) error {
-	rpcClient := RPCClientFromContext(c)
+	client := APIClientFromContext(c)
 
 	addrs := make([]string, c.NArg())
 	var err error
@@ -103,7 +103,7 @@ func addrBalance(c *gcli.Context) error {
 		}
 	}
 
-	balRlt, err := GetBalanceOfAddresses(rpcClient, addrs)
+	balRlt, err := GetBalanceOfAddresses(client, addrs)
 	if err != nil {
 		return err
 	}
@@ -114,7 +114,7 @@ func addrBalance(c *gcli.Context) error {
 // PUBLIC
 
 // CheckWalletBalance returns the total and individual balances of addresses in a wallet file
-func CheckWalletBalance(c *webrpc.Client, walletFile string) (*BalanceResult, error) {
+func CheckWalletBalance(c GetOutputser, walletFile string) (*BalanceResult, error) {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
 		return nil, WalletLoadError{err}
@@ -130,8 +130,8 @@ func CheckWalletBalance(c *webrpc.Client, walletFile string) (*BalanceResult, er
 }
 
 // GetBalanceOfAddresses returns the total and individual balances of a set of addresses
-func GetBalanceOfAddresses(c *webrpc.Client, addrs []string) (*BalanceResult, error) {
-	outs, err := c.GetUnspentOutputs(addrs)
+func GetBalanceOfAddresses(c GetOutputser, addrs []string) (*BalanceResult, error) {
+	outs, err := c.OutputsForAddresses(addrs)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +139,7 @@ func GetBalanceOfAddresses(c *webrpc.Client, addrs []string) (*BalanceResult, er
 	return getBalanceOfAddresses(outs, addrs)
 }
 
-func getBalanceOfAddresses(outs *webrpc.OutputsResult, addrs []string) (*BalanceResult, error) {
+func getBalanceOfAddresses(outs *visor.ReadableOutputSet, addrs []string) (*BalanceResult, error) {
 	addrsMap := make(map[string]struct{}, len(addrs))
 	for _, a := range addrs {
 		addrsMap[a] = struct{}{}
@@ -150,7 +150,7 @@ func getBalanceOfAddresses(outs *webrpc.OutputsResult, addrs []string) (*Balance
 	}, len(addrs))
 
 	// Count confirmed balances
-	for _, o := range outs.Outputs.HeadOutputs {
+	for _, o := range outs.HeadOutputs {
 		if _, ok := addrsMap[o.Address]; !ok {
 			return nil, fmt.Errorf("Found address %s in GetUnspentOutputs result, but this address wasn't requested", o.Address)
 		}
@@ -168,7 +168,7 @@ func getBalanceOfAddresses(outs *webrpc.OutputsResult, addrs []string) (*Balance
 	}
 
 	// Count spendable balances
-	for _, o := range outs.Outputs.SpendableOutputs() {
+	for _, o := range outs.SpendableOutputs() {
 		if _, ok := addrsMap[o.Address]; !ok {
 			return nil, fmt.Errorf("Found address %s in GetUnspentOutputs result, but this address wasn't requested", o.Address)
 		}
@@ -186,7 +186,7 @@ func getBalanceOfAddresses(outs *webrpc.OutputsResult, addrs []string) (*Balance
 	}
 
 	// Count predicted balances
-	for _, o := range outs.Outputs.ExpectedOutputs() {
+	for _, o := range outs.ExpectedOutputs() {
 		if _, ok := addrsMap[o.Address]; !ok {
 			return nil, fmt.Errorf("Found address %s in GetUnspentOutputs result, but this address wasn't requested", o.Address)
 		}

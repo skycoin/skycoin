@@ -4,9 +4,22 @@ package secp256k1
 import (
 	"bytes"
 	"encoding/hex"
+	"errors"
 	"log"
 
 	secp "github.com/skycoin/skycoin/src/cipher/secp256k1-go/secp256k1-go2"
+	skyerrors "github.com/skycoin/skycoin/src/util/errors"
+)
+
+var (
+	ErrVerifySignatureInvalidInputsNils    = errors.New("VerifySignature, ERROR: invalid input, nils")
+	ErrVerifySignatureInvalidSigLength     = errors.New("VerifySignature, invalid signature length")
+	ErrVerifySignatureInvalidPubkeysLength = errors.New("VerifySignature, invalid pubkey length")
+	ErrSignInvalidSeckeyLength             = errors.New("Sign, Invalid seckey length")
+	ErrSignInvalidSeckey                   = errors.New("Attempting to sign with invalid seckey")
+	ErrSignMessageNil                      = errors.New("Sign, message nil")
+	ErrSecp25k1SignSignatureFailed         = errors.New("Secp25k1-go, Sign, signature operation failed")
+	ErrSecp256k1InvalidLengthPubKey        = errors.New("pubkey length wrong")
 )
 
 //intenal, may fail
@@ -223,13 +236,19 @@ func DeterministicKeyPairIterator(seedIn []byte) ([]byte, []byte, []byte) {
 func Sign(msg []byte, seckey []byte) []byte {
 
 	if len(seckey) != 32 {
-		log.Panic("Sign, Invalid seckey length")
+		err := skyerrors.NewValueError(ErrSignInvalidSeckeyLength, "seckey  ", seckey)
+		log.Print(err)
+		panic(err)
 	}
 	if secp.SeckeyIsValid(seckey) != 1 {
-		log.Panic("Attempting to sign with invalid seckey")
+		err := skyerrors.NewValueError(ErrSignInvalidSeckey, "seckey  ", seckey)
+		log.Print(err)
+		panic(err)
 	}
 	if msg == nil {
-		log.Panic("Sign, message nil")
+		err := skyerrors.NewValueError(ErrSignMessageNil, "msg  ", msg)
+		log.Print(err)
+		panic(err)
 	}
 	var nonce = RandByte(32)
 	var sig = make([]byte, 65)
@@ -248,7 +267,9 @@ func Sign(msg []byte, seckey []byte) []byte {
 	ret := cSig.Sign(&seckey1, &msg1, &nonce1, &recid)
 
 	if ret != 1 {
-		log.Panic("Secp25k1-go, Sign, signature operation failed")
+		err := skyerrors.NewValueError(ErrSecp25k1SignSignatureFailed, "ret   ", ret)
+		log.Print(err)
+		panic(err)
 	}
 
 	sigBytes := cSig.Bytes()
@@ -384,13 +405,20 @@ func VerifySignatureValidity(sig []byte) int {
 // Rename SignatureChk
 func VerifySignature(msg []byte, sig []byte, pubkey1 []byte) int {
 	if msg == nil || sig == nil || pubkey1 == nil {
-		log.Panic("VerifySignature, ERROR: invalid input, nils")
+		err := skyerrors.NewValueError(ErrVerifySignatureInvalidInputsNils, "pubkey1 ", pubkey1)
+		log.Print(err)
+		panic(err)
 	}
 	if len(sig) != 65 {
-		log.Panic("VerifySignature, invalid signature length")
+		err := skyerrors.NewValueError(ErrVerifySignatureInvalidSigLength, "sig    ", sig)
+		log.Print(err)
+		panic(err)
 	}
 	if len(pubkey1) != 33 {
-		log.Panic("VerifySignature, invalid pubkey length")
+		err := skyerrors.NewValueError(ErrVerifySignatureInvalidPubkeysLength, "pubkey1 ", pubkey1)
+		log.Print(err)
+		panic(err)
+
 	}
 
 	//malleability check:
@@ -464,20 +492,23 @@ func RecoverPubkey(msg []byte, sig []byte) []byte {
 		recid)
 
 	if ret != 1 {
-		log.Printf("RecoverPubkey: code %d", ret)
+		err := skyerrors.NewValueErrorFromString("RecoverPubkey: code ", "ret ", ret)
+		log.Print(err)
 		return nil
 	}
-	//var pubkey2 []byte = pubkey1.Bytes() //compressed
 
 	if pubkey == nil {
-		log.Panic("ERROR: impossible, pubkey nil and ret ==1")
+		err := skyerrors.NewValueErrorFromString("ERROR: impossible, pubkey nil and ret ==1", "ret ", ret)
+		log.Print(err)
+		panic(err)
 	}
 	if len(pubkey) != 33 {
-		log.Panic("pubkey length wrong")
-	}
+		err := skyerrors.NewValueError(ErrSecp256k1InvalidLengthPubKey, "pubkey", pubkey)
+		log.Print(err)
+		panic(err)
 
+	}
 	return pubkey
-	//nonce1.SetBytes(nonce_seed)
 
 }
 
@@ -505,7 +536,9 @@ func ECDH(pub []byte, sec []byte) []byte {
 		return nil
 	}
 	if len(pubkeyOut) != 33 {
-		log.Panic("ERROR: impossible, invalid pubkey length")
+		err := skyerrors.NewValueError(ErrSecp256k1InvalidLengthPubKey, "pubkeyOut", pubkeyOut)
+		log.Print(err)
+		panic(err)
 	}
 	return pubkeyOut
 }

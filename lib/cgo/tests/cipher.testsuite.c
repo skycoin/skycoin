@@ -124,7 +124,7 @@ GoUint32 InputTestDataFromJSON(InputTestDataJSON* json_data, InputTestData* inpu
   for (i = 0; i < hexstrings->len && err == SKY_OK; i++, s++, hash++) {
     err = SKY_cipher_SHA256FromHex(*s, hash);
   }
-  if (err != SKY_OK)
+  if (err == SKY_ERROR)
     free(hashes->data);
   return err;
 }
@@ -221,13 +221,13 @@ void KeysTestDataToJson(KeysTestData* input_data, KeysTestDataJSON* json_data) {
 // - json_data.Signatures.len * sizeof(cipher__Sig) bytes for sigs slice data
 GoUint32 KeysTestDataFromJSON(KeysTestDataJSON* json_data, KeysTestData* input_data) {
   GoUint32 err = SKY_cipher_DecodeBase58Address(json_data->Address, &input_data->Address);
-  if (err != SKY_OK)
+  if (err == SKY_ERROR)
     return err;
   err = SKY_cipher_SecKeyFromHex(json_data->Secret, &input_data->Secret);
-  if (err != SKY_OK)
+  if (err == SKY_ERROR)
     return err;
   err = SKY_cipher_PubKeyFromHex(json_data->Public, &input_data->Public);
-  if (err != SKY_OK)
+  if (err == SKY_ERROR)
     return err;
 
   input_data->Signatures.len = input_data->Signatures.cap = json_data->Signatures.len;
@@ -241,7 +241,7 @@ GoUint32 KeysTestDataFromJSON(KeysTestDataJSON* json_data, KeysTestData* input_d
   for (i = 0; i < json_data->Signatures.len && err == SKY_OK; i++, sig++, s++) {
     SKY_cipher_SigFromHex(*s, sig);
   }
-  if (err != SKY_OK)
+  if (err == SKY_ERROR)
     free(input_data->Signatures.data);
   return err;
 }
@@ -356,7 +356,7 @@ GoUint32 SeedTestDataFromJSON(SeedTestDataJSON* json_data, SeedTestData* input_d
   for (i = 0; i < json_data->Keys.len && err == SKY_OK; i++, k++, kj++) {
     err = KeysTestDataFromJSON(kj, k);
   }
-  if (err != SKY_OK)
+  if (err == SKY_ERROR)
     free(input_data->Keys.data);
   return err;
 }
@@ -431,17 +431,17 @@ void ValidateSeedData(SeedTestData* seedData, InputTestData* inputData) {
         "%d-th SKY_cipher_AddressFromPubKey and SKY_cipher_AddressFromSecKey must generate same addresses", i);
 
     // TODO : Translate once secp256k1 be part of libskycoin
-    /*
-    validSec := secp256k1.VerifySeckey(s[:])
-    if validSec != 1 {
-      return errors.New("secp256k1.VerifySeckey failed")
-    }
+  GoInt validSec;
+	char bufferSecKey[101];
+	strnhex((unsigned char *)s, bufferSecKey, sizeof(cipher__SecKey));
+	GoSlice slseckey = { bufferSecKey,sizeof(cipher__SecKey),65  };
+	SKY_secp256k1_VerifySeckey(slseckey,&validSec);
+  cr_assert(validSec ==1 ,"SKY_secp256k1_VerifySeckey failed");
 
-    validPub := secp256k1.VerifyPubkey(p[:])
-    if validPub != 1 {
-      return errors.New("secp256k1.VerifyPubkey failed")
-    }
-    */
+	GoInt validPub;
+	GoSlice slpubkey = { &p,sizeof(cipher__PubKey), sizeof(cipher__PubKey) };
+	SKY_secp256k1_VerifyPubkey(slpubkey,&validPub);
+	cr_assert(validPub ==1 ,"SKY_secp256k1_VerifyPubkey failed");
 
     // FIXME: without cond : 'not give a valid preprocessing token'
     bool cond = (!(inputData == NULL && expected->Signatures.len != 0));

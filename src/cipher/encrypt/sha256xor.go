@@ -24,6 +24,20 @@ const (
 	sha256XorChecksumSize = 32 // 32 bytes
 	// Data length size
 	sha256XorDataLengthSize = 4 // 4 bytes
+
+)
+
+var (
+	ErrSHA256orMissingPassword         = errors.New("missing password")
+	ErrLenghtDataOverflowMaxUint32     = errors.New("data length overflowed, it must <= math.MaxUint32(4294967295)")
+	ErrInvalidChecksumLength           = errors.New("invalid checksum length")
+	ErrInvalidDataChecksumNotMatched   = errors.New("invalid data, checksum is not matched")
+	ErrInvalidNonceLength              = errors.New("invalid nonce length")
+	ErrInvalidBlockSizeMultiple32Bytes = errors.New("invalid block size, must be multiple of 32 bytes")
+	ErrReadDataHashFailedLength        = errors.New("read data hash failed: read length != 32")
+	ErrSHA256orInvalidPassword         = errors.New("invalid password")
+	ErrReadDataLengthFailed            = errors.New("read data length failed")
+	ErrInvalidDataLength               = errors.New("invalid data length")
 )
 
 // DefaultSha256Xor default sha256xor encryptor
@@ -44,11 +58,11 @@ type Sha256Xor struct{}
 // 6> Finally, the data format is: base64(<checksum(32 bytes)><nonce(32 bytes)><block0.Hex(), block1.Hex()...>)
 func (s Sha256Xor) Encrypt(data []byte, password []byte) ([]byte, error) {
 	if len(password) == 0 {
-		return nil, errors.New("missing password")
+		return nil, ErrSHA256orMissingPassword
 	}
 
 	if uint(len(data)) > math.MaxUint32 {
-		return nil, errors.New("data length overflowed, it must <= math.MaxUint32(4294967295)")
+		return nil, ErrLenghtDataOverflowMaxUint32
 	}
 
 	// Sets data length prefix
@@ -112,7 +126,7 @@ func (s Sha256Xor) Encrypt(data []byte, password []byte) ([]byte, error) {
 // Decrypt decrypts the data
 func (s Sha256Xor) Decrypt(data []byte, password []byte) ([]byte, error) {
 	if len(password) == 0 {
-		return nil, errors.New("missing password")
+		return nil, ErrSHA256orMissingPassword
 	}
 
 	// Base64 decodes data
@@ -138,13 +152,13 @@ func (s Sha256Xor) Decrypt(data []byte, password []byte) ([]byte, error) {
 	}
 
 	if n != sha256XorChecksumSize {
-		return nil, errors.New("invalid checksum length")
+		return nil, ErrInvalidChecksumLength
 	}
 
 	// Checks the checksum
 	csh := cipher.SumSHA256(buf.Bytes())
 	if csh != checkSum {
-		return nil, errors.New("invalid data, checksum is not matched")
+		return nil, ErrInvalidDataChecksumNotMatched
 	}
 
 	// Gets the nonce
@@ -155,7 +169,7 @@ func (s Sha256Xor) Decrypt(data []byte, password []byte) ([]byte, error) {
 	}
 
 	if n != sha256XorNonceSize {
-		return nil, errors.New("invalid nonce length")
+		return nil, ErrInvalidNonceLength
 	}
 
 	var decodeData []byte
@@ -169,7 +183,7 @@ func (s Sha256Xor) Decrypt(data []byte, password []byte) ([]byte, error) {
 		}
 
 		if n != sha256XorBlockSize {
-			return nil, errors.New("invalid block size, must be multiple of 32 bytes")
+			return nil, ErrInvalidBlockSizeMultiple32Bytes
 		}
 
 		// Decodes the block
@@ -188,12 +202,12 @@ func (s Sha256Xor) Decrypt(data []byte, password []byte) ([]byte, error) {
 	}
 
 	if n != 32 {
-		return nil, errors.New("read data hash failed: read length != 32")
+		return nil, ErrReadDataHashFailedLength
 	}
 
 	// Checks the hash
 	if dataHash != cipher.SumSHA256(buf.Bytes()) {
-		return nil, errors.New("invalid password")
+		return nil, ErrSHA256orInvalidPassword
 	}
 
 	// Reads out the data length
@@ -204,16 +218,16 @@ func (s Sha256Xor) Decrypt(data []byte, password []byte) ([]byte, error) {
 	}
 
 	if n != sha256XorDataLengthSize {
-		return nil, errors.New("read data length failed")
+		return nil, ErrReadDataLengthFailed
 	}
 
 	l := binary.LittleEndian.Uint32(dataLenBytes)
 	if l > math.MaxUint32 {
-		return nil, errors.New("data length overflowed, it must <= math.MaxUint32(4294967295)")
+		return nil, ErrLenghtDataOverflowMaxUint32
 	}
 
 	if l > uint32(buf.Len()) {
-		return nil, errors.New("invalid data length")
+		return nil, ErrInvalidDataLength
 	}
 
 	// Reads out the raw data

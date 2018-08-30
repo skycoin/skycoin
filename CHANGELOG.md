@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Add `util/droplet` and `util/fee` API's as part of `libskycoin`
+- Implement tests for libc `./src/util/droplet` and `./src/util/fee`
+- Implemented SWIG interfaces `./src/util/droplet` and `./src/util/fee`
 - Add `-csv` option to `cli send` and `cli createRawTransaction`, which will send coins to multiple addresses defined in a csv file
 - Add `-disable-default-peers` option to disable the default hardcoded peers and mark all cached peers as untrusted
 - Add `-custom-peers-file` to load peers from disk. This peers file is a newline separate list of `ip:port` strings

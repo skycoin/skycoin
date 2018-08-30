@@ -1546,7 +1546,7 @@ func (vs *Visor) getReadableVerboseInputsForUnconfirmedTxns(tx *dbutil.Tx, txns 
 // An unconfirmed transaction's fee will be calculated from the current block head time, once executed.
 func (vs *Visor) getFeeCalcTimeForTransaction(tx *dbutil.Tx, txn Transaction) (*uint64, error) {
 	// The genesis block has no inputs to calculate, otherwise calculate the inputs
-	if txn.Status.BlockSeq == 0 {
+	if txn.Status.BlockSeq == 0 && txn.Status.Confirmed {
 		return nil, nil
 	}
 

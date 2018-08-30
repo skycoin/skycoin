@@ -3,8 +3,7 @@
 		"confirmed": true,
 		"unconfirmed": false,
 		"height": 0,
-		"block_seq": 517,
-		"unknown": false
+		"block_seq": 517
 	},
 	"time": 1479100522,
 	"txn": {

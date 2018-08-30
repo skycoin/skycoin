@@ -11,7 +11,7 @@
 				"tx_body_hash": "0a610a34a8408effe8f2f70e4a85a3a8f4aca923f43e10a8a6e08cf410d7a35d"
 			},
 			"unspents": 218,
-			"unconfirmed": 1,
+			"unconfirmed": 0,
 			"time_since_last_block": "0s"
 		},
 		"version": {

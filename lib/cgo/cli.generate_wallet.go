@@ -15,10 +15,11 @@ import "C"
 
 //export SKY_cli_GenerateWallet
 func SKY_cli_GenerateWallet(_walletFile string, _opts *C.Options__Handle, _numAddrs uint64, _arg3 *C.Wallet__Handle) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	walletFile := _walletFile
 	__opts, okopts := lookupOptionsHandle(*_opts)
 	if !okopts {
@@ -37,10 +38,11 @@ func SKY_cli_GenerateWallet(_walletFile string, _opts *C.Options__Handle, _numAd
 
 //export SKY_cli_MakeAlphanumericSeed
 func SKY_cli_MakeAlphanumericSeed(_arg0 *C.GoString_) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	__arg0 := cli.MakeAlphanumericSeed()
 	copyString(__arg0, _arg0)
 	return

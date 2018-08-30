@@ -17,10 +17,11 @@ import "C"
 
 //export SKY_encoder_StructField_String
 func SKY_encoder_StructField_String(_s *C.encoder__StructField, _arg0 *C.GoString_) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	s := (*encoder.StructField)(unsafe.Pointer(_s))
 	__arg0 := s.String()
 	copyString(__arg0, _arg0)
@@ -29,10 +30,11 @@ func SKY_encoder_StructField_String(_s *C.encoder__StructField, _arg0 *C.GoStrin
 
 //export SKY_encoder_ParseFields
 func SKY_encoder_ParseFields(_in []byte, _fields []C.encoder__StructField, _arg2 *C.GoStringMap_) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	in := *(*[]byte)(unsafe.Pointer(&_in))
 	fields := *(*[]encoder.StructField)(unsafe.Pointer(&_fields))
 	__arg2 := encoder.ParseFields(in, fields)

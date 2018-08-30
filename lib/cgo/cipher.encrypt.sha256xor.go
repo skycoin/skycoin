@@ -22,6 +22,7 @@ func SKY_encrypt_Sha256Xor_Encrypt(_data []byte, _password []byte, _arg2 *C.GoSl
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	s := encrypt.Sha256Xor{}
 	data := *(*[]byte)(unsafe.Pointer(&_data))
 	password := *(*[]byte)(unsafe.Pointer(&_password))
@@ -39,6 +40,7 @@ func SKY_encrypt_Sha256Xor_Decrypt(_data []byte, _password []byte, _arg2 *C.GoSl
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	s := encrypt.Sha256Xor{}
 	data := *(*[]byte)(unsafe.Pointer(&_data))
 	password := *(*[]byte)(unsafe.Pointer(&_password))

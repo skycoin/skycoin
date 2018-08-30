@@ -13,10 +13,11 @@ import "C"
 
 //export SKY_utc_UnixNow
 func SKY_utc_UnixNow(_arg0 *int64) (____error_code uint32) {
-	____error_code = 0
+	____error_code = SKY_OK
 	defer func() {
 		____error_code = catchApiPanic(____error_code, recover())
 	}()
+	checkAPIReady()
 	__arg0 := utc.UnixNow()
 	*_arg0 = __arg0
 	return

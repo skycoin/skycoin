@@ -178,7 +178,7 @@ func lookupClientHandle(handle C.Client__Handle) (*api.Client, bool) {
 	return nil, false
 }
 
-func registerWalletsHandle(obj []*api.WalletResponse) C.Wallets__Handle {
+func registerWalletsHandle(obj *[]api.WalletResponse) C.Wallets__Handle {
 	return (C.Wallets__Handle)(registerHandle(obj))
 }
 
@@ -416,34 +416,6 @@ func lookupSortableTransactionHandle(handle C.SortableTransactionResult_Handle) 
 	return nil, false
 }
 
-func registerWalletNotesHandle(obj *wallet.Notes) C.WalletNotes_Handle {
-	return (C.WalletNotes_Handle)(registerHandle(obj))
-}
-
-func lookupWalletNotesHandle(handle C.WalletNotes_Handle) (*wallet.Notes, bool) {
-	obj, ok := lookupHandle(C.Handle(handle))
-	if ok {
-		if obj, isOK := (obj).(*wallet.Notes); isOK {
-			return obj, true
-		}
-	}
-	return nil, false
-}
-
-func registerWalletReadableNotesHandle(obj *wallet.ReadableNotes) C.WalletReadableNotes_Handle {
-	return (C.WalletReadableNotes_Handle)(registerHandle(obj))
-}
-
-func lookupWalletReadableNotesHandle(handle C.WalletReadableNotes_Handle) (*wallet.ReadableNotes, bool) {
-	obj, ok := lookupHandle(C.Handle(handle))
-	if ok {
-		if obj, isOK := (obj).(*wallet.ReadableNotes); isOK {
-			return obj, true
-		}
-	}
-	return nil, false
-}
-
 func registerOutputsResultHandle(obj *webrpc.OutputsResult) C.OutputsResult_Handle {
 	return (C.OutputsResult_Handle)(registerHandle(obj))
 }
@@ -556,7 +528,7 @@ func SKY_handle_copy(handle C.Handle, copy *C.Handle) uint32 {
 	obj, ok := lookupHandle(handle)
 	if ok {
 		*copy = registerHandle(obj)
-		return 0
+		return SKY_OK
 	} else {
 		return SKY_BAD_HANDLE
 	}

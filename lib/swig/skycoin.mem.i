@@ -25,7 +25,7 @@
 	GoStringMap, PasswordReader__Handle_,
 	Transaction__Handle, Transactions__Handle, CreatedTransaction__Handle,
 	CreatedTransactionOutput__Handle, CreatedTransactionInput__Handle, CreateTransactionResponse__Handle,
-	Block__Handle, SignedBlock__Handle, BlockBody__Handle, BuildInfo_Handle, Number_Handle, Signature_Handle, AddressUxOuts_Handle
+	Block__Handle, SignedBlock__Handle, BlockBody__Handle, BuildInfo_Handle, Number_Handle, Signature_Handle, AddressUxOuts_Handle,ReadableOutputSet__Handle
 	}
 
 %apply Handle* { Wallet__Handle*, Options__Handle*, ReadableEntry__Handle*, ReadableWallet__Handle*, WebRpcClient__Handle*,
@@ -33,7 +33,7 @@
 	App__Handle*, Context__Handle*, GoStringMap_*, PasswordReader__Handle*,
 	Transaction__Handle*, Transactions__Handle*, CreatedTransaction__Handle*,
 	CreatedTransactionOutput__Handle*, CreatedTransactionInput__Handle*, CreateTransactionResponse__Handle*,
-	Block__Handle*, SignedBlock__Handle*, BlockBody__Handle*, BuildInfo_Handle*, Number_Handle*, Signature_Handle*, AddressUxOuts_Handle*
+	Block__Handle*, SignedBlock__Handle*, BlockBody__Handle*, BuildInfo_Handle*, Number_Handle*, Signature_Handle*, AddressUxOuts_Handle*,ReadableOutputSet__Handle*
 	}
 
 #if defined(SWIGPYTHON)

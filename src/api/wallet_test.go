@@ -699,6 +699,7 @@ func TestWalletGet(t *testing.T) {
 			gateway := &MockGatewayer{}
 			gateway.On("GetWallet", tc.walletID).Return(&tc.gatewayGetWalletResult, tc.gatewayGetWalletErr)
 			gateway.On("IsAPISetEnabled", "WALLET", []string(nil)).Return(true)
+
 			v := url.Values{}
 
 			endpoint := "/api/v1/wallet"
@@ -2086,6 +2087,7 @@ func TestGetWalletFolderHandler(t *testing.T) {
 		gateway := &MockGatewayer{}
 		gateway.On("GetWalletDir").Return(tc.getWalletDirResponse, tc.getWalletDirErr)
 		gateway.On("IsAPISetEnabled", "WALLET", []string(nil)).Return(true)
+
 		endpoint := "/api/v1/wallets/folderName"
 
 		req, err := http.NewRequest(tc.method, endpoint, nil)

@@ -465,6 +465,10 @@ func (r createTransactionRequest) ToWalletParams() wallet.CreateTransactionParam
 	}
 }
 
+// createTransactionHandler creates a signed transaction
+// Method: POST
+// URI: /api/v1/wallet/transaction
+// Args: JSON body
 func createTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {

@@ -20,7 +20,13 @@
 			"branch": ""
 		},
 		"open_connections": 0,
-		"uptime": "0s"
+		"uptime": "0s",
+		"csrf_enabled": false,
+		"csp_enabled": true,
+		"wallet_api_enabled": true,
+		"gui_enabled": false,
+		"unversioned_api_enabled": false,
+		"json_rpc_enabled": false
 	},
 	"cli_config": {
 		"webrpc_address": "http://127.0.0.1:1024"

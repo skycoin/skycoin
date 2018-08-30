@@ -30,36 +30,50 @@ func makeBadBlock(t *testing.T) *coin.Block {
 	preBlock, err := coin.NewGenesisBlock(genAddress, genCoins, genTime)
 	require.NoError(t, err)
 	uxHash := testutil.RandSHA256(t)
-	tx := coin.Transaction{}
+	tx := coin.Transaction{
+		In: []cipher.SHA256{
+			testutil.RandSHA256(t),
+		},
+	}
 	tx.PushOutput(genAddress, math.MaxInt64+1, 255)
 	b, err := coin.NewBlock(*preBlock, now, uxHash, coin.Transactions{tx}, func(t *coin.Transaction) (uint64, error) {
 		return 0, nil
 	})
 	require.NoError(t, err)
+	require.NotEqual(t, b.Head.BkSeq, uint64(0))
+	require.NotEmpty(t, b.Body.Transactions)
+	for i, txn := range b.Body.Transactions {
+		require.NotEmpty(t, txn.In, "txn %d/%d", i+1, len(b.Body.Transactions))
+	}
 	return b
 }
 
 func TestGetBlock(t *testing.T) {
-
 	badBlock := makeBadBlock(t)
 	validHashString := testutil.RandSHA256(t).Hex()
 	validSHA256, err := cipher.SHA256FromHex(validHashString)
 	require.NoError(t, err)
 
 	tt := []struct {
-		name                        string
-		method                      string
-		status                      int
-		err                         string
-		hash                        string
-		sha256                      cipher.SHA256
-		seqStr                      string
-		seq                         uint64
-		gatewayGetBlockByHashResult *coin.SignedBlock
-		gatewayGetBlockByHashErr    error
-		gatewayGetBlockBySeqResult  *coin.SignedBlock
-		gatewayGetBlockBySeqErr     error
-		response                    *visor.ReadableBlock
+		name                               string
+		method                             string
+		status                             int
+		err                                string
+		hash                               string
+		sha256                             cipher.SHA256
+		seqStr                             string
+		seq                                uint64
+		verbose                            bool
+		verboseStr                         string
+		gatewayGetBlockByHashResult        *coin.SignedBlock
+		gatewayGetBlockByHashErr           error
+		gatewayGetBlockBySeqResult         *coin.SignedBlock
+		gatewayGetBlockBySeqErr            error
+		gatewayGetBlockByHashVerboseResult *visor.ReadableBlockVerbose
+		gatewayGetBlockByHashVerboseErr    error
+		gatewayGetBlockBySeqVerboseResult  *visor.ReadableBlockVerbose
+		gatewayGetBlockBySeqVerboseErr     error
+		response                           interface{}
 	}{
 		{
 			name:   "405",
@@ -114,8 +128,8 @@ func TestGetBlock(t *testing.T) {
 			name:   "400 - seq error: invalid syntax",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
-			err:    "400 Bad Request - strconv.ParseUint: parsing \"seq\": invalid syntax",
-			seqStr: "seq",
+			err:    "400 Bad Request - Invalid seq value \"badseq\"",
+			seqStr: "badseq",
 		},
 		{
 			name:   "404 - block by seq does not exist",
@@ -137,29 +151,29 @@ func TestGetBlock(t *testing.T) {
 			},
 		},
 		{
-			name:   "500 - get block by hash error",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - GetSignedBlockByHash failed",
-			hash:   validHashString,
-			sha256: validSHA256,
+			name:                     "500 - get block by hash error",
+			method:                   http.MethodGet,
+			status:                   http.StatusInternalServerError,
+			err:                      "500 Internal Server Error - GetSignedBlockByHash failed",
+			hash:                     validHashString,
+			sha256:                   validSHA256,
 			gatewayGetBlockByHashErr: errors.New("GetSignedBlockByHash failed"),
 		},
 		{
-			name:   "500 - get block by seq error",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - GetSignedBlockBySeq failed",
-			seqStr: "1",
-			seq:    1,
+			name:                    "500 - get block by seq error",
+			method:                  http.MethodGet,
+			status:                  http.StatusInternalServerError,
+			err:                     "500 Internal Server Error - GetSignedBlockBySeq failed",
+			seqStr:                  "1",
+			seq:                     1,
 			gatewayGetBlockBySeqErr: errors.New("GetSignedBlockBySeq failed"),
 		},
 		{
-			name:   "200 - got block by seq",
-			method: http.MethodGet,
-			status: http.StatusOK,
-			seqStr: "1",
-			seq:    1,
+			name:                       "200 - get block by seq",
+			method:                     http.MethodGet,
+			status:                     http.StatusOK,
+			seqStr:                     "1",
+			seq:                        1,
 			gatewayGetBlockBySeqResult: &coin.SignedBlock{},
 			response: &visor.ReadableBlock{
 				Head: visor.ReadableBlockHeader{
@@ -177,11 +191,11 @@ func TestGetBlock(t *testing.T) {
 			},
 		},
 		{
-			name:   "200 - got block by hash",
-			method: http.MethodGet,
-			status: http.StatusOK,
-			hash:   validHashString,
-			sha256: validSHA256,
+			name:                        "200 - get block by hash",
+			method:                      http.MethodGet,
+			status:                      http.StatusOK,
+			hash:                        validHashString,
+			sha256:                      validSHA256,
 			gatewayGetBlockByHashResult: &coin.SignedBlock{},
 			response: &visor.ReadableBlock{
 				Head: visor.ReadableBlockHeader{
@@ -198,15 +212,131 @@ func TestGetBlock(t *testing.T) {
 				},
 			},
 		},
+
+		{
+			name:       "200 - get block by hash verbose",
+			method:     http.MethodGet,
+			status:     http.StatusOK,
+			hash:       validHashString,
+			sha256:     validSHA256,
+			verbose:    true,
+			verboseStr: "1",
+			gatewayGetBlockByHashVerboseResult: func() *visor.ReadableBlockVerbose {
+				b, err := visor.NewReadableBlockVerbose(&coin.Block{}, nil)
+				require.NoError(t, err)
+				return b
+			}(),
+			response: &visor.ReadableBlockVerbose{
+				Head: visor.ReadableBlockHeader{
+					BkSeq:             0x0,
+					BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+					PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					Time:              0x0,
+					Fee:               0x0,
+					Version:           0x0,
+					BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+				},
+				Body: visor.ReadableBlockBodyVerbose{
+					Transactions: []visor.ReadableBlockTransactionVerbose{},
+				},
+			},
+		},
+
+		{
+			name:       "200 - get block by seq verbose",
+			method:     http.MethodGet,
+			status:     http.StatusOK,
+			seq:        1,
+			seqStr:     "1",
+			verbose:    true,
+			verboseStr: "1",
+			gatewayGetBlockBySeqVerboseResult: func() *visor.ReadableBlockVerbose {
+				b, err := visor.NewReadableBlockVerbose(&coin.Block{}, nil)
+				require.NoError(t, err)
+				return b
+			}(),
+			response: &visor.ReadableBlockVerbose{
+				Head: visor.ReadableBlockHeader{
+					BkSeq:             0x0,
+					BlockHash:         "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+					PreviousBlockHash: "0000000000000000000000000000000000000000000000000000000000000000",
+					Time:              0x0,
+					Fee:               0x0,
+					Version:           0x0,
+					BodyHash:          "0000000000000000000000000000000000000000000000000000000000000000",
+				},
+				Body: visor.ReadableBlockBodyVerbose{
+					Transactions: []visor.ReadableBlockTransactionVerbose{},
+				},
+			},
+		},
+
+		{
+			name:                            "500 - get block by hash verbose error",
+			method:                          http.MethodGet,
+			status:                          http.StatusInternalServerError,
+			hash:                            validHashString,
+			sha256:                          validSHA256,
+			verbose:                         true,
+			verboseStr:                      "1",
+			gatewayGetBlockByHashVerboseErr: errors.New("GetBlockByHashVerbose failed"),
+			err:                             "500 Internal Server Error - GetBlockByHashVerbose failed",
+		},
+
+		{
+			name:                           "500 - get block by seq verbose error",
+			method:                         http.MethodGet,
+			status:                         http.StatusInternalServerError,
+			seq:                            1,
+			seqStr:                         "1",
+			verbose:                        true,
+			verboseStr:                     "1",
+			gatewayGetBlockBySeqVerboseErr: errors.New("GetBlockBySeqVerbose failed"),
+			err:                            "500 Internal Server Error - GetBlockBySeqVerbose failed",
+		},
+
+		{
+			name:       "404 - get block by hash verbose not found",
+			method:     http.MethodGet,
+			status:     http.StatusNotFound,
+			hash:       validHashString,
+			sha256:     validSHA256,
+			verbose:    true,
+			verboseStr: "1",
+			err:        "404 Not Found",
+		},
+
+		{
+			name:       "404 - get block by seq verbose not found",
+			method:     http.MethodGet,
+			status:     http.StatusNotFound,
+			seq:        1,
+			seqStr:     "1",
+			verbose:    true,
+			verboseStr: "1",
+			err:        "404 Not Found",
+		},
+
+		{
+			name:       "400 - invalid verbose flag",
+			method:     http.MethodGet,
+			status:     http.StatusBadRequest,
+			seq:        1,
+			seqStr:     "1",
+			verbose:    true,
+			verboseStr: "asdasdasd",
+			err:        "400 Bad Request - Invalid value for verbose",
+		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			gateway := &GatewayerMock{}
+			gateway := &MockGatewayer{}
 
 			gateway.On("GetSignedBlockByHash", tc.sha256).Return(tc.gatewayGetBlockByHashResult, tc.gatewayGetBlockByHashErr)
 			gateway.On("GetSignedBlockBySeq", tc.seq).Return(tc.gatewayGetBlockBySeqResult, tc.gatewayGetBlockBySeqErr)
-			gateway.On("IsCSPEnabled").Return(false)
+			gateway.On("GetBlockByHashVerbose", tc.sha256).Return(tc.gatewayGetBlockByHashVerboseResult, tc.gatewayGetBlockByHashVerboseErr)
+			gateway.On("GetBlockBySeqVerbose", tc.seq).Return(tc.gatewayGetBlockBySeqVerboseResult, tc.gatewayGetBlockBySeqVerboseErr)
 			gateway.On("IsAPISetEnabled", "BLOCKCHAIN", []string{"DEFAULT"}).Return(true)
 
 			endpoint := "/api/v1/block"
@@ -217,6 +347,9 @@ func TestGetBlock(t *testing.T) {
 			}
 			if tc.seqStr != "" {
 				v.Add("seq", tc.seqStr)
+			}
+			if tc.verboseStr != "" {
+				v.Add("verbose", tc.verboseStr)
 			}
 			if len(v) > 0 {
 				endpoint += "?" + v.Encode()
@@ -232,7 +365,7 @@ func TestGetBlock(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
 
@@ -240,13 +373,19 @@ func TestGetBlock(t *testing.T) {
 			require.Equal(t, tc.status, status, "case: %s, handler returned wrong status code: got `%v` want `%v`", tc.name, status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
-					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()))
 			} else {
-				var msg *visor.ReadableBlock
-				err := json.Unmarshal(rr.Body.Bytes(), &msg)
-				require.NoError(t, err)
-				require.Equal(t, tc.response, msg)
+				if tc.verbose {
+					var msg *visor.ReadableBlockVerbose
+					err := json.Unmarshal(rr.Body.Bytes(), &msg)
+					require.NoError(t, err)
+					require.Equal(t, tc.response.(*visor.ReadableBlockVerbose), msg)
+				} else {
+					var msg *visor.ReadableBlock
+					err := json.Unmarshal(rr.Body.Bytes(), &msg)
+					require.NoError(t, err)
+					require.Equal(t, tc.response.(*visor.ReadableBlock), msg)
+				}
 			}
 		})
 	}
@@ -254,21 +393,25 @@ func TestGetBlock(t *testing.T) {
 
 func TestGetBlocks(t *testing.T) {
 	type httpBody struct {
-		Start string
-		End   string
+		Start   string
+		End     string
+		Verbose string
 	}
 
 	tt := []struct {
-		name                   string
-		method                 string
-		status                 int
-		err                    string
-		body                   *httpBody
-		start                  uint64
-		end                    uint64
-		gatewayGetBlocksResult *visor.ReadableBlocks
-		gatewayGetBlocksError  error
-		response               *visor.ReadableBlocks
+		name                          string
+		method                        string
+		status                        int
+		err                           string
+		body                          *httpBody
+		start                         uint64
+		end                           uint64
+		verbose                       bool
+		gatewayGetBlocksResult        *visor.ReadableBlocks
+		gatewayGetBlocksError         error
+		gatewayGetBlocksVerboseResult *visor.ReadableBlocksVerbose
+		gatewayGetBlocksVerboseError  error
+		response                      interface{}
 	}{
 		{
 			name:   "405",
@@ -303,18 +446,45 @@ func TestGetBlocks(t *testing.T) {
 			start: 1,
 		},
 		{
-			name:   "400 - gatewayGetBlocksError",
+			name:   "400 - bad verbose",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
-			err:    "400 Bad Request - Get blocks failed: gatewayGetBlocksError",
+			err:    "400 Bad Request - Invalid value for verbose",
+			body: &httpBody{
+				Start:   "1",
+				End:     "2",
+				Verbose: "foo",
+			},
+		},
+		{
+			name:   "500 - gatewayGetBlocksError",
+			method: http.MethodGet,
+			status: http.StatusInternalServerError,
+			err:    "500 Internal Server Error - gatewayGetBlocksError",
 			body: &httpBody{
 				Start: "1",
 				End:   "3",
 			},
-			start: 1,
-			end:   3,
+			start:                 1,
+			end:                   3,
 			gatewayGetBlocksError: errors.New("gatewayGetBlocksError"),
 		},
+		{
+			name:   "500 - gatewayGetBlocksVerboseError",
+			method: http.MethodGet,
+			status: http.StatusInternalServerError,
+			err:    "500 Internal Server Error - gatewayGetBlocksVerboseError",
+			body: &httpBody{
+				Start:   "1",
+				End:     "3",
+				Verbose: "1",
+			},
+			start:                        1,
+			end:                          3,
+			verbose:                      true,
+			gatewayGetBlocksVerboseError: errors.New("gatewayGetBlocksVerboseError"),
+		},
+
 		{
 			name:   "200",
 			method: http.MethodGet,
@@ -323,18 +493,41 @@ func TestGetBlocks(t *testing.T) {
 				Start: "1",
 				End:   "3",
 			},
-			start: 1,
-			end:   3,
+			start:                  1,
+			end:                    3,
 			gatewayGetBlocksResult: &visor.ReadableBlocks{Blocks: []visor.ReadableBlock{visor.ReadableBlock{}}},
 			response:               &visor.ReadableBlocks{Blocks: []visor.ReadableBlock{visor.ReadableBlock{}}},
+		},
+		{
+			name:   "200 verbose",
+			method: http.MethodGet,
+			status: http.StatusOK,
+			body: &httpBody{
+				Start:   "1",
+				End:     "3",
+				Verbose: "1",
+			},
+			start:   1,
+			end:     3,
+			verbose: true,
+			gatewayGetBlocksVerboseResult: &visor.ReadableBlocksVerbose{
+				Blocks: []visor.ReadableBlockVerbose{
+					visor.ReadableBlockVerbose{},
+				},
+			},
+			response: &visor.ReadableBlocksVerbose{
+				Blocks: []visor.ReadableBlockVerbose{
+					visor.ReadableBlockVerbose{},
+				},
+			},
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			gateway := &GatewayerMock{}
+			gateway := &MockGatewayer{}
 			gateway.On("GetBlocks", tc.start, tc.end).Return(tc.gatewayGetBlocksResult, tc.gatewayGetBlocksError)
-			gateway.On("IsCSPEnabled").Return(false)
+			gateway.On("GetBlocksVerbose", tc.start, tc.end).Return(tc.gatewayGetBlocksVerboseResult, tc.gatewayGetBlocksVerboseError)
 			gateway.On("IsAPISetEnabled", "BLOCKCHAIN", []string{"DEFAULT"}).Return(true)
 
 			endpoint := "/api/v1/blocks"
@@ -347,6 +540,9 @@ func TestGetBlocks(t *testing.T) {
 				if tc.body.End != "" {
 					v.Add("end", tc.body.End)
 				}
+				if tc.body.Verbose != "" {
+					v.Add("verbose", tc.body.Verbose)
+				}
 			}
 			if len(v) > 0 {
 				endpoint += "?" + v.Encode()
@@ -361,7 +557,7 @@ func TestGetBlocks(t *testing.T) {
 			setCSRFParameters(csrfStore, tokenValid, req)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
 
@@ -372,10 +568,17 @@ func TestGetBlocks(t *testing.T) {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg *visor.ReadableBlocks
-				err = json.Unmarshal(rr.Body.Bytes(), &msg)
-				require.NoError(t, err)
-				require.Equal(t, tc.response, msg)
+				if tc.verbose {
+					var msg *visor.ReadableBlocksVerbose
+					err = json.Unmarshal(rr.Body.Bytes(), &msg)
+					require.NoError(t, err)
+					require.Equal(t, tc.response, msg)
+				} else {
+					var msg *visor.ReadableBlocks
+					err = json.Unmarshal(rr.Body.Bytes(), &msg)
+					require.NoError(t, err)
+					require.Equal(t, tc.response, msg)
+				}
 			}
 		})
 	}
@@ -383,19 +586,22 @@ func TestGetBlocks(t *testing.T) {
 
 func TestGetLastBlocks(t *testing.T) {
 	type httpBody struct {
-		Num string
+		Num     string
+		Verbose string
 	}
 	tt := []struct {
-		name                       string
-		method                     string
-		url                        string
-		status                     int
-		err                        string
-		body                       httpBody
-		num                        uint64
-		gatewayGetLastBlocksResult *visor.ReadableBlocks
-		gatewayGetLastBlocksError  error
-		response                   *visor.ReadableBlocks
+		name                              string
+		method                            string
+		status                            int
+		err                               string
+		body                              httpBody
+		num                               uint64
+		verbose                           bool
+		gatewayGetLastBlocksResult        *visor.ReadableBlocks
+		gatewayGetLastBlocksError         error
+		gatewayGetLastBlocksVerboseResult *visor.ReadableBlocksVerbose
+		gatewayGetLastBlocksVerboseError  error
+		response                          interface{}
 	}{
 		{
 			name:   "405",
@@ -405,35 +611,55 @@ func TestGetLastBlocks(t *testing.T) {
 			body: httpBody{
 				Num: "1",
 			},
-			num: 1,
 		},
 		{
 			name:   "400 - empty num value",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
-			err:    "400 Bad Request - Param: num is empty",
-			num:    1,
+			err:    "400 Bad Request - Invalid num value \"\"",
 		},
 		{
 			name:   "400 - bad num value",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
-			err:    "400 Bad Request - strconv.ParseUint: parsing \"badNumValue\": invalid syntax",
+			err:    "400 Bad Request - Invalid num value \"badNumValue\"",
 			body: httpBody{
 				Num: "badNumValue",
 			},
-			num: 1,
 		},
 		{
-			name:   "400 - gatewayGetLastBlocksError",
+			name:   "400 - bad verbose",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
-			err:    "400 Bad Request - Get last 1 blocks failed: gatewayGetLastBlocksError",
+			err:    "400 Bad Request - Invalid value for verbose",
+			body: httpBody{
+				Num:     "1",
+				Verbose: "foo",
+			},
+		},
+		{
+			name:   "500 - gatewayGetLastBlocksError",
+			method: http.MethodGet,
+			status: http.StatusInternalServerError,
+			err:    "500 Internal Server Error - gatewayGetLastBlocksError",
 			body: httpBody{
 				Num: "1",
 			},
-			num: 1,
+			num:                       1,
 			gatewayGetLastBlocksError: errors.New("gatewayGetLastBlocksError"),
+		},
+		{
+			name:   "500 - gatewayGetLastBlocksVerboseError",
+			method: http.MethodGet,
+			status: http.StatusInternalServerError,
+			err:    "500 Internal Server Error - gatewayGetLastBlocksVerboseError",
+			body: httpBody{
+				Num:     "1",
+				Verbose: "1",
+			},
+			num:                              1,
+			verbose:                          true,
+			gatewayGetLastBlocksVerboseError: errors.New("gatewayGetLastBlocksVerboseError"),
 		},
 		{
 			name:   "200",
@@ -443,21 +669,55 @@ func TestGetLastBlocks(t *testing.T) {
 				Num: "1",
 			},
 			num: 1,
+			gatewayGetLastBlocksResult: &visor.ReadableBlocks{
+				Blocks: []visor.ReadableBlock{
+					visor.ReadableBlock{},
+				},
+			},
+			response: &visor.ReadableBlocks{
+				Blocks: []visor.ReadableBlock{
+					visor.ReadableBlock{},
+				},
+			},
+		},
+		{
+			name:   "200 verbose",
+			method: http.MethodGet,
+			status: http.StatusOK,
+			body: httpBody{
+				Num:     "1",
+				Verbose: "1",
+			},
+			num:     1,
+			verbose: true,
+			gatewayGetLastBlocksVerboseResult: &visor.ReadableBlocksVerbose{
+				Blocks: []visor.ReadableBlockVerbose{
+					visor.ReadableBlockVerbose{},
+				},
+			},
+			response: &visor.ReadableBlocksVerbose{
+				Blocks: []visor.ReadableBlockVerbose{
+					visor.ReadableBlockVerbose{},
+				},
+			},
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/last_blocks"
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 
 			gateway.On("GetLastBlocks", tc.num).Return(tc.gatewayGetLastBlocksResult, tc.gatewayGetLastBlocksError)
-			gateway.On("IsCSPEnabled").Return(false)
+			gateway.On("GetLastBlocksVerbose", tc.num).Return(tc.gatewayGetLastBlocksVerboseResult, tc.gatewayGetLastBlocksVerboseError)
 			gateway.On("IsAPISetEnabled", "BLOCKCHAIN", []string{"DEFAULT"}).Return(true)
 
 			v := url.Values{}
 			if tc.body.Num != "" {
 				v.Add("num", tc.body.Num)
+			}
+			if tc.body.Verbose != "" {
+				v.Add("verbose", tc.body.Verbose)
 			}
 			if len(v) > 0 {
 				endpoint += "?" + v.Encode()
@@ -473,7 +733,7 @@ func TestGetLastBlocks(t *testing.T) {
 
 			rr := httptest.NewRecorder()
 
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, csrfStore, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, csrfStore, nil)
 
 			handler.ServeHTTP(rr, req)
 
@@ -484,10 +744,17 @@ func TestGetLastBlocks(t *testing.T) {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "case: %s, handler returned wrong error message: got `%v`| %s, want `%v`",
 					tc.name, strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				var msg *visor.ReadableBlocks
-				err = json.Unmarshal(rr.Body.Bytes(), &msg)
-				require.NoError(t, err)
-				require.Equal(t, tc.response, msg)
+				if tc.verbose {
+					var msg *visor.ReadableBlocksVerbose
+					err = json.Unmarshal(rr.Body.Bytes(), &msg)
+					require.NoError(t, err)
+					require.Equal(t, tc.response, msg)
+				} else {
+					var msg *visor.ReadableBlocks
+					err = json.Unmarshal(rr.Body.Bytes(), &msg)
+					require.NoError(t, err)
+					require.Equal(t, tc.response, msg)
+				}
 			}
 		})
 	}

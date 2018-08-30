@@ -85,6 +85,7 @@ type NodeConfig struct {
 	// Comma separated list of API sets exported via remote web interface
 	WebInterfaceAPISets flagutils.StringSet
 
+	// Enable the deprecated JSON 2.0 RPC interface
 	RPCInterface bool
 
 	// Launch System Default Browser after client startup
@@ -119,6 +120,11 @@ type NodeConfig struct {
 	WalletDirectory string
 	// Wallet crypto type
 	WalletCryptoType string
+
+	// Disable the hardcoded default peers
+	DisableDefaultPeers bool
+	// Load custom peers from disk
+	CustomPeersFile string
 
 	RunMaster bool
 
@@ -180,7 +186,7 @@ func NewNodeConfig(mode string, node NodeParameters) *NodeConfig {
 		EnableSeedAPI: false,
 		// Disable CSRF check in the wallet API
 		DisableCSRF: false,
-		// DisableCSP disable content-security-policy in http reponse
+		// DisableCSP disable content-security-policy in http response
 		DisableCSP: false,
 		// Only run on localhost and only connect to others on localhost
 		LocalhostOnly: false,
@@ -209,7 +215,7 @@ func NewNodeConfig(mode string, node NodeParameters) *NodeConfig {
 		WebInterfaceHTTPS:   false,
 		WebInterfaceAPISets: flagutils.NewStringSet(),
 
-		RPCInterface: true,
+		RPCInterface: false,
 
 		LaunchBrowser: false,
 		// Data directory holds app data
@@ -332,6 +338,10 @@ func (c *Config) postProcess() {
 	if c.Node.EnableGUI {
 		c.Node.GUIDirectory = file.ResolveResourceDirectory(c.Node.GUIDirectory)
 	}
+
+	if c.Node.DisableDefaultPeers {
+		c.Node.DefaultConnections = nil
+	}
 }
 
 func (c *Config) register() {
@@ -359,7 +369,7 @@ func (c *Config) register() {
 	flag.BoolVar(&c.Node.WebInterfaceHTTPS, "web-interface-https", c.Node.WebInterfaceHTTPS, "enable HTTPS for web interface")
 	flag.Var(&c.Node.WebInterfaceAPISets, "enable-api", "enable API set (DEFAULT, WALLET, SEED, STATUS)")
 
-	flag.BoolVar(&c.Node.RPCInterface, "rpc-interface", c.Node.RPCInterface, "enable the rpc interface")
+	flag.BoolVar(&c.Node.RPCInterface, "rpc-interface", c.Node.RPCInterface, "enable the deprecated JSON 2.0 RPC interface")
 
 	flag.BoolVar(&c.Node.LaunchBrowser, "launch-browser", c.Node.LaunchBrowser, "launch system default webbrowser at client startup")
 	flag.BoolVar(&c.Node.PrintWebInterfaceAddress, "print-web-interface-address", c.Node.PrintWebInterfaceAddress, "print configured web interface address and exit")
@@ -377,6 +387,9 @@ func (c *Config) register() {
 
 	flag.BoolVar(&c.Node.VerifyDB, "verify-db", c.Node.VerifyDB, "check the database for corruption")
 	flag.BoolVar(&c.Node.ResetCorruptDB, "reset-corrupt-db", c.Node.ResetCorruptDB, "reset the database if corrupted, and continue running instead of exiting")
+
+	flag.BoolVar(&c.Node.DisableDefaultPeers, "disable-default-peers", c.Node.DisableDefaultPeers, "disable the hardcoded default peers")
+	flag.StringVar(&c.Node.CustomPeersFile, "custom-peers-file", c.Node.CustomPeersFile, "load custom peers from a newline separate list of ip:port in a file. Note that this is different from the peers.json file in the data directory")
 
 	// Key Configuration Data
 	flag.BoolVar(&c.Node.RunMaster, "master", c.Node.RunMaster, "run the daemon as blockchain master server")

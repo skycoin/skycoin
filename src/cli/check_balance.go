@@ -82,8 +82,8 @@ func checkWltBalance(c *gcli.Context) error {
 	switch err.(type) {
 	case nil:
 	case WalletLoadError:
-		errorWithHelp(c, err)
-		return nil
+		printHelp(c)
+		return err
 	default:
 		return err
 	}

@@ -536,9 +536,7 @@ func (w *Wallet) copyFrom(src *Wallet) {
 	}
 
 	// Copies the address entries
-	for _, e := range src.Entries {
-		w.Entries = append(w.Entries, e)
-	}
+	w.Entries = append(w.Entries, src.Entries...)
 }
 
 // erase wipes secret fields in wallet
@@ -614,7 +612,7 @@ func (w *Wallet) GuardView(password []byte, f func(w *Wallet) error) error {
 // Load loads wallet from a given file
 func Load(wltFile string) (*Wallet, error) {
 	if _, err := os.Stat(wltFile); os.IsNotExist(err) {
-		return nil, fmt.Errorf("load wallet file failed, wallet %s doesn't exist", wltFile)
+		return nil, fmt.Errorf("wallet %s doesn't exist", wltFile)
 	}
 
 	r := &ReadableWallet{}
@@ -900,7 +898,9 @@ func (w *Wallet) ScanAddresses(scanN uint64, bg BalanceGetter) error {
 	// This is necessary to keep the lastSeed updated.
 	if keepNum != uint64(len(bals)) {
 		w.reset()
-		w.GenerateAddresses(nExistingAddrs + keepNum)
+		if _, err := w.GenerateAddresses(nExistingAddrs + keepNum); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -945,9 +945,7 @@ func (w *Wallet) clone() *Wallet {
 		wlt.Meta[k] = v
 	}
 
-	for _, e := range w.Entries {
-		wlt.Entries = append(wlt.Entries, e)
-	}
+	wlt.Entries = append(wlt.Entries, w.Entries...)
 
 	return &wlt
 }
@@ -1134,9 +1132,7 @@ func (w *Wallet) CreateAndSignTransactionAdvanced(params CreateTransactionParams
 
 	switch params.HoursSelection.Type {
 	case HoursSelectionTypeManual:
-		for _, out := range params.To {
-			txn.Out = append(txn.Out, out)
-		}
+		txn.Out = append(txn.Out, params.To...)
 
 	case HoursSelectionTypeAuto:
 		var addrHours []uint64

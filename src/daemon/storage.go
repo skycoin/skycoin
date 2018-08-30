@@ -7,48 +7,10 @@ import (
 	"github.com/skycoin/skycoin/src/daemon/pex"
 )
 
-// base storage struct
-type store struct {
-	value map[interface{}]interface{}
-	lk    sync.Mutex
-}
-
-type storeFunc func(*store) error
-
-func (s *store) setValue(k interface{}, v interface{}) {
-	s.lk.Lock()
-	s.value[k] = v
-	s.lk.Unlock()
-}
-
-func (s *store) getValue(k interface{}) (interface{}, bool) {
-	s.lk.Lock()
-	defer s.lk.Unlock()
-	v, ok := s.value[k]
-	return v, ok
-}
-
-func (s *store) do(sf storeFunc) error {
-	s.lk.Lock()
-	defer s.lk.Unlock()
-	return sf(s)
-}
-
-func (s *store) remove(k interface{}) {
-	s.lk.Lock()
-	delete(s.value, k)
-	s.lk.Unlock()
-}
-
-func (s *store) len() int {
-	s.lk.Lock()
-	defer s.lk.Unlock()
-	return len(s.value)
-}
-
 // ExpectIntroductions records connections that are expecting introduction msg.
 type ExpectIntroductions struct {
-	store
+	value map[string]time.Time
+	sync.Mutex
 }
 
 // CullMatchFunc function for checking if the connection need to be culled
@@ -57,268 +19,271 @@ type CullMatchFunc func(addr string, t time.Time) (bool, error)
 // NewExpectIntroductions creates a ExpectIntroduction instance
 func NewExpectIntroductions() *ExpectIntroductions {
 	return &ExpectIntroductions{
-		store: store{
-			value: make(map[interface{}]interface{}),
-		},
+		value: make(map[string]time.Time),
 	}
 }
 
 // Add adds expecting introduction connection
-func (ei *ExpectIntroductions) Add(addr string, tm time.Time) {
-	ei.setValue(addr, tm)
+func (s *ExpectIntroductions) Add(addr string, tm time.Time) {
+	s.Lock()
+	defer s.Unlock()
+	s.value[addr] = tm
 }
 
 // Remove removes connection
-func (ei *ExpectIntroductions) Remove(addr string) {
-	ei.remove(addr)
+func (s *ExpectIntroductions) Remove(addr string) {
+	s.Lock()
+	defer s.Unlock()
+	delete(s.value, addr)
 }
 
 // CullInvalidConns cull connections that match the matchFunc
-func (ei *ExpectIntroductions) CullInvalidConns(f CullMatchFunc) ([]string, error) {
-	var addrs []string
-	if err := ei.do(func(s *store) error {
-		for k, v := range s.value {
-			addr := k.(string)
-			t := v.(time.Time)
-			ok, err := f(addr, t)
-			if err != nil {
-				return err
-			}
+func (s *ExpectIntroductions) CullInvalidConns(f CullMatchFunc) ([]string, error) {
+	s.Lock()
+	defer s.Unlock()
 
-			if ok {
-				addrs = append(addrs, addr)
-				delete(s.value, k)
-			}
+	var addrs []string
+	for addr, t := range s.value {
+		ok, err := f(addr, t)
+		if err != nil {
+			return nil, err
 		}
-		return nil
-	}); err != nil {
-		return nil, err
+
+		if ok {
+			addrs = append(addrs, addr)
+			delete(s.value, addr)
+		}
 	}
 
 	return addrs, nil
 }
 
 // Get returns the time of speicific address
-func (ei *ExpectIntroductions) Get(addr string) (time.Time, bool) {
-	if v, ok := ei.getValue(addr); ok {
-		return v.(time.Time), ok
-	}
-	return time.Time{}, false
+func (s *ExpectIntroductions) Get(addr string) (time.Time, bool) {
+	s.Lock()
+	defer s.Unlock()
+	t, ok := s.value[addr]
+	return t, ok
 }
 
 // ConnectionMirrors records mirror for connection
 type ConnectionMirrors struct {
-	store
+	value map[string]uint32
+	sync.Mutex
 }
 
 // NewConnectionMirrors create ConnectionMirrors instance.
 func NewConnectionMirrors() *ConnectionMirrors {
 	return &ConnectionMirrors{
-		store: store{
-			value: make(map[interface{}]interface{}),
-		},
+		value: make(map[string]uint32),
 	}
 }
 
 // Add adds connection mirror
-func (cm *ConnectionMirrors) Add(addr string, mirror uint32) {
-	cm.setValue(addr, mirror)
+func (s *ConnectionMirrors) Add(addr string, mirror uint32) {
+	s.Lock()
+	defer s.Unlock()
+	s.value[addr] = mirror
 }
 
 // Get returns the mirror of connection
-func (cm *ConnectionMirrors) Get(addr string) (uint32, bool) {
-	v, ok := cm.getValue(addr)
-	if ok {
-		return v.(uint32), ok
-	}
-	return 0, false
+func (s *ConnectionMirrors) Get(addr string) (uint32, bool) {
+	s.Lock()
+	defer s.Unlock()
+	v, ok := s.value[addr]
+	return v, ok
 }
 
 // Remove remove connection mirror
-func (cm *ConnectionMirrors) Remove(addr string) {
-	cm.remove(addr)
+func (s *ConnectionMirrors) Remove(addr string) {
+	s.Lock()
+	defer s.Unlock()
+	delete(s.value, addr)
 }
 
 // OutgoingConnections records the outgoing connections
 type OutgoingConnections struct {
-	store
+	value map[string]struct{}
+	sync.Mutex
 }
 
 // NewOutgoingConnections create OutgoingConnection instance
 func NewOutgoingConnections(max int) *OutgoingConnections {
 	return &OutgoingConnections{
-		store: store{
-			value: make(map[interface{}]interface{}, max),
-		},
+		value: make(map[string]struct{}, max),
 	}
 }
 
 // Add records connection
-func (oc *OutgoingConnections) Add(addr string) {
-	oc.setValue(addr, true)
+func (s *OutgoingConnections) Add(addr string) {
+	s.Lock()
+	defer s.Unlock()
+	s.value[addr] = struct{}{}
 }
 
 // Remove remove connection
-func (oc *OutgoingConnections) Remove(addr string) {
-	oc.remove(addr)
+func (s *OutgoingConnections) Remove(addr string) {
+	s.Lock()
+	defer s.Unlock()
+	delete(s.value, addr)
 }
 
 // Get returns if connection is outgoing
-func (oc *OutgoingConnections) Get(addr string) bool {
-	_, ok := oc.getValue(addr)
+func (s *OutgoingConnections) Get(addr string) bool {
+	s.Lock()
+	defer s.Unlock()
+	_, ok := s.value[addr]
 	return ok
 }
 
 // Len returns the outgoing connections count
-func (oc *OutgoingConnections) Len() int {
-	return oc.len()
+func (s *OutgoingConnections) Len() int {
+	s.Lock()
+	defer s.Unlock()
+	return len(s.value)
 }
 
 // PendingConnections records pending connection peers
 type PendingConnections struct {
-	store
+	value map[string]pex.Peer
+	sync.Mutex
 }
 
 // NewPendingConnections creates new PendingConnections instance
 func NewPendingConnections(maxConn int) *PendingConnections {
 	return &PendingConnections{
-		store: store{
-			value: make(map[interface{}]interface{}, maxConn),
-		},
+		value: make(map[string]pex.Peer, maxConn),
 	}
 }
 
 // Add adds pending connection
-func (pc *PendingConnections) Add(addr string, peer pex.Peer) {
-	pc.setValue(addr, peer)
+func (s *PendingConnections) Add(peer pex.Peer) {
+	s.Lock()
+	defer s.Unlock()
+	s.value[peer.Addr] = peer
 }
 
 // Get returns pending connections
-func (pc *PendingConnections) Get(addr string) (pex.Peer, bool) {
-	v, ok := pc.getValue(addr)
-	if ok {
-		return v.(pex.Peer), true
-	}
-	return pex.Peer{}, false
+func (s *PendingConnections) Get(addr string) (pex.Peer, bool) {
+	s.Lock()
+	defer s.Unlock()
+	v, ok := s.value[addr]
+	return v, ok
 }
 
 // Remove removes pending connection
-func (pc *PendingConnections) Remove(addr string) {
-	pc.remove(addr)
+func (s *PendingConnections) Remove(addr string) {
+	s.Lock()
+	defer s.Unlock()
+	delete(s.value, addr)
 }
 
 // Len returns pending connection number
-func (pc *PendingConnections) Len() int {
-	return pc.len()
+func (s *PendingConnections) Len() int {
+	s.Lock()
+	defer s.Unlock()
+	return len(s.value)
 }
 
 // MirrorConnections records mirror connections
 type MirrorConnections struct {
-	store
+	value map[uint32]map[string]uint16
+	sync.Mutex
 }
 
 // NewMirrorConnections create mirror connection instance
 func NewMirrorConnections() *MirrorConnections {
 	return &MirrorConnections{
-		store: store{
-			value: make(map[interface{}]interface{}),
-		},
+		value: make(map[uint32]map[string]uint16),
 	}
 }
 
 // Add adds mirror connection
-func (mc *MirrorConnections) Add(mirror uint32, ip string, port uint16) {
-	mc.do(func(s *store) error {
-		if m, ok := s.value[mirror]; ok {
-			m.(map[string]uint16)[ip] = port
-			return nil
-		}
+func (s *MirrorConnections) Add(mirror uint32, ip string, port uint16) {
+	s.Lock()
+	defer s.Unlock()
 
-		m := make(map[string]uint16)
+	if m, ok := s.value[mirror]; ok {
 		m[ip] = port
-		s.value[mirror] = m
-		return nil
-	})
+		return
+	}
+
+	m := make(map[string]uint16)
+	m[ip] = port
+	s.value[mirror] = m
 }
 
 // Get returns ip port of specific mirror
-func (mc *MirrorConnections) Get(mirror uint32, ip string) (uint16, bool) {
-	var port uint16
-	var exist bool
-	mc.do(func(s *store) error {
-		if m, ok := s.value[mirror]; ok {
-			port, exist = m.(map[string]uint16)[ip]
-		}
-		return nil
-	})
-	return port, exist
+func (s *MirrorConnections) Get(mirror uint32, ip string) (uint16, bool) {
+	s.Lock()
+	defer s.Unlock()
+
+	m, ok := s.value[mirror]
+	if ok {
+		port, exist := m[ip]
+		return port, exist
+	}
+
+	return 0, false
 }
 
 // Remove removes port of ip for specific mirror
-func (mc *MirrorConnections) Remove(mirror uint32, ip string) {
-	mc.do(func(s *store) error {
-		if m, ok := s.value[mirror]; ok {
-			delete(m.(map[string]uint16), ip)
-		}
-		return nil
-	})
+func (s *MirrorConnections) Remove(mirror uint32, ip string) {
+	s.Lock()
+	defer s.Unlock()
+
+	m, ok := s.value[mirror]
+	if ok {
+		delete(m, ip)
+	}
 }
 
 // IPCount records connection number from the same base ip
 type IPCount struct {
-	store
+	value map[string]int
+	sync.Mutex
 }
 
 // NewIPCount returns IPCount instance
 func NewIPCount() *IPCount {
 	return &IPCount{
-		store: store{
-			value: make(map[interface{}]interface{}),
-		},
+		value: make(map[string]int),
 	}
 }
 
-// Set sets ip count
-// func (ic *IPCount) Set(ip string, n int) {
-// 	ic.setValue(ip, n)
-// }
-
 // Increase increases one for specific ip
-func (ic *IPCount) Increase(ip string) {
-	ic.do(func(s *store) error {
-		if v, ok := s.value[ip]; ok {
-			c := v.(int)
-			c++
-			s.value[ip] = c
-			return nil
-		}
+func (s *IPCount) Increase(ip string) {
+	s.Lock()
+	defer s.Unlock()
 
-		s.value[ip] = 1
-		return nil
-	})
+	if c, ok := s.value[ip]; ok {
+		c++
+		s.value[ip] = c
+		return
+	}
+
+	s.value[ip] = 1
 }
 
 // Decrease decreases one for specific ip
-func (ic *IPCount) Decrease(ip string) {
-	ic.do(func(s *store) error {
-		if v, ok := s.value[ip]; ok {
-			c := v.(int)
-			if c <= 1 {
-				delete(s.value, ip)
-				return nil
-			}
-			c--
-			s.value[ip] = c
+func (s *IPCount) Decrease(ip string) {
+	s.Lock()
+	defer s.Unlock()
+
+	if c, ok := s.value[ip]; ok {
+		if c <= 1 {
+			delete(s.value, ip)
+			return
 		}
-		return nil
-	})
+		c--
+		s.value[ip] = c
+	}
 }
 
 // Get return ip count
-func (ic *IPCount) Get(ip string) (int, bool) {
-	v, ok := ic.getValue(ip)
-	if ok {
-		return v.(int), true
-	}
-	return 0, false
+func (s *IPCount) Get(ip string) (int, bool) {
+	s.Lock()
+	defer s.Unlock()
+	v, ok := s.value[ip]
+	return v, ok
 }

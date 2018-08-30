@@ -6,6 +6,8 @@ package historydb
 // transaction hash, and get the tx value from transactions bucket.
 
 import (
+	"errors"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/coin"
@@ -55,14 +57,14 @@ func (txs *transactions) Get(tx *dbutil.Tx, hash cipher.SHA256) (*Transaction, e
 
 // GetSlice returns transactions slice of given hashes
 func (txs *transactions) GetSlice(tx *dbutil.Tx, hashes []cipher.SHA256) ([]Transaction, error) {
-	var txns []Transaction
+	txns := make([]Transaction, 0, len(hashes))
 	for _, h := range hashes {
 		var txn Transaction
 
 		if ok, err := dbutil.GetBucketObjectDecoded(tx, TransactionsBkt, h[:], &txn); err != nil {
 			return nil, err
 		} else if !ok {
-			continue
+			return nil, errors.New("Transaction not found")
 		}
 
 		txns = append(txns, txn)

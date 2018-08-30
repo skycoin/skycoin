@@ -59,20 +59,20 @@ func TestConnection(t *testing.T) {
 			err:    "405 Method Not Allowed",
 		},
 		{
-			name:   "400 - empty addr",
-			method: http.MethodGet,
-			status: http.StatusBadRequest,
-			err:    "400 Bad Request - addr is required",
-			addr:   "",
+			name:                       "400 - empty addr",
+			method:                     http.MethodGet,
+			status:                     http.StatusBadRequest,
+			err:                        "400 Bad Request - addr is required",
+			addr:                       "",
 			gatewayGetConnectionResult: nil,
-			result: nil,
+			result:                     nil,
 		},
 		{
-			name:   "200",
-			method: http.MethodGet,
-			status: http.StatusOK,
-			err:    "",
-			addr:   "addr",
+			name:                               "200",
+			method:                             http.MethodGet,
+			status:                             http.StatusOK,
+			err:                                "",
+			addr:                               "addr",
 			gatewayGetBlockchainProgressResult: &bp,
 			gatewayGetBlockchainProgressError:  nil,
 			gatewayGetConnectionResult: &daemon.Connection{
@@ -97,11 +97,11 @@ func TestConnection(t *testing.T) {
 			},
 		},
 		{
-			name:   "500 - blockchain progress failed",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - some error",
-			addr:   "addr",
+			name:                               "500 - blockchain progress failed",
+			method:                             http.MethodGet,
+			status:                             http.StatusInternalServerError,
+			err:                                "500 Internal Server Error - some error",
+			addr:                               "addr",
 			gatewayGetBlockchainProgressResult: nil,
 			gatewayGetBlockchainProgressError:  errors.New("some error"),
 			gatewayGetConnectionResult: &daemon.Connection{
@@ -119,13 +119,12 @@ func TestConnection(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/network/connection"
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			gateway.On("GetConnection", tc.addr).Return(tc.gatewayGetConnectionResult)
 			gateway.On("GetBlockchainProgress").Return(
 				tc.gatewayGetBlockchainProgressResult,
 				tc.gatewayGetBlockchainProgressError,
 			)
-			gateway.On("IsCSPEnabled").Return(false)
 			gateway.On("IsAPISetEnabled", "PEX", []string{"STATUS", "DEFAULT"}).Return(true)
 
 			v := url.Values{}
@@ -139,7 +138,7 @@ func TestConnection(t *testing.T) {
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, &CSRFStore{}, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -202,10 +201,10 @@ func TestConnections(t *testing.T) {
 			err:    "405 Method Not Allowed",
 		},
 		{
-			name:   "200",
-			method: http.MethodGet,
-			status: http.StatusOK,
-			err:    "",
+			name:                               "200",
+			method:                             http.MethodGet,
+			status:                             http.StatusOK,
+			err:                                "",
 			gatewayGetBlockchainProgressResult: &bp,
 			gatewayGetBlockchainProgressError:  nil,
 			gatewayGetConnectionsResult: &daemon.Connections{
@@ -238,10 +237,10 @@ func TestConnections(t *testing.T) {
 			},
 		},
 		{
-			name:   "500 - blockchain progress failed",
-			method: http.MethodGet,
-			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - some error",
+			name:                               "500 - blockchain progress failed",
+			method:                             http.MethodGet,
+			status:                             http.StatusInternalServerError,
+			err:                                "500 Internal Server Error - some error",
 			gatewayGetBlockchainProgressResult: nil,
 			gatewayGetBlockchainProgressError:  errors.New("some error"),
 			gatewayGetConnectionsResult: &daemon.Connections{
@@ -263,20 +262,19 @@ func TestConnections(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/network/connections"
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			gateway.On("GetConnections").Return(tc.gatewayGetConnectionsResult)
 			gateway.On("GetBlockchainProgress").Return(
 				tc.gatewayGetBlockchainProgressResult,
 				tc.gatewayGetBlockchainProgressError,
 			)
-			gateway.On("IsCSPEnabled").Return(false)
 			gateway.On("IsAPISetEnabled", "PEX", []string{"STATUS", "DEFAULT"}).Return(true)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, &CSRFStore{}, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -311,27 +309,26 @@ func TestDefaultConnections(t *testing.T) {
 			err:    "405 Method Not Allowed",
 		},
 		{
-			name:   "200",
-			method: http.MethodGet,
-			status: http.StatusOK,
-			err:    "",
+			name:                               "200",
+			method:                             http.MethodGet,
+			status:                             http.StatusOK,
+			err:                                "",
 			gatewayGetDefaultConnectionsResult: []string{"44.33.22.11", "11.44.66.88"},
-			result: []string{"11.44.66.88", "44.33.22.11"},
+			result:                             []string{"11.44.66.88", "44.33.22.11"},
 		},
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/network/defaultConnections"
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			gateway.On("GetDefaultConnections").Return(tc.gatewayGetDefaultConnectionsResult)
-			gateway.On("IsCSPEnabled").Return(false)
 			gateway.On("IsAPISetEnabled", "PEX", []string{"STATUS", "DEFAULT"}).Return(true)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, &CSRFStore{}, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -366,27 +363,26 @@ func TestGetTrustConnections(t *testing.T) {
 			err:    "405 Method Not Allowed",
 		},
 		{
-			name:   "200",
-			method: http.MethodGet,
-			status: http.StatusOK,
-			err:    "",
+			name:                             "200",
+			method:                           http.MethodGet,
+			status:                           http.StatusOK,
+			err:                              "",
 			gatewayGetTrustConnectionsResult: []string{"44.33.22.11", "11.44.66.88"},
-			result: []string{"11.44.66.88", "44.33.22.11"},
+			result:                           []string{"11.44.66.88", "44.33.22.11"},
 		},
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/network/connections/trust"
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			gateway.On("GetTrustConnections").Return(tc.gatewayGetTrustConnectionsResult)
-			gateway.On("IsCSPEnabled").Return(false)
 			gateway.On("IsAPISetEnabled", "PEX", []string{"STATUS", "DEFAULT"}).Return(true)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, &CSRFStore{}, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -421,27 +417,26 @@ func TestGetExchgConnection(t *testing.T) {
 			err:    "405 Method Not Allowed",
 		},
 		{
-			name:   "200",
-			method: http.MethodGet,
-			status: http.StatusOK,
-			err:    "",
+			name:                            "200",
+			method:                          http.MethodGet,
+			status:                          http.StatusOK,
+			err:                             "",
 			gatewayGetExchgConnectionResult: []string{"44.33.22.11", "11.44.66.88"},
-			result: []string{"11.44.66.88", "44.33.22.11"},
+			result:                          []string{"11.44.66.88", "44.33.22.11"},
 		},
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/network/connections/exchange"
-			gateway := NewGatewayerMock()
+			gateway := &MockGatewayer{}
 			gateway.On("GetExchgConnection").Return(tc.gatewayGetExchgConnectionResult)
-			gateway.On("IsCSPEnabled").Return(false)
 			gateway.On("IsAPISetEnabled", "PEX", []string{"STATUS", "DEFAULT"}).Return(true)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(muxConfig{host: configuredHost, appLoc: "."}, gateway, &CSRFStore{}, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway, &CSRFStore{}, nil)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

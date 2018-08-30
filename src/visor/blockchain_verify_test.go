@@ -53,12 +53,13 @@ func MakeBlockchain(t *testing.T, db *dbutil.DB, seckey cipher.SecKey) *Blockcha
 	}
 
 	sig := cipher.SignHash(gb.HashHeader(), seckey)
-	db.Update("", func(tx *dbutil.Tx) error {
+	err = db.Update("", func(tx *dbutil.Tx) error {
 		return b.ExecuteBlock(tx, &coin.SignedBlock{
 			Block: *gb,
 			Sig:   sig,
 		})
 	})
+	require.NoError(t, err)
 	return b
 }
 

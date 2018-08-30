@@ -111,7 +111,7 @@ func TestLoadPeersFromFile(t *testing.T) {
 				defer removeFile()
 			}
 
-			peers, err := loadPeersFromFile(f)
+			peers, err := loadCachedPeersFile(f)
 			require.Equal(t, tc.err, err)
 			require.Equal(t, len(tc.expectPeers), len(peers))
 			for k, v := range tc.expectPeers {
@@ -429,7 +429,7 @@ func TestPeerlistSave(t *testing.T) {
 			defer removeFile()
 			require.NoError(t, pl.save(f))
 
-			psMap, err := loadPeersFromFile(f)
+			psMap, err := loadCachedPeersFile(f)
 			require.NoError(t, err)
 			for k, v := range tc.expect {
 				p, ok := psMap[k]
@@ -515,9 +515,9 @@ func peersEqualWithSeenAllowedDiff(t *testing.T, expected Peer, actual Peer) {
 	require.Equal(t, expected, actual)
 }
 
-// preparePeerlistFile makes peers.txt in temporary dir,
+// preparePeerlistFile makes peers.json in temporary dir,
 func preparePeerlistFile(t *testing.T) (string, func()) {
-	f, err := ioutil.TempFile("", "peers.txt")
+	f, err := ioutil.TempFile("", PeerCacheFilename)
 	require.NoError(t, err)
 
 	return f.Name(), func() {

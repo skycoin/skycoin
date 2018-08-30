@@ -30,8 +30,7 @@ func getBlocks(c *gcli.Context) error {
 	}
 
 	if start == "" {
-		gcli.ShowSubcommandHelp(c)
-		return nil
+		return gcli.ShowSubcommandHelp(c)
 	}
 
 	s, err := strconv.ParseUint(start, 10, 64)

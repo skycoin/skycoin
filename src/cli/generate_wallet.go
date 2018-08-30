@@ -170,7 +170,7 @@ func generateWalletHandler(c *gcli.Context) error {
 		Seed:       sd,
 		Encrypt:    encrypt,
 		CryptoType: cryptoType,
-		Password:   []byte(password),
+		Password:   password,
 	}
 
 	wlt, err := GenerateWallet(wltName, opts, num)

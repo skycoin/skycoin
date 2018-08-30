@@ -91,28 +91,28 @@ func createRawTxCmd(cfg Config) gcli.Command {
 		},
 		OnUsageError: onCommandUsageError(name),
 		Action: func(c *gcli.Context) error {
-			tx, err := createRawTxCmdHandler(c)
+			txn, err := createRawTxnCmdHandler(c)
 			switch err.(type) {
 			case nil:
 			case WalletLoadError:
-				errorWithHelp(c, err)
-			case WalletSaveError:
-				return errors.New("save wallet failed")
+				printHelp(c)
+				return err
 			default:
 				return err
 			}
 
-			rawTx := hex.EncodeToString(tx.Serialize())
+			rawTxn := hex.EncodeToString(txn.Serialize())
 
 			if c.Bool("json") {
 				return printJSON(struct {
 					RawTx string `json:"rawtx"`
 				}{
-					RawTx: rawTx,
+					RawTx: rawTxn,
 				})
 			}
 
-			fmt.Println(rawTx)
+			fmt.Println(rawTxn)
+
 			return nil
 		},
 	}
@@ -348,7 +348,7 @@ func parseCreateRawTxArgs(c *gcli.Context) (*createRawTxArgs, error) {
 	}, nil
 }
 
-func createRawTxCmdHandler(c *gcli.Context) (*coin.Transaction, error) {
+func createRawTxnCmdHandler(c *gcli.Context) (*coin.Transaction, error) {
 	apiClient := APIClientFromContext(c)
 
 	args, err := parseCreateRawTxArgs(c)

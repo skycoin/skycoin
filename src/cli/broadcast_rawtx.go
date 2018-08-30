@@ -16,8 +16,7 @@ func broadcastTxCmd() gcli.Command {
 		Action: func(c *gcli.Context) error {
 			rawtx := c.Args().First()
 			if rawtx == "" {
-				gcli.ShowSubcommandHelp(c)
-				return nil
+				return gcli.ShowSubcommandHelp(c)
 			}
 
 			client := APIClientFromContext(c)

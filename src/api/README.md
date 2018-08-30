@@ -57,59 +57,59 @@ However, any changes to the API will be recorded in the [changelog](../../CHANGE
 <!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3,4,5" -->
 
 - [CSRF](#csrf)
-    - [Get current csrf token](#get-current-csrf-token)
+	- [Get current csrf token](#get-current-csrf-token)
 - [General system checks](#general-system-checks)
-    - [Health check](#health-check)
+	- [Health check](#health-check)
+	- [Version info](#version-info)
 - [Simple query APIs](#simple-query-apis)
-    - [Get node version info](#get-node-version-info)
-    - [Get balance of addresses](#get-balance-of-addresses)
-    - [Get unspent output set of address or hash](#get-unspent-output-set-of-address-or-hash)
-    - [Verify an address](#verify-an-address)
+	- [Get balance of addresses](#get-balance-of-addresses)
+	- [Get unspent output set of address or hash](#get-unspent-output-set-of-address-or-hash)
+	- [Verify an address](#verify-an-address)
 - [Wallet APIs](#wallet-apis)
-    - [Get wallet](#get-wallet)
-    - [Get wallet transactions](#get-wallet-transactions)
-    - [Get wallets](#get-wallets)
-    - [Get wallet folder name](#get-wallet-folder-name)
-    - [Generate wallet seed](#generate-wallet-seed)
-    - [Create a wallet from seed](#create-a-wallet-from-seed)
-    - [Generate new address in wallet](#generate-new-address-in-wallet)
-    - [Updates wallet label](#updates-wallet-label)
-    - [Get wallet balance](#get-wallet-balance)
-    - [Spend coins from wallet](#spend-coins-from-wallet)
-    - [Create transaction](#create-transaction)
-    - [Unload wallet](#unload-wallet)
-    - [Encrypt wallet](#encrypt-wallet)
-    - [Decrypt wallet](#decrypt-wallet)
-    - [Get wallet seed](#get-wallet-seed)
+	- [Get wallet](#get-wallet)
+	- [Get unconfirmed transactions of a wallet](#get-unconfirmed-transactions-of-a-wallet)
+	- [Get wallets](#get-wallets)
+	- [Get wallet folder name](#get-wallet-folder-name)
+	- [Generate wallet seed](#generate-wallet-seed)
+	- [Create a wallet from seed](#create-a-wallet-from-seed)
+	- [Generate new address in wallet](#generate-new-address-in-wallet)
+	- [Updates wallet label](#updates-wallet-label)
+	- [Get wallet balance](#get-wallet-balance)
+	- [Spend coins from wallet](#spend-coins-from-wallet)
+	- [Create transaction](#create-transaction)
+	- [Unload wallet](#unload-wallet)
+	- [Encrypt wallet](#encrypt-wallet)
+	- [Decrypt wallet](#decrypt-wallet)
+	- [Get wallet seed](#get-wallet-seed)
 - [Transaction APIs](#transaction-apis)
-    - [Get unconfirmed transactions](#get-unconfirmed-transactions)
-    - [Get transaction info by id](#get-transaction-info-by-id)
-    - [Get raw transaction by id](#get-raw-transaction-by-id)
-    - [Inject raw transaction](#inject-raw-transaction)
-    - [Get transactions that are addresses related](#get-transactions-that-are-addresses-related)
-    - [Resend unconfirmed transactions](#resend-unconfirmed-transactions)
-    - [Verify encoded transaction](#verify-encoded-transaction)
+	- [Get unconfirmed transactions](#get-unconfirmed-transactions)
+	- [Get transaction info by id](#get-transaction-info-by-id)
+	- [Get raw transaction by id](#get-raw-transaction-by-id)
+	- [Inject raw transaction](#inject-raw-transaction)
+	- [Get transactions that are addresses related](#get-transactions-that-are-addresses-related)
+	- [Resend unconfirmed transactions](#resend-unconfirmed-transactions)
+	- [Verify encoded transaction](#verify-encoded-transaction)
 - [Block APIs](#block-apis)
-    - [Get blockchain metadata](#get-blockchain-metadata)
-    - [Get blockchain progress](#get-blockchain-progress)
-    - [Get block by hash or seq](#get-block-by-hash-or-seq)
-    - [Get blocks in specific range](#get-blocks-in-specific-range)
-    - [Get last N blocks](#get-last-n-blocks)
+	- [Get blockchain metadata](#get-blockchain-metadata)
+	- [Get blockchain progress](#get-blockchain-progress)
+	- [Get block by hash or seq](#get-block-by-hash-or-seq)
+	- [Get blocks in specific range](#get-blocks-in-specific-range)
+	- [Get last N blocks](#get-last-n-blocks)
 - [Explorer APIs](#explorer-apis)
-    - [Get address affected transactions](#get-address-affected-transactions)
+	- [Get address affected transactions](#get-address-affected-transactions)
 - [Uxout APIs](#uxout-apis)
-    - [Get uxout](#get-uxout)
-    - [Get historical unspent outputs for an address](#get-historical-unspent-outputs-for-an-address)
+	- [Get uxout](#get-uxout)
+	- [Get historical unspent outputs for an address](#get-historical-unspent-outputs-for-an-address)
 - [Coin supply related information](#coin-supply-related-information)
-    - [Coin supply](#coin-supply)
-    - [Richlist show top N addresses by uxouts](#richlist-show-top-n-addresses-by-uxouts)
-    - [Count unique addresses](#count-unique-addresses)
+	- [Coin supply](#coin-supply)
+	- [Richlist show top N addresses by uxouts](#richlist-show-top-n-addresses-by-uxouts)
+	- [Count unique addresses](#count-unique-addresses)
 - [Network status](#network-status)
-    - [Get information for a specific connection](#get-information-for-a-specific-connection)
-    - [Get a list of all connections](#get-a-list-of-all-connections)
-    - [Get a list of all default connections](#get-a-list-of-all-default-connections)
-    - [Get a list of all trusted connections](#get-a-list-of-all-trusted-connections)
-    - [Get a list of all connections discovered through peer exchange](#get-a-list-of-all-connections-discovered-through-peer-exchange)
+	- [Get information for a specific connection](#get-information-for-a-specific-connection)
+	- [Get a list of all connections](#get-a-list-of-all-connections)
+	- [Get a list of all default connections](#get-a-list-of-all-default-connections)
+	- [Get a list of all trusted connections](#get-a-list-of-all-trusted-connections)
+	- [Get a list of all connections discovered through peer exchange](#get-a-list-of-all-connections-discovered-through-peer-exchange)
 
 <!-- /MarkdownTOC -->
 
@@ -169,31 +169,35 @@ Response:
 {
     "blockchain": {
         "head": {
-            "seq": 21175,
-            "block_hash": "8a3e0aac619551ae009cfb28c2b36bb1300925f74da770d1512072314f6a4c80",
-            "previous_block_hash": "001eb7911b6a6ab7c75feb88726dd2bc8b87133aebc82201c4404537eb74f7ac",
-            "timestamp": 1523168686,
-            "fee": 2,
+            "seq": 53522,
+            "block_hash": "95fa50f505c02589faf598bfc8ac44b9e3c7f25690a0a16725b63836459c1b5f",
+            "previous_block_hash": "d3af6cc4e65ac650d73835681075a95ba59743721506b6fc1d891e7b7d8f7900",
+            "timestamp": 1535002265,
+            "fee": 7064,
             "version": 0,
-            "tx_body_hash": "36be8d70d1e9f70b340ea7ecf0b247c27086bad10568044c1196fe150f6cea1b"
+            "tx_body_hash": "1ed5bee9c6cfe96a971232e8fee0d2b90d1e0c14867dd8505d0897476ec47e31"
         },
-        "unspents": 14750,
-        "unconfirmed": 0,
-        "time_since_last_block": "12m6s"
+        "unspents": 34159,
+        "unconfirmed": 1,
+        "time_since_last_block": "6m47s"
     },
     "version": {
-        "version": "0.23.0",
-        "commit": "f61b4319c2f146a5ad86f7cbda26a1ba6a09998d",
+        "version": "0.24.1",
+        "commit": "991b8c0cfe7ca4aed41d6c4bc960b61e9612c516",
         "branch": "develop"
     },
-    "open_connections": 30,
-    "uptime": "13.686460853s"
+    "open_connections": 5,
+    "uptime": "11.158716091s",
+    "csrf_enabled": true,
+    "csp_enabled": true,
+    "wallet_api_enabled": true,
+    "gui_enabled": true,
+    "unversioned_api_enabled": false,
+    "json_rpc_enabled": false
 }
 ```
 
-## Simple query APIs
-
-### Get node version info
+### Version info
 
 API sets : always available
 
@@ -213,9 +217,13 @@ Result:
 ```json
 {
     "version": "0.20.0",
-    "commit": "cc733e9922d85c359f5f183d3a3a6e42c73ccb16"
+    "commit": "cc733e9922d85c359f5f183d3a3a6e42c73ccb16",
+    "branch": "develop"
 }
 ```
+
+
+## Simple query APIs
 
 ### Get balance of addresses
 
@@ -419,7 +427,7 @@ Result:
 }
 ```
 
-### Get wallet transactions
+### Get unconfirmed transactions of a wallet
 
 API sets: `WALLET`
 
@@ -428,9 +436,10 @@ URI: /api/v1/wallet/transactions
 Method: GET
 Args:
 	id: Wallet ID
+	verbose: [bool] include verbose transaction input data
 ```
 
-Returns all pending transaction for all addresses by selected Wallet
+Returns all unconfirmed transactions for all addresses in a given wallet
 
 Example:
 
@@ -456,6 +465,68 @@ Result:
                 "inputs": [
                     "782a8662efb0e933cab7d3ae9429ab53c4208cf44d8cdc07c2fbd7204b6b5cad",
                     "2f6b61a44086588c4eaa56a5dd9f1e0be2528861a6731608fcec38891b95db91"
+                ],
+                "outputs": [
+                    {
+                        "uxid": "bd302ef776efa8548183b89f21e90649f21b90fe2d2e90ecc1b880f2d995f226",
+                        "dst": "2UXZTg4ZHF6715b6tRhtaqceuQQ3G79GiZg",
+                        "coins": "998.000000",
+                        "hours": 247538
+                    },
+                    {
+                        "uxid": "31058b6bfb30bfd441aec00929e75782bce47c8a75787ba519dbb268f89d2c4b",
+                        "dst": "2awsJ2CR5H6QXCF2hwDjcvcAH9SgyfxCxgz",
+                        "coins": "1.000000",
+                        "hours": 247538
+                    }
+                ]
+            },
+            "received": "2018-03-16T18:03:57.139109904+05:30",
+            "checked": "2018-03-16T18:03:57.139109904+05:30",
+            "announced": "0001-01-01T00:00:00Z",
+            "is_valid": true
+        }
+    ]
+}
+```
+
+Example (verbose):
+
+```sh
+curl http://127.0.0.1:6420/api/v1/wallet/transactions?id=2017_11_25_e5fb.wlt&verbose=1
+```
+
+Result:
+
+```json
+{
+    "transactions": [
+        {
+            "transaction": {
+                "length": 317,
+                "type": 0,
+                "txid": "76ecbabc53ea2a3be46983058433dda6a3cf7ea0b86ba14d90b932fa97385de7",
+                "inner_hash": "5d55837bb0cbda9c9323ff9aafd7c3d31d0d38638346172fbe2d9078ebaa892a",
+                "sigs": [
+                    "464b7724302178c1cfeacadaaf3556a3b7e5259adf51919476c3acc695747ed244b5ce2187ce7bedb6ad65c71f7f7ff3fa6805e64fe5da3aaa00ad563c7424f600",
+                    "1155537b0391d4a6ee5eac07dee5798e953dca3a7c30643403dd2d326582c7d35080a16dc22644782ce1087bfc3bd06c2bf68e9a98e3989d90831646a9be2c9101"
+                ],
+                "fee": 495076,
+                "inputs": [
+                    {
+                    	"uxid": "782a8662efb0e933cab7d3ae9429ab53c4208cf44d8cdc07c2fbd7204b6b5cad",
+                    	"owner": "8C5icxR9zdkYTZZTVV3cCX7QoK4EkLuK4p",
+                    	"coins": "997.000000",
+                    	"hours": 880000,
+                    	"calculated_hours": 990000
+                    },
+                    {
+                    	"uxid": "2f6b61a44086588c4eaa56a5dd9f1e0be2528861a6731608fcec38891b95db91",
+                    	"owner": "23A1EWMZopUFLCwtXMe2CU9xTCbi5Gth643",
+                    	"coins": "2.000000",
+                    	"hours": 10,
+                    	"calculated_hours": 152
+                    }
                 ],
                 "outputs": [
                     {
@@ -1265,6 +1336,8 @@ API sets: `TX`, `DEFAULT`
 ```
 URI: /api/v1/pendingTxs
 Method: GET
+Args:
+	verbose [bool] include verbose transaction input data
 ```
 
 Example:
@@ -1314,6 +1387,58 @@ Result:
 ]
 ```
 
+Example (verbose):
+
+```sh
+curl http://127.0.0.1:6420/api/v1/pendingTxs?verbose=1
+```
+
+Result:
+
+```json
+[
+    {
+        "transaction": {
+            "length": 220,
+            "type": 0,
+            "txid": "d455564dcf1fb666c3846cf579ff33e21c203e2923938c6563fe7fcb8573ba44",
+            "inner_hash": "4e73155db8ed04a3bd2b953218efcc9122ebfbf4c55f08f50d1563e48eacf71d",
+            "fee": 12855964,
+            "sigs": [
+                "17330c256a50e2117ddccf51f1980fc14380f0f9476432196ade3043668759847b97e1b209961458745684d9239541f79d9ca9255582864d30a540017ab84f2b01"
+            ],
+            "inputs": [
+                {
+                    "uxid": "27e7bc48ceca4d47e806a87100a8a98592b7618702e1cd479bf4c190462a6d09",
+                    "owner": "23MjQipM9YsPKkYiuaBmf6m7fD54wrzHxpd",
+                    "coins": "7815.000000",
+                    "hours": 279089,
+                    "calculated_hours": 13101146
+                }
+            ],
+            "outputs": [
+                {
+                    "uxid": "4b4ebf62acbaece798d0dfc92fcea85768a2874dad8a9b8eb5454288deae468c",
+                    "dst": "23MjQipM9YsPKkYiuaBmf6m7fD54wrzHxpd",
+                    "coins": "586.000000",
+                    "hours": 122591
+                },
+                {
+                    "uxid": "781cfb134d5fdad48f3c937dfcfc66b169a305adc8abdfe92a0ec94c564913f2",
+                    "dst": "2ehrG4VKLRuvBNWYz3U7tS75QWvzyWR89Dg",
+                    "coins": "7229.000000",
+                    "hours": 122591
+                }
+            ]
+        },
+        "received": "2018-06-20T14:14:52.415702671+08:00",
+        "checked": "2018-08-26T19:47:45.328131142+08:00",
+        "announced": "2018-08-26T19:51:47.356083569+08:00",
+        "is_valid": true
+    }
+]
+```
+
 ### Get transaction info by id
 
 API sets: `TX`, `DEFAULT`
@@ -1323,6 +1448,8 @@ URI: /api/v1/transaction
 Method: GET
 Args:
     txid: transaction id
+    verbose: [bool] include verbose transaction input data
+    encoded: [bool] return the transaction as hex-encoded serialized bytes
 ```
 
 Example:
@@ -1339,8 +1466,7 @@ Result:
         "confirmed": true,
         "unconfirmed": false,
         "height": 1,
-        "block_seq": 1178,
-        "unknown": false
+        "block_seq": 1178
     },
     "txn": {
         "length": 183,
@@ -1363,6 +1489,81 @@ Result:
             }
         ]
     }
+}
+```
+
+Example (verbose):
+
+```sh
+curl http://127.0.0.1:6420/api/v1/transaction?txid=a6446654829a4a844add9f181949d12f8291fdd2c0fcb22200361e90e814e2d3&verbose=1
+```
+
+Result:
+
+```json
+{
+    "status": {
+        "confirmed": true,
+        "unconfirmed": false,
+        "height": 53107,
+        "block_seq": 1178
+    },
+    "time": 1494275231,
+    "txn": {
+        "status": {
+            "confirmed": true,
+            "unconfirmed": false,
+            "height": 53107,
+            "block_seq": 1178
+        },
+        "timestamp": 1494275231,
+        "length": 183,
+        "type": 0,
+        "txid": "a6446654829a4a844add9f181949d12f8291fdd2c0fcb22200361e90e814e2d3",
+        "inner_hash": "075f255d42ddd2fb228fe488b8b468526810db7a144aeed1fd091e3fd404626e",
+        "fee": 6523,
+        "sigs": [
+            "9b6fae9a70a42464dda089c943fafbf7bae8b8402e6bf4e4077553206eebc2ed4f7630bb1bd92505131cca5bf8bd82a44477ef53058e1995411bdbf1f5dfad1f00"
+        ],
+        "inputs": [
+            {
+                "uxid": "5287f390628909dd8c25fad0feb37859c0c1ddcf90da0c040c837c89fefd9191",
+                "owner": "2K6NuLBBapWndAssUtkxKfCtyjDQDHrEhhT",
+                "coins": "8.000000",
+                "hours": 7454,
+                "calculated_hours": 7454
+            }
+        ],
+        "outputs": [
+            {
+                "uxid": "70fa9dfb887f9ef55beb4e960f60e4703c56f98201acecf2cad729f5d7e84690",
+                "dst": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
+                "coins": "8.000000",
+                "hours": 931
+            }
+        ]
+    }
+}
+```
+
+Example (encoded):
+
+```sh
+curl http://127.0.0.1:6420/api/v1/transaction?txid=a6446654829a4a844add9f181949d12f8291fdd2c0fcb22200361e90e814e2d3&encoded=1
+```
+
+Result:
+
+```json
+{
+    "status": {
+        "confirmed": true,
+        "unconfirmed": false,
+        "height": 53267,
+        "block_seq": 1178
+    },
+    "time": 1494275231,
+    "encoded_transaction": "b700000000075f255d42ddd2fb228fe488b8b468526810db7a144aeed1fd091e3fd404626e010000009b6fae9a70a42464dda089c943fafbf7bae8b8402e6bf4e4077553206eebc2ed4f7630bb1bd92505131cca5bf8bd82a44477ef53058e1995411bdbf1f5dfad1f00010000005287f390628909dd8c25fad0feb37859c0c1ddcf90da0c040c837c89fefd9191010000000010722f061aa262381dce35193d43eceb112373c300127a0000000000a303000000000000"
 }
 ```
 
@@ -1431,6 +1632,7 @@ Method: GET
 Args:
 	addrs: Comma seperated addresses [optional, returns all transactions if no address is provided]
     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
+    verbose: [bool] include verbose transaction input data
 ```
 
 To get address related confirmed transactions:
@@ -1450,7 +1652,6 @@ To get all addresses related transactions:
 curl http://127.0.0.1:6420/api/v1/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,6dkVxyKFbFKg9Vdg6HPg1UANLByYRqkrdY
 ```
 
-
 Result:
 
 ```json
@@ -1460,8 +1661,7 @@ Result:
             "confirmed": true,
             "unconfirmed": false,
             "height": 10492,
-            "block_seq": 1177,
-            "unknown": false
+            "block_seq": 1177
         },
         "time": 1494275011,
         "txn": {
@@ -1499,8 +1699,7 @@ Result:
             "confirmed": true,
             "unconfirmed": false,
             "height": 10491,
-            "block_seq": 1178,
-            "unknown": false
+            "block_seq": 1178
         },
         "time": 1494275231,
         "txn": {
@@ -1530,8 +1729,7 @@ Result:
             "confirmed": true,
             "unconfirmed": false,
             "height": 8730,
-            "block_seq": 2939,
-            "unknown": false
+            "block_seq": 2939
         },
         "time": 1505205561,
         "txn": {
@@ -1558,6 +1756,193 @@ Result:
                     "dst": "2hAjmdPP9R3um9JhKczeVdJUVugY6SPJBDm",
                     "coins": "6.000000",
                     "hours": 204
+                }
+            ]
+        }
+    }
+]
+```
+
+Example (verbose):
+
+```sh
+curl http://127.0.0.1:6420/api/v1/transactions?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,2K6NuLBBapWndAssUtkxKfCtyjDQDHrEhhT&verbose=1
+```
+
+Result:
+
+```json
+[
+    {
+        "status": {
+            "confirmed": true,
+            "unconfirmed": false,
+            "height": 53207,
+            "block_seq": 1131
+        },
+        "time": 1494192581,
+        "txn": {
+            "timestamp": 1494192581,
+            "length": 220,
+            "type": 0,
+            "txid": "b785dc57a9b53dbf0390213480dd9dffc32356fb79b82fa622a2607894bfab98",
+            "inner_hash": "5279e944502d6bdaff25af7b7fb7c6e503c62ae70a01084031e1cb563afe2e2c",
+            "fee": 317021,
+            "sigs": [
+                "f8cd208acc6674de79fa1192e5177325cda871c26707242dbd6fb9df245bf34b2fbc3dfe32e61eefa0543934556cb073bdeab6e555d7bfe6b7220f1ae575613d01"
+            ],
+            "inputs": [
+                {
+                    "uxid": "004d3ef83af64c542701b923ec5c727734de9d88837bcea37a2927a569dd3f0d",
+                    "owner": "MbZvwdXHnMUZ1eUFxNDqxPEEHkkffKgq2F",
+                    "coins": "904.000000",
+                    "hours": 14,
+                    "calculated_hours": 422693
+                }
+            ],
+            "outputs": [
+                {
+                    "uxid": "4047c5cbbaf0ed927caa1391d5456d58e0857ef188f2eec8ee987a30b3f53aed",
+                    "dst": "MbZvwdXHnMUZ1eUFxNDqxPEEHkkffKgq2F",
+                    "coins": "903.000000",
+                    "hours": 52836
+                },
+                {
+                    "uxid": "4f4b0078a9cd19b3395e54b3f42af6adc997f77f04e0ca54016c67c4f2384e3c",
+                    "dst": "2K6NuLBBapWndAssUtkxKfCtyjDQDHrEhhT",
+                    "coins": "1.000000",
+                    "hours": 52836
+                }
+            ]
+        }
+    },
+    {
+        "status": {
+            "confirmed": true,
+            "unconfirmed": false,
+            "height": 53206,
+            "block_seq": 1132
+        },
+        "time": 1494192731,
+        "txn": {
+            "timestamp": 1494192731,
+            "length": 220,
+            "type": 0,
+            "txid": "dc39c39bea82e5b56a1a77ce8485d9b06fda694e04ddf63af1273351c87dd077",
+            "inner_hash": "b8f36a57212a68f4b3ecf9d699f286dafcdb624551e07c35a983832ffd37326c",
+            "fee": 39628,
+            "sigs": [
+                "1005adda19efe31b5cd85caa85b4a42599263f649103fd26761f2261f3ee00460d9693c45406d782b0e04613aa412a5ef6b275c2a665a9f13167912da91777a700"
+            ],
+            "inputs": [
+                {
+                    "uxid": "4047c5cbbaf0ed927caa1391d5456d58e0857ef188f2eec8ee987a30b3f53aed",
+                    "owner": "MbZvwdXHnMUZ1eUFxNDqxPEEHkkffKgq2F",
+                    "coins": "903.000000",
+                    "hours": 52836,
+                    "calculated_hours": 52836
+                }
+            ],
+            "outputs": [
+                {
+                    "uxid": "a6662ea872dabee2fae96a4561d67728d16cb3da372d4b7bbc74a18f2bc3fecf",
+                    "dst": "MbZvwdXHnMUZ1eUFxNDqxPEEHkkffKgq2F",
+                    "coins": "895.000000",
+                    "hours": 6604
+                },
+                {
+                    "uxid": "36f4871646b6564b2f1ab72bd768a67579a1e0242bc68bcbcf1779bc75b3dddd",
+                    "dst": "2K6NuLBBapWndAssUtkxKfCtyjDQDHrEhhT",
+                    "coins": "8.000000",
+                    "hours": 6604
+                }
+            ]
+        }
+    },
+    {
+        "status": {
+            "confirmed": true,
+            "unconfirmed": false,
+            "height": 53161,
+            "block_seq": 1177
+        },
+        "time": 1494275011,
+        "txn": {
+            "timestamp": 1494275011,
+            "length": 317,
+            "type": 0,
+            "txid": "b09cd3a8baef6a449848f50a1b97943006ca92747d4e485d0647a3ea74550eca",
+            "inner_hash": "2cb370051c92521a04ba5357e229d8ffa90d9d1741ea223b44dd60a1483ee0e5",
+            "fee": 44726,
+            "sigs": [
+                "a55155ca15f73f0762f79c15917949a936658cff668647daf82a174eed95703a02622881f9cf6c7495536676f931b2d91d389a9e7b034232b3a1519c8da6fb8800",
+                "cc7d7cbd6f31adabd9bde2c0deaa9277c0f3cf807a4ec97e11872817091dc3705841a6adb74acb625ee20ab6d3525350b8663566003276073d94c3bfe22fe48e01"
+            ],
+            "inputs": [
+                {
+                    "uxid": "4f4b0078a9cd19b3395e54b3f42af6adc997f77f04e0ca54016c67c4f2384e3c",
+                    "owner": "2K6NuLBBapWndAssUtkxKfCtyjDQDHrEhhT",
+                    "coins": "1.000000",
+                    "hours": 52836,
+                    "calculated_hours": 52857
+                },
+                {
+                    "uxid": "36f4871646b6564b2f1ab72bd768a67579a1e0242bc68bcbcf1779bc75b3dddd",
+                    "owner": "2K6NuLBBapWndAssUtkxKfCtyjDQDHrEhhT",
+                    "coins": "8.000000",
+                    "hours": 6604,
+                    "calculated_hours": 6777
+                }
+            ],
+            "outputs": [
+                {
+                    "uxid": "5287f390628909dd8c25fad0feb37859c0c1ddcf90da0c040c837c89fefd9191",
+                    "dst": "2K6NuLBBapWndAssUtkxKfCtyjDQDHrEhhT",
+                    "coins": "8.000000",
+                    "hours": 7454
+                },
+                {
+                    "uxid": "a1268e9bd2033b49b44afa765d20876467254f51e5515626780467267a65c563",
+                    "dst": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
+                    "coins": "1.000000",
+                    "hours": 7454
+                }
+            ]
+        }
+    },
+    {
+        "status": {
+            "confirmed": true,
+            "unconfirmed": false,
+            "height": 53160,
+            "block_seq": 1178
+        },
+        "time": 1494275231,
+        "txn": {
+            "timestamp": 1494275231,
+            "length": 183,
+            "type": 0,
+            "txid": "a6446654829a4a844add9f181949d12f8291fdd2c0fcb22200361e90e814e2d3",
+            "inner_hash": "075f255d42ddd2fb228fe488b8b468526810db7a144aeed1fd091e3fd404626e",
+            "fee": 6523,
+            "sigs": [
+                "9b6fae9a70a42464dda089c943fafbf7bae8b8402e6bf4e4077553206eebc2ed4f7630bb1bd92505131cca5bf8bd82a44477ef53058e1995411bdbf1f5dfad1f00"
+            ],
+            "inputs": [
+                {
+                    "uxid": "5287f390628909dd8c25fad0feb37859c0c1ddcf90da0c040c837c89fefd9191",
+                    "owner": "2K6NuLBBapWndAssUtkxKfCtyjDQDHrEhhT",
+                    "coins": "8.000000",
+                    "hours": 7454,
+                    "calculated_hours": 7454
+                }
+            ],
+            "outputs": [
+                {
+                    "uxid": "70fa9dfb887f9ef55beb4e960f60e4703c56f98201acecf2cad729f5d7e84690",
+                    "dst": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
+                    "coins": "8.000000",
+                    "hours": 931
                 }
             ]
         }
@@ -1783,14 +2168,14 @@ Result:
     "current": 2760,
     "highest": 2760,
     "peers": [
-    {
-        "address": "35.157.164.126:6000",
-        "height": 2760
-    },
-    {
-        "address": "63.142.253.76:6000",
-        "height": 2760
-    },
+	    {
+	        "address": "35.157.164.126:6000",
+	        "height": 2760
+	    },
+	    {
+	        "address": "63.142.253.76:6000",
+	        "height": 2760
+	    },
     ]
 }
 ```
@@ -1805,7 +2190,10 @@ Method: GET
 Args:
     hash: get block by hash
     seq: get block by sequence number
+    verbose: [bool] return verbose transaction input data
 ```
+
+Example:
 
 ```sh
 curl http://127.0.0.1:6420/api/v1/block?hash=6eafd13ab6823223b714246b32c984b56e0043412950faf17defdbb2cbf3fe30
@@ -1864,6 +2252,73 @@ Result:
 }
 ```
 
+Example (verbose):
+
+```sh
+curl http://127.0.0.1:6420/api/v1/block?hash=6eafd13ab6823223b714246b32c984b56e0043412950faf17defdbb2cbf3fe30&verbose=1
+```
+
+or
+
+```sh
+curl http://127.0.0.1:6420/api/v1/block?seq=2760&verbose=1
+```
+
+Result:
+
+```json
+{
+    "header": {
+        "seq": 2760,
+        "block_hash": "6eafd13ab6823223b714246b32c984b56e0043412950faf17defdbb2cbf3fe30",
+        "previous_block_hash": "eaccd527ef263573c29000dbfb3c782ee175153c63f42abb671588b7071e877f",
+        "timestamp": 1504220821,
+        "fee": 196130,
+        "version": 0,
+        "tx_body_hash": "825ae95b81ae0ce037cdf9f1cda138bac3f3ed41c51b09e0befb71848e0f3bfd"
+    },
+    "body": {
+        "txns": [
+            {
+                "length": 220,
+                "type": 0,
+                "txid": "825ae95b81ae0ce037cdf9f1cda138bac3f3ed41c51b09e0befb71848e0f3bfd",
+                "inner_hash": "312e5dd55e06be5f9a0ee43a00d447f2fea47a7f1fb9669ecb477d2768ab04fd",
+                "fee": 196130,
+                "sigs": [
+                    "f0d0eb337e3440af6e8f0c105037ec205f36c83770d26a9e3a0fb4b7ec1a2be64764f4e31cbaf6629933c971613d10d58e6acb592704a7d511f19836441f09fb00"
+                ],
+                "inputs": [
+                    {
+                        "uxid": "e7594379c9a6bb111205cbfa6fac908cac1d136e207960eb0429f15fde09ac8c",
+                        "owner": "kbbzyrUKNVJsJDGFLAjVT5neVcx5SQjFx5",
+                        "coins": "1000.000000",
+                        "hours": 283123,
+                        "calculated_hours": 302300
+                    }
+                ],
+                "outputs": [
+                    {
+                        "uxid": "840d0ee483c1dc085e6518e1928c68979af61188b809fc74da9fca982e6a61ba",
+                        "dst": "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv",
+                        "coins": "998.000000",
+                        "hours": 35390
+                    },
+                    {
+                        "uxid": "38177c437ff42f29dc8d682e2f7c278f2203b6b02f42b1a88f9eb6c2392a7f70",
+                        "dst": "2YHKP9yH7baLvkum3U6HCBiJjnAUCLS5Z9U",
+                        "coins": "2.000000",
+                        "hours": 70780
+                    }
+                ]
+            }
+        ]
+    },
+    "size": 220
+}
+```
+
+
 ### Get blocks in specific range
 
 API sets: `BLOCKCHAIN`, `DEFAULT`
@@ -1874,12 +2329,15 @@ Method: GET
 Args:
     start: start seq
     end: end seq
+    verbose: [bool] return verbose transaction input data
 ```
+
+Returns blocks in the range [start, end].  Both start and end sequences are included in the returned array of blocks.
 
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/api/v1/blocks?start=1&end=2
+curl http://127.0.0.1:6420/api/v1/blocks?start=101&end=102
 ```
 
 Result:
@@ -1887,42 +2345,6 @@ Result:
 ```json
 {
     "blocks": [
-        {
-            "header": {
-                "seq": 100,
-                "block_hash": "725e76907998485d367a847b0fb49f08536c592247762279fcdbd9907fee5607",
-                "previous_block_hash": "5c06896760ace71b02edab01700ff9ca8c32ef1d647e14c3e0d5fa751e47867e",
-                "timestamp": 1429274636,
-                "fee": 613712,
-                "version": 0,
-                "tx_body_hash": "9f20b52befed2cbaaa4a066de7119b7fdbff09a83d8e2a82628671f51f3f6551"
-            },
-            "body": {
-                "txns": [
-                    {
-                        "length": 183,
-                        "type": 0,
-                        "txid": "9f20b52befed2cbaaa4a066de7119b7fdbff09a83d8e2a82628671f51f3f6551",
-                        "inner_hash": "c2e60dbb6ad5095985d21391cbeb679fd0787c4a20471340d63f8de437d915df",
-                        "sigs": [
-                            "2fefd2da9d3b4af87c4157f87da0b1bf82e3d6c9f6427572bd768cf85900d15d36971ffa17eb3b486f7692584102a7a58d9fb3ef57fa24d9a4ab02eba811ef4f00"
-                        ],
-                        "inputs": [
-                            "aee4af7e06c24bccc2f87b16d0708bfea68ac1b420f97914965f4a23ad9e11d6"
-                        ],
-                        "outputs": [
-                            {
-                                "uxid": "194cc596d2beda803d8142ddc455872082f84b09a5edd8085082b60d314c1e29",
-                                "dst": "qxmeHkwgAMfwXyaQrwv9jq3qt228xMuoT5",
-                                "coins": "23000.000000",
-                                "hours": 87673
-                            }
-                        ]
-                    }
-                ]
-            },
-            "size": 183
-        },
         {
             "header": {
                 "seq": 101,
@@ -1958,10 +2380,148 @@ Result:
                 ]
             },
             "size": 183
+        },
+        {
+            "header": {
+                "seq": 102,
+                "block_hash": "311f4b83b4fdb9fd1d45648115969cf4b3aab2d1acad9e2aa735829245c525f3",
+                "previous_block_hash": "8156057fc823589288f66c91edb60c11ff004465bcbe3a402b1328be7f0d6ce0",
+                "timestamp": 1429274686,
+                "fee": 710046,
+                "version": 0,
+                "tx_body_hash": "7b13cab45b52dd2df291ec97cf000bf6ea1b647d6fdf0261a7527578d8b71b9d"
+            },
+            "body": {
+                "txns": [
+                    {
+                        "length": 183,
+                        "type": 0,
+                        "txid": "7b13cab45b52dd2df291ec97cf000bf6ea1b647d6fdf0261a7527578d8b71b9d",
+                        "inner_hash": "73bfee3a7c8d4f8a68657ebcaf69a59639f762bfc1a6f4468f3ca4724bc5b9f8",
+                        "sigs": [
+                            "c4bcada17604a4a62baf50f929655027f2913639c27b773871f2135b72553c1959737e39d50e8349ffa5a7679de845aa6370999dbaaff4c7f9fd01260818683901"
+                        ],
+                        "inputs": [
+                            "4e75b4bced3404590d38ca06440c275d7fd86618a84966a0a1053fb18164e898"
+                        ],
+                        "outputs": [
+                            {
+                                "uxid": "0a5603a1a5aeda575aa498cdaec5a4c893a28669dba84163eba2e90db3d9f39d",
+                                "dst": "2JJ8pgq8EDAnrzf9xxBJapE2qkYLefW4uF8",
+                                "coins": "26700.000000",
+                                "hours": 101435
+                            }
+                        ]
+                    }
+                ]
+            },
+            "size": 183
         }
     ]
 }
 ```
+
+Example (verbose):
+
+```sh
+curl http://127.0.0.1:6420/api/v1/blocks?start=101&end=102&verbose=1
+```
+
+Result:
+
+```json
+{
+    "blocks": [
+        {
+            "header": {
+                "seq": 101,
+                "block_hash": "8156057fc823589288f66c91edb60c11ff004465bcbe3a402b1328be7f0d6ce0",
+                "previous_block_hash": "725e76907998485d367a847b0fb49f08536c592247762279fcdbd9907fee5607",
+                "timestamp": 1429274666,
+                "fee": 720335,
+                "version": 0,
+                "tx_body_hash": "e8fe5290afba3933389fd5860dca2cbcc81821028be9c65d0bb7cf4e8d2c4c18"
+            },
+            "body": {
+                "txns": [
+                    {
+                        "length": 183,
+                        "type": 0,
+                        "txid": "e8fe5290afba3933389fd5860dca2cbcc81821028be9c65d0bb7cf4e8d2c4c18",
+                        "inner_hash": "45da31b68748eafdb08ef8bf1ebd1c07c0f14fcb0d66759d6cf4642adc956d06",
+                        "fee": 720335,
+                        "sigs": [
+                            "09bce2c888ceceeb19999005cceb1efdee254cacb60edee118b51ffd740ff6503a8f9cbd60a16c7581bfd64f7529b649d0ecc8adbe913686da97fe8c6543189001"
+                        ],
+                        "inputs": [
+                            {
+                                "uxid": "6002f3afc7054c0e1161bcf2b4c1d4d1009440751bc1fe806e0eae33291399f4",
+                                "owner": "2M1C5LSZ4Pvu5RWS44bCdY6or3R8grQw7ez",
+                                "coins": "27000.000000",
+                                "hours": 220,
+                                "calculated_hours": 823240
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "uxid": "f9bffdcbe252acb1c3a8a1e8c99829342ba1963860d5692eebaeb9bcfbcaf274",
+                                "dst": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
+                                "coins": "27000.000000",
+                                "hours": 102905
+                            }
+                        ]
+                    }
+                ]
+            },
+            "size": 183
+        },
+        {
+            "header": {
+                "seq": 102,
+                "block_hash": "311f4b83b4fdb9fd1d45648115969cf4b3aab2d1acad9e2aa735829245c525f3",
+                "previous_block_hash": "8156057fc823589288f66c91edb60c11ff004465bcbe3a402b1328be7f0d6ce0",
+                "timestamp": 1429274686,
+                "fee": 710046,
+                "version": 0,
+                "tx_body_hash": "7b13cab45b52dd2df291ec97cf000bf6ea1b647d6fdf0261a7527578d8b71b9d"
+            },
+            "body": {
+                "txns": [
+                    {
+                        "length": 183,
+                        "type": 0,
+                        "txid": "7b13cab45b52dd2df291ec97cf000bf6ea1b647d6fdf0261a7527578d8b71b9d",
+                        "inner_hash": "73bfee3a7c8d4f8a68657ebcaf69a59639f762bfc1a6f4468f3ca4724bc5b9f8",
+                        "fee": 710046,
+                        "sigs": [
+                            "c4bcada17604a4a62baf50f929655027f2913639c27b773871f2135b72553c1959737e39d50e8349ffa5a7679de845aa6370999dbaaff4c7f9fd01260818683901"
+                        ],
+                        "inputs": [
+                            {
+                                "uxid": "4e75b4bced3404590d38ca06440c275d7fd86618a84966a0a1053fb18164e898",
+                                "owner": "2JJ8pgq8EDAnrzf9xxBJapE2qkYLefW4uF8",
+                                "coins": "26700.000000",
+                                "hours": 54,
+                                "calculated_hours": 811481
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "uxid": "0a5603a1a5aeda575aa498cdaec5a4c893a28669dba84163eba2e90db3d9f39d",
+                                "dst": "2JJ8pgq8EDAnrzf9xxBJapE2qkYLefW4uF8",
+                                "coins": "26700.000000",
+                                "hours": 101435
+                            }
+                        ]
+                    }
+                ]
+            },
+            "size": 183
+        }
+    ]
+}
+```
+
 
 ### Get last N blocks
 
@@ -1972,6 +2532,7 @@ URI: /api/v1/last_blocks
 Method: GET
 Args:
     num: number of most recent blocks to return
+    verbose: [bool] return verbose transaction input data
 ```
 
 Example:
@@ -2073,6 +2634,105 @@ Result:
 }
 ```
 
+Example (verbose):
+
+```sh
+curl http://127.0.0.1:6420/api/v1/last_blocks?num=2&verbose=1
+```
+
+Result:
+
+```json
+{
+    "blocks": [
+        {
+            "header": {
+                "seq": 54281,
+                "block_hash": "226ad00fd6c25b916d5660d56da42f9775e277a293251c826a9dc6c88a6257f3",
+                "previous_block_hash": "b765fab948af06d51028bec33e50de8f0cc794abdb725c7529564638e847f291",
+                "timestamp": 1535270765,
+                "fee": 5166,
+                "version": 0,
+                "tx_body_hash": "69d704a7c1137c2c86c1abe631521d4c81d7f16a4885d01418958c40dfffd56f"
+            },
+            "body": {
+                "txns": [
+                    {
+                        "length": 220,
+                        "type": 0,
+                        "txid": "69d704a7c1137c2c86c1abe631521d4c81d7f16a4885d01418958c40dfffd56f",
+                        "inner_hash": "06af77a238310fdb47d88bebe3dba3d6018ac0db465de6fe5ca883e8d517f33f",
+                        "sigs": [
+                            "80848efe341526498d73642f419991fc0c695c85047703dc2665655de09a7e081e4385f759ebd31b70c715e8ee12c575232010625798b84506b3580d955a1d6c01"
+                        ],
+                        "inputs": [
+                            "b9a22a6abaa9b2ef990995b510c4839862ed98e28495f76d992153c69c598c0e"
+                        ],
+                        "outputs": [
+                            {
+                                "uxid": "c26db0ee0fc96f3744f0ed484ceb4aae38e43f6703ec3d875b6ded49c16b4285",
+                                "dst": "2iNNt6fm9LszSWe51693BeyNUKX34pPaLx8",
+                                "coins": "6568.304000",
+                                "hours": 2583
+                            },
+                            {
+                                "uxid": "d45581e327b02bf32dd64fb1dd2b4809ad257276ac03464f83b77cde65b1c181",
+                                "dst": "cm7qnyrM8zGf9QGdgyv19781WWC1Kaj7Sb",
+                                "coins": "61.628000",
+                                "hours": 2582
+                            }
+                        ]
+                    }
+                ]
+            },
+            "size": 220
+        },
+        {
+            "header": {
+                "seq": 54282,
+                "block_hash": "13bdc4078216499ccc4e96b0ffed4a130299b321b1101c5bb648c0e1f010d81e",
+                "previous_block_hash": "226ad00fd6c25b916d5660d56da42f9775e277a293251c826a9dc6c88a6257f3",
+                "timestamp": 1535271135,
+                "fee": 226666,
+                "version": 0,
+                "tx_body_hash": "6a8d90df3e80f6ba4908e3fe9230a0db8811dbd257674d165b5f3fa620141cf9"
+            },
+            "body": {
+                "txns": [
+                    {
+                        "length": 220,
+                        "type": 0,
+                        "txid": "6a8d90df3e80f6ba4908e3fe9230a0db8811dbd257674d165b5f3fa620141cf9",
+                        "inner_hash": "c0185353ac63b8dad341e9a948cf89c5d943f48f322c5f876f3f94e66608d0e5",
+                        "sigs": [
+                            "98ea0220447f96026abd1ff5fa965714d49007678c4b0fb9807b6b9c92998230605d4f4505a9b723ce6c120da1c90381a961a5faa5c3d4de1ae16edbee656c7500"
+                        ],
+                        "inputs": [
+                            "ac8f02f60941d6e1fdaa1a298dbca837cc661b13fda03b795db0457767263686"
+                        ],
+                        "outputs": [
+                            {
+                                "uxid": "41cbd18f8914089966e91960dff5d8e7abf116cc71c605aa93b730f0e784d8e1",
+                                "dst": "2iNNt6fm9LszSWe51693BeyNUKX34pPaLx8",
+                                "coins": "6582.090000",
+                                "hours": 113333
+                            },
+                            {
+                                "uxid": "567e119e5cd58a958182ea6faf2b968a8d6d59b6a14877fe08f7918d3edf933a",
+                                "dst": "2maszCHKu8v6tzrwDqZTRHvvSPPrYASTvtB",
+                                "coins": "43.990000",
+                                "hours": 113332
+                            }
+                        ]
+                    }
+                ]
+            },
+            "size": 220
+        }
+    ]
+}
+```
+
 ## Explorer APIs
 
 ### Get address affected transactions
@@ -2100,16 +2760,14 @@ Result:
         "status": {
             "confirmed": true,
             "unconfirmed": false,
-            "height": 12639,
-            "block_seq": 15493,
-            "unknown": false
+            "height": 38076,
+            "block_seq": 15493
         },
+        "timestamp": 1518878675,
         "length": 183,
         "type": 0,
         "txid": "6d8e2f8b436a2f38d604b3aa1196ef2176779c5e11e33fbdd09f993fe659c39f",
         "inner_hash": "8da7c64dcedeeb6aa1e0d21fb84a0028dcd68e6801f1a3cc0224fdd50682046f",
-        "timestamp": 1518878675,
-        "size": 183,
         "fee": 126249,
         "sigs": [
             "c60e43980497daad59b4c72a2eac053b1584f960c57a5e6ac8337118dccfcee4045da3f60d9be674867862a13fdd87af90f4b85cbf39913bde13674e0a039b7800"

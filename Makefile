@@ -5,6 +5,7 @@
 .PHONY: integration-test-disable-wallet-api integration-test-disable-seed-api
 .PHONY: integration-test-enable-seed-api integration-test-enable-seed-api
 .PHONY: integration-test-disable-gui integration-test-disable-gui
+.PHONY: integration-test-db-no-unconfirmed
 .PHONY: install-linters format release clean-release
 .PHONY: install-deps-ui build-ui help newcoin generate-mocks
 
@@ -160,7 +161,10 @@ lint: ## Run linters. Use make install-linters first.
 	# The govet version in golangci-lint is out of date and has spurious warnings, run it separately
 	go vet -all ./...
 
-check: lint test integration-test-stable integration-test-stable-disable-csrf integration-test-disable-wallet-api integration-test-disable-seed-api integration-test-enable-seed-api integration-test-disable-gui ## Run tests and linters
+check: lint test integration-test-stable integration-test-stable-disable-csrf \
+	integration-test-disable-wallet-api integration-test-disable-seed-api \
+	integration-test-enable-seed-api integration-test-disable-gui \
+	integration-test-db-no-unconfirmed ## Run tests and linters
 
 integration-test-stable: ## Run stable integration tests
 	./ci-scripts/integration-test-stable.sh -c
@@ -183,8 +187,11 @@ integration-test-disable-wallet-api: ## Run disable wallet api integration tests
 integration-test-enable-seed-api: ## Run enable seed api integration test
 	./ci-scripts/integration-test-enable-seed-api.sh
 
-integration-test-disable-gui:
+integration-test-disable-gui: ## Run tests with the GUI disabled
 	./ci-scripts/integration-test-disable-gui.sh
+
+integration-test-db-no-unconfirmed: ## Run stable tests against the stable database that has no unconfirmed transactions
+	./ci-scripts/integration-test-stable.sh -d
 
 cover: ## Runs tests on ./src/ with HTML code coverage
 	go test -cover -coverprofile=cover.out -coverpkg=github.com/skycoin/skycoin/... ./src/...

@@ -3045,6 +3045,15 @@ func TestStablePendingTransactions(t *testing.T) {
 	txns, err := c.PendingTransactions()
 	require.NoError(t, err)
 
+	// Convert Received and Checked times to UTC for stable comparison
+	for i, txn := range txns {
+		require.False(t, txn.Received.IsZero())
+		require.False(t, txn.Checked.IsZero())
+
+		txns[i].Received = txn.Received.UTC()
+		txns[i].Checked = txn.Checked.UTC()
+	}
+
 	var expect []visor.ReadableUnconfirmedTxn
 	checkGoldenFile(t, "pending-transactions.golden", TestData{txns, &expect})
 }
@@ -3081,6 +3090,15 @@ func TestStablePendingTransactionsVerbose(t *testing.T) {
 
 	txns, err := c.PendingTransactionsVerbose()
 	require.NoError(t, err)
+
+	// Convert Received and Checked times to UTC for stable comparison
+	for i, txn := range txns {
+		require.False(t, txn.Received.IsZero())
+		require.False(t, txn.Checked.IsZero())
+
+		txns[i].Received = txn.Received.UTC()
+		txns[i].Checked = txn.Checked.UTC()
+	}
 
 	var expect []visor.ReadableUnconfirmedTxnVerbose
 	checkGoldenFile(t, "verbose-pending-transactions.golden", TestData{txns, &expect})

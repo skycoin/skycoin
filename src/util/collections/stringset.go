@@ -11,7 +11,7 @@ func NewStringSet(strings ...string) StringSet {
 		strMap: make(map[string]struct{}, len(strings)),
 	}
 	for _, s := range strings {
-		set.Set(s)
+		_ = set.Set(s)
 	}
 	return set
 }
@@ -64,7 +64,7 @@ func (set *StringSet) IsEmpty() bool {
 	return len(set.strMap) == 0
 }
 
-// String representaion of list vars
+// String representation of list vars
 func (set *StringSet) String() string {
 	str := ""
 	sep := ""

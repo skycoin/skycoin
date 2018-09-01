@@ -142,7 +142,7 @@ func TestGetBalanceHandler(t *testing.T) {
 			gateway := &MockGatewayer{}
 			endpoint := "/api/v1/balance"
 			gateway.On("GetBalanceOfAddrs", tc.getBalanceOfAddrsArg).Return(tc.getBalanceOfAddrsResponse, tc.getBalanceOfAddrsError)
-			gateway.On("IsAPISetEnabled", "BLOCKCHAIN", []string{"DEFAULT"}).Return(true)
+			gateway.On("IsAPISetEnabled", "READ_ONLY", []string(nil)).Return(true)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -1785,7 +1785,7 @@ func TestGetWalletSeed(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &MockGatewayer{}
 			gateway.On("GetWalletSeed", tc.wltID, []byte(tc.password)).Return(tc.gatewayReturnArgs...)
-			gateway.On("IsAPISetEnabled", "SEED", []string(nil)).Return(true)
+			gateway.On("IsAPISetEnabled", "WALLET_SEED", []string(nil)).Return(true)
 
 			endpoint := "/api/v1/wallet/seed"
 

@@ -125,7 +125,7 @@ func TestConnection(t *testing.T) {
 				tc.gatewayGetBlockchainProgressResult,
 				tc.gatewayGetBlockchainProgressError,
 			)
-			gateway.On("IsAPISetEnabled", "PEX", []string{"STATUS", "DEFAULT"}).Return(true)
+			gateway.On("IsAPISetEnabled", "STATUS", []string{"READ_ONLY"}).Return(true)
 
 			v := url.Values{}
 			if tc.addr != "" {
@@ -268,7 +268,7 @@ func TestConnections(t *testing.T) {
 				tc.gatewayGetBlockchainProgressResult,
 				tc.gatewayGetBlockchainProgressError,
 			)
-			gateway.On("IsAPISetEnabled", "PEX", []string{"STATUS", "DEFAULT"}).Return(true)
+			gateway.On("IsAPISetEnabled", "STATUS", []string{"READ_ONLY"}).Return(true)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
@@ -322,7 +322,7 @@ func TestDefaultConnections(t *testing.T) {
 			endpoint := "/api/v1/network/defaultConnections"
 			gateway := &MockGatewayer{}
 			gateway.On("GetDefaultConnections").Return(tc.gatewayGetDefaultConnectionsResult)
-			gateway.On("IsAPISetEnabled", "PEX", []string{"STATUS", "DEFAULT"}).Return(true)
+			gateway.On("IsAPISetEnabled", "STATUS", []string{"READ_ONLY"}).Return(true)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
@@ -376,7 +376,7 @@ func TestGetTrustConnections(t *testing.T) {
 			endpoint := "/api/v1/network/connections/trust"
 			gateway := &MockGatewayer{}
 			gateway.On("GetTrustConnections").Return(tc.gatewayGetTrustConnectionsResult)
-			gateway.On("IsAPISetEnabled", "PEX", []string{"STATUS", "DEFAULT"}).Return(true)
+			gateway.On("IsAPISetEnabled", "STATUS", []string{"READ_ONLY"}).Return(true)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
@@ -430,7 +430,7 @@ func TestGetExchgConnection(t *testing.T) {
 			endpoint := "/api/v1/network/connections/exchange"
 			gateway := &MockGatewayer{}
 			gateway.On("GetExchgConnection").Return(tc.gatewayGetExchgConnectionResult)
-			gateway.On("IsAPISetEnabled", "PEX", []string{"STATUS", "DEFAULT"}).Return(true)
+			gateway.On("IsAPISetEnabled", "STATUS", []string{"READ_ONLY"}).Return(true)
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)

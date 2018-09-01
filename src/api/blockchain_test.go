@@ -337,7 +337,7 @@ func TestGetBlock(t *testing.T) {
 			gateway.On("GetSignedBlockBySeq", tc.seq).Return(tc.gatewayGetBlockBySeqResult, tc.gatewayGetBlockBySeqErr)
 			gateway.On("GetBlockByHashVerbose", tc.sha256).Return(tc.gatewayGetBlockByHashVerboseResult, tc.gatewayGetBlockByHashVerboseErr)
 			gateway.On("GetBlockBySeqVerbose", tc.seq).Return(tc.gatewayGetBlockBySeqVerboseResult, tc.gatewayGetBlockBySeqVerboseErr)
-			gateway.On("IsAPISetEnabled", "BLOCKCHAIN", []string{"DEFAULT"}).Return(true)
+			gateway.On("IsAPISetEnabled", "READ_ONLY", []string(nil)).Return(true)
 
 			endpoint := "/api/v1/block"
 
@@ -528,7 +528,7 @@ func TestGetBlocks(t *testing.T) {
 			gateway := &MockGatewayer{}
 			gateway.On("GetBlocks", tc.start, tc.end).Return(tc.gatewayGetBlocksResult, tc.gatewayGetBlocksError)
 			gateway.On("GetBlocksVerbose", tc.start, tc.end).Return(tc.gatewayGetBlocksVerboseResult, tc.gatewayGetBlocksVerboseError)
-			gateway.On("IsAPISetEnabled", "BLOCKCHAIN", []string{"DEFAULT"}).Return(true)
+			gateway.On("IsAPISetEnabled", "READ_ONLY", []string(nil)).Return(true)
 
 			endpoint := "/api/v1/blocks"
 
@@ -710,7 +710,7 @@ func TestGetLastBlocks(t *testing.T) {
 
 			gateway.On("GetLastBlocks", tc.num).Return(tc.gatewayGetLastBlocksResult, tc.gatewayGetLastBlocksError)
 			gateway.On("GetLastBlocksVerbose", tc.num).Return(tc.gatewayGetLastBlocksVerboseResult, tc.gatewayGetLastBlocksVerboseError)
-			gateway.On("IsAPISetEnabled", "BLOCKCHAIN", []string{"DEFAULT"}).Return(true)
+			gateway.On("IsAPISetEnabled", "READ_ONLY", []string(nil)).Return(true)
 
 			v := url.Values{}
 			if tc.body.Num != "" {

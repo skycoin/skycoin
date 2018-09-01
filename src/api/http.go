@@ -37,23 +37,13 @@ const (
 	defaultIdleTimeout  = time.Second * 120
 
 	// APIDefault endpoints available when nodes executed with no CLI args
-	APIDefault = "DEFAULT"
-	// APIBlockchain endpoints expose blockchain to clients
-	APIBlockchain = "BLOCKCHAIN"
+	APIDefault = "READ_ONLY"
 	// APIStatus endpoints offer (meta,runtime)data to dashboard and monitoring clients
 	APIStatus = "STATUS"
 	// APIWallet endpoints implement wallet interface
 	APIWallet = "WALLET"
 	// APISeed endpoints implement wallet interface
-	APISeed = "SEED"
-	// APIPex endpoints expose peer exchange data to clients
-	APIPex = "PEX"
-	// APITxn endpoints for transaction data and related operations
-	APITxn = "TX"
-	// APIUxOut endpoints expose UxOut data to clients
-	APIUxOut = "UX"
-	// APIExplorer endpoints consumed by or related to Skycoin blockchain explorer
-	APIExplorer = "EXPLORER"
+	APISeed = "WALLET_SEED"
 )
 
 // Server exposes an HTTP API
@@ -338,10 +328,10 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 	webHandlerV1("/version", versionHandler(gateway))
 
 	// get set of unspent outputs
-	webHandlerV1("/outputs", forAPISet(getOutputsHandler(gateway), APIUxOut, APIBlockchain, APIDefault))
+	webHandlerV1("/outputs", forAPISet(getOutputsHandler(gateway), APIDefault))
 
 	// get balance of addresses
-	webHandlerV1("/balance", forAPISet(getBalanceHandler(gateway), APIBlockchain, APIDefault))
+	webHandlerV1("/balance", forAPISet(getBalanceHandler(gateway), APIDefault))
 
 	// Wallet interface
 
@@ -430,67 +420,67 @@ func newServerMux(c muxConfig, gateway Gatewayer, csrfStore *CSRFStore, rpc *web
 
 	// Blockchain interface
 
-	webHandlerV1("/blockchain/metadata", forAPISet(blockchainHandler(gateway), APIBlockchain, APIStatus, APIDefault))
-	webHandlerV1("/blockchain/progress", forAPISet(blockchainProgressHandler(gateway), APIBlockchain, APIStatus, APIDefault))
+	webHandlerV1("/blockchain/metadata", forAPISet(blockchainHandler(gateway), APIStatus, APIDefault))
+	webHandlerV1("/blockchain/progress", forAPISet(blockchainProgressHandler(gateway), APIStatus, APIDefault))
 
 	// get block by hash or seq
-	webHandlerV1("/block", forAPISet(blockHandler(gateway), APIBlockchain, APIDefault))
+	webHandlerV1("/block", forAPISet(blockHandler(gateway), APIDefault))
 	// get blocks in specific range
-	webHandlerV1("/blocks", forAPISet(blocksHandler(gateway), APIBlockchain, APIDefault))
+	webHandlerV1("/blocks", forAPISet(blocksHandler(gateway), APIDefault))
 	// get last N blocks
-	webHandlerV1("/last_blocks", forAPISet(lastBlocksHandler(gateway), APIBlockchain, APIDefault))
+	webHandlerV1("/last_blocks", forAPISet(lastBlocksHandler(gateway), APIDefault))
 
 	// Network stats interface
-	webHandlerV1("/network/connection", forAPISet(connectionHandler(gateway), APIPex, APIStatus, APIDefault))
-	webHandlerV1("/network/connections", forAPISet(connectionsHandler(gateway), APIPex, APIStatus, APIDefault))
-	webHandlerV1("/network/defaultConnections", forAPISet(defaultConnectionsHandler(gateway), APIPex, APIStatus, APIDefault))
-	webHandlerV1("/network/connections/trust", forAPISet(trustConnectionsHandler(gateway), APIPex, APIStatus, APIDefault))
-	webHandlerV1("/network/connections/exchange", forAPISet(exchgConnectionsHandler(gateway), APIPex, APIStatus, APIDefault))
+	webHandlerV1("/network/connection", forAPISet(connectionHandler(gateway), APIStatus, APIDefault))
+	webHandlerV1("/network/connections", forAPISet(connectionsHandler(gateway), APIStatus, APIDefault))
+	webHandlerV1("/network/defaultConnections", forAPISet(defaultConnectionsHandler(gateway), APIStatus, APIDefault))
+	webHandlerV1("/network/connections/trust", forAPISet(trustConnectionsHandler(gateway), APIStatus, APIDefault))
+	webHandlerV1("/network/connections/exchange", forAPISet(exchgConnectionsHandler(gateway), APIStatus, APIDefault))
 
 	// Transaction handler
 
 	// get set of pending transactions
-	webHandlerV1("/pendingTxs", forAPISet(pendingTxnsHandler(gateway), APITxn, APIDefault))
+	webHandlerV1("/pendingTxs", forAPISet(pendingTxnsHandler(gateway), APIDefault))
 	// get txn by txid
-	webHandlerV1("/transaction", forAPISet(transactionHandler(gateway), APITxn, APIDefault))
+	webHandlerV1("/transaction", forAPISet(transactionHandler(gateway), APIDefault))
 
 	// parse and verify transaction
 	webHandlerV2("/transaction/verify", verifyTxnHandler(gateway))
 
 	// Health check handler
-	webHandlerV1("/health", forAPISet(healthHandler(c, csrfStore, gateway), APIStatus, APIBlockchain, APIPex, APITxn, APIDefault))
+	webHandlerV1("/health", forAPISet(healthHandler(c, csrfStore, gateway), APIStatus, APIDefault))
 
 	// Returns transactions that match the filters.
 	// Method: GET
 	// Args:
 	//     addrs: Comma separated addresses [optional, returns all transactions if no address is provided]
 	//     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
-	webHandlerV1("/transactions", forAPISet(getTransactions(gateway), APIBlockchain, APITxn, APIDefault))
+	webHandlerV1("/transactions", forAPISet(getTransactions(gateway), APIDefault))
 	// inject a transaction into network
-	webHandlerV1("/injectTransaction", forAPISet(injectTransaction(gateway), APITxn, APIDefault))
-	webHandlerV1("/resendUnconfirmedTxns", forAPISet(resendUnconfirmedTxns(gateway), APITxn, APIDefault))
+	webHandlerV1("/injectTransaction", forAPISet(injectTransaction(gateway), APIDefault))
+	webHandlerV1("/resendUnconfirmedTxns", forAPISet(resendUnconfirmedTxns(gateway), APIDefault))
 	// get raw tx by txid.
-	webHandlerV1("/rawtx", forAPISet(getRawTxn(gateway), APITxn, APIDefault))
+	webHandlerV1("/rawtx", forAPISet(getRawTxn(gateway), APIDefault))
 
 	// UxOut api handler
 
 	// get uxout by id.
-	webHandlerV1("/uxout", forAPISet(getUxOutByID(gateway), APIUxOut, APIBlockchain, APIDefault))
+	webHandlerV1("/uxout", forAPISet(getUxOutByID(gateway), APIDefault))
 	// get all the address affected uxouts.
-	webHandlerV1("/address_uxouts", forAPISet(getAddrUxOuts(gateway), APIUxOut, APIBlockchain, APIDefault))
+	webHandlerV1("/address_uxouts", forAPISet(getAddrUxOuts(gateway), APIDefault))
 
-	webHandlerV2("/address/verify", http.HandlerFunc(forAPISet(addressVerify, APIBlockchain, APITxn, APIExplorer, APIUxOut, APIDefault)))
+	webHandlerV2("/address/verify", http.HandlerFunc(forAPISet(addressVerify, APIDefault)))
 
 	// Explorer handler
 
 	// get set of pending transactions
-	webHandlerV1("/explorer/address", forAPISet(getTransactionsForAddress(gateway), APIExplorer, APIBlockchain, APIDefault))
+	webHandlerV1("/explorer/address", forAPISet(getTransactionsForAddress(gateway), APIDefault))
 
-	webHandlerV1("/coinSupply", forAPISet(getCoinSupply(gateway), APIBlockchain, APIStatus, APIExplorer, APIDefault))
+	webHandlerV1("/coinSupply", forAPISet(getCoinSupply(gateway), APIStatus, APIDefault))
 
-	webHandlerV1("/richlist", forAPISet(getRichlist(gateway), APIBlockchain, APIStatus, APIExplorer, APIDefault))
+	webHandlerV1("/richlist", forAPISet(getRichlist(gateway), APIStatus, APIDefault))
 
-	webHandlerV1("/addresscount", forAPISet(getAddressCount(gateway), APIBlockchain, APIStatus, APIExplorer, APIDefault))
+	webHandlerV1("/addresscount", forAPISet(getAddressCount(gateway), APIStatus, APIDefault))
 
 	return mux
 }

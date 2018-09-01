@@ -300,18 +300,18 @@ func (c *Config) postProcess() {
 
 	// Enable defaults if --enable-api not specified
 	if c.Node.WebInterfaceAPISets.IsEmpty() {
-		_ = c.Node.WebInterfaceAPISets.Set("DEFAULT")
+		_ = c.Node.WebInterfaceAPISets.Set("READ_ONLY")
 	}
 	// FIXME: Use API set constants
 	if c.Node.EnableWalletAPI {
 		_ = c.Node.WebInterfaceAPISets.Set("WALLET")
 	}
 	if c.Node.EnableSeedAPI {
-		_ = c.Node.WebInterfaceAPISets.Set("SEED")
+		_ = c.Node.WebInterfaceAPISets.Set("WALLET_SEED")
 	}
 	// Ensure bool condition is consistent with enabled API sets
 	c.Node.EnableWalletAPI = c.Node.EnableWalletAPI || c.Node.WebInterfaceAPISets.Contains("WALLET")
-	c.Node.EnableSeedAPI = c.Node.EnableSeedAPI || c.Node.WebInterfaceAPISets.Contains("SEED")
+	c.Node.EnableSeedAPI = c.Node.EnableSeedAPI || c.Node.WebInterfaceAPISets.Contains("WALLET_SEED")
 
 	if c.Node.WalletDirectory == "" {
 		c.Node.WalletDirectory = filepath.Join(c.Node.DataDirectory, "wallets")

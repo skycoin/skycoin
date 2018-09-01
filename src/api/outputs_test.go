@@ -81,7 +81,7 @@ func TestGetOutputsHandler(t *testing.T) {
 			gateway := &MockGatewayer{}
 			endpoint := "/api/v1/outputs"
 			gateway.On("GetUnspentOutputs", mock.Anything).Return(tc.getUnspentOutputsResponse, tc.getUnspentOutputsError)
-			gateway.On("IsAPISetEnabled", "UX", []string{"BLOCKCHAIN", "DEFAULT"}).Return(true)
+			gateway.On("IsAPISetEnabled", "READ_ONLY", []string(nil)).Return(true)
 
 			v := url.Values{}
 			if tc.httpBody != nil {

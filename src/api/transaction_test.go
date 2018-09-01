@@ -160,7 +160,7 @@ func TestGetPendingTxs(t *testing.T) {
 			gateway := &MockGatewayer{}
 			gateway.On("GetAllUnconfirmedTxns").Return(tc.getAllUnconfirmedTxnsResponse, tc.getAllUnconfirmedTxnsErr)
 			gateway.On("GetAllUnconfirmedTxnsVerbose").Return(tc.getAllUnconfirmedTxnsVerboseResponse, tc.getAllUnconfirmedTxnsVerboseErr)
-			gateway.On("IsAPISetEnabled", "TX", []string{"DEFAULT"}).Return(true)
+			gateway.On("IsAPISetEnabled", "READ_ONLY", []string(nil)).Return(true)
 
 			v := url.Values{}
 			if tc.verboseStr != "" {
@@ -422,7 +422,7 @@ func TestGetTransactionByID(t *testing.T) {
 			gateway.On("GetTransaction", tc.txid).Return(tc.getTransactionReponse, tc.getTransactionError)
 			gateway.On("GetTransactionResult", tc.txid).Return(tc.getTransactionResultReponse, tc.getTransactionResultError)
 			gateway.On("GetTransactionResultVerbose", tc.txid).Return(tc.getTransactionResultVerboseReponse, tc.getTransactionResultVerboseError)
-			gateway.On("IsAPISetEnabled", "TX", []string{"DEFAULT"}).Return(true)
+			gateway.On("IsAPISetEnabled", "READ_ONLY", []string(nil)).Return(true)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -574,7 +574,7 @@ func TestInjectTransaction(t *testing.T) {
 			endpoint := "/api/v1/injectTransaction"
 			gateway := &MockGatewayer{}
 			gateway.On("InjectBroadcastTransaction", tc.injectTransactionArg).Return(tc.injectTransactionError)
-			gateway.On("IsAPISetEnabled", "TX", []string{"DEFAULT"}).Return(true)
+			gateway.On("IsAPISetEnabled", "READ_ONLY", []string(nil)).Return(true)
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)
@@ -646,7 +646,7 @@ func TestResendUnconfirmedTxns(t *testing.T) {
 			endpoint := "/api/v1/resendUnconfirmedTxns"
 			gateway := &MockGatewayer{}
 			gateway.On("ResendUnconfirmedTxns").Return(tc.resendUnconfirmedTxnsResponse, tc.resendUnconfirmedTxnsErr)
-			gateway.On("IsAPISetEnabled", "TX", []string{"DEFAULT"}).Return(true)
+			gateway.On("IsAPISetEnabled", "READ_ONLY", []string(nil)).Return(true)
 
 			req, err := http.NewRequest(tc.method, endpoint, bytes.NewBufferString(tc.httpBody))
 			require.NoError(t, err)
@@ -770,7 +770,7 @@ func TestGetRawTx(t *testing.T) {
 			endpoint := "/api/v1/rawtx"
 			gateway := &MockGatewayer{}
 			gateway.On("GetTransaction", tc.getTransactionArg).Return(tc.getTransactionResponse, tc.getTransactionError)
-			gateway.On("IsAPISetEnabled", "TX", []string{"DEFAULT"}).Return(true)
+			gateway.On("IsAPISetEnabled", "READ_ONLY", []string(nil)).Return(true)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -1014,7 +1014,7 @@ func TestGetTransactions(t *testing.T) {
 
 			gateway.On("GetTransactionResults", matchFunc).Return(tc.getTransactionsResponse, tc.getTransactionsError)
 			gateway.On("GetTransactionResultsVerbose", matchFunc).Return(tc.getTransactionsVerboseResponse, tc.getTransactionsVerboseError)
-			gateway.On("IsAPISetEnabled", "BLOCKCHAIN", []string{"TX", "DEFAULT"}).Return(true)
+			gateway.On("IsAPISetEnabled", "READ_ONLY", []string(nil)).Return(true)
 
 			v := url.Values{}
 			if tc.httpBody != nil {

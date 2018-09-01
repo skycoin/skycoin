@@ -19,6 +19,11 @@ import (
 	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
+const (
+	// AllAPISets special API set containing all exported methods
+	AllAPISets = "ALL"
+)
+
 // GatewayConfig configuration set of gateway.
 type GatewayConfig struct {
 	BufferSize     int
@@ -1174,7 +1179,7 @@ func (gw *Gateway) IsWalletAPIEnabled() bool {
 
 // IsAPISetEnabled returns if any of the API set names is enabled
 func (gw *Gateway) IsAPISetEnabled(mainAPIName string, otherAPINames ...string) bool {
-	return gw.Config.EnabledAPISets.ContainsAny(mainAPIName, otherAPINames...)
+	return gw.Config.EnabledAPISets.ContainsAny(AllAPISets, append(otherAPINames, mainAPIName)...)
 }
 
 // GetBuildInfo returns node build info.

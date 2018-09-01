@@ -14,18 +14,16 @@
 %include "python_sha256s.i"
 %include "python_skycoin.coin.i"
 %include "python_skycoin.callback.i"
-#else
-%include "skycoin.cipher.crypto.i"
-%include "skycoin.coin.i"
-#endif
-
-//Apply typemaps for Python for now
-//It can be applied to other languages that fit in
-//Not languages can't return multiple values
-#if defined(SWIGPYTHON)
 %include "golang.cgo.i"
 %include "structs_typemaps.i"
 %include "skycoin.mem.i"
+#endif
+
+%include "skycoin.cipher.crypto.i"
+%include "skycoin.coin.i"
+#if defined(SWIGCSHARP)
+%include "csharp_java_basic.i"
+%include "csharp_java_typemap.i"
 #endif
 
 %include "swig.h"
